@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   summarize-history
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   03-Nov-2002
-# CVS:    $Id: summarize-history,v 1.10 2006-07-16 13:54:51 theine Exp $
+# CVS:    $Id$
 # Description:
 #    Evaluate `params.log' and print a history of changes.
 

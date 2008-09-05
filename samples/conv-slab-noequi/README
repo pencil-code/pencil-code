@@ -1,7 +1,7 @@
 Directory:
     ${PENCIL_HOME}/samples/conv-slab-noequi
 CVS-Id:
-    $Id: README,v 1.4 2007-08-17 09:41:06 bingert Exp $
+    $Id$
 Maintainer:
     Wolfgang <nobody[at]nowhere.net>
     Sven Bingert <mail@bingert.com>

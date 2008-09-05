@@ -1,5 +1,5 @@
 #!/bin/sh
-# CVS: $Id: pc_start,v 1.5 2006-08-29 19:06:16 theine Exp $
+# CVS: $Id$
 #                       pc_start
 #                      ----------
 #   Run src/start.x (initialising f for src/run.x).

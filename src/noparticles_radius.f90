@@ -1,4 +1,4 @@
-! $Id: noparticles_radius.f90,v 1.11 2007-09-15 23:27:06 wlyra Exp $
+! $Id$
 !
 !  This module takes care of everything related to particle radius.
 !

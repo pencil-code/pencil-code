@@ -1,4 +1,4 @@
-!$Id: temperature_TT.f90,v 1.8 2008-06-17 15:34:10 ajohan Exp $
+!$Id$
 !  This module can replace the entropy module by using _T_ as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
 !  we have (1-1/gamma) * cp*T = cs02 * exp( (gamma-1)*ln(rho/rho0)-gamma*s/cp )
@@ -109,7 +109,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_TT.f90,v 1.8 2008-06-17 15:34:10 ajohan Exp $")
+           "$Id$")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

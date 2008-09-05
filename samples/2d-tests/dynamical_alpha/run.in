@@ -2,7 +2,7 @@
 !  mean field dynamo with dynamical quenching
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.1 2006-05-29 08:40:15 brandenb Exp $'
+  cvsid='$Id$'
   nt=51, it1=10, cdt=0.4, cdtv=0.30, isave=50, itorder=3
   dsnap=.2, dvid=.5, ialive=1
 /

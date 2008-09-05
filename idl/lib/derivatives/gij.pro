@@ -1,5 +1,5 @@
 ;;
-;;  $Id: gij.pro,v 1.5 2008-06-10 17:24:37 ajohan Exp $
+;;  $Id$
 ;;
 ;;  Calculate derivative matrix.
 ;;

@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   12-Nov-2001
-;;;  $Id: evol.pro,v 1.11 2003-08-08 18:09:25 dobler Exp $
+;;;  $Id$
 ;;;
 ;;;  Description:
 ;;;   Time evolution (from time_series.dat).

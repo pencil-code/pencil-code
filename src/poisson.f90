@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.52 2008-05-28 17:24:46 wlyra Exp $
+! $Id$
 
 !
 !  This module solves the Poisson equation
@@ -134,7 +134,7 @@ module Poisson
 !  Identify version.
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.52 2008-05-28 17:24:46 wlyra Exp $")
+        "$Id$")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -247,7 +247,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.52 2008-05-28 17:24:46 wlyra Exp $")
+        "$Id$")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -361,7 +361,7 @@ module Poisson
 !  Identify version.
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.52 2008-05-28 17:24:46 wlyra Exp $")
+        "$Id$")
 !
 !  Break if lshear or 3D
 !

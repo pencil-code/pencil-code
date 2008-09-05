@@ -1,5 +1,5 @@
 ;;
-;; $Id: power_snapshot.pro,v 1.14 2008-04-08 10:22:05 ajohan Exp $
+;; $Id$
 ;;
 ;; Calculate energy spectrum of 3-D cube.
 ;;

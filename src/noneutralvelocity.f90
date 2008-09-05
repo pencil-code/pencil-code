@@ -1,4 +1,4 @@
-! $Id: noneutralvelocity.f90,v 1.3 2008-06-17 15:34:09 ajohan Exp $
+! $Id$
 !  This module takes care of everything related to neutral velocity
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -48,7 +48,7 @@ module NeutralVelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: noneutralvelocity.f90,v 1.3 2008-06-17 15:34:09 ajohan Exp $")
+           "$Id$")
 !
     endsubroutine register_neutralvelocity
 !***********************************************************************

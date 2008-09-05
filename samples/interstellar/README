@@ -1,7 +1,7 @@
 Directory:
     ${PENCIL_HOME}/samples/interstellar
 CVS-Id:
-    $Id: README,v 1.4 2007-08-18 04:47:44 brandenb Exp $
+    $Id$
 Maintainers:
     Tony Mee <A.J.Mee@ncl.ac.uk>
     Axel Brandenburg <brandenb@nordita.dk>

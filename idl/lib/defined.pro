@@ -1,4 +1,4 @@
-; $Id: defined.pro,v 1.2 2004-07-14 09:50:57 dobler Exp $
+; $Id$
 ;
 ;  If argument is undefined, it is initialized to zero
 ;  15-jun-02/axel: coded

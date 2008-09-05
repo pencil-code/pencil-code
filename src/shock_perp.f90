@@ -1,4 +1,4 @@
-! $Id: shock_perp.f90,v 1.15 2008-06-17 15:34:09 ajohan Exp $
+! $Id$
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -106,7 +106,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock_perp.f90,v 1.15 2008-06-17 15:34:09 ajohan Exp $")
+           "$Id$")
 !
     endsubroutine register_shock
 !***********************************************************************

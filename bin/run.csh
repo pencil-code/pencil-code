@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: run.csh,v 1.101 2008-07-17 14:24:48 ajohan Exp $
+# CVS: $Id$
 
 #                       run.csh
 #                      ---------

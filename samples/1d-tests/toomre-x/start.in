@@ -4,7 +4,7 @@
 !  velocity field.
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.1 2006-07-11 14:47:25 ajohan Exp $'
+  cvsid='$Id$'
   xyz0  = -6.28319, -6.28319, -6.28319   ! first corner of box
   xyz1  =  6.28319,  6.28319,  6.28319   ! box size
   lperi =        T,        T,        T   ! periodic direction?

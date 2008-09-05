@@ -1,4 +1,4 @@
-! $Id: struct_func.f90,v 1.31 2008-04-03 12:50:50 ajohan Exp $
+! $Id$
 !
 !  Calculates 2-point structure functions and/or PDFs
 !  and saves them during the run.

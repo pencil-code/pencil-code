@@ -1,4 +1,4 @@
-; $Id: pc_units.pro,v 1.2 2005-12-14 11:57:53 mee Exp $
+; $Id$
 ;
 ;  Read defined units from params and return them along with a bunch
 ;  of calculated units in a structure

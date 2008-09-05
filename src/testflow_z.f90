@@ -1,4 +1,4 @@
-! $Id: testflow_z.f90,v 1.13 2008-06-25 21:48:54 brandenb Exp $
+! $Id$
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -162,7 +162,7 @@ module Testflow
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testflow_z.f90,v 1.13 2008-06-25 21:48:54 brandenb Exp $")
+           "$Id$")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

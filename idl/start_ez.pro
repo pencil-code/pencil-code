@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start_ez.pro,v 1.8 2007-08-03 09:53:26 ajohan Exp $
+;;; $Id$
 
 common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
 ;

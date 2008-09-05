@@ -3,7 +3,7 @@
 #  Author: Tony Mee.
 #
 #  CVS:
-#    $Id: mkdep,v 1.14 2008-03-21 15:53:02 brandenb Exp $
+#    $Id$
 #
 #  Usage:
 #    In $PENCIL_HOME/src do 'mkdep *.f90 > Makefile.depend'

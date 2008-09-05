@@ -1,4 +1,4 @@
-! $Id: entropy_onefluid.f90,v 1.30 2008-08-07 21:10:15 dobler Exp $
+! $Id$
 
 !  This module takes care of entropy (initial condition
 !  and time advance) for a fluid consisting of gas and perfectly
@@ -94,7 +94,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_onefluid.f90,v 1.30 2008-08-07 21:10:15 dobler Exp $")
+           "$Id$")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

@@ -1,4 +1,4 @@
-! $Id: nochiral.f90,v 1.10 2007-01-31 12:50:12 wlyra Exp $
+! $Id$
 
 !  This modules solves two reactive scalar advection equations
 !  This is used for modeling the spatial evolution of left and
@@ -54,7 +54,7 @@ module Chiral
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nochiral.f90,v 1.10 2007-01-31 12:50:12 wlyra Exp $")
+           "$Id$")
 !
     endsubroutine register_chiral
 !***********************************************************************

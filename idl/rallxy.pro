@@ -4,7 +4,7 @@
 
 ;;;
 ;;;  Author: nils/ adapted from rall.pro 20-nov-2003    
-;;;  $Id: rallxy.pro,v 1.5 2005-09-19 04:44:31 brandenb Exp $
+;;;  $Id$
 ;;;
 ;;;  Description:
 ;;;   Read data from all processors in a xy-plane (select plane by 

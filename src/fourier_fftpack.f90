@@ -1,4 +1,4 @@
-! $Id: fourier_fftpack.f90,v 1.29 2008-07-03 16:15:30 dhruba Exp $
+! $Id$
 !
 !  This module contains FFT wrapper subroutines.
 !

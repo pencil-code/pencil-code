@@ -1,5 +1,5 @@
 ;
-;  $Id: cross.pro,v 1.4 2008-02-29 15:35:53 ajohan Exp $
+;  $Id$
 ;
 function cross, g, f
 ;

@@ -55,7 +55,7 @@ cat >> $index<<EOF
 <H2>Discusion</H2>
 <p/>
 made on the `date` by `whoami`  <br/>
-CVS: \$Id: mkwww,v 1.3 2005-06-26 17:34:16 eos_merger_tony Exp $
+CVS: \$Id$
 
 </BODY>  
 </HTML> 

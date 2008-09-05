@@ -1,4 +1,4 @@
-! $Id: nocosmicray.f90,v 1.15 2007-01-31 12:50:12 wlyra Exp $
+! $Id$
 
 !  This modules solves the passive scalar advection equation
 
@@ -51,7 +51,7 @@ module Cosmicray
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nocosmicray.f90,v 1.15 2007-01-31 12:50:12 wlyra Exp $")
+           "$Id$")
 !
     endsubroutine register_cosmicray
 !***********************************************************************

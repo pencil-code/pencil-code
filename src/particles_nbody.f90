@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.102 2008-04-10 11:53:53 dobler Exp $
+! $Id$
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -92,7 +92,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.102 2008-04-10 11:53:53 dobler Exp $")
+           "$Id$")
 !
 ! Set up mass as particle index. Plus seven, since the other 6 are 
 ! used by positions and velocities.      

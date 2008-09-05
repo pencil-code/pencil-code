@@ -1,4 +1,4 @@
-;  $Id: pc_vectors_selected.pro,v 1.6 2003-08-22 13:12:51 brandenb Exp $
+;  $Id$
 ;
 PRO pc_vectors_selected,l,m,n,U,V,W,X,Y,Z,length=length,ax=ax,az=az,nbox=nbox,$
 	color=color,symsize=symsize,scale=scale,black=black,field=field,$

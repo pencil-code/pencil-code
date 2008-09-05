@@ -1,4 +1,4 @@
-;$Id: ioncalc.pro,v 1.6 2007-08-28 04:31:31 brandenb Exp $
+;$Id$
 pro saha,yH,lnrho,ss,f,df,par
 ;
 ;  We want to find the root of f

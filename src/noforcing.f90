@@ -1,4 +1,4 @@
-! $Id: noforcing.f90,v 1.24 2008-06-17 15:34:09 ajohan Exp $
+! $Id$
 
 !  This module contains routines both for delta-correlated
 !  and continuous forcing. The fcont pencil is only provided
@@ -56,7 +56,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noforcing.f90,v 1.24 2008-06-17 15:34:09 ajohan Exp $")
+           "$Id$")
 !
     endsubroutine register_forcing
 !***********************************************************************

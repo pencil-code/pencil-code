@@ -1,5 +1,5 @@
 ;
-; $Id: yderxder.pro,v 1.1 2008-01-18 10:29:39 ajohan Exp $
+; $Id$
 ;
 ; Wrapper for 6th-order derivative routine with ghost cells.
 ;

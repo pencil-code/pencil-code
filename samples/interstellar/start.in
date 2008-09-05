@@ -3,7 +3,7 @@
 ! Initialisation parameters for interstellar
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.12 2006-08-18 13:01:47 mee Exp $'
+  cvsid='$Id$'
   unit_length=3.16e21, unit_velocity=1e5, unit_density=1e-24
   unit_temperature=29.8277784018579
   xyz0=-0.0625,-0.0625,-0.125

@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_magic_var.pro,v 1.49 2008-07-31 10:07:55 ajohan Exp $
+;  $Id$
 ;  $Date: 2008-07-31 10:07:55 $
 ;  $Revision: 1.49 $
 ;

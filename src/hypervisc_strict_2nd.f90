@@ -1,4 +1,4 @@
-! $Id: hypervisc_strict_2nd.f90,v 1.8 2007-09-14 11:19:40 ajohan Exp $
+! $Id$
 
 !
 !  This module applies a sixth order hyperviscosity to the equation
@@ -56,7 +56,7 @@ module Hypervisc_strict
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: hypervisc_strict_2nd.f90,v 1.8 2007-09-14 11:19:40 ajohan Exp $")
+           "$Id$")
 !
 !  Set indices for auxiliary variables
 ! 

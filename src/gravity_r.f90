@@ -1,4 +1,4 @@
-! $Id: gravity_r.f90,v 1.36 2008-05-14 22:27:21 dobler Exp $
+! $Id$
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -85,7 +85,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.36 2008-05-14 22:27:21 dobler Exp $")
+      if (lroot) call cvs_id("$Id$")
 !
       lgrav =.true.
       lgravr=.true.

@@ -5,7 +5,7 @@
 !  gaussian seed magnetic field.
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.4 2005-10-27 05:00:08 dobler Exp $',
+  cvsid='$Id$',
 /
 &eos_init_pars
   gamma=1.

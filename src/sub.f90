@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.371 2008-08-11 15:09:41 dhruba Exp $
+! $Id$
 
 module Sub
 

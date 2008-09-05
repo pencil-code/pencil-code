@@ -1,4 +1,4 @@
-;$Id: pc_alpha_flucts_pdf.pro,v 1.4 2007-10-21 23:14:42 brandenb Exp $
+;$Id$
 ;
 ;  Calculates pdf of all 4 components of alpha_ij, and saves the
 ;  pdf results for the full array of all 4 components and the fit.

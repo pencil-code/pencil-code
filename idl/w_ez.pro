@@ -1,4 +1,4 @@
-;  $Id: w_ez.pro,v 1.3 2002-11-27 11:25:01 brandenb Exp $
+;  $Id$
 ;
 ;  this routine is an easy-to-use write routine
 ;  This assumes that the data have been read in with r_ez.pro

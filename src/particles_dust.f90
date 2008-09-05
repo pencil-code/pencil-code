@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.242 2008-08-18 20:24:32 kapelrud Exp $
+! $Id$
 !
 !  This module takes care of everything related to dust particles
 !
@@ -162,7 +162,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.242 2008-08-18 20:24:32 kapelrud Exp $")
+           "$Id$")
 !
 !  Indices for particle position.
 !

@@ -1,4 +1,4 @@
-;$Id: pc_corrtime.pro,v 1.1 2007-10-18 17:36:07 brandenb Exp $
+;$Id$
 ;
 ;  plot correlation function <u(t).u(t')>/<u^2>
 ;

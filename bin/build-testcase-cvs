@@ -28,7 +28,7 @@
 
 #   Link files into a local src directory
 #   Also link files from the bin directory ==> should be renamed
-# CVS $Id: build-testcase-cvs,v 1.2 2005-06-26 17:34:16 eos_merger_tony Exp $
+# CVS $Id$
 # Usage:
 #   setup-src  [src-dir]
 

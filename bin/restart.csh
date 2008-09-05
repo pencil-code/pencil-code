@@ -1,5 +1,5 @@
 #PBS -S /bin/csh
-# CVS: $Id: restart.csh,v 1.3 2005-06-26 17:34:17 eos_merger_tony Exp $
+# CVS: $Id$
 
 # (I'm not sure this script is currently being used!?)
 

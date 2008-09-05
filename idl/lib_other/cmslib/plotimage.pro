@@ -211,7 +211,7 @@
 ;     are very large compared to the screen), 23 Aug 2001
 ;   Add support for Z buffer, CM, 20 Oct 2002
 ;
-;   $Id: plotimage.pro,v 1.1 2004-09-15 02:37:48 dobler Exp $
+;   $Id$
 ;
 ;-
 ; Copyright (C) 1997-2001, Craig Markwardt

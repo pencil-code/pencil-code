@@ -1,6 +1,6 @@
 pro rslice_xy_all,file,plane,mpeg=mpeg,itmax=itmax,fmax=fmax,fmin=fmin,nrepeat=nrepeat,OLDFILE=OLDFILE
 ;
-; $Id: rslice_all.pro,v 1.1 2003-08-02 15:38:25 mee Exp $
+; $Id$
 ;
 ; This program reads video snapshots from all the processors
 ; in the xy or xz plane, depending on whether plane='xy' or plane='xz'.

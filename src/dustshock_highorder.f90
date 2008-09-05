@@ -1,4 +1,4 @@
-! $Id: dustshock_highorder.f90,v 1.1 2008-08-05 12:51:49 ajohan Exp $
+! $Id$
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -68,7 +68,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: dustshock_highorder.f90,v 1.1 2008-08-05 12:51:49 ajohan Exp $")
+           "$Id$")
 !
 ! Check we aren't registering too many auxiliary variables
 !

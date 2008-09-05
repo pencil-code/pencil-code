@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 ;;;  Date:   25-Feb-2002
-;;;  $Id: pscaleh.pro,v 1.2 2002-08-11 04:00:11 brandenb Exp $
+;;;  $Id$
 ;;;
 ;;;  Description:
 ;;;   Plot pressure and pressure scale height as function of z.

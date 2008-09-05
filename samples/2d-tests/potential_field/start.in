@@ -2,7 +2,7 @@
 ! Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.1 2006-09-29 21:46:53 brandenb Exp $',
+  cvsid='$Id$',
   xyz0  = -3.14159, -3.14159, -0.5
   xyz1  =  3.14159,  3.14159,  0.5
   lperi =  T ,   T ,   F

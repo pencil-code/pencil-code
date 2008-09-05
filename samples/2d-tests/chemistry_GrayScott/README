@@ -1,7 +1,7 @@
 Directory:
     ${PENCIL_HOME}/samples/2d-tests/gray_scott
 CVS-Id:
-    $Id: README,v 1.1 2008-03-10 22:25:41 brandenb Exp $
+    $Id$
 Maintainer:
     Axel Brandenburg <brandenb@nordita.org>
 Added:

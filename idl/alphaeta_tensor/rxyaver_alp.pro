@@ -1,4 +1,4 @@
-; $Id: rxyaver_alp.pro,v 1.1 2005-07-17 20:02:19 brandenb Exp $
+; $Id$
 ;
 ;  read global sizes
 ;

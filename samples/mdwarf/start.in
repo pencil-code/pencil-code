@@ -3,7 +3,7 @@
 !  Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.6 2005-06-26 17:34:39 eos_merger_tony Exp $',
+  cvsid='$Id$',
   ip=14,                        ! debugging parameter
   xyz0  = -1.5,-1.5,-1.5,       ! first corner of box
   Lxyz  =  3. , 3. , 3.,        ! box size

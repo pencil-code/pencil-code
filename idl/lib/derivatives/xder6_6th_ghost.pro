@@ -1,5 +1,5 @@
 ;;
-;;  $Id: xder6_6th_ghost.pro,v 1.4 2008-06-10 17:29:19 ajohan Exp $
+;;  $Id$
 ;;
 ;;  Sixth derivative d^6/dx^6
 ;;  - 6th-order (7-point stencil)

@@ -1,4 +1,4 @@
-;$Id: mean.pro,v 1.2 2004-05-05 17:10:32 mee Exp $
+;$Id$
 ;
 ; Copyright (c) 1997-1999, Research Systems, Inc.  All rights reserved.
 ;       Unauthorized reproduction prohibited.

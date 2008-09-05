@@ -1,4 +1,4 @@
-; $Id: pc_set_precision.pro,v 1.7 2006-03-07 16:07:43 ajohan Exp $
+; $Id$
 ;
 ;
 ;  Read ensure 'zero' and 'one' are set in the pc_precision common block.

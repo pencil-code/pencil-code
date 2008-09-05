@@ -1,4 +1,4 @@
- ! $Id: global_gg_cs2_nolnrho.f90,v 1.5 2006-11-30 09:03:35 dobler Exp $
+ ! $Id$
 
 module Global
 

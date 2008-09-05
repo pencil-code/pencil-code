@@ -1,4 +1,4 @@
-! $Id: eos_ionization.f90,v 1.57 2008-08-08 12:23:23 nilshau Exp $
+! $Id$
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -116,7 +116,7 @@ module EquationOfState
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: eos_ionization.f90,v 1.57 2008-08-08 12:23:23 nilshau Exp $")
+           "$Id$")
 !
 !  Check we aren't registering too many auxiliary variables
 !

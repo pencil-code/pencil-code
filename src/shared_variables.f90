@@ -1,4 +1,4 @@
-! $Id: shared_variables.f90,v 1.15 2008-06-03 11:50:07 ajohan Exp $
+! $Id$
 !
 !  This module is an interface to allow modules
 !  to register pointers to their internal variables so that

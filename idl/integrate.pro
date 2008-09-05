@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 ;;;  Date:   10-Apr-2002
-;;;  $Id: integrate.pro,v 1.3 2002-08-11 04:00:11 brandenb Exp $
+;;;  $Id$
 ;;;
 ;;;  Description:
 ;;;   Calculat a few integral quantities and provide dVol for further

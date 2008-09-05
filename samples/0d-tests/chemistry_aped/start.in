@@ -2,7 +2,7 @@
 !  Initialisation parameters for Kelvin-Helmholtz turbulence.
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.1 2008-03-05 19:45:13 brandenb Exp $',
+  cvsid='$Id$',
   !xyz0=-5.,-1.,-1.
   !xyz1=+5.,+1.,+1.
 /

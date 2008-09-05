@@ -1,4 +1,4 @@
-;  $Id: time_series.pro,v 1.30 2008-03-10 10:36:04 brandenb Exp $
+;  $Id$
 ;
 ;  here we read the rprint files
 ;  to generate an index catalogue of what is written

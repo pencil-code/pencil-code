@@ -1,4 +1,4 @@
-; $Id: ryaver.pro,v 1.4 2007-08-03 09:53:26 ajohan Exp $
+; $Id$
 ;
 ;  reads the yaver.dat file, puts the result into fmxz array
 ;  this routine keeps only the last time

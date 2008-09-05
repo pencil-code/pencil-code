@@ -1,4 +1,4 @@
-; $Id: pscatter.pro,v 1.1 2002-09-27 07:29:34 brandenb Exp $
+; $Id$
 ;
 window,xs=600,ys=480
 !p.charthick=3 & !p.thick=3 & !x.thick=3 & !y.thick=3

@@ -1,4 +1,4 @@
- ! $Id: global_gg_bext_cs2.f90,v 1.4 2006-11-30 09:03:35 dobler Exp $
+ ! $Id$
 
 module Global
 

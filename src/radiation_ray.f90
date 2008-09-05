@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.139 2007-11-22 11:33:02 ajohan Exp $
+! $Id$
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -178,7 +178,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.139 2007-11-22 11:33:02 ajohan Exp $")
+           "$Id$")
 !
 !  Check that we aren't registering too many auxilary variables
 !

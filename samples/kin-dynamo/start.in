@@ -3,7 +3,7 @@
 ! Initialisation parameters for a kinematic dynamo run
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.4 2008-01-15 06:34:43 brandenb Exp $',
+  cvsid='$Id$',
   random_gen='nr_f90'
 /
 &magnetic_init_pars

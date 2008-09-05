@@ -1,5 +1,5 @@
 #!/bin/csh
-#$Id: restart-new-dir-VAR,v 1.4 2005-06-26 17:34:17 eos_merger_tony Exp $
+#$Id$
 #
 #  Example:
 #     restart-new-dir-VAR ../hydro256e 6

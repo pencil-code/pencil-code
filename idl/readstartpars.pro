@@ -1,4 +1,4 @@
-;  $Id: readstartpars.pro,v 1.17 2005-07-22 23:59:15 dobler Exp $
+;  $Id$
 ;
 ;  Read startup parameters
 ;

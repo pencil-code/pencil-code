@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 ;;;  Date:   24-Jun-2003
-;;;  $Id: read-ser-par.pro,v 1.2 2003-08-08 07:49:16 brandenb Exp $
+;;;  $Id$
 ;;;
 ;;;  Description:
 ;;;   Read data from a run that was done in serial and parallel and

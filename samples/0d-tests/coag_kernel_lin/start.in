@@ -3,7 +3,7 @@
 ! Initialisation parameters for disc run
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.8 2006-04-01 11:29:21 ajohan Exp $'
+  cvsid='$Id$'
   Lxyz  = 0.0, 0.0, 0.0
   xyz0  = 0.0, 0.0, 0.0 
   lperi =   T,   T,   T

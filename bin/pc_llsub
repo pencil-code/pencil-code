@@ -17,7 +17,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   llsub
 # Author: Tobias Heinemann (theine@nordita.dk)
 # Date:   23-Apr-2006
-# CVS:    $Id: pc_llsub,v 1.6 2007-02-08 15:14:59 theine Exp $
+# CVS:    $Id$
 # Description:
 #   Wrapper script to pass start.csh and run.csh (or both) to IBM Loadleveler
 #   God knows why it does not take any useful command line options on its

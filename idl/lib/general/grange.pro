@@ -1,7 +1,7 @@
 FUNCTION grange,x1,x2,n,log=log
 ;
 ;  generates a uniform sequence of values in the range [x1,x2]
-;  $Id: grange.pro,v 1.2 2008-07-27 19:41:17 brandenb Exp $
+;  $Id$
 ;
 if keyword_set(log) then begin
   lx1=alog(x1)

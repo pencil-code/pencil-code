@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   09-Sep-2001
-;;;  $Id: psect.pro,v 1.2 2002-08-11 04:00:11 brandenb Exp $
+;;;  $Id$
 ;;;
 ;;;  Description:
 ;;;   Plot a section of the box, indicating processor boundaries and

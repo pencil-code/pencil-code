@@ -1,4 +1,4 @@
-; $Id: arraytostring.pro,v 1.1 2005-10-13 10:30:29 dobler Exp $
+; $Id$
 ;
 ;  Concatenate an array of strings into a single string 
 ;

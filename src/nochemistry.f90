@@ -1,4 +1,4 @@
-! $Id: nochemistry.f90,v 1.6 2008-03-20 16:59:32 brandenb Exp $
+! $Id$
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -79,11 +79,11 @@ module Chemistry
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: nochemistry.f90,v 1.6 2008-03-20 16:59:32 brandenb Exp $
+!  CVS should automatically update everything between $Id$
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: nochemistry.f90,v 1.6 2008-03-20 16:59:32 brandenb Exp $")
+           "$Id$")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't

@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: copy-snapshots,v 1.37 2005-06-26 17:34:16 eos_merger_tony Exp $
+# CVS: $Id$
 
 # Name:   copy-snapshots
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)

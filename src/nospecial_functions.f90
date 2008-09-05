@@ -1,4 +1,4 @@
-! $Id: nospecial_functions.f90,v 1.1 2007-08-06 07:00:26 brandenb Exp $
+! $Id$
 
 !  Dummy routine for ideal gas
 

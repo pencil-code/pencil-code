@@ -1,5 +1,5 @@
 ;;
-;;  $Id: der_single.pro,v 1.2 2008-06-10 13:07:40 ajohan Exp $
+;;  $Id$
 ;;
 ;;  Calculate single component of firstst derivative; the second argument
 ;;  gives the direction.

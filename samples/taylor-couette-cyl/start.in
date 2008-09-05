@@ -3,7 +3,7 @@
 ! Initialisation parameters for a 1-D isothermal wind problem
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.1 2007-07-02 07:44:42 brandenb Exp $',
+  cvsid='$Id$',
   coord_system='cylindric'
   lperi=F, T, T
   xyz0=1.,0.00000,-2.

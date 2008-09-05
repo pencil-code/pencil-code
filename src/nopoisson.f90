@@ -1,4 +1,4 @@
-! $Id: nopoisson.f90,v 1.12 2007-10-18 10:30:29 ajohan Exp $
+! $Id$
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array

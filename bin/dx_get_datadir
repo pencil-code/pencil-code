@@ -3,7 +3,7 @@
 # Name:   dx_get_datadir
 # Author: ajwm (A.J.Mee@ncl.ac.uk)
 # Date:   02-12-2002
-# CVS: $Id: dx_get_datadir,v 1.2 2005-06-26 17:34:16 eos_merger_tony Exp $
+# CVS: $Id$
 # Description:
 #   Read in a datadir.in if it exists and output the contents
 #   For reading into DX

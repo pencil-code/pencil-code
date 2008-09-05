@@ -1,4 +1,4 @@
-! $Id: poisson_multigrid.f90,v 1.4 2007-10-18 10:36:21 ajohan Exp $
+! $Id$
 
 !
 !  This module solves the Poisson equation
@@ -67,7 +67,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson_multigrid.f90,v 1.4 2007-10-18 10:36:21 ajohan Exp $")
+        "$Id$")
 !
       if (lshear) then
         call fatal_error("inverse_laplacian", &
@@ -107,7 +107,7 @@ module Poisson
 ! !  identify version
 ! !
 !       if (lroot .and. ip<10) call cvs_id( &
-!         "$Id: poisson_multigrid.f90,v 1.4 2007-10-18 10:36:21 ajohan Exp $")
+!         "$Id$")
 ! !
 !       if (present(kmax)) then
 !         call warning("inverse_curl2", &

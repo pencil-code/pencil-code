@@ -1,5 +1,5 @@
 ;;
-;;  $Id: del2.pro,v 1.6 2008-06-10 17:24:36 ajohan Exp $
+;;  $Id$
 ;;
 ;;  Calculate the Laplacian of f, i.e.
 ;;    div(grad(f)) if f is a scalar field, or

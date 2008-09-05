@@ -91,7 +91,7 @@ GetOptions(\%opts,
 	            --tag-stable=s
 	            --tag-broken=s
 	       )) or die "$!\n";
-die '$Id: pencil-test,v 1.40 2008-07-11 05:02:53 dobler Exp $ ' . "\n"
+die '$Id$ ' . "\n"
             if    ($opts{'v'} || $opts{'version'});
 die usage() if    ($opts{'h'} || $opts{'help'});
 my $debug       = (              $opts{'debug'}       || 0 );

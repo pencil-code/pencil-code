@@ -1,4 +1,4 @@
-;$Id: pc_remove_travelling_wave.pro,v 1.1 2008-06-24 16:08:13 brandenb Exp $
+;$Id$
 pro pc_remove_travelling_wave,f,z,speed,t, $
   average=average,it1=it1
 ;

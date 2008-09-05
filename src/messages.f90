@@ -1,4 +1,4 @@
-! $Id: messages.f90,v 1.17 2008-05-09 23:36:10 dobler Exp $
+! $Id$
 !
 !  This module takes care of messages.
 !

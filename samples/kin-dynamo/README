@@ -1,7 +1,7 @@
 Directory:
     ${PENCIL_HOME}/samples/kin-dynamo
 CVS-Id:
-    $Id: README,v 1.4 2008-03-24 16:52:01 brandenb Exp $
+    $Id$
 Maintainer:
     Axel Brandenburg <brandenb@nordita.dk>
 Added:

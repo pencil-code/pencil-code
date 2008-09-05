@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   23-Nov-2001
-;;;  $Id: strati.pro,v 1.2 2002-08-11 04:00:11 brandenb Exp $
+;;;  $Id$
 ;;;
 ;;;  Description:
 ;;;   Plot vertical profile of p, rho, s, etc for a stratified

@@ -4,7 +4,7 @@
 ! Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.2 2007-02-09 15:22:37 dintrans Exp $',
+  cvsid='$Id$',
   nt=50, it1=10, isave=1000, itorder=3,
   dsnap=1., cdtv=0.4,
   lpencil_check=F  ! test of the requested pencils

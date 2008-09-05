@@ -4,7 +4,7 @@
 ! Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.3 2007-10-24 11:05:47 dintrans Exp $',
+  cvsid='$Id$',
   lwrite_ic = T,              ! write the initial condition VAR0
   lwrite_2d = T,              ! write 2-D snapshots
   xyz0  = -1., -1., 0.,       ! first corner of box

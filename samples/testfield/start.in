@@ -2,7 +2,7 @@
 ! Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.1 2005-06-26 21:37:21 brandenb Exp $',
+  cvsid='$Id$',
 /
 &testfield_init_pars
 /

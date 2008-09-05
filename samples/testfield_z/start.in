@@ -2,7 +2,7 @@
 ! Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.2 2008-04-13 04:45:46 brandenb Exp $',
+  cvsid='$Id$',
   random_gen='nr_f90'
   lwrite_aux=F
 /

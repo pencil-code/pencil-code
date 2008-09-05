@@ -1,4 +1,4 @@
-! $Id: particles_radius.f90,v 1.25 2008-08-19 09:38:13 brandenb Exp $
+! $Id$
 !
 !  This module takes care of everything related to particle radius.
 !
@@ -54,7 +54,7 @@ module Particles_radius
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_radius.f90,v 1.25 2008-08-19 09:38:13 brandenb Exp $")
+           "$Id$")
 !
 !  Index for particle radius.
 !

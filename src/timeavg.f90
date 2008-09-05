@@ -1,4 +1,4 @@
-! $Id: timeavg.f90,v 1.20 2007-04-09 09:02:24 ajohan Exp $
+! $Id$
 
 module Timeavg
 

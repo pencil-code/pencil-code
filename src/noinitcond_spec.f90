@@ -1,4 +1,4 @@
-!  $Id: noinitcond_spec.f90,v 1.11 2006-08-23 16:53:32 mee Exp $
+!  $Id$
 !
 !  Substitute routines for vortex_solve.f90
 !

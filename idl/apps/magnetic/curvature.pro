@@ -1,4 +1,4 @@
-;$Id: curvature.pro,v 1.1 2006-06-20 18:32:05 brandenb Exp $
+;$Id$
 ;
 ;  calculate B.gradB, where B is in terms of curl(A).
 ;

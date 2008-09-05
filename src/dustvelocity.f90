@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.129 2008-08-05 08:36:20 ajohan Exp $
+! $Id$
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -140,7 +140,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.129 2008-08-05 08:36:20 ajohan Exp $")
+           "$Id$")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

@@ -1,4 +1,4 @@
-! $Id: noparticles_nbody.f90,v 1.13 2008-04-01 17:18:17 wlyra Exp $
+! $Id$
 !
 !  This module takes care of everything related to particle self-gravity.
 !

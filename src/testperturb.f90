@@ -1,4 +1,4 @@
-! $Id: testperturb.f90,v 1.6 2008-03-28 07:00:10 brandenb Exp $
+! $Id$
 
 !  test perturbation method
 
@@ -63,7 +63,7 @@ module TestPerturb
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testperturb.f90,v 1.6 2008-03-28 07:00:10 brandenb Exp $")
+           "$Id$")
 !
     endsubroutine register_testperturb
 !***********************************************************************

@@ -4,7 +4,7 @@
 ! Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.1 2005-10-19 19:49:11 dobler Exp $',
+  cvsid='$Id$',
   ip=14,                        ! debugging parameter
   xyz0  = -2., -2., -2.,        ! first corner of box
   Lxyz  =  4.,  4.,  4.,        ! box size

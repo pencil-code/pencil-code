@@ -1,5 +1,5 @@
 ;;
-;;  $Id: zderxder_6th_ghost.pro,v 1.2 2008-06-10 13:07:41 ajohan Exp $
+;;  $Id$
 ;;
 ;;  Second derivative d2f/dzdx
 ;;  - 6th-order

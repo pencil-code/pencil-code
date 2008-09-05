@@ -4,7 +4,7 @@
 !  to be compared with Fig.6 of Falle (2002, ApJ 577, L123)
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.1 2006-08-23 15:13:16 theine Exp $'
+  cvsid='$Id$'
   xyz0  =-280., 0.0, 0.0,      ! first corner of box
   xyz1  = 220., 1.0, 1.0,      ! box size
   lperi = F , T , T,          ! periodic direction?

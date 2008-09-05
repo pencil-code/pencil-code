@@ -4,7 +4,7 @@
 ! Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.2 2006-06-24 06:08:41 brandenb Exp $'
+  cvsid='$Id$'
 
   unit_length=1e8               !
   unit_velocity=1e6             ! unit system (relative to cgs)

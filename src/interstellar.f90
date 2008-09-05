@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.147 2008-04-03 12:50:49 ajohan Exp $
+! $Id$
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development.
@@ -390,7 +390,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.147 2008-04-03 12:50:49 ajohan Exp $")
+           "$Id$")
 !
 ! Check we aren't registering too many auxiliary variables
 !

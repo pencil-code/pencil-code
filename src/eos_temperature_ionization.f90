@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.64 2008-08-08 12:23:23 nilshau Exp $
+! $Id$
 
 !  Dummy routine for ideal gas
 
@@ -129,7 +129,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.64 2008-08-08 12:23:23 nilshau Exp $')
+           '$Id$')
 !
     endsubroutine register_eos
 !***********************************************************************

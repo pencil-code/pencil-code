@@ -1,4 +1,4 @@
-;  $Id: thermodynamics.pro,v 1.20 2004-06-16 20:02:20 theine Exp $
+;  $Id$
 
 if (not lionization and not lionization_fixed) then begin
   print,'Using simple equation of state...'

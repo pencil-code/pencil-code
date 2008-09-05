@@ -2,7 +2,7 @@
 !!!   write_default_namelists.f90   !!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-! $Id: write_default_namelists.f90,v 1.1 2006-06-22 16:35:18 dobler Exp $
+! $Id$
 
 !***********************************************************************
   program Write_default_namelists

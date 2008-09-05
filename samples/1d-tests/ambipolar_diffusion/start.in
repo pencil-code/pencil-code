@@ -3,7 +3,7 @@
 !  Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.2 2007-08-17 13:09:16 wlyra Exp $',
+  cvsid='$Id$',
   ip=10,                        ! debugging parameter
   xyz0  =  0,0,0,       ! first corner of box
   xyz1  =  1,1,1,       ! second corner of box

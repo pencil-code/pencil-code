@@ -1,4 +1,4 @@
-! $Id: nogsl.f90,v 1.3 2008-03-06 10:34:54 wlyra Exp $
+! $Id$
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array

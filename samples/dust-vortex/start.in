@@ -3,7 +3,7 @@
 ! Initialisation parameters for vortex simulation.
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.17 2007-09-17 05:44:01 ajohan Exp $'
+  cvsid='$Id$'
   Lxyz=+4.0,+8.0,+4.0
   xyz0=-2.0,-4.0,-2.0, 
   bcz = 's','s','a','s','s','s','a','s'

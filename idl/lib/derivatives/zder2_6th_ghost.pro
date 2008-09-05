@@ -1,5 +1,5 @@
 ;;
-;;  $Id: zder2_6th_ghost.pro,v 1.12 2008-06-10 17:29:19 ajohan Exp $
+;;  $Id$
 ;;
 ;;  Second derivative d^2/dz^2
 ;;  - 6th-order (7-point stencil)

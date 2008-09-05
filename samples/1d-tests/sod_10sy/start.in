@@ -3,7 +3,7 @@
 ! Initialisation parameters for shock tube problem.
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.4 2008-01-13 14:04:53 ajohan Exp $'
+  cvsid='$Id$'
   xyz0  =  0.0,-3.7, 0.0,      ! first corner of box
   xyz1  =  1.0, 6.3, 1.0,      ! box size
   lperi =  T ,  F ,  T,        ! periodic direction?

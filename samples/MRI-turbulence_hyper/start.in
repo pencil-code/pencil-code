@@ -3,7 +3,7 @@
 ! Initialisation parameters for MRI turbulence
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.5 2007-08-17 08:53:08 ajohan Exp $',
+  cvsid='$Id$',
   xyz0  =  -0.66,  -0.66,  -0.66
   Lxyz  =   1.32,   1.32,   1.32
   lperi =      T,      T,      T

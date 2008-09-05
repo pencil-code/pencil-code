@@ -1,4 +1,4 @@
-; $Id: safe_get_tag.pro,v 1.2 2005-10-20 09:18:32 bingert Exp $
+; $Id$
 ;
 ;  Safely attempt to access a particular tag of a structure by ensuring 
 ;  that the tag exists first. 

@@ -4,7 +4,7 @@
 !
 &init_pars
 ip=14
-  cvsid='$Id: start.in,v 1.4 2005-06-26 17:34:33 eos_merger_tony Exp $'
+  cvsid='$Id$'
 /
 &eos_init_pars
 /

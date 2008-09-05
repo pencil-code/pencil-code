@@ -1,4 +1,4 @@
- ! $Id: global_gg_halo.f90,v 1.10 2008-05-14 22:27:21 dobler Exp $
+ ! $Id$
 
 module Global
 

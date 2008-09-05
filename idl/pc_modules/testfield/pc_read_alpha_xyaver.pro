@@ -1,4 +1,4 @@
-;$Id: pc_read_alpha_xyaver.pro,v 1.10 2008-08-01 03:45:32 brandenb Exp $
+;$Id$
 common cdat,x,y,z,nx,ny,nz,nw,ntmax,date0,time0
 ;
 ;  In order to determine the z-dependence of the alpha and eta tensors

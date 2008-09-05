@@ -1,4 +1,4 @@
-! $Id: io_mpio.f90,v 1.40 2008-07-07 14:12:42 brandenb Exp $
+! $Id$
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
@@ -113,7 +113,7 @@ contains
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: io_mpio.f90,v 1.40 2008-07-07 14:12:42 brandenb Exp $")
+           "$Id$")
 !
 !  consistency check
 !

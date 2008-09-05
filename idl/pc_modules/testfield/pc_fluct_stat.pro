@@ -1,4 +1,4 @@
-;$Id: pc_fluct_stat.pro,v 1.3 2008-04-29 04:36:32 brandenb Exp $
+;$Id$
 pro pc_fluct_stat,t,f,fm,frms,frms_error,plo=plo,good=good,debug=debug
 ;
 ;  calculate average and rms fluctuations

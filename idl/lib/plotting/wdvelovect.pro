@@ -1,4 +1,4 @@
-; $Id: wdvelovect.pro,v 1.11 2005-06-04 21:09:17 dobler Exp $
+; $Id$
 ;
 ; Copyright (c) 1983-1998, Research Systems, Inc.  All rights reserved.
 ;	Unauthorized reproduction prohibited.

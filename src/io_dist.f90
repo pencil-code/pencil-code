@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.95 2008-08-15 12:03:12 kapelrud Exp $
+! $Id$
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -94,7 +94,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.95 2008-08-15 12:03:12 kapelrud Exp $")
+      if (lroot) call cvs_id("$Id$")
 !
     endsubroutine register_io
 !

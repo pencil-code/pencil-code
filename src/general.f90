@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.80 2008-08-15 11:49:59 kapelrud Exp $
+! $Id$
 
 module General
 

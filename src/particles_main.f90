@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.69 2008-08-17 17:29:29 wlyra Exp $
+! $Id$
 !
 !  This module contains all the main structure needed for particles.
 !

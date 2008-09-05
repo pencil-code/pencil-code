@@ -1,4 +1,4 @@
-! $Id: filter.f90,v 1.7 2006-12-20 07:23:14 dobler Exp $
+! $Id$
 
 !
 !  Filters for smoothing, removing trends (like spurious build-up of

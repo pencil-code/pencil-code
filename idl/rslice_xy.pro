@@ -1,4 +1,4 @@
-; $Id: rslice_xy.pro,v 1.4 2002-11-19 10:55:51 mee Exp $
+; $Id$
 ;
 ;  reads xy slices
 ;  this routine is not very general yet and needs to be adjusted

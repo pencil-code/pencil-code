@@ -1,4 +1,4 @@
-! $Id: nopower_spectrum.f90,v 1.17 2008-07-01 16:47:49 wlyra Exp $
+! $Id$
 !
 module  power_spectrum
   !

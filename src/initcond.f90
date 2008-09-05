@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.247 2008-08-12 14:46:09 wlyra Exp $
+! $Id$
 
 module Initcond
 

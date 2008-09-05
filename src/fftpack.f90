@@ -1,4 +1,4 @@
-!  $Id: fftpack.f90,v 1.4 2006-11-30 09:03:35 dobler Exp $
+!  $Id$
 !
 !  downloaded from:
 !  http://www.psc.edu/~burkardt/src/fftpack/fftpack.html

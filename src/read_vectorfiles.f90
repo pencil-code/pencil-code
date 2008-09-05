@@ -1,4 +1,4 @@
-! $Id: read_vectorfiles.f90,v 1.6 2006-10-26 11:51:30 bingert Exp $
+! $Id$
 
 !***********************************************************************
       program read_vectorfiles

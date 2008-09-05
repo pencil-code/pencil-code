@@ -1,4 +1,4 @@
-! $Id: hydro_ffreeMHDrel.f90,v 1.32 2008-06-20 10:12:43 ajohan Exp $
+! $Id$
 
 !  This module solve the momentum equation for relativistic force-free MHD
 !  dS/dt = curlB x B +  curlE x E + divE E
@@ -95,7 +95,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro_ffreeMHDrel.f90,v 1.32 2008-06-20 10:12:43 ajohan Exp $")
+           "$Id$")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

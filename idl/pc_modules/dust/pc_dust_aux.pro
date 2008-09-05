@@ -1,4 +1,4 @@
-;  $Id: pc_dust_aux.pro,v 1.11 2005-06-06 10:11:13 ajohan Exp $
+;  $Id$
 ;
 ;  Calculate auxiliary dust variables such as distribution function f
 ;

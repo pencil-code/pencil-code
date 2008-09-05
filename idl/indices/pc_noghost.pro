@@ -1,4 +1,4 @@
-;; $Id: pc_noghost.pro,v 1.6 2008-01-17 16:22:44 ajohan Exp $
+;; $Id$
 ;;
 ;;  Trim variable of ghost zones and empty dimensions
 ;;

@@ -4,7 +4,7 @@
 !  to be compared with Fig.6 of Falle (2002, ApJ 577, L123)
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.1 2006-08-23 15:13:16 theine Exp $'
+  cvsid='$Id$'
   nt=5000, it1=10, isave=50, itorder=3,
   dsnap=100., dvid=1., tmax=30.
   bcx = 's','s','s','s','s','s','a2','a2'

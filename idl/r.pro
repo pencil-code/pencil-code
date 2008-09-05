@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.60 2007-08-03 09:53:26 ajohan Exp $
+; $Id$
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -6,7 +6,7 @@
 
 ;;; Read the data produced on one processor
 ;;; You should have run `start.pro' once before.
-;;; $Id: r.pro,v 1.60 2007-08-03 09:53:26 ajohan Exp $
+;;; $Id$
 
 function param2
 COMPILE_OPT HIDDEN 

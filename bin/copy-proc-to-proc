@@ -1,5 +1,5 @@
 #!/bin/sh
-#$Id: copy-proc-to-proc,v 1.7 2007-11-27 10:48:57 brandenb Exp $
+#$Id$
 #
 #  Example:
 #     copy-proc-to-proc grid.dat ../hydro256e

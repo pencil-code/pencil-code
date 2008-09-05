@@ -1,4 +1,4 @@
-! $Id: magnetic_ffreeMHDrel.f90,v 1.46 2008-06-20 10:12:43 ajohan Exp $
+! $Id$
 
 !  Relativistic treatment of force-free magnetic fields.
 !  Still quite experimental.
@@ -109,7 +109,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic_ffreeMHDrel.f90,v 1.46 2008-06-20 10:12:43 ajohan Exp $")
+           "$Id$")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

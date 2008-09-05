@@ -1,4 +1,4 @@
-! $Id: diffops_cartesian.f90,v 1.5 2006-11-30 09:03:34 dobler Exp $
+! $Id$
 
 module DiffOps
 

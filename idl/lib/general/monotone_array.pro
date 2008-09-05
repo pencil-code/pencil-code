@@ -1,5 +1,5 @@
 ;;
-;;  $Id: monotone_array.pro,v 1.7 2007-06-03 08:45:18 ajohan Exp $
+;;  $Id$
 ;;
 ;;  monotone_array - take array and return index of monotonous growth.
 ;;

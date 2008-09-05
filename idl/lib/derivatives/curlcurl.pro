@@ -1,5 +1,5 @@
 ;;
-;;  $Id: curlcurl.pro,v 1.3 2008-06-10 17:24:36 ajohan Exp $
+;;  $Id$
 ;;
 ;;  Calculate two consecutive curls of a 3-D vector field.
 ;;

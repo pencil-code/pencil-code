@@ -1,5 +1,5 @@
 ;;
-;;  $Id: zder_6th_ghost.pro,v 1.20 2008-06-10 17:22:24 ajohan Exp $
+;;  $Id$
 ;;
 ;;  First derivative d/dz
 ;;  - 6th-order (7-point stencil)

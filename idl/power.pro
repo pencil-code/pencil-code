@@ -3,7 +3,7 @@ PRO power,var1,var2,last,w,v1=v1,v2=v2,all=all,wait=wait,k=k,spec1=spec1, $
           tot=tot,lin=lin,png=png,yrange=yrange,norm=norm,helicity2=helicity2, $
           compensate1=compensate1,compensate2=compensate2,datatopdir=datatopdir
 ;
-;  $Id: power.pro,v 1.30 2008-07-24 23:44:42 brandenb Exp $
+;  $Id$
 ;
 ;  This routine reads in the power spectra generated during the run
 ;  (provided dspec is set to a time interval small enough to produce

@@ -12,7 +12,7 @@ pro rvid_plane,field,mpeg=mpeg,png=png,TRUEPNG=png_truecolor,tmin=tmin,$
                style_polar=style_polar,nlevels=nlevels, $
                doublebuffer=doublebuffer,wsx=wsx,wsy=wsy
 ;
-; $Id: rvid_plane.pro,v 1.34 2008-07-25 09:38:27 arnelohr Exp $
+; $Id$
 ;
 ;  reads and displays data in a plane (currently with tvscl)
 ;  and plots a curve as well (cross-section through iy)

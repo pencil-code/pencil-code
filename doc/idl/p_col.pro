@@ -1,4 +1,4 @@
-; $Id: p_col.pro,v 1.6 2004-10-16 18:31:39 brandenb Exp $
+; $Id$
 ;
 !p.charthick=3 & !p.thick=3 & !x.thick=3 & !y.thick=3
 if !d.name eq 'PS' then begin

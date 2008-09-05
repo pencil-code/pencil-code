@@ -3,7 +3,7 @@
 !
 &run_pars
   ip=14
-  cvsid='$Id: run.in,v 1.6 2008-06-18 13:29:55 bingert Exp $'
+  cvsid='$Id$'
   nt=21, it1=5, isave=50
   cdt=0.4, cdtv=0.08, cdts=0.08, itorder=3
   dsnap=30. 

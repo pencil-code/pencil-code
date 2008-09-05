@@ -1,4 +1,4 @@
-;  $Id: extra.pro,v 1.47 2004-06-16 20:02:20 theine Exp $
+;  $Id$
 ;
 ;  This routine calculates a number of extra variables
 ;

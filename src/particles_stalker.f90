@@ -1,4 +1,4 @@
-! $Id: particles_stalker.f90,v 1.8 2008-03-02 18:03:13 ajohan Exp $
+! $Id$
 !
 !  This module writes information about the local state of the gas at
 !  the positions of a selected number of particles.

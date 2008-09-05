@@ -3,7 +3,7 @@
 # Name:   dx_table2csv
 # Author: ajwm (A.J.Mee@ncl.ac.uk)
 # Date:   02-12-2002
-# CVS: $Id: dx_table2csv,v 1.2 2005-06-26 17:34:16 eos_merger_tony Exp $
+# CVS: $Id$
 # Description:
 #   Read in a time_series.dat file and output a CSV version
 #   For reading into DX

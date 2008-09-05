@@ -1,4 +1,4 @@
-; $Id: p_ukaff.pro,v 1.1 2002-09-27 07:29:34 brandenb Exp $
+; $Id$
 ;
 if !d.name eq 'PS' then begin
   device,xsize=18,ysize=12,yoffset=3

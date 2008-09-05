@@ -1,4 +1,4 @@
-! $Id: noshear.f90,v 1.17 2008-05-01 08:56:58 ajohan Exp $
+! $Id$
 
 !  This modules deals with all aspects of shear; if no
 !  shear are invoked, a corresponding replacement dummy
@@ -39,7 +39,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noshear.f90,v 1.17 2008-05-01 08:56:58 ajohan Exp $")
+           "$Id$")
 !
     endsubroutine register_shear
 !***********************************************************************

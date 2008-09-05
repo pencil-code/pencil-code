@@ -1,4 +1,4 @@
-! $Id: noparticles.f90,v 1.21 2008-06-18 17:06:24 ajohan Exp $
+! $Id$
 !
 !  This module takes care of everything related to no particles.
 !

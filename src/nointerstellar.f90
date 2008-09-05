@@ -1,4 +1,4 @@
-! $Id: nointerstellar.f90,v 1.32 2007-01-31 12:50:12 wlyra Exp $
+! $Id$
 !
 !  Dummy module
 !
@@ -43,7 +43,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nointerstellar.f90,v 1.32 2007-01-31 12:50:12 wlyra Exp $")
+           "$Id$")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

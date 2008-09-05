@@ -1,4 +1,4 @@
-$Id: README,v 1.10 2007-08-26 16:46:21 dobler Exp $
+$Id$
 
 In manual.tex we try to keep a reasonably up-to-date description of the code.
 For latex installations that don't have some of the less frequent style files,

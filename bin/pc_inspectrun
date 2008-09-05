@@ -1,5 +1,5 @@
 #!/bin/sh
-#  $Id: pc_inspectrun,v 1.1 2005-08-16 23:51:03 mee Exp $
+#  $Id$
 #
 #  The script prints the header (legend) and the
 #  last few lines of the time_series.dat file.

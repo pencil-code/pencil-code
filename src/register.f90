@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.240 2008-08-11 15:09:41 dhruba Exp $
+! $Id$
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).

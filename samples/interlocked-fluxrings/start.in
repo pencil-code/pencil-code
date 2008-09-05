@@ -3,7 +3,7 @@
 ! Initialisation parameters for magnetic flux rings
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.21 2005-06-26 17:34:37 eos_merger_tony Exp $'
+  cvsid='$Id$'
 /
 &eos_init_pars
   gamma=1. ! isothermal

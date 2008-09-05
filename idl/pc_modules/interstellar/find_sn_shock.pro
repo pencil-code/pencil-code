@@ -1,6 +1,6 @@
 PRO find_SN_shock,var,x,pnts=pnts,leftpnt=leftpnt,rightpnt=rightpnt,tol=tol
 ;
-; $Id: find_sn_shock.pro,v 1.2 2006-08-24 23:03:22 mee Exp $
+; $Id$
 ;
 ; Routine to find shock front by finding points within a given
 ; tolerance of the maximum

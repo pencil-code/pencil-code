@@ -1,4 +1,4 @@
-! $Id: selfgravity.f90,v 1.38 2008-06-20 10:13:26 ajohan Exp $
+! $Id$
 
 !
 !  This module takes care of self gravity by solving the Poisson equation
@@ -74,7 +74,7 @@ module Selfgravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: selfgravity.f90,v 1.38 2008-06-20 10:13:26 ajohan Exp $")
+           "$Id$")
 !
 !  Put variable name in array
 !

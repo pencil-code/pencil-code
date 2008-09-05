@@ -1,4 +1,4 @@
-! $Id: noglobal.f90,v 1.14 2006-08-20 22:39:15 wlyra Exp $
+! $Id$
 
 module Global
 

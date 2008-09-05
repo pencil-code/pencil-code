@@ -3,7 +3,7 @@
 !  Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.8 2005-06-26 17:34:33 eos_merger_tony Exp $',
+  cvsid='$Id$',
   nt=20, it1=5, isave=100
   cdt=0.4, cdtv=0.2, dtmin=1e-6,
   dsnap=20., dvid=0.2,

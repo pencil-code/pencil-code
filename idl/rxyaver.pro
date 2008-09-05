@@ -1,4 +1,4 @@
-; $Id: rxyaver.pro,v 1.14 2007-08-03 09:53:26 ajohan Exp $
+; $Id$
 ;
 ;  reads xyaver.dat file
 ;  read first global array sizes

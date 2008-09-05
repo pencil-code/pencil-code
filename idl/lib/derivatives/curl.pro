@@ -1,5 +1,5 @@
 ;;
-;;  $Id: curl.pro,v 1.13 2008-06-10 17:24:36 ajohan Exp $
+;;  $Id$
 ;;
 ;;  Calculate the curl of a 3-D vector field
 ;;

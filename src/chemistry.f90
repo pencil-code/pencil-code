@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.129 2008-08-08 12:24:07 nilshau Exp $
+! $Id$
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -225,11 +225,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.129 2008-08-08 12:24:07 nilshau Exp $
+!  CVS should automatically update everything between $Id$
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.129 2008-08-08 12:24:07 nilshau Exp $")
+           "$Id$")
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
 !  been configured in a custom module but they do no harm)

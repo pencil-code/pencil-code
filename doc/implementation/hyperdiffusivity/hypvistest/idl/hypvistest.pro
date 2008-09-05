@@ -1,5 +1,5 @@
 ;
-; $Id: hypvistest.pro,v 1.1 2007-09-15 11:50:59 ajohan Exp $
+; $Id$
 ;
 ; Script to check the implementation of hyperviscosity.
 ;

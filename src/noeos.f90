@@ -1,4 +1,4 @@
-! $Id: noeos.f90,v 1.41 2008-06-17 15:34:09 ajohan Exp $
+! $Id$
 
 !  Dummy routine for ideal gas
 
@@ -82,7 +82,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noeos.f90,v 1.41 2008-06-17 15:34:09 ajohan Exp $')
+           '$Id$')
 !
     endsubroutine register_eos
 !***********************************************************************

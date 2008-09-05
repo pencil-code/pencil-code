@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.92 2008-07-02 00:31:46 brandenb Exp $
+! $Id$
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -65,7 +65,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.92 2008-07-02 00:31:46 brandenb Exp $")
+           "$Id$")
 !
     endsubroutine register_magnetic
 !***********************************************************************

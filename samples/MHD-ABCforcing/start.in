@@ -2,7 +2,7 @@
 ! Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.1 2008-03-27 05:03:39 brandenb Exp $',
+  cvsid='$Id$',
 /
 &eos_init_pars
   gamma=1.

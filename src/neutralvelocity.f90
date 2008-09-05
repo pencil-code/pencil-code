@@ -1,4 +1,4 @@
-! $Id: neutralvelocity.f90,v 1.23 2008-06-20 10:13:26 ajohan Exp $
+! $Id$
 !
 !  This module takes care of everything related to velocity
 !
@@ -132,7 +132,7 @@ module NeutralVelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutralvelocity.f90,v 1.23 2008-06-20 10:13:26 ajohan Exp $")
+           "$Id$")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

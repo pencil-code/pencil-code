@@ -1,5 +1,5 @@
 ; 
-;  $Id: multmv.pro,v 1.1 2004-12-25 14:33:10 ajohan Exp $
+;  $Id$
 ;
 ;  Calculate dot product of a matrix and a vector
 ;

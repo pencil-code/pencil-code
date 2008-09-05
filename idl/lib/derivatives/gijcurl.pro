@@ -1,5 +1,5 @@
 ;;
-;;  $Id: gijcurl.pro,v 1.4 2008-06-10 13:07:40 ajohan Exp $
+;;  $Id$
 ;;
 ;;  Derivative matrix from curl in cartesian coordinates.
 ;;  Used to calculate B_{i,j} as bij=gijcurl(aa).

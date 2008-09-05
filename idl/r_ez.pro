@@ -1,4 +1,4 @@
-;  $Id: r_ez.pro,v 1.12 2003-06-15 09:02:50 brandenb Exp $
+;  $Id$
 ;
 ;  this routine is an easy-to-use replacement of r.pro,
 ;  which can sometimes fail (if nml2idl fails, for example).

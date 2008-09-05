@@ -1,4 +1,4 @@
-! $Id: nostruct_func.f90,v 1.10 2006-08-23 16:53:32 mee Exp $
+! $Id$
 !
 module  struct_func
   !

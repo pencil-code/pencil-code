@@ -1,4 +1,4 @@
-! $Id: ghostfold_nompicomm.f90,v 1.12 2008-04-04 10:13:29 bicanski Exp $
+! $Id$
 !
 !  This module performs some special mpifunctions that
 !  also require the Fourier routines.

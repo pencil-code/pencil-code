@@ -1,6 +1,6 @@
 ### -*-Makefile-*- (for Emacs)
 ###
-### $Id: Makefile.depend,v 1.103 2008-08-15 14:28:09 kapelrud Exp $
+### $Id$
 ### Makefile dependencies for modular Pencil Code.
 ###
 ##

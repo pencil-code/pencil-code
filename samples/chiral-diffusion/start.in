@@ -3,7 +3,7 @@
 ! Initialisation parameters for forced helical MHD turbulence
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.2 2005-06-26 17:34:32 eos_merger_tony Exp $',
+  cvsid='$Id$',
 /
 &chiral_init_pars
   initXX_chiral='blob', amplXX_chiral=1., radiusXX_chiral=.5, xposXX_chiral=+1.

@@ -1,5 +1,5 @@
 &run_pars
-  cvsid='$Id: run.in,v 1.1 2006-09-29 21:46:53 brandenb Exp $',
+  cvsid='$Id$',
   nt=1001, it1=50, isave=20, itorder=3
   !nt=1, it1=20, isave=20, itorder=1
   dsnap=10., dvid=.5, ialive=1

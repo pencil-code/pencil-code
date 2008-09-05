@@ -3,7 +3,7 @@
 ! Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.4 2005-06-26 17:34:18 eos_merger_tony Exp $'
+  cvsid='$Id$'
   unit_length=1e8, unit_velocity=1e5, unit_density=1e-6, unit_temperature=1e0
   Lxyz=1e0, xyz0=0.
   lwrite_aux=T

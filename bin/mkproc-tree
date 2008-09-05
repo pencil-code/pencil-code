@@ -1,5 +1,5 @@
 #!/bin/csh
-#$Id: mkproc-tree,v 1.4 2006-06-05 13:00:39 brandenb Exp $
+#$Id$
 #
 #  Makes a processor directory tree
 #

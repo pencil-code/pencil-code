@@ -3,7 +3,7 @@
 !  Convection in a (relatively) flat box
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.6 2007-01-11 22:06:56 dobler Exp $',
+  cvsid='$Id$',
   ip=14,                        ! debugging parameter
   xyz0  = -2., -2.,  0.,        ! first corner of box
   Lxyz  =  4.,  4.,  1.,        ! box size

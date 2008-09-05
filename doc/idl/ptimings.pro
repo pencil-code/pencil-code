@@ -1,4 +1,4 @@
-; $Id: ptimings.pro,v 1.11 2008-01-13 08:06:35 brandenb Exp $
+; $Id$
 ;
 red = 122
 blue = 55

@@ -1,4 +1,4 @@
-; $Id: rzaver.pro,v 1.6 2007-08-03 09:53:26 ajohan Exp $
+; $Id$
 ;
 ;  reads the zaver.dat file
 ;  need to supply nprocy by hand...

@@ -1,4 +1,4 @@
-! $Id: nohypervisc_strict.f90,v 1.4 2007-08-23 21:05:41 wlyra Exp $
+! $Id$
 
 !
 !  This module applies a sixth order hyperviscosity to the equation

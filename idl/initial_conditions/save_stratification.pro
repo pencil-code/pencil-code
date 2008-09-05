@@ -1,4 +1,4 @@
-;$Id: save_stratification.pro,v 1.4 2007-08-27 20:54:04 brandenb Exp $
+;$Id$
 pro save_stratification,z,lnrho,ss,zresolution=zresolution,filename=filename
 ;
 ;  seems like a rather special routine to me

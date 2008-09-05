@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.58 2008-08-17 15:39:25 wlyra Exp $
+! $Id$
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -57,7 +57,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodensity.f90,v 1.58 2008-08-17 15:39:25 wlyra Exp $")
+           "$Id$")
 !
     endsubroutine register_density
 !***********************************************************************

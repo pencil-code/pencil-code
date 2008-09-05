@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: cvs-add-rundir,v 1.7 2007-12-09 17:06:37 ajohan Exp $
+# CVS: $Id$
 
 # Name:   cvs-add-rundir
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)

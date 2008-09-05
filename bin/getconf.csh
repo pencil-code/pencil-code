@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.244 2008-07-17 14:25:08 ajohan Exp $
+# $Id$
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do

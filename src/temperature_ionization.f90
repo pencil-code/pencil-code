@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.48 2008-08-08 10:20:22 dintrans Exp $
+! $Id$
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -92,7 +92,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.48 2008-08-08 10:20:22 dintrans Exp $")
+           "$Id$")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

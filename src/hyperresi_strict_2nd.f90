@@ -1,4 +1,4 @@
-! $Id: hyperresi_strict_2nd.f90,v 1.1 2007-08-23 11:59:33 ajohan Exp $
+! $Id$
 
 !
 !  This module applies a sixth order hyperresistivity to the induction
@@ -47,7 +47,7 @@ module Hyperresi_strict
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: hyperresi_strict_2nd.f90,v 1.1 2007-08-23 11:59:33 ajohan Exp $")
+           "$Id$")
 !
 !  Set indices for auxiliary variables
 ! 

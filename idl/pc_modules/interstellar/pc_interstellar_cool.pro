@@ -1,4 +1,4 @@
-;  $Id: pc_interstellar_cool.pro,v 1.1 2005-12-14 11:58:42 mee Exp $
+;  $Id$
 ;
 ;  Calculate interstellar cooling term
 ;

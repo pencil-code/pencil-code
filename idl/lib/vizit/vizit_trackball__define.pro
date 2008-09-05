@@ -1,4 +1,4 @@
-; $Id: vizit_trackball__define.pro,v 1.1 2008-03-29 14:56:33 abag Exp $
+; $Id$
 ;
 ; Copyright (c) 1997-1999, Research Systems, Inc.  All rights reserved.
 ;	Unauthorized reproduction prohibited.

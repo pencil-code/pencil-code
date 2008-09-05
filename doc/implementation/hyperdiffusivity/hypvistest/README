@@ -1,7 +1,7 @@
 Directory:
     ${PENCIL_HOME}/doc/implementation/hyperdiffusivity/hypvistest
 CVS-Id:
-    $Id: README,v 1.2 2007-09-17 05:51:59 ajohan Exp $
+    $Id$
 Maintainer:
     Anders Johansen <johansen@mpia.de>
 Added:

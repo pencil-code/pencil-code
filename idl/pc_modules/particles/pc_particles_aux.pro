@@ -1,4 +1,4 @@
-;  $Id: pc_particles_aux.pro,v 1.1 2006-01-15 13:42:29 ajohan Exp $
+;  $Id$
 ;
 ;  Calculate auxiliary particle variables such as particle velocity.
 ;

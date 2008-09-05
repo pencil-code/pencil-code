@@ -4,7 +4,7 @@
 ! Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.1 2008-03-06 19:23:01 theine Exp $',
+  cvsid='$Id$',
   xyz0  =  0.,  0.,  0.,        ! first corner of box
   Lxyz  =  1.,  1.,  1.,          ! box size
   lwrite_aux=T

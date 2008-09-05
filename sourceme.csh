@@ -1,4 +1,4 @@
-#$Id: sourceme.csh,v 1.30 2008-02-08 15:56:26 tgastine Exp $
+#$Id$
 #
 #  This file tries to set the PENCIL_HOME environment variable if it
 #  doesn't exist yet, and then adds stuff to your PATH and IDL_PATH.

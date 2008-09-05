@@ -1,5 +1,5 @@
 !  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
-!$Id: mpicomm.h,v 1.37 2008-07-01 13:53:18 dhruba Exp $
+!$Id$
 !
   private
 

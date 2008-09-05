@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   03-Aug-2002
-;;;  $Id: calcvar.pro,v 1.2 2002-08-11 04:00:11 brandenb Exp $
+;;;  $Id$
 ;;;
 ;;;  Description:
 ;;;   Calculate derived variables that are often needed, but should

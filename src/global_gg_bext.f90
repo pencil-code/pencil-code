@@ -1,4 +1,4 @@
- ! $Id: global_gg_bext.f90,v 1.5 2006-08-20 22:35:50 wlyra Exp $
+ ! $Id$
 
 module Global
 

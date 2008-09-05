@@ -1,5 +1,5 @@
 #! /bin/sh
-# CVS: $Id: pc_findconfig,v 1.4 2005-06-26 17:34:17 eos_merger_tony Exp $
+# CVS: $Id$
 #
 #  This file tries to set the PENCIL_HOME environment variable if it
 #  doesn't exist yet, and then adds stuff to your PATH and IDL_PATH.

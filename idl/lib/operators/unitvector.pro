@@ -1,5 +1,5 @@
 function unitvector,f,debug=debug
-if keyword_set(debug) then print,'$Id: unitvector.pro,v 1.1 2004-03-20 10:24:54 brandenb Exp $'
+if keyword_set(debug) then print,'$Id$'
 ;
 ;  calculate unit vector
 ;  20-mar-04/axel: coded

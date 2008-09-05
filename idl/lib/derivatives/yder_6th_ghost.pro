@@ -1,5 +1,5 @@
 ;;
-;;  $Id: yder_6th_ghost.pro,v 1.16 2008-06-10 17:22:24 ajohan Exp $
+;;  $Id$
 ;;
 ;;  First derivative d/dy
 ;;  - 6th-order

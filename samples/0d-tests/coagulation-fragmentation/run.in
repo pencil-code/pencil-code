@@ -2,7 +2,7 @@
 !  Run parameters for MRI turbulence
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.3 2007-09-25 16:07:59 ajohan Exp $',
+  cvsid='$Id$',
   nt=100, it1=1, cdt=0.4, cdtv=0.4, isave=1000, itorder=3
   dsnap=1.0e37, dvid=1.0, dtmin=1e-9
   lpencil_check=T

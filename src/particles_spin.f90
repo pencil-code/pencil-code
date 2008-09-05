@@ -1,4 +1,4 @@
-! $Id: particles_spin.f90,v 1.2 2008-08-18 20:24:32 kapelrud Exp $
+! $Id$
 !
 !  This module takes care of everything related to particle spin
 !  including lifting forces. The module maintains a full f-array
@@ -64,7 +64,7 @@ module Particles_spin
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_spin.f90,v 1.2 2008-08-18 20:24:32 kapelrud Exp $")
+           "$Id$")
 !
 !  Indices for flow field vorticity. The vorticity is a communicated auxiliary
 !  vector.

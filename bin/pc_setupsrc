@@ -6,7 +6,7 @@
 #   Also link script files from the bin directory ==> should be renamed
 #
 # CVS:
-#   $Id: pc_setupsrc,v 1.15 2006-07-23 10:20:34 mee Exp $
+#   $Id$
 #
 # Usage:
 #   setup-src [options] [src-dir]

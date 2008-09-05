@@ -1,7 +1,7 @@
 Directory:
     ${PENCIL_HOME}/samples/MRI-turbulence_hyper_strict
 CVS-Id:
-    $Id: README,v 1.1 2007-08-23 12:18:01 ajohan Exp $
+    $Id$
 Maintainer:
     Anders Johansen <johansen@mpia.de>
 Added:

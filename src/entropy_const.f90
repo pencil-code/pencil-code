@@ -1,4 +1,4 @@
-! $Id: entropy_const.f90,v 1.13 2007-11-21 14:32:47 wlyra Exp $
+! $Id$
 
 !  This module is for systems with spatially fixed entropy
 !  distribution. This implies Ds/Dt=u.grads only, which is used
@@ -79,7 +79,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_const.f90,v 1.13 2007-11-21 14:32:47 wlyra Exp $")
+           "$Id$")
 !
     endsubroutine register_entropy
 !***********************************************************************

@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_particles_to_ascii.pro,v 1.2 2008-08-17 10:25:30 ajohan Exp $
+;  $Id$
 ;
 ;  Output particles positions in ascii file.
 ;

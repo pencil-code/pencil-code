@@ -1,5 +1,5 @@
 ;;
-;;  $Id: pc_is_vectorfield.pro,v 1.3 2007-07-09 06:16:53 ajohan Exp $
+;;  $Id$
 ;;
 function pc_is_vectorfield, variable, $
     subscripts=subscripts, dim=dim, $

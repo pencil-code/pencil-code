@@ -1,7 +1,7 @@
 Directory:
     ${PENCIL_HOME}/samples/2d-tests/selfgravitating-shearwave
 CVS-Id:
-    $Id: README,v 1.5 2007-10-04 09:17:41 ajohan Exp $
+    $Id$
 Maintainer:
     Anders Johansen <johansen@mpia.de>
 Added:

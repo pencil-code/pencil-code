@@ -1,4 +1,4 @@
- ! $Id: global_spheromak.f90,v 1.3 2005-06-26 17:34:13 eos_merger_tony Exp $
+ ! $Id$
 
 module Global
 

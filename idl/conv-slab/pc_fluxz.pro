@@ -1,4 +1,4 @@
-; $Id: pc_fluxz.pro,v 1.2 2007-08-28 04:10:14 brandenb Exp $
+; $Id$
 ;
 ;  for plotting 1-D energy fluxes from convection simulations (conv-slab)
 ;

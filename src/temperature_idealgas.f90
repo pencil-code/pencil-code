@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.71 2008-08-11 09:07:31 dintrans Exp $
+! $Id$
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -140,7 +140,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.71 2008-08-11 09:07:31 dintrans Exp $")
+           "$Id$")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_plot_par.pro,v 1.17 2008-08-15 14:35:44 kapelrud Exp $
+;  $Id$
 ;
 pro pc_plot_par, xx, $
     x=x, y=y, z=z, com=com, shiftx=shiftx, shifty=shifty, shiftz=shiftz, $

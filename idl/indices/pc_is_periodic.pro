@@ -1,5 +1,5 @@
 ;;
-;;  $Id: pc_is_periodic.pro,v 1.1 2005-09-29 13:17:35 ajohan Exp $
+;;  $Id$
 ;;
 ;;  Simple program that evaluates whether a Pencil Code variable is periodic.
 ;;

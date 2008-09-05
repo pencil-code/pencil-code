@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Started:   06-Jul-2002
-# CVS: $Id: mkdot,v 1.2 2006-07-30 22:53:19 mee Exp $
+# CVS: $Id$
 # Usage:
 #  Hello errrr...
 

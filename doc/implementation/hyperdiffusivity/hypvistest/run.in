@@ -1,6 +1,6 @@
 !                          -*-f90-*- (for Emacs)
 &run_pars
-  cvsid='$Id: run.in,v 1.3 2007-09-16 17:24:29 brandenb Exp $',
+  cvsid='$Id$',
   nt=10000, it1=5, cdt=0.4, cdtv=0.001, isave=100, itorder=3  !(default)
   nt=50, it1=5, cdt=0.4, cdtv=0.001, isave=100, itorder=  !(for reference.out)
   dsnap=6.2831853, dtmin=1.0e-6

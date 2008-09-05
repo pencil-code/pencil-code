@@ -1,4 +1,4 @@
-! $Id: noparticles_spin.f90,v 1.1 2008-08-15 14:28:10 kapelrud Exp $
+! $Id$
 !
 !  This module takes care of everything related to particle spin.
 !

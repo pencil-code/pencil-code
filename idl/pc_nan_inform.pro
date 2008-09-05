@@ -1,4 +1,4 @@
-; $Id: pc_nan_inform.pro,v 1.2 2004-06-11 16:30:20 dobler Exp $
+; $Id$
 pro pc_nan_inform, object=object
 
   vars = tag_names(object)

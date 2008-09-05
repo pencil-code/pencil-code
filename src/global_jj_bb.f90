@@ -1,4 +1,4 @@
-! $Id: global_jj_bb.f90,v 1.1 2006-05-28 14:05:21 theine Exp $
+! $Id$
 
 module Global
 !

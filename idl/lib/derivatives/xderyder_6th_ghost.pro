@@ -1,5 +1,5 @@
 ;;
-;;  $Id: xderyder_6th_ghost.pro,v 1.7 2008-06-24 17:11:00 brandenb Exp $
+;;  $Id$
 ;;
 ;;  Second derivative d2f/dxdy
 ;;  - 6th-order

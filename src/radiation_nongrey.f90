@@ -1,4 +1,4 @@
-! $Id: radiation_nongrey.f90,v 1.8 2007-11-22 11:33:02 ajohan Exp $
+! $Id$
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -218,7 +218,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_nongrey.f90,v 1.8 2007-11-22 11:33:02 ajohan Exp $")
+           "$Id$")
 !
 !  Check that we aren't registering too many auxilary variables
 !

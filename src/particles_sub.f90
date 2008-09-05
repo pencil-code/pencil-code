@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.147 2008-08-18 20:24:32 kapelrud Exp $
+! $Id$
 !
 !  This module contains subroutines useful for the Particle module.
 !

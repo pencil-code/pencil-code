@@ -3,7 +3,7 @@
 !  Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.2 2005-07-04 12:34:18 ngrs Exp $',
+  cvsid='$Id$',
   ip=13,
   nt=20, it1=4, isave=500, itorder=3, ialive=1
   cdt=0.4, cdtv=0.3, dtmin=1e-6,

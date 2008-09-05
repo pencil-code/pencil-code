@@ -1,6 +1,6 @@
 !                              -*-f90-*-     (for emacs)
 &init_pars
-  cvsid='$Id: start.in,v 1.1 2007-09-15 11:50:59 ajohan Exp $',
+  cvsid='$Id$',
   xyz0  =  -3.1415927, -3.1415927, -3.1415927
   Lxyz  =   6.2831853,  6.2831853,  6.2831853
   lperi =           T,          T,          T

@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.415 2008-08-15 14:28:09 kapelrud Exp $
+! $Id$
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -499,7 +499,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.415 2008-08-15 14:28:09 kapelrud Exp $")
+           "$Id$")
 !
 !  Initialize counter for calculating and communicating print results.
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.

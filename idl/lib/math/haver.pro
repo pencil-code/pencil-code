@@ -1,7 +1,7 @@
 function haver,f,xvertical=xvertical,yvertical=yvertical
 ;
 ;  Horizontal average of 3-d or 2-d scalar
-;  $Id: haver.pro,v 1.4 2004-07-14 12:30:43 dobler Exp $
+;  $Id$
 ;
         sizef=size(f)
         dim=sizef[0]

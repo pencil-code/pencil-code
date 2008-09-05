@@ -1,4 +1,4 @@
-; $Id: vizit.pro,v 1.1 2008-03-29 14:56:33 abag Exp $
+; $Id$
 
 pro safe_obj_destroy,obj
   obj_size = n_elements(obj)

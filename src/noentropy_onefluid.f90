@@ -1,4 +1,4 @@
-! $Id: noentropy_onefluid.f90,v 1.7 2008-06-17 15:34:09 ajohan Exp $
+! $Id$
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -59,7 +59,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy_onefluid.f90,v 1.7 2008-06-17 15:34:09 ajohan Exp $")
+           "$Id$")
 !
     endsubroutine register_entropy
 !***********************************************************************

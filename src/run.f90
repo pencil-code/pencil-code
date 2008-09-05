@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.261 2008-08-15 12:03:12 kapelrud Exp $
+! $Id$
 !
 !***********************************************************************
       program run
@@ -76,7 +76,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.261 2008-08-15 12:03:12 kapelrud Exp $")
+             "$Id$")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)

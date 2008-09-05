@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: copy-snapshots_exp,v 1.8 2008-07-17 14:25:41 ajohan Exp $
+# CVS: $Id$
 
 # Name:   copy-snapshots
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)

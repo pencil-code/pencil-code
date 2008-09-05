@@ -1,4 +1,4 @@
-! $Id: global_rr.f90,v 1.10 2006-11-30 09:03:35 dobler Exp $
+! $Id$
 
 module Global
 

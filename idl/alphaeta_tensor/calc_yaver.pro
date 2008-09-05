@@ -1,4 +1,4 @@
-; $Id: calc_yaver.pro,v 1.2 2005-06-12 19:22:42 brandenb Exp $
+; $Id$
 ;
 ;  read global sizes
 ;

@@ -1,4 +1,4 @@
-! $Id: shock.f90,v 1.37 2008-06-20 10:02:05 bingert Exp $
+! $Id$
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -113,7 +113,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock.f90,v 1.37 2008-06-20 10:02:05 bingert Exp $")
+           "$Id$")
 !
 ! Check we aren't registering too many auxiliary variables
 !

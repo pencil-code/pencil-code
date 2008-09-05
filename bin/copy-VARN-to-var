@@ -1,5 +1,5 @@
 #!/bin/sh
-#$Id: copy-VARN-to-var,v 1.9 2008-04-10 15:55:09 wlyra Exp $
+#$Id$
 #
 #  Examples:
 #     nohup copy-VAR-to-var 10 .

@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_particles_to_density.pro,v 1.23 2007-08-03 13:33:49 ajohan Exp $
+;  $Id$
 ;
 ;  Convert positions of particles to a grid density field.
 ;

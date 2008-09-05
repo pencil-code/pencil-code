@@ -1,4 +1,4 @@
-! $Id: noborder_profiles.f90,v 1.10 2008-03-24 22:57:17 wlyra Exp $
+! $Id$
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array

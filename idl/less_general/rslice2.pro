@@ -1,4 +1,4 @@
-; $Id: rslice2.pro,v 1.1 2002-06-15 07:01:46 brandenb Exp $
+; $Id$
 ;
 ;  show two different slices
 ;

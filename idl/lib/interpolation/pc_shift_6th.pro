@@ -1,4 +1,4 @@
-;$Id: pc_shift_6th.pro,v 1.2 2008-06-24 16:08:13 brandenb Exp $
+;$Id$
 function pc_shift_6th, f, x, deltax
 ;
 ;  20-jun-2008/anders: coded

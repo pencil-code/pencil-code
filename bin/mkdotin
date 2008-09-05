@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkstartrun
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   06-Jul-2002
-# CVS: $Id: mkdotin,v 1.5 2006-07-16 13:54:51 theine Exp $
+# CVS: $Id$
 # Description:
 #   Given a set of files (normally Makefile and Makefile.local), scan
 #   through all lines of the type

@@ -1,5 +1,5 @@
 ;;
-;;  $Id: pc_unshear.pro,v 1.5 2008-06-19 14:57:54 ajohan Exp $
+;;  $Id$
 ;;
 ;;  Transform from sheared to unsheared frame by shifting data along the
 ;;  y-direction to match last purely periodic state.

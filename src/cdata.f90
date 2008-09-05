@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.433 2008-08-15 12:03:12 kapelrud Exp $
+! $Id$
 !
 !  Global variables are defined in this module.
 !

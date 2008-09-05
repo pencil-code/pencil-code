@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name    : mkcparam
 # Author  : wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Started : 06-Jul-2002
-# CVS     : $Id: mkcparam,v 1.84 2008-06-21 01:04:03 dobler Exp $
+# CVS     : $Id$
 #
 # Usage:
 #   mkcparam <file1> [<file2> [..]] [-o outfile]\n

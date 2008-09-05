@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   10-Oct-2002
-;;;  $Id: compare_runs.pro,v 1.2 2003-08-08 07:49:16 brandenb Exp $
+;;;  $Id$
 ;;;
 ;;;  Description:
 ;;;   Compare serial and parallel runs with reference data. called by

@@ -1,5 +1,5 @@
 ;;
-;;  $Id: del6.pro,v 1.3 2008-06-10 17:24:36 ajohan Exp $
+;;  $Id$
 ;;
 ;;  Calculate del6 of f.
 ;;

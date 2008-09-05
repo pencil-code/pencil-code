@@ -1,4 +1,4 @@
-;$Id: pc_alpha_flucts.pro,v 1.3 2007-11-26 12:25:42 brandenb Exp $
+;$Id$
 ;
 ;  This routine plots alpha and eta results from time series.
 ;  The rms value of the fluctuations (departure from mean)

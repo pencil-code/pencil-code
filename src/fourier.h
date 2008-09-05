@@ -1,5 +1,5 @@
 !
-!  $Id: fourier.h,v 1.9 2008-07-01 13:53:18 dhruba Exp $  
+!  $Id$  
 !
   private
 

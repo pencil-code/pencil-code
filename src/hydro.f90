@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.450 2008-08-12 14:46:08 wlyra Exp $
+! $Id$
 !
 !  This module takes care of everything related to velocity
 !
@@ -358,7 +358,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.450 2008-08-12 14:46:08 wlyra Exp $")
+           "$Id$")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

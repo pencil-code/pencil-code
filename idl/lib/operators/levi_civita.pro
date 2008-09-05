@@ -1,5 +1,5 @@
 function levi_civita,i,j,k,debug=debug
-if keyword_set(debug) then print,'$Id: levi_civita.pro,v 1.1 2004-03-20 10:24:54 brandenb Exp $'
+if keyword_set(debug) then print,'$Id$'
 ;
 ;  totally antisymmetric tensor
 ;  20-mar-04/axel: adapted from fortran code

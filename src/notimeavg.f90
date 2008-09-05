@@ -1,4 +1,4 @@
-! $Id: notimeavg.f90,v 1.14 2006-11-30 09:03:36 dobler Exp $
+! $Id$
 
 module Timeavg
 

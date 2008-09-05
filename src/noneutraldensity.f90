@@ -1,4 +1,4 @@
-! $Id: noneutraldensity.f90,v 1.4 2008-05-10 12:13:34 wlyra Exp $
+! $Id$
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrhon_dt and init_lnrhon, among other auxiliary routines.
@@ -55,7 +55,7 @@ module Neutraldensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: noneutraldensity.f90,v 1.4 2008-05-10 12:13:34 wlyra Exp $")
+           "$Id$")
 !
     endsubroutine register_neutraldensity
 !***********************************************************************

@@ -1,4 +1,4 @@
-;$Id: pc_accumulate.pro,v 1.1 2008-01-26 14:24:47 brandenb Exp $
+;$Id$
 function pc_accumulate,f,n1
 ;
 ;  Computes the accumulative mean of f(t)

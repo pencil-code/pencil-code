@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: read_videofiles.csh,v 1.3 2005-06-26 17:34:17 eos_merger_tony Exp $
+# CVS: $Id$
 #
 #  Run read_videofiles.x -- to read_videofiles
 #

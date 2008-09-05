@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start.pro,v 1.78 2008-04-22 12:55:52 wlyra Exp $
+;;; $Id$
 
 function param
   COMPILE_OPT IDL2,HIDDEN 

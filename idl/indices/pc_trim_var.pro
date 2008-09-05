@@ -1,4 +1,4 @@
-; $Id: pc_trim_var.pro,v 1.1 2004-05-25 09:19:32 mee Exp $
+; $Id$
 ;
 ;  Trim variable of ghost zones and empty dimensions
 ;

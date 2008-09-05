@@ -1,4 +1,4 @@
-! $Id: farray.f90,v 1.22 2008-03-11 10:55:31 wlyra Exp $
+! $Id$
 !
 !  This module allocates and manages indices in the f-array
 !  in a controlled way.  This includes handling different

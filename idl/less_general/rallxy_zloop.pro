@@ -13,7 +13,7 @@
 
 ;;;
 ;;;  Author: nils/ adapted from rall.pro 20-nov-2003    
-;;;  $Id: rallxy_zloop.pro,v 1.1 2008-06-15 05:13:31 brandenb Exp $
+;;;  $Id$
 ;;;
 ;;;  Description:
 ;;;   Read data from all processors in a xy-plane (select plane by 

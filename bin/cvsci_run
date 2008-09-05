@@ -1,5 +1,5 @@
 #!/bin/csh 
-#$Id: cvsci_run,v 1.26 2008-05-12 15:37:54 dhruba Exp $
+#$Id$
 #
 #  This script adds a new run to the repository
 #  and checks in all *.in files as well as material

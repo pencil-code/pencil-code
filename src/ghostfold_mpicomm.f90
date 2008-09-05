@@ -1,4 +1,4 @@
-! $Id: ghostfold_mpicomm.f90,v 1.12 2007-10-04 07:09:24 ajohan Exp $
+! $Id$
 !
 !  This module performs some special mpifunctions that
 !  also require the Fourier routines.

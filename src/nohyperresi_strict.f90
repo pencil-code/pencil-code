@@ -1,4 +1,4 @@
-! $Id: nohyperresi_strict.f90,v 1.2 2007-09-26 14:52:17 bingert Exp $
+! $Id$
 
 !
 !  This module applies a sixth order hyperresistivity to the induction

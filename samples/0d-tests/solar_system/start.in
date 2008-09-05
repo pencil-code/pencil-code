@@ -3,7 +3,7 @@
 !  Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.2 2008-04-02 20:56:47 wlyra Exp $',
+  cvsid='$Id$',
   ip=10,                        ! debugging parameter
   !xyz0  =  -32,-32,-0.26,      !Cartesian
   !xyz1  =   32, 32, 0.26,      

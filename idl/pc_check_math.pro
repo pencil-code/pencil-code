@@ -1,4 +1,4 @@
-;$Id: pc_check_math.pro,v 1.2 2007-08-28 04:16:55 brandenb Exp $
+;$Id$
 pro pc_check_math,location=location
 ;
 ;  date: 2005/12/14 11:56:20;  author: mee;  state: Exp;

@@ -1,4 +1,4 @@
-;$Id: pc_potentialfield_exterior_z.pro,v 1.3 2006-10-12 10:55:31 brandenb Exp $
+;$Id$
 PRO pc_potentialfield_exterior_z,aa,aaa=aaa,zzz=zzz,plo=plo
 ;
 ;  calculate potential field in the exterior in the z-direction

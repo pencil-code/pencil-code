@@ -1,4 +1,4 @@
-! $Id: grid.f90,v 1.42 2008-08-16 11:01:29 ajohan Exp $
+! $Id$
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array

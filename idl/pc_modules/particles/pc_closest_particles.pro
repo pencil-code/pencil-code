@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_closest_particles.pro,v 1.3 2005-03-14 09:48:15 ajohan Exp $
+;  $Id$
 ;
 ;  Find nclost closest particles surrounding the point (x,y,z).
 ;

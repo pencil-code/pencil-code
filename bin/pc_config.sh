@@ -3,7 +3,7 @@
 # Name:   pc_config
 # Author: Antony Mee (A.J.Mee@ncl.ac.uk)
 # Date:   05-Apr-2004
-# $Id: pc_config.sh,v 1.9 2006-03-14 11:45:00 mkorpi Exp $
+# $Id$
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do

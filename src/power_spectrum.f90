@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.63 2008-07-03 16:15:30 dhruba Exp $
+! $Id$
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -45,7 +45,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.63 2008-07-03 16:15:30 dhruba Exp $")
+       "$Id$")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -148,7 +148,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.63 2008-07-03 16:15:30 dhruba Exp $")
+       "$Id$")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -248,7 +248,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.63 2008-07-03 16:15:30 dhruba Exp $")
+       "$Id$")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -389,7 +389,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.63 2008-07-03 16:15:30 dhruba Exp $")
+       "$Id$")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -488,7 +488,7 @@ module  power_spectrum
 !  identify version
 !
     if (lroot .AND. ip<10) call cvs_id( &
-        "$Id: power_spectrum.f90,v 1.63 2008-07-03 16:15:30 dhruba Exp $")
+        "$Id$")
 !
 !  In fft, real and imaginary parts are handled separately.
 !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -805,7 +805,7 @@ endsubroutine pdf
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.63 2008-07-03 16:15:30 dhruba Exp $")
+       "$Id$")
 !--------------Makes sense only in spherical coordinate system -----------
   if(.not.lspherical_coords) call stop_it("power_phi works only in spherical coordinates")
   !
@@ -915,7 +915,7 @@ endsubroutine pdf
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.63 2008-07-03 16:15:30 dhruba Exp $")
+       "$Id$")
 !--------------Makes sense only in spherical coordinate system -----------
   if(.not.lspherical_coords) call stop_it("power_phi works only in spherical coordinates")
   !

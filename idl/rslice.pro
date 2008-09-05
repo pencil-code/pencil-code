@@ -1,4 +1,4 @@
-; $Id: rslice.pro,v 1.8 2003-02-22 17:27:55 brandenb Exp $
+; $Id$
 ;
 ;  reads xz slices
 ;  this routine is not very general yet and needs to be adjusted

@@ -1,4 +1,4 @@
-! $Id: temperature.f90,v 1.27 2007-10-06 13:56:53 ajohan Exp $
+! $Id$
 
 !  This module replaces the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
@@ -93,7 +93,7 @@ iss=ilnTT  !(need to think how to deal with this...)
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature.f90,v 1.27 2007-10-06 13:56:53 ajohan Exp $")
+           "$Id$")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

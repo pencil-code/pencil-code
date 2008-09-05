@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_map_particles_on_grid.pro,v 1.2 2006-12-12 05:42:42 ajohan Exp $
+;  $Id$
 ;
 ;  Map the particle positions on the grid.
 ;

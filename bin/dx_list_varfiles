@@ -3,7 +3,7 @@
 # Name:   dx_list_varfiles
 # Author: ajwm (A.J.Mee@ncl.ac.uk)
 # Date:   02-12-2002
-# CVS: $Id: dx_list_varfiles,v 1.2 2005-06-26 17:34:16 eos_merger_tony Exp $
+# CVS: $Id$
 # Description:
 #   Get list of VAR? files available or return 0 for var.dat only
 #   For reading into DX

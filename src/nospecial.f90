@@ -1,4 +1,4 @@
-! $Id: nospecial.f90,v 1.32 2008-06-24 09:43:04 bingert Exp $
+! $Id$
 
 !  This module provide a way for users to specify custom
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc.
@@ -141,11 +141,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: nospecial.f90,v 1.32 2008-06-24 09:43:04 bingert Exp $
+!  CVS should automatically update everything between $Id$
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: nospecial.f90,v 1.32 2008-06-24 09:43:04 bingert Exp $")
+           "$Id$")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't

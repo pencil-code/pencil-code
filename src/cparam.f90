@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.67 2008-07-24 10:14:07 arnelohr Exp $
+! $Id$
 
 module Cparam
 

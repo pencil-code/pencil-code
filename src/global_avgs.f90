@@ -1,4 +1,4 @@
-! $Id: global_avgs.f90,v 1.14 2006-11-30 09:03:35 dobler Exp $
+! $Id$
 !
 ! This module takes care of all the global variables needed when solving
 ! cylindrical problems in a cartesian grid. It saves as global variables

@@ -1,5 +1,5 @@
 function curlij,f,debug=debug
-if keyword_set(debug) then print,'$Id: curlij.pro,v 1.1 2004-03-20 10:24:54 brandenb Exp $'
+if keyword_set(debug) then print,'$Id$'
 ;
 ;  derivative matrix from curl in cartesian coordinates
 ;  used to calculate B_{i,j} as bij=curlij(aa)

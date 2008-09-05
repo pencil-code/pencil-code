@@ -1,4 +1,4 @@
-! $Id: particles_selfgravity.f90,v 1.20 2008-05-29 18:25:00 wlyra Exp $
+! $Id$
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -55,7 +55,7 @@ module Particles_selfgravity
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_selfgravity.f90,v 1.20 2008-05-29 18:25:00 wlyra Exp $")
+           "$Id$")
 !
 !  Index for gradient for the self-potential and for the smooth particle
 !  density field.

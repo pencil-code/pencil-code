@@ -1,4 +1,4 @@
-! $Id: cosmicrayflux.f90,v 1.11 2007-01-13 21:42:04 dobler Exp $
+! $Id$
 
 !  Cosmic Ray Flux
 !
@@ -79,7 +79,7 @@ module Cosmicrayflux
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicrayflux.f90,v 1.11 2007-01-13 21:42:04 dobler Exp $")
+           "$Id$")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

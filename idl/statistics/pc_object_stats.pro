@@ -1,4 +1,4 @@
-;  $Id: pc_object_stats.pro,v 1.2 2005-08-28 13:07:40 ajohan Exp $
+;  $Id$
 ;
 ;  Summarize data
 ;  omit ghost zones in the analysis

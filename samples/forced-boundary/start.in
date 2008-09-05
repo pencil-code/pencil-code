@@ -2,7 +2,7 @@
 ! Initialisation parameters for magnetic flux rings
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.5 2006-06-13 22:29:29 bingert Exp $'
+  cvsid='$Id$'
   xyz0 = , , 0.
   ! Lxyz =  6.28.,   6.28.,  6.28.
   lperi = T,    T,   F

@@ -1,5 +1,5 @@
 #!/bin/sh
-#$Id: copy-var-to-var,v 1.5 2008-04-12 12:04:12 wlyra Exp $
+#$Id$
 #
 #  Example:
 #     copy-var-to-var ../hydro256e

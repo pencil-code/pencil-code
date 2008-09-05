@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_write_kdat.pro,v 1.3 2008-01-13 14:51:22 ajohan Exp $
+;  $Id$
 ;
 ;  Program to calculate all possible vectors k that have a specified
 ;  length (in 1, 2 or 3 dimensions). The output file, k.dat, can be used

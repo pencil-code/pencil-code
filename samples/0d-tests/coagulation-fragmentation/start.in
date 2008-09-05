@@ -3,7 +3,7 @@
 ! Initialisation parameters for MRI turbulence
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.1 2006-11-21 09:39:44 ajohan Exp $',
+  cvsid='$Id$',
   lperi =      T,      T,      T
   ip=14, lwrite_ic=T, lwrite_aux=T
   lcopysnapshots_exp=T

@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: pc_svn_add_rundir,v 1.2 2006-10-17 20:50:15 joishi Exp $
+# CVS: $Id$
 
 # Name:   svn-add-rundir
 # Author: joishi (joishi@amnh.org) (modified from W. Dobler's cvs-add-rundir)

@@ -27,7 +27,7 @@ s=size(f) & mx=s[1] & my=s[2] & mz=s[3]
 ;  debug output
 ;
 if keyword_set(debug) then begin
-  print,'$Id: set_ghost.pro,v 1.4 2006-08-26 16:43:03 mee Exp $'
+  print,'$Id$'
   help,f
   print,'mx,my,mz=',mx,my,mz
 endif

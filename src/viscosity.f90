@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.103 2008-08-15 11:47:25 kapelrud Exp $
+! $Id$
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -115,7 +115,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.103 2008-08-15 11:47:25 kapelrud Exp $")
+           "$Id$")
 !
 !  Default viscosity.
 !

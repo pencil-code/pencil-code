@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.65 2008-06-17 15:34:09 ajohan Exp $
+! $Id$
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc.
@@ -113,7 +113,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.65 2008-06-17 15:34:09 ajohan Exp $")
+           "$Id$")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

@@ -1,5 +1,5 @@
 #!/bin/sh
-# CVS: $Id: scpdatadir,v 1.3 2005-06-26 17:34:17 eos_merger_tony Exp $
+# CVS: $Id$
 
 # make tarball of data directory and secure copy to $1 
 # tarek  Nov 26  2002

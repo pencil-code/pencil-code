@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.557 2008-08-15 19:52:18 dobler Exp $
+! $Id$
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -222,7 +222,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.557 2008-08-15 19:52:18 dobler Exp $")
+           "$Id$")
 !
 !  Get the shared variable lpressuregradient_gas from Hydro module.
 !

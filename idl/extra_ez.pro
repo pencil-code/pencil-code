@@ -1,4 +1,4 @@
-;  $Id: extra_ez.pro,v 1.5 2003-08-04 17:59:58 theine Exp $
+;  $Id$
 ;
 ;  this is to be used in connection with r_ez.pro
 ;  it calculates a number of extra variables

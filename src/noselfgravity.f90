@@ -1,4 +1,4 @@
-! $Id: noselfgravity.f90,v 1.7 2006-11-30 09:03:36 dobler Exp $
+! $Id$
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array

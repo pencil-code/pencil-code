@@ -1,4 +1,4 @@
-! $Id: noparticles_selfgravity.f90,v 1.7 2006-11-30 09:03:36 dobler Exp $
+! $Id$
 !
 !  This module takes care of everything related to particle self-gravity.
 !

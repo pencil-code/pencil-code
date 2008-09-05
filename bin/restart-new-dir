@@ -1,5 +1,5 @@
 #!/bin/csh
-#$Id: restart-new-dir,v 1.9 2008-05-06 13:02:21 brandenb Exp $
+#$Id$
 #
 #  Example:
 #     restart-new-dir ../hydro256e

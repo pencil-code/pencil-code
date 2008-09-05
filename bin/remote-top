@@ -3,7 +3,7 @@
 # Name:   remote-top
 # Author: wd+ab
 # Date:    7-Oct-2002
-# $Id: remote-top,v 1.9 2007-12-06 11:00:00 sur Exp $
+# $Id$
 # Description:
 #     does top -bn1 on all procs of nodelist, write to datadir
 

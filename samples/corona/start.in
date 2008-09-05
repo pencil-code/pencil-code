@@ -2,7 +2,7 @@
 ! Initialisation parameters for corona 
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.4 2008-06-18 13:29:55 bingert Exp $'
+  cvsid='$Id$'
   xyz0 = 0., 0., 0.
   Lxyz = 5e4, 5e4 , 3e4
   !

@@ -1,4 +1,4 @@
-! $Id: particles_cdata.f90,v 1.37 2008-08-18 20:24:32 kapelrud Exp $
+! $Id$
 !!
 !! Global particle variables
 !!

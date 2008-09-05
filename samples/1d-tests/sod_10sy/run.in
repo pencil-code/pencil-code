@@ -3,7 +3,7 @@
 ! Runtime parameters for shock tube problem.
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.4 2008-01-13 14:04:53 ajohan Exp $'
+  cvsid='$Id$'
   nt=200000, it1=100, cdt=0.4, cdtv=0.25, isave=50, itorder=3,
   dsnap=20.0, dvid=0.02, tmax=2.4,
   bcy = 'a','s','s','s','s','s'

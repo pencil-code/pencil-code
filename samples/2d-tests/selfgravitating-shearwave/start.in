@@ -4,7 +4,7 @@
 !  velocity field.
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.4 2007-10-18 10:30:54 ajohan Exp $',
+  cvsid='$Id$',
   lperi =    T,    T,    T
   ip=20, lwrite_ic=T, lwrite_aux=T
 /

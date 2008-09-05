@@ -3,7 +3,7 @@
 ! Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.1 2006-07-13 07:52:30 brandenb Exp $'
+  cvsid='$Id$'
   c_light=1., G_Newton=1., hbar=1.
   unit_temperature=1e12
   Lxyz=1e0, xyz0=0.

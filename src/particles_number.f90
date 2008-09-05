@@ -1,4 +1,4 @@
-! $Id: particles_number.f90,v 1.29 2008-04-10 07:41:10 dobler Exp $
+! $Id$
 !
 !  This module takes care of everything related to internal particle number.
 !
@@ -54,7 +54,7 @@ module Particles_number
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_number.f90,v 1.29 2008-04-10 07:41:10 dobler Exp $")
+           "$Id$")
 !
 !  Index for particle internal number.
 !

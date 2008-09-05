@@ -1,5 +1,5 @@
 #!/bin/csh
-#$Id: scp-proc-to-proc,v 1.9 2007-12-03 15:31:13 brandenb Exp $
+#$Id$
 #
 #  Purpose:
 #      copies directory trees to another machine

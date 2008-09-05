@@ -1,5 +1,5 @@
 function der_unitvector,f,fij,i,j,debug=debug
-if keyword_set(debug) then print,'$Id: der_unitvector.pro,v 1.1 2004-03-20 10:24:54 brandenb Exp $'
+if keyword_set(debug) then print,'$Id$'
 ;
 ;  calculate 1st derivative of a unitvector
 ;  f is vector, and fij is its gradient matrix (f is *not* a unitvector)

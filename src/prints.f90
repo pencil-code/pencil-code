@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.97 2008-06-20 07:44:40 ajohan Exp $
+! $Id$
 
 module Print
 

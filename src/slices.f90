@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.83 2008-03-23 10:46:19 brandenb Exp $
+! $Id$
 
 !  This module produces slices for animation purposes
 

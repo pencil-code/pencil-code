@@ -2,7 +2,7 @@
                               ------------
 */
 
-/* $Id: headers_c.h,v 1.1 2007-09-11 09:51:39 dobler Exp $
+/* $Id$
    Description:
      Common headers for all of our C files. Mostly required to get the
      number of underscores and single vs. double precision right.
