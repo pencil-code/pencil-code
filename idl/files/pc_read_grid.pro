@@ -1,5 +1,5 @@
 ;;
-;; $Id: pc_read_grid.pro,v 1.17 2008-06-12 13:26:15 ajohan Exp $
+;; $Id$
 ;;
 ;;   Read grid.dat
 ;;

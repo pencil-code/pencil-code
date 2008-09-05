@@ -1,4 +1,4 @@
-; $Id: pc_read_var_ts.pro,v 1.5 2007-08-03 09:53:26 ajohan Exp $
+; $Id$
 ;
 ;   Get time series for various parameters from data snapshots
 ;

@@ -1,4 +1,4 @@
-;; $Id: pc_read_yaver.pro,v 1.13 2008-07-09 08:28:06 ajohan Exp $
+;; $Id$
 ;;
 ;;   Read y-averages from file.
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.

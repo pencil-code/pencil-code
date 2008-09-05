@@ -1,4 +1,4 @@
-; $Id: pc_read_zprof.pro,v 1.3 2007-08-03 09:53:27 ajohan Exp $
+; $Id$
 ;
 ;  read zprofile file
 ;

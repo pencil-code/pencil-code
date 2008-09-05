@@ -1,4 +1,4 @@
-; $Id: pc_read.pro,v 1.4 2005-10-24 01:47:28 dobler Exp $
+; $Id$
 ;
 ;  Help on Pencil-Code read routines
 ;

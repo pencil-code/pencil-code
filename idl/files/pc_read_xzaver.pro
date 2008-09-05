@@ -1,4 +1,4 @@
-;; $Id: pc_read_xzaver.pro,v 1.7 2008-05-11 08:20:10 ajohan Exp $
+;; $Id$
 ;;
 ;;   Read xz-averages from file
 ;;

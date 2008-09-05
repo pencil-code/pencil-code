@@ -1,4 +1,4 @@
-;; $Id: pc_read_zaver.pro,v 1.26 2008-07-09 08:26:16 ajohan Exp $
+;; $Id$
 ;;
 ;;   Read z-averages from file.
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.

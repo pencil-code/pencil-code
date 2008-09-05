@@ -1,4 +1,4 @@
-;; $Id: pc_read_xyaver.pro,v 1.10 2008-05-11 08:20:10 ajohan Exp $
+;; $Id$
 ;;
 ;;   Read xy-averages from file
 ;;

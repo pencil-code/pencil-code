@@ -1,4 +1,4 @@
-; $Id: pc_read_pvar.pro,v 1.27 2008-06-07 17:50:43 wlyra Exp $
+; $Id$
 ;
 ;   Read pvar.dat, or other PVAR file
 ;

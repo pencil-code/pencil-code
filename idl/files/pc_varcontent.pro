@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.60 2008-03-17 05:16:08 brandenb Exp $
+;  $Id$
 ;
 ; VARCONTENT STRUCTURE DESCRIPTION
 ;

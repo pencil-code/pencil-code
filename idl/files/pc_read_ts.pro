@@ -1,4 +1,4 @@
-; $Id: pc_read_ts.pro,v 1.24 2007-08-03 13:32:52 ajohan Exp $
+; $Id$
 ;
 ;  Read time_series.dat and sort data into structure or variables
 ;

@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_varcontent_global.pro,v 1.5 2008-01-21 15:29:45 ajohan Exp $
+;  $Id$
 ;
 ;  Same as pc_varcontent, but for global variables.
 ;

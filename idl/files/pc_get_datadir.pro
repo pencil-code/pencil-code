@@ -1,4 +1,4 @@
-; $Id: pc_get_datadir.pro,v 1.1 2007-08-03 09:52:07 ajohan Exp $
+; $Id$
 ;
 ; pc_get_datadir - gets the name of the data directory from datadir .in
 ;                  or sets the default value './data'

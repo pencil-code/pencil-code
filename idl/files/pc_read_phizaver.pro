@@ -1,4 +1,4 @@
-;; $Id: pc_read_phizaver.pro,v 1.3 2007-08-03 09:53:26 ajohan Exp $
+;; $Id$
 ;;
 ;;   Read phiz-averages from file
 ;;

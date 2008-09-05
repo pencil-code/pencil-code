@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_read_global.pro,v 1.14 2008-06-12 13:24:56 ajohan Exp $
+;  $Id$
 ;
 ;  Same as pc_read_var, but for global variables.
 ;

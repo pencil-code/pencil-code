@@ -1,5 +1,5 @@
 ;;
-;; $Id: pc_read_video.pro,v 1.5 2008-07-22 10:19:44 ajohan Exp $
+;; $Id$
 ;;
 ;; NAME:
 ;;      PC_READ_VIDEO

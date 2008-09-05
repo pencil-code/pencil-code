@@ -1,5 +1,5 @@
 ;
-; $Id: pc_read_pdim.pro,v 1.4 2007-11-13 13:45:25 ajohan Exp $
+; $Id$
 ;
 ;   Read particle dimension data.
 ;

@@ -1,4 +1,4 @@
-; $Id: pc_read_slice.pro,v 1.7 2007-08-03 09:53:26 ajohan Exp $
+; $Id$
 ;
 ;   Read slice files
 ;

@@ -1,4 +1,4 @@
-; $Id: pc_read_dim.pro,v 1.22 2008-04-19 06:13:04 brandenb Exp $
+; $Id$
 ;
 ;   Read stuff from dim.dat
 ;

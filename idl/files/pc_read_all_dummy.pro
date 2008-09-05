@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   09-Sep-2001
-;;;  $Id: pc_read_all_dummy.pro,v 1.3 2004-05-05 17:10:31 mee Exp $
+;;;  $Id$
 ;;;
 ;;;  Description:
 ;;;   Dummy routine for reading data from all processors.

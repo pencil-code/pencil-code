@@ -1,4 +1,4 @@
-;$Id: pc_read_pdf.pro,v 1.1 2006-06-10 22:34:11 brandenb Exp $
+;$Id$
 ;
 ;  preliminary version for reading pdf files
 ;  (at the time of check-in on horseshoe I don't remember details

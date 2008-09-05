@@ -1,4 +1,4 @@
-; $Id: pc_read_param.pro,v 1.14 2008-07-22 07:46:24 ajohan Exp $
+; $Id$
 ;
 ;  Read param.nml
 ;

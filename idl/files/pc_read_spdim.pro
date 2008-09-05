@@ -1,5 +1,5 @@
 ;
-; $Id: pc_read_spdim.pro,v 1.1 2008-04-01 17:44:22 wlyra Exp $
+; $Id$
 ;
 ;   Read particle dimension data.
 ;

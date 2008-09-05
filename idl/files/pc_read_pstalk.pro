@@ -1,5 +1,5 @@
 ;;
-;; $Id: pc_read_pstalk.pro,v 1.7 2008-03-02 17:59:22 ajohan Exp $
+;; $Id$
 ;;
 ;; NAME:
 ;;      pc_read_pstalk
