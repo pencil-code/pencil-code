@@ -45,6 +45,7 @@ module Forcing
   logical :: lwork_ff=.false.,lmomentum_ff=.false.
   logical :: lmagnetic_forcing=.false.,ltestfield_forcing=.false.
   logical :: lhelical_test=.false.,lrandom_location=.true.
+  logical :: lwrite_psi=.false.
   logical :: lscale_kvector_tobox=.false.,lwrite_gausspot_to_file=.true.
   logical :: old_forcing_evector=.false.
   character (len=labellen) :: iforce='zero', iforce2='zero'
@@ -52,12 +53,12 @@ module Forcing
 ! For helical forcing in sphreical polar coordinate system
   real,allocatable,dimension(:,:,:) :: psif
   real,allocatable,dimension(:,:) :: cklist
-  logical :: lfastCK=.false.
+  logical :: lfastCK=.false.,lsamesign=.true.
 ! allocated only if we have lfastCK=T
   real,allocatable,dimension(:,:,:) :: Zpsi_list
   real,allocatable,dimension(:,:,:) :: RYlm_list,IYlm_list
   integer :: helsign=0,nlist_ck=25
-  real :: fpre = 1.0
+  real :: fpre = 1.0,ck_equator_gap=0.,ck_gap_step=0.
   integer :: icklist
 ! Persistent stuff
   real :: tsforce=-10.
@@ -92,10 +93,11 @@ module Forcing
        max_force,dtforce,dtforce_duration,old_forcing_evector, &
        iforce_profile,lscale_kvector_tobox, &
        force_direction, force_strength, &
-       lhelical_test,lfastCK,fpre,helsign,nlist_ck,&
+       lhelical_test,lfastCK,fpre,helsign,nlist_ck,lwrite_psi,&
+       ck_equator_gap,ck_gap_step,&
        lforcing_cont,iforcing_cont, &
        lembed,k1_ff,ampl_ff,width_fcont,x1_fcont,x2_fcont, &
-       kf_fcont,omega_fcont,eps_fcont
+       kf_fcont,omega_fcont,eps_fcont,lsamesign
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_ffm=0
   integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
@@ -855,6 +857,9 @@ module Forcing
          psilm= RYlm_list(m,n,lmindex)*cos(rphase1)- &
            IYlm_list(m,n,lmindex)*sin(rphase1)
          psif(:,m,n) = psilm*Zpsi_list(:,lmindex,aindex+1)
+         if(ck_equator_gap/=0)&
+           psif(:,m,n)=psif(:,m,n)*(1.-step_scalar(y(m),pi/2.-ck_equator_gap,ck_gap_step)+&
+             step_scalar(y(m),pi/2+ck_equator_gap,ck_gap_step))
        enddo
      enddo
    else
@@ -876,6 +881,9 @@ module Forcing
          call sp_harm_imag(IYlm,Legendrel,emm,y(m),z(n))
          psilm= RYlm*cos(rphase1)-IYlm*sin(rphase1)
          psif(:,m,n) = Z_psi*psilm
+         if(ck_equator_gap/=0)&
+           psif(:,m,n)=psif(:,m,n)*(1.-step_scalar(y(m),pi/2.-ck_equator_gap,ck_gap_step)+&
+           step_scalar(y(m),pi/2+ck_equator_gap,ck_gap_step))
        enddo
      enddo
    endif
@@ -903,13 +911,21 @@ module Forcing
        call curl_mn(psi_ij,capitalT,psi)
        call gij_psi_etc(psif,ee,psi,psi_ij,Tij)
        call curl_mn(Tij,capitalS,capitalT)
-       capitalS = float(helsign)*(1./Balpha)*capitalS
+       if ((y(m).lt.pi/2.).or.(lsamesign)) then
+         capitalS = float(helsign)*(1./Balpha)*capitalS
+       else
+         capitalS = -float(helsign)*(1./Balpha)*capitalS
+       endif
        capitalH = capitalT + capitalS
        do j=1,3
          jf = iuu+j-1
          if(lhelical_test) then
-           f(l1:l2,m,n,jf) = fnorm*capitalH(:,j)
-         else
+           if(lwrite_psi) then
+             f(l1:l2,m,n,jf) = psif(l1:l2,m,n)
+           else
+             f(l1:l2,m,n,jf) = fnorm*capitalH(:,j)
+           endif
+       else
 ! stochastic euler scheme of integration[sqrt(dt) is already included in fnorm] 
            f(l1:l2,m,n,jf) = f(l1:l2,m,n,jf)+ fnorm*capitalH(:,j)
          endif
