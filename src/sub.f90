@@ -7,7 +7,7 @@ module Sub
 
   private
 
-  public :: step
+  public :: step,step_scalar
 
   public :: identify_bcs, parse_bc, parse_bc_rad, parse_bc_radg
   public :: parse_nscbc
@@ -4103,6 +4103,20 @@ module Sub
       enddo
 
     endfunction poly_3
+!***********************************************************************
+    function step_scalar(x,x0,width)
+!
+!  Smooth unit step function centred at x0; implemented as tanh profile
+!  05 sept 2008/dhruba : copied from step
+!
+      use Cdata, only: tini
+!
+      real :: x
+      real :: step_scalar
+      real :: x0,width
+      step_scalar = 0.5*(1+tanh((x-x0)/(width+tini)))
+!
+    endfunction step_scalar
 !***********************************************************************
     function step(x,x0,width)
 !
