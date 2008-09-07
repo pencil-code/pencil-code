@@ -453,7 +453,7 @@ else if ($hn =~ node*.steno.dcsc.ku.dk) then
   set hostfile = "$LOADL_STEP_INITDIR/hostfile"
   echo $LOADL_PROCESSOR_LIST | tr ' ' '\n' > $hostfile
   set mpirunops      = "-hostfile $hostfile"
-  set mpirun         = "/usr/local/topspin/mpi/mpich/bin/mpirun_ssh"
+  set mpirun         = "/usr/mpi/gcc/openmpi-1.2.2-1/bin/mpirun"
   set local_disc     = 1
   set one_local_disc = 0
   set remote_top     = 1
