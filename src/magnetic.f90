@@ -1170,7 +1170,7 @@ module Magnetic
         if (alpha_effect/=0. .or. delta_effect/=0.) lpenc_requested(i_mf_EMF)=.true.
         if (delta_effect/=0.) lpenc_requested(i_oxj)=.true.
       endif
-      if (nu_ni/=0.) lpenc_diagnos(i_jxbrxb)=.true.
+      if (nu_ni/=0.) lpenc_requested(i_jxbrxb)=.true.
 !
       if (     idiag_brmphi/=0  .or. idiag_uxbrmphi/=0 .or. idiag_jxbrmphi/=0 &
           .or. idiag_armphi/=0  .or. idiag_brmr/=0     .or. idiag_armr/=0 ) then
