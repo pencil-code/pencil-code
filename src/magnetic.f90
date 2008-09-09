@@ -1860,6 +1860,14 @@ module Magnetic
         etatotal=etatotal+eta_smag+eta
       endif
 !
+!  Ambipolar diffusion in the strong coupling approximation
+!
+      if (nu_ni/=0.) then
+        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+nu_ni1*p%jxbrxb
+        etatotal=etatotal+nu_ni1*p%va2
+        if (lfirst.and.ldt) diffus_eta=diffus_eta+nu_ni1*p%va2
+      endif
+!
 !  Multiply resistivity by Nyquist scale, for resistive time-step.
 !  We include possible contribution from meanfield_etat, which is however
 !  only invoked in mean field models.
@@ -1874,13 +1882,6 @@ module Magnetic
           print*, 'daa_dt: max(diffus_eta2) =', maxval(diffus_eta2)
           print*, 'daa_dt: max(diffus_eta3) =', maxval(diffus_eta3)
         endif
-      endif
-!
-!  Ambipolar diffusion in the strong coupling approximation
-!
-      if (nu_ni/=0.) then
-        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+nu_ni1*p%jxbrxb
-        etatotal=etatotal+nu_ni1*p%va2
       endif
 !
 !  Add Ohmic heat to entropy or temperature equation
