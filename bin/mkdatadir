@@ -18,7 +18,7 @@ echo $cwd >! .tmp
 #  where workspace can be allocated.
 #
 set hn = `hostname`
-echo "we are on" $hn ", the new workspace will be"
+echo 'we are on' $hn', the new workspace will be'
 
 if ($hn =~ mhd*.st-and.ac.uk) then
   set str='s/home/work2/g'
@@ -108,8 +108,8 @@ else if ($hn =~ obelix*) then
 else if ($hn =~ psi24*) then
   set str='s/afs\/ipp-garching\.mpg\.de\/home\/a/u/g'
 else if (($hn =~ rio* || $hn =~ pia*) && ($USER =~ ajohan)) then
-  if ( $cwd =~ \/afs\/* ) set str='s/afs\/ipp\/home\/[a-z]/nfs\/mpia2/g'
-  if ( $cwd =~ \/nfs\/* ) then
+  if ( `pwd` =~ \/afs\/* ) set str='s/afs\/ipp\/home\/[a-z]/nfs\/mpia2/g'
+  if ( `pwd` =~ \/nfs\/* ) then
     echo "We are on /nfs at pia, so datadir is simply data/"
     mkdir data
     exit
