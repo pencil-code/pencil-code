@@ -7,7 +7,7 @@
 ;
 pro pc_particles_to_ascii, xxp, filename=filename, npar=npar, $
     xshift=xshift, yshift=yshift, zshift=zshift, deltay=deltay, $
-    lwrite_tauf=lwrite_tauf, datadir=datadir
+    lwrite_tauf=lwrite_tauf, param=param, datadir=datadir
 ;
 ;  Default values.
 ;
@@ -22,16 +22,16 @@ default, datadir, './data'
 ;
 ;  Define box size
 ;
-pc_read_param, obj=par, datadir=datadir, /quiet
-x0=par.xyz0[0] & x1=par.xyz1[0] & Lx=par.Lxyz[0]
-y0=par.xyz0[1] & y1=par.xyz1[1] & Ly=par.Lxyz[1]
-z0=par.xyz0[2] & z1=par.xyz1[2] & Lz=par.Lxyz[2]
+if (n_elements(param) eq 0) then pc_read_param, obj=param, datadir=datadir, /quiet
+x0=param.xyz0[0] & x1=param.xyz1[0] & Lx=param.Lxyz[0]
+y0=param.xyz0[1] & y1=param.xyz1[1] & Ly=param.Lxyz[1]
+z0=param.xyz0[2] & z1=param.xyz1[2] & Lz=param.Lxyz[2]
 ;
 ;  Read friction time from parameter files.
 ;
 if (lwrite_tauf) then begin
   pc_read_pdim, obj=pdim, datadir=datadir, /quiet
-  if (max(par.tausp_species) eq 0.0) then begin
+  if (max(param.tausp_species) eq 0.0) then begin
 ;
 ;  Single friction time.
 ;
@@ -40,7 +40,7 @@ if (lwrite_tauf) then begin
 ;
 ;  Multiple friction times.
 ;
-    npar_species=n_elements(par.tausp_species)
+    npar_species=n_elements(param.tausp_species)
     npar_per_species=pdim.npar/npar_species
     ipar_fence_species=lonarr(npar_species)
     ipar_fence_species[0]=npar_per_species-1
@@ -101,14 +101,14 @@ for ipar=0L,npar-1 do begin
 ;  Write particle friction time to file as well.
 ;
   if (lwrite_tauf) then begin
-    if (max(par.tausp_species) eq 0.0) then begin
-      tauf=par.tausp
+    if (max(param.tausp_species) eq 0.0) then begin
+      tauf=param.tausp
     endif else begin
       ispec=0
       while (ipar gt ipar_fence_species[ispec]) do begin
         ispec=ispec+1
       endwhile
-      tauf=par.tausp_species[ispec]
+      tauf=param.tausp_species[ispec]
     endelse
     printf, 1, xxpar, tauf, format='(4f9.4)'
   endif else begin
