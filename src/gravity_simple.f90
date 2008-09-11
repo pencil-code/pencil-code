@@ -15,7 +15,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED gg(3)
+! PENCILS PROVIDED gg(3); epot
 !
 !***************************************************************
 
@@ -86,13 +86,12 @@ module Gravity
        lgravx_gas,lgravx_dust,lgravy_gas,lgravy_dust,lgravz_gas,lgravz_dust, &
        xinfty,yinfty,zinfty, &
        zref,reduced_top,lboussinesq,grav_profile,n_pot
-
-  ! other variables (needs to be consistent with reset list below)
-  integer :: idiag_curlggrms=0,idiag_curlggmax=0,idiag_divggrms=0
-  integer :: idiag_divggmax=0
-
+!
+!  Diagnostic variables (need to be consistent with reset list below)
+!
+  integer :: idiag_epot=0
+!
   contains
-
 !***********************************************************************
     subroutine register_gravity()
 !
@@ -314,7 +313,7 @@ module Gravity
         gravz_zpencil = -z*(cs0hs/H0hs)**2/sqrt(1 + (z/H0hs)**2)
 
       case('reduced_top')
-        if (lroot) print*,'duu_dt_grav: reduced, gravz=',gravz
+        if (lroot) print*,'initialize_gravity: reduced, gravz=',gravz
         if (zgrav==impossible.and.lroot) print*,'zgrav is not set!'
         ztop = xyz0(3)+Lxyz(3)
         prof = cubic_step(z,(zgrav+ztop)/2,(ztop-zgrav)/2)
@@ -368,8 +367,9 @@ module Gravity
 !
 !  20-11-04/anders: coded
 !
-!
       lpenc_requested(i_gg)=.true.
+!
+      if (idiag_epot/=0) lpenc_diagnos(i_epot)=.true.
 !
     endsubroutine pencil_criteria_gravity
 !***********************************************************************
@@ -381,7 +381,7 @@ module Gravity
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
+      if (lpencil_in(i_epot)) lpencil_in(i_rho)=.true.
 !
     endsubroutine pencil_interdep_gravity
 !***********************************************************************
@@ -406,6 +406,8 @@ module Gravity
         p%gg(:,3) = gravz_zpencil(n)
       endif
 !
+      if (lpencil(i_epot)) p%epot = p%rho*(potx_xpencil(l1:l2) + poty_ypencil(m) + potz_zpencil(n))
+!
       if (NO_WARN) print*, f
 !
     endsubroutine calc_pencils_gravity
@@ -423,7 +425,8 @@ module Gravity
 !   5-dec-06/petri: added Boussinesq approximation
 !
       use Cdata
-
+      use Sub
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -462,6 +465,12 @@ module Gravity
           if (lgravz_dust) &
               df(l1:l2,m,n,iudz(k)) = df(l1:l2,m,n,iudz(k)) + p%gg(:,3)
         enddo
+      endif
+!
+!  Gravity diagnostics.
+!
+      if (ldiagnos) then
+        if (idiag_epot/=0) call sum_mn_name(p%epot,idiag_epot)
       endif
 !
       if (NO_WARN) print*,f,p !(keep compiler quiet)
@@ -686,31 +695,41 @@ module Gravity
 !
 !  12-jun-04/axel: adapted from grav_z
 !
-      use Cdata, only: igg,igx,igy,igz
-
-      logical :: lreset,lwr
+      use Cdata
+      use Sub
+!
+      logical :: lreset
       logical, optional :: lwrite
+!
+      integer :: iname
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
+!
+!  reset everything in case of reset
+!  (this needs to be consistent with what is defined above!)
+!
+      if (lreset) then
+        idiag_epot=0
+      endif
+!
+!  iname runs through all possible names that may be listed in print.in
+!
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'epot',idiag_epot)
+      enddo
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
 !  idl needs this even if everything is zero
 !
       if (lwr) then
-        write(3,*) 'i_curlggrms=',idiag_curlggrms
-        write(3,*) 'i_curlggmax=',idiag_curlggmax
-        write(3,*) 'i_divggrms=',idiag_divggrms
-        write(3,*) 'i_divggmax=',idiag_divggmax
         write(3,*) 'igg=',igg
         write(3,*) 'igx=',igx
         write(3,*) 'igy=',igy
         write(3,*) 'igz=',igz
       endif
 !
-      if(NO_WARN) print*,lreset  !(to keep compiler quiet)
-!
     endsubroutine rprint_gravity
 !***********************************************************************
-
 endmodule Gravity

@@ -61,10 +61,6 @@ module Gravity
   namelist /grav_run_pars/  ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
        qgshear,lgravity_gas,g01,rpot
 
-  ! other variables (needs to be consistent with reset list below)
-  integer :: idiag_curlggrms=0,idiag_curlggmax=0,idiag_divggrms=0
-  integer :: idiag_divggmax=0
-
   contains
 
 !***********************************************************************
@@ -759,10 +755,6 @@ module Gravity
 !  idl needs this even if everything is zero
 !
       if (lwr) then
-        write(3,*) 'i_curlggrms=',idiag_curlggrms
-        write(3,*) 'i_curlggmax=',idiag_curlggmax
-        write(3,*) 'i_divggrms=',idiag_divggrms
-        write(3,*) 'i_divggmax=',idiag_divggmax
         write(3,*) 'igg=',igg
         write(3,*) 'igx=',igx
         write(3,*) 'igy=',igy
