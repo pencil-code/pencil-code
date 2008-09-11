@@ -15,7 +15,7 @@
 !
 ! PENCILS PROVIDED aa(3); a2; aij(3,3); bb(3); bbb(3); ab; uxb(3)
 ! PENCILS PROVIDED b2; bij(3,3); del2a(3); graddiva(3); jj(3)
-! PENCILS PROVIDED j2; jb; va2; jxb(3); jxbr(3); ub; uxb(3); uxb2
+! PENCILS PROVIDED j2; jb; va2; jxb(3); jxbr(3); jxbr2; ub; uxb(3); uxb2
 ! PENCILS PROVIDED uxj(3); beta; uga(3); djuidjbi; jo
 ! PENCILS PROVIDED ujxb; oxu(3); oxuxb(3); jxbxb(3); jxbrxb(3)
 ! PENCILS PROVIDED glnrhoxb(3); del4a(3); del6a(3); oxj(3); diva
@@ -111,7 +111,7 @@ module Magnetic
   logical :: lresi_smagorinsky_cross=.false.
   logical, target, dimension (3) :: lfrozen_bb_bot=(/.false.,.false.,.false./)
   logical, target, dimension (3) :: lfrozen_bb_top=(/.false.,.false.,.false./)
-  logical :: reinitalize_aa=.false., lohmic_heat=.true.
+  logical :: reinitalize_aa=.false., lohmic_heat=.true., lneutralion_heat=.true.
   logical :: lB_ext_pot=.false.
   logical :: lforce_free_test=.false.
   logical :: lmeanfield_theory=.false.,lOmega_effect=.false.
@@ -136,7 +136,7 @@ module Magnetic
        rmode,zmode,rm_int,rm_ext,lgauss,lcheck_positive_va2, &
        lbb_as_aux,ljj_as_aux,beta_const,lbext_curvilinear, &
        lbbt_as_aux,ljjt_as_aux, &
-       etadust0
+       etadust0,lneutralion_heat
 
   ! run parameters
   real :: eta=0.,eta1=0.,eta_hyper2=0.,eta_hyper3=0.,height_eta=0.,eta_out=0.
@@ -187,7 +187,7 @@ module Magnetic
        lelectron_inertia,inertial_length,lbext_curvilinear, &
        lbb_as_aux,ljj_as_aux,lremove_mean_emf,lkinematic, &
        lbbt_as_aux,ljjt_as_aux, &
-       etadust0
+       etadust0,lneutralion_heat
 
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_b2tm=0       ! DIAG_DOC: $\left<\bv(t)\cdot\int_0^t\bv(t')
@@ -204,6 +204,7 @@ module Magnetic
   integer :: idiag_jbm=0        ! DIAG_DOC: $\left<\jv\cdot\Bv\right>$
   integer :: idiag_ubm=0        ! DIAG_DOC: $\left<\uv\cdot\Bv\right>$
   integer :: idiag_epsM=0       ! DIAG_DOC: $\left<2\eta\mu_0\jv^2\right>$
+  integer :: idiag_epsAD=0      ! DIAG_DOC: $\left<\rho^{-1} t_{\rm AD} (\vec{J}\times\vec{B})^2\right>$ (heating by ion-neutrals friction)
   integer :: idiag_bxpt=0       ! DIAG_DOC: $B_x(x_0,y_0,z_0,t)$
   integer :: idiag_bypt=0       ! DIAG_DOC: $B_y(x_0,y_0,z_0,t)$
   integer :: idiag_bzpt=0       ! DIAG_DOC: $B_z(x_0,y_0,z_0,t)$
@@ -1159,7 +1160,11 @@ module Magnetic
       if (lentropy .or. ltemperature .or. ldt) lpenc_requested(i_rho1)=.true.
       if (lentropy .or. ltemperature) lpenc_requested(i_TT1)=.true.
       if (ltemperature) lpenc_requested(i_cv1)=.true.
-      if (nu_ni/=0.) lpenc_requested(i_va2)=.true.
+      if (nu_ni/=0.) then
+        lpenc_requested(i_va2)=.true.
+        lpenc_requested(i_jxbrxb)=.true.
+        lpenc_requested(i_jxbr2)=.true.
+      endif
       if (hall_term/=0.) lpenc_requested(i_jxb)=.true.
       if ((lhydro .and. llorentzforce) .or. nu_ni/=0.) &
           lpenc_requested(i_jxbr)=.true.
@@ -1170,7 +1175,6 @@ module Magnetic
         if (alpha_effect/=0. .or. delta_effect/=0.) lpenc_requested(i_mf_EMF)=.true.
         if (delta_effect/=0.) lpenc_requested(i_oxj)=.true.
       endif
-      if (nu_ni/=0.) lpenc_requested(i_jxbrxb)=.true.
 !
       if (     idiag_brmphi/=0  .or. idiag_uxbrmphi/=0 .or. idiag_jxbrmphi/=0 &
           .or. idiag_armphi/=0  .or. idiag_brmr/=0     .or. idiag_armr/=0 ) then
@@ -1204,6 +1208,7 @@ module Magnetic
       if (idiag_j2m/=0 .or. idiag_jm2/=0 .or. idiag_jrms/=0 .or. &
           idiag_jmax/=0 .or. idiag_epsM/=0 .or. idiag_epsM_LES/=0) &
           lpenc_diagnos(i_j2)=.true.
+      if (idiag_epsAD/=0) lpenc_diagnos(i_jxbr2)=.true.
       if (idiag_jbm/=0 .or. idiag_jbmz/=0) lpenc_diagnos(i_jb)=.true.
       if (idiag_jbmphi/=0) lpenc_diagnos2d(i_jb)=.true.
       if (idiag_vArms/=0 .or. idiag_vAmax/=0 .or. idiag_vA2m/=0) lpenc_diagnos(i_va2)=.true.
@@ -1554,6 +1559,8 @@ module Magnetic
         call multsv_mn(rho1_jxb,p%jxb,p%jxbr)
         if (lmeanfield_jxb) p%jxbr=meanfield_Qs*p%jxbr
       endif
+! jxbr2
+      if (lpencil(i_jxbr2)) call dot2_mn(p%jxbr,p%jxbr2)
 ! ub
       if (lpencil(i_ub)) call dot_mn(p%uu,p%bb,p%ub)
 ! uxb2
@@ -1864,7 +1871,13 @@ module Magnetic
 !
       if (nu_ni/=0.) then
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+nu_ni1*p%jxbrxb
-        etatotal=etatotal+nu_ni1*p%va2
+        if (lentropy .and. lneutralion_heat) then
+          if (pretend_lnTT) then
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%cv1*p%TT1*nu_ni1*p%jxbr2
+          else
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%TT1*nu_ni1*p%jxbr2
+         endif
+        endif
         if (lfirst.and.ldt) diffus_eta=diffus_eta+nu_ni1*p%va2
       endif
 !
@@ -1886,20 +1899,20 @@ module Magnetic
 !
 !  Add Ohmic heat to entropy or temperature equation
 !
-      if(.not.lkinematic) then
+      if (.not.lkinematic) then
         if (lentropy .and. lohmic_heat) then
           if (pretend_lnTT) then
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) &
-              + p%cv1*etatotal*mu0*p%j2*p%rho1*p%TT1
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + &
+                p%cv1*etatotal*mu0*p%j2*p%rho1*p%TT1
           else
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) &
-                 + etatotal*mu0*p%j2*p%rho1*p%TT1
-         endif
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + &
+                      etatotal*mu0*p%j2*p%rho1*p%TT1
+          endif
         endif
 !
         if (ltemperature .and. lohmic_heat) then
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
-                            + etatotal*mu0*p%j2*p%rho1*p%cv1*p%TT1
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + &
+              p%cv1*etatotal*mu0*p%j2*p%rho1*p%TT1
         else
         endif
       else
@@ -2149,6 +2162,10 @@ module Magnetic
 !  Not correct for hyperresistivity:
 !
         if (idiag_epsM/=0) call sum_mn_name(eta*p%j2,idiag_epsM)
+!
+!  Heating by ion-neutrals friction.
+!
+        if (idiag_epsAD/=0) call sum_mn_name(nu_ni1*p%rho*p%jxbr2,idiag_epsAD)
 !
 ! <A>'s, <A^2> and A^2|max
 !
@@ -4780,7 +4797,7 @@ module Magnetic
         idiag_bjtm=0
         idiag_jbtm=0
         idiag_b2m=0; idiag_bm2=0; idiag_j2m=0; idiag_jm2=0; idiag_abm=0
-        idiag_jbm=0; idiag_ubm=0; idiag_epsM=0; idiag_epsM_LES=0
+        idiag_jbm=0; idiag_ubm=0; idiag_epsM=0; idiag_epsM_LES=0; idiag_epsAD=0
         idiag_bxpt=0; idiag_bypt=0; idiag_bzpt=0
         idiag_Expt=0; idiag_Eypt=0; idiag_Ezpt=0
         idiag_aybym2=0; idiag_exaym2=0; idiag_exjm2=0
@@ -4854,6 +4871,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'epsM',idiag_epsM)
         call parse_name(iname,cname(iname),cform(iname),&
             'epsM_LES',idiag_epsM_LES)
+        call parse_name(iname,cname(iname),cform(iname),'epsAD',idiag_epsAD)
         call parse_name(iname,cname(iname),cform(iname),'brms',idiag_brms)
         call parse_name(iname,cname(iname),cform(iname),'bmax',idiag_bmax)
         call parse_name(iname,cname(iname),cform(iname),'bxmin',idiag_bxmin)
