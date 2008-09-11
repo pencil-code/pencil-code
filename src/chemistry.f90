@@ -477,6 +477,7 @@ module Chemistry
       type (pencil_case) :: p
       real, dimension (nx) :: mu1_cgs, cp_spec
       real, dimension (mx) :: tmp_sum, tmp_sum2
+      real, dimension (mx,my,mz) :: pp_full
       real, dimension (nchemspec,nchemspec) :: Phi
 !
       intent(in) :: f
@@ -569,15 +570,31 @@ module Chemistry
 !
 !  Sound speed
 !
-        if (lpencil(i_cs2)) p%cs2=p%cp*p%TT*p%gamma1*p%mu1
+     !   if (lpencil(i_cs2)) p%cs2=p%cp*p%TT*p%gamma1*p%mu1
+     !
+!!!!! Natalia:it is wrong for the chemistry case
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !  Logarithmic pressure gradient
 !
         if (lpencil(i_rho1gpp)) then
-         do i=1,3
-           p%rho1gpp(:,i) = p%gamma11*p%cs2*(p%glnrho(:,i)+p%glnTT(:,i)+p%gmu1(:,i)/p%mu1(:))
-         enddo
-        endif
+
+          pp_full=Rgas*TT_full*rho_full*mu1_full
+
+            call grad(pp_full,p%rho1gpp)
+
+            do i=1,3
+              p%rho1gpp(:,i)=p%rho1gpp(:,i)/p%rho(:)
+            enddo
+!print*,'1', p%rho1gpp(15,1)
+
+!       do i=1,3
+!           p%rho1gpp(:,i) = p%gamma11*p%cs2*(p%glnrho(:,i)+p%glnTT(:,i)+p%gmu1(:,i)/p%mu1(:))
+!         enddo
+
+!print*,'2', p%rho1gpp(15,1)
+
+  endif
 !
 !  Viscosity of a mixture
 !
@@ -662,9 +679,10 @@ module Chemistry
       integer :: file_id=123
 
 ! 
-! Density
+! Density and temperature
 !
       rho_full=exp(f(:,:,:,ilnrho))
+       TT_full=exp(f(:,:,:,ilnTT))
 !
 ! Now this routine is only for chemkin data !!!
 !
@@ -704,6 +722,8 @@ module Chemistry
              do m=1,my
                do i=1,mx
                  T_local=exp(f(i,m,n,ilnTT))*unit_temperature 
+
+
                  if (T_local >=T_low .and. T_local <= T_mid) then
                    tmp=0. 
                    do j=1,5
@@ -1206,35 +1226,18 @@ module Chemistry
         sum_DYDt=0.
         do k=1,nchemspec
          sum_DYDt=sum_DYDt+Rgas/species_constants(k,imass)*(1.-H0_RT(l1:l2,m,n,k))*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
-
-
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Testing of the conservation of enthalpy !!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! HHHHH
-
-!         sum_DYDt=sum_DYDt+Rgas/species_constants(k,imass)*(1.-0.*H0_RT(l1:l2,m,n,k))*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
-
         enddo
 
         call dot_mn(p%ghYrho,p%uu,ghYrho_uu)
 
+! HHHHHH
+
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
          + (sum_DYDt(:)- Rgas*p%mu1*p%divu)*p%cv1 &
           !/(p%cp-Rgas*p%mu1)&
-        +(hYrho_full(l1:l2,m,n)*p%divu(:)+ghYrho_uu(:))/p%TT(:)*p%cv1
+        -(hYrho_full(l1:l2,m,n)*p%divu(:)+ghYrho_uu(:))/p%TT(:)*p%cv1
           !/(p%cp-Rgas*p%mu1)
 
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Testing of the conservation of enthalpy !!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! HHHHHHH
-
- !       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
- !       + (sum_DYDt(:)- Rgas*p%mu1*p%divu) &
- !         /(p%cp-Rgas*p%mu1*0.)
 
 
         if (lheatc_chemistry) call calc_heatcond_chemistry(f,df,p)
@@ -2393,29 +2396,21 @@ module Chemistry
 !
 
           hYrho_full=0.
-          TT_full=exp(f(:,:,:,ilnTT))
+        
           do k=1,nchemspec
             hYrho_full=hYrho_full+H0_RT(:,:,:,k)*Rgas*TT_full(:,:,:)*f(:,:,:,ichemspec(k))/species_constants(k,imass)
           enddo
 
-
-
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Testing of the conservation of enthalpy !!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- !  print*,'HHHHH', &
- !  hYrho_full(l1,m1,n1)-Rgas*exp(f(l1,m1,n1,ilnTT))*mu1_full(l1,m1,n1)
-!,&
-!    hYrho_full(l1,m1,n1)
-!maxval(H0_RT(:,:,:,1)*Rgas*TT_full(:,:,:))
-
-          hYrho_full=hYrho_full*exp(f(:,:,:,ilnrho))
+!  HHHHH
 
 !
 ! Internal energy
 !
-          e_int_full=hYrho_full+Rgas*TT_full(:,:,:)*mu1_full
+          e_int_full=hYrho_full-Rgas*TT_full(:,:,:)*mu1_full
+
+
+          hYrho_full=hYrho_full*exp(f(:,:,:,ilnrho))
+
 
 !print*,'   ',e_int_full(l1:l2,m1:m2,n1:n2)
 
@@ -2981,15 +2976,6 @@ module Chemistry
                             !/(p%cp-Rgas*p%mu1)
 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Testing of the conservation of enthalpy !! 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! HHHHH
-  !     df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)  & 
-  !      + p%lambda(:)*(p%del2lnTT+g2TT+g2TTlnlambda) &
-  !                /(p%cp-Rgas*p%mu1*0.)
-
-!print*,'Natalia',maxval(p%lambda(:)),maxval(p%del2lnTT),maxval(p%del2lnTT+g2TT +g2TTlnlambda)/(p%cp-Rgas*p%mu1))
 
     endsubroutine calc_heatcond_chemistry
 !***********************************************************************
@@ -3093,11 +3079,11 @@ module Chemistry
         f(:,:,:,ichemspec(stor1(j)))=stor2(j)*0.01
       enddo 
 
-      do j=1,nchemspec
-        if (maxval(f(:,:,:,ichemspec(j)))<1e-15) then
-           f(:,:,:,ichemspec(j))=1e-15
-        endif 
-      enddo
+!      do j=1,nchemspec
+!       if (maxval(f(:,:,:,ichemspec(j)))<1e-15) then
+!           f(:,:,:,ichemspec(j))=1e-15
+!        endif 
+!      enddo
 
     sum_Y=0.
 
