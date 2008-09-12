@@ -1490,6 +1490,7 @@ module Boundcond
     endsubroutine bc_set_pfc_x
 !***********************************************************************
     subroutine bc_set_nfr_x(f,topbot,j)
+!
 ! Normal-field (or angry-hedgehog) boundary condition for spherical
 ! coordinate system. 
 ! d_r(A_{\theta}) = -A_{\theta}/r  with A_r = 0 sets B_{r} to zero
@@ -1524,6 +1525,7 @@ module Boundcond
     endsubroutine bc_set_nfr_x
 ! **********************************************************************
     subroutine bc_set_sfree_x(f,topbot,j)
+!
 ! Stress-free boundary condition for spherical coordinate system. 
 ! d_r(u_{\theta}) = u_{\theta}/r  with u_r = 0 sets S_{r \theta}
 ! component of the strain matrix to be zero in spherical coordinate system. 
@@ -1540,8 +1542,10 @@ module Boundcond
       select case(topbot)
 
       case('bot')               ! bottom boundary
+!
 ! The coding assumes we are using 6-th order centered finite difference for our
 ! derivatives. 
+!
         f(l1-1,:,:,j)= f(l1+1,:,:,j) -  60.*f(l1,:,:,j)*dx/(45.*x(l1))
         f(l1-2,:,:,j)= f(l1+2,:,:,j) -  60.*f(l1,:,:,j)*dx/(9.*x(l1))
         f(l1-3,:,:,j)= f(l1+3,:,:,j) -  60.*f(l1,:,:,j)*dx/(x(l1))
@@ -1552,7 +1556,7 @@ module Boundcond
 
       case default
         call warning('bc_set_sfree_x',topbot//" should be `top' or `bot'")
-
+!
       endselect
 !
     endsubroutine bc_set_sfree_x
@@ -1581,7 +1585,7 @@ module Boundcond
       uzero = uzeroall(jj)
 !      write(*,*) frac,uzero,y0,z0,y1,z1
      if(lspherical_coords)then
-!! -----------
+!
         select case(topbot)
         case('bot')               ! bottom boundary
           ylim = (y1-y0)*frac
@@ -1602,17 +1606,17 @@ module Boundcond
                 enddo
             enddo
           enddo
-!! -----------
+!
         case('top')               ! top boundary
           call warning('bc_set_jethat_x','Jet flowing out of the exit boundary ?')
           do i=1,nghost
             f(l2+i,:,:,j)=0.
           enddo
-!! ---------------
+!
         case default
           call warning('bc_set_jethat_x',topbot//" should be `top' or `bot'")
         endselect
-!! ------
+!
       else
         call stop_it('Boundary condition jethat is valid only in spherical coordinate system')
       endif
@@ -1620,6 +1624,7 @@ module Boundcond
     endsubroutine bc_set_jethat_x
 ! **********************************************************************
     subroutine bc_set_nfr_y(f,topbot,j)
+!
 ! Stress-free boundary condition for spherical coordinate system. 
 ! d_{\theta}(A_{\phi}) = -A_{\phi}cot(\theta)/r  with A_{\theta} = 0 sets 
 ! B_{\theta}=0 in spherical polar
@@ -1632,12 +1637,14 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
       real :: cottheta
-
+!
       select case(topbot)
 
       case('bot')               ! bottom boundary
+!
 ! The coding assumes we are using 6-th order centered finite difference for our
 ! derivatives. 
+!
         cottheta= cotth(m1)
         f(:,m1-1,:,j)= f(:,m1+1,:,j) +  60.*dy*cottheta*f(:,m1,:,j)/45.
         f(:,m1-2,:,j)= f(:,m1+2,:,j) +  60.*dy*cottheta*f(:,m1,:,j)/9.
@@ -1647,15 +1654,16 @@ module Boundcond
         f(:,m2+1,:,j)= f(:,m2-1,:,j) -  60.*dy*cottheta*f(:,m2,:,j)/45.
         f(:,m2+2,:,j)= f(:,m2-2,:,j) -  60.*dy*cottheta*f(:,m2,:,j)/9.
         f(:,m2+3,:,j)= f(:,m2-3,:,j) -  60.*dy*cottheta*f(:,m2,:,j)
-
+!
       case default
         call warning('bc_set_nfr_y',topbot//" should be `top' or `bot'")
-
+!
       endselect
 !
     endsubroutine bc_set_nfr_y
 ! **********************************************************************
     subroutine bc_set_sfree_y(f,topbot,j)
+!
 ! Stress-free boundary condition for spherical coordinate system. 
 ! d_{\theta}(u_{\phi}) = u_{\phi}cot(\theta)/r  with u_{\theta} = 0 sets 
 ! S_{\theta \phi} component of the strain matrix to be zero in spherical 
@@ -1668,12 +1676,14 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
       real :: cottheta
-
+!
       select case(topbot)
 
       case('bot')               ! bottom boundary
+!
 ! The coding assumes we are using 6-th order centered finite difference for our
 ! derivatives. 
+!
         cottheta= cotth(m1)
         f(:,m1-1,:,j)= f(:,m1+1,:,j) -  60.*dy*cottheta*f(:,m1,:,j)/45.
         f(:,m1-2,:,j)= f(:,m1+2,:,j) -  60.*dy*cottheta*f(:,m1,:,j)/9.
@@ -1686,11 +1696,10 @@ module Boundcond
 
       case default
         call warning('bc_set_sfree_y',topbot//" should be `top' or `bot'")
-
+!
       endselect
 !
     endsubroutine bc_set_sfree_y
-
 ! **********************************************************************
     subroutine bc_set_pfc_y(f,topbot,j)
 !
@@ -1708,12 +1717,14 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
       real :: cottheta
-
+!
       select case(topbot)
-
+!
       case('bot')               ! bottom boundary
+!
 ! The coding assumes we are using 6-th order centered finite difference for our
 ! derivatives. 
+!
         cottheta= cotth(m1)
         f(:,m1-1,:,j)= f(:,m1+1,:,j) +  2.*60.*dy*cottheta*f(:,m1,:,j)/45.
         f(:,m1-2,:,j)= f(:,m1+2,:,j) -  2.*60.*dy*cottheta*f(:,m1,:,j)/9.
@@ -1726,7 +1737,7 @@ module Boundcond
 
       case default
         call warning('bc_set_pfc_y',topbot//" should be `top' or `bot'")
-
+!
       endselect
 !
     endsubroutine bc_set_pfc_y
