@@ -899,6 +899,11 @@ else if ($hn =~ morvern || $hn =~ renton || $hn =~ lanark) then
     setenv SCRATCH_DIR /var/tmp
   endif
 
+else if ($hn =~ rockall || $hn =~ valdivia) then
+  echo "rockall/valdivia - ngrs's laptop/desktop"
+  set mpirun = 'orterun'
+  set mpirunops = '-machinefile ~/machines'
+
 else if ($hn =~ hades) then
   echo "Hades - Wlad's laptop"
   set mpirun = 'mpiexec'
