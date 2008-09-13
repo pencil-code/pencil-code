@@ -572,14 +572,14 @@ LD_FFTW2=
 ##
 ## rockall (ngrs's current laptop)
 ##
-##FC=g95 -fno-second-underscore #(rockall) # ngrs: g95 currently seg-faulting..
+##FC=g95 -fno-second-underscore #(rockall)
 #FC=gfortran #(rockall)
-##FFLAGS=-O3 -I/usr/lib/lam/include -frecord-marker=4 #(rockall) # ngrs: record-marker used by joishi 
-#FFLAGS=-O3 -I/usr/lib/openmpi/include #(rockall) # ngrs: change to openmpi...
-#FFLAGS_DOUBLE= -fdefault-real-8 #(rockall) # ngrs: for gfortran only!
+##FFLAGS=-O3 -I/usr/lib/lam/include -frecord-marker=4 #(rockall)
+#FFLAGS=-O3 -I/usr/lib/openmpi/include #(rockall)
+#FFLAGS_DOUBLE= -fdefault-real-8 #(rockall)
 ##LD_MPI=-L/usr/lib/lam/lib -pthread -llammpio -llamf77mpi -lmpi -llam -llammpi++ #(rockall)
-#LD_MPI=-L/usr/lib/openmpi/lib -pthread -lmpi -lmpi_f77 -lmpi_f90 -lmpi_cxx -lopen-rte -lopen-pal -lmca_common_sm #(rockall) # ngrs: change to openmpi
-##F77FLAGS=-w90 #(rockall) # ngrs: not recognised by gfortran.
+#LD_MPI=-L/usr/lib/openmpi/lib -pthread -lmpi -lmpi_f77 -lmpi_f90 -lmpi_cxx -lopen-rte -lopen-pal -lmca_common_sm #(rockall)
+##F77FLAGS=-w90 #(rockall)
 #LIBMPISUFFIX=_#(rockall) 
 ##
 ## renton & morvern (ngrs's older desktop & laptop)
