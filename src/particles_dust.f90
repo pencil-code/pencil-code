@@ -47,7 +47,7 @@ module Particles
   real :: tau_coll_min=0.0, tau_coll1_max=0.0
   real :: coeff_restitution=0.5, mean_free_path_gas=0.0
   real :: pdlaw=0.0, tausp_short_friction=0.0, tausp1_short_friction=0.0
-  real :: brownian_T0=0.0, mass_origin=0.0
+  real :: brownian_T0=0.0
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iscratch_short_friction=0
   integer, dimension (npar_species) :: ipar_fence_species=0
@@ -70,6 +70,7 @@ module Particles
   logical :: lshort_friction_approx=.false.
   logical :: lbrownian_forces=.false.
   logical :: lenforce_policy=.false.
+  logical :: lnostore_uu=.false.
 
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -104,7 +105,7 @@ module Particles
       tausp_short_friction,ldraglaw_steadystate,tstart_liftforce_par, &
       tstart_brownian_par, lbrownian_forces, lenforce_policy, &
       interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, &
-      brownian_T0, mass_origin
+      brownian_T0, lnostore_uu
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -126,7 +127,7 @@ module Particles
       tausp_short_friction,ldraglaw_steadystate,tstart_liftforce_par, &
       tstart_brownian_par, lbrownian_forces, lenforce_policy, &
       interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, &
-      brownian_T0, mass_origin
+      brownian_T0, lnostore_uu
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -427,7 +428,11 @@ module Particles
 !  (The particles_spin module will for instance enable interpolation of the
 !  vorticity oo)
 !
-      interp%luu=ldragforce_dust_par
+      if (lnostore_uu) then
+        interp%luu=.false.
+      else
+        interp%luu=ldragforce_dust_par
+      endif
       interp%loo=.false.
       interp%lTT=lbrownian_forces.and.(brownian_T0/=0.0)
       interp%lrho=lbrownian_forces.or.ldraglaw_steadystate
@@ -1570,7 +1575,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       real, dimension (nx) :: dt1_drag, dt1_drag_gas, dt1_drag_dust
       real, dimension (nx) :: drag_heat
-      real, dimension (3) :: dragforce, liftforce, bforce
+      real, dimension (3) :: dragforce, liftforce, bforce, uup
       real, dimension(:), allocatable :: rep,stocunn
       real :: rho_point, rho1_point, tausp1_par, up2
       real :: weight, weight_x, weight_y, weight_z
@@ -1578,16 +1583,14 @@ k_loop:   do while (.not. (k>npar_loc))
       integer :: k, l, ix0, iy0, iz0
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
       logical :: lsink
-      logical :: lfirstcall=.true.
 !
       intent (in) :: fp, ineargrid
       intent (inout) :: f, df, dfp
 !
 !  Identify module.
 !     
-      if (lfirstcall) then
+      if (headtt) then
         if (lroot) print*,'dvvp_dt_pencil: calculate dvvp_dt'
-        lfirstcall=.false.
       endif
 !
 !  Precalculate certain quantities, if necessary.
@@ -1646,14 +1649,39 @@ k_loop:   do while (.not. (k>npar_loc))
               iy0=ineargrid(k,2)
               iz0=ineargrid(k,3)
 !
+!  The interpolated gas velocity is either precalculated, and stored in
+!  interp_uu, or it must be calculated here.
+!
+              if (.not.interp%luu) then
+                if (lhydro) then
+                  if (lparticlemesh_cic) then
+                    call interpolate_linear( &
+                         f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
+                  elseif (lparticlemesh_tsc) then
+                    if (linterpolate_spline) then
+                      call interpolate_quadratic_spline( &
+                           f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
+                    else
+                      call interpolate_quadratic( &
+                           f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
+                    endif
+                  else
+                    uup=f(ix0,iy0,iz0,iux:iuz)
+                  endif
+                else
+                  uup=0.0
+                endif
+              else
+                uup=interp_uu(k,:)
+              endif
+!
 !  Get the friction time. For the case of |uup| ~> cs, the Epstein drag law
 !  is dependent on the relative mach number, hence the need to feed uup as 
 !  an optional argument to get_frictiontime.
 !
               if (ldraglaw_epstein_transonic .or. &
                   ldraglaw_eps_stk_transonic) then
-                call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par, &
-                    interp_uu(k,:))
+                call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par,uup)
               elseif (ldraglaw_steadystate) then
                 call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par,rep=rep(k),&
                   stocunn=stocunn(k))
@@ -1670,7 +1698,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Calculate and add drag force.
 !
-              dragforce = -tausp1_par*(fp(k,ivpx:ivpz)-interp_uu(k,:))
+              dragforce = -tausp1_par*(fp(k,ivpx:ivpz)-uup)
 !
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + dragforce
 !
@@ -1821,9 +1849,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !
               if (ldragforce_heat .or. (ldiagnos .and. idiag_dedragp/=0)) then
                 if (ldragforce_gas_par) then
-                  up2=sum((fp(k,ivpx:ivpz)-interp_uu(k,:))**2)
+                  up2=sum((fp(k,ivpx:ivpz)-uup)**2)
                 else
-                  up2=sum(fp(k,ivpx:ivpz)*(fp(k,ivpx:ivpz)-interp_uu(k,:)))
+                  up2=sum(fp(k,ivpx:ivpz)*(fp(k,ivpx:ivpz)-uup))
                 endif
 !
                 drag_heat(ix0-nghost)=drag_heat(ix0-nghost) + &
@@ -2082,7 +2110,7 @@ k_loop:   do while (.not. (k>npar_loc))
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension(3) :: ggp
-      real :: Omega2, np_tilde, rsph, OO2, r2
+      real :: Omega2, np_tilde, rsph, OO2
       integer :: k
       logical :: lheader, lfirstcall=.true.
 !
@@ -2115,17 +2143,6 @@ k_loop:   do while (.not. (k>npar_loc))
       if (beta_dPdr_dust/=0.0 .and. t>=tstart_dragforce_par) then
         dfp(1:npar_loc,ivpx) = &
             dfp(1:npar_loc,ivpx) + 1/gamma*cs20*beta_dPdr_dust_scaled
-      endif
-!
-!
-!
-      if (mass_origin/=0.0) then
-        do k=1,npar_loc
-          r2=fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2
-          dfp(k,ivpx) = dfp(k,ivpx) - mass_origin/r2*fp(k,ixp)/sqrt(r2)
-          dfp(k,ivpy) = dfp(k,ivpy) - mass_origin/r2*fp(k,iyp)/sqrt(r2)
-          dfp(k,ivpz) = dfp(k,ivpz) - mass_origin/r2*fp(k,izp)/sqrt(r2)
-        enddo
       endif
 !
 !  Gravity on the particles.
