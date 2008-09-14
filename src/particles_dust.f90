@@ -144,7 +144,7 @@ module Particles
   integer :: idiag_mpt=0, idiag_dedragp=0, idiag_rhopmxy=0, idiag_rhopmr=0
   integer :: idiag_dvpx2m=0, idiag_dvpy2m=0, idiag_dvpz2m=0
   integer :: idiag_dvpm=0,idiag_dvpmax=0
-  integer :: idiag_rhopmxz=0
+  integer :: idiag_rhopmxz=0, idiag_nparpmax=0
 
   contains
 
@@ -1966,21 +1966,21 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Diagnostic output
 !
       if (ldiagnos) then
-        if (idiag_npm/=0)     call sum_mn_name(p%np,idiag_npm)
-        if (idiag_np2m/=0)    call sum_mn_name(p%np**2,idiag_np2m)
-        if (idiag_npmax/=0)   call max_mn_name(p%np,idiag_npmax)
-        if (idiag_npmin/=0)   call max_mn_name(-p%np,idiag_npmin,lneg=.true.)
-        if (idiag_rhopm/=0)   call sum_mn_name(p%rhop,idiag_rhopm)
-        if (idiag_rhop2m/=0)  call sum_mn_name(p%rhop**2,idiag_rhop2m)
-        if (idiag_rhoprms/=0) call sum_mn_name(p%rhop**2,idiag_rhoprms,lsqrt=.true.)
-        if (idiag_rhopmax/=0) call max_mn_name(p%rhop,idiag_rhopmax)
-        if (idiag_rhopmin/=0) call max_mn_name(-p%rhop,idiag_rhopmin,lneg=.true.)
-        if (idiag_dedragp/=0) call sum_mn_name(drag_heat,idiag_dedragp)
+        if (idiag_npm/=0)      call sum_mn_name(p%np,idiag_npm)
+        if (idiag_np2m/=0)     call sum_mn_name(p%np**2,idiag_np2m)
+        if (idiag_npmax/=0)    call max_mn_name(p%np,idiag_npmax)
+        if (idiag_npmin/=0)    call max_mn_name(-p%np,idiag_npmin,lneg=.true.)
+        if (idiag_rhopm/=0)    call sum_mn_name(p%rhop,idiag_rhopm)
+        if (idiag_rhop2m/=0 )  call sum_mn_name(p%rhop**2,idiag_rhop2m)
+        if (idiag_rhoprms/=0)  call sum_mn_name(p%rhop**2,idiag_rhoprms,lsqrt=.true.)
+        if (idiag_rhopmax/=0)  call max_mn_name(p%rhop,idiag_rhopmax)
+        if (idiag_rhopmin/=0)  call max_mn_name(-p%rhop,idiag_rhopmin,lneg=.true.)
+        if (idiag_dedragp/=0)  call sum_mn_name(drag_heat,idiag_dedragp)
         if (idiag_dvpx2m /=0  .or. &
             idiag_dvpx2m /=0  .or. &
             idiag_dvpx2m /=0  .or. &
             idiag_dvpm   /=0  .or. &
-            idiag_dvpmax /=0) call calculate_rms_speed(fp,ineargrid,p)
+            idiag_dvpmax /=0)  call calculate_rms_speed(fp,ineargrid,p)
       endif
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
@@ -2239,14 +2239,15 @@ k_loop:   do while (.not. (k>npar_loc))
         case default
            call fatal_error('dvvp_dt','chosen gravr_profile is not valid!')
 !
-       endselect
-
-    endif
+        endselect
+!
+      endif
 !
 !  Diagnostic output
 !
       if (ldiagnos) then
-        if (idiag_nparmax/=0) call max_name(npar_loc,idiag_nparmax)
+        if (idiag_nparmax/=0)  call max_name(npar_loc,idiag_nparmax)
+        if (idiag_nparpmax/=0) call max_name(maxval(npar_imn),idiag_nparpmax)
         if (idiag_xpm/=0)  call sum_par_name(fp(1:npar_loc,ixp),idiag_xpm)
         if (idiag_ypm/=0)  call sum_par_name(fp(1:npar_loc,iyp),idiag_ypm)
         if (idiag_zpm/=0)  call sum_par_name(fp(1:npar_loc,izp),idiag_zpm)
@@ -3321,7 +3322,7 @@ k_loop:   do while (.not. (k>npar_loc))
         idiag_epspmx=0; idiag_epspmy=0; idiag_epspmz=0
         idiag_rhopmxy=0; idiag_rhopmxz=0; idiag_rhopmr=0
         idiag_dvpx2m=0; idiag_dvpy2m=0; idiag_dvpz2m=0
-        idiag_dvpmax=0; idiag_dvpm=0
+        idiag_dvpmax=0; idiag_dvpm=0; idiag_nparpmax=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
@@ -3329,6 +3330,7 @@ k_loop:   do while (.not. (k>npar_loc))
       if (lroot .and. ip<14) print*,'rprint_particles: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'nparmax',idiag_nparmax)
+        call parse_name(iname,cname(iname),cform(iname),'nparpmax',idiag_nparpmax)
         call parse_name(iname,cname(iname),cform(iname),'xpm',idiag_xpm)
         call parse_name(iname,cname(iname),cform(iname),'ypm',idiag_ypm)
         call parse_name(iname,cname(iname),cform(iname),'zpm',idiag_zpm)
