@@ -26,4 +26,5 @@
   tausp=0.1, cdtp=0.2
   ldragforce_dust_par=T, ldragforce_gas_par=F
   ldragforce_heat=T
+  lnostore_uu=T
 /
