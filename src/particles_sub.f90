@@ -2158,11 +2158,11 @@ module Particles_sub
 !
       use Particles_cdata
       use Cdata
-      use Messages, only: fatal_error
+      use Messages, only: fatal_error, warning
 !
       if (interp%luu .and. (.not.lhydro)) then
-        call fatal_error('initialize_particles','interpolation of uu '// &
-          'impossible without the Hydro module!')
+        call warning('initialize_particles','interpolated uu '// &
+          'is set to zero because there is no Hydro module!')
       endif
 !
       if (interp%loo .and. (.not.lparticles_spin)) then
@@ -2212,8 +2212,12 @@ module Particles_sub
                  'sufficient memory for interp_uu'
           call fatal_error('interpolate_quantities','')
         endif
-        call interp_field_pencil_wrap(f,iux,iuz,fp,ineargrid,interp_uu, &
-          interp%pol_uu)
+        if (lhydro) then
+          call interp_field_pencil_wrap(f,iux,iuz,fp,ineargrid,interp_uu, &
+            interp%pol_uu)
+        else
+          interp_uu=0.0
+        endif
       endif
 !
 !  Flow vorticity:
