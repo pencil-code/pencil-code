@@ -1578,34 +1578,25 @@ k_loop:   do while (.not. (k>npar_loc))
       integer :: k, l, ix0, iy0, iz0
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
       logical :: lsink
-      logical :: lfirsttime=.true.
-      logical,save :: lcalc_rep,lcalc_sto_cunn
+      logical :: lfirstcall=.true.
 !
       intent (in) :: fp, ineargrid
       intent (inout) :: f, df, dfp
 !
-!  Do logical checks on the first run, to determine what quantities we
-!  need to calculate.
+!  Identify module.
 !     
-      if (lfirsttime) then
+      if (lfirstcall) then
         if (lroot) print*,'dvvp_dt_pencil: calculate dvvp_dt'
-        lfirsttime=.false.
-!
-!  Do we need the particle Reynolds number?
-!
-        lcalc_rep=ldraglaw_steadystate.or.lparticles_spin
-!
-!  Do we need the stokes cunningham factor?
-!
-        lcalc_sto_cunn=ldraglaw_steadystate.or.lbrownian_forces
-!
+        lfirstcall=.false.
       endif
+!
+!  Precalculate certain quantities, if necessary.
 !
       if (npar_imn(imn)/=0) then
 !
-!  Calculate particle Reynolds numbers.
+!  Precalculate particle Reynolds numbers.
 !
-        if (lcalc_rep) then
+        if (ldraglaw_steadystate.or.lparticles_spin) then
           allocate(rep(k1_imn(imn):k2_imn(imn)))
 !
           if (.not.allocated(rep)) then
@@ -1616,9 +1607,9 @@ k_loop:   do while (.not. (k>npar_loc))
           call calc_pencil_rep(fp,interp_uu,rep)
         endif
 !
-!  Calculate Stokes-Cunningham factor
+!  Precalculate Stokes-Cunningham factor
 !
-        if (lcalc_sto_cunn) then
+        if (ldraglaw_steadystate.or.lbrownian_forces) then
           allocate(stocunn(k1_imn(imn):k2_imn(imn)))
           if (.not.allocated(stocunn)) then
             call fatal_error('dvvp_dt_pencil','unable to allocate sufficient'//&
@@ -1629,29 +1620,7 @@ k_loop:   do while (.not. (k>npar_loc))
         endif
       endif
 !
-!  Add lift forces.
-!
-      if (lparticles_spin .and. t>=tstart_liftforce_par) then
-        if (npar_imn(imn)/=0) then
-          do k=k1_imn(imn),k2_imn(imn)
-            call calc_liftforce(fp(k,:), k, rep(k), liftforce)
-            dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)+liftforce
-          enddo
-        endif
-      endif
-!
-!  Add Brownian forces.
-!
-      if (lbrownian_forces .and. t>=tstart_brownian_par) then
-        if (npar_imn(imn)/=0) then
-          do k=k1_imn(imn),k2_imn(imn)
-            call calc_brownian_force(fp,k,stocunn(k),bforce)
-            dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)+bforce
-          enddo
-        endif
-      endif
-!
-!  Add drag force.
+!  Drag force on particles and on gas.
 !
       if (ldragforce_dust_par .and. t>=tstart_dragforce_par) then
         if (headtt) print*,'dvvp_dt: Add drag force; tausp=', tausp
@@ -1699,22 +1668,11 @@ k_loop:   do while (.not. (k>npar_loc))
               if (lshort_friction_approx .and. &
                   tausp1_par>tausp1_short_friction) cycle
 !
+!  Calculate and add drag force.
+!
               dragforce = -tausp1_par*(fp(k,ivpx:ivpz)-interp_uu(k,:))
 !
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + dragforce
-!
-!  Heating of gas due to drag force.
-!
-              if (ldragforce_heat .or. (ldiagnos .and. idiag_dedragp/=0)) then
-                if (ldragforce_gas_par) then
-                  up2=sum((fp(k,ivpx:ivpz)-interp_uu(k,:))**2)
-                else
-                  up2=sum(fp(k,ivpx:ivpz)*(fp(k,ivpx:ivpz)-interp_uu(k,:)))
-                endif
-!
-                drag_heat(ix0-nghost)=drag_heat(ix0-nghost) + &
-                     rhop_tilde*tausp1_par*up2
-              endif
 !
 !  Back-reaction friction force from particles on gas. Three methods are
 !  implemented for assigning a particle to the mesh (see Hockney & Eastwood):
@@ -1755,7 +1713,7 @@ k_loop:   do while (.not. (k>npar_loc))
                     if (nzgrid/=1) &
                          weight=weight*( 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz) )
 !  Save the calculation of rho1 when inside pencil.
-                    if ( (iyy/=m) .or. (izz/=n) .or. (ixx<l1) .or. (ixx>l2) ) then
+                    if ( (iyy/=m).or.(izz/=n).or.(ixx<l1).or.(ixx>l2) ) then
                       rho_point=f(ixx,iyy,izz,ilnrho)
                       if (.not. ldensity_nolog) rho_point=exp(rho_point)
                       rho1_point=1/rho_point
@@ -1821,9 +1779,9 @@ k_loop:   do while (.not. (k>npar_loc))
                       if (nzgrid/=1) &
                            weight_z=0.75-((fp(k,izp)-z(izz))*dz_1(izz))**2
                     endif
-
+!
                     weight=1.0
-
+!
                     if (nxgrid/=1) weight=weight*weight_x
                     if (nygrid/=1) weight=weight*weight_y
                     if (nzgrid/=1) weight=weight*weight_z
@@ -1857,6 +1815,19 @@ k_loop:   do while (.not. (k>npar_loc))
                          mp_tilde*dvolume_1(l-nghost)*p%rho1(l-nghost)*dragforce
                   endif
                 endif
+              endif
+!
+!  Heating of gas due to drag force.
+!
+              if (ldragforce_heat .or. (ldiagnos .and. idiag_dedragp/=0)) then
+                if (ldragforce_gas_par) then
+                  up2=sum((fp(k,ivpx:ivpz)-interp_uu(k,:))**2)
+                else
+                  up2=sum(fp(k,ivpx:ivpz)*(fp(k,ivpx:ivpz)-interp_uu(k,:)))
+                endif
+!
+                drag_heat(ix0-nghost)=drag_heat(ix0-nghost) + &
+                     rhop_tilde*tausp1_par*up2
               endif
 !
 !  The minimum friction time of particles in a grid cell sets the local friction
@@ -1915,6 +1886,28 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if (lcompensate_friction_increase) &
           call compensate_friction_increase(f,df,fp,dfp,p,ineargrid)
+!
+!  Add lift forces.
+!
+      if (lparticles_spin .and. t>=tstart_liftforce_par) then
+        if (npar_imn(imn)/=0) then
+          do k=k1_imn(imn),k2_imn(imn)
+            call calc_liftforce(fp(k,:), k, rep(k), liftforce)
+            dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)+liftforce
+          enddo
+        endif
+      endif
+!
+!  Add Brownian forces.
+!
+      if (lbrownian_forces .and. t>=tstart_brownian_par) then
+        if (npar_imn(imn)/=0) then
+          do k=k1_imn(imn),k2_imn(imn)
+            call calc_brownian_force(fp,k,stocunn(k),bforce)
+            dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)+bforce
+          enddo
+        endif
+      endif
 !
 !  Contribution of dust particles to time step.
 !
