@@ -47,7 +47,7 @@ module Particles
   real :: tau_coll_min=0.0, tau_coll1_max=0.0
   real :: coeff_restitution=0.5, mean_free_path_gas=0.0
   real :: pdlaw=0.0, tausp_short_friction=0.0, tausp1_short_friction=0.0
-  real :: brownian_T0=0.0
+  real :: brownian_T0=0.0, mass_origin=0.0
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iscratch_short_friction=0
   integer, dimension (npar_species) :: ipar_fence_species=0
@@ -104,7 +104,7 @@ module Particles
       tausp_short_friction,ldraglaw_steadystate,tstart_liftforce_par, &
       tstart_brownian_par, lbrownian_forces, lenforce_policy, &
       interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, &
-      brownian_T0
+      brownian_T0, mass_origin
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -126,7 +126,7 @@ module Particles
       tausp_short_friction,ldraglaw_steadystate,tstart_liftforce_par, &
       tstart_brownian_par, lbrownian_forces, lenforce_policy, &
       interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, &
-      brownian_T0
+      brownian_T0, mass_origin
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -436,10 +436,10 @@ module Particles
 !   Make sure that interpolation of uu is chosen in a backwards compatible
 !   manner. NGP is chosen by default.
 !
-      if(.not.lenforce_policy) then
-        if(lparticlemesh_cic) then
+      if (.not.lenforce_policy) then
+        if (lparticlemesh_cic) then
           interp_pol_uu='cic'
-        else if(lparticlemesh_tsc) then
+        else if (lparticlemesh_tsc) then
           interp_pol_uu='tsc'
         endif
       endif
@@ -1587,30 +1587,29 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Do logical checks on the first run, to determine what quantities we
 !  need to calculate.
 !     
-      if(lfirsttime) then
-        if(lroot) print*,'dvvp_dt_pencil: calculate dvvp_dt'
+      if (lfirsttime) then
+        if (lroot) print*,'dvvp_dt_pencil: calculate dvvp_dt'
         lfirsttime=.false.
 !
 !  Do we need the particle Reynolds number?
 !
-        lcalc_rep=  ldraglaw_steadystate  .or. &
-                    lparticles_spin
+        lcalc_rep=ldraglaw_steadystate.or.lparticles_spin
 !
 !  Do we need the stokes cunningham factor?
 !
-        lcalc_sto_cunn= ldraglaw_steadystate.or.lbrownian_forces
+        lcalc_sto_cunn=ldraglaw_steadystate.or.lbrownian_forces
 !
       endif
 !
-      if(npar_imn(imn)/=0) then
+      if (npar_imn(imn)/=0) then
 !
 !  Calculate particle Reynolds numbers.
 !
-        if(lcalc_rep) then
+        if (lcalc_rep) then
           allocate(rep(k1_imn(imn):k2_imn(imn)))
 !
-          if(.not.allocated(rep)) then
-            call fatal_error('dvvp_dt_pencil','unable to allocate sufficient'// &
+          if (.not.allocated(rep)) then
+            call fatal_error('dvvp_dt_pencil','unable to allocate sufficient'//&
               ' memory for rep')
           endif
 !
@@ -1619,10 +1618,10 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Calculate Stokes-Cunningham factor
 !
-        if(lcalc_sto_cunn) then
+        if (lcalc_sto_cunn) then
           allocate(stocunn(k1_imn(imn):k2_imn(imn)))
-          if(.not.allocated(stocunn)) then
-            call fatal_error('dvvp_dt_pencil','unable to allocate sufficient'// &
+          if (.not.allocated(stocunn)) then
+            call fatal_error('dvvp_dt_pencil','unable to allocate sufficient'//&
               'memory for stocunn')
           endif
 !
@@ -1632,8 +1631,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Add lift forces.
 !
-      if(lparticles_spin .and. t>=tstart_liftforce_par) then
-        if(npar_imn(imn)/=0) then
+      if (lparticles_spin .and. t>=tstart_liftforce_par) then
+        if (npar_imn(imn)/=0) then
           do k=k1_imn(imn),k2_imn(imn)
             call calc_liftforce(fp(k,:), k, rep(k), liftforce)
             dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)+liftforce
@@ -1643,8 +1642,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Add Brownian forces.
 !
-      if(lbrownian_forces .and. t>=tstart_brownian_par) then
-        if(npar_imn(imn)/=0) then
+      if (lbrownian_forces .and. t>=tstart_brownian_par) then
+        if (npar_imn(imn)/=0) then
           do k=k1_imn(imn),k2_imn(imn)
             call calc_brownian_force(fp,k,stocunn(k),bforce)
             dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)+bforce
@@ -1685,9 +1684,9 @@ k_loop:   do while (.not. (k>npar_loc))
               if (ldraglaw_epstein_transonic .or. &
                   ldraglaw_eps_stk_transonic) then
                 call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par, &
-                  interp_uu(k,:))
+                    interp_uu(k,:))
               elseif (ldraglaw_steadystate) then
-                call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par,rep=rep(k), &
+                call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par,rep=rep(k),&
                   stocunn=stocunn(k))
               else
                 call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par)
@@ -1802,25 +1801,25 @@ k_loop:   do while (.not. (k>npar_loc))
 !
                   do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
                     if ( ((ixx-ix0)==-1) .or. ((ixx-ix0)==+1) ) then
-                      weight_x = 1.125 - 1.5* abs(fp(k,ixp)-x(ixx))*dx_1(ixx) + &
-                                         0.5*(abs(fp(k,ixp)-x(ixx))*dx_1(ixx))**2
+                      weight_x=1.125-1.5* abs(fp(k,ixp)-x(ixx))*dx_1(ixx) + &
+                                     0.5*(abs(fp(k,ixp)-x(ixx))*dx_1(ixx))**2
                     else
                       if (nxgrid/=1) &
-                           weight_x = 0.75  -       ((fp(k,ixp)-x(ixx))*dx_1(ixx))**2
+                           weight_x=0.75-((fp(k,ixp)-x(ixx))*dx_1(ixx))**2
                     endif
                     if ( ((iyy-iy0)==-1) .or. ((iyy-iy0)==+1) ) then
-                      weight_y = 1.125 - 1.5* abs(fp(k,iyp)-y(iyy))*dy_1(iyy) + &
-                                         0.5*(abs(fp(k,iyp)-y(iyy))*dy_1(iyy))**2
+                      weight_y=1.125-1.5* abs(fp(k,iyp)-y(iyy))*dy_1(iyy) + &
+                                     0.5*(abs(fp(k,iyp)-y(iyy))*dy_1(iyy))**2
                     else
                       if (nygrid/=1) &
-                           weight_y = 0.75  -       ((fp(k,iyp)-y(iyy))*dy_1(iyy))**2
+                           weight_y=0.75-((fp(k,iyp)-y(iyy))*dy_1(iyy))**2
                     endif
                     if ( ((izz-iz0)==-1) .or. ((izz-iz0)==+1) ) then
-                      weight_z = 1.125 - 1.5* abs(fp(k,izp)-z(izz))*dz_1(izz) + &
-                                         0.5*(abs(fp(k,izp)-z(izz))*dz_1(izz))**2
+                      weight_z=1.125-1.5* abs(fp(k,izp)-z(izz))*dz_1(izz) + &
+                                     0.5*(abs(fp(k,izp)-z(izz))*dz_1(izz))**2
                     else
                       if (nzgrid/=1) &
-                           weight_z = 0.75  -       ((fp(k,izp)-z(izz))*dz_1(izz))**2
+                           weight_z=0.75-((fp(k,izp)-z(izz))*dz_1(izz))**2
                     endif
 
                     weight=1.0
@@ -1829,7 +1828,7 @@ k_loop:   do while (.not. (k>npar_loc))
                     if (nygrid/=1) weight=weight*weight_y
                     if (nzgrid/=1) weight=weight*weight_z
 !  Save the calculation of rho1 when inside pencil.
-                    if ( (iyy/=m) .or. (izz/=n) .or. (ixx<l1) .or. (ixx>l2) ) then
+                    if ( (iyy/=m).or.(izz/=n).or.(ixx<l1).or.(ixx>l2) ) then
                       rho_point=f(ixx,iyy,izz,ilnrho)
                       if (.not. ldensity_nolog) rho_point=exp(rho_point)
                       rho1_point=1/rho_point
@@ -1988,8 +1987,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Clean up (free allocated memory)
 !
-      if(allocated(rep)) deallocate(rep)
-      if(allocated(stocunn)) deallocate(stocunn)
+      if (allocated(rep)) deallocate(rep)
+      if (allocated(stocunn)) deallocate(stocunn)
 !
     endsubroutine dvvp_dt_pencil
 !***********************************************************************
@@ -2090,7 +2089,7 @@ k_loop:   do while (.not. (k>npar_loc))
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension(3) :: ggp
-      real :: Omega2, np_tilde, rsph, OO2
+      real :: Omega2, np_tilde, rsph, OO2, r2
       integer :: k
       logical :: lheader, lfirstcall=.true.
 !
@@ -2123,6 +2122,17 @@ k_loop:   do while (.not. (k>npar_loc))
       if (beta_dPdr_dust/=0.0 .and. t>=tstart_dragforce_par) then
         dfp(1:npar_loc,ivpx) = &
             dfp(1:npar_loc,ivpx) + 1/gamma*cs20*beta_dPdr_dust_scaled
+      endif
+!
+!
+!
+      if (mass_origin/=0.0) then
+        do k=1,npar_loc
+          r2=fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2
+          dfp(k,ivpx) = dfp(k,ivpx) - mass_origin/r2*fp(k,ixp)/sqrt(r2)
+          dfp(k,ivpy) = dfp(k,ivpy) - mass_origin/r2*fp(k,iyp)/sqrt(r2)
+          dfp(k,ivpz) = dfp(k,ivpz) - mass_origin/r2*fp(k,izp)/sqrt(r2)
+        enddo
       endif
 !
 !  Gravity on the particles.
@@ -3055,11 +3065,11 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       call getnu(nu)
 !
-      if(.not.lparticles_radius) then
+      if (.not.lparticles_radius) then
         print*,'calc_pencil_rep: particle_radius module needs to be '// &
           'enabled to calculate the particles Reynolds numbers.'
         call fatal_error('calc_pencil_rep','')
-      elseif(nu==0.0) then
+      elseif (nu==0.0) then
         print*,'calc_pencil_rep: nu (kinematic visc.) must be non-zero!'
         call fatal_error('calc_pencil_rep','')
       endif
@@ -3119,7 +3129,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Particle diameter
 !
-      if(.not.lparticles_radius) then
+      if (.not.lparticles_radius) then
         print*,'calc_draglaw_steadystate: need particles_radius module to '// &
             'calculate the relaxation time!'
         call fatal_error('calc_draglaw_steadystate','')
@@ -3129,9 +3139,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Calculate drag coefficent pre-factor:
 !
-      if(rep<1) then
+      if (rep<1) then
         cdrag=1.0
-      elseif(rep>1000) then
+      elseif (rep>1000) then
         cdrag=0.44*rep/24.0
       else
         cdrag=(1.+0.15*rep**0.687)
@@ -3175,7 +3185,7 @@ k_loop:   do while (.not. (k>npar_loc))
       call normal_deviate(force(2))
       call normal_deviate(force(3))
 !
-      if(interp%lTT) then
+      if (interp%lTT) then
         TT=interp_TT(k)
       else
         TT=brownian_T0
@@ -3184,7 +3194,7 @@ k_loop:   do while (.not. (k>npar_loc))
       Szero=216*nu*k_B*TT*pi_1/ &
         (dia**5*stocunn*rhop_tilde**2/interp_rho(k))
 !
-      if(dt==0.0) then
+      if (dt==0.0) then
         force=0.0
       else
         force=force*sqrt(Szero/dt)
