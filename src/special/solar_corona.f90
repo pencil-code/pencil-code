@@ -660,9 +660,9 @@ module Special
       gsmo = cubic_der_step(tmps,lntt0,wlntt)
 !      
       do i=1,3
-         tmpv(:,i) = p%glnTT(:,1)*p%hlnTT(:,i,1)+ &
-              p%glnTT(:,2)*p%hlnTT(:,i,2) + &
-              p%glnTT(:,3)*p%hlnTT(:,i,3)
+         tmpv(:,i) = p%glnTT(:,1)*p%hlnTT(:,i,1)+ & ! sven
+              p%glnTT(:,2)*p%hlnTT(:,i,2) + &       ! sven
+              p%glnTT(:,3)*p%hlnTT(:,i,3)           ! sven
       enddo
 !      
       call dot(tmpv,p%glnTT,tmp)
@@ -830,7 +830,7 @@ module Special
 !
 !  dot Hessian matrix of ecr with bi*bj, and add into tmp
 !
-      call multmv_mn(p%hlnTT,bunit,tmpv)
+      call multmv_mn(p%hlnTT,bunit,tmpv) !sven 
 !      quenchfactor =1.*get_quench(tmpv,1e-6,1e-5)  ! NEU ****************
 !      call multsv_mn(quenchfactor,tmpv,tmpv2)      ! NEU **************** 
 !      call dot_mn(tmpv2,bunit,tmpj)

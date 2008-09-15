@@ -1189,7 +1189,7 @@ module Mpicomm
 ! Load the z dimension of an array in a 1-d array
 ! 1-july-2008: dhruba
 ! ---------------------------------------------
-      real, dimension(nx,ny,nz), intent(in) :: a
+      real, dimension(nx,ny,nzgrid), intent(in) :: a
       real, dimension(nzgrid), intent(out) :: az
       integer, intent(in) :: xi,yj,yproc_no
       

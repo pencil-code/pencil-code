@@ -11,7 +11,7 @@
 !
 ! PENCILS PROVIDED ss; ee; pp; lnTT; cs2; nabla_ad; glnTT(3); TT; TT1
 ! PENCILS PROVIDED yH; del2lnTT; cv; cv1; cp; cp1; gamma; gamma1; gamma11; mu1
-! PENCILS PROVIDED glnTT(3); rho1gpp(3); delta; gradcp(3); del6lnTT
+! PENCILS PROVIDED hlnTT(3,3); rho1gpp(3); delta; gradcp(3); del6lnTT
 !
 !***************************************************************
 
@@ -283,7 +283,7 @@ module EquationOfState
 !
 !  dummy (but to be changed)
 !
-      use Sub, only: grad,del2,del6
+      use Sub, only: grad,del2,del6,g2ij
 
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -307,6 +307,7 @@ module EquationOfState
 !  Temperature laplacian and gradient
 !
       if (lpencil(i_glnTT)) call grad(f,ilnTT,p%glnTT)
+      if (lpencil(i_hlnTT)) call g2ij(f,ilnTT,p%hlnTT)
       if (lpencil(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
       if (lpencil(i_del6lnTT)) call del6(f,ilnTT,p%del6lnTT)
 

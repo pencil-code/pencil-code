@@ -1417,7 +1417,7 @@ module Shock
 !  16-aug-06/tobi: coded
 !
       use Cdata
-      use Magnetic, only: bb_unitvec_shock
+      use Sub, only: bb_unitvec_shock
 
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mx), intent (out) :: df
