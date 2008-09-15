@@ -32,7 +32,7 @@ module Particles
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0
   real :: tausg_min=0.0, tausg1_max=0.0, epsp_friction_increase=0.0, cdtp=0.2
-  real :: gravx=0.0, gravz=0.0, kx_gg=1.0, kz_gg=1.0
+  real :: gravx=0.0, gravz=0.0, gravr=0.0, kx_gg=1.0, kz_gg=1.0
   real :: Ri0=0.25, eps1=0.5
   real :: kx_xxp=0.0, ky_xxp=0.0, kz_xxp=0.0, amplxxp=0.0
   real :: kx_vvp=0.0, ky_vvp=0.0, kz_vvp=0.0, amplvvp=0.0
@@ -87,7 +87,7 @@ module Particles
       bcpx, bcpy, bcpz, tausp, beta_dPdr_dust, rhop_tilde, &
       eps_dtog, nu_epicycle, &
       gravx_profile, gravz_profile, gravr_profile, &
-      gravx, gravz, kx_gg, kz_gg, Ri0, eps1, &
+      gravx, gravz, gravr, kx_gg, kz_gg, Ri0, eps1, &
       lmigration_redo, ldragforce_equi_global_eps, coeff, &
       kx_vvp, ky_vvp, kz_vvp, amplvvp, kx_xxp, ky_xxp, kz_xxp, amplxxp, &
       kx_vpx, kx_vpy, kx_vpz, ky_vpx, ky_vpy, ky_vpz, kz_vpx, kz_vpy, kz_vpz, &
@@ -113,7 +113,7 @@ module Particles
       rhop_tilde, eps_dtog, cdtp, lpar_spec, &
       linterp_reality_check, nu_epicycle, &
       gravx_profile, gravz_profile, gravr_profile, &
-      gravx, gravz, kx_gg, kz_gg, &
+      gravx, gravz, gravr, kx_gg, kz_gg, &
       lmigration_redo, tstart_dragforce_par, tstart_grav_par, &
       lparticlemesh_cic, lparticlemesh_tsc, lcollisional_cooling_rms, &
       lcollisional_cooling_twobody, lcollisional_dragforce_cooling, &
@@ -2149,93 +2149,99 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if (t>=tstart_grav_par) then
 !
+!  Gravity in the x-direction.
+!
         select case (gravx_profile)
-
+!
           case ('')
             if (lheader) print*, 'dvvp_dt: No gravity in x-direction.'
-
+!
           case ('zero')
             if (lheader) print*, 'dvvp_dt: No gravity in x-direction.'
-
+!
           case ('linear')
             if (lheader) print*, 'dvvp_dt: Linear gravity field in x-direction.'
             dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) - &
                 nu_epicycle2*fp(1:npar_loc,ixp)
-
+!
           case ('sinusoidal')
             if (lheader) &
                 print*, 'dvvp_dt: Sinusoidal gravity field in x-direction.'
             dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) - &
                 gravx*sin(kx_gg*fp(1:npar_loc,ixp))
-
+!
           case default
             call fatal_error('dvvp_dt','chosen gravx_profile is not valid!')
-
+!
         endselect
 !
+!  Gravity in the z-direction.
+!
         select case (gravz_profile)
-
+!
           case ('')
             if (lheader) print*, 'dvvp_dt: No gravity in z-direction.'
-
+!
           case ('zero')
             if (lheader) print*, 'dvvp_dt: No gravity in z-direction.'
-
+!
           case ('linear')
             if (lheader) print*, 'dvvp_dt: Linear gravity field in z-direction.'
             dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) - &
                 nu_epicycle2*fp(1:npar_loc,izp)
-
+!
           case ('sinusoidal')
             if (lheader) &
                 print*, 'dvvp_dt: Sinusoidal gravity field in z-direction.'
             dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) - &
                 gravz*sin(kz_gg*fp(1:npar_loc,izp))
-
+!
           case default
             call fatal_error('dvvp_dt','chosen gravz_profile is not valid!')
-
+!
         endselect
 !
+!  Radial gravity.
+!
         select case (gravr_profile)
-
+!
         case ('')
-           if (lheader) print*, 'dvvp_dt: No spherical gravity'
-
+           if (lheader) print*, 'dvvp_dt: No radial gravity'
+!
         case ('zero')
-           if (lheader) print*, 'dvvp_dt: No spherical gravity'
-
-        case('no-smooth')
+           if (lheader) print*, 'dvvp_dt: No radial gravity'
+!
+        case('newtonian-central','newtonian')
           if (lparticles_nbody) &
-               call fatal_error("dvvp_dt","You are using massive particles. "//&
-               "The N-body code should take care of thi stellar-like gravity "//&
-               "on the dust. Switch off the gravr_profile='no-smooth' on particles_init")
-          !Experimental: assumes GM=1, static and cylindrical gravity
+              call fatal_error('dvvp_dt','You are using massive particles. '//&
+              'The N-body code should take care of the stellar-like '// &
+              'gravity on the dust. Switch off the '// &
+              'gravr_profile=''no-smooth'' on particles_init')
            if (lheader) print*, 'dvvp_dt: Newtonian gravity from a fixed central object'
            do k=1,npar_loc
              if (lcartesian_coords) then
                rsph=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2)
-               OO2=rsph**(-3)
+               OO2=rsph**(-3)*gravr
                ggp(1) = -fp(k,ixp)*OO2
                ggp(2) = -fp(k,iyp)*OO2
                ggp(3) = -fp(k,izp)*OO2
                dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
              elseif (lcylindrical_coords) then
                rsph=sqrt(fp(k,ixp)**2 + fp(k,izp)**2)
-               OO2=rsph**(-3)
+               OO2=rsph**(-3)*gravr
                ggp(1) = -fp(k,ixp)*OO2
-               ggp(2) = 0.
+               ggp(2) = 0.0
                ggp(3) = -fp(k,izp)*OO2
                dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
              elseif (lspherical_coords) then
                rsph=fp(k,ixp)
-               OO2=rsph**(-3)
+               OO2=rsph**(-3)*gravr
                ggp(1) = -fp(k,ixp)*OO2
-               ggp(2) = 0.; ggp(3) = 0.
+               ggp(2) = 0.0; ggp(3) = 0.0
                dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
              endif
            enddo
-
+!
         case default
            call fatal_error('dvvp_dt','chosen gravr_profile is not valid!')
 !
