@@ -22,7 +22,7 @@ def read_grid(datadir='data/',proc=-1,ivar=-1,quiet=False,trim=False,format='nat
     and assemble. otherwise, load grid from specified processor.
     """
     datadir = os.path.expanduser(datadir)
-    if (param == None): param = read_param(datadir)
+    if (param == None): param = read_param(datadir,quiet=quiet)
     # global dim
     dim = read_dim(datadir,proc) 
     if dim.precision == 'D':
