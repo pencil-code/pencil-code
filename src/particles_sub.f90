@@ -785,8 +785,8 @@ module Particles_sub
       integer :: npar_loc
       integer, dimension (mpar_loc) :: ipar
 !
-      integer :: i,k,jspec,npar_per_species
-      integer, dimension (0:ncpus-1) :: ipar1, ipar2
+      integer :: i,k,jspec,npar_per_species,npar_rest
+      integer, dimension (0:ncpus-1) :: ipar1, ipar2, npar_loc_array
 !
       intent (inout) :: npar_loc,ipar
 !
@@ -798,9 +798,9 @@ module Particles_sub
 !  it will do for now. The best thing would be to allocate all sink particles
 !  at the root and the rest (if any) distributed evenly 
 !
-      if ((lparticles_nbody).and.(npar==nspar)) then
+      if ( lparticles_nbody.and.(npar==nspar) ) then
         if (lroot) then
-          npar_loc=nspar
+          npar_loc=npar
           !also needs to initialize ipar(k)
           do k=1,nspar
             ipar(k)=k
@@ -809,36 +809,55 @@ module Particles_sub
         endif
         call mpibcast_int(ipar_sink,nspar)
       else
-!  Must be possible to have same number of particles at each processor.
-        if (mod(npar,ncpus)/=0) then
-          if (lroot) then
-            print*, 'dist_particles_evenly_procs: npar must be a '// &
-                'whole multiple of ncpus!'
-            print*, 'npar, ncpus=', npar, ncpus
+!
+!  Place particles evenly on all processors. Some processors may get an extra
+!  particle if the particle number is not divisible by the number of processors.
+!
+        npar_loc =npar/ncpus
+        npar_rest=npar-npar_loc*ncpus
+        do i=0,ncpus-1
+          if (i<npar_rest) then
+            npar_loc_array(i)=npar_loc+1
+          else
+            npar_loc_array(i)=npar_loc
           endif
-          call fatal_error('dist_particles_evenly_procs','')
-        endif
-
-        npar_loc=npar/ncpus
+        enddo
+        npar_loc=npar_loc_array(iproc)
+        if (lroot) print*, 'dist_particles_evenly_procs: npar_loc_array =', &
+            npar_loc_array
+!
+!  If there are zero particles on a processor, set ipar1 and ipar2 to zero.
+!
         if (npar_species==1) then
           do i=0,ncpus-1
-            if (i==0) then
-              ipar1(i)=1
+            if (npar_loc_array(i)==0) then
+              ipar1(i)=0
+              ipar2(i)=0
             else
-              ipar1(i)=ipar2(i-1)+1
+              if (i==0) then
+                ipar1(i)=1
+              else
+                ipar1(i)=maxval(ipar2(0:i-1))+1
+              endif
+              ipar2(i)=ipar1(i) + npar_loc_array(i) - 1
             endif
-            ipar2(i)=ipar1(i) + (npar/ncpus-1) + (ncpus-(i+1)+mod(npar,ncpus))/ncpus
           enddo
 !
           if (lroot) then
-            print*, 'dist_particles_evenly_procs: ipar1=', ipar1
-            print*, 'dist_particles_evenly_procs: ipar2=', ipar2
+            print*, 'dist_particles_evenly_procs: ipar1 =', ipar1
+            print*, 'dist_particles_evenly_procs: ipar2 =', ipar2
           endif
+!
+!  Fill in particle index between ipar1 and ipar2.
+!
           do k=1,npar_loc
             ipar(k)=k-1+ipar1(iproc)
           enddo
         else
-!  Must be possible to have same number of particles at each processor.
+!
+!  Must be possible to have same number of particles of each species at each
+!  processor.
+!
           if (mod(npar_loc,npar_species)/=0) then
             if (lroot) then
               print*, 'dist_particles_evenly_procs: npar_species '// &
@@ -853,7 +872,8 @@ module Particles_sub
           npar_per_species=npar/npar_species
           do jspec=1,npar_species
             if (lroot) &
-                print*, 'dist_particles_evenly_procs: spec', jspec, 'interval:', &
+                print*, 'dist_particles_evenly_procs: spec', jspec, &
+                'interval:', &
                 1+npar_per_species*(jspec-1)+iproc*npar_per_species/ncpus, &
                 npar_per_species*(jspec-1)+(iproc+1)*npar_per_species/ncpus
             do k=1,npar_per_species/ncpus
