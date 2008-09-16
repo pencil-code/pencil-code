@@ -33,7 +33,7 @@ module Particles
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0
   real :: tausg_min=0.0, tausg1_max=0.0, epsp_friction_increase=0.0, cdtp=0.2
   real :: gravx=0.0, gravz=0.0, gravr=0.0, kx_gg=1.0, kz_gg=1.0
-  real :: Ri0=0.25, eps1=0.5
+  real :: gravsmooth=0.0, gravsmooth2=0.0, Ri0=0.25, eps1=0.5
   real :: kx_xxp=0.0, ky_xxp=0.0, kz_xxp=0.0, amplxxp=0.0
   real :: kx_vvp=0.0, ky_vvp=0.0, kz_vvp=0.0, amplvvp=0.0
   real :: kx_vpx=0.0, kx_vpy=0.0, kx_vpz=0.0
@@ -87,7 +87,7 @@ module Particles
       bcpx, bcpy, bcpz, tausp, beta_dPdr_dust, rhop_tilde, &
       eps_dtog, nu_epicycle, &
       gravx_profile, gravz_profile, gravr_profile, &
-      gravx, gravz, gravr, kx_gg, kz_gg, Ri0, eps1, &
+      gravx, gravz, gravr, gravsmooth, kx_gg, kz_gg, Ri0, eps1, &
       lmigration_redo, ldragforce_equi_global_eps, coeff, &
       kx_vvp, ky_vvp, kz_vvp, amplvvp, kx_xxp, ky_xxp, kz_xxp, amplxxp, &
       kx_vpx, kx_vpy, kx_vpz, ky_vpx, ky_vpy, ky_vpz, kz_vpx, kz_vpy, kz_vpz, &
@@ -113,7 +113,7 @@ module Particles
       rhop_tilde, eps_dtog, cdtp, lpar_spec, &
       linterp_reality_check, nu_epicycle, &
       gravx_profile, gravz_profile, gravr_profile, &
-      gravx, gravz, gravr, kx_gg, kz_gg, &
+      gravx, gravz, gravr, gravsmooth, kx_gg, kz_gg, &
       lmigration_redo, tstart_dragforce_par, tstart_grav_par, &
       lparticlemesh_cic, lparticlemesh_tsc, lcollisional_cooling_rms, &
       lcollisional_cooling_twobody, lcollisional_dragforce_cooling, &
@@ -341,6 +341,10 @@ module Particles
 !
       if (gravz_profile=='' .and. nu_epicycle/=0.0) gravz_profile='linear'
       nu_epicycle2=nu_epicycle**2
+!
+!  Calculate gravsmooth**2 for gravity.
+!
+      if (gravsmooth/=0.0) gravsmooth2=gravsmooth2**2
 !
 !  Inverse of minimum gas friction time (time-step control).
 !
@@ -2110,7 +2114,7 @@ k_loop:   do while (.not. (k>npar_loc))
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension(3) :: ggp
-      real :: Omega2, np_tilde, rsph, OO2
+      real :: Omega2, np_tilde, rsph, vsph, OO2
       integer :: k
       logical :: lheader, lfirstcall=.true.
 !
@@ -2216,29 +2220,41 @@ k_loop:   do while (.not. (k>npar_loc))
               call fatal_error('dvvp_dt','You are using massive particles. '//&
               'The N-body code should take care of the stellar-like '// &
               'gravity on the dust. Switch off the '// &
-              'gravr_profile=''no-smooth'' on particles_init')
+              'gravr_profile=''newtonian'' on particles_init')
            if (lheader) print*, 'dvvp_dt: Newtonian gravity from a fixed central object'
            do k=1,npar_loc
              if (lcartesian_coords) then
-               rsph=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2)
+               rsph=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2+gravsmooth2)
                OO2=rsph**(-3)*gravr
                ggp(1) = -fp(k,ixp)*OO2
                ggp(2) = -fp(k,iyp)*OO2
                ggp(3) = -fp(k,izp)*OO2
                dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
+               dt1_max=max(dt1_max,10.0*vsph/rsph)
              elseif (lcylindrical_coords) then
-               rsph=sqrt(fp(k,ixp)**2 + fp(k,izp)**2)
+               rsph=sqrt(fp(k,ixp)**2+fp(k,izp)**2+gravsmooth2)
                OO2=rsph**(-3)*gravr
                ggp(1) = -fp(k,ixp)*OO2
                ggp(2) = 0.0
                ggp(3) = -fp(k,izp)*OO2
                dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
              elseif (lspherical_coords) then
-               rsph=fp(k,ixp)
+               rsph=sqrt(fp(k,ixp)**2+gravsmooth2)
                OO2=rsph**(-3)*gravr
                ggp(1) = -fp(k,ixp)*OO2
                ggp(2) = 0.0; ggp(3) = 0.0
                dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
+             endif
+!  Limit time-step if particles close to gravity source.
+             if (lfirst.and.ldt) then
+               if (lcartesian_coords) then
+                 vsph=sqrt(fp(k,ivpx)**2+fp(k,ivpy)**2+fp(k,ivpz)**2)
+               elseif (lcylindrical_coords) then
+                 vsph=sqrt(fp(k,ivpx)**2+fp(k,ivpz)**2)
+               elseif (lspherical_coords) then
+                 vsph=abs(fp(k,ivpx))
+               endif
+               dt1_max=max(dt1_max,10.0*vsph/rsph)
              endif
            enddo
 !
