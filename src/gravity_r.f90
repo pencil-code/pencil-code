@@ -33,7 +33,6 @@ module Gravity
   endinterface
 
   ! coefficients for potential
-  real, dimension(nx) :: gravx_pencil=0.,gravy_pencil=0.,gravz_pencil=0.
   real, dimension (5,ninit) :: cpot=0. !=(/ 0., 0., 0., 0., 0. /)
   real, dimension(ninit) :: g01=0.,rpot=0.
   real :: nu_epicycle=1.
@@ -55,11 +54,13 @@ module Gravity
 
   integer :: iglobal_gg=0
 
-  namelist /grav_init_pars/ ipotential,g0,r0_pot,r1_pot1,n_pot,n_pot1,lnumerical_equilibrium, &
-       qgshear,lgravity_gas,g01,rpot
+  namelist /grav_init_pars/ &
+      ipotential,g0,r0_pot,r1_pot1,n_pot,n_pot1,lnumerical_equilibrium, &
+      qgshear,lgravity_gas,g01,rpot
 
-  namelist /grav_run_pars/  ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
-       qgshear,lgravity_gas,g01,rpot
+  namelist /grav_run_pars/ &
+      ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
+      qgshear,lgravity_gas,g01,rpot
 
   contains
 
