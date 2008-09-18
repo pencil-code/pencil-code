@@ -816,7 +816,7 @@ module EquationOfState
       rho = EE * cv1 / TT
       if (NO_WARN) print*,yH
 
-    end subroutine getdensity
+    endsubroutine getdensity
 !***********************************************************************
     subroutine get_cp1(cp1_)
 !
@@ -828,7 +828,7 @@ module EquationOfState
 !
       cp1_=cp1
 !
-    end subroutine get_cp1
+    endsubroutine get_cp1
 !***********************************************************************
     subroutine get_ptlaw(ptlaw_)
 !
@@ -839,7 +839,7 @@ module EquationOfState
 !
       ptlaw_=ptlaw
 !
-    end subroutine get_ptlaw
+    endsubroutine get_ptlaw
 !***********************************************************************
     subroutine isothermal_density_ion(pot,tmp)
 !
@@ -848,7 +848,7 @@ module EquationOfState
 !
       tmp=pot
 !
-    end subroutine isothermal_density_ion
+    endsubroutine isothermal_density_ion
 !***********************************************************************
     subroutine pressure_gradient_farray(f,cs2,cp1tilde)
 !
@@ -1067,7 +1067,7 @@ module EquationOfState
       else
         call not_implemented("eosperturb")
       endif
-    end subroutine eosperturb
+    endsubroutine eosperturb
 !***********************************************************************
     subroutine eoscalc_farray(f,psize,lnrho,yH,lnTT,ee,pp,kapparho)
 !
@@ -1417,7 +1417,7 @@ module EquationOfState
 !
       cs2=gamma1*cp*exp(lnTT)
 !
-    end subroutine get_soundspeed
+    endsubroutine get_soundspeed
 !***********************************************************************
     subroutine read_eos_init_pars(unit,iostat)
       integer, intent(in) :: unit
@@ -2389,7 +2389,7 @@ module EquationOfState
       call fatal_error('bc_ss_energy','invalid argument')
     endselect
 
-    end subroutine bc_ss_energy
+    endsubroutine bc_ss_energy
 !***********************************************************************
     subroutine bc_stellar_surface(f,topbot)
 !
@@ -2401,7 +2401,7 @@ module EquationOfState
       call stop_it("bc_stellar_surface: NOT IMPLEMENTED IN EOS_IDEALGAS")
       if (NO_WARN) print*,f,topbot
 !
-    end subroutine bc_stellar_surface
+    endsubroutine bc_stellar_surface
 !***********************************************************************
     subroutine bc_lnrho_cfb_r_iso(f,topbot,j)
 !
@@ -2495,7 +2495,7 @@ module EquationOfState
 
       endselect
 
-    end subroutine bc_lnrho_cfb_r_iso
+    endsubroutine bc_lnrho_cfb_r_iso
 !***********************************************************************
     subroutine bc_lnrho_hds_z_iso(f,topbot)
 !
@@ -2511,49 +2511,53 @@ module EquationOfState
 !    \partial_{z} lnT = 0
 !  at the boundary.
 !
-!
 !  12-Juil-2006/dintrans: coded
 !
       use Cdata
       use Gravity
       use Sub, only: div
-
+!
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
+!
       real, dimension (mx,my) :: cs2
       real, dimension (nx) :: shock,divu
-      real :: dlnrhodz, dssdz
+      real :: dlnrhodz, dssdz, cs2_point
       real :: potp,potm
       integer :: i
 
       select case (topbot)
-
 !
 !  Bottom boundary
 !
       case ('bot')
-
+!
         if (lentropy) then
-
+!
           if (bcz1(iss)/='hs') then
             call fatal_error("bc_lnrho_hydrostatic_z", &
                              "This boundary condition for density is "// &
                              "currently only correct for bcz1(iss)='hs'")
           endif
-
-          dlnrhodz = gamma*gravz/cs2bot
-          dssdz = -gamma1*gravz/cs2bot
+!
+          call eoscalc(ilnrho_ss,f(l1,m1,n1,ilnrho),f(l1,m1,n1,iss), &
+              cs2=cs2_point)
+!
+          dlnrhodz =  gamma *gravz/cs2_point
+          dssdz    = -gamma1*gravz/cs2_point
+!
           do i=1,nghost
             f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) - 2*i*dz*dlnrhodz
             f(:,:,n1-i,iss   ) = f(:,:,n1+i,iss   ) - 2*i*dz*dssdz
           enddo
-
+!
         else
-
+!
           do i=1,nghost
             call potential(z=z(n1-i),pot=potm)
             call potential(z=z(n1+i),pot=potp)
             cs2 = cs2bot
+!
             if (.false.) then
               ! Note: Since boundconds_x and boundconds_y are called first,
               ! this doesn't set the corners properly. However, this is
@@ -2566,37 +2570,42 @@ module EquationOfState
                 cs2(l1:l2,m) = cs2bot - shock*divu
               enddo
             endif
+!
             if (ldensity_nolog) then
               f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho)*exp(-(potm-potp)/cs2)
             else
               f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) - (potm-potp)/cs2
             endif
+!
           enddo
-
+!
         endif
-
 !
 !  Top boundary
 !
       case ('top')
-
+!
         if (lentropy) then
-
+!
           if (bcz2(iss)/='hs') then
             call fatal_error("bc_lnrho_hydrostatic_z", &
                              "This boundary condition for density is "//&
                              "currently only correct for bcz2(iss)='hs'")
           endif
-
-          dlnrhodz = gamma*gravz/cs2top
-          dssdz = -gamma1*gravz/cs2top
+!
+          call eoscalc(ilnrho_ss,f(l1,m1,n1,ilnrho),f(l1,m1,n1,iss), &
+              cs2=cs2_point)
+!
+          dlnrhodz =  gamma *gravz/cs2_point
+          dssdz    = -gamma1*gravz/cs2_point
+!
           do i=1,nghost
             f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho) + 2*i*dz*dlnrhodz
             f(:,:,n2+i,iss   ) = f(:,:,n2-i,iss   ) + 2*i*dz*dssdz
           enddo
-
+!
         else
-
+!
           do i=1,nghost
             call potential(z=z(n2+i),pot=potp)
             call potential(z=z(n2-i),pot=potm)
@@ -2626,8 +2635,8 @@ module EquationOfState
       case default
 
       endselect
-
-    end subroutine bc_lnrho_hds_z_iso
+!
+    endsubroutine bc_lnrho_hds_z_iso
 !***********************************************************************
     subroutine bc_lnrho_hdss_z_iso(f,topbot)
 !
@@ -3028,6 +3037,6 @@ module EquationOfState
 !        
       endselect
 !
-    end subroutine bc_lnrho_hds_z_liso
+    endsubroutine bc_lnrho_hds_z_liso
 !***********************************************************************
 endmodule EquationOfState
