@@ -2325,7 +2325,7 @@ module Particles_sub
       integer :: i1,i2
       real, dimension(mpar_loc,mpvar) :: fp
       integer, dimension(mpar_loc,3) :: ineargrid
-      real, dimension(:), allocatable :: vec
+      real, dimension(:) :: vec
       integer :: policy
 !
       intent(in) :: f,i1,i2,fp,ineargrid, policy
@@ -2344,7 +2344,7 @@ module Particles_sub
       integer :: i1,i2
       real, dimension(mpar_loc,mpvar) :: fp
       integer, dimension(mpar_loc,3) :: ineargrid
-      real, dimension(:,:), allocatable :: vec
+      real, dimension(:,:) :: vec
       integer :: policy
 !
       intent(in) :: f,i1,i2,fp,ineargrid, policy
