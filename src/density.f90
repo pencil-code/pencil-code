@@ -497,6 +497,12 @@ module Density
         case('sinwave-phase')
           call sinwave_phase(f,ilnrho,ampllnrho(iinit),kx_lnrho(iinit), &
               ky_lnrho(iinit),kz_lnrho(iinit),phase_lnrho(iinit))
+        case('sinwave-phase-nolog')
+          do m=m1,m2; do n=n1,n2
+            f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) + &
+                alog(1+amplrho(iinit)*sin(kx_lnrho(iinit)*x(l1:l2)+ &
+                ky_lnrho(iinit)*y(m)+kz_lnrho(iinit)*z(n)+phase_lnrho(iinit)))
+          enddo; enddo
         case('coswave-phase')
           call coswave_phase(f,ilnrho,ampllnrho(iinit),kx_lnrho(iinit), &
               ky_lnrho(iinit),kz_lnrho(iinit),phase_lnrho(iinit))
@@ -521,11 +527,10 @@ module Density
               radius_lnrho(iinit)) 
         case('plaw_gauss_disk'); call power_law_gaussian_disk(f)
         case('gaussian-z')
-          do n=n1,n2
-            f(:,:,n,ilnrho) = f(:,:,n,ilnrho) + &
-                alog(exp(f(:,:,n,ilnrho))+ &
-                ampllnrho(iinit)*(exp(-z(n)**2/(2*radius_lnrho(iinit)**2))))
-          enddo
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) - &
+                z(n)**2/(2*radius_lnrho(iinit)**2)
+          enddo; enddo
         case('gauss-z-offset')
           do n=n1,n2
              f(:,:,n,ilnrho) = f(:,:,n,ilnrho) + &
