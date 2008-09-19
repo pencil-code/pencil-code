@@ -34,13 +34,13 @@ module Density
 
   include 'density.h'
 
-  real :: ampllnrho=0.,widthlnrho=.1,rho_left=1.,rho_right=1.
-  real :: cdiffrho=0.,diffrho=0.,diffrho_hyper3=0.,diffrho_shock=0.
-  real :: lnrho_const=0., rho_const=1.
-  real :: amplrho=0, phase_lnrho=0.0
-  real :: radius_lnrho=.5,kx_lnrho=1.,ky_lnrho=1.,kz_lnrho=1.
-  real :: eps_planet=.5
-  real :: q_ell=5., hh0=0.
+  real, dimension (ninit) :: ampllnrho=0.0, widthlnrho=0.1
+  real, dimension (ninit) :: rho_left=1.0, rho_right=1.0
+  real, dimension (ninit) :: amplrho=0.0, phase_lnrho=0.0, radius_lnrho=0.5
+  real, dimension (ninit) :: kx_lnrho=1.0, ky_lnrho=1.0, kz_lnrho=1.0
+  real :: lnrho_const=0.0, rho_const=1.0
+  real :: cdiffrho=0.0, diffrho=0.0, diffrho_hyper3=0.0, diffrho_shock=0.0
+  real :: eps_planet=0.5, q_ell=5.0, hh0=0.0
   real :: xblob=0., yblob=0., zblob=0.
   real :: co1_ss=0.,co2_ss=0.,Sigma1=150.
   real :: lnrho_int=0.,lnrho_ext=0.,damplnrho_int=0.,damplnrho_ext=0.
@@ -63,7 +63,7 @@ module Density
   logical :: lrho_as_aux=.false., ldiffusion_nolog=.false.
 
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
-  character (len=labellen) :: strati_type='lnrho_ss',initlnrho2='nothing'
+  character (len=labellen) :: strati_type='lnrho_ss'
   character (len=labellen), dimension(ndiff_max) :: idiff=''
   character (len=labellen) :: borderlnrho='nothing'
   character (len=labellen) :: mass_source_profile='cylindric'
@@ -73,25 +73,25 @@ module Density
   integer :: iglobal_gg=0
 
   namelist /density_init_pars/ &
-       ampllnrho,initlnrho,initlnrho2,widthlnrho,                    &
-       rho_left,rho_right,lnrho_const,rho_const,cs2bot,cs2top,       &
-       radius_lnrho,eps_planet,xblob,yblob,zblob,                    &
-       b_ell,q_ell,hh0,rbound,lwrite_stratification,                 &
-       mpoly,strati_type,beta_glnrho_global,radial_percent_smooth,   &
-       kx_lnrho,ky_lnrho,kz_lnrho,amplrho,phase_lnrho,coeflnrho,     &
-       co1_ss,co2_ss,Sigma1,idiff,ldensity_nolog,lexponential_smooth,&
-       wdamp,plaw,lcontinuity_gas,density_floor,lanti_shockdiffusion,&
-       rshift,lrho_as_aux,ldiffusion_nolog,lnrho_z_shift
+      ampllnrho,initlnrho,widthlnrho,                    &
+      rho_left,rho_right,lnrho_const,rho_const,cs2bot,cs2top,       &
+      radius_lnrho,eps_planet,xblob,yblob,zblob,                    &
+      b_ell,q_ell,hh0,rbound,lwrite_stratification,                 &
+      mpoly,strati_type,beta_glnrho_global,radial_percent_smooth,   &
+      kx_lnrho,ky_lnrho,kz_lnrho,amplrho,phase_lnrho,coeflnrho,     &
+      co1_ss,co2_ss,Sigma1,idiff,ldensity_nolog,lexponential_smooth,&
+      wdamp,plaw,lcontinuity_gas,density_floor,lanti_shockdiffusion,&
+      rshift,lrho_as_aux,ldiffusion_nolog,lnrho_z_shift
 
   namelist /density_run_pars/ &
-       cdiffrho,diffrho,diffrho_hyper3,diffrho_shock,                &
-       cs2bot,cs2top,lupw_lnrho,lupw_rho,idiff,lmass_source,         &
-       mass_source_profile, mass_source_Mdot, mass_source_sigma,     &
-       lnrho_int,lnrho_ext,damplnrho_int,damplnrho_ext,              &
-       wdamp,lfreeze_lnrhoint,lfreeze_lnrhoext,                      &
-       lnrho_const,plaw,lcontinuity_gas,borderlnrho,                 &
-       diffrho_hyper3_aniso,lfreeze_lnrhosqu,density_floor,          &
-       lanti_shockdiffusion,lrho_as_aux,ldiffusion_nolog
+      cdiffrho,diffrho,diffrho_hyper3,diffrho_shock,                &
+      cs2bot,cs2top,lupw_lnrho,lupw_rho,idiff,lmass_source,         &
+      mass_source_profile, mass_source_Mdot, mass_source_sigma,     &
+      lnrho_int,lnrho_ext,damplnrho_int,damplnrho_ext,              &
+      wdamp,lfreeze_lnrhoint,lfreeze_lnrhoext,                      &
+      lnrho_const,plaw,lcontinuity_gas,borderlnrho,                 &
+      diffrho_hyper3_aniso,lfreeze_lnrhosqu,density_floor,          &
+      lanti_shockdiffusion,lrho_as_aux,ldiffusion_nolog
 
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_rhom=0       ! DIAG_DOC: $\left<\varrho\right>$
@@ -415,7 +415,8 @@ module Density
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,tmp,pot,prof
-      real :: lnrhoint,cs2int,pot0,lnrho_left,lnrho_right
+      real, dimension (ninit) :: lnrho_left,lnrho_right
+      real :: lnrhoint,cs2int,pot0
       real :: pot_ext,lnrho_ext,cs2_ext,tmp1,k_j2
       real :: zbot,ztop,haut
       real, dimension (nx) :: r_mn,lnrho,TT,ss
@@ -442,471 +443,498 @@ module Density
       lnrho0      = log(rho0)
       lnrho_left  = log(rho_left)
       lnrho_right = log(rho_right)
-
+!
       lnothing=.true.
-
+!
       do iinit=1,ninit
-
-      if (initlnrho(iinit)/='nothing') then
-
-      lnothing=.false.
-
-      call chn(iinit,iinit_str)
-
-      select case(initlnrho(iinit))
-
-      case('zero', '0'); f(:,:,:,ilnrho)=0.
-      case('const_lnrho'); f(:,:,:,ilnrho)=lnrho_const
-      case('const_rho'); f(:,:,:,ilnrho)=log(rho_const)
-      case('constant'); f(:,:,:,ilnrho)=log(rho_left)
-      case('mode'); call modes(ampllnrho,coeflnrho,f,ilnrho,kx_lnrho,ky_lnrho,kz_lnrho,xx,yy,zz)
-      case('blob'); call blob(ampllnrho,f,ilnrho,radius_lnrho,xblob,yblob,zblob)
-      case('blob_hs')
-        call blob(ampllnrho,f,ilnrho,radius_lnrho,xblob,yblob,zblob)
-        call blob(-ampllnrho,f,iss,radius_lnrho,xblob,yblob,zblob)
-
-      case('isothermal'); call isothermal_density(f)
-      case('local-isothermal'); call local_isothermal_density(f)
-      case('power-law'); call power_law_disk(f)
-      case('galactic-disk'); call exponential_fall(f)
-      case('stratification'); call stratification(f,strati_type)
-      case('polytropic_simple'); call polytropic_simple(f)
-      case('hydrostatic-z', '1'); print*, &
-                              'init_lnrho: use polytropic_simple instead!'
-      case('xjump'); call jump(f,ilnrho,lnrho_left,lnrho_right,widthlnrho,'x')
-      case('yjump'); call jump(f,ilnrho,lnrho_left,lnrho_right,widthlnrho,'y')
-      case('zjump'); call jump(f,ilnrho,lnrho_left,lnrho_right,widthlnrho,'z')
-      case('soundwave-x'); call soundwave(ampllnrho,f,ilnrho,kx=kx_lnrho)
-      case('soundwave-y'); call soundwave(ampllnrho,f,ilnrho,ky=ky_lnrho)
-      case('soundwave-z'); call soundwave(ampllnrho,f,ilnrho,kz=kz_lnrho)
-      case('sinwave-phase'); call sinwave_phase(f,ilnrho,ampllnrho,kx_lnrho,ky_lnrho,kz_lnrho,phase_lnrho)
-      case('coswave-phase'); call coswave_phase(f,ilnrho,ampllnrho,kx_lnrho,ky_lnrho,kz_lnrho,phase_lnrho)
-      case('sinwave-x'); call sinwave(ampllnrho,f,ilnrho,kx=kx_lnrho)
-      case('sinwave-y'); call sinwave(ampllnrho,f,ilnrho,ky=ky_lnrho)
-      case('sinwave-z'); call sinwave(ampllnrho,f,ilnrho,kz=kz_lnrho)
-      case('coswave-x'); call coswave(ampllnrho,f,ilnrho,kx=kx_lnrho)
-      case('coswave-y'); call coswave(ampllnrho,f,ilnrho,ky=ky_lnrho)
-      case('coswave-z'); call coswave(ampllnrho,f,ilnrho,kz=kz_lnrho)
-      case('sinx_siny_sinz'); call sinx_siny_sinz(ampllnrho,f,ilnrho,kx_lnrho,ky_lnrho,kz_lnrho)
-      case('corona'); call corona_init(f)
-      case('gaussian3d'); call gaussian3d(ampllnrho,f,ilnrho,xx,yy,zz,radius_lnrho) 
-      case('plaw_gauss_disk'); call power_law_gaussian_disk(f)
-
-      case('gaussian-z')
-        do n=n1,n2
-          f(:,:,n,ilnrho) = f(:,:,n,ilnrho) + &
-              alog(exp(f(:,:,n,ilnrho))+ampllnrho*(exp(-z(n)**2/(2*radius_lnrho**2))))
-        enddo
-
-      case('gauss-z-offset')
-        do n=n1,n2
-           f(:,:,n,ilnrho) = f(:,:,n,ilnrho) + &
-              alog(exp(f(:,:,n,ilnrho))+ampllnrho*(exp(-(z(n)+lnrho_z_shift)**2/(2*radius_lnrho**2))))
-        enddo
-
-      case('gaussian-noise')
-        If (lnrho_left /= 0.) f(:,:,:,ilnrho)=lnrho_left
-        call gaunoise(ampllnrho,f,ilnrho,ilnrho)
-      case('gaussian-noise-x')
-        !
-        !  noise, but just x-dependent
-        !
-        call gaunoise(ampllnrho,f,ilnrho,ilnrho)
-        f(:,:,:,ilnrho)=spread(spread(f(:,4,4,ilnrho),2,my),3,mz) !(watch 1-D)
-
-      case('rho-jump-z', '2')
-        !
-        !  density jump (for shocks)
-        !
-        if (lroot) print*, &
-               'init_lnrho: density jump; rho_left,right=',rho_left,rho_right
-        if (lroot) print*, &
-               'init_lnrho: density jump; widthlnrho=',widthlnrho
-        prof=.5*(1.+tanh(zz/widthlnrho))
-        f(:,:,:,ilnrho)=log(rho_left)+log(rho_left/rho_right)*prof
-
-      case ('hydrostatic-z-2', '3')
-        !
-        !  hydrostatic density stratification for isentropic atmosphere
-        !
-        if (lgravz) then
-          if (lroot) print*,'init_lnrho: vertical density stratification'
-          !        f(:,:,:,ilnrho)=-zz
-          ! isentropic case:
-          !        zmax = -cs20/gamma1/gravz
-          !        print*, 'zmax = ', zmax
-          !        f(:,:,:,ilnrho) = 1./gamma1 * log(abs(1-zz/zmax))
-          ! linear entropy gradient;
-          f(:,:,:,ilnrho) = -grads0*zz &
-                            + 1./gamma1*log( 1 + gamma1*gravz/grads0/cs20 &
-                                                  *(1-exp(-grads0*zz)) )
-        endif
-
-      case ('hydrostatic-r')
-        !
-        !  hydrostatic radial density stratification for isentropic (or
-        !  isothermal) sphere
-        !
-        if (lgravr) then
+!
+        if (initlnrho(iinit)=='nothing') cycle
+!
+        lnothing=.false.
+!
+        call chn(iinit,iinit_str)
+!
+        select case(initlnrho(iinit))
+!
+        case('zero', '0'); f(:,:,:,ilnrho)=0.
+        case('const_lnrho'); f(:,:,:,ilnrho)=lnrho_const
+        case('const_rho'); f(:,:,:,ilnrho)=log(rho_const)
+        case('constant'); f(:,:,:,ilnrho)=log(rho_left(iinit))
+        case('mode')
+          call modes(ampllnrho(iinit),coeflnrho,f,ilnrho,kx_lnrho(iinit), &
+              ky_lnrho(iinit),kz_lnrho(iinit),xx,yy,zz)
+        case('blob')
+          call blob(ampllnrho(iinit),f,ilnrho,radius_lnrho(iinit), &
+              xblob,yblob,zblob)
+        case('blob_hs')
+          call blob(ampllnrho(iinit),f,ilnrho,radius_lnrho(iinit), &
+              xblob,yblob,zblob)
+          call blob(-ampllnrho(iinit),f,iss,radius_lnrho(iinit), &
+              xblob,yblob,zblob)
+        case('isothermal'); call isothermal_density(f)
+        case('local-isothermal'); call local_isothermal_density(f)
+        case('power-law'); call power_law_disk(f)
+        case('galactic-disk'); call exponential_fall(f)
+        case('stratification'); call stratification(f,strati_type)
+        case('polytropic_simple'); call polytropic_simple(f)
+        case('hydrostatic-z', '1')
+          print*, 'init_lnrho: use polytropic_simple instead!'
+        case('xjump')
+          call jump(f,ilnrho,lnrho_left(iinit),lnrho_right(iinit), &
+              widthlnrho(iinit),'x')
+        case('yjump')
+          call jump(f,ilnrho,lnrho_left(iinit),lnrho_right(iinit), &
+              widthlnrho(iinit),'y')
+        case('zjump')
+          call jump(f,ilnrho,lnrho_left(iinit),lnrho_right(iinit), &
+              widthlnrho(iinit),'z')
+        case('soundwave-x')
+          call soundwave(ampllnrho(iinit),f,ilnrho,kx=kx_lnrho(iinit))
+        case('soundwave-y')
+          call soundwave(ampllnrho(iinit),f,ilnrho,ky=ky_lnrho(iinit))
+        case('soundwave-z')
+          call soundwave(ampllnrho(iinit),f,ilnrho,kz=kz_lnrho(iinit))
+        case('sinwave-phase')
+          call sinwave_phase(f,ilnrho,ampllnrho(iinit),kx_lnrho(iinit), &
+              ky_lnrho(iinit),kz_lnrho(iinit),phase_lnrho(iinit))
+        case('coswave-phase')
+          call coswave_phase(f,ilnrho,ampllnrho(iinit),kx_lnrho(iinit), &
+              ky_lnrho(iinit),kz_lnrho(iinit),phase_lnrho(iinit))
+        case('sinwave-x')
+          call sinwave(ampllnrho(iinit),f,ilnrho,kx=kx_lnrho(iinit))
+        case('sinwave-y')
+          call sinwave(ampllnrho(iinit),f,ilnrho,ky=ky_lnrho(iinit))
+        case('sinwave-z')
+          call sinwave(ampllnrho(iinit),f,ilnrho,kz=kz_lnrho(iinit))
+        case('coswave-x')
+          call coswave(ampllnrho(iinit),f,ilnrho,kx=kx_lnrho(iinit))
+        case('coswave-y')
+          call coswave(ampllnrho(iinit),f,ilnrho,ky=ky_lnrho(iinit))
+        case('coswave-z')
+          call coswave(ampllnrho(iinit),f,ilnrho,kz=kz_lnrho(iinit))
+        case('sinx_siny_sinz')
+          call sinx_siny_sinz(ampllnrho(iinit),f,ilnrho,kx_lnrho(iinit), &
+              ky_lnrho(iinit),kz_lnrho(iinit))
+        case('corona'); call corona_init(f)
+        case('gaussian3d')
+          call gaussian3d(ampllnrho(iinit),f,ilnrho,xx,yy,zz, &
+              radius_lnrho(iinit)) 
+        case('plaw_gauss_disk'); call power_law_gaussian_disk(f)
+        case('gaussian-z')
+          do n=n1,n2
+            f(:,:,n,ilnrho) = f(:,:,n,ilnrho) + &
+                alog(exp(f(:,:,n,ilnrho))+ &
+                ampllnrho(iinit)*(exp(-z(n)**2/(2*radius_lnrho(iinit)**2))))
+          enddo
+        case('gauss-z-offset')
+          do n=n1,n2
+             f(:,:,n,ilnrho) = f(:,:,n,ilnrho) + &
+                alog(exp(f(:,:,n,ilnrho))+ &
+                ampllnrho(iinit)*(exp(-(z(n)+lnrho_z_shift)**2/ &
+                (2*radius_lnrho(iinit)**2))))
+          enddo
+        case('gaussian-noise')
+          If (lnrho_left(iinit) /= 0.) f(:,:,:,ilnrho)=lnrho_left(iinit)
+          call gaunoise(ampllnrho(iinit),f,ilnrho,ilnrho)
+        case('gaussian-noise-x')
+!
+!  Noise, but just x-dependent.
+!
+          call gaunoise(ampllnrho(iinit),f,ilnrho,ilnrho)
+          f(:,:,:,ilnrho)=spread(spread(f(:,4,4,ilnrho),2,my),3,mz) !(watch 1-D)
+        case('rho-jump-z', '2')
+!
+!  Density jump (for shocks).
+!
           if (lroot) print*, &
-               'init_lnrho: radial density stratification (assumes s=const)'
-
-          call potential(xx,yy,zz,POT=pot) ! gravity potential
-          call potential(R=r_ref,POT=pot0)
-          call output(trim(directory)//'/pot.dat',pot,1)
-          !
-          ! rho0, cs0, pot0 are the values at r=r_ref
-          !
-          if (gamma /= 1) then  ! isentropic
-            f(:,:,:,ilnrho) = lnrho0 &
-                              + log(1 - gamma1*(pot-pot0)/cs20) / gamma1
-          else                  ! isothermal
-            f(:,:,:,ilnrho) = lnrho0 - (pot-pot0)/cs20
+              'init_lnrho: density jump; rho_left,right=', &
+              rho_left(iinit), rho_right(iinit)
+          if (lroot) print*, &
+              'init_lnrho: density jump; widthlnrho=', widthlnrho(iinit)
+          prof=.5*(1.+tanh(zz/widthlnrho(iinit)))
+          f(:,:,:,ilnrho)=log(rho_left(iinit))+ &
+              log(rho_left(iinit)/rho_right(iinit))*prof
+        case ('hydrostatic-z-2', '3')
+!
+!  Hydrostatic density stratification for isentropic atmosphere.
+!
+          if (lgravz) then
+            if (lroot) print*,'init_lnrho: vertical density stratification'
+            !        f(:,:,:,ilnrho)=-zz
+            ! isentropic case:
+            !        zmax = -cs20/gamma1/gravz
+            !        print*, 'zmax = ', zmax
+            !        f(:,:,:,ilnrho) = 1./gamma1 * log(abs(1-zz/zmax))
+            ! linear entropy gradient;
+            f(:,:,:,ilnrho) = -grads0*zz &
+                              + 1./gamma1*log( 1 + gamma1*gravz/grads0/cs20 &
+                                                    *(1-exp(-grads0*zz)) )
           endif
-
-          !
-          ! the following sets gravity gg in order to achieve numerical
-          ! exact equilibrium at t=0
-          !
-
-          if (lnumerical_equilibrium) call numerical_equilibrium(f)
-
-        endif
-
-      case ('sph_isoth')
-        if (lgravr) then
-          if (lroot) print*, 'init_lnrho: isothermal sphere'
-          haut=cs20/gamma
-          TT=spread(cs20/gamma1,1,nx)
-          do n=n1,n2
-          do m=m1,m2
-            r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
-            f(l1:l2,m,n,ilnrho)=lnrho0-r_mn/haut
-            lnrho=f(l1:l2,m,n,ilnrho)
-            call eoscalc(ilnrho_TT,lnrho,TT,ss=ss)
-            f(l1:l2,m,n,iss)=ss
-          enddo
-          enddo
-        endif
-
-      case ('cylind_isoth')
-        if (lgravr) then
-          if (lroot) print*, 'init_lnrho: isothermal cylindrical ring'
-          haut=cs20/gamma
-          TT=spread(cs20/gamma1,1,nx)
-          do n=n1,n2
-          do m=m1,m2
-            lnrho=lnrho0-(x(l1:l2)-r_ext)/haut
-            f(l1:l2,m,n,ilnrho)=lnrho
-            call eoscalc(ilnrho_TT,lnrho,TT,ss=ss)
-            f(l1:l2,m,n,iss)=ss
-          enddo
-          enddo
-        endif
-
-      case ('isentropic-star')
-        !
-        !  isentropic/isothermal hydrostatic sphere"
-        !    ss  = 0       for r<R,
-        !    cs2 = const   for r>R
-        !
-        !  Only makes sense if both initlnrho=initss='isentropic-star'
-        !
-        if (lgravr) then
-          if (lroot) print*, &
-               'init_lnrho: isentropic star with isothermal atmosphere'
-          call potential(xx,yy,zz,POT=pot,POT0=pot0) ! gravity potential
-          call output(trim(directory)//'/pot.dat',pot,1)
-          !
-          ! rho0, cs0, pot0 are the values in the centre
-          !
-          if (gamma /= 1) then
-            ! Note:
-            ! (a) `where' is expensive, but this is only done at
-            !     initialization.
-            ! (b) Comparing pot with pot_ext instead of r with r_ext will
-            !     only work if grav_r<=0 everywhere -- but that seems
-            !     reasonable.
-            call potential(R=r_ext,POT=pot_ext) ! get pot_ext=pot(r_ext)
-            ! Do consistency check before taking the log() of a potentially
-            ! negative number
-            tmp1 = 1 - gamma1*(pot_ext-pot0)/cs20
-            if (tmp1 <= 0.) then
-              if (lroot) then
-                print*, 'BAD IDEA: Trying to calculate log(', tmp1, ')'
-                print*, '  for r_ext -- need to increase cs20?'
-              endif
-              call error('init_lnrho', 'Imaginary density values')
-            endif
-            lnrho_ext = lnrho0 + log(tmp1) / gamma1
-            cs2_ext   = cs20*tmp1
-            ! Adjust for given cs2cool (if given) or set cs2cool (otherwise)
-            if (cs2cool/=0) then
-              lnrho_ext = lnrho_ext - log(cs2cool/cs2_ext)
-            else
-              cs2cool   = cs2_ext
-            endif
-            ! Add temperature and entropy jump (such that pressure
-            ! remains continuous) if cs2cool was specified in start.in:
-            ! where (sqrt(xx**2+yy**2+zz**2) <= r_ext) ! isentropic for r<r_ext
-            where (pot <= pot_ext) ! isentropic for r<r_ext
+        case ('hydrostatic-r')
+!
+!  Hydrostatic radial density stratification for isentropic (or
+!  isothermal) sphere.
+!
+          if (lgravr) then
+            if (lroot) print*, &
+                 'init_lnrho: radial density stratification (assumes s=const)'
+! 
+            call potential(xx,yy,zz,POT=pot) ! gravity potential
+            call potential(R=r_ref,POT=pot0)
+            call output(trim(directory)//'/pot.dat',pot,1)
+!
+!  rho0, cs0, pot0 are the values at r=r_ref
+!
+            if (gamma /= 1) then  ! isentropic
               f(:,:,:,ilnrho) = lnrho0 &
                                 + log(1 - gamma1*(pot-pot0)/cs20) / gamma1
-            elsewhere           ! isothermal for r>r_ext
-              f(:,:,:,ilnrho) = lnrho_ext - gamma*(pot-pot_ext)/cs2cool
-            endwhere
-          else                  ! gamma=1 --> simply isothermal (I guess [wd])
-            f(:,:,:,ilnrho) = lnrho0 - (pot-pot0)/cs20
-          endif
-        endif
-
-      case ('piecew-poly', '4')
-        !
-        !  piecewise polytropic for stellar convection models
-        !
-        if (lroot) print*, &
-           'init_lnrho: piecewise polytropic vertical stratification (lnrho)'
-        ! top region
-
-        cs2int = cs0**2
-        lnrhoint = lnrho0
-        f(:,:,:,ilnrho) = lnrho0 ! just in case
-        call polytropic_lnrho_z(f,mpoly2,zz,tmp,zref,z2,ztop+Lz, &
-                            isothtop,cs2int,lnrhoint)
-          ! unstable layer
-        call polytropic_lnrho_z(f,mpoly0,zz,tmp,z2,z1,z2,0,cs2int,lnrhoint)
-          ! stable layer
-        call polytropic_lnrho_z(f,mpoly1,zz,tmp,z1,z0,z1,0,cs2int,lnrhoint)
-        !
-        !  calculate cs2bot and cs2top for run.x (boundary conditions)
-        !
-        cs2bot = cs2int + gamma/gamma1*gravz/(mpoly2+1)*(zbot-z0  )
-        if (isothtop /= 0) then
-          cs2top = cs20
-        else
-          cs2top = cs20 + gamma/gamma1*gravz/(mpoly0+1)*(ztop-zref)
-        endif
-
-      case ('piecew-disc', '41')
-        !
-        !  piecewise polytropic for accretion discs
-        !
-        if (lroot) print*, &
-             'init_lnrho: piecewise polytropic disc stratification (lnrho)'
-        ! bottom region
-
-        cs2int = cs0**2
-        lnrhoint = lnrho0
-        f(:,:,:,ilnrho) = lnrho0 ! just in case
-        call polytropic_lnrho_disc(f,mpoly1,zz,tmp,zref,z1,z1, &
-                            0,cs2int,lnrhoint)
-          ! unstable layer
-        call polytropic_lnrho_disc(f,mpoly0,zz,tmp,z1,z2,z2,0,cs2int,lnrhoint)
-          ! stable layer (top)
-        call polytropic_lnrho_disc(f,mpoly2,zz,tmp,z2,ztop,ztop, &
-                                   isothtop,cs2int,lnrhoint)
-        !
-        !  calculate cs2bot and cs2top for run.x (boundary conditions)
-        !
-        !cs2bot = cs2int + gamma/gamma1*gravz*nu_epicycle**2/(mpoly2+1)* &
-        !         (zbot**2-z0**2)/2.
-        cs2bot = cs20
-        if (isothtop /= 0) then
-          cs2top = cs20
-        else
-          cs2top = cs20 + gamma/gamma1*gravz*nu_epicycle**2/(mpoly0+1)* &
-                  (ztop**2-zref**2)/2.
-        endif
-
-      case ('polytropic', '5')
-        !
-        !  polytropic stratification
-        !  cs0, rho0 and ss0=0 refer to height z=zref
-        !
-        if (lroot) print*, &
-                  'init_lnrho: polytropic vertical stratification (lnrho)'
-        !
-        cs2int = cs20
-        lnrhoint = lnrho0
-        f(:,:,:,ilnrho) = lnrho0 ! just in case
-        ! only one layer
-        call polytropic_lnrho_z(f,mpoly0,zz,tmp,zref,z0,z0+2*Lz, &
-             0,cs2int,lnrhoint)
-        !
-        !  calculate cs2bot and cs2top for run.x (boundary conditions)
-        !
-        cs2bot = cs20 + gamma*gravz/(mpoly0+1)*(zbot-zref)
-        cs2top = cs20 + gamma*gravz/(mpoly0+1)*(ztop-zref)
-
-      case('sound-wave', '11')
-        !
-        !  sound wave (should be consistent with hydro module)
-        !
-        if (lroot) print*,'init_lnrho: x-wave in lnrho; ampllnrho=',ampllnrho
-        f(:,:,:,ilnrho)=lnrho_const+ampllnrho*sin(kx_lnrho*xx)
-
-      case('sound-wave-exp')
-        !
-        !  sound wave (should be consistent with hydro module)
-        !
-        if (lroot) print*,'init_lnrho: x-wave in rho; ampllnrho=',ampllnrho
-        f(:,:,:,ilnrho)=log(rho_const+amplrho*sin(kx_lnrho*xx))
-
-      case('sound-wave2')
-        !
-        !  sound wave (should be consistent with hydro module)
-        !
-        if (lroot) print*,'init_lnrho: x-wave in lnrho; ampllnrho=',ampllnrho
-        f(:,:,:,ilnrho)=lnrho_const+ampllnrho*cos(kx_lnrho*xx)
-
-      case('shock-tube', '13')
-        !
-        !  shock tube test (should be consistent with hydro module)
-        !
-        call information('init_lnrho','polytopic standing shock')
-        prof=.5*(1.+tanh(xx/widthlnrho))
-        f(:,:,:,ilnrho)=log(rho_left)+(log(rho_right)-log(rho_left))*prof
-
-      case('sin-xy')
-        !
-        !  sin profile in x and y
-        !
-        call information('init_lnrho','lnrho=sin(x)*sin(y)')
-        f(:,:,:,ilnrho) = &
-             log(rho0) + ampllnrho*sin(kx_lnrho*xx)*sin(ky_lnrho*yy)
-
-      case('sin-xy-rho')
-        !
-        !  sin profile in x and y, but in rho, not ln(rho)
-        !
-        call information('init_lnrho','rho=sin(x)*sin(y)')
-        f(:,:,:,ilnrho) = &
-             log(rho0*(1+ampllnrho*sin(kx_lnrho*xx)*sin(ky_lnrho*yy)))
-
-      case('linear')
-        !
-        !  linear profile in kk.xxx
-        !
-        call information('init_lnrho','linear profile')
-        f(:,:,:,ilnrho) = log(rho0) &
-             + ampllnrho*(kx_lnrho*xx+ky_lnrho*yy+kz_lnrho*zz) &
-               / sqrt(kx_lnrho**2+ky_lnrho**2+kz_lnrho**2)
-
-      case('planet')
-        !
-        !  planet solution of Goodman, Narayan & Goldreich (1987)
-        !  (Simple 3-D)
-        !
-        call planet(rbound,f,xx,yy,zz,eps_planet,radius_lnrho, &
-            gamma,cs20,rho0,widthlnrho,hh0)
-
-      case('planet_hc')
-        !
-        !  planet solution of Goodman, Narayan & Goldreich (1987)
-        !  (3-D with hot corona)
-        !
-        call planet_hc(amplrho,f,xx,yy,zz,eps_planet,radius_lnrho, &
-            gamma,cs20,rho0,widthlnrho)
-
-      case('Ferriere'); call information('init_lnrho','Ferriere set in entropy')
-      case('Galactic-hs'); call information('init_lnrho', &
-           'Galactic hydrostatic equilibrium setup done in entropy')
-
-      case('geo-kws')
-      !
-      ! radial hydrostatic profile in shell region only
-      !
-        call information('init_lnrho','kws hydrostatic in spherical shell region')
-        call shell_lnrho(f)
-
-      case('geo-kws-constant-T','geo-benchmark')
-      !
-      ! radial hydrostatic profile throughout box, which is consistent
-      ! with constant temperature in exterior regions, and gives continuous
-      ! density at shell boundaries
-      !
-        call information('init_lnrho','kws hydrostatic in spherical shell and exterior')
-        call shell_lnrho(f)
-
-     case ('step_xz')
-        call fatal_error('init_lnrho','neutron_star initial condition is now in the special/neutron_star.f90 code')
-
-     case('jeans-wave-x')
-! soundwave + self gravity
-        omega_jeans = sqrt(cmplx(cs20*kx_lnrho**2 - rhs_poisson_const*rho0,0.))/(rho0*kx_lnrho)
-        if (lroot) &
-            print*,'Re(omega_jeans), Im(omega_jeans), Abs(omega_jeans)',&
-            real(omega_jeans),aimag(omega_jeans),abs(omega_jeans)
-
-        f(:,:,:,ilnrho) = lnrho_const + ampllnrho*sin(kx_lnrho*xx+phase_lnrho)
-        if (abs(omega_jeans)/=0.0) then
-          f(:,:,:,iux) = f(:,:,:,iux) &
-             + abs(omega_jeans*ampllnrho) * &
-             sin(kx_lnrho*xx+phase_lnrho+complex_phase(omega_jeans*ampllnrho))
-        else
-          f(:,:,:,iux) = f(:,:,:,iux) + 0.0
-        endif
-
-     case('jeans-wave-oblique')
-! soundwave + self gravity
-        k_j2 = kx_lnrho**2 + ky_lnrho**2 + kz_lnrho**2
-        omega_jeans = sqrt(cmplx(cs20*k_j2 - rhs_poisson_const*rho0,0.))/ &
-            (rho0*sqrt(k_j2))
-        print*,'Re(omega_jeans), Im(omega_jeans), Abs(omega_jeans)',&
-          real(omega_jeans),aimag(omega_jeans),abs(omega_jeans)
-
-        f(:,:,:,ilnrho) = lnrho_const + &
-          ampllnrho*sin(kx_lnrho*xx + ky_lnrho*yy + kz_lnrho*zz)
-        if (kx_lnrho .ne. 0) &
-             f(:,:,:,iux) = f(:,:,:,iux) &
-             + abs(omega_jeans*ampllnrho) * &
-             sin(kx_lnrho*xx+complex_phase(omega_jeans*ampllnrho))
-        if (ky_lnrho .ne. 0) &
-             f(:,:,:,iuy) = f(:,:,:,iuy) &
-             + abs(omega_jeans*ampllnrho) * &
-             sin(ky_lnrho*yy+complex_phase(omega_jeans*ampllnrho))
-        if (kz_lnrho .ne. 0) &
-             f(:,:,:,iuz) = f(:,:,:,iuz) &
-             + abs(omega_jeans*ampllnrho) * &
-             sin(kz_lnrho*zz+complex_phase(omega_jeans*ampllnrho))
-
-     case('toomre-wave-x')
-! soundwave + self gravity + (differential) rotation
-        omega_jeans = sqrt(cmplx(cs20*kx_lnrho**2 + Omega**2 - rhs_poisson_const*rho0,0.))/(rho0*kx_lnrho)
-
-        print*,'Re(omega_jeans), Im(omega_jeans), Abs(omega_jeans)',&
-          real(omega_jeans),aimag(omega_jeans),abs(omega_jeans)
-
-        f(:,:,:,ilnrho) = lnrho_const + &
-          ampllnrho*sin(kx_lnrho*xx)
-        f(:,:,:,iux) = f(:,:,:,iux) &
-             + abs(omega_jeans*ampllnrho) * &
-             sin(kx_lnrho*xx+complex_phase(omega_jeans*ampllnrho))
-        f(:,:,:,iuy) = f(:,:,:,iuy) &
-             + abs(ampllnrho*cmplx(0,-0.5*Omega/(kx_lnrho*rho0))) * &
-             sin(kx_lnrho*xx+complex_phase(ampllnrho*cmplx(0,-0.5*Omega/(kx_lnrho*rho0))))
-
-      case('compressive-shwave')
-        ! should be consistent with density 
-        f(:,:,:,ilnrho) = log(rho_const + f(:,:,:,ilnrho))
+            else                  ! isothermal
+              f(:,:,:,ilnrho) = lnrho0 - (pot-pot0)/cs20
+            endif
 !
-      case default
-        !
-        !  Catch unknown values
-        !
-        write(unit=errormsg,fmt=*) 'No such value for initlnrho(' &
-                          //trim(iinit_str)//'): ',trim(initlnrho(iinit))
-        call fatal_error('init_lnrho',errormsg)
-
-      endselect
-
-      if (lroot) print*,'init_lnrho: initlnrho(' &
-                        //trim(iinit_str)//') = ',trim(initlnrho(iinit))
-
-      endif
-
-      enddo
-
+!  The following sets gravity gg in order to achieve numerical
+!  exact equilibrium at t=0.
+!
+            if (lnumerical_equilibrium) call numerical_equilibrium(f)
+ 
+          endif
+        case ('sph_isoth')
+          if (lgravr) then
+            if (lroot) print*, 'init_lnrho: isothermal sphere'
+            haut=cs20/gamma
+            TT=spread(cs20/gamma1,1,nx)
+            do n=n1,n2
+            do m=m1,m2
+              r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+              f(l1:l2,m,n,ilnrho)=lnrho0-r_mn/haut
+              lnrho=f(l1:l2,m,n,ilnrho)
+              call eoscalc(ilnrho_TT,lnrho,TT,ss=ss)
+              f(l1:l2,m,n,iss)=ss
+            enddo
+            enddo
+          endif
+        case ('cylind_isoth')
+          if (lgravr) then
+            if (lroot) print*, 'init_lnrho: isothermal cylindrical ring'
+            haut=cs20/gamma
+            TT=spread(cs20/gamma1,1,nx)
+            do n=n1,n2
+            do m=m1,m2
+              lnrho=lnrho0-(x(l1:l2)-r_ext)/haut
+              f(l1:l2,m,n,ilnrho)=lnrho
+              call eoscalc(ilnrho_TT,lnrho,TT,ss=ss)
+              f(l1:l2,m,n,iss)=ss
+            enddo
+            enddo
+          endif
+        case ('isentropic-star')
+!
+!  Isentropic/isothermal hydrostatic sphere"
+!    ss  = 0       for r<R,
+!    cs2 = const   for r>R
+!
+!  Only makes sense if both initlnrho=initss='isentropic-star'
+!
+          if (lgravr) then
+            if (lroot) print*, &
+                 'init_lnrho: isentropic star with isothermal atmosphere'
+            call potential(xx,yy,zz,POT=pot,POT0=pot0) ! gravity potential
+            call output(trim(directory)//'/pot.dat',pot,1)
+!
+!  rho0, cs0, pot0 are the values in the centre
+!
+            if (gamma /= 1) then
+!  Note:
+!  (a) `where' is expensive, but this is only done at
+!      initialization.
+!  (b) Comparing pot with pot_ext instead of r with r_ext will
+!      only work if grav_r<=0 everywhere -- but that seems
+!      reasonable.
+              call potential(R=r_ext,POT=pot_ext) ! get pot_ext=pot(r_ext)
+!  Do consistency check before taking the log() of a potentially
+!  negative number
+              tmp1 = 1 - gamma1*(pot_ext-pot0)/cs20
+              if (tmp1 <= 0.) then
+                if (lroot) then
+                  print*, 'BAD IDEA: Trying to calculate log(', tmp1, ')'
+                  print*, '  for r_ext -- need to increase cs20?'
+                endif
+                call error('init_lnrho', 'Imaginary density values')
+              endif
+              lnrho_ext = lnrho0 + log(tmp1) / gamma1
+              cs2_ext   = cs20*tmp1
+!  Adjust for given cs2cool (if given) or set cs2cool (otherwise)
+              if (cs2cool/=0) then
+                lnrho_ext = lnrho_ext - log(cs2cool/cs2_ext)
+              else
+                cs2cool   = cs2_ext
+              endif
+!  Add temperature and entropy jump (such that pressure
+!  remains continuous) if cs2cool was specified in start.in:
+!  where (sqrt(xx**2+yy**2+zz**2) <= r_ext) ! isentropic for r<r_ext
+              where (pot <= pot_ext) ! isentropic for r<r_ext
+                f(:,:,:,ilnrho) = lnrho0 &
+                                  + log(1 - gamma1*(pot-pot0)/cs20) / gamma1
+              elsewhere           ! isothermal for r>r_ext
+                f(:,:,:,ilnrho) = lnrho_ext - gamma*(pot-pot_ext)/cs2cool
+              endwhere
+            else                  ! gamma=1 --> simply isothermal (I guess [wd])
+              f(:,:,:,ilnrho) = lnrho0 - (pot-pot0)/cs20
+            endif
+          endif
+        case ('piecew-poly', '4')
+!
+!  Piecewise polytropic for stellar convection models.
+!
+          if (lroot) print*, &
+             'init_lnrho: piecewise polytropic vertical stratification (lnrho)'
+!  Top region.
+          cs2int = cs0**2
+          lnrhoint = lnrho0
+          f(:,:,:,ilnrho) = lnrho0 ! just in case
+          call polytropic_lnrho_z(f,mpoly2,zz,tmp,zref,z2,ztop+Lz, &
+                                  isothtop,cs2int,lnrhoint)
+!  Unstable layer.
+          call polytropic_lnrho_z(f,mpoly0,zz,tmp,z2,z1,z2,0,cs2int,lnrhoint)
+!  Stable layer.
+          call polytropic_lnrho_z(f,mpoly1,zz,tmp,z1,z0,z1,0,cs2int,lnrhoint)
+!
+!  Calculate cs2bot and cs2top for run.x (boundary conditions).
+!
+          cs2bot = cs2int + gamma/gamma1*gravz/(mpoly2+1)*(zbot-z0  )
+          if (isothtop /= 0) then
+            cs2top = cs20
+          else
+            cs2top = cs20 + gamma/gamma1*gravz/(mpoly0+1)*(ztop-zref)
+          endif
+        case ('piecew-disc', '41')
+!
+!  Piecewise polytropic for accretion discs.
+!
+          if (lroot) print*, &
+               'init_lnrho: piecewise polytropic disc stratification (lnrho)'
+!  Bottom region.
+          cs2int = cs0**2
+          lnrhoint = lnrho0
+          f(:,:,:,ilnrho) = lnrho0 ! just in case
+          call polytropic_lnrho_disc(f,mpoly1,zz,tmp,zref,z1,z1, &
+                              0,cs2int,lnrhoint)
+!  Unstable layer.
+          call polytropic_lnrho_disc(f,mpoly0,zz,tmp,z1,z2,z2,0,cs2int,lnrhoint)
+!  Stable layer (top).
+          call polytropic_lnrho_disc(f,mpoly2,zz,tmp,z2,ztop,ztop, &
+                                     isothtop,cs2int,lnrhoint)
+!
+!  Calculate cs2bot and cs2top for run.x (boundary conditions).
+!
+!  cs2bot = cs2int + gamma/gamma1*gravz*nu_epicycle**2/(mpoly2+1)* &
+!         (zbot**2-z0**2)/2.
+          cs2bot = cs20
+          if (isothtop /= 0) then
+            cs2top = cs20
+          else
+            cs2top = cs20 + gamma/gamma1*gravz*nu_epicycle**2/(mpoly0+1)* &
+                    (ztop**2-zref**2)/2.
+          endif
+        case ('polytropic', '5')
+!
+!  Polytropic stratification.
+!  cs0, rho0 and ss0=0 refer to height z=zref
+!
+          if (lroot) print*, &
+                    'init_lnrho: polytropic vertical stratification (lnrho)'
+!
+          cs2int = cs20
+          lnrhoint = lnrho0
+          f(:,:,:,ilnrho) = lnrho0 ! just in case
+!  Only one layer.
+          call polytropic_lnrho_z(f,mpoly0,zz,tmp,zref,z0,z0+2*Lz, &
+               0,cs2int,lnrhoint)
+!
+!  Calculate cs2bot and cs2top for run.x (boundary conditions).
+!
+          cs2bot = cs20 + gamma*gravz/(mpoly0+1)*(zbot-zref)
+          cs2top = cs20 + gamma*gravz/(mpoly0+1)*(ztop-zref)
+        case('sound-wave', '11')
+!
+!  Sound wave (should be consistent with hydro module).
+!
+          if (lroot) print*,'init_lnrho: x-wave in lnrho; ampllnrho=', &
+              ampllnrho(iinit)
+          f(:,:,:,ilnrho)=lnrho_const+ampllnrho(iinit)*sin(kx_lnrho(iinit)*xx)
+        case('sound-wave-exp')
+!
+!  Sound wave (should be consistent with hydro module).
+!
+          if (lroot) print*,'init_lnrho: x-wave in rho; ampllnrho=', &
+              ampllnrho(iinit)
+          f(:,:,:,ilnrho)=log(rho_const+amplrho(iinit)*sin(kx_lnrho(iinit)*xx))
+        case('sound-wave2')
+!
+!  Sound wave (should be consistent with hydro module).
+!
+          if (lroot) print*,'init_lnrho: x-wave in lnrho; ampllnrho=', &
+              ampllnrho(iinit)
+          f(:,:,:,ilnrho)=lnrho_const+ampllnrho(iinit)*cos(kx_lnrho(iinit)*xx)
+        case('shock-tube', '13')
+!
+!  Shock tube test (should be consistent with hydro module).
+!
+          call information('init_lnrho','polytopic standing shock')
+          prof=.5*(1.+tanh(xx/widthlnrho(iinit)))
+          f(:,:,:,ilnrho)=log(rho_left(iinit))+ &
+              (log(rho_right(iinit))-log(rho_left(iinit)))*prof
+        case('sin-xy')
+!
+!  sin profile in x and y.
+!
+          call information('init_lnrho','lnrho=sin(x)*sin(y)')
+          f(:,:,:,ilnrho)=log(rho0) + &
+              ampllnrho(iinit)*sin(kx_lnrho(iinit)*xx)*sin(ky_lnrho(iinit)*yy)
+        case('sin-xy-rho')
+!
+!  sin profile in x and y, but in rho, not ln(rho).
+!
+          call information('init_lnrho','rho=sin(x)*sin(y)')
+          f(:,:,:,ilnrho)=log(rho0*(1+ &
+              ampllnrho(iinit)*sin(kx_lnrho(iinit)*xx)*sin(ky_lnrho(iinit)*yy)))
+ 
+        case('linear')
+!
+!  Linear profile in kk.xxx.
+!
+          call information('init_lnrho','linear profile')
+          f(:,:,:,ilnrho) = log(rho0) + &
+              ampllnrho(iinit)*(kx_lnrho(iinit)*xx+ &
+              ky_lnrho(iinit)*yy+kz_lnrho(iinit)*zz)/ &
+              sqrt(kx_lnrho(iinit)**2+ky_lnrho(iinit)**2+kz_lnrho(iinit)**2)
+        case('planet')
+!
+!  Planet solution of Goodman, Narayan & Goldreich (1987).
+!  (Simple 3-D)
+!
+          call planet(rbound,f,xx,yy,zz,eps_planet,radius_lnrho(iinit), &
+              gamma,cs20,rho0,widthlnrho(iinit),hh0)
+        case('planet_hc')
+!
+!  Planet solution of Goodman, Narayan & Goldreich (1987).
+!  (3-D with hot corona)
+!
+          call planet_hc(amplrho(iinit),f,xx,yy,zz,eps_planet, &
+              radius_lnrho(iinit), gamma,cs20,rho0,widthlnrho(iinit))
+        case('Ferriere')
+          call information('init_lnrho','Ferriere set in entropy')
+        case('Galactic-hs')
+          call information('init_lnrho', &
+              'Galactic hydrostatic equilibrium setup done in entropy')
+        case('geo-kws')
+!
+!  Radial hydrostatic profile in shell region only.
+!
+          call information('init_lnrho', &
+              'kws hydrostatic in spherical shell region')
+          call shell_lnrho(f)
+        case('geo-kws-constant-T','geo-benchmark')
+!
+!  Radial hydrostatic profile throughout box, which is consistent
+!  with constant temperature in exterior regions, and gives continuous
+!  density at shell boundaries.
+!
+          call information('init_lnrho', &
+              'kws hydrostatic in spherical shell and exterior')
+          call shell_lnrho(f)
+        case ('step_xz')
+          call fatal_error('init_lnrho','neutron_star initial condition '// &
+              'is now in the special/neutron_star.f90 code')
+        case('jeans-wave-x')
+!
+!  Soundwave + self gravity.
+!
+          omega_jeans = sqrt(cmplx(cs20*kx_lnrho(iinit)**2 - &
+              rhs_poisson_const*rho0,0.))/(rho0*kx_lnrho(iinit))
+          if (lroot) &
+              print*,'Re(omega_jeans), Im(omega_jeans), Abs(omega_jeans)',&
+              real(omega_jeans),aimag(omega_jeans),abs(omega_jeans)
+!
+          f(:,:,:,ilnrho) = lnrho_const + &
+              ampllnrho(iinit)*sin(kx_lnrho(iinit)*xx+phase_lnrho(iinit))
+          if (abs(omega_jeans)/=0.0) then
+            f(:,:,:,iux) = f(:,:,:,iux) &
+               + abs(omega_jeans*ampllnrho(iinit)) * &
+               sin(kx_lnrho(iinit)*xx+phase_lnrho(iinit)+ &
+               complex_phase(omega_jeans*ampllnrho(iinit)))
+          else
+            f(:,:,:,iux) = f(:,:,:,iux) + 0.0
+          endif
+        case('jeans-wave-oblique')
+!
+!  Soundwave + self gravity.
+!
+          k_j2 = kx_lnrho(iinit)**2 + ky_lnrho(iinit)**2 + kz_lnrho(iinit)**2
+          omega_jeans = sqrt(cmplx(cs20*k_j2 - rhs_poisson_const*rho0,0.))/ &
+              (rho0*sqrt(k_j2))
+          print*,'Re(omega_jeans), Im(omega_jeans), Abs(omega_jeans)',&
+              real(omega_jeans),aimag(omega_jeans),abs(omega_jeans)
+! 
+          f(:,:,:,ilnrho) = lnrho_const + &
+            ampllnrho(iinit)*sin(kx_lnrho(iinit)*xx + &
+            ky_lnrho(iinit)*yy + kz_lnrho(iinit)*zz)
+          if (kx_lnrho(iinit)/=0) &
+              f(:,:,:,iux) = f(:,:,:,iux) + &
+              abs(omega_jeans*ampllnrho(iinit)) * &
+              sin(kx_lnrho(iinit)*xx + &
+              complex_phase(omega_jeans*ampllnrho(iinit)))
+          if (ky_lnrho(iinit)/=0) &
+              f(:,:,:,iuy) = f(:,:,:,iuy) + &
+              abs(omega_jeans*ampllnrho(iinit)) * &
+              sin(ky_lnrho(iinit)*yy + &
+              complex_phase(omega_jeans*ampllnrho(iinit)))
+          if (kz_lnrho(iinit)/=0) &
+              f(:,:,:,iuz) = f(:,:,:,iuz) + &
+              abs(omega_jeans*ampllnrho(iinit)) * &
+              sin(kz_lnrho(iinit)*zz + &
+              complex_phase(omega_jeans*ampllnrho(iinit)))
+        case('toomre-wave-x')
+!
+!  Soundwave + self gravity + (differential) rotation.
+!
+          omega_jeans = sqrt(cmplx(cs20*kx_lnrho(iinit)**2 + &
+              Omega**2 - rhs_poisson_const*rho0,0.))/(rho0*kx_lnrho(iinit))
+!
+          print*,'Re(omega_jeans), Im(omega_jeans), Abs(omega_jeans)',&
+              real(omega_jeans),aimag(omega_jeans),abs(omega_jeans)
+!
+          f(:,:,:,ilnrho) = lnrho_const + &
+            ampllnrho(iinit)*sin(kx_lnrho(iinit)*xx)
+          f(:,:,:,iux) = f(:,:,:,iux) + &
+              abs(omega_jeans*ampllnrho(iinit)) * &
+              sin(kx_lnrho(iinit)*xx+ &
+              complex_phase(omega_jeans*ampllnrho(iinit)))
+          f(:,:,:,iuy) = f(:,:,:,iuy) + &
+               abs(ampllnrho(iinit)* &
+               cmplx(0,-0.5*Omega/(kx_lnrho(iinit)*rho0))) * &
+               sin(kx_lnrho(iinit)*xx+ &
+               complex_phase(ampllnrho(iinit)* &
+               cmplx(0,-0.5*Omega/(kx_lnrho(iinit)*rho0))))
+        case('compressive-shwave')
+!  Should be consistent with density 
+          f(:,:,:,ilnrho) = log(rho_const + f(:,:,:,ilnrho))
+!
+        case default
+!
+!  Catch unknown values
+!
+          write(unit=errormsg,fmt=*) 'No such value for initlnrho(' &
+                            //trim(iinit_str)//'): ',trim(initlnrho(iinit))
+          call fatal_error('init_lnrho',errormsg)
+ 
+        endselect
+!
+        if (lroot) print*,'init_lnrho: initlnrho(' &
+            //trim(iinit_str)//') = ',trim(initlnrho(iinit))
+!
+      enddo  ! End loop over initial conditions.
+!
       if (lnothing.and.lroot) print*,'init_lnrho: nothing'
 !
 !  check that cs2bot,cs2top are ok
@@ -918,35 +946,6 @@ module Density
       else
         if(lroot) print*,'init_lnrho: cs2bot,cs2top=',cs2bot,cs2top
       endif
-!
-!  Add some structures to the lnrho initialized above
-!  Tobi: This is only kept for backwards compatibility
-!
-      select case(initlnrho2)
-
-      case('nothing')
-
-        if (lroot.and.ip<=5) print*,"init_lnrho: initlnrho2='nothing'"
-
-      case('addblob')
-
-        if (lroot) print*,'init_lnrho: add blob'
-        if (lroot) print*,'initlnrho2 is deprecated. '// &
-                          "use initlnrho='initcond1','initcond2' instead"
-        f(:,:,:,ilnrho)=f(:,:,:,ilnrho) &
-          +ampllnrho*exp(-(xx**2+yy**2+zz**2)/radius_lnrho**2)
-
-
-
-
-
-      case default
-
-        write(unit=errormsg,fmt=*) 'init_lnrho: No such value for initlnrho2: ', &
-                          trim(initlnrho2)
-        call fatal_error('init_lnrho',errormsg)
-
-      endselect
 !
 !  If unlogarithmic density considered, take exp of lnrho resulting from
 !  initlnrho
@@ -1013,7 +1012,7 @@ module Density
       ! smoothly blend the old value (above zblend) and the new one (below
       ! zblend) for the two regions:
       !
-      stp = step(z,zblend,widthlnrho)
+      stp = step(z,zblend,widthlnrho(1))
       p = spread(spread(stp,1,mx),2,my)
       f(:,:,:,ilnrho) = p*f(:,:,:,ilnrho) + (1-p)*tmp
 !
@@ -1071,7 +1070,7 @@ module Density
       ! smoothly blend the old value (above zblend) and the new one (below
       ! zblend) for the two regions:
       !
-      stp = step(z,zblend,widthlnrho)
+      stp = step(z,zblend,widthlnrho(1))
       p = spread(spread(stp,1,mx),2,my)
       f(:,:,:,ilnrho) = p*f(:,:,:,ilnrho) + (1-p)*tmp
 !
