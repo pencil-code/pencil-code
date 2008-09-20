@@ -396,38 +396,40 @@ module Density
 !***********************************************************************
     subroutine init_lnrho(f,xx,yy,zz)
 !
-!  initialise lnrho; called from start.f90
+!  Initialise logarithmic or non-logarithmic density.
 !
-!  7-nov-01/wolf: coded
-! 28-jun-02/axel: added isothermal
-! 15-oct-03/dave: added spherical shell (kws)
+!   7-nov-01/wolf: coded
+!  28-jun-02/axel: added isothermal
+!  15-oct-03/dave: added spherical shell (kws)
 !
+      use EquationOfState
       use General, only: chn,complex_phase
       use Gravity, only: zref,z1,z2,gravz,nu_epicycle,potential, &
-                          lnumerical_equilibrium
-      use Selfgravity,only: rhs_poisson_const
+                         lnumerical_equilibrium
       use Initcond
       use Initcond_spec
       use IO
       use Mpicomm
+      use Selfgravity, only: rhs_poisson_const
       use Sub
-      use EquationOfState
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz,tmp,pot,prof
+      real, dimension (mx,my,mz) :: xx,yy,zz
+!      
+      real, dimension (mx,my,mz) :: tmp,pot,prof
       real, dimension (ninit) :: lnrho_left,lnrho_right
       real :: lnrhoint,cs2int,pot0
       real :: pot_ext,lnrho_ext,cs2_ext,tmp1,k_j2
       real :: zbot,ztop,haut
       real, dimension (nx) :: r_mn,lnrho,TT,ss
-      logical :: lnothing
       complex :: omega_jeans=(0.,0.)
+      integer :: j
+      logical :: lnothing
 !
       intent(inout) :: f
       intent(in)    :: xx,yy,zz
-
 !
-!  define bottom and top height
+!  Define bottom and top height.
 !
       zbot=xyz0(3)
       ztop=xyz0(3)+Lxyz(3)
@@ -437,8 +439,7 @@ module Density
 !
       cs2top=cs20; cs2bot=cs20
 !
-!  different initializations of lnrho (called from start).
-!  If initrho does't match, f=0 is assumed (default).
+!  Different initializations of lnrho (called from start).
 !
       lnrho0      = log(rho0)
       lnrho_left  = log(rho_left)
@@ -446,31 +447,28 @@ module Density
 !
       lnothing=.true.
 !
-      do iinit=1,ninit
+      do j=1,ninit
 !
-        if (initlnrho(iinit)=='nothing') cycle
+        if (initlnrho(j)=='nothing') cycle
 !
         lnothing=.false.
 !
-        call chn(iinit,iinit_str)
+        call chn(j,iinit_str)
 !
-        select case(initlnrho(iinit))
+        select case(initlnrho(j))
 !
         case('zero', '0'); f(:,:,:,ilnrho)=0.
         case('const_lnrho'); f(:,:,:,ilnrho)=lnrho_const
         case('const_rho'); f(:,:,:,ilnrho)=log(rho_const)
-        case('constant'); f(:,:,:,ilnrho)=log(rho_left(iinit))
+        case('constant'); f(:,:,:,ilnrho)=log(rho_left(j))
         case('mode')
-          call modes(ampllnrho(iinit),coeflnrho,f,ilnrho,kx_lnrho(iinit), &
-              ky_lnrho(iinit),kz_lnrho(iinit),xx,yy,zz)
+          call modes(ampllnrho(j),coeflnrho,f,ilnrho,kx_lnrho(j), &
+              ky_lnrho(j),kz_lnrho(j),xx,yy,zz)
         case('blob')
-          call blob(ampllnrho(iinit),f,ilnrho,radius_lnrho(iinit), &
-              xblob,yblob,zblob)
+          call blob(ampllnrho(j),f,ilnrho,radius_lnrho(j),xblob,yblob,zblob)
         case('blob_hs')
-          call blob(ampllnrho(iinit),f,ilnrho,radius_lnrho(iinit), &
-              xblob,yblob,zblob)
-          call blob(-ampllnrho(iinit),f,iss,radius_lnrho(iinit), &
-              xblob,yblob,zblob)
+          call blob(ampllnrho(j),f,ilnrho,radius_lnrho(j),xblob,yblob,zblob)
+          call blob(-ampllnrho(j),f,iss,radius_lnrho(j),xblob,yblob,zblob)
         case('isothermal'); call isothermal_density(f)
         case('local-isothermal'); call local_isothermal_density(f)
         case('power-law'); call power_law_disk(f)
@@ -480,85 +478,79 @@ module Density
         case('hydrostatic-z', '1')
           print*, 'init_lnrho: use polytropic_simple instead!'
         case('xjump')
-          call jump(f,ilnrho,lnrho_left(iinit),lnrho_right(iinit), &
-              widthlnrho(iinit),'x')
+          call jump(f,ilnrho,lnrho_left(j),lnrho_right(j),widthlnrho(j),'x')
         case('yjump')
-          call jump(f,ilnrho,lnrho_left(iinit),lnrho_right(iinit), &
-              widthlnrho(iinit),'y')
+          call jump(f,ilnrho,lnrho_left(j),lnrho_right(j),widthlnrho(j),'y')
         case('zjump')
-          call jump(f,ilnrho,lnrho_left(iinit),lnrho_right(iinit), &
-              widthlnrho(iinit),'z')
+          call jump(f,ilnrho,lnrho_left(j),lnrho_right(j),widthlnrho(j),'z')
         case('soundwave-x')
-          call soundwave(ampllnrho(iinit),f,ilnrho,kx=kx_lnrho(iinit))
+          call soundwave(ampllnrho(j),f,ilnrho,kx=kx_lnrho(j))
         case('soundwave-y')
-          call soundwave(ampllnrho(iinit),f,ilnrho,ky=ky_lnrho(iinit))
+          call soundwave(ampllnrho(j),f,ilnrho,ky=ky_lnrho(j))
         case('soundwave-z')
-          call soundwave(ampllnrho(iinit),f,ilnrho,kz=kz_lnrho(iinit))
+          call soundwave(ampllnrho(j),f,ilnrho,kz=kz_lnrho(j))
         case('sinwave-phase')
-          call sinwave_phase(f,ilnrho,ampllnrho(iinit),kx_lnrho(iinit), &
-              ky_lnrho(iinit),kz_lnrho(iinit),phase_lnrho(iinit))
+          call sinwave_phase(f,ilnrho,ampllnrho(j),kx_lnrho(j), &
+              ky_lnrho(j),kz_lnrho(j),phase_lnrho(j))
         case('sinwave-phase-nolog')
           do m=m1,m2; do n=n1,n2
             f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) + &
-                alog(1+amplrho(iinit)*sin(kx_lnrho(iinit)*x(l1:l2)+ &
-                ky_lnrho(iinit)*y(m)+kz_lnrho(iinit)*z(n)+phase_lnrho(iinit)))
+                alog(1+amplrho(j)*sin(kx_lnrho(j)*x(l1:l2)+ &
+                ky_lnrho(j)*y(m)+kz_lnrho(j)*z(n)+phase_lnrho(j)))
           enddo; enddo
         case('coswave-phase')
-          call coswave_phase(f,ilnrho,ampllnrho(iinit),kx_lnrho(iinit), &
-              ky_lnrho(iinit),kz_lnrho(iinit),phase_lnrho(iinit))
+          call coswave_phase(f,ilnrho,ampllnrho(j),kx_lnrho(j), &
+              ky_lnrho(j),kz_lnrho(j),phase_lnrho(j))
         case('sinwave-x')
-          call sinwave(ampllnrho(iinit),f,ilnrho,kx=kx_lnrho(iinit))
+          call sinwave(ampllnrho(j),f,ilnrho,kx=kx_lnrho(j))
         case('sinwave-y')
-          call sinwave(ampllnrho(iinit),f,ilnrho,ky=ky_lnrho(iinit))
+          call sinwave(ampllnrho(j),f,ilnrho,ky=ky_lnrho(j))
         case('sinwave-z')
-          call sinwave(ampllnrho(iinit),f,ilnrho,kz=kz_lnrho(iinit))
+          call sinwave(ampllnrho(j),f,ilnrho,kz=kz_lnrho(j))
         case('coswave-x')
-          call coswave(ampllnrho(iinit),f,ilnrho,kx=kx_lnrho(iinit))
+          call coswave(ampllnrho(j),f,ilnrho,kx=kx_lnrho(j))
         case('coswave-y')
-          call coswave(ampllnrho(iinit),f,ilnrho,ky=ky_lnrho(iinit))
+          call coswave(ampllnrho(j),f,ilnrho,ky=ky_lnrho(j))
         case('coswave-z')
-          call coswave(ampllnrho(iinit),f,ilnrho,kz=kz_lnrho(iinit))
+          call coswave(ampllnrho(j),f,ilnrho,kz=kz_lnrho(j))
         case('sinx_siny_sinz')
-          call sinx_siny_sinz(ampllnrho(iinit),f,ilnrho,kx_lnrho(iinit), &
-              ky_lnrho(iinit),kz_lnrho(iinit))
+          call sinx_siny_sinz(ampllnrho(j),f,ilnrho, &
+              kx_lnrho(j),ky_lnrho(j),kz_lnrho(j))
         case('corona'); call corona_init(f)
         case('gaussian3d')
-          call gaussian3d(ampllnrho(iinit),f,ilnrho,xx,yy,zz, &
-              radius_lnrho(iinit)) 
+          call gaussian3d(ampllnrho(j),f,ilnrho,xx,yy,zz,radius_lnrho(j)) 
         case('plaw_gauss_disk'); call power_law_gaussian_disk(f)
         case('gaussian-z')
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) - &
-                z(n)**2/(2*radius_lnrho(iinit)**2)
+                z(n)**2/(2*radius_lnrho(j)**2)
           enddo; enddo
         case('gauss-z-offset')
           do n=n1,n2
              f(:,:,n,ilnrho) = f(:,:,n,ilnrho) + &
                 alog(exp(f(:,:,n,ilnrho))+ &
-                ampllnrho(iinit)*(exp(-(z(n)+lnrho_z_shift)**2/ &
-                (2*radius_lnrho(iinit)**2))))
+                ampllnrho(j)*(exp(-(z(n)+lnrho_z_shift)**2/ &
+                (2*radius_lnrho(j)**2))))
           enddo
         case('gaussian-noise')
-          If (lnrho_left(iinit) /= 0.) f(:,:,:,ilnrho)=lnrho_left(iinit)
-          call gaunoise(ampllnrho(iinit),f,ilnrho,ilnrho)
+          If (lnrho_left(j) /= 0.) f(:,:,:,ilnrho)=lnrho_left(j)
+          call gaunoise(ampllnrho(j),f,ilnrho,ilnrho)
         case('gaussian-noise-x')
 !
 !  Noise, but just x-dependent.
 !
-          call gaunoise(ampllnrho(iinit),f,ilnrho,ilnrho)
+          call gaunoise(ampllnrho(j),f,ilnrho,ilnrho)
           f(:,:,:,ilnrho)=spread(spread(f(:,4,4,ilnrho),2,my),3,mz) !(watch 1-D)
         case('rho-jump-z', '2')
 !
 !  Density jump (for shocks).
 !
-          if (lroot) print*, &
-              'init_lnrho: density jump; rho_left,right=', &
-              rho_left(iinit), rho_right(iinit)
-          if (lroot) print*, &
-              'init_lnrho: density jump; widthlnrho=', widthlnrho(iinit)
-          prof=.5*(1.+tanh(zz/widthlnrho(iinit)))
-          f(:,:,:,ilnrho)=log(rho_left(iinit))+ &
-              log(rho_left(iinit)/rho_right(iinit))*prof
+          if (lroot) print*, 'init_lnrho: density jump; rho_left,right=', &
+              rho_left(j), rho_right(j)
+          if (lroot) print*, 'init_lnrho: density jump; widthlnrho=', &
+              widthlnrho(j)
+          prof=0.5*(1.0+tanh(zz/widthlnrho(j)))
+          f(:,:,:,ilnrho)=log(rho_left(j))+log(rho_left(j)/rho_right(j))*prof
         case ('hydrostatic-z-2', '3')
 !
 !  Hydrostatic density stratification for isentropic atmosphere.
@@ -590,7 +582,7 @@ module Density
 !
 !  rho0, cs0, pot0 are the values at r=r_ref
 !
-            if (gamma /= 1) then  ! isentropic
+            if (gamma/=1.0) then  ! isentropic
               f(:,:,:,ilnrho) = lnrho0 &
                                 + log(1 - gamma1*(pot-pot0)/cs20) / gamma1
             else                  ! isothermal
@@ -601,7 +593,6 @@ module Density
 !  exact equilibrium at t=0.
 !
             if (lnumerical_equilibrium) call numerical_equilibrium(f)
- 
           endif
         case ('sph_isoth')
           if (lgravr) then
@@ -723,7 +714,7 @@ module Density
           lnrhoint = lnrho0
           f(:,:,:,ilnrho) = lnrho0 ! just in case
           call polytropic_lnrho_disc(f,mpoly1,zz,tmp,zref,z1,z1, &
-                              0,cs2int,lnrhoint)
+                                     0,cs2int,lnrhoint)
 !  Unstable layer.
           call polytropic_lnrho_disc(f,mpoly0,zz,tmp,z1,z2,z2,0,cs2int,lnrhoint)
 !  Stable layer (top).
@@ -765,68 +756,67 @@ module Density
 !  Sound wave (should be consistent with hydro module).
 !
           if (lroot) print*,'init_lnrho: x-wave in lnrho; ampllnrho=', &
-              ampllnrho(iinit)
-          f(:,:,:,ilnrho)=lnrho_const+ampllnrho(iinit)*sin(kx_lnrho(iinit)*xx)
+              ampllnrho(j)
+          f(:,:,:,ilnrho)=lnrho_const+ampllnrho(j)*sin(kx_lnrho(j)*xx)
         case('sound-wave-exp')
 !
 !  Sound wave (should be consistent with hydro module).
 !
           if (lroot) print*,'init_lnrho: x-wave in rho; ampllnrho=', &
-              ampllnrho(iinit)
-          f(:,:,:,ilnrho)=log(rho_const+amplrho(iinit)*sin(kx_lnrho(iinit)*xx))
+              ampllnrho(j)
+          f(:,:,:,ilnrho)=log(rho_const+amplrho(j)*sin(kx_lnrho(j)*xx))
         case('sound-wave2')
 !
 !  Sound wave (should be consistent with hydro module).
 !
           if (lroot) print*,'init_lnrho: x-wave in lnrho; ampllnrho=', &
-              ampllnrho(iinit)
-          f(:,:,:,ilnrho)=lnrho_const+ampllnrho(iinit)*cos(kx_lnrho(iinit)*xx)
+              ampllnrho(j)
+          f(:,:,:,ilnrho)=lnrho_const+ampllnrho(j)*cos(kx_lnrho(j)*xx)
         case('shock-tube', '13')
 !
 !  Shock tube test (should be consistent with hydro module).
 !
           call information('init_lnrho','polytopic standing shock')
-          prof=.5*(1.+tanh(xx/widthlnrho(iinit)))
-          f(:,:,:,ilnrho)=log(rho_left(iinit))+ &
-              (log(rho_right(iinit))-log(rho_left(iinit)))*prof
+          prof=.5*(1.+tanh(xx/widthlnrho(j)))
+          f(:,:,:,ilnrho)=log(rho_left(j))+ &
+              (log(rho_right(j))-log(rho_left(j)))*prof
         case('sin-xy')
 !
 !  sin profile in x and y.
 !
           call information('init_lnrho','lnrho=sin(x)*sin(y)')
           f(:,:,:,ilnrho)=log(rho0) + &
-              ampllnrho(iinit)*sin(kx_lnrho(iinit)*xx)*sin(ky_lnrho(iinit)*yy)
+              ampllnrho(j)*sin(kx_lnrho(j)*xx)*sin(ky_lnrho(j)*yy)
         case('sin-xy-rho')
 !
 !  sin profile in x and y, but in rho, not ln(rho).
 !
           call information('init_lnrho','rho=sin(x)*sin(y)')
           f(:,:,:,ilnrho)=log(rho0*(1+ &
-              ampllnrho(iinit)*sin(kx_lnrho(iinit)*xx)*sin(ky_lnrho(iinit)*yy)))
- 
+              ampllnrho(j)*sin(kx_lnrho(j)*xx)*sin(ky_lnrho(j)*yy)))
         case('linear')
 !
 !  Linear profile in kk.xxx.
 !
           call information('init_lnrho','linear profile')
           f(:,:,:,ilnrho) = log(rho0) + &
-              ampllnrho(iinit)*(kx_lnrho(iinit)*xx+ &
-              ky_lnrho(iinit)*yy+kz_lnrho(iinit)*zz)/ &
-              sqrt(kx_lnrho(iinit)**2+ky_lnrho(iinit)**2+kz_lnrho(iinit)**2)
+              ampllnrho(j)*(kx_lnrho(j)*xx+ &
+              ky_lnrho(j)*yy+kz_lnrho(j)*zz)/ &
+              sqrt(kx_lnrho(j)**2+ky_lnrho(j)**2+kz_lnrho(j)**2)
         case('planet')
 !
 !  Planet solution of Goodman, Narayan & Goldreich (1987).
 !  (Simple 3-D)
 !
-          call planet(rbound,f,xx,yy,zz,eps_planet,radius_lnrho(iinit), &
-              gamma,cs20,rho0,widthlnrho(iinit),hh0)
+          call planet(rbound,f,xx,yy,zz,eps_planet,radius_lnrho(j), &
+              gamma,cs20,rho0,widthlnrho(j),hh0)
         case('planet_hc')
 !
 !  Planet solution of Goodman, Narayan & Goldreich (1987).
 !  (3-D with hot corona)
 !
-          call planet_hc(amplrho(iinit),f,xx,yy,zz,eps_planet, &
-              radius_lnrho(iinit), gamma,cs20,rho0,widthlnrho(iinit))
+          call planet_hc(amplrho(j),f,xx,yy,zz,eps_planet, &
+              radius_lnrho(j), gamma,cs20,rho0,widthlnrho(j))
         case('Ferriere')
           call information('init_lnrho','Ferriere set in entropy')
         case('Galactic-hs')
@@ -855,19 +845,19 @@ module Density
 !
 !  Soundwave + self gravity.
 !
-          omega_jeans = sqrt(cmplx(cs20*kx_lnrho(iinit)**2 - &
-              rhs_poisson_const*rho0,0.))/(rho0*kx_lnrho(iinit))
+          omega_jeans = sqrt(cmplx(cs20*kx_lnrho(j)**2 - &
+              rhs_poisson_const*rho0,0.))/(rho0*kx_lnrho(j))
           if (lroot) &
               print*,'Re(omega_jeans), Im(omega_jeans), Abs(omega_jeans)',&
               real(omega_jeans),aimag(omega_jeans),abs(omega_jeans)
 !
           f(:,:,:,ilnrho) = lnrho_const + &
-              ampllnrho(iinit)*sin(kx_lnrho(iinit)*xx+phase_lnrho(iinit))
+              ampllnrho(j)*sin(kx_lnrho(j)*xx+phase_lnrho(j))
           if (abs(omega_jeans)/=0.0) then
-            f(:,:,:,iux) = f(:,:,:,iux) &
-               + abs(omega_jeans*ampllnrho(iinit)) * &
-               sin(kx_lnrho(iinit)*xx+phase_lnrho(iinit)+ &
-               complex_phase(omega_jeans*ampllnrho(iinit)))
+            f(:,:,:,iux) = f(:,:,:,iux) + &
+               abs(omega_jeans*ampllnrho(j)) * &
+               sin(kx_lnrho(j)*xx+phase_lnrho(j)+ &
+               complex_phase(omega_jeans*ampllnrho(j)))
           else
             f(:,:,:,iux) = f(:,:,:,iux) + 0.0
           endif
@@ -875,52 +865,47 @@ module Density
 !
 !  Soundwave + self gravity.
 !
-          k_j2 = kx_lnrho(iinit)**2 + ky_lnrho(iinit)**2 + kz_lnrho(iinit)**2
+          k_j2 = kx_lnrho(j)**2 + ky_lnrho(j)**2 + kz_lnrho(j)**2
           omega_jeans = sqrt(cmplx(cs20*k_j2 - rhs_poisson_const*rho0,0.))/ &
               (rho0*sqrt(k_j2))
           print*,'Re(omega_jeans), Im(omega_jeans), Abs(omega_jeans)',&
               real(omega_jeans),aimag(omega_jeans),abs(omega_jeans)
 ! 
           f(:,:,:,ilnrho) = lnrho_const + &
-            ampllnrho(iinit)*sin(kx_lnrho(iinit)*xx + &
-            ky_lnrho(iinit)*yy + kz_lnrho(iinit)*zz)
-          if (kx_lnrho(iinit)/=0) &
+            ampllnrho(j)*sin(kx_lnrho(j)*xx + &
+            ky_lnrho(j)*yy + kz_lnrho(j)*zz)
+          if (kx_lnrho(j)/=0) &
               f(:,:,:,iux) = f(:,:,:,iux) + &
-              abs(omega_jeans*ampllnrho(iinit)) * &
-              sin(kx_lnrho(iinit)*xx + &
-              complex_phase(omega_jeans*ampllnrho(iinit)))
-          if (ky_lnrho(iinit)/=0) &
+              abs(omega_jeans*ampllnrho(j)) * &
+              sin(kx_lnrho(j)*xx+complex_phase(omega_jeans*ampllnrho(j)))
+          if (ky_lnrho(j)/=0) &
               f(:,:,:,iuy) = f(:,:,:,iuy) + &
-              abs(omega_jeans*ampllnrho(iinit)) * &
-              sin(ky_lnrho(iinit)*yy + &
-              complex_phase(omega_jeans*ampllnrho(iinit)))
-          if (kz_lnrho(iinit)/=0) &
+              abs(omega_jeans*ampllnrho(j)) * &
+              sin(ky_lnrho(j)*yy+complex_phase(omega_jeans*ampllnrho(j)))
+          if (kz_lnrho(j)/=0) &
               f(:,:,:,iuz) = f(:,:,:,iuz) + &
-              abs(omega_jeans*ampllnrho(iinit)) * &
-              sin(kz_lnrho(iinit)*zz + &
-              complex_phase(omega_jeans*ampllnrho(iinit)))
+              abs(omega_jeans*ampllnrho(j)) * &
+              sin(kz_lnrho(j)*zz+complex_phase(omega_jeans*ampllnrho(j)))
         case('toomre-wave-x')
 !
 !  Soundwave + self gravity + (differential) rotation.
 !
-          omega_jeans = sqrt(cmplx(cs20*kx_lnrho(iinit)**2 + &
-              Omega**2 - rhs_poisson_const*rho0,0.))/(rho0*kx_lnrho(iinit))
+          omega_jeans = sqrt(cmplx(cs20*kx_lnrho(j)**2 + &
+              Omega**2 - rhs_poisson_const*rho0,0.))/(rho0*kx_lnrho(j))
 !
           print*,'Re(omega_jeans), Im(omega_jeans), Abs(omega_jeans)',&
               real(omega_jeans),aimag(omega_jeans),abs(omega_jeans)
 !
           f(:,:,:,ilnrho) = lnrho_const + &
-            ampllnrho(iinit)*sin(kx_lnrho(iinit)*xx)
+            ampllnrho(j)*sin(kx_lnrho(j)*xx)
           f(:,:,:,iux) = f(:,:,:,iux) + &
-              abs(omega_jeans*ampllnrho(iinit)) * &
-              sin(kx_lnrho(iinit)*xx+ &
-              complex_phase(omega_jeans*ampllnrho(iinit)))
+              abs(omega_jeans*ampllnrho(j)) * &
+              sin(kx_lnrho(j)*xx+complex_phase(omega_jeans*ampllnrho(j)))
           f(:,:,:,iuy) = f(:,:,:,iuy) + &
-               abs(ampllnrho(iinit)* &
-               cmplx(0,-0.5*Omega/(kx_lnrho(iinit)*rho0))) * &
-               sin(kx_lnrho(iinit)*xx+ &
-               complex_phase(ampllnrho(iinit)* &
-               cmplx(0,-0.5*Omega/(kx_lnrho(iinit)*rho0))))
+               abs(ampllnrho(j)* &
+               cmplx(0,-0.5*Omega/(kx_lnrho(j)*rho0))) * &
+               sin(kx_lnrho(j)*xx+complex_phase(ampllnrho(j)* &
+               cmplx(0,-0.5*Omega/(kx_lnrho(j)*rho0))))
         case('compressive-shwave')
 !  Should be consistent with density 
           f(:,:,:,ilnrho) = log(rho_const + f(:,:,:,ilnrho))
@@ -930,13 +915,13 @@ module Density
 !  Catch unknown values
 !
           write(unit=errormsg,fmt=*) 'No such value for initlnrho(' &
-                            //trim(iinit_str)//'): ',trim(initlnrho(iinit))
+                            //trim(iinit_str)//'): ',trim(initlnrho(j))
           call fatal_error('init_lnrho',errormsg)
  
         endselect
 !
-        if (lroot) print*,'init_lnrho: initlnrho(' &
-            //trim(iinit_str)//') = ',trim(initlnrho(iinit))
+        if (lroot) print*,'init_lnrho: initlnrho('//trim(iinit_str)//') = ', &
+            trim(initlnrho(j))
 !
       enddo  ! End loop over initial conditions.
 !
