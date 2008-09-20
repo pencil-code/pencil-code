@@ -282,21 +282,22 @@ module Entropy
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
+      integer :: j
       logical :: lnothing=.true.
 !
       intent(in) :: xx,yy,zz
       intent(inout) :: f
 !
-      do iinit=1,ninit
+      do j=1,ninit
 !
-        if (initss(iinit)/='nothing') then
+        if (initss(j)/='nothing') then
 !
           lnothing=.false.
-          call chn(iinit,iinit_str)
+          call chn(j,iinit_str)
 !
 !  select different initial conditions
 !
-          select case(initss(iinit))
+          select case(initss(j))
 
             case('zero', '0'); f(:,:,:,iss) = 0.
             case('const_ss'); f(:,:,:,iss)=f(:,:,:,iss)+ss_const
@@ -309,7 +310,7 @@ module Entropy
 !  Catch unknown values
 !
               write(unit=errormsg,fmt=*) 'No such value for initss(' &
-                               //trim(iinit_str)//'): ',trim(initss(iinit))
+                               //trim(iinit_str)//'): ',trim(initss(j))
               call fatal_error('init_ss',errormsg)
           endselect
 !

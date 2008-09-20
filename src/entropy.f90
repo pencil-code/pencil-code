@@ -704,167 +704,165 @@ module Entropy
                                 eosperturb
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz,tmp,pot
+      real, dimension (mx,my,mz) :: xx,yy,zz
+!
+      real, dimension (mx,my,mz) :: tmp,pot
       real, dimension (nx) :: pp,lnrho,ss
       real, dimension (mx) :: ss_mx
       real :: cs2int,ssint,ztop,ss_ext,pot0,pot_ext
+      integer :: j
       logical :: lnothing=.true., save_pretend_lnTT
 !
       intent(in) :: xx,yy,zz
       intent(inout) :: f
 !
-! If pretend_lnTT is set then turn it off so that initial conditions are
-! correctly generated in terms of entropy, but then restore it later
-! when we convert the data back again.
+!  If pretend_lnTT is set then turn it off so that initial conditions are
+!  correctly generated in terms of entropy, but then restore it later
+!  when we convert the data back again.
 !
       save_pretend_lnTT=pretend_lnTT
       pretend_lnTT=.false.
 
-      do iinit=1,ninit
+      do j=1,ninit
 !
+        if (initss(j)=='nothing') cycle
 !
-      if (initss(iinit)/='nothing') then
-!
-      lnothing=.false.
-      call chn(iinit,iinit_str)
+        lnothing=.false.
+        call chn(j,iinit_str)
 !
 !  select different initial conditions
 !
-      select case(initss(iinit))
-
-        case('zero', '0'); f(:,:,:,iss) = 0.
-        case('const_ss'); f(:,:,:,iss)=f(:,:,:,iss)+ss_const
-        case('gaussian-noise'); call gaunoise(ampl_ss,f,iss,iss)
-        case('blob'); call blob(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
-        case('blob_radeq'); call blob_radeq(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
-        case('isothermal'); call isothermal_entropy(f,T0)
-        case('isothermal_lnrho_ss')
-          print*, 'init_ss: Isothermal density and entropy stratification'
-          call isothermal_lnrho_ss(f,T0,rho0)
-        case('hydrostatic-isentropic')
-          call hydrostatic_isentropic(f,lnrho_bot,ss_const)
-        case('wave'); f(:,:,:,iss)=f(:,:,:,iss)+ss_const+ampl_ss*sin(kx_ss*xx(:,:,:) + pi)
-        case('Ferriere'); call ferriere(f)
-        case('Galactic-hs'); call galactic_hs(f,rho0hs,cs0hs,H0hs)
-        case('xjump'); call jump(f,iss,ss_left,ss_right,widthss,'x')
-        case('yjump'); call jump(f,iss,ss_left,ss_right,widthss,'y')
-        case('zjump'); call jump(f,iss,ss_left,ss_right,widthss,'z')
-        case('hor-fluxtube'); call htube(ampl_ss,f,iss,iss,xx,yy,zz,radius_ss,epsilon_ss)
-        case('hor-tube'); call htube2(ampl_ss,f,iss,iss,xx,yy,zz,radius_ss,epsilon_ss)
-
-        case('mixinglength')
-           call mixinglength(mixinglength_flux,f)
-           if (ampl_ss/=0.) call blob(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
-           hcond0=-gamma/(gamma-1)*gravz/(mpoly0+1)/mixinglength_flux
-           print*,'init_ss: hcond0=',hcond0
-
-        case('sedov')
-          if (lroot) print*,'init_ss: sedov - thermal background with gaussian energy burst'
-        call blob(thermal_peak,f,iss,radius_ss,center1_x,center1_y,center1_z)
-      !   f(:,:,:,iss) = f(:,:,:,iss) + (log(f(:,:,:,iss) + thermal_background)+log(thermal_scaling))/gamma
-
-        case('sedov-dual')
-          if (lroot) print*,'init_ss: sedov - thermal background with gaussian energy burst'
-        call blob(thermal_peak,f,iss,radius_ss,center1_x,center1_y,center1_z)
-        call blob(thermal_peak,f,iss,radius_ss,center2_x,center2_y,center2_z)
-      !   f(:,:,:,iss) = (log(f(:,:,:,iss) + thermal_background)+log(thermal_scaling))/gamma
-
-        case('shock2d')
-          call shock2d(f,xx,yy,zz)
-
-        case('isobaric')
-          !
-          !  ss = - ln(rho/rho0)
-          !
-          if (lroot) print*,'init_ss: isobaric stratification'
-          if (pp_const==0.) then
-            f(:,:,:,iss) = -(f(:,:,:,ilnrho)-lnrho0)
-          else
-            pp=pp_const
-            do n=n1,n2
-            do m=m1,m2
-              lnrho=f(l1:l2,m,n,ilnrho)
-              call eoscalc(ilnrho_pp,lnrho,pp,ss=ss)
-              f(l1:l2,m,n,iss)=ss
-            enddo
-            enddo
-          endif
-
-        case('isentropic', '1')
-          !
-          !  ss = const.
-          !
-          if (lroot) print*,'init_ss: isentropic stratification'
-          ! ss0=log(-gamma1*gravz*zinfty)/gamma
-          ! print*,'init_ss: isentropic stratification; ss=',ss0
-          f(:,:,:,iss)=0.
-          if (ampl_ss/=0.) then
-            print*,'init_ss: put bubble: radius_ss,ampl_ss=',radius_ss,ampl_ss
-            tmp=xx**2+yy**2+zz**2
-            f(:,:,:,iss)=f(:,:,:,iss)+ampl_ss*exp(-tmp/max(radius_ss**2-tmp,1e-20))
-          !f(:,:,:,iss)=f(:,:,:,iss)+ampl_ss*exp(-tmp/radius_ss**2)
-          endif
-
-        case('linprof', '2')
-          !
-          !  linear profile of ss, centered around ss=0.
-          !
-          if (lroot) print*,'init_ss: linear entropy profile'
-          f(:,:,:,iss) = grads0*zz
-
-        case('isentropic-star')
-          !
-          !  isentropic/isothermal hydrostatic sphere"
-          !    ss  = 0       for r<R,
-          !    cs2 = const   for r>R
-          !
-          !  Only makes sense if both initlnrho=initss='isentropic-star'
-          !
-          if (.not. ldensity) &
-          ! BEWARNED: isentropic star requires initlnrho=initss=isentropic-star
-               call fatal_error('isentropic-star','requires density.f90')
-          if (lgravr) then
-            if (lroot) print*, &
-                 'init_lnrho: isentropic star with isothermal atmosphere'
-            call potential(xx,yy,zz,POT=pot,POT0=pot0) ! gravity potential
-            !
-            ! rho0, cs0,pot0 are the values in the centre
-            !
-            if (gamma /= 1) then
-              ! Note:
-              ! (a) `where' is expensive, but this is only done at
-              !     initialization.
-              ! (b) Comparing pot with pot_ext instead of r with r_ext will
-              !     only work if grav_r<=0 everywhere -- but that seems
-              !     reasonable.
-              call potential(R=r_ext,POT=pot_ext) ! get pot_ext=pot(r_ext)
-              cs2_ext   = cs20*(1 - gamma1*(pot_ext-pot0)/cs20)
-              !
-              ! Make sure init_lnrho (or start.in) has already set cs2cool:
-              !
-              if (cs2cool == 0) &
-                   call fatal_error('init_ss',"inconsistency - cs2cool can't be 0")
-              ss_ext = 0. + log(cs2cool/cs2_ext)
-              ! where (sqrt(xx**2+yy**2+zz**2) <= r_ext) ! isentropic f. r<r_ext
-              where (pot <= pot_ext) ! isentropic for r<r_ext
-                f(:,:,:,iss) = 0.
-              elsewhere           ! isothermal for r>r_ext
-                f(:,:,:,iss) = ss_ext + gamma1*(pot-pot_ext)/cs2cool
-              endwhere
-            else                  ! gamma=1 --> simply isothermal (I guess [wd])
-              ! [NB: Never tested this..]
-              f(:,:,:,iss) = -gamma1/gamma*(f(:,:,:,ilnrho)-lnrho0)
+        select case(initss(j))
+ 
+          case('zero', '0'); f(:,:,:,iss) = 0.
+          case('const_ss'); f(:,:,:,iss)=f(:,:,:,iss)+ss_const
+          case('gaussian-noise'); call gaunoise(ampl_ss,f,iss,iss)
+          case('blob')
+            call blob(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
+          case('blob_radeq')
+            call blob_radeq(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
+          case('isothermal'); call isothermal_entropy(f,T0)
+          case('isothermal_lnrho_ss')
+            print*, 'init_ss: Isothermal density and entropy stratification'
+            call isothermal_lnrho_ss(f,T0,rho0)
+          case('hydrostatic-isentropic')
+            call hydrostatic_isentropic(f,lnrho_bot,ss_const)
+          case('wave'); f(:,:,:,iss)=f(:,:,:,iss)+ss_const+ampl_ss*sin(kx_ss*xx(:,:,:) + pi)
+          case('Ferriere'); call ferriere(f)
+          case('Galactic-hs'); call galactic_hs(f,rho0hs,cs0hs,H0hs)
+          case('xjump'); call jump(f,iss,ss_left,ss_right,widthss,'x')
+          case('yjump'); call jump(f,iss,ss_left,ss_right,widthss,'y')
+          case('zjump'); call jump(f,iss,ss_left,ss_right,widthss,'z')
+          case('hor-fluxtube')
+            call htube(ampl_ss,f,iss,iss,xx,yy,zz,radius_ss,epsilon_ss)
+          case('hor-tube')
+            call htube2(ampl_ss,f,iss,iss,xx,yy,zz,radius_ss,epsilon_ss)
+          case('mixinglength')
+             call mixinglength(mixinglength_flux,f)
+             if (ampl_ss/=0.0) &
+                 call blob(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
+             hcond0=-gamma/(gamma-1)*gravz/(mpoly0+1)/mixinglength_flux
+             print*,'init_ss: hcond0=',hcond0
+          case('sedov')
+            if (lroot) print*,'init_ss: sedov - thermal background with gaussian energy burst'
+          call blob(thermal_peak,f,iss,radius_ss,center1_x,center1_y,center1_z)
+!  f(:,:,:,iss) = f(:,:,:,iss) + (log(f(:,:,:,iss) + thermal_background)+log(thermal_scaling))/gamma
+          case('sedov-dual')
+            if (lroot) print*,'init_ss: sedov - thermal background with gaussian energy burst'
+          call blob(thermal_peak,f,iss,radius_ss,center1_x,center1_y,center1_z)
+          call blob(thermal_peak,f,iss,radius_ss,center2_x,center2_y,center2_z)
+!  f(:,:,:,iss) = (log(f(:,:,:,iss) + thermal_background)+log(thermal_scaling))/gamma
+          case('shock2d')
+            call shock2d(f,xx,yy,zz)
+          case('isobaric')
+!
+!  ss = - ln(rho/rho0)
+!
+            if (lroot) print*,'init_ss: isobaric stratification'
+            if (pp_const==0.) then
+              f(:,:,:,iss) = -(f(:,:,:,ilnrho)-lnrho0)
+            else
+              pp=pp_const
+              do n=n1,n2
+              do m=m1,m2
+                lnrho=f(l1:l2,m,n,ilnrho)
+                call eoscalc(ilnrho_pp,lnrho,pp,ss=ss)
+                f(l1:l2,m,n,iss)=ss
+              enddo
+              enddo
             endif
-          endif
-
-        case('piecew-poly', '4')
-          !
-          !  piecewise polytropic convection setup
-          !  cs0, rho0 and ss0=0 refer to height z=zref
-          !
-          if (lroot) print*, &
-                 'init_ss: piecewise polytropic vertical stratification (ss)'
-          !
+          case('isentropic', '1')
+!
+!  ss = const.
+!
+            if (lroot) print*,'init_ss: isentropic stratification'
+            ! ss0=log(-gamma1*gravz*zinfty)/gamma
+            ! print*,'init_ss: isentropic stratification; ss=',ss0
+            f(:,:,:,iss)=0.
+            if (ampl_ss/=0.) then
+              print*,'init_ss: put bubble: radius_ss,ampl_ss=',radius_ss,ampl_ss
+              tmp=xx**2+yy**2+zz**2
+              f(:,:,:,iss)=f(:,:,:,iss)+ampl_ss*exp(-tmp/max(radius_ss**2-tmp,1e-20))
+            !f(:,:,:,iss)=f(:,:,:,iss)+ampl_ss*exp(-tmp/radius_ss**2)
+            endif
+          case('linprof', '2')
+!
+!  Linear profile of ss, centered around ss=0.
+!
+            if (lroot) print*,'init_ss: linear entropy profile'
+            f(:,:,:,iss) = grads0*zz
+          case('isentropic-star')
+!
+!  Isentropic/isothermal hydrostatic sphere"
+!    ss  = 0       for r<R,
+!    cs2 = const   for r>R
+!
+!  Only makes sense if both initlnrho=initss='isentropic-star'
+!
+            if (.not. ldensity) &
+!  BEWARNED: isentropic star requires initlnrho=initss=isentropic-star
+                 call fatal_error('isentropic-star','requires density.f90')
+            if (lgravr) then
+              if (lroot) print*, &
+                   'init_lnrho: isentropic star with isothermal atmosphere'
+              call potential(xx,yy,zz,POT=pot,POT0=pot0) ! gravity potential
+!
+!  rho0, cs0,pot0 are the values in the centre
+!
+              if (gamma /= 1) then
+!  Note:
+!  (a) `where' is expensive, but this is only done at
+!      initialization.
+!  (b) Comparing pot with pot_ext instead of r with r_ext will
+!      only work if grav_r<=0 everywhere -- but that seems
+!      reasonable.
+                call potential(R=r_ext,POT=pot_ext) ! get pot_ext=pot(r_ext)
+                cs2_ext   = cs20*(1 - gamma1*(pot_ext-pot0)/cs20)
+!
+! Make sure init_lnrho (or start.in) has already set cs2cool:
+!
+                if (cs2cool == 0) &
+                     call fatal_error('init_ss',"inconsistency - cs2cool can't be 0")
+                ss_ext = 0. + log(cs2cool/cs2_ext)
+                ! where (sqrt(xx**2+yy**2+zz**2) <= r_ext) ! isentropic f. r<r_ext
+                where (pot <= pot_ext) ! isentropic for r<r_ext
+                  f(:,:,:,iss) = 0.
+                elsewhere           ! isothermal for r>r_ext
+                  f(:,:,:,iss) = ss_ext + gamma1*(pot-pot_ext)/cs2cool
+                endwhere
+              else                  ! gamma=1 --> simply isothermal (I guess [wd])
+                ! [NB: Never tested this..]
+                f(:,:,:,iss) = -gamma1/gamma*(f(:,:,:,ilnrho)-lnrho0)
+              endif
+            endif
+          case('piecew-poly', '4')
+!
+!  Piecewise polytropic convection setup.
+!  cs0, rho0 and ss0=0 refer to height z=zref
+!
+            if (lroot) print*, &
+                   'init_ss: piecewise polytropic vertical stratification (ss)'
+!
 !         !  override hcond1,hcond2 according to polytropic equilibrium
 !         !  solution
 !         !
@@ -873,26 +871,25 @@ module Entropy
 !         if (lroot) &
 !              print*, &
 !              'Note: mpoly{1,2} override hcond{1,2} to ', hcond1, hcond2
-        !
-          cs2int = cs0**2
-          ss0 = 0.              ! reference value ss0 is zero
-          ssint = ss0
-          f(:,:,:,iss) = 0.    ! just in case
-          ! top layer
-          call polytropic_ss_z(f,mpoly2,zz,tmp,zref,z2,z0+2*Lz, &
-                               isothtop,cs2int,ssint)
-          ! unstable layer
-          call polytropic_ss_z(f,mpoly0,zz,tmp,z2,z1,z2,0,cs2int,ssint)
-          ! stable layer
-          call polytropic_ss_z(f,mpoly1,zz,tmp,z1,z0,z1,0,cs2int,ssint)
-
-        case('piecew-disc', '41')
-          !
-          !  piecewise polytropic convective disc
-          !  cs0, rho0 and ss0=0 refer to height z=zref
-          !
-          if (lroot) print*,'init_ss: piecewise polytropic disc'
-          !
+!
+            cs2int = cs0**2
+            ss0 = 0.              ! reference value ss0 is zero
+            ssint = ss0
+            f(:,:,:,iss) = 0.    ! just in case
+!  Top layer.
+            call polytropic_ss_z(f,mpoly2,zz,tmp,zref,z2,z0+2*Lz, &
+                                 isothtop,cs2int,ssint)
+!  Unstable layer.
+            call polytropic_ss_z(f,mpoly0,zz,tmp,z2,z1,z2,0,cs2int,ssint)
+!  Stable layer.
+            call polytropic_ss_z(f,mpoly1,zz,tmp,z1,z0,z1,0,cs2int,ssint)
+          case('piecew-disc', '41')
+!
+!  piecewise polytropic convective disc
+!  cs0, rho0 and ss0=0 refer to height z=zref
+!
+            if (lroot) print*,'init_ss: piecewise polytropic disc'
+!
 !         !  override hcond1,hcond2 according to polytropic equilibrium
 !         !  solution
 !         !
@@ -901,101 +898,88 @@ module Entropy
 !         if (lroot) &
 !              print*, &
 !        'init_ss: Note: mpoly{1,2} override hcond{1,2} to ', hcond1, hcond2
-        !
-          ztop = xyz0(3)+Lxyz(3)
-          cs2int = cs0**2
-          ss0 = 0.              ! reference value ss0 is zero
-          ssint = ss0
-          f(:,:,:,iss) = 0.    ! just in case
-          ! bottom (middle) layer
-          call polytropic_ss_disc(f,mpoly1,zz,tmp,zref,z1,z1, &
-                               0,cs2int,ssint)
-          ! unstable layer
-          call polytropic_ss_disc(f,mpoly0,zz,tmp,z1,z2,z2,0,cs2int,ssint)
-          ! stable layer (top)
-          call polytropic_ss_disc(f,mpoly2,zz,tmp,z2,ztop,ztop,&
-                               isothtop,cs2int,ssint)
-
-        case('polytropic', '5')
-          !
-          !  polytropic stratification
-          !  cs0, rho0 and ss0=0 refer to height z=zref
-          !
-          if (lroot) print*,'init_ss: polytropic vertical stratification'
-          !
-          cs20 = cs0**2
-          ss0 = 0.              ! reference value ss0 is zero
-          f(:,:,:,iss) = ss0   ! just in case
-          cs2int = cs20
-          ssint = ss0
-          ! only one layer
-          call polytropic_ss_z(f,mpoly0,zz,tmp,zref,z0,z0+2*Lz,0,cs2int,ssint)
-          ! reset mpoly1, mpoly2 (unused) to make IDL routine `thermo.pro' work
-          mpoly1 = mpoly0
-          mpoly2 = mpoly0
-
-        case ('geo-kws')
-          !
-          ! radial temperature profiles for spherical shell problem
-          !
-          if (lroot) print*,'init_ss: kws temperature in spherical shell'
-          call shell_ss(f)
-
-        case ('geo-benchmark')
-          !
-          ! radial temperature profiles for spherical shell problem
-          !
-          if (lroot) print*,'init_ss: benchmark temperature in spherical shell'
-          call shell_ss(f)
-
-        case ('shell_layers')
-          !
-          ! radial temperature profiles for spherical shell problem
-          !
-          call information('init_ss',' two polytropic layers in a spherical shell')
-          call shell_ss_layers(f)
-
-        case ('star_heat')
-          !
-          ! radial temperature profiles for spherical shell problem
-          !
-          call information('init_ss',' two polytropic layers with a central heating')
-          call star_heat(f)
-
-        case ('cylind_layers')
-          call cylind_layers(f)
-
-        case ('polytropic_simple')
-          !
-          ! vertical temperature profiles for convective layer problem
-          !
-          call layer_ss(f)
-
-        case('blob_hs')
-          print*,'init_ss: put blob in hydrostatic equilibrium: radius_ss,ampl_ss=',radius_ss,ampl_ss
-          call blob(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
-          call blob(-ampl_ss,f,ilnrho,radius_ss,center1_x,center1_y,center1_z)
-
-        case ('single_polytrope')
-          call single_polytrope(f)
-
-        case default
-          !
-          !  Catch unknown values
-          !
-          write(unit=errormsg,fmt=*) 'No such value for initss(' &
-                           //trim(iinit_str)//'): ',trim(initss(iinit))
-          call fatal_error('init_ss',errormsg)
-
-      endselect
-
-      if (lroot) print*,'init_ss: initss(' &
-                        //trim(iinit_str)//') = ',trim(initss(iinit))
-
-      endif
-
+!
+            ztop = xyz0(3)+Lxyz(3)
+            cs2int = cs0**2
+            ss0 = 0.              ! reference value ss0 is zero
+            ssint = ss0
+            f(:,:,:,iss) = 0.    ! just in case
+!  Bottom (middle) layer.
+            call polytropic_ss_disc(f,mpoly1,zz,tmp,zref,z1,z1, &
+                                 0,cs2int,ssint)
+!  Unstable layer.
+            call polytropic_ss_disc(f,mpoly0,zz,tmp,z1,z2,z2,0,cs2int,ssint)
+!  Stable layer (top).
+            call polytropic_ss_disc(f,mpoly2,zz,tmp,z2,ztop,ztop,&
+                                 isothtop,cs2int,ssint)
+          case('polytropic', '5')
+!
+!  polytropic stratification
+!  cs0, rho0 and ss0=0 refer to height z=zref
+!
+            if (lroot) print*,'init_ss: polytropic vertical stratification'
+!
+            cs20 = cs0**2
+            ss0 = 0.              ! reference value ss0 is zero
+            f(:,:,:,iss) = ss0   ! just in case
+            cs2int = cs20
+            ssint = ss0
+!  Only one layer.
+            call polytropic_ss_z(f,mpoly0,zz,tmp,zref,z0,z0+2*Lz,0,cs2int,ssint)
+!  Reset mpoly1, mpoly2 (unused) to make IDL routine `thermo.pro' work.
+            mpoly1 = mpoly0
+            mpoly2 = mpoly0
+          case ('geo-kws')
+!
+!  Radial temperature profiles for spherical shell problem.
+!
+            if (lroot) print*,'init_ss: kws temperature in spherical shell'
+            call shell_ss(f)
+          case ('geo-benchmark')
+!
+!  Radial temperature profiles for spherical shell problem.
+!
+            if (lroot) print*,'init_ss: benchmark temperature in spherical shell'
+            call shell_ss(f)
+          case ('shell_layers')
+!
+!  Radial temperature profiles for spherical shell problem.
+!
+            call information('init_ss',' two polytropic layers in a spherical shell')
+            call shell_ss_layers(f)
+          case ('star_heat')
+!
+!  Radial temperature profiles for spherical shell problem.
+!
+            call information('init_ss',' two polytropic layers with a central heating')
+            call star_heat(f)
+          case ('cylind_layers')
+            call cylind_layers(f)
+          case ('polytropic_simple')
+!
+!  Vertical temperature profiles for convective layer problem.
+!
+            call layer_ss(f)
+          case('blob_hs')
+            print*,'init_ss: put blob in hydrostatic equilibrium: radius_ss,ampl_ss=',radius_ss,ampl_ss
+            call blob(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
+            call blob(-ampl_ss,f,ilnrho,radius_ss,center1_x,center1_y,center1_z)
+          case ('single_polytrope')
+            call single_polytrope(f)
+          case default
+!
+!  Catch unknown values
+!
+            write(unit=errormsg,fmt=*) 'No such value for initss(' &
+                             //trim(iinit_str)//'): ',trim(initss(j))
+            call fatal_error('init_ss',errormsg)
+        endselect
+!
+        if (lroot) print*,'init_ss: initss('//trim(iinit_str)//') = ', &
+            trim(initss(j))
+!
       enddo
-
+!
       if (lnothing.and.lroot) print*,'init_ss: nothing'
 !
 !  if ss_const/=0, add this constant to entropy
@@ -1010,39 +994,35 @@ module Entropy
 !     if (lgravr) then
 !       f(:,:,:,iss) = -0.
 !     endif
-
 !
 !  Add perturbation(s)
-
 !
-!      if (lgravz)
-
       select case (pertss)
-
+!
       case('zero', '0')
-        ! Don't perturb
-
+!
+!  Don't perturb
+!
       case ('hexagonal', '1')
-        !
-        !  hexagonal perturbation
-        !
+!
+!  Hexagonal perturbation.
+!
         if (lroot) print*,'init_ss: adding hexagonal perturbation to ss'
         f(:,:,:,iss) = f(:,:,:,iss) &
                         + ampl_ss*(2*cos(sqrt(3.)*0.5*khor_ss*xx) &
                                     *cos(0.5*khor_ss*yy) &
                                    + cos(khor_ss*yy) &
                                   ) * cos(pi*zz)
-
       case default
-        !
-        !  Catch unknown values
-        !
+!
+!  Catch unknown values
+!
         write (unit=errormsg,fmt=*) 'No such value for pertss:', pertss
         call fatal_error('init_ss',errormsg)
 
       endselect
 !
-!  replace ss by lnTT when pretend_lnTT is true
+!  Replace ss by lnTT when pretend_lnTT is true.
 !
       if (save_pretend_lnTT) then
         pretend_lnTT=.true.
@@ -1053,7 +1033,7 @@ module Entropy
         enddo; enddo
       endif
 !
-      if (NO_WARN) print*,xx,yy  !(to keep compiler quiet)
+      if (NO_WARN) print*, xx, yy  !(to keep compiler quiet)
 !
     endsubroutine init_ss
 !***********************************************************************

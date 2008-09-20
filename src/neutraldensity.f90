@@ -286,14 +286,16 @@ module NeutralDensity
       use EquationOfState
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz,tmp,pot,prof
+      real, dimension (mx,my,mz) :: xx,yy,zz
+!      
+      real, dimension (mx,my,mz) :: tmp,pot,prof
       real :: lnrhonint,cs2int,pot0
       real :: pot_ext,cs2_ext,tmp1,k_j2
       real :: zbot,ztop,haut,TT
       real, dimension (nx) :: r_mn,lnrhon,lnTT,ss
       logical :: lnothing
+      integer :: j
       complex :: omega_jeans
-
 !
 !  define bottom and top height
 !
@@ -310,15 +312,15 @@ module NeutralDensity
 !
       lnothing=.true.
 
-      do iinit=1,ninit
+      do j=1,ninit
 
-         if (initlnrhon(iinit)/='nothing') then
+         if (initlnrhon(j)/='nothing') then
 
             lnothing=.false.
 
-            call chn(iinit,iinit_str)
+            call chn(j,iinit_str)
 
-            select case(initlnrhon(iinit))
+            select case(initlnrhon(j))
 !
 ! some one-liners from density
 !
@@ -345,13 +347,13 @@ module NeutralDensity
                !  Catch unknown values
                !
                write(unit=errormsg,fmt=*) 'No such value for initlnrhon(' &
-                    //trim(iinit_str)//'): ',trim(initlnrhon(iinit))
+                    //trim(iinit_str)//'): ',trim(initlnrhon(j))
                call fatal_error('init_lnrhon',errormsg)
                
             endselect
 
             if (lroot) print*,'init_lnrhon: initlnrhon(' &
-                 //trim(iinit_str)//') = ',trim(initlnrhon(iinit))
+                 //trim(iinit_str)//') = ',trim(initlnrhon(j))
 
          endif
          

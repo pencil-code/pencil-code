@@ -420,7 +420,7 @@ module Cdata
 !
 !  Initial conditions.
 !
-  integer :: init_loops=1, iinit
+  integer :: init_loops=1
 !
 !  Reset initial condition.
 !

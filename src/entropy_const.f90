@@ -136,8 +136,8 @@ module Entropy
 !
       intent(in) :: xx,yy,zz
 !
-      do iinit=1,ninit
-        select case(initss(iinit))
+      do j=1,ninit
+        select case(initss(j))
 
           case('zero', '0'); f(:,:,:,iss) = 0.
           case('const_ss'); f(:,:,:,iss)=f(:,:,:,iss)+ss_const

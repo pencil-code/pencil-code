@@ -373,23 +373,24 @@ module Entropy
       use Gravity, only: gravz
       use Mpicomm, only: stop_it
 !
-      integer :: j
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension (mx,my,mz), intent (in) :: xx,yy,zz
+!
+      integer :: j
       logical :: lnothing=.true.
       real :: haut, Rgas, cp1, Ttop, alpha, beta, expo
 !
-      do iinit=1,ninit
+      do j=1,ninit
 !
-      if (initlnTT(iinit)/='nothing') then
+      if (initlnTT(j)/='nothing') then
 !
       lnothing=.false.
 
-      call chn(iinit,iinit_str)
+      call chn(j,iinit_str)
 !
 !  select different initial conditions
 !
-      select case(initlnTT(iinit))
+      select case(initlnTT(j))
         case('zero', '0'); f(:,:,:,ilnTT) = 0.
 !
         case('const_lnTT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+lnTT_const
@@ -399,9 +400,9 @@ module Entropy
         case('single_polytrope'); call single_polytrope(f)
 !
         case('gaussian')
-          do j=n1,n2
+          do n=n1,n2
             f(l1:l2,4,j,ilnTT)=exp(-(x(l1:l2)/radius_lnTT)**2)* &
-                   exp(-((z(j)-0.5)/radius_lnTT)**2)
+                   exp(-((z(n)-0.5)/radius_lnTT)**2)
           enddo
           cs2bot=gamma1*f(l1,4,n1,ilnTT)
           cs2top=gamma1*f(l1,4,n2,ilnTT)
@@ -423,8 +424,8 @@ module Entropy
             f(:,:,:,ilnTT)=log(cs20/gamma1)
           endif
           haut=-cs20/gamma/gravz
-          do j=n1,n2
-            f(:,:,j,ilnrho)=lnrho0+(1.-z(j))/haut
+          do n=n1,n2
+            f(:,:,n,ilnrho)=lnrho0+(1.-z(n))/haut
           enddo
 !
         case('hydro_rad')
@@ -437,14 +438,14 @@ module Entropy
           beta=-Fbot/hcond0
           alpha=Ttop-beta
           expo=-gravz/beta/Rgas
-          do j=n1,n2
+          do n=n1,n2
             if (ltemperature_nolog) then
-              f(:,:,j,ilnTT)=beta*z(j)+alpha
+              f(:,:,n,ilnTT)=beta*z(n)+alpha
             else
-              f(:,:,j,ilnTT)=log(beta*z(j)+alpha)
+              f(:,:,n,ilnTT)=log(beta*z(n)+alpha)
             endif
-            f(:,:,j,ilnrho)=lnrho0+ &
-              (1.+expo)*log((1.+alpha/beta)/(z(j)+alpha/beta))
+            f(:,:,n,ilnrho)=lnrho0+ &
+              (1.+expo)*log((1.+alpha/beta)/(z(n)+alpha/beta))
           enddo
 !
         case default
@@ -452,13 +453,13 @@ module Entropy
           !  Catch unknown values
           !
           write(unit=errormsg,fmt=*) 'No such value for initss(' &
-                           //trim(iinit_str)//'): ',trim(initlnTT(iinit))
+                           //trim(iinit_str)//'): ',trim(initlnTT(j))
           call fatal_error('init_ss',errormsg)
 
       endselect
 
       if (lroot) print*,'init_ss: initss(' &
-                        //trim(iinit_str)//') = ',trim(initlnTT(iinit))
+                        //trim(iinit_str)//') = ',trim(initlnTT(j))
       endif
       enddo
       if (lnothing.and.lroot) print*,'init_ss: nothing'

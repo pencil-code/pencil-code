@@ -806,24 +806,25 @@ module Interstellar
       use General, only: chn
 !
       real, dimension (mx,my,mz,mfarray) :: f
+!
       real, dimension (mx,my,mz,mvar) :: df
       logical :: lnothing=.true.
       character (len=5) :: iinit_str
-      integer :: i,iSNR
+      integer :: i,j,iSNR
 !
       intent(inout) :: f
 !
-      do iinit=1,ninit
+      do j=1,ninit
 !
 !
-      if (initinterstellar(iinit)/='nothing') then
+      if (initinterstellar(j)/='nothing') then
 !
       lnothing=.false.
-      call chn(iinit,iinit_str)
+      call chn(j,iinit_str)
 !
 !  select different initial conditions
 !
-      select case(initinterstellar(iinit))
+      select case(initinterstellar(j))
 
         case('single')
           iSNR=get_free_SNR()
@@ -906,13 +907,13 @@ module Interstellar
           !  Catch unknown values
           !
           write(unit=errormsg,fmt=*) 'No such value for initinterstellar(' &
-                           //trim(iinit_str)//'): ',trim(initinterstellar(iinit))
+                           //trim(iinit_str)//'): ',trim(initinterstellar(j))
           call fatal_error('init_interstellar',errormsg)
 
       endselect
 
       if (lroot) print*,'init_interstellar: initinterstellar(' &
-                        //trim(iinit_str)//') = ',trim(initinterstellar(iinit))
+                        //trim(iinit_str)//') = ',trim(initinterstellar(j))
       endif
 
       enddo
