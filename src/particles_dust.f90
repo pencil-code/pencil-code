@@ -71,6 +71,7 @@ module Particles
   logical :: lbrownian_forces=.false.
   logical :: lenforce_policy=.false.
   logical :: lnostore_uu=.false.
+  logical :: ldtgrav_par=.false.
 
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -105,7 +106,7 @@ module Particles
       tausp_short_friction,ldraglaw_steadystate,tstart_liftforce_par, &
       tstart_brownian_par, lbrownian_forces, lenforce_policy, &
       interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, &
-      brownian_T0, lnostore_uu
+      brownian_T0, lnostore_uu, ldtgrav_par
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -127,7 +128,7 @@ module Particles
       tausp_short_friction,ldraglaw_steadystate,tstart_liftforce_par, &
       tstart_brownian_par, lbrownian_forces, lenforce_policy, &
       interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, &
-      brownian_T0, lnostore_uu
+      brownian_T0, lnostore_uu, ldtgrav_par
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -2221,7 +2222,8 @@ k_loop:   do while (.not. (k>npar_loc))
               'The N-body code should take care of the stellar-like '// &
               'gravity on the dust. Switch off the '// &
               'gravr_profile=''newtonian'' on particles_init')
-           if (lheader) print*, 'dvvp_dt: Newtonian gravity from a fixed central object'
+           if (lheader) &
+               print*, 'dvvp_dt: Newtonian gravity from a fixed central object'
            do k=1,npar_loc
              if (lcartesian_coords) then
                rsph=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2+gravsmooth2)
@@ -2230,7 +2232,6 @@ k_loop:   do while (.not. (k>npar_loc))
                ggp(2) = -fp(k,iyp)*OO2
                ggp(3) = -fp(k,izp)*OO2
                dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
-               dt1_max=max(dt1_max,10.0*vsph/rsph)
              elseif (lcylindrical_coords) then
                rsph=sqrt(fp(k,ixp)**2+fp(k,izp)**2+gravsmooth2)
                OO2=rsph**(-3)*gravr
@@ -2246,7 +2247,7 @@ k_loop:   do while (.not. (k>npar_loc))
                dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
              endif
 !  Limit time-step if particles close to gravity source.
-             if (lfirst.and.ldt) then
+             if (ldtgrav_par.and.(lfirst.and.ldt)) then
                if (lcartesian_coords) then
                  vsph=sqrt(fp(k,ivpx)**2+fp(k,ivpy)**2+fp(k,ivpz)**2)
                elseif (lcylindrical_coords) then
