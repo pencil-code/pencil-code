@@ -1,0 +1,32 @@
+
+Problem: Floating point exception
+
+
+How to reproduce:
+
+  Either just run `make'
+  Or do
+    g95 -r8 -freal=nan -c general.f90
+    g95 -r8 -freal=nan -c start.f90
+    g95 -r8 -freal=nan general.o start.o -o start.x
+    ./start.x
+
+  and you will get
+
+    Floating point exception: Invalid operation
+    Traceback: not available, compile with -ftrace=frame or -ftrace=full
+
+
+g95 version:
+  Using built-in specs.
+  Target: 
+  Configured with: ../configure --enable-languages=c
+  Thread model: posix
+  gcc version 4.0.3 (g95 0.92!) Sep 16 2008
+
+
+Platform:
+  Linux norlx50 2.6.24-19-generic #1 SMP Fri Jul 11 23:41:49 UTC 2008 i686
+  Ubuntu Hardy
+
+
