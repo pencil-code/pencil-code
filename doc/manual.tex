@@ -414,7 +414,8 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
   \vspace{\stretch{1}}
 
   \emph{$ $Date: 2008-08-18 22:46:19 $ $,~ $ $Revision: 1.403 $ $}\\
-  \url{http://www.nordita.org/software/pencil-code/}
+  \url{http://www.nordita.org/software/pencil-code/}\\
+  \url{http://code.google.com/p/pencil-code/}
 
   \vspace{\stretch{3}}
 
@@ -450,7 +451,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
 \begin{center}
   {\bf Contributors to the code}\\
-  (in inverse alphabetical order according to their CVS user name)\\
+  (in inverse alphabetical order according to their user name)\\
 \end{center}
 
 \begin{tabular}{lll}
@@ -690,6 +691,8 @@ the case for higher order finite-difference or spectral codes.
 Having been approached by people interested in using our code, we
 decided to make it as flexible as possible and as user-friendly as seems
 reasonable, and to put it onto a public \name{CVS} repository.
+Since 21 September it is distributed via
+\url{http://code.google.com/p/pencil-code/}.
 The code can certainly not be treated as a black box (no code can), and in
 order to solve a new problem in an optimal way, users will need to find their
 own optimal set of parameters.
@@ -835,7 +838,7 @@ procedures.
 He also added, together with Andrew Snodin, the evolution equations
 for the cosmic ray energy density.
 Vladimir Pariev (University of Rochester) contributed to the development
-and testing of the potential field boundary condition.
+and testing of the potential field boundary condition at an early stage.
 
 Use of the PPARC supported supercomputers in St Andrews (Mhd) and
 Leicester (Ukaff) is acknowledged. We also acknowledge the Danish Center
@@ -894,20 +897,12 @@ To use the code, you will need the following:
 
 \section{Obtaining the Code}
 
-There are two ways to obtain the code:
-you can access the latest version via anonymous \name{CVS}\index{CVS},
-or you can download the tarball of a stable release.
-Older tarballs are kept, and the correspondingly old version
-of the manual is also checked in, but the manual on the web
-refers of course to a recent version.
+The code is now distributed via
+\url{http://code.google.com/p/pencil-code/},
+where you can either download a TarBall, or, preferably,
+download it via \name{svn}.
 
-Since we are still actively developing the code (and probably always
-will), it is important to be able to update your version to the current
-one.
-You can do so via \name{CVS}, regardless of whether you have initially
-installed the tarball or have used \name{CVS} from the very start.
-
-To ensure at least some level of stability of the \name{CVS}
+To ensure at least some level of stability of the \name{svn}
 versions, a set of test problems (listed in
 \file[auto-test]{\$PENCIL_HOME/bin/auto-test})
 are routinely tested.
@@ -916,108 +911,41 @@ This includes all problems in
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Obtaining the code via anonymous CVS}
+\subsection{Obtaining the code via svn}
 \index{CVS}
+\index{svn}
 
 \begin{enumerate}
 
-\item Many machines have \name{CVS} installed
-  (try \code{cvs -v} or \code{which cvs}).
-  If yours has not, get a \name{CVS} client from
-  \url{http://www.cvshome.org/} and
-  install it on any machine where you want to run the code.
-  Alternatively, just copy the executable from a binary compatible
-  machine.
+\item Many machines have \name{svn} installed
+  (try \code{svn -v} or \code{which svn}).
+  On Ubuntu, for example, \name{svn} comes under the
+  package name subversion.
 
-\item Get the password for anonymous \name{CVS} access to the {\sc Pencil Code}
-  from the download section in
-  \url{http://www.nordita.org/software/pencil-code}.
-  Alternatively, just email \email{Wolfgang.Dobler@kis.uni-freiburg.de}
-  or \email{Axel.Brandenburg@nordita.org}.
-  Privileged users with write access to the original repository should
-  continue to use it.\footnote{%
-    In that case you'd say
-    \code{setenv CVSROOT :pserver:\$USER@svn.nordita.org:/var/cvs/brandenb},
-    assuming that \env[USER]{\$USER} is the userid registered in the original
-    repository. The content of this repository is copied automatically every
-    hour to the anonymous cvs repository.
+\item Unless you are a privileged users with write access, you can
+  download the code with the comand
+  \code{svn checkout http://pencil-code.googlecode.com/svn/trunk/ pencil-code}
+  Privileged users with write access to the original repository should use
+  something like
+  \code{svn checkout https://pencil-code.googlecode.com/svn/trunk/ pencil-code --username AxelBrandenburg},
+  where \name{AxelBrandenburg} is replaced by your google name.
     Be sure to run \code{auto-test} before you check anything back in again.
     It can be very annoying for someone else to figure out what's wrong,
     especially if you are just up to something else.}
 
-\item Set your environment variable \env{CVSROOT}:
-  \begin{small}
-  \begin{alltt}
-  \prompt{csh> } setenv CVSROOT :pserver:anonymous@svn.nordita.org:/var/cvs/pencil-public \
-  \end{alltt}
-  \end{small}
-  or (if you are running \name{bash} or \name{Bourne shell})
-  \begin{small}
-  \begin{alltt}
-  \prompt{sh> } CVSROOT=:pserver:anonymous@svn.nordita.org:/var/cvs/pencil-public
-  \prompt{sh> } export CVSROOT \
-  \end{alltt}
-  \end{small}
-
-\item Log in:
-  \begin{alltt}
-  \prompt{unix> } cvs login
-  cvs password: ........ \
-\end{alltt}
-(you only need to do this once; your CVS password is saved in the file
-\file{.cvspass} in your home directory)
-
-\item Go to wherever you want the code:
-  \begin{alltt}
-  \prompt{unix> } cd somewhere/ \
-  \end{alltt}
-  and check out the code:
-  \begin{alltt}
-  \prompt{unix> } cvs checkout pencil-code \
-  \end{alltt} 
-  This creates a subdirectory \file[pencil-code/]{somewhere/pencil-code}
-  and populates it with the {\sc Pencil Code}'s subdirectories.
-  If you change your mind about the location of the code, you can just
-  move the whole directory,
-  \begin{alltt}
-  \prompt{unix> } mv somewhere/pencil-code elsewhere/ \
-  \end{alltt}
-  since \name{CVS} keeps all information in the local \file{CVS/}
-  subdirectories below \file{pencil-code/}.
-\end{enumerate}
-
-
 % ---------------------------------------------------------------------- %
 
-\subsection{Obtaining and unpacking the tarball}
-
-\begin{enumerate}
-\item Download the tarball \texttt{pencil-code_\emph{X}.tar.gz}
-  (where \emph{X} is the release number) from the download section in
-  \url{http://www.nordita.org/software/pencil-code}
-
-\item Put it into a convenient directory and unpack it:
-  \begin{alltt}
-  \prompt{unix> } mv pencil-code_\emph{X}.tar.gz somewhere/
-  \prompt{unix> } cd somewhere
-  \prompt{unix> } gunzip pencil-code_\emph{X}.tar.gz
-  \prompt{unix> } tar xf pencil-code_\emph{X}.tar \
-  \end{alltt}
-\end{enumerate}
-
-% ---------------------------------------------------------------------- %
-
-\subsection{Updating via CVS}
-\index{CVS}
+\subsection{Updating via svn}
+\index{svn}
 
 Independent of how you installed the code in the first place (from tarball
-or via \name{CVS}), you can update your version using \name{CVS}.
+or via \name{svn}), you can update your version using \name{svn}.
 If you have done nontrivial alterations to your version of the code, you
-ought to be careful about upgrading: although \name{CVS} is an excellent
+ought to be careful about upgrading: although \name{svn} is an excellent
 tool for distributed programming,
 conflicts are quite likely, since we are going to
 touch many parts of the code while we develop it further.
-Thus, despite the fact that the code is under \name{CVS}, you should probably
+Thus, despite the fact that the code is under \name{svn}, you should probably
 back up your changes before upgrading.
 
 Here is the upgrading procedure:
@@ -1028,16 +956,14 @@ Here is the upgrading procedure:
 %  \end{alltt}
 \item Perform a \cmd{cvs} update of the tree:
   \begin{alltt}
-  \prompt{unix> } pc_cvsup \
+  \prompt{unix> } pc_svnup \
   \end{alltt}
-  (This is equivalent to typing \cmd{cvs -q update -dP} from the top directory
-  of the code, except that it only performs a full update of the core 
-  {\sc Pencil Code} directories.  This for example avoids the problem of having
-  a partially checked out \file{runs} directory under your {\sc Pencil Code}
-  which would otherwise be checked out in full if the simple cvs command 
-  were used.)
-%  (the option \option{-q} means ``somewhat quiet'', \option{-d} checks out
-%  new directories, and \option{-P} removes empty directories)
+% (This is equivalent to typing \cmd{cvs -q update -dP} from the top directory
+% of the code, except that it only performs a full update of the core 
+% {\sc Pencil Code} directories.  This for example avoids the problem of having
+% a partially checked out \file{runs} directory under your {\sc Pencil Code}
+% which would otherwise be checked out in full if the simple cvs command 
+% were used.)
 \item Fix any conflicts you encounter and make sure the examples in the
   directory \file{samples/} are still working.
 \end{enumerate}
@@ -1045,41 +971,31 @@ Here is the upgrading procedure:
 % ---------------------------------------------------------------------- %
 
 \subsection{Getting older versions}
-\index{CVS}
+\index{svn}
 
-You may find that the latest \name{CVS} version of the code produces errors.
+You may find that the latest \name{svn} version of the code produces errors.
 If you have reasons to believe that this is due to changes introduced on
 27 November 2002 (to give an example), you can check out the version prior to
-this by:
-\begin{enumerate}
-\item Go to the top directory of the code:
-  \begin{alltt}
-  \prompt{unix> } cd somewhere/pencil-code \
-  \end{alltt}
-\item Run \cmd{pc_cvsup}:
-  \begin{alltt}
-  \prompt{unix> } pc_cvsup -D "26 Nov 2002"\
-  \end{alltt}
-\end{enumerate}
+this.
 One reason why one cannot always reproduce exactly the same situation too far
 back in time is connected with the fact that machine names and architectures
 were different back then can cannot be reproduced.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Obtaining and unpacking the tarball}
-
-\begin{enumerate}
-\item Download the tarball file, pencil-code_X.tar.gz,
-  where X is the release number, after registering on
-  \url{http://www.nordita.org/software/pencil-code/}
-\item Put it into a convenient directory and unpack it:
-  \begin{alltt}
-  \prompt{unix> } mv pencil-code_X.tar.gz somewhere/; cd somewhere
-  \prompt{unix> } gunzip pencil-code_X.tar.gz
-  \prompt{unix> } tar xf pencil-code_X.tar \
-  \end{alltt}
-\end{enumerate}
+%\subsection{Obtaining and unpacking the tarball}
+%
+%\begin{enumerate}
+%\item Download the tarball file, pencil-code_X.tar.gz,
+%  where X is the release number, after registering on
+%  \url{http://www.nordita.org/software/pencil-code/}
+%\item Put it into a convenient directory and unpack it:
+%  \begin{alltt}
+%  \prompt{unix> } mv pencil-code_X.tar.gz somewhere/; cd somewhere
+%  \prompt{unix> } gunzip pencil-code_X.tar.gz
+%  \prompt{unix> } tar xf pencil-code_X.tar \
+%  \end{alltt}
+%\end{enumerate}
 
 
 % ====================================================================== %
@@ -1189,10 +1105,9 @@ Fortran source files (plus a few more files) from \file[src/]{\$PENCIL_HOME/src}
 to that directory:
 \begin{alltt}
   \prompt{unix> } ls -F
-  CVS/           src/
+  reference.out  src/
   start.csh@     run.csh@  getconf.csh@ 
   start.in       run.in    print.in            
-  reference.out     
 \end{alltt}
 
 
@@ -1429,7 +1344,7 @@ Under \file[pencil-code/]{pencil-code}, there are currently the following
 files and directories:
 \begin{verbatim}
 bin/   config/  doc/  idl/  license/  perl/   samples/      sourceme.sh  utils/
-bugs/  CVS/     dx/   lib/  misc/     README  sourceme.csh  src/         www/
+bugs/  dx/   lib/  misc/     README  sourceme.csh  src/         www/
 \end{verbatim}
 
 Almost all of the source code is contained in the directory \file{src/},
@@ -1438,7 +1353,7 @@ separately for each run in a local directory \file[src/]{src} below the
 individual run directory, like
 e.\,g.~\file[conv-slab/src/]{samples/conv-slab/src}.
 
-It may be a good idea to keep your own runs also under \name{CVS}, but
+It may be a good idea to keep your own runs also under \name{svn}, but
 this would normally be a different repository. On the machine where you
 are running the code, you may want to check them out into a subdirectory
 of \file{pencil-code/}.
@@ -1492,7 +1407,7 @@ The directory \file[doc/]{doc} contains this manual;
 \file[bin/]{bin} contains a number of utility scripts (mostly written in
 \name{csh} and \name{Perl}), and in particular the \file{start.csh},
 \file{run.csh}, and \file{getconf.csh} scripts.
-The \file[CVS/]{CVS} directory is used (you guessed it) by \name{CVS}, and is
+The \file[.svn/]{.svn} directory is used (you guessed it) by \name{.svn}, and is
 not normally directly accessed by the user;
 \file[bugs/]{bugs}, finally is used by us for internal purposes.
 
@@ -1596,7 +1511,7 @@ These files specify the startup and runtime parameters (see
 Sects.~\ref{S-start-params} and \ref{S-all-run-params}), and the list of
 diagnostic variables to print (see \ref{diagnostic-IO}).
 They specify the setup of a given simulation and are kept under
-\name{CVS}\index{CVS} in
+\name{svn}\index{svn} in
 the individual \file[samples/]{samples} directories.
 
 \subsubsection{\file{datadir.in}}
@@ -1631,7 +1546,7 @@ The \file[src/]{src} directory contains two local files,
 individual modules (see \ref{S-modularity}) and to set parameters like the
 grid size and the number of processors for each direction.
 These two files are part of the setup of a given simulation and are kept
-under \name{CVS} in the individual \file[samples/]{samples} directories.
+under \name{svn} in the individual \file[samples/]{samples} directories.
 
 The file \file[cparam.inc]{src/cparam.inc} is automatically generated by
 the script \file{mkcparam} and contains the number of fundamental
@@ -1738,7 +1653,7 @@ By default, one \file{Makefile} will only work on a given class of
 computers with identical (or at least similar) compilers.
 One aim when building the {\sc Pencil Code} was however to allow running the
 code on different machines without needing to modify any file.
-This, together with \name{CVS} allows you for example to very quickly
+This, together with \name{svn} allows you for example to very quickly
 compare results for identical runs on different machines.
 
 Our mechanism for picking the right set of compiler flags is based on the
@@ -2404,7 +2319,7 @@ Here is a list of the more important ones.
   to the given computer, see \S\ref{adapt-mkfile}.
 \item[auto-test] Verify that the code compiles and runs in a set of run
   directories and compare the results to the reference output.
-  These tests are carried out routinely to ensure that the \name{CVS}
+  These tests are carried out routinely to ensure that the \name{svn}
   version of the code is in a usable state.
 \item[cleanf95] Can be use to clean up the output from the Intel x86 Fortran
   95 compiler (ifc).
@@ -2420,7 +2335,7 @@ Here is a list of the more important ones.
 \item[copy-VARN-to-var] Used to restart a run from a particular snapshot 
   \file{VAR$N$}. Copies a specified snapshot \file{VAR$N$} to \file{var.dat}
   where $N$ and the target run directory are given on the command line.
-\item[cvs-add-rundir] Add the current run directory to the \name{CVS} repository.
+\item[cvs-add-rundir] Add the current run directory to the \name{svn} repository.
 \item[cvsci_run] Similar to \cmd{cvs-add-rundir}, but it also checks in
   the \file{*.in} and \file{src/*.local} files. It also checks in the files
   \file[time_series.dat]{data/time_series.dat}, \file[dim.dat]{data/dim.dat} and
@@ -4826,7 +4741,7 @@ make: *** [code] Error 2
   Somebody may have checked in something without having
   run auto-test beforehand. The problem here is that something has been added in
   one module, but not in the corresponding no-module. You can of course check
-  with \name{CVS} who it was\ldots
+  with \name{svn} who it was\ldots
 }
 
 %%%
@@ -4976,7 +4891,7 @@ Under IRIX, I get
   unfortunately yes.
 
   Of course, this does not affect users' private changes outside the
-  central CVS tree.
+  central svn tree.
 
 %   My experience of some 5 days ago was quite enormous. It started
 %   with noticing that remesh.f90 doesn't work correctly. I thought:- ok,
@@ -5424,7 +5339,7 @@ to errors.
 A consistent coding style has evolved in the {\sc Pencil Code} and we
 ask that those contributing try to be consistent for everybody's 
 benefit.  In particular, it would be appreciated if those committing
-changes to the code via CVS submit code
+changes to the code via svn submit code
 
 There are not terribly many rules and using existing code as a template
 is usually the easiest way to proceed.  In short the most important rules are:
@@ -6188,7 +6103,7 @@ A high performance Infiniband network from Mellanox is used for MPI traffic.
 
 Table~\ref{Ttimescale-convsample} shows a similar list, but for a few
 well-defined sample problems.
-The \name{CVS} \index{CVS} check-in patterns are displayed graphically
+The \name{svn} \index{svn} check-in patterns are displayed graphically
 in Fig~\ref{cvsstat}.
 
 % ---------------------------------------------------------------------- %
@@ -8179,7 +8094,7 @@ double precision, $\varepsilon\approx10^{-15}$.
   \multicolumn{2}{c}{Namelist \name{init_pars}}\\
 \midrule
   \var{cvsid} [\code{''}]
-               & the \name{CVS} identification string, which allows you to
+               & the \name{svn} identification string, which allows you to
                  keep track of the version of \file{start.in}.\\
   \var{ip} [$14$]
                & (anti-)verbosity level: \code{ip=1} produces lots of
@@ -8627,7 +8542,7 @@ the latest set of parameters, you need to look at the code.
   \multicolumn{2}{c}{Namelist \name{run_pars}}\\
 \midrule
   \var{cvsid} [\code{''}]
-               & \name{CVS} identification string, which allows you to
+               & \name{svn} identification string, which allows you to
                  keep track of the version of \file{run.in}. \\
   \var{ip} [$14$]
                & (anti-)verbosity level: \code{ip=1} produces lots of
