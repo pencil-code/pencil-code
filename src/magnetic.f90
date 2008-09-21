@@ -1,4 +1,4 @@
-! $Id$
+! $Id$ 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -410,6 +410,7 @@ module Magnetic
   integer :: idiag_etasmagm=0   ! DIAG_DOC: Mean of Smagorinsky resistivity
   integer :: idiag_etasmagmin=0 ! DIAG_DOC: Min of Smagorinsky resistivity
   integer :: idiag_etasmagmax=0 ! DIAG_DOC: Max of Smagorinsky resistivity
+  integer :: idiag_cosjbm=0  ! DIAG_DOC: <cos[(J\cdot B)/|J||B|]>
 
   contains
 
@@ -1231,7 +1232,12 @@ module Magnetic
          ) lpenc_diagnos(i_jj)=.true.
       if (idiag_b2m/=0 .or. idiag_bm2/=0 .or. idiag_brms/=0 .or. &
           idiag_bmax/=0) lpenc_diagnos(i_b2)=.true.
-
+! to calculate the angle between magnetic field and current.
+      if(idiag_cosjbm/=0) then
+        lpenc_requested(i_jj)=.true.
+        lpenc_requested(i_jb)=.true.
+      else
+      endif
 !  pencils for meanfield dynamo diagnostics
 !
       if (idiag_EMFdotBm/=0) lpenc_diagnos(i_mf_EMFdotB)=.true.
@@ -2152,6 +2158,7 @@ module Magnetic
         if (idiag_jmax/=0) call max_mn_name(p%j2,idiag_jmax,lsqrt=.true.)
         if (idiag_epsM_LES/=0) call sum_mn_name(eta_smag*p%j2,idiag_epsM_LES)
         if (idiag_dteta/=0)  call max_mn_name(diffus_eta/cdtv,idiag_dteta,l_dt=.true.)
+        if (idiag_cosjbm/=0) call sum_mn_name(cos(p%jb/sqrt(p%j2*p%b2)),idiag_cosjbm)
 !
 !  Resistivity.
 !
@@ -4959,6 +4966,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'etasmagm',idiag_etasmagm)
         call parse_name(iname,cname(iname),cform(iname),'etasmagmin',idiag_etasmagmin)
         call parse_name(iname,cname(iname),cform(iname),'etasmagmax',idiag_etasmagmax)
+        call parse_name(iname,cname(iname),cform(iname),'cosjbm',idiag_cosjbm)
 !
       enddo
 !
@@ -5254,6 +5262,7 @@ module Magnetic
         write(3,*) 'iaz=',iaz
         write(3,*) 'ihypres=',ihypres
         write(3,*) 'idiag_bmxy_rms=',idiag_bmxy_rms
+        write(3,*) 'idiag_cosjbm=',idiag_cosjbm
       endif
 !
     endsubroutine rprint_magnetic
