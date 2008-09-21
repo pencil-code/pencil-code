@@ -899,7 +899,7 @@ To use the code, you will need the following:
 
 The code is now distributed via
 \url{http://code.google.com/p/pencil-code/},
-where you can either download a TarBall, or, preferably,
+where you can either download a tarball, or, preferably,
 download it via \name{svn}.
 
 To ensure at least some level of stability of the \name{svn}
@@ -923,15 +923,16 @@ This includes all problems in
   package name subversion.
 
 \item Unless you are a privileged users with write access, you can
-  download the code with the comand
+  download the code with the command
   \code{svn checkout http://pencil-code.googlecode.com/svn/trunk/ pencil-code}
   Privileged users with write access to the original repository should use
   something like
-  \code{svn checkout https://pencil-code.googlecode.com/svn/trunk/ pencil-code --username AxelBrandenburg},
-  where \name{AxelBrandenburg} is to be replaced by {\it your} google name.
-    Be sure to run \code{auto-test} before you check anything back in again.
-    It can be very annoying for someone else to figure out what's wrong,
-    especially if you are just up to something else.
+  \code{svn checkout https://pencil-code.googlecode.com/svn/trunk/ pencil-code --username USERNAME},
+  where \name{USERNAME} is to be replaced by {\it your} googlecode user
+  name.
+  Be sure to run \code{auto-test} before you check anything back in again.
+  It can be very annoying for someone else to figure out what's wrong,
+  especially if you are just up to something else.
 \end{enumerate}
 
 % ---------------------------------------------------------------------- %
@@ -1388,7 +1389,7 @@ The file \file{samples/README} should contain an up-to-date list and
 short description of the individual classes.\footnote{Our
 \file[pencil-runs/]{pencil-runs} directory also contains runs that were
 done some time ago. Occasionally, we try to update these, especially if we
-have changed names or other input convections.}
+have changed names or other input conventions.}
 
 The subdirectory \file[src/]{src} of each run directory contains a few local
 configuration files (currently these are \file{Makefile.local} and
@@ -1879,7 +1880,7 @@ where
 and $h=L_y/2$ is the duct half-width.
 
 Currently this method is only adapted for ducts where $x$ is
-the streamwise direction, $z$ is in the spanwise direction and the walls
+the stream-wise direction, $z$ is in the span-wise direction and the walls
 are at $y=y_0$ and $y=y_0+L_y$.
 
 In order to have fine enough resolution, the first grid point should be
@@ -2689,7 +2690,7 @@ For some choices of density and velocity units, Table~\ref{Tab-units-B-T}
 shows the resulting units of magnetic field and temperature.
 
 On the other hand, as soon as material equations are used (e.\,g.~one of
-the popular parameterizations for radiative losses, Kramers opacity,
+the popular parametrizations for radiative losses, Kramers opacity,
 Spitzer conductivities or ionization, which implies well-defined
 ionization energies), the corresponding routines in the code need to know
 the units you are using.
@@ -4554,7 +4555,7 @@ If this does not help, say first \cmd{make clean} and then \cmd{setup-src}.
 {\em
   The {\sc Pencil Code} should compile successfully with \name{ifc}~6.x,
   \name{ifc}~7.0, sufficiently recent versions of \name{ifc} 7.1 (you
-  should get the latest version; if your's is too old, you will typically
+  should get the latest version; if yours is too old, you will typically
   get an `internal compiler error' during compilation of
   \file[hydro.f90]{src/hydro.f90}), as well as with recent versions of
   \name{ifort} 8.1 (8.0 may also work).
@@ -9559,4 +9560,19 @@ $ $Id$ $}
 % LocalWords:  evr xz yz workq subclusters gigabit Gb uplinks OSF Ny Beltrami
 % LocalWords:  varphi cccc gd hydrostat lcc regridding isocontours num eff dF
 % LocalWords:  upwinded centr hyperdiffusion hyperdiffusive meshpoint kpc uint
-% LocalWords:  dampint dampext uext unst irrotational dV cr poly nez
+% LocalWords:  dampint dampext uext unst irrotational dV cr poly nez pdftex cn
+% LocalWords:  wlyra Wladimir weezy Wilkin steveb Berukoff Petri nbabkovs Korpi
+% LocalWords:  Babkovskaia mkorpi Maarit karlsson Torgny Karlsson joishi Oishi
+% LocalWords:  dhruba Dhrubaditya Mitra dintrans Dintrans Observatoire Pyr ees
+% LocalWords:  bing apichat Apichat Neamvonk Johansen arXiv Klahr Henning de th
+% LocalWords:  Youdin Borro Piskunov svn AxelBrandenburg google NFS RISC divu
+% LocalWords:  nogravity mpiodist VARN makefile eclet unshocked IDL's CPUs NGP
+% LocalWords:  rrrrrrrrrrrr gfortran CIC TSC cartesian lnTT et McNally Sur eos
+% LocalWords:  nochemistry severes nomodule epicycle logicals everybody's del
+% LocalWords:  lcylindrical fjv timestepped PDE mfarray maux mglobal mscratch
+% LocalWords:  lspecial nospecial rllrlrrr mem BD Lenn cetus Neolith Sanss AMD
+% LocalWords:  Opteron fastsse tp Lucidor myrinet Lenngren Xeon Nocona Mellanox
+% LocalWords:  Makefiles mmm yy login TT tt idiag boolean emacs setq nd alist
+% LocalWords:  fF Xemacs fortran el failsafes daainit etatest FBCX yx
+% LocalWords:  xB yB zB alfven Deutsch Verlag Gammie McGraw Moin Moser Krause
+% LocalWords:  Pergamon
