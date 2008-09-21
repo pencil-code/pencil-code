@@ -46,7 +46,8 @@ module Testfield
 !
   character (len=labellen), dimension(ninit) :: initaatest='nothing'
   real, dimension (ninit) :: kx_aatest=1.,ky_aatest=1.,kz_aatest=1.
-  real, dimension (ninit) :: amplaatest=0.,phasez_aatest=0.
+  real, dimension (ninit) :: phasex_aatest=0.,phasez_aatest=0.
+  real, dimension (ninit) :: amplaatest=0.
   integer :: iE0=0
 
   ! input parameters
@@ -65,7 +66,7 @@ module Testfield
   namelist /testfield_init_pars/ &
        B_ext,zextent,initaatest, &
        amplaatest,kx_aatest,ky_aatest,kz_aatest, &
-       phasez_aatest, &
+       phasex_aatest,phasez_aatest, &
        luxb_as_aux,ljxb_as_aux
 
   ! run parameters
@@ -407,7 +408,7 @@ module Testfield
       case('sinwave-x-1'); call sinwave(amplaatest(j),f,iaxtest+0+1,kx=kx_aatest(j))
       case('sinwave-x-2'); call sinwave(amplaatest(j),f,iaxtest+3+1,kx=kx_aatest(j))
       case('sinwave-x-3'); call sinwave(amplaatest(j),f,iaxtest+6+1,kx=kx_aatest(j))
-      case('Beltrami-x-1'); call beltrami(amplaatest(j),f,iaxtest+0,kx=-kx_aatest(j))
+      case('Beltrami-x-1'); call beltrami(amplaatest(j),f,iaxtest+0,kx=-kx_aatest(j),phase=phasex_aatest(j))
       case('Beltrami-z-1'); call beltrami(amplaatest(j),f,iaxtest+0,kz=-kz_aatest(j),phase=phasez_aatest(j))
       case('Beltrami-z-2'); call beltrami(amplaatest(j),f,iaxtest+3,kz=-kz_aatest(j),phase=phasez_aatest(j))
       case('Beltrami-z-3'); call beltrami(amplaatest(j),f,iaxtest+6,kz=-kz_aatest(j),phase=phasez_aatest(j))
