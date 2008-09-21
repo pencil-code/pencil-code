@@ -407,7 +407,6 @@ module Magnetic
   integer :: idiag_bmxy_rms=0   ! DIAG_DOC: $\sqrt{[\left<b_x\right>_z(x,y)]^2 + 
                                 ! DIAG_DOC: [\left<b_y\right>_z(x,y)]^2 +
                                 ! DIAG_DOC: [\left<b_z\right>_z(x,y)]^2} $ 
-! testing the google svn
   integer :: idiag_etasmagm=0   ! DIAG_DOC: Mean of Smagorinsky resistivity
   integer :: idiag_etasmagmin=0 ! DIAG_DOC: Min of Smagorinsky resistivity
   integer :: idiag_etasmagmax=0 ! DIAG_DOC: Max of Smagorinsky resistivity
