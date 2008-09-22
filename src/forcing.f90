@@ -50,6 +50,7 @@ module Forcing
   logical :: old_forcing_evector=.false.
   character (len=labellen) :: iforce='zero', iforce2='zero'
   character (len=labellen) :: iforce_profile='nothing'
+  real :: equator
 ! For helical forcing in sphreical polar coordinate system
   real,allocatable,dimension(:,:,:) :: psif
   real,allocatable,dimension(:,:) :: cklist
@@ -97,7 +98,8 @@ module Forcing
        ck_equator_gap,ck_gap_step,&
        lforcing_cont,iforcing_cont, &
        lembed,k1_ff,ampl_ff,width_fcont,x1_fcont,x2_fcont, &
-       kf_fcont,omega_fcont,eps_fcont,lsamesign
+       kf_fcont,omega_fcont,eps_fcont,lsamesign,&
+       equator
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_ffm=0
   integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
@@ -264,6 +266,7 @@ module Forcing
         case ('zero'); if (headt) print*,'addforce: No forcing'
         case ('irrotational');    call forcing_irro(f,force)
         case ('helical', '2');    call forcing_hel(f)
+        case ('helical_both');    call forcing_hel_both(f)
         case ('GP');              call forcing_GP(f)
         case ('TG');              call forcing_TG(f)
         case ('ABC');             call forcing_ABC(f)
@@ -296,6 +299,7 @@ module Forcing
         case ('zero'); if(headtt .and. lroot) print*,'addforce: No additional forcing'
         case ('irrotational'); call forcing_irro(f,force2)
         case ('helical');      call forcing_hel(f)
+        case ('helical_both'); call forcing_hel_both(f)
         case ('fountain');     call forcing_fountain(f)
         case ('horiz-shear');  call forcing_hshear(f)
         case ('diffrot');      call forcing_diffrot(f,force2)
@@ -746,6 +750,243 @@ module Forcing
       if (ip.le.9) print*,'forcing_hel: forcing OK'
 !
     endsubroutine forcing_hel
+!***********************************************************************
+    subroutine forcing_hel_both(f)
+!
+!  Add helical forcing function, using a set of precomputed wavevectors.
+!  The relative helicity of the forcing function is determined by the factor
+!  sigma, called here also relhel. If it is +1 or -1, the forcing is a fully
+!  helical Beltrami wave of positive or negative helicity. For |relhel| < 1
+!  the helicity less than maximum. For relhel=0 the forcing is nonhelical.
+!  The forcing function is now normalized to unity (also for |relhel| < 1).
+!  This adds positive helical forcing to the "northern hemisphere" (y above the
+!  midplane and negative helical forcing to the "southern hemisphere". The
+!  two forcing are merged at the "equator" (midplane) where both are smoothly
+!  set to zero. 
+!
+!  22-sep-08/dhruba: aped from forcing_hel
+
+      use Mpicomm
+      use Cdata
+      use General
+      use Sub
+      use EquationOfState, only: cs0
+!
+      real :: phase,ffnorm,irufm
+      real, save :: kav
+      real, dimension (1) :: fsum_tmp,fsum
+      real, dimension (2) :: fran
+      real, dimension (nx) :: radius,tmpx,rho1,ff,ruf,uf,of,rho
+      real, dimension (mz) :: tmpz
+      real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all,uu,oo,bb,fxb
+      real, dimension (nx,3) :: fda
+      real, dimension (mx,my,mz,mfarray) :: f
+      complex, dimension (mx) :: fx
+      complex, dimension (my) :: fy
+      complex, dimension (mz) :: fz
+      real, dimension (3) :: coef1,coef2
+      logical, dimension (3), save :: extent
+      integer, parameter :: mk=3000
+      integer, dimension(mk), save :: kkx,kky,kkz
+      integer, save :: ifirst=0,nk
+      integer :: ik,j,jf,l
+      real :: kx0,kx,ky,kz,k2,k,force_ampl=1.
+      real :: ex,ey,ez,kde,sig=1.,fact,kex,key,kez,kkex,kkey,kkez
+      real, dimension(3) :: e1,e2,ee,kk
+      real :: norm,phi
+      real :: fd,fd2,kkfd
+!
+!  additional stuff for test fields
+!
+      integer :: jtest
+!
+      if (ifirst==0) then
+        if (lroot) print*,'forcing_hel_both: opening k.dat'
+        open(9,file='k.dat')
+        read(9,*) nk,kav
+        if (lroot) print*,'forcing_hel_both: average k=',kav
+        if(nk.gt.mk) then
+          if (lroot) print*,'forcing_hel_both: mk in forcing_hel is set too small'
+          print*,'nk=',nk,'mk=',mk
+          call mpifinalize
+        endif
+        read(9,*) (kkx(ik),ik=1,nk)
+        read(9,*) (kky(ik),ik=1,nk)
+        read(9,*) (kkz(ik),ik=1,nk)
+        close(9)
+        extent(1)=nx.ne.1
+        extent(2)=ny.ne.1
+        extent(3)=nz.ne.1
+      endif
+      ifirst=ifirst+1
+!
+!  generate random coefficients -1 < fran < 1
+!  ff=force*Re(exp(i(kx+phase)))
+!  |k_i| < akmax
+!
+      call random_number_wrapper(fran)
+      phase=pi*(2*fran(1)-1.)
+      ik=nk*(.9999*fran(2))+1
+      if(ip<=6) print*,'forcing_hel_both: ik,phase=',ik,phase
+      if(ip<=6) print*,'forcing_hel_both: kx,ky,kz=',kkx(ik),kky(ik),kkz(ik)
+      if(ip<=6) print*,'forcing_hel_both: dt, ifirst=',dt,ifirst
+!
+!  normally we want to use the wavevectors as they are,
+!  but in some cases, e.g. when the box is bigger than 2pi,
+!  we want to rescale k so that k=1 now corresponds to a smaller value.
+!
+      if (lscale_kvector_tobox) then
+        kx0=kkx(ik)*(2.*pi/Lxyz(1))
+        ky=kky(ik)*(2.*pi/Lxyz(2))
+        kz=kkz(ik)*(2.*pi/Lxyz(3))
+      else
+        kx0=kkx(ik)
+        ky=kky(ik)
+        kz=kkz(ik)
+      endif
+!
+!  in the shearing sheet approximation, kx = kx0 - St*k_y.
+!  Here, St=-deltay/Lx
+!
+      if (Sshear==0.) then
+        kx=kx0
+      else
+        kx=kx0+ky*deltay/Lx
+      endif
+!
+      if(headt.or.ip<5) print*, 'forcing_hel_both: kx0,kx,ky,kz=',kx0,kx,ky,kz
+      k2=kx**2+ky**2+kz**2
+      k=sqrt(k2)
+!
+! Find e-vector
+!
+      !
+      ! Start with old method (not isotropic) for now.
+      ! Pick e1 if kk not parallel to ee1. ee2 else.
+      !
+      if((ky.eq.0).and.(kz.eq.0)) then
+        ex=0; ey=1; ez=0
+      else
+        ex=1; ey=0; ez=0
+      endif
+      if (.not. old_forcing_evector) then
+        !
+        !  Isotropize ee in the plane perp. to kk by
+        !  (1) constructing two basis vectors for the plane perpendicular
+        !      to kk, and
+        !  (2) choosing a random direction in that plane (angle phi)
+        !  Need to do this in order for the forcing to be isotropic.
+        !
+        kk = (/kx, ky, kz/)
+        ee = (/ex, ey, ez/)
+        call cross(kk,ee,e1)
+        call dot2(e1,norm); e1=e1/sqrt(norm) ! e1: unit vector perp. to kk
+        call cross(kk,e1,e2)
+        call dot2(e2,norm); e2=e2/sqrt(norm) ! e2: unit vector perp. to kk, e1
+        call random_number_wrapper(phi); phi = phi*2*pi
+        ee = cos(phi)*e1 + sin(phi)*e2
+        ex=ee(1); ey=ee(2); ez=ee(3)
+      endif
+!
+!  k.e
+!
+      call dot(kk,ee,kde)
+!
+!  k x e
+!
+      kex=ky*ez-kz*ey
+      key=kz*ex-kx*ez
+      kez=kx*ey-ky*ex
+!
+!  k x (k x e)
+!
+      kkex=ky*kez-kz*key
+      kkey=kz*kex-kx*kez
+      kkez=kx*key-ky*kex
+!
+!  ik x (k x e) + i*phase
+!
+!  Normalize ff; since we don't know dt yet, we finalize this
+!  within timestep where dt is determined and broadcast.
+!  For further details on normalization see forcing_hel subroutine.
+!
+      ffnorm=sqrt(1.+relhel**2) &
+        *k*sqrt(k2-kde**2)/sqrt(kav*cs0**3)*(k/kav)**slope_ff
+      if (ip.le.9) print*,'forcing_hel_both: k,kde,ffnorm,kav=',k,kde,ffnorm,kav
+      if (ip.le.9) print*,'forcing_hel_both: k*sqrt(k2-kde**2)=',k*sqrt(k2-kde**2)
+!
+!  need to multiply by dt (for Euler step), but it also needs to be
+!  divided by sqrt(dt), because square of forcing is proportional
+!  to a delta function of the time difference
+!
+      fact=force/ffnorm*sqrt(dt)
+!
+!  The wavevector is for the case where Lx=Ly=Lz=2pi. If that is not the
+!  case one needs to scale by 2pi/Lx, etc.
+!
+      fx=exp(cmplx(0.,kx*k1_ff*x+phase))*fact
+! only sines, to make sure that the force goes to zeroat the equator
+      fy=cmplx(0.,sin(ky*k1_ff*y))
+      fz=exp(cmplx(0.,kz*k1_ff*z))
+
+
+!
+      if (ip.le.5) print*,'forcing_hel: fx=',fx
+      if (ip.le.5) print*,'forcing_hel: fy=',fy
+      if (ip.le.5) print*,'forcing_hel: fz=',fz
+!
+!  prefactor; treat real and imaginary parts separately (coef1 and coef2),
+!  so they can be multiplied by different profiles below.
+!
+      coef1(1)=k*kex; coef2(1)=relhel*kkex
+      coef1(2)=k*key; coef2(2)=relhel*kkey
+      coef1(3)=k*kez; coef2(3)=relhel*kkez
+      if (ip.le.5) print*,'forcing_hel: coef=',coef1,coef2
+!
+
+
+!  loop the two cases separately, so we don't check for r_ff during
+!  each loop cycle which could inhibit (pseudo-)vectorisation
+!  calculate energy input from forcing; must use lout (not ldiagnos)
+!
+     rho1=1
+      do n=n1,n2
+        do m=m1,m2
+          variable_rhs=f(l1:l2,m,n,iffx:iffz)
+          do j=1,3
+            if(extent(j)) then
+              jf=j+ifff-1
+              if(y(m).gt.equator)then
+                forcing_rhs(:,j)=rho1*real(cmplx(coef1(j),coef2(j)) &
+                                    *fx(l1:l2)*fy(m)*fz(n))& 
+                        *(1.-step_scalar(y(m),equator-ck_equator_gap,ck_gap_step)+&
+                            step_scalar(y(m),equator+ck_equator_gap,ck_gap_step))
+              else
+                forcing_rhs(:,j)=rho1*real(cmplx(coef1(j),-coef2(j)) &
+                  *fx(l1:l2)*fy(m)*fz(n))&
+                  *(1.-step_scalar(y(m),equator-ck_equator_gap,ck_gap_step)+&
+                      step_scalar(y(m),equator+ck_equator_gap,ck_gap_step))
+              endif
+              if(lhelical_test) then
+                f(l1:l2,m,n,jf)=forcing_rhs(:,j)
+              else
+                f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
+              endif
+              if (ltestfield_forcing) then
+                do jtest=1,12
+                  iaxtest=iaatest+3*(jtest-1)
+                  jf=j+iaxtest-1
+                  f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
+                enddo
+              endif
+            endif
+          enddo
+        enddo
+      enddo
+!
+      if (ip.le.9) print*,'forcing_hel_both: forcing OK'
+!
+    endsubroutine forcing_hel_both
 !***********************************************************************
     subroutine forcing_chandra_kendall(f)
 !
