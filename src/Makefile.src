@@ -254,8 +254,12 @@ LD_FFTW2=
 #FFLAGS=-fno-second-underscore -O3 -I/home/johansen/local/mpich2/include #(aida69)
 #LD_MPI=-l pthread -L /home/johansen/local/mpich2/lib -lmpich #(aida69)
 ##
+## Andrej's Laptop
+##
 #FC=ifort #(helios-thinkpad)
 #FFLAGS=-O3 #(helios-thinkpad)
+##
+## Andrej's Desktop - tau and non-tau setup
 ##
 ##FC=gfortran #(aida90)
 ##TAUROOTDIR    = /home/bicanski/tau-pdt/tau-2.17 #(aida90)
@@ -274,6 +278,13 @@ LD_FFTW2=
 ##FFLAGS=-prof-genx -g -O0 -I/home/bicanski/mpich2-install/include #(aida90)
 ##FFLAGS=-pg -O0 -g -I/home/bicanski/mpich2-install/include #(aida90)
 ##F90FLAGS=-g #(aida90)
+##
+## Andrej on PIA cluster
+##
+#FC=/afs/ipp-garching.mpg.de/amd64_sles9/soft/mvapich/mvapich2-1.0.0-opteron-x/f95i.11.0/bin/mpif90 #(pia)
+##FFLAGS=-O3 -I/afs/ipp-garching.mpg.de/amd64_sles9/soft/mvapich/mvapich2-1.0.0-opteron-x/f95i.11.0/include #(pia)
+#FFLAGS=-O2 -I/afs/ipp-garching.mpg.de/amd64_sles9/soft/mvapich/mvapich2-1.0.0-opteron-x/f95i.11.0/include #(pia)
+#LD_MPI=-L/afs/ipp-garching.mpg.de/amd64_sles9/soft/mvapich/mvapich2-1.0.0-opteron-x/f95i.11.0/lib -lpthread #(pia)
 ##
 #FC=mpif90 #(nw[0-9]+|hamlet|lynx|brahe|nq[0-9]*|milipeia|goose)
 #FC=f90 #(p6012)
