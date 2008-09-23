@@ -1180,10 +1180,12 @@ else if ($hn =~ is*.uppmax.uu.se) then
   echo "Isis cluster at Uppmax, Uppsala"
 #set the library paths
   if (  $?LD_LIBRARY_PATH) then
-    setenv LD_LIBRARY_PATH  /opt/openmpi/1.2pgi/lib:/sw/openmpi/1.1/pgi/comp/openmpi-1.1.3/orte/.libs/:/sw/openmpi/1.1/pgi/install/lib:${LD_LIBRARY_PATH}
+    setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:/opt/openmpi/1.2pgi/lib:/sw/openmpi/1.1/pgi/comp/openmpi-1.1.3/orte/.libs/:/sw/openmpi/1.1/pgi/install/lib
   else
     setenv LD_LIBRARY_PATH  /opt/openmpi/1.2pgi/lib:/sw/openmpi/1.1/pgi/comp/openmpi-1.1.3/orte/.libs/:/sw/openmpi/1.1/pgi/install/lib  
   endif
+  setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:/opt/openmpi/1.2.5gcc/lib:/sw/gcc/4.2.3/lib64:/opt/openmpi/1.2.5pgi/lib:/opt/sge_61u2/lib/lx24-amd64
+  set mpirun = /opt/openmpi/1.2.5gcc/bin/mpirun
 
 else if ($hn =~ vsl2*) then
     set mpirunops2 = ' -machinefile machines.txt '
