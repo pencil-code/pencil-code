@@ -262,6 +262,9 @@ if ($?SLURM_JOBID) then
     >> $datadir/jobid.dat
 endif
 
+# Write time and current working directory into log file
+(date; echo $cwd; echo "")>> $PENCIL_HOME/.run_directories.log
+
 # Run run.x
 rm -f 'ERROR'
 date
