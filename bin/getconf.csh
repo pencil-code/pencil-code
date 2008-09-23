@@ -904,11 +904,6 @@ else if ($hn =~ rockall || $hn =~ valdivia) then
   set mpirun = 'orterun'
   set mpirunops = '-machinefile ~/machines'
 
-else if ($hn =~ hades) then
-  echo "Hades - Wlad's laptop"
-  set mpirun = 'mpiexec'
-  set mpirunops = '-boot'
-
 else if ($hn =~ kolmogorov) then
   echo "Kolmogorov on Wolfgang's desk"
   set mpirun = 'mpiexec'
@@ -997,6 +992,8 @@ else if ($hn =~ rio* || $hn =~ pia*) then
   if ($#nodelist == 1) then
     echo "Apparently an interactive run."
     set nodelist = `repeat $ncpus echo $nodelist`
+    set mpirun = ' '
+    set npops  = ' '
   else
     set nprocpernode = 1
 #    if ($mpi) then
