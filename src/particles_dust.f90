@@ -70,7 +70,7 @@ module Particles
   logical :: lshort_friction_approx=.false.
   logical :: lbrownian_forces=.false.
   logical :: lenforce_policy=.false.
-  logical :: lnostore_uu=.false.
+  logical :: lnostore_uu=.true.
   logical :: ldtgrav_par=.false.
 
   character (len=labellen) :: interp_pol_uu ='ngp'
