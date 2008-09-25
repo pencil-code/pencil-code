@@ -2140,7 +2140,7 @@ module Particles_sub
 !
       if (lsink) then
         if (present(ks)) then 
-          print*,'sink particle ',ks 
+          print*,'sink particle ', ks 
           print*,'is removing the following sink particle:'
         else
           print*,'the following sink particle is being removed'
@@ -2154,7 +2154,7 @@ module Particles_sub
 !  Write to the respective processor that the particle is removed.
 !
       open(20,file=trim(directory)//'/rmv_par.dat',position='append')
-      write(20,*) t, ipar(k), fp(k,ivpx:ivpz)
+      write(20,*) ipar(k), fp(k,:), t
       close(20)
 !
 !  Switch the removed particle with the last particle present in the processor
