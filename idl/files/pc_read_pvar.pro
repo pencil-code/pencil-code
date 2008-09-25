@@ -1,9 +1,11 @@
+;
 ; $Id$
 ;
 ;   Read pvar.dat, or other PVAR file
 ;
 pro pc_read_pvar, object=object, varfile=varfile_, datadir=datadir, ivar=ivar, $
-    npar_max=npar_max, quiet=quiet, qquiet=qquiet,SWAP_ENDIAN=SWAP_ENDIAN
+    npar_max=npar_max, quiet=quiet, qquiet=qquiet, swap_endian=swap_endian, $
+    rmv=rmv
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;
@@ -12,7 +14,8 @@ COMMON pc_precision, zero, one
 if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 default, quiet, 0
 default, qquiet, 0
-
+default, rmv, 0
+;
 if n_elements(ivar) eq 1 then begin
     default,varfile_,'PVAR'
     varfile=varfile_+strcompress(string(ivar),/remove_all)
@@ -20,7 +23,7 @@ endif else begin
     default,varfile_,'pvar.dat'
     varfile=varfile_
 endelse
-
+;
 if (qquiet) then quiet=1
 ;
 ;  Get necessary dimensions.
@@ -72,7 +75,7 @@ varcontent=REPLICATE( $
     idlinit    : 'fltarr(npar)*one', $
     skip       : 0}, $
     mpvar+1)
-
+;
 INIT_SCALAR  = 'fltarr(npar)*one'
 INIT_3VECTOR = 'fltarr(npar,3)*one'
 ;
@@ -129,12 +132,12 @@ npar_loc=0L
 ;  Loop over processors.
 ;
 for i=0,ncpus-1 do begin
-
+;
   if (not keyword_set(quiet)) then $
       print,'Loading chunk ', strtrim(str(i+1)), ' of ', $
       strtrim(str(ncpus)), ' (', $
       strtrim(datadir+'/proc'+str(i)+'/'+varfile), ')...'
-
+;
   filename=datadir+'/proc'+strtrim(i,2)+'/'+varfile 
 ;
 ;  Check if file exists.
@@ -149,7 +152,7 @@ for i=0,ncpus-1 do begin
 ;
   get_lun, file
   close, file
-  openr, file, filename, /F77,SWAP_ENDIAN=SWAN_ENDIAN
+  openr, file, filename, /f77, swap_endian=swan_endian
 ;
 ;  Read the number of particles at the local processor together with their
 ;  global index numbers.
@@ -225,22 +228,37 @@ for i=0,ncpus-1 do begin
       i0zloc=procdim.nghostz
       i1zloc=procdim.mz-1L
     endelse
-
+;
     x[i0x:i1x] = xloc[i0xloc:i1xloc]
     y[i0y:i1y] = yloc[i0yloc:i1yloc]
     z[i0z:i1z] = zloc[i0zloc:i1zloc]
-
+;
   endif else begin
-
+;
     x=xloc
     y=yloc
     z=zloc
-
+;
   endelse
   tarr[i]=t
 ;
   close, file
   free_lun, file
+;
+;  Read indices of removed particles. The positions are not actually read - we
+;  are just checking that all particles are accounted for.
+;
+  if (rmv) then begin
+    filename=datadir+'/proc'+strtrim(i,2)+'/rmv_par.dat'
+    ipar_rmv=0L
+    get_lun, file
+    close, file
+    openr, file, filename
+    while (not eof(file)) do begin
+      readf, file, ipar_rmv
+      ipar[ipar_rmv-1]=ipar[ipar_rmv-1]+1
+    endwhile
+  endif
 ;
 endfor
 ;
@@ -276,16 +294,16 @@ endif
 ;
 ;  Put data and parameters in object.
 ;
-makeobject="object = CREATE_STRUCT(name=objectname," + $
+makeobject="object = create_struct(name=objectname," + $
     "['t','x','y','z','dx','dy','dz'," + $
-    arraytostring(variables,QUOTE="'",/noleader) + "]," + $
+    arraytostring(variables,quote="'",/noleader) + "]," + $
     "t,x,y,z,dx,dy,dz," + $
     arraytostring(variables,/noleader) + ")"
 if (execute(makeobject) ne 1) then begin
-  message, 'ERROR Evaluating variables: ' + makeobject, /INFO
-  undefine,object
+  message, 'ERROR Evaluating variables: ' + makeobject, /info
+  undefine, object
 endif
-
+;
 ; If requested print a summary
 ;
 ;if keyword_set(STATS) or (not (keyword_set(NOSTATS) or keyword_set(quiet))) then begin
@@ -298,7 +316,7 @@ if (min(tarr) ne max(tarr)) then begin
   print, 'The time of the snapshot is inconsistent among the processors!'
   print, 'min(t), max(t)=', min(tarr), max(tarr)
 endif
-
+;
 if (not qquiet) then print,' t = ', mean(tarr)
-
+;
 end
