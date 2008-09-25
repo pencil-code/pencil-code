@@ -1505,7 +1505,7 @@ module Particles_nbody
 !
     endsubroutine get_total_gravity
 !***********************************************************************
-    subroutine create_sink_particles(f,fp,ineargrid)
+    subroutine create_sink_particles_nbody(f,fp,dfp,ineargrid)
 !
 ! If the flow in any place of the grid has gone gravitationally 
 ! unstable, substitute the local flow by a sink particle. By now, 
@@ -1527,15 +1527,15 @@ module Particles_nbody
       use Mpicomm
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mpar_loc,mpvar) :: fp
+      real, dimension(mpar_loc,mpvar) :: fp, dfp
+      integer, dimension(mpar_loc,3) :: ineargrid
+!
       real, dimension(maxsink,mspvar) :: fcsp,fcsp_loc
       real, dimension(maxsink,mspvar) :: fcsp_proc
       real, dimension(nx,3) :: vvpm
       real, dimension(nx) :: rho_jeans,rho_jeans_dust,vpm2
       real, dimension(nx) :: Delta1
-!
       integer, dimension(nx,mpar_loc) :: pik
-      integer, dimension(mpar_loc,3) :: ineargrid
       integer :: i,k,kn,inx0,nc,ks,nc_loc,j
       integer::nc_proc
       integer, pointer :: iglobal_cs2
@@ -1558,7 +1558,7 @@ module Particles_nbody
         ltime_to_create = (mod(it-1,icreate) == 0)
         if (ltime_to_create.and.llast) then
 !
-          if (ldebug) print*,'Entered create_sink_particles'
+          if (ldebug) print*,'Entered create_sink_particles_nbody'
 !
           do i=1,nx
             if (lcartesian_coords) then 
@@ -1566,8 +1566,8 @@ module Particles_nbody
             elseif (lcylindrical_coords) then 
               Delta1(i)=max(dx_1(i),rcyl_mn1(i)*dy_1(mpoint),dz_1(npoint))
             elseif (lspherical_coords) then 
-              call fatal_error("create_sink_particle","not yet implemented"//&
-                   "for spherical polars")
+              call fatal_error('create_sink_particle_nbody', &
+                  'not yet implemented for spherical polars')
             endif
           enddo
 !
@@ -1639,7 +1639,7 @@ module Particles_nbody
                     print*,'number of created partciles (nc)=',nc_loc
                     print*,'maximum allowed number of sinks '//&
                          'before merging (maxsink)=',maxsink
-                    call fatal_error("create_sink_particles","")
+                    call fatal_error('create_sink_particles_nbody','')
                   endif
 !
 ! store these particles in a temporary array fcsp - "F array of Created Sink Particles"
@@ -1745,7 +1745,7 @@ module Particles_nbody
                       print*,'number of created partciles (nc)=',nc_loc
                       print*,'maximum allowed number of sinks '//&
                            'before merging (maxsink)=',maxsink
-                      call fatal_error("create_sink_particles","")
+                      call fatal_error('create_sink_particle_nbody','')
                     endif
 !
                     fcsp_loc(nc_loc,ixp) = x(i+nghost)
@@ -1842,7 +1842,24 @@ module Particles_nbody
 !
       endif
 !      
-    endsubroutine create_sink_particles
+    endsubroutine create_sink_particles_nbody
+!***********************************************************************
+    subroutine remove_particles_sink_nbody(f,fp,dfp,ineargrid)
+!
+!  Subroutine for taking particles out of the simulation due to their
+!  proximity to a sink particle or sink point.
+!
+!  Just a dummy routine for now.
+!
+!  25-sep-08/anders: coded
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mpar_loc,mpvar) :: fp, dfp
+      integer, dimension(mpar_loc,3) :: ineargrid
+!
+      if (NO_WARN) print*, f, fp, dfp, ineargrid
+!
+    endsubroutine remove_particles_sink_nbody
 !**************************************************************************
     subroutine merge_and_share(fcsp,nc,fp)
 !     

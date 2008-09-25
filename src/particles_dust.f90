@@ -48,6 +48,7 @@ module Particles
   real :: coeff_restitution=0.5, mean_free_path_gas=0.0
   real :: pdlaw=0.0, tausp_short_friction=0.0, tausp1_short_friction=0.0
   real :: brownian_T0=0.0
+  real :: xsinkpoint=0.0, ysinkpoint=0.0, zsinkpoint=0.0, rsinkpoint=0.0
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iscratch_short_friction=0
   integer, dimension (npar_species) :: ipar_fence_species=0
@@ -72,6 +73,7 @@ module Particles
   logical :: lenforce_policy=.false.
   logical :: lnostore_uu=.true.
   logical :: ldtgrav_par=.false.
+  logical :: lsinkpoint=.false.
 
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -106,7 +108,8 @@ module Particles
       tausp_short_friction,ldraglaw_steadystate,tstart_liftforce_par, &
       tstart_brownian_par, lbrownian_forces, lenforce_policy, &
       interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, &
-      brownian_T0, lnostore_uu, ldtgrav_par
+      brownian_T0, lnostore_uu, ldtgrav_par, &
+      lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -128,7 +131,8 @@ module Particles
       tausp_short_friction,ldraglaw_steadystate,tstart_liftforce_par, &
       tstart_brownian_par, lbrownian_forces, lenforce_policy, &
       interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, &
-      brownian_T0, lnostore_uu, ldtgrav_par
+      brownian_T0, lnostore_uu, ldtgrav_par, &
+      lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -1589,8 +1593,7 @@ k_loop:   do while (.not. (k>npar_loc))
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
       logical :: lsink
 !
-      intent (in) :: fp, ineargrid
-      intent (inout) :: f, df, dfp
+      intent (inout) :: f, df, dfp, fp, ineargrid
 !
 !  Identify module.
 !     
@@ -2315,6 +2318,49 @@ k_loop:   do while (.not. (k>npar_loc))
       if (NO_WARN) print*, f, df, ineargrid
 !
     endsubroutine dvvp_dt
+!***********************************************************************
+    subroutine remove_particles_sink(f,fp,dfp,ineargrid)
+!
+!  Subroutine for taking particles out of the simulation due to their proximity
+!  to a sink particle or sink point.
+!
+!  25-sep-08/anders: coded
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mpar_loc,mpvar) :: fp, dfp
+      integer, dimension(mpar_loc,3) :: ineargrid
+!
+      real :: rp
+      integer :: k
+!
+      if (lsinkpoint) then
+        k=1
+        do while (k<=npar_loc)
+          rp=sqrt((fp(k,ixp)-xsinkpoint)**2+(fp(k,iyp)-ysinkpoint)**2+ &
+             (fp(k,izp)-zsinkpoint)**2)
+          if (rp<rsinkpoint) &
+              call remove_particle(fp,npar_loc,ipar,k,dfp,ineargrid)
+          k=k+1
+        enddo
+      endif
+!
+    endsubroutine remove_particles_sink
+!***********************************************************************
+    subroutine create_sink_particles(f,fp,dfp,ineargrid)
+!
+!  Subroutine for creating new sink particles or sink points.
+!
+!  Just a dummy routine for now.
+!
+!  25-sep-08/anders: coded
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mpar_loc,mpvar) :: fp, dfp
+      integer, dimension(mpar_loc,3) :: ineargrid
+!
+      if (NO_WARN) print*, f, fp, dfp, ineargrid
+!
+    endsubroutine create_sink_particles
 !***********************************************************************
     subroutine get_frictiontime(f,fp,p,ineargrid,k,tausp1_par,uup,&
       nochange_opt,rep,stocunn)

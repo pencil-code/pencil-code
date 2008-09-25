@@ -3,7 +3,7 @@
 !  This module contains all the main structure needed for particles.
 !
 module Particles_main
-
+!
   use Cdata
   use Messages
   use Particles
@@ -15,16 +15,15 @@ module Particles_main
   use Particles_selfgravity
   use Particles_stalker
   use Particles_sub
-
+!
   implicit none
-
+!
   include 'particles_main.h'
-
+!
   real, dimension (mpar_loc,mpvar) :: fp, dfp
   integer, dimension (mpar_loc,3) :: ineargrid
-
+!
   contains
-
 !***********************************************************************
     subroutine particles_register_modules()
 !
@@ -224,7 +223,21 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
+!  First apply boundary conditions to the newly updated particle positions.
+!
       call boundconds_particles(fp,npar_loc,ipar,dfp=dfp)
+!
+!  Remove particles that are too close to sink particles or sink points.
+!  WARNING: ineargrid and the mapped particle density have not been updated
+!  yet, and the sink particle subroutine must not rely on those arrays.
+!
+      if (lparticles)       call remove_particles_sink(f,fp,dfp,ineargrid)
+      if (lparticles_nbody) call remove_particles_sink_nbody(f,fp,dfp,ineargrid)
+!
+!  Create new sink particles or sink points.
+!
+      if (lparticles)       call create_sink_particles(f,fp,dfp,ineargrid)
+      if (lparticles_nbody) call create_sink_particles_nbody(f,fp,dfp,ineargrid)
 !
 !  Map the particle positions on the grid for later use.
 !
@@ -234,6 +247,8 @@ module Particles_main
 !  Sort particles so that they can be accessed contiguously in the memory.
 !
       call sort_particles_imn(fp,ineargrid,ipar,dfp=dfp)
+!
+!  ???
 !
       if (lparticles_nbody) call share_sinkparticles(fp)
 !
@@ -260,7 +275,8 @@ module Particles_main
 !
     endsubroutine particles_doprepencil_calc
 !***********************************************************************
-    subroutine particles_calc_selfpotential(f,rhs_poisson,rhs_poisson_const,lcontinued)
+    subroutine particles_calc_selfpotential(f,rhs_poisson,rhs_poisson_const, &
+        lcontinued)
 !
 !  Calculate the potential of the dust particles (wrapper).
 !
@@ -271,7 +287,8 @@ module Particles_main
       real :: rhs_poisson_const
       logical :: lcontinued
 !
-      call calc_selfpotential_particles(f,rhs_poisson,rhs_poisson_const,lcontinued)
+      call calc_selfpotential_particles(f,rhs_poisson,rhs_poisson_const, &
+          lcontinued)
 !
     endsubroutine particles_calc_selfpotential
 !***********************************************************************
@@ -289,12 +306,12 @@ module Particles_main
 !
 !  20-apr-06/anders: coded
 !
-      call pencil_criteria_particles()
-      if (lparticles_radius) call pencil_criteria_par_radius()
-      if (lparticles_spin)   call pencil_criteria_par_spin()
-      if (lparticles_number) call pencil_criteria_par_number()
+      if (lparticles)             call pencil_criteria_particles()
+      if (lparticles_radius)      call pencil_criteria_par_radius()
+      if (lparticles_spin)        call pencil_criteria_par_spin()
+      if (lparticles_number)      call pencil_criteria_par_number()
       if (lparticles_selfgravity) call pencil_criteria_par_selfgrav()
-      if (lparticles_nbody) call pencil_criteria_par_nbody()
+      if (lparticles_nbody)       call pencil_criteria_par_nbody()
 !
     endsubroutine particles_pencil_criteria
 !***********************************************************************
@@ -306,9 +323,9 @@ module Particles_main
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      call pencil_interdep_particles(lpencil_in)
+      if (lparticles)             call pencil_interdep_particles(lpencil_in)
       if (lparticles_selfgravity) call pencil_interdep_par_selfgrav(lpencil_in)
-      if (lparticles_nbody) call pencil_interdep_par_nbody(lpencil_in)
+      if (lparticles_nbody)       call pencil_interdep_par_nbody(lpencil_in)
 !
     endsubroutine particles_pencil_interdep
 !***********************************************************************
@@ -321,9 +338,9 @@ module Particles_main
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      call calc_pencils_particles(f,p)
+      if (lparticles)             call calc_pencils_particles(f,p)
       if (lparticles_selfgravity) call calc_pencils_par_selfgrav(f,p)
-      if (lparticles_nbody) call calc_pencils_par_nbody(f,p)
+      if (lparticles_nbody)       call calc_pencils_par_nbody(f,p)
 !
     endsubroutine particles_calc_pencils
 !***********************************************************************
@@ -353,15 +370,14 @@ module Particles_main
 !
 !  Dynamical equations.
 !
-      call dxxp_dt_pencil(f,df,fp,dfp,p,ineargrid)
-      call dvvp_dt_pencil(f,df,fp,dfp,p,ineargrid)
+      if (lparticles)        call dxxp_dt_pencil(f,df,fp,dfp,p,ineargrid)
+      if (lparticles)        call dvvp_dt_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_radius) call dap_dt_pencil(f,df,fp,dfp,p,ineargrid)
-      if (lparticles_spin) call dps_dt_pencil(f,df,fp,dfp,p,ineargrid)
+      if (lparticles_spin)   call dps_dt_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_number) call dnptilde_dt_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_selfgravity) &
           call dvvp_dt_selfgrav_pencil(f,df,fp,dfp,p,ineargrid)
-      if (lparticles_nbody) &
-          call dvvp_dt_nbody_pencil(f,df,fp,dfp,p,ineargrid)
+      if (lparticles_nbody)  call dvvp_dt_nbody_pencil(f,df,fp,dfp,p,ineargrid)
 !
       call cleanup_interpolated_quantities()
 !
@@ -387,16 +403,14 @@ module Particles_main
 !
 !  Dynamical equations.
 !
-      call dxxp_dt(f,df,fp,dfp,ineargrid)
-      call dvvp_dt(f,df,fp,dfp,ineargrid)
+      if (lparticles)             call dxxp_dt(f,df,fp,dfp,ineargrid)
+      if (lparticles)             call dvvp_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_radius)      call dap_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_spin)        call dps_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_number)      call dnptilde_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_selfgravity) call dvvp_dt_selfgrav(f,df,fp,dfp,ineargrid)
-      if (lparticles_nbody) then
-         call dxxp_dt_nbody(dfp)
-         call dvvp_dt_nbody(f,df,fp,dfp,ineargrid)
-      endif
+      if (lparticles_nbody)       call dxxp_dt_nbody(dfp)
+      if (lparticles_nbody)       call dvvp_dt_nbody(f,df,fp,dfp,ineargrid)
 !
 !  Correct for curvilinear geometry
 !
@@ -441,19 +455,6 @@ module Particles_main
 !
     endsubroutine correct_curvilinear
 !***********************************************************************
-    subroutine particles_create_sinks(f)
-!
-! Wrap to fetch fp and ineargrid to create sinks
-! This will be called only if both particles_nbody and selfgravity are used
-!
-! 14-mar-08/wlad : coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call create_sink_particles(f,fp,ineargrid)
-!
-    endsubroutine particles_create_sinks
-!***********************************************************************
     subroutine read_particles_init_pars_wrap(unit,iostat)
 !
 ! 01-sep-05/anders: coded
@@ -465,42 +466,42 @@ module Particles_main
       integer, intent (inout), optional :: iostat
 !
       call read_particles_init_pars(unit,iostat)
-      if (present(iostat).and.(iostat.ne.0)) &
+      if (present(iostat).and.(iostat/=0)) &
         call samplepar_startpars('particles_init_pars',iostat)
 !
       if (lparticles_radius) then 
         call read_particles_rad_init_pars(unit,iostat)
-        if (present(iostat).and.(iostat.ne.0)) &
+        if (present(iostat).and.(iostat/=0)) &
              call samplepar_startpars('particles_rad_init_pars',iostat)
       endif
 !
       if (lparticles_spin) then
         call read_particles_spin_init_pars(unit,iostat)
-        if (present(iostat).and.(iostat.ne.0)) &
+        if (present(iostat).and.(iostat/=0)) &
              call samplepar_startpars('particles_spin_init_pars',iostat)
       endif
 !
       if (lparticles_number) then 
         call read_particles_num_init_pars(unit,iostat)
-        if (present(iostat).and.(iostat.ne.0)) &
+        if (present(iostat).and.(iostat/=0)) &
              call samplepar_startpars('particles_num_init_pars',iostat)
       endif
 !
       if (lparticles_selfgravity) then
         call read_particles_selfg_init_pars(unit,iostat)
-        if (present(iostat).and.(iostat.ne.0)) &
+        if (present(iostat).and.(iostat/=0)) &
              call samplepar_startpars('particles_selg_init_pars',iostat)
       endif
 !
       if (lparticles_nbody) then
         call read_particles_nbody_init_pars(unit,iostat)
-        if (present(iostat).and.(iostat.ne.0)) &
+        if (present(iostat).and.(iostat/=0)) &
              call samplepar_startpars('particles_nbody_init_pars',iostat)
       endif
 !
       if (lparticles_stalker) then
         call read_pstalker_init_pars(unit,iostat)
-        if (present(iostat).and.(iostat.ne.0)) &
+        if (present(iostat).and.(iostat/=0)) &
              call samplepar_startpars('particles_pstalker_init_pars',iostat)
       endif
 !
@@ -519,34 +520,7 @@ module Particles_main
 !
       if (lroot) then
         print*
-        print*,'-----BEGIN sample namelist ------'
-        print*,'&init_pars                 /'
-        if (leos            ) print*,'&eos_init_pars             /'
-        if (lhydro          ) print*,'&hydro_init_pars           /'
-        if (ldensity        ) print*,'&density_init_pars         /'
-        ! no input parameters for forcing
-        if (lgrav           ) print*,'&grav_init_pars            /'
-        if (lselfgravity    ) print*,'&selfgrav_init_pars        /'
-        if (lpoisson        ) print*,'&poisson_init_pars         /'
-        if (lentropy        ) print*,'&entropy_init_pars         /'
-        if (ltemperature    ) print*,'&entropy_init_pars         /'
-        if (lmagnetic       ) print*,'&magnetic_init_pars        /'
-        if (ltestfield      ) print*,'&testfield_init_pars       /'
-        if (ltestflow       ) print*,'&testflow_init_pars        /'
-        if (lradiation      ) print*,'&radiation_init_pars       /'
-        if (lpscalar        ) print*,'&pscalar_init_pars         /'
-        if (lchiral         ) print*,'&chiral_init_pars          /'
-        if (lchemistry      ) print*,'&chemistry_init_pars       /'
-        if (ldustvelocity   ) print*,'&dustvelocity_init_pars    /'
-        if (ldustdensity    ) print*,'&dustdensity_init_pars     /'
-        if (lneutralvelocity) print*,'&neutralvelocity_init_pars /'
-        if (lneutraldensity ) print*,'&neutraldensity_init_pars  /'
-        if (lcosmicray      ) print*,'&cosmicray_init_pars       /'
-        if (lcosmicrayflux  ) print*,'&cosmicrayflux_init_pars   /'
-        if (linterstellar   ) print*,'&interstellar_init_pars    /'
-        if (lshear          ) print*,'&shear_init_pars           /'
-        if (ltestperturb    ) print*,'&testperturb_init_pars     /'
-        if (lspecial        ) print*,'&special_init_pars         /'
+        print*,'-----BEGIN sample particles namelist ------'
         if (lparticles) &
             print*,'&particles_init_pars         /'
         if (lparticles_radius) &
@@ -559,12 +533,13 @@ module Particles_main
             print*,'&particles_selfgrav_init_pars/'
         if (lparticles_nbody) &
             print*,'&particles_nbody_init_pars   /'
-        print*,'------END sample namelist -------'
+        print*,'------END sample particles namelist -------'
         print*
-        if (present(label))  print*, 'Found error in input namelist "' // trim(label)
+        if (present(label)) &
+            print*, 'Found error in input namelist "' // trim(label)
         if (present(iostat)) print*, 'iostat = ', iostat
         if (present(iostat).or.present(label)) &
-                           print*,  '-- use sample above.'
+            print*,  '-- use sample above.'
       endif
       call stop_it('')
 !
@@ -575,15 +550,12 @@ module Particles_main
       integer, intent (in) :: unit
 !
       call write_particles_init_pars(unit)
-      if (lparticles_radius) call write_particles_rad_init_pars(unit)
-      if (lparticles_spin)   call write_particles_spin_init_pars(unit)
-      if (lparticles_number) call write_particles_num_init_pars(unit)
-      if (lparticles_selfgravity) &
-          call write_particles_selfg_init_pars(unit)
-      if (lparticles_nbody) &
-          call write_particles_nbody_init_pars(unit)
-      if (lparticles_stalker) &
-          call write_pstalker_init_pars(unit)
+      if (lparticles_radius)      call write_particles_rad_init_pars(unit)
+      if (lparticles_spin)        call write_particles_spin_init_pars(unit)
+      if (lparticles_number)      call write_particles_num_init_pars(unit)
+      if (lparticles_selfgravity) call write_particles_selfg_init_pars(unit)
+      if (lparticles_nbody)       call write_particles_nbody_init_pars(unit)
+      if (lparticles_stalker)     call write_pstalker_init_pars(unit)
 !
     endsubroutine write_particles_init_pars_wrap
 !***********************************************************************
@@ -593,42 +565,42 @@ module Particles_main
       integer, intent (inout), optional :: iostat
 !
       call read_particles_run_pars(unit,iostat)
-      if (iostat.ne.0) &
+      if (iostat/=0) &
            call samplepar_runpars('particles_run_pars',iostat)
 !      
       if (lparticles_radius) then 
         call read_particles_rad_run_pars(unit,iostat)
-        if (iostat.ne.0) &
+        if (iostat/=0) &
              call samplepar_runpars('particles_rad_run_pars',iostat)
       endif
 !
       if (lparticles_spin) then
         call read_particles_spin_run_pars(unit,iostat)
-        if (iostat.ne.0) &
+        if (iostat/=0) &
              call samplepar_runpars('particles_spin_run_pars',iostat)
       endif
 !
       if (lparticles_number) then
         call read_particles_num_run_pars(unit,iostat)
-        if (iostat.ne.0) &
+        if (iostat/=0) &
              call samplepar_runpars('particles_num_run_pars',iostat)
       endif
 !
       if (lparticles_selfgravity) then
         call read_particles_selfg_run_pars(unit,iostat)
-        if (iostat.ne.0) &
+        if (iostat/=0) &
              call samplepar_runpars('particles_selfg_run_pars',iostat)
       endif
 !
       if (lparticles_nbody) then
         call read_particles_nbody_run_pars(unit,iostat)
-        if (iostat.ne.0) &
+        if (iostat/=0) &
              call samplepar_runpars('particles_nbody_run_pars',iostat)
       endif
 !
       if (lparticles_stalker) then
         call read_pstalker_run_pars(unit,iostat)
-        if (iostat.ne.0) &
+        if (iostat/=0) &
              call samplepar_runpars('particles_pstalker_run_pars',iostat)
       endif
 !
@@ -637,62 +609,30 @@ module Particles_main
     subroutine samplepar_runpars(label,iostat)
 !
       use Mpicomm, only: stop_it
-
+!
       character (len=*), optional :: label
       integer, optional :: iostat
-
+!
       if (lroot) then
         print*
-        print*,'-----BEGIN sample namelist ------'
-                              print*,'&run_pars                 /'
-        if (leos            ) print*,'&eos_run_pars             /'
-        if (lhydro          ) print*,'&hydro_run_pars           /'
-        if (ldensity        ) print*,'&density_run_pars         /'
-        if (lforcing        ) print*,'&forcing_run_pars         /'
-        if (lgrav           ) print*,'&grav_run_pars            /'
-        if (lselfgravity    ) print*,'&selfgrav_run_pars        /'
-        if (lpoisson        ) print*,'&poisson_run_pars         /'
-        if (lentropy        ) print*,'&entropy_run_pars         /'
-        if (ltemperature    ) print*,'&entropy_run_pars         /'
-        if (lmagnetic       ) print*,'&magnetic_run_pars        /'
-        if (ltestfield      ) print*,'&testfield_run_pars       /'
-        if (ltestflow       ) print*,'&testflow_run_pars        /'
-        if (lradiation      ) print*,'&radiation_run_pars       /'
-        if (lpscalar        ) print*,'&pscalar_run_pars         /'
-        if (lchiral         ) print*,'&chiral_run_pars          /'
-        if (lchemistry      ) print*,'&chemistry_run_pars       /'
-        if (ldustvelocity   ) print*,'&dustvelocity_run_pars    /'
-        if (ldustdensity    ) print*,'&dustdensity_run_pars     /'
-        if (lneutralvelocity) print*,'&neutralvelocity_run_pars /'
-        if (lneutraldensity ) print*,'&neutraldensity_run_pars  /'
-        if (lcosmicray      ) print*,'&cosmicray_run_pars       /'
-        if (lcosmicrayflux  ) print*,'&cosmicrayflux_run_pars   /'
-        if (linterstellar   ) print*,'&interstellar_run_pars    /'
-        if (lshear          ) print*,'&shear_run_pars           /'
-        if (ltestperturb    ) print*,'&testperturb_run_pars     /'
-        if (lviscosity      ) print*,'&viscosity_run_pars       /'
-        if (lspecial        ) print*,'&special_run_pars         /'
-        if (lparticles) &
-            print*,'&particles_run_pars         /'
-        if (lparticles_radius) &
-            print*,'&particles_radius_run_pars  /'
-        if (lparticles_spin) &
-            print*,'&particles_spin_run_pars  /'
-        if (lparticles_number) &
-            print*,'&particles_number_run_pars  /'
-        if (lparticles_selfgravity) &
-            print*,'&particles_selfgrav_run_pars/'
-        if (lparticles_nbody) &
-            print*,'&particles_nbody_run_pars   /'
-        if (lshock        ) print*,'&shock_run_pars           /'
-        print*,'------END sample namelist -------'
+        print*,'-----BEGIN sample particle namelist ------'
+        if (lparticles)             print*,'&particles_run_pars         /'
+        if (lparticles_radius)      print*,'&particles_radius_run_pars  /'
+        if (lparticles_spin)        print*,'&particles_spin_run_pars    /'
+        if (lparticles_number)      print*,'&particles_number_run_pars  /'
+        if (lparticles_selfgravity) print*,'&particles_selfgrav_run_pars/'
+        if (lparticles_nbody)       print*,'&particles_nbody_run_pars   /'
+        if (lparticles_stalker)     print*,'&particles_pstalker_run_pars/'
+        print*,'------END sample particle namelist -------'
         print*
-        if (present(label))  print*, 'Found error in input namelist "' // trim(label)
+        if (present(label)) &
+            print*, 'Found error in input namelist "' // trim(label)
         if (present(iostat)) print*, 'iostat = ', iostat
         if (present(iostat).or.present(label)) &
-                           print*,  '-- use sample above.'
+            print*,  '-- use sample above.'
       endif
-      call stop_it('')
+!
+      call fatal_error('samplepar_runpars','')
 !
     endsubroutine samplepar_runpars
 !***********************************************************************
@@ -700,16 +640,13 @@ module Particles_main
 !
       integer, intent (in) :: unit
 !
-      call write_particles_run_pars(unit)
-      if (lparticles_radius) call write_particles_rad_run_pars(unit)
-      if (lparticles_spin)   call write_particles_spin_run_pars(unit)
-      if (lparticles_number) call write_particles_num_run_pars(unit)
-      if (lparticles_selfgravity) &
-          call write_particles_selfg_run_pars(unit)
-      if (lparticles_nbody) &
-           call write_particles_nbody_run_pars(unit)
-      if (lparticles_stalker) &
-           call write_pstalker_run_pars(unit)
+      if (lparticles)             call write_particles_run_pars(unit)
+      if (lparticles_radius)      call write_particles_rad_run_pars(unit)
+      if (lparticles_spin)        call write_particles_spin_run_pars(unit)
+      if (lparticles_number)      call write_particles_num_run_pars(unit)
+      if (lparticles_selfgravity) call write_particles_selfg_run_pars(unit)
+      if (lparticles_nbody)       call write_particles_nbody_run_pars(unit)
+      if (lparticles_stalker)     call write_pstalker_run_pars(unit)
 !
     endsubroutine write_particles_run_pars_wrap
 !***********************************************************************

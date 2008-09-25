@@ -154,6 +154,26 @@ module Particles
 !
     endsubroutine dvvp_dt
 !***********************************************************************
+    subroutine remove_particles_sink(f,fp,dfp,ineargrid)
+!
+      real,    dimension (mx,my,mz,mfarray) :: f
+      real,    dimension (mpar_loc,mpvar)   :: fp, dfp
+      integer, dimension (mpar_loc,3)       :: ineargrid
+!
+      if (NO_WARN) print*, f, fp, dfp, ineargrid
+!
+    endsubroutine remove_particles_sink
+!***********************************************************************
+    subroutine create_sink_particles(f,fp,dfp,ineargrid)
+!
+      real,    dimension (mx,my,mz,mfarray) :: f
+      real,    dimension (mpar_loc,mpvar)   :: fp, dfp
+      integer, dimension (mpar_loc,3)       :: ineargrid
+!
+      if (NO_WARN) print*, f, fp, dfp, ineargrid
+!
+    endsubroutine create_sink_particles
+!***********************************************************************
     subroutine read_particles_init_pars(unit,iostat)
 !
       integer, intent (in) :: unit

@@ -138,15 +138,25 @@ module Particles_nbody
 !
     endsubroutine dvvp_dt_nbody
 !***********************************************************************
-    subroutine create_sink_particles(f,fp,ineargrid)
+    subroutine remove_particles_sink_nbody(f,fp,dfp,ineargrid)
 !
       real,    dimension (mx,my,mz,mfarray) :: f
-      real,    dimension (mpar_loc,mpvar)   :: fp
+      real,    dimension (mpar_loc,mpvar)   :: fp, dfp
       integer, dimension (mpar_loc,3)       :: ineargrid
 !
-      if (NO_WARN) print*, f, fp, ineargrid
+      if (NO_WARN) print*, f, fp, dfp, ineargrid
 !
-    endsubroutine create_sink_particles
+    endsubroutine remove_particles_sink_nbody
+!***********************************************************************
+    subroutine create_sink_particles_nbody(f,fp,dfp,ineargrid)
+!
+      real,    dimension (mx,my,mz,mfarray) :: f
+      real,    dimension (mpar_loc,mpvar)   :: fp, dfp
+      integer, dimension (mpar_loc,3)       :: ineargrid
+!
+      if (NO_WARN) print*, f, fp, dfp, ineargrid
+!
+    endsubroutine create_sink_particles_nbody
 !***********************************************************************
     subroutine calc_nbodygravity_particles(f)
 !

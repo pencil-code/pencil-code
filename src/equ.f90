@@ -1219,11 +1219,6 @@ module Equ
 !
       if (lparticles) call particles_pde(f,df)
 !
-!  Check if sink particles were created
-!
-      if (lparticles_nbody.and.lselfgravity) &
-           call particles_create_sinks(f)
-!
 !  in case of lvisc_hyper=true epsK is calculated for the whole array
 !  at not just for one pencil, it must therefore be added outside the
 !  m,n loop.
