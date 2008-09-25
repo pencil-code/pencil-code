@@ -580,6 +580,7 @@ module Hydro
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: r,p,tmp,xx,yy,zz,prof
+      real, dimension (mx,my,mz,3) :: utmp
       real :: kabs,crit,eta_sigma
       integer :: j,i,l
 !
@@ -863,6 +864,24 @@ module Hydro
                 (cos(kx_uu*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n)) + &
                 sin(kx_uu*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n)))
           enddo; enddo
+
+        case('incompressive-shwave')
+          ampl_ux = ampl_ux/ky_uu
+          print*, "incomp-shwave: ampl_ux(j) = ", ampl_ux(j)
+          call sinwave_phase(f,iuz,ampl_ux(j),kx_uu,ky_uu,kz_uu,phase_ux(i))
+          f(1:l1-1,:,:,iuz) = f(l2i:l2,:,:,iuz)
+          f(l2+1:mx,:,:,iuz) = f(l1:l1+2,:,:,iuz)
+          f(:,1:m1-1,:,iuz) = f(:,m2i:m2,:,iuz)
+          f(:,m2+1:my,:,iuz) = f(:,m1:m1+2,:,iuz)
+          f(:,:,1:n1-1,iuz) = f(:,:,n2i:n2,iuz)
+          f(:,:,n2+1:mz,iuz) = f(:,:,n1:n1+2,iuz)
+          
+          f(:,:,:,iux) = 0.
+          f(:,:,:,iuy) = 0.
+          do n=n1,n2; do m=m1,m2
+            call curl(f,iuu,utmp(l1:l2,m,n,:))
+          enddo;enddo
+          f(:,:,:,iux:iuz) = utmp
 
         case default
           !

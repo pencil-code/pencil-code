@@ -876,6 +876,32 @@ LD_FFTW2=
 #CC=gcc     #(wintermute)
 #CFLAGS=-O3 -DFUNDERSC=1   #(wintermute)
 #LD_MPI=-lmpi -llam #(wintermute)
+##
+##  Oishi's desktop @ berkeley
+##
+#FC=gfortran -frecord-marker=4 #(volans)
+#F77=$(FC)  #(volans)
+#FFLAGS_SLOPPY=  #(volans)
+#FFLAGS=-O3   #(volans)
+#F90FLAGS=  #(volans)
+#F77FLAGS=   #(volans)
+#FFLAGS_DOUBLE=-fdefault-real-8  #(volans)
+#CC=gcc     #(volans)
+#CFLAGS=-O3 -DFUNDERSC=1   #(volans)
+##LD_MPI=-lmpi  #(volans)
+##
+##  Crater @ berkeley
+##
+#FC=mpif90 -frecord-marker=4 #(crater)
+#F77=$(FC)  #(crater)
+#FFLAGS_SLOPPY=  #(crater)
+#FFLAGS=-O3   #(crater)
+#F90FLAGS=  #(crater)
+#F77FLAGS=   #(crater)
+#FFLAGS_DOUBLE=-fdefault-real-8 #(crater)
+#CC=mpicc     #(crater)
+#CFLAGS=-O3 -DFUNDERSC=1   #(crater)
+
 
 ## Darwin:
 ## Power Macintosh
