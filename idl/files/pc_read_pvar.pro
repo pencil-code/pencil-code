@@ -125,6 +125,7 @@ endfor
 ;
 array=fltarr(npar_max,totalvars)*one
 ipar=lonarr(npar)
+if (rmv) then ipar_rmv=lonarr(npar)
 tarr=fltarr(ncpus)*one
 t=zero
 npar_loc=0L
@@ -250,14 +251,17 @@ for i=0,ncpus-1 do begin
 ;
   if (rmv) then begin
     filename=datadir+'/proc'+strtrim(i,2)+'/rmv_par.dat'
-    ipar_rmv=0L
-    get_lun, file
-    close, file
-    openr, file, filename
-    while (not eof(file)) do begin
-      readf, file, ipar_rmv
-      ipar[ipar_rmv-1]=ipar[ipar_rmv-1]+1
-    endwhile
+    file_exists=file_test(filename)
+    if (file_exists) then begin
+      get_lun, file
+      close, file
+      openr, file, filename, /f77
+      while (not eof(file)) do begin
+        ipar_rmv_loc=0L
+        readu, file, ipar_rmv_loc
+        ipar_rmv[ipar_rmv_loc-1]=ipar_rmv[ipar_rmv_loc-1]+1
+      endwhile
+    endif
   endif
 ;
 endfor
@@ -280,16 +284,20 @@ endfor
 ;  Check if all particles found exactly once.
 ;
 if (not keyword_set(quiet)) then begin
-    if ( (max(ipar) ne 1) or (min(ipar) ne 1)) then begin
-        print, 'Warning: Some particles not found at all or found more'
-        print, 'than once in snapshot files.'
-        print, 'Particle number---No. of occurences'
-        for i=0,npar-1 do begin
-            if (ipar[i] ne 1) then begin
-                print, i, ipar[i]
-            endif
-        endfor
-    endif
+  if ( (max(ipar) ne 1) or (min(ipar) ne 1) ) then begin
+    inform=1
+    for i=0,npar-1 do begin
+      if ( (ipar[i] ne 1) and (ipar_rmv[i] ne 1) ) then begin
+        if (inform) then begin
+          print, 'Warning: Some particles not found at all or found more'
+          print, 'than once in snapshot files.'
+          print, 'Particle number---No. of occurences'
+          inform=0
+        endif
+        print, i, ipar[i]
+      endif
+    endfor
+  endif
 endif
 ;
 ;  Put data and parameters in object.
