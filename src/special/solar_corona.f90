@@ -80,8 +80,8 @@ module Special
 
   include 'special.h'
 
-  real :: tdown=0.,allp=0.,Kgpara=0.,cool_RTV=0.,adjust_jj=1.,hcond0=0.
-  real :: lntt0=0.,wlntt=0.
+  real :: tdown=0.,allp=0.,Kgpara=0.,cool_RTV=0.,hcond0=0.
+  real :: lntt0=0.,wlntt=0.,bmdi=0.
   real, parameter, dimension (37) :: intlnT = (/ &
           8.74982,  8.86495,  8.98008,  9.09521,  9.21034,  9.44060,  9.67086,  9.90112,  10.1314,  10.2465 &
        ,  10.3616,  10.5919,  10.8221,  11.0524,  11.2827,  11.5129,  11.7432,  11.9734,  12.2037,  12.4340 &
@@ -98,7 +98,7 @@ module Special
 !
 ! run parameters
   namelist /special_run_pars/ &
-       tdown,allp,Kgpara,cool_RTV,adjust_jj,hcond0,lntt0,wlntt
+       tdown,allp,Kgpara,cool_RTV,hcond0,lntt0,wlntt,bmdi
 
 !!
 !! Declare any index variables necessary for main or
@@ -301,32 +301,16 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension(nx) :: quenchfactor
-      real, dimension (nx,3) :: tmp
 !
       intent(in) :: f
       intent(inout) :: p
 !
-      quenchfactor =1.*get_quench(p%jj,adjust_jj/10.,adjust_jj)
-      call multsv_mn(quenchfactor,p%jj,tmp)
-!
-      p%jj = tmp
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)
-!
-!  calculate right hand side of ONE OR MORE extra coupled PDEs
-!  along the 'current' Pencil, i.e. f(l1:l2,m,n) where
-!  m,n are global variables looped over in equ.f90
-!
-!  Due to the multi-step Runge Kutta timestepping used one MUST always
-!  add to the present contents of the df array.  NEVER reset it to zero.
-!
-!  several precalculated Pencils of information are passed if for
-!  efficiency.
-!
-!   06-oct-03/tony: coded
 !
       use Cdata
       use Mpicomm
@@ -344,18 +328,7 @@ module Special
 !  identify module and boundary conditions
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dSPECIAL_dt'
-!!      if (headtt) call identify_bcs('ss',iss)
 !
-!!
-!! SAMPLE DIAGNOSTIC IMPLEMENTATION
-!!
-!!      if(ldiagnos) then
-!!        if(i_SPECIAL_DIAGNOSTIC/=0) then
-!!          call sum_mn_name(SOME MATHEMATICAL EXPRESSION,i_SPECIAL_DIAGNOSTIC)
-!!! see also integrate_mn_name
-!!        endif
-!!      endif
-
 ! Keep compiler quiet by ensuring every parameter is used
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
@@ -435,16 +408,6 @@ module Special
 !!        i_SPECIAL_DIAGNOSTIC=0
       endif
 !!
-!!      do iname=1,nname
-!!        call parse_name(iname,cname(iname),cform(iname),'NAMEOFSPECIALDIAGNOSTIC',i_SPECIAL_DIAGNOSTIC)
-!!      enddo
-!!
-!!!  write column where which magnetic variable is stored
-!!      if (lwr) then
-!!        write(3,*) 'i_SPECIAL_DIAGNOSTIC=',i_SPECIAL_DIAGNOSTIC
-!!      endif
-!!
-
     endsubroutine rprint_special
 !***********************************************************************
     subroutine get_slices_special(f,slices)
@@ -636,7 +599,7 @@ module Special
       newton = exp(lnTTor-p%lnTT)-1.
       !
       newton = newton * tdown*exp(-allp*(z(n)*unit_length*1e-6))
-!      newton = newton * tdown*exp(allp*(p%lnrho-lnrho0))
+      !newton = newton * tdown*exp(allp*(p%lnrho-lnrho0))
       !
       !  Add newton cooling term to entropy
       !
@@ -721,12 +684,88 @@ module Special
 !
 !   06-jul-06/tony: coded
 !
+!      use Cdata
+!      use Sub, only: keep_compiler_quiet
+!
+!      real, dimension (mx,my,mz,mfarray), intent(in) :: f
       use Cdata
-      use Sub, only: keep_compiler_quiet
+      use Fourier
+      use Sub
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(nxgrid,nygrid) :: kx,ky,k2
+
+      real, dimension(nxgrid,nygrid) :: Bz0,Bz0_i,Bz0_r
+      real, dimension(nxgrid,nygrid) :: Ax_i,Ay_i
+      real, dimension(nxgrid,nygrid),save :: Ax_r,Ay_r
+      
+      real, dimension(nxgrid) :: kxp
+      real, dimension(nygrid) :: kyp
+
+      real :: mu0_SI,u_b
+      integer :: i,idx2,idy2
+
+      ! Auxiliary quantities:
+      !
+      ! idx2 and idy2 are essentially =2, but this makes compilers
+      ! complain if nygrid=1 (in which case this is highly unlikely to be
+      ! correct anyway), so we try to do this better:
+      if (ipz .eq. 0) then
+      if (it  .le. 1) then
+         idx2 = min(2,nxgrid)
+         idy2 = min(2,nygrid)
+         !
+         ! Magnetic field strength unit [B] = u_b
+         !
+         mu0_SI = 4.*pi*1.e-7
+         u_b = unit_velocity*sqrt(mu0_SI/mu0*unit_density)
+         !
+         kxp=cshift((/(i-(nxgrid-1)/2,i=0,nxgrid-1)/),+(nxgrid-1)/2)*2*pi/Lx
+         kyp=cshift((/(i-(nygrid-1)/2,i=0,nygrid-1)/),+(nygrid-1)/2)*2*pi/Ly
+         !
+         kx =spread(kxp,2,nygrid)
+         ky =spread(kyp,1,nxgrid)
+         !
+         k2 = kx*kx + ky*ky
+         !
+         open (11,file='driver/magnetogram_k.dat',form='unformatted')
+         read (11) Bz0
+         close (11)
+         !
+         Bz0_i = 0.
+         Bz0_r = Bz0 * 1e-4 / u_b ! Gauss to Tesla  and SI to PENCIL units
+         !
+         ! Fourier Transform of Bz0:
+         !
+         call fourier_transform_other(Bz0_r,Bz0_i)
+         !
+         where (k2 .ne. 0 )
+            Ax_r = -Bz0_i*ky/k2*exp(-sqrt(k2)*z(n1) )
+            Ax_i =  Bz0_r*ky/k2*exp(-sqrt(k2)*z(n1) )
+            !
+            Ay_r =  Bz0_i*kx/k2*exp(-sqrt(k2)*z(n1) )
+            Ay_i = -Bz0_r*kx/k2*exp(-sqrt(k2)*z(n1) )
+         elsewhere
+            Ax_r = -Bz0_i*ky/ky(1,idy2)*exp(-sqrt(k2)*z(n1) )
+            Ax_i =  Bz0_r*ky/ky(1,idy2)*exp(-sqrt(k2)*z(n1) )
+            !
+            Ay_r =  Bz0_i*kx/kx(idx2,1)*exp(-sqrt(k2)*z(n1) )
+            Ay_i = -Bz0_r*kx/kx(idx2,1)*exp(-sqrt(k2)*z(n1) )
+         endwhere
+         !
+         call fourier_transform_other(Ax_r,Ax_i,linv=.true.)
+         !
+         call fourier_transform_other(Ay_r,Ay_i,linv=.true.)
+         !
+      endif
 !
-      call keep_compiler_quiet(f)
+         f(l1:l2,m1:m2,n1,iax)=dt/(bmdi+dt) * Ax_r(ipx*nx+1:(ipx+1)*nx+1,ipy*ny+1:(ipy+1)*ny+1) + &
+              (1.-dt/(bmdi+dt)) * f(l1:l2,m1:m2,n1,iax)
+         f(l1:l2,m1:m2,n1,iay)=dt/(bmdi+dt) * Ay_r(ipx*nx+1:(ipx+1)*nx+1,ipy*ny+1:(ipy+1)*ny+1) + &      
+                            (1.-dt/(bmdi+dt)) * f(l1:l2,m1:m2,n1,iay)
+      endif
+!      
+!      call keep_compiler_quiet(f)
 !
     endsubroutine special_before_boundary
 !***********************************************************************
@@ -793,10 +832,6 @@ module Special
       call dot2_mn(p%bb,abs_b,PRECISE_SQRT=.true.)
       b1=1./max(tini,abs_b)
       call multsv_mn(b1,p%bb,bunit)
-! TEST start
-      call dot2_mn(bunit,test,PRECISE_SQRT=.true.)
-      if (maxval(test) .gt. 1.001) call stop_it("MIST 1")
-! TEST ende
 !
 !  calculate first H_i
 !
@@ -821,27 +856,17 @@ module Special
 !      quenchfactor =1. !*get_quench(hhh,1e-9,1e-6)
       quenchfactor=1./max(1.,3.*hhh2*dxmax)
       call multsv_mn(quenchfactor,hhh,tmpv)
-! TEST start
-!      call dot2_mn(hhh,test,PRECISE_SQRT=.true.)
-!      if (maxval(test) .gt. 3.*dxmax) call stop_it("MIST 2")
-! TEST ende
 !
       call dot_mn(tmpv,p%glnTT,tmp)
 !
 !  dot Hessian matrix of ecr with bi*bj, and add into tmp
 !
       call multmv_mn(p%hlnTT,bunit,tmpv) !sven 
-!      quenchfactor =1.*get_quench(tmpv,1e-6,1e-5)  ! NEU ****************
-!      call multsv_mn(quenchfactor,tmpv,tmpv2)      ! NEU **************** 
-!      call dot_mn(tmpv2,bunit,tmpj)
       call dot_mn(tmpv,bunit,tmpj)
       tmp = tmp+tmpj
 !
 !  calculate (Gi*ni)^2 needed for lnecr form; also add into tmp
 !
- !     quenchfactor =1.*get_quench(p%glnTT,1e-4,1e-3)  ! NEU ****************
- !     call multsv_mn(quenchfactor,p%glnTT,tmpv2)      ! NEU **************** 
-!      call dot_mn(tmpv2,bunit,tmpi)
       call dot_mn(p%glnTT,bunit,tmpi)
       tmpi= sqrt(3.5)*tmpi
       tmp=tmp+tmpi**2
@@ -850,20 +875,18 @@ module Special
 !     
       chix = exp(alog(Kgpara)+2.5*p%lnTT-p%lnrho)* p%cp1
 !
-!      chix = chix*cubic_step(z(n)*real(unit_length)*1e-6,1.,0.5)
-!
       rhs = gamma*chix*tmp
 !
-      rhs = rhs *(1.-cubic_step(z(n)*real(unit_length)*1e-6,28.,0.6))
+!      rhs = rhs *(1.-cubic_step(z(n)*real(unit_length)*1e-6,28.,0.6))
 !
       df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+rhs
 !
       if (itsub .eq. 3 .and. ip .eq. 33) call output_pencil(trim(directory)//'/rhs1.dat',rhs,1)
 
       if (lfirst.and.ldt) then
-         advec_uu=advec_uu + sqrt(gamma*chix*dxyz_2)
+ !        advec_uu=advec_uu + sqrt(gamma*chix*dxyz_2)
          diffus_chi=diffus_chi+gamma*chix*dxyz_2
-         dt1_max=max(dt1_max,rhs/cdts)
+ !        dt1_max=max(dt1_max,rhs/cdts)
       endif
       
     endsubroutine calc_heatcond_tensor
