@@ -284,20 +284,25 @@ endfor
 ;  Check if all particles found exactly once.
 ;
 if (not keyword_set(quiet)) then begin
-  if ( (max(ipar) ne 1) or (min(ipar) ne 1) ) then begin
-    inform=1
-    for i=0,npar-1 do begin
-      if ( (ipar[i] ne 1) and (ipar_rmv[i] ne 1) ) then begin
-        if (inform) then begin
-          print, 'Warning: Some particles not found at all or found more'
-          print, 'than once in snapshot files.'
-          print, 'Particle number---No. of occurences'
-          inform=0
-        endif
-        print, i, ipar[i]
-      endif
-    endfor
-  endif
+  if (rmv) then begin
+    if ( (max(ipar+ipar_rmv) ne 1) or (min(ipar+ipar_rmv) ne 1) ) then begin
+      print, 'Warning: Some particles not found at all or found more'
+      print, 'than once in snapshot files.'
+      print, 'Particle number---No. of occurences'
+      for i=0,npar-1 do begin
+        if ( (ipar[i]+ipar_rmv[i] ne 1) ) then print, i, ipar[i]
+      endfor
+    endif
+  endif else begin
+    if ( (max(ipar) ne 1) or (min(ipar) ne 1) ) then begin
+      print, 'Warning: Some particles not found at all or found more'
+      print, 'than once in snapshot files.'
+      print, 'Particle number---No. of occurences'
+      for i=0,npar-1 do begin
+        if ( ipar[i] ne 1 ) then print, i, ipar[i]
+      endfor
+    endif
+  endelse
 endif
 ;
 ;  Put data and parameters in object.
