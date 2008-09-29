@@ -4,7 +4,7 @@
 ;   Read pvar.dat, or other PVAR file
 ;
 pro pc_read_pvar, object=object, varfile=varfile_, datadir=datadir, ivar=ivar, $
-    npar_max=npar_max, quiet=quiet, qquiet=qquiet, swap_endian=swap_endian, $
+    npar_max=npar_max, stats=stats, quiet=quiet, swap_endian=swap_endian, $
     rmv=rmv
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
@@ -12,8 +12,8 @@ COMMON pc_precision, zero, one
 ;  Defaults.
 ;
 if (not keyword_set(datadir)) then datadir=pc_get_datadir()
+default, stats, 1
 default, quiet, 0
-default, qquiet, 0
 default, rmv, 0
 ;
 if n_elements(ivar) eq 1 then begin
@@ -23,8 +23,6 @@ endif else begin
     default,varfile_,'pvar.dat'
     varfile=varfile_
 endelse
-;
-if (qquiet) then quiet=1
 ;
 ;  Get necessary dimensions.
 ;
@@ -59,7 +57,7 @@ xloc=fltarr(procdim.mx)*one & yloc=fltarr(procdim.my)*one & zloc=fltarr(procdim.
 if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 openr, 1, datadir+'/index.pro'
 line=''
-while ~ eof(1) do begin
+while (not eof(1)) do begin
   readf, 1, line, format='(a)'
   if (execute(line) ne 1) then $
     message, 'There was a problem with index.pro', /INF
@@ -68,7 +66,7 @@ close, 1
 ;
 ;  Define structure for data
 ;
-varcontent=REPLICATE( $
+varcontent=replicate( $
     {varcontent_all_par, $
     variable   : 'UNKNOWN', $
     idlvar     : 'dummy', $
@@ -85,20 +83,20 @@ varcontent[ixp].variable = 'Particle position (xx)'
 varcontent[ixp].idlvar   = 'xx'
 varcontent[ixp].idlinit  = INIT_3VECTOR
 varcontent[ixp].skip     = 2
-
+;
 varcontent[ivpx].variable = 'Particle velocity (vv)'
 varcontent[ivpx].idlvar   = 'vv'
 varcontent[ivpx].idlinit  = INIT_3VECTOR
 varcontent[ivpx].skip     = 2
-
+;
 varcontent[iap].variable = 'Particle radius (a)'
 varcontent[iap].idlvar   = 'a'
 varcontent[iap].idlinit  = INIT_SCALAR
-
+;
 varcontent[inptilde].variable = 'Particle internal number (nptilde)'
 varcontent[inptilde].idlvar   = 'nptilde'
 varcontent[inptilde].idlinit  = INIT_SCALAR
-
+;
 varcontent[0].variable    = 'UNKNOWN'
 varcontent[0].idlvar      = 'UNKNOWN'
 varcontent[0].idlinit     = '0.'
@@ -125,10 +123,13 @@ endfor
 ;
 array=fltarr(npar_max,totalvars)*one
 ipar=lonarr(npar)
-if (rmv) then ipar_rmv=lonarr(npar)
 tarr=fltarr(ncpus)*one
 t=zero
 npar_loc=0L
+if (rmv) then begin
+  ipar_rmv=lonarr(npar)
+  npar_rmv=0L
+endif
 ;
 ;  Loop over processors.
 ;
@@ -186,15 +187,42 @@ for i=0,ncpus-1 do begin
 ;
   endif
 ;
-;  Read time.
+;  Read time and grid data.
 ;
   readu, file, t, xloc, yloc, zloc, dx, dy, dz
+;
+;  Close time.
+;
+  close, file
+  free_lun, file
+;
+;  Read indices and removal times of removed particles. The positions are not
+;  actually read - we are just checking that all particles are accounted for.
+;
+  if (rmv) then begin
+    filename=datadir+'/proc'+strtrim(i,2)+'/rmv_ipar.dat'
+    file_exists=file_test(filename)
+    if (file_exists) then begin
+      get_lun, file
+      close, file
+      openr, file, filename
+      while (not eof(file)) do begin
+        ipar_rmv_loc=0L
+        t_rmv_loc=0.0*one
+        readf, file, ipar_rmv_loc, t_rmv_loc
+        if (t_rmv_loc le t) then begin
+          ipar_rmv[ipar_rmv_loc-1]=ipar_rmv[ipar_rmv_loc-1]+1
+          npar_rmv=npar_rmv+1
+        endif
+      endwhile
+    endif
+  endif
 ;
 ;  Create global x, y and z arrays from local ones.
 ;
   if (ncpus gt 1) then begin
     pc_read_dim, object=procdim, datadir=datadir, proc=i, /quiet
-
+;
     if (procdim.ipx eq 0L) then begin
       i0x=0L
       i1x=i0x+procdim.mx-1L
@@ -243,27 +271,6 @@ for i=0,ncpus-1 do begin
   endelse
   tarr[i]=t
 ;
-  close, file
-  free_lun, file
-;
-;  Read indices of removed particles. The positions are not actually read - we
-;  are just checking that all particles are accounted for.
-;
-  if (rmv) then begin
-    filename=datadir+'/proc'+strtrim(i,2)+'/rmv_par.dat'
-    file_exists=file_test(filename)
-    if (file_exists) then begin
-      get_lun, file
-      close, file
-      openr, file, filename, /f77
-      while (not eof(file)) do begin
-        ipar_rmv_loc=0L
-        readu, file, ipar_rmv_loc
-        ipar_rmv[ipar_rmv_loc-1]=ipar_rmv[ipar_rmv_loc-1]+1
-      endwhile
-    endif
-  endif
-;
 endfor
 ;
 ;  Trim x, y and z arrays.
@@ -290,7 +297,7 @@ if (not keyword_set(quiet)) then begin
       print, 'than once in snapshot files.'
       print, 'Particle number---No. of occurences'
       for i=0,npar-1 do begin
-        if ( (ipar[i]+ipar_rmv[i] ne 1) ) then print, i, ipar[i]
+        if ( (ipar[i]+ipar_rmv[i] ne 1) ) then print, i, ipar[i], ipar_rmv[i]
       endfor
     endif
   endif else begin
@@ -305,6 +312,73 @@ if (not keyword_set(quiet)) then begin
   endelse
 endif
 ;
+;  Check if times are consistent between processors.
+;
+if (min(tarr) ne max(tarr)) then begin
+  print, 'The time of the snapshot is inconsistent among the processors!'
+  print, 'min(t), max(t)=', min(tarr), max(tarr)
+endif
+;
+;  Print out total number of particles.
+;
+if (rmv) then begin
+  print, ''
+  print, 'Found '+strtrim(n_elements(where(ipar eq 1)),2)+' particles ' + $
+      'and '+strtrim(npar_rmv,2)+' removed particles'
+endif else begin
+  print, ''
+  print, 'Found '+strtrim(n_elements(where(ipar eq 1)),2)+' particles'
+endelse
+;
+;  Print out time.
+;
+if (not quiet) then begin
+  print, ''
+  print, 't = ', mean(tarr)
+endif
+;
+;  If requested print a summary.
+;
+if ( keyword_set(stats) and (not quiet) ) then begin
+  print, ''
+  print, 'VARIABLE SUMMARY:'
+  print, '  name              minval          maxval          mean            stddev'
+  for iv=0,n_elements(variables)-1 do begin
+    command='size=size('+variables[iv]+') & isvector=size[0] eq 2'
+    result=execute(command)
+;  Vector.
+    if (isvector) then begin
+      for ivec=0,2 do begin
+        command='minval=min('+variables[iv]+'[*,ivec])'
+        result=execute(command)
+        command='maxval=max('+variables[iv]+'[*,ivec])'
+        result=execute(command)
+        command='meanval=mean('+variables[iv]+'[*,ivec])'
+        result=execute(command)
+        command='stdval=stddev('+variables[iv]+'[*,ivec])'
+        result=execute(command)
+        if (ivec eq 0) then ind='x'
+        if (ivec eq 1) then ind='y'
+        if (ivec eq 2) then ind='z'
+        print, ' '+variables[iv]+'_'+ind+'    -->', $
+            minval, maxval, meanval, stdval
+      endfor
+    endif else begin
+;  Scalar.
+      command='minval=min('+variables[iv]
+      result=execute(command)
+      command='maxval=max('+variables[iv]
+      result=execute(command)
+      command='meanval=mean('+variables[iv]
+      result=execute(command)
+      command='stdval=stddev('+variables[iv]
+      result=execute(command)
+      print, ' '+variables[iv]+'  '+'    -->', $
+          minval, maxval, meanval, stdval
+    endelse
+  endfor
+endif
+;
 ;  Put data and parameters in object.
 ;
 makeobject="object = create_struct(name=objectname," + $
@@ -316,20 +390,5 @@ if (execute(makeobject) ne 1) then begin
   message, 'ERROR Evaluating variables: ' + makeobject, /info
   undefine, object
 endif
-;
-; If requested print a summary
-;
-;if keyword_set(STATS) or (not (keyword_set(NOSTATS) or keyword_set(quiet))) then begin
-;  pc_object_stats,object,dim=dim,quiet=quiet
-;endif
-;
-;  Check if times are consistent between processors.
-;
-if (min(tarr) ne max(tarr)) then begin
-  print, 'The time of the snapshot is inconsistent among the processors!'
-  print, 'min(t), max(t)=', min(tarr), max(tarr)
-endif
-;
-if (not qquiet) then print,' t = ', mean(tarr)
 ;
 end
