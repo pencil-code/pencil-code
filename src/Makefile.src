@@ -803,11 +803,11 @@ LD_FFTW2=
 ##
 ## Dhruba's Desktop (starpc37) 
 ##
-#FC=mpif90    # (starpc37.maths.qmul.ac.uk)
+#FC=g95 -fno-second-underscore   # (starpc37.maths.qmul.ac.uk)
 #F77=$(FC) #(starpc37.maths.qmul.ac.uk)
 #FFLAGS=-O3 -L/misc/network/dhruba/Library/lib/ #(starpc37.maths.qmul.ac.uk)
-#CC=mpicc -I/misc/network/dhruba/Library/include/  #(starpc37.maths.qmul.ac.uk)
-#CFLAGS=-O3 -DFUNDERSC=1  #(starpc37)
+#CC=gcc -I/misc/network/dhruba/Library/include/  #(starpc37.maths.qmul.ac.uk)
+#CFLAGS=-O3 -DFUNDERSC=1  #(starpc37.maths.qmul.ac.uk)
 ##
 ## Dhruba on ukmhd cluster
 ##

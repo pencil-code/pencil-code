@@ -410,7 +410,7 @@ module Magnetic
   integer :: idiag_etasmagm=0   ! DIAG_DOC: Mean of Smagorinsky resistivity
   integer :: idiag_etasmagmin=0 ! DIAG_DOC: Min of Smagorinsky resistivity
   integer :: idiag_etasmagmax=0 ! DIAG_DOC: Max of Smagorinsky resistivity
-  integer :: idiag_cosjbm=0     ! DIAG_DOC: $\left<\cos[(\Jv\cdot\Bv)/|\Jv|\,|\Bv|]\right>$
+  integer :: idiag_cosjbm=0     ! DIAG_DOC: $\left<[(\Jv\cdot\Bv)/|\Jv|\,|\Bv|]\right>$
 
   contains
 
@@ -2158,7 +2158,7 @@ module Magnetic
         if (idiag_jmax/=0) call max_mn_name(p%j2,idiag_jmax,lsqrt=.true.)
         if (idiag_epsM_LES/=0) call sum_mn_name(eta_smag*p%j2,idiag_epsM_LES)
         if (idiag_dteta/=0)  call max_mn_name(diffus_eta/cdtv,idiag_dteta,l_dt=.true.)
-        if (idiag_cosjbm/=0) call sum_mn_name(cos(p%jb/sqrt(p%j2*p%b2)),idiag_cosjbm)
+        if (idiag_cosjbm/=0) call sum_mn_name((p%jb/sqrt(p%j2*p%b2)),idiag_cosjbm)
 !
 !  Resistivity.
 !
