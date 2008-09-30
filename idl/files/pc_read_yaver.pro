@@ -9,7 +9,7 @@ pro pc_read_yaver, object=object, varfile=varfile, datadir=datadir, $
     nit=nit, iplot=iplot, min=min, max=max, zoom=zoom, $
     xax=xax, zax=zax, xtitle=xtitle, ytitle=ytitle, title=title, $
     lsubbox=lsubbox, rsubbox=rsubbox, subboxcolor=subboxcolor, tsubbox=tsubbox,$
-    noaxes=noaxes, thick=thick, charsize=charsize, logplot=logplot, $
+    noaxes=noaxes, thick=thick, charsize=charsize, loge=loge, log10=log10, $
     t_title=t_title, t_scale=t_scale, t_zero=t_zero, interp=interp, $
     position=position, fillwindow=fillwindow, tformat=tformat, $
     tmin=tmin, njump=njump, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
@@ -46,7 +46,8 @@ default, subboxcolor, 255
 default, tsubbox, 0.0
 default, thick, 1.0
 default, charsize, 1.0
-default, logplot, 0
+default, loge, 0
+default, log10, 0
 default, fillwindow, 0
 default, tformat, '(f5.1)'
 default, it1, 10
@@ -181,7 +182,8 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
         xax=congrid(xax,zoom*nx,/interp)
         zax=congrid(zax,zoom*nz,/interp)
       endif
-      if (logplot) then array_plot=alog(array_plot)
+      if (loge)  then array_plot=alog(array_plot)
+      if (log10) then array_plot=alog10(array_plot)
 ;;  Plot to post script (eps).      
       if (ps) then begin
         set_plot, 'ps'
@@ -293,7 +295,7 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
       for ivar=0,nvar-1 do begin
           print, it, t, variables[ivar], $
               min(array[*,*,ivarpos[ivar]]), max(array[*,*,ivarpos[ivar]]), $
-              format='(i11,f15.7,A12,2e17.7)'
+              format='(i11,e17.7,A12,2e17.7)'
       endfor
     endif
 ;;
