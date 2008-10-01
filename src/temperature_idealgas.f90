@@ -294,7 +294,7 @@ module Entropy
 ! radiative diffusion term, i.e. one solves d(TT)/dt=gamma*chi*del2(TT)
 ! with bcz='cT' (all other modules are down)
         cs2bot=gamma1*f(l1,4,n1,ilnTT)
-        cs2top=gamma1*f(l1,4,n1,ilnTT)
+        cs2top=gamma1*f(l1,4,n2,ilnTT)
       endif
 !
 ! some tricks regarding Fbot and hcond0 when bcz1='c1' (constant flux)
@@ -401,7 +401,7 @@ module Entropy
 !
         case('gaussian')
           do n=n1,n2
-            f(l1:l2,4,j,ilnTT)=exp(-(x(l1:l2)/radius_lnTT)**2)* &
+            f(l1:l2,4,n,ilnTT)=exp(-(x(l1:l2)/radius_lnTT)**2)* &
                    exp(-((z(n)-0.5)/radius_lnTT)**2)
           enddo
           cs2bot=gamma1*f(l1,4,n1,ilnTT)
