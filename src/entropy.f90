@@ -2859,9 +2859,7 @@ module Entropy
         zbot=xyz0(3)
         ztop=xyz0(3)+Lxyz(3)
 !
-!  TEMPORARY: Add heat near bottom. Wrong: should be Heat/(T*rho)
-!AB: Wolfgang, the last part of above comment seems wrong;
-!AB: We do divide by rho and T. But what about the heating profile?
+!  Add heat near bottom
 !
 !  Heating profile, normalised, so volume integral = 1
         prof = spread(exp(-0.5*((z(n)-zbot)/wheat)**2), 1, l2-l1+1) &
