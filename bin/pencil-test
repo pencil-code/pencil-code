@@ -145,6 +145,9 @@ print_footer();
 sub run_tests_on {
 # Run auto tests remotely (unless $local is true) on the given host
     my ($host) = @_;
+    chomp $host;
+
+    print STDERR "run_test_on($host)" if ($debug);
 
     my ($shost) = ($host =~ /([^.]*)/); # host name sans domain
     $shost = "\u$shost";
@@ -215,6 +218,8 @@ sub build_remote_cmd {
     if ($infofile ne '')    { $remcmd .= " --infofile=$infofile" };
     if ($postproc)          { $remcmd .= " --postproc=\"$postproc\"" };
     if ($timingsfile ne '') { $remcmd .= " --summarize-times" };
+
+    return $remcmd;
 }
 # ---------------------------------------------------------------------- #
 sub print_header {
