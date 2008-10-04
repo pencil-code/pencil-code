@@ -56,12 +56,14 @@ module Pscalar
   real :: pscalar_diff=0.0, tensor_pscalar_diff=0.0, soret_diff=0.0
   real :: pscalar_diff_hyper3=0.0, rhoccm=0.0, cc2m=0.0, gcc2m=0.0
   real :: pscalar_sink=0.0, Rpscalar_sink=0.5
+  real :: lam_gradC=0., om_gradC=0.
   logical :: lpscalar_sink
 
   namelist /pscalar_run_pars/ &
        pscalar_diff,nopscalar,tensor_pscalar_diff,gradC0,soret_diff, &
        pscalar_diff_hyper3,reinitalize_lncc,reinitalize_cc, &
-       lpscalar_sink,pscalar_sink,Rpscalar_sink
+       lpscalar_sink,pscalar_sink,Rpscalar_sink, &
+       lam_gradC, om_gradC
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rhoccm=0, idiag_ccmax=0, idiag_ccmin=0., idiag_ccm=0
@@ -413,6 +415,7 @@ module Pscalar
       type (pencil_case) :: p
 !
       real, dimension (nx) :: diff_op,diff_op2,bump
+      real :: lam_gradC_fact=1., om_gradC_fact=1., gradC_fact=1.
       integer :: j
 !
       intent(in)  :: f
@@ -479,13 +482,20 @@ module Pscalar
           df(l1:l2,m,n,icc) = df(l1:l2,m,n,icc) + soret_diff*diff_op2
         endif
 !
-!  add diffusion of imposed constant gradient of c
-!  restrict ourselves (for the time being) to z-gradient only
-!  makes sense really only for periodic boundary conditions
+!  time-dependent prefactor for the imposed passive scalar gradient
+!
+        if (lam_gradC/=0..or.om_gradC/=0.) then
+          if (lam_gradC/=0.) lam_gradC_fact=exp(lam_gradC*t)
+          if ( om_gradC/=0.)  om_gradC_fact=cos( om_gradC*t)
+          gradC_fact=lam_gradC_fact*om_gradC_fact
+        endif
+!
+!  add diffusion of imposed spatially constant gradient of c.
+!  This makes sense really only for periodic boundary conditions
 !
         do j=1,3
           if (gradC0(j)/=0.) then
-            df(l1:l2,m,n,icc) = df(l1:l2,m,n,icc) - gradC0(j)*p%uu(:,j)
+            df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)-gradC0(j)*p%uu(:,j)*gradC_fact
           endif
         enddo
 !

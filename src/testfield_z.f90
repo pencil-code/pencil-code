@@ -59,7 +59,7 @@ module Testfield
   logical :: luxb_as_aux=.false.,ljxb_as_aux=.false.,linit_aatest=.false.
   logical :: lignore_uxbtestm=.false., lphase_adjust=.false.
   character (len=labellen) :: itestfield='B11-B21'
-  real :: ktestfield=1., ktestfield1=1.
+  real :: ktestfield=1., ktestfield1=1.,lam_testfield=0.,om_testfield=0.
   integer, parameter :: mtestfield=3*njtest
   integer :: naainit
   real :: bamp=1.,bamp1=1.
@@ -76,6 +76,7 @@ module Testfield
   namelist /testfield_run_pars/ &
        B_ext,reinitialize_aatest,zextent,lsoca,lsoca_jxb, &
        lset_bbtest2,etatest,etatest1,itestfield,ktestfield, &
+       lam_testfield,om_testfield, &
        ltestfield_newz,leta_rank2,lphase_adjust,phase_testfield, &
        luxb_as_aux,ljxb_as_aux,lignore_uxbtestm, &
        daainit,linit_aatest,bamp, &
@@ -372,6 +373,8 @@ module Testfield
         write(1,'(a,i1)') 'lsoca_jxb='  ,merge(1,0,lsoca_jxb)
         write(1,'(3a)') "itestfield='",trim(itestfield)//"'"
         write(1,'(a,f5.2)') 'ktestfield=',ktestfield
+        write(1,'(a,f5.2)') 'lam_testfield=',lam_testfield
+        write(1,'(a,f5.2)')  'om_testfield=', om_testfield
         close(1)
       endif
 !
@@ -545,6 +548,15 @@ module Testfield
         enddo
       else
         uufluct=p%uu
+      endif
+!
+!  multiply by exponential factor if different from zero
+!  Should use the actual time for substep (tshear or something)
+!
+      if (lam_testfield/=0..or.om_testfield/=0.) then
+        if (lam_testfield/=0.) bamp=exp(lam_testfield*t)
+        if ( om_testfield/=0.) bamp=cos( om_testfield*t)
+        bamp1=1./bamp
       endif
 !
 !  do each of the 9 test fields at a time
