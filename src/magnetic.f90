@@ -410,7 +410,7 @@ module Magnetic
   integer :: idiag_etasmagm=0   ! DIAG_DOC: Mean of Smagorinsky resistivity
   integer :: idiag_etasmagmin=0 ! DIAG_DOC: Min of Smagorinsky resistivity
   integer :: idiag_etasmagmax=0 ! DIAG_DOC: Max of Smagorinsky resistivity
-  integer :: idiag_cosjbm=0     ! DIAG_DOC: $\left<[(\Jv\cdot\Bv)/|\Jv|\,|\Bv|]\right>$
+  integer :: idiag_cosjbm=0     ! DIAG_DOC: $\left<(\Jv\cdot\Bv)/|\Jv|\,|\Bv|\right>$
 
   contains
 
