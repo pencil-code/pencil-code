@@ -32,7 +32,7 @@ module Particles
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0
   real :: tausg_min=0.0, tausg1_max=0.0, epsp_friction_increase=0.0, cdtp=0.2
-  real :: gravx=0.0, gravz=0.0, gravr=0.0, kx_gg=1.0, kz_gg=1.0
+  real :: gravx=0.0, gravz=0.0, gravr=1.0, kx_gg=1.0, kz_gg=1.0
   real :: gravsmooth=0.0, gravsmooth2=0.0, Ri0=0.25, eps1=0.5
   real :: kx_xxp=0.0, ky_xxp=0.0, kz_xxp=0.0, amplxxp=0.0
   real :: kx_vvp=0.0, ky_vvp=0.0, kz_vvp=0.0, amplvvp=0.0
@@ -135,7 +135,7 @@ module Particles
       lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
-  integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
+  integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0, idiag_rp2m=0
   integer :: idiag_vpxm=0, idiag_vpym=0, idiag_vpzm=0
   integer :: idiag_vpx2m=0, idiag_vpy2m=0, idiag_vpz2m=0, idiag_ekinp=0
   integer :: idiag_vpxmax=0, idiag_vpymax=0, idiag_vpzmax=0
@@ -537,7 +537,7 @@ module Particles
       real :: vpx_sum, vpy_sum, vpz_sum
       real :: r, p, q, px, py, pz, eps, cs, k2_xxp
       real :: dim1, npar_loc_x, npar_loc_y, npar_loc_z, dx_par, dy_par, dz_par
-      real :: rad,rad_scl,phi,tmp
+      real :: rad,rad_scl,phi,tmp,OO
       integer :: l, j, k, ix0, iy0, iz0
       logical :: lequidistant=.false.
 !
@@ -587,7 +587,7 @@ module Particles
 !
           do k=1,npar_loc
 !
-! Start the particles obbeying a power law pdlaw
+! Start the particles obeying a power law pdlaw
 !
             tmp=2-pdlaw
             call random_number_wrapper(rad_scl)
@@ -1024,39 +1024,38 @@ k_loop:   do while (.not. (k>npar_loc))
                 1/gamma*beta_dPdr_dust*Omega*tausp*0.5/ &
                 (Omega*tausp+1/(Omega*tausp))*cs
           enddo
-
+!
        case ('Keplerian','keplerian')
 !
-!  Keplerian velocities assuming GM=1 
+!  Keplerian velocity based on gravr.
 !
           if (lroot) then
-            print*,'init_particles: Keplerian velocities assuming GM=1'
-            if (lspherical_coords) call stop_it("Keplerian particle "//&
-                 "initial condition: not implemented for spherical coordinates")
+            print*, 'init_particles: Keplerian velocity'
+            if (lspherical_coords) call stop_it('Keplerian particle '//&
+                 'initial condition: not implemented for spherical coordinates')
           endif
           do k=1,npar_loc
             if (lcartesian_coords) then
-              !tmp is the Keplerian velocity
-              rad=sqrt(fp(k,ixp)**2 + fp(k,iyp)**2 + fp(k,izp)**2)
-              tmp=rad**(-1.5)
-              fp(k,ivpx) = -tmp*fp(k,iyp)
-              fp(k,ivpy) =  tmp*fp(k,ixp)
+              rad=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2)
+              OO=sqrt(gravr)*rad**(-1.5)
+              fp(k,ivpx) = -OO*fp(k,iyp)
+              fp(k,ivpy) =  OO*fp(k,ixp)
               fp(k,ivpz) =  0.0
             elseif (lcylindrical_coords) then
               rad=fp(k,ixp)
-              tmp=rad**(-1.5)
+              OO=sqrt(gravr)*rad**(-1.5)
               fp(k,ivpx) =  0.0
-              fp(k,ivpy) =  tmp*rad
+              fp(k,ivpy) =  OO*rad
               fp(k,ivpz) =  0.0
             endif
           enddo
-
+!
         case default
           if (lroot) &
               print*, 'init_particles: No such such value for initvvp: ', &
               trim(initvvp(j))
           call stop_it("")
-
+!
         endselect
 !
       enddo ! do j=1,ninit
@@ -2280,6 +2279,8 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_xp2m/=0) call sum_par_name(fp(1:npar_loc,ixp)**2,idiag_xp2m)
         if (idiag_yp2m/=0) call sum_par_name(fp(1:npar_loc,iyp)**2,idiag_yp2m)
         if (idiag_zp2m/=0) call sum_par_name(fp(1:npar_loc,izp)**2,idiag_zp2m)
+        if (idiag_rp2m/=0) call sum_par_name(fp(1:npar_loc,ixp)**2+ &
+            fp(1:npar_loc,iyp)**2+fp(1:npar_loc,izp)**2,idiag_rp2m)
         if (idiag_vpxm/=0) call sum_par_name(fp(1:npar_loc,ivpx),idiag_vpxm)
         if (idiag_vpym/=0) call sum_par_name(fp(1:npar_loc,ivpy),idiag_vpym)
         if (idiag_vpzm/=0) call sum_par_name(fp(1:npar_loc,ivpz),idiag_vpzm)
@@ -3377,7 +3378,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if (lreset) then
         idiag_xpm=0; idiag_ypm=0; idiag_zpm=0
-        idiag_xp2m=0; idiag_yp2m=0; idiag_zp2m=0
+        idiag_xp2m=0; idiag_yp2m=0; idiag_zp2m=0; idiag_rp2m=0
         idiag_vpxm=0; idiag_vpym=0; idiag_vpzm=0
         idiag_vpx2m=0; idiag_vpy2m=0; idiag_vpz2m=0; idiag_ekinp=0
         idiag_vpxmax=0; idiag_vpymax=0; idiag_vpzmax=0
@@ -3406,6 +3407,7 @@ k_loop:   do while (.not. (k>npar_loc))
         call parse_name(iname,cname(iname),cform(iname),'xp2m',idiag_xp2m)
         call parse_name(iname,cname(iname),cform(iname),'yp2m',idiag_yp2m)
         call parse_name(iname,cname(iname),cform(iname),'zp2m',idiag_zp2m)
+        call parse_name(iname,cname(iname),cform(iname),'rp2m',idiag_rp2m)
         call parse_name(iname,cname(iname),cform(iname),'vpxm',idiag_vpxm)
         call parse_name(iname,cname(iname),cform(iname),'vpym',idiag_vpym)
         call parse_name(iname,cname(iname),cform(iname),'vpzm',idiag_vpzm)
