@@ -355,8 +355,12 @@ if ( keyword_set(stats) and (not quiet) ) then begin
         result=execute(command)
         command='meanval=mean('+variables[iv]+'[*,ivec])'
         result=execute(command)
-        command='stdval=stddev('+variables[iv]+'[*,ivec])'
-        result=execute(command)
+        if (npar ge 2) then begin
+          command='stdval=stddev('+variables[iv]+'[*,ivec])'
+          result=execute(command)
+        endif else begin
+          stdval=0.0d
+        endelse
         if (ivec eq 0) then ind='x'
         if (ivec eq 1) then ind='y'
         if (ivec eq 2) then ind='z'
@@ -371,8 +375,12 @@ if ( keyword_set(stats) and (not quiet) ) then begin
       result=execute(command)
       command='meanval=mean('+variables[iv]
       result=execute(command)
-      command='stdval=stddev('+variables[iv]
-      result=execute(command)
+      if (npar ge 2) then begin
+        command='stdval=stddev('+variables[iv]
+        result=execute(command)
+      endif else begin
+        stdval=0.0d
+      endelse
       print, ' '+variables[iv]+'  '+'    -->', $
           minval, maxval, meanval, stdval
     endelse
