@@ -10,7 +10,7 @@ pro rvid_plane,field,mpeg=mpeg,png=png,TRUEPNG=png_truecolor,tmin=tmin,$
                _extra=_extra, $
                polar=polar, anglecoord=anglecoord, $
                style_polar=style_polar,nlevels=nlevels, $
-               doublebuffer=doublebuffer,wsx=wsx,wsy=wsy
+               doublebuffer=doublebuffer,wsx=wsx,wsy=wsy,log=log
 ;
 ; $Id$
 ;
@@ -60,6 +60,8 @@ default,style_polar,'fill'
 default,wsx,640
 default,wsy,480
 default,nlevels,30
+;
+tini=1e-30 ; a small number
 ;
 ;  Set up a window for double buffering
 ;
@@ -290,6 +292,15 @@ if (keyword_set(global_scaling)) then begin
         amax=max([amax,exp(max(plane))])
         amin=min([amin,exp(min(plane))])
       endelse
+    endif else if (keyword_set(log)) then begin
+      if (first) then begin
+        amax=alog10(max(plane))
+        amin=alog10(min(plane)+tini)
+        first=0L
+      endif else begin
+        amax=max([amax,alog10(max(plane))])
+        amin=min([amin,alog10(min(plane)+tini)])
+      endelse
     endif else if (keyword_set(nsmooth)) then begin
       if (first) then begin
         amax=max(smooth(plane,nsmooth))
@@ -345,6 +356,8 @@ while (not eof(1)) do begin
     plane2=rebin(smooth(plane,nsmooth),zoom*[nx_plane,ny_plane])
   endif else if (keyword_set(sqroot)) then begin
     plane2=rebin(sqrt(plane),zoom*[nx_plane,ny_plane])
+  endif else if (keyword_set(log)) then begin
+    plane2=rebin(alog10(plane+tini),zoom*[nx_plane,ny_plane])
   endif else begin
     plane2=rebin(plane,zoom*[nx_plane,ny_plane])
   endelse
