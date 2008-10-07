@@ -20,7 +20,7 @@ module Particles_cdata
 
   integer :: npvar=0, npar_loc=0, mspar=0
   integer :: ixp=0,iyp=0,izp=0,ivpx=0,ivpy=0,ivpz=0,iap=0,inptilde=0
-  integer :: ipsx=0, ipsy=0, ipsz=0
+  integer :: ipsx=0, ipsy=0, ipsz=0, iuup=0, ipvisc=0
   integer :: inp=0
   integer :: idiag_nmigmax=0
   integer, dimension(ny*nz) :: npar_imn, k1_imn, k2_imn
