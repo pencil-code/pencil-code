@@ -439,7 +439,7 @@ module Forcing
       integer, dimension(mk), save :: kkx,kky,kkz
       integer, save :: ifirst=0,nk
       integer :: ik,j,jf,l
-      real :: kx0,kx,ky,kz,k2,k,force_ampl=1.
+      real :: kx0,kx,ky,kz,k2,k,force_ampl=1.,pi_over_Lx=.5
       real :: ex,ey,ez,kde,sig=1.,fact,kex,key,kez,kkex,kkey,kkez
       real, dimension(3) :: e1,e2,ee,kk
       real :: norm,phi
@@ -480,7 +480,7 @@ module Forcing
       if(ip<=6) print*,'forcing_hel: kx,ky,kz=',kkx(ik),kky(ik),kkz(ik)
       if(ip<=6) print*,'forcing_hel: dt, ifirst=',dt,ifirst
 !
-!  normally we want to use the wavevectors as the are,
+!  normally we want to use the wavevectors as they are,
 !  but in some cases, e.g. when the box is bigger than 2pi,
 !  we want to rescale k so that k=1 now corresponds to a smaller value.
 !
@@ -488,24 +488,28 @@ module Forcing
         kx0=kkx(ik)*(2.*pi/Lxyz(1))
         ky=kky(ik)*(2.*pi/Lxyz(2))
         kz=kkz(ik)*(2.*pi/Lxyz(3))
+        pi_over_Lx=pi/Lxyz(1)
       else
         kx0=kkx(ik)
         ky=kky(ik)
         kz=kkz(ik)
+        pi_over_Lx=.5
       endif
 !
 !  in the shearing sheet approximation, kx = kx0 - St*k_y.
-!  Here, St=-deltay/Lx
+!  Here, St=-deltay/Lx. However, to stay near kx0, we ignore
+!  integer shifts.
 !
       if (Sshear==0.) then
         kx=kx0
       else
-        kx=kx0+ky*deltay/Lx
+        kx=kx0+mod(ky*deltay/Lx-pi_over_Lx,2.*pi_over_Lx)+pi_over_Lx
       endif
 !
       if(headt.or.ip<5) print*, 'forcing_hel: kx0,kx,ky,kz=',kx0,kx,ky,kz
       k2=kx**2+ky**2+kz**2
       k=sqrt(k2)
+      if (ip.lt.4) write(88,*) k,kx0,kx,ky,kz
 !
 ! Find e-vector
 !
