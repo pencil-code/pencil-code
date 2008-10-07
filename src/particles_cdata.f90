@@ -12,6 +12,7 @@ module Particles_cdata
   real, parameter :: npar_per_cell=npar/(1.*nwgrid)
   integer, parameter :: mspvar=mpvar+1 
 
+  real :: rp_int=-impossible,rp_ext=-impossible
   real :: dsnap_par_minor=0.0
   real :: rhops=1.0e10, rhop_tilde=0.0, mp_tilde=0.0
   integer, dimension (mpar_loc) :: ipar

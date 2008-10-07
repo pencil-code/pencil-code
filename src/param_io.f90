@@ -71,7 +71,7 @@ module Param_IO
        lread_oldsnap_notestfield, &
        lwrite_aux,pretend_lnTT, &
        lprocz_slowest, lcopysnapshots_exp, &
-       bcx,bcy,bcz,r_int,r_ext,rp_int,rp_ext,r_ref,rsmooth, &
+       bcx,bcy,bcz,r_int,r_ext,r_ref,rsmooth, &
        nscbc, &
        mu0,force_lower_bound,force_upper_bound, &
        fbcx1,fbcx2,fbcy1,fbcy2,fbcz1,fbcz2,fbcz1_1,fbcz1_2,fbcz2_1,fbcz2_2, &
@@ -106,7 +106,7 @@ module Param_IO
        lread_oldsnap_notestfield, &
        comment_char, &
        ix,iy,iz,iz2,slice_position,zbot_slice,ztop_slice, &
-       bcx,bcy,bcz,r_int,r_ext,rp_int,rp_ext, &
+       bcx,bcy,bcz,r_int,r_ext, &
        nscbc, &
        lfreeze_varsquare,lfreeze_varint,lfreeze_varext, &
        xfreeze_square,yfreeze_square,rfreeze_int,rfreeze_ext, &
