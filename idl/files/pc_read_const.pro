@@ -1,3 +1,4 @@
+;;
 ;; $Id$
 ;;
 ;;  Read Pencil Code constants from a file.
@@ -10,24 +11,24 @@
 pro pc_read_const, object=object, varfile=varfile, datadir=datadir, quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
-;;
-;;  Default data directory.
-;;
-IF (not keyword_set(datadir)) THEN datadir=pc_get_datadir()
+;
+;  Default data directory.
+;
+if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 default, varfile, 'pc_constants.pro'
 default, quiet, 0
 fullvarfile=datadir+'/'+varfile
 if (not quiet) then $
     print, 'Going to read Pencil Code constants from the file ' $
     + fullvarfile + ' .'
-;;
-;;  Set precision
-;;
+;
+;  Set precision
+;
 pc_read_dim, obj=dim, datadir=datadir, quiet=quiet
 pc_set_precision, dim=dim, quiet=quiet
-;;
-;;  Find length of data file and define data arrays.
-;;
+;
+;  Find length of data file and define data arrays.
+;
 spawn, 'wc -l '+fullvarfile, nlines
 nlines=fix(nlines[0])
 if (not quiet) then $
@@ -35,39 +36,45 @@ if (not quiet) then $
 array=strarr(nlines)
 varnames=strarr(nlines)
 values=strarr(nlines)
-;;
-;;  Read data file into array.
-;;
+;
+;  Read data file into array.
+;
 get_lun, file
 openr, file, datadir+'/'+varfile
   readf, file, array
 close, file
-;;
-;;  Split lines into variable name and associate value.
-;;
+;
+;  Split lines into variable name and associate value.
+;
+ncom=0
 for i=0, nlines-1 do begin
-  pos = strpos(array[i], '=')
-  varnames[i] = strmid(array[i], 0, pos)
-;;  Remove blanks from variable name.
-  while (strpos(varnames[i],' ') ne -1) do begin
-    j = strpos(varnames[i],' ')
-    varnames[i] = strmid(varnames[i], 0, j-1) + $
-        strmid(varnames[i], j+1, strlen(varnames[i]))
-  endwhile
-;;  
-  values[i] = strmid(array[i], pos+1, strlen(array[i]))
+;  Skip comment lines.
+  com = strpos(array[i], ';')
+  if (com ne 1) then begin
+    pos = strpos(array[i], '=')
+    varnames[i] = strmid(array[i], 0, pos)
+;  Remove blanks from variable name.
+    while (strpos(varnames[i],' ') ne -1) do begin
+      j = strpos(varnames[i],' ')
+      varnames[i] = strmid(varnames[i], 0, j-1) + $
+          strmid(varnames[i], j+1, strlen(varnames[i]))
+    endwhile
+;  
+    values[i] = strmid(array[i], pos+1, strlen(array[i]))
+  endif else begin
+    ncom=ncom+1
+  endelse
 endfor
-;;
-;;  Put data in structure.
-;;
-makeobject="object = CREATE_STRUCT(name=objectname,[" + $
-    arraytostring(varnames,QUOTE="'",/noleader) + "]," + $
-    arraytostring(values,/noleader) + ")"
-;;
+;
+;  Put data in structure.
+;
+makeobject="object = create_struct(name=objectname,[" + $
+    arraytostring(varnames[ncom:nlines-1],quote="'",/noleader) + "]," + $
+    arraytostring(values[ncom:nlines-1],/noleader) + ")"
+;
 if (execute(makeobject) ne 1) then begin
   message, 'ERROR Evaluating variables: ' + makeobject, /INFO
   undefine,object
 endif
-
-
+;
 end
