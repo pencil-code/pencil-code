@@ -373,8 +373,8 @@ module Testfield
         write(1,'(a,i1)') 'lsoca_jxb='  ,merge(1,0,lsoca_jxb)
         write(1,'(3a)') "itestfield='",trim(itestfield)//"'"
         write(1,'(a,f5.2)') 'ktestfield=',ktestfield
-        write(1,'(a,f5.2)') 'lam_testfield=',lam_testfield
-        write(1,'(a,f5.2)')  'om_testfield=', om_testfield
+        write(1,'(a,f7.4)') 'lam_testfield=',lam_testfield
+        write(1,'(a,f7.4)')  'om_testfield=', om_testfield
         close(1)
       endif
 !

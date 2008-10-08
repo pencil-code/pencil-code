@@ -67,7 +67,7 @@ module Forcing
 !
 !  continuous forcing variables
 !
-  logical :: lembed=.false.
+  logical :: lembed=.false.,lshearing_adjust_old=.false.
   character (len=labellen) :: iforcing_cont='ABC'
   real :: ampl_ff=1.,width_fcont=1.,x1_fcont=0.,x2_fcont=0.
   real :: kf_fcont=0.,omega_fcont=0.,eps_fcont=0.
@@ -99,7 +99,7 @@ module Forcing
        lforcing_cont,iforcing_cont, &
        lembed,k1_ff,ampl_ff,width_fcont,x1_fcont,x2_fcont, &
        kf_fcont,omega_fcont,eps_fcont,lsamesign,&
-       equator
+       lshearing_adjust_old,equator
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_ffm=0
   integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
@@ -503,7 +503,11 @@ module Forcing
       if (Sshear==0.) then
         kx=kx0
       else
-        kx=kx0+mod(ky*deltay/Lx-pi_over_Lx,2.*pi_over_Lx)+pi_over_Lx
+        if (lshearing_adjust_old) then
+          kx=kx0+ky*deltay/Lx
+        else
+          kx=kx0+mod(ky*deltay/Lx-pi_over_Lx,2.*pi_over_Lx)+pi_over_Lx
+        endif
       endif
 !
       if(headt.or.ip<5) print*, 'forcing_hel: kx0,kx,ky,kz=',kx0,kx,ky,kz
