@@ -1,34 +1,5 @@
-! $Id: nospecial.f90,v 1.30 2008-01-16 07:02:43 brandenb Exp $
+! $Id:$
 
-!  This module provide a way for users to specify custom
-!  (i.e. not in the standard Pencil Code) physics, diagnostics etc.
-!
-!  The module provides a set of standard hooks into the Pencil-Code and
-!  currently allows the following customizations:
-!
-!   Description                                     | Relevant function call
-!  ---------------------------------------------------------------------------
-!   Special variable registration                   | register_special
-!     (pre parameter read)                          |
-!   Special variable initialization                 | initialize_special
-!     (post parameter read)                         |
-!                                                   |
-!   Special initial condition                       | init_special
-!    this is called last so may be used to modify   |
-!    the mvar variables declared by this module     |
-!    or optionally modify any of the other f array  |
-!    variables.  The latter, however, should be     |
-!    avoided where ever possible.                   |
-!                                                   |
-!   Special term in the mass (density) equation     | special_calc_density
-!   Special term in the momentum (hydro) equation   | special_calc_hydro
-!   Special term in the entropy equation            | special_calc_entropy
-!   Special term in the induction (magnetic)        | special_calc_magnetic
-!      equation                                     |
-!                                                   |
-!   Special equation                                | dspecial_dt
-!     NOT IMPLEMENTED FULLY YET - HOOKS NOT PLACED INTO THE PENCIL-CODE
-!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -39,35 +10,6 @@
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
-
-!-------------------------------------------------------------------
-!
-! HOW TO USE THIS FILE
-! --------------------
-!
-! The rest of this file may be used as a template for your own
-! special module.  Lines which are double commented are intended
-! as examples of code.  Simply fill out the prototypes for the
-! features you want to use.
-!
-! Save the file with a meaningful name, eg. geo_kws.f90 and place
-! it in the $PENCIL_HOME/src/special directory.  This path has
-! been created to allow users ot optionally check their contributions
-! in to the Pencil-Code CVS repository.  This may be useful if you
-! are working on/using the additional physics with somebodyelse or
-! may require some assistance from one of the main Pencil-Code team.
-!
-! To use your additional physics code edit the Makefile.local in
-! the src directory under the run directory in which you wish to
-! use your additional physics.  Add a line with all the module
-! selections to say something like:
-!
-!    SPECIAL=special/geo_kws
-!
-! Where geo_kws it replaced by the filename of your new module
-! upto and not including the .f90
-!
-!--------------------------------------------------------------------
 
 module Special
 
@@ -553,18 +495,19 @@ module Special
       type (pencil_case), intent(in) :: p
 
       real, dimension (nx) :: newton=0.
-      real, dimension (150), save :: b_lnT,b_z
+      real, dimension (150) :: b_lnT,b_z
+      real, dimension (mz), save :: blnTT
       real, dimension (nx) :: g2,chix,smo=0.,gsmo=0.,rhs,tmps,tmp
       real, dimension (nx,3) :: gsmoglntt,tmpv
-      real :: lnTTor
+      real :: dummy
       integer :: i,lend,j
 !
       if (headtt) print*,'special_calc_entropy: newton cooling',tdown,gamma11,lnrho0
 !
-!  Initial temperature profile is given in ln(T) in [K] over z in [Mm]
+!  Initial temperature profile is given in ln(T) [K] over z [Mm]
 !
-      if (it .eq. 1) then
-         inquire(IOLENGTH=lend) lnTTor
+      if (it .eq. 1 .and. lfirstpoint) then
+         inquire(IOLENGTH=lend) dummy
          open (10,file='driver/b_lnT.dat',form='unformatted',status='unknown',recl=lend*150)
          read (10) b_lnT
          read (10) b_z
@@ -577,29 +520,32 @@ module Special
          elseif (unit_system == 'cgs') then
             b_z = b_z * 1.e8 / unit_length
          endif
+         !
+         do j=n1,n2 
+            if (z(j) .lt. b_z(1) ) then
+               blnTT(j) = b_lnT(1)
+            elseif (z(j) .ge. b_z(150)) then
+               blnTT(j) = b_lnT(150)
+            else
+               do i=1,149
+                  if (z(j) .ge. b_z(i) .and. z(j) .lt. b_z(i+1)) then
+                     !
+                     ! linear interpol   y = m*(x-x1) + y1   
+                     blnTT(j) = (b_lnT(i+1)-b_lnT(i))/(b_z(i+1)-b_z(i)) * (z(j)-b_z(i)) + b_lnT(i)
+                     exit
+                  endif
+               enddo
+            endif
+         enddo
+!         if (ipz .eq. 1) print*,ipy,ipz,blntt
       endif
       !
       !  Get reference temperature
       !
-      if (z(n) .lt. b_z(1) ) then
-         lnTTor = b_lnT(1)
-      elseif (z(n) .ge. b_z(150)) then
-         lnTTor = b_lnT(150)
-      else
-         do i=1,149
-            if (z(n) .ge. b_z(i) .and. z(n) .lt. b_z(i+1)) then
-               !
-               ! linear interpol   y = m*(x-x1) + y1   
-               lnTTor = (b_lnT(i+1)-b_lnT(i))/(b_z(i+1)-b_z(i)) * (z(n)-b_z(i)) + b_lnT(i)
-               exit
-            endif
-         enddo
-      endif
       !
-      newton = exp(lnTTor-p%lnTT)-1.
+      newton = exp(blnTT(n)-p%lnTT)-1.
       !
       newton = newton * tdown*exp(-allp*(z(n)*unit_length*1e-6))
-      !newton = newton * tdown*exp(allp*(p%lnrho-lnrho0))
       !
       !  Add newton cooling term to entropy
       !
@@ -614,9 +560,6 @@ module Special
 ! -------------------------------------------------------------------------------     
       chix=p%rho1*hcond0*p%cp1
 !
-!      smo = (1.-cubic_step(p%lnTT,lntt0,wlntt))
-!      gsmo = -cubic_der_step(p%lnTT,lntt0,wlntt)
-!     
       call dot2(p%glnTT,tmps,PRECISE_SQRT=.true.)
 
       smo  = cubic_step(tmps,lntt0,wlntt)
@@ -765,8 +708,6 @@ module Special
                             (1.-dt/(bmdi+dt)) * f(l1:l2,m1:m2,n1,iay)
       endif
 !      
-!      call keep_compiler_quiet(f)
-!
     endsubroutine special_before_boundary
 !***********************************************************************
     subroutine calc_heatcond_tensor(f,df,p)
@@ -788,43 +729,6 @@ module Special
       intent(in) :: p
       intent(out) :: df
 !
-!       if (headtt) print*,'special/calc_heatcond_tensor',Kgpara
-! !
-! !  calculate cos alpha of b_unit and grad(lntt)
-! !
-!       call dot2_mn(p%bb,abs_b,PRECISE_SQRT=.true.)
-!       b1=1./max(tini,abs_b)
-!       call multsv_mn(b1,p%bb,bunit)
-! !
-!       call dot2_mn(p%glnTT,tmp,PRECISE_SQRT=.true.)
-!       call dot_mn(p%glnTT,bunit,tmpi)
-!       cosa = tmpi/max(tini,tmp)
-! !
-!       cos2a = cosa*cosa
-      
-!       tmpi = cubic_step(cos2a,0.8,0.1)
-! !      where (cos2a .gt. 0.6) 
-! !         tmpi=1
-! !      endwhere
-!       cos2a = tmpi
-
-!       chix = exp(alog(Kgpara)+2.5*p%lnTT-p%lnrho)* p%cp1
-! !
-!       call dot2_mn(p%glnTT,tmp)
-!       rhs = chix * (3.5*tmp+p%del2lnTT)* cos2a
-! !
-!       rhs = rhs *(1.-cubic_step(z(n)*real(unit_length)*1e-6,28.,0.6))
-      
-!       df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+rhs
-!       !
-!       if (itsub .eq. 3  .and. ip .eq. 33) call output_pencil(trim(directory)//'/rhs2.dat',rhs,1)
-
-!       if (lfirst.and.ldt) then
-!          advec_uu=advec_uu + sqrt(gamma*chix*dxyz_2)
-!          diffus_chi=diffus_chi+gamma*chix*dxyz_2
-!          dt1_max=max(dt1_max,rhs/cdts)
-!       endif
-      
       if (headtt) print*,'special/calc_heatcond_tensor',Kgpara
 !
 !  calculate unit vector of bb
@@ -849,9 +753,9 @@ module Special
 !
 !  calculate abs(h) for time step
 !
-      call dot2_mn(hhh,hhh2,PRECISE_SQRT=.true.)        
+      call dot2_mn(hhh,hhh2,PRECISE_SQRT=.true.)
 !
-!  limit the length of h 
+!  limit the length of h
 !
 !      quenchfactor =1. !*get_quench(hhh,1e-9,1e-6)
       quenchfactor=1./max(1.,3.*hhh2*dxmax)
@@ -861,7 +765,7 @@ module Special
 !
 !  dot Hessian matrix of ecr with bi*bj, and add into tmp
 !
-      call multmv_mn(p%hlnTT,bunit,tmpv) !sven 
+      call multmv_mn(p%hlnTT,bunit,tmpv) !sven
       call dot_mn(tmpv,bunit,tmpj)
       tmp = tmp+tmpj
 !
@@ -872,21 +776,19 @@ module Special
       tmp=tmp+tmpi**2
 !
 !  calculate rhs
-!     
+!
       chix = exp(alog(Kgpara)+2.5*p%lnTT-p%lnrho)* p%cp1
 !
       rhs = gamma*chix*tmp
 !
-!      rhs = rhs *(1.-cubic_step(z(n)*real(unit_length)*1e-6,28.,0.6))
-!
       df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+rhs
 !
       if (itsub .eq. 3 .and. ip .eq. 33) call output_pencil(trim(directory)//'/rhs1.dat',rhs,1)
-
+!
       if (lfirst.and.ldt) then
- !        advec_uu=advec_uu + sqrt(gamma*chix*dxyz_2)
+!        advec_uu=advec_uu + sqrt(gamma*chix*dxyz_2)
          diffus_chi=diffus_chi+gamma*chix*dxyz_2
- !        dt1_max=max(dt1_max,rhs/cdts)
+!        dt1_max=max(dt1_max,rhs/cdts)
       endif
       
     endsubroutine calc_heatcond_tensor
