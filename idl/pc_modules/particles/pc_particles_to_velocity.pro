@@ -204,31 +204,34 @@ case interpolation_scheme of
     for k=0L,npar-1 do begin
 ;  Find nearest grid point     
       ix0=l1 & iy0=m1 & iz0=n1
-      if (nx ne 1) then ix0 = round((xxp[k,0]-x[0])*dx_1)
-      if (ny ne 1) then iy0 = round((xxp[k,1]-y[0])*dy_1)
-      if (nz ne 1) then iz0 = round((xxp[k,2]-z[0])*dz_1)
-      if (ix0 eq nx) then ix0=ix0-1
-      if (iy0 eq ny) then iy0=iy0-1
-      if (iz0 eq nz) then iz0=iz0-1
-      if (ix0 eq -1) then ix0=0
-      if (iy0 eq -1) then iy0=0
-      if (iz0 eq -1) then iz0=0
+      if (nx ne 1) then begin
+        ix0 = round((xxp[k,0]-x[0])*dx_1)
+        if (ix0 gt l2) then ix0=l2
+        if (ix0 lt l1) then ix0=l1
 ;  Each particle affects its nearest grid point and the two neighbours of that
 ;  grid point in all directions.
-      ixx0=ix0-1 & ixx1=ix0+1
-      iyy0=iy0-1 & iyy1=iy0+1
-      izz0=iz0-1 & izz1=iz0+1
-      if (nx eq 1) then begin
+        ixx0=ix0-1 & ixx1=ix0+1
+      endif else begin
         ixx0=ix0 & ixx1=ix0
-      endif
-      if (ny eq 1) then begin
+      endelse
+      if (ny ne 1) then begin
+        iy0 = round((xxp[k,1]-y[0])*dy_1)
+        if (iy0 gt m2) then iy0=m2
+        if (iy0 lt m1) then iy0=m1
+        iyy0=iy0-1 & iyy1=iy0+1
+      endif else begin
         iyy0=iy0 & iyy1=iy0
-      endif
-      if (nz eq 1) then begin
+      endelse
+      if (nz ne 1) then begin
+        iz0 = round((xxp[k,2]-z[0])*dz_1)
+        if (iz0 gt n2) then iz0=n2
+        if (iz0 lt n1) then iz0=n1
+        izz0=iz0-1 & izz1=iz0+1
+      endif else begin
         izz0=iz0 & izz1=iz0
-      endif
+      endelse
 ;  Calculate weight of each particle on the grid.
-      for ixx=ixx0,ixx1 do begin & for iyy=iyy0,iyy1 do begin & for izz=izz0,izz1 do begin
+      for ixx=ixx0,ixx1 do begin & for iyy=iyy0,iyy1 do begin & for izz=izz0,   izz1 do begin
         if ( ((ixx-ix0) eq -1) or ((ixx-ix0) eq +1) ) then begin
           weight_x = 1.125d - 1.5d*abs(xxp[k,0]-x[ixx])  *dx_1 + $
                               0.5d*abs(xxp[k,0]-x[ixx])^2*dx_2
@@ -263,7 +266,7 @@ case interpolation_scheme of
     endfor ; end loop over particles
 ;
   end ; 'tsc'
-
+;
 endcase
 ;
 ;  Fold velocity from ghost cells into main array.
@@ -275,6 +278,10 @@ if (cic or tsc) then begin
         ww[l1-1:l2+1,m1-1:m2+1,n1,*] + ww[l1-1:l2+1,m1-1:m2+1,n2+1,*]
     ww[l1-1:l2+1,m1-1:m2+1,n2,*]= $
         ww[l1-1:l2+1,m1-1:m2+1,n2,*] + ww[l1-1:l2+1,m1-1:m2+1,n1-1,*]
+    rhop[l1-1:l2+1,m1-1:m2+1,n1]= $
+        rhop[l1-1:l2+1,m1-1:m2+1,n1] + rhop[l1-1:l2+1,m1-1:m2+1,n2+1]
+    rhop[l1-1:l2+1,m1-1:m2+1,n2]= $
+        rhop[l1-1:l2+1,m1-1:m2+1,n2] + rhop[l1-1:l2+1,m1-1:m2+1,n1-1]
   endif
 ;
   if (ny ne 1) then begin
@@ -282,24 +289,29 @@ if (cic or tsc) then begin
         ww[l1-1:l2+1,m1,n1:n2,*] + ww[l1-1:l2+1,m2+1,n1:n2,*]
     ww[l1-1:l2+1,m2,n1:n2,*]= $
         ww[l1-1:l2+1,m2,n1:n2,*] + ww[l1-1:l2+1,m1-1,n1:n2,*]
+    rhop[l1-1:l2+1,m1,n1:n2]= $
+        rhop[l1-1:l2+1,m1,n1:n2,*] + rhop[l1-1:l2+1,m2+1,n1:n2]
+    rhop[l1-1:l2+1,m2,n1:n2]= $
+        rhop[l1-1:l2+1,m2,n1:n2,*] + rhop[l1-1:l2+1,m1-1,n1:n2]
   endif
 ;
   if (nx ne 1) then begin
     ww[l1,m1:m2,n1:n2,*]=ww[l1,m1:m2,n1:n2,*] + ww[l2+1,m1:m2,n1:n2,*]
     ww[l2,m1:m2,n1:n2,*]=ww[l2,m1:m2,n1:n2,*] + ww[l1-1,m1:m2,n1:n2,*]
+    rhop[l1,m1:m2,n1:n2]=rhop[l1,m1:m2,n1:n2] + rhop[l2+1,m1:m2,n1:n2]
+    rhop[l2,m1:m2,n1:n2]=rhop[l2,m1:m2,n1:n2] + rhop[l1-1,m1:m2,n1:n2]
   endif
-;
-;  Trim the array of ghost zones.
-;
-  ww=ww[l1:l2,m1:m2,n1:n2,*]
 endif
 ;
 ;  Normalize momentum sum with total density.
 ;
 for iz=0,nz-1 do begin & for iy=0,ny-1 do begin & for ix=0,nx-1 do begin
-  if (rhop[ix,iy,iz] ne 0.0) then $
-      ww[ix,iy,iz,*]=ww[ix,iy,iz,*]/rhop[ix,iy,iz]
+  if (rhop[ix,iy,iz] ne 0.0) then ww[ix,iy,iz,*]=ww[ix,iy,iz,*]/rhop[ix,iy,iz]
 endfor & endfor & endfor
+;
+;  Trim the array of ghost zones.
+;
+if (cic or tsc) then ww=ww[l1:l2,m1:m2,n1:n2,*]
 ;
 ;  Purge missing directions from ww before returning it.
 ;
