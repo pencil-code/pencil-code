@@ -13,7 +13,7 @@
   lupw_lnrho=T
 /
 &forcing_run_pars
-  iforce='helical', force=.01, relhel=1., lshearing_adjust_old=T
+  iforce='helical', force=.01, relhel=1.
 /
 &testfield_run_pars
   itestfield='B11-B22'
