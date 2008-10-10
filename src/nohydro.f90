@@ -254,7 +254,7 @@ module Hydro
       real, dimension(nx) :: kdotxwt,cos_kdotxwt,sin_kdotxwt
       real :: kkx_aa,kky_aa,kkz_aa, fac, fpara, dfpara, ecost, esint, epst
       integer :: modeN
-      real :: sqrt2, sqrt21k1, WW=0.25
+      real :: sqrt2, sqrt21k1, WW=0.25, k21
 !
       intent(in) :: f
       intent(inout) :: p
@@ -469,6 +469,18 @@ kky_aa=2.*pi
         p%uu(:,1)=0.
         p%uu(:,2)=eps_kinflow*z(n)*sin(kkx_aa*x(l1:l2))
         p%uu(:,3)=1.+cos(kkx_aa*x(l1:l2))
+        if (lpencil(i_divu)) p%divu=0.
+!
+!  Shearing wave
+!
+      elseif (kinflow=='ShearingWave') then
+        if (headtt) print*,'ShearingWave flow; eps_kinflow=',eps_kinflow
+        kkx_aa=eps_kinflow*(10.-t)
+        kky_aa=1.
+        k21=1./(kkx_aa**2+kky_aa**2)
+        p%uu(:,1)=-kky_aa*k21*cos(kkx_aa*x(l1:l2)+kky_aa*y(m))
+        p%uu(:,2)=+kkx_aa*k21*cos(kkx_aa*x(l1:l2)+kky_aa*y(m))
+        p%uu(:,3)=            cos(kkx_aa*x(l1:l2)+kky_aa*y(m))
         if (lpencil(i_divu)) p%divu=0.
 !
 !  KS-flow

@@ -513,7 +513,7 @@ module Forcing
       if(headt.or.ip<5) print*, 'forcing_hel: kx0,kx,ky,kz=',kx0,kx,ky,kz
       k2=kx**2+ky**2+kz**2
       k=sqrt(k2)
-      if (ip.lt.4) write(88,*) k,kx0,kx,ky,kz
+      if (ip.lt.4) write(88,'(6f10.5)') k,kx0,kx,ky,kz,deltay
 !
 ! Find e-vector
 !
