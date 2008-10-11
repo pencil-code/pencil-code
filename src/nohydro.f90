@@ -475,8 +475,8 @@ kky_aa=2.*pi
 !
       elseif (kinflow=='ShearingWave') then
         if (headtt) print*,'ShearingWave flow; eps_kinflow=',eps_kinflow
-        kkx_aa=eps_kinflow*(10.-t)
         kky_aa=1.
+        kkx_aa=kky_aa*eps_kinflow*(10.-t)
         k21=1./(kkx_aa**2+kky_aa**2)
         p%uu(:,1)=-kky_aa*k21*cos(kkx_aa*x(l1:l2)+kky_aa*y(m))
         p%uu(:,2)=+kkx_aa*k21*cos(kkx_aa*x(l1:l2)+kky_aa*y(m))
