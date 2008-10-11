@@ -973,8 +973,6 @@ module Testfield
           enddo
         endif
       enddo
-!      print*,'NPROCY:',nprocy
-!      print*,'UXBTESTM1:',uxbtestm1(:,1,1,1)
 !
 !  do communication for array of size nz*nprocz*3*njtest
 !
