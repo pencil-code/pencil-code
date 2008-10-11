@@ -923,8 +923,8 @@ module Testfield
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mz) :: c,s
 !
-      real, dimension (nz,nprocz,3,njtest) :: uxbtestm1,uxbtestm1_tmp
-      real, dimension (nz,nprocz,3,njtest) :: jxbtestm1,jxbtestm1_tmp
+      real, dimension (nz,nprocz,3,njtest) :: uxbtestm1=0.,uxbtestm1_tmp=0.
+      real, dimension (nz,nprocz,3,njtest) :: jxbtestm1=0.,jxbtestm1_tmp=0.
 !
       real, dimension (nx,3,3) :: aijtest,bijtest
       real, dimension (nx,3) :: aatest,bbtest,jjtest,uxbtest,jxbtest
@@ -973,6 +973,8 @@ module Testfield
           enddo
         endif
       enddo
+!      print*,'NPROCY:',nprocy
+!      print*,'UXBTESTM1:',uxbtestm1(:,1,1,1)
 !
 !  do communication for array of size nz*nprocz*3*njtest
 !
