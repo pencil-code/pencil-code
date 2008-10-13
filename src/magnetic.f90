@@ -1905,8 +1905,8 @@ module Magnetic
 !
 !  Add Ohmic heat to entropy or temperature equation
 !
-      if (.not.lkinematic) then
-        if (lentropy .and. lohmic_heat) then
+      if (.not.lkinematic.and.lohmic_heat) then
+        if (lentropy) then
           if (pretend_lnTT) then
             df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + &
                 p%cv1*etatotal*mu0*p%j2*p%rho1*p%TT1
@@ -1914,19 +1914,20 @@ module Magnetic
             df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + &
                       etatotal*mu0*p%j2*p%rho1*p%TT1
           endif
+        else if (ltemperature) then
+          if (ltemperature_nolog) then
+            df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + &
+                 p%cv1*etatotal*mu0*p%j2*p%rho1
+          else
+            df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + &
+                 p%cv1*etatotal*mu0*p%j2*p%rho1*p%TT1
+          endif
         endif
-!
-        if (ltemperature .and. lohmic_heat) then
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + &
-              p%cv1*etatotal*mu0*p%j2*p%rho1*p%TT1
-        else
-        endif
-      else
       endif
 !
 !  Switch off diffusion in boundary slice if requested by boundconds
 !
-!  Only need to do this on bottommost (topmost) processors
+      !  Only need to do this on bottommost (topmost) processors
 !  and in bottommost (topmost) pencils
 !
       do j=1,3
