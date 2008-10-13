@@ -2002,6 +2002,7 @@ module Particles_sub
 !
       if (iuup/=0) then
         do ivp=0,2
+          f(:,:,:,iuup+ivp)=0.0
           if (lparticlemesh_cic) then
 !
 !  Cloud In Cell (CIC) scheme.
@@ -2100,21 +2101,23 @@ module Particles_sub
 !
 !  Nearest Grid Point (NGP) method.
 !
-            f(l1:l2,m1:m2,n1:n2,iuup+ivp)=f(l1:l2,m1:m2,n1:n2,iuup+ivp)+ &
-                fp(k,ivpx+ivp)
+            do k=1,npar_loc
+              ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+              f(ix0,iy0,iz0,iuup+ivp)=f(ix0,iy0,iz0,iuup+ivp)+fp(k,ivpx+ivp)
+            enddo
           endif
 !
 !  Fold first ghost zone of f.
 !
           if (lparticlemesh_cic.or.lparticlemesh_tsc) &
-              call fold_f(f,irhop,iuup+ivp)
-        enddo
+              call fold_f(f,iuup+ivp,iuup+ivp)
 !
 !  Normalize the assigned momentum by the particle density in the grid cell.
 !
-        where (f(l1:l2,m1:m2,n1:n2,iuup+ivp)/=0.0) &
-            f(l1:l2,m1:m2,n1:n2,iuup+ivp)= &
-            rhop_tilde*f(l1:l2,m1:m2,n1:n2,iuup+ivp)/f(l1:l2,m1:m2,n1:n2,irhop)
+          where (f(l1:l2,m1:m2,n1:n2,irhop)/=0.0) &
+              f(l1:l2,m1:m2,n1:n2,iuup+ivp)=rhop_tilde* &
+              f(l1:l2,m1:m2,n1:n2,iuup+ivp)/f(l1:l2,m1:m2,n1:n2,irhop)
+        enddo
 !
       endif
 !
