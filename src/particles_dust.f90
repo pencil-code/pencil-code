@@ -1060,6 +1060,10 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       enddo ! do j=1,ninit
 !
+!  Map particle velocity on the grid.
+!
+      call map_vvp_grid(f,fp,ineargrid)
+!
 !  Sort particles (must happen at the end of the subroutine so that random
 !  positions and velocities are not displaced relative to when there is no
 !  sorting).
@@ -1946,23 +1950,21 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Contribution of dust particles to time step.
 !
-      if (npar_imn(imn)/=0) then
-        do k=k1_imn(imn),k2_imn(imn)
-          if (lfirst.and.ldt) then
+      if (lfirst.and.ldt) then
+        if (npar_imn(imn)/=0) then
+          do k=k1_imn(imn),k2_imn(imn)
             ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-            dt1_advpx=fp(k,ivpx)*dx_1(ix0)/cdtp
+            dt1_advpx=abs(fp(k,ivpx))*dx_1(ix0)
             if (lshear) then
-              dt1_advpy=(-qshear*Omega*fp(k,ixp)+fp(k,ivpy))*dy_1(iy0)/cdtp
+              dt1_advpy=(-qshear*Omega*fp(k,ixp)+abs(fp(k,ivpy)))*dy_1(iy0)
             else
-              dt1_advpy=fp(k,ivpy)*dy_1(iy0)/cdtp
+              dt1_advpy=abs(fp(k,ivpy))*dy_1(iy0)
             endif
-            dt1_advpz=fp(k,ivpz)*dz_1(iz0)/cdtp
-
-            dt1_max(ix0-nghost)=max(dt1_max(ix0-nghost),dt1_advpx)
-            dt1_max(ix0-nghost)=max(dt1_max(ix0-nghost),dt1_advpy)
-            dt1_max(ix0-nghost)=max(dt1_max(ix0-nghost),dt1_advpz)
-          endif
-        enddo
+            dt1_advpz=abs(fp(k,ivpz))*dz_1(iz0)
+            dt1_max(ix0-nghost)=max(dt1_max(ix0-nghost), &
+                sqrt(dt1_advpx**2+dt1_advpy**2+dt1_advpz**2)/cdtp)
+          enddo
+        endif
       endif
 !
 !  For short friction time approximation we need to record the pressure
