@@ -15,6 +15,7 @@ module Particles_main
   use Particles_selfgravity
   use Particles_stalker
   use Particles_sub
+  use Particles_viscosity
 !
   implicit none
 !
@@ -31,12 +32,13 @@ module Particles_main
 !
 !  07-jan-05/anders: coded
 !
-      call register_particles         ()
-      call register_particles_radius  ()
-      call register_particles_spin    ()
-      call register_particles_number  ()
-      call register_particles_selfgrav()
-      call register_particles_nbody   ()
+      call register_particles          ()
+      call register_particles_radius   ()
+      call register_particles_spin     ()
+      call register_particles_number   ()
+      call register_particles_selfgrav ()
+      call register_particles_nbody    ()
+      call register_particles_viscosity()
 !
     endsubroutine particles_register_modules
 !***********************************************************************
@@ -50,12 +52,13 @@ module Particles_main
 !
       if (lroot) open(3, file=trim(datadir)//'/index.pro', &
           STATUS='old', POSITION='append')
-      call rprint_particles         (lreset,LWRITE=lroot)
-      call rprint_particles_radius  (lreset,LWRITE=lroot)
-      call rprint_particles_spin    (lreset,LWRITE=lroot)
-      call rprint_particles_number  (lreset,LWRITE=lroot)
-      call rprint_particles_selfgrav(lreset,LWRITE=lroot)
-      call rprint_particles_nbody   (lreset,LWRITE=lroot)
+      call rprint_particles          (lreset,LWRITE=lroot)
+      call rprint_particles_radius   (lreset,LWRITE=lroot)
+      call rprint_particles_spin     (lreset,LWRITE=lroot)
+      call rprint_particles_number   (lreset,LWRITE=lroot)
+      call rprint_particles_selfgrav (lreset,LWRITE=lroot)
+      call rprint_particles_nbody    (lreset,LWRITE=lroot)
+      call rprint_particles_viscosity(lreset,LWRITE=lroot)
       if (lroot) close(3)
 !
     endsubroutine particles_rprint_list
@@ -82,13 +85,14 @@ module Particles_main
         call fatal_error('particles_initialize_modules','')
       endif
 !
-      call initialize_particles         (lstarting)
-      call initialize_particles_radius  (lstarting)
-      call initialize_particles_spin    (lstarting)
-      call initialize_particles_number  (lstarting)
-      call initialize_particles_selfgrav(lstarting)
-      call initialize_particles_nbody   (lstarting)
-      call initialize_particles_stalker (lstarting)
+      call initialize_particles          (lstarting)
+      call initialize_particles_radius   (lstarting)
+      call initialize_particles_spin     (lstarting)
+      call initialize_particles_number   (lstarting)
+      call initialize_particles_selfgrav (lstarting)
+      call initialize_particles_nbody    (lstarting)
+      call initialize_particles_viscosity(lstarting)
+      call initialize_particles_stalker  (lstarting)
 !
 !  Make sure all requested interpolation variables are available.
 !
@@ -239,10 +243,11 @@ module Particles_main
       if (lparticles)       call create_sink_particles(f,fp,dfp,ineargrid)
       if (lparticles_nbody) call create_sink_particles_nbody(f,fp,dfp,ineargrid)
 !
-!  Map the particle positions on the grid for later use.
+!  Map the particle positions and velocities on the grid for later use.
 !
       call map_nearest_grid(fp,ineargrid)
       call map_xxp_grid(f,fp,ineargrid)
+      call map_vvp_grid(f,fp,ineargrid)
 !
 !  Sort particles so that they can be accessed contiguously in the memory.
 !
@@ -400,6 +405,7 @@ module Particles_main
 !  Write information about local environment to file.
 !
       if (itsub==1) call particles_stalker_sub(f,fp,ineargrid)
+      if (lparticles_viscosity)   call calc_particles_viscosity(f,fp,ineargrid)
 !
 !  Dynamical equations.
 !
@@ -499,6 +505,12 @@ module Particles_main
              call samplepar_startpars('particles_nbody_init_pars',iostat)
       endif
 !
+      if (lparticles_viscosity) then
+        call read_particles_visc_init_pars(unit,iostat)
+        if (present(iostat).and.(iostat/=0)) &
+             call samplepar_startpars('particles_visc_init_pars',iostat)
+      endif
+!
       if (lparticles_stalker) then
         call read_pstalker_init_pars(unit,iostat)
         if (present(iostat).and.(iostat/=0)) &
@@ -526,13 +538,17 @@ module Particles_main
         if (lparticles_radius) &
             print*,'&particles_radius_init_pars  /'
         if (lparticles_spin) &
-            print*,'&particles_spin_init_pars  /'
+            print*,'&particles_spin_init_pars    /'
         if (lparticles_number) &
             print*,'&particles_number_init_pars  /'
         if (lparticles_selfgravity) &
             print*,'&particles_selfgrav_init_pars/'
         if (lparticles_nbody) &
             print*,'&particles_nbody_init_pars   /'
+        if (lparticles_viscosity) &
+            print*,'&particles_visc_init_pars    /'
+        if (lparticles_stalker) &
+            print*,'&particles_pstalker_init_pars/'
         print*,'------END sample particles namelist -------'
         print*
         if (present(label)) &
@@ -555,6 +571,7 @@ module Particles_main
       if (lparticles_number)      call write_particles_num_init_pars(unit)
       if (lparticles_selfgravity) call write_particles_selfg_init_pars(unit)
       if (lparticles_nbody)       call write_particles_nbody_init_pars(unit)
+      if (lparticles_viscosity)   call write_particles_visc_init_pars(unit)
       if (lparticles_stalker)     call write_pstalker_init_pars(unit)
 !
     endsubroutine write_particles_init_pars_wrap
@@ -598,6 +615,12 @@ module Particles_main
              call samplepar_runpars('particles_nbody_run_pars',iostat)
       endif
 !
+      if (lparticles_viscosity) then
+        call read_particles_visc_run_pars(unit,iostat)
+        if (iostat/=0) &
+             call samplepar_runpars('particles_visc_run_pars',iostat)
+      endif
+!
       if (lparticles_stalker) then
         call read_pstalker_run_pars(unit,iostat)
         if (iostat/=0) &
@@ -622,6 +645,7 @@ module Particles_main
         if (lparticles_number)      print*,'&particles_number_run_pars  /'
         if (lparticles_selfgravity) print*,'&particles_selfgrav_run_pars/'
         if (lparticles_nbody)       print*,'&particles_nbody_run_pars   /'
+        if (lparticles_viscosity)   print*,'&particles_visc_run_pars    /'
         if (lparticles_stalker)     print*,'&particles_pstalker_run_pars/'
         print*,'------END sample particle namelist -------'
         print*
@@ -646,6 +670,7 @@ module Particles_main
       if (lparticles_number)      call write_particles_num_run_pars(unit)
       if (lparticles_selfgravity) call write_particles_selfg_run_pars(unit)
       if (lparticles_nbody)       call write_particles_nbody_run_pars(unit)
+      if (lparticles_viscosity)   call write_particles_visc_run_pars(unit)
       if (lparticles_stalker)     call write_pstalker_run_pars(unit)
 !
     endsubroutine write_particles_run_pars_wrap
