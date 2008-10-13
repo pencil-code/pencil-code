@@ -1,3 +1,4 @@
+;
 ;  $Id$
 ;
 ; VARCONTENT STRUCTURE DESCRIPTION
@@ -488,6 +489,22 @@ if (param.lwrite_aux ne 0) then begin
   varcontent[irhop].idlinit    = INIT_SCALAR
   varcontent[irhop].idlvarloc  = 'rhop_loc'
   varcontent[irhop].idlinitloc = INIT_SCALAR_LOC
+;
+  default, iuup, 0
+  varcontent[iuup].variable   = 'Particle velocity field (uup)'
+  varcontent[iuup].idlvar     = 'uup'
+  varcontent[iuup].idlinit    = INIT_3VECTOR
+  varcontent[iuup].idlvarloc  = 'uup_loc'
+  varcontent[iuup].idlinitloc = INIT_3VECTOR_LOC
+  varcontent[iuup].skip       = 2
+;
+  default, ipvisc, 0
+  varcontent[ipvisc].variable   = 'Particle viscosity field (pvisc)'
+  varcontent[ipvisc].idlvar     = 'pvisc'
+  varcontent[ipvisc].idlinit    = INIT_3VECTOR
+  varcontent[ipvisc].idlvarloc  = 'pvisc_loc'
+  varcontent[ipvisc].idlinitloc = INIT_3VECTOR_LOC
+  varcontent[ipvisc].skip       = 2
 ;
   default, ipotself, 0
   varcontent[ipotself].variable   = 'Self gravity potential'
