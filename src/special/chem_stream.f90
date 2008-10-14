@@ -659,9 +659,9 @@ module Special
       real, dimension (mx,my,mz) :: xx, yy
       integer :: k,j,i
 
-      real :: x1_front=45., x2_front=55.
+      real :: x1_front=-0.1, x2_front=0.1
       real :: rho1_front=1e-3, rho2_front=10./3.*1e-3
-      real :: TT1_front=1000., TT2_front=300.
+      real :: TT1_front=1000., TT2_front=330.
 
      do k=1,mx 
       if (x(k)<x1_front) then
@@ -669,7 +669,7 @@ module Special
  !       f(k,:,:,ilnrho)=log(1e-3)
       endif
       if (x(k)>x2_front) then
-        f(k,:,:,ilnTT)=log(300.)
+        f(k,:,:,ilnTT)=log(330.)
   !      f(k,:,:,ilnrho)=log(1e-3*10./3.)
       endif
       if (x(k)>x1_front .and. x(k)<x2_front) then
