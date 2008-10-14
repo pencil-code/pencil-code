@@ -3909,6 +3909,8 @@ module Boundcond
       use EquationOfState, only: cs0, cs20
       use Deriv, only: der_onesided_4_slice
 
+      use Chemistry
+
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       character (len=3) :: topbot
@@ -3918,6 +3920,7 @@ module Boundcond
       !real, parameter :: sigma = 1.
       real, dimension(ny,nz) :: du_dx, dlnrho_dx, rho0, L_1, L_5 
       real, dimension(ny,nz) :: dp_prefac, prefac1, prefac2
+      real, dimension (ny,nz) :: cs2x,cs0_ar,cs20_ar
       integer lll
       integer sgn
 
@@ -3932,13 +3935,18 @@ module Boundcond
       case('bot')
         lll = l1
         sgn = 1
+        if (leos_chemistry) call calc_cs2x(cs2x,'bot',f)
       case('top')
         lll = l2
         sgn = -1
+        if (leos_chemistry) call calc_cs2x(cs2x,'top',f)
       case default
         print*, "bc_nscbc_prf_x: ", topbot, " should be `top' or `bot'"
       endselect
+
       if (leos_idealgas) then
+         cs20_ar=cs20
+         cs0_ar=cs0
         if (ldensity_nolog) then
           rho0 = f(lll,m1:m2,n1:n2,ilnrho)
           ! ``dp = cs20*drho''
@@ -3948,8 +3956,20 @@ module Boundcond
           ! ``dp = cs20*rho0*dlnrho''
           dp_prefac = cs20*rho0
         endif
-        prefac1 = -1./(2*rho0*cs20)
-        prefac2 = -1./(2*rho0*cs0)
+        prefac1 = -1./(2.*rho0*cs20)
+        prefac2 = -1./(2.*rho0*cs0)
+      elseif (leos_chemistry) then
+         cs20_ar=cs2x
+         cs0_ar=cs2x**0.5
+        if (ldensity_nolog) then
+          rho0 = f(lll,m1:m2,n1:n2,ilnrho)
+          dp_prefac = cs20_ar
+        else
+          rho0 = exp(f(lll,m1:m2,n1:n2,ilnrho))
+          dp_prefac = cs20_ar*rho0
+        endif
+        prefac1 = -1./(2.*rho0*cs20_ar)
+        prefac2 = -1./(2.*rho0*cs0_ar)
       else
         print*,"bc_nscbc_prf_x: leos_idealgas=",leos_idealgas,"."
         print*,"NSCBC boundary treatment only implemented for an ideal gas." 
@@ -3958,10 +3978,10 @@ module Boundcond
       endif
       call der_onesided_4_slice(f,sgn,ilnrho,dlnrho_dx,lll,1)
       call der_onesided_4_slice(f,sgn,iux,du_dx,lll,1)
-      L_1 = (f(lll,m1:m2,n1:n2,iux) - sgn*cs0)*&
-            (dp_prefac*dlnrho_dx - sgn*rho0*cs0*du_dx)
+      L_1 = (f(lll,m1:m2,n1:n2,iux) - sgn*cs0_ar)*&
+            (dp_prefac*dlnrho_dx - sgn*rho0*cs0_ar*du_dx)
       if (llinlet) then
-        L_5 = nscbc_sigma*cs20*rho0*(sgn*f(lll,m1:m2,n1:n2,iux)-sgn*u_t)
+        L_5 = nscbc_sigma*cs20_ar*rho0*(sgn*f(lll,m1:m2,n1:n2,iux)-sgn*u_t)
       else
         L_5 = 0
       end if

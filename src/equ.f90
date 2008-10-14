@@ -599,6 +599,13 @@ module Equ
 !  communication along processor/periodic boundaries.
 !
       if (lshock) call calc_shock_profile(f)
+
+!
+!  Calculate quantities for a chemical mixture
+!
+    if (lchemistry .and. ldensity) call calc_for_chem_mixture(f)
+
+
 !
 !  Prepare x-ghost zones; required before f-array communication
 !  AND shock calculation
@@ -652,10 +659,7 @@ module Equ
           dt1_max=0.
         endif
       endif
-!
-!  Calculate quantities for a chemical mixture
-!
-    if (lchemistry .and. ldensity) call calc_for_chem_mixture(f)
+
 !
 !  Calculate ionization degree (needed for thermodynamics)
 !  Radiation transport along rays

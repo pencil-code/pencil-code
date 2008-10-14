@@ -634,16 +634,19 @@ module Special
 
      do k=1,mx 
 
-      if (abs(x(k))<10) then
-       f(k,:,:,4)=log(rho_init)+((10.-abs(x(k)))/10.)**2
+      if (abs(x(k))<0.2) then
+       f(k,:,:,ilnrho)=log(rho_init) &
+          +log(1.01)*((0.2-abs(x(k)))/0.2)**2
       else
-        f(k,:,:,4)=log(rho_init)
+        f(k,:,:,ilnrho)=log(rho_init)
       endif
 
      enddo
 
-     f(:,:,:,5)=log(T_init)!-(xx(:,:,:)/(0.5*Lxyz(1)))**2
-     f(l1:mx,:,:,ichemspec(nchemspec))=Y3_init
+     f(:,:,:,ilnTT)=log(T_init)!-(xx(:,:,:)/(0.5*Lxyz(1)))**2
+     !f(l1:mx,:,:,ichemspec(nchemspec))=Y3_init
+     f(:,:,:,iux)=1.
+
 
    endsubroutine bomb_field
 !**************************************************************************

@@ -489,7 +489,18 @@ module Chemistry
 !
     endsubroutine special_before_boundary
 !***********************************************************************
+subroutine calc_cs2x(cs2x,topbot,f)
 
+ use Mpicomm
+
+    real, dimension(mx,my,mz,mfarray) :: f
+   real, dimension (ny,nz) :: cs2x
+   character (len=3) :: topbot
+   integer :: k
+
+   call keep_compiler_quiet(f)
+
+ endsubroutine calc_cs2x
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************

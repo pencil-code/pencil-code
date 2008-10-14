@@ -2980,7 +2980,26 @@ module Chemistry
 
     endsubroutine calc_heatcond_chemistry
 !***********************************************************************
+!CCCCC
+ subroutine calc_cs2x(cs2x,topbot,f)
 
+ use Mpicomm
+
+    real, dimension(mx,my,mz,mfarray) :: f
+   real, dimension (ny,nz) :: cs2x
+   character (len=3) :: topbot
+   integer :: k
+
+   select case(topbot)
+      case('bot')               ! bottom boundary
+       cs2x=cp_full(l1,m1:m2,n1:n2)/cv_full(l1,m1:m2,n1:n2)*mu1_full(l1,m1:m2,n1:n2)*TT_full(l1,m1:m2,n1:n2)*Rgas
+      case('top')               ! top boundary
+       cs2x=cp_full(l2,m1:m2,n1:n2)/cv_full(l2,m1:m2,n1:n2)*mu1_full(l2,m1:m2,n1:n2)*TT_full(l2,m1:m2,n1:n2)*Rgas
+      case default
+        print*, "calc_cs2x: ", topbot, " should be `top' or `bot'"
+      endselect
+ endsubroutine calc_cs2x
+!*************************************************************
    subroutine air_field(f)
 
   use Mpicomm
