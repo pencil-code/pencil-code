@@ -658,9 +658,11 @@ module Special
       real, dimension (mx,my,mz) :: xx, yy
       integer :: k,j,i
 
-      real :: x1_front=-0.1, x2_front=0.1
+      real :: x1_front=-0.2, x2_front=0.2
       real :: rho1_front=1e-3, rho2_front=10./3.*1e-3
       real :: TT1_front=1000., TT2_front=330.
+
+     f(l1,:,:,ichemspec(2))=(f(l2,:,:,ichemspec(2))/32.-f(l2,:,:,ichemspec(1))/4.)*32. 
 
      do k=1,mx 
       if (x(k)<x1_front) then
@@ -680,9 +682,19 @@ module Special
 
      f(k,:,:,ilnrho)=log(rho1_front)+log(TT1_front) -f(k,:,:,ilnTT)
 
+      if (x(k)<x2_front) then
+       f(k,:,:,ichemspec(3))=f(l2,:,:,ichemspec(1))/2.*18. &
+             *(exp(f(k,:,:,ilnTT))-TT2_front) &
+             /(TT1_front-TT2_front)
+      endif
+
       if (x(k)<x1_front) then
-       f(k,:,:,ichemspec(3))=f(k,:,:,ichemspec(1))/2.*18.
-       f(k,:,:,ichemspec(2))=(f(k,:,:,ichemspec(2))/32.-f(k,:,:,ichemspec(1))/2.)*32.
+       f(k,:,:,ichemspec(2))=f(l1,:,:,ichemspec(2))
+      endif
+
+      if (x(k)>x1_front .and. x(k)<x2_front) then
+        f(k,:,:,ichemspec(2))=(x(k)-x1_front)/(x2_front-x1_front) &
+          *(f(l2,:,:,ichemspec(2))-f(l1,:,:,ichemspec(2)))+f(l1,:,:,ichemspec(2))
       endif
 
      enddo
