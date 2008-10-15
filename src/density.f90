@@ -422,7 +422,7 @@ module Density
       real :: pot_ext,lnrho_ext,cs2_ext,tmp1,k_j2
       real :: zbot,ztop,haut
       real, dimension (nx) :: r_mn,lnrho,TT,ss
-      complex :: omega_jeans=(0.,0.)
+      complex :: omega_jeans
       integer :: j
       logical :: lnothing
 !
