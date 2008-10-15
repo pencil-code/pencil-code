@@ -666,11 +666,11 @@ module Special
 
      do k=1,mx 
       if (x(k)<x1_front) then
-        f(k,:,:,ilnTT)=log(1000.)
+        f(k,:,:,ilnTT)=log(TT1_front)
  !       f(k,:,:,ilnrho)=log(1e-3)
       endif
       if (x(k)>x2_front) then
-        f(k,:,:,ilnTT)=log(330.)
+        f(k,:,:,ilnTT)=log(TT2_front)
   !      f(k,:,:,ilnrho)=log(1e-3*10./3.)
       endif
       if (x(k)>x1_front .and. x(k)<x2_front) then
