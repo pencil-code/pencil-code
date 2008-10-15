@@ -691,6 +691,7 @@ module Slices
 !  Otherwise lproc=F and izpos=1.
 !
 !  18-nov-06/axel: coded
+!  14-oct-08/ccyang: use half-closed interval and include the top-most plane
 !
       use Cdata, only: n1,n2,z
 !
@@ -701,8 +702,8 @@ module Slices
 !  run through all z positions until we hit the right interval.
 !  If the right interval is found, jump out of the loop.
 !
-      do n=n1,n2-1
-        if (z(n)<zpos.and.z(n+1)>zpos) then
+      do n=n1,n2
+        if (z(n)<=zpos.and.z(n+1)>zpos) then
           izpos=n
           lproc=.true.
           goto 900
