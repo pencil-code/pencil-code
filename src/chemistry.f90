@@ -1524,148 +1524,6 @@ module Chemistry
 !
     endsubroutine get_slices_chemistry
 !***********************************************************************
-    subroutine special_calc_density(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   13-aug-07/steveb: coded
-!
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!
-!!
-!!  df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + SOME NEW TERM
-!!
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_density
-!***********************************************************************
-    subroutine special_calc_hydro(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   13-aug-07/steveb: coded
-!
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!
-!!
-!!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
-!!
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_hydro
-!***********************************************************************
-    subroutine special_calc_magnetic(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   13-aug-07/steveb: coded
-!
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!
-!!
-!!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_magnetic
-!!***********************************************************************
-    subroutine special_calc_entropy(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   13-aug-07/steveb: coded
-!
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!
-!!
-!!  df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + SOME NEW TERM
-!!
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_entropy
-!***********************************************************************
-    subroutine special_before_boundary(f)
-!
-!   Possibility to modify the f array before the boundaries are
-!   communicated.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-jul-06/tony: coded
-!
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine special_before_boundary
-!***********************************************************************
     subroutine find_species_index(species_name,ind_glob,ind_chem,found_specie)
 !
 !   Find index in the f array for specie
@@ -2160,12 +2018,6 @@ module Chemistry
       !
     end subroutine read_reactions
  !********************************************************************
-    subroutine  read_add_react
-
-
-    endsubroutine read_add_react
- !********************************************************************
-
     subroutine write_thermodyn()
       !
       ! This subroutine writes the thermodynamical data for every specie
@@ -2297,33 +2149,29 @@ module Chemistry
       end subroutine write_reactions
 !***************************************************************
    subroutine get_reaction_rate(f,vreact_p,vreact_m,p)
-! Natalia (17.03.2008)
-! This subroutine calculates forward and reverse reaction rates, if chem.inp file exists.
-! For more details see Chemkin Theory Manual
-!
-    real, dimension (mx,my,mz,mfarray) :: f 
-    intent(in) :: f
-    type (pencil_case) :: p
-    real, dimension (nx) :: dSR=0.,dHRT=0.,Kp,Kc,prod1,prod2
-    real, dimension (nx) :: prod1_ts,prod2_ts
-    real, dimension (nx) :: kf=0., kr=0.
-    real, dimension (nx) :: T_cgs,rho_cgs,p_atm
-    real, dimension (mx,my,mz) :: T_cgs_full
-
-    real, dimension (nx,nreactions), intent(out) :: vreact_p, vreact_m
-    real :: Rcal
+     !
+     ! 2008.03.17, Natalia: Coded
+     ! This subroutine calculates forward and reverse reaction rates, 
+     ! if chem.inp file exists.
+     ! For more details see Chemkin Theory Manual
+     !
+     real, dimension (mx,my,mz,mfarray), intent(in) :: f 
+     real, dimension (nx,nreactions), intent(out) :: vreact_p, vreact_m
+     !
+     type (pencil_case) :: p
+     real, dimension (nx) :: dSR=0.,dHRT=0.,Kp,Kc,prod1,prod2
+     real, dimension (nx) :: kf=0., kr=0.
+     real, dimension (nx) :: T_cgs,rho_cgs,p_atm
+     real, dimension (mx,my,mz) :: T_cgs_full
+     real :: Rcal
      integer :: k , reac, j, i, v, t
      real  :: sum_tmp=0., T_low, T_mid, T_up, T_local, lnT_local, tmp
      logical,SAVE :: lwrite=.true.
-
      character (len=20) :: input_file="./data/react.out"
      integer :: file_id=123
-
      real :: B_n_0,alpha_n_0,E_an_0
      real, dimension (nx) ::  kf_0,Kc_0,Pr,sum_sp,prod1_0,prod2_0
-!--     real, dimension (nchemspec) :: fact !(Axel test)
      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
-!
 !
     if (lwrite)  open(file_id,file=input_file)
 
@@ -2331,18 +2179,12 @@ module Chemistry
 ! p is in atm units; atm/bar=1./10.13
 !
     Rcal=Rgas_unit_sys/4.14*1e-7
-
-!print*,'Rcal',Rcal
-
     T_cgs=p%TT*unit_temperature
     T_cgs_full=exp(f(:,:,:,ilnTT))*unit_temperature
     rho_cgs=p%rho*unit_mass/unit_length**3
     p_atm=p%pp*unit_energy/unit_length**3/10.13e5
-
- !  print*,'Natalia',p_atm
-
-    if (lwrite)   write(file_id,*)'T= ',   T_cgs
-      if (lwrite)  write(file_id,*)'p_atm= ',   p_atm
+    if (lwrite)  write(file_id,*)'T= ',   T_cgs
+    if (lwrite)  write(file_id,*)'p_atm= ',   p_atm
 !
 !  Dimensionless Standard-state molar enthalpy H0/RT
 !
@@ -2357,64 +2199,42 @@ module Chemistry
           do t=1,my
            do i=1,mx
              T_local=(T_cgs_full(i,t,v))
-         !  if (T_local >=T_low .and. T_local <= T_mid) then
-               if ( T_local <= T_mid) then
-                tmp=0. 
-                do j=1,5
-                tmp=tmp+species_constants(k,iaa2(j))*T_local**(j-1)/j 
-                enddo
-                H0_RT(i,t,v,k)=tmp+species_constants(k,iaa2(6))/T_local
-               else
-
-                tmp=0. 
-                do j=1,5
+             if ( T_local <= T_mid) then
+               tmp=0. 
+               do j=1,5
+                 tmp=tmp+species_constants(k,iaa2(j))*T_local**(j-1)/j 
+               enddo
+               H0_RT(i,t,v,k)=tmp+species_constants(k,iaa2(6))/T_local
+             else               
+               tmp=0. 
+               do j=1,5
                  tmp=tmp+species_constants(k,iaa1(j))*T_local**(j-1)/j 
-                enddo
-                H0_RT(i,t,v,k)=tmp+species_constants(k,iaa1(6))/T_local
-              endif
+               enddo
+               H0_RT(i,t,v,k)=tmp+species_constants(k,iaa1(6))/T_local
+             endif
            enddo
           enddo
          enddo
 
-!print*,(H0_RT(4,4,4,2)),species_constants(2,iaa2(3))
-
-
-!
-!  experiment: H0_RT_3 -> -H0_RT_3
-!
-!fact=Rgas*TT_full(4,4,4)/species_constants(:,imass)
-!print*,'1) H0_RT(4,4,4,:)=',H0_RT(4,4,4,:)*fact
-!H0_RT(:,:,:,3)=(((H0_RT(:,:,:,3)))-species_constants(3,iaa2(6))/T_local)
-!H0_RT(4,4,4,3)=0.
-!print*,'2) H0_RT(4,4,4,:)=',H0_RT(4,4,4,:)*fact
-
-        if (lwrite)    write(file_id,*)varname(ichemspec(k)), maxval(H0_RT(:,:,:,k)),minval(H0_RT(:,:,:,k))
-       enddo
-
-! HHHH
+        if (lwrite) then    
+          write(file_id,*)&
+               varname(ichemspec(k)), &
+               maxval(H0_RT(:,:,:,k)),&
+               minval(H0_RT(:,:,:,k))
+        endif
+      enddo
 !
 ! Enthalpy flux
 !
-
-          hYrho_full=0.
-        
-          do k=1,nchemspec
-            hYrho_full=hYrho_full+H0_RT(:,:,:,k)*Rgas*TT_full(:,:,:)*f(:,:,:,ichemspec(k))/species_constants(k,imass)
-          enddo
-
-!  HHHHH
-
+      hYrho_full=0.       
+      do k=1,nchemspec
+        hYrho_full=hYrho_full+H0_RT(:,:,:,k)*Rgas*TT_full(:,:,:)*f(:,:,:,ichemspec(k))/species_constants(k,imass)
+      enddo
 !
 ! Internal energy
 !
-          e_int_full=hYrho_full-Rgas*TT_full(:,:,:)*mu1_full
-
-
-          hYrho_full=hYrho_full*exp(f(:,:,:,ilnrho))
-
-
-!print*,'   ',e_int_full(l1:l2,m1:m2,n1:n2)
-
+      e_int_full=hYrho_full-Rgas*TT_full(:,:,:)*mu1_full
+      hYrho_full=hYrho_full*exp(f(:,:,:,ilnrho))
 !
 !  Dimensionless Standard-state molar entropy  S0/R
 !
@@ -2429,189 +2249,127 @@ module Chemistry
          do i=1,nx
           T_local=T_cgs(i)
           lnT_local=p%lnTT(i)+log(unit_temperature)
-          ! if (T_local >=T_low .and. T_local <= T_mid) then
            if (T_local <= T_mid) then
                tmp=0. 
                do j=2,5
                 tmp=tmp+species_constants(k,iaa2(j))*T_local**(j-1)/(j-1) 
                enddo
-              S0_R(i,k)=species_constants(k,iaa2(1))*lnT_local+tmp+species_constants(k,iaa2(7))
+               S0_R(i,k)=species_constants(k,iaa2(1))*lnT_local+tmp&
+                    +species_constants(k,iaa2(7))
            else
                tmp=0. 
                do j=2,5 
                 tmp=tmp+species_constants(k,iaa1(j))*T_local**(j-1)/(j-1) 
                enddo
-             S0_R(i,k)=species_constants(k,iaa1(1))*lnT_local+tmp+species_constants(k,iaa1(7))
+             S0_R(i,k)=species_constants(k,iaa1(1))*lnT_local+tmp&
+                  +species_constants(k,iaa1(7))
            endif
          enddo
 
-      if (lwrite)  write(file_id,*)varname(ichemspec(k)), maxval(S0_R(:,k)), minval(S0_R(:,k))
-
+         if (lwrite)  then
+           write(file_id,*)&
+                varname(ichemspec(k)),&
+                maxval(S0_R(:,k)), &
+                minval(S0_R(:,k))
+         endif
         enddo
 !
 ! calculation of the reaction rate
 !
-
-      if (lwrite)  write(file_id,*)'**************************'
+      if (lwrite) write(file_id,*)'**************************'
       if (lwrite) write(file_id,*)'Reaction rates'
-      if (lwrite)  write(file_id,*)'**************************'
+      if (lwrite) write(file_id,*)'**************************'
 
       do reac=1,nreactions
+        !
+        ! Find forward rate constant for reaction 'reac'
+        !
         kf(:)=B_n(reac)*T_cgs(:)**alpha_n(reac)*exp(-E_an(reac)/Rcal/T_cgs(:))
-
         if (lwrite)  write(file_id,*) 'Nreact= ',reac,  'kf=', maxval(kf)
-
-
+        !
+        ! Find backward rate constant for reaction 'reac'
+        !
         dSR=0.
         dHRT=0.
         sum_tmp=0.
-
         do k=1,nchemspec
-         dSR(:) =dSR(:)+(Sijm(k,reac)-Sijp(k,reac))*S0_R(:,k)
-
-! experiment
-!if (k==3) then
-
-!         dHRT(:)=dHRT(:)+(Sijm(k,reac)-Sijp(k,reac))*(-(H0_RT(l1:l2,m,n,k)))
-!else
+          dSR(:) =dSR(:)+(Sijm(k,reac) -Sijp(k,reac))*S0_R(:,k)
           dHRT(:)=dHRT(:)+(Sijm(k,reac)-Sijp(k,reac))*H0_RT(l1:l2,m,n,k)  
-!endif
-
-         sum_tmp=sum_tmp+(Sijm(k,reac)-Sijp(k,reac))
+          sum_tmp=sum_tmp+(Sijm(k,reac)-Sijp(k,reac))
         enddo
-
         if (lwrite) write(file_id,*) 'Nreact= ',reac,'dSR= ', maxval(dSR)
         if (lwrite) write(file_id,*) 'Nreact= ',reac,'dHRT= ', maxval(dHRT)
-
-
         Kp=exp(dSR-dHRT)
-
         if (sum_tmp==0.) then
          Kc=Kp
         else
          Kc=Kp*(p_atm/T_cgs/Rgas_unit_sys)**sum_tmp
         endif
-
-        if (lwrite) write(file_id,*) 'Nreact= ',reac,'Kc= ', maxval(Kc)
-
         kr(:)=kf(:)/Kc
-
+        if (lwrite) write(file_id,*) 'Nreact= ',reac,'Kc= ', maxval(Kc)
         if (lwrite) write(file_id,*) 'Nreact= ',reac,  'kr=', maxval(kr)
-
         if (lwrite) write(file_id,*)'**************************'
-
+        !
+        ! Find forward (vreact_p) and backward (vreact_m) rate of 
+        ! progress variable. 
+        ! (vreact_p - vreact_m) is labeled q in the chemkin manual
+        !
         prod1=1.
         prod2=1.
-        prod1_ts=1.
-        prod2_ts=1.
-
         do k=1,nchemspec
-         prod1=prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))**Sijp(k,reac)
- 
- !     print*,'Natalia',maxval(prod1)
-
-      enddo
-
-      do k=1,nchemspec
-
-        prod2=prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))**Sijm(k,reac)
-       
-   !   do i=0,nx-1
-   !    if (abs(f(l1+i,m,n,ichemspec(k))) > 0.) then
-   !      prod2_ts(i+1)=prod2_ts(i+1)*(f(l1+i,m,n,ichemspec(k))*rho_cgs(i+1)/species_constants(k,imass))**Sijm(k,reac)
-   !    else
-   !       prod2_ts(i+1)=prod2_ts(i+1)*(1e-3*rho_cgs(i+1)/species_constants(k,imass))**Sijm(k,reac)
-   !    endif
-     ! enddo
-! print*,'Natalia',maxval(prod2),maxval((f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))**Sijm(k,reac)),k,reac,maxval(f(l1:l2,m,n,ichemspec(k))),maxval(rho_cgs),(species_constants(k,imass)),Sijm(k,reac)
-
-   !  print*,'Natalia',maxval(Kc)
-
-    !   if (reac==4)  then
-    !      Kc_0=Kc
-    !      prod1_0=prod1
-    !      prod2_0=prod2
-    !   endif
-
-
-
-      enddo
-
-   !    print*,'Natalia',maxval(prod2),minval(prod2)
-
-      vreact_p(:,reac)=prod1/rho_cgs*kf
-      vreact_m(:,reac)=prod2/rho_cgs*kr
-
-
-  !  enddo
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!! Printing for a test case
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-!print*,'Natalia'
-       if (lwrite)     write(file_id,*) ''
-       if (lwrite)   write(file_id,*) '*******************'
-
-
-
-       if (lwrite) print*,'get_reaction_rate: writing react.out file'
-       if (lwrite)   close(file_id)
-
-       lwrite=.false.
- 
-! print*,'Natalia'
-  !   do reac=1,nreactions
-
-         Kc_0=Kc
-         prod1_0=prod1
-         prod2_0=prod2
-
-!print*,reac,': a_k4(:,reac)=',a_k4(:,reac)
-
-         if (maxval(abs(low_coeff(:,reac))) > 0.) then
-           B_n_0=low_coeff(1,reac) 
-           alpha_n_0=low_coeff(2,reac)
-           E_an_0=low_coeff(3,reac)           
-           
-           kf_0(:)=B_n_0*T_cgs(:)**alpha_n_0*exp(-E_an_0/Rcal/T_cgs(:)) 
-           
-           Pr=kf_0/kf*rho_cgs(:)*p%mu1/unit_mass
-           kf=kf*(Pr/(1.+Pr))
-           kr(:)=kf(:)/Kc_0
-         endif
-
-
-         if (minval(a_k4(:,reac))<impossible) then
-!print*,'reac with a_k4=',reac
-           sum_sp=0.
-           do k=1,nchemspec
-!          
-          sum_sp=sum_sp+a_k4(k,reac)*f(l1:l2,m,n,ichemspec(k))  &
-                *rho_cgs(:)/species_constants(k,imass)
-
-! print*,'Natalia',a_k4(k)
-
+          prod1=prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
+               /species_constants(k,imass))**Sijp(k,reac)
         enddo
-
-        vreact_p(:,reac)=prod1_0*kf*sum_sp!
-        vreact_m(:,reac)=prod2_0*kr*sum_sp!
-
-!  print*,'Natalia',reac, B_n_0,alpha_n_0,maxval(sum_sp),Kc_0,a_k4()
-
-        endif
-
-      enddo
-
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   end subroutine get_reaction_rate
+        do k=1,nchemspec
+          prod2=prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
+               /species_constants(k,imass))**Sijm(k,reac)
+        enddo
+        vreact_p(:,reac)=prod1/rho_cgs*kf
+        vreact_m(:,reac)=prod2/rho_cgs*kr
+        !
+        ! Finalize writing to file
+        !
+       if (lwrite) write(file_id,*) ''
+       if (lwrite) write(file_id,*) '*******************'
+       if (lwrite) print*,'get_reaction_rate: writing react.out file'
+       if (lwrite) close(file_id)
+       lwrite=.false.
+       !
+       ! The Lindstrom approach to the fall of reactions
+       !
+       Kc_0=Kc
+       prod1_0=prod1
+       prod2_0=prod2
+       if (maxval(abs(low_coeff(:,reac))) > 0.) then
+         B_n_0=low_coeff(1,reac) 
+         alpha_n_0=low_coeff(2,reac)
+         E_an_0=low_coeff(3,reac)                      
+         kf_0(:)=B_n_0*T_cgs(:)**alpha_n_0*exp(-E_an_0/Rcal/T_cgs(:))            
+         Pr=kf_0/kf*rho_cgs(:)*p%mu1/unit_mass
+         kf=kf*(Pr/(1.+Pr))
+         kr(:)=kf(:)/Kc_0
+       endif
+       !
+       !
+       !
+       if (minval(a_k4(:,reac))<impossible) then
+         sum_sp=0.
+         do k=1,nchemspec  
+           sum_sp=sum_sp+a_k4(k,reac)*f(l1:l2,m,n,ichemspec(k))  &
+                *rho_cgs(:)/species_constants(k,imass)
+         enddo
+         vreact_p(:,reac)=prod1_0*kf*sum_sp
+         vreact_m(:,reac)=prod2_0*kr*sum_sp
+       endif
+    enddo
+    !
+  end subroutine get_reaction_rate
 !***************************************************************
    subroutine calc_reaction_term(f,p)
 
       use Sub
 
-  real, dimension (mx,my,mz,mfarray) :: f
+  real, dimension (mx,my,mz,mfarray), intent(in) :: f
   real, dimension (nx,mreactions) :: vreactions,vreactions_p,vreactions_m
   real, dimension (nx) :: xdot
   type (pencil_case) :: p
@@ -2619,56 +2377,53 @@ module Chemistry
   real :: sum_omega
   real :: sum_Y
   integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
-
-  intent(in) :: f
-
+  !
   p%DYDt_reac=0.
-
-!  if we do reactions, we must calculate the reaction speed vector
-!  outside the loop where we multiply it by the stoichiometric matrix
-!
-        if (.not. lcheminp) then
-! Axel' case
-          do j=1,nreactions
-           vreactions_p(:,j)=kreactions_p(j)*kreactions_z(n,j)
-           vreactions_m(:,j)=kreactions_m(j)*kreactions_z(n,j)
-           do k=1,nchemspec
-             vreactions_p(:,j)=vreactions_p(:,j)*f(l1:l2,m,n,ichemspec(k))**Sijm(k,j)
-             vreactions_m(:,j)=vreactions_m(:,j)*f(l1:l2,m,n,ichemspec(k))**Sijp(k,j)
-           enddo
-          enddo
-        else
-! Chemkin data case
-          call get_reaction_rate(f,vreactions_p,vreactions_m,p)
-        endif 
-         vreactions=vreactions_p-vreactions_m
-
-      do k=1,nchemspec  
-        xdot=0.
-        do j=1,nreactions
-          xdot=xdot+stoichio(k,j)*vreactions(:,j)  
-        enddo
-        if (lcheminp) then
-!
-!
-          xdot=-xdot*species_constants(k,imass)
-        endif
-        p%DYDt_reac(:,k)=xdot*unit_time
-
-!print*,'Natalia',maxval(p%DYDt_reac(:,k)),k
-
-      enddo 
-
-      sum_omega=0.
-      sum_Y=0.
-!
-!  sums for diagnostics
-!
-     do k=1,nchemspec
-      sum_omega=sum_omega+maxval(p%DYDt_reac(:,k))!species_constants(k,imass)
-      sum_Y=sum_Y+maxval(f(l1:l2,m,n,ichemspec(k)))
-     enddo
-  !    print*,'sum_Y',sum_Y,m,n
+  !
+  !  if we do reactions, we must calculate the reaction speed vector
+  !  outside the loop where we multiply it by the stoichiometric matrix
+  !
+  if (.not. lcheminp) then
+    ! Axel' case
+    do j=1,nreactions
+      vreactions_p(:,j)=kreactions_p(j)*kreactions_z(n,j)
+      vreactions_m(:,j)=kreactions_m(j)*kreactions_z(n,j)
+      do k=1,nchemspec
+        vreactions_p(:,j)=vreactions_p(:,j)*f(l1:l2,m,n,ichemspec(k))**Sijm(k,j)
+        vreactions_m(:,j)=vreactions_m(:,j)*f(l1:l2,m,n,ichemspec(k))**Sijp(k,j)
+      enddo
+    enddo
+  else
+    ! Chemkin data case
+    call get_reaction_rate(f,vreactions_p,vreactions_m,p)
+  endif
+  !
+  ! Calculate rate of progress variable (labeled q in the chemkin manual)
+  !
+  vreactions=vreactions_p-vreactions_m
+  !
+  ! Calculate production rate for all species k (called \dot(\omega)_k 
+  ! in the chemkin manual)
+  !
+  do k=1,nchemspec  
+    xdot=0.
+    do j=1,nreactions
+      xdot=xdot+stoichio(k,j)*vreactions(:,j)  
+    enddo
+    if (lcheminp) then
+      xdot=-xdot*species_constants(k,imass)
+    endif
+    p%DYDt_reac(:,k)=xdot*unit_time
+  enddo
+!NILS  !
+!NILS  !  Sums for diagnostics
+!NILS  !
+!NILS  sum_omega=0.
+!NILS  sum_Y=0.
+!NILS  do k=1,nchemspec
+!NILS    sum_omega=sum_omega+maxval(p%DYDt_reac(:,k))
+!NILS    sum_Y=sum_Y+maxval(f(l1:l2,m,n,ichemspec(k)))
+!NILS  enddo
 !
 !  Calculate diagnostic quantities
 !
@@ -2692,10 +2447,7 @@ module Chemistry
         if (idiag_h8m/=0) call sum_mn_name(H0_RT(l1:l2,m,n,i8)*Rgas*p%TT(:)/species_constants(i8,imass),idiag_h8m)
         if (idiag_h9m/=0) call sum_mn_name(H0_RT(l1:l2,m,n,i9)*Rgas*p%TT(:)/species_constants(i9,imass),idiag_h9m)
       endif
-
-   ! print*,'sum_omega',sum_omega
-   ! print*,'sum_Y',sum_Y
-
+      !
    endsubroutine calc_reaction_term
 !***************************************************************
    subroutine read_transport_data  
