@@ -767,8 +767,8 @@ LD_FFTW2=
 ##
 #FC=ifort #(brahe|cfe2)
 #CC=icc #(brahe|cfe2)
-#FFLAGS=-O3 #(brahe|cfe2)
-#CFLAGS=-O3 -DFUNDERSC=1 #(brahe|cfe2)
+#FFLAGS=-O3 -ip -mp1 #(brahe|cfe2)
+#CFLAGS=-O3 -ip -mp1 -DFUNDERSC=1 #(brahe|cfe2)
 #LD_MPI=-lmpi #(brahe|cfe2)
 ##
 ## Toulouse's machines: 
@@ -902,6 +902,11 @@ LD_FFTW2=
 #FFLAGS_DOUBLE=-fdefault-real-8 #(crater)
 #CC=mpicc     #(crater)
 #CFLAGS=-O3 -DFUNDERSC=1   #(crater)
+##
+##  ENYO Cluster @ AMNH (New York)
+##
+#FC=mpif90  #(enyo)
+#CC=mpicc   #(enyo)
 
 
 ## Darwin:
