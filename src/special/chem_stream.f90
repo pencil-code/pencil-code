@@ -664,6 +664,8 @@ module Special
 
      f(l1,:,:,ichemspec(2))=(f(l2,:,:,ichemspec(2))/32.-f(l2,:,:,ichemspec(1))/4.)*32. 
 
+     f(l2,:,:,iux)=ux_init
+
      do k=1,mx 
       if (x(k)<x1_front) then
         f(k,:,:,ilnTT)=log(TT1_front)
@@ -701,14 +703,14 @@ module Special
           *(f(l2,:,:,ichemspec(2))-f(l1,:,:,ichemspec(2)))+f(l1,:,:,ichemspec(2))
       endif
 
-    
+    enddo
 
-      f(l2,:,:,iux)=ux_init
-      f(l1,:,:,iux)=ux_init*rho2_front/rho1_front
+
+    f(l1,:,:,iux)=ux_init*exp(f(l2,:,:,ilnrho))/exp(f(l1,:,:,ilnrho))
+    do k=1,mx
       f(k,:,:,iux)=(f(l1,:,:,iux)-ux_init) &
-          *(exp(f(k,:,:,ilnTT))-TT2_front)/(TT1_front-TT2_front)&
-          +ux_init
-
+           *(exp(f(k,:,:,ilnTT))-TT2_front)/(TT1_front-TT2_front)&
+           +ux_init
     enddo
 
    endsubroutine flame_spd
