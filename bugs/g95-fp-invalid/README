@@ -1,4 +1,7 @@
 
+FIXED: with G95 (GCC 4.0.3 (g95 0.92!) Oct 14 2008)
+
+
 Problem: Floating point exception
 
 
