@@ -76,15 +76,14 @@ module Special
   real :: test, H_max
   real :: Rgas, Rgas_unit_sys=1.
 
-  real :: rho_init=1., T_init=1., Y1_init=1., Y2_init=1., Y3_init=1.
+  real :: rho_init=1., T_init=1., Y1_init=1., Y2_init=1., Y3_init=1., ux_init=0.
 
 ! Keep some over used pencils
 !
 
 ! start parameters
   namelist /chem_stream_init_pars/ &
-   initstream,rho_init, T_init, Y1_init, Y2_init, Y3_init, H_max
-
+   initstream,rho_init, T_init, Y1_init, Y2_init, Y3_init, H_max, ux_init   
 ! run parameters
   namelist /chem_stream_run_pars/ &
    test
@@ -681,7 +680,14 @@ module Special
 
      f(k,:,:,ilnrho)=log(rho1_front)+log(TT1_front) -f(k,:,:,ilnTT)
 
+      if (x(k)<x1_front) then
+       f(k,:,:,ichemspec(3))=f(k,:,:,ichemspec(1))/2.*18.
+       f(k,:,:,ichemspec(2))=(f(k,:,:,ichemspec(2))/32.-f(k,:,:,ichemspec(1))/2.)*32.
+      endif
+
      enddo
+
+     f(:,:,:,iux)=ux_init
 
    endsubroutine flame_spd
 !**************************************************************************
