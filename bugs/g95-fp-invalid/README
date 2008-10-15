@@ -9,7 +9,7 @@ How to reproduce:
     g95 -r8 -freal=nan -c general.f90
     g95 -r8 -freal=nan -c start.f90
     g95 -r8 -freal=nan general.o start.o -o start.x
-    ./start.x
+    env G95_FPU_INVALID=Yes ./start.x
 
   and you will get
 
