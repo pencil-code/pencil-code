@@ -660,7 +660,7 @@ module Special
 
       real :: x1_front=-0.2, x2_front=0.2
       real :: rho1_front=1e-3, rho2_front=10./3.*1e-3
-      real :: TT1_front=1000., TT2_front=330.
+      real :: TT1_front=2400., TT2_front=330.
 
      f(l1,:,:,ichemspec(2))=(f(l2,:,:,ichemspec(2))/32.-f(l2,:,:,ichemspec(1))/4.)*32. 
 
@@ -686,6 +686,10 @@ module Special
        f(k,:,:,ichemspec(3))=f(l2,:,:,ichemspec(1))/2.*18. &
              *(exp(f(k,:,:,ilnTT))-TT2_front) &
              /(TT1_front-TT2_front)
+       f(k,:,:,ichemspec(1))=f(l2,:,:,ichemspec(1)) &
+             *(exp(f(k,:,:,ilnTT))-TT1_front) &
+             /(TT2_front-TT1_front)
+
       endif
 
       if (x(k)<x1_front) then
@@ -697,9 +701,15 @@ module Special
           *(f(l2,:,:,ichemspec(2))-f(l1,:,:,ichemspec(2)))+f(l1,:,:,ichemspec(2))
       endif
 
-     enddo
+    
 
-     f(:,:,:,iux)=ux_init
+      f(l2,:,:,iux)=ux_init
+      f(l1,:,:,iux)=ux_init*rho2_front/rho1_front
+      f(k,:,:,iux)=(f(l1,:,:,iux)-ux_init) &
+          *(exp(f(k,:,:,ilnTT))-TT2_front)/(TT1_front-TT2_front)&
+          +ux_init
+
+    enddo
 
    endsubroutine flame_spd
 !**************************************************************************
