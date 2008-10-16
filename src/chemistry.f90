@@ -724,7 +724,7 @@ module Chemistry
                do i=1,mx
                  T_local=exp(f(i,m,n,ilnTT))*unit_temperature 
 
-
+!print*,'k,T_local,T_low,T_mid=',k,T_local,T_low,T_mid
                  if (T_local >=T_low .and. T_local <= T_mid) then
                    tmp=0. 
                    do j=1,5
@@ -1743,7 +1743,7 @@ module Chemistry
       !
     end subroutine read_thermodyn
 !***********************************************************************
-     subroutine read_reactions(input_file,NrOfReactions)
+    subroutine read_reactions(input_file,NrOfReactions)
       !
       ! This subroutine reads all reaction information from chem.inp
       ! See the chemkin manual for more information on
@@ -1753,7 +1753,7 @@ module Chemistry
       !
       use Mpicomm
       !
-      logical :: IsReaction=.false.,LastSpecie
+      logical :: IsReaction=.false.,LastSpecie,found_new_reaction=.false.
       logical, SAVE :: find_specie, found_specie
       integer, optional :: NrOfReactions
       integer, SAVE :: ind_glob, ind_chem
@@ -1768,7 +1768,12 @@ module Chemistry
       k=1
       open(file_id,file=input_file)
       dataloop3: do
-        read(file_id,'(80A)',end=1012) ChemInpLine(1:80)
+        if (found_new_reaction) then
+          ChemInpLine=ChemInpLine_add
+        else
+          read(file_id,'(80A)',end=1012) ChemInpLine(1:80)
+        endif
+        found_new_reaction=.false.
         !
         ! Check if we are reading a line within the reactions section
         !
@@ -1801,7 +1806,6 @@ module Chemistry
                 !
                 ! Fill in reaction name
                 !
-!                print*,'Find reaction name.'
                 StopIndName=index(ChemInpLine(StartInd:),' ')+StartInd-1
                 reaction_name(k)=ChemInpLine(StartInd:StopIndName)
                 !
@@ -1815,123 +1819,127 @@ module Chemistry
                 ParanthesisInd=index(ChemInpLine(StartInd:),'(+M)')
                 MplussInd=index(ChemInpLine(StartInd:),'+M')
 
+                found_new_reaction=.false.
                 if (ParanthesisInd>0 .or. Mplussind>0) then
                   if (ParanthesisInd>0) then
                     LastLeftCharacter=min(ParanthesisInd,SeparatorInd)-1
                   else
                     LastLeftCharacter=min(MplussInd,SeparatorInd)-1
                   endif
-!
-!  reading of the additional data for (+M) case
-!  NNNNN 
+                  !
+                  !  reading of the additional data for (+M) case
+                  ! 
 
-  100     read(file_id,'(80A)',end=1012) ChemInpLine_add(1:80)
-           if (ChemInpLine_add(1:1) == ' ') then
-            i=1
-             do while (i<80)
-              if (ChemInpLine_add(i:i)==' ') then
-               i=i+1
-              elseif (ChemInpLine_add(i:i+2)=='LOW') then
-                print*,ChemInpLine_add(i:i+2),'   coefficients for reaction ', reaction_name(k),'number ', k 
-                 VarNumber_add=1; StartInd_add=i+4; StopInd_add=i+4
-                 do while (VarNumber_add<4)
-                  StopInd_add=index(ChemInpLine_add(StartInd_add:),' ')+StartInd_add-2
-                  StopInd_add_=index(ChemInpLine_add(StartInd_add:),'/')+StartInd_add-2
-                  StopInd_add=min(StopInd_add,StopInd_add_)
-                   if (StopInd_add==StartInd_add) then
-                    StartInd_add=StartInd_add+1
-                   else
-                    if (VarNumber_add==1) then
-                     read (unit=ChemInpLine_add(StartInd_add:StopInd_add),fmt='(E15.8)') low_coeff(1,k)
-                     print*,low_coeff(1,k)
-                    elseif (VarNumber_add==2) then
-                     read (unit=ChemInpLine_add(StartInd_add:StopInd_add),fmt='(E15.8)') low_coeff(2,k)
-                     print*,low_coeff(2,k)
-                    elseif (VarNumber_add==3) then
-                     read (unit=ChemInpLine_add(StartInd_add:StopInd_add),fmt='(E15.8)') low_coeff(3,k)
-                     print*,low_coeff(3,k)
-                    else
-                     call stop_it("No such VarNumber!")
-                    endif
-                   endif
-                     VarNumber_add=VarNumber_add+1
-                   !   StartInd_add=StopInd_add
-                     StartInd_add=verify(ChemInpLine_add(StopInd_add+1:),' ')+StopInd_add
-                     StopInd_add=StartInd_add
-                 enddo
-                     i=80
-              elseif (ChemInpLine_add(i:i+3)=='TROE') then
-                 print*,ChemInpLine_add(i:i+3),'   coefficients for reaction ', reaction_name(k),'number ', k 
-                 VarNumber_add=1; StartInd_add=i+5; StopInd_add=i+5
-                 do while (VarNumber_add<4)
-                  StopInd_add=index(ChemInpLine_add(StartInd_add:),' ')+StartInd_add-2
-                  StopInd_add_=index(ChemInpLine_add(StartInd_add:),'/')+StartInd_add-2
-                  StopInd_add=min(StopInd_add,StopInd_add_)
-                   if (StopInd_add==StartInd_add) then
-                    StartInd_add=StartInd_add+1
-                   else
-                    if (VarNumber_add==1) then
-                     read (unit=ChemInpLine_add(StartInd_add:StopInd_add),fmt='(E15.8)') troe_coeff(1,k)
-                     print*,troe_coeff(1,k)
-                    elseif (VarNumber_add==2) then
-                     read (unit=ChemInpLine_add(StartInd_add:StopInd_add),fmt='(E15.8)') troe_coeff(2,k)
-                     print*,troe_coeff(2,k)
-                    elseif (VarNumber_add==3) then
-                     read (unit=ChemInpLine_add(StartInd_add:StopInd_add),fmt='(E15.8)') troe_coeff(3,k)
-                     print*,troe_coeff(3,k)
-                    else
-                     call stop_it("No such VarNumber!")
-                    endif
-                   endif
-                    VarNumber_add=VarNumber_add+1
-                   !   StartInd_add=StopInd_add
-                    StartInd_add=verify(ChemInpLine_add(StopInd_add+1:),' ')+StopInd_add
-                    StopInd_add=StartInd_add
-                 enddo
-                     i=80
-              elseif (ChemInpLine_add(i:i+3)=='HIGH') then
-!
-! should be added later !!!
-!
-              else 
-   print*,' --------------  a_k4 coefficients----------------'
-!                a_k4=0.
-                StartInd_add=i; StopInd_add=0; StopInd_add_=0
-                do while (ChemInpLine_add(i:i+1)/='  ')
-                 find_specie=.true.
-                  do while (StartInd_add/=StopInd_add_)
-                   StopInd_add=index(ChemInpLine_add(StartInd_add:),'/')+StartInd_add-2
-                   StopInd_add_=index(ChemInpLine_add(StartInd_add:),' ')+StartInd_add-1
-                    if (find_specie) then
-                     call find_species_index(ChemInpLine_add(StartInd_add:StopInd_add),ind_glob,ind_chem,found_specie)
-                    else
-                     if (found_specie) then
-                      read (unit=ChemInpLine_add(StartInd_add:StopInd_add),fmt='(E15.8)') a_k4(ind_chem,k)
-                      print*, 'a_k4(ind_chem,k)=',a_k4(ind_chem,k),ind_chem,k
-                     else
-                       call stop_it("Did not find specie!")
-                     endif
-                    endif  
-                     StartInd_add=StopInd_add+2
-                     find_specie=.false.
-                  enddo
-                 i=StopInd_add_
-                 StartInd_add=StartInd_add+1
-                enddo
-               i=80
+100               read(file_id,'(80A)',end=1012) ChemInpLine_add(1:80)
+                  if (ChemInpLine_add(1:1) == ' ') then
+                    i=1
+                    do while (i<80)
+                      if (ChemInpLine_add(i:i)==' ') then
+                        i=i+1
+                      elseif (ChemInpLine_add(i:i+2)=='LOW') then
+                        print*,ChemInpLine_add(i:i+2),'   coefficients for reaction ', reaction_name(k),'number ', k 
+                        VarNumber_add=1; StartInd_add=i+4; StopInd_add=i+4
+                        do while (VarNumber_add<4)
+                          StopInd_add=index(ChemInpLine_add(StartInd_add:),' ')+StartInd_add-2
+                          StopInd_add_=index(ChemInpLine_add(StartInd_add:),'/')+StartInd_add-2
+                          StopInd_add=min(StopInd_add,StopInd_add_)
+                          if (StopInd_add==StartInd_add) then
+                            StartInd_add=StartInd_add+1
+                          else
+                            if (VarNumber_add==1) then
+                              read (unit=ChemInpLine_add(StartInd_add:StopInd_add),fmt='(E15.8)') low_coeff(1,k)
+                              print*,low_coeff(1,k)
+                            elseif (VarNumber_add==2) then
+                              read (unit=ChemInpLine_add(StartInd_add:StopInd_add),fmt='(E15.8)') low_coeff(2,k)
+                              print*,low_coeff(2,k)
+                            elseif (VarNumber_add==3) then
+                              read (unit=ChemInpLine_add(StartInd_add:StopInd_add),fmt='(E15.8)') low_coeff(3,k)
+                              print*,low_coeff(3,k)
+                            else
+                              call stop_it("No such VarNumber!")
+                            endif
+                          endif
+                          VarNumber_add=VarNumber_add+1
+                          !   StartInd_add=StopInd_add
+                          StartInd_add=verify(ChemInpLine_add(StopInd_add+1:),' ')+StopInd_add
+                          StopInd_add=StartInd_add
+                        enddo
+                        i=80
+                      elseif (ChemInpLine_add(i:i+3)=='TROE') then
+                        print*,ChemInpLine_add(i:i+3),'   coefficients for reaction ', reaction_name(k),'number ', k 
+                        VarNumber_add=1; StartInd_add=i+5; StopInd_add=i+5
+                        do while (VarNumber_add<4)
+                          StopInd_add=index(ChemInpLine_add(StartInd_add:),' ')+StartInd_add-2
+                          StopInd_add_=index(ChemInpLine_add(StartInd_add:),'/')+StartInd_add-2
+                          StopInd_add=min(StopInd_add,StopInd_add_)
+                          if (StopInd_add==StartInd_add) then
+                            StartInd_add=StartInd_add+1
+                          else
+                            if (VarNumber_add==1) then
+                              read (unit=ChemInpLine_add(StartInd_add:StopInd_add),fmt='(E15.8)') troe_coeff(1,k)
+                              print*,troe_coeff(1,k)
+                            elseif (VarNumber_add==2) then
+                              read (unit=ChemInpLine_add(StartInd_add:StopInd_add),fmt='(E15.8)') troe_coeff(2,k)
+                              print*,troe_coeff(2,k)
+                            elseif (VarNumber_add==3) then
+                              read (unit=ChemInpLine_add(StartInd_add:StopInd_add),fmt='(E15.8)') troe_coeff(3,k)
+                              print*,troe_coeff(3,k)
+                            else
+                              call stop_it("No such VarNumber!")
+                            endif
+                          endif
+                          VarNumber_add=VarNumber_add+1
+                          !   StartInd_add=StopInd_add
+                          StartInd_add=verify(ChemInpLine_add(StopInd_add+1:),' ')+StopInd_add
+                          StopInd_add=StartInd_add
+                        enddo
+                        i=80
+                      elseif (ChemInpLine_add(i:i+3)=='HIGH') then
+                        !
+                        ! should be added later !!!
+                        ! NILS: There will probably never by such a thing.....????
+                        !
+                      else 
+                        print*,' --------------  a_k4 coefficients----------------'
+                        !                a_k4=0.
+                        StartInd_add=i; StopInd_add=0; StopInd_add_=0
+                        do while (ChemInpLine_add(i:i+1)/='  ')
+                          find_specie=.true.
+                          do while (StartInd_add/=StopInd_add_)
+                            StopInd_add=index(ChemInpLine_add(StartInd_add:),'/')+StartInd_add-2
+                            StopInd_add_=index(ChemInpLine_add(StartInd_add:),' ')+StartInd_add-1
+                            if (find_specie) then
+                              call find_species_index(ChemInpLine_add(StartInd_add:StopInd_add),ind_glob,ind_chem,found_specie)
+                            else
+                              if (found_specie) then
+                                read (unit=ChemInpLine_add(StartInd_add:StopInd_add),fmt='(E15.8)') a_k4(ind_chem,k)
+                                print*, 'a_k4(ind_chem,k)=',a_k4(ind_chem,k),ind_chem,k
+                              else
+                                call stop_it("Did not find specie!")
+                              endif
+                            endif
+                            StartInd_add=StopInd_add+2
+                            find_specie=.false.
+                          enddo
+                          i=StopInd_add_
+                          StartInd_add=StartInd_add+1
+                        enddo
+                        i=80
 
-               !call find_species_index('N2',ind_glob,ind_chem,found_specie)
+                        !call find_species_index('N2',ind_glob,ind_chem,found_specie)
 
-               !if (found_specie) a_k4(ind_chem,k)=1.
-               do ind_chem=1,nchemspec
-                 if (a_k4(ind_chem,k)==impossible) a_k4(ind_chem,k)=1
-               enddo
+                        !if (found_specie) a_k4(ind_chem,k)=1.
+                        do ind_chem=1,nchemspec
+                          if (a_k4(ind_chem,k)==impossible) a_k4(ind_chem,k)=1
+                        enddo
 
-              endif
-             enddo
- print*,' ------------------------------'
-            goto 100
-           endif
+                      endif
+                    enddo
+                    print*,' ------------------------------'
+                    goto 100
+                  else
+                    found_new_reaction=.true.
+                  endif
 
                 else
                   LastLeftCharacter=SeparatorInd-1
@@ -1978,7 +1986,7 @@ module Chemistry
                 !
                 ! Find Arrhenius coefficients
                 !
-!                print*,'Start reading Arrhenius coefficients.'
+                !                print*,'Start reading Arrhenius coefficients.'
                 VarNumber=1; StartInd=1; StopInd =0
                 stringloop: do while (VarNumber<4)
                   StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
@@ -2310,9 +2318,8 @@ module Chemistry
         if (lwrite) write(file_id,*) 'Nreact= ',reac,  'kr=', maxval(kr)
         if (lwrite) write(file_id,*)'**************************'
         !
-        ! Find forward (vreact_p) and backward (vreact_m) rate of 
-        ! progress variable. 
-        ! (vreact_p - vreact_m) is labeled q in the chemkin manual
+        ! Find the product of the species molar consentrations (where
+        ! each molar consentration is taken to the power of the number)
         !
         prod1=1.
         prod2=1.
@@ -2324,8 +2331,6 @@ module Chemistry
           prod2=prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
                /species_constants(k,imass))**Sijm(k,reac)
         enddo
-        vreact_p(:,reac)=prod1/rho_cgs*kf
-        vreact_m(:,reac)=prod2/rho_cgs*kr
         !
         ! Finalize writing to file
         !
@@ -2338,8 +2343,6 @@ module Chemistry
        ! The Lindstrom approach to the fall of reactions
        !
        Kc_0=Kc
-       prod1_0=prod1
-       prod2_0=prod2
        if (maxval(abs(low_coeff(:,reac))) > 0.) then
          B_n_0=low_coeff(1,reac) 
          alpha_n_0=low_coeff(2,reac)
@@ -2350,7 +2353,7 @@ module Chemistry
          kr(:)=kf(:)/Kc_0
        endif
        !
-       !
+       ! Multiply by third body reaction term
        !
        if (minval(a_k4(:,reac))<impossible) then
          sum_sp=0.
@@ -2358,9 +2361,16 @@ module Chemistry
            sum_sp=sum_sp+a_k4(k,reac)*f(l1:l2,m,n,ichemspec(k))  &
                 *rho_cgs(:)/species_constants(k,imass)
          enddo
-         vreact_p(:,reac)=prod1_0*kf*sum_sp
-         vreact_m(:,reac)=prod2_0*kr*sum_sp
+       else
+         sum_sp=1
        endif
+       !
+       ! Find forward (vreact_p) and backward (vreact_m) rate of 
+       ! progress variable. 
+       ! (vreact_p - vreact_m) is labeled q in the chemkin manual
+       !       
+       vreact_p(:,reac)=prod1*kf*sum_sp
+       vreact_m(:,reac)=prod2*kr*sum_sp
     enddo
     !
   end subroutine get_reaction_rate
@@ -2411,7 +2421,7 @@ module Chemistry
       xdot=xdot+stoichio(k,j)*vreactions(:,j)  
     enddo
     if (lcheminp) then
-      xdot=-xdot*species_constants(k,imass)
+      xdot=-xdot*species_constants(k,imass)/p%rho
     endif
     p%DYDt_reac(:,k)=xdot*unit_time
   enddo
