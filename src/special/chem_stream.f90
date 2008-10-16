@@ -655,12 +655,21 @@ module Special
 ! Initialization of chem. species  in a case of the stream
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: xx, yy
+      real, dimension (mx,my,mz) :: xx, yy, mu1
       integer :: k,j,i
 
       real :: x1_front=-0.2, x2_front=0.2
       real :: rho1_front=1e-3, rho2_front=10./3.*1e-3
       real :: TT1_front=2400., TT2_front=330.
+      real :: mH,mC,mN,mO,mAr,mHe
+
+        mH=1.00794
+        mC=12.0107
+        mN=14.00674
+        mO=15.9994
+        mAr=39.948
+        mHe=4.0026
+
 
      f(l1,:,:,ichemspec(2))=(f(l2,:,:,ichemspec(2))/32.-f(l2,:,:,ichemspec(1))/4.)*32. 
 
@@ -682,8 +691,7 @@ module Special
     !      *(rho2_front-rho1_front)+rho1_front)
       endif
 
-     f(k,:,:,ilnrho)=log(rho1_front)+log(TT1_front) -f(k,:,:,ilnTT)
-
+    
       if (x(k)<x2_front) then
        f(k,:,:,ichemspec(3))=f(l2,:,:,ichemspec(1))/2.*18. &
              *(exp(f(k,:,:,ilnTT))-TT2_front) &
@@ -703,14 +711,25 @@ module Special
           *(f(l2,:,:,ichemspec(2))-f(l1,:,:,ichemspec(2)))+f(l1,:,:,ichemspec(2))
       endif
 
+     mu1(k,:,:)=f(k,:,:,ichemspec(1))/(2.*mH)+f(k,:,:,ichemspec(2))/(2.*mO) &
+           +f(k,:,:,ichemspec(3))/(2.*mH+mO)+f(k,:,:,ichemspec(8))/(2.*mN)
+
+
     enddo
 
+    do k=1,mx
+ 
+      f(k,:,:,ilnrho)=log(rho2_front)+log(TT2_front) -f(k,:,:,ilnTT)+log(mu1(l2,:,:)/mu1(k,:,:))
+
+    enddo
 
     f(l1,:,:,iux)=ux_init*exp(f(l2,:,:,ilnrho))/exp(f(l1,:,:,ilnrho))
+
     do k=1,mx
       f(k,:,:,iux)=(f(l1,:,:,iux)-ux_init) &
            *(exp(f(k,:,:,ilnTT))-TT2_front)/(TT1_front-TT2_front)&
            +ux_init
+
     enddo
 
    endsubroutine flame_spd
