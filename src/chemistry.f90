@@ -2202,7 +2202,7 @@ module Chemistry
     T_cgs=p%TT*unit_temperature
     T_cgs_full=exp(f(:,:,:,ilnTT))*unit_temperature
     rho_cgs=p%rho*unit_mass/unit_length**3
-    p_atm=p%pp*unit_energy/unit_length**3/10.13e5
+    p_atm=1e6*unit_length**3/unit_energy
     if (lwrite)  write(file_id,*)'T= ',   T_cgs
     if (lwrite)  write(file_id,*)'p_atm= ',   p_atm
 !
@@ -2323,7 +2323,7 @@ module Chemistry
         if (sum_tmp==0.) then
          Kc=Kp
         else
-         Kc=Kp*(p_atm/T_cgs/Rgas_unit_sys)**sum_tmp
+         Kc=Kp*(p_atm/(p%TT*Rgas))**sum_tmp
         endif
         kr(:)=kf(:)/Kc
         if (lwrite) write(file_id,*) 'Nreact= ',reac,'Kc= ', maxval(Kc)
