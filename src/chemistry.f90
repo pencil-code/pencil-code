@@ -50,6 +50,8 @@ module Chemistry
 
   logical :: lheatc_chemistry=.false.
 
+  logical :: BinDif_simple=.false.
+  
   logical :: lkreactions_profile=.false.
   integer :: nreactions=0,nreactions1=0,nreactions2=0
   real, dimension(2*nchemspec) :: kreactions_profile_width=0.
@@ -90,13 +92,13 @@ module Chemistry
   real, dimension (mx,my,mz,nchemspec), SAVE :: H0_RT
 
   logical :: Natalia_thoughts=.false.
-
+ 
 
 
 ! input parameters
   namelist /chemistry_init_pars/ &
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
-      amplchemk,amplchemk2, Natalia_thoughts,chem_diff,nu_spec
+      amplchemk,amplchemk2, Natalia_thoughts,chem_diff,nu_spec, BinDif_simple
 
 ! run parameters
   namelist /chemistry_run_pars/ &
@@ -763,22 +765,7 @@ module Chemistry
         if (tran_exist) then
              call calc_diff_visc_coef(f)
         endif
-!
-!  Diffusion coeffisient of a mixture
-!
-        if (.not. lone_spec) then
-           do k=1,nchemspec
-            tmp_sum=0.
-             do j=1,nchemspec
-                tmp_sum(:,:,:)=tmp_sum(:,:,:) &
-                  +f(:,:,:,ichemspec(j))*unit_mass &
-                  /species_constants(j,imass) &
-                  /Bin_Diff_coef(:,:,:,j,k)
-             enddo
-              Diff_full(:,:,:,k)=(1.-f(:,:,:,ichemspec(k))) &
-                                *mu1_full(:,:,:)/tmp_sum
-           enddo
-        endif
+
 !print*, Bin_Diff_coef(10,10,3,1,2)
 !
 !  Viscosity of a mixture
@@ -812,9 +799,32 @@ module Chemistry
 
       endif
 
+!
+!  Diffusion coeffisient of a mixture
+!
 
+      if (BinDif_simple) then
+       do k=1,nchemspec
+         Diff_full(:,:,:,k)=species_viscosity(:,:,:,k)/rho_full(:,:,:)/0.7
+       enddo
+      else
+        if (.not. lone_spec) then
+           do k=1,nchemspec
+            tmp_sum=0.
+             do j=1,nchemspec
+                tmp_sum(:,:,:)=tmp_sum(:,:,:) &
+                  +f(:,:,:,ichemspec(j))*unit_mass &
+                  /species_constants(j,imass) &
+                  /Bin_Diff_coef(:,:,:,j,k)
+             enddo
+              Diff_full(:,:,:,k)=(1.-f(:,:,:,ichemspec(k))) &
+                                *mu1_full(:,:,:)/tmp_sum
+           enddo
+        endif
+      endif
 
-
+   
+      
 !
 !  Artificial Viscosity of a mixture
 !
@@ -1043,8 +1053,10 @@ module Chemistry
 !  Allocate binary diffusion coefficient array
 !
       if (.not.lreloading) then
-        allocate(Bin_Diff_coef(mx,my,mz,nchemspec,nchemspec),STAT=stat)
-        if (stat>0) call stop_it("Couldn't allocate memory for binary diffusion coefficients") 
+        if (.not. BinDif_simple) then
+	 allocate(Bin_Diff_coef(mx,my,mz,nchemspec,nchemspec),STAT=stat)
+         if (stat>0) call stop_it("Couldn't allocate memory for binary diffusion coefficients") 
+	endif 
       endif
 
      if (tran_exist) then 
@@ -2619,8 +2631,12 @@ module Chemistry
 
      prefactor=3./16.*sqrt(2.*k_B_cgs**3*TT**3)/pp_full/sqrt(pi)
 
-     omega="Omega11"
-      do k=1,nchemspec
+!DDDDDDDDDDDD     
+     
+      if (.not. BinDif_simple) then
+     
+      omega="Omega11"
+       do k=1,nchemspec
         do j=1,nchemspec
 
            eps_jk=(tran_data(j,2)*tran_data(k,2))**0.5
@@ -2642,8 +2658,11 @@ module Chemistry
    !         print*, 'Natalia',Bin_Diff_coef(10,3,3,1,1),tran_data(1,1)
   !  endif
         enddo
-      enddo
-
+       enddo
+       
+      endif 
+      
+      
       omega="Omega22"
       do k=1,nchemspec
 
@@ -2656,7 +2675,7 @@ module Chemistry
       /(Omega_kl+0.2*delta_st/(TT/tran_data(k,2))) 
       species_viscosity(:,:,:,k)=(tmp)/(unit_mass/unit_length/unit_time)
 
-!print*,'Natalia',maxval(species_viscosity(:,:,:,k))
+      
       enddo
 
 
