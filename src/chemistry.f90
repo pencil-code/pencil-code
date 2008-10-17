@@ -2177,6 +2177,7 @@ module Chemistry
      !
      real, dimension (mx,my,mz,mfarray), intent(in) :: f 
      real, dimension (nx,nreactions), intent(out) :: vreact_p, vreact_m
+     real, dimension (nx):: mix_conc
      !
      type (pencil_case) :: p
      real, dimension (nx) :: dSR=0.,dHRT=0.,Kp,Kc,prod1,prod2
@@ -2351,19 +2352,7 @@ module Chemistry
        if (lwrite) print*,'get_reaction_rate: writing react.out file'
        if (lwrite) close(file_id)
        lwrite=.false.
-       !
-       ! The Lindstrom approach to the fall of reactions
-       !
-       Kc_0=Kc
-       if (maxval(abs(low_coeff(:,reac))) > 0.) then
-         B_n_0=low_coeff(1,reac) 
-         alpha_n_0=low_coeff(2,reac)
-         E_an_0=low_coeff(3,reac)                      
-         kf_0(:)=B_n_0*T_cgs(:)**alpha_n_0*exp(-E_an_0/Rcal/T_cgs(:))            
-         Pr=kf_0/kf*rho_cgs(:)*p%mu1/unit_mass
-         kf=kf*(Pr/(1.+Pr))
-         kr(:)=kf(:)/Kc_0
-       endif
+       
        !
        ! Multiply by third body reaction term
        !
@@ -2373,9 +2362,28 @@ module Chemistry
            sum_sp=sum_sp+a_k4(k,reac)*f(l1:l2,m,n,ichemspec(k))  &
                 *rho_cgs(:)/species_constants(k,imass)
          enddo
+	 mix_conc=sum_sp
        else
-         sum_sp=1
+         sum_sp=1.
+	 mix_conc=rho_cgs(:)*p%mu1(:)/unit_mass
        endif
+       !
+      
+       
+       !
+       ! The Lindstrom approach to the fall of reactions
+       !
+       Kc_0=Kc
+       if (maxval(abs(low_coeff(:,reac))) > 0.) then
+         B_n_0=low_coeff(1,reac) 
+         alpha_n_0=low_coeff(2,reac)
+         E_an_0=low_coeff(3,reac)                      
+         kf_0(:)=B_n_0*T_cgs(:)**alpha_n_0*exp(-E_an_0/Rcal/T_cgs(:))            
+         Pr=kf_0/kf*sum_sp
+         kf=kf*(Pr/(1.+Pr))
+         kr(:)=kf(:)/Kc_0
+       endif
+    
        !
        ! Find forward (vreact_p) and backward (vreact_m) rate of 
        ! progress variable. 
