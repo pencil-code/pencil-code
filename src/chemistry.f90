@@ -104,7 +104,7 @@ module Chemistry
   namelist /chemistry_run_pars/ &
       lkreactions_profile,kreactions_profile,kreactions_profile_width, &
       chem_diff,chem_diff_prefactor, nu_spec, ldiffusion, ladvection, &
-      lreactions,lchem_cdtc,lheatc_chemistry
+      lreactions,lchem_cdtc,lheatc_chemistry, BinDif_simple
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -2352,7 +2352,6 @@ module Chemistry
        if (lwrite) print*,'get_reaction_rate: writing react.out file'
        if (lwrite) close(file_id)
        lwrite=.false.
-       
        !
        ! Multiply by third body reaction term
        !
@@ -2368,9 +2367,6 @@ module Chemistry
 	 mix_conc=rho_cgs(:)*p%mu1(:)/unit_mass
        endif
        !
-      
-       
-       !
        ! The Lindstrom approach to the fall of reactions
        !
        Kc_0=Kc
@@ -2379,11 +2375,10 @@ module Chemistry
          alpha_n_0=low_coeff(2,reac)
          E_an_0=low_coeff(3,reac)                      
          kf_0(:)=B_n_0*T_cgs(:)**alpha_n_0*exp(-E_an_0/Rcal/T_cgs(:))            
-         Pr=kf_0/kf*sum_sp
+         Pr=kf_0/kf*mix_conc
          kf=kf*(Pr/(1.+Pr))
          kr(:)=kf(:)/Kc_0
-       endif
-    
+       endif    
        !
        ! Find forward (vreact_p) and backward (vreact_m) rate of 
        ! progress variable. 
