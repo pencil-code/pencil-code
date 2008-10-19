@@ -12,7 +12,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED divu; oo(3); o2; ou; u2; uij(3,3); uu(3)
-! PENCILS PROVIDED sij(3,3); sij2; uij5(3,3); ugu(3); oij(3,3); qq(3)
+! PENCILS PROVIDED sij(3,3); sij2; uij5(3,3); ugu(3); ugu2; oij(3,3); qq(3)
 ! PENCILS PROVIDED u3u21; u1u32; u2u13; del2u(3); del4u(3); del6u(3)
 ! PENCILS PROVIDED graddivu(3); del6u_bulk(3); grad5divu(3)
 !
@@ -295,12 +295,23 @@ module Hydro
                                 ! DIAG_DOC: \cdot\uv\right>_{xz}$
   integer :: idiag_oumz=0       ! DIAG_DOC: $\left<\boldsymbol{\omega}
                                 ! DIAG_DOC: \cdot\uv\right>_{xy}$
-  !
+  integer :: idiag_uguxm=0      ! DIAG_DOC:
+  integer :: idiag_uguym=0      ! DIAG_DOC:
+  integer :: idiag_uguzm=0      ! DIAG_DOC:
+  integer :: idiag_ugu2m=0      ! DIAG_DOC:
+  integer :: idiag_uguxmx=0     ! DIAG_DOC:
+  integer :: idiag_uguymx=0     ! DIAG_DOC:
+  integer :: idiag_uguzmx=0     ! DIAG_DOC:
+  integer :: idiag_uguxmy=0     ! DIAG_DOC:
+  integer :: idiag_uguymy=0     ! DIAG_DOC:
+  integer :: idiag_uguzmy=0     ! DIAG_DOC:
+  integer :: idiag_uguxmz=0     ! DIAG_DOC:
+  integer :: idiag_uguymz=0     ! DIAG_DOC:
+  integer :: idiag_uguzmz=0     ! DIAG_DOC:
   integer :: idiag_Marms=0      ! DIAG_DOC: $\left<\uv^2/\cs^2\right>$
                                 ! DIAG_DOC:   \quad(rms Mach number)
   integer :: idiag_Mamax=0      ! DIAG_DOC: $\max |\uv|/\cs$
                                 ! DIAG_DOC:   \quad(maximum Mach number)
-  !
   integer :: idiag_fintm=0      ! DIAG_DOC: 
   integer :: idiag_fextm=0      ! DIAG_DOC: 
   integer :: idiag_duxdzma=0    ! DIAG_DOC: 
@@ -970,6 +981,8 @@ module Hydro
       if (tau_damp_ruxm/=0..or.tau_damp_ruym/=0..or.tau_damp_ruzm/=0.) &
         lpenc_requested(i_rho1)=.true.
 !
+      if (lisotropic_advection) lpenc_requested(i_u2)=.true.
+!
 !  video pencils
 !
       if (dvid/=0.) then
@@ -1003,33 +1016,32 @@ module Hydro
       if (idiag_fmassz/=0 .or. idiag_ruxuym/=0 .or. idiag_ruxuymz/=0 .or. &
           idiag_ruxm/=0 .or. idiag_ruym/=0 .or. idiag_ruzm/=0) &
           lpenc_diagnos(i_rho)=.true.
-
       if (idiag_ormr/=0 .or. idiag_opmr/=0 .or. idiag_ozmr/=0) &
           lpenc_diagnos(i_oo)=.true.
-
       if (idiag_oxmxy/=0 .or. idiag_oymxy/=0 .or. idiag_ozmxy/=0 .or. &
           idiag_oxmz/=0 .or. idiag_oymz/=0 .or. idiag_ozmz/=0) &
           lpenc_diagnos2d(i_oo)=.true.
-
       if (idiag_totangmom/=0 ) lpenc_diagnos(i_rcyl_mn)=.true.
-
       if (idiag_urmr/=0 .or.  idiag_ormr/=0 .or. idiag_urmphi/=0) then
         lpenc_diagnos(i_pomx)=.true.
         lpenc_diagnos(i_pomy)=.true.
       endif
-
       if (idiag_upmr/=0 .or. idiag_opmr/=0 .or. idiag_upmphi/=0) then
         lpenc_diagnos(i_phix)=.true.
         lpenc_diagnos(i_phiy)=.true.
       endif
-
       if (idiag_ekin/=0 .or. idiag_ekintot/=0 .or. idiag_fkinz/=0 .or. &
           idiag_ekinz/=0) then
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_u2)=.true.
       endif
-!
-      if (lisotropic_advection) lpenc_requested(i_u2)=.true.
+      if (idiag_uguxm/=0 .or. idiag_uguym/=0 .or. idiag_uguzm/=0) &
+          lpenc_diagnos(i_ugu)=.true.
+      if (idiag_ugu2m/=0) lpenc_diagnos(i_ugu2)=.true.
+      if (idiag_uguxmx/=0 .or. idiag_uguymx/=0 .or. idiag_uguzmx/=0 .or. &
+          idiag_uguxmy/=0 .or. idiag_uguymy/=0 .or. idiag_uguzmy/=0 .or. &
+          idiag_uguxmz/=0 .or. idiag_uguymz/=0 .or. idiag_uguzmz/=0) &
+          lpenc_diagnos(i_ugu)=.true.
 !
     endsubroutine pencil_criteria_hydro
 !***********************************************************************
@@ -1171,6 +1183,8 @@ use Mpicomm, only: stop_it
         endif
         call u_dot_grad(f,iuu,p%uij,p%uu,p%ugu,UPWIND=lupw_uu)
       endif
+! ugu2
+      if (lpencil(i_ugu2)) call dot2_mn(p%ugu,p%ugu2)
 !
 ! u3u21, u1u32, u2u13
 !
@@ -1449,31 +1463,10 @@ use Mpicomm, only: stop_it
         if (idiag_uymax/=0) call max_mn_name(p%uu(:,2),idiag_uymax)
         if (idiag_uzmax/=0) call max_mn_name(p%uu(:,3),idiag_uzmax)
         if (idiag_rumax/=0) call max_mn_name(p%u2*p%rho**2,idiag_rumax,lsqrt=.true.)
-!
-!  integrate velocity in time, to calculate correlation time later
-!
-        if (idiag_u2tm/=0) then
-          if (iuut==0) call stop_it("Cannot calculate u2tm if iuut==0")
-          call dot(p%uu,f(l1:l2,m,n,iuxt:iuzt),u2t)
-          call sum_mn_name(u2t,idiag_u2tm)
-        endif
-!
-!  integrate velocity in time, to calculate correlation time later
-!
-        if (idiag_outm/=0) then
-          if (iuut==0) call stop_it("Cannot calculate outm if iuut==0")
-          call dot(p%oo,f(l1:l2,m,n,iuxt:iuzt),out)
-          call sum_mn_name(out,idiag_outm)
-        endif
-!
-!  integrate velocity in time, to calculate correlation time later
-!
-        if (idiag_uotm/=0) then
-          if (ioot==0) call stop_it("Cannot calculate uotm if ioot==0")
-          call dot(p%uu,f(l1:l2,m,n,ioxt:iozt),uot)
-          call sum_mn_name(uot,idiag_uotm)
-        endif
-!
+        if (idiag_uguxm/=0) call sum_mn_name(p%ugu(:,1),idiag_uguxm)
+        if (idiag_uguym/=0) call sum_mn_name(p%ugu(:,2),idiag_uguym)
+        if (idiag_uguzm/=0) call sum_mn_name(p%ugu(:,3),idiag_uguzm)
+        if (idiag_ugu2m/=0) call sum_mn_name(p%ugu2,idiag_ugu2m)
         if (idiag_u2m/=0)     call sum_mn_name(p%u2,idiag_u2m)
         if (idiag_um2/=0)     call max_mn_name(p%u2,idiag_um2)
         if (idiag_divum/=0)   call sum_mn_name(p%divu,idiag_divum)
@@ -1550,17 +1543,41 @@ use Mpicomm, only: stop_it
           space_part_im = -sin(kx*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n)) 
         endif
 !
-        if(idiag_uxfampm/=0) &
+!  integrate velocity in time, to calculate correlation time later
+!
+        if (idiag_u2tm/=0) then
+          if (iuut==0) call stop_it("Cannot calculate u2tm if iuut==0")
+          call dot(p%uu,f(l1:l2,m,n,iuxt:iuzt),u2t)
+          call sum_mn_name(u2t,idiag_u2tm)
+        endif
+!
+!  integrate velocity in time, to calculate correlation time later
+!
+        if (idiag_outm/=0) then
+          if (iuut==0) call stop_it("Cannot calculate outm if iuut==0")
+          call dot(p%oo,f(l1:l2,m,n,iuxt:iuzt),out)
+          call sum_mn_name(out,idiag_outm)
+        endif
+!
+!  integrate velocity in time, to calculate correlation time later
+!
+        if (idiag_uotm/=0) then
+          if (ioot==0) call stop_it("Cannot calculate uotm if ioot==0")
+          call dot(p%uu,f(l1:l2,m,n,ioxt:iozt),uot)
+          call sum_mn_name(uot,idiag_uotm)
+        endif
+!
+        if (idiag_uxfampm/=0) &
             call sum_mn_name(p%uu(:,1)*space_part_re,idiag_uxfampm)
-        if(idiag_uyfampm/=0) &
+        if (idiag_uyfampm/=0) &
             call sum_mn_name(p%uu(:,2)*space_part_re,idiag_uyfampm)
-        if(idiag_uzfampm/=0) &
+        if (idiag_uzfampm/=0) &
             call sum_mn_name(p%uu(:,3)*space_part_re,idiag_uzfampm)
-        if(idiag_uxfampim/=0) &
+        if (idiag_uxfampim/=0) &
             call sum_mn_name(p%uu(:,1)*space_part_im,idiag_uxfampim)
-        if(idiag_uyfampim/=0) &
+        if (idiag_uyfampim/=0) &
             call sum_mn_name(p%uu(:,2)*space_part_im,idiag_uyfampim)
-        if(idiag_uzfampim/=0) &
+        if (idiag_uzfampim/=0) &
             call sum_mn_name(p%uu(:,3)*space_part_im,idiag_uzfampim)
 !
       endif
@@ -1591,33 +1608,51 @@ use Mpicomm, only: stop_it
         if (idiag_ux2mx/=0)  call yzsum_mn_name_x(p%uu(:,1)**2,idiag_ux2mx)
         if (idiag_uy2mx/=0)  call yzsum_mn_name_x(p%uu(:,2)**2,idiag_uy2mx)
         if (idiag_uz2mx/=0)  call yzsum_mn_name_x(p%uu(:,3)**2,idiag_uz2mx)
-        if (idiag_uxuymz/=0) call xysum_mn_name_z(p%uu(:,1)*p%uu(:,2),idiag_uxuymz)
-        if (idiag_uxuzmz/=0) call xysum_mn_name_z(p%uu(:,1)*p%uu(:,3),idiag_uxuzmz)
-        if (idiag_uyuzmz/=0) call xysum_mn_name_z(p%uu(:,2)*p%uu(:,3),idiag_uyuzmz)
+        if (idiag_uxuymz/=0) &
+            call xysum_mn_name_z(p%uu(:,1)*p%uu(:,2),idiag_uxuymz)
+        if (idiag_uxuzmz/=0) &
+            call xysum_mn_name_z(p%uu(:,1)*p%uu(:,3),idiag_uxuzmz)
+        if (idiag_uyuzmz/=0) &
+            call xysum_mn_name_z(p%uu(:,2)*p%uu(:,3),idiag_uyuzmz)
         if (idiag_ruxuymz/=0) &
           call xysum_mn_name_z(p%rho*p%uu(:,1)*p%uu(:,2),idiag_ruxuymz)
-        if (idiag_uxuymy/=0) call xzsum_mn_name_y(p%uu(:,1)*p%uu(:,2),idiag_uxuymy)
-        if (idiag_uxuzmy/=0) call xzsum_mn_name_y(p%uu(:,1)*p%uu(:,3),idiag_uxuzmy)
-        if (idiag_uyuzmy/=0) call xzsum_mn_name_y(p%uu(:,2)*p%uu(:,3),idiag_uyuzmy)
-        if (idiag_uxuymx/=0) call yzsum_mn_name_x(p%uu(:,1)*p%uu(:,2),idiag_uxuymx)
-        if (idiag_uxuzmx/=0) call yzsum_mn_name_x(p%uu(:,1)*p%uu(:,3),idiag_uxuzmx)
-        if (idiag_uyuzmx/=0) call yzsum_mn_name_x(p%uu(:,2)*p%uu(:,3),idiag_uyuzmx)
+        if (idiag_uxuymy/=0) &
+            call xzsum_mn_name_y(p%uu(:,1)*p%uu(:,2),idiag_uxuymy)
+        if (idiag_uxuzmy/=0) &
+            call xzsum_mn_name_y(p%uu(:,1)*p%uu(:,3),idiag_uxuzmy)
+        if (idiag_uyuzmy/=0) &
+            call xzsum_mn_name_y(p%uu(:,2)*p%uu(:,3),idiag_uyuzmy)
+        if (idiag_uxuymx/=0) &
+            call yzsum_mn_name_x(p%uu(:,1)*p%uu(:,2),idiag_uxuymx)
+        if (idiag_uxuzmx/=0) &
+            call yzsum_mn_name_x(p%uu(:,1)*p%uu(:,3),idiag_uxuzmx)
+        if (idiag_uyuzmx/=0) &
+            call yzsum_mn_name_x(p%uu(:,2)*p%uu(:,3),idiag_uyuzmx)
         if (idiag_ekinz/=0)  call xysum_mn_name_z(.5*p%rho*p%u2,idiag_ekinz)
         if (idiag_oumx/=0)   call yzsum_mn_name_x(p%ou,idiag_oumx)
         if (idiag_oumy/=0)   call xzsum_mn_name_y(p%ou,idiag_oumy)
         if (idiag_oumz/=0)   call xysum_mn_name_z(p%ou,idiag_oumz)
+        if (idiag_uguxmx/=0) call yzsum_mn_name_x(p%ugu(:,1),idiag_uguxmx)
+        if (idiag_uguymx/=0) call yzsum_mn_name_x(p%ugu(:,2),idiag_uguymx)
+        if (idiag_uguzmx/=0) call yzsum_mn_name_x(p%ugu(:,3),idiag_uguzmx)
+        if (idiag_uguxmy/=0) call xzsum_mn_name_y(p%ugu(:,1),idiag_uguxmy)
+        if (idiag_uguymy/=0) call xzsum_mn_name_y(p%ugu(:,2),idiag_uguymy)
+        if (idiag_uguzmy/=0) call xzsum_mn_name_y(p%ugu(:,3),idiag_uguzmy)
+        if (idiag_uguxmz/=0) call xysum_mn_name_z(p%ugu(:,1),idiag_uguxmz)
+        if (idiag_uguymz/=0) call xysum_mn_name_z(p%ugu(:,2),idiag_uguymz)
+        if (idiag_uguzmz/=0) call xysum_mn_name_z(p%ugu(:,3),idiag_uguzmz)
 !  phi-z averages
         if (idiag_u2mr/=0)   call phizsum_mn_name_r(p%u2,idiag_u2mr)
         if (idiag_urmr/=0) &
-             call phizsum_mn_name_r(p%uu(:,1)*p%pomx+p%uu(:,2)*p%pomy,idiag_urmr)
+            call phizsum_mn_name_r(p%uu(:,1)*p%pomx+p%uu(:,2)*p%pomy,idiag_urmr)
         if (idiag_upmr/=0) &
-             call phizsum_mn_name_r(p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy,idiag_upmr)
+            call phizsum_mn_name_r(p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy,idiag_upmr)
         if (idiag_uzmr/=0) &
              call phizsum_mn_name_r(p%uu(:,3),idiag_uzmr)
         if (idiag_ormr/=0) &
-             call phizsum_mn_name_r(p%oo(:,1)*p%pomx+p%oo(:,2)*p%pomy,idiag_ormr)
+            call phizsum_mn_name_r(p%oo(:,1)*p%pomx+p%oo(:,2)*p%pomy,idiag_ormr)
         if (idiag_opmr/=0) &
-             call phizsum_mn_name_r(p%oo(:,1)*p%phix+p%oo(:,2)*p%phiy,idiag_opmr)
+            call phizsum_mn_name_r(p%oo(:,1)*p%phix+p%oo(:,2)*p%phiy,idiag_opmr)
         if (idiag_ozmr/=0) &
              call phizsum_mn_name_r(p%oo(:,3),idiag_ozmr)
         endif
@@ -2627,15 +2662,12 @@ use Mpicomm, only: stop_it
         idiag_ruxuymxy=0
         idiag_ruxuzmxy=0
         idiag_ruyuzmxy=0
-        !
         idiag_ruxm=0
         idiag_ruym=0
         idiag_ruzm=0
         idiag_rumax=0
         idiag_rufm=0
-        !
         idiag_dtu=0
-        !
         idiag_oum=0
         idiag_o2m=0
         idiag_orms=0
@@ -2657,10 +2689,8 @@ use Mpicomm, only: stop_it
         idiag_ormr=0
         idiag_opmr=0
         idiag_ozmr=0
-        !
         idiag_Marms=0
         idiag_Mamax=0
-        !
         idiag_fintm=0
         idiag_fextm=0
         idiag_duxdzma=0
@@ -2676,6 +2706,19 @@ use Mpicomm, only: stop_it
         idiag_fxbzm=0
         idiag_ruxuym=0
         idiag_ruxuymz=0
+        idiag_uguxm=0
+        idiag_uguym=0
+        idiag_uguzm=0
+        idiag_ugu2m=0
+        idiag_uguxmx=0
+        idiag_uguymx=0
+        idiag_uguzmx=0
+        idiag_uguxmy=0
+        idiag_uguymy=0
+        idiag_uguzmy=0
+        idiag_uguxmz=0
+        idiag_uguymz=0
+        idiag_uguzmz=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -2755,10 +2798,67 @@ use Mpicomm, only: stop_it
         call parse_name(iname,cname(iname),cform(iname),'uxfampim',idiag_uxfampim)
         call parse_name(iname,cname(iname),cform(iname),'uyfampim',idiag_uyfampim)
         call parse_name(iname,cname(iname),cform(iname),'uzfampim',idiag_uzfampim)
-
+        call parse_name(iname,cname(iname),cform(iname),'uguxm',idiag_uguxm)
+        call parse_name(iname,cname(iname),cform(iname),'uguym',idiag_uguym)
+        call parse_name(iname,cname(iname),cform(iname),'uguzm',idiag_uguzm)
+        call parse_name(iname,cname(iname),cform(iname),'ugu2m',idiag_ugu2m)
       enddo
 !
-!  check for those quantities for which we want xy-averages
+!  Check for those quantities for which we want yz-averages.
+!
+      do inamex=1,nnamex
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'uxmx',idiag_uxmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'uymx',idiag_uymx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'uzmx',idiag_uzmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
+            'ux2mx',idiag_ux2mx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
+            'uy2mx',idiag_uy2mx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
+            'uz2mx',idiag_uz2mx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
+            'uxuymx',idiag_uxuymx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
+            'uxuzmx',idiag_uxuzmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
+            'uyuzmx',idiag_uyuzmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'oumx',idiag_oumx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
+            'uguxmx',idiag_uguxmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
+            'uguymx',idiag_uguymx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
+            'uguzmx',idiag_uguzmx)
+      enddo
+!
+!  Check for those quantities for which we want xz-averages.
+!
+      do inamey=1,nnamey
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'uxmy',idiag_uxmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'uymy',idiag_uymy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'uzmy',idiag_uzmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
+            'ux2my',idiag_ux2my)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
+            'uy2my',idiag_uy2my)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
+            'uz2my',idiag_uz2my)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
+            'uxuymy',idiag_uxuymy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
+            'uxuzmy',idiag_uxuzmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
+            'uyuzmy',idiag_uyuzmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'oumy',idiag_oumy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
+            'uguxmy',idiag_uguxmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
+            'uguymy',idiag_uguymy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
+            'uguzmy',idiag_uguzmy)
+      enddo
+!
+!  Check for those quantities for which we want xy-averages.
 !
       do inamez=1,nnamez
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uxmz',idiag_uxmz)
@@ -2789,51 +2889,15 @@ use Mpicomm, only: stop_it
             'ekinz',idiag_ekinz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'u2mz',idiag_u2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'oumz',idiag_oumz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+            'uguxmz',idiag_uguxmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+            'uguymz',idiag_uguymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+            'uguzmz',idiag_uguzmz)
       enddo
 !
-!  check for those quantities for which we want xz-averages
-!
-      do inamey=1,nnamey
-        call parse_name(inamey,cnamey(inamey),cformy(inamey),'uxmy',idiag_uxmy)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey),'uymy',idiag_uymy)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey),'uzmy',idiag_uzmy)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'ux2my',idiag_ux2my)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'uy2my',idiag_uy2my)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'uz2my',idiag_uz2my)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'uxuymy',idiag_uxuymy)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'uxuzmy',idiag_uxuzmy)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'uyuzmy',idiag_uyuzmy)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey),'oumy',idiag_oumy)
-      enddo
-!
-!  check for those quantities for which we want yz-averages
-!
-      do inamex=1,nnamex
-        call parse_name(inamex,cnamex(inamex),cformx(inamex),'uxmx',idiag_uxmx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex),'uymx',idiag_uymx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex),'uzmx',idiag_uzmx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
-            'ux2mx',idiag_ux2mx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
-            'uy2mx',idiag_uy2mx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
-            'uz2mx',idiag_uz2mx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
-            'uxuymx',idiag_uxuymx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
-            'uxuzmx',idiag_uxuzmx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
-            'uyuzmx',idiag_uyuzmx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex),'oumx',idiag_oumx)
-      enddo
-!
-!  check for those quantities for which we want y-averages
+!  Check for those quantities for which we want y-averages.
 !
       do ixz=1,nnamexz
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'uxmxz',idiag_uxmxz)
