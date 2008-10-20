@@ -254,7 +254,7 @@ module Hydro
       real, dimension(nx) :: kdotxwt,cos_kdotxwt,sin_kdotxwt
       real :: kkx_aa,kky_aa,kkz_aa, fac, fpara, dfpara, ecost, esint, epst
       integer :: modeN
-      real :: sqrt2, sqrt21k1, WW=0.25, k21
+      real :: sqrt2, sqrt21k1, eps1=1., WW=0.25, k21
 !
       intent(in) :: f
       intent(inout) :: p
@@ -297,8 +297,9 @@ module Hydro
 ! uu
         if (lpencil(i_uu)) then
           if (headtt) print*,'Glen Roberts flow; kx_aa,ky_aa=',kkx_aa,kky_aa
-          p%uu(:,1)=+sin(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))
-          p%uu(:,2)=-cos(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))
+          eps1=1.-eps_kinflow
+          p%uu(:,1)=+sin(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))*eps1
+          p%uu(:,2)=-cos(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))*eps1
           p%uu(:,3)=+sin(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))*sqrt(2.)
         endif
 ! divu
@@ -309,8 +310,9 @@ module Hydro
       elseif (kinflow=='poshel-roberts') then
         if (headtt) print*,'Pos Helicity Roberts flow; kx_aa,ky_aa=',kkx_aa,kky_aa
         fac=ampl_kinflow
-        p%uu(:,1)=-fac*cos(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))
-        p%uu(:,2)=+fac*sin(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))
+        eps1=1.-eps_kinflow
+        p%uu(:,1)=-fac*cos(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))*eps1
+        p%uu(:,2)=+fac*sin(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))*eps1
         p%uu(:,3)=+fac*cos(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))*sqrt(2.)
         if (lpencil(i_divu)) p%divu=0.
 !
@@ -322,8 +324,9 @@ module Hydro
       elseif (kinflow=='xdir-roberts') then
         if (headtt) print*,'x-dir Roberts flow; ky_aa,kz_aa=',kky_aa,kkz_aa
         fac=ampl_kinflow
-        p%uu(:,2)=-fac*cos(kky_aa*y(m))*sin(kkz_aa*z(n))
-        p%uu(:,3)=+fac*sin(kky_aa*y(m))*cos(kkz_aa*z(n))
+        eps1=1.-eps_kinflow
+        p%uu(:,2)=-fac*cos(kky_aa*y(m))*sin(kkz_aa*z(n))*eps1
+        p%uu(:,3)=+fac*sin(kky_aa*y(m))*cos(kkz_aa*z(n))*eps1
         p%uu(:,1)=+fac*cos(kky_aa*y(m))*cos(kkz_aa*z(n))*sqrt(2.)
         if (lpencil(i_divu)) p%divu=0.
 !

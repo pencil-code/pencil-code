@@ -550,8 +550,8 @@ module Testfield
         uufluct=p%uu
       endif
 !
-!  multiply by exponential factor if different from zero
-!  Should use the actual time for substep (tshear or something)
+!  multiply by exponential factor if lam_testfield is different from zero
+!  Keep bamp1=1 for oscillatory fields.
 !
       if (lam_testfield/=0..or.om_testfield/=0.) then
         if (lam_testfield/=0.) then
@@ -561,7 +561,7 @@ module Testfield
         endif
         if ( om_testfield/=0.) then
           bamp=cos( om_testfield*t)
-          bamp1=2.*bamp
+          bamp1=1.
         endif
       endif
 !
