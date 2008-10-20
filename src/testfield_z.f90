@@ -53,7 +53,7 @@ module Testfield
   ! input parameters
   real, dimension(3) :: B_ext=(/0.,0.,0./)
   real, dimension (nx,3) :: bbb
-  real :: taainit=0.,daainit=0.
+  real :: taainit=0.,daainit=0.,taainit_previous=0.
   logical :: reinitialize_aatest=.false.
   logical :: zextent=.true.,lsoca=.false.,lsoca_jxb=.true.,lset_bbtest2=.false.
   logical :: luxb_as_aux=.false.,ljxb_as_aux=.false.,linit_aatest=.false.
@@ -554,9 +554,15 @@ module Testfield
 !  Should use the actual time for substep (tshear or something)
 !
       if (lam_testfield/=0..or.om_testfield/=0.) then
-        if (lam_testfield/=0.) bamp=exp(lam_testfield*t)
-        if ( om_testfield/=0.) bamp=cos( om_testfield*t)
-        bamp1=1./bamp
+        if (lam_testfield/=0.) then
+          taainit_previous=taainit-daainit
+          bamp=exp(lam_testfield*(t-taainit_previous))
+          bamp1=1./bamp
+        endif
+        if ( om_testfield/=0.) then
+          bamp=cos( om_testfield*t)
+          bamp1=2.*bamp
+        endif
       endif
 !
 !  do each of the 9 test fields at a time
