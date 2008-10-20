@@ -537,6 +537,11 @@ module Chemistry
 !  Pressure
 !
         if (lpencil(i_pp)) p%pp = Rgas*p%rho*p%TT*p%mu1
+       
+     ! print*,p%pp
+       !print*,'end of line'
+   !   print*,maxval(p%pp(:)), maxval(p%rho(:)),maxval(p%TT(:)),1./maxval(p%mu1(:)),Rgas
+
 !p%pp=1e5
 
 !  Specific heat at constant pressure
@@ -2912,7 +2917,8 @@ module Chemistry
       if (lroot) print*, 'Air density, g/cm^3:'
       if (lroot) print '(E10.3)',  PP*10./(k_B_cgs/m_u_cgs)*air_mass/TT
       if (lroot) print*, 'Air mean weight, g/mol', air_mass
-
+      if (lroot) print*, 'R', k_B_cgs/m_u_cgs
+      
       close(file_id)
   endsubroutine air_field
 !***************************************************************
