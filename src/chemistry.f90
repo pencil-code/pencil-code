@@ -729,7 +729,7 @@ module Chemistry
             do n=1,mz
              do m=1,my
                do i=1,mx
-                 T_local=exp(f(i,m,n,ilnTT))*unit_temperature 
+                 T_local=TT_full(i,m,n)*unit_temperature 
 
 !print*,'k,T_local,T_low,T_mid=',k,T_local,T_low,T_mid
                  if (T_local >=T_low .and. T_local <= T_mid) then
@@ -2206,7 +2206,7 @@ module Chemistry
 !
     Rcal=Rgas_unit_sys/4.14*1e-7
     T_cgs=p%TT*unit_temperature
-    T_cgs_full=exp(f(:,:,:,ilnTT))*unit_temperature
+    T_cgs_full=TT_full*unit_temperature
     rho_cgs=p%rho*unit_mass/unit_length**3
     p_atm=1e6*unit_length**3/unit_energy
     if (lwrite)  write(file_id,*)'T= ',   T_cgs
@@ -2260,7 +2260,7 @@ module Chemistry
 ! Internal energy
 !
       e_int_full=hYrho_full-Rgas*TT_full(:,:,:)*mu1_full
-      hYrho_full=hYrho_full*exp(f(:,:,:,ilnrho))
+      hYrho_full=hYrho_full*rho_full(:,:,:)
 !
 !  Dimensionless Standard-state molar entropy  S0/R
 !
@@ -2631,7 +2631,7 @@ module Chemistry
 
 
      lnT=f(:,:,:,ilnTT)+log(unit_temperature)
-     TT=exp(f(:,:,:,ilnTT))*unit_temperature
+     TT=TT_full*unit_temperature
      rho=rho_full*unit_mass/unit_length**3
 
 
