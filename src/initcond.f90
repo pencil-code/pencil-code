@@ -1594,7 +1594,7 @@ module Initcond
 !   8-apr-03/axel: coded
 !  23-may-04/anders: made structure for other input variables
 !
-      use Mpicomm
+      use Mpicomm, only: stop_it
       use EquationOfState, only: eoscalc,ilnrho_lnTT
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -3343,7 +3343,7 @@ module Initcond
                !
                if (ltemperature) then
                   f(:,:,j,ilnTT) = tmp
-               else
+               elseif (lentropy) then
                   f(:,:,j,iss) = (alog(gamma1/cs20)+tmp- &
                        gamma1*(f(l1,m1,j,ilnrho)-lnrho0))/gamma
                endif
@@ -3357,7 +3357,7 @@ module Initcond
             !
             if (ltemperature) then
                f(:,:,j,ilnTT) = tmp
-            else
+            elseif (lentropy) then
                f(:,:,j,iss) = (alog(gamma1/cs20)+tmp- &
                     gamma1*(f(l1,m1,j,ilnrho)-lnrho0))/gamma
             endif
