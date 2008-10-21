@@ -624,8 +624,17 @@ module Viscosity
 !  viscous force: nu*(del2u+graddivu/3+2S.glnrho)
 !  -- the correct expression for nu=const
 !
-        if(ldensity) then
-          p%fvisc=p%fvisc+2*nu*p%sglnrho+nu*(p%del2u+1./3.*p%graddivu)
+        if (ldensity) then
+          p%fvisc = p%fvisc + 2*nu*p%sglnrho+nu*(p%del2u + 1./3.*p%graddivu)
+          ! Tobi: This is not quite the full story in the presence of linear
+          ! shear. In this case the rate-of-strain tensor S has xy and yx
+          ! components
+          !   S_xy = S_yx = 1/2 (du_x/dy + du_y/dx + Sshear)
+          ! so that one must add
+          if (.false.) then
+            p%fvisc(:,1) = p%fvisc(:,1) + Sshear*nu*p%glnrho(:,2)
+            p%fvisc(:,2) = p%fvisc(:,2) + Sshear*nu*p%glnrho(:,1)
+          endif
         else
           p%fvisc=p%fvisc+nu*(p%del2u+1./3.*p%graddivu)
         endif
