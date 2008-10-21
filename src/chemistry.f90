@@ -2622,7 +2622,7 @@ module Chemistry
 !
    real, dimension (mx,my,mz,mfarray) :: f
    intent(in) :: f
-   real, dimension (mx,my,mz) :: Omega_kl, prefactor, lnT, TT, lnTjk, pp_full, rho, lnTk
+   real, dimension (mx,my,mz) :: Omega_kl, prefactor, lnT, TT, lnTjk, pp_full_cgs, rho, lnTk
    real, dimension (mx,my,mz) :: tmp
    integer :: k,j
    real :: eps_jk, sigma_jk, m_jk, delta_jk, delta_st
@@ -2635,9 +2635,9 @@ module Chemistry
      rho=rho_full*unit_mass/unit_length**3
 
 
-     pp_full = Rgas_unit_sys*mu1_full/unit_mass*rho*TT
+     pp_full_cgs = Rgas_unit_sys*mu1_full/unit_mass*rho*TT
 
-     prefactor=3./16.*sqrt(2.*k_B_cgs**3*TT**3)/pp_full/sqrt(pi)
+     prefactor=3./16.*sqrt(2.*k_B_cgs**3*TT**3)/pp_full_cgs/sqrt(pi)
 
 !DDDDDDDDDDDD     
      
