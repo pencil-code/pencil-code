@@ -780,11 +780,13 @@ module Chemistry
       if  (lone_spec) then
        nu_full=species_viscosity(:,:,:,1)/rho_full
       elseif (visc_simple) then
+         nu_dyn=0.
        do k=1,nchemspec 
          nu_dyn=nu_dyn+XX_full(:,:,:,k)*species_viscosity(:,:,:,k)
        enddo
         nu_full=nu_dyn/rho_full
       else 
+      
        do k=1,nchemspec
          do j=1,nchemspec
         !  if (j .ne. k) then
@@ -804,8 +806,6 @@ module Chemistry
            tmp_sum2=tmp_sum2+XX_full(:,:,:,j)*Phi(:,:,:,k,j) 
           enddo
          nu_dyn=nu_dyn+XX_full(:,:,:,k)*species_viscosity(:,:,:,k)/tmp_sum2
-
-
        enddo
         nu_full=nu_dyn/rho_full
       endif
