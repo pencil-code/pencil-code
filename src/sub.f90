@@ -50,6 +50,7 @@ module Sub
   public :: expand_cname
   public :: parse_name, save_name, max_name
   public :: max_mn_name,sum_mn_name,integrate_mn_name,sum_weighted_name
+  public :: sum_mn_name_halfy
   public :: surf_mn_name,sum_lim_mn_name
   public :: xysum_mn_name_z, xzsum_mn_name_y, yzsum_mn_name_x
   public :: phizsum_mn_name_r
@@ -466,6 +467,94 @@ module Sub
       endif
 !
     endsubroutine sum_mn_name
+!***********************************************************************
+    subroutine sum_mn_name_halfy(a,iname,lsqrt,lint,ipart)
+!
+!  successively calculate sum of a, which is supplied at each call.
+!  Start from zero if lfirstpoint=.true.
+!  TODO: for nonperiodic arrays we want to multiply boundary data by 1/2.
+!
+!   29-sep-08/dhruba: adapted from sum_mn_name
+!
+      use Cdata
+!
+      real, dimension (nx) :: a
+      real :: sum_name
+      real :: ppart=1.,qpart=0.
+      integer :: iname,isum
+      integer, optional :: ipart
+      logical, optional :: lsqrt, lint
+!
+      if (iname /= 0) then
+! northern of southern hemisphere
+        if(y(m).gt. yequator) then
+          sum_name=fname_half(iname,1)
+        else
+          sum_name=fname_half(iname,2)
+        endif
+!
+!  set fraction if old and new stuff
+!
+        if (present(ipart)) then
+          ppart=1./float(ipart)
+          if (lfirstpoint) then
+            qpart=1.-ppart
+          else
+            qpart=1.
+          endif
+!
+!  use it
+!
+          if(lspherical_coords) then
+            sum_name=qpart*sum_name+ppart*sum(r2_weight*sinth_weight(m)*a)
+          elseif (lcylindrical_coords) then
+            sum_name=qpart*sum_name+ppart*sum(rcyl_weight*a)
+          else
+            sum_name=qpart*sum_name+ppart*sum(a)
+          endif
+!
+!  normal method
+!
+        else
+          if (lfirstpoint) then
+            sum_name=0.
+            if (lspherical_coords) then
+              sum_name=sum(r2_weight*sinth_weight(m)*a)
+            elseif (lcylindrical_coords) then
+              sum_name=sum(rcyl_weight*a)
+            else
+              sum_name=sum(a)
+            endif
+          else
+            if(lspherical_coords) then
+              sum_name=sum_name+sum(r2_weight*sinth_weight(m)*a)
+            elseif (lcylindrical_coords) then
+              sum_name=sum_name+sum(rcyl_weight*a)
+            else
+              sum_name=sum_name+sum(a)
+            endif
+          endif
+        endif
+!
+        if(y(m).gt. yequator) then
+          fname_half(iname,1)=sum_name
+        else
+          fname_half(iname,2)=sum_name
+        endif
+        !
+        !  set corresponding entry in itype_name
+        !
+        if (present(lsqrt)) then
+          itype_name(iname)=ilabel_sum_sqrt
+        elseif (present(lint)) then
+          itype_name(iname)=ilabel_integrate
+        else
+          itype_name(iname)=ilabel_sum
+        endif
+!
+      endif
+!
+    endsubroutine sum_mn_name_halfy
 !***********************************************************************
     subroutine sum_weighted_name(a,weight,iname,lsqrt)
 !

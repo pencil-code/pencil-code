@@ -66,7 +66,7 @@
         lrun = .true.
 !
         call initialize_messages()
-!b
+!
 !  initialize MPI and register physics modules
 !  (must be done before lroot can be used, for example)
 !

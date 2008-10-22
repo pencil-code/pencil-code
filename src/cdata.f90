@@ -280,6 +280,16 @@ module Cdata
   logical :: ltime_integrals=.false.
   character (len=1) :: slice_position='p'
   real :: nVol,nVol1  !  For calculating averages in non-cartesian coordinates
+! Averages of half the computational box:
+! fname_half has two indices, the first contains the quantity averaged
+! over northern hemisphere and the second contains the 
+! quantity averaged over southern hemisphere.
+! yequator = [xyz0(2)+0.5*Lxyz(2) assigned in start.f90   
+  real :: yequator
+  integer, parameter :: mname_half=20
+  integer, dimension (mname_half) :: itype_name_half=0.
+  real, dimension (mname_half,2) :: fname_half
+  character (len=30) :: cname_half(mname_half)
 !  Coordinates of the point where some quantities can be printed.
   integer :: lpoint=(l1+l2)/2,mpoint=(m1+m2)/2,npoint=(n1+n2)/2
   integer :: lpoint2=(l1+l2)/4,mpoint2=(m1+m2)/4,npoint2=(n1+n2)/4

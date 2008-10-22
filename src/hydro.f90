@@ -325,7 +325,16 @@ module Hydro
   integer :: idiag_fxbxm=0      ! DIAG_DOC: 
   integer :: idiag_fxbym=0      ! DIAG_DOC: 
   integer :: idiag_fxbzm=0      ! DIAG_DOC: 
-
+  integer :: idiag_urmsn=0      ! DIAG_DOC: $U_{\rm rms}$ over north hemisphere
+  integer :: idiag_oumn=0        ! DIAG_DOC: $\left<\boldsymbol{\omega}
+                                ! DIAG_DOC:  \cdot\uv\right>$ over north hemisphere
+  integer :: idiag_ormsn=0       ! DIAG_DOC: $\left<\boldsymbol{\omega}^2
+                                ! DIAG_DOC:   \right>^{1/2}$ over north hemisphere
+  integer :: idiag_urmss=0      ! DIAG_DOC: $U_{\rm rms}$ over south hemisphere
+  integer :: idiag_oums=0        ! DIAG_DOC: $\left<\boldsymbol{\omega}
+                                ! DIAG_DOC:  \cdot\uv\right>$ over south hemisphere
+  integer :: idiag_ormss=0       ! DIAG_DOC: $\left<\boldsymbol{\omega}^2
+                                ! DIAG_DOC:   \right>^{1/2}$ over south hemisphere
   contains
 
 !***********************************************************************
@@ -1001,16 +1010,19 @@ module Hydro
           idiag_oxm /=0 .or. idiag_oym /=0 .or. idiag_ozm /=0 .or. &
           idiag_oxoym/=0 .or. idiag_oxozm/=0 .or. idiag_oyozm/=0) &
           lpenc_diagnos(i_oo)=.true.
-      if (idiag_orms/=0 .or. idiag_omax/=0 .or. idiag_o2m/=0) &
+      if (idiag_orms/=0 .or. idiag_omax/=0 .or. idiag_o2m/=0 .or. &
+          idiag_ormsn/=0 .or. idiag_ormss/=0) &
           lpenc_diagnos(i_o2)=.true.
-      if (idiag_oum/=0 .or. idiag_oumx/=0.or.idiag_oumy/=0.or.idiag_oumz/=0) &
+      if (idiag_oum/=0 .or. idiag_oumx/=0.or.idiag_oumy/=0.or.idiag_oumz/=0 .or. &
+           idiag_oumn/=0 .or. idiag_oums/=0 ) &
           lpenc_diagnos(i_ou)=.true.
       if (idiag_Marms/=0 .or. idiag_Mamax/=0) lpenc_diagnos(i_Ma2)=.true.
       if (idiag_u3u21m/=0) lpenc_diagnos(i_u3u21)=.true.
       if (idiag_u1u32m/=0) lpenc_diagnos(i_u1u32)=.true.
       if (idiag_u2u13m/=0) lpenc_diagnos(i_u2u13)=.true.
       if (idiag_urms/=0 .or. idiag_umax/=0 .or. idiag_rumax/=0 .or. &
-          idiag_u2m/=0 .or. idiag_um2/=0 .or. idiag_u2mz/=0) &
+          idiag_u2m/=0 .or. idiag_um2/=0 .or. idiag_u2mz/=0 .or. &
+          idiag_urmsn/=0 .or. idiag_urmss/=0) &
           lpenc_diagnos(i_u2)=.true.
       if (idiag_duxdzma/=0 .or. idiag_duydzma/=0) lpenc_diagnos(i_uij)=.true.
       if (idiag_fmassz/=0 .or. idiag_ruxuym/=0 .or. idiag_ruxuymz/=0 .or. &
@@ -1451,6 +1463,8 @@ use Mpicomm, only: stop_it
         if (headtt.or.ldebug) print*,'duu_dt: Calculate maxima and rms values...'
         if (idiag_dtu/=0) call max_mn_name(advec_uu/cdt,idiag_dtu,l_dt=.true.)
         if (idiag_urms/=0)   call sum_mn_name(p%u2,idiag_urms,lsqrt=.true.)
+!        if (idiag_urmsn/=0)   call sum_mn_name_halfy(p%u2,idiag_urmsn,lsqrt=.true.)
+!        if (idiag_urmss/=0)   call sum_mn_name_halfy(p%u2,idiag_urmss,lsqrt=.true.)
         if (idiag_umax/=0)   call max_mn_name(p%u2,idiag_umax,lsqrt=.true.)
         if (idiag_uzrms/=0) &
             call sum_mn_name(p%uu(:,3)**2,idiag_uzrms,lsqrt=.true.)

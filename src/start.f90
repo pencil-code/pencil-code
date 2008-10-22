@@ -182,6 +182,7 @@
           endif
         enddo
         xyz1=xyz0+Lxyz
+        yequator=xyz0(2)+0.5*Lxyz(2)
 !
 !  Abbreviations
 !
