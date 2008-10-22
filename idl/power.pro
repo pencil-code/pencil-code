@@ -107,7 +107,9 @@ size=2*!pi
 first='true'
 nx=mx-nghostx*2
 if  keyword_set(v1) then begin
-  if v1 EQ "_phiu" then begin
+  if ((v1 EQ "_phiu") OR (v1 EQ "_phi_kin") $
+       OR (v1 EQ "hel_phi_kin") OR (v1 EQ "hel_phi_mag") $
+       OR (v1 EQ "_phib") OR (v1 EQ "_phi_mag") ) then begin
      nx=mz-nghostz*2
      pc_read_grid,o=grid,/quiet
      size=grid.Lz
@@ -122,7 +124,9 @@ wavenumbers=indgen(imax)*k0
 k=findgen(imax)+1.
 k=findgen(imax)
 if  keyword_set(v1) then begin
-  if v1 EQ "_phiu" then begin
+  if ((v1 EQ "_phiu") OR (v1 EQ "_phi_kin") $
+       OR (v1 EQ "hel_phi_kin") OR (v1 EQ "hel_phi_mag") $
+       OR (v1 EQ "_phib") OR (v1 EQ "_phi_mag") ) then begin
     k = k*k0   
   end
 end
