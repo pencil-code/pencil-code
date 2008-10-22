@@ -98,6 +98,7 @@ module Slices
 !
   real, public :: tvid
   integer, public :: nvid
+  real :: tslice
 
   contains
 
@@ -132,6 +133,11 @@ module Slices
 !  This routine sets lvid=T whenever its time to write a slice
 !
       call update_snaptime(file,tvid,nvid,dvid,t,lvid,ch,ENUM=.false.)
+!
+!  Save current time so that the time that is written out in wslice() is not
+!  from the next time step
+!
+      if (lvid) tslice = t
 !
     endsubroutine wvid_prepare
 !***********************************************************************
@@ -531,7 +537,7 @@ module Slices
            (lwrite_slice_xz .and.index(filename,'xz')>0) .or. &
            (lwrite_slice_yz .and.index(filename,'yz')>0) ) then
         open(1,file=filename,form='unformatted',position='append')
-        write(1) a,t,pos
+        write(1) a,tslice,pos
         close(1)
       endif
 !
