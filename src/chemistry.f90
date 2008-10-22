@@ -51,6 +51,7 @@ module Chemistry
   logical :: lheatc_chemistry=.false.
 
   logical :: BinDif_simple=.false.
+  logical :: visc_simple=.false.
   
   logical :: lkreactions_profile=.false.
   integer :: nreactions=0,nreactions1=0,nreactions2=0
@@ -98,13 +99,13 @@ module Chemistry
 ! input parameters
   namelist /chemistry_init_pars/ &
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
-      amplchemk,amplchemk2, Natalia_thoughts,chem_diff,nu_spec, BinDif_simple
+      amplchemk,amplchemk2, Natalia_thoughts,chem_diff,nu_spec, BinDif_simple, visc_simple
 
 ! run parameters
   namelist /chemistry_run_pars/ &
       lkreactions_profile,kreactions_profile,kreactions_profile_width, &
       chem_diff,chem_diff_prefactor, nu_spec, ldiffusion, ladvection, &
-      lreactions,lchem_cdtc,lheatc_chemistry, BinDif_simple
+      lreactions,lchem_cdtc,lheatc_chemistry, BinDif_simple, visc_simple
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -778,7 +779,12 @@ module Chemistry
 
       if  (lone_spec) then
        nu_full=species_viscosity(:,:,:,1)/rho_full
-      else
+      elseif (visc_simple) then
+       do k=1,nchemspec 
+         nu_dyn=nu_dyn+XX_full(:,:,:,k)*species_viscosity(:,:,:,k)
+       enddo
+        nu_full=nu_dyn/rho_full
+      else 
        do k=1,nchemspec
          do j=1,nchemspec
         !  if (j .ne. k) then
@@ -799,11 +805,12 @@ module Chemistry
           enddo
          nu_dyn=nu_dyn+XX_full(:,:,:,k)*species_viscosity(:,:,:,k)/tmp_sum2
 
+
        enddo
         nu_full=nu_dyn/rho_full
-
       endif
 
+      
 !
 !  Diffusion coeffisient of a mixture
 !
@@ -834,14 +841,14 @@ module Chemistry
 !  Artificial Viscosity of a mixture
 !
 
-        if (maxval(nu_spec)>0) then
-         nu_dyn=0.
-         tmp_sum2=0.
-           do k=1,nchemspec 
-           nu_dyn=nu_dyn+XX_full(:,:,:,k)*nu_spec(k)!/tmp_sum2
-           enddo
-           nu_art_full=nu_dyn/rho_full
-        endif
+      !  if (maxval(nu_spec)>0) then
+      !   nu_dyn=0.
+      !   tmp_sum2=0.
+      !     do k=1,nchemspec 
+      !     nu_dyn=nu_dyn+XX_full(:,:,:,k)*nu_spec(k)!/tmp_sum2
+      !     enddo
+      !     nu_art_full=nu_dyn/rho_full
+      !  endif
 !
 !   Thermal diffusivity 
 !
