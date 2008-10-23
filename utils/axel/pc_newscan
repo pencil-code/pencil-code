@@ -1,15 +1,26 @@
-#!/bin/bash
+#!/bin/csh
 #
 #  $Id: pc_newrun 9993 2008-10-22 07:38:25Z boris.dintrans $
 #
+#  Usage:
+#    pc_newscan scan_newname [scan_newdir]
+#
 #  assume that one is in the old directory
 #
-newdir=$1
-olddir=`pwd`
+if ($#argv == 2) then
+  newname=$1
+  newdir=$2'/'$1
+  olddir=`pwd`
+else
+  newname=$1
+  newdir='../'$1
+  olddir=`pwd`
+endif
 #
 echo $olddir
 echo $newdir
 #
+mkdir $newdir
 cd $newdir
 ls
 #
@@ -24,10 +35,13 @@ cp templates/* $newdir/templates
 #
 #  check in everything (hope you are online!)
 #
-cd $newdir/bin
-cvs add *
+cd $newdir
+cd ..
+cvs add $newname
+cd $newname
+cvs add bin idl templates
 #
-cd ../idl
+cd bin
 cvs add *
 #
 cd ../templates
