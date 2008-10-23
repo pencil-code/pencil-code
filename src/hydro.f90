@@ -14,6 +14,7 @@
 ! PENCILS PROVIDED divu; oo(3); o2; ou; u2; uij(3,3); uu(3)
 ! PENCILS PROVIDED sij(3,3); sij2; uij5(3,3); ugu(3); ugu2; oij(3,3); qq(3)
 ! PENCILS PROVIDED u3u21; u1u32; u2u13; del2u(3); del4u(3); del6u(3)
+! PENCILS PROVIDED u2u31; u3u12; u1u23
 ! PENCILS PROVIDED graddivu(3); del6u_bulk(3); grad5divu(3)
 !
 !***************************************************************
@@ -237,6 +238,15 @@ module Hydro
   integer :: idiag_u3u21m=0     ! DIAG_DOC: 
   integer :: idiag_u1u32m=0     ! DIAG_DOC: 
   integer :: idiag_u2u13m=0     ! DIAG_DOC: 
+  integer :: idiag_u2u31m=0     ! DIAG_DOC: 
+  integer :: idiag_u3u12m=0     ! DIAG_DOC: 
+  integer :: idiag_u1u23m=0     ! DIAG_DOC: 
+  integer :: idiag_u3u21mz=0    ! DIAG_DOC: 
+  integer :: idiag_u1u32mz=0    ! DIAG_DOC: 
+  integer :: idiag_u2u13mz=0    ! DIAG_DOC: 
+  integer :: idiag_u2u31mz=0    ! DIAG_DOC: 
+  integer :: idiag_u3u12mz=0    ! DIAG_DOC: 
+  integer :: idiag_u1u23mz=0    ! DIAG_DOC: 
   integer :: idiag_urmphi=0     ! DIAG_DOC: 
   integer :: idiag_upmphi=0     ! DIAG_DOC: 
   integer :: idiag_uzmphi=0     ! DIAG_DOC: 
@@ -1017,9 +1027,12 @@ module Hydro
            idiag_oumn/=0 .or. idiag_oums/=0 ) &
           lpenc_diagnos(i_ou)=.true.
       if (idiag_Marms/=0 .or. idiag_Mamax/=0) lpenc_diagnos(i_Ma2)=.true.
-      if (idiag_u3u21m/=0) lpenc_diagnos(i_u3u21)=.true.
-      if (idiag_u1u32m/=0) lpenc_diagnos(i_u1u32)=.true.
-      if (idiag_u2u13m/=0) lpenc_diagnos(i_u2u13)=.true.
+      if (idiag_u3u21m/=0 .or. idiag_u3u21mz/=0) lpenc_diagnos(i_u3u21)=.true.
+      if (idiag_u1u32m/=0 .or. idiag_u1u32mz/=0) lpenc_diagnos(i_u1u32)=.true.
+      if (idiag_u2u13m/=0 .or. idiag_u2u13mz/=0) lpenc_diagnos(i_u2u13)=.true.
+      if (idiag_u2u31m/=0 .or. idiag_u2u31mz/=0) lpenc_diagnos(i_u2u31)=.true.
+      if (idiag_u3u12m/=0 .or. idiag_u3u12mz/=0) lpenc_diagnos(i_u3u12)=.true.
+      if (idiag_u1u23m/=0 .or. idiag_u1u23mz/=0) lpenc_diagnos(i_u1u23)=.true.
       if (idiag_urms/=0 .or. idiag_umax/=0 .or. idiag_rumax/=0 .or. &
           idiag_u2m/=0 .or. idiag_um2/=0 .or. idiag_u2mz/=0 .or. &
           idiag_urmsn/=0 .or. idiag_urmss/=0) &
@@ -1087,7 +1100,10 @@ module Hydro
       endif
       if (lpencil_in(i_u3u21) .or. &
           lpencil_in(i_u1u32) .or. &
-          lpencil_in(i_u2u13)) then
+          lpencil_in(i_u2u13) .or. &
+          lpencil_in(i_u2u31) .or. &
+          lpencil_in(i_u3u12) .or. &
+          lpencil_in(i_u1u23)) then
         lpencil_in(i_uu)=.true.
         lpencil_in(i_uij)=.true.
       endif
@@ -1198,11 +1214,14 @@ use Mpicomm, only: stop_it
 ! ugu2
       if (lpencil(i_ugu2)) call dot2_mn(p%ugu,p%ugu2)
 !
-! u3u21, u1u32, u2u13
+! u3u21, u1u32, u2u13, u2u31, u3u12, u1u23
 !
       if (lpencil(i_u3u21)) p%u3u21=p%uu(:,3)*p%uij(:,2,1)
       if (lpencil(i_u1u32)) p%u1u32=p%uu(:,1)*p%uij(:,3,2)
       if (lpencil(i_u2u13)) p%u2u13=p%uu(:,2)*p%uij(:,1,3)
+      if (lpencil(i_u2u31)) p%u2u31=p%uu(:,2)*p%uij(:,3,1)
+      if (lpencil(i_u3u12)) p%u3u12=p%uu(:,3)*p%uij(:,1,2)
+      if (lpencil(i_u1u23)) p%u1u23=p%uu(:,1)*p%uij(:,2,3)
 !
 ! del4u and del6u
 !
@@ -1541,11 +1560,19 @@ use Mpicomm, only: stop_it
         if (idiag_Marms/=0) call sum_mn_name(p%Ma2,idiag_Marms,lsqrt=.true.)
         if (idiag_Mamax/=0) call max_mn_name(p%Ma2,idiag_Mamax,lsqrt=.true.)
 !
-!  alp11=<u3*u2,1>,  alp22=<u1*u3,2>,  alp33=<u2*u1,3>
+!  Diagonal components of alpha using FOSA:
+!    alp11=<u3*u2,1>-<u2*u3,1> 
+!    alp22=<u1*u3,2>-<u3*u1,2>
+!    alp33=<u2*u1,3>-<u1*u2,3>
+!  For fully periodic domains it is sufficient to compute, e.g., only:
+!    alp11=<u3*u2,1>,  alp22=<u1*u3,2>,  alp33=<u2*u1,3>
 !
         if (idiag_u3u21m/=0) call sum_mn_name(p%u3u21,idiag_u3u21m)
         if (idiag_u1u32m/=0) call sum_mn_name(p%u1u32,idiag_u1u32m)
         if (idiag_u2u13m/=0) call sum_mn_name(p%u2u13,idiag_u2u13m)
+        if (idiag_u2u31m/=0) call sum_mn_name(p%u2u31,idiag_u2u31m)
+        if (idiag_u3u12m/=0) call sum_mn_name(p%u3u12,idiag_u3u12m)
+        if (idiag_u1u23m/=0) call sum_mn_name(p%u1u23,idiag_u1u23m)
 !
 ! fourier amplitude f(t) for non-axisymmetric waves: 
 !         u_x = f(t)*exp[i(kx*x+ky*y+kz*z)]
@@ -1655,6 +1682,12 @@ use Mpicomm, only: stop_it
         if (idiag_uguxmz/=0) call xysum_mn_name_z(p%ugu(:,1),idiag_uguxmz)
         if (idiag_uguymz/=0) call xysum_mn_name_z(p%ugu(:,2),idiag_uguymz)
         if (idiag_uguzmz/=0) call xysum_mn_name_z(p%ugu(:,3),idiag_uguzmz)
+        if (idiag_u3u21mz/=0) call xysum_mn_name_z(p%u3u21,idiag_u3u21mz)
+        if (idiag_u1u32mz/=0) call xysum_mn_name_z(p%u1u32,idiag_u1u32mz)
+        if (idiag_u2u13mz/=0) call xysum_mn_name_z(p%u2u13,idiag_u2u13mz)
+        if (idiag_u2u31mz/=0) call xysum_mn_name_z(p%u2u31,idiag_u2u31mz)
+        if (idiag_u3u12mz/=0) call xysum_mn_name_z(p%u3u12,idiag_u3u12mz)
+        if (idiag_u1u23mz/=0) call xysum_mn_name_z(p%u1u23,idiag_u1u23mz)
 !  phi-z averages
         if (idiag_u2mr/=0)   call phizsum_mn_name_r(p%u2,idiag_u2mr)
         if (idiag_urmr/=0) &
@@ -2635,6 +2668,15 @@ use Mpicomm, only: stop_it
         idiag_u3u21m=0
         idiag_u1u32m=0
         idiag_u2u13m=0
+        idiag_u2u31m=0
+        idiag_u3u12m=0
+        idiag_u1u23m=0
+        idiag_u3u21mz=0
+        idiag_u1u32mz=0
+        idiag_u2u13mz=0
+        idiag_u2u31mz=0
+        idiag_u3u12mz=0
+        idiag_u1u23mz=0
         idiag_urmphi=0
         idiag_upmphi=0
         idiag_uzmphi=0
@@ -2794,6 +2836,9 @@ use Mpicomm, only: stop_it
         call parse_name(iname,cname(iname),cform(iname),'u3u21m',idiag_u3u21m)
         call parse_name(iname,cname(iname),cform(iname),'u1u32m',idiag_u1u32m)
         call parse_name(iname,cname(iname),cform(iname),'u2u13m',idiag_u2u13m)
+        call parse_name(iname,cname(iname),cform(iname),'u2u31m',idiag_u2u31m)
+        call parse_name(iname,cname(iname),cform(iname),'u3u12m',idiag_u3u12m)
+        call parse_name(iname,cname(iname),cform(iname),'u1u23m',idiag_u1u23m)
         call parse_name(iname,cname(iname),cform(iname),'uxpt',idiag_uxpt)
         call parse_name(iname,cname(iname),cform(iname),'uypt',idiag_uypt)
         call parse_name(iname,cname(iname),cform(iname),'uzpt',idiag_uzpt)
@@ -2909,6 +2954,18 @@ use Mpicomm, only: stop_it
             'uguymz',idiag_uguymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
             'uguzmz',idiag_uguzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+             'u3u21mz',idiag_u3u21mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+             'u1u32mz',idiag_u1u32mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+             'u2u13mz',idiag_u2u13mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+             'u2u31mz',idiag_u2u31mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+             'u3u12mz',idiag_u3u12mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+             'u1u23mz',idiag_u1u23mz)
       enddo
 !
 !  Check for those quantities for which we want y-averages.
@@ -3020,6 +3077,15 @@ use Mpicomm, only: stop_it
         write(3,*) 'i_u3u21m=',idiag_u3u21m
         write(3,*) 'i_u1u32m=',idiag_u1u32m
         write(3,*) 'i_u2u13m=',idiag_u2u13m
+        write(3,*) 'i_u2u31m=',idiag_u3u21m
+        write(3,*) 'i_u3u12m=',idiag_u1u32m
+        write(3,*) 'i_u1u23m=',idiag_u2u13m
+        write(3,*) 'i_u3u21mz=',idiag_u3u21mz
+        write(3,*) 'i_u1u32mz=',idiag_u1u32mz
+        write(3,*) 'i_u2u13mz=',idiag_u2u13mz
+        write(3,*) 'i_u2u31mz=',idiag_u3u21mz
+        write(3,*) 'i_u3u12mz=',idiag_u1u32mz
+        write(3,*) 'i_u1u23mz=',idiag_u2u13mz
         write(3,*) 'i_uxfampm=',idiag_uxfampm
         write(3,*) 'i_uyfampm=',idiag_uyfampm
         write(3,*) 'i_uzfampm=',idiag_uzfampm
