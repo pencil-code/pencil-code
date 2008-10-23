@@ -10,21 +10,15 @@
 #     new run1 run2
 #  Alternative usage, if one is already in run1
 #     new run2
+#  Options: -s or --same_source also mirrors the source directory
 #
 
-while expr "$1" : - ; do
-  case $1 in
-    -s) 
-      same_source=1
-      echo "Using same source directory"
-      shift
-    ;;
-    --same-source)
-      same_source=1
-      echo "Using same source directory"
-      shift
-  esac
-done
+case $1 in
+  ""|"-s"|"--same_source")
+   echo "Using same source directory"
+   same_source=1
+   shift
+esac
 
 if [ $# -eq 2 ]; then
   olddir=`pwd`/$1
@@ -34,6 +28,7 @@ else
   cd ..
   newdir=`pwd`/$1
 fi
+
 #
 #  save current working directory and make new run directory
 #  and go there.
