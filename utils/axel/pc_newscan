@@ -1,0 +1,38 @@
+#!/bin/bash
+#
+#  $Id: pc_newrun 9993 2008-10-22 07:38:25Z boris.dintrans $
+#
+#  assume that one is in the old directory
+#
+newdir=$1
+olddir=`pwd`
+#
+echo $olddir
+echo $newdir
+#
+cd $newdir
+ls
+#
+mkdir bin idl templates
+cd $olddir
+#
+pc_newrun master $newdir/master
+#
+cp bin/* $newdir/bin
+cp idl/* $newdir/idl
+cp templates/* $newdir/templates
+#
+#  check in everything (hope you are online!)
+#
+cd $newdir/bin
+cvs add *
+#
+cd ../idl
+cvs add *
+#
+cd ../templates
+cvs add *
+#
+cd ../master
+cvsci_run
+#
