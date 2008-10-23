@@ -33,7 +33,7 @@ module Chemistry
   include 'chemistry.h'
 
   real :: Rgas, Rgas_unit_sys=1.
-  real, dimension (mx,my,mz) :: cp_full,cv_full,mu1_full, nu_full, lambda_full, rho_full, nu_art_full
+  real, dimension (mx,my,mz) :: cp_full,cv_full,mu1_full, nu_full, lambda_full, rho_full, nu_art_full=0.
   real, dimension (mx,my,mz,nchemspec) :: cvspec_full
    real, dimension (mx,my,mz,nchemspec) ::  cp_R_spec
   real, dimension (mx,my,mz) ::  TT_full
