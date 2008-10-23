@@ -3907,15 +3907,15 @@ module Entropy
         dlnrho=-gamma*g(i+1)/cs20
       elseif (r(i+1) > r_bcz) then
 ! convective zone
-        if (nzgrid == 1) then
-          dtemp=lumi(i+1)/(2.*pi*r(i+1))/hcond(i+1)
-        else
-          dtemp=lumi(i+1)/(4.*pi*r(i+1)**2)/hcond(i+1)
-        endif
-        dlnrho=mpoly0*dtemp/temp(i+1)
-! force adiabatic stratification with m0=3/2
-!       dtemp=-g(i+1)
-!       dlnrho=3./2.*dtemp/temp(i+1)
+!       if (nzgrid == 1) then
+!         dtemp=lumi(i+1)/(2.*pi*r(i+1))/hcond(i+1)
+!       else
+!         dtemp=lumi(i+1)/(4.*pi*r(i+1)**2)/hcond(i+1)
+!       endif
+!       dlnrho=mpoly0*dtemp/temp(i+1)
+! force adiabatic stratification with m0=3/2 (assume cp=1)
+        dtemp=-g(i+1)
+        dlnrho=3./2.*dtemp/temp(i+1)
       else
 ! radiative zone
         if (nzgrid == 1) then
