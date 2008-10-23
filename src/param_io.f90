@@ -130,7 +130,7 @@ module Param_IO
        lpencil_check,lpencil_check_diagnos_opti,lpencil_init,lwrite_2d, &
        lbidiagonal_derij,lisotropic_advection, &
        crash_file_dtmin_factor,niter_poisson, &
-       lADI,ltestperturb
+       lADI,ltestperturb,eps_rkf, timestep_scaling
   contains
 
 !***********************************************************************

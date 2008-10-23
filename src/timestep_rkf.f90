@@ -12,7 +12,6 @@ module Timestep
   public :: rk_2n, border_profiles, timestep_autopsy
 
   ! Parameters for adaptive time stepping
-  real, parameter :: eps              = 1e-8
   real, parameter :: safety           = 0.9
   real, parameter :: dt_decrease      = -0.25
   real, parameter :: dt_increase      = -0.20
@@ -160,7 +159,7 @@ module Timestep
       real, intent(inout) :: errmax
       real :: errmaxs
       integer :: j,lll
-      character (len=20) :: timestep_scaling='cons_err'
+      
 
 
       df=0.
@@ -232,7 +231,7 @@ module Timestep
 
           ! Get the maximum error over the whole field
           !
-          select case(timestep_scaling)
+          select case(timestep_scaling(j))
           case('per_var_err')
             !
             ! Per variable error
@@ -263,13 +262,19 @@ module Timestep
             enddo
             errmaxs = max(maxval(abs(err/scal)),errmaxs)
             !
+          case('none')
+            !
+            ! No error check 
+            !
+            errmaxs = 0
+            !
           endselect
           !
         enddo; enddo; enddo
         !
         ! Divide your maximum error by the required accuracy
         !
-        errmaxs=errmaxs/eps
+        errmaxs=errmaxs/eps_rkf
         !
       call mpiallreduce_max(errmaxs,errmax)
 
