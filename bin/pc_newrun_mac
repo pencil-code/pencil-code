@@ -1,39 +1,53 @@
 #!/bin/bash 
 #
-#  $Id$
+#  $Id: pc_newrun 9993 2008-10-22 07:38:25Z boris.dintrans $
 #
 #  This script uses mkdatadir which links the subdirectory data
 #  to some data disk (which is machine dependent and therefore
 #  you may want to adapt mkdatadir for your particular machine).
 #
 #  Usage:
-#     new run1 run2
+#     pc_new run1 run2
 #  Alternative usage, if one is already in run1
-#     new run2
+#     pc_new run2
+#  Options: -s or --same_source allows to also copy the source directory
 #
 
-while expr "$1" : - ; do
-  case $1 in
-    -s) 
-      same_source=1
-      echo "Using same source directory"
-      shift
-    ;;
-    --same-source)
-      same_source=1
-      echo "Using same source directory"
-      shift
-  esac
-done
+#while expr "$1" : - ; do
+#  case $1 in
+#    -s)
+#      same_source=1
+#      echo "Using same source directory"
+#      shift
+#    ;;
+#    --same-source)
+#      same_source=1
+#      echo "Using same source directory"
+#      shift
+#  esac
+#done
+
+# 22oct08/dintrans: simpler version which is compatible with MAC's Tiger
+if [ "${1##*.}" == "-s" ]; then
+  same_source=1
+  echo "Using same source directory"
+elif [ "${1##*.}" == "--same_source" ]; then
+  same_source=1
+  echo "Using same source directory"
+fi
 
 if [ $# -eq 2 ]; then
   olddir=`pwd`/$1
   newdir=`pwd`/$2
+elif [ $# -eq 3 ]; then
+  olddir=`pwd`/$2
+  newdir=`pwd`/$3
 else
   olddir=`pwd`
   cd ..
   newdir=`pwd`/$1
 fi
+
 #
 #  save current working directory and make new run directory
 #  and go there.
