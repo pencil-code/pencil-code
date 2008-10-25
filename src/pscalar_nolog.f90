@@ -57,13 +57,13 @@ module Pscalar
   real :: pscalar_diff_hyper3=0.0, rhoccm=0.0, cc2m=0.0, gcc2m=0.0
   real :: pscalar_sink=0.0, Rpscalar_sink=0.5
   real :: lam_gradC=0., om_gradC=0.
-  logical :: lpscalar_sink
+  logical :: lpscalar_sink, lgradC_profile=.false.
 
   namelist /pscalar_run_pars/ &
        pscalar_diff,nopscalar,tensor_pscalar_diff,gradC0,soret_diff, &
        pscalar_diff_hyper3,reinitalize_lncc,reinitalize_cc, &
        lpscalar_sink,pscalar_sink,Rpscalar_sink, &
-       lam_gradC, om_gradC
+       lam_gradC, om_gradC, lgradC_profile
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rhoccm=0, idiag_ccmax=0, idiag_ccmin=0., idiag_ccm=0
@@ -490,6 +490,12 @@ module Pscalar
           gradC_fact=lam_gradC_fact*om_gradC_fact
         endif
 !
+!  possibility of an additional z-profile on gradC_fact
+!
+        if (lgradC_profile) then
+          gradC_fact=gradC_fact*cos(z(n))
+        endif
+!
 !  add diffusion of imposed spatially constant gradient of c.
 !  This makes sense really only for periodic boundary conditions
 !
@@ -528,7 +534,11 @@ module Pscalar
         if (idiag_uxcm/=0)    call sum_mn_name(p%uu(:,1)*p%cc,idiag_uxcm)
         if (idiag_uycm/=0)    call sum_mn_name(p%uu(:,2)*p%cc,idiag_uycm)
         if (idiag_uzcm/=0)    call sum_mn_name(p%uu(:,3)*p%cc,idiag_uzcm)
-        if (idiag_ucm/=0)     call sum_mn_name(p%uu(:,3)*p%cc,idiag_ucm)
+        if (lgradC_profile) then
+          if (idiag_ucm/=0)   call sum_mn_name(2.*cos(z(n))*p%uu(:,3)*p%cc,idiag_ucm)
+        else
+          if (idiag_ucm/=0)   call sum_mn_name(p%uu(:,3)*p%cc,idiag_ucm)
+        endif
         if (idiag_uudcm/=0)   call sum_mn_name(p%uu(:,3)*p%ugcc,idiag_uudcm)
         if (idiag_Cz2m/=0)    call sum_mn_name(p%rho*p%cc*z(n)**2,idiag_Cz2m)
         if (idiag_Cz4m/=0)    call sum_mn_name(p%rho*p%cc*z(n)**4,idiag_Cz4m)
