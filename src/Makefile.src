@@ -564,11 +564,12 @@ LD_FFTW2=
 #FFLAGS=-O3 #(norlx5*)
 ##LD_MPI=-L/usr/lib/openmpi/lib -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl #(norlx5*)
 ##
-## Axel on Ferlin
+## Axel on Ferlin(ferlin)
 ##
 #FC=mpif90 #(a07c01n03.pdc.kth.se)
-#CC=icc#(a07c01n03.pdc.kth.se)
-#FFLAGS=-O3 #(a07c01n03.pdc.kth.se)
+#CC=mpicc#(a07c01n03.pdc.kth.se)
+#FFLAGS=-O3 -I/pdc/vol/openmpi/1.2.6/intel/include/ -L/pdc/vol/i-fce/10.0.023/lib #(a07c01n03.pdc.kth.se)
+#LD_MPI= -L/usr/lib/openmpi/lib -L/pdc/vol/openmpi/1.2.6/intel/lib -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl #(a07c01n03.pdc.kth.se)
 ##
 ##  Patrik's playstation
 ##
@@ -1049,7 +1050,6 @@ LD_FFTW2=
 
 
 ### End machine dependent
-
 LD=$(FC)
 LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL) $(LDONLYFLAGS)
 MPICOMM_FIX=$(MPICOMM)$(LIBMPISUFFIX)
