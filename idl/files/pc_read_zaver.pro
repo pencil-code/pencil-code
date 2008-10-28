@@ -1,3 +1,4 @@
+;;
 ;; $Id$
 ;;
 ;;   Read z-averages from file.
@@ -6,12 +7,13 @@
 ;;   number of snapshots to save.
 ;;
 pro pc_read_zaver, object=object, varfile=varfile, datadir=datadir, $
-    nit=nit, iplot=iplot, min=min, max=max, zoom=zoom, $
-    xax=xax, yax=yax, xtitle=xtitle, ytitle=ytitle, title=title, $
-    lsubbox=lsubbox, rsubbox=rsubbox, subboxcolor=subboxcolor, tsubbox=tsubbox,$
+    nit=nit, iplot=iplot, min=min, max=max, zoom=zoom, xax=xax, yax=yax, $
+    xtitle=xtitle, ytitle=ytitle, title=title, subbox=subbox,$
+    subpos=subpos, rsubbox=rsubbox, subcolor=subcolor, tsubbox=tsubbox,$
     noaxes=noaxes, thick=thick, charsize=charsize, loge=loge, log10=log10, $
     t_title=t_title, t_scale=t_scale, t_zero=t_zero, interp=interp, $
-    position=position, fillwindow=fillwindow, tformat=tformat, $
+    ceiling=ceiling, position=position, fillwindow=fillwindow, $
+    tformat=tformat, $
     tmin=tmin, njump=njump, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
     xsize=xsize, ysize=ysize, it1=it1, variables=variables, $
     colorbar=colorbar, bartitle=bartitle, xshift=xshift, timefix=timefix, $
@@ -41,9 +43,11 @@ default, t_title, 0
 default, t_scale, 1.0
 default, t_zero, 0.0
 default, interp, 0
-default, lsubbox, 0
-default, rsubbox, 5
-default, subboxcolor, 255
+default, ceiling, 0.0
+default, subbox, 0
+default, subpos, [0.7,0.7,0.9,0.9]
+default, rsubbox, 5.0
+default, subcolor, 255
 default, tsubbox, 0.0
 default, thick, 1.0
 default, charsize, 1.0
@@ -247,12 +251,22 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
     if (iplot ne -1) then begin
       array_plot=array[*,*,ivarpos[iplot]]
       if (zoom ne 1.0) then begin
-        array_plot=congrid(array_plot,zoom*nx,zoom*ny,/interp)
-        xax=congrid(xax,zoom*nx,/interp)
-        yax=congrid(yax,zoom*ny,/interp)
+        array_plot=congrid(array_plot,zoom*nx,zoom*ny,interp=interp,/center)
+        xax=congrid(xax,zoom*nx,interp=interp,/center)
+        yax=congrid(yax,zoom*ny,interp=interp,/center)
       endif
+;;
+;;  Take logarithm.
+;;
       if (loge)  then array_plot=alog(array_plot)
       if (log10) then array_plot=alog10(array_plot)
+;;
+;;  Set the maximum value of the array.
+;;
+      if (ceiling) then begin
+        ii=where(array_plot gt ceiling)
+        if (max(ii) ne -1) then array_plot[ii]=ceiling
+      endif
 ;;  Plot to post script (eps).      
       if (ps) then begin
         set_plot, 'ps'
@@ -286,17 +300,16 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
 ;;
 ;;  Enlargement of ``densest'' point.          
 ;;
-      if ( lsubbox and (t ge tsubbox) ) then begin
+      if ( subbox and (t ge tsubbox) ) then begin
         imax=where(array_plot eq max(array_plot))
         imax=array_indices(array_plot,imax)
-        subpos=[0.7,0.7,0.9,0.9]
 ;;  Plot box indicating enlarged region.
         oplot, [xax[imax[0]]-rsubbox,xax[imax[0]]+rsubbox, $
                 xax[imax[0]]+rsubbox,xax[imax[0]]-rsubbox, $
                 xax[imax[0]]-rsubbox], $
                [yax[imax[1]]-rsubbox,yax[imax[1]]-rsubbox, $
                 yax[imax[1]]+rsubbox,yax[imax[1]]+rsubbox, $
-                yax[imax[1]]-rsubbox], color=subboxcolor, thick=thick
+                yax[imax[1]]-rsubbox], color=subcolor, thick=thick
 ;;  Box crosses lower boundary.
         if (yax[imax[1]]-rsubbox lt y0) then begin
           oplot, [xax[imax[0]]-rsubbox,xax[imax[0]]+rsubbox, $
@@ -304,7 +317,7 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
                   xax[imax[0]]-rsubbox], $
                  [yax[imax[1]]+Ly-rsubbox,yax[imax[1]]+Ly-rsubbox, $
                   yax[imax[1]]+Ly+rsubbox,yax[imax[1]]+Ly+rsubbox, $
-                  yax[imax[1]]+Ly-rsubbox], color=subboxcolor, thick=thick
+                  yax[imax[1]]+Ly-rsubbox], color=subcolor, thick=thick
         endif
 ;;  Box crosses upper boundary.
         if (yax[imax[1]]+rsubbox gt y1) then begin
@@ -336,7 +349,7 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
             interp=interp, charsize=charsize, thick=thick
         plots, [subpos[0],subpos[2],subpos[2],subpos[0],subpos[0]], $
                [subpos[1],subpos[1],subpos[3],subpos[3],subpos[1]], /normal, $
-               thick=thick, color=subboxcolor
+               thick=thick, color=subcolor
       endif
 ;;  Colorbar indicating range.
       if (colorbar) then begin
