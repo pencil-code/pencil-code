@@ -24,6 +24,8 @@
 &selfgrav_init_pars
   rhs_poisson_const=1.0
 /
+&poisson_init_pars
+/
 &shear_init_pars
   qshear=1.5
 /

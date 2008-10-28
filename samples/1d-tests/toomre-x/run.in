@@ -16,6 +16,8 @@
 /
 &selfgrav_run_pars
 /
+&poisson_run_pars
+/
 &shear_run_pars
 /
 &viscosity_run_pars
