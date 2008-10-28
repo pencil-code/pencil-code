@@ -16,6 +16,8 @@
   rhs_poisson_const=1.0
   lselfgravity_gas=F, lselfgravity_dust=F
 /
+&poisson_init_pars
+/
 &particles_init_pars
   initxxp='equidistant','shift'
   initvvp='jeans-wave-dustpar-x'

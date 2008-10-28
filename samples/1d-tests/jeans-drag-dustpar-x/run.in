@@ -12,6 +12,8 @@
 /
 &selfgrav_run_pars
 /
+&poisson_run_pars
+/
 &particles_run_pars
   ldragforce_dust_par=T, ldragforce_gas_par=F
 /
