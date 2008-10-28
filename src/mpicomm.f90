@@ -2936,7 +2936,6 @@ module Mpicomm
       integer, intent(in) :: xi,yj,yproc_no
       integer :: my_iniz,my_finz
 !
-!      write(*,*)'Dhruba',ipx,ipy,ipz,iproc 
       az=0.
       az_local=0.
       if(ipy.eq.(yproc_no-1)) then

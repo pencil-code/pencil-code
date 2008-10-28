@@ -290,6 +290,7 @@ module Cdata
   integer, parameter :: mname_half=20
   integer, dimension (mname_half) :: itype_name_half=0.
   real, dimension (mname_half,2) :: fname_half
+  integer :: name_half_max=0
   character (len=30) :: cname_half(mname_half)
 !  Coordinates of the point where some quantities can be printed.
   integer :: lpoint=(l1+l2)/2,mpoint=(m1+m2)/2,npoint=(n1+n2)/2

@@ -1093,7 +1093,6 @@ module Forcing
    call random_number_wrapper(ralpha)
    aindex=nint(ralpha*2)
    Balpha = cklist(lmindex,3+aindex)
-!  if(lroot) write(*,*) "Dhruba",lmindex,emm,Legendrel,Balpha 
 ! Now calculate the "potential" for the helical forcing. The expression
 ! is taken from Chandrasekhar and Kendall.
 ! Now construct the Z_psi(r) 

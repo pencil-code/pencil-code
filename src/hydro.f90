@@ -78,7 +78,7 @@ module Hydro
   logical :: luut_as_aux=.false.,loot_as_aux=.false.
   logical :: lpressuregradient_gas=.true.
   logical :: lscale_tobox=.true.
-! Dhruba
+! The following is useful to debug the forcing - Dhruba
   real :: outest
   logical :: loutest,ldiffrot_test=.false.
   namelist /hydro_init_pars/ &
@@ -335,16 +335,10 @@ module Hydro
   integer :: idiag_fxbxm=0      ! DIAG_DOC: 
   integer :: idiag_fxbym=0      ! DIAG_DOC: 
   integer :: idiag_fxbzm=0      ! DIAG_DOC: 
-  integer :: idiag_urmsn=0      ! DIAG_DOC: $U_{\rm rms}$ over north hemisphere
-  integer :: idiag_oumn=0        ! DIAG_DOC: $\left<\boldsymbol{\omega}
-                                ! DIAG_DOC:  \cdot\uv\right>$ over north hemisphere
-  integer :: idiag_ormsn=0       ! DIAG_DOC: $\left<\boldsymbol{\omega}^2
-                                ! DIAG_DOC:   \right>^{1/2}$ over north hemisphere
-  integer :: idiag_urmss=0      ! DIAG_DOC: $U_{\rm rms}$ over south hemisphere
-  integer :: idiag_oums=0        ! DIAG_DOC: $\left<\boldsymbol{\omega}
-                                ! DIAG_DOC:  \cdot\uv\right>$ over south hemisphere
-  integer :: idiag_ormss=0       ! DIAG_DOC: $\left<\boldsymbol{\omega}^2
-                                ! DIAG_DOC:   \right>^{1/2}$ over south hemisphere
+  integer :: idiag_urmsn=0,idiag_urmss=0,idiag_urmsh=0
+  integer :: idiag_ormsn=0,idiag_ormss=0,idiag_ormsh=0
+  integer :: idiag_oumn=0,idiag_oums=0,idiag_oumh=0
+
   contains
 
 !***********************************************************************
@@ -1021,11 +1015,9 @@ module Hydro
           idiag_oxoym/=0 .or. idiag_oxozm/=0 .or. idiag_oyozm/=0) &
           lpenc_diagnos(i_oo)=.true.
       if (idiag_orms/=0 .or. idiag_omax/=0 .or. idiag_o2m/=0 .or. &
-          idiag_ormsn/=0 .or. idiag_ormss/=0) &
-          lpenc_diagnos(i_o2)=.true.
+          idiag_ormsh/=0 )  lpenc_diagnos(i_o2)=.true.
       if (idiag_oum/=0 .or. idiag_oumx/=0.or.idiag_oumy/=0.or.idiag_oumz/=0 .or. &
-           idiag_oumn/=0 .or. idiag_oums/=0 ) &
-          lpenc_diagnos(i_ou)=.true.
+           idiag_oumh/=0 ) lpenc_diagnos(i_ou)=.true.
       if (idiag_Marms/=0 .or. idiag_Mamax/=0) lpenc_diagnos(i_Ma2)=.true.
       if (idiag_u3u21m/=0 .or. idiag_u3u21mz/=0) lpenc_diagnos(i_u3u21)=.true.
       if (idiag_u1u32m/=0 .or. idiag_u1u32mz/=0) lpenc_diagnos(i_u1u32)=.true.
@@ -1035,8 +1027,7 @@ module Hydro
       if (idiag_u1u23m/=0 .or. idiag_u1u23mz/=0) lpenc_diagnos(i_u1u23)=.true.
       if (idiag_urms/=0 .or. idiag_umax/=0 .or. idiag_rumax/=0 .or. &
           idiag_u2m/=0 .or. idiag_um2/=0 .or. idiag_u2mz/=0 .or. &
-          idiag_urmsn/=0 .or. idiag_urmss/=0) &
-          lpenc_diagnos(i_u2)=.true.
+          idiag_urmsh/=0 ) lpenc_diagnos(i_u2)=.true.
       if (idiag_duxdzma/=0 .or. idiag_duydzma/=0) lpenc_diagnos(i_uij)=.true.
       if (idiag_fmassz/=0 .or. idiag_ruxuym/=0 .or. idiag_ruxuymz/=0 .or. &
           idiag_ruxm/=0 .or. idiag_ruym/=0 .or. idiag_ruzm/=0) &
@@ -1122,8 +1113,7 @@ module Hydro
       use Cdata
       use Deriv
       use Sub
-!Dhruba
-use Mpicomm, only: stop_it
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -1190,7 +1180,7 @@ use Mpicomm, only: stop_it
       if (lpencil(i_o2)) call dot2_mn(p%oo,p%o2)
 ! ou
       if (lpencil(i_ou)) call dot_mn(p%oo,p%uu,p%ou)
-! Dhruba
+! Useful to debug forcing - Dhruba 
       if(loutest.and.lpencil(i_ou))then
 !      write(*,*) lpencil(i_ou)
         outest = minval(p%ou)
@@ -1482,8 +1472,14 @@ use Mpicomm, only: stop_it
         if (headtt.or.ldebug) print*,'duu_dt: Calculate maxima and rms values...'
         if (idiag_dtu/=0) call max_mn_name(advec_uu/cdt,idiag_dtu,l_dt=.true.)
         if (idiag_urms/=0)   call sum_mn_name(p%u2,idiag_urms,lsqrt=.true.)
-!        if (idiag_urmsn/=0)   call sum_mn_name_halfy(p%u2,idiag_urmsn,lsqrt=.true.)
-!        if (idiag_urmss/=0)   call sum_mn_name_halfy(p%u2,idiag_urmss,lsqrt=.true.)
+        if (idiag_urmsh/=0) then
+          call sum_mn_name_halfy(p%u2,idiag_urmsh)
+          fname(idiag_urmsn)=fname_half(idiag_urmsh,1)
+          fname(idiag_urmss)=fname_half(idiag_urmsh,2)
+          itype_name(idiag_urmsn)=ilabel_sum_sqrt
+          itype_name(idiag_urmss)=ilabel_sum_sqrt
+        else
+        endif
         if (idiag_umax/=0)   call max_mn_name(p%u2,idiag_umax,lsqrt=.true.)
         if (idiag_uzrms/=0) &
             call sum_mn_name(p%uu(:,3)**2,idiag_uzrms,lsqrt=.true.)
@@ -1542,7 +1538,23 @@ use Mpicomm, only: stop_it
 !  things related to vorticity
 !
         if (idiag_oum/=0) call sum_mn_name(p%ou,idiag_oum)
+        if (idiag_oumh/=0) then
+          call sum_mn_name_halfy(p%ou,idiag_oumh)
+          fname(idiag_oumn)=fname_half(idiag_oumh,1)
+          fname(idiag_oums)=fname_half(idiag_oumh,2)
+          itype_name(idiag_oumn)=ilabel_sum
+          itype_name(idiag_oums)=ilabel_sum
+        else
+        endif
         if (idiag_orms/=0) call sum_mn_name(p%o2,idiag_orms,lsqrt=.true.)
+        if (idiag_ormsh/=0) then
+          call sum_mn_name_halfy(p%o2,idiag_ormsh)
+          fname(idiag_ormsn)=fname_half(idiag_ormsh,1)
+          fname(idiag_ormss)=fname_half(idiag_ormsh,2)
+          itype_name(idiag_ormsn)=ilabel_sum_sqrt
+          itype_name(idiag_ormss)=ilabel_sum_sqrt
+        else
+        endif
         if (idiag_omax/=0) call max_mn_name(p%o2,idiag_omax,lsqrt=.true.)
         if (idiag_o2m/=0)  call sum_mn_name(p%o2,idiag_o2m)
         if (idiag_ox2m/=0) call sum_mn_name(p%oo(:,1)**2,idiag_ox2m)
@@ -2603,7 +2615,7 @@ use Mpicomm, only: stop_it
       use Cdata
       use Sub
 !
-      integer :: iname,inamez,inamey,inamex,ixy,ixz,irz,inamer
+      integer :: iname,inamez,inamey,inamex,ixy,ixz,irz,inamer,iname_half
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -2775,6 +2787,9 @@ use Mpicomm, only: stop_it
         idiag_uguxmz=0
         idiag_uguymz=0
         idiag_uguzmz=0
+        idiag_urmsh=0;idiag_urmsn=0;idiag_urmss=0
+        idiag_ormsh=0;idiag_ormsn=0;idiag_ormss=0
+        idiag_oumh=0;idiag_oumn=0;idiag_oums=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -2790,8 +2805,12 @@ use Mpicomm, only: stop_it
         call parse_name(iname,cname(iname),cform(iname),'um2',idiag_um2)
         call parse_name(iname,cname(iname),cform(iname),'o2m',idiag_o2m)
         call parse_name(iname,cname(iname),cform(iname),'oum',idiag_oum)
+        call parse_name(iname,cname(iname),cform(iname),'oumn',idiag_oumn)
+        call parse_name(iname,cname(iname),cform(iname),'oums',idiag_oums)
         call parse_name(iname,cname(iname),cform(iname),'dtu',idiag_dtu)
         call parse_name(iname,cname(iname),cform(iname),'urms',idiag_urms)
+        call parse_name(iname,cname(iname),cform(iname),'urmsn',idiag_urmsn)
+        call parse_name(iname,cname(iname),cform(iname),'urmss',idiag_urmss)
         call parse_name(iname,cname(iname),cform(iname),'umax',idiag_umax)
         call parse_name(iname,cname(iname),cform(iname),'uxmin',idiag_uxmin)
         call parse_name(iname,cname(iname),cform(iname),'uymin',idiag_uymin)
@@ -2821,6 +2840,8 @@ use Mpicomm, only: stop_it
         call parse_name(iname,cname(iname),cform(iname),'oxozm',idiag_oxozm)
         call parse_name(iname,cname(iname),cform(iname),'oyozm',idiag_oyozm)
         call parse_name(iname,cname(iname),cform(iname),'orms',idiag_orms)
+        call parse_name(iname,cname(iname),cform(iname),'ormsn',idiag_ormsn)
+        call parse_name(iname,cname(iname),cform(iname),'ormss',idiag_ormss)
         call parse_name(iname,cname(iname),cform(iname),'omax',idiag_omax)
         call parse_name(iname,cname(iname),cform(iname),'ruxm',idiag_ruxm)
         call parse_name(iname,cname(iname),cform(iname),'ruym',idiag_ruym)
@@ -2862,6 +2883,26 @@ use Mpicomm, only: stop_it
         call parse_name(iname,cname(iname),cform(iname),'uguzm',idiag_uguzm)
         call parse_name(iname,cname(iname),cform(iname),'ugu2m',idiag_ugu2m)
       enddo
+!
+! Quantities which are averaged over half (north-south) the box
+!
+      iname_half=name_half_max
+      if((idiag_urmsn/=0).or.(idiag_urmss/=0))then
+        iname_half=iname_half+1
+        idiag_urmsh=iname_half
+      else
+      endif
+      if((idiag_ormsn/=0).or.(idiag_ormss/=0))then
+        iname_half=iname_half+1
+        idiag_ormsh=iname_half
+      else
+      endif
+      if((idiag_oumn/=0).or.(idiag_oums/=0))then
+        iname_half=iname_half+1
+        idiag_oumh=iname_half
+      else
+      endif
+      name_half_max=iname_half
 !
 !  Check for those quantities for which we want yz-averages.
 !
@@ -3037,8 +3078,14 @@ use Mpicomm, only: stop_it
         write(3,*) 'i_um2=',idiag_um2
         write(3,*) 'i_o2m=',idiag_o2m
         write(3,*) 'i_oum=',idiag_oum
+        write(3,*) 'i_oumn=',idiag_oumn
+        write(3,*) 'i_oums=',idiag_oums
+        write(3,*) 'i_oumh=',idiag_oumh
         write(3,*) 'i_dtu=',idiag_dtu
         write(3,*) 'i_urms=',idiag_urms
+        write(3,*) 'i_urmsn=',idiag_urmsn
+        write(3,*) 'i_urmss=',idiag_urmss
+        write(3,*) 'i_urmsh=',idiag_urmsh
         write(3,*) 'i_umax=',idiag_umax
         write(3,*) 'i_uxmax=',idiag_uxmax
         write(3,*) 'i_uymax=',idiag_uymax
@@ -3062,6 +3109,9 @@ use Mpicomm, only: stop_it
         write(3,*) 'i_oxozm=',idiag_oxozm
         write(3,*) 'i_oyozm=',idiag_oyozm
         write(3,*) 'i_orms=',idiag_orms
+        write(3,*) 'i_ormsn=',idiag_ormsn
+        write(3,*) 'i_ormss=',idiag_ormss
+        write(3,*) 'i_ormsh=',idiag_ormsh
         write(3,*) 'i_omax=',idiag_omax
         write(3,*) 'i_ruxm=',idiag_ruxm
         write(3,*) 'i_ruym=',idiag_ruym

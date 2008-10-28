@@ -201,6 +201,9 @@ module Magnetic
   integer :: idiag_j2m=0        ! DIAG_DOC: $\left<\jv^2\right>$
   integer :: idiag_jm2=0        ! DIAG_DOC: $\max(\jv^2)$
   integer :: idiag_abm=0        ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$
+  integer :: idiag_abmh=0        ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$
+  integer :: idiag_abmn=0        ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$
+  integer :: idiag_abms=0        ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$
   integer :: idiag_jbm=0        ! DIAG_DOC: $\left<\jv\cdot\Bv\right>$
   integer :: idiag_ubm=0        ! DIAG_DOC: $\left<\uv\cdot\Bv\right>$
   integer :: idiag_epsM=0       ! DIAG_DOC: $\left<2\eta\mu_0\jv^2\right>$
@@ -1222,7 +1225,7 @@ module Magnetic
           idiag_examx/=0 .or. idiag_examy/=0 .or. idiag_examz/=0 &
          ) lpenc_diagnos(i_aa)=.true.
       if (idiag_arms/=0 .or. idiag_amax/=0) lpenc_diagnos(i_a2)=.true.
-      if (idiag_abm/=0) lpenc_diagnos(i_ab)=.true.
+      if (idiag_abm/=0 .or. idiag_abmh/=0) lpenc_diagnos(i_ab)=.true.
       if (idiag_djuidjbim/=0 .or. idiag_b3b21m/=0 &
           .or. idiag_dexbmx/=0 .or. idiag_dexbmy/=0 .or. idiag_dexbmz/=0 &
           .or. idiag_b1b32m/=0 .or.  idiag_b2b13m/=0) &
@@ -2126,6 +2129,14 @@ module Magnetic
         if (idiag_aybym2/=0) &
             call sum_mn_name(2*p%aa(:,2)*p%bb(:,2),idiag_aybym2)
         if (idiag_abm/=0) call sum_mn_name(p%ab,idiag_abm)
+        if (idiag_abmh/=0) then
+          call sum_mn_name_halfy(p%ab,idiag_abmh)
+          fname(idiag_abmn)=fname_half(idiag_abmh,1)
+          fname(idiag_abms)=fname_half(idiag_abmh,2)
+          itype_name(idiag_abmn)=ilabel_sum
+          itype_name(idiag_abms)=ilabel_sum
+        else
+        endif
         if (idiag_ubm/=0) call sum_mn_name(p%ub,idiag_ubm)
         if (idiag_bxm/=0) call sum_mn_name(p%bbb(:,1),idiag_bxm)
         if (idiag_bym/=0) call sum_mn_name(p%bbb(:,2),idiag_bym)
@@ -4827,7 +4838,7 @@ module Magnetic
       use Cdata
       use Sub
 !
-      integer :: iname,inamex,inamey,inamez,ixy,ixz,irz,inamer
+      integer :: iname,inamex,inamey,inamez,ixy,ixz,irz,inamer,iname_half
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -4842,6 +4853,7 @@ module Magnetic
         idiag_bjtm=0
         idiag_jbtm=0
         idiag_b2m=0; idiag_bm2=0; idiag_j2m=0; idiag_jm2=0; idiag_abm=0
+        idiag_abmh=0;idiag_abmn=0;idiag_abms=0
         idiag_jbm=0; idiag_ubm=0; idiag_epsM=0; idiag_epsM_LES=0; idiag_epsAD=0
         idiag_bxpt=0; idiag_bypt=0; idiag_bzpt=0
         idiag_Expt=0; idiag_Eypt=0; idiag_Ezpt=0
@@ -4911,6 +4923,8 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'bjtm',idiag_bjtm)
         call parse_name(iname,cname(iname),cform(iname),'jbtm',idiag_jbtm)
         call parse_name(iname,cname(iname),cform(iname),'abm',idiag_abm)
+        call parse_name(iname,cname(iname),cform(iname),'abmn',idiag_abmn)
+        call parse_name(iname,cname(iname),cform(iname),'abms',idiag_abms)
         call parse_name(iname,cname(iname),cform(iname),'jbm',idiag_jbm)
         call parse_name(iname,cname(iname),cform(iname),'ubm',idiag_ubm)
         call parse_name(iname,cname(iname),cform(iname),'b2m',idiag_b2m)
@@ -5015,6 +5029,16 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'cosjbm',idiag_cosjbm)
 !
       enddo
+!
+! Quantities which are averaged over half (north-south) the box
+!
+      iname_half=name_half_max
+      if((idiag_abmn/=0).or.(idiag_abms/=0))then
+        iname_half=iname_half+1
+        idiag_abmh=iname_half
+      else
+      endif
+      name_half_max=iname_half
 !
 ! Currently need to force zaverage calculation at every lout step for
 ! bmx and bmy and bmxy_rms.
@@ -5181,6 +5205,9 @@ module Magnetic
         write(3,*) 'i_bjtm=',idiag_bjtm
         write(3,*) 'i_jbtm=',idiag_jbtm
         write(3,*) 'i_abm=',idiag_abm
+        write(3,*) 'i_abmh=',idiag_abmh
+        write(3,*) 'i_abmn=',idiag_abmn
+        write(3,*) 'i_abms=',idiag_abms
         write(3,*) 'i_jbm=',idiag_jbm
         write(3,*) 'i_ubm=',idiag_ubm
         write(3,*) 'i_b2m=',idiag_b2m
