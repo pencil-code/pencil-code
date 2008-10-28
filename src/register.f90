@@ -909,7 +909,7 @@ module Register
 92      nnamey=inamey-1
         close(1)
       endif
-      if (lroot.and.ip<14) print*,'rprint_list: nnamex=',nnamex
+      if (lroot.and.ip<14) print*,'rprint_list: nnamey=',nnamey
 !
 !  read in the list of variables for yz-averages
 !
