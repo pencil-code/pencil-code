@@ -458,14 +458,27 @@ sub send_mail {
     } else {                    # most likely: lockfile exists
         $errmsg = "There are errors";
     }
-    my $cmdline =
-      "$mailer "
-      . "-s '$errmsg from pencil-code autotest on $host' "
-      . "$address";
-    if ($debug) { print STDERR "$cmdline\n" };
+    my @cmdline = ($mailer);
+    push @cmdline, '-s', "$errmsg from pencil-code autotest on $host";
+
+    my $mail = my $email = $ENV{EMAIL};
+    if (defined($email)) {
+        if ($email =~ /<([^>]*)>/) {
+            $mail = $1;
+        } else {
+            $mail = $email;
+        }
+        if ($mail =~ /[-.a-zA-Z_0-9]+@[-.a-zA-Z_0-9]+/) {
+            push @cmdline, '-a', "Reply-To: $email";
+        }
+    }
+
+    push @cmdline, "$address";
+
+    if ($debug) { print STDERR "\@cmdline = @cmdline\n" };
     my $sep = "\n" . "-" x 70 . "\n\n";
-    open (MAIL, "| $cmdline");
-    print MAIL join($sep,@text);
+    open (MAIL, '|-', @cmdline);
+    print MAIL join($sep, @text);
     print MAIL "\n";
     close MAIL;
 }
