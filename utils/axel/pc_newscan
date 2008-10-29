@@ -6,28 +6,43 @@
 #    pc_newscan scan_newname [scan_newdir]
 #
 #  assume that one is in the old directory
+#  $newname is the name of the new directory, but without full path
+#
+set olddir=$cwd
+set newname=$1
+#
+#  next, determine full path
+#  If no extra argument is given, assume that it is located next to $cwd
+#  Then, go into the parent directory of new run
 #
 if ($#argv == 2) then
-  newname=$1
-  newdir=$2'/'$1
-  olddir=`pwd`
+  cd $2
 else
-  newname=$1
-  newdir='../'$1
-  olddir=`pwd`
+  cd ..
 endif
 #
-echo $olddir
-echo $newdir
+#  make new directory name there, go into it, and set $newdir
 #
-mkdir $newdir
-cd $newdir
-ls
+mkdir $1
+cd $1
+set newdir=$cwd
+#
+#  make new directories there
 #
 mkdir bin idl templates
-cd $olddir
 #
-pc_newrun master $newdir/master
+#  goto olddir and begin populating content of newdir from here
+#
+cd $olddir
+echo
+echo "we should now be in olddir: do pwd"
+pwd
+echo
+echo "check that newdir is ok"
+echo $newdir
+echo
+echo "pc_newrun $olddir/master $newdir/master"
+pc_newrun $olddir/master $newdir/master
 #
 cp bin/* $newdir/bin
 cp idl/* $newdir/idl
