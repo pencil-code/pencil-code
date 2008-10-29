@@ -21,12 +21,34 @@ case $1 in
 esac
 
 if [ $# -eq 2 ]; then
-  olddir=`pwd`/$1
-  newdir=`pwd`/$2
+  #
+  #  check whether absolute or relative path
+  #  by checking whether target exists
+  #
+  if [ -d `pwd`/$1 ]; then
+    olddir=`pwd`/$1
+  else
+    olddir=$1
+  fi
+  #
+  #  same for newdir
+  #
+  if [ -d `pwd`/$2 ]; then
+    newdir=`pwd`/$2
+  else
+    newdir=$2
+  fi
 else
   olddir=`pwd`
   cd ..
-  newdir=`pwd`/$1
+  #
+  #  same for newdir
+  #
+  if [ -d `pwd`/$1 ]; then
+    newdir=`pwd`/$1
+  else
+    newdir=$1
+  fi
 fi
 
 #
