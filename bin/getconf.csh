@@ -78,8 +78,6 @@ set start_x = "src/start.x"
 set run_x   = "src/run.x"
 set x_ops = ""         # arguments to both start.x and run.x
 set mpirun = 'mpirun'
-set mpirun = 'orterun'
-
 
 # Check if experimental copy-snapshots is used
 set copysnapshots="copy-snapshots"
@@ -188,6 +186,9 @@ else if ($?JOB_ID) then
   if ($debug) echo "OARSUB job"
   set nodelist = `cat $OAR_FILE_NODES | grep -v '^#' | sed 's/\ .*//'`
   set nodelist = `cat $OAR_FILE_NODES | tr " " "\n" | uniq`
+else if ($?SP_HOSTFILE) then
+  if ($debug) echo "EASY job"
+  set nodelist = `cat $SP_NODES`
 else
   if ($debug) echo "Setting nodelist to ($hn)"
   set nodelist = ("$hn")
@@ -202,7 +203,6 @@ else
 endif
 set nprocpernode = `expr $ncpus / $nnodes`
 echo "$nnodes nodes, $nprocpernode CPU(s) per node"
-
 
 ## ------------------------------
 ## Choose machine specific settings
@@ -1090,16 +1090,9 @@ else if ($hn =~ *tpb*) then
 
 else if ($hn =~ *.pdc.kth.se) then
   echo "Linux cluster at PDC, KTH in Stockholm"
-  echo "do the same after having added heimdal"
-  module add heimdal
-  module add i-compilers mpich easy
-  if ($mpi) echo "Use mpirun"
-  set mpirun = mpirun
-  #
-  echo "added i-compilers scampi module"
-  module add i-compilers scampi
-  #set mpirunops = "-np $SP_PROCS"
-  set mpirunops = ""
+  set mpirun = orterun
+  set mpirunops = "-machinefile $SP_HOSTFILE"
+  cat $SP_HOSTFILE > nodelist
   #
   # use unique scratch directory name, just in case it wasn't cleaned up
   #
@@ -1114,8 +1107,6 @@ else if ($hn =~ *.pdc.kth.se) then
 # set one_local_disc = 0
 # set remote_top     = 1
 # set local_binary   = 0
-# setenv SSH rsh 
-# setenv SCP rcp
 
 else if (($hn =~ n[0-9]*) && ($USER =~ x_axebr)) then
   echo "Neolith cluster in Linkoping"
