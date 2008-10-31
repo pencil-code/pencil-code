@@ -47,6 +47,8 @@ module Forcing
   logical :: lhelical_test=.false.,lrandom_location=.true.
   logical :: lwrite_psi=.false.
   logical :: lscale_kvector_tobox=.false.,lwrite_gausspot_to_file=.true.
+  logical :: lscale_kvector_fac=.false.
+  real :: scale_kvectorx=1.,scale_kvectory=1.,scale_kvectorz=1.
   logical :: old_forcing_evector=.false.
   character (len=labellen) :: iforce='zero', iforce2='zero'
   character (len=labellen) :: iforce_profile='nothing'
@@ -99,7 +101,8 @@ module Forcing
        lforcing_cont,iforcing_cont, &
        lembed,k1_ff,ampl_ff,width_fcont,x1_fcont,x2_fcont, &
        kf_fcont,omega_fcont,eps_fcont,lsamesign,&
-       lshearing_adjust_old,equator
+       lshearing_adjust_old,equator,&
+       lscale_kvector_fac,scale_kvectorx,scale_kvectory,scale_kvectorz
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_ffm=0
   integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
@@ -484,7 +487,11 @@ module Forcing
 !  but in some cases, e.g. when the box is bigger than 2pi,
 !  we want to rescale k so that k=1 now corresponds to a smaller value.
 !
-      if (lscale_kvector_tobox) then
+      if (lscale_kvector_fac) then
+        kx0=kkx(ik)*scale_kvectorx
+        ky=kky(ik)*scale_kvectory
+        kz=kkz(ik)*scale_kvectorz
+      elseif (lscale_kvector_tobox) then
         kx0=kkx(ik)*(2.*pi/Lxyz(1))
         ky=kky(ik)*(2.*pi/Lxyz(2))
         kz=kkz(ik)*(2.*pi/Lxyz(3))
