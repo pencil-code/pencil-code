@@ -59,7 +59,8 @@ module Testfield
   logical :: luxb_as_aux=.false.,ljxb_as_aux=.false.,linit_aatest=.false.
   logical :: lignore_uxbtestm=.false., lphase_adjust=.false.
   character (len=labellen) :: itestfield='B11-B21'
-  real :: ktestfield=1., ktestfield1=1.,lam_testfield=0.,om_testfield=0.
+  real :: ktestfield=1., ktestfield1=1.
+  real :: lam_testfield=0.,om_testfield=0.,delta_testfield=0.
   integer, parameter :: mtestfield=3*njtest
   integer :: naainit
   real :: bamp=1.,bamp1=1.
@@ -76,7 +77,7 @@ module Testfield
   namelist /testfield_run_pars/ &
        B_ext,reinitialize_aatest,zextent,lsoca,lsoca_jxb, &
        lset_bbtest2,etatest,etatest1,itestfield,ktestfield, &
-       lam_testfield,om_testfield, &
+       lam_testfield,om_testfield,delta_testfield, &
        ltestfield_newz,leta_rank2,lphase_adjust,phase_testfield, &
        luxb_as_aux,ljxb_as_aux,lignore_uxbtestm, &
        daainit,linit_aatest,bamp, &
@@ -374,7 +375,8 @@ module Testfield
         write(1,'(3a)') "itestfield='",trim(itestfield)//"'"
         write(1,'(a,f5.2)') 'ktestfield=',ktestfield
         write(1,'(a,f7.4)') 'lam_testfield=',lam_testfield
-        write(1,'(a,f7.4)')  'om_testfield=', om_testfield
+        write(1,'(a,f7.4)') 'om_testfield=', om_testfield
+        write(1,'(a,f7.4)') 'delta_testfield=',delta_testfield
         close(1)
       endif
 !
@@ -553,14 +555,22 @@ module Testfield
 !  multiply by exponential factor if lam_testfield is different from zero
 !  Keep bamp1=1 for oscillatory fields.
 !
-      if (lam_testfield/=0..or.om_testfield/=0.) then
+      if (lam_testfield/=0..or.om_testfield/=0..or.delta_testfield/=0.) then
         if (lam_testfield/=0.) then
           taainit_previous=taainit-daainit
           bamp=exp(lam_testfield*(t-taainit_previous))
           bamp1=1./bamp
         endif
-        if ( om_testfield/=0.) then
-          bamp=cos( om_testfield*t)
+        if (om_testfield/=0.) then
+          bamp=cos(om_testfield*t)
+          bamp1=1.
+        endif
+        if (delta_testfield/=0.) then
+          if (t.lt.dt*delta_testfield) then
+            bamp=1./(dt*delta_testfield)
+          else
+            bamp=0.
+          endif
           bamp1=1.
         endif
       endif
