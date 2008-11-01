@@ -2446,8 +2446,7 @@ module Initcond
         f(:,:,:,i:i+2)=0
         if (lroot) print*,'vfield: set variable to zero; i=',i
       else
-!        kx=2*pi/Lx
-        print*,'vfield: implement x-dependent vertical field'
+        if (lroot) print*,'vfield: implement x-dependent vertical field'
         if ((ip<=8).and.lroot) print*,'vfield: x-dependent vertical field'
         f(:,:,:,i  )=0.
         f(:,:,:,i+1)=ampl*sin(k*xx)
@@ -2472,7 +2471,7 @@ module Initcond
         if (lroot) print*,'vfield2: set variable to zero; i=',i
       else
         kx=2*pi/Lx
-        print*,'vfield2: implement x-dependent vertical field'
+        if (lroot) print*,'vfield2: implement x-dependent vertical field'
         f(:,:,:,i  )=0.
         f(:,:,:,i+1)=ampl*cos(kx*xx)
         f(:,:,:,i+2)=0.
