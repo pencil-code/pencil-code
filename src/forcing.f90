@@ -808,7 +808,7 @@ module Forcing
       real :: kx0,kx,ky,kz,k2,k,force_ampl=1.
       real :: ex,ey,ez,kde,sig=1.,fact,kex,key,kez,kkex,kkey,kkez
       real, dimension(3) :: e1,e2,ee,kk
-      real :: norm,phi
+      real :: norm,phi,pi_over_Lx=0.5
       real :: fd,fd2,kkfd
 !
 !  additional stuff for test fields
@@ -850,14 +850,20 @@ module Forcing
 !  but in some cases, e.g. when the box is bigger than 2pi,
 !  we want to rescale k so that k=1 now corresponds to a smaller value.
 !
-      if (lscale_kvector_tobox) then
+      if (lscale_kvector_fac) then
+        kx0=kkx(ik)*scale_kvectorx
+        ky=kky(ik)*scale_kvectory
+        kz=kkz(ik)*scale_kvectorz
+      elseif (lscale_kvector_tobox) then
         kx0=kkx(ik)*(2.*pi/Lxyz(1))
         ky=kky(ik)*(2.*pi/Lxyz(2))
         kz=kkz(ik)*(2.*pi/Lxyz(3))
+        pi_over_Lx=pi/Lxyz(1)
       else
         kx0=kkx(ik)
         ky=kky(ik)
         kz=kkz(ik)
+        pi_over_Lx=.5
       endif
 !
 !  in the shearing sheet approximation, kx = kx0 - St*k_y.
