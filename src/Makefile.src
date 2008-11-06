@@ -423,6 +423,7 @@ LD_FFTW2=
 #LD_MPI=-I/usr/include -pthread  -llamf77mpi -lmpi -llam -lutil #(damtp)
 #FC=mpif90 #(damaskus|n00)
 #FFLAGS=-xT -ipo -O3 #(damaskus|n00)
+#FC=mpif90 #(ui.bfg.uni-freiburg.de)
 #FC=mpif90 #(bender)
 ##
 ## Toulouse's machines: efigi, shal, galileo, mithra, yang & pleiades
