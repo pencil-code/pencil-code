@@ -762,7 +762,7 @@ module Entropy
 !
 ! Shock diffusion 
 !
-      if (lheatc_shock) call calc_heatcond_shock(df,p,diffus_chi)
+      if (lheatc_shock) call calc_heatcond_shock(df,p)
 !
 !  Add thermal diffusion to temperature equation
 !
@@ -814,7 +814,7 @@ module Entropy
 !
     endsubroutine dss_dt
 !***********************************************************************
-    subroutine calc_heatcond_shock(df,p,diffus_chi)
+    subroutine calc_heatcond_shock(df,p)
 !
 !  Adds in shock diffusion to the temperature equation.
 !  Ds/Dt = ... + 1/(rho*T) grad(flux), where
@@ -829,10 +829,10 @@ module Entropy
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx) :: thdiff,diffus_chi,g2,gshockglnTT
+      real, dimension (nx) :: thdiff,g2,gshockglnTT
 !
       intent(in) :: p
-      intent(out) :: df,diffus_chi
+      intent(out) :: df
 !
       if(headtt) print*,'calc_heatcond_shock: chi_shock=',chi_shock
 !
