@@ -1,0 +1,38 @@
+#!/bin/sh
+#
+#  $Id: pc_newrun_modify,v 1.1 2008-10-21 05:59:44 brandenb Exp $
+#
+#  Script to adapt a new run directory,
+#  start the job and check it in.
+#
+#----------------------------------------------------------
+#  name of the new run directory
+#
+oldrun=master
+newrun=Run_$1
+#
+#  set up new run directory by modifying an existing one,
+#  using the executable in it.
+#
+pc_newrun -s $oldrun $newrun
+#
+#  adapt run.in file in the new run directory
+#
+modfile='run.in'
+str='s/XX/'$1'/g'
+sed -e $str templates/$modfile > $newrun/$modfile
+#
+#  adapt parameters.pro file in the new run directory
+#
+modfile='parameters.pro'
+str='s/XX/'$newrun'/g'
+sed -e $str templates/$modfile > $newrun/$modfile
+#
+# go into run directory, run start.csh and run N.csh (background job)
+#
+cd $newrun
+start.csh
+N.csh
+sleep 120
+cvsci_run
+#

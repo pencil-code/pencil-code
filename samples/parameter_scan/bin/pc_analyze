@@ -1,0 +1,15 @@
+#!/bin/sh
+#
+#  $Id: pc_analyze,v 1.1 2008-10-21 05:59:43 brandenb Exp $
+#
+#  Script to analyze data in run directory.
+#
+#----------------------------------------------------------
+#  name of the new run directory
+#
+newrun=om_$1
+cd $newrun
+#
+idl <<EOF
+.r p3b
+EOF
