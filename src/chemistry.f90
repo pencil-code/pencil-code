@@ -91,6 +91,7 @@ module Chemistry
   real, dimension(nchemspec,7)     :: tran_data
   real, dimension (nx,nchemspec), SAVE  :: S0_R
   real, dimension (mx,my,mz,nchemspec), SAVE :: H0_RT
+  logical, allocatable, dimension(:)  :: lLOW, lHIGH
 
   logical :: Natalia_thoughts=.false.
  
@@ -1125,7 +1126,13 @@ module Chemistry
           troe_coeff=0.
           if (stat>0) call stop_it("Couldn't allocate memory for troe_coeff")
           allocate(a_k4(nchemspec,nreactions),STAT=stat)
-          a_k4=impossible
+          a_k4=impossible 
+          if (stat>0) call stop_it("Couldn't allocate memory for troe_coeff")
+          allocate(lLOW(nreactions),STAT=stat)
+          lLOW=.false.
+          if (stat>0) call stop_it("Couldn't allocate memory for troe_coeff")
+          allocate(lHIGH(nreactions),STAT=stat)
+          lHIGH=.false.
         endif
 !
 !  Initialize data
@@ -1794,10 +1801,12 @@ module Chemistry
       dataloop3: do
         if (found_new_reaction) then
           ChemInpLine=ChemInpLine_add
+
         else
           read(file_id,'(80A)',end=1012) ChemInpLine(1:80)
         endif
         found_new_reaction=.false.
+        
         !
         ! Check if we are reading a line within the reactions section
         !
@@ -1840,6 +1849,9 @@ module Chemistry
                   SeparatorInd=index(ChemInpLine(StartInd:),'=')
                 endif
                 !
+                ParanthesisInd=0
+                MplussInd=0
+
                 ParanthesisInd=index(ChemInpLine(StartInd:),'(+M)')
                 MplussInd=index(ChemInpLine(StartInd:),'+M')
 
@@ -1854,14 +1866,23 @@ module Chemistry
                   !  reading of the additional data for (+M) case
                   ! 
 
+                  
+
+
 100               read(file_id,'(80A)',end=1012) ChemInpLine_add(1:80)
                   if (ChemInpLine_add(1:1) == ' ') then
+
+! Natalia_new
+                  
+                   if (MplussInd>0 .and. ParanthesisInd==0) then
+!
                     i=1
                     do while (i<80)
                       if (ChemInpLine_add(i:i)==' ') then
                         i=i+1
                       elseif (ChemInpLine_add(i:i+2)=='LOW') then
-                        print*,ChemInpLine_add(i:i+2),'   coefficients for reaction ', reaction_name(k),'number ', k 
+                       lLOW(k)=.true.
+                       print*,ChemInpLine_add(i:i+2),'   coefficients for reaction ', reaction_name(k),'number ', k 
                         VarNumber_add=1; StartInd_add=i+4; StopInd_add=i+4
                         do while (VarNumber_add<4)
                           StopInd_add=index(ChemInpLine_add(StartInd_add:),' ')+StartInd_add-2
@@ -1919,10 +1940,13 @@ module Chemistry
                         enddo
                         i=80
                       elseif (ChemInpLine_add(i:i+3)=='HIGH') then
+                         lHIGH(k)=.true.
                         !
                         ! should be added later !!!
                         ! NILS: There will probably never by such a thing.....????
                         !
+                    
+
                       else 
                         print*,' --------------  a_k4 coefficients----------------'
                         !                a_k4=0.
@@ -1961,6 +1985,10 @@ module Chemistry
                     enddo
                     print*,' ------------------------------'
                     goto 100
+            
+!Natalia_new 
+                   endif
+!
                   else
                     found_new_reaction=.true.
                   endif
@@ -2381,6 +2409,11 @@ module Chemistry
        !
        ! The Lindstrom approach to the fall of reactions
        !
+
+print*,'NATALIA_low',lLOW
+print*,'NATALIA_high',lHIGH
+
+
        Kc_0=Kc
        if (maxval(abs(low_coeff(:,reac))) > 0.) then
          B_n_0=low_coeff(1,reac) 
