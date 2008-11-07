@@ -5092,6 +5092,27 @@ happened to occur in param.nml, the code would require manual intervention
 after each start.csh.
 
 
+\subsubsection{Spurious dots in the time series file}
+
+{\bf Q}:
+Wolfgang, you explained it to me once, but I forget.
+How can one remove spurious dots after the timestep number
+if the time format overflows?
+
+\medskip
+
+{\bf A}:
+I don't know whether it exists anywhere, but it's easy.
+In perl you'd say
+\begin{Verbatim}
+  perl -pe 's/^(\s*[-0-9]+)\.([-0-9eEdD])/$1 $2/g'
+\end{Verbatim}
+and in sed (but that's harder to read)
+\begin{Verbatim}
+  sed 's/^\( *[-0-9]\+\)\.\([-0-9eEdD]\)/\1 \2/g'
+\end{Verbatim}
+
+
 % ---------------------------------------------------------------------- %
 
 \subsection{General questions}
