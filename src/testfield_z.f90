@@ -61,6 +61,7 @@ module Testfield
   character (len=labellen) :: itestfield='B11-B21'
   real :: ktestfield=1., ktestfield1=1.
   real :: lam_testfield=0.,om_testfield=0.,delta_testfield=0.
+  real :: delta_testfield_next=0.
   integer, parameter :: mtestfield=3*njtest
   integer :: naainit
   real :: bamp=1.,bamp1=1.
@@ -566,8 +567,9 @@ module Testfield
           bamp1=1.
         endif
         if (delta_testfield/=0.) then
-          if (t.lt.dt*delta_testfield) then
+          if (t.ge.delta_testfield_next.and.t.lt.(delta_testfield_next+dt)) then
             bamp=1./(dt*delta_testfield)
+            delta_testfield_next=t+delta_testfield
           else
             bamp=0.
           endif
