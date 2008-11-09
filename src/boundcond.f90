@@ -167,6 +167,12 @@ module Boundcond
                   call bc_freeze_var_x(topbot,j)
                   call bc_sym_x(f,-1,topbot,j,REL=.true.) 
                   ! antisymm wrt boundary
+                case ('fg')
+                  ! BCX_DOC: ``freeze'' value, i.e. maintain initial
+                  !  value at boundary, also mantaining the 
+                  !  ghost zones at the initial coded value, i.e., 
+                  !  keep the gradient frozen as well
+                  call bc_freeze_var_x(topbot,j)
                 case ('1')
                   ! BCX_DOC: $f=1$ (for debugging)
                   call bc_one_x(f,topbot,j)
@@ -330,6 +336,12 @@ module Boundcond
                 ! tell other modules not to change boundary value
                 call bc_freeze_var_y(topbot,j)
                 call bc_sym_y(f,-1,topbot,j,REL=.true.) ! antisymm wrt boundary
+              case ('fg')
+                ! BCY_DOC: ``freeze'' value, i.e. maintain initial
+                !  value at boundary, also mantaining the 
+                !  ghost zones at the initial coded value, i.e., 
+                !  keep the gradient frozen as well
+                call bc_freeze_var_y(topbot,j)
               case ('1')
                 ! BCY_DOC: f=1 (for debugging)
                 call bc_one_y(f,topbot,j)
