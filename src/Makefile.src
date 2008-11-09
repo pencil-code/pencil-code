@@ -799,6 +799,12 @@ LD_FFTW2=
 #CC=/home/dhruba/mpich2/bin/mpicc -I/home/dhruba/Library/include#(hyades.maths.qmul.ac.uk)
 #LD_MPI = -L/home/dhruba/mpich2/lib/ -lmpich#(hyades.maths.qmul.ac.uk)
 ##
+## Dhruba on andromeda.qmul cluster
+##
+#FC=mpif90   #(andromeda)
+#FFLAGS= -O3  #(andromeda)
+#CC=mpicc #(andromeda) 
+##
 ## Dhruba at manchester, lancaster, liverpool
 ## 
 #FC = mpif90 #(man2|penumbra|lv1)
