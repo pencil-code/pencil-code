@@ -84,7 +84,7 @@ module Param_IO
        lcylindrical_gravity,border_frac_x,border_frac_y, &
        border_frac_z,luse_latitude, &
        lshift_datacube_x,&
-       yequator
+       yequator, nscbc_sigma
 
   namelist /run_pars/ &
        cvsid,ip,nt,it1,it1d,dt,cdt,ddt,cdtv,cdtv2,cdtv3,&
@@ -131,7 +131,7 @@ module Param_IO
        lpencil_check,lpencil_check_diagnos_opti,lpencil_init,lwrite_2d, &
        lbidiagonal_derij,lisotropic_advection, &
        crash_file_dtmin_factor,niter_poisson, &
-       lADI,ltestperturb,eps_rkf, timestep_scaling
+       lADI,ltestperturb,eps_rkf, timestep_scaling, nscbc_sigma
   contains
 
 !***********************************************************************
