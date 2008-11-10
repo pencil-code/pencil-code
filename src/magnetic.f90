@@ -4641,8 +4641,8 @@ module Magnetic
     subroutine remove_mean_emf_spherical(f,df)
 !
 !  Substract mean emf from the radial component of the induction 
-!  equation. Activated only when large Bz fields and are present 
-!  keplerian advection. Due to this u_phi x Bz term, the radial 
+!  equation. Activated only when large Bz fields and keplerian 
+!  advection are present. Due to this u_phi x Bz term, the radial 
 !  component of the magnetic potential
 !  develops a divergence that grows linearly in time. Since it is
 !  purely divergent, it is okay analytically. But numerically it leads to 
@@ -4675,10 +4675,15 @@ module Magnetic
       do m=m1,m2
         mmghost=m-m1+1
         call curl(f,iaa,pbb)
+!
+! if lbext_curvilinear is true, then it respects the coordinate 
+! system defined by the user. B_ext(2) then is the polar field. 
+!
         if (lbext_curvilinear) then
-          bb=(pbb(:,1)+B_ext(1))*costh(m) - (pbb(:,2)+B_ext(2))*sinth(m) 
+          bb=B_ext(2)
         else
-          bb=pbb(:,1)*costh(m) - pbb(:,2)*sinth(m) + B_ext(3)            
+          !else the field is cartesian, in the z-direction
+          bb=B_ext(3)
         endif
         uu=f(l1:l2,m,n,iuz)
         fsum_tmp(:,mmghost)=fsum_tmp(:,mmghost)+ fac*uu*bb
@@ -4690,8 +4695,15 @@ module Magnetic
       do n=n1,n2
       do m=m1,m2  
         mmghost=m-m1+1
-        df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)-uxb(:,mmghost)*sinth(m)
-        df(l1:l2,m,n,iay)=df(l1:l2,m,n,iay)-uxb(:,mmghost)*costh(m)
+        if (lbext_curvilinear) then
+          ! u\phi times b\theta = -ub \r
+          df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)+uxb(:,mmghost)
+        else
+          ! \z=cos(theta)*\r - sin(theta)\theta
+          ! u\phi times b\z = ub*sin \r + ub*cos \theta
+          df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)-uxb(:,mmghost)*sinth(m)
+          df(l1:l2,m,n,iay)=df(l1:l2,m,n,iay)-uxb(:,mmghost)*costh(m)
+        endif
       enddo
       enddo
 !
