@@ -3117,7 +3117,7 @@ module Initcond
     endsubroutine random_isotropic_KS
 !**********************************************************
     subroutine set_thermodynamical_quantities&
-         (f,ptlaw,iglobal_cs2,iglobal_glnTT)
+         (f,ptlaw,lspherical_cs2,iglobal_cs2,iglobal_glnTT)
 
       use FArrayManager
       use Mpicomm
@@ -3127,12 +3127,12 @@ module Initcond
       use Messages       , only: warning
 
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension(mx) :: rr_sph,rr_cyl,cs2
+      real, dimension(mx) :: rr,rr_sph,rr_cyl,cs2
       real, dimension(mx) :: tmp1,tmp2,gslnTT,corr
       real :: cp1,ptlaw
       integer, pointer, optional :: iglobal_cs2,iglobal_glnTT
       integer :: i
-      logical :: lheader,lenergy
+      logical :: lheader,lenergy,lspherical_cs2
 !
       intent(in)  :: ptlaw
       intent(out) :: f
@@ -3186,14 +3186,16 @@ module Initcond
         do n=1,mz
           lheader=((m==1).and.(n==1).and.lroot)
 !
-!  Calculate the sound speed
+!  Calculate the sound speed and radial temperature gradient
 !
           call get_radial_distance(rr_sph,rr_cyl)
-          call power_law(cs20,rr_cyl,ptlaw,cs2,r_ref)
-!
-!  Temperature gradient
-!
-          gslnTT=-ptlaw/((rr_cyl/r_ref)**2+rsmooth**2)*rr_cyl/r_ref**2
+          if (lspherical_cs2) then 
+            rr=rr_sph
+          else
+            rr=rr_cyl
+          endif
+          call power_law(cs20,rr,ptlaw,cs2,r_ref)
+          gslnTT=-ptlaw/((rr/r_ref)**2+rsmooth**2)*rr/r_ref**2
 !
 !  Put in the global arrays if they are to be static
 !
@@ -3208,8 +3210,15 @@ module Initcond
               f(:,m,n,iglobal_glnTT+1)=0.
               f(:,m,n,iglobal_glnTT+2)=0.
             elseif (lspherical_coords) then
-              f(:,m,n,iglobal_glnTT  )=gslnTT*sinth(m)
-              f(:,m,n,iglobal_glnTT+1)=gslnTT*costh(m)
+              if (lspherical_cs2) then 
+                !gslnTT is the spherical gradient
+                f(:,m,n,iglobal_glnTT  )=gslnTT
+                f(:,m,n,iglobal_glnTT+1)=0.
+              else
+                !gslnTT is the cylindrical gradient
+                f(:,m,n,iglobal_glnTT  )=gslnTT*sinth(m)
+                f(:,m,n,iglobal_glnTT+1)=gslnTT*costh(m)
+              endif
               f(:,m,n,iglobal_glnTT+2)=0.
             endif
           elseif (ltemperature) then
@@ -3233,15 +3242,20 @@ module Initcond
           corr=gslnTT*cs2
           if (lenergy) corr=corr/gamma
           if (lcartesian_coords) then
-            !tmp1 is the cylindrical velocity
+            !tmp1 is the angular velocity
             tmp1=(f(:,m,n,iux)**2+f(:,m,n,iuy)**2)/rr_cyl**2
             tmp2=tmp1 + corr/rr_cyl
           elseif (lcylindrical_coords) then
             tmp1=(f(:,m,n,iuy)/rr_cyl)**2
             tmp2=tmp1 + corr/rr_cyl
           elseif (lspherical_coords) then
-            tmp1=(f(:,m,n,iuz)/(rr_sph*sinth(m)))**2
-            tmp2=tmp1 + corr/(rr_sph*sinth(m)**2)
+            if (lspherical_cs2) then 
+              tmp1=(f(:,m,n,iuz)/rr_sph)**2
+              tmp2=tmp1 + corr/rr_sph
+            else
+              tmp1=(f(:,m,n,iuz)/(rr_sph*sinth(m)))**2
+              tmp2=tmp1 + corr/(rr_sph*sinth(m)**2)
+            endif
           endif
 !
           do i=1,mx
@@ -3267,7 +3281,11 @@ module Initcond
           elseif (lcylindrical_coords) then
             f(:,m,n,iuy)= sqrt(tmp2)*rr_cyl
           elseif (lspherical_coords) then 
-            f(:,m,n,iuz)= sqrt(tmp2)*rr_sph*sinth(m)
+            if (lspherical_cs2) then 
+              f(:,m,n,iuz)= sqrt(tmp2)*rr_sph
+            else
+              f(:,m,n,iuz)= sqrt(tmp2)*rr_sph*sinth(m)
+            endif
           endif
         enddo
       enddo
