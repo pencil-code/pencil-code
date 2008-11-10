@@ -61,6 +61,7 @@ module Density
   logical :: lfreeze_lnrhoint=.false.,lfreeze_lnrhoext=.false.
   logical :: lfreeze_lnrhosqu=.false.,lexponential_smooth=.false.
   logical :: lrho_as_aux=.false., ldiffusion_nolog=.false.
+  logical :: lspherical_cs2=.false.
 
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
   character (len=labellen) :: strati_type='lnrho_ss'
@@ -81,7 +82,8 @@ module Density
       kx_lnrho,ky_lnrho,kz_lnrho,amplrho,phase_lnrho,coeflnrho,     &
       co1_ss,co2_ss,Sigma1,idiff,ldensity_nolog,lexponential_smooth,&
       wdamp,plaw,lcontinuity_gas,density_floor,lanti_shockdiffusion,&
-      rshift,lrho_as_aux,ldiffusion_nolog,lnrho_z_shift
+      rshift,lrho_as_aux,ldiffusion_nolog,lnrho_z_shift,            &
+      lspherical_cs2
 
   namelist /density_run_pars/ &
       cdiffrho,diffrho,diffrho_hyper3,diffrho_shock,                &
@@ -1930,16 +1932,16 @@ module Density
       use FArrayManager
       use Mpicomm,     only:stop_it 
       use Initcond,    only:set_thermodynamical_quantities
-      use Gravity,     only:potential
+      use Gravity,     only:potential,acceleration
       use Sub,         only:get_radial_distance,grad
       use Selfgravity, only:calc_selfpotential
       use Boundcond,   only:update_ghosts
       use Particles_nbody, only:potential_nbody
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx)   :: pot,tmp1,tmp2,cs2
+      real, dimension (mx)   :: strat,tmp1,tmp2,cs2
       real, dimension (mx)   :: rr_sph,rr,rr_cyl,lnrhomid
-      real                   :: ptlaw,cp1,rmid
+      real                   :: ptlaw,cp1,rmid,lat
       integer, pointer       :: iglobal_cs2,iglobal_glnTT
       integer                :: i
       logical                :: lheader,lenergy,lpresent_zed
@@ -1958,9 +1960,9 @@ module Density
       call get_ptlaw(ptlaw)
       if (llocal_iso) then
         call set_thermodynamical_quantities&
-             (f,ptlaw,iglobal_cs2,iglobal_glnTT)
+             (f,ptlaw,lspherical_cs2,iglobal_cs2,iglobal_glnTT)
       else
-        call set_thermodynamical_quantities(f,ptlaw)
+        call set_thermodynamical_quantities(f,ptlaw,lspherical_cs2)
       endif
 !
       lpresent_zed=.false.
@@ -1978,14 +1980,20 @@ module Density
 ! midplane density
 !
           call get_radial_distance(rr_sph,rr_cyl)
-          if (lexponential_smooth) then
-             !radial_percent_smooth = percentage of the grid
-             !that the smoothing is applied
-             rmid=rshift+(xyz1(1)-xyz0(1))/radial_percent_smooth
-             lnrhomid=log(rho0) &
-                  + plaw*log((1-exp( -((rr_cyl-rshift)/rmid)**2 ))/rr_cyl)
+          if (lspherical_cs2) then 
+            rr=rr_sph
           else
-             lnrhomid=log(rho0)-.5*plaw*log((rr_cyl/r_ref)**2+rsmooth**2)
+            rr=rr_cyl
+          endif
+!
+          if (lexponential_smooth) then
+            !radial_percent_smooth = percentage of the grid
+            !that the smoothing is applied
+            rmid=rshift+(xyz1(1)-xyz0(1))/radial_percent_smooth
+            lnrhomid=log(rho0) &
+                + plaw*log((1-exp( -((rr-rshift)/rmid)**2 ))/rr)
+          else
+            lnrhomid=log(rho0)-.5*plaw*log((rr/r_ref)**2+rsmooth**2)
           endif
 !
 ! vertical stratification, if needed
@@ -1995,23 +2003,7 @@ module Density
                  print*,"Adding vertical stratification with "//&
                  "scale height h/r=",cs0
 !
-!  The subroutine "potential" yields the whole gradient.
-!  I want the function that partially derived in 
-!  z gives g0/r^3 * z. This is NOT -g0/r
-!  The second call takes care of normalizing it 
-!  i.e., there should be no correction at midplane
-!
-            if (lgrav) then 
-              call potential(POT=tmp1,RMN=rr_sph)
-              call potential(POT=tmp2,RMN=rr_cyl)
-            elseif (lparticles_nbody) then
-              call potential_nbody(POT=tmp1,RMN=rr_sph)
-              call potential_nbody(POT=tmp2,RMN=rr_cyl)
-            else
-              print*,"both gravity and particles_nbody are switched off"
-              print*,"there is no gravity to determine the stratification"
-              call stop_it("local_isothermal_density")
-            endif
+! Get the sound speed
 !
             if (llocal_iso) then
               cs2=f(:,m,n,iglobal_cs2)
@@ -2024,13 +2016,41 @@ module Density
             else
               cs2=cs20
             endif
+!            
+            if (lspherical_cs2) then
+              ! uphi2/r = -gr + dp/dr
+              call acceleration(tmp1)
+              tmp2=-tmp1*rr_sph - cs2*(plaw + ptlaw)
+              lat=pi/2-y(m)
+              strat=(tmp2/cs2) * log(cos(lat))
+            else
 !
-            pot=-(tmp1-tmp2)/cs2
-            if (lenergy) pot=gamma*pot
-          else 
-            pot=0.
+!  The subroutine "potential" yields the whole gradient.
+!  I want the function that partially derived in 
+!  z gives g0/r^3 * z. This is NOT -g0/r
+!  The second call takes care of normalizing it 
+!  i.e., there should be no correction at midplane
+!
+              if (lgrav) then 
+                call potential(POT=tmp1,RMN=rr_sph)
+                call potential(POT=tmp2,RMN=rr_cyl)
+              elseif (lparticles_nbody) then
+                call potential_nbody(POT=tmp1,RMN=rr_sph)
+                call potential_nbody(POT=tmp2,RMN=rr_cyl)
+              else
+                print*,"both gravity and particles_nbody are switched off"
+                print*,"there is no gravity to determine the stratification"
+                call stop_it("local_isothermal_density")
+              endif
+              strat=-(tmp1-tmp2)/cs2
+              if (lenergy) strat=gamma*strat
+            endif
+!
+          else
+! no stratification
+            strat=0.
           endif
-          f(:,m,n,ilnrho) = max(lnrhomid+pot,density_floor)
+          f(:,m,n,ilnrho) = max(lnrhomid+strat,density_floor)
         enddo
       enddo
 !
@@ -2040,11 +2060,11 @@ module Density
 !
 ! Correct the velocities by this density gradient
 !
-      call correct_density_gradient(f)
+      call correct_density_gradient(f,lspherical_cs2)
 !
     endsubroutine local_isothermal_density
 !***********************************************************************
-    subroutine correct_density_gradient(f)
+    subroutine correct_density_gradient(f,lspherical_cs2)
 ! 
 ! Correct for density gradient term in the centrifugal force. The
 ! temperature gradient was already corrected for when setting the
@@ -2062,13 +2082,16 @@ module Density
       real, dimension (nx)   :: cs2,tmp1,tmp2,corr,gslnrho
       integer,pointer        :: iglobal_cs2
       integer                :: i
-      logical                :: lheader,lenergy
+      logical                :: lheader,lenergy,lsc2
+      logical,optional       :: lspherical_cs2
       real                   :: cp1
 !
       if (lroot) print*,'Correcting density gradient on the '//&
            'centrifugal force'
 !
       lenergy=ltemperature.or.lentropy
+      lsc2=.false.
+      if (present(lspherical_cs2)) lsc2=.true.
 !
       if (llocal_iso) &
            call farray_use_global('cs2',iglobal_cs2)
@@ -2087,7 +2110,11 @@ module Density
           else if (lcylindrical_coords) then 
             gslnrho=glnrho(:,1)
           else if (lspherical_coords) then 
-            gslnrho=glnrho(:,1)*sinth(m) + glnrho(:,2)*costh(m)
+            if (lsc2) then 
+              gslnrho=glnrho(:,1)
+            else
+              gslnrho=glnrho(:,1)*sinth(m) + glnrho(:,2)*costh(m)
+            endif
           endif
 !
 ! get sound speed
@@ -2116,8 +2143,13 @@ module Density
             tmp1=(f(l1:l2,m,n,iuy)/rr_cyl)**2
             tmp2=tmp1 + corr/rr_cyl
           elseif (lspherical_coords) then
-            tmp1=(f(l1:l2,m,n,iuz)/(rr_sph*sinth(m)))**2
-            tmp2=tmp1 + corr/(rr_sph*sinth(m)**2)
+            if (lsc2) then 
+              tmp1=(f(l1:l2,m,n,iuz)/rr_sph)**2
+              tmp2=tmp1 + corr/rr_sph
+            else
+              tmp1=(f(l1:l2,m,n,iuz)/(rr_sph*sinth(m)))**2
+              tmp2=tmp1 + corr/(rr_sph*sinth(m)**2)
+            endif
           endif
 !
           do i=1,nx
@@ -2146,7 +2178,11 @@ module Density
           elseif (lcylindrical_coords) then
             f(l1:l2,m,n,iuy)= sqrt(tmp2)*rr_cyl
           elseif (lspherical_coords) then 
-            f(l1:l2,m,n,iuz)= sqrt(tmp2)*rr_sph*sinth(m)
+            if (lsc2) then 
+              f(l1:l2,m,n,iuz)= sqrt(tmp2)*rr_sph
+            else
+              f(l1:l2,m,n,iuz)= sqrt(tmp2)*rr_sph*sinth(m)
+            endif
           endif
         enddo
       enddo
@@ -2332,7 +2368,7 @@ subroutine power_law_gaussian_disk(f)
 !**********************************************************************
     subroutine power_law_disk(f)
 !
-! Simple power-law disk. It sets only the density
+! Simple power-law disk. It sets only the density, whereas 
 ! local_isothermal sets the density and thermodynamical
 ! quantities
 !
