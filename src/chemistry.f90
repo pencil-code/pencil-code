@@ -87,11 +87,11 @@ module Chemistry
   integer :: imass=1, iTemp1=2,iTemp2=3,iTemp3=4
   integer, dimension(7) :: iaa1,iaa2
   real, allocatable, dimension(:)  :: B_n, alpha_n, E_an
-  real, allocatable, dimension(:,:) :: low_coeff,troe_coeff,a_k4
+  real, allocatable, dimension(:,:) :: low_coeff,high_coeff,troe_coeff,a_k4
   real, dimension(nchemspec,7)     :: tran_data
   real, dimension (nx,nchemspec), SAVE  :: S0_R
   real, dimension (mx,my,mz,nchemspec), SAVE :: H0_RT
-  logical, allocatable, dimension(:)  :: lLOW, lHIGH
+  
 
   logical :: Natalia_thoughts=.false.
  
@@ -650,13 +650,9 @@ module Chemistry
 !  Calculate grad(enthalpy)
 !
 
-
-
         if (lpenc_requested(i_ghYrho)) then
          call grad(hYrho_full,p%ghYrho)
         endif
-
-
 
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
@@ -1122,17 +1118,15 @@ module Chemistry
           allocate(low_coeff(3,nreactions),STAT=stat)
           low_coeff=0.
           if (stat>0) call stop_it("Couldn't allocate memory for low_coeff")
+          allocate(high_coeff(3,nreactions),STAT=stat)
+          high_coeff=0.
+          if (stat>0) call stop_it("Couldn't allocate memory for high_coeff")
           allocate(troe_coeff(3,nreactions),STAT=stat)
           troe_coeff=0.
           if (stat>0) call stop_it("Couldn't allocate memory for troe_coeff")
           allocate(a_k4(nchemspec,nreactions),STAT=stat)
           a_k4=impossible 
           if (stat>0) call stop_it("Couldn't allocate memory for troe_coeff")
-          allocate(lLOW(nreactions),STAT=stat)
-          lLOW=.false.
-          if (stat>0) call stop_it("Couldn't allocate memory for troe_coeff")
-          allocate(lHIGH(nreactions),STAT=stat)
-          lHIGH=.false.
         endif
 !
 !  Initialize data
@@ -1881,7 +1875,6 @@ module Chemistry
                       if (ChemInpLine_add(i:i)==' ') then
                         i=i+1
                       elseif (ChemInpLine_add(i:i+2)=='LOW') then
-                       lLOW(k)=.true.
                        print*,ChemInpLine_add(i:i+2),'   coefficients for reaction ', reaction_name(k),'number ', k 
                         VarNumber_add=1; StartInd_add=i+4; StopInd_add=i+4
                         do while (VarNumber_add<4)
@@ -1940,13 +1933,34 @@ module Chemistry
                         enddo
                         i=80
                       elseif (ChemInpLine_add(i:i+3)=='HIGH') then
-                         lHIGH(k)=.true.
-                        !
-                        ! should be added later !!!
-                        ! NILS: There will probably never by such a thing.....????
-                        !
-                    
-
+                       print*,ChemInpLine_add(i:i+3),'   coefficients for reaction ', reaction_name(k),'number ', k 
+                        VarNumber_add=1; StartInd_add=i+5; StopInd_add=i+5
+                        do while (VarNumber_add<4)
+                          StopInd_add=index(ChemInpLine_add(StartInd_add:),' ')+StartInd_add-2
+                          StopInd_add_=index(ChemInpLine_add(StartInd_add:),'/')+StartInd_add-2
+                          StopInd_add=min(StopInd_add,StopInd_add_)
+                          if (StopInd_add==StartInd_add) then
+                            StartInd_add=StartInd_add+1
+                          else
+                            if (VarNumber_add==1) then
+                              read (unit=ChemInpLine_add(StartInd_add:StopInd_add),fmt='(E15.8)') high_coeff(1,k)
+                              print*,high_coeff(1,k)
+                            elseif (VarNumber_add==2) then
+                              read (unit=ChemInpLine_add(StartInd_add:StopInd_add),fmt='(E15.8)') high_coeff(2,k)
+                              print*,high_coeff(2,k)
+                            elseif (VarNumber_add==3) then
+                              read (unit=ChemInpLine_add(StartInd_add:StopInd_add),fmt='(E15.8)') high_coeff(3,k)
+                              print*,high_coeff(3,k)
+                            else
+                              call stop_it("No such VarNumber!")
+                            endif
+                          endif
+                          VarNumber_add=VarNumber_add+1
+                          !   StartInd_add=StopInd_add
+                          StartInd_add=verify(ChemInpLine_add(StopInd_add+1:),' ')+StopInd_add
+                          StopInd_add=StartInd_add
+                        enddo
+                        i=80
                       else 
                         print*,' --------------  a_k4 coefficients----------------'
                         !                a_k4=0.
@@ -2197,13 +2211,16 @@ module Chemistry
           write(unit=output_string(64:79),fmt='(E14.4)') E_an(reac)
           write(file_id,*) trim(output_string)
           if (maxval(abs(low_coeff(:,reac))) > 0.) then
-            write(file_id,*) 'LOW/',low_coeff(:,reac) 
+            write(file_id,*) 'LOW/',low_coeff(:,reac)
+          elseif (maxval(abs(high_coeff(:,reac))) > 0.) then
+            write(file_id,*) 'HIGH/',high_coeff(:,reac)
           endif
           if (minval(a_k4(:,reac))<impossible) then
             write(file_id,*) a_k4(:,reac)
           endif
         enddo
         write(file_id,*) 'END'
+
         close(file_id) 
         !
       end subroutine write_reactions
@@ -2410,10 +2427,6 @@ module Chemistry
        ! The Lindstrom approach to the fall of reactions
        !
 
-print*,'NATALIA_low',lLOW
-print*,'NATALIA_high',lHIGH
-
-
        Kc_0=Kc
        if (maxval(abs(low_coeff(:,reac))) > 0.) then
          B_n_0=low_coeff(1,reac) 
@@ -2423,7 +2436,16 @@ print*,'NATALIA_high',lHIGH
          Pr=kf_0/kf*mix_conc
          kf=kf*(Pr/(1.+Pr))
          kr(:)=kf(:)/Kc_0
-       endif    
+       elseif (maxval(abs(high_coeff(:,reac))) > 0.) then
+         B_n_0=high_coeff(1,reac) 
+         alpha_n_0=high_coeff(2,reac)
+         E_an_0=high_coeff(3,reac)                      
+         kf_0(:)=B_n_0*T_cgs(:)**alpha_n_0*exp(-E_an_0/Rcal/T_cgs(:))            
+         Pr=kf_0/kf*mix_conc
+         kf=kf*(1./(1.+Pr))
+         kr(:)=kf(:)/Kc_0
+       endif  
+
        !
        ! Find forward (vreact_p) and backward (vreact_m) rate of 
        ! progress variable. 
