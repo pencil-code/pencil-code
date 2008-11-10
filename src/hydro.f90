@@ -2242,7 +2242,7 @@ module Hydro
                    (coord_system=='cartesian')) then
                 OO=sqrt(max(-g_r/rr_cyl,0.))
               else if (coord_system=='spherical') then
-                OO=sqrt(max(-g_r/(rr_sph*sinth(m)**2),0.))
+                OO=sqrt(max(-g_r/rr_sph,0.))
               endif
             endif
 !
@@ -2259,7 +2259,7 @@ module Hydro
               if (lcylindrical_gravity) &
                    OO=tmp*sqrt(rr_sph/rr_cyl)
             elseif (lspherical_coords) then
-              OO=tmp/sinth(m) 
+              OO=tmp
             endif
 !
           endif
@@ -2275,7 +2275,7 @@ module Hydro
           elseif (coord_system=='spherical') then
             f(:,m,n,iux) = f(:,m,n,iux) + 0.
             f(:,m,n,iuy) = f(:,m,n,iuy) + 0.
-            f(:,m,n,iuz) = f(:,m,n,iuz) + OO*(rr_sph*sinth(m))
+            f(:,m,n,iuz) = f(:,m,n,iuz) + OO*rr_sph
           endif
 !
         enddo
