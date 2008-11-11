@@ -1280,12 +1280,14 @@ module Entropy
 !
 !  beta is the (negative) temperature gradient
 !  beta = -(g/cp) /[(1-1/gamma)*(m+1)]
+!  gamma*(Rgas/mu)T0 = cs2(ad) = cp*T0*gamma1,
+!  so T0 = cs20*cp1/gamma1
 !
       call get_cp1(cp1)
       beta=-cp1*gravz/(mpoly0+1.)*gamma/gamma1
       ztop=xyz0(3)+Lxyz(3)
       zbot=xyz0(3)
-      T0=cs20/gamma1
+      T0=cs20*cp1/gamma1
       print*, 'polytrope: mpoly0, beta, T0=', mpoly0, beta, T0
 !
       do imn=1,ny*nz
