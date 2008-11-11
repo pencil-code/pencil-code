@@ -35,7 +35,7 @@ module Chemistry
   real :: Rgas, Rgas_unit_sys=1.
   real, dimension (mx,my,mz) :: cp_full,cv_full,mu1_full, nu_full, lambda_full, rho_full, nu_art_full=0.
   real, dimension (mx,my,mz,nchemspec) :: cvspec_full
-   real, dimension (mx,my,mz,nchemspec) ::  cp_R_spec
+  real, dimension (mx,my,mz,nchemspec) ::  cp_R_spec
   real, dimension (mx,my,mz) ::  TT_full
   real, dimension (mx,my,mz) :: hYrho_full, e_int_full
 
@@ -88,6 +88,7 @@ module Chemistry
   integer, dimension(7) :: iaa1,iaa2
   real, allocatable, dimension(:)  :: B_n, alpha_n, E_an
   real, allocatable, dimension(:,:) :: low_coeff,high_coeff,troe_coeff,a_k4
+  logical, allocatable, dimension(:) :: Mplus_case
   real, dimension(nchemspec,7)     :: tran_data
   real, dimension (nx,nchemspec), SAVE  :: S0_R
   real, dimension (mx,my,mz,nchemspec), SAVE :: H0_RT
@@ -1127,6 +1128,9 @@ module Chemistry
           allocate(a_k4(nchemspec,nreactions),STAT=stat)
           a_k4=impossible 
           if (stat>0) call stop_it("Couldn't allocate memory for troe_coeff")
+          allocate(Mplus_case(nreactions),STAT=stat)
+          Mplus_case=.false. 
+          if (stat>0) call stop_it("Couldn't allocate memory for Mplus_case")
         endif
 !
 !  Initialize data
@@ -1858,18 +1862,20 @@ module Chemistry
                   endif
                   !
                   !  reading of the additional data for (+M) case
-                  ! 
-
-                  
+                  !
 
 
 100               read(file_id,'(80A)',end=1012) ChemInpLine_add(1:80)
                   if (ChemInpLine_add(1:1) == ' ') then
 
 ! Natalia_new
-                  
-                   if (MplussInd>0 .and. ParanthesisInd==0) then
+              !     if (MplussInd>0 .and. ParanthesisInd==0) then
 !
+                    if (ParanthesisInd>0) then
+                      Mplus_case(k)=.true.
+                    endif
+
+
                     i=1
                     do while (i<80)
                       if (ChemInpLine_add(i:i)==' ') then
@@ -2001,7 +2007,7 @@ module Chemistry
                     goto 100
             
 !Natalia_new 
-                   endif
+                !   endif
 !
                   else
                     found_new_reaction=.true.
@@ -2220,6 +2226,7 @@ module Chemistry
           endif
         enddo
         write(file_id,*) 'END'
+         write(file_id,*) '(M+) case: ',Mplus_case
 
         close(file_id) 
         !
@@ -2450,9 +2457,15 @@ module Chemistry
        ! Find forward (vreact_p) and backward (vreact_m) rate of 
        ! progress variable. 
        ! (vreact_p - vreact_m) is labeled q in the chemkin manual
-       !       
-       vreact_p(:,reac)=prod1*kf*sum_sp
-       vreact_m(:,reac)=prod2*kr*sum_sp
+       ! 
+       if (Mplus_case(reac)) then
+        vreact_p(:,reac)=prod1*kf
+        vreact_m(:,reac)=prod2*kr
+       else
+        vreact_p(:,reac)=prod1*kf*sum_sp
+        vreact_m(:,reac)=prod2*kr*sum_sp
+       endif
+
     enddo
     !
   end subroutine get_reaction_rate

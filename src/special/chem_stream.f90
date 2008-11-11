@@ -637,7 +637,7 @@ module Special
 
       if (abs(x(k))<0.2) then
        f(k,:,:,ilnrho)=log(rho_init) &
-          +log(1.01)*((0.2-abs(x(k)))/0.2)**2
+          +log(1.1)*((0.2-abs(x(k)))/0.2)**2
       else
         f(k,:,:,ilnrho)=log(rho_init)
       endif
@@ -646,7 +646,7 @@ module Special
 
      f(:,:,:,ilnTT)=log(T_init)!-(xx(:,:,:)/(0.5*Lxyz(1)))**2
      !f(l1:mx,:,:,ichemspec(nchemspec))=Y3_init
-     f(:,:,:,iux)=1.
+     f(:,:,:,iux)=ux_init
 
 
    endsubroutine bomb_field
