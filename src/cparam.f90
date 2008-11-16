@@ -129,7 +129,7 @@ module Cparam
 !
   type slice_data
     character (LEN=30) :: name
-    integer :: ix, iy, iz, iz2
+    integer :: ix, iy, iz, iz2, iz3, iz4
     integer :: index
     logical :: ready
     real, pointer, dimension (:,:) :: xy

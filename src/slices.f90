@@ -15,18 +15,20 @@ module Slices
 
 !  Variables for xy slices start here
 !!! New slice code reuses the following slice variables.
-  real, target, dimension (nx,ny) :: slice_xy = 0., slice_xy2 = 0.
+  real, target, dimension (nx,ny) :: slice_xy  = 0., slice_xy2 = 0.
   real, target, dimension (nx,nz) :: slice_xz = 0.
   real, target, dimension (ny,nz) :: slice_yz = 0.
-
+!
+!  xy3 and xy4 for spherical slices  
+!
+  real, target, dimension (nx,ny) :: slice_xy3 = 0., slice_xy4 = 0.
+!
 !!! LEGACY SLICE VARIABLES FOLLOW
 !  Code variables
-
 !
-! Density SLices
+! Density Slices
 !
   real, public, dimension (nx,ny) :: lnrho_xy
-
 !
 ! EOS Slices
 !
@@ -34,12 +36,10 @@ module Slices
   real, public, dimension (nx,ny) :: yH_xy
   real, public, dimension (nx,ny) :: lnTT_xy
   real, public, dimension (nx,ny) :: pp_xy
-
 !
 ! Pscalar Slices
 !
   real, public, dimension (nx,ny) :: cc_xy,lncc_xy
-
 !
 ! Dust slices
 !
@@ -69,6 +69,9 @@ module Slices
   real, public, dimension (nx,ny) :: lnTT_xy2
   real, public, dimension (nx,ny) :: epsd_xy2
   real, public, dimension (nx,ny) :: pp_xy2
+!  Variables for xy3 and xy4, necessary for 
+!  spherical slices, start here
+  real, public, dimension (nx,ny) :: lnrho_xy3,lnrho_xy4
 !  Variables for xz slices start here
 !  Code variables
   real, public, dimension (nx,nz,3) :: uud_xz,vvp_xz
@@ -99,9 +102,9 @@ module Slices
   real, public :: tvid
   integer, public :: nvid
   real :: tslice
-
+!
   contains
-
+!
 !***********************************************************************
     subroutine wvid_prepare
 !
@@ -182,6 +185,8 @@ module Slices
       slices%iy=iy_loc
       slices%iz=iz_loc
       slices%iz2=iz2_loc
+      slices%iz3=iz3_loc
+      slices%iz4=iz4_loc
       slices%ready=.false.
       slices%index=0
 !
@@ -207,10 +212,16 @@ module Slices
           lnrho_xz=f(l1:l2,iy_loc,n1:n2,ilnrho)
           lnrho_xy=f(l1:l2,m1:m2,iz_loc,ilnrho)
           lnrho_xy2=f(l1:l2,m1:m2,iz2_loc,ilnrho)
+          lnrho_xy3=f(l1:l2,m1:m2,iz3_loc,ilnrho)
+          lnrho_xy4=f(l1:l2,m1:m2,iz4_loc,ilnrho)
           call wslice(path//'lnrho.yz',lnrho_yz,x(ix_loc),ny,nz)
           call wslice(path//'lnrho.xz',lnrho_xz,y(iy_loc),nx,nz)
           call wslice(path//'lnrho.xy',lnrho_xy,z(iz_loc),nx,ny)
           call wslice(path//'lnrho.xy2',lnrho_xy2,z(iz2_loc),nx,ny)
+          if (lwrite_slice_xy3) &
+              call wslice(path//'lnrho.xy3',lnrho_xy3,z(iz3_loc),nx,ny)
+          if (lwrite_slice_xy4) & 
+              call wslice(path//'lnrho.xy4',lnrho_xy4,z(iz4_loc),nx,ny)
 !
 !  Entropy (code variable)
 !
@@ -523,7 +534,9 @@ module Slices
 !  26-jun-06/anders: moved from Slices
 !  22-sep-07/axel: changed Xy to xy2, to be compatible with Mac
 !
-      use Cdata, only: t, lwrite_slice_xy2, lwrite_slice_xy, lwrite_slice_xz, lwrite_slice_yz
+      use Cdata, only: t, lwrite_slice_xy ,lwrite_slice_xy2, &
+                          lwrite_slice_xy3,lwrite_slice_xy4, &
+                          lwrite_slice_xz ,lwrite_slice_yz 
 !
       integer :: ndim1,ndim2
       character (len=*) :: filename
@@ -532,10 +545,12 @@ module Slices
 !
 !  check whether we want to write a slice on this processor
 !
-      if ( (lwrite_slice_xy2.and.index(filename,'xy2')>0) .or. &
-           (lwrite_slice_xy .and.index(filename,'xy')>0) .or. &
-           (lwrite_slice_xz .and.index(filename,'xz')>0) .or. &
-           (lwrite_slice_yz .and.index(filename,'yz')>0) ) then
+      if ( (lwrite_slice_xy .and.index(filename,'xy' )>0) .or. & 
+           (lwrite_slice_xy2.and.index(filename,'xy2')>0) .or. &
+           (lwrite_slice_xy3.and.index(filename,'xy3')>0) .or. &
+           (lwrite_slice_xy4.and.index(filename,'xy4')>0) .or. &
+           (lwrite_slice_xz .and.index(filename,'xz' )>0) .or. &
+           (lwrite_slice_yz .and.index(filename,'yz' )>0) ) then
         open(1,file=filename,form='unformatted',position='append')
         write(1) a,tslice,pos
         close(1)
@@ -577,6 +592,29 @@ module Slices
         lwrite_slice_xz=(ipy==nprocy/2)
         lwrite_slice_yz=.true.
 !
+!  slice positions for spherical coordinates
+!  w is for "wedges" since the outputs are 
+!  the midplane (rphi,theta=y(mpoint)) and four 
+!  wedges in rtheta (xy)
+!
+      elseif (slice_position=='w') then
+        !midplane slices
+        ix_loc=(l1+l2)/2
+        iy_loc=(m1+m2)/2
+        !meridional wedges, at 4 different 
+        !equally spaced azimuthal locations
+        iz =  0*nzgrid/4+1+nghost
+        iz2=  1*nzgrid/4+1+nghost
+        iz3=  2*nzgrid/4+1+nghost
+        iz4=  3*nzgrid/4+1+nghost
+!
+        lwrite_slice_xy =.true.
+        lwrite_slice_xy2=.true.
+        lwrite_slice_xy3=.true.
+        lwrite_slice_xy4=.true.
+        lwrite_slice_xz =.true.
+        lwrite_slice_yz =.false.        
+!
 !  slice position when the first meshpoint in z is the equator (sphere)
 !  For one z-processor, iz remains n1, but iz2 is set to the middle.
 !
@@ -616,7 +654,21 @@ module Slices
         endif
       endif
 !
-!  Overwrite slice postions if any ix,iy,iz,iz2 is greater then Zero
+!  Spherical admits only position 'sph'. Break if this is not met.
+!  Also, turn extra r-theta slices to false in case of 
+!  non-spherical coordinates
+!
+      if (coord_system=='spherical') then
+        if (slice_position/='w') &
+            call fatal_error("setup_slices",&
+            "You are using spherical coordinates. "//&
+            "Switch slice_position='w' in run_pars")
+      else
+        lwrite_slice_xy3=.false.
+        lwrite_slice_xy4=.false.
+      endif
+!
+!  Overwrite slice postions if any ix,iy,iz,iz2,iz3,iz4 is greater then Zero
 !
       if (ix>0) then
         ix_loc=ix-ipx*nx
@@ -626,7 +678,7 @@ module Slices
           lwrite_slice_yz=.false.
         endif
       endif
-
+!
       if (iy>0) then
         iy_loc=iy-ipy*ny
         if (iy_loc>=m1.and.iy_loc<=m2) then
@@ -635,7 +687,7 @@ module Slices
           lwrite_slice_xz=.false.
         endif
       endif
-
+!
       if (iz>0) then
         iz_loc=iz-ipz*nz
         if (iz_loc>=n1.and.iz_loc<=n2) then
@@ -644,13 +696,31 @@ module Slices
           lwrite_slice_xy=.false.
         endif
       endif
-
+!
       if (iz2>0) then
         iz2_loc=iz2-ipz*nz
         if (iz2_loc>=n1.and.iz2_loc<=n2) then
           lwrite_slice_xy2=.true.
         else
           lwrite_slice_xy2=.false.
+        endif
+      endif
+!
+      if (iz3>0) then
+        iz3_loc=iz3-ipz*nz
+        if (iz3_loc>=n1.and.iz3_loc<=n2) then
+          lwrite_slice_xy3=.true.
+        else
+          lwrite_slice_xy3=.false.
+        endif
+      endif
+!
+      if (iz4>0) then
+        iz4_loc=iz4-ipz*nz
+        if (iz4_loc>=n1.and.iz4_loc<=n2) then
+          lwrite_slice_xy4=.true.
+        else
+          lwrite_slice_xy4=.false.
         endif
       endif
 !
@@ -675,20 +745,36 @@ module Slices
         write(1,'(2i5,e12.4)') ipz,iz2_loc,z(iz2_loc)
         close(1)
       endif
+      if (lwrite_slice_xy3.and.ipy==0) then
+        open(1,file=trim(directory)//'/ztop_procnum.dat',STATUS='unknown')
+        write(1,'(2i5,e12.4)') ipz,iz3_loc,z(iz3_loc)
+        close(1)
+      endif
+      if (lwrite_slice_xy4.and.ipy==0) then
+        open(1,file=trim(directory)//'/ztop_procnum.dat',STATUS='unknown')
+        write(1,'(2i5,e12.4)') ipz,iz4_loc,z(iz4_loc)
+        close(1)
+      endif
 !
-!  make sure ix_loc,iy_loc,iz_loc,iz2_loc are not outside the boundaries
+!  make sure ix_loc,iy_loc,iz_loc,iz2_loc,iz3_loc,iz4_loc 
+!  are not outside the boundaries
 !
-      ix_loc=min(ix_loc,l2); iy_loc=min(iy_loc,m2)
-      ix_loc=max(ix_loc,l1); iy_loc=max(iy_loc,m1)
-      iz_loc=min(iz_loc,n2); iz2_loc=min(iz2_loc,n2)
-      iz_loc=max(iz_loc,n1); iz2_loc=max(iz2_loc,n1)
-
+       ix_loc=min( ix_loc,l2) ;  iy_loc=min( iy_loc,m2)
+       ix_loc=max( ix_loc,l1) ;  iy_loc=max( iy_loc,m1)
+       iz_loc=min( iz_loc,n2) ; iz2_loc=min(iz2_loc,n2)
+       iz_loc=max( iz_loc,n1) ; iz2_loc=max(iz2_loc,n1)
+      iz3_loc=min(iz3_loc,n2) ; iz4_loc=min(iz4_loc,n2)
+      iz3_loc=max(iz3_loc,n1) ; iz4_loc=max(iz4_loc,n1)
+!
       if (lroot) then
         write (*,*)'read_runpars: slice_position = '//slice_position
         write (*,'(1x,a,4i4)') &
-          'read_runpars: ix,iy,iz,iz2 (video files) =',ix,iy,iz,iz2
+          'read_runpars: ix,iy,iz,iz2 (video files) =',&
+          ix,iy,iz,iz2
+        if (lspherical_coords) write (*,'(1x,a,2i4)') &
+          'read_runpars: iz3, iz4 (video files) =',iz3,iz4
       endif
-
+!
     endsubroutine setup_slices
 !***********************************************************************
     subroutine zlocation(zpos,izpos,lproc)

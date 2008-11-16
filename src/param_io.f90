@@ -106,7 +106,7 @@ module Param_IO
        lread_oldsnap_nomag,lread_oldsnap_nopscalar, &
        lread_oldsnap_notestfield, &
        comment_char, &
-       ix,iy,iz,iz2,slice_position,zbot_slice,ztop_slice, &
+       ix,iy,iz,iz2,iz3,iz4,slice_position,zbot_slice,ztop_slice, &
        bcx,bcy,bcz,r_int,r_ext, &
        nscbc, &
        lfreeze_varsquare,lfreeze_varint,lfreeze_varext, &
