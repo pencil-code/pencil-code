@@ -4323,7 +4323,7 @@ module Boundcond
       call der_onesided_4_slice(f,sgn,iux,du_dx,lll,1)
 
       Mach_num=maxval(f(lll,m1:m2,n1:n2,iux)/cs0_ar)
-      KK=nscbc_sigma*(1.-Mach_num)*cs0_ar/Lxyz(1)
+      KK=nscbc_sigma*(1.-Mach_num*Mach_num)*cs0_ar/Lxyz(1)
       
 
       select case(topbot)

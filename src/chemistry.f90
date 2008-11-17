@@ -3025,10 +3025,10 @@ module Chemistry
 
       f(:,:,:,ilnrho)=log((PP*10./(k_B_cgs/m_u_cgs)*air_mass/TT)/unit_mass*unit_length**3)
 
-      pp_infx(1:2,:,:)=PP
+      pp_infx(1:2,:,:)=PP*10.
 
       if (lroot) print*, 'Air temperature, K', TT
-      if (lroot) print*, 'Air pressure, K', PP
+      if (lroot) print*, 'Air pressure, dyn', PP*10.
       if (lroot) print*, 'Air density, g/cm^3:'
       if (lroot) print '(E10.3)',  PP*10./(k_B_cgs/m_u_cgs)*air_mass/TT
       if (lroot) print*, 'Air mean weight, g/mol', air_mass
