@@ -2864,6 +2864,25 @@ module Chemistry
       endselect
  endsubroutine calc_cs2x
 !*************************************************************
+subroutine get_gamma(gamma0,topbot)
+
+ use Mpicomm
+
+    real, dimension(mx,my,mz,mfarray) :: f
+   real, dimension (ny,nz) :: gamma0
+   character (len=3) :: topbot
+   integer :: k
+
+   select case(topbot)
+      case('bot')               ! bottom boundary
+       gamma0=cp_full(l1,m1:m2,n1:n2)/cv_full(l1,m1:m2,n1:n2)
+      case('top')               ! top boundary
+       gamma0=cp_full(l2,m1:m2,n1:n2)/cv_full(l2,m1:m2,n1:n2)
+      case default
+        print*, "get_gamma: ", topbot, " should be `top' or `bot'"
+      endselect
+ endsubroutine get_gamma
+!*************************************************************
    subroutine air_field(f)
 
   use Mpicomm

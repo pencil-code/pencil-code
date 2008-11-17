@@ -392,8 +392,8 @@ module Cdata
 ! to set it is case dependent.
 !
   logical :: lnscbc = .false.
-  character(len=2*nscbc_len+1), dimension(3) :: nscbc=''
-  character(len=nscbc_len), dimension(3) :: nscbc1,nscbc2
+  character(len=2*nscbc_len+1), dimension(5) :: nscbc=''
+  character(len=nscbc_len), dimension(5) :: nscbc1,nscbc2
   real :: nscbc_sigma = 1.
 !
 !  Parameters for freezing boundary zones.

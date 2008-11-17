@@ -687,6 +687,8 @@ module Boundcond
           call nscbc_boundtreat_xyz(f,df,2)
       if (nscbc1(3) /= '' .or. nscbc2(3) /= '') &
           call nscbc_boundtreat_xyz(f,df,3)
+      if (nscbc1(5) /= '' .or. nscbc2(5) /= '') &
+          call nscbc_boundtreat_xyz(f,df,5)
     endsubroutine
 !***********************************************************************
     subroutine nscbc_boundtreat_xyz(f,df,j)
@@ -737,6 +739,9 @@ module Boundcond
             direction = 3
             call bc_nscbc_prf_z(f,df,topbot,linlet=.true.,u_t=valz(direction))
           endif
+        case('subsonic_inflow')
+! Subsonic inflow 
+          call bc_nscbc_subin_x(f,df,topbot)
         case('')
 !   Do nothing.
         endselect
@@ -4163,5 +4168,88 @@ module Boundcond
         df(l1:l2,m1:m2,lll,iuz) = prefac2*(L_1 - L_5)
       endselect
     endsubroutine
+!***********************************************************************
+!***********************************************************************
+    subroutine bc_nscbc_subin_x(f,df,topbot)
+!
+!   Calculate du and dlnrho at a partially reflecting outlet/inlet normal to 
+!   x-direction acc. to LODI relations. Uses a one-sided finite diff. stencil.
+!
+!   16-nov-08/natalia: coded.
+!
+      use MpiComm, only: stop_it
+      use EquationOfState, only: cs0, cs20
+      use Deriv, only: der_onesided_4_slice
+
+      use Chemistry
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      character (len=3) :: topbot
+      real, dimension(ny,nz) :: du_dx, dlnrho_dx, rho0, L_1, L_2, L_5 
+      real, dimension(ny,nz) :: dp_prefac
+      real, dimension (ny,nz) :: cs2x,cs0_ar,cs20_ar,gamma0
+      integer lll
+      integer sgn
+
+      intent(in) :: f
+      intent(out) :: df
+   
+      select case(topbot)
+      case('bot')
+        lll = l1
+        sgn = 1
+        if (leos_chemistry) then 
+          call calc_cs2x(cs2x,'bot',f)
+          call get_gamma(gamma0,'bot') 
+        endif
+      case('top')
+        lll = l2
+        sgn = -1
+        if (leos_chemistry) then
+          call calc_cs2x(cs2x,'top',f)
+          call get_gamma(gamma0,'top')
+        endif
+      case default
+        print*, "bc_nscbc_subin_x: ", topbot, " should be `top' or `bot'"
+      endselect
+
+      if (leos_chemistry) then
+         cs20_ar=cs2x
+         cs0_ar=cs2x**0.5
+        if (ldensity_nolog) then
+          rho0 = f(lll,m1:m2,n1:n2,ilnrho)
+          dp_prefac = cs20_ar/gamma0
+        else
+          rho0 = exp(f(lll,m1:m2,n1:n2,ilnrho))
+          dp_prefac = cs20_ar*rho0/gamma0
+        endif
+      else
+        print*,"bc_nscbc_subin_x: leos_idealgas=",leos_idealgas,"."
+        print*,"NSCBC subsonic inflos is only implemented for the chemistry case." 
+        print*,"Boundary treatment skipped."
+        return
+      endif
+      call der_onesided_4_slice(f,sgn,ilnrho,dlnrho_dx,lll,1)
+      call der_onesided_4_slice(f,sgn,iux,du_dx,lll,1)
+      
+      select case(topbot)
+      case('bot')
+        L_1 = (f(lll,m1:m2,n1:n2,iux) - cs0_ar)*&
+            (dp_prefac*dlnrho_dx - rho0*cs0_ar*du_dx)
+        L_5 =L_1-2.*rho0*cs0_ar*df(lll,m1:m2,n1:n2,iux)/dt
+      case('top')
+        L_5 = (f(lll,m1:m2,n1:n2,iux) + cs0_ar)*&
+            (dp_prefac*dlnrho_dx + rho0*cs0_ar*du_dx)
+        L_1 = L_5+2.*rho0*cs0_ar*df(lll,m1:m2,n1:n2,iux)/dt
+      endselect
+        L_2 = 0.5*(gamma0-1.)*(L_5+L_1)+rho0*cs20_ar*df(lll,m1:m2,n1:n2,ilnTT)/dt
+      if (ldensity_nolog) then
+          df(lll,m1:m2,n1:n2,ilnrho) = -dt/cs20_ar*(L_2+0.5*(L_5 + L_1))
+      else
+          df(lll,m1:m2,n1:n2,ilnrho) = -dt/rho0/cs20_ar*(L_2+0.5*(L_5 + L_1))
+      endif
+            
+    endsubroutine bc_nscbc_subin_x
 !***********************************************************************
 endmodule Boundcond

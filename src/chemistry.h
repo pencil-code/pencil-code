@@ -18,6 +18,7 @@
   public :: calc_for_chem_mixture
 
   public :: calc_cs2x
+  public :: get_gamma
 
 ! public :: chemistry_calc_density
 ! public :: chemistry_calc_hydro
