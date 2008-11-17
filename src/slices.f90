@@ -599,20 +599,15 @@ module Slices
 !
       elseif (slice_position=='w') then
         !midplane slices
-        ix_loc=(l1+l2)/2
-        iy_loc=(m1+m2)/2
+        !ix_loc=nxgrid/2+nghost
+        iy = nygrid/2+nghost
         !meridional wedges, at 4 different 
         !equally spaced azimuthal locations
         iz =  0*nzgrid/4+1+nghost
         iz2=  1*nzgrid/4+1+nghost
         iz3=  2*nzgrid/4+1+nghost
         iz4=  3*nzgrid/4+1+nghost
-!
-        lwrite_slice_xy =.true.
-        lwrite_slice_xy2=.true.
-        lwrite_slice_xy3=.true.
-        lwrite_slice_xy4=.true.
-        lwrite_slice_xz =.true.
+        !yz is not needed
         lwrite_slice_yz =.false.        
 !
 !  slice position when the first meshpoint in z is the equator (sphere)
@@ -771,7 +766,7 @@ module Slices
         write (*,'(1x,a,4i4)') &
           'read_runpars: ix,iy,iz,iz2 (video files) =',&
           ix,iy,iz,iz2
-        if (lspherical_coords) write (*,'(1x,a,2i4)') &
+        if (coord_system=='spherical') write (*,'(1x,a,2i4)') &
           'read_runpars: iz3, iz4 (video files) =',iz3,iz4
       endif
 !

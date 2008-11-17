@@ -105,12 +105,12 @@
         ipz_bottom=nprocz-1
         ipy_front=nprocy-1
       elseif (slice_position=='w') then
-        ipz_top =   0*nprocz/4
-        ipz_mid1=   1*nprocz/4
-        ipz_mid2=   2*nprocz/4
-        ipz_bottom= 3*nprocz/4
-        print*,'ipz_mid1,ipz_mid2=',ipz_mid1,ipz_mid2        
-        ipy_front=nprocy/2
+        ipz_bottom = 0*nprocz/4
+        ipz_top    = 1*nprocz/4
+        ipz_mid1   = 2*nprocz/4
+        ipz_mid2   = 3*nprocz/4
+        print*,'ipz_mid1,ipz_mid2=',ipz_mid1,ipz_mid2
+        ipy_front=(nygrid/2-1)/ny
       else
         print*,'slice_position cannot be interpreted by read_videofiles'
       endif
@@ -125,6 +125,7 @@
 !
 !  Top xy2-plane:
 !  need data where ipz=nprocz-1
+!  (or ipz=nprocz/4, in case of slice_position='w')                
 !
       ipz=ipz_top
       do ipy=0,nprocy-1
@@ -228,7 +229,8 @@
 !  Left side yz-plane:
 !  need data where ipx=0
 !
-      if (slice_position/='w') then
+      if (slice_position/='w') then 
+      !WL's ugly hack: no yz for spherical coordinates 
       ipx=0
       do ipz=0,nprocz-1
       do ipy=0,nprocy-1
@@ -265,90 +267,92 @@
 !  need data where ipz=2*nprocz/4-1
 !
       if (slice_position=='w') then
-      ipz=ipz_mid1
-      do ipy=0,nprocy-1
-      do ipx=0,nprocx-1
-        iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
-        call chn(iproc,chproc,'rvid_box: mid1 xy')
-        call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
-        call safe_character_assign(file,'/slice_'//trim(field)//'.xy3')
-        call safe_character_assign(fullname,trim(path)//trim(file))
-        if(it<=itdebug) print*,trim(fullname)
-        inquire(FILE=trim(fullname),EXIST=exists)
-        if (.not.exists) then
-          print*,"Slice not found", fullname
-          xy3(:,1+ipy*ny:ny+ipy*ny)=0.
-          goto 999
+        ipz=ipz_mid1
+        do ipy=0,nprocy-1
+        do ipx=0,nprocx-1
+          iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
+          call chn(iproc,chproc,'rvid_box: mid1 xy')
+          call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
+          call safe_character_assign(file,'/slice_'//trim(field)//'.xy3')
+          call safe_character_assign(fullname,trim(path)//trim(file))
+          if(it<=itdebug) print*,trim(fullname)
+          inquire(FILE=trim(fullname),EXIST=exists)
+          if (.not.exists) then
+            print*,"Slice not found", fullname
+            xy3(:,1+ipy*ny:ny+ipy*ny)=0.
+            goto 999
+          endif
+          call rslice(trim(fullname),xy3_loc,slice_z3pos,nx,ny,t,it,lun,eof,err)
+          min_xy3_loc=min(min_xy3_loc,minval(xy3_loc))
+          max_xy3_loc=max(max_xy3_loc,maxval(xy3_loc))
+          if(eof) goto 999
+          xy3(1+ipx*nx:nx+ipx*nx,1+ipy*ny:ny+ipy*ny)=xy3_loc
+        enddo
+        enddo
+        call safe_character_assign(wfile,trim(datadir)//trim(file))
+        err_timestep=err
+        if(.not.err_timestep) then
+          call wslice(trim(wfile),xy3,slice_z3pos,nxgrid,nygrid,t,it,lun5)
+          lwritten_something=.true.
+        else
+          print*,'skip writing because of error; t=',t
         endif
-        call rslice(trim(fullname),xy3_loc,slice_z3pos,nx,ny,t,it,lun,eof,err)
-        min_xy3_loc=min(min_xy3_loc,minval(xy3_loc))
-        max_xy3_loc=max(max_xy3_loc,maxval(xy3_loc))
-        if(eof) goto 999
-        xy3(1+ipx*nx:nx+ipx*nx,1+ipy*ny:ny+ipy*ny)=xy3_loc
-      enddo
-      enddo
-      call safe_character_assign(wfile,trim(datadir)//trim(file))
-      err_timestep=err
-      if(.not.err_timestep) then
-        call wslice(trim(wfile),xy3,slice_z3pos,nxgrid,nygrid,t,it,lun5)
-        lwritten_something=.true.
-      else
-        print*,'skip writing because of error; t=',t
-      endif
 !
 !  Mid xy4-plane:
 !  need data where ipz=3*nprocz/4-1
 !
-      ipz=ipz_mid1
-      do ipy=0,nprocy-1
-      do ipx=0,nprocx-1
-        iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
-        call chn(iproc,chproc,'rvid_box: mid2 xy')
-        call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
-        call safe_character_assign(file,'/slice_'//trim(field)//'.xy4')
-        call safe_character_assign(fullname,trim(path)//trim(file))
-        if(it<=itdebug) print*,trim(fullname)
-        inquire(FILE=trim(fullname),EXIST=exists)
-        if (.not.exists) then
-          print*,"Slice not found", fullname
-          xy4(:,1+ipy*ny:ny+ipy*ny)=0.
-          goto 999
+        ipz=ipz_mid2
+        do ipy=0,nprocy-1
+        do ipx=0,nprocx-1
+          iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
+          call chn(iproc,chproc,'rvid_box: mid2 xy')
+          call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
+          call safe_character_assign(file,'/slice_'//trim(field)//'.xy4')
+          call safe_character_assign(fullname,trim(path)//trim(file))
+          if(it<=itdebug) print*,trim(fullname)
+          inquire(FILE=trim(fullname),EXIST=exists)
+          if (.not.exists) then
+            print*,"Slice not found", fullname
+            xy4(:,1+ipy*ny:ny+ipy*ny)=0.
+            goto 999
+          endif
+          call rslice(trim(fullname),xy4_loc,slice_z4pos,nx,ny,t,it,lun,eof,err)
+          min_xy4_loc=min(min_xy4_loc,minval(xy4_loc))
+          max_xy4_loc=max(max_xy4_loc,maxval(xy4_loc))
+          if(eof) goto 999
+          xy4(1+ipx*nx:nx+ipx*nx,1+ipy*ny:ny+ipy*ny)=xy4_loc
+        enddo
+        enddo
+        call safe_character_assign(wfile,trim(datadir)//trim(file))
+        err_timestep=err
+        if(.not.err_timestep) then
+          call wslice(trim(wfile),xy4,slice_z4pos,nxgrid,nygrid,t,it,lun6)
+          lwritten_something=.true.
+        else
+          print*,'skip writing because of error; t=',t
         endif
-        call rslice(trim(fullname),xy4_loc,slice_z4pos,nx,ny,t,it,lun,eof,err)
-        min_xy4_loc=min(min_xy4_loc,minval(xy4_loc))
-        max_xy4_loc=max(max_xy4_loc,maxval(xy4_loc))
-        if(eof) goto 999
-        xy4(1+ipx*nx:nx+ipx*nx,1+ipy*ny:ny+ipy*ny)=xy4_loc
-      enddo
-      enddo
-      call safe_character_assign(wfile,trim(datadir)//trim(file))
-      err_timestep=err
-      if(.not.err_timestep) then
-        call wslice(trim(wfile),xy4,slice_z4pos,nxgrid,nygrid,t,it,lun6)
-        lwritten_something=.true.
-      else
-        print*,'skip writing because of error; t=',t
-      endif
       endif
 !
       print*,'written full set of slices at t=',t,min_xy_loc,max_xy_loc
       enddo
+!
 999   continue
+!
       if (lwritten_something) then
-      print*,'last file read: ',trim(fullname)
-      print*,'-------------------------------------------------'
-      print*,'minimum and maximum values:'
-      print*,'xy-plane:',min_xy_loc,max_xy_loc
-      print*,'xy2-plane:',min_xy2_loc,max_xy2_loc
-      print*,'xz-plane:',min_xz_loc,max_xz_loc
-      if (slice_position=='w') then
-        print*,'xy3-plane:',min_xy3_loc,max_xy3_loc
-        print*,'xy4-plane:',min_xy4_loc,max_xy4_loc
-      else
-        print*,'yz-plane:',min_yz_loc,max_yz_loc
-      endif
-      print*,'-------------------------------------------------'
-      print*,'finished OK'
+        print*,'last file read: ',trim(fullname)
+        print*,'-------------------------------------------------'
+        print*,'minimum and maximum values:'
+        print*,'xy-plane:',min_xy_loc,max_xy_loc
+        print*,'xy2-plane:',min_xy2_loc,max_xy2_loc
+        print*,'xz-plane:',min_xz_loc,max_xz_loc
+        if (slice_position=='w') then
+          print*,'xy3-plane:',min_xy3_loc,max_xy3_loc
+          print*,'xy4-plane:',min_xy4_loc,max_xy4_loc
+        else
+          print*,'yz-plane:',min_yz_loc,max_yz_loc
+        endif
+        print*,'-------------------------------------------------'
+        print*,'finished OK'
       endif
 
       select case (trim(field))
