@@ -3258,9 +3258,11 @@ module Initcond
             endif
           endif
 !
+!  Make sure the correction does not impede centrifugal equilibrium
+!
           do i=1,mx
             if (tmp2(i).lt.0.) then
-              if (rr_cyl(i) .lt. r_int) then
+              if (rr(i) .lt. r_int) then
                 !it's inside the frozen zone, so
                 !just set tmp2 to zero and emit a warning
                 tmp2(i)=0.
@@ -3275,6 +3277,9 @@ module Initcond
               endif
             endif
           enddo
+!
+!  Correct the velocities
+!
           if (lcartesian_coords) then
             f(:,m,n,iux)=-sqrt(tmp2)*y(m)
             f(:,m,n,iuy)= sqrt(tmp2)*x
@@ -3289,6 +3294,8 @@ module Initcond
           endif
         enddo
       enddo
+!
+!  Word of warning...
 !
       if (llocal_iso) then
         if (associated(iglobal_cs2)) then
