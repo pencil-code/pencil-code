@@ -4295,6 +4295,8 @@ module Boundcond
           call calc_cs2x(cs2x,'top',f)
           call get_gammax(gamma0,'top')
           call get_p_infx(p_infx,'top')
+!print*,'p_inf',maxval(p_infx),maxval(cs2x)
+
         endif
       case default
         print*, "bc_nscbc_subin_x: ", topbot, " should be `top' or `bot'"
@@ -4334,6 +4336,9 @@ module Boundcond
             (dp_prefac*dlnrho_dx - rho0*cs0_ar*du_dx)
       case('top')
         L_1=KK*(cs20_ar/gamma0*rho0-p_infx)
+
+!print*, maxval(cs20_ar/gamma0*rho0-p_infx),maxval(cs20_ar/gamma0*rho0),maxval(p_infx)
+
         L_2 = f(lll,m1:m2,n1:n2,iux)*(cs20_ar*dlnrho_dx-dp_prefac*dlnrho_dx)
         L_5 = (f(lll,m1:m2,n1:n2,iux) + cs0_ar)*&
             (dp_prefac*dlnrho_dx + rho0*cs0_ar*du_dx)

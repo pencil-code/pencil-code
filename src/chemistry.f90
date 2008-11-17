@@ -92,12 +92,12 @@ module Chemistry
   real, dimension(nchemspec,7)     :: tran_data
   real, dimension (nx,nchemspec), SAVE  :: S0_R
   real, dimension (mx,my,mz,nchemspec), SAVE :: H0_RT
-  
-  real, dimension (2,ny,nz) :: pp_infx
-  
+
+
+
 
   logical :: Natalia_thoughts=.false.
- 
+
 
 
 ! input parameters
@@ -2890,7 +2890,67 @@ module Chemistry
     use Mpicomm
      real, dimension (ny,nz) :: p_infx
      character (len=3) :: topbot
-  
+     logical, SAVE :: read_P=.true.
+     real, dimension (2,ny,nz), SAVE :: pp_infx
+     real :: PP
+
+
+      logical :: emptyfile
+      integer :: file_id=123
+      character (len=80) :: ChemInpLine
+      character (len=10) :: specie_string
+      character (len=1)  :: tmp_string 
+      integer :: VarNumber,i,j,k=1
+
+      integer :: StartInd,StopInd,StartInd_1,StopInd_1
+      integer :: iostat
+
+      StartInd_1=1; StopInd_1 =0
+
+     if (read_P) then
+
+
+      StartInd_1=1; StopInd_1 =0
+      open(file_id,file="air.dat")
+
+       if (lroot) print*, 'the following parameters and species are found in air.dat (volume fraction fraction in %): '
+
+       dataloop: do
+
+        read(file_id,'(80A)',IOSTAT=iostat) ChemInpLine(1:80)
+        if (iostat < 0) exit dataloop
+        emptyFile=.false.
+        StartInd_1=1; StopInd_1=0
+        StopInd_1=index(ChemInpLine,' ') 
+        specie_string=trim(ChemInpLine(1:StopInd_1-1)) 
+        tmp_string=trim(ChemInpLine(1:1)) 
+
+        if (tmp_string == '!' .or. tmp_string == ' ') then
+        elseif (tmp_string == 'P') then
+
+           StartInd=1; StopInd =0
+
+          StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
+          StartInd=verify(ChemInpLine(StopInd:),' ')+StopInd-1
+          StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
+
+          read (unit=ChemInpLine(StartInd:StopInd),fmt='(E14.7)'), PP
+              print*, ' Pressure, Pa   ', PP
+
+
+        endif
+       enddo dataloop
+
+
+       close(file_id)
+
+
+
+      pp_infx(:,:,:)=PP*10.
+      read_P=.false.
+     endif
+
+
      select case(topbot)
       case('bot')               ! bottom boundary
        p_infx(ny,nz)=pp_infx(1,ny,nz)
@@ -2899,6 +2959,8 @@ module Chemistry
       case default
         print*, "get_p_infx: ", topbot, " should be `top' or `bot'"
      endselect
+
+!print*,'pp_inf2',maxval(pp_infx)
 
    endsubroutine get_p_infx
 !*************************************************************
@@ -3025,7 +3087,6 @@ module Chemistry
 
       f(:,:,:,ilnrho)=log((PP*10./(k_B_cgs/m_u_cgs)*air_mass/TT)/unit_mass*unit_length**3)
 
-      pp_infx(1:2,:,:)=PP*10.
 
       if (lroot) print*, 'Air temperature, K', TT
       if (lroot) print*, 'Air pressure, dyn', PP*10.
