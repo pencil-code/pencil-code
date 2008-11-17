@@ -93,6 +93,8 @@ module Chemistry
   real, dimension (nx,nchemspec), SAVE  :: S0_R
   real, dimension (mx,my,mz,nchemspec), SAVE :: H0_RT
   
+  real, dimension (2,ny,nz) :: pp_infx
+  
 
   logical :: Natalia_thoughts=.false.
  
@@ -2862,9 +2864,9 @@ module Chemistry
       case default
         print*, "calc_cs2x: ", topbot, " should be `top' or `bot'"
       endselect
- endsubroutine calc_cs2x
+  endsubroutine calc_cs2x
 !*************************************************************
-subroutine get_gamma(gamma0,topbot)
+  subroutine get_gammax(gamma0,topbot)
 
  use Mpicomm
 
@@ -2873,15 +2875,32 @@ subroutine get_gamma(gamma0,topbot)
    character (len=3) :: topbot
    integer :: k
 
-   select case(topbot)
+     select case(topbot)
       case('bot')               ! bottom boundary
        gamma0=cp_full(l1,m1:m2,n1:n2)/cv_full(l1,m1:m2,n1:n2)
       case('top')               ! top boundary
        gamma0=cp_full(l2,m1:m2,n1:n2)/cv_full(l2,m1:m2,n1:n2)
       case default
-        print*, "get_gamma: ", topbot, " should be `top' or `bot'"
-      endselect
- endsubroutine get_gamma
+        print*, "get_gammax: ", topbot, " should be `top' or `bot'"
+     endselect
+   endsubroutine get_gammax
+!*************************************************************
+   subroutine get_p_infx(p_infx,topbot)
+
+    use Mpicomm
+     real, dimension (ny,nz) :: p_infx
+     character (len=3) :: topbot
+  
+     select case(topbot)
+      case('bot')               ! bottom boundary
+       p_infx(ny,nz)=pp_infx(1,ny,nz)
+      case('top')               ! top boundary
+       p_infx(ny,nz)=pp_infx(2,ny,nz)
+      case default
+        print*, "get_p_infx: ", topbot, " should be `top' or `bot'"
+     endselect
+
+   endsubroutine get_p_infx
 !*************************************************************
    subroutine air_field(f)
 
@@ -3005,6 +3024,8 @@ subroutine get_gamma(gamma0,topbot)
       f(:,:,:,ilnTT)=log(TT/unit_temperature)
 
       f(:,:,:,ilnrho)=log((PP*10./(k_B_cgs/m_u_cgs)*air_mass/TT)/unit_mass*unit_length**3)
+
+      pp_infx(1:2,:,:)=PP
 
       if (lroot) print*, 'Air temperature, K', TT
       if (lroot) print*, 'Air pressure, K', PP
