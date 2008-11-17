@@ -502,6 +502,21 @@ subroutine calc_cs2x(cs2x,topbot,f)
 
  endsubroutine calc_cs2x
 !********************************************************************
+subroutine get_gamma(gamma0,topbot)
+
+ use Mpicomm
+
+   real, dimension(mx,my,mz,mfarray) :: f
+   real, dimension (ny,nz) :: gamma0
+   character (len=3) :: topbot
+   integer :: k
+
+   call keep_compiler_quiet(f)
+
+
+ endsubroutine get_gamma
+!********************************************************************
+
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
 !**  This is an automatically generated include file that creates  **
