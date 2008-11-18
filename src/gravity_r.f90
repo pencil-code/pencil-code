@@ -30,6 +30,7 @@ module Gravity
   interface acceleration
     module procedure acceleration_penc
     module procedure acceleration_penc_1D
+    module procedure acceleration_point
   endinterface
 
   ! coefficients for potential
@@ -695,6 +696,85 @@ module Gravity
       if (NO_WARN) print *,g_r
 !
     endsubroutine acceleration_penc_1D
+!***********************************************************************
+    subroutine acceleration_point(x,y,z,r,g_r)
+!
+!  Gravitational acceleration in one point
+!
+!  Analogous to potential, but for the radial acceleration. 
+!   useful for coding initial condition with centrifugal balance
+!
+!  18-nov-08/wlad: coded
+!
+      use Cdata,  only: r_ref,lroot,lcartesian_coords
+      use Mpicomm,only: stop_it
+!     
+      real :: g_r,rad,pot
+      real, optional :: x,y,z,r
+      integer :: j
+!
+      intent(in)  :: x,y,z,r
+      intent(out) :: g_r
+!
+
+      if (present(r)) then
+        rad = r
+      else
+        if (present(x) .and. present(y) .and. present(z)) then
+!
+          if (.not.lcartesian_coords) &
+              call stop_it("gravity_r: acceleration_point with x,y,z is "//&
+              "not yet implemented for non-cartesiand coordinates. Fix  "//&
+              "the call to  use radial distance instead")
+!          
+          rad = sqrt(x**2+y**2+z**2)
+        else
+          call stop_it("Need to specify either x,y,z or r in acceleration_point()")
+        endif
+      endif
+!
+      g_r=0.
+      do j=1,ninit
+        select case (ipotential(j))
+        case ('no-smooth')
+          g_r=g_r -g0/rad**2
+!
+        case('smoothed-newton')
+          !g_r=g_r -g0*rad**(n_pot-1) &
+          !     *(rad**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
+          pot = -g0*(1. + (r1_pot1*rad)**n_pot1)**(1.0/n_pot1) &
+                   /(rad**n_pot + r0_pot**n_pot)**(1.0/n_pot)
+          g_r = pot*(rad**(n_pot-1)/(rad**n_pot + r0_pot**n_pot) &
+                   - r1_pot1*(r1_pot1*rad)**(n_pot1-1) &
+                            /(1 + (r1_pot1*rad)**n_pot1))
+!
+        case ('varying-q')
+          g_r=g_r -g0/rad**(2*qgshear-1) 
+!
+        case ('varying-q-smooth')
+          g_r=g_r -g0*rad/(rad**2+r0_pot**2)**qgshear  
+!
+        case ('dark-matter-halo')
+          g_r=g_r -g01(j)*(1-rpot(j)/rad*atan2(rad,rpot(j)))/rad
+!
+        case ('light-matter')
+          g_r=g_r-4.134e-4*g01(j)*(.5*rad/rpot(j))**1.22/&
+               ((.5*rad/rpot(j))**2+1.502)**1.43/rad
+!
+        case ('zero')
+          g_r=g_r
+!
+        case default
+          if (lroot) print*, 'acceleration: '//&
+               'No such value for ipotential: ', trim(ipotential(j))
+          call stop_it("")
+!              
+        endselect
+      enddo
+!
+      if (NO_WARN) print *,g_r
+!
+    endsubroutine acceleration_point
 !***********************************************************************
     subroutine get_gravity_field(gr,gg_mn,rr_mn)
 !

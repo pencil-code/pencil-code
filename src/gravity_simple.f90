@@ -39,6 +39,7 @@ module Gravity
   interface acceleration
     module procedure acceleration_penc
     module procedure acceleration_penc_1D
+    module procedure acceleration_point
   endinterface
 !
 !  Parameters used throughout entire module
@@ -635,6 +636,28 @@ module Gravity
       if (NO_WARN) gr=0.
 !
     endsubroutine acceleration_penc_1D
+!***********************************************************************
+    subroutine acceleration_point(x,y,z,r,g_r)
+!
+!  Gravity in one point
+!
+!  18-nov-08/wlad: coded
+!
+      use Mpicomm, only: stop_it
+!
+      real :: g_r
+      real, optional :: x,y,z,r
+!
+      intent(in)  :: x,y,z,r
+      intent(out) :: g_r
+!
+      call stop_it("gravity_simple: acceleration_point not implemented")
+!
+      g_r = 0.
+!
+      if (NO_WARN) print*,x,y,z,r,g_r     !(to keep compiler quiet)
+!
+    endsubroutine acceleration_point
 !***********************************************************************
     subroutine read_gravity_init_pars(unit,iostat)
 !
