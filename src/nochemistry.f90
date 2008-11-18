@@ -489,43 +489,43 @@ module Chemistry
 !
     endsubroutine special_before_boundary
 !***********************************************************************
-subroutine calc_cs2x(cs2x,topbot,f)
-
- use Mpicomm
-
-    real, dimension(mx,my,mz,mfarray) :: f
-   real, dimension (ny,nz) :: cs2x
-   character (len=3) :: topbot
-   integer :: k
-
-   call keep_compiler_quiet(f)
-
- endsubroutine calc_cs2x
-!********************************************************************
- subroutine get_gammax(gamma0,topbot)
-
-   use Mpicomm
-
-    real, dimension(mx,my,mz,mfarray) :: f
-    real, dimension (ny,nz) :: gamma0
-    character (len=3) :: topbot
-    integer :: k
-
-    call keep_compiler_quiet(f)
-
-
-  endsubroutine get_gammax
-!********************************************************************
-  subroutine get_p_infx(p_infx,topbot)
-
-    use Mpicomm
-     real, dimension (ny,nz) :: p_infx
-     character (len=3) :: topbot
-       
+    subroutine calc_cs2x(cs2x,topbot,f)
+!
+      use Mpicomm
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension (ny,nz) :: cs2x
+      character (len=3) :: topbot
+      integer :: k
+!
       call keep_compiler_quiet(f)
-
-   endsubroutine get_p_infx
- !********************************************************************
+!
+    endsubroutine calc_cs2x
+!********************************************************************
+    subroutine get_gammax(gamma0,topbot)
+!
+      use Mpicomm
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension (ny,nz) :: gamma0
+      character (len=3) :: topbot
+      integer :: k
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine get_gammax
+!********************************************************************
+    subroutine get_p_infx(p_infx,topbot)
+!
+      use Mpicomm
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension (ny,nz) :: p_infx
+      character (len=3) :: topbot
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine get_p_infx
+!********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
 !**  This is an automatically generated include file that creates  **
