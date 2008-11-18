@@ -12,6 +12,7 @@ module Deriv
   public :: der6_other, der_pencil, der2_pencil
   public :: der_upwind1st
   public :: der_onesided_4_slice
+  public :: der_center_6
 
 !debug  integer, parameter :: icount_der   = 1         !DERCOUNT
 !debug  integer, parameter :: icount_der2  = 2         !DERCOUNT
@@ -1571,6 +1572,106 @@ module Deriv
       endif
     endsubroutine
 !***********************************************************************
+   subroutine der_center_6(f,df,j1,pos,j2)
+!
+! derivative for the fixed position in k-direction 
+! for example, df/dx_j2 at the fixed position x_j1 
+! it is clear that (j1<>j2) , and j1, j2 can be 1,2,3
+!
 
+      use Cdata
+!
+      real, dimension (mx,my,mz) :: f
+      real, dimension (:,:) :: df
+      integer :: j1,j2,pos,i
+  
+!
+      intent(in)  :: f,j1,j2,pos
+      intent(out) :: df
+!
+      if (j1==1) then
+         if (j2==2) then
+           if (nygrid/=1) then
+             do i=n1,n2      
+              df(m1:m2,i)= (1./60)*dy_1(m1:m2) &
+                       *(+ 45.0*(f(pos,m1+1:m2+1,i)-f(pos,m1-1:m2-1,i)) &
+                         -  9.0*(f(pos,m1+2:m2+2,i)-f(pos,m1-2:m2-2,i)) &
+                         +      (f(pos,m1+3:m2+3,i)-f(pos,m1-3:m2-3,i)))
+             enddo
+           else
+             df=0.
+             if (ip<=5) print*, 'der_center_6: Degenerate case in y-direction'
+           endif
+         elseif (j2==3) then
+           if (nzgrid/=1) then
+             do i=n1,n2 
+              df(i,n1:n2)= (1./60)*dz_1(n1:n2) &
+                          *(+ 45.0*(f(pos,i,n1+1:n2+1)-f(pos,i,n1-1:n2-1)) &
+                            -  9.0*(f(pos,i,n1+2:n2+2)-f(pos,i,n1-2:n2-2)) &
+                            +      (f(pos,i,n1+3:n2+3)-f(pos,i,n1-3:n2-3)))
+             enddo
+           else
+             df=0.
+             if (ip<=5) print*, 'der_center_6: Degenerate case in z-direction'
+           endif
+         endif
+      elseif (j1==2) then
+         if (j2==1) then
+           if (nxgrid/=1) then
+             do i=n1,n2 
+              df(l1:l2,i)=(1./60)*dx_1(l1:l2) &
+                    *(+ 45.0*(f(l1+1:l2+1,pos,i)-f(l1-1:l2-1,pos,i)) &
+                      -  9.0*(f(l1+2:l2+2,pos,i)-f(l1-2:l2-2,pos,i)) &
+                      +      (f(l1+3:l2+3,pos,i)-f(l1-3:l2-3,pos,i)))
+             enddo
+           else
+             df=0.
+             if (ip<=5) print*, 'der_center_6: Degenerate case in x-direction'
+           endif
+         elseif (j2==3) then
+           if (nzgrid/=1) then
+             df(i,n1:n2)=(1./60)*dz_1(n1:n2) &
+                   *(+ 45.0*(f(i,pos,n1+1:n2+1)-f(i,pos,n1-1:n2-1)) &
+                     -  9.0*(f(i,pos,n1+2:n2+2)-f(i,pos,n1-2:n2-2)) &
+                     +      (f(i,pos,n1+3:n2+3)-f(i,pos,n1-3:n2-3)))
+       
+           else
+             df=0.
+             if (ip<=5) print*, 'der_center_6: Degenerate case in z-direction'
+           endif
+        endif
+
+      elseif (j1==3) then
+          if (j2==1) then
+            if (nxgrid/=1) then
+             do i=m1,m2 
+              df(l1:l2,i)=(1./60)*dx_1(l1:l2) &
+                    *(+ 45.0*(f(l1+1:l2+1,i,pos)-f(l1-1:l2-1,i,pos)) &
+                      -  9.0*(f(l1+2:l2+2,i,pos)-f(l1-2:l2-2,i,pos)) &
+                      +      (f(l1+3:l2+3,i,pos)-f(l1-3:l2-3,i,pos)))
+             enddo
+            else
+              df=0.
+              if (ip<=5) print*, 'der_center_6: Degenerate case in x-direction'
+            endif
+          
+          elseif (j2==2) then
+            if (nygrid/=1) then
+             do i=l1,l2 
+              df(i,m1:m2)= (1./60)*dy_1(m1:m2) &
+                    *(+ 45.0*(f(i,m1+1:m2+1,pos)-f(i,m1-1:m2-1,pos)) &
+                      -  9.0*(f(i,m1+2:m2+2,pos)-f(i,m1-2:m2-2,pos)) &
+                      +      (f(i,m1+3:m2+3,pos)-f(i,m1-3:m2-3,pos)))
+             enddo
+            else
+              df=0.
+              if (ip<=5) print*, 'der_center_6: Degenerate case in y-direction'
+            endif
+          endif        
+      endif
+
+!
+    endsubroutine der_center_6
+!***********************************************************************
 
 endmodule Deriv
