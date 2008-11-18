@@ -2078,7 +2078,7 @@ module Density
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: glnrho
-      real, dimension (nx)   :: rr_cyl,rr_sph
+      real, dimension (nx)   :: rr,rr_cyl,rr_sph
       real, dimension (nx)   :: cs2,tmp1,tmp2,corr,gslnrho
       integer,pointer        :: iglobal_cs2
       integer                :: i
@@ -2098,7 +2098,7 @@ module Density
 !
       do m=m1,m2
         do n=n1,n2
-          lheader=((m==1).and.(n==1).and.lroot)
+          lheader=((m==m1).and.(n==n1).and.lroot)
 !
 ! get the density gradient
 !
@@ -2152,9 +2152,14 @@ module Density
             endif
           endif
 !
+! Make sure the correction does not impede centrifugal equilibrium
+!
+          rr=rr_cyl
+          if (lspherical_coords.and.lsc2) rr=rr_sph
+!
           do i=1,nx
             if (tmp2(i).lt.0.) then
-              if (rr_cyl(i) .lt. r_int) then
+              if (rr(i) .lt. r_int) then
                 !it's inside the frozen zone, so 
                 !just set tmp2 to zero and emit a warning
                 tmp2(i)=0.
@@ -2172,6 +2177,9 @@ module Density
               endif
             endif
           enddo
+!
+! Correct the velocities
+!
           if (lcartesian_coords) then
             f(l1:l2,m,n,iux)=-sqrt(tmp2)*y(  m  )
             f(l1:l2,m,n,iuy)= sqrt(tmp2)*x(l1:l2)
@@ -2270,7 +2278,7 @@ module Density
         do n=n1,n2
           do m=m1,m2
 !
-            lheader=((m==1).and.(n==1).and.lroot)
+            lheader=((m==m1).and.(n==n1).and.lroot)
 !
 !  Get the potential gradient
 !
@@ -2332,11 +2340,11 @@ module Density
 !
     endsubroutine correct_for_selfgravity    
 !**********************************************************************
-subroutine power_law_gaussian_disk(f)
+    subroutine power_law_gaussian_disk(f)
 !
 !  power-law with gaussian z
 !
-! 18/04/08/steveb: coded
+!  18/04/08/steveb: coded
 !
       use Sub, only: get_radial_distance
       use Gravity, only: g0
@@ -2345,20 +2353,20 @@ subroutine power_law_gaussian_disk(f)
       real, dimension(mx) :: rr_sph,rr_cyl
       logical :: lheader
 !
-!      if (lroot) print*,'setting density gradient of power '//&
-!           'law=',plaw
+      if (lroot) print*,'setting density gradient of power '//&
+          'law=',plaw
 !
       do m=1,my
-         do n=1,mz
-            lheader=lroot.and.(m==1).and.(n==1)
-            call get_radial_distance(rr_sph,rr_cyl)
-            f(:,m,n,ilnrho) = & ! f(:,m,n,ilnrho) + &
-                 lnrho_const+0.5*log(r_ref/rr_cyl) &
-                 - z(n)**2.*g0/(2.*cs20*rr_cyl*3.)
-         enddo
+        do n=1,mz
+          lheader=lroot.and.(m==1).and.(n==1)
+          call get_radial_distance(rr_sph,rr_cyl)
+          f(:,m,n,ilnrho) = & ! f(:,m,n,ilnrho) + &
+              lnrho_const+0.5*log(r_ref/rr_cyl) &
+              - z(n)**2.*g0/(2.*cs20*rr_cyl*3.)
+        enddo
       enddo
+!
       call impose_density_floor(f)
-!      print*,f(:,:,:,ilnrho),"\n"
 !
 ! Correct the velocities by this density gradient
 !
