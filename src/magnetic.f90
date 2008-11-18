@@ -135,8 +135,8 @@ module Magnetic
        ampl_B0,initpower_aa,cutoff_aa,N_modes_aa, &
        rmode,zmode,rm_int,rm_ext,lgauss,lcheck_positive_va2, &
        lbb_as_aux,ljj_as_aux,beta_const,lbext_curvilinear, &
-       lbbt_as_aux,ljjt_as_aux, &
-       etadust0,lneutralion_heat
+       lbbt_as_aux,ljjt_as_aux, etadust0,lneutralion_heat, &
+       va2max_jxb,va2power_jxb
 
   ! run parameters
   real :: eta=0.,eta1=0.,eta_hyper2=0.,eta_hyper3=0.,height_eta=0.,eta_out=0.
@@ -1079,8 +1079,104 @@ module Magnetic
         enddo
       endif
 !
+!  Correct for the tension of the initial large scale magnetic field 
+!  in the momentum equation
+!
+      if ((lbext_curvilinear).and.&
+      ((B_ext(0).ne.0).or.&
+       (B_ext(1).ne.0).or.&
+       (B_ext(2).ne.0))) call correct_magnetic_tension(f)
+!
     endsubroutine init_aa
-! !***********************************************************************
+!************************************************************************
+    subroutine correct_magnetic_tension(f)
+! 
+!  Correct for magnetic tension term in the centrifugal force. The
+!  pressure gradient was already corrected in the density and temperature 
+!  modules
+!
+!  13-nov-08/wlad : coded
+!
+      use FArrayManager
+      use Messages, only: fatal_error
+      use Sub,      only: get_radial_distance
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx)   :: rr_cyl,rr_sph
+      real, dimension (mx)   :: tmp,uu2,va2,va2r
+      real, dimension (mx)   :: rho1,rho1_jxb
+      integer                :: i
+      logical                :: lheader
+!
+      if (lroot) print*,'Correcting magnetic tension on the '//&
+           'centrifugal force'
+!
+      if (.not.lspherical_coords) & 
+          call fatal_error("correct_magnetic_tension",&
+          "only implemented for spherical coordinates")
+!
+      do m=1,my
+        do n=1,mz
+!
+          call get_radial_distance(rr_sph,rr_cyl)
+!
+          lheader=((m==1).and.(n==1).and.lroot)
+!         
+          rho1=1./f(:,m,n,ilnrho)
+!
+          uu2=f(:,m,n,iuz)**2
+          va2=rho1*B_ext(2)**2
+
+          rho1_jxb=rho1
+!
+!  set rhomin_jxb>0 in order to limit the jxb term at very low densities.
+!
+          if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
+!
+!  set va2max_jxb>0 in order to limit the jxb term at very high Alfven speeds.
+!  set va2power_jxb to an integer value in order to specify the power
+!  of the limiting term,
+!
+          if (va2max_jxb>0) then
+            rho1_jxb = rho1_jxb &
+                * (1+(va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
+          endif
+          va2r=rho1_jxb*va2
+!
+          tmp=uu2+va2r
+!
+!  Make sure the correction does not impede centrifugal equilibrium
+!
+          do i=1,nx
+            if (tmp(i).lt.0.) then
+              if (rr_sph(i) .lt. r_int) then
+                !it's inside the frozen zone, so 
+                !just set tmp to zero and emit a warning
+                tmp(i)=0.
+                if ((ip<=10).and.lheader) &
+                    call warning('correct_density_gradient','Cannot '//&
+                    'have centrifugal equilibrium in the inner '//&
+                    'domain. The pressure gradient is too steep.')
+              else
+                print*,'correct_density_gradient: ',&
+                    'cannot have centrifugal equilibrium in the inner ',&
+                    'domain. The pressure gradient is too steep at ',&
+                    'x,y,z=',x(i+nghost),y(m),z(n)
+                print*,'the angular frequency here is',tmp(i)
+                call fatal_error("","")
+              endif
+            endif
+          enddo
+!
+!  Correct the velocities
+!
+          f(:,m,n,iuz)= sqrt(tmp)
+!
+        enddo
+      enddo
+!
+    endsubroutine correct_magnetic_tension
+!*************************************************************************
 !     subroutine pert_aa(f)
 ! !
 ! !   perturb magnetic field when reading old NON-magnetic snapshot
