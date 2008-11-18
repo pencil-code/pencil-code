@@ -1650,13 +1650,13 @@ module Density
       use EquationOfState, only: cs0,cs20
       use Sub,             only: power_law
       use Mpicomm,         only: stop_it
-      use Gravity,         only: potential
+      use Gravity,         only: potential,acceleration
       use FArrayManager
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx) :: f_target
-      real :: lnrhomid,pot,tmp1,tmp2,rmid
+      real :: lnrhomid,strat,tmp1,tmp2,rmid,ptlaw
       type (pencil_case)  :: p
       integer            :: i
 
@@ -1704,6 +1704,7 @@ module Density
         endif
 !
       case('stratification')
+        if (lspherical_coords) call get_ptlaw(ptlaw)
         do i=1,nx
           if ( ((p%rborder_mn(i).ge.r_int).and.(p%rborder_mn(i).le.r_int+2*wborder_int)).or.&
                ((p%rborder_mn(i).ge.r_ext-2*wborder_ext).and.(p%rborder_mn(i).le.r_ext))) then
@@ -1717,11 +1718,18 @@ module Density
             else
               lnrhomid=log(rho0)-.5*plaw*log((p%rcyl_mn(i)/r_ref)**2+rsmooth**2)
             endif
-            call potential(R=p%r_mn(i),POT=tmp1)
-            call potential(R=p%rcyl_mn(i),POT=tmp2)
-            pot=-gamma*(tmp1-tmp2)/p%cs2(i)
+            if (lspherical_coords) then 
+              call acceleration(R=p%r_mn(i),G_R=tmp1)
+              tmp2=-tmp1*p%r_mn(i) - p%cs2(i)*(plaw + ptlaw)
+              !lat=pi/2-y(m)
+              strat=(tmp2/p%cs2(i)) * log(cos(pi/2-y(m)))
+            else 
+              call potential(R=p%r_mn(i),POT=tmp1)
+              call potential(R=p%rcyl_mn(i),POT=tmp2)
+              strat=-gamma*(tmp1-tmp2)/p%cs2(i)
+            endif
 !
-            f_target(i)=lnrhomid+pot
+            f_target(i)=lnrhomid+strat
 !
             if (ldensity_nolog) &
                  f_target(i)=exp(f_target(i))
