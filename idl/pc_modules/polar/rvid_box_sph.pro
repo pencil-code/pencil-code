@@ -41,7 +41,7 @@ pro rvid_box_sph, field, $
   noplot=noplot, fo=fo, swapz=swapz, xsize=xsize, ysize=ysize, $
   title=title, itpng=itpng, global_scaling=global_scaling, proc=proc, $
   exponential=exponential, sqroot=sqroot, logarithmic=logarithmic, $
-  shell=shell, centred=centred, colmpeg=colmpeg,$;r_int=r_int, r_ext=r_ext, colmpeg=colmpeg, $
+  shell=shell, centred=centred, colmpeg=colmpeg,$
   z_bot_twice=z_bot_twice, z_top_twice=z_top_twice, $
   z_topbot_swap=z_topbot_swap, xrot=xrot, zrot=zrot, zof=zof, $
   magnify=magnify, xpos=xpos, zpos=zpos, xmax=xmax, ymax=ymax, $
@@ -51,7 +51,8 @@ pro rvid_box_sph, field, $
   tunit=tunit, qswap=qswap, bar=bar, nolabel=nolabel, norm=norm, $
   divbar=divbar, blabel=blabel, bsize=bsize, bformat=bformat, thlabel=thlabel, $
   bnorm=bnorm, swap_endian=swap_endian, newwindow=newwindow, $
-  quiet_skip=quiet_skip,zoomz=zoomz
+  quiet_skip=quiet_skip,zoomz=zoomz,nointerpz=nointerpz,$
+  orig_aspect=orig_aspect
 ;
 common pc_precision, zero, one
 ;
@@ -95,6 +96,7 @@ default,norm,1.0
 default,swap_endian,0
 default,quiet_skip,1
 default,zoomz,1.0
+default,nointerpz,0
 ;
 if (keyword_set(newwindow)) then window, xsize=xsize, ysize=ysize
 if (keyword_set(png_truecolor)) then png=1
@@ -154,16 +156,7 @@ ncpus = dim.nprocx*dim.nprocy*dim.nprocz
   iphi1=nghostz    
   iphi2=nghostz+   mz/4
   iphi3=nghostz+ 2*mz/4
-  iphi4=nghostz+ 3*mz/4
-  
-  ;rr_rp  =rr(nghostx:mx-nghostx-1,itht,nghostz:mz-nghostz-1)
-;
-  rr_rt1 =rr(nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iphi1)
-  rr_rt2 =rr(nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iphi2)
-  rr_rt3 =rr(nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iphi3)
-  rr_rt4 =rr(nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iphi4)
-;
-;endif
+  iphi4=nghostz+ 3*mz/4  
 ;
 t=zero
 rp =fltarr(nx,nz)*one
@@ -286,21 +279,58 @@ while ( (not eof(1)) and (t le tmax) ) do begin
 ;  Convert midplane to cartesian coordinates
 ;
     fcrp=pc_cyl2cart(rps,rad[dim.l1:dim.l2],phi[dim.n1:dim.n2])
+    rps=fcrp.field
 ;
-;  For masking, rr at constant phi and constant theta
+;  For masking, rr at constant theta 
 ;
-    prr=rr_rt1
     xx=rebin(fcrp.xc,n_elements(fcrp.xc),n_elements(fcrp.yc))
     yy=rebin(transpose(fcrp.yc),n_elements(fcrp.xc),n_elements(fcrp.yc))
     trr=sqrt(xx^2+yy^2)
+    xc=fcrp.xc
+    yc=fcrp.yc
 ;
-    boxbotex_scl_sph,fcrp.field,rt1,rt2,rt3,rt4,$
-      1.,1.,rad=rad,tht=tht,phi=phi,xc=fcrp.xc,yc=fcrp.yc,ip=3,$
-      zof=.36,zpos=.25,$
+;  Convert meridional plane to cartesian if the keyword is set
+;
+    if (keyword_set(nointerpz)) then begin
+      ;will use the meridional slices as they are.
+      ;rr at constant phi, for masking  
+      prr=rr(nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iphi1)
+      ;tt at constant phi, for masking
+      ptt=tt(nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iphi1)
+      zm=tht
+      xm=rad
+    endif else begin
+      ;will interpolate the meridional plane to cartesian
+      fcrt1=pc_meridional(rt1s,rad[dim.l1:dim.l2],tht[dim.m1:dim.m2])
+      fcrt2=pc_meridional(rt2s,rad[dim.l1:dim.l2],tht[dim.m1:dim.m2])
+      fcrt3=pc_meridional(rt3s,rad[dim.l1:dim.l2],tht[dim.m1:dim.m2])
+      fcrt4=pc_meridional(rt4s,rad[dim.l1:dim.l2],tht[dim.m1:dim.m2])
+;
+      ;the quantity fields
+      rt1s=fcrt1.field & rt2s=fcrt2.field 
+      rt3s=fcrt3.field & rt4s=fcrt4.field
+;
+      ;rr at constant phi, for masking
+      xx=rebin(fcrt1.xc,n_elements(fcrt1.xc),n_elements(fcrt1.zc))
+      zz=rebin(transpose(fcrt1.zc),n_elements(fcrt1.xc),n_elements(fcrt1.zc))
+      prr=sqrt(xx^2+zz^2)
+      ;tt at constant phi, for masking
+      ptt=atan(xx/zz) 
+      ;i=where(zz eq 0,ntmp) & if (ntmp ne 0) then ptt[i]=!pi/2
+      i=where(zz le 0) & ptt[i]=ptt[i]+!pi
+;
+      xm=fcrt1.xc
+      zm=fcrt1.zc
+    endelse
+;
+    boxbotex_scl_sph,rps,rt1s,rt2s,rt3s,rt4s,$
+      1.,1.,rad=rad,tht=tht,phi=phi,xc=xc,yc=yc,xm=xm,zm=zm,$
+      ip=3,zof=.36,zpos=.25,$
       amin=amin,amax=amax,dev=dev,$
       scale=1.4,$
-      r_int=r_int,r_ext=r_ext,trr=trr,prr=prr,$
-      nobottom=nobottom,norm=norm,xrot=xrot,zrot=zrot,zoomz=zoomz
+      r_int=r_int,r_ext=r_ext,trr=trr,prr=prr,ptt=ptt,$
+      nobottom=nobottom,norm=norm,xrot=xrot,zrot=zrot,zoomz=zoomz,$
+      nointerpz=nointerpz,orig_aspect=orig_aspect
 ;
     xyouts, .08, 0.81, '!8t!6='+string(t/tunit,fo=fo)+'!c'+title, $
       col=1,siz=1.6

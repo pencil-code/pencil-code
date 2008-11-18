@@ -9,24 +9,25 @@ pro boxbotex_scl_sph,imrp,imrt1,imrt2,imrt3,imrt4,$
          zoom=zoom,lmax=lmax,xrot=xrot,zrot=zrot,dev=dev,npx=npx,npy=npy,$
          amax=amax,amin=amin,thick=thick,zpos=zpos,scale=scale,title=title,$
          length=length,xpos=xpos,ip=ip,box=box,$
-         r_int=r_int,r_ext=r_ext,$
-         trr=trr,prr=prr,magnify=magnify,$
+         r_int=r_int,r_ext=r_ext,orig_aspect=orig_aspect,$
+         trr=trr,prr=prr,ptt=ptt,magnify=magnify,$
          nobottom=nobottom,norm=norm,rad=rad,tht=tht,phi=phi,$
-         xc=xc,yc=yc,zoomz=zoomz
+         xc=xc,yc=yc,xm=xm,zm=zm,zoomz=zoomz,nointerpz=nointerpz
 
 ;
-nr=n_elements(rad)
+nr=n_elements(xm)
 nt=n_elements(tht)
-r0=rad[0]  & rn=rad[nr-1] & Lr=rn-r0
-th0=tht[0] & thn=tht[nt-1]
+r0=xm[0]  & rn=xm[nr-1] & Lr=rn-r0
+tht0=tht[0] & thtn=tht[nt-1]
 
 ;swap y and z
 nx=n_elements(xc) 
 ny=n_elements(yc)
-nz=nt
+nz=n_elements(zm)
 
 Lx=xc[nx-1]-xc[0]
 Ly=yc[ny-1]-yc[0]
+
 ;
 ;  the keyword box is used to overplot a bounding box
 ;
@@ -207,6 +208,17 @@ if xrot gt 0 then begin
     phi4img(indp)=mincol-1
   endif
   ;
+  ; set up theta masking
+  ; 
+  pttg=rebin(reform(ptt),nxi*npx*zoom,nzi*zoom)
+  indpt=where(pttg lt tht0 or pttg gt thtn,nindpt)
+  if nindpt ne 0 then begin
+    phi1img(indpt)=mincol-1
+    phi2img(indpt)=mincol-1
+    phi3img(indpt)=mincol-1
+    phi4img(indpt)=mincol-1
+  endif
+  ;
 endif else begin
   print,"xrot < 0: don't have data for this"
   return
@@ -244,52 +256,71 @@ xm=x0+0.5*xmax*npx+xval & ym=y0+0.5*ymax*npy & zm=z0+0.5*zval
 ;
 ; z of the spherical shell
 ;
-Lxbox=x1-x0 & xratio=Lxbox/Lx
-spc=r_int*xratio
-spc2=(xc[nx-1]-r_ext)*xratio
-yf0=ym+spc & yf1=y1-spc2 & yfm=yf0+(yf1-yf0)/2.
+  Lxbox=x1-x0 & xratio=Lxbox/Lx
+  if (keyword_set(nointerpz)) then begin
+    spc=r_int*xratio
+   endif else begin
+    spc=r_int*sin(tht0)*xratio
+  endelse
+  spc2=(xc[nx-1]-r_ext)*xratio
+  yf0=ym+spc & yf1=y1-spc2 & yfm=yf0+(yf1-yf0)/2.
 
-Lrbox=yf1-yf0 & rratio=Lrbox/Lr
+  Lrbox=yf1-yf0 & rratio=Lrbox/Lr
 
-zu1=zm+r0*cos(tht[0])*rratio*zoomz 
-zd1=zm+r0*cos(tht[nt-1])*rratio*zoomz
-zu2=zm+rn*cos(tht[0])*rratio*zoomz 
-zd2=zm+rn*cos(tht[nt-1])*rratio*zoomz
+  if (keyword_set(nointerpz)) then begin
+    ; define four different vertices, obeying the
+    ; opening angle of the spherical wedges, and the
+    ; aspect ratio of the axes. Polyfill will attach 
+    ; the image inside the polygon defined by them
+    zu1=zm+r0*cos(tht[0])*rratio*zoomz 
+    zd1=zm+r0*cos(tht[nt-1])*rratio*zoomz
+    zu2=zm+rn*cos(tht[0])*rratio*zoomz 
+    zd2=zm+rn*cos(tht[nt-1])*rratio*zoomz
+  endif else begin
+    if (not keyword_set(orig_aspect)) then begin
+      ; define only up and down, obeying the aspect ratio
+      ; of the axes. The rectangle will be masked later
+      zu1=zm+rn*cos(tht[0])*rratio*zoomz    & zu2=zu1
+      zd1=zm+rn*cos(tht[nt-1])*rratio*zoomz & zd2=zd1
+    endif else begin
+      ; don't care about the aspect ratio, use z0 and z1
+      ; this is more like what rvid_box does
+      zu1=z1 & zu2=zu1
+      zd1=z0 & zd2=zd1
+    endelse
+  endelse
 ;
 ; set up verts for planes on edges of box, or through centre
 ;
-  ; centre-slices through box; with transparency if shell options set
-;
 ;x=0 plot - phi=pi/2
-yf0=ym+spc & yf1=y1-spc2 & yfm=yf0+(yf1-yf0)/2.
-vertxs=[[xm,yf1,zd2],[xm,yf0,zd1],$
-        [xm,yf0,zu1],[xm,yf1,zu2]]
-polyfill,vertxs,/t3d,pattern=phi2img, transparent=mincol, $
-  image_coord=[[xs(1)-1,0],[0,0],[0,xs(2)-1],[xs(1)-1,xs(2)-1]]
+  yf0=ym+spc & yf1=y1-spc2 & yfm=yf0+(yf1-yf0)/2.
+  vertxs=[[xm,yf1,zd2],[xm,yf0,zd1],$
+          [xm,yf0,zu1],[xm,yf1,zu2]]
+  polyfill,vertxs,/t3d,pattern=phi2img, transparent=mincol, $
+    image_coord=[[xs(1)-1,0],[0,0],[0,xs(2)-1],[xs(1)-1,xs(2)-1]]
 
 ;second x plot - phi=3pi/2
-yf0=ym-spc & yf1=y0+spc2 & yfm=yf0+(yf1-yf0)/2.
-vertxs=[[xm,yf1,zd2],[xm,yf0,zd1],$
-        [xm,yf0,zu1],[xm,yf1,zu2]]
-polyfill,vertxs,/t3d,pattern=phi4img, transparent=mincol, $
-  image_coord=[[xs(1)-1,0],[0,0],[0,xs(2)-1],[xs(1)-1,xs(2)-1]]
+  yf0=ym-spc & yf1=y0+spc2 & yfm=yf0+(yf1-yf0)/2.
+  vertxs=[[xm,yf1,zd2],[xm,yf0,zd1],$
+          [xm,yf0,zu1],[xm,yf1,zu2]]
+  polyfill,vertxs,/t3d,pattern=phi4img, transparent=mincol, $
+    image_coord=[[xs(1)-1,0],[0,0],[0,xs(2)-1],[xs(1)-1,xs(2)-1]]
 
 ;y=0 plot - phi=0
-xf0=xm+spc & xf1=x1-spc2 & xfm=xf0+(xf1-xf0)/2.
-vertys=[[xf0,ym,zd1],[xf1,ym,zd2],$
-        [xf1,ym,zu2],[xf0,ym,zu1]]
-polyfill,vertys,/t3d,pattern=phi1img, transparent=mincol, $
-  image_coord=[[0,0],[ys(1)-1,0],[ys(1)-1,ys(2)-1],[0,ys(2)-1]]
+  xf0=xm+spc & xf1=x1-spc2 & xfm=xf0+(xf1-xf0)/2.
+  vertys=[[xf0,ym,zd1],[xf1,ym,zd2],$
+          [xf1,ym,zu2],[xf0,ym,zu1]]
+  polyfill,vertys,/t3d,pattern=phi1img, transparent=mincol, $
+    image_coord=[[0,0],[ys(1)-1,0],[ys(1)-1,ys(2)-1],[0,ys(2)-1]]
 
 ;second y plot - phi=-pi
-xf0=xm-spc & xf1=x0+spc2 & xfm=xf0+(xf1-xf0)/2.
-vertys=[[xf0,ym,zd1],[xf1,ym,zd2],$
-        [xf1,ym,zu2],[xf0,ym,zu1]]
-polyfill,vertys,/t3d,pattern=phi3img, transparent=mincol, $
-  image_coord=[[0,0],[ys(1)-1,0],[ys(1)-1,ys(2)-1],[0,ys(2)-1]]
+  xf0=xm-spc & xf1=x0+spc2 & xfm=xf0+(xf1-xf0)/2.
+  vertys=[[xf0,ym,zd1],[xf1,ym,zd2],$
+          [xf1,ym,zu2],[xf0,ym,zu1]]
+  polyfill,vertys,/t3d,pattern=phi3img, transparent=mincol, $
+    image_coord=[[0,0],[ys(1)-1,0],[ys(1)-1,ys(2)-1],[0,ys(2)-1]]
 
 ;midplane plots
-
 verts=[[xm,y0,z0],[x1,ym,z0],[xm,y1,z0],[x0,ym,z0],$
          [x0,y0,zm],[x1,y0,zm],[x1,y1,zm],[x0,y1,zm],$
          [xm,y0,z1],[x1,ym,z1],[xm,y1,z1],[x0,ym,z1],$
