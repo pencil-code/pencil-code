@@ -349,6 +349,58 @@ module Hydro
         p%uu(:,3)=+fpara*cos(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))*sqrt2
         if (lpencil(i_divu)) p%divu=0.
 !
+!  "Incoherent" Roberts flow with cosinusoidal helicity variation (version 1)
+!
+      elseif (kinflow=='IncohRoberts1') then
+        if (headtt) print*,'Roberts flow with cosinusoidal helicity; kx_aa,ky_aa=',kkx_aa,kky_aa
+        fac=ampl_kinflow
+        eps1=(1.-eps_kinflow)*cos(omega_kinflow*t)
+        p%uu(:,1)=-fac*cos(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))*eps1
+        p%uu(:,2)=+fac*sin(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))*eps1
+        p%uu(:,3)=+fac*cos(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))*sqrt(2.)
+        if (lpencil(i_divu)) p%divu=0.
+!
+!  "Incoherent" Roberts flow with cosinusoidal helicity variation (version 2)
+!
+      elseif (kinflow=='IncohRoberts2') then
+        if (headtt) print*,'Roberts flow with cosinusoidal helicity; kx_aa,ky_aa=',kkx_aa,kky_aa
+        fac=ampl_kinflow
+        eps1=(1.-eps_kinflow)*cos(omega_kinflow*t)
+        p%uu(:,1)=-fac*cos(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))
+        p%uu(:,2)=+fac*sin(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))
+        p%uu(:,3)=+fac*cos(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))*sqrt(2.)*eps1
+        if (lpencil(i_divu)) p%divu=0.
+!
+!  "Incoherent" Roberts flow with helicity variation and shear (version 1)
+!  Must use shear module and set eps_kinflow equal to shear
+!
+      elseif (kinflow=='ShearRoberts1') then
+        if (headtt) print*,'Roberts flow with cosinusoidal helicity; kx_aa,ky_aa=',kkx_aa,kky_aa
+        fac=ampl_kinflow
+        kky_aa=1.
+        kkx_aa=kky_aa*(mod(.5-eps_kinflow*t,1.)-.5)
+if (ip.eq.11.and.m==4.and.n==4) write(21,*) t,kkx_aa
+        eps1=cos(omega_kinflow*t)
+        p%uu(:,1)=-fac*cos(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))*eps1
+        p%uu(:,2)=+fac*sin(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))*eps1
+        p%uu(:,3)=+fac*cos(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))*sqrt(2.)
+        if (lpencil(i_divu)) p%divu=0.
+!
+!  "Incoherent" Roberts flow with helicity variation and shear (version 2)
+!  Must use shear module and set eps_kinflow equal to shear
+!
+      elseif (kinflow=='ShearRoberts1') then
+        if (headtt) print*,'Roberts flow with cosinusoidal helicity; kx_aa,ky_aa=',kkx_aa,kky_aa
+        fac=ampl_kinflow
+        kky_aa=1.
+        kkx_aa=kky_aa*(mod(.5-eps_kinflow*t,1.)-.5)
+if (ip.eq.11.and.m==4.and.n==4) write(21,*) t,kkx_aa
+        eps1=cos(omega_kinflow*t)
+        p%uu(:,1)=-fac*cos(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))
+        p%uu(:,2)=+fac*sin(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))
+        p%uu(:,3)=+fac*cos(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))*sqrt(2.)*eps1
+        if (lpencil(i_divu)) p%divu=0.
+!
 !  Taylor-Green flow
 !
       elseif (kinflow=='TG') then
