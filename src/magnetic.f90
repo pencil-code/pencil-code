@@ -1083,9 +1083,9 @@ module Magnetic
 !  in the momentum equation
 !
       if ((lbext_curvilinear).and.&
-      ((B_ext(0).ne.0).or.&
-       (B_ext(1).ne.0).or.&
-       (B_ext(2).ne.0))) call correct_magnetic_tension(f)
+      ((B_ext(1).ne.0).or.&
+       (B_ext(2).ne.0).or.&
+       (B_ext(3).ne.0))) call correct_magnetic_tension(f)
 !
     endsubroutine init_aa
 !************************************************************************
