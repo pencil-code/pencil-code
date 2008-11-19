@@ -598,6 +598,15 @@ LD_FFTW2=
 ##F77FLAGS=-w90 #(rockall)
 #LIBMPISUFFIX=_#(rockall) 
 ##
+## valdivia (grsarson's desktop)
+##
+#FC=ifort #(valdivia)
+#FFLAGS=-O3 -I/usr/lib/openmpi/include #(valdivia)
+#FFLAGS_DOUBLE= #(valdivia)
+#LD_MPI=-L/usr/lib/openmpi/lib -pthread -lmpi -lmpi_f77 -lmpi_f90 -lmpi_cxx -lopen-rte -lopen-pal -lmca_common_sm #(valdivia)
+#F77FLAGS=-w90 #(valdivia)
+#LIBMPISUFFIX=_#(valdivia)
+##
 ## renton & morvern (ngrs's older desktop & laptop)
 ##
 #FC=ifort #(renton|morvern)
