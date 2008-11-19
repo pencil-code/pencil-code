@@ -296,7 +296,7 @@ module Special
               tmp=0
               tmp(m1:m2)=mean_u(1:ny,1)
               call der_pencil(2,tmp,du_mean_dy)
-              print*,'rhom is hardcoded in internal_flow.f90: dspecial_dt'
+              if (lroot) print*,'rhom is hardcoded in internal_flow.f90: dspecial_dt'
               tau_tmp=du_mean_dy(m1+3)*nu*1.2
 !              tau_tmp=-(mean_u(2,1)-mean_u(1,1))/(y(l1+1)-y(l1+0))
             else
@@ -688,6 +688,10 @@ module Special
 !
       call getnu(nu)
 !
+if (nu==0) then
+  print*,'Nu is zero, setting it to 1.5e-5 for now, but this should be fixed!'
+  nu=1.5e-5
+endif
       height=Lxyz(2)/2
       h2=height**2
       B1=0.2
@@ -772,6 +776,13 @@ module Special
       real :: y_pluss, lw, u_log, u_lam
       !
       call getnu(nu)
+
+if (nu==0) then
+  print*,'WARNING: Nu is zero, setting it to 1.5e-5 for now, but this should be fixed!'
+  nu=1.5e-5
+endif
+
+
 !
       height=Lxyz(2)/2
       h2=height**2
