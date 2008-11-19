@@ -69,7 +69,7 @@ module Special
 !
   character(len=24) :: initspecial='nothing', sphere_type='none',&
       special_inituu='nothing'
-  real :: special_infuu=-1.
+  real :: special_infuu=-1., skin_depth=0.0
   logical :: ldisturbance = .false.
   logical :: linlet_northern = .true.
   logical :: ltest = .false.
@@ -82,7 +82,8 @@ module Special
           sph_l1,sph_l2,sph_n1,sph_n2,&
           sph_center_x,sph_nx,sph_ny,&
           sph_dia,sph_rad,&
-          northern,southern,nequator,ltest
+          northern,southern,nequator,ltest,&
+          skin_depth
 !
 ! Run parameters
 !
@@ -208,7 +209,7 @@ module Special
       intent(inout) :: f
       
       integer, pointer :: iglobal_cs2,iglobal_glnTT
-      real :: a2,rr2,pphi,wall_smoothing,skin_depth
+      real :: a2,rr2,pphi,wall_smoothing
       integer i,j,k
 
       select case(initspecial)
@@ -262,21 +263,38 @@ module Special
                                       *(1. + a2/rr2)
             end do
           end do
-  case('cylinderstream_nils')
+  case('cylinderstream_nils_x')
 !   Stream functions for flow around a cylinder as initial condition. 
           a2 = sph_rad**2
           f(:,:,:,iux:iuz)=0
-          skin_depth=0.1
           do i=l1,l2
             do j=m1,m2
               do k=n1,n2
                 rr2 = xx(i,j,k)**2+yy(i,j,k)**2
                 if (rr2 > a2) then
-                  wall_smoothing=1-exp(-(rr2-a2)/skin_depth)
+                  wall_smoothing=1-exp(-(rr2-a2)/skin_depth**2)
                   f(i,j,k,iux) = special_infuu*&
                        (1. - a2/rr2 + 2*yy(i,j,k)**2*a2/rr2**2)*wall_smoothing
                   f(i,j,k,iuy) = -special_infuu*&
                        2*xx(i,j,k)*yy(i,j,k)*a2/rr2**2*wall_smoothing
+                end if
+              end do
+            end do
+          end do
+  case('cylinderstream_nils_y')
+!   Stream functions for flow around a cylinder as initial condition. 
+          a2 = sph_rad**2
+          f(:,:,:,iux:iuz)=0
+          do i=l1,l2
+            do j=m1,m2
+              do k=n1,n2
+                rr2 = xx(i,j,k)**2+yy(i,j,k)**2
+                if (rr2 > a2) then
+                  wall_smoothing=1-exp(-(rr2-a2)/skin_depth**2)
+                  f(i,j,k,iuy) = special_infuu*&
+                       (1. - a2/rr2 + 2*xx(i,j,k)**2*a2/rr2**2)*wall_smoothing
+                  f(i,j,k,iux) = -special_infuu*&
+                       2*yy(i,j,k)*xx(i,j,k)*a2/rr2**2*wall_smoothing
                 end if
               end do
             end do
