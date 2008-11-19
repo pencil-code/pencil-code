@@ -4181,7 +4181,7 @@ module Boundcond
 !
       use MpiComm, only: stop_it
       !use EquationOfState, only: cs0, cs20
-      use Deriv, only: der_onesided_4_slice, der_center_6
+      use Deriv, only: der_onesided_4_slice, der_pencil
 
       use Chemistry
 
@@ -4193,8 +4193,7 @@ module Boundcond
       real, dimension(my,mz) :: rho0
       real, dimension(ny,nz) :: dp_prefac
       real, dimension (ny,nz) :: cs2x,cs0_ar,cs20_ar,gamma0
-      integer lll
-      integer sgn
+      integer :: lll,i, sgn
 
       intent(in) :: f
       intent(out) :: df
@@ -4237,8 +4236,9 @@ module Boundcond
       endif
       call der_onesided_4_slice(f,sgn,ilnrho,dlnrho_dx,lll,1)
       call der_onesided_4_slice(f,sgn,iux,du_dx,lll,1)
-      call der_center_6(mom2,dmom2_dy,1,lll,2)
-      
+      do i=1,mz
+       call der_pencil(2,mom2(lll,:,i),dmom2_dy(:,i))
+      enddo
       select case(topbot)
       case('bot')
         L_1 = (f(lll,m1:m2,n1:n2,iux) - cs0_ar)*&
@@ -4268,7 +4268,7 @@ module Boundcond
 !
       use MpiComm, only: stop_it
       !use EquationOfState, only: cs0, cs20
-      use Deriv, only: der_onesided_4_slice, der_center_6
+      use Deriv, only: der_onesided_4_slice, der_pencil
 
       use Chemistry
 
@@ -4280,7 +4280,7 @@ module Boundcond
       real, dimension(ny,nz) :: du_dx, du_dy, dlnrho_dx, L_1, L_2, L_5,dmom2_dy 
       real, dimension(ny,nz) :: dp_prefac,drho_prefac
       real, dimension (ny,nz) :: cs2x,cs0_ar,cs20_ar,gamma0,p_infx,KK
-      integer lll, sgn
+      integer :: lll, sgn,i
       real :: Mach_num
 
       intent(in) :: f
@@ -4330,12 +4330,15 @@ module Boundcond
 
       call der_onesided_4_slice(f,sgn,ilnrho,dlnrho_dx,lll,1)
       call der_onesided_4_slice(f,sgn,iux,du_dx,lll,1)
-      call der_center_6(mom2,dmom2_dy,1,lll,2)
-      call der_center_6(f(:,:,:,iux),du_dy,1,lll,2)
+
+      do i=1,mz
+       call der_pencil(2,mom2(lll,:,i),dmom2_dy(:,i))
+       call der_pencil(2,f(lll,:,i,iux),du_dy(:,i))
+      enddo
 
       Mach_num=maxval(f(lll,m1:m2,n1:n2,iux)/cs0_ar)
       KK=nscbc_sigma*(1.-Mach_num*Mach_num)*cs0_ar/Lxyz(1)
-      
+
 
       select case(topbot)
       case('bot')
