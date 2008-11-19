@@ -4189,7 +4189,7 @@ module Boundcond
       real, dimension (mx,my,mz) :: mom2
       real, dimension (mx,my,mz,mvar) :: df
       character (len=3) :: topbot
-      real, dimension(ny,nz) :: du_dx, dlnrho_dx, L_1, L_2, L_5, dmom2_dy 
+      real, dimension(ny,nz) :: dux_dx, dlnrho_dx, L_1, L_2, L_5, dmom2_dy 
       real, dimension(my,mz) :: rho0
       real, dimension(ny,nz) :: dp_prefac
       real, dimension (ny,nz) :: cs2x,cs0_ar,cs20_ar,gamma0
@@ -4235,18 +4235,18 @@ module Boundcond
         return
       endif
       call der_onesided_4_slice(f,sgn,ilnrho,dlnrho_dx,lll,1)
-      call der_onesided_4_slice(f,sgn,iux,du_dx,lll,1)
+      call der_onesided_4_slice(f,sgn,iux,dux_dx,lll,1)
       do i=1,mz
        call der_pencil(2,mom2(lll,:,i),dmom2_dy(:,i))
       enddo
       select case(topbot)
       case('bot')
         L_1 = (f(lll,m1:m2,n1:n2,iux) - cs0_ar)*&
-            (dp_prefac*dlnrho_dx - rho0(m1:m2,n1:n2)*cs0_ar*du_dx)
+            (dp_prefac*dlnrho_dx - rho0(m1:m2,n1:n2)*cs0_ar*dux_dx)
         L_5 =L_1-2.*rho0(m1:m2,n1:n2)*cs0_ar*df(lll,m1:m2,n1:n2,iux)
       case('top')
         L_5 = (f(lll,m1:m2,n1:n2,iux) + cs0_ar)*&
-            (dp_prefac*dlnrho_dx + rho0(m1:m2,n1:n2)*cs0_ar*du_dx)
+            (dp_prefac*dlnrho_dx + rho0(m1:m2,n1:n2)*cs0_ar*dux_dx)
         L_1 = L_5+2.*rho0(m1:m2,n1:n2)*cs0_ar*df(lll,m1:m2,n1:n2,iux)
       endselect
         L_2 = 0.5*(gamma0-1.)*(L_5+L_1)+rho0(m1:m2,n1:n2)*cs20_ar*df(lll,m1:m2,n1:n2,ilnTT)
@@ -4277,7 +4277,7 @@ module Boundcond
       character (len=3) :: topbot
       real, dimension(my,mz) :: rho0
       real, dimension (mx,my,mz) :: mom2
-      real, dimension(ny,nz) :: du_dx, du_dy, dlnrho_dx, L_1, L_2, L_5,dmom2_dy 
+      real, dimension(ny,nz) :: dux_dx, dux_dy, dlnrho_dx, L_1, L_2, L_5,dmom2_dy 
       real, dimension(ny,nz) :: dp_prefac,drho_prefac
       real, dimension (ny,nz) :: cs2x,cs0_ar,cs20_ar,gamma0,p_infx,KK
       integer :: lll, sgn,i
@@ -4329,11 +4329,11 @@ module Boundcond
       endif
 
       call der_onesided_4_slice(f,sgn,ilnrho,dlnrho_dx,lll,1)
-      call der_onesided_4_slice(f,sgn,iux,du_dx,lll,1)
+      call der_onesided_4_slice(f,sgn,iux,dux_dx,lll,1)
 
       do i=1,mz
        call der_pencil(2,mom2(lll,:,i),dmom2_dy(:,i))
-       call der_pencil(2,f(lll,:,i,iux),du_dy(:,i))
+       call der_pencil(2,f(lll,:,i,iux),dux_dy(:,i))
       enddo
 
       Mach_num=maxval(f(lll,m1:m2,n1:n2,iux)/cs0_ar)
@@ -4345,13 +4345,13 @@ module Boundcond
         L_5=KK*(cs20_ar/gamma0*rho0(m1:m2,n1:n2)-p_infx)
         L_2 = f(lll,m1:m2,n1:n2,iux)*(cs20_ar*dlnrho_dx-dp_prefac*dlnrho_dx)
         L_1 = (f(lll,m1:m2,n1:n2,iux) - cs0_ar)*&
-            (dp_prefac*dlnrho_dx - rho0(m1:m2,n1:n2)*cs0_ar*du_dx)
+            (dp_prefac*dlnrho_dx - rho0(m1:m2,n1:n2)*cs0_ar*dux_dx)
       case('top')
         L_1=KK*(cs20_ar/gamma0*rho0(m1:m2,n1:n2)-p_infx)
 
         L_2 = f(lll,m1:m2,n1:n2,iux)*(cs20_ar*dlnrho_dx-dp_prefac*dlnrho_dx)
         L_5 = (f(lll,m1:m2,n1:n2,iux) + cs0_ar)*&
-            (dp_prefac*dlnrho_dx + rho0(m1:m2,n1:n2)*cs0_ar*du_dx)
+            (dp_prefac*dlnrho_dx + rho0(m1:m2,n1:n2)*cs0_ar*dux_dx)
       endselect
       
       if (ldensity_nolog) then
@@ -4361,7 +4361,7 @@ module Boundcond
                                        -1./rho0(m1:m2,n1:n2)*dmom2_dy
       endif
         df(lll,m1:m2,n1:n2,iux) = -1./(2.*rho0(m1:m2,n1:n2)*cs0_ar)*(L_5 - L_1) &
-                                  -f(lll,m1:m2,n1:n2,iux)*du_dy
+                                  -f(lll,m1:m2,n1:n2,iux)*dux_dy
         df(lll,m1:m2,n1:n2,ilnTT) = -1./(rho0(m1:m2,n1:n2)*cs20_ar)*(-L_2 &
                +0.5*(gamma0-1.)*(L_5-L_1))
             
