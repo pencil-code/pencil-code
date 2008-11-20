@@ -212,6 +212,7 @@ module Register
       use Special,         only: initialize_special
       use BorderProfiles,  only: initialize_border_profiles
       use Equ,             only: initialize_time_integrals
+      use Solid_Cells,     only: initialize_solid_cells
 
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(my) :: lat
@@ -317,6 +318,7 @@ module Register
       call initialize_viscosity(lstarting)
       call initialize_special(f)
       call initialize_border_profiles()
+      call initialize_solid_cells()
 !
 !  initialize time integrals
 !  (leads to linker problem)

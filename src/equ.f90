@@ -483,6 +483,7 @@ module Equ
       use Interstellar, only: interstellar_before_boundary
       use BorderProfiles, only: calc_pencils_borderprofiles
       use Particles_main
+      use Solid_Cells, only: update_solid_cells, freeze_solid_cells
 !
       logical :: early_finalize,ldiagnos_mdt
       real, dimension (mx,my,mz,mfarray) :: f
@@ -535,7 +536,8 @@ module Equ
 !
       early_finalize=test_nonblocking.or.leos_ionization.or.lradiation_ray.or. &
                      lhyperviscosity_strict.or.lhyperresistivity_strict.or. &
-                     ltestfield.or.ltestflow.or.lparticles_prepencil_calc
+                     ltestfield.or.ltestflow.or.lparticles_prepencil_calc.or. &
+                     lsolid_cells
 !
 !  Write crash snapshots to the hard disc if the time-step is very low.
 !  The user must have set crash_file_dtmin_factor>0.0 in &run_pars for
@@ -625,6 +627,11 @@ module Equ
         call boundconds_y(f)
         call boundconds_z(f)
       endif
+!
+! update solid cell "ghost points". This must be done in order to get the correct
+! boundary layer close to the solid geometry, i.e. no-slip conditions.
+!
+        call update_solid_cells(f)
 !
 !  Give the particle modules a chance to do something special with a fully
 !  communicated f array, for instance: the particles_spin module needs to
@@ -1053,6 +1060,11 @@ module Equ
             endif
           endif
         endif
+!
+!  Set df=0 for all solid cells
+!
+      call freeze_solid_cells(df)
+
 !
 !  In max_mn maximum values of u^2 (etc) are determined sucessively
 !  va2 is set in magnetic (or nomagnetic)

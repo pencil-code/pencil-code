@@ -375,6 +375,7 @@ module Cdata
                                             bcz1='',bcz2=''
   character (len=10), dimension(mfarray) :: varname
   character (len=labellen) :: force_lower_bound='',force_upper_bound=''
+  logical :: lsolid_cells
 !
 ! NSCBC stuff. An alternative way of imposing (time-dependent) boundary 
 ! conditions through solving differential equations on the boundaries.
