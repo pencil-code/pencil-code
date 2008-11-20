@@ -2852,15 +2852,15 @@ module Chemistry
  use Mpicomm
 
     real, dimension(mx,my,mz,mfarray) :: f
-   real, dimension (ny,nz) :: cs2x
+   real, dimension (my,mz) :: cs2x
    character (len=3) :: topbot
    integer :: k
 
    select case(topbot)
       case('bot')               ! bottom boundary
-       cs2x=cp_full(l1,m1:m2,n1:n2)/cv_full(l1,m1:m2,n1:n2)*mu1_full(l1,m1:m2,n1:n2)*TT_full(l1,m1:m2,n1:n2)*Rgas
+       cs2x=cp_full(l1,:,:)/cv_full(l1,:,:)*mu1_full(l1,:,:)*TT_full(l1,:,:)*Rgas
       case('top')               ! top boundary
-       cs2x=cp_full(l2,m1:m2,n1:n2)/cv_full(l2,m1:m2,n1:n2)*mu1_full(l2,m1:m2,n1:n2)*TT_full(l2,m1:m2,n1:n2)*Rgas
+       cs2x=cp_full(l2,:,:)/cv_full(l2,:,:)*mu1_full(l2,:,:)*TT_full(l2,:,:)*Rgas
       case default
         print*, "calc_cs2x: ", topbot, " should be `top' or `bot'"
       endselect
@@ -2871,15 +2871,15 @@ module Chemistry
  use Mpicomm
 
     real, dimension(mx,my,mz,mfarray) :: f
-   real, dimension (ny,nz) :: gamma0
+   real, dimension (my,mz) :: gamma0
    character (len=3) :: topbot
    integer :: k
 
      select case(topbot)
       case('bot')               ! bottom boundary
-       gamma0=cp_full(l1,m1:m2,n1:n2)/cv_full(l1,m1:m2,n1:n2)
+       gamma0=cp_full(l1,:,:)/cv_full(l1,:,:)
       case('top')               ! top boundary
-       gamma0=cp_full(l2,m1:m2,n1:n2)/cv_full(l2,m1:m2,n1:n2)
+       gamma0=cp_full(l2,:,:)/cv_full(l2,:,:)
       case default
         print*, "get_gammax: ", topbot, " should be `top' or `bot'"
      endselect

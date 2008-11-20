@@ -3939,7 +3939,7 @@ module Boundcond
       !real, parameter :: sigma = 1.
       real, dimension(ny,nz) :: du_dx, dlnrho_dx, rho0, L_1, L_5 
       real, dimension(ny,nz) :: dp_prefac, prefac1, prefac2
-      real, dimension (ny,nz) :: cs2x,cs0_ar,cs20_ar
+      real, dimension (my,mz) :: cs2x,cs0_ar,cs20_ar
       integer lll
       integer sgn
 
@@ -3964,8 +3964,8 @@ module Boundcond
       endselect
 
       if (leos_idealgas) then
-         cs20_ar=cs20
-         cs0_ar=cs0
+         cs20_ar(m1:m2,n1:n2)=cs20
+         cs0_ar(m1:m2,n1:n2)=cs0
         if (ldensity_nolog) then
           rho0 = f(lll,m1:m2,n1:n2,ilnrho)
           ! ``dp = cs20*drho''
@@ -3982,13 +3982,13 @@ module Boundcond
          cs0_ar=cs2x**0.5
         if (ldensity_nolog) then
           rho0 = f(lll,m1:m2,n1:n2,ilnrho)
-          dp_prefac = cs20_ar
+          dp_prefac = cs20_ar(m1:m2,n1:n2)
         else
           rho0 = exp(f(lll,m1:m2,n1:n2,ilnrho))
-          dp_prefac = cs20_ar*rho0
+          dp_prefac = cs20_ar(m1:m2,n1:n2)*rho0
         endif
-        prefac1 = -1./(2.*rho0*cs20_ar)
-        prefac2 = -1./(2.*rho0*cs0_ar)
+        prefac1 = -1./(2.*rho0*cs20_ar(m1:m2,n1:n2))
+        prefac2 = -1./(2.*rho0*cs0_ar(m1:m2,n1:n2))
       else
         print*,"bc_nscbc_prf_x: leos_idealgas=",leos_idealgas,"."
         print*,"NSCBC boundary treatment only implemented for an ideal gas." 
@@ -3997,10 +3997,10 @@ module Boundcond
       endif
       call der_onesided_4_slice(f,sgn,ilnrho,dlnrho_dx,lll,1)
       call der_onesided_4_slice(f,sgn,iux,du_dx,lll,1)
-      L_1 = (f(lll,m1:m2,n1:n2,iux) - sgn*cs0_ar)*&
-            (dp_prefac*dlnrho_dx - sgn*rho0*cs0_ar*du_dx)
+      L_1 = (f(lll,m1:m2,n1:n2,iux) - sgn*cs0_ar(m1:m2,n1:n2))*&
+            (dp_prefac*dlnrho_dx - sgn*rho0*cs0_ar(m1:m2,n1:n2)*du_dx)
       if (llinlet) then
-        L_5 = nscbc_sigma*cs20_ar*rho0*(sgn*f(lll,m1:m2,n1:n2,iux)-sgn*u_t)
+        L_5 = nscbc_sigma*cs20_ar(m1:m2,n1:n2)*rho0*(sgn*f(lll,m1:m2,n1:n2,iux)-sgn*u_t)
       else
         L_5 = 0
       end if
@@ -4174,8 +4174,10 @@ module Boundcond
 !***********************************************************************
     subroutine bc_nscbc_subin_x(f,df,topbot)
 !
-!   Calculate du and dlnrho at a partially reflecting outlet/inlet normal to 
-!   x-direction acc. to LODI relations. Uses a one-sided finite diff. stencil.
+!   nscbc case 
+!   subsonic inflow boundary conditions
+!   now it is 2D case (should be corrected for 3D case)
+!    ux,uy,T are fixed, drho  is calculated 
 !
 !   16-nov-08/natalia: coded.
 !
@@ -4190,9 +4192,9 @@ module Boundcond
       real, dimension (mx,my,mz,mvar) :: df
       character (len=3) :: topbot
       real, dimension(ny,nz) :: dux_dx, dlnrho_dx, L_1, L_2, L_5, dmom2_dy 
-      real, dimension(my,mz) :: rho0
+      real, dimension(my,mz) :: rho0, gamma0
       real, dimension(ny,nz) :: dp_prefac
-      real, dimension (ny,nz) :: cs2x,cs0_ar,cs20_ar,gamma0
+      real, dimension (my,mz) :: cs2x,cs0_ar,cs20_ar
       integer :: lll,i, sgn
 
       intent(in) :: f
@@ -4222,10 +4224,10 @@ module Boundcond
          cs0_ar=cs2x**0.5
         if (ldensity_nolog) then
           rho0(:,:) = f(lll,:,:,ilnrho)
-          dp_prefac = cs20_ar/gamma0
+          dp_prefac = cs20_ar(m1:m2,n1:n2)/gamma0(m1:m2,n1:n2)
         else
           rho0(:,:) = exp(f(lll,:,:,ilnrho))
-          dp_prefac = cs20_ar*rho0(m1:m2,n1:n2)/gamma0
+          dp_prefac = cs20_ar(m1:m2,n1:n2)*rho0(m1:m2,n1:n2)/gamma0(m1:m2,n1:n2)
         endif
          mom2(lll,:,:)=rho0(:,:)*f(lll,:,:,iuy)
       else
@@ -4241,19 +4243,21 @@ module Boundcond
       enddo
       select case(topbot)
       case('bot')
-        L_1 = (f(lll,m1:m2,n1:n2,iux) - cs0_ar)*&
-            (dp_prefac*dlnrho_dx - rho0(m1:m2,n1:n2)*cs0_ar*dux_dx)
-        L_5 =L_1-2.*rho0(m1:m2,n1:n2)*cs0_ar*df(lll,m1:m2,n1:n2,iux)
+        L_1 = (f(lll,m1:m2,n1:n2,iux) - cs0_ar(m1:m2,n1:n2))*&
+            (dp_prefac*dlnrho_dx - rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dux_dx)
+        L_5 =L_1-2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*df(lll,m1:m2,n1:n2,iux)
       case('top')
-        L_5 = (f(lll,m1:m2,n1:n2,iux) + cs0_ar)*&
-            (dp_prefac*dlnrho_dx + rho0(m1:m2,n1:n2)*cs0_ar*dux_dx)
-        L_1 = L_5+2.*rho0(m1:m2,n1:n2)*cs0_ar*df(lll,m1:m2,n1:n2,iux)
+        L_5 = (f(lll,m1:m2,n1:n2,iux) + cs0_ar(m1:m2,n1:n2))*&
+            (dp_prefac*dlnrho_dx + rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dux_dx)
+        L_1 = L_5+2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*df(lll,m1:m2,n1:n2,iux)
       endselect
-        L_2 = 0.5*(gamma0-1.)*(L_5+L_1)+rho0(m1:m2,n1:n2)*cs20_ar*df(lll,m1:m2,n1:n2,ilnTT)
+        L_2 = 0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1) &
+                 +rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2)*df(lll,m1:m2,n1:n2,ilnTT)
       if (ldensity_nolog) then
-          df(lll,m1:m2,n1:n2,ilnrho) = -1./cs20_ar*(L_2+0.5*(L_5 + L_1))-dmom2_dy
+          df(lll,m1:m2,n1:n2,ilnrho) = -1./cs20_ar(m1:m2,n1:n2)*(L_2+0.5*(L_5 + L_1))-dmom2_dy
       else
-          df(lll,m1:m2,n1:n2,ilnrho) = -1./rho0(m1:m2,n1:n2)/cs20_ar*(L_2*0.+0.5*(L_5 + L_1)) &
+          df(lll,m1:m2,n1:n2,ilnrho) = -1./rho0(m1:m2,n1:n2)/cs20_ar(m1:m2,n1:n2) &
+                                       *(L_2*0.+0.5*(L_5 + L_1)) &
                                        -1./rho0(m1:m2,n1:n2)*dmom2_dy
       endif
             
@@ -4261,8 +4265,11 @@ module Boundcond
 !***********************************************************************
  subroutine bc_nscbc_nref_subout_x(f,df,topbot)
 !
-!   Calculate du and dlnrho at a partially reflecting outlet/inlet normal to 
-!   x-direction acc. to LODI relations. Uses a one-sided finite diff. stencil.
+!
+!   nscbc case 
+!   subsonic non-reflecting outflow boundary conditions
+!   now it is 2D case (should be corrected for 3D case)
+!    drho. dT, dux, duy  are calculated, p_inf can be fixed (if nscbc_sigma <>0)
 !
 !   16-nov-08/natalia: coded.
 !
@@ -4275,11 +4282,11 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       character (len=3) :: topbot
-      real, dimension(my,mz) :: rho0
-      real, dimension (mx,my,mz) :: mom2
-      real, dimension(ny,nz) :: dux_dx, dux_dy, dlnrho_dx, L_1, L_2, L_5,dmom2_dy 
-      real, dimension(ny,nz) :: dp_prefac,drho_prefac
-      real, dimension (ny,nz) :: cs2x,cs0_ar,cs20_ar,gamma0,p_infx,KK
+      real, dimension(my,mz) :: rho0,gamma0
+      real, dimension (mx,my,mz) :: mom2, rho_ux2, rho_uy2, rho_gamma, rhoE_p
+      real, dimension(ny,nz) :: dux_dx, dux_dy, dlnrho_dx, L_1, L_2, L_5,dmom2_dy,drhoE_p_dy
+      real, dimension(ny,nz) :: dp_prefac,drho_prefac,p_infx, KK
+      real, dimension (my,mz) :: cs2x,cs0_ar,cs20_ar
       integer :: lll, sgn,i
       real :: Mach_num
 
@@ -4313,14 +4320,19 @@ module Boundcond
          cs0_ar=cs2x**0.5
         if (ldensity_nolog) then
           rho0(:,:) = f(lll,:,:,ilnrho)
-          dp_prefac = cs20_ar/gamma0
-          drho_prefac=-1./cs20_ar
+          dp_prefac = cs20_ar(m1:m2,n1:n2)/gamma0(m1:m2,n1:n2)
+          drho_prefac=-1./cs20_ar(m1:m2,n1:n2)
         else
           rho0(:,:) = exp(f(lll,:,:,ilnrho))
-          dp_prefac = cs20_ar*rho0(m1:m2,n1:n2)/gamma0
-          drho_prefac=-1./rho0(m1:m2,n1:n2)/cs20_ar
+          dp_prefac = cs20_ar(m1:m2,n1:n2)*rho0(m1:m2,n1:n2)/gamma0(m1:m2,n1:n2)
+          drho_prefac=-1./rho0(m1:m2,n1:n2)/cs20_ar(m1:m2,n1:n2)
         endif
          mom2(lll,:,:)=rho0(:,:)*f(lll,:,:,iuy)
+         rho_ux2(lll,:,:)=rho0(:,:)*f(lll,:,:,iux)*f(lll,:,:,iux)
+         rho_uy2(lll,:,:)=rho0(:,:)*f(lll,:,:,iuy)*f(lll,:,:,iuy)
+         rho_gamma(lll,:,:)=rho0(:,:)/gamma0(:,:)
+         rhoE_p(lll,:,:)=0.5*rho_ux2(lll,:,:)+0.5*rho_uy2(lll,:,:) &
+                        +cs20_ar(:,:)/(gamma0(:,:)-1.)*rho0(:,:)
       else
         print*,"bc_nscbc_subin_x: leos_idealgas=",leos_idealgas,"."
         print*,"NSCBC subsonic inflos is only implemented for the chemistry case." 
@@ -4334,37 +4346,38 @@ module Boundcond
       do i=1,mz
        call der_pencil(2,mom2(lll,:,i),dmom2_dy(:,i))
        call der_pencil(2,f(lll,:,i,iux),dux_dy(:,i))
+       call der_pencil(2,rhoE_p(lll,:,i),drhoE_p_dy(:,i))
       enddo
 
-      Mach_num=maxval(f(lll,m1:m2,n1:n2,iux)/cs0_ar)
-      KK=nscbc_sigma*(1.-Mach_num*Mach_num)*cs0_ar/Lxyz(1)
+      Mach_num=maxval(f(lll,m1:m2,n1:n2,iux)/cs0_ar(m1:m2,n1:n2))
+      KK=nscbc_sigma*(1.-Mach_num*Mach_num)*cs0_ar(m1:m2,n1:n2)/Lxyz(1)
 
 
       select case(topbot)
       case('bot')
-        L_5=KK*(cs20_ar/gamma0*rho0(m1:m2,n1:n2)-p_infx)
-        L_2 = f(lll,m1:m2,n1:n2,iux)*(cs20_ar*dlnrho_dx-dp_prefac*dlnrho_dx)
-        L_1 = (f(lll,m1:m2,n1:n2,iux) - cs0_ar)*&
-            (dp_prefac*dlnrho_dx - rho0(m1:m2,n1:n2)*cs0_ar*dux_dx)
+        L_5=KK*(cs20_ar(m1:m2,n1:n2)/gamma0(m1:m2,n1:n2)*rho0(m1:m2,n1:n2)-p_infx)
+        L_2 = f(lll,m1:m2,n1:n2,iux)*(cs20_ar(m1:m2,n1:n2)*dlnrho_dx-dp_prefac*dlnrho_dx)
+        L_1 = (f(lll,m1:m2,n1:n2,iux) - cs0_ar(m1:m2,n1:n2))*&
+            (dp_prefac*dlnrho_dx - rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dux_dx)
       case('top')
-        L_1=KK*(cs20_ar/gamma0*rho0(m1:m2,n1:n2)-p_infx)
+        L_1=KK*(cs20_ar(m1:m2,n1:n2)/gamma0(m1:m2,n1:n2)*rho0(m1:m2,n1:n2)-p_infx)
 
-        L_2 = f(lll,m1:m2,n1:n2,iux)*(cs20_ar*dlnrho_dx-dp_prefac*dlnrho_dx)
-        L_5 = (f(lll,m1:m2,n1:n2,iux) + cs0_ar)*&
-            (dp_prefac*dlnrho_dx + rho0(m1:m2,n1:n2)*cs0_ar*dux_dx)
+        L_2 = f(lll,m1:m2,n1:n2,iux)*(cs20_ar(m1:m2,n1:n2)*dlnrho_dx-dp_prefac*dlnrho_dx)
+        L_5 = (f(lll,m1:m2,n1:n2,iux) + cs0_ar(m1:m2,n1:n2))*&
+            (dp_prefac*dlnrho_dx + rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dux_dx)
       endselect
-      
       if (ldensity_nolog) then
         df(lll,m1:m2,n1:n2,ilnrho) = drho_prefac*(L_2+0.5*(L_5 + L_1))-dmom2_dy
       else
         df(lll,m1:m2,n1:n2,ilnrho) = drho_prefac*(L_2+0.5*(L_5 + L_1)) &
                                        -1./rho0(m1:m2,n1:n2)*dmom2_dy
       endif
-        df(lll,m1:m2,n1:n2,iux) = -1./(2.*rho0(m1:m2,n1:n2)*cs0_ar)*(L_5 - L_1) &
+        df(lll,m1:m2,n1:n2,iux) = -1./(2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2))*(L_5 - L_1) &
                                   -f(lll,m1:m2,n1:n2,iux)*dux_dy
-        df(lll,m1:m2,n1:n2,ilnTT) = -1./(rho0(m1:m2,n1:n2)*cs20_ar)*(-L_2 &
-               +0.5*(gamma0-1.)*(L_5-L_1))
-            
+        df(lll,m1:m2,n1:n2,ilnTT) = -1./(rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*(-L_2 &
+               +0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5-L_1)) &
+               -1./(rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*(gamma0(m1:m2,n1:n2)-1.) &
+               *gamma0(m1:m2,n1:n2)*drhoE_p_dy(m1:m2,n1:n2)
     endsubroutine bc_nscbc_nref_subout_x
 !***********************************************************************
 endmodule Boundcond
