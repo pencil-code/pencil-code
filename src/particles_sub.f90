@@ -2498,8 +2498,7 @@ module Particles_sub
       intent(in) :: f,i1,i2,fp,ineargrid, policy
       intent(inout) :: vec
 !
-      call interp_field_pencil(f,i1,i2,fp,ineargrid, &
-          lbound(vec,1),ubound(vec,1),1,vec,policy)
+      call interp_field_pencil(f,i1,i2,fp,ineargrid,1,vec,policy)
 !
     endsubroutine interp_field_pencil_0
 !***********************************************************************
@@ -2517,13 +2516,11 @@ module Particles_sub
       intent(in) :: f,i1,i2,fp,ineargrid, policy
       intent(inout) :: vec
 !
-      call interp_field_pencil(f,i1,i2,fp,ineargrid, &
-          lbound(vec,1),ubound(vec,1),ubound(vec,2),vec,policy)
+      call interp_field_pencil(f,i1,i2,fp,ineargrid,ubound(vec,2),vec,policy)
 !
     endsubroutine interp_field_pencil_1
 !***********************************************************************
-    subroutine interp_field_pencil(f,i1,i2,fp,ineargrid, &
-      lvec,uvec,uvec2,vec,policy)
+    subroutine interp_field_pencil(f,i1,i2,fp,ineargrid,uvec2,vec,policy)
 !
 !  Interpolate stream field to all sub grid particle positions in the
 !  current pencil.
@@ -2537,8 +2534,8 @@ module Particles_sub
       integer :: i1,i2
       real, dimension(mpar_loc,mpvar) :: fp
       integer, dimension(mpar_loc,3) :: ineargrid
-      integer :: lvec,uvec,uvec2,policy
-      real, dimension(lvec:uvec,uvec2) :: vec
+      integer :: uvec2,policy
+      real, dimension(k1_imn(imn):k2_imn(imn),uvec2) :: vec
 !
       intent(in) :: f,i1,i2,fp,ineargrid, policy
       intent(inout) :: vec

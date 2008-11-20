@@ -3139,7 +3139,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       real,dimension(mpar_loc,mpvar) :: fp
       real,dimension(:,:) :: uup
-      real,dimension(:) :: rep
+      real,dimension(k1_imn(imn):k2_imn(imn)) :: rep
       intent(in) :: fp, uup
       intent(inout) :: rep
 !
@@ -3172,7 +3172,7 @@ k_loop:   do while (.not. (k>npar_loc))
       use Particles_radius
 !
       real,dimension(mpar_loc,mpvar) :: fp
-      real,dimension(:) :: stocunn
+      real,dimension(k1_imn(imn):k2_imn(imn)) :: stocunn
 !
       real :: dia
       integer :: k
