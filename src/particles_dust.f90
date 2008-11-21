@@ -1594,7 +1594,7 @@ k_loop:   do while (.not. (k>npar_loc))
       real :: dt1_advpx, dt1_advpy, dt1_advpz
       integer :: k, l, ix0, iy0, iz0
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
-      logical :: lsink
+      logical :: lnbody
 !
       intent (inout) :: f, df, dfp, fp, ineargrid
 !
@@ -1652,10 +1652,10 @@ k_loop:   do while (.not. (k>npar_loc))
 !
           do k=k1_imn(imn),k2_imn(imn)
 !
-!  Exclude the massive sink particles from the drag calculations
+!  Exclude the massive nbody particles from the drag calculations
 !
-            lsink=(lparticles_nbody.and.any(ipar(k).eq.ipar_sink))
-            if (.not.lsink) then
+            lnbody=(lparticles_nbody.and.any(ipar(k).eq.ipar_nbody))
+            if (.not.lnbody) then
               ix0=ineargrid(k,1)
               iy0=ineargrid(k,2)
               iz0=ineargrid(k,3)
@@ -3086,14 +3086,14 @@ k_loop:   do while (.not. (k>npar_loc))
       real,dimension(nx,3) :: vvpm,dvp2m
       integer :: inx0,k,l
       type (pencil_case) :: p
-      logical :: lsink
+      logical :: lnbody
 !
 !  Calculate the average velocity at each cell
 !
       vvpm=0.0; dvp2m=0.0
       do k=k1_imn(imn),k2_imn(imn)
-        lsink=any(ipar(k).eq.ipar_sink)
-        if (.not.lsink) then
+        lnbody=any(ipar(k).eq.ipar_nbody)
+        if (.not.lnbody) then
           inx0=ineargrid(k,1)-nghost
           vvpm(inx0,:) = vvpm(inx0,:) + fp(k,ivpx:ivpz)
         endif
@@ -3105,8 +3105,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Get the residual in quadrature, dvp2m
 !
       do k=k1_imn(imn),k2_imn(imn)
-        lsink=any(ipar(k).eq.ipar_sink)
-        if (.not.lsink) then
+        lnbody=any(ipar(k).eq.ipar_nbody)
+        if (.not.lnbody) then
           inx0=ineargrid(k,1)-nghost
           dvp2m(inx0,1)=dvp2m(inx0,1)+(fp(k,ivpx)-vvpm(inx0,1))**2
           dvp2m(inx0,2)=dvp2m(inx0,2)+(fp(k,ivpy)-vvpm(inx0,2))**2

@@ -1,6 +1,6 @@
 ! $Id$
 !
-!  This module takes care of everything related to sink particles.
+!  This module takes care of everything related to massive particles.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 !
@@ -138,7 +138,7 @@ module Particles_nbody
       do ks=1,nspar
         if (pmass(ks)/=0.) then 
           mspar_orig=mspar_orig+1
-          ipar_sink(mspar_orig)=ks
+          ipar_nbody(mspar_orig)=ks
         endif
       enddo
 !
@@ -263,7 +263,7 @@ module Particles_nbody
       endif
       
       if (linterpolate_gravity) then
-         if (lroot) print*,'initializing global array for sink gravity'
+         if (lroot) print*,'initializing global array for nbody gravity'
          call farray_register_global('ggp',iglobal_ggp,vector=3)
       endif
 !      
@@ -316,7 +316,7 @@ module Particles_nbody
 !***********************************************************************
     subroutine calc_pencils_par_nbody(f,p)
 !
-!  Calculate sink particle pencils
+!  Calculate nbody particle pencils
 !
 !  22-sep-06/wlad: adapted
 !
@@ -329,7 +329,7 @@ module Particles_nbody
 !***********************************************************************
     subroutine init_particles_nbody(f,fp)
 !
-!  Initial positions and velocities of sink particles.
+!  Initial positions and velocities of nbody particles.
 !  Overwrite the position asserted by the dust module
 !
 !  17-nov-05/anders+wlad: adapted
@@ -361,13 +361,13 @@ module Particles_nbody
 
       case ('origin')
         if (lroot) then
-          print*, 'init_particles_nbody: All sink particles at origin'
+          print*, 'init_particles_nbody: All nbody particles at origin'
           fp(1:mspar,ixp:izp)=0.
         endif
 !
       case('constant')
         if (lroot) then
-          print*, 'init_particles_nbody: All sink particles at x,y,z=', xsp0, ysp0, zsp0
+          print*, 'init_particles_nbody: All nbody particles at x,y,z=', xsp0, ysp0, zsp0
           fp(1:mspar,ixp)=xsp0
           fp(1:mspar,iyp)=ysp0
           fp(1:mspar,izp)=zsp0
@@ -388,11 +388,11 @@ module Particles_nbody
         if (nzgrid/=1) &
              position(1:mspar,izp)=xyz0_loc(3)+position(1:mspar,izp)*Lxyz_loc(3)
 !
-!  Loop through ipar to allocate the sink particles
+!  Loop through ipar to allocate the nbody particles
 !
         do k=1,npar_loc
           if (ipar(k) <= mspar) then
-            print*,'initparticles_nbody. Slot for sink particle ',ipar(k),&
+            print*,'initparticles_nbody. Slot for nbody particle ',ipar(k),&
                  ' was at fp position ',k,' at processor ',iproc
 !
             fp(k,ixp:izp)=position(ipar(k),1:3)
@@ -403,7 +403,7 @@ module Particles_nbody
             if (nygrid==1) fp(k,iyp)=y(nghost+1)
             if (nzgrid==1) fp(k,izp)=z(nghost+1)
 !
-            print*,'initparticles_nbody. Sink particle ',ipar(k),&
+            print*,'initparticles_nbody. Nbody particle ',ipar(k),&
                  ' located at ixp=',fp(k,ixp)
           endif
         enddo
@@ -417,9 +417,9 @@ module Particles_nbody
           call stop_it("init_particles_nbody")
         endif
 !
-!  Ok, I have the masses and the positions of all sinks except the last, 
-!  which will have a position determined to fix the center of mass on 
-!  the center of the grid
+!  Ok, I have the masses and the positions of all massive particles 
+!  except the last, which will have a position determined to fix the 
+!  center of mass on the center of the grid
 !
         if (any(ysp0/=0)) then
           if (lspherical_coords) then
@@ -446,7 +446,7 @@ module Particles_nbody
         endif
 !
         if (lroot) then
-          print*,'fixed-cm: redefining the mass of the last sink particle'
+          print*,'fixed-cm: redefining the mass of the last nbody particle'
           print*,'fixed-cm: it assumes that the sum of the mass'//&
                ' of the particles is always g0'
         endif
@@ -499,12 +499,12 @@ module Particles_nbody
           print*,'position (z)=',position(:,3)
         endif
 !
-!  Loop through ipar to allocate the sink particles
+!  Loop through ipar to allocate the nbody particles
 !
         do k=1,npar_loc
           if (ipar(k) <= mspar) then
 !
-            print*,'initparticles_nbody. Slot for sink particle ',ipar(k),&
+            print*,'initparticles_nbody. Slot for nbody particle ',ipar(k),&
                  ' was at fp position ',k,' at processor ',iproc
 !
 !  Here I substitute the first mspar dust particles by massive ones, 
@@ -518,7 +518,7 @@ module Particles_nbody
             if (nygrid==1) fp(k,iyp)=y(nghost+1)
             if (nzgrid==1) fp(k,izp)=z(nghost+1)
 !
-            print*,'initparticles_nbody. Sink particle ',ipar(k),&
+            print*,'initparticles_nbody. Nbody particle ',ipar(k),&
                  ' located at ixp=',fp(k,ixp)
           endif
         enddo
@@ -590,18 +590,18 @@ module Particles_nbody
           velocity(istar,3)=-parc
         endif
 !
-!  Loop through ipar to allocate the sink particles
+!  Loop through ipar to allocate the nbody particles
 !
          do k=1,npar_loc
            if (ipar(k)<=mspar) then
              print*,&
-                  'initparticles_nbody. Slot for sink particle ',ipar(k),&
+                  'initparticles_nbody. Slot for nbody particle ',ipar(k),&
                   ' was at fp position ',k,&
                   ' at processor ',iproc
 !
              fp(k,ivpx:ivpz) = velocity(ipar(k),1:3)
 !
-             print*,'initparticles_nbody. Sink particle ',ipar(k),&
+             print*,'initparticles_nbody. Nbody particle ',ipar(k),&
                   ' has velocity y=',fp(k,ivpy)
 !
            endif
@@ -617,7 +617,7 @@ module Particles_nbody
 !  Make the particles known to all processors
 !
       call boundconds_particles(fp,npar_loc,ipar)
-      call share_sinkparticles(fp)
+      call share_nbodyparticles(fp)
 !
     endsubroutine init_particles_nbody
 !***********************************************************************
@@ -628,7 +628,8 @@ module Particles_nbody
 !
 !  Adding the gravity on the dust component via the grid
 !  is less accurate, but much faster than looping through all 
-!  npar_loc particle and add the gravity of all sinks to it.
+!  npar_loc particle and add the gravity of all massive partgicles 
+!  to it.
 !
 !  07-sep-06/wlad: coded
 !
@@ -770,7 +771,7 @@ module Particles_nbody
 !***********************************************************************
     subroutine dxxp_dt_nbody(dfp)
 !
-!  If the center of mass of the sink particles was moved from the
+!  If the center of mass of the nbody particles was moved from the
 !  center of the grid, reset it.
 !
 !  22-sep-06/wlad: coded
@@ -784,7 +785,7 @@ module Particles_nbody
 !***********************************************************************
     subroutine dvvp_dt_nbody(f,df,fp,dfp,ineargrid)
 !
-!  Evolution of sink and dust particles velocities due to
+!  Evolution of nbody and dust particles velocities due to
 !  particle-particle interaction only. 
 !
 !  Coriolis and shear already added in particles_dust
@@ -817,9 +818,9 @@ module Particles_nbody
 !
       if (lheader) print*,'dvvp_dt_nbody: Calculate dvvp_dt_nbody'
 !
-!  Evolve sink particle positions due to the gravity of other 
-!  sink particles. The gravity of the sinks on the dust will be
-!  added inside the pencil in dvvp_dt_nbody_pencil
+!  Evolve massive particle positions due to the gravity of other 
+!  massive particles. The gravity of the massive particles on the 
+!  dust will be added inside the pencil in dvvp_dt_nbody_pencil
 !
       if (lramp) call get_ramped_mass
 !
@@ -848,17 +849,17 @@ module Particles_nbody
 !
       do k=npar_loc,1,-1
         if (linterpolate_gravity) then
-          !only loop through sinks
+          !only loop through massive particles
           if (ipar(k).le.mspar) then
-            call loop_through_sinks(fp,dfp,k,sq_hills,ineargrid)
+            call loop_through_nbodies(fp,dfp,k,sq_hills,ineargrid)
           endif
         else
           !for all particles
-          call loop_through_sinks(fp,dfp,k,sq_hills,ineargrid)
+          call loop_through_nbodies(fp,dfp,k,sq_hills,ineargrid)
         endif
       enddo
 !
-!  Position and velocity diagnostics (per sink particle)
+!  Position and velocity diagnostics (per nbody particle)
 ! 
       if (ldiagnos) then
         do ks=1,mspar
@@ -880,7 +881,7 @@ module Particles_nbody
 !
     endsubroutine dvvp_dt_nbody
 !************************************************************
-    subroutine loop_through_sinks(fp,dfp,k,sq_hills,ineargrid)
+    subroutine loop_through_nbodies(fp,dfp,k,sq_hills,ineargrid)
 !
 !  Subroutine that adds the gravity from all massive particles
 !
@@ -937,7 +938,7 @@ module Particles_nbody
 !
 99    continue
       
-    endsubroutine loop_through_sinks
+    endsubroutine loop_through_nbodies
 !**********************************************************
     subroutine point_par_name(a,iname)
 !
@@ -1184,10 +1185,10 @@ module Particles_nbody
 !
     endsubroutine integrate_selfgravity
 !***********************************************************************
-    subroutine share_sinkparticles(fp)
+    subroutine share_nbodyparticles(fp)
 !
-!  Broadcast sink particles across processors
-!  The non-root processors, if they find a sink particle in their
+!  Broadcast nbody particles across processors
+!  The non-root processors, if they find a nbody particle in their
 !  fp array, they:
 !     send it to root with a true logical
 !     else send a false logical
@@ -1200,27 +1201,27 @@ module Particles_nbody
       use Mpicomm
 !
       real, dimension(mpar_loc,mpvar) :: fp
-      logical, dimension(mspar) :: lsink
+      logical, dimension(mspar) :: lnbody
       integer :: ks,k,tagsend,j,tagrecv
 !
       if (lmpicomm) then
 !
-!  Loop through the sink particles
+!  Loop through the nbody particles
 !
         do ks=1,mspar
 !
 !  Set the logical to false initially
 !
-          lsink(ks)=.false.
+          lnbody(ks)=.false.
 !
 !  Loop through the particles on this processor
 !
           do k=1,npar_loc
-            if (ipar_sink(ks)==ipar(k)) then
+            if (ipar_nbody(ks)==ipar(k)) then
 !
-!  A sink was found here. Turn the logical true and copy fp to fsp
+!  A nbody was found here. Turn the logical true and copy fp to fsp
 !
-              lsink(ks) = .true.
+              lnbody(ks) = .true.
               fsp(ks,ixp:ivpz) = fp(k,:)
               fsp(ks,imass)    = pmass(ks)
 !
@@ -1242,20 +1243,20 @@ module Particles_nbody
 !
           if (.not.lroot) then
             tagsend = mspar*iproc + ks
-            call mpisend_logical(lsink(ks),1,root,tagsend)
+            call mpisend_logical(lnbody(ks),1,root,tagsend)
           else
 !
 !  The root receives all logicals. Same tag.
 !
             do j=1,ncpus-1
               tagrecv = mspar*j + ks
-              call mpirecv_logical(lsink(ks),1,j,tagrecv)
+              call mpirecv_logical(lnbody(ks),1,j,tagrecv)
 !
 !  Test the received logicals
 !
-              if (lsink(ks)) then
+              if (lnbody(ks)) then
 !
-!  Found a sink particle. Get the value of fsp
+!  Found a nbody particle. Get the value of fsp
 !
                 call mpirecv_real(fsp(ks,:),mspvar,j,ks)
                 if (ip<=6) print*,'logical for particle ',ks,&
@@ -1271,8 +1272,8 @@ module Particles_nbody
 !
 !  Print the result in all processors
 !
-          if (ip<=8)  print*,'share_sinkparticles: finished loop. '//&
-               'sink particles in proc ',iproc,&
+          if (ip<=8)  print*,'share_nbodyparticles: finished loop. '//&
+               'nbody particles in proc ',iproc,&
                ' are fsp(ks,:)=',fsp(ks,:)
         enddo
       else
@@ -1281,7 +1282,7 @@ module Particles_nbody
 !
         do ks=1,mspar
           do k=1,npar_loc
-            if (ipar_sink(ks)==ipar(k)) then
+            if (ipar_nbody(ks)==ipar(k)) then
               fsp(ks,ixp:ivpz) = fp(k,:)
             endif
           enddo
@@ -1290,9 +1291,21 @@ module Particles_nbody
 !
       endif
 !
-      if (ldebug) print*,'share_sinkparticles finished'
+      if (ldebug) print*,'share_nbodyparticles finished'
 !
-    endsubroutine share_sinkparticles
+    endsubroutine share_nbodyparticles
+!***********************************************************************
+    subroutine particles_nbody_special
+!
+!  Fetch fsp array to special module
+!
+!  01-mar-08/wlad: coded
+!
+      use Special, only: special_calc_particles_nbody
+!
+      call special_calc_particles_nbody(fsp)
+!
+    endsubroutine particles_nbody_special
 !***********************************************************************
     subroutine get_totalmass(tmass)
 !
@@ -1356,7 +1369,7 @@ module Particles_nbody
 !***********************************************************************
     subroutine calc_torque(p,dist,ks)
 !
-!  Output torque diagnostic for sink particle ks
+!  Output torque diagnostic for nbody particle ks
 !
 !  05-nov-05/wlad : coded
 !
@@ -1444,7 +1457,7 @@ module Particles_nbody
 !
         if (lramp) call get_ramped_mass
 !
-!  Calculate grid - sink particles distances
+!  Calculate grid - nbody particles distances
 !
         do n=1,mz
           do m=1,my
@@ -1496,7 +1509,7 @@ module Particles_nbody
         if ((ks==istar).and.lnogravz_star) &
              ggp(:,3) = 0.
 !
-!  Sum up the accelerations of the sinks
+!  Sum up the accelerations of the massive particles
 !
         ggt=ggt+ggp
 !
@@ -1679,7 +1692,7 @@ module Particles_nbody
 !
               vvpm=0.0; vpm2=0.0
               do k=k1_imn(imn),k2_imn(imn)
-                if (.not.(any(ipar(k).eq.ipar_sink))) then
+                if (.not.(any(ipar(k).eq.ipar_nbody))) then
                   inx0=ineargrid(k,1)-nghost
                   vvpm(inx0,:) = vvpm(inx0,:) + fp(k,ivpx:ivpz)
                 endif
@@ -1689,7 +1702,7 @@ module Particles_nbody
               enddo
 !  vpm2
               do k=k1_imn(imn),k2_imn(imn)
-                if (.not.(any(ipar(k).eq.ipar_sink))) then
+                if (.not.(any(ipar(k).eq.ipar_nbody))) then
                   inx0=ineargrid(k,1)-nghost
                   vpm2(inx0) = vpm2(inx0) + (fp(k,ivpx)-vvpm(inx0,1))**2 + &
                        (fp(k,ivpy)-vvpm(inx0,2))**2 + &
@@ -1711,7 +1724,7 @@ module Particles_nbody
 !
               npik=0.
               do k=k1_imn(imn),k2_imn(imn)
-                if (.not.(any(ipar(k).eq.ipar_sink))) then
+                if (.not.(any(ipar(k).eq.ipar_nbody))) then
                   inx0=ineargrid(k,1)-nghost
                   npik(inx0)=npik(inx0)+1
                   pik(inx0,npik(inx0)) = k
@@ -1728,7 +1741,7 @@ module Particles_nbody
                   if (pnp(i) > 1.0) then
                     !removing must always be done backwards 
                     do kn=pnp(i),1,-1 
-                      if (.not.(any(ipar(k).eq.ipar_sink))) &
+                      if (.not.(any(ipar(k).eq.ipar_nbody))) &
                            call remove_particle(fp,npar_loc,ipar,pik(i,kn))
                     enddo
 !
@@ -1817,7 +1830,7 @@ module Particles_nbody
 !
           if (nc/=0) then
             call merge_and_share(fcsp,nc,fp)
-            call share_sinkparticles(fp)
+            call share_nbodyparticles(fp)
           endif
 !
         endif
@@ -1827,13 +1840,13 @@ module Particles_nbody
 !
         if (ldebug) then
           print*,'---------------------------'
-          print*,'the sinks present are:'
+          print*,'the massive particles present are:'
           do ks=1,mspar 
             print*,'ks=',ks
             print*,'positions=',fsp(ks,ixp:izp)
             print*,'velocities=',fsp(ks,ivpx:ivpz)
             print*,'mass=',fsp(ks,imass)
-            print*,'ipar_sink=',ipar_sink
+            print*,'ipar_nbody=',ipar_nbody
             print*,''
           enddo
           print*,'---------------------------'
@@ -1900,10 +1913,10 @@ module Particles_nbody
 !
         pmass(mspar+1:mspar+nf)=fleft(1:nf,imass)
 !
-!  Allocate the new ipar_sinks
+!  Allocate the new ipar_nbodies
 !
         do i=1,nf 
-          ipar_sink(mspar+i)=mspar+i 
+          ipar_nbody(mspar+i)=mspar+i 
 !  Activate accretion for the newly created sinks
           if (laccrete_when_create) then
             ladd_mass(mspar+i)=.true.
@@ -1916,19 +1929,19 @@ module Particles_nbody
 !
         if (mspar>nspar) then 
           print*,'after friends_of_friends, we still have '//&
-               'too many sink particles.'//&
+               'too many nbody particles.'//&
                'Stop and allocated more'
-          print*,'the total number of sinks (mspar)=',mspar
+          print*,'the total number of massive particles (mspar)=',mspar
           print*,'is bigger than the maximum number of '//&
-               'allowed sinks (nspar)=',nspar
+               'allowed massive particles (nspar)=',nspar
           call fatal_error("merge and share","")
         endif
       endif
 !
-!  Broadcast mspar, ipar_sink and pmass
+!  Broadcast mspar, ipar_nbody and pmass
 !      
       call mpibcast_int(mspar,1)
-      call mpibcast_int(ipar_sink(1:mspar),mspar)
+      call mpibcast_int(ipar_nbody(1:mspar),mspar)
       call mpibcast_real(pmass,mspar)      
       call mpibcast_logical(ladd_mass,mspar)
       call mpibcast_logical(laccretion,mspar)
@@ -2024,9 +2037,9 @@ module Particles_nbody
 !
       if (ldebug) then 
         print*,'merge_and_share finished. '
-        print*,'We have now ',mspar,' sink particles, '
+        print*,'We have now ',mspar,' nbody particles, '
         print*,'located at '
-        print*,ipar_sink(1:mspar)
+        print*,ipar_nbody(1:mspar)
       endif
 !
     endsubroutine merge_and_share
@@ -2276,7 +2289,7 @@ module Particles_nbody
 !***********************************************************************
     subroutine particles_nbody_read_snapshot(filename)
 !
-!  Read sink particle info
+!  Read nbody particle info
 !
 !  01-apr-08/wlad: dummy
 !
@@ -2287,20 +2300,20 @@ module Particles_nbody
       if (lroot) then
         open(1,FILE=filename,FORM='unformatted')
         read(1) mspar
-        if (mspar/=0) read(1) fsp(1:mspar,:),ipar_sink(1:mspar)
+        if (mspar/=0) read(1) fsp(1:mspar,:),ipar_nbody(1:mspar)
         if (ip<=8) print*, 'read snapshot', filename
         close(1)
       endif
 !
       call mpibcast_int(mspar,1)
       call mpibcast_real(fsp(1:mspar,:),(/mspar,mspvar/))
-      call mpibcast_int(ipar_sink(1:mspar),mspar)
+      call mpibcast_int(ipar_nbody(1:mspar),mspar)
 !
       if (ldebug) then 
         print*,'particles_nbody_read_snapshot'
         print*,'mspar=',mspar
         print*,'fsp(1:mspar)=',fsp(1:mspar,:)
-        print*,'ipar_sink(1:mspar)=',ipar_sink
+        print*,'ipar_nbody(1:mspar)=',ipar_nbody
         print*,''
       endif
 !
@@ -2312,7 +2325,7 @@ module Particles_nbody
       use IO, only: lun_output
       use Sub, only: update_snaptime, read_snaptime
 !
-!  Input and output of information about the sinks
+!  Input and output of information about the massive particles
 ! 
 !  01-apr-08/wlad: coded
 !
@@ -2335,11 +2348,11 @@ module Particles_nbody
         if (lsnap) then
           snapname=snapbase//nsnap_ch
 !
-!  Write number of sinks and sink's data
+!  Write number of massive particles and their data
 !
           open(lun_output,FILE=snapname,FORM='unformatted')
           write(lun_output) mspar
-          if (mspar/=0) write(lun_output) fsp(1:mspar,:),ipar_sink(1:mspar)
+          if (mspar/=0) write(lun_output) fsp(1:mspar,:),ipar_nbody(1:mspar)
           close(lun_output)
           if(ip<=10 .and. lroot) &
                print*,'written snapshot ', snapname
@@ -2351,7 +2364,7 @@ module Particles_nbody
         snapname=snapbase
         open(lun_output,FILE=snapname,FORM='unformatted')
         write(lun_output) mspar
-        if (mspar/=0) write(lun_output) fsp(1:mspar,:),ipar_sink(1:mspar)
+        if (mspar/=0) write(lun_output) fsp(1:mspar,:),ipar_nbody(1:mspar)
         close(lun_output)
         if(ip<=10 .and. lroot) &
              print*,'written snapshot ', snapname
@@ -2375,7 +2388,7 @@ module Particles_nbody
 !***********************************************************************
     subroutine rprint_particles_nbody(lreset,lwrite)
 !
-!  Read and register print parameters relevant for sink particles.
+!  Read and register print parameters relevant for nbody particles.
 !
 !  17-nov-05/anders+wlad: adapted
 !

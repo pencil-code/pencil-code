@@ -234,7 +234,7 @@ module Particles_selfgravity
 !
       real, dimension (3) :: gpotself
       integer :: k
-      logical :: lheader, lsink, lfirstcall=.true.
+      logical :: lheader, lnbody, lfirstcall=.true.
 !
       intent (in) :: f, fp
       intent (out) :: dfp
@@ -280,8 +280,8 @@ module Particles_selfgravity
 !  massive n-body particles
 !
             if (lparticles_nbody.and.(.not.lselfgravity_nbodyparticles)) then 
-              lsink=(lparticles_nbody.and.any(ipar(k).eq.ipar_sink))
-              if (lsink) gpotself=0
+              lnbody=(lparticles_nbody.and.any(ipar(k).eq.ipar_nbody))
+              if (lnbody) gpotself=0
             endif
 !
             dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)-gpotself

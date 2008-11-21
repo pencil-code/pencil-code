@@ -211,7 +211,7 @@ module Particles_sub
       real :: xold,yold,rad,r1old,OO
       integer :: npar_loc,k,ik,k1,k2
       character (len=2*bclen+1) :: boundx,boundy,boundz
-      logical :: lsink
+      logical :: lnbody
 !
       intent (inout) :: fp, npar_loc, ipar, dfp
 !
@@ -227,8 +227,8 @@ module Particles_sub
 !
 !  Check if we are dealing with a dust or a massive particle
 !
-        lsink=(lparticles_nbody.and.any(ipar(k).eq.ipar_sink))
-        if (.not.lsink) then
+        lnbody=(lparticles_nbody.and.any(ipar(k).eq.ipar_nbody))
+        if (.not.lnbody) then
           boundx=bcpx ;boundy=bcpy ;boundz=bcpz
         else
           boundx=bcspx;boundy=bcspy;boundz=bcspz
@@ -798,7 +798,7 @@ module Particles_sub
 !  WL:
 !  For runs with few particles (rather arbitrarily set to npar==nspar),
 !  set them all at the root processor at first. Not an optimal solution, but
-!  it will do for now. The best thing would be to allocate all sink particles
+!  it will do for now. The best thing would be to allocate all nbody particles
 !  at the root and the rest (if any) distributed evenly 
 !
       if ( lparticles_nbody.and.(npar==nspar) ) then
@@ -807,10 +807,10 @@ module Particles_sub
           !also needs to initialize ipar(k)
           do k=1,nspar
             ipar(k)=k
-            ipar_sink(k)=k
+            ipar_nbody(k)=k
           enddo
         endif
-        call mpibcast_int(ipar_sink,nspar)
+        call mpibcast_int(ipar_nbody,nspar)
       else
 !
 !  Place particles evenly on all processors. Some processors may get an extra
@@ -1483,7 +1483,7 @@ module Particles_sub
       double precision, save :: dx1, dy1, dz1
       integer :: k, ix0, iy0, iz0
       logical, save :: lfirstcall=.true.
-      logical :: lspecial_boundx,lsink
+      logical :: lspecial_boundx,lnbody
       integer :: jl,jm,ju
 !
       intent(in)  :: fp
@@ -1585,8 +1585,8 @@ module Particles_sub
 !  for instance). 
 !
         lspecial_boundx=.false.
-        lsink=(lparticles_nbody.and.any(ipar(k).eq.ipar_sink))
-        if (lsink.and.bcspx=='out') lspecial_boundx=.true.
+        lnbody=(lparticles_nbody.and.any(ipar(k).eq.ipar_nbody))
+        if (lnbody.and.bcspx=='out') lspecial_boundx=.true.
         if (.not.lspecial_boundx) then 
 !
 !  Round off errors may put a particle closer to a ghost point than to a
@@ -1819,7 +1819,7 @@ module Particles_sub
       real :: weight, weight_x, weight_y, weight_z
       integer :: k, ix0, iy0, iz0, ixx, iyy, izz
       integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1
-      logical :: lsink
+      logical :: lnbody
 !
       intent(in)  :: fp, ineargrid
       intent(out) :: f
@@ -1830,8 +1830,8 @@ module Particles_sub
         f(:,:,:,inp)=0.0
         do k=1,npar_loc
           !exclude the massive particles from the mapping
-          lsink=(lparticles_nbody.and.any(ipar(k).eq.ipar_sink))
-          if (.not.lsink) then 
+          lnbody=(lparticles_nbody.and.any(ipar(k).eq.ipar_nbody))
+          if (.not.lnbody) then 
             ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
             f(ix0,iy0,iz0,inp) = f(ix0,iy0,iz0,inp) + 1.0
           endif
@@ -1858,8 +1858,8 @@ module Particles_sub
 !  Cloud In Cell (CIC) scheme.
 !
           do k=1,npar_loc
-            lsink=(lparticles_nbody.and.any(ipar(k).eq.ipar_sink))
-            if (.not.lsink) then 
+            lnbody=(lparticles_nbody.and.any(ipar(k).eq.ipar_nbody))
+            if (.not.lnbody) then 
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
               ixx0=ix0; iyy0=iy0; izz0=iz0
               ixx1=ix0; iyy1=iy0; izz1=iz0
@@ -1890,8 +1890,8 @@ module Particles_sub
 !  decreases with the distance from the particle centre.
 !
           do k=1,npar_loc
-            lsink=(lparticles_nbody.and.any(ipar(k).eq.ipar_sink))
-            if (.not.lsink) then 
+            lnbody=(lparticles_nbody.and.any(ipar(k).eq.ipar_nbody))
+            if (.not.lnbody) then 
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
               if (nxgrid/=1) then
                 ixx0=ix0-1; ixx1=ix0+1
@@ -1984,7 +1984,7 @@ module Particles_sub
       real :: weight, weight_x, weight_y, weight_z
       integer :: ivp, k, ix0, iy0, iz0, ixx, iyy, izz
       integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1
-      logical :: lsink
+      logical :: lnbody
 !
       intent(in)  :: fp, ineargrid
       intent(out) :: f
@@ -2011,8 +2011,8 @@ module Particles_sub
 !  Cloud In Cell (CIC) scheme.
 !
             do k=1,npar_loc
-              lsink=(lparticles_nbody.and.any(ipar(k).eq.ipar_sink))
-              if (.not.lsink) then 
+              lnbody=(lparticles_nbody.and.any(ipar(k).eq.ipar_nbody))
+              if (.not.lnbody) then 
                 ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
                 ixx0=ix0; iyy0=iy0; izz0=iz0
                 ixx1=ix0; iyy1=iy0; izz1=iz0
@@ -2044,8 +2044,8 @@ module Particles_sub
 !  decreases with the distance from the particle centre.
 !
             do k=1,npar_loc
-              lsink=(lparticles_nbody.and.any(ipar(k).eq.ipar_sink))
-              if (.not.lsink) then 
+              lnbody=(lparticles_nbody.and.any(ipar(k).eq.ipar_nbody))
+              if (.not.lnbody) then 
                 ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
                 if (nxgrid/=1) then
                   ixx0=ix0-1; ixx1=ix0+1
@@ -2291,21 +2291,21 @@ module Particles_sub
       integer, dimension (mpar_loc,3), optional :: ineargrid
       integer, optional :: ks
       integer :: npar_loc,k
-      logical :: lsink
+      logical :: lnbody
 !   
       intent (inout) :: fp, npar_loc, dfp,ineargrid
       intent (in)    :: k
 !
-!  Check that we are not removing sinks.
+!  Check that we are not removing massive particles.
 !
-      lsink=(lparticles_nbody.and.any(ipar(k).eq.ipar_sink))
+      lnbody=(lparticles_nbody.and.any(ipar(k).eq.ipar_nbody))
 !
-      if (lsink) then
+      if (lnbody) then
         if (present(ks)) then 
-          print*,'sink particle ', ks 
-          print*,'is removing the following sink particle:'
+          print*,'nbody particle ', ks 
+          print*,'is removing the following nbody particle:'
         else
-          print*,'the following sink particle is being removed'
+          print*,'the following nbody particle is being removed'
         endif
         print*,'ipar(k)=',ipar(k)
         print*,'xp,yp,zp=',fp(k,ixp),fp(k,iyp),fp(k,izp)
