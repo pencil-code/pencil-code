@@ -18,8 +18,11 @@
   public :: calc_for_chem_mixture
 
   public :: calc_cs2x
+  public :: calc_cs2y
   public :: get_gammax
+  public :: get_gammay
   public :: get_p_infx
+  public :: get_p_infy
 
 ! public :: chemistry_calc_density
 ! public :: chemistry_calc_hydro

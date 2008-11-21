@@ -2865,6 +2865,26 @@ module Chemistry
         print*, "calc_cs2x: ", topbot, " should be `top' or `bot'"
       endselect
   endsubroutine calc_cs2x
+!***********************************************************************
+!CCCCC
+ subroutine calc_cs2y(cs2y,topbot,f)
+
+ use Mpicomm
+
+    real, dimension(mx,my,mz,mfarray) :: f
+   real, dimension (mx,mz) :: cs2y
+   character (len=3) :: topbot
+   integer :: k
+
+   select case(topbot)
+      case('bot')               ! bottom boundary
+       cs2y=cp_full(:,m1,:)/cv_full(:,m1,:)*mu1_full(:,m1,:)*TT_full(:,m1,:)*Rgas
+      case('top')               ! top boundary
+       cs2y=cp_full(:,m2,:)/cv_full(:,m2,:)*mu1_full(:,m2,:)*TT_full(:,m2,:)*Rgas
+      case default
+        print*, "calc_cs2y: ", topbot, " should be `top' or `bot'"
+      endselect
+  endsubroutine calc_cs2y
 !*************************************************************
   subroutine get_gammax(gamma0,topbot)
 
@@ -2884,6 +2904,25 @@ module Chemistry
         print*, "get_gammax: ", topbot, " should be `top' or `bot'"
      endselect
    endsubroutine get_gammax
+!*************************************************************
+ subroutine get_gammay(gamma0,topbot)
+
+ use Mpicomm
+
+    real, dimension(mx,my,mz,mfarray) :: f
+   real, dimension (mx,mz) :: gamma0
+   character (len=3) :: topbot
+   integer :: k
+
+     select case(topbot)
+      case('bot')               ! bottom boundary
+       gamma0=cp_full(:,m1,:)/cv_full(:,m1,:)
+      case('top')               ! top boundary
+       gamma0=cp_full(:,m2,:)/cv_full(:,m2,:)
+      case default
+        print*, "get_gammay: ", topbot, " should be `top' or `bot'"
+     endselect
+   endsubroutine get_gammay
 !*************************************************************
    subroutine get_p_infx(p_infx,topbot)
 
@@ -2963,6 +3002,75 @@ module Chemistry
 !print*,'pp_inf2',maxval(pp_infx)
 
    endsubroutine get_p_infx
+!*************************************************************
+ subroutine get_p_infy(p_infy,topbot)
+
+    use Mpicomm
+     real, dimension (nx,nz) :: p_infy
+     character (len=3) :: topbot
+     logical, SAVE :: read_P=.true.
+     real, dimension (2,nx,nz), SAVE :: pp_infy
+     real :: PP
+
+
+      logical :: emptyfile
+      integer :: file_id=123
+      character (len=80) :: ChemInpLine
+      character (len=10) :: specie_string
+      character (len=1)  :: tmp_string 
+      integer :: VarNumber,i,j,k=1
+
+      integer :: StartInd,StopInd,StartInd_1,StopInd_1
+      integer :: iostat
+
+      StartInd_1=1; StopInd_1 =0
+
+     if (read_P) then
+
+      StartInd_1=1; StopInd_1 =0
+      open(file_id,file="air.dat")
+
+       if (lroot) print*, 'the following parameters and species are found in air.dat (volume fraction fraction in %): '
+
+       dataloop: do
+
+        read(file_id,'(80A)',IOSTAT=iostat) ChemInpLine(1:80)
+        if (iostat < 0) exit dataloop
+        emptyFile=.false.
+        StartInd_1=1; StopInd_1=0
+        StopInd_1=index(ChemInpLine,' ') 
+        specie_string=trim(ChemInpLine(1:StopInd_1-1)) 
+        tmp_string=trim(ChemInpLine(1:1)) 
+
+        if (tmp_string == '!' .or. tmp_string == ' ') then
+        elseif (tmp_string == 'P') then
+
+           StartInd=1; StopInd =0
+
+          StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
+          StartInd=verify(ChemInpLine(StopInd:),' ')+StopInd-1
+          StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
+
+          read (unit=ChemInpLine(StartInd:StopInd),fmt='(E14.7)'), PP
+              print*, ' Pressure, Pa   ', PP
+
+        endif
+       enddo dataloop
+       close(file_id)
+
+      pp_infy(:,:,:)=PP*10.
+      read_P=.false.
+     endif
+
+     select case(topbot)
+      case('bot')               ! bottom boundary
+       p_infy(nx,nz)=pp_infy(1,nx,nz)
+      case('top')               ! top boundary
+       p_infy(nx,nz)=pp_infy(2,nx,nz)
+      case default
+        print*, "get_p_infy: ", topbot, " should be `top' or `bot'"
+     endselect
+   endsubroutine get_p_infy
 !*************************************************************
    subroutine air_field(f)
 

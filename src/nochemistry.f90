@@ -502,6 +502,19 @@ module Chemistry
 !
     endsubroutine calc_cs2x
 !********************************************************************
+ subroutine calc_cs2y(cs2y,topbot,f)
+!
+      use Mpicomm
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension (nx,nz) :: cs2y
+      character (len=3) :: topbot
+      integer :: k
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine calc_cs2y
+!********************************************************************
     subroutine get_gammax(gamma0,topbot)
 !
       use Mpicomm
@@ -515,6 +528,19 @@ module Chemistry
 !
     endsubroutine get_gammax
 !********************************************************************
+   subroutine get_gammay(gamma0,topbot)
+!
+      use Mpicomm
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension (nx,nz) :: gamma0
+      character (len=3) :: topbot
+      integer :: k
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine get_gammay
+!********************************************************************
     subroutine get_p_infx(p_infx,topbot)
 !
       use Mpicomm
@@ -525,6 +551,17 @@ module Chemistry
       call keep_compiler_quiet(f)
 !
     endsubroutine get_p_infx
+!********************************************************************
+   subroutine get_p_infy(p_infy,topbot)
+!
+      use Mpicomm
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension (nx,nz) :: p_infy
+      character (len=3) :: topbot
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine get_p_infy
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************

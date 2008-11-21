@@ -1542,11 +1542,11 @@ module Deriv
                   -sgn*3 *f(pos+sgn*4,m1:m2,n1:n2,k))
         else
           df=0.
-          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in x-direction'
+          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in x-directder_onesided_4_sliceion'
         endif
       elseif (j==2) then
         if (nygrid/=1) then
-          fac=1./12.*dx_1(pos)
+          fac=1./12.*dy_1(pos)
           df = fac*(-sgn*25*f(l1:l2,pos,n1:n2,k)&
                   +sgn*48*f(l1:l2,pos+sgn*1,n1:n2,k)&
                   -sgn*36*f(l1:l2,pos+sgn*2,n1:n2,k)&
@@ -1558,7 +1558,7 @@ module Deriv
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
-          fac=1./12.*dx_1(pos)
+          fac=1./12.*dz_1(pos)
           df = fac*(-sgn*25*f(l1:l2,m1:m2,pos,k)&
                   +sgn*48*f(l1:l2,m1:m2,pos+sgn*1,k)&
                   -sgn*36*f(l1:l2,m1:m2,pos+sgn*1,k)&

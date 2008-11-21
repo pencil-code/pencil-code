@@ -4375,9 +4375,125 @@ module Boundcond
         df(lll,m1:m2,n1:n2,iux) = -1./(2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2))*(L_5 - L_1) &
                                   -f(lll,m1:m2,n1:n2,iux)*dux_dy
         df(lll,m1:m2,n1:n2,ilnTT) = -1./(rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*(-L_2 &
-               +0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5-L_1)) &
+               +0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1)) &
                -1./(rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*(gamma0(m1:m2,n1:n2)-1.) &
                *gamma0(m1:m2,n1:n2)*drhoE_p_dy!(m1:m2,n1:n2)
     endsubroutine bc_nscbc_nref_subout_x
+!***********************************************************************
+ subroutine bc_nscbc_nref_subout_y(f,df,topbot)
+!
+!
+!   nscbc case 
+!   subsonic non-reflecting outflow boundary conditions
+!   now it is 2D case (should be corrected for 3D case)
+!    drho. dT, dux, duy  are calculated, p_inf can be fixed (if nscbc_sigma <>0)
+!
+!   16-nov-08/natalia: coded.
+!
+      use MpiComm, only: stop_it
+      !use EquationOfState, only: cs0, cs20
+      use Deriv, only: der_onesided_4_slice, der_pencil
+
+      use Chemistry
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      character (len=3) :: topbot
+      real, dimension(mx,mz) :: rho0,gamma0
+      real, dimension (mx,my,mz) :: mom2, rho_ux2, rho_uy2, rho_gamma, rhoE_p
+      real, dimension(nx,nz) :: duy_dx, duy_dy, dlnrho_dy, L_1, L_2, L_5,dmom2_dx,drhoE_p_dx
+      real, dimension(nx,nz) :: dp_prefac,drho_prefac,p_infy, KK
+      real, dimension (mx,mz) :: cs2y,cs0_ar,cs20_ar
+      integer :: mmm, sgn,i
+      real :: Mach_num
+
+      intent(in) :: f
+      intent(out) :: df
+   
+      select case(topbot)
+      case('bot')
+        mmm = m1
+        sgn = 1
+        if (leos_chemistry) then 
+          call calc_cs2y(cs2y,'bot',f)
+          call get_gammay(gamma0,'bot')
+          call get_p_infy(p_infy,'bot')
+        endif
+      case('top')
+        mmm = m2
+        sgn = -1
+        if (leos_chemistry) then
+          call calc_cs2y(cs2y,'top',f)
+          call get_gammay(gamma0,'top')
+          call get_p_infy(p_infy,'top')
+        endif
+      case default
+        print*, "bc_nscbc_subin_y: ", topbot, " should be `top' or `bot'"
+      endselect
+
+      if (leos_chemistry) then
+         cs20_ar=cs2y
+         cs0_ar=cs2y**0.5
+        if (ldensity_nolog) then
+          rho0(:,:) = f(:,mmm,:,ilnrho)
+          dp_prefac = cs20_ar(l1:l2,n1:n2)/gamma0(l1:l2,n1:n2)
+          drho_prefac=-1./cs20_ar(l1:l2,n1:n2)
+        else
+          rho0(:,:) = exp(f(:,mmm,:,ilnrho))
+          dp_prefac = cs20_ar(l1:l2,n1:n2)*rho0(l1:l2,n1:n2)/gamma0(l1:l2,n1:n2)
+          drho_prefac=-1./rho0(l1:l2,n1:n2)/cs20_ar(l1:l2,n1:n2)
+        endif
+         mom2(:,mmm,:)=rho0(:,:)*f(:,mmm,:,iuy)
+         rho_ux2(:,mmm,:)=rho0(:,:)*f(:,mmm,:,iux)*f(:,mmm,:,iux)
+         rho_uy2(:,mmm,:)=rho0(:,:)*f(:,mmm,:,iuy)*f(:,mmm,:,iuy)
+         rho_gamma(:,mmm,:)=rho0(:,:)/gamma0(:,:)
+         rhoE_p(:,mmm,:)=0.5*rho_ux2(:,mmm,:)+0.5*rho_uy2(:,mmm,:) &
+                        +cs20_ar(:,:)/(gamma0(:,:)-1.)*rho0(:,:)
+      else
+        print*,"bc_nscbc_subin_y: leos_idealgas=",leos_idealgas,"."
+        print*,"NSCBC subsonic inflos is only implemented for the chemistry case." 
+        print*,"Boundary treatment skipped."
+        return
+      endif
+
+      call der_onesided_4_slice(f,sgn,ilnrho,dlnrho_dy,mmm,2)
+      call der_onesided_4_slice(f,sgn,iux,duy_dy,mmm,2)
+
+      do i=1,mz
+       call der_pencil(1,mom2(:,mmm,i),dmom2_dx(:,i))
+       call der_pencil(1,f(:,mmm,i,iuy),duy_dx(:,i))
+       call der_pencil(1,rhoE_p(:,mmm,i),drhoE_p_dx(:,i))
+      enddo
+
+      Mach_num=maxval(f(l1:l2,mmm,n1:n2,iuy)/cs0_ar(l1:l2,n1:n2))
+      KK=nscbc_sigma*(1.-Mach_num*Mach_num)*cs0_ar(l1:l2,n1:n2)/Lxyz(2)
+
+
+      select case(topbot)
+      case('bot')
+        L_5=KK*(cs20_ar(l1:l2,n1:n2)/gamma0(l1:l2,n1:n2)*rho0(l1:l2,n1:n2)-p_infy)
+        L_2 = f(l1:l2,mmm,n1:n2,iuy)*(cs20_ar(l1:l2,n1:n2)*dlnrho_dy-dp_prefac*dlnrho_dy)
+        L_1 = (f(l1:l2,mmm,n1:n2,iuy) - cs0_ar(l1:l2,n1:n2))*&
+            (dp_prefac*dlnrho_dy - rho0(l1:l2,n1:n2)*cs0_ar(l1:l2,n1:n2)*duy_dy)
+      case('top')
+        L_1=KK*(cs20_ar(l1:l2,n1:n2)/gamma0(l1:l2,n1:n2)*rho0(l1:l2,n1:n2)-p_infy)
+
+        L_2 = f(l1:l2,mmm,n1:n2,iuy)*(cs20_ar(l1:l2,n1:n2)*dlnrho_dy-dp_prefac*dlnrho_dy)
+        L_5 = (f(l1:l2,mmm,n1:n2,iuy) + cs0_ar(l1:l2,n1:n2))*&
+            (dp_prefac*dlnrho_dy + rho0(l1:l2,n1:n2)*cs0_ar(l1:l2,n1:n2)*duy_dy)
+      endselect
+      if (ldensity_nolog) then
+        df(l1:l2,mmm,n1:n2,ilnrho) = drho_prefac*(L_2+0.5*(L_5 + L_1))-dmom2_dx
+      else
+        df(l1:l2,mmm,n1:n2,ilnrho) = drho_prefac*(L_2+0.5*(L_5 + L_1)) &
+                                       -1./rho0(l1:l2,n1:n2)*dmom2_dx
+      endif
+        df(l1:l2,mmm,n1:n2,iuy) = -1./(2.*rho0(l1:l2,n1:n2)*cs0_ar(l1:l2,n1:n2))*(L_5 - L_1) &
+                                  -f(l1:l2,mmm,n1:n2,iuy)*duy_dx
+        df(l1:l2,mmm,n1:n2,ilnTT) = -1./(rho0(l1:l2,n1:n2)*cs20_ar(l1:l2,n1:n2))*(-L_2 &
+               +0.5*(gamma0(l1:l2,n1:n2)-1.)*(L_5-L_1)) &
+               -1./(rho0(l1:l2,n1:n2)*cs20_ar(l1:l2,n1:n2))*(gamma0(l1:l2,n1:n2)-1.) &
+               *gamma0(l1:l2,n1:n2)*drhoE_p_dx(l1:l2,n1:n2)
+    endsubroutine bc_nscbc_nref_subout_y
 !***********************************************************************
 endmodule Boundcond
