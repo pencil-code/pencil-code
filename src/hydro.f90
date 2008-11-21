@@ -224,6 +224,9 @@ module Hydro
   integer :: idiag_ruxuymxy=0   ! DIAG_DOC: $\left< \rho u_x u_y \right>_{z}$
   integer :: idiag_ruxuzmxy=0   ! DIAG_DOC: $\left< \rho u_x u_z \right>_{z}$
   integer :: idiag_ruyuzmxy=0   ! DIAG_DOC: $\left< \rho u_y u_z \right>_{z}$
+  integer :: idiag_rux2m=0      ! DIAG_DOC: $\left<\rho u_x^2\right>$
+  integer :: idiag_ruy2m=0      ! DIAG_DOC: $\left<\rho u_y^2\right>$
+  integer :: idiag_ruz2m=0      ! DIAG_DOC: $\left<\rho u_z^2\right>$
   integer :: idiag_uxmxz=0      ! DIAG_DOC: $\left< u_x \right>_{y}$
   integer :: idiag_uymxz=0      ! DIAG_DOC: $\left< u_y \right>_{y}$
   integer :: idiag_uzmxz=0      ! DIAG_DOC: $\left< u_z \right>_{y}$
@@ -1513,6 +1516,9 @@ module Hydro
         if (idiag_duxdzma/=0) call sum_mn_name(abs(p%uij(:,1,3)),idiag_duxdzma)
         if (idiag_duydzma/=0) call sum_mn_name(abs(p%uij(:,2,3)),idiag_duydzma)
 !
+        if (idiag_rux2m/=0)    call sum_mn_name(p%rho*p%uu(:,1)**2,idiag_rux2m)
+        if (idiag_ruy2m/=0)    call sum_mn_name(p%rho*p%uu(:,2)**2,idiag_ruy2m)
+        if (idiag_ruz2m/=0)    call sum_mn_name(p%rho*p%uu(:,3)**2,idiag_ruz2m)
         if (idiag_ekin/=0)  call sum_mn_name(.5*p%rho*p%u2,idiag_ekin)
         if (idiag_ekintot/=0) &
             call integrate_mn_name(.5*p%rho*p%u2,idiag_ekintot)
@@ -2650,6 +2656,9 @@ module Hydro
         idiag_ux2m=0
         idiag_uy2m=0
         idiag_uz2m=0
+        idiag_rux2m=0
+        idiag_ruy2m=0
+        idiag_ruz2m=0
         idiag_ux2mx=0
         idiag_uy2mx=0
         idiag_uz2mx=0
@@ -2826,6 +2835,9 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'ux2m',idiag_ux2m)
         call parse_name(iname,cname(iname),cform(iname),'uy2m',idiag_uy2m)
         call parse_name(iname,cname(iname),cform(iname),'uz2m',idiag_uz2m)
+        call parse_name(iname,cname(iname),cform(iname),'rux2m',idiag_rux2m)
+        call parse_name(iname,cname(iname),cform(iname),'ruy2m',idiag_ruy2m)
+        call parse_name(iname,cname(iname),cform(iname),'ruz2m',idiag_ruz2m)
         call parse_name(iname,cname(iname),cform(iname),'uxuym',idiag_uxuym)
         call parse_name(iname,cname(iname),cform(iname),'uxuzm',idiag_uxuzm)
         call parse_name(iname,cname(iname),cform(iname),'uyuzm',idiag_uyuzm)
@@ -3095,6 +3107,9 @@ module Hydro
         write(3,*) 'i_ux2m=',idiag_ux2m
         write(3,*) 'i_uy2m=',idiag_uy2m
         write(3,*) 'i_uz2m=',idiag_uz2m
+        write(3,*) 'i_rux2m=',idiag_rux2m
+        write(3,*) 'i_ruy2m=',idiag_ruy2m
+        write(3,*) 'i_ruz2m=',idiag_ruz2m
         write(3,*) 'i_uxuym=',idiag_uxuym
         write(3,*) 'i_uxuzm=',idiag_uxuzm
         write(3,*) 'i_uyuzm=',idiag_uyuzm
