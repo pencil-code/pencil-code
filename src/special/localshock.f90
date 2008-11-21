@@ -241,7 +241,6 @@ module Special
 !
       if (lmagnetic) then 
         lpenc_requested(i_del2a)=.true.
-!        lpenc_requested(i_del2a)=.true.
         lpenc_requested(i_diva)=.true.
       endif
 !
@@ -412,7 +411,9 @@ module Special
 !  Only calculate the shock if a value of lshock_local
 !  in this pencil is true
 !
-      lshock_pencil=lshock_local(:,m,n)
+      if (headtt) print*,'special_calc_density: add shock diffusion'
+!
+      lshock_pencil=lshock_local(:,m-m1+1,n-n1+1)
       if (any(lshock_pencil)) then 
 
         if (ldensity_nolog) then
@@ -450,12 +451,14 @@ module Special
       logical, dimension(nx) :: lshock_pencil
       integer :: i
 !
+      if (headtt) print*,'special_calc_hydro: add shock viscosity'
+!
       if (ldensity) then
 !
 !  Only calculate the shock if a value of lshock_local
 !  in this pencil is true
 !
-        lshock_pencil=lshock_local(:,m,n)
+        lshock_pencil=lshock_local(:,m-m1+1,n-n1+1)
         if (any(lshock_pencil)) then 
 !
           call multsv(p%divu,p%glnrho,tmp2)
@@ -490,10 +493,12 @@ module Special
      logical, dimension(nx) :: lshock_pencil
      integer :: i
 !
+     if (headtt) print*,'special_calc_magnetic: add shock resistivity'
+!
 !  Only calculate the shock if a value of lshock_local
 !  in this pencil is true
 !
-     lshock_pencil=lshock_local(:,m,n)
+     lshock_pencil=lshock_local(:,m-m1+1,n-n1+1)
      if (any(lshock_pencil)) then 
        do i=1,3
          fres(:,i) = eta_shock_local*&
@@ -540,6 +545,8 @@ module Special
       real :: e1,e2,e3
       integer :: ks,i
 !
+      if (headtt) print*,'special_calc_particles_nbody: calculate mask'
+!
       lshock_local(:,:,:)=.false.
       do ks=1,nspar
         e1=fsp(ks,1) ; e2=fsp(ks,2) ; e3=fsp(ks,3) 
@@ -571,7 +578,7 @@ module Special
 !
             do i=1,nx 
               if (rp2(i).le.rmask2) &
-                  lshock_local(i,m-m1+1,n-n1+1)=.true.
+                   lshock_local(i,m-m1+1,n-n1+1)=.true.
             enddo
 !
           enddo
