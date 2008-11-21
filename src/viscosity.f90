@@ -185,7 +185,7 @@ module Viscosity
           if (lroot) print*,'viscous force with a radial profile for nu'
           if (nu/=0.) lpenc_requested(i_sij)=.true.
           lvisc_nu_profr=.true.
-        case('nu-profr-powerlaw')
+        case('nu-profr-powerlaw','powerlaw','power-law')
           if (lroot) print*,'viscous force with a power law profile'
           if (nu/=0.) lpenc_requested(i_sij)=.true.
           lvisc_nu_profr_powerlaw=.true.
@@ -576,8 +576,6 @@ module Viscosity
       integer :: i,j,ju
 !
       intent(inout) :: f,p
-
-
 !
 !  Viscous force and viscous heating are calculated here (for later use).
 !
@@ -1037,16 +1035,6 @@ module Viscosity
               "ldensity better be .true. for ivisc='smagorinsky'"
         endif
      endif
-
-
-    ! if (lvisc_chemistry) then
-
-    ! endif
-
-
-
-
-
 !
 !  Store viscous heating rate in auxiliary variable if requested.
 !  Just neccessary immediately before writing snapshots, but how would we
