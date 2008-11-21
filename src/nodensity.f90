@@ -9,7 +9,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED rho; lnrho; rho1; glnrho(3); del2rho; del2lnrho
-! PENCILS PROVIDED hlnrho(3,3); grho(3)
+! PENCILS PROVIDED hlnrho(3,3); grho(3); glnrho2
 ! PENCILS PROVIDED del6lnrho; uij5glnrho(3); uglnrho; ugrho; sglnrho(3)
 !
 !***************************************************************

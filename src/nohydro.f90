@@ -9,7 +9,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED oo(3); ou; uij(3,3); uu(3); u2; sij(3,3)
-! PENCILS PROVIDED divu; uij5(3,3)
+! PENCILS PROVIDED divu; uij5(3,3); graddivu(3)
 !
 !***************************************************************
 
