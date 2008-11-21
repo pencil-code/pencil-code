@@ -59,7 +59,7 @@ module Special
 
 ! input parameters
   logical, dimension(nx,ny,nz)  :: lshock_local
-  real :: rcut=0.,rcut2,eta_shock_local=0.
+  real :: rmask=0.,rmask2,eta_shock_local=0.
   real :: diffrho_shock_local=0.,nu_shock_local=0.
   integer :: dummy
 !
@@ -70,7 +70,7 @@ module Special
 !   run parameters
 !
   namelist /special_run_pars/ &
-      eta_shock_local,diffrho_shock_local,nu_shock_local,rcut
+      eta_shock_local,diffrho_shock_local,nu_shock_local,rmask
 !
 !
 ! Keep some over used pencils
@@ -173,7 +173,7 @@ module Special
 !
 !  Initialize any module variables which are parameter dependant
 !
-      rcut2=rcut**2
+      rmask2=rmask**2
 !
       if(NO_WARN) print*,f  !(keep compiler quiet)
 !
@@ -570,7 +570,7 @@ module Special
 !  If the distance is less than the threshold, activate the shock
 !
             do i=1,nx 
-              if (rp2(i).le.rcut2) &
+              if (rp2(i).le.rmask2) &
                   lshock_local(i,m-m1+1,n-n1+1)=.true.
             enddo
 !
