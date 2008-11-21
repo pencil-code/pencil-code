@@ -136,6 +136,8 @@ else if ($hn =~ aida25 ) then
   set str='s/home/var\/tmp/g'
 else if ($hn =~ p6012 ) then # huygens.sara.nl
   set str='s/home/scratch\/shared/g'
+else if ($hn =~ andromeda ) then # andromeda.qmul.ac.uk
+  set str='s/andromeda/scratch/g'
 else
   #
   #  set the default to empty string (to make local data directory; see below)

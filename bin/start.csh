@@ -12,8 +12,7 @@
 #@$-s /bin/csh
 #
 # Work in submit directory (SGE):
-#$ -cwd
-
+#$ -cwd -V
 # Work in submit directory (PBS):
 if ($?PBS_O_WORKDIR) then
   cd $PBS_O_WORKDIR
@@ -180,3 +179,5 @@ exit ( $start_status | $start_status2 )        # propagate status of mpirun
 # qsub -l nodes=4:ppn=1,mem=500mb,cput=24:00:00 -q p-long start.csh
 # qsub -l ncpus=4,mem=1gb,cput=100:00:00 -q parallel start.csh
 # qsub -l nodes=128,mem=64gb,walltime=1:00:00 -q workq start.csh
+# For Andromeda 
+# qsub $QSUB_OPTIONS $qstring   -pe $PE $nodes $FILE

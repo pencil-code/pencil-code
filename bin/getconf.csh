@@ -14,7 +14,6 @@ set debug = 1
 
 # Just as a keepsake 
 set dollar = '$'
-
 # Set up PATH for people who don't include $PENCIL_HOME/bin by default
 if ($?PENCIL_HOME) setenv PATH ${PATH}:${PENCIL_HOME}/bin
 
@@ -118,12 +117,13 @@ set booted_lam = 0
 # so we use this to define $hostname.
 #
 set hn = `uname -n`
+echo "HOSTNAME = $HOSTNAME"
 if ($?HOSTNAME) then
   set hostname=$HOSTNAME
 else
   set hostname=$hn
 endif
-echo $hn
+echo "hn = $hn"
 #
 if ($mpi) echo "Running under MPI"
 set mpirunops  = ''  # options before -np $ncpus
@@ -155,7 +155,11 @@ else if ($?LOADL_PROCESSOR_LIST) then
   if ($debug) echo "LoadLeveler job"
   set nodelist = `echo $LOADL_PROCESSOR_LIST | tr " " "\n" | uniq`
 else if ($?PE_HOSTFILE) then
-  if ($debug) echo "SGE Parallel Environment job - $PE"
+  set masterhost = $SGE_O_HOST
+  echo " Running under SGE "
+  echo "The masterhost is $masterhost"
+  echo "PE_HOSTFILE is ${PE_HOSTFILE}"
+#  if ($debug) echo "SGE Parallel Environment job - $PE"
   set nodelist = `cat $PE_HOSTFILE | grep -v '^#' | sed 's/\ .*//'`
 else if ($?SLURM_NODELIST) then
   if ($debug) echo "Simple Linux Utility for Resource Management (SLURM) job"
@@ -204,6 +208,7 @@ endif
 set nprocpernode = `expr $ncpus / $nnodes`
 echo "$nnodes nodes, $nprocpernode CPU(s) per node"
 
+echo "Getting into Machine Specific regions"
 ## ------------------------------
 ## Choose machine specific settings
 ## ------------------------------
@@ -311,6 +316,14 @@ else if ($hn =~ *.maths.qmul.ac.uk) then
              echo "Non-PBS, running on `hostname`"
            endif
          endif
+else if (($hn =~ comp*) || ($masterhost =~ andromeda)) then         
+       echo "QMUL Maths cluster (andromeda) - LONDON"
+       echo "******************************"
+       echo "Always use  multiple of 8 no. of processors .."
+       echo "..for multiprecossor jobs. "           
+       echo " ******************************"
+       source ${HOME}/.cshrc
+       set $mpirun=mpirun
 # For North-West Grid UK
 else if ($hn =~ lv1*) then
        echo "Liverpool Grid - NW-grid"
@@ -345,7 +358,6 @@ else if ($hn =~ man2*) then
        set mynodes = `expr $ncpus / $myprocpernode `
        echo "dhruba: $mynodes nodes, $myprocpernode CPU(s) per node"
        set npops  = "$mynodes$mpisub_myproc"
-
 #------------------------------------------------
 else if ($hn =~ ice[0-9]*_[0-9]*) then
   echo "Glacier in Vancouver"
@@ -363,7 +375,6 @@ else if ($hn =~ ice[0-9]*_[0-9]*) then
   endif
   setenv SSH /usr/bin/ssh
   setenv SCP /usr/bin/scp
-
 #------------------------------------------------
 else if ($hn =~ giga[0-9][0-9]) then
   echo "Nordita cluster - Copenhagen"
@@ -397,7 +408,7 @@ else if ($hn =~ giga[0-9][0-9]) then
   if ($local_disc) then
     setenv SCRATCH_DIR "/var/tmp"
   endif
-
+#------------------------------------------------
 else if (($hn =~ sleipner) || ($hn =~ fenris) || ($hn =~ hugin) || ($hn =~ munin)) then
   echo "IBM machine - Aarhus"
   set mpirun = /usr/bin/mpiexec
@@ -418,7 +429,7 @@ else if (($hn =~ sleipner) || ($hn =~ fenris) || ($hn =~ hugin) || ($hn =~ munin
   setenv SSH rsh
   setenv SCP rcp
   setenv LANG en_US
-
+#----------------------------------------------------
 else if ($hn =~ p690*) then
   echo "SP1600 - CSC, Espoo, Finland (IBM with AIX UNIX)"
   set mpirunops = "-euilib us -shared_memory yes"
@@ -433,7 +444,7 @@ else if ($hn =~ p690*) then
 #  setenv SCRATCH_DIR /scratch/${USER}
 #  set masternode=sp.sp4
 #  echo "Setting master node to sp.sp4, the only node that is accesible by rsh"
-
+#-----------------------------------------------------------------------
 else if ($hn =~ sp[0-9]*) then
   echo "SP4 - CINECA, Bologna (IBM with AIX UNIX)"
   set mpirun = poe
@@ -446,7 +457,7 @@ else if ($hn =~ sp[0-9]*) then
   setenv SCRATCH_DIR /scratch/${USER}
 #  set masternode=sp.sp4
   echo "Setting master node to sp.sp4, the only node that is accesible by rsh"
-
+#----------------------------------------------------
 else if ($hn =~ node*.steno.dcsc.ku.dk) then
   echo "DCSC cluster - Copenhagen (Denmark)"
   setenv SCRATCH_DIR /scratch/$LOADL_STEP_ID
@@ -459,14 +470,14 @@ else if ($hn =~ node*.steno.dcsc.ku.dk) then
   set remote_top     = 1
   set local_binary   = 0
   set nprocpernode   = 4
-
+#----------------------------------------------------------
 else if (($hn =~ columbia*) || ($hn =~ cfe*)) then
   echo "Columbia cluster"
   set mpirun = mpirun
   set start_x=$PBS_O_WORKDIR/src/start.x
   set run_x=$PBS_O_WORKDIR/src/run.x
   set local_disc = 0
-
+#------------------------------------------
 else if ($hn =~ node[0-9]*) then
   echo "CLX - CINECA, Bologna (IBM Linux Cluster)"
   if ( $?PBS_JOBID ) then 
@@ -477,7 +488,7 @@ else if ($hn =~ node[0-9]*) then
   set local_disc = 0
   set one_local_disc = 1
   set local_binary = 0
-
+#------------------------------------------------
 else if ($hn =~ octopus[0-9]*) then
   echo "AIP Potsdam Octopus Xeon Linux Cluster"
   if ( $?PBS_JOBID ) then
@@ -492,7 +503,7 @@ else if ($hn =~ octopus[0-9]*) then
   set local_disc = 0
   set one_local_disc = 1
   set local_binary = 0
-
+#------------------------------------------------
 else if ($hn =~ psi*) then
   echo "RZG - Garching (IBM pSeries Regatta with AIX UNIX)"
   set mpirun = mpiexec
@@ -505,7 +516,7 @@ else if ($hn =~ psi*) then
   setenv SCRATCH_DIR /ptmp/$USER
   set masternode=psi24
   echo "Setting master node to psi24, the only node that is accesible by rsh"
-
+#--------------------------------------------------
 else if ($hn =~ sepeli.csc.fi) then
   echo "Sepeli - CSC, Espoo, Finland"
   set mpirunops = ''
@@ -523,7 +534,7 @@ else if ($hn =~ compute-*.local) then
   set one_local_disc = 0
   set local_binary = 0
 #  setenv SCRATCH_DIR $TMPDIR
-
+#----------------------------------------------
 else if ($hn =~ louhi-login*) then
   echo "Louhi - CSC, Espoo, Finland"
   if ( $?PBS_JOBID ) then 
@@ -538,7 +549,7 @@ else if ($hn =~ louhi-login*) then
   set one_local_disc = 0
   set remote_top     = 1
   set local_binary = 0
-
+#--------------------------------------------------------------
 else if (($hn =~ c[0-9]*) && ($USER =~ pkapyla || $USER =~ abranden || $USER =~ mkorpi || $USER =~ aliljest || $USER =~ mvaisala)) then
   echo "Murska - CSC, Espoo, Finland"
   set mpirunops = '-srun'
@@ -548,8 +559,7 @@ else if (($hn =~ c[0-9]*) && ($USER =~ pkapyla || $USER =~ abranden || $USER =~ 
   set local_disc = 0
   set one_local_disc = 0
   set local_binary = 0
-
-
+#-------------------------------------------------------------
 else if (($hn =~ n[0-9]*) && ($USER =~ sur || $USER =~ kandu)) then
   echo "Cetus, Iucaa, India"
   set mpirunops = '-srun'
@@ -561,7 +571,7 @@ else if (($hn =~ n[0-9]*) && ($USER =~ sur || $USER =~ kandu)) then
   set remote_top = 1
   setenv SSH rsh
   setenv SCP rcp
-
+#-----------------------------------------------
 else if ($hn =~ corona*) then
   echo "Corona SunFire - CSC, Espoo, Finland"
   # generic fgrep -c fails
@@ -571,14 +581,14 @@ else if ($hn =~ corona*) then
   set mpirun = 'mprun'
   set npops = "-np $ncpus"
   set mpirunops = ""
-
+#------------------------------------------------------
 else if ( ($hn =~ node*.clusters.com) || ($hn =~ fire) ) then
   echo "Fire - Bergen"
   set mpirunops = ''
   set mpirun = 'mpirunpbs'
   set npops = "-np $ncpus"
 #  set mpi = 1
-
+#---------------------------------------------------
 else if ( ($hn =~ cincinnatus*) || ($hn =~ owen*) \
           || ($hn =~ master) || ($hn =~ node* && $masterhost == '') \
 	  || ($hn =~ ns0*) ) then
@@ -607,7 +617,7 @@ else if ( ($hn =~ cincinnatus*) || ($hn =~ owen*) \
       set mpirun 'Cannot_find_out_which_mpirun_to_use'
     endif
   endif
-
+#-----------------------------------------------------
 else if ($hn == "frontend") then
   echo "KIS Bagdad cluster - Freiburg"
   if ($mpi) then
@@ -620,7 +630,7 @@ else if ($hn == "frontend") then
       if (-x /usr/local/share/mpich-g95/bin/mpirun)   set mpirun=/usr/local/share/mpich-g95/bin/mpirun
     endif
   endif
-
+#----------------------------------------------
 else if ($hn =~ nq* || $hn =~ ns*) then
   echo "Nordita cluster - Copenhagen"
   if ($?PBS_NODEFILE) then
@@ -654,7 +664,7 @@ else if ($hn =~ nq* || $hn =~ ns*) then
   if ($local_disc) then
     setenv SCRATCH_DIR "/var/tmp"
   endif
-
+#-----------------------------------------
 else if (($hn =~ s[0-9]*p[0-9]*) || ($hn =~ 10_[0-9]*_[0-9]*_[0-9]*)) then
   echo "Horseshoe cluster - Odense (Denmark)"
   if ($mpi) then
@@ -697,7 +707,7 @@ else if (($hn =~ s[0-9]*p[0-9]*) || ($hn =~ 10_[0-9]*_[0-9]*_[0-9]*)) then
     set mpirunops = ''
     set mpirun = ''
   endif
-
+#--------------------------------------------
  else if (($hn =~ copson*.st-and.ac.uk) || ($hn =~ comp*.st-and.ac.uk)) then
   echo "Copson Cluster - St. Andrews"
   if ($?PE) then                            # Are we running under SGE?   
@@ -759,6 +769,7 @@ else if (($hn =~ s[0-9]*p[0-9]*) || ($hn =~ 10_[0-9]*_[0-9]*_[0-9]*)) then
       set mpirunops = "-local -machinefile hostfile"
      set local_disc=0
   endif
+#-----------------------------------------------------------
 # Commented by DHRUBA as different configuration seems to be workin in Liverpool grid
 # else if (($hn =~ lv1*.nw-grid.ac.uk) || ($hn =~ lv1*.st-and.ac.uk)) then
 #  echo "Liverpool Grid"
@@ -821,7 +832,7 @@ else if (($hn =~ s[0-9]*p[0-9]*) || ($hn =~ 10_[0-9]*_[0-9]*_[0-9]*)) then
 #      set mpirunops = "-local -machinefile hostfile"
 #     set local_disc=0
 #  endif
-
+#-----------------------------------------------------
 else if ($hn =~ obelix || \
           ($hn =~ node[0-9][0-9] && $masterhost =~ obelix)) then
   echo "Obelix Cluster - Calgary"
@@ -836,12 +847,12 @@ else if ($hn =~ obelix || \
     set mpirun = /opt/intel/lam-7.1.1/bin/mpiexec
     set mpirunops = '-boot'
   endif
-
+#--------------------------------------------------
 else if ($hn == pencil) then
   echo "Pencil [sic] - Calgary"
   set mpirun = mpiexec
   set mpirunops = '-boot'
-
+#-------------------------------------------------
 else if ($hn == rasmussen) then
   echo "Rasmussen - Copenhagen (SGI machine)"
   limit stacksize unlimited
@@ -849,7 +860,7 @@ else if ($hn == rasmussen) then
   set mpirunops = ''
   set npops = ''
   set ncpus = 1
-
+#--------------------------------------------------
 else if ($hn == hwwsr8k) then
   echo "Hitachi - Stuttgart"
   set nnodes = `echo "precision=0; ($ncpus-1)/8+1" | bc` # Hitachi-specific
@@ -867,7 +878,7 @@ else if ($hn == hwwsr8k) then
   endif
   setenv SSH rsh 
   setenv SCP rcp
-
+#-----------------------------------------------------
 else if ($hn =~ hwwsx5*) then
   echo "NEC-SX5 - Stuttgart"
   set mpirun = mpiexec
@@ -883,7 +894,7 @@ else if ($hn =~ hwwsx5*) then
   endif
   setenv SSH rsh
   setenv SCP rcp
-
+#----------------------------------------------------
 else if ($hn =~ morvern || $hn =~ renton || $hn =~ lanark) then
   echo "LAM MPI - Newcastle desktops)" 
   #NB: need set mpi here: egrep on Makefile.local fails if using ~/.adapt-mkfile.inc 
@@ -898,22 +909,22 @@ else if ($hn =~ morvern || $hn =~ renton || $hn =~ lanark) then
   if ($local_disc) then
     setenv SCRATCH_DIR /var/tmp
   endif
-
+#----------------------------------------------------
 else if ($hn =~ rockall || $hn =~ valdivia) then
   echo "rockall/valdivia - ngrs's laptop/desktop"
   set mpirun = 'orterun'
   set mpirunops = '-machinefile ~/machines'
-
+#-------------------------------------------------
 else if ($hn =~ kolmogorov) then
   echo "Kolmogorov on Wolfgang's desk"
   set mpirun = 'mpiexec'
   set mpirunops = '-boot'
-
+#------------------------------------------------
 else if ($hn =~ kepler) then
   echo "Kepler in Calgary"
   set mpirun = 'mpiexec'
   set mpirunops = '-boot'
-
+#-------------------------------------------
 else if ($hn =~ mhd) then
   echo "mhd node - Newcastle (alpha linux running LAM MPI)"
   #echo `hostname` "cpu=4" >! lamhosts
@@ -931,7 +942,7 @@ else if ($hn =~ mhd) then
   if ($local_disc) then
     setenv SCRATCH_DIR /var/tmp
   endif
-
+#---------------------------------------------
 else if ($hn =~ opto[1-4]) then
   echo "opto[1-4] 4xAMD opteron procs@2190.948 MHz at MPIA"
   set nprocpernode = 4
@@ -949,14 +960,14 @@ else if ($hn =~ opto[1-4]) then
   setenv SSH rsh
   setenv SCP rcp
   setenv SCRATCH_DIR /var/tmp/$USER
-
+#-------------------------------------------
 else if ($hn =~ swift) then
   echo "swift laptop (Anders)"
   set mpirun = mpiexec
   setenv SSH ssh
   setenv SCP scp
   setenv SCRATCH_DIR /var/tmp/$USER
-
+#------------------------------------------------
 else if ($hn =~ lfc*) then
   echo "opteron cluster at MPIK with SGE queue."
   if ($#nodelist == 1) then
@@ -982,7 +993,7 @@ else if ($hn =~ lfc*) then
 #  setenv SGE_CWD_PATH `pwd`
 #  setenv SGE_O_WORKDIR `pwd`
 #  setenv JOB_SCRIPT `pwd`/start.csh
-
+#------------------------------------------------
 else if ($hn =~ rio* || $hn =~ pia*) then
   echo "opteron cluster at RZG with SGE queue."
   touch ~/.mpdpasswd
@@ -1016,20 +1027,7 @@ else if ($hn =~ rio* || $hn =~ pia*) then
       $SSH $node '\rm -rf /var/tmp/$USER/*'
     end
   endif
-
-else if ($hn =~ comp*) then
-  echo "milipeia cluster at Universidade de Coimbra."
-  set nodelist = `cat $PBS_NODEFILE | grep -v '^#' | sed 's/:[0-9]*//'`
-  cat $PBS_NODEFILE > mpi.hosts
-  set nprocpernode = 1
-  set local_disc = 0
-  set one_local_disc = 1
-  set mpirun = ''
-  set npops = ''
-  setenv SSH 'ssh -x'
-  setenv SCP scp
-  setenv SCRATCH_DIR /var/tmp/$USER
-
+#---------------------------------------------------
 else if ($hostname =~ *huygens.sara.nl*) then
   echo "huygens cluster in Amsterdam"
 #  set local_disc = 1
@@ -1042,7 +1040,7 @@ else if ($hostname =~ *huygens.sara.nl*) then
   setenv SSH "ssh -q -x"
   setenv SCP "scp -q"
   setenv SCRATCH_DIR /scratch/shared/$USER
-
+#----------------------------------------------------
 else if ($hn =~ *mckenzie*) then
   echo "McKenzie cluster at CITA"
   if ($#nodelist == 1) then
@@ -1068,7 +1066,7 @@ else if ($hn =~ *mckenzie*) then
       $SSH $node '\rm -rf /scratch/$USER/*'
     end
   endif
-
+#-----------------------------------------
 else if ($hn =~ *tpb*) then
   echo "Sunnyvale cluster at CITA"
   if ($#nodelist == 1) then
@@ -1087,7 +1085,7 @@ else if ($hn =~ *tpb*) then
     setenv SCP scp
     setenv SCRATCH_DIR /mnt/scratch/local/$USER
   endif
-
+#--------------------------------------------
 else if ($hn =~ *.pdc.kth.se) then
   echo "Linux cluster at PDC, KTH in Stockholm"
   set mpirun = orterun
@@ -1107,7 +1105,7 @@ else if ($hn =~ *.pdc.kth.se) then
 # set one_local_disc = 0
 # set remote_top     = 1
 # set local_binary   = 0
-
+#----------------------------------------------------
 else if (($hn =~ n[0-9]*) && ($USER =~ x_axebr)) then
   echo "Neolith cluster in Linkoping"
   echo "special settings for USER=$USER"
@@ -1122,7 +1120,7 @@ else if (($hn =~ n[0-9]*) && ($USER =~ x_axebr)) then
   set npops = ""
   #
   set one_local_disc = 0
-
+#---------------------------------------------
 else if ($hn =~ sans*) then
   echo "Sanssouci cluster in Potsdam (AIP)"
   if ($?PBS_NODEFILE) then
@@ -1146,7 +1144,7 @@ else if ($hn =~ sans*) then
     setenv SCRATCH_DIR /data1/$USER/pencil
     echo "setenv SCRATCH_DIR /data1/$USER/pencil"
   endif
-
+#---------------------------------------------
 else if ($hn =~ tun[a-z]*) then
   echo "Tungsten cluster - NCSA"
   if (! $?LSB_JOBID) then
@@ -1163,7 +1161,7 @@ else if ($hn =~ tun[a-z]*) then
   set local_binary   = 0
   setenv SSH ssh
   setenv SCP scp
-
+#-----------------------------------------------
 else if ($hn =~ is*.uppmax.uu.se) then 
   echo "Isis cluster at Uppmax, Uppsala"
 #set the library paths
@@ -1174,10 +1172,10 @@ else if ($hn =~ is*.uppmax.uu.se) then
   endif
   setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:/opt/openmpi/1.2.5gcc/lib:/sw/gcc/4.2.3/lib64:/opt/openmpi/1.2.5pgi/lib:/opt/sge_61u2/lib/lx24-amd64
   set mpirun = /opt/openmpi/1.2.5gcc/bin/mpirun
-
+#---------------------------------------------------
 else if ($hn =~ vsl2*) then
     set mpirunops2 = ' -machinefile machines.txt '
-
+#----------------------------------------------
 else if (($hn =~ *pastel*) || ($hn =~ *violette*)) then
 # use the local /tmp by default on every node
 # set local_disc     = 1
@@ -1260,11 +1258,11 @@ endif
 ## ------------------------------
 
 # Determine data directory (defaults to `data')
-if (-r datadir.in) then
-  set datadir = `cat datadir.in | sed 's/ *\([^ ]*\).*/\1/'`
-else
+#if (-r datadir.in) then
+#  set datadir = `cat datadir.in | sed 's/ *\([^ ]*\).*/\1/'`
+#else
   set datadir = "data"
-endif
+#endif
 echo "datadir = $datadir"
 
 # Propagate current pid to copy-snapshots:

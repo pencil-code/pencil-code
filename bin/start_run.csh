@@ -395,3 +395,6 @@ exit ( $run_status | $run_status2 ) # propagate status of mpirun
 # qsub -l ncpus=4,mem=1gb,cput=100:00:00 -q parallel start_run.csh
 # qsub -l nodes=128,mem=64gb,walltime=1:00:00 -q workq start_run.csh
 # eval `env-setup lam`; qsub -v PATH -pe lam 8 -j y -o run.log run.csh
+# cut & paste for job submission for SGE with parallel environment openmpi (e.g. andromeda)
+qsub -pe openmpi 1 ./start_run.csh 
+qsub -pe openmpi 8 ./start_run.csh 
