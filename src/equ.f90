@@ -597,17 +597,18 @@ module Equ
       if (lshear)        call shear_before_boundary(f)
       if (lspecial)      call special_before_boundary(f)
 !
+!  Fetch fp to the special module
+!
+      if (lparticles.and.lspecial) call particles_special
+!
 !  Initiate shock profile calculation and use asynchronous to handle
 !  communication along processor/periodic boundaries.
 !
       if (lshock) call calc_shock_profile(f)
-
 !
 !  Calculate quantities for a chemical mixture
 !
     if (lchemistry .and. ldensity) call calc_for_chem_mixture(f)
-
-
 !
 !  Prepare x-ghost zones; required before f-array communication
 !  AND shock calculation

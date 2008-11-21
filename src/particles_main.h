@@ -3,7 +3,7 @@
  
   public :: particles_register_modules, particles_rprint_list
   public :: particles_initialize_modules, particles_init
-  public :: particles_boundconds
+  public :: particles_boundconds, particles_special
   public :: particles_timestep_first, particles_timestep_second
   public :: particles_pencil_criteria, particles_pencil_interdep
   public :: particles_calc_pencils, particles_calc_selfpotential

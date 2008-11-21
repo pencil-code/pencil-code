@@ -253,9 +253,9 @@ module Particles_main
 !
       call sort_particles_imn(fp,ineargrid,ipar,dfp=dfp)
 !
-!  ???
+!  Distribute the n-body particles across processors
 !
-      if (lparticles_nbody) call share_sinkparticles(fp)
+      if (lparticles_nbody) call share_nbodyparticles(fp)
 !
     endsubroutine particles_boundconds
 !***********************************************************************
@@ -299,11 +299,28 @@ module Particles_main
 !***********************************************************************
     subroutine particles_calc_nbodygravity(f)
 !
+!  Calculate the gravity of the nbody particles (wrapper).
+!
+!  01-mar-08/wlad: coded
+!
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call calc_nbodygravity_particles(f)
 !
     endsubroutine particles_calc_nbodygravity
+!***********************************************************************
+    subroutine particles_special
+!
+!  Fetch fp (and fsp) array to special module
+!
+!  01-mar-08/wlad: coded
+!
+      use Special, only: special_calc_particles
+!
+      call special_calc_particles(fp)
+      if (lparticles_nbody) call particles_nbody_special
+!
+    endsubroutine particles_special
 !***********************************************************************
     subroutine particles_pencil_criteria()
 !

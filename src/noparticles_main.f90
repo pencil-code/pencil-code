@@ -195,6 +195,14 @@ module Particles_main
 !
     endsubroutine particles_calc_nbodygravity
 !***********************************************************************
+    subroutine particles_special
+!
+      real :: dummy_=0.
+!
+      if (NO_WARN) print*,dummy_
+!
+    endsubroutine particles_special
+!***********************************************************************
     subroutine particles_pde(f,df)
 !
 !  Dynamical evolution of particle variables.
