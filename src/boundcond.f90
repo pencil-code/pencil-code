@@ -4377,7 +4377,7 @@ module Boundcond
         df(lll,m1:m2,n1:n2,ilnTT) = -1./(rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*(-L_2 &
                +0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1)) &
                -1./(rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*(gamma0(m1:m2,n1:n2)-1.) &
-               *gamma0(m1:m2,n1:n2)*drhoE_p_dy!(m1:m2,n1:n2)
+               *gamma0(m1:m2,n1:n2)*drhoE_p_dy
     endsubroutine bc_nscbc_nref_subout_x
 !***********************************************************************
  subroutine bc_nscbc_nref_subout_y(f,df,topbot)
@@ -4491,9 +4491,9 @@ module Boundcond
         df(l1:l2,mmm,n1:n2,iuy) = -1./(2.*rho0(l1:l2,n1:n2)*cs0_ar(l1:l2,n1:n2))*(L_5 - L_1) &
                                   -f(l1:l2,mmm,n1:n2,iuy)*duy_dx
         df(l1:l2,mmm,n1:n2,ilnTT) = -1./(rho0(l1:l2,n1:n2)*cs20_ar(l1:l2,n1:n2))*(-L_2 &
-               +0.5*(gamma0(l1:l2,n1:n2)-1.)*(L_5-L_1)) &
+               +0.5*(gamma0(l1:l2,n1:n2)-1.)*(L_5+L_1)) &
                -1./(rho0(l1:l2,n1:n2)*cs20_ar(l1:l2,n1:n2))*(gamma0(l1:l2,n1:n2)-1.) &
-               *gamma0(l1:l2,n1:n2)*drhoE_p_dx(l1:l2,n1:n2)
+               *gamma0(l1:l2,n1:n2)*drhoE_p_dx
     endsubroutine bc_nscbc_nref_subout_y
 !***********************************************************************
 endmodule Boundcond
