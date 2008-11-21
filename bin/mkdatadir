@@ -137,7 +137,8 @@ else if ($hn =~ aida25 ) then
 else if ($hn =~ p6012 ) then # huygens.sara.nl
   set str='s/home/scratch\/shared/g'
 else if ($hn =~ andromeda ) then # andromeda.qmul.ac.uk
-  set str='s/andromeda/scratch/g'
+  echo $hn
+  set str='s/users/andromeda\/scratch/g'
 else
   #
   #  set the default to empty string (to make local data directory; see below)
@@ -169,7 +170,7 @@ else
   #
   #  Tidy up temporary files
   #
-  rm -f .scr .tmp
+#  rm -f .scr .tmp
 endif
 #
 #  For certain people who like it like that...
