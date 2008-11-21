@@ -816,9 +816,10 @@ LD_FFTW2=
 ##
 ## Dhruba on andromeda.qmul cluster
 ##
-#FC=mpif90   #(andromeda)
+#FC=mpif90  -axW  -L${HOME}/Library/lib #(andromeda)
 #FFLAGS= -O3  #(andromeda)
 #CC=mpicc #(andromeda) 
+#CFLAGS=-O3 -DFUNDERSC=1 -I${HOME}/Library/include -L${HOME}/Library/lib #(andromeda)
 ##
 ## Dhruba at manchester, lancaster, liverpool
 ## 
