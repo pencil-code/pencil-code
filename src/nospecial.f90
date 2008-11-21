@@ -542,6 +542,38 @@ module Special
 !
     endsubroutine special_calc_entropy
 !***********************************************************************
+    subroutine special_calc_particles(fp)
+!
+!   Called before the loop, in case some particle value is needed 
+!   for the special density/hydro/magnetic/entropy
+!
+!   20-nov-08/wlad: coded
+!
+      use Cdata
+      use Sub, only: keep_compiler_quiet
+
+      real, dimension (:,:), intent(in) :: fp
+!
+      if (NO_WARN) print*,fp !(keep compiler quiet)
+!
+    endsubroutine special_calc_particles
+!***********************************************************************
+    subroutine special_calc_particles_nbody(fsp)
+!
+!   Called before the loop, in case some massive particles value 
+!   is needed for the special density/hydro/magnetic/entropy
+!
+!   20-nov-08/wlad: coded
+!
+      use Cdata
+      use Sub, only: keep_compiler_quiet
+
+      real, dimension (:,:), intent(in) :: fsp
+!
+      if (NO_WARN) print*,fsp !(keep compiler quiet)
+!
+    endsubroutine special_calc_particles_nbody
+!***********************************************************************
     subroutine special_boundconds(f,bc)
 !
 !   Some precalculated pencils of data are passed in for efficiency

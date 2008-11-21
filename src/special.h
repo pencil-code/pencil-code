@@ -20,6 +20,8 @@
   public :: special_calc_hydro
   public :: special_calc_entropy
   public :: special_calc_magnetic
+  public :: special_calc_particles
+  public :: special_calc_particles_nbody
 
   public :: special_boundconds
   public :: special_before_boundary

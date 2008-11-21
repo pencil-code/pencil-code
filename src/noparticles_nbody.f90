@@ -1,6 +1,6 @@
 ! $Id$
 !
-!  This module takes care of everything related to particle self-gravity.
+!  This module takes care of everything related to massive particles
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 !
@@ -48,7 +48,7 @@ module Particles_nbody
 !***********************************************************************
     subroutine init_particles_nbody(f,fp)
 !
-! Initial positions and velocities of sink particles
+! Initial positions and velocities of nbody particles
 ! Overwrite the position asserted by the dust module
 !
 ! 28-aug-06/wlad: dummy
@@ -96,7 +96,7 @@ module Particles_nbody
 !***********************************************************************
     subroutine dvvp_dt_nbody_pencil(f,df,fp,dfp,p,ineargrid)
 !
-!  Evolution of sink particles' velocities (called from main pencil loop)
+!  Evolution of nbody particles' velocities (called from main pencil loop)
 !
 !  27-aug-06/wlad: coded
 !
@@ -125,7 +125,7 @@ module Particles_nbody
 !***********************************************************************
     subroutine dvvp_dt_nbody(f,df,fp,dfp,ineargrid)
 !
-!  Evolution of sink particles velocities
+!  Evolution of nbody particles velocities
 !
 !  27-aug-06/wlad: coded
 !
@@ -200,14 +200,19 @@ module Particles_nbody
       if (NO_WARN) print*,pot,rmn
     endsubroutine potential_nbody
 !***********************************************************************
-    subroutine share_sinkparticles(fp)
+    subroutine share_nbodyparticles(fp)
       real, dimension(mpar_loc,mpvar) :: fp
       if (NO_WARN) print*, fp
-    endsubroutine share_sinkparticles
+    endsubroutine share_nbodyparticles
+!************************************************************************
+    subroutine particles_nbody_special
+      real :: dummy_=0.
+      if (NO_WARN) print*,dummy_
+    endsubroutine particles_nbody_special
 !************************************************************************
     subroutine particles_nbody_read_snapshot(filename)
 !
-! Read sink particle info
+! Read nbody particle info
 !
 ! 01-apr-08/wlad: dummy
 !
@@ -218,7 +223,7 @@ module Particles_nbody
 !************************************************************************
     subroutine particles_nbody_write_snapshot(snapbase,enum,flist)
 !
-! Input and output of information about the sinks
+! Input and output of information about the massive particles
 !
 ! 01-apr-08/wlad: dummy
 !
@@ -233,6 +238,7 @@ module Particles_nbody
     subroutine particles_nbody_write_spdim(filename)
 !
 !  Write nspar, mspvar and mspar to file.
+!
 !  01-apr-08/wlad: dummy
 !
       character (len=*) :: filename
