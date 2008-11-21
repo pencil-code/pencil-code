@@ -4377,7 +4377,7 @@ module Boundcond
         df(lll,m1:m2,n1:n2,ilnTT) = -1./(rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*(-L_2 &
                +0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5-L_1)) &
                -1./(rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*(gamma0(m1:m2,n1:n2)-1.) &
-               *gamma0(m1:m2,n1:n2)*drhoE_p_dy(m1:m2,n1:n2)
+               *gamma0(m1:m2,n1:n2)*drhoE_p_dy!(m1:m2,n1:n2)
     endsubroutine bc_nscbc_nref_subout_x
 !***********************************************************************
 endmodule Boundcond
