@@ -58,16 +58,22 @@ module Special
   include 'special.h'
 
 ! input parameters
-  logical, dimension(nx,ny,nz)  :: lshock_local
-  real :: rmask=0.,rmask2,eta_shock_local=0.
+  
+  real :: rmask=0.,rmask2,rmask1,rmask12,eta_shock_local=0.
   real :: diffrho_shock_local=0.,nu_shock_local=0.
   integer :: dummy
+! global arrays
+  real, dimension(nx,ny,nz)   :: shock_mask
+  real, dimension(nx,ny,nz,3) :: gshock_mask
+! "internal" pencils that don't need to be cast into p%
+  real, dimension(nx)   :: shock_masked
+  real, dimension(nx,3) :: gshock_masked
 !
 !  start parameters
 !
   namelist /special_init_pars/ dummy!maxspar
 !
-!   run parameters
+!  run parameters
 !
   namelist /special_run_pars/ &
       eta_shock_local,diffrho_shock_local,nu_shock_local,rmask
@@ -174,6 +180,8 @@ module Special
 !  Initialize any module variables which are parameter dependant
 !
       rmask2=rmask**2
+      rmask1=1./rmask
+      rmask12=rmask1**2
 !
       if(NO_WARN) print*,f  !(keep compiler quiet)
 !
@@ -371,13 +379,20 @@ module Special
 !***********************************************************************
     subroutine calc_pencils_special(f,p)
 !   06-oct-03/tony: coded
-!   called on main loop - the average must be calculated BEFORE
 !
       use Mpicomm
       use General, only: spline
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+      integer :: i,mg,ng
+!
+      mg=m-m1+1 ; ng=n-n1+1
+      shock_masked=p%shock*shock_mask(:,mg,ng)
+      do i=1,3
+        gshock_masked(:,i)=&
+             shock_mask(:,mg,ng)*p%gshock(:,i) + p%shock*gshock_mask(:,mg,ng,i)
+      enddo
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -405,35 +420,23 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p 
       real, dimension (nx) :: fdiff,gshockgrho,gshockglnrho
-      logical, dimension(nx) :: lshock_pencil
-      integer :: i
 !
 !  Only calculate the shock if a value of lshock_local
 !  in this pencil is true
 !
       if (headtt) print*,'special_calc_density: add shock diffusion'
 !
-      lshock_pencil=lshock_local(:,m-m1+1,n-n1+1)
-      if (any(lshock_pencil)) then 
-
-        if (ldensity_nolog) then
-          call dot_mn(p%gshock,p%grho,gshockgrho)
-          fdiff=diffrho_shock_local*&
-              (p%shock*p%del2rho + gshockgrho)
-        else
-          call dot_mn(p%gshock,p%glnrho,gshockglnrho)
-          fdiff=diffrho_shock_local*&
-              (p%shock*(p%del2lnrho+p%glnrho2) + gshockglnrho)
-        endif
-!
-        do i=1,nx
-          if (lshock_pencil(i)) then
-            !if (lfirst.and.ldt) diffus_diffrho(i)=&
-            !    diffus_diffrho(i)+diffrho_shock_local*p%shock(i)
-            df(i+l1-1,m,n,ilnrho) = df(i+l1-i,m,n,ilnrho) + fdiff(i)
-          endif
-        enddo
+      if (ldensity_nolog) then
+        call dot_mn(gshock_masked,p%grho,gshockgrho)
+        fdiff=diffrho_shock_local*&
+             (shock_masked*p%del2rho + gshockgrho)
+      else
+        call dot_mn(gshock_masked,p%glnrho,gshockglnrho)
+        fdiff=diffrho_shock_local*&
+             (shock_masked*(p%del2lnrho+p%glnrho2) + gshockglnrho)
       endif
+!
+      df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + fdiff
 !
     endsubroutine special_calc_density
 !***********************************************************************
@@ -448,34 +451,17 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
       real, dimension(nx,3) :: tmp,tmp2,fvisc
-      logical, dimension(nx) :: lshock_pencil
-      integer :: i
 !
       if (headtt) print*,'special_calc_hydro: add shock viscosity'
 !
       if (ldensity) then
+        call multsv(p%divu,p%glnrho,tmp2)
+        tmp=tmp2 + p%graddivu
+        call multsv(nu_shock_local*shock_masked,tmp,tmp2)
+        call multsv_add(tmp2,nu_shock_local*p%divu,gshock_masked,tmp)
+        fvisc=tmp
 !
-!  Only calculate the shock if a value of lshock_local
-!  in this pencil is true
-!
-        lshock_pencil=lshock_local(:,m-m1+1,n-n1+1)
-        if (any(lshock_pencil)) then 
-!
-          call multsv(p%divu,p%glnrho,tmp2)
-          tmp=tmp2 + p%graddivu
-          call multsv(nu_shock_local*p%shock,tmp,tmp2)
-          call multsv_add(tmp2,nu_shock_local*p%divu,p%gshock,tmp)
-          fvisc=tmp
-
-          do i=1,nx
-            if (lshock_pencil(i)) then
-              !if (lfirst.and.ldt) p%diffus_total(i)=&
-              !    p%diffus_total(i)+(nu_shock_local*p%shock(i))
-              df(i+l1-1,m,n,iux:iuz) = df(i+l1-1,m,n,iux:iuz) + fvisc(i,:)
-            endif
-          enddo
-        endif
-!
+        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + fvisc
       endif
 !
     endsubroutine special_calc_hydro
@@ -490,29 +476,16 @@ module Special
      real, dimension (mx,my,mz,mvar), intent(inout) :: df
      type (pencil_case), intent(in) :: p
      real, dimension(nx,3) :: fres
-     logical, dimension(nx) :: lshock_pencil
      integer :: i
 !
      if (headtt) print*,'special_calc_magnetic: add shock resistivity'
 !
-!  Only calculate the shock if a value of lshock_local
-!  in this pencil is true
+     do i=1,3
+       fres(:,i) = eta_shock_local*&
+            (shock_masked*p%del2a(:,i)+p%diva*gshock_masked(:,i))
+     enddo
 !
-     lshock_pencil=lshock_local(:,m-m1+1,n-n1+1)
-     if (any(lshock_pencil)) then 
-       do i=1,3
-         fres(:,i) = eta_shock_local*&
-             (p%shock*p%del2a(:,i)+p%diva*p%gshock(:,i))
-       enddo
-!
-       do i=1,nx
-         if (lshock_pencil(i)) then
-           !if (lfirst.and.ldt) &
-           !    diffus_eta(i)=diffus_eta(i)+eta_shock_local*p%shock(i)
-           df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + fres
-         endif
-       enddo
-     endif
+     df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + fres
 !
     endsubroutine special_calc_magnetic
 !***********************************************************************
@@ -538,16 +511,21 @@ module Special
 !***********************************************************************
     subroutine special_calc_particles_nbody(fsp)
 !
+!  Calculate the shock mask and its gradient. It's better to 
+!  do it analytically than to use grad on the shock_mask array.
+!  
+!
       use Cdata
 !
       real, dimension(nspar,mpvar) :: fsp
+      real, dimension(nx,3) :: tmp
       real, dimension(nx) :: xc,rp2
       real :: e1,e2,e3
-      integer :: ks,i
+      integer :: ks,i,mg,ng
 !
       if (headtt) print*,'special_calc_particles_nbody: calculate mask'
 !
-      lshock_local(:,:,:)=.false.
+      shock_mask(:,:,:)=0. ; gshock_mask(:,:,:,:)=0.
       do ks=1,nspar
         e1=fsp(ks,1) ; e2=fsp(ks,2) ; e3=fsp(ks,3) 
 !
@@ -565,7 +543,7 @@ module Special
             if (lcartesian_coords) then 
               rp2=(xc-e1)**2+(y(m)-e2)**2+(z(n)-e3)**2
             elseif (lcylindrical_coords) then 
-              rp2=xc**2+e1**2 - 2*xc*e1*cos(y(m)-e2)+(z(n)-e3)**2
+              rp2=xc**2+e1**2 - 2*xc*e1*cos(y(m)-e2) + (z(n)-e3)**2
             elseif (lspherical_coords) then 
               rp2=xc**2 + e1**2 - 2*xc*e1*&
                   (cos(y(m))*cos(e2)+sin(y(m))*sin(e2)*cos(z(n)-e3))
@@ -574,12 +552,14 @@ module Special
                   "invalid coordinate system")
             endif
 !
-!  If the distance is less than the threshold, activate the shock
+            mg=m-m1+1 ; ng=n-n1+1
 !
-            do i=1,nx 
-              if (rp2(i).le.rmask2) &
-                   lshock_local(i,m-m1+1,n-n1+1)=.true.
-            enddo
+!  Shock-mask: gaussian 
+!  rmask12=1./rmask**2
+!
+            shock_mask(:,mg,ng)=shock_mask(:,mg,ng)+exp(-.5*rp2*rmask12)
+            call get_gradshock(shock_mask(:,mg,ng),e1,e2,e3,tmp)
+            gshock_mask(:,mg,ng,:)=gshock_mask(:,mg,ng,:)+tmp
 !
           enddo
           enddo
@@ -587,6 +567,37 @@ module Special
       enddo
 !
     endsubroutine special_calc_particles_nbody
+!***********************************************************************
+    subroutine get_gradshock(fshock,e1,e2,e3,gradshock)
+
+      real, dimension(nx,3) :: gradshock
+      real, dimension(nx) :: fshock,base
+      real :: e1,e2,e3
+!
+      if (headtt.and.(m==m1).and.(n==n1)) &
+           print*,'calculate shock mask gradient'
+!
+      base=-rmask12*fshock
+!
+      if (lcartesian_coords) then
+        gradshock(:,1)=base*(x(l1:l2)-e1)
+        gradshock(:,2)=base*(y(  m  )-e2)
+        gradshock(:,3)=base*(z(  n  )-e3)
+      elseif (lcylindrical_coords) then 
+        gradshock(:,1)=base*(x(l1:l2)-e1*cos(y(m)-e2))
+        gradshock(:,2)=base*(e1*sin(y(m)-e2))
+        gradshock(:,3)=base*(z(n)-e3)
+      elseif (lspherical_coords) then
+        gradshock(:,1)=base*(x(l1:l2)-e1*&
+             (cos(y(m))*cos(e2) + sin(y(m))*sin(e2)*cos(z(n)-e3)))
+        gradshock(:,2)=base*e1*&
+             (sin(y(m))*cos(e2) - cos(y(m))*sin(e2)*cos(z(n)-e3))
+        gradshock(:,3)=base*e1*sin(e2)*sin(z(n)-e3)
+      else
+        call fatal_error("get_gradshock","invalid coordinate system")
+      endif
+!
+    endsubroutine get_gradshock
 !***********************************************************************
     subroutine special_boundconds(f,bc)
 !
