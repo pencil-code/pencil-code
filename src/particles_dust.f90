@@ -535,7 +535,7 @@ module Particles
 !
       real, dimension (3) :: uup
       real :: vpx_sum, vpy_sum, vpz_sum
-      real :: r, p, q, px, py, pz, eps, cs, k2_xxp
+      real :: r, p, q, px, py, pz, eps, cs, k2_xxp, rp2
       real :: dim1, npar_loc_x, npar_loc_y, npar_loc_z, dx_par, dy_par, dz_par
       real :: rad,rad_scl,phi,tmp,OO
       integer :: l, j, k, ix0, iy0, iz0
@@ -580,6 +580,22 @@ module Particles
               fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
           if (nzgrid/=1) &
               fp(1:npar_loc,izp)=xyz0_loc(3)+fp(1:npar_loc,izp)*Lxyz_loc(3)
+
+        case ('random-hole')
+          if (lroot) print*, 'init_particles: Random particle positions '// &
+              'with inner hole'
+          do k=1,npar_loc
+            rp2=-1.0
+            do while (rp2<rp_int**2)
+              if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
+              if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
+              if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
+              if (nxgrid/=1) fp(k,ixp)=xyz0(1)+fp(k,ixp)*Lxyz(1)
+              if (nygrid/=1) fp(k,iyp)=xyz0(2)+fp(k,iyp)*Lxyz(2)
+              if (nzgrid/=1) fp(k,izp)=xyz0(3)+fp(k,izp)*Lxyz(3)
+              rp2=fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2
+            enddo
+          enddo
 
        case ('random-cylindrical','random-cyl')
           if (lroot) print*, 'init_particles: Random particle '//&
