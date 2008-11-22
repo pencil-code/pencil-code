@@ -117,8 +117,8 @@ set booted_lam = 0
 # so we use this to define $hostname.
 #
 set hn = `uname -n`
-echo "HOSTNAME = $HOSTNAME"
 if ($?HOSTNAME) then
+  echo "HOSTNAME = $HOSTNAME"
   set hostname=$HOSTNAME
 else
   set hostname=$hn
