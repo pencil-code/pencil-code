@@ -274,6 +274,10 @@ module Hydro
                                 ! DIAG_DOC:   \quad(maximum modulus of momentum)
   integer :: idiag_ruxuym=0     ! DIAG_DOC: $\left<\varrho u_x u_y\right>$
                                 ! DIAG_DOC:   \quad(mean Reynold's stress)
+  integer :: idiag_ruxuzm=0     ! DIAG_DOC: $\left<\varrho u_x u_z\right>$
+                                ! DIAG_DOC:   \quad(mean Reynold's stress)
+  integer :: idiag_ruyuzm=0     ! DIAG_DOC: $\left<\varrho u_y u_z\right>$
+                                ! DIAG_DOC:   \quad(mean Reynold's stress)
   integer :: idiag_ruxuymz=0    ! DIAG_DOC:
   integer :: idiag_rufm=0       ! DIAG_DOC:
   integer :: idiag_dtu=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta x
@@ -1033,7 +1037,8 @@ module Hydro
           idiag_urmsh/=0 ) lpenc_diagnos(i_u2)=.true.
       if (idiag_duxdzma/=0 .or. idiag_duydzma/=0) lpenc_diagnos(i_uij)=.true.
       if (idiag_fmassz/=0 .or. idiag_ruxuym/=0 .or. idiag_ruxuymz/=0 .or. &
-          idiag_ruxm/=0 .or. idiag_ruym/=0 .or. idiag_ruzm/=0) &
+          idiag_ruxm/=0 .or. idiag_ruym/=0 .or. idiag_ruzm/=0 .or. &
+          idiag_ruxuzm/=0 .or. idiag_ruyuzm/=0) &
           lpenc_diagnos(i_rho)=.true.
       if (idiag_ormr/=0 .or. idiag_opmr/=0 .or. idiag_ozmr/=0) &
           lpenc_diagnos(i_oo)=.true.
@@ -1513,6 +1518,8 @@ module Hydro
         if (idiag_uxuzm/=0)   call sum_mn_name(p%uu(:,1)*p%uu(:,3),idiag_uxuzm)
         if (idiag_uyuzm/=0)   call sum_mn_name(p%uu(:,2)*p%uu(:,3),idiag_uyuzm)
         if (idiag_ruxuym/=0)  call sum_mn_name(p%rho*p%uu(:,1)*p%uu(:,2),idiag_ruxuym)
+        if (idiag_ruxuzm/=0)  call sum_mn_name(p%rho*p%uu(:,1)*p%uu(:,3),idiag_ruxuzm)
+        if (idiag_ruyuzm/=0)  call sum_mn_name(p%rho*p%uu(:,2)*p%uu(:,3),idiag_ruyuzm)
         if (idiag_duxdzma/=0) call sum_mn_name(abs(p%uij(:,1,3)),idiag_duxdzma)
         if (idiag_duydzma/=0) call sum_mn_name(abs(p%uij(:,2,3)),idiag_duydzma)
 !
@@ -2782,6 +2789,8 @@ module Hydro
         idiag_fxbym=0
         idiag_fxbzm=0
         idiag_ruxuym=0
+        idiag_ruxuzm=0
+        idiag_ruyuzm=0
         idiag_ruxuymz=0
         idiag_uguxm=0
         idiag_uguym=0
@@ -2842,6 +2851,8 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'uxuzm',idiag_uxuzm)
         call parse_name(iname,cname(iname),cform(iname),'uyuzm',idiag_uyuzm)
         call parse_name(iname,cname(iname),cform(iname),'ruxuym',idiag_ruxuym)
+        call parse_name(iname,cname(iname),cform(iname),'ruxuzm',idiag_ruxuzm)
+        call parse_name(iname,cname(iname),cform(iname),'ruyuzm',idiag_ruyuzm)
         call parse_name(iname,cname(iname),cform(iname),'ox2m',idiag_ox2m)
         call parse_name(iname,cname(iname),cform(iname),'oy2m',idiag_oy2m)
         call parse_name(iname,cname(iname),cform(iname),'oz2m',idiag_oz2m)
@@ -3114,6 +3125,8 @@ module Hydro
         write(3,*) 'i_uxuzm=',idiag_uxuzm
         write(3,*) 'i_uyuzm=',idiag_uyuzm
         write(3,*) 'i_ruxuym=',idiag_ruxuym
+        write(3,*) 'i_ruxuzm=',idiag_ruxuzm
+        write(3,*) 'i_ruyuzm=',idiag_ruyuzm
         write(3,*) 'i_ox2m=',idiag_ox2m
         write(3,*) 'i_oy2m=',idiag_oy2m
         write(3,*) 'i_oz2m=',idiag_oz2m
