@@ -13,8 +13,8 @@ Recommended resolution:
 Comments:
     This procedure allows the full alpha and eta tensors to be calculated.
     Different test fields can be used. Note however that the result is
-    in general wavenumber dependent. The present examples is for the
-    isotropic helical turbulence.
+    in general wavenumber dependent. The present example is for the
+    homogeneous helical turbulence with large-scale uniform shear.
 References:
     Brandenburg, A.: 2005, ``Turbulence and its parametrization in
        accretion discs,'' Astron. Nachr. 326, 787-797
