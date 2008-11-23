@@ -5,7 +5,7 @@
 ;
 pro pc_read_pvar, object=object, varfile=varfile_, datadir=datadir, ivar=ivar, $
     npar_max=npar_max, stats=stats, quiet=quiet, swap_endian=swap_endian, $
-    rmv=rmv
+    rmv=rmv, irmv=irmv
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;
@@ -196,26 +196,32 @@ for i=0,ncpus-1 do begin
   close, file
   free_lun, file
 ;
-;  Read indices and removal times of removed particles. The positions are not
-;  actually read - we are just checking that all particles are accounted for.
+;  Read indices and removal times of removed particles.
 ;
   if (rmv) then begin
     filename=datadir+'/proc'+strtrim(i,2)+'/rmv_ipar.dat'
     file_exists=file_test(filename)
     if (file_exists) then begin
-      get_lun, file
-      close, file
-      openr, file, filename
+      get_lun, file1 & close, file1
+      openr, file1, filename
+      get_lun, file2 & close, file2
+      openr, file2, datadir+'/proc'+strtrim(i,2)+'/rmv_par.dat', /f77
       while (not eof(file)) do begin
         ipar_rmv_loc=0L
         t_rmv_loc=0.0*one
-        readf, file, ipar_rmv_loc, t_rmv_loc
-        if (t_rmv_loc le t) then begin
+        readf, file1, ipar_rmv_loc, t_rmv_loc
+        array_loc=fltarr(mpvar)*one
+        readu, file2, ipar_rmv_loc_2, array_loc
+        if (t_rmv_loc lt t) then begin
           ipar_rmv[ipar_rmv_loc-1]=ipar_rmv[ipar_rmv_loc-1]+1
           npar_rmv=npar_rmv+1
+          array[ipar_rmv_loc-1,*]=array_loc
         endif
       endwhile
+      close, file1 & close, file2
+      free_lun, file1 & free_lun, file2
     endif
+    irmv=where(ipar_rmv eq 1)
   endif
 ;
 ;  Create global x, y and z arrays from local ones.
@@ -321,14 +327,16 @@ endif
 ;
 ;  Print out total number of particles.
 ;
-if (rmv) then begin
-  print, ''
-  print, 'Found '+strtrim(n_elements(where(ipar eq 1)),2)+' particles ' + $
-      'and '+strtrim(npar_rmv,2)+' removed particles'
-endif else begin
-  print, ''
-  print, 'Found '+strtrim(n_elements(where(ipar eq 1)),2)+' particles'
-endelse
+if (not quiet) then begin
+  if (rmv) then begin
+    print, ''
+    print, 'Found '+strtrim(n_elements(where(ipar eq 1)),2)+' particles ' + $
+        'and '+strtrim(npar_rmv,2)+' removed particles'
+  endif else begin
+    print, ''
+    print, 'Found '+strtrim(n_elements(where(ipar eq 1)),2)+' particles'
+  endelse
+endif
 ;
 ;  Print out time.
 ;
