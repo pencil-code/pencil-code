@@ -1085,98 +1085,10 @@ module Magnetic
       if ((lbext_curvilinear).and.&
       ((B_ext(1).ne.0).or.&
        (B_ext(2).ne.0).or.&
-       (B_ext(3).ne.0))) call correct_magnetic_tension(f)
+       (B_ext(3).ne.0))) call correct_lorentz_force(f)
 !
     endsubroutine init_aa
 !************************************************************************
-    subroutine correct_magnetic_tension(f)
-! 
-!  Correct for magnetic tension term in the centrifugal force. The
-!  pressure gradient was already corrected in the density and temperature 
-!  modules
-!
-!  13-nov-08/wlad : coded
-!
-      use FArrayManager
-      use Messages, only: fatal_error
-      use Sub,      only: get_radial_distance
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx)   :: rr_cyl,rr_sph
-      real, dimension (mx)   :: tmp,uu2,va2,va2r
-      real, dimension (mx)   :: rho1,rho1_jxb
-      integer                :: i
-      logical                :: lheader
-!
-      if (lroot) print*,'Correcting magnetic tension on the '//&
-           'centrifugal force'
-!
-      if (.not.lspherical_coords) & 
-          call fatal_error("correct_magnetic_tension",&
-          "only implemented for spherical coordinates")
-!
-      do m=1,my
-        do n=1,mz
-!
-          call get_radial_distance(rr_sph,rr_cyl)
-!
-          lheader=((m==1).and.(n==1).and.lroot)
-!         
-          rho1=1./f(:,m,n,ilnrho)
-!
-          uu2=f(:,m,n,iuz)**2
-          va2=rho1*B_ext(2)**2
-
-          rho1_jxb=rho1
-!
-!  set rhomin_jxb>0 in order to limit the jxb term at very low densities.
-!
-          if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
-!
-!  set va2max_jxb>0 in order to limit the jxb term at very high Alfven speeds.
-!  set va2power_jxb to an integer value in order to specify the power
-!  of the limiting term,
-!
-          if (va2max_jxb>0) then
-            rho1_jxb = rho1_jxb &
-                * (1+(va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
-          endif
-          va2r=rho1_jxb*va2
-!
-          tmp=uu2+va2r
-!
-!  Make sure the correction does not impede centrifugal equilibrium
-!
-          do i=1,nx
-            if (tmp(i).lt.0.) then
-              if (rr_sph(i) .lt. r_int) then
-                !it's inside the frozen zone, so 
-                !just set tmp to zero and emit a warning
-                tmp(i)=0.
-                if ((ip<=10).and.lheader) &
-                    call warning('correct_density_gradient','Cannot '//&
-                    'have centrifugal equilibrium in the inner '//&
-                    'domain. The pressure gradient is too steep.')
-              else
-                print*,'correct_density_gradient: ',&
-                    'cannot have centrifugal equilibrium in the inner ',&
-                    'domain. The pressure gradient is too steep at ',&
-                    'x,y,z=',x(i+nghost),y(m),z(n)
-                print*,'the angular frequency here is',tmp(i)
-                call fatal_error("","")
-              endif
-            endif
-          enddo
-!
-!  Correct the velocities
-!
-          f(:,m,n,iuz)= sqrt(tmp)
-!
-        enddo
-      enddo
-!
-    endsubroutine correct_magnetic_tension
-!*************************************************************************
 !     subroutine pert_aa(f)
 ! !
 ! !   perturb magnetic field when reading old NON-magnetic snapshot
@@ -4016,7 +3928,7 @@ module Magnetic
     subroutine alfven_zconst(f,xx,yy)
 !
 !  Radially variable field pointing in the z direction
-!  4 Balbus Hawley wavelengths in the vertical direction
+!  4 Balbus-Hawley wavelengths in the vertical direction
 !
 !  Bz=Lz/(8pi)*Omega      ==> Aphi = Lz/(8pi) Omega*r/(2-q)
 !
@@ -4029,17 +3941,42 @@ module Magnetic
 !
       use Cdata
       use Gravity, only: qgshear,r0_pot
+      use SharedVariables
+      use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz) :: xx,yy,rrcyl,Aphi
-      real :: B0
+      real, dimension(mx,my,mz) :: xx,yy,rr,Aphi
+      real, pointer :: plaw
+      real :: B0,pblaw
+      integer :: ierr
 !
-      B0=Lxyz(3)/(2*zmode*pi)
-      rrcyl=sqrt(xx**2+yy**2)
-      Aphi=B0/(rrcyl*(2-qgshear))*(rrcyl**2+r0_pot**2)**(1-qgshear/2.)
+      if (lcartesian_coords) then 
+        B0=Lxyz(3)/(2*zmode*pi)
+        rr=sqrt(xx**2+yy**2)
+        Aphi=B0/(rr*(2-qgshear))*(rr**2+r0_pot**2)**(1-qgshear/2.)
 !
-      f(:,:,:,iax) =  -Aphi*yy/rrcyl
-      f(:,:,:,iay) =   Aphi*xx/rrcyl
+        f(:,:,:,iax) =  -Aphi*yy/rr
+        f(:,:,:,iay) =   Aphi*xx/rr
+      elseif (lcylindrical_coords) then 
+        call stop_it("alfven_zconst: "//&
+            "not implemented for cylindrical coordinates")
+      elseif (lspherical_coords) then
+        B0=Lxyz(2)/(2*zmode*pi)
+        rr=xx
+        call get_shared_variable('plaw',plaw,ierr)
+        if (ierr/=0) call stop_it("alfven_zconst: "//&
+            "there was a problem when getting plaw")
+        pblaw=1-qgshear-plaw/2.
+        Aphi=-B0/(pblaw+2)*rr**(pblaw+1)*1
+!        
+        f(:,:,:,iax)=0.
+        f(:,:,:,iay)=0.
+        f(:,:,:,iaz)=Aphi/sin(yy)
+!
+        call correct_lorentz_force(f,&
+            lfield=.true.,const=B0,pblaw=pblaw)
+!
+      endif
 !
     endsubroutine alfven_zconst
 !***********************************************************************
@@ -4662,6 +4599,122 @@ module Magnetic
 !
     endsubroutine eta_zdep
 !************************************************************************
+    subroutine correct_lorentz_force(f,lfield,const,pblaw)
+! 
+!  Correct for the magnetic term in the centrifugal force. The
+!  pressure gradient was already corrected in the density and temperature 
+!  modules
+!
+!  13-nov-08/wlad : coded
+!
+      use FArrayManager
+      use Messages, only: fatal_error
+      use Sub,      only: get_radial_distance
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx)   :: rr_cyl,rr_sph,Btheta
+      real, dimension (mx)   :: tmp,uu2,va2,va2r
+      real, dimension (mx)   :: rho1,rho1_jxb
+      integer                :: i
+      logical                :: lheader
+      logical, optional      :: lfield
+      real, optional :: const,pblaw
+!
+      if (lroot) print*,'Correcting magnetic terms on the '//&
+           'centrifugal force'
+!
+      if (.not.lspherical_coords) then
+        call fatal_error("correct_lorentz_force",&
+            "only implemented for spherical coordinates")
+        if ((B_ext(1).ne.0).or.(B_ext(3).ne.0)) then 
+          call fatal_error("correct_lorentz_force",&
+              "only implemented for polar fields")
+        endif
+      endif
+!
+      do m=1,my
+        do n=1,mz
+!
+          call get_radial_distance(rr_sph,rr_cyl)
+!
+          lheader=((m==1).and.(n==1).and.lroot)
+!         
+          if (present(lfield).and.&
+              present(const).and.&
+              (present(pblaw))) then 
+            !this field also has a magnetic pressure gradient
+            Btheta=const*rr_sph**pblaw/sin(y(m))
+          else
+            Btheta=0.
+          endif
+!
+          rho1=1./f(:,m,n,ilnrho)
+!
+          uu2=f(:,m,n,iuz)**2
+          va2=rho1*(Btheta+B_ext(2))**2
+
+          rho1_jxb=rho1
+!
+!  set rhomin_jxb>0 in order to limit the jxb term at very low densities.
+!
+          if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
+!
+!  set va2max_jxb>0 in order to limit the jxb term at very high Alfven speeds.
+!  set va2power_jxb to an integer value in order to specify the power
+!  of the limiting term,
+!
+          if (va2max_jxb>0) then
+            rho1_jxb = rho1_jxb &
+                * (1+(va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
+          endif
+          va2r=rho1_jxb*va2
+!
+          if (lfield) then
+            !second term is the magnetic pressure gradient
+            tmp=uu2+va2r*(1+2*pblaw/rr_sph)
+            !the polar pressure should be
+            !-2*cot(theta)/rr * va2r, but I will ignore it
+            ! for now. It feedbacks on the density, 
+            ! so the initial condition for density and field 
+            ! should be solved iteratively. But as uu>>va, I 
+            ! will just let the system relax to equilibrium in
+            ! runtime.
+          else
+            tmp=uu2+va2r
+          endif
+!
+!  Make sure the correction does not impede centrifugal equilibrium
+!
+          do i=1,nx
+            if (tmp(i).lt.0.) then
+              if (rr_sph(i) .lt. r_int) then
+                !it's inside the frozen zone, so 
+                !just set tmp to zero and emit a warning
+                tmp(i)=0.
+                if ((ip<=10).and.lheader) &
+                    call warning('correct_lorentz_force','Cannot '//&
+                    'have centrifugal equilibrium in the inner '//&
+                    'domain. The lorentz force is too strong.')
+              else
+                print*,'correct_lorentz_force: ',&
+                    'cannot have centrifugal equilibrium in the inner ',&
+                    'domain. The lorentz force is too strong at ',&
+                    'x,y,z=',x(i+nghost),y(m),z(n)
+                print*,'the angular frequency here is',tmp(i)
+                call fatal_error("","")
+              endif
+            endif
+          enddo
+!
+!  Correct the velocities
+!
+          f(:,m,n,iuz)= sqrt(tmp)
+!
+        enddo
+      enddo
+!
+    endsubroutine correct_lorentz_force
+!*************************************************************************
     subroutine remove_mean_emf(f,df)
 !
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
@@ -4711,7 +4764,7 @@ module Magnetic
       real                    :: fac
       integer                 :: nnghost
 !
-      fac = 1.0/ny
+      fac = 1.0/nygrid
 !      
 ! Average over phi - the result is a (nr,nz) array
 !
@@ -4726,7 +4779,7 @@ module Magnetic
       enddo
       enddo
 !          
-      call mpiallreduce_sum(fsum_tmp,uxb,(/nx,nz/))
+      call mpiallreduce_sum(fsum_tmp,uxb,(/nx,nz/),LSUMY=.true.)
 !
       do m=m1,m2  
         df(l1:l2,m,n1:n2,iax)=df(l1:l2,m,n1:n2,iax)-uxb
@@ -4751,8 +4804,9 @@ module Magnetic
 !
 !
       use Cdata
-      use Mpicomm, only: mpiallreduce_sum
-      use Sub    , only: curl
+      use Mpicomm,  only: mpiallreduce_sum
+      use Messages, only: fatal_error
+      use Sub    ,  only: curl
 !
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mx,my,mz,mvar), intent (inout) :: df
@@ -4762,7 +4816,7 @@ module Magnetic
       real                    :: fac
       integer                 :: mmghost
 !
-      fac = 1.0/nz
+      fac = 1.0/nzgrid
 !      
 ! Average over phi - the result is a (nr,ntht) array
 !
@@ -4776,17 +4830,23 @@ module Magnetic
 ! system defined by the user. B_ext(2) then is the polar field. 
 !
         if (lbext_curvilinear) then
-          bb=B_ext(2)
+          bb=pbb(:,2)+B_ext(2)
         else
           !else the field is cartesian, in the z-direction
-          bb=B_ext(3)
+          call fatal_error("remove_mean_emf_spherical",&
+              "not implemented for cartesian fields in spherical coordinates")
         endif
         uu=f(l1:l2,m,n,iuz)
+!
         fsum_tmp(:,mmghost)=fsum_tmp(:,mmghost)+ fac*uu*bb
       enddo
       enddo
-!          
-      call mpiallreduce_sum(fsum_tmp,uxb,(/nx,ny/))
+!
+! The sum has to be done processor-wise
+! Sum over processors of same ipy, and different ipz
+!      
+      !call mpiallreduce_sum_column(fsum_tmp,uxb,(/nx,ny/))
+      call mpiallreduce_sum(fsum_tmp,uxb,(/nx,ny/),LSUMZ=.true.)
 !
       do n=n1,n2
       do m=m1,m2  
