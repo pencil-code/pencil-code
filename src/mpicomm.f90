@@ -209,7 +209,7 @@ module Mpicomm
 !
 !  Communicators
 !
-  integer :: MPI_COMM_ROW
+  integer :: MPI_COMM_ROW,MPI_COMM_COLUMN
 !
   integer :: isend_rq_tolowx,isend_rq_touppx,irecv_rq_fromlowx,irecv_rq_fromuppx
   integer :: isend_rq_tolowy,isend_rq_touppy,irecv_rq_fromlowy,irecv_rq_fromuppy
@@ -354,6 +354,11 @@ module Mpicomm
 !  given by ipy.
 !
       call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipz, ipy, MPI_COMM_ROW, ierr)
+!
+!  Do the same for columns - all processes sharing the same value of 
+!  ipy. The rank within MPI_COMM_WORLD is given by ipz
+!
+      call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipy, ipz, MPI_COMM_COLUMN, ierr)
 !
     endsubroutine mpicomm_init
 !***********************************************************************
@@ -1768,19 +1773,32 @@ module Mpicomm
 !
     endsubroutine mpibcast_char_arr
 !***********************************************************************
-    subroutine mpiallreduce_sum_arr2(fsum_tmp,fsum,nreduce_array)
+    subroutine mpiallreduce_sum_arr2(fsum_tmp,fsum,nreduce_array,lsumy,lsumz)
+!
+!  Calculate total sum for each array element and return to 
+!  all processors (MPI_COMM_WORLD).
+!  Or sum over z and return to the nprocy processors (MPI_COMM_COLUMN). 
+!  Or sum over y and return to the nprocz processors (MPI_COMM_ROW).
+!
+!  23-nov-08/wlad: included the lsumy,lsumz possibilities
 !
       integer, dimension(2) :: nreduce_array
       real, dimension(nreduce_array(1),nreduce_array(2)) :: fsum_tmp,fsum
-      integer :: nreduce
-!
-!  calculate total sum for each array element
-!  and return to all processors
+      integer :: nreduce,mpiprocs
+      logical, optional :: lsumy,lsumz
 !
       nreduce=nreduce_array(1)*nreduce_array(2)
 !
+      if (present(lsumy)) then
+        mpiprocs=MPI_COMM_ROW
+      elseif (present(lsumz)) then 
+        mpiprocs=MPI_COMM_COLUMN
+      else
+        mpiprocs=MPI_COMM_WORLD 
+      endif
+!
       call MPI_ALLREDUCE(fsum_tmp, fsum, nreduce, MPI_REAL, MPI_SUM, &
-                      MPI_COMM_WORLD, ierr)
+                      mpiprocs, ierr)
 !
     endsubroutine mpiallreduce_sum_arr2
 !***********************************************************************

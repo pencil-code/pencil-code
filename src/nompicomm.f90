@@ -720,10 +720,11 @@ module Mpicomm
 !
     endsubroutine mpibcast_char_arr
 !***********************************************************************
-    subroutine mpiallreduce_sum_arr2(fsum_tmp,fsum,nreduce_array)
+    subroutine mpiallreduce_sum_arr2(fsum_tmp,fsum,nreduce_array,lsumy,lsumz)
 !
       integer, dimension(2) :: nreduce_array
       real, dimension(nreduce_array(1),nreduce_array(2)) :: fsum_tmp, fsum
+      logical, optional :: lsumy,lsumz
 !
       fsum=fsum_tmp
     endsubroutine mpiallreduce_sum_arr2
