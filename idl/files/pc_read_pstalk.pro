@@ -86,10 +86,12 @@ for iproc=0,dim.nprocx*dim.nprocy*dim.nprocz-1 do begin
     while (it lt nout and not eof(1)) do begin
       readu, 1, t_loc, npar_stalk_loc
 
-      if (it eq 0) then $
-          print, '-------- iproc ------ it --------- t ----------- npar ------- '
-      if ( (it1 ne -1) and (it mod it1 eq 0) ) then $
-          print, iproc, it, t_loc, npar_stalk_loc
+      if (not quiet) then begin
+        if (it eq 0) then $
+            print, '-------- iproc ------ it --------- t ----------- npar ------- '
+        if ( (it1 ne -1) and (it mod it1 eq 0) ) then $
+            print, iproc, it, t_loc, npar_stalk_loc
+      endif
 
       if (npar_stalk_loc ge 1) then begin
 
