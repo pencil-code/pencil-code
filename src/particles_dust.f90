@@ -440,7 +440,7 @@ module Particles
       if (lnostore_uu) then
         interp%luu=.false.
       else
-        interp%luu=ldragforce_dust_par
+        interp%luu=ldragforce_dust_par.or.ldraglaw_steadystate.or.lparticles_spin
       endif
       interp%loo=.false.
       interp%lTT=lbrownian_forces.and.(brownian_T0/=0.0)
@@ -1632,6 +1632,10 @@ k_loop:   do while (.not. (k>npar_loc))
           if (.not.allocated(rep)) then
             call fatal_error('dvvp_dt_pencil','unable to allocate sufficient'//&
               ' memory for rep')
+          endif
+          if (.not. interp%luu) then
+            call fatal_error('dvvp_dt_pencil','you must set lnostore_uu=F'//&
+                 ' when rep is to be calculated')
           endif
 !
           call calc_pencil_rep(fp,interp_uu,rep)
