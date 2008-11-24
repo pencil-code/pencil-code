@@ -273,11 +273,11 @@ module Hydro
   integer :: idiag_rumax=0      ! DIAG_DOC: $\max(\varrho |\uv|)$
                                 ! DIAG_DOC:   \quad(maximum modulus of momentum)
   integer :: idiag_ruxuym=0     ! DIAG_DOC: $\left<\varrho u_x u_y\right>$
-                                ! DIAG_DOC:   \quad(mean Reynold's stress)
+                                ! DIAG_DOC:   \quad(mean Reynolds stress)
   integer :: idiag_ruxuzm=0     ! DIAG_DOC: $\left<\varrho u_x u_z\right>$
-                                ! DIAG_DOC:   \quad(mean Reynold's stress)
+                                ! DIAG_DOC:   \quad(mean Reynolds stress)
   integer :: idiag_ruyuzm=0     ! DIAG_DOC: $\left<\varrho u_y u_z\right>$
-                                ! DIAG_DOC:   \quad(mean Reynold's stress)
+                                ! DIAG_DOC:   \quad(mean Reynolds stress)
   integer :: idiag_ruxuymz=0    ! DIAG_DOC:
   integer :: idiag_rufm=0       ! DIAG_DOC:
   integer :: idiag_dtu=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta x
