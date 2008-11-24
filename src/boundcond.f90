@@ -4384,14 +4384,30 @@ module Boundcond
                -1./(rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*(gamma0(m1:m2,n1:n2)-1.) &
                *gamma0(m1:m2,n1:n2)*drhoE_p_dy(m1:m2,n1:n2)
 
-      do k=1,nchemspec
-        call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dx,lll,1)
-       do i=1,mz
-        call der_pencil(2,f(lll,:,i,ichemspec(k)),dYk_dy(:,i))
-       enddo
-        df(lll,m1:m2,n1:n2,ichemspec(k))=-f(lll,m1:m2,n1:n2,iux)*dYk_dx(m1:m2,n1:n2) &
-                                         -f(lll,m1:m2,n1:n2,iuy)*dYk_dy(m1:m2,n1:n2)
-      enddo
+
+
+ !     select case(topbot)
+ !     case('bot')
+ !      do i=1,l1-1
+ !       df(i,m1:m2,n1:n2,ilnTT)=df(lll,m1:m2,n1:n2,ilnTT)
+ !     enddo
+ !     case('top')
+ !       do i=l2+1,mx
+ !       df(i,m1:m2,n1:n2,ilnTT)=df(lll,m1:m2,n1:n2,ilnTT)
+ !       df(i,m1:m2,n1:n2,iux)=df(lll,m1:m2,n1:n2,iux)
+ !       df(i,m1:m2,n1:n2,ilnrho)=df(lll,m1:m2,n1:n2,ilnrho)
+ !     enddo
+ !     endselect
+
+
+   !   do k=1,nchemspec
+   !     call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dx,lll,1)
+   !    do i=1,mz
+   !     call der_pencil(2,f(lll,:,i,ichemspec(k)),dYk_dy(:,i))
+   !    enddo
+   !     df(lll,m1:m2,n1:n2,ichemspec(k))=-f(lll,m1:m2,n1:n2,iux)*dYk_dx(m1:m2,n1:n2) &
+   !                                      -f(lll,m1:m2,n1:n2,iuy)*dYk_dy(m1:m2,n1:n2)
+   !   enddo
 
     endsubroutine bc_nscbc_nref_subout_x
 !***********************************************************************
