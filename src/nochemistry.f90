@@ -562,6 +562,44 @@ module Chemistry
       call keep_compiler_quiet(f)
 !
     endsubroutine get_p_infy
+!*************************************************************
+   subroutine get_rhs_Y(topbot,j,bound_reac_term)
+
+    use Mpicomm
+!
+!  Dummy routine
+!
+     real, dimension (ny,nz,nchemspec) :: bound_reac_term
+     integer :: j
+     character (len=3) :: topbot
+
+     intent(out) :: bound_reac_term
+     intent(in) :: j
+!
+!  set bound_reac_term to keep compiler quiet
+!
+      bound_reac_term=0.
+!
+   endsubroutine get_rhs_Y
+!*************************************************************
+  subroutine get_rhs_T(topbot,j,bound_rhs_T)
+ 
+    use Mpicomm
+!
+!  Dummy routine
+!
+     real, dimension (ny,nz) :: bound_rhs_T
+     integer :: j
+     character (len=3) :: topbot
+
+     intent(out) :: bound_rhs_T
+     intent(in) :: j
+!
+!  set bound_reac_term to keep compiler quiet
+!
+      bound_rhs_T=0.
+!
+   endsubroutine get_rhs_T
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
