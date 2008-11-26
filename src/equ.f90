@@ -453,6 +453,7 @@ module Equ
       use Selfgravity
       use Entropy
       use Magnetic
+      use Testscalar
       use Testfield
       use Testflow
       use Radiation
@@ -536,7 +537,8 @@ module Equ
 !
       early_finalize=test_nonblocking.or.leos_ionization.or.lradiation_ray.or. &
                      lhyperviscosity_strict.or.lhyperresistivity_strict.or. &
-                     ltestfield.or.ltestflow.or.lparticles_prepencil_calc.or. &
+                     ltestscalar.or.ltestfield.or.ltestflow.or. &
+                     lparticles_prepencil_calc.or. &
                      lsolid_cells
 !
 !  Write crash snapshots to the hard disc if the time-step is very low.
@@ -685,6 +687,7 @@ module Equ
       if (lhydro.and.ldensity) call calc_lhydro_pars(f)
       if (lforcing_cont) call calc_lforcing_cont_pars(f)
       if (lforcing_cont) call calc_lforcing_cont_pars(f)
+      if (ltestscalar) call calc_ltestscalar_pars(f)
       if (ltestfield) call calc_ltestfield_pars(f)
       if (ltestflow) call calc_ltestflow_nonlin_terms(f,df)
       if (lspecial) call calc_lspecial_pars(f)
@@ -820,6 +823,10 @@ module Equ
 !  Magnetic field evolution
 !
         if (lmagnetic) call daa_dt(f,df,p)
+!
+!  Testscalar evolution
+!
+        if (ltestscalar) call dcctest_dt(f,df,p)
 !
 !  Testfield evolution
 !

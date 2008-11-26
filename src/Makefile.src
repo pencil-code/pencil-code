@@ -34,6 +34,7 @@ EOS              =   eos_idealgas
 STRUCT_FUNC      = nostruct_func
 INITCOND_SPEC    = noinitcond_spec
 SHOCK            = noshock
+TESTSCALAR       = notestscalar
 TESTFIELD        = notestfield
 TESTFLOW         = notestflow
 
@@ -1137,7 +1138,7 @@ endif
 ## Abbreviations
 technical=cparam.o cdata.o particles_cdata.o messages.o general.o farray.o shared_variables.o $(FOURIER).o slices.o $(DERIV).o boundcond.o filter.o $(INITCOND_SPEC).o initcond.o register.o prints.o $(TIMEAVG).o persist.o $(GRID).o $(SOLID_CELLS).o
 #
-physics=$(GLOBAL).o $(VISCOSITY).o $(SHOCK).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(POISSON).o $(SELFGRAVITY).o $(INTERSTELLAR).o $(ENTROPY).o $(EOS).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(CHIRAL).o $(RADIATION).o $(CHEMISTRY).o $(DUSTVELOCITY).o $(DUSTDENSITY).o $(SPECIAL).o $(COSMICRAY).o $(COSMICRAYFLUX).o $(TESTFIELD).o $(TESTFLOW).o $(PARTICLES).o $(PARTICLES_RADIUS).o $(PARTICLES_SPIN).o $(PARTICLES_NUMBER).o $(PARTICLES_SELFGRAVITY).o $(PARTICLES_NBODY).o $(PARTICLES_VISCOSITY).o $(PARTICLES_STALKER).o $(NEUTRALVELOCITY).o $(NEUTRALDENSITY).o $(HYPERVISC_STRICT).o $(HYPERRESI_STRICT).o
+physics=$(GLOBAL).o $(VISCOSITY).o $(SHOCK).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(POISSON).o $(SELFGRAVITY).o $(INTERSTELLAR).o $(ENTROPY).o $(EOS).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(CHIRAL).o $(RADIATION).o $(CHEMISTRY).o $(DUSTVELOCITY).o $(DUSTDENSITY).o $(SPECIAL).o $(COSMICRAY).o $(COSMICRAYFLUX).o $(TESTSCALAR).o $(TESTFIELD).o $(TESTFLOW).o $(PARTICLES).o $(PARTICLES_RADIUS).o $(PARTICLES_SPIN).o $(PARTICLES_NUMBER).o $(PARTICLES_SELFGRAVITY).o $(PARTICLES_NBODY).o $(PARTICLES_VISCOSITY).o $(PARTICLES_STALKER).o $(NEUTRALVELOCITY).o $(NEUTRALDENSITY).o $(HYPERVISC_STRICT).o $(HYPERRESI_STRICT).o
 #
 switchable=$(physics) $(BORDER_PROFILES).o
 #
@@ -1244,6 +1245,7 @@ buildinfo:
                                -e "NEUTRALVELOCITY='$(NEUTRALVELOCITY)';NEUTRALDENSITY='$(NEUTRALDENSITY)';" \
 	                       -e "INTERSTELLAR='$(INTERSTELLAR)';COSMICRAY='$(COSMICRAY)';COSMICRAYFLUX='$(COSMICRAYFLUX)';" \
 	                       -e "EOS='$(EOS)';STRUCT_FUNC='$(STRUCT_FUNC)';INITCOND_SPEC='$(INITCOND_SPEC)';SHOCK='$(SHOCK)';" \
+	                       -e "TESTSCALAR='$(TESTSCALAR)';GRAVITY='$(GRAVITY)';FORCING='$(FORCING)';SHEAR='$(SHEAR)';" \
 	                       -e "TESTFIELD='$(TESTFIELD)';GRAVITY='$(GRAVITY)';FORCING='$(FORCING)';SHEAR='$(SHEAR)';" \
 	                       -e "TESTFLOW='$(TESTFLOW)';GRAVITY='$(GRAVITY)';FORCING='$(FORCING)';SHEAR='$(SHEAR)';" \
 	                       -e "TIMEAVG='$(TIMEAVG)';SPECIAL='$(SPECIAL)';PARTICLES='$(PARTICLES)';PARTICLES_SUB='$(PARTICLES_SUB)';" \

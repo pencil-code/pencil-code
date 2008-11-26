@@ -146,7 +146,7 @@ module Cdata
 !  Module flags.
 !
   logical :: ldensity_nolog=.false., lwrite_stratification=.false.
-  logical :: ltestfield=.false.,ltestflow=.false.
+  logical :: ltestscalar=.false.,ltestfield=.false.,ltestflow=.false.
   logical :: lmpicomm=.false., lforcing=.false., lforcing_cont=.false.
   logical :: lpostproc=.false.
   logical :: lwrite_slices=.false., lwrite_2daverages=.false.
@@ -191,7 +191,8 @@ module Cdata
   integer :: ifcr=0,ifcrx=0,ifcry=0,ifcrz=0
   integer :: iaatest=0,iaxtest=0,iaytest=0,iaztest=0,iaxtestpq=0,iaztestpq=0
   integer :: iuutest=0,iuxtest=0,iuytest=0,iuztest=0,iuxtestpq=0,iuztestpq=0
-  integer :: ihhtest=0,ihhtestpq=0,ntestfield=0
+  integer :: ihhtest=0,ihhtestpq=0,ntestscalar=0,ntestfield=0
+  integer :: icctest=0,icctestpq=0,iug=0
   integer :: iam=0,iamx=0,iamy=0,iamz=0
   integer :: ie=0,iff=0,ifx=0,ify=0,ifz=0,idd=0
   integer :: ivisc_heat=0,ibb=0,ibx=0,iby=0,ibz=0,ijj=0,ijx=0,ijy=0,ijz=0
@@ -477,6 +478,7 @@ module Cdata
   logical :: pretend_lnTT=.false.
   logical :: lmonolithic_io=.false.
   logical :: lrescaling_magnetic=.false.
+  logical :: lrescaling_testscalar=.false.
   logical :: lrescaling_testfield=.false.
   logical :: llocal_iso=.false.
   logical :: lthermo_ppd=.false.

@@ -52,7 +52,6 @@ module Testfield
 
   ! input parameters
   real, dimension(3) :: B_ext=(/0.,0.,0./)
-  real, dimension (nx,3) :: bbb
   real :: taainit=0.,daainit=0.,taainit_previous=0.
   logical :: reinitialize_aatest=.false.
   logical :: zextent=.true.,lsoca=.false.,lsoca_jxb=.true.,lset_bbtest2=.false.

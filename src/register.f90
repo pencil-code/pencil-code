@@ -42,6 +42,7 @@ module Register
       use Forcing,          only: register_forcing
       use Entropy,          only: register_entropy
       use Magnetic,         only: register_magnetic
+      use Testscalar,       only: register_testscalar
       use Testfield,        only: register_testfield
       use Testflow,         only: register_testflow
       use Radiation,        only: register_radiation
@@ -117,6 +118,7 @@ module Register
       call register_forcing
       call register_entropy
       call register_magnetic
+      call register_testscalar
       call register_testfield
       call register_testflow
       call register_radiation
@@ -194,6 +196,7 @@ module Register
       use Forcing,         only: initialize_forcing
       use Entropy,         only: initialize_entropy
       use Magnetic,        only: initialize_magnetic
+      use Testscalar,      only: initialize_testscalar
       use Testfield,       only: initialize_testfield
       use Testflow,        only: initialize_testflow
       use Radiation,       only: initialize_radiation
@@ -299,6 +302,7 @@ module Register
       call initialize_forcing(lstarting)   ! get random seed from file, ..
       call initialize_entropy(f,lstarting) ! calculate radiative conductivity,..
       call initialize_magnetic(f,lstarting)
+      call initialize_testscalar(f)
       call initialize_testfield(f)
       call initialize_testflow(f)
       call initialize_radiation()
@@ -684,6 +688,7 @@ module Register
       use NeutralVelocity, only: pencil_criteria_neutralvelocity
       use NeutralDensity,  only: pencil_criteria_neutraldensity
       use Magnetic,        only: pencil_criteria_magnetic
+      use Testscalar,      only: pencil_criteria_testscalar
       use Testfield,       only: pencil_criteria_testfield
       use Testflow,        only: pencil_criteria_testflow
       use Cosmicray,       only: pencil_criteria_cosmicray
@@ -713,6 +718,7 @@ module Register
       call pencil_criteria_neutralvelocity()
       call pencil_criteria_neutraldensity()
       call pencil_criteria_magnetic()
+      call pencil_criteria_testscalar()
       call pencil_criteria_testfield()
       call pencil_criteria_testflow()
       call pencil_criteria_cosmicray()
@@ -747,6 +753,7 @@ module Register
       use Gravity, only: pencil_interdep_gravity
       use Selfgravity, only: pencil_interdep_selfgravity
       use Magnetic, only: pencil_interdep_magnetic
+      use Testscalar, only: pencil_interdep_testscalar
       use Testfield, only: pencil_interdep_testfield
       use Testflow, only: pencil_interdep_testflow
       use Pscalar, only: pencil_interdep_pscalar
@@ -782,6 +789,7 @@ module Register
       call pencil_interdep_neutraldensity(lpencil_in)
       call pencil_interdep_pscalar(lpencil_in)
       call pencil_interdep_magnetic(lpencil_in)
+      call pencil_interdep_testscalar(lpencil_in)
       call pencil_interdep_testfield(lpencil_in)
       call pencil_interdep_testflow(lpencil_in)
       call pencil_interdep_cosmicray(lpencil_in)
@@ -807,6 +815,7 @@ module Register
       use Forcing,         only: rprint_forcing
       use Entropy,         only: rprint_entropy
       use Magnetic,        only: rprint_magnetic
+      use Testscalar,      only: rprint_testscalar
       use Testfield,       only: rprint_testfield
       use Testflow,        only: rprint_testflow
       use Radiation,       only: rprint_radiation
@@ -1004,6 +1013,7 @@ module Register
       call rprint_forcing         (lreset,LWRITE=lroot)
       call rprint_entropy         (lreset,LWRITE=lroot)
       call rprint_magnetic        (lreset,LWRITE=lroot)
+      call rprint_testscalar      (lreset,LWRITE=lroot)
       call rprint_testfield       (lreset,LWRITE=lroot)
       call rprint_testflow        (lreset,LWRITE=lroot)
       call rprint_radiation       (lreset,LWRITE=lroot)

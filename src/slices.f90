@@ -162,6 +162,7 @@ module Slices
       use Interstellar,    only: get_slices_interstellar
       use Shock,           only: get_slices_shock
       use Magnetic,        only: get_slices_magnetic
+      use Testscalar,      only: get_slices_testscalar
       use Testfield,       only: get_slices_testfield
       use Testflow,        only: get_slices_testflow
       use Hydro,           only: get_slices_hydro
@@ -459,6 +460,7 @@ module Slices
           if (linterstellar) call get_slices_interstellar(f,slices)
           if (lhydro)        call get_slices_hydro       (f,slices)
           if (lmagnetic)     call get_slices_magnetic    (f,slices)
+          if (ltestscalar)   call get_slices_testscalar  (f,slices)
           if (ltestfield)    call get_slices_testfield   (f,slices)
           if (ltestflow)     call get_slices_testflow    (f,slices)
           if (lradiation)    call get_slices_radiation   (f,slices)

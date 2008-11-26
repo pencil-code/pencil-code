@@ -1,9 +1,9 @@
-! $Id$
+! $Id: testscalar_z.f90 10031 2008-11-08 09:16:14Z AxelBrandenburg $
 
-!  This modules deals with all aspects of testfield fields; if no
-!  testfield fields are invoked, a corresponding replacement dummy
+!  This modules deals with all aspects of testscalar fields; if no
+!  testscalar fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
-!  testfield relevant subroutines listed in here.
+!  testscalar relevant subroutines listed in here.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -14,31 +14,32 @@
 !
 !***************************************************************
 
-module Testfield
+module Testscalar
 
   use Cparam
+  use Messages
 
   implicit none
 
-  include 'testfield.h'
+  include 'testscalar.h'
 
   real :: dummy=0.
 
-  namelist /testfield_init_pars/ &
+  namelist /testscalar_init_pars/ &
        dummy
-  namelist /testfield_run_pars/ &
+  namelist /testscalar_run_pars/ &
        dummy
 
   contains
 
 !***********************************************************************
-    subroutine register_testfield()
+    subroutine register_testscalar()
 !
 !  Dummy routine
 !
-    endsubroutine register_testfield
+    endsubroutine register_testscalar
 !***********************************************************************
-    subroutine initialize_testfield(f)
+    subroutine initialize_testscalar(f)
 !
 !  Dummy routine
 !
@@ -47,27 +48,28 @@ module Testfield
       real, dimension (mx,my,mz,mfarray) :: f
 !
       if(ip==0) print*,f  !(to keep compiler quiet)
-    endsubroutine initialize_testfield
+!
+    endsubroutine initialize_testscalar
 !***********************************************************************
-    subroutine init_aatest(f,xx,yy,zz)
+    subroutine init_cctest(f,xx,yy,zz)
 !
 !  Dummy routine
 !
       use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz)      :: xx,yy,zz
+      real, dimension (mx,my,mz) :: xx,yy,zz
 !
       if(ip==0) print*,f,xx,yy,zz  !(to keep compiler quiet)
-    endsubroutine init_aatest
+    endsubroutine init_cctest
 !***********************************************************************
-    subroutine pencil_criteria_testfield()
+    subroutine pencil_criteria_testscalar()
 !
 !  Dummy routine
 !
-    endsubroutine pencil_criteria_testfield
+    endsubroutine pencil_criteria_testscalar
 !***********************************************************************
-    subroutine pencil_interdep_testfield(lpencil_in)
+    subroutine pencil_interdep_testscalar(lpencil_in)
 !
 !  Dummy routine
 !
@@ -77,41 +79,41 @@ module Testfield
 !
       if (NO_WARN) print*, lpencil_in
 !
-    endsubroutine pencil_interdep_testfield
+    endsubroutine pencil_interdep_testscalar
 !***********************************************************************
-    subroutine read_testfield_init_pars(unit,iostat)
+    subroutine read_testscalar_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat).and.NO_WARN) print*,iostat
       if (NO_WARN) print*,unit !(keep compiler quiet)
 !
-    endsubroutine read_testfield_init_pars
+    endsubroutine read_testscalar_init_pars
 !***********************************************************************
-    subroutine write_testfield_init_pars(unit)
+    subroutine write_testscalar_init_pars(unit)
       integer, intent(in) :: unit
-!
+
       if (NO_WARN) print*,unit !(keep compiler quiet)
-!
-    endsubroutine write_testfield_init_pars
+
+    endsubroutine write_testscalar_init_pars
 !***********************************************************************
-    subroutine read_testfield_run_pars(unit,iostat)
+    subroutine read_testscalar_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat).and.NO_WARN) print*,iostat
       if (NO_WARN) print*,unit !(keep compiler quiet)
 !
-    endsubroutine read_testfield_run_pars
+    endsubroutine read_testscalar_run_pars
 !***********************************************************************
-    subroutine write_testfield_run_pars(unit)
+    subroutine write_testscalar_run_pars(unit)
       integer, intent(in) :: unit
-
+!
       if (NO_WARN) print*,unit !(keep compiler quiet)
-
-    endsubroutine write_testfield_run_pars
+!
+    endsubroutine write_testscalar_run_pars
 !***********************************************************************
-    subroutine daatest_dt(f,df,p)
+    subroutine dcctest_dt(f,df,p)
 !
 !  Dummy routine
 !
@@ -121,50 +123,50 @@ module Testfield
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      intent(in)     :: f, p
+      intent(in)     :: f,p
       intent(inout)  :: df
 !
       if(ip==0) print*, f, df, p  !(to keep compiler quiet)
 !
-    endsubroutine daatest_dt
+    endsubroutine dcctest_dt
 !***********************************************************************
-    subroutine get_slices_testfield(f,slices)
+    subroutine get_slices_testscalar(f,slices)
 !
       use Sub, only: keep_compiler_quiet
+! 
+!  Dummy routine
+! 
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+! 
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices%ready)
+!
+    endsubroutine get_slices_testscalar
+!***********************************************************************
+    subroutine calc_ltestscalar_pars(f)
 !
 !  Dummy routine
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      type (slice_data) :: slices
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(slices%ready)
-!
-    endsubroutine get_slices_testfield
-!***********************************************************************
-    subroutine calc_ltestfield_pars(f)
-!
-!  29-jan-06/axel: dummy routine
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(in)     :: f
+      real, dimension (mz) :: c,s
 !
       if (NO_WARN) print*, f
 !
-    endsubroutine calc_ltestfield_pars
+    endsubroutine calc_ltestscalar_pars
 !***********************************************************************
-    subroutine rescaling_testfield(f)
+    subroutine rescaling_testscalar(f)
 !
-!  18-may-08/axel: dummy routine
+!  Dummy routine
 !
       real, dimension (mx,my,mz,mfarray) :: f
       intent(inout) :: f
 !
       if (NO_WARN) print*, f
 !
-    endsubroutine rescaling_testfield
+    endsubroutine rescaling_testscalar
 !***********************************************************************
-    subroutine rprint_testfield(lreset,lwrite)
+    subroutine rprint_testscalar(lreset,lwrite)
 !
 !  Dummy routine
 !
@@ -174,7 +176,6 @@ module Testfield
       logical, optional :: lwrite
 !
       if(ip==0) print*,lreset,lwrite  !(to keep compiler quiet)
-    endsubroutine rprint_testfield
-!***********************************************************************
+    endsubroutine rprint_testscalar
 
-endmodule Testfield
+endmodule Testscalar
