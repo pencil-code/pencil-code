@@ -51,7 +51,7 @@ pro rvid_box, field, $
   tunit=tunit, qswap=qswap, bar=bar, nolabel=nolabel, norm=norm, $
   divbar=divbar, blabel=blabel, bsize=bsize, bformat=bformat, thlabel=thlabel, $
   bnorm=bnorm, swap_endian=swap_endian, newwindow=newwindow, $
-  quiet_skip=quiet_skip
+  quiet_skip=quiet_skip,axes=axes
 ;
 common pc_precision, zero, one
 ;
@@ -400,6 +400,61 @@ while ( (not eof(1)) and (t le tmax) ) do begin
             range=[amin,amax]/bnorm, /right, /vertical, $
             format=bformat, charsize=bsize, title=title
         !p.title=''
+      endif
+;
+;  Draw axes
+;
+      if (keyword_set(axes)) then begin
+        xx=!d.x_size & yy=!d.y_size
+        aspect_ratio=1.*yy/xx
+        ; length of the arrow
+        length=0.1 
+        xlength=length & ylength=xlength/aspect_ratio 
+        ; rotation angles. I didn't figure out exactly 
+        ; the rotation law. This .7 is an ugly hack 
+        ; that looks good for most angles
+        gamma=.7*xrot*!pi/180.
+        alpha=zrot*!pi/180.
+        ; position of the origin
+        x0=0.12 & y0=0.25
+        ;
+        ; x arrow
+        ;
+        x1=x0+xlength*(cos(gamma)*cos(alpha)) 
+        y1=y0+ylength*(sin(gamma)*sin(alpha))
+        angle=atan((y1-y0)/(x1-x0))
+        if ((x1-x0 le 0)and(y1-y0 ge 0)) then angle=angle+!pi
+        if ((x1-x0 le 0)and(y1-y0 le 0)) then angle=angle-!pi
+        x2=x0+length*cos(angle)
+        y2=y0+length*sin(angle)
+        ;arrow, x0, y0, x1, y1,color=100,/normal
+        arrow, x0, y0, x2, y2,col=1,/normal,$
+          thick=thlabel,hthick=thlabel
+        xyouts,x2-0.01,y2-0.045,'!8x!x',col=1,/normal,$
+        siz=size_label,charthick=thlabel
+        ;
+        ; y arrow
+        ;
+        x1=x0+xlength*(-cos(gamma)*sin(alpha))
+        y1=y0+ylength*( sin(gamma)*cos(alpha))
+        angle=atan((y1-y0)/(x1-x0))
+        if ((x1-x0 le 0)and(y1-y0 ge 0)) then angle=angle+!pi
+        if ((x1-x0 le 0)and(y1-y0 le 0)) then angle=angle-!pi
+        x2=x0+length*cos(angle)
+        y2=y0+length*sin(angle)
+        ;arrow, x0, y0, x1, y1,color=100,/normal
+        arrow, x0, y0, x2, y2,col=1,/normal,$
+          thick=thlabel,hthick=thlabel
+        xyouts,x2-0.03,y2-0.01,'!8y!x',col=1,/normal,$
+        siz=size_label,charthick=thlabel
+        ;
+        ; z arrow
+        ;
+        x1=x0 & y1=y0+ylength
+        arrow, x0, y0, x1, y1,col=1,/normal,$
+          thick=thlabel,hthick=thlabel
+        xyouts,x1-0.015,y1+0.01,'!8z!x',col=1,/normal,$
+          siz=size_label,charthick=thlabel
       endif
 ;
 ;  Save as png file.
