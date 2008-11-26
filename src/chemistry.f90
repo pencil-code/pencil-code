@@ -92,6 +92,8 @@ module Chemistry
   real, dimension(nchemspec,7)     :: tran_data
   real, dimension (nx,nchemspec), SAVE  :: S0_R
   real, dimension (mx,my,mz,nchemspec), SAVE :: H0_RT
+  real, dimension (mx,my,mz,nchemspec), SAVE :: RHS_Y_full
+  real, dimension (mx,my,mz), SAVE :: RHS_T_full
 
 
 
@@ -641,6 +643,11 @@ module Chemistry
         else
            p%DYDt_diff=0.
         endif
+
+
+        RHS_Y_full(l1:l2,m,n,:)=p%DYDt_reac+p%DYDt_diff
+
+
 !
 ! Calculate thermal diffusivity
 !
@@ -732,7 +739,6 @@ module Chemistry
                do i=1,mx
                  T_local=TT_full(i,m,n)*unit_temperature 
 
-!print*,'k,T_local,T_low,T_mid=',k,T_local,T_low,T_mid
                  if (T_local >=T_low .and. T_local <= T_mid) then
                    tmp=0. 
                    do j=1,5
@@ -740,7 +746,13 @@ module Chemistry
                    enddo
                    cp_R_spec(i,m,n,k)=tmp
                    cvspec_full(i,m,n,k)=cp_R_spec(i,m,n,k)-1.
-                 elseif (T_local >=T_mid .and. T_local <= T_up) then
+
+!
+!  NATALIA: test
+!
+               !  elseif (T_local >=T_mid .and. T_local <= T_up) then
+                  elseif (T_local >=T_mid ) then
+
                    tmp=0.
                    do j=1,5 
                      tmp=tmp+species_constants(k,iaa1(j))*T_local**(j-1) 
@@ -1264,12 +1276,11 @@ module Chemistry
 
 ! HHHHHH
 
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
-         + (sum_DYDt(:)- Rgas*p%mu1*p%divu)*p%cv1 &
+        RHS_T_full(l1:l2,m,n)=(sum_DYDt(:)- Rgas*p%mu1*p%divu)*p%cv1 &
           !/(p%cp-Rgas*p%mu1)&
         -(hYrho_full(l1:l2,m,n)*p%divu(:)+ghYrho_uu(:))/p%TT(:)*p%cv1
-          !/(p%cp-Rgas*p%mu1)
 
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + RHS_T_full(l1:l2,m,n)
 
 
         if (lheatc_chemistry) call calc_heatcond_chemistry(f,df,p)
@@ -2842,6 +2853,8 @@ module Chemistry
         + p%lambda(:)*(p%del2lnTT+g2TT+g2TTlnlambda)*p%cv1
                             !/(p%cp-Rgas*p%mu1)
 
+      RHS_T_full(l1:l2,m,n)=RHS_T_full(l1:l2,m,n) &
+        + p%lambda(:)*(p%del2lnTT+g2TT+g2TTlnlambda)*p%cv1
 
 
     endsubroutine calc_heatcond_chemistry
@@ -3072,6 +3085,64 @@ module Chemistry
      endselect
    endsubroutine get_p_infy
 !*************************************************************
+   subroutine get_rhs_Y(topbot,j,bound_reac_term)
+
+    use Mpicomm
+
+     real, dimension (ny,nz,nchemspec) :: bound_reac_term
+     integer :: j
+     character (len=3) :: topbot
+
+     intent(out) :: bound_reac_term
+     intent(in) :: j
+
+     if (j==1) then
+
+      select case(topbot)
+      case('bot')               ! bottom boundary
+       bound_reac_term(:,:,1:nchemspec)=RHS_Y_full(l1,m1:m2,n1:n2,1:nchemspec)
+      case('top')               ! top boundary
+       bound_reac_term(:,:,1:nchemspec)=RHS_Y_full(l2,m1:m2,n1:n2,1:nchemspec)
+
+      case default
+        print*, "get_rhs_Y: ", topbot, " should be `top' or `bot'"
+     endselect
+
+     elseif (j==2) then
+
+     endif
+
+   endsubroutine get_rhs_Y
+!!*************************************************************
+  subroutine get_rhs_T(topbot,j,bound_rhs_T)
+
+    use Mpicomm
+
+     real, dimension (ny,nz) :: bound_rhs_T
+     integer :: j
+     character (len=3) :: topbot
+
+     intent(out) :: bound_rhs_T
+     intent(in) :: j
+
+     if (j==1) then
+
+      select case(topbot)
+      case('bot')               ! bottom boundary
+       bound_rhs_T(:,:)=RHS_T_full(l1,m1:m2,n1:n2)
+      case('top')               ! top boundary
+       bound_rhs_T(:,:)=RHS_T_full(l2,m1:m2,n1:n2)
+
+      case default
+        print*, "get_rhs_T: ", topbot, " should be `top' or `bot'"
+     endselect
+
+     elseif (j==2) then
+
+     endif
+
+   endsubroutine get_rhs_T
+!!*************************************************************
    subroutine air_field(f)
 
   use Mpicomm

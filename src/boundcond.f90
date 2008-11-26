@@ -982,7 +982,7 @@ module Boundcond
     endsubroutine bc_slope_x
 !***********************************************************************
     subroutine bc_dr0_x(f,slope,topbot,j,rel,val)
-!
+
 ! FIXME: This documentation is almost certainly wrong
 !
 !  Symmetry boundary conditions.
@@ -4295,6 +4295,9 @@ module Boundcond
       real, dimension(ny,nz) :: dux_dx, dlnrho_dx
       real, dimension(ny,nz) :: dp_prefac,drho_prefac,p_infx, KK, L_1, L_2, L_5
       real, dimension (my,mz) :: cs2x,cs0_ar,cs20_ar,dmom2_dy,drhoE_p_dy,dYk_dx,dYk_dy, dux_dy
+      real, dimension (ny,nz,nchemspec) :: bound_rhs_Y
+      real, dimension(ny,nz) :: bound_rhs_T
+
       integer :: lll, sgn,i,k
       real :: Mach_num
 
@@ -4379,35 +4382,28 @@ module Boundcond
       endif
         df(lll,m1:m2,n1:n2,iux) = -1./(2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2))*(L_5 - L_1) &
                                   -f(lll,m1:m2,n1:n2,iux)*dux_dy(m1:m2,n1:n2)
+
+       call get_rhs_T('top',1,bound_rhs_T)
+
         df(lll,m1:m2,n1:n2,ilnTT) = -1./(rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*(-L_2 &
                +0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1)) &
                -1./(rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*(gamma0(m1:m2,n1:n2)-1.) &
-               *gamma0(m1:m2,n1:n2)*drhoE_p_dy(m1:m2,n1:n2)
+               *gamma0(m1:m2,n1:n2)*drhoE_p_dy(m1:m2,n1:n2)+bound_rhs_T(:,:)*0.
 
 
 
- !     select case(topbot)
- !     case('bot')
- !      do i=1,l1-1
- !       df(i,m1:m2,n1:n2,ilnTT)=df(lll,m1:m2,n1:n2,ilnTT)
- !     enddo
- !     case('top')
- !       do i=l2+1,mx
- !       df(i,m1:m2,n1:n2,ilnTT)=df(lll,m1:m2,n1:n2,ilnTT)
- !       df(i,m1:m2,n1:n2,iux)=df(lll,m1:m2,n1:n2,iux)
- !       df(i,m1:m2,n1:n2,ilnrho)=df(lll,m1:m2,n1:n2,ilnrho)
- !     enddo
- !     endselect
+      call get_rhs_Y('top',1,bound_rhs_Y)
 
+      do k=1,nchemspec
+        call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dx,lll,1)
+       do i=1,mz
+        call der_pencil(2,f(lll,:,i,ichemspec(k)),dYk_dy(:,i))
+       enddo
+        df(lll,m1:m2,n1:n2,ichemspec(k))=-f(lll,m1:m2,n1:n2,iux)*dYk_dx(m1:m2,n1:n2) &
+                                         -f(lll,m1:m2,n1:n2,iuy)*dYk_dy(m1:m2,n1:n2) &
+                                         +bound_rhs_Y(:,:,k)
 
-   !   do k=1,nchemspec
-   !     call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dx,lll,1)
-   !    do i=1,mz
-   !     call der_pencil(2,f(lll,:,i,ichemspec(k)),dYk_dy(:,i))
-   !    enddo
-   !     df(lll,m1:m2,n1:n2,ichemspec(k))=-f(lll,m1:m2,n1:n2,iux)*dYk_dx(m1:m2,n1:n2) &
-   !                                      -f(lll,m1:m2,n1:n2,iuy)*dYk_dy(m1:m2,n1:n2)
-   !   enddo
+      enddo
 
     endsubroutine bc_nscbc_nref_subout_x
 !***********************************************************************

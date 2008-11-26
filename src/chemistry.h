@@ -23,6 +23,8 @@
   public :: get_gammay
   public :: get_p_infx
   public :: get_p_infy
+  public :: get_rhs_Y
+  public :: get_rhs_T
 
 ! public :: chemistry_calc_density
 ! public :: chemistry_calc_hydro
