@@ -678,18 +678,17 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
 
-      intent(in) :: f
+      intent(inout) :: f
       intent(inout) :: df
-
+!
       if (nscbc1(1) /= '' .or. nscbc2(1) /= '') &
           call nscbc_boundtreat_xyz(f,df,1)
       if (nscbc1(2) /= '' .or. nscbc2(2) /= '') &
           call nscbc_boundtreat_xyz(f,df,2)
       if (nscbc1(3) /= '' .or. nscbc2(3) /= '') &
           call nscbc_boundtreat_xyz(f,df,3)
-      if (nscbc1(5) /= '' .or. nscbc2(5) /= '') &
-          call nscbc_boundtreat_xyz(f,df,5)
-    endsubroutine
+!
+    endsubroutine nscbc_boundtreat
 !***********************************************************************
     subroutine nscbc_boundtreat_xyz(f,df,j)
 !
@@ -705,9 +704,10 @@ module Boundcond
       integer j,k,direction
       real, dimension(mcom) :: valx,valy,valz
 
-      intent(in) :: f,j
-      intent(out) :: df
-
+      intent(inout) :: f
+      intent(inout) :: df
+      intent(in)    :: j
+!
       do k=1,2                ! loop over 'bot','top'
         if (k==1) then
           topbot='bot'; bc12=nscbc1(j);!val=bt_val1(j)
@@ -752,8 +752,12 @@ module Boundcond
          elseif (j==2) then
           call bc_nscbc_nref_subout_y(f,df,topbot)
          endif
-        case('')
+        case('none')
+          print*,'nscbc_boundtreat_xyz: doing nothing!'
 !   Do nothing.
+        case default
+!          print*,'j,bc12(j)=',j,bc12(j)
+          call fatal_error("nscbc_boundtreat_xyz",'You must specify nscbc bouncond!')
         endselect
       end do
     end subroutine
@@ -3931,10 +3935,12 @@ module Boundcond
 !   x-direction acc. to LODI relations. Uses a one-sided finite diff. stencil.
 !
 !   7-jul-08/arne: coded.
+!  25-nov-08/nils: extended to work in multiple dimensions and with cross terms
+!                  i.e. not just the LODI equations.
 !
       use MpiComm, only: stop_it
       use EquationOfState, only: cs0, cs20
-      use Deriv, only: der_onesided_4_slice
+      use Deriv, only: der_onesided_4_slice, der_pencil
 
       use Chemistry
 
@@ -3945,14 +3951,22 @@ module Boundcond
       logical :: llinlet
       real, optional :: u_t
       !real, parameter :: sigma = 1.
-      real, dimension(ny,nz) :: du_dx, dlnrho_dx, rho0, L_1, L_5 
-      real, dimension(ny,nz) :: dp_prefac, prefac1, prefac2
+      real, dimension(ny,nz) :: dlnrho_dx, du1_dx, du2_dx, du3_dx
+      real, dimension(ny,nz) :: rho0, L_1, L_3, L_4, L_5,parallell_term_uz
+      real, dimension(ny,nz) :: du2_dy,du3_dz,du2_dz,du3_dy
+      real, dimension(ny,nz) :: parallell_term_rho,dlnrho_dy,dlnrho_dz
+      real, dimension(ny,nz) :: parallell_term_ux,du1_dy,du1_dz
+      real, dimension(ny,nz) :: prefac1, prefac2,parallell_term_uy
+      real, dimension(ny,nz,3) :: div_rho
       real, dimension (my,mz) :: cs2x,cs0_ar,cs20_ar
-      integer lll
+      real, dimension (my,mz) :: tmp22,tmp12,tmp2_lnrho,tmp33,tmp13,tmp3_lnrho
+      real, dimension (my,mz) :: tmp23,tmp32
+      real :: Mach,p_infty,KK
+      integer lll,i
       integer sgn
 
-      intent(in) :: f
-      intent(out) :: df
+      intent(inout) :: f
+      intent(inout) :: df
 
       llinlet = .false.
       if (present(linlet)) llinlet = linlet
@@ -3970,32 +3984,24 @@ module Boundcond
       case default
         print*, "bc_nscbc_prf_x: ", topbot, " should be `top' or `bot'"
       endselect
-
+!
+!  Find density
+!
+      if (ldensity_nolog) then
+        rho0 = f(lll,m1:m2,n1:n2,ilnrho)
+      else
+        rho0 = exp(f(lll,m1:m2,n1:n2,ilnrho))
+      endif
+!
       if (leos_idealgas) then
-         cs20_ar(m1:m2,n1:n2)=cs20
-         cs0_ar(m1:m2,n1:n2)=cs0
-        if (ldensity_nolog) then
-          rho0 = f(lll,m1:m2,n1:n2,ilnrho)
-          ! ``dp = cs20*drho''
-          dp_prefac = cs20
-        else
-          rho0 = exp(f(lll,m1:m2,n1:n2,ilnrho))
-          ! ``dp = cs20*rho0*dlnrho''
-          dp_prefac = cs20*rho0
-        endif
-        prefac1 = -1./(2.*rho0*cs20)
+        cs20_ar(m1:m2,n1:n2)=cs20
+        cs0_ar(m1:m2,n1:n2)=cs0
+        prefac1 = -1./(2.*cs20)
         prefac2 = -1./(2.*rho0*cs0)
       elseif (leos_chemistry) then
-         cs20_ar=cs2x
-         cs0_ar=cs2x**0.5
-        if (ldensity_nolog) then
-          rho0 = f(lll,m1:m2,n1:n2,ilnrho)
-          dp_prefac = cs20_ar(m1:m2,n1:n2)
-        else
-          rho0 = exp(f(lll,m1:m2,n1:n2,ilnrho))
-          dp_prefac = cs20_ar(m1:m2,n1:n2)*rho0
-        endif
-        prefac1 = -1./(2.*rho0*cs20_ar(m1:m2,n1:n2))
+        cs20_ar=cs2x
+        cs0_ar=cs2x**0.5
+        prefac1 = -1./(2.*cs20_ar(m1:m2,n1:n2))
         prefac2 = -1./(2.*rho0*cs0_ar(m1:m2,n1:n2))
       else
         print*,"bc_nscbc_prf_x: leos_idealgas=",leos_idealgas,"."
@@ -4003,24 +4009,132 @@ module Boundcond
         print*,"Boundary treatment skipped."
         return
       endif
-      call der_onesided_4_slice(f,sgn,ilnrho,dlnrho_dx,lll,1)
-      call der_onesided_4_slice(f,sgn,iux,du_dx,lll,1)
-      L_1 = (f(lll,m1:m2,n1:n2,iux) - sgn*cs0_ar(m1:m2,n1:n2))*&
-            (dp_prefac*dlnrho_dx - sgn*rho0*cs0_ar(m1:m2,n1:n2)*du_dx)
-      if (llinlet) then
-        L_5 = nscbc_sigma*cs20_ar(m1:m2,n1:n2)*rho0*(sgn*f(lll,m1:m2,n1:n2,iux)-sgn*u_t)
+!
+!  Calculate one-sided derivatives in the boundary normal direction
+!
+      call der_onesided_4_slice(f,sgn,ilnrho,div_rho(:,:,1),lll,1)
+      call der_onesided_4_slice(f,sgn,iux,du1_dx,lll,1)
+      call der_onesided_4_slice(f,sgn,iuy,du2_dx,lll,1)
+      call der_onesided_4_slice(f,sgn,iuz,du3_dx,lll,1)
+!
+!  then do central differencing in the directions parallell to the boundary
+!
+      if (nygrid /= 1) then
+        do i=n1,n2
+          call der_pencil(2,f(lll,:,i,iuy),tmp22(:,i))
+          call der_pencil(2,f(lll,:,i,ilnrho),tmp2_lnrho(:,i))
+          call der_pencil(2,f(lll,:,i,iux),tmp12(:,i))
+          call der_pencil(2,f(lll,:,i,iuz),tmp32(:,i))
+        enddo
       else
-        L_5 = 0
+        tmp32=0
+        tmp22=0
+        tmp12=0
+        tmp2_lnrho=0
+      endif
+      du3_dy=tmp32(m1:m2,n1:n2)
+      du2_dy=tmp22(m1:m2,n1:n2)
+      du1_dy=tmp12(m1:m2,n1:n2)
+      div_rho(:,:,2)=tmp2_lnrho(m1:m2,n1:n2)
+!
+      if (nzgrid /= 1) then
+        do i=m1,m2
+          call der_pencil(3,f(lll,i,:,iuz),tmp33(i,:))
+          call der_pencil(3,f(lll,i,:,ilnrho),tmp3_lnrho(i,:))
+          call der_pencil(3,f(lll,i,:,iux),tmp13(i,:))
+          call der_pencil(3,f(lll,i,:,iuy),tmp23(i,:))
+        enddo
+      else
+        tmp33=0
+        tmp23=0
+        tmp13=0
+        tmp3_lnrho=0
+      endif
+      du3_dz=tmp33(m1:m2,n1:n2)
+      du2_dz=tmp23(m1:m2,n1:n2)
+      du1_dz=tmp13(m1:m2,n1:n2)
+      div_rho(:,:,3)=tmp3_lnrho(m1:m2,n1:n2)
+!
+!  Find divergence of rho
+!
+      if (.not. ldensity_nolog) then
+        do i=1,3
+          div_rho(:,:,i)=div_rho(:,:,i)*rho0
+        enddo
+      endif
+!
+!  Find the L_i's
+!
+      if (llinlet) then
+        L_1 = (f(lll,m1:m2,n1:n2,iux) - sgn*cs0_ar(m1:m2,n1:n2))*&
+             (cs20*div_rho(:,:,1) - sgn*rho0*cs0_ar(m1:m2,n1:n2)*du1_dx)
+        L_3=0
+        L_4=0
+!        L_5 = nscbc_sigma*cs20_ar(m1:m2,n1:n2)*rho0&
+!             *(sgn*f(lll,m1:m2,n1:n2,iux)-sgn*u_t)
+        L_5 = L_1
+ !       L_5 = 0
+             
+      else
+        Mach=10.0/40.0
+        p_infty=cs20*1.
+        KK=nscbc_sigma*(1-Mach**2)*cs0/Lxyz(1)
+        L_1 = KK*(rho0*cs20-p_infty)
+        L_3 = f(lll,m1:m2,n1:n2,iux)*du2_dx
+        L_4 = f(lll,m1:m2,n1:n2,iux)*du3_dx
+        L_5 = (f(lll,m1:m2,n1:n2,iux) - sgn*cs0_ar(m1:m2,n1:n2))*&
+             (cs0_ar(m1:m2,n1:n2)*div_rho(:,:,1)&
+             +rho0*cs0_ar(m1:m2,n1:n2)*du1_dx)
       end if
+!
+!  Add terms due to derivatives parallell to the boundary
+!
+      parallell_term_rho &
+           =rho0*du2_dy+f(lll,m1:m2,n1:n2,iuy)*div_rho(:,:,2)&
+           +rho0*du3_dz+f(lll,m1:m2,n1:n2,iuz)*div_rho(:,:,3)
+      parallell_term_ux &
+           =f(lll,m1:m2,n1:n2,iuy)*du1_dy&
+           +f(lll,m1:m2,n1:n2,iuz)*du1_dz
+      parallell_term_uy &
+           =f(lll,m1:m2,n1:n2,iuy)*du2_dy&
+           +f(lll,m1:m2,n1:n2,iuz)*du2_dz&
+           +cs20_ar(m1:m2,n1:n2)*div_rho(:,:,2)/rho0
+      parallell_term_uz &
+           =f(lll,m1:m2,n1:n2,iuy)*du3_dy&
+           +f(lll,m1:m2,n1:n2,iuz)*du3_dz&
+           +cs20_ar(m1:m2,n1:n2)*div_rho(:,:,3)/rho0
+!
+!  Find the evolution equations at the boundary
+!
       select case(topbot)
       ! NB: For 'top' L_1 plays the role of L5 and L_5 the role of L1
       case('bot')
-        df(lll,m1:m2,n1:n2,ilnrho) = prefac1*(L_5 + L_1)
-        df(lll,m1:m2,n1:n2,iux) = prefac2*(L_5 - L_1)
+        df(lll,m1:m2,n1:n2,ilnrho) = prefac1*(L_5 + L_1)-parallell_term_rho
+        df(lll,m1:m2,n1:n2,iux) = prefac2*(L_5 - L_1)-parallell_term_ux
+        df(lll,m1:m2,n1:n2,iuy) = -L_3-parallell_term_uy
+        df(lll,m1:m2,n1:n2,iuz) = -L_4-parallell_term_uz
       case('top')
-        df(lll,m1:m2,n1:n2,ilnrho) = prefac1*(L_1 + L_5)
-        df(lll,m1:m2,n1:n2,iux) = prefac2*(L_1 - L_5)
+        df(lll,m1:m2,n1:n2,ilnrho) = prefac1*(L_1 + L_5)-parallell_term_rho
+!        df(lll,m1:m2,n1:n2,iux) = prefac2*(L_1 - L_5)
+        df(lll,m1:m2,n1:n2,iux) = prefac2*(L_5 - L_1)-parallell_term_ux
+        df(lll,m1:m2,n1:n2,iuy) = -L_3-parallell_term_uy
+        df(lll,m1:m2,n1:n2,iuz) = -L_4-parallell_term_uz
       endselect
+!
+!  Check if we are solving for logrho or rho
+!
+      if (.not. ldensity_nolog) then
+        df(lll,m1:m2,n1:n2,ilnrho)=df(lll,m1:m2,n1:n2,ilnrho)/rho0
+      endif
+!
+! Impose required variables at the boundary
+!
+      if (llinlet) then
+        f(lll,m1:m2,n1:n2,iux) = u_t
+        f(lll,m1:m2,n1:n2,iuy) = 0
+        f(lll,m1:m2,n1:n2,iuz) = 0
+      endif
+!
     endsubroutine
 !***********************************************************************
     subroutine bc_nscbc_prf_y(f,df,topbot,linlet,u_t)
@@ -4047,6 +4161,10 @@ module Boundcond
 
       intent(in) :: f
       intent(out) :: df
+
+
+      call fatal_error('bc_nscbc_prf_y',&
+           'This sub is not properly implemented yet! Adapt from bc_nscbc_prf_x')
 
       llinlet = .false.
       if (present(linlet)) llinlet = linlet
@@ -4125,6 +4243,9 @@ module Boundcond
 
       intent(in) :: f
       intent(out) :: df
+
+      call fatal_error('bc_nscbc_prf_z',&
+           'This sub is not properly implemented yet! Adapt from bc_nscbc_prf_x')
 
       llinlet = .false.
       if (present(linlet)) llinlet = linlet
