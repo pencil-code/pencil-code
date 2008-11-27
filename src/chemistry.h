@@ -17,14 +17,12 @@
 
   public :: calc_for_chem_mixture
 
-  public :: calc_cs2x
-  public :: calc_cs2y
-  public :: get_gammax
-  public :: get_gammay
   public :: get_p_infx
   public :: get_p_infy
   public :: get_rhs_Y
   public :: get_rhs_T
+  public :: get_cs2_full
+  public :: get_gamma_full
 
 ! public :: chemistry_calc_density
 ! public :: chemistry_calc_hydro

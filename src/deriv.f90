@@ -12,6 +12,7 @@ module Deriv
   public :: der6_other, der_pencil, der2_pencil
   public :: der_upwind1st
   public :: der_onesided_4_slice
+  public :: der_onesided_4_slice_other
 
 !debug  integer, parameter :: icount_der   = 1         !DERCOUNT
 !debug  integer, parameter :: icount_der2  = 2         !DERCOUNT
@@ -35,6 +36,11 @@ module Deriv
   interface derij                 ! Overload the der function
     module procedure derij_main   ! derivative of an 'mvar' variable
     module procedure derij_other  ! derivative of another field
+  endinterface
+
+  interface  der_onesided_4_slice                ! Overload the der function
+    module procedure  der_onesided_4_slice_main  ! derivative of an 'mvar' variable
+    module procedure  der_onesided_4_slice_other ! derivative of another field
   endinterface
 
   contains
@@ -1509,7 +1515,7 @@ module Deriv
 !
     endsubroutine der_upwind1st
 !***********************************************************************
-    subroutine der_onesided_4_slice(f,sgn,k,df,pos,j)
+    subroutine der_onesided_4_slice_main(f,sgn,k,df,pos,j)
       use Cdata
 !
 !   Calculate x/y/z-derivative on a yz/xz/xy-slice at gridpoint pos. 
@@ -1564,6 +1570,68 @@ module Deriv
                   -sgn*36*f(l1:l2,m1:m2,pos+sgn*1,k)&
                   +sgn*16*f(l1:l2,m1:m2,pos+sgn*1,k)&
                   -sgn*3 *f(l1:l2,m1:m2,pos+sgn*1,k))
+        else
+          df=0.
+          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in z-direction'
+        endif
+      endif
+    endsubroutine
+!***********************************************************************
+   subroutine der_onesided_4_slice_other(f,sgn,df,pos,j)
+      use Cdata
+!
+!   Calculate x/y/z-derivative on a yz/xz/xy-slice at gridpoint pos. 
+!   Uses a one-sided 4th order stencil.
+!   sgn = +1 for forward difference, sgn = -1 for backwards difference.
+!
+!   Because of its original intended use in relation to solving
+!   characteristic equations on boundaries (NSCBC), this sub should 
+!   return only PARTIAL derivatives, NOT COVARIANT. Applying the right
+!   scaling factors and connection terms should instead be done when
+!   solving the characteristic equations.
+!
+!   7-jul-08/arne: coded.
+!
+      real, dimension (mx,my,mz) :: f
+      real, dimension (:,:) :: df
+      real :: fac
+      integer :: pos,k,sgn,j
+!
+      intent(in)  :: f,pos,sgn,j
+      intent(out) :: df
+
+      if (j==1) then
+        if (nxgrid/=1) then
+          fac=1./12.*dx_1(pos)
+          df = fac*(-sgn*25*f(pos,m1:m2,n1:n2)&
+                  +sgn*48*f(pos+sgn*1,m1:m2,n1:n2)&
+                  -sgn*36*f(pos+sgn*2,m1:m2,n1:n2)&
+                  +sgn*16*f(pos+sgn*3,m1:m2,n1:n2)&
+                  -sgn*3 *f(pos+sgn*4,m1:m2,n1:n2))
+        else
+          df=0.
+          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in x-directder_onesided_4_sliceion'
+        endif
+      elseif (j==2) then
+        if (nygrid/=1) then
+          fac=1./12.*dy_1(pos)
+          df = fac*(-sgn*25*f(l1:l2,pos,n1:n2)&
+                  +sgn*48*f(l1:l2,pos+sgn*1,n1:n2)&
+                  -sgn*36*f(l1:l2,pos+sgn*2,n1:n2)&
+                  +sgn*16*f(l1:l2,pos+sgn*3,n1:n2)&
+                  -sgn*3 *f(l1:l2,pos+sgn*4,n1:n2))
+        else
+          df=0.
+          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in y-direction'
+        endif
+      elseif (j==3) then
+        if (nzgrid/=1) then
+          fac=1./12.*dz_1(pos)
+          df = fac*(-sgn*25*f(l1:l2,m1:m2,pos)&
+                  +sgn*48*f(l1:l2,m1:m2,pos+sgn*1)&
+                  -sgn*36*f(l1:l2,m1:m2,pos+sgn*1)&
+                  +sgn*16*f(l1:l2,m1:m2,pos+sgn*1)&
+                  -sgn*3 *f(l1:l2,m1:m2,pos+sgn*1))
         else
           df=0.
           if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in z-direction'

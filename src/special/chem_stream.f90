@@ -224,6 +224,8 @@ module Special
             call flame_spd(f,xx,x1_front,x2_front)
          case('flame_spd_invert')
             call flame_spd_invert(f,xx)
+         case('stream_field')
+            call stream_field(f,xx,yy)
          case('default')
           if(lroot) print*,'init_special: Default  setup'
      !     call density_init(f,xx,zz)
@@ -600,32 +602,7 @@ module Special
     endsubroutine  velocity_init
 !***********************************************************************
 !   INITIAL CONDITIONS
-!44444444444444444444444444444444444444444444444444444444444444444444444
-    subroutine stream_field(f,xx,yy)
 !
-! Natalia
-! Initialization of chem. species  in a case of the stream
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: xx, yy
-      real, dimension (my, nchemspec-1) :: mask
-      real, dimension (my) :: sum_mask=0.
-      integer :: k,j,i
-
-
-     f(:,:,:,4)=log(rho_init)
-     f(:,:,:,5)=log(T_init)
-     f(l1:mx,:,:,ichemspec(nchemspec))=Y3_init
-   !  f(:,:,:,ichemspec(nchemspec-1))=Y2_init
-   !  f(:,:,:,ichemspec(nchemspec-2))=Y1_init
-
-     do i=0,nghost
-       f(i,:,:,ichemspec(nchemspec-1))=Y2_init*((l1+1.-i)/l1)**2
-       f(i,:,:,ichemspec(nchemspec-2))=Y1_init*((l1+1.-i)/l1)**2
-     enddo
-
-
-    endsubroutine stream_field
 !***********************************************************************
    subroutine bomb_field(f,xx,yy)
 !
@@ -639,20 +616,63 @@ module Special
      do k=1,mx 
 
       if (abs(x(k))<0.2) then
-       f(k,:,:,ilnrho)=log(rho_init) &
-          +log(1.1)*((0.2-abs(x(k)))/0.2)**2
+       f(k,:,:,ilnrho)=log(rho_init)! &
+         ! +log(1.1)*((0.2-abs(x(k)))/0.2)**2
+        f(k,:,:,ilnTT)=log(T_init)+log(2.)*((0.2-abs(x(k)))/0.2)**2
       else
         f(k,:,:,ilnrho)=log(rho_init)
+        f(k,:,:,ilnTT)=log(T_init)
       endif
 
      enddo
 
-     f(:,:,:,ilnTT)=log(T_init)!-(xx(:,:,:)/(0.5*Lxyz(1)))**2
-     !f(l1:mx,:,:,ichemspec(nchemspec))=Y3_init
+     
+       !  -(xx(:,:,:)/(0.5*Lxyz(1)))**2
+     f(l1:mx,:,:,ichemspec(nchemspec))=Y3_init
      f(:,:,:,iux)=ux_init
 
 
    endsubroutine bomb_field
+!**************************************************************************
+  subroutine stream_field(f,xx,yy)
+!
+! Natalia
+! Initialization of chem. species  in a case of the stream
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: xx, yy
+      integer :: k,j,i
+     
+      real :: p2_front=10.13e5
+      real :: Rgas=83144726.8870299
+
+      real :: TT1_front=400., TT2_front=2400.
+  
+
+      do k=1,mx 
+        if (x(k)<x1_front) then
+          f(k,:,:,ilnTT)=log(TT1_front)
+        endif
+        if (x(k)>x2_front) then
+          f(k,:,:,ilnTT)=log(TT2_front)
+        endif
+        if (x(k)>x1_front .and. x(k)<x2_front) then
+          f(k,:,:,ilnTT)=log((x(k)-x1_front)/(x2_front-x1_front) &
+               *(TT2_front-TT1_front)+TT1_front)
+        endif
+
+      enddo
+
+      do k=1,mx
+        f(k,:,:,ilnrho)=log(p2_front)-log(Rgas)-f(k,:,:,ilnTT)-log(2.)
+      enddo
+
+
+     f(:,:,:,ichemspec(nchemspec))=1.
+     f(:,:,:,iux)=ux_init
+
+
+   endsubroutine stream_field
 !**************************************************************************
  subroutine flame_spd(f,xx,x1_front,x2_front)
 !

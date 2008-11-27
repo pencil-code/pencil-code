@@ -737,7 +737,23 @@ module Chemistry
             do n=1,mz
              do m=1,my
                do i=1,mx
-                 T_local=TT_full(i,m,n)*unit_temperature 
+
+!                if (n<=l1 .or. n>=l2) then
+!                  T_low=0.
+!                  T_up=1e10
+!                endif
+
+!                if (m<=m1 .or. m>=m2) then
+!                  T_low=0.
+!                  T_up=1e10
+!                endif
+
+!                if (i<=m1 .or. i>=m2) then
+!                  T_low=0.
+!                  T_up=1e10
+!                endif
+
+                T_local=TT_full(i,m,n)*unit_temperature 
 
                  if (T_local >=T_low .and. T_local <= T_mid) then
                    tmp=0. 
@@ -746,28 +762,25 @@ module Chemistry
                    enddo
                    cp_R_spec(i,m,n,k)=tmp
                    cvspec_full(i,m,n,k)=cp_R_spec(i,m,n,k)-1.
-
-!
-!  NATALIA: test
-!
-               !  elseif (T_local >=T_mid .and. T_local <= T_up) then
-                  elseif (T_local >=T_mid ) then
-
+                 elseif (T_local >=T_mid .and. T_local <= T_up) then
+                !  elseif (T_local >=T_mid ) then
                    tmp=0.
                    do j=1,5 
                      tmp=tmp+species_constants(k,iaa1(j))*T_local**(j-1) 
                     enddo
                     cp_R_spec(i,m,n,k)=tmp
                     cvspec_full(i,m,n,k)=cp_R_spec(i,m,n,k)-1.
-                  else
+                 else
                     print*,'T_local=',T_local
                     print*,'i,m,n=',i,m,n
                     call fatal_error('calc_for_chem_mixture','T_local is outside range')
-                    
                  endif
                enddo
               enddo
              enddo
+
+
+
 
             cp_full(:,:,:)=cp_full(:,:,:)+f(:,:,:,ichemspec(k))  &
                 *cp_R_spec(:,:,:,k)/species_constants(k,imass)*Rgas
@@ -2879,65 +2892,32 @@ module Chemistry
       endselect
   endsubroutine calc_cs2x
 !***********************************************************************
-!CCCCC
- subroutine calc_cs2y(cs2y,topbot,f)
-
- use Mpicomm
-
-    real, dimension(mx,my,mz,mfarray) :: f
-   real, dimension (mx,mz) :: cs2y
-   character (len=3) :: topbot
-   integer :: k
-
-   select case(topbot)
-      case('bot')               ! bottom boundary
-       cs2y=cp_full(:,m1,:)/cv_full(:,m1,:)*mu1_full(:,m1,:)*TT_full(:,m1,:)*Rgas
-      case('top')               ! top boundary
-       cs2y=cp_full(:,m2,:)/cv_full(:,m2,:)*mu1_full(:,m2,:)*TT_full(:,m2,:)*Rgas
-      case default
-        print*, "calc_cs2y: ", topbot, " should be `top' or `bot'"
-      endselect
-  endsubroutine calc_cs2y
 !*************************************************************
-  subroutine get_gammax(gamma0,topbot)
+ subroutine get_cs2_full(cs2_full)
 
- use Mpicomm
+  use Mpicomm
 
-    real, dimension(mx,my,mz,mfarray) :: f
-   real, dimension (my,mz) :: gamma0
-   character (len=3) :: topbot
-   integer :: k
+   real, dimension (mx,my,mz) :: cs2_full
 
-     select case(topbot)
-      case('bot')               ! bottom boundary
-       gamma0=cp_full(l1,:,:)/cv_full(l1,:,:)
-      case('top')               ! top boundary
-       gamma0=cp_full(l2,:,:)/cv_full(l2,:,:)
-      case default
-        print*, "get_gammax: ", topbot, " should be `top' or `bot'"
-     endselect
-   endsubroutine get_gammax
+   intent(out) :: cs2_full
+
+       cs2_full=cp_full/cv_full*mu1_full*TT_full*Rgas
+
+  endsubroutine get_cs2_full
 !*************************************************************
- subroutine get_gammay(gamma0,topbot)
+  subroutine get_gamma_full(gamma_full)
 
- use Mpicomm
+  use Mpicomm
 
-    real, dimension(mx,my,mz,mfarray) :: f
-   real, dimension (mx,mz) :: gamma0
-   character (len=3) :: topbot
-   integer :: k
+   real, dimension (mx,my,mz) :: gamma_full
 
-     select case(topbot)
-      case('bot')               ! bottom boundary
-       gamma0=cp_full(:,m1,:)/cv_full(:,m1,:)
-      case('top')               ! top boundary
-       gamma0=cp_full(:,m2,:)/cv_full(:,m2,:)
-      case default
-        print*, "get_gammay: ", topbot, " should be `top' or `bot'"
-     endselect
-   endsubroutine get_gammay
+   intent(out) :: gamma_full
+
+       gamma_full=cp_full/cv_full
+
+  endsubroutine get_gamma_full
 !*************************************************************
-   subroutine get_p_infx(p_infx,topbot)
+    subroutine get_p_infx(p_infx,topbot)
 
     use Mpicomm
      real, dimension (ny,nz) :: p_infx
@@ -2994,6 +2974,7 @@ module Chemistry
        enddo dataloop
 
 
+
        close(file_id)
 
 
@@ -3013,6 +2994,7 @@ module Chemistry
      endselect
 
 !print*,'pp_inf2',maxval(pp_infx)
+
 
    endsubroutine get_p_infx
 !*************************************************************
