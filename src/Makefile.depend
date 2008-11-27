@@ -297,7 +297,7 @@ $(EQU_OBJ): $(EQU_SRC) $(CDATA_OBJ) $(MPICOMM_OBJ) $(GHOSTFOLD_OBJ) $(MESSAGES_O
 #
 boundcond.o: boundcond.f90 cdata.o cparam.o $(EOS_OBJ) farray.o $(FOURIER_OBJ) messages.o $(MPICOMM_FIX_OBJ) $(SHEAR_OBJ) $(SPECIAL_OBJ) $(CHEMISTRY_OBJ) 
 #
-$(INITCOND_OBJ): initcond.f90 cdata.o $(EOS_OBJ) farray.o $(FOURIER_OBJ) general.o $(GRAVITY_OBJ) messages.o $(MPICOMM_FIX_OBJ) $(PARTICLES_NBODY_OBJ) sub.o
+$(INITCOND_OBJ): initcond.f90 cdata.o $(EOS_OBJ) farray.o $(FOURIER_OBJ) general.o $(GRAVITY_OBJ) messages.o $(MPICOMM_FIX_OBJ) sub.o
 #
 $(TIMESTEP_OBJ): $(TIMESTEP).f90 $(CDATA_OBJ) $(MPICOMM_OBJ) equ.o $(FORCING_OBJ) $(BORDER_PROFILES_OBJ)
 #
