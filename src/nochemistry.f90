@@ -600,6 +600,32 @@ module Chemistry
       bound_rhs_T=0.
 !
    endsubroutine get_rhs_T
+!*************************************************************
+  subroutine get_gamma_full(gamma_full)
+!
+  use Mpicomm
+!
+   real, dimension (mx,my,mz) :: gamma_full
+!
+   intent(out) :: gamma_full
+!   
+   gamma_full=0.
+   call keep_compiler_quiet(gamma_full)
+!
+  endsubroutine get_gamma_full
+!*************************************************************
+ subroutine get_cs2_full(cs2_full)
+
+  use Mpicomm
+
+   real, dimension (mx,my,mz) :: cs2_full
+
+   intent(out) :: cs2_full
+!
+   cs2_full=0.
+   call keep_compiler_quiet(cs2_full)
+!
+  endsubroutine get_cs2_full
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
