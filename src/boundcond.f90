@@ -4360,11 +4360,8 @@ module Boundcond
          cs20_ar=cs2_full(lll,:,:)
          cs0_ar=cs2_full(lll,:,:)**0.5
          gamma0=gamma_full(lll,:,:)
-        if (ldensity_nolog) then
-          rho0(:,:) = f(lll,:,:,ilnrho)
-        else
-          rho0(:,:) = exp(f(lll,:,:,ilnrho))
-        endif
+         rho_full=exp(f(:,:,:,ilnrho))
+         rho0(:,:) = rho_full(lll,:,:)
          mom2(lll,:,:)=rho0(:,:)*f(lll,:,:,iuy)
          pp=cs2_full*rho_full/gamma_full
       else
