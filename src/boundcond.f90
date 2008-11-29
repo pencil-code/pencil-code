@@ -4613,6 +4613,7 @@ module Boundcond
           drho_prefac=-1./rho0(l1:l2,n1:n2)/cs20_ar(l1:l2,n1:n2)
         endif
 
+         rho_full=exp(f(:,:,:,ilnrho))
          pp=cs2_full*rho_full/gamma_full
          mom2(:,mmm,:)=rho0(:,:)*f(:,mmm,:,iuy)
          rho_ux2(:,mmm,:)=rho0(:,:)*f(:,mmm,:,iux)*f(:,mmm,:,iux)
