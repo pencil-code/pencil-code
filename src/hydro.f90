@@ -71,12 +71,13 @@ module Hydro
   integer :: nb_rings=0
   real, dimension(5) :: om_rings=0.
   integer :: N_modes_uu=0
-  logical :: lcoriolis_force=.true., lcentrifugal_force=.false.
   logical :: ladvection_velocity=.true.
   logical :: lprecession=.false.
   logical :: lshear_rateofstrain=.false.
   logical :: luut_as_aux=.false.,loot_as_aux=.false.
-  logical :: lpressuregradient_gas=.true.
+  logical, target :: lpressuregradient_gas=.true.
+  logical, target :: lcoriolis_force=.true.
+  logical, target :: lcentrifugal_force=.false.
   logical :: lscale_tobox=.true.
 ! The following is useful to debug the forcing - Dhruba
   real :: outest
@@ -357,9 +358,9 @@ module Hydro
 !  6-nov-01/wolf: coded
 !
       use Cdata
-      use Mpicomm, only: stop_it
-      use SharedVariables
+      use Mpicomm,         only: stop_it
       use Sub
+      use SharedVariables,only:put_shared_variable
 !
       logical, save :: first=.true.
       integer :: ierr
@@ -386,6 +387,14 @@ module Hydro
       varname(iuy) = 'uy'
       varname(iuz) = 'uz'
 !
+!  Share lpressuregradient_gas so Entropy module knows whether to apply
+!  pressure gradient or not.
+!
+      call put_shared_variable('lpressuregradient_gas',&
+          lpressuregradient_gas,ierr)     
+      if (ierr/=0) call fatal_error('register_hydro',&
+          'there was a problem sharing lpressuregradient_gas')
+!
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
@@ -408,12 +417,6 @@ module Hydro
         write(15,*) 'uu = fltarr(mx,my,mz,3)*one'
       endif
 !
-!  Share lpressuregradient_gas so Entropy module knows whether to apply
-!  pressure gradient or not.
-!
-      call put_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)     
-      if (ierr/=0) call fatal_error('register_hydro','there was a problem sharing lpressuregradient_gas')
-!
     endsubroutine register_hydro
 !***********************************************************************
     subroutine initialize_hydro(f,lstarting)
@@ -426,12 +429,14 @@ module Hydro
 !
       use Mpicomm, only: stop_it
       use Cdata,   only: r_int,r_ext,lfreeze_varint,lfreeze_varext,epsi, &
-        leos,iux,iuy,iuz,iuut,iuxt,iuyt,iuzt,ioot,ioxt,ioyt,iozt,lroot,datadir
+        leos,iux,iuy,iuz,iuut,iuxt,iuyt,iuzt,ioot,ioxt,ioyt,iozt,lroot,&
+        datadir,lfargo_advection
       use FArrayManager
-      use SharedVariables
+      use SharedVariables,only:put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
+      integer :: ierr
 !
 ! Check any module dependencies
 !
@@ -486,7 +491,29 @@ module Hydro
 !
       if (nxgrid*nygrid*nzgrid==1) then
         ladvection_velocity=.false.
-        print*, 'initialize_entropy: 0-D run, turned off advection of velocity'
+        print*, 'initialize_hydro: 0-D run, turned off advection of velocity'
+      endif
+!
+!  If fargo is used, advection is taken care of in special/fargo.f90
+!
+      if (lfargo_advection) then 
+        ladvection_velocity=.false.
+        print*,'initialize_hydro: fargo used. turned off advection of velocity'
+      endif
+!
+!  Share lcoriolis_force and lcentrifugal_force so the Particles module 
+!  knows whether to apply them or not
+!
+      if (lparticles.and.Omega/=0) then
+        call put_shared_variable('lcoriolis_force',&
+            lcoriolis_force,ierr)     
+        if (ierr/=0) call fatal_error('register_hydro',&
+            'there was a problem sharing lcoriolis_force')
+!
+        call put_shared_variable('lcentrifugal_force',&
+            lcentrifugal_force,ierr)     
+        if (ierr/=0) call fatal_error('register_hydro',&
+            'there was a problem sharing lcentrifugal_force')
       endif
 !
 !  Register an extra aux slot for uut if requested. This is needed
@@ -541,8 +568,6 @@ module Hydro
 !***********************************************************************
     subroutine read_hydro_init_pars(unit,iostat)
 !
-!
-!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
@@ -557,8 +582,6 @@ module Hydro
     endsubroutine read_hydro_init_pars
 !***********************************************************************
     subroutine write_hydro_init_pars(unit)
-!
-!
 !    
       integer, intent(in) :: unit
 !
@@ -567,8 +590,6 @@ module Hydro
     endsubroutine write_hydro_init_pars
 !***********************************************************************
     subroutine read_hydro_run_pars(unit,iostat)
-!
-!
 !    
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -585,8 +606,6 @@ module Hydro
 !***********************************************************************
     subroutine write_hydro_run_pars(unit)
 !
-!
-!    
       integer, intent(in) :: unit
 !
       write(unit,NML=hydro_run_pars)
@@ -613,7 +632,7 @@ module Hydro
       real, dimension (mx,my,mz) :: r,p,tmp,xx,yy,zz,prof
       real, dimension (mx,my,mz,3) :: utmp
       real :: kabs,crit,eta_sigma
-      integer :: j,i,l
+      integer :: j,i,l,ierr
 !
 !  inituu corresponds to different initializations of uu (called from start).
 !
@@ -964,7 +983,6 @@ module Hydro
           enddo
         endif
       endif
-
 !
 !     if (NO_WARN) print*,yy,zz !(keep compiler from complaining)
 !
@@ -1341,12 +1359,12 @@ module Hydro
               c2=2*Omega
               df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+c2*p%uu(:,2)
               df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-c2*p%uu(:,1)
+            endif
 !
 !  add centrifugal force (doing this with periodic boundary
 !  conditions in x and y would not be compatible, so it is
 !  therefore usually ignored in those cases!)
 !
-            endif
             if (lcentrifugal_force) then
               if (headtt) print*,'duu_dt: add Centrifugal force; Omega=',Omega
               df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+x(l1:l2)*Omega**2
@@ -2383,11 +2401,19 @@ module Hydro
 !
 !  -2 Omega x u
 !
-      c2=2*Omega*costh(m)
-      s2=2*Omega*sinth(m)
-      df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+s2*p%uu(:,3)
-      df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+c2*p%uu(:,3)
-      df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-c2*p%uu(:,2)+s2*p%uu(:,1)
+      if (lcoriolis_force) then 
+        c2=2*Omega*costh(m)
+        s2=2*Omega*sinth(m)
+        df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+s2*p%uu(:,3)
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+c2*p%uu(:,3)
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-c2*p%uu(:,2)+s2*p%uu(:,1)
+      endif
+!
+!  Centrifugal force
+!
+      if (lcentrifugal_force) & 
+          call stop_it("duu_dt: Centrifugal force not "//&
+          "implemented in spherical coordinates")
 !
     endsubroutine coriolis_spherical
 !***********************************************************************
@@ -2409,17 +2435,23 @@ module Hydro
 !
 !  info about coriolis_cylindrical term
 !
-      if (headtt) then
-        print*, 'coriolis_cylindrical: Omega=', Omega
-      endif
+      if (headtt) &
+          print*, 'coriolis_cylindrical: Omega=', Omega
 !
 !  -2 Omega x u
 !    
-      c2=2*Omega
-      df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+c2*p%uu(:,2)
-      df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-c2*p%uu(:,1)
+      if (lcoriolis_force) then 
+        c2=2*Omega
+        df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+c2*p%uu(:,2)
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-c2*p%uu(:,1)
+      endif
 !
-!   Note, there is no z-component
+!  Centrifugal force
+!
+      if (lcentrifugal_force) &
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+x(l1:l2)*Omega**2
+!
+!  Note, there is no z-component
 !
     endsubroutine coriolis_cylindrical
 !***********************************************************************
