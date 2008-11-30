@@ -1,6 +1,7 @@
 
 function pc_cyl2cart,field_in,rad,phi,perc_expand=perc_expand,time=time,$
-                  plot=plot,amin=amin,amax=amax,ncolors=ncolors
+                  plot=plot,amin=amin,amax=amax,ncolors=ncolors,$
+                  keep_resolution=keep_resolution   
 
 ;;;
 ;;; pc_cyl2cart.pro
@@ -59,10 +60,15 @@ nphi=n_elements(phi)
 ;
 rext=rad(nr-1)
 rint=rad(0)
+Lr=rext-rint
 ;
-nxc=2*nr & nyc=2*nphi
 xn=(1+perc_expand/100.)*rext & x0=-xn
 yn=xn                        & y0=-yn
+Lx=xn-x0
+;
+fac=Lx/Lr
+;
+nxc=round(fac*nr) & nyc=nxc
 ;
 xc=grange(x0,xn,Nxc)
 yc=grange(y0,yn,Nyc)
@@ -128,9 +134,15 @@ if (keyword_set(plot)) then begin
       title='Cartesian plot',xtitle='X',ytitle='Y'
 endif
 ;
-field=rebin(fieldxy,nr,nphi)
-x=rebin(xc,nr)
-y=rebin(yc,nphi)
+; Rebin xy to the original resolution rphi
+;
+if (keyword_set(keep_resolution)) then begin
+    field=rebin(fieldxy,nr,nphi)
+    x=rebin(xc,nr) & y=rebin(yc,nphi)
+endif else begin
+    field=fieldxy
+    x=xc & y=yc
+endelse
 ;
 fc={field:field,$
    xc:    x    ,$

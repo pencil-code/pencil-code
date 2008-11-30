@@ -105,6 +105,7 @@ s = size(imrp)        ;Get size of image
 nx = s[1]
 ny = s[2]
 s = size(imrt1)       ;Get size of image
+nr = s[1]
 nz = s[2]
 ;
 if n_elements(amax) eq 0 then begin
@@ -147,32 +148,34 @@ end else begin
 end
 if n_elements(npx) eq 0 then npx=1
 if n_elements(npy) eq 0 then npy=1
+npr=npx
 nxi=fix((1.0-xval)*(nx-1))+1
 nyi=fix((1.0-yval)*(ny-1))+1
+nri=fix((1.0-xval)*(nr-1))+1
 if xrot gt 0 then nzi=fix(zval*nz) else nzi=fix((1.0-zval)*(nz-1))+1
-if ip gt 3 then print,'nxi,nyi,nzi=',nxi,nyi,nzi
+if ip gt 3 then print,'nxi,nyi,nri,nzi=',nxi,nyi,nri,nzi
 if ip gt 3 then print,'amax,amin,xmax,ymax=',amax,amin,xmax,ymax
 ;
 thtim=bytarr(nxi*npx,nyi*npy)
 if xrot gt 0 then begin
-  phi1im=bytarr(nxi*npx,nzi)
-  phi2im=bytarr(nxi*npx,nzi)
-  phi3im=bytarr(nxi*npx,nzi)
-  phi4im=bytarr(nxi*npx,nzi)
+  phi1im=bytarr(nri*npr,nzi)
+  phi2im=bytarr(nri*npr,nzi)
+  phi3im=bytarr(nri*npr,nzi)
+  phi4im=bytarr(nri*npr,nzi)
 ;
 ;  rtheta wedges
 ;
   for i=0,npx-1 do begin
-   phi1im(i*nxi:(i+1)*nxi-1,*) = bytscl(rev*imrt1(nx-nxi:nx-1,0:nzi-1)/norm $
+   phi1im(i*nri:(i+1)*nri-1,*) = bytscl(rev*imrt1(nr-nri:nr-1,0:nzi-1)/norm $
                                  ,max=amax,min=amin,top=ncols-2-mincol)+mincol
 ;
-   phi2im(i*nxi:(i+1)*nxi-1,*) = bytscl(rev*imrt2(nx-nxi:nx-1,0:nzi-1)/norm $
+   phi2im(i*nri:(i+1)*nri-1,*) = bytscl(rev*imrt2(nr-nri:nr-1,0:nzi-1)/norm $
                                  ,max=amax,min=amin,top=ncols-2-mincol)+mincol
 ;
-   phi3im(i*nxi:(i+1)*nxi-1,*) = bytscl(rev*imrt3(nx-nxi:nx-1,0:nzi-1)/norm $
+   phi3im(i*nri:(i+1)*nri-1,*) = bytscl(rev*imrt3(nr-nri:nr-1,0:nzi-1)/norm $
                                  ,max=amax,min=amin,top=ncols-2-mincol)+mincol
 ;
-   phi4im(i*nxi:(i+1)*nxi-1,*) = bytscl(rev*imrt4(nx-nxi:nx-1,0:nzi-1)/norm $
+   phi4im(i*nri:(i+1)*nri-1,*) = bytscl(rev*imrt4(nr-nri:nr-1,0:nzi-1)/norm $
                                  ,max=amax,min=amin,top=ncols-2-mincol)+mincol
   endfor
 ;
@@ -189,15 +192,15 @@ if xrot gt 0 then begin
 ; Use simple rebin instead of the cryptic rebinbox
 ;
   thtimg =rebin(reform(thtim ),nxi*npx*zoom,nyi*npy*zoom)
-  phi1img=rebin(reform(phi1im),nxi*npx*zoom,nzi*zoom)
-  phi2img=rebin(reform(phi2im),nxi*npx*zoom,nzi*zoom)
-  phi3img=rebin(reform(phi3im),nxi*npx*zoom,nzi*zoom)
-  phi4img=rebin(reform(phi4im),nxi*npx*zoom,nzi*zoom)
+  phi1img=rebin(reform(phi1im),nri*npr*zoom,nzi*zoom)
+  phi2img=rebin(reform(phi2im),nri*npr*zoom,nzi*zoom)
+  phi3img=rebin(reform(phi3im),nri*npr*zoom,nzi*zoom)
+  phi4img=rebin(reform(phi4im),nri*npr*zoom,nzi*zoom)
 ;
 ; set up masking for transparency, if using shell
 ;
   trrg = rebin(reform(trr),nxi*npx*zoom,nyi*npy*zoom)
-  prrg = rebin(reform(prr),nxi*npx*zoom,nzi*zoom)
+  prrg = rebin(reform(prr),nri*npr*zoom,nzi*zoom)
   indt=where(trrg lt r_int or trrg gt r_ext,nindt)
   indp=where(prrg lt r_int or prrg gt r_ext,nindp)
   if nindt ne 0 then thtimg(indt)=mincol-1
@@ -210,7 +213,7 @@ if xrot gt 0 then begin
 ;
 ; set up theta masking
 ; 
-  pttg=rebin(reform(ptt),nxi*npx*zoom,nzi*zoom)
+  pttg=rebin(reform(ptt),nri*npr*zoom,nzi*zoom)
   indpt=where(pttg lt tht0 or pttg gt thtn,nindpt)
   if nindpt ne 0 then begin
     phi1img(indpt)=mincol-1
