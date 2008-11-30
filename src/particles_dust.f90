@@ -74,6 +74,8 @@ module Particles
   logical :: lnostore_uu=.true.
   logical :: ldtgrav_par=.false.
   logical :: lsinkpoint=.false.
+  logical, pointer:: lcoriolis_force
+  logical, pointer:: lcentrifugal_force
 
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -216,12 +218,13 @@ module Particles
 !
       use EquationOfState, only: cs0,rho0
       use FArrayManager
+      use SharedVariables,only:get_shared_variable
 !
       integer :: jspec
       logical :: lstarting
 !
       real :: rhom
-      integer :: npar_per_species, ierr
+      integer :: npar_per_species,ierr
 !
 !  Distribute particles evenly among processors to begin with.
 !
@@ -507,6 +510,18 @@ module Particles
         call fatal_error('initialize_particles','No such such value for '// &
           'interp_pol_rho: '//trim(interp_pol_rho))
       endselect
+!
+!  Get lcoriolis_force and lcentrifugal_force from the Hydro module
+!
+      if (lhydro.and.Omega/=0) then 
+        call get_shared_variable('lcoriolis_force',lcoriolis_force,ierr)     
+        if (ierr/=0) call fatal_error('register_particles',&
+            'there was a problem getting lcoriolis_force')
+!
+        call get_shared_variable('lcentrifugal_force',lcentrifugal_force,ierr)
+        if (ierr/=0) call fatal_error('register_particles',&
+            'there was a problem getting lcentrifugal_force')
+      endif
 !
 !  Write constants to disk.
 !
@@ -2149,14 +2164,37 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Print out header information in first time step.
 !
       lheader=lfirstcall .and. lroot
+      if (lheader) print*,'dvvp_dt: Calculate dvvp_dt'
 !
 !  Add Coriolis force from rotating coordinate frame.
 !
       if (Omega/=0.) then
-        if (lheader) print*,'dvvp_dt: Add Coriolis force; Omega=', Omega
-        Omega2=2*Omega
-        dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega2*fp(1:npar_loc,ivpy)
-        dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) - Omega2*fp(1:npar_loc,ivpx)
+        if (lcoriolis_force) then 
+          if (lheader) print*,'dvvp_dt: Add Coriolis force; Omega=', Omega
+          Omega2=2*Omega
+          if (.not.lspherical_coords) then 
+            dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega2*fp(1:npar_loc,ivpy)
+            dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) - Omega2*fp(1:npar_loc,ivpx)
+          else 
+            print*,'dvvp_dt: Coriolis force on the particles is '
+            print*,'not yet implemented for spherical coordinates.'
+            call stop_it("")
+          endif
+        endif
+!
+! Centrifugal force
+!
+        if (lcentrifugal_force) then 
+          if (lheader) print*,'dvvp_dt: Add Centrifugal force; Omega=', Omega
+          if (lcylindrical_coords) then 
+            dfp(1:npar_loc,ivpx) = &
+                dfp(1:npar_loc,ivpx) + Omega**2*fp(1:npar_loc,ixp)
+          else
+            print*,'dvvp_dt: Centrifugal force on the particles is '
+            print*,'only implemented for cylindrical coordinates.'
+            call stop_it("")
+          endif
+        endif
 !
 !  With shear there is an extra term due to the background shear flow.
 !
