@@ -136,7 +136,7 @@ module NeutralDensity
 !
       if (nxgrid*nygrid*nzgrid==1) then
         lcontinuity_neutral=.false.
-        print*, 'initialize_neutraldensity: 0-D run, turned off continity equation'
+        print*, 'initialize_neutraldensity: 0-D run, turned off continuity equation'
       endif
 !
 !  Initialize dust diffusion

@@ -182,7 +182,8 @@ module NeutralVelocity
 !
       if (nxgrid*nygrid*nzgrid==1) then
         ladvection_velocity=.false.
-        print*, 'initialize_entropy: 0-D run, turned off advection of velocity'
+        print*, 'initialize_neutralvelocity: 0-D run, '//&
+            'turned off advection of velocity'
       endif
 !
 !  Turn off neutral viscosity if zero viscosity
