@@ -687,6 +687,8 @@ module Boundcond
           call nscbc_boundtreat_xyz(f,df,2)
       if (nscbc1(3) /= '' .or. nscbc2(3) /= '') &
           call nscbc_boundtreat_xyz(f,df,3)
+      if (nscbc1(5) /= '' .or. nscbc2(5) /= '') &
+          call nscbc_boundtreat_xyz(f,df,5)
 !
     endsubroutine nscbc_boundtreat
 !***********************************************************************
@@ -699,7 +701,7 @@ module Boundcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      character (len=nscbc_len), dimension(3) :: bc12
+      character (len=nscbc_len), dimension(5) :: bc12
       character (len=3) :: topbot
       integer j,k,direction
       real, dimension(mcom) :: valx,valy,valz
@@ -710,13 +712,12 @@ module Boundcond
 !
       do k=1,2                ! loop over 'bot','top'
         if (k==1) then
-          topbot='bot'; bc12=nscbc1(j);!val=bt_val1(j)
+          topbot='bot'; bc12(j)=nscbc1(j);!val=bt_val1(j)
           valx=fbcx1; valy=fbcy1; valz=fbcz1
         else
-          topbot='top'; bc12=nscbc2(j);!val=bt_val2(j)
+          topbot='top'; bc12(j)=nscbc2(j);!val=bt_val2(j)
           valx=fbcx2; valy=fbcy2; valz=fbcz2
         endif
-
         select case(bc12(j))
         case('part_ref_outlet')
 !   Partially reflecting outlet.
@@ -742,9 +743,11 @@ module Boundcond
         case('subsonic_inflow')
 ! Subsonic inflow 
          if (j==1) then
-          call bc_nscbc_subin_x(f,df,topbot)
+          call bc_nscbc_subin_x(f,df,topbot,luinlet=.true.,lTinlet=.false.,f_t=valx(j))
          elseif (j==2) then
          ! call bc_nscbc_subin_y(f,df,topbot)
+         elseif (j==5) then
+          call bc_nscbc_subin_x(f,df,topbot,luinlet=.false.,lTinlet=.true.,f_t=valx(j))
          endif
         case('subson_nref_outflow')
          if (j==1) then
@@ -752,11 +755,12 @@ module Boundcond
          elseif (j==2) then
           call bc_nscbc_nref_subout_y(f,df,topbot)
          endif
+        case('')
+!   Do nothing.
         case('none')
           print*,'nscbc_boundtreat_xyz: doing nothing!'
 !   Do nothing.
         case default
-!          print*,'j,bc12(j)=',j,bc12(j)
           call fatal_error("nscbc_boundtreat_xyz",'You must specify nscbc bouncond!')
         endselect
       end do
@@ -4312,7 +4316,7 @@ module Boundcond
     endsubroutine
 !***********************************************************************
 !***********************************************************************
-    subroutine bc_nscbc_subin_x(f,df,topbot)
+    subroutine bc_nscbc_subin_x(f,df,topbot,luinlet,lTinlet,f_t)
 !
 !   nscbc case 
 !   subsonic inflow boundary conditions
@@ -4332,14 +4336,33 @@ module Boundcond
       real, dimension (mx,my,mz,mvar) :: df
       character (len=3) :: topbot
       real, dimension(ny,nz) :: dux_dx, dlnrho_dx, L_1, L_2, L_5, dpp_dx
-      real, dimension(my,mz) :: rho0, gamma0, dmom2_dy 
+      real, dimension(my,mz) :: rho0, gamma0, dmom2_dy, TT0 
       real, dimension (my,mz) :: cs2x,cs0_ar,cs20_ar
       real, dimension (mx,my,mz) :: cs2_full, gamma_full, rho_full, pp
+      logical, optional :: luinlet, lTinlet
+      real, optional :: f_t
+      logical :: lluinlet, llTinlet
       integer :: lll,i, sgn
+      real :: Mach_num
 
       intent(in) :: f
       intent(out) :: df
- 
+
+      lluinlet = .false.
+      llTinlet = .false.
+
+      if (present(luinlet)) lluinlet = luinlet
+      if (present(lTinlet)) llTinlet = lTinlet
+
+!print*, luinlet, u_t, lTinlet, T_t
+
+
+      if (luinlet.and..not.present(f_t)) call stop_it(&
+           'bc_nscbc_subin_x: when using luinlet=T, you must also specify u_t and T_t)')
+      if (lTinlet.and..not.present(f_t)) call stop_it(&
+           'bc_nscbc_subin_x: when using lTinlet=T, you must also specify u_t and T_t)')
+
+
       if (leos_chemistry) then
          call get_cs2_full(cs2_full)
          call get_gamma_full(gamma_full)
@@ -4360,6 +4383,7 @@ module Boundcond
          cs20_ar=cs2_full(lll,:,:)
          cs0_ar=cs2_full(lll,:,:)**0.5
          gamma0=gamma_full(lll,:,:)
+         TT0=exp(f(lll,:,:,ilnTT))
          rho_full=exp(f(:,:,:,ilnrho))
          rho0(:,:) = rho_full(lll,:,:)
          mom2(lll,:,:)=rho0(:,:)*f(lll,:,:,iuy)
@@ -4370,34 +4394,52 @@ module Boundcond
         print*,"Boundary treatment skipped."
         return
       endif
-      call der_onesided_4_slice(f,sgn,ilnrho,dlnrho_dx,lll,1)
-      call der_onesided_4_slice(f,sgn,iux,dux_dx,lll,1)
-      call der_onesided_4_slice(pp,sgn,dpp_dx,lll,1)
-      do i=1,mz
-       call der_pencil(2,mom2(lll,:,i),dmom2_dy(:,i))
-      enddo
-      
 
-      select case(topbot)
-      case('bot')
-        L_1 = (f(lll,m1:m2,n1:n2,iux) - cs0_ar(m1:m2,n1:n2))*&
-            (dpp_dx - rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dux_dx)
-        L_5 =L_1-2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*df(lll,m1:m2,n1:n2,iux)
-      case('top')
-        L_5 = (f(lll,m1:m2,n1:n2,iux) + cs0_ar(m1:m2,n1:n2))*&
-            (dpp_dx + rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dux_dx)
-        L_1 = L_5+2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*df(lll,m1:m2,n1:n2,iux)
-      endselect
-        L_2 = 0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1) &
-                 +rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2)*df(lll,m1:m2,n1:n2,ilnTT)
-      if (ldensity_nolog) then
-          df(lll,m1:m2,n1:n2,ilnrho) = -1./cs20_ar(m1:m2,n1:n2)*(L_2+0.5*(L_5 + L_1)) !&
+     if (lluinlet) then
+
+
+       call der_onesided_4_slice(f,sgn,ilnrho,dlnrho_dx,lll,1)
+       call der_onesided_4_slice(f,sgn,iux,dux_dx,lll,1)
+       call der_onesided_4_slice(pp,sgn,dpp_dx,lll,1)
+
+       do i=1,mz
+        call der_pencil(2,mom2(lll,:,i),dmom2_dy(:,i))
+       enddo
+
+       Mach_num=maxval(f(lll,m1:m2,n1:n2,iux)/cs0_ar(m1:m2,n1:n2))
+
+       select case(topbot)
+        case('bot')
+         L_1 = (f(lll,m1:m2,n1:n2,iux) - cs0_ar(m1:m2,n1:n2))*&
+             (dpp_dx - rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dux_dx)
+         L_5 =L_1-2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*df(lll,m1:m2,n1:n2,iux)
+        case('top')
+         L_5 = (f(lll,m1:m2,n1:n2,iux) + cs0_ar(m1:m2,n1:n2))*&
+             (dpp_dx + rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dux_dx)
+         L_1 = L_5+2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*df(lll,m1:m2,n1:n2,iux)
+        endselect
+         L_2 = 0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1) &
+                  +rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2)*df(lll,m1:m2,n1:n2,ilnTT)
+        if (ldensity_nolog) then
+           df(lll,m1:m2,n1:n2,ilnrho) = -1./cs20_ar(m1:m2,n1:n2)*(L_2+0.5*(L_5 + L_1)) !&
                                       ! -dmom2_dy(m1:m2,n1:n2)
-      else
-          df(lll,m1:m2,n1:n2,ilnrho) = -1./rho0(m1:m2,n1:n2)/cs20_ar(m1:m2,n1:n2) &
+        else
+           df(lll,m1:m2,n1:n2,ilnrho) = -1./rho0(m1:m2,n1:n2)/cs20_ar(m1:m2,n1:n2) &
                                        *(L_2+0.5*(L_5 + L_1)) !&
                                       ! -1./rho0(m1:m2,n1:n2)*dmom2_dy(m1:m2,n1:n2)
-      endif
+        endif
+
+          df(lll,m1:m2,n1:n2,iux) = -sgn*(cs0_ar(m1:m2,n1:n2)*df(lll,m1:m2,n1:n2,ilnrho) &
+                    +(f(lll,m1:m2,n1:n2,iux) + sgn*cs0_ar(m1:m2,n1:n2)) &
+                    *cs0_ar(m1:m2,n1:n2)/Lxyz(1)*(1.-Mach_num*Mach_num) &
+                   *(f(lll,m1:m2,n1:n2,iux) - f_t))
+
+      elseif (llTinlet) then
+          df(lll,m1:m2,n1:n2,iux) = df(lll,m1:m2,n1:n2,iux)  &
+                    -sgn*(f(lll,m1:m2,n1:n2,iux)/Lxyz(1)*pp(lll,m1:m2,n1:n2)/rho0(m1:m2,n1:n2) &
+                    *(1.-f_t/TT0(m1:m2,n1:n2)))
+     endif
+!
 
     endsubroutine bc_nscbc_subin_x
 !***********************************************************************
