@@ -475,6 +475,7 @@ module Cdata
   real :: b_ell=1., rbound=1.
   real :: grads0=0.   ! (1/c_p)ds/dz
   logical :: lisotropic_advection=.false.
+  logical :: lfargo_advection=.false.
   logical :: pretend_lnTT=.false.
   logical :: lmonolithic_io=.false.
   logical :: lrescaling_magnetic=.false.

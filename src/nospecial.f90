@@ -170,7 +170,8 @@ module Special
 !  06-oct-03/tony: coded
 !
       use Cdata
-      use Sub, only: keep_compiler_quiet
+      use Sub,     only: keep_compiler_quiet
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !!
@@ -179,6 +180,15 @@ module Special
 !
 ! DO NOTHING
       call keep_compiler_quiet(f)
+!
+      if (lfargo_advection) then 
+        print*,''
+        print*,'Switch '
+        print*,' SPECIAL = special/fargo'
+        print*,'in src/Makefile.local if you want to use the fargo algorithm'
+        print*,''
+        call stop_it("")
+      endif
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -542,6 +552,25 @@ module Special
 !
     endsubroutine special_calc_entropy
 !***********************************************************************
+    subroutine special_after_timestep(f,df,dt_)
+!
+!   Possibility to modify the f and df after df is updated
+!   Used for the fargo shift, for instance.
+!
+!   27-nov-08/wlad: coded
+!
+      use Cdata
+      use Sub, only: keep_compiler_quiet
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real :: dt_
+!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(dt_)
+!
+    endsubroutine  special_after_timestep
+!********************************************************************
     subroutine special_calc_particles(fp)
 !
 !   Called before the loop, in case some particle value is needed 
@@ -611,7 +640,7 @@ module Special
 !
     endsubroutine special_before_boundary
 !***********************************************************************
-
+!
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************

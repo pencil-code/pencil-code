@@ -29,6 +29,7 @@ module Timestep
       use BorderProfiles
       use Interstellar, only: calc_snr_damp_int
       use Shear, only: advance_shear
+      use Special, only: special_after_timestep
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -127,6 +128,9 @@ module Timestep
 !  by shifting all variables and their derivatives).
 !
         if (lshear) call advance_shear(f,df,dt_beta_ts(itsub)*ds)
+!
+        if (lspecial) &
+            call special_after_timestep(f,df,dt_beta_ts(itsub)*ds)
 !
 !  Increase time
 !

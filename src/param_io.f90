@@ -84,7 +84,7 @@ module Param_IO
        lcylinder_in_a_box,lsphere_in_a_box,llocal_iso,init_loops,lwrite_2d,&
        lcylindrical_gravity,border_frac_x,border_frac_y, &
        border_frac_z,luse_latitude, &
-       lshift_datacube_x,&
+       lshift_datacube_x, lfargo_advection, &
        yequator, nscbc_sigma
 
   namelist /run_pars/ &
