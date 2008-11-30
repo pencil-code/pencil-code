@@ -4778,7 +4778,10 @@ module Magnetic
         fsum_tmp(:,nnghost)=fsum_tmp(:,nnghost)+ fac*uu*bb
       enddo
       enddo
-!          
+!
+! The sum has to be done processor-wise
+! Sum over processors of same ipz, and different ipy
+!
       call mpiallreduce_sum(fsum_tmp,uxb,(/nx,nz/),LSUMY=.true.)
 !
       do m=m1,m2  
