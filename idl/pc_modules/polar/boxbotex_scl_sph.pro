@@ -159,25 +159,25 @@ if xrot gt 0 then begin
   phi2im=bytarr(nxi*npx,nzi)
   phi3im=bytarr(nxi*npx,nzi)
   phi4im=bytarr(nxi*npx,nzi)
-  ;
-  ;  rtheta wedges
-  ;
+;
+;  rtheta wedges
+;
   for i=0,npx-1 do begin
    phi1im(i*nxi:(i+1)*nxi-1,*) = bytscl(rev*imrt1(nx-nxi:nx-1,0:nzi-1)/norm $
                                  ,max=amax,min=amin,top=ncols-2-mincol)+mincol
-  ;
+;
    phi2im(i*nxi:(i+1)*nxi-1,*) = bytscl(rev*imrt2(nx-nxi:nx-1,0:nzi-1)/norm $
                                  ,max=amax,min=amin,top=ncols-2-mincol)+mincol
-  ;
+;
    phi3im(i*nxi:(i+1)*nxi-1,*) = bytscl(rev*imrt3(nx-nxi:nx-1,0:nzi-1)/norm $
                                  ,max=amax,min=amin,top=ncols-2-mincol)+mincol
-  ;
+;
    phi4im(i*nxi:(i+1)*nxi-1,*) = bytscl(rev*imrt4(nx-nxi:nx-1,0:nzi-1)/norm $
                                  ,max=amax,min=amin,top=ncols-2-mincol)+mincol
   endfor
-  ;
-  ;  top and bottom xy-planes
-  ;
+;
+;  top and bottom xy-planes
+;
   for i = 0,npy-1 do begin
     for j = 0,npx-1 do begin
       thtim(j*nxi:(j+1)*nxi-1,i*nyi:(i+1)*nyi-1) = bytscl(rev* $
@@ -193,9 +193,9 @@ if xrot gt 0 then begin
   phi2img=rebin(reform(phi2im),nxi*npx*zoom,nzi*zoom)
   phi3img=rebin(reform(phi3im),nxi*npx*zoom,nzi*zoom)
   phi4img=rebin(reform(phi4im),nxi*npx*zoom,nzi*zoom)
-  ;
-  ; set up masking for transparency, if using shell
-  ;
+;
+; set up masking for transparency, if using shell
+;
   trrg = rebin(reform(trr),nxi*npx*zoom,nyi*npy*zoom)
   prrg = rebin(reform(prr),nxi*npx*zoom,nzi*zoom)
   indt=where(trrg lt r_int or trrg gt r_ext,nindt)
@@ -207,9 +207,9 @@ if xrot gt 0 then begin
     phi3img(indp)=mincol-1
     phi4img(indp)=mincol-1
   endif
-  ;
-  ; set up theta masking
-  ; 
+;
+; set up theta masking
+; 
   pttg=rebin(reform(ptt),nxi*npx*zoom,nzi*zoom)
   indpt=where(pttg lt tht0 or pttg gt thtn,nindpt)
   if nindpt ne 0 then begin
@@ -296,28 +296,28 @@ xm=x0+0.5*xmax*npx+xval & ym=y0+0.5*ymax*npy & zm=z0+0.5*zval
   yf0=ym+spc & yf1=y1-spc2 & yfm=yf0+(yf1-yf0)/2.
   vertxs=[[xm,yf1,zd2],[xm,yf0,zd1],$
           [xm,yf0,zu1],[xm,yf1,zu2]]
-  polyfill,vertxs,/t3d,pattern=phi2img, transparent=mincol, $
+  polyfill,vertxs,/t3d,pattern=phi4img, transparent=mincol, $
     image_coord=[[xs(1)-1,0],[0,0],[0,xs(2)-1],[xs(1)-1,xs(2)-1]]
 
 ;second x plot - phi=3pi/2
   yf0=ym-spc & yf1=y0+spc2 & yfm=yf0+(yf1-yf0)/2.
   vertxs=[[xm,yf1,zd2],[xm,yf0,zd1],$
           [xm,yf0,zu1],[xm,yf1,zu2]]
-  polyfill,vertxs,/t3d,pattern=phi4img, transparent=mincol, $
+  polyfill,vertxs,/t3d,pattern=phi2img, transparent=mincol, $
     image_coord=[[xs(1)-1,0],[0,0],[0,xs(2)-1],[xs(1)-1,xs(2)-1]]
 
 ;y=0 plot - phi=0
   xf0=xm+spc & xf1=x1-spc2 & xfm=xf0+(xf1-xf0)/2.
   vertys=[[xf0,ym,zd1],[xf1,ym,zd2],$
           [xf1,ym,zu2],[xf0,ym,zu1]]
-  polyfill,vertys,/t3d,pattern=phi1img, transparent=mincol, $
+  polyfill,vertys,/t3d,pattern=phi3img, transparent=mincol, $
     image_coord=[[0,0],[ys(1)-1,0],[ys(1)-1,ys(2)-1],[0,ys(2)-1]]
 
 ;second y plot - phi=-pi
   xf0=xm-spc & xf1=x0+spc2 & xfm=xf0+(xf1-xf0)/2.
   vertys=[[xf0,ym,zd1],[xf1,ym,zd2],$
           [xf1,ym,zu2],[xf0,ym,zu1]]
-  polyfill,vertys,/t3d,pattern=phi3img, transparent=mincol, $
+  polyfill,vertys,/t3d,pattern=phi1img, transparent=mincol, $
     image_coord=[[0,0],[ys(1)-1,0],[ys(1)-1,ys(2)-1],[0,ys(2)-1]]
 
 ;midplane plots
