@@ -2776,7 +2776,7 @@ module EquationOfState
 !***********************************************************************
     subroutine bc_lnrho_hdss_z_liso(f,topbot)
 !
-!  Pontential field boundary condition
+!  Potential field boundary condition
 !
 !  02-jul-07/wlad: Adapted from Tobi's bc_aa_pot2
 !  Does the same thing as bc_lnrho_hdss_z_iso, but for a local isothermal

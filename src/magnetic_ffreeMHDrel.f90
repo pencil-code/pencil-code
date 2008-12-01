@@ -1033,12 +1033,12 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
       real, dimension (nx,ny,nghost+1) :: fz
       integer :: j
 !
-!  pontential field condition
+!  potential field condition
 !  check whether we want to do top or bottom (this is precessor dependent)
 !
       select case(topbot)
 !
-!  pontential field condition at the bottom
+!  potential field condition at the bottom
 !
       case('bot')
         if (headtt) print*,'bc_aa_pot: potential field boundary condition at the bottom'
@@ -1056,7 +1056,7 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
         call potentdiv(fz,f2,f3,-1)
         f(l1:l2,m1:m2,1:n1,iaz)=-fz
 !
-!  pontential field condition at the top
+!  potential field condition at the top
 !
       case('top')
         if (headtt) print*,'bc_aa_pot: potential field boundary condition at the top'
