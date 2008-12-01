@@ -185,18 +185,34 @@ module BorderProfiles
 !  Position-dependent driving term that attempts to drive pde
 !  the variable toward some target solution on the boundary.
 !
+!
+!  The driving is applied in the inner stripe between
+!  r_int and r_int+2*w, and in the outer stripe between
+!  r_ext-2*w and r_ext, as sketched below
+!  
+!  Radial extent of the box:
+!
+!   -------------------------------------------
+!  | border |        untouched        | border |
+!   -------------------------------------------
+! r_int    r_int        ...          r_ext    r_ext
+!          +2*w                      -2*w
+! 
       real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension(nx) :: f_target
+      type (pencil_case) :: p
       real :: pborder,inverse_drive_time
       integer :: i,j
 !
-
-!
       do i=1,nx
-        if ( ((p%rcyl_mn(i).ge.r_int).and.(p%rcyl_mn(i).le.r_int+2*wborder_int)).or.&
-             ((p%rcyl_mn(i).ge.r_ext-2*wborder_ext).and.(p%rcyl_mn(i).le.r_ext))) then
+        if ( &
+            !inner stripe
+             ((p%rcyl_mn(i).ge.r_int).and.&
+              (p%rcyl_mn(i).le.r_int+2*wborder_int)).or.&
+            !outer stripe
+             ((p%rcyl_mn(i).ge.r_ext-2*wborder_ext).and.&
+              (p%rcyl_mn(i).le.r_ext))) then
 !        
           call get_drive_time(p,inverse_drive_time,i)
           call get_border(p,pborder,i)
