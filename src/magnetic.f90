@@ -1173,10 +1173,12 @@ module Magnetic
       if (lresi_dust) lpenc_requested(i_rhop)=.true.
 
       if ((borderaa=='Alfven-rz').or.(borderaa=='Alfven-zconst')) then
-        lpenc_requested(i_rcyl_mn) =.true.
-        lpenc_requested(i_rcyl_mn1)=.true.
-        lpenc_requested(i_phix)    =.true.
-        lpenc_requested(i_phiy)    =.true.
+        if (.not.lspherical_coords) then 
+          lpenc_requested(i_rcyl_mn) =.true.
+          lpenc_requested(i_rcyl_mn1)=.true.
+          lpenc_requested(i_phix)    =.true.
+          lpenc_requested(i_phiy)    =.true.
+        endif
       endif
 
       if (borderaa=='toroidal') &
@@ -2633,13 +2635,15 @@ module Magnetic
       use BorderProfiles, only: border_driving
       use Mpicomm, only: stop_it
       use Gravity, only: qgshear
+      use SharedVariables
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: f_target
-      real :: kr,kr1,Aphi,B0
-      integer :: ju,j,i
+      real :: kr,kr1,Aphi,B0,pblaw
+      real, pointer :: plaw 
+      integer :: ju,j,i,ierr
 !
       select case(borderaa)
 !
@@ -2671,30 +2675,54 @@ module Magnetic
              Aphi =  amplaa(1)*kr1 * sin(kr*(p%rcyl_mn(i)-r_int)) + &
                   amplaa(1)*kr1**2*p%rcyl_mn1(i)*cos(kr*(p%rcyl_mn(i)-r_int))
 !
-             f_target(:,1) = Aphi * p%phix(i)
-             f_target(:,2) = Aphi * p%phiy(i)
-             f_target(:,3) = 0.
+             f_target(i,1) = Aphi * p%phix(i)
+             f_target(i,2) = Aphi * p%phiy(i)
+             f_target(i,3) = 0.
            endif
          enddo
 !
       case('Alfven-zconst')
-        B0=Lxyz(3)/(2*zmode*pi)
-        do i=1,nx
-          if ( ((p%rborder_mn(i).ge.r_int).and.(p%rborder_mn(i).le.r_int+2*wborder_int)).or.&
-               ((p%rborder_mn(i).ge.r_ext-2*wborder_ext).and.(p%rborder_mn(i).le.r_ext))) then
+        if (lcartesian_coords.or.lcylindrical_coords) then
+          B0=Lxyz(3)/(2*zmode*pi)
+          do i=1,nx
+            if ( ((p%rborder_mn(i).ge.r_int)               .and.&
+                  (p%rborder_mn(i).le.r_int+2*wborder_int)).or. &
+                 ((p%rborder_mn(i).ge.r_ext-2*wborder_ext) .and.&
+                  (p%rborder_mn(i).le.r_ext)))              then
 !            
-            if ((qgshear.eq.1.5).and.(rsmooth.eq.0.)) then
-              !default unsmoothed keplerian
-              Aphi=2*B0*sqrt(p%rcyl_mn1(i))
-            else
-              Aphi=B0/(p%rcyl_mn(i)*(2-qgshear))*(p%rcyl_mn(i)**2+rsmooth**2)**(1-qgshear/2.)
-            endif
+              if ((qgshear.eq.1.5).and.(rsmooth.eq.0.)) then
+                !default unsmoothed keplerian
+                Aphi=2*B0*sqrt(p%rcyl_mn1(i))
+              else
+                Aphi=B0/(p%rcyl_mn(i)*(2-qgshear))*(p%rcyl_mn(i)**2+rsmooth**2)**(1-qgshear/2.)
+              endif
 !
-            f_target(:,1) = Aphi * p%phix(i)
-            f_target(:,2) = Aphi * p%phiy(i)
-            f_target(:,3) = 0.
-          endif
-        enddo
+              f_target(i,1) = Aphi * p%phix(i)
+              f_target(i,2) = Aphi * p%phiy(i)
+              f_target(i,3) = 0.
+            endif
+          enddo
+        elseif (lspherical_coords) then 
+          B0=Lxyz(2)/(2*zmode*pi)
+          do i=1,nx
+            if ( ((p%rborder_mn(i).ge.r_int)               .and.&
+                  (p%rborder_mn(i).le.r_int+2*wborder_int)).or. &
+                 ((p%rborder_mn(i).ge.r_ext-2*wborder_ext) .and.&
+                  (p%rborder_mn(i).le.r_ext)))              then
+!            
+              call get_shared_variable('plaw',plaw,ierr)
+              if (ierr/=0) call stop_it("alfven_zconst: "//&
+                   "there was a problem when getting plaw")
+!
+              pblaw=1-qgshear-plaw/2.
+              Aphi=-B0/(pblaw+2)*p%rborder_mn(i)**(pblaw+1)*1
+!
+              f_target(i,1) = 0.
+              f_target(i,2) = 0.
+              f_target(i,3) = Aphi*sin1th(m)
+            endif
+          enddo
+        endif
 !
       case('nothing')
          if (lroot.and.ip<=5) &
