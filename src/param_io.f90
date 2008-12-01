@@ -84,7 +84,7 @@ module Param_IO
        lcylinder_in_a_box,lsphere_in_a_box,llocal_iso,init_loops,lwrite_2d,&
        lcylindrical_gravity,border_frac_x,border_frac_y, &
        border_frac_z,luse_latitude, &
-       lshift_datacube_x, lfargo_advection, &
+       lshift_datacube_x,&
        yequator, nscbc_sigma
 
   namelist /run_pars/ &
@@ -388,7 +388,7 @@ module Param_IO
         print*, 'lperi= ', lperi
       endif
       call check_consistency_of_lperi('read_startpars')
-      do i=1,3
+      do i=1,5
         if (nscbc(i) /= '') lnscbc = .true.
       enddo
       if(lnscbc) call parse_nscbc(nscbc,nscbc1,nscbc2)
@@ -758,7 +758,7 @@ module Param_IO
         print*, 'bcz1,bcz2= ', bcz1," : ",bcz2
       endif
       call check_consistency_of_lperi('read_runpars')
-      do i=1,3
+      do i=1,5
         if (nscbc(i) /= '') lnscbc = .true.
       enddo
       if(lnscbc) call parse_nscbc(nscbc,nscbc1,nscbc2)

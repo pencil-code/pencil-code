@@ -5162,7 +5162,7 @@ module Sub
         intent(in) :: bc
         intent(out) :: bc1,bc2
 !
-        do j=1,3
+        do j=1,5
           isep = index(bc(j),':')
           if (isep > 0) then
             bc1(j) = bc(j)(1:isep-1)

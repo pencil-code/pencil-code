@@ -98,14 +98,10 @@ module Chemistry
 
 
 
-  logical :: Natalia_thoughts=.false.
-
-
-
 ! input parameters
   namelist /chemistry_init_pars/ &
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
-      amplchemk,amplchemk2, Natalia_thoughts,chem_diff,nu_spec, BinDif_simple, visc_simple
+      amplchemk,amplchemk2, chem_diff,nu_spec, BinDif_simple, visc_simple
 
 ! run parameters
   namelist /chemistry_run_pars/ &
@@ -543,7 +539,7 @@ module Chemistry
 !
 !  Pressure
 !
-        if (lpencil(i_pp)) p%pp = Rgas*p%rho*p%TT*p%mu1
+        if (lpencil(i_pp)) p%pp = Rgas*p%rho*p%mu1*p%TT
        
      ! print*,p%pp
        !print*,'end of line'
@@ -594,7 +590,7 @@ module Chemistry
 !
         if (lpencil(i_rho1gpp)) then
 
-          pp_full=Rgas*TT_full*rho_full*mu1_full
+          pp_full=Rgas*rho_full*mu1_full*TT_full
 
             call grad(pp_full,p%rho1gpp)
 
@@ -683,7 +679,7 @@ module Chemistry
       real, dimension (mx,my,mz,nchemspec) :: species_cond
 !
       intent(in) :: f
-      integer :: k,i,j
+      integer :: k,i,j, j1,j2,j3
        integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
       real :: T_local, T_up, T_mid, T_low, tmp,  lnT_local
       real :: mk_mj
@@ -734,45 +730,45 @@ module Chemistry
             T_mid=species_constants(k,iTemp2)
             T_up= species_constants(k,iTemp3)
 
-            do n=1,mz
-             do m=1,my
-               do i=1,mx
+            do j3=1,mz
+             do j2=1,my
+               do j1=1,mx
 
-!                if (n<=l1 .or. n>=l2) then
-!                  T_low=0.
-!                  T_up=1e10
-!                endif
+                if (j1<=l1 .or. j2>=l2) then
+                  T_low=0.
+                  T_up=1e10
+                endif
 
-!                if (m<=m1 .or. m>=m2) then
-!                  T_low=0.
-!                  T_up=1e10
-!                endif
+                if (j2<=m1 .or. j2>=m2) then
+                  T_low=0.
+                  T_up=1e10
+                endif
 
-!                if (i<=m1 .or. i>=m2) then
-!                  T_low=0.
-!                  T_up=1e10
-!                endif
+                if (j3<=n1 .or. j3>=n2) then
+                  T_low=0.
+                  T_up=1e10
+                endif
 
-                T_local=TT_full(i,m,n)*unit_temperature 
+                T_local=TT_full(j1,j2,j3)*unit_temperature 
 
                  if (T_local >=T_low .and. T_local <= T_mid) then
                    tmp=0. 
                    do j=1,5
                      tmp=tmp+species_constants(k,iaa2(j))*T_local**(j-1) 
                    enddo
-                   cp_R_spec(i,m,n,k)=tmp
-                   cvspec_full(i,m,n,k)=cp_R_spec(i,m,n,k)-1.
+                   cp_R_spec(j1,j2,j3,k)=tmp
+                   cvspec_full(j1,j2,j3,k)=cp_R_spec(j1,j2,j3,k)-1.
                  elseif (T_local >=T_mid .and. T_local <= T_up) then
                 !  elseif (T_local >=T_mid ) then
                    tmp=0.
                    do j=1,5 
                      tmp=tmp+species_constants(k,iaa1(j))*T_local**(j-1) 
                     enddo
-                    cp_R_spec(i,m,n,k)=tmp
-                    cvspec_full(i,m,n,k)=cp_R_spec(i,m,n,k)-1.
+                    cp_R_spec(j1,j2,j3,k)=tmp
+                    cvspec_full(j1,j2,j3,k)=cp_R_spec(j1,j2,j3,k)-1.
                  else
                     print*,'T_local=',T_local
-                    print*,'i,m,n=',i,m,n
+                    print*,'j1,j2,j3=',j1,j2,j3
                     call fatal_error('calc_for_chem_mixture','T_local is outside range')
                  endif
                enddo
@@ -1263,17 +1259,7 @@ module Chemistry
           if (lreactions) then
             df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+p%DYDt_reac(:,k)
           endif
-!
-!this are Natalia's thoughts, which should be discussed later!
-!
-          if (Natalia_thoughts) then
-            do j=l1,l2
-              if (f(j,m,n,ichemspec(k))+dt*df(j,m,n,ichemspec(k)) < 0.) then
-               !f(j,m,n,ichemspec(k))=-f(j,m,n,ichemspec(k))
-             !  df(j,m,n,ichemspec(k))=0.
-               endif
-            enddo
-          endif
+
 
       enddo
 
