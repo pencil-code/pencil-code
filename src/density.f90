@@ -1666,9 +1666,9 @@ module Density
       real :: lnrhomid,strat,tmp1,tmp2,rmid,ptlaw
       type (pencil_case)  :: p
       integer            :: i
-
+!
       select case(borderlnrho)
-
+!
       case('zero','0')
         if (plaw.ne.0) call stop_it("borderlnrho: density is not flat but "//&
              "you are calling zero border")
@@ -1691,8 +1691,10 @@ module Density
         if (plaw.eq.0) call stop_it("borderlnrho: no need to call a power-"//&
              "law border for a flat density profile")
         do i=1,nx
-          if ( ((p%rborder_mn(i).ge.r_int).and.(p%rborder_mn(i).le.r_int+2*wborder_int)).or.&
-               ((p%rborder_mn(i).ge.r_ext-2*wborder_ext).and.(p%rborder_mn(i).le.r_ext))) then
+          if ( ((p%rborder_mn(i).ge.r_int).and.&
+                (p%rborder_mn(i).le.r_int+2*wborder_int)).or.&
+               ((p%rborder_mn(i).ge.r_ext-2*wborder_ext).and.&
+                (p%rborder_mn(i).le.r_ext))) then
 !
             if (ldensity_nolog) then
               call power_law(rho_const,p%rcyl_mn(i),plaw,f_target(i),r_ref)
@@ -1713,17 +1715,21 @@ module Density
       case('stratification')
         if (lspherical_coords) call get_ptlaw(ptlaw)
         do i=1,nx
-          if ( ((p%rborder_mn(i).ge.r_int).and.(p%rborder_mn(i).le.r_int+2*wborder_int)).or.&
-               ((p%rborder_mn(i).ge.r_ext-2*wborder_ext).and.(p%rborder_mn(i).le.r_ext))) then
+          if ( ((p%rborder_mn(i).ge.r_int).and.&
+                (p%rborder_mn(i).le.r_int+2*wborder_int)).or.&
+               ((p%rborder_mn(i).ge.r_ext-2*wborder_ext).and.&
+                (p%rborder_mn(i).le.r_ext))) then
 !            
             if (lexponential_smooth) then
               !radial_percent_smooth = percentage of the grid
               !that the smoothing is applied
               rmid=rshift+(xyz1(1)-xyz0(1))/radial_percent_smooth
               lnrhomid=log(rho0) &
-                   + plaw*log((1-exp( -((p%rcyl_mn(i)-rshift)/rmid)**2 ))/p%rcyl_mn(i))
+                  + plaw*log((1-exp( -((p%rcyl_mn(i)-rshift)/rmid)**2 ))/&
+                  p%rcyl_mn(i))
             else
-              lnrhomid=log(rho0)-.5*plaw*log((p%rcyl_mn(i)/r_ref)**2+rsmooth**2)
+              lnrhomid=log(rho0)-&
+                  .5*plaw*log((p%rcyl_mn(i)/r_ref)**2+rsmooth**2)
             endif
             if (lspherical_coords) then 
               call acceleration(R=p%r_mn(i),G_R=tmp1)

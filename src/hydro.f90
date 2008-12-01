@@ -1006,8 +1006,9 @@ module Hydro
         if (lcylinder_in_a_box) lpenc_requested(i_rcyl_mn)=.true.
       endif
 !
-      if ( borderuu=='global-shear'      .or. &
-           borderuu=='global-shear-mhs') then
+      if ((borderuu=='global-shear'      .or. &
+           borderuu=='global-shear-mhs') .and.&
+           .not.lspherical_coords)             then
         lpenc_requested(i_rcyl_mn)     =.true.
         lpenc_requested(i_rcyl_mn1)    =.true.
         lpenc_requested(i_phix)        =.true.
@@ -2033,14 +2034,12 @@ module Hydro
       real :: tmp,OO,corr,corrmag
       integer :: ju,j,i,ierr
       real, pointer :: zmode,plaw
-!!
+!
       real :: dr,r0,alpha
       real, dimension(nx) :: tmp_nx,a_tri,b_tri,c_tri,d_tri,u_tri
       real, dimension(nx) :: usg,corr_nx,uu_nx,dens
       real, dimension(mx) :: potential,gpotential
       logical :: err
-!!
-
 !
 ! these tmps and where's are needed because these square roots
 ! go negative in the frozen inner disc if the sound speed is big enough
@@ -2055,7 +2054,8 @@ module Hydro
         enddo
       case('keplerian')  
         if (.not.lspherical_coords) &
-             call stop_it("keplerian border: not implemented for other grids than spherical yet")
+            call stop_it("keplerian border: not implemented"//& 
+            "for other grids than spherical yet")
         if (lgrav) then 
           g0_=g0
         elseif (lparticles_nbody) then
@@ -2066,8 +2066,10 @@ module Hydro
         !don't care about the pressure term, just drive it to Keplerian
         !in the inner boundary ONLY!!
         do i=1,nx
-          if ( ((p%rborder_mn(i).ge.r_int).and.(p%rborder_mn(i).le.r_int+2*wborder_int)).or.&
-               ((p%rborder_mn(i).ge.r_ext-2*wborder_ext).and.(p%rborder_mn(i).le.r_ext))) then
+          if ( ((p%rborder_mn(i).ge.r_int).and.&
+                (p%rborder_mn(i).le.r_int+2*wborder_int)).or.&
+               ((p%rborder_mn(i).ge.r_ext-2*wborder_ext).and.&
+                (p%rborder_mn(i).le.r_ext))) then
             call power_law(g0_,p%r_mn(i),qgshear,OO)
             f_target(i,1) = 0.
             f_target(i,2) = 0.
@@ -2076,6 +2078,8 @@ module Hydro
         enddo
 
       case('global-shear')
+        if (lspherical_coords) call fatal_error("set_border_hydro",&
+            "global-shear not implemented for spherical coords")
         !get g0
         if (lgrav) then 
           g0_=g0
@@ -2091,8 +2095,10 @@ module Hydro
              "there was a problem when getting plaw")
         !no need to do the whole nx array. the border is all we need
         do i=1,nx
-          if ( ((p%rborder_mn(i).ge.r_int).and.(p%rborder_mn(i).le.r_int+2*wborder_int)).or.&
-               ((p%rborder_mn(i).ge.r_ext-2*wborder_ext).and.(p%rborder_mn(i).le.r_ext))) then
+          if ( ((p%rborder_mn(i).ge.r_int).and.&
+                (p%rborder_mn(i).le.r_int+2*wborder_int)).or.&
+               ((p%rborder_mn(i).ge.r_ext-2*wborder_ext).and.&
+                (p%rborder_mn(i).le.r_ext))) then
             call power_law(g0_,p%rcyl_mn(i),2*qgshear,tmp)
             !minimize use of exponentials if no smoothing is used
             if (rsmooth.ne.0.) then 
@@ -2108,6 +2114,8 @@ module Hydro
         enddo
 !
       case('global-shear-mhs')
+        if (lspherical_coords) call fatal_error("set_border_hydro",&
+            "global-shear-mhs not implemented for spherical coords")
         !get g0
         if (lgrav) then 
           g0_=g0
@@ -2127,8 +2135,10 @@ module Hydro
         B0=Lxyz(3)/(2*zmode*pi)
         !no need to do the whole nx array. the border is all we need
         do i=1,nx
-          if ( ((p%rborder_mn(i).ge.r_int).and.(p%rborder_mn(i).le.r_int+2*wborder_int)).or.&
-               ((p%rborder_mn(i).ge.r_ext-2*wborder_ext).and.(p%rborder_mn(i).le.r_ext))) then
+          if ( ((p%rborder_mn(i).ge.r_int).and.&
+                (p%rborder_mn(i).le.r_int+2*wborder_int)).or.&
+               ((p%rborder_mn(i).ge.r_ext-2*wborder_ext).and.&
+                (p%rborder_mn(i).le.r_ext))) then
             call power_law(g0_,p%rcyl_mn(i),2*qgshear,tmp)
             !minimize use of exponentials if no smoothing is used
             if (rsmooth.ne.0.) then 
@@ -2204,16 +2214,16 @@ module Hydro
 !***********************************************************************
     subroutine centrifugal_balance(f)
 !
-! This subroutine is a general routine that takes
-! the gravity acceleration and adds the centrifugal force
-! that numerically balances it.
+!  This subroutine is a general routine that takes
+!  the gravity acceleration and adds the centrifugal force
+!  that numerically balances it.
 !
-! Pressure corrections to ensure centrifugal equilibrium are
-! added in the respective modules
+!  Pressure corrections to ensure centrifugal equilibrium are
+!  added in the respective modules
 !
-! 24-feb-05/wlad: coded
-! 04-jul-07/wlad: generalized for any shear
-! 08-sep-07/wlad: moved here from initcond
+!  24-feb-05/wlad: coded
+!  04-jul-07/wlad: generalized for any shear
+!  08-sep-07/wlad: moved here from initcond
 !
       use Cdata
       use Gravity, only: r0_pot,n_pot,acceleration,qgshear
