@@ -1,0 +1,28 @@
+! The sea-level composition of air 
+! (in percent  by volume at the  temperature of 15°C 
+! and the pressure of 101325 Pa) is given  below.
+!
+! Source:
+!
+!    CRC Handbook of Chemistry and Physics
+!    by David R. Lide, Editor-in-Chief
+!   1997 Edition
+!
+!
+! Symbol   Percent by Volume
+!
+
+T= 1200.000
+P= 10.1327e4
+N2     74.523
+O2     22.626
+H2      2.851
+!H2      1.999997
+!CO2   0.0314
+!NE    0.001818
+!CH4   0.0002
+!HE    0.000524
+!KR    0.000114
+!H2    0.00005
+H      0.000
+O      0.000
