@@ -56,7 +56,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   or `hydrogen-bond' fail. Note that the patterns are anchored at the end,
 #   but not at the beginning.
 # Crontab entry:
-#   30 02 * * *  $HOME/f90/pencil-auto-test/bin/pencil-test -D /home/wdobler/f90/pencil-auto-test -N15 -Uc -rs -T $HOME/public_html/pencil-code/tests/g95_debug_timings.txt -Hm wdobler@gmail.com norlx50 > $HOME/public_html/pencil-code/tests/g95_debug.html
+#   30 02 * * *  $HOME/f90/pencil-auto-test/bin/pencil-test -D /home/wdobler/f90/pencil-auto-test -N15 -Uc -rs -T $HOME/public_html/pencil-code/tests/g95_debug_timings.txt -Hm my@email.net norlx50 > $HOME/public_html/pencil-code/tests/g95_debug.html
 
 use strict;
 use Getopt::Long;
