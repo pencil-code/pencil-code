@@ -3290,7 +3290,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Relaxation time:
 !
-      tausp1_par=18.0*cdrag*nu/((rhop_tilde/interp_rho(k))*stocunn*dia**2)
+      tausp1_par=18.0*cdrag*nu/((rhops/interp_rho(k))*stocunn*dia**2)
 !
     endsubroutine calc_draglaw_steadystate
 !***********************************************************************
