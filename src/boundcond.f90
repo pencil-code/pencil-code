@@ -4585,13 +4585,13 @@ module Boundcond
           enddo
           df(lll,m1:m2,n1:n2,ichemspec(k))=&
               -f(lll,m1:m2,n1:n2,iux)*dYk_dx(m1:m2,n1:n2) &
-              -f(lll,m1:m2,n1:n2,iuy)*dYk_dy(m1:m2,n1:n2) &
-              +bound_rhs_Y(:,:,k)
+              -f(lll,m1:m2,n1:n2,iuy)*dYk_dy(m1:m2,n1:n2)! &
+            !  +bound_rhs_Y(:,:,k)
 !
         enddo
 
-         df(lll,m1:m2,n1:n2,ichemspec(k))=-f(lll,m1:m2,n1:n2,iux)*dYk_dx(m1:m2,n1:n2) &
-                                         -f(lll,m1:m2,n1:n2,iuy)*dYk_dy(m1:m2,n1:n2) !&
+   !      df(lll,m1:m2,n1:n2,ichemspec(k))=-f(lll,m1:m2,n1:n2,iux)*dYk_dx(m1:m2,n1:n2) &
+   !                                      -f(lll,m1:m2,n1:n2,iuy)*dYk_dy(m1:m2,n1:n2) !&
                                         !+bound_rhs_Y(:,:,k)
 
       endif

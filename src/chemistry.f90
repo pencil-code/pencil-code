@@ -3217,6 +3217,8 @@ module Chemistry
         f(:,:,:,ichemspec(stor1(j)))=stor2(j)*0.01
       enddo 
 
+
+
 !      do j=1,nchemspec
 !       if (maxval(f(:,:,:,ichemspec(j)))<1e-15) then
 !           f(:,:,:,ichemspec(j))=1e-15
