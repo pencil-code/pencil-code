@@ -510,7 +510,7 @@ module Particles_sub
         do k=npar_loc,1,-1
 !  Find y index of receiving processor.
           ipy_rec=ipy
-          if (fp(k,iyp)>procy_bounds(ipy+1).and.ipy<nprocy-1) then
+          if (fp(k,iyp)>=procy_bounds(ipy+1).and.ipy<nprocy-1) then
             do j=ipy+1,nprocy-1
               if (fp(k,iyp)<procy_bounds(j+1)) then
                 ipy_rec=j
@@ -527,7 +527,7 @@ module Particles_sub
           endif
 !  Find z index of receiving processor.
           ipz_rec=ipz
-          if (fp(k,izp)>procz_bounds(ipz+1).and.ipz<nprocz-1) then
+          if (fp(k,izp)>=procz_bounds(ipz+1).and.ipz<nprocz-1) then
             do j=ipz+1,nprocz-1
               if (fp(k,izp)<procz_bounds(j+1)) then
                 ipz_rec=j
