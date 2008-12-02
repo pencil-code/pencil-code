@@ -2913,19 +2913,22 @@ module Chemistry
      real :: PP
 
 
-      logical :: emptyfile
+      logical :: emptyfile, lairinp
       integer :: file_id=123
       character (len=80) :: ChemInpLine
       character (len=10) :: specie_string
       character (len=1)  :: tmp_string 
       integer :: VarNumber,i,j,k=1
+      character (len=20) :: input_file='air.dat'
 
       integer :: StartInd,StopInd,StartInd_1,StopInd_1
       integer :: iostat
 
       StartInd_1=1; StopInd_1 =0
 
-     if (read_P) then
+      inquire(FILE=input_file, EXIST=lairinp)
+
+     if (read_P .and. lairinp) then
 
 
       StartInd_1=1; StopInd_1 =0
