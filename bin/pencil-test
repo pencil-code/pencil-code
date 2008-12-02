@@ -459,8 +459,9 @@ sub send_mail {
         $errmsg = "There are errors";
     }
     my @cmdline = ($mailer);
-    push @cmdline, '-s', "$errmsg from pencil-code autotest on $host";
+    my $subject = "$errmsg from pencil-code autotest on $host";
 
+    # Add Reply-To: field if we have enough information
     my $mail = my $email = $ENV{EMAIL};
     if (defined($email)) {
         if ($email =~ /<([^>]*)>/) {
@@ -469,9 +470,13 @@ sub send_mail {
             $mail = $email;
         }
         if ($mail =~ /[-.a-zA-Z_0-9]+@[-.a-zA-Z_0-9]+/) {
-            push @cmdline, '-a', "Reply-To: $email";
+            # Hack: append extra header field to subject line (because not
+            # all `mail' versions have a `-a' option)
+            $subject .= "\nReply-To: $email";
         }
     }
+
+    push @cmdline, '-s', $subject;
 
     push @cmdline, "$address";
 
