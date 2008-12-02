@@ -2913,7 +2913,7 @@ module Chemistry
      real :: PP
 
 
-      logical :: emptyfile, lairinp
+      logical :: emptyfile=.true., lairinp=.false.
       integer :: file_id=123
       character (len=80) :: ChemInpLine
       character (len=10) :: specie_string
@@ -2939,6 +2939,7 @@ module Chemistry
        dataloop: do
 
         read(file_id,'(80A)',IOSTAT=iostat) ChemInpLine(1:80)
+
         if (iostat < 0) exit dataloop
         emptyFile=.false.
         StartInd_1=1; StopInd_1=0
@@ -2958,7 +2959,6 @@ module Chemistry
           read (unit=ChemInpLine(StartInd:StopInd),fmt='(E14.7)'), PP
               print*, ' Pressure, Pa   ', PP
 
-
         endif
        enddo dataloop
 
@@ -2966,10 +2966,14 @@ module Chemistry
 
        close(file_id)
 
-
-
-      pp_infx(:,:,:)=PP*10.
-      read_P=.false.
+       if (emptyFile) then
+         pp_infx(:,:,:)=0.
+         read_P=.false.
+         if (lroot) print*, 'air.dat file is empty, then pp_inf=0 '
+       else
+         pp_infx(:,:,:)=PP*10.
+         read_P=.false.
+       endif
      endif
 
 
