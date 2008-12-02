@@ -687,9 +687,7 @@ module Boundcond
           call nscbc_boundtreat_xyz(f,df,2)
       if (nscbc1(3) /= '' .or. nscbc2(3) /= '') &
           call nscbc_boundtreat_xyz(f,df,3)
-      if (nscbc1(5) /= '' .or. nscbc2(5) /= '') &
-          call nscbc_boundtreat_xyz(f,df,5)
-!
+     
     endsubroutine nscbc_boundtreat
 !***********************************************************************
     subroutine nscbc_boundtreat_xyz(f,df,j)
@@ -743,11 +741,9 @@ module Boundcond
         case('subsonic_inflow')
 ! Subsonic inflow 
          if (j==1) then
-          call bc_nscbc_subin_x(f,df,topbot,luinlet=.true.,lTinlet=.false.,f_t=valx(j))
+          call bc_nscbc_subin_x(f,df,topbot,luinlet=.true.,lTinlet=.true.,u_t=valx(j),T_t=valx(5))
          elseif (j==2) then
          ! call bc_nscbc_subin_y(f,df,topbot)
-         elseif (j==5) then
-          call bc_nscbc_subin_x(f,df,topbot,luinlet=.false.,lTinlet=.true.,f_t=valx(j))
          endif
         case('subson_nref_outflow')
          if (j==1) then
@@ -4318,7 +4314,7 @@ module Boundcond
 !
     endsubroutine bc_nscbc_prf_z
 !***********************************************************************
-    subroutine bc_nscbc_subin_x(f,df,topbot,luinlet,lTinlet,f_t)
+    subroutine bc_nscbc_subin_x(f,df,topbot,luinlet,lTinlet,u_t,T_t)
 !
 !   nscbc case 
 !   subsonic inflow boundary conditions
@@ -4341,7 +4337,7 @@ module Boundcond
       real, dimension (my,mz) :: cs2x,cs0_ar,cs20_ar
       real, dimension (mx,my,mz) :: cs2_full, gamma_full, rho_full, pp
       logical, optional :: luinlet, lTinlet
-      real, optional :: f_t
+      real, optional :: u_t,T_t
       logical :: lluinlet, llTinlet
       integer :: lll,i, sgn
       real :: Mach_num
@@ -4355,12 +4351,12 @@ module Boundcond
       if (present(luinlet)) lluinlet = luinlet
       if (present(lTinlet)) llTinlet = lTinlet
 !
-      if (luinlet.and..not.present(f_t)) call stop_it(&
+      if (luinlet.and..not.present(u_t)) call stop_it(&
            'bc_nscbc_subin_x: when using luinlet=T, '//&
-           'you must also specify u_t and T_t)')
-      if (lTinlet.and..not.present(f_t)) call stop_it(&
+           'you must also specify u_t)')
+      if (lTinlet.and..not.present(T_t)) call stop_it(&
            'bc_nscbc_subin_x: when using lTinlet=T, '//&
-           'you must also specify u_t and T_t)')
+           'you must also specify T_t)')
 !
       if (leos_chemistry) then
         call get_cs2_full(cs2_full)
@@ -4435,13 +4431,13 @@ module Boundcond
             df(lll,m1:m2,n1:n2,ilnrho) &
             +(f(lll,m1:m2,n1:n2,iux) + sgn*cs0_ar(m1:m2,n1:n2)) &
             *cs0_ar(m1:m2,n1:n2)/Lxyz(1)*(1.-Mach_num*Mach_num) &
-            *(f(lll,m1:m2,n1:n2,iux) - f_t))
+            *(f(lll,m1:m2,n1:n2,iux) - u_t))
 !
       elseif (llTinlet) then
         df(lll,m1:m2,n1:n2,iux) = df(lll,m1:m2,n1:n2,iux)  &
             -sgn*(f(lll,m1:m2,n1:n2,iux)/Lxyz(1)*&
             pp(lll,m1:m2,n1:n2)/rho0(m1:m2,n1:n2) &
-            *(1.-f_t/TT0(m1:m2,n1:n2)))
+            *(1.-T_t/TT0(m1:m2,n1:n2)))
       endif
 !
     endsubroutine bc_nscbc_subin_x

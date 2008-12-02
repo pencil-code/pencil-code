@@ -388,7 +388,7 @@ module Param_IO
         print*, 'lperi= ', lperi
       endif
       call check_consistency_of_lperi('read_startpars')
-      do i=1,5
+      do i=1,3
         if (nscbc(i) /= '') lnscbc = .true.
       enddo
       if(lnscbc) call parse_nscbc(nscbc,nscbc1,nscbc2)
@@ -758,7 +758,7 @@ module Param_IO
         print*, 'bcz1,bcz2= ', bcz1," : ",bcz2
       endif
       call check_consistency_of_lperi('read_runpars')
-      do i=1,5
+      do i=1,3
         if (nscbc(i) /= '') lnscbc = .true.
       enddo
       if(lnscbc) call parse_nscbc(nscbc,nscbc1,nscbc2)
