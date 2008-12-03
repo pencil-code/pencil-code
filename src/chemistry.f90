@@ -1658,8 +1658,8 @@ module Chemistry
                 k=k+1
                 if (k>nvar) then
                   print*,'nchemspec=',nchemspec
-                  call stop_it("There were too many species, '//&
-                      'please increase nchemspec!")
+                  call stop_it("There were too many species, "//&
+                      "please increase nchemspec!")
                 endif
               endif
               if (StartInd==80) exit
