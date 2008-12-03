@@ -458,14 +458,14 @@ module Particles_main
 ! Correct acceleration
 !
         if (lcylindrical_coords) then
-          rad=fp(k,ixp);raddot=fp(k,ivpx);phidot=fp(k,ivpy)/rad
+          rad=fp(k,ixp);raddot=fp(k,ivpx);phidot=fp(k,ivpy)/max(rad,tini)
           dfp(k,ivpx) = dfp(k,ivpx) + rad*phidot**2
           dfp(k,ivpy) = dfp(k,ivpy) - 2*raddot*phidot
         elseif (lspherical_coords) then
           rad=fp(k,ixp)
           sintht=sin(fp(k,iyp));costht=cos(fp(k,iyp))
-          raddot=fp(k,ivpx);thtdot=fp(k,ivpy)/rad
-          phidot=fp(k,ivpz)/(rad*sintht)
+          raddot=fp(k,ivpx);thtdot=fp(k,ivpy)/max(rad,tini)
+          phidot=fp(k,ivpz)/(max(rad,tini)*sintht)
 !
           dfp(k,ivpx) = dfp(k,ivpx) &
                + rad*(thtdot**2 + (sintht*phidot)**2)

@@ -2122,7 +2122,7 @@ k_loop:   do while (.not. (k>npar_loc))
              dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + fp(1:npar_loc,ivpx)
         if (nygrid/=1) &
              dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + &
-             fp(1:npar_loc,ivpy)/fp(1:npar_loc,ixp)
+             fp(1:npar_loc,ivpy)/max(fp(1:npar_loc,ixp),tini)
         if (nzgrid/=1) &
              dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + fp(1:npar_loc,ivpz)
 !
@@ -2132,10 +2132,11 @@ k_loop:   do while (.not. (k>npar_loc))
              dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + fp(1:npar_loc,ivpx)
         if (nygrid/=1) &
              dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + &
-             fp(1:npar_loc,ivpy)/fp(1:npar_loc,ixp)
+             fp(1:npar_loc,ivpy)/max(fp(1:npar_loc,ixp),tini)
         if (nzgrid/=1) &
              dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + &
-             fp(1:npar_loc,ivpz)/(fp(1:npar_loc,ixp)*sin(fp(1:npar_loc,iyp)))
+             fp(1:npar_loc,ivpz)/(max(fp(1:npar_loc,ixp),tini)*&
+                                                    sin(fp(1:npar_loc,iyp)))
 !
       endif
 !
