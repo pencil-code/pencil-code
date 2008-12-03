@@ -46,6 +46,7 @@ use IPC::Open2;
 my @sampdirs = qw(
                   no-modules
                   0d-tests/heating_noionize
+                  0d-tests/chemistry_H2_ignition_rkf
                   chiral-diffusion
                   cosmicray
                   backwards-compatible
