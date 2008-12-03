@@ -54,7 +54,7 @@ module Special
 !
 ! Sphere geometry
 !
-  real :: sphere_radius = 0.0
+  real :: sphere_radius = 0.0,cylinder_temp=293.0
   real :: sph_dia, sph_rad
   integer :: sph_center_x
   integer :: sph_nx, sph_ny
@@ -83,7 +83,7 @@ module Special
           sph_center_x,sph_nx,sph_ny,&
           sph_dia,sph_rad,&
           northern,southern,nequator,ltest,&
-          skin_depth
+          skin_depth,cylinder_temp
 !
 ! Run parameters
 !
@@ -210,6 +210,7 @@ module Special
       
       integer, pointer :: iglobal_cs2,iglobal_glnTT
       real :: a2,rr2,pphi,wall_smoothing,rr2_low,rr2_high,shiftx,shifty
+      real :: wall_smoothing_temp
       integer i,j,k,cyl
 
       select case(initspecial)
@@ -281,6 +282,12 @@ module Special
                       f(i,j,k,iux) = special_infuu*&
                            (1. - a2/rr2 + 2*yy(i,j,k)**2*a2/rr2**2)&
                            *wall_smoothing
+                      if (ilnTT .ne. 0) then
+                        wall_smoothing_temp=1-exp(-(rr2-a2)/(sqrt(a2))**2)
+                        f(i,j,k,ilnTT) = wall_smoothing_temp*f(i,j,k,ilnTT)&
+                             +cylinder_temp*(1-wall_smoothing_temp)
+                        f(i,j,k,ilnrho)=f(l2,m2,n2,ilnrho)*f(l2,m2,n2,ilnTT)/f(i,j,k,ilnTT)
+                      endif
                     else
                       shifty=cyl*Lxyz(2)
                       rr2_low =(xx(i,j,k)+shiftx)**2+(yy(i,j,k)+shifty)**2
@@ -294,7 +301,12 @@ module Special
                            +2*(xx(i,j,k)+shiftx)*(yy(i,j,k)+shifty)&
                            *a2/rr2_low**2)
                     endif
-                  enddo                  
+                  enddo
+                else
+                  if (ilnTT .ne. 0) then
+                    f(i,j,k,ilnTT) = cylinder_temp
+                    f(i,j,k,ilnrho)=f(l2,m2,n2,ilnrho)*f(l2,m2,n2,ilnTT)/cylinder_temp
+                  endif
                 end if
               end do
             end do
@@ -317,6 +329,13 @@ module Special
                       f(i,j,k,iuy) = special_infuu*&
                            (1. - a2/rr2 + 2*xx(i,j,k)**2*a2/rr2**2)&
                            *wall_smoothing
+                      if (ilnTT .ne. 0) then
+                        wall_smoothing_temp=1-exp(-(rr2-a2)/(sqrt(a2))**2)
+                        f(i,j,k,ilnTT) = wall_smoothing_temp*f(i,j,k,ilnTT)&
+                             +cylinder_temp*(1-wall_smoothing_temp)
+                        f(i,j,k,ilnrho)=f(l2,m2,n2,ilnrho)*f(l2,m2,n2,ilnTT)/f(i,j,k,ilnTT)
+                      endif
+
                     else
                       shiftx=cyl*Lxyz(1)
                       rr2_low =(xx(i,j,k)+shiftx)**2+(yy(i,j,k)+shifty)**2
@@ -330,7 +349,12 @@ module Special
                            +2*(xx(i,j,k)+shiftx)*(yy(i,j,k)+shifty)&
                            *a2/rr2_low**2)
                     endif
-                  enddo                  
+                  enddo  
+                else
+                  if (ilnTT .ne. 0) then
+                    f(i,j,k,ilnTT) = cylinder_temp
+                    f(i,j,k,ilnrho)=f(l2,m2,n2,ilnrho)*f(l2,m2,n2,ilnTT)/cylinder_temp
+                  endif
                 end if
               end do
             end do
