@@ -136,6 +136,7 @@ set masterhost = ''
 if ($?PBS_O_HOST) then
   if ("$PBS_O_HOST" =~ obelix*) set masterhost = 'obelix'
   if ("$PBS_O_HOST" =~ hyades*) set masterhost = 'hyades'
+  if ("$PBS_O_HOST" =~ master.cvos.cluster) set masterhost = 'vsl176'
 endif
 if ($?PBS_JOBID) then
   if ("$PBS_JOBID" =~ *.obelix*) set masterhost = 'obelix'
@@ -478,7 +479,7 @@ else if (($hn =~ columbia*) || ($hn =~ cfe*)) then
   set run_x=$PBS_O_WORKDIR/src/run.x
   set local_disc = 0
 #------------------------------------------
-else if ($hn =~ node[0-9]*) then
+else if ($hn =~ node[0-9]* && $masterhost != 'vsl176') then
   echo "CLX - CINECA, Bologna (IBM Linux Cluster)"
   if ( $?PBS_JOBID ) then 
     echo "Running job: $PBS_JOBID"
@@ -489,6 +490,18 @@ else if ($hn =~ node[0-9]*) then
   set one_local_disc = 1
   set local_binary = 0
 #------------------------------------------------
+else if ($hn =~ vsl2* ) then
+  echo "SINTEF ER, old linux cluster (Scali Linux Cluster)"
+  if ( $?PBS_JOBID ) then 
+    echo "Running job: $PBS_JOBID"
+  endif
+  set mpirunops2 = ' -machinefile machines.txt '
+  set mpirun = mpirun
+  set mpirunops =
+  set local_disc = 0
+  set one_local_disc = 1
+  set local_binary = 0
+
 else if ($hn =~ octopus[0-9]*) then
   echo "AIP Potsdam Octopus Xeon Linux Cluster"
   if ( $?PBS_JOBID ) then
@@ -1173,9 +1186,6 @@ else if ($hn =~ is*.uppmax.uu.se) then
   setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:/opt/openmpi/1.2.5gcc/lib:/sw/gcc/4.2.3/lib64:/opt/openmpi/1.2.5pgi/lib:/opt/sge_61u2/lib/lx24-amd64
   set mpirun = /opt/openmpi/1.2.5gcc/bin/mpirun
 #---------------------------------------------------
-else if ($hn =~ vsl2*) then
-    set mpirunops2 = ' -machinefile machines.txt '
-#----------------------------------------------
 else if (($hn =~ *pastel*) || ($hn =~ *violette*)) then
 # use the local /tmp by default on every node
 # set local_disc     = 1
@@ -1200,6 +1210,22 @@ else if (($hn =~ *pastel*) || ($hn =~ *violette*)) then
 
 else if (($hn =~ shal.ast.obs-mip.fr) || ($hn =~ yang) || ($hn =~ n[25-28]* || ($hn =~ ulysse))) then
     set mpirun = 'orterun'
+
+else if ($hn =~ node* && $masterhost == 'vsl176') then
+  echo "SINTEF linux cluster"
+
+  source /etc/profile.d/modules.csh
+  module add torque maui
+  module add pgi/7.0.7
+  module add mvapich2/pgi pgi
+  module add ofed/1.3.1/base
+
+  set mpirun    = "mpirun_rsh"
+  set nprocpernode = 8
+  set npops = "-np $ncpus"
+  set mpirunops2 = "-hostfile $PBS_NODEFILE"
+  set start_x=$PBS_O_WORKDIR/src/start.x
+  set run_x=$PBS_O_WORKDIR/src/run.x
 
 else
   echo "Generic setup; hostname is <$hn>"
