@@ -42,6 +42,7 @@ module Param_IO
   use Particles_main
   use Shock
   use Messages
+  use Solid_Cells
 
   implicit none
 
@@ -349,6 +350,10 @@ module Param_IO
       call read_shock_init_pars(1,IOSTAT=ierr)
       if (ierr.ne.0) call sample_startpars('shock_init_pars',ierr)
 
+      call sgi_fix(lsgifix,1,'start.in')
+      call read_solid_cells_init_pars(1,IOSTAT=ierr)
+      if (ierr.ne.0) call sample_startpars('solid_cells_init_pars',ierr)
+
       ! no input parameters for viscosity
       label='[none]'
       close(1)
@@ -465,6 +470,7 @@ module Param_IO
             print*,'&particles_nbody_init_pars   /'
         !if (lshock       ) print*,'&shock_init_pars          /'
         ! no input parameters for viscosity
+        if (lsolid_cells        ) print*,'&solid_cells_init_pars         /'
         print*,'------END sample namelist -------'
         print*
         if (present(label))  print*, 'Found error in input namelist "' // trim(label)
@@ -530,6 +536,7 @@ module Param_IO
         call write_special_init_pars(unit)
         call write_particles_init_pars_wrap(unit)
         call write_shock_init_pars(unit)
+        call write_solid_cells_init_pars(unit)
 !
         if (present(file)) then
           close(unit)
@@ -704,6 +711,10 @@ module Param_IO
       call read_shock_run_pars(1,IOSTAT=ierr)
       if (ierr.ne.0) call sample_runpars('shock_run_pars',ierr)
 
+      call sgi_fix(lsgifix,1,'run.in')
+      call read_solid_cells_run_pars(1,IOSTAT=ierr)
+      if (ierr.ne.0) call sample_runpars('solid_cells_run_pars',ierr)
+
       label='[none]'
       close(1)
 !
@@ -820,6 +831,7 @@ module Param_IO
         if (lparticles_nbody) &
             print*,'&particles_nbody_run_pars   /'
         if (lshock        ) print*,'&shock_run_pars           /'
+        if (lsolid_cells    ) print*,'&solid_cells_run_pars         /'
         print*,'------END sample namelist -------'
         print*
         if (present(label))  print*, 'Found error in input namelist "' // trim(label)
@@ -908,6 +920,7 @@ module Param_IO
         call write_special_run_pars(unit)
         call write_particles_run_pars_wrap(unit)
         call write_shock_run_pars(unit)
+        call write_solid_cells_run_pars(unit)
 !
         if (present(file)) then
           close(unit)
@@ -1087,6 +1100,7 @@ module Param_IO
         call write_special_init_pars(1)
         call write_particles_init_pars_wrap(1)
         call write_shock_init_pars(1)
+        call write_solid_cells_init_pars(1)
         ! The following parameters need to be communicated to IDL
         write(1,NML=lphysics              )
         close(1)
@@ -1138,6 +1152,7 @@ module Param_IO
         call read_special_init_pars(1)
         call read_particles_init_pars_wrap(1)
         call read_shock_init_pars(1)
+        call read_solid_cells_init_pars(1)
         close(1)
 !
       if (lroot.and.ip<14) then
@@ -1186,6 +1201,7 @@ module Param_IO
         call write_special_run_pars(1)
         call write_particles_run_pars_wrap(1)
         call write_shock_run_pars(1)
+        call write_solid_cells_run_pars(1)
         close(1)
       endif
 !

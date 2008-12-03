@@ -7,40 +7,231 @@ module Solid_Cells
 
   use Cparam
   use Cdata
+  use Messages
   
   implicit none
   
   include 'solid_cells.h'
 
   integer, parameter           :: max_items=10
-  integer                      :: ncylinders,nrectangles
-  real, dimension(max_items,4) :: cylinder
-  real, dimension(max_items,6) :: rectangle
-  integer, dimension(mx,my,mz,3)  :: ba,ba_shift
-  
+  integer                      :: ncylinders,nrectangles,dummy
+  real, dimension(max_items,5) :: cylinder
+  real, dimension(max_items,7) :: rectangle
+  real, dimension(max_items)   :: cylinder_radius
+  real, dimension(max_items)   :: cylinder_temp=703.0
+  real, dimension(max_items) :: cylinder_xpos,cylinder_ypos,cylinder_zpos
+  integer, dimension(mx,my,mz,4)  :: ba,ba_shift
+  real :: skin_depth, init_uu
+  character (len=labellen), dimension(ninit) :: initsolid_cells='nothing'
+!
+  namelist /solid_cells_init_pars/ &
+       cylinder_temp, ncylinders, cylinder_radius, cylinder_xpos, &
+       cylinder_ypos, cylinder_zpos, initsolid_cells, skin_depth, init_uu
+!
+  namelist /solid_cells_run_pars/  &
+       dummy
+!
   contains
 !***********************************************************************
     subroutine initialize_solid_cells
 !
-!  DOCUMENT ME!
+!  Define the geometry of the solids.
+!  There might be many separate solid objects of different geometries (currently
+!  only cylinders are implemented however).
 !
 !  19-nov-2008/nils: coded
+!
+      integer :: icyl
 !
       lsolid_cells=.true.
 !
 !  Define the geometry of the solid object.
-!  This shold probably be included as a geometry.local file such that
+!  For more complex geometries (i.e. for objects different than cylinders or
+!  rectangles) this shold probably be included as a geometry.local file such that
 !  one can define complex geometries on a case to case basis.
 !  Alternatively one will here end up with a terribly long series
 !  of case checks.
 !
-      cylinder(1,:)=(/16.85e-3,0,0,0/)
-      ncylinders=1
+      do icyl=1,ncylinders
+        if (cylinder_radius(icyl)>0) then
+          cylinder(icyl,1)=cylinder_radius(icyl)
+          cylinder(icyl,2)=cylinder_xpos(icyl)
+          cylinder(icyl,3)=cylinder_ypos(icyl)
+          cylinder(icyl,4)=cylinder_zpos(icyl)
+          cylinder(icyl,5)=cylinder_temp(icyl)
+        else
+          call fatal_error('initialize_solid_cells',&
+               'All cylinders must have non-zero radii!')
+        endif
+      enddo
 !
       call find_solid_cell_boundaries
       call calculate_shift_matrix
 !
     endsubroutine initialize_solid_cells
+!***********************************************************************
+    subroutine init_solid_cells(f,xx,yy,zz)
+!
+!  Initial conditions for cases where we have solid structures in the domain.
+!  Typically the flow field is set such that we have no-slip conditions
+!  at the solid structure surface.
+! 
+!  28-nov-2008/nils: coded
+!
+      use Cdata
+      use Sub
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz) :: xx,yy,zz
+
+      intent(in) :: xx,yy,zz
+      intent(inout) :: f
+      
+      integer, pointer :: iglobal_cs2,iglobal_glnTT
+      real :: a2,rr2,pphi,wall_smoothing,rr2_low,rr2_high,shiftx,shifty
+      real :: wall_smoothing_temp,xr,yr
+      integer i,j,k,cyl,jj,icyl
+
+
+      do jj=1,ninit
+      select case(initsolid_cells(jj))
+!
+!   This overrides any initial conditions set in the Hydro module.
+!
+      case('nothing')
+        if(lroot) print*,'init_solid_cells: nothing'
+      case('cylinderstream_x')
+!   Stream functions for flow around a cylinder as initial condition. 
+        f(:,:,:,iux)=init_uu
+        f(:,:,:,iuy:iuz)=0
+        shiftx=0
+        do i=l1,l2
+        do j=m1,m2
+        do k=n1,n2
+!
+!  Loop over all cylinders
+!
+          do icyl=1,ncylinders
+            a2 = cylinder(icyl,1)**2
+            xr=xx(i,j,k)-cylinder(icyl,2)
+            if (cylinder(icyl,3) .ne. 0) then
+              print*,'When using cylinderstream_x all cylinders must have'
+              print*,'zero offset in y-direction!'
+              call fatal_error('init_solid_cells:','')
+            endif
+            yr=yy(i,j,k)
+            rr2 = xr**2+yr**2
+            if (rr2 > a2) then
+              do cyl=0,100
+                if (cyl==0) then
+                  wall_smoothing=1-exp(-(rr2-a2)/skin_depth**2)
+                  f(i,j,k,iuy) = f(i,j,k,iuy)-init_uu*&
+                       2*xx(i,j,k)*yy(i,j,k)*a2/rr2**2*wall_smoothing
+                  f(i,j,k,iux) = f(i,j,k,iux)+init_uu*&
+                       (0. - a2/rr2 + 2*yy(i,j,k)**2*a2/rr2**2)&
+                       *wall_smoothing
+                  if (ilnTT .ne. 0) then
+                    wall_smoothing_temp=1-exp(-(rr2-a2)/(sqrt(a2))**2)
+                    f(i,j,k,ilnTT) = wall_smoothing_temp*f(i,j,k,ilnTT)&
+                         +cylinder(icyl,5)*(1-wall_smoothing_temp)
+                    f(i,j,k,ilnrho)=f(l2,m2,n2,ilnrho)&
+                         *f(l2,m2,n2,ilnTT)/f(i,j,k,ilnTT)
+                  endif
+                else
+                  shifty=cyl*Lxyz(2)
+                  rr2_low =(xx(i,j,k)+shiftx)**2+(yy(i,j,k)+shifty)**2
+                  rr2_high=(xx(i,j,k)-shiftx)**2+(yy(i,j,k)-shifty)**2
+                  f(i,j,k,iux) = f(i,j,k,iux)+init_uu*( &
+                       +2*(yy(i,j,k)-shifty)**2*a2/rr2_high**2-a2/rr2_high&
+                       +2*(yy(i,j,k)+shifty)**2*a2/rr2_low**2 -a2/rr2_low)
+                  f(i,j,k,iuy) = f(i,j,k,iuy)-init_uu*( &
+                       +2*(xx(i,j,k)-shiftx)*(yy(i,j,k)-shifty)&
+                       *a2/rr2_high**2&
+                       +2*(xx(i,j,k)+shiftx)*(yy(i,j,k)+shifty)&
+                       *a2/rr2_low**2)
+                endif
+              enddo
+            else
+              if (ilnTT .ne. 0) then
+                f(i,j,k,ilnTT) = cylinder(icyl,5)
+                f(i,j,k,ilnrho)=f(l2,m2,n2,ilnrho)&
+                     *f(l2,m2,n2,ilnTT)/cylinder(icyl,5)
+              endif
+            end if
+          end do
+        end do
+        end do
+        enddo
+      case('cylinderstream_y')
+!   Stream functions for flow around a cylinder as initial condition. 
+        f(:,:,:,iux:iuz)=0
+        f(:,:,:,iuy)=init_uu
+        shifty=0
+        do i=l1,l2
+        do j=m1,m2
+        do k=n1,n2
+          do icyl=1,ncylinders
+            a2 = cylinder(icyl,1)**2
+            yr=yy(i,j,k)-cylinder(icyl,3)
+            if (cylinder(icyl,2) .ne. 0) then
+              print*,'When using cylinderstream_y all cylinders must have'
+              print*,'zero offset in x-direction!'
+              call fatal_error('init_solid_cells:','')
+            endif
+            xr=xx(i,j,k)
+            rr2 = xr**2+yr**2
+            if (rr2 > a2) then
+              do cyl=0,100
+                if (cyl==0) then
+                  wall_smoothing=1-exp(-(rr2-a2)/skin_depth**2)
+                  f(i,j,k,iux) = f(i,j,k,iux)-init_uu*&
+                       2*xr*yr*a2/rr2**2*wall_smoothing
+                  f(i,j,k,iuy) = f(i,j,k,iuy)+init_uu*&
+                       (0. - a2/rr2 + 2*xr**2*a2/rr2**2)&
+                       *wall_smoothing
+                  if (ilnTT .ne. 0) then
+                    wall_smoothing_temp=1-exp(-(rr2-a2)/(sqrt(a2))**2)
+                    f(i,j,k,ilnTT) = wall_smoothing_temp*f(i,j,k,ilnTT)&
+                         +cylinder(icyl,5)*(1-wall_smoothing_temp)
+                    f(i,j,k,ilnrho)=f(l2,m2,n2,ilnrho)&
+                         *f(l2,m2,n2,ilnTT)/f(i,j,k,ilnTT)
+                  endif
+                else
+                  shiftx=cyl*Lxyz(1)
+                  rr2_low =(xr+shiftx)**2+(yr+shifty)**2
+                  rr2_high=(xr-shiftx)**2+(yr-shifty)**2
+                  f(i,j,k,iuy) = f(i,j,k,iuy)+init_uu*( &
+                       +2*(xr-shiftx)**2*a2/rr2_high**2-a2/rr2_high&
+                       +2*(xr+shiftx)**2*a2/rr2_low**2 -a2/rr2_low)
+                  f(i,j,k,iux) = f(i,j,k,iux)-init_uu*( &
+                       +2*(xr-shiftx)*(yy(i,j,k)-shifty)&
+                       *a2/rr2_high**2&
+                       +2*(xr+shiftx)*(yy(i,j,k)+shifty)&
+                       *a2/rr2_low**2)
+                endif
+              enddo
+            else
+              if (ilnTT .ne. 0) then
+                f(i,j,k,ilnTT) = cylinder(icyl,5)
+                f(i,j,k,ilnrho)=f(l2,m2,n2,ilnrho)&
+                     *f(l2,m2,n2,ilnTT)/cylinder(icyl,5)
+              endif
+            end if
+          end do
+        end do
+        end do
+        end do
+      case default
+        !
+        !  Catch unknown values
+        !
+        if (lroot) print*,'No such value for init_solid_cells:',&
+             trim(initsolid_cells(jj))
+        call fatal_error('init_solid_cells','')
+      endselect
+    enddo
+!
+    endsubroutine init_solid_cells
 !***********************************************************************  
     subroutine update_solid_cells(f)
 !
@@ -50,36 +241,73 @@ module Solid_Cells
 !  19-nov-2008/nils: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i,j,k,idir,xind,yind,zind
+      integer :: i,j,k,idir,xind,yind,zind,icyl
 !
       do i=l1,l2
-        do j=m1,m2
-          do k=n1,n2
-            do idir=1,3
-              if (ba_shift(i,j,k,idir).ne.0) then
-                xind=i
-                yind=j
-                zind=k
+      do j=m1,m2
+      do k=n1,n2
+        do idir=1,3
+          if (ba_shift(i,j,k,idir).ne.0) then
+            xind=i
+            yind=j
+            zind=k
+            if (idir==1) then
+              xind=i-ba_shift(i,j,k,idir)
+            elseif (idir==2) then
+              yind=j-ba_shift(i,j,k,idir)
+            elseif (idir==3) then
+              zind=k-ba_shift(i,j,k,idir)
+            else
+              print*,'No such idir!...exiting!'
+              stop
+            endif
+!                
+!  Only update the solid cell "ghost points" if all indeces are non-zero.
+!  In this way we might loose the innermost "ghost point" if the processore
+!  border is two grid cells inside the solid structure, but this will 
+!  probably just have a very minor effect.
 !
-                if (idir==1) then
-                  xind=i-ba_shift(i,j,k,idir)
-                elseif (idir==2) then
-                  yind=j-ba_shift(i,j,k,idir)
-                elseif (idir==3) then
-                  zind=k-ba_shift(i,j,k,idir)
-                else
-                  print*,'No such idir!...exiting!'
-                  stop
-                endif
-                f(i,j,k,iux:iuz)=-f(xind,yind,zind,iux:iuz)
-                if (ilnrho>0) f(i,j,k,ilnrho) = f(xind,yind,zind,ilnrho)
-              endif
-            enddo
-          enddo
+            if (xind.ne.0 .and. yind.ne.0 .and. zind.ne.0) then
+              icyl=ba_shift(i,j,k,4)
+              f(i,j,k,iux:iuz)=-f(xind,yind,zind,iux:iuz)
+              if (ilnrho>0) f(i,j,k,ilnrho) = f(xind,yind,zind,ilnrho)
+              if (ilnTT>0) f(i,j,k,ilnTT) = &
+                   2*cylinder_temp(icyl)-f(xind,yind,zind,ilnTT)
+            endif
+          endif
         enddo
+      enddo
+      enddo
       enddo
 !
     endsubroutine update_solid_cells
+!***********************************************************************  
+    function in_solid_cell(part_pos)
+!
+!  Check if the position px,py,pz is within a colid cell
+!
+!  02-dec-2008/nils: coded
+!
+      logical :: in_solid_cell
+      real, dimension(3) :: cyl_pos, part_pos
+      real :: rad,distance2
+      integer :: icyl, i
+!
+      in_solid_cell=.false.
+!
+      do icyl=1,ncylinders
+        rad=cylinder(icyl,1)
+        cyl_pos=cylinder(icyl,2:4)
+        distance2=0
+        do i=1,3
+          distance2=distance2+(cyl_pos(i)-part_pos(i))**2
+        enddo
+        if (sqrt(distance2)<rad) then
+          in_solid_cell=.true.
+        endif
+      enddo
+!
+    end function in_solid_cell
 !***********************************************************************  
     subroutine freeze_solid_cells(df)
 !
@@ -101,6 +329,46 @@ module Solid_Cells
 !
     endsubroutine freeze_solid_cells
 !***********************************************************************
+    subroutine read_solid_cells_init_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+
+      if (present(iostat)) then
+        read(unit,NML=solid_cells_init_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=solid_cells_init_pars,ERR=99)
+      endif
+
+99    return
+    endsubroutine read_solid_cells_init_pars
+!***********************************************************************
+    subroutine read_solid_cells_run_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+
+      if (present(iostat)) then
+        read(unit,NML=solid_cells_run_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=solid_cells_run_pars,ERR=99)
+      endif
+
+99    return
+    endsubroutine read_solid_cells_run_pars
+!***********************************************************************
+    subroutine write_solid_cells_init_pars(unit)
+      integer, intent(in) :: unit
+
+      write(unit,NML=solid_cells_init_pars)
+
+    endsubroutine write_solid_cells_init_pars
+!***********************************************************************
+    subroutine write_solid_cells_run_pars(unit)
+      integer, intent(in) :: unit
+
+      write(unit,NML=solid_cells_run_pars)
+
+    endsubroutine write_solid_cells_run_pars
+!***********************************************************************
     subroutine find_solid_cell_boundaries
 !
 !  Find the boundaries of the geometries such that we can set the
@@ -109,7 +377,7 @@ module Solid_Cells
 !
 !  19-nov-2008/nils: coded
 !
-      integer :: i,j,k,icyl
+      integer :: i,j,k,icyl,cw
       real :: x2,y2,xval_p,xval_m,yval_p,yval_m
 !
 !  Initialize ba
@@ -123,28 +391,86 @@ module Solid_Cells
 !
 !  First we look in x-direction
 !
+        k=l1
         do j=m1,m2
+!
+!  Check if we are inside the cylinder for y(j) (i.e. if x2>0)
+!
           x2=cylinder(icyl,1)**2-(y(j)-cylinder(icyl,3))**2
           if (x2>0) then
+!
+!  Find upper and lower x-values for the surface of the cylinder for y(j)
+!
             xval_p=cylinder(icyl,2)+sqrt(x2)
             xval_m=cylinder(icyl,2)-sqrt(x2)            
             do i=l1,l2
               if (x(i)<xval_p .and. x(i)>xval_m) then
+                !
                 if (x(i+1)>xval_p) then
-                  ba(i,j,:,1)=-1
-                elseif (x(i+2)>xval_p) then
-                  ba(i,j,:,1)=-2
-                elseif (x(i+3)>xval_p) then
-                  ba(i,j,:,1)=-3
-                elseif (x(i-1)<xval_m) then
-                  ba(i,j,:,1)=1
-                elseif (x(i-2)<xval_m) then
-                  ba(i,j,:,1)=2
-                elseif (x(i-3)<xval_m) then
-                  ba(i,j,:,1)=3
-                else
-                  ba(i,j,:,1)=9
+                  if (.not. ba_defined(i,j)) then
+                    ba(i,j,:,1)=-1
+                    ba(i,j,:,4)=icyl
+                  else
+                    call find_closest_wall(i,j,k,icyl,cw)
+                    if (cw==1) ba(i,j,:,1)=-1
+                  endif
                 endif
+                !
+                if (x(i+2)>xval_p .and. x(i+1)<xval_p) then
+                  if (.not. ba_defined(i,j)) then
+                    ba(i,j,:,1)=-2
+                    ba(i,j,:,4)=icyl
+                  else
+                    call find_closest_wall(i,j,k,icyl,cw)
+                    if (cw==1) ba(i,j,:,1)=-2
+                  endif
+                endif
+                !
+                if (x(i+3)>xval_p .and. x(i+2)<xval_p) then
+                  if (.not. ba_defined(i,j)) then
+                    ba(i,j,:,1)=-3
+                    ba(i,j,:,4)=icyl
+                  else
+                    call find_closest_wall(i,j,k,icyl,cw)
+                    if (cw==1) ba(i,j,:,1)=-3
+                  endif
+                endif
+                !
+                if (x(i-1)<xval_m) then
+                  if (.not. ba_defined(i,j)) then
+                    ba(i,j,:,1)=1
+                    ba(i,j,:,4)=icyl
+                  else
+                    call find_closest_wall(i,j,k,icyl,cw)
+                    if (cw==-1) ba(i,j,:,1)=1
+                  endif
+                endif
+                !
+                if (x(i-2)<xval_m .and. x(i-1)>xval_m) then
+                  if (.not. ba_defined(i,j)) then
+                    ba(i,j,:,1)=2
+                    ba(i,j,:,4)=icyl
+                  else
+                    call find_closest_wall(i,j,k,icyl,cw)
+                    if (cw==-1) ba(i,j,:,1)=2
+                  endif
+                endif
+                !
+                if (x(i-3)<xval_m .and. x(i-2)>xval_m) then
+                  if (.not. ba_defined(i,j)) then
+                    ba(i,j,:,1)=3
+                    ba(i,j,:,4)=icyl
+                  else
+                    call find_closest_wall(i,j,k,icyl,cw)
+                    if (cw==-1) ba(i,j,:,1)=3
+                  endif
+                endif
+                !
+                if (ba(i,j,k,1)==0) then
+                  ba(i,j,:,1)=9
+                  ba(i,j,:,4)=icyl
+                endif
+                !
               endif
             enddo
           endif
@@ -153,26 +479,81 @@ module Solid_Cells
 !  Then we look in y-direction
 !
         do i=l1,l2
+!
+!  Check if we are inside the cylinder for x(i) (i.e. if y2>0)
+!
           y2=cylinder(icyl,1)**2-(x(i)-cylinder(icyl,2))**2
           if (y2>0) then
+!
+!  Find upper and lower y-values for the surface of the cylinder for x(i)
+!
             yval_p=cylinder(icyl,3)+sqrt(y2)
             yval_m=cylinder(icyl,3)-sqrt(y2)            
             do j=m1,m2
               if (y(j)<yval_p .and. y(j)>yval_m) then
                 if (y(j+1)>yval_p) then
-                  ba(i,j,:,2)=-1
-                elseif (y(j+2)>yval_p) then
-                  ba(i,j,:,2)=-2
-                elseif (y(j+3)>yval_p) then
-                  ba(i,j,:,2)=-3
-                elseif (y(j-1)<yval_m) then
-                  ba(i,j,:,2)=1
-                elseif (y(j-2)<yval_m) then
-                  ba(i,j,:,2)=2
-                elseif (y(j-3)<yval_m) then
-                  ba(i,j,:,2)=3
-                else
+                  if (.not. ba_defined(i,j)) then
+                    ba(i,j,:,2)=-1
+                    ba(i,j,:,4)=icyl
+                  else
+                    call find_closest_wall(i,j,k,icyl,cw)
+                    if (cw==2) ba(i,j,:,2)=-1                  
+                  endif
+                endif
+!
+                if (y(j+2)>yval_p .and. y(j+1)<yval_p) then
+                  if (.not. ba_defined(i,j)) then
+                    ba(i,j,:,2)=-2
+                    ba(i,j,:,4)=icyl
+                  else
+                    call find_closest_wall(i,j,k,icyl,cw)
+                    if (cw==2) ba(i,j,:,2)=-2                  
+                  endif
+                endif
+!
+                if (y(j+3)>yval_p .and. y(j+2)<yval_p) then
+                  if (.not. ba_defined(i,j)) then
+                    ba(i,j,:,2)=-3
+                    ba(i,j,:,4)=icyl
+                  else
+                    call find_closest_wall(i,j,k,icyl,cw)
+                    if (cw==2) ba(i,j,:,2)=-3                  
+                  endif
+                endif
+!
+                if (y(j-1)<yval_m) then
+                  if (.not. ba_defined(i,j)) then
+                    ba(i,j,:,2)=1
+                    ba(i,j,:,4)=icyl
+                  else
+                    call find_closest_wall(i,j,k,icyl,cw)
+                    if (cw==-2) ba(i,j,:,2)=1                  
+                  endif
+                endif
+!
+                if (y(j-2)<yval_m .and. y(j-1)>yval_m) then
+                  if (.not. ba_defined(i,j)) then
+                    ba(i,j,:,2)=2
+                    ba(i,j,:,4)=icyl
+                  else
+                    call find_closest_wall(i,j,k,icyl,cw)
+                    if (cw==-2) ba(i,j,:,2)=2                  
+                  endif
+                endif
+!
+                if (y(j-3)<yval_m .and. y(j-2)>yval_m) then
+                  if (.not. ba_defined(i,j)) then
+                    ba(i,j,:,2)=3
+                    ba(i,j,:,4)=icyl
+                  else
+                    call find_closest_wall(i,j,k,icyl,cw)
+                    if (cw==-2) ba(i,j,:,2)=3                  
+                  endif
+                endif
+!
+                if (ba(i,j,k,2)==0) then
                   ba(i,j,:,2)=9
+                  ba(i,j,:,4)=icyl
                 endif
               endif
             enddo
@@ -194,21 +575,93 @@ module Solid_Cells
       ba_shift=0
 !
       do i=l1,l2
-        do j=m1,m2
-          do k=n1,n2
-            do idir=1,3
+      do j=m1,m2
+      do k=n1,n2
+        do idir=1,3
 !
 !  If ba is non-zero find the shift matrix
 !
-              if (ba(i,j,k,idir).ne.0 .and. ba(i,j,k,idir).ne.9) then
-                sgn=-ba(i,j,k,idir)/abs(ba(i,j,k,idir))
-                ba_shift(i,j,k,idir)=2*ba(i,j,k,idir)+sgn
-              endif
-            enddo
-          enddo
+          if (ba(i,j,k,idir).ne.0 .and. ba(i,j,k,idir).ne.9) then
+            sgn=-ba(i,j,k,idir)/abs(ba(i,j,k,idir))
+            ba_shift(i,j,k,idir)=2*ba(i,j,k,idir)+sgn
+            ba_shift(i,j,k,4)=ba(i,j,k,4)
+          endif
         enddo
+      enddo
+      enddo
       enddo
 !
     endsubroutine calculate_shift_matrix
+!***********************************************************************  
+    subroutine find_closest_wall(i,j,k,icyl,cw)
+!
+!  Find the direction of the closest wall for given grid point and cylinder
+!
+!  28-nov-2008/nils: coded
+!
+      integer :: i,j,k,cw,icyl
+      real :: xval_p,xval_m,yval_p,yval_m,maxval,x2,y2,minval,dist
+!
+      x2=cylinder(icyl,1)**2-(y(j)-cylinder(icyl,3))**2
+      y2=cylinder(icyl,1)**2-(x(i)-cylinder(icyl,2))**2
+      xval_p=cylinder(icyl,2)+sqrt(x2)
+      xval_m=cylinder(icyl,2)-sqrt(x2)            
+      yval_p=cylinder(icyl,3)+sqrt(y2)
+      yval_m=cylinder(icyl,3)-sqrt(y2)            
+!
+      minval=impossible
+      cw=0
+!
+      dist=xval_p-x(i)
+      if (dist<minval) then
+        minval=dist
+        cw=1
+      endif
+!
+      dist=yval_p-y(j)
+      if (dist<minval) then
+        minval=dist
+        cw=2
+      endif
+!
+      dist=x(i)-xval_m
+      if (dist<minval) then
+        minval=dist
+        cw=-1
+      endif
+!
+      dist=y(j)-yval_m
+      if (dist<minval) then
+        minval=dist
+        cw=-2
+      endif
+!
+    end subroutine find_closest_wall
+!***********************************************************************  
+    function ba_defined(i,j)
+!
+!  28-nov-2008/nils: coded
+!
+      integer :: i,j,k
+      logical :: lba1=.true.,lba2=.true.
+      logical :: ba_defined
+!
+      k=3
+!
+      if (ba(i,j,k,1)==0 .or. ba(i,j,k,1)==9) then
+        lba1=.false.
+      endif
+!
+      if (ba(i,j,k,2)==0 .or. ba(i,j,k,2)==9) then
+        lba2=.false.
+      endif
+!
+      if (lba1 .or. lba2) then
+        ba_defined=.true.
+      else
+        ba_defined=.false.
+      endif
+!
+    end function ba_defined
 !***********************************************************************  
   endmodule Solid_Cells

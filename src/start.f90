@@ -44,6 +44,7 @@
         use Dustvelocity,    only: init_uud
         use NeutralDensity,  only: init_lnrhon
         use NeutralVelocity, only: init_uun
+        use Solid_Cells,     only: init_solid_cells
 
         use Selfgravity,     only: calc_selfpotential
         use Radiation,       only: init_rad, radtransfer
@@ -325,6 +326,7 @@
           call init_ecr       (f,xx,yy,zz)
           call init_fcr       (f,xx,yy,zz)
           call init_interstellar (f)
+          call init_solid_cells(f,xx,yy,zz)
           call init_special   (f,xx,yy,zz)
         enddo
 !
