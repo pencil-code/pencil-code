@@ -375,6 +375,7 @@ LD_FFTW2=
 #LD_MPI=-lmpi #(brahe)
 ##FFLAGS=-O3 -ipo #PACX #(fe[0-3])
 #FFLAGS= -C -g -Mbounds -Mchkfpstk -Mchkptr -Mchkstk -Mcoff -Mdwarf1 -Mdwarf2 -Melf  -Mstabs -lm #(sintef*)
+#FFLAGS= -C -Mbounds -Mchkfpstk -Mchkptr -Mchkstk -Mcoff -Mdwarf1 -Mdwarf2 -Melf  -Mstabs -lm #(sintef*)
 ##FFLAGS= #(vmware|erland|bohm|igor|onsager)
 #FFLAGS= -I./ -D_REENTRANT -I/opt/scali/include #(vsl21*|vsl22*|vsl230)
 #LD_MPI= -L/opt/scali/lib -lfmpi -lmpi -lpthread #(vsl21*|vsl22*|vsl230)
