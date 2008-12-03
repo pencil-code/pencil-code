@@ -4463,10 +4463,10 @@ module Boundcond
       real, dimension (my,mz) :: rho0,gamma0
       real, dimension (mx,my,mz) :: mom2, rho_ux2, rho_uy2
       real, dimension (mx,my,mz) :: rho_gamma, rhoE_p, pp
-      real, dimension (ny,nz) :: dux_dx, dlnrho_dx, dpp_dx
+      real, dimension (ny,nz) :: dux_dx, dlnrho_dx, dpp_dx,dYk_dx
       real, dimension (ny,nz) :: drho_prefac,p_infx, KK, L_1, L_2, L_5
       real, dimension (my,mz) :: cs2x,cs0_ar,cs20_ar,dmom2_dy
-      real, dimension (my,mz) :: drhoE_p_dy,dYk_dx,dYk_dy, dux_dy
+      real, dimension (my,mz) :: drhoE_p_dy,dYk_dy, dux_dy
       real, dimension (ny,nz,nchemspec) :: bound_rhs_Y
       real, dimension (ny,nz) :: bound_rhs_T
       real, dimension (mx,my,mz) :: cs2_full, gamma_full, rho_full
@@ -4585,14 +4585,10 @@ module Boundcond
           enddo
           df(lll,m1:m2,n1:n2,ichemspec(k))=&
               -f(lll,m1:m2,n1:n2,iux)*dYk_dx(m1:m2,n1:n2) &
-              -f(lll,m1:m2,n1:n2,iuy)*dYk_dy(m1:m2,n1:n2)! &
-            !  +bound_rhs_Y(:,:,k)
+              -f(lll,m1:m2,n1:n2,iuy)*dYk_dy(m1:m2,n1:n2) &
+              +bound_rhs_Y(:,:,k)
 !
         enddo
-
-   !      df(lll,m1:m2,n1:n2,ichemspec(k))=-f(lll,m1:m2,n1:n2,iux)*dYk_dx(m1:m2,n1:n2) &
-   !                                      -f(lll,m1:m2,n1:n2,iuy)*dYk_dy(m1:m2,n1:n2) !&
-                                        !+bound_rhs_Y(:,:,k)
 
       endif
 !
