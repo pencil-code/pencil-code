@@ -28,6 +28,7 @@ module Particles
   complex, dimension (7) :: coeff=(0.0,0.0)
   real, dimension (npar_species) :: tausp_species=0.0, tausp1_species=0.0
   real :: xp0=0.0, yp0=0.0, zp0=0.0, vpx0=0.0, vpy0=0.0, vpz0=0.0
+  real :: Lx0, Ly0, Lz0
   real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0, eps_dtog=0.01
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0
@@ -111,7 +112,8 @@ module Particles
       tstart_brownian_par, lbrownian_forces, lenforce_policy, &
       interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, &
       brownian_T0, lnostore_uu, ldtgrav_par, &
-      lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint
+      lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, &
+      Lx0, Ly0, Lz0
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -610,6 +612,18 @@ module Particles
               if (nzgrid/=1) fp(k,izp)=xyz0(3)+fp(k,izp)*Lxyz(3)
               rp2=fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2
             enddo
+          enddo
+
+        case ('random-box')
+          if (lroot) print*, 'init_particles: Random particle positions '// &
+               'within a box'
+          do k=1,npar_loc
+            if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
+            if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
+            if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
+            if (nxgrid/=1) fp(k,ixp)=xp0+fp(k,ixp)*Lx0
+            if (nygrid/=1) fp(k,iyp)=yp0+fp(k,iyp)*Ly0
+            if (nzgrid/=1) fp(k,izp)=zp0+fp(k,izp)*Lz0
           enddo
 
        case ('random-cylindrical','random-cyl')
@@ -2231,6 +2245,10 @@ k_loop:   do while (.not. (k>npar_loc))
             dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) - &
                 nu_epicycle2*fp(1:npar_loc,ixp)
 !
+          case ('plain')
+            if (lheader) print*, 'dvvp_dt: Plain gravity field in x-direction.'
+            dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) - gravx
+!
           case ('sinusoidal')
             if (lheader) &
                 print*, 'dvvp_dt: Sinusoidal gravity field in x-direction.'
@@ -2387,6 +2405,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  25-sep-08/anders: coded
 !
+      Use Solid_Cells
+!
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mpar_loc,mpvar) :: fp, dfp
       integer, dimension(mpar_loc,3) :: ineargrid
@@ -2401,6 +2421,19 @@ k_loop:   do while (.not. (k>npar_loc))
              (fp(k,izp)-zsinkpoint)**2)
           if (rp<rsinkpoint) &
               call remove_particle(fp,npar_loc,ipar,k,dfp,ineargrid)
+          k=k+1
+        enddo
+      endif
+!
+!  Remove particles if they are within a solid geometry
+!
+      if (lsolid_cells) then
+        k=1
+        do while (k<=npar_loc)
+          if (in_solid_cell(fp(k,ixp:izp))) then
+            print*,k,fp(k,ixp:izp)
+            call remove_particle(fp,npar_loc,ipar,k,dfp,ineargrid)
+          endif
           k=k+1
         enddo
       endif
