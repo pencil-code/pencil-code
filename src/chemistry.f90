@@ -1143,7 +1143,7 @@ module Chemistry
 !
 !  print input data for verification
 !
-      if (lroot) then
+      if (lroot .and. nreactions>0) then
         print*,'kreactions_m=',kreactions_m(1:nreactions)
         print*,'kreactions_p=',kreactions_p(1:nreactions)
         print*,'Sijm:' ; write(*,100),Sijm(:,1:nreactions)
