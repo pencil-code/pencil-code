@@ -1667,7 +1667,7 @@ k_loop:   do while (.not. (k>npar_loc))
                  ' when rep is to be calculated')
           endif
 !
-          call calc_pencil_rep(fp,interp_uu,rep)
+          call calc_pencil_rep(fp,rep)
         endif
 !
 !  Precalculate Stokes-Cunningham factor
@@ -3220,7 +3220,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !     
     endsubroutine calculate_rms_speed
 !***********************************************************************
-    subroutine calc_pencil_rep(fp,uup,rep)
+    subroutine calc_pencil_rep(fp,rep)
 !
 !  Calculate particle Reynolds numbers
 !
