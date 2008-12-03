@@ -3229,7 +3229,6 @@ k_loop:   do while (.not. (k>npar_loc))
       use Viscosity, only: getnu
 !
       real,dimension(mpar_loc,mpvar) :: fp
-      real,dimension(:,:) :: uup
       real,dimension(k1_imn(imn):k2_imn(imn)) :: rep
       intent(in) :: fp, uup
       intent(inout) :: rep
@@ -3249,7 +3248,7 @@ k_loop:   do while (.not. (k>npar_loc))
       endif
 !
       do k=k1_imn(imn),k2_imn(imn)
-        rep(k)=2.0*fp(k,iap)*sqrt(sum((uup(k,:)-fp(k,ivpx:ivpz))**2))/nu
+        rep(k)=2.0*fp(k,iap)*sqrt(sum((interp_uu(k,:)-fp(k,ivpx:ivpz))**2))/nu
       enddo
 !
     endsubroutine calc_pencil_rep
