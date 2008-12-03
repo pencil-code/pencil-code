@@ -3230,7 +3230,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       real,dimension(mpar_loc,mpvar) :: fp
       real,dimension(k1_imn(imn):k2_imn(imn)) :: rep
-      intent(in) :: fp, uup
+      intent(in) :: fp
       intent(inout) :: rep
 !
       real :: nu
