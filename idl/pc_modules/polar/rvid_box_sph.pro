@@ -202,6 +202,43 @@ if (keyword_set(logarithmic)) then begin
   amin=alog(amin) & amax=alog(amax)
 endif
 ;
+;  Go through all video snapshots and find global min and max.
+;
+if (keyword_set(global_scaling)) then begin
+;
+  first=1L
+;
+  close, 1 & openr, 1, file_slice1, /f77, swap_endian=swap_endian
+  close, 2 & openr, 2, file_slice2, /f77, swap_endian=swap_endian
+  close, 3 & openr, 3, file_slice3, /f77, swap_endian=swap_endian
+  close, 4 & openr, 4, file_slice4, /f77, swap_endian=swap_endian
+  close, 5 & openr, 5, file_slice5, /f77, swap_endian=swap_endian
+;
+  while (not eof(1)) do begin
+;
+    readu, 1, rp , t, slice_ypos
+    readu, 2, rt1, t, slice_z1pos
+    readu, 3, rt2, t, slice_z2pos
+    readu, 4, rt3, t, slice_z3pos 
+    readu, 5, rt4, t, slice_z4pos
+;
+    if (first) then begin
+      amax=max([max(rt2),max(rt1),max(rp),max(rt3),max(rt4)])
+      amin=min([min(rt2),min(rt1),min(rp),min(rt3),min(rt4)])
+      first=0L
+    endif else begin
+      amax=max([amax,max(rt2),max(rt1),max(rp),max(rt3),max(rt4)])
+      amin=min([amin,min(rt2),min(rt1),min(rp),min(rt3),min(rt4)])
+    endelse
+;
+  endwhile
+;
+  close, 1 & close, 2 & close, 3 & close, 4 & close, 5
+;
+  print,'Scale using global min, max: ', amin, amax
+;
+endif
+;
 ;  Open slice files for reading.
 ;
 close, 1 & openr, 1, file_slice1, /f77, swap_endian=swap_endian
@@ -465,6 +502,7 @@ while ( (not eof(1)) and (t le tmax) ) do begin
         if (first_print) then $
             print, '   islice        t        min/norm     max/norm        amin         amax'
         first_print = 0
+
         print, islice, t, $
             min([min(rp),min(rt1),min(rt2),min(rt3),min(rt4)])/norm, $
             max([max(rp),max(rt1),max(rt2),max(rt3),max(rt4)])/norm, $
