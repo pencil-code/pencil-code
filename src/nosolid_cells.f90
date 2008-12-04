@@ -91,7 +91,6 @@ module Solid_Cells
       if (present(iostat)) call keep_compiler_quiet(iostat)
       call keep_compiler_quiet(unit)
 !
-99    return
     endsubroutine read_solid_cells_init_pars
 !***********************************************************************
     subroutine read_solid_cells_run_pars(unit,iostat)
@@ -101,7 +100,6 @@ module Solid_Cells
       if (present(iostat)) call keep_compiler_quiet(iostat)
       call keep_compiler_quiet(unit)
 !
-99    return
     endsubroutine read_solid_cells_run_pars
 !***********************************************************************
     subroutine write_solid_cells_init_pars(unit)
