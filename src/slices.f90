@@ -202,7 +202,9 @@ module Slices
         slices%xz=>slice_xz
         slices%yz=>slice_yz
         slices%xy2=>slice_xy2
-
+        slices%xy3=>slice_xy3
+        slices%xy4=>slice_xy4
+!
         slices%name=trim(cnamev(inamev))
         lslices_legacy=.true.       ! By default assume we're not
                                     ! using module hooks to get the

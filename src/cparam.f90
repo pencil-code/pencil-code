@@ -136,6 +136,8 @@ module Cparam
     real, pointer, dimension (:,:) :: xz
     real, pointer, dimension (:,:) :: yz
     real, pointer, dimension (:,:) :: xy2
+    real, pointer, dimension (:,:) :: xy3
+    real, pointer, dimension (:,:) :: xy4
   endtype slice_data
 !
 ! Data structure used to allow module specific
