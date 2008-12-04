@@ -1007,7 +1007,7 @@ module Hydro
       endif
 !
       if ((borderuu=='global-shear'      .or. &
-           borderuu=='global-shear-mhs') .and.&
+           borderuu=='global-shear-mhs') .and. &
            .not.lspherical_coords)             then
         lpenc_requested(i_rcyl_mn)     =.true.
         lpenc_requested(i_rcyl_mn1)    =.true.
