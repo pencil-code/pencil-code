@@ -228,27 +228,6 @@ for i=0,ncpus-1 do begin
     irmv=where(ipar_rmv eq 1)
   endif
 ;
-;  Check how many particles have collided with a solid object
-;
-if (keyword_set(solid_object)) then begin
-    pc_read_param, object=param
-    dims=size(irmv)
-    solid_colls=0
-    maxy=param.xyz1[1]
-; This should eventually be a loop over all solid objects
-    cyl_ypos=param.cylinder_ypos[0]
-    for k=0,dims[1]-1 do begin        
-        if (array[irmv[k],1] lt maxy) then begin 
-            radius2=(array[irmv[k],0])^2+(array[irmv[k],1]-cyl_ypos)^2
-            print,'k,radius=',irmv[k],sqrt(radius2)
-            solid_colls=solid_colls+1
-        endif
-    end
-    print,'Number of collisions with the solid geometry is:',solid_colls
-    print,'Total number of particles:',npar
-    print,'Capture efficiency=',float(solid_colls)/npar
-endif
-;
 ;  Create global x, y and z arrays from local ones.
 ;
   if (ncpus gt 1) then begin
@@ -303,6 +282,27 @@ endif
   tarr[i]=t
 ;
 endfor
+;
+;  Check how many particles have collided with a solid object
+;
+if (keyword_set(solid_object)) then begin
+    pc_read_param, object=param
+    dims=size(irmv)
+    solid_colls=0
+    maxy=param.xyz1[1]
+; This should eventually be a loop over all solid objects
+    cyl_ypos=param.cylinder_ypos[0]
+    for k=0,dims[1]-1 do begin        
+        if (array[irmv[k],1] lt maxy) then begin 
+            radius2=(array[irmv[k],0])^2+(array[irmv[k],1]-cyl_ypos)^2
+            print,'k,radius=',irmv[k],sqrt(radius2)
+            solid_colls=solid_colls+1
+        endif
+    end
+    print,'Number of collisions with the solid geometry is:',solid_colls
+    print,'Total number of particles:',npar
+    print,'Capture efficiency=',float(solid_colls)/npar
+endif
 ;
 ;  Trim x, y and z arrays.
 ;
