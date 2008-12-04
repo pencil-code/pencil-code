@@ -99,6 +99,7 @@ module Param_IO
        lr_spec,r2u_spec,r3u_spec, &
        rhocc_pdf,cc_pdf,lncc_pdf,gcc_pdf,lngcc_pdf, &
        kinflow,eps_kinflow,omega_kinflow,ampl_kinflow,lkinflow_as_aux, &
+       kx_kinflow,ky_kinflow,kz_kinflow, &
        dtphase_kinflow, &
        random_gen, &
        lrmwig_rho,lrmwig_full,lrmwig_xyaverage, &

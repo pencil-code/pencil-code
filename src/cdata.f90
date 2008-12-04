@@ -461,11 +461,12 @@ module Cdata
   logical :: lsgifix=.false.
 !
 !  Kinematic flows (computed by nohydro, so must be defined here).
-!  [AJ: should probably not be defined here]
+!  [AJ: should probably not be defined here; AB: where else?]
 !
   character (len=40) :: kinflow=''
   logical :: lkinflow_as_aux
   real :: eps_kinflow=0.0, omega_kinflow=1.0, ampl_kinflow=1.0
+  real :: kx_kinflow=1., ky_kinflow=1., kz_kinflow=1.
   real :: dtphase_kinflow=0.0
 !
 !  Scrap yard. Please categorise these variables if you know what they do.

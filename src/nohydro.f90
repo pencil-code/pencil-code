@@ -510,10 +510,10 @@ kky_aa=2.*pi
 !  Stream function: psi_y = cos(kx*x) * cos(kz*z)
 !
       elseif (kinflow=='rolls') then
-        if (headtt) print*,'Convection rolls; kx_aa,kz_aa=',kkx_aa,kkz_aa
-        p%uu(:,1)=kkz_aa*cos(kkx_aa*x(l1:l2))*sin(kkz_aa*z(n))
+        if (headtt) print*,'Convection rolls; kx_kinflow,kz_aa=',kx_kinflow,kz_kinflow
+        p%uu(:,1)=ampl_kinflow*kz_kinflow*cos(kx_kinflow*x(l1:l2))*sin(kz_kinflow*z(n))
         p%uu(:,2)=+0.
-        p%uu(:,3)=kkx_aa*sin(kkx_aa*x(l1:l2))*cos(kkz_aa*z(n))
+        p%uu(:,3)=ampl_kinflow*kx_kinflow*sin(kx_kinflow*x(l1:l2))*cos(kz_kinflow*z(n))
 ! divu
         if (lpencil(i_divu)) p%divu=0.
 !

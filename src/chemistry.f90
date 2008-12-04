@@ -122,6 +122,16 @@ module Chemistry
   integer :: idiag_dY8m=0        ! DIAG_DOC: $\left<dY_8\right>$
   integer :: idiag_dY9m=0        ! DIAG_DOC: $\left<dY_9\right>$
 
+  integer :: idiag_Y1mz=0        ! DIAG_DOC: $\left<Y_1\right>_{xy}(z)$
+  integer :: idiag_Y2mz=0        ! DIAG_DOC: $\left<Y_2\right>_{xy}(z)$
+  integer :: idiag_Y3mz=0        ! DIAG_DOC: $\left<Y_3\right>_{xy}(z)$
+  integer :: idiag_Y4mz=0        ! DIAG_DOC: $\left<Y_4\right>_{xy}(z)$
+  integer :: idiag_Y5mz=0        ! DIAG_DOC: $\left<Y_5\right>_{xy}(z)$
+  integer :: idiag_Y6mz=0        ! DIAG_DOC: $\left<Y_6\right>_{xy}(z)$
+  integer :: idiag_Y7mz=0        ! DIAG_DOC: $\left<Y_7\right>_{xy}(z)$
+  integer :: idiag_Y8mz=0        ! DIAG_DOC: $\left<Y_8\right>_{xy}(z)$
+  integer :: idiag_Y9mz=0        ! DIAG_DOC: $\left<Y_9\right>_{xy}(z)$
+
   integer :: idiag_h1m=0
   integer :: idiag_h2m=0
   integer :: idiag_h3m=0
@@ -1354,6 +1364,20 @@ module Chemistry
 !
       endif
 !
+!  1d-averages. Happens at every it1d timesteps, NOT at every it1
+!
+      if (l1ddiagnos) then
+        if (idiag_Y1mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i1)),idiag_Y1mz)
+        if (idiag_Y2mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i2)),idiag_Y2mz)
+        if (idiag_Y3mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i3)),idiag_Y3mz)
+        if (idiag_Y4mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i4)),idiag_Y4mz)
+        if (idiag_Y5mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i5)),idiag_Y5mz)
+        if (idiag_Y6mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i6)),idiag_Y6mz)
+        if (idiag_Y7mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i7)),idiag_Y7mz)
+        if (idiag_Y8mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i8)),idiag_Y8mz)
+        if (idiag_Y9mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i9)),idiag_Y9mz)
+      endif
+!
 !  Keep compiler quiet by ensuring every parameter is used
 !
       call keep_compiler_quiet(f,df)
@@ -1415,7 +1439,7 @@ module Chemistry
       use Sub
       use General, only: chn
 !
-      integer :: iname
+      integer :: iname,inamez
       logical :: lreset,lwr
       logical, optional :: lwrite
       character (len=5) :: schem,schemspec,snd1,smd1,smi1
@@ -1440,6 +1464,9 @@ module Chemistry
         idiag_cp5m=0; idiag_cp6m=0; idiag_cp7m=0; idiag_cp8m=0; 
         idiag_cp9m=0; idiag_cpfull=0; idiag_cvfull=0
         idiag_e_intm=0
+        idiag_Y1mz=0; idiag_Y2mz=0; idiag_Y3mz=0; idiag_Y4mz=0
+        idiag_Y5mz=0; idiag_Y6mz=0; idiag_Y7mz=0; idiag_Y8mz=0
+        idiag_Y9mz=0
       endif
 !
       call chn(nchemspec,schemspec)
@@ -1488,6 +1515,20 @@ module Chemistry
         call parse_name(iname,cname(iname),cform(iname),'e_intm',idiag_e_intm)
       enddo
 !
+!  xy-averages
+!
+      do inamez=1,nnamez
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y1mz',idiag_Y1mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y2mz',idiag_Y2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y3mz',idiag_Y3mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y4mz',idiag_Y4mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y5mz',idiag_Y5mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y6mz',idiag_Y6mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y7mz',idiag_Y7mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y8mz',idiag_Y8mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y9mz',idiag_Y9mz)
+      enddo
+!
 !  Write chemistry index in short notation
 !
       call chn(ichemspec(1),snd1)
@@ -1531,6 +1572,15 @@ module Chemistry
         write(3,*) 'i_cp8m=',idiag_cp8m
         write(3,*) 'i_cp9m=',idiag_cp9m
         write(3,*) 'i_e_intm=',idiag_e_intm
+        write(3,*) 'i_Y1mz=',idiag_Y1mz
+        write(3,*) 'i_Y2mz=',idiag_Y2mz
+        write(3,*) 'i_Y3mz=',idiag_Y3mz
+        write(3,*) 'i_Y4mz=',idiag_Y4mz
+        write(3,*) 'i_Y5mz=',idiag_Y5mz
+        write(3,*) 'i_Y6mz=',idiag_Y6mz
+        write(3,*) 'i_Y7mz=',idiag_Y7mz
+        write(3,*) 'i_Y8mz=',idiag_Y8mz
+        write(3,*) 'i_Y9mz=',idiag_Y9mz
         write(3,*) 'ichemspec=indgen('//trim(schemspec)//') + '//trim(snd1)
       endif
 !
