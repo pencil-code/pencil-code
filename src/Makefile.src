@@ -879,12 +879,13 @@ LD_FFTW2=
 #LIBMPISUFFIX=_#(frenesi)
 ##
 ## Steve's test cluster
-#FC=g95 #(asd|kool|aster|bitwo)
-#FFLAGS=-O3 -m64 -march=opteron -ftrace=full -I/usr/local/include -L/usr/lib -L/usr/local/lib -I/usr/include -fno-second-underscore #(asd|kool|aster|bitwo)
-#LDFLAGS=-m64 -m64 -march=opteron #(asd|kool|aster|bitwo)
-#LD_MPI=-lmpich -lfmpich -lpthread #(asd|kool|aster|bitwo)
-#CC=gcc #(asd|kool|aster|bitwo)
-#CFLAGS=-O3 -DFUNDERSC=1 -Wall -march=opteron #(asd|kool|bitwo|aster)
+#FC=gfortran #(asd|kool)
+#FFLAGS=-O3 -m64 -march=opteron -I/usr/local/include -L/lib64 -L/usr/lib64 -L/usr/local/lib/64 -L/usr/lib -L/usr/local/lib -I/usr/include -fno-second-underscore #(asd|kool)
+#FFLAGS_DOUBLE=-fdefault-real-8 #(asd|kool)
+#LDFLAGS=-m64 -m64 -march=opteron #(asd|kool)
+#LD_MPI=-lmpich -lfmpich -lpthread #(asd|kool)
+#CC=gcc #(asd|kool)
+#CFLAGS=-O3 -DFUNDERSC=1 -Wall -march=opteron #(asd|kool)
 ##
 ## Marcus on janus (ifc/icc 9.1)
 ##
