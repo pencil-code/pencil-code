@@ -72,6 +72,9 @@ module Slices
 !  Variables for xy3 and xy4, necessary for 
 !  spherical slices, start here
   real, public, dimension (nx,ny) :: lnrho_xy3,lnrho_xy4
+  real, public, dimension (nx,ny) :: pp_xy3,pp_xy4
+  real, public, dimension (nx,ny) :: ss_xy3,ss_xy4
+  real, public, dimension (nx,ny) :: lnTT_xy3,lnTT_xy4
 !  Variables for xz slices start here
 !  Code variables
   real, public, dimension (nx,nz,3) :: uud_xz,vvp_xz
@@ -231,10 +234,16 @@ module Slices
           ss_xz=f(l1:l2,iy_loc,n1:n2,iss)
           ss_xy=f(l1:l2,m1:m2,iz_loc,iss)
           ss_xy2=f(l1:l2,m1:m2,iz2_loc,iss)
+          ss_xy3=f(l1:l2,m1:m2,iz3_loc,iss)
+          ss_xy4=f(l1:l2,m1:m2,iz4_loc,iss)
           call wslice(path//'ss.yz',ss_yz,x(ix_loc),ny,nz)
           call wslice(path//'ss.xz',ss_xz,y(iy_loc),nx,nz)
           call wslice(path//'ss.xy',ss_xy,z(iz_loc),nx,ny)
           call wslice(path//'ss.xy2',ss_xy2,z(iz2_loc),nx,ny)
+          if (lwrite_slice_xy3) &
+              call wslice(path//'ss.xy3',ss_xy3,z(iz3_loc),nx,ny)
+          if (lwrite_slice_xy4) & 
+              call wslice(path//'ss.xy4',ss_xy4,z(iz4_loc),nx,ny)
 !
 !  Passive scalar (code variable)
 !
@@ -378,6 +387,8 @@ module Slices
             lnTT_xz=f(l1:l2,iy_loc,n1:n2,ilnTT)
             lnTT_xy=f(l1:l2,m1:m2,iz_loc,ilnTT)
             lnTT_xy2=f(l1:l2,m1:m2,iz2_loc,ilnTT)
+            lnTT_xy3=f(l1:l2,m1:m2,iz3_loc,ilnTT)
+            lnTT_xy4=f(l1:l2,m1:m2,iz4_loc,ilnTT)
           else
             do m=m1,m2; do n=n1,n2
               call eoscalc(ilnrho_ss,f(ix_loc,m,n,ilnrho),f(ix_loc,m,n,iss),lnTT=tmpval)
@@ -390,15 +401,22 @@ module Slices
             do l=l1,l2; do m=m1,m2
               call eoscalc(ilnrho_ss,f(l,m,iz_loc,ilnrho),f(l,m,iz_loc,iss),lnTT=tmpval)
               lnTT_xy(l-l1+1,m-m1+1)=tmpval
-              call eoscalc(ilnrho_ss,f(l,m,iz2_loc,ilnrho),f(l,m,iz2_loc,iss), &
-                  lnTT=tmpval)
+              call eoscalc(ilnrho_ss,f(l,m,iz2_loc,ilnrho),f(l,m,iz2_loc,iss),lnTT=tmpval)
               lnTT_xy2(l-l1+1,m-m1+1)=tmpval
+              call eoscalc(ilnrho_ss,f(l,m,iz3_loc,ilnrho),f(l,m,iz3_loc,iss),lnTT=tmpval)
+              lnTT_xy3(l-l1+1,m-m1+1)=tmpval
+              call eoscalc(ilnrho_ss,f(l,m,iz4_loc,ilnrho),f(l,m,iz4_loc,iss),lnTT=tmpval)
+              lnTT_xy4(l-l1+1,m-m1+1)=tmpval
             enddo; enddo
           endif
           call wslice(path//'lnTT.yz',lnTT_yz,x(ix_loc),ny,nz)
           call wslice(path//'lnTT.xz',lnTT_xz,y(iy_loc),nx,nz)
           call wslice(path//'lnTT.xy',lnTT_xy,z(iz_loc),nx,ny)
           call wslice(path//'lnTT.xy2',lnTT_xy2,z(iz2_loc),nx,ny)
+          if (lwrite_slice_xy3) &
+              call wslice(path//'lnTT.xy3',lnTT_xy3,z(iz3_loc),nx,ny)
+          if (lwrite_slice_xy4) & 
+              call wslice(path//'lnTT.xy4',lnTT_xy4,z(iz4_loc),nx,ny)
 !
 !  Pressure (derived variable)
 !
@@ -414,14 +432,22 @@ module Slices
           do l=l1,l2; do m=m1,m2
             call eoscalc(ilnrho_ss,f(l,m,iz_loc,ilnrho),f(l,m,iz_loc,iss),pp=tmpval)
             pp_xy(l-l1+1,m-m1+1)=tmpval
-            call eoscalc(ilnrho_ss,f(l,m,iz2_loc,ilnrho),f(l,m,iz2_loc,iss), &
-                pp=tmpval)
+            call eoscalc(ilnrho_ss,f(l,m,iz2_loc,ilnrho),f(l,m,iz2_loc,iss),pp=tmpval)
             pp_xy2(l-l1+1,m-m1+1)=tmpval
+            call eoscalc(ilnrho_ss,f(l,m,iz3_loc,ilnrho),f(l,m,iz3_loc,iss),pp=tmpval)
+            pp_xy3(l-l1+1,m-m1+1)=tmpval
+            call eoscalc(ilnrho_ss,f(l,m,iz4_loc,ilnrho),f(l,m,iz4_loc,iss),pp=tmpval)
+            pp_xy4(l-l1+1,m-m1+1)=tmpval
           enddo; enddo
           call wslice(path//'pp.yz',pp_yz,x(ix_loc),ny,nz)
           call wslice(path//'pp.xz',pp_xz,y(iy_loc),nx,nz)
           call wslice(path//'pp.xy',pp_xy,z(iz_loc),nx,ny)
           call wslice(path//'pp.xy2',pp_xy2,z(iz2_loc),nx,ny)
+          if (lwrite_slice_xy3) &
+              call wslice(path//'pp.xy3',pp_xy3,z(iz3_loc),nx,ny)
+          if (lwrite_slice_xy4) & 
+              call wslice(path//'pp.xy4',pp_xy4,z(iz4_loc),nx,ny)
+!
 !
 !  Dust-to-gas mass ratio (derived variable)
 !
