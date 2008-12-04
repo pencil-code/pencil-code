@@ -740,8 +740,10 @@ module Boundcond
           endif
         case('subsonic_inflow')
 ! Subsonic inflow 
-         if (j==1) then
-          call bc_nscbc_subin_x(f,df,topbot,luinlet=.true.,lTinlet=.true.,u_t=valx(j),T_t=valx(5))
+         if (j==1) then   
+           
+
+          call bc_nscbc_subin_x(f,df,topbot,luinlet=.true.,lTinlet=.true.,u_t=valx(j),T_t=valx(ilnTT))
          elseif (j==2) then
          ! call bc_nscbc_subin_y(f,df,topbot)
          endif
