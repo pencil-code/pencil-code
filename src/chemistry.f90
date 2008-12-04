@@ -73,11 +73,12 @@ module Chemistry
   real, allocatable, dimension(:,:,:,:,:) :: Bin_Diff_coef
   real, dimension (mx,my,mz,mfarray) :: Diff_full, XX_full
   real, dimension (mx,my,mz,nchemspec) :: species_viscosity
-  real, dimension(nchemspec) :: nu_spec=0.
+  real, dimension(nchemspec) :: nu_spec=0., mobility=1.
 !
 !  Chemkin related parameters
 !
   logical :: lcheminp=.false., lchem_cdtc=.false.
+  logical :: lmobility=.false.
   real, dimension(nchemspec,18) :: species_constants
   integer :: imass=1, iTemp1=2,iTemp2=3,iTemp3=4
   integer, dimension(7) :: iaa1,iaa2
@@ -99,7 +100,8 @@ module Chemistry
   namelist /chemistry_run_pars/ &
       lkreactions_profile,kreactions_profile,kreactions_profile_width, &
       chem_diff,chem_diff_prefactor, nu_spec, ldiffusion, ladvection, &
-      lreactions,lchem_cdtc,lheatc_chemistry, BinDif_simple, visc_simple
+      lreactions,lchem_cdtc,lheatc_chemistry, BinDif_simple, visc_simple, &
+      lmobility,mobility
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -366,6 +368,10 @@ module Chemistry
         case('coswave-x')
           do k=1,nchemspec
             call coswave(amplchem,f,ichemspec(k),kx=kx_chem)
+          enddo
+        case('gaussian-x')
+          do k=1,nchemspec
+            call gaussian(amplchem,f,ichemspec(k),kx=kx_chem)
           enddo
         case('hatwave-x')
           do k=1,nchemspec
@@ -1218,6 +1224,7 @@ module Chemistry
         if (ladvection) then 
           call grad(f,ichemspec(k),gchemspec) 
           call dot_mn(p%uu,gchemspec,ugchemspec)
+          if (lmobility) ugchemspec=ugchemspec*mobility(k)
           df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))-ugchemspec
         endif
 !
@@ -2877,7 +2884,7 @@ module Chemistry
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx,3) :: gXX, gDiff_full_add, gchemspec
-      real, dimension (nx) :: ugchemspec,del2chemspec
+      real, dimension (nx) :: del2chemspec
       real, dimension (nx) :: diff_op,diff_op1,diff_op2,xdot, del2XX 
       real :: diff_k
       integer :: j,k

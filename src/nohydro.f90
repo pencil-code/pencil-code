@@ -271,7 +271,7 @@ module Hydro
       if (kinflow=='const-x') then
         if (lpencil(i_uu)) then
           if (headtt) print*,'const-x'
-          p%uu(:,1)=1.
+          p%uu(:,1)=ampl_kinflow*cos(omega_kinflow*t)
           p%uu(:,2)=0.
           p%uu(:,3)=0.
         endif
