@@ -45,6 +45,8 @@ module Particles_nbody
   logical :: linterpolate_quadratic_spline=.false.
   logical :: laccrete_when_create=.true.
 
+  logical :: lstar_at_center=.false.
+
   integer :: ramp_orbits=5,mspar_orig=1
   integer :: iglobal_ggp=0,istar=1,imass=0
   integer :: maxsink=10*nspar,icreate=100
@@ -58,7 +60,7 @@ module Particles_nbody
        ramp_orbits,lramp,final_ramped_mass,prhs_cte,linterpolate_gravity,&
        linterpolate_quadratic_spline,laccretion,accrete_hills_frac,istar,&
        maxsink,lcreate_sinks,icreate,lcreate_gas,lcreate_dust,ladd_mass,&
-       laccrete_when_create
+       laccrete_when_create,lstar_at_center
 
   namelist /particles_nbody_run_pars/ &
        dsnap_par_minor, linterp_reality_check, lcalc_orbit, lreset_cm, &
@@ -66,7 +68,7 @@ module Particles_nbody
        GNewton, bcspx, bcspy, bcspz,prhs_cte,lnoselfgrav_star,&
        linterpolate_quadratic_spline,laccretion,accrete_hills_frac,istar,&
        maxsink,lcreate_sinks,icreate,lcreate_gas,lcreate_dust,ladd_mass,&
-       laccrete_when_create
+       laccrete_when_create,lstar_at_center
 
   integer, dimension(nspar,3) :: idiag_xxspar=0,idiag_vvspar=0
   integer, dimension(nspar)   :: idiag_torqint=0,idiag_torqext=0
@@ -358,7 +360,7 @@ module Particles_nbody
 
       case ('nothing')
         if (lroot) print*, 'init_particles_nbody: nothing'
-
+        
       case ('origin')
         if (lroot) then
           print*, 'init_particles_nbody: All nbody particles at origin'
@@ -366,12 +368,12 @@ module Particles_nbody
         endif
 !
       case('constant')
-        if (lroot) then
-          print*, 'init_particles_nbody: All nbody particles at x,y,z=', xsp0, ysp0, zsp0
-          fp(1:mspar,ixp)=xsp0
-          fp(1:mspar,iyp)=ysp0
-          fp(1:mspar,izp)=zsp0
-        endif
+        if (lroot) &
+            print*, 'init_particles_nbody: All nbody particles at x,y,z=', xsp0, ysp0, zsp0
+        do k=1,npar_loc
+          if (ipar(k) <= mspar) &
+              fp(k,ixp:izp)=position(ipar(k),1:3)
+        enddo
 !
       case ('random')
         if (lroot) print*, 'init_particles_nbody: Random particle positions'
@@ -409,7 +411,6 @@ module Particles_nbody
         enddo
 !
       case ('fixed-cm')
-!
         if (lgrav) then
           print*,"a gravity module is being used. Are you using "//&
                  "both a fixed central gravity and nbody gravity? "//&
@@ -540,6 +541,7 @@ module Particles_nbody
 
       case ('nothing')
         if (lroot) print*, 'init_particles: No particle velocity set'
+
       case ('zero')
         if (lroot) then
           print*, 'init_particles: Zero particle velocity'
@@ -547,13 +549,14 @@ module Particles_nbody
         endif
 !
       case ('constant')
-         if (lroot) then
-           print*, 'init_particles: Constant particle velocity'
-           print*, 'init_particles: vspx0, vspy0, vspz0=', vspx0, vspy0, vspz0
-           fp(1:mspar,ivpx)=vspx0
-           fp(1:mspar,ivpy)=vspy0
-           fp(1:mspar,ivpz)=vspz0
-         endif
+        if (lroot) then
+          print*, 'init_particles: Constant particle velocity'
+          print*, 'init_particles: vspx0, vspy0, vspz0=', vspx0, vspy0, vspz0
+        endif
+        do k=1,npar_loc
+          if (ipar(k) <= mspar) &
+              fp(k,ivpx:ivpz)=velocity(ipar(k),1:3)
+        enddo           
 !
       case ('fixed-cm')
 !
@@ -658,33 +661,33 @@ module Particles_nbody
 !
 !  Interpolate the gravity to the position of the particles
 !
-          if (npar_imn(imn)/=0) then
-            do k=k1_imn(imn),k2_imn(imn) !loop throught in the pencil
-              if (ipar(k).gt.mspar) then !for dust
-                !interpolate the gravity
-                if (linterpolate_linear) then
-                  call interpolate_linear(f,iglobal_ggp,&
-                       iglobal_ggp+2,fp(k,ixp:izp),accg,ineargrid(k,:),ipar(k))
-                else if (linterpolate_quadratic_spline) then
-                  !
-                  ! WL: I am not sure if this interpolation
-                  !     works for cylindrical coordinates, so
-                  !     beware
-                  !
-                  call interpolate_quadratic_spline(f,iglobal_ggp,&
-                       iglobal_ggp+2,fp(k,ixp:izp),accg,ineargrid(k,:),ipar(k))
-                endif
-                dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)+accg
+        if (npar_imn(imn)/=0) then
+          do k=k1_imn(imn),k2_imn(imn) !loop through the pencil
+            if (ipar(k).gt.mspar) then !for dust
+              !interpolate the gravity
+              if (linterpolate_linear) then
+                call interpolate_linear(f,iglobal_ggp,&
+                    iglobal_ggp+2,fp(k,ixp:izp),accg,ineargrid(k,:),ipar(k))
+              else if (linterpolate_quadratic_spline) then
+!
+! WL: I am not sure if this interpolation
+!     works for cylindrical coordinates, so
+!     beware
+!
+                call interpolate_quadratic_spline(f,iglobal_ggp,&
+                    iglobal_ggp+2,fp(k,ixp:izp),accg,ineargrid(k,:),ipar(k))
               endif
-            enddo
-          endif
+              dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)+accg
+            endif
+          enddo
         endif
+      endif
 ! 
 !  Add the acceleration to the gas
 !
       if (lhydro) then
         if (linterpolate_gravity) then
-          !already calculate, so no need to lose time
+          !already calculated, so no need to lose time
           !calculating again
           ggt=f(:,m,n,iglobal_ggp:iglobal_ggp+2)
         else
@@ -765,7 +768,7 @@ module Particles_nbody
             endif
           endif
         enddo
-      endif
+      endif !if hydro
 !
     endsubroutine dvvp_dt_nbody_pencil
 !***********************************************************************
@@ -847,15 +850,23 @@ module Particles_nbody
         endif
       enddo
 !
+!  Add the gravity from all N-body particles
+!
       do k=npar_loc,1,-1
-        if (linterpolate_gravity) then
-          !only loop through massive particles
-          if (ipar(k).le.mspar) then
+!
+!  Exclude the star if the grid is centered at it
+!        
+        if (.not.(lstar_at_center.and.(ipar(k).eq.istar))) then 
+!
+          if (linterpolate_gravity) then
+            !only loop through massive particles
+            if (ipar(k).le.mspar) then
+              call loop_through_nbodies(fp,dfp,k,sq_hills,ineargrid)
+            endif
+          else
+            !for all particles
             call loop_through_nbodies(fp,dfp,k,sq_hills,ineargrid)
           endif
-        else
-          !for all particles
-          call loop_through_nbodies(fp,dfp,k,sq_hills,ineargrid)
         endif
       enddo
 !
@@ -889,9 +900,9 @@ module Particles_nbody
 !
       real, dimension (mpar_loc,mpvar) :: fp,dfp
       real, dimension (mspar) :: sq_hills
-      real, dimension (3) :: evr
+      real, dimension (3) :: evr,acc
       integer, dimension (mpar_loc,3) :: ineargrid
-      real :: r2_ij,rs2,invr3_ij
+      real :: r2_ij,rs2,invr3_ij,rr
       integer :: k, ks
 !
       intent(inout) :: fp,dfp
@@ -930,15 +941,87 @@ module Particles_nbody
 !  in position.
 !
             dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - &
-                 GNewton*pmass(ks)*invr3_ij*evr(1:3)
-          endif
+                GNewton*pmass(ks)*invr3_ij*evr(1:3)
 !
-        endif
-      enddo
+!  If the star is at the center (non-inertial frame), one 
+!  has to add on the frame the acceleration this particle ks
+!  produces on the star at the inertial frame
+!
+            if (lstar_at_center.and.ks/=istar) then
+!
+!  The frame acceleration in cartesian coordinates
+!  does not depend on position
+!
+              if (lcartesian_coords) then 
+                call calc_frame_acceleration(ks,acc)
+              else
+                call calc_frame_acceleration(ks,acc,&
+                    e1=fp(k,ixp),e2=fp(k,izp),e3=fp(k,izp))
+              endif
+!
+              dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + acc
+!
+            endif
+!
+          endif !if accretion
+!
+        endif ! if ipar(k)/=ks
+!
+      enddo !nbody loop
 !
 99    continue
-      
+!
     endsubroutine loop_through_nbodies
+!**********************************************************
+    subroutine calc_frame_acceleration(ks,acc,e1,e2,e3)
+!
+!  Used in connection with lstar_at_center. With this 
+!  logical, the movements occurs in an non-inertial frame
+!  of reference, that follows the star. 
+!
+!  The acceleration from the other N-body particles, that 
+!  in the inertial frame goes into the star, has to be 
+!  transfered to all stuff in the frame (gas, other 
+!  planets, etc.)  
+!
+!  03-dec-08/wlad: coded 
+!
+      use Messages, only: fatal_error
+!
+      real, dimension(3), intent(out) :: acc
+      real, intent(in), optional  :: e1,e2,e3
+      real :: rr2,inv_rr2,inv_rr3
+      real :: e10,e20,e30
+      integer :: ks
+!
+      e10=fsp(ks,ixp) ; e20=fsp(ks,iyp) ; e30=fsp(ks,izp)
+!
+!  Add on the frame (particle, gas) the acceleration that in the
+!  inertial frame goes into the star. 
+!
+      if (lcartesian_coords) then
+        inv_rr3=(e10**2+e20**2+e30**2)**(-1.5)
+        acc(1) = - GNewton*pmass(ks)*inv_rr3 * e10
+        acc(2) = - GNewton*pmass(ks)*inv_rr3 * e20
+        acc(3) = - GNewton*pmass(ks)*inv_rr3 * e30
+      elseif (lcylindrical_coords) then
+        rr2=e1**2 + e10**2 -2*e1*e10*cos(e2-e20) + (e3-e30)**2
+        inv_rr2=1./rr2
+        acc(1) = - GNewton*pmass(ks)*inv_rr2 * cos(e2-e20)
+        acc(2) =   GNewton*pmass(ks)*inv_rr2 * sin(e2-e20)
+        if (nzgrid/=1) then
+          inv_rr3=inv_rr2**(1.5)
+          acc(3) = - GNewton*pmass(ks)*inv_rr3 * (e3-e30)
+        else
+          acc(3) = 0.
+        endif
+      elseif (lspherical_coords) then 
+        call fatal_error("calc_frame_acceleration",&
+            "not implemented for spherical coordinates")
+      endif
+
+!
+    endsubroutine calc_frame_acceleration
 !**********************************************************
     subroutine point_par_name(a,iname)
 !
@@ -1031,6 +1114,9 @@ module Particles_nbody
         vcm(2) = sum(ftmp(:,imass)*ftmp(:,ivpy))
         vcm(3) = sum(ftmp(:,imass)*ftmp(:,ivpz))
       else if (lcylindrical_coords) then
+!
+!  This is not really functional for other grids than Cartesian
+!
         xcm=sum(ftmp(:,imass)*(ftmp(:,ipx)*cos(ftmp(:,iyp))))
         ycm=sum(ftmp(:,imass)*(ftmp(:,ipx)*sin(ftmp(:,iyp))))
         phicm=atan2(ycm,xcm)
@@ -1040,7 +1126,6 @@ module Particles_nbody
         vycm=sum(ftmp(:,imass)*(&
              ftmp(:,ivpx)*sin(ftmp(:,iyp))+ftmp(:,ivpy)*cos(ftmp(:,iyp))&
                                                                     ))
-        !
         vcm(1)= vxcm*cos(phicm) + vycm*sin(phicm)
         vcm(2)=-vxcm*sin(phicm) + vycm*cos(phicm)
         vcm(3) = sum(ftmp(:,imass)*ftmp(:,ivpz))
@@ -1065,9 +1150,12 @@ module Particles_nbody
         thtcm=atan2(sqrt(xcm**2+ycm**2),zcm)
         phicm=atan2(ycm,xcm)
 !
-        vcm(1)= vxcm*sin(thtcm)*cos(phicm) + vycm*sin(thtcm)*sin(phicm) + vzcm*cos(thtcm) 
-        vcm(2)= vxcm*cos(thtcm)*cos(phicm) + vycm*cos(thtcm)*sin(phicm) - vzcm*sin(thtcm) 
-        vcm(3)=-vxcm*sin(phicm)            + vycm*cos(phicm) 
+        vcm(1)= vxcm*sin(thtcm)*cos(phicm) + &
+            vycm*sin(thtcm)*sin(phicm) + vzcm*cos(thtcm) 
+        vcm(2)= vxcm*cos(thtcm)*cos(phicm) + &
+            vycm*cos(thtcm)*sin(phicm) - vzcm*sin(thtcm) 
+        vcm(3)=-vxcm*sin(phicm)            + &
+            vycm*cos(phicm) 
       endif
 !
       do k=1,npar_loc
@@ -1460,10 +1548,10 @@ module Particles_nbody
 !  Calculate grid - nbody particles distances
 !
         do n=1,mz
-          do m=1,my
-            call get_total_gravity(ggt)
-            f(:,m,n,iglobal_ggp:iglobal_ggp+2)=ggt
-          enddo
+        do m=1,my
+          call get_total_gravity(ggt)
+          f(:,m,n,iglobal_ggp:iglobal_ggp+2)=ggt
+        enddo
         enddo
 !
 !  else do nothing
@@ -1479,9 +1567,10 @@ module Particles_nbody
       use Sub
 !
       real, dimension (mx,mspar) :: rp_mn,rpcyl_mn
-      real, dimension (mx,3)     :: ggp,ggt
+      real, dimension (mx,3)     :: ggp,ggt,ggi
       real, dimension (mx)       :: grav_particle,rrp
-      integer                    :: ks
+      real, dimension (3)        :: acc
+      integer                    :: ks,i
 !
       intent(out) :: ggt
 !
@@ -1506,12 +1595,46 @@ module Particles_nbody
         grav_particle =-GNewton*pmass(ks)*(rrp**2+r_smooth(ks)**2)**(-1.5)
         call get_gravity_field_nbody(grav_particle,ggp,ks)
 !
+!  Add the indirect term (in the case of a non-inertial frame 
+!  where the star doesn't move). The gravity acting on the 
+!  star is added to the frame - here, to the gas        
+!
+        if (ks/=istar) then
+!
+!  The particle acceleration does not depend on position
+!  for the Cartesian frame. Separate it then according to 
+!  grid geometry because calc_frame_acceleration needs to 
+!  compute square roots and powers. It's needed in cylindrical
+!  and spherical, but just a waste of computational time for 
+!  cartesian coordinates
+!  
+          if (lcartesian_coords) then 
+            call calc_frame_acceleration(ks,acc)
+            do i=1,mx 
+              ggi(i,:)=acc
+            enddo
+          else !cylindrical and spherical
+            do i=1,mx
+              call calc_frame_acceleration(ks,acc,&
+                  e1=x(i),e2=y(m),e3=z(n))
+              ggi(i,:)=acc
+            enddo
+          endif
+!
+        else 
+!
+!  The star does not exert influence on itself
+!
+          ggi=0
+!
+        endif
+!
         if ((ks==istar).and.lnogravz_star) &
-             ggp(:,3) = 0.
+            ggp(:,3) = 0.
 !
 !  Sum up the accelerations of the massive particles
 !
-        ggt=ggt+ggp
+        ggt=ggt+ggp+ggi
 !
       enddo
 !
