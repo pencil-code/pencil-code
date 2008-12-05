@@ -21,6 +21,9 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Description:
 #   Run a shell script like run.csh and kill it and its child processes
 #   after a given time, including subprocesses started via mpirun/mpiexec.
+#   CAVEAT: As there is apparently no portable way to processes we
+#   initiated via mpirun/mpiexec, we simply kill _any_ process of the
+#   given name that didn't exist when this script started.
 # Usage:
 #   reaper -t <time,run.x> run.csh [<args>]
 # Options:
@@ -63,6 +66,8 @@ use Getopt::Long;
 # Allow for `-Plp' as equivalent to `-P lp' etc:
 Getopt::Long::config("bundling");
 
+use POSIX ":sys_wait_h";
+
 my (%opts);                     # Options hash for GetOptions
 my $doll='\$';                  # Need this to trick CVS
 my $prefix = '';
@@ -85,11 +90,12 @@ if ($debug) {
 if ($opts{'h'} || $opts{'help'})    { die usage();   }
 if ($opts{'v'} || $opts{'version'}) { die version(); }
 
-my $update_interval = 2;        # check for processes after this interval
+my $update_interval = 0.5;        # check for processes after this interval
 
 my ($child_pid, @old_procs);
 my $our_procs_started = 0;
 
+my $quiet = ( $opts{'q'} || $opts{'quiet'} || 0 );
 my ($total_time,$proc_name,$warn_time,$warn_cmd)
   = parse_time_spec( $opts{t} || $opts{time} || '' );
 
@@ -132,7 +138,7 @@ sub timed_system_call {
         # Try to be nice
         my $sleep = $total - (time() - $t0) - $warn;
         logger("Sleeping for $sleep seconds");
-        watch_procs($proc_name, $sleep);
+        watch_procs($proc_name, $sleep, $child_pid);
         if (defined($warncmd)) {
             logger("Running  system(\"$warncmd &\");");
             system("$warncmd &");
@@ -143,12 +149,12 @@ sub timed_system_call {
         # Be tough
         $sleep = $total - (time() - $t0);
         logger("Sleeping for $sleep seconds");
-        watch_procs($proc_name, $sleep);
+        watch_procs($proc_name, $sleep, $child_pid);
         # kill_processes();  # Now handled by END{} block
     } else {                    # child
         $prefix = 'Child: ';
         logger("pid=$$");
-        exec("@cmd &");
+        exec(@cmd);
     }
 
     print "\n";
@@ -159,10 +165,16 @@ sub watch_procs {
 # processes of ours called $name. If new ones appear, add them to the
 # @our_procs list. If there have been processes in @our_procs, but now
 # there are none, exit.
-    my ($name, $sleep) = @_;
+# Also, if the cild process $childid has finished, exit.
+    my ($name, $sleep, $child_pid) = @_;
 
     my $t0 = time();
     do {
+        if (waitpid($child_pid, WNOHANG) != 0){
+            logger("Child finished -- exiting");
+            exit 0;
+        }
+
         if (get_proc_list($name)) { # found running procs
             logger("watch_procs: Found running procs");
             $our_procs_started = 1;
@@ -170,27 +182,35 @@ sub watch_procs {
             logger("Our procs have run and quit -- exiting");
             exit 0 if ($our_procs_started)
         }
-
         # sleep until the next check
         my $time_left = $sleep - (time() - $t0);
         sleep min($update_interval, $time_left);
     } while ((time() - $t0) <  $sleep);
-
 }
 # ---------------------------------------------------------------------- #
 sub kill_processes {
 # Kill all processes we are supposed to reap
-        my @procs = ( get_proc_list($proc_name, \@old_procs),
-                      $child_pid
-                    );
+        my @procs = get_proc_list($proc_name, \@old_procs);
         logger("kill -KILL @procs\n");
-        kill 'KILL', @procs;
+        my $num_killed = kill 'KILL', @procs;
+
+        wait;
+
+        if ($num_killed > 0 && ! $quiet) {
+            print STDERR 
+              "reaper: Reached time limit of ${total_time}s --"
+              . " killed $num_killed process '$proc_name'"
+              . ($num_killed > 1 ? 'es' : '')
+              . "\n";
+        }
+
+        return $num_killed;
     }
 # ---------------------------------------------------------------------- #
 END {
 # Clean up, in particular kill child process if parent exits prematurely
     if ($child_pid) {
-        kill_processes();
+        $? = $? || kill_processes();
     }
 }
 # ---------------------------------------------------------------------- #
