@@ -4586,7 +4586,10 @@ module Boundcond
             call der_pencil(2,f(lll,:,i,ichemspec(k)),dYk_dy(:,i))
           enddo
           df(lll,m1:m2,n1:n2,ichemspec(k))=&
-              -f(lll,m1:m2,n1:n2,iux)*dYk_dx(m1:m2,n1:n2) &
+!AB: the dYk_dx array is defined with size ny*nz,
+!AB: so m1:m2,n1:n2 cannot be the right argument!
+!             -f(lll,m1:m2,n1:n2,iux)*dYk_dx(m1:m2,n1:n2) &
+              -f(lll,m1:m2,n1:n2,iux)*dYk_dx &
               -f(lll,m1:m2,n1:n2,iuy)*dYk_dy(m1:m2,n1:n2) &
               +bound_rhs_Y(:,:,k)
 !
