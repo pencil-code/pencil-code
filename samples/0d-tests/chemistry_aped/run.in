@@ -4,12 +4,12 @@
 &run_pars
   cvsid='$Id$',
   nt=10100, it1=100, cdtv=0.25, isave=1000, itorder=3
-  nt=1000000, it1=1, cdtv=0.25, isave=1000, itorder=3
-  dsnap=1.0, dvid=0.5, dtmin=1e-38
-  cdtc=.01, tmax=100.
-  !dt=1.
+  nt=100000, it1=1000, cdtv=0.25, isave=1000, itorder=3
+  nt=20, it1=1, cdtv=0.25, isave=1000, itorder=1
+  dsnap=1.0, dvid=0.5, dtmin=1e-6
+  dt=1e-2
+  dt=.005
 /
 &chemistry_run_pars
   chem_diff=.002
-  lchem_cdtc=T
 /
