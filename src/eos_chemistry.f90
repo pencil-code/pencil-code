@@ -584,10 +584,9 @@ module EquationOfState
       real, dimension(nx), intent(out) :: cs2,cp1tilde
       real, dimension(nx) :: lnrho,ss
  
-      type (pencil_case) :: p
+!AB: this is not defined
+!     type (pencil_case) :: p
 !
-
-
       if (ldensity_nolog) then
         lnrho=log(f(l1:l2,m,n,ilnrho))
       else
@@ -606,12 +605,17 @@ module EquationOfState
       endif
       cp1tilde=cp1
     else
-      if (pretend_lnTT) then
-        cs2=p%gamma1*exp(p%cv1*ss)
-      else
-        cs2=cs20*exp(p%cv1*ss+p%gamma1*(lnrho-lnrho0))
-      endif
-      cp1tilde=p%cp1
+!     if (pretend_lnTT) then
+!       cs2=p%gamma1*exp(p%cv1*ss)
+!     else
+!       cs2=cs20*exp(p%cv1*ss+p%gamma1*(lnrho-lnrho0))
+!     endif
+!     cp1tilde=p%cp1
+!AB: p was not defined, and I am not familiar with this routine.
+!AB: Please fix this or delete this
+cs2=impossible
+cp1tilde=impossible
+!
     endif
 !
     endsubroutine pressure_gradient_farray
