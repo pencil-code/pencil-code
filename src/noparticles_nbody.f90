@@ -200,10 +200,10 @@ module Particles_nbody
       if (NO_WARN) print*,pot,rmn
     endsubroutine potential_nbody
 !***********************************************************************
-    subroutine share_nbodyparticles(fp)
+    subroutine bcast_nbodyarray(fp)
       real, dimension(mpar_loc,mpvar) :: fp
       if (NO_WARN) print*, fp
-    endsubroutine share_nbodyparticles
+    endsubroutine bcast_nbodyarray
 !************************************************************************
     subroutine particles_nbody_special
       real :: dummy_=0.

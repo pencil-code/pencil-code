@@ -465,7 +465,12 @@ module Particles_nbody
             parc = parc - sma(ks)*pmass(ks)
           endif
         enddo
+!
+!  Fixed-cm assumes that the total mass is always one. The mass of the 
+!  star is adjusted to ensure this.
+! 
         pmass(istar)=1.- tmp;pmass1=1./max(pmass,tini);totmass=1.;totmass1=1.
+!
         parc = parc*totmass1
         if (tmp .ge. 1.) &
              call stop_it("particles_nbody,init_particles. The mass of one "//& 
@@ -617,10 +622,21 @@ module Particles_nbody
 !
       endselect
 !
+      if (Omega/=0) then
+        if (.not.lcylindrical_coords) & 
+            call stop_it("co-rotational frame"//&
+            "not implemented for other than cylindrical coords")
+        do k=1,npar_loc
+          if (ipar(k)/=istar) then
+            fp(k,ivpy) = fp(k,ivpy)-Omega*fp(k,ixp)
+          endif
+        enddo
+      endif
+!
 !  Make the particles known to all processors
 !
       call boundconds_particles(fp,npar_loc,ipar)
-      call share_nbodyparticles(fp)
+      call bcast_nbodyarray(fp)
 !
     endsubroutine init_particles_nbody
 !***********************************************************************
@@ -965,7 +981,22 @@ module Particles_nbody
 !
           endif !if accretion
 !
-        endif ! if ipar(k)/=ks
+        else ! if ipar(k)/=ks
+!
+! Effect of the particle on itself - appears in the frame 
+! co-rotating with the star
+!          
+          if (lstar_at_center.and.ks/=istar) then 
+            if (lcartesian_coords) then 
+              call calc_frame_acceleration(ks,acc)
+            else
+              call calc_frame_acceleration(ks,acc,&
+                  e1=fp(k,ixp),e2=fp(k,izp),e3=fp(k,izp))
+            endif
+            dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + acc
+          endif
+!
+        endif
 !
       enddo !nbody loop
 !
@@ -990,7 +1021,7 @@ module Particles_nbody
 !
       real, dimension(3), intent(out) :: acc
       real, intent(in), optional  :: e1,e2,e3
-      real :: rr2,inv_rr2,inv_rr3
+      real :: inv_rr,inv_rr2,inv_rr3
       real :: e10,e20,e30
       integer :: ks
 !
@@ -1000,26 +1031,33 @@ module Particles_nbody
 !  inertial frame goes into the star. 
 !
       if (lcartesian_coords) then
+!
         inv_rr3=(e10**2+e20**2+e30**2)**(-1.5)
         acc(1) = - GNewton*pmass(ks)*inv_rr3 * e10
         acc(2) = - GNewton*pmass(ks)*inv_rr3 * e20
         acc(3) = - GNewton*pmass(ks)*inv_rr3 * e30
+!
       elseif (lcylindrical_coords) then
-        rr2=e1**2 + e10**2 -2*e1*e10*cos(e2-e20) + (e3-e30)**2
-        inv_rr2=1./rr2
+!
+!  Save some time if we are running 2D
+!
+        if (nzgrid==1) then 
+          inv_rr=1./e10
+          inv_rr2=inv_rr**2
+          acc(3) = 0.
+        else
+          inv_rr2=1./(e10**2+e30**2)
+          inv_rr3=inv_rr2**(1.5)
+          acc(3) = - GNewton*pmass(ks)*inv_rr3*e30
+        endif
+!
         acc(1) = - GNewton*pmass(ks)*inv_rr2 * cos(e2-e20)
         acc(2) =   GNewton*pmass(ks)*inv_rr2 * sin(e2-e20)
-        if (nzgrid/=1) then
-          inv_rr3=inv_rr2**(1.5)
-          acc(3) = - GNewton*pmass(ks)*inv_rr3 * (e3-e30)
-        else
-          acc(3) = 0.
-        endif
+!
       elseif (lspherical_coords) then 
         call fatal_error("calc_frame_acceleration",&
             "not implemented for spherical coordinates")
       endif
-
 !
     endsubroutine calc_frame_acceleration
 !**********************************************************
@@ -1273,7 +1311,7 @@ module Particles_nbody
 !
     endsubroutine integrate_selfgravity
 !***********************************************************************
-    subroutine share_nbodyparticles(fp)
+    subroutine bcast_nbodyarray(fp)
 !
 !  Broadcast nbody particles across processors
 !  The non-root processors, if they find a nbody particle in their
@@ -1360,7 +1398,7 @@ module Particles_nbody
 !
 !  Print the result in all processors
 !
-          if (ip<=8)  print*,'share_nbodyparticles: finished loop. '//&
+          if (ip<=8)  print*,'bcast_nbodyarray: finished loop. '//&
                'nbody particles in proc ',iproc,&
                ' are fsp(ks,:)=',fsp(ks,:)
         enddo
@@ -1379,9 +1417,9 @@ module Particles_nbody
 !
       endif
 !
-      if (ldebug) print*,'share_nbodyparticles finished'
+      if (ldebug) print*,'bcast_nbodyarray finished'
 !
-    endsubroutine share_nbodyparticles
+    endsubroutine bcast_nbodyarray
 !***********************************************************************
     subroutine particles_nbody_special
 !
@@ -1538,6 +1576,11 @@ module Particles_nbody
 !***********************************************************************
     subroutine calc_nbodygravity_particles(f)
 !
+!  For the case of interpolated gravity, add the gravity 
+!  of all n-body particles to slots of the f-array.
+!
+!  08-mar-08/wlad: coded
+!
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,3) :: ggt
 !
@@ -1563,6 +1606,8 @@ module Particles_nbody
     subroutine get_total_gravity(ggt)
 !
 !  Sum the gravities of all massive particles
+!
+!  08-mar-08/wlad: coded
 !  
       use Sub
 !
@@ -1599,7 +1644,7 @@ module Particles_nbody
 !  where the star doesn't move). The gravity acting on the 
 !  star is added to the frame - here, to the gas        
 !
-        if (ks/=istar) then
+        if (lstar_at_center.and.(ks/=istar)) then
 !
 !  The particle acceleration does not depend on position
 !  for the Cartesian frame. Separate it then according to 
@@ -1953,7 +1998,7 @@ module Particles_nbody
 !
           if (nc/=0) then
             call merge_and_share(fcsp,nc,fp)
-            call share_nbodyparticles(fp)
+            call bcast_nbodyarray(fp)
           endif
 !
         endif

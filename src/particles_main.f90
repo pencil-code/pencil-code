@@ -255,7 +255,7 @@ module Particles_main
 !
 !  Distribute the n-body particles across processors
 !
-      if (lparticles_nbody) call share_nbodyparticles(fp)
+      if (lparticles_nbody) call bcast_nbodyarray(fp)
 !
     endsubroutine particles_boundconds
 !***********************************************************************
