@@ -51,6 +51,7 @@ module Chemistry
   logical :: BinDif_simple=.false.
   logical :: visc_simple=.false.
   
+  logical :: lfilter=.false.
   logical :: lkreactions_profile=.false.
   integer :: nreactions=0,nreactions1=0,nreactions2=0
   real, dimension(2*nchemspec) :: kreactions_profile_width=0.
@@ -101,7 +102,7 @@ module Chemistry
       lkreactions_profile,kreactions_profile,kreactions_profile_width, &
       chem_diff,chem_diff_prefactor, nu_spec, ldiffusion, ladvection, &
       lreactions,lchem_cdtc,lheatc_chemistry, BinDif_simple, visc_simple, &
-      lmobility,mobility
+      lmobility,mobility, lfilter
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -1200,7 +1201,7 @@ module Chemistry
 !
 !  indices
 !
-      integer :: j,k
+      integer :: j,k,i
       integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
 !
       intent(in) :: f,p
@@ -1248,7 +1249,14 @@ module Chemistry
               p%DYDt_reac(:,k)
         endif
 !
-      enddo
+      if (lfilter) then
+       do i=1,mx
+        if ((f(i,m,n,ichemspec(k))+df(i,m,n,ichemspec(k))*dt)<-1e-15 ) df(i,m,n,ichemspec(k))=-1e-15*dt
+       enddo
+      endif
+
+
+     enddo
 !
       if (ldensity .and. lcheminp) then
         sum_DYDt=0.
@@ -1258,10 +1266,7 @@ module Chemistry
         enddo
 !
         call dot_mn(p%ghYrho,p%uu,ghYrho_uu)
-!
-! HHHHHH
-!
-! WL: What does this "HHHHHHH" mean?
+
 !
         RHS_T_full(l1:l2,m,n)=(sum_DYDt(:)- Rgas*p%mu1*p%divu)*p%cv1 &
             !/(p%cp-Rgas*p%mu1)&
@@ -1923,10 +1928,7 @@ module Chemistry
 !
 100               read(file_id,'(80A)',end=1012) ChemInpLine_add(1:80)
                   if (ChemInpLine_add(1:1) == ' ') then
-!
-! Natalia_new
-! WL: what does it mean, Natalia_new?
-                  !if (MplussInd>0 .and. ParanthesisInd==0) then
+
 !
                     if (ParanthesisInd>0) then
                       Mplus_case(k)=.true.
@@ -2090,9 +2092,7 @@ module Chemistry
                     enddo
                     print*,' ------------------------------'
                     goto 100
-            
-!Natalia_new 
-                !   endif
+
 !
                   else
                     found_new_reaction=.true.
@@ -2826,9 +2826,6 @@ module Chemistry
 !
       prefactor=3./16.*sqrt(2.*k_B_cgs**3*TT**3)/pp_full_cgs/sqrt(pi)
 !
-!  DDDDDDDDDDDD     
-!  WL: what is "DDDDDDDD"?
-!   
       if (.not. BinDif_simple) then
 !
         omega="Omega11"

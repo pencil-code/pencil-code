@@ -740,10 +740,8 @@ module Boundcond
           endif
         case('subsonic_inflow')
 ! Subsonic inflow 
-         if (j==1) then   
-           
-
-          call bc_nscbc_subin_x(f,df,topbot,luinlet=.true.,lTinlet=.true.,u_t=valx(j),T_t=valx(ilnTT))
+         if (j==1) then
+          call bc_nscbc_subin_x(f,df,topbot,val=valx)
          elseif (j==2) then
          ! call bc_nscbc_subin_y(f,df,topbot)
          endif
@@ -4316,7 +4314,7 @@ module Boundcond
 !
     endsubroutine bc_nscbc_prf_z
 !***********************************************************************
-    subroutine bc_nscbc_subin_x(f,df,topbot,luinlet,lTinlet,u_t,T_t)
+    subroutine bc_nscbc_subin_x(f,df,topbot,val)
 !
 !   nscbc case 
 !   subsonic inflow boundary conditions
@@ -4338,27 +4336,25 @@ module Boundcond
       real, dimension(my,mz) :: rho0, gamma0, dmom2_dy, TT0 
       real, dimension (my,mz) :: cs2x,cs0_ar,cs20_ar
       real, dimension (mx,my,mz) :: cs2_full, gamma_full, rho_full, pp
-      logical, optional :: luinlet, lTinlet
-      real, optional :: u_t,T_t
-      logical :: lluinlet, llTinlet
-      integer :: lll,i, sgn
-      real :: Mach_num
+      real, dimension(nchemspec) :: YYi
+      real, dimension (mcom), optional :: val
+      integer :: lll,i, sgn,k
+      real :: Mach_num, u_t, T_t
 !
-      intent(in) :: f
+      intent(inout) :: f
       intent(out) :: df
 !
-      lluinlet = .false.
-      llTinlet = .false.
+
+     if (.not.present(val)) call stop_it(&
+           'bc_nscbc_subin_x: you must specify fbcx)')
+
+      u_t=val(iux)
+      T_t=val(ilnTT)
+      do k=1,nchemspec
+       YYi(k)=val(ichemspec(k))
+      enddo
+
 !
-      if (present(luinlet)) lluinlet = luinlet
-      if (present(lTinlet)) llTinlet = lTinlet
-!
-      if (luinlet.and..not.present(u_t)) call stop_it(&
-           'bc_nscbc_subin_x: when using luinlet=T, '//&
-           'you must also specify u_t)')
-      if (lTinlet.and..not.present(T_t)) call stop_it(&
-           'bc_nscbc_subin_x: when using lTinlet=T, '//&
-           'you must also specify T_t)')
 !
       if (leos_chemistry) then
         call get_cs2_full(cs2_full)
@@ -4393,7 +4389,6 @@ module Boundcond
         return
       endif
 !
-      if (lluinlet) then
 !
         call der_onesided_4_slice(f,sgn,ilnrho,dlnrho_dx,lll,1)
         call der_onesided_4_slice(f,sgn,iux,dux_dx,lll,1)
@@ -4429,19 +4424,54 @@ module Boundcond
           ! -1./rho0(m1:m2,n1:n2)*dmom2_dy(m1:m2,n1:n2)
         endif
 
-        df(lll,m1:m2,n1:n2,iux) = -sgn*(cs0_ar(m1:m2,n1:n2)*&
-            df(lll,m1:m2,n1:n2,ilnrho) &
-            +(f(lll,m1:m2,n1:n2,iux) + sgn*cs0_ar(m1:m2,n1:n2)) &
-            *cs0_ar(m1:m2,n1:n2)/Lxyz(1)*(1.-Mach_num*Mach_num) &
-            *(f(lll,m1:m2,n1:n2,iux) - u_t))
 !
-      elseif (llTinlet) then
-        df(lll,m1:m2,n1:n2,iux) = df(lll,m1:m2,n1:n2,iux)  &
-            -sgn*(f(lll,m1:m2,n1:n2,iux)/Lxyz(1)*&
-            pp(lll,m1:m2,n1:n2)/rho0(m1:m2,n1:n2) &
-            *(1.-T_t/TT0(m1:m2,n1:n2)))
-      endif
+! Natalia: this subroutine is still under construction
+! Please, do not remove this commented part !!!!!
 !
+      !  df(lll,m1:m2,n1:n2,iux) = -sgn*(cs0_ar(m1:m2,n1:n2)*&
+       !     df(lll,m1:m2,n1:n2,ilnrho) &
+       !    +(f(lll,m1:m2,n1:n2,iux) + sgn*cs0_ar(m1:m2,n1:n2)) &
+       !     *cs0_ar(m1:m2,n1:n2)/Lxyz(1)*(1.-Mach_num*Mach_num) &
+       !     *(f(lll,m1:m2,n1:n2,iux) - u_t))
+
+   !    df(lll,m1:m2,n1:n2,iux) = &
+   !        +0.5*sgn*(cs0_ar(m1:m2,n1:n2)*df(lll,m1:m2,n1:n2,ilnrho) &
+   !        +cs0_ar(m1:m2,n1:n2)/Lxyz(1)*(1.-Mach_num*Mach_num) &
+   !        *(f(lll,m1:m2,n1:n2,iux) - u_t))
+
+    !       df(lll,m1:m2,n1:n2,iux) = &
+    !        -f(lll,m1:m2,n1:n2,iux)/Lxyz(1)&
+    !        *(f(lll,m1:m2,n1:n2,iux) - u_t)
+!
+  !      df(lll,m1:m2,n1:n2,iux) = df(lll,m1:m2,n1:n2,iux)  &
+  !         +0.5/Lxyz(1)*pp(lll,m1:m2,n1:n2)/rho0(m1:m2,n1:n2) &
+  !         *(1.-exp(T_t)/TT0(m1:m2,n1:n2))
+!
+ !       do k=1,nchemspec
+      !    df(lll,m1:m2,n1:n2,ichemspec(k))=& 
+      !    -0.5*cs0_ar(m1:m2,n1:n2)/Lxyz(1)*(f(lll,m1:m2,n1:n2,ichemspec(k))-YYi(k)) 
+      !    df(lll,m1:m2,n1:n2,ichemspec(k))=&
+       !      f(lll,m1:m2,n1:n2,iux)*(f(lll,m1:m2,n1:n2,ichemspec(k))-YYi(k))/dx 
+  !       f(lll,m1:m2,n1:n2,ichemspec(k))=YYi(k)  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !    df(lll,m1:m2,n1:n2,ichemspec(k))=0.
+   !     enddo
+    !     f(lll,m1:m2,n1:n2,iux) = u_t              !!!!!!!!!!!!!!!!!!!
+     !    f(lll,m1:m2,n1:n2,ilnTT) = T_t            !!!!!!!!!!!!!!!!!!!!!!
+      !   df(lll,m1:m2,n1:n2,iux)=0.!-0.5*cs0_ar(m1:m2,n1:n2)/Lxyz(1)*(f(lll,m1:m2,n1:n2,iux)-u_t)
+      !   df(lll,m1:m2,n1:n2,ilnTT)=0.!0.5*cs0_ar(m1:m2,n1:n2)/Lxyz(1)*(f(lll,m1:m2,n1:n2,ilnTT)-T_t) !!!!!!!!!!!!!!!!!!
+
+!
+!  this conditions can be important! 
+!  check withour them
+!
+
+!        do k=1,nchemspec
+!         f(lll,m1:m2,n1:n2,ichemspec(k))=YYi(k)  
+!        enddo
+!         f(lll,m1:m2,n1:n2,iux) = u_t
+!         f(lll,m1:m2,n1:n2,ilnTT) = T_t
+!         df(lll,m1:m2,n1:n2,ilnTT)=0.
+
     endsubroutine bc_nscbc_subin_x
 !***********************************************************************
     subroutine bc_nscbc_nref_subout_x(f,df,topbot)
