@@ -18,8 +18,8 @@ Axel Brandenburg, brandenb/nordita.org,     +46 8 5537 8707 +46 70 574 0650, bra
 Boris Dintrans   dintrans/ast.obs-mip.fr   +33 5 6133 2811    +33 6 61 24 79 83
 Wolfgang Dobler, wdobler/gmail.com,        +49 33201 43791,   +49 1520 4056 762, +49 305331 12083 (office), wdobler, ,
 Anders Johansen  johansen/mpia-hd.mpg.de   +31 71 527 8454    +31 648 211 427
-Nils E.L. Haugen Nils.E.Haugen/sintef.no   +47 73 55 06 75    +47 986 086 83
-Tobias Heinemann T.Heinemann/damtp.cam.ac.uk +44 1223 760 393 +44 784 716 5958
+Nils E.L. Haugen Nils.E.Haugen/sintef.no   +47 73 55 06 75    +47 986 086 83, +47 72878737 (home)
+Tobias Heinemann T.Heinemann/damtp.cam.ac.uk +44 1223 337 907 +44 784 716 5958
 André Kapelrud   kapelrud/stud.ntnu.no
 Maarit Korpi     maarit.korpi/helsinki.fi
 Petri Käpylä     petri.kapyla/helsinki.fi  +358 9 191 22952   +358 40 533 4117
@@ -32,7 +32,7 @@ Matthias Rheinhardt, mreinhardt/aip.de,                     , +49 49 3044 19348,
 Graeme R. Sarson g.r.sarson/ncl.ac.uk      +44 191 222 5375
 Andrew Snodin    andrew.snodin/ncl.ac.uk
 Sharanya Sur     sur/iucaa.ernet.in        +91 2560 4115      +91 94 210 37 292
-Tarek A. Yousef  tarek/pvv.org             +44 798 122 8515
+Tarek A. Yousef, tarek/pvv.org,            +44 798 122 8515,
 
 Please add further names that have been forgotten so far!
 This file is located in the directory
