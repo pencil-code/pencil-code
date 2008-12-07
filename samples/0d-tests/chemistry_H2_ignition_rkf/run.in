@@ -5,6 +5,7 @@
   cvsid='$Id: run.in,v 1.9 2008-11-12 10:56:34 nilshau Exp $',
   nt=500 it1=100, cdtv=1., isave=10, itorder=5
   dsnap=5.0, dvid=1., dtmin=1e-26
+  lpencil_check=F
   Udrift_bc=100.
   dt=1e-16
 /
