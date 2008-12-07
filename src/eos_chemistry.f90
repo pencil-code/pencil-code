@@ -632,7 +632,7 @@ module EquationOfState
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx,3), intent(in) :: glnrho,gss
       real, dimension(nx,3), intent(out) :: glnTT
-      type (pencil_case) :: p
+  !    type (pencil_case) :: p
 
       integer :: i
 !
@@ -648,7 +648,7 @@ module EquationOfState
          glnTT=gamma1*glnrho+cv1*gss
         else
          do i=1,3 
-          glnTT(:,i)=p%gamma1(:)*glnrho(:,i)+p%cv1(:)*gss(:,i)
+       !   glnTT(:,i)=p%gamma1(:)*glnrho(:,i)+p%cv1(:)*gss(:,i)
          enddo
         endif
       endif
@@ -669,7 +669,7 @@ module EquationOfState
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx), intent(in) :: del2lnrho,del2ss
       real, dimension(nx), intent(out) :: del2lnTT
-      type (pencil_case) :: p
+  !    type (pencil_case) :: p
 
 !
       if (gamma1==0.) call fatal_error('temperature_laplacian','gamma=1 not allowed w/entropy')
@@ -682,7 +682,7 @@ module EquationOfState
         if (.not. l_gamma1) then
          del2lnTT=gamma1*del2lnrho+cv1*del2ss
         else
-          del2lnTT=p%gamma1*del2lnrho+p%cv1*del2ss
+   !       del2lnTT=p%gamma1*del2lnrho+p%cv1*del2ss
         endif
       endif
 !
@@ -703,7 +703,7 @@ module EquationOfState
       real, dimension(nx,3,3), intent(in) :: hlnrho,hss
       real, dimension(nx,3,3), intent(out) :: hlnTT
 
-      type (pencil_case) :: p
+    !  type (pencil_case) :: p
 !
       call fatal_error('temperature_hessian','This routine is not coded for eos_chemistry')
 !
@@ -744,7 +744,7 @@ module EquationOfState
       use Cdata
       use Sub, only: max_mn_name, sum_mn_name
      
-      type (pencil_case) :: p
+     ! type (pencil_case) :: p
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: psize
@@ -775,7 +775,7 @@ module EquationOfState
            if (.not. l_gamma1) then
             ss_=-cv*gamma1*(lnrho_-lnrho0)
            else
-            ss_=-p%cv*p%gamma1*(lnrho_-lnrho0)
+      !      ss_=-p%cv*p%gamma1*(lnrho_-lnrho0)
            endif
           else
             ss_=f(l1:l2,m,n,ieosvar2)
@@ -788,7 +788,7 @@ module EquationOfState
            if (.not. l_gamma1) then
             ss_=-cv*gamma1*(lnrho_-lnrho0)
            else
-            ss_=-p%cv*p%gamma1*(lnrho_-lnrho0)
+       !     ss_=-p%cv*p%gamma1*(lnrho_-lnrho0)
            endif
           else
             ss_=f(:,m,n,ieosvar2)
@@ -800,7 +800,7 @@ module EquationOfState
         if (.not. l_gamma1) then
           lnTT_=lnTT0+cv1*ss_+gamma1*(lnrho_-lnrho0)
         else
-          lnTT_=lnTT0+p%cv1*ss_+p%gamma1*(lnrho_-lnrho0)
+        !  lnTT_=lnTT0+p%cv1*ss_+p%gamma1*(lnrho_-lnrho0)
         endif
         if (gamma1==0.) &
             call fatal_error('eoscalc_farray','gamma=1 not allowed w/entropy')
@@ -810,8 +810,8 @@ module EquationOfState
         if (present(ee)) ee=cv*exp(lnTT_)
         if (present(pp)) pp=(cp-cv)*exp(lnTT_+lnrho_)
        else
-        if (present(ee)) ee=p%cv*exp(lnTT_)
-        if (present(pp)) pp=(p%cp-p%cv)*exp(lnTT_+lnrho_)
+       ! if (present(ee)) ee=p%cv*exp(lnTT_)
+       ! if (present(pp)) pp=(p%cp-p%cv)*exp(lnTT_+lnrho_)
        endif  
 !
 ! Log rho and Log T
@@ -824,7 +824,7 @@ module EquationOfState
            if (.not. l_cp) then
             lnTT_=lnTT0+(cp-cv)*(lnrho_-lnrho0)
            else
-            lnTT_=lnTT0+(p%cp-p%cv)*(lnrho_-lnrho0)
+        !    lnTT_=lnTT0+(p%cp-p%cv)*(lnrho_-lnrho0)
            endif
           elseif (leos_isothermal) then
             lnTT_=lnTT0
@@ -837,7 +837,7 @@ module EquationOfState
            if (.not. l_cp) then
             lnTT_=lnTT0+(cp-cv)*(lnrho_-lnrho0)
            else
-            lnTT_=lnTT0+(p%cp-p%cv)*(lnrho_-lnrho0)
+         !   lnTT_=lnTT0+(p%cp-p%cv)*(lnrho_-lnrho0)
            endif
           elseif (leos_isothermal) then
             lnTT_=lnTT0
@@ -859,11 +859,11 @@ module EquationOfState
           if (present(pp)) pp=(cp-cv)*exp(lnTT_)*lnrho_
         endif
        else
-        if (present(ee)) ee=p%cv*exp(lnTT_)
+      !  if (present(ee)) ee=p%cv*exp(lnTT_)
         if (ieosvars==ilnrho_lnTT) then
-          if (present(pp)) pp=(p%cp-p%cv)*exp(lnTT_+lnrho_)
+      !    if (present(pp)) pp=(p%cp-p%cv)*exp(lnTT_+lnrho_)
         else
-          if (present(pp)) pp=(p%cp-p%cv)*exp(lnTT_)*lnrho_
+       !   if (present(pp)) pp=(p%cp-p%cv)*exp(lnTT_)*lnrho_
         endif
        endif
 !
@@ -886,7 +886,7 @@ module EquationOfState
            if (.not. l_gamma1) then 
             cs2_=exp(gamma1*(lnrho_-lnrho0)+log(cs20))
            else
-            cs2_=exp(p%gamma1*(lnrho_-lnrho0)+log(cs20))
+        !    cs2_=exp(p%gamma1*(lnrho_-lnrho0)+log(cs20))
            endif  
           elseif (leos_isothermal) then
             cs2_=cs20
@@ -901,7 +901,7 @@ module EquationOfState
            if (.not. l_gamma1) then 
             cs2_=exp(gamma1*(lnrho_-lnrho0)+log(cs20))
            else
-            cs2_=exp(p%gamma1*(lnrho_-lnrho0)+log(cs20))
+         !   cs2_=exp(p%gamma1*(lnrho_-lnrho0)+log(cs20))
            endif
           elseif (leos_isothermal) then
             cs2_=cs20
@@ -920,8 +920,8 @@ module EquationOfState
         if (present(ee)) ee=gamma11*cs2_/gamma1
         if (present(pp)) pp=gamma11*cs2_*exp(lnrho_)
        else
-        if (present(ee)) ee=p%gamma11*cs2_/p%gamma1
-        if (present(pp)) pp=p%gamma11*cs2_*exp(lnrho_)
+      !  if (present(ee)) ee=p%gamma11*cs2_/p%gamma1
+      !  if (present(pp)) pp=p%gamma11*cs2_*exp(lnrho_)
        endif
 !
       case default
@@ -1047,7 +1047,7 @@ module EquationOfState
       real, dimension(nx), intent(out), optional :: ee,pp,cs2
       real, dimension(nx) :: lnrho_,ss_,lnTT_,ee_,pp_,cs2_,TT_
 
-      type (pencil_case) :: p
+    !  type (pencil_case) :: p
 !
       if (gamma1==0.) call fatal_error('eoscalc_pencil','gamma=1 not allowed w/entropy')
 !
@@ -1063,11 +1063,11 @@ module EquationOfState
         cs2_=gamma*gamma1*ee_
         cs2_=cs20*cv1*ee_
        else
-        lnTT_=lnTT0+p%cv1*ss_+p%gamma1*(lnrho_-lnrho0)
-        ee_=p%cv*exp(lnTT_)
-        pp_=(p%cp-p%cv)*exp(lnTT_+lnrho_)
-        cs2_=p%gamma*p%gamma1*ee_
-        cs2_=cs20*p%cv1*ee_
+   !     lnTT_=lnTT0+p%cv1*ss_+p%gamma1*(lnrho_-lnrho0)
+     !   ee_=p%cv*exp(lnTT_)
+     !   pp_=(p%cp-p%cv)*exp(lnTT_+lnrho_)
+     !  cs2_=p%gamma*p%gamma1*ee_
+    !    cs2_=cs20*p%cv1*ee_
        endif
 
       case (ilnrho_ee)
@@ -1079,10 +1079,10 @@ module EquationOfState
         pp_=gamma1*ee_*exp(lnrho_)
         cs2_=gamma*gamma1*ee_
        else
-        lnTT_=log(p%cv1*ee_)
-        ss_=p%cv*(lnTT_-lnTT0-p%gamma1*(lnrho_-lnrho0))
-        pp_=p%gamma1*ee_*exp(lnrho_)
-        cs2_=p%gamma*p%gamma1*ee_
+      !  lnTT_=log(p%cv1*ee_)
+      !  ss_=p%cv*(lnTT_-lnTT0-p%gamma1*(lnrho_-lnrho0))
+      !  pp_=p%gamma1*ee_*exp(lnrho_)
+      !  cs2_=p%gamma*p%gamma1*ee_
        endif
 
       case (ilnrho_pp)
@@ -1094,10 +1094,10 @@ module EquationOfState
         lnTT_=log(cv1*ee_)
         cs2_=gamma*gamma1*ee_
        else
-        ss_=p%cv*(log(pp_*exp(-lnrho_)*p%gamma/cs20)-p%gamma1*(lnrho_-lnrho0))
-        ee_=pp_*exp(-lnrho_)/p%gamma1
-        lnTT_=log(p%cv1*ee_)
-        cs2_=p%gamma*p%gamma1*ee_
+       ! ss_=p%cv*(log(pp_*exp(-lnrho_)*p%gamma/cs20)-p%gamma1*(lnrho_-lnrho0))
+       ! ee_=pp_*exp(-lnrho_)/p%gamma1
+        !lnTT_=log(p%cv1*ee_)
+       ! cs2_=p%gamma*p%gamma1*ee_
        endif
 
       case (ilnrho_lnTT)
@@ -1109,10 +1109,10 @@ module EquationOfState
         pp_=ee_*exp(lnrho_)*gamma1
         cs2_=gamma*gamma1*ee_
        else
-        ss_=p%cv*(lnTT_-lnTT0-p%gamma1*(lnrho_-lnrho0))
-        ee_=p%cv*exp(lnTT_)
-        pp_=ee_*exp(lnrho_)*p%gamma1
-        cs2_=p%gamma*p%gamma1*ee_
+       ! ss_=p%cv*(lnTT_-lnTT0-p%gamma1*(lnrho_-lnrho0))
+       ! ee_=p%cv*exp(lnTT_)
+       ! pp_=ee_*exp(lnrho_)*p%gamma1
+       ! cs2_=p%gamma*p%gamma1*ee_
        endif 
 
       case (ilnrho_TT)
@@ -1124,10 +1124,10 @@ module EquationOfState
         pp_=ee_*exp(lnrho_)*gamma1
         cs2_=gamma1*TT_
        else
-        ss_=p%cv*(log(TT_)-lnTT0-p%gamma1*(lnrho_-lnrho0))
-        ee_=p%cv*TT_
-        pp_=ee_*exp(lnrho_)*p%gamma1
-        cs2_=p%gamma1*TT_
+       ! ss_=p%cv*(log(TT_)-lnTT0-p%gamma1*(lnrho_-lnrho0))
+       ! ee_=p%cv*TT_
+       ! pp_=ee_*exp(lnrho_)*p%gamma1
+       ! cs2_=p%gamma1*TT_
        endif
 
       case default
