@@ -7,6 +7,7 @@
   nt=100000, it1=1000, cdtv=0.25, isave=1000, itorder=3
   nt=20, it1=1, cdtv=0.25, isave=1000, itorder=1
   dsnap=1.0, dvid=0.5, dtmin=1e-6
+  lpencil_check=T
   dt=1e-2
   dt=.005
 /
