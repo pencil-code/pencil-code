@@ -649,6 +649,8 @@ module EquationOfState
         else
          do i=1,3 
        !   glnTT(:,i)=p%gamma1(:)*glnrho(:,i)+p%cv1(:)*gss(:,i)
+!AB: set instead to impossible
+glnTT(:,i)=impossible
          enddo
         endif
       endif
