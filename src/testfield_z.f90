@@ -258,10 +258,10 @@ module Testfield
         ztestfield=ktestfield_effective*(z-z0)-pi
       else
         ktestfield_effective=ktestfield
-        ztestfield=z
+        ztestfield=z*ktestfield_effective
       endif
-      cz=cos(ktestfield*ztestfield)
-      sz=sin(ktestfield*ztestfield)
+      cz=cos(ztestfield)
+      sz=sin(ztestfield)
 !
 !  calculate cosz*sinz, cos^2, and sinz^2, to take moments with
 !  of alpij and etaij. This is useful if there is a mean Beltrami field
