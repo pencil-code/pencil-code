@@ -1,15 +1,35 @@
 #!/bin/sh
 #
-#  $Id: pc_newrun_modify,v 1.1 2008-10-21 05:59:44 brandenb Exp $
+#  $Id: pc_newrun_modify,v 1.1 2008-12-07 17:46:20 brandenb Exp $
 #
 #  Script to adapt a new run directory,
 #  start the job and check it in.
 #
 #----------------------------------------------------------
+#  Exit if there is no CVS directory
+#
+if [ ! -e "CVS" ]; then
+  echo
+  echo "This directory is not under CVS"
+  echo
+  exit
+fi
+#
+#----------------------------------------------------------
+#  Exit if the executable does not exist
+#
+if [ ! -e "master/src/start.x" ]; then
+  echo
+  echo "The is no executable"
+  echo
+  exit
+fi
+#
+#----------------------------------------------------------
 #  name of the new run directory
 #
 oldrun=master
-newrun=Run_$1
+newrun=$1
 #
 #  set up new run directory by modifying an existing one,
 #  using the executable in it.
@@ -33,6 +53,6 @@ sed -e $str templates/$modfile > $newrun/$modfile
 cd $newrun
 start.csh
 N.csh
-sleep 120
+sleep 20
 cvsci_run
 #
