@@ -1,0 +1,18 @@
+$Id$
+
+Here is a more general set of scripts that produce a series of jobs in batch.
+These directories start with "scan_...".
+
+To produce a new scan directory from an existing one (say scan_ABC), just say
+  pc_cvsci_scan scan_ABC
+
+You must then:
+  1. cd ..
+  2. cvs add scan_ABC
+  3. edit "template/*"
+  4. bin/do_all.csh
+
+This checks in all the stuff at the same time. So you must be online.
+The scipt also checks that you have checked it in and that you have
+an executable.
+
