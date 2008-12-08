@@ -870,13 +870,12 @@ LD_FFTW2=
 ##
 ## Wolfgang's laptop frenesi (g95 + Open MPI, August 2007)
 ##
-#FC=g95 -fno-second-underscore -std=f95 #(frenesi)
+#FC=g95 -fno-second-underscore -std=f95 -I/usr/lib/openmpi/include #(frenesi)
 #FFLAGS=-O3 #(frenesi)
 #FFLAGS_SLOPPY=$(FFLAGS) -Wno=154,155 -I/usr/lib/openmpi/include #(frenesi)
 #CC=gcc #(frenesi)
 #CFLAGS=-O3 -DFUNDERSC=1 #(frenesi)
 #LD_MPI=-L/usr/lib/openmpi/lib -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl  #(frenesi)
-#LIBMPISUFFIX=_#(frenesi)
 ##
 ## Steve's test cluster
 #FC=mpif90 #(asd|kool)
