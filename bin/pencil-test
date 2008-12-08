@@ -47,6 +47,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #      --Mailer=<mailer>      -- Specify e-mail program to use
 #   -p <PP>,
 #       --postproc=<PP>       -- Use postprocessor <PP> for output from make
+#   -t <limit>,
+#       --time-limit=<limit>  -- Limit total time for each run.csh phase
 #   -T <file>,
 #       --timings-file=<file> -- Append timings to <file>
 # Email list syntax:
@@ -111,6 +113,7 @@ if ($UPDATE) { $update=1 };
 my $emails      = ($opts{'m'} || $opts{'mail'}        || '');
 my $mailer      = ($opts{'M'} || $opts{'Mailer'}      || '');
 my $postproc    = ($opts{'p'} || $opts{'postproc'}    || '');
+my $time_limit  = ($opts{'t'} || $opts{'time-limit'}  || '');
 my $timingsfile = ($opts{'T'} || $opts{'timings-file'}|| '');
 my $with_xml    = ($opts{'x'} || $opts{'xml'}         || '');
 
@@ -217,6 +220,7 @@ sub build_remote_cmd {
     if ($nice)              { $remcmd .= " --nice=$nice" };
     if ($infofile ne '')    { $remcmd .= " --infofile=$infofile" };
     if ($postproc)          { $remcmd .= " --postproc=\"$postproc\"" };
+    if ($time_limit ne '')  { $remcmd .= " --time-limit=\"$time_limit\"" };
     if ($timingsfile ne '') { $remcmd .= " --summarize-times" };
 
     return $remcmd;
