@@ -2007,7 +2007,7 @@ k_loop:   do while (.not. (k>npar_loc))
             if (lshear) then
               dt1_advpy=(-qshear*Omega*fp(k,ixp)+abs(fp(k,ivpy)))*dy_1(iy0)
             else
-              dt1_advpy=abs(fp(k,ivpy))*dy_1(iy0)
+              !!!!!!dt1_advpy=abs(fp(k,ivpy))*dy_1(iy0)
             endif
             dt1_advpz=abs(fp(k,ivpz))*dz_1(iz0)
             dt1_max(ix0-nghost)=max(dt1_max(ix0-nghost), &
@@ -2201,12 +2201,20 @@ k_loop:   do while (.not. (k>npar_loc))
 !
         if (lcentrifugal_force) then 
           if (lheader) print*,'dvvp_dt: Add Centrifugal force; Omega=', Omega
-          if (lcylindrical_coords) then 
+          if (lcartesian_coords) then 
+!
+            dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + &
+                Omega**2*fp(1:npar_loc,ixp)
+!
+            dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) + &
+                Omega**2*fp(1:npar_loc,iyp)
+!
+          elseif (lcylindrical_coords) then 
             dfp(1:npar_loc,ivpx) = &
                 dfp(1:npar_loc,ivpx) + Omega**2*fp(1:npar_loc,ixp)
           else
             print*,'dvvp_dt: Centrifugal force on the particles is '
-            print*,'only implemented for cylindrical coordinates.'
+            print*,'not implemented for spherical coordinates.'
             call stop_it("")
           endif
         endif
