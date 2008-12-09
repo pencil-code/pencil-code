@@ -44,9 +44,6 @@ module Particles_nbody
   logical :: linterpolate_gravity=.false.,linterpolate_linear=.true.
   logical :: linterpolate_quadratic_spline=.false.
   logical :: laccrete_when_create=.true.
-
-  logical :: lstar_at_center=.false.
-
   integer :: ramp_orbits=5,mspar_orig=1
   integer :: iglobal_ggp=0,istar=1,imass=0
   integer :: maxsink=10*nspar,icreate=100
@@ -60,7 +57,7 @@ module Particles_nbody
        ramp_orbits,lramp,final_ramped_mass,prhs_cte,linterpolate_gravity,&
        linterpolate_quadratic_spline,laccretion,accrete_hills_frac,istar,&
        maxsink,lcreate_sinks,icreate,lcreate_gas,lcreate_dust,ladd_mass,&
-       laccrete_when_create,lstar_at_center
+       laccrete_when_create
 
   namelist /particles_nbody_run_pars/ &
        dsnap_par_minor, linterp_reality_check, lcalc_orbit, lreset_cm, &
@@ -68,7 +65,7 @@ module Particles_nbody
        GNewton, bcspx, bcspy, bcspz,prhs_cte,lnoselfgrav_star,&
        linterpolate_quadratic_spline,laccretion,accrete_hills_frac,istar,&
        maxsink,lcreate_sinks,icreate,lcreate_gas,lcreate_dust,ladd_mass,&
-       laccrete_when_create,lstar_at_center
+       laccrete_when_create
 
   integer, dimension(nspar,3) :: idiag_xxspar=0,idiag_vvspar=0
   integer, dimension(nspar)   :: idiag_torqint=0,idiag_torqext=0
@@ -622,17 +619,6 @@ module Particles_nbody
 !
       endselect
 !
-      if (Omega/=0) then
-        if (.not.lcylindrical_coords) & 
-            call stop_it("co-rotational frame"//&
-            "not implemented for other than cylindrical coords")
-        do k=1,npar_loc
-          if (ipar(k)/=istar) then
-            fp(k,ivpy) = fp(k,ivpy)-Omega*fp(k,ixp)
-          endif
-        enddo
-      endif
-!
 !  Make the particles known to all processors
 !
       call boundconds_particles(fp,npar_loc,ipar)
@@ -870,19 +856,14 @@ module Particles_nbody
 !
       do k=npar_loc,1,-1
 !
-!  Exclude the star if the grid is centered at it
-!        
-        if (.not.(lstar_at_center.and.(ipar(k).eq.istar))) then 
-!
-          if (linterpolate_gravity) then
-            !only loop through massive particles
-            if (ipar(k).le.mspar) then
-              call loop_through_nbodies(fp,dfp,k,sq_hills,ineargrid)
-            endif
-          else
-            !for all particles
+        if (linterpolate_gravity) then
+          !only loop through massive particles
+          if (ipar(k).le.mspar) then
             call loop_through_nbodies(fp,dfp,k,sq_hills,ineargrid)
           endif
+        else
+          !for all particles
+          call loop_through_nbodies(fp,dfp,k,sq_hills,ineargrid)
         endif
       enddo
 !
@@ -959,107 +940,15 @@ module Particles_nbody
             dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - &
                 GNewton*pmass(ks)*invr3_ij*evr(1:3)
 !
-!  If the star is at the center (non-inertial frame), one 
-!  has to add on the frame the acceleration this particle ks
-!  produces on the star at the inertial frame
-!
-            if (lstar_at_center.and.ks/=istar) then
-!
-!  The frame acceleration in cartesian coordinates
-!  does not depend on position
-!
-              if (lcartesian_coords) then 
-                call calc_frame_acceleration(ks,acc)
-              else
-                call calc_frame_acceleration(ks,acc,&
-                    e1=fp(k,ixp),e2=fp(k,izp),e3=fp(k,izp))
-              endif
-!
-              dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + acc
-!
-            endif
-!
           endif !if accretion
 !
-        else ! if ipar(k)/=ks
-!
-! Effect of the particle on itself - appears in the frame 
-! co-rotating with the star
-!          
-          if (lstar_at_center.and.ks/=istar) then 
-            if (lcartesian_coords) then 
-              call calc_frame_acceleration(ks,acc)
-            else
-              call calc_frame_acceleration(ks,acc,&
-                  e1=fp(k,ixp),e2=fp(k,izp),e3=fp(k,izp))
-            endif
-            dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + acc
-          endif
-!
-        endif
+        endif !if (ipar(k)/=ks)
 !
       enddo !nbody loop
 !
 99    continue
 !
     endsubroutine loop_through_nbodies
-!**********************************************************
-    subroutine calc_frame_acceleration(ks,acc,e1,e2,e3)
-!
-!  Used in connection with lstar_at_center. With this 
-!  logical, the movements occurs in an non-inertial frame
-!  of reference, that follows the star. 
-!
-!  The acceleration from the other N-body particles, that 
-!  in the inertial frame goes into the star, has to be 
-!  transfered to all stuff in the frame (gas, other 
-!  planets, etc.)  
-!
-!  03-dec-08/wlad: coded 
-!
-      use Messages, only: fatal_error
-!
-      real, dimension(3), intent(out) :: acc
-      real, intent(in), optional  :: e1,e2,e3
-      real :: inv_rr,inv_rr2,inv_rr3
-      real :: e10,e20,e30
-      integer :: ks
-!
-      e10=fsp(ks,ixp) ; e20=fsp(ks,iyp) ; e30=fsp(ks,izp)
-!
-!  Add on the frame (particle, gas) the acceleration that in the
-!  inertial frame goes into the star. 
-!
-      if (lcartesian_coords) then
-!
-        inv_rr3=(e10**2+e20**2+e30**2)**(-1.5)
-        acc(1) = - GNewton*pmass(ks)*inv_rr3 * e10
-        acc(2) = - GNewton*pmass(ks)*inv_rr3 * e20
-        acc(3) = - GNewton*pmass(ks)*inv_rr3 * e30
-!
-      elseif (lcylindrical_coords) then
-!
-!  Save some time if we are running 2D
-!
-        if (nzgrid==1) then 
-          inv_rr=1./e10
-          inv_rr2=inv_rr**2
-          acc(3) = 0.
-        else
-          inv_rr2=1./(e10**2+e30**2)
-          inv_rr3=inv_rr2**(1.5)
-          acc(3) = - GNewton*pmass(ks)*inv_rr3*e30
-        endif
-!
-        acc(1) = - GNewton*pmass(ks)*inv_rr2 * cos(e2-e20)
-        acc(2) =   GNewton*pmass(ks)*inv_rr2 * sin(e2-e20)
-!
-      elseif (lspherical_coords) then 
-        call fatal_error("calc_frame_acceleration",&
-            "not implemented for spherical coordinates")
-      endif
-!
-    endsubroutine calc_frame_acceleration
 !**********************************************************
     subroutine point_par_name(a,iname)
 !
@@ -1612,7 +1501,7 @@ module Particles_nbody
       use Sub
 !
       real, dimension (mx,mspar) :: rp_mn,rpcyl_mn
-      real, dimension (mx,3)     :: ggp,ggt,ggi
+      real, dimension (mx,3)     :: ggp,ggt
       real, dimension (mx)       :: grav_particle,rrp
       real, dimension (3)        :: acc
       integer                    :: ks,i
@@ -1640,46 +1529,12 @@ module Particles_nbody
         grav_particle =-GNewton*pmass(ks)*(rrp**2+r_smooth(ks)**2)**(-1.5)
         call get_gravity_field_nbody(grav_particle,ggp,ks)
 !
-!  Add the indirect term (in the case of a non-inertial frame 
-!  where the star doesn't move). The gravity acting on the 
-!  star is added to the frame - here, to the gas        
-!
-        if (lstar_at_center.and.(ks/=istar)) then
-!
-!  The particle acceleration does not depend on position
-!  for the Cartesian frame. Separate it then according to 
-!  grid geometry because calc_frame_acceleration needs to 
-!  compute square roots and powers. It's needed in cylindrical
-!  and spherical, but just a waste of computational time for 
-!  cartesian coordinates
-!  
-          if (lcartesian_coords) then 
-            call calc_frame_acceleration(ks,acc)
-            do i=1,mx 
-              ggi(i,:)=acc
-            enddo
-          else !cylindrical and spherical
-            do i=1,mx
-              call calc_frame_acceleration(ks,acc,&
-                  e1=x(i),e2=y(m),e3=z(n))
-              ggi(i,:)=acc
-            enddo
-          endif
-!
-        else 
-!
-!  The star does not exert influence on itself
-!
-          ggi=0
-!
-        endif
-!
         if ((ks==istar).and.lnogravz_star) &
             ggp(:,3) = 0.
 !
 !  Sum up the accelerations of the massive particles
 !
-        ggt=ggt+ggp+ggi
+        ggt=ggt+ggp
 !
       enddo
 !
@@ -2628,6 +2483,8 @@ module Particles_nbody
           write(3,*) 'i_torqext_'//trim(sks)//'=',idiag_torqext(ks)
         endif
       enddo
+!
+!  Diagnostic related to quantities summed over all particles
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),&
