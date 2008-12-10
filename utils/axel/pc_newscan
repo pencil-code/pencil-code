@@ -1,67 +1,66 @@
-#!/bin/csh
+#!/bin/bash
 #
 #  $Id: pc_newrun 9993 2008-10-22 07:38:25Z boris.dintrans $
 #
 #  Usage:
 #    pc_newscan scan_newname [scan_newdir]
 #
-#  assume that one is in the old directory
-#  $newname is the name of the new directory, but without full path
+#  We can either give the full path name (in which case any reference
+#  to $wrkdir is redundant), or we can give the path name relative to the
+#  working directory (which is defined now):
 #
-set olddir=$cwd
-set newname=$1
+wrkdir=`pwd`
 #
-#  next, determine full path
-#  If no extra argument is given, assume that it is located next to $cwd
-#  Then, go into the parent directory of new run
+#  Set olddir and newdir. If only one argument is given, $olddir is
+#  assumed to be the current working directory.
 #
-if ($#argv == 2) then
-  cd $2
+if [ $# -eq 2 ]; then
+  #
+  #  check whether absolute or relative path
+  #  by checking whether target exists
+  #
+  if [ -d `pwd`/$1 ]; then
+    olddir=`pwd`/$1
+  else
+    olddir=$1
+  fi
+  #
+  #  same for newdir
+  #
+  if [ -d `pwd`/$2 ]; then
+    newdir=`pwd`/$2
+  else
+    newdir=$2
+  fi
 else
+  olddir=`pwd`
   cd ..
-endif
-#
-#  make new directory name there, go into it, and set $newdir
-#
-mkdir $1
-cd $1
-set newdir=$cwd
+  #
+  #  same for newdir
+  #
+  if [ -d `pwd`/$1 ]; then
+    newdir=`pwd`/$1
+  else
+    newdir=$1
+  fi
+fi
+
 #
 #  make new directories there
 #
+mkdir -p $newdir
+cd $newdir
 mkdir bin idl templates
 #
 #  goto olddir and begin populating content of newdir from here
 #
-cd $olddir
+cd $wrkdir
 echo
-echo "we should now be in olddir: do pwd"
-pwd
-echo
-echo "check that newdir is ok"
-echo $newdir
-echo
+echo "We are in wrkdir: $wrkdir"
 echo "pc_newrun $olddir/master $newdir/master"
 pc_newrun $olddir/master $newdir/master
 #
-cp bin/* $newdir/bin
-cp idl/* $newdir/idl
-cp templates/* $newdir/templates
-#
-#  check in everything (hope you are online!)
-#
-cd $newdir
-cd ..
-cvs add $newname
-cd $newname
-cvs add bin idl templates
-#
-cd bin
-cvs add *
-#
-cd ../templates
-cvs add *
-#
-cd ../master
-cvsci_run
+cp $olddir/bin/* $newdir/bin
+cp $olddir/idl/* $newdir/idl
+cp $olddir/templates/* $newdir/templates
 #

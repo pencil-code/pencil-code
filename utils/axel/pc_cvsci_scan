@@ -1,0 +1,19 @@
+#!/bin/bash
+#
+#  $Id: pc_newrun 9993 2008-10-22 07:38:25Z boris.dintrans $
+#
+#  check in everything (hope you are online!)
+#
+cvs add $1
+cd $1
+cvs add bin idl templates
+#
+cd bin
+cvs add *
+#
+cd ../templates
+cvs add *
+#
+cd ../master
+cvsci_run
+#
