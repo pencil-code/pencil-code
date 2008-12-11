@@ -514,6 +514,7 @@ module Special
 !  Calculate the shock mask and its gradient. It's better to 
 !  do it analytically than to use grad on the shock_mask array.
 !  
+!  10-dec-08/wlad: coded
 !
       use Cdata
 !
@@ -569,7 +570,11 @@ module Special
     endsubroutine special_calc_particles_nbody
 !***********************************************************************
     subroutine get_gradshock(fshock,e1,e2,e3,gradshock)
-
+!
+!  Analitical grad-shock: works only for the gaussian mask
+!
+!  10-dec-08/wlad: coded
+!
       real, dimension(nx,3) :: gradshock
       real, dimension(nx) :: fshock,base
       real :: e1,e2,e3
