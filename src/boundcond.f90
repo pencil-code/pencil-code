@@ -4503,7 +4503,7 @@ module Boundcond
       real, dimension (ny,nz) :: bound_rhs_T
       real, dimension (mx,my,mz) :: cs2_full, gamma_full, rho_full
 !
-      integer :: lll, sgn,i,k
+      integer :: lll, sgn,i,j,k
       real :: Mach_num
 !
       intent(in) :: f
@@ -4610,7 +4610,7 @@ module Boundcond
       call get_rhs_Y('top',1,bound_rhs_Y)
 !
       if (nchemspec>1) then
-        do k=1,nchemspec
+       do k=1,nchemspec
           call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dx,lll,1)
           do i=1,mz
             call der_pencil(2,f(lll,:,i,ichemspec(k)),dYk_dy(:,i))
@@ -4619,7 +4619,16 @@ module Boundcond
               -f(lll,m1:m2,n1:n2,iux)*dYk_dx &
               -f(lll,m1:m2,n1:n2,iuy)*dYk_dy(m1:m2,n1:n2) &
               +bound_rhs_Y(:,:,k)
-        enddo
+      
+       ! if (lfilter) then
+         do i=m1,m2
+         do j=n1,n2
+           if ((f(lll,i,j,ichemspec(k))+df(lll,i,j,ichemspec(k))*dt)<-1e-15 ) df(lll,i,j,ichemspec(k))=-1e-15*dt
+         enddo
+         enddo
+       ! endif
+
+       enddo
 
       endif
 !
