@@ -4579,11 +4579,13 @@ module Boundcond
             rho0(m1:m2,n1:n2)-p_infx)
         L_1 = (f(lll,m1:m2,n1:n2,iux) - cs0_ar(m1:m2,n1:n2))*&
             (dpp_dx- rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dux_dx)
+        call get_rhs_Y('bot',1,bound_rhs_Y)
       case('top')
         L_1=KK*(cs20_ar(m1:m2,n1:n2)/gamma0(m1:m2,n1:n2)*&
             rho0(m1:m2,n1:n2)-p_infx)
         L_5 = (f(lll,m1:m2,n1:n2,iux) + cs0_ar(m1:m2,n1:n2))*&
             ( dpp_dx+ rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dux_dx)
+        call get_rhs_Y('top',1,bound_rhs_Y)
       endselect
 !
       L_2 = f(lll,m1:m2,n1:n2,iux)*(cs20_ar(m1:m2,n1:n2)*dlnrho_dx-dpp_dx)
@@ -4607,7 +4609,7 @@ module Boundcond
       !  (gamma0(m1:m2,n1:n2)-1.) &
       !  *gamma0(m1:m2,n1:n2)*drhoE_p_dy(m1:m2,n1:n2)!+bound_rhs_T(:,:)*0.
 !
-      call get_rhs_Y('top',1,bound_rhs_Y)
+     
 !
       if (nchemspec>1) then
        do k=1,nchemspec
