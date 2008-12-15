@@ -4580,12 +4580,14 @@ module Boundcond
         L_1 = (f(lll,m1:m2,n1:n2,iux) - cs0_ar(m1:m2,n1:n2))*&
             (dpp_dx- rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dux_dx)
         call get_rhs_Y('bot',1,bound_rhs_Y)
-      case('top')
+        call get_rhs_T('bot',1,bound_rhs_T)
+     case('top')
         L_1=KK*(cs20_ar(m1:m2,n1:n2)/gamma0(m1:m2,n1:n2)*&
             rho0(m1:m2,n1:n2)-p_infx)
         L_5 = (f(lll,m1:m2,n1:n2,iux) + cs0_ar(m1:m2,n1:n2))*&
             ( dpp_dx+ rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dux_dx)
         call get_rhs_Y('top',1,bound_rhs_Y)
+        call get_rhs_T('top',1,bound_rhs_T)
       endselect
 !
       L_2 = f(lll,m1:m2,n1:n2,iux)*(cs20_ar(m1:m2,n1:n2)*dlnrho_dx-dpp_dx)
@@ -4601,13 +4603,13 @@ module Boundcond
       df(lll,m1:m2,n1:n2,iux) = -1./&
           (2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2))*(L_5 - L_1) !&
       !      -f(lll,m1:m2,n1:n2,iux)*dux_dy(m1:m2,n1:n2)
-      !   call get_rhs_T('top',1,bound_rhs_T)
       df(lll,m1:m2,n1:n2,ilnTT) = -1./&
           (rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*(-L_2 &
-          +0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1)) !&
-      !  -1./(rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*
-      !  (gamma0(m1:m2,n1:n2)-1.) &
-      !  *gamma0(m1:m2,n1:n2)*drhoE_p_dy(m1:m2,n1:n2)!+bound_rhs_T(:,:)*0.
+          +0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1)) 
+!        -1./(rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))* &
+!        (gamma0(m1:m2,n1:n2)-1.) &
+!        *gamma0(m1:m2,n1:n2)*drhoE_p_dy(m1:m2,n1:n2) !&
+    !    +bound_rhs_T(:,:)
 !
      
 !
