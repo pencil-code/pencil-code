@@ -291,7 +291,7 @@ module Print
       if (lroot.and.nnamez>0) then
         open(1,file=trim(datadir)//'/xyaverages.dat',position='append')
         write(1,'(1pe12.5)') t1ddiagnos
-        write(1,'(1p,8e13.5)') fnamez(:,:,1:nnamez)
+        write(1,'(1p,8e13.5e3)') fnamez(:,:,1:nnamez)
         close(1)
       endif
 !
@@ -307,7 +307,7 @@ module Print
       if (lroot.and.nnamey>0) then
         open(1,file=trim(datadir)//'/xzaverages.dat',position='append')
         write(1,'(1pe12.5)') t1ddiagnos
-        write(1,'(1p,8e13.5)') fnamey(:,:,1:nnamey)
+        write(1,'(1p,8e13.5e3)') fnamey(:,:,1:nnamey)
         close(1)
       endif
 !
@@ -323,7 +323,7 @@ module Print
       if (lroot.and.nnamex>0) then
         open(1,file=trim(datadir)//'/yzaverages.dat',position='append')
         write(1,'(1pe12.5)') t1ddiagnos
-        write(1,'(1p,8e13.5)') fnamex(:,1:nnamex)
+        write(1,'(1p,8e13.5e3)') fnamex(:,1:nnamex)
         close(1)
       endif
 !
@@ -344,9 +344,9 @@ module Print
 !
       if (lroot.and.nnamer>0) then
         open(1,file=trim(datadir)//'/phizaverages.dat',position='append')
-        if (it==1) write(1,'(1p,8e13.5)') rcyl
+        if (it==1) write(1,'(1p,8e13.5e3)') rcyl
         write(1,'(1pe12.5)') t1ddiagnos
-        write(1,'(1p,8e13.5)') fnamer(:,1:nnamer)
+        write(1,'(1p,8e13.5e3)') fnamer(:,1:nnamer)
         close(1)
       endif
 !
