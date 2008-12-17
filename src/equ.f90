@@ -80,7 +80,7 @@ module Equ
 !  prevent zeros from less then 3-dimensional runs
 !  (maybe this should be 2pi, but maybe not )
 !
-!(axel) if(intdphi_rel==0.) intdphi_rel=1.
+!(axel) if (intdphi_rel==0.) intdphi_rel=1.
           dVol_rel1=1./(intdr_rel*intdtheta_rel*intdphi_rel)
         elseif (lcylindrical_coords) then
           intdr_rel   =      (xyz1(1)**2-    xyz0(1)**2)/(2.*dx)
@@ -641,9 +641,9 @@ module Equ
 !  maintain the full vorticity field, including ghost zones, to be able to do
 !  interpolation on the vorticity to subgrid particles positions.
 !
-      if(early_finalize.and.lparticles_prepencil_calc) then
+      if (early_finalize.and.lparticles_prepencil_calc) then
         call particles_doprepencil_calc(f,ivar1,ivar2);
-        if(ivar1>=0 .and. ivar2>=0) then
+        if (ivar1>=0 .and. ivar2>=0) then
           call boundconds_x(f,ivar1,ivar2)
           call initiate_isendrcv_bdry(f,ivar1,ivar2)
           call finalize_isendrcv_bdry(f,ivar1,ivar2)
@@ -766,22 +766,14 @@ module Equ
           lpencil(i_rcyl_mn)=.true.
         endif
 !
-        if (any(lfreeze_varext).or.any(lfreeze_varint)) then
-          if (lcylinder_in_a_box.or.lcylindrical_coords) then
-            lpencil(i_rcyl_mn)=.true.
-          else
-            lpencil(i_r_mn)=.true.
-          endif
-        endif
-!
-!  calculate grid/geometry related pencils
+!  Calculate grid/geometry related pencils.
 !
         call calc_pencils_grid(f,p)
 !
-!  calculate profile for phi-averages if needed
+!  Calculate profile for phi-averages if needed.
 !
-        if ((l2davgfirst  .and. lwrite_phiaverages  )  .or. &
-            (l1dphiavg    .and. lwrite_phizaverages ))  &
+        if ((l2davgfirst.and.lwrite_phiaverages )  .or. &
+            (l1dphiavg  .and.lwrite_phizaverages))  &
             call calc_phiavg_profile(p)
 !            
 !  Calculate pencils for the pencil_case
@@ -920,159 +912,9 @@ module Equ
           call phisum_mn_name_rz(p%r_mn,idiag_rmphi)
         endif
 !
-!  Do the vorticity integration here, before the omega penci is overwritten
+!  Do the vorticity integration here, before the omega pencil is overwritten.
 !
       if (ltime_integrals) call time_integrals(f,p)
-!
-!  -------------------------------------------------------------
-!  NO CALLS MODIFYING DF BEYOND THIS POINT (APART FROM FREEZING)
-!  -------------------------------------------------------------
-!
-!  Similar to velocity damping, but more radical: set some df=0 for r_mn<r_int:
-
-        if (any(lfreeze_varint)) then
-          if (headtt) &
-              print*, 'pde: freezing variables for r < ', rfreeze_int, &
-                  ' : ', lfreeze_varint
-          if (.not.lborder_profiles) then
-!  there is not much sense in using both border driving and smoothed freezing 
-            if (lcylinder_in_a_box.or.lcylindrical_coords) then
-              pfreeze_int = &
-                   quintic_step(p%rcyl_mn,rfreeze_int,wfreeze_int,SHIFT=fshift_int)
-            else
-              pfreeze_int = &
-                   quintic_step(p%r_mn   ,rfreeze_int,wfreeze_int,SHIFT=fshift_int)
-            endif
-          else
-            do i=1,nx
-!  this saves a lot of time by skipping the (very) frequent call to quintic_step
-              if (p%rcyl_mn(i).le.rfreeze_int) then
-                pfreeze_int(i)=0.
-              else
-                pfreeze_int(i)=1.
-              endif
-            enddo
-          endif
-!
-          do iv=1,nvar
-            if (lfreeze_varint(iv)) &
-                 df(l1:l2,m,n,iv) = pfreeze_int*df(l1:l2,m,n,iv)
-          enddo
-!            
-        endif
-
-        if (any(lfreeze_varext)) then
-          if (headtt) &
-              print*, 'pde: freezing variables for r > ', rfreeze_ext, &
-                  ' : ', lfreeze_varext
-          if (.not.lborder_profiles) then
-            if (lcylinder_in_a_box) then
-              pfreeze_ext = &
-                   1-quintic_step(p%rcyl_mn,rfreeze_ext,wfreeze_ext,SHIFT=fshift_ext)
-            else
-              pfreeze_ext = &
-                   1-quintic_step(p%r_mn   ,rfreeze_ext,wfreeze_ext,SHIFT=fshift_ext)
-            endif
-          else
-            do i=1,nx
-              if (p%rcyl_mn(i).gt.rfreeze_ext) then
-                pfreeze_ext(i)=0.
-              else
-                pfreeze_ext(i)=1.
-              endif
-            enddo
-          endif
-!
-          do iv=1,nvar
-            if (lfreeze_varext(iv)) &
-                df(l1:l2,m,n,iv) = pfreeze_ext*df(l1:l2,m,n,iv)
-          enddo
-        endif
-
-        if (any(lfreeze_varsquare)) then
-          if (headtt) &
-              print*, 'pde: freezing variables inside square : ', &
-                  lfreeze_varsquare
-          pfreeze = 1. - quintic_step(x(l1:l2),xfreeze_square, wfreeze,SHIFT=-1.) &
-                       * quintic_step(spread(y(m),1,nx),yfreeze_square,-wfreeze,SHIFT=-1.)
-!
-          do iv=1,nvar
-            if (lfreeze_varsquare(iv)) &
-                df(l1:l2,m,n,iv) = pfreeze*df(l1:l2,m,n,iv)
-          enddo
-        endif
-!
-!  Freeze components of variables in boundary slice if specified by boundary
-!  condition 'f'
-!
-!  freezing boundary conditions in x
-!
-        if (lfrozen_bcs_x) then ! are there any frozen vars at all?
-!
-! Only need to do this for nonperiodic x direction, on left/right-most
-! processor and in left/right--most pencils
-!
-          if (.not. lperi(1)) then
-            if (ipx == 0) then
-              do iv=1,nvar
-                if (lfrozen_bot_var_x(iv)) df(l1,m,n,iv) = 0.
-              enddo
-            endif
-            if (ipx == nprocx-1) then
-              do iv=1,nvar
-                if (lfrozen_top_var_x(iv)) df(l2,m,n,iv) = 0.
-              enddo
-            endif
-          endif
-!
-        endif
-!
-!  freezing boundary conditions in y
-!
-        if (lfrozen_bcs_y) then ! are there any frozen vars at all?
-!
-! Only need to do this for nonperiodic y direction, on bottom/top-most
-! processor and in bottom/top-most pencils
-!
-          if (.not. lperi(2)) then
-            if ((ipy == 0) .and. (m == m1)) then
-              do iv=1,nvar
-                if (lfrozen_bot_var_y(iv)) df(l1:l2,m,n,iv) = 0.
-              enddo
-            endif
-            if ((ipy == nprocy-1) .and. (m == m2)) then
-              do iv=1,nvar
-                if (lfrozen_top_var_y(iv)) df(l1:l2,m,n,iv) = 0.
-              enddo
-            endif
-          endif
-        endif
-!
-!  freezing boundary conditions in z
-!
-        if (lfrozen_bcs_z) then ! are there any frozen vars at all?
-!
-! Only need to do this for nonperiodic z direction, on bottom/top-most
-! processor and in bottom/top-most pencils
-!
-          if (.not. lperi(3)) then
-            if ((ipz == 0) .and. (n == n1)) then
-              do iv=1,nvar
-                if (lfrozen_bot_var_z(iv)) df(l1:l2,m,n,iv) = 0.
-              enddo
-            endif
-            if ((ipz == nprocz-1) .and. (n == n2)) then
-              do iv=1,nvar
-                if (lfrozen_top_var_z(iv)) df(l1:l2,m,n,iv) = 0.
-              enddo
-            endif
-          endif
-        endif
-!
-!  Set df=0 for all solid cells
-!
-      call freeze_solid_cells(df)
-
 !
 !  In max_mn maximum values of u^2 (etc) are determined sucessively
 !  va2 is set in magnetic (or nomagnetic)
@@ -1103,38 +945,38 @@ module Equ
               diffus_diffrhon3,diffus_nun3)
 !
           if (nxgrid==1.and.nygrid==1.and.nzgrid==1) then
-            maxadvec=0.
-            maxdiffus=0.
+            maxadvec=0.0
+            maxdiffus=0.0
           endif
 !
-!  exclude the frozen zones from the time-step calculation
+!  Exclude the frozen zones from the time-step calculation.
 !
           if (any(lfreeze_varint)) then
-             if (lcylinder_in_a_box.or.lcylindrical_coords) then
-                where (p%rcyl_mn .le. rfreeze_int)
-                   maxadvec=0.
-                   maxdiffus=0.
-                endwhere
-             else
-                where (p%r_mn .le. rfreeze_int)
-                   maxadvec=0.
-                   maxdiffus=0.
-                endwhere
-             endif
+            if (lcylinder_in_a_box.or.lcylindrical_coords) then
+              where (p%rcyl_mn<=rfreeze_int)
+                maxadvec=0.0
+                maxdiffus=0.0
+              endwhere
+            else
+              where (p%r_mn<=rfreeze_int)
+                maxadvec=0.0
+                maxdiffus=0.0
+              endwhere
+            endif
           endif
 !
           if (any(lfreeze_varext)) then
-             if (lcylinder_in_a_box.or.lcylindrical_coords) then
-                where (p%rcyl_mn .ge. rfreeze_ext)
-                   maxadvec=0.
-                   maxdiffus=0.
-                endwhere
-             else
-                where (p%r_mn .ge. rfreeze_ext)
-                   maxadvec=0.
-                   maxdiffus=0.
-                endwhere
-             endif
+            if (lcylinder_in_a_box.or.lcylindrical_coords) then
+              where (p%rcyl_mn>=rfreeze_ext)
+                maxadvec=0.0
+                maxdiffus=0.0
+              endwhere
+            else
+              where (p%r_mn>=rfreeze_ext)
+                maxadvec=0.0
+                maxdiffus=0.0
+              endwhere
+            endif
           endif
 !
 !  cdt, cdtv, and cdtc are empirical coefficients
@@ -1181,53 +1023,6 @@ module Equ
         headtt=.false.
      enddo
 !
-!
-!  Check for NaNs in the advection time-step.
-!
-     if (notanumber(dt1_advec)) then
-       print*, 'pde: dt1_advec contains a NaN at iproc=', iproc
-       if (lhydro)           print*, 'advec_uu   =',advec_uu
-       if (lshear)           print*, 'advec_shear=',advec_shear
-       if (lmagnetic)        print*, 'advec_hall =',advec_hall
-       if (lneutralvelocity) print*, 'advec_uun  =',advec_uun
-       if (lentropy)         print*, 'advec_cs2  =',advec_cs2
-       if (lmagnetic)        print*, 'advec_va2  =',advec_va2
-       if (lradiation)       print*, 'advec_crad2=',advec_crad2
-       if (lneutralvelocity) print*, 'advec_csn2 =',advec_csn2
-       call fatal_error_local('pde','')
-     endif
-!
-!  Boundary treatment of the df-array. 
-!
-!  This is a way to impose (time-
-!  dependent) boundary conditions by solving a so-called characteristic
-!  form of the fluid equations on the boundaries, as opposed to setting 
-!  actual values of the variables in the f-array. The method is called 
-!  Navier-Stokes characteristic boundary conditions (NSCBC).
-!
-!  The treatment should be done after the y-z-loop, but before the Runge-
-!  Kutta solver adds to the f-array.
-!
-      if (lnscbc) call nscbc_boundtreat(f,df)
-!
-!  Take care of flux-limited diffusion
-!
-      if (lradiation_fld) f(:,:,:,idd)=DFF_new
-!
-!  Electron inertia: our df(:,:,:,iax:iaz) so far is
-!  (1 - l_e^2\Laplace) daa, thus to get the true daa, we need to invert
-!  that operator.
-!  [wd-aug-2007: This should be replaced by the more general stuff with the
-!   Poisson solver (so l_e can be non-constant), so at some point, we can
-!   remove/replace this]
-!
-!      if (lelectron_inertia .and. inertial_length/=0.) then
-!        do iv = iax,iaz
-!          call inverse_laplacian_semispectral(df(:,:,:,iv), H=linertial_2)
-!        enddo
-!        df(:,:,:,iax:iaz) = -df(:,:,:,iax:iaz) * linertial_2
-!      endif
-!
 !  Calculate the gradient of the potential if there is room allocated in the
 !  f-array.
 !
@@ -1243,13 +1038,219 @@ module Equ
 !
       if (lparticles) call particles_pde(f,df)
 !
-!  in case of lvisc_hyper=true epsK is calculated for the whole array
-!  at not just for one pencil, it must therefore be added outside the
-!  m,n loop.
+!  Electron inertia: our df(:,:,:,iax:iaz) so far is
+!  (1 - l_e^2\Laplace) daa, thus to get the true daa, we need to invert
+!  that operator.
+!  [wd-aug-2007: This should be replaced by the more general stuff with the
+!   Poisson solver (so l_e can be non-constant), so at some point, we can
+!   remove/replace this]
 !
-!ajwm idiag_epsK needs close inspection... and requires tidying up
-!ajwm to be consistent in the viscosity.f90 routine.
-!      if (lvisc_hyper .and. ldiagnos) fname(idiag_epsK)=epsK_hyper
+!      if (lelectron_inertia .and. inertial_length/=0.) then
+!        do iv = iax,iaz
+!          call inverse_laplacian_semispectral(df(:,:,:,iv), H=linertial_2)
+!        enddo
+!        df(:,:,:,iax:iaz) = -df(:,:,:,iax:iaz) * linertial_2
+!      endif
+!
+!  Take care of flux-limited diffusion
+!
+      if (lradiation_fld) f(:,:,:,idd)=DFF_new
+!
+!  Fold df from first ghost zone into main df.
+!  Currently only needed for smoothed out particle drag force.
+!
+      if (lhydro .and. lfold_df) call fold_df(df,iux,iuz)
+!
+!  -------------------------------------------------------------
+!  NO CALLS MODIFYING DF BEYOND THIS POINT (APART FROM FREEZING)
+!  -------------------------------------------------------------
+!
+!  Freezing must be done after the full (m,n) loop, as df may be modified
+!  outside of the considered pencil.
+!
+      do imn=1,ny*nz
+        n=nn(imn)
+        m=mm(imn)
+!
+!  Recalculate grid/geometry related pencils. The r_mn and rcyl_mn are requested
+!  in pencil_criteria_grid. Unfortunately we need to recalculate them here.
+!
+        if (any(lfreeze_varext).or.any(lfreeze_varint)) &
+            call calc_pencils_grid(f,p)
+!
+!  Set df=0 for r_mn<r_int.
+!
+        if (any(lfreeze_varint)) then
+          if (headtt) print*, 'pde: freezing variables for r < ', rfreeze_int, &
+              ' : ', lfreeze_varint
+          if (lcylinder_in_a_box.or.lcylindrical_coords) then
+            if (wfreeze_int==0.0) then
+              where (p%rcyl_mn<=rfreeze_int) pfreeze_int=0.0
+              where (p%rcyl_mn> rfreeze_int) pfreeze_int=1.0
+            else
+              pfreeze_int=quintic_step(p%rcyl_mn,rfreeze_int,wfreeze_int, &
+                  SHIFT=fshift_int)
+            endif
+          else
+            if (wfreeze_int==0.0) then
+              where (p%r_mn<=rfreeze_int) pfreeze_int=0.0
+              where (p%r_mn> rfreeze_int) pfreeze_int=1.0
+            else
+              pfreeze_int=quintic_step(p%r_mn   ,rfreeze_int,wfreeze_int, &
+                  SHIFT=fshift_int)
+            endif
+          endif
+!
+          do iv=1,nvar
+            if (lfreeze_varint(iv)) &
+                df(l1:l2,m,n,iv)=pfreeze_int*df(l1:l2,m,n,iv)
+          enddo
+!
+        endif
+!
+!  Set df=0 for r_mn>r_ext.
+!
+        if (any(lfreeze_varext)) then
+          if (headtt) print*, 'pde: freezing variables for r > ', rfreeze_ext, &
+              ' : ', lfreeze_varext
+          if (lcylinder_in_a_box) then
+            if (wfreeze_ext==0.0) then
+              where (p%rcyl_mn>=rfreeze_ext) pfreeze_ext=0.0
+              where (p%rcyl_mn< rfreeze_ext) pfreeze_ext=1.0
+            else
+              pfreeze_ext=1.0-quintic_step(p%rcyl_mn,rfreeze_ext,wfreeze_ext, &
+                SHIFT=fshift_ext)
+            endif
+          else
+            if (wfreeze_ext==0.0) then
+              where (p%r_mn>=rfreeze_ext) pfreeze_ext=0.0
+              where (p%r_mn< rfreeze_ext) pfreeze_ext=1.0
+            else
+              pfreeze_ext=1.0-quintic_step(p%r_mn   ,rfreeze_ext,wfreeze_ext, &
+                  SHIFT=fshift_ext)
+            endif
+          endif
+!
+          do iv=1,nvar
+            if (lfreeze_varext(iv)) &
+                df(l1:l2,m,n,iv) = pfreeze_ext*df(l1:l2,m,n,iv)
+          enddo
+        endif
+!
+!  Set df=0 inside square.
+!
+        if (any(lfreeze_varsquare)) then
+          if (headtt) print*, 'pde: freezing variables inside square : ', &
+              lfreeze_varsquare
+          pfreeze=1.0-quintic_step(x(l1:l2),xfreeze_square,wfreeze,SHIFT=-1.0)*&
+              quintic_step(spread(y(m),1,nx),yfreeze_square,-wfreeze,SHIFT=-1.0)
+!
+          do iv=1,nvar
+            if (lfreeze_varsquare(iv)) &
+                df(l1:l2,m,n,iv) = pfreeze*df(l1:l2,m,n,iv)
+          enddo
+        endif
+!
+!  Freeze components of variables in boundary slice if specified by boundary
+!  condition 'f'
+!
+!  Freezing boundary conditions in x.
+!
+        if (lfrozen_bcs_x) then ! are there any frozen vars at all?
+!
+!  Only need to do this for nonperiodic x direction, on left/right-most
+!  processor and in left/right--most pencils
+!
+          if (.not. lperi(1)) then
+            if (ipx == 0) then
+              do iv=1,nvar
+                if (lfrozen_bot_var_x(iv)) df(l1,m,n,iv) = 0.
+              enddo
+            endif
+            if (ipx == nprocx-1) then
+              do iv=1,nvar
+                if (lfrozen_top_var_x(iv)) df(l2,m,n,iv) = 0.
+              enddo
+            endif
+          endif
+!
+        endif
+!
+!  Freezing boundary conditions in y.
+!
+        if (lfrozen_bcs_y) then ! are there any frozen vars at all?
+!
+!  Only need to do this for nonperiodic y direction, on bottom/top-most
+!  processor and in bottom/top-most pencils
+!
+          if (.not. lperi(2)) then
+            if ((ipy == 0) .and. (m == m1)) then
+              do iv=1,nvar
+                if (lfrozen_bot_var_y(iv)) df(l1:l2,m,n,iv) = 0.
+              enddo
+            endif
+            if ((ipy == nprocy-1) .and. (m == m2)) then
+              do iv=1,nvar
+                if (lfrozen_top_var_y(iv)) df(l1:l2,m,n,iv) = 0.
+              enddo
+            endif
+          endif
+        endif
+!
+!  Freezing boundary conditions in z.
+!
+        if (lfrozen_bcs_z) then ! are there any frozen vars at all?
+!
+!  Only need to do this for nonperiodic z direction, on bottom/top-most
+!  processor and in bottom/top-most pencils
+!
+          if (.not. lperi(3)) then
+            if ((ipz == 0) .and. (n == n1)) then
+              do iv=1,nvar
+                if (lfrozen_bot_var_z(iv)) df(l1:l2,m,n,iv) = 0.
+              enddo
+            endif
+            if ((ipz == nprocz-1) .and. (n == n2)) then
+              do iv=1,nvar
+                if (lfrozen_top_var_z(iv)) df(l1:l2,m,n,iv) = 0.
+              enddo
+            endif
+          endif
+        endif
+!
+!  Set df=0 for all solid cells
+!
+      call freeze_solid_cells(df)
+!
+    enddo
+!
+!  Boundary treatment of the df-array. 
+!
+!  This is a way to impose (time-
+!  dependent) boundary conditions by solving a so-called characteristic
+!  form of the fluid equations on the boundaries, as opposed to setting 
+!  actual values of the variables in the f-array. The method is called 
+!  Navier-Stokes characteristic boundary conditions (NSCBC).
+!
+!  The treatment should be done after the y-z-loop, but before the Runge-
+!  Kutta solver adds to the f-array.
+!
+      if (lnscbc) call nscbc_boundtreat(f,df)
+!
+!  Check for NaNs in the advection time-step.
+!
+     if (notanumber(dt1_advec)) then
+       print*, 'pde: dt1_advec contains a NaN at iproc=', iproc
+       if (lhydro)           print*, 'advec_uu   =',advec_uu
+       if (lshear)           print*, 'advec_shear=',advec_shear
+       if (lmagnetic)        print*, 'advec_hall =',advec_hall
+       if (lneutralvelocity) print*, 'advec_uun  =',advec_uun
+       if (lentropy)         print*, 'advec_cs2  =',advec_cs2
+       if (lmagnetic)        print*, 'advec_va2  =',advec_va2
+       if (lradiation)       print*, 'advec_crad2=',advec_crad2
+       if (lneutralvelocity) print*, 'advec_csn2 =',advec_csn2
+       call fatal_error_local('pde','')
+     endif
 !
 !  Collect from different processors max(uu) for the time step.
 !
@@ -1286,11 +1287,6 @@ module Equ
 !  reset lwrite_prof
 !
       lwrite_prof=.false.
-!
-!  Fold df from first ghost zone into main df.
-!  Currently only needed for smoothed out particle drag force.
-!
-      if (lhydro .and. lfold_df) call fold_df(df,iux,iuz)
 !
     endsubroutine pde
 !***********************************************************************

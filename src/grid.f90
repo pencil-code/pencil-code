@@ -517,6 +517,16 @@ module Grid
 !
 !  15-nov-06/tony: coded
 !
+      use Cdata
+!
+      if (any(lfreeze_varext).or.any(lfreeze_varint)) then
+        if (lcylinder_in_a_box.or.lcylindrical_coords) then
+          lpenc_requested(i_rcyl_mn)=.true.
+        else
+          lpenc_requested(i_r_mn)=.true.
+        endif
+      endif
+!
     endsubroutine pencil_criteria_grid
 !***********************************************************************
     subroutine pencil_interdep_grid(lpencil_in)
