@@ -81,7 +81,7 @@ my @sampdirs = qw(
 my @runsdirs = qw( );
 # ---------------------------------------------------------------------- #
 ## Override for testing:
-@sampdirs = qw( no-modules helical-MHDturb cosmicray geodynamo );
+#@sampdirs = qw( no-modules helical-MHDturb cosmicray geodynamo );
 #@runsdirs = qw(  );
 
 my $ntests      = 0;                 # total number of tests run
