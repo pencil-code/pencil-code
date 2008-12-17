@@ -2007,7 +2007,7 @@ k_loop:   do while (.not. (k>npar_loc))
             if (lshear) then
               dt1_advpy=(-qshear*Omega*fp(k,ixp)+abs(fp(k,ivpy)))*dy_1(iy0)
             else
-              !!!!!!dt1_advpy=abs(fp(k,ivpy))*dy_1(iy0)
+              dt1_advpy=abs(fp(k,ivpy))*dy_1(iy0)
             endif
             dt1_advpz=abs(fp(k,ivpz))*dz_1(iz0)
             dt1_max(ix0-nghost)=max(dt1_max(ix0-nghost), &
