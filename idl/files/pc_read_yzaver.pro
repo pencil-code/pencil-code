@@ -1,3 +1,4 @@
+;;
 ;; $Id$
 ;;
 ;;   Read yz-averages from file

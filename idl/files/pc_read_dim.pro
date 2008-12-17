@@ -1,3 +1,4 @@
+;
 ; $Id$
 ;
 ;   Read stuff from dim.dat

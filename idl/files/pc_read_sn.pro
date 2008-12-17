@@ -1,3 +1,4 @@
+;
 ; $Id$
 ;
 ;  Read time_series.dat and sort data into structure or variables

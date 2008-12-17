@@ -1,4 +1,5 @@
-;$Id$
+;
+; $Id$
 ;
 ;  preliminary version for reading pdf files
 ;  (at the time of check-in on horseshoe I don't remember details

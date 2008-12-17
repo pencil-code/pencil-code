@@ -1,3 +1,4 @@
+;
 ; $Id$
 ;
 ; pc_get_datadir - gets the name of the data directory from datadir .in

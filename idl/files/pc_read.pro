@@ -1,3 +1,4 @@
+;
 ; $Id$
 ;
 ;  Help on Pencil-Code read routines
@@ -7,8 +8,6 @@
 ;  $Revision: 1.4 $
 ;
 ;  27-nov-02/tony: tony
-;
-;  
 ;
 pro pc_read
 COMPILE_OPT IDL2,HIDDEN

@@ -1,3 +1,4 @@
+;;
 ;; $Id$
 ;;
 ;;   Read xz-averages from file

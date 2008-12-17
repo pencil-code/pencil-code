@@ -1,3 +1,4 @@
+;;
 ;; $Id$
 ;;
 ;;   Read xy-averages from file
