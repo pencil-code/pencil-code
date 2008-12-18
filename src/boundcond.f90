@@ -357,6 +357,9 @@ module Boundcond
               case ('e2')
                 ! BCY_DOC: extrapolation
                 call bcy_extrap_2_2(f,topbot,j)
+              case ('e3')
+                ! BCX_DOC: extrapolation in log [maintain a power law]
+                call bcy_extrap_2_3(f,topbot,j)
               case ('der')
                 ! BCY_DOC: set derivative on the boundary
                 call bc_set_der_y(f,topbot,j,fbcy12(j))
@@ -2297,6 +2300,52 @@ module Boundcond
 !
     endsubroutine bcy_extrap_2_2
 !***********************************************************************
+    subroutine bcy_extrap_2_3(f,topbot,j)
+!
+!  Extrapolation boundary condition in logarithm:
+!  It maintains a power law
+!  
+!   18-dec-08/wlad: coded
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: j,l,i
+!
+      select case(topbot)
+!
+      case('bot')               ! bottom boundary
+        do i=1,nghost
+          do n=1,mz
+            do l=1,mx
+              if (f(l,m1+i,n,j)/=0.) then 
+                f(l,m1-i,n,j)=f(l,m1,n,j)**2/f(l,m1+i,n,j)
+              else
+                f(l,m1-i,n,j)=0.
+              endif
+            enddo
+          enddo
+        enddo
+!
+      case('top')               ! top boundary
+        do i=1,nghost
+          do n=1,mz
+            do l=1,mx
+              if (f(l,m2-i,n,j)/=0.) then 
+                f(l,m2+i,n,j)=f(l,m2,n,j)**2/f(l,m2-i,n,j)
+              else
+                f(l,m2+i,n,j)=0.
+              endif
+            enddo
+          enddo
+        enddo
+!
+      case default
+        print*, "bcy_extrap_2_3: ", topbot, " should be `top' or `bot'"
+!
+      endselect
+!
+    endsubroutine bcy_extrap_2_3
+!***********************************************************************
     subroutine bc_extrap0_2_0(f,topbot,j)
 !
 !  Extrapolation boundary condition for f(bdry)=0.
@@ -2463,9 +2512,9 @@ module Boundcond
           do n=1,mz
             do m=1,my
               if (f(l2-i,m,n,j)/=0.) then 
-                f(l2+i,:,:,j)=f(l2,:,:,j)**2/f(l2-i,:,:,j)
+                f(l2+i,m,n,j)=f(l2,m,n,j)**2/f(l2-i,m,n,j)
               else
-                f(l2+i,:,:,j)=0.
+                f(l2+i,m,n,j)=0.
               endif
             enddo
           enddo
