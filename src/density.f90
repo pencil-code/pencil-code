@@ -1654,7 +1654,7 @@ module Density
 !  28-jul-06/wlad: coded
 !
       use BorderProfiles,  only: border_driving
-      use EquationOfState, only: cs0,cs20
+      use EquationOfState, only: cs0,cs20,gamma,gamma11
       use Sub,             only: power_law
       use Mpicomm,         only: stop_it
       use Gravity,         only: potential,acceleration
@@ -1733,9 +1733,9 @@ module Density
             endif
             if (lspherical_coords) then 
               call acceleration(R=p%r_mn(i),G_R=tmp1)
-              tmp2=-tmp1*p%r_mn(i) - p%cs2(i)*(plaw + ptlaw)
+              tmp2=-tmp1*p%r_mn(i) - p%cs2(i)*(plaw + ptlaw)*gamma11
               !lat=pi/2-y(m)
-              strat=(tmp2/p%cs2(i)) * log(cos(pi/2-y(m)))
+              strat=(tmp2*gamma/p%cs2(i)) * log(cos(pi/2-y(m)))
             else 
               call potential(R=p%r_mn(i),POT=tmp1)
               call potential(R=p%rcyl_mn(i),POT=tmp2)
@@ -1954,7 +1954,7 @@ module Density
       use Mpicomm,     only:stop_it 
       use Initcond,    only:set_thermodynamical_quantities
       use Gravity,     only:potential,acceleration
-      use Sub,         only:get_radial_distance,grad
+      use Sub,         only:get_radial_distance,grad,power_law
       use Selfgravity, only:calc_selfpotential
       use Boundcond,   only:update_ghosts
       use Particles_nbody, only:potential_nbody
@@ -1964,7 +1964,7 @@ module Density
       real, dimension (mx)   :: rr_sph,rr,rr_cyl,lnrhomid
       real                   :: ptlaw,cp1,rmid,lat
       integer, pointer       :: iglobal_cs2,iglobal_glnTT
-      integer                :: i
+      integer                :: i,ics2
       logical                :: lheader,lenergy,lpresent_zed
 !
       real, dimension(nx,3)  :: gpotself
@@ -1976,15 +1976,40 @@ module Density
 !
       lenergy=ltemperature.or.lentropy
 !
-! Set the sound speed
+!  Set the sound speed
 !
       call get_ptlaw(ptlaw)
-      if (llocal_iso) then
-        call set_thermodynamical_quantities&
-             (f,ptlaw,lspherical_cs2,iglobal_cs2,iglobal_glnTT)
-      else
-        call set_thermodynamical_quantities(f,ptlaw,lspherical_cs2)
-      endif
+      do m=1,my
+        do n=1,mz
+          lheader=((m==1).and.(n==1).and.lroot)
+          call get_radial_distance(rr_sph,rr_cyl)
+          if (lsphere_in_a_box.or.lspherical_coords) then 
+            rr=rr_sph
+          elseif (lcylinder_in_a_box.or.lcylindrical_coords) then
+            rr=rr_cyl
+          else
+            call stop_it("local_isothermal_density: "//&
+                "no valid coordinate system")
+          endif
+!
+          call power_law(cs20,rr,ptlaw,cs2,r_ref)
+!
+!  Store cs2 in one of the free slots of the f-array
+!
+          if (llocal_iso) then 
+            nullify(iglobal_cs2)
+            call farray_use_global('cs2',iglobal_cs2)
+            ics2=iglobal_cs2
+          elseif (ltemperature) then 
+            ics2=ilnTT
+          elseif (lentropy) then 
+            ics2=iss
+          endif
+!
+          f(:,m,n,ics2)=cs2
+!
+        enddo
+      enddo
 !
       lpresent_zed=.false.
       if (lspherical_coords) then 
@@ -1998,12 +2023,12 @@ module Density
 !
           lheader=lroot.and.(m==1).and.(n==1)
 !
-! midplane density
+!  Midplane density
 !
           call get_radial_distance(rr_sph,rr_cyl)
-          if (lspherical_cs2) then 
+          if (lsphere_in_a_box.or.lspherical_coords) then 
             rr=rr_sph
-          else
+          elseif (lcylinder_in_a_box.or.lcylindrical_coords) then
             rr=rr_cyl
           endif
 !
@@ -2017,37 +2042,27 @@ module Density
             lnrhomid=log(rho0)-.5*plaw*log((rr/r_ref)**2+rsmooth**2)
           endif
 !
-! vertical stratification, if needed
+!  Vertical stratification, if needed
 !
           if (.not.lcylindrical_gravity.and.lpresent_zed) then 
             if (lheader) &
                  print*,"Adding vertical stratification with "//&
                  "scale height h/r=",cs0
 !
-! Get the sound speed
+!  Get the sound speed
 !
-            if (llocal_iso) then
-              cs2=f(:,m,n,iglobal_cs2)
-            elseif (ltemperature) then
-              call get_cp1(cp1)
-              cs2=exp(f(:,m,n,ilnTT))*gamma1/cp1
-            elseif (lentropy) then
-              call get_cp1(cp1)
-              cs2=cs20*exp(cp1*gamma*f(:,m,n,iss) + gamma1*f(:,m,n,ilnrho))
-            else
-              cs2=cs20
-            endif
+            cs2=f(:,m,n,ics2)
 !            
-            if (lspherical_cs2) then
+            if (lspherical_coords.or.lsphere_in_a_box) then
               ! uphi2/r = -gr + dp/dr
               call acceleration(tmp1)
-              tmp2=-tmp1*rr_sph - cs2*(plaw + ptlaw)
+              tmp2=-tmp1*rr_sph - cs2*(plaw + ptlaw)/gamma
               lat=pi/2-y(m)
-              strat=(tmp2/cs2) * log(cos(lat))
+              strat=(tmp2*gamma/cs2) * log(cos(lat))
             else
 !
 !  The subroutine "potential" yields the whole gradient.
-!  I want the function that partially derived in 
+!  I want the function that partially derived in
 !  z gives g0/r^3 * z. This is NOT -g0/r
 !  The second call takes care of normalizing it 
 !  i.e., there should be no correction at midplane
@@ -2068,30 +2083,40 @@ module Density
             endif
 !
           else
-! no stratification
+!  No stratification
             strat=0.
           endif
           f(:,m,n,ilnrho) = max(lnrhomid+strat,density_floor)
         enddo
       enddo
 !
-! Correct the velocities for self-gravity
+!  Correct the velocities by this pressure gradient
+!
+      call correct_pressure_gradient(f,ics2,ptlaw)
+!
+!  Correct the velocities for self-gravity
 !
       call correct_for_selfgravity(f)
 !
-! Correct the velocities by this density gradient
+!  Set the thermodynamical variable
 !
-      call correct_density_gradient(f,lspherical_cs2)
+      if (llocal_iso) then
+        call set_thermodynamical_quantities&
+             (f,ptlaw,ics2,iglobal_cs2,iglobal_glnTT)
+      else
+        call set_thermodynamical_quantities(f,ptlaw,ics2)
+      endif
 !
     endsubroutine local_isothermal_density
 !***********************************************************************
-    subroutine correct_density_gradient(f,lspherical_cs2)
+    subroutine correct_pressure_gradient(f,ics2,ptlaw)
 ! 
-! Correct for density gradient term in the centrifugal force. The
-! temperature gradient was already corrected for when setting the
-! thermodynamical quantities.   
+!  Correct for pressure gradient term in the centrifugal force.
+!  For now, it only works for flat (isothermal) or power-law 
+!  sound speed profiles, because the temperature gradient is 
+!  constructed analytically.
 !
-! 21-aug-07/wlad : coded
+!  21-aug-07/wlad : coded
 !
       use FArrayManager
       use Mpicomm,only: stop_it
@@ -2100,28 +2125,21 @@ module Density
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: glnrho
       real, dimension (nx)   :: rr,rr_cyl,rr_sph
-      real, dimension (nx)   :: cs2,tmp1,tmp2,corr,gslnrho
-      integer,pointer        :: iglobal_cs2
-      integer                :: i
-      logical                :: lheader,lenergy,lsc2
-      logical,optional       :: lspherical_cs2
-      real                   :: cp1
+      real, dimension (nx)   :: cs2,tmp1,tmp2,corr,gslnrho,gslnTT
+      integer                :: i,ics2
+      logical                :: lheader,lenergy
+      real                   :: cp1,ptlaw
 !
       if (lroot) print*,'Correcting density gradient on the '//&
            'centrifugal force'
 !
       lenergy=ltemperature.or.lentropy
-      lsc2=.false.
-      if (present(lspherical_cs2)) lsc2=.true.
-!
-      if (llocal_iso) &
-           call farray_use_global('cs2',iglobal_cs2)
 !
       do m=m1,m2
         do n=n1,n2
           lheader=((m==m1).and.(n==n1).and.lroot)
 !
-! get the density gradient
+!  Get the density gradient
 !
           call get_radial_distance(rr_sph,rr_cyl)
           call grad(f,ilnrho,glnrho)
@@ -2131,30 +2149,18 @@ module Density
           else if (lcylindrical_coords) then 
             gslnrho=glnrho(:,1)
           else if (lspherical_coords) then 
-            if (lsc2) then 
-              gslnrho=glnrho(:,1)
-            else
-              gslnrho=glnrho(:,1)*sinth(m) + glnrho(:,2)*costh(m)
-            endif
+            gslnrho=glnrho(:,1)
           endif
 !
-! get sound speed
+!  Get sound speed and calculate the temperature gradient
 !
-          if (llocal_iso) then
-            cs2=f(l1:l2,m,n,iglobal_cs2)
-          elseif (ltemperature) then
-            call get_cp1(cp1)
-            cs2=exp(f(l1:l2,m,n,ilnTT))*gamma1/cp1
-          elseif (lentropy) then
-            call get_cp1(cp1)
-	    cs2=cs20*exp(cp1*gamma*f(l1:l2,m,n,iss) + gamma1*f(l1:l2,m,n,ilnrho))
-          else
-            cs2=cs20
-          endif
+          cs2=f(l1:l2,m,n,ics2);rr=rr_cyl
+          if (lspherical_coords.or.lsphere_in_a_box) rr=rr_sph
+          gslnTT=-ptlaw/((rr/r_ref)**2+rsmooth**2)*rr/r_ref**2
 !
-! correct for cartesian or spherical
+!  Correct for cartesian or spherical
 !
-          corr=gslnrho*cs2
+          corr=(gslnrho+gslnTT)*cs2
           if (lenergy) corr=corr/gamma
 !
           if (lcartesian_coords) then
@@ -2164,19 +2170,11 @@ module Density
             tmp1=(f(l1:l2,m,n,iuy)/rr_cyl)**2
             tmp2=tmp1 + corr/rr_cyl
           elseif (lspherical_coords) then
-            if (lsc2) then 
-              tmp1=(f(l1:l2,m,n,iuz)/rr_sph)**2
-              tmp2=tmp1 + corr/rr_sph
-            else
-              tmp1=(f(l1:l2,m,n,iuz)/(rr_sph*sinth(m)))**2
-              tmp2=tmp1 + corr/(rr_sph*sinth(m)**2)
-            endif
+            tmp1=(f(l1:l2,m,n,iuz)/rr_sph)**2
+            tmp2=tmp1 + corr/rr_sph
           endif
 !
-! Make sure the correction does not impede centrifugal equilibrium
-!
-          rr=rr_cyl
-          if (lspherical_coords.and.lsc2) rr=rr_sph
+!  Make sure the correction does not impede centrifugal equilibrium
 !
           do i=1,nx
             if (tmp2(i).lt.0.) then
@@ -2199,7 +2197,7 @@ module Density
             endif
           enddo
 !
-! Correct the velocities
+!  Correct the velocities
 !
           if (lcartesian_coords) then
             f(l1:l2,m,n,iux)=-sqrt(tmp2)*y(  m  )
@@ -2207,20 +2205,16 @@ module Density
           elseif (lcylindrical_coords) then
             f(l1:l2,m,n,iuy)= sqrt(tmp2)*rr_cyl
           elseif (lspherical_coords) then 
-            if (lsc2) then 
-              f(l1:l2,m,n,iuz)= sqrt(tmp2)*rr_sph
-            else
-              f(l1:l2,m,n,iuz)= sqrt(tmp2)*rr_sph*sinth(m)
-            endif
+            f(l1:l2,m,n,iuz)= sqrt(tmp2)*rr_sph
           endif
         enddo
       enddo
 !
-    endsubroutine correct_density_gradient
+    endsubroutine correct_pressure_gradient
 !***********************************************************************
     subroutine exponential_fall(f)
 !
-!  Exponentially falling radial density profile
+!  Exponentially falling radial density profile.
 !
 !  21-aug-07/wlad: coded 
 !
@@ -2252,10 +2246,6 @@ module Density
 !  Add self-gravity's contribution to the centrifugal force
 !
       call correct_for_selfgravity(f)
-!
-!  Correct the velocities by this density gradient
-!
-      call correct_density_gradient(f)
 !
     endsubroutine exponential_fall
 !**********************************************************
@@ -2327,8 +2317,8 @@ module Density
             do i=1,nx
               if (tmp2(i).lt.0.) then
                 if (rr_cyl(i) .lt. r_int) then
-                  !it's inside the frozen zone, so                                
-                  !just set tmp2 to zero and emit a warning                       
+                  !it's inside the frozen zone, so
+                  !just set tmp2 to zero and emit a warning
                   tmp2(i)=0.
                   if ((ip<=10).and.lheader) &
                        call warning('correct_for_selfgravity','Cannot '//&
@@ -2389,19 +2379,15 @@ module Density
 !
       call impose_density_floor(f)
 !
-! Correct the velocities by this density gradient
-!
-      call correct_density_gradient(f)
-!
     endsubroutine power_law_gaussian_disk
 !**********************************************************************
     subroutine power_law_disk(f)
 !
-! Simple power-law disk. It sets only the density, whereas 
-! local_isothermal sets the density and thermodynamical
-! quantities
+!  Simple power-law disk. It sets only the density, whereas 
+!  local_isothermal sets the density and thermodynamical
+!  quantities
 !
-! 19-sep-07/wlad: coded
+!  19-sep-07/wlad: coded
 !
       use Sub, only: get_radial_distance
 !
@@ -2419,10 +2405,6 @@ module Density
           f(:,m,n,ilnrho)=log(rho0)-.5*plaw*log((rr_cyl/r_ref)**2+rsmooth**2)
         enddo
       enddo
-!
-! Correct the velocities by this density gradient
-!
-      call correct_density_gradient(f)
 !
     endsubroutine power_law_disk
 !**********************************************************************

@@ -3113,31 +3113,45 @@ module Initcond
       enddo
     enddo
 !
-!
     endsubroutine random_isotropic_KS
 !**********************************************************
     subroutine set_thermodynamical_quantities&
-         (f,ptlaw,lspherical_cs2,iglobal_cs2,iglobal_glnTT)
-
+         (f,ptlaw,ics2,iglobal_cs2,iglobal_glnTT)
+!
+!  Subroutine that sets the thermodynamical quantities 
+!   - static sound speed, temperature or entropy -
+!  based on a sound speed which is given as input. 
+!  This routine is not general. For llocal_iso (locally 
+!  isothermal approximation, the temperature gradient is 
+!  stored as a static array, as the (analytical) derivative 
+!  of an assumed power-law profile for the sound speed
+!  (hence the parameter ptlaw) 
+! 
+!  05-jul-07/wlad: coded
+!  16-dec-08/wlad: moved pressure gradient correction to 
+!                  the density module (correct_pressure_gradient)
+!                  Now this subroutine really only sets the thermo
+!                  variables.
+!
       use FArrayManager
       use Mpicomm
       use EquationOfState, only: gamma,gamma1,get_cp1,&
                                  cs20,cs2bot,cs2top,lnrho0
       use Sub,             only: power_law,get_radial_distance
       use Messages       , only: warning
-
+!
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension(mx) :: rr,rr_sph,rr_cyl,cs2
-      real, dimension(mx) :: tmp1,tmp2,gslnTT,corr
+      real, dimension(nx) :: rr,rr_sph,rr_cyl,cs2,lnrho
+      real, dimension(nx) :: tmp1,tmp2,gslnTT,corr
       real :: cp1,ptlaw
       integer, pointer, optional :: iglobal_cs2,iglobal_glnTT
-      integer :: i
-      logical :: lheader,lenergy,lspherical_cs2
+      integer :: i,ics2
+      logical :: lheader,lenergy
 !
       intent(in)  :: ptlaw
       intent(out) :: f
 !
-! Break if llocal_iso is used with entropy or temperature
+!  Break if llocal_iso is used with entropy or temperature
 !
       lenergy=ltemperature.or.lentropy
 !
@@ -3146,7 +3160,7 @@ module Initcond
            "evolving the energy, but llocal_iso is switched "//&
            " on in start.in. Better stop and change it")
 !
-! Break if gamma=1.0 and energy is solved
+!  Break if gamma=1.0 and energy is solved
 !
       if ((gamma==1.0).and.lenergy) then
         if (lroot) then
@@ -3171,62 +3185,47 @@ module Initcond
 !
       if (lroot) print*,'Temperature gradient with power law=',ptlaw
 !
-! Get the pointers to the global arrays if needed
+!  Get the pointers to the global arrays if needed
 !
       if (llocal_iso) then
-        nullify(iglobal_cs2)
         nullify(iglobal_glnTT)
-        call farray_use_global('cs2',iglobal_cs2)
         call farray_use_global('glnTT',iglobal_glnTT)
       endif
 !
-      call get_cp1(cp1)
+      if (lenergy) call get_cp1(cp1)
 !
-      do m=1,my
-        do n=1,mz
-          lheader=((m==1).and.(n==1).and.lroot)
-!
-!  Calculate the sound speed and radial temperature gradient
-!
-          call get_radial_distance(rr_sph,rr_cyl)
-          if (lspherical_cs2) then 
-            rr=rr_sph
-          else
-            rr=rr_cyl
-          endif
-          call power_law(cs20,rr,ptlaw,cs2,r_ref)
-          gslnTT=-ptlaw/((rr/r_ref)**2+rsmooth**2)*rr/r_ref**2
+      do m=m1,m2
+        do n=n1,n2
+          lheader=((m==m1).and.(n==n1).and.lroot)
 !
 !  Put in the global arrays if they are to be static
 !
+          cs2=f(l1:l2,m,n,ics2)
           if (llocal_iso) then
-            f(:,m,n,iglobal_cs2)= cs2
+!
+            f(l1:l2,m,n,iglobal_cs2) = cs2
+!
+            call get_radial_distance(rr_sph,rr_cyl);   rr=rr_cyl
+            if (lspherical_coords.or.lsphere_in_a_box) rr=rr_sph
+!
+            gslnTT=-ptlaw/((rr/r_ref)**2+rsmooth**2)*rr/r_ref**2
+!
             if (lcartesian_coords) then
-              f(:,m,n,iglobal_glnTT  )=gslnTT*x   /rr_cyl
-              f(:,m,n,iglobal_glnTT+1)=gslnTT*y(m)/rr_cyl
-              f(:,m,n,iglobal_glnTT+2)=0.
-            elseif (lcylindrical_coords) then
-              f(:,m,n,iglobal_glnTT  )=gslnTT
-              f(:,m,n,iglobal_glnTT+1)=0.
-              f(:,m,n,iglobal_glnTT+2)=0.
-            elseif (lspherical_coords) then
-              if (lspherical_cs2) then 
-                !gslnTT is the spherical gradient
-                f(:,m,n,iglobal_glnTT  )=gslnTT
-                f(:,m,n,iglobal_glnTT+1)=0.
-              else
-                !gslnTT is the cylindrical gradient
-                f(:,m,n,iglobal_glnTT  )=gslnTT*sinth(m)
-                f(:,m,n,iglobal_glnTT+1)=gslnTT*costh(m)
-              endif
-              f(:,m,n,iglobal_glnTT+2)=0.
+              f(l1:l2,m,n,iglobal_glnTT  )=gslnTT*x(l1:l2)/rr_cyl
+              f(l1:l2,m,n,iglobal_glnTT+1)=gslnTT*y(m)    /rr_cyl
+              f(l1:l2,m,n,iglobal_glnTT+2)=0.
+            else! (lcylindrical_coords.or.lspherical_coords) then
+              f(l1:l2,m,n,iglobal_glnTT  )=gslnTT
+              f(l1:l2,m,n,iglobal_glnTT+1)=0.
+              f(l1:l2,m,n,iglobal_glnTT+2)=0.
             endif
           elseif (ltemperature) then
 !  else do it as temperature ...
-            f(:,m,n,ilnTT)=log(cs2*cp1/gamma1)
+            f(l1:l2,m,n,ilnTT)=log(cs2*cp1/gamma1)
           elseif (lentropy) then
 !  ... or entropy
-            f(:,m,n,iss)=1./(gamma*cp1)*(log(cs2/cs20)-gamma1*lnrho0)
+            lnrho=f(l1:l2,m,n,ilnrho) ! initial condition, always log
+            f(l1:l2,m,n,iss)=1./(gamma*cp1)*(log(cs2/cs20)-gamma1*(lnrho-lnrho0))
           else
 !
             call stop_it("No thermodynamical variable. Choose if you want "//&
@@ -3234,63 +3233,6 @@ module Initcond
                  "(switch llocal_iso=T init_pars and entropy=noentropy on "//&
                  "Makefile.local), or if you want to compute the "//&
                  "temperature directly and evolve it in time.")
-          endif
-!
-!  correct for temperature gradient term in the centrifugal force
-!  the density gradient term will be corrected in density
-!
-          corr=gslnTT*cs2
-          if (lenergy) corr=corr/gamma
-          if (lcartesian_coords) then
-            !tmp1 is the angular velocity
-            tmp1=(f(:,m,n,iux)**2+f(:,m,n,iuy)**2)/rr_cyl**2
-            tmp2=tmp1 + corr/rr_cyl
-          elseif (lcylindrical_coords) then
-            tmp1=(f(:,m,n,iuy)/rr_cyl)**2
-            tmp2=tmp1 + corr/rr_cyl
-          elseif (lspherical_coords) then
-            if (lspherical_cs2) then 
-              tmp1=(f(:,m,n,iuz)/rr_sph)**2
-              tmp2=tmp1 + corr/rr_sph
-            else
-              tmp1=(f(:,m,n,iuz)/(rr_sph*sinth(m)))**2
-              tmp2=tmp1 + corr/(rr_sph*sinth(m)**2)
-            endif
-          endif
-!
-!  Make sure the correction does not impede centrifugal equilibrium
-!
-          do i=1,mx
-            if (tmp2(i).lt.0.) then
-              if (rr(i) .lt. r_int) then
-                !it's inside the frozen zone, so
-                !just set tmp2 to zero and emit a warning
-                tmp2(i)=0.
-                if ((ip<=10).and.lheader) &
-                     call warning('set_thermodynamical_quantities',&
-                     'the disk is too hot inside the frozen zone')
-              else
-                print*,'set_thermodynamical_quantities '
-                print*,'the disk is too hot at x,y,z=',x(i),y(m),z(n)
-                print*,'the azimuthal velocity there is',sqrt(tmp1(i-nghost))
-                !call stop_it("")
-              endif
-            endif
-          enddo
-!
-!  Correct the velocities
-!
-          if (lcartesian_coords) then
-            f(:,m,n,iux)=-sqrt(tmp2)*y(m)
-            f(:,m,n,iuy)= sqrt(tmp2)*x
-          elseif (lcylindrical_coords) then
-            f(:,m,n,iuy)= sqrt(tmp2)*rr_cyl
-          elseif (lspherical_coords) then 
-            if (lspherical_cs2) then 
-              f(:,m,n,iuz)= sqrt(tmp2)*rr_sph
-            else
-              f(:,m,n,iuz)= sqrt(tmp2)*rr_sph*sinth(m)
-            endif
           endif
         enddo
       enddo
@@ -3322,49 +3264,51 @@ module Initcond
 !*************************************************************
     subroutine corona_init(f)
 !
-! 07-dec-05/bing : coded.
-!      intialize the density for given temperprofile in vertical
-!      z direction by solving hydrostatic equilibrium.
-!      Temperatur is hard coded as three polynoms.
+!  Initialize the density for a given temperature profile 
+!  in the vertical (z) direction by solving for hydrostatic 
+!  equilibrium. 
+!  The temperature is hard coded as three polynomials.
+!
+!  07-dec-05/bing : coded.
 !
       use Cdata
       use EquationOfState, only: lnrho0,gamma,gamma1,cs20,cs2top,cs2bot
-
+!
       real, dimension(mx,my,mz,mfarray) :: f
       real :: tmp,ztop,zbot
       real, dimension(150) :: b_lnT,b_lnrho,b_z
       integer :: i,lend,j
-      !
-      ! temperature given as function lnT(z) in SI units
-      ! [T] = K   &   [z] = Mm   & [rho] = kg/m^3
-      !
+!
+!  temperature given as function lnT(z) in SI units
+!  [T] = K   &   [z] = Mm   & [rho] = kg/m^3
+!
       if (pretend_lnTT) print*,'corona_init: not implemented for pretend_lnTT=T'
-      !      
+!      
       inquire(IOLENGTH=lend) tmp
       open (10,file='driver/b_lnT.dat',form='unformatted',status='unknown',recl=lend*150)
       read (10) b_lnT
       read (10) b_z
       close (10)
-      !
+!
       open (10,file='driver/b_lnrho.dat',form='unformatted',status='unknown',recl=lend*150)
       read (10) b_lnrho
       close (10)
-      !
+!
       b_z = b_z*1.e6/unit_length
       b_lnT = b_lnT - alog(real(unit_temperature))
       b_lnrho = b_lnrho - alog(real(unit_density))
-      !
-      ! simple linear interpolation
-      !
+!
+! simple linear interpolation
+!
       do j=n1,n2
          do i=1,149
             if (z(j) .ge. b_z(i) .and. z(j) .lt. b_z(i+1) ) then
                f(:,:,j,ilnrho) = (b_lnrho(i)*(b_z(i+1) - z(j)) +   &
                     b_lnrho(i+1)*(z(j)-b_z(i)) ) / (b_z(i+1)-b_z(i))
-               !
+!
                tmp =  (b_lnT(i)*(b_z(i+1) - z(j)) +   &
                     b_lnT(i+1)*(z(j)-b_z(i)) ) / (b_z(i+1)-b_z(i))
-               !
+!
                if (ltemperature) then
                   f(:,:,j,ilnTT) = tmp
                elseif (lentropy) then
@@ -3376,9 +3320,9 @@ module Initcond
          enddo
          if (z(j) .ge. b_z(150)) then
             f(:,:,j,ilnrho) = b_lnrho(150)
-            !
+!
             tmp =  b_lnT(150)
-            !
+!
             if (ltemperature) then
                f(:,:,j,ilnTT) = tmp
             elseif (lentropy) then
@@ -3387,26 +3331,26 @@ module Initcond
             endif
          endif
       enddo
-      !
+!
       ztop=xyz0(3)+Lxyz(3)
       zbot=xyz0(3)
-      !
+!
       do i=1,149
          if (ztop .ge. b_z(i) .and. ztop .lt. b_z(i+1) ) then
-            !
+!
             tmp =  (b_lnT(i)*(b_z(i+1) - ztop) +   &
                  b_lnT(i+1)*(ztop-b_z(i)) ) / (b_z(i+1)-b_z(i))
             cs2top = gamma1*exp(tmp)
-            !
+!
          elseif (ztop .ge. b_z(150)) then
             cs2top = gamma1*exp(b_lnT(150))
          endif
          if (zbot .ge. b_z(i) .and. zbot .lt. b_z(i+1) ) then
-            !
+!
             tmp =  (b_lnT(i)*(b_z(i+1) - zbot) +   &
                  b_lnT(i+1)*(zbot-b_z(i)) ) / (b_z(i+1)-b_z(i))
             cs2bot = gamma1*exp(tmp)
-            !
+!
          endif
       enddo
 !
@@ -3414,10 +3358,11 @@ module Initcond
 !*********************************************************
     subroutine mdi_init(f)
 !
-! 13-dec-05/bing : coded.
-! intialize the vector potential
-! by potential field extrapolation
-! of a mdi magnetogram
+!  Intialize the vector potential
+!  by potential field extrapolation
+!  of a mdi magnetogram
+!
+!  13-dec-05/bing : coded.
 !
       use Cdata
       use Fourier
@@ -3425,75 +3370,75 @@ module Initcond
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(nxgrid,nygrid) :: kx,ky,k2
-
+!
       real, dimension(nxgrid,nygrid) :: Bz0,Bz0_i,Bz0_r
       real, dimension(nxgrid,nygrid) :: Ax_r,Ax_i,Ay_r,Ay_i
-
+!
       real, dimension(nxgrid) :: kxp
       real, dimension(nygrid) :: kyp
-
+!
       real :: mu0_SI,u_b
       integer :: i,idx2,idy2
-
-      ! Auxiliary quantities:
-      !
-      ! idx2 and idy2 are essentially =2, but this makes compilers
-      ! complain if nygrid=1 (in which case this is highly unlikely to be
-      ! correct anyway), so we try to do this better:
+!
+!  Auxiliary quantities:
+!
+!  idx2 and idy2 are essentially =2, but this makes compilers
+!  complain if nygrid=1 (in which case this is highly unlikely to be
+!  correct anyway), so we try to do this better:
       idx2 = min(2,nxgrid)
       idy2 = min(2,nygrid)
-      !
-      ! Magnetic field strength unit [B] = u_b
-      !
+!
+!  Magnetic field strength unit [B] = u_b
+!
       mu0_SI = 4.*pi*1.e-7
       u_b = unit_velocity*sqrt(mu0_SI/mu0*unit_density)
-      !
+!
       kxp=cshift((/(i-(nxgrid-1)/2,i=0,nxgrid-1)/),+(nxgrid-1)/2)*2*pi/Lx
       kyp=cshift((/(i-(nygrid-1)/2,i=0,nygrid-1)/),+(nygrid-1)/2)*2*pi/Ly
-      !
+!
       kx =spread(kxp,2,nygrid)
       ky =spread(kyp,1,nxgrid)
-      !
+!
       k2 = kx*kx + ky*ky
-      !
+!
       open (11,file='driver/magnetogram_k.dat',form='unformatted')
       read (11) Bz0
       close (11)
-      !
+!
       Bz0_i = 0.
       Bz0_r = Bz0 * 1e-4 / u_b ! Gauss to Tesla  and SI to PENCIL units
-      !
-      ! Fourier Transform of Bz0:
-      !
+!
+!  Fourier Transform of Bz0:
+!
       call fourier_transform_other(Bz0_r,Bz0_i)
-      !
+!
       do i=n1,n2
-         !
-         !  Calculate transformed vector potential at "each height"
-         !
+!
+!  Calculate transformed vector potential at "each height"
+!
          where (k2 .ne. 0 )
             Ax_r = -Bz0_i*ky/k2*exp(-sqrt(k2)*z(i) )
             Ax_i =  Bz0_r*ky/k2*exp(-sqrt(k2)*z(i) )
-            !
+!
             Ay_r =  Bz0_i*kx/k2*exp(-sqrt(k2)*z(i) )
             Ay_i = -Bz0_r*kx/k2*exp(-sqrt(k2)*z(i) )
          elsewhere
             Ax_r = -Bz0_i*ky/ky(1,idy2)*exp(-sqrt(k2)*z(i) )
             Ax_i =  Bz0_r*ky/ky(1,idy2)*exp(-sqrt(k2)*z(i) )
-            !
+!
             Ay_r =  Bz0_i*kx/kx(idx2,1)*exp(-sqrt(k2)*z(i) )
             Ay_i = -Bz0_r*kx/kx(idx2,1)*exp(-sqrt(k2)*z(i) )
          endwhere
-         !
+!
          call fourier_transform_other(Ax_r,Ax_i,linv=.true.)
-         !
+!
          call fourier_transform_other(Ay_r,Ay_i,linv=.true.)
-         !
+!
          f(l1:l2,m1:m2,i,iax)=Ax_r(ipx*nx+1:(ipx+1)*nx+1,ipy*ny+1:(ipy+1)*ny+1)
          f(l1:l2,m1:m2,i,iay)=Ay_r(ipx*nx+1:(ipx+1)*nx+1,ipy*ny+1:(ipy+1)*ny+1)
          f(l1:l2,m1:m2,i,iaz)=0.
       enddo
-
+!
     endsubroutine mdi_init
 !*********************************************************
     subroutine const_lou(ampl,f,i,xx,yy,zz)
