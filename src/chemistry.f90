@@ -229,7 +229,11 @@ module Chemistry
 !  Read data on the thermodynamical properties of the different species.
 !  All these data are stored in the array species_constants.
 !
+
+print*,'Natalia3'
       if (lcheminp) call read_thermodyn(input_file)
+print*,'Natalia4'
+
 !
 !  Write all data on species and their thermodynamics to file 
 !
@@ -1624,13 +1628,14 @@ module Chemistry
 !
       integer, intent(out) :: ind_glob,ind_chem
       character (len=*), intent(in) :: species_name
-      integer :: k
+      integer :: k, tmp
       logical, intent(out) :: found_specie
 !
       ind_glob=0
+      tmp=1
       do k=1,nchemspec
         if (trim(varname(ichemspec(k)))==species_name) then
-          ind_glob=k+ichemspec(1)-1
+          ind_glob=k+ichemspec(tmp)-1
           ind_chem=k
           exit
         endif
@@ -1772,9 +1777,13 @@ module Chemistry
           if (ChemInpLine(1:7) /= "THERMO") then
             StopInd=index(ChemInpLine,' ')
             specie_string=trim(ChemInpLine(1:StopInd-1))
+print*,'Natalia1'
             call find_species_index(specie_string,ind_glob,ind_chem,&
                 found_specie)
 !
+print*,'Natalia2',ind_glob,ind_chem
+
+
             if (found_specie) then
 !
 ! Find molar mass
