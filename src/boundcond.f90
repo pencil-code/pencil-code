@@ -201,6 +201,9 @@ module Boundcond
                 case ('e2')
                   ! BCX_DOC: extrapolation [describe]
                   call bcx_extrap_2_2(f,topbot,j)
+               case ('e3')
+                  ! BCX_DOC: extrapolation in log [maintain a power law]
+                  call bcx_extrap_2_3(f,topbot,j)
                 case ('hat')
                   !BCX_DOC: top hat jet profile in spherical coordinate. 
                   !Defined only for the bottom boundary 
@@ -2428,6 +2431,52 @@ module Boundcond
       endselect
 !
     endsubroutine bc_extrap0_2_2
+!***********************************************************************
+    subroutine bcx_extrap_2_3(f,topbot,j)
+!
+!  Extrapolation boundary condition in logarithm:
+!  It maintains a power law
+!  
+!   18-dec-08/wlad: coded
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: j,i
+!
+      select case(topbot)
+!
+      case('bot')               ! bottom boundary
+        do i=1,nghost
+          do n=1,mz
+            do m=1,my
+              if (f(l1+i,m,n,j)/=0.) then 
+                f(l1-i,m,n,j)=f(l1,m,n,j)**2/f(l1+i,m,n,j)
+              else
+                f(l1-i,m,n,j)=0.
+              endif
+            enddo
+          enddo
+        enddo
+!
+      case('top')               ! top boundary
+        do i=1,nghost
+          do n=1,mz
+            do m=1,my
+              if (f(l2-i,m,n,j)/=0.) then 
+                f(l2+i,:,:,j)=f(l2,:,:,j)**2/f(l2-i,:,:,j)
+              else
+                f(l2+i,:,:,j)=0.
+              endif
+            enddo
+          enddo
+        enddo
+!
+      case default
+        print*, "bcx_extrap_2_3: ", topbot, " should be `top' or `bot'"
+!
+      endselect
+!
+    endsubroutine bcx_extrap_2_3
 !***********************************************************************
     subroutine bc_db_z(f,topbot,j)
 !
