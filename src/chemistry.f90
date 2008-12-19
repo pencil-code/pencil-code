@@ -1628,14 +1628,14 @@ print*,'Natalia4'
 !
       integer, intent(out) :: ind_glob,ind_chem
       character (len=*), intent(in) :: species_name
-      integer :: k, tmp
+      integer :: k
       logical, intent(out) :: found_specie
 !
       ind_glob=0
-      tmp=1
+      ind_chem=0
       do k=1,nchemspec
         if (trim(varname(ichemspec(k)))==species_name) then
-          ind_glob=k+ichemspec(tmp)-1
+          ind_glob=k+ichemspec(1)-1
           ind_chem=k
           exit
         endif
