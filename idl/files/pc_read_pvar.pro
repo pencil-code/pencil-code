@@ -5,7 +5,7 @@
 ;
 pro pc_read_pvar, object=object, varfile=varfile_, datadir=datadir, ivar=ivar, $
     npar_max=npar_max, stats=stats, quiet=quiet, swap_endian=swap_endian, $
-    rmv=rmv, irmv=irmv, solid_object=solid_object
+    rmv=rmv, irmv=irmv, trmv=trmv, solid_object=solid_object
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;
@@ -133,6 +133,7 @@ npar_loc=0L
 if (rmv) then begin
   ipar_rmv=lonarr(npar)
   npar_rmv=0L
+  trmv    =fltarr(npar)*one
 endif
 ;
 ;  Loop over processors.
@@ -212,20 +213,20 @@ for i=0,ncpus-1 do begin
       openr, file2, datadir+'/proc'+strtrim(i,2)+'/rmv_par.dat', /f77
       while (not eof(file)) do begin
         ipar_rmv_loc=0L
-        t_rmv_loc=0.0*one
-        readf, file1, ipar_rmv_loc, t_rmv_loc
+        trmv_loc=0.0*one
+        readf, file1, ipar_rmv_loc, trmv_loc
         array_loc=fltarr(mpvar)*one
         readu, file2, ipar_rmv_loc_2, array_loc
-        if (t_rmv_loc lt t) then begin
+        if (trmv_loc lt t) then begin
           ipar_rmv[ipar_rmv_loc-1]=ipar_rmv[ipar_rmv_loc-1]+1
           npar_rmv=npar_rmv+1
           array[ipar_rmv_loc-1,*]=array_loc
+          trmv[ipar_rmv_loc-1]   =trmv_loc
         endif
       endwhile
       close, file1 & close, file2
       free_lun, file1 & free_lun, file2
     endif
-    irmv=where(ipar_rmv eq 1)
   endif
 ;
 ;  Create global x, y and z arrays from local ones.
@@ -283,25 +284,32 @@ for i=0,ncpus-1 do begin
 ;
 endfor
 ;
+;  Give indices of removed particles and the time of removal.
+;
+if (rmv) then begin
+  irmv=where(ipar_rmv eq 1)
+  if (irmv[0] ne -1) then trmv=trmv[irmv]
+endif
+;
 ;  Check how many particles have collided with a solid object
 ;
 if (keyword_set(solid_object)) then begin
-    pc_read_param, object=param
-    dims=size(irmv)
-    solid_colls=0
-    maxy=param.xyz1[1]
+  pc_read_param, object=param
+  dims=size(irmv)
+  solid_colls=0
+  maxy=param.xyz1[1]
 ; This should eventually be a loop over all solid objects
-    cyl_ypos=param.cylinder_ypos[0]
-    for k=0,dims[1]-1 do begin        
-        if (array[irmv[k],1] lt maxy) then begin 
-            radius2=(array[irmv[k],0])^2+(array[irmv[k],1]-cyl_ypos)^2
-            print,'k,radius=',irmv[k],sqrt(radius2)
-            solid_colls=solid_colls+1
-        endif
-    end
-    print,'Number of collisions with the solid geometry is:',solid_colls
-    print,'Total number of particles:',npar
-    print,'Capture efficiency=',float(solid_colls)/npar
+  cyl_ypos=param.cylinder_ypos[0]
+  for k=0,dims[1]-1 do begin        
+    if (array[irmv[k],1] lt maxy) then begin 
+      radius2=(array[irmv[k],0])^2+(array[irmv[k],1]-cyl_ypos)^2
+      print,'k,radius=',irmv[k],sqrt(radius2)
+      solid_colls=solid_colls+1
+    endif
+  endfor
+  print,'Number of collisions with the solid geometry is:',solid_colls
+  print,'Total number of particles:',npar
+  print,'Capture efficiency=',float(solid_colls)/npar
 endif
 ;
 ;  Trim x, y and z arrays.
