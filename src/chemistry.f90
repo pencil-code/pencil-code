@@ -1784,7 +1784,7 @@ print*,'Natalia1'
 print*,'Natalia2',ind_glob,ind_chem
 
 
-            if (found_specie) then
+            if (found_specie .and. ind_chem>0) then
 !
 ! Find molar mass
 !
