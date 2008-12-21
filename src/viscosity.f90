@@ -456,8 +456,12 @@ module Viscosity
       if (lvisc_nu_prof) lpenc_requested(i_z_mn)=.true.
       if (lvisc_nu_profx) lpenc_requested(i_x_mn)=.true.
       if (lvisc_nu_profr) then 
-        lpenc_requested(i_rcyl_mn)=.true.
-        if (lcylinder_in_a_box) lpenc_requested(i_rcyl_mn1)=.true.
+        if (lsphere_in_a_box.or.lspherical_coords) then 
+          lpenc_requested(i_r_mn)=.true.
+        else
+          lpenc_requested(i_rcyl_mn)=.true.
+          if (lcylinder_in_a_box) lpenc_requested(i_rcyl_mn1)=.true.
+        endif
       endif
       if (lvisc_nu_profr_powerlaw) lpenc_requested(i_rcyl_mn)=.true.
       if (lvisc_simplified .or. lvisc_rho_nu_const .or. lvisc_nu_const .or. &
@@ -673,7 +677,13 @@ module Viscosity
 !  -- here the nu viscosity depends on x; nu_jump=nu2/nu1
 !!        pnu = nu + nu*(nu_jump-1.)*step(abs(p%x_mn),xnu,widthnu)
         if (lvisc_nu_profx) tmp3=p%x_mn
-        if (lvisc_nu_profr) tmp3=p%rcyl_mn
+        if (lvisc_nu_profr) then
+          if (lspherical_coords.or.lsphere_in_a_box) then
+            tmp3=p%r_mn
+          else
+            tmp3=p%rcyl_mn
+          endif
+        endif
         if (lvisc_nu_profx.and.lvisc_nu_profr) then 
           print*,'You are using both radial and horizontal '
           print*,'profiles for a viscosity jump. Are you '
@@ -684,6 +694,7 @@ module Viscosity
                                     step(tmp3,xnu2,widthnu)) 
         tmp4=nu*(nu_jump-1.)*(der_step(tmp3,xnu ,widthnu)- &
                               der_step(tmp3,xnu2,widthnu))
+!
         call get_gradnu(tmp4,lvisc_nu_profx,&
                              lvisc_nu_profr,p,gradnu)
 !  A routine for write_xprof should be written here
@@ -1062,25 +1073,26 @@ module Viscosity
 !***********************************************************************
     subroutine get_gradnu(tmp,ljumpx,ljumpr,p,gradnu)
 !
-! Calculate grad nu for vicosity jump in different 
-! coordinate systems
+!  Calculate grad nu for vicosity jump in different 
+!  coordinate systems
 !
-! 20-jun-08/wlad :: coded
+!  20-jun-08/wlad :: coded
 !
       real, dimension(nx)  ,intent(in) :: tmp
       real, dimension(nx,3),intent(out) :: gradnu
       logical, intent (in) :: ljumpx,ljumpr
       type (pencil_case) :: p
 !
-      if (ljumpx.or.(ljumpr.and.lcylindrical_coords)) then 
+      if (ljumpx.or.                             &
+         (ljumpr.and.(lcylindrical_coords.or.    &
+                      lspherical_coords       ))) then 
         gradnu(:,1)=tmp ; gradnu(:,2)=0 ; gradnu(:,3)=0
       elseif (ljumpr.and.lcylinder_in_a_box) then 
         gradnu(:,1)=tmp*x(l1:l2)*p%rcyl_mn1
         gradnu(:,2)=tmp*y(  m  )*p%rcyl_mn1
-      else
-        print*,'get gradnu: not yet implemented for '
-        print*,'other than Cartesian, cylindrical coordinates '
-        print*,'or cylinder-in-a-box'
+      elseif (ljumpr.and.lsphere_in_a_box) then
+        print*,'get_gradnu: not yet implemented for '
+        print*,'embedded spheres'
         call fatal_error("","")
       endif
 !
