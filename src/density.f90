@@ -1960,12 +1960,12 @@ module Density
       use Sub,         only:get_radial_distance,grad,power_law
       use Selfgravity, only:calc_selfpotential
       use Boundcond,   only:update_ghosts
-      use Particles_nbody, only:potential_nbody
+      use Particles_nbody, only:get_totalmass
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx)   :: strat,tmp1,tmp2,cs2
       real, dimension (mx)   :: rr_sph,rr,rr_cyl,lnrhomid
-      real                   :: ptlaw,cp1,rmid,lat
+      real                   :: ptlaw,cp1,rmid,lat,g0
       integer, pointer       :: iglobal_cs2,iglobal_glnTT
       integer                :: i,ics2
       logical                :: lheader,lenergy,lpresent_zed
@@ -2008,11 +2008,15 @@ module Density
           elseif (lentropy) then 
             ics2=iss
           endif
-!
           f(:,m,n,ics2)=cs2
-!
         enddo
       enddo
+!
+!  Stratification is only coded for 3D runs. But as 
+!  cylindrical and spherical coordinates store the 
+!  vertical direction in different slots, one has to 
+!  do this trick below to decide whether this run is 
+!  2D or 3D. 
 !
       lpresent_zed=.false.
       if (lspherical_coords) then 
@@ -2020,6 +2024,8 @@ module Density
       else
         if (nzgrid/=1) lpresent_zed=.true.
       endif
+!
+!  Pencilize the density allocation.
 !
       do n=1,mz
         do m=1,my
@@ -2058,7 +2064,16 @@ module Density
 !            
             if (lspherical_coords.or.lsphere_in_a_box) then
               ! uphi2/r = -gr + dp/dr
-              call acceleration(tmp1)
+              if (lgrav) then
+                call acceleration(tmp1)
+              elseif (lparticles_nbody) then
+                call get_totalmass(g0) ; tmp1=-g0/rr_sph**2
+              else
+                print*,"both gravity and particles_nbody are switched off"
+                print*,"there is no gravity to determine the stratification"
+                call stop_it("local_isothermal_density")
+              endif
+!                
               tmp2=-tmp1*rr_sph - cs2*(plaw + ptlaw)/gamma
               lat=pi/2-y(m)
               strat=(tmp2*gamma/cs2) * log(cos(lat))
@@ -2074,8 +2089,8 @@ module Density
                 call potential(POT=tmp1,RMN=rr_sph)
                 call potential(POT=tmp2,RMN=rr_cyl)
               elseif (lparticles_nbody) then
-                call potential_nbody(POT=tmp1,RMN=rr_sph)
-                call potential_nbody(POT=tmp2,RMN=rr_cyl)
+                call get_totalmass(g0) 
+                tmp1=-g0/rr_sph ; tmp2=-g0/rr_cyl
               else
                 print*,"both gravity and particles_nbody are switched off"
                 print*,"there is no gravity to determine the stratification"

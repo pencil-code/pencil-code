@@ -194,12 +194,6 @@ module Particles_nbody
       if (NO_WARN) print*,tmass
     endsubroutine get_totalmass
 !***********************************************************************
-    subroutine potential_nbody(pot,rmn)
-      real, dimension (:) :: pot
-      real, dimension (size(pot)) :: rmn
-      if (NO_WARN) print*,pot,rmn
-    endsubroutine potential_nbody
-!***********************************************************************
     subroutine bcast_nbodyarray(fp)
       real, dimension(mpar_loc,mpvar) :: fp
       if (NO_WARN) print*, fp

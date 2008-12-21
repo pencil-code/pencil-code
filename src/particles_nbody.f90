@@ -1336,17 +1336,6 @@ module Particles_nbody
 !   
     endsubroutine get_totalmass
 !***********************************************************************
-    subroutine potential_nbody(pot,rmn)
-!
-      real, dimension (:) :: pot
-      real, dimension (size(pot)) :: rmn
-      real :: g0_
-!
-      call get_totalmass(g0_)
-      pot=-g0_/rmn
-!
-    endsubroutine potential_nbody
-!***********************************************************************
     subroutine get_gravity_field_nbody(grr,gg,ks)
 !
 !  Subroutine that returns the gravity field a particle
