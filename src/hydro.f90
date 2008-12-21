@@ -2053,9 +2053,9 @@ module Hydro
           f_target(:,j) = uu_const(j)
         enddo
       case('keplerian')  
-        if (.not.lspherical_coords) &
+        if (lcartesian_coords) &
             call stop_it("keplerian border: not implemented"//& 
-            "for other grids than spherical yet")
+            "for Cartesian grids yet")
         if (lgrav) then 
           g0_=g0
         elseif (lparticles_nbody) then
@@ -2072,8 +2072,13 @@ module Hydro
                 (p%rborder_mn(i).le.r_ext))) then
             call power_law(g0_,p%r_mn(i),qgshear,OO)
             f_target(i,1) = 0.
-            f_target(i,2) = 0.
-            f_target(i,3) = OO*p%r_mn(i)
+            if (lspherical_coords) then
+              f_target(i,2) = 0.
+              f_target(i,3) = OO*p%r_mn(i)
+            elseif (lcylindrical_coords) then
+              f_target(i,2) = OO*p%r_mn(i)
+              f_target(i,3) = 0.
+            endif
           endif
         enddo
 

@@ -61,7 +61,7 @@ module Density
   logical :: lfreeze_lnrhoint=.false.,lfreeze_lnrhoext=.false.
   logical :: lfreeze_lnrhosqu=.false.,lexponential_smooth=.false.
   logical :: lrho_as_aux=.false., ldiffusion_nolog=.false.
-  logical :: lspherical_cs2=.false.
+  logical :: lshare_plaw=.false.
 
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
   character (len=labellen) :: strati_type='lnrho_ss'
@@ -83,7 +83,7 @@ module Density
       co1_ss,co2_ss,Sigma1,idiff,ldensity_nolog,lexponential_smooth,&
       wdamp,plaw,lcontinuity_gas,density_floor,lanti_shockdiffusion,&
       rshift,lrho_as_aux,ldiffusion_nolog,lnrho_z_shift,            &
-      lspherical_cs2
+      lshare_plaw
 
   namelist /density_run_pars/ &
       cdiffrho,diffrho,diffrho_hyper3,diffrho_shock,                &
@@ -293,7 +293,10 @@ module Density
          call farray_register_global('gg',iglobal_gg,vector=3)
       endif
 !
-      if (llocal_iso) then
+!  For backward compatibility, set lshare_plaw=T if llocal_iso is used.
+!
+      if (llocal_iso) lshare_plaw=.true.
+      if (lshare_plaw) then
         call put_shared_variable('plaw',plaw,ierr)
         if (ierr/=0) call stop_it("local_isothermal_density: "//&
              "there was a problem when sharing plaw")
