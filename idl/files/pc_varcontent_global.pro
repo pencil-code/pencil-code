@@ -153,6 +153,14 @@ varcontent[iglobal_ez_ext].idlinit    = INIT_SCALAR
 varcontent[iglobal_ez_ext].idlvarloc  = 'ez_ext_loc'
 varcontent[iglobal_ez_ext].idlinitloc = INIT_SCALAR_LOC
 ;
+default, cs2, 0
+if (cs2            ne 0) then cs2           =cs2            -dim.mvar-dim.maux
+varcontent[cs2].variable   = 'Sound speed'
+varcontent[cs2].idlvar     = 'cs2'
+varcontent[cs2].idlinit    = INIT_SCALAR
+varcontent[cs2].idlvarloc  = 'cs2_loc'
+varcontent[cs2].idlinitloc = INIT_SCALAR_LOC
+;
 default, gg, 0
 if (gg             ne 0) then gg            =gg            -dim.mvar-dim.maux
 varcontent[gg].variable   = 'Gravitational acceleration'
