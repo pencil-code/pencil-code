@@ -1761,6 +1761,9 @@ print*,'Natalia4'
       character (len=5) :: NumberOfElement_string,element_string
       character (len=10) :: specie_string,TemperatureNr_i
       real :: nne
+
+      ind_chem=1
+      ind_glob=1
 !
       open(file_id,file=input_file)
       dataloop2: do
@@ -1837,13 +1840,16 @@ print*,'Natalia2',ind_glob,ind_chem
               read (unit=ChemInpLine(1:75),fmt='(4E15.8)')  &
                   species_constants(ind_chem,iaa2(4):iaa2(7))
             endif
+
+print*,'Natalia 5'
           endif
         endif
       enddo dataloop2
 1001  continue
       close(file_id)
 !
-    endsubroutine read_thermodyn
+
+   endsubroutine read_thermodyn
 !***********************************************************************
     subroutine read_reactions(input_file,NrOfReactions)
 !
