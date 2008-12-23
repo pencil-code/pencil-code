@@ -1780,7 +1780,7 @@ print*,'Natalia4'
           if (ChemInpLine(1:7) /= "THERMO") then
             StopInd=index(ChemInpLine,' ')
             specie_string=trim(ChemInpLine(1:StopInd-1))
-print*,'Natalia1'
+
             call find_species_index(specie_string,ind_glob,ind_chem,&
                 found_specie)
 !
@@ -1789,7 +1789,7 @@ print*,'Natalia2',ind_glob,ind_chem
 !AB: the following causes an error if ind_chem=0
             if (ind_chem>0) then
 
-            if (found_specie .and. ind_chem>0) then
+            if (found_specie) then
 !
 ! Find molar mass
 !
