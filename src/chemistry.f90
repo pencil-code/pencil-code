@@ -1786,6 +1786,8 @@ print*,'Natalia1'
 !
 print*,'Natalia2',ind_glob,ind_chem
 
+!AB: the following causes an error if ind_chem=0
+            if (ind_chem>0) then
 
             if (found_specie .and. ind_chem>0) then
 !
@@ -1843,6 +1845,7 @@ print*,'Natalia2',ind_glob,ind_chem
 
 print*,'Natalia 5'
           endif
+          endif !(from ind_chem>0 query)
         endif
       enddo dataloop2
 1001  continue
