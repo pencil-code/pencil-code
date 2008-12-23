@@ -229,11 +229,7 @@ module Chemistry
 !  Read data on the thermodynamical properties of the different species.
 !  All these data are stored in the array species_constants.
 !
-
-print*,'Natalia3'
       if (lcheminp) call read_thermodyn(input_file)
-print*,'Natalia4'
-
 !
 !  Write all data on species and their thermodynamics to file 
 !
@@ -1632,7 +1628,7 @@ print*,'Natalia4'
       logical, intent(out) :: found_specie
 !
       ind_glob=0
-      ind_chem=0
+    !  ind_chem=0
       do k=1,nchemspec
         if (trim(varname(ichemspec(k)))==species_name) then
           ind_glob=k+ichemspec(1)-1
@@ -1762,8 +1758,7 @@ print*,'Natalia4'
       character (len=10) :: specie_string,TemperatureNr_i
       real :: nne
 
-      ind_chem=1
-      ind_glob=1
+      ind_chem=0
 !
       open(file_id,file=input_file)
       dataloop2: do
@@ -1784,7 +1779,6 @@ print*,'Natalia4'
             call find_species_index(specie_string,ind_glob,ind_chem,&
                 found_specie)
 !
-print*,'Natalia2',ind_glob,ind_chem
 
 !AB: the following causes an error if ind_chem=0
             if (ind_chem>0) then
@@ -1843,7 +1837,6 @@ print*,'Natalia2',ind_glob,ind_chem
                   species_constants(ind_chem,iaa2(4):iaa2(7))
             endif
 
-print*,'Natalia 5'
           endif
           endif !(from ind_chem>0 query)
         endif
