@@ -3531,7 +3531,7 @@ module Sub
       !
       if (lroot .or. .not. lmonolithic_io) then
         open(1,file=file)
-        write(1,'(3i7,3i4)') mxout1,myout1,mzout1,mvar,maux,mglobal
+        write(1,'(3i7,3i5)') mxout1,myout1,mzout1,mvar,maux,mglobal
         !
         !  check for double precision
         !
@@ -3540,12 +3540,12 @@ module Sub
         !
         !  write number of ghost cells (could be different in x, y and z)
         !
-        write(1,'(3i3)') nghost, nghost, nghost
+        write(1,'(3i5)') nghost, nghost, nghost
         if (present(mzout)) then
           if(lprocz_slowest) iprocz_slowest=1
-          write(1,'(4i3)') nprocx, nprocy, nprocz, iprocz_slowest
+          write(1,'(4i5)') nprocx, nprocy, nprocz, iprocz_slowest
         else
-          write(1,'(3i3)') ipx, ipy, ipz
+          write(1,'(3i5)') ipx, ipy, ipz
         endif
         !
         close(1)
