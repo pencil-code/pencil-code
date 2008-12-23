@@ -21,15 +21,18 @@ module Solid_Cells
   real, dimension(max_items)   :: cylinder_temp=703.0
   real, dimension(max_items) :: cylinder_xpos,cylinder_ypos,cylinder_zpos
   integer, dimension(mx,my,mz,4)  :: ba,ba_shift
-  real :: skin_depth, init_uu
+  real :: skin_depth=0, init_uu=0, ampl_noise=0
   character (len=labellen), dimension(ninit) :: initsolid_cells='nothing'
+  character (len=labellen) :: interpolation_method='staircase'
+  integer, parameter :: iradius=1, ixpos=2,iypos=3,izpos=4,itemp=5
 !
   namelist /solid_cells_init_pars/ &
        cylinder_temp, ncylinders, cylinder_radius, cylinder_xpos, &
-       cylinder_ypos, cylinder_zpos, initsolid_cells, skin_depth, init_uu
+       cylinder_ypos, cylinder_zpos, initsolid_cells, skin_depth, init_uu, &
+       ampl_noise,interpolation_method
 !
   namelist /solid_cells_run_pars/  &
-       dummy
+       interpolation_method
 !
   contains
 !***********************************************************************
@@ -54,11 +57,11 @@ module Solid_Cells
 !
       do icyl=1,ncylinders
         if (cylinder_radius(icyl)>0) then
-          cylinder(icyl,1)=cylinder_radius(icyl)
-          cylinder(icyl,2)=cylinder_xpos(icyl)
-          cylinder(icyl,3)=cylinder_ypos(icyl)
-          cylinder(icyl,4)=cylinder_zpos(icyl)
-          cylinder(icyl,5)=cylinder_temp(icyl)
+          cylinder(icyl,iradius)=cylinder_radius(icyl)
+          cylinder(icyl,ixpos)=cylinder_xpos(icyl)
+          cylinder(icyl,iypos)=cylinder_ypos(icyl)
+          cylinder(icyl,izpos)=cylinder_zpos(icyl)
+          cylinder(icyl,itemp)=cylinder_temp(icyl)
         else
           call fatal_error('initialize_solid_cells',&
                'All cylinders must have non-zero radii!')
@@ -80,6 +83,7 @@ module Solid_Cells
 !
       use Cdata
       use Sub
+      use Initcond
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
@@ -102,8 +106,8 @@ module Solid_Cells
         if(lroot) print*,'init_solid_cells: nothing'
       case('cylinderstream_x')
 !   Stream functions for flow around a cylinder as initial condition. 
-        f(:,:,:,iux)=init_uu
-        f(:,:,:,iuy:iuz)=0
+        call gaunoise(ampl_noise,f,iux,iuz)
+        f(:,:,:,iux)=f(:,:,:,iux)+init_uu
         shiftx=0
         do i=l1,l2
         do j=m1,m2
@@ -163,9 +167,9 @@ module Solid_Cells
         end do
         enddo
       case('cylinderstream_y')
-!   Stream functions for flow around a cylinder as initial condition. 
-        f(:,:,:,iux:iuz)=0
-        f(:,:,:,iuy)=init_uu
+!   Stream functions for flow around a cylinder as initial condition.
+        call gaunoise(ampl_noise,f,iux,iuz)
+        f(:,:,:,iuy)=f(:,:,:,iuy)+init_uu
         shifty=0
         do i=l1,l2
         do j=m1,m2
@@ -242,45 +246,161 @@ module Solid_Cells
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j,k,idir,xind,yind,zind,icyl
+      
+      real :: y_cyl, x_cyl, r_cyl, r_new, r_point, sin_theta, cos_theta
+      real :: xmirror, ymirror, phi
+      integer :: lower_i, upper_i, lower_j, upper_j, ii, jj
+      logical :: bax, bay
 !
-      do i=l1,l2
-      do j=m1,m2
-      do k=n1,n2
-        do idir=1,3
-          if (ba_shift(i,j,k,idir).ne.0) then
-            xind=i
-            yind=j
-            zind=k
-            if (idir==1) then
-              xind=i-ba_shift(i,j,k,idir)
-            elseif (idir==2) then
-              yind=j-ba_shift(i,j,k,idir)
-            elseif (idir==3) then
-              zind=k-ba_shift(i,j,k,idir)
-            else
-              print*,'No such idir!...exiting!'
-              stop
+!  Find ghost points based on the mirror interpolation method
+!
+      if (interpolation_method=='mirror') then
+        do i=l1,l2
+        do j=m1,m2
+        do k=n1,n2
+          bax=(ba(i,j,k,1) .ne. 0) .and. (ba(i,j,k,1) .ne. 9)
+          bay=(ba(i,j,k,2) .ne. 0) .and. (ba(i,j,k,2) .ne. 9)
+!
+!  Check if we are in a point which must be interpolated, i.e. we are inside
+!  a solid geometry AND we are not more than three grid points from the 
+!  closest solid-fluid interface
+!
+          if (bax.or.bay) then
+!
+!  Find x and y values of mirror point
+!
+            icyl=ba(i,j,k,4)
+            x_cyl=cylinder(icyl,ixpos)
+            y_cyl=cylinder(icyl,iypos)
+            r_cyl=cylinder(icyl,iradius)
+            r_point=sqrt(((x(i)-x_cyl)**2+(y(j)-y_cyl)**2))
+            r_new=r_cyl+(r_cyl-r_point)
+            sin_theta=(y(j)-y_cyl)/r_point
+            cos_theta=(x(i)-x_cyl)/r_point
+            xmirror=cos_theta*r_new+x_cyl
+            ymirror=sin_theta*r_new+y_cyl
+!
+!  Check that we are indeed inside the solid geometry
+!
+            if (r_point>r_cyl) then
+              call fatal_error('update_solid_cells:','r_point>r_cyl')
             endif
+!
+!
+!  Find i and j indeces for points to be used during interpolation 
+!
+            do ii=1,mx
+              if (x(ii)>xmirror) then
+                lower_i=ii-1
+                upper_i=ii
+                exit
+              endif
+            enddo
+!
+            do jj=1,my
+              if (y(jj)>ymirror) then
+                lower_j=jj-1
+                upper_j=jj
+                exit
+              endif
+            enddo
+!
+!  First we use interpolations to find the value of the mirror point.
+!  Then we use the interpolated value to find the value of the ghost point
+!  by empoying either Dirichlet or Neuman boundary conditions.
+!  Note that the currently implemented interpolation routine should be updated
+!  for points close to the boundary where one of the corners are inside the
+!  solid geometry.
+!
+              call interpolate_mirror_point(f,phi,iux,k,lower_i,upper_i,lower_j,&
+                  upper_j,xmirror,ymirror)
+              f(i,j,k,iux)=-phi
+              call interpolate_mirror_point(f,phi,iuy,k,lower_i,upper_i,lower_j,&
+                  upper_j,xmirror,ymirror)
+              f(i,j,k,iuy)=-phi
+              call interpolate_mirror_point(f,phi,iuz,k,lower_i,upper_i,lower_j,&
+                  upper_j,xmirror,ymirror)
+              f(i,j,k,iuz)=-phi
+              if (ilnrho>0) then
+                call interpolate_mirror_point(f,phi,ilnrho,k,lower_i,upper_i,&
+                    lower_j,upper_j,xmirror,ymirror)
+                f(i,j,k,ilnrho)=phi
+              endif
+              if (ilnTT>0) then
+                call interpolate_mirror_point(f,phi,ilnTT,k,lower_i,upper_i,&
+                    lower_j,upper_j,xmirror,ymirror)
+                f(i,j,k,ilnTT)=2*cylinder_temp(icyl)-phi
+              endif
+          endif
+        enddo
+        enddo
+        enddo
+!
+!  Find ghost points based on the staircase interpolation method
+!
+      elseif (interpolation_method=='staircase') then
+        do i=l1,l2
+        do j=m1,m2
+        do k=n1,n2
+          do idir=1,3
+            if (ba_shift(i,j,k,idir).ne.0) then
+              xind=i
+              yind=j
+              zind=k
+              if (idir==1) then
+                xind=i-ba_shift(i,j,k,idir)
+              elseif (idir==2) then
+                yind=j-ba_shift(i,j,k,idir)
+              elseif (idir==3) then
+                zind=k-ba_shift(i,j,k,idir)
+              else
+                print*,'No such idir!...exiting!'
+                stop
+              endif
 !                
 !  Only update the solid cell "ghost points" if all indeces are non-zero.
 !  In this way we might loose the innermost "ghost point" if the processore
 !  border is two grid cells inside the solid structure, but this will 
 !  probably just have a very minor effect.
 !
-            if (xind.ne.0 .and. yind.ne.0 .and. zind.ne.0) then
-              icyl=ba_shift(i,j,k,4)
-              f(i,j,k,iux:iuz)=-f(xind,yind,zind,iux:iuz)
-              if (ilnrho>0) f(i,j,k,ilnrho) = f(xind,yind,zind,ilnrho)
-              if (ilnTT>0) f(i,j,k,ilnTT) = &
-                   2*cylinder_temp(icyl)-f(xind,yind,zind,ilnTT)
+              if (xind.ne.0 .and. yind.ne.0 .and. zind.ne.0) then
+                icyl=ba_shift(i,j,k,4)
+                f(i,j,k,iux:iuz)=-f(xind,yind,zind,iux:iuz)
+                if (ilnrho>0) f(i,j,k,ilnrho) = f(xind,yind,zind,ilnrho)
+                if (ilnTT>0) f(i,j,k,ilnTT) = &
+                    2*cylinder_temp(icyl)-f(xind,yind,zind,ilnTT)
+              endif
             endif
-          endif
+          enddo
         enddo
-      enddo
-      enddo
-      enddo
+        enddo
+        enddo
+      endif
 !
     endsubroutine update_solid_cells
+!***********************************************************************  
+    subroutine interpolate_mirror_point(f,phi,ivar,k,lower_i,upper_i,lower_j,upper_j,xmirror,ymirror)
+!
+!  Interpolate value in i mirror point from the four corner values
+!
+!  23-dec-2008/nils: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      integer :: lower_i,upper_i,lower_j,upper_j,k,ivar
+      real :: xmirror,ymirror,phi, hx1, hy1,hy2,hx2
+!
+      hx1=xmirror-x(lower_i)
+      hx2=x(upper_i)-xmirror
+      hy1=ymirror-y(lower_j)
+      hy2=y(upper_j)-ymirror
+!
+      phi=&
+          (f(lower_i,upper_j,k,ivar)*hx2*hy1 &
+          +f(upper_i,upper_j,k,ivar)*hx1*hy1 &
+          +f(lower_i,lower_j,k,ivar)*hx2*hy2 &
+          +f(upper_i,lower_j,k,ivar)*hx1*hy2)/((hx1+hx2)*(hy1+hy2))
+!
+    end subroutine interpolate_mirror_point
 !***********************************************************************  
     function in_solid_cell(part_pos)
 !
@@ -374,6 +494,17 @@ module Solid_Cells
 !  Find the boundaries of the geometries such that we can set the
 !  ghost points inside the solid geometry in order to achieve the
 !  correct no-slip boundaries.
+!  
+!  Store data in the ba array.
+!  If ba(ip,jp,kp,1)= 0 we are in a fluid cell (i.e. NOT inside a solid geometry)
+!  If ba(ip,jp,kp,1)= 9 we are inside a solid geometry, but far from the boundary
+!  If ba(ip,jp,kp,1)=-1 we are inside a solid geometry, and the point at ip+1
+!                       is outside the geometry. 
+!  If ba(ip,jp,kp,1)=-3 we are inside a solid geometry, and the point at ip+3
+!                       is outside the geometry. 
+!  If ba(ip,jp,kp,2)=-3 we are inside a solid geometry, and the point at jp+3
+!                       is outside the geometry. 
+!  The number stored in ba(ip,jp,kp,4) is the number of the cylinder
 !
 !  19-nov-2008/nils: coded
 !
@@ -642,22 +773,30 @@ module Solid_Cells
 !
 !  28-nov-2008/nils: coded
 !
+!  Check if ba for the point of interest has been defined for another direction.
+!  This is only interesting if interpolation_method=='staircase',
+!  otherwise this function always return .false.
+!
       integer :: i,j,k
       logical :: lba1=.true.,lba2=.true.
       logical :: ba_defined
 !
       k=3
 !
-      if (ba(i,j,k,1)==0 .or. ba(i,j,k,1)==9) then
-        lba1=.false.
-      endif
+      if (interpolation_method=='staircase') then
+        if (ba(i,j,k,1)==0 .or. ba(i,j,k,1)==9) then
+          lba1=.false.
+        endif
 !
-      if (ba(i,j,k,2)==0 .or. ba(i,j,k,2)==9) then
-        lba2=.false.
-      endif
+        if (ba(i,j,k,2)==0 .or. ba(i,j,k,2)==9) then
+          lba2=.false.
+        endif
 !
-      if (lba1 .or. lba2) then
-        ba_defined=.true.
+        if (lba1 .or. lba2) then
+          ba_defined=.true.
+        else
+          ba_defined=.false.
+        endif
       else
         ba_defined=.false.
       endif
