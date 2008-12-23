@@ -2321,7 +2321,7 @@ module Particles_sub
 !
       open(20,file=trim(directory)//'/rmv_par.dat', &
           position='append',form='unformatted')
-      write(20) ipar(k), fp(k,:)
+      write(20) fp(k,:)
       close(20)
 !
 !  Switch the removed particle with the last particle present in the processor
