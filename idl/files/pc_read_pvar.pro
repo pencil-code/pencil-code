@@ -5,7 +5,7 @@
 ;
 pro pc_read_pvar, object=object, varfile=varfile_, datadir=datadir, ivar=ivar, $
     npar_max=npar_max, stats=stats, quiet=quiet, swap_endian=swap_endian, $
-    rmv=rmv, irmv=irmv, trmv=trmv, solid_object=solid_object
+    rmv=rmv, irmv=irmv, trmv=trmv, oldrmv=oldrmv, solid_object=solid_object
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;
@@ -15,6 +15,7 @@ if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 default, stats, 1
 default, quiet, 0
 default, rmv, 0
+default, oldrmv, 0
 ;
 if n_elements(ivar) eq 1 then begin
     default,varfile_,'PVAR'
@@ -201,31 +202,60 @@ for i=0,ncpus-1 do begin
   close, file
   free_lun, file
 ;
-;  Read indices and removal times of removed particles.
+;  Read information about removed particles.
 ;
   if (rmv) then begin
-    filename=datadir+'/proc'+strtrim(i,2)+'/rmv_ipar.dat'
-    file_exists=file_test(filename)
+    filename1=datadir+'/proc'+strtrim(i,2)+'/rmv_ipar.dat'
+    filename2=datadir+'/proc'+strtrim(i,2)+'/rmv_par.dat'
+    file_exists=file_test(filename1)
     if (file_exists) then begin
+;
+;  Read indices and removal times of removed particles.
+;
       get_lun, file1 & close, file1
-      openr, file1, filename
-      get_lun, file2 & close, file2
-      openr, file2, datadir+'/proc'+strtrim(i,2)+'/rmv_par.dat', /f77
-      while (not eof(file)) do begin
-        ipar_rmv_loc=0L
-        trmv_loc=0.0*one
-        readf, file1, ipar_rmv_loc, trmv_loc
-        array_loc=fltarr(mpvar)*one
-        readu, file2, ipar_rmv_loc_2, array_loc
-        if (trmv_loc lt t) then begin
-          ipar_rmv[ipar_rmv_loc-1]=ipar_rmv[ipar_rmv_loc-1]+1
-          npar_rmv=npar_rmv+1
-          array[ipar_rmv_loc-1,*]=array_loc
-          trmv[ipar_rmv_loc-1]   =trmv_loc
-        endif
+      openr, file1, filename1
+      ipar_rmv_loc=0L & t_rmv_loc=0.0*one
+;
+;  Find out how many particles were removed at this processor. This is done
+;  by counting lines until eof, without actually using the read data.
+;
+      nrmv=0L
+      while not (eof(file1)) do begin
+        readf, file1, ipar_rmv_loc, t_rmv_loc
+        nrmv=nrmv+1
       endwhile
-      close, file1 & close, file2
-      free_lun, file1 & free_lun, file2
+      close, file1
+;
+;  Read indices and times into array. The index is read as a real number,
+;  but converted to integer afterwards.
+;
+      array_loc=fltarr(2,nrmv)*one
+      openr, file1, filename1
+      readf, file1, array_loc
+      close, file1 & free_lun, file1
+      ipar_rmv_loc=reform(long(array_loc[0,*]))
+      t_rmv_loc   =reform(     array_loc[1,*])
+;
+;  Read positions, velocities, etc.
+;
+      get_lun, file2 & close, file2
+      openr, file2, filename2, /f77
+      array_loc=fltarr(mpvar)*one
+      k=0L
+      ipar_rmv_loc_dummy=0L
+      for k=0,nrmv-1 do begin
+        if (oldrmv) then begin
+          readu, file2, ipar_rmv_loc_dummy, array_loc
+        endif else begin
+          readu, file2, array_loc
+        endelse
+        if (t_rmv_loc[k] lt t) then begin
+          array[ipar_rmv_loc[k]-1,*]=array_loc
+          ipar_rmv[ipar_rmv_loc[k]-1]=ipar_rmv[ipar_rmv_loc[k]-1]+1
+          trmv[ipar_rmv_loc[k]-1]=t_rmv_loc[k]
+        endif
+      endfor
+      close, file2 & free_lun, file2
     endif
   endif
 ;
@@ -288,7 +318,10 @@ endfor
 ;
 if (rmv) then begin
   irmv=where(ipar_rmv eq 1)
-  if (irmv[0] ne -1) then trmv=trmv[irmv]
+  if (irmv[0] ne -1) then begin
+    trmv=trmv[irmv]
+    npar_rmv=n_elements(irmv)
+  endif
 endif
 ;
 ;  Check how many particles have collided with a solid object
