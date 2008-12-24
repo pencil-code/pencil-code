@@ -545,7 +545,7 @@ module Chemistry
           p%cp=cp_full(l1:l2,m,n)
         endif
 !
-        if (lpencil(i_cp1))   p%cp1 = 1./p%cp
+        if (lpencil(i_cp1) .and. maxval(p%cp)>0)   p%cp1 = 1./p%cp
 !
 !  Gradient of the above
 !
