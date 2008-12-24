@@ -38,12 +38,11 @@ endif
 ; Read the number of output times from file.
 ;
 tout=zero
-default, nout, 0
-if (nout eq 0) then begin
-  openr, 1, datadir+'/tstalk.dat'
-    readf, 1, tout, nout
-  close, 1
-endif
+default, nout, -1
+openr, 1, datadir+'/tstalk.dat'
+  readf, 1, tout, noutmax
+close, 1
+if (nout eq -1 or nout gt noutmax) then nout=noutmax
 ;
 ; Read header information from file.
 ;
