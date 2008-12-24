@@ -19,16 +19,17 @@ module Shear
   real :: eps_vshear=0.0, x0_shear=0.0
   logical :: luy0_extra=.false.,lshearadvection_as_shift=.false.
   logical :: lmagnetic_stretching=.true.,lrandomx0=.false.
+  logical, target :: lcoriolis_force=.true., lcentrifugal_force=.false.
 
   include 'shear.h'
 
   namelist /shear_init_pars/ &
       qshear,Sshear,deltay,eps_vshear,Omega,lshearadvection_as_shift, &
-      lmagnetic_stretching,lrandomx0,x0_shear
+      lmagnetic_stretching,lrandomx0,x0_shear,lcoriolis_force,lcentrifugal_force
 
   namelist /shear_run_pars/ &
       qshear,Sshear,deltay,eps_vshear,Omega,lshearadvection_as_shift, &
-      lmagnetic_stretching,lrandomx0,x0_shear
+      lmagnetic_stretching,lrandomx0,x0_shear,lcoriolis_force,lcentrifugal_force
 
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_dtshear=0    ! DIAG_DOC: advec\_shear/cdt
@@ -63,9 +64,13 @@ module Shear
 !
 !  21-nov-02/tony: coded
 !  08-jul-04/anders: Sshear calculated whenever qshear /= 0
-
+!
 !  calculate shear flow velocity; if qshear is given then Sshear=-qshear*Omega
 !  is calculated. Otherwise Sshear keeps its value from the input list.
+!
+      use SharedVariables, only: put_shared_variable
+!
+      integer :: ierr=0
 !
       if (qshear/=0.0) Sshear=-qshear*Omega
       if (lroot .and. ip<=12) &
@@ -78,6 +83,20 @@ module Shear
         uy0_extra=Sshear*eps_vshear*Lx*cos(2*pi/Lz*z(n1:n2))
         duy0dz_extra=-Sshear*eps_vshear*Lx*sin(2*pi/Lz*z(n1:n2))*2*pi/Lz
         luy0_extra=.true.
+      endif
+!
+!  Share lcoriolis_force and lcentrifugal_force so the Particles module knows
+!  whether to apply them or not.
+!
+      if (lparticles.and.Omega/=0.0.and.(.not.lhydro)) then
+        call put_shared_variable('lcoriolis_force',&
+            lcoriolis_force,ierr)
+        if (ierr/=0) call fatal_error('register_shear',&
+            'there was a problem sharing lcoriolis_force')
+        call put_shared_variable('lcentrifugal_force',&
+            lcentrifugal_force,ierr)
+        if (ierr/=0) call fatal_error('register_shear',&
+            'there was a problem sharing lcentrifugal_force')
       endif
 !
     endsubroutine initialize_shear

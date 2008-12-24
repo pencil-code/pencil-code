@@ -515,7 +515,7 @@ module Particles
 !
 !  Get lcoriolis_force and lcentrifugal_force from the Hydro module
 !
-      if (lhydro.and.Omega/=0) then 
+      if (Omega/=0.0) then 
         call get_shared_variable('lcoriolis_force',lcoriolis_force,ierr)     
         if (ierr/=0) call fatal_error('register_particles',&
             'there was a problem getting lcoriolis_force')

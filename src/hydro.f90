@@ -475,14 +475,14 @@ module Hydro
         endif
       endif
 !
-!  calculate inverse damping times for damping momentum in the
-!  x and y directions
+!  Calculate inverse damping times for damping momentum in the
+!  x and y directions.
 !
       if (tau_damp_ruxm /= 0.) tau_damp_ruxm1=1./tau_damp_ruxm
       if (tau_damp_ruym /= 0.) tau_damp_ruym1=1./tau_damp_ruym
       if (tau_damp_ruzm /= 0.) tau_damp_ruzm1=1./tau_damp_ruzm
 !
-!  set freezing arrays
+!  Set freezing arrays.
 !
       if (lfreeze_uint) lfreeze_varint(iux:iuz) = .true.
       if (lfreeze_uext) lfreeze_varext(iux:iuz) = .true.
@@ -502,9 +502,9 @@ module Hydro
       endif
 !
 !  Share lcoriolis_force and lcentrifugal_force so the Particles module 
-!  knows whether to apply them or not
+!  knows whether to apply them or not.
 !
-      if (lparticles.and.Omega/=0) then
+      if (lparticles.and.Omega/=0.0) then
         call put_shared_variable('lcoriolis_force',&
             lcoriolis_force,ierr)     
         if (ierr/=0) call fatal_error('register_hydro',&
@@ -903,6 +903,14 @@ module Hydro
           if (lroot) print*, 'init_hydro: set sub-Keplerian gas velocity'
           f(:,:,:,iux) = -1/(2*Omega)*cs20*beta_glnrho_scaled(2)
           f(:,:,:,iuy) = 1/(2*Omega)*cs20*beta_glnrho_scaled(1)
+
+        case('rigid')
+          do n=n1,n2; do m=m1,m2; do l=l1,l2
+            if (x(l)**2+y(m)**2+z(n)**2<=radiusuu**2) then
+              f(l,m,n,iux)=-ampluu(j)*y(m)
+              f(l,m,n,iuy)=+ampluu(j)*x(l)
+            endif
+          enddo; enddo; enddo
 
         case('compressive-shwave')
 ! compressive (non-vortical) shear wave of Johnson & Gammie (2005a)
