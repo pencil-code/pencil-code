@@ -437,7 +437,6 @@ module Chemistry
          lpenc_requested(i_gradcp)=.true.
          lpenc_requested(i_cv)=.true.
          lpenc_requested(i_cv1)=.true.
-         lpenc_requested(i_lncp)=.true.
          lpenc_requested(i_gamma)=.true.
          lpenc_requested(i_gamma1)=.true.
          lpenc_requested(i_gamma11)=.true.
