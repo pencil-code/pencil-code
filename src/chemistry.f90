@@ -11,7 +11,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED gTT(3); mu1; gamma; gamma1; gamma11; gradcp(3)
-! PENCILS PROVIDED cv; cv1; cp; cp1; lncp; YY(nchemspec)
+! PENCILS PROVIDED cv; cv1; cp; cp1; YY(nchemspec)
 ! PENCILS PROVIDED cs2; rho1gpp(3); gmu1(3); nu; gradnu(3); nu_art
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
 ! PENCILS PROVIDED lambda; glnlambda(3); ghYrho(3); cvspec(nchemspec)
@@ -563,7 +563,7 @@ module Chemistry
           enddo
         endif
 !
-        if (lpencil(i_lncp)) p%lncp=log(p%cp)
+
 !
 !  Polytropic index
 !
