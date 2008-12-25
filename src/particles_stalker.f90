@@ -232,7 +232,7 @@ module Particles_stalker
 !  Collect environment information in single array and write array to file.
 !
           if (npar_stalk_loc>=1) then
-            write(1) ipar(k_stalk)
+            write(1) ipar(k_stalk(1:npar_stalk_loc))
             allocate(values(nvar_stalk,npar_stalk_loc))
             ivalue=0
             if (lstalk_xx) then
