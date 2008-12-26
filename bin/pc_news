@@ -2,8 +2,8 @@
 #$Id$
 echo ""
 echo "==> During the Pencil Code User Meeting 2008 in Leiden (19-22 Aug)"
-echo "       We switched from CVS to SVN. For details see:"
-echo "       http://www.nordita.org/software/pencil-code/svn-transition.html"
+echo "       We switched from CVS to SVN using google-code. For details see:"
+echo "       http://pencil-code.googlecode.com/"
 echo ""
 echo "==> For a link to the past meeting see:"
 echo "       http://www.strw.leidenuniv.nl/~ajohan/pencil2008/index.php"

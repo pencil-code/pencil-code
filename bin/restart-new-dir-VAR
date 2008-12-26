@@ -25,6 +25,6 @@ else
   copy-proc-to-proc grid.dat $1
   copy-proc-to-proc seed.dat $1
   copy-proc-to-proc dim.dat $1
-  copy-VAR-to-var $2 $1
+  copy-VARN-to-var $2 $1
   mkdir $1/data/averages
 endif
