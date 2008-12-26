@@ -48,6 +48,7 @@ module Testfield
   real, dimension (ninit) :: kx_aatest=1.,ky_aatest=1.,kz_aatest=1.
   real, dimension (ninit) :: phasex_aatest=0.,phasez_aatest=0.
   real, dimension (ninit) :: amplaatest=0.
+  integer, dimension (njtest) :: nuxb=0
   integer :: iE0=0
 
   ! input parameters
@@ -74,11 +75,13 @@ module Testfield
   real :: etatest=0.,etatest1=0.
   real, dimension(njtest) :: rescale_aatest=0.
   logical :: ltestfield_newz=.true.,leta_rank2=.false.
+  logical :: ltestfield_taver=.false.
   namelist /testfield_run_pars/ &
        B_ext,reinitialize_aatest,zextent,lsoca,lsoca_jxb, &
        lset_bbtest2,etatest,etatest1,itestfield,ktestfield, &
        lam_testfield,om_testfield,delta_testfield, &
        ltestfield_newz,leta_rank2,lphase_adjust,phase_testfield, &
+       ltestfield_taver, &
        luxb_as_aux,ljxb_as_aux,lignore_uxbtestm, &
        daainit,linit_aatest,bamp, &
        rescale_aatest
@@ -948,7 +951,7 @@ module Testfield
       real, dimension (nx,3) :: del2Atest2,graddivatest
       integer :: jtest,j,nxy=nxgrid*nygrid,juxb,jjxb
       logical :: headtt_save
-      real :: fac,bcosphz,bsinphz
+      real :: fac, bcosphz, bsinphz, fac1=0., fac2=1.
       type (pencil_case) :: p
 !
       intent(inout) :: f
@@ -969,6 +972,21 @@ module Testfield
         if (lsoca) then
           uxbtestm(:,:,jtest)=0.
         else
+!
+!  prepare coefficients for possible time integration of uxb,
+!  But do this only when we are on the last time step
+!
+          if (ltestfield_taver) then
+            if (itsub==itorder) then
+              fac2=1./(nuxb(jtest)+1.)
+              fac1=1.-fac2
+            endif
+          endif
+!
+!  calculate uxb, and put it into f-array
+!  If ltestfield_taver is turned on, the time evolution becomes unstable,
+!  so that does not currently work.
+!
           do n=n1,n2
             uxbtestm(n,:,jtest)=0.
             do m=m1,m2
@@ -978,7 +996,14 @@ module Testfield
               call curl_mn(aijtest,bbtest,aatest)
               call cross_mn(p%uu,bbtest,uxbtest)
               juxb=iuxb+3*(jtest-1)
-              if (iuxb/=0) f(l1:l2,m,n,juxb:juxb+2)=uxbtest
+              if (ltestfield_taver) then
+                if (itsub==itorder) then
+                  if (iuxb/=0) f(l1:l2,m,n,juxb:juxb+2)= &
+                          fac1*f(l1:l2,m,n,juxb:juxb+2)+fac2*uxbtest
+                endif
+              else
+                if (iuxb/=0) f(l1:l2,m,n,juxb:juxb+2)=uxbtest
+              endif
               do j=1,3
                 uxbtestm(n,j,jtest)=uxbtestm(n,j,jtest)+fac*sum(uxbtest(:,j))
               enddo
@@ -988,6 +1013,14 @@ module Testfield
               uxbtestm1(n-n1+1,ipz+1,j,jtest)=uxbtestm(n,j,jtest)
             enddo
           enddo
+!
+!  update counter, but only when we are on the last substep
+!
+          if (ltestfield_taver) then
+            if (itsub==itorder) then
+              nuxb(jtest)=nuxb(jtest)+1
+            endif
+          endif
         endif
       enddo
 !
@@ -1104,7 +1137,7 @@ module Testfield
 !
       intent(inout) :: f
 !
-! reinitialize aatest periodically if requested
+!  reinitialize aatest periodically if requested
 !
       if (linit_aatest) then
         file=trim(datadir)//'/tinit_aatest.dat'
@@ -1117,8 +1150,11 @@ module Testfield
         endif
 !
 !  Do only one xy plane at a time (for cache efficiency)
+!  Also: reset nuxb=0, which is used for time-averaged testfields
+!  Do this for the full nuxb array.
 !
         if (t >= taainit) then
+          if (ltestfield_taver) nuxb=0
           do jtest=1,njtest
             iaxtest=iaatest+3*(jtest-1)
             iaztest=iaxtest+2
