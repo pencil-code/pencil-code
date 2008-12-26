@@ -2159,19 +2159,13 @@ module Magnetic
         if (idiag_bybzm/=0) call sum_mn_name(p%bbb(:,2)*p%bbb(:,3),idiag_bybzm)
         if (idiag_djuidjbim/=0) call sum_mn_name(p%djuidjbi,idiag_djuidjbim)
 !
-!  calculate B*sin(phi) = <Bx*sinkz> + <By*coskz>
+!  calculate B*sin(phi) = -<Bx*sinkz> + <By*coskz>
 !
-        if (idiag_bsinphz/=0) then
-          call sum_mn_name(-p%bbb(:,1)*sinkz(n),idiag_bsinphz)
-          call sum_mn_name(+p%bbb(:,2)*coskz(n),idiag_bsinphz,ipart=2)
-        endif
+        if (idiag_bsinphz/=0) call sum_mn_name(-p%bbb(:,1)*sinkz(n)+p%bbb(:,2)*coskz(n),idiag_bsinphz)
 !
-!  calculate B*cos(phi) = <Bx*coskz> + <By*coskz>
+!  calculate B*cos(phi) = <Bx*coskz> + <By*sinkz>
 !
-        if (idiag_bcosphz/=0) then
-          call sum_mn_name(+p%bbb(:,1)*coskz(n),idiag_bcosphz)
-          call sum_mn_name(+p%bbb(:,2)*sinkz(n),idiag_bcosphz,ipart=2)
-        endif
+        if (idiag_bcosphz/=0) call sum_mn_name(+p%bbb(:,1)*coskz(n)+p%bbb(:,2)*sinkz(n),idiag_bcosphz)
 !
 !  magnetic field components at one point (=pt)
 !
