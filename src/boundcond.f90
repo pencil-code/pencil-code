@@ -4604,7 +4604,7 @@ module Boundcond
       integer :: lll, sgn,i,j,k
       real :: Mach_num
 !
-      intent(in) :: f
+      intent(inout) :: f
       intent(out) :: df
 !
       if (leos_chemistry) then
@@ -4702,7 +4702,7 @@ module Boundcond
           (2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2))*(L_5 - L_1) !&
       !      -f(lll,m1:m2,n1:n2,iux)*dux_dy(m1:m2,n1:n2)
       df(lll,m1:m2,n1:n2,ilnTT) = -1./&
-          (rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*(-L_2 &
+          (rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*(-L_2*0. &
           +0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1)) 
 !        -1./(rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))* &
 !        (gamma0(m1:m2,n1:n2)-1.) &
@@ -4734,6 +4734,18 @@ module Boundcond
 
       endif
 !
+
+      select case(topbot)
+      case('bot')
+       do i=1,nghost; f(l1-i,:,:,ilnTT)=2*f(l1,:,:,ilnTT)-f(l1+i,:,:,ilnTT); enddo 
+      case('top')
+        do i=1,nghost; f(l2+i,:,:,ilnTT)=2*f(l2,:,:,ilnTT)-f(l2-i,:,:,ilnTT); enddo
+      case default
+        print*, "bc_nscbc_subin_x: ", topbot, " should be `top' or `bot'"
+      endselect
+
+
+
     endsubroutine bc_nscbc_nref_subout_x
 !***********************************************************************
     subroutine bc_nscbc_nref_subout_y(f,df,topbot)
