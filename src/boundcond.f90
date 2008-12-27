@@ -4430,7 +4430,7 @@ module Boundcond
       real, dimension (mx,my,mz) :: mom2
       real, dimension (mx,my,mz,mvar) :: df
       character (len=3) :: topbot
-      real, dimension(ny,nz) :: dux_dx, dlnrho_dx, L_1, L_2, L_5, dpp_dx
+      real, dimension(ny,nz) :: dux_dx, L_1, L_2, L_5, dpp_dx
       real, dimension(my,mz) :: rho0, gamma0, dmom2_dy, TT0 
       real, dimension (my,mz) :: cs2x,cs0_ar,cs20_ar
       real, dimension (mx,my,mz) :: cs2_full, gamma_full, rho_full, pp
@@ -4488,7 +4488,7 @@ module Boundcond
       endif
 !
 !
-        call der_onesided_4_slice(f,sgn,ilnrho,dlnrho_dx,lll,1)
+      !  call der_onesided_4_slice(f,sgn,ilnrho,dlnrho_dx,lll,1)
         call der_onesided_4_slice(f,sgn,iux,dux_dx,lll,1)
         call der_onesided_4_slice(pp,sgn,dpp_dx,lll,1)
 !
@@ -4593,7 +4593,7 @@ module Boundcond
       real, dimension (my,mz) :: rho0,gamma0
       real, dimension (mx,my,mz) :: mom2, rho_ux2, rho_uy2
       real, dimension (mx,my,mz) :: rho_gamma, rhoE_p, pp
-      real, dimension (ny,nz) :: dux_dx, dlnrho_dx, dpp_dx,dYk_dx
+      real, dimension (ny,nz) :: dux_dx, drho_dx, dpp_dx,dYk_dx
       real, dimension (ny,nz) :: drho_prefac,p_infx, KK, L_1, L_2, L_5
       real, dimension (my,mz) :: cs2x,cs0_ar,cs20_ar,dmom2_dy
       real, dimension (my,mz) :: drhoE_p_dy,dYk_dy, dux_dy
@@ -4658,7 +4658,7 @@ module Boundcond
         return
       endif
 !
-      call der_onesided_4_slice(f,sgn,ilnrho,dlnrho_dx,lll,1)
+      call der_onesided_4_slice(rho_full,sgn,drho_dx,lll,1)
       call der_onesided_4_slice(pp,sgn,dpp_dx,lll,1)
       call der_onesided_4_slice(f,sgn,iux,dux_dx,lll,1)
 !
@@ -4688,7 +4688,7 @@ module Boundcond
         call get_rhs_T('top',1,bound_rhs_T)
       endselect
 !
-      L_2 = f(lll,m1:m2,n1:n2,iux)*(cs20_ar(m1:m2,n1:n2)*dlnrho_dx-dpp_dx)
+      L_2 = f(lll,m1:m2,n1:n2,iux)*(cs20_ar(m1:m2,n1:n2)*drho_dx-dpp_dx)
 !
       if (ldensity_nolog) then
         df(lll,m1:m2,n1:n2,ilnrho) = &
