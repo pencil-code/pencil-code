@@ -717,7 +717,7 @@ module Testscalar
               jug=iug+(jtest-1)
               if (iug/=0) f(l1:l2,m,n,jug)=ugtest
               ugtestmx(:,jtest)=ugtestmx(:,jtest)+fac_yz*ugtest
-              ugtestmx1(m-m1+1,ipy+1,n-n1+1,ipz+1,jtest)=ugtestmx(:,jtest)
+!             ugtestmx1(m-m1+1,ipy+1,n-n1+1,ipz+1,jtest)=ugtestmx(:,jtest)
               headtt=.false.
             enddo
           enddo
@@ -739,17 +739,17 @@ module Testscalar
 !
 !  Next, do this for x-dependent mean fields
 !
-      if (ncpus>1) then
-        call mpireduce_sum(ugtestmx1,ugtestmx1_tmp,ny*nprocy*nz*nprocz*njtest)
-        call mpibcast_real_arr(ugtestmx1_tmp,ny*nprocy*nz*nprocz*njtest)
-        do jtest=1,njtest
-          do n=n1,n2
-            do m=m1,m2
-              ugtestmx(:,jtest)=ugtestmx1_tmp(m-m1+1,ipy+1,n-n1+1,ipz+1,jtest)
-            enddo
-          enddo
-        enddo
-      endif
+!     if (ncpus>1) then
+!       call mpireduce_sum(ugtestmx1,ugtestmx1_tmp,ny*nprocy*nz*nprocz*njtest)
+!       call mpibcast_real_arr(ugtestmx1_tmp,ny*nprocy*nz*nprocz*njtest)
+!       do jtest=1,njtest
+!         do n=n1,n2
+!           do m=m1,m2
+!             ugtestmx(:,jtest)=ugtestmx1_tmp(m-m1+1,ipy+1,n-n1+1,ipz+1,jtest)
+!           enddo
+!         enddo
+!       enddo
+!     endif
 !
 !  reset headtt
 !
