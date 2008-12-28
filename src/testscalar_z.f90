@@ -654,11 +654,11 @@ module Testscalar
       real, dimension (mz) :: c,s
 !
       real, dimension (nz,nprocz,njtest) :: ugtestm1=0.,ugtestm1_tmp=0.
-      real, dimension (ny,nprocy,nz,nprocz,njtest) :: ugtestmx1=0.,ugtestmx1_tmp=0.
+      real, dimension (nx,nprocy,nprocz,njtest) :: ugtestmx1=0.,ugtestmx1_tmp=0.
 !
       real, dimension (nx) :: cctest,ugtest
       real, dimension (nx,3) :: ggtest
-      integer :: jcctest,jtest,j,jug
+      integer :: jcctest,jtest,j,jug,jpy,jpz
       integer :: nxy=nxgrid*nygrid,nyz=nygrid*nzgrid
       logical :: headtt_save
       real :: fac_xy,fac_yz
@@ -717,10 +717,10 @@ module Testscalar
               jug=iug+(jtest-1)
               if (iug/=0) f(l1:l2,m,n,jug)=ugtest
               ugtestmx(:,jtest)=ugtestmx(:,jtest)+fac_yz*ugtest
-!             ugtestmx1(m-m1+1,ipy+1,n-n1+1,ipz+1,jtest)=ugtestmx(:,jtest)
               headtt=.false.
             enddo
           enddo
+          ugtestmx1(:,ipy+1,ipz+1,jtest)=ugtestmx(:,jtest)
         endif
       enddo
 !
@@ -739,17 +739,18 @@ module Testscalar
 !
 !  Next, do this for x-dependent mean fields
 !
-!     if (ncpus>1) then
-!       call mpireduce_sum(ugtestmx1,ugtestmx1_tmp,ny*nprocy*nz*nprocz*njtest)
-!       call mpibcast_real_arr(ugtestmx1_tmp,ny*nprocy*nz*nprocz*njtest)
-!       do jtest=1,njtest
-!         do n=n1,n2
-!           do m=m1,m2
-!             ugtestmx(:,jtest)=ugtestmx1_tmp(m-m1+1,ipy+1,n-n1+1,ipz+1,jtest)
-!           enddo
-!         enddo
-!       enddo
-!     endif
+      if (ncpus>1) then
+        call mpireduce_sum(ugtestmx1,ugtestmx1_tmp,nx*nprocy*nprocz*njtest)
+        call mpibcast_real_arr(ugtestmx1_tmp,nx*nprocy*nprocz*njtest)
+        do jtest=1,njtest
+          ugtestmx(:,jtest)=0.
+          do jpz=1,nprocz
+            do jpy=1,nprocy
+              ugtestmx(:,jtest)=ugtestmx(:,jtest)+ugtestmx1_tmp(:,jpy,jpz,jtest)
+            enddo
+          enddo
+        enddo
+      endif
 !
 !  reset headtt
 !
