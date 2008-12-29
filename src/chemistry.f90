@@ -1621,7 +1621,8 @@ module Chemistry
 !
       use Cdata
 !
-      integer, intent(out) :: ind_glob,ind_chem
+      integer, intent(out) :: ind_glob
+      integer, intent(inout) :: ind_chem
       character (len=*), intent(in) :: species_name
       integer :: k
       logical, intent(out) :: found_specie
