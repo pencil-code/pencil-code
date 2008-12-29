@@ -1780,7 +1780,7 @@ module Chemistry
 !
 
 !AB: the following causes an error if ind_chem=0
-            if (ind_chem>0) then
+            if (ind_chem>0 .and. ind_chem<=nchemspec) then
 
             if (found_specie) then
 !
