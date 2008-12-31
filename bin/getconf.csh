@@ -1101,7 +1101,8 @@ else if ($hn =~ *tpb*) then
 #--------------------------------------------
 else if ($hn =~ *.pdc.kth.se) then
   echo "Linux cluster at PDC, KTH in Stockholm"
-  set mpirun = orterun
+  module add i-compilers mpi easy
+  set mpirun = mpirun
   set mpirunops = "-machinefile $SP_HOSTFILE"
   cat $SP_HOSTFILE > nodelist
   #
