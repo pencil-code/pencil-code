@@ -13,14 +13,13 @@
 %%   testfield_x.f90
 %%   testflow_z.f90
 %%   viscosity.f90
-%%   testscalar_xz.f90
 %%   testfield_xz.f90
 %%   shear.f90
 %%   testperturb.f90
+%%   testscalar.f90
 %%   testfield_z.f90
 %%   chemistry.f90
 %%   noentropy.f90
-%%   testscalar.f90
 
 % ---------------------------------------------------------------- %
 \begin{longtable}{lp{0.7\textwidth}}
@@ -440,22 +439,6 @@
                     viscous time step;
                     see \S~\ref{time-step}) \\
 \midrule
-  \multicolumn{2}{c}{Module \file{testscalar_xz.f90}} \\
-\midrule
-  \var{kap13=0}   & $\kappa_{13}$ \\
-  \var{kap23=0}   & $\kappa_{23}$ \\
-  \var{kap33=0}   & $\kappa_{33}$ \\
-  \var{c1rms=0}   & $\left<c_{1}^2\right>^{1/2}$ \\
-  \var{c2rms=0}   & $\left<c_{2}^2\right>^{1/2}$ \\
-  \var{c1pt=0}    & $c^{1}$ \\
-  \var{c2pt=0}    & $c^{2}$ \\
-  \var{F11z=0}    & ${\cal F}_1^{1}$ \\
-  \var{F21z=0}    & ${\cal F}_2^{1}$ \\
-  \var{F31z=0}    & ${\cal F}_3^{1}$ \\
-  \var{F12z=0}    & ${\cal F}_1^{2}$ \\
-  \var{F22z=0}    & ${\cal F}_2^{2}$ \\
-  \var{F32z=0}    & ${\cal F}_3^{2}$ \\
-\midrule
   \multicolumn{2}{c}{Module \file{testfield_xz.f90}} \\
 \midrule
   \var{E111z=0}   & ${\cal E}_1^{11}$ \\
@@ -490,6 +473,29 @@
   \var{eta12=0}   & $\eta_{123}k$ \\
   \var{eta22=0}   & $\eta_{223}k$ \\
   \var{eta32=0}   & $\eta_{323}k$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{testscalar.f90}} \\
+\midrule
+  \var{kap11=0}   & $\kappa_{11}$ \\
+  \var{kap21=0}   & $\kappa_{21}$ \\
+  \var{kap31=0}   & $\kappa_{31}$ \\
+  \var{kap13=0}   & $\kappa_{13}$ \\
+  \var{kap23=0}   & $\kappa_{23}$ \\
+  \var{kap33=0}   & $\kappa_{33}$ \\
+  \var{c1rms=0}   & $\left<c_{1}^2\right>^{1/2}$ \\
+  \var{c2rms=0}   & $\left<c_{2}^2\right>^{1/2}$ \\
+  \var{c3rms=0}   & $\left<c_{3}^2\right>^{1/2}$ \\
+  \var{c4rms=0}   & $\left<c_{4}^2\right>^{1/2}$ \\
+  \var{c1pt=0}    & $c^{1}$ \\
+  \var{c2pt=0}    & $c^{2}$ \\
+  \var{c3pt=0}    & $c^{3}$ \\
+  \var{c4pt=0}    & $c^{4}$ \\
+  \var{F11z=0}    & ${\cal F}_1^{1}$ \\
+  \var{F21z=0}    & ${\cal F}_2^{1}$ \\
+  \var{F31z=0}    & ${\cal F}_3^{1}$ \\
+  \var{F12z=0}    & ${\cal F}_1^{2}$ \\
+  \var{F22z=0}    & ${\cal F}_2^{2}$ \\
+  \var{F32z=0}    & ${\cal F}_3^{2}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{testfield_z.f90}} \\
 \midrule
@@ -601,29 +607,6 @@
                     \quad(time step relative to
                     acoustic time step;
                     see \S~\ref{time-step}) \\
-\midrule
-  \multicolumn{2}{c}{Module \file{testscalar.f90}} \\
-\midrule
-  \var{kap11=0}   & $\kappa_{11}$ \\
-  \var{kap21=0}   & $\kappa_{21}$ \\
-  \var{kap31=0}   & $\kappa_{31}$ \\
-  \var{kap13=0}   & $\kappa_{13}$ \\
-  \var{kap23=0}   & $\kappa_{23}$ \\
-  \var{kap33=0}   & $\kappa_{33}$ \\
-  \var{c1rms=0}   & $\left<c_{1}^2\right>^{1/2}$ \\
-  \var{c2rms=0}   & $\left<c_{2}^2\right>^{1/2}$ \\
-  \var{c3rms=0}   & $\left<c_{3}^2\right>^{1/2}$ \\
-  \var{c4rms=0}   & $\left<c_{4}^2\right>^{1/2}$ \\
-  \var{c1pt=0}    & $c^{1}$ \\
-  \var{c2pt=0}    & $c^{2}$ \\
-  \var{c3pt=0}    & $c^{3}$ \\
-  \var{c4pt=0}    & $c^{4}$ \\
-  \var{F11z=0}    & ${\cal F}_1^{1}$ \\
-  \var{F21z=0}    & ${\cal F}_2^{1}$ \\
-  \var{F31z=0}    & ${\cal F}_3^{1}$ \\
-  \var{F12z=0}    & ${\cal F}_1^{2}$ \\
-  \var{F22z=0}    & ${\cal F}_2^{2}$ \\
-  \var{F32z=0}    & ${\cal F}_3^{2}$ \\
 %
 \bottomrule
 \end{longtable}

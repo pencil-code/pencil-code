@@ -2696,7 +2696,7 @@ For some choices of density and velocity units, Table~\ref{Tab-units-B-T}
 shows the resulting units of magnetic field and temperature.
 
 On the other hand, as soon as material equations are used (e.\,g.~one of
-the popular parametrizations for radiative losses, Kramers opacity,
+the popular parameterizations for radiative losses, Kramers opacity,
 Spitzer conductivities or ionization, which implies well-defined
 ionization energies), the corresponding routines in the code need to know
 the units you are using.
@@ -3523,8 +3523,8 @@ an integer multiple of the other. So, it can be done for
 
 \code{Nx = n*Ny}
 
-Unfortunately, for some applications one wants \code{Nx < Ny}. I experimented
-with arbitrary resolution by interpolating x to the same resolution of y
+Unfortunately, for some applications one wants \code{Nx < Ny}. Wlad experimented
+with arbitrary resolution by interpolating $x$ to the same resolution of $y$
 prior to transposing, then transform the interpolated array and then
 interpolating it back (check \file{fourier_transform_y} in
 \file{fourier_fftpack.f90}).
