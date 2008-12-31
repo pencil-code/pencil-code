@@ -30,6 +30,7 @@
   \var{sT}        & symmetric temperature, $T_{N-i}=T_{N+i}$;
                     implies $T'(x_N)=T'''(x_0)=0$ \\
   \var{f}         & ``freeze'' value, i.e. maintain initial \\
+  \var{fg}        & ``freeze'' value, i.e. maintain initial \\
   \var{1}         & $f=1$ (for debugging) \\
   \var{set}       & set boundary value to \var{fbcx12} \\
   \var{der}       & set derivative on boundary to \var{fbcx12} \\
@@ -40,6 +41,7 @@
   \var{ant}       & set boundary value [really??] \\
   \var{e1}        & extrapolation [describe] \\
   \var{e2}        & extrapolation [describe] \\
+  \var{e3}        & extrapolation in log [maintain a power law] \\
   \var{hat}       & top hat jet profile in spherical coordinate. \\
   \var{spd}       & sets $d(rA_{\alpha})/dr = \mathtt{fbcx12(j)}$ \\
   \var{sfr}       & stress-free boundary condition for spherical coordinate system. \\
@@ -50,6 +52,7 @@
   \var{fil}       & set boundary value from a file \\
   \var{}          & do nothing; assume that everything is set \\
   \var{s}         & implies $f'(y_N)=f'''(y_0)=0$ \\
+  \var{e3}        & extrapolation in log [maintain a power law] \\
 %
 \bottomrule
 \end{longtable}

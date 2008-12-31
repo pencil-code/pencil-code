@@ -13,12 +13,14 @@
 %%   testfield_x.f90
 %%   testflow_z.f90
 %%   viscosity.f90
+%%   testscalar_xz.f90
 %%   testfield_xz.f90
 %%   shear.f90
 %%   testperturb.f90
 %%   testfield_z.f90
 %%   chemistry.f90
 %%   noentropy.f90
+%%   testscalar.f90
 
 % ---------------------------------------------------------------- %
 \begin{longtable}{lp{0.7\textwidth}}
@@ -82,6 +84,9 @@
   \var{ruxuymxy=0} & $\left< \rho u_x u_y \right>_{z}$ \\
   \var{ruxuzmxy=0} & $\left< \rho u_x u_z \right>_{z}$ \\
   \var{ruyuzmxy=0} & $\left< \rho u_y u_z \right>_{z}$ \\
+  \var{rux2m=0}   & $\left<\rho u_x^2\right>$ \\
+  \var{ruy2m=0}   & $\left<\rho u_y^2\right>$ \\
+  \var{ruz2m=0}   & $\left<\rho u_z^2\right>$ \\
   \var{uxmxz=0}   & $\left< u_x \right>_{y}$ \\
   \var{uymxz=0}   & $\left< u_y \right>_{y}$ \\
   \var{uzmxz=0}   & $\left< u_z \right>_{y}$ \\
@@ -97,7 +102,11 @@
   \var{rumax=0}   & $\max(\varrho |\uv|)$
                     \quad(maximum modulus of momentum) \\
   \var{ruxuym=0}  & $\left<\varrho u_x u_y\right>$
-                    \quad(mean Reynold's stress) \\
+                    \quad(mean Reynolds stress) \\
+  \var{ruxuzm=0}  & $\left<\varrho u_x u_z\right>$
+                    \quad(mean Reynolds stress) \\
+  \var{ruyuzm=0}  & $\left<\varrho u_y u_z\right>$
+                    \quad(mean Reynolds stress) \\
   \var{dtu=0}     & $\delta t/[c_{\delta t}\,\delta x
                     /\max|\mathbf{u}|]$
                     \quad(time step relative to
@@ -171,6 +180,9 @@
   \var{j2m=0}     & $\left<\jv^2\right>$ \\
   \var{jm2=0}     & $\max(\jv^2)$ \\
   \var{abm=0}     & $\left<\Av\cdot\Bv\right>$ \\
+  \var{abmh=0}    & $\left<\Av\cdot\Bv\right>$ \\
+  \var{abmn=0}    & $\left<\Av\cdot\Bv\right>$ \\
+  \var{abms=0}    & $\left<\Av\cdot\Bv\right>$ \\
   \var{jbm=0}     & $\left<\jv\cdot\Bv\right>$ \\
   \var{ubm=0}     & $\left<\uv\cdot\Bv\right>$ \\
   \var{epsM=0}    & $\left<2\eta\mu_0\jv^2\right>$ \\
@@ -428,6 +440,22 @@
                     viscous time step;
                     see \S~\ref{time-step}) \\
 \midrule
+  \multicolumn{2}{c}{Module \file{testscalar_xz.f90}} \\
+\midrule
+  \var{kap13=0}   & $\kappa_{13}$ \\
+  \var{kap23=0}   & $\kappa_{23}$ \\
+  \var{kap33=0}   & $\kappa_{33}$ \\
+  \var{c1rms=0}   & $\left<c_{1}^2\right>^{1/2}$ \\
+  \var{c2rms=0}   & $\left<c_{2}^2\right>^{1/2}$ \\
+  \var{c1pt=0}    & $c^{1}$ \\
+  \var{c2pt=0}    & $c^{2}$ \\
+  \var{F11z=0}    & ${\cal F}_1^{1}$ \\
+  \var{F21z=0}    & ${\cal F}_2^{1}$ \\
+  \var{F31z=0}    & ${\cal F}_3^{1}$ \\
+  \var{F12z=0}    & ${\cal F}_1^{2}$ \\
+  \var{F22z=0}    & ${\cal F}_2^{2}$ \\
+  \var{F32z=0}    & ${\cal F}_3^{2}$ \\
+\midrule
   \multicolumn{2}{c}{Module \file{testfield_xz.f90}} \\
 \midrule
   \var{E111z=0}   & ${\cal E}_1^{11}$ \\
@@ -556,6 +584,15 @@
   \var{dY7m=0}    & $\left<dY_7\right>$ \\
   \var{dY8m=0}    & $\left<dY_8\right>$ \\
   \var{dY9m=0}    & $\left<dY_9\right>$ \\
+  \var{Y1mz=0}    & $\left<Y_1\right>_{xy}(z)$ \\
+  \var{Y2mz=0}    & $\left<Y_2\right>_{xy}(z)$ \\
+  \var{Y3mz=0}    & $\left<Y_3\right>_{xy}(z)$ \\
+  \var{Y4mz=0}    & $\left<Y_4\right>_{xy}(z)$ \\
+  \var{Y5mz=0}    & $\left<Y_5\right>_{xy}(z)$ \\
+  \var{Y6mz=0}    & $\left<Y_6\right>_{xy}(z)$ \\
+  \var{Y7mz=0}    & $\left<Y_7\right>_{xy}(z)$ \\
+  \var{Y8mz=0}    & $\left<Y_8\right>_{xy}(z)$ \\
+  \var{Y9mz=0}    & $\left<Y_9\right>_{xy}(z)$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{noentropy.f90}} \\
 \midrule
@@ -564,6 +601,29 @@
                     \quad(time step relative to
                     acoustic time step;
                     see \S~\ref{time-step}) \\
+\midrule
+  \multicolumn{2}{c}{Module \file{testscalar.f90}} \\
+\midrule
+  \var{kap11=0}   & $\kappa_{11}$ \\
+  \var{kap21=0}   & $\kappa_{21}$ \\
+  \var{kap31=0}   & $\kappa_{31}$ \\
+  \var{kap13=0}   & $\kappa_{13}$ \\
+  \var{kap23=0}   & $\kappa_{23}$ \\
+  \var{kap33=0}   & $\kappa_{33}$ \\
+  \var{c1rms=0}   & $\left<c_{1}^2\right>^{1/2}$ \\
+  \var{c2rms=0}   & $\left<c_{2}^2\right>^{1/2}$ \\
+  \var{c3rms=0}   & $\left<c_{3}^2\right>^{1/2}$ \\
+  \var{c4rms=0}   & $\left<c_{4}^2\right>^{1/2}$ \\
+  \var{c1pt=0}    & $c^{1}$ \\
+  \var{c2pt=0}    & $c^{2}$ \\
+  \var{c3pt=0}    & $c^{3}$ \\
+  \var{c4pt=0}    & $c^{4}$ \\
+  \var{F11z=0}    & ${\cal F}_1^{1}$ \\
+  \var{F21z=0}    & ${\cal F}_2^{1}$ \\
+  \var{F31z=0}    & ${\cal F}_3^{1}$ \\
+  \var{F12z=0}    & ${\cal F}_1^{2}$ \\
+  \var{F22z=0}    & ${\cal F}_2^{2}$ \\
+  \var{F32z=0}    & ${\cal F}_3^{2}$ \\
 %
 \bottomrule
 \end{longtable}

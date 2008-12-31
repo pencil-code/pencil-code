@@ -497,6 +497,7 @@ are preserved on all copies.
 
 Permission is granted to copy and distribute modified versions
 of this manual under the conditions for verbatim copying,
+\index{Manual}
 provided that the entire resulting derived work is distributed under the
 terms of a permission notice identical to this one.
 
@@ -3517,6 +3518,17 @@ power at each wavenumber, from the smallest to the largest.
 If several snapshots have been saved, they are being stored immediately 
 following the preceding snapshot.
 
+It is limited for the case of different resolution when one direction is
+an integer multiple of the other. So, it can be done for
+
+\code{Nx = n*Ny}
+
+Unfortunately, for some applications one wants \code{Nx < Ny}. I experimented
+with arbitrary resolution by interpolating x to the same resolution of y
+prior to transposing, then transform the interpolated array and then
+interpolating it back (check \file{fourier_transform_y} in
+\file{fourier_fftpack.f90}).
+
 To visualize with \name{IDL} just type
 \cmd{power} and you get the last snapshot of the three-dimensional 
 power spectrum. See head of \file[power.pro]{\$PENCIL_HOME/idl/power.pro} 
@@ -5196,6 +5208,25 @@ The answer is yes; just go to:
    http://lists.albanova.se/pipermail/AlbaNova/pencilcode-discuss/
 \end{Verbatim}
 
+%%%
+\subsubsection{The manual}
+\index{Manual}
+
+  It would be a good idea to add this useful information in the manual, no?
+
+\medskip
+
+When you have added new stuff to the code, don't forget to mention this
+in the \file{pencil-code/doc/manual.tex} file.
+
+Again, the answer is yes; just go to:
+\begin{Verbatim}
+   cd pencil-code/doc/
+   vi manual.tex
+   svn ci -m "explanations about a new module in the code"
+\end{Verbatim}
+
+
 \cleardoublepage
 % ====================================================================== %
 
@@ -5738,6 +5769,9 @@ can easily be added - please contact the {\sc Pencil Code} team for assistance.
 
 You are encouraged to submit/commit your special modules to the Pencil-Code
 source.
+\index{Manual}
+When you have added new stuff to the code, don't forget to mention this
+in the \file{pencil-code/doc/manual.tex} file.
 
 \subsection{Adding switchable modules}
 
@@ -6045,6 +6079,7 @@ where \code{nw=nx*ny*nz}.
   32 & Steno & 0.085& $256^3$ &nomag/entro/cool/sh& 4x8 & 20-jun-06 & AB \\
   32 & Steno & 0.235& $512^2\times256$ &mag/entro& 4x8 &  9-jul-06 & AB \\
   32 & Sanss & 0.273& $128\times256^2$ &nomag& 4x8 &  3-jul-07 & AB \\
+  32 &Neolith& 0.275& $128^3$ &testfield4& 24-oct-08 & AB \\
   64 & fe1   & 0.24 & $256^3$ & magn/noentro &  8x8   &  2-sep-02 & AB \\
   64 & giga  & 0.11 & $256^3$ &nomag/noentro&  4x16  & 29-apr-03 & AB \\
   64 & giga  & 0.23 & $256^3$ &nomag/noentro/hyp&4x16& 8-dec-03& AB \\
