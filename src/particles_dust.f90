@@ -28,7 +28,7 @@ module Particles
   complex, dimension (7) :: coeff=(0.0,0.0)
   real, dimension (npar_species) :: tausp_species=0.0, tausp1_species=0.0
   real :: xp0=0.0, yp0=0.0, zp0=0.0, vpx0=0.0, vpy0=0.0, vpz0=0.0
-  real :: Lx0, Ly0, Lz0
+  real :: Lx0=0.0, Ly0=0.0, Lz0=0.0
   real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0, eps_dtog=0.01
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0
@@ -54,6 +54,7 @@ module Particles
   integer :: iscratch_short_friction=0
   integer, dimension (npar_species) :: ipar_fence_species=0
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
+  logical :: ldragforce_radialonly=.false.
   logical :: ldragforce_heat=.false., lcollisional_heat=.false.
   logical :: lpar_spec=.false., lcompensate_friction_increase=.false.
   logical :: lcollisional_cooling_rms=.false.
@@ -111,7 +112,7 @@ module Particles
       tausp_short_friction,ldraglaw_steadystate,tstart_liftforce_par, &
       tstart_brownian_par, lbrownian_forces, lenforce_policy, &
       interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, &
-      brownian_T0, lnostore_uu, ldtgrav_par, &
+      brownian_T0, lnostore_uu, ldtgrav_par, ldragforce_radialonly, &
       lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, &
       Lx0, Ly0, Lz0
 
@@ -135,7 +136,7 @@ module Particles
       tausp_short_friction,ldraglaw_steadystate,tstart_liftforce_par, &
       tstart_brownian_par, lbrownian_forces, lenforce_policy, &
       interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, &
-      brownian_T0, lnostore_uu, ldtgrav_par, &
+      brownian_T0, lnostore_uu, ldtgrav_par, ldragforce_radialonly, &
       lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
@@ -354,7 +355,7 @@ module Particles
 !
 !  Calculate gravsmooth**2 for gravity.
 !
-      if (gravsmooth/=0.0) gravsmooth2=gravsmooth2**2
+      if (gravsmooth/=0.0) gravsmooth2=gravsmooth**2
 !
 !  Inverse of minimum gas friction time (time-step control).
 !
@@ -597,6 +598,19 @@ module Particles
               fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
           if (nzgrid/=1) &
               fp(1:npar_loc,izp)=xyz0_loc(3)+fp(1:npar_loc,izp)*Lxyz_loc(3)
+
+        case ('random-circle')
+          if (lroot) print*, 'init_particles: Random particle positions'
+          do k=1,npar_loc
+            call random_number_wrapper(r)
+            if (zp0>yp0) then
+              fp(k,ixp)=xp0*cos((zp0-yp0)*r+yp0)
+              fp(k,iyp)=xp0*sin((zp0-yp0)*r+yp0)
+            else
+              fp(k,ixp)=xp0*cos(2*pi*r)
+              fp(k,iyp)=xp0*sin(2*pi*r)
+            endif
+          enddo
 
         case ('random-hole')
           if (lroot) print*, 'init_particles: Random particle positions '// &
@@ -1000,45 +1014,51 @@ k_loop:   do while (.not. (k>npar_loc))
             print*, 'init_particles: drag equilibrium'
             print*, 'init_particles: beta_glnrho_global=', beta_glnrho_global
           endif
+          cs=sqrt(cs20)
+          if (ldragforce_gas_par) then
 !  Calculate average dust-to-gas ratio in box.
-          if (ldensity_nolog) then
-            eps = sum(f(l1:l2,m1:m2,n1:n2,irhop))/ &
-                sum(f(l1:l2,m1:m2,n1:n2,ilnrho))
-          else
-            eps = sum(f(l1:l2,m1:m2,n1:n2,irhop))/ &
-                sum(exp(f(l1:l2,m1:m2,n1:n2, ilnrho)))
-          endif
-
-          if (lroot) print*, 'init_particles: average dust-to-gas ratio=', eps
-!  Set gas velocity field.
-          do l=l1,l2; do m=m1,m2; do n=n1,n2
-            cs=sqrt(cs20)
-!  Take either global or local dust-to-gas ratio.
-            if (.not. ldragforce_equi_global_eps) then
-              if (ldensity_nolog) then
-                eps = f(l,m,n,irhop)/f(l,m,n,ilnrho)
-              else
-                eps = f(l,m,n,irhop)/exp(f(l,m,n,ilnrho))
-              endif
+            if (ldensity_nolog) then
+              eps = sum(f(l1:l2,m1:m2,n1:n2,irhop))/ &
+                  sum(f(l1:l2,m1:m2,n1:n2,ilnrho))
+            else
+              eps = sum(f(l1:l2,m1:m2,n1:n2,irhop))/ &
+                  sum(exp(f(l1:l2,m1:m2,n1:n2, ilnrho)))
             endif
-
-            f(l,m,n,iux) = f(l,m,n,iux) - &
-                beta_glnrho_global(1)*eps*Omega*tausp/ &
-                ((1.0+eps)**2+(Omega*tausp)**2)*cs
-            f(l,m,n,iuy) = f(l,m,n,iuy) + &
-                beta_glnrho_global(1)*(1+eps+(Omega*tausp)**2)/ &
-                (2*((1.0+eps)**2+(Omega*tausp)**2))*cs
-
-          enddo; enddo; enddo
+ 
+            if (lroot) print*, 'init_particles: average dust-to-gas ratio=', eps
+!  Set gas velocity field.
+            do l=l1,l2; do m=m1,m2; do n=n1,n2
+!  Take either global or local dust-to-gas ratio.
+              if (.not. ldragforce_equi_global_eps) then
+                if (ldensity_nolog) then
+                  eps = f(l,m,n,irhop)/f(l,m,n,ilnrho)
+                else
+                  eps = f(l,m,n,irhop)/exp(f(l,m,n,ilnrho))
+                endif
+              endif
+ 
+              f(l,m,n,iux) = f(l,m,n,iux) - &
+                  beta_glnrho_global(1)*eps*Omega*tausp/ &
+                  ((1.0+eps)**2+(Omega*tausp)**2)*cs
+              f(l,m,n,iuy) = f(l,m,n,iuy) + &
+                  beta_glnrho_global(1)*(1+eps+(Omega*tausp)**2)/ &
+                  (2*((1.0+eps)**2+(Omega*tausp)**2))*cs
+ 
+            enddo; enddo; enddo
+          endif
 !  Set particle velocity field.
           do k=1,npar_loc
 !  Take either global or local dust-to-gas ratio.
             if (.not. ldragforce_equi_global_eps) then
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-              if (ldensity_nolog) then
-                eps = f(ix0,iy0,iz0,irhop)/f(ix0,iy0,iz0,ilnrho)
+              if (ldragforce_gas_par) then
+                if (ldensity_nolog) then
+                  eps = f(ix0,iy0,iz0,irhop)/f(ix0,iy0,iz0,ilnrho)
+                else
+                  eps = f(ix0,iy0,iz0,irhop)/exp(f(ix0,iy0,iz0,ilnrho))
+                endif
               else
-                eps = f(ix0,iy0,iz0,irhop)/exp(f(ix0,iy0,iz0,ilnrho))
+                eps=0.0
               endif
             endif
 
@@ -1759,6 +1779,14 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Calculate and add drag force.
 !
               dragforce = -tausp1_par*(fp(k,ivpx:ivpz)-uup)
+!
+!  Consider only (spherical) radial component of drag force (for testing).
+!
+              if (ldragforce_radialonly) then
+                dragforce=fp(k,ixp:izp)*(dragforce(1)*fp(k,ixp)+ &
+                    dragforce(2)*fp(k,iyp)+dragforce(3)*fp(k,izp))/ &
+                    (fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2)
+              endif
 !
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + dragforce
 !
