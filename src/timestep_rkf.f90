@@ -154,7 +154,7 @@ module Timestep
       real, dimension (mx,my,mz,mvar), intent(out) :: df
       type (pencil_case), intent(inout) :: p
       real, allocatable, dimension(:,:,:,:,:) :: k
-!      real, dimension(5,mx,my,mx,mvar) :: k
+!      real, dimension(mx,my,mx,mvar,5) :: k
       real, dimension(nx) :: scal, err
       real, intent(inout) :: errmax
       real :: errmaxs
@@ -164,70 +164,70 @@ module Timestep
 
       df=0.
       errmax=0.
-      allocate(k(5,mx,my,mz,mvar))
+      allocate(k(mx,my,mz,mvar,5))
       k=0.
 
-      call pde(f,k(1,:,:,:,:),p)
+      call pde(f,k(:,:,:,:,1),p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
-          k(1,l1:l2,m,n,j) = dt*k(1,l1:l2,m,n,j)
+          k(l1:l2,m,n,j,1) = dt*k(l1:l2,m,n,j,1)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
 
       enddo; enddo; enddo
 
       lfirst=.false.
 
-      call pde(f+b21*k(1,:,:,:,:), k(2,:,:,:,:),p)
+      call pde(f+b21*k(:,:,:,:,1), k(:,:,:,:,2),p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
-          k(2,l1:l2,m,n,j) = dt*k(2,l1:l2,m,n,j)
+          k(l1:l2,m,n,j,2) = dt*k(l1:l2,m,n,j,2)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
       enddo; enddo; enddo
 
 
 
-      call pde(f+b31*k(1,:,:,:,:)+&
-                       b32*k(2,:,:,:,:), k(3,:,:,:,:),p)
+      call pde(f+b31*k(:,:,:,:,1)+&
+                       b32*k(:,:,:,:,2), k(:,:,:,:,3),p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
-          k(3,l1:l2,m,n,j) = dt*k(3,l1:l2,m,n,j)
+          k(l1:l2,m,n,j,3) = dt*k(l1:l2,m,n,j,3)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
       enddo; enddo; enddo
 
 
-      call pde(f+b41*k(1,:,:,:,:)+&
-                       b42*k(2,:,:,:,:)+&
-                       b43*k(3,:,:,:,:), k(4,:,:,:,:),p)
+      call pde(f+b41*k(:,:,:,:,1)+&
+                       b42*k(:,:,:,:,2)+&
+                       b43*k(:,:,:,:,3), k(:,:,:,:,4),p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
-          k(4,l1:l2,m,n,j) = dt*k(4,l1:l2,m,n,j)
+          k(l1:l2,m,n,j,4) = dt*k(l1:l2,m,n,j,4)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
       enddo; enddo; enddo
 
 
-      call pde(f+b51*k(1,:,:,:,:)+&
-                 b52*k(2,:,:,:,:)+&
-                 b53*k(3,:,:,:,:)+&
-                 b54*k(4,:,:,:,:), k(5,:,:,:,:),p)
+      call pde(f+b51*k(:,:,:,:,1)+&
+                 b52*k(:,:,:,:,2)+&
+                 b53*k(:,:,:,:,3)+&
+                 b54*k(:,:,:,:,4), k(:,:,:,:,5),p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
-          k(5,l1:l2,m,n,j) = dt*k(5,l1:l2,m,n,j)
+          k(l1:l2,m,n,j,5) = dt*k(l1:l2,m,n,j,5)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
       enddo; enddo; enddo
 
 
       errmaxs=0.
-      call pde(f+b61*k(1,:,:,:,:)+&
-                 b62*k(2,:,:,:,:)+&
-                 b63*k(3,:,:,:,:)+&
-                 b64*k(4,:,:,:,:)+&
-                 b65*k(5,:,:,:,:), df,p)
+      call pde(f+b61*k(:,:,:,:,1)+&
+                 b62*k(:,:,:,:,2)+&
+                 b63*k(:,:,:,:,3)+&
+                 b64*k(:,:,:,:,4)+&
+                 b65*k(:,:,:,:,5), df,p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
           df(l1:l2,m,n,j) = dt*df(l1:l2,m,n,j)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
 
-          err = dc1*k(1,l1:l2,m,n,j) + dc2*k(2,l1:l2,m,n,j) + &
-                dc3*k(3,l1:l2,m,n,j) + dc4*k(4,l1:l2,m,n,j) + &
-                dc5*k(5,l1:l2,m,n,j) + dc6*df(l1:l2,m,n,j)
+          err = dc1*k(l1:l2,m,n,j,1) + dc2*k(l1:l2,m,n,j,2) + &
+                dc3*k(l1:l2,m,n,j,3) + dc4*k(l1:l2,m,n,j,4) + &
+                dc5*k(l1:l2,m,n,j,5) + dc6*df(l1:l2,m,n,j)
 
-          df(l1:l2,m,n,j) = c1*k(1,l1:l2,m,n,j) + c2*k(2,l1:l2,m,n,j) + &
-                            c3*k(3,l1:l2,m,n,j) + c4*k(4,l1:l2,m,n,j) + &
-                            c5*k(5,l1:l2,m,n,j) + c6*df(l1:l2,m,n,j)
+          df(l1:l2,m,n,j) = c1*k(l1:l2,m,n,j,1) + c2*k(l1:l2,m,n,j,2) + &
+                            c3*k(l1:l2,m,n,j,3) + c4*k(l1:l2,m,n,j,4) + &
+                            c5*k(l1:l2,m,n,j,5) + c6*df(l1:l2,m,n,j)
 
           ! Get the maximum error over the whole field
           !
@@ -238,11 +238,11 @@ module Timestep
             !    
             scal=  ( &
                  sqrt(f(l1:l2,m,n,1)**2+f(l1:l2,m,n,2)**2)  + &
-                 sqrt(k(1,l1:l2,m,n,1)**2 + k(1,l1:l2,m,n,2)**2) + &
+                 sqrt(k(l1:l2,m,n,1,1)**2 + k(l1:l2,m,n,2,2)**2) + &
                  1e-30)
             errmaxs = max(maxval(abs(err/scal)),errmaxs)
             !scal=  ( &
-            !     abs(f(l1:l2,m,n,j))  + abs(k(1,l1:l2,m,n,j)) + 1e-30)
+            !     abs(f(l1:l2,m,n,j))  + abs(k(l1:l2,m,n,j,1)) + 1e-30)
             !errmaxs = max(maxval(abs(err/scal)),errmaxs)
           case('cons_frac_err')
             !
