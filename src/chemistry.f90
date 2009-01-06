@@ -37,6 +37,9 @@ module Chemistry
   real, dimension (mx,my,mz,nchemspec) ::  cp_R_spec
   real, dimension (mx,my,mz) ::  TT_full
   real, dimension (mx,my,mz) :: hYrho_full, e_int_full
+
+  real :: lambda_const=impossible
+  real :: visc_const=impossible
 !
   logical :: lone_spec=.false.
 !
@@ -95,7 +98,8 @@ module Chemistry
 ! input parameters
   namelist /chemistry_init_pars/ &
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
-      amplchemk,amplchemk2, chem_diff,nu_spec, BinDif_simple, visc_simple
+      amplchemk,amplchemk2, chem_diff,nu_spec, BinDif_simple, visc_simple, &
+      lambda_const, visc_const
 
 ! run parameters
   namelist /chemistry_run_pars/ &
@@ -536,7 +540,7 @@ module Chemistry
 !
 !  Pressure
 !
-        if (lpencil(i_pp)) p%pp = Rgas*p%rho*p%mu1*p%TT
+        if (lpencil(i_pp)) p%pp = Rgas*p%TT*p%mu1*p%rho
 !
 !  Specific heat at constant pressure
 !
@@ -583,7 +587,7 @@ module Chemistry
 !
         if (lpencil(i_rho1gpp)) then
 !
-          pp_full=Rgas*rho_full*mu1_full*TT_full
+          pp_full=Rgas*mu1_full*rho_full*TT_full
 !
           call grad(pp_full,p%rho1gpp)
 !
@@ -635,8 +639,16 @@ module Chemistry
 ! Calculate thermal diffusivity
 !
       if (lpenc_requested(i_lambda)) then
-        p%lambda=lambda_full(l1:l2,m,n)
-        if (lpenc_requested(i_glnlambda)) call grad(lambda_full,p%glnlambda)
+
+        if (lambda_const<impossible) then
+         p%lambda=lambda_const
+        else
+         p%lambda=lambda_full(l1:l2,m,n)
+         if (lpenc_requested(i_glnlambda)) call grad(lambda_full,p%glnlambda)
+        endif
+
+!print*,'Natalia',maxval(p%lambda)
+
       endif
 !
 !  Calculate grad(enthalpy)
@@ -810,8 +822,17 @@ module Chemistry
               nu_dyn=nu_dyn+XX_full(:,:,:,k)*&
                   species_viscosity(:,:,:,k)/tmp_sum2
             enddo
-            nu_full=nu_dyn/rho_full
+    
+           
           endif
+
+          if (visc_const<impossible) then
+                nu_full=visc_const
+          else
+                nu_full=nu_dyn/rho_full
+          endif
+
+
 !
 !  Diffusion coeffisient of a mixture
 !

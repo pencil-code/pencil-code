@@ -4496,7 +4496,7 @@ module Boundcond
           call der_pencil(2,mom2(lll,:,i),dmom2_dy(:,i))
         enddo
 !
-        Mach_num=maxval(f(lll,m1:m2,n1:n2,iux)/cs0_ar(m1:m2,n1:n2))
+ !       Mach_num=maxval(f(lll,m1:m2,n1:n2,iux)/cs0_ar(m1:m2,n1:n2))
 !
         select case(topbot)
         case('bot')
@@ -4526,38 +4526,7 @@ module Boundcond
 ! Natalia: this subroutine is still under construction
 ! Please, do not remove this commented part !!!!!
 !
-      !  df(lll,m1:m2,n1:n2,iux) = -sgn*(cs0_ar(m1:m2,n1:n2)*&
-       !     df(lll,m1:m2,n1:n2,ilnrho) &
-       !    +(f(lll,m1:m2,n1:n2,iux) + sgn*cs0_ar(m1:m2,n1:n2)) &
-       !     *cs0_ar(m1:m2,n1:n2)/Lxyz(1)*(1.-Mach_num*Mach_num) &
-       !     *(f(lll,m1:m2,n1:n2,iux) - u_t))
-
-   !    df(lll,m1:m2,n1:n2,iux) = &
-   !        +0.5*sgn*(cs0_ar(m1:m2,n1:n2)*df(lll,m1:m2,n1:n2,ilnrho) &
-   !        +cs0_ar(m1:m2,n1:n2)/Lxyz(1)*(1.-Mach_num*Mach_num) &
-   !        *(f(lll,m1:m2,n1:n2,iux) - u_t))
-
-    !       df(lll,m1:m2,n1:n2,iux) = &
-    !        -f(lll,m1:m2,n1:n2,iux)/Lxyz(1)&
-    !        *(f(lll,m1:m2,n1:n2,iux) - u_t)
-!
-  !      df(lll,m1:m2,n1:n2,iux) = df(lll,m1:m2,n1:n2,iux)  &
-  !         +0.5/Lxyz(1)*pp(lll,m1:m2,n1:n2)/rho0(m1:m2,n1:n2) &
-  !         *(1.-exp(T_t)/TT0(m1:m2,n1:n2))
-!
- !       do k=1,nchemspec
-      !    df(lll,m1:m2,n1:n2,ichemspec(k))=& 
-      !    -0.5*cs0_ar(m1:m2,n1:n2)/Lxyz(1)*(f(lll,m1:m2,n1:n2,ichemspec(k))-YYi(k)) 
-      !    df(lll,m1:m2,n1:n2,ichemspec(k))=&
-       !      f(lll,m1:m2,n1:n2,iux)*(f(lll,m1:m2,n1:n2,ichemspec(k))-YYi(k))/dx 
-  !       f(lll,m1:m2,n1:n2,ichemspec(k))=YYi(k)  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !    df(lll,m1:m2,n1:n2,ichemspec(k))=0.
-   !     enddo
-    !     f(lll,m1:m2,n1:n2,iux) = u_t              !!!!!!!!!!!!!!!!!!!
-     !    f(lll,m1:m2,n1:n2,ilnTT) = T_t            !!!!!!!!!!!!!!!!!!!!!!
-      !   df(lll,m1:m2,n1:n2,iux)=0.!-0.5*cs0_ar(m1:m2,n1:n2)/Lxyz(1)*(f(lll,m1:m2,n1:n2,iux)-u_t)
-      !   df(lll,m1:m2,n1:n2,ilnTT)=0.!0.5*cs0_ar(m1:m2,n1:n2)/Lxyz(1)*(f(lll,m1:m2,n1:n2,ilnTT)-T_t) !!!!!!!!!!!!!!!!!!
-
+  
 !
 !  this conditions can be important! 
 !  check withour them
@@ -4566,9 +4535,10 @@ module Boundcond
 !        do k=1,nchemspec
 !         f(lll,m1:m2,n1:n2,ichemspec(k))=YYi(k)  
 !        enddo
-!         f(lll,m1:m2,n1:n2,iux) = u_t
-!         f(lll,m1:m2,n1:n2,ilnTT) = T_t
-!         df(lll,m1:m2,n1:n2,ilnTT)=0.
+   !      f(lll,m1:m2,n1:n2,iux) = u_t
+   !      f(lll,m1:m2,n1:n2,ilnTT) = T_t
+   !      df(lll,m1:m2,n1:n2,ilnTT)=0.
+
 
     endsubroutine bc_nscbc_subin_x
 !***********************************************************************
