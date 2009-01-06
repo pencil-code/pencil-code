@@ -128,6 +128,15 @@ if ($?LOADL_STEP_ID) then
   echo $LOADL_STEP_ID "  RUN STARTED on "$LOADL_STEP_CLASS `date` \
     >> $datadir/jobid.dat
 endif
+if ($?SLURM_JOBID) then
+  echo $SLURM_JOBID "  RUN STARTED on "$SLURMD_NODENAME `date` \
+    >> $datadir/jobid.dat
+endif
+# EASY job (PDC):
+if ($?SP_JID) then
+  echo $SP_JID "  RUN STARTED on " `date` \
+    >> $datadir/jobid.dat
+endif
 
 # Write time and current working directory into log file
 (date; echo $cwd; echo "")>> $PENCIL_HOME/.run_directories.log
