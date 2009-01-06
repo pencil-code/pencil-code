@@ -40,6 +40,9 @@ module Chemistry
 
   real :: lambda_const=impossible
   real :: visc_const=impossible
+  real :: init_x1=-0.2,init_x2=0.2
+  real :: init_TT1=400, init_TT2=2400., init_ux
+
 !
   logical :: lone_spec=.false.
 !
@@ -68,7 +71,7 @@ module Chemistry
 !  hydro-related parameters
 !
   real, dimension(nchemspec) :: amplchemk=0.,amplchemk2=0.
-  real, dimension(nchemspec) :: chem_diff_prefactor=1.
+  real, dimension(nchemspec) :: chem_diff_prefactor=1.,initial_massfractions
   real :: amplchem=1.,kx_chem=1.,ky_chem=1.,kz_chem=1.,widthchem=1.
   real :: chem_diff=0.
   character (len=labellen), dimension (ninit) :: initchem='nothing'
@@ -99,7 +102,8 @@ module Chemistry
   namelist /chemistry_init_pars/ &
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
       amplchemk,amplchemk2, chem_diff,nu_spec, BinDif_simple, visc_simple, &
-      lambda_const, visc_const
+      lambda_const, visc_const,init_x1,init_x2,init_TT1,init_TT2,init_ux
+
 
 ! run parameters
   namelist /chemistry_run_pars/ &
@@ -398,6 +402,8 @@ module Chemistry
            else
             call stop_it('there is no air.dat file')
            endif
+        case('flame_front')
+          call flame_front(f)
         case default
 !
 !  Catch unknown values
@@ -661,6 +667,103 @@ module Chemistry
       call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_chemistry
+!**************************************************************************
+subroutine flame_front(f)
+!
+! 06.05.2009/Nils Erland L. Haugen: adapted from similar 
+!                                   routine in special/chem_stream.f90
+! This routine set up the initial profiles used in 1D flame speed measurments
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: mu1
+      integer :: k,j,i
+
+      real :: p2_front=10.13e5
+      real :: mO2, mH2, mN2, mH2O
+      real :: log_inlet_density
+      integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
+      real :: initial_mu1, final_massfrac_O2
+      logical :: found_specie
+!     
+! Initialize some indexes
+!
+      call find_species_index('H2' ,i_H2 ,ichem_H2 ,found_specie)
+      call find_species_index('O2' ,i_O2 ,ichem_O2 ,found_specie)
+      call find_species_index('N2' ,i_N2 ,ichem_N2 ,found_specie)
+      call find_species_index('H2O',i_H2O,ichem_H2O,found_specie)
+      mO2 =species_constants(ichem_O2 ,imass)
+      mH2 =species_constants(ichem_H2 ,imass)
+      mH2O=species_constants(ichem_H2O,imass)
+      mN2 =species_constants(ichem_N2 ,imass)
+!      
+! Find approximate value for the mass fraction of O2 after the flame front
+!
+      final_massfrac_O2&
+          =(initial_massfractions(ichem_O2)/mO2&
+          -initial_massfractions(ichem_H2)/(2*mH2))*mO2 
+!
+!  Initialize temperature and species
+!
+      do k=1,mx 
+!
+!  Initialize temperature
+!
+        if (x(k)<init_x1) then
+          f(k,:,:,ilnTT)=log(init_TT1)
+        endif
+        if (x(k)>init_x2) then
+          f(k,:,:,ilnTT)=log(init_TT2)
+        endif
+        if (x(k)>init_x1 .and. x(k)<init_x2) then
+          f(k,:,:,ilnTT)=log((x(k)-init_x1)/(init_x2-init_x1) &
+               *(init_TT2-init_TT1)+init_TT1)
+        endif
+!
+!  Initialize steam and hydrogen
+!
+        if (x(k)>init_x1) then
+          f(k,:,:,i_H2O)=initial_massfractions(ichem_H2)/mH2*mH2O &
+               *(exp(f(k,:,:,ilnTT))-init_TT1) &
+               /(init_TT2-init_TT1)
+          f(k,:,:,i_H2)=initial_massfractions(ichem_H2) &
+               *(exp(f(k,:,:,ilnTT))-init_TT2) &
+               /(init_TT1-init_TT2)          
+        endif
+!
+!  Initialize oxygen
+!
+        if (x(k)>init_x2) then
+          f(k,:,:,i_O2)=final_massfrac_O2
+        endif
+        if (x(k)>init_x1 .and. x(k)<init_x2) then
+          f(k,:,:,i_O2)=(x(k)-init_x2)/(init_x1-init_x2) &
+               *(initial_massfractions(ichem_O2)-final_massfrac_O2)&
+               +final_massfrac_O2
+        endif
+      enddo
+!
+!  Initialize density
+!
+      call calc_for_chem_mixture(f)
+      do k=1,mx
+        f(k,:,:,ilnrho)&
+            =log(p2_front)-log(Rgas)-f(k,:,:,ilnTT)-log(mu1_full(k,:,:))
+      enddo
+!
+!  Find logaritm of density at inlet
+!
+      initial_mu1&
+          =initial_massfractions(ichem_H2)/(mH2)&
+          +initial_massfractions(ichem_O2)/(mO2)&
+          +initial_massfractions(ichem_H2O)/(mH2O)&
+          +initial_massfractions(ichem_N2)/(mN2)
+      log_inlet_density=log(p2_front)-log(Rgas)-log(init_TT1)-log(initial_mu1)
+!
+!  Initialize velocity
+!
+      f(:,:,:,iux)=init_ux*exp(log_inlet_density)/exp(f(:,:,:,ilnrho))
+!
+    endsubroutine flame_front
 !***********************************************************************
     subroutine calc_for_chem_mixture(f)
 !
@@ -3359,6 +3462,7 @@ module Chemistry
       enddo
       do j=1,nchemspec
         f(:,:,:,ichemspec(j))=f(:,:,:,ichemspec(j))/sum_Y
+        initial_massfractions(j)=f(l1,m1,n1,ichemspec(j))
       enddo
 !
       if (mvar < 5) then
