@@ -396,7 +396,7 @@ module Cdata
   logical :: lnscbc = .false.
   character(len=2*nscbc_len+1), dimension(5) :: nscbc=''
   character(len=nscbc_len), dimension(5) :: nscbc1,nscbc2
-  real :: nscbc_sigma = 1.
+  real :: nscbc_sigma = 1., p_infty=1.
 !
 !  Parameters for freezing boundary zones.
 !
