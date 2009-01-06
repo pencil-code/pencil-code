@@ -286,7 +286,6 @@ module Solid_Cells
               call fatal_error('update_solid_cells:','r_point>r_cyl')
             endif
 !
-!
 !  Find i and j indeces for points to be used during interpolation 
 !
             do ii=1,mx
