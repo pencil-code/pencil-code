@@ -4061,7 +4061,7 @@ module Boundcond
       real, dimension (mx,my,mz) :: cs2_full
       real, dimension (my,mz) :: tmp22,tmp12,tmp2_lnrho,tmp33,tmp13,tmp3_lnrho
       real, dimension (my,mz) :: tmp23,tmp32
-      real :: Mach,p_infty,KK
+      real :: Mach,KK
       integer lll,i
       integer sgn
 
@@ -4100,8 +4100,8 @@ module Boundcond
         prefac1 = -1./(2.*cs20)
         prefac2 = -1./(2.*rho0*cs0)
       elseif (leos_chemistry) then
-    !     cs20_ar=cs2_full(lll,:,:)
-    !     cs0_ar=cs20_ar**0.5
+         cs20_ar=cs2_full(lll,:,:)
+         cs0_ar=cs20_ar**0.5
    !     if (ldensity_nolog) then
    !       rho0 = f(lll,m1:m2,n1:n2,ilnrho)
    !       dp_prefac = cs20_ar(m1:m2,n1:n2)
@@ -4183,12 +4183,17 @@ module Boundcond
 !        L_5 = nscbc_sigma*cs20_ar(m1:m2,n1:n2)*rho0&
 !             *(sgn*f(lll,m1:m2,n1:n2,iux)-sgn*u_t)
         L_5 = L_1
- !       L_5 = 0
+!        L_5 = 0
              
       else
-        Mach=10.0/40.0
-        p_infty=cs20*1.
+        Mach=sum(f(lll,m1:m2,n1:n2,iux))/((m2-m1+1)*(n2-n1+1))/cs0_ar(m1,n1)
         KK=nscbc_sigma*(1-Mach**2)*cs0/Lxyz(1)
+
+!print*,'Mach=',Mach
+!print*,rho0*cs20,p_infty
+
+!KK=0
+
         L_1 = KK*(rho0*cs20-p_infty)
         L_3 = f(lll,m1:m2,n1:n2,iux)*du2_dx
         L_4 = f(lll,m1:m2,n1:n2,iux)*du3_dx
