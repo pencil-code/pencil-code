@@ -687,7 +687,7 @@ module Special
 
       real :: x1_front,x2_front
       real :: rho1_front=1e-3, rho2_front=10./3.*1e-3
-      real :: TT1_front=2000., TT2_front=400.
+      real :: TT1_front=2000., TT2_front=exp(6.)
       real :: p2_front=10.13e5
       real :: Rgas=83144726.8870299
       real :: mH,mC,mN,mO,mAr,mHe
@@ -879,7 +879,7 @@ subroutine flame_spd_invert2(f,xx)
       integer :: k,j,i
 
       real :: x1_front=-0.2, x2_front=0.2
-      real :: TT1_front=400., TT2_front=1200.
+      real :: TT1_front=exp(6.), TT2_front=1200.
       real :: p2_front=10.13e5
       real :: Rgas=83144726.8870299
       real :: mH,mC,mN,mO,mAr,mHe
