@@ -705,9 +705,9 @@ module Boundcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      character (len=nscbc_len), dimension(5) :: bc12
+      character (len=nscbc_len), dimension(3) :: bc12
       character (len=3) :: topbot
-      integer j,k,direction
+      integer j,k,direction,ip_ok,ip_test
       real, dimension(mcom) :: valx,valy,valz
 
       intent(inout) :: f
@@ -717,54 +717,64 @@ module Boundcond
       do k=1,2                ! loop over 'bot','top'
         if (k==1) then
           topbot='bot'; bc12(j)=nscbc1(j);!val=bt_val1(j)
-          valx=fbcx1; valy=fbcy1; valz=fbcz1
+          valx=fbcx1; valy=fbcy1; valz=fbcz1; ip_ok=0
         else
           topbot='top'; bc12(j)=nscbc2(j);!val=bt_val2(j)
           valx=fbcx2; valy=fbcy2; valz=fbcz2
+          if (j==1) ip_ok=nprocx-1
+          if (j==2) ip_ok=nprocy-1
+          if (j==3) ip_ok=nprocz-1
         endif
-        select case(bc12(j))
-        case('part_ref_outlet')
+        if (j==1) ip_test=ipx
+        if (j==2) ip_test=ipy
+        if (j==3) ip_test=ipz
+!
+!  Check if this is a physical boundary
+!
+        if (ip_test==ip_ok) then
+          select case(bc12(j))
+          case('part_ref_outlet')
 !   Partially reflecting outlet.
-          if (j==1) then 
-            call bc_nscbc_prf_x(f,df,topbot)
-          elseif (j==2) then 
-            call bc_nscbc_prf_y(f,df,topbot)
-          elseif (j==3) then 
-            call bc_nscbc_prf_z(f,df,topbot)
-          endif
-        case('part_ref_inlet')
+            if (j==1) then 
+              call bc_nscbc_prf_x(f,df,topbot)
+            elseif (j==2) then 
+              call bc_nscbc_prf_y(f,df,topbot)
+            elseif (j==3) then 
+              call bc_nscbc_prf_z(f,df,topbot)
+            endif
+          case('part_ref_inlet')
 !   Partially reflecting inlet, ie. impose a velocity u_t.
-          if (j==1) then 
-            direction = 1
-            call bc_nscbc_prf_x(f,df,topbot,linlet=.true.,u_t=valx(direction))
-          elseif (j==2) then 
-            direction = 2
-            call bc_nscbc_prf_y(f,df,topbot,linlet=.true.,u_t=valy(direction))
-          elseif (j==3) then 
-            direction = 3
-            call bc_nscbc_prf_z(f,df,topbot,linlet=.true.,u_t=valz(direction))
-          endif
-        case('subsonic_inflow')
+            if (j==1) then 
+              direction = 1
+              call bc_nscbc_prf_x(f,df,topbot,linlet=.true.,u_t=valx(direction))
+            elseif (j==2) then 
+              direction = 2
+              call bc_nscbc_prf_y(f,df,topbot,linlet=.true.,u_t=valy(direction))
+            elseif (j==3) then 
+              direction = 3
+              call bc_nscbc_prf_z(f,df,topbot,linlet=.true.,u_t=valz(direction))
+            endif
+          case('subsonic_inflow')
 ! Subsonic inflow 
-         if (j==1) then
-          call bc_nscbc_subin_x(f,df,topbot,val=valx)
-         elseif (j==2) then
-         ! call bc_nscbc_subin_y(f,df,topbot)
-         endif
-        case('subson_nref_outflow')
-         if (j==1) then
-          call bc_nscbc_nref_subout_x(f,df,topbot)
-         elseif (j==2) then
-          call bc_nscbc_nref_subout_y(f,df,topbot)
-         endif
-        case('')
+            if (j==1) then
+              call bc_nscbc_subin_x(f,df,topbot,val=valx)
+            elseif (j==2) then
+            endif
+          case('subson_nref_outflow')
+            if (j==1) then
+              call bc_nscbc_nref_subout_x(f,df,topbot)
+            elseif (j==2) then
+              call bc_nscbc_nref_subout_y(f,df,topbot)
+            endif
+          case('')
 !   Do nothing.
-        case('none')
-          print*,'nscbc_boundtreat_xyz: doing nothing!'
+          case('none')
+            print*,'nscbc_boundtreat_xyz: doing nothing!'
 !   Do nothing.
-        case default
-          call fatal_error("nscbc_boundtreat_xyz",'You must specify nscbc bouncond!')
-        endselect
+          case default
+            call fatal_error("nscbc_boundtreat_xyz",'You must specify nscbc bouncond!')
+          endselect
+        endif
       end do
     end subroutine
 !***********************************************************************
