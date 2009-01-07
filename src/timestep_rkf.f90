@@ -278,6 +278,8 @@ module Timestep
         !
       call mpiallreduce_max(errmaxs,errmax)
 
+      deallocate(k)
+
   end subroutine rkck
 !***********************************************************************
     subroutine timestep_autopsy
