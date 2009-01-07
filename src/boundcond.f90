@@ -139,6 +139,9 @@ module Boundcond
                 case ('1s')
                   ! BCX_DOC: onesided
                   call bc_onesided_x(f,topbot,j)
+                case ('1so')
+                  ! BCX_DOC: onesided
+                  call bc_onesided_x_old(f,topbot,j)
                 case ('cT')
                   ! BCX_DOC: constant temperature (implemented as
                   ! BCX_DOC: condition for entropy $s$ or temperature $T$) 
@@ -2020,6 +2023,86 @@ module Boundcond
 !  corresponding to (9.207)-(9.210) in Ferriz-Mas proceedings.
 !
 !   5-apr-03/axel: coded
+!   7-jan-09/axel: corrected
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i,j,k
+!
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+          k=l1-1
+          f(k,:,:,j)=7*f(k+1,:,:,j) &
+                   -21*f(k+2,:,:,j) &
+                   +35*f(k+3,:,:,j) &
+                   -35*f(k+4,:,:,j) &
+                   +21*f(k+5,:,:,j) &
+                    -7*f(k+6,:,:,j) &
+                      +f(k+7,:,:,j)
+          k=l1-2
+          f(k,:,:,j)=9*f(k+1,:,:,j) &
+                   -35*f(k+2,:,:,j) &
+                   +77*f(k+3,:,:,j) &
+                  -105*f(k+4,:,:,j) &
+                   +91*f(k+5,:,:,j) &
+                   -49*f(k+6,:,:,j) &
+                   +15*f(k+7,:,:,j) &
+                    -2*f(k+8,:,:,j)
+          k=l1-3
+          f(k,:,:,j)=9*f(k+1,:,:,j) &
+                   -45*f(k+2,:,:,j) &
+                  +147*f(k+3,:,:,j) &
+                  -315*f(k+4,:,:,j) &
+                  +441*f(k+5,:,:,j) &
+                  -399*f(k+6,:,:,j) &
+                  +225*f(k+7,:,:,j) &
+                   -72*f(k+8,:,:,j) &
+                   +10*f(k+9,:,:,j)
+
+      case('top')               ! top boundary
+          k=l2+1
+          f(k,:,:,j)=7*f(k-1,:,:,j) &
+                   -21*f(k-2,:,:,j) &
+                   +35*f(k-3,:,:,j) &
+                   -35*f(k-4,:,:,j) &
+                   +21*f(k-5,:,:,j) &
+                    -7*f(k-6,:,:,j) &
+                      +f(k-7,:,:,j)
+          k=l2+2
+          f(k,:,:,j)=9*f(k-1,:,:,j) &
+                   -35*f(k-2,:,:,j) &
+                   +77*f(k-3,:,:,j) &
+                  -105*f(k-4,:,:,j) &
+                   +91*f(k-5,:,:,j) &
+                   -49*f(k-6,:,:,j) &
+                   +15*f(k-7,:,:,j) &
+                    -2*f(k-8,:,:,j)
+          k=l2+3
+          f(k,:,:,j)=9*f(k-1,:,:,j) &
+                   -45*f(k-2,:,:,j) &
+                  +147*f(k-3,:,:,j) &
+                  -315*f(k-4,:,:,j) &
+                  +441*f(k-5,:,:,j) &
+                  -399*f(k-6,:,:,j) &
+                  +225*f(k-7,:,:,j) &
+                   -72*f(k-8,:,:,j) &
+                   +10*f(k-9,:,:,j)
+
+      case default
+        print*, "bc_onesided_x ", topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bc_onesided_x
+!***********************************************************************
+    subroutine bc_onesided_x_old(f,topbot,j)
+!
+!  One-sided conditions.
+!  These expressions result from combining Eqs(207)-(210), astro-ph/0109497,
+!  corresponding to (9.207)-(9.210) in Ferriz-Mas proceedings.
+!
+!   5-apr-03/axel: coded
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2052,11 +2135,11 @@ module Boundcond
         enddo
 
       case default
-        print*, "bc_onesided_x ", topbot, " should be `top' or `bot'"
+        print*, "bc_onesided_x_old ", topbot, " should be `top' or `bot'"
 
       endselect
 !
-    endsubroutine bc_onesided_x
+    endsubroutine bc_onesided_x_old
 !***********************************************************************
     subroutine bc_onesided_z(f,topbot,j)
 !
