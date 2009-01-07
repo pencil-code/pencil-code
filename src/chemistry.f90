@@ -40,6 +40,7 @@ module Chemistry
 
   real :: lambda_const=impossible
   real :: visc_const=impossible
+  real :: diffus_const=impossible
   real :: init_x1=-0.2,init_x2=0.2
   real :: init_TT1=400, init_TT2=2400., init_ux
 
@@ -102,7 +103,7 @@ module Chemistry
   namelist /chemistry_init_pars/ &
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
       amplchemk,amplchemk2, chem_diff,nu_spec, BinDif_simple, visc_simple, &
-      lambda_const, visc_const,init_x1,init_x2,init_TT1,init_TT2,init_ux
+      lambda_const, visc_const,diffus_const,init_x1,init_x2,init_TT1,init_TT2,init_ux
 
 
 ! run parameters
@@ -645,16 +646,8 @@ module Chemistry
 ! Calculate thermal diffusivity
 !
       if (lpenc_requested(i_lambda)) then
-
-        if (lambda_const<impossible) then
-         p%lambda=lambda_const
-        else
          p%lambda=lambda_full(l1:l2,m,n)
          if (lpenc_requested(i_glnlambda)) call grad(lambda_full,p%glnlambda)
-        endif
-
-!print*,'Natalia',maxval(p%lambda)
-
       endif
 !
 !  Calculate grad(enthalpy)
@@ -963,6 +956,10 @@ subroutine flame_front(f)
               enddo
             endif
           endif
+
+          if (diffus_const<impossible) then
+                Diff_full=diffus_const
+          endif
 !
 !  Artificial Viscosity of a mixture
 !
@@ -992,6 +989,12 @@ subroutine flame_front(f)
           enddo
 !
           lambda_full=0.5*(tmp_sum+1./tmp_sum2)
+
+          
+          if (lambda_const<impossible) then
+            lambda_full=lambda_const
+          endif
+
         else
           call stop_it('This case works only for cgs units system!')
         endif
@@ -1039,6 +1042,11 @@ subroutine flame_front(f)
         lwrite=.false.
       endif
 !
+
+print*,'D',maxval(Diff_full)
+print*,'n',maxval(nu_full)
+print*,'l',maxval(lambda_full)
+
     endsubroutine calc_for_chem_mixture
 !**********************************************************************
     subroutine astrobiology_data(f)
