@@ -153,34 +153,22 @@ module Timestep
       real, dimension (mx,my,mz,mvar), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(out) :: df
       type (pencil_case), intent(inout) :: p
-      real, allocatable, dimension(:,:,:,:,:) :: k
-      real, allocatable, dimension(:,:,:,:) :: tmp1, tmp2
-!      real, dimension(mx,my,mx,mvar,5) :: k
+      real, dimension(mx,my,mz,mvar,5) :: k
+      real, dimension(mx,my,mz,mvar) :: tmp1, tmp2
       real, dimension(nx) :: scal, err
       real, intent(inout) :: errmax
       real :: errmaxs
       integer :: j,lll
-      
+
       if (ny /= 1 .or. nz /= 1) then
         call fatal_error("rkck", "timestep_rkf_1d only works for the 1D case")
       endif
 
-      df=0.
       errmax=0.
 
-      ! Why do we use allocatable arrays here???
-      allocate(k(mx,my,mz,mvar,5))
-      allocate(tmp1(mx,my,mz,mvar))
-      allocate(tmp2(mx,my,mz,mvar))
-      k=0.
-
-      ! Initialize to make sure the ghost points are not uninitialized
-      ! (assumption is that they are not used anyway)
-      tmp1 = 0.
-      tmp2 = 0.
-
-      tmp2(:,m1:m2,n1:n2,:) = k(:,m1:m2,n1:n2,:,1)
+      tmp2(:,m1:m2,n1:n2,:) = 0.
       call pde(f,tmp2,p)
+      k(:,m1:m2,n1:n2,:,1) = tmp2(:,m1:m2,n1:n2,:)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
           k(l1:l2,m,n,j,1) = dt*k(l1:l2,m,n,j,1)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
@@ -191,19 +179,20 @@ module Timestep
 
       tmp1(:,m1:m2,n1:n2,:) = f(:,m1:m2,n1:n2,:) &
           + b21*k(:,m1:m2,n1:n2,:,1)
-      tmp2(:,m1:m2,n1:n2,:) = k(:,m1:m2,n1:n2,:,2)
+      tmp2(:,m1:m2,n1:n2,:) = 0.
       call pde(tmp1,tmp2,p)
+      k(:,m1:m2,n1:n2,:,2) = tmp2(:,m1:m2,n1:n2,:)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
           k(l1:l2,m,n,j,2) = dt*k(l1:l2,m,n,j,2)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
       enddo; enddo; enddo
 
-
       tmp1(:,m1:m2,n1:n2,:) = f(:,m1:m2,n1:n2,:) &
           + b31*k(:,m1:m2,n1:n2,:,1) &
           + b32*k(:,m1:m2,n1:n2,:,2)
-      tmp2(:,m1:m2,n1:n2,:) = k(:,m1:m2,n1:n2,:,3)
+      tmp2(:,m1:m2,n1:n2,:) = 0.
       call pde(tmp1,tmp2,p)
+      k(:,m1:m2,n1:n2,:,3) = tmp2(:,m1:m2,n1:n2,:)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
           k(l1:l2,m,n,j,3) = dt*k(l1:l2,m,n,j,3)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
@@ -213,8 +202,9 @@ module Timestep
           + b41*k(:,m1:m2,n1:n2,:,1) &
           + b42*k(:,m1:m2,n1:n2,:,2) &
           + b43*k(:,m1:m2,n1:n2,:,3)
-      tmp2(:,m1:m2,n1:n2,:) = k(:,m1:m2,n1:n2,:,4)
+      tmp2(:,m1:m2,n1:n2,:) = 0.
       call pde(tmp1,tmp2,p)
+      k(:,m1:m2,n1:n2,:,4) = tmp2(:,m1:m2,n1:n2,:) 
       do j=1,mvar; do n=n1,n2; do m=m1,m2
           k(l1:l2,m,n,j,4) = dt*k(l1:l2,m,n,j,4)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
@@ -225,13 +215,13 @@ module Timestep
           + b52*k(:,m1:m2,n1:n2,:,2) &
           + b53*k(:,m1:m2,n1:n2,:,3) &
           + b54*k(:,m1:m2,n1:n2,:,4)
-      tmp2(:,m1:m2,n1:n2,:) = k(:,m1:m2,n1:n2,:,5)
+      tmp2(:,m1:m2,n1:n2,:) = 0.
       call pde(tmp1,tmp2,p)
+      k(:,m1:m2,n1:n2,:,5) = tmp2(:,m1:m2,n1:n2,:)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
           k(l1:l2,m,n,j,5) = dt*k(l1:l2,m,n,j,5)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
       enddo; enddo; enddo
-
 
       errmaxs=0.
       tmp1(:,m1:m2,n1:n2,:) = f(:,m1:m2,n1:n2,:) &
@@ -240,7 +230,8 @@ module Timestep
           + b63*k(:,m1:m2,n1:n2,:,3) &
           + b64*k(:,m1:m2,n1:n2,:,4) &
           + b65*k(:,m1:m2,n1:n2,:,5)
-      call pde(tmp1, df,p)
+      df(:,m1:m2,n1:n2,:)=0.
+      call pde(tmp1,df,p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
           df(l1:l2,m,n,j) = dt*df(l1:l2,m,n,j)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
@@ -301,10 +292,6 @@ module Timestep
         errmaxs=errmaxs/eps_rkf
         !
       call mpiallreduce_max(errmaxs,errmax)
-
-      deallocate(k)
-      deallocate(tmp1)
-      deallocate(tmp2)
 
   end subroutine rkck
 !***********************************************************************
