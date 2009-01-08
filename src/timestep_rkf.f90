@@ -153,18 +153,14 @@ module Timestep
       real, dimension (mx,my,mz,mvar), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(out) :: df
       type (pencil_case), intent(inout) :: p
-      real, allocatable, dimension(:,:,:,:,:) :: k
-!      real, dimension(mx,my,mx,mvar,5) :: k
+      real, dimension(mx,my,mz,mvar,5) :: k
       real, dimension(nx) :: scal, err
       real, intent(inout) :: errmax
       real :: errmaxs
       integer :: j,lll
-      
-
 
       df=0.
       errmax=0.
-      allocate(k(mx,my,mz,mvar,5))
       k=0.
 
       call pde(f,k(:,:,:,:,1),p)
@@ -277,8 +273,6 @@ module Timestep
         errmaxs=errmaxs/eps_rkf
         !
       call mpiallreduce_max(errmaxs,errmax)
-
-      deallocate(k)
 
   end subroutine rkck
 !***********************************************************************
