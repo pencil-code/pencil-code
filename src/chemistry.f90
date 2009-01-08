@@ -1043,10 +1043,6 @@ subroutine flame_front(f)
       endif
 !
 
-print*,'D',maxval(Diff_full)
-print*,'n',maxval(nu_full)
-print*,'l',maxval(lambda_full)
-
     endsubroutine calc_for_chem_mixture
 !**********************************************************************
     subroutine astrobiology_data(f)
