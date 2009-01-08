@@ -56,13 +56,14 @@ module Pscalar
   real :: pscalar_diff=0.0, tensor_pscalar_diff=0.0, soret_diff=0.0
   real :: pscalar_diff_hyper3=0.0, rhoccm=0.0, cc2m=0.0, gcc2m=0.0
   real :: pscalar_sink=0.0, Rpscalar_sink=0.5
-  real :: lam_gradC=0., om_gradC=0.
-  logical :: lpscalar_sink, lgradC_profile=.false.
+  real :: lam_gradC=0., om_gradC=0., lambda_cc=0.
+  logical :: lpscalar_sink, lgradC_profile=.false., lreactions=.false.
 
   namelist /pscalar_run_pars/ &
        pscalar_diff,nopscalar,tensor_pscalar_diff,gradC0,soret_diff, &
        pscalar_diff_hyper3,reinitalize_lncc,reinitalize_cc, &
        lpscalar_sink,pscalar_sink,Rpscalar_sink, &
+       lreactions, lambda_cc, &
        lam_gradC, om_gradC, lgradC_profile
 
   ! other variables (needs to be consistent with reset list below)
@@ -306,6 +307,7 @@ module Pscalar
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_del2lnTT)=.true.
       endif
+      if (lreactions) lpenc_requested(i_cc)=.true.
       do i=1,3
         if (gradC0(i)/=0.) lpenc_requested(i_uu)=.true.
       enddo
@@ -439,6 +441,13 @@ module Pscalar
 !  passive scalar equation
 !
         df(l1:l2,m,n,icc) = df(l1:l2,m,n,icc) - p%ugcc
+!
+!  reaction term
+!  Simple Fisher term for now
+!
+        if (lreactions) then
+          df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)+lambda_cc*p%cc*(1.-p%cc)
+        endif
 !
 !  passive scalar sink
 !
