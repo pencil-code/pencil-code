@@ -11,7 +11,7 @@ phone calls even outside office hours.
 
 Name,            email,                    office,            mobile/home/alternative, svn-UserId,  skype-Id
 ---------------------------------------------------------------------------------------------------------------------
-Natalia Babkovskaia nbabkovs/sun3.oulu.fi  +358 8 553 1939   +358 40 5286784
+Natalia Babkovskaia nbabkovskaia/gmail.com  +358 8 553 1939   +358 40 5286784
 Steve Berukoff   steveb/physics.ucla.edu
 Sven Bingert     bingert/kis.uni-freiburg.de 
 Axel Brandenburg, brandenb/nordita.org,     +46 8 5537 8707 +46 70 574 0650, brandenb, axelbrandenburg
