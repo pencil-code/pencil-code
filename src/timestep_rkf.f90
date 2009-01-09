@@ -154,7 +154,7 @@ module Timestep
       real, dimension (mx,my,mz,mvar), intent(out) :: df
       type (pencil_case), intent(inout) :: p
       real, dimension(mx,my,mz,mvar,5) :: k
-      real, dimension (mx,my,mz,mvar) :: f_new
+      real, dimension (mx,my,mz,mvar) :: tmp1
       real, dimension(nx) :: scal, err
       real, intent(inout) :: errmax
       real :: errmaxs
@@ -173,41 +173,41 @@ module Timestep
 
       lfirst=.false.
 
-      f_new=f+b21*k(:,:,:,:,1)
+      tmp1=f+b21*k(:,:,:,:,1)
 
-      call pde(f_new, k(:,:,:,:,2),p)
+      call pde(tmp1, k(:,:,:,:,2),p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
           k(l1:l2,m,n,j,2) = dt*k(l1:l2,m,n,j,2)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
       enddo; enddo; enddo
 
 
-      f_new=f+b31*k(:,:,:,:,1)+b32*k(:,:,:,:,2)
+      tmp1=f+b31*k(:,:,:,:,1)+b32*k(:,:,:,:,2)
 
-      call pde(f_new, k(:,:,:,:,3),p)
+      call pde(tmp1, k(:,:,:,:,3),p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
           k(l1:l2,m,n,j,3) = dt*k(l1:l2,m,n,j,3)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
       enddo; enddo; enddo
 
 
-      f_new=f+b41*k(:,:,:,:,1)+&
+      tmp1=f+b41*k(:,:,:,:,1)+&
               b42*k(:,:,:,:,2)+&
               b43*k(:,:,:,:,3)
 
-      call pde(f_new, k(:,:,:,:,4),p)
+      call pde(tmp1, k(:,:,:,:,4),p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
           k(l1:l2,m,n,j,4) = dt*k(l1:l2,m,n,j,4)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
       enddo; enddo; enddo
 
 
-      f_new=f+b51*k(:,:,:,:,1)+&
+      tmp1=f+b51*k(:,:,:,:,1)+&
               b52*k(:,:,:,:,2)+&
               b53*k(:,:,:,:,3)+&
               b54*k(:,:,:,:,4)
 
-      call pde(f_new, k(:,:,:,:,5),p)
+      call pde(tmp1, k(:,:,:,:,5),p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
           k(l1:l2,m,n,j,5) = dt*k(l1:l2,m,n,j,5)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
@@ -216,12 +216,12 @@ module Timestep
 
       errmaxs=0.
 
-      f_new=f+b61*k(:,:,:,:,1)+&
+      tmp1=f+b61*k(:,:,:,:,1)+&
               b62*k(:,:,:,:,2)+&
               b63*k(:,:,:,:,3)+&
               b64*k(:,:,:,:,4)+&
               b65*k(:,:,:,:,5)
-      call pde(f_new, df,p)
+      call pde(tmp1, df,p)
 
       do j=1,mvar; do n=n1,n2; do m=m1,m2
           df(l1:l2,m,n,j) = dt*df(l1:l2,m,n,j)
