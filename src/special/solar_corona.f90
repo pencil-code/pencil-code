@@ -20,7 +20,7 @@ module Special
 
   implicit none
 
-  include 'special.h'
+  include '../special.h'
 
   real :: tdown=0.,allp=0.,Kgpara=0.,cool_RTV=0.,hcond0=0.
   real :: lntt0=0.,wlntt=0.,bmdi=0.

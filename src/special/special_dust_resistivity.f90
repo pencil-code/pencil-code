@@ -48,7 +48,7 @@ module Special
 !
   implicit none
 !
-  include 'special.h'
+  include '../special.h'
 !
   real :: zetaCR=1.0e-17, SigmaCR=100.0, agrain=1.0e-2, scaleH=1.0
   real :: Sigmagas=150.0

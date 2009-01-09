@@ -49,7 +49,7 @@ module Special
 
   implicit none
 
-  include 'special.h'
+  include '../special.h'
 
 !
 ! Sphere geometry
