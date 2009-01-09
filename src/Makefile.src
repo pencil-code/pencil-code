@@ -572,6 +572,7 @@ LD_FFTW2=
 #F77=$(FC) #(norlx5*)
 #CC=gcc #(norlx5*)
 #FFLAGS=-O3 #(norlx5*)
+#FFLAGS_DOUBLE=-fdefault-real-8  #(norlx5*)
 ##LD_MPI=-L/usr/lib/openmpi/lib -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl #(norlx5*)
 ##
 ## Axel on Ferlin (ferlin)
