@@ -3658,13 +3658,23 @@ module Hydro
 !
       case ('BS04c')
       if (wdamp/=0.) then
-!        prof_amp3=ampl1_diffrot*(step(z(n1:n2),rdampint,wdamp))
         prof_amp3=ampl1_diffrot*0.5*(1+tanh((z-rdampint)/(wdamp)))
       else
         prof_amp3=ampl1_diffrot
       endif
       df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(f(l1:l2,m,n,iuy) &
         -prof_amp3(n)*sin(0.5*pi*((x(l1:l2))-x0)/Lx)**xexp_diffrot)
+!
+!  same as above but with an equator
+!
+      case ('BS04c1')
+      if (wdamp/=0.) then
+        prof_amp3=ampl1_diffrot*0.5*(1+tanh((z-rdampint)/(wdamp)))
+      else
+        prof_amp3=ampl1_diffrot
+      endif
+      df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(f(l1:l2,m,n,iuy) &
+        -prof_amp3(n)*sin(pi*((x(l1:l2))-x0)/Lx)**xexp_diffrot)
 !
 !  modified diffrot profile from Brandenburg & Sandin (2004, A&A)
       case ('BS04m')
