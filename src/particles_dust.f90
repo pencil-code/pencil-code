@@ -937,9 +937,16 @@ k_loop:   do while (.not. (k>npar_loc))
 
         case ('nothing')
           if (lroot.and.j==1) print*, 'init_particles: No particle velocity set'
+
         case ('zero')
           if (lroot) print*, 'init_particles: Zero particle velocity'
-          fp(1:npar_loc,ivpx:ivpz)=0.
+          fp(1:npar_loc,ivpx:ivpz)=0.0
+
+        case ('zero-shear')
+          if (lroot) print*, 'init_particles: Zero particle velocity'
+          fp(1:npar_loc,ivpy)=-Sshear*fp(1:npar_loc,ixp)
+          fp(1:npar_loc,ivpx)=0.0
+          fp(1:npar_loc,ivpz)=0.0
 
         case ('constant')
           if (lroot) print*, 'init_particles: Constant particle velocity'
