@@ -91,9 +91,6 @@ module Magnetic
   real :: etadust0=0.0
   integer :: nbvec,nbvecmax=nx*ny*nz/4,va2power_jxb=5
   integer :: N_modes_aa=1
-  integer :: iglobal_bx_ext=0, iglobal_by_ext=0, iglobal_bz_ext=0
-  integer :: iglobal_jx_ext=0, iglobal_jy_ext=0, iglobal_jz_ext=0
-  integer :: iglobal_ex_ext=0, iglobal_ey_ext=0, iglobal_ez_ext=0
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
   logical :: llorentzforce=.true.,linduction=.true.
   logical :: lresi_eta_const=.false.

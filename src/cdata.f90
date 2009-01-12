@@ -209,6 +209,9 @@ module Cdata
   integer, dimension(ndustspec) :: iuud=0,iudx=0,iudy=0,iudz=0,ind=0,imd=0,imi=0
   integer, dimension(nchemspec) :: ichemspec=0
   integer :: ilnrhon=0,iuun=0,iunx=0,iuny=0,iunz=0
+  integer :: iglobal_bx_ext=0, iglobal_by_ext=0, iglobal_bz_ext=0
+  integer :: iglobal_jx_ext=0, iglobal_jy_ext=0, iglobal_jz_ext=0
+  integer :: iglobal_ex_ext=0, iglobal_ey_ext=0, iglobal_ez_ext=0
 !
 !  Parameters related to message passing.
 !
