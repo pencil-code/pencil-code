@@ -1,4 +1,4 @@
-! $Id: testscalar_z.f90 10031 2008-11-08 09:16:14Z AxelBrandenburg $
+! $Id$
 
 !  This modules deals with all aspects of testscalar fields; if no
 !  testscalar fields are invoked, a corresponding replacement dummy
@@ -156,7 +156,7 @@ module Testscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testscalar.f90 10031 2008-11-08 09:16:14Z AxelBrandenburg $")
+           "$Id$")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
