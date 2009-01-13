@@ -104,8 +104,8 @@ for ix=0,nxc-1 do begin
             endif
 ;
             phis=atan(yc[iy]/xc[ix])
-            if ((xc[ix] le 0)and(yc[iy] ge 0)) then phis=phis+!pi
-            if ((xc[ix] le 0)and(yc[iy] le 0)) then phis=phis-!pi
+            if ((xc[ix] lt 0)and(yc[iy] ge 0)) then phis=phis+!pi
+            if ((xc[ix] lt 0)and(yc[iy] le 0)) then phis=phis-!pi
             ;take closest r and phi
             ip1=floor((phis-phi(0))*dphi1) & ip2=ip1+1
             if (ip1 eq -1) then begin
