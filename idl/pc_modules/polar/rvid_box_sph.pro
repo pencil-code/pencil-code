@@ -352,9 +352,7 @@ while ( (not eof(1)) and (t le tmax) ) do begin
       zz=rebin(transpose(fcrt1.zc),n_elements(fcrt1.xc),n_elements(fcrt1.zc))
       prr=sqrt(xx^2+zz^2)
       ;tt at constant phi, for masking
-      ptt=atan(xx/zz) 
-      ;i=where(zz eq 0,ntmp) & if (ntmp ne 0) then ptt[i]=!pi/2
-      i=where(zz le 0) & ptt[i]=ptt[i]+!pi
+      ptt=atan(xx,zz) 
 ;
       xm=fcrt1.xc
       zm=fcrt1.zc
@@ -408,9 +406,7 @@ while ( (not eof(1)) and (t le tmax) ) do begin
         ;
         x1=x0+xlength*(cos(gamma)*cos(alpha)) 
         y1=y0+ylength*(sin(gamma)*sin(alpha))
-        angle=atan((y1-y0)/(x1-x0))
-        if ((x1-x0 le 0)and(y1-y0 ge 0)) then angle=angle+!pi
-        if ((x1-x0 le 0)and(y1-y0 le 0)) then angle=angle-!pi
+        angle=atan((y1-y0),(x1-x0))
         x2=x0+length*cos(angle)
         y2=y0+length*sin(angle)
         ;arrow, x0, y0, x1, y1,color=100,/normal
@@ -423,9 +419,7 @@ while ( (not eof(1)) and (t le tmax) ) do begin
         ;
         x1=x0+xlength*(-cos(gamma)*sin(alpha))
         y1=y0+ylength*( sin(gamma)*cos(alpha))
-        angle=atan((y1-y0)/(x1-x0))
-        if ((x1-x0 le 0)and(y1-y0 ge 0)) then angle=angle+!pi
-        if ((x1-x0 le 0)and(y1-y0 le 0)) then angle=angle-!pi
+        angle=atan((y1-y0),(x1-x0))
         x2=x0+length*cos(angle)
         y2=y0+length*sin(angle)
         ;arrow, x0, y0, x1, y1,color=100,/normal

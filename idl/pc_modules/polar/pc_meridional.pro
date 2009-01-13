@@ -46,8 +46,7 @@ rext=rad[nrad-1]
 for ix=0,nxc-1 do begin
   for iz=0,nzc-1 do begin
     radius = sqrt(xc[ix]^2+zc[iz]^2)
-    theta=atan(xc[ix]/zc[iz])
-    if (zc[iz] le 0) then theta=theta+!pi
+    theta=atan(xc[ix],zc[iz])
 ;
     if ((radius ge rint)  and (radius le rext)  $
                           and                   $
