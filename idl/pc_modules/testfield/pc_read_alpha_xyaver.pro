@@ -13,6 +13,10 @@ common cdat,x,y,z,nx,ny,nz,nw,ntmax,date0,time0
 @xder_6th
 pc_read_xyaver,o=xyaver
 pc_read_param,o=param,/param2
+pc_read_param,o=param1
+z0=param1.xyz0(2)
+z1=param1.xyz1(2)
+Lz=z1-z0
 ;
 default,use_grid,1
 spawn,'touch parameters.pro'
@@ -33,10 +37,6 @@ endif else begin
   ;z1=!pi & z0=-z1
   ;dz=(z1-z0)/nz
   ;zzz=z0+dz*(.5+findgen(nz))
-  pc_read_param,o=param1
-  z0=param1.xyz0(2)
-  z1=param1.xyz1(2)
-  Lz=z1-z0
   dz=Lz/(nz-1)
   print,'assume non-periodic domain with dz=',dz
   zzz=z0+dz*findgen(nz)
@@ -89,7 +89,7 @@ for it=0L,nt-1L do begin
 endfor
 ;
 print,'tvscl,alpij(*,*,0,0)'
-print,'contour,transpose(alpij(*,*,1,1)),tt,zzz,nlev=20,/fil'
+print,'contour,transpose(alpij(*,*,1,1)),tt(1:*),zzz,nlev=20,/fil'
 ;
 ;tarray=spread(xyaver.t,[0,2,3],[nz,2,2])
 ;default,good,where(tarray gt 0.)

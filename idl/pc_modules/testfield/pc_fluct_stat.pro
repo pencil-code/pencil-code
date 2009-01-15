@@ -22,7 +22,7 @@ if iplo ne 0 then begin
   yr=minmax([fac*fm,-fac*fm,fac*frms])
   plot,t,f,li=1,yr=yr
 endif
-pc_error_range,t(good),f(good),mean=fm,error=fm_error,/accum,oplot=iplo
+pc_error_range2,t(good),f(good),mean=fm,error=fm_error,/accum,oplot=iplo
 ;
 ;  g = (f-fm)^2
 ;  g = gm +/- gm_error = gm*(1 +/- gm_error/gm)
@@ -37,7 +37,7 @@ if iplo ne 0 then begin
   oplot,t,t*0.,li=3
 endif
 ;
-pc_error_range,t(good),g,mean=gm,error=gm_error,/accum,oplot=iplo
+pc_error_range2,t(good),g,mean=gm,error=gm_error,/accum,oplot=iplo
 frms=gm^.5
 frms_error=.5*gm_error/frms
 ;
