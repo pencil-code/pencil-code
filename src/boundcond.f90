@@ -4550,8 +4550,6 @@ module Boundcond
        YYi(k)=val(ichemspec(k))
       enddo
 
-!
-!
       if (leos_chemistry) then
         call get_cs2_full(cs2_full)
         call get_gamma_full(gamma_full)
@@ -4576,7 +4574,15 @@ module Boundcond
          rho_full=exp(f(:,:,:,ilnrho))
          rho0(:,:) = rho_full(lll,:,:)
          mom2(lll,:,:)=rho0(:,:)*f(lll,:,:,iuy)
-         pp=cs2_full*rho_full/gamma_full
+         do i=1,my
+         do k=1,mz
+          if (minval(gamma_full(:,i,k))<=0.) then
+           pp(:,i,k)=0.
+          else
+           pp(:,i,k)=cs2_full(:,i,k)*rho_full(:,i,k)/gamma_full(:,i,k)
+          endif
+         enddo
+         enddo
       else
         print*,"bc_nscbc_subin_x: leos_idealgas=",leos_idealgas,"."
         print*,"NSCBC subsonic inflos is only implemented for "//&
@@ -4593,9 +4599,7 @@ module Boundcond
         do i=1,mz
           call der_pencil(2,mom2(lll,:,i),dmom2_dy(:,i))
         enddo
-!
- !       Mach_num=maxval(f(lll,m1:m2,n1:n2,iux)/cs0_ar(m1:m2,n1:n2))
-!
+
         select case(topbot)
         case('bot')
           L_1 = (f(lll,m1:m2,n1:n2,iux) - cs0_ar(m1:m2,n1:n2))*&
@@ -4711,13 +4715,32 @@ module Boundcond
           rho0(:,:) = rho_full(lll,:,:)
           drho_prefac=-1./rho0(m1:m2,n1:n2)/cs20_ar(m1:m2,n1:n2)
         endif
-         pp=cs2_full*rho_full/gamma_full
+         
+         do i=1,my
+         do k=1,mz
+          if (minval(gamma_full(:,i,k))<=0.) then
+           pp(:,i,k)=0.
+          else
+           pp(:,i,k)=cs2_full(:,i,k)*rho_full(:,i,k)/gamma_full(:,i,k)
+          endif
+         enddo
+         enddo
+
          mom2(lll,:,:)=rho0(:,:)*f(lll,:,:,iuy)
          rho_ux2(lll,:,:)=rho0(:,:)*f(lll,:,:,iux)*f(lll,:,:,iux)
          rho_uy2(lll,:,:)=rho0(:,:)*f(lll,:,:,iuy)*f(lll,:,:,iuy)
-         rho_gamma(lll,:,:)=rho0(:,:)/gamma0(:,:)
-         rhoE_p(lll,:,:)=0.5*rho_ux2(lll,:,:)+0.5*rho_uy2(lll,:,:) &
-                        +cs20_ar(:,:)/(gamma0(:,:)-1.)*rho0(:,:)
+         do i=1,my
+         do k=1,mz
+          if (gamma0(i,k)<=0.) then
+           rho_gamma(lll,i,k)=0.
+           rhoE_p(lll,i,k)=0.
+          else
+           rho_gamma(lll,i,k)=rho0(i,k)/gamma0(i,k)
+           rhoE_p(lll,i,k)=0.5*rho_ux2(lll,i,k)+0.5*rho_uy2(lll,i,k) &
+                         +cs20_ar(i,k)/(gamma0(i,k)-1.)*rho0(i,k)
+          endif
+         enddo
+         enddo
       else
         print*,"bc_nscbc_subin_x: leos_idealgas=",leos_idealgas,"."
         print*,"NSCBC subsonic inflos is only implemented "//&

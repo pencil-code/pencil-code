@@ -807,12 +807,23 @@ subroutine flame_front(f)
                 /species_constants(k,imass)
           enddo
           mu1_full=mu1_full*unit_mass
+
+          
+
 !
 !  Mole fraction XX
 !
           do k=1,nchemspec 
-            XX_full(:,:,:,k)=f(:,:,:,ichemspec(k))*unit_mass &
-                /species_constants(k,imass)/mu1_full(:,:,:)
+           do j2=1,my
+            do j3=1,mz
+              if (minval(mu1_full(:,j2,j3))<=0) then
+                XX_full(:,j2,j3,k)=0.
+              else
+                XX_full(:,j2,j3,k)=f(:,j2,j3,ichemspec(k))*unit_mass &
+                 /species_constants(k,imass)/mu1_full(:,j2,j3)
+              endif
+            enddo
+           enddo
           enddo
 !
 !  Specific heat at constant pressure
@@ -988,8 +999,16 @@ subroutine flame_front(f)
             tmp_sum2=tmp_sum2+XX_full(:,:,:,k)/species_cond(:,:,:,k)
           enddo
 !
-          lambda_full=0.5*(tmp_sum+1./tmp_sum2)
 
+          do j2=1,my
+          do j3=1,mz
+           if (minval(tmp_sum2(:,j2,j3))<=0.) then
+            lambda_full(:,j2,j3)=0.
+           else
+            lambda_full(:,j2,j3)=0.5*(tmp_sum(:,j2,j3)+1./tmp_sum2(:,j2,j3))
+           endif
+          enddo
+          enddo
           
           if (lambda_const<impossible) then
             lambda_full=lambda_const
@@ -2963,7 +2982,16 @@ subroutine flame_front(f)
 !      
       pp_full_cgs = Rgas_unit_sys*mu1_full/unit_mass*rho*TT
 !
-      prefactor=3./16.*sqrt(2.*k_B_cgs**3*TT**3)/pp_full_cgs/sqrt(pi)
+       do j=1,my
+       do k=1,mz 
+
+        if (minval(pp_full_cgs(:,j,k))<=0.) then
+         prefactor(:,j,k)=0.
+        else
+         prefactor(:,j,k)=3./16.*sqrt(2.*k_B_cgs**3*TT(:,j,k)**3)/pp_full_cgs(:,j,k)/sqrt(pi)
+        endif
+       enddo
+       enddo
 !
       if (.not. BinDif_simple) then
 !
@@ -3120,9 +3148,21 @@ subroutine flame_front(f)
       real, dimension (mx,my,mz) :: cs2_full
 !
       intent(out) :: cs2_full
+
+      integer :: j,k
+
 !
-      cs2_full=cp_full/cv_full*mu1_full*TT_full*Rgas
+     do j=1,my
+     do k=1,mz
+      if (minval(cv_full(:,j,k))<=0) then
+       cs2_full(:,j,k)=0.
+      else
+       cs2_full(:,j,k)=cp_full(:,j,k)/cv_full(:,j,k)*mu1_full(:,j,k)*TT_full(:,j,k)*Rgas
+      endif
+     enddo
+     enddo
 !
+
     endsubroutine get_cs2_full
 !*************************************************************
     subroutine get_gamma_full(gamma_full)
@@ -3132,9 +3172,20 @@ subroutine flame_front(f)
       real, dimension (mx,my,mz) :: gamma_full
 !
       intent(out) :: gamma_full
+
+      integer :: j,k
 !      
-      gamma_full=cp_full/cv_full
-!
+      do j=1,my
+      do k=1,mz
+       if (minval(cv_full(:,j,k))<=0) then
+        gamma_full(:,j,k)=0.
+       else
+        gamma_full(:,j,k)=cp_full(:,j,k)/cv_full(:,j,k)
+       endif
+      enddo
+      enddo
+
+
     endsubroutine get_gamma_full
 !*************************************************************
     subroutine get_p_infx(p_infx,topbot)
@@ -3203,7 +3254,8 @@ subroutine flame_front(f)
         if (emptyFile) then
           pp_infx(:,:,:)=0.
           read_P=.false.
-          if (lroot) print*, 'air.dat file is empty, then pp_inf=0 '
+         ! if (lroot) print*, 'air.dat file is empty, then pp_inf=0 '
+          call stop_it('air.dat file is empty')
         else
           pp_infx(:,:,:)=PP*10.
           read_P=.false.
