@@ -593,8 +593,8 @@ LD_FFTW2=
 ##
 #FC=ifort #(nbabkovs)
 #FC=ifort #(hikari)
-##FC=ifort #(pchelka)
-#FC=g95 -finteger=-2147483648 #(pchelka)
+#FC=ifort #(pchelka)
+##FC=g95 -finteger=-2147483648 #(pchelka)
 ##
 ## rockall (ngrs's current laptop)
 ##
