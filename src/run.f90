@@ -651,7 +651,7 @@
           write(*,'(A,1pG10.3,A,1pG8.2,A)') &
                ' Wall clock time [hours] = ', wall_clock_time/3600., &
                ' (+/- ', real(mpiwtick())/3600.,')'
-          if (it>1) write(*,'(A,G10.3)') &
+          if (it>1) write(*,'(A,1pG10.3)') &
                ' Wall clock time/timestep/meshpoint [microsec] =', &
                wall_clock_time/count/nw/ncpus/1e-6
           print*
