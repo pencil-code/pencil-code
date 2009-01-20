@@ -154,17 +154,27 @@ module Timestep
       real, dimension (mx,my,mz,mvar), intent(out) :: df
       type (pencil_case), intent(inout) :: p
       real, dimension(mx,my,mz,mvar,5) :: k
-      real, dimension(mx,my,mz,mvar) :: tmp1, tmp2
+      real, save, dimension(mx,my,mz,mvar) :: tmp1
+      real, dimension(mx,my,mz,mvar) :: tmp2
       real, dimension(nx) :: scal, err
       real, intent(inout) :: errmax
       real :: errmaxs
       integer :: j,lll
+      logical, save :: first_call=.true.
 
       if (ny /= 1 .or. nz /= 1) then
         call fatal_error("rkck", "timestep_rkf_1d only works for the 1D case")
       endif
 
       errmax=0.
+
+      if (first_call) then
+        ! Initialize tmp1 to arbitrary value /= 0, so chemistry.f90 (which
+        ! operates in the ghost zones where it most probably shouldn't)
+        ! doesn't divide by 0.
+        tmp1 = real(0.577215664901532860606512090082402431042159335)
+        first_call = .false.
+      endif
 
       tmp2(:,m1:m2,n1:n2,:) = 0.
       call pde(f,tmp2,p)
