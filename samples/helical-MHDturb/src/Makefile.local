@@ -15,4 +15,5 @@ EOS=eos_idealgas
 DENSITY=density
 PSCALAR=pscalar_nolog
 IO=io_dist
-
+FOURIER=fourier_fftpack
+POWER=power_spectrum
