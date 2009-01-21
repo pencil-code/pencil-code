@@ -1,4 +1,4 @@
-$Id: developers.txt,v 1.15 2008-08-17 18:12:59 dobler Exp $
+$Id$
 
 Below are the contact details of some of the Pencil Code developers.
 Their web pages may be found in the pencil code manual.

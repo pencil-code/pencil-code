@@ -1,4 +1,4 @@
-! $Id: localshock.f90,v 1.14 2008-05-09 17:27:56 brandenb Exp $
+! $Id$
 !
 !  This module fetchs the position of the massive n-body particles 
 !  and applies extra shock dissipation around them. This allows for
@@ -144,7 +144,7 @@ module Special
 !  identify CVS/SVN version information:
 !
       if (lroot) call cvs_id( &
-           "$Id: localshock.f90,v 1.14 2008-05-09 17:27:56 brandenb Exp $")
+           "$Id$")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't

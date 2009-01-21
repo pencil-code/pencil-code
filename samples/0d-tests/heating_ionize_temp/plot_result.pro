@@ -1,4 +1,4 @@
-;  $Id: plot_result.pro,v 1.1 2006-03-31 17:16:19 theine Exp $
+;  $Id$
 ;
 if !d.name eq 'PS' then begin
   device,xsize=18,ysize=14,yoffset=3

@@ -1,4 +1,4 @@
-! $Id: gross_pitaevskii.f90,v 1.11 2008-05-09 17:27:56 brandenb Exp $
+! $Id$
 !  This module provide a way for users to specify custom 
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc. 
 !
@@ -184,7 +184,7 @@ module Special
 !
 !  identify CVS/SVN version information:
 !
-      if (lroot) call cvs_id( "$Id: gross_pitaevskii.f90,v 1.11 2008-05-09 17:27:56 brandenb Exp $")
+      if (lroot) call cvs_id( "$Id$")
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
 !  been configured in a custom module but they do no harm)

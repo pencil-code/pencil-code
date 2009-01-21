@@ -1,4 +1,4 @@
-! $Id: read_xyaver_alpha.f90,v 1.1 2007-08-27 18:31:34 brandenb Exp $
+! $Id$
 
 !***********************************************************************
       program read_xyaver_alpha

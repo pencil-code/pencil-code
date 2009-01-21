@@ -1,7 +1,7 @@
 Directory:
     ${PENCIL_HOME}/samples/0d-tests/chemistry_H2_ignition_rkf
 CVS-Id:
-    $Id: README 9840 2008-09-05 07:29:37Z ajohan $
+    $Id$
 Maintainer:
     Nils Erland L. Haugen <nils.e.haugen@sintef.no>
     Natalia Babkovskaia <>

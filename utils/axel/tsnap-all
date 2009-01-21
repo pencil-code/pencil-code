@@ -1,6 +1,6 @@
 #!/bin/csh
 #
-#  $Id: tsnap-all,v 1.2 2004-01-26 23:20:07 brandenb Exp $
+#  $Id$
 #
 #  Runs tsnap (to get time of snapshot) for all var.dat files
 #  If a number is given as argument it runs tsnap for all VAR files

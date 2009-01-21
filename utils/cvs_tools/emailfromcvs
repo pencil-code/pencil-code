@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   emailfromcvs
 # Author: Antony Mee (A.J.Mee@ncl.ac.uk)
 # Started:   17-Feb-2004
-# CVS: $Id: emailfromcvs,v 1.8 2008-07-28 18:41:35 brandenb Exp $
+# CVS: $Id$
 # Usage:
 #   emailfromcvs <cvs_user_id> <subject> <to_addr_1> [to_addr_2 ...]
 # Description:

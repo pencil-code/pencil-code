@@ -1,4 +1,4 @@
-! $Id: meanfield_alpm.f90,v 1.8 2008-05-09 17:27:56 brandenb Exp $
+! $Id$
 !
 !  This module serves as a sample for a special_XXX module that
 !  introduces additional primitive variables. Use this as a basis for your
@@ -83,7 +83,7 @@ module Special
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: meanfield_alpm.f90,v 1.8 2008-05-09 17:27:56 brandenb Exp $")
+           "$Id$")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

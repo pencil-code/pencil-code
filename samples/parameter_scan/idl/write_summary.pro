@@ -1,4 +1,4 @@
-;$Id: write_summary.pro,v 1.1 2008-12-07 09:10:44 brandenb Exp $
+;$Id$
 ;
 ;  read
 ;

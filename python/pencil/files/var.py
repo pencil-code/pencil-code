@@ -1,4 +1,4 @@
-# $Id: var.py,v 1.11 2008-07-16 23:41:16 joishi Exp $
+# $Id$
 #
 # read VAR files. based on the read_var.pro IDL script.
 #

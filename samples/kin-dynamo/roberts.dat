@@ -1,4 +1,4 @@
-$Id: roberts.dat,v 1.1 2004-02-22 09:11:58 brandenb Exp $
+$Id$
 Growth rates for Roberts flow
 
 N    eta      lam      dt

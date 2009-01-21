@@ -1,4 +1,4 @@
-; $Id: pux.pro,v 1.2 2002-12-05 12:43:13 brandenb Exp $
+; $Id$
 ;
 ;  expansion shock, to be compared with Fig 1 of S.A.E.G. Falle (2002)
 ;  ApJL 577, L123-L126 "Rarefaction shocks, shock errors, and low

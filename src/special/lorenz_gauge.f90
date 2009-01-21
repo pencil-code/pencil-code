@@ -1,4 +1,4 @@
-! $Id: lorenz_gauge.f90,v 1.3 2008-05-09 17:27:56 brandenb Exp $
+! $Id$
 !
 !  Lorentz gauge, dphi/dt = -cphi2*divA
 !
@@ -83,7 +83,7 @@ module Special
 !      naux = naux+1
 !
       if (lroot) call cvs_id( &
-           "$Id: lorenz_gauge.f90,v 1.3 2008-05-09 17:27:56 brandenb Exp $")
+           "$Id$")
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
 !  been configured in a custom module but they do no harm)

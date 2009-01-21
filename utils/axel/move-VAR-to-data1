@@ -1,5 +1,5 @@
 #!/bin/csh
-#$Id: move-VAR-to-data1,v 1.1 2007-06-17 17:25:29 boson9 Exp $
+#$Id$
 #
 #  Example:
 #     copy-var-to-var ../hydro256e

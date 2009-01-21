@@ -1,4 +1,4 @@
-$Id: comm-problem.txt,v 1.2 2002-07-24 14:16:54 dobler Exp $
+$Id$
 
 On Kabul, the code sometimes hangs after some 1000 or time steps (sometimes
 less, sometimes more). Here is the output of mpitask for a run on 5 CPUs

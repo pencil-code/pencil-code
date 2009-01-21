@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   11-Nov-2001
-;;;  $Id: pvert1.pro,v 1.3 2006-03-27 17:06:29 ngrs Exp $
+;;;  $Id$
 ;;;
 ;;;  Description:
 ;;;    Plot vertical profiles of uz, lnrho and entropy.

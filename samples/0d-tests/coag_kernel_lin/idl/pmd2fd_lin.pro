@@ -1,4 +1,4 @@
-; $Id: pmd2fd_lin.pro,v 1.5 2006-04-01 11:29:21 ajohan Exp $
+; $Id$
 !p.charsize=1.5
 int=0.
 for k=0,ndustspec-1 do begin

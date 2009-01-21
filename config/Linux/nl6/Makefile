@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.1 2003-08-25 13:05:20 mee Exp $
+### $Id$
 ### Machine Specific Makefile for modular pencil code
 ### 
 ### The appropriate Makefile will be chosen from the config tree and included during at compile time 

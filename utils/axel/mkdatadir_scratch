@@ -1,6 +1,6 @@
 #!/bin/csh
 #
-#  $Id: mkdatadir_scratch,v 1.1 2007-06-17 17:25:29 boson9 Exp $
+#  $Id$
 #
 #  This script generates a link to a data directory
 #  with the same name as the current working directory

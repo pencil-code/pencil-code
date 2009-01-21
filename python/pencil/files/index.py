@@ -1,4 +1,4 @@
-#$Id: index.py,v 1.3 2008-03-19 10:08:37 tgastine Exp $
+#$Id$
 
 from param import read_param
 

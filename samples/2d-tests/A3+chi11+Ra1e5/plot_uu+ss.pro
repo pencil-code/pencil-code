@@ -1,4 +1,4 @@
-; $Id: plot_uu+ss.pro,v 1.2 2007-08-18 06:28:06 brandenb Exp $
+; $Id$
 ;
 ; scp Hurlburt84-Ra1e5.png $ns1/f90/pencil-code/www/samples/2d-tests
 ;

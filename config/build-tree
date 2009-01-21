@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   
 # Author: 
 # Date:   14-Aug-2003
-# CVS: $Id: build-tree,v 1.3 2005-08-11 17:12:20 mee Exp $
+# CVS: $Id$
 # Description:
 #
 #   DESCRIPTION

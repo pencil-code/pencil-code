@@ -1,11 +1,11 @@
-# $Id: yaver.py,v 1.1 2007-11-16 13:57:04 joishi Exp $
+# $Id$
 #
 # read yaverages.dat file
 #
 # Author: J. Oishi (joishi@amnh.org). 
 # 
 #
-__version__ = "$Id: yaver.py,v 1.1 2007-11-16 13:57:04 joishi Exp $"
+__version__ = "$Id$"
 
 import os
 import re

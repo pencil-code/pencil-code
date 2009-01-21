@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.2 2004-11-02 21:49:09 dobler Exp $
+! $Id$
 
 module General
 

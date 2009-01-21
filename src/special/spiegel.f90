@@ -1,4 +1,4 @@
-! $Id: spiegel.f90,v 1.6 2008-05-20 11:18:12 brandenb Exp $
+! $Id$
 !
 !  This module is currently fairly much obsolete.
 !  This module incorporates all the modules used for Natalia's
@@ -159,7 +159,7 @@ module Special
 !  identify CVS/SVN version information:
 !
       if (lroot) call cvs_id( &
-           "$Id: spiegel.f90,v 1.6 2008-05-20 11:18:12 brandenb Exp $")
+           "$Id$")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 

@@ -1,4 +1,4 @@
-;$Id: parameters.pro,v 1.1 2008-01-14 07:47:33 brandenb Exp $
+;$Id$
 ;
 ;  plot range for penergy_total.pro routine
 ;

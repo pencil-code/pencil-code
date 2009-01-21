@@ -1,4 +1,4 @@
-! $Id: special_dust_resistivity.f90,v 1.1 2008-07-29 07:47:03 ajohan Exp $
+! $Id$
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -85,7 +85,7 @@ module Special
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: special_dust_resistivity.f90,v 1.1 2008-07-29 07:47:03 ajohan Exp $")
+           "$Id$")
       if (naux > maux) then
         if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
         call stop_it('register_special: naux > maux')

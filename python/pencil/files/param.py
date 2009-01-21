@@ -1,4 +1,4 @@
-# $Id: param.py,v 1.2 2008-03-10 16:59:13 dintrans Exp $
+# $Id$
 """
 param.py -- reads parameters from the f90 namelists
 Author: J. Oishi (joishi@amnh.org)

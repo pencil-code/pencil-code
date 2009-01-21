@@ -1,4 +1,4 @@
-$Id: pvid.pro,v 1.2 2006-09-24 17:09:58 brandenb Exp $
+$Id$
 ;
 ;  preprocess run using "src/read_videofiles.x" with "bb"
 ;

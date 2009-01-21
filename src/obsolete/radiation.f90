@@ -1,4 +1,4 @@
-! $Id: radiation.f90,v 1.1 2006-10-13 06:19:14 brandenb Exp $
+! $Id$
 
 !  Radiation in the fluxlimited-diffusion approximation.
 !  Doesn't work convincingly (and maybe never will). Look at the
@@ -99,7 +99,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation.f90,v 1.1 2006-10-13 06:19:14 brandenb Exp $")
+           "$Id$")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

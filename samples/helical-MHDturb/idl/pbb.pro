@@ -1,4 +1,4 @@
-;$Id: pbb.pro,v 1.1 2006-06-26 21:38:51 brandenb Exp $
+;$Id$
 if !d.name eq 'PS' then begin
   device,xsize=18,ysize=16,yoffset=3
   !p.charthick=4 & !p.thick=4 & !x.thick=4 & !y.thick=4

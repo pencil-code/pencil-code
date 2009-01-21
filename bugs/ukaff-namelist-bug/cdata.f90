@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.1 2002-06-12 17:25:17 dobler Exp $
+! $Id$
 
 module Cdata
 

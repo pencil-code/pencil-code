@@ -1,5 +1,5 @@
 
-__version__ = "$Id: vector_multiplication.py,v 1.1 2007-11-16 13:57:05 joishi Exp $"
+__version__ = "$Id$"
 import numpy as N
 
 def dot(a,b):

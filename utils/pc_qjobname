@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 ##
-## $Id: pc_qjobname,v 1.11 2008-07-17 14:41:41 ajohan Exp $
+## $Id$
 ##
 ## Extract simulation directory of queued jobs.
 ##

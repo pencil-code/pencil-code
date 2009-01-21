@@ -1,4 +1,4 @@
-#$Id: zprof.py,v 1.2 2008-03-13 14:16:27 dintrans Exp $
+#$Id$
 
 import numpy as N
 import pencil as pc

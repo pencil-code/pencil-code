@@ -1,4 +1,4 @@
-;$Id: ptestfield.pro,v 1.2 2008-03-30 04:48:00 brandenb Exp $
+;$Id$
 ;
 ;  plot alpa and eta results from time series
 ;

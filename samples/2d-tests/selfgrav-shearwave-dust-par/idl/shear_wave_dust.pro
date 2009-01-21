@@ -1,5 +1,5 @@
 ;;
-;;  $Id: shear_wave_dust.pro,v 1.2 2006-10-07 11:03:15 ajohan Exp $
+;;  $Id$
 ;;
 ;;  Semi-analytical solution of the linear growth of a non-axisymmetric
 ;;  self-gravitating dust wave in a Keplerian shear flow.

@@ -1,4 +1,4 @@
-#$Id: README,v 1.3 2007-09-05 18:37:16 dintrans Exp $
+#$Id$
 #
 #  list of README file with maintainer names, produced using
 #  (grep -A4 Maintainer */{,*/}README | grep "<"; echo "") >> README 

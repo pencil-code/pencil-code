@@ -1,4 +1,4 @@
-# $Id: xyaver.py,v 1.1 2007-11-16 13:57:04 joishi Exp $
+# $Id$
 #
 # read xyaver files
 #

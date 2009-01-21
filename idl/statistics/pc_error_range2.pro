@@ -1,4 +1,4 @@
-;$Id: pc_error_range.pro 9840 2008-09-05 07:29:37Z ajohan $
+;$Id$
 pro pc_error_range2,tt,a,mean=am,error=err,oplot=oplot,accum=accum,col=col
 ;
 ;  calculate averages for each stretch of time series that has the

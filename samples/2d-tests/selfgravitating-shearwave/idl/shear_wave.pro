@@ -1,5 +1,5 @@
 ;;
-;;  $Id: shear_wave.pro,v 1.1 2006-06-07 03:25:50 ajohan Exp $
+;;  $Id$
 ;;
 ;;  Semi-analytical solution of the linear growth of a non-axisymmetric
 ;;  self-gravitating wave in a Keplerian shear flow.

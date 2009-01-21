@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.54 2008-05-09 17:27:56 brandenb Exp $
+! $Id$
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -181,7 +181,7 @@ module Special
 !  identify CVS/SVN version information:
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.54 2008-05-09 17:27:56 brandenb Exp $")
+           "$Id$")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't

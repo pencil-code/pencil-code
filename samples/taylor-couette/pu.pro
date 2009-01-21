@@ -1,4 +1,4 @@
-; $Id: pu.pro,v 1.2 2005-06-26 17:34:41 eos_merger_tony Exp $
+; $Id$
 ;
 ;  horizontal plane; not as interesting as xz cross-section;
 ;  for which one uses pu_xz.pro

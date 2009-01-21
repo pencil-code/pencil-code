@@ -1,4 +1,4 @@
-! $Id: chem_stream.f90,v 1.27 2008-05-13 15:44:29 nbabkovs Exp $
+! $Id$
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -146,7 +146,7 @@ module Special
 !  identify CVS/SVN version information:
 !
       if (lroot) call cvs_id( &
-           "$Id: chem_stream.f90,v 1.27 2008-05-13 15:44:29 nbabkovs Exp $")
+           "$Id$")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't

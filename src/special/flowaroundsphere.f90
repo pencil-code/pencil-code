@@ -1,4 +1,4 @@
-! $Id: flowaroundsphere.f90,v 1.2 2008-08-01 16:52:42 arnelohr Exp $
+! $Id$
 
 !  This module provide a way for users to specify custom
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc.
@@ -134,7 +134,7 @@ module Special
 !  identify CVS/SVN version information:
 !
       if (lroot) call cvs_id( &
-           "$Id: flowaroundsphere.f90,v 1.2 2008-08-01 16:52:42 arnelohr Exp $")
+           "$Id$")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't

@@ -1,4 +1,4 @@
-;$Id: generate_kvectors.pro,v 1.9 2007-04-29 16:03:02 brandenb Exp $
+;$Id$
 ;
 ;  generate_kvectors.pro (formerly called gwav.pro)
 ;
@@ -12,7 +12,7 @@
 ;     cp $PENCIL_HOME/samples/helical-MHDturb/K_VECTORS/k5.dat k.dt
 ;
 ;  Author: axel
-;  CVS: $Id: generate_kvectors.pro,v 1.9 2007-04-29 16:03:02 brandenb Exp $
+;  CVS: $Id$
 ;
 ; Wave vectors are located in a subvolume of the box
 ;   -kmax <= kk:=(kx,ky,kz) <= kmax

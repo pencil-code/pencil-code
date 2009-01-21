@@ -1,5 +1,5 @@
 ;  
-;  $Id: pgrowth.pro,v 1.1 2004-02-22 09:11:58 brandenb Exp $
+;  $Id$
 ;  for plotting brms and local growth rate
 ;  a summary of the results are in roberts.dat in this directory
 ;

@@ -1,4 +1,4 @@
-# $Id: grid.py,v 1.2 2008-03-11 13:15:04 dintrans Exp $
+# $Id$
 #
 # read grid
 #

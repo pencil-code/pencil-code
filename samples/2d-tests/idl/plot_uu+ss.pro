@@ -1,4 +1,4 @@
-; $Id: plot_uu+ss.pro,v 1.2 2005-06-26 17:34:29 eos_merger_tony Exp $
+; $Id$
 ;
 ; Plot entropy and velocity vectors for 2d convection runs
 ;

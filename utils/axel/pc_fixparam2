@@ -1,6 +1,6 @@
 #!/bin/csh
 #
-#$Id: pc_fixparam2,v 1.1 2006-04-29 08:40:18 brandenb Exp $
+#$Id$
 #
 #  temporary fix to make data/param2.nml readible
 #

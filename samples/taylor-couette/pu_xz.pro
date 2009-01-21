@@ -1,4 +1,4 @@
-;  $Id: pu_xz.pro,v 1.3 2006-05-04 15:04:54 brandenb Exp $
+;  $Id$
 ;
 ;  one should see 2 nice pairs of Taylor vortices after t=50
 ;

@@ -3,7 +3,7 @@
 ! Initialisation parameters for forced helical MHD turbulence
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.1 2008-10-18 18:04:06 brandenb Exp $',
+  cvsid='$Id$',
 /
 &testfield_init_pars
   luxb_as_aux=T

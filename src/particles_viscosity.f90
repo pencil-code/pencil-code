@@ -1,4 +1,4 @@
-! $Id: viscosity.f90 9840 2008-09-05 07:29:37Z ajohan $
+! $Id$
 !
 !  This modules takes care of viscosity of inertial particles.
 !
@@ -59,7 +59,7 @@ module Particles_viscosity
 !  Identify version number.
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90 9840 2008-09-05 07:29:37Z ajohan $")
+           "$Id$")
 !
 !  Check that we aren't registering too many auxilary variables
 !

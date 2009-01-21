@@ -2,7 +2,7 @@
 !  Initialisation parameters for Kelvin-Helmholtz turbulence.
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.2 2008-10-16 17:32:41 nilshau Exp $',
+  cvsid='$Id$',
   unit_system='cgs'
   unit_temperature=1.
   lperi=T,T,T

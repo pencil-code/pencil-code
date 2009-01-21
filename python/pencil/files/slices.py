@@ -1,4 +1,4 @@
-# $Id: slices.py,v 1.2 2008-03-11 14:44:06 rplasson Exp $
+# $Id$
 #
 # read slice files
 #

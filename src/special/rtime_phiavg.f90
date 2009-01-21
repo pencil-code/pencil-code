@@ -1,4 +1,4 @@
-! $Id: rtime_phiavg.f90,v 1.14 2008-05-09 17:27:56 brandenb Exp $
+! $Id$
 !
 !  This module calculates a number of outputs and removes a mean
 !  (phi-averaged) emf from the simulations with net vertical fields
@@ -151,7 +151,7 @@ module Special
 !  identify CVS/SVN version information:
 !
       if (lroot) call cvs_id( &
-           "$Id: rtime_phiavg.f90,v 1.14 2008-05-09 17:27:56 brandenb Exp $")
+           "$Id$")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't

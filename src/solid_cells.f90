@@ -1,4 +1,4 @@
-! $Id: timestep.f90 9840 2008-09-05 07:29:37Z ajohan $
+! $Id$
 !
 !  This module add solid (as in no-fluid) cells in the domain.
 !  This can be used e.g. in order to simulate a cylinder in a cross flow.

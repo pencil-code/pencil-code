@@ -1,4 +1,4 @@
-# $Id: ts.py,v 1.8 2008-07-23 22:06:30 joishi Exp $
+# $Id$
 #
 # read time_series.dat and return a TimeSeries class of 1D numpy
 # arrrays

@@ -1,4 +1,4 @@
-; $Id: pmg2fd.pro,v 1.2 2004-01-29 13:49:43 ajohan Exp $
+; $Id$
 !p.charsize=1.5
 
 ndustspec = n_elements(ind)

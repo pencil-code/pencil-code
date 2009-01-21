@@ -1,4 +1,4 @@
-! $Id: viscosity.f90 9840 2008-09-05 07:29:37Z ajohan $
+! $Id$
 !
 !  This dummy module takes care of the viscosity of inertial particles.
 !

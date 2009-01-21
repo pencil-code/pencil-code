@@ -1,4 +1,4 @@
-$Id: README,v 1.2 2008-04-19 22:44:07 brandenb Exp $
+$Id$
 
 This directory contains the python subroutines for postprocessing.
 sourceme.sh now resents your $PYTHONPATH to include $PENCIL_HOME/python,

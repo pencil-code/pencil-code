@@ -1,4 +1,4 @@
-### $Id: Makefile.baseline,v 1.1 2003-08-25 12:50:06 mee Exp $
+### $Id$
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local

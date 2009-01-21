@@ -1,4 +1,4 @@
-! $Id: special_dust_resistivity.f90,v 1.1 2008-07-29 07:47:03 ajohan Exp $
+! $Id$
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -84,7 +84,7 @@ module Special
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: special_dust_resistivity.f90,v 1.1 2008-07-29 07:47:03 ajohan Exp $")
+           "$Id$")
 !
       ietadust = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 1
 !

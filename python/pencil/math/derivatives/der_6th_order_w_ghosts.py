@@ -1,4 +1,4 @@
-# $Id: der_6th_order_w_ghosts.py,v 1.2 2008-06-16 08:33:07 tgastine Exp $
+# $Id$
 #
 #
 # calculate 6th order spatial derivatives with ghost zones assumed to be in the arrays

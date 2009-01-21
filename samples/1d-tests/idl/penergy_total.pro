@@ -1,4 +1,4 @@
-;$Id: penergy_total.pro,v 1.1 2008-01-14 07:47:04 brandenb Exp $
+;$Id$
 if !d.name eq 'PS' then begin
   device,xsize=18,ysize=12,yoffset=3
   !p.charthick=4 & !p.thick=4 & !x.thick=4 & !y.thick=4 

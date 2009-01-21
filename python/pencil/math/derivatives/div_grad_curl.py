@@ -1,5 +1,5 @@
 #
-# $Id: div_grad_curl.py,v 1.3 2008-06-19 08:40:03 dintrans Exp $
+# $Id$
 #
 """module to do div, grad, curl (but not 'all that') for pencil-code data.
 

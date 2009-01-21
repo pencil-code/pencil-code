@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#  $Id: pc_newrun_modify,v 1.1 2008-12-07 17:46:20 brandenb Exp $
+#  $Id$
 #
 #  Script to adapt a new run directory,
 #  start the job and check it in.

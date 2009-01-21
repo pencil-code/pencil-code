@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#  $Id: do_all.csh,v 1.1 2008-12-07 17:46:20 brandenb Exp $
+#  $Id$
 #
 bin/pc_newrun_modify 10.0
 bin/pc_newrun_modify 5.0

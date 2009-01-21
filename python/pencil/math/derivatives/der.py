@@ -1,5 +1,5 @@
 #
-# $Id: der.py,v 1.1 2007-11-19 14:29:08 joishi Exp $
+# $Id$
 #
 """
 this is a wrapper for the actual derivatives, currently 6th order with

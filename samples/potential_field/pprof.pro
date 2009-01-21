@@ -1,4 +1,4 @@
-;$Id: pprof.pro,v 1.2 2006-10-11 23:28:24 theine Exp $
+;$Id$
 if !d.name eq 'PS' then begin
   device,xsize=18,ysize=12,yoffset=3
   !p.charthick=4 & !p.thick=4 & !x.thick=4 & !y.thick=4

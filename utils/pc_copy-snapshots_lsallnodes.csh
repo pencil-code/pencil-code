@@ -1,4 +1,4 @@
-## $Id: pc_copy-snapshots_lsallnodes.csh,v 1.3 2005-03-31 07:45:24 ajohan Exp $
+## $Id$
 ##
 ## This file can be used by copy-snapshots to list the data directory on all
 ## the nodes.

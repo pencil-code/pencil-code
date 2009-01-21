@@ -1,4 +1,4 @@
-! $Id: internal_flow.f90,v 1.14 2008-08-15 11:47:25 kapelrud Exp $
+! $Id$
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -86,7 +86,7 @@ module Special
 !  identify CVS/SVN version information:
 !
       if (lroot) call cvs_id( &
-           "$Id: internal_flow.f90,v 1.14 2008-08-15 11:47:25 kapelrud Exp $")
+           "$Id$")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't

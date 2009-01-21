@@ -1,5 +1,5 @@
 ;;
-;;  $Id: shear_wave_dust_nograv.pro,v 1.1 2006-08-11 12:34:45 ajohan Exp $
+;;  $Id$
 ;;
 ;;  Semi-analytical solution of the linear growth of a non-axisymmetric
 ;;  dust particle wave in a Keplerian shear flow.
