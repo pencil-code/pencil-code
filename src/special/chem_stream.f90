@@ -50,7 +50,7 @@
 !
 !--------------------------------------------------------------------
 
-module pecial
+module Special
 
   use Cparam
   use Cdata
