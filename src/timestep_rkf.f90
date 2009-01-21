@@ -173,41 +173,36 @@ module Timestep
 
       lfirst=.false.
 
-      tmp1=f+b21*k(:,:,:,:,1)
 
-      call pde(tmp1, k(:,:,:,:,2),p)
+      call pde(f+b21*k(:,:,:,:,1), k(:,:,:,:,2),p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
           k(l1:l2,m,n,j,2) = dt*k(l1:l2,m,n,j,2)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
       enddo; enddo; enddo
 
 
-      tmp1=f+b31*k(:,:,:,:,1)+b32*k(:,:,:,:,2)
 
-      call pde(tmp1, k(:,:,:,:,3),p)
+      call pde(f+b31*k(:,:,:,:,1)+b32*k(:,:,:,:,2), k(:,:,:,:,3),p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
           k(l1:l2,m,n,j,3) = dt*k(l1:l2,m,n,j,3)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
       enddo; enddo; enddo
 
 
-      tmp1=f+b41*k(:,:,:,:,1)+&
-              b42*k(:,:,:,:,2)+&
-              b43*k(:,:,:,:,3)
 
-      call pde(tmp1, k(:,:,:,:,4),p)
+      call pde(f+b41*k(:,:,:,:,1)+&
+              b42*k(:,:,:,:,2)+&
+              b43*k(:,:,:,:,3), k(:,:,:,:,4),p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
           k(l1:l2,m,n,j,4) = dt*k(l1:l2,m,n,j,4)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
       enddo; enddo; enddo
 
 
-      tmp1=f+b51*k(:,:,:,:,1)+&
+      call pde(f+b51*k(:,:,:,:,1)+&
               b52*k(:,:,:,:,2)+&
               b53*k(:,:,:,:,3)+&
-              b54*k(:,:,:,:,4)
-
-      call pde(tmp1, k(:,:,:,:,5),p)
+              b54*k(:,:,:,:,4), k(:,:,:,:,5),p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
           k(l1:l2,m,n,j,5) = dt*k(l1:l2,m,n,j,5)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
@@ -216,12 +211,11 @@ module Timestep
 
       errmaxs=0.
 
-      tmp1=f+b61*k(:,:,:,:,1)+&
+      call pde(f+b61*k(:,:,:,:,1)+&
               b62*k(:,:,:,:,2)+&
               b63*k(:,:,:,:,3)+&
               b64*k(:,:,:,:,4)+&
-              b65*k(:,:,:,:,5)
-      call pde(tmp1, df,p)
+              b65*k(:,:,:,:,5), df,p)
 
       do j=1,mvar; do n=n1,n2; do m=m1,m2
           df(l1:l2,m,n,j) = dt*df(l1:l2,m,n,j)
