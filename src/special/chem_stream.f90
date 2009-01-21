@@ -81,7 +81,7 @@ module Special
   integer :: index_H2=0, index_O2=0, index_H2O=0, index_N2=0
   real :: init_x1=-0.2,init_x2=0.2
  ! real :: x1_front=-0.2, x2_front=0.2
-  real :: init_TT1=400.,init_TT2=2400.,init_lnTT1=6.,init_p2=1e6
+  real :: init_TT1=400.,init_TT2=2400.,init_lnTT1=5.7,init_p2=1.013e6
 ! Keep some over used pencils
 !
 
