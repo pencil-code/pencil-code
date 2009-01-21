@@ -1,0 +1,271 @@
+#!/usr/bin/perl -w
+
+# Name:   pc_fix_svn_properties
+# Author: wd (wdobler [at] gmail [dot] com)
+# Date:   08-Dec-2008
+# Description:
+#   For all files containing a SVN keywords line, set the corresponding
+#   svn:keywords property
+#   So far, we handle only <dollar>Id<dollar>, which is probably enough.
+# Usage:
+#   pc_fix_svn_properties [-nq] dir1|file1 [dir2|file2 [...]]
+#   pc_fix_svn_properties [-v|-h]
+# Options:
+#   -n, --dry-run   Don't change any properties, just print what would happen
+#   -h, --help      This help
+#   -v, --version   Print version number
+#   -q, --quiet     Be quiet
+# Arguments:
+#   Arguments are either names of files to fix or names of directories to
+#   traverse recursively, fixing the properties for all files.
+# Examples:
+#   pc_fix_svn_properties README
+#   pc_fix_svn_properties .
+#   pc_fix_svn_properties ${PENCIL_HOME}
+
+# Copyright (C) 2008  Wolfgang Dobler
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the same conditions as Perl or under the GNU General Public
+# License, version 3 or later.
+
+use strict;
+
+use Getopt::Long;
+# Allow for `-Plp' as equivalent to `-P lp' etc:
+Getopt::Long::config("bundling");
+
+my (%opts);			# Options hash for GetOptions
+my $doll='\$';			# Need this to trick CVS
+
+## Process command line
+GetOptions(\%opts,
+	   qw( -n   --dry-run
+	       -h   --help
+	            --debug
+	       -q   --quiet
+               -v   --version ));
+
+my $debug = ($opts{'debug'} ? 1 : 0 ); # undocumented debug option
+if ($debug) {
+    printopts(\%opts);
+    print "\@ARGV = `@ARGV'\n";
+}
+
+if ($opts{'h'} || $opts{'help'})    { die usage();   }
+if ($opts{'v'} || $opts{'version'}) { die version(); }
+
+my $dry_run = ($opts{'n'} || $opts{'dry-run'} || '');
+my $quiet   = ($opts{'q'} || $opts{'quiet'}   || '');
+
+my @files = @ARGV;
+die usage() unless (@files);
+
+my ($count, $no_kw_count, $already_set) = (0, 0, 0);
+for my $file_or_dir (@files) {
+    $count += fix_file_or_dir($file_or_dir);
+}
+
+unless ($quiet) {
+    print "Fixed SVN properties for $count files\n";
+    print "No keywords in           $no_kw_count files\n";
+    print "`Id' already set in      $already_set files\n";
+}
+
+# ---------------------------------------------------------------------- #
+sub fix_file_or_dir {
+# Fix SVN properties for given file, or recursively for all files in given
+# directory
+    my ($file_or_dir) = @_;
+    if (-f $file_or_dir) {
+        return fix_file($file_or_dir);
+    } elsif (-d $file_or_dir) {
+        return fix_dir($file_or_dir);
+    } elsif (! -x $file_or_dir) {
+        warn "No such file or directory: $file_or_dir\n";
+    } else {
+        warn "$file_or_dir is neither file, nor directory\n";
+    }
+    return 0;
+}
+# ---------------------------------------------------------------------- #
+sub fix_file {
+# Fix SVN properties for given file
+    my ($file) = @_;
+
+    my $status = `svn status $file`;
+    # output from `svn status' is presumably column oriented, but not
+    # really: no output means file is under SVN and has no changes. Argh.
+    "$status " =~ /(.).*/;
+    my $indicator = $1;
+
+    # Known no-op cases
+    if ($indicator =~ /[I?]/) {
+        return 0;
+    }
+    if ($indicator =~ /[C]/) {
+        warn "Cowardly refusing to operate on conflicting file";
+        return 0;
+    }
+
+    # Unknown cases
+    if ($indicator !~ /[ AMR]/) {
+        warn "$file does not appear to be under SVN";
+        return 0;
+    }
+
+    return fix_svn_file($file);
+}
+# ---------------------------------------------------------------------- #
+sub fix_dir {
+# Fix SVN properties for all files or directories (recursively) in given
+# directory that are under SVN.
+    my ($dir) = @_;
+
+    warn "fix_dir: \$dir=<$dir>\n" if ($debug);
+
+    use File::Find;
+
+    my @files;
+    find(
+         sub {
+             # Skip VC directories (in particular .svn/)
+             if ($_ =~ /^(\.svn|\.hg|_darcs|\.git)$/) {
+                 $File::Find::prune = 1;
+                 warn "Pruning dirs: $File::Find::name\n" if ($debug);
+                 return 0;
+             }
+
+             # Skip backup files (shouldn't be under SVN anyway)
+             if ($_ =~ /(~|\.bak)$/) {
+                 warn "Skipping backups: $File::Find::name\n" if ($debug);
+                 return 0;
+             }
+
+             # Skip files or dirs not under SVN
+             unless (svn_controlled($_)) {
+                 $File::Find::prune = 1;
+                 warn "Not under SVN: $File::Find::name\n" if ($debug);
+                 return 0;
+             }
+
+             # Dirs are not interesting on their own
+             if (-d $_) {
+                 warn "Directory: $File::Find::name\n" if ($debug);
+                 return;
+             }
+
+             if (-f $_) {
+                 push @files, $File::Find::name;
+             } else {
+                 warn "Don't know what to do with $File::Find::name\n";
+             }
+         },
+         $dir
+        );
+
+    my $count = 0;
+    for my $file (@files) {
+        $count += fix_svn_file($file);
+    }
+
+    return $count;
+}
+# ---------------------------------------------------------------------- #
+sub fix_svn_file {
+# Fix SVN properties for file that is known to be under SVN
+    my ($file) = @_;
+
+    if (grep /^\s*svn:keywords\s*$/, `svn proplist $file`) {
+        my $prop = `svn propget svn:keywords $file`;
+        chomp $prop;
+        if ($prop eq 'Id') {
+            warn "$file: property `$prop' is already there\n" if ($debug);
+            $already_set++;
+            return 0;
+        } else {
+            warn "$file has svn:keywords=`$prop' != `Id' -- not fixing\n";
+            return 0;
+        }
+    }
+
+    unless (open(FILE, "<$file")) {
+        warn "Cannot open $file for reading\n";
+        return 0;
+    }
+    my $found = 0;
+    while (defined(my $line = <FILE>)) {
+        if ($line =~ /\$Id($|:)/) {
+            $found = 1;
+            last;
+        }
+    }
+    close FILE;
+
+    if ($found) {
+        print "Fixing $file\n" unless ($quiet);
+        my $new_prop = 'Id';
+        system('svn', 'propset', 'svn:keywords', $new_prop, $file)
+          unless ($dry_run);
+        return 1;
+    } else {
+        warn "No keywords in $file\n" if ($debug);
+        $no_kw_count++;
+        return 0;
+    }
+}
+# ---------------------------------------------------------------------- #
+sub svn_controlled {
+# Return 1 if file is under SVN, 0 otherwise
+    my ($file) = @_;
+
+    if (`svn status --depth empty $file` =~ /^\?/) {
+        return 0;
+    } else {
+        return 1;
+    }
+}
+# ---------------------------------------------------------------------- #
+sub printopts {
+# Print command line options
+    my $optsref = shift;
+    my %opts = %$optsref;
+    foreach my $opt (keys(%opts)) {
+	print STDERR "\$opts{$opt} = `$opts{$opt}'\n";
+    }
+}
+# ---------------------------------------------------------------------- #
+sub usage {
+# Extract description and usage information from this file's header.
+    my $thisfile = __FILE__;
+    local $/ = '';              # Read paragraphs
+    open(FILE, "<$thisfile") or die "Cannot open $thisfile\n";
+    while (<FILE>) {
+	# Paragraph _must_ contain `Description:' or `Usage:'
+        next unless /^\s*\#\s*(Description|Usage):/m;
+        # Drop `Author:', etc. (anything before `Description:' or `Usage:')
+        s/.*?\n(\s*\#\s*(Description|Usage):\s*\n.*)/$1/s;
+        # Don't print comment sign:
+        s/^\s*# ?//mg;
+        last;                        # ignore body
+    }
+    return $_ or "<No usage information found>\n";
+}
+# ---------------------------------------------------------------------- #
+sub version {
+# Return CVS/SVN data and version info.
+    my $doll='\$';		# Need this to trick CVS/SVN
+    my $cmdname = (split('/', $0))[-1];
+    my $rev = '$Revision: 1.12 $';
+    my $date = '$Date: 2008/07/07 21:37:16 $';
+    $rev =~ s/${doll}Revision:\s*(\S+).*/$1/;
+    $date =~ s/${doll}Date:\s*(\S+).*/$1/;
+
+    return "$cmdname version $rev ($date)\n";
+}
+# ---------------------------------------------------------------------- #
+
+# End of file [name]
+
+
+# End of file pc_fix_svn_properties
