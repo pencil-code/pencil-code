@@ -50,7 +50,7 @@
 !
 !--------------------------------------------------------------------
 
-module Special
+module pecial
 
   use Cparam
   use Cdata
@@ -80,7 +80,7 @@ module Special
 
   integer :: index_H2=0, index_O2=0, index_H2O=0, index_N2=0
   real :: init_x1=-0.2,init_x2=0.2
-  real :: x1_front=-0.2, x2_front=0.2
+ ! real :: x1_front=-0.2, x2_front=0.2
   real :: init_TT1=400.,init_TT2=2400.,init_lnTT1=6.,init_p2=1e6
 ! Keep some over used pencils
 !
@@ -89,8 +89,7 @@ module Special
   namelist /chem_stream_init_pars/ &
    initstream,rho_init, T_init, Y1_init, Y2_init, Y3_init, H_max, ux_init, &
    index_H2, index_O2, index_H2O, &
-   index_N2,x1_front,x2_front,init_TT1,init_TT2,init_lnTT1, init_x1, &
-   init_x2,  init_p2
+   index_N2,init_TT1,init_TT2,init_lnTT1, init_x1, init_x2,  init_p2
 ! run parameters
   namelist /chem_stream_run_pars/ &
    test
@@ -220,18 +219,16 @@ module Special
 
 !!
       select case(initstream)
-         case('stream')
-            call stream_field(f,xx,yy)
+        ! case('stream')
+        !    call stream_field(f,xx,yy)
          case('bomb')
             call bomb_field(f,xx,yy)
          case('flame_spd')
-            call flame_spd(f,xx,x1_front,x2_front)
+            call flame_spd(f,xx)
          case('flame_spd_invert')
             call flame_spd_invert(f,xx)
-         case('flame_spd_invert2')
-            call flame_spd_invert2(f,xx)
-        case('stream_field')
-            call stream_field(f,xx,yy)
+      !  case('stream_field')
+       !     call stream_field(f,xx,yy)
          case('default')
           if(lroot) print*,'init_special: Default  setup'
      !     call density_init(f,xx,zz)
@@ -640,47 +637,47 @@ module Special
 
    endsubroutine bomb_field
 !**************************************************************************
-  subroutine stream_field(f,xx,yy)
+ ! subroutine stream_field(f,xx,yy)
 !
 ! Natalia
 ! Initialization of chem. species  in a case of the stream
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: xx, yy
-      integer :: k,j,i
+ !     real, dimension (mx,my,mz,mvar+maux) :: f
+ !     real, dimension (mx,my,mz) :: xx, yy
+ !     integer :: k,j,i
      
-      real :: p2_front=10.13e5
-      real :: Rgas=83144726.8870299
+ !     real :: p2_front=10.13e5
+ !     real :: Rgas=83144726.8870299
 
-      real :: TT1_front=400., TT2_front=2400.
+ !     real :: TT1_front=400., TT2_front=2400.
   
 
-      do k=1,mx 
-        if (x(k)<x1_front) then
-          f(k,:,:,ilnTT)=log(TT1_front)
-        endif
-        if (x(k)>x2_front) then
-          f(k,:,:,ilnTT)=log(TT2_front)
-        endif
-        if (x(k)>x1_front .and. x(k)<x2_front) then
-          f(k,:,:,ilnTT)=log((x(k)-x1_front)/(x2_front-x1_front) &
-               *(TT2_front-TT1_front)+TT1_front)
-        endif
+  !    do k=1,mx 
+  !      if (x(k)<x1_front) then
+  !        f(k,:,:,ilnTT)=log(TT1_front)
+  !      endif
+  !      if (x(k)>x2_front) then
+  !        f(k,:,:,ilnTT)=log(TT2_front)
+  !      endif
+  !      if (x(k)>x1_front .and. x(k)<x2_front) then
+  !        f(k,:,:,ilnTT)=log((x(k)-x1_front)/(x2_front-x1_front) &
+  !             *(TT2_front-TT1_front)+TT1_front)
+  !      endif
 
-      enddo
+    !  enddo
 
-      do k=1,mx
-        f(k,:,:,ilnrho)=log(p2_front)-log(Rgas)-f(k,:,:,ilnTT)-log(2.)
-      enddo
-
-
-     f(:,:,:,ichemspec(nchemspec))=1.
-     f(:,:,:,iux)=ux_init
+    !  do k=1,mx
+    !    f(k,:,:,ilnrho)=log(p2_front)-log(Rgas)-f(k,:,:,ilnTT)-log(2.)
+    !  enddo
 
 
-   endsubroutine stream_field
+     !f(:,:,:,ichemspec(nchemspec))=1.
+     !f(:,:,:,iux)=ux_init
+
+
+  ! endsubroutine stream_field
 !**************************************************************************
- subroutine flame_spd(f,xx,x1_front,x2_front)
+ subroutine flame_spd(f,xx)
 !
 ! Natalia
 ! Initialization of chem. species  in a case of the stream
@@ -691,14 +688,24 @@ module Special
 
       real :: x1_front,x2_front
       real :: rho1_front=1e-3, rho2_front=10./3.*1e-3
-      real :: TT1_front=2000., TT2_front
+      real :: TT1_front, TT2_front
       real :: p2_front=10.13e5
       real :: Rgas=83144726.8870299
       real :: mH,mC,mN,mO,mAr,mHe
       real :: YH2,YO2,YN2
       integer :: i_H2, i_O2, i_H2O, i_N2
       
-      TT2_front=exp(6.)
+     
+      TT1_front=exp(init_lnTT1)
+      TT2_front=init_TT2
+
+      
+      x1_front=init_x1
+      x2_front=init_x2
+
+      p2_front=init_p2
+
+
 
       mH=1.00794
       mC=12.0107
@@ -886,95 +893,7 @@ subroutine flame_spd_invert(f,xx)
       !
    endsubroutine flame_spd_invert
 !**************************************************************************
-subroutine flame_spd_invert2(f,xx)
-!
-! Natalia
-! Initialization of chem. species  in a case of the stream
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: xx, yy, mu1
-      integer :: k,j,i
 
-      real :: x1_front=-0.2, x2_front=0.2
-      real :: TT1_front, TT2_front=1200.
-      real :: p2_front=10.13e5
-      real :: Rgas=83144726.8870299
-      real :: mH,mC,mN,mO,mAr,mHe
-      real :: YH2,YO2,YN2
-      
-
-      TT1_front=exp(6.)
-
-        mH=1.00794
-        mC=12.0107
-        mN=14.00674
-        mO=15.9994
-        mAr=39.948
-        mHe=4.0026
-
-     if (index_H2==0) call fatal_error('flame_spd','set index for H2 in start.in')
-     if (index_O2==0)  call fatal_error('flame_spd','set index for O2 in start.in')
-     if (index_H2O==0)  call fatal_error('flame_spd','set index for H2O in start.in')
-     if (index_N2==0)  call fatal_error('flame_spd','set index for N2 in start.in')
-
-
-  !   f(l1,:,:,ichemspec(index_O2))=(f(l2,:,:,ichemspec(index_O2))/32.-f(l2,:,:,ichemspec(index_H2))/4.)*32. 
-
-     f(l1,:,:,iux)=ux_init
-
-     do k=1,mx 
-      if (x(k)<x1_front) then
-        f(k,:,:,ilnTT)=log(TT1_front)
- !       f(k,:,:,ilnrho)=log(1e-3)
-      endif
-      if (x(k)>x2_front) then
-        f(k,:,:,ilnTT)=log(TT2_front)
-  !      f(k,:,:,ilnrho)=log(1e-3*10./3.)
-      endif
-      if (x(k)>x1_front .and. x(k)<x2_front) then
-        f(k,:,:,ilnTT)=log((x(k)-x1_front)/(x2_front-x1_front) &
-          *(TT2_front-TT1_front)+TT1_front)
-      endif
-
-    
-    !  if (x(k)<x2_front) then
-    !   f(k,:,:,ichemspec(index_H2O))=f(l2,:,:,ichemspec(index_H2))/2.*18. &
-    !         *(exp(f(k,:,:,ilnTT))-TT2_front) &
-    !        /(TT1_front-TT2_front)
-    !   f(k,:,:,ichemspec(index_H2))=f(l2,:,:,ichemspec(index_H2)) &
-    !        *(exp(f(k,:,:,ilnTT))-TT1_front) &
-    !         /(TT2_front-TT1_front)
-
-    !  endif
-
-  !    if (x(k)<x1_front) then
-  !     f(k,:,:,ichemspec(index_O2))=f(l1,:,:,ichemspec(index_O2))
-  !    endif
-
-   !   if (x(k)>x1_front .and. x(k)<x2_front) then
-   !     f(k,:,:,ichemspec(index_O2))=(x(k)-x1_front)/(x2_front-x1_front) &
-   !       *(f(l2,:,:,ichemspec(index_O2))-f(l1,:,:,ichemspec(index_O2)))+f(l1,:,:,ichemspec(index_O2))
-   !   endif
-
-     mu1(k,:,:)=f(k,:,:,ichemspec(index_H2))/(2.*mH)+f(k,:,:,ichemspec(index_O2))/(2.*mO) &
-           +f(k,:,:,ichemspec(index_H2O))/(2.*mH+mO)+f(k,:,:,ichemspec(index_N2))/(2.*mN)
-
-    enddo
-
-    do k=1,mx
-     f(k,:,:,ilnrho)=log(p2_front)-log(Rgas)-f(k,:,:,ilnTT)-log(mu1(k,:,:))
-    enddo
-
-     f(l1,:,:,iux)=ux_init*exp(f(l2,:,:,ilnrho))/exp(f(l1,:,:,ilnrho))
-
-    do k=1,mx
-      f(k,:,:,iux)=(f(l1,:,:,iux)-ux_init) &
-           *(exp(f(k,:,:,ilnTT))-TT2_front)/(TT1_front-TT2_front)&
-           +ux_init
-
-    enddo
-   endsubroutine flame_spd_invert2
-!**************************************************************************
 !**************************************************************************
 subroutine flame_spd_2D(f,xx,x1_front,x2_front)
 !
