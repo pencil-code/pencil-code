@@ -79,7 +79,8 @@ module Special
   real :: rho_init=1., T_init=1., Y1_init=1., Y2_init=1., Y3_init=1., ux_init=0.
 
   integer :: index_H2=0, index_O2=0, index_H2O=0, index_N2=0
-  real :: x1_front=-0.2,x2_front=0.2
+  real :: init_x1=-0.2,init_x2=0.2
+  real :: x1_front=-0.2, x2_front=0.2
   real :: init_TT1=400.,init_TT2=2400.,init_lnTT1=6.,init_p2=1e6
 ! Keep some over used pencils
 !
@@ -87,7 +88,9 @@ module Special
 ! start parameters
   namelist /chem_stream_init_pars/ &
    initstream,rho_init, T_init, Y1_init, Y2_init, Y3_init, H_max, ux_init, &
-   index_H2, index_O2, index_H2O, index_N2,x1_front,x2_front,init_TT1,init_TT2,init_lnTT1, init_p2
+   index_H2, index_O2, index_H2O, &
+   index_N2,x1_front,x2_front,init_TT1,init_TT2,init_lnTT1, init_x1, &
+   init_x2,  init_p2
 ! run parameters
   namelist /chem_stream_run_pars/ &
    test
@@ -785,7 +788,7 @@ subroutine flame_spd_invert(f,xx)
       real, dimension (mx,my,mz) :: xx, yy, mu1
       integer :: k,j,i
 
-      real :: x1_front=-0.2,x2_front=0.2
+      real :: x1_front,x2_front
       real :: rho1_front=1e-3, rho2_front=10./3.*1e-3
       real :: TT1_front, TT2_front!=2400.
       real :: p2_front!=10.13e5
@@ -797,7 +800,13 @@ subroutine flame_spd_invert(f,xx)
 
       TT1_front=exp(init_lnTT1)
       TT2_front=init_TT2
+
+      
+      x1_front=init_x1
+      x2_front=init_x2
+
       p2_front=init_p2
+
 
       mH=1.00794
       mC=12.0107
