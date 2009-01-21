@@ -131,9 +131,7 @@ module Special
 !      lwrite_aux = .true.
 !
 !
-!  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: flowaroundsphere.f90,v 1.2 2008-08-01 16:52:42 arnelohr Exp $
-!  when the file in committed to a CVS repository.
+!  identify CVS/SVN version information:
 !
       if (lroot) call cvs_id( &
            "$Id: flowaroundsphere.f90,v 1.2 2008-08-01 16:52:42 arnelohr Exp $")

@@ -78,9 +78,7 @@ module Chemistry
 !      naux = naux+1
 !
 !
-!  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id$
-!  when the file in committed to a CVS repository.
+!  identify CVS/SVN version information:
 !
       if (lroot) call cvs_id( &
            "$Id$")

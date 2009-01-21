@@ -141,9 +141,7 @@ module Special
 !      naux = naux+1
 !
 !
-!  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: localshock.f90,v 1.14 2008-05-09 17:27:56 brandenb Exp $
-!  when the file in committed to a CVS repository.
+!  identify CVS/SVN version information:
 !
       if (lroot) call cvs_id( &
            "$Id: localshock.f90,v 1.14 2008-05-09 17:27:56 brandenb Exp $")
