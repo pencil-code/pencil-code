@@ -123,6 +123,7 @@ if ($?HOSTNAME) then
 else
   set hostname=$hn
 endif
+echo "USER = ${USER}"
 echo "hn = $hn"
 #
 if ($mpi) echo "Running under MPI"
