@@ -129,7 +129,8 @@ if ($?LOADL_STEP_ID) then
     >> $datadir/jobid.dat
 endif
 if ($?SLURM_JOBID) then
-  echo $SLURM_JOBID "  RUN STARTED on "$SLURMD_NODENAME `date` \
+  #echo $SLURM_JOBID "  RUN STARTED on "$SLURMD_NODENAME `date` \
+    echo $SLURM_JOBID "  RUN STARTED on " `date` \
     >> $datadir/jobid.dat
 endif
 # EASY job (PDC):
