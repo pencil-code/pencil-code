@@ -1,4 +1,5 @@
-#                              -*-Makefile-*-
+#  -*-Makefile-*-  (for Emacs)    vim:set filetype=make:  (for vim)
+#
 #  Makefile.parent
 #
 #  Pencil Code Makefile for run directories that builds the code in the
