@@ -33,6 +33,7 @@ module Sub
   public :: gradf_upw1st
 
   public :: dot, dot2, dot_mn, dot_mn_sv, dot_mn_sm, dot2_mn, dot_add, dot_sub
+  public :: dyadic2
   public :: cross, cross_mn
   public :: sum_mn, max_mn
   public :: multsv, multsv_add, multsv_mn
@@ -1474,6 +1475,40 @@ module Sub
 !
     endsubroutine dot_mn_sub
 
+!***********************************************************************
+    subroutine dyadic2(a,b)
+!
+!  dyadic product with itself
+!
+!  24-jan-09/axel: coded
+!
+      use Cdata, only: nx,tini
+!
+      real, dimension (nx,3) :: a
+      real, dimension (nx,3,3) :: b
+!
+      intent(in) :: a
+      intent(out) :: b
+!
+!  diagonal components
+!
+      b(:,1,1)=a(:,1)**2
+      b(:,2,2)=a(:,2)**2
+      b(:,3,3)=a(:,3)**2
+!
+!  upper off-diagonal components
+!
+      b(:,1,2)=a(:,1)*a(:,2)
+      b(:,1,3)=a(:,1)*a(:,3)
+      b(:,2,3)=a(:,2)*a(:,3)
+!
+!  lower off-diagonal components
+!
+      b(:,2,1)=b(:,1,2)
+      b(:,3,1)=b(:,1,3)
+      b(:,3,2)=b(:,2,3)
+!
+    endsubroutine dyadic2
 !***********************************************************************
     subroutine trace_mn(a,b)
 !

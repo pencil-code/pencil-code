@@ -64,7 +64,7 @@ module Testfield
   real :: delta_testfield_next=0.
   integer, parameter :: mtestfield=3*njtest
   integer :: naainit
-  real :: bamp=1.,bamp1=1.
+  real :: bamp=1.,bamp1=1.,bamp12=1.
   namelist /testfield_init_pars/ &
        B_ext,zextent,initaatest, &
        amplaatest,kx_aatest,ky_aatest,kz_aatest, &
@@ -107,6 +107,10 @@ module Testfield
   integer :: idiag_eta21sc=0    ! DIAG_DOC: $\eta_{21}\sin kz\cos kz$
   integer :: idiag_eta12cs=0    ! DIAG_DOC: $\eta_{12}\cos kz\sin kz$
   integer :: idiag_eta22ss=0    ! DIAG_DOC: $\eta_{22}\sin^2 kz$
+  integer :: idiag_M11=0        ! DIAG_DOC: ${\cal M}_{11}$
+  integer :: idiag_M22=0        ! DIAG_DOC: ${\cal M}_{22}$
+  integer :: idiag_M11cc=0      ! DIAG_DOC: ${\cal M}_{11}\cos^2 kz$
+  integer :: idiag_M11ss=0      ! DIAG_DOC: ${\cal M}_{11}\sin^2 kz$
   integer :: idiag_bx11pt=0     ! DIAG_DOC: $b_x^{11}$
   integer :: idiag_bx21pt=0     ! DIAG_DOC: $b_x^{21}$
   integer :: idiag_bx12pt=0     ! DIAG_DOC: $b_x^{12}$
@@ -297,8 +301,10 @@ module Testfield
 !
       if (bamp==0.) then
         bamp1=1.
+        bamp12=1.
       else
         bamp1=1./bamp
+        bamp12=1./bamp**2
       endif
 !
 !  calculate iE0
@@ -309,6 +315,7 @@ module Testfield
         case('B11-B22+B=0'); iE0=5
         case('B11-B21'); iE0=0
         case('B11-B22'); iE0=0
+        case('B11'); iE0=1
         case('B=0'); iE0=1
       case default
         call fatal_error('initialize_testfield','undefined itestfield value')
@@ -512,6 +519,7 @@ module Testfield
 !
 !   3-jun-05/axel: coded
 !  16-mar-08/axel: Lorentz force added for testfield method
+!  25-jan-09/axel: added Maxwell stress tensor calculation
 !
       use Cdata
       use Sub
@@ -525,10 +533,11 @@ module Testfield
       real, dimension (nx,3) :: bb,aa,uxB,B0test=0,bbtest
       real, dimension (nx,3) :: uxbtest,duxbtest,jxbtest,djxbrtest
       real, dimension (nx,3) :: J0test,jxB0rtest,J0xbrtest
+      real, dimension (nx,3,3,njtest) :: Mijpq
       real, dimension (nx,3,njtest) :: Eipq,bpq,jpq
       real, dimension (nx,3) :: del2Atest,uufluct
       real, dimension (nx,3) :: del2Atest2,graddivatest,aatest,jjtest,jxbrtest
-      real, dimension (nx,3,3) :: aijtest,bijtest
+      real, dimension (nx,3,3) :: aijtest,bijtest,Mijtest
       real, dimension (nx) :: jbpq,bpq2,Epq2
       integer :: jtest,jfnamez,j, i1=1, i2=2, i3=3, i4=4
       logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
@@ -593,6 +602,7 @@ module Testfield
           case('B11-B22+B=0'); call set_bbtest_B11_B22(B0test,jtest)
           case('B11-B21'); call set_bbtest_B11_B21(B0test,jtest)
           case('B11-B22'); call set_bbtest_B11_B22(B0test,jtest)
+          case('B11'); call set_bbtest_B11_B22(B0test,jtest)
           case('B=0') !(dont do anything)
         case default
           call fatal_error('daatest_dt','undefined itestfield value')
@@ -702,14 +712,18 @@ module Testfield
         if ((ldiagnos.or.l1ddiagnos).and. &
           (lsoca.or.ltest_uxb.or.idiag_b0rms/=0.or. &
            idiag_b11rms/=0.or.idiag_b21rms/=0.or. &
-           idiag_b12rms/=0.or.idiag_b22rms/=0)) then
+           idiag_b12rms/=0.or.idiag_b22rms/=0.or. &
+           idiag_M11cc/=0.or.idiag_M11cc/=0.or. &
+           idiag_M11/=0.or.idiag_M22/=0)) then
           aatest=f(l1:l2,m,n,iaxtest:iaztest)
           call gij(f,iaxtest,aijtest,1)
           call curl_mn(aijtest,bbtest,aatest)
           call cross_mn(p%uu,bbtest,uxbtest)
+          call dyadic2(bbtest,Mijtest)
         endif
         bpq(:,:,jtest)=bbtest
         Eipq(:,:,jtest)=uxbtest*bamp1
+        Mijpq(:,:,:,jtest)=Mijtest*bamp12
         if (ldiagnos.and.idiag_jb0m/=0) jpq(:,:,jtest)=jjtest
       enddo
 !
@@ -766,6 +780,13 @@ module Testfield
           if (idiag_eta12cs/=0) call sum_mn_name(-csz(n)*(-sz(n)*Eipq(:,1,i1)+cz(n)*Eipq(:,1,i2))*ktestfield1,idiag_eta12cs)
           if (idiag_eta22ss/=0) call sum_mn_name(-s2z(n)*(-sz(n)*Eipq(:,2,i1)+cz(n)*Eipq(:,2,i2))*ktestfield1,idiag_eta22ss)
         endif
+!
+!  Maxwell tensor and its weighted averages
+!
+        if (idiag_M11/=0)   call sum_mn_name(       Mijpq(:,1,1,i1),idiag_M11)
+        if (idiag_M22/=0)   call sum_mn_name(       Mijpq(:,2,2,i1),idiag_M22)
+        if (idiag_M11cc/=0) call sum_mn_name(c2z(n)*Mijpq(:,1,1,i1),idiag_M11cc)
+        if (idiag_M11ss/=0) call sum_mn_name(s2z(n)*Mijpq(:,1,1,i1),idiag_M11ss)
 !
 !  Projection of EMF from testfield against testfield itself
 !
@@ -1211,8 +1232,8 @@ module Testfield
 !  set B0test for each of the 9 cases
 !
       select case(jtest)
-      case(1); B0test(:,1)=cz(n); B0test(:,2)=0.; B0test(:,3)=0.
-      case(2); B0test(:,1)=sz(n); B0test(:,2)=0.; B0test(:,3)=0.
+      case(1); B0test(:,1)=bamp*cz(n); B0test(:,2)=0.; B0test(:,3)=0.
+      case(2); B0test(:,1)=bamp*sz(n); B0test(:,2)=0.; B0test(:,3)=0.
       case default; B0test(:,:)=0.
       endselect
 !
@@ -1298,6 +1319,7 @@ module Testfield
         idiag_eta12=0; idiag_eta22=0; idiag_eta32=0
         idiag_alp11cc=0; idiag_alp21sc=0; idiag_alp12cs=0; idiag_alp22ss=0
         idiag_eta11cc=0; idiag_eta21sc=0; idiag_eta12cs=0; idiag_eta22ss=0
+        idiag_M11=0; idiag_M22=0; idiag_M11cc=0; idiag_M11ss=0
         idiag_jb0m=0; idiag_b0rms=0; idiag_E0rms=0
         idiag_b11rms=0; idiag_b21rms=0; idiag_b12rms=0; idiag_b22rms=0
         idiag_E11rms=0; idiag_E21rms=0; idiag_E12rms=0; idiag_E22rms=0
@@ -1330,6 +1352,10 @@ module Testfield
         call parse_name(iname,cname(iname),cform(iname),'eta21sc',idiag_eta21sc)
         call parse_name(iname,cname(iname),cform(iname),'eta12cs',idiag_eta12cs)
         call parse_name(iname,cname(iname),cform(iname),'eta22ss',idiag_eta22ss)
+        call parse_name(iname,cname(iname),cform(iname),'M11',idiag_M11)
+        call parse_name(iname,cname(iname),cform(iname),'M22',idiag_M22)
+        call parse_name(iname,cname(iname),cform(iname),'M11cc',idiag_M11cc)
+        call parse_name(iname,cname(iname),cform(iname),'M11ss',idiag_M11ss)
         call parse_name(iname,cname(iname),cform(iname),'bx11pt',idiag_bx11pt)
         call parse_name(iname,cname(iname),cform(iname),'bx21pt',idiag_bx21pt)
         call parse_name(iname,cname(iname),cform(iname),'bx12pt',idiag_bx12pt)
@@ -1410,6 +1436,10 @@ module Testfield
         write(3,*) 'idiag_eta21sc=',idiag_eta21sc
         write(3,*) 'idiag_eta12cs=',idiag_eta12cs
         write(3,*) 'idiag_eta22ss=',idiag_eta22ss
+        write(3,*) 'idiag_M11=',idiag_M11
+        write(3,*) 'idiag_M22=',idiag_M22
+        write(3,*) 'idiag_M11cc=',idiag_M11cc
+        write(3,*) 'idiag_M11ss=',idiag_M11ss
         write(3,*) 'idiag_bx11pt=',idiag_bx11pt
         write(3,*) 'idiag_bx21pt=',idiag_bx21pt
         write(3,*) 'idiag_bx12pt=',idiag_bx12pt
