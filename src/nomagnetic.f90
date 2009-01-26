@@ -39,7 +39,6 @@ module Magnetic
   integer :: idiag_bxmz=0,idiag_bymz=0,idiag_bzmz=0,idiag_bmx=0,idiag_bmy=0
   integer :: idiag_bxmxy=0,idiag_bymxy=0,idiag_bzmxy=0
   integer :: idiag_uxbm=0,idiag_oxuxbm=0,idiag_jxbxbm=0,idiag_uxDxuxbm=0
-  integer :: idiag_bxmz=0,idiag_bymz=0
   integer :: idiag_b2mphi=0
   integer :: idiag_bmxy_rms=0
   integer :: idiag_bsinphz=0
