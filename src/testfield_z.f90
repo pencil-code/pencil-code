@@ -109,8 +109,9 @@ module Testfield
   integer :: idiag_eta22ss=0    ! DIAG_DOC: $\eta_{22}\sin^2 kz$
   integer :: idiag_M11=0        ! DIAG_DOC: ${\cal M}_{11}$
   integer :: idiag_M22=0        ! DIAG_DOC: ${\cal M}_{22}$
+  integer :: idiag_M33=0        ! DIAG_DOC: ${\cal M}_{33}$
   integer :: idiag_M11cc=0      ! DIAG_DOC: ${\cal M}_{11}\cos^2 kz$
-  integer :: idiag_M11ss=0      ! DIAG_DOC: ${\cal M}_{11}\sin^2 kz$
+  integer :: idiag_M22cc=0      ! DIAG_DOC: ${\cal M}_{22}\cos^2 kz$
   integer :: idiag_bx11pt=0     ! DIAG_DOC: $b_x^{11}$
   integer :: idiag_bx21pt=0     ! DIAG_DOC: $b_x^{21}$
   integer :: idiag_bx12pt=0     ! DIAG_DOC: $b_x^{12}$
@@ -161,6 +162,9 @@ module Testfield
   integer :: idiag_bx0mz=0      ! DIAG_DOC: $\left<b_{x}\right>_{xy}$
   integer :: idiag_by0mz=0      ! DIAG_DOC: $\left<b_{y}\right>_{xy}$
   integer :: idiag_bz0mz=0      ! DIAG_DOC: $\left<b_{z}\right>_{xy}$
+  integer :: idiag_M11z=0       ! DIAG_DOC: $\left<{\cal M}_{11}\right>_{xy}$
+  integer :: idiag_M22z=0       ! DIAG_DOC: $\left<{\cal M}_{22}\right>_{xy}$
+  integer :: idiag_M33z=0       ! DIAG_DOC: $\left<{\cal M}_{33}\right>_{xy}$
 !
 !  arrays for horizontally averaged uxb and jxb
 !
@@ -714,7 +718,8 @@ module Testfield
            idiag_b11rms/=0.or.idiag_b21rms/=0.or. &
            idiag_b12rms/=0.or.idiag_b22rms/=0.or. &
            idiag_M11cc/=0.or.idiag_M11cc/=0.or. &
-           idiag_M11/=0.or.idiag_M22/=0)) then
+           idiag_M11/=0.or.idiag_M22/=0.or.idiag_M33/=0.or. &
+           idiag_M11z/=0.or.idiag_M22z/=0.or.idiag_M33z/=0)) then
           aatest=f(l1:l2,m,n,iaxtest:iaztest)
           call gij(f,iaxtest,aijtest,1)
           call curl_mn(aijtest,bbtest,aatest)
@@ -757,6 +762,9 @@ module Testfield
         if (idiag_E10z/=0) call xysum_mn_name_z(Eipq(:,1,iE0),idiag_E10z)
         if (idiag_E20z/=0) call xysum_mn_name_z(Eipq(:,2,iE0),idiag_E20z)
         if (idiag_E30z/=0) call xysum_mn_name_z(Eipq(:,3,iE0),idiag_E30z)
+        if (idiag_M11z/=0) call xysum_mn_name_z(Mijpq(:,1,1,i1),idiag_M11z)
+        if (idiag_M22z/=0) call xysum_mn_name_z(Mijpq(:,2,2,i1),idiag_M22z)
+        if (idiag_M33z/=0) call xysum_mn_name_z(Mijpq(:,3,3,i1),idiag_M33z)
 !
 !  averages of alpha and eta
 !
@@ -785,8 +793,9 @@ module Testfield
 !
         if (idiag_M11/=0)   call sum_mn_name(       Mijpq(:,1,1,i1),idiag_M11)
         if (idiag_M22/=0)   call sum_mn_name(       Mijpq(:,2,2,i1),idiag_M22)
+        if (idiag_M33/=0)   call sum_mn_name(       Mijpq(:,3,3,i1),idiag_M33)
         if (idiag_M11cc/=0) call sum_mn_name(c2z(n)*Mijpq(:,1,1,i1),idiag_M11cc)
-        if (idiag_M11ss/=0) call sum_mn_name(s2z(n)*Mijpq(:,1,1,i1),idiag_M11ss)
+        if (idiag_M22cc/=0) call sum_mn_name(c2z(n)*Mijpq(:,2,2,i1),idiag_M22cc)
 !
 !  Projection of EMF from testfield against testfield itself
 !
@@ -1319,7 +1328,8 @@ module Testfield
         idiag_eta12=0; idiag_eta22=0; idiag_eta32=0
         idiag_alp11cc=0; idiag_alp21sc=0; idiag_alp12cs=0; idiag_alp22ss=0
         idiag_eta11cc=0; idiag_eta21sc=0; idiag_eta12cs=0; idiag_eta22ss=0
-        idiag_M11=0; idiag_M22=0; idiag_M11cc=0; idiag_M11ss=0
+        idiag_M11=0; idiag_M22=0; idiag_M33=0; idiag_M11cc=0; idiag_M22cc=0
+        idiag_M11z=0; idiag_M22z=0; idiag_M33z=0
         idiag_jb0m=0; idiag_b0rms=0; idiag_E0rms=0
         idiag_b11rms=0; idiag_b21rms=0; idiag_b12rms=0; idiag_b22rms=0
         idiag_E11rms=0; idiag_E21rms=0; idiag_E12rms=0; idiag_E22rms=0
@@ -1354,8 +1364,9 @@ module Testfield
         call parse_name(iname,cname(iname),cform(iname),'eta22ss',idiag_eta22ss)
         call parse_name(iname,cname(iname),cform(iname),'M11',idiag_M11)
         call parse_name(iname,cname(iname),cform(iname),'M22',idiag_M22)
+        call parse_name(iname,cname(iname),cform(iname),'M33',idiag_M33)
         call parse_name(iname,cname(iname),cform(iname),'M11cc',idiag_M11cc)
-        call parse_name(iname,cname(iname),cform(iname),'M11ss',idiag_M11ss)
+        call parse_name(iname,cname(iname),cform(iname),'M22cc',idiag_M22cc)
         call parse_name(iname,cname(iname),cform(iname),'bx11pt',idiag_bx11pt)
         call parse_name(iname,cname(iname),cform(iname),'bx21pt',idiag_bx21pt)
         call parse_name(iname,cname(iname),cform(iname),'bx12pt',idiag_bx12pt)
@@ -1411,6 +1422,9 @@ module Testfield
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'E10z',idiag_E10z)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'E20z',idiag_E20z)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'E30z',idiag_E30z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'M11z',idiag_M11z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'M22z',idiag_M22z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'M33z',idiag_M33z)
       enddo
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
@@ -1438,8 +1452,9 @@ module Testfield
         write(3,*) 'idiag_eta22ss=',idiag_eta22ss
         write(3,*) 'idiag_M11=',idiag_M11
         write(3,*) 'idiag_M22=',idiag_M22
+        write(3,*) 'idiag_M33=',idiag_M33
         write(3,*) 'idiag_M11cc=',idiag_M11cc
-        write(3,*) 'idiag_M11ss=',idiag_M11ss
+        write(3,*) 'idiag_M22cc=',idiag_M22cc
         write(3,*) 'idiag_bx11pt=',idiag_bx11pt
         write(3,*) 'idiag_bx21pt=',idiag_bx21pt
         write(3,*) 'idiag_bx12pt=',idiag_bx12pt
@@ -1489,6 +1504,9 @@ module Testfield
         write(3,*) 'idiag_E10z=',idiag_E10z
         write(3,*) 'idiag_E20z=',idiag_E20z
         write(3,*) 'idiag_E30z=',idiag_E30z
+        write(3,*) 'idiag_M11z=',idiag_M11z
+        write(3,*) 'idiag_M22z=',idiag_M22z
+        write(3,*) 'idiag_M33z=',idiag_M33z
         write(3,*) 'idiag_EBpq=',idiag_EBpq
         write(3,*) 'iaatest=',iaatest
         write(3,*) 'iaxtestpq=',iaxtestpq

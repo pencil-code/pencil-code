@@ -207,6 +207,10 @@ module Hydro
   integer :: idiag_uzmy=0       ! DIAG_DOC: 
   integer :: idiag_u2mz=0       ! DIAG_DOC: 
   integer :: idiag_umz=0        ! DIAG_DOC: 
+  integer :: idiag_ubmz=0       ! DIAG_DOC: $\left<\left<\Uv\right>_{xy}
+                                ! DIAG_DOC:   \cdot\left<\Bv\right>_{xy}
+                                ! DIAG_DOC:   \right>$ \quad($xy$-averaged
+                                ! DIAG_DOC:   mean cross helicity production)
   integer :: idiag_uxmxy=0      ! DIAG_DOC: $\left< u_x \right>_{z}$
   integer :: idiag_uymxy=0      ! DIAG_DOC: $\left< u_y \right>_{z}$
   integer :: idiag_uzmxy=0      ! DIAG_DOC: $\left< u_z \right>_{z}$
@@ -288,6 +292,7 @@ module Hydro
                                 ! DIAG_DOC:   see \S~\ref{time-step})
   integer :: idiag_oum=0        ! DIAG_DOC: $\left<\boldsymbol{\omega}
                                 ! DIAG_DOC:   \cdot\uv\right>$
+  integer :: idiag_fum=0        ! DIAG_DOC: $\left<\fv\cdot\uv\right>$
   integer :: idiag_o2m=0        ! DIAG_DOC: $\left<\boldsymbol{\omega}^2\right>
                                 ! DIAG_DOC:   \equiv \left<(\curl\uv)^2\right>$
   integer :: idiag_orms=0       ! DIAG_DOC: $\left<\boldsymbol{\omega}^2
@@ -1327,7 +1332,7 @@ module Hydro
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: space_part_re,space_part_im,u2t,uot,out
+      real, dimension (nx) :: space_part_re,space_part_im,u2t,uot,out,fu
       real :: c2,s2,kx
       integer :: j
 !
@@ -1574,6 +1579,13 @@ module Hydro
         if (idiag_ruxm/=0) call sum_mn_name(p%rho*p%uu(:,1),idiag_ruxm)
         if (idiag_ruym/=0) call sum_mn_name(p%rho*p%uu(:,2),idiag_ruym)
         if (idiag_ruzm/=0) call sum_mn_name(p%rho*p%uu(:,3),idiag_ruzm)
+!
+!  mean dot product of forcing and velocity field, <f.u>
+!
+        if (idiag_fum/=0) then
+          call dot(p%fcont,p%uu,fu)
+          call sum_mn_name(fu,idiag_fum)
+        endif
 !
 !  things related to vorticity
 !
@@ -2746,6 +2758,7 @@ module Hydro
         idiag_umx=0
         idiag_umy=0
         idiag_umz=0
+        idiag_ubmz=0
         idiag_divum=0
         idiag_divu2m=0
         idiag_u3u21m=0
@@ -2808,6 +2821,7 @@ module Hydro
         idiag_rufm=0
         idiag_dtu=0
         idiag_oum=0
+        idiag_fum=0
         idiag_o2m=0
         idiag_orms=0
         idiag_omax=0
@@ -2878,6 +2892,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'um2',idiag_um2)
         call parse_name(iname,cname(iname),cform(iname),'o2m',idiag_o2m)
         call parse_name(iname,cname(iname),cform(iname),'oum',idiag_oum)
+        call parse_name(iname,cname(iname),cform(iname),'fum',idiag_fum)
         call parse_name(iname,cname(iname),cform(iname),'oumn',idiag_oumn)
         call parse_name(iname,cname(iname),cform(iname),'oums',idiag_oums)
         call parse_name(iname,cname(iname),cform(iname),'dtu',idiag_dtu)
@@ -2928,6 +2943,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'umx',idiag_umx)
         call parse_name(iname,cname(iname),cform(iname),'umy',idiag_umy)
         call parse_name(iname,cname(iname),cform(iname),'umz',idiag_umz)
+        call parse_name(iname,cname(iname),cform(iname),'ubmz',idiag_ubmz)
         call parse_name(iname,cname(iname),cform(iname),'Marms',idiag_Marms)
         call parse_name(iname,cname(iname),cform(iname),'Mamax',idiag_Mamax)
         call parse_name(iname,cname(iname),cform(iname),'divum',idiag_divum)
@@ -3156,6 +3172,7 @@ module Hydro
         write(3,*) 'i_um2=',idiag_um2
         write(3,*) 'i_o2m=',idiag_o2m
         write(3,*) 'i_oum=',idiag_oum
+        write(3,*) 'i_fum=',idiag_fum
         write(3,*) 'i_oumn=',idiag_oumn
         write(3,*) 'i_oums=',idiag_oums
         write(3,*) 'i_oumh=',idiag_oumh
@@ -3203,6 +3220,7 @@ module Hydro
         write(3,*) 'i_umx=',idiag_umx
         write(3,*) 'i_umy=',idiag_umy
         write(3,*) 'i_umz=',idiag_umz
+        write(3,*) 'i_ubmz=',idiag_ubmz
         write(3,*) 'i_Marms=',idiag_Marms
         write(3,*) 'i_Mamax=',idiag_Mamax
         write(3,*) 'i_divum=',idiag_divum
@@ -3462,10 +3480,55 @@ module Hydro
                       +fnamez(:,:,idiag_uzmz)**2)/(nz*nprocz))
         endif
         call save_name(umz,idiag_umz)
+!
+!  calculation of <U>.<B> in separate subroutine.
+!  Should do the same for <Ux^2>, <Uy^2>, <Uz^2> later (as in magnetic)
+!
+        if (idiag_ubmz/=0) call calc_ubmz
       endif
 !
       first = .false.
     endsubroutine calc_mflow
+!***********************************************************************
+    subroutine calc_ubmz
+!
+!  Magnetic helicity production of mean field
+!  The bxmz and bymz as well as Exmz and Eymz must have been calculated,
+!  so they are present on the root processor.
+!
+!  26-jan-09/axel: adapted from calc_ebmz
+!
+      use Cdata
+      use Magnetic, only: idiag_bxmz,idiag_bymz
+      use Mpicomm
+      use Sub
+!
+      logical,save :: first=.true.
+      real :: ubmz
+      integer :: j
+!
+!  This only works if uxmz, uymz, bxmz, bymz, are in xyaver,
+!  so print warning if this is not ok.
+!
+      if (idiag_uxmz==0.or.idiag_uymz==0.or.idiag_bxmz==0.or.idiag_bymz==0) then
+        if (first) then
+          print*,"calc_mfield: WARNING"
+          print*,"NOTE: to get ubmz, set uxmz, uymz, bxmz, and bymz in xyaver"
+          print*,"We proceed, but you'll get ubmz=0"
+        endif
+        ubmz=0.
+      else
+        ubmz=sum(fnamez(:,:,idiag_uxmz)*fnamez(:,:,idiag_bxmz) &
+                +fnamez(:,:,idiag_uymz)*fnamez(:,:,idiag_bymz))/(nz*nprocz)
+      endif
+!
+!  save the name in the idiag_ubmz slot
+!  and set first to false
+!
+      call save_name(ubmz,idiag_ubmz)
+      first=.false.
+!
+    endsubroutine calc_ubmz
 !***********************************************************************
     subroutine remove_mean_momenta(f)
 !

@@ -21,6 +21,7 @@
   public :: rescaling_magnetic
   public :: bb_unitvec_shock, remove_mean_emf
   public :: lelectron_inertia, inertial_length, linertial_2
+  public :: idiag_bxmz,idiag_bymz
 
 !ajwm SHOULDN'T BE SHARED
 !
