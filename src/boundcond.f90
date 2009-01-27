@@ -331,6 +331,9 @@ module Boundcond
               case ('v')
                 ! BCY_DOC: vanishing third derivative
                 call bc_van_y(f,topbot,j)
+              case ('1s')
+                ! BCY_DOC: onesided
+                call bc_onesided_y(f,topbot,j)
               case ('cT')
                 ! BCY_DOC: constant temp.
                 if (j==iss) call bc_ss_temp_y(f,topbot)
@@ -739,23 +742,41 @@ module Boundcond
           case('part_ref_outlet')
 !   Partially reflecting outlet.
             if (j==1) then 
-              call bc_nscbc_prf_x(f,df,topbot)
+              call bc_nscbc_prf_x(f,df,topbot,.false.)
             elseif (j==2) then 
-              call bc_nscbc_prf_y(f,df,topbot)
+              call bc_nscbc_prf_y(f,df,topbot,.false.)
             elseif (j==3) then 
-              call bc_nscbc_prf_z(f,df,topbot)
+              call bc_nscbc_prf_z(f,df,topbot,.false.)
             endif
           case('part_ref_inlet')
 !   Partially reflecting inlet, ie. impose a velocity u_t.
             if (j==1) then 
               direction = 1
-              call bc_nscbc_prf_x(f,df,topbot,linlet=.true.,u_t=valx(direction))
+              call bc_nscbc_prf_x(f,df,topbot,.true.,linlet=.true.,&
+                  u_t=valx(direction))
             elseif (j==2) then 
               direction = 2
-              call bc_nscbc_prf_y(f,df,topbot,linlet=.true.,u_t=valy(direction))
+              call bc_nscbc_prf_y(f,df,topbot,.true.,linlet=.true.,&
+                  u_t=valy(direction))
             elseif (j==3) then 
               direction = 3
-              call bc_nscbc_prf_z(f,df,topbot,linlet=.true.,u_t=valz(direction))
+              call bc_nscbc_prf_z(f,df,topbot,.true.,linlet=.true.,&
+                  u_t=valz(direction))
+            endif
+          case('ref_inlet')
+!   Partially reflecting inlet, ie. impose a velocity u_t.
+            if (j==1) then 
+              direction = 1
+              call bc_nscbc_prf_x(f,df,topbot,.false.,linlet=.true.,&
+                  u_t=valx(direction))
+            elseif (j==2) then 
+              direction = 2
+              call bc_nscbc_prf_y(f,df,topbot,.false.,linlet=.true.,&
+                  u_t=valy(direction))
+            elseif (j==3) then 
+              direction = 3
+              call bc_nscbc_prf_z(f,df,topbot,.false.,linlet=.true.,&
+                  u_t=valz(direction))
             endif
           case('subsonic_inflow')
 ! Subsonic inflow 
@@ -2140,6 +2161,87 @@ module Boundcond
       endselect
 !
     endsubroutine bc_onesided_x_old
+!***********************************************************************
+    subroutine bc_onesided_y(f,topbot,j)
+!
+!  One-sided conditions.
+!  These expressions result from combining Eqs(207)-(210), astro-ph/0109497,
+!  corresponding to (9.207)-(9.210) in Ferriz-Mas proceedings.
+!
+!   5-apr-03/axel: coded
+!   7-jan-09/axel: corrected
+!   26-jan-09/nils: adapted from bc_onesided_x
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i,j,k
+!
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+          k=m1-1
+          f(:,k,:,j)=7*f(:,k+1,:,j) &
+                   -21*f(:,k+2,:,j) &
+                   +35*f(:,k+3,:,j) &
+                   -35*f(:,k+4,:,j) &
+                   +21*f(:,k+5,:,j) &
+                    -7*f(:,k+6,:,j) &
+                      +f(:,k+7,:,j)
+          k=m1-2               
+          f(:,k,:,j)=9*f(:,k+1,:,j) &
+                   -35*f(:,k+2,:,j) &
+                   +77*f(:,k+3,:,j) &
+                  -105*f(:,k+4,:,j) &
+                   +91*f(:,k+5,:,j) &
+                   -49*f(:,k+6,:,j) &
+                   +15*f(:,k+7,:,j) &
+                    -2*f(:,k+8,:,j)
+          k=m1-3               
+          f(:,k,:,j)=9*f(:,k+1,:,j) &
+                   -45*f(:,k+2,:,j) &
+                  +147*f(:,k+3,:,j) &
+                  -315*f(:,k+4,:,j) &
+                  +441*f(:,k+5,:,j) &
+                  -399*f(:,k+6,:,j) &
+                  +225*f(:,k+7,:,j) &
+                   -72*f(:,k+8,:,j) &
+                   +10*f(:,k+9,:,j)
+                               
+      case('top')               ! top boundary
+          k=m2+1               
+          f(:,k,:,j)=7*f(:,k-1,:,j) &
+                   -21*f(:,k-2,:,j) &
+                   +35*f(:,k-3,:,j) &
+                   -35*f(:,k-4,:,j) &
+                   +21*f(:,k-5,:,j) &
+                    -7*f(:,k-6,:,j) &
+                      +f(:,k-7,:,j)
+          k=m2+2
+          f(:,k,:,j)=9*f(:,k-1,:,j) &
+                   -35*f(:,k-2,:,j) &
+                   +77*f(:,k-3,:,j) &
+                  -105*f(:,k-4,:,j) &
+                   +91*f(:,k-5,:,j) &
+                   -49*f(:,k-6,:,j) &
+                   +15*f(:,k-7,:,j) &
+                    -2*f(:,k-8,:,j)
+          k=m2+3               
+          f(:,k,:,j)=9*f(:,k-1,:,j) &
+                   -45*f(:,k-2,:,j) &
+                  +147*f(:,k-3,:,j) &
+                  -315*f(:,k-4,:,j) &
+                  +441*f(:,k-5,:,j) &
+                  -399*f(:,k-6,:,j) &
+                  +225*f(:,k-7,:,j) &
+                   -72*f(:,k-8,:,j) &
+                   +10*f(:,k-9,:,j)
+
+      case default
+        print*, "bc_onesided_7 ", topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bc_onesided_y
 !***********************************************************************
     subroutine bc_onesided_z(f,topbot,j)
 !
@@ -4122,7 +4224,7 @@ module Boundcond
 !
      endsubroutine bc_wind_z
 !***********************************************************************
-    subroutine bc_nscbc_prf_x(f,df,topbot,linlet,u_t)
+    subroutine bc_nscbc_prf_x(f,df,topbot,non_reflecting_inlet,linlet,u_t)
 !
 !   Calculate du and dlnrho at a partially reflecting outlet/inlet normal to 
 !   x-direction acc. to LODI relations. Uses a one-sided finite diff. stencil.
@@ -4140,7 +4242,7 @@ module Boundcond
       real, dimension (mx,my,mz,mvar) :: df
       character (len=3) :: topbot
       logical, optional :: linlet
-      logical :: llinlet
+      logical :: llinlet, non_reflecting_inlet
       real, optional :: u_t
       !real, parameter :: sigma = 1.
       real, dimension(ny,nz) :: dlnrho_dx, du1_dx, du2_dx, du3_dx
@@ -4186,24 +4288,19 @@ module Boundcond
 !
 
       if (leos_chemistry) call get_cs2_full(cs2_full)
-
+!
+!  Set arrays for the speed of sound and for the speed of sound squared (is it
+!  really necessarry to have both arrays?) 
+!  Set prefactors to be used later.
+!
       if (leos_idealgas) then
         cs20_ar(m1:m2,n1:n2)=cs20
         cs0_ar(m1:m2,n1:n2)=cs0
         prefac1 = -1./(2.*cs20)
         prefac2 = -1./(2.*rho0*cs0)
       elseif (leos_chemistry) then
-         cs20_ar=cs2_full(lll,:,:)
-         cs0_ar=cs20_ar**0.5
-   !     if (ldensity_nolog) then
-   !       rho0 = f(lll,m1:m2,n1:n2,ilnrho)
-   !       dp_prefac = cs20_ar(m1:m2,n1:n2)
-   !     else
-   !       rho0 = exp(f(lll,m1:m2,n1:n2,ilnrho))
-   !       dp_prefac = cs20_ar(m1:m2,n1:n2)*rho0
-   !     endif
-    !    prefac1 = -1./(2.*rho0*cs20_ar(m1:m2,n1:n2))
-
+        cs20_ar=cs2_full(lll,:,:)
+        cs0_ar=cs20_ar**0.5
         prefac1 = -1./(2.*cs20_ar(m1:m2,n1:n2))
         prefac2 = -1./(2.*rho0*cs0_ar(m1:m2,n1:n2))
       else
@@ -4220,7 +4317,8 @@ module Boundcond
       call der_onesided_4_slice(f,sgn,iuy,du2_dx,lll,1)
       call der_onesided_4_slice(f,sgn,iuz,du3_dx,lll,1)
 !
-!  then do central differencing in the directions parallell to the boundary
+!  Do central differencing in the directions parallell to the boundary 
+!  first in the y-direction......
 !
       if (nygrid /= 1) then
         do i=n1,n2
@@ -4240,6 +4338,8 @@ module Boundcond
       du1_dy=tmp12(m1:m2,n1:n2)
       div_rho(:,:,2)=tmp2_lnrho(m1:m2,n1:n2)
 !
+!  .... then in the z-direction
+!
       if (nzgrid /= 1) then
         do i=m1,m2
           call der_pencil(3,f(lll,i,:,iuz),tmp33(i,:))
@@ -4258,7 +4358,7 @@ module Boundcond
       du1_dz=tmp13(m1:m2,n1:n2)
       div_rho(:,:,3)=tmp3_lnrho(m1:m2,n1:n2)
 !
-!  Find divergence of rho
+!  Find divergence of rho if we solve for logarithm of rho
 !
       if (.not. ldensity_nolog) then
         do i=1,3
@@ -4266,21 +4366,38 @@ module Boundcond
         enddo
       endif
 !
-!  Find the L_i's
+!  Find the L_i's (which really is the Lodi equations)
 !
       if (llinlet) then
         L_1 = (f(lll,m1:m2,n1:n2,iux) - sgn*cs0_ar(m1:m2,n1:n2))*&
              (cs20*div_rho(:,:,1) - sgn*rho0*cs0_ar(m1:m2,n1:n2)*du1_dx)
         L_3=0
         L_4=0
-!        L_5 = nscbc_sigma*cs20_ar(m1:m2,n1:n2)*rho0&
-!             *(sgn*f(lll,m1:m2,n1:n2,iux)-sgn*u_t)
-        L_5 = L_1
-!        L_5 = 0
-             
+        if (non_reflecting_inlet) then
+!
+!  The inlet in non-reflecting only when nscbc_sigma_in is set to 0, this 
+!  might however lead to problems ..... NILS: Must SPECIFY!!!!!!!!!!
+!
+          L_5 = nscbc_sigma_in*cs20_ar(m1:m2,n1:n2)*rho0&
+              *(sgn*f(lll,m1:m2,n1:n2,iux)-sgn*u_t)
+        else
+          L_5 = L_1
+        endif
       else
-        Mach=sum(f(lll,m1:m2,n1:n2,iux))/((m2-m1+1)*(n2-n1+1))/cs0_ar(m1,n1)
-        KK=nscbc_sigma*(1-Mach**2)*cs0/Lxyz(1)
+!
+!  Find Mach number 
+!  (NILS: I do not think this is a good way to determine the Mach
+!  number since this is a local Mach number for this processor. Furthermore
+!  by determining the Mach number like this we will see the Mach number varying
+!  with the phase of an acoustic wave as the wave pass through the boundary.
+!  I think that what we really want is a Mach number averaged over the 
+!  timescale of several acoustic waves. How could this be done????)
+!
+        Mach=sum(f(lll,m1:m2,n1:n2,iux)/cs0_ar(m1:m2,n1:n2))/(ny*nz)
+!
+!  Find the parameter determining 
+!
+        KK=nscbc_sigma_out*(1-Mach**2)*cs0/Lxyz(1)
 
 !print*,'Mach=',Mach
 !print*,rho0*cs20,p_infty
@@ -4345,40 +4462,50 @@ module Boundcond
 !
     endsubroutine bc_nscbc_prf_x
 !***********************************************************************
-    subroutine bc_nscbc_prf_y(f,df,topbot,linlet,u_t)
+    subroutine bc_nscbc_prf_y(f,df,topbot,non_reflecting_inlet,linlet,u_t)
 !
 !   Calculate du and dlnrho at a partially reflecting outlet/inlet normal to 
 !   y-direction acc. to LODI relations. Uses a one-sided finite diff. stencil.
 !
 !   7-jul-08/arne: coded.
+!  25-nov-08/nils: extended to work in multiple dimensions and with cross terms
+!                  i.e. not just the LODI equations.
 !
       use MpiComm, only: stop_it
       use EquationOfState, only: cs0, cs20
-      use Deriv, only: der_onesided_4_slice
+      use Deriv, only: der_onesided_4_slice, der_pencil
+      use Chemistry
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       character (len=3) :: topbot
       logical, optional :: linlet
-      logical :: llinlet
+      logical :: llinlet, non_reflecting_inlet
       real, optional :: u_t
       !real, parameter :: sigma = 1.
-      real, dimension(nx,nz) :: du_dy, dlnrho_dy, rho0, L_1, L_5
-      real, dimension(nx,nz) :: dp_prefac, prefac1, prefac2
-      integer lll,sgn
+      real, dimension(nx,nz) :: dlnrho_dx,dlnrho_dy,dlnrho_dz
+      real, dimension(nx,nz) :: du1_dy, du2_dy, du3_dy
+      real, dimension(nx,nz) :: rho0, L_1, L_3, L_4, L_5,parallell_term_uz
+      real, dimension(nx,nz) :: du1_dx,du3_dz,du1_dz,du3_dx
+      real, dimension(nx,nz) :: parallell_term_rho
+      real, dimension(nx,nz) :: parallell_term_ux,du2_dx,du2_dz
+      real, dimension(nx,nz) :: prefac1, prefac2,parallell_term_uy
+      real, dimension(nx,nz,3) :: div_rho
+      real, dimension (mx,mz) :: cs0_ar,cs20_ar
+      real, dimension (mx,my,mz) :: cs2_full
+      real, dimension (mx,mz) :: tmp22,tmp12,tmp2_lnrho,tmp33,tmp13,tmp3_lnrho
+      real, dimension (mx,mz) :: tmp23,tmp32
+      real :: Mach,KK
+      integer lll,i
+      integer sgn
 
-      intent(in) :: f
-      intent(out) :: df
-
-
-      call fatal_error('bc_nscbc_prf_y',&
-           'This sub is not properly implemented yet! Adapt from bc_nscbc_prf_x')
+      intent(inout) :: f
+      intent(inout) :: df
 
       llinlet = .false.
       if (present(linlet)) llinlet = linlet
       if (llinlet.and..not.present(u_t)) call stop_it(&
-           'bc_nscbc_prf_y:when using linlet=T, you must also specify u_t)')
-
+           'bc_nscbc_prf_y: when using linlet=T, you must also specify u_t)')
       select case(topbot)
       case('bot')
         lll = m1
@@ -4389,46 +4516,182 @@ module Boundcond
       case default
         print*, "bc_nscbc_prf_y: ", topbot, " should be `top' or `bot'"
       endselect
-      if (leos_idealgas) then
-        if (ldensity_nolog) then
-          rho0 = f(l1:l2,lll,n1:n2,ilnrho)
-          ! ``dp = cs20*drho''
-          dp_prefac = cs20
-        else
-          rho0 = exp(f(l1:l2,lll,n1:n2,ilnrho))
-          ! ``dp = cs20*rho0*dlnrho''
-          dp_prefac = cs20*rho0
-        endif
-        prefac1 = -1./(2*rho0*cs20)
-        prefac2 = -1./(2*rho0*cs0)
+!
+!  Find density
+!
+      if (ldensity_nolog) then
+        rho0 = f(l1:l2,lll,n1:n2,ilnrho)
       else
-        print*,"bc_nscbc_prf_y: leos_idealgas=",leos_idealgas,"." 
-        print*,"NSCBC boundary treatment only implemented for an ideal gas."
+        rho0 = exp(f(l1:l2,lll,n1:n2,ilnrho))
+      endif
+!
+
+      if (leos_chemistry) call get_cs2_full(cs2_full)
+!
+!  Set arrays for the speed of sound and for the speed of sound squared (is it
+!  really necessarry to have both arrays?) 
+!  Set prefactors to be used later.
+!
+      if (leos_idealgas) then
+        cs20_ar(l1:l2,n1:n2)=cs20
+        cs0_ar(l1:l2,n1:n2)=cs0
+        prefac1 = -1./(2.*cs20)
+        prefac2 = -1./(2.*rho0*cs0)
+      elseif (leos_chemistry) then
+        cs20_ar=cs2_full(:,lll,:)
+        cs0_ar=cs20_ar**0.5
+        prefac1 = -1./(2.*cs20_ar(l1:l2,n1:n2))
+        prefac2 = -1./(2.*rho0*cs0_ar(l1:l2,n1:n2))
+      else
+        print*,"bc_nscbc_prf_y: leos_idealgas=",leos_idealgas,"."
+        print*,"NSCBC boundary treatment only implemented for an ideal gas." 
         print*,"Boundary treatment skipped."
         return
       endif
-      call der_onesided_4_slice(f,sgn,ilnrho,dlnrho_dy,lll,2)
-      call der_onesided_4_slice(f,sgn,iuy,du_dy,lll,2)
-      L_1 = (f(l1:l2,lll,n1:n2,iuy) - sgn*cs0)*&
-            (dp_prefac*dlnrho_dy - sgn*rho0*cs0*du_dy)
-      if (llinlet) then
-        L_5 = nscbc_sigma*cs20*rho0*(sgn*f(l1:l2,lll,n1:n2,iuy)-sgn*u_t)
+!
+!  Calculate one-sided derivatives in the boundary normal direction
+!
+      call der_onesided_4_slice(f,sgn,ilnrho,div_rho(:,:,2),lll,2)
+      call der_onesided_4_slice(f,sgn,iux,du1_dy,lll,2)
+      call der_onesided_4_slice(f,sgn,iuy,du2_dy,lll,2)
+      call der_onesided_4_slice(f,sgn,iuz,du3_dy,lll,2)
+!
+!  Do central differencing in the directions parallell to the boundary 
+!  first in the x-direction......
+!
+      if (nxgrid /= 1) then
+        do i=n1,n2
+          call der_pencil(2,f(:,lll,i,iuy),tmp22(:,i))
+          call der_pencil(2,f(:,lll,i,ilnrho),tmp2_lnrho(:,i))
+          call der_pencil(2,f(:,lll,i,iux),tmp12(:,i))
+          call der_pencil(2,f(:,lll,i,iuz),tmp32(:,i))
+        enddo
       else
-        L_5 = 0
+        tmp32=0
+        tmp22=0
+        tmp12=0
+        tmp2_lnrho=0
+      endif
+      du3_dy=tmp32(l1:l2,n1:n2)
+      du2_dy=tmp22(l1:l2,n1:n2)
+      du1_dy=tmp12(l1:l2,n1:n2)
+      div_rho(:,:,1)=tmp2_lnrho(l1:l2,n1:n2)
+!
+!  .... then in the z-direction
+!
+      if (nzgrid /= 1) then
+        do i=l1,l2
+          call der_pencil(3,f(i,lll,:,iuz),tmp33(i,:))
+          call der_pencil(3,f(i,lll,:,ilnrho),tmp3_lnrho(i,:))
+          call der_pencil(3,f(i,lll,:,iux),tmp13(i,:))
+          call der_pencil(3,f(i,lll,:,iuy),tmp23(i,:))
+        enddo
+      else
+        tmp33=0
+        tmp23=0
+        tmp13=0
+        tmp3_lnrho=0
+      endif
+      du3_dz=tmp33(l1:l2,n1:n2)
+      du2_dz=tmp23(l1:l2,n1:n2)
+      du1_dz=tmp13(l1:l2,n1:n2)
+      div_rho(:,:,3)=tmp3_lnrho(l1:l2,n1:n2)
+!
+!  Find divergence of rho if we solve for logarithm of rho
+!
+      if (.not. ldensity_nolog) then
+        do i=1,3
+          div_rho(:,:,i)=div_rho(:,:,i)*rho0
+        enddo
+      endif
+!
+!  Find the L_i's (which really is the Lodi equations)
+!
+      if (llinlet) then
+        L_1 = (f(l1:l2,lll,n1:n2,iux) - sgn*cs0_ar(l1:l2,n1:n2))*&
+             (cs20*div_rho(:,:,2) - sgn*rho0*cs0_ar(l1:l2,n1:n2)*du2_dy)
+        L_3=0
+        L_4=0
+        if (non_reflecting_inlet) then
+!
+!  The inlet in non-reflecting only when nscbc_sigma_in is set to 0, this 
+!  might however lead to problems ..... NILS: Must SPECIFY!!!!!!!!!!
+!
+          L_5 = nscbc_sigma_in*cs20_ar(l1:l2,n1:n2)*rho0&
+              *(sgn*f(l1:l2,lll,n1:n2,iux)-sgn*u_t)
+        else
+          L_5 = L_1
+        endif
+      else
+!
+!  Find Mach number 
+!  (NILS: I do not think this is a good way to determine the Mach
+!  number since this is a local Mach number for this processor. Furthermore
+!  by determining the Mach number like this we will see the Mach number varying
+!  with the phase of an acoustic wave as the wave pass through the boundary.
+!  I think that what we really want is a Mach number averaged over the 
+!  timescale of several acoustic waves. How could this be done????)
+!
+        Mach=sum(f(l1:l2,lll,n1:n2,iux)/cs0_ar(l1:l2,n1:n2))/(nx*nz)
+!
+!  Find the parameter determining 
+!
+        KK=nscbc_sigma_out*(1-Mach**2)*cs0/Lxyz(1)
+
+!print*,'Mach=',Mach
+!print*,rho0*cs20,p_infty
+
+!KK=0
+
+        L_1 = KK*(rho0*cs20-p_infty)
+        L_3 = f(l1:l2,lll,n1:n2,iux)*du2_dy
+        L_4 = f(l1:l2,lll,n1:n2,iux)*du3_dy
+        L_5 = (f(l1:l2,lll,n1:n2,iux) - sgn*cs0_ar(l1:l2,n1:n2))*&
+             (cs0_ar(l1:l2,n1:n2)*div_rho(:,:,2)&
+             +rho0*cs0_ar(l1:l2,n1:n2)*du2_dy)
       end if
+!
+!  Add terms due to derivatives parallell to the boundary
+!
+      parallell_term_rho=0
+      parallell_term_ux=0
+      parallell_term_uy=0
+      parallell_term_uz=0
+!
+!  Find the evolution equations at the boundary
+!
       select case(topbot)
       ! NB: For 'top' L_1 plays the role of L5 and L_5 the role of L1
       case('bot')
-        df(l1:l2,lll,n1:n2,ilnrho) = prefac1*(L_5 + L_1)
-        df(l1:l2,lll,n1:n2,iuy) = prefac2*(L_5 - L_1)
+        df(l1:l2,lll,n1:n2,ilnrho) = prefac1*(L_5 + L_1)-parallell_term_rho
+        df(l1:l2,lll,n1:n2,iux) = prefac2*(L_5 - L_1)-parallell_term_ux
+        df(l1:l2,lll,n1:n2,iuy) = -L_3-parallell_term_uy
+        df(l1:l2,lll,n1:n2,iuz) = -L_4-parallell_term_uz
       case('top')
-        df(l1:l2,lll,n1:n2,ilnrho) = prefac1*(L_1 + L_5)
-        df(l1:l2,lll,n1:n2,iuy) = prefac2*(L_1 - L_5)
+        df(l1:l2,lll,n1:n2,ilnrho) = prefac1*(L_1 + L_5)-parallell_term_rho
+!       df(l1:l2,lll,n1:n2,iux) = prefac2*(L_1 - L_5)
+        df(l1:l2,lll,n1:n2,iux) = prefac2*(L_5 - L_1)-parallell_term_ux
+        df(l1:l2,lll,n1:n2,iuy) = -L_3-parallell_term_uy
+        df(l1:l2,lll,n1:n2,iuz) = -L_4-parallell_term_uz
       endselect
+!
+!  Check if we are solving for logrho or rho
+!
+      if (.not. ldensity_nolog) then
+        df(l1:l2,lll,n1:n2,ilnrho)=df(l1:l2,lll,n1:n2,ilnrho)/rho0
+      endif
+!
+! Impose required variables at the boundary
+!
+      if (llinlet) then
+        f(l1:l2,lll,n1:n2,iux) = u_t
+        f(l1:l2,lll,n1:n2,iuy) = 0
+        f(l1:l2,lll,n1:n2,iuz) = 0
+      endif
 !
     endsubroutine bc_nscbc_prf_y
 !***********************************************************************
-    subroutine bc_nscbc_prf_z(f,df,topbot,linlet,u_t)
+    subroutine bc_nscbc_prf_z(f,df,topbot,non_reflecting_inlet,linlet,u_t)
 !
 !   Calculate du and dlnrho at a partially reflecting outlet/inlet normal to 
 !   z-direction acc. to LODI relations. Uses a one-sided finite diff. stencil.
@@ -4443,7 +4706,7 @@ module Boundcond
       real, dimension (mx,my,mz,mvar) :: df
       character (len=3) :: topbot
       logical, optional :: linlet
-      logical :: llinlet
+      logical :: llinlet,non_reflecting_inlet
       real, optional :: u_t
       !real, parameter :: sigma = 1.
       real, dimension(nx,ny) :: du_dz, dlnrho_dz, rho0, L_1, L_5
@@ -4494,7 +4757,7 @@ module Boundcond
       L_1 = (f(l1:l2,m1:m2,lll,iuz) - sgn*cs0)*&
             (dp_prefac*dlnrho_dz - sgn*rho0*cs0*du_dz)
       if (llinlet) then
-        L_5 = nscbc_sigma*cs20*rho0*(sgn*f(l1:l2,m1:m2,lll,iuz)-sgn*u_t)
+        L_5 = nscbc_sigma_in*cs20*rho0*(sgn*f(l1:l2,m1:m2,lll,iuz)-sgn*u_t)
       else
         L_5 = 0
       end if
@@ -4760,7 +5023,7 @@ module Boundcond
       enddo
 !
       Mach_num=maxval(f(lll,m1:m2,n1:n2,iux)/cs0_ar(m1:m2,n1:n2))
-      KK=nscbc_sigma*(1.-Mach_num*Mach_num)*cs0_ar(m1:m2,n1:n2)/Lxyz(1)
+      KK=nscbc_sigma_out*(1.-Mach_num*Mach_num)*cs0_ar(m1:m2,n1:n2)/Lxyz(1)
 !
       select case(topbot)
       case('bot')
@@ -4937,7 +5200,7 @@ module Boundcond
       enddo
 !
       Mach_num=maxval(f(l1:l2,mmm,n1:n2,iuy)/cs0_ar(l1:l2,n1:n2))
-      KK=nscbc_sigma*(1.-Mach_num*Mach_num)*cs0_ar(l1:l2,n1:n2)/Lxyz(2)
+      KK=nscbc_sigma_out*(1.-Mach_num*Mach_num)*cs0_ar(l1:l2,n1:n2)/Lxyz(2)
 !
       select case(topbot)
       case('bot')
