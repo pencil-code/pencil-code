@@ -753,6 +753,10 @@ subroutine flame_front(f)
 !
       f(:,:,:,iux)=init_ux*exp(log_inlet_density)/exp(f(:,:,:,ilnrho))
 !
+!  Check if we want nolog of density
+!
+      if (ldensity_nolog) f(:,:,:,ilnrho)=exp(f(:,:,:,ilnrho))
+!
     endsubroutine flame_front
 !***********************************************************************
     subroutine calc_for_chem_mixture(f)
