@@ -328,21 +328,29 @@ endif
 ;
 if (keyword_set(solid_object)) then begin
   pc_read_param, object=param
+  pc_read_param, object=param2,/param2
   dims=size(irmv)
   solid_colls=0
   maxy=param.xyz1[1]
 ; This should eventually be a loop over all solid objects
   cyl_ypos=param.cylinder_ypos[0]
   for k=0,dims[1]-1 do begin        
-    if (array[irmv[k],1] lt maxy) then begin 
-      radius2=(array[irmv[k],0])^2+(array[irmv[k],1]-cyl_ypos)^2
-      print,'k,radius=',irmv[k],sqrt(radius2)
-      solid_colls=solid_colls+1
-    endif
+   if (dims[0]>0) then begin
+       if (array[irmv[k],1] lt maxy) then begin 
+           radius2=(array[irmv[k],0])^2+(array[irmv[k],1]-cyl_ypos)^2
+           print,'k,radius,x,y=',irmv[k],sqrt(radius2),array[irmv[k],0],array[irmv[k],1]
+           solid_colls=solid_colls+1
+       endif
+   endif
   endfor
+  tau_p=param.rhops*(2*param.ap0)^2/(18.0*param2.nu)
+  Stokes=tau_p*param.init_uu/param.cylinder_radius[0]
+  eta=float(solid_colls)/npar
   print,'Number of collisions with the solid geometry is:',solid_colls
   print,'Total number of particles:',npar
-  print,'Capture efficiency=',float(solid_colls)/npar
+  print,'Capture efficiency=',eta
+  print,'Stokes number=',Stokes
+  save,Stokes,eta,filename='./data/captur_eff.sav'
 endif
 ;
 ;  Trim x, y and z arrays.
