@@ -70,7 +70,7 @@ module Chiral
 !  set to zero and then call the same initial condition
 !  that was used in start.csh
 !
-      if(NO_WARN) print*,'f=',f
+      if (NO_WARN) print*,'f=',f
     endsubroutine initialize_chiral
 !***********************************************************************
     subroutine init_chiral(f,xx,yy,zz)
@@ -139,7 +139,7 @@ module Chiral
 !
       intent(in)  :: f,df,p
 !
-      if(NO_WARN) print*,f,df,p
+      if (NO_WARN) print*,f,df,p
     endsubroutine dXY_chiral_dt
 !***********************************************************************
     subroutine read_chiral_init_pars(unit,iostat)

@@ -1680,7 +1680,7 @@ module Fourier
       integer :: nx_other
       logical :: lforward
 !----------
-      if(ifirst_fft.eq.1) then
+      if (ifirst_fft==1) then
 ! Initialize fftpack
         call rffti(na,wsavex_temp)
       else

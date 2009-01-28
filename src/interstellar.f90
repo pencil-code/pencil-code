@@ -972,7 +972,7 @@ module Interstellar
 !
 !  identifier
 !
-      if(headtt) print*,'interstellar_before_boundary: ENTER'
+      if (headtt) print*,'interstellar_before_boundary: ENTER'
 !
 ! Precalculate radiative cooling function
 !
@@ -1049,7 +1049,7 @@ module Interstellar
 !
 !  identifier
 !
-      if(headtt) print*,'calc_heat_cool_interstellar: ENTER'
+      if (headtt) print*,'calc_heat_cool_interstellar: ENTER'
 !
 !
     if (lcooltime_smooth) then
@@ -1114,20 +1114,20 @@ module Interstellar
 !
 !  prepare diagnostic output
 !
-    if(ldiagnos) then
-      if(idiag_Hmax/=0) &
+    if (ldiagnos) then
+      if (idiag_Hmax/=0) &
         call max_mn_name(heat,idiag_Hmax)
-      if(idiag_taucmin/=0) &
+      if (idiag_taucmin/=0) &
         call max_mn_name(cool/p%ee,idiag_taucmin,lreciprocal=.true.)
-      if(idiag_Lamm/=0) &
+      if (idiag_Lamm/=0) &
         call sum_mn_name(cool,idiag_Lamm)
-      if(idiag_nrhom/=0) &
+      if (idiag_nrhom/=0) &
         call sum_mn_name(cool/p%ee,idiag_nrhom)
 !--       call sum_mn_name(cool*p%rho/p%ee,idiag_nrhom)
 !AB: the factor rho is already included in cool, so cool=rho*Lambda
-      if(idiag_rhoLm/=0) &
+      if (idiag_rhoLm/=0) &
         call sum_mn_name(p%rho*cool,idiag_rhoLm)
-      if(idiag_Gamm/=0) &
+      if (idiag_Gamm/=0) &
         call sum_mn_name(p%rho*heat,idiag_Gamm)
     endif
 
@@ -1247,7 +1247,7 @@ cool_loop: do i=1,ncool
 !
 !  identifier
 !
-      if(headtt) print*,'check_SN: ENTER'
+      if (headtt) print*,'check_SN: ENTER'
 !
 !  Do separately for SNI (simple scheme) and SNII (Boris' scheme)
 !
@@ -1275,7 +1275,7 @@ cool_loop: do i=1,ncool
 !
 !  identifier
 !
-    if(headtt) print*,'check_SNI: ENTER'
+    if (headtt) print*,'check_SNI: ENTER'
 !
     l_SNI=.false.
     if (t >= t_next_SNI) then
@@ -1358,7 +1358,7 @@ cool_loop: do i=1,ncool
 !
 !  identifier
 !
-    if(lroot.and.headtt.and.ip<14) print*,'check_SNII: ENTER'
+    if (lroot.and.headtt.and.ip<14) print*,'check_SNII: ENTER'
 !
     if (l_SNI) return         ! only do if no SNI this step
 !
@@ -1441,7 +1441,7 @@ cool_loop: do i=1,ncool
     real, dimension(3) :: fran3
     integer :: i
 !
-    if(headtt) print*,'position_SN_testposition: ENTER'
+    if (headtt) print*,'position_SN_testposition: ENTER'
 !
 !  Calculate the global (nzgrid) lower z-coordinate
 !
@@ -1500,7 +1500,7 @@ cool_loop: do i=1,ncool
 !
 !
 !
-    if(headtt) print*,'position_SN_gaussianz: ENTER'
+    if (headtt) print*,'position_SN_gaussianz: ENTER'
 !
 !  Calculate the global (nzgrid) lower z-coordinate
 !
@@ -1567,7 +1567,7 @@ cool_loop: do i=1,ncool
     real, dimension(3) :: fran3
     integer :: i   !prevent SN from being too close to boundaries
 !
-    if(headtt) print*,'position_SN_uniformz: ENTER'
+    if (headtt) print*,'position_SN_uniformz: ENTER'
 !
 !  Calculate the global (nzgrid) lower z-coordinate
 !
@@ -1628,7 +1628,7 @@ cool_loop: do i=1,ncool
 !
 !  identifier
 !
-      if(lroot.and.ip<14) print*,'position_SN_bycloudmass: ENTER'
+      if (lroot.and.ip<14) print*,'position_SN_bycloudmass: ENTER'
 !
 !  Construct cumulative distribution function, using cloud_mass_byproc.
 !  NB: icpu=iproc+1 (iproc in [0,ncpus-1], icpu in [1,ncpus] )
@@ -1718,7 +1718,7 @@ find_SN: do n=n1,n2
     integer :: m,n
 !
 !
-    if(headtt) print*,'find_nearest_SNI: ENTER'
+    if (headtt) print*,'find_nearest_SNI: ENTER'
 !
     call random_number_wrapper(fran_location)
     if (iproc==SNR%iproc) then
@@ -1908,7 +1908,7 @@ find_SN: do n=n1,n2
 !
       SNR%state=SNstate_exploding
 !
-      if(lroot.and.ip<12) print*,'explode_SN: SN type =',SNR%SN_type
+      if (lroot.and.ip<12) print*,'explode_SN: SN type =',SNR%SN_type
 
 !
 !  Calculate explosion site mean density
@@ -2037,7 +2037,7 @@ find_SN: do n=n1,n2
         cvelocity_SN=0.
       endif
 
-      if(lroot.and.ip<32) print*, &
+      if (lroot.and.ip<32) print*, &
          'explode_SN: SNR%site%TT, TT_SN_new, TT_SN_min, SNR%site%ee =', &
                                 SNR%site%TT,TT_SN_new,TT_SN_min, SNR%site%ee
       if (lroot) print*,'explode_SN: yH_SN_new =',yH_SN_new
@@ -2086,7 +2086,7 @@ find_SN: do n=n1,n2
                                  lnTT=lnTT_SN_new,yH=yH_SN_new)
            TT_SN_new=exp(lnTT_SN_new)
 
-           if(lroot.and.ip<32) print*, &
+           if (lroot.and.ip<32) print*, &
               'explode_SN: Relocate mass... TT_SN_new, rho_SN_new=', &
                                                      TT_SN_new,rho_SN_new
 

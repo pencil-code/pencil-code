@@ -18,9 +18,9 @@ module  struct_func
   integer :: ivec
   character (len=*) :: variabl
   !
-  if(ip<=15) print*,'Use POWER=power_spectrum in Makefile.local'
-  if(ip<=15) print*,'Use STRUCT_FUNC  = struct_func in Makefile.local'
-  if(NO_WARN)  print*,f,ivec,b_vec,variabl  !(to keep compiler happy)
+  if (ip<=15) print*,'Use POWER=power_spectrum in Makefile.local'
+  if (ip<=15) print*,'Use STRUCT_FUNC  = struct_func in Makefile.local'
+  if (NO_WARN)  print*,f,ivec,b_vec,variabl  !(to keep compiler happy)
 end subroutine structure
 !***********************************************************************
 

@@ -287,7 +287,7 @@ module General
         y=abs(v)+0.386595
         q=x**2+y*(0.19600*y-0.25472*x)
         lloop=q>0.27597
-        if(lloop) &
+        if (lloop) &
           lloop=(q>0.27846).or.(v**2>-4.0*log(u)*u**2)
       enddo
 !
@@ -308,19 +308,19 @@ module General
 !
       case('system')
         call random_seed(SIZE=nseed)
-        if(present(size)) size=nseed
-        if(present(get))  call random_seed(GET=get(1:nseed))
-        if(present(put))  call random_seed(PUT=put(1:nseed))
+        if (present(size)) size=nseed
+        if (present(get))  call random_seed(GET=get(1:nseed))
+        if (present(put))  call random_seed(PUT=put(1:nseed))
       case('min_std')
         nseed=1
-        if(present(size)) size=nseed
-        if(present(get))  get=rstate(1)
-        if(present(put))  rstate(1)=put(1)
+        if (present(size)) size=nseed
+        if (present(get))  get=rstate(1)
+        if (present(put))  rstate(1)=put(1)
       case default ! 'nr_f90'
         nseed=2
-        if(present(size)) size=nseed
-        if(present(get))  get=rstate(1:nseed)
-        if(present(put)) then
+        if (present(size)) size=nseed
+        if (present(get))  get=rstate(1:nseed)
+        if (present(put)) then
           if (put(2)==0) then   ! state cannot be result from previous
                                 ! call, so initialize
             dummy = mars_ran(put(1))

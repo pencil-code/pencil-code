@@ -426,7 +426,7 @@ module Sub
 !
 !  use it
 !
-          if(lspherical_coords) then
+          if (lspherical_coords) then
             fname(iname)=qpart*fname(iname)+ppart*sum(r2_weight*sinth_weight(m)*a)
           elseif (lcylindrical_coords) then
             fname(iname)=qpart*fname(iname)+ppart*sum(rcyl_weight*a)
@@ -446,7 +446,7 @@ module Sub
               fname(iname)=sum(a)
             endif
           else
-            if(lspherical_coords) then
+            if (lspherical_coords) then
               fname(iname)=fname(iname)+sum(r2_weight*sinth_weight(m)*a)
             elseif (lcylindrical_coords) then
               fname(iname)=fname(iname)+sum(rcyl_weight*a)
@@ -487,7 +487,7 @@ module Sub
       if (iname /= 0) then
         sum_name=0
 !
-        if(y(m).ge.yequator)then
+        if (y(m).ge.yequator)then
           sum_name=fname_half(iname,2)
         else
           sum_name=fname_half(iname,1)
@@ -505,7 +505,7 @@ module Sub
             sum_name=sum(a)
           endif
         else
-          if(lspherical_coords) then
+          if (lspherical_coords) then
             sum_name=sum_name+sum(r2_weight*sinth_weight(m)*a)
           elseif (lcylindrical_coords) then
             sum_name=sum_name+sum(rcyl_weight*a)
@@ -514,7 +514,7 @@ module Sub
           endif
         endif
 !
-        if(y(m).ge.yequator)then
+        if (y(m).ge.yequator)then
           fname_half(iname,2)=sum_name
         else
           fname_half(iname,1)=sum_name
@@ -609,7 +609,7 @@ module Sub
          enddo
 !
          if (lfirstpoint) then
-            if(lspherical_coords)then
+            if (lspherical_coords)then
               fname(iname) = 0.
               do isum=l1,l2
                 fname(iname)=fname(iname)+ & 
@@ -619,7 +619,7 @@ module Sub
               fname(iname)=sum(aux)*dv
             endif
          else
-            if(lspherical_coords)then
+            if (lspherical_coords)then
               do isum=l1,l2
                 fname(iname)=fname(iname)+ &  
                       x(isum)*x(isum)*sinth(isum)*aux(isum)*dv
@@ -723,7 +723,7 @@ module Sub
 !  n starts with nghost+1=4, so the correct index is n-nghost
 !
       n_nghost=n-nghost
-      if(lspherical_coords.or.lcylindrical_coords)then
+      if (lspherical_coords.or.lcylindrical_coords)then
         do isum=l1,l2
           fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+ & 
                               x(isum)*a(isum)
@@ -756,7 +756,7 @@ module Sub
 !  m starts with mghost+1=4, so the correct index is m-nghost
 !
       m_nghost=m-nghost
-      if(lspherical_coords)then
+      if (lspherical_coords)then
         do isum=l1,l2
           fnamey(m_nghost,ipy+1,iname)=fnamey(m_nghost,ipy+1,iname)+ &
                               x(isum)*sinth(m)*a(isum)
@@ -785,7 +785,7 @@ module Sub
 !
       if (lfirstpoint) fnamex(:,iname)=0.
 !
-      if(lspherical_coords)then
+      if (lspherical_coords)then
         do isum=l1,l2
           fnamex(isum,iname)=fnamex(isum,iname)+x(isum)*x(isum)*sinth(m)*a(isum)
         enddo
@@ -968,7 +968,7 @@ module Sub
 !  keep full x-dependence
 !
       n_nghost=n-nghost
-      if(lspherical_coords.or.lcylindrical_coords)then
+      if (lspherical_coords.or.lcylindrical_coords)then
         fnamexz(:,n_nghost,ipz+1,iname) = fnamexz(:,n_nghost,ipz+1,iname)+a*x(l1:l2)
       else
         fnamexz(:,n_nghost,ipz+1,iname)=fnamexz(:,n_nghost,ipz+1,iname)+a
@@ -1118,7 +1118,7 @@ module Sub
       integer :: isum
 !
       if (lfirstpoint) then
-        if(lspherical_coords) then
+        if (lspherical_coords) then
           res = 0.
           do isum=l1,l2
             res = res+x(isum)*x(isum)*sinth(m)*a(isum)*a(isum)
@@ -1127,7 +1127,7 @@ module Sub
           res=sum(a*1.D0)     ! sum at double precision to improve accuracy
         endif
       else
-        if(lspherical_coords) then
+        if (lspherical_coords) then
           do isum=l1,l2
             res = res+x(isum)*x(isum)*sinth(m)*a(isum)*a(isum)
           enddo
@@ -1156,7 +1156,7 @@ module Sub
       integer :: isum
 !
       if (lfirstpoint) then
-        if(lspherical_coords) then
+        if (lspherical_coords) then
           res = 0.
           do isum=l1,l2
             res = res+x(isum)*x(isum)*sinth(m)*a(isum)*a(isum)
@@ -1165,7 +1165,7 @@ module Sub
           res=sum(a**2)
         endif
       else
-        if(lspherical_coords) then
+        if (lspherical_coords) then
           do isum=l1,l2
             res = res+x(isum)*x(isum)*sinth(m)*a(isum)*a(isum)
           enddo
@@ -1195,7 +1195,7 @@ module Sub
       integer :: isum
 !
       if (lfirstpoint) then
-        if(lspherical_coords) then
+        if (lspherical_coords) then
           res = 0.
           do isum=l1,l2
             res = res+x(isum)*x(isum)*sinth(m)*a2(isum)
@@ -1204,7 +1204,7 @@ module Sub
           res=sum(a2)
         endif
       else
-        if(lspherical_coords) then
+        if (lspherical_coords) then
           do isum=l1,l2
             res = res+x(isum)*x(isum)*sinth(m)*a2(isum)
           enddo
@@ -1234,7 +1234,7 @@ module Sub
       integer :: isum
 !
       if (lfirstpoint) then
-        if(lspherical_coords) then
+        if (lspherical_coords) then
           res = 0.
           do isum=l1,l2
             res = res+x(isum)*x(isum)*sinth(m)*a(isum)
@@ -1243,7 +1243,7 @@ module Sub
           res=sum(a)
         endif
       else
-        if(lspherical_coords) then
+        if (lspherical_coords) then
           do isum=l1,l2
             res = res+x(isum)*x(isum)*sinth(m)*a(isum)
           enddo
@@ -2241,21 +2241,21 @@ module Sub
       call der(f,k1+3,tmp1,2)
       call der(f,k1+2,tmp2,3)
       g=tmp1-tmp2
-      if(lspherical_coords) g=tmp1-tmp2& 
+      if (lspherical_coords) g=tmp1-tmp2& 
             +f(l1:l2,m,n,k1+3)*r1_mn*cotth(m)
 !
       case(2)
       call der(f,k1+1,tmp1,3)
       call der(f,k1+3,tmp2,1)
       g=tmp1-tmp2
-      if(lspherical_coords) g=tmp1-tmp2& 
+      if (lspherical_coords) g=tmp1-tmp2& 
             -f(l1:l2,m,n,k1+3)*r1_mn
 !
       case(3)
       call der(f,k1+2,tmp1,1)
       call der(f,k1+1,tmp2,2)
       g=tmp1-tmp2
-      if(lspherical_coords) g=tmp1-tmp2& 
+      if (lspherical_coords) g=tmp1-tmp2& 
             +f(l1:l2,m,n,k1+2)*r1_mn
 !
       endselect
@@ -2480,7 +2480,7 @@ module Sub
           call stop_it("curlcurl at del2v_etc not implemented for non-cartesian coordinates:use gij_etc")
       endif
 !
-      if(present(gradcurl)) then
+      if (present(gradcurl)) then
          gradcurl(:,1,1) = fjik(:,3)   - fjik(:,2)
          gradcurl(:,1,2) = fjji(:,1,3) - fijj(:,3,1)
          gradcurl(:,1,3) = fijj(:,2,1) - fjji(:,1,2)
@@ -3302,22 +3302,22 @@ module Sub
 !  y-direction
 !
         call der6(f,k,del6f,2,UPWIND=.true.)
-        if(lcartesian_coords) then
+        if (lcartesian_coords) then
           ugradf=ugradf-abs(uu(:,2))*del6f
         else
-          if(lcylindrical_coords) &
+          if (lcylindrical_coords) &
              ugradf=ugradf-rcyl_mn1*abs(uu(:,2))*del6f
-          if(lspherical_coords) &
+          if (lspherical_coords) &
              ugradf=ugradf-r1_mn*abs(uu(:,2))*del6f
         endif
 !
 !  z-direction
 !
         call der6(f,k,del6f,3,UPWIND=.true.)
-        if((lcartesian_coords).or.(lcylindrical_coords)) then
+        if ((lcartesian_coords).or.(lcylindrical_coords)) then
           ugradf=ugradf-abs(uu(:,3))*del6f
         else
-          if(lspherical_coords) &
+          if (lspherical_coords) &
              ugradf=ugradf-r1_mn*sin1th(m)*abs(uu(:,3))*del6f
         endif
         
@@ -3577,7 +3577,7 @@ module Sub
         !
         write(1,'(3i5)') nghost, nghost, nghost
         if (present(mzout)) then
-          if(lprocz_slowest) iprocz_slowest=1
+          if (lprocz_slowest) iprocz_slowest=1
           write(1,'(4i5)') nprocx, nprocy, nprocz, iprocz_slowest
         else
           write(1,'(3i5)') ipx, ipy, ipz
@@ -3742,11 +3742,11 @@ module Sub
 !
 !  return if thresh=0 (default)
 !
-      if(thresh==0.) return
+      if (thresh==0.) return
 !
 !  open files when first data point
 !
-      if(lfirstpoint) then
+      if (lfirstpoint) then
         open(lun,FILE=trim(file)//'.dat',form='unformatted',position='append')
         write(lun) 0,0,0,t,dummy,dummy  !(marking first line)
         nvec=0
@@ -3757,7 +3757,7 @@ module Sub
       thresh2=thresh**2
       v2=vv(:,1)**2+vv(:,2)**2+vv(:,3)**2
       do l=1,nx
-        if(v2(l)>=thresh2) then
+        if (v2(l)>=thresh2) then
           write(lun) l,m-nghost,n-nghost,vv(l,:)
           nvec=nvec+1
         endif
@@ -3765,7 +3765,7 @@ module Sub
 !
 !  close file, and write number of vectors to a separate file
 !
-      if(llastpoint) then
+      if (llastpoint) then
         close(lun)
         open(lun,FILE=trim(file)//'.num',position='append')
         write(lun,*) t,nvec
@@ -4082,7 +4082,7 @@ module Sub
       index_d=index(cform,'.')
       index_r=index(cform,')')
       index1=max(index_e,index_f,index_g,index_i)
-      index2=index_d; if(index_d==0) index2=index_r
+      index2=index_d; if (index_d==0) index2=index_r
 !
 !  calculate the length of the format and assemble expression for legend
 !
@@ -4119,12 +4119,12 @@ module Sub
       real :: levi_civita
       integer :: i,j,k
 !
-      if( &
+      if ( &
         (i==1 .and. j==2 .and. k==3) .or. &
         (i==2 .and. j==3 .and. k==1) .or. &
         (i==3 .and. j==1 .and. k==2) ) then
         levi_civita=1.
-      elseif( &
+      elseif ( &
         (i==3 .and. j==2 .and. k==1) .or. &
         (i==1 .and. j==3 .and. k==2) .or. &
         (i==2 .and. j==1 .and. k==3) ) then
@@ -6334,7 +6334,7 @@ nameloop: do
         elseif (coord_system=='cylindric') then
           rcylmn= xc                      +tini
           rrmn  =sqrt(  rcylmn**2+z(n)**2)
-        elseif(coord_system=='spherical') then
+        elseif (coord_system=='spherical') then
           rcylmn=     xc*sin(y(m))+tini
           rrmn  =     xc          +tini
         endif
@@ -6345,7 +6345,7 @@ nameloop: do
         elseif (coord_system=='cylindric') then
           rcylmn=sqrt(xc**2+e1**2 - 2*xc*e1*cos(y(m)-e2))+tini
           rrmn  =sqrt(rcylmn**2+(z(n)-e3)**2)
-        elseif(coord_system=='spherical') then
+        elseif (coord_system=='spherical') then
           rcylmn=sqrt((xc*sin(y(m)))**2 + (e1*sin(e2))**2 - &
                2*xc*e1*cos(y(m))*cos(e2))+tini
           rrmn  =sqrt(xc**2 + e1**2 - 2*xc*e1*&

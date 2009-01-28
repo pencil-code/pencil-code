@@ -62,7 +62,7 @@ module Filter
 !
       if (present(explog)) then
         f(:,:,:,ilnrho)=exp(f(:,:,:,ilnrho))
-        if(lroot) print*,'rmwig: turn f into exp(f), ilnrho=',ilnrho
+        if (lroot) print*,'rmwig: turn f into exp(f), ilnrho=',ilnrho
       endif
 !
 !  Apply boundconds and smooth in all three directions consecutively
@@ -86,7 +86,7 @@ module Filter
 !
       if (present(explog)) then
         f(l1:l2,m1:m2,n1:n2,ilnrho)=log(f(l1:l2,m1:m2,n1:n2,ilnrho))
-        if(lroot) print*,'rmwig: turn f back into log(f), ilnrho=',ilnrho
+        if (lroot) print*,'rmwig: turn f back into log(f), ilnrho=',ilnrho
       endif
 !
     endsubroutine rmwig
@@ -203,7 +203,7 @@ module Filter
 !
       if (present(explog)) then
         f(:,:,:,ivar)=exp(f(:,:,:,ivar))
-        if(lroot) print*,'rmwig_old: turn f into exp(f), ivar=',ivar
+        if (lroot) print*,'rmwig_old: turn f into exp(f), ivar=',ivar
       endif
 !
 !  do loop over y and z
@@ -233,7 +233,7 @@ module Filter
 !
       if (present(explog)) then
         f(l1:l2,m1:m2,n1:n2,ivar)=log(f(l1:l2,m1:m2,n1:n2,ivar))
-        if(lroot) print*,'rmwig_old: turn f back into log(f), ivar=',ivar
+        if (lroot) print*,'rmwig_old: turn f back into log(f), ivar=',ivar
       endif
 !
     endsubroutine rmwig_old

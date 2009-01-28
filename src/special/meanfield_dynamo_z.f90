@@ -157,7 +157,7 @@ module Special
 !  SAMPLE IMPLEMENTATION
 !
       select case(init)
-        case('nothing'); if(lroot) print*,'init_special: nothing'
+        case('nothing'); if (lroot) print*,'init_special: nothing'
         case('zero'); f(:,:,:,iamx:iamz)=0.
         case('sinwave-x'); call sinwave(ampl,f,iam,kx=kx)
         case('sinwave-y'); call sinwave(ampl,f,iam,ky=ky)
@@ -308,7 +308,7 @@ module Special
 !
 !  diagnostics
 !
-      if(ldiagnos) then
+      if (ldiagnos) then
         if (idiag_bmx2m/=0) call sum_mn_name(bm(:,1)**2,idiag_bmx2m)
         if (idiag_bmy2m/=0) call sum_mn_name(bm(:,2)**2,idiag_bmy2m)
 !

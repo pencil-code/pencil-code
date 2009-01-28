@@ -120,7 +120,7 @@ module Special
 !  set to zero and then call the same initial condition
 !  that was used in start.csh
 !   
-      if(NO_WARN) print*,'f=',f
+      if (NO_WARN) print*,'f=',f
     endsubroutine initialize_special
 !***********************************************************************
     subroutine init_special(f,xx,yy,zz)
@@ -144,7 +144,7 @@ module Special
         case default; call stop_it('init_alpm: bad initalpm='//trim(initalpm))
       endselect
 !
-      if(NO_WARN) print*,xx,yy,zz !(prevent compiler warnings)
+      if (NO_WARN) print*,xx,yy,zz !(prevent compiler warnings)
     endsubroutine init_special
 !***********************************************************************
     subroutine calc_pencils_special(f,p)
@@ -162,7 +162,7 @@ module Special
       intent(in) :: f
       intent(inout) :: p
 !
-      if(NO_WARN) print*,f(1,1,1,1),p   !(keep compiler quiet)
+      if (NO_WARN) print*,f(1,1,1,1),p   !(keep compiler quiet)
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -195,17 +195,17 @@ module Special
 !  dynamical quenching equation
 !  with advection flux proportional to uu
 !
-      if(lmagnetic) then
+      if (lmagnetic) then
         call dot_mn(p%mf_EMF,p%bb,EMFdotB)
         call divflux_from_Omega_effect(p,divflux)
         df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)&
            -2*etat_alpm*kf_alpm**2*(EMFdotB+alpm/Rm_alpm)-etat_alpm*divflux
-        if(ladvect_alpm) then
+        if (ladvect_alpm) then
           call grad(f,ialpm,galpm)
           call dot_mn(p%uu,galpm,ugalpm)
           df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)-ugalpm
         endif
-        if(alpmdiff/=0) then
+        if (alpmdiff/=0) then
           call del2(f,ialpm,del2alpm)
           df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)+alpmdiff*del2alpm
         endif

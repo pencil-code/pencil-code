@@ -364,7 +364,7 @@ module Radiation
 !
 !  Identifier
 !
-      if(ldebug.and.headt) print*,'raydirection'
+      if (ldebug.and.headt) print*,'raydirection'
 !
 !  Get direction components
 !
@@ -433,7 +433,7 @@ module Radiation
 !
 !  identifier
 !
-      if(ldebug.and.headt) print*,'Qintrinsic'
+      if (ldebug.and.headt) print*,'Qintrinsic'
 !
 !  line elements
 !
@@ -900,7 +900,7 @@ module Radiation
 !
 !  identifier
 !
-      if(ldebug.and.headt) print*,'Qrevision'
+      if (ldebug.and.headt) print*,'Qrevision'
 !
 !  do the ray...
 !

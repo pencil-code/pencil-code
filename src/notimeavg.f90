@@ -52,8 +52,8 @@ module Timeavg
       logical :: enum
       optional :: flist
 !
-      if(chsnap=='X') enum=.false. !(to keep compiler quiet)
-      if(NO_WARN) print*,flist !(to keep compiler quiet)
+      if (chsnap=='X') enum=.false. !(to keep compiler quiet)
+      if (NO_WARN) print*,flist !(to keep compiler quiet)
     endsubroutine wsnap_timeavgs
 !***********************************************************************
 

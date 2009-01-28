@@ -111,7 +111,7 @@ module Cosmicrayflux
 !
       real, dimension (mx,my,mz,mfarray) :: f
 
-      if(tau /= 0.) tau1=1./tau
+      if (tau /= 0.) tau1=1./tau
 
 !
     endsubroutine initialize_cosmicrayflux

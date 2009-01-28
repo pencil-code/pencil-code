@@ -275,7 +275,7 @@ module Special
       endif
 !
 ! DO NOTHING
-      if(NO_WARN) print*,f  !(keep compiler quiet)
+      if (NO_WARN) print*,f  !(keep compiler quiet)
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -315,7 +315,7 @@ module Special
 !!  SAMPLE IMPLEMENTATION
 !!
       select case(initgpe)
-        case('nothing'); if(lroot) print*,'init_special: nothing'
+        case('nothing'); if (lroot) print*,'init_special: nothing'
         case('constant', '0'); 
           f(:,:,:,ipsi_real) = 1.
           f(:,:,:,ipsi_imag) = 1.
@@ -358,7 +358,7 @@ module Special
           call stop_it("")
       endselect
 !
-      if(NO_WARN) print*,f,xx,yy,zz  !(keep compiler quiet)
+      if (NO_WARN) print*,f,xx,yy,zz  !(keep compiler quiet)
 !
     endsubroutine init_special
 !***********************************************************************
@@ -397,7 +397,7 @@ module Special
       intent(in) :: f
       intent(inout) :: p
 !     
-      if(NO_WARN) print*,f(1,1,1,1),p   !(keep compiler quiet)
+      if (NO_WARN) print*,f(1,1,1,1),p   !(keep compiler quiet)
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -530,8 +530,8 @@ module Special
 !!
 !! SAMPLE DIAGNOSTIC IMPLEMENTATION
 !!
-      if(ldiagnos) then
-        if(i_modpsim/=0) then
+      if (ldiagnos) then
+        if (i_modpsim/=0) then
           call sum_mn_name(sqrt(psi2),i_modpsim)
 ! see also integrate_mn_name
         endif

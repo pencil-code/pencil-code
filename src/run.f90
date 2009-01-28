@@ -203,7 +203,7 @@
 !
 !  read processor boundaries
 !
-        if(lparticles) then
+        if (lparticles) then
           if (ip<=6.and.lroot) print*,'reading processor boundaries'
           call rproc_bounds(trim(directory)//'/proc_bounds.dat')
         endif
@@ -333,7 +333,7 @@
                 if (t>tmax) print*, "done: t > tmax"
                 call remove_file("STOP")
                 inquire(FILE="RESUBMIT", EXIST=resubmit)
-                if(resubmit) then 
+                if (resubmit) then 
                   print*, "Cannot be resubmitted"
                   call remove_file("RESUBMIT")
                 else

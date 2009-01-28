@@ -834,7 +834,7 @@ module Entropy
       intent(in) :: p
       intent(out) :: df
 !
-      if(headtt) print*,'calc_heatcond_shock: chi_shock=',chi_shock
+      if (headtt) print*,'calc_heatcond_shock: chi_shock=',chi_shock
 !
 !  calculate terms for shock diffusion
 !
@@ -1649,8 +1649,8 @@ module Entropy
       real, dimension(n)    :: a,b,c,r,x,bb,u,z
 !     real, dimension(NMAX) :: bb,u,z
 !
-      if(n.le.2)pause 'n too small in cyclic'
-      if(n.gt.NMAX)pause 'NMAX too small in cyclic'
+      if (n.le.2)pause 'n too small in cyclic'
+      if (n.gt.NMAX)pause 'NMAX too small in cyclic'
       gamma=-b(1)
       bb(1)=b(1)-gamma
       bb(n)=b(n)-alpha*beta/gamma

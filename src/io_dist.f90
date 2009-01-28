@@ -423,7 +423,7 @@ contains
 !
       if (dxmin==0) call stop_it("rgrid: check Lx,Ly,Lz: is one of them 0?")
 !
-      if(NO_WARN) print*,tdummy  !(keep compiler quiet)
+      if (NO_WARN) print*,tdummy  !(keep compiler quiet)
 !
     endsubroutine rgrid
 !***********************************************************************

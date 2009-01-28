@@ -155,7 +155,7 @@ module Hydro
 !
       select case(inituu)
 
-      case('zero', '0'); if(lroot) print*,'init_uu: zero velocity'
+      case('zero', '0'); if (lroot) print*,'init_uu: zero velocity'
       case('gaussian-noise'); call gaunoise(ampluu,f,iux,iuz)
       case('gaussian-noise-x'); call gaunoise(ampluu,f,iux,iux)
       case('xjump'); call jump(f,iux,uu_left,uu_right,widthuu,'x')
@@ -431,9 +431,9 @@ module Hydro
           !
           if (idiag_orms/=0.or.idiag_omax/=0.or.idiag_o2m/=0) then
             call dot2_mn(oo,o2)
-            if(idiag_orms/=0) call sum_mn_name(o2,idiag_orms,lsqrt=.true.)
-            if(idiag_omax/=0) call max_mn_name(o2,idiag_omax,lsqrt=.true.)
-            if(idiag_o2m/=0)  call sum_mn_name(o2,idiag_o2m)
+            if (idiag_orms/=0) call sum_mn_name(o2,idiag_orms,lsqrt=.true.)
+            if (idiag_omax/=0) call max_mn_name(o2,idiag_omax,lsqrt=.true.)
+            if (idiag_o2m/=0)  call sum_mn_name(o2,idiag_o2m)
           endif
         endif
       endif
@@ -529,7 +529,7 @@ module Hydro
 !
 !  iname runs through all possible names that may be listed in print.in
 !
-      if(lroot.and.ip<14) print*,'rprint_hydro: run through parse list'
+      if (lroot.and.ip<14) print*,'rprint_hydro: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'u2m',idiag_u2m)
         call parse_name(iname,cname(iname),cform(iname),'um2',idiag_um2)
@@ -645,11 +645,11 @@ module Hydro
 !  so they are present on the root processor.
 !
       if (idiag_umx/=0) then
-        if(idiag_uymxy==0.or.idiag_uzmxy==0) then
-          if(first) print*,"calc_mflow:                WARNING"
-          if(first) print*, &
+        if (idiag_uymxy==0.or.idiag_uzmxy==0) then
+          if (first) print*,"calc_mflow:                WARNING"
+          if (first) print*, &
                   "calc_mflow: NOTE: to get umx, uymxy and uzmxy must also be set in zaver"
-          if(first) print*, &
+          if (first) print*, &
                   "calc_mflow:       We proceed, but you'll get umx=0"
           umx=0.
         else
@@ -666,11 +666,11 @@ module Hydro
 !  similarly for umy
 !
       if (idiag_umy/=0) then
-        if(idiag_uxmxy==0.or.idiag_uzmxy==0) then
-          if(first) print*,"calc_mflow:                WARNING"
-          if(first) print*, &
+        if (idiag_uxmxy==0.or.idiag_uzmxy==0) then
+          if (first) print*,"calc_mflow:                WARNING"
+          if (first) print*, &
                   "calc_mflow: NOTE: to get umy, uxmxy and uzmxy must also be set in zaver"
-          if(first) print*, &
+          if (first) print*, &
                   "calc_mflow:       We proceed, but you'll get umy=0"
           umy=0.
         else
@@ -691,13 +691,13 @@ module Hydro
 !  so they are present on the root processor.
 !
       if (idiag_umz/=0) then
-        if(idiag_uxmz==0.or.idiag_uymz==0.or.idiag_uzmz==0) then
-          if(first) print*,"calc_mflow:               WARNING"
-          if(first) print*, &
+        if (idiag_uxmz==0.or.idiag_uymz==0.or.idiag_uzmz==0) then
+          if (first) print*,"calc_mflow:               WARNING"
+          if (first) print*, &
                   "calc_mflow: NOTE: to get umz, uxmz, uymz and uzmz must also be set in xyaver"
-          if(first) print*, &
+          if (first) print*, &
                   "calc_mflow:       This may be because we renamed zaver.in into xyaver.in"
-          if(first) print*, &
+          if (first) print*, &
                   "calc_mflow:       We proceed, but you'll get umz=0"
           umz=0.
         else

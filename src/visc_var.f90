@@ -151,7 +151,7 @@ module Viscosity
 !
 !  iname runs through all possible names that may be listed in print.in
 !
-      if(lroot.and.ip<14) print*,'rprint_viscosity: run through parse list'
+      if (lroot.and.ip<14) print*,'rprint_viscosity: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'dtnu',idiag_dtnu)
       enddo
@@ -167,12 +167,12 @@ module Viscosity
         endif
       endif
 !
-      if(NO_WARN) print*,lreset  !(to keep compiler quiet)
+      if (NO_WARN) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_viscosity
 !!***********************************************************************
     subroutine calc_viscosity(f)
       real, dimension (mx,my,mz,mfarray) :: f
-      if(NO_WARN) print*,f  !(to keep compiler quiet)
+      if (NO_WARN) print*,f  !(to keep compiler quiet)
     endsubroutine calc_viscosity
 !***********************************************************************
     subroutine calc_viscous_heat(f,df,glnrho,divu,rho1,cs2,TT1,shock)
@@ -212,7 +212,7 @@ module Viscosity
 
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + TT1*heat
       if (lfirst.and.ldt) Hmax=Hmax+heat
-      if(NO_WARN) print*,f,cs2,divu,glnrho,shock  !(keep compiler quiet)
+      if (NO_WARN) print*,f,cs2,divu,glnrho,shock  !(keep compiler quiet)
     endsubroutine calc_viscous_heat
 
 !***********************************************************************
@@ -250,12 +250,12 @@ module Viscosity
           !
           if (headtt) print*,'VISC_VAR: viscous force: nu*(del2u+graddivu/3+2S.glnrho)'
           call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
-          if(ldensity) then
+          if (ldensity) then
             call multmv(sij,glnrho,sglnrho)
             fvisc=2*nu*sglnrho+nu*(del2u+1./3.*graddivu)
             diffus_nu=diffus_nu+nu*dxyz_2
           else
-            if(lfirstpoint) &
+            if (lfirstpoint) &
                  print*,"ldensity better be .true. for ivisc='nu-const'"
           endif
 
@@ -289,12 +289,12 @@ module Viscosity
           endif
           if (headtt) print*,'viscous force: nu_var*(del2u+graddivu/3+2S.glnrho)'
           call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
-          if(ldensity) then
+          if (ldensity) then
             call multmv(sij,glnrho,sglnrho)
             fvisc=2.*nu_var*sglnrho+nu_var*(del2u+1./3.*graddivu)
             diffus_nu=diffus_nu+nu_var*dxyz_2
           else
-            if(lfirstpoint) &
+            if (lfirstpoint) &
                  print*,"ldensity better be .true. for ivisc=",ivisc
           endif
 
@@ -334,7 +334,7 @@ module Viscosity
         call max_mn_name(spread(nu,1,nx)/dxmin**2/cdtvDim,idiag_dtnu,l_dt=.true.)
       endif
 !
-      if(NO_WARN) print*,divu  !(keep compiler quiet)
+      if (NO_WARN) print*,divu  !(keep compiler quiet)
     end subroutine calc_viscous_force
 
 !***********************************************************************

@@ -152,7 +152,7 @@ module Gravity
 !
 !  Different x-gravity profiles
 !
-      if(gravx/=0) lgravx=.true.
+      if (gravx/=0) lgravx=.true.
       select case (gravx_profile)
 
       case('zero')
@@ -264,13 +264,13 @@ module Gravity
 
       case('linear')      !  Linear gravity profile (for accretion discs)
         nu_epicycle2=nu_epicycle**2
-        if(lroot) print*,'initialize_gravity: linear z-grav, nu=', nu_epicycle
+        if (lroot) print*,'initialize_gravity: linear z-grav, nu=', nu_epicycle
         gravz_zpencil = -nu_epicycle2*z
         potz_zpencil=0.5*nu_epicycle2*(z**2-zinfty**2)
 
       case('linear_smoothed')
         nu_epicycle2=nu_epicycle**2
-        if(lroot) print*,'initialize_gravity: linear z-grav, '// &
+        if (lroot) print*,'initialize_gravity: linear z-grav, '// &
                          'smoothed to zero at top/bottom, nu=', nu_epicycle
         prof = 1. + (z/zref)**(2*n_pot)
         gravz_zpencil = -nu_epicycle2*z/prof**(1./n_pot+1.)

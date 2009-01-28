@@ -194,7 +194,7 @@ module Special
         gamma11 = 1.
       endif
 !
-      if(NO_WARN) print*,f  !(keep compiler quiet)
+      if (NO_WARN) print*,f  !(keep compiler quiet)
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -228,7 +228,7 @@ module Special
       !  case('stream_field')
        !     call stream_field(f,xx,yy)
          case('default')
-          if(lroot) print*,'init_special: Default  setup'
+          if (lroot) print*,'init_special: Default  setup'
      !     call density_init(f,xx,zz)
      !     call entropy_init(f,xx,zz)
      !     call velocity_init(f,zz)
@@ -240,7 +240,7 @@ module Special
           call stop_it("")
       endselect
 !
-      if(NO_WARN) print*,f,xx,yy,zz  !(keep compiler quiet)
+      if (NO_WARN) print*,f,xx,yy,zz  !(keep compiler quiet)
 !
     endsubroutine init_special
 !***********************************************************************
@@ -291,7 +291,7 @@ module Special
 !!
 !! SAMPLE DIAGNOSTIC IMPLEMENTATION
 !!
-      if(ldiagnos) then
+      if (ldiagnos) then
         if (idiag_dtcrad/=0) &
           call max_mn_name(sqrt(advec_crad2)/cdt,idiag_dtcrad,l_dt=.true.)
         if (idiag_dtchi/=0) &

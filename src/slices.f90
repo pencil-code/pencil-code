@@ -647,8 +647,8 @@ module Slices
 !
       elseif (slice_position=='e') then
         ix_loc=(l1+l2)/2; iy_loc=m1; iz_loc=n1; iz2_loc=n2
-        if(nprocy==1) then; iy_loc=(m1+m2)/2; endif
-        if(nprocz==1) then; iz2_loc=(iz+n2)/2; endif
+        if (nprocy==1) then; iy_loc=(m1+m2)/2; endif
+        if (nprocz==1) then; iz2_loc=(iz+n2)/2; endif
         lwrite_slice_xy2=(ipz==nprocz/4)
         lwrite_slice_xy=(ipz==0)
         lwrite_slice_xz=(ipy==nprocy/2)

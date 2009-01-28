@@ -178,7 +178,7 @@ module Density
 !     cs2cool=cs20
 !
 !
-      if(diffrho==0.) then
+      if (diffrho==0.) then
 !
 !  Made to work by adding diffrho + cdiffrho to the rprint reset list.
 !
@@ -946,7 +946,7 @@ module Density
         cs2top=impossible
         cs2bot=impossible
       else
-        if(lroot) print*,'init_lnrho: cs2bot,cs2top=',cs2bot,cs2top
+        if (lroot) print*,'init_lnrho: cs2bot,cs2top=',cs2bot,cs2top
       endif
 !
 !  If unlogarithmic density considered, take exp of lnrho resulting from
@@ -1096,7 +1096,7 @@ module Density
 !
       beta1=g0/(mpoly+1)*gamma/gamma1  ! gamma1/gamma=R_{*} (for cp=1)
 !
-      if(lspherical_coords) then
+      if (lspherical_coords) then
 !     densities at shell boundaries
         lnrho_int=lnrho0+mpoly*log(1+beta1*(x(l2)/x(l1)-1.))
         lnrho_ext=lnrho0
@@ -1803,7 +1803,7 @@ module Density
 !
 !  iname runs through all possible names that may be listed in print.in
 !
-      if(lroot.and.ip<14) print*,'rprint_density: run through parse list'
+      if (lroot.and.ip<14) print*,'rprint_density: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'rhom',idiag_rhom)
         call parse_name(iname,cname(iname),cform(iname),'rho2m',idiag_rho2m)
@@ -2456,21 +2456,21 @@ module Density
 !
       if (lgravz) then
         if (grav_profile=='const') then
-          if(lroot.and.gravz==0.) print*,'polytropic_simple: divide by gravz=0'
+          if (lroot.and.gravz==0.) print*,'polytropic_simple: divide by gravz=0'
           zref=zinfty-(mpoly+1.)*cs20/(-gamma*gravz)
         elseif (grav_profile=='const_zero') then
-          if(lroot.and.gravz==0.) print*,'polytropic_simple: divide by gravz=0'
+          if (lroot.and.gravz==0.) print*,'polytropic_simple: divide by gravz=0'
           zref=zinfty-(mpoly+1.)*cs20/(-gamma*gravz)
         elseif (grav_profile=='linear') then
-          if(lroot.and.gravz==0.) print*,'polytropic_simple: divide by gravz=0'
+          if (lroot.and.gravz==0.) print*,'polytropic_simple: divide by gravz=0'
           zref2=zinfty**2-(mpoly+1.)*cs20/(0.5*gamma*nu_epicycle**2)
-          if(zref2<0) then
-            if(lroot) print*,'polytropic_simple: zref**2<0 is not ok'
+          if (zref2<0) then
+            if (lroot) print*,'polytropic_simple: zref**2<0 is not ok'
             zref2=0. !(and see what happens)
           endif
           zref=sqrt(zref2)
         else
-          if(lroot) print*,'polytropic_simple: zref not prepared!'
+          if (lroot) print*,'polytropic_simple: zref not prepared!'
         endif
         if (lroot) print*,'polytropic_simple: zref=',zref
 !
@@ -2480,9 +2480,9 @@ module Density
 !
         ztop=xyz0(3)+Lxyz(3)
         zbot=xyz0(3)
-        !-- if(zinfty<min(ztop,zgrav) .or. (-zinfty)>min(zbot,zgrav)) then
-        if(zinfty<min(ztop,zgrav)) then
-          if(lroot) print*,'polytropic_simple: domain too big; zinfty=',zinfty
+        !-- if (zinfty<min(ztop,zgrav) .or. (-zinfty)>min(zbot,zgrav)) then
+        if (zinfty<min(ztop,zgrav)) then
+          if (lroot) print*,'polytropic_simple: domain too big; zinfty=',zinfty
           !call stop_it( &
           !         'polytropic_simply: rho and cs2 will vanish within domain')
         endif
@@ -2517,7 +2517,7 @@ module Density
 !
 !  entropy
 !
-          if(lentropy) then
+          if (lentropy) then
             where (r_mn > r_ext)
               f(l1:l2,m,n,iss)=-(1.-1./gamma)*f(l1:l2,m,n,ilnrho)+log(cs2top)/gamma
             elsewhere
@@ -2536,9 +2536,9 @@ module Density
           call potential(x(l1:l2),y(m),z(n),pot=pot)
           dlncs2=log(-gamma*pot/((mpoly+1.)*cs20))
           f(l1:l2,m,n,ilnrho)=lnrho0+mpoly*dlncs2
-          if(lentropy) f(l1:l2,m,n,iss)=mpoly*(ggamma/gamma-1.)*dlncs2
-!         if(ltemperature) f(l1:l2,m,n,ilnTT)=dlncs2-log(gamma1)
-          if(ltemperature) f(l1:l2,m,n,ilnTT)=log(-gamma*pot/(mpoly+1.)/gamma1)
+          if (lentropy) f(l1:l2,m,n,iss)=mpoly*(ggamma/gamma-1.)*dlncs2
+!         if (ltemperature) f(l1:l2,m,n,ilnTT)=dlncs2-log(gamma1)
+          if (ltemperature) f(l1:l2,m,n,ilnTT)=log(-gamma*pot/(mpoly+1.)/gamma1)
         enddo
         enddo
 !
@@ -2573,7 +2573,7 @@ module Density
       type (pencil_case) :: p
       real, dimension(nx) :: fint,fext,pdamp,fprofile,fnorm
 !
-      if(ldebug) print*,'mass_source: cs20,cs0=',cs20,cs0
+      if (ldebug) print*,'mass_source: cs20,cs0=',cs20,cs0
 !
 !  choose between different possibilities
 !

@@ -242,7 +242,7 @@ print*,"init_ecr: amplecr = ", amplecr
         lpencil_in(i_bb)=.true.
         lpencil_in(i_gecr)=.true.
       endif
-      if(lpencil_in(i_bglnrho)) then
+      if (lpencil_in(i_bglnrho)) then
         lpencil_in(i_bb)=.true.
         lpencil_in(i_glnrho)=.true.
       endif
@@ -306,7 +306,7 @@ print*,"init_ecr: amplecr = ", amplecr
 !  Evolution equation of cosmic ray energy density
 !
 !  Alfv\'en advection? (with w, an alternative to u for now)
-      if(lalfven_advect)then
+      if (lalfven_advect)then
 !
 !  simple model for w depending on the sign of bgecr
 !
@@ -353,7 +353,7 @@ print*,"init_ecr: amplecr = ", amplecr
 !
 !  tensor diffusion, or, alternatively scalar diffusion or no diffusion
 !
-      if(lcosmicrayflux)then
+      if (lcosmicrayflux)then
         call div(f,ifcr,divfcr)
         call del2(f,iecr,del2ecr)
         df(l1:l2,m,n,iecr) = df(l1:l2,m,n,iecr) - divfcr + cosmicray_diff*del2ecr

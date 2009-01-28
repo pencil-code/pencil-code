@@ -78,7 +78,7 @@
       enddo
       close(lun2)
 !
-      if(NO_WARN) print*,ipx  !(keep compiler quiet)
+      if (NO_WARN) print*,ipx  !(keep compiler quiet)
 !
       end
 !***********************************************************************

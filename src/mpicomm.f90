@@ -2956,7 +2956,7 @@ module Mpicomm
 !
       az=0.
       az_local=0.
-      if(ipy.eq.(yproc_no-1)) then
+      if (ipy==(yproc_no-1)) then
         my_iniz=ipz*nz+1
         my_finz=(ipz+1)*nz
 !       write(*,*)'DM',iproc,ipy,yproc_no,ipz,my_iniz,my_finz,nzgrid

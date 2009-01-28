@@ -69,7 +69,7 @@ module Forcing
 !
       logical :: lstarting
 !
-      if(NO_WARN) print*,'lstarting=',lstarting !(to keep compiler quiet)
+      if (NO_WARN) print*,'lstarting=',lstarting !(to keep compiler quiet)
     endsubroutine initialize_forcing
 !***********************************************************************
     subroutine addforce(f)
@@ -214,7 +214,7 @@ module Forcing
 !
 !  iname runs through all possible names that may be listed in print.in
 !
-      if(lroot.and.ip<14) print*,'rprint_noforcing: run through parse list'
+      if (lroot.and.ip<14) print*,'rprint_noforcing: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'rufm',idiag_rufm)
       enddo

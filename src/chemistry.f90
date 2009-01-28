@@ -1116,7 +1116,7 @@ subroutine flame_front(f)
       inquire(file=file1,exist=exist1)
       inquire(file=file2,exist=exist2)
 ! 
-      if(exist1.and.exist2) then
+      if (exist1.and.exist2) then
 !
 !  if both chemistry1.dat and chemistry2.dat are present,
 !  then read Sijp and Sijm, and calculate their sum
@@ -1155,7 +1155,7 @@ subroutine flame_front(f)
 !  old method: read chemistry data, if present
 !
         inquire(file='chemistry.dat',exist=exist)
-        if(exist) then
+        if (exist) then
           open(19,file='chemistry.dat')
           read(19,*) chemicals
           do j=1,mreactions

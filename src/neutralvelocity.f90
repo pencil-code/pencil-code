@@ -258,9 +258,9 @@ module NeutralVelocity
 
         select case(inituun(j))
 
-        case('nothing'); if(lroot .and. j==1) print*,'init_uun: nothing'
+        case('nothing'); if (lroot .and. j==1) print*,'init_uun: nothing'
         case('zero', '0')
-          if(lroot) print*,'init_uu: zero velocity'
+          if (lroot) print*,'init_uu: zero velocity'
           ! Ensure really is zero, as may have used lread_oldsnap
           f(:,:,:,iunx:iunz)=0.
         case('const_uun'); do i=1,3; f(:,:,:,iuun+i-1) = uun_const(i); enddo
@@ -824,7 +824,7 @@ module NeutralVelocity
 !
             if (headtt) &
                  print*,'Viscous force (neutral): nun*(del2un+graddivun/3+2Sn.glnrhon)'
-            if(lneutraldensity) then
+            if (lneutraldensity) then
                fvisc=fvisc+2*nun*p%snglnrhon+nun*(p%del2un+1./3.*p%graddivun)
             else
                fvisc=fvisc+nun*(p%del2un+1./3.*p%graddivun)
@@ -936,7 +936,7 @@ module NeutralVelocity
 !
 !  iname runs through all possible names that may be listed in print.in
 !
-      if(lroot.and.ip<14) print*,'rprint_neutralvelocity: run through parse list'
+      if (lroot.and.ip<14) print*,'rprint_neutralvelocity: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'un2m',idiag_un2m)
         call parse_name(iname,cname(iname),cform(iname),'unm2',idiag_unm2)

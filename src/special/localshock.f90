@@ -181,7 +181,7 @@ module Special
       rmask1=1./rmask
       rmask12=rmask1**2
 !
-      if(NO_WARN) print*,f  !(keep compiler quiet)
+      if (NO_WARN) print*,f  !(keep compiler quiet)
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -198,7 +198,7 @@ module Special
       intent(in) :: xx,yy,zz
       intent(inout) :: f
 !
-      if(NO_WARN) print*,f,xx,yy,zz  !(keep compiler quiet)
+      if (NO_WARN) print*,f,xx,yy,zz  !(keep compiler quiet)
 !
     endsubroutine init_special
 !***********************************************************************

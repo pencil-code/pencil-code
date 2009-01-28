@@ -260,7 +260,7 @@ module struct_func
       !
       !  Collecting all data on root processor and normalizing pdf and sf
       !
-      if(llpdf) then
+      if (llpdf) then
         call mpireduce_sum(p_du,p_du_sum,n_pdf*imax*3)  !Is this safe???
         do i=1,imax
           do direction=1,nr_directions
@@ -270,7 +270,7 @@ module struct_func
         enddo
       endif
       !
-      if(llsf) then
+      if (llsf) then
         call mpireduce_sum(sf,sf_sum,imax*qmax*3)  !Is this safe???
         ndiv=nw*ncpus*2
         sf_sum=sf_sum/ndiv
@@ -280,7 +280,7 @@ module struct_func
       !
       if (iproc==root) then
         call chn(ivec,var,'structure')
-        if(llpdf) then
+        if (llpdf) then
           if (ip<10) print*,'Writing pdf of variable',var &
                ,'to ',trim(datadir)//trim(filetowrite)//trim(var)//'.dat'
           open(1,file=trim(datadir)//trim(filetowrite)//trim(var) &
@@ -291,7 +291,7 @@ module struct_func
           close(1)
         endif
         !
-        if(llsf) then
+        if (llsf) then
           if (ip<10) print*,'Writing structure functions of variable',var &
                ,'to ',trim(datadir)//trim(filetowrite)//trim(var)//'.dat'
           open(1,file=trim(datadir)//trim(filetowrite)//trim(var) &

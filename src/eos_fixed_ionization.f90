@@ -159,7 +159,7 @@ module EquationOfState
 !  since m_e and chiH, as well as hbar are all very small
 !  it is better to divide m_e and chiH separately by hbar.
 !
-      if(headtt) print*,'initialize_eos: assume cp is not 1, yH0=',yH0
+      if (headtt) print*,'initialize_eos: assume cp is not 1, yH0=',yH0
       mu1yHxHe=1.+3.97153*xHe
       TT_ion=chiH/k_B
       lnTT_ion=log(chiH/k_B)
@@ -178,7 +178,7 @@ module EquationOfState
       kappa0=sigmaH_/m_H/mu1yHxHe/4.0
       Srad0=sigmaSB*TT_ion**4/pi
 !
-      if(lroot) then
+      if (lroot) then
         print*,'initialize_eos: reference values for ionization'
         print*,'initialize_eos: TT_ion,lnrho_e,ss_ion=',TT_ion,lnrho_e,ss_ion
       endif
@@ -215,7 +215,7 @@ module EquationOfState
       lnTT0=lnTT_ion+(2./3.)*((yH_term+one_yH_term+xHe_term)/ &
           (1+yH0+xHe-xH2)-2.5)
 !
-      if(lroot) then
+      if (lroot) then
         print*,'initialize_eos: reference values for ionization'
         print*,'initialize_eos: TT_ion,ss_ion,kappa0=', &
                 TT_ion,ss_ion,kappa0
@@ -353,7 +353,7 @@ module EquationOfState
       logical :: lreset
       logical, optional :: lwrite
 !
-      if(NO_WARN) print*,lreset  !(to keep compiler quiet)
+      if (NO_WARN) print*,lreset  !(to keep compiler quiet)
 !
     endsubroutine rprint_eos
 !***********************************************************************
@@ -464,7 +464,7 @@ module EquationOfState
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      if(NO_WARN) print*,f  !(keep compiler quiet)
+      if (NO_WARN) print*,f  !(keep compiler quiet)
 !
     endsubroutine ioninit
 !***********************************************************************
@@ -472,7 +472,7 @@ module EquationOfState
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if(NO_WARN) print*,f  !(keep compiler quiet)
+      if (NO_WARN) print*,f  !(keep compiler quiet)
 !
     endsubroutine ioncalc
 !***********************************************************************

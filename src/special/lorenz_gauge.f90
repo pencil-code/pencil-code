@@ -139,7 +139,7 @@ module Special
 !  SAMPLE IMPLEMENTATION
 !
       select case(init)
-        case('nothing'); if(lroot) print*,'init_special: nothing'
+        case('nothing'); if (lroot) print*,'init_special: nothing'
         case('zero'); f(:,:,:,iphi)=0.
         case('sinwave-x'); call sinwave(ampl,f,iphi,kx=kx)
         case('sinwave-y'); call sinwave(ampl,f,iphi,ky=ky)
@@ -241,7 +241,7 @@ module Special
 !
 !  solve gauge condition
 !
-      if(lmagnetic) then
+      if (lmagnetic) then
         call grad(f,iphi,gphi)
         df(l1:l2,m,n,iphi)=df(l1:l2,m,n,iphi)-cphi2*p%diva
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-gphi
@@ -249,7 +249,7 @@ module Special
 !
 !  diagnostics
 !
-      if(ldiagnos) then
+      if (ldiagnos) then
         phi=f(l1:l2,m,n,iphi)
         if (idiag_phim/=0) call sum_mn_name(phi,idiag_phim)
 !

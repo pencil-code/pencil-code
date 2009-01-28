@@ -1348,7 +1348,7 @@ module Poisson
 !
       if (var=='y') then 
         nk=ny ; nkgrid=nygrid ; nprock=nprocy
-      else if(var=='z') then
+      else if (var=='z') then
         nk=nz ; nkgrid=nzgrid ; nprock=nprocz
       else
         print*,'var=',var

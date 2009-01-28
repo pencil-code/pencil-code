@@ -138,7 +138,7 @@ iss=ilnTT  !(need to think how to deal with this...)
           !
           Kbot=gamma1/gamma*(mpoly+1.)*Fbot
           FbotKbot=gamma/gamma1/(mpoly+1.)
-          if(lroot) print*,'initialize_entropy: Fbot,Kbot=',Fbot,Kbot
+          if (lroot) print*,'initialize_entropy: Fbot,Kbot=',Fbot,Kbot
         endif
       endif
 !
@@ -164,7 +164,7 @@ iss=ilnTT  !(need to think how to deal with this...)
       intent(inout) :: f
 !
       select case(initlnTT)
-        case('nothing'); if(lroot) print*,'init_ss: nothing'
+        case('nothing'); if (lroot) print*,'init_ss: nothing'
         case('zero', '0'); f(:,:,:,ilnTT) = 0.
         case default
           !
@@ -180,7 +180,7 @@ iss=ilnTT  !(need to think how to deal with this...)
           f(:,:,:,ilnTT) = -0.
       endif
 !
-      if(NO_WARN) print*,xx,yy,zz  !(to keep compiler quiet)
+      if (NO_WARN) print*,xx,yy,zz  !(to keep compiler quiet)
 !
     endsubroutine init_ss
 !***********************************************************************
@@ -346,7 +346,7 @@ iss=ilnTT  !(need to think how to deal with this...)
 !
 !  check that chi is ok
 !
-      if(headtt) print*,'calc_heatcond_constchi: chi==',chi
+      if (headtt) print*,'calc_heatcond_constchi: chi==',chi
 !
 !  Heat conduction
 !
@@ -356,7 +356,7 @@ iss=ilnTT  !(need to think how to deal with this...)
       glnP = gamma*gss + gamma*glnrho
       call dot_mn(glnP,glnT,g2)
       thdiff = chi * (gamma*del2ss+gamma1*del2lnrho + g2)
-      if(chi_t/=0.) then
+      if (chi_t/=0.) then
         call dot_mn(glnP,gss,g2)
         thdiff = thdiff + chi_t*(del2ss+g2)
       endif
@@ -372,7 +372,7 @@ iss=ilnTT  !(need to think how to deal with this...)
 !
       if (lfirst.and.ldt) diffus_chi=diffus_chi+(gamma*chi+chi_t)*dxyz_2
 !
-      if(NO_WARN) print*,rho1 !(to keep compiler quiet)
+      if (NO_WARN) print*,rho1 !(to keep compiler quiet)
     endsubroutine calc_heatcond_constchi
 !***********************************************************************
     subroutine calc_heatcond_simple(f,df,rho1,glnrho,gss)
@@ -399,7 +399,7 @@ iss=ilnTT  !(need to think how to deal with this...)
 !  This particular version assumes a simple polytrope, so mpoly is known
 !
       hcond=Kbot
-      if(headtt) print*,'calc_heatcond_simple: max(hcond)=',maxval(hcond)
+      if (headtt) print*,'calc_heatcond_simple: max(hcond)=',maxval(hcond)
 !
 !  Heat conduction
 !
@@ -451,11 +451,11 @@ iss=ilnTT  !(need to think how to deal with this...)
 !
 !  identifier
 !
-      if(headtt) print*,'calc_heatcond: lgravz=',lgravz
+      if (headtt) print*,'calc_heatcond: lgravz=',lgravz
 !
 !  Heat conduction / entropy diffusion
 !
-      if(headtt) then
+      if (headtt) then
         print*,'calc_heatcond: hcond0=',hcond0
         if (lgravz) print*,'Fbot=',Fbot
       endif
@@ -568,7 +568,7 @@ endif
 !
 !  identifier
 !
-      if(headtt) print*,'calc_heat_cool: lgravz=',lgravz
+      if (headtt) print*,'calc_heat_cool: lgravz=',lgravz
 !
 !  define bottom and top height
 !
@@ -644,7 +644,7 @@ endif
       intent(out) :: df
 !
       if (headtt) print*,'calc_tau_ss_exterior: tau=',tau_ss_exterior
-      if(z(n)>zgrav) then
+      if (z(n)>zgrav) then
         scl=1./tau_ss_exterior
         df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-scl*f(l1:l2,m,n,iss)
       endif
@@ -805,7 +805,7 @@ endif
       real, dimension (mx,my) :: tmp_xy,cs2_xy,rho_xy
       integer :: i
 !
-      if(ldebug) print*,'ENTER: bc_ss, cs20,cs0=',cs20,cs0
+      if (ldebug) print*,'ENTER: bc_ss, cs20,cs0=',cs20,cs0
 !
 !  Do the `c1' boundary condition (constant heat flux) for entropy.
 !  check whether we want to do top or bottom (this is precessor dependent)
@@ -815,7 +815,7 @@ endif
 !  bottom boundary
 !
       case('strange-bot')
-        if(headtt) print*,'bc_ss_flux: hcond0,hcond1=',hcond0,hcond1
+        if (headtt) print*,'bc_ss_flux: hcond0,hcond1=',hcond0,hcond1
         if (bcz1(ilnrho) /= "a2") &
              call stop_it("BOUNDCONDS: Inconsistent boundary conditions 1.")
         tmp_xy = gamma1/cs20 & ! 1/T_0 (i.e. 1/T at boundary)
@@ -834,8 +834,8 @@ endif
 !  ===============
 !
       case('bot')
-        if(headt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
-!       if(bcz1(ilnrho)/="a2") call stop_it("bc_ss_flux: bad lnrho bc")
+        if (headt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
+!       if (bcz1(ilnrho)/="a2") call stop_it("bc_ss_flux: bad lnrho bc")
 !
 !  calculate Fbot/(K*cs2)
 !
@@ -845,7 +845,7 @@ endif
 !  check whether we have chi=constant at bottom, in which case
 !  we have the nonconstant rho_xy*chi in tmp_xy.
 !
-        if(lcalc_heatcond_constchi) then
+        if (lcalc_heatcond_constchi) then
           tmp_xy=Fbot/(rho_xy*chi*cs2_xy)
         else
           tmp_xy=FbotKbot/cs2_xy
@@ -862,7 +862,7 @@ endif
 !  ============
 !
       case('top')
-        if(headtt) print*,'bc_ss_flux: hcond0=',hcond0
+        if (headtt) print*,'bc_ss_flux: hcond0=',hcond0
         if (bcz2(ilnrho) /= "a2") &
              call stop_it("BOUNDCONDS: Inconsistent boundary conditions 2.")
         tmp_xy = gamma1/cs20 & ! 1/T_0 (i.e. 1/T at boundary)
@@ -877,7 +877,7 @@ endif
                + f(:,:,n2-i,iss)
         enddo
       case default
-        if(lroot) print*,"invalid argument for 'bc_ss_flux'"
+        if (lroot) print*,"invalid argument for 'bc_ss_flux'"
         call stop_it("")
       endselect
 !
@@ -900,7 +900,7 @@ endif
       real, dimension (mx,my) :: tmp_xy
       integer :: i
 !
-      if(ldebug) print*,'ENTER: bc_ss, cs20,cs0=',cs20,cs0
+      if (ldebug) print*,'ENTER: bc_ss, cs20,cs0=',cs20,cs0
 !
 !  Do the `c2' boundary condition (fixed temperature/sound speed) for entropy.
 !  This assumes that the density is already set (ie density must register
@@ -940,7 +940,7 @@ endif
           f(:,:,n2+i,iss) = 2*tmp_xy - f(:,:,n2-i,iss)
         enddo
       case default
-        if(lroot) print*,"invalid argument for 'bc_ss_flux'"
+        if (lroot) print*,"invalid argument for 'bc_ss_flux'"
         call stop_it("")
       endselect
 !
@@ -961,7 +961,7 @@ endif
       real :: tmp
       integer :: i
 !
-      if(ldebug) print*,'ENTER: bc_ss_temp_x, cs20,cs0=',cs20,cs0
+      if (ldebug) print*,'ENTER: bc_ss_temp_x, cs20,cs0=',cs20,cs0
 !
 !  Constant temperature/sound speed for entropy, i.e. antisymmetric
 !  ln(cs2) relative to cs2top/cs2bot.
@@ -997,7 +997,7 @@ endif
         enddo
 
       case default
-        if(lroot) print*,"invalid argument for 'bc_ss_temp_x'"
+        if (lroot) print*,"invalid argument for 'bc_ss_temp_x'"
         call stop_it("")
       endselect
 !
@@ -1018,7 +1018,7 @@ endif
       real :: tmp
       integer :: i
 !
-      if(ldebug) print*,'ENTER: bc_ss_temp_y, cs20,cs0=',cs20,cs0
+      if (ldebug) print*,'ENTER: bc_ss_temp_y, cs20,cs0=',cs20,cs0
 !
 !  Constant temperature/sound speed for entropy, i.e. antisymmetric
 !  ln(cs2) relative to cs2top/cs2bot.
@@ -1054,7 +1054,7 @@ endif
         enddo
 
       case default
-        if(lroot) print*,"invalid argument for 'bc_ss_temp_y'"
+        if (lroot) print*,"invalid argument for 'bc_ss_temp_y'"
         call stop_it("")
       endselect
 !
@@ -1075,7 +1075,7 @@ endif
       real :: tmp
       integer :: i
 !
-      if(ldebug) print*,'ENTER: bc_ss_temp_z, cs20,cs0=',cs20,cs0
+      if (ldebug) print*,'ENTER: bc_ss_temp_z, cs20,cs0=',cs20,cs0
 !
 !  Constant temperature/sound speed for entropy, i.e. antisymmetric
 !  ln(cs2) relative to cs2top/cs2bot.
@@ -1111,7 +1111,7 @@ endif
         enddo
 
       case default
-        if(lroot) print*,"invalid argument for 'bc_ss_temp_z'"
+        if (lroot) print*,"invalid argument for 'bc_ss_temp_z'"
         call stop_it("")
       endselect
 !
@@ -1131,7 +1131,7 @@ endif
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i
 !
-      if(ldebug) print*,'ENTER: bc_ss_stemp_x, cs20,cs0=',cs20,cs0
+      if (ldebug) print*,'ENTER: bc_ss_stemp_x, cs20,cs0=',cs20,cs0
 !
 !  Symmetric temperature/sound speed for entropy.
 !  This assumes that the density is already set (ie density _must_ register
@@ -1160,7 +1160,7 @@ endif
         enddo
 
       case default
-        if(lroot) print*,"invalid argument for 'bc_ss_stemp_x'"
+        if (lroot) print*,"invalid argument for 'bc_ss_stemp_x'"
         call stop_it("")
       endselect
 !
@@ -1180,7 +1180,7 @@ endif
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i
 !
-      if(ldebug) print*,'ENTER: bc_ss_stemp_y, cs20,cs0=',cs20,cs0
+      if (ldebug) print*,'ENTER: bc_ss_stemp_y, cs20,cs0=',cs20,cs0
 !
 !  Symmetric temperature/sound speed for entropy.
 !  This assumes that the density is already set (ie density _must_ register
@@ -1209,7 +1209,7 @@ endif
         enddo
 
       case default
-        if(lroot) print*,"invalid argument for 'bc_ss_stemp_y'"
+        if (lroot) print*,"invalid argument for 'bc_ss_stemp_y'"
         call stop_it("")
       endselect
 !
@@ -1229,7 +1229,7 @@ endif
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i
 !
-      if(ldebug) print*,'ENTER: bc_ss_stemp_x, cs20,cs0=',cs20,cs0
+      if (ldebug) print*,'ENTER: bc_ss_stemp_x, cs20,cs0=',cs20,cs0
 !
 !  Symmetric temperature/sound speed for entropy.
 !  This assumes that the density is already set (ie density _must_ register
@@ -1258,7 +1258,7 @@ endif
         enddo
 
       case default
-        if(lroot) print*,"invalid argument for 'bc_ss_stemp_z'"
+        if (lroot) print*,"invalid argument for 'bc_ss_stemp_z'"
         call stop_it("")
       endselect
 !
@@ -1311,7 +1311,7 @@ endif
               +log(cs2_2d))
       enddo
     case default
-       if(lroot) print*,"invalid argument for 'bc_ss_flux'"
+       if (lroot) print*,"invalid argument for 'bc_ss_flux'"
         call stop_it("")
     endselect
 

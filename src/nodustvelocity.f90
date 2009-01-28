@@ -158,7 +158,7 @@ module Dustvelocity
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      if(NO_WARN) print*,f,df,p !(keep compiler quiet)
+      if (NO_WARN) print*,f,df,p !(keep compiler quiet)
 !
     endsubroutine duud_dt
 !***********************************************************************
@@ -174,7 +174,7 @@ module Dustvelocity
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
 !
-      if(NO_WARN) print*,f,df !(keep compiler quiet)
+      if (NO_WARN) print*,f,df !(keep compiler quiet)
 !
     end subroutine shearingdust
 !***********************************************************************
@@ -254,7 +254,7 @@ module Dustvelocity
         write(3,*) 'iudz=',iudz
       endif
 !
-      if(NO_WARN) print*,lreset  !(to keep compiler quiet)
+      if (NO_WARN) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_dustvelocity
 !***********************************************************************
 

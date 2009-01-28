@@ -87,7 +87,7 @@ module Hydro
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
-      if(NO_WARN) print*,f,xx,yy,zz  !(keep compiler quiet)
+      if (NO_WARN) print*,f,xx,yy,zz  !(keep compiler quiet)
     endsubroutine init_uu
 !***********************************************************************
     subroutine duu_dt(f,df,uu,u2,divu,rho,rho1,glnrho,uij,bij,shock,gshock)
@@ -151,7 +151,7 @@ module Hydro
         if (idiag_um2/=0) call max_mn_name(u2,idiag_um2)
       endif
 !
-      if(NO_WARN) print*,f,df,glnrho,divu,rho1,u2  !(keep compiler quiet)
+      if (NO_WARN) print*,f,df,glnrho,divu,rho1,u2  !(keep compiler quiet)
     endsubroutine duu_dt
 !***********************************************************************
     subroutine time_integrals_hydro(f,p)
@@ -238,7 +238,7 @@ module Hydro
 !
 !  iname runs through all possible names that may be listed in print.in
 !
-      if(lroot.and.ip<14) print*,'rprint_nohydro_file: run through parse list'
+      if (lroot.and.ip<14) print*,'rprint_nohydro_file: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'u2m',idiag_u2m)
         call parse_name(iname,cname(iname),cform(iname),'um2',idiag_um2)

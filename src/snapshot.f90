@@ -77,7 +77,7 @@ contains
           call update_ghosts(a)
           if (msnap==mfarray) call update_auxiliaries(a)
           call output_snap(chsnap//ch,a,msnap)
-          if(ip<=10.and.lroot) print*,'wsnap: written snapshot ',chsnap//ch
+          if (ip<=10.and.lroot) print*,'wsnap: written snapshot ',chsnap//ch
           if (present(flist)) call log_filename_to_file(chsnap//ch,flist)
         endif
 !
@@ -120,7 +120,7 @@ contains
 !  NOTE: for this to work one has to modify *manually* data/param.nml
 !  by adding an entry for MAGNETIC_INIT_PARS or PSCALAR_INIT_PARS.
 !
-        if(lread_oldsnap_nomag) then
+        if (lread_oldsnap_nomag) then
           print*,'read old snapshot file (but without magnetic field)'
           call input_snap(trim(directory_snap)//'/var.dat',f,msnap-3,1)
           ! shift the rest of the data
@@ -133,7 +133,7 @@ contains
 !
 !  read data without passive scalar into new run with passive scalar
 !
-        elseif(lread_oldsnap_nopscalar) then
+        elseif (lread_oldsnap_nopscalar) then
           print*,'read old snapshot file (but without passive scalar)'
           call input_snap(chsnap,f,msnap-1,1)
           ! shift the rest of the data
@@ -146,7 +146,7 @@ contains
 !
 !  read data without testfield into new run with testfield
 !
-        elseif(lread_oldsnap_notestfield) then
+        elseif (lread_oldsnap_notestfield) then
           print*,'read old snapshot file (but without testfield),iaatest,iaztestpq,mvar,msnap=',iaatest,iaztestpq,mvar,msnap
           call input_snap(chsnap,f,msnap-ntestfield,1)
           ! shift the rest of the data

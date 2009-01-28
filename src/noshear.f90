@@ -109,7 +109,7 @@ module Shear
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
 !
-      if(NO_WARN) print*,f,df !(to keep compiler quiet)
+      if (NO_WARN) print*,f,df !(to keep compiler quiet)
     endsubroutine shearing
 !***********************************************************************
     subroutine advance_shear(f,df,dt_shear)

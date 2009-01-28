@@ -114,7 +114,7 @@ module Viscosity
       logical :: lreset
       logical, optional :: lwrite
 !
-      if(NO_WARN) print*,lreset,present(lwrite)  !(to keep compiler quiet)
+      if (NO_WARN) print*,lreset,present(lwrite)  !(to keep compiler quiet)
     endsubroutine rprint_viscosity
 !***********************************************************************
     subroutine pencil_criteria_viscosity()
@@ -170,7 +170,7 @@ module Viscosity
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if(NO_WARN) print*,f  !(to keep compiler quiet)
+      if (NO_WARN) print*,f  !(to keep compiler quiet)
 !
     endsubroutine calc_viscosity
 !!***********************************************************************
@@ -190,7 +190,7 @@ module Viscosity
 !
       intent(in) :: df,p,Hmax
 !
-      if(NO_WARN) print*,df,p,Hmax  !(keep compiler quiet)
+      if (NO_WARN) print*,df,p,Hmax  !(keep compiler quiet)
 !
     endsubroutine calc_viscous_heat
 !***********************************************************************
@@ -207,9 +207,9 @@ module Viscosity
 !
       intent (in) :: df,p
 !
-      if(NO_WARN) print*,df,p  !(keep compiler quiet)
+      if (NO_WARN) print*,df,p  !(keep compiler quiet)
 !
-    end subroutine calc_viscous_force
+    endsubroutine calc_viscous_force
 !***********************************************************************
     subroutine calc_visc_heat_ppd(f,df,p)
 !    
@@ -220,9 +220,9 @@ module Viscosity
       type (pencil_case) :: p
       intent (in) :: f,df,p
 !
-      if(NO_WARN) print*,f,df,p  !(keep compiler quiet)
+      if (NO_WARN) print*,f,df,p  !(keep compiler quiet)
 !
-    End subroutine calc_visc_heat_ppd
+    endsubroutine calc_visc_heat_ppd
 !***********************************************************************
     subroutine getnu(nu_)
 !
@@ -232,7 +232,7 @@ module Viscosity
 !
       nu_=0.0
 !
-      if(NO_WARN) print*,nu_  !(keep compiler quiet)
+      if (NO_WARN) print*,nu_  !(keep compiler quiet)
 !
     endsubroutine getnu
 !***********************************************************************

@@ -1597,7 +1597,7 @@ module Dustdensity
 !
 !  iname runs through all possible names that may be listed in print.in
 !
-        if(lroot.and.ip<14) print*,'rprint_dustdensity: run through parse list'
+        if (lroot.and.ip<14) print*,'rprint_dustdensity: run through parse list'
         do iname=1,nname
           call parse_name(iname,cname(iname),cform(iname), &
               'ndm'//trim(sdust),idiag_ndm(k))

@@ -826,7 +826,7 @@ module Magnetic
       do j=1,ninit
 !        
         select case(initaa(j))
-        case('nothing'); if(lroot .and. j==1) print*,'init_aa: nothing'
+        case('nothing'); if (lroot .and. j==1) print*,'init_aa: nothing'
         case('zero', '0'); f(:,:,:,iax:iaz) = 0.
         case('rescale'); f(:,:,:,iax:iaz)=amplaa(j)*f(:,:,:,iax:iaz)
         case('mode'); call modev(amplaa(j),coefaa,f,iaa,kx_aa(j),ky_aa(j),kz_aa(j),xx,yy,zz)
@@ -1265,7 +1265,7 @@ module Magnetic
       if (idiag_b2m/=0 .or. idiag_bm2/=0 .or. idiag_brms/=0 .or. &
           idiag_bmax/=0) lpenc_diagnos(i_b2)=.true.
 ! to calculate the angle between magnetic field and current.
-      if(idiag_cosjbm/=0) then
+      if (idiag_cosjbm/=0) then
         lpenc_requested(i_jj)=.true.
         lpenc_requested(i_jb)=.true.
       else
@@ -1529,7 +1529,7 @@ module Magnetic
 ! uga
 ! DM : this requires later attention
       if (lpencil(i_uga)) then
-        if(.not.lcartesian_coords) then
+        if (.not.lcartesian_coords) then
           call warning("calc_pencils_magnetic","u_dot_grad A not implemented for non-cartesian coordinates") 
         else
           call u_dot_grad(f,iaa,p%aij,p%uu,p%uga,UPWIND=lupw_aa)
@@ -1740,7 +1740,7 @@ module Magnetic
 !  add jxb/rho to momentum equation
 !
       if (lhydro) then
-        if(.not.lkinematic) then
+        if (.not.lkinematic) then
           if (llorentzforce) df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
         endif
       endif
@@ -3118,7 +3118,7 @@ module Magnetic
 !  x,y,z points and are then saved and used for all subsequent steps
 !  and pencils
 !
-      if(ip<=6) print*,'forcing_continuous: ifirst=',ifirst
+      if (ip<=6) print*,'forcing_continuous: ifirst=',ifirst
       if (ifirst==0) then
         if (iforcing_continuous_aa=='fixed_swirl') then
           if (lroot) print*,'forcing_continuous: fixed_swirl; swirl=',swirl
@@ -3142,7 +3142,7 @@ module Magnetic
         endif
       endif
       ifirst=ifirst+1
-      if(ip<=6) print*,'forcing_continuous: dt, ifirst=',dt,ifirst
+      if (ip<=6) print*,'forcing_continuous: dt, ifirst=',dt,ifirst
 !
 !  at the first meshpoint, and if phase_beltrami is finite,
 !  recalculate sinz and cosz for the phase correction of an
@@ -3703,12 +3703,12 @@ module Magnetic
               bymxy=fnamexy(l,m,j,idiag_bymxy)
               bzmxy=fnamexy(l,m,j,idiag_bzmxy)
               btemp=bxmxy**2+bymxy**2+bzmxy**2
-              if(lspherical_coords) then 
+              if (lspherical_coords) then 
                 btemp=btemp*r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
                 nVol2d=nVol2d+r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
               else
               endif
-              if(lcylindrical_coords) & 
+              if (lcylindrical_coords) & 
                   call stop_it("bmxy_rms not yet implemented for cylindrical")
               bmxy_rms=bmxy_rms+btemp
             enddo
@@ -5234,7 +5234,7 @@ module Magnetic
 ! Quantities which are averaged over half (north-south) the box
 !
       iname_half=name_half_max
-      if((idiag_abmn/=0).or.(idiag_abms/=0))then
+      if ((idiag_abmn/=0).or.(idiag_abms/=0))then
         iname_half=iname_half+1
         idiag_abmh=iname_half
       else

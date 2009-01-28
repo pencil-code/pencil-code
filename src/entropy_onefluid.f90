@@ -752,7 +752,7 @@ module Entropy
 !
 !  check that chi is ok
 !
-      if(headtt) print*,'calc_heatcond_shock: chi_t,chi_shock=',chi_t,chi_shock
+      if (headtt) print*,'calc_heatcond_shock: chi_t,chi_shock=',chi_t,chi_shock
 !
 !  calculate terms for shock diffusion
 !  Ds/Dt = ... + chi_shock*[del2ss + (glnchi_shock+glnpp).gss]

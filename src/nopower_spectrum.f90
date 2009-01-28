@@ -16,8 +16,8 @@ module  power_spectrum
   real, dimension (mx,my,mz,mfarray) :: f
   character (len=1) :: sp
   !
-  if(ip<=15) print*,'Use POWER=power_spectrum in Makefile.local'
-  if(sp=='') print*,f  !(to keep compiler happy)
+  if (ip<=15) print*,'Use POWER=power_spectrum in Makefile.local'
+  if (sp=='') print*,f  !(to keep compiler happy)
   endsubroutine power
 !***********************************************************************
     subroutine power_2d(f,sp)
@@ -25,8 +25,8 @@ module  power_spectrum
   real, dimension (mx,my,mz,mfarray) :: f
   character (len=1) :: sp
   !
-  if(ip<=15) print*,'Use POWER=power_spectrum in Makefile.local'
-  if(sp=='') print*,f  !(to keep compiler happy)
+  if (ip<=15) print*,'Use POWER=power_spectrum in Makefile.local'
+  if (sp=='') print*,f  !(to keep compiler happy)
   endsubroutine power_2d
 !***********************************************************************
   subroutine powerhel(f,sp)
@@ -34,8 +34,8 @@ module  power_spectrum
   real, dimension (mx,my,mz,mfarray) :: f
   character (len=3) :: sp
   !
-  if(ip<=15) print*,'Use POWER=power_spectrum in Makefile.local'
-  if(sp=='') print*,f  !(to keep compiler happy)
+  if (ip<=15) print*,'Use POWER=power_spectrum in Makefile.local'
+  if (sp=='') print*,f  !(to keep compiler happy)
   endsubroutine powerhel
 !***********************************************************************
   subroutine powerscl(f,sp)
@@ -43,8 +43,8 @@ module  power_spectrum
   real, dimension (mx,my,mz,mfarray) :: f
   character (len=2) :: sp
   !
-  if(ip<=15) print*,'Use POWER=power_spectrum in Makefile.local'
-  if(sp=='') print*,f  !(to keep compiler happy)
+  if (ip<=15) print*,'Use POWER=power_spectrum in Makefile.local'
+  if (sp=='') print*,f  !(to keep compiler happy)
   endsubroutine powerscl
 !***********************************************************************
     subroutine power_1d(f,sp,ivec,ivar)
@@ -54,7 +54,7 @@ module  power_spectrum
     integer :: ivec
     integer, optional :: ivar
 !
-    if(ip<=15) print*,'Use POWER=power_spectrum in Makefile.local'
+    if (ip<=15) print*,'Use POWER=power_spectrum in Makefile.local'
 !
     if (NO_WARN) print*, f, sp, ivec, ivar
 !
@@ -66,7 +66,7 @@ module  power_spectrum
   real :: pdf_mean,pdf_rms
   character (len=*) :: variabl
 !
-  if(ip<0) print*,f,variabl,pdf_mean,pdf_rms !(keep compiler quiet)
+  if (ip<0) print*,f,variabl,pdf_mean,pdf_rms !(keep compiler quiet)
   endsubroutine pdf
 !***********************************************************************
   subroutine power_phi(f,sp)

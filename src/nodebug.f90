@@ -27,7 +27,7 @@ subroutine output_penciled_vect_c(filename,pencil,&
        ' since DEBUG=nodebug'
 
   ! to keep compiler quiet...
-  if(NO_WARN) print*,pencil(1,1),ndim,i,iy,iz,t,nx,ny,nz,nghost,fnlen
+  if (NO_WARN) print*,pencil(1,1),ndim,i,iy,iz,t,nx,ny,nz,nghost,fnlen
 !
 endsubroutine output_penciled_vect_c
 !***********************************************************************
@@ -47,7 +47,7 @@ subroutine output_penciled_scal_c(filename,pencil,&
        ' since DEBUG=nodebug'
 
   ! to keep compiler quiet...
-  if(NO_WARN) print*,pencil(1),ndim,i,iy,iz,t,nx,ny,nz,nghost,fnlen
+  if (NO_WARN) print*,pencil(1),ndim,i,iy,iz,t,nx,ny,nz,nghost,fnlen
 endsubroutine output_penciled_scal_c
 
 

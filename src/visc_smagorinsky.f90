@@ -123,7 +123,7 @@ module Viscosity
 !
 !  iname runs through all possible names that may be listed in print.in
 !
-      if(lroot.and.ip<14) print*,'rprint_ionization: run through parse list'
+      if (lroot.and.ip<14) print*,'rprint_ionization: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'nu_LES',idiag_nu_LES)
       enddo
@@ -136,7 +136,7 @@ module Viscosity
         endif
       endif
 !
-      if(NO_WARN) print*,lreset  !(to keep compiler quiet)
+      if (NO_WARN) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_viscosity
 !***********************************************************************
     subroutine pencil_criteria_viscosity()
@@ -321,7 +321,7 @@ module Viscosity
        case default
          if (headtt) print*,'no heating: ivisc=',ivisc
       endselect
-      if(NO_WARN) print*,f,cs2,divu,glnrho,shock,Hmax  !(keep compiler quiet)
+      if (NO_WARN) print*,f,cs2,divu,glnrho,shock,Hmax  !(keep compiler quiet)
     endsubroutine calc_viscous_heat
 
 !***********************************************************************
@@ -358,7 +358,7 @@ module Viscosity
           !  where nu_smag=(C_smag*dxmax)**2*sqrt(SS)
           !
           if (headtt) print*,'viscous force: Smagorinsky'
-          if(ldensity) then
+          if (ldensity) then
              call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
              call multmv_mn(sij,glnrho,sglnrho)
              call multsv_mn(f(l1:l2,m,n,ismagorinsky),sglnrho,nusglnrho)
@@ -369,7 +369,7 @@ module Viscosity
              fvisc=2*nusglnrho+tmp2+2*sgradnu_smag
              diffus_nu=diffus_nu+f(l1:l2,m,n,ismagorinsky)*dxyz_2
           else
-             if(lfirstpoint) &
+             if (lfirstpoint) &
                   print*,"ldensity better be .true. for ivisc='smagorinsky'"
           endif
        case ('smagorinsky_simplified')
@@ -379,7 +379,7 @@ module Viscosity
           !  where nu_smag=(C_smag*dxmax)**2*sqrt(SS)
           !
           if (headtt) print*,'viscous force: Smagorinsky_simplified'
-          if(ldensity) then
+          if (ldensity) then
             call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
             call multmv_mn(sij,glnrho,sglnrho)
             call multsv_mn(f(l1:l2,m,n,ismagorinsky),sglnrho,nusglnrho)
@@ -390,7 +390,7 @@ module Viscosity
             fvisc=2*nusglnrho+tmp2+sgradnu_smag
             diffus_nu=diffus_nu+f(l1:l2,m,n,ismagorinsky)*dxyz_2
          else
-            if(lfirstpoint) print*,&
+            if (lfirstpoint) print*,&
                  "ldensity better be true for ivisc='smagorinsky_simplified'"
          endif
       case default
@@ -421,8 +421,8 @@ module Viscosity
         call max_mn_name(diffus_nu/cdtv,idiag_dtnu,l_dt=.true.)
       endif
 !
-      if(NO_WARN) print*,divu,shock,gshock  !(keep compiler quiet)
-    end subroutine calc_viscous_force
+      if (NO_WARN) print*,divu,shock,gshock  !(keep compiler quiet)
+    endsubroutine calc_viscous_force
 !***********************************************************************
 
 endmodule Viscosity

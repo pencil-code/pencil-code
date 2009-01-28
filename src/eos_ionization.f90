@@ -192,7 +192,7 @@ module EquationOfState
         xHe_term=0
       endif
 !
-      if(lroot.and.ip<14) then
+      if (lroot.and.ip<14) then
         print*,'initialize_eos: reference values for ionization'
         print*,'initialize_eos: yHmin,yHmax,yMetals=',yHmin,yHmax,yMetals
         print*,'initialize_eos: TT_ion,ss_ion,kappa0=', &
@@ -332,7 +332,7 @@ module EquationOfState
       logical :: lreset
       logical, optional :: lwrite
 !
-      if(NO_WARN) print*,lreset  !(to keep compiler quiet)
+      if (NO_WARN) print*,lreset  !(to keep compiler quiet)
 !
     endsubroutine rprint_eos
 !***********************************************************************
@@ -1130,7 +1130,7 @@ module EquationOfState
 !
       if (present(rterror)) rterror=.false.
       if (present(rtdebug)) then
-        if(rtdebug) print*,'rtsafe: i,yH=',0,yH
+        if (rtdebug) print*,'rtsafe: i,yH=',0,yH
       endif
 !
       yHl=yHlb
@@ -1367,9 +1367,9 @@ module EquationOfState
 !
       case('bot')
         if (lmultilayer) then
-          if(headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
+          if (headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
         else
-          if(headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0
+          if (headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0
         endif
 !
 !  calculate Fbot/(K*cs2)
@@ -1380,7 +1380,7 @@ module EquationOfState
 !  check whether we have chi=constant at bottom, in which case
 !  we have the nonconstant rho_xy*chi in tmp_xy.
 !
-        if(lheatc_chiconst) then
+        if (lheatc_chiconst) then
           tmp_xy=Fbot/(rho_xy*chi*TT_xy)
         else
           tmp_xy=FbotKbot/TT_xy
@@ -1402,9 +1402,9 @@ module EquationOfState
 !
       case('top')
         if (lmultilayer) then
-          if(headtt) print*,'bc_ss_flux: Ftop,hcond=',Ftop,hcond0*hcond1
+          if (headtt) print*,'bc_ss_flux: Ftop,hcond=',Ftop,hcond0*hcond1
         else
-          if(headtt) print*,'bc_ss_flux: Ftop,hcond=',Ftop,hcond0
+          if (headtt) print*,'bc_ss_flux: Ftop,hcond=',Ftop,hcond0
         endif
 !
 !  calculate Fbot/(K*cs2)
@@ -1415,7 +1415,7 @@ module EquationOfState
 !  check whether we have chi=constant at bottom, in which case
 !  we have the nonconstant rho_xy*chi in tmp_xy.
 !
-        if(lheatc_chiconst) then
+        if (lheatc_chiconst) then
           tmp_xy=Ftop/(rho_xy*chi*TT_xy)
         else
           tmp_xy=FtopKtop/TT_xy

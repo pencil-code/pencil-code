@@ -721,9 +721,9 @@ kky_aa=2.*pi
 !    enddo
 !
 !    do modeN=1,KS_modes
-!       if(modeN.eq.1)delk(modeN)=(k(modeN+1)-K(modeN))
-!       if(modeN.eq.KS_modes)delk(modeN)=(k(modeN)-k(modeN-1))
-!       if(modeN.gt.1.and.modeN.lt.KS_modes)delk(modeN)=(k(modeN+1)-k(modeN-2))/2.0
+!       if (modeN.eq.1)delk(modeN)=(k(modeN+1)-K(modeN))
+!       if (modeN.eq.KS_modes)delk(modeN)=(k(modeN)-k(modeN-1))
+!       if (modeN.gt.1.and.modeN.lt.KS_modes)delk(modeN)=(k(modeN+1)-k(modeN-2))/2.0
 !    enddo
 !          mk=(k2*k2)*((1.0 + (k2/(bk_min*bk_min)))**(0.5*initpower-2.0))
 !
@@ -747,11 +747,11 @@ kky_aa=2.*pi
 !       print *,kmin,kmax,k
 !       dk=1.0*kmin
 !
-      if(modeN==1)&
+      if (modeN==1)&
               dk=kmin*(a-1.)/2.
-      if(modeN.gt.1.and.modeN.lt.KS_modes) &
+      if (modeN.gt.1.and.modeN.lt.KS_modes) &
               dk=(a**(modeN-2.))*kmin*((a**2.) -1.)/2.
-      if(modeN==KS_modes) &
+      if (modeN==KS_modes) &
               dk=(a**(KS_modes -2.))*kmin*(a -1.)/2.
 !
        call random_number_wrapper(r)
@@ -865,9 +865,9 @@ kky_aa=2.*pi
 !weezy       print *,kmin,kmax,k
 !weezy       dk=1.0*kmin
 
-!weezy       if(modeN==1)dk=kmin*(a-1.)/2.
-!weezy       if(modeN.gt.1.and.modeN.lt.KS_modes)dk=(a**(modeN-2.))*kmin*((a**2.) -1.)/2.
-!weezy       if(modeN==KS_modes)dk=(a**(KS_modes -2.))*kmin*(a -1.)/2.
+!weezy       if (modeN==1)dk=kmin*(a-1.)/2.
+!weezy       if (modeN.gt.1.and.modeN.lt.KS_modes)dk=(a**(modeN-2.))*kmin*((a**2.) -1.)/2.
+!weezy       if (modeN==KS_modes)dk=(a**(KS_modes -2.))*kmin*(a -1.)/2.
 
 !
 !  pick 4 random angles for each mode
@@ -902,7 +902,7 @@ kky_aa=2.*pi
 !  construct basis for plane having rr normal to it
 !  (bit of code from forcing to construct x', y')
 !
-      if((k_unit(2).eq.0).and.(k_unit(3).eq.0)) then
+      if ((k_unit(2).eq.0).and.(k_unit(3).eq.0)) then
         ex=0.; ey=1.; ez=0.
       else
         ex=1.; ey=0.; ez=0.
@@ -1012,10 +1012,10 @@ kky_aa=2.*pi
     kmin=k(1)
 !
     do modeN=1,KS_modes
-      if(modeN==1) dk(modeN)=(k(modeN+1)-k(modeN))/2.
-      if(modeN.gt.1.and.modeN.lt.KS_modes) &
+      if (modeN==1) dk(modeN)=(k(modeN+1)-k(modeN))/2.
+      if (modeN.gt.1.and.modeN.lt.KS_modes) &
                 dk(modeN)=(k(modeN+1)-k(modeN-1))/2.
-      if(modeN==KS_modes) dk(modeN)=(k(modeN)-k(modeN-1))/2.
+      if (modeN==KS_modes) dk(modeN)=(k(modeN)-k(modeN-1))/2.
     end do
 !
     do modeN=1,KS_modes
@@ -1102,7 +1102,7 @@ kky_aa=2.*pi
    ! num=1
    ! do i=1,10000   
    !  call random_number(angle)  
-   !  if((angle(1)-0.0 < epsilon(0.0)) .or. &
+   !  if ((angle(1)-0.0 < epsilon(0.0)) .or. &
    !     (angle(2)-0.0 < epsilon(0.0)) .or. &
    !     (angle(3)-0.0 < epsilon(0.0))) then
    !     call random_number(angle)
@@ -1119,32 +1119,32 @@ kky_aa=2.*pi
    !  !find the length of the current k_option vector
    !  mkunit(i)=dsqrt((k_option(1,i)**2)+(k_option(2,i)**2)+(k_option(3,i)**2))
 
-   !  if(i==1.and.mkunit(i).gt.0.)then 
+   !  if (i==1.and.mkunit(i).gt.0.)then 
    !    k(:,num)=k_option(:,i)
    !    klengths(num)=mkunit(i)
    !  endif
 
    !  !now we check that the current length is unique (hasn't come before)
-   !  if(i.gt.1.and.num.lt.KS_modes)then
+   !  if (i.gt.1.and.num.lt.KS_modes)then
    !    do s1=i-1,1,-1
-   !      if(mkunit(i).gt.0.0D0.and.mkunit(i) /= mkunit(s1))then
+   !      if (mkunit(i).gt.0.0D0.and.mkunit(i) /= mkunit(s1))then
    !        ne=.true.
    !      else
    !        ne=.false.
    !        exit
    !      endif
-   !      if(s1==1.and.ne)then !i.e. if length of current k_option is new...... 
+   !      if (s1==1.and.ne)then !i.e. if length of current k_option is new...... 
    !        num=num+1
    !        k(:,num)=k_option(:,i) !load current k_option into k that we keep
    !        klengths(num)=mkunit(i)  ! store the length also
    !      endif
    !    end do
    !   endif
-   !   if(i==10000.and.num.lt.KS_modes)print*,"Haven't got",KS_modes,"modes!!!!"
+   !   if (i==10000.and.num.lt.KS_modes)print*,"Haven't got",KS_modes,"modes!!!!"
    ! end do
    ! do i=1,KS_modes
    !    do s1=1,KS_modes
-   !       if(kk(i)==klengths(s1))then
+   !       if (kk(i)==klengths(s1))then
    !          orderK(:,i)=k(:,s1)
    !       endif
    !    end do
@@ -1155,9 +1155,9 @@ kky_aa=2.*pi
    ! end do
    ! do i=1,N
    ! !now we find delk as defined in Malik & Vassilicos' paper
-   !    if(i==1)delk(i)=(kk(i+1)-kk(i))/2.0D0 
-   !    if(i==KS_modes)delk(i)=(kk(i)-kk(i-1))/2.0D0 
-   !    if(i.gt.1.and.i.lt.KS_modes)delk(i)=(kk(i+1)-kk(i-1))/2.0D0  
+   !    if (i==1)delk(i)=(kk(i+1)-kk(i))/2.0D0 
+   !    if (i==KS_modes)delk(i)=(kk(i)-kk(i-1))/2.0D0 
+   !    if (i.gt.1.and.i.lt.KS_modes)delk(i)=(kk(i+1)-kk(i-1))/2.0D0  
    ! end do
    ! endsubroutine random_isotropic_KS_setup_abag
 !***********************************************************************
@@ -1248,7 +1248,7 @@ kky_aa=2.*pi
 !
 !  iname runs through all possible names that may be listed in print.in
 !
-      if(lroot.and.ip<14) print*,'rprint_hydro: run through parse list'
+      if (lroot.and.ip<14) print*,'rprint_hydro: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'ekin',idiag_ekin)
         call parse_name(iname,cname(iname),cform(iname),'ekintot',idiag_ekintot)

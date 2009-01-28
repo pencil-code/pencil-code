@@ -47,7 +47,7 @@ module Testflow
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if(ip==0) print*,f  !(to keep compiler quiet)
+      if (ip==0) print*,f  !(to keep compiler quiet)
     endsubroutine initialize_testflow
 !***********************************************************************
     subroutine init_uutest(f,xx,yy,zz)
@@ -59,7 +59,7 @@ module Testflow
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz
 !
-      if(ip==0) print*,f,xx,yy,zz  !(to keep compiler quiet)
+      if (ip==0) print*,f,xx,yy,zz  !(to keep compiler quiet)
     endsubroutine init_uutest
 !***********************************************************************
     subroutine pencil_criteria_testflow()
@@ -125,7 +125,7 @@ module Testflow
       intent(in)     :: f,p
       intent(inout)  :: df
 !
-      if(ip==0) print*, f, df, p  !(to keep compiler quiet)
+      if (ip==0) print*, f, df, p  !(to keep compiler quiet)
 !
     endsubroutine duutest_dt
 !***********************************************************************
@@ -166,7 +166,7 @@ module Testflow
       logical :: lreset
       logical, optional :: lwrite
 !
-      if(ip==0) print*,lreset,lwrite  !(to keep compiler quiet)
+      if (ip==0) print*,lreset,lwrite  !(to keep compiler quiet)
     endsubroutine rprint_testflow
 
 endmodule Testflow

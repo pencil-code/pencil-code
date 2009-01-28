@@ -432,7 +432,7 @@ module Dustvelocity
           lnothing=.true.
         case('zero', '0')
           do k=1,ndustspec; f(:,:,:,iudx(k):iudz(k))=0.0; enddo
-          if(lroot) print*,'init_uud: zero dust velocity'
+          if (lroot) print*,'init_uud: zero dust velocity'
         case('gaussian-noise')
           do k=1,ndustspec; call gaunoise(ampluud,f,iudx(k),iudz(k)); enddo
         case('sinwave-phase')
@@ -1315,7 +1315,7 @@ module Dustvelocity
 !
 !  iname runs through all possible names that may be listed in print.in
 !
-        if(lroot.and.ip<14) print*,'rprint_dustvelocity: run through parse list'
+        if (lroot.and.ip<14) print*,'rprint_dustvelocity: run through parse list'
         do iname=1,nname
           call chn(k,sdust)
           if (ndustspec == 1) sdust=''

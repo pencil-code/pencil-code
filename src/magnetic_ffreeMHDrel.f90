@@ -174,9 +174,9 @@ module Magnetic
         !
         !  wave
         !
-        if(lroot) print*,'init_aa: B_ext=',B_ext
-        if(lroot) print*,'init_aa: k_aa=',k_aa
-        if(lroot) print*,'init_aa: A0=',A0
+        if (lroot) print*,'init_aa: B_ext=',B_ext
+        if (lroot) print*,'init_aa: k_aa=',k_aa
+        if (lroot) print*,'init_aa: A0=',A0
         !
         !  calculate frequency, sin(phi), cos(phi)
         !
@@ -205,8 +205,8 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
         !
         !  wave
         !
-        if(lroot) print*,'init_aa: B_ext=',B_ext
-        if(lroot) print*,'init_aa: k_aa=',kx_aa,ky_aa,kz_aa
+        if (lroot) print*,'init_aa: B_ext=',B_ext
+        if (lroot) print*,'init_aa: k_aa=',kx_aa,ky_aa,kz_aa
         !
         sinphi=amplaa*sin(kx_aa*xx+ky_aa*yy+kz_aa*zz)
         cosphi=amplaa*cos(kx_aa*xx+ky_aa*yy+kz_aa*zz)
@@ -282,7 +282,7 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
 !
 !  calculate del2S only if nu is finite
 !
-      if(nu/=0.) then
+      if (nu/=0.) then
         call del2v(f,iuu,del2S)
       else
         del2S=0.
@@ -494,11 +494,11 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
         call output_pencil(trim(directory)//'/df.dat',df(l1:l2,m,n,:),mvar)
       endif
 !
-if(ip<3.and.m==4.and.n==4) write(61) ss,Sij,curlS,divS,del2A,curlB
-if(ip<3.and.m==4.and.n==4) write(61) BB,B2,BgS,SgB,Bij,CC,EE,B21
-if(ip<3.and.m==4.and.n==4) write(61) divE,BdivS,CxE,curlBxB,curlE,curlExE,divEE
+if (ip<3.and.m==4.and.n==4) write(61) ss,Sij,curlS,divS,del2A,curlB
+if (ip<3.and.m==4.and.n==4) write(61) BB,B2,BgS,SgB,Bij,CC,EE,B21
+if (ip<3.and.m==4.and.n==4) write(61) divE,BdivS,CxE,curlBxB,curlE,curlExE,divEE
 !
-if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
+if (NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !
     endsubroutine daa_dt
 !***********************************************************************
@@ -750,11 +750,11 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !  so they are present on the root processor.
 !
       if (idiag_bmx/=0) then
-        if(idiag_bymxy==0.or.idiag_bzmxy==0) then
-          if(first) print*,"calc_mfield:                  WARNING"
-          if(first) print*, &
+        if (idiag_bymxy==0.or.idiag_bzmxy==0) then
+          if (first) print*,"calc_mfield:                  WARNING"
+          if (first) print*, &
                   "calc_mfield: NOTE: to get bmx, bymxy and bzmxy must also be set in zaver"
-          if(first) print*, &
+          if (first) print*, &
                   "calc_mfield:       We proceed, but you'll get bmx=0"
           bmx=0.
         else
@@ -770,11 +770,11 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !  similarly for bmy
 !
       if (idiag_bmy/=0) then
-        if(idiag_bxmxy==0.or.idiag_bzmxy==0) then
-          if(first) print*,"calc_mfield:                  WARNING"
-          if(first) print*, &
+        if (idiag_bxmxy==0.or.idiag_bzmxy==0) then
+          if (first) print*,"calc_mfield:                  WARNING"
+          if (first) print*, &
                   "calc_mfield: NOTE: to get bmy, bxmxy and bzmxy must also be set in zaver"
-          if(first) print*, &
+          if (first) print*, &
                   "calc_mfield:       We proceed, but you'll get bmy=0"
           bmy=0.
         else
@@ -794,13 +794,13 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !  so they are present on the root processor.
 !
       if (idiag_bmz/=0) then
-        if(idiag_bxmz==0.or.idiag_bymz==0) then
-          if(first) print*,"calc_mfield:                  WARNING"
-          if(first) print*, &
+        if (idiag_bxmz==0.or.idiag_bymz==0) then
+          if (first) print*,"calc_mfield:                  WARNING"
+          if (first) print*, &
                   "calc_mfield: NOTE: to get bmz, bxmz and bymz must also be set in xyaver"
-          if(first) print*, &
+          if (first) print*, &
                   "calc_mfield:       This may be because we renamed zaver.in into xyaver.in"
-          if(first) print*, &
+          if (first) print*, &
                   "calc_mfield:       We proceed, but you'll get bmz=0"
           bmz=0.
         else
@@ -1074,7 +1074,7 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
         call potentdiv(fz,f2,f3,+1)
         f(l1:l2,m1:m2,n2:mz,iaz)=-fz
       case default
-        if(lroot) print*,"bc_aa_pot: invalid argument"
+        if (lroot) print*,"bc_aa_pot: invalid argument"
       endselect
 !
       endsubroutine bc_aa_pot
@@ -1139,8 +1139,8 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !
 !  reverse order if irev=-1 (if we are at the bottom)
 !
-        if(irev==+1) fz(:,:,       i+1) = g1r/(nx*ny)  ! Renormalize
-        if(irev==-1) fz(:,:,nghost-i+1) = g1r/(nx*ny)  ! Renormalize
+        if (irev==+1) fz(:,:,       i+1) = g1r/(nx*ny)  ! Renormalize
+        if (irev==-1) fz(:,:,nghost-i+1) = g1r/(nx*ny)  ! Renormalize
       enddo
 !
     endsubroutine potential_field
@@ -1210,8 +1210,8 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !
 !  reverse order if irev=-1 (if we are at the bottom)
 !
-        if(irev==+1) fz(:,:,       i+1) = g1r/(nx*ny)  ! Renormalize
-        if(irev==-1) fz(:,:,nghost-i+1) = g1r/(nx*ny)  ! Renormalize
+        if (irev==+1) fz(:,:,       i+1) = g1r/(nx*ny)  ! Renormalize
+        if (irev==-1) fz(:,:,nghost-i+1) = g1r/(nx*ny)  ! Renormalize
       enddo
 !
     endsubroutine potentdiv

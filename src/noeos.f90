@@ -186,7 +186,7 @@ module EquationOfState
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      if(NO_WARN) print*,f  !(keep compiler quiet)
+      if (NO_WARN) print*,f  !(keep compiler quiet)
 !
     endsubroutine ioninit
 !***********************************************************************
@@ -194,7 +194,7 @@ module EquationOfState
 !
     real, dimension (mx,my,mz,mfarray) :: f
 !
-    if(NO_WARN) print*,f  !(keep compiler quiet)
+    if (NO_WARN) print*,f  !(keep compiler quiet)
 !
     endsubroutine ioncalc
 !***********************************************************************
@@ -554,7 +554,7 @@ module EquationOfState
       integer :: i,ierr
 
 !
-      if(ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
+      if (ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
 !
 !  Do the `c1' boundary condition (constant heat flux) for entropy.
 !  check whether we want to do top or bottom (this is precessor dependent)
@@ -598,9 +598,9 @@ module EquationOfState
 !
       case('bot')
         if (lmultilayer) then
-          if(headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
+          if (headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
         else
-          if(headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0
+          if (headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0
         endif
 !
 !  calculate Fbot/(K*cs2)
@@ -611,7 +611,7 @@ module EquationOfState
 !  check whether we have chi=constant at bottom, in which case
 !  we have the nonconstant rho_xy*chi in tmp_xy.
 !
-        if(lheatc_chiconst) then
+        if (lheatc_chiconst) then
           tmp_xy=Fbot/(rho_xy*chi*cs2_xy)
         else
           tmp_xy=FbotKbot/cs2_xy
@@ -629,9 +629,9 @@ module EquationOfState
 !
       case('top')
         if (lmultilayer) then
-          if(headtt) print*,'bc_ss_flux: Ftop,hcond=',Ftop,hcond0*hcond1
+          if (headtt) print*,'bc_ss_flux: Ftop,hcond=',Ftop,hcond0*hcond1
         else
-          if(headtt) print*,'bc_ss_flux: Ftop,hcond=',Ftop,hcond0
+          if (headtt) print*,'bc_ss_flux: Ftop,hcond=',Ftop,hcond0
         endif
 !
 !  calculate Ftop/(K*cs2)
@@ -642,7 +642,7 @@ module EquationOfState
 !  check whether we have chi=constant at bottom, in which case
 !  we have the nonconstant rho_xy*chi in tmp_xy.
 !
-        if(lheatc_chiconst) then
+        if (lheatc_chiconst) then
           tmp_xy=Ftop/(rho_xy*chi*cs2_xy)
         else
           tmp_xy=FtopKtop/cs2_xy
@@ -677,7 +677,7 @@ module EquationOfState
       real, dimension (mx,my) :: tmp_xy
       integer :: i
 !
-      if(ldebug) print*,'bc_ss_temp_old: ENTER - cs20,cs0=',cs20,cs0
+      if (ldebug) print*,'bc_ss_temp_old: ENTER - cs20,cs0=',cs20,cs0
 !
 !  Do the `c2' boundary condition (fixed temperature/sound speed) for entropy.
 !  This assumes that the density is already set (ie density must register
@@ -743,7 +743,7 @@ module EquationOfState
       real :: tmp
       integer :: i
 !
-      if(ldebug) print*,'bc_ss_temp_x: cs20,cs0=',cs20,cs0
+      if (ldebug) print*,'bc_ss_temp_x: cs20,cs0=',cs20,cs0
 !
 !  Constant temperature/sound speed for entropy, i.e. antisymmetric
 !  ln(cs2) relative to cs2top/cs2bot.
@@ -804,7 +804,7 @@ module EquationOfState
       real :: tmp
       integer :: i
 !
-      if(ldebug) print*,'bc_ss_temp_y: cs20,cs0=',cs20,cs0
+      if (ldebug) print*,'bc_ss_temp_y: cs20,cs0=',cs20,cs0
 !
 !  Constant temperature/sound speed for entropy, i.e. antisymmetric
 !  ln(cs2) relative to cs2top/cs2bot.
@@ -863,7 +863,7 @@ module EquationOfState
       real :: tmp
       integer :: i
 !
-      if(ldebug) print*,'bc_ss_temp_z: cs20,cs0=',cs20,cs0
+      if (ldebug) print*,'bc_ss_temp_z: cs20,cs0=',cs20,cs0
 !
 !  Constant temperature/sound speed for entropy, i.e. antisymmetric
 !  ln(cs2) relative to cs2top/cs2bot.
@@ -921,7 +921,7 @@ module EquationOfState
       real :: tmp
       integer :: i
 !
-      if(ldebug) print*,'bc_lnrho_temp_z: cs20,cs0=',cs20,cs0
+      if (ldebug) print*,'bc_lnrho_temp_z: cs20,cs0=',cs20,cs0
 !
 !  Constant temperature/sound speed for entropy, i.e. antisymmetric
 !  ln(cs2) relative to cs2top/cs2bot.
@@ -999,7 +999,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i
 !
-      if(ldebug) print*,'bc_lnrho_pressure_z: cs20,cs0=',cs20,cs0
+      if (ldebug) print*,'bc_lnrho_pressure_z: cs20,cs0=',cs20,cs0
 !
 !  Constant pressure, i.e. antisymmetric
 !  This assumes that the entropy is already set (ie density _must_ register
@@ -1017,7 +1017,7 @@ module EquationOfState
 !  fix entropy if inflow (uz>0); otherwise leave s unchanged
 !  afterwards set s antisymmetrically about boundary value
 !
-        if(lentropy) then
+        if (lentropy) then
 !         do m=m1,m2
 !         do l=l1,l2
 !           if (f(l,m,n1,iuz)>=0) then
@@ -1053,7 +1053,7 @@ module EquationOfState
 !  fix entropy if inflow (uz>0); otherwise leave s unchanged
 !  afterwards set s antisymmetrically about boundary value
 !
-        if(lentropy) then
+        if (lentropy) then
 !         do m=m1,m2
 !         do l=l1,l2
 !           if (f(l,m,n1,iuz)>=0) then
@@ -1101,7 +1101,7 @@ module EquationOfState
       real :: tmp
       integer :: i
 !
-      if(ldebug) print*,'bc_ss_temp2_z: cs20,cs0=',cs20,cs0
+      if (ldebug) print*,'bc_ss_temp2_z: cs20,cs0=',cs20,cs0
 !
 !  Constant temperature/sound speed for entropy, i.e. antisymmetric
 !  ln(cs2) relative to cs2top/cs2bot.
@@ -1155,7 +1155,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i
 !
-      if(ldebug) print*,'bc_ss_stemp_x: cs20,cs0=',cs20,cs0
+      if (ldebug) print*,'bc_ss_stemp_x: cs20,cs0=',cs20,cs0
 !
 !  Symmetric temperature/sound speed for entropy.
 !  This assumes that the density is already set (ie density _must_ register
@@ -1204,7 +1204,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i
 !
-      if(ldebug) print*,'bc_ss_stemp_y: cs20,cs0=',cs20,cs0
+      if (ldebug) print*,'bc_ss_stemp_y: cs20,cs0=',cs20,cs0
 !
 !  Symmetric temperature/sound speed for entropy.
 !  This assumes that the density is already set (ie density _must_ register
@@ -1254,7 +1254,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i
 !
-      if(ldebug) print*,'bc_ss_stemp_z: cs20,cs0=',cs20,cs0
+      if (ldebug) print*,'bc_ss_stemp_z: cs20,cs0=',cs20,cs0
 !
 !  Symmetric temperature/sound speed for entropy.
 !  This assumes that the density is already set (ie density _must_ register

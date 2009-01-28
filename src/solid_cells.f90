@@ -103,7 +103,7 @@ module Solid_Cells
 !   This overrides any initial conditions set in the Hydro module.
 !
       case('nothing')
-        if(lroot) print*,'init_solid_cells: nothing'
+        if (lroot) print*,'init_solid_cells: nothing'
       case('cylinderstream_x')
 !   Stream functions for flow around a cylinder as initial condition. 
         call gaunoise(ampl_noise,f,iux,iuz)

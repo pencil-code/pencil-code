@@ -447,7 +447,7 @@ module Entropy
           else
             lmultilayer=.false.  ! to ensure that hcond=cte
             TT_ext=T0            ! T0 defined in start.in for geodynamo
-            if(coord_system=='spherical')then
+            if (coord_system=='spherical')then
               r_ext=x(l2)
               r_int=x(l1)
             else
@@ -1379,7 +1379,7 @@ module Entropy
 !
 !  set intial condition
 !
-      if(lspherical_coords)then
+      if (lspherical_coords)then
         do imn=1,ny*nz
           n=nn(imn)
           m=mm(imn)
@@ -1395,7 +1395,7 @@ module Entropy
           f(l1:l2,m,n,iss)=ss
 !
         enddo
-      elseif(lcylindrical_coords) then
+      elseif (lcylindrical_coords) then
         call stop_it('shell_ss:not valid in cylindrical coordinates')
       else
         do imn=1,ny*nz
@@ -1439,7 +1439,7 @@ module Entropy
           pert_TT=0.
 !
         case ('geo-benchmark')
-          if(lspherical_coords)then
+          if (lspherical_coords)then
             xr=x(l1:l2)
             sin_theta4=sin(y(m))**4
             pert_TT=ampl0*ampl_TT*(1-3*xr**2+3*xr**4-xr**6)*&
@@ -2407,7 +2407,7 @@ module Entropy
 !
 !  check that chi is ok
 !
-      if(headtt) print*,'calc_heatcond_shock: chi_t,chi_shock=',chi_t,chi_shock
+      if (headtt) print*,'calc_heatcond_shock: chi_t,chi_shock=',chi_t,chi_shock
 !
 !  calculate terms for shock diffusion
 !  Ds/Dt = ... + chi_shock*[del2ss + (glnchi_shock+glnpp).gss]

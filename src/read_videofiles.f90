@@ -135,7 +135,7 @@
         call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
         call safe_character_assign(file,'/slice_'//trim(field)//'.xy2')
         call safe_character_assign(fullname,trim(path)//trim(file))
-        if(it<=itdebug) print*,trim(fullname)
+        if (it<=itdebug) print*,trim(fullname)
         inquire(FILE=trim(fullname),EXIST=exists)
         if (.not.exists) then
           print*,"Slice not found", fullname
@@ -145,13 +145,13 @@
         call rslice(trim(fullname),xy2_loc,slice_z2pos,nx,ny,t,it,lun,eof,err)
         min_xy2_loc=min(min_xy2_loc,minval(xy2_loc))
         max_xy2_loc=max(max_xy2_loc,maxval(xy2_loc))
-        if(eof) goto 999
+        if (eof) goto 999
         xy2(1+ipx*nx:nx+ipx*nx,1+ipy*ny:ny+ipy*ny)=xy2_loc
       enddo
       enddo
       call safe_character_assign(wfile,trim(datadir)//trim(file))
       err_timestep=err
-      if(.not.err_timestep) then
+      if (.not.err_timestep) then
         call wslice(trim(wfile),xy2,slice_z2pos,nxgrid,nygrid,t,it,lun1)
         lwritten_something=.true.
       else
@@ -169,7 +169,7 @@
         call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
         call safe_character_assign(file,'/slice_'//trim(field)//'.xy')
         call safe_character_assign(fullname,trim(path)//trim(file))
-        if(it<=itdebug) print*,trim(fullname)
+        if (it<=itdebug) print*,trim(fullname)
         inquire(FILE=trim(fullname),EXIST=exists)
         if (.not.exists) then
           print*,"Slice not found", fullname
@@ -179,13 +179,13 @@
         call rslice(trim(fullname),xy_loc,slice_zpos,nx,ny,t,it,lun,eof,err)
         min_xy_loc=min(min_xy_loc,minval(xy_loc))
         max_xy_loc=max(max_xy_loc,maxval(xy_loc))
-        if(eof) goto 999
+        if (eof) goto 999
         xy(1+ipx*nx:nx+ipx*nx,1+ipy*ny:ny+ipy*ny)=xy_loc
       enddo
       enddo
       call safe_character_assign(wfile,trim(datadir)//trim(file))
       err_timestep=err_timestep.or.err
-      if(.not.err_timestep) then
+      if (.not.err_timestep) then
         call wslice(trim(wfile),xy,slice_zpos,nxgrid,nygrid,t,it,lun2)
         lwritten_something=.true.
       else
@@ -203,7 +203,7 @@
         call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
         call safe_character_assign(file,'/slice_'//trim(field)//'.xz')
         call safe_character_assign(fullname,trim(path)//trim(file))
-        if(it<=itdebug) print*,trim(fullname)
+        if (it<=itdebug) print*,trim(fullname)
         inquire(FILE=trim(fullname),EXIST=exists)
         if (.not.exists) then
           print*,"Slice not found", fullname
@@ -213,13 +213,13 @@
         call rslice(trim(fullname),xz_loc,slice_ypos,nx,nz,t,it,lun,eof,err)
         min_xz_loc=min(min_xz_loc,minval(xz_loc))
         max_xz_loc=max(max_xz_loc,maxval(xz_loc))
-        if(eof) goto 999
+        if (eof) goto 999
         xz(1+ipx*nx:nx+ipx*nx,1+ipz*nz:nz+ipz*nz)=xz_loc
       enddo
       enddo
       call safe_character_assign(wfile,trim(datadir)//trim(file))
       err_timestep=err_timestep.or.err
-      if(.not.err_timestep) then
+      if (.not.err_timestep) then
         call wslice(trim(wfile),xz,slice_ypos,nxgrid,nzgrid,t,it,lun3)
         lwritten_something=.true.
       else
@@ -239,7 +239,7 @@
         call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
         call safe_character_assign(file,'/slice_'//trim(field)//'.yz')
         call safe_character_assign(fullname,trim(path)//trim(file))
-        if(it<=itdebug) print*,trim(fullname)
+        if (it<=itdebug) print*,trim(fullname)
         inquire(FILE=trim(fullname),EXIST=exists)
         if (.not.exists) then
           print*,"Slice not found", fullname
@@ -249,13 +249,13 @@
         call rslice(trim(fullname),yz_loc,slice_xpos,ny,nz,t,it,lun,eof,err)
         min_yz_loc=min(min_yz_loc,minval(yz_loc))
         max_yz_loc=max(max_yz_loc,maxval(yz_loc))
-        if(eof) goto 999
+        if (eof) goto 999
         yz(1+ipy*ny:ny+ipy*ny,1+ipz*nz:nz+ipz*nz)=yz_loc
       enddo
       enddo
       call safe_character_assign(wfile,trim(datadir)//trim(file))
       err_timestep=err_timestep.or.err
-      if(.not.err_timestep) then
+      if (.not.err_timestep) then
         call wslice(trim(wfile),yz,slice_xpos,nygrid,nzgrid,t,it,lun4)
         lwritten_something=.true.
       else
@@ -275,7 +275,7 @@
           call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
           call safe_character_assign(file,'/slice_'//trim(field)//'.xy3')
           call safe_character_assign(fullname,trim(path)//trim(file))
-          if(it<=itdebug) print*,trim(fullname)
+          if (it<=itdebug) print*,trim(fullname)
           inquire(FILE=trim(fullname),EXIST=exists)
           if (.not.exists) then
             print*,"Slice not found", fullname
@@ -285,13 +285,13 @@
           call rslice(trim(fullname),xy3_loc,slice_z3pos,nx,ny,t,it,lun,eof,err)
           min_xy3_loc=min(min_xy3_loc,minval(xy3_loc))
           max_xy3_loc=max(max_xy3_loc,maxval(xy3_loc))
-          if(eof) goto 999
+          if (eof) goto 999
           xy3(1+ipx*nx:nx+ipx*nx,1+ipy*ny:ny+ipy*ny)=xy3_loc
         enddo
         enddo
         call safe_character_assign(wfile,trim(datadir)//trim(file))
         err_timestep=err
-        if(.not.err_timestep) then
+        if (.not.err_timestep) then
           call wslice(trim(wfile),xy3,slice_z3pos,nxgrid,nygrid,t,it,lun5)
           lwritten_something=.true.
         else
@@ -309,7 +309,7 @@
           call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
           call safe_character_assign(file,'/slice_'//trim(field)//'.xy4')
           call safe_character_assign(fullname,trim(path)//trim(file))
-          if(it<=itdebug) print*,trim(fullname)
+          if (it<=itdebug) print*,trim(fullname)
           inquire(FILE=trim(fullname),EXIST=exists)
           if (.not.exists) then
             print*,"Slice not found", fullname
@@ -319,13 +319,13 @@
           call rslice(trim(fullname),xy4_loc,slice_z4pos,nx,ny,t,it,lun,eof,err)
           min_xy4_loc=min(min_xy4_loc,minval(xy4_loc))
           max_xy4_loc=max(max_xy4_loc,maxval(xy4_loc))
-          if(eof) goto 999
+          if (eof) goto 999
           xy4(1+ipx*nx:nx+ipx*nx,1+ipy*ny:ny+ipy*ny)=xy4_loc
         enddo
         enddo
         call safe_character_assign(wfile,trim(datadir)//trim(file))
         err_timestep=err
-        if(.not.err_timestep) then
+        if (.not.err_timestep) then
           call wslice(trim(wfile),xy4,slice_z4pos,nxgrid,nygrid,t,it,lun6)
           lwritten_something=.true.
         else
@@ -412,7 +412,7 @@
       logical :: eof,err
       real :: t,pos
 !
-      if(it==1) open(lun,file=file,status='old',form='unformatted')
+      if (it==1) open(lun,file=file,status='old',form='unformatted')
 
       pos=0.  ! By default (i.e. if missing from record)
       read(lun,end=999,err=998) a,t,pos
@@ -450,7 +450,7 @@
       real :: t, pos
 
 !
-      if(it==1) open(lun,file=file,form='unformatted')
+      if (it==1) open(lun,file=file,form='unformatted')
       write(lun) a,t,pos
 !
     endsubroutine wslice

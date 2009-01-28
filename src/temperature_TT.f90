@@ -1088,13 +1088,13 @@ module Entropy
       real, dimension(n) :: a,b,c,r,u
       real, dimension(NMAX) :: gam
 !
-      if(b(1).eq.0.) pause 'tridag: rewrite equations'
+      if (b(1).eq.0.) pause 'tridag: rewrite equations'
       bet=b(1)
       u(1)=r(1)/bet
       do 11 j=2,n
         gam(j)=c(j-1)/bet
         bet=b(j)-a(j)*gam(j)
-        if(bet.eq.0.) pause 'tridag failed'
+        if (bet.eq.0.) pause 'tridag failed'
         u(j)=(r(j)-a(j)*u(j-1))/bet
 11    continue
       do 12 j=n-1,1,-1
@@ -1114,8 +1114,8 @@ module Entropy
       real, dimension(n)    :: a,b,c,r,x
       real, dimension(NMAX) :: bb,u,z
 !
-      if(n.le.2)pause 'n too small in cyclic'
-      if(n.gt.NMAX)pause 'NMAX too small in cyclic'
+      if (n.le.2)pause 'n too small in cyclic'
+      if (n.gt.NMAX)pause 'NMAX too small in cyclic'
       gamma=-b(1)
       bb(1)=b(1)-gamma
       bb(n)=b(n)-alpha*beta/gamma

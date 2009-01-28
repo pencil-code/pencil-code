@@ -125,7 +125,7 @@ module NeutralVelocity
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      if(NO_WARN) print*,f,df,p !(keep compiler quiet)
+      if (NO_WARN) print*,f,df,p !(keep compiler quiet)
 !
     endsubroutine duun_dt
 !***********************************************************************
@@ -186,7 +186,7 @@ module NeutralVelocity
         write(3,*) 'iunz=',iunz
       endif
 !
-      if(NO_WARN) print*,lreset  !(to keep compiler quiet)
+      if (NO_WARN) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_neutralvelocity
 !***********************************************************************
 

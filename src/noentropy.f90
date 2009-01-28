@@ -355,7 +355,7 @@ module Entropy
 !
       real, dimension (nx) :: x,y,z
       real, dimension (nx) :: hcond
-      if(ip==1) print*,x,y,z,hcond  !(to remove compiler warnings)
+      if (ip==1) print*,x,y,z,hcond  !(to remove compiler warnings)
 !
     endsubroutine heatcond
 !***********************************************************************
@@ -371,7 +371,7 @@ module Entropy
 !
       real, dimension (nx) :: x,y,z
       real, dimension (nx,3) :: glhc
-      if(ip==1) print*,x,y,z,glhc  !(to remove compiler warnings)
+      if (ip==1) print*,x,y,z,glhc  !(to remove compiler warnings)
 !
     endsubroutine gradloghcond
 !***********************************************************************

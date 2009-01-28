@@ -1503,7 +1503,7 @@ module Boundcond
       real, intent (in) :: val
       integer :: i
 
-      if(lspherical_coords)then
+      if (lspherical_coords)then
         select case(topbot)
         case('bot')               ! bottom boundary
         do i=1,nghost
@@ -1655,7 +1655,7 @@ module Boundcond
       frac = fracall(jj)
       uzero = uzeroall(jj)
 !      write(*,*) frac,uzero,y0,z0,y1,z1
-     if(lspherical_coords)then
+     if (lspherical_coords)then
 !
         select case(topbot)
         case('bot')               ! bottom boundary
@@ -3319,7 +3319,7 @@ module Boundcond
       if (ierr/=0) call stop_it("bc_lnTT_flux_x: "//&
            "there was a problem when getting Fbot")
 !
-      if(headtt) print*,'bc_lnTT_flux_x: Fbot,hcond,dx=',Fbot,hcond0*hcond1,dx
+      if (headtt) print*,'bc_lnTT_flux_x: Fbot,hcond,dx=',Fbot,hcond0*hcond1,dx
 
       select case(topbot)
 !
@@ -3367,7 +3367,7 @@ module Boundcond
       if (ierr/=0) call stop_it("bc_lnTT_flux_z: "//&
            "there was a problem when getting Fbot")      
 !
-      if(headtt) print*,'bc_lnTT_flux_z: Fbot,hcond,dz=',Fbot,hcond0,dz
+      if (headtt) print*,'bc_lnTT_flux_z: Fbot,hcond,dz=',Fbot,hcond0,dz
 
       select case(topbot)
       case('bot')
@@ -3414,7 +3414,7 @@ module Boundcond
 !  ===============
 !
       case('bot')
-        if(headtt) print*,'bc_ss_flux_x: FbotKbot=',FbotKbot
+        if (headtt) print*,'bc_ss_flux_x: FbotKbot=',FbotKbot
 !
 !  calculate Fbot/(K*cs2)
 !

@@ -144,7 +144,7 @@ module Special
       ! Select case
       !
       select case(initspecial)
-      case('nothing'); if(lroot) print*,'init_special: nothing'
+      case('nothing'); if (lroot) print*,'init_special: nothing'
       case('poiseulle_xy')
         f(:,:,:,iux:iuz)=0
         call poiseulle_flowx_wally(f,xx,yy,zz,central_vel)
@@ -259,7 +259,7 @@ module Special
       !
       ! Write video slices
       !
-      if(lvid.and.lfirst) then
+      if (lvid.and.lfirst) then
         if (n==iz_loc)  then
           do j=1,3
             meanx_oo(j)=sum(p%oo(:,j))/(l2-l1+1)
@@ -272,7 +272,7 @@ module Special
 !
 ! Write diagnostics
 !
-      if(ldiagnos) then
+      if (ldiagnos) then
         if (idiag_turbint/=0) then
           do j=1,3
             meanx_uu(j)=mean_u(m+ny*ipy-nghost,j)
@@ -459,7 +459,7 @@ module Special
 !
 !  calculate mean of velocity in xz planes
 !
-      if(lvid.and.lfirst .or. ldiagnos) then
+      if (lvid.and.lfirst .or. ldiagnos) then
         mean_u_tmp=0
         faq=nxgrid*nzgrid
         do j=m1,m2

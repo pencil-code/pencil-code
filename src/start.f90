@@ -233,7 +233,7 @@
 !  write grid.dat file
 !
         call wgrid(trim(directory)//'/grid.dat')
-        if(lparticles) &
+        if (lparticles) &
           call wproc_bounds(trim(directory)//'/proc_bounds.dat')
 !
 !  write .general file for data explorer

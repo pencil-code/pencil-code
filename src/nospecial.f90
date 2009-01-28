@@ -209,7 +209,7 @@ module Special
 !!  SAMPLE IMPLEMENTATION
 !!
 !!      select case(initspecial)
-!!        case('nothing'); if(lroot) print*,'init_special: nothing'
+!!        case('nothing'); if (lroot) print*,'init_special: nothing'
 !!        case('zero', '0'); f(:,:,:,iSPECIAL_VARIABLE_INDEX) = 0.
 !!        case default
 !!          !
@@ -302,8 +302,8 @@ module Special
 !!
 !! SAMPLE DIAGNOSTIC IMPLEMENTATION
 !!
-!!      if(ldiagnos) then
-!!        if(i_SPECIAL_DIAGNOSTIC/=0) then
+!!      if (ldiagnos) then
+!!        if (i_SPECIAL_DIAGNOSTIC/=0) then
 !!          call sum_mn_name(SOME MATHEMATICAL EXPRESSION,i_SPECIAL_DIAGNOSTIC)
 !!! see also integrate_mn_name
 !!        endif

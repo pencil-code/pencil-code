@@ -239,7 +239,7 @@ module Particles_spin
 !  Calculate torque on particle due to the shear flow, and
 !  update the particles' spin.
 !
- !     if(lmagnus_lift) then
+ !     if (lmagnus_lift) then
  !       do k=k1_imn(imn),k2_imn(imn)
 !
 !  Calculate angular momentum
@@ -374,11 +374,11 @@ module Particles_spin
       real,dimension(3) :: dlift
 !
       liftforce=0.0
-      if(lsaffman_lift) then
+      if (lsaffman_lift) then
         call calc_saffman_liftforce(fp,k,rep,dlift)
         liftforce=liftforce+dlift
       endif
- !     if(lmagnus_lift) then
+ !     if (lmagnus_lift) then
  !       call calc_magnus_liftforce(fp,k,rep,dlift)
  !       liftforce=liftforce+dlift
  !       endif
@@ -408,7 +408,7 @@ module Particles_spin
 !
       call getnu(nu)
 !
-      if(.not.lparticles_radius) then
+      if (.not.lparticles_radius) then
         print*,'calc_saffman_liftforce: Particle_radius module must be enabled!'
         call fatal_error('calc_saffman_liftforce','')
       endif
@@ -417,13 +417,13 @@ module Particles_spin
       oo=sqrt(sum(interp_oo(k,:)**2))
 !
       beta=dia**2*oo/(2.0*rep*nu)
-      if(beta<0.005) then
+      if (beta<0.005) then
         beta=0.005
-      elseif(beta>0.4) then
+      elseif (beta>0.4) then
         beta=0.4
       endif
 !
-      if(rep<=40) then
+      if (rep<=40) then
         csaff=(1-0.3314*beta**0.5)*exp(-rep/10.0)+0.3314*beta**0.5
       else
         csaff=0.0524*(beta*rep)**0.5
@@ -455,7 +455,7 @@ module Particles_spin
       real :: const_lr, spin_omega, area, nu
       real, dimension(3) :: ps_rel,uu_rel
 !
-      if(.not.lparticles_radius) then
+      if (.not.lparticles_radius) then
         print*,'calc_magnus_liftforce: Particle_radius module must be enabled!'
         call fatal_error('calc_magnus_liftforce','')
       endif

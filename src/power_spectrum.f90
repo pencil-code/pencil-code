@@ -91,12 +91,12 @@ module  power_spectrum
 !
 !  integration over shells
 !
-     if(lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
+     if (lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
      do ikz=1,nz
         do iky=1,ny
            do ikx=1,nx
               k=nint(sqrt(kx(ikx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2))
-              if(k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1) &
+              if (k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1) &
                    +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
            enddo
         enddo
@@ -189,12 +189,12 @@ module  power_spectrum
 !
 !  integration over shells
 !
-     if(lroot .AND. ip<10) print*,'fft done; now integrate over circles...'
+     if (lroot .AND. ip<10) print*,'fft done; now integrate over circles...'
      do ikz=1,nz
        do iky=1,ny
          do ikx=1,nx
            k=nint(sqrt(kx(ikx)**2+kz(ikz+ipz*nz)**2))
-           if(k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1) &
+           if (k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1) &
                 +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
          enddo
        enddo
@@ -298,14 +298,14 @@ module  power_spectrum
     elseif (sp=='uxj') then
       do n=n1,n2
         do m=m1,m2
-          if(ivec==1) ivec_jj=2
-          if(ivec==2) ivec_jj=1
-          if(ivec/=3) call del2vi_etc(f,iaa,ivec_jj,curlcurl=jji)
+          if (ivec==1) ivec_jj=2
+          if (ivec==2) ivec_jj=1
+          if (ivec/=3) call del2vi_etc(f,iaa,ivec_jj,curlcurl=jji)
           im=m-nghost
           in=n-nghost
-          if(ivec==1) b_re(:,im,in)=+jji
-          if(ivec==2) b_re(:,im,in)=-jji
-          if(ivec==3) b_re(:,im,in)=+0.
+          if (ivec==1) b_re(:,im,in)=+jji
+          if (ivec==2) b_re(:,im,in)=-jji
+          if (ivec==3) b_re(:,im,in)=+0.
         enddo
       enddo
       a_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
@@ -320,12 +320,12 @@ module  power_spectrum
 !
 !  integration over shells
 !
-    if(lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
+    if (lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
     do ikz=1,nz
       do iky=1,ny
         do ikx=1,nx
           k=nint(sqrt(kx(ikx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2))
-          if(k>=0 .and. k<=(nk-1)) then
+          if (k>=0 .and. k<=(nk-1)) then
             spectrum(k+1)=spectrum(k+1) &
                +b_re(ikx,iky,ikz)**2 &
                +b_im(ikx,iky,ikz)**2
@@ -428,12 +428,12 @@ module  power_spectrum
 !
 !  integration over shells
 !
-  if(lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
+  if (lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
   do ikz=1,nz
     do iky=1,ny
       do ikx=1,nx
         k=nint(sqrt(kx(ikx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2))
-        if(k>=0 .and. k<=(nk-1)) then
+        if (k>=0 .and. k<=(nk-1)) then
           spectrum(k+1)=spectrum(k+1) &
              +a_re(ikx,iky,ikz)**2 &
              +a_im(ikx,iky,ikz)**2
@@ -807,7 +807,7 @@ endsubroutine pdf
   if (lroot .AND. ip<10) call cvs_id( &
        "$Id$")
 !--------------Makes sense only in spherical coordinate system -----------
-  if(.not.lspherical_coords) call stop_it("power_phi works only in spherical coordinates")
+  if (.not.lspherical_coords) call stop_it("power_phi works only in spherical coordinates")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -917,7 +917,7 @@ endsubroutine pdf
   if (lroot .AND. ip<10) call cvs_id( &
        "$Id$")
 !--------------Makes sense only in spherical coordinate system -----------
-  if(.not.lspherical_coords) call stop_it("powerhel_phi works only in spherical coordinates")
+  if (.not.lspherical_coords) call stop_it("powerhel_phi works only in spherical coordinates")
 !
 !  Define wave vector, defined here for the *full* mesh.
 !  Each processor will see only part of it.

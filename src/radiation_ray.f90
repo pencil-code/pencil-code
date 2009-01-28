@@ -431,7 +431,7 @@ module Radiation
 !  do the rest only if we don't do diffusion approximation
 !
       if (lrad_cool_diffus.or.lrad_pres_diffus) then
-        if(headt) print*,'do diffusion approximation, no rays'
+        if (headt) print*,'do diffusion approximation, no rays'
       else
 !
 !  Initialize heating rate
@@ -494,7 +494,7 @@ module Radiation
 !
 !  Identifier
 !
-      if(ldebug.and.headt) print*,'raydirection'
+      if (ldebug.and.headt) print*,'raydirection'
 !
 !  Get direction components
 !
@@ -571,7 +571,7 @@ module Radiation
 !
 !  identifier
 !
-      if(ldebug.and.headt) print*,'Qintrinsic'
+      if (ldebug.and.headt) print*,'Qintrinsic'
 !
 !  line elements
 !
@@ -1065,7 +1065,7 @@ module Radiation
 !
 !  identifier
 !
-      if(ldebug.and.headt) print*,'Qrevision'
+      if (ldebug.and.headt) print*,'Qrevision'
 !
 !  do the ray...
 !

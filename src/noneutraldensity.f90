@@ -79,7 +79,7 @@ module Neutraldensity
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
-      if(NO_WARN) print*,f,xx,yy,zz ! keep compiler quiet
+      if (NO_WARN) print*,f,xx,yy,zz ! keep compiler quiet
     endsubroutine init_lnrhon
 !***********************************************************************
     subroutine pencil_criteria_neutraldensity()
@@ -130,7 +130,7 @@ module Neutraldensity
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      if(NO_WARN) print*,f,df,p !(keep compiler quiet)
+      if (NO_WARN) print*,f,df,p !(keep compiler quiet)
 !
     endsubroutine dlnrhon_dt
 !***********************************************************************
@@ -187,7 +187,7 @@ module Neutraldensity
         write(3,*) 'ilnrhon=',ilnrhon
       endif
 !
-      if(NO_WARN) print*,lreset  !(to keep compiler quiet)
+      if (NO_WARN) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_neutraldensity
 !***********************************************************************
 

@@ -145,7 +145,7 @@ module Forcing
       logical :: lstarting
 !
       if (lstarting) then
-        if(ip<4) print*,'initialize_forcing: not needed in start'
+        if (ip<4) print*,'initialize_forcing: not needed in start'
       else
 !
 !  check whether we want ordinary hydro forcing or magnetic forcing
@@ -160,10 +160,10 @@ module Forcing
 !  check whether we want constant forcing at each timestep,
 !  in which case lwork_ff is set to true.
 !
-        if(work_ff/=0.) then
+        if (work_ff/=0.) then
           force=1.
           lwork_ff=.true.
-          if(lroot) print*,'initialize_forcing: reset force=1., because work_ff is set'
+          if (lroot) print*,'initialize_forcing: reset force=1., because work_ff is set'
         endif
       endif
 !
@@ -188,8 +188,8 @@ module Forcing
       elseif (iforce_profile=='galactic') then
         profx_ampl=1.; profx_hel=1.
         do n=1,mz
-          if(abs(z(n))<zff_ampl) profz_ampl(n)=.5*(1.-cos(z(n)))
-          if(abs(z(n))<zff_hel ) profz_hel (n)=.5*(1.+cos(z(n)/2.))
+          if (abs(z(n))<zff_ampl) profz_ampl(n)=.5*(1.-cos(z(n)))
+          if (abs(z(n))<zff_hel ) profz_hel (n)=.5*(1.+cos(z(n)/2.))
         enddo
       elseif (iforce_profile=='diffrot_corona') then
         profz_ampl=1.; profz_hel=1.
@@ -201,7 +201,7 @@ module Forcing
 !  x,y,z points and are then saved and used for all subsequent steps
 !  and pencils
 !
-      if(ip<=6) print*,'forcing_cont'
+      if (ip<=6) print*,'forcing_cont'
       if (iforcing_cont=='ABC') then
         if (lroot) print*,'forcing_cont: ABC--calc sinx, cosx, etc'
         sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
@@ -283,7 +283,7 @@ module Forcing
         case ('hel_smooth');      call forcing_hel_smooth(f)
         case ('chandra_kendall'); call forcing_chandra_kendall(f)
         case ('cktest'); call forcing_cktest(f)
-        case default; if(lroot) print*,'addforce: No such forcing iforce=',trim(iforce)
+        case default; if (lroot) print*,'addforce: No such forcing iforce=',trim(iforce)
         endselect
       endif
 !
@@ -299,14 +299,14 @@ module Forcing
         lfirstforce2=.false.
 !
         select case(iforce2)
-        case ('zero'); if(headtt .and. lroot) print*,'addforce: No additional forcing'
+        case ('zero'); if (headtt .and. lroot) print*,'addforce: No additional forcing'
         case ('irrotational'); call forcing_irro(f,force2)
         case ('helical');      call forcing_hel(f)
         case ('helical_both'); call forcing_hel_both(f)
         case ('fountain');     call forcing_fountain(f)
         case ('horiz-shear');  call forcing_hshear(f)
         case ('diffrot');      call forcing_diffrot(f,force2)
-        case default; if(lroot) print*,'addforce: No such forcing iforce2=',trim(iforce2)
+        case default; if (lroot) print*,'addforce: No such forcing iforce2=',trim(iforce2)
         endselect
 !
         if (headtt.or.ldebug) print*,'addforce: done addforce'
@@ -346,7 +346,7 @@ module Forcing
         open(9,file='k.dat')
         read(9,*) nk,kav
         if (lroot) print*,'forcing_irro: average k=',kav
-        if(nk.gt.mk) then
+        if (nk.gt.mk) then
           if (lroot) print*,'forcing_irro: dimension mk in forcing_irro is insufficient'
           print*,'nk=',nk,'mk=',mk
           call mpifinalize
@@ -380,7 +380,7 @@ module Forcing
       ikk(3)=cmplx(0.,kkz(ik))
 !
       do j=1,3
-        if(extent(j)) then
+        if (extent(j)) then
           jf=j+ifff-1
           do n=n1,n2
           do m=m1,m2
@@ -457,7 +457,7 @@ module Forcing
         open(9,file='k.dat')
         read(9,*) nk,kav
         if (lroot) print*,'forcing_hel: average k=',kav
-        if(nk.gt.mk) then
+        if (nk.gt.mk) then
           if (lroot) print*,'forcing_hel: mk in forcing_hel is set too small'
           print*,'nk=',nk,'mk=',mk
           call mpifinalize
@@ -479,9 +479,9 @@ module Forcing
       call random_number_wrapper(fran)
       phase=pi*(2*fran(1)-1.)
       ik=nk*(.9999*fran(2))+1
-      if(ip<=6) print*,'forcing_hel: ik,phase=',ik,phase
-      if(ip<=6) print*,'forcing_hel: kx,ky,kz=',kkx(ik),kky(ik),kkz(ik)
-      if(ip<=6) print*,'forcing_hel: dt, ifirst=',dt,ifirst
+      if (ip<=6) print*,'forcing_hel: ik,phase=',ik,phase
+      if (ip<=6) print*,'forcing_hel: kx,ky,kz=',kkx(ik),kky(ik),kkz(ik)
+      if (ip<=6) print*,'forcing_hel: dt, ifirst=',dt,ifirst
 !
 !  normally we want to use the wavevectors as they are,
 !  but in some cases, e.g. when the box is bigger than 2pi,
@@ -517,7 +517,7 @@ module Forcing
         endif
       endif
 !
-      if(headt.or.ip<5) print*, 'forcing_hel: kx0,kx,ky,kz=',kx0,kx,ky,kz
+      if (headt.or.ip<5) print*, 'forcing_hel: kx0,kx,ky,kz=',kx0,kx,ky,kz
       k2=kx**2+ky**2+kz**2
       k=sqrt(k2)
       if (ip.lt.4) write(88,'(6f10.5)') k,kx0,kx,ky,kz,deltay
@@ -528,7 +528,7 @@ module Forcing
       ! Start with old method (not isotropic) for now.
       ! Pick e1 if kk not parallel to ee1. ee2 else.
       !
-      if((ky.eq.0).and.(kz.eq.0)) then
+      if ((ky.eq.0).and.(kz.eq.0)) then
         ex=0; ey=1; ez=0
       else
         ex=1; ey=0; ez=0
@@ -665,7 +665,7 @@ module Forcing
 !  it may be better to force rho*du/dt (if lmomentum_ff=.true.)
 !  For compatibility with earlier results, lmomentum_ff=.false. by default.
 !
-      if(lmomentum_ff) then
+      if (lmomentum_ff) then
         rho1=exp(-f(l1:l2,m,n,ilnrho))
         rho=1./rho1
       else
@@ -684,12 +684,12 @@ module Forcing
           do m=m1,m2
             variable_rhs=f(l1:l2,m,n,iffx:iffz)
             do j=1,3
-              if(extent(j)) then
+              if (extent(j)) then
                 jf=j+ifff-1
                 forcing_rhs(:,j)=rho1*profx_ampl*profz_ampl(n)*force_ampl &
                   *real(cmplx(coef1(j),profx_hel*profz_hel(n)*coef2(j)) &
                   *fx(l1:l2)*fy(m)*fz(n))*fda(:,j)
-                  if(lhelical_test) then
+                  if (lhelical_test) then
                     f(l1:l2,m,n,jf)=forcing_rhs(:,j)
                   else
                     f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
@@ -707,7 +707,7 @@ module Forcing
         enddo
       else                      ! with radial profile
         do j=1,3
-          if(extent(j)) then
+          if (extent(j)) then
             jf=j+ifff-1
             do n=n1,n2
               sig = relhel*tmpz(n)
@@ -715,7 +715,7 @@ module Forcing
               coef1(2)=cmplx(k*key,sig*kkey)
               coef1(3)=cmplx(k*kez,sig*kkez)
               do m=m1,m2
-                if(lspherical_coords)then
+                if (lspherical_coords)then
                   radius = x(l1:l2)
                 else
                   radius = sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
@@ -820,7 +820,7 @@ module Forcing
         open(9,file='k.dat')
         read(9,*) nk,kav
         if (lroot) print*,'forcing_hel_both: average k=',kav
-        if(nk.gt.mk) then
+        if (nk.gt.mk) then
           if (lroot) print*,'forcing_hel_both: mk in forcing_hel is set too small'
           print*,'nk=',nk,'mk=',mk
           call mpifinalize
@@ -842,9 +842,9 @@ module Forcing
       call random_number_wrapper(fran)
       phase=pi*(2*fran(1)-1.)
       ik=nk*(.9999*fran(2))+1
-      if(ip<=6) print*,'forcing_hel_both: ik,phase=',ik,phase
-      if(ip<=6) print*,'forcing_hel_both: kx,ky,kz=',kkx(ik),kky(ik),kkz(ik)
-      if(ip<=6) print*,'forcing_hel_both: dt, ifirst=',dt,ifirst
+      if (ip<=6) print*,'forcing_hel_both: ik,phase=',ik,phase
+      if (ip<=6) print*,'forcing_hel_both: kx,ky,kz=',kkx(ik),kky(ik),kkz(ik)
+      if (ip<=6) print*,'forcing_hel_both: dt, ifirst=',dt,ifirst
 !
 !  normally we want to use the wavevectors as they are,
 !  but in some cases, e.g. when the box is bigger than 2pi,
@@ -875,7 +875,7 @@ module Forcing
         kx=kx0+ky*deltay/Lx
       endif
 !
-      if(headt.or.ip<5) print*, 'forcing_hel_both: kx0,kx,ky,kz=',kx0,kx,ky,kz
+      if (headt.or.ip<5) print*, 'forcing_hel_both: kx0,kx,ky,kz=',kx0,kx,ky,kz
       k2=kx**2+ky**2+kz**2
       k=sqrt(k2)
 !
@@ -885,7 +885,7 @@ module Forcing
       ! Start with old method (not isotropic) for now.
       ! Pick e1 if kk not parallel to ee1. ee2 else.
       !
-      if((ky.eq.0).and.(kz.eq.0)) then
+      if ((ky.eq.0).and.(kz.eq.0)) then
         ex=0; ey=1; ez=0
       else
         ex=1; ey=0; ez=0
@@ -975,9 +975,9 @@ module Forcing
         do m=m1,m2
           variable_rhs=f(l1:l2,m,n,iffx:iffz)
           do j=1,3
-            if(extent(j)) then
+            if (extent(j)) then
               jf=j+ifff-1
-              if(y(m).gt.equator)then
+              if (y(m).gt.equator)then
                 forcing_rhs(:,j)=rho1*real(cmplx(coef1(j),coef2(j)) &
                                     *fx(l1:l2)*fy(m)*fz(n))& 
                         *(1.-step_scalar(y(m),equator-ck_equator_gap,ck_gap_step)+&
@@ -988,7 +988,7 @@ module Forcing
                   *(1.-step_scalar(y(m),equator-ck_equator_gap,ck_gap_step)+&
                       step_scalar(y(m),equator+ck_equator_gap,ck_gap_step))
               endif
-              if(lhelical_test) then
+              if (lhelical_test) then
                 f(l1:l2,m,n,jf)=forcing_rhs(:,j)
               else
                 f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
@@ -1051,12 +1051,12 @@ module Forcing
         if (lroot) print*, '..done'
         open(unit=76,file="alpha_in.dat",status="old")
         read(76,*) ckno,rmin,rmax
-        if(.not. (ckno.eq.nlist_ck)) then
+        if (.not. (ckno.eq.nlist_ck)) then
           call stop_it("CK forcing aborting:  The list does not match check entries in alpha_in.dat")
         else
         endif
         if (lroot) then
-          if(.not.((helsign.eq.1).or.(helsign.eq.-1))) & 
+          if (.not.((helsign.eq.1).or.(helsign.eq.-1))) & 
             call stop_it("CK forcing: helsign must be +1 or -1, aborting")
         else
         endif
@@ -1111,14 +1111,14 @@ module Forcing
 ! Now construct the Z_psi(r) 
    call random_number_wrapper(rphase1)
    rphase1=rphase1*2*pi
-   if(lfastCK) then
+   if (lfastCK) then
      do n=n1-nghost,n2+nghost
        do m=m1-nghost,m2+nghost
          psilm=0.
          psilm= RYlm_list(m,n,lmindex)*cos(rphase1)- &
            IYlm_list(m,n,lmindex)*sin(rphase1)
          psif(:,m,n) = psilm*Zpsi_list(:,lmindex,aindex+1)
-         if(ck_equator_gap/=0)&
+         if (ck_equator_gap/=0)&
            psif(:,m,n)=psif(:,m,n)*(1.-step_scalar(y(m),pi/2.-ck_equator_gap,ck_gap_step)+&
              step_scalar(y(m),pi/2+ck_equator_gap,ck_gap_step))
        enddo
@@ -1142,7 +1142,7 @@ module Forcing
          call sp_harm_imag(IYlm,Legendrel,emm,y(m),z(n))
          psilm= RYlm*cos(rphase1)-IYlm*sin(rphase1)
          psif(:,m,n) = Z_psi*psilm
-         if(ck_equator_gap/=0)&
+         if (ck_equator_gap/=0)&
            psif(:,m,n)=psif(:,m,n)*(1.-step_scalar(y(m),pi/2.-ck_equator_gap,ck_gap_step)+&
            step_scalar(y(m),pi/2+ck_equator_gap,ck_gap_step))
        enddo
@@ -1180,8 +1180,8 @@ module Forcing
        capitalH = capitalT + capitalS
        do j=1,3
          jf = iuu+j-1
-         if(lhelical_test) then
-           if(lwrite_psi) then
+         if (lhelical_test) then
+           if (lwrite_psi) then
              f(l1:l2,m,n,jf) = psif(l1:l2,m,n)
            else
              f(l1:l2,m,n,jf) = fnorm*capitalH(:,j)
@@ -1239,12 +1239,12 @@ module Forcing
         if (lroot) print*, '..done'
         open(unit=76,file="alpha_in.dat",status="old")
         read(76,*) ckno,rmin,rmax
-        if(.not. (ckno.eq.nlist_ck)) then
+        if (.not. (ckno.eq.nlist_ck)) then
           call stop_it("CK forcing aborting:  The list does not match check entries in alpha_in.dat")
         else
         endif
         if (lroot) then
-          if(.not.((helsign.eq.1).or.(helsign.eq.-1))) & 
+          if (.not.((helsign.eq.1).or.(helsign.eq.-1))) & 
             call stop_it("CK forcing: helsign must be +1 or -1, aborting")
         else
         endif
@@ -1289,7 +1289,7 @@ module Forcing
       endif
 ! This is designed from 5 emm values and for each one 5 ell values. Total 25 values
    icklist=icklist+1
-   if(icklist.eq.(nlist_ck+1)) & 
+   if (icklist.eq.(nlist_ck+1)) & 
             call stop_it("CK testing: no more value in list; ending")
    lmindex=icklist
    emm = cklist(lmindex,1)
@@ -1302,7 +1302,7 @@ module Forcing
 ! Now construct the Z_psi(r) 
    call random_number_wrapper(rphase1)
    rphase1=rphase1*2*pi
-   if(lfastCK) then
+   if (lfastCK) then
      do n=n1-nghost,n2+nghost
        do m=m1-nghost,m2+nghost
          psilm=0.
@@ -1394,7 +1394,7 @@ module Forcing
       integer :: ik,j,jf
       real :: force_ampl=1.,fact
 !
-      if(ip<=6) print*,'forcing_GP: t=',t
+      if (ip<=6) print*,'forcing_GP: t=',t
       cost=cos(omega_ff*t)
       sint=sin(omega_ff*t)
 !
@@ -1500,7 +1500,7 @@ module Forcing
       endif
       ifirst=ifirst+1
 !
-      if(ip<=6) print*,'forcing_TG: dt, ifirst=',dt,ifirst
+      if (ip<=6) print*,'forcing_TG: dt, ifirst=',dt,ifirst
 !
 !  Normalize ff; since we don't know dt yet, we finalize this
 !  within timestep where dt is determined and broadcast.
@@ -1523,7 +1523,7 @@ module Forcing
           forcing_rhs(:,2)=-fact*cosx(l1:l2)*siny(m)*cosz(n)
           forcing_rhs(:,3)=0.
           do j=1,3
-            if(extent(j)) then
+            if (extent(j)) then
               jf=j+ifff-1
               f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
             endif
@@ -1593,7 +1593,7 @@ module Forcing
 !  x,y,z points and are then saved and used for all subsequent steps
 !  and pencils
 !
-      if(ip<=6) print*,'forcing_ABC: ifirst=',ifirst
+      if (ip<=6) print*,'forcing_ABC: ifirst=',ifirst
       if (ifirst==0) then
         if (lroot) print*,'forcing_ABC: calculate sinx,cosx,siny,cosy,sinz,cosz'
         sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
@@ -1601,7 +1601,7 @@ module Forcing
         sinz=sin(k1_ff*z); cosz=cos(k1_ff*z)
       endif
       ifirst=ifirst+1
-      if(ip<=6) print*,'forcing_ABC: dt, ifirst=',dt,ifirst
+      if (ip<=6) print*,'forcing_ABC: dt, ifirst=',dt,ifirst
 !
 !  Normalize ff; since we don't know dt yet, we finalize this
 !  within timestep where dt is determined and broadcast.
@@ -1708,7 +1708,7 @@ module Forcing
       endif
       ifirst=ifirst+1
 !
-      if(ip<=6) print*,'forcing_hel: dt, ifirst=',dt,ifirst
+      if (ip<=6) print*,'forcing_hel: dt, ifirst=',dt,ifirst
 !
 !  Normalize ff; since we don't know dt yet, we finalize this
 !  within timestep where dt is determined and broadcast.
@@ -1731,7 +1731,7 @@ module Forcing
           forcing_rhs(:,2)=fact*sinx(l1:l2)
           forcing_rhs(:,3)=fact*siny(m)
           do j=1,3
-            if(extent(j)) then
+            if (extent(j)) then
               jf=j+ifff-1
               f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
             endif
@@ -1795,7 +1795,7 @@ module Forcing
 !
 !  check length of time step
 !
-      if(ip<=6) print*,'forcing_gaussianpot: dt=',dt
+      if (ip<=6) print*,'forcing_gaussianpot: dt=',dt
 !
 !  check whether there is any extent in each of the three directions
 !
@@ -1820,7 +1820,7 @@ module Forcing
         endif
 !
         tsforce=t+dtforce
-        if(ip<=6) print*,'forcing_gaussianpot: location=',location
+        if (ip<=6) print*,'forcing_gaussianpot: location=',location
       endif
 !
 !  Let explosion last dtforce_duration or, by default, until next explosion.
@@ -1949,8 +1949,8 @@ module Forcing
 !
       fsum_tmp(1)=rho_uu_ff
       call mpireduce_sum(fsum_tmp,fsum,1)
-      if(lroot) rho_uu_ff=fsum(1)/(ncpus*nw)
-!      if(lroot) rho_uu_ff=rho_uu_ff/(ncpus*nw)
+      if (lroot) rho_uu_ff=fsum(1)/(ncpus*nw)
+!      if (lroot) rho_uu_ff=rho_uu_ff/(ncpus*nw)
       call mpibcast_real(rho_uu_ff,1)
 !
 !  scale forcing function
@@ -1959,7 +1959,7 @@ module Forcing
 
 !print*,fname(idiag_urms)
 
-        if(headt) print*,'calc_force_ampl: divide forcing function by rho_uu_ff=',rho_uu_ff
+        if (headt) print*,'calc_force_ampl: divide forcing function by rho_uu_ff=',rho_uu_ff
         !      force_ampl=work_ff/(.1+max(0.,rho_uu_ff))
         force_ampl=work_ff/rho_uu_ff
         if (force_ampl .gt. max_force) force_ampl=max_force
@@ -2002,7 +2002,7 @@ module Forcing
         open(9,file='k.dat')
         read(9,*) nk,kav
         if (lroot) print*,'force_hel_noshear: average k=',kav
-        if(nk.gt.mk) then
+        if (nk.gt.mk) then
           if (lroot) print*,'force_hel_noshear: dimension mk in forcing_hel is insufficient'
           print*,'nk=',nk,'mk=',mk
           call mpifinalize
@@ -2026,7 +2026,7 @@ module Forcing
       kx=kkx(ik)
       ky=kky(ik)
       kz=kkz(ik)
-      if(ip.le.4) print*, 'force_hel_noshear: kx,ky,kz=',kx,ky,kz
+      if (ip.le.4) print*, 'force_hel_noshear: kx,ky,kz=',kx,ky,kz
 !
       k2=float(kx**2+ky**2+kz**2)
       k=sqrt(k2)
@@ -2037,7 +2037,7 @@ module Forcing
       ! Start with old method (not isotropic) for now.
       ! Pick e1 if kk not parallel to ee1. ee2 else.
       !
-      if((ky.eq.0).and.(kz.eq.0)) then
+      if ((ky.eq.0).and.(kz.eq.0)) then
         ex=0; ey=1; ez=0
       else
         ex=1; ey=0; ez=0
@@ -2372,7 +2372,7 @@ module Forcing
 !
 !  identifier
 !
-      if(headt) print*,'forcing_twist: r_ff,width_ff=',r_ff,width_ff
+      if (headt) print*,'forcing_twist: r_ff,width_ff=',r_ff,width_ff
 !
 !  need to multiply by dt (for Euler step).
 !
@@ -2384,7 +2384,7 @@ module Forcing
       xx=spread(x(l1:l2),2,nz)
       zz=spread(z(n1:n2),1,nx)
       if (r_ff==0.) then
-        if(lroot) print*,'forcing_twist: division by r_ff=0!!'
+        if (lroot) print*,'forcing_twist: division by r_ff=0!!'
       endif
       r2=(xx**2+zz**2)/r_ff**2
       tmp=exp(-r2/max(1.-r2,1e-5))*ffnorm
@@ -2431,7 +2431,7 @@ module Forcing
 !
 !  identifier
 !
-      if(headt) print*,'forcing_diffrot: ENTER'
+      if (headt) print*,'forcing_diffrot: ENTER'
 !
 !  need to multiply by dt (for Euler step).
 !
@@ -2481,7 +2481,7 @@ module Forcing
 !
 !  identifier
 !
-      if(headt) print*,'forcing_blobs: ENTER'
+      if (headt) print*,'forcing_blobs: ENTER'
 !
 !  the last forcing time is recorded in tforce.dat
 !
@@ -2676,7 +2676,7 @@ module Forcing
         kx=kx0+ky*deltay/Lx
       endif
 !
-      if(headt.or.ip<5) print*, 'hel_vec: kx0,kx,ky,kz=',kx0,kx,ky,kz
+      if (headt.or.ip<5) print*, 'hel_vec: kx0,kx,ky,kz=',kx0,kx,ky,kz
       k2=kx**2+ky**2+kz**2
       k=sqrt(k2)
 !
@@ -2686,7 +2686,7 @@ module Forcing
       ! Start with old method (not isotropic) for now.
       ! Pick e1 if kk not parallel to ee1. ee2 else.
       !
-      if((ky.eq.0).and.(kz.eq.0)) then
+      if ((ky.eq.0).and.(kz.eq.0)) then
         ex=0; ey=1; ez=0
       else
         ex=1; ey=0; ez=0
@@ -3083,7 +3083,7 @@ module Forcing
 !
 !  iname runs through all possible names that may be listed in print.in
 !
-      if(lroot.and.ip<14) print*,'rprint_forcing: run through parse list'
+      if (lroot.and.ip<14) print*,'rprint_forcing: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'rufm',idiag_rufm)
         call parse_name(iname,cname(iname),cform(iname),'ufm',idiag_ufm)

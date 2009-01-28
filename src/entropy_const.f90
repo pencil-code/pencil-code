@@ -99,7 +99,7 @@ module Entropy
 !
 !  read initialization parameters
 !
-      if(lroot) print*,'read entropy_initialize_pars'
+      if (lroot) print*,'read entropy_initialize_pars'
       open(1,FILE='run.in',FORM='formatted',STATUS='old')
       read(1,NML=entropy_initialize_pars,ERR=99,IOSTAT=ierr)
       close(1)
@@ -113,13 +113,13 @@ module Entropy
         dprofxss=ss_corona*.5/(wss_corona*cosh((x(l1:l2)-xss_corona)/wss_corona)**2)
       endif
 !
-      if(lroot) then
+      if (lroot) then
         print*,'initialize_entropy: iss_profile=',iss_profile
         print*,'initialize_entropy: wss_corona,ss_corona=',xss_corona,wss_corona,ss_corona
       endif
 
       return
-99    if(lroot) print*,'i/o error'
+99    if (lroot) print*,'i/o error'
 !
     endsubroutine initialize_entropy
 !***********************************************************************
@@ -145,7 +145,7 @@ module Entropy
         endselect
       enddo
 
-      if(NO_WARN) print*,f,xx,yy  !(to keep compiler quiet)
+      if (NO_WARN) print*,f,xx,yy  !(to keep compiler quiet)
     endsubroutine init_ss
 !***********************************************************************
     subroutine dss_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1,shock,gshock,bb,bij)
@@ -200,7 +200,7 @@ module Entropy
         endif
       endif
 !
-      if(ip==1) print*,f,df,uu,divu,rho1,shock,gshock,bb,bij  !(compiler)
+      if (ip==1) print*,f,df,uu,divu,rho1,shock,gshock,bb,bij  !(compiler)
     endsubroutine dss_dt
 !***********************************************************************
     subroutine rprint_entropy(lreset,lwrite)
@@ -275,7 +275,7 @@ module Entropy
 !
       real, dimension (nx) :: x,y,z
       real, dimension (nx) :: hcond
-      if(ip==1) print*,x,y,z,hcond  !(to remove compiler warnings)
+      if (ip==1) print*,x,y,z,hcond  !(to remove compiler warnings)
 !
     endsubroutine heatcond
 !***********************************************************************
@@ -291,7 +291,7 @@ module Entropy
 !
       real, dimension (nx) :: x,y,z
       real, dimension (nx,3) :: glhc
-      if(ip==1) print*,x,y,z,glhc  !(to remove compiler warnings)
+      if (ip==1) print*,x,y,z,glhc  !(to remove compiler warnings)
 !
     endsubroutine gradloghcond
 !***********************************************************************

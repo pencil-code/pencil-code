@@ -77,7 +77,7 @@ module Dustdensity
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if(NO_WARN) print*,f ! keep compiler quiet
+      if (NO_WARN) print*,f ! keep compiler quiet
     endsubroutine init_nd
 !***********************************************************************
     subroutine pencil_criteria_dustdensity()
@@ -128,7 +128,7 @@ module Dustdensity
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      if(NO_WARN) print*,f,df,p !(keep compiler quiet)
+      if (NO_WARN) print*,f,df,p !(keep compiler quiet)
 !
     endsubroutine dndmd_dt
 !***********************************************************************
@@ -171,7 +171,7 @@ module Dustdensity
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if(NO_WARN) print*,f
+      if (NO_WARN) print*,f
     endsubroutine redist_mdbins
 !***********************************************************************
     subroutine null_dust_vars(f)
@@ -180,7 +180,7 @@ module Dustdensity
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if(NO_WARN) print*,f
+      if (NO_WARN) print*,f
     endsubroutine null_dust_vars
 !***********************************************************************
     subroutine reinit_criteria_dust
@@ -213,7 +213,7 @@ module Dustdensity
         write(3,*) 'ind=',ind
       endif
 !
-      if(NO_WARN) print*,lreset  !(to keep compiler quiet)
+      if (NO_WARN) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_dustdensity
 !***********************************************************************
 

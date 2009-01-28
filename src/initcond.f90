@@ -1305,7 +1305,7 @@ module Initcond
 !  set x-dependent sin wave
 !
       if (present(kx)) then
-        k=kx; if(k==0) print*,'soundwave: k must not be zero!'; fac=sqrt(abs(ampl/k))
+        k=kx; if (k==0) print*,'soundwave: k must not be zero!'; fac=sqrt(abs(ampl/k))
         if (ampl==0) then
           if (lroot) print*,'soundwave: ampl=0; kx=',k
         else
@@ -1317,7 +1317,7 @@ module Initcond
 !  set y-dependent sin wave field
 !
       if (present(ky)) then
-        k=ky; if(k==0) print*,'soundwave: k must not be zero!'; fac=sqrt(abs(ampl/k))
+        k=ky; if (k==0) print*,'soundwave: k must not be zero!'; fac=sqrt(abs(ampl/k))
         if (ampl==0) then
           if (lroot) print*,'soundwave: ampl=0; ky=',k
         else
@@ -1329,7 +1329,7 @@ module Initcond
 !  set z-dependent sin wave field
 !
       if (present(kz)) then
-        k=kz; if(k==0) print*,'soundwave: k must not be zero!'; fac=sqrt(abs(ampl/k))
+        k=kz; if (k==0) print*,'soundwave: k must not be zero!'; fac=sqrt(abs(ampl/k))
         if (ampl==0) then
           if (lroot) print*,'soundwave: ampl=0; kz=',k
         else
@@ -1356,7 +1356,7 @@ module Initcond
 !  set x-dependent cos wave
 !
       if (present(kx)) then
-        k=kx; if(k==0) print*,'coswave: k must not be zero!'; fac=ampl
+        k=kx; if (k==0) print*,'coswave: k must not be zero!'; fac=ampl
         if (ampl==0) then
           if (lroot) print*,'coswave: ampl=0; kx=',k
         else
@@ -1368,7 +1368,7 @@ module Initcond
 !  set y-dependent cos wave field
 !
       if (present(ky)) then
-        k=ky; if(k==0) print*,'coswave: k must not be zero!'; fac=ampl
+        k=ky; if (k==0) print*,'coswave: k must not be zero!'; fac=ampl
         if (ampl==0) then
           if (lroot) print*,'coswave: ampl=0; ky=',k
         else
@@ -1380,7 +1380,7 @@ module Initcond
 !  set z-dependent cos wave field
 !
       if (present(kz)) then
-        k=kz; if(k==0) print*,'coswave: k must not be zero!'; fac=ampl
+        k=kz; if (k==0) print*,'coswave: k must not be zero!'; fac=ampl
         if (ampl==0) then
           if (lroot) print*,'coswave: ampl=0; kz=',k
         else
@@ -1407,7 +1407,7 @@ module Initcond
 !  set x-dependent hat wave
 !
       if (present(kx)) then
-        k=kx; if(k==0) print*,'hatwave: k must not be zero!'; fac=.5*ampl
+        k=kx; if (k==0) print*,'hatwave: k must not be zero!'; fac=.5*ampl
         if (ampl==0) then
           if (lroot) print*,'hatwave: ampl=0; kx=',k
         else
@@ -1419,7 +1419,7 @@ module Initcond
 !  set y-dependent hat wave field
 !
       if (present(ky)) then
-        k=ky; if(k==0) print*,'hatwave: k must not be zero!'; fac=.5*ampl
+        k=ky; if (k==0) print*,'hatwave: k must not be zero!'; fac=.5*ampl
         if (ampl==0) then
           if (lroot) print*,'hatwave: ampl=0; ky=',k
         else
@@ -1431,7 +1431,7 @@ module Initcond
 !  set z-dependent hat wave field
 !
       if (present(kz)) then
-        k=kz; if(k==0) print*,'hatwave: k must not be zero!'; fac=.5*ampl
+        k=kz; if (k==0) print*,'hatwave: k must not be zero!'; fac=.5*ampl
         if (ampl==0) then
           if (lroot) print*,'hatwave: ampl=0; kz=',k
         else
@@ -1458,7 +1458,7 @@ module Initcond
 !  set x-dependent sin wave
 !
       if (present(kx)) then
-        k=kx; if(k==0) print*,'sinwave: k must not be zero!'; fac=ampl
+        k=kx; if (k==0) print*,'sinwave: k must not be zero!'; fac=ampl
         if (ampl==0) then
           if (lroot) print*,'sinwave: ampl=0; kx=',k
         else
@@ -1470,7 +1470,7 @@ module Initcond
 !  set y-dependent sin wave field
 !
       if (present(ky)) then
-        k=ky; if(k==0) print*,'sinwave: k must not be zero!'; fac=ampl
+        k=ky; if (k==0) print*,'sinwave: k must not be zero!'; fac=ampl
         if (ampl==0) then
           if (lroot) print*,'sinwave: ampl=0; ky=',k
         else
@@ -1482,7 +1482,7 @@ module Initcond
 !  set z-dependent sin wave field
 !
       if (present(kz)) then
-        k=kz; if(k==0) print*,'sinwave: k must not be zero!'; fac=ampl
+        k=kz; if (k==0) print*,'sinwave: k must not be zero!'; fac=ampl
         if (ampl==0) then
           if (lroot) print*,'sinwave: ampl=0; kz=',k
         else
@@ -1609,11 +1609,11 @@ module Initcond
 !  if file is not found in run directory, search under trim(directory)
 !
       inquire(file='stratification.dat',exist=exist)
-      if(exist) then
+      if (exist) then
         open(19,file='stratification.dat')
       else
         inquire(file=trim(directory)//'/stratification.ascii',exist=exist)
-        if(exist) then
+        if (exist) then
           open(19,file=trim(directory)//'/stratification.ascii')
         else
           call stop_it('stratification: *** error *** - no input file')
@@ -1762,7 +1762,7 @@ module Initcond
       b_ell = radius
       a_ell = radius/eps
       c_ell = radius*delta
-      if(lroot) print*,'planet_hc: Ellipse axes (b_ell,a_ell,c_ell)=', &
+      if (lroot) print*,'planet_hc: Ellipse axes (b_ell,a_ell,c_ell)=', &
           b_ell,a_ell,c_ell
 !
 !  add continuous vertical stratification to horizontal planet solution
@@ -1784,19 +1784,19 @@ module Initcond
 !
       if (lroot) print*,'planet_hc: hmin=',minval(hh(l1:l2,m1:m2,n1:n2))
 
-      if(gamma1<0. .and. lroot) &
+      if (gamma1<0. .and. lroot) &
           print*,'planet_hc: must have gamma>1 for planet solution'
 !
 !  calculate density, depending on what gamma is
 !
-      if(lentropy) then
+      if (lentropy) then
         f(l1:l2,m1:m2,n1:n2,ilnrho)= &
              (log(gamma1*hh(l1:l2,m1:m2,n1:n2)/cs20) &
              -gamma*f(l1:l2,m1:m2,n1:n2,iss))/gamma1
         if (lroot) &
           print*,'planet_hc: planet solution with entropy for gamma=',gamma
       else
-        if(gamma==1.) then
+        if (gamma==1.) then
           f(l1:l2,m1:m2,n1:n2,ilnrho)=hh(l1:l2,m1:m2,n1:n2)/cs20
           if (lroot) print*,'planet_hc: planet solution for gamma=1'
         else
@@ -1884,13 +1884,13 @@ module Initcond
       a_ell = radius/eps
       c_ell = radius*delta
       r_ell = sqrt(xx**2/b_ell**2+yy**2/a_ell**2)
-      if(lroot) print*,'planet: Ellipse axes (b_ell,a_ell,c_ell)=', &
+      if (lroot) print*,'planet: Ellipse axes (b_ell,a_ell,c_ell)=', &
           b_ell,a_ell,c_ell
 !
 !  xi is 1 inside vortex and 0 outside
 !
       xi = 1./(exp((1/width)*(r_ell-rbound))+1.)
-      if(lroot) print*,'planet: width,rbound',width,rbound
+      if (lroot) print*,'planet: width,rbound',width,rbound
 !
 !  Calculate enthalpy inside vortex
 !
@@ -1917,13 +1917,13 @@ module Initcond
 !
 !  have to use explicit indices here, because ghostzones are not set
 !
-      if(lentropy) then
+      if (lentropy) then
         f(l1:l2,m1:m2,n1:n2,ilnrho) = &
             (log(gamma1*hh(l1:l2,m1:m2,n1:n2)/cs20) &
             - gamma*f(l1:l2,m1:m2,n1:n2,iss))/gamma1
         if (lroot) print*,'planet: planet solution for gamma=',gamma
       else
-      if(gamma==1.) then
+      if (gamma==1.) then
         f(l1:l2,m1:m2,n1:n2,ilnrho) = hh(l1:l2,m1:m2,n1:n2)/cs20
           if (lroot) print*,'planet: planet solution for gamma=1'
         else
@@ -1980,7 +1980,7 @@ module Initcond
 !  ellipse parameters
 !
       a_ell = b_ell/eps_ell
-      if(lroot) print*,'vortex_2d: Ellipse axes (b_ell,a_ell)=', b_ell,a_ell
+      if (lroot) print*,'vortex_2d: Ellipse axes (b_ell,a_ell)=', b_ell,a_ell
 !
 !  Limit vortex to within r_ell
 !
@@ -2075,7 +2075,7 @@ module Initcond
         if (lroot) print*,'htube: set variable to zero; i1,i2=',i1,i2
       else
         ky=2*pi/Ly
-        if(lroot) then
+        if (lroot) then
           print*,'htube: implement y-dependent flux tube in xz-plane; i1,i2=',i1,i2
           print*,'htube: radius,epsilon_nonaxi=',radius,epsilon_nonaxi
         endif
@@ -2087,16 +2087,16 @@ module Initcond
 !
 !  check whether vector or scalar
 !
-        if(i1==i2) then
-          if(lroot) print*,'htube: set scalar'
+        if (i1==i2) then
+          if (lroot) print*,'htube: set scalar'
           f(:,:,:,i1)=tmp
-        elseif(i1+2==i2) then
-          if(lroot) print*,'htube: set vector'
+        elseif (i1+2==i2) then
+          if (lroot) print*,'htube: set vector'
           f(:,:,:,i1 )=+zz*tmp
           f(:,:,:,i1+1)=0.
           f(:,:,:,i1+2)=-xx*tmp
         else
-          if(lroot) print*,'htube: bad value of i2=',i2
+          if (lroot) print*,'htube: bad value of i2=',i2
         endif
       endif
 !
@@ -2119,14 +2119,14 @@ module Initcond
         if (lroot) print*,'htube2: set variable to zero; i1,i2=',i1,i2
       else
         ky=2*pi/Ly
-        if(lroot) then
+        if (lroot) then
           print*,'htube2: implement y-dependent flux tube in xz-plane; i1,i2=',i1,i2
           print*,'htube2: radius,epsilon_nonaxi=',radius,epsilon_nonaxi
         endif
 !
 !  constant, when epsilon_nonaxi; otherwise modulation about zero
 !
-        if(epsilon_nonaxi==0) then
+        if (epsilon_nonaxi==0) then
           modulate=1.
         else
           modulate=epsilon_nonaxi*sin(ky*yy)
@@ -2138,16 +2138,16 @@ module Initcond
 !
 !  check whether vector or scalar
 !
-        if(i1==i2) then
-          if(lroot) print*,'htube2: set scalar'
+        if (i1==i2) then
+          if (lroot) print*,'htube2: set scalar'
           f(:,:,:,i1)=tmp
-        elseif(i1+2==i2) then
-          if(lroot) print*,'htube2: set vector'
+        elseif (i1+2==i2) then
+          if (lroot) print*,'htube2: set vector'
           f(:,:,:,i1 )=+zz*tmp
           f(:,:,:,i1+1)=0.
           f(:,:,:,i1+2)=-xx*tmp
         else
-          if(lroot) print*,'htube2: bad value of i2=',i2
+          if (lroot) print*,'htube2: bad value of i2=',i2
         endif
       endif
 !
@@ -2826,7 +2826,7 @@ module Initcond
       kz=.5*pi/Lz
       f(:,:,:,ivar) = ampl*sin(kx*xx)*cos(kz*zz)
 !
-      if(NO_WARN) print*,yy !(to keep compiler quiet)
+      if (NO_WARN) print*,yy !(to keep compiler quiet)
     endsubroutine olddiffrot
 !***********************************************************************
     subroutine powern(ampl,initpower,cutoff,f,i1,i2)
@@ -2939,7 +2939,7 @@ module Initcond
 !
 !  integration over shells
 !
-        if(lroot .AND. ip<10) &
+        if (lroot .AND. ip<10) &
              print*,'power_randomphase:fft done; now integrate over shells...'
         do ikz=1,nz
           do iky=1,ny
@@ -3017,9 +3017,9 @@ module Initcond
 !    enddo
 !
 !    do modeN=1,N_modes
-!       if(modeN.eq.1)delk(modeN)=(k(modeN+1)-K(modeN))
-!       if(modeN.eq.N_modes)delk(modeN)=(k(modeN)-k(modeN-1))
-!       if(modeN.gt.1.and.modeN.lt.N_modes)delk(modeN)=(k(modeN+1)-k(modeN-2))/2.0
+!       if (modeN.eq.1)delk(modeN)=(k(modeN+1)-K(modeN))
+!       if (modeN.eq.N_modes)delk(modeN)=(k(modeN)-k(modeN-1))
+!       if (modeN.gt.1.and.modeN.lt.N_modes)delk(modeN)=(k(modeN+1)-k(modeN-2))/2.0
 !    enddo
 !          mk=(k2*k2)*((1.0 + (k2/(bk_min*bk_min)))**(0.5*initpower-2.0))
 !
@@ -3061,7 +3061,7 @@ module Initcond
 !   construct basis for plane having rr normal to it
 !   (bit of code from forcing to construct x', y')
 !
-       if((k_unit(2).eq.0).and.(k_unit(3).eq.0)) then
+       if ((k_unit(2).eq.0).and.(k_unit(3).eq.0)) then
         ex=0.; ey=1.; ez=0.
        else
         ex=1.; ey=0.; ez=0.

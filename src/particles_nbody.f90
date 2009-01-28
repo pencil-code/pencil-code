@@ -2366,7 +2366,7 @@ module Particles_nbody
           write(lun_output) mspar
           if (mspar/=0) write(lun_output) fsp(1:mspar,:),ipar_nbody(1:mspar)
           close(lun_output)
-          if(ip<=10 .and. lroot) &
+          if (ip<=10 .and. lroot) &
                print*,'written snapshot ', snapname
         endif
       else
@@ -2378,7 +2378,7 @@ module Particles_nbody
         write(lun_output) mspar
         if (mspar/=0) write(lun_output) fsp(1:mspar,:),ipar_nbody(1:mspar)
         close(lun_output)
-        if(ip<=10 .and. lroot) &
+        if (ip<=10 .and. lroot) &
              print*,'written snapshot ', snapname
       endif
 !

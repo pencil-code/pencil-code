@@ -199,7 +199,7 @@ module Shock
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if(NO_WARN) print*,f  !(to keep compiler quiet)
+      if (NO_WARN) print*,f  !(to keep compiler quiet)
 !
     endsubroutine calc_shock_profile_simple
 !!***********************************************************************
@@ -214,7 +214,7 @@ module Shock
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if(NO_WARN) print*,f  !(to keep compiler quiet)
+      if (NO_WARN) print*,f  !(to keep compiler quiet)
 !
     endsubroutine calc_shock_profile
 !***********************************************************************

@@ -205,7 +205,7 @@ module Special
       nd=3
       if (nzgrid==1) nd=2
 !
-      if(NO_WARN) print*,f  !(keep compiler quiet)
+      if (NO_WARN) print*,f  !(keep compiler quiet)
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -226,7 +226,7 @@ module Special
       intent(in) :: xx,yy,zz
       intent(inout) :: f
 !
-      if(NO_WARN) print*,f,xx,yy,zz  !(keep compiler quiet)
+      if (NO_WARN) print*,f,xx,yy,zz  !(keep compiler quiet)
 !
     endsubroutine init_special
 !***********************************************************************
@@ -310,7 +310,7 @@ module Special
 !!
 !! SAMPLE DIAGNOSTIC IMPLEMENTATION
 !!
-      !if(ldiagnos) then
+      !if (ldiagnos) then
       !  if (idiag_dtcrad/=0) &
       !    call max_mn_name(sqrt(advec_crad2)/cdt,idiag_dtcrad,l_dt=.true.)
       !  if (idiag_dtchi/=0) &

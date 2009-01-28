@@ -46,7 +46,7 @@ module Testfield
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if(ip==0) print*,f  !(to keep compiler quiet)
+      if (ip==0) print*,f  !(to keep compiler quiet)
     endsubroutine initialize_testfield
 !***********************************************************************
     subroutine init_aatest(f,xx,yy,zz)
@@ -58,7 +58,7 @@ module Testfield
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz
 !
-      if(ip==0) print*,f,xx,yy,zz  !(to keep compiler quiet)
+      if (ip==0) print*,f,xx,yy,zz  !(to keep compiler quiet)
     endsubroutine init_aatest
 !***********************************************************************
     subroutine pencil_criteria_testfield()
@@ -124,7 +124,7 @@ module Testfield
       intent(in)     :: f, p
       intent(inout)  :: df
 !
-      if(ip==0) print*, f, df, p  !(to keep compiler quiet)
+      if (ip==0) print*, f, df, p  !(to keep compiler quiet)
 !
     endsubroutine daatest_dt
 !***********************************************************************
@@ -173,7 +173,7 @@ module Testfield
       logical :: lreset
       logical, optional :: lwrite
 !
-      if(ip==0) print*,lreset,lwrite  !(to keep compiler quiet)
+      if (ip==0) print*,lreset,lwrite  !(to keep compiler quiet)
     endsubroutine rprint_testfield
 !***********************************************************************
 

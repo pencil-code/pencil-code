@@ -391,7 +391,7 @@ module Viscosity
 !
 !  iname runs through all possible names that may be listed in print.in
 !
-      if(lroot.and.ip<14) print*,'rprint_viscosity: run through parse list'
+      if (lroot.and.ip<14) print*,'rprint_viscosity: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'fviscm',idiag_fviscm)
         call parse_name(iname,cname(iname),cform(iname),'fviscmin',idiag_fviscmin)
@@ -427,7 +427,7 @@ module Viscosity
         endif
       endif
 !
-      if(NO_WARN) print*,lreset  !(to keep compiler quiet)
+      if (NO_WARN) print*,lreset  !(to keep compiler quiet)
 !
     endsubroutine rprint_viscosity
 !***********************************************************************
@@ -653,7 +653,7 @@ module Viscosity
 ! sglnrho
       if (lpencil(i_sgnu)) call multmv(p%sij,p%gradnu,p%sgnu)
 
-        if(ldensity) then
+        if (ldensity) then
          do i=1,3
           p%fvisc(:,i)=2*(p%nu+p%nu_art)*p%sglnrho(:,i) &
           +(p%nu+p%nu_art)*(p%del2u(:,i)+1./3.*p%graddivu(:,i)) &
@@ -1067,7 +1067,7 @@ module Viscosity
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if(NO_WARN) print*,f  !(to keep compiler quiet)
+      if (NO_WARN) print*,f  !(to keep compiler quiet)
 !
     endsubroutine calc_viscosity
 !***********************************************************************
@@ -1264,7 +1264,7 @@ module Viscosity
 ! this goes into entropy equation, which divides by \rho, so no density here
 ! this is really surface density, though
 !
-      if(nzgrid==1) then
+      if (nzgrid==1) then
          diss = 9./4.*nu*OO2
       else
          call fatal_error("calc_visc_heat_ppd","dissipation only implemented for 2d-disk")

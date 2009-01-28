@@ -245,7 +245,7 @@ module Register
 !  convert physical constants to code units
 !
       if (unit_system=='cgs') then
-        if(lroot.and.leos_ionization.and.ip<14) print*,'initialize_modules: ' &
+        if (lroot.and.leos_ionization.and.ip<14) print*,'initialize_modules: ' &
           //'unit_velocity, unit_density, etc, are in cgs'
         hbar=hbar_cgs/(unit_energy*unit_time)
         k_B=k_B_cgs/(unit_energy/unit_temperature)
@@ -259,7 +259,7 @@ module Register
         c_light=c_light_cgs/unit_velocity
         G_Newton=G_Newton_cgs*unit_length**2*unit_density/unit_velocity**2
       elseif (unit_system=='SI') then
-        if(lroot.and.leos_ionization) print*,&
+        if (lroot.and.leos_ionization) print*,&
             'initialize_modules: unit_velocity, unit_density, etc, are in SI'
         hbar=hbar_cgs*1e-7/(unit_energy*unit_time)
         k_B=1e-7*k_B_cgs/(unit_energy/unit_temperature)
@@ -1067,7 +1067,7 @@ module Register
 !
 !  iname runs through all possible names that may be listed in print.in
 !
-      if(lroot.and.ip<14) print*,'rprint_register: run through parse list'
+      if (lroot.and.ip<14) print*,'rprint_register: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'t',idiag_t)
         call parse_name(iname,cname(iname),cform(iname),'it',idiag_it)

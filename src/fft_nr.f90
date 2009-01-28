@@ -23,7 +23,7 @@
       n=2*nn
       j=1
       do i=1,n,2                ! Bit-reversal section of the routine
-         if(j.gt.i)then
+         if (j.gt.i)then
             tempr=data(j)       ! Exchange the two complex numbers
             tempi=data(j+1)
             data(j)=data(i)

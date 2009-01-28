@@ -33,7 +33,7 @@ module Initcond_spec
       real, dimension (mx,my,mz) :: xx,yy,zz
       real :: q_ell_, b_ell_, hh0
       real :: gamma,cs20
-      if(NO_WARN) print*,f,xx,yy,zz,b_ell_,q_ell_,gamma,cs20,hh0 ! compiler quiet
+      if (NO_WARN) print*,f,xx,yy,zz,b_ell_,q_ell_,gamma,cs20,hh0 ! compiler quiet
     endsubroutine kepvor
 !***********************************************************************
     subroutine enthblob(f,xx,yy,zz,b_ell_,q_ell_,gamma,cs20,hh0)
@@ -47,7 +47,7 @@ module Initcond_spec
       real, dimension (mx,my,mz) :: xx,yy,zz
       real :: q_ell_, b_ell_, hh0
       real :: gamma,cs20
-      if(NO_WARN) print*,f,xx,yy,zz,b_ell_,q_ell_,gamma,cs20,hh0 ! compiler quiet
+      if (NO_WARN) print*,f,xx,yy,zz,b_ell_,q_ell_,gamma,cs20,hh0 ! compiler quiet
     endsubroutine enthblob
 
 endmodule Initcond_spec

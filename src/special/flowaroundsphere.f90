@@ -213,7 +213,7 @@ module Special
 
       select case(initspecial)
         case('nothing')
-          if(lroot) print*,'init_special: nothing'
+          if (lroot) print*,'init_special: nothing'
           sphere_type = 'none'
           sph_dia = 2.*sphere_radius
         case('sphere')
@@ -247,7 +247,7 @@ module Special
 !   This overrides any initial conditions set in the Hydro module.
 !
         case('nothing')
-          if(lroot) print*,'special_inituu: nothing'
+          if (lroot) print*,'special_inituu: nothing'
         case('cylinderstream')
 !   Stream functions for flow around a cylinder as initial condition. 
           a2 = sph_rad**2
@@ -392,7 +392,7 @@ module Special
 
       select case(sphere_type)
         case('none')
-          if(lroot) print*,'sphere_type: none'
+          if (lroot) print*,'sphere_type: none'
         case('freeze','nscbc_wall')
           call sph_vel(f,0.)
         case('ghosts')

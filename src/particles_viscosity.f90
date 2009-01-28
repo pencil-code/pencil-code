@@ -230,7 +230,7 @@ module Particles_viscosity
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if(NO_WARN) print*,f  !(to keep compiler quiet)
+      if (NO_WARN) print*,f  !(to keep compiler quiet)
 !
     endsubroutine calc_viscosity
 !*******************************************************************
@@ -253,7 +253,7 @@ module Particles_viscosity
         endif
       endif
 !
-      if(NO_WARN) print*,lreset  !(to keep compiler quiet)
+      if (NO_WARN) print*,lreset  !(to keep compiler quiet)
 !
     endsubroutine rprint_particles_viscosity
 !***********************************************************************

@@ -645,9 +645,9 @@ module Hydro
 
         select case(inituu(j))
 
-        case('nothing'); if(lroot .and. j==1) print*,'init_uu: nothing'
+        case('nothing'); if (lroot .and. j==1) print*,'init_uu: nothing'
         case('zero', '0')
-          if(lroot) print*,'init_uu: zero velocity'
+          if (lroot) print*,'init_uu: zero velocity'
           ! Ensure really is zero, as may have used lread_oldsnap
           f(:,:,:,iux:iuz)=0.
         case('const_uu'); do i=1,3; f(:,:,:,iuu+i-1) = uu_const(i); enddo
@@ -1221,10 +1221,10 @@ module Hydro
 ! ou
       if (lpencil(i_ou)) call dot_mn(p%oo,p%uu,p%ou)
 ! Useful to debug forcing - Dhruba 
-      if(loutest.and.lpencil(i_ou))then
+      if (loutest.and.lpencil(i_ou))then
 !      write(*,*) lpencil(i_ou)
         outest = minval(p%ou)
-        if(outest.lt.(-1.0d-8))then
+        if (outest.lt.(-1.0d-8))then
           write(*,*) m,n,outest,maxval(p%ou),lpencil(i_ou)
           write(*,*)'WARNING : hydro:ou has different sign than relhel'
         else
@@ -1483,7 +1483,7 @@ module Hydro
 !  This must be done outside the diagnostics loop (accessed at different times).
 !  Note: ix is the index with respect to array with ghost zones.
 !
-      if(lvid.and.lfirst) then
+      if (lvid.and.lfirst) then
         divu_yz(m-m1+1,n-n1+1)=p%divu(ix_loc-l1+1)
         if (m.eq.iy_loc)  divu_xz(:,n-n1+1)=p%divu
         if (n.eq.iz_loc)  divu_xy(:,m-m1+1)=p%divu
@@ -1502,7 +1502,7 @@ module Hydro
         if (m==iy_loc)  o2_xz(:,n-n1+1)=p%o2
         if (n==iz_loc)  o2_xy(:,m-m1+1)=p%o2
         if (n==iz2_loc) o2_xy2(:,m-m1+1)=p%o2
-        if(othresh_per_orms/=0) call calc_othresh
+        if (othresh_per_orms/=0) call calc_othresh
         call vecout(41,trim(directory)//'/ovec',p%oo,othresh,novec)
       endif
 !
@@ -2359,8 +2359,8 @@ module Hydro
 !
 !  give warning if orms is not set in prints.in
 !
-      if(idiag_orms==0) then
-        if(lroot.and.lfirstpoint) then
+      if (idiag_orms==0) then
+        if (lroot.and.lfirstpoint) then
           print*,'calc_othresh: need to set orms in print.in to get othresh'
         endif
       endif
@@ -2369,7 +2369,7 @@ module Hydro
 !  increase scaling factor on othresh. These settings will stay in place
 !  until the next restart
 !
-      if(novec>novecmax.and.lfirstpoint) then
+      if (novec>novecmax.and.lfirstpoint) then
         print*,'calc_othresh: processor ',iproc,': othresh_scl,novec,novecmax=', &
                                                    othresh_scl,novec,novecmax
         othresh_scl=othresh_scl*1.2
@@ -2881,7 +2881,7 @@ module Hydro
 !
 !  iname runs through all possible names that may be listed in print.in
 !
-      if(lroot.and.ip<14) print*,'rprint_hydro: run through parse list'
+      if (lroot.and.ip<14) print*,'rprint_hydro: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'ekin',idiag_ekin)
         call parse_name(iname,cname(iname),cform(iname),'ekintot',idiag_ekintot)
@@ -2981,17 +2981,17 @@ module Hydro
 ! Quantities which are averaged over half (north-south) the box
 !
       iname_half=name_half_max
-      if((idiag_urmsn/=0).or.(idiag_urmss/=0))then
+      if ((idiag_urmsn/=0).or.(idiag_urmss/=0))then
         iname_half=iname_half+1
         idiag_urmsh=iname_half
       else
       endif
-      if((idiag_ormsn/=0).or.(idiag_ormss/=0))then
+      if ((idiag_ormsn/=0).or.(idiag_ormss/=0))then
         iname_half=iname_half+1
         idiag_ormsh=iname_half
       else
       endif
-      if((idiag_oumn/=0).or.(idiag_oums/=0))then
+      if ((idiag_oumn/=0).or.(idiag_oums/=0))then
         iname_half=iname_half+1
         idiag_oumh=iname_half
       else
@@ -3419,11 +3419,11 @@ module Hydro
 !  so they are present on the root processor.
 !
       if (idiag_umx/=0) then
-        if(idiag_uymxy==0.or.idiag_uzmxy==0) then
-          if(first) print*, 'calc_mflow:                    WARNING'
-          if(first) print*, &
+        if (idiag_uymxy==0.or.idiag_uzmxy==0) then
+          if (first) print*, 'calc_mflow:                    WARNING'
+          if (first) print*, &
                   "calc_mflow: NOTE: to get umx, uymxy and uzmxy must also be set in zaver"
-          if(first) print*, &
+          if (first) print*, &
                   "calc_mflow:      We proceed, but you'll get umx=0"
           umx=0.
         else
@@ -3440,11 +3440,11 @@ module Hydro
 !  similarly for umy
 !
       if (idiag_umy/=0) then
-        if(idiag_uxmxy==0.or.idiag_uzmxy==0) then
-          if(first) print*, 'calc_mflow:                    WARNING'
-          if(first) print*, &
+        if (idiag_uxmxy==0.or.idiag_uzmxy==0) then
+          if (first) print*, 'calc_mflow:                    WARNING'
+          if (first) print*, &
                   "calc_mflow: NOTE: to get umy, uxmxy and uzmxy must also be set in zaver"
-          if(first) print*, &
+          if (first) print*, &
                   "calc_mflow:       We proceed, but you'll get umy=0"
           umy=0.
         else
@@ -3465,13 +3465,13 @@ module Hydro
 !  so they are present on the root processor.
 !
       if (idiag_umz/=0) then
-        if(idiag_uxmz==0.or.idiag_uymz==0.or.idiag_uzmz==0) then
-          if(first) print*,"calc_mflow:                    WARNING"
-          if(first) print*, &
+        if (idiag_uxmz==0.or.idiag_uymz==0.or.idiag_uzmz==0) then
+          if (first) print*,"calc_mflow:                    WARNING"
+          if (first) print*, &
                   "calc_mflow: NOTE: to get umz, uxmz, uymz and uzmz must also be set in xyaver"
-          if(first) print*, &
+          if (first) print*, &
                   "calc_mflow:       This may be because we renamed zaver.in into xyaver.in"
-          if(first) print*, &
+          if (first) print*, &
                   "calc_mflow:       We proceed, but you'll get umz=0"
           umz=0.
         else
@@ -3679,7 +3679,7 @@ module Hydro
 !  no profile matches
 !
       case default
-        if(lroot) print*,'duu_dt: No such profile ',interior_bc_hydro_profile
+        if (lroot) print*,'duu_dt: No such profile ',interior_bc_hydro_profile
       endselect
 !
     endsubroutine interior_bc_hydro
@@ -3777,7 +3777,7 @@ module Hydro
       case ('solar_simple')
       prof_amp1=ampl1_diffrot*step(x(l1:l2),x1_ff_uu,width_ff_uu)
       prof_amp2=1.-step(x(l1:l2),x2_ff_uu,width_ff_uu)
-      if(lspherical_coords) then
+      if (lspherical_coords) then
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz) &
           -prof_amp1*(1.5-7.5*costh(m)*costh(m)))
       elseif (lcylindrical_coords) then
@@ -3789,12 +3789,12 @@ module Hydro
 !            -prof_amp1*cos(20.*x(llx))*cos(20.*y(m)) )
         enddo
       endif
-      if(ldiffrot_test) then
+      if (ldiffrot_test) then
         f(l1:l2,m,n,iux) = 0.
         f(l1:l2,m,n,iuy) = 0.
-        if(lspherical_coords) then
+        if (lspherical_coords) then
           f(l1:l2,m,n,iuz) = prof_amp1*(1.5-7.5*costh(m)*costh(m))
-        else if(lcylindrical_coords) then
+        else if (lcylindrical_coords) then
           call stop_it("diffrot_test: not implemented for cylindrical coordinates")
         else
           do llx=l1,l2 
@@ -3820,7 +3820,7 @@ module Hydro
 !  no profile matches
 !
       case default
-          if(lroot) print*,'duu_dt: No such profile ',trim(prof_diffrot)
+          if (lroot) print*,'duu_dt: No such profile ',trim(prof_diffrot)
       endselect
 !
     endsubroutine impose_profile_diffrot

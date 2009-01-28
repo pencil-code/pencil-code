@@ -199,7 +199,7 @@ module Param_IO
         close(1)
         if (len(trim(tdir)) .gt. 0) call parse_shell(tdir,dir)
       endif
-      if(lroot.and.ip<20) print*,'get_snapdir: dir=',trim(dir)
+      if (lroot.and.ip<20) print*,'get_snapdir: dir=',trim(dir)
 !
     endsubroutine get_snapdir
 !***********************************************************************
@@ -362,7 +362,7 @@ module Param_IO
 !
 !  print cvs id from first line
 !
-      if(lroot) call cvs_id(cvsid)
+      if (lroot) call cvs_id(cvsid)
 !
 !  Give online feedback if called with the PRINT optional argument
 !  Note: Some compiler's [like Compaq's] code crashes with the more
@@ -398,7 +398,7 @@ module Param_IO
       do i=1,3
         if (nscbc(i) /= '') lnscbc = .true.
       enddo
-      if(lnscbc) call parse_nscbc(nscbc,nscbc1,nscbc2)
+      if (lnscbc) call parse_nscbc(nscbc,nscbc1,nscbc2)
 !
 !  produce a warning when somebody still sets lcylindrical
 !
@@ -726,7 +726,7 @@ module Param_IO
 !
 !  print cvs id from first line
 !
-      if(lroot) call cvs_id(cvsid)
+      if (lroot) call cvs_id(cvsid)
 !
 !  set debug logical (easier to use than the combination of ip and lroot)
 !
@@ -774,7 +774,7 @@ module Param_IO
       do i=1,3
         if (nscbc(i) /= '') lnscbc = .true.
       enddo
-      if(lnscbc) call parse_nscbc(nscbc,nscbc1,nscbc2)
+      if (lnscbc) call parse_nscbc(nscbc,nscbc1,nscbc2)
 !
 !  in case of i/o error: print sample input list
 !
@@ -946,32 +946,32 @@ module Param_IO
 !
 !  identifier
 !
-      if(lroot.and.ip<5) print*,'check_consistency_of_lperi: called from ',label
+      if (lroot.and.ip<5) print*,'check_consistency_of_lperi: called from ',label
 !
 !  make the warnings less dramatic looking, if we are only in start
 !  and exit this routine altogether if, in addition, ip > 13.
 !
-      if(label=='read_startpars'.and.ip>13) return
-      if(label=='read_startpars') lwarning=.false.
+      if (label=='read_startpars'.and.ip>13) return
+      if (label=='read_startpars') lwarning=.false.
 !
 !  check x direction
 !
       j=1
-      if(any(bcx(1:nvar)=='p'.or. bcx(1:nvar)=='she').and..not.lperi(j).or.&
+      if (any(bcx(1:nvar)=='p'.or. bcx(1:nvar)=='she').and..not.lperi(j).or.&
          any(bcx(1:nvar)/='p'.and.bcx(1:nvar)/='she').and.lperi(j)) &
            call warning_lperi(lwarning,bcx(1:nvar),lperi,j)
 !
 !  check y direction
 !
       j=2
-      if(any(bcy(1:nvar)=='p').and..not.lperi(j).or.&
+      if (any(bcy(1:nvar)=='p').and..not.lperi(j).or.&
          any(bcy(1:nvar)/='p').and.lperi(j)) &
            call warning_lperi(lwarning,bcy(1:nvar),lperi,j)
 !
 !  check z direction
 !
       j=3
-      if(any(bcz(1:nvar)=='p').and..not.lperi(j).or.&
+      if (any(bcz(1:nvar)=='p').and..not.lperi(j).or.&
          any(bcz(1:nvar)/='p').and.lperi(j)) &
            call warning_lperi(lwarning,bcz(1:nvar),lperi,j)
 !
@@ -979,7 +979,7 @@ module Param_IO
 !  make the warnings less dramatic looking, if we are only in start
 !
       if (lroot .and. (.not. lwarning)) then
-        if(label=='read_startpars') then
+        if (label=='read_startpars') then
           print*,'[bad BCs in start.in only affects post-processing' &
                //' of start data, not the run]'
         else
@@ -1003,7 +1003,7 @@ module Param_IO
       integer :: j
 !
       if (lroot) then
-        if(lwarning) then
+        if (lwarning) then
           print*
           print*,'------------------------------------------------------'
           print*,'W A R N I N G'
