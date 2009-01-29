@@ -268,7 +268,7 @@ module NeutralDensity
 
     endsubroutine write_neutraldensity_run_pars
 !***********************************************************************
-    subroutine init_lnrhon(f,xx,yy,zz)
+    subroutine init_lnrhon(f)
 !
 !  initialise lnrhon; called from start.f90
 !
@@ -279,16 +279,13 @@ module NeutralDensity
                           lnumerical_equilibrium
       use Selfgravity,only: rhs_poisson_const
       use Initcond
-      use Initcond_spec
       use IO
       use Mpicomm
       use Sub
       use EquationOfState
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
 !      
-      real, dimension (mx,my,mz) :: tmp,pot,prof
       real :: lnrhonint,cs2int,pot0
       real :: pot_ext,cs2_ext,tmp1,k_j2
       real :: zbot,ztop,haut,TT

@@ -173,7 +173,7 @@ module Testfield
 !
     endsubroutine initialize_testfield
 !***********************************************************************
-    subroutine init_aatest(f,xx,yy,zz)
+    subroutine init_aatest(f)
 !
 !  initialise testfield; called from start.f90
 !
@@ -186,7 +186,6 @@ module Testfield
       use Initcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz)      :: xx,yy,zz,tmp,prof
       real, dimension (nx,3) :: bb
       real, dimension (nx) :: b2,fact
       real :: beq2

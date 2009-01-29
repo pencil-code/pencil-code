@@ -198,7 +198,7 @@ module Special
 !
     endsubroutine initialize_special
 !***********************************************************************
-    subroutine init_special(f,xx,yy,zz)
+    subroutine init_special(f)
 !
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
@@ -210,37 +210,26 @@ module Special
       use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
 !
-      intent(in) :: xx,yy,zz
       intent(inout) :: f
 
 !!
       select case(initstream)
-        ! case('stream')
-        !    call stream_field(f,xx,yy)
          case('bomb')
-            call bomb_field(f,xx,yy)
+            call bomb_field(f)
          case('flame_spd')
-            call flame_spd(f,xx)
+            call flame_spd(f)
          case('flame_spd_invert')
-            call flame_spd_invert(f,xx)
-      !  case('stream_field')
-       !     call stream_field(f,xx,yy)
+            call flame_spd_invert(f)
          case('default')
           if (lroot) print*,'init_special: Default  setup'
-     !     call density_init(f,xx,zz)
-     !     call entropy_init(f,xx,zz)
-     !     call velocity_init(f,zz)
         case default
-          !
-          !  Catch unknown values
-          !
+!
+!  Catch unknown values
+!
           if (lroot) print*,'init_special: No such value for initstream: ', trim(initstream)
           call stop_it("")
       endselect
-!
-      if (NO_WARN) print*,f,xx,yy,zz  !(keep compiler quiet)
 !
     endsubroutine init_special
 !***********************************************************************
@@ -571,47 +560,35 @@ module Special
 !  PRIVATE UTITLITY ROUTINES
 !
 !***********************************************************************
-!********************************************************************
-   subroutine density_init(f,xx,zz)
-!
-! Natalia
-! Initialization of density 
+   subroutine density_init(f)
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: xx, zz
-
+!
     endsubroutine density_init
 !***************************************************************
-
-    subroutine entropy_init(f,xx,zz)
-
+    subroutine entropy_init(f)
+!
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: xx, zz
-
+!
       endsubroutine entropy_init
 !***********************************************************************
-
-      subroutine velocity_init(f,zz)
-     !Natalia
-     !Initialization of velocity 
-
+      subroutine velocity_init(f)
+!
       use Cdata
-
+!
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: zz
-
+!
     endsubroutine  velocity_init
 !***********************************************************************
 !   INITIAL CONDITIONS
 !
 !***********************************************************************
-   subroutine bomb_field(f,xx,yy)
+   subroutine bomb_field(f)
 !
 ! Natalia
 ! Initialization of chem. species  in a case of the stream
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: xx, yy
       integer :: k,j,i
 
      do k=1,mx 
@@ -627,61 +604,18 @@ module Special
 
      enddo
 
-     
-       !  -(xx(:,:,:)/(0.5*Lxyz(1)))**2
      f(l1:mx,:,:,ichemspec(nchemspec))=Y3_init
      f(:,:,:,iux)=ux_init
 
-
    endsubroutine bomb_field
 !**************************************************************************
- ! subroutine stream_field(f,xx,yy)
-!
-! Natalia
-! Initialization of chem. species  in a case of the stream
-!
- !     real, dimension (mx,my,mz,mvar+maux) :: f
- !     real, dimension (mx,my,mz) :: xx, yy
- !     integer :: k,j,i
-     
- !     real :: p2_front=10.13e5
- !     real :: Rgas=83144726.8870299
-
- !     real :: TT1_front=400., TT2_front=2400.
-  
-
-  !    do k=1,mx 
-  !      if (x(k)<x1_front) then
-  !        f(k,:,:,ilnTT)=log(TT1_front)
-  !      endif
-  !      if (x(k)>x2_front) then
-  !        f(k,:,:,ilnTT)=log(TT2_front)
-  !      endif
-  !      if (x(k)>x1_front .and. x(k)<x2_front) then
-  !        f(k,:,:,ilnTT)=log((x(k)-x1_front)/(x2_front-x1_front) &
-  !             *(TT2_front-TT1_front)+TT1_front)
-  !      endif
-
-    !  enddo
-
-    !  do k=1,mx
-    !    f(k,:,:,ilnrho)=log(p2_front)-log(Rgas)-f(k,:,:,ilnTT)-log(2.)
-    !  enddo
-
-
-     !f(:,:,:,ichemspec(nchemspec))=1.
-     !f(:,:,:,iux)=ux_init
-
-
-  ! endsubroutine stream_field
-!**************************************************************************
- subroutine flame_spd(f,xx)
+ subroutine flame_spd(f)
 !
 ! Natalia
 ! Initialization of chem. species  in a case of the stream
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: xx, yy, mu1
+      real, dimension (mx,my,mz) :: mu1
       integer :: k,j,i
 
       real :: x1_front,x2_front
@@ -783,14 +717,14 @@ module Special
       !
    endsubroutine flame_spd
 !**************************************************************************
-subroutine flame_spd_invert(f,xx)
+subroutine flame_spd_invert(f)
 
 !
 ! Natalia
 ! Initialization of chem. species  in a case of the stream
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: xx, yy, mu1
+      real, dimension (mx,my,mz) ::  mu1
       integer :: k,j,i
 
       real :: x1_front,x2_front
@@ -893,13 +827,13 @@ subroutine flame_spd_invert(f,xx)
 !**************************************************************************
 
 !**************************************************************************
-subroutine flame_spd_2D(f,xx,x1_front,x2_front)
+subroutine flame_spd_2D(f,x1_front,x2_front)
 !
 ! Natalia
 ! Initialization of chem. species  in a case of the stream
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: xx, yy, mu1
+      real, dimension (mx,my,mz) :: mu1
       integer :: k,j,i
 
       real :: x1_front,x2_front

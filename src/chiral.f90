@@ -116,7 +116,7 @@ module Chiral
       if (NO_WARN) print*,'f=',f
     endsubroutine initialize_chiral
 !***********************************************************************
-    subroutine init_chiral(f,xx,yy,zz)
+    subroutine init_chiral(f)
 !
 !  initialise passive scalar field; called from start.f90
 !
@@ -128,7 +128,6 @@ module Chiral
       use Initcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz)      :: xx,yy,zz,prof
 !
 !  check first for initXX_chiral
 !
@@ -169,8 +168,6 @@ module Chiral
         case('cosx_cosy_cosz'); call cosx_cosy_cosz(amplYY_chiral,f,iYY_chiral,kx_YY_chiral,ky_YY_chiral,kz_YY_chiral)
         case default; call stop_it('init_chiral: bad init_chiral='//trim(initYY_chiral))
       endselect
-!
-      call keep_compiler_quiet(xx,yy,zz)
 !
     endsubroutine init_chiral
 !***********************************************************************

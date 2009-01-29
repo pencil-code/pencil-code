@@ -71,19 +71,18 @@ module Chiral
 !  that was used in start.csh
 !
       if (NO_WARN) print*,'f=',f
+!
     endsubroutine initialize_chiral
 !***********************************************************************
-    subroutine init_chiral(f,xx,yy,zz)
+    subroutine init_chiral(f)
 !
 !  initialise passive scalar field; called from start.f90
 !
 !  28-may-04/axel: adapted from pscalar
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(xx,yy,zz)
 !
     endsubroutine init_chiral
 !***********************************************************************

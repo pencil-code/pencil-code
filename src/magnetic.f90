@@ -796,7 +796,7 @@ module Magnetic
 !
     endsubroutine initialize_magnetic
 !***********************************************************************
-    subroutine init_aa(f,xx,yy,zz)
+    subroutine init_aa(f)
 !
 !  initialise magnetic field; called from start.f90
 !  AB: maybe we should here call different routines (such as rings)
@@ -815,8 +815,8 @@ module Magnetic
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz)      :: xx,yy,zz,tmp,prof
 !
+      real, dimension (mz) :: tmp
       real, dimension (nx,3) :: bb
       real, dimension (nx) :: b2,fact,rho,rhomid
       real :: beq2, scaleH
@@ -829,19 +829,18 @@ module Magnetic
         case('nothing'); if (lroot .and. j==1) print*,'init_aa: nothing'
         case('zero', '0'); f(:,:,:,iax:iaz) = 0.
         case('rescale'); f(:,:,:,iax:iaz)=amplaa(j)*f(:,:,:,iax:iaz)
-        case('mode'); call modev(amplaa(j),coefaa,f,iaa,kx_aa(j),ky_aa(j),kz_aa(j),xx,yy,zz)
-        case('modeb'); call modeb(amplaa(j),coefbb,f,iaa,kx_aa(j),ky_aa(j),kz_aa(j),xx,yy,zz)
-        case('const_lou'); call const_lou(amplaa(j),f,iaa,xx,yy,zz)
+        case('mode'); call modev(amplaa(j),coefaa,f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
+        case('modeb'); call modeb(amplaa(j),coefbb,f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
+        case('const_lou'); call const_lou(amplaa(j),f,iaa)
         case('power_randomphase')
           call power_randomphase(amplaa(j),initpower_aa,cutoff_aa,f,iax,iaz)
         case('random-isotropic-KS')
           call random_isotropic_KS(amplaa(j),initpower_aa,cutoff_aa,f,iax,iaz,N_modes_aa)
         case('gaussian-noise'); call gaunoise(amplaa(j),f,iax,iaz)
         case('gaussian-noise-rprof')
-          tmp=sqrt(xx**2+yy**2+zz**2)
-          call gaunoise_rprof(amplaa(j),tmp,prof,f,iax,iaz)
+          call gaunoise_rprof(amplaa(j),f,iax,iaz)
         case('gaussian-noise-zprof')
-          tmp=amplaa(1)*0.5*(tanh((zz-z1)/0.05)-tanh((zz-z2)/0.05))
+          tmp=amplaa(1)*0.5*(tanh((z-z1)/0.05)-tanh((z-z2)/0.05))
           call gaunoise(tmp,f,iax,iaz)
 !
 !  Beltrami fields, put k=-k to make sure B=curl(A) has the right phase
@@ -853,27 +852,27 @@ module Magnetic
         case('propto-ux'); call wave_uu(amplaa(j),f,iaa,kx=kx_aa(j))
         case('propto-uy'); call wave_uu(amplaa(j),f,iaa,ky=ky_aa(j))
         case('propto-uz'); call wave_uu(amplaa(j),f,iaa,kz=kz_aa(j))
-        case('diffrot'); call diffrot(amplaa(j),f,iay,xx,yy,zz)
-        case('hor-tube'); call htube(amplaa(j),f,iax,iaz,xx,yy,zz,radius,epsilonaa)
-        case('hor-fluxlayer'); call hfluxlayer(amplaa(j),f,iaa,xx,yy,zz,z0aa,widthaa)
-        case('ver-fluxlayer'); call vfluxlayer(amplaa(j),f,iaa,xx,yy,zz,x0aa,widthaa)
-        case('mag-support'); call magsupport(amplaa(j),f,zz,gravz,cs0,rho0)
+        case('diffrot'); call diffrot(amplaa(j),f,iay)
+        case('hor-tube'); call htube(amplaa(j),f,iax,iaz,radius,epsilonaa)
+        case('hor-fluxlayer'); call hfluxlayer(amplaa(j),f,iaa,z0aa,widthaa)
+        case('ver-fluxlayer'); call vfluxlayer(amplaa(j),f,iaa,x0aa,widthaa)
+        case('mag-support'); call magsupport(amplaa(j),f,gravz,cs0,rho0)
         case('pattern-xy'); call vecpatternxy(amplaa(j),f,iaa)
-        case('arcade-x'); call arcade_x(amplaa(j),f,iaa,xx,yy,zz,kx_aa(j),kz_aa(j))
-        case('halfcos-Bx'); call halfcos_x(amplaa(j),f,iaa,xx,yy,zz)
-        case('uniform-Bx'); call uniform_x(amplaa(j),f,iaa,xx,yy,zz)
-        case('uniform-By'); call uniform_y(amplaa(j),f,iaa,xx,yy,zz)
-        case('uniform-Bz'); call uniform_z(amplaa(j),f,iaa,xx,yy,zz)
-        case('uniform-Bphi'); call uniform_phi(amplaa(j),f,iaa,xx,yy,zz)
-        case('phi_comp_over_r'); call phi_comp_over_r(amplaa(j),f,iaa,xx,yy,zz)
+        case('arcade-x'); call arcade_x(amplaa(j),f,iaa,kx_aa(j),kz_aa(j))
+        case('halfcos-Bx'); call halfcos_x(amplaa(j),f,iaa)
+        case('uniform-Bx'); call uniform_x(amplaa(j),f,iaa)
+        case('uniform-By'); call uniform_y(amplaa(j),f,iaa)
+        case('uniform-Bz'); call uniform_z(amplaa(j),f,iaa)
+        case('uniform-Bphi'); call uniform_phi(amplaa(j),f,iaa)
+        case('phi_comp_over_r'); call phi_comp_over_r(amplaa(j),f,iaa)
         case('phi_comp_over_r_noise') 
-          call phi_comp_over_r(amplaa(j),f,iaa,xx,yy,zz)
+          call phi_comp_over_r(amplaa(j),f,iaa)
           call gaunoise(1.0e-5*amplaa(j),f,iax,iaz)
-        case('Bz(x)', '3'); call vfield(amplaa(j),f,iaa,xx)
-        case('vfield2'); call vfield2(amplaa(j),f,iaa,xx)
+        case('Bz(x)', '3'); call vfield(amplaa(j),f,iaa)
+        case('vfield2'); call vfield2(amplaa(j),f,iaa)
         case('vecpatternxy'); call vecpatternxy(amplaa(j),f,iaa)
         case('xjump'); call bjump(f,iaa,by_left,by_right,bz_left,bz_right,widthaa,'x')
-        case('fluxrings', '4'); call fluxrings(amplaa(j),f,iaa,xx,yy,zz)
+        case('fluxrings', '4'); call fluxrings(amplaa(j),f,iaa)
         case('sinxsinz'); call sinxsinz(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
         case('sinxsinz_Hz'); call sinxsinz(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j),KKz=kz_aa(j))
         case('sin2xsin2y'); call sin2x_sin2y_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
@@ -899,39 +898,52 @@ module Magnetic
         case('coswave-Az-kx'); call coswave(amplaa(j),f,iaz,kx=kx_aa(j))
         case('coswave-Az-ky'); call coswave(amplaa(j),f,iaz,ky=ky_aa(j))
         case('coswave-Az-kz'); call coswave(amplaa(j),f,iaz,kz=kz_aa(j))
-        case('linear-zx'); f(:,:,:,iay)=-.5*amplaa(j)*zz**2/Lxyz(3)
-        case('Alfven-x'); call alfven_x(amplaa(j),f,iuu,iaa,ilnrho,xx,kx_aa(j))
-        case('Alfven-y'); call alfven_y(amplaa(j),f,iuu,iaa,yy,ky_aa(j),mu0)
-        case('Alfven-z'); call alfven_z(amplaa(j),f,iuu,iaa,zz,kz_aa(j),mu0)
-        case('Alfven-xy'); call alfven_xy(amplaa(j),f,iuu,iaa,xx,yy,kx_aa(j),ky_aa(j))
-        case('Alfven-xz'); call alfven_xz(amplaa(j),f,iuu,iaa,xx,zz,kx_aa(j),kz_aa(j))
-        case('Alfven-rphi'); call alfven_rphi(amplaa(j),f,xx,yy,rmode)
-        case('Alfven-zconst'); call alfven_zconst(f,xx,yy)
-        case('Alfven-rz'); call alfven_rz(amplaa(j),f,xx,yy,rmode)
-        case('Alfvenz-rot'); call alfvenz_rot(amplaa(j),f,iuu,iaa,zz,kz_aa(j),Omega)
-        case('Alfvenz-rot-shear'); call alfvenz_rot_shear(amplaa(j),f,iuu,iaa,zz,kz_aa(j),Omega)
+        case('linear-zx')
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iay)=-0.5*amplaa(j)*z(n)**2/Lxyz(3)
+          enddo; enddo
+        case('Alfven-x'); call alfven_x(amplaa(j),f,iuu,iaa,ilnrho,kx_aa(j))
+        case('Alfven-y'); call alfven_y(amplaa(j),f,iuu,iaa,ky_aa(j),mu0)
+        case('Alfven-z'); call alfven_z(amplaa(j),f,iuu,iaa,kz_aa(j),mu0)
+        case('Alfven-xy'); call alfven_xy(amplaa(j),f,iuu,iaa,kx_aa(j),ky_aa(j))
+        case('Alfven-xz'); call alfven_xz(amplaa(j),f,iuu,iaa,kx_aa(j),kz_aa(j))
+        case('Alfven-rphi'); call alfven_rphi(amplaa(j),f,rmode)
+        case('Alfven-zconst'); call alfven_zconst(f)
+        case('Alfven-rz'); call alfven_rz(amplaa(j),f,rmode)
+        case('Alfvenz-rot'); call alfvenz_rot(amplaa(j),f,iuu,iaa,kz_aa(j),Omega)
+        case('Alfvenz-rot-shear'); call alfvenz_rot_shear(amplaa(j),f,iuu,iaa,kz_aa(j),Omega)
         case('sine-bc'); call sine_avoid_boundary(amplaa(j),f,iaa,kx_aa(j),rm_int,rm_ext)
-        case('piecewise-dipole'); call piecew_dipole_aa (amplaa(j),inclaa,f,iaa,xx,yy,zz)
+        case('piecewise-dipole'); call piecew_dipole_aa (amplaa(j),inclaa,f,iaa)
         case('tony-nohel')
-          f(:,:,:,iay) = amplaa(j)/kz_aa(j)*cos(kz_aa(j)*2.*pi/Lz*zz)
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iay)=amplaa(j)/kz_aa(j)*cos(kz_aa(j)*2.*pi/Lz*z(n))
+          enddo;enddo
         case('tony-nohel-yz')
-          f(:,:,:,iay) = amplaa(j)/kx_aa(j)*sin(kx_aa(j)*2.*pi/Lx*xx)
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iay)=amplaa(j)/kx_aa(j)*sin(kx_aa(j)*2.*pi/Lx*x(l1:l2))
+          enddo;enddo
         case('tony-hel-xy')
-          f(:,:,:,iax) = amplaa(j)/kz_aa(j)*sin(kz_aa(j)*2.*pi/Lz*zz)
-          f(:,:,:,iay) = amplaa(j)/kz_aa(j)*cos(kz_aa(j)*2.*pi/Lz*zz)
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iax)=amplaa(j)/kz_aa(j)*sin(kz_aa(j)*2.*pi/Lz*z(n))
+            f(l1:l2,m,n,iay)=amplaa(j)/kz_aa(j)*cos(kz_aa(j)*2.*pi/Lz*z(n))
+          enddo;enddo
         case('tony-hel-yz')
-          f(:,:,:,iay) = amplaa(j)/kx_aa(j)*sin(kx_aa(j)*2.*pi/Lx*xx)
-          f(:,:,:,iaz) = amplaa(j)/kx_aa(j)*cos(kx_aa(j)*2.*pi/Lx*xx)
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iay)=amplaa(j)/kx_aa(j)*sin(kx_aa(j)*2.*pi/Lx*x(l1:l2))
+            f(l1:l2,m,n,iaz)=amplaa(j)/kx_aa(j)*cos(kx_aa(j)*2.*pi/Lx*x(l1:l2))
+          enddo;enddo
         case('force-free-jet')
           lB_ext_pot=.true.
-          call force_free_jet(mu_ext_pot,xx,yy,zz)
+          call force_free_jet(mu_ext_pot)
         case('Alfven-circ-x')
 !
 !  Circularly polarised Alfven wave in x direction.
 !
           if (lroot) print*,'init_aa: circular Alfven wave -> x'
-          f(:,:,:,iay) = amplaa(j)/kx_aa(j)*sin(kx_aa(j)*xx)
-          f(:,:,:,iaz) = amplaa(j)/kx_aa(j)*cos(kx_aa(j)*xx)
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iay) = amplaa(j)/kx_aa(j)*sin(kx_aa(j)*x(l1:l2))
+            f(l1:l2,m,n,iaz) = amplaa(j)/kx_aa(j)*cos(kx_aa(j)*x(l1:l2))
+          enddo;enddo
         case('geo-benchmark-case1','geo-benchmark-case2'); call geo_benchmark_B(f)
 !
 !  Magnetohydrostatic equilibrium initial condition.
@@ -1036,7 +1048,7 @@ module Magnetic
                               *sin(kx_aa(j)*x(l1:l2))*erfunc(0.5*z(n)/scaleH)
           enddo; enddo
 
-        case('torus-test'); call torus_test(amplaa(j),f,iaa,xx,yy,zz,tmp,prof)
+        case('torus-test'); call torus_test(amplaa(j),f,iaa)
 
         case default
 !
@@ -1086,27 +1098,6 @@ module Magnetic
        (B_ext(3).ne.0))) call correct_lorentz_force(f)
 !
     endsubroutine init_aa
-!************************************************************************
-!     subroutine pert_aa(f)
-! !
-! !   perturb magnetic field when reading old NON-magnetic snapshot
-! !   called from run.f90; this uses a lot of memory and should be modified.
-! !
-! !   30-july-2004/dave: coded
-! !
-!       use Cdata
-! !
-!       real, dimension (mx,my,mz,mfarray) :: f
-!       real, dimension (mx,my,mz) :: xx,yy,zz
-! !
-!       xx=spread(spread(x,2,my),3,mz)
-!       yy=spread(spread(y,1,mx),3,mz)
-!       zz=spread(spread(z,1,mx),2,my)
-!       initaa=pertaa
-!       amplaa=pertamplaa
-!       call init_aa(f,xx,yy,zz)
-! !
-!     endsubroutine pert_aa
 !***********************************************************************
     subroutine pencil_criteria_magnetic()
 !
@@ -3802,7 +3793,7 @@ module Magnetic
 !
     endsubroutine calc_bmz_beltrami_phase
 !***********************************************************************
-    subroutine alfven_x(ampl,f,iuu,iaa,ilnrho,xx,kx)
+    subroutine alfven_x(ampl,f,iuu,iaa,ilnrho,kx)
 !
 !  Alfven wave propagating in the x-direction
 !  ux = +sin(kx-ot), for B0x=1 and rho=1.
@@ -3820,21 +3811,22 @@ module Magnetic
 !   8-nov-03/axel: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx
       real :: ampl,kx
       integer :: iuu,iaa,ilnrho
 !
 !  ux and Ay.
 !  Don't overwrite the density, just add to the log of it.
 !
-      f(:,:,:,ilnrho)=ampl*sin(kx*xx)+f(:,:,:,ilnrho)
-      f(:,:,:,iuu+0)=+ampl*sin(kx*xx)
-      f(:,:,:,iuu+1)=+ampl*sin(kx*xx)
-      f(:,:,:,iaa+2)=-ampl*cos(kx*xx)
+      do n=n1,n2; do m=m1,m2
+        f(l1:l2,m,n,ilnrho)=ampl*sin(kx*x(l1:l2))+f(l1:l2,m,n,ilnrho)
+        f(l1:l2,m,n,iuu+0)=+ampl*sin(kx*x(l1:l2))
+        f(l1:l2,m,n,iuu+1)=+ampl*sin(kx*x(l1:l2))
+        f(l1:l2,m,n,iaa+2)=-ampl*cos(kx*x(l1:l2))
+      enddo; enddo
 !
     endsubroutine alfven_x
 !***********************************************************************
-    subroutine alfven_y(ampl,f,iuu,iaa,yy,ky,mu0)
+    subroutine alfven_y(ampl,f,iuu,iaa,ky,mu0)
 !
 !  Alfven wave propagating in the y-direction; can be used in 2-d runs.
 !  ux = cos(ky-ot), for B0y=1 and rho=1.
@@ -3850,18 +3842,19 @@ module Magnetic
 !  06-dec-06/wolf: adapted from alfven_z
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz)         :: yy
-      real                               :: ampl,ky,mu0
-      integer                            :: iuu,iaa
+      real :: ampl,ky,mu0
+      integer :: iuu,iaa
 !
 !  ux and Az
 !
-      f(:,:,:,iuu+0) = +ampl*cos(ky*yy)
-      f(:,:,:,iaa+2) = -ampl*sin(ky*yy)*sqrt(mu0)/ky
+      do n=n1,n2; do m=m1,m2
+        f(l1:l2,m,n,iuu+0) = +ampl*cos(ky*y(m))
+        f(l1:l2,m,n,iaa+2) = -ampl*sin(ky*y(m))*sqrt(mu0)/ky
+      enddo; enddo
 !
     endsubroutine alfven_y
 !***********************************************************************
-    subroutine alfven_z(ampl,f,iuu,iaa,zz,kz,mu0)
+    subroutine alfven_z(ampl,f,iuu,iaa,kz,mu0)
 !
 !  Alfven wave propagating in the z-direction
 !  ux = cos(kz-ot), for B0z=1 and rho=1.
@@ -3874,18 +3867,19 @@ module Magnetic
 !  18-aug-02/axel: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: zz
       real :: ampl,kz,mu0
       integer :: iuu,iaa
 !
 !  ux and Ay
 !
-      f(:,:,:,iuu+0)=+ampl*cos(kz*zz)
-      f(:,:,:,iaa+1)=+ampl*sin(kz*zz)*sqrt(mu0)
+      do n=n1,n2; do m=m1,m2
+        f(l1:l2,m,n,iuu+0)=+ampl*cos(kz*z(n))
+        f(l1:l2,m,n,iaa+1)=+ampl*sin(kz*z(n))*sqrt(mu0)
+      enddo; enddo
 !
     endsubroutine alfven_z
 !***********************************************************************
-    subroutine alfven_xy(ampl,f,iuu,iaa,xx,yy,kx,ky)
+    subroutine alfven_xy(ampl,f,iuu,iaa,kx,ky)
 !
 !  Alfven wave propagating in the xy-direction; can be used in 2-d runs.
 !  uz = cos(kx*x+ky*y-ot), for B0=(1,1,0) and rho=1.
@@ -3895,20 +3889,21 @@ module Magnetic
 !  16-jun-07/axel: adapted from alfven_y
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz)         :: xx,yy
-      real                               :: ampl,kx,ky,mu0=1.,om
-      integer                            :: iuu,iaa
+      real :: ampl,kx,ky,mu0=1.,om
+      integer :: iuu,iaa
 !
 !  set ux, Ax, and Ay
 !
       om=B_ext(1)*kx+B_ext(2)*ky
-      f(:,:,:,iuu+2)=+ampl*cos(kx*xx+ky*yy)
-      f(:,:,:,iaa+0)=+ampl*sin(kx*xx+ky*yy)*sqrt(mu0)/om*B_ext(2)
-      f(:,:,:,iaa+1)=-ampl*sin(kx*xx+ky*yy)*sqrt(mu0)/om*B_ext(1)
+      do n=n1,n2; do m=m1,m2
+        f(l1:l2,m,n,iuu+2)=+ampl*cos(kx*x(l1:l2)+ky*y(m))
+        f(l1:l2,m,n,iaa+0)=+ampl*sin(kx*x(l1:l2)+ky*y(m))*sqrt(mu0)/om*B_ext(2)
+        f(l1:l2,m,n,iaa+1)=-ampl*sin(kx*x(l1:l2)+ky*y(m))*sqrt(mu0)/om*B_ext(1)
+      enddo; enddo
 !
     endsubroutine alfven_xy
 !***********************************************************************
-    subroutine alfven_xz(ampl,f,iuu,iaa,xx,zz,kx,kz)
+    subroutine alfven_xz(ampl,f,iuu,iaa,kx,kz)
 !
 !  Alfven wave propagating in the xz-direction; can be used in 2-d runs.
 !  uz = cos(kx*x+kz*z-ot), for B0=(1,1,0) and rho=1.
@@ -3918,20 +3913,21 @@ module Magnetic
 !  16-jun-07/axel: adapted from alfven_xy
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz)         :: xx,zz
-      real                               :: ampl,kx,kz,mu0=1.,om
-      integer                            :: iuu,iaa
+      real :: ampl,kx,kz,mu0=1.,om
+      integer :: iuu,iaa
 !
 !  set ux, Ax, and Az
 !
       om=B_ext(1)*kx+B_ext(3)*kz
-      f(:,:,:,iuu+2)=+ampl*cos(kx*xx+kz*zz)
-      f(:,:,:,iaa+0)=+ampl*sin(kx*xx+kz*zz)*sqrt(mu0)/om*B_ext(2)
-      f(:,:,:,iaa+2)=-ampl*sin(kx*xx+kz*zz)*sqrt(mu0)/om*B_ext(1)
+      do n=n1,n2; do m=m1,m2
+        f(l1:l2,m,n,iuu+2)=+ampl*cos(kx*x(l1:l2)+kz*z(n))
+        f(l1:l2,m,n,iaa+0)=+ampl*sin(kx*x(l1:l2)+kz*z(n))*sqrt(mu0)/om*B_ext(2)
+        f(l1:l2,m,n,iaa+2)=-ampl*sin(kx*x(l1:l2)+kz*z(n))*sqrt(mu0)/om*B_ext(1)
+      enddo; enddo
 !
     endsubroutine alfven_xz
 !***********************************************************************
-    subroutine alfven_rphi(B0,f,xx,yy,mode)
+    subroutine alfven_rphi(B0,f,mode)
 !
 !  Alfven wave propagating on radial direction with
 !  field pointing to the phi direction.
@@ -3943,17 +3939,20 @@ module Magnetic
       use Cdata
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz) :: xx,yy,rrcyl
-      real :: B0,kr,mode
+      real :: B0,mode
 !
-      kr = 2*pi*mode/(r_ext-r_int)
-      rrcyl = sqrt(xx**2 + yy**2)
+      real, dimension(nx) :: rrcyl
+      real :: kr
 !
-      f(:,:,:,iaz) =  -B0/kr*sin(kr*(rrcyl-r_int))
+      do n=n1,n2; do m=m1,m2
+        kr = 2*pi*mode/(r_ext-r_int)
+        rrcyl = sqrt(x(l1:l2)**2 + y(m)**2)
+        f(l1:l2,m,n,iaz) =  -B0/kr*sin(kr*(rrcyl-r_int))
+      enddo; enddo
 !
     endsubroutine alfven_rphi
 !***********************************************************************
-    subroutine alfven_zconst(f,xx,yy)
+    subroutine alfven_zconst(f)
 !
 !  Radially variable field pointing in the z direction
 !  4 Balbus-Hawley wavelengths in the vertical direction
@@ -3973,33 +3972,36 @@ module Magnetic
       use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz) :: xx,yy,rr,Aphi
+!
+      real, dimension(nx) :: Aphi, rr
       real, pointer :: plaw
       real :: B0,pblaw
       integer :: ierr
 !
       if (lcartesian_coords) then 
         B0=Lxyz(3)/(2*zmode*pi)
-        rr=sqrt(xx**2+yy**2)
-        Aphi=B0/(rr*(2-qgshear))*(rr**2+r0_pot**2)**(1-qgshear/2.)
-!
-        f(:,:,:,iax) =  -Aphi*yy/rr
-        f(:,:,:,iay) =   Aphi*xx/rr
+        do n=n1,n2; do m=m1,m2
+          rr=sqrt(x(l1:l2)**2+y(m)**2)
+          Aphi=B0/(rr*(2-qgshear))*(rr**2+r0_pot**2)**(1-qgshear/2.)
+          f(l1:l2,m,n,iax) =  -Aphi*y(m)/rr
+          f(l1:l2,m,n,iay) =   Aphi*x(l1:l2)/rr
+        enddo; enddo
       elseif (lcylindrical_coords) then 
         call stop_it("alfven_zconst: "//&
             "not implemented for cylindrical coordinates")
       elseif (lspherical_coords) then
         B0=Lxyz(2)/(2*zmode*pi)
-        rr=xx
         call get_shared_variable('plaw',plaw,ierr)
         if (ierr/=0) call stop_it("alfven_zconst: "//&
             "there was a problem when getting plaw")
         pblaw=1-qgshear-plaw/2.
-        Aphi=-B0/(pblaw+2)*rr**(pblaw+1)*1
-!        
-        f(:,:,:,iax)=0.
-        f(:,:,:,iay)=0.
-        f(:,:,:,iaz)=Aphi/sin(yy)
+        do n=n1,n2; do m=m1,m2
+          rr=x(l1:l2)
+          Aphi=-B0/(pblaw+2)*rr**(pblaw+1)*1
+          f(l1:l2,m,n,iax)=0.
+          f(l1:l2,m,n,iay)=0.
+          f(l1:l2,m,n,iaz)=Aphi/sin(y(m))
+        enddo; enddo
 !
         call correct_lorentz_force(f,&
             lfield=.true.,const=B0,pblaw=pblaw)
@@ -4008,7 +4010,7 @@ module Magnetic
 !
     endsubroutine alfven_zconst
 !***********************************************************************
-    subroutine alfven_rz(B0,f,xx,yy,mode)
+    subroutine alfven_rz(B0,f,mode)
 !
 !  Alfven wave propagating on radial direction with
 !  field pointing to the z direction.
@@ -4020,9 +4022,11 @@ module Magnetic
       use Cdata
       use Mpicomm, only: stop_it
 !
+      real :: B0,mode
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz) :: xx,yy,rrcyl,Aphi
-      real :: B0,kr,mode,k1,const
+!
+      real :: kr,k1,const
+      real, dimension(nx) :: rrcyl,Aphi
 !
       if (headtt) print*,'radial alfven wave propagating on z direction'
       if (.not.lcylinder_in_a_box) &
@@ -4033,28 +4037,33 @@ module Magnetic
 ! has a linear component that prevents singularities and a exponential that prevents
 ! the field from growing large in the outer disk
 !
-      rrcyl = max(sqrt(xx**2 + yy**2),tini)
-      if (r_int.gt.0.) then
-         if (lroot) print*,'freezing is being used, ok to use singular potentials'
-         if (lroot) print*,'Bz=B0cos(k.r) ==> Aphi=B0/k*sin(k.r)+B0/(k^2*r)*cos(k r)'
-         kr = 2*pi*mode/(r_ext-r_int)
-         Aphi =  B0/kr * sin(kr*(rrcyl-r_int)) + &
-              B0/(kr**2*rrcyl)*cos(kr*(rrcyl-r_int))
-      else   
-         if (lroot) print*,'Softened magnetic field in the center'
-         if (mode .lt. 5) call stop_it("put more wavelengths in the field")
-          kr = 2*pi*mode/r_ext
-          k1 = 1. !not tested for other values
-          const=B0*exp(1.)*k1/cos(kr/k1)
-          Aphi=const/kr*rrcyl*exp(-k1*rrcyl)*sin(kr*rrcyl)
-      endif
+      do n=n1,n2; do m=m1,m2
+        rrcyl = max(sqrt(x(l1:l2)**2 + y(m)**2),tini)
+        if (r_int.gt.0.) then
+           if (lroot .and. m==m1 .and. n==n1) then
+             print*,'freezing is being used, ok to use singular potentials'
+             print*,'Bz=B0cos(k.r) ==> Aphi=B0/k*sin(k.r)+B0/(k^2*r)*cos(k r)'
+           endif
+           kr = 2*pi*mode/(r_ext-r_int)
+           Aphi =  B0/kr * sin(kr*(rrcyl-r_int)) + &
+                B0/(kr**2*rrcyl)*cos(kr*(rrcyl-r_int))
+        else   
+           if (lroot .and. m==m1 .and. n==n1) print*,'Softened magnetic field in the center'
+           if (mode .lt. 5) call stop_it("put more wavelengths in the field")
+           kr = 2*pi*mode/r_ext
+           k1 = 1. !not tested for other values
+           const=B0*exp(1.)*k1/cos(kr/k1)
+           Aphi=const/kr*rrcyl*exp(-k1*rrcyl)*sin(kr*rrcyl)
+        endif
 !
-      f(:,:,:,iax) = Aphi * (-yy/rrcyl)
-      f(:,:,:,iay) = Aphi * ( xx/rrcyl)
+        f(l1:l2,m,n,iax) = Aphi * (-    y(m)/rrcyl)
+        f(l1:l2,m,n,iay) = Aphi * ( x(l1:l2)/rrcyl)
+!
+      enddo; enddo
 !
     endsubroutine alfven_rz
 !***********************************************************************
-    subroutine alfvenz_rot(ampl,f,iuu,iaa,zz,kz,O)
+    subroutine alfvenz_rot(ampl,f,iuu,iaa,kz,O)
 !
 !  Alfven wave propagating in the z-direction (with Coriolis force)
 !  ux = cos(kz-ot), for B0z=1 and rho=1.
@@ -4071,7 +4080,6 @@ module Magnetic
       use Cdata, only: lroot
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: zz
       real :: ampl,kz,O,fac
       integer :: iuu,iaa
 !
@@ -4079,14 +4087,16 @@ module Magnetic
 !
       if (lroot) print*,'alfvenz_rot: Alfven wave with rotation; O,kz=',O,kz
       fac=-O+sqrt(O**2+kz**2)
-      f(:,:,:,iuu+0)=-ampl*sin(kz*zz)*fac/kz
-      f(:,:,:,iuu+1)=-ampl*cos(kz*zz)*fac/kz
-      f(:,:,:,iaa+0)=+ampl*sin(kz*zz)/kz
-      f(:,:,:,iaa+1)=+ampl*cos(kz*zz)/kz
+      do n=n1,n2; do m=m1,m2
+        f(l1:l2,m,n,iuu+0)=-ampl*sin(kz*z(n))*fac/kz
+        f(l1:l2,m,n,iuu+1)=-ampl*cos(kz*z(n))*fac/kz
+        f(l1:l2,m,n,iaa+0)=+ampl*sin(kz*z(n))/kz
+        f(l1:l2,m,n,iaa+1)=+ampl*cos(kz*z(n))/kz
+      enddo; enddo
 !
     endsubroutine alfvenz_rot
 !***********************************************************************
-    subroutine alfvenz_rot_shear(ampl,f,iuu,iaa,zz,kz,O)
+    subroutine alfvenz_rot_shear(ampl,f,iuu,iaa,kz,O)
 !
 !  Alfven wave propagating in the z-direction (with Coriolis force and shear)
 !
@@ -4103,7 +4113,6 @@ module Magnetic
       use Cdata, only: lroot
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: zz
       real :: ampl,kz,O
       complex :: fac
       integer :: iuu,iaa
@@ -4113,16 +4122,18 @@ module Magnetic
       if (lroot) print*,'alfvenz_rot_shear: '// &
           'Alfven wave with rotation and shear; O,kz=',O,kz
       fac=cmplx(O-sqrt(16*kz**2+O**2),0.)
-      f(:,:,:,iuu+0)=f(:,:,:,iuu+0) + ampl*fac/(4*kz)*sin(kz*zz)
-      f(:,:,:,iuu+1)=f(:,:,:,iuu+1) + ampl*real(exp(cmplx(0,zz*kz))* &
-          fac*sqrt(2*kz**2+O*fac)/(sqrt(2.)*kz*(-6*O-fac)))
-      f(:,:,:,iaa+0)=ampl*sin(kz*zz)/kz
-      f(:,:,:,iaa+1)=-ampl*2*sqrt(2.)*aimag(exp(cmplx(0,zz*kz))* &
-          sqrt(2*kz**2+O*fac)/(-6*O-fac)/(cmplx(0,kz)))
+      do n=n1,n2; do m=m1,m2
+        f(l1:l2,m,n,iuu+0)=f(l1:l2,m,n,iuu+0)+ampl*fac/(4*kz)*sin(kz*z(n))
+        f(l1:l2,m,n,iuu+1)=f(l1:l2,m,n,iuu+1)+ampl*real(exp(cmplx(0,z(n)*kz))* &
+            fac*sqrt(2*kz**2+O*fac)/(sqrt(2.)*kz*(-6*O-fac)))
+        f(l1:l2,m,n,iaa+0)=ampl*sin(kz*z(n))/kz
+        f(l1:l2,m,n,iaa+1)=-ampl*2*sqrt(2.)*aimag(exp(cmplx(0,z(n)*kz))* &
+            sqrt(2*kz**2+O*fac)/(-6*O-fac)/(cmplx(0,kz)))
+      enddo; enddo
 !
     endsubroutine alfvenz_rot_shear
 !***********************************************************************
-    subroutine fluxrings(ampl,f,ivar,xx,yy,zz,profile)
+    subroutine fluxrings(ampl,f,ivar,profile)
 !
 !  Magnetic flux rings. Constructed from a canonical ring which is the
 !  rotated and translated:
@@ -4138,11 +4149,11 @@ module Magnetic
       use Cdata, only: lroot, epsi
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,3)    :: tmpv
-      real, dimension (mx,my,mz)      :: xx,yy,zz,xx1,yy1,zz1
+      real, dimension (nx,3) :: tmpv
+      real, dimension (nx) :: xx1,yy1,zz1
       real, dimension(3) :: axis,disp
-      real    :: ampl,phi,theta,ct,st,cp,sp
-      real    :: fring,Iring,R0,width
+      real :: ampl,phi,theta,ct,st,cp,sp
+      real :: fring,Iring,R0,width
       integer :: i,ivar
       character (len=*), optional :: profile
       character (len=labellen) :: prof
@@ -4179,24 +4190,26 @@ module Magnetic
           ct = cos(theta); st = sin(theta)
           cp = cos(phi)  ; sp = sin(phi)
           ! Calculate D^(-1)*(xxx-disp)
-          xx1 =  ct*cp*(xx-disp(1)) + ct*sp*(yy-disp(2)) - st*(zz-disp(3))
-          yy1 = -   sp*(xx-disp(1)) +    cp*(yy-disp(2))
-          zz1 =  st*cp*(xx-disp(1)) + st*sp*(yy-disp(2)) + ct*(zz-disp(3))
-          call norm_ring(xx1,yy1,zz1,fring,Iring,R0,width,tmpv,PROFILE=prof)
-          ! calculate D*tmpv
-          f(:,:,:,ivar  ) = f(:,:,:,ivar  ) + ampl*( &
-               + ct*cp*tmpv(:,:,:,1) - sp*tmpv(:,:,:,2) + st*cp*tmpv(:,:,:,3))
-          f(:,:,:,ivar+1) = f(:,:,:,ivar+1) + ampl*( &
-               + ct*sp*tmpv(:,:,:,1) + cp*tmpv(:,:,:,2) + st*sp*tmpv(:,:,:,3))
-          f(:,:,:,ivar+2) = f(:,:,:,ivar+2) + ampl*( &
-               - st   *tmpv(:,:,:,1)                    + ct   *tmpv(:,:,:,3))
+          do n=n1,n2; do m=m1,m2
+            xx1= ct*cp*(x(l1:l2)-disp(1))+ct*sp*(y(m)-disp(2))-st*(z(n)-disp(3))
+            yy1=-   sp*(x(l1:l2)-disp(1))+   cp*(y(m)-disp(2))
+            zz1= st*cp*(x(l1:l2)-disp(1))+st*sp*(y(m)-disp(2))+ct*(z(n)-disp(3))
+            call norm_ring(xx1,yy1,zz1,fring,Iring,R0,width,tmpv,PROFILE=prof)
+            ! calculate D*tmpv
+            f(l1:l2,m,n,ivar  ) = f(l1:l2,m,n,ivar  ) + ampl*( &
+                 + ct*cp*tmpv(:,1) - sp*tmpv(:,2) + st*cp*tmpv(:,3))
+            f(l1:l2,m,n,ivar+1) = f(l1:l2,m,n,ivar+1) + ampl*( &
+                 + ct*sp*tmpv(:,1) + cp*tmpv(:,2) + st*sp*tmpv(:,3))
+            f(l1:l2,m,n,ivar+2) = f(l1:l2,m,n,ivar+2) + ampl*( &
+                 - st   *tmpv(:,1)                + ct   *tmpv(:,3))
+          enddo; enddo
         enddo
       endif
       if (lroot) print*, 'fluxrings: Magnetic flux rings initialized'
 !
     endsubroutine fluxrings
 !***********************************************************************
-    subroutine norm_ring(xx,yy,zz,fring,Iring,R0,width,vv,profile)
+    subroutine norm_ring(xx1,yy1,zz1,fring,Iring,R0,width,vv,profile)
 !
 !  Generate vector potential for a flux ring of magnetic flux FRING,
 !  current Iring (not correctly normalized), radius R0 and thickness
@@ -4207,22 +4220,22 @@ module Magnetic
       use Cdata, only: mx,my,mz
       use Mpicomm, only: stop_it
 !
-      real, dimension (mx,my,mz,3) :: vv
-      real, dimension (mx,my,mz)   :: xx,yy,zz,phi,tmp
+      real, dimension (nx,3) :: vv
+      real, dimension (nx) :: xx1,yy1,zz1,phi,tmp
       real :: fring,Iring,R0,width
       character (len=*) :: profile
 !
-      vv = 0.
+      vv = 0.0
 !
 !  magnetic ring
 !
-      tmp = sqrt(xx**2+yy**2)-R0
+      tmp = sqrt(xx1**2+yy1**2)-R0
 
       select case(profile)
 
       case('tanh')
-        vv(:,:,:,3) = - fring * 0.5*(1+tanh(tmp/width)) &
-                              * 0.5/width/cosh(zz/width)**2
+        vv(:,3) = - fring * 0.5*(1+tanh(tmp/width)) &
+                          * 0.5/width/cosh(zz1/width)**2
 
       case default
         call stop_it('norm_ring: No such fluxtube profile')
@@ -4230,16 +4243,15 @@ module Magnetic
 !
 !  current ring (to twist the B-lines)
 !
-!      tmp = tmp**2 + zz**2 + width**2  ! need periodic analog of this
-      tmp = width - sqrt(tmp**2 + zz**2)
+      tmp = width - sqrt(tmp**2 + zz1**2)
       tmp = Iring*0.5*(1+tanh(tmp/width))     ! Now the A_phi component
-      phi = atan2(yy,xx)
-      vv(:,:,:,1) = - tmp*sin(phi)
-      vv(:,:,:,2) =   tmp*cos(phi)
+      phi = atan2(yy1,xx1)
+      vv(:,1) = - tmp*sin(phi)
+      vv(:,2) =   tmp*cos(phi)
 !
     endsubroutine norm_ring
 !***********************************************************************
-    subroutine torus_test(ampl,f,iaa,xx,yy,zz,xxi2,ee)
+    subroutine torus_test(ampl,f,iaa)
 !
 !  Initial field concentrated along torus well inside the computational
 !  domain.
@@ -4253,48 +4265,51 @@ module Magnetic
 !
 !   05-may-2008/wolf: coded
 !
+      real :: ampl
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz)         :: xx,yy,zz,xxi2,ee
-      real                               :: ampl
-      integer                            :: iaa
-      intent(in)    :: ampl,iaa,xx,yy,zz
-      intent(inout) :: f
-      intent(out)   :: xxi2,ee
-      !
-      real, dimension (mx,my,mz)         :: costh,sinth
-      real, dimension (mx,my,mz)         :: cosphi,sinphi,ss,rr,aar,aap
+      integer :: iaa
+!
+      real, dimension (nx) :: xxi2,ee
+      real, dimension (nx) :: costh,sinth,cosphi,sinphi,ss,rr,aar,aap
       real :: radius,width,r_cent
-
+!
+      intent(in)    :: ampl,iaa
+      intent(inout) :: f
+!
       radius = xyz1(1)
       width  = 0.1*radius
       r_cent = 0.6*radius
-
+!
       if (lspherical_coords) then
-        xxi2 = (xx*sin(yy) - r_cent)**2 + xx**2*cos(yy)**2
-        ee = ampl * exp(-0.5 * xxi2 / width**2)
-        f(:,:,:,iax) = f(:,:,:,iax) + ee * xx*cos(yy)
-        f(:,:,:,iaz) = f(:,:,:,iaz) + ee
+        do n=n1,n2; do m=m1,m2
+          xxi2 = (x(l1:l2)*sin(y(m))-r_cent)**2 + x(l1:l2)**2*cos(y(m))**2
+          ee = ampl * exp(-0.5 * xxi2 / width**2)
+          f(l1:l2,m,n,iax) = f(l1:l2,m,n,iax) + ee * x(l1:l2)*cos(y(m))
+          f(l1:l2,m,n,iaz) = f(l1:l2,m,n,iaz) + ee
+        enddo; enddo
       else
-        xxi2 = (sqrt(xx**2+yy**2) - r_cent)**2 + zz**2
-        ee = ampl * exp(-0.5 * xxi2 / width**2)
-        aar = zz * ee 
-        aap = ee
-        ss = sqrt(xx**2+yy**2)
-        rr = sqrt(xx**2+yy**2+zz**2)
-        ss = max(ss, tini)
-        rr = max(rr, tini)
-        costh = zz/rr
-        sinth = ss/rr
-        cosphi   = xx/ss
-        sinphi   = yy/ss
-        f(:,:,:,iax) = f(:,:,:,iax) + aar*sinth*cosphi - aap*sinphi
-        f(:,:,:,iay) = f(:,:,:,iay) + aar*sinth*sinphi + aap*cosphi
-        f(:,:,:,iaz) = f(:,:,:,iaz) + aar*costh
+        do n=n1,n2; do m=m1,m2
+          xxi2 = (sqrt(x(l1:l2)**2+y(m)**2) - r_cent)**2 + z(n)**2
+          ee = ampl * exp(-0.5 * xxi2 / width**2)
+          aar = z(n) * ee 
+          aap = ee
+          ss = sqrt(x(l1:l2)**2+y(m)**2)
+          rr = sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+          ss = max(ss, tini)
+          rr = max(rr, tini)
+          costh = z(n)/rr
+          sinth = ss/rr
+          cosphi   = x(l1:l2)/ss
+          sinphi   = y(m)/ss
+          f(l1:l2,m,n,iax) = f(l1:l2,m,n,iax) + aar*sinth*cosphi - aap*sinphi
+          f(l1:l2,m,n,iay) = f(l1:l2,m,n,iay) + aar*sinth*sinphi + aap*cosphi
+          f(l1:l2,m,n,iaz) = f(l1:l2,m,n,iaz) + aar*costh
+        enddo; enddo
       endif
-
+!
     endsubroutine torus_test
 !***********************************************************************
-    subroutine force_free_jet(mu,xx,yy,zz)
+    subroutine force_free_jet(mu)
 !
 !  Force free magnetic field configuration for jet simulations
 !  with a fixed accretion disc at the bottom boundary.
@@ -4329,7 +4344,6 @@ module Magnetic
       use IO, only: output
 
       real, intent(in) :: mu
-      real, dimension(mx,my,mz), intent(in) :: xx,yy,zz
       real :: xi2,A_phi
       real :: r2
       real :: B1r_,B1z_,B1
@@ -4358,15 +4372,14 @@ module Magnetic
       if (lforce_free_test) then
 
         if (lroot) print*,'FORCE_FREE_JET: using analytic solution for mu=-1'
-        Ax_ext=-2*yy*(1-zz/sqrt(xx**2+yy**2+zz**2))/(xx**2+yy**2)/B1
-        Ay_ext= 2*xx*(1-zz/sqrt(xx**2+yy**2+zz**2))/(xx**2+yy**2)/B1
+        do l=1,mx; do m=1,my; do n=1,mz
+          Ax_ext=-2*y(m)*(1-z(n)/sqrt(x(l)**2+y(m)**2+z(n)**2))/(x(l)**2+y(m)**2)/B1
+          Ay_ext= 2*x(l)*(1-z(n)/sqrt(x(l)**2+y(m)**2+z(n)**2))/(x(l)**2+y(m)**2)/B1
+        enddo; enddo; enddo
 
       else
 
-        do l=1,mx
-        do m=1,my
-        do n=1,mz
-
+        do l=1,mx; do m=1,my; do n=1,mz
           r2=x(l)**2+y(m)**2
           xi2=r2/(r2+z(n)**2)
           A_phi=hypergeometric2F1((1-mu)/2,(2+mu)/2,2.0,xi2,tol) &
@@ -4374,10 +4387,7 @@ module Magnetic
 
           Ax_ext(l,m,n)=-y(m)*A_phi/sqrt(r2)
           Ay_ext(l,m,n)= x(l)*A_phi/sqrt(r2)
-
-        enddo
-        enddo
-        enddo
+        enddo; enddo; enddo
 
       endif
 
@@ -4408,7 +4418,7 @@ module Magnetic
 
     endsubroutine force_free_jet
 !***********************************************************************
-    subroutine piecew_dipole_aa(ampl,inclaa,f,ivar,xx,yy,zz)
+    subroutine piecew_dipole_aa(ampl,inclaa,f,ivar)
 !
 !  A field that is vertical uniform for r<R_int, inclined dipolar for
 !  r>R_ext, and potential in the shell R_int<r<R_ext.
@@ -4429,7 +4439,6 @@ module Magnetic
                        r_int,r_ext
 !
       real, intent(inout), dimension (mx,my,mz,mfarray) :: f
-      real, intent(in), dimension (mx,my,mz) :: xx,yy,zz
       real, intent(in) :: ampl,inclaa
       real, dimension (nx) :: r_1_mn,r_2_mn,sigma0,sigma1, r_mn
       real :: fact
@@ -4472,8 +4481,6 @@ module Magnetic
         f(l1:l2,m,n,ivar+1) =  sigma0*x(l1:l2)*r_1_mn + sigma1*z(n)*r_1_mn
         f(l1:l2,m,n,ivar+2) =                     - sigma1*y(m)*r_1_mn
       enddo
-!
-      if (NO_WARN) print*, xx(1,1,1),yy(1,1,1),zz(1,1,1) !(keep compiler quiet)
 !
     endsubroutine piecew_dipole_aa
 !***********************************************************************

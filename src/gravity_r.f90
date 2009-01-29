@@ -337,7 +337,7 @@ module Gravity
 
     endsubroutine write_gravity_run_pars
 !***********************************************************************
-    subroutine init_gg(f,xx,yy,zz)
+    subroutine init_gg(f)
 !
 !  initialise gravity; called from start.f90
 !  10-jan-02/wolf: coded
@@ -346,11 +346,8 @@ module Gravity
       use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
 !
 ! Not doing anything (this might change if we decide to save gg to a file)
-!
-      if (NO_WARN) print*,f,xx,yy,zz  !(to keep compiler quiet)
 !
     endsubroutine init_gg
 !***********************************************************************
@@ -424,24 +421,22 @@ module Gravity
 !
     endsubroutine duu_dt_grav
 !***********************************************************************
-    subroutine potential_global(xx,yy,zz, pot,pot0)
-!    subroutine potential(rr, pot)
+    subroutine potential_global(pot,pot0)
 !
 !  gravity potential; version called by init_hydro, which operates on
 !  full global coordinate arrays
 !
 !  16-jul-02/wolf: coded
 !
-      use Cdata,   only: mx,my,mz,dx,coord_system,lcylindrical_gravity
+      use Cdata
       use Sub,     only: poly
       use Mpicomm, only: stop_it 
 
-      real, dimension (mx,my,mz) :: xx,yy,zz, pot
+      real, dimension (mx,my,mz) :: pot
       real, optional :: pot0           ! potential at r=0
       real, dimension (mx,my,mz) :: rr
       integer :: j
 !
-      intent(in)  :: xx,yy,zz
       intent(out) :: pot,pot0
 !
       if (lcylindrical_gravity) &
@@ -451,11 +446,17 @@ module Gravity
 !  remove this if you are sure rr is already calculated elsewhere
 !
       if     (coord_system=='cartesian') then
-        rr=sqrt(xx**2+yy**2+zz**2)
+        do n=n1,n2; do m=m1,m2
+          rr(l1:l2,m,n)=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+        enddo; enddo
       elseif (coord_system=='cylindric') then
-        rr=sqrt(xx**2+zz**2)
+        do n=n1,n2; do m=m1,m2
+          rr(l1:l2,m,n)=sqrt(x(l1:l2)**2+z(n)**2)
+        enddo; enddo
       elseif (coord_system=='spherical') then
-        rr=xx
+        do n=n1,n2; do m=m1,m2
+          rr(l1:l2,m,n)=x(l1:l2)
+        enddo; enddo
       endif
 !
       pot=0.

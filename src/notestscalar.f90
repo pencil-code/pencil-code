@@ -51,16 +51,16 @@ module Testscalar
 !
     endsubroutine initialize_testscalar
 !***********************************************************************
-    subroutine init_cctest(f,xx,yy,zz)
+    subroutine init_cctest(f)
 !
 !  Dummy routine
 !
       use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
 !
-      if (ip==0) print*,f,xx,yy,zz  !(to keep compiler quiet)
+      if (ip==0) print*,f  !(to keep compiler quiet)
+!
     endsubroutine init_cctest
 !***********************************************************************
     subroutine pencil_criteria_testscalar()

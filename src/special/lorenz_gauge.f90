@@ -120,7 +120,7 @@ module Special
 !
     endsubroutine initialize_special
 !***********************************************************************
-    subroutine init_special(f,xx,yy,zz)
+    subroutine init_special(f)
 !
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
@@ -131,9 +131,7 @@ module Special
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
 !
-      intent(in) :: xx,yy,zz
       intent(inout) :: f
 !
 !  SAMPLE IMPLEMENTATION
@@ -154,7 +152,6 @@ module Special
       endselect
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(xx,yy,zz)
 !
     endsubroutine init_special
 !***********************************************************************

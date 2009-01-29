@@ -172,7 +172,7 @@ module Hydro
 
     endsubroutine write_hydro_run_pars
 !***********************************************************************
-    subroutine init_uu(f,xx,yy,zz)
+    subroutine init_uu(f)
 !
 !  initialise uu and lnrho; called from start.f90
 !  Should be located in the Hydro module, if there was one.
@@ -183,11 +183,9 @@ module Hydro
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(xx,yy,zz)
-
+!
     endsubroutine init_uu
 !***********************************************************************
     subroutine pencil_criteria_hydro()

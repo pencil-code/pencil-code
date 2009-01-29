@@ -72,9 +72,7 @@
         real :: x00,y00,z00
 !        real, dimension (mx,my,mz,mfarray) :: f
 !        real, dimension (mx,my,mz,mvar) :: df
-!        real, dimension (mx,my,mz) :: xx,yy,zz
         real, allocatable, dimension (:,:,:,:) :: f,df
-        real, allocatable, dimension (:,:,:) :: xx,yy,zz
 !
         lstart = .true.
 !
@@ -86,12 +84,8 @@
 !  avoid segfaults at 128^3 (7 variables) with Intel compiler on 32-bit
 !  Linux boxes. Not clear why they crashed (we _did_ increase stacksize
 !  limits), but they did and now don't. Also, the present approach runs
-!  up to nx=ny=nz=135 (nx=ny=nz=128 if only xx,yy,zz are made
-!  allocatable), but not for even slightly larger grids.
+!  up to nx=ny=nz=135, but not for even slightly larger grids.
 !
-        allocate(xx(mx,my,mz)          ,STAT=stat); if (stat>0) call stop_it("Couldn't allocate memory for xx")
-        allocate(yy(mx,my,mz)          ,STAT=stat); if (stat>0) call stop_it("Couldn't allocate memory for yy")
-        allocate(zz(mx,my,mz)          ,STAT=stat); if (stat>0) call stop_it("Couldn't allocate memory for zz")
         allocate( f(mx,my,mz,mfarray),STAT=stat); if (stat>0) call stop_it("Couldn't allocate memory for f ")
         allocate(df(mx,my,mz,mvar)     ,STAT=stat); if (stat>0) call stop_it("Couldn't allocate memory for df")
 !
@@ -242,12 +236,6 @@
                           trim(datadir)//'/var.general', &
                           x0-nghost*dx, y0-nghost*dy, z0-nghost*dz)
 !
-!  as full arrays
-!
-        xx=spread(spread(x,2,my),3,mz)
-        yy=spread(spread(y,1,mx),3,mz)
-        zz=spread(spread(z,1,mx),2,my)
-!
 !  populate wavenumber arrays for fft and calculate nyquist wavenumber
 !
         if (nxgrid/=1) then
@@ -308,26 +296,26 @@
           if (lroot .and. init_loops/=1) &
               print '(A33,i3,A25)', 'start: -- performing loop number', i, &
               ' of initial conditions --'
-          call init_gg        (f,xx,yy,zz)
-          call init_uu        (f,xx,yy,zz)
-          call init_lnrho     (f,xx,yy,zz)
-          call init_ss        (f,xx,yy,zz)
-          call init_aa        (f,xx,yy,zz)
-          call init_aatest    (f,xx,yy,zz)
-          call init_uutest    (f,xx,yy,zz)
-          call init_rad       (f,xx,yy,zz)
-          call init_lncc      (f,xx,yy,zz)
-          call init_chiral    (f,xx,yy,zz)
-          call init_chemistry (f,xx,yy,zz)
+          call init_gg        (f)
+          call init_uu        (f)
+          call init_lnrho     (f)
+          call init_ss        (f)
+          call init_aa        (f)
+          call init_aatest    (f)
+          call init_uutest    (f)
+          call init_rad       (f)
+          call init_lncc      (f)
+          call init_chiral    (f)
+          call init_chemistry (f)
           call init_uud       (f)
           call init_nd        (f)
-          call init_uun       (f,xx,yy,zz)
-          call init_lnrhon    (f,xx,yy,zz)
-          call init_ecr       (f,xx,yy,zz)
-          call init_fcr       (f,xx,yy,zz)
+          call init_uun       (f)
+          call init_lnrhon    (f)
+          call init_ecr       (f)
+          call init_fcr       (f)
           call init_interstellar (f)
-          call init_solid_cells(f,xx,yy,zz)
-          call init_special   (f,xx,yy,zz)
+          call init_solid_cells(f)
+          call init_special   (f)
         enddo
 !
         if (lparticles) call particles_init(f)

@@ -188,7 +188,7 @@ module Special
       endif
     endsubroutine initialize_special
 !***********************************************************************
-    subroutine init_special(f,xx,yy,zz)
+    subroutine init_special(f)
 !
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
@@ -201,9 +201,7 @@ module Special
       use FArrayManager, only: farray_use_global
 
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
 
-      intent(in) :: xx,yy,zz
       intent(inout) :: f
       
       integer, pointer :: iglobal_cs2,iglobal_glnTT
@@ -270,15 +268,15 @@ module Special
           do i=l1,l2
             do j=m1,m2
               do k=n1,n2
-                rr2 = xx(i,j,k)**2+yy(i,j,k)**2
+                rr2 = x(i)**2+y(j)**2
                 if (rr2 > a2) then
                   do cyl=0,100
                     if (cyl==0) then
                       wall_smoothing=1-exp(-(rr2-a2)/skin_depth**2)
                       f(i,j,k,iuy) = -special_infuu*&
-                           2*xx(i,j,k)*yy(i,j,k)*a2/rr2**2*wall_smoothing
+                           2*x(i)*y(j)*a2/rr2**2*wall_smoothing
                       f(i,j,k,iux) = special_infuu*&
-                           (1. - a2/rr2 + 2*yy(i,j,k)**2*a2/rr2**2)&
+                           (1. - a2/rr2 + 2*y(j)**2*a2/rr2**2)&
                            *wall_smoothing
                       if (ilnTT .ne. 0) then
                         wall_smoothing_temp=1-exp(-(rr2-a2)/(sqrt(a2))**2)
@@ -288,15 +286,15 @@ module Special
                       endif
                     else
                       shifty=cyl*Lxyz(2)
-                      rr2_low =(xx(i,j,k)+shiftx)**2+(yy(i,j,k)+shifty)**2
-                      rr2_high=(xx(i,j,k)-shiftx)**2+(yy(i,j,k)-shifty)**2
+                      rr2_low =(x(i)+shiftx)**2+(y(j)+shifty)**2
+                      rr2_high=(x(i)-shiftx)**2+(y(j)-shifty)**2
                       f(i,j,k,iux) = f(i,j,k,iux)+special_infuu*( &
-                           +2*(yy(i,j,k)-shifty)**2*a2/rr2_high**2-a2/rr2_high&
-                           +2*(yy(i,j,k)+shifty)**2*a2/rr2_low**2 -a2/rr2_low)
+                           +2*(y(j)-shifty)**2*a2/rr2_high**2-a2/rr2_high&
+                           +2*(y(j)+shifty)**2*a2/rr2_low**2 -a2/rr2_low)
                       f(i,j,k,iuy) = f(i,j,k,iuy)-special_infuu*( &
-                           +2*(xx(i,j,k)-shiftx)*(yy(i,j,k)-shifty)&
+                           +2*(x(i)-shiftx)*(y(j)-shifty)&
                            *a2/rr2_high**2&
-                           +2*(xx(i,j,k)+shiftx)*(yy(i,j,k)+shifty)&
+                           +2*(x(i)+shiftx)*(y(j)+shifty)&
                            *a2/rr2_low**2)
                     endif
                   enddo
@@ -317,15 +315,15 @@ module Special
           do i=l1,l2
             do j=m1,m2
               do k=n1,n2
-                rr2 = xx(i,j,k)**2+yy(i,j,k)**2
+                rr2 = x(i)**2+y(j)**2
                 if (rr2 > a2) then
                   do cyl=0,100
                     if (cyl==0) then
                       wall_smoothing=1-exp(-(rr2-a2)/skin_depth**2)
                       f(i,j,k,iux) = -special_infuu*&
-                           2*xx(i,j,k)*yy(i,j,k)*a2/rr2**2*wall_smoothing
+                           2*x(i)*y(j)*a2/rr2**2*wall_smoothing
                       f(i,j,k,iuy) = special_infuu*&
-                           (1. - a2/rr2 + 2*xx(i,j,k)**2*a2/rr2**2)&
+                           (1. - a2/rr2 + 2*x(i)**2*a2/rr2**2)&
                            *wall_smoothing
                       if (ilnTT .ne. 0) then
                         wall_smoothing_temp=1-exp(-(rr2-a2)/(sqrt(a2))**2)
@@ -336,15 +334,15 @@ module Special
 
                     else
                       shiftx=cyl*Lxyz(1)
-                      rr2_low =(xx(i,j,k)+shiftx)**2+(yy(i,j,k)+shifty)**2
-                      rr2_high=(xx(i,j,k)-shiftx)**2+(yy(i,j,k)-shifty)**2
+                      rr2_low =(x(i)+shiftx)**2+(y(j)+shifty)**2
+                      rr2_high=(x(i)-shiftx)**2+(y(j)-shifty)**2
                       f(i,j,k,iuy) = f(i,j,k,iuy)+special_infuu*( &
-                           +2*(xx(i,j,k)-shiftx)**2*a2/rr2_high**2-a2/rr2_high&
-                           +2*(xx(i,j,k)+shiftx)**2*a2/rr2_low**2 -a2/rr2_low)
+                           +2*(x(i)-shiftx)**2*a2/rr2_high**2-a2/rr2_high&
+                           +2*(x(i)+shiftx)**2*a2/rr2_low**2 -a2/rr2_low)
                       f(i,j,k,iux) = f(i,j,k,iux)-special_infuu*( &
-                           +2*(xx(i,j,k)-shiftx)*(yy(i,j,k)-shifty)&
+                           +2*(x(i)-shiftx)*(y(j)-shifty)&
                            *a2/rr2_high**2&
-                           +2*(xx(i,j,k)+shiftx)*(yy(i,j,k)+shifty)&
+                           +2*(x(i)+shiftx)*(y(j)+shifty)&
                            *a2/rr2_low**2)
                     endif
                   enddo  

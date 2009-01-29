@@ -213,7 +213,7 @@ module Pscalar
 !
     endsubroutine init_lncc_simple
 !***********************************************************************
-    subroutine init_lncc(f,xx,yy,zz)
+    subroutine init_lncc(f)
 !
 !  initialise passive scalar field; called from start.f90
 !
@@ -225,7 +225,6 @@ module Pscalar
       use Initcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz)      :: xx,yy,zz,prof
 !
       ! for the time being, keep old name for backward compatibility
       if (initlncc/='impossible') initcc=initlncc
@@ -259,12 +258,16 @@ module Pscalar
         case('propto-uy'); call wave_uu(amplcc,f,icc,ky=ky_cc)
         case('propto-uz'); call wave_uu(amplcc,f,icc,kz=kz_cc)
         case('cosx_cosy_cosz'); call cosx_cosy_cosz(amplcc,f,icc,kx_cc,ky_cc,kz_cc)
-        case('sound-wave'); f(:,:,:,icc)=-amplcc*cos(kx_cc*xx)
+        case('sound-wave')
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,icc)=-amplcc*cos(kx_cc*x(l1:l2))
+          enddo; enddo
         case('tang-discont-z')
-           print*,'init_lncc: widthcc=',widthcc
-        prof=.5*(1.+tanh(zz/widthcc))
-        f(:,:,:,icc)=-1.+2.*prof
-        case('hor-tube'); call htube2(amplcc,f,icc,icc,xx,yy,zz,radius_cc,epsilon_cc)
+          print*,'init_lncc: widthcc=',widthcc
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,icc)=-1.0+2*.5*(1.+tanh(z(n)/widthcc))
+          enddo; enddo
+        case('hor-tube'); call htube2(amplcc,f,icc,icc,radius_cc,epsilon_cc)
         case('jump'); call jump(f,icc,cc_const,0.,widthcc,'z')
         case default; call stop_it('init_lncc: bad initcc='//trim(initcc))
       endselect
@@ -282,8 +285,6 @@ module Pscalar
         if (lroot) print*,'set floor value for cc; cc_min=',cc_min
         f(:,:,:,icc)=max(cc_min,f(:,:,:,icc))
       endif
-!
-      if (NO_WARN) print*,xx,yy,zz !(prevent compiler warnings)
 !
     endsubroutine init_lncc
 !***********************************************************************

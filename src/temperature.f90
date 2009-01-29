@@ -144,7 +144,7 @@ iss=ilnTT  !(need to think how to deal with this...)
 !
     endsubroutine initialize_entropy
 !***********************************************************************
-    subroutine init_ss(f,xx,yy,zz)
+    subroutine init_ss(f)
 !
 !  initialise lnTT; called from start.f90
 !
@@ -158,9 +158,7 @@ iss=ilnTT  !(need to think how to deal with this...)
       use Initcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
 !
-      intent(in) :: xx,yy,zz
       intent(inout) :: f
 !
       select case(initlnTT)
@@ -180,65 +178,7 @@ iss=ilnTT  !(need to think how to deal with this...)
           f(:,:,:,ilnTT) = -0.
       endif
 !
-      if (NO_WARN) print*,xx,yy,zz  !(to keep compiler quiet)
-!
     endsubroutine init_ss
-!***********************************************************************
-    subroutine polytropic_ss_z( &
-         f,mpoly,zz,tmp,zint,zbot,zblend,isoth,cs2int,ssint)
-!
-!  Implement a polytropic profile in ss above zbot. If this routine is
-!  called several times (for a piecewise polytropic atmosphere), on needs
-!  to call it from top to bottom.
-!
-!  zint    -- z at top of layer
-!  zbot    -- z at bottom of layer
-!  zblend  -- smoothly blend (with width widthss) previous ss (for z>zblend)
-!             with new profile (for z<zblend)
-!  isoth   -- flag for isothermal stratification;
-!  ssint   -- value of ss at interface, i.e. at the top on entry, at the
-!             bottom on exit
-!  cs2int  -- same for cs2
-!
-      use Sub, only: step
-      use Gravity, only: gravz
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: tmp,p,zz
-      real, dimension (mz) :: stp
-      real :: mpoly,zint,zbot,zblend,beta1,cs2int,ssint
-      integer :: isoth
-!
-      ! NB: beta1 is not dT/dz, but dcs2/dz = (gamma-1)c_p dT/dz
-      if (isoth /= 0) then ! isothermal layer
-        beta1 = 0.
-        tmp = ssint - gamma1*gravz*(zz-zint)/cs2int
-        ssint = -gamma1*gravz*(zbot-zint)/cs2int ! ss at layer interface
-      else
-        beta1 = gamma*gravz/(mpoly+1)
-        tmp = 1 + beta1*(zz-zint)/cs2int
-        ! Abort if args of log() are negative
-        if (any((tmp <= 0.) .and. (zz <= zblend))) then
-          call fatal_error('polytropic_ss_z', &
-              'Imaginary temperature values -- your z_inf is too low.')
-        endif
-        tmp = max(tmp,epsi)  ! ensure arg to log is positive
-        tmp = ssint + (1-mpoly*gamma1)/gamma &
-                      * log(tmp)
-        ssint = ssint + (1-mpoly*gamma1)/gamma & ! ss at layer interface
-                        * log(1 + beta1*(zbot-zint)/cs2int)
-      endif
-      cs2int = cs2int + beta1*(zbot-zint) ! cs2 at layer interface (bottom)
-
-      !
-      ! smoothly blend the old value (above zblend) and the new one (below
-      ! zblend) for the two regions:
-      !
-      stp = step(z,zblend,widthss)
-      p = spread(spread(stp,1,mx),2,my)
-      f(:,:,:,iss) = p*f(:,:,:,iss)  + (1-p)*tmp
-!
-    endsubroutine polytropic_ss_z
 !***********************************************************************
     subroutine dss_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1)
 !

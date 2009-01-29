@@ -70,16 +70,16 @@ module Neutraldensity
 !
     endsubroutine initialize_neutraldensity
 !***********************************************************************
-    subroutine init_lnrhon(f,xx,yy,zz)
+    subroutine init_lnrhon(f)
 !
 !  initialise lnrhon; called from start.f90
 !
 !  18-mar-03/axel: adapted from neutraldensity
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
 !
-      if (NO_WARN) print*,f,xx,yy,zz ! keep compiler quiet
+      if (NO_WARN) print*,f ! keep compiler quiet
+!
     endsubroutine init_lnrhon
 !***********************************************************************
     subroutine pencil_criteria_neutraldensity()

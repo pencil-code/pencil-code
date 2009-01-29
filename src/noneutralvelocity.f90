@@ -61,16 +61,15 @@ module NeutralVelocity
 !
     endsubroutine initialize_neutralvelocity
 !***********************************************************************
-    subroutine init_uun(f,xx,yy,zz)
+    subroutine init_uun(f)
 !
 !  initialise uun; called from start.f90
 !
 !  18-mar-03/axel: dummy routine
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
 !
-      if (NO_WARN) print*,f,xx,yy,zz  !(keep compiler quiet)
+      if (NO_WARN) print*,f !(keep compiler quiet)
 !
     endsubroutine init_uun
 !***********************************************************************

@@ -88,7 +88,7 @@ module Magnetic
 !
     endsubroutine initialize_magnetic
 !***********************************************************************
-    subroutine init_aa(f,xx,yy,zz)
+    subroutine init_aa(f)
 !
 !  initialise magnetic field; called from start.f90
 !  3-may-2002/wolf: dummy routine
@@ -97,10 +97,8 @@ module Magnetic
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz)      :: xx,yy,zz
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(xx,yy,zz)
 !
     endsubroutine init_aa
 !***********************************************************************

@@ -116,7 +116,7 @@ module Cosmicrayflux
 !
     endsubroutine initialize_cosmicrayflux
 !***********************************************************************
-    subroutine init_fcr(f,xx,yy,zz)
+    subroutine init_fcr(f)
 !
 !  initialise magnetic field; called from start.f90
 !  AB: maybe we should here call different routines (such as rings)
@@ -133,7 +133,6 @@ module Cosmicrayflux
       use Initcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz)      :: xx,yy,zz
 !,tmp,prof
 !      real, dimension (nx,3) :: bb
 !      real, dimension (nx) :: b2,fact

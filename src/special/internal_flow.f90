@@ -123,7 +123,7 @@ module Special
 !
     endsubroutine initialize_special
 !***********************************************************************
-    subroutine init_special(f,xx,yy,zz)
+    subroutine init_special(f)
 !
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
@@ -134,11 +134,9 @@ module Special
       use Initcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
       integer :: i
       real :: height,h2
 !
-      intent(in) :: xx,yy,zz
       intent(inout) :: f
       !
       ! Select case
@@ -147,7 +145,7 @@ module Special
       case('nothing'); if (lroot) print*,'init_special: nothing'
       case('poiseulle_xy')
         f(:,:,:,iux:iuz)=0
-        call poiseulle_flowx_wally(f,xx,yy,zz,central_vel)
+        call poiseulle_flowx_wally(f,central_vel)
       case('poiseulle_xy_noise')
         f(:,:,:,iux:iuz)=0
         height=Lxyz(2)/2
@@ -157,11 +155,11 @@ module Special
           f(l1:l2,m1:m2,n1:n2,i)=f(l1:l2,m1:m2,n1:n2,i)&
                *(1-(yy(l1:l2,m1:m2,n1:n2)-xyz0(2)-height)**2/h2)
         enddo
-        call poiseulle_flowx_wally(f,xx,yy,zz,central_vel)
+        call poiseulle_flowx_wally(f,central_vel)
       case('velocity_defect_xy')
-        call velocity_defect_flowx_wally(f,xx,yy,zz,central_vel,Re_tau)
+        call velocity_defect_flowx_wally(f,central_vel,Re_tau)
       case('log_law_xy')
-        call log_law_flowx_wally(f,xx,yy,zz,central_vel,Re_tau)
+        call log_law_flowx_wally(f,central_vel,Re_tau)
       case default
         !
         !  Catch unknown values
@@ -644,7 +642,7 @@ module Special
 !
     endsubroutine special_before_boundary
 !***********************************************************************
-    subroutine poiseulle_flowx_wally(f,xx,yy,zz,central_vel)
+    subroutine poiseulle_flowx_wally(f,central_vel)
       !
       ! Set initial Poiseulle flow in x-direction.
       ! The walls are in the y-direction
@@ -652,7 +650,6 @@ module Special
       ! 2008.02.18: Nils Erland (Coded)
       !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
       real :: central_vel, height, h2
       integer :: i,j,k
       !
@@ -664,7 +661,7 @@ module Special
       !
     end subroutine poiseulle_flowx_wally
 !***********************************************************************
-    subroutine velocity_defect_flowx_wally(f,xx,yy,zz,central_vel,Re_tau)
+    subroutine velocity_defect_flowx_wally(f,central_vel,Re_tau)
       !
       ! Set initial turbulent flow in x-direction.
       ! The walls are in the y-direction.
@@ -677,7 +674,6 @@ module Special
       use Viscosity, only: getnu
       !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mx,my,mz), intent(in) :: xx,yy,zz
       real, intent(in) :: central_vel,Re_tau
       real :: B1,kappa,utau,height, h2, nu
       integer :: i,j,k
@@ -753,7 +749,7 @@ endif
       !
     end subroutine velocity_defect_flowx_wally
 !***********************************************************************
-    subroutine log_law_flowx_wally(f,xx,yy,zz,central_vel,Re_tau)
+    subroutine log_law_flowx_wally(f,central_vel,Re_tau)
       !
       ! Set initial turbulent flow in x-direction.
       ! The walls are in the y-direction.
@@ -766,7 +762,6 @@ endif
       use Viscosity, only: getnu
       !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mx,my,mz), intent(in) :: xx,yy,zz
       real, intent(in) :: central_vel,Re_tau
       real :: B1,kappa,utau,height, h2, nu
       integer :: i,j,k

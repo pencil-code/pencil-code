@@ -355,7 +355,7 @@ module Entropy
 
     endsubroutine initialize_entropy
 !***********************************************************************
-    subroutine init_ss(f,xx,yy,zz)
+    subroutine init_ss(f)
 !
 !  initialise lnTT or TT (; called from start.f90
 !
@@ -374,7 +374,6 @@ module Entropy
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
-      real, dimension (mx,my,mz), intent (in) :: xx,yy,zz
 !
       integer :: j
       logical :: lnothing=.true.
@@ -467,8 +466,6 @@ module Entropy
       if (ltemperature_nolog.and.linitial_log) &
            f(:,:,:,ilnTT)=exp(f(:,:,:,ilnTT))
 !
-      if (NO_WARN) print*,xx,yy  !(to keep compiler quiet)        
-
     endsubroutine init_ss
 !***********************************************************************
     subroutine pencil_criteria_entropy()

@@ -787,19 +787,20 @@ module Initcond
 !
     endsubroutine gaussian
 !***********************************************************************
-    subroutine gaussian3d(ampl,f,i,xx,yy,zz,radius)
+    subroutine gaussian3d(ampl,f,i,radius)
 !
 !  gaussian 3-D bump
 !
 !  28-may-03/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz) :: xx,yy,zz
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl,radius,radius21
 !
       radius21=1./radius**2
-      f(:,:,:,i)=f(:,:,:,i)+ampl*exp(-(xx**2+yy**2+zz**2)*radius21)
+      do n=n1,n2; do m=m1,m2
+        f(l1:l2,m,n,i)=f(l1:l2,m,n,i)+ampl*exp(-(x(l1:l2)**2+y(m)**2+z(n)**2)*radius21)
+      enddo; enddo
 !
     endsubroutine gaussian3d
 !***********************************************************************
@@ -956,7 +957,7 @@ module Initcond
 !
     endsubroutine wave_uu
 !***********************************************************************
-    subroutine modes(ampl,coef,f,i,kx,ky,kz,xx,yy,zz)
+    subroutine modes(ampl,coef,f,i,kx,ky,kz)
 !
 !  mode
 !
@@ -964,16 +965,17 @@ module Initcond
 !
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
       complex :: coef
       complex :: ii=(0.,1.)
       real :: ampl,kx,ky,kz
 !
-      f(:,:,:,i)=ampl*real(coef*exp(ii*(kx*xx+ky*yy+kz*zz)))
+      do n=n1,n2; do m=m1,m2
+        f(l1:l2,m,n,i)=ampl*real(coef*exp(ii*(kx*x(l1:l2)+ky*y(m)+kz*z(n))))
+      enddo; enddo
 !
     endsubroutine modes
 !***********************************************************************
-    subroutine modev(ampl,coef,f,i,kx,ky,kz,xx,yy,zz)
+    subroutine modev(ampl,coef,f,i,kx,ky,kz)
 !
 !  mode
 !
@@ -981,18 +983,17 @@ module Initcond
 !
       integer :: i,ivv
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
       complex, dimension (3) :: coef
       complex :: ii=(0.,1.)
       real :: ampl,kx,ky,kz
 !
       do ivv=0,2
-        f(:,:,:,ivv+i)=ampl*real(coef(ivv+1)*exp(ii*(kx*xx+ky*yy+kz*zz)))
+        f(l1:l2,m,n,ivv+i)=ampl*real(coef(ivv+1)*exp(ii*(kx*x(l1:l2)+ky*y(m)+kz*z(n))))
       enddo
 !
     endsubroutine modev
 !***********************************************************************
-    subroutine modeb(ampl,coefb,f,i,kx,ky,kz,xx,yy,zz)
+    subroutine modeb(ampl,coefb,f,i,kx,ky,kz)
 !
 !  mode
 !
@@ -1000,7 +1001,6 @@ module Initcond
 !
       integer :: i,ivv
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
       complex, dimension (3) :: coef,coefb
       complex :: ii=(0.,1.)
       real :: ampl,kx,ky,kz,k2
@@ -1013,7 +1013,7 @@ module Initcond
       print*,'coef=',coef
 !
       do ivv=0,2
-        f(:,:,:,ivv+i)=ampl*real(coef(ivv+1)*exp(ii*(kx*xx+ky*yy+kz*zz)))
+        f(l1:l2,m,n,ivv+i)=ampl*real(coef(ivv+1)*exp(ii*(kx*x(l1:l2)+ky*y(m)+kz*z(n))))
       enddo
 !
     endsubroutine modeb
@@ -1251,9 +1251,6 @@ module Initcond
       fac1=sqrt(2.)*ampl*k/kf
       fac2=sqrt(2.)*ampl
 !
-!  U=(U/k)*[curl(phi*zz)/kf+curlcurl(phi*zz)/kf^2],
-!  where phi=sqrt(2)*cos(kx)*cos(ky)
-!
       j=i+0; f(:,:,:,j)=f(:,:,:,j)-fac1*spread(spread(cos(k*x),2,my),3,mz)&
                                        *spread(spread(sin(k*y),1,mx),3,mz)
 !
@@ -1279,9 +1276,6 @@ module Initcond
 !
       kf=k*sqrt(2.)
       fac1=sqrt(2.)*ampl*k/kf
-!
-!  U=(U/k)*[curl(phi*zz)/kf+curlcurl(phi*zz)/kf^2],
-!  where phi=sqrt(2)*cos(kx)*cos(ky)
 !
       j=i+0; f(:,:,:,j)=f(:,:,:,j)-fac1*spread(spread(sin(k*y),1,mx),3,mz)
 !
@@ -1537,14 +1531,13 @@ module Initcond
 !
     endsubroutine coswave_phase
 !***********************************************************************
-    subroutine hawley_etal99a(ampl,f,i,width,Lxyz,xx,yy,zz)
+    subroutine hawley_etal99a(ampl,f,i,width,Lxyz)
 !
 !  velocity perturbations as used by Hawley et al (1999, ApJ,518,394)
 !
 !  13-jun-05/maurice reyes: sent to axel via email
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
       real, dimension (mx) :: funx
       real, dimension (my) :: funy
       real, dimension (mz) :: funz
@@ -1561,8 +1554,6 @@ module Initcond
 !  velocity perturbations as used by Hawley et al (1999, ApJ,518,394)
 !
       if (lroot) print*,'init_uu: hawley-et-al'
-      !f(:,:,:,iux)=f(:,:,:,iux)+ampl*exp(-(xx**2+yy**2+(zz-1.)**2)/width)
-      !f(:,:,:,iuz)=f(:,:,:,iuz)-ampl*exp(-(xx**2+yy**2+zz**2)/width)
       k1=2.0*pi/(Lxyz(1))
       k2=4.0*pi/(Lxyz(1))
       k3=6.0*pi/(Lxyz(1))
@@ -1577,13 +1568,9 @@ module Initcond
       funx=sin(k1*x+phi1)+sin(k2*x+phi2)+sin(k3*x+phi3)+sin(k4*x+phi4)
       funy=sin(k1*y+phi1)+sin(k2*y+phi2)+sin(k3*y+phi3)+sin(k4*y+phi4)
       funz=sin(k1*z+phi1)+sin(k2*z+phi2)+sin(k3*z+phi3)+sin(k4*z+phi4)
-      do n=1,mz
-        do m=1,my
-          do l=1,mx
-            f(l,m,n,iuy)=ampl*funx(l)*funy(m)*funz(n)
-          enddo
-        enddo
-      enddo
+      do n=1,mz; do m=1,my; do l=1,mx
+        f(l,m,n,iuy)=ampl*funx(l)*funy(m)*funz(n)
+      enddo; enddo; enddo
 !
     endsubroutine hawley_etal99a
 !***********************************************************************
@@ -1705,7 +1692,7 @@ module Initcond
 !
     endsubroutine stratification
 !***********************************************************************
-    subroutine planet_hc(ampl,f,xx,yy,zz,eps,radius,gamma,cs20,rho0,width)
+    subroutine planet_hc(ampl,f,eps,radius,gamma,cs20,rho0,width)
 !
 !  Ellipsoidal planet solution (Goldreich, Narayan, Goodman 1987)
 !
@@ -1714,14 +1701,15 @@ module Initcond
 !  26-Jul-03/anders: Revived from June 1 version
 !
       use Mpicomm, only: mpireduce_sum, mpibcast_real
-
+!
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz,hh,xi
-      real, dimension (mx,my) :: delS
-      real :: ampl,sigma2,sigma,delta2,delta,eps,radius,a_ell,b_ell,c_ell
+      real, dimension (nx) :: hh, xi
+      real, dimension (mz) :: hz
+      real :: delS,ampl,sigma2,sigma,delta2,delta,eps,radius,a_ell,b_ell,c_ell
       real :: gamma,cs20,gamma1,eps2,radius2,width
       real :: lnrhosum_thisbox,rho0
       real, dimension(1) :: lnrhosum_thisbox_tmp,lnrhosum_wholebox
+      integer :: l
 !
 !  calculate sigma
 !
@@ -1751,12 +1739,6 @@ module Initcond
       gamma1=gamma-1.
       if (lroot) print*,'planet_hc: gamma=',gamma
 !
-!  calculate hh
-!  xi=1 inside vortex, and 0 outside
-!
-      hh=+.5*delta2*Omega**2*(radius2-xx**2-eps2*yy**2)-.5*Omega**2*zz**2
-      xi=.5+.5*tanh(hh/width)
-!
 !  ellipse parameters
 !
       b_ell = radius
@@ -1764,47 +1746,54 @@ module Initcond
       c_ell = radius*delta
       if (lroot) print*,'planet_hc: Ellipse axes (b_ell,a_ell,c_ell)=', &
           b_ell,a_ell,c_ell
+      if (lroot) print*,"planet_hc: integrate hot corona"
+!
+!  xi=1 inside vortex, and 0 outside
+!
+      do n=n1,n2; do m=m1,m2
+        hh=0.5*delta2*Omega**2*(radius2-x(l1:l2)**2-eps2*y(m)**2)-.5*Omega**2*z(n)**2
+        xi=0.5+0.5*tanh(hh/width)
+!
+!  Calculate velocities (Kepler speed subtracted)
+!
+        f(l1:l2,m,n,iux)=   eps2*sigma *Omega*y(m)    *xi
+        f(l1:l2,m,n,iuy)=(qshear-sigma)*Omega*x(l1:l2)*xi
+        if (lentropy) f(l1:l2,m,n,iss)=-log(ampl)*xi
+      enddo; enddo
+!
+      do m=m1,m2; do l=l1,l2
 !
 !  add continuous vertical stratification to horizontal planet solution
 !  NOTE: if width is too small, the vertical integration below may fail.
 !
-      if (lroot) print*,"planet_hc: integrate hot corona"
-      hh(:,:,n2)=1.  !(initial condition)
-      f(:,:,:,iss)=-log(ampl)*xi
-      do n=n2-1,n1,-1
-        delS=f(:,:,n+1,iss)-f(:,:,n,iss)
-        hh(:,:,n)=(hh(:,:,n+1)*(1.-.5*delS)+ &
-             Omega**2*.5*(z(n)+z(n+1))*dz)/(1.+.5*delS)
-      enddo
-!
-!  Calculate velocities (Kepler speed subtracted)
-!
-      f(:,:,:,iux)=   eps2*sigma *Omega*yy*xi
-      f(:,:,:,iuy)=(qshear-sigma)*Omega*xx*xi
-!
-      if (lroot) print*,'planet_hc: hmin=',minval(hh(l1:l2,m1:m2,n1:n2))
-
-      if (gamma1<0. .and. lroot) &
-          print*,'planet_hc: must have gamma>1 for planet solution'
+        hz(n2)=1.0  !(initial condition)
+        do n=n2-1,n1,-1
+          delS=f(l,m,n+1,iss)-f(l,m,n,iss)
+          hz(n)=(hz(n+1)*(1.0-0.5*delS)+ &
+               Omega**2*0.5*(z(n)+z(n+1))*dz)/(1.0+0.5*delS)
+        enddo
 !
 !  calculate density, depending on what gamma is
 !
-      if (lentropy) then
-        f(l1:l2,m1:m2,n1:n2,ilnrho)= &
-             (log(gamma1*hh(l1:l2,m1:m2,n1:n2)/cs20) &
-             -gamma*f(l1:l2,m1:m2,n1:n2,iss))/gamma1
-        if (lroot) &
-          print*,'planet_hc: planet solution with entropy for gamma=',gamma
-      else
-        if (gamma==1.) then
-          f(l1:l2,m1:m2,n1:n2,ilnrho)=hh(l1:l2,m1:m2,n1:n2)/cs20
-          if (lroot) print*,'planet_hc: planet solution for gamma=1'
+        if (lentropy) then
+          f(l,m,n1:n2,ilnrho)= &
+               (log(gamma1*hz(n1:n2)/cs20)-gamma*f(l,m,n1:n2,iss))/gamma1
+          if (lroot) &
+            print*,'planet_hc: planet solution with entropy for gamma=',gamma
         else
-          f(l1:l2,m1:m2,n1:n2,ilnrho)=&
-               log(gamma1*hh(l1:l2,m1:m2,n1:n2)/cs20)/gamma1
-          if (lroot) print*,'planet_hc: planet solution for gamma=',gamma
+          if (gamma==1.) then
+            f(l,m,n1:n2,ilnrho)=hz(n1:n2)/cs20
+            if (lroot) print*,'planet_hc: planet solution for gamma=1'
+          else
+            f(l,m,n1:n2,ilnrho)=log(gamma1*hz(n1:n2)/cs20)/gamma1
+            if (lroot) print*,'planet_hc: planet solution for gamma=',gamma
+          endif
         endif
-      endif
+!
+      enddo; enddo
+!
+      if (gamma1<0. .and. lroot) &
+          print*,'planet_hc: must have gamma>1 for planet solution'
 !
 !  Use average density of box as unit density
 !
@@ -1834,16 +1823,16 @@ module Initcond
 !
     endsubroutine planet_hc
 !***********************************************************************
-    subroutine planet(rbound,f,xx,yy,zz,eps,radius,gamma,cs20,rho0,width,hh0)
+    subroutine planet(rbound,f,eps,radius,gamma,cs20,rho0,width,hh0)
 !
 !  Cylindrical planet solution (Goldreich, Narayan, Goodman 1987)
 !
 !   jun-03/anders: coded (adapted from old 'planet', now 'planet_hc')
 !
       use Mpicomm, only: mpireduce_sum, mpibcast_real
-
+!
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz,hh,xi,r_ell
+      real, dimension (nx) :: hh, xi, r_ell
       real :: rbound,sigma2,sigma,delta2,delta,eps,radius
       real :: gamma,eps2,radius2,width,a_ell,b_ell,c_ell
       real :: gamma1,ztop,cs20,hh0
@@ -1862,7 +1851,7 @@ module Initcond
       else
         sigma=sqrt(sigma2)
       endif
-
+!
       gamma1=gamma-1.
 !
 !  calculate delta
@@ -1874,7 +1863,7 @@ module Initcond
       else
         delta=sqrt(delta2)
       endif
-
+!
       ztop=z0+lz
       if (lroot) print*,'planet: ztop=', ztop
 !
@@ -1883,55 +1872,43 @@ module Initcond
       b_ell = radius
       a_ell = radius/eps
       c_ell = radius*delta
-      r_ell = sqrt(xx**2/b_ell**2+yy**2/a_ell**2)
       if (lroot) print*,'planet: Ellipse axes (b_ell,a_ell,c_ell)=', &
           b_ell,a_ell,c_ell
+      if (lroot) print*,'planet: width,rbound',width,rbound
+!
+      do n=n1,n2; do m=m1,m2
+        r_ell = sqrt(x(l1:l2)**2/b_ell**2+y(m)**2/a_ell**2)
 !
 !  xi is 1 inside vortex and 0 outside
 !
-      xi = 1./(exp((1/width)*(r_ell-rbound))+1.)
-      if (lroot) print*,'planet: width,rbound',width,rbound
+        xi = 1/(exp((1/width)*(r_ell-rbound))+1.0)
 !
 !  Calculate enthalpy inside vortex
 !
-      hh = 0.5*delta2*Omega**2*(radius2-xx**2-eps2*yy**2) &
-           -0.5*Omega**2*zz**2 + 0.5*Omega**2*ztop**2 + hh0
+        hh = 0.5*delta2*Omega**2*(radius2-x(l1:l2)**2-eps2*y(m)**2) &
+             -0.5*Omega**2*z(n)**2 + 0.5*Omega**2*ztop**2 + hh0
 !
 !  Calculate enthalpy outside vortex
 !
-      where (r_ell .gt. 1) hh=-0.5*Omega**2*zz**2 + 0.5*Omega**2*ztop**2 + hh0
+        where (r_ell>1.0) hh=-0.5*Omega**2*z(n)**2 + 0.5*Omega**2*ztop**2 + hh0
 !
 !  Calculate velocities (Kepler speed subtracted)
 !
-      f(:,:,:,iux)=   eps2*sigma *Omega*yy*xi
-      f(:,:,:,iuy)=(qshear-sigma)*Omega*xx*xi
+        f(l1:l2,m,n,iux)=   eps2*sigma *Omega*y(m)*xi
+        f(l1:l2,m,n,iuy)=(qshear-sigma)*Omega*x(l1:l2)*xi
 !
 !  calculate density, depending on what gamma is
 !
-      if (lroot) print*,'planet: hh0,hmin',&
-           hh0,minval(hh(l1:l2,m1:m2,n1:n2))
-      if (lentropy .and. lroot) print*,'planet: smin,smax', &
-           minval(f(:,:,:,iss)), maxval(f(:,:,:,iss))
-      if (gamma1<0. .and. lroot) &
-           print*,'planet: must have gamma>1 for planet solution'
-!
-!  have to use explicit indices here, because ghostzones are not set
-!
-      if (lentropy) then
-        f(l1:l2,m1:m2,n1:n2,ilnrho) = &
-            (log(gamma1*hh(l1:l2,m1:m2,n1:n2)/cs20) &
-            - gamma*f(l1:l2,m1:m2,n1:n2,iss))/gamma1
-        if (lroot) print*,'planet: planet solution for gamma=',gamma
-      else
-      if (gamma==1.) then
-        f(l1:l2,m1:m2,n1:n2,ilnrho) = hh(l1:l2,m1:m2,n1:n2)/cs20
-          if (lroot) print*,'planet: planet solution for gamma=1'
+        if (lentropy) then
+          f(l1:l2,m,n,ilnrho)=(log(gamma1*hh/cs20)-gamma*f(l1:l2,m,n,iss))/gamma1
         else
-          f(l1:l2,m1:m2,n1:n2,ilnrho) = &
-               log(gamma1*hh(l1:l2,m1:m2,n1:n2)/cs20)/gamma1
-          if (lroot) print*,'planet: planet solution for gamma=',gamma
+          if (gamma==1.) then
+            f(l1:l2,m,n,ilnrho) = hh/cs20
+          else
+            f(l1:l2,m,n,ilnrho) = log(gamma1*hh/cs20)/gamma1
+          endif
         endif
-      endif
+      enddo; enddo
 !
 !  Use average density of box as unit density
 !
@@ -1947,7 +1924,7 @@ module Initcond
 !
       call mpireduce_sum(lnrhosum_thisbox_tmp,lnrhosum_wholebox,1)
       if (lroot .and. ip<14) &
-        print*,'planet_hc: lnrhosum_wholebox=',lnrhosum_wholebox
+          print*,'planet_hc: lnrhosum_wholebox=',lnrhosum_wholebox
 !
 !  Calculate <rho> and send to all processors
 !
@@ -1961,14 +1938,14 @@ module Initcond
 !
     endsubroutine planet
 !***********************************************************************
-    subroutine vortex_2d(f,xx,yy,b_ell,width,rbound)
+    subroutine vortex_2d(f,b_ell,width,rbound)
 !
 !  Ellipsoidal planet solution (Goldreich, Narayan, Goodman 1987)
 !
 !   8-jun-04/anders: adapted from planet
 !
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my,mz) :: xx,yy,r_ell,xi
+      real, dimension (nx) :: r_ell, xi
       real :: sigma,eps_ell,a_ell,b_ell,width,rbound
 !
 !  calculate sigma
@@ -1984,51 +1961,55 @@ module Initcond
 !
 !  Limit vortex to within r_ell
 !
-      r_ell = sqrt(xx**2/b_ell**2+yy**2/a_ell**2)
-      xi = 1./(exp((1/width)*(r_ell-rbound))+1.)
+      do n=n1,n2; do m=m1,m2
+        r_ell = sqrt(x(l1:l2)**2/b_ell**2+y(m)**2/a_ell**2)
+        xi = 1./(exp((1/width)*(r_ell-rbound))+1.)
 !
 !  Calculate velocities (Kepler speed subtracted)
 !
-      f(:,:,:,iux)=eps_ell**2*sigma*Omega*yy*xi
-      f(:,:,:,iuy)=(qshear-sigma)  *Omega*xx*xi
+        f(l1:l2,m,n,iux)=eps_ell**2*sigma*Omega*y(m)*xi
+        f(l1:l2,m,n,iuy)=(qshear-sigma)  *Omega*x(l1:l2)*xi
+      enddo; enddo
 !
     endsubroutine vortex_2d
 !***********************************************************************
-    subroutine baroclinic(f,xx,yy,zz,gamma,rho0,dlnrhobdx,co1_ss,co2_ss,cs20)
+    subroutine baroclinic(f,gamma,rho0,dlnrhobdx,co1_ss,co2_ss,cs20)
 !
 !  Baroclinic shearing sheet initial condition
 !  11-nov-03/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz,sz,I_int
+      real :: sz,I_int
       real :: gamma,rho0,dlnrhobdx,co1_ss,co2_ss,cs20
 !
 !  Specify vertical entropy and integral of exp(-sz/cp)*z
 !
-      if (co1_ss .ne. 0. .and. co2_ss .eq. 0.) then
-        if (lroot) print*,'baroclinic: sz =', co1_ss,'*abs(zz)'
-        sz = co1_ss*abs(zz)
-        I_int = 1/(co1_ss**2)*( 1 - exp(-sz) * (1+co1_ss*abs(zz)) )
-      elseif (co1_ss .eq. 0. .and. co2_ss .ne. 0.) then
-        if (lroot) print*,'baroclinic: sz =', co2_ss,'*zz**2'
-        sz = co2_ss*zz**2
-        I_int = -1/(2*co2_ss)*( exp(-co2_ss*zz**2)-1 )
-      elseif (lroot) then
-        print*, 'baroclinic: no valid sz specified'
-      endif
-
-      f(:,:,:,iss) = sz
+      do n=n1,n2; do m=m1,m2
+        if (co1_ss/=0.0 .and. co2_ss==0.0) then
+          if (lroot) print*,'baroclinic: sz =', co1_ss,'*abs(z(n))'
+          sz = co1_ss*abs(z(n))
+          I_int = 1/(co1_ss**2)*( 1 - exp(-sz) * (1+co1_ss*abs(z(n))) )
+        elseif (co1_ss==0.0 .and. co2_ss/=0.0) then
+          if (lroot) print*,'baroclinic: sz =', co2_ss,'*zz**2'
+          sz = co2_ss*z(n)**2
+          I_int = -1/(2*co2_ss)*( exp(-co2_ss*z(n)**2)-1 )
+        elseif (lroot) then
+          print*, 'baroclinic: no valid sz specified'
+        endif
+ 
+        f(l1:l2,m,n,iss) = sz
 !
 !  Solution to hydrostatic equlibrium in the z-direction
 !
-      f(:,:,:,ilnrho) = 1/(gamma-1) * log( (1-gamma)/cs20 * I_int + 1 ) - sz
+        f(l1:l2,m,n,ilnrho) = 1/(gamma-1)*log( (1-gamma)/cs20 * I_int + 1 ) - sz
 !
 !  Toroidal velocity comes from hyd. stat. eq. equ. in the x-direction
 !
-      f(:,:,:,iuy) = cs20/(2*Omega) * exp( gamma*f(:,:,:,iss) + &
-          (gamma-1)*f(:,:,:,ilnrho) ) * dlnrhobdx/gamma
+        f(l1:l2,m,n,iuy) = cs20/(2*Omega)*exp( gamma*f(l1:l2,m,n,iss) + &
+            (gamma-1)*f(l1:l2,m,n,ilnrho) ) * dlnrhobdx/gamma
 !
-      if (NO_WARN) print*,xx,yy,rho0  !(keep compiler quiet)
+      enddo; enddo
+!
     endsubroutine baroclinic
 !***********************************************************************
     subroutine crazy(ampl,f,i)
@@ -2058,7 +2039,7 @@ module Initcond
 !
     endsubroutine crazy
 !***********************************************************************
-    subroutine htube(ampl,f,i1,i2,xx,yy,zz,radius,epsilon_nonaxi)
+    subroutine htube(ampl,f,i1,i2,radius,epsilon_nonaxi)
 !
 !  Horizontal flux tube (for vector potential, or passive scalar)
 !
@@ -2067,7 +2048,7 @@ module Initcond
 !
       integer :: i1,i2
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: tmp,xx,yy,zz,modulate
+      real, dimension (nx) :: tmp,modulate
       real :: ampl,radius,epsilon_nonaxi,ky
 !
       if (ampl==0) then
@@ -2079,30 +2060,33 @@ module Initcond
           print*,'htube: implement y-dependent flux tube in xz-plane; i1,i2=',i1,i2
           print*,'htube: radius,epsilon_nonaxi=',radius,epsilon_nonaxi
         endif
-        modulate=1.+epsilon_nonaxi*sin(ky*yy)
 !
 ! completely quenched "gaussian"
 !
-        tmp=.5*ampl/modulate*exp(-(xx**2+zz**2)/(max((radius*modulate)**2-xx**2-zz**2,1e-6)))
+        do n=n1,n2; do m=m1,m2
+          modulate=1.+epsilon_nonaxi*sin(ky*y(m))
+          tmp=.5*ampl/modulate*exp(-(x(l1:l2)**2+z(n)**2)/(max((radius*modulate)**2-x(l1:l2)**2-z(n)**2,1e-6)))
 !
 !  check whether vector or scalar
 !
-        if (i1==i2) then
-          if (lroot) print*,'htube: set scalar'
-          f(:,:,:,i1)=tmp
-        elseif (i1+2==i2) then
-          if (lroot) print*,'htube: set vector'
-          f(:,:,:,i1 )=+zz*tmp
-          f(:,:,:,i1+1)=0.
-          f(:,:,:,i1+2)=-xx*tmp
-        else
-          if (lroot) print*,'htube: bad value of i2=',i2
-        endif
+          if (i1==i2) then
+            if (lroot) print*,'htube: set scalar'
+            f(l1:l2,m,n,i1)=tmp
+          elseif (i1+2==i2) then
+            if (lroot) print*,'htube: set vector'
+            f(l1:l2,m,n,i1 )=+z(n)*tmp
+            f(l1:l2,m,n,i1+1)=0.
+            f(l1:l2,m,n,i1+2)=-x(l1:l2)*tmp
+          else
+            if (lroot) print*,'htube: bad value of i2=',i2
+          endif
+!
+        enddo; enddo
       endif
 !
     endsubroutine htube
 !***********************************************************************
-    subroutine htube2(ampl,f,i1,i2,xx,yy,zz,radius,epsilon_nonaxi)
+    subroutine htube2(ampl,f,i1,i2,radius,epsilon_nonaxi)
 !
 !  Horizontal flux tube (for vector potential, or passive scalar)
 !
@@ -2111,7 +2095,7 @@ module Initcond
 !
       integer :: i1,i2
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: tmp,xx,yy,zz,modulate
+      real, dimension (nx) :: tmp,modulate
       real :: ampl,radius,epsilon_nonaxi,ky
 !
       if (ampl==0) then
@@ -2126,34 +2110,36 @@ module Initcond
 !
 !  constant, when epsilon_nonaxi; otherwise modulation about zero
 !
-        if (epsilon_nonaxi==0) then
-          modulate=1.
-        else
-          modulate=epsilon_nonaxi*sin(ky*yy)
-        endif
+        do n=n1,n2; do m=m1,m2
+          if (epsilon_nonaxi==0) then
+            modulate(:)=1.0
+          else
+            modulate=epsilon_nonaxi*sin(ky*y(m))
+          endif
 !
 ! completely quenched "gaussian"
 !
-        tmp=.5*ampl*modulate*exp(-(xx**2+zz**2)/radius**2)
+          tmp=.5*ampl*modulate*exp(-(x(l1:l2)**2+z(n)**2)/radius**2)
 !
 !  check whether vector or scalar
 !
-        if (i1==i2) then
-          if (lroot) print*,'htube2: set scalar'
-          f(:,:,:,i1)=tmp
-        elseif (i1+2==i2) then
-          if (lroot) print*,'htube2: set vector'
-          f(:,:,:,i1 )=+zz*tmp
-          f(:,:,:,i1+1)=0.
-          f(:,:,:,i1+2)=-xx*tmp
-        else
-          if (lroot) print*,'htube2: bad value of i2=',i2
-        endif
+          if (i1==i2) then
+            if (lroot) print*,'htube2: set scalar'
+            f(l1:l2,m,n,i1)=tmp
+          elseif (i1+2==i2) then
+            if (lroot) print*,'htube2: set vector'
+            f(l1:l2,m,n,i1 )=+z(n)*tmp
+            f(l1:l2,m,n,i1+1)=0.
+            f(l1:l2,m,n,i1+2)=-x(l1:l2)*tmp
+          else
+            if (lroot) print*,'htube2: bad value of i2=',i2
+          endif
+        enddo; enddo
       endif
 !
     endsubroutine htube2
 !***********************************************************************
-    subroutine magsupport(ampl,f,zz,gravz,cs0,rho0)
+    subroutine magsupport(ampl,f,gravz,cs0,rho0)
 !
 !  magnetically supported horizontal flux layer
 !  (for aa):  By^2 = By0^2 * exp(-z/H),
@@ -2164,7 +2150,6 @@ module Initcond
 !   7-dec-02/axel: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: zz
       real :: ampl,H,A0,gravz,cs0,rho0,lnrho0
 !
       if (ampl==0) then
@@ -2174,13 +2159,15 @@ module Initcond
         H=(1+ampl)*cs0**2/abs(gravz)
         A0=-2*H*ampl*cs0*sqrt(2*rho0)
         if (lroot) print*,'magsupport: H,A0=',H,A0
-        f(:,:,:,iaa)=A0*exp(-.5*zz/H)
-        f(:,:,:,ilnrho)=lnrho0-zz/H
+        do n=n1,n2; do m=m1,m2
+          f(l1:l2,m,n,iaa)=A0*exp(-.5*z(n)/H)
+          f(l1:l2,m,n,ilnrho)=lnrho0-z(n)/H
+        enddo; enddo
       endif
 !
     endsubroutine magsupport
 !***********************************************************************
-    subroutine hfluxlayer(ampl,f,i,xx,yy,zz,zflayer,width)
+    subroutine hfluxlayer(ampl,f,i,zflayer,width)
 !
 !  Horizontal flux layer (for vector potential)
 !
@@ -2188,7 +2175,6 @@ module Initcond
 !
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
       real :: ampl,zflayer,width
 !
       if (ampl==0) then
@@ -2197,15 +2183,16 @@ module Initcond
       else
         if (lroot) print*,'hfluxlayer: horizontal flux layer; i=',i
         if ((ip<=16).and.lroot) print*,'hfluxlayer: ampl,width=',ampl,width
-        f(:,:,:,i  )=0.
-        f(:,:,:,i+1)=ampl*tanh((zz-zflayer)/width)
-        f(:,:,:,i+2)=0.
+        do n=n1,n2; do m=m1,m2
+          f(l1:l2,m,n,i  )=0.0
+          f(l1:l2,m,n,i+1)=ampl*tanh((z(n)-zflayer)/width)
+          f(l1:l2,m,n,i+2)=0.0
+        enddo; enddo
       endif
 !
-      if (ip==1) print*,xx,yy
     endsubroutine hfluxlayer
 !***********************************************************************
-    subroutine vfluxlayer(ampl,f,i,xx,yy,zz,xflayer,width)
+    subroutine vfluxlayer(ampl,f,i,xflayer,width)
 !
 !  Vertical flux layer (for vector potential)
 !
@@ -2213,7 +2200,6 @@ module Initcond
 !
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
       real :: ampl,xflayer,width
 !
       if (ampl==0) then
@@ -2222,15 +2208,16 @@ module Initcond
       else
         if (lroot) print*,'hfluxlayer: horizontal flux layer; i=',i
         if ((ip<=16).and.lroot) print*,'hfluxlayer: ampl,width=',ampl,width
-        f(:,:,:,i  )=0.
-        f(:,:,:,i+1)=0.
-        f(:,:,:,i+2)=-ampl*tanh((xx-xflayer)/width)
+        do n=n1,n2; do m=m1,m2
+          f(l1:l2,m,n,i  )=0.0
+          f(l1:l2,m,n,i+1)=0.0
+          f(l1:l2,m,n,i+2)=-ampl*tanh((x(l1:l2)-xflayer)/width)
+        enddo; enddo
       endif
 !
-      if (ip==1) print*,xx,yy,zz
     endsubroutine vfluxlayer
 !***********************************************************************
-    subroutine arcade_x(ampl,f,i,xx,yy,zz,kx,kz)
+    subroutine arcade_x(ampl,f,i,kx,kz)
 !
 !  Arcade-like structures around x=0
 !
@@ -2238,7 +2225,6 @@ module Initcond
 !
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
       real :: ampl,kx,kz,zmid
 !
       if (ampl==0) then
@@ -2250,15 +2236,17 @@ module Initcond
           print*,'arcade_x: i,zmid=',i,zmid
           print*,'arcade_x: ampl,kx,kz=',ampl,kx,kz
         endif
-
-        f(:,:,:,i+1)=f(:,:,:,i+1)+ampl*exp(-.5*(kx*xx)**2)* &
-          cos(min(abs(kz*(zz-zmid)),.5*pi))
+!
+        do n=n1,n2; do m=m1,m2
+          f(l1:l2,m,n,i+1)=f(l1:l2,m,n,i+1)+ampl*exp(-.5*(kx*x(l1:l2))**2)* &
+            cos(min(abs(kz*(z(n)-zmid)),.5*pi))
+        enddo; enddo
+!
       endif
 !
-      if (ip==1) print*,xx,yy
     endsubroutine arcade_x
 !***********************************************************************
-    subroutine halfcos_x(ampl,f,i,xx,yy,zz)
+    subroutine halfcos_x(ampl,f,i)
 !
 !  Uniform B_x field (for vector potential)
 !
@@ -2266,7 +2254,6 @@ module Initcond
 !
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
       real :: ampl,kz,zbot
 !
       if (ampl==0) then
@@ -2278,15 +2265,16 @@ module Initcond
         zbot=xyz0(3)
         ! ztop=xyz0(3)+Lxyz(3)
         if ((ip<=16).and.lroot) print*,'halfcos_x: ampl,kz=',ampl,kz
-        f(:,:,:,i  )=0.
-        f(:,:,:,i+1)=-ampl*sin(kz*(zz-zbot))
-        f(:,:,:,i+2)=0.
+        do n=n1,n2; do m=m1,m2
+          f(l1:l2,m,n,i  )=0.0
+          f(l1:l2,m,n,i+1)=-ampl*sin(kz*(z(n)-zbot))
+          f(l1:l2,m,n,i+2)=0.0
+        enddo; enddo
       endif
 !
-      if (ip==1) print*,xx,yy
     endsubroutine halfcos_x
 !***********************************************************************
-    subroutine uniform_x(ampl,f,i,xx,yy,zz)
+    subroutine uniform_x(ampl,f,i)
 !
 !  Uniform B_x field (for vector potential)
 !
@@ -2294,7 +2282,6 @@ module Initcond
 !
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
       real :: ampl
 !
       if (ampl==0) then
@@ -2303,15 +2290,16 @@ module Initcond
       else
         print*,'uniform_x: uniform x-field ; i=',i
         if ((ip<=16).and.lroot) print*,'uniform_x: ampl=',ampl
-        f(:,:,:,i  )=0.
-        f(:,:,:,i+1)=-ampl*zz
-        f(:,:,:,i+2)=0.
+        do n=n1,n2; do m=m1,m2
+          f(l1:l2,m,n,i  )=0.0
+          f(l1:l2,m,n,i+1)=-ampl*z(n)
+          f(l1:l2,m,n,i+2)=0.0
+        enddo; enddo
       endif
 !
-      if (ip==1) print*,xx,yy
     endsubroutine uniform_x
 !***********************************************************************
-    subroutine uniform_y(ampl,f,i,xx,yy,zz)
+    subroutine uniform_y(ampl,f,i)
 !
 !  Uniform B_y field (for vector potential)
 !
@@ -2319,7 +2307,6 @@ module Initcond
 !
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
       real :: ampl
 !
       if (ampl==0) then
@@ -2328,15 +2315,16 @@ module Initcond
       else
         print*,'uniform_y: uniform y-field ; i=',i
         if ((ip<=16).and.lroot) print*,'uniform_y: ampl=',ampl
-        f(:,:,:,i  )=ampl*zz
-        f(:,:,:,i+1)=0.
-        f(:,:,:,i+2)=0.
+        do n=n1,n2; do m=m1,m2
+          f(l1:l2,m,n,i  )=ampl*z(n)
+          f(l1:l2,m,n,i+1)=0.0
+          f(l1:l2,m,n,i+2)=0.0
+        enddo; enddo
       endif
 !
-      if (ip==1) print*,xx,yy
     endsubroutine uniform_y
 !***********************************************************************
-    subroutine uniform_z(ampl,f,i,xx,yy,zz)
+    subroutine uniform_z(ampl,f,i)
 !
 !  Uniform B_z field (for vector potential)
 !
@@ -2344,7 +2332,6 @@ module Initcond
 !
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
       real :: ampl
 !
       if (ampl==0) then
@@ -2353,21 +2340,22 @@ module Initcond
       else
         print*,'uniform_z: uniform z-field ; i=',i
         if ((ip<=16).and.lroot) print*,'uniform_z: ampl=',ampl
-        if (lcartesian_coords) then
-          f(:,:,:,i  )=0.
-          f(:,:,:,i+1)=+ampl*xx
-          f(:,:,:,i+2)=0.
-        elseif (lcylindrical_coords) then
-          f(:,:,:,i  )=0.
-          f(:,:,:,i+1)=-ampl*xx*yy
-          f(:,:,:,i+2)=0.
-        endif
+        do n=n1,n2; do m=m1,m2
+          if (lcartesian_coords) then
+            f(l1:l2,m,n,i  )=0.0
+            f(l1:l2,m,n,i+1)=+ampl*x(l1:l2)
+            f(l1:l2,m,n,i+2)=0.0
+          elseif (lcylindrical_coords) then
+            f(l1:l2,m,n,i  )=0.0
+            f(l1:l2,m,n,i+1)=-ampl*x(l1:l2)*y(m)
+            f(l1:l2,m,n,i+2)=0.0
+          endif
+        enddo; enddo
       endif
 !
-      if (ip==1) print*,yy,zz
     endsubroutine uniform_z
 !***********************************************************************
-    subroutine uniform_phi(ampl,f,i,xx,yy,zz)
+    subroutine uniform_phi(ampl,f,i)
 !
 !  Uniform B_phi field (for vector potential)
 !
@@ -2375,7 +2363,7 @@ module Initcond
 !
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz,rr
+      real, dimension (nx) :: rr
       real :: ampl
 !
       if (ampl==0) then
@@ -2384,16 +2372,17 @@ module Initcond
       else
         print*,'uniform_phi: uniform phi-field ; i=',i
         if ((ip<=16).and.lroot) print*,'uniform_phi: ampl=',ampl
-        rr=sqrt(xx**2+yy**2)
-        f(:,:,:,i  )=0.
-        f(:,:,:,i+1)=0.
-        f(:,:,:,i+2)=-ampl*rr
+        do n=n1,n2; do m=m1,m2
+          rr=sqrt(x(l1:l2)**2+y(m)**2)
+          f(l1:l2,m,n,i  )=0.0
+          f(l1:l2,m,n,i+1)=0.0
+          f(l1:l2,m,n,i+2)=-ampl*rr
+        enddo; enddo
       endif
 !
-      if (ip==1) print*,rr
     endsubroutine uniform_phi
 !***********************************************************************
-    subroutine phi_comp_over_r(ampl,f,i,xx,yy,zz)
+    subroutine phi_comp_over_r(ampl,f,i)
 !
 !  B_phi ~ 1/R field (in terms of vector potential)
 !  meaningful mainly in cylindrical coordinates, otherwise it will be By~1/x
@@ -2402,7 +2391,6 @@ module Initcond
 !
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx, yy, zz
       real :: ampl
 !
       if (ampl==0) then
@@ -2415,14 +2403,16 @@ module Initcond
           print*,'phi_comp_over_r: set By ~ 1/x ; i=',i
         endif
         if ((ip<=16).and.lroot) print*,'phi_comp_over_r: ampl=',ampl
-        f(:,:,:,i  )=0.!ampl*zz/xx
-        f(:,:,:,i+1)=0.
-        f(:,:,:,i+2)=-ampl*log(xx)
+        do n=n1,n2; do m=m1,m2
+          f(l1:l2,m,n,i  )=0.0!ampl*z(n)/x(l1:l2)
+          f(l1:l2,m,n,i+1)=0.0
+          f(l1:l2,m,n,i+2)=-ampl*log(x(l1:l2))
+        enddo; enddo
       endif
 !
     endsubroutine phi_comp_over_r
 !***********************************************************************
-    subroutine vfield(ampl,f,i,xx,kx)
+    subroutine vfield(ampl,f,i,kx)
 !
 !  Vertical field, for potential field test
 !
@@ -2431,7 +2421,6 @@ module Initcond
 !
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx
       real :: ampl
       real,optional :: kx
       real :: k
@@ -2448,14 +2437,16 @@ module Initcond
       else
         if (lroot) print*,'vfield: implement x-dependent vertical field'
         if ((ip<=8).and.lroot) print*,'vfield: x-dependent vertical field'
-        f(:,:,:,i  )=0.
-        f(:,:,:,i+1)=ampl*sin(k*xx)
-        f(:,:,:,i+2)=0.
+        do n=n1,n2; do m=m1,m2
+          f(l1:l2,m,n,i  )=0.0
+          f(l1:l2,m,n,i+1)=ampl*sin(k*x(l1:l2))
+          f(l1:l2,m,n,i+2)=0.0
+        enddo; enddo
       endif
 !
     endsubroutine vfield
 !***********************************************************************
-    subroutine vfield2(ampl,f,i,xx)
+    subroutine vfield2(ampl,f,i)
 !
 !  Vertical field, zero on boundaries
 !
@@ -2463,7 +2454,6 @@ module Initcond
 !
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx
       real :: ampl,kx
 !
       if (ampl==0) then
@@ -2472,9 +2462,11 @@ module Initcond
       else
         kx=2*pi/Lx
         if (lroot) print*,'vfield2: implement x-dependent vertical field'
-        f(:,:,:,i  )=0.
-        f(:,:,:,i+1)=ampl*cos(kx*xx)
-        f(:,:,:,i+2)=0.
+        do n=n1,n2; do m=m1,m2
+          f(l1:l2,m,n,i  )=0.0
+          f(l1:l2,m,n,i+1)=ampl*cos(kx*x(l1:l2))
+          f(l1:l2,m,n,i+2)=0.0
+        enddo; enddo
       endif
 !
     endsubroutine vfield2
@@ -2486,7 +2478,7 @@ module Initcond
 !  28-may-04/axel: adapted from gaunoise
 !
       integer :: i,i1,i2
-      real, dimension (mx,my,mz) :: tmp
+      real, dimension (mx) :: tmp
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl
 !
@@ -2496,11 +2488,13 @@ module Initcond
         if (lroot) print*,'posnoise_vect: ampl=0 for i1,i2=',i1,i2
       else
         if ((ip<=8).and.lroot) print*,'posnoise_vect: i1,i2=',i1,i2
-        do i=i1,i2
-          call random_number_wrapper(tmp)
-          f(:,:,:,i)=f(:,:,:,i)+ampl*tmp
           if (lroot) print*,'posnoise_vect: variable i=',i
-        enddo
+        do n=1,mz; do m=1,my
+          do i=i1,i2
+            call random_number_wrapper(tmp)
+            f(:,m,n,i)=f(:,m,n,i)+ampl*tmp
+          enddo
+        enddo; enddo
       endif
 !
     endsubroutine posnoise_vect
@@ -2512,7 +2506,7 @@ module Initcond
 !  28-may-04/axel: adapted from gaunoise
 !
       integer :: i
-      real, dimension (mx,my,mz) :: tmp
+      real, dimension (mx) :: tmp
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl
 !
@@ -2522,9 +2516,11 @@ module Initcond
         if (lroot) print*,'posnoise_scal: ampl=0 for i=',i
       else
         if ((ip<=8).and.lroot) print*,'posnoise_scal: i=',i
-        call random_number_wrapper(tmp)
-        f(:,:,:,i)=f(:,:,:,i)+ampl*tmp
         if (lroot) print*,'posnoise_scal: variable i=',i
+        do n=1,mz; do m=1,my
+          call random_number_wrapper(tmp)
+          f(:,m,n,i)=f(:,m,n,i)+ampl*tmp
+        enddo; enddo
       endif
 !
 !  Wouldn't the following be equivalent (but clearer)?
@@ -2541,10 +2537,12 @@ module Initcond
 !  23-may-02/axel: coded
 !  10-sep-03/axel: result only *added* to whatever f array had before
 !
-      integer :: i,i1,i2
-      real, dimension (mx,my,mz) :: r,p,tmp
-      real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i1,i2
+!
+      real, dimension (mx) :: r,p,tmp
+      integer :: i
 !
       intent(in)    :: ampl,i1,i2
       intent(inout) :: f
@@ -2555,18 +2553,19 @@ module Initcond
         if (lroot) print*,'gaunoise_vect: ampl=0 for i1,i2=',i1,i2
       else
         if ((ip<=8).and.lroot) print*,'gaunoise_vect: i1,i2=',i1,i2
-        do i=i1,i2
-          if (modulo(i-i1,2)==0) then
-            call random_number_wrapper(r)
-            call random_number_wrapper(p)
-            tmp=sqrt(-2*log(r))*sin(2*pi*p)
-          else
-            tmp=sqrt(-2*log(r))*cos(2*pi*p)
-          endif
-          !call smooth_3d(tmp,ismo)  !(may want to smooth)
-          f(:,:,:,i)=f(:,:,:,i)+ampl*tmp
-          if (lroot) print*,'gaunoise_vect: variable i=',i
-        enddo
+        do n=1,mz; do m=1,my
+          do i=i1,i2
+            if (lroot.and.m==1.and.n==1) print*,'gaunoise_vect: variable i=',i
+            if (modulo(i-i1,2)==0) then
+              call random_number_wrapper(r)
+              call random_number_wrapper(p)
+              tmp=sqrt(-2*log(r))*sin(2*pi*p)
+            else
+              tmp=sqrt(-2*log(r))*cos(2*pi*p)
+            endif
+            f(:,m,n,i)=f(:,m,n,i)+ampl*tmp
+          enddo
+        enddo; enddo
       endif
 !
     endsubroutine gaunoise_vect
@@ -2578,10 +2577,11 @@ module Initcond
 !  23-may-02/axel: coded
 !  10-sep-03/axel: result only *added* to whatever f array had before
 !
-      integer :: i
-      real, dimension (mx,my,mz) :: r,p,tmp
-      real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i
+!
+      real, dimension (mx) :: r,p,tmp
 !
       intent(in)    :: ampl,i
       intent(inout) :: f
@@ -2592,11 +2592,13 @@ module Initcond
         if (lroot) print*,'gaunoise_scal: ampl=0 for i=',i
       else
         if ((ip<=8).and.lroot) print*,'gaunoise_scal: i=',i
-        call random_number_wrapper(r)
-        call random_number_wrapper(p)
-        tmp=sqrt(-2*log(r))*sin(2*pi*p)
-        f(:,:,:,i)=f(:,:,:,i)+ampl*tmp
         if (lroot) print*,'gaunoise_scal: variable i=',i
+        do n=1,mz; do m=1,my
+          call random_number_wrapper(r)
+          call random_number_wrapper(p)
+          tmp=sqrt(-2*log(r))*sin(2*pi*p)
+          f(:,m,n,i)=f(:,m,n,i)+ampl*tmp
+        enddo; enddo
       endif
 !
 !  Wouldn't the following be equivalent (but clearer)?
@@ -2613,25 +2615,31 @@ module Initcond
 !
 ! 18-apr-04/wolf: adapted from gaunoise_vect
 !
-      integer :: i,i1,i2
-      real, dimension (mx,my,mz) :: r,p,tmp,ampl
+      real, dimension (nz) :: ampl
       real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i1,i2
+!
+      real, dimension (mx) :: r,p,tmp
+      integer :: i
 !
       intent(in)    :: ampl,i1,i2
       intent(inout) :: f
 !
       if ((ip<=8).and.lroot) print*,'GAUNOISE_PROF_VECT: i1,i2=',i1,i2
-      do i=i1,i2
-        if (modulo(i-i1,2)==0) then
-          call random_number_wrapper(r)
-          call random_number_wrapper(p)
-          tmp=sqrt(-2*log(r))*sin(2*pi*p)
-        else
-          tmp=sqrt(-2*log(r))*cos(2*pi*p)
-        endif
-        f(:,:,:,i)=f(:,:,:,i)+ampl*tmp
-        if (lroot) print*,'gaunoise_vect: variable i=',i
-      enddo
+      do n=1,mz; do m=1,my
+        do i=i1,i2
+          print*, m, n
+          if (lroot.and.m==1.and.n==1) print*,'gaunoise_vect: variable i=',i
+          if (modulo(i-i1,2)==0) then
+            call random_number_wrapper(r)
+            call random_number_wrapper(p)
+            tmp=sqrt(-2*log(r))*sin(2*pi*p)
+          else
+            tmp=sqrt(-2*log(r))*cos(2*pi*p)
+          endif
+          f(:,m,n,i)=f(:,m,n,i)+ampl(n)*tmp
+        enddo
+      enddo; enddo
 !
     endsubroutine gaunoise_prof_vect
 !***********************************************************************
@@ -2642,7 +2650,7 @@ module Initcond
 !
 ! 18-apr-04/wolf: coded
 !
-      real, dimension (mx,my,mz) :: ampl
+      real, dimension (nz) :: ampl
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i
 !
@@ -2654,7 +2662,7 @@ module Initcond
 !
     endsubroutine gaunoise_prof_scal
 !***********************************************************************
-    subroutine gaunoise_rprof_vect(ampl,rr,prof,f,i1,i2)
+    subroutine gaunoise_rprof_vect(ampl,f,i1,i2)
 !
 !  Add Gaussian noise within r_int < r < r_ext.
 !  Use PROF as buffer variable so we don't need to allocate a large
@@ -2664,29 +2672,46 @@ module Initcond
 !
       use Sub, only: cubic_step
 !
-      real, dimension (mx,my,mz) :: rr,prof
+      real :: ampl
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: ampl,dr
       integer :: i1,i2
 !
-      intent(in)  :: ampl,rr,i1,i2
-      intent(out) :: prof,f
+      real, dimension (mx) :: prof, rr, r, p, tmp
+      real :: dr
+      integer :: i
+!
+      intent(in)  :: ampl,i1,i2
+      intent(out) :: f
 !
 !  set up profile
 !
-      dr = r_ext-max(0.,r_int)
-      prof = 1 - cubic_step(rr,r_ext,0.25*dr,SHIFT=-1.)
-      prof = 1 - cubic_step(rr,r_ext,0.25*dr,SHIFT=-1.)
-      if (r_int>0.) then
-        prof = prof*cubic_step(rr,r_int,0.25*dr,SHIFT=1.)
-      endif
-      prof = ampl*prof
+      do n=1,mz; do m=1,my
+        rr=sqrt(x(:)**2+y(m)**2+z(n)**2)
+        dr = r_ext-max(0.,r_int)
+        prof = 1 - cubic_step(rr,r_ext,0.25*dr,SHIFT=-1.)
+        prof = 1 - cubic_step(rr,r_ext,0.25*dr,SHIFT=-1.)
+        if (r_int>0.) then
+          prof = prof*cubic_step(rr,r_int,0.25*dr,SHIFT=1.)
+        endif
+        prof = ampl*prof
 !
-      call gaunoise(prof,f,i1,i2)
+        do i=i1,i2
+          if (lroot.and.m==1.and.n==1) print*,'gaunoise_vect: variable i=',i
+          if (modulo(i-i1,2)==0) then
+            call random_number_wrapper(r)
+            call random_number_wrapper(p)
+            tmp=sqrt(-2*log(r))*sin(2*pi*p)
+          else
+            tmp=sqrt(-2*log(r))*cos(2*pi*p)
+          endif
+          f(:,m,n,i)=f(:,m,n,i)+prof*tmp
+        enddo
+!
+      enddo; enddo
 !
     endsubroutine gaunoise_rprof_vect
 !***********************************************************************
-    subroutine gaunoise_rprof_scal(ampl,rr,prof,f,i)
+    subroutine gaunoise_rprof_scal(ampl,f,i)
 !
 !  Add Gaussian noise within r_int < r < r_ext.
 !  Use PROF as buffer variable so we don't need to allocate a large
@@ -2694,19 +2719,18 @@ module Initcond
 !
 !  18-apr-04/wolf: coded
 !
-      real, dimension (mx,my,mz) :: rr,prof
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl
       integer :: i
 !
-      intent(in) :: ampl,rr,i
-      intent(out) :: prof,f
+      intent(in) :: ampl,i
+      intent(out) :: f
 !
-      call gaunoise_rprof_vect(ampl,rr,prof,f,i,i)
+      call gaunoise_rprof_vect(ampl,f,i,i)
 !
     endsubroutine gaunoise_rprof_scal
 !***********************************************************************
-    subroutine trilinear(ampl,f,ivar,xx,yy,zz)
+    subroutine trilinear(ampl,f,ivar)
 !
 !  Produce a profile that is linear in any non-periodic direction, but
 !  periodic in periodic ones (for testing purposes).
@@ -2714,42 +2738,46 @@ module Initcond
 !  5-nov-02/wolf: coded
 ! 23-nov-02/axel: included scaling factor ampl, corrected lperi argument
 !
-      integer :: ivar
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: tmp,xx,yy,zz
       real :: ampl
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: ivar
+!
+      real, dimension (nx) :: tmp
 !
       if (lroot) print*, 'trilinear: ivar = ', ivar
 !
 !  x direction
 !
-      if (lperi(1)) then
-        tmp = sin(2*pi/Lx*(xx-xyz0(1)-0.25*Lxyz(1)))
-      else
-        tmp = xx
-      endif
+      do n=n1,n2; do m=m1,m2
+        if (lperi(1)) then
+          tmp = sin(2*pi/Lx*(x(l1:l2)-xyz0(1)-0.25*Lxyz(1)))
+        else
+          tmp = x(l1:l2)
+        endif
 !
 !  y direction
 !
-      if (lperi(2)) then
-        tmp = tmp + 10*sin(2*pi/Ly*(yy-xyz0(2)-0.25*Lxyz(2)))
-      else
-        tmp = tmp + 10*yy
-      endif
+        if (lperi(2)) then
+          tmp = tmp + 10*sin(2*pi/Ly*(y(m)-xyz0(2)-0.25*Lxyz(2)))
+        else
+          tmp = tmp + 10*y(m)
+        endif
 !
 !  z direction
 !
-      if (lperi(3)) then
-        tmp = tmp + 100*sin(2*pi/Lz*(zz-xyz0(3)-0.25*Lxyz(3)))
-      else
-        tmp = tmp + 100*zz
-      endif
+        if (lperi(3)) then
+          tmp = tmp + 100*sin(2*pi/Lz*(z(n)-xyz0(3)-0.25*Lxyz(3)))
+        else
+          tmp = tmp + 100*z(n)
+        endif
 !
-      f(:,:,:,ivar) = ampl*tmp
+        f(l1:l2,m,n,ivar) = ampl*tmp
+!
+      enddo; enddo
 !
     endsubroutine trilinear
 !***********************************************************************
-    subroutine cos_cos_sin(ampl,f,ivar,xx,yy,zz)
+    subroutine cos_cos_sin(ampl,f,ivar)
 !
 !  Produce a profile that is linear in any non-periodic direction, but
 !  periodic in periodic ones (for testing purposes).
@@ -2758,7 +2786,6 @@ module Initcond
 !
       integer :: ivar
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
       real :: ampl,kx,ky,kz
 !
       if (lroot) print*, 'cos_cos_sin: ivar = ', ivar
@@ -2766,11 +2793,13 @@ module Initcond
       kx=2*pi/Lx*3
       ky=2*pi/Ly*3
       kz=pi/Lz
-      f(:,:,:,ivar) = ampl*cos(kx*xx)*cos(ky*yy)*sin(kz*zz)
+      do n=n1,n2; do m=m1,m2
+        f(l1:l2,m,n,ivar) = ampl*cos(kx*x(l1:l2))*cos(ky*y(m))*sin(kz*z(n))
+      enddo; enddo
 !
     endsubroutine cos_cos_sin
 !***********************************************************************
-    subroutine tor_pert(ampl,f,ivar,xx,yy,zz)
+    subroutine tor_pert(ampl,f,ivar)
 !
 !  Produce a profile that is periodic in the y- and z-directions.
 !  For testing the Balbus-Hawley instability of a toroidal magnetic field
@@ -2779,54 +2808,56 @@ module Initcond
 !
       integer :: ivar
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
       real :: ampl,ky,kz
 !
       if (lroot) print*, 'tor_pert: sinusoidal modulation of ivar = ', ivar
 !
       ky=2*pi/Ly
       kz=2.*pi/Lz
-      f(:,:,:,ivar) = ampl*cos(ky*yy)*cos(kz*zz)
+      do n=n1,n2; do m=m1,m2
+        f(l1:l2,m,n,ivar) = ampl*cos(ky*y(m))*cos(kz*z(n))
+      enddo; enddo
 !
-      if (NO_WARN) print*,'xx(1,1,1)=',xx(1,1,1) !(to keep compiler quiet)
     endsubroutine tor_pert
 !***********************************************************************
-    subroutine diffrot(ampl,f,ivar,xx,yy,zz)
+    subroutine diffrot(ampl,f,ivar)
 !
 !  Set up profile for differential rotation
 !
 !  16-jul-03/axel: coded
 !
-      integer :: ivar
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
       real :: ampl
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: ivar
 !
       if (lroot) print*, 'diffrot: sinusoidal modulation of ivar = ', ivar
 !
-      f(:,:,:,ivar) = ampl*cos(xx)*cos(zz)
+      do n=n1,n2; do m=m1,m2
+        f(l1:l2,m,n,ivar) = ampl*cos(x(l1:l2))*cos(z(n))
+      enddo; enddo
 !
-      if (NO_WARN) print*,'yy(1,1,1)=',yy(1,1,1) !(to keep compiler quiet)
     endsubroutine diffrot
 !***********************************************************************
-    subroutine olddiffrot(ampl,f,ivar,xx,yy,zz)
+    subroutine olddiffrot(ampl,f,ivar)
 !
 !  Set up profile for differential rotation
 !
 !  16-jul-03/axel: coded
 !
-      integer :: ivar
+      real :: ampl
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
-      real :: ampl,kx,kz
+      integer :: ivar
+!
+      real :: kx,kz
 !
       if (lroot) print*, 'olddiffrot: sinusoidal modulation of ivar = ', ivar
 !
       kx=.5*pi/Lx
       kz=.5*pi/Lz
-      f(:,:,:,ivar) = ampl*sin(kx*xx)*cos(kz*zz)
+      do n=n1,n2; do m=m1,m2
+        f(l1:l2,m,n,ivar) = ampl*sin(kx*x(l1:l2))*cos(kz*z(n))
+      enddo; enddo
 !
-      if (NO_WARN) print*,yy !(to keep compiler quiet)
     endsubroutine olddiffrot
 !***********************************************************************
     subroutine powern(ampl,initpower,cutoff,f,i1,i2)
@@ -2838,15 +2869,18 @@ module Initcond
 !
       use Fourier
 !
-      integer :: i,i1,i2
+      real :: ampl,initpower,cutoff
+      integer :: i1,i2
+!
       real, dimension (nx,ny,nz) :: k2
       real, dimension (nx) :: k2x
       real, dimension (ny) :: k2y
       real, dimension (nz) :: k2z
       real, dimension (mx,my,mz,mfarray) :: f
+!
       real, dimension (nx,ny,nz) :: u_re,u_im
-      real :: ampl,initpower,cutoff
-
+      integer :: i
+!
       if (ampl==0) then
         f(:,:,:,i1:i2)=0
         if (lroot) print*,'powern: set variable to zero; i1,i2=',i1,i2
@@ -2981,7 +3015,6 @@ module Initcond
       endif !(ampl.eq.0)
 !
     endsubroutine power_randomphase
-
 !***********************************************************************
     subroutine random_isotropic_KS(ampl,initpower,cutoff,f,i1,i2,N_modes)
 !
@@ -3441,7 +3474,7 @@ module Initcond
 !
     endsubroutine mdi_init
 !*********************************************************
-    subroutine const_lou(ampl,f,i,xx,yy,zz)
+    subroutine const_lou(ampl,f,i)
 !
 !  PLEASE ADD A DESCRIPTION
 !
@@ -3451,16 +3484,15 @@ module Initcond
     use General
 
     real, dimension (mx,my,mz,mfarray) :: f
-    real, dimension(mx,my,mz) :: xx,yy,zz
     real :: ampl
     integer::i
-
-    f(:,:,:,i  )=ampl*cos(2.*pi*yy)/32.*pi
-    f(:,:,:,i+1)=ampl*cos(2.*pi*zz)/32.*pi
-    f(:,:,:,i+2)=ampl*cos(2.*pi*xx)/32.*pi
-
+!
+    do n=n1,n2; do m=m1,m2
+      f(l1:l2,m,n,i  )=ampl*cos(2.*pi*y(m))/32.*pi
+      f(l1:l2,m,n,i+1)=ampl*cos(2.*pi*z(n))/32.*pi
+      f(l1:l2,m,n,i+2)=ampl*cos(2.*pi*x(l1:l2))/32.*pi
+    enddo; enddo
+!
     endsubroutine const_lou
 !*********************************************************
 endmodule Initcond
-
-

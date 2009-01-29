@@ -686,7 +686,7 @@ module Entropy
       write(unit,NML=entropy_run_pars)
     endsubroutine write_entropy_run_pars
 !!***********************************************************************
-    subroutine init_ss(f,xx,yy,zz)
+    subroutine init_ss(f)
 !
 !  initialise entropy; called from start.f90
 !  07-nov-2001/wolf: coded
@@ -704,16 +704,14 @@ module Entropy
                                 eosperturb
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
 !
-      real, dimension (mx,my,mz) :: tmp,pot
-      real, dimension (nx) :: pp,lnrho,ss
+      real, dimension (nx) :: tmp,pot
+      real, dimension (nx) :: pp,lnrho,ss,r_mn
       real, dimension (mx) :: ss_mx
       real :: cs2int,ssint,ztop,ss_ext,pot0,pot_ext
       integer :: j
       logical :: lnothing=.true., save_pretend_lnTT
 !
-      intent(in) :: xx,yy,zz
       intent(inout) :: f
 !
 !  If pretend_lnTT is set then turn it off so that initial conditions are
@@ -747,16 +745,19 @@ module Entropy
             call isothermal_lnrho_ss(f,T0,rho0)
           case('hydrostatic-isentropic')
             call hydrostatic_isentropic(f,lnrho_bot,ss_const)
-          case('wave'); f(:,:,:,iss)=f(:,:,:,iss)+ss_const+ampl_ss*sin(kx_ss*xx(:,:,:) + pi)
+          case('wave')
+            do n=n1,n2; do m=m1,m2
+              f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+ss_const+ampl_ss*sin(kx_ss*x(l1:l2)+pi)
+            enddo; enddo
           case('Ferriere'); call ferriere(f)
           case('Galactic-hs'); call galactic_hs(f,rho0hs,cs0hs,H0hs)
           case('xjump'); call jump(f,iss,ss_left,ss_right,widthss,'x')
           case('yjump'); call jump(f,iss,ss_left,ss_right,widthss,'y')
           case('zjump'); call jump(f,iss,ss_left,ss_right,widthss,'z')
           case('hor-fluxtube')
-            call htube(ampl_ss,f,iss,iss,xx,yy,zz,radius_ss,epsilon_ss)
+            call htube(ampl_ss,f,iss,iss,radius_ss,epsilon_ss)
           case('hor-tube')
-            call htube2(ampl_ss,f,iss,iss,xx,yy,zz,radius_ss,epsilon_ss)
+            call htube2(ampl_ss,f,iss,iss,radius_ss,epsilon_ss)
           case('mixinglength')
              call mixinglength(mixinglength_flux,f)
              if (ampl_ss/=0.0) &
@@ -773,7 +774,7 @@ module Entropy
           call blob(thermal_peak,f,iss,radius_ss,center2_x,center2_y,center2_z)
 !  f(:,:,:,iss) = (log(f(:,:,:,iss) + thermal_background)+log(thermal_scaling))/gamma
           case('shock2d')
-            call shock2d(f,xx,yy,zz)
+            call shock2d(f)
           case('isobaric')
 !
 !  ss = - ln(rho/rho0)
@@ -783,34 +784,33 @@ module Entropy
               f(:,:,:,iss) = -(f(:,:,:,ilnrho)-lnrho0)
             else
               pp=pp_const
-              do n=n1,n2
-              do m=m1,m2
+              do n=n1,n2; do m=m1,m2
                 lnrho=f(l1:l2,m,n,ilnrho)
                 call eoscalc(ilnrho_pp,lnrho,pp,ss=ss)
                 f(l1:l2,m,n,iss)=ss
-              enddo
-              enddo
+              enddo; enddo
             endif
           case('isentropic', '1')
 !
 !  ss = const.
 !
             if (lroot) print*,'init_ss: isentropic stratification'
-            ! ss0=log(-gamma1*gravz*zinfty)/gamma
-            ! print*,'init_ss: isentropic stratification; ss=',ss0
             f(:,:,:,iss)=0.
             if (ampl_ss/=0.) then
               print*,'init_ss: put bubble: radius_ss,ampl_ss=',radius_ss,ampl_ss
-              tmp=xx**2+yy**2+zz**2
-              f(:,:,:,iss)=f(:,:,:,iss)+ampl_ss*exp(-tmp/max(radius_ss**2-tmp,1e-20))
-            !f(:,:,:,iss)=f(:,:,:,iss)+ampl_ss*exp(-tmp/radius_ss**2)
+              do n=n1,n2; do m=m1,m2
+                tmp=x(l1:l2)**2+y(m)**2+z(n)**2
+                f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+ampl_ss*exp(-tmp/max(radius_ss**2-tmp,1e-20))
+              enddo; enddo
             endif
           case('linprof', '2')
 !
 !  Linear profile of ss, centered around ss=0.
 !
             if (lroot) print*,'init_ss: linear entropy profile'
-            f(:,:,:,iss) = grads0*zz
+            do n=n1,n2; do m=m1,m2
+              f(l1:l2,m,n,iss) = grads0*z(n)
+            enddo; enddo
           case('isentropic-star')
 !
 !  Isentropic/isothermal hydrostatic sphere"
@@ -825,35 +825,37 @@ module Entropy
             if (lgravr) then
               if (lroot) print*, &
                    'init_lnrho: isentropic star with isothermal atmosphere'
-              call potential(xx,yy,zz,POT=pot,POT0=pot0) ! gravity potential
+              do n=n1,n2; do m=m1,m2
+                r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+                call potential(POT=pot,POT0=pot0,RMN=r_mn) ! gravity potential
 !
 !  rho0, cs0,pot0 are the values in the centre
 !
-              if (gamma /= 1) then
+                if (gamma /= 1) then
 !  Note:
 !  (a) `where' is expensive, but this is only done at
 !      initialization.
 !  (b) Comparing pot with pot_ext instead of r with r_ext will
 !      only work if grav_r<=0 everywhere -- but that seems
 !      reasonable.
-                call potential(R=r_ext,POT=pot_ext) ! get pot_ext=pot(r_ext)
-                cs2_ext   = cs20*(1 - gamma1*(pot_ext-pot0)/cs20)
+                  call potential(R=r_ext,POT=pot_ext) ! get pot_ext=pot(r_ext)
+                  cs2_ext   = cs20*(1 - gamma1*(pot_ext-pot0)/cs20)
 !
 ! Make sure init_lnrho (or start.in) has already set cs2cool:
 !
-                if (cs2cool == 0) &
-                     call fatal_error('init_ss',"inconsistency - cs2cool can't be 0")
-                ss_ext = 0. + log(cs2cool/cs2_ext)
-                ! where (sqrt(xx**2+yy**2+zz**2) <= r_ext) ! isentropic f. r<r_ext
-                where (pot <= pot_ext) ! isentropic for r<r_ext
-                  f(:,:,:,iss) = 0.
-                elsewhere           ! isothermal for r>r_ext
-                  f(:,:,:,iss) = ss_ext + gamma1*(pot-pot_ext)/cs2cool
-                endwhere
-              else                  ! gamma=1 --> simply isothermal (I guess [wd])
-                ! [NB: Never tested this..]
-                f(:,:,:,iss) = -gamma1/gamma*(f(:,:,:,ilnrho)-lnrho0)
-              endif
+                  if (cs2cool == 0) &
+                       call fatal_error('init_ss',"inconsistency - cs2cool can't be 0")
+                  ss_ext = 0. + log(cs2cool/cs2_ext)
+                  where (pot <= pot_ext) ! isentropic for r<r_ext
+                    f(l1:l2,m,n,iss) = 0.
+                  elsewhere           ! isothermal for r>r_ext
+                    f(l1:l2,m,n,iss) = ss_ext + gamma1*(pot-pot_ext)/cs2cool
+                  endwhere
+                else                  ! gamma=1 --> simply isothermal (I guess [wd])
+                  ! [NB: Never tested this..]
+                  f(l1:l2,m,n,iss) = -gamma1/gamma*(f(l1:l2,m,n,ilnrho)-lnrho0)
+                endif
+              enddo; enddo
             endif
           case('piecew-poly', '4')
 !
@@ -877,12 +879,12 @@ module Entropy
             ssint = ss0
             f(:,:,:,iss) = 0.    ! just in case
 !  Top layer.
-            call polytropic_ss_z(f,mpoly2,zz,tmp,zref,z2,z0+2*Lz, &
+            call polytropic_ss_z(f,mpoly2,zref,z2,z0+2*Lz, &
                                  isothtop,cs2int,ssint)
 !  Unstable layer.
-            call polytropic_ss_z(f,mpoly0,zz,tmp,z2,z1,z2,0,cs2int,ssint)
+            call polytropic_ss_z(f,mpoly0,z2,z1,z2,0,cs2int,ssint)
 !  Stable layer.
-            call polytropic_ss_z(f,mpoly1,zz,tmp,z1,z0,z1,0,cs2int,ssint)
+            call polytropic_ss_z(f,mpoly1,z1,z0,z1,0,cs2int,ssint)
           case('piecew-disc', '41')
 !
 !  piecewise polytropic convective disc
@@ -905,12 +907,12 @@ module Entropy
             ssint = ss0
             f(:,:,:,iss) = 0.    ! just in case
 !  Bottom (middle) layer.
-            call polytropic_ss_disc(f,mpoly1,zz,tmp,zref,z1,z1, &
+            call polytropic_ss_disc(f,mpoly1,zref,z1,z1, &
                                  0,cs2int,ssint)
 !  Unstable layer.
-            call polytropic_ss_disc(f,mpoly0,zz,tmp,z1,z2,z2,0,cs2int,ssint)
+            call polytropic_ss_disc(f,mpoly0,z1,z2,z2,0,cs2int,ssint)
 !  Stable layer (top).
-            call polytropic_ss_disc(f,mpoly2,zz,tmp,z2,ztop,ztop,&
+            call polytropic_ss_disc(f,mpoly2,z2,ztop,ztop,&
                                  isothtop,cs2int,ssint)
           case('polytropic', '5')
 !
@@ -925,7 +927,7 @@ module Entropy
             cs2int = cs20
             ssint = ss0
 !  Only one layer.
-            call polytropic_ss_z(f,mpoly0,zz,tmp,zref,z0,z0+2*Lz,0,cs2int,ssint)
+            call polytropic_ss_z(f,mpoly0,zref,z0,z0+2*Lz,0,cs2int,ssint)
 !  Reset mpoly1, mpoly2 (unused) to make IDL routine `thermo.pro' work.
             mpoly1 = mpoly0
             mpoly2 = mpoly0
@@ -1008,11 +1010,13 @@ module Entropy
 !  Hexagonal perturbation.
 !
         if (lroot) print*,'init_ss: adding hexagonal perturbation to ss'
-        f(:,:,:,iss) = f(:,:,:,iss) &
-                        + ampl_ss*(2*cos(sqrt(3.)*0.5*khor_ss*xx) &
-                                    *cos(0.5*khor_ss*yy) &
-                                   + cos(khor_ss*yy) &
-                                  ) * cos(pi*zz)
+        do n=n1,n2; do m=m1,m2
+          f(l1:l2,m,n,iss) = f(l1:l2,m,n,iss) &
+                          + ampl_ss*(2*cos(sqrt(3.)*0.5*khor_ss*x(l1:l2)) &
+                                      *cos(0.5*khor_ss*y(m)) &
+                                     + cos(khor_ss*y(m)) &
+                                    ) * cos(pi*z(n))
+        enddo; enddo
       case default
 !
 !  Catch unknown values
@@ -1026,14 +1030,11 @@ module Entropy
 !
       if (save_pretend_lnTT) then
         pretend_lnTT=.true.
-        do m=1,my
-        do n=1,mz
+        do m=1,my; do n=1,mz
           ss_mx=f(:,m,n,iss)
           call eosperturb(f,mx,ss=ss_mx)
         enddo; enddo
       endif
-!
-      if (NO_WARN) print*, xx, yy  !(to keep compiler quiet)
 !
     endsubroutine init_ss
 !***********************************************************************
@@ -1068,7 +1069,7 @@ module Entropy
     endsubroutine blob_radeq
 !***********************************************************************
     subroutine polytropic_ss_z( &
-         f,mpoly,zz,tmp,zint,zbot,zblend,isoth,cs2int,ssint)
+         f,mpoly,zint,zbot,zblend,isoth,cs2int,ssint)
 !
 !  Implement a polytropic profile in ss above zbot. If this routine is
 !  called several times (for a piecewise polytropic atmosphere), on needs
@@ -1087,46 +1088,50 @@ module Entropy
       use Gravity, only: gravz
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: tmp,p,zz
       real, dimension (mz) :: stp
-      real :: mpoly,zint,zbot,zblend,beta1,cs2int,ssint
+      real :: tmp,mpoly,zint,zbot,zblend,beta1,cs2int,ssint
       integer :: isoth
 !
 !  Warning: beta1 is here not dT/dz, but dcs2/dz = (gamma-1)c_p dT/dz
 !
-      if (isoth /= 0) then ! isothermal layer
-        beta1 = 0.
-        tmp = ssint - gamma1*gravz*(zz-zint)/cs2int
-        ssint = -gamma1*gravz*(zbot-zint)/cs2int ! ss at layer interface
-        if (headt) print*,'ssint=',ssint
-      else
-        beta1 = gamma*gravz/(mpoly+1)
-        tmp = 1 + beta1*(zz-zint)/cs2int
-        ! Abort if args of log() are negative
-        if (any((tmp <= 0.) .and. (zz <= zblend))) then
-          call fatal_error('polytropic_ss_z', &
-              'Imaginary entropy values -- your z_inf is too low.')
+      if (headt .and. isoth/=0.0) print*,'ssint=',ssint
+      stp = step(z,zblend,widthss)
+!
+      do n=n1,n2; do m=m1,m2
+        if (isoth/=0.0) then ! isothermal layer
+          beta1 = 0.0
+          tmp = ssint - gamma1*gravz*(z(n)-zint)/cs2int
+        else
+          beta1 = gamma*gravz/(mpoly+1)
+          tmp = 1.0 + beta1*(z(n)-zint)/cs2int
+          ! Abort if args of log() are negative
+          if ( (tmp<=0.0) .and. (z(n)<=zblend) ) then
+            call fatal_error('polytropic_ss_z', &
+                'Imaginary entropy values -- your z_inf is too low.')
+          endif
+          tmp = max(tmp,epsi)  ! ensure arg to log is positive
+          tmp = ssint + (1-mpoly*gamma1)/gamma*log(tmp)
         endif
-        tmp = max(tmp,epsi)  ! ensure arg to log is positive
-        tmp = ssint + (1-mpoly*gamma1)/gamma &
-                      * log(tmp)
-        ssint = ssint + (1-mpoly*gamma1)/gamma & ! ss at layer interface
-                        * log(1 + beta1*(zbot-zint)/cs2int)
+!
+! smoothly blend the old value (above zblend) and the new one (below
+! zblend) for the two regions:
+!
+        f(l1:l2,m,n,iss) = stp(n)*f(l1:l2,m,n,iss)  + (1-stp(n))*tmp
+!
+      enddo; enddo
+!
+      if (isoth/=0.0) then
+        ssint = -gamma1*gravz*(zbot-zint)/cs2int
+      else
+        ssint = ssint + (1-mpoly*gamma1)/gamma &
+                      * log(1 + beta1*(zbot-zint)/cs2int)
       endif
       cs2int = cs2int + beta1*(zbot-zint) ! cs2 at layer interface (bottom)
-
-      !
-      ! smoothly blend the old value (above zblend) and the new one (below
-      ! zblend) for the two regions:
-      !
-      stp = step(z,zblend,widthss)
-      p = spread(spread(stp,1,mx),2,my)
-      f(:,:,:,iss) = p*f(:,:,:,iss)  + (1-p)*tmp
 !
     endsubroutine polytropic_ss_z
 !***********************************************************************
     subroutine polytropic_ss_disc( &
-         f,mpoly,zz,tmp,zint,zbot,zblend,isoth,cs2int,ssint)
+         f,mpoly,zint,zbot,zblend,isoth,cs2int,ssint)
 !
 !  Implement a polytropic profile in ss for a disc. If this routine is
 !  called several times (for a piecewise polytropic atmosphere), on needs
@@ -1147,43 +1152,44 @@ module Entropy
       use Gravity, only: gravz, nu_epicycle
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: tmp,p,zz
       real, dimension (mz) :: stp
-      real :: mpoly,zint,zbot,zblend,beta1,cs2int,ssint, nu_epicycle2
+      real :: tmp,mpoly,zint,zbot,zblend,beta1,cs2int,ssint, nu_epicycle2
       integer :: isoth
 !
 !  Warning: beta1 is here not dT/dz, but dcs2/dz = (gamma-1)c_p dT/dz
 !
-      nu_epicycle2 = nu_epicycle**2
-      if (isoth /= 0) then ! isothermal layer
-        beta1 = 0.
-        tmp = ssint - gamma1*gravz*nu_epicycle2*(zz**2-zint**2)/cs2int/2.
-        ssint = -gamma1*gravz*nu_epicycle2*(zbot**2-zint**2)/cs2int/2.
-              ! ss at layer interface
-      else
-        beta1 = gamma*gravz*nu_epicycle2/(mpoly+1)
-        tmp = 1 + beta1*(zz**2-zint**2)/cs2int/2.
-        ! Abort if args of log() are negative
-        if (any((tmp <= 0.) .and. (zz <= zblend))) then
-          call fatal_error('polytropic_ss_disc', &
-              'Imaginary entropy values -- your z_inf is too low.')
-        endif
-        tmp = max(tmp,epsi)  ! ensure arg to log is positive
-        tmp = ssint + (1-mpoly*gamma1)/gamma &
-                      * log(tmp)
-        ssint = ssint + (1-mpoly*gamma1)/gamma & ! ss at layer interface
-                        * log(1 + beta1*(zbot**2-zint**2)/cs2int/2.)
-      endif
-      cs2int = cs2int + beta1*(zbot**2-zint**2)/2.
-             ! cs2 at layer interface (bottom)
-
-      !
-      ! smoothly blend the old value (above zblend) and the new one (below
-      ! zblend) for the two regions:
-      !
       stp = step(z,zblend,widthss)
-      p = spread(spread(stp,1,mx),2,my)
-      f(:,:,:,iss) = p*f(:,:,:,iss)  + (1-p)*tmp
+      nu_epicycle2 = nu_epicycle**2
+      do n=n1,n2; do m=m1,m2
+        if (isoth /= 0) then ! isothermal layer
+          beta1 = 0.
+          tmp = ssint - gamma1*gravz*nu_epicycle2*(z(n)**2-zint**2)/cs2int/2.
+        else
+          beta1 = gamma*gravz*nu_epicycle2/(mpoly+1)
+          tmp = 1 + beta1*(z(n)**2-zint**2)/cs2int/2.
+          ! Abort if args of log() are negative
+          if ( (tmp<=0.0) .and. (z(n)<=zblend) ) then
+            call fatal_error('polytropic_ss_disc', &
+                'Imaginary entropy values -- your z_inf is too low.')
+          endif
+          tmp = max(tmp,epsi)  ! ensure arg to log is positive
+          tmp = ssint + (1-mpoly*gamma1)/gamma*log(tmp)
+        endif
+!
+! smoothly blend the old value (above zblend) and the new one (below
+! zblend) for the two regions:
+!
+        f(l1:l2,m,n,iss) = stp(n)*f(l1:l2,m,n,iss)  + (1-stp(n))*tmp
+      enddo; enddo
+!
+      if (isoth/=0.0) then
+        ssint = -gamma1*gravz*nu_epicycle2*(zbot**2-zint**2)/cs2int/2.
+      else
+        ssint = ssint + (1-mpoly*gamma1)/gamma &
+                      * log(1 + beta1*(zbot**2-zint**2)/cs2int/2.)
+      endif
+!
+      cs2int = cs2int + beta1*(zbot**2-zint**2)/2.
 !
     endsubroutine polytropic_ss_disc
 !***********************************************************************
@@ -1636,7 +1642,7 @@ module Entropy
 !
     endsubroutine galactic_hs
 !***********************************************************************
-    subroutine shock2d(f,xx,yy,zz)
+    subroutine shock2d(f)
 !
 !  shock2d
 !
@@ -1659,8 +1665,9 @@ module Entropy
 !          pages="1394-1414" }
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
+!
       real, dimension (4) :: rpp,rpr,rpu,rpv
+      integer :: l
 !
       if (lroot) print*,'shock2d: initial condition, gamma=',gamma
 !
@@ -1690,32 +1697,33 @@ module Entropy
 !
 !  s=-lnrho+log(gamma*p)/gamma
 !
-        where ( (xx>=0.) .and. (yy>=0.) )
-          f(:,:,:,ilnrho)=log(rpr(1))
-          f(:,:,:,iss)=log(gamma*rpp(1))/gamma-f(:,:,:,ilnrho)
-          f(:,:,:,iux)=rpu(1)
-          f(:,:,:,iuy)=rpv(1)
-        endwhere
-        where ( (xx<0.) .and. (yy>=0.) )
-          f(:,:,:,ilnrho)=log(rpr(2))
-          f(:,:,:,iss)=log(gamma*rpp(2))/gamma-f(:,:,:,ilnrho)
-          f(:,:,:,iux)=rpu(2)
-          f(:,:,:,iuy)=rpv(2)
-        endwhere
-        where ( (xx<0.) .and. (yy<0.) )
-          f(:,:,:,ilnrho)=log(rpr(3))
-          f(:,:,:,iss)=log(gamma*rpp(3))/gamma-f(:,:,:,ilnrho)
-          f(:,:,:,iux)=rpu(3)
-          f(:,:,:,iuy)=rpv(3)
-        endwhere
-        where ( (xx>=0.) .and. (yy<0.) )
-          f(:,:,:,ilnrho)=log(rpr(4))
-          f(:,:,:,iss)=log(gamma*rpp(4))/gamma-f(:,:,:,ilnrho)
-          f(:,:,:,iux)=rpu(4)
-          f(:,:,:,iuy)=rpv(4)
-        endwhere
+        do n=n1,n2; do m=m1,m2; do l=l1,l2
+          if ( x(l)>=0.0 .and. y(m)>=0.0 ) then
+            f(l,m,n,ilnrho)=log(rpr(1))
+            f(l,m,n,iss)=log(gamma*rpp(1))/gamma-f(l,m,n,ilnrho)
+            f(l,m,n,iux)=rpu(1)
+            f(l,m,n,iuy)=rpv(1)
+          endif
+          if ( x(l)<0.0 .and. y(m)>=0.0 ) then
+            f(l,m,n,ilnrho)=log(rpr(2))
+            f(l,m,n,iss)=log(gamma*rpp(2))/gamma-f(l,m,n,ilnrho)
+            f(l,m,n,iux)=rpu(2)
+            f(l,m,n,iuy)=rpv(2)
+          endif
+          if ( x(l)<0.0 .and. y(m)<0.0 ) then
+            f(l,m,n,ilnrho)=log(rpr(3))
+            f(l,m,n,iss)=log(gamma*rpp(3))/gamma-f(l,m,n,ilnrho)
+            f(l,m,n,iux)=rpu(3)
+            f(l,m,n,iuy)=rpv(3)
+          endif
+          if ( x(l)>=0.0 .and. y(m)<0.0 ) then
+            f(l,m,n,ilnrho)=log(rpr(4))
+            f(l,m,n,iss)=log(gamma*rpp(4))/gamma-f(l,m,n,ilnrho)
+            f(l,m,n,iux)=rpu(4)
+            f(l,m,n,iuy)=rpv(4)
+          endif
+        enddo; enddo; enddo
 !
-    if (NO_WARN) print*,zz
     endsubroutine shock2d
 !***********************************************************************
     subroutine pencil_criteria_entropy()

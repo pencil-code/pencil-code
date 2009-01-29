@@ -234,7 +234,7 @@ module Special
 !
     endsubroutine initialize_special
 !***********************************************************************
-    subroutine init_special(f,xx,yy,zz)
+    subroutine init_special(f)
 !
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
@@ -246,18 +246,16 @@ module Special
       use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
 !
-      intent(in) :: xx,yy,zz
       intent(inout) :: f
 
 !!
       select case(initnstar)
         case('default')
           if (lroot) print*,'init_special: Default neutron star setup'
-          call density_init(f,xx,zz)
-          call entropy_init(f,xx,zz)
-          call velocity_init(f,zz)
+          call density_init(f)
+          call entropy_init(f)
+          call velocity_init(f)
         case default
           !
           !  Catch unknown values
@@ -265,8 +263,6 @@ module Special
           if (lroot) print*,'init_special: No such value for initnstar: ', trim(initnstar)
           call stop_it("")
       endselect
-!
-      if (NO_WARN) print*,f,xx,yy,zz  !(keep compiler quiet)
 !
     endsubroutine init_special
 !***********************************************************************
@@ -1110,13 +1106,12 @@ module Special
 !
     endsubroutine mass_source_NS
 !********************************************************************
-    subroutine density_init(f,xx,zz)
+    subroutine density_init(f)
 !
 ! Natalia
 ! Initialization of density in a case of the step-like distribution
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: xx, zz
       real ::  ln_ro_l, ln_ro_r, ln_ro_u, cs2_disk
       integer :: i
 
@@ -1127,32 +1122,34 @@ module Special
       ln_ro_u=log(rho_surf)
 
       if (nxgrid/=1.and.nzgrid/=1) then
+        do n=n1,n2; do m=m1,m2
+          f(l1:l2,m,n,ilnrho)= &
+              -M_star/2./max(z(n)**3,tini)*x(l1:l2)**2*gamma/cs2_disk
 
-        f(:,:,:,ilnrho)= &
-            -M_star/2./max(zz(:,:,:)**3,tini)*xx(:,:,:)**2*gamma/cs2_disk
 
-
-        f(:,:,:,ilnrho)= f(:,:,:,ilnrho) &
-                       +(abs(zz(:,:,:)-R_star)/Lxyz(3))**0.25 &
-                       *(ln_ro_r-ln_ro_l)+ln_ro_l
+          f(l1:l2,m,n,ilnrho)= f(l1:l2,m,n,ilnrho) &
+                         +(abs(z(n)-R_star)/Lxyz(3))**0.25 &
+                         *(ln_ro_r-ln_ro_l)+ln_ro_l
+        enddo; enddo
       else
-        if (nzgrid > 1) then
-          f(:,:,:,ilnrho)=(abs(zz(:,:,:)-R_star)/Lxyz(3))**0.25 &
-                           *(ln_ro_r-ln_ro_l)+ln_ro_l
-        else
-          f(:,:,:,ilnrho)=(xx(:,:,:)-0.)/Lxyz(1) &
-                           *(ln_ro_u-ln_ro_r)+ln_ro_r
-        endif
+        do n=n1,n2; do m=m1,m2
+          if (nzgrid > 1) then
+            f(l1:l2,m,n,ilnrho)=(abs(z(n)-R_star)/Lxyz(3))**0.25 &
+                             *(ln_ro_r-ln_ro_l)+ln_ro_l
+          else
+            f(l1:l2,m,n,ilnrho)=(x(l1:l2)-0.)/Lxyz(1) &
+                             *(ln_ro_u-ln_ro_r)+ln_ro_r
+          endif
+        enddo; enddo
       endif
 
     endsubroutine density_init
 !***************************************************************
-    subroutine entropy_init(f,xx,zz)
+    subroutine entropy_init(f)
 
      ! use EquationOfState
 
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: xx, zz
       real, dimension (nx) ::  lnrho, lnTT,ss, TT_0
       integer ::  mi,ni,li,i
       real ::  ll, cs2_star, dT_dx_i1
@@ -1178,7 +1175,7 @@ module Special
             if (nxgrid <= 1) then
 
               lnrho=f(l1:l2,mi,ni,ilnrho)
-              lnTT=(zz(l1:l2,mi,ni)-R_star)/Lxyz(3) &
+              lnTT=(z(ni)-R_star)/Lxyz(3) &
                   *(log(T_disk)-log(T_star))+log(T_star)
 
               call eoscalc(4,lnrho,lnTT,ss=ss)
@@ -1188,24 +1185,15 @@ module Special
 
               lnrho=f(l1:l2,mi,ni,ilnrho)
 
-              lnTT=(zz(l1:l2,mi,ni)-R_star)/Lxyz(3) &
+              lnTT=(z(ni)-R_star)/Lxyz(3) &
                   *(log(T_disk)-log(T_star))+log(T_star)
-
-        !  if (hot_star) then
-	  
-	!  for li=l1,l2 do
-	!    lnTT(li-3)=(xx(li,mi,ni)-0)/Lxyz(1) &
-	!       *(log(T_disk*0.7)-lnTT(li-3))+lnTT(li-3)
-        !  enddo			  
-	  
-	!  endif
 
               if (hot_star) then
              
                 TT_0(1)=exp(lnTT(l1))
 
                 do li=l1+1,l2
-                  dT_dx_i1=-M_star/(zz(li-1,mi,ni))**3*xx(li-1,mi,ni) &
+                  dT_dx_i1=-M_star/(z(ni))**3*x(li-1) &
                       *3./16./sigmaSB*c_light*exp(f(li-1,mi,ni,ilnrho)) &
                       /TT_0(li-l1)**3
 
@@ -1230,14 +1218,13 @@ module Special
       endsubroutine entropy_init
 !*********************************************************************
 !***********************************************************************
-      subroutine velocity_init(f,zz)
+      subroutine velocity_init(f)
       !Natalia
       !Initialization of velocity in a case of the step-like distribution
 
       use Cdata
 
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: zz
       integer :: decel_zone
       real ::   ll
       integer :: L_disk_point
@@ -1263,27 +1250,31 @@ module Special
 
       else
        if (ldecelerat_zone .AND. decel_zone .LT. nzgrid) then
-
-        f(:,:,L_disk_point+4:mz,iuy)= &
-          sqrt(M_star/zz(:,:,L_disk_point+4:mz))
-
-        f(:,:,decel_zone+1:L_disk_point+3,iuy)= &
-           (zz(:,:,decel_zone+1:L_disk_point+3)-R_star-(decel_zone-4)*dz) &
-           /(ll-(decel_zone-4)*dz)*sqrt(M_star/(ll+R_star))
-        f(:,:,1:decel_zone,iuy)=0.
-
+         do m=m1,m2; do l=l1,l2
+           f(l,m,L_disk_point+4:mz,iuy)= &
+             sqrt(M_star/z(L_disk_point+4:mz))
+  
+           f(l,m,decel_zone+1:L_disk_point+3,iuy)= &
+              (z(decel_zone+1:L_disk_point+3)-R_star-(decel_zone-4)*dz) &
+              /(ll-(decel_zone-4)*dz)*sqrt(M_star/(ll+R_star))
+           f(l,m,1:decel_zone,iuy)=0.
+         enddo; enddo
        else
-         f(:,:,L_disk_point+4:mz,iuy)= &
-           sqrt(M_star / max(zz(:,:,L_disk_point+3+1:mz),tini))
-         f(:,:,1:L_disk_point+3,iuy)= &
-           (zz(:,:,1:L_disk_point+3)-R_star)/ll*sqrt(M_star/(ll+R_star))
+         do m=m1,m2; do l=l1,l2
+           f(l,m,L_disk_point+4:mz,iuy)= &
+             sqrt(M_star / max(z(L_disk_point+3+1:mz),tini))
+           f(l,m,1:L_disk_point+3,iuy)= &
+             (z(1:L_disk_point+3)-R_star)/ll*sqrt(M_star/(ll+R_star))
+         enddo; enddo
        endif
 
      endif
      else
-      f(:,:,:,iux)=uu_init
-      f(:,:,:,iuz)=uu_init
-      f(:,:,:,iuy)=sqrt(M_star/zz(:,:,:))
+       do m=m1,m2; do l=l1,l2
+         f(l1:l2,m,n,iux)=uu_init
+         f(l1:l2,m,n,iuz)=uu_init
+         f(l1:l2,m,n,iuy)=sqrt(M_star/z(n))
+       enddo; enddo
      endif
 
 

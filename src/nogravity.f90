@@ -128,7 +128,7 @@ module Gravity
 !
     endsubroutine write_gravity_run_pars
 !***********************************************************************
-    subroutine init_gg(f,xx,yy,zz)
+    subroutine init_gg(f)
 !
 !  initialise gravity; called from start.f90
 !   9-jan-02/wolf: coded
@@ -136,11 +136,8 @@ module Gravity
       use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
 !
 ! Not doing anything (this might change if we decide to store gg)
-!
-      if (NO_WARN) print*,f,xx,yy,zz !(keep compiler quiet)
 !
     endsubroutine init_gg
 !***********************************************************************
@@ -198,24 +195,21 @@ module Gravity
 !
     endsubroutine duu_dt_grav
 !***********************************************************************
-    subroutine potential_global(xx,yy,zz,pot,pot0)
+    subroutine potential_global(pot,pot0)
 !
 !  gravity potential
 !  28-mar-02/axel: adapted from grav_z
 !
       use Cdata, only: mx,my,mz,lroot
 !
-      real, dimension (mx,my,mz) :: xx,yy,zz,pot
+      real, dimension (mx,my,mz) :: pot
       real, optional :: pot0
 !
-      intent(in ) :: xx,yy,zz
       intent(out) :: pot,pot0
 !
       if (lroot) print*,'potential: note, GRAV=nograv is not OK'
       pot = 0.
       pot0 = 0.
-!
-      if (NO_WARN) print*,xx(1,1,1),yy(1,1,1),zz(1,1,1)
 !
     endsubroutine potential_global
 !***********************************************************************

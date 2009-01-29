@@ -74,7 +74,7 @@ module Hydro
       if (ip==0) print*,f,lstarting  !(to keep compiler quiet)
     endsubroutine initialize_hydro
 !***********************************************************************
-    subroutine init_uu(f,xx,yy,zz)
+    subroutine init_uu(f)
 !
 !  initialise uu and lnrho; called from start.f90
 !  Should be located in the Hydro module, if there was one.
@@ -85,9 +85,9 @@ module Hydro
       use Sub
 !
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
 !
-      if (NO_WARN) print*,f,xx,yy,zz  !(keep compiler quiet)
+      if (NO_WARN) print*,f  !(keep compiler quiet)
+!
     endsubroutine init_uu
 !***********************************************************************
     subroutine duu_dt(f,df,uu,u2,divu,rho,rho1,glnrho,uij,bij,shock,gshock)

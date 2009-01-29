@@ -123,7 +123,7 @@ module Special
       if (NO_WARN) print*,'f=',f
     endsubroutine initialize_special
 !***********************************************************************
-    subroutine init_special(f,xx,yy,zz)
+    subroutine init_special(f)
 !
 !  initialise passive scalar field; called from start.f90
 !
@@ -136,7 +136,6 @@ module Special
       use Initcond
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz)      :: xx,yy,zz
 !
       select case(initalpm)
         case('zero'); f(:,:,:,ialpm)=0.
@@ -144,7 +143,6 @@ module Special
         case default; call stop_it('init_alpm: bad initalpm='//trim(initalpm))
       endselect
 !
-      if (NO_WARN) print*,xx,yy,zz !(prevent compiler warnings)
     endsubroutine init_special
 !***********************************************************************
     subroutine calc_pencils_special(f,p)

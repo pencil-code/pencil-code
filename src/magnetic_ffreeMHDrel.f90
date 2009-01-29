@@ -141,7 +141,7 @@ module Magnetic
 
     endsubroutine initialize_magnetic
 !***********************************************************************
-    subroutine init_aa(f,xx,yy,zz)
+    subroutine init_aa(f)
 !
 !  initialise magnetic field; called from start.f90
 !  AB: maybe we should here call different routines (such as rings)
@@ -157,7 +157,7 @@ module Magnetic
       use Initcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz)      :: xx,yy,zz,cosphi,sinphi
+      real, dimension (nx) :: cosphi,sinphi
       real, dimension (nx,3) :: bb
       real, dimension (nx) :: b2
       real, dimension (3) :: A0xB0,kxA0,A0xkxA0
@@ -171,53 +171,56 @@ module Magnetic
 
       case('zero'); f(:,:,:,iax:iaz) = 0.
       case('wave')
-        !
-        !  wave
-        !
+!
+!  wave
+!
         if (lroot) print*,'init_aa: B_ext=',B_ext
         if (lroot) print*,'init_aa: k_aa=',k_aa
         if (lroot) print*,'init_aa: A0=',A0
-        !
-        !  calculate frequency, sin(phi), cos(phi)
-        !
+!
+!  calculate frequency, sin(phi), cos(phi)
+!
         !omega_aa=sqrt(kx_aa**2+ky_aa**2+kz_aa**2)
         omega_aa=kx_aa**2+ky_aa**2+kz_aa**2
-        sinphi=amplaa*sin(kx_aa*xx+ky_aa*yy+kz_aa*zz)
-        cosphi=amplaa*cos(kx_aa*xx+ky_aa*yy+kz_aa*zz)
-        !
-        !  calculate amplitudes
-        !
-        call cross(A0,B_ext,A0xB0)
-        call cross(k_aa,A0,kxA0)
-        call cross(A0,kxA0,A0xkxA0)
+        do n=n1,n2; do m=m1,m2
+          sinphi=amplaa*sin(kx_aa*x(l1:l2)+ky_aa*y(m)+kz_aa*z(n))
+          cosphi=amplaa*cos(kx_aa*x(l1:l2)+ky_aa*y(m)+kz_aa*z(n))
+!
+!  calculate amplitudes
+!
+          call cross(A0,B_ext,A0xB0)
+          call cross(k_aa,A0,kxA0)
+          call cross(A0,kxA0,A0xkxA0)
 print*,'init_aa: A0=',A0
 print*,'init_aa: A0xB0=',A0xB0
 print*,'init_aa: A0xkxA0=',A0xkxA0
-        !
-        !  Calculate A and S
-        !
-        do j=1,3
-          f(:,:,:,iaa-1+j)=A0(j)*sinphi
-          f(:,:,:,iuu-1+j)=(A0xB0(j)+A0xkxA0(j)*cosphi)*omega_aa*cosphi*omega_aa
-        enddo
+!
+!  Calculate A and S
+!
+          do j=1,3
+            f(l1:l2,m,n,iaa-1+j)=A0(j)*sinphi
+            f(l1:l2,m,n,iuu-1+j)=(A0xB0(j)+A0xkxA0(j)*cosphi)*omega_aa*cosphi*omega_aa
+          enddo
+        enddo; enddo
         !
       case('current')
-        !
-        !  wave
-        !
+!
+!  wave
+!
         if (lroot) print*,'init_aa: B_ext=',B_ext
         if (lroot) print*,'init_aa: k_aa=',kx_aa,ky_aa,kz_aa
-        !
-        sinphi=amplaa*sin(kx_aa*xx+ky_aa*yy+kz_aa*zz)
-        cosphi=amplaa*cos(kx_aa*xx+ky_aa*yy+kz_aa*zz)
-        !
-        f(:,:,:,iay)=cosphi
-        f(:,:,:,iuy)=sinphi**2
-        !
+!
+        do n=n1,n2; do m=m1,m2
+          sinphi=amplaa*sin(kx_aa*x(l1:l2)+ky_aa*y(m)+kz_aa*z(n))
+          cosphi=amplaa*cos(kx_aa*x(l1:l2)+ky_aa*y(m)+kz_aa*z(n))
+          f(l1:l2,m,n,iay)=cosphi
+          f(l1:l2,m,n,iuy)=sinphi**2
+        enddo; enddo
+!
       case default
-        !
-        !  Catch unknown values
-        !
+!
+!  Catch unknown values
+!
         if (lroot) print*, 'init_aa: No such value for initaa: ', trim(initaa)
         call stop_it("")
 
@@ -811,177 +814,6 @@ if (NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !
       first = .false.
     endsubroutine calc_mfield
-!***********************************************************************
-    subroutine alfven_z(ampl,f,iuu,iaa,zz,kz)
-!
-!  Alfven wave propagating in the z-direction
-!  ux = cos(kz-ot), for B0z=1 and rho=1.
-!  Ay = sin(kz-ot), ie Bx=-cos(kz-ot)
-!
-!  satisfies the equations
-!  dux/dt = Bx'  ==>  dux/dt = -Ay''
-!  dBx/dt = ux'  ==>  dAy/dt = -ux.
-!
-!  18-aug-02/axel: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: zz
-      real :: ampl,kz
-      integer :: iuu,iaa
-!
-!  ux and Ay
-!
-      f(:,:,:,iuu+0)=+ampl*cos(kz*zz)
-      f(:,:,:,iaa+1)=+ampl*sin(kz*zz)
-!
-    endsubroutine alfven_z
-!***********************************************************************
-    subroutine alfvenz_rot(ampl,f,iuu,iaa,zz,kz,O)
-!
-!  Alfven wave propagating in the z-direction
-!  ux = cos(kz-ot), for B0z=1 and rho=1.
-!  Ay = sin(kz-ot), ie Bx=-cos(kz-ot)
-!
-!  satisfies the equations
-!  dux/dt - 2Omega*uy = -Ay''
-!  duy/dt + 2Omega*ux = +Ax''
-!  dAx/dt = +uy
-!  dAy/dt = -ux
-!
-!  18-aug-02/axel: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: zz
-      real :: ampl,kz,O,fac
-      integer :: iuu,iaa
-!
-!  ux and Ay
-!
-      print*,'alfvenz_rot: Alfven wave with rotation; O,kz=',O,kz
-      fac=-O+sqrt(O**2+kz**2)
-      f(:,:,:,iuu+0)=+ampl*cos(kz*zz)*fac/kz
-      f(:,:,:,iuu+1)=-ampl*sin(kz*zz)*fac/kz
-      f(:,:,:,iaa+0)=-ampl*cos(kz*zz)
-      f(:,:,:,iaa+1)=+ampl*sin(kz*zz)
-!
-    endsubroutine alfvenz_rot
-!***********************************************************************
-    subroutine fluxrings(f,ivar,xx,yy,zz,profile)
-!
-!  Magnetic flux rings. Constructed from a canonical ring which is the
-!  rotated and translated:
-!    AA(xxx) = D*AA0(D^(-1)*(xxx-xxx_disp)) ,
-!  where AA0(xxx) is the canonical ring and D the rotation matrix
-!  corresponding to a rotation by phi around z, followed by a
-!  rotation by theta around y.
-!  The array was already initialized to zero before calling this
-!  routine.
-!  Optional argument `profile' allows to choose a different profile (see
-!  norm_ring())
-!
-      use Cdata
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,3)    :: tmpv
-      real, dimension (mx,my,mz)      :: xx,yy,zz,xx1,yy1,zz1
-      real, dimension(3) :: axis,disp
-      real    :: phi,theta,ct,st,cp,sp
-      real    :: fring,Iring,R0,width
-      integer :: i,ivar
-      character (len=*), optional :: profile
-      character (len=labellen) :: prof
-!
-      if (present(profile)) then
-        prof = profile
-      else
-        prof = 'tanh'
-      endif
-
-      if (any((/fring1,fring2,Iring1,Iring2/) /= 0.)) then
-        ! fringX is the magnetic flux, IringX the current
-        if (lroot) then
-          print*, 'fluxrings: Initialising magnetic flux rings'
-        endif
-        do i=1,2
-          if (i==1) then
-            fring = fring1      ! magnetic flux along ring
-            Iring = Iring1      ! current along ring (for twisted flux tube)
-            R0    = Rring1      ! radius of ring
-            width = wr1         ! ring thickness
-            axis  = axisr1 ! orientation
-            disp  = dispr1    ! position
-          else
-            fring = fring2
-            Iring = Iring2
-            R0    = Rring2
-            width = wr2
-            axis  = axisr2
-            disp  = dispr2
-          endif
-          phi   = atan2(axis(2),axis(1)+epsi)
-          theta = atan2(sqrt(axis(1)**2+axis(2)**2)+epsi,axis(3))
-          ct = cos(theta); st = sin(theta)
-          cp = cos(phi)  ; sp = sin(phi)
-          ! Calculate D^(-1)*(xxx-disp)
-          xx1 =  ct*cp*(xx-disp(1)) + ct*sp*(yy-disp(2)) - st*(zz-disp(3))
-          yy1 = -   sp*(xx-disp(1)) +    cp*(yy-disp(2))
-          zz1 =  st*cp*(xx-disp(1)) + st*sp*(yy-disp(2)) + ct*(zz-disp(3))
-          call norm_ring(xx1,yy1,zz1,fring,Iring,R0,width,tmpv,PROFILE=prof)
-          ! calculate D*tmpv
-          f(:,:,:,ivar  ) = f(:,:,:,ivar  ) + amplaa*( &
-               + ct*cp*tmpv(:,:,:,1) - sp*tmpv(:,:,:,2) + st*cp*tmpv(:,:,:,3))
-          f(:,:,:,ivar+1) = f(:,:,:,ivar+1) + amplaa*( &
-               + ct*sp*tmpv(:,:,:,1) + cp*tmpv(:,:,:,2) + st*sp*tmpv(:,:,:,3))
-          f(:,:,:,ivar+2) = f(:,:,:,ivar+2) + amplaa*( &
-               - st   *tmpv(:,:,:,1)                    + ct   *tmpv(:,:,:,3))
-        enddo
-      endif
-      if (lroot) print*, 'fluxrings: Magnetic flux rings initialized'
-!
-    endsubroutine fluxrings
-!***********************************************************************
-    subroutine norm_ring(xx,yy,zz,fring,Iring,R0,width,vv,profile)
-!
-!  Generate vector potential for a flux ring of magnetic flux FRING,
-!  current Iring (not correctly normalized), radius R0 and thickness
-!  WIDTH in normal orientation (lying in the x-y plane, centred at (0,0,0)).
-!
-!   1-may-02/wolf: coded
-!
-      use Cdata, only: mx,my,mz
-      use Mpicomm, only: stop_it
-!
-      real, dimension (mx,my,mz,3) :: vv
-      real, dimension (mx,my,mz)   :: xx,yy,zz,phi,tmp
-      real :: fring,Iring,R0,width
-      character (len=*) :: profile
-!
-      vv = 0.
-!
-!  magnetic ring
-!
-      tmp = sqrt(xx**2+yy**2)-R0
-
-      select case(profile)
-
-      case('tanh')
-        vv(:,:,:,3) = - fring * 0.5*(1+tanh(tmp/width)) &
-                              * 0.5/width/cosh(zz/width)**2
-
-      case default
-        call stop_it('norm_ring: No such fluxtube profile')
-      endselect
-!
-!  current ring (to twist the B-lines)
-!
-!      tmp = tmp**2 + zz**2 + width**2  ! need periodic analog of this
-      tmp = width - sqrt(tmp**2 + zz**2)
-      tmp = Iring*0.5*(1+tanh(tmp/width))     ! Now the A_phi component
-      phi = atan2(yy,xx)
-      vv(:,:,:,1) = - tmp*sin(phi)
-      vv(:,:,:,2) =   tmp*cos(phi)
-!
-    endsubroutine norm_ring
 !***********************************************************************
     subroutine bc_frozen_in_bb_z(topbot)
 !

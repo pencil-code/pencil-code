@@ -84,7 +84,7 @@ module Density
 !
     endsubroutine initialize_density
 !***********************************************************************
-    subroutine init_lnrho(f,xx,yy,zz)
+    subroutine init_lnrho(f)
 !
 !  initialise lnrho; called from start.f90
 !
@@ -94,10 +94,8 @@ module Density
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(xx,yy,zz)
 !
     endsubroutine init_lnrho
 !***********************************************************************

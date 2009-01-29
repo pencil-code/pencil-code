@@ -84,15 +84,14 @@ module Cosmicrayflux
 !
     endsubroutine write_cosmicrayflux_run_pars
 !***********************************************************************
-    subroutine init_fcr(f,xx,yy,zz)
+    subroutine init_fcr(f)
 !
       use Cdata
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz)      :: xx,yy,zz
 !
-      if (NO_WARN) print*,f,xx,yy,zz !(prevent compiler warnings)
+      if (NO_WARN) print*,f !(prevent compiler warnings)
 !
     endsubroutine init_fcr
 !***********************************************************************

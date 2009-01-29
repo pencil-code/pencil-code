@@ -264,7 +264,7 @@ module Entropy
       write(unit,NML=entropy_run_pars)
     endsubroutine write_entropy_run_pars
 !***********************************************************************
-    subroutine init_ss(f,xx,yy,zz)
+    subroutine init_ss(f)
 !
 !  initialise entropy; called from start.f90
 !  07-nov-2001/wolf: coded
@@ -280,12 +280,10 @@ module Entropy
                                 isothermal_lnrho_ss, eoscalc, ilnrho_pp
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
 !
       integer :: j
       logical :: lnothing=.true.
 !
-      intent(in) :: xx,yy,zz
       intent(inout) :: f
 !
       do j=1,ninit
@@ -317,8 +315,6 @@ module Entropy
         endif
 !
       enddo
-!
-      if (NO_WARN) print*,xx,yy  !(to keep compiler quiet)
 !
     endsubroutine init_ss
 !***********************************************************************

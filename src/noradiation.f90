@@ -116,12 +116,12 @@ module Radiation
     subroutine output_radiation(lun)
 !
       integer, intent(in) :: lun
-
+!
       call keep_compiler_quiet(lun)
-
+!
     endsubroutine output_radiation
 !***********************************************************************
-    subroutine init_rad(f,xx,yy,zz)
+    subroutine init_rad(f)
 !
 !  initialise radiation; called from start.f90
 !  15-jul-2002/nils: dummy routine
@@ -130,11 +130,9 @@ module Radiation
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz)      :: xx,yy,zz
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(xx,yy,zz)
-
+!
     endsubroutine init_rad
 !***********************************************************************
     subroutine pencil_criteria_radiation()

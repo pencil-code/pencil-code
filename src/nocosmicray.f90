@@ -106,7 +106,7 @@ module Cosmicray
 !
     endsubroutine write_cosmicray_run_pars
 !***********************************************************************
-    subroutine init_ecr(f,xx,yy,zz)
+    subroutine init_ecr(f)
 !
 !  initialise magnetic field; called from start.f90
 !  AB: maybe we should here call different routines (such as rings)
@@ -119,9 +119,8 @@ module Cosmicray
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz)      :: xx,yy,zz
 !
-      if (NO_WARN) print*,f,xx,yy,zz !(prevent compiler warnings)
+      if (NO_WARN) print*,f !(prevent compiler warnings)
 !
     endsubroutine init_ecr
 !***********************************************************************

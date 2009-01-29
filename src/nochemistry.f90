@@ -118,7 +118,7 @@ module Chemistry
 !
     endsubroutine initialize_chemistry
 !***********************************************************************
-    subroutine init_chemistry(f,xx,yy,zz)
+    subroutine init_chemistry(f)
 !
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
@@ -128,9 +128,7 @@ module Chemistry
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
 !
-      intent(in) :: xx,yy,zz
       intent(inout) :: f
 
 !!
@@ -148,7 +146,6 @@ module Chemistry
 !!      endselect
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(xx,yy,zz)
 !
     endsubroutine init_chemistry
 !***********************************************************************

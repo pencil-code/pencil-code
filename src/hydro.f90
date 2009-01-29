@@ -617,7 +617,7 @@ module Hydro
 !
     endsubroutine write_hydro_run_pars
 !***********************************************************************
-    subroutine init_uu(f,xx,yy,zz)
+    subroutine init_uu(f)
 !
 !  initialise uu and lnrho; called from start.f90
 !  Should be located in the Hydro module, if there was one.
@@ -634,9 +634,10 @@ module Hydro
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: r,p,tmp,xx,yy,zz,prof
-      real, dimension (mx,my,mz,3) :: utmp
-      real :: kabs,crit,eta_sigma
+!
+      real, dimension (mx) :: tmpmx
+      real, dimension (nx) :: r,p,tmp,prof
+      real :: kabs,crit,eta_sigma,tmp0
       integer :: j,i,l,ierr
 !
 !  inituu corresponds to different initializations of uu (called from start).
@@ -651,15 +652,13 @@ module Hydro
           ! Ensure really is zero, as may have used lread_oldsnap
           f(:,:,:,iux:iuz)=0.
         case('const_uu'); do i=1,3; f(:,:,:,iuu+i-1) = uu_const(i); enddo
-        case('mode'); call modev(ampluu(j),coefuu,f,iuu,kx_uu,ky_uu,kz_uu,xx,yy,zz)
+        case('mode'); call modev(ampluu(j),coefuu,f,iuu,kx_uu,ky_uu,kz_uu)
         case('gaussian-noise'); call gaunoise(ampluu(j),f,iux,iuz)
         case('gaussian-noise-x'); call gaunoise(ampluu(j),f,iux)
         case('gaussian-noise-y'); call gaunoise(ampluu(j),f,iuy)
         case('gaussian-noise-z'); call gaunoise(ampluu(j),f,iuz)
         case('gaussian-noise-xy'); call gaunoise(ampluu(j),f,iux,iuy)
-        case('gaussian-noise-rprof')
-          tmp=sqrt(xx**2+yy**2+zz**2)
-          call gaunoise_rprof(ampluu(j),tmp,prof,f,iux,iuz)
+        case('gaussian-noise-rprof'); call gaunoise_rprof(ampluu(j),f,iux,iuz)
         case('xjump')
           call jump(f,iux,uu_left,uu_right,widthuu,'x')
           call jump(f,iuy,uy_left,uy_right,widthuu,'x')
@@ -667,14 +666,14 @@ module Hydro
         case('Beltrami-y'); call beltrami(ampluu(j),f,iuu,ky=ky_uu)
         case('Beltrami-z'); call beltrami(ampluu(j),f,iuu,kz=kz_uu)
         case('rolls'); call rolls(ampluu(j),f,iuu,kx_uu,kz_uu)
-        case('trilinear-x'); call trilinear(ampluu(j),f,iux,xx,yy,zz)
-        case('trilinear-y'); call trilinear(ampluu(j),f,iuy,xx,yy,zz)
-        case('trilinear-z'); call trilinear(ampluu(j),f,iuz,xx,yy,zz)
-        case('cos-cos-sin-uz'); call cos_cos_sin(ampluu(j),f,iuz,xx,yy,zz)
-        case('tor_pert'); call tor_pert(ampluu(j),f,iux,xx,yy,zz)
-        case('diffrot'); call diffrot(ampluu(j),f,iuy,xx,yy,zz)
+        case('trilinear-x'); call trilinear(ampluu(j),f,iux)
+        case('trilinear-y'); call trilinear(ampluu(j),f,iuy)
+        case('trilinear-z'); call trilinear(ampluu(j),f,iuz)
+        case('cos-cos-sin-uz'); call cos_cos_sin(ampluu(j),f,iuz)
+        case('tor_pert'); call tor_pert(ampluu(j),f,iux)
+        case('diffrot'); call diffrot(ampluu(j),f,iuy)
         case('centrifugal-balance','global-shear'); call centrifugal_balance(f)
-        case('olddiffrot'); call olddiffrot(ampluu(j),f,iuy,xx,yy,zz)
+        case('olddiffrot'); call olddiffrot(ampluu(j),f,iuy)
         case('sinwave-phase')
           call sinwave_phase(f,iux,ampl_ux(j),kx_ux(j),ky_ux(j),kz_ux(j),phase_ux(j))
           call sinwave_phase(f,iuy,ampl_uy(j),kx_uy(j),ky_uy(j),kz_uy(j),phase_uy(j))
@@ -721,13 +720,15 @@ module Hydro
         case('soundwave-y'); call soundwave(ampluu(j),f,iuy,ky=ky_uu)
         case('soundwave-z'); call soundwave(ampluu(j),f,iuz,kz=kz_uu)
         case('robertsflow'); call robertsflow(ampluu(j),f,iuu)
-        case('hawley-et-al'); call hawley_etal99a(ampluu(j),f,iuu,widthuu,Lxyz,xx,yy,zz)
+        case('hawley-et-al'); call hawley_etal99a(ampluu(j),f,iuu,widthuu,Lxyz)
         case('sound-wave', '11')
 !
 !  sound wave (should be consistent with density module)
 !
           if (lroot) print*,'init_uu: x-wave in uu; ampluu(j)=',ampluu(j)
-          f(:,:,:,iux)=uu_const(1)+ampluu(j)*sin(kx_uu*xx)
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iux)=uu_const(1)+ampluu(j)*sin(kx_uu*x(l1:l2))
+          enddo; enddo
 
         case('sound-wave2')
 !
@@ -735,35 +736,34 @@ module Hydro
 !
           crit=cs20-grav_const/kx_uu**2
           if (lroot) print*,'init_uu: x-wave in uu; crit,ampluu(j)=',crit,ampluu(j)
-          if (crit>0.) then
-            f(:,:,:,iux)=+ampluu(j)*cos(kx_uu*xx)*sqrt(abs(crit))
-          else
-            f(:,:,:,iux)=-ampluu(j)*sin(kx_uu*xx)*sqrt(abs(crit))
-          endif
+          do n=n1,n2; do m=m1,m2
+            if (crit>0.) then
+              f(l1:l2,m,n,iux)=+ampluu(j)*cos(kx_uu*x(l1:l2))*sqrt(abs(crit))
+            else
+              f(l1:l2,m,n,iux)=-ampluu(j)*sin(kx_uu*x(l1:l2))*sqrt(abs(crit))
+            endif
+          enddo; enddo
 
         case('shock-tube', '13')
 !
 !  shock tube test (should be consistent with density module)
 !
           if (lroot) print*,'init_uu: polytopic standing shock'
-          prof=.5*(1.+tanh(xx/widthuu))
-          f(:,:,:,iux)=uu_left+(uu_right-uu_left)*prof
+          do n=n1,n2; do m=m1,m2
+            prof=.5*(1.+tanh(x(l1:l2)/widthuu))
+            f(l1:l2,m,n,iux)=uu_left+(uu_right-uu_left)*prof
+          enddo; enddo
 
         case('shock-sphere')
 !
 !  shock tube test (should be consistent with density module)
 !
           if (lroot) print*,'init_uu: spherical shock, widthuu=',widthuu,' radiusuu=',radiusuu
-         ! where (sqrt(xx**2+yy**2+zz**2) .le. widthuu)
-            f(:,:,:,iux)=0.5*xx/radiusuu*ampluu(j)*(1.-tanh((sqrt(xx**2+yy**2+zz**2)-radiusuu)/widthuu))
-            f(:,:,:,iuy)=0.5*yy/radiusuu*ampluu(j)*(1.-tanh((sqrt(xx**2+yy**2+zz**2)-radiusuu)/widthuu))
-            f(:,:,:,iuz)=0.5*zz/radiusuu*ampluu(j)*(1.-tanh((sqrt(xx**2+yy**2+zz**2)-radiusuu)/widthuu))
-         !   f(:,:,:,iuy)=yy*ampluu(j)/(widthuu)
-         !   f(:,:,:,iuz)=zz*ampluu(j)/(widthuu)
-            !f(:,:,:,iux)=xx/sqrt(xx**2+yy**2+zz**2)*ampluu(j)
-            !f(:,:,:,iuy)=yy/sqrt(xx**2+yy**2+zz**2)*ampluu(j)
-            !f(:,:,:,iuz)=zz/sqrt(xx**2+yy**2+zz**2)*ampluu(j)
-         ! endwhere
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iux)=0.5*x(l1:l2)/radiusuu*ampluu(j)*(1.-tanh((sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)-radiusuu)/widthuu))
+            f(l1:l2,m,n,iuy)=0.5*y(m)/radiusuu*ampluu(j)*(1.-tanh((sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)-radiusuu)/widthuu))
+            f(l1:l2,m,n,iuz)=0.5*z(n)/radiusuu*ampluu(j)*(1.-tanh((sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)-radiusuu)/widthuu))
+          enddo; enddo
 !
 
         case('bullets')
@@ -771,16 +771,19 @@ module Hydro
 !  blob-like velocity perturbations (bullets)
 !
           if (lroot) print*,'init_uu: velocity blobs'
-          !f(:,:,:,iux)=f(:,:,:,iux)+ampluu(j)*exp(-(xx**2+yy**2+(zz-1.)**2)/widthuu)
-          f(:,:,:,iuz)=f(:,:,:,iuz)-ampluu(j)*exp(-(xx**2+yy**2+zz**2)/widthuu)
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iuz)=f(l1:l2,m,n,iuz)-ampluu(j)*exp(-(x(l1:l2)**2+y(m)**2+z(n)**2)/widthuu)
+          enddo; enddo
 
         case('Alfven-circ-x')
 !
 !  circularly polarised Alfven wave in x direction
 !
+          do n=n1,n2; do m=m1,m2
           if (lroot) print*,'init_uu: circular Alfven wave -> x'
-          f(:,:,:,iuy) = f(:,:,:,iuy) + ampluu(j)*sin(kx_uu*xx)
-          f(:,:,:,iuz) = f(:,:,:,iuz) + ampluu(j)*cos(kx_uu*xx)
+            f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + ampluu(j)*sin(kx_uu*x(l1:l2))
+            f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + ampluu(j)*cos(kx_uu*x(l1:l2))
+          enddo; enddo
 
         case ('coszsiny-uz')
           do n=n1,n2; do m=m1,m2
@@ -848,17 +851,19 @@ module Hydro
           if (lroot) print*,'init_uu: tangential discontinuity of uux at z=0'
           if (lroot) print*,'init_uu: uu_lower=',uu_lower,' uu_upper=',uu_upper
           if (lroot) print*,'init_uu: widthuu=',widthuu
-          prof=.5*(1.+tanh(zz/widthuu))
-          f(:,:,:,iux)=uu_lower+(uu_upper-uu_lower)*prof
+          do n=n1,n2; do m=m1,m2
+            prof=.5*(1.+tanh(z(n)/widthuu))
+            f(l1:l2,m,n,iux)=uu_lower+(uu_upper-uu_lower)*prof
 
 !  Add some random noise to see the development of instability
 !WD: Can't we incorporate this into the urand stuff?
-          print*, 'init_uu: ampluu(j)=',ampluu(j)
-          call random_number_wrapper(r)
-          call random_number_wrapper(p)
-!          tmp=sqrt(-2*log(r))*sin(2*pi*p)*exp(-zz**2*10.)
-          tmp=exp(-zz**2*10.)*cos(2.*xx+sin(4.*xx))
-          f(:,:,:,iuz)=f(:,:,:,iuz)+ampluu(j)*tmp
+            print*, 'init_uu: ampluu(j)=',ampluu(j)
+            call random_number_wrapper(r)
+            call random_number_wrapper(p)
+!          tmp=sqrt(-2*log(r))*sin(2*pi*p)*exp(-z(n)**2*10.)
+            tmp=exp(-z(n)**2*10.)*cos(2.*x(l1:l2)+sin(4.*x(l1:l2)))
+            f(l1:l2,m,n,iuz)=f(l1:l2,m,n,iuz)+ampluu(j)*tmp
+          enddo; enddo
 
         case('Fourier-trunc')
 !
@@ -870,24 +875,28 @@ module Hydro
 !  random or 'up-down') ..
 !
           if (lroot) print*,'init_uu: truncated Fourier'
-          prof = ampluu(j)*exp(-0.5*(zz-z1)**2/widthuu**2) ! vertical Gaussian
-          tmp = kx_uu*xx + ky_uu*yy               ! horizontal phase
-          kabs = sqrt(kx_uu**2+ky_uu**2)
-          f(:,:,:,iuz) = prof * kabs*(-sin(tmp) + 4*cos(2*tmp) - 9*sin(3*tmp))
-          tmp = (zz-z1)/widthuu**2*prof*(cos(tmp) + 2*sin(2*tmp) + 3*cos(3*tmp))
-          f(:,:,:,iux) = tmp*kx_uu/kabs
-          f(:,:,:,iuy) = tmp*ky_uu/kabs
+          do n=n1,n2; do m=m1,m2
+            prof = ampluu(j)*exp(-0.5*(z(n)-z1)**2/widthuu**2)!vertical Gaussian
+            tmp = kx_uu*x(l1:l2) + ky_uu*y(m)                 ! horizontal phase
+            kabs = sqrt(kx_uu**2+ky_uu**2)
+            f(l1:l2,m,n,iuz) = prof * kabs*(-sin(tmp) + 4*cos(2*tmp) - 9*sin(3*tmp))
+            tmp = (z(n)-z1)/widthuu**2*prof*(cos(tmp) + 2*sin(2*tmp) + 3*cos(3*tmp))
+            f(l1:l2,m,n,iux) = tmp*kx_uu/kabs
+            f(l1:l2,m,n,iuy) = tmp*ky_uu/kabs
+          enddo; enddo
 
         case('up-down')
 !
 !  flow upwards in one spot, downwards in another; not soneloidal
 !
           if (lroot) print*,'init_uu: up-down'
-          prof = ampluu(j)*exp(-0.5*(zz-z1)**2/widthuu**2) ! vertical profile
-          tmp = sqrt((xx-(x0+0.3*Lx))**2+(yy-(y0+0.3*Ly))**2)! dist. from spot 1
-          f(:,:,:,iuz) = prof*exp(-0.5*(tmp**2)/widthuu**2)
-          tmp = sqrt((xx-(x0+0.5*Lx))**2+(yy-(y0+0.8*Ly))**2)! dist. from spot 1
-          f(:,:,:,iuz) = f(:,:,:,iuz) - 0.7*prof*exp(-0.5*(tmp**2)/widthuu**2)
+          do n=n1,n2; do m=m1,m2
+            prof = ampluu(j)*exp(-0.5*(z(n)-z1)**2/widthuu**2) ! vertical profile
+            tmp = sqrt((x(l1:l2)-(x0+0.3*Lx))**2+(y(m)-(y0+0.3*Ly))**2)! dist. from spot 1
+            f(l1:l2,m,n,iuz) = prof*exp(-0.5*(tmp**2)/widthuu**2)
+            tmp = sqrt((x(l1:l2)-(x0+0.5*Lx))**2+(y(m)-(y0+0.8*Ly))**2)! dist. from spot 1
+            f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) - 0.7*prof*exp(-0.5*(tmp**2)/widthuu**2)
+          enddo; enddo
 
         case('powern')
 ! initial spectrum k^power
@@ -902,7 +911,7 @@ module Hydro
 
         case('vortex_2d')
 ! Vortex solution of Goodman, Narayan, & Goldreich (1987)
-          call vortex_2d(f,xx,yy,b_ell,widthuu,rbound)
+          call vortex_2d(f,b_ell,widthuu,rbound)
 
         case('sub-Keplerian')
           if (lroot) print*, 'init_hydro: set sub-Keplerian gas velocity'
@@ -941,10 +950,11 @@ module Hydro
           
           f(:,:,:,iux) = 0.
           f(:,:,:,iuy) = 0.
-          do n=n1,n2; do m=m1,m2
-            call curl(f,iuu,utmp(l1:l2,m,n,:))
-          enddo;enddo
-          f(:,:,:,iux:iuz) = utmp
+! MEMOPT/AJ : requires too much memory, so commented out
+!          do n=n1,n2; do m=m1,m2
+!            call curl(f,iuu,utmp(l1:l2,m,n,:))
+!          enddo;enddo
+!          f(:,:,:,iux:iuz) = utmp
 
         case default
           !
@@ -967,14 +977,18 @@ module Hydro
         if (lroot) print*, 'init_uu: Adding random uu fluctuations'
         if (urand > 0) then
           do i=iux,iuz
-            call random_number_wrapper(tmp)
-            f(:,:,:,i) = f(:,:,:,i) + urand*(tmp-0.5)
+            do n=1,mz; do m=1,my
+              call random_number_wrapper(tmpmx)
+              f(:,m,n,i) = f(:,m,n,i) + urand*(tmpmx-0.5)
+            enddo; enddo
           enddo
         else
           if (lroot) print*, 'init_uu:  ... multiplicative fluctuations'
           do i=iux,iuz
-            call random_number_wrapper(tmp)
-            f(:,:,:,i) = f(:,:,:,i) * urand*(tmp-0.5)
+            do n=1,mz; do m=1,my
+              call random_number_wrapper(tmpmx)
+              f(:,m,n,i) = f(:,m,n,i) * urand*(tmpmx-0.5)
+            enddo; enddo
           enddo
         endif
       endif
@@ -985,19 +999,21 @@ module Hydro
         if (lroot) print*, 'init_uu: Adding random uu fluctuations (not on boundary), urandi=',urandi
         if (urandi > 0) then
           do i=iux,iuz
-            call random_number_wrapper(tmp)
-            f(l1+1:l2-1,m1:m2,n1+1:n2-1,i) = f(l1+1:l2-1,m1:m2,n1+1:n2-1,i) + urandi*(tmp(l1+1:l2-1,m1:m2,n1+1:n2-1)-0.5)
+            do n=n1+1,n2-1; do m=m1,m2; do l=l1+1,l2-1
+              call random_number_wrapper(tmp0)
+              f(l,m,n,i) = f(l,m,n,i) + urandi*(tmp0-0.5)
+            enddo; enddo; enddo
           enddo
         else
           if (lroot) print*, 'init_uu:  ... multiplicative fluctuations (not on boundary)'
           do i=iux,iuz
-            call random_number_wrapper(tmp)
-            f(l1:l2,m1:m2,n1:n2,i) = f(l1:l2,m1:m2,n1:n2,i) * urandi*(tmp(l1:l2,m1:m2,n1:n2)-0.5)
+            do n=n1+1,n2-1; do m=m1,m2; do l=l1+1,l2-1
+              call random_number_wrapper(tmp0)
+              f(l,m,n,i) = f(l,m,n,i) * urandi*(tmp0-0.5)
+            enddo; enddo; enddo
           enddo
         endif
       endif
-!
-!     if (NO_WARN) print*,yy,zz !(keep compiler from complaining)
 !
     endsubroutine init_uu
 !***********************************************************************

@@ -71,7 +71,7 @@ module Pscalar
       if (NO_WARN) print*,'f=',f
     endsubroutine initialize_pscalar
 !***********************************************************************
-    subroutine init_lncc(f,xx,yy,zz)
+    subroutine init_lncc(f)
 !
 !  initialise magnetic field; called from start.f90
 !  AB: maybe we should here call different routines (such as rings)
@@ -84,9 +84,8 @@ module Pscalar
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz)      :: xx,yy,zz
 !
-      if (NO_WARN) print*,f,xx,yy,zz !(prevent compiler warnings)
+      if (NO_WARN) print*,f !(prevent compiler warnings)
 !
     endsubroutine init_lncc
 !***********************************************************************

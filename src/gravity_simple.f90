@@ -345,7 +345,7 @@ module Gravity
 !
     endsubroutine initialize_gravity
 !***********************************************************************
-    subroutine init_gg(f,xx,yy,zz)
+    subroutine init_gg(f)
 !
 !  Initialise gravity; called from start.f90
 !
@@ -354,11 +354,8 @@ module Gravity
       use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
 !
 !  Don't do anything
-!
-      if (NO_WARN) print*,f,xx,yy,zz !(keep compiler quiet)
 !
     endsubroutine init_gg
 !***********************************************************************
@@ -478,21 +475,19 @@ module Gravity
 !
     endsubroutine duu_dt_grav
 !***********************************************************************
-    subroutine potential_global(xx,yy,zz,pot,pot0)
+    subroutine potential_global(pot,pot0)
 !
 !  Calculates gravity potential globally
-!  DEPRECATED (use loop and potential_penc instead to avoid global xx,yy,zz)
 !
 !  13-nov-04/anders: coded
 !
-      real, dimension (mx,my,mz) :: xx,yy,zz, pot
+      real, dimension (mx,my,mz) :: pot
       real, optional :: pot0
 !
       call fatal_error('potential_global','this subroutine has been '// &
           'deprecated for gravity_simple')
 !
-      if (NO_WARN) print*,xx(1,1,1)+yy(1,1,1)+zz(1,1,1), &
-          pot(1,1,1),pot0  !(keep compiler quiet)
+      if (NO_WARN) print*,pot(1,1,1),pot0  !(keep compiler quiet)
 !
     endsubroutine potential_global
 !***********************************************************************

@@ -199,7 +199,7 @@ module Special
 !
     endsubroutine initialize_special
 !***********************************************************************
-    subroutine init_special(f,xx,yy,zz)
+    subroutine init_special(f)
 !
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
@@ -211,18 +211,16 @@ module Special
       use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
 !
-      intent(in) :: xx,yy,zz
       intent(inout) :: f
 
 !!
       select case(initnstar)
         case('default')
           if (lroot) print*,'init_special: Default neutron star setup'
-          call density_init(f,xx,zz)
-          call entropy_init(f,xx,zz)
-          call velocity_init(f,zz)
+          call density_init(f)
+          call entropy_init(f)
+          call velocity_init(f)
         
         case default
           !
@@ -232,7 +230,7 @@ module Special
           call stop_it("")
       endselect
 !
-      if (NO_WARN) print*,f,xx,yy,zz  !(keep compiler quiet)
+      if (NO_WARN) print*,f  !(keep compiler quiet)
 !
     endsubroutine init_special
 !***********************************************************************
@@ -689,44 +687,32 @@ endsubroutine read_special_run_pars
       endif
     endsubroutine raddif_local
 !*************************************************************************
-
-!***********************************************************************
-
-    subroutine density_init(f,xx,zz)
+    subroutine density_init(f)
 !
 !Natalia
 !Initialization of density in a case of the step-like distribution
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (my,mz) :: lnrho_2d
-      real, dimension (mx,my,mz) :: xx, zz
-
 !
-    
       real ::   ln_ro_l, ln_ro_r, ln_ro_u
       real :: cs2_star
 !
-
-    !   call eoscalc(ilnrho_lnTT,log(rho_star),log(T_bot), cs2=cs2_star)
-
         ln_ro_r=log(rho_bot)
         ln_ro_u=log(rho_top)
 !
-
-        f(:,:,:,ilnrho)=(xx(:,:,:)-0.)/Lxyz(1)*(ln_ro_u-ln_ro_r)+ln_ro_r
-       
-       
-    
+        do n=n1,n2; do m=m1,m2
+          f(l1:l2,m,n,ilnrho)=(x(l1:l2)-0.)/Lxyz(1)*(ln_ro_u-ln_ro_r)+ln_ro_r
+        enddo; enddo
+!    
     endsubroutine density_init
 !***************************************************************
-
-    subroutine entropy_init(f,xx,zz)
+    subroutine entropy_init(f)
 !Natalia
 !Initialization of entropy in a case of the step-like distribution
  use EquationOfState
 
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: xx, zz
       real, dimension (nx) ::  lnrho, lnTT,ss
       integer ::  mi,ni
   
@@ -746,8 +732,6 @@ endsubroutine read_special_run_pars
       ! lnrho=f(l1:l2,mi,ni,ilnrho)
       ! const_tmp=M_star/sigmaSB*c_light*3./4.
 
-     !  lnTT=0.25*log(T_star**4+const_tmp*exp(f(l1:l2,mi,ni,ilnrho))*(1./zz(l1:l2,mi,ni)-1./R_star))
-    
      !  call eoscalc(4,lnrho,lnTT,ss=ss)
   
       ! f(l1:l2,mi,ni,iss)=ss  
@@ -762,15 +746,13 @@ endsubroutine read_special_run_pars
      
     endsubroutine entropy_init
 !**********************************************************************
-
-    subroutine velocity_init(f,zz)
+    subroutine velocity_init(f)
 !Natalia
 !Initialization of velocity in a case of the step-like distribution
 
       use Cdata
 
       real, dimension (mx,my,mz,mvar+maux) :: f
-        real, dimension (mx,my,mz) :: zz
      
      
         f(:,:,:,iuz)=uu_left

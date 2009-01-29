@@ -233,7 +233,7 @@ module NeutralVelocity
       write(unit,NML=neutralvelocity_run_pars)
     endsubroutine write_neutralvelocity_run_pars
 !***********************************************************************
-    subroutine init_uun(f,xx,yy,zz)
+    subroutine init_uun(f)
 !
 !  initialise uun and lnrhon; called from start.f90
 !
@@ -248,7 +248,6 @@ module NeutralVelocity
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: r,p,tmp,xx,yy,zz,prof
       real :: kabs,crit
       integer :: j,i,l
 !
@@ -273,8 +272,7 @@ module NeutralVelocity
         case('sinwave-y'); call sinwave(ampluun(j),f,iuny,ky=ky_uun)
         case('sinwave-z'); call sinwave(ampluun(j),f,iunz,kz=kz_uun)
         case('gaussian-noise-rprof')
-          tmp=sqrt(xx**2+yy**2+zz**2)
-          call gaunoise_rprof(ampluun(j),tmp,prof,f,iunx,iunz)
+          call gaunoise_rprof(ampluun(j),f,iunx,iunz)
         case('follow-ions'); f(:,:,:,iunx:iunz)=f(:,:,:,iux:iuz)  
         case default
           !
@@ -289,8 +287,6 @@ module NeutralVelocity
 !  End loop over initial conditions
 !
       enddo
-!
-!     if (NO_WARN) print*,yy,zz !(keep compiler from complaining)
 !
     endsubroutine init_uun
 !***********************************************************************

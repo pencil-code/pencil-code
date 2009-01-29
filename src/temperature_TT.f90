@@ -233,7 +233,7 @@ module Entropy
 
     endsubroutine initialize_entropy
 !***********************************************************************
-    subroutine init_ss(f,xx,yy,zz)
+    subroutine init_ss(f)
 !
 !  initialise lnTT; called from start.f90
 !
@@ -248,7 +248,6 @@ module Entropy
       use Initcond, only: jump
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
-      real, dimension (mx,my,mz), intent (in) :: xx,yy,zz
       logical :: lnothing=.true.
 !
       do j=1,ninit
@@ -294,8 +293,6 @@ module Entropy
       enddo
       if (lnothing.and.lroot) print*,'init_ss: nothing'
 !
-      if (NO_WARN) print*,xx,yy  !(to keep compiler quiet)        
-
     endsubroutine init_ss
 !***********************************************************************
     subroutine pencil_criteria_entropy()

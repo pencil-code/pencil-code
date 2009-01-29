@@ -133,7 +133,7 @@ module Cosmicray
       if (NO_WARN) print*,'f=',f
     endsubroutine initialize_cosmicray
 !***********************************************************************
-    subroutine init_ecr(f,xx,yy,zz)
+    subroutine init_ecr(f)
 !
 !  initialise cosmic ray energy density field; called from start.f90
 !
@@ -145,7 +145,6 @@ module Cosmicray
       use Initcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz)      :: xx,yy,zz,prof
 print*,"init_ecr: ecr_const,ln(ecr_const) = ", ecr_const, alog(ecr_const)
 print*,"init_ecr: initecr = ", initecr
 !
@@ -168,10 +167,11 @@ print*,"init_ecr: initecr = ", initecr
         case('propto-uy'); call wave_uu(amplecr,f,iecr,ky=ky_ecr)
         case('propto-uz'); call wave_uu(amplecr,f,iecr,kz=kz_ecr)
         case('tang-discont-z')
-           print*,'init_ecr: widthecr=',widthecr
-        prof=.5*(1.+tanh(zz/widthecr))
-        f(:,:,:,iecr)=-1.+2.*prof
-        case('hor-tube'); call htube2(amplecr,f,iecr,iecr,xx,yy,zz,radius_ecr,epsilon_ecr)
+          print*,'init_ecr: widthecr=',widthecr
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iecr)=-1.0+2*.5*(1.+tanh(z(n)/widthecr))
+          enddo; enddo
+        case('hor-tube'); call htube2(amplecr,f,iecr,iecr,radius_ecr,epsilon_ecr)
         case default; call stop_it('init_ecr: bad initecr='//trim(initecr))
       endselect
 !
@@ -182,12 +182,9 @@ print*,"init_ecr: initecr = ", initecr
         case('const_ecr'); f(:,:,:,iecr)=f(:,:,:,iecr)+ecr_const
       endselect
 !
-!
 !  form lnecr from initecr
 !
 !         f(:,:,:,iecr)=alog(f(:,:,:,iecr))
-
-      if (NO_WARN) print*,xx,yy,zz !(prevent compiler warnings)
     endsubroutine init_ecr
 !***********************************************************************
     subroutine pencil_criteria_cosmicray()

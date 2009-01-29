@@ -193,7 +193,7 @@ module Entropy
       write(unit,NML=entropy_run_pars)
     endsubroutine write_entropy_run_pars
 !!***********************************************************************
-    subroutine init_ss(f,xx,yy,zz)
+    subroutine init_ss(f)
 !
 !  initialise entropy; called from start.f90
 !  07-nov-2001/wolf: coded
@@ -204,7 +204,6 @@ module Entropy
       use Initcond, only: jump
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
-      real, dimension (mx,my,mz), intent (in) :: xx,yy,zz
 !
       integer :: j
       logical :: lnothing=.true.
@@ -225,17 +224,26 @@ module Entropy
         case('const_lnTT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+lnTT_const
         case('const_TT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+log(TT_const)
         case('blob'); call blob(ampl_lnTT,f,ilnTT,radius_lnTT,0.,0.,0.)
-        case('xwave'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+ampl_lnTT*sin(kx_lnTT*xx)
-        case('ywave'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+ampl_lnTT*sin(ky_lnTT*yy)
-        case('zwave'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+ampl_lnTT*sin(kz_lnTT*zz)
+        case('xwave')
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,ilnTT)=f(l1:l2,m,n,ilnTT)+ampl_lnTT*sin(kx_lnTT*x(l1:l2))
+          enddo; enddo
+        case('ywave')
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,ilnTT)=f(l1:l2,m,n,ilnTT)+ampl_lnTT*sin(ky_lnTT*y(m))
+          enddo; enddo
+        case('zwave')
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,ilnTT)=f(l1:l2,m,n,ilnTT)+ampl_lnTT*sin(kz_lnTT*z(n))
+          enddo; enddo
         case('xjump'); call jump(f,ilnTT,lnTT_left,lnTT_right,widthlnTT,'x')
         case('yjump'); call jump(f,ilnTT,lnTT_left,lnTT_right,widthlnTT,'y')
         case('zjump'); call jump(f,ilnTT,lnTT_left,lnTT_right,widthlnTT,'z')
 !
         case default
-          !
-          !  Catch unknown values
-          !
+!
+!  Catch unknown values
+!
           write(unit=errormsg,fmt=*) 'No such value for initss(' &
                            //trim(iinit_str)//'): ',trim(initlnTT(j))
           call fatal_error('init_ss',errormsg)
@@ -250,8 +258,6 @@ module Entropy
       enddo
 
       if (lnothing.and.lroot) print*,'init_ss: nothing'
-!
-      if (NO_WARN) print*,xx,yy  !(to keep compiler quiet)
 !
     endsubroutine init_ss
 !***********************************************************************

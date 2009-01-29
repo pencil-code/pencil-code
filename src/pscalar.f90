@@ -156,7 +156,7 @@ module Pscalar
       if (NO_WARN) print*,'f=',f
     endsubroutine initialize_pscalar
 !***********************************************************************
-    subroutine init_lncc(f,xx,yy,zz)
+    subroutine init_lncc(f)
 !
 !  initialise passive scalar field; called from start.f90
 !
@@ -168,7 +168,6 @@ module Pscalar
       use Initcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz)      :: xx,yy,zz,prof
 !
       select case(initlncc)
         case('zero'); f(:,:,:,ilncc)=0.
@@ -187,10 +186,11 @@ module Pscalar
         case('propto-uy'); call wave_uu(ampllncc,f,ilncc,ky=ky_lncc)
         case('propto-uz'); call wave_uu(ampllncc,f,ilncc,kz=kz_lncc)
         case('tang-discont-z')
-           print*,'init_lncc: widthlncc=',widthlncc
-        prof=.5*(1.+tanh(zz/widthlncc))
-        f(:,:,:,ilncc)=-1.+2.*prof
-        case('hor-tube'); call htube2(ampllncc,f,ilncc,ilncc,xx,yy,zz,radius_lncc,epsilon_lncc)
+          print*,'init_lncc: widthlncc=',widthlncc
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,ilncc)=-1.0+2*0.5*(1.+tanh(z(n)/widthlncc))
+          enddo; enddo
+        case('hor-tube'); call htube2(ampllncc,f,ilncc,ilncc,radius_lncc,epsilon_lncc)
         case default; call stop_it('init_lncc: bad initlncc='//trim(initlncc))
       endselect
 !
@@ -208,7 +208,6 @@ module Pscalar
         f(:,:,:,ilncc)=max(lncc_min,f(:,:,:,ilncc))
       endif
 !
-      if (NO_WARN) print*,xx,yy,zz !(prevent compiler warnings)
     endsubroutine init_lncc
 !***********************************************************************
     subroutine pencil_criteria_pscalar()

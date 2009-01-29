@@ -48,7 +48,7 @@ module Particles
   real :: tau_coll_min=0.0, tau_coll1_max=0.0
   real :: coeff_restitution=0.5, mean_free_path_gas=0.0
   real :: pdlaw=0.0, tausp_short_friction=0.0, tausp1_short_friction=0.0
-  real :: brownian_T0=0.0
+  real :: taucool=0.0, taucool1=0.0, brownian_T0=0.0
   real :: xsinkpoint=0.0, ysinkpoint=0.0, zsinkpoint=0.0, rsinkpoint=0.0
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iscratch_short_friction=0
@@ -57,6 +57,7 @@ module Particles
   logical :: ldragforce_radialonly=.false.
   logical :: ldragforce_heat=.false., lcollisional_heat=.false.
   logical :: lpar_spec=.false., lcompensate_friction_increase=.false.
+  logical :: lcollisional_cooling_taucool=.false.
   logical :: lcollisional_cooling_rms=.false.
   logical :: lcollisional_cooling_twobody=.false.
   logical :: lcollisional_dragforce_cooling=.false.
@@ -100,7 +101,8 @@ module Particles
       kx_vpx, kx_vpy, kx_vpz, ky_vpx, ky_vpy, ky_vpz, kz_vpx, kz_vpy, kz_vpz, &
       phase_vpx, phase_vpy, phase_vpz, lcoldstart_amplitude_correction, &
       lparticlemesh_cic, lparticlemesh_tsc, linterpolate_spline, &
-      tstart_dragforce_par, tstart_grav_par, lcollisional_cooling_rms, &
+      tstart_dragforce_par, tstart_grav_par, taucool, &
+      lcollisional_cooling_taucool, lcollisional_cooling_rms, &
       lcollisional_cooling_twobody, ipar_fence_species, tausp_species, &
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
       tstart_collisional_cooling, tausg_min, l_hole, m_hole, n_hole, &
@@ -124,7 +126,8 @@ module Particles
       gravx_profile, gravz_profile, gravr_profile, &
       gravx, gravz, gravr, gravsmooth, kx_gg, kz_gg, &
       lmigration_redo, tstart_dragforce_par, tstart_grav_par, &
-      lparticlemesh_cic, lparticlemesh_tsc, lcollisional_cooling_rms, &
+      lparticlemesh_cic, lparticlemesh_tsc, taucool, &
+      lcollisional_cooling_taucool, lcollisional_cooling_rms, &
       lcollisional_cooling_twobody, lcollisional_dragforce_cooling, &
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
       tstart_collisional_cooling, tausg_min, epsp_friction_increase, &
@@ -235,19 +238,11 @@ module Particles
 !
 !  The inverse stopping time is needed for drag force and collisional cooling.
 !
-      tausp1=0.0
-      if (tausp/=0.) then
-        tausp1=1/tausp
-      endif
-      if (ldragforce_dust_par .or. ldragforce_gas_par) then
-        if (tausp==0.0 .and. npar_species==1) then
-          if (iap==0) then  ! Particle_radius module calculates taus independently
-            if (lroot) print*, &
-                'initialize_particles: drag force must have tausp/=0 !'
-            call fatal_error('initialize_particles','')
-          endif
-        endif
-      endif
+      if (tausp/=0.0) tausp1=1/tausp
+!
+!  Inverse cooling time.
+!
+      if (taucool/=0.0) taucool1=1/taucool
 !
 !  Multiple dust species. Friction time is given in the array tausp_species.
 !
@@ -1550,6 +1545,9 @@ k_loop:   do while (.not. (k>npar_loc))
         lpenc_requested(i_TT1)=.true.
         lpenc_requested(i_rho1)=.true.
       endif
+      if (lcollisional_cooling_taucool) then
+        lpenc_requested(i_np)=.true.
+      endif
       if (lcollisional_cooling_rms) then
         lpenc_requested(i_epsp)=.true.
       endif
@@ -2000,8 +1998,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Collisional cooling is in a separate subroutine.
 !
-      if ( (lcollisional_cooling_rms .or. lcollisional_cooling_twobody .or. &
-          lcollisional_dragforce_cooling) .and. t>=tstart_collisional_cooling) &
+      if ( (lcollisional_cooling_taucool .or. lcollisional_cooling_rms .or. &
+          lcollisional_cooling_twobody .or. lcollisional_dragforce_cooling) &
+          .and. t>=tstart_collisional_cooling) &
           call collisional_cooling(f,df,fp,dfp,p,ineargrid)
 !
 !  Compensate for increased friction time by appying extra friction force to
@@ -2929,6 +2928,30 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Add collisional cooling of the rms speed.
 !
+      if (lcollisional_cooling_taucool) then
+        if (npar_imn(imn)/=0) then
+          vvpm=0.0
+          do k=k1_imn(imn),k2_imn(imn)
+            ix0=ineargrid(k,1)
+            vvpm(ix0-nghost,:) = vvpm(ix0-nghost,:) + fp(k,ivpx:ivpz)
+          enddo
+          do l=1,nx
+            if (p%np(l)>1.0) vvpm(l,:)=vvpm(l,:)/p%np(l)
+          enddo
+!
+          do k=k1_imn(imn),k2_imn(imn)
+            ix0=ineargrid(k,1)
+            dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - &
+                taucool1*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:))
+          enddo
+!
+          if (lfirst.and.ldt) dt1_max=max(dt1_max,taucool1/cdtp)
+        endif
+      endif
+!
+!  Add collisional cooling of the rms speed, with cooling time-scale based
+!  on friction time and local rms speed of particles.
+!
       if (lcollisional_cooling_rms) then
         if (npar_imn(imn)/=0) then
 !  When multiple friction times are present, the average is used for the
@@ -2980,7 +3003,6 @@ k_loop:   do while (.not. (k>npar_loc))
           if (tau_coll_min>0.0) then
             where (tau_coll1>tau_coll1_max) tau_coll1=tau_coll1_max
           endif
-          dt1_max=max(dt1_max,tau_coll1/cdtp)
 !
           do k=k1_imn(imn),k2_imn(imn)
             ix0=ineargrid(k,1)
@@ -2992,6 +3014,8 @@ k_loop:   do while (.not. (k>npar_loc))
                   sum(fp(k,ivpx:ivpz)*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:)))
             endif
           enddo
+!
+          if (lfirst.and.ldt) dt1_max=max(dt1_max,tau_coll1/cdtp)
         endif
       endif
 !
@@ -3039,7 +3063,7 @@ k_loop:   do while (.not. (k>npar_loc))
                 dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - &
                     tau_cool1_par*(fp(k,ivpx:ivpz)-vbar_jk)
               enddo
-              dt1_max=max(dt1_max(l),dt1_cool/cdtp)
+              if (lfirst.and.ldt) dt1_max=max(dt1_max(l),dt1_cool/cdtp)
 !  Go through all possible k.
               k=kneighbour(k)
             enddo
@@ -3125,9 +3149,11 @@ k_loop:   do while (.not. (k>npar_loc))
               tau_coll1_tot(:,ispecies)=tau_coll1_tot(:,ispecies)+tau_coll1_species(:,ispecies,jspecies)
             enddo; enddo
           endif
-          do ispecies=1,npar_species
-            dt1_max=max(dt1_max,tau_coll1_tot(:,ispecies)/cdtp)
-          enddo
+          if (lfirst.and.ldt) then
+            do ispecies=1,npar_species
+              dt1_max=max(dt1_max,tau_coll1_tot(:,ispecies)/cdtp)
+            enddo
+          endif
 !  Add to equation of motion.
           do k=k1_imn(imn),k2_imn(imn)
             ix0=ineargrid(k,1)

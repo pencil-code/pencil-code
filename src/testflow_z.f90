@@ -260,7 +260,7 @@ module Testflow
 !
     endsubroutine initialize_testflow
 !***********************************************************************
-    subroutine init_uutest(f,xx,yy,zz)
+    subroutine init_uutest(f)
 !
 !  initialise testflow; called from start.f90
 !
@@ -272,7 +272,6 @@ module Testflow
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz)      :: xx,yy,zz,tmp,prof
 !     real, dimension (nx,3) :: bb
       real, dimension (nx) :: b2,fact
       real :: beq2

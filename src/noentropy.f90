@@ -112,7 +112,7 @@ module Entropy
 !
     endsubroutine initialize_entropy
 !***********************************************************************
-    subroutine init_ss(f,xx,yy,zz)
+    subroutine init_ss(f)
 !
 !  Initialise entropy; called from start.f90
 !
@@ -122,9 +122,8 @@ module Entropy
       use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
 !
-      if (NO_WARN) print*, f, xx, yy, zz ! keep compiler quiet
+      if (NO_WARN) print*, f ! keep compiler quiet
 !
     endsubroutine init_ss
 !***********************************************************************

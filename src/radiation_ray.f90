@@ -1538,7 +1538,7 @@ module Radiation
 
     endsubroutine opacity
 !***********************************************************************
-    subroutine init_rad(f,xx,yy,zz)
+    subroutine init_rad(f)
 !
 !  Dummy routine for Flux Limited Diffusion routine
 !  initialise radiation; called from start.f90
@@ -1549,9 +1549,8 @@ module Radiation
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
 !
-      if (NO_WARN) print*,f,xx,yy,zz !(keep compiler quiet)
+      if (NO_WARN) print*,f !(keep compiler quiet)
 !
     endsubroutine init_rad
 !***********************************************************************

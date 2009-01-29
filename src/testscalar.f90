@@ -311,7 +311,7 @@ module Testscalar
 !
     endsubroutine initialize_testscalar
 !***********************************************************************
-    subroutine init_cctest(f,xx,yy,zz)
+    subroutine init_cctest(f)
 !
 !  initialise testscalar; called from start.f90
 !
@@ -323,7 +323,6 @@ module Testscalar
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz,tmp,prof
       real, dimension (nx) :: cc
       real, dimension (nx) :: b2,fact
       real :: beq2

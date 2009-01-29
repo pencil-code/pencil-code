@@ -387,9 +387,7 @@
               lreloading          = .false.
             endif
 !
-!  Reinit variables found in `REINIT' file; then remove the file. Currently
-!  only works for uud and nd, because these variables don't need xx, yy or zz
-!  for initial condition.
+!  Reinit variables found in `REINIT' file; then remove the file.
 !
             if (lroot) inquire(FILE="REINIT", EXIST=lreinit_file)
             if (lroot .and. lreinit_file) then

@@ -23,7 +23,7 @@ module Solid_Cells
 !
     endsubroutine initialize_solid_cells
 !***********************************************************************
-    subroutine init_solid_cells(f,xx,yy,zz)
+    subroutine init_solid_cells(f)
 !
 !  Initial conditions for cases where we have solid structures in the domain.
 !  Typically the flow field is set such that we have no-slip conditions
@@ -35,10 +35,8 @@ module Solid_Cells
       use Sub
 
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(xx,yy,zz)
 !
     end subroutine init_solid_cells
 !***********************************************************************  

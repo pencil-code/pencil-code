@@ -328,7 +328,7 @@ module Chemistry
 !
     endsubroutine initialize_chemistry
 !***********************************************************************
-    subroutine init_chemistry(f,xx,yy,zz)
+    subroutine init_chemistry(f)
 !
 !  initialise chemistry initial condition; called from start.f90
 !
@@ -340,11 +340,9 @@ module Chemistry
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
       integer :: j,k
       logical :: lnothing, air_exist
 !
-      intent(in) :: xx,yy,zz
       intent(inout) :: f
 !
 !  different initializations of nd (called from start)
@@ -419,7 +417,6 @@ module Chemistry
       endif
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(xx,yy,zz)
 !
     endsubroutine init_chemistry
 !***********************************************************************

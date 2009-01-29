@@ -73,7 +73,7 @@ module Solid_Cells
 !
     endsubroutine initialize_solid_cells
 !***********************************************************************
-    subroutine init_solid_cells(f,xx,yy,zz)
+    subroutine init_solid_cells(f)
 !
 !  Initial conditions for cases where we have solid structures in the domain.
 !  Typically the flow field is set such that we have no-slip conditions
@@ -86,9 +86,7 @@ module Solid_Cells
       use Initcond
 
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
 
-      intent(in) :: xx,yy,zz
       intent(inout) :: f
       
       integer, pointer :: iglobal_cs2,iglobal_glnTT
@@ -117,22 +115,22 @@ module Solid_Cells
 !
           do icyl=1,ncylinders
             a2 = cylinder(icyl,1)**2
-            xr=xx(i,j,k)-cylinder(icyl,2)
+            xr=x(i)-cylinder(icyl,2)
             if (cylinder(icyl,3) .ne. 0) then
               print*,'When using cylinderstream_x all cylinders must have'
               print*,'zero offset in y-direction!'
               call fatal_error('init_solid_cells:','')
             endif
-            yr=yy(i,j,k)
+            yr=y(j)
             rr2 = xr**2+yr**2
             if (rr2 > a2) then
               do cyl=0,100
                 if (cyl==0) then
                   wall_smoothing=1-exp(-(rr2-a2)/skin_depth**2)
                   f(i,j,k,iuy) = f(i,j,k,iuy)-init_uu*&
-                       2*xx(i,j,k)*yy(i,j,k)*a2/rr2**2*wall_smoothing
+                       2*x(i)*y(j)*a2/rr2**2*wall_smoothing
                   f(i,j,k,iux) = f(i,j,k,iux)+init_uu*&
-                       (0. - a2/rr2 + 2*yy(i,j,k)**2*a2/rr2**2)&
+                       (0. - a2/rr2 + 2*y(j)**2*a2/rr2**2)&
                        *wall_smoothing
                   if (ilnTT .ne. 0) then
                     wall_smoothing_temp=1-exp(-(rr2-a2)/(sqrt(a2))**2)
@@ -143,15 +141,15 @@ module Solid_Cells
                   endif
                 else
                   shifty=cyl*Lxyz(2)
-                  rr2_low =(xx(i,j,k)+shiftx)**2+(yy(i,j,k)+shifty)**2
-                  rr2_high=(xx(i,j,k)-shiftx)**2+(yy(i,j,k)-shifty)**2
+                  rr2_low =(x(i)+shiftx)**2+(y(j)+shifty)**2
+                  rr2_high=(x(i)-shiftx)**2+(y(j)-shifty)**2
                   f(i,j,k,iux) = f(i,j,k,iux)+init_uu*( &
-                       +2*(yy(i,j,k)-shifty)**2*a2/rr2_high**2-a2/rr2_high&
-                       +2*(yy(i,j,k)+shifty)**2*a2/rr2_low**2 -a2/rr2_low)
+                       +2*(y(j)-shifty)**2*a2/rr2_high**2-a2/rr2_high&
+                       +2*(y(j)+shifty)**2*a2/rr2_low**2 -a2/rr2_low)
                   f(i,j,k,iuy) = f(i,j,k,iuy)-init_uu*( &
-                       +2*(xx(i,j,k)-shiftx)*(yy(i,j,k)-shifty)&
+                       +2*(x(i)-shiftx)*(y(j)-shifty)&
                        *a2/rr2_high**2&
-                       +2*(xx(i,j,k)+shiftx)*(yy(i,j,k)+shifty)&
+                       +2*(x(i)+shiftx)*(y(j)+shifty)&
                        *a2/rr2_low**2)
                 endif
               enddo
@@ -176,13 +174,13 @@ module Solid_Cells
         do k=n1,n2
           do icyl=1,ncylinders
             a2 = cylinder(icyl,1)**2
-            yr=yy(i,j,k)-cylinder(icyl,3)
+            yr=y(j)-cylinder(icyl,3)
             if (cylinder(icyl,2) .ne. 0) then
               print*,'When using cylinderstream_y all cylinders must have'
               print*,'zero offset in x-direction!'
               call fatal_error('init_solid_cells:','')
             endif
-            xr=xx(i,j,k)
+            xr=x(i)
             rr2 = xr**2+yr**2
             if (rr2 > a2) then
               do cyl=0,100
@@ -208,9 +206,9 @@ module Solid_Cells
                        +2*(xr-shiftx)**2*a2/rr2_high**2-a2/rr2_high&
                        +2*(xr+shiftx)**2*a2/rr2_low**2 -a2/rr2_low)
                   f(i,j,k,iux) = f(i,j,k,iux)-init_uu*( &
-                       +2*(xr-shiftx)*(yy(i,j,k)-shifty)&
+                       +2*(xr-shiftx)*(y(j)-shifty)&
                        *a2/rr2_high**2&
-                       +2*(xr+shiftx)*(yy(i,j,k)+shifty)&
+                       +2*(xr+shiftx)*(y(j)+shifty)&
                        *a2/rr2_low**2)
                 endif
               enddo

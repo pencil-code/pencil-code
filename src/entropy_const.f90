@@ -123,7 +123,7 @@ module Entropy
 !
     endsubroutine initialize_entropy
 !***********************************************************************
-    subroutine init_ss(f,xx,yy,zz)
+    subroutine init_ss(f)
 !
 !  initialise entropy; called from start.f90
 !  07-nov-2001/wolf: coded
@@ -132,9 +132,7 @@ module Entropy
       use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
 !
-      intent(in) :: xx,yy,zz
 !
       do j=1,ninit
         select case(initss(j))
@@ -144,8 +142,7 @@ module Entropy
 
         endselect
       enddo
-
-      if (NO_WARN) print*,f,xx,yy  !(to keep compiler quiet)
+!
     endsubroutine init_ss
 !***********************************************************************
     subroutine dss_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1,shock,gshock,bb,bij)
