@@ -73,9 +73,9 @@ class read_ts:
         plot:
         ----
           Do two plots:
-          Try to plot urms(t) and brms(t), if any of these two is not
-          available or zero, fill the list with the first two variables other
-          than `it' and `dt*'
+          Try to plot urms(t), ruzm(t) and brms(t), if any of these
+          three is not available or zero, fill the list with the first two 
+          variables other than `it' and `dt*'
       """
 # speed the graphics (in connection with an ending P.show())
       P.ioff()
@@ -101,6 +101,13 @@ class read_ts:
          P.xlabel('Time')
          P.ylabel('brms')
          listargs.remove('brms')
+      if (hasattr(self, 'ruzm') and self.ruzm.max() != 0.):
+         cnt+=1
+         P.subplot(2,1,cnt)
+         P.plot(self.t, self.ruzm)
+         P.xlabel('Time')
+         P.ylabel('ruzm')
+         listargs.remove('ruzm')
       else:
          listargs.remove('t')
          i=0
