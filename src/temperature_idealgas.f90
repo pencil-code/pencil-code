@@ -1418,7 +1418,7 @@ module Entropy
          bz(1)=1.  ; cz(1)=0. 
          rhsz(1)=cs2bot/gamma1
 ! Constant flux at the bottom
-        case('c1')
+        case('c3')
          bz(1)=1.   ; cz(1)=-1
          rhsz(1)=dz*Fbot/hcond0
       endselect
@@ -1539,7 +1539,7 @@ module Entropy
           bz(1)=1. ; cz(1)=0.
           rhsz(1)=0.
 ! Constant flux at the bottom
-         case('c1')
+         case('c3')
           bz(1)=1. ; cz(1)=-1.
           rhsz(1)=0.
        endselect
@@ -1552,7 +1552,7 @@ module Entropy
 !
       call boundary_ADI(f(:,4,:,ilnTT),hcond)
 !
-! refresh hcond needed for the 'c1' condition in boundcond.f90
+! refresh hcond needed for the 'c3' condition in boundcond.f90
 !
       call heatcond_TT(f(:,4,n1,ilnTT),hcondADI,dhcondADI)
       call put_shared_variable('hcond0',hcondADI,ierr)
@@ -1610,8 +1610,8 @@ module Entropy
 ! 13-Sep-07/gastine: computed two different types of boundary 
 ! conditions for the implicit solver:
 !     - Always periodic in x-direction
-!     - Possibility to choose between 'cT' and 'c1' in z direction
-! Note: 'c1' means that the flux is constant at the _bottom_ 
+!     - Possibility to choose between 'cT' and 'c3' in z direction
+! Note: 'c3' means that the flux is constant at the _bottom_ 
 ! boundary and the temperature is constant at the top
       implicit none
 
@@ -1622,7 +1622,7 @@ module Entropy
 ! x-direction: periodic
       f_2d(1:l1-1,:)=f_2d(l2i:l2,:)
       f_2d(l2+1:mx,:)=f_2d(l1:l1i,:)
-! z-direction: always constant temperature at the top and cT or c1 at
+! z-direction: always constant temperature at the top and cT or c3 at
 ! the bottom
       f_2d(:,n2+1)=2.*f_2d(:,n2)-f_2d(:,n2-1)
 
@@ -1631,7 +1631,7 @@ module Entropy
           f_2d(:,n1-1)=2.*f_2d(:,n1)-f_2d(:,n1+1)
 !
 ! Constant flux at the bottom
-        case('c1')
+        case('c3')
           if (.not. present(hcond)) then
             do i=1,nghost
               f_2d(:,n1-i)=f_2d(:,n1+i)+2.*i*dz*Fbot/hcond0
