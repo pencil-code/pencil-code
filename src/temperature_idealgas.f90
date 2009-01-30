@@ -185,6 +185,7 @@ module Entropy
       logical :: lstarting, lnothing
       type (pencil_case) :: p
       integer :: i, ierr
+      real, dimension (mx) :: hcondADI,dhcondADI
 !
       if (.not. leos) then
          call fatal_error('initialize_entropy','EOS=noeos but temperature_idealgas requires an EQUATION OF STATE for the fluid')
@@ -320,7 +321,13 @@ module Entropy
 !  30-nov-2007/dintrans: now hcond0 and Fbot are passed to boundcond()
 !  as shared variables
 !
-      call put_shared_variable('hcond0',hcond0,ierr)
+      if (initlnTT(1).eq.'rad_equil') then
+        call heatcond_TT(f(:,4,n1,ilnTT),hcondADI,dhcondADI)
+        print*,'Kmax,hcond=',Kmax,hcondADI
+        call put_shared_variable('hcond0',hcondADI,ierr)
+      else
+        call put_shared_variable('hcond0',hcond0,ierr)
+      endif
       if (ierr/=0) call stop_it("initialize_entropy: "//&
            "there was a problem when putting hcond0")
       call put_shared_variable('Fbot',Fbot,ierr)
@@ -1441,14 +1448,16 @@ module Entropy
       use Cparam
       use EquationOfState, only: gamma, gamma1, cs2bot, cs2top, get_cp1
       use General, only: tridag
+      use SharedVariables, only: put_shared_variable
 
       implicit none
 
-      integer :: i,j
+      integer :: i,j,ierr
       real, dimension(mx,my,mz,mfarray) :: finit,f
       real, dimension(mx,mz) :: source,hcond,dhcond,finter,val,TT,rho
       real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
+      real, dimension(mx)    :: hcondADI, dhcondADI
       real    :: alpha, aalpha, bbeta
       real    :: dx_2, dz_2, cp1
 
@@ -1543,8 +1552,10 @@ module Entropy
 !
       call boundary_ADI(f(:,4,:,ilnTT),hcond)
 !
-! 19-sep-07/dintrans: useless
-!     call heatcond_TT(f(:,4,:,ilnTT),hcond,dhcond)
+! refresh hcond needed for the 'c1' condition in boundcond.f90
+!
+      call heatcond_TT(f(:,4,n1,ilnTT),hcondADI,dhcondADI)
+      call put_shared_variable('hcond0',hcondADI,ierr)
 !
     end subroutine ADI_Kprof
 !***********************************************************************
@@ -1641,7 +1652,7 @@ module Entropy
       implicit none
 !
       integer :: i,n
-      integer, parameter    :: NMAX=500
+      integer, parameter    :: NMAX=600
       real    :: alpha, beta,gamma,fact      
       real, dimension(n)    :: a,b,c,r,x,bb,u,z
 !     real, dimension(NMAX) :: bb,u,z

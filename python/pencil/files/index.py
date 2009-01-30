@@ -24,7 +24,7 @@ class read_index:
       if datadir.endswith('/'):
           datadir += '/'
 
-      if (param == None): param = read_param(datadir,quiet=True)
+      if (param == None): param = read_param(datadir=datadir,quiet=True)
 
       f = open(datadir+'index.pro')
       self.index={}

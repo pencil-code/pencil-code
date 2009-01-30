@@ -515,6 +515,9 @@ module Boundcond
                 if (j==iss) call bc_ss_flux(f,topbot)
                 if (j==iaa) call bc_aa_pot(f,topbot)
                 if (j==ilnTT) call bc_lnTT_flux_z(f,topbot)
+              case ('c3')
+                ! BCZ_DOC: constant flux at the bottom with a variable hcond
+                if (j==ilnTT) call bc_ADI_flux_z(f,topbot)
               case ('pot')
                 ! BCZ_DOC: potential magnetic field
                 if (j==iaa) call bc_aa_pot2(f,topbot)
@@ -5235,5 +5238,42 @@ module Boundcond
           *gamma0(l1:l2,n1:n2)*drhoE_p_dx(l1:l2,n1:n2)
 !
     endsubroutine bc_nscbc_nref_subout_y
+!***********************************************************************
+    subroutine bc_ADI_flux_z(f,topbot)
+!
+!  constant flux boundary condition for temperature (called when bcz='c3')
+!  30-jan-2009/dintrans: coded 
+!
+      use SharedVariables, only: get_shared_variable
+!
+      real, pointer :: hcond(:),Fbot
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx) :: tmp_x
+      integer :: i,ierr
+!
+!  Do the `c3' boundary condition (constant heat flux) for TT
+!  at the bottom _only_ in the ADI case where hcond is variable.
+!  TT version: enforce dT/dz = - Fbot/K
+!      
+      call get_shared_variable('hcond0',hcond,ierr)
+      if (ierr/=0) call stop_it("bc_lnTT_flux_z: "//&
+           "there was a problem when getting hcond")      
+      call get_shared_variable('Fbot',Fbot,ierr)
+      if (ierr/=0) call stop_it("bc_lnTT_flux_z: "//&
+           "there was a problem when getting Fbot")      
+ 
+      if(headtt) print*,'bc_ADI_flux_z: Fbot,hcond,dz=',Fbot,hcond,dz
+
+      if (topbot.eq.'bot') then
+        tmp_x=-Fbot/hcond
+        do i=1,nghost
+          f(:,4,n1-i,ilnTT)=f(:,4,n1+i,ilnTT)-2.*i*dz*tmp_x
+        enddo
+      else
+        call fatal_error('bc_ADI_flux_z','invalid argument')
+      endif
+!
+    endsubroutine bc_ADI_flux_z
 !***********************************************************************
 endmodule Boundcond
