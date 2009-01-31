@@ -7,7 +7,7 @@ Maintainer:
 Added:
     23-Apr-2004
 Status:
-    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+    succeeds since 31 Jan 2009 (in this form)
 Recommended resolution:
     32x32x32 for eta=0.1 is fine.
     At 16x16x16, eta_crit=0.1814, i.e. Rm_crit=5.514
