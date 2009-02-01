@@ -3764,7 +3764,18 @@ module Hydro
       endif
       df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz) &
         -prof_amp1*sin((pi/(2.*x(l2)))*x(l1:l2))*cos((pi/(2.*y(m2)))*y(m)))
-
+!
+!  Shear profile from Hughes & Proctor (2009, PRL)
+!
+      case ('HP09')
+      if (wdamp/=0.) then
+        prof_amp3=ampl1_diffrot*0.5*(1+tanh((z-rdampint)/(wdamp)))
+      else
+        prof_amp3=ampl1_diffrot
+      endif
+      df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(f(l1:l2,m,n,iuy) &
+        -prof_amp3(n)*cos(2.*pi*((x(l1:l2))-x0)/Lx))
+!
 !  vertical shear profile
 !
       case ('vertical_shear')
