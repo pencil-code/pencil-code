@@ -198,12 +198,13 @@ module Magnetic
   integer :: idiag_j2m=0        ! DIAG_DOC: $\left<\jv^2\right>$
   integer :: idiag_jm2=0        ! DIAG_DOC: $\max(\jv^2)$
   integer :: idiag_abm=0        ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$
-  integer :: idiag_abmh=0        ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$
-  integer :: idiag_abmn=0        ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$
-  integer :: idiag_abms=0        ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$
+  integer :: idiag_abmh=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$
+  integer :: idiag_abmn=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$
+  integer :: idiag_abms=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$
   integer :: idiag_jbm=0        ! DIAG_DOC: $\left<\jv\cdot\Bv\right>$
   integer :: idiag_ubm=0        ! DIAG_DOC: $\left<\uv\cdot\Bv\right>$
   integer :: idiag_fbm=0        ! DIAG_DOC: $\left<\fv\cdot\Bv\right>$
+  integer :: idiag_fxbxm=0      ! DIAG_DOC: $\left<f_x B_x\right>$
   integer :: idiag_epsM=0       ! DIAG_DOC: $\left<2\eta\mu_0\jv^2\right>$
   integer :: idiag_epsAD=0      ! DIAG_DOC: $\left<\rho^{-1} t_{\rm AD} (\vec{J}\times\vec{B})^2\right>$ (heating by ion-neutrals friction)
   integer :: idiag_bxpt=0       ! DIAG_DOC: $B_x(x_0,y_0,z_0,t)$
@@ -1709,7 +1710,7 @@ module Magnetic
       real, dimension (nx,3) :: geta,uxDxuxb,fres,uxb_upw,tmp2,exa,exj,dexb
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,b3b21,b1b32,b2b13,sign_jo,rho1_jxb
-      real, dimension (nx) :: B1dot_glnrhoxb,tmp1,fb
+      real, dimension (nx) :: B1dot_glnrhoxb,tmp1,fb,fxbx
       real, dimension (nx) :: b2t,bjt,jbt
       real, dimension (nx) :: eta_mn,eta_smag,etadust,etatotal
       real, dimension (nx) :: fres2,etaSS,penc
@@ -2142,6 +2143,11 @@ module Magnetic
         if (idiag_fbm/=0) then
           call dot(p%fcont,p%bb,fb)
           call sum_mn_name(fb,idiag_fbm)
+        endif
+!
+        if (idiag_fxbxm/=0) then
+          fxbx=p%fcont(:,1)*p%bb(:,1)
+          call sum_mn_name(fxbx,idiag_fxbxm)
         endif
 !
         if (idiag_ubm/=0) call sum_mn_name(p%ub,idiag_ubm)
@@ -5060,7 +5066,7 @@ module Magnetic
         idiag_jbtm=0
         idiag_b2m=0; idiag_bm2=0; idiag_j2m=0; idiag_jm2=0; idiag_abm=0
         idiag_abmh=0;idiag_abmn=0;idiag_abms=0
-        idiag_jbm=0; idiag_ubm=0; idiag_fbm=0
+        idiag_jbm=0; idiag_ubm=0; idiag_fbm=0; idiag_fxbxm=0
         idiag_epsM=0; idiag_epsM_LES=0; idiag_epsAD=0
         idiag_bxpt=0; idiag_bypt=0; idiag_bzpt=0
         idiag_Expt=0; idiag_Eypt=0; idiag_Ezpt=0
@@ -5135,6 +5141,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'jbm',idiag_jbm)
         call parse_name(iname,cname(iname),cform(iname),'ubm',idiag_ubm)
         call parse_name(iname,cname(iname),cform(iname),'fbm',idiag_fbm)
+        call parse_name(iname,cname(iname),cform(iname),'fxbxm',idiag_fxbxm)
         call parse_name(iname,cname(iname),cform(iname),'b2m',idiag_b2m)
         call parse_name(iname,cname(iname),cform(iname),'bm2',idiag_bm2)
         call parse_name(iname,cname(iname),cform(iname),'j2m',idiag_j2m)
@@ -5419,6 +5426,7 @@ module Magnetic
         write(3,*) 'i_jbm=',idiag_jbm
         write(3,*) 'i_ubm=',idiag_ubm
         write(3,*) 'i_fbm=',idiag_fbm
+        write(3,*) 'i_fxbxm=',idiag_fxbxm
         write(3,*) 'i_b2m=',idiag_b2m
         write(3,*) 'i_bm2=',idiag_bm2
         write(3,*) 'i_j2m=',idiag_j2m
