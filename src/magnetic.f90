@@ -38,11 +38,15 @@ module Magnetic
 !
   real, target, dimension (nx,ny,3) :: bb_xy,jj_xy
   real, target, dimension (nx,ny,3) :: bb_xy2,jj_xy2
+  real, target, dimension (nx,ny,3) :: bb_xy3,jj_xy3
+  real, target, dimension (nx,ny,3) :: bb_xy4,jj_xy4
   real, target, dimension (nx,nz,3) :: bb_xz,jj_xz
   real, target, dimension (ny,nz,3) :: bb_yz,jj_yz
 !
   real, target, dimension (nx,ny) :: b2_xy,jb_xy
   real, target, dimension (nx,ny) :: b2_xy2,jb_xy2
+  real, target, dimension (nx,ny) :: b2_xy3,jb_xy3
+  real, target, dimension (nx,ny) :: b2_xy4,jb_xy4
   real, target, dimension (ny,nz) :: b2_yz,jb_yz
   real, target, dimension (nx,nz) :: b2_xz,jb_xz
 !
@@ -2533,21 +2537,29 @@ module Magnetic
           if (m==iy_loc)  bb_xz(:,n-n1+1,j)=p%bb(:,j)
           if (n==iz_loc)  bb_xy(:,m-m1+1,j)=p%bb(:,j)
           if (n==iz2_loc) bb_xy2(:,m-m1+1,j)=p%bb(:,j)
+          if (n==iz3_loc) bb_xy3(:,m-m1+1,j)=p%bb(:,j)
+          if (n==iz4_loc) bb_xy4(:,m-m1+1,j)=p%bb(:,j)
         enddo
         do j=1,3
           jj_yz(m-m1+1,n-n1+1,j)=p%jj(ix_loc-l1+1,j)
           if (m==iy_loc)  jj_xz(:,n-n1+1,j)=p%jj(:,j)
           if (n==iz_loc)  jj_xy(:,m-m1+1,j)=p%jj(:,j)
           if (n==iz2_loc) jj_xy2(:,m-m1+1,j)=p%jj(:,j)
+          if (n==iz3_loc) jj_xy3(:,m-m1+1,j)=p%jj(:,j)
+          if (n==iz4_loc) jj_xy4(:,m-m1+1,j)=p%jj(:,j)
         enddo
         b2_yz(m-m1+1,n-n1+1)=p%b2(ix_loc-l1+1)
         if (m==iy_loc)  b2_xz(:,n-n1+1)=p%b2
         if (n==iz_loc)  b2_xy(:,m-m1+1)=p%b2
         if (n==iz2_loc) b2_xy2(:,m-m1+1)=p%b2
+        if (n==iz3_loc) b2_xy3(:,m-m1+1)=p%b2
+        if (n==iz4_loc) b2_xy4(:,m-m1+1)=p%b2
         jb_yz(m-m1+1,n-n1+1)=p%jb(ix_loc-l1+1)
         if (m==iy_loc)  jb_xz(:,n-n1+1)=p%jb
         if (n==iz_loc)  jb_xy(:,m-m1+1)=p%jb
         if (n==iz2_loc) jb_xy2(:,m-m1+1)=p%jb
+        if (n==iz3_loc) jb_xy3(:,m-m1+1)=p%jb
+        if (n==iz4_loc) jb_xy4(:,m-m1+1)=p%jb
         if (bthresh_per_brms/=0) call calc_bthresh
         call vecout(41,trim(directory)//'/bvec',p%bb,bthresh,nbvec)
       endif
@@ -3222,6 +3234,8 @@ module Magnetic
             slices%xz=f(l1:l2    ,slices%iy,n1:n2,iax+slices%index)
             slices%xy=f(l1:l2    ,m1:m2    ,slices%iz,iax+slices%index)
             slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,iax+slices%index)
+            slices%xy3=f(l1:l2    ,m1:m2    ,slices%iz3,iax+slices%index)
+            slices%xy4=f(l1:l2    ,m1:m2    ,slices%iz4,iax+slices%index)
             slices%index = slices%index+1
             if (slices%index < 3) slices%ready = .true.
           endif
@@ -3237,6 +3251,8 @@ module Magnetic
             slices%xz=>bb_xz(:,:,slices%index)
             slices%xy=>bb_xy(:,:,slices%index)
             slices%xy2=>bb_xy2(:,:,slices%index)
+            slices%xy3=>bb_xy3(:,:,slices%index)
+            slices%xy4=>bb_xy4(:,:,slices%index)
             if (slices%index < 3) slices%ready = .true.
           endif
 !
@@ -3251,6 +3267,8 @@ module Magnetic
             slices%xz=>jj_xz(:,:,slices%index)
             slices%xy=>jj_xy(:,:,slices%index)
             slices%xy2=>jj_xy2(:,:,slices%index)
+            slices%xy3=>jj_xy3(:,:,slices%index)
+            slices%xy4=>jj_xy4(:,:,slices%index)
             if (slices%index < 3) slices%ready = .true.
           endif
 !
@@ -3261,6 +3279,8 @@ module Magnetic
           slices%xz=>b2_xz
           slices%xy=>b2_xy
           slices%xy2=>b2_xy2
+          slices%xy3=>b2_xy3
+          slices%xy4=>b2_xy4
           slices%ready = .true.
 !
 !  Current density (derived variable)
@@ -3270,6 +3290,8 @@ module Magnetic
           slices%xz=>jb_xz
           slices%xy=>jb_xy
           slices%xy2=>jb_xy2
+          slices%xy3=>jb_xy3
+          slices%xy4=>jb_xy4
           slices%ready = .true.
 !
       endselect

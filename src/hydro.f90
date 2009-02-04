@@ -34,8 +34,7 @@ module Hydro
 !
 ! Slice precalculation buffers
 !
-  real, target, dimension (nx,ny,3) :: oo_xy
-  real, target, dimension (nx,ny,3) :: oo_xy2
+  real, target, dimension (nx,ny,3) :: oo_xy,oo_xy2,oo_xy3,oo_xy4
   real, target, dimension (nx,nz,3) :: oo_xz
   real, target, dimension (ny,nz,3) :: oo_yz
   real, target, dimension (nx,ny) :: divu_xy,u2_xy,o2_xy
@@ -43,6 +42,8 @@ module Hydro
   real, target, dimension (nx,nz) :: divu_xz,u2_xz,o2_xz
   real, target, dimension (ny,nz) :: divu_yz,u2_yz,o2_yz
   real, dimension (nz,3) :: uumz
+  real, target, dimension (nx,ny) :: divu_xy3,divu_xy4,u2_xy3,u2_xy4
+  real, target, dimension (nx,ny) :: o2_xy3,o2_xy4
 !
 !  precession matrices
 !
@@ -1504,20 +1505,28 @@ module Hydro
         if (m.eq.iy_loc)  divu_xz(:,n-n1+1)=p%divu
         if (n.eq.iz_loc)  divu_xy(:,m-m1+1)=p%divu
         if (n.eq.iz2_loc) divu_xy2(:,m-m1+1)=p%divu
+        if (n.eq.iz3_loc) divu_xy3(:,m-m1+1)=p%divu
+        if (n.eq.iz4_loc) divu_xy4(:,m-m1+1)=p%divu
         do j=1,3
           oo_yz(m-m1+1,n-n1+1,j)=p%oo(ix_loc-l1+1,j)
           if (m==iy_loc)  oo_xz(:,n-n1+1,j)=p%oo(:,j)
           if (n==iz_loc)  oo_xy(:,m-m1+1,j)=p%oo(:,j)
           if (n==iz2_loc) oo_xy2(:,m-m1+1,j)=p%oo(:,j)
+          if (n==iz3_loc) oo_xy3(:,m-m1+1,j)=p%oo(:,j)
+          if (n==iz4_loc) oo_xy4(:,m-m1+1,j)=p%oo(:,j)
         enddo
         u2_yz(m-m1+1,n-n1+1)=p%u2(ix_loc-l1+1)
         if (m==iy_loc)  u2_xz(:,n-n1+1)=p%u2
         if (n==iz_loc)  u2_xy(:,m-m1+1)=p%u2
         if (n==iz2_loc) u2_xy2(:,m-m1+1)=p%u2
+        if (n==iz3_loc) u2_xy3(:,m-m1+1)=p%u2
+        if (n==iz4_loc) u2_xy4(:,m-m1+1)=p%u2
         o2_yz(m-m1+1,n-n1+1)=p%o2(ix_loc-l1+1)
         if (m==iy_loc)  o2_xz(:,n-n1+1)=p%o2
         if (n==iz_loc)  o2_xy(:,m-m1+1)=p%o2
         if (n==iz2_loc) o2_xy2(:,m-m1+1)=p%o2
+        if (n==iz3_loc) o2_xy3(:,m-m1+1)=p%o2
+        if (n==iz4_loc) o2_xy4(:,m-m1+1)=p%o2
         if (othresh_per_orms/=0) call calc_othresh
         call vecout(41,trim(directory)//'/ovec',p%oo,othresh,novec)
       endif
@@ -3349,6 +3358,10 @@ module Hydro
             slices%xz=f(l1:l2    ,slices%iy,n1:n2,iux+slices%index)
             slices%xy=f(l1:l2    ,m1:m2    ,slices%iz,iux+slices%index)
             slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,iux+slices%index)
+            if (lwrite_slice_xy3) &
+                 slices%xy3=f(l1:l2    ,m1:m2    ,slices%iz3,iux+slices%index)
+            if (lwrite_slice_xy4) &
+                 slices%xy4=f(l1:l2    ,m1:m2    ,slices%iz4,iux+slices%index)
             slices%index = slices%index+1
             if (slices%index < 3) slices%ready = .true.
           endif
@@ -3360,6 +3373,8 @@ module Hydro
           slices%xz=>divu_xz
           slices%xy=>divu_xy
           slices%xy2=>divu_xy2
+          if (lwrite_slice_xy3) slices%xy3=>divu_xy3
+          if (lwrite_slice_xy4) slices%xy4=>divu_xy4
           slices%ready = .true.
 !
 !  Velocity squared (derived variable)
@@ -3369,6 +3384,8 @@ module Hydro
           slices%xz=>u2_xz
           slices%xy=>u2_xy
           slices%xy2=>u2_xy2
+          if (lwrite_slice_xy3) slices%xy3=>u2_xy3
+          if (lwrite_slice_xy4) slices%xy4=>u2_xy4
           slices%ready = .true.
 !
 !  Vorticity (derived variable)
@@ -3382,6 +3399,8 @@ module Hydro
             slices%xz=>oo_xz(:,:,slices%index)
             slices%xy=>oo_xy(:,:,slices%index)
             slices%xy2=>oo_xy2(:,:,slices%index)
+            if (lwrite_slice_xy3) slices%xy3=>oo_xy3(:,:,slices%index)
+            if (lwrite_slice_xy4) slices%xy4=>oo_xy4(:,:,slices%index)
             if (slices%index < 3) slices%ready = .true.
           endif
 !
@@ -3392,6 +3411,8 @@ module Hydro
           slices%xz=>o2_xz
           slices%xy=>o2_xy
           slices%xy2=>o2_xy2
+          if (lwrite_slice_xy3) slices%xy3=>o2_xy3
+          if (lwrite_slice_xy4) slices%xy4=>o2_xy4
           slices%ready = .true.
 !
       endselect
