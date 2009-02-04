@@ -26,7 +26,7 @@
 !
       integer :: ipx,ipy,ipz,iproc,it,nt=999999,ipz_top,ipz_bottom,ipy_front
       integer :: ipz_mid1,ipz_mid2
-      integer :: lun,lun1=1,lun2=2,lun3=3,lun4=4,lun5=5,lun6=6
+      integer :: lun,lun1=21,lun2=22,lun3=23,lun4=24,lun5=25,lun6=26
       integer :: itdebug=2
       logical :: eof=.false.,slice_position_ok=.false.
       logical :: err=.false.,err_timestep=.false.
@@ -54,6 +54,9 @@
       min_xy2_loc=huge(min_xy2_loc); max_xy2_loc=-huge(max_xy2_loc)
       min_xz_loc=huge(min_xz_loc); max_xz_loc=-huge(max_xz_loc)
       min_yz_loc=huge(min_yz_loc); max_yz_loc=-huge(max_yz_loc)
+      min_xy3_loc=huge(min_xy3_loc); max_xy3_loc=-huge(max_xy3_loc)
+      min_xy4_loc=huge(min_xy4_loc); max_xy4_loc=-huge(max_xy4_loc)
+      
 !
 !  read name of the field (must coincide with file extension)
 !
@@ -336,7 +339,8 @@
       print*,'written full set of slices at t=',t,min_xy_loc,max_xy_loc
       enddo
 !
-999   continue
+999   print*,"Fucked"
+	continue
 !
       if (lwritten_something) then
         print*,'last file read: ',trim(fullname)
