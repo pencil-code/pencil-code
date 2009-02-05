@@ -74,7 +74,7 @@ module Testfield
   ! run parameters
   real :: etatest=0.,etatest1=0.
   real, dimension(njtest) :: rescale_aatest=0.
-  logical :: ltestfield_newz=.true.,leta_rank2=.false.
+  logical :: ltestfield_newz=.true.,leta_rank2=.true.
   logical :: ltestfield_taver=.false.
   namelist /testfield_run_pars/ &
        B_ext,reinitialize_aatest,zextent,lsoca,lsoca_jxb, &

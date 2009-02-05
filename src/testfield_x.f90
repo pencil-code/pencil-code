@@ -41,7 +41,7 @@ module Testfield
 !
 !  cosine and sine function for setting test fields and analysis
 !
-  real, dimension(nx) :: cx,sx
+  real, dimension(nx) :: cx,sx,xx
 !
   character (len=labellen), dimension(ninit) :: initaatest='nothing'
   real, dimension (ninit) :: amplaatest=0.
@@ -53,7 +53,7 @@ module Testfield
   real :: amplaa=0., kx_aatest=1.,ky_aatest=1.,kz_aatest=1.
   real :: taainit=0.,daainit=0.
   logical :: reinitialize_aatest=.false.
-  logical :: zextent=.true.,lsoca=.true.,lsoca_jxb=.true.,lset_bbtest2=.false.
+  logical :: zextent=.true.,lsoca=.false.,lsoca_jxb=.true.,lset_bbtest2=.false.
   logical :: luxb_as_aux=.false.,ljxb_as_aux=.false.,linit_aatest=.false.
   logical :: lignore_uxbtestm=.false.
   character (len=labellen) :: itestfield='B11-B21'
@@ -69,7 +69,7 @@ module Testfield
   ! run parameters
   real :: etatest=0.,etatest1=0.
   real, dimension(njtest) :: rescale_aatest=0.
-  logical :: ltestfield_newx=.true.,leta_rank2=.false.
+  logical :: ltestfield_newx=.true.,leta_rank2=.true.
   namelist /testfield_run_pars/ &
        B_ext,reinitialize_aatest,zextent,lsoca,lsoca_jxb, &
        lset_bbtest2,etatest,etatest1,itestfield,ktestfield, &
@@ -89,14 +89,31 @@ module Testfield
   integer :: idiag_eta21=0      ! DIAG_DOC: $\eta_{21}k$
   integer :: idiag_eta12=0      ! DIAG_DOC: $\eta_{12}k$
   integer :: idiag_eta22=0      ! DIAG_DOC: $\eta_{22}k$
-  integer :: idiag_alp11cc=0    ! DIAG_DOC: $\alpha_{11}\cos^2 kz$
-  integer :: idiag_alp21sc=0    ! DIAG_DOC: $\alpha_{21}\sin kz\cos kz$
-  integer :: idiag_alp12cs=0    ! DIAG_DOC: $\alpha_{12}\cos kz\sin kz$
-  integer :: idiag_alp22ss=0    ! DIAG_DOC: $\alpha_{22}\sin^2 kz$
-  integer :: idiag_eta11cc=0    ! DIAG_DOC: $\eta_{11}\cos^2 kz$
-  integer :: idiag_eta21sc=0    ! DIAG_DOC: $\eta_{21}\sin kz\cos kz$
-  integer :: idiag_eta12cs=0    ! DIAG_DOC: $\eta_{12}\cos kz\sin kz$
-  integer :: idiag_eta22ss=0    ! DIAG_DOC: $\eta_{22}\sin^2 kz$
+!
+!  sin and cos weighted averages
+!
+  integer :: idiag_alp11cc=0    ! DIAG_DOC: $\alpha_{11}\cos^2 kx$
+  integer :: idiag_alp21sc=0    ! DIAG_DOC: $\alpha_{21}\sin kx\cos kx$
+  integer :: idiag_alp12cs=0    ! DIAG_DOC: $\alpha_{12}\cos kx\sin kx$
+  integer :: idiag_alp22ss=0    ! DIAG_DOC: $\alpha_{22}\sin^2 kx$
+  integer :: idiag_eta11cc=0    ! DIAG_DOC: $\eta_{11}\cos^2 kx$
+  integer :: idiag_eta21sc=0    ! DIAG_DOC: $\eta_{21}\sin kx\cos kx$
+  integer :: idiag_eta12cs=0    ! DIAG_DOC: $\eta_{12}\cos kx\sin kx$
+  integer :: idiag_eta22ss=0    ! DIAG_DOC: $\eta_{22}\sin^2 kx$
+!
+!  x-weighted averages
+!
+  integer :: idiag_alp11x=0      ! DIAG_DOC: $\alpha_{11}x$
+  integer :: idiag_alp21x=0      ! DIAG_DOC: $\alpha_{21}x$
+  integer :: idiag_alp12x=0      ! DIAG_DOC: $\alpha_{12}x$
+  integer :: idiag_alp22x=0      ! DIAG_DOC: $\alpha_{22}x$
+  integer :: idiag_eta11x=0      ! DIAG_DOC: $\eta_{11}kx$
+  integer :: idiag_eta21x=0      ! DIAG_DOC: $\eta_{21}kx$
+  integer :: idiag_eta12x=0      ! DIAG_DOC: $\eta_{12}kx$
+  integer :: idiag_eta22x=0      ! DIAG_DOC: $\eta_{22}kx$
+!
+!  other quantities
+!
   integer :: idiag_b11rms=0     ! DIAG_DOC: $\left<b_{11}^2\right>^{1/2}$
   integer :: idiag_b21rms=0     ! DIAG_DOC: $\left<b_{21}^2\right>^{1/2}$
   integer :: idiag_b12rms=0     ! DIAG_DOC: $\left<b_{12}^2\right>^{1/2}$
@@ -230,6 +247,7 @@ module Testfield
       endif
       cx=cos(ktestfield*xtestfield)
       sx=sin(ktestfield*xtestfield)
+      xx=xtestfield
 !
 !  Also calculate its inverse, but only if different from zero
 !
@@ -642,6 +660,13 @@ module Testfield
         if (idiag_alp21sc/=0) call sum_mn_name(sx*cx*(+cx*Eipq(:,3,1)+sx*Eipq(:,3,2)),idiag_alp21sc)
         if (idiag_eta11cc/=0) call sum_mn_name(cx**2*(-sx*Eipq(:,2,i3)+cx*Eipq(:,2,i4))*ktestfield1,idiag_eta11cc)
         if (idiag_eta21sc/=0) call sum_mn_name(sx*cx*(-sx*Eipq(:,3,i3)+cx*Eipq(:,3,i4))*ktestfield1,idiag_eta21sc)
+!
+!  x-weighted averages alpha and eta
+!
+        if (idiag_alp11x/=0) call sum_mn_name(xx*(+cx*Eipq(:,2,1)+sx*Eipq(:,2,2)),idiag_alp11cc)
+        if (idiag_alp21x/=0) call sum_mn_name(xx*(+cx*Eipq(:,3,1)+sx*Eipq(:,3,2)),idiag_alp21sc)
+        if (idiag_eta11x/=0) call sum_mn_name(xx*(-sx*Eipq(:,2,i3)+cx*Eipq(:,2,i4))*ktestfield1,idiag_eta11cc)
+        if (idiag_eta21x/=0) call sum_mn_name(xx*(-sx*Eipq(:,3,i3)+cx*Eipq(:,3,i4))*ktestfield1,idiag_eta21sc)
 !
 !  Projection of EMF from testfield against testfield itself
 !
@@ -1079,6 +1104,8 @@ module Testfield
         idiag_eta12=0; idiag_eta22=0
         idiag_alp11cc=0; idiag_alp21sc=0; idiag_alp12cs=0; idiag_alp22ss=0
         idiag_eta11cc=0; idiag_eta21sc=0; idiag_eta12cs=0; idiag_eta22ss=0
+        idiag_alp11x=0; idiag_alp21x=0; idiag_alp12x=0; idiag_alp22x=0
+        idiag_eta11x=0; idiag_eta21x=0; idiag_eta12x=0; idiag_eta22x=0
         idiag_b0rms=0; idiag_E0rms=0
         idiag_b11rms=0; idiag_b21rms=0; idiag_b12rms=0; idiag_b22rms=0
         idiag_E11rms=0; idiag_E21rms=0; idiag_E12rms=0; idiag_E22rms=0
@@ -1105,6 +1132,14 @@ module Testfield
         call parse_name(iname,cname(iname),cform(iname),'eta21sc',idiag_eta21sc)
         call parse_name(iname,cname(iname),cform(iname),'eta12cs',idiag_eta12cs)
         call parse_name(iname,cname(iname),cform(iname),'eta22ss',idiag_eta22ss)
+        call parse_name(iname,cname(iname),cform(iname),'alp11x',idiag_alp11x)
+        call parse_name(iname,cname(iname),cform(iname),'alp21x',idiag_alp21x)
+        call parse_name(iname,cname(iname),cform(iname),'alp12x',idiag_alp12x)
+        call parse_name(iname,cname(iname),cform(iname),'alp22x',idiag_alp22x)
+        call parse_name(iname,cname(iname),cform(iname),'eta11x',idiag_eta11x)
+        call parse_name(iname,cname(iname),cform(iname),'eta21x',idiag_eta21x)
+        call parse_name(iname,cname(iname),cform(iname),'eta12x',idiag_eta12x)
+        call parse_name(iname,cname(iname),cform(iname),'eta22x',idiag_eta22x)
         call parse_name(iname,cname(iname),cform(iname),'b11rms',idiag_b11rms)
         call parse_name(iname,cname(iname),cform(iname),'b21rms',idiag_b21rms)
         call parse_name(iname,cname(iname),cform(iname),'b12rms',idiag_b12rms)
@@ -1162,6 +1197,14 @@ module Testfield
         write(3,*) 'idiag_eta21sc=',idiag_eta21sc
         write(3,*) 'idiag_eta12cs=',idiag_eta12cs
         write(3,*) 'idiag_eta22ss=',idiag_eta22ss
+        write(3,*) 'idiag_alp11x=',idiag_alp11x
+        write(3,*) 'idiag_alp21x=',idiag_alp21x
+        write(3,*) 'idiag_alp12x=',idiag_alp12x
+        write(3,*) 'idiag_alp22x=',idiag_alp22x
+        write(3,*) 'idiag_eta11x=',idiag_eta11x
+        write(3,*) 'idiag_eta21x=',idiag_eta21x
+        write(3,*) 'idiag_eta12x=',idiag_eta12x
+        write(3,*) 'idiag_eta22x=',idiag_eta22x
         write(3,*) 'idiag_b11rms=',idiag_b11rms
         write(3,*) 'idiag_b21rms=',idiag_b21rms
         write(3,*) 'idiag_b12rms=',idiag_b12rms
