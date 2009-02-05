@@ -26,7 +26,7 @@
 !
       integer :: ipx,ipy,ipz,iproc,it,nt=999999,ipz_top,ipz_bottom,ipy_front
       integer :: ipz_mid1,ipz_mid2
-      integer :: lun,lun1,lun2,lun3,lun4,lun5,lun6
+      integer :: lun,lun1=1,lun2=2,lun3=3,lun4=4,lun5=5,lun6=6
       integer :: itdebug=2
       logical :: eof=.false.,slice_position_ok=.false.
       logical :: err=.false.,err_timestep=.false.
