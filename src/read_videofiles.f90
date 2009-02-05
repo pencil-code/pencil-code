@@ -26,7 +26,7 @@
 !
       integer :: ipx,ipy,ipz,iproc,it,nt=999999,ipz_top,ipz_bottom,ipy_front
       integer :: ipz_mid1,ipz_mid2
-      integer :: lun,lun1=21,lun2=22,lun3=23,lun4=24,lun5=25,lun6=26
+      integer :: lun,lun1,lun2,lun3,lun4,lun5,lun6
       integer :: itdebug=2
       logical :: eof=.false.,slice_position_ok=.false.
       logical :: err=.false.,err_timestep=.false.
@@ -339,8 +339,7 @@
       print*,'written full set of slices at t=',t,min_xy_loc,max_xy_loc
       enddo
 !
-999   print*,"Fucked"
-	continue
+999   continue
 !
       if (lwritten_something) then
         print*,'last file read: ',trim(fullname)
@@ -439,6 +438,11 @@
 999   eof=.true.
 !
 900   continue
+!
+!  Close the file descriptor
+!
+    if (eof) close(lun)
+!
     endsubroutine rslice
 !***********************************************************************
     subroutine wslice(file,a,pos,ndim1,ndim2,t,it,lun)
