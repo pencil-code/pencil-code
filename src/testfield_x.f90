@@ -663,10 +663,10 @@ module Testfield
 !
 !  x-weighted averages alpha and eta
 !
-        if (idiag_alp11x/=0) call sum_mn_name(xx*(+cx*Eipq(:,2,1)+sx*Eipq(:,2,2)),idiag_alp11cc)
-        if (idiag_alp21x/=0) call sum_mn_name(xx*(+cx*Eipq(:,3,1)+sx*Eipq(:,3,2)),idiag_alp21sc)
-        if (idiag_eta11x/=0) call sum_mn_name(xx*(-sx*Eipq(:,2,i3)+cx*Eipq(:,2,i4))*ktestfield1,idiag_eta11cc)
-        if (idiag_eta21x/=0) call sum_mn_name(xx*(-sx*Eipq(:,3,i3)+cx*Eipq(:,3,i4))*ktestfield1,idiag_eta21sc)
+        if (idiag_alp11x/=0) call sum_mn_name(xx*(+cx*Eipq(:,2,1)+sx*Eipq(:,2,2)),idiag_alp11x)
+        if (idiag_alp21x/=0) call sum_mn_name(xx*(+cx*Eipq(:,3,1)+sx*Eipq(:,3,2)),idiag_alp21x)
+        if (idiag_eta11x/=0) call sum_mn_name(xx*(-sx*Eipq(:,2,i3)+cx*Eipq(:,2,i4))*ktestfield1,idiag_eta11x)
+        if (idiag_eta21x/=0) call sum_mn_name(xx*(-sx*Eipq(:,3,i3)+cx*Eipq(:,3,i4))*ktestfield1,idiag_eta21x)
 !
 !  Projection of EMF from testfield against testfield itself
 !
@@ -678,18 +678,24 @@ module Testfield
         if ((idiag_alp12/=0.or.idiag_alp22/=0 &
          .or.idiag_eta12/=0.or.idiag_eta22/=0 &
          .or.idiag_alp12cs/=0.or.idiag_alp22ss/=0  &
-         .or.idiag_eta12cs/=0.or.idiag_eta22ss/=0) &
-         .and.njtest<=2) then
+         .or.idiag_eta12cs/=0.or.idiag_eta22ss/=0 &
+         .or.idiag_alp12x/=0.or.idiag_alp22x/=0 &
+         .or.idiag_eta12x/=0.or.idiag_eta22x/=0 &
+        ).and.njtest<=2) then
           call stop_it('njtest is too small if alpi2 or etai2 for i=1,2,3 are needed')
         else
           if (idiag_alp12/=0) call sum_mn_name(+cx*Eipq(:,2,i3)+sx*Eipq(:,2,i4),idiag_alp12)
           if (idiag_alp22/=0) call sum_mn_name(+cx*Eipq(:,3,i3)+sx*Eipq(:,3,i4),idiag_alp22)
           if (idiag_alp12cs/=0) call sum_mn_name(cx*sx*(+cx*Eipq(:,2,i3)+sx*Eipq(:,2,i4)),idiag_alp12cs)
           if (idiag_alp22ss/=0) call sum_mn_name(sx**2*(+cx*Eipq(:,3,i3)+sx*Eipq(:,3,i4)),idiag_alp22ss)
+          if (idiag_alp12x/=0) call sum_mn_name(xx*(+cx*Eipq(:,2,i3)+sx*Eipq(:,2,i4)),idiag_alp12x)
+          if (idiag_alp22x/=0) call sum_mn_name(xx*(+cx*Eipq(:,3,i3)+sx*Eipq(:,3,i4)),idiag_alp22x)
           if (idiag_eta12/=0) call sum_mn_name(-(-sx*Eipq(:,2,i1)+cx*Eipq(:,2,i2))*ktestfield1,idiag_eta12)
           if (idiag_eta22/=0) call sum_mn_name(-(-sx*Eipq(:,3,i1)+cx*Eipq(:,3,i2))*ktestfield1,idiag_eta22)
           if (idiag_eta12cs/=0) call sum_mn_name(-cx*sx*(-sx*Eipq(:,2,i1)+cx*Eipq(:,2,i2))*ktestfield1,idiag_eta12cs)
           if (idiag_eta22ss/=0) call sum_mn_name(-sx**2*(-sx*Eipq(:,3,i1)+cx*Eipq(:,3,i2))*ktestfield1,idiag_eta22ss)
+          if (idiag_eta12x/=0) call sum_mn_name(xx*(-sx*Eipq(:,2,i1)+cx*Eipq(:,2,i2))*ktestfield1,idiag_eta12x)
+          if (idiag_eta22x/=0) call sum_mn_name(xx*(-sx*Eipq(:,3,i1)+cx*Eipq(:,3,i2))*ktestfield1,idiag_eta22x)
         endif
 !
 !  rms values of small scales fields bpq in response to the test fields Bpq
