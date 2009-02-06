@@ -435,7 +435,7 @@ module Special
      l_sz=int(0.1*nxgrid)
 
      df(l1:l_sz,m,n,iux)=df(l1:l_sz,m,n,iux)&  
-            -3.*(x(l1:l_sz)-x(l1))**3/(Lxyz(1)-x(l1))**3 &
+            -3.*(x(l1:l_sz)-x(l_sz))**3/(Lxyz(1)-x(l_sz))**3 &
             /dt*(f(l1:l_sz,m,n,iux)-f(l1,m,n,iux))
     endif
 
