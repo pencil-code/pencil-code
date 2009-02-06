@@ -65,8 +65,7 @@ module Special
   include '../special.h'
 
   ! input parameters
-  logical :: lmass_source_NS=.false.
-  logical :: leffective_gravity=.false.
+  logical :: left_buffer_zone=.false.
 
   character (len=labellen) :: initstream='default'
 
@@ -80,7 +79,6 @@ module Special
 
   integer :: index_H2=0, index_O2=0, index_H2O=0, index_N2=0
   real :: init_x1=-0.2,init_x2=0.2
- ! real :: x1_front=-0.2, x2_front=0.2
   real :: init_TT1=400.,init_TT2=2400.,init_lnTT1=5.7,init_p2=1.013e6
 ! Keep some over used pencils
 !
@@ -89,7 +87,8 @@ module Special
   namelist /chem_stream_init_pars/ &
    initstream,rho_init, T_init, Y1_init, Y2_init, Y3_init, H_max, ux_init, &
    index_H2, index_O2, index_H2O, &
-   index_N2,init_TT1,init_TT2,init_lnTT1, init_x1, init_x2,  init_p2
+   index_N2,init_TT1,init_TT2,init_lnTT1, init_x1, init_x2,  init_p2, &
+   left_buffer_zone
 ! run parameters
   namelist /chem_stream_run_pars/ &
    test
@@ -415,7 +414,7 @@ module Special
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-      integer :: i
+      integer :: i, l_sz
 !
 !      do i=1,3
 !        divtau(l1:l2,m,n,i)=p%fvisc(:,i)*p%rho(:)
@@ -428,6 +427,20 @@ module Special
      !    print*,'Natalia',p%pp(l1+1), p%fvisc(l1+1,1),mmu1(l1+1,4,4)
       ldivtau=.true.
 
+! buffer zone to damp the acustic waves!!!!!!!!!!!
+
+
+    if (left_buffer_zone) then
+
+     l_sz=int(0.1*nxgrid)
+
+     df(l1:l_sz,m,n,iux)=df(l1:l_sz,m,n,iux)&  
+            -3.*(x(l1:l_sz)-x(l1))**3/(Lxyz(1)-x(l1))**3 &
+            /dt*(f(l1:l_sz,m,n,iux)-f(l1,m,n,iux))
+    endif
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
     endsubroutine special_calc_hydro
