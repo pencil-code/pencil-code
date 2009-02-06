@@ -364,6 +364,10 @@ module Magnetic
   integer :: idiag_uxbmx=0      ! DIAG_DOC:
   integer :: idiag_uxbmy=0      ! DIAG_DOC:
   integer :: idiag_uxbmz=0      ! DIAG_DOC:
+  integer :: idiag_uxbcmx=0     ! DIAG_DOC:
+  integer :: idiag_uxbcmy=0     ! DIAG_DOC:
+  integer :: idiag_uxbsmx=0     ! DIAG_DOC:
+  integer :: idiag_uxbsmy=0     ! DIAG_DOC:
   integer :: idiag_examx=0      ! DIAG_DOC:
   integer :: idiag_examy=0      ! DIAG_DOC:
   integer :: idiag_examz=0      ! DIAG_DOC:
@@ -792,7 +796,9 @@ module Magnetic
 !  calculate cosz and sinz for calculating the phase of a Beltrami field
 !  The choice to use k1_ff may not be optimal, but keep it for now.
 !
-      if (idiag_bsinphz/=0.or.idiag_bcosphz/=0) then
+      if (idiag_bsinphz/=0 .or. idiag_bcosphz/=0 &
+          .or. idiag_uxbcmx/=0 .or. idiag_uxbcmy/=0 &
+          .or. idiag_uxbsmx/=0 .or. idiag_uxbsmy/=0 ) then
         sinkz=sin(k1_ff*z)
         coskz=cos(k1_ff*z)
       endif
@@ -2246,6 +2252,8 @@ module Magnetic
 !  Note that uxbm means <EMF.B0>/B0^2, so it gives already alpha=EMF/B0.
 !
         if (idiag_uxbm/=0 .or. idiag_uxbmx/=0 .or. idiag_uxbmy/=0 &
+            .or. idiag_uxbcmx/=0 .or. idiag_uxbcmy/=0 &
+            .or. idiag_uxbsmx/=0 .or. idiag_uxbsmy/=0 &
             .or. idiag_uxbmz/=0) then
           uxb_dotB0=B_ext(1)*p%uxb(:,1)+B_ext(2)*p%uxb(:,2)+B_ext(3)*p%uxb(:,3)
           uxb_dotB0=uxb_dotB0*B_ext21
@@ -2253,6 +2261,10 @@ module Magnetic
           if (idiag_uxbmx/=0) call sum_mn_name(uxbb(:,1),idiag_uxbmx)
           if (idiag_uxbmy/=0) call sum_mn_name(uxbb(:,2),idiag_uxbmy)
           if (idiag_uxbmz/=0) call sum_mn_name(uxbb(:,3),idiag_uxbmz)
+          if (idiag_uxbcmx/=0) call sum_mn_name(uxbb(:,1)*coskz(n),idiag_uxbcmx)
+          if (idiag_uxbcmy/=0) call sum_mn_name(uxbb(:,2)*coskz(n),idiag_uxbcmy)
+          if (idiag_uxbsmx/=0) call sum_mn_name(uxbb(:,1)*sinkz(n),idiag_uxbsmx)
+          if (idiag_uxbsmy/=0) call sum_mn_name(uxbb(:,2)*sinkz(n),idiag_uxbsmy)
         endif
 !
 !  calculate magnetic helicity flux (for imposed field)
@@ -5120,6 +5132,7 @@ module Magnetic
         idiag_axmxz=0; idiag_aymxz=0; idiag_azmxz=0
         idiag_uxbm=0; idiag_oxuxbm=0; idiag_jxbxbm=0.; idiag_gpxbm=0.
         idiag_uxDxuxbm=0.; idiag_uxbmx=0; idiag_uxbmy=0; idiag_uxbmz=0
+        idiag_uxbcmx=0; idiag_uxbsmx=0; idiag_uxbcmy=0; idiag_uxbsmy=0
         idiag_examx=0; idiag_examy=0; idiag_examz=0
         idiag_exjmx=0; idiag_exjmy=0; idiag_exjmz=0
         idiag_dexbmx=0; idiag_dexbmy=0; idiag_dexbmz=0
@@ -5214,6 +5227,10 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'uxbmx',idiag_uxbmx)
         call parse_name(iname,cname(iname),cform(iname),'uxbmy',idiag_uxbmy)
         call parse_name(iname,cname(iname),cform(iname),'uxbmz',idiag_uxbmz)
+        call parse_name(iname,cname(iname),cform(iname),'uxbcmx',idiag_uxbcmx)
+        call parse_name(iname,cname(iname),cform(iname),'uxbcmy',idiag_uxbcmy)
+        call parse_name(iname,cname(iname),cform(iname),'uxbsmx',idiag_uxbsmx)
+        call parse_name(iname,cname(iname),cform(iname),'uxbsmy',idiag_uxbsmy)
         call parse_name(iname,cname(iname),cform(iname),'examx',idiag_examx)
         call parse_name(iname,cname(iname),cform(iname),'examy',idiag_examy)
         call parse_name(iname,cname(iname),cform(iname),'examz',idiag_examz)
