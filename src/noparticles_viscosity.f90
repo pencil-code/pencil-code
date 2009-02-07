@@ -50,17 +50,18 @@ module Particles_viscosity
 !
     endsubroutine calc_particles_viscosity
 !***********************************************************************
-    subroutine dvvp_dt_viscosity_pencil(df,p)
+    subroutine dvvp_dt_viscosity_pencil(f,df,fp,dfp,ineargrid)
 !
 !  07-oct-08/anders: dummy
 !
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
+      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      integer, dimension (mpar_loc,3) :: ineargrid
 !
-      intent (in) :: p
-      intent (inout) :: df 
+      intent (in) :: df, f, fp, dfp, ineargrid
 !
-      if (NO_WARN) print*, df, p
+      if (NO_WARN) print*, f, df, fp, dfp, ineargrid
 !
     endsubroutine dvvp_dt_viscosity_pencil
 !***********************************************************************

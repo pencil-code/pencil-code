@@ -176,8 +176,8 @@ module Particles_viscosity
       use Mpicomm
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mx,my,mz,mfarray) :: f 
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
