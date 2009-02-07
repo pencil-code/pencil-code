@@ -60,7 +60,6 @@
         use SharedVariables, only: sharedvars_clean_up
 !
         implicit none
-
 !
 !  define parameters
 !  The f-array includes auxiliary variables
@@ -412,8 +411,8 @@
 !
         if (lglobal) call wglobal()
         if (mglobal/=0)  &
-                call output_globals(trim(directory_snap)//'/global.dat', &
-                            f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
+            call output_globals(trim(directory_snap)//'/global.dat', &
+            f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
 !
 !  Write input parameters to a parameter file (for run.x and IDL).
 !  Do this late enough, so init_entropy etc. can adjust them

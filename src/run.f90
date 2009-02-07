@@ -193,8 +193,8 @@
         call rtime(trim(directory)//'/time.dat',t)
         if (lglobal) call rglobal()
         if (mglobal/=0)  &
-                call input_globals(trim(directory_snap)//'/global.dat', &
-                            f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
+            call input_globals(trim(directory_snap)//'/global.dat', &
+            f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
 !
 !  read coordinates
 !
@@ -277,8 +277,8 @@
 !
         if (lglobal) call wglobal()
         if (mglobal/=0)  &
-                call output_globals(trim(directory_snap)//'/global.dat', &
-                            f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
+            call output_globals(trim(directory_snap)//'/global.dat', &
+            f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
 !
 !  update ghost zones, so rprint works corrected for at the first
 !  time step even if we didn't read ghost zones
@@ -585,7 +585,7 @@
               if (lglobal) call wglobal()
               if (mglobal/=0)  &
                 call output_globals(trim(directory_snap)//'/global.dat', &
-                            f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
+                    f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
             endif
           endif
 !
