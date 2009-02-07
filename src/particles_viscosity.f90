@@ -10,63 +10,54 @@
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 6
+! COMMUNICATED AUXILIARIES 3
 !
 !***************************************************************
-
 module Particles_viscosity
-
+!
   use Cparam
   use Cdata
   use Messages
   use Particles_cdata
+  use Particles_sub
   use Sub, only: keep_compiler_quiet
-
+!
   implicit none
-
+!
   include 'particles_viscosity.h'
-
+!
   integer, parameter :: nviscp_max = 4
   character (len=labellen), dimension(nviscp_max) :: iviscp=''
   real :: nup=0.0
   logical :: lviscp_simplified=.false.
   logical :: lviscp_rhop_nup_const=.false.
   logical :: lviscp_nup_const=.false.
-
+!
   namelist /particles_visc_run_pars/ &
       nup, iviscp
-
+!
   contains
-
 !***********************************************************************
     subroutine register_particles_viscosity()
 !
 !  07-oct-08/anders: coded
 !
-      use Mpicomm
+      use FArrayManager
       use Sub
 !
       logical, save :: first=.true.
 !
-      if (.not. first) call stop_it('register_particles_viscosity called twice')
-      first = .false.
-!
-!
-!  Set indices for auxiliary variables
-!
-      iuup   = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 3
-      ipvisc = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 3
-!
 !  Identify version number.
 !
       if (lroot) call cvs_id( &
-           "$Id$")
+          '$Id$')
 !
-!  Check that we aren't registering too many auxilary variables
+!  Set indices for auxiliary variables.
 !
-      if (naux > maux) then
-        if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
-        call fatal_error('register_particles_viscosity: naux > maux','')
-      endif
+      call farray_register_auxiliary('upviscx',ipviscx,vector=3)
+      ipviscy=ipviscx+1; ipviscz=ipviscx+2
+      call farray_register_auxiliary('upx',iupx,communicated=.true.,vector=3)
+      iupy=iupx+1; iupz=iupx+2
 !
     endsubroutine register_particles_viscosity
 !***********************************************************************
@@ -124,59 +115,109 @@ module Particles_viscosity
 !***********************************************************************
     subroutine calc_particles_viscosity(f,fp,ineargrid)
 !
+!  Calculate the Laplacian of the particle velocity field, for use in
+!  particle viscosity later.
 !
+!  07-feb-09/anders: coded
 !
+      use Boundcond
+      use Mpicomm
       use Particles_sub, only: map_vvp_grid
-      use Sub, only: del2v
 !
       real, dimension (mx,my,mz,mfarray) :: f 
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (nx,3) :: del2uup
+      real :: dx_2, dy_2, dz_2
+      logical, save :: lfirstcall=.true.
+!
+      if (lfirstcall) then
+        dx_2=1/dx**2
+        dy_2=1/dy**2
+        dz_2=1/dz**2
+      endif
+!
+!  Map the particle velocities as a vector field on the grid.
 !
       call map_vvp_grid(f,fp,ineargrid)
 !
+!  Put boundary conditions on mapped velocity field.
+!
+      call initiate_isendrcv_bdry(f,iupx,iupz)
+      call finalize_isendrcv_bdry(f,iupx,iupz)
+      call boundconds_y(f,iupx,iupz)
+      call boundconds_z(f,iupx,iupz)
+!
+!  We use a second order discrete Laplacian.
+!
       if (lviscp_simplified) then
         do n=n1,n2; do m=m1,m2
-          call del2v(f,iuup,del2uup)
-          f(l1:l2,m,n,ipvisc:ipvisc+2)=del2uup
+          f(l1:l2,m,n,ipviscx:ipviscz) = &
+              (f(l1+1:l2+1,m,n,iupx:iupz) - 2*f(l1:l2,m,n,iupx:iupz) + &
+               f(l1-1:l2-1,m,n,iupx:iupz))*dx_2 + &
+              (f(l1:l2,m+1,n,iupx:iupz) - 2*f(l1:l2,m,n,iupx:iupz) + &
+               f(l1:l2,m-1,n,iupx:iupz))*dy_2 + &
+              (f(l1:l2,m,n+1,iupx:iupz) - 2*f(l1:l2,m,n,iupx:iupz) + &
+               f(l1:l2,m,n-1,iupx:iupz))*dz_2
         enddo; enddo
       endif
 !
+      lfirstcall=.false.
+!
     endsubroutine calc_particles_viscosity
 !***********************************************************************
-    subroutine calc_particles_viscous_force(df,p)
+    subroutine dvvp_dt_viscosity_pencil(f,df,fp,dfp,ineargrid)
 !
-!  calculate viscous force term for right hand side of  equation
+!  Calculate viscous force term.
 !
-!  20-nov-02/tony: coded
-!   9-jul-04/nils: added Smagorinsky viscosity
-
+!  07-feb-09/anders: coded
+!
       use Mpicomm
       use Sub
 !
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: nu_smag
-      real, dimension (nx,3) :: nuD2uxb
-      type (pencil_case) :: p
+      real, dimension (mx,my,mz,mfarray) :: f 
+      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      integer, dimension (mpar_loc,3) :: ineargrid
 !
-      intent (in) :: p
-      intent (inout) :: df 
+      intent (in) :: f, df, fp, ineargrid
+      intent (out) :: dfp
 !
-!  Add viscosity to equation of motion
+      real, dimension (3) :: fviscp
+      integer :: k
 !
-      df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + p%fvisc
 !
-!  Calculate max total diffusion coefficient for timestep calculation etc.
 !
-      if (lfirst.and.ldt) then
-        diffus_nu =p%diffus_total *dxyz_2
-        diffus_nu2=p%diffus_total2*dxyz_4
-        diffus_nu3=p%diffus_total3*dxyz_6
+      if (npar_imn(imn)/=0) then
+!
+!  Loop over all particles in current pencil.
+!
+        do k=k1_imn(imn),k2_imn(imn)
+          if (lparticlemesh_cic) then
+            call interpolate_linear(f,ipviscx,ipviscz, &
+                fp(k,ixp:izp),fviscp,ineargrid(k,:),ipar(k) )
+          elseif (lparticlemesh_tsc) then
+            if (linterpolate_spline) then
+              call interpolate_quadratic_spline(f,ipviscx,ipviscz, &
+                  fp(k,ixp:izp),fviscp,ineargrid(k,:),ipar(k) )
+            else
+              call interpolate_quadratic(f,ipviscx,ipviscz, &
+                  fp(k,ixp:izp),fviscp,ineargrid(k,:),ipar(k) )
+            endif
+          endif
+!
+          dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + nup*fviscp
+!
+        enddo
+!
       endif
 !
-    endsubroutine calc_particles_viscous_force
+!  Calculate viscosity time-step.
+!
+      if (lfirst.and.ldt) dt1_max=max(dt1_max,0.25*dxyz_2*nup)
+!
+    endsubroutine dvvp_dt_viscosity_pencil
 !***********************************************************************
     subroutine read_particles_visc_init_pars(unit,iostat)
 !
@@ -248,8 +289,12 @@ module Particles_viscosity
 !
       if (present(lwrite)) then
         if (lwrite) then
-          write(3,*) 'iuup=', iuup
-          write(3,*) 'ipvisc=', ipvisc
+          write(3,*) 'ipviscx=', ipviscx
+          write(3,*) 'ipviscy=', ipviscy
+          write(3,*) 'ipviscz=', ipviscz
+          write(3,*) 'iupx=', iupx
+          write(3,*) 'iupy=', iupy
+          write(3,*) 'iupz=', iupz
         endif
       endif
 !
