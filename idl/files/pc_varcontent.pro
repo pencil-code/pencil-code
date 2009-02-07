@@ -490,21 +490,21 @@ if (param.lwrite_aux ne 0) then begin
   varcontent[irhop].idlvarloc  = 'rhop_loc'
   varcontent[irhop].idlinitloc = INIT_SCALAR_LOC
 ;
-  default, iuup, 0
-  varcontent[iuup].variable   = 'Particle velocity field (uup)'
-  varcontent[iuup].idlvar     = 'uup'
-  varcontent[iuup].idlinit    = INIT_3VECTOR
-  varcontent[iuup].idlvarloc  = 'uup_loc'
-  varcontent[iuup].idlinitloc = INIT_3VECTOR_LOC
-  varcontent[iuup].skip       = 2
+  default, iupx, 0
+  varcontent[iupx].variable   = 'Particle velocity field (uup)'
+  varcontent[iupx].idlvar     = 'uup'
+  varcontent[iupx].idlinit    = INIT_3VECTOR
+  varcontent[iupx].idlvarloc  = 'uup_loc'
+  varcontent[iupx].idlinitloc = INIT_3VECTOR_LOC
+  varcontent[iupx].skip       = 2
 ;
-  default, ipvisc, 0
-  varcontent[ipvisc].variable   = 'Particle viscosity field (pvisc)'
-  varcontent[ipvisc].idlvar     = 'pvisc'
-  varcontent[ipvisc].idlinit    = INIT_3VECTOR
-  varcontent[ipvisc].idlvarloc  = 'pvisc_loc'
-  varcontent[ipvisc].idlinitloc = INIT_3VECTOR_LOC
-  varcontent[ipvisc].skip       = 2
+  default, ipviscx, 0
+  varcontent[ipviscx].variable   = 'Particle viscosity field (pvisc)'
+  varcontent[ipviscx].idlvar     = 'pvisc'
+  varcontent[ipviscx].idlinit    = INIT_3VECTOR
+  varcontent[ipviscx].idlvarloc  = 'pvisc_loc'
+  varcontent[ipviscx].idlinitloc = INIT_3VECTOR_LOC
+  varcontent[ipviscx].skip       = 2
 ;
   default, ipotself, 0
   varcontent[ipotself].variable   = 'Self gravity potential'
