@@ -95,17 +95,12 @@ module EquationOfState
       use Cdata
       use Sub
 !
-      logical, save :: first=.true.
-!
-      if (.not. first) call fatal_error('register_eos','module registration called twice')
-      first = .false.
-!
       leos=.true.
       leos_idealgas=.true.
 !
       iyH = 0
       ilnTT = 0
-
+!
       if ((ip<=8) .and. lroot) then
         print*, 'register_eos: ionization nvar = ', nvar
       endif
@@ -114,13 +109,6 @@ module EquationOfState
 !
       if (lroot) call cvs_id( &
            '$Id$')
-!
-!  Check we aren't registering too many auxiliary variables
-!
-      if (naux > maux) then
-        if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
-        call fatal_error('register_eos','naux > maux')
-      endif
 !
     endsubroutine register_eos
 !***********************************************************************

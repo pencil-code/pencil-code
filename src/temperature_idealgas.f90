@@ -124,10 +124,6 @@ module Entropy
 !
 !  6-nov-01/wolf: coded
 !
-      logical, save :: first=.true.
-!
-      if (.not. first) call fatal_error('register_entropy','module registration called twice')
-      first = .false.
 !
       ilnTT = nvar+1             ! index to access temperature
       nvar = nvar+1

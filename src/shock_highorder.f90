@@ -54,42 +54,15 @@ module Shock
 !  24-jan-05/tony: modified from visc_shock.f90
 !
       use Cdata
-      use Mpicomm, only: stop_it
+      use FArrayManager
       use Messages, only: cvs_id
 !
-      logical, save :: first=.true.
+      call farray_register_auxiliary('shock',ishock,communicated=.true.)
 !
-      if (.not. first) call stop_it('register_shock called twice')
-      first = .false.
-!
-      ishock = mvar + naux_com + 1
-      naux = naux + 1
-      naux_com = naux_com + 1
-!
-      if ((ip<=8) .and. lroot) then
-        print*, 'register_shock: shock viscosity nvar = ', nvar
-        print*, 'ishock = ', ishock
-      endif
-!
-!  Put variable name in array
-!
-      varname(ishock) = 'shock'
-!
-!  identify version number
+!  Identify version number.
 !
       if (lroot) call cvs_id( &
            "$Id$")
-!
-! Check we aren't registering too many auxiliary variables
-!
-      if (naux > maux) then
-        if (lroot) write(0,*) 'naux = ', naux, ', maux= ', maux
-        call stop_it('register_shock: naux > maux')
-      endif
-      if (naux_com > maux_com) then
-        if (lroot) write(0,*) 'naux_com = ', naux_com, ', maux_com = ', maux_com
-        call stop_it('register_shock: naux_com > maux_com')
-      endif
 !
 !  Writing files for use with IDL
 !

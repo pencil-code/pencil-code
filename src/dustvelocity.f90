@@ -106,12 +106,8 @@ module Dustvelocity
       use Sub
       use General, only: chn
 !
-      logical, save :: first=.true.
       integer :: k
       character(len=5) :: sdust
-!
-      if (.not. first) call fatal_error('register_dustvelocity','module registration called twice')
-      first = .false.
 !
       ldustvelocity = .true.
 !

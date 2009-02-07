@@ -44,17 +44,12 @@ module Chiral
       use Mpicomm
       use Sub
 !
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_chiral called twice')
-      first = .false.
-!
       lchiral = .false.
 !
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id$")
+          "$Id$")
 !
     endsubroutine register_chiral
 !***********************************************************************

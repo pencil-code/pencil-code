@@ -1,7 +1,7 @@
 ! $Id$
-
+!
 !  Dummy routine for ideal gas
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -14,60 +14,54 @@
 ! PENCILS PROVIDED hlnTT(3,3); rho1gpp(3); delta; gradcp(3); del6lnTT
 !
 !***************************************************************
-
 module EquationOfState
-
+!
   use Cparam
   use Cdata
   use Messages
-
+!
   implicit none
-
+!
   include 'eos.h'
-
+!
   interface eoscalc ! Overload subroutine `eoscalc' function
     module procedure eoscalc_pencil   ! explicit f implicit m,n
     module procedure eoscalc_point    ! explicit lnrho, ss
     module procedure eoscalc_farray   ! explicit lnrho, ss
   end interface
-
+!
   interface pressure_gradient ! Overload subroutine `pressure_gradient'
     module procedure pressure_gradient_farray  ! explicit f implicit m,n
     module procedure pressure_gradient_point   ! explicit lnrho, ss
   end interface
-
-  ! integers specifying which independent variables to use in eoscalc
+! integers specifying which independent variables to use in eoscalc
   integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3,ilnrho_lnTT=4,ilnrho_TT=5
-
-  !  secondary parameters calculated in initialize
+!  secondary parameters calculated in initialize
   real :: mu1_0,Rgas
   real :: TT_ion,lnTT_ion,TT_ion_,lnTT_ion_
   real :: ss_ion,kappa0,pp_ion
   real :: rho_H,rho_e,rho_e_,rho_He
   real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_He
-
+!
   real :: xHe=0.1,yH_const=0.0,yMetals=0.0,tau_relax=1.0
   logical :: lconst_yH=.false.
-
+!
   real :: lnpp_bot=0.
   real :: ss_bot=0.
-
+!
   real :: va2max_eos=huge1
   integer :: va2power_eos=5
   real, dimension (3) :: B_ext_eos=(/0.,0.,0./)
-
-  ! input parameters
+! input parameters
   namelist /eos_init_pars/ xHe,lconst_yH,yH_const,yMetals,lnpp_bot,ss_bot, &
                            tau_relax,va2max_eos,va2power_eos,B_ext_eos
-
-  ! run parameters
+! run parameters
   namelist /eos_run_pars/ xHe,lconst_yH,yH_const,yMetals,lnpp_bot,ss_bot, &
                           tau_relax,va2max_eos,va2power_eos,B_ext_eos
-
+!
   real :: cs0=impossible, rho0=impossible, cp=impossible
   real :: cs20=impossible, lnrho0=impossible
   logical :: lcalc_cp=.false.,lcalc_cp_full=.false.
-!  real :: gamma=impossible, gamma1=impossible, gamma11=impossible
   real :: gamma=5./3., gamma1=impossible, gamma11=impossible
   real :: cs2bot=impossible, cs2top=impossible
   real :: cs2cool=impossible, ptlaw=impossible
@@ -76,46 +70,23 @@ module EquationOfState
   integer :: isothtop=0
   real, dimension (3) :: beta_glnrho_global=impossible
   real, dimension (3) :: beta_glnrho_scaled=impossible
-
 ! Allocatable 3D-array for cp
   real, dimension (:,:,:), allocatable :: cp_full
-
+!
   contains
-
 !***********************************************************************
     subroutine register_eos()
 !
 !  14-jun-03/axel: adapted from register_eos
 !
-      use Mpicomm, only: stop_it
-!
-      logical, save :: first=.true.
-!
-      if (.not. first) call fatal_error('register_eos','module registration called twice')
-      first = .false.
+      use FArrayManager
 !
       leos=.true.
       leos_temperature_ionization=.true.
 !
-!  set indices for auxiliary variables
+!  Set indices for auxiliary variables.
 !
-      iyH   = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 1
-
-      if ((ip<=8) .and. lroot) then
-        print*, 'register_eos: ionization nvar = ', nvar
-        print*, 'register_eos: iyH = ', iyH
-      endif
-!
-!  Put variable names in array
-!
-      varname(iyH)   = 'yH'
-!
-!  Check we aren't registering too many auxiliary variables
-!
-      if (naux > maux) then
-        if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
-        call stop_it('register_eos: naux > maux')
-      endif
+      call farray_register_auxiliary('yH',iyH)
 !
 !  Writing files for use with IDL
 !
@@ -126,7 +97,7 @@ module EquationOfState
         write(15,*) 'yH = fltarr(mx,my,mz)*one'
       endif
 !
-!  identify version number
+!  Identify version number.
 !
       if (lroot) call cvs_id( &
            '$Id$')

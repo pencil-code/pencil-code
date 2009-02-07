@@ -53,27 +53,15 @@ module Viscosity
       use Mpicomm
       use Sub
 !
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_viscosity called twice')
-      first = .false.
-!
       if ((ip<=8) .and. lroot) then
         print*, 'register_viscosity: constant viscosity'
       endif
 !
-!  identify version number
+!  Identify version number.
 !
       if (lroot) call cvs_id( &
            "$Id$")
 
-
-! Following test unnecessary as no extra variable is evolved
-!
-!      if (nvar > mvar) then
-!        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-!        call stop_it('Register_viscosity: nvar > mvar')
-!      endif
 !
     endsubroutine register_viscosity
 !***********************************************************************

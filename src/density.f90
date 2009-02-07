@@ -129,19 +129,13 @@ module Density
 !
       use Sub
       use FArrayManager
-!
-      logical, save :: first=.true.
-!      integer, target :: tmp_ilnrho
-!
-      if (.not. first) call fatal_error('register_density','module registration called twice')
-      first = .false.
 
       call farray_register_pde('lnrho',ilnrho)
 !
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id$")
+          "$Id$")
 !
     endsubroutine register_density
 !***********************************************************************

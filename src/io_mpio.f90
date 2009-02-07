@@ -104,10 +104,7 @@ contains
       integer, dimension(3) :: localsize =(/nx    ,ny    ,nz    /)
       integer, dimension(3) :: memsize   =(/mx    ,my    ,mz    /)
       integer, dimension(3) :: start_index,mem_start_index
-      logical, save :: first=.true.
 !
-      if (.not. first) call stop_it('register_io called twice')
-      first = .false.
       lmonolithic_io = .true.   ! we write f to one single file
 !
 !  identify version number

@@ -51,16 +51,6 @@ module Shock
       use Mpicomm
       use Sub
 !
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_shock called twice')
-      first = .false.
-!
-!
-      if ((ip<=8) .and. lroot) then
-        print*, 'register_shock: no shock capturing profile'
-      endif
-!
 !  identify version number
 !
       if (lroot) call cvs_id( &

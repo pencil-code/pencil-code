@@ -88,11 +88,6 @@ module EquationOfState
       use Mpicomm, only: stop_it
       use Sub
 !
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_eos: called twice')
-      first = .false.
-!
       leos=.true.
       leos_fixed_ionization=.true.
 !
@@ -107,13 +102,6 @@ module EquationOfState
 !
       if (lroot) call cvs_id( &
           "$Id$")
-!
-!  Check we aren't registering too many auxiliary variables
-!
-      if (naux > maux) then
-        if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
-        call stop_it('register_ionization: naux > maux')
-      endif
 !
     endsubroutine register_eos
 !*******************************************************************

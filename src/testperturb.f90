@@ -55,12 +55,7 @@ module TestPerturb
 !
       use Mpicomm, only: stop_it
 !
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_testperturb called twice')
-      first = .false.
-!
-!  identify version number
+!  Identify version number.
 !
       if (lroot) call cvs_id( &
            "$Id$")

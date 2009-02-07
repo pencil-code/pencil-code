@@ -212,17 +212,13 @@ module Entropy
       use Sub
 !
       integer :: ierr
-      logical, save :: first=.true.
-!
-      if (.not. first) call fatal_error('register_entropy','module registration called twice')
-      first = .false.
 !
       call farray_register_pde('ss',iss)
 !
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id$")
+          "$Id$")
 !
 !  Get the shared variable lpressuregradient_gas from Hydro module.
 !

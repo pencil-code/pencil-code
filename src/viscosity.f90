@@ -103,19 +103,10 @@ module Viscosity
       use Mpicomm
       use Sub
 !
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_viscosity called twice')
-      first = .false.
-!
-      if ((ip<=8) .and. lroot) then
-        print*, 'register_viscosity: viscosity.f90 module'
-      endif
-!
-!  identify version number
+!  Identify version number.
 !
       if (lroot) call cvs_id( &
-           "$Id$")
+          "$Id$")
 !
 !  Default viscosity.
 !

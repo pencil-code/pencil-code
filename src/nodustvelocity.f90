@@ -63,17 +63,12 @@ module Dustvelocity
       use Mpicomm, only: stop_it
       use Sub
 !
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_dustvelocity called twice')
-      first = .false.
-!
       ldustvelocity = .false.
 !
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id$")
+          "$Id$")
 !
     endsubroutine register_dustvelocity
 !***********************************************************************

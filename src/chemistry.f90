@@ -184,7 +184,6 @@ module Chemistry
       use Mpicomm
       use General, only: chn
 !
-      logical, save :: first=.true.
       integer :: k
       character (len=5) :: schem
       character (len=20) :: input_file='chem.inp'
@@ -196,11 +195,6 @@ module Chemistry
 !
       iaa2(1)=12;iaa2(2)=13;iaa2(3)=14;iaa2(4)=15
       iaa2(5)=16;iaa2(6)=17;iaa2(7)=18
-!
-!  A quick sanity check
-!
-      if (.not. first) call stop_it('register_chemistry called twice')
-      first=.false.
 !
 !  Set ind to consecutive numbers nvar+1, nvar+2, ..., nvar+nchemspec
 !
@@ -248,14 +242,6 @@ module Chemistry
 !
       if (lroot) call cvs_id( &
           "$Id$")
-!
-!  Perform some sanity checks (may be meaningless if certain things haven't
-!  been configured in a custom module but they do no harm)
-!
-      if (naux > maux) then
-        if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
-        call stop_it('register_chemistry: naux > maux')
-      endif
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

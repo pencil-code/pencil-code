@@ -74,11 +74,6 @@ module Hydro
       use Mpicomm, only: lroot,stop_it
       use Sub
 !
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_hydro called twice')
-      first = .false.
-!
       lhydro = .true.
 !
       iuu = nvar+1             ! indices to access uu
@@ -87,12 +82,7 @@ module Hydro
       iuz = iuu+2
       nvar = nvar+3             ! added 3 variables
 !
-      if ((ip<=8) .and. lroot) then
-        print*, 'register_hydro: nvar = ', nvar
-        print*, 'register_hydro: iux,iuy,iuz = ', iux,iuy,iuz
-      endif
-!
-!  identify version number (generated automatically by CVS)
+!  Identify version number (generated automatically by CVS).
 !
       if (lroot) call cvs_id( &
            "$Id$")

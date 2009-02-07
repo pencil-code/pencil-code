@@ -563,13 +563,6 @@ module Equ
 !
       call calc_selfpotential(f)
 !
-!  Calculate the summed gravity due to the massive particles. 
-!  Needed because it is too slow to calculate the gravity at the 
-!  position of all dust particles. So we calculate the gravity 
-!  for the grid and interpolate to the position of the particles.
-!
-      if (lparticles_nbody) call particles_calc_nbodygravity(f)
-!
 !  Remove mean x-momentum if desired.
 !  Useful to avoid unphysical winds in shearing box simulations.
 !  (This is only done if lremove_mean_momenta=T,
@@ -598,6 +591,7 @@ module Equ
       if (ldensity)      call density_before_boundary(f)
       if (lshear)        call shear_before_boundary(f)
       if (lspecial)      call special_before_boundary(f)
+      if (lparticles)    call particles_before_boundary(f)
 !
 !  Fetch fp to the special module
 !

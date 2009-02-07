@@ -1,11 +1,9 @@
 ! $Id$
-
 !
 !  This module takes care of self gravity by solving the Poisson equation
 !    (d^2/dx^2 + d^2/dy^2 + d^2/dz^2)phi = 4*pi*G*rho
 !  for the potential phi.
 !
-
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -17,24 +15,23 @@
 ! PENCILS PROVIDED potself; gpotself(3)
 !
 !***************************************************************
-
 module Selfgravity
-
+!
   use Cdata
   use Cparam
   use Messages
-
+!
   implicit none
-
+!
   include 'selfgravity.h'
-
+!
   real, target :: rhs_poisson_const=1.0
   real, target :: tstart_selfgrav=0.0
   real :: gravitational_const=0.0
-
+!
   logical :: lselfgravity_gas=.true., lselfgravity_dust=.false.
   logical :: lselfgravity_neutrals=.false.
-
+!
   namelist /selfgrav_init_pars/ &
       rhs_poisson_const, lselfgravity_gas, lselfgravity_dust, &
       lselfgravity_neutrals,tstart_selfgrav, gravitational_const
@@ -42,15 +39,14 @@ module Selfgravity
   namelist /selfgrav_run_pars/ &
       rhs_poisson_const, lselfgravity_gas, lselfgravity_dust, &
       lselfgravity_neutrals,tstart_selfgrav, gravitational_const
-
+!
   integer :: idiag_gpoten=0, idiag_gpotenmxy=0
   integer :: idiag_gpotselfxm=0, idiag_gpotselfym=0, idiag_gpotselfzm=0
   integer :: idiag_gpotselfx2m=0, idiag_gpotselfy2m=0, idiag_gpotselfz2m=0
   integer :: idiag_gxgym=0,idiag_gxgzm=0,idiag_gygzm=0
   integer :: idiag_grgpm=0,idiag_grgzm=0,idiag_gpgzm=0
-
+!
   contains
-
 !***********************************************************************
     subroutine register_selfgravity()
 !
@@ -59,26 +55,16 @@ module Selfgravity
 !  15-may-06/anders+jeff: adapted
 !
       use Cdata
-      use Mpicomm
-      use Sub
-!
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_selfgravity: called twice')
-      first = .false.
+      use FArrayManager
 !
 !  Set indices for auxiliary variables
 !
-      ipotself = mvar + naux_com + 1; naux = naux + 1; naux_com = naux_com + 1
+      call farray_register_auxiliary('potself',ipotself,communicated=.true.)
 !
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id$")
-!
-!  Put variable name in array
-!
-      varname(ipotself) = 'potself'
+          "$Id$")
 !
 !  Set lselfgravity.
 !

@@ -91,17 +91,11 @@ module Shock
 !
       use Cdata
       use FArrayManager
-      use Mpicomm
       use Sub
-!
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_shock called twice')
-      first = .false.
 !
       call farray_register_auxiliary('shock',ishock,communicated=.true.)
       call farray_register_auxiliary('shock_perp',ishock_perp, &
-                                                     communicated=.true.)
+                                                  communicated=.true.)
 !
 !  identify version number
 !

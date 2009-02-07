@@ -93,11 +93,6 @@ module Pscalar
       use Mpicomm
       use Sub
 !
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_cc called twice')
-      first = .false.
-!
       lpscalar = .true.
       lpscalar_nolog = .true.
       ilncc = 0                 ! needed for idl

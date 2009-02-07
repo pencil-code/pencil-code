@@ -74,11 +74,6 @@ module Entropy
       use Mpicomm
       use Sub
 !
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_ent called twice')
-      first = .false.
-!
       lentropy = .true.
 !
       ilnTT = nvar+1             ! index to access entropy

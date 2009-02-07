@@ -48,13 +48,8 @@ module Particles_number
 !
       use Messages, only: fatal_error, cvs_id
 !
-      logical, save :: first=.true.
-!
-      if (.not. first) call fatal_error('register_particles_number: called twice','')
-      first = .false.
-!
       if (lroot) call cvs_id( &
-           "$Id$")
+          "$Id$")
 !
 !  Index for particle internal number.
 !

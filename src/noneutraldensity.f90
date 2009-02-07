@@ -45,17 +45,12 @@ module Neutraldensity
       use Mpicomm, only: stop_it
       use Sub
 !
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_neutraldensity called twice')
-      first = .false.
-!
       lneutraldensity = .false.
 !
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id$")
+          "$Id$")
 !
     endsubroutine register_neutraldensity
 !***********************************************************************

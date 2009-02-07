@@ -71,9 +71,6 @@ module EquationOfState
 !
       logical, save :: first=.true.
 !
-      if (.not. first) call fatal_error('register_eos','module registration called twice')
-      first = .false.
-!
       leos=.false.
 !
       iyH = 0

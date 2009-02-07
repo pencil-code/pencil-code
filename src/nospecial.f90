@@ -115,14 +115,6 @@ module Special
 !
       use Cdata
       use Mpicomm
-!
-      logical, save :: first=.true.
-!
-! A quick sanity check
-!
-      if (.not. first) call stop_it('register_special called twice')
-      first = .false.
-
 !!
 !! MUST SET lspecial = .true. to enable use of special hooks in the Pencil-Code
 !!   THIS IS NOW DONE IN THE HEADER ABOVE
@@ -144,15 +136,6 @@ module Special
 !
       if (lroot) call cvs_id( &
            "$Id$")
-!
-!
-!  Perform some sanity checks (may be meaningless if certain things haven't
-!  been configured in a custom module but they do no harm)
-!
-      if (naux > maux) then
-        if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
-        call stop_it('register_special: naux > maux')
-      endif
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

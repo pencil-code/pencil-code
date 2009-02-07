@@ -187,13 +187,13 @@ module Particles_main
 !
     endsubroutine particles_calc_selfpotential
 !***********************************************************************
-    subroutine particles_calc_nbodygravity(f)
+    subroutine particles_before_boundary(f)
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
       if (NO_WARN) print*, f
 !
-    endsubroutine particles_calc_nbodygravity
+    endsubroutine particles_before_boundary
 !***********************************************************************
     subroutine particles_special
 !

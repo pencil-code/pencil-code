@@ -53,15 +53,10 @@ module Particles_spin
 !  21-jul-08/kapelrud: coded
 !
       use Cdata
+      use FArrayManager
       use Mpicomm, only: stop_it
-      use Messages, only: fatal_error, cvs_id
+      use Messages, only: cvs_id
       use Cparam
-!
-      logical, save :: first=.true.
-!
-      if (.not. first) call fatal_error( &
-          'register_particles_spin: called twice','')
-      first = .false.
 !
       if (lroot) call cvs_id( &
            "$Id$")
@@ -72,11 +67,9 @@ module Particles_spin
 !  then the three last entries in bc{x,y,z} in start.in sets the boundary
 !  conditions of the vorticity.
 !
-      iox=mvar+1+naux_com
-      ioy=iox+1
-      ioz=iox+2
-      naux=naux+3
-      naux_com=naux_com+3
+      call farray_register_auxiliary('ox',iox,communicated=.true.)
+      call farray_register_auxiliary('oy',ioy,communicated=.true.)
+      call farray_register_auxiliary('oz',ioz,communicated=.true.)
 !
 !  Indices for particle spin
 !
@@ -91,14 +84,6 @@ module Particles_spin
       if (npvar > mpvar) then
         if (lroot) write(0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
         call stop_it('register_particles_spin: npvar > mpvar')
-      endif
-
-!
-!  Check that we aren't registering too many auxiliary variables
-!
-      if (naux > maux) then
-        if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
-        call stop_it('register_particles_spin: naux > maux')
       endif
 !
 !  Make sure that the vorticity field is communicated one time extra

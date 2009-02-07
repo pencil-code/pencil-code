@@ -61,15 +61,10 @@ module Gravity
       use Mpicomm
       use Sub
 !
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_grav called twice')
-      first = .false.
-!
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id$")
+          "$Id$")
 !
       lgrav = .false.
       lgravz = .false.

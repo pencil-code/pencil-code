@@ -368,11 +368,7 @@ module Hydro
       use Sub
       use SharedVariables,only:put_shared_variable
 !
-      logical, save :: first=.true.
       integer :: ierr
-!
-      if (.not. first) call stop_it('register_hydro called twice')
-      first = .false.
 !
 !  indices to access uu
 !
@@ -381,11 +377,6 @@ module Hydro
       iuy = iuu+1
       iuz = iuu+2
       nvar = nvar+3             ! added 3 variables
-!
-      if ((ip<=8) .and. lroot) then
-        print*, 'register_hydro: nvar = ', nvar
-        print*, 'register_hydro: iux,iuy,iuz = ', iux,iuy,iuz
-      endif
 !
 !  Put variable names in array
 !

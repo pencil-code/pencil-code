@@ -1,8 +1,8 @@
 ! $Id$
-
+!
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -15,52 +15,43 @@
 ! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv1
 !
 !***************************************************************
-
 module EquationOfState
-
+!
   use Cparam
   use Cdata
   use Messages
-
+!
   implicit none
-
+!
   include 'eos.h'
-
 ! integers specifying which independent variables to use in eoscalc
   integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3,ilnrho_lnTT=4
   integer, parameter :: ilnrho_TT=9
-
+!
   interface eoscalc              ! Overload subroutine eoscalc
     module procedure eoscalc_farray
     module procedure eoscalc_pencil
     module procedure eoscalc_point
   endinterface
-
+!
   interface pressure_gradient    ! Overload subroutine pressure_gradient
     module procedure pressure_gradient_farray
     module procedure pressure_gradient_point
   endinterface
-
-
-  !  secondary parameters calculated in initialize
+!  secondary parameters calculated in initialize
   real :: TT_ion,lnTT_ion,TT_ion_,lnTT_ion_
   real :: ss_ion,ee_ion,kappa0,xHe_term,ss_ion1,Srad0
   real :: lnrho_e,lnrho_e_,lnrho_H,lnrho_He
   integer :: l
-
-  ! namelist parameters
+! namelist parameters
   real, parameter :: yHmin=tiny(TT_ion), yHmax=1-epsilon(TT_ion)
   real :: xHe=0.1
   real :: yMetals=0
   real :: yHacc=1e-5
-
-  ! input parameters
+! input parameters
   namelist /eos_init_pars/ xHe,yMetals,yHacc
-
-  ! run parameters
+! run parameters
   namelist /eos_run_pars/ xHe,yMetals,yHacc
-
-
 !ajwm  Moved here from Density.f90
 !ajwm  Completely irrelevant to eos_ionization but density and entropy need
 !ajwm  reworking to be independent of these things first
@@ -76,9 +67,8 @@ module EquationOfState
   real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
   integer :: isothtop=0
   real, dimension (3) :: beta_glnrho_global=0.0,beta_glnrho_scaled=0.0
-
+!
   contains
-
 !***********************************************************************
     subroutine register_eos()
 !
@@ -86,46 +76,23 @@ module EquationOfState
 !   13-jun-03/tobi: re-adapted from visc_shock module
 !
       use Cdata
-      use Mpicomm, only: stop_it
+      use FArrayManager
       use Sub
-!
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_eos: called twice')
-      first = .false.
 !
       leos=.true.
       leos_ionization=.true.
 !
-!  set indices for auxiliary variables
+!  Set indices for auxiliary variables.
 !
-      iyH   = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 1
-      ilnTT = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 1
-
-      if ((ip<=8) .and. lroot) then
-        print*, 'register_eos: ionization nvar = ', nvar
-        print*, 'register_eos: iyH = ', iyH
-        print*, 'register_eos: ilnTT = ', ilnTT
-      endif
+      call farray_register_auxiliary('yH',iyH)
+      call farray_register_auxiliary('lnTT',ilnTT)
 !
-!  Put variable names in array
-!
-      varname(iyH)   = 'yH'
-      varname(ilnTT) = 'lnTT'
-!
-!  identify version number (generated automatically by CVS)
+!  Identify version number (generated automatically by CVS).
 !
       if (lroot) call cvs_id( &
            "$Id$")
 !
-!  Check we aren't registering too many auxiliary variables
-!
-      if (naux > maux) then
-        if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
-        call stop_it('register_eos: naux > maux')
-      endif
-!
-!  Writing files for use with IDL
+!  Writing files for use with IDL.
 !
       aux_var(aux_count)=',yh $'
       aux_count=aux_count+1

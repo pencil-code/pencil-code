@@ -84,14 +84,8 @@ module Particles_nbody
 !
       use Messages, only: fatal_error, cvs_id
 !
-      logical, save :: first=.true.
-!
-      if (.not. first) &
-          call fatal_error('register_particles_nbody: called twice','')
-      first = .false.
-!
       if (lroot) call cvs_id( &
-           "$Id$")
+          "$Id$")
 !
 !  Set up mass as particle index. Plus seven, since the other 6 are 
 !  used by positions and velocities.      
@@ -106,13 +100,6 @@ module Particles_nbody
              ' particles is less than 2. There is no need to use the'//&
              ' N-body code. Consider setting gravity as a global variable'//&
              ' using gravity_r.f90 instead.')
-      endif
-!
-!  Check that we aren't registering too many auxiliary variables
-!
-      if (naux > maux) then
-        if (lroot) write(0,*) 'naux = ', naux, ', maux= ', maux
-        call fatal_error('register_particles_nbody','naux > maux')
       endif
 !
     endsubroutine register_particles_nbody

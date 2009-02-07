@@ -56,11 +56,7 @@ module Entropy
       use SharedVariables
       use Sub
 !
-      logical, save :: first=.true.
       integer :: ierr
-!
-      if (.not. first) call fatal_error('register_entropy','module registration called twice')
-      first=.false.
 !
 !  Get the shared variable lpressuregradient_gas from Hydro module.
 !
@@ -70,7 +66,7 @@ module Entropy
 !  Identify version number.
 !
       if (lroot) call cvs_id( &
-           "$Id$")
+          "$Id$")
 !
     endsubroutine register_entropy
 !***********************************************************************

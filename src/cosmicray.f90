@@ -75,11 +75,6 @@ module Cosmicray
       use Mpicomm
       use Sub
 !
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_cosmicray called twice')
-      first = .false.
-!
       iecr = nvar+1            ! index to access icr
       nvar = nvar+1            ! added 1 variable
 !

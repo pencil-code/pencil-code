@@ -2003,9 +2003,9 @@ module Particles_sub
 !       a density that falls linearly outwards.
 !       This is equivalent to a second order spline interpolation scheme.
 !
-      if (iuup/=0) then
+      if (iupx/=0) then
         do ivp=0,2
-          f(:,:,:,iuup+ivp)=0.0
+          f(:,:,:,iupx+ivp)=0.0
           if (lparticlemesh_cic) then
 !
 !  Cloud In Cell (CIC) scheme.
@@ -2030,7 +2030,7 @@ module Particles_sub
                        weight=weight*( 1.0-abs(fp(k,iyp)-y(iyy))*dy_1(iyy) )
                   if (nzgrid/=1) &
                        weight=weight*( 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz) )
-                  f(ixx,iyy,izz,iuup+ivp)=f(ixx,iyy,izz,iuup+ivp) + &
+                  f(ixx,iyy,izz,iupx+ivp)=f(ixx,iyy,izz,iupx+ivp) + &
                       weight*fp(k,ivpx+ivp)
                 enddo; enddo; enddo
               endif
@@ -2095,7 +2095,7 @@ module Particles_sub
                   if (nxgrid/=1) weight=weight*weight_x
                   if (nygrid/=1) weight=weight*weight_y
                   if (nzgrid/=1) weight=weight*weight_z
-                  f(ixx,iyy,izz,iuup+ivp)=f(ixx,iyy,izz,iuup+ivp) + &
+                  f(ixx,iyy,izz,iupx+ivp)=f(ixx,iyy,izz,iupx+ivp) + &
                       weight*fp(k,ivpx+ivp)
                 enddo; enddo; enddo
               endif
@@ -2106,20 +2106,20 @@ module Particles_sub
 !
             do k=1,npar_loc
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-              f(ix0,iy0,iz0,iuup+ivp)=f(ix0,iy0,iz0,iuup+ivp)+fp(k,ivpx+ivp)
+              f(ix0,iy0,iz0,iupx+ivp)=f(ix0,iy0,iz0,iupx+ivp)+fp(k,ivpx+ivp)
             enddo
           endif
 !
 !  Fold first ghost zone of f.
 !
           if (lparticlemesh_cic.or.lparticlemesh_tsc) &
-              call fold_f(f,iuup+ivp,iuup+ivp)
+              call fold_f(f,iupx+ivp,iupx+ivp)
 !
 !  Normalize the assigned momentum by the particle density in the grid cell.
 !
           where (f(l1:l2,m1:m2,n1:n2,irhop)/=0.0) &
-              f(l1:l2,m1:m2,n1:n2,iuup+ivp)=rhop_tilde* &
-              f(l1:l2,m1:m2,n1:n2,iuup+ivp)/f(l1:l2,m1:m2,n1:n2,irhop)
+              f(l1:l2,m1:m2,n1:n2,iupx+ivp)=rhop_tilde* &
+              f(l1:l2,m1:m2,n1:n2,iupx+ivp)/f(l1:l2,m1:m2,n1:n2,irhop)
         enddo
 !
       endif

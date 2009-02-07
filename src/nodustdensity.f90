@@ -44,11 +44,6 @@ module Dustdensity
       use Mpicomm, only: stop_it
       use Sub
 !
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_dustdensity called twice')
-      first = .false.
-!
       ldustdensity = .false.
 !
 !  identify version number (generated automatically by CVS)

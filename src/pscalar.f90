@@ -99,11 +99,6 @@ module Pscalar
       use Mpicomm
       use Sub
 !
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_lncc called twice')
-      first = .false.
-!
       lpscalar = .true.
       ilncc = nvar+1            ! index to access lncc
       nvar = nvar+1             ! added 1 variable

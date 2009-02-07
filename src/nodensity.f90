@@ -47,13 +47,6 @@ module Density
       use Cdata
       use Sub
 !
-      logical, save :: first=.true.
-!
-      if (.not. first) call fatal_error('register_density', &
-                                        'module registration called twice')
-      first = .false.
-!
-!
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &

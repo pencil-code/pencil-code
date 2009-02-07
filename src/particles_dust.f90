@@ -168,12 +168,8 @@ module Particles
 !
 !  29-dec-04/anders: coded
 !
+      use FArrayManager
       use Mpicomm, only: stop_it
-!
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_particles: called twice')
-      first = .false.
 !
       if (lroot) call cvs_id( &
            "$Id$")
@@ -196,21 +192,14 @@ module Particles
 !
 !  Set indices for auxiliary variables
 !
-      inp   = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 1
-      irhop = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 1
+      call farray_register_auxiliary('np',inp)
+      call farray_register_auxiliary('rhop',irhop)
 !
 !  Check that the fp and dfp arrays are big enough.
 !
       if (npvar > mpvar) then
         if (lroot) write(0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
         call stop_it('register_particles: npvar > mpvar')
-      endif
-!
-!  Check that we aren't registering too many auxilary variables
-!
-      if (naux > maux) then
-        if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
-            call stop_it('register_particles: naux > maux')
       endif
 !
     endsubroutine register_particles

@@ -449,21 +449,11 @@ module Magnetic
       use Mpicomm
       use Sub
 !
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_aa called twice')
-      first = .false.
-!
       iaa = nvar+1              ! indices to access aa
       iax = iaa
       iay = iaa+1
       iaz = iaa+2
       nvar = nvar+3             ! added 3 variables
-!
-      if ((ip<=8) .and. lroot) then
-        print*, 'register_magnetic: nvar = ', nvar
-        print*, 'register_magnetic: iaa,iax,iay,iaz = ', iaa,iax,iay,iaz
-      endif
 !
 !  Put variable names in array
 !

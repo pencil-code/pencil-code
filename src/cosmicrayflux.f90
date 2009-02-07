@@ -52,13 +52,6 @@ module Cosmicrayflux
       use Mpicomm
       use Sub
 !
-      logical, save :: first=.true.
-!
-
-      if (.not. first) call stop_it('register_cosmicrayflux called twice')
-      first = .false.
-
-!
       ifcr = nvar+1              ! indices to access fcr
       ifcrx = ifcr
       ifcry = ifcr+1

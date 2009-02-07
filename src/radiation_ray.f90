@@ -140,14 +140,6 @@ module Radiation
       use Cdata, only: lradiation,lradiation_ray
       use Mpicomm, only: stop_it
 !
-      logical, save :: first=.true.
-!
-      if (first) then
-        first = .false.
-      else
-        call stop_it('register_radiation called twice')
-      endif
-!
       lradiation=.true.
       lradiation_ray=.true.
 !
@@ -179,13 +171,6 @@ module Radiation
 !
       if (lroot) call cvs_id( &
            "$Id$")
-!
-!  Check that we aren't registering too many auxilary variables
-!
-      if (naux > maux) then
-        if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
-        call stop_it('register_radiation: naux > maux')
-      endif
 !
 !  Writing files for use with IDL
 !

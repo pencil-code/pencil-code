@@ -14,16 +14,16 @@
 !
 !***************************************************************
 module Particles
-
+!
   use Cdata
   use Particles_cdata
   use Particles_sub
   use Messages
-
+!
   implicit none
-
+!
   include 'particles.h'
-
+!
   real :: xp0=0.0, yp0=0.0, zp0=0.0, eps_dtog=0.01, tausp=0.0
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
   logical :: ldragforce_equi_global_eps=.false.
@@ -31,38 +31,30 @@ module Particles
   logical :: ltrace_dust=.false.
   character (len=labellen), dimension (ninit) :: initxxp='nothing'
   character (len=labellen) :: gravz_profile='zero'
-
+!
   namelist /particles_init_pars/ &
       initxxp, xp0, yp0, zp0, bcpx, bcpy, bcpz, eps_dtog, tausp, &
       ldragforce_equi_global_eps, lquadratic_interpolation, &
       lparticlemesh_cic, lparticlemesh_tsc, ltrace_dust, &
       gravz_profile, nu_epicycle
-
+!
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, lquadratic_interpolation, &
       lparticlemesh_cic, lparticlemesh_tsc, ltrace_dust
-
+!
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
   integer :: idiag_nparmax=0, idiag_npmax=0, idiag_npmin=0
   integer :: idiag_npmx=0, idiag_rhopmx=0, idiag_epspmx=0
   integer :: idiag_npmz=0, idiag_rhopmz=0, idiag_epspmz=0
-
+!
   contains
-
 !***********************************************************************
     subroutine register_particles()
 !
 !  Set up indices for access to the fp and dfp arrays
 !
 !  29-dec-04/anders: coded
-!
-      use Mpicomm, only: stop_it
-!
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_particles: called twice')
-      first = .false.
 !
       if (lroot) call cvs_id( &
            "$Id$")
@@ -77,22 +69,15 @@ module Particles
 !
       npvar=npvar+3
 !
-!  Set indices for auxiliary variables
+!  Set indices for auxiliary variables.
 !
-      inp = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 1
+      call farray_register_auxiliary('np',inp)
 !
 !  Check that the fp and dfp arrays are big enough.
 !
       if (npvar > mpvar) then
         if (lroot) write(0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
         call stop_it('register_particles: npvar > mpvar')
-      endif
-!
-!  Check that we aren't registering too many auxilary variables
-!
-      if (naux > maux) then
-        if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
-            call stop_it('register_particles: naux > maux')
       endif
 !
     endsubroutine register_particles

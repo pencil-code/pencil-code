@@ -78,11 +78,6 @@ module Entropy
       use Cdata
       use Sub
 !
-      logical, save :: first=.true.
-!
-      if (.not. first) call fatal_error('register_entropy','module registration called twice')
-      first = .false.
-!
       iss = nvar+1             ! index to access entropy
       nvar = nvar+1
 !

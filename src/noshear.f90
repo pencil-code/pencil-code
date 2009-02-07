@@ -29,11 +29,6 @@ module Shear
 !
       use Mpicomm
 !
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_shear called twice')
-      first = .false.
-!
       lshear = .false.
 !
 !  identify version number

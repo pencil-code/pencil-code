@@ -87,11 +87,6 @@ contains
       use Sub
       use Mpicomm, only: lroot,stop_it
 !
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_io called twice')
-      first = .false.
-!
 !  identify version number
 !
       if (lroot) call cvs_id("$Id$")

@@ -95,10 +95,6 @@ module NeutralDensity
       use FArrayManager
 !
       logical, save :: first=.true.
-!      integer, target :: tmp_ilnrhon
-!
-      if (.not. first) call fatal_error('register_neutraldensity','module registration called twice')
-      first = .false.
 !
       if (.not.lcartesian_coords) call fatal_error('register_neutraldensity','non cartesian '//&
            'not yet implemented in the neutrals module')

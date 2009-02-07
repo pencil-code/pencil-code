@@ -57,12 +57,6 @@ module Magnetic
       use Mpicomm
       use Sub
 !
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_aa called twice')
-      first = .false.
-!
-!
 !  identify version number
 !
       if (lroot) call cvs_id( &

@@ -156,41 +156,30 @@ module Radiation
 !
 !  18-apr-07/wlad+heidar: apadted from radiation_ray
 !
-      use Cdata, only: nvar,naux,aux_var,naux_com,aux_count,lroot,varname
-      use Cdata, only: iQrad,iQrad2,ikapparho,ikapparho2
-      use Cdata, only: iFrad,iFradx,iFrady,iFradz,iFrad2,iFradx2,iFrady2,iFradz2
-      use Cdata, only: lradiation,lradiation_ray
+      use Cdata
+      use FArrayManager
       use Mpicomm, only: stop_it
-!
-      logical, save :: first=.true.
-!
-      if (first) then
-        first = .false.
-      else
-        call stop_it('register_radiation called twice')
-      endif
 !
       lradiation=.true.
       lradiation_ray=.true.
 !
 !  Set indices for auxiliary variables
 !
-      iQrad = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 1
-      iQrad2 = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 1
-
-      ikapparho = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 1
-      ikapparho2 = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 1
-
-      iFrad = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 3
+      call farray_register_auxiliary('Qrad',iQrad)
+      call farray_register_auxiliary('Qrad2',iQrad2)
+!
+      call farray_register_auxiliary('Qkapparho',iQkapparho)
+      call farray_register_auxiliary('Qkapparho2',iQkapparho2)
+!
+      call farray_register_auxiliary('Frad',iFrad,vector=3)
       iFradx = iFrad
       iFrady = iFrad+1
       iFradz = iFrad+2
-      
-      iFrad2 = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 3
+!      
+      call farray_register_auxiliary('Frad2',iFrad,vector=3)
       iFradx2 = iFrad2
       iFrady2 = iFrad2+1
       iFradz2 = iFrad2+2
-
 !
       if ((ip<=8) .and. lroot) then
         print*, 'register_radiation: radiation naux = ', naux
@@ -202,30 +191,10 @@ module Radiation
         print*, 'iFrad2 = ', iFrad2
       endif
 !
-!  Put variable name in array
-!
-      varname(iQrad) = 'Qrad'
-      varname(iQrad2) = 'Qrad2'
-      varname(ikapparho) = 'kapparho'
-      varname(ikapparho2) = 'kapparho2'
-      varname(iFradx) = 'Fradx'
-      varname(iFrady) = 'Frady'
-      varname(iFradz) = 'Fradz'
-      varname(iFradx2) = 'Fradx2'
-      varname(iFrady2) = 'Frady2'
-      varname(iFradz2) = 'Fradz2'
-!
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
            "$Id$")
-!
-!  Check that we aren't registering too many auxilary variables
-!
-      if (naux > maux) then
-        if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
-        call stop_it('register_radiation: naux > maux')
-      endif
 !
 !  Writing files for use with IDL
 !
@@ -237,15 +206,15 @@ module Radiation
       aux_count=aux_count+1
       aux_var(aux_count)=',kapparho2 $'
       aux_count=aux_count+1
-
+!
       if (naux < maux) aux_var(aux_count)=',Frad $'
       if (naux == maux) aux_var(aux_count)=',Frad'
       aux_count=aux_count+3
-
+!
       if (naux < maux) aux_var(aux_count)=',Frad2 $'
       if (naux == maux) aux_var(aux_count)=',Frad2'
       aux_count=aux_count+3
-
+!
       if (lroot) then
         write(15,*) 'Qrad = fltarr(mx,my,mz)*one'
         write(15,*) 'Qrad2 = fltarr(mx,my,mz)*one'

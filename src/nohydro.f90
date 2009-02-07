@@ -66,12 +66,7 @@ module Hydro
       use SharedVariables
       use Sub
 !
-      logical, save :: first=.true.
       integer :: ierr
-!
-      if (.not. first) call stop_it('register_hydro called twice')
-      first = .false.
-!
 !
 !  identify version number (generated automatically by CVS)
 !

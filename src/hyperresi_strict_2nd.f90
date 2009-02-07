@@ -1,5 +1,4 @@
 ! $Id$
-
 !
 !  This module applies a sixth order hyperresistivity to the induction
 !  equation (following Brandenburg & Sarson 2002). This hyperresistivity
@@ -7,7 +6,6 @@
 !
 !  Spatial derivatives are accurate to second order.
 !
-
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -18,20 +16,18 @@
 ! MAUX CONTRIBUTION 3
 !
 !***************************************************************
-
 module Hyperresi_strict
-
+!
   use Cparam
   use Cdata
   use Messages
   use Density
-
+!
   implicit none
-
+!
   include 'hyperresi_strict.h'
-
+!
   contains
-
 !***********************************************************************
     subroutine register_hyperresi_strict()
 !
@@ -39,26 +35,14 @@ module Hyperresi_strict
 !
 !  23-aug-07/anders: adapted from register_hypervisc_strict
 !
-      use Mpicomm, only: stop_it
-!
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_hyperresi: called twice')
-      first = .false.
+      use FArrayManager
 !
       if (lroot) call cvs_id( &
-           "$Id$")
+          "$Id$")
 !
 !  Set indices for auxiliary variables
 ! 
-      ihypres = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 3
-!
-!  Check that we aren't registering too many auxilary variables
-!
-      if (naux > maux) then
-        if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
-            call stop_it('register_hyperresi: naux > maux')
-      endif
+      call farray_register_auxiliary('hypres',ihypres,vector=3)
 ! 
     endsubroutine register_hyperresi_strict
 !***********************************************************************

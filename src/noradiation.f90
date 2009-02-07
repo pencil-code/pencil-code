@@ -41,11 +41,6 @@ module Radiation
       use Mpicomm
       use Sub
 !
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_rad called twice')
-      first = .false.
-!
 !  identify version number
 !
       if (lroot) call cvs_id( &

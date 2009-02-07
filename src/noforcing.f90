@@ -46,11 +46,6 @@ module Forcing
       use Mpicomm
       use Sub
 !
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_forcing called twice')
-      first = .false.
-!
       lforcing = .false.
 !
 !  identify version number

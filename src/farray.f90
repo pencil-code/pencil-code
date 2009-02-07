@@ -95,6 +95,7 @@ module FArrayManager
 
 !***********************************************************************
     subroutine farray_register_pde(varname,ivar,vector,ierr)
+!
       character (len=*) :: varname
       integer  :: ivar
       type (farray_contents_list), pointer :: item
@@ -102,10 +103,10 @@ module FArrayManager
       integer, parameter :: vartype = iFARRAY_TYPE_PDE
       integer, optional :: ierr
       integer, optional :: vector
-      !
+!
       intent(in)  :: varname,vector
       intent(out) :: ivar,ierr
-
+!
       if (present(ierr).and.present(vector)) then
         call farray_register_variable(varname,ivar,vartype,vector=vector,ierr=ierr)
       elseif (present(ierr)) then
@@ -115,7 +116,7 @@ module FArrayManager
       else
         call farray_register_variable(varname,ivar,vartype)
       endif
-
+!
     endsubroutine farray_register_pde
 !***********************************************************************
     subroutine farray_register_global(varname,ivar,vector,ierr)
@@ -165,18 +166,18 @@ module FArrayManager
       integer, optional :: ierr
       integer, optional :: vector
       logical, optional :: communicated
-      !
+!
       intent(in)  :: varname,communicated,vector
       intent(out) :: ivar,ierr
-
+!
       vartype = iFARRAY_TYPE_AUXILIARY
-      ! ... unless
+! ... unless
       if (present(communicated)) then
         if (communicated) then
           vartype=iFARRAY_TYPE_COMM_AUXILIARY
         endif
       endif
-
+!
       if (present(ierr).and.present(vector)) then
         call farray_register_variable(varname,ivar,vartype,vector=vector,ierr=ierr)
       elseif (present(ierr)) then
@@ -186,10 +187,11 @@ module FArrayManager
       else
         call farray_register_variable(varname,ivar,vartype)
       endif
-
+!
     endsubroutine farray_register_auxiliary
 !***********************************************************************
     subroutine farray_register_variable(varname,ivar,vartype,vector,ierr)
+!
       character (len=*) :: varname
       integer, target   :: ivar
       integer           :: vartype, i
@@ -198,7 +200,7 @@ module FArrayManager
       integer, optional :: ierr
       integer, optional :: vector
       integer :: memstat
-      !
+!
       intent(in)  :: varname,vartype,vector
       intent(out) :: ivar,ierr
 !
@@ -208,7 +210,7 @@ module FArrayManager
           "To allocate a scratch variable in the f-array, you must use the"// &
           "farray_acquire_scratch_area routine.")
       endif
-
+!
       ncomponents=1
       if (present(ierr)) ierr=0
       if (present(vector)) ncomponents=vector
@@ -316,7 +318,7 @@ module FArrayManager
       new%ncomponents = ncomponents
       allocate(new%ivar(ncomponents))
       new%ivar(1)%p => ivar
-
+!
       select case (vartype)
         case (iFARRAY_TYPE_PDE)
           ivar=nvar+1
@@ -390,10 +392,10 @@ module FArrayManager
       "than the number currently allocated.  Try adding "// &
       "an MSCRATCH CONTRIBUTION header to cparam.local or increasing the value.")
       endif
-
+!
       consecutive_free=0
       iscratch=0
-
+!
       if (iscratch+ncomponents>mscratch) then
         if (present(ierr)) then
           ierr=iFARRAY_ERR_OUTOFSPACE
@@ -405,7 +407,7 @@ module FArrayManager
         "There are insufficient consecutive mscratch slots available. "// &
         "The scratch area has become fragmented!")
       endif
-
+!
       do i=1,mscratch
         if (consecutive_free==0) iscratch=i
         if (scratch_used(i)) then
@@ -415,15 +417,15 @@ module FArrayManager
           if (consecutive_free>=ncomponents) exit
         endif
       enddo
-
+!
       call new_item_atstart(thelist,new=new)
       new%varname=varname
       new%vartype=iFARRAY_TYPE_SCRATCH
       new%ncomponents=ncomponents
-
+!
       allocate(new%ivar(ncomponents),stat=memstat)
       allocate(new%ivar(1)%p)
-
+!
       ivar=mvar+maux+mglobal+iscratch
       new%ivar(1)%p=ivar
       if (ncomponents==1) then
@@ -431,12 +433,13 @@ module FArrayManager
       else
         scratch_used(iscratch:iscratch+ncomponents-1)=.false.
       endif
-
+!
       nscratch=nscratch+ncomponents
 !
     endsubroutine farray_acquire_scratch_area
 !***********************************************************************
     subroutine farray_release_scratch_area(varname,ivar,vector,ierr)
+!
       character (len=*) :: varname
       integer           :: ivar
       integer           :: vartype, i
@@ -445,7 +448,7 @@ module FArrayManager
       integer, optional :: ierr
       integer, optional :: vector
       integer :: iscratch
-      !
+!
       intent(in)  :: varname,ivar,vector
       intent(out) :: ierr
 !
@@ -518,6 +521,7 @@ module FArrayManager
     endsubroutine save_analysis_info
 !***********************************************************************
     subroutine farray_use_pde(varname,ivar,vector,ierr)
+!
       character (len=*) :: varname
       integer, pointer  :: ivar
       type (farray_contents_list), pointer :: item
@@ -525,10 +529,10 @@ module FArrayManager
       integer, parameter :: vartype = iFARRAY_TYPE_PDE
       integer, optional :: ierr
       integer, optional :: vector
-      !
+!
       intent(in)  :: varname,vector
       intent(out) :: ierr
-
+!
       if (present(ierr).and.present(vector)) then
         call farray_use_variable(varname,ivar,vartype,vector=vector,ierr=ierr)
       elseif (present(ierr)) then
@@ -538,10 +542,11 @@ module FArrayManager
       else
         call farray_use_variable(varname,ivar,vartype)
       endif
-
+!
     endsubroutine farray_use_pde
 !***********************************************************************
     subroutine farray_use_global(varname,ivar,vector,ierr)
+!
       character (len=*) :: varname
       integer, pointer  :: ivar
       type (farray_contents_list), pointer :: item
@@ -549,10 +554,10 @@ module FArrayManager
       integer, parameter :: vartype = iFARRAY_TYPE_GLOBAL
       integer, optional :: ierr
       integer, optional :: vector
-      !
+!
       intent(in)  :: varname,vector
       intent(out) :: ierr
-
+!
       if (present(ierr).and.present(vector)) then
         call farray_use_variable(varname,ivar,vartype,vector=vector,ierr=ierr)
       elseif (present(ierr)) then
@@ -562,10 +567,11 @@ module FArrayManager
       else
         call farray_use_variable(varname,ivar,vartype)
       endif
-
+!
     endsubroutine farray_use_global
 !***********************************************************************
     subroutine farray_use_auxiliary(varname,ivar,communicated,vector,ierr)
+!
       character (len=*) :: varname
       integer, pointer  :: ivar
       type (farray_contents_list), pointer :: item
@@ -574,10 +580,10 @@ module FArrayManager
       integer, optional :: ierr
       integer, optional :: vector
       logical, optional :: communicated
-      !
+!
       intent(in)  :: varname,communicated,vector
       intent(out) :: ierr
-
+!
       if (present(communicated)) then
         if (communicated) then
           vartype=iFARRAY_TYPE_COMM_AUXILIARY
@@ -585,7 +591,7 @@ module FArrayManager
           vartype=iFARRAY_TYPE_AUXILIARY
         endif
       endif
-
+!
       if (present(ierr).and.present(vector)) then
         call farray_use_variable(varname,ivar,vartype,vector=vector,ierr=ierr)
       elseif (present(ierr)) then
@@ -595,10 +601,11 @@ module FArrayManager
       else
         call farray_use_variable(varname,ivar,vartype)
       endif
-
+!
     endsubroutine farray_use_auxiliary
 !***********************************************************************
     subroutine farray_use_variable(varname,ivar,vartype,component,vector,ierr)
+!
       character (len=*) :: varname
       integer, pointer  :: ivar
       integer           :: icomp
@@ -608,12 +615,11 @@ module FArrayManager
       integer, optional :: vector
       integer, optional :: vartype
       integer, optional :: component
-      !
+!
       intent(in)  :: varname,vartype,component,vector
       intent(out) :: ierr
-
+!
       if (present(ierr)) ierr=0
-
 !
       item => find_by_name(varname)
       if (associated(item)) then
@@ -639,7 +645,7 @@ module FArrayManager
             call fatal_error("farray_use_variable","f array variable name already exists but with the wrong variable type!")
           endif
         endif
-
+!
         if (present(component)) then
           if ((component<=0).or.(component>item%ncomponents)) then
             if (present(ierr)) then
@@ -668,11 +674,12 @@ module FArrayManager
     endsubroutine farray_use_variable
 !***********************************************************************
     function variable_exists(varname,include_scratch)
+!
       character (len=*) :: varname
       logical, optional :: include_scratch
       logical :: variable_exists
       type (farray_contents_list), pointer :: item
-      !
+!
       intent(in) :: varname,include_scratch
 !
       item=>thelist
@@ -700,11 +707,12 @@ module FArrayManager
     endfunction variable_exists
 !***********************************************************************
     function find_by_name(varname, include_scratch, only_scratch)
+!
       character (len=*) :: varname
       logical, optional :: include_scratch
       logical, optional :: only_scratch
       type (farray_contents_list), pointer :: find_by_name
-      !
+!
       intent(in) :: varname,include_scratch,only_scratch
 !
       find_by_name=>thelist
@@ -745,10 +753,11 @@ module FArrayManager
     endfunction find_by_name
 !***********************************************************************
     function farray_size_by_name(varname)
+!
       character (len=*) :: varname
       integer :: farray_size_by_name
       type (farray_contents_list), pointer :: item
-      !
+!
       intent(in) :: varname
 !
       item=>find_by_name(varname)
@@ -762,10 +771,11 @@ module FArrayManager
     endfunction farray_size_by_name
 !***********************************************************************
     function farray_type_by_name(varname)
+!
       character (len=*) :: varname
       integer :: farray_type_by_name
       type (farray_contents_list), pointer :: item
-      !
+!
       intent(in) :: varname
 !
       item=>find_by_name(varname)
@@ -784,7 +794,7 @@ module FArrayManager
 !      integer, optional :: component
 !      integer, optional :: ierr
 !      type (farray_contents_list), pointer :: item
-!      !
+!!
 !      intent(in) :: varname,component,ierr
 !!
 !      item=>thelist
@@ -813,7 +823,7 @@ module FArrayManager
 !
       type (farray_contents_list), pointer :: list
       type (farray_contents_list), pointer :: next
-
+!
       do while (associated(list))
         next => list%next
         deallocate(list%ivar)
@@ -825,12 +835,14 @@ module FArrayManager
     endsubroutine free_list
 !***********************************************************************
     subroutine delete_item_from_list(item)
+!
       type (farray_contents_list), pointer :: item
-
+!
       item%next%previous => item%previous
       item%previous%next => item%next
       deallocate(item)
       nullify(item)
+!
     endsubroutine delete_item_from_list
 !***********************************************************************
     subroutine new_item_atstart(list,new)
@@ -865,5 +877,4 @@ module FArrayManager
 !
     endsubroutine farray_clean_up
 !***********************************************************************
-
 endmodule FArrayManager

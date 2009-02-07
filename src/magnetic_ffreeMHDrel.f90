@@ -90,11 +90,6 @@ module Magnetic
       use Mpicomm
       use Sub
 !
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_aa called twice')
-      first = .false.
-!
       iaa = nvar+1              ! indices to access aa
       iax = iaa
       iay = iaa+1
@@ -109,7 +104,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id$")
+          "$Id$")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

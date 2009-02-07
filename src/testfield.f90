@@ -99,9 +99,6 @@ module Testfield
       logical, save :: first=.true.
       integer :: j
 !
-      if (.not. first) call stop_it('register_aa called twice')
-      first = .false.
-!
       ltestfield = .true.
       iaatest = nvar+1          ! indices to access aa
       ntestfield=mtestfield

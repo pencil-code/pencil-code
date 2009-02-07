@@ -35,20 +35,10 @@ module Interstellar
       use Mpicomm
       use Sub
 !
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_nointerstellar called twice')
-      first = .false.
-!
 !  identify version number
 !
       if (lroot) call cvs_id( &
            "$Id$")
-!
-!      if (nvar > mvar) then
-!        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-!        call stop_it('Register_nointerstellar: nvar > mvar')
-!      endif
 !
     endsubroutine register_interstellar
 !***********************************************************************

@@ -46,13 +46,8 @@ module Particles_selfgravity
 !
 !  14-jun-06/anders: adapted
 !
-      use Messages, only: fatal_error, cvs_id
-!
-      logical, save :: first=.true.
-!
-      if (.not. first) &
-          call fatal_error('register_particles_selfgrav: called twice','')
-      first = .false.
+      use FArrayManager
+      use Messages, only: cvs_id
 !
       if (lroot) call cvs_id( &
            "$Id$")
@@ -60,16 +55,9 @@ module Particles_selfgravity
 !  Index for gradient for the self-potential and for the smooth particle
 !  density field.
 !
-      igpotselfx = mvar + naux_com + 1; naux = naux + 1; naux_com = naux_com + 1
-      igpotselfy = mvar + naux_com + 1; naux = naux + 1; naux_com = naux_com + 1
-      igpotselfz = mvar + naux_com + 1; naux = naux + 1; naux_com = naux_com + 1
-!
-!  Check that we aren't registering too many auxiliary variables
-!
-      if (naux > maux) then
-        if (lroot) write(0,*) 'naux = ', naux, ', maux= ', maux
-        call fatal_error('register_shock','naux > maux')
-      endif
+      call farray_register_auxiliary('gpotselfx',igpotselfx,communicated=.true.)
+      call farray_register_auxiliary('gpotselfy',igpotselfy,communicated=.true.)
+      call farray_register_auxiliary('gpotselfz',igpotselfz,communicated=.true.)
 !
     endsubroutine register_particles_selfgrav
 !***********************************************************************

@@ -94,12 +94,8 @@ module Dustdensity
       use Sub
       use General, only: chn
 !
-      logical, save :: first=.true.
       integer :: k
       character (len=5) :: sdust
-!
-      if (.not. first) call stop_it('register_dustdensity: called twice')
-      first = .false.
 !
       ldustdensity = .true.
 !

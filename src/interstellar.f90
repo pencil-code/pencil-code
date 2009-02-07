@@ -359,45 +359,16 @@ module Interstellar
 !
 !  19-nov-02/tony: coded
 !
-      use Cdata, only: linterstellar,ip,nvar,lroot,naux,naux_com,maux,aux_count,varname,aux_var !,mvar,nvar
-      use Mpicomm, only: stop_it
+      use Cdata
+      use FArrayManager
 !
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_interstellar called twice')
-      first = .false.
-!
-      if ((ip<=8) .and. lroot) then
-        print*, 'register_interstellar: ENTER'
-      endif
-!
-      icooling  = mvar+naux_com+1       ! indices to access uu
-      icooling2 = mvar+naux+2           ! indices to access uu
-      naux_com = naux_com+1             ! added 1 variables
-      naux = naux+2                     ! added 2 variables
-!
-      if ((ip<=8) .and. lroot) then
-        print*, 'register_interstellar: naux = ', naux
-        print*, 'register_interstellar: icooling  = ', icooling
-        print*, 'register_interstellar: icooling2 = ', icooling2
-      endif
-!
-!  Put variable names in array
-!
-      varname(icooling) = 'cooling'
-      varname(icooling2) = 'cooling2'
+      call farray_register_auxiliary('cooling',icooling,communicated=.true.)
+      call farray_register_auxiliary('cooling2',icooling2)
 !
 !  identify version number
 !
       if (lroot) call cvs_id( &
            "$Id$")
-!
-! Check we aren't registering too many auxiliary variables
-!
-      if (naux > maux) then
-        if (lroot) write(0,*) 'naux = ', naux, ', maux= ', maux
-        call stop_it('register_interstellar: naux > maux')
-      endif
 !
 ! Invalidate all SNRs
 !

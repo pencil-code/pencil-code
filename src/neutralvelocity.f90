@@ -100,11 +100,6 @@ module NeutralVelocity
       use Mpicomm, only: stop_it
       use Sub
 !
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_neutralvelocity called twice')
-      first = .false.
-!
       if (.not.lcartesian_coords) call fatal_error('register_neutralvelocity','non cartesian '//&
            'not yet implemented in the neutrals module')
 !

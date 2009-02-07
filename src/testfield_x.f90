@@ -162,11 +162,7 @@ module Testfield
       use Mpicomm
       use Sub
 !
-      logical, save :: first=.true.
       integer :: j
-!
-      if (.not. first) call stop_it('register_aa called twice')
-      first=.false.
 !
 !  Set first and last index of text field
 !  Note: iaxtest, iaytest, and iaztest are initialized to the first test field.

@@ -47,36 +47,18 @@ module Viscosity
 !  16-july-04/nils: adapted from visc_shock
 !
       use Cdata
-      use Mpicomm
+      use FArrayManager
       use Sub
-!
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_viscosity called twice')
-      first = .false.
 !
       lvisc_LES  = .true.
       lvisc_smagorinsky = .true.
 !
-      ismagorinsky = mvar + naux + 1 + (maux_com - naux_com)
-      naux = naux + 1
-!
-      if ((ip<=8) .and. lroot) then
-        print*, 'register_viscosity: smagorinsky viscosity nvar = ', nvar
-        print*, 'ismagorinsky = ', ismagorinsky
-      endif
+      call farray_register_auxiliary('smagorinsky',ismagorinsky,communicated=.true.)
 !
 !  identify version number
 !
       if (lroot) call cvs_id( &
            "$Id$")
-!
-! Check we aren't registering too many auxiliary variables
-!
-      if (naux > maux) then
-        if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
-        call stop_it('register_viscosity: naux > maux')
-      endif
 !
 !  Writing files for use with IDL
 !

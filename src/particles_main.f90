@@ -297,17 +297,24 @@ module Particles_main
 !
     endsubroutine particles_calc_selfpotential
 !***********************************************************************
-    subroutine particles_calc_nbodygravity(f)
+    subroutine particles_before_boundary(f)
 !
-!  Calculate the gravity of the nbody particles (wrapper).
+!  Calculate particle-related properties before boundary conditions are
+!  set.
 !
-!  01-mar-08/wlad: coded
+!  07-feb-09/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      call calc_nbodygravity_particles(f)
+!  Calculate the summed gravity due to the massive particles. 
+!  Needed because it is too slow to calculate the gravity at the 
+!  position of all dust particles. So we calculate the gravity 
+!  for the grid and interpolate to the position of the particles.
 !
-    endsubroutine particles_calc_nbodygravity
+      if (lparticles_nbody)     call calc_nbodygravity_particles(f)
+      if (lparticles_viscosity) call calc_particles_viscosity(f,fp,ineargrid)
+!
+    endsubroutine particles_before_boundary
 !***********************************************************************
     subroutine particles_special
 !
@@ -392,14 +399,17 @@ module Particles_main
 !
 !  Dynamical equations.
 !
-      if (lparticles)        call dxxp_dt_pencil(f,df,fp,dfp,p,ineargrid)
-      if (lparticles)        call dvvp_dt_pencil(f,df,fp,dfp,p,ineargrid)
-      if (lparticles_radius) call dap_dt_pencil(f,df,fp,dfp,p,ineargrid)
-      if (lparticles_spin)   call dps_dt_pencil(f,df,fp,dfp,p,ineargrid)
-      if (lparticles_number) call dnptilde_dt_pencil(f,df,fp,dfp,p,ineargrid)
+      if (lparticles)           call dxxp_dt_pencil(f,df,fp,dfp,p,ineargrid)
+      if (lparticles)           call dvvp_dt_pencil(f,df,fp,dfp,p,ineargrid)
+      if (lparticles_radius)    call dap_dt_pencil(f,df,fp,dfp,p,ineargrid)
+      if (lparticles_spin)      call dps_dt_pencil(f,df,fp,dfp,p,ineargrid)
+      if (lparticles_number)    call dnptilde_dt_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_selfgravity) &
           call dvvp_dt_selfgrav_pencil(f,df,fp,dfp,p,ineargrid)
-      if (lparticles_nbody)  call dvvp_dt_nbody_pencil(f,df,fp,dfp,p,ineargrid)
+      if (lparticles_nbody) &
+          call dvvp_dt_nbody_pencil(f,df,fp,dfp,p,ineargrid)
+      if (lparticles_viscosity) &
+          call dvvp_dt_viscosity_pencil(f,df,fp,dfp,ineargrid)
 !
       call cleanup_interpolated_quantities()
 !
@@ -421,8 +431,7 @@ module Particles_main
 !
 !  Write information about local environment to file.
 !
-      if (itsub==1) call particles_stalker_sub(f,fp,ineargrid)
-      if (lparticles_viscosity)   call calc_particles_viscosity(f,fp,ineargrid)
+      if (itsub==1)               call particles_stalker_sub(f,fp,ineargrid)
 !
 !  Dynamical equations.
 !

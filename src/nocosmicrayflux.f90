@@ -30,15 +30,9 @@ module Cosmicrayflux
       use Mpicomm
       use Sub
 !
-      logical, save :: first=.true.
-!
-
-      if (.not. first) call stop_it('register_cosmicrayflux called twice')
-      first = .false.
-
       if (lroot) call cvs_id( &
            "$Id$")
-
+!
     endsubroutine register_cosmicrayflux
 !***********************************************************************
     subroutine initialize_cosmicrayflux(f)

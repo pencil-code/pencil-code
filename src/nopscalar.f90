@@ -42,17 +42,12 @@ module Pscalar
       use Mpicomm
       use Sub
 !
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_lncc called twice')
-      first = .false.
-!
       lpscalar = .false.
 !
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id$")
+          "$Id$")
 !
     endsubroutine register_pscalar
 !***********************************************************************

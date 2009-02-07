@@ -71,9 +71,6 @@ module Chiral
 !
       logical, save :: first=.true.
 !
-      if (.not. first) call stop_it('register_chiral called twice')
-      first = .false.
-!
       lchiral = .true.
       iXX_chiral = nvar+1       ! index to access XX_chiral
       iYY_chiral = nvar+2       ! index to access YY_chiral

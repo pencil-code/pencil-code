@@ -1,7 +1,7 @@
 ! $Id$
-
+!
 !  This modules solves the passive scalar advection equation
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -12,25 +12,17 @@
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
-
 module Cosmicray
-
+!
   use Cparam
   use Cdata
   use Messages
-
+!
   implicit none
-
+!
   include 'cosmicray.h'
-
-  !namelist /cosmicray_init_pars/ dummy
-  !namelist /cosmicray_run_pars/  dummy
-
-  ! other variables (needs to be consistent with reset list below)
-!  integer :: idiag_rhocrm=0,idiag_crmax=0,idiag_lncrm=0,idiag_lncrmz=0
-
+!
   contains
-
 !***********************************************************************
     subroutine register_cosmicray()
 !
@@ -43,15 +35,10 @@ module Cosmicray
       use Mpicomm
       use Sub
 !
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_cosmicray called twice')
-      first = .false.
-!
-!  identify version number
+!  Identify version number.
 !
       if (lroot) call cvs_id( &
-           "$Id$")
+          "$Id$")
 !
     endsubroutine register_cosmicray
 !***********************************************************************
@@ -208,5 +195,4 @@ module Cosmicray
 !
     endsubroutine rprint_cosmicray
 !***********************************************************************
-
 endmodule Cosmicray

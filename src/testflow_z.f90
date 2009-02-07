@@ -126,11 +126,7 @@ module Testflow
       use Mpicomm
       use Sub
 !
-      logical, save :: first=.true.
       integer :: j
-!
-      if (.not. first) call stop_it('register_uu called twice')
-      first=.false.
 !
 !  Set first and last index of text field
 !  Here always ltestflow=T
@@ -159,7 +155,7 @@ module Testflow
         varname(j) = 'uutest'
       enddo
 !
-!  identify version number
+!  Identify version number.
 !
       if (lroot) call cvs_id( &
            "$Id$")

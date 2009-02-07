@@ -1,5 +1,4 @@
 ! $Id$
-
 !
 !  This module applies a sixth order hyperviscosity to the equation
 !  of motion (following Haugen & Brandenburg 2004). This hyperviscosity
@@ -12,7 +11,6 @@
 !
 !  Derivatives are taken in Fourier space.
 !
-
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -23,20 +21,18 @@
 ! MAUX CONTRIBUTION 3
 !
 !***************************************************************
-
 module Hypervisc_strict
-
+!
   use Cdata
   use Cparam
   use Fourier
   use Messages
-
+!
   implicit none
-
+!
   include 'hypervisc_strict.h'
-
+!
   contains
-
 !***********************************************************************
     subroutine register_hypervisc_strict()
 !
@@ -44,26 +40,14 @@ module Hypervisc_strict
 !
 !  20-aug-07/anders: coded
 !
-      use Mpicomm, only: stop_it
-!
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_hypervisc_strict: called twice')
-      first = .false.
+      use FArrayManager
 !
       if (lroot) call cvs_id( &
            "$Id$")
 !
-!  Set indices for auxiliary variables
+!  Set indices for auxiliary variables.
 ! 
-      ihypvis = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 3
-!
-!  Check that we aren't registering too many auxilary variables
-!
-      if (naux > maux) then
-        if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
-            call stop_it('register_hypervisc_strict: naux > maux')
-      endif
+      call farray_register_auxiliary('hypvis',ihypvis,vector=3)
 ! 
     endsubroutine register_hypervisc_strict
 !***********************************************************************
@@ -298,6 +282,4 @@ module Hypervisc_strict
 !
     endsubroutine hyperviscosity_strict
 !***********************************************************************
-
 endmodule Hypervisc_strict
-

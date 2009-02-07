@@ -50,7 +50,7 @@ module Particles_viscosity
 !
     endsubroutine calc_particles_viscosity
 !***********************************************************************
-    subroutine calc_particles_viscous_force(df,p)
+    subroutine dvvp_dt_viscosity_pencil(df,p)
 !
 !  07-oct-08/anders: dummy
 !
@@ -62,7 +62,7 @@ module Particles_viscosity
 !
       if (NO_WARN) print*, df, p
 !
-    endsubroutine calc_particles_viscous_force
+    endsubroutine dvvp_dt_viscosity_pencil
 !***********************************************************************
     subroutine read_particles_visc_init_pars(unit,iostat)
 !
