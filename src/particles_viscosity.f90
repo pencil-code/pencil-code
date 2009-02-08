@@ -129,7 +129,7 @@ module Particles_viscosity
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (nx,3) :: del2uup
-      real :: dx_2, dy_2, dz_2
+      real, save :: dx_2, dy_2, dz_2
       logical, save :: lfirstcall=.true.
 !
       if (lfirstcall) then
@@ -153,11 +153,13 @@ module Particles_viscosity
 !
       if (lviscp_simplified) then
         do n=n1,n2; do m=m1,m2
-          f(l1:l2,m,n,ipviscx:ipviscz) = &
+          if (nxgrid/=1) f(l1:l2,m,n,ipviscx:ipviscz) = &
               (f(l1+1:l2+1,m,n,iupx:iupz) - 2*f(l1:l2,m,n,iupx:iupz) + &
-               f(l1-1:l2-1,m,n,iupx:iupz))*dx_2 + &
+               f(l1-1:l2-1,m,n,iupx:iupz))*dx_2
+          if (nygrid/=1) f(l1:l2,m,n,ipviscx:ipviscz) = &
               (f(l1:l2,m+1,n,iupx:iupz) - 2*f(l1:l2,m,n,iupx:iupz) + &
-               f(l1:l2,m-1,n,iupx:iupz))*dy_2 + &
+               f(l1:l2,m-1,n,iupx:iupz))*dy_2
+          if (nzgrid/=1) f(l1:l2,m,n,ipviscx:ipviscz) = &
               (f(l1:l2,m,n+1,iupx:iupz) - 2*f(l1:l2,m,n,iupx:iupz) + &
                f(l1:l2,m,n-1,iupx:iupz))*dz_2
         enddo; enddo

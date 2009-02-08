@@ -103,45 +103,28 @@ module Dustvelocity
 !  18-mar-03/axel+anders: adapted from hydro
 !
       use Cdata
-      use Sub
+      use FArrayManager
       use General, only: chn
 !
-      integer :: k
+      integer :: k, uud_tmp
       character(len=5) :: sdust
 !
       ldustvelocity = .true.
 !
       do k=1,ndustspec
-        iuud(k) = nvar+1      ! Unecessary index... iudx would suffice
-        iudx(k) = nvar+1
-        iudy(k) = nvar+2
-        iudz(k) = nvar+3
-        nvar = nvar+3                ! add 3 variables pr. dust layer
-!
-        if ((ip<=8) .and. lroot) then
-          print*, 'register_dustvelocity: nvar = ', nvar
-          print*, 'register_dustvelocity: k = ', k
-          print*, 'register_dustvelocity: iudx,iudy,iudz = ', &
-              iudx(k),iudy(k),iudz(k)
-        endif
-!
-!  Put variable name in array
-!
         call chn(k,sdust)
-        varname(iudx(k)) = 'udx('//trim(sdust)//')'
-        varname(iudy(k)) = 'udy('//trim(sdust)//')'
-        varname(iudz(k)) = 'udz('//trim(sdust)//')'
+        if (ndustspec == 1) sdust = ''
+        call farray_register_pde('uud('//trim(sdust)//')',uud_tmp,vector=3)
+        iuud(k) = uud_tmp
+        iudx(k) = iuud(k)
+        iudy(k) = iuud(k)+1
+        iudz(k) = iuud(k)+2
       enddo
 !
-!  identify version number (generated automatically by CVS)
+!  Identify version number (generated automatically by CVS).
 !
       if (lroot) call cvs_id( &
-           "$Id$")
-!
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call fatal_error('register_dustvelocity','nvar > mvar')
-      endif
+          "$Id$")
 !
 !  Writing files for use with IDL
 !

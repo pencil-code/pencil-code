@@ -93,27 +93,14 @@ module Entropy
 !
 !  6-nov-01/wolf: coded
 !
-      ilnTT = nvar+1             ! index to access temperature
-      nvar = nvar+1
+      use FArrayManager
 !
-      if ((ip<=8) .and. lroot) then
-        print*, 'register_entropy: nvar = ', nvar
-        print*, 'register_entropy: ilnTT = ', ilnTT
-      endif
+      call farray_register_pde('lnTT',ilnTT)
 !
-!  identify version number
+!  Identify version number.
 !
       if (lroot) call cvs_id( &
            "$Id$")
-!
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call fatal_error('register_entropy','nvar > mvar')
-      endif
-!
-!  Put variable name in array
-!
-      varname(ilnTT) = 'lnTT'
 !
 !  Writing files for use with IDL
 !

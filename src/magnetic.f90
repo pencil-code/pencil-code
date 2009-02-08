@@ -446,30 +446,15 @@ module Magnetic
 !  1-may-02/wolf: coded
 !
       use Cdata
-      use Mpicomm
-      use Sub
+      use FArrayManager
 !
-      iaa = nvar+1              ! indices to access aa
-      iax = iaa
-      iay = iaa+1
-      iaz = iaa+2
-      nvar = nvar+3             ! added 3 variables
+      call farray_register_pde('aa',iaa,vector=3)
+      iax = iaa; iay = iaa+1; iaz = iaa+2
 !
-!  Put variable names in array
-!
-      varname(iax) = 'ax'
-      varname(iay) = 'ay'
-      varname(iaz) = 'az'
-!
-!  identify version number
+!  Identify version number.
 !
       if (lroot) call cvs_id( &
-           "$Id$")
-!
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('register_magnetic: nvar > mvar')
-      endif
+          "$Id$")
 !
 !  Writing files for use with IDL
 !

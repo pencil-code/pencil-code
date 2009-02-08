@@ -96,31 +96,16 @@ module Pscalar
 !  6-jul-02/axel: coded
 !
       use Cdata
-      use Mpicomm
-      use Sub
+      use FArrayManager
 !
       lpscalar = .true.
-      ilncc = nvar+1            ! index to access lncc
-      nvar = nvar+1             ! added 1 variable
 !
-      if ((ip<=8) .and. lroot) then
-        print*, 'Register_lncc:  nvar = ', nvar
-        print*, 'ilncc = ', ilncc
-      endif
+      call farray_register_pde('lncc',ilncc)
 !
-!  identify version number
+!  Identify version number.
 !
       if (lroot) call cvs_id( &
-           "$Id$")
-!
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('Register_lncc: nvar > mvar')
-      endif
-!
-!  Put variable name in array
-!
-      varname(ilncc) = 'lncc'
+          "$Id$")
 !
 !  Writing files for use with IDL
 !

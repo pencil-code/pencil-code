@@ -72,30 +72,14 @@ module Cosmicray
 !  09-oct-03/tony: coded
 !
       use Cdata
-      use Mpicomm
-      use Sub
+      use FArrayManager
 !
-      iecr = nvar+1            ! index to access icr
-      nvar = nvar+1            ! added 1 variable
+      call farray_register_pde('ecr',iecr)
 !
-      if ((ip<=8) .and. lroot) then
-        print*, 'register_cosmicray: nvar = ', nvar
-        print*, 'register_cosmicray: iecr = ', iecr
-      endif
-!
-!  Put variable names in array
-!
-      varname(iecr) = 'lnecr'
-!
-!  identify version number
+!  Identify version number.
 !
       if (lroot) call cvs_id( &
-           "$Id$")
-!
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('register_cosmicray: nvar > mvar')
-      endif
+          "$Id$")
 !
 !  Writing files for use with IDL
 !

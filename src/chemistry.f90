@@ -181,11 +181,10 @@ module Chemistry
 !   5-mar-08/nils: Read thermodynamical data from chem.inp
 !
       use Cdata
-      use Mpicomm
+      use FArrayManager
       use General, only: chn
 !
-      integer :: k
-      character (len=5) :: schem
+      integer :: k, ichemspec_tmp
       character (len=20) :: input_file='chem.inp'
 !
 !  Initialize some index pointers
@@ -196,57 +195,31 @@ module Chemistry
       iaa2(1)=12;iaa2(2)=13;iaa2(3)=14;iaa2(4)=15
       iaa2(5)=16;iaa2(6)=17;iaa2(7)=18
 !
-!  Set ind to consecutive numbers nvar+1, nvar+2, ..., nvar+nchemspec
+!  Set ichemistry to consecutive numbers nvar+1, nvar+2, ..., nvar+nchemspec.
 !
+      call farray_register_pde('chemspec',ichemspec_tmp,vector=nchemspec)
       do k=1,nchemspec
-        ichemspec(k)=nvar+k
+        ichemspec(k)=ichemspec_tmp+k-1
       enddo
 !
-!  Increase nvar accordingly
-!
-      nvar=nvar+nchemspec
-!
-!  Read species to be used from chem.inp (if the file exists)
+!  Read species to be used from chem.inp (if the file exists).
 !
       inquire(FILE=input_file, EXIST=lcheminp)
-      if (lcheminp) then
-        call read_species(input_file)
-      else
-        do k=1,nchemspec
-!
-!  Put variable name in array
-!
-          call chn(k,schem)
-          varname(ichemspec(k))='nd('//trim(schem)//')'
-        enddo
-      endif
-!
-!  Print some diagnostics
-!
-      do k=1,nchemspec
-        write(*,'("register_chemistry: k=",I4," nvar=",I4,"'//&
-            'ichemspec(k)=",I4," name=",8A)') &
-            k, nvar, ichemspec(k), trim(varname(ichemspec(k)))
-      enddo
+      if (lcheminp) call read_species(input_file)
 !
 !  Read data on the thermodynamical properties of the different species.
 !  All these data are stored in the array species_constants.
 !
       if (lcheminp) call read_thermodyn(input_file)
 !
-!  Write all data on species and their thermodynamics to file 
+!  Write all data on species and their thermodynamics to file.
 !
       if (lcheminp) call write_thermodyn()
 !
-!  identify CVS/SVN version information:
+!  Identify CVS/SVN version information.
 !
       if (lroot) call cvs_id( &
           "$Id$")
-!
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('register_chemistry: nvar > mvar')
-      endif
 !
     endsubroutine register_chemistry
 !***********************************************************************

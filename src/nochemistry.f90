@@ -51,20 +51,11 @@ module Chemistry
 !  6-oct-03/tony: coded
 !
       use Cdata
-      use Mpicomm
 !
-!  identify CVS/SVN version information:
+!  Identify CVS/SVN version information.
 !
       if (lroot) call cvs_id( &
-           "$Id$")
-!
-!  Perform some sanity checks (may be meaningless if certain things haven't
-!  been configured in a custom module but they do no harm)
-!
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('register_chemistry: nvar > mvar')
-      endif
+          "$Id$")
 !
     endsubroutine register_chemistry
 !***********************************************************************

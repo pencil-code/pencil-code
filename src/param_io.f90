@@ -124,7 +124,7 @@ module Param_IO
        ttransient,tavg,idx_tavg,lserial_io,nr_directions, &
        lsfu,lsfb,lsfz1,lsfz2,lsfflux,lpdfu,lpdfb,lpdfz1,lpdfz2,oned, &
        lwrite_aux,onedall,pretend_lnTT,old_cdtv,lmaxadvec_sum, &
-       save_lastsnap, &
+       save_lastsnap, lwrite_dvar, &
        force_lower_bound,force_upper_bound,twod, &
        border_frac_x,border_frac_y,border_frac_z, &
        lpoint,mpoint,npoint, &

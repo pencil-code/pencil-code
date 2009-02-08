@@ -75,30 +75,14 @@ module Entropy
 !
 !  6-nov-01/wolf: coded
 !
-      use Cdata
-      use Sub
+      use FArrayManager
 !
-      iss = nvar+1             ! index to access entropy
-      nvar = nvar+1
+      call farray_register_pde('ss',iss)
 !
-      if ((ip<=8) .and. lroot) then
-        print*, 'register_entropy: nvar = ', nvar
-        print*, 'register_entropy: iss = ', iss
-      endif
-!
-!  identify version number
+!  Identify version number.
 !
       if (lroot) call cvs_id( &
-           "$Id$")
-!
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call fatal_error('register_entropy','nvar > mvar')
-      endif
-!
-!  Put variable name in array
-!
-      varname(iss) = 'ss'
+          "$Id$")
 !
 !  Writing files for use with IDL
 !
@@ -120,7 +104,6 @@ module Entropy
 !
 !  21-jul-2002/wolf: coded
 !
-      use Cdata
       use Gravity, only: gravz,g0
       use EquationOfState, only: cs0, &
                                  beta_glnrho_global, beta_glnrho_scaled, &
@@ -265,7 +248,6 @@ module Entropy
 !  07-nov-2001/wolf: coded
 !  24-nov-2002/tony: renamed for consistancy (i.e. init_[variable name])
 !
-      use Cdata
       use Sub
       use Gravity
       use General, only: chn
@@ -319,7 +301,6 @@ module Entropy
 !
 !  20-11-04/anders: coded
 !
-      use Cdata
       use EquationOfState, only: beta_glnrho_scaled
 !
       if (ldt) lpenc_requested(i_cs2)=.true.
@@ -518,7 +499,6 @@ module Entropy
 !
 !  Calculate right hand side of entropy equation.
 !
-      use Cdata
       use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled
       use Sub
       use Global
@@ -632,7 +612,6 @@ module Entropy
 !
 !  29-sep-02/axel: adapted from calc_heatcond_simple
 !
-      use Cdata
       use Sub
       use Gravity
 !
@@ -686,7 +665,6 @@ module Entropy
 !
 !  17-jun-05/anders: coded
 !
-      use Cdata
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -729,7 +707,6 @@ module Entropy
 !  20-jul-03/axel: adapted from calc_heatcond_constchi
 !  19-nov-03/axel: added chi_t also here.
 !
-      use Cdata
       use Sub
       use Gravity
 !
@@ -782,7 +759,6 @@ module Entropy
 !
 !   8-jul-02/axel: adapted from Wolfgang's more complex version
 !
-      use Cdata
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -835,7 +811,6 @@ module Entropy
 !  17-sep-01/axel: coded
 !  14-jul-05/axel: corrected expression for chi_t diffusion.
 !
-      use Cdata
       use Sub
       use IO
       use Gravity
@@ -978,7 +953,6 @@ module Entropy
 !
 !   1-jun-02/axel: adapted from magnetic fields
 !
-      use Cdata
       use Sub
 !
       integer :: iname,inamez,inamey,inamex,irz

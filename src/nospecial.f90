@@ -110,37 +110,14 @@ module Special
 !  Configure pre-initialised (i.e. before parameter read) variables
 !  which should be know to be able to evaluate
 !
-!
 !  6-oct-03/tony: coded
 !
       use Cdata
-      use Mpicomm
-!!
-!! MUST SET lspecial = .true. to enable use of special hooks in the Pencil-Code
-!!   THIS IS NOW DONE IN THE HEADER ABOVE
 !
-!
-!
-!!
-!! Set any required f-array indexes to the next available slot
-!!
-!!
-!      iSPECIAL_VARIABLE_INDEX = nvar+1                ! index to access special variable
-!      nvar = nvar+1
-!
-!      iSPECIAL_AUXILIARY_VARIABLE_INDEX = naux+1      ! index to access special variable
-!      naux = naux+1
-!
-!
-!  identify CVS/SVN version information:
+!  Identify CVS/SVN version information.
 !
       if (lroot) call cvs_id( &
            "$Id$")
-!
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('register_special: nvar > mvar')
-      endif
 !
     endsubroutine register_special
 !***********************************************************************

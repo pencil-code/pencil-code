@@ -90,73 +90,47 @@ module Dustdensity
 !
 !   4-jun-02/axel: adapted from hydro
 !
-      use Mpicomm, only: stop_it
-      use Sub
-      use General, only: chn
+      use FArrayManager
 !
-      integer :: k
-      character (len=5) :: sdust
+      integer :: k, ind_tmp, imd_tmp, imi_tmp
 !
       ldustdensity = .true.
 !
 !  Set ind to consecutive numbers nvar+1, nvar+2, ..., nvar+ndustspec
 !
+      call farray_register_pde('nd',ind_tmp,vector=ndustspec)
       do k=1,ndustspec
-        ind(k)=nvar+k
+        ind(k)=ind_tmp+k-1
       enddo
 !
-!  Increase nvar accordingly
+!  Register dust mass.
 !
-      nvar=nvar+ndustspec
-!
-!  Allocate some f array variables for dust grain mass and ice density
-!
-      if (lmdvar .and. lmice) then   ! Both grain mass and ice density
-        imd  = ind  + ndustspec
-        imi  = imd  + ndustspec
-        nvar = nvar + 2*ndustspec
-      else if (lmdvar) then          ! Only grain mass
-        imd  = ind  + ndustspec
-        nvar = nvar + ndustspec
-      else if (lmice) then           ! Only ice density
-        imi  = ind  + ndustspec
-        nvar = nvar + ndustspec
+      if (lmdvar) then
+        call farray_register_pde('md',imd_tmp,vector=ndustspec)
+        do k=1,ndustspec
+          imd(k)=imd_tmp+k-1
+        enddo
       endif
 !
-!  Print some diagnostics
+!  Register ice mass.
 !
-      do k=1,ndustspec
-        if ((ip<=8) .and. lroot) then
-          print*, 'register_dustdensity: k = ', k
-          print*, 'register_dustdensity: nvar = ', nvar
-          print*, 'register_dustdensity: ind = ', ind(k)
-          if (lmdvar) print*, 'register_dustdensity: imd = ', imd(k)
-          if (lmice)  print*, 'register_dustdensity: imi = ', imi(k)
-        endif
+      if (lmice) then
+        call farray_register_pde('mi',imi_tmp,vector=ndustspec)
+        do k=1,ndustspec
+          imi(k)=imi_tmp+k-1
+        enddo
+      endif
 !
-!  Put variable name in array
-!
-        call chn(k,sdust)
-        varname(ind(k)) = 'nd('//trim(sdust)//')'
-        if (lmdvar) varname(imd(k)) = 'md('//trim(sdust)//')'
-        if (lmice)  varname(imi(k)) = 'mi('//trim(sdust)//')'
-      enddo
-!
-!  identify version number (generated automatically by CVS)
+!  Identify version number (generated automatically by CVS).
 !
       if (lroot) call cvs_id( &
-           "$Id$")
-!
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('register_dustdensity: nvar > mvar')
-      endif
+          "$Id$")
 !
 !  Ensure dust density variables are contiguous with dust velocity
 !
       if (ldustvelocity) then
         if ((iudz(ndustspec)+1)/=ind(1)) then
-          call stop_it('register_dustdensity: uud and ind are NOT '// &
+          call fatal_error('register_dustdensity','uud and ind are NOT '// &
               'contiguous in the f-array - as required by copy_bcs_dust')
         endif
       endif

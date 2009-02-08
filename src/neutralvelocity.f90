@@ -97,42 +97,22 @@ module NeutralVelocity
 !  28-feb-07/wlad: adapted
 !
       use Cdata
-      use Mpicomm, only: stop_it
-      use Sub
+      use FArrayManager
 !
       if (.not.lcartesian_coords) call fatal_error('register_neutralvelocity','non cartesian '//&
            'not yet implemented in the neutrals module')
 !
-!  indices to access uu
-!
-      iuun = nvar+1
-      iunx = iuun
-      iuny = iuun+1
-      iunz = iuun+2
-      nvar = nvar+3             ! added 3 variables
-!
-      if ((ip<=8) .and. lroot) then
-        print*, 'register_neutralvelocity: nvar = ', nvar
-        print*, 'register_neutralvelocity: iunx,iuny,iunz = ', iunx,iuny,iunz
-      endif
-!
-!  Put variable names in array
-!
-      varname(iunx) = 'unx'
-      varname(iuny) = 'uny'
-      varname(iunz) = 'unz'
-!
       lneutralvelocity=.true.
 !
-!  identify version number (generated automatically by CVS)
+!  indices to access uu
+!
+      call farray_register_pde('uun',iuun,vector=3)
+      iunx = iuun; iuny = iuun+1; iunz = iuun+2
+!
+!  Identify version number (generated automatically by CVS).
 !
       if (lroot) call cvs_id( &
-           "$Id$")
-!
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('register_neutralvelocity: nvar > mvar')
-      endif
+          "$Id$")
 !
 !  Writing files for use with IDL
 !

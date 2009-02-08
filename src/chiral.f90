@@ -66,35 +66,17 @@ module Chiral
 !  28-may-04/axel: adapted from pscalar
 !
       use Cdata
-      use Mpicomm
-      use Sub
-!
-      logical, save :: first=.true.
+      use FArrayManager
 !
       lchiral = .true.
-      iXX_chiral = nvar+1       ! index to access XX_chiral
-      iYY_chiral = nvar+2       ! index to access YY_chiral
-      nvar = nvar+2             ! added 1 variable
 !
-      if ((ip<=8) .and. lroot) then
-        print*, 'Register_XX_chiral:  nvar = ', nvar
-        print*, 'iXX_chiral = ', iXX_chiral
-      endif
+      call farray_register_pde('XX_chiral',iXX_chiral)
+      call farray_register_pde('YY_chiral',iYY_chiral)
 !
-!  Put variable names in array
-!
-      varname(iXX_chiral) = 'XX_chiral'
-      varname(iYY_chiral) = 'YY_chiral'
-!
-!  identify version number
+!  Identify version number.
 !
       if (lroot) call cvs_id( &
-           "$Id$")
-!
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('Register_chiral: nvar > mvar')
-      endif
+          "$Id$")
 !
     endsubroutine register_chiral
 !***********************************************************************

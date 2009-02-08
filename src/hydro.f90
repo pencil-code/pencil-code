@@ -23,7 +23,7 @@ module Hydro
 !  Note that Omega is already defined in cdata.
 
   use Cparam
-  use Cdata, only: Omega, theta, huge1
+  use Cdata
   use Viscosity
   use Messages
 
@@ -363,26 +363,16 @@ module Hydro
 !
 !  6-nov-01/wolf: coded
 !
-      use Cdata
-      use Mpicomm,         only: stop_it
-      use Sub
+      use FArrayManager
       use SharedVariables,only:put_shared_variable
+      use Sub
 !
       integer :: ierr
 !
 !  indices to access uu
 !
-      iuu = nvar+1
-      iux = iuu
-      iuy = iuu+1
-      iuz = iuu+2
-      nvar = nvar+3             ! added 3 variables
-!
-!  Put variable names in array
-!
-      varname(iux) = 'ux'
-      varname(iuy) = 'uy'
-      varname(iuz) = 'uz'
+      call farray_register_pde('uu',iuu,vector=3)
+      iux = iuu; iuy = iuu+1; iuz = iuu+2
 !
 !  Share lpressuregradient_gas so Entropy module knows whether to apply
 !  pressure gradient or not.
@@ -392,15 +382,10 @@ module Hydro
       if (ierr/=0) call fatal_error('register_hydro',&
           'there was a problem sharing lpressuregradient_gas')
 !
-!  identify version number (generated automatically by CVS)
+!  Identify version number (generated automatically by CVS).
 !
       if (lroot) call cvs_id( &
            "$Id$")
-!
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('register_hydro: nvar > mvar')
-      endif
 !
 !  Writing files for use with IDL
 !

@@ -49,35 +49,15 @@ module Cosmicrayflux
 !  1-may-02/wolf: coded
 !
       use Cdata
-      use Mpicomm
-      use Sub
+      use FArrayManager
 !
-      ifcr = nvar+1              ! indices to access fcr
-      ifcrx = ifcr
-      ifcry = ifcr+1
-      ifcrz = ifcr+2
-      nvar = nvar+3             ! added 3 variables
+      call farray_register_pde('fcr',ifcr,vector=3)
+      ifcrx = ifcr; ifcry = ifcr+1; ifcrz = ifcr+2
 !
-      if ((ip<=8) .and. lroot) then
-        print*, 'register_cosmicrayflux: nvar = ', nvar
-        print*, 'register_cosmicrayflux: ifcr,ifcrx,ifcry,ifcrz = ', ifcr,ifcrx,ifcry,ifcrz
-      endif
-!
-!  Put variable names in array
-!
-      varname(ifcrx) = 'fcrx'
-      varname(ifcry) = 'fcry'
-      varname(ifcrz) = 'fcrz'
-!
-!  identify version number
+!  Identify version number.
 !
       if (lroot) call cvs_id( &
-           "$Id$")
-!
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('register_cosmicrayflux: nvar > mvar')
-      endif
+          "$Id$")
 !
 !  Writing files for use with IDL
 !

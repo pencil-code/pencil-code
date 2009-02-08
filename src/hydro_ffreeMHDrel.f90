@@ -71,26 +71,17 @@ module Hydro
 !  6-nov-01/wolf: coded
 !
       use Cdata
-      use Mpicomm, only: lroot,stop_it
-      use Sub
+      use FarrayManager
 !
       lhydro = .true.
 !
-      iuu = nvar+1             ! indices to access uu
-      iux = iuu
-      iuy = iuu+1
-      iuz = iuu+2
-      nvar = nvar+3             ! added 3 variables
+      call farray_register_pde('uu',iuu,vector=3)
+      iux = iuu; iuy = iuu+1; iuz = iuu+2
 !
 !  Identify version number (generated automatically by CVS).
 !
       if (lroot) call cvs_id( &
-           "$Id$")
-!
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('register_hydro: nvar > mvar')
-      endif
+          "$Id$")
 !
 !  Writing files for use with IDL
 !

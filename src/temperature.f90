@@ -71,29 +71,17 @@ module Entropy
 ! 13-dec-02/axel+tobi: coded
 !
       use Cdata
-      use Mpicomm
-      use Sub
+      use FArrayManager
 !
       lentropy = .true.
 !
-      ilnTT = nvar+1             ! index to access entropy
-      nvar = nvar+1
-iss=ilnTT  !(need to think how to deal with this...)
+      call farray_register_pde('lnTT',ilnTT)
+      iss=ilnTT  !(need to think how to deal with this...)
 !
-      if ((ip<=8) .and. lroot) then
-        print*, 'Register_ent:  nvar = ', nvar
-        print*, 'ilnTT = ', ilnTT
-      endif
-!
-!  identify version number
+!  Identify version number.
 !
       if (lroot) call cvs_id( &
-           "$Id$")
-!
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('Register_ent: nvar > mvar')
-      endif
+          "$Id$")
 !
     endsubroutine register_entropy
 !***********************************************************************
