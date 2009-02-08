@@ -81,7 +81,7 @@ pro pc_read_var, t=t,                                             $
     nxrange=nxrange, nyrange=nyrange, nzrange=nzrange,            $
     stats=stats, nostats=nostats, quiet=quiet, help=help,         $
     swap_endian=swap_endian, varcontent=varcontent,               $
-    global=global, scalar=scalar, run2D=run2D,                    $
+    global=global, scalar=scalar, run2D=run2D, noaux=noaux,       $
     ghost=ghost, bcx=bcx, bcy=bcy, bcz=bcz,                       $
     exit_status=exit_status
 
@@ -101,6 +101,7 @@ COMPILE_OPT IDL2,HIDDEN
   default, trimall, 0
   default, unshear, 0
   default, ghost, 0
+  default, noaux, 0
   default, bcx, 'none'
   default, bcy, 'none'
   default, bcz, 'none'
@@ -216,10 +217,14 @@ COMPILE_OPT IDL2,HIDDEN
     zloc=fltarr(procdim.mz)*one
   endif
 ;
+;  When reading derivative data, do not attempt to read aux variables.
+;
+  if (varfile eq 'dvar.dat') then noaux=1
+;
 ;  Read meta data and set up variable/tag lists
 ;
   default, varcontent, pc_varcontent(datadir=datadir,dim=dim, $
-                              param=param,quiet=quiet,scalar=scalar,run2D=run2D)
+      param=param,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D)
   totalvars=(size(varcontent))[1]-1
 ;
   if (n_elements(variables) ne 0) then begin

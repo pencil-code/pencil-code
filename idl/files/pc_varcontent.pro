@@ -24,7 +24,7 @@
 ;   see idlvarloc
 ;
 function pc_varcontent, datadir=datadir, dim=dim, param=param, $
-    run2D=run2D, scalar=scalar, quiet=quiet
+    run2D=run2D, scalar=scalar, noaux=noaux, quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Read grid dimensions, input parameters and location of datadir.
@@ -47,9 +47,12 @@ for i=0,nindex-1 do begin
 endfor
 ;
 ;  The number of variables in the snapshot file depends on whether we
-;  are writing auxiliary data or not.
+;  are writing auxiliary data or not. Auxiliary variables can be turned
+;  off by hand by setting noaux=1, e.g. for reading derivative snapshots.
 ;
-if (param.lwrite_aux ne 0) then totalvars=dim.mvar+dim.maux else totalvars=dim.mvar
+default, noaux, 0
+totalvars=dim.mvar
+if ((param.lwrite_aux ne 0) and (not noaux)) then totalvars=dim.mvar+dim.maux
 ;
 ;  Make an array of structures in which to store their descriptions.
 ;  Index zero is kept as a dummy entry.
@@ -417,7 +420,7 @@ end
 ;
 ;  Auxiliary variables (only if they have been saved).
 ;
-if (param.lwrite_aux ne 0) then begin
+if ((param.lwrite_aux ne 0) and (not noaux)) then begin
 ;
   default, iQrad, 0
   varcontent[iQrad].variable   = 'Radiative heating rate (Qrad)'
