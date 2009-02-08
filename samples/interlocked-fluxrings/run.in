@@ -4,11 +4,12 @@
 !
 &run_pars
   cvsid='$Id$'
-  nt=10, it1=2, cdt=0.4, cdtv=0.3, isave=50, itorder=3,
+  nt=10, it1=2, cdt=0.4, cdtv=0.3, isave=50, itorder=3
   tmax = 50.
-  dsnap=50, dvid=0.6,
+  !dsnap=5, dvid=0.6
+  dsnap=5, dvid=0.02
   ip=14
-  lpencil_check=T
+  !lpencil_check=T
   lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
   /
 &eos_run_pars
@@ -18,8 +19,10 @@
 &density_run_pars
 /
 &magnetic_run_pars
-  eta=3e-3,
+  eta=3e-3
+/
+&radiation_run_pars
 /
 &viscosity_run_pars
-  nu=3e-3,
+  nu=3e-3
 /
