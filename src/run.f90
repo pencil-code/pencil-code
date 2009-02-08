@@ -625,9 +625,10 @@
                trim(datadir)//'/proc0/spvar.dat',ENUM=.false.)
           call wsnap_timeavgs(trim(directory_snap)//'/timeavg.dat', &
                                   ENUM=.false.)
-          if (ip<=11) then
-            call wsnap(trim(directory)//'/dvar.dat',df,mvar,ENUM=.false.)
-            call particles_write_dsnapshot(trim(directory)//'/dpvar.dat',ENUM=.false.)
+          if (ip<=11 .or. lwrite_dvar) then
+            call wsnap(trim(directory)//'/dvar.dat',df,mvar, &
+                       enum=.false.,noghost=.true.)
+            call particles_write_dsnapshot(trim(directory)//'/dpvar.dat')
           endif
         else
           call wsnap(trim(directory_snap)//'/crash.dat',f,mvar_io,ENUM=.false.)

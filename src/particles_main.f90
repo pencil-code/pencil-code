@@ -159,25 +159,16 @@ module Particles_main
 !
     endsubroutine particles_write_snapshot
 !***********************************************************************
-    subroutine particles_write_dsnapshot(chsnap,enum,flist)
+    subroutine particles_write_dsnapshot(chsnap)
 !
 !  Write particle derivative snapshot to file.
 !
 !  07-jan-05/anders: coded
 !
-      logical :: enum
-      character (len=*) :: chsnap,flist
-      optional :: flist
+      character (len=*) :: chsnap
 !
-      logical :: lsnap
-!
-      if (present(flist)) then
-        call wsnap_particles(chsnap,dfp,enum,lsnap,dsnap_par_minor, &
-            npar_loc,ipar,flist)
-      else
-        call wsnap_particles(chsnap,dfp,enum,lsnap,dsnap_par_minor, &
-            npar_loc,ipar)
-      endif
+      call wsnap_particles(chsnap,dfp,.false.,.false.,0.0,npar_loc,ipar, &
+          nobound=.true.)
 !
     endsubroutine particles_write_dsnapshot
 !***********************************************************************

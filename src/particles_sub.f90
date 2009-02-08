@@ -107,13 +107,13 @@ module Particles_sub
     endsubroutine output_particles
 !***********************************************************************
     subroutine wsnap_particles(snapbase,fp,enum,lsnap,dsnap_par_minor, &
-        npar_loc,ipar,flist)
+        npar_loc,ipar,flist,nobound)
 !
 !  Write particle snapshot file, labelled consecutively if enum==.true.
 !  Otherwise just write a snapshot without label (used e.g. for pvar.dat)
 !
 !  29-dec-04/anders: adapted from wsnap
-!  04-oct-08/ccyang: use a seperate log file for minor snapshots
+!  04-oct-08/ccyang: use a separate log file for minor snapshots
 !
       use General
       use IO
@@ -123,7 +123,7 @@ module Particles_sub
       real :: dsnap_par_minor
       integer, dimension (mpar_loc) :: ipar
       integer :: npar_loc
-      logical :: enum, lsnap
+      logical :: enum, lsnap, nobound
       character (len=*) :: snapbase, flist
 !
       integer, save :: ifirst=0, nsnap, nsnap_minor
@@ -133,7 +133,7 @@ module Particles_sub
       character (len=fnlen) :: snapname
       character (len=5) :: nsnap_ch,nsnap_minor_ch,nsnap_ch_last
 !
-      optional :: flist
+      optional :: flist, nobound
 !
 !  Output snapshot with label in 'tsnap' time intervals
 !  file keeps the information about number and time of last snapshot
@@ -186,7 +186,11 @@ module Particles_sub
 !  Write snapshot without label
 !
         snapname=snapbase
-        call boundconds_particles(fp,npar_loc,ipar)
+        if (present(nobound)) then
+          if (.not. nobound) call boundconds_particles(fp,npar_loc,ipar)
+        else
+          call boundconds_particles(fp,npar_loc,ipar)
+        endif
         call output_particles(snapname,fp,npar_loc,ipar)
         if (ip<=10 .and. lroot) &
              print*,'wsnap_particles: written snapshot ', snapname

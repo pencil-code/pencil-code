@@ -85,17 +85,15 @@ module Particles_main
 !
     endsubroutine particles_write_snapshot
 !***********************************************************************
-    subroutine particles_write_dsnapshot(chsnap,enum,flist)
+    subroutine particles_write_dsnapshot(chsnap)
 !
 !  Write particle derivative snapshot to file.
 !
 !  22-aug-05/anders: dummy
 !
-      logical :: enum
-      character (len=*) :: chsnap,flist
-      optional :: flist
+      character (len=*) :: chsnap
 !
-      if (NO_WARN) print*, chsnap, enum, flist
+      if (NO_WARN) print*, chsnap
 !
     endsubroutine particles_write_dsnapshot
 !***********************************************************************

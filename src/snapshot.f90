@@ -23,7 +23,7 @@ module Snapshot
 contains
 
 !***********************************************************************
-    subroutine wsnap(chsnap,a,msnap,enum,flist)
+    subroutine wsnap(chsnap,a,msnap,enum,flist,noghost)
 !
 !  Write snapshot file, labelled consecutively if enum==.true.
 !  Otherwise just write a snapshot without label (used for var.dat)
@@ -46,8 +46,8 @@ contains
       character (len=*) :: chsnap, flist
       real, dimension (mx,my,mz,msnap) :: a
       integer :: msnap
-      logical :: enum, bcs
-      optional :: flist, enum
+      logical :: enum, bcs, noghost
+      optional :: enum, flist, noghost
 !
       real, save :: tsnap
       integer, save :: ifirst=0,nsnap
@@ -55,14 +55,14 @@ contains
       character (len=fnlen) :: file
       character (len=5) :: ch
 !
-!  Output snapshot with label in 'tsnap' time intervals
-!  file keeps the information about number and time of last snapshot
+!  Output snapshot with label in 'tsnap' time intervals.
+!  File keeps the information about number and time of last snapshot.
 !
       if (enum) then
         call safe_character_assign(file,trim(datadir)//'/tsnap.dat')
 !
-!  at first call, need to initialize tsnap
-!  tsnap calculated in read_snaptime, but only available to root processor
+!  At first call, need to initialize tsnap.
+!  tsnap calculated in read_snaptime, but only available to root processor.
 !
         if (ifirst==0) then
           call read_snaptime(file,tsnap,nsnap,dsnap,t)
@@ -70,7 +70,7 @@ contains
         endif
 !
 !  Check whether we want to output snapshot. If so, then
-!  update ghost zones for var.dat (cheap, since done infrequently)
+!  update ghost zones for var.dat (cheap, since done infrequently).
 !
         call update_snaptime(file,tsnap,nsnap,dsnap,t,lsnap,ch,ENUM=.true.)
         if (lsnap) then
@@ -83,9 +83,14 @@ contains
 !
       else
 !
-!  write snapshot without label (typically, var.dat)
+!  Write snapshot without label (typically, var.dat). For dvar.dat we need to
+!  make sure that ghost zones are not set on df!
 !
-        call update_ghosts(a)
+        if (present(noghost)) then
+          if (.not. noghost) call update_ghosts(a)
+        else
+          call update_ghosts(a)
+        endif
         if (msnap==mfarray) call update_auxiliaries(a) ! Not if e.g. dvar.dat.
         call output_snap(chsnap,a,msnap)
         if (present(flist)) call log_filename_to_file(chsnap,flist)
