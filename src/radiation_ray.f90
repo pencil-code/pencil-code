@@ -1340,15 +1340,20 @@ module Radiation
 !  calculates source function
 !  (This module is currently ignored if diffusion approximation is used)
 !
-!  03-apr-04/tobi: coded
+!   3-apr-04/tobi: coded
+!   8-feb-09/axel: added B2 for visualisation purposes
 !
-      use Cdata, only: m,n,x,y,z,Lx,Ly,Lz,dx,dy,dz,pi,directory_snap
-      use Mpicomm, only: stop_it
+      use Cdata, only: m,n,x,y,z,Lx,Ly,Lz,dx,dy,dz,pi,directory_snap,iaa
+      use Sub, only: gij, curl_mn, dot2_mn
       use EquationOfState, only: eoscalc
+      use Mpicomm, only: stop_it
       use IO, only: output
 
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       logical, save :: lfirst=.true.
+      real, dimension(nx,3,3) :: aij
+      real, dimension(nx,3) :: aa,bb
+      real, dimension(nx) :: b2
       real, dimension(mx) :: lnTT
 
       select case (source_function_type)
@@ -1378,6 +1383,24 @@ module Radiation
                        *spread(spread(cos(kz_Srad*z),1,mx),2,my)
           lfirst=.false.
         endif
+!
+!  Source function proportional to magnetic energy density
+!  (used for visualization purposes)
+!  Needs to be done at every time step (not just when lfirst=.true.)
+!
+      case ('B2')
+        if (iaa==0) then
+          print*,'no magnetic field available'
+        else
+          do n=n1,n2
+          do m=m1,m2
+            call gij(f,iaa,aij,1)
+            call curl_mn(aij,bb,aa)
+            call dot2_mn(bb,b2)
+            Srad(l1:l2,m,n)=b2
+          enddo
+          enddo
+        endif
 
       case ('nothing')
           Srad=0.
@@ -1401,16 +1424,21 @@ module Radiation
 !  Note that currently the diffusion approximation does not take
 !  into account any gradient terms of kappa.
 !
-!  03-apr-04/tobi: coded
+!   3-apr-04/tobi: coded
+!   8-feb-09/axel: added B2 for visualisation purposes
 !
       use Cdata, only: ilnrho,x,y,z,m,n,Lx,Ly,Lz,dx,dy,dz,pi,directory_snap
-      use Cdata, only: kappa_es,ikapparho, m_H, sigmaH_
+      use Cdata, only: kappa_es,ikapparho, m_H, sigmaH_, iaa
+      use Sub, only: gij, curl_mn, dot2_mn
       use EquationOfState, only: eoscalc
       use Mpicomm, only: stop_it
       use IO, only: output
 
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx) :: tmp,lnrho,lnTT,yH
+      real, dimension(nx,3,3) :: aij
+      real, dimension(nx,3) :: aa,bb
+      real, dimension(nx) :: b2
       real :: kappa0, kappa0_cgs,k1,k2
       logical, save :: lfirst=.true.
       integer :: i
@@ -1515,6 +1543,24 @@ module Radiation
           f(:,m,n,ikapparho)= sigmaH_*(1 - yH)*exp(2*lnrho+log(m_H))
         enddo
         enddo
+!
+!  Source function proportional to magnetic energy density
+!  (used for visualization purposes)
+!  Needs to be done at every time step (not just when lfirst=.true.)
+!
+      case ('B2') !! magnetic field
+        if (iaa==0) then
+          print*,'no magnetic field available'
+        else
+          do n=n1,n2
+          do m=m1,m2
+            call gij(f,iaa,aij,1)
+            call curl_mn(aij,bb,aa)
+            call dot2_mn(bb,b2)
+            f(l1:l2,m,n,ikapparho)=b2
+          enddo
+          enddo
+        endif
 
       case default
         call stop_it('no such opacity type: '//trim(opacity_type))
