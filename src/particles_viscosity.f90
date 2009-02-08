@@ -45,8 +45,6 @@ module Particles_viscosity
       use FArrayManager
       use Sub
 !
-      logical, save :: first=.true.
-!
 !  Identify version number.
 !
       if (lroot) call cvs_id( &
@@ -144,6 +142,7 @@ module Particles_viscosity
 !
 !  Put boundary conditions on mapped velocity field.
 !
+      call boundconds_x(f,iupx,iupz)
       call initiate_isendrcv_bdry(f,iupx,iupz)
       call finalize_isendrcv_bdry(f,iupx,iupz)
       call boundconds_y(f,iupx,iupz)
@@ -151,17 +150,33 @@ module Particles_viscosity
 !
 !  We use a second order discrete Laplacian.
 !
-      if (lviscp_simplified) then
+      if (lviscp_simplified .or. lviscp_rhop_nup_const) then
         do n=n1,n2; do m=m1,m2
           if (nxgrid/=1) f(l1:l2,m,n,ipviscx:ipviscz) = &
               (f(l1+1:l2+1,m,n,iupx:iupz) - 2*f(l1:l2,m,n,iupx:iupz) + &
                f(l1-1:l2-1,m,n,iupx:iupz))*dx_2
-          if (nygrid/=1) f(l1:l2,m,n,ipviscx:ipviscz) = &
-              (f(l1:l2,m+1,n,iupx:iupz) - 2*f(l1:l2,m,n,iupx:iupz) + &
-               f(l1:l2,m-1,n,iupx:iupz))*dy_2
-          if (nzgrid/=1) f(l1:l2,m,n,ipviscx:ipviscz) = &
-              (f(l1:l2,m,n+1,iupx:iupz) - 2*f(l1:l2,m,n,iupx:iupz) + &
-               f(l1:l2,m,n-1,iupx:iupz))*dz_2
+          if (nygrid/=1) then
+            if (nxgrid==1) then
+              f(l1:l2,m,n,ipviscx:ipviscz) = &
+                  (f(l1:l2,m+1,n,iupx:iupz) - 2*f(l1:l2,m,n,iupx:iupz) + &
+                   f(l1:l2,m-1,n,iupx:iupz))*dy_2
+            else
+              f(l1:l2,m,n,ipviscx:ipviscz) = f(l1:l2,m,n,ipviscx:ipviscz) + &
+                  (f(l1:l2,m+1,n,iupx:iupz) - 2*f(l1:l2,m,n,iupx:iupz) + &
+                   f(l1:l2,m-1,n,iupx:iupz))*dy_2
+            endif
+          endif
+          if (nzgrid/=1) then
+            if (nxgrid==1 .and. nygrid==1) then
+              f(l1:l2,m,n,ipviscx:ipviscz) = &
+                  (f(l1:l2,m,n+1,iupx:iupz) - 2*f(l1:l2,m,n,iupx:iupz) + &
+                   f(l1:l2,m,n-1,iupx:iupz))*dz_2
+            else
+              f(l1:l2,m,n,ipviscx:ipviscz) = f(l1:l2,m,n,ipviscx:ipviscz) + &
+                  (f(l1:l2,m,n+1,iupx:iupz) - 2*f(l1:l2,m,n,iupx:iupz) + &
+                   f(l1:l2,m,n-1,iupx:iupz))*dz_2
+            endif
+          endif
         enddo; enddo
       endif
 !
@@ -171,7 +186,7 @@ module Particles_viscosity
 !***********************************************************************
     subroutine dvvp_dt_viscosity_pencil(f,df,fp,dfp,ineargrid)
 !
-!  Calculate viscous force term.
+!  Calculate viscous force term for particles.
 !
 !  07-feb-09/anders: coded
 !
@@ -187,15 +202,14 @@ module Particles_viscosity
       intent (out) :: dfp
 !
       real, dimension (3) :: fviscp
-      integer :: k
-!
-!
+      integer :: k, ix0, iy0, iz0
 !
       if (npar_imn(imn)/=0) then
 !
 !  Loop over all particles in current pencil.
 !
         do k=k1_imn(imn),k2_imn(imn)
+          ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
           if (lparticlemesh_cic) then
             call interpolate_linear(f,ipviscx,ipviscz, &
                 fp(k,ixp:izp),fviscp,ineargrid(k,:),ipar(k) )
@@ -207,9 +221,24 @@ module Particles_viscosity
               call interpolate_quadratic(f,ipviscx,ipviscz, &
                   fp(k,ixp:izp),fviscp,ineargrid(k,:),ipar(k) )
             endif
+          else
+            fviscp=f(ix0,iy0,iz0,ipviscx:ipviscz)
           endif
 !
-          dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + nup*fviscp
+!  Viscous force dvp/dt = nu*del2(uup). Does not conserve momentum, but
+!  should be okay if the particle density is nearly constant.
+!
+          if (lviscp_simplified) then
+            dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + nup*fviscp
+          endif
+!
+!  Viscous force dvp/dt = (mu/rho)*del2(uup). Conserves momentum and is
+!  a reasonable description of viscosity since nup=cs*lambda yields
+!  nup*np=constant.
+!
+          if (lviscp_rhop_nup_const) then
+            dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + nup*fviscp/f(ix0,iy0,iz0,inp)
+          endif
 !
         enddo
 !
