@@ -56,8 +56,10 @@ module Particles
 !
 !  29-dec-04/anders: coded
 !
+      use FArrayManager
+!
       if (lroot) call cvs_id( &
-           "$Id$")
+          "$Id$")
 !
 !  Indices for particle position.
 !
@@ -77,7 +79,7 @@ module Particles
 !
       if (npvar > mpvar) then
         if (lroot) write(0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
-        call stop_it('register_particles: npvar > mpvar')
+        call fatal_error('register_particles','npvar > mpvar')
       endif
 !
     endsubroutine register_particles
