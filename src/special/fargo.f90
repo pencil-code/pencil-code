@@ -75,26 +75,9 @@ module Special
 !  6-oct-03/tony: coded
 !
       use Cdata
-      use Mpicomm
-!
-      logical, save :: first=.true.
-!
-! A quick sanity check
-!
-      if (.not. first) call stop_it('register_special called twice')
-      first = .false.
 !
       if (lroot) call cvs_id( &
            "$Id$")
-      if (naux > maux) then
-        if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
-        call stop_it('register_special: naux > maux')
-      endif
-!
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('register_special: nvar > mvar')
-      endif
 !
     endsubroutine register_special
 !***********************************************************************

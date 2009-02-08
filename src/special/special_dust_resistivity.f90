@@ -73,30 +73,12 @@ module Special
 !  6-oct-03/tony: coded
 !
       use Cdata
-      use EquationOfState
-      use Mpicomm
+      use FArrayManager
 !
-      logical, save :: first=.true.
-!
-! A quick sanity check
-!
-      if (.not. first) call stop_it('register_special called twice')
-      first = .false.
+      call farray_register_auxiliary('etadust',ietadust,communicated=.true.)
 !
       if (lroot) call cvs_id( &
-           "$Id$")
-!
-      ietadust = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 1
-!
-      if (naux > maux) then
-        if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
-        call stop_it('register_special: naux > maux')
-      endif
-!
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('register_special: nvar > mvar')
-      endif
+          "$Id$")
 !
     endsubroutine register_special
 !***********************************************************************

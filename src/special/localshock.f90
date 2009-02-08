@@ -114,51 +114,11 @@ module Special
 !  6-oct-03/tony: coded
 !
       use Cdata
-      use EquationOfState
-      use Mpicomm
 !
-      logical, save :: first=.true.
-!
-! A quick sanity check
-!
-      if (.not. first) call stop_it('register_special called twice')
-      first = .false.
-
-!!
-!! MUST SET lspecial = .true. to enable use of special hooks in the Pencil-Code
-!!   THIS IS NOW DONE IN THE HEADER ABOVE
-!
-!
-!
-!!
-!! Set any required f-array indexes to the next available slot
-!!
-!!
-!      iSPECIAL_VARIABLE_INDEX = nvar+1             ! index to access entropy
-!      nvar = nvar+1
-!
-!      iSPECIAL_AUXILIARY_VARIABLE_INDEX = naux+1             ! index to access entropy
-!      naux = naux+1
-!
-!
-!  identify CVS/SVN version information:
+!  Identify CVS/SVN version information.
 !
       if (lroot) call cvs_id( &
-           "$Id$")
-!
-!
-!  Perform some sanity checks (may be meaningless if certain things haven't
-!  been configured in a custom module but they do no harm)
-!
-      if (naux > maux) then
-        if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
-        call stop_it('register_special: naux > maux')
-      endif
-!
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('register_special: nvar > mvar')
-      endif
+          "$Id$")
 !
     endsubroutine register_special
 !***********************************************************************

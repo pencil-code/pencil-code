@@ -63,36 +63,14 @@ module Special
 !  6-jul-02/axel: coded
 !
       use Cdata
-      use Mpicomm
-      use Sub
+      use FArrayManager
 !
-      logical, save :: first=.true.
+      call farray_register_pde('alpm',ialpm)
 !
-      if (.not. first) call stop_it('register_alpm called twice')
-      first = .false.
-!
-      lalpm = .true.
-      ialpm = nvar+1            ! index to access alpm
-      nvar = nvar+1             ! added 1 variable
-!
-      if ((ip<=8) .and. lroot) then
-        print*, 'Register_alpm:  nvar = ', nvar
-        print*, 'ialpm = ', ialpm
-      endif
-!
-!  identify version number
+!  Identify version number.
 !
       if (lroot) call cvs_id( &
-           "$Id$")
-!
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('Register_alpm: nvar > mvar')
-      endif
-!
-!  Put variable name in array
-!
-      varname(ialpm) = 'alpm'
+          "$Id$")
 !
 !  Writing files for use with IDL
 !

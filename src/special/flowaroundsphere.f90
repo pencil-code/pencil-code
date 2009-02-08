@@ -111,44 +111,17 @@ module Special
 !  6-oct-03/tony: coded
 !
       use Cdata
-      use Mpicomm
       use FArrayManager, only: farray_register_auxiliary
-!
-      logical, save :: first=.true.
-!
-! A quick sanity check
-!
-      if (.not. first) call stop_it('register_special called twice')
-      first = .false.
-!
-! Set any required f-array indexes to the next available slot
-!
-      !ibox_wall_x = naux+1      ! index to access special variable
-      !naux = naux+1
 !
 ! Write auxiliary variables to var.dat
 !
 !      lwrite_aux = .true.
 !
 !
-!  identify CVS/SVN version information:
+!  Identify CVS/SVN version information.
 !
       if (lroot) call cvs_id( &
-           "$Id$")
-!
-!
-!  Perform some sanity checks (may be meaningless if certain things haven't
-!  been configured in a custom module but they do no harm)
-!
-      if (naux > maux) then
-        if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
-        call stop_it('register_special: naux > maux')
-      endif
-!
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('register_special: nvar > mvar')
-      endif
+          "$Id$")
 !
     endsubroutine register_special
 !***********************************************************************
