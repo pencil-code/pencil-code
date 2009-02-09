@@ -220,7 +220,9 @@ module Special
             call flame_spd(f)
          case('flame_spd_invert')
             call flame_spd_invert(f)
-         case('default')
+         case('flame_spd_test')
+            call flame_spd_test(f)
+        case('default')
           if (lroot) print*,'init_special: Default  setup'
         case default
 !
@@ -403,9 +405,9 @@ module Special
 
       l_sz=int(0.1*nxgrid)
 
-!      df(l1:l_sz,m,n,ilnrho)=df(l1:l_sz,m,n,ilnrho)&  
-!            -3.*(x(l1:l_sz)-x(l_sz))**3/(Lxyz(1)-x(l_sz))**3 &
-!            /dt*(f(l1:l_sz,m,n,ilnrho)-f(l1,m,n,ilnrho))
+      df(l1:l_sz,m,n,ilnrho)=df(l1:l_sz,m,n,ilnrho)&  
+            -3.*(x(l1:l_sz)-x(l_sz))**3/(Lxyz(1)-x(l_sz))**3 &
+            /dt*(f(l1:l_sz,m,n,ilnrho)-f(l1,m,n,ilnrho))
      endif
 
 
@@ -843,7 +845,97 @@ subroutine flame_spd_invert(f)
       !
    endsubroutine flame_spd_invert
 !**************************************************************************
+subroutine flame_spd_test(f)
 
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) ::  mu1
+      integer :: k,j,i
+
+      real :: x1_front,x2_front
+      real :: rho1_front=1e-3, rho2_front=10./3.*1e-3
+      real :: TT1_front, TT2_front!=2400.
+      real :: p2_front!=10.13e5
+      real :: Rgas=83144726.8870299
+      real :: mH,mC,mN,mO,mAr,mHe
+      real :: YH2,YO2,YN2
+      integer :: i_H2, i_O2, i_H2O, i_N2
+      
+
+      TT1_front=exp(init_lnTT1)
+      TT2_front=init_TT2
+
+      
+      x1_front=init_x1
+      x2_front=init_x2
+
+      p2_front=init_p2
+
+
+      mH=1.00794
+      mC=12.0107
+      mN=14.00674
+      mO=15.9994
+      mAr=39.948
+      mHe=4.0026
+      !     
+      ! Initialize some indexes
+      !
+      if (index_H2==0) &
+           call fatal_error('flame_spd','set index for H2 in start.in')
+      if (index_O2==0) &
+           call fatal_error('flame_spd','set index for O2 in start.in')
+
+      i_H2=ichemspec(index_H2)
+      i_O2=ichemspec(index_O2)
+
+      !
+      f(l2,:,:,i_O2)=(f(l1,:,:,i_O2)/32.-f(l1,:,:,i_H2)/4.)*32. 
+      f(l1,:,:,iux)=ux_init
+      !
+      do k=1,mx 
+        if (x(k)<x1_front) then
+          f(k,:,:,ilnTT)=log(TT1_front)
+        endif
+        if (x(k)>x2_front) then
+          f(k,:,:,ilnTT)=log(TT2_front)
+        endif
+        if (x(k)>x1_front .and. x(k)<x2_front) then
+          f(k,:,:,ilnTT)=log((x(k)-x1_front)/(x2_front-x1_front) &
+               *(TT2_front-TT1_front)+TT1_front)
+        endif
+        !
+        if (x(k)>x1_front) then
+          f(k,:,:,i_H2)=f(l1,:,:,i_H2) &
+               *(exp(f(k,:,:,ilnTT))-TT2_front) &
+               /(TT1_front-TT2_front)          
+        endif
+        !
+        if (x(k)>x2_front) then
+          f(k,:,:,i_O2)=f(l2,:,:,i_O2)
+        endif
+        !
+        if (x(k)>x1_front .and. x(k)<x2_front) then
+          f(k,:,:,i_O2)=(x(k)-x2_front)/(x1_front-x2_front) &
+               *(f(l1,:,:,i_O2)-f(l2,:,:,i_O2))+f(l2,:,:,i_O2)
+        endif
+        !
+        mu1(k,:,:)=f(k,:,:,i_H2)/(2.*mH)+f(k,:,:,i_O2)/(2.*mO)
+      enddo
+      !
+      do k=1,mx
+        f(k,:,:,ilnrho)=log(p2_front)-log(Rgas)-f(k,:,:,ilnTT)-log(mu1(k,:,:))
+      enddo
+      !
+ !     f(l1,:,:,iux)=ux_init*exp(f(l2,:,:,ilnrho))/exp(f(l1,:,:,ilnrho))
+      !
+      do k=1,mx
+!        f(k,:,:,iux)=(f(l1,:,:,iux)-ux_init) &
+!             *(exp(f(k,:,:,ilnTT))-TT2_front)/(TT1_front-TT2_front)&
+!             +ux_init        
+      f(k,:,:,iux)=ux_init*exp(f(l1,:,:,ilnrho))/exp(f(k,:,:,ilnrho))
+      enddo
+      !
+endsubroutine flame_spd_test
 !**************************************************************************
 subroutine flame_spd_2D(f,x1_front,x2_front)
 !
