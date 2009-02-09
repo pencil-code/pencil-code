@@ -2689,7 +2689,7 @@ subroutine flame_front(f)
 !  For more details see Doom, et al., J. Comp. Phys., 226, 2007
 
       if (l1step_test) then
-        do i=l1,l2
+        do i=1,nx
          if (p%TT(i) >= T_c) then
          vreact_p(i,reac)=beta*(beta-1.)*(p%TT(i)/T_c-1.)
         else
@@ -3521,6 +3521,7 @@ endsubroutine get_reaction_rate_test
 !
       do j=1,k-1 
         f(:,:,:,ichemspec(stor1(j)))=stor2(j)*0.01
+
       enddo
 !
       !do j=1,nchemspec
@@ -3559,6 +3560,9 @@ endsubroutine get_reaction_rate_test
 !
       close(file_id)
 !
+
+
+
     endsubroutine air_field
 !********************************************************************
 

@@ -403,9 +403,9 @@ module Special
 
       l_sz=int(0.1*nxgrid)
 
-      df(l1:l_sz,m,n,ilnrho)=df(l1:l_sz,m,n,ilnrho)&  
-            -3.*(x(l1:l_sz)-x(l_sz))**3/(Lxyz(1)-x(l_sz))**3 &
-            /dt*(f(l1:l_sz,m,n,ilnrho)-f(l1,m,n,ilnrho))
+!      df(l1:l_sz,m,n,ilnrho)=df(l1:l_sz,m,n,ilnrho)&  
+!            -3.*(x(l1:l_sz)-x(l_sz))**3/(Lxyz(1)-x(l_sz))**3 &
+!            /dt*(f(l1:l_sz,m,n,ilnrho)-f(l1,m,n,ilnrho))
      endif
 
 
