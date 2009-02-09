@@ -56,6 +56,7 @@ module Special
   use Cdata
   use Messages
   use Sub, only: keep_compiler_quiet
+!  use Density, only: rho_up
   use EquationOfState
 
 
@@ -109,14 +110,56 @@ module Special
 !  Configure pre-initialised (i.e. before parameter read) variables
 !  which should be know to be able to evaluate
 !
+!
 !  6-oct-03/tony: coded
 !
       use Cdata
+   !   use Density
+      use EquationOfState
+      use Mpicomm
+!
+      logical, save :: first=.true.
+!
+! A quick sanity check
+!
+      if (.not. first) call stop_it('register_special called twice')
+      first = .false.
+
+!!
+!! MUST SET lspecial = .true. to enable use of special hooks in the Pencil-Code
+!!   THIS IS NOW DONE IN THE HEADER ABOVE
+!
+!
+!
+!!
+!! Set any required f-array indexes to the next available slot
+!!
+!!
+!      iSPECIAL_VARIABLE_INDEX = nvar+1             ! index to access entropy
+!      nvar = nvar+1
+!
+!      iSPECIAL_AUXILIARY_VARIABLE_INDEX = naux+1             ! index to access entropy
+!      naux = naux+1
+!
 !
 !  identify CVS/SVN version information:
 !
       if (lroot) call cvs_id( &
-          "$Id$")
+           "$Id$")
+!
+!
+!  Perform some sanity checks (may be meaningless if certain things haven't
+!  been configured in a custom module but they do no harm)
+!
+      if (naux > maux) then
+        if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
+        call stop_it('register_special: naux > maux')
+      endif
+!
+      if (nvar > mvar) then
+        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
+        call stop_it('register_special: nvar > mvar')
+      endif
 !
     endsubroutine register_special
 !***********************************************************************
@@ -354,6 +397,18 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       real, dimension (mx) :: rho_prf
       type (pencil_case), intent(in) :: p
+      integer :: l_sz
+
+     if (left_buffer_zone) then
+
+      l_sz=int(0.1*nxgrid)
+
+      df(l1:l_sz,m,n,ilnrho)=df(l1:l_sz,m,n,ilnrho)&  
+            -3.*(x(l1:l_sz)-x(l_sz))**3/(Lxyz(1)-x(l_sz))**3 &
+            /dt*(f(l1:l_sz,m,n,ilnrho)-f(l1,m,n,ilnrho))
+     endif
+
+
 !
 ! Keep compiler quiet by ensuring every parameter is used
 !
@@ -413,16 +468,6 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!
-!!
-!!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
-!!
-!!
 
 ! Keep compiler quiet by ensuring every parameter is used
       if (NO_WARN) print*,df,p
@@ -521,14 +566,6 @@ module Special
            call bc_HstreamAir_x(f,-1, bc)
          case (iBC_X_BOT)
            call bc_HstreamAir_x(f,-1, bc)
-         endselect
-         bc%done=.true.
-         case ('sim')
-         select case (bc%location)
-         case (iBC_X_TOP)
-           call bc_simple_x(f,-1, bc)
-         case (iBC_X_BOT)
-           call bc_simple_x(f,-1, bc)
          endselect
          bc%done=.true.
       endselect
@@ -1521,39 +1558,6 @@ subroutine flame_spd_2D(f,x1_front,x2_front)
 !
     endsubroutine bc_HstreamAir_x
  !******************************************************************** 
-   subroutine bc_simple_x(f,sgn,bc)
-!
-! Natalia
-!
-    use Cdata
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      integer :: sgn
-      type (boundary_condition) :: bc
-      integer :: i,vr
-      real :: value1, value2
-
-      vr=bc%ivar
-
-      value1=bc%value1
-      value2=bc%value2
-
-
-      if (bc%location==iBC_X_BOT) then
-      ! bottom boundary 
-       do i=0,nghost; f(l1-i,:,:,vr)=f(l1,:,:,vr); enddo
-
-      elseif (bc%location==iBC_X_TOP) then
-      ! top boundary
-        do i=0,nghost
-        f(l2+i,:,:,vr)=f(l2,:,:,vr)
-        enddo
-      else
-        print*, "bc_BL_x: ", bc%location, " should be `top(", &
-                        iBC_X_TOP,")' or `bot(",iBC_X_BOT,")'"
-      endif
-!
-    endsubroutine bc_simple_x
  !******************************************************************** 
 
     subroutine special_before_boundary(f)
