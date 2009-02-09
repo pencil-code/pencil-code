@@ -1343,7 +1343,7 @@ module Radiation
 !   3-apr-04/tobi: coded
 !   8-feb-09/axel: added B2 for visualisation purposes
 !
-      use Cdata, only: m,n,x,y,z,Lx,Ly,Lz,dx,dy,dz,pi,directory_snap,iaa
+      use Cdata, only: m,n,x,y,z,Lx,Ly,Lz,dx,dy,dz,pi,directory_snap,iaa,iax,iaz
       use Sub, only: gij, curl_mn, dot2_mn
       use EquationOfState, only: eoscalc
       use Mpicomm, only: stop_it
@@ -1394,6 +1394,7 @@ module Radiation
         else
           do n=n1,n2
           do m=m1,m2
+            aa=f(l1:l2,m,n,iax:iaz)
             call gij(f,iaa,aij,1)
             call curl_mn(aij,bb,aa)
             call dot2_mn(bb,b2)
@@ -1428,7 +1429,7 @@ module Radiation
 !   8-feb-09/axel: added B2 for visualisation purposes
 !
       use Cdata, only: ilnrho,x,y,z,m,n,Lx,Ly,Lz,dx,dy,dz,pi,directory_snap
-      use Cdata, only: kappa_es,ikapparho, m_H, sigmaH_, iaa
+      use Cdata, only: kappa_es,ikapparho, m_H, sigmaH_, iaa, iax, iaz
       use Sub, only: gij, curl_mn, dot2_mn
       use EquationOfState, only: eoscalc
       use Mpicomm, only: stop_it
@@ -1554,6 +1555,7 @@ module Radiation
         else
           do n=n1,n2
           do m=m1,m2
+            aa=f(l1:l2,m,n,iax:iaz)
             call gij(f,iaa,aij,1)
             call curl_mn(aij,bb,aa)
             call dot2_mn(bb,b2)
