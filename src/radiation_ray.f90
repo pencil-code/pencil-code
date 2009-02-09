@@ -135,42 +135,23 @@ module Radiation
 !
 !  24-mar-03/axel+tobi: coded
 !
-      use Cdata, only: nvar,naux,aux_var,naux_com,aux_count,lroot,varname
-      use Cdata, only: iQrad,ikapparho,iFrad,iFradx,iFrady,iFradz
-      use Cdata, only: lradiation,lradiation_ray
-      use Mpicomm, only: stop_it
+      use Cdata
+      use FArrayManager
 !
       lradiation=.true.
       lradiation_ray=.true.
 !
-!  Set indices for auxiliary variables
+!  Set indices for auxiliary variables.
 !
-      iQrad = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 1
-      ikapparho = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 1
-      iFrad = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 3
-      iFradx = iFrad
-      iFrady = iFrad+1
-      iFradz = iFrad+2
+      call farray_register_auxiliary('Qrad',iQrad)
+      call farray_register_auxiliary('kapparho',ikapparho)
+      call farray_register_auxiliary('Frad',iFrad,vector=3)
+      iFradx = iFrad; iFrady = iFrad+1; iFradz = iFrad+2
 !
-      if ((ip<=8) .and. lroot) then
-        print*, 'register_radiation: radiation naux = ', naux
-        print*, 'iQrad = ', iQrad
-        print*, 'ikapparho = ', ikapparho
-        print*, 'iFrad = ', iFrad
-      endif
-!
-!  Put variable name in array
-!
-      varname(iQrad) = 'Qrad'
-      varname(ikapparho) = 'kapparho'
-      varname(iFradx) = 'Fradx'
-      varname(iFrady) = 'Frady'
-      varname(iFradz) = 'Fradz'
-!
-!  Identify version number (generated automatically by CVS)
+!  Identify version number (generated automatically by CVS).
 !
       if (lroot) call cvs_id( &
-           "$Id$")
+          "$Id$")
 !
 !  Writing files for use with IDL
 !
