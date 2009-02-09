@@ -42,7 +42,7 @@ module Chemistry
   real :: visc_const=impossible
   real :: diffus_const=impossible
   real :: init_x1=-0.2,init_x2=0.2
-  real :: init_TT1=400, init_TT2=2400., init_ux
+  real :: init_TT1=400, init_TT2=2400., init_ux=0.
 
 !
   logical :: lone_spec=.false.
@@ -3546,6 +3546,9 @@ endsubroutine get_reaction_rate_test
 !
       f(:,:,:,ilnrho)=log((PP*10./(k_B_cgs/m_u_cgs)*&
           air_mass/TT)/unit_mass*unit_length**3)
+
+      f(:,:,:,iux)=init_ux
+
 !
       if (lroot) print*, 'Air temperature, K', TT
       if (lroot) print*, 'Air pressure, dyn', PP*10.
