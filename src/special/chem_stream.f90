@@ -437,6 +437,17 @@ module Special
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
+      integer :: l_sz
+
+
+     if (left_buffer_zone) then
+
+      l_sz=int(0.1*nxgrid)
+
+      df(l1:l_sz,m,n,ilnTT)=df(l1:l_sz,m,n,ilnTT)&  
+            -3.*(x(l1:l_sz)-x(l_sz))**3/(Lxyz(1)-x(l_sz))**3 &
+            /dt*(f(l1:l_sz,m,n,ilnTT)-f(l1,m,n,ilnTT))
+     endif
 
 
 ! Keep compiler quiet by ensuring every parameter is used

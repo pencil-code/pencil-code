@@ -591,7 +591,7 @@ LD_FFTW2=
 ##
 ## Natalia's laptop (Natalia, 1.8 GHz)
 ##
-#FC=ifort #(naiad)
+#FC=ifort #(naiad|sky1)
 #FC=ifort #(hikari)
 #FC=ifort #(pchelka)
 ##FC=ifort -fexceptions -fp-stack-check -fstack-security-check -ftrapuv  #(pchelka)
