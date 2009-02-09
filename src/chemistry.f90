@@ -46,6 +46,7 @@ module Chemistry
 
 !
   logical :: lone_spec=.false.
+  logical :: l1step_test=.false.
 !
 !  parameters related to chemical reactions
 !
@@ -103,7 +104,8 @@ module Chemistry
   namelist /chemistry_init_pars/ &
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
       amplchemk,amplchemk2, chem_diff,nu_spec, BinDif_simple, visc_simple, &
-      lambda_const, visc_const,diffus_const,init_x1,init_x2,init_TT1,init_TT2,init_ux
+      lambda_const, visc_const,diffus_const,init_x1,init_x2, &
+      init_TT1,init_TT2,init_ux,l1step_test
 
 
 ! run parameters
@@ -2469,6 +2471,9 @@ subroutine flame_front(f)
       real :: B_n_0,alpha_n_0,E_an_0
       real, dimension (nx) ::  kf_0,Kc_0,Pr,sum_sp,prod1_0,prod2_0
       integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
+
+      real :: T_c=600., beta=10.
+
 !
       if (lwrite)  open(file_id,file=input_file)
 !
@@ -2676,9 +2681,60 @@ subroutine flame_front(f)
           vreact_m(:,reac)=prod2*kr*sum_sp
         endif
 !
+
+
+ ! This part calculates forward and reverse reaction rates
+!  for the test case R->P 
+!
+!  For more details see Doom, et al., J. Comp. Phys., 226, 2007
+
+      if (l1step_test) then
+        do i=l1,l2
+         if (p%TT(i) >= T_c) then
+         vreact_p(i,reac)=beta*(beta-1.)*(p%TT(i)/T_c-1.)
+        else
+         vreact_p(i,reac)=0.
+        endif
+       enddo 
+         vreact_m(:,reac)=0.
+      endif
+!******************************************************************
+
       enddo
 !
     endsubroutine get_reaction_rate
+!***************************************************************
+
+subroutine get_reaction_rate_test(f,vreact_p,vreact_m,p)
+!
+!  This subroutine calculates forward and reverse reaction rates
+!  for the test case R->P , 
+!  
+!  For more details see Doom, et al., J. Comp. Phys., 226, 2007
+!
+!  9-feb-09/natalia: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f 
+      real, dimension (nx,nreactions), intent(out) :: vreact_p, vreact_m
+!
+      type (pencil_case) :: p
+      real :: T_c=600., beta=10.
+      integer :: reac,i
+
+      do reac=1,nchemspec
+      ! do i=l1,l2
+      !  if (p%TT(i) >= T_c) then
+      !   vreact_p(i,reac)=0.!beta*(beta-1.)*(p%TT(i)/T_c-1.)
+      !  else
+      !   vreact_p(i,reac)=0.
+      !  endif
+      ! enddo
+         vreact_p(:,reac)=0.
+         vreact_m(:,reac)=0.
+      enddo
+
+endsubroutine get_reaction_rate_test
+
 !***************************************************************
     subroutine calc_reaction_term(f,p)
 !
@@ -2718,7 +2774,12 @@ subroutine flame_front(f)
 !        
 !  Chemkin data case
 !
-        call get_reaction_rate(f,vreactions_p,vreactions_m,p)
+
+      !  if (l1step_test) then
+      !   call get_reaction_rate_test(f,vreactions_p,vreactions_m,p)
+      !  else
+         call get_reaction_rate(f,vreactions_p,vreactions_m,p)
+      !  endif
       endif
 !
 !  Calculate rate of progress variable (labeled q in the chemkin manual)
