@@ -237,7 +237,7 @@ module Particles_viscosity
 !  nup*np=constant.
 !
           if (lviscp_rhop_nup_const) then
-            dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + nup*fviscp/f(ix0,iy0,iz0,inp)
+            dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)+nup*fviscp/f(ix0,iy0,iz0,irhop)
           endif
 !
         enddo
