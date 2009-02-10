@@ -516,10 +516,10 @@ module Slices
             if (associated(slices%xy2)) &
               call wslice(path//trim(slices%name)//'.xy2',slices%xy2, &
                                                      z(slices%iz2),nx,ny)
-            if (associated(slices%xy3)) &
+            if (associated(slices%xy3).and.lwrite_slice_xy3) &
               call wslice(path//trim(slices%name)//'.xy2',slices%xy3, &
                                                      z(slices%iz3),nx,ny)
-            if (associated(slices%xy4)) &
+            if (associated(slices%xy4).and.lwrite_slice_xy4) &
               call wslice(path//trim(slices%name)//'.xy2',slices%xy4, &
                                                      z(slices%iz4),nx,ny)
             inamev=inamev+1
@@ -537,10 +537,10 @@ module Slices
             if (associated(slices%xy2)) &
               call wslice(path//trim(slices%name)//trim(sindex)//'.xy2', &
                                        slices%xy2, z(slices%iz2),nx,ny)
-            if (associated(slices%xy3)) &
+            if (associated(slices%xy3).and.lwrite_slice_xy3) &
               call wslice(path//trim(slices%name)//trim(sindex)//'.xy3', &
                                        slices%xy3, z(slices%iz3),nx,ny)
-            if (associated(slices%xy4)) &
+            if (associated(slices%xy4).and.lwrite_slice_xy4) &
               call wslice(path//trim(slices%name)//trim(sindex)//'.xy4', &
                                        slices%xy4, z(slices%iz4),nx,ny)
           endif
