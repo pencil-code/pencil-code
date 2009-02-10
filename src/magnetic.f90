@@ -112,7 +112,7 @@ module Magnetic
   logical :: lresi_smagorinsky_cross=.false.
   logical, target, dimension (3) :: lfrozen_bb_bot=(/.false.,.false.,.false./)
   logical, target, dimension (3) :: lfrozen_bb_top=(/.false.,.false.,.false./)
-  logical :: reinitalize_aa=.false., lohmic_heat=.true., lneutralion_heat=.true.
+  logical :: reinitialize_aa=.false., lohmic_heat=.true., lneutralion_heat=.true.
   logical :: lB_ext_pot=.false.
   logical :: lforce_free_test=.false.
   logical :: lmeanfield_theory=.false.,lOmega_effect=.false.
@@ -179,7 +179,7 @@ module Magnetic
        alphaSSm, &
        eta_int,eta_ext,eta_shock,wresistivity, &
        rhomin_jxb,va2max_jxb,va2power_jxb,llorentzforce,linduction, &
-       reinitalize_aa,rescale_aa,lB_ext_pot, &
+       reinitialize_aa,rescale_aa,lB_ext_pot, &
        displacement_gun, &
        pertaa,pertamplaa,D_smag,brms_target,rescaling_fraction, &
        lOmega_effect,Omega_profile,Omega_ampl,lfreeze_aint,lfreeze_aext, &
@@ -476,7 +476,7 @@ module Magnetic
 !  Perform any post-parameter-read initialization
 !
 !  24-nov-02/tony: dummy routine - nothing to do at present
-!  20-may-03/axel: reinitalize_aa added
+!  20-may-03/axel: reinitialize_aa added
 !
       use Cdata
       use Messages, only: fatal_error
@@ -526,9 +526,9 @@ module Magnetic
       B_ext11=sqrt(B_ext21)
       B1_ext=B_ext*B_ext11
 !
-!  rescale magnetic field by a factor reinitalize_aa
+!  rescale magnetic field by a factor reinitialize_aa
 !
-      if (reinitalize_aa) then
+      if (reinitialize_aa) then
         f(:,:,:,iax:iaz)=rescale_aa*f(:,:,:,iax:iaz)
       endif
 !
