@@ -93,8 +93,9 @@ module Magnetic
   real :: phase_beltrami=0., ampl_beltrami=0.
   real :: bmz=0, bmz_beltrami_phase=0.
   real :: etadust0=0.0
+  real :: taareset=0.,daareset=0.
   integer :: nbvec,nbvecmax=nx*ny*nz/4,va2power_jxb=5
-  integer :: N_modes_aa=1
+  integer :: N_modes_aa=1, naareset
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
   logical :: llorentzforce=.true.,linduction=.true.
   logical :: lresi_eta_const=.false.
@@ -121,6 +122,7 @@ module Magnetic
   logical :: lbb_as_aux=.false.,ljj_as_aux=.false.
   logical :: lbbt_as_aux=.false.,ljjt_as_aux=.false.
   logical :: lbext_curvilinear=.true., lcheck_positive_va2=.false.
+  logical :: lreset_aa=.false.
   character (len=labellen) :: pertaa='zero'
 
   namelist /magnetic_init_pars/ &
@@ -188,7 +190,7 @@ module Magnetic
        lelectron_inertia,inertial_length,lbext_curvilinear, &
        lbb_as_aux,ljj_as_aux,lremove_mean_emf,lkinematic, &
        lbbt_as_aux,ljjt_as_aux, &
-       etadust0,lneutralion_heat
+       etadust0,lneutralion_heat, lreset_aa, daareset
 
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_b2tm=0       ! DIAG_DOC: $\left<\bv(t)\cdot\int_0^t\bv(t')
@@ -1703,7 +1705,7 @@ module Magnetic
       real :: tmp,eta_out1,OmegaSS=1.
       integer :: i,j,k,ju
 !
-      intent(in)     :: f,p
+      intent(inout)  :: f,p
       intent(inout)  :: df
 !
 !  identify module and boundary conditions
@@ -2070,6 +2072,10 @@ module Magnetic
 !  Apply border profiles
 !
       if (lborder_profiles) call set_border_magnetic(f,df,p)
+!
+!  Reinitialize aa periodically if requested
+!
+      if (lreset_aa) call rescaling_magnetic(f)
 !
 !  Calculate diagnostic quantities
 !
@@ -2831,11 +2837,16 @@ module Magnetic
 !AB: should be improved.
 !
 !  22-feb-05/axel: coded
+!  10-feb-09/petri: adapted from testfield
 !
       use Cdata
+      use Sub, only: update_snaptime, read_snaptime
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: scl
+      character (len=130) :: file
+      character (len=5) :: ch
+!      real :: scl
+      integer,save :: ifirst=0
       integer :: j
 !
       intent(inout) :: f
@@ -2844,14 +2855,33 @@ module Magnetic
 !  Note: we rely here on the brms that is update every it1 timesteps.
 !  This may not always be sufficient.
 !
-      if (brms/=0) then
-        scl=1.+rescaling_fraction*(brms_target/brms-1.)
-        if (headtt) print*,'rescaling_magnetic: scl=',scl
-        do j=iax,iaz
-          do n=n1,n2
-            f(l1:l2,m1:m2,n,j)=scl*f(l1:l2,m1:m2,n,j)
-          enddo
-        enddo
+!      if (brms/=0) then
+!        scl=1.+rescaling_fraction*(brms_target/brms-1.)
+!        if (headtt) print*,'rescaling_magnetic: scl=',scl
+!        do j=iax,iaz
+!          do n=n1,n2
+!            f(l1:l2,m1:m2,n,j)=scl*f(l1:l2,m1:m2,n,j)
+!          enddo
+!        enddo
+!      endif
+!
+!  Reinitialize aa periodically if requested
+!
+      if (lreset_aa) then
+        file=trim(datadir)//'/treset_aa.dat'
+        if (ifirst==0) then
+          call read_snaptime(trim(file),taareset,naareset,daareset,t)
+          if (taareset==0 .or. taareset < t-daareset) then
+            taareset=t+daareset
+          endif
+          ifirst=1
+        endif
+!
+        if (t >= taareset) then
+          f(:,:,:,iax:iaz)=rescale_aa*f(:,:,:,iax:iaz)
+          call update_snaptime(file,taareset,naareset,daareset,t, &
+            lmagnetic,ch,ENUM=.false.)
+        endif
       endif
 !
     endsubroutine rescaling_magnetic
