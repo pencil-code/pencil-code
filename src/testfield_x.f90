@@ -41,7 +41,7 @@ module Testfield
 !
 !  cosine and sine function for setting test fields and analysis
 !
-  real, dimension(nx) :: cx,sx,xx
+  real, dimension(nx) :: cx,sx,xx,x2
 !
   character (len=labellen), dimension(ninit) :: initaatest='nothing'
   real, dimension (ninit) :: amplaatest=0.
@@ -111,6 +111,17 @@ module Testfield
   integer :: idiag_eta21x=0      ! DIAG_DOC: $\eta_{21}kx$
   integer :: idiag_eta12x=0      ! DIAG_DOC: $\eta_{12}kx$
   integer :: idiag_eta22x=0      ! DIAG_DOC: $\eta_{22}kx$
+!
+!  x^2-weighted averages
+!
+  integer :: idiag_alp11x2=0      ! DIAG_DOC: $\alpha_{11}x^2$
+  integer :: idiag_alp21x2=0      ! DIAG_DOC: $\alpha_{21}x^2$
+  integer :: idiag_alp12x2=0      ! DIAG_DOC: $\alpha_{12}x^2$
+  integer :: idiag_alp22x2=0      ! DIAG_DOC: $\alpha_{22}x^2$
+  integer :: idiag_eta11x2=0      ! DIAG_DOC: $\eta_{11}kx^2$
+  integer :: idiag_eta21x2=0      ! DIAG_DOC: $\eta_{21}kx^2$
+  integer :: idiag_eta12x2=0      ! DIAG_DOC: $\eta_{12}kx^2$
+  integer :: idiag_eta22x2=0      ! DIAG_DOC: $\eta_{22}kx^2$
 !
 !  other quantities
 !
@@ -243,6 +254,7 @@ module Testfield
       endif
       cx=cos(ktestfield*xtestfield)
       sx=sin(ktestfield*xtestfield)
+      x2=xtestfield**2
       xx=xtestfield
 !
 !  Also calculate its inverse, but only if different from zero
@@ -664,6 +676,13 @@ module Testfield
         if (idiag_eta11x/=0) call sum_mn_name(xx*(-sx*Eipq(:,2,i3)+cx*Eipq(:,2,i4))*ktestfield1,idiag_eta11x)
         if (idiag_eta21x/=0) call sum_mn_name(xx*(-sx*Eipq(:,3,i3)+cx*Eipq(:,3,i4))*ktestfield1,idiag_eta21x)
 !
+!  x^2-weighted averages alpha and eta
+!
+        if (idiag_alp11x2/=0) call sum_mn_name(x2*(+cx*Eipq(:,2,1)+sx*Eipq(:,2,2)),idiag_alp11x2)
+        if (idiag_alp21x2/=0) call sum_mn_name(x2*(+cx*Eipq(:,3,1)+sx*Eipq(:,3,2)),idiag_alp21x2)
+        if (idiag_eta11x2/=0) call sum_mn_name(x2*(-sx*Eipq(:,2,i3)+cx*Eipq(:,2,i4))*ktestfield1,idiag_eta11x2)
+        if (idiag_eta21x2/=0) call sum_mn_name(x2*(-sx*Eipq(:,3,i3)+cx*Eipq(:,3,i4))*ktestfield1,idiag_eta21x2)
+!
 !  Projection of EMF from testfield against testfield itself
 !
         if (idiag_EBpq/=0) call sum_mn_name(cx*Eipq(:,2,1) &
@@ -684,14 +703,18 @@ module Testfield
           if (idiag_alp22/=0) call sum_mn_name(+cx*Eipq(:,3,i3)+sx*Eipq(:,3,i4),idiag_alp22)
           if (idiag_alp12cs/=0) call sum_mn_name(cx*sx*(+cx*Eipq(:,2,i3)+sx*Eipq(:,2,i4)),idiag_alp12cs)
           if (idiag_alp22ss/=0) call sum_mn_name(sx**2*(+cx*Eipq(:,3,i3)+sx*Eipq(:,3,i4)),idiag_alp22ss)
-          if (idiag_alp12x/=0) call sum_mn_name(xx*(+cx*Eipq(:,2,i3)+sx*Eipq(:,2,i4)),idiag_alp12x)
-          if (idiag_alp22x/=0) call sum_mn_name(xx*(+cx*Eipq(:,3,i3)+sx*Eipq(:,3,i4)),idiag_alp22x)
           if (idiag_eta12/=0) call sum_mn_name(-(-sx*Eipq(:,2,i1)+cx*Eipq(:,2,i2))*ktestfield1,idiag_eta12)
           if (idiag_eta22/=0) call sum_mn_name(-(-sx*Eipq(:,3,i1)+cx*Eipq(:,3,i2))*ktestfield1,idiag_eta22)
           if (idiag_eta12cs/=0) call sum_mn_name(-cx*sx*(-sx*Eipq(:,2,i1)+cx*Eipq(:,2,i2))*ktestfield1,idiag_eta12cs)
           if (idiag_eta22ss/=0) call sum_mn_name(-sx**2*(-sx*Eipq(:,3,i1)+cx*Eipq(:,3,i2))*ktestfield1,idiag_eta22ss)
+          if (idiag_alp12x/=0) call sum_mn_name(xx*(+cx*Eipq(:,2,i3)+sx*Eipq(:,2,i4)),idiag_alp12x)
+          if (idiag_alp22x/=0) call sum_mn_name(xx*(+cx*Eipq(:,3,i3)+sx*Eipq(:,3,i4)),idiag_alp22x)
           if (idiag_eta12x/=0) call sum_mn_name(xx*(-sx*Eipq(:,2,i1)+cx*Eipq(:,2,i2))*ktestfield1,idiag_eta12x)
           if (idiag_eta22x/=0) call sum_mn_name(xx*(-sx*Eipq(:,3,i1)+cx*Eipq(:,3,i2))*ktestfield1,idiag_eta22x)
+          if (idiag_alp12x2/=0) call sum_mn_name(x2*(+cx*Eipq(:,2,i3)+sx*Eipq(:,2,i4)),idiag_alp12x2)
+          if (idiag_alp22x2/=0) call sum_mn_name(x2*(+cx*Eipq(:,3,i3)+sx*Eipq(:,3,i4)),idiag_alp22x2)
+          if (idiag_eta12x2/=0) call sum_mn_name(x2*(-sx*Eipq(:,2,i1)+cx*Eipq(:,2,i2))*ktestfield1,idiag_eta12x2)
+          if (idiag_eta22x2/=0) call sum_mn_name(x2*(-sx*Eipq(:,3,i1)+cx*Eipq(:,3,i2))*ktestfield1,idiag_eta22x2)
         endif
 !
 !  rms values of small scales fields bpq in response to the test fields Bpq
@@ -1108,6 +1131,8 @@ module Testfield
         idiag_eta11cc=0; idiag_eta21sc=0; idiag_eta12cs=0; idiag_eta22ss=0
         idiag_alp11x=0; idiag_alp21x=0; idiag_alp12x=0; idiag_alp22x=0
         idiag_eta11x=0; idiag_eta21x=0; idiag_eta12x=0; idiag_eta22x=0
+        idiag_alp11x2=0; idiag_alp21x2=0; idiag_alp12x2=0; idiag_alp22x2=0
+        idiag_eta11x2=0; idiag_eta21x2=0; idiag_eta12x2=0; idiag_eta22x2=0
         idiag_b0rms=0; idiag_E0rms=0
         idiag_b11rms=0; idiag_b21rms=0; idiag_b12rms=0; idiag_b22rms=0
         idiag_E11rms=0; idiag_E21rms=0; idiag_E12rms=0; idiag_E22rms=0
@@ -1142,6 +1167,14 @@ module Testfield
         call parse_name(iname,cname(iname),cform(iname),'eta21x',idiag_eta21x)
         call parse_name(iname,cname(iname),cform(iname),'eta12x',idiag_eta12x)
         call parse_name(iname,cname(iname),cform(iname),'eta22x',idiag_eta22x)
+        call parse_name(iname,cname(iname),cform(iname),'alp11x2',idiag_alp11x2)
+        call parse_name(iname,cname(iname),cform(iname),'alp21x2',idiag_alp21x2)
+        call parse_name(iname,cname(iname),cform(iname),'alp12x2',idiag_alp12x2)
+        call parse_name(iname,cname(iname),cform(iname),'alp22x2',idiag_alp22x2)
+        call parse_name(iname,cname(iname),cform(iname),'eta11x2',idiag_eta11x2)
+        call parse_name(iname,cname(iname),cform(iname),'eta21x2',idiag_eta21x2)
+        call parse_name(iname,cname(iname),cform(iname),'eta12x2',idiag_eta12x2)
+        call parse_name(iname,cname(iname),cform(iname),'eta22x2',idiag_eta22x2)
         call parse_name(iname,cname(iname),cform(iname),'b11rms',idiag_b11rms)
         call parse_name(iname,cname(iname),cform(iname),'b21rms',idiag_b21rms)
         call parse_name(iname,cname(iname),cform(iname),'b12rms',idiag_b12rms)
@@ -1207,6 +1240,14 @@ module Testfield
         write(3,*) 'idiag_eta21x=',idiag_eta21x
         write(3,*) 'idiag_eta12x=',idiag_eta12x
         write(3,*) 'idiag_eta22x=',idiag_eta22x
+        write(3,*) 'idiag_alp11x2=',idiag_alp11x2
+        write(3,*) 'idiag_alp21x2=',idiag_alp21x2
+        write(3,*) 'idiag_alp12x2=',idiag_alp12x2
+        write(3,*) 'idiag_alp22x2=',idiag_alp22x2
+        write(3,*) 'idiag_eta11x2=',idiag_eta11x2
+        write(3,*) 'idiag_eta21x2=',idiag_eta21x2
+        write(3,*) 'idiag_eta12x2=',idiag_eta12x2
+        write(3,*) 'idiag_eta22x2=',idiag_eta22x2
         write(3,*) 'idiag_b11rms=',idiag_b11rms
         write(3,*) 'idiag_b21rms=',idiag_b21rms
         write(3,*) 'idiag_b12rms=',idiag_b12rms

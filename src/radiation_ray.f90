@@ -87,10 +87,11 @@ module Radiation
 !  Default values for one pair of vertical rays
 !
   integer :: radx=0,rady=0,radz=1,rad2max=1
+  integer, dimension (3) :: single_ray
 !
   logical :: lcooling=.true.,lrad_debug=.false.
   logical :: lintrinsic=.true.,lcommunicate=.true.,lrevision=.true.
-  logical :: lradpressure=.false.,lradflux=.false.
+  logical :: lradpressure=.false.,lradflux=.false.,lsingle_ray=.false.
 
   logical ::  lrad_cool_diffus=.false., lrad_pres_diffus=.false.
 
@@ -109,7 +110,7 @@ module Radiation
   namelist /radiation_init_pars/ &
        radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst,kapparho_cst, &
        TT_top,TT_bot,tau_top,tau_bot,source_function_type,opacity_type, &
-       Srad_const,amplSrad,radius_Srad, &
+       lsingle_ray,single_ray,Srad_const,amplSrad,radius_Srad, &
        kapparho_const,amplkapparho,radius_kapparho, &
        lintrinsic,lcommunicate,lrevision,lradflux, &
        Frad_boundary_ref,lrad_cool_diffus, lrad_pres_diffus, &
@@ -118,7 +119,7 @@ module Radiation
   namelist /radiation_run_pars/ &
        radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst, &
        TT_top,TT_bot,tau_top,tau_bot,source_function_type,opacity_type, &
-       Srad_const,amplSrad,radius_Srad, &
+       lsingle_ray,single_ray,Srad_const,amplSrad,radius_Srad, &
        kx_Srad,ky_Srad,kz_Srad,kx_kapparho,ky_kapparho,kz_kapparho, &
        kapparho_const,amplkapparho,radius_kapparho, &
        lintrinsic,lcommunicate,lrevision,lcooling,lradflux,lradpressure, &
@@ -184,7 +185,7 @@ module Radiation
       use Mpicomm, only: stop_it
 
       real :: radlength,arad_normal
-      logical :: periodic_xy_plane,bad_ray
+      logical :: periodic_xy_plane,bad_ray,lsingle_ray_good
 !
 !  Check that the number of rays does not exceed maximum
 !
@@ -221,8 +222,17 @@ module Radiation
 !  many, many times before `biting itself in its tail'.
 !
         bad_ray=(rad2==2.and.nrad==0.and.periodic_xy_plane)
+!
+        if (lsingle_ray) then
+          lsingle_ray_good=(lrad==single_ray(1) &
+                       .and.mrad==single_ray(2) &
+                       .and.nrad==single_ray(3) )
+        else
+          lsingle_ray_good=.false.
+        endif
 
-        if ((rad2>0.and.rad2<=rad2max).and.(.not.bad_ray)) then
+        if (((rad2>0.and.rad2<=rad2max).and.(.not.bad_ray)) &
+            .or.lsingle_ray_good) then
 
           dir(idir,1)=lrad
           dir(idir,2)=mrad
@@ -1371,7 +1381,7 @@ module Radiation
 !
       case ('B2')
         if (iaa==0) then
-          print*,'no magnetic field available'
+          call stop_it("no magnetic field available")
         else
           do n=n1,n2
           do m=m1,m2
@@ -1532,7 +1542,7 @@ module Radiation
 !
       case ('B2') !! magnetic field
         if (iaa==0) then
-          print*,'no magnetic field available'
+          call stop_it("no magnetic field available")
         else
           do n=n1,n2
           do m=m1,m2

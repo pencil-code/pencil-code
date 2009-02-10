@@ -2869,6 +2869,7 @@ module Forcing
 !  Calculate forcing pencils.
 !
 !  24-mar-08/axel: adapted from density.f90
+!   6-feb-09/axel: added epsilon factor in ABC flow (eps_fcont=1. -> nocos)
 !
       use Sub, only: quintic_step, quintic_der_step
       use Mpicomm, only: stop_it
@@ -2876,7 +2877,7 @@ module Forcing
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      real :: fact,fpara, dfpara,sqrt2,sqrt21k1
+      real :: fact,fact2,fpara,dfpara,sqrt2,sqrt21k1
 !
       intent(inout) :: f,p
 !
@@ -2885,9 +2886,10 @@ module Forcing
       if (lpencil(i_fcont)) then
         if (iforcing_cont=='ABC') then
           fact=ampl_ff/sqrt(3.)
-          p%fcont(:,1)=fact*(sinz(n    )+cosy(m)    )
-          p%fcont(:,2)=fact*(sinx(l1:l2)+cosz(n)    )
-          p%fcont(:,3)=fact*(siny(m    )+cosx(l1:l2))
+          fact2=1.-eps_fcont
+          p%fcont(:,1)=fact*(sinz(n    )+fact2*cosy(m)    )
+          p%fcont(:,2)=fact*(sinx(l1:l2)+fact2*cosz(n)    )
+          p%fcont(:,3)=fact*(siny(m    )+fact2*cosx(l1:l2))
         elseif (iforcing_cont=='RobertsFlow') then
           fact=ampl_ff
           p%fcont(:,1)=-fact*cosx(l1:l2)*siny(m)
