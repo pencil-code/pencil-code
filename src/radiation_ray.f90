@@ -391,6 +391,7 @@ module Radiation
 !  16-jun-03/axel+tobi: coded
 !
       use Cdata, only: ldebug,headt,iQrad,iFrad,iFradx,iFradz
+      use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mfarray) :: f
       integer :: j,k
@@ -421,20 +422,18 @@ module Radiation
 !  loop over rays
 !
       do idir=1,ndir
-
+!
         call raydirection
-
+!
         if (lintrinsic) call Qintrinsic(f)
-
+!
         if (lcommunicate) then
-          if (lperiodic_ray) then
-            call Qperiodic
-          else
-            call Qpointers
-            call Qcommunicate
-          endif
+          if (lperiodic_ray) call Qperiodic
+        else
+          call Qpointers
+          call Qcommunicate
         endif
-
+!
         if (lrevision) call Qrevision
 !
 !  calculate heating rate, so at the end of the loop
@@ -451,13 +450,13 @@ module Radiation
             f(:,:,:,k)=f(:,:,:,k)+weightn(idir)*unit_vec(idir,j)*(Qrad+Srad)
           enddo
         endif
-
+!
       enddo
 !
 !  end of diffusion approximation
 !
       endif
-
+!
     endsubroutine radtransfer
 !***********************************************************************
     subroutine raydirection
@@ -537,7 +536,7 @@ module Radiation
 !  16-jun-03/axel+tobi: coded
 !   3-aug-03/axel: added max(dtau,dtaumin) construct
 !
-      use Cdata, only: ldebug,headt,dx,dy,dz,directory_snap,ikapparho
+      use Cdata, only: ldebug,headt,dx,dy,dz,directory_snap,ikapparho,epsi
       use IO, only: output
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
@@ -568,10 +567,10 @@ module Radiation
                     f(l,m,n,ikapparho))*dlength
         dtau_p=sqrt(f(l,m,n,ikapparho)* &
                     f(l+lrad,m+mrad,n+nrad,ikapparho))*dlength
-        dSdtau_m=(Srad(l,m,n)-Srad(l-lrad,m-mrad,n-nrad))/dtau_m
-        dSdtau_p=(Srad(l+lrad,m+mrad,n+nrad)-Srad(l,m,n))/dtau_p
-        Srad1st=(dSdtau_p*dtau_m+dSdtau_m*dtau_p)/(dtau_m+dtau_p)
-        Srad2nd=2*(dSdtau_p-dSdtau_m)/(dtau_m+dtau_p)
+        dSdtau_m=(Srad(l,m,n)-Srad(l-lrad,m-mrad,n-nrad))/max(dtau_m,epsi)
+        dSdtau_p=(Srad(l+lrad,m+mrad,n+nrad)-Srad(l,m,n))/max(dtau_p,epsi)
+        Srad1st=(dSdtau_p*dtau_m+dSdtau_m*dtau_p)/max((dtau_m+dtau_p),epsi)
+        Srad2nd=2*(dSdtau_p-dSdtau_m)/max((dtau_m+dtau_p),epsi)
         if (dtau_m>dtau_thresh_max) then
           emdtau=0.0
           emdtau1=1.0
@@ -588,7 +587,6 @@ module Radiation
         tau(l,m,n)=tau(l-lrad,m-mrad,n-nrad)+dtau_m
         Qrad(l,m,n)=Qrad(l-lrad,m-mrad,n-nrad)*emdtau &
                    -Srad1st*emdtau1-Srad2nd*emdtau2
-
       enddo
       enddo
       enddo
@@ -1827,6 +1825,25 @@ module Radiation
           slices%xz=f(l1:l2,iy_loc,n1:n2,iQrad)
           slices%xy=f(l1:l2,m1:m2,iz_loc,iQrad)
           slices%xy2=f(l1:l2,m1:m2,iz2_loc,iQrad)
+          slices%ready = .true.
+!
+!  Mean intensity (auxiliary variable)
+!
+        case ('Jrad')
+          !J = S + Q/(4pi) 
+          slices%yz=.25*pi_1*f(ix_loc,m1:m2,n1:n2,iQrad)+Srad(ix_loc,m1:m2,n1:n2)
+          slices%xz=.25*pi_1*f(l1:l2,iy_loc,n1:n2,iQrad)+Srad(l1:l2,iy_loc,n1:n2)
+          slices%xy=.25*pi_1*f(l1:l2,m1:m2,iz_loc,iQrad)+Srad(l1:l2,m1:m2,iz_loc)
+          slices%xy2=.25*pi_1*f(l1:l2,m1:m2,iz2_loc,iQrad)+Srad(l1:l2,m1:m2,iz2_loc)
+          slices%ready = .true.
+!
+! Source function
+!
+        case ('Srad')
+          slices%yz=Srad(ix_loc,m1:m2,n1:n2)
+          slices%xz=Srad(l1:l2,iy_loc,n1:n2)
+          slices%xy=Srad(l1:l2,m1:m2,iz_loc)
+          slices%xy2=Srad(l1:l2,m1:m2,iz2_loc)
           slices%ready = .true.
 !
 !  Opacity (auxiliary variable)
