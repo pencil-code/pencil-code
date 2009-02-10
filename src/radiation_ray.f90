@@ -93,8 +93,8 @@ module Radiation
   logical :: lintrinsic=.true.,lcommunicate=.true.,lrevision=.true.
   logical :: lradpressure=.false.,lradflux=.false.,lsingle_ray=.false.
 
-  logical ::  lrad_cool_diffus=.false., lrad_pres_diffus=.false.
-
+  logical :: lrad_cool_diffus=.false., lrad_pres_diffus=.false.
+  logical :: lcheck_tau_division=.false. 
 
   character :: lrad_str,mrad_str,nrad_str
   character(len=3) :: raydir_str
@@ -114,7 +114,7 @@ module Radiation
        kapparho_const,amplkapparho,radius_kapparho, &
        lintrinsic,lcommunicate,lrevision,lradflux, &
        Frad_boundary_ref,lrad_cool_diffus, lrad_pres_diffus, &
-       scalefactor_Srad,angle_weight
+       scalefactor_Srad,angle_weight,lcheck_tau_division
 
   namelist /radiation_run_pars/ &
        radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst, &
@@ -125,7 +125,7 @@ module Radiation
        lintrinsic,lcommunicate,lrevision,lcooling,lradflux,lradpressure, &
        Frad_boundary_ref,lrad_cool_diffus,lrad_pres_diffus, &
        cdtrad_thin,cdtrad_thick, &
-       scalefactor_Srad,angle_weight
+       scalefactor_Srad,angle_weight,lcheck_tau_division
 
   contains
 
@@ -544,6 +544,7 @@ module Radiation
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real :: Srad1st,Srad2nd,dlength,emdtau1,emdtau2,emdtau
       real :: dtau_m,dtau_p,dSdtau_m,dSdtau_p
+      real :: dtau_mm,dtau_pp
       character(len=3) :: raydir
 !
 !  identifier
@@ -569,10 +570,20 @@ module Radiation
                     f(l,m,n,ikapparho))*dlength
         dtau_p=sqrt(f(l,m,n,ikapparho)* &
                     f(l+lrad,m+mrad,n+nrad,ikapparho))*dlength
-        dSdtau_m=(Srad(l,m,n)-Srad(l-lrad,m-mrad,n-nrad))/max(dtau_m,epsi)
-        dSdtau_p=(Srad(l+lrad,m+mrad,n+nrad)-Srad(l,m,n))/max(dtau_p,epsi)
-        Srad1st=(dSdtau_p*dtau_m+dSdtau_m*dtau_p)/max((dtau_m+dtau_p),epsi)
-        Srad2nd=2*(dSdtau_p-dSdtau_m)/max((dtau_m+dtau_p),epsi)
+!
+!  avoid divisions by zero when the optical depth is such
+!
+        dtau_mm=dtau_m 
+        dtau_pp=dtau_p 
+        if (lcheck_tau_division) then
+          if (dtau_m.eq.0.0) dtau_mm=epsi
+          if (dtau_p.eq.0.0) dtau_pp=epsi
+        endif
+!
+        dSdtau_m=(Srad(l,m,n)-Srad(l-lrad,m-mrad,n-nrad))/dtau_mm
+        dSdtau_p=(Srad(l+lrad,m+mrad,n+nrad)-Srad(l,m,n))/dtau_pp
+        Srad1st=(dSdtau_p*dtau_m+dSdtau_m*dtau_p)/(dtau_mm+dtau_pp)
+        Srad2nd=2*(dSdtau_p-dSdtau_m)/(dtau_mm+dtau_pp)
         if (dtau_m>dtau_thresh_max) then
           emdtau=0.0
           emdtau1=1.0
