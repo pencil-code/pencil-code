@@ -1357,6 +1357,7 @@ subroutine flame_front(f)
       if (lfilter) then
        do i=1,mx
         if ((f(i,m,n,ichemspec(k))+df(i,m,n,ichemspec(k))*dt)<-1e-15 ) df(i,m,n,ichemspec(k))=-1e-15*dt
+        if ((f(i,m,n,ichemspec(k))+df(i,m,n,ichemspec(k))*dt)>1. ) df(i,m,n,ichemspec(k))=1.*dt
        enddo
       endif
 
