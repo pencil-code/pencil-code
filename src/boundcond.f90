@@ -5083,6 +5083,7 @@ module Boundcond
          do i=m1,m2
          do j=n1,n2
            if ((f(lll,i,j,ichemspec(k))+df(lll,i,j,ichemspec(k))*dt)<-1e-15 ) df(lll,i,j,ichemspec(k))=-1e-15*dt
+           if ((f(lll,i,j,ichemspec(k))+df(lll,i,j,ichemspec(k))*dt)>1.) df(lll,i,j,ichemspec(k))=1.*dt
          enddo
          enddo
        ! endif
