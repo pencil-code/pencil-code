@@ -428,10 +428,12 @@ module Radiation
         if (lintrinsic) call Qintrinsic(f)
 !
         if (lcommunicate) then
-          if (lperiodic_ray) call Qperiodic
-        else
-          call Qpointers
-          call Qcommunicate
+          if (lperiodic_ray) then 
+            call Qperiodic
+          else
+            call Qpointers
+            call Qcommunicate
+          endif
         endif
 !
         if (lrevision) call Qrevision
