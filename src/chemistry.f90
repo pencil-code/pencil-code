@@ -2705,36 +2705,6 @@ subroutine flame_front(f)
     endsubroutine get_reaction_rate
 !***************************************************************
 
-subroutine get_reaction_rate_test(f,vreact_p,vreact_m,p)
-!
-!  This subroutine calculates forward and reverse reaction rates
-!  for the test case R->P , 
-!  
-!  For more details see Doom, et al., J. Comp. Phys., 226, 2007
-!
-!  9-feb-09/natalia: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f 
-      real, dimension (nx,nreactions), intent(out) :: vreact_p, vreact_m
-!
-      type (pencil_case) :: p
-      real :: T_c=600., beta=10.
-      integer :: reac,i
-
-      do reac=1,nchemspec
-      ! do i=l1,l2
-      !  if (p%TT(i) >= T_c) then
-      !   vreact_p(i,reac)=0.!beta*(beta-1.)*(p%TT(i)/T_c-1.)
-      !  else
-      !   vreact_p(i,reac)=0.
-      !  endif
-      ! enddo
-         vreact_p(:,reac)=0.
-         vreact_m(:,reac)=0.
-      enddo
-
-endsubroutine get_reaction_rate_test
-
 !***************************************************************
     subroutine calc_reaction_term(f,p)
 !
@@ -3548,7 +3518,7 @@ endsubroutine get_reaction_rate_test
       f(:,:,:,ilnrho)=log((PP*10./(k_B_cgs/m_u_cgs)*&
           air_mass/TT)/unit_mass*unit_length**3)
 
-      f(:,:,:,iux)=init_ux
+   !   f(:,:,:,iux)=init_ux
 
 !
       if (lroot) print*, 'Air temperature, K', TT
