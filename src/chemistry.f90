@@ -41,8 +41,9 @@ module Chemistry
   real :: lambda_const=impossible
   real :: visc_const=impossible
   real :: diffus_const=impossible
+  real :: Cp_const=impossible
   real :: init_x1=-0.2,init_x2=0.2
-  real :: init_TT1=400, init_TT2=2400., init_ux=0.
+  real :: init_TT1=400, init_TT2=2400., init_ux
 
 !
   logical :: lone_spec=.false.
@@ -104,7 +105,7 @@ module Chemistry
   namelist /chemistry_init_pars/ &
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
       amplchemk,amplchemk2, chem_diff,nu_spec, BinDif_simple, visc_simple, &
-      lambda_const, visc_const,diffus_const,init_x1,init_x2, &
+      lambda_const, visc_const,Cp_const,diffus_const,init_x1,init_x2, &
       init_TT1,init_TT2,init_ux,l1step_test
 
 
@@ -846,6 +847,15 @@ subroutine flame_front(f)
                 *cvspec_full(:,:,:,k)/species_constants(k,imass)*Rgas
 !
           enddo
+
+
+          if (Cp_const<impossible) then
+            Cp_full=Cp_const
+            Cv_full=Cp_const-Rgas
+          endif
+
+
+
 !
 !  Binary diffusion coefficients
 !
@@ -2473,7 +2483,7 @@ subroutine flame_front(f)
       real, dimension (nx) ::  kf_0,Kc_0,Pr,sum_sp,prod1_0,prod2_0
       integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
 
-      real :: T_c=600., beta=10.
+      real :: T_c=1500., Tinf=2400., beta=10.
 
 !
       if (lwrite)  open(file_id,file=input_file)
@@ -2692,12 +2702,12 @@ subroutine flame_front(f)
       if (l1step_test) then
         do i=1,nx
          if (p%TT(i) >= T_c) then
-         vreact_m(i,reac)=-beta*(beta-1.)*(p%TT(i)/T_c-1.)
+         vreact_p(i,reac)=beta*(beta-1.)*((p%TT(i)-p%TT(1))/(Tinf-p%TT(1))-1.)
         else
-         vreact_m(i,reac)=0.
+         vreact_p(i,reac)=0.
         endif
        enddo 
-         vreact_p(:,reac)=0.
+         vreact_m(:,reac)=0.
       endif
 !******************************************************************
 

@@ -78,7 +78,7 @@ module Special
   real :: rho_init=1., T_init=1., Y1_init=1., Y2_init=1., Y3_init=1., ux_init=0.
 
   integer :: index_H2=0, index_O2=0, index_H2O=0, index_N2=0
-  real :: init_x1=-0.2,init_x2=0.2
+  real :: init_x1=-0.2,init_x2=0.2, init_lnrho, init_ux
   real :: init_TT1=400.,init_TT2=2400.,init_lnTT1=5.7,init_p2=1.013e6
 ! Keep some over used pencils
 !
@@ -88,7 +88,7 @@ module Special
    initstream,rho_init, T_init, Y1_init, Y2_init, Y3_init, H_max, ux_init, &
    index_H2, index_O2, index_H2O, &
    index_N2,init_TT1,init_TT2,init_lnTT1, init_x1, init_x2,  init_p2, &
-   left_buffer_zone
+   left_buffer_zone, init_lnrho, init_ux
 ! run parameters
   namelist /chem_stream_run_pars/ &
    test
@@ -852,7 +852,6 @@ subroutine flame_spd_test(f)
       integer :: k,j,i
 
       real :: x1_front,x2_front
-      real :: rho1_front=1e-3, rho2_front=10./3.*1e-3
       real :: TT1_front, TT2_front!=2400.
       real :: p2_front!=10.13e5
       real :: Rgas=83144726.8870299
@@ -868,7 +867,6 @@ subroutine flame_spd_test(f)
       x1_front=init_x1
       x2_front=init_x2
 
-      p2_front=init_p2
 
 
       mH=1.00794
@@ -888,9 +886,7 @@ subroutine flame_spd_test(f)
       i_H2=ichemspec(index_H2)
       i_O2=ichemspec(index_O2)
 
-      !
-    !  f(l2,:,:,i_O2)=(f(l1,:,:,i_O2)/32.-f(l1,:,:,i_H2)/4.)*32. 
-      f(:,:,:,iux)=ux_init
+    
       !
       do k=1,mx 
         if (x(k)<x1_front) then
@@ -903,38 +899,14 @@ subroutine flame_spd_test(f)
           f(k,:,:,ilnTT)=log((x(k)-x1_front)/(x2_front-x1_front) &
                *(TT2_front-TT1_front)+TT1_front)
         endif
-        !
-    !    if (x(k)>x1_front) then
-    !      f(k,:,:,i_H2)=f(l1,:,:,i_H2) &
-    !           *(exp(f(k,:,:,ilnTT))-TT2_front) &
-    !           /(TT1_front-TT2_front)          
-    !    endif
-        !
-    !    if (x(k)>x2_front) then
-    !      f(k,:,:,i_O2)=f(l2,:,:,i_O2)
-    !    endif
-        !
-        !if (x(k)>x1_front .and. x(k)<x2_front) then
-        !  f(k,:,:,i_O2)=(x(k)-x2_front)/(x1_front-x2_front) &
-    !           *(f(l1,:,:,i_O2)-f(l2,:,:,i_O2))+f(l2,:,:,i_O2)
-    !    endif
-        !
         mu1(k,:,:)=f(k,:,:,i_H2)/(2.*mH)+f(k,:,:,i_O2)/(2.*mO)
       enddo
       !
       do k=1,mx
-        f(k,:,:,ilnrho)=log(p2_front)-log(Rgas)-f(k,:,:,ilnTT)-log(mu1(k,:,:))
+        f(k,:,:,ilnrho)=init_lnrho!log(p2_front)-log(Rgas)-f(k,:,:,ilnTT)-log(mu1(k,:,:))
+        f(k,:,:,iux)=init_ux!f(l1,:,:,iux)
       enddo
-      !
- !     f(l1,:,:,iux)=ux_init*exp(f(l2,:,:,ilnrho))/exp(f(l1,:,:,ilnrho))
-      !
-      do k=1,mx
-!        f(k,:,:,iux)=(f(l1,:,:,iux)-ux_init) &
-!             *(exp(f(k,:,:,ilnTT))-TT2_front)/(TT1_front-TT2_front)&
-!             +ux_init        
-!      f(k,:,:,iux)=ux_init*exp(f(l1,:,:,ilnrho))/exp(f(k,:,:,ilnrho))
-      enddo
-      !
+
 endsubroutine flame_spd_test
 !**************************************************************************
 subroutine flame_spd_2D(f,x1_front,x2_front)
