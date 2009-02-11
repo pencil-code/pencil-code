@@ -129,7 +129,7 @@ module Param_IO
        border_frac_x,border_frac_y,border_frac_z, &
        lpoint,mpoint,npoint, &
        lpoint2,mpoint2,npoint2, &
-       lrescaling_magnetic, lcylinder_in_a_box, lsphere_in_a_box,&
+       lcylinder_in_a_box, lsphere_in_a_box,&
        ipencil_swap,lpencil_requested_swap,lpencil_diagnos_swap, &
        lpencil_check,lpencil_check_diagnos_opti,lpencil_init,lwrite_2d, &
        lbidiagonal_derij,lisotropic_advection, &

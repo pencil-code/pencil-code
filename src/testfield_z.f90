@@ -1161,7 +1161,8 @@ module Testfield
 !
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=130) :: file
-      character (len=5) :: ch
+      character (len=5) :: ch='\_/^\'
+      logical :: ltestfield_out
       integer,save :: ifirst=0
       integer :: j,jtest
 !
@@ -1195,7 +1196,7 @@ module Testfield
             enddo
           enddo
           call update_snaptime(file,taainit,naainit,daainit,t, &
-            ltestfield,ch,ENUM=.false.)
+            ltestfield_out,ch,.false.)
         endif
       endif
 !

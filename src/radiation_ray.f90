@@ -1566,6 +1566,9 @@ module Radiation
           enddo
         endif
 
+      case ('nothing')
+        f(l1:l2,m,n,ikapparho)=0.
+
       case default
         call stop_it('no such opacity type: '//trim(opacity_type))
 

@@ -286,7 +286,8 @@ module Testfield
 !     real :: fnamez_mean
       integer :: jtest,jfnamez,j
       integer,save :: ifirst=0
-      character (len=5) :: ch
+      logical :: ltestfield_out
+      character (len=5) :: ch='\_/^\'
       character (len=130) :: file
 !
       intent(in)     :: f,p
@@ -486,11 +487,14 @@ module Testfield
             ifirst=1
          endif
 !
+!  reinitialize aatest
+!  note that ltestfield_out is not used
+!
          if (t >= taainit) then
             reinitialize_aatest=.true.
             call initialize_testfield(f)
             reinitialize_aatest=.false.
-            call update_snaptime(file,taainit,naainit,daainit,t,ltestfield,ch,ENUM=.false.)
+            call update_snaptime(file,taainit,naainit,daainit,t,ltestfield_out,ch,.false.)
          endif
       endif
 !
@@ -593,7 +597,7 @@ module Testfield
 !
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=130) :: file
-      character (len=5) :: ch
+      character (len=5) :: ch='\_/^\'
       integer,save :: ifirst=0
       integer :: j,jtest
 !
@@ -624,7 +628,7 @@ module Testfield
             enddo
           enddo
           call update_snaptime(file,taainit,naainit,daainit,t, &
-            ltestfield,ch,ENUM=.false.)
+            ltestfield_out,ch,.false.)
         endif
       endif
 !

@@ -80,7 +80,7 @@ module Magnetic
   real :: omega_Bz_ext=0.
   real :: mu_r=-0.5 !(still needed for backwards compatibility)
   real :: mu_ext_pot=-0.5,inclaa=0.
-  real :: rescale_aa=1.
+  real :: rescale_aa=0.
   real :: ampl_B0=0.,D_smag=0.17,B_ext21,B_ext11
   real :: Omega_ampl=0.
   real :: rmode=1.,rm_int=0.,rm_ext=0.
@@ -532,6 +532,12 @@ module Magnetic
 !
       if (reinitialize_aa) then
         f(:,:,:,iax:iaz)=rescale_aa*f(:,:,:,iax:iaz)
+      endif
+!
+!  set lrescaling_magnetic=T if linit_aa=T
+!
+      if (lreset_aa) then
+        lrescaling_magnetic=.true.
       endif
 !
       if (lfreeze_aint) lfreeze_varint(iax:iaz) = .true.
@@ -2073,10 +2079,6 @@ module Magnetic
 !
       if (lborder_profiles) call set_border_magnetic(f,df,p)
 !
-!  Reinitialize aa periodically if requested
-!
-      if (lreset_aa) call rescaling_magnetic(f)
-!
 !  Calculate diagnostic quantities
 !
       if (ldiagnos) then
@@ -2829,12 +2831,7 @@ module Magnetic
 !***********************************************************************
     subroutine rescaling_magnetic(f)
 !
-!  This routine could be turned into a wrapper routine later on,
-!  if we want to do dynamic rescaling also on other quantities.
-!
-!AB: When I tested last this routine (23-jul-08) it didn't seem useful
-!AB: in its current configuration. Next time somebody uses it, it
-!AB: should be improved.
+!  Rescale magnetic field by factor rescale_aa,
 !
 !  22-feb-05/axel: coded
 !  10-feb-09/petri: adapted from testfield
@@ -2844,26 +2841,12 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=130) :: file
-      character (len=5) :: ch
-!      real :: scl
+      character (len=5) :: ch='\_/^\'
+      logical :: lmagnetic_out
       integer,save :: ifirst=0
       integer :: j
 !
       intent(inout) :: f
-!
-!  do rescaling only if brms is finite.
-!  Note: we rely here on the brms that is update every it1 timesteps.
-!  This may not always be sufficient.
-!
-!      if (brms/=0) then
-!        scl=1.+rescaling_fraction*(brms_target/brms-1.)
-!        if (headtt) print*,'rescaling_magnetic: scl=',scl
-!        do j=iax,iaz
-!          do n=n1,n2
-!            f(l1:l2,m1:m2,n,j)=scl*f(l1:l2,m1:m2,n,j)
-!          enddo
-!        enddo
-!      endif
 !
 !  Reinitialize aa periodically if requested
 !
@@ -2877,10 +2860,13 @@ module Magnetic
           ifirst=1
         endif
 !
+!  Rescale when the time has come
+!  (Note that lmagnetic_out and ch are not used here)
+!
         if (t >= taareset) then
           f(:,:,:,iax:iaz)=rescale_aa*f(:,:,:,iax:iaz)
           call update_snaptime(file,taareset,naareset,daareset,t, &
-            lmagnetic,ch,ENUM=.false.)
+            lmagnetic_out,ch,.false.)
         endif
       endif
 !
