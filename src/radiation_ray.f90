@@ -185,7 +185,7 @@ module Radiation
       use Mpicomm, only: stop_it
 
       real :: radlength,arad_normal
-      logical :: periodic_xy_plane,bad_ray,lsingle_ray_good
+      logical :: periodic_xy_plane,bad_ray,ray_good
 !
 !  Check that the number of rays does not exceed maximum
 !
@@ -223,17 +223,20 @@ module Radiation
 !
         bad_ray=(rad2==2.and.nrad==0.and.periodic_xy_plane)
 !
+!  For single rays: single_ray must match (lrad,mrad,nrad)
+!  Otherwise, check for length of rays
+!
         if (lsingle_ray) then
-          lsingle_ray_good=(lrad==single_ray(1) &
-                       .and.mrad==single_ray(2) &
-                       .and.nrad==single_ray(3) )
+          ray_good=(lrad==single_ray(1) &
+               .and.mrad==single_ray(2) &
+               .and.nrad==single_ray(3) )
         else
-          lsingle_ray_good=.false.
+          ray_good=(rad2>0.and.rad2<=rad2max).and.(.not.bad_ray)
         endif
-
-        if (((rad2>0.and.rad2<=rad2max).and.(.not.bad_ray)) &
-            .or.lsingle_ray_good) then
-
+!
+!  proceed with good rays
+!
+        if (ray_good) then
           dir(idir,1)=lrad
           dir(idir,2)=mrad
           dir(idir,3)=nrad
