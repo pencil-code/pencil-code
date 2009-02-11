@@ -12,6 +12,8 @@ if ("$1" == "-h" || "$1" == "-help") then
   echo 'directory. Works from anywhere in the Pencil Code tree.'
   echo '-h  this help menu'
   echo '-i  update only the important directories'
+  echo '-I  update only the src and bin directories'
+  echo '-src  update only the src directory'
   echo '-s  check svn status as well'
   exit 1
 endif
@@ -25,42 +27,62 @@ endif
 echo svn up $PENCIL_HOME/src
 svn up $PENCIL_HOME/src
 if ($stat) svn status $PENCIL_HOME/src
-echo svn up $PENCIL_HOME/samples
-svn up $PENCIL_HOME/samples
-if ($stat) svn status $PENCIL_HOME/samples
-echo svn up $PENCIL_HOME/bin
-svn up $PENCIL_HOME/bin
-if ($stat) svn status $PENCIL_HOME/bin
-echo svn up $PENCIL_HOME/lib
-svn up $PENCIL_HOME/lib
-if ($stat) svn status $PENCIL_HOME/lib
-echo svn up $PENCIL_HOME/doc
-svn up $PENCIL_HOME/doc
-if ($stat) svn status $PENCIL_HOME/doc
-echo svn up $PENCIL_HOME/idl
-svn up $PENCIL_HOME/idl
-if ($stat) svn status $PENCIL_HOME/idl
-echo svn up $PENCIL_HOME/python
-svn up $PENCIL_HOME/python
-if ($stat) svn status $PENCIL_HOME/python
 #
 #  Don't do the following directories unless
-#  we only want the important ones (pc_svnup -i).
+#  we only want the important ones (pc_svnup -I).
 #
-if ("$1" != "-i") then
-  echo svn up $PENCIL_HOME/license
-  svn up $PENCIL_HOME/license
-  if ($stat) svn status $PENCIL_HOME/license
-  echo svn up $PENCIL_HOME/bugs
-  svn up $PENCIL_HOME/bugs
-  if ($stat) svn status $PENCIL_HOME/bugs
-  echo svn up $PENCIL_HOME/dx
-  svn up $PENCIL_HOME/dx
-  if ($stat) svn status $PENCIL_HOME/dx
-  echo svn up $PENCIL_HOME/misc
-  svn up $PENCIL_HOME/misc
-  if ($stat) svn status $PENCIL_HOME/misc
-  echo svn up $PENCIL_HOME/utils
-  svn up $PENCIL_HOME/utils
-  if ($stat) svn status $PENCIL_HOME/utils
+if ("$1" != "-src") then
+  echo svn up $PENCIL_HOME/bin
+  svn up $PENCIL_HOME/bin
+  if ($stat) svn status $PENCIL_HOME/bin
+  #
+  #  Don't do the following directories unless
+  #  we only want the important ones (pc_svnup -I).
+  #
+  if ("$1" != "-I") then
+    echo svn up $PENCIL_HOME/samples
+    svn up $PENCIL_HOME/samples
+    if ($stat) svn status $PENCIL_HOME/samples
+    #
+    echo svn up $PENCIL_HOME/lib
+    svn up $PENCIL_HOME/lib
+    if ($stat) svn status $PENCIL_HOME/lib
+    #
+    echo svn up $PENCIL_HOME/doc
+    svn up $PENCIL_HOME/doc
+    if ($stat) svn status $PENCIL_HOME/doc
+    #
+    echo svn up $PENCIL_HOME/idl
+    svn up $PENCIL_HOME/idl
+    if ($stat) svn status $PENCIL_HOME/idl
+    #
+    echo svn up $PENCIL_HOME/python
+    svn up $PENCIL_HOME/python
+    if ($stat) svn status $PENCIL_HOME/python
+    #
+    #  Don't do the following directories unless
+    #  we only want the important ones (pc_svnup -i).
+    #
+    if ("$1" != "-i") then
+      echo svn up $PENCIL_HOME/license
+      svn up $PENCIL_HOME/license
+      if ($stat) svn status $PENCIL_HOME/license
+      #
+      echo svn up $PENCIL_HOME/bugs
+      svn up $PENCIL_HOME/bugs
+      if ($stat) svn status $PENCIL_HOME/bugs
+      #
+      echo svn up $PENCIL_HOME/dx
+      svn up $PENCIL_HOME/dx
+      if ($stat) svn status $PENCIL_HOME/dx
+      #
+      echo svn up $PENCIL_HOME/misc
+      svn up $PENCIL_HOME/misc
+      if ($stat) svn status $PENCIL_HOME/misc
+      #
+      echo svn up $PENCIL_HOME/utils
+      svn up $PENCIL_HOME/utils
+      if ($stat) svn status $PENCIL_HOME/utils
+    endif
+  endif
 endif
