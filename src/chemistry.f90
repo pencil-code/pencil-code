@@ -2692,12 +2692,12 @@ subroutine flame_front(f)
       if (l1step_test) then
         do i=1,nx
          if (p%TT(i) >= T_c) then
-         vreact_p(i,reac)=beta*(beta-1.)*(p%TT(i)/T_c-1.)
+         vreact_m(i,reac)=-beta*(beta-1.)*(p%TT(i)/T_c-1.)
         else
-         vreact_p(i,reac)=0.
+         vreact_m(i,reac)=0.
         endif
        enddo 
-         vreact_m(:,reac)=0.
+         vreact_p(:,reac)=0.
       endif
 !******************************************************************
 

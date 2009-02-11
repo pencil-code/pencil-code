@@ -889,8 +889,8 @@ subroutine flame_spd_test(f)
       i_O2=ichemspec(index_O2)
 
       !
-      f(l2,:,:,i_O2)=(f(l1,:,:,i_O2)/32.-f(l1,:,:,i_H2)/4.)*32. 
-      f(l1,:,:,iux)=ux_init
+    !  f(l2,:,:,i_O2)=(f(l1,:,:,i_O2)/32.-f(l1,:,:,i_H2)/4.)*32. 
+      f(:,:,:,iux)=ux_init
       !
       do k=1,mx 
         if (x(k)<x1_front) then
@@ -904,20 +904,20 @@ subroutine flame_spd_test(f)
                *(TT2_front-TT1_front)+TT1_front)
         endif
         !
-        if (x(k)>x1_front) then
-          f(k,:,:,i_H2)=f(l1,:,:,i_H2) &
-               *(exp(f(k,:,:,ilnTT))-TT2_front) &
-               /(TT1_front-TT2_front)          
-        endif
+    !    if (x(k)>x1_front) then
+    !      f(k,:,:,i_H2)=f(l1,:,:,i_H2) &
+    !           *(exp(f(k,:,:,ilnTT))-TT2_front) &
+    !           /(TT1_front-TT2_front)          
+    !    endif
         !
-        if (x(k)>x2_front) then
-          f(k,:,:,i_O2)=f(l2,:,:,i_O2)
-        endif
+    !    if (x(k)>x2_front) then
+    !      f(k,:,:,i_O2)=f(l2,:,:,i_O2)
+    !    endif
         !
-        if (x(k)>x1_front .and. x(k)<x2_front) then
-          f(k,:,:,i_O2)=(x(k)-x2_front)/(x1_front-x2_front) &
-               *(f(l1,:,:,i_O2)-f(l2,:,:,i_O2))+f(l2,:,:,i_O2)
-        endif
+        !if (x(k)>x1_front .and. x(k)<x2_front) then
+        !  f(k,:,:,i_O2)=(x(k)-x2_front)/(x1_front-x2_front) &
+    !           *(f(l1,:,:,i_O2)-f(l2,:,:,i_O2))+f(l2,:,:,i_O2)
+    !    endif
         !
         mu1(k,:,:)=f(k,:,:,i_H2)/(2.*mH)+f(k,:,:,i_O2)/(2.*mO)
       enddo
@@ -932,7 +932,7 @@ subroutine flame_spd_test(f)
 !        f(k,:,:,iux)=(f(l1,:,:,iux)-ux_init) &
 !             *(exp(f(k,:,:,ilnTT))-TT2_front)/(TT1_front-TT2_front)&
 !             +ux_init        
-      f(k,:,:,iux)=ux_init*exp(f(l1,:,:,ilnrho))/exp(f(k,:,:,ilnrho))
+!      f(k,:,:,iux)=ux_init*exp(f(l1,:,:,ilnrho))/exp(f(k,:,:,ilnrho))
       enddo
       !
 endsubroutine flame_spd_test
