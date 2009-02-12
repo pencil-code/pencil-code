@@ -145,7 +145,7 @@ pro pc_magic_var, variables, tags, $
   pc_magic_var_dep, variables, tags, 'advb', 'bij'
   pc_magic_var_dep, variables, tags, 'strb', 'bb'
   pc_magic_var_dep, variables, tags, 'strb', 'uij'
-  pc_magic_var_dep, variables, tags, 'strbs', 'uu'
+  pc_magic_var_dep, variables, tags, 'strbs', 'bb'
   pc_magic_var_dep, variables, tags, 'compb', 'uu'
   pc_magic_var_dep, variables, tags, 'compb', 'bb'
   pc_magic_var_dep, variables, tags, 'divadvu', 'uu'
@@ -320,8 +320,7 @@ pro pc_magic_var, variables, tags, $
 ; Velocity advection
     endif else if (variables[iv] eq 'advu') then begin
       tags[iv]=variables[iv]
-      variables[iv]=$
-      '-0.5*grad(dot2(uu))+cross(uu,curl(uu))'
+      variables[iv]='-0.5*grad(dot2(uu))+cross(uu,curl(uu))'
 ; Velocity advection by background shear
     endif else if (variables[iv] eq 'sadvu') then begin
       tags[iv]=variables[iv]
