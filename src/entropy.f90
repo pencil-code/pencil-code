@@ -191,6 +191,7 @@ module Entropy
   integer :: idiag_TTmy=0       ! DIAG_DOC:
   integer :: idiag_TTmz=0       ! DIAG_DOC:
   integer :: idiag_TTmxy=0      ! DIAG_DOC:
+  integer :: idiag_TTmxz=0      ! DIAG_DOC:
   integer :: idiag_TTmr=0       ! DIAG_DOC:
   integer :: idiag_uxTTmz=0     ! DIAG_DOC:
   integer :: idiag_uyTTmz=0     ! DIAG_DOC:
@@ -1887,8 +1888,8 @@ module Entropy
           lpenc_diagnos(i_TT)=.true.  !(to be replaced by enthalpy)
       endif
       if (idiag_TTm/=0 .or. idiag_TTmx/=0 .or. idiag_TTmy/=0 .or. &
-          idiag_TTmz/=0 .or. idiag_TTmxy/=0 .or. idiag_TTmr/=0 .or. &
-          idiag_TTmax/=0 .or. idiag_TTmin/=0 .or. &
+          idiag_TTmz/=0 .or. idiag_TTmxy/=0 .or. idiag_TTmxz .or. &
+          idiag_TTmr/=0 .or. idiag_TTmax/=0 .or. idiag_TTmin/=0 .or. &
           idiag_uxTTmz/=0 .or.idiag_uyTTmz/=0 .or.idiag_uzTTmz/=0) &
           lpenc_diagnos(i_TT)=.true.
       if (idiag_yHm/=0 .or. idiag_yHmax/=0) lpenc_diagnos(i_yH)=.true.
@@ -2187,6 +2188,7 @@ module Entropy
 !
       if (l2davgfirst) then
         if (idiag_TTmxy/=0) call zsum_mn_name_xy(p%TT,idiag_TTmxy)
+        if (idiag_TTmxz/=0) call ysum_mn_name_xz(p%TT,idiag_TTmxz)
       endif
 !
     endsubroutine dss_dt
@@ -3186,7 +3188,7 @@ module Entropy
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
-      integer :: iname,inamez,inamey,inamex,inamexy,irz,inamer
+      integer :: iname,inamez,inamey,inamex,inamexy,inamexz,irz,inamer
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
@@ -3201,7 +3203,7 @@ module Entropy
         idiag_yHmax=0; idiag_yHm=0; idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0
         idiag_fconvz=0; idiag_dcoolz=0; idiag_fradz=0; idiag_fturbz=0
         idiag_ssmz=0; idiag_ssmy=0; idiag_ssmx=0; idiag_ssmr=0; idiag_TTmr=0
-        idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_TTmxy=0
+        idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_TTmxy=0; idiag_TTmxz=0
         idiag_uxTTmz=0; idiag_uyTTmz=0; idiag_uzTTmz=0; idiag_cs2mphi=0
       endif
 !
@@ -3260,12 +3262,17 @@ module Entropy
          call parse_name(inamer,cnamer(inamer),cformr(inamer),'ssmr',idiag_ssmr)
          call parse_name(inamer,cnamer(inamer),cformr(inamer),'TTmr',idiag_TTmr)
       enddo
-
 !
 !  check for those quantities for which we want z-averages
 !
       do inamexy=1,nnamexy
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'TTmxy',idiag_TTmxy)
+      enddo
+!
+!  check for those quantities for which we want y-averages
+!
+      do inamexz=1,nnamexz
+        call parse_name(inamexz,cnamexy(inamexz),cformxy(inamexz),'TTmxz',idiag_TTmxz)
       enddo
 !
 !  check for those quantities for which we want phi-averages
