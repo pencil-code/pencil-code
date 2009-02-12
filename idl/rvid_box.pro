@@ -36,7 +36,7 @@
 ;
 pro rvid_box, field, $
   mpeg=mpeg, png=png, truepng=png_truecolor, tmin=tmin, tmax=tmax, $
-  max=amax,min=amin, noborder=noborder, imgdir=imgdir, $
+  max=amax,min=amin, noborder=noborder, imgdir=imgdir, dev=dev, $
   nrepeat=nrepeat, wait=wait, njump=njump, datadir=datatopdir, $
   noplot=noplot, fo=fo, swapz=swapz, xsize=xsize, ysize=ysize, $
   title=title, itpng=itpng, global_scaling=global_scaling, proc=proc, $
@@ -51,7 +51,7 @@ pro rvid_box, field, $
   tunit=tunit, qswap=qswap, bar=bar, nolabel=nolabel, norm=norm, $
   divbar=divbar, blabel=blabel, bsize=bsize, bformat=bformat, thlabel=thlabel, $
   bnorm=bnorm, swap_endian=swap_endian, newwindow=newwindow, $
-  quiet_skip=quiet_skip,axes=axes
+  quiet_skip=quiet_skip, axes=axes
 ;
 common pc_precision, zero, one
 ;
@@ -74,6 +74,7 @@ default,noborder,[0,0,0,0,0,0]
 default,r_int,0.5
 default,r_ext,1.0
 default,imgdir,'.'
+default,dev,'x'
 default,magnify,1.0
 default,xpos,0.0
 default,zpos,0.34
@@ -178,7 +179,6 @@ slice_z2pos=zero
 ;
 ;  Open MPEG file, if keyword is set.
 ;
-dev='x' ;(default)
 if (keyword_set(png)) then begin
   set_plot, 'z'                        ; switch to Z buffer
   device, set_resolution=[xsize,ysize] ; set window size
@@ -332,6 +332,7 @@ while ( (not eof(1)) and (t le tmax) ) do begin
 ;  Plot normal box.
 ;
       if (not keyword_set(shell)) then begin
+        print, dev
         boxbotex_scl,xy2s,xys,xzs,yzs,xmax,ymax,zof=zof,zpos=zpos,ip=3,$
             amin=amin/oversaturate,amax=amax/oversaturate,dev=dev,$
             xpos=xpos,magnify=magnify,nobottom=nobottom,norm=norm,$
@@ -402,24 +403,23 @@ while ( (not eof(1)) and (t le tmax) ) do begin
         !p.title=''
       endif
 ;
-;  Draw axes
+;  Draw axes.
 ;
       if (keyword_set(axes)) then begin
         xx=!d.x_size & yy=!d.y_size
         aspect_ratio=1.*yy/xx
-        ; length of the arrow
+;  Length of the arrow.
         length=0.1 
         xlength=length & ylength=xlength/aspect_ratio 
-        ; rotation angles. I didn't figure out exactly 
-        ; the rotation law. This .7 is an ugly hack 
-        ; that looks good for most angles
+;  Rotation angles. WL didn't figure out exactly the rotation law. This .7 is
+;  an ugly hack that looks good for most angles.
         gamma=.7*xrot*!pi/180.
         alpha=zrot*!pi/180.
-        ; position of the origin
+;  Position of the origin
         x0=0.12 & y0=0.25
-        ;
-        ; x arrow
-        ;
+;
+;  x arrow
+;
         x1=x0+xlength*(cos(gamma)*cos(alpha)) 
         y1=y0+ylength*(sin(gamma)*sin(alpha))
         angle=atan((y1-y0)/(x1-x0))
@@ -432,9 +432,9 @@ while ( (not eof(1)) and (t le tmax) ) do begin
           thick=thlabel,hthick=thlabel
         xyouts,x2-0.01,y2-0.045,'!8x!x',col=1,/normal,$
         siz=size_label,charthick=thlabel
-        ;
-        ; y arrow
-        ;
+;
+;  y arrow
+;
         x1=x0+xlength*(-cos(gamma)*sin(alpha))
         y1=y0+ylength*( sin(gamma)*cos(alpha))
         angle=atan((y1-y0)/(x1-x0))
@@ -447,9 +447,9 @@ while ( (not eof(1)) and (t le tmax) ) do begin
           thick=thlabel,hthick=thlabel
         xyouts,x2-0.03,y2-0.01,'!8y!x',col=1,/normal,$
         siz=size_label,charthick=thlabel
-        ;
-        ; z arrow
-        ;
+;
+;  z arrow
+;
         x1=x0 & y1=y0+ylength
         arrow, x0, y0, x1, y1,col=1,/normal,$
           thick=thlabel,hthick=thlabel
