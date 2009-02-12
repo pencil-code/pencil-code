@@ -92,6 +92,7 @@ module Particles
 
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
+      ldragforce_gas_par, ldragforce_dust_par, &
       bcpx, bcpy, bcpz, tausp, beta_dPdr_dust, rhop_tilde, &
       eps_dtog, nu_epicycle, rp_int, rp_ext, &
       gravx_profile, gravz_profile, gravr_profile, &
