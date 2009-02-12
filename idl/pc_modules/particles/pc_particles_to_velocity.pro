@@ -330,13 +330,22 @@ for iz=0,mz-1 do begin & for iy=0,my-1 do begin & for ix=0,mx-1 do begin
   endif
 endfor & endfor & endfor
 ;;
+;;  Calculate standard deviation of particle velocity. Round off errors may
+;;  yield a negative variance, but this is set to zero.
+;;
+if (n_elements(ww2) ne 0) then begin
+  vprms=fltarr(mx,my,mz,3)*one
+  ii=where((ww2-ww^2) ge 0.0)
+  vprms[ii]=sqrt(ww2[ii]-ww[ii]^2)
+endif
+;;
 ;;  Trim the arrays of ghost zones.
 ;;
 x=x[l1:l2]
 y=y[m1:m2]
 z=z[n1:n2]
 ww=ww[l1:l2,m1:m2,n1:n2,*]
-if (n_elements(ww2) ne 0) then vprms=sqrt(ww2[l1:l2,m1:m2,n1:n2,*]-ww^2)
+if (n_elements(ww2) ne 0) then vprms=vprms[l1:l2,m1:m2,n1:n2,*]
 ;;
 ;;  Purge missing directions from ww before returning it.
 ;;
