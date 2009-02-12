@@ -18,6 +18,8 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
+! CPARAM logical, parameter :: ltestscalar = .true.
+!
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
@@ -130,9 +132,7 @@ module Testscalar
 !  Set first and last index of text field
 !  Note: iaxtest, iaytest, and iaztest are initialized to the first test field.
 !  These values are used in this form in start, but later overwritten.
-!  Here always ltestscalar=T
 !
-      ltestscalar=.true.
       icctest=nvar+1
       icctestpq=icctest+(njtest-1)
       ntestscalar=mtestscalar
@@ -766,6 +766,7 @@ module Testscalar
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=130) :: file
       character (len=5) :: ch
+      logical :: ltestscalar_out
       integer,save :: ifirst=0
       integer :: j,jtest
 !
@@ -793,7 +794,7 @@ module Testscalar
             enddo
           enddo
           call update_snaptime(file,tccinit,nccinit,dccinit,t, &
-            ltestscalar,ch,ENUM=.false.)
+            ltestscalar_out,ch,.false.)
         endif
       endif
 !

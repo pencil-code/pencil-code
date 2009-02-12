@@ -13,6 +13,8 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
+! CPARAM logical, parameter :: ltestfield = .true.
+!
 ! MVAR CONTRIBUTION 36
 ! MAUX CONTRIBUTION 0
 !
@@ -99,7 +101,6 @@ module Testfield
       logical, save :: first=.true.
       integer :: j
 !
-      ltestfield = .true.
       iaatest = nvar+1          ! indices to access aa
       ntestfield=mtestfield
       nvar = nvar+ntestfield    ! added ntestfield variables
@@ -598,6 +599,7 @@ module Testfield
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=130) :: file
       character (len=5) :: ch='\_/^\'
+      logical :: ltestfield_out
       integer,save :: ifirst=0
       integer :: j,jtest
 !

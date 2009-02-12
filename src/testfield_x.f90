@@ -18,6 +18,8 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
+! CPARAM logical, parameter :: ltestfield = .true.
+!
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
@@ -180,7 +182,6 @@ module Testfield
 !  These values are used in this form in start, but later overwritten.
 !  Here always ltestfield=T
 !
-      ltestfield=.true.
       iaatest=nvar+1
       iaxtest=iaatest
       iaytest=iaatest+1

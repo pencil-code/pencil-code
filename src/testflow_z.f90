@@ -18,6 +18,8 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
+! CPARAM logical, parameter :: ltestflow = .true.
+!
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
@@ -129,11 +131,9 @@ module Testflow
       integer :: j
 !
 !  Set first and last index of text field
-!  Here always ltestflow=T
 !  Note that iuxtest, ..., ihhtest are being overwritten later,
 !  and only iuutest stays fixed.
 !
-      ltestflow=.true.
       iuutest=nvar+1
       iuxtest=iuutest
       iuytest=iuutest+1
@@ -406,6 +406,8 @@ module Testflow
       real, dimension (nx,0:njtest) :: Qipq,hpq
       real, dimension (nx,3,3) :: uijtest
 
+      logical :: ltestflow_out
+
       integer :: jtest,jfnamez,j,i,i3,i4
       integer,save :: ifirst=0
       
@@ -655,7 +657,7 @@ module Testflow
             reinitialize_uutest=.true.
             call initialize_testflow(f)
             reinitialize_uutest=.false.
-            call update_snaptime(file,tuuinit,nuuinit,duuinit,t,ltestflow,ch,ENUM=.false.)
+            call update_snaptime(file,tuuinit,nuuinit,duuinit,t,ltestflow_out,ch,.false.)
          endif
       endif
 !

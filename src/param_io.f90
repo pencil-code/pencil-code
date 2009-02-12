@@ -1033,7 +1033,7 @@ module Param_IO
            lneutralvelocity,lneutraldensity, &
            leos_ionization,leos_fixed_ionization,lvisc_hyper,lchiral, &
            leos,leos_temperature_ionization,lspecial, &
-           ltestscalar, ltestfield, ltestflow, &
+           ltestscalar_var, ltestfield_var, ltestflow_var, &
            lhydro_var, lentropy_var, ldensity_var, lshock_var, &
            lcosmicray_var, lcosmicrayflux_var, linterstellar_var, &
            datadir
@@ -1043,6 +1043,9 @@ module Param_IO
       logical :: lentropy       = lentropy_var
       logical :: lshock         = lshock_var
       logical :: lmagnetic      = lmagnetic_var
+      logical :: ltestscalar    = ltestscalar_var
+      logical :: ltestfield     = ltestfield_var
+      logical :: ltestflow      = ltestflow_var
       logical :: linterstellar  = linterstellar_var
       logical :: lcosmicray     = lcosmicray_var
       logical :: lcosmicrayflux = lcosmicrayflux_var

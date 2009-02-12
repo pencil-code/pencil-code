@@ -146,7 +146,6 @@ module Cdata
 !  Module flags.
 !
   logical :: ldensity_nolog=.false., lwrite_stratification=.false.
-  logical :: ltestscalar=.false.,ltestfield=.false.,ltestflow=.false.
   logical :: lmpicomm=.false., lforcing=.false., lforcing_cont=.false.
   logical :: lpostproc=.false.
   logical :: lwrite_slices=.false., lwrite_2daverages=.false.
@@ -348,6 +347,9 @@ module Cdata
   logical, parameter :: lentropy_var=lentropy
   logical, parameter :: lshock_var=lshock
   logical, parameter :: lmagnetic_var=lmagnetic
+  logical, parameter :: ltestscalar_var=ltestscalar
+  logical, parameter :: ltestfield_var=ltestfield
+  logical, parameter :: ltestflow_var=ltestflow
   logical, parameter :: linterstellar_var=linterstellar
   logical, parameter :: lcosmicray_var=lcosmicray
   logical, parameter :: lcosmicrayflux_var=lcosmicrayflux
