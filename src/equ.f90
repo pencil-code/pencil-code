@@ -669,7 +669,7 @@ module Equ
 !  Radiation transport along rays
 !
       if (leos_ionization.or.leos_temperature_ionization) call ioncalc(f)
-      if (lradiation_ray)  call radtransfer(f)
+      if (lradiation_ray) call radtransfer(f)
       if (lshock) call calc_shock_profile_simple(f)
 !      if (lvisc_hyper.or.lvisc_smagorinsky) then
 !        if (.not.lvisc_first.or.lfirst) call calc_viscosity(f)
