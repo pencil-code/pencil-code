@@ -550,10 +550,17 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Make structure out of the variables.
 ;
-  makeobject = "object = "+ $
-      "CREATE_STRUCT(name=objectname,['t','x','y','z','dx','dy','dz'" + $
-      arraytostring(tags,QUOTE="'") + "],t,"+xyzstring+",dx,dy,dz" + $
-      arraytostring(variables) + ")"
+  if (param.lshear) then begin
+    makeobject = "object = "+ $
+        "CREATE_STRUCT(name=objectname,['t','x','y','z','dx','dy','dz','deltay'" + $
+        arraytostring(tags,QUOTE="'") + "],t,"+xyzstring+",dx,dy,dz,deltay" + $
+        arraytostring(variables) + ")"
+  endif else begin
+    makeobject = "object = "+ $
+        "CREATE_STRUCT(name=objectname,['t','x','y','z','dx','dy','dz'" + $
+        arraytostring(tags,QUOTE="'") + "],t,"+xyzstring+",dx,dy,dz" + $
+        arraytostring(variables) + ")"
+  endelse
 ;
 ; Execute command to make the structure.
 ;
