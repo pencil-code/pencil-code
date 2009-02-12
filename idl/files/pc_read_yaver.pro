@@ -1,22 +1,24 @@
 ;;
 ;; $Id$
 ;;
-;;   Read y-averages from file.
+;;   Read z-averages from file.
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.
 ;;   The user can get the data returned in an object by specifying nit, the
 ;;   number of snapshots to save.
 ;;
 pro pc_read_yaver, object=object, varfile=varfile, datadir=datadir, $
     nit=nit, iplot=iplot, min=min, max=max, zoom=zoom, xax=xax, zax=zax, $
-    xtitle=xtitle, ytitle=ytitle, title=title, subbox=subbox, $
-    subpos=subpos, rsubbox=rsubbox, subcolor=subcolor, tsubbox=tsubbox, $
+    xtitle=xtitle, ytitle=ytitle, title=title, subbox=subbox, subcen=subcen, $
+    subpos=subpos, rsubbox=rsubbox, subcolor=subcolor, tsubbox=tsubbox,$
+    submin=submin, submax=submax, sublog=sublog, $
     noaxes=noaxes, thick=thick, charsize=charsize, loge=loge, log10=log10, $
     t_title=t_title, t_scale=t_scale, t_zero=t_zero, interp=interp, $
     ceiling=ceiling, position=position, fillwindow=fillwindow, $
     tformat=tformat, $
     tmin=tmin, njump=njump, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
     xsize=xsize, ysize=ysize, it1=it1, variables=variables, $
-    colorbar=colorbar, bartitle=bartitle, readpar=readpar, quiet=quiet
+    colorbar=colorbar, bartitle=bartitle, xshift=xshift, $
+    readpar=readpar, readgrid=readgrid, debug=debug, quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;;
@@ -44,7 +46,11 @@ default, t_zero, 0.0
 default, interp, 0
 default, ceiling, 0.0
 default, subbox, 0
+default, subcen, -1
 default, subpos, [0.7,0.7,0.9,0.9]
+default, submin, min
+default, submax, max
+default, sublog, 0
 default, rsubbox, 5.0
 default, subcolor, 255
 default, tsubbox, 0.0
@@ -58,7 +64,10 @@ default, it1, 10
 default, variables, ''
 default, colorbar, 0
 default, bartitle, ''
+default, xshift, 0
 default, readpar, 0
+default, readgrid, 0
+default, debug, 0
 default, quiet, 0
 ;;
 ;;  Define line and character thickness (will revert to old settings later).
@@ -76,6 +85,10 @@ pc_set_precision, dim=dim, /quiet
 ;;  Need to know box size for proper axes.
 ;;
 if (readpar) then pc_read_param, obj=par, datadir=datadir, /quiet
+if (readgrid) then begin
+  pc_read_grid, obj=grid, /trim, datadir=datadir, /quiet
+  xax=grid.x & zax=grid.z
+endif
 ;;
 ;;  Derived dimensions.
 ;;
@@ -172,10 +185,24 @@ endif
 it=0 & itimg=0
 lwindow_opened=0
 while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
-
+;;
+;;  Read time.
+;;
   readu, file, t
+  if (it eq 0) then t0=t
+;;
+;;  Read data.
+;;    
   if ( (t ge tmin) and (it mod njump eq 0) ) then begin
     readu, file, array
+;;
+;;  Shift plane in the radial direction.
+;;
+    if (xshift ne 0) then begin
+      for ivar=0,nvarall-1 do begin
+        array[*,*,ivar]=shift(array[*,*,ivar],xshift,0)
+      endfor
+    endif
 ;;
 ;;  Plot requested variable (plotting is turned off by default).
 ;;
@@ -204,6 +231,8 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
         imgname='img_'+strtrim(string(itimg,'(i20.4)'),2)+'.eps'
         device, filename=imgdir+'/'+imgname, xsize=xsize, ysize=ysize, $
             color=1, /encapsulated, bits_per_pixel=8
+        ps_fonts
+        !p.font=-1
       endif else if (png) then begin
 ;;  Plot to png.
       endif else begin
@@ -216,6 +245,7 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
           lwindow_opened=1
         endelse
       endelse
+      sym=texsyms()
 ;;  Put current time in title if requested.      
       if (t_title) then $
           title='t='+strtrim(string(t/t_scale-t_zero,format=tformat),2)
@@ -229,50 +259,55 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
 ;;  Enlargement of ``densest'' point.          
 ;;
       if ( subbox and (t ge tsubbox) ) then begin
-        imax=where(array_plot eq max(array_plot))
-        imax=array_indices(array_plot,imax)
+        if (subcen[0] eq -1) then begin
+          isub=where(array_plot eq max(array_plot))
+          isub=array_indices(array_plot,isub)
+        endif else begin
+          isub=subcen
+        endelse
 ;;  Plot box indicating enlarged region.
-        oplot, [xax[imax[0]]-rsubbox,xax[imax[0]]+rsubbox, $
-                xax[imax[0]]+rsubbox,xax[imax[0]]-rsubbox, $
-                xax[imax[0]]-rsubbox], $
-               [zax[imax[1]]-rsubbox,zax[imax[1]]-rsubbox, $
-                zax[imax[1]]+rsubbox,zax[imax[1]]+rsubbox, $
-                zax[imax[1]]-rsubbox], color=subcolor, thick=thick
+        oplot, [xax[isub[0]]-rsubbox,xax[isub[0]]+rsubbox, $
+                xax[isub[0]]+rsubbox,xax[isub[0]]-rsubbox, $
+                xax[isub[0]]-rsubbox], $
+               [zax[isub[1]]-rsubbox,zax[isub[1]]-rsubbox, $
+                zax[isub[1]]+rsubbox,zax[isub[1]]+rsubbox, $
+                zax[isub[1]]-rsubbox], color=subcolor, thick=thick
 ;;  Box crosses lower boundary.
-        if (zax[imax[1]]-rsubbox lt z0) then begin
-          oplot, [xax[imax[0]]-rsubbox,xax[imax[0]]+rsubbox, $
-                  xax[imax[0]]+rsubbox,xax[imax[0]]-rsubbox, $
-                  xax[imax[0]]-rsubbox], $
-                 [zax[imax[1]]+Ly-rsubbox,zax[imax[1]]+Ly-rsubbox, $
-                  zax[imax[1]]+Ly+rsubbox,zax[imax[1]]+Ly+rsubbox, $
-                  zax[imax[1]]+Ly-rsubbox], color=subcolor, thick=thick
+        if (zax[isub[1]]-rsubbox lt z0) then begin
+          oplot, [xax[isub[0]]-rsubbox,xax[isub[0]]+rsubbox, $
+                  xax[isub[0]]+rsubbox,xax[isub[0]]-rsubbox, $
+                  xax[isub[0]]-rsubbox], $
+                 [zax[isub[1]]+Lz-rsubbox,zax[isub[1]]+Lz-rsubbox, $
+                  zax[isub[1]]+Lz+rsubbox,zax[isub[1]]+Lz+rsubbox, $
+                  zax[isub[1]]+Lz-rsubbox], color=subcolor, thick=thick
         endif
 ;;  Box crosses upper boundary.
-        if (zax[imax[1]]+rsubbox gt z1) then begin
-          oplot, [xax[imax[0]]-rsubbox,xax[imax[0]]+rsubbox, $
-                  xax[imax[0]]+rsubbox,xax[imax[0]]-rsubbox, $
-                  xax[imax[0]]-rsubbox], $
-                 [zax[imax[1]]-Ly-rsubbox,zax[imax[1]]-Ly-rsubbox, $
-                  zax[imax[1]]-Ly+rsubbox,zax[imax[1]]-Ly+rsubbox, $
-                  zax[imax[1]]-Ly-rsubbox], thick=thick
+        if (zax[isub[1]]+rsubbox gt z1) then begin
+          oplot, [xax[isub[0]]-rsubbox,xax[isub[0]]+rsubbox, $
+                  xax[isub[0]]+rsubbox,xax[isub[0]]-rsubbox, $
+                  xax[isub[0]]-rsubbox], $
+                 [zax[isub[1]]-Lz-rsubbox,zax[isub[1]]-Lz-rsubbox, $
+                  zax[isub[1]]-Lz+rsubbox,zax[isub[1]]-Lz+rsubbox, $
+                  zax[isub[1]]-Lz-rsubbox], thick=thick
         endif
 ;;  Subplot and box.
-        if ( (xax[imax[0]]-rsubbox lt x0) or $
-             (xax[imax[0]]+rsubbox gt x1) ) then begin
+        if ( (xax[isub[0]]-rsubbox lt x0) or $
+             (xax[isub[0]]+rsubbox gt x1) ) then begin
           array_plot=shift(array_plot,[nx/2,0])
-          if (xax[imax[0]]-rsubbox lt x0) then imax[0]=imax[0]+nx/2
-          if (xax[imax[0]]+rsubbox gt x1) then imax[0]=imax[0]-nx/2
+          if (xax[isub[0]]-rsubbox lt x0) then isub[0]=isub[0]+nx/2
+          if (xax[isub[0]]+rsubbox gt x1) then isub[0]=isub[0]-nx/2
         endif
-        if ( (zax[imax[1]]-rsubbox lt z0) or $
-             (zax[imax[1]]+rsubbox gt z1) ) then begin
+        if ( (zax[isub[1]]-rsubbox lt z0) or $
+             (zax[isub[1]]+rsubbox gt z1) ) then begin
           array_plot=shift(array_plot,[0,nz/2])
-          if (zax[imax[1]]-rsubbox lt z0) then imax[1]=imax[1]+nz/2
-          if (zax[imax[1]]+rsubbox gt z1) then imax[1]=imax[1]-nz/2
+          if (zax[isub[1]]-rsubbox lt z0) then isub[1]=isub[1]+nz/2
+          if (zax[isub[1]]+rsubbox gt z1) then isub[1]=isub[1]-nz/2
         endif
+        if (sublog) then array_plot=alog10(array_plot)
         plotimage, array_plot, $
-            xrange=xax[imax[0]]+[-rsubbox,rsubbox], $
-            yrange=zax[imax[1]]+[-rsubbox,rsubbox], $
-            range=[min,max], imgxrange=[x0,x1], imgyrange=[z0,z1], $
+            xrange=xax[isub[0]]+[-rsubbox,rsubbox], $
+            yrange=zax[isub[1]]+[-rsubbox,rsubbox], $
+            range=[submin,submax], imgxrange=[x0,x1], imgyrange=[z0,z1], $
             position=subpos, /noerase, /noaxes, $
             interp=interp, charsize=charsize, thick=thick
         plots, [subpos[0],subpos[2],subpos[2],subpos[0],subpos[0]], $

@@ -8,8 +8,9 @@
 ;;
 pro pc_read_zaver, object=object, varfile=varfile, datadir=datadir, $
     nit=nit, iplot=iplot, min=min, max=max, zoom=zoom, xax=xax, yax=yax, $
-    xtitle=xtitle, ytitle=ytitle, title=title, subbox=subbox,$
+    xtitle=xtitle, ytitle=ytitle, title=title, subbox=subbox, subcen=subcen, $
     subpos=subpos, rsubbox=rsubbox, subcolor=subcolor, tsubbox=tsubbox,$
+    submin=submin, submax=submax, sublog=sublog, $
     noaxes=noaxes, thick=thick, charsize=charsize, loge=loge, log10=log10, $
     t_title=t_title, t_scale=t_scale, t_zero=t_zero, interp=interp, $
     ceiling=ceiling, position=position, fillwindow=fillwindow, $
@@ -45,7 +46,11 @@ default, t_zero, 0.0
 default, interp, 0
 default, ceiling, 0.0
 default, subbox, 0
+default, subcen, -1
 default, subpos, [0.7,0.7,0.9,0.9]
+default, submin, min
+default, submax, max
+default, sublog, 0
 default, rsubbox, 5.0
 default, subcolor, 255
 default, tsubbox, 0.0
@@ -301,50 +306,55 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
 ;;  Enlargement of ``densest'' point.          
 ;;
       if ( subbox and (t ge tsubbox) ) then begin
-        imax=where(array_plot eq max(array_plot))
-        imax=array_indices(array_plot,imax)
+        if (subcen[0] eq -1) then begin
+          isub=where(array_plot eq max(array_plot))
+          isub=array_indices(array_plot,isub)
+        endif else begin
+          isub=subcen
+        endelse
 ;;  Plot box indicating enlarged region.
-        oplot, [xax[imax[0]]-rsubbox,xax[imax[0]]+rsubbox, $
-                xax[imax[0]]+rsubbox,xax[imax[0]]-rsubbox, $
-                xax[imax[0]]-rsubbox], $
-               [yax[imax[1]]-rsubbox,yax[imax[1]]-rsubbox, $
-                yax[imax[1]]+rsubbox,yax[imax[1]]+rsubbox, $
-                yax[imax[1]]-rsubbox], color=subcolor, thick=thick
+        oplot, [xax[isub[0]]-rsubbox,xax[isub[0]]+rsubbox, $
+                xax[isub[0]]+rsubbox,xax[isub[0]]-rsubbox, $
+                xax[isub[0]]-rsubbox], $
+               [yax[isub[1]]-rsubbox,yax[isub[1]]-rsubbox, $
+                yax[isub[1]]+rsubbox,yax[isub[1]]+rsubbox, $
+                yax[isub[1]]-rsubbox], color=subcolor, thick=thick
 ;;  Box crosses lower boundary.
-        if (yax[imax[1]]-rsubbox lt y0) then begin
-          oplot, [xax[imax[0]]-rsubbox,xax[imax[0]]+rsubbox, $
-                  xax[imax[0]]+rsubbox,xax[imax[0]]-rsubbox, $
-                  xax[imax[0]]-rsubbox], $
-                 [yax[imax[1]]+Ly-rsubbox,yax[imax[1]]+Ly-rsubbox, $
-                  yax[imax[1]]+Ly+rsubbox,yax[imax[1]]+Ly+rsubbox, $
-                  yax[imax[1]]+Ly-rsubbox], color=subcolor, thick=thick
+        if (yax[isub[1]]-rsubbox lt y0) then begin
+          oplot, [xax[isub[0]]-rsubbox,xax[isub[0]]+rsubbox, $
+                  xax[isub[0]]+rsubbox,xax[isub[0]]-rsubbox, $
+                  xax[isub[0]]-rsubbox], $
+                 [yax[isub[1]]+Ly-rsubbox,yax[isub[1]]+Ly-rsubbox, $
+                  yax[isub[1]]+Ly+rsubbox,yax[isub[1]]+Ly+rsubbox, $
+                  yax[isub[1]]+Ly-rsubbox], color=subcolor, thick=thick
         endif
 ;;  Box crosses upper boundary.
-        if (yax[imax[1]]+rsubbox gt y1) then begin
-          oplot, [xax[imax[0]]-rsubbox,xax[imax[0]]+rsubbox, $
-                  xax[imax[0]]+rsubbox,xax[imax[0]]-rsubbox, $
-                  xax[imax[0]]-rsubbox], $
-                 [yax[imax[1]]-Ly-rsubbox,yax[imax[1]]-Ly-rsubbox, $
-                  yax[imax[1]]-Ly+rsubbox,yax[imax[1]]-Ly+rsubbox, $
-                  yax[imax[1]]-Ly-rsubbox], thick=thick
+        if (yax[isub[1]]+rsubbox gt y1) then begin
+          oplot, [xax[isub[0]]-rsubbox,xax[isub[0]]+rsubbox, $
+                  xax[isub[0]]+rsubbox,xax[isub[0]]-rsubbox, $
+                  xax[isub[0]]-rsubbox], $
+                 [yax[isub[1]]-Ly-rsubbox,yax[isub[1]]-Ly-rsubbox, $
+                  yax[isub[1]]-Ly+rsubbox,yax[isub[1]]-Ly+rsubbox, $
+                  yax[isub[1]]-Ly-rsubbox], thick=thick
         endif
 ;;  Subplot and box.
-        if ( (xax[imax[0]]-rsubbox lt x0) or $
-             (xax[imax[0]]+rsubbox gt x1) ) then begin
+        if ( (xax[isub[0]]-rsubbox lt x0) or $
+             (xax[isub[0]]+rsubbox gt x1) ) then begin
           array_plot=shift(array_plot,[nx/2,0])
-          if (xax[imax[0]]-rsubbox lt x0) then imax[0]=imax[0]+nx/2
-          if (xax[imax[0]]+rsubbox gt x1) then imax[0]=imax[0]-nx/2
+          if (xax[isub[0]]-rsubbox lt x0) then isub[0]=isub[0]+nx/2
+          if (xax[isub[0]]+rsubbox gt x1) then isub[0]=isub[0]-nx/2
         endif
-        if ( (yax[imax[1]]-rsubbox lt y0) or $
-             (yax[imax[1]]+rsubbox gt y1) ) then begin
+        if ( (yax[isub[1]]-rsubbox lt y0) or $
+             (yax[isub[1]]+rsubbox gt y1) ) then begin
           array_plot=shift(array_plot,[0,ny/2])
-          if (yax[imax[1]]-rsubbox lt y0) then imax[1]=imax[1]+ny/2
-          if (yax[imax[1]]+rsubbox gt y1) then imax[1]=imax[1]-ny/2
+          if (yax[isub[1]]-rsubbox lt y0) then isub[1]=isub[1]+ny/2
+          if (yax[isub[1]]+rsubbox gt y1) then isub[1]=isub[1]-ny/2
         endif
+        if (sublog) then array_plot=alog10(array_plot)
         plotimage, array_plot, $
-            xrange=xax[imax[0]]+[-rsubbox,rsubbox], $
-            yrange=yax[imax[1]]+[-rsubbox,rsubbox], $
-            range=[min,max], imgxrange=[x0,x1], imgyrange=[y0,y1], $
+            xrange=xax[isub[0]]+[-rsubbox,rsubbox], $
+            yrange=yax[isub[1]]+[-rsubbox,rsubbox], $
+            range=[submin,submax], imgxrange=[x0,x1], imgyrange=[y0,y1], $
             position=subpos, /noerase, /noaxes, $
             interp=interp, charsize=charsize, thick=thick
         plots, [subpos[0],subpos[2],subpos[2],subpos[0],subpos[0]], $
