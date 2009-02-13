@@ -4278,8 +4278,11 @@ module Entropy
                heat = heat*costh(m)  
                ! don't double-heat the innermost radial point!
                df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%rho1*p%TT1*heat
-               df(l1,m,n,iss) = df(l1,m,n,iss) - p%rho1(l1)*p%TT1(l1) * &
-                    heat(l1)
+!              df(l1,m,n,iss) = df(l1,m,n,iss) - p%rho1(l1)*p%TT1(l1) * &
+!                   heat(l1)
+!AB: Hi Steve, the first point is 1, not l1, because all pencils
+!AB: have dimensions nx, not mx. Axel
+               df(l1,m,n,iss) = df(l1,m,n,iss) - p%rho1(1)*p%TT1(1)*heat(1)
             endif
          else 
             if(n.eq.n1.or.n.eq.n2) then
