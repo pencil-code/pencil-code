@@ -208,7 +208,11 @@ module Hydro
   integer :: idiag_uzmy=0       ! DIAG_DOC: 
   integer :: idiag_u2mz=0       ! DIAG_DOC: 
   integer :: idiag_umz=0        ! DIAG_DOC: 
-  integer :: idiag_ubmz=0       ! DIAG_DOC: $\left<\left<\Uv\right>_{xy}
+  integer :: idiag_omumz=0      ! DIAG_DOC: $\left<\left<\Wv\right>_{xy}
+                                ! DIAG_DOC:   \cdot\left<\Uv\right>_{xy}
+                                ! DIAG_DOC:   \right>$ \quad($xy$-averaged
+                                ! DIAG_DOC:   mean cross helicity production)
+  integer :: idiag_umbmz=0      ! DIAG_DOC: $\left<\left<\Uv\right>_{xy}
                                 ! DIAG_DOC:   \cdot\left<\Bv\right>_{xy}
                                 ! DIAG_DOC:   \right>$ \quad($xy$-averaged
                                 ! DIAG_DOC:   mean cross helicity production)
@@ -2759,7 +2763,8 @@ module Hydro
         idiag_umx=0
         idiag_umy=0
         idiag_umz=0
-        idiag_ubmz=0
+        idiag_omumz=0
+        idiag_umbmz=0
         idiag_divum=0
         idiag_divu2m=0
         idiag_u3u21m=0
@@ -2944,7 +2949,8 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'umx',idiag_umx)
         call parse_name(iname,cname(iname),cform(iname),'umy',idiag_umy)
         call parse_name(iname,cname(iname),cform(iname),'umz',idiag_umz)
-        call parse_name(iname,cname(iname),cform(iname),'ubmz',idiag_ubmz)
+        call parse_name(iname,cname(iname),cform(iname),'omumz',idiag_omumz)
+        call parse_name(iname,cname(iname),cform(iname),'umbmz',idiag_umbmz)
         call parse_name(iname,cname(iname),cform(iname),'Marms',idiag_Marms)
         call parse_name(iname,cname(iname),cform(iname),'Mamax',idiag_Mamax)
         call parse_name(iname,cname(iname),cform(iname),'divum',idiag_divum)
@@ -3221,7 +3227,8 @@ module Hydro
         write(3,*) 'i_umx=',idiag_umx
         write(3,*) 'i_umy=',idiag_umy
         write(3,*) 'i_umz=',idiag_umz
-        write(3,*) 'i_ubmz=',idiag_ubmz
+        write(3,*) 'i_omumz=',idiag_omumz
+        write(3,*) 'i_umbmz=',idiag_umbmz
         write(3,*) 'i_Marms=',idiag_Marms
         write(3,*) 'i_Mamax=',idiag_Mamax
         write(3,*) 'i_divum=',idiag_divum
@@ -3497,13 +3504,53 @@ module Hydro
 !  calculation of <U>.<B> in separate subroutine.
 !  Should do the same for <Ux^2>, <Uy^2>, <Uz^2> later (as in magnetic)
 !
-        if (idiag_ubmz/=0) call calc_ubmz
+        if (idiag_omumz/=0) call calc_omumz
+        if (idiag_umbmz/=0) call calc_umbmz
       endif
 !
       first = .false.
     endsubroutine calc_mflow
 !***********************************************************************
-    subroutine calc_ubmz
+    subroutine calc_omumz
+!
+!  Calculate kinetic helicity of mean field
+!  The oxmz and oymz as well as uxmz and uymz must have been calculated,
+!  so they are present on the root processor.
+!
+!  14-feb-09/axel: adapted from calc_umbmz
+!
+      use Cdata
+      use Mpicomm
+      use Sub
+!
+      logical,save :: first=.true.
+      real :: omumz
+      integer :: j
+!
+!  This only works if uxmz, uymz, bxmz, bymz, are in xyaver,
+!  so print warning if this is not ok.
+!
+      if (idiag_oxmz==0.or.idiag_oymz==0.or.idiag_uxmz==0.or.idiag_uymz==0) then
+        if (first) then
+          print*,"calc_mfield: WARNING"
+          print*,"NOTE: to get omumz, set uxmz, uymz, oxmz, and oymz in xyaver"
+          print*,"We proceed, but you'll get omumz=0"
+        endif
+        omumz=0.
+      else
+        omumz=sum(fnamez(:,:,idiag_oxmz)*fnamez(:,:,idiag_uxmz) &
+                 +fnamez(:,:,idiag_oymz)*fnamez(:,:,idiag_uymz))/(nz*nprocz)
+      endif
+!
+!  save the name in the idiag_omumz slot
+!  and set first to false
+!
+      call save_name(omumz,idiag_omumz)
+      first=.false.
+!
+    endsubroutine calc_omumz
+!***********************************************************************
+    subroutine calc_umbmz
 !
 !  Magnetic helicity production of mean field
 !  The bxmz and bymz as well as Exmz and Eymz must have been calculated,
@@ -3517,7 +3564,7 @@ module Hydro
       use Sub
 !
       logical,save :: first=.true.
-      real :: ubmz
+      real :: umbmz
       integer :: j
 !
 !  This only works if uxmz, uymz, bxmz, bymz, are in xyaver,
@@ -3526,22 +3573,22 @@ module Hydro
       if (idiag_uxmz==0.or.idiag_uymz==0.or.idiag_bxmz==0.or.idiag_bymz==0) then
         if (first) then
           print*,"calc_mfield: WARNING"
-          print*,"NOTE: to get ubmz, set uxmz, uymz, bxmz, and bymz in xyaver"
-          print*,"We proceed, but you'll get ubmz=0"
+          print*,"NOTE: to get umbmz, set uxmz, uymz, bxmz, and bymz in xyaver"
+          print*,"We proceed, but you'll get umbmz=0"
         endif
-        ubmz=0.
+        umbmz=0.
       else
-        ubmz=sum(fnamez(:,:,idiag_uxmz)*fnamez(:,:,idiag_bxmz) &
-                +fnamez(:,:,idiag_uymz)*fnamez(:,:,idiag_bymz))/(nz*nprocz)
+        umbmz=sum(fnamez(:,:,idiag_uxmz)*fnamez(:,:,idiag_bxmz) &
+                 +fnamez(:,:,idiag_uymz)*fnamez(:,:,idiag_bymz))/(nz*nprocz)
       endif
 !
-!  save the name in the idiag_ubmz slot
+!  save the name in the idiag_umbmz slot
 !  and set first to false
 !
-      call save_name(ubmz,idiag_ubmz)
+      call save_name(umbmz,idiag_umbmz)
       first=.false.
 !
-    endsubroutine calc_ubmz
+    endsubroutine calc_umbmz
 !***********************************************************************
     subroutine remove_mean_momenta(f)
 !
