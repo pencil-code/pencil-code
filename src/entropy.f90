@@ -80,22 +80,6 @@ module Entropy
   logical :: lfreeze_sint=.false.,lfreeze_sext=.false.
   logical :: lhcond_global=.false.
 !
-! Steve
-!
-  real :: midpl_heat=0.0
-  real :: surf_heat=0.0
-  real :: dens_heat=0.0
-  real :: radial_heat=0.0
-  real :: stellar_heat=0.0
-  real :: plaw=0.0
-!
-  logical :: lmidplane_heating=.false.
-  logical :: ldisk_heat=.false.
-  logical :: lsurface_heating=.false.
-  logical :: ldensity_heating=.false.
-  logical :: lradial_heating=.false.
-  logical :: lstellar_heating=.false.
-!
   integer :: iglobal_hcond=0
   integer :: iglobal_glhc=0
 
@@ -140,9 +124,7 @@ module Entropy
       T0,ampl_TT,kx_ss,ky_ss,kz_ss,beta_glnrho_global,ladvection_entropy, &
       lviscosity_heat, &
       r_bcz,luminosity,wheat,hcond0,tau_cool,TTref_cool,lhcond_global, &
-      cool_fac,cs0hs,H0hs,rho0hs, &
-! Steve
-      plaw
+      cool_fac,cs0hs,H0hs,rho0hs
 !
 ! run parameters
   namelist /entropy_run_pars/ &
@@ -159,11 +141,7 @@ module Entropy
       lturbulent_heat,deltaT_poleq, &
       tdown, allp,beta_glnrho_global,ladvection_entropy, &
       lviscosity_heat,r_bcz,lfreeze_sint,lfreeze_sext,lhcond_global, &
-      tau_cool,TTref_cool,mixinglength_flux, &
-! Steve
-      ldisk_heat,lmidplane_heating,midpl_heat,lsurface_heating,surf_heat, &
-      ldensity_heating,dens_heat,lradial_heating,radial_heat, &
-      lstellar_heating,stellar_heat
+      tau_cool,TTref_cool,mixinglength_flux
 
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
@@ -762,8 +740,6 @@ module Entropy
           case('isothermal_lnrho_ss')
             print*, 'init_ss: Isothermal density and entropy stratification'
             call isothermal_lnrho_ss(f,T0,rho0)
-          case('disk')
-            call init_disk_entropy(f,T0) 
           case('hydrostatic-isentropic')
             call hydrostatic_isentropic(f,lnrho_bot,ss_const)
           case('wave')
@@ -1886,14 +1862,6 @@ module Entropy
         lpenc_requested(i_cp)=.true.
         lpenc_requested(i_TT)=.true.
       endif
-! Steve
-      if (ldisk_heat) then
-         lpenc_requested(i_rho1)=.true.
-         lpenc_requested(i_TT1) =.true.
-         lpenc_requested(i_lnrho)=.true.
-         lpenc_requested(i_rho)=.true.
-         lpenc_requested(i_TT)=.true.
-      endif
 !
       if (maxval(abs(beta_glnrho_scaled))/=0.0) lpenc_requested(i_cs2)=.true.
 !
@@ -2141,7 +2109,6 @@ module Entropy
           call calc_heat_cool(df,p,Hmax)
       if (tdown/=0.0) call newton_cool(df,p)
       if (cool_RTV/=0.0) call calc_heat_cool_RTV(df,p)
-      if (ldisk_heat) call disk_entropy(f,df,p,T0)
 !
 !  Interstellar radiative cooling and UV heating.
 !
@@ -2991,9 +2958,6 @@ module Entropy
             prof = 1 - step(p%r_mn,r_int,wcool) ! inner heating/cooling step
             heat = heat - cool_int*prof*(p%cs2-cs2_int)/cs2_int
           endif
-!
-          case('disk')
-             heat = heat - cool*exp(p%lnTT+p%lnrho)
 !
         case default
           write(unit=errormsg,fmt=*) &
@@ -4102,209 +4066,6 @@ module Entropy
       real, dimension(mx,my,mz,mfarray) :: finit,f
 
     end subroutine calc_heatcond_ADI
-!***********************************************************************
-    subroutine init_disk_entropy(f,T0)
-!
-      use FArrayManager
-      use Sub,          only: get_radial_distance
-      use Gravity,      only: acceleration
-      use EquationOfState, only: get_cp1
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, intent(in)        :: T0
-      logical                 :: lpresent_zed,lheader
-      integer                 :: i
-      real, dimension (mx)    :: ss_mid,rr_sph,rr_cyl
-      real, dimension (mx)    :: strat,cs2,tmp1,tmp2
-      real                    :: lat,cp1
-!
-      lpresent_zed=.false.
-      if (lspherical_coords) then 
-         if (nygrid/=1) lpresent_zed=.true.
-      else
-         if (nzgrid/=1) lpresent_zed=.true.
-      endif
-!
-      do n=1,mz
-         do m=1,my
-!
-            lheader=lroot.and.(m==1).and.(n==1)
-!
-! midplane entropy
-!
-            call get_radial_distance(rr_sph,rr_cyl)
-            ! only valid for (density) lspherical_cs2=T
-!
-            ss_mid=T0*rr_sph**plaw  !+rsmooth**2)
-!
-! vertical stratification, if needed
-!
-            if (.not.lcylindrical_gravity.and.lpresent_zed) then 
-               if (lheader) &
-                    print*,"Adding vertical entropy stratification with "//&
-                    "scale height h/r=",sqrt(cs20)
-!
-! Get the sound speed
-!
-               call get_cp1(cp1)
-               cs2=cs20*exp(cp1*gamma*f(:,m,n,iss) + gamma1*f(:,m,n,ilnrho))
-!               cs2=f(:,m,n,iss)
-               !            
-               ! uphi2/r = -gr + dp/dr
-               call acceleration(tmp1)
-               tmp2=-tmp1*rr_sph - cs2*(-1.*plaw) ! + ptlaw)
-               lat=pi/2-y(m)
-               strat=(tmp2/cs2) * log(cos(lat))
-            endif
-            f(:,m,n,iss) = ss_mid+strat
-         enddo
-      enddo
-
-!
-    endsubroutine init_disk_entropy
-!***********************************************************************
-
-    subroutine disk_entropy(f,df,p,T0)
-!
-      use Cparam
-      use Cdata,            only: pi
-      use Sub,             only: get_radial_distance
-!      use EquationOfState, only: gamma, gamma1, gamma11, get_cp1, ilnrho_ss
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
-      intent(in) :: p
-!      real, dimension (mx) :: cs2
-      real, dimension (mx) :: rr_sph,rr_cyl  !,ss
-      real, dimension (nx) :: heat,rhomid
-!      real :: cp1,Rgas
-      real, intent(in), optional :: T0
-      real, parameter :: pi2=0.5*pi
-      integer :: i,l,nmid,mmid
-!
-!      call get_cp1(cp1)
-
-      if(lspherical_coords) call get_radial_distance(rr_sph,rr_cyl)
-!
-      nmid=(n2+n1+1)/2
-      mmid=(m2+m1+1)/2
-!
-!  midplane heating
-!  only is correct if domain is symmetric about midplane!!!
-!
-      if(lmidplane_heating) then
-         heat = midpl_heat*p%rho
-         if (lspherical_coords) then
-            if(m.eq.mmid) then
-               ! volume heating should be scaled on spherical grid.
-               heat = heat/(rr_sph(l1:l2)**2*sinth(m))   !!! CHECK ME:
-               df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%rho1*p%TT1*heat
-            endif
-         else 
-            if(n.eq.nmid) then
-               df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%rho1*p%TT1*heat
-            endif
-         endif
-      endif
-!
-!  surface heating
-!  apply only to outer grid cells
-!
-      if(lsurface_heating) then
-         heat = surf_heat*p%rho
-         if (lspherical_coords) then
-            if(m.eq.m1 .or. m.eq.m2) then
-               ! volume heating should be scaled on spherical grid.
-!               heat = heat/rr_sph(l1:l2)**2.   !!! CHECK ME:
-               df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%rho1*p%TT1*heat
-!               print*,"M is ",m !, heat(l1),heat(m2)
-
-            endif
-         else 
-            if(n.eq.n1.or.n.eq.n2) then
-               df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%rho1*p%TT1*heat
-            endif
-         endif
-      endif
-!
-!  column density-dependent heating
-!  e.g. cosmic ray heating
-!  compute column densities & attenuate
-!  - could just do comparison against desired column density extinction
-!  - or look at opacity ;-)  i can only wish
-!  could just illuminate the vertical border and let 
-!  flux-limited diffusion do its job
-!
-      if(ldensity_heating) then
-         heat = dens_heat
-         if (lspherical_coords) then
-            if (ldensity_nolog) then
-               rhomid=f(l1:l2,mmid,n,ilnrho)
-            else 
-               rhomid=exp(f(l1:l2,mmid,n,ilnrho))
-            endif
-            heat = heat * exp(-rhomid/p%rho)  !/rr_sph(l1:l2)**2
-         else  ! cartesian only
-            if (ldensity_nolog) then
-               rhomid=f(l1:l2,m,nmid,ilnrho)
-            else
-               rhomid=exp(f(l1:l2,m,nmid,ilnrho))
-            endif
-            heat = heat * exp(-p%rho/rhomid)
-         endif
-         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%rho1*p%TT1*heat
-      endif
-!
-! radial heating
-!
-      if(lradial_heating) then
-         heat = radial_heat*p%TT
-         if (lspherical_coords.or.lcartesian_coords) then
-            heat = heat/(4.*pi*rr_sph(l1:l2)**2.)
-         else  ! cylindrical
-            heat = heat/(2.*pi*rr_cyl(l1:l2)**2.)
-         endif
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%rho1*p%TT1*heat         
-      endif
-!
-!  star heating
-!  basically radial heating + inclined surface heating/r**2
-!
-      if(lstellar_heating) then
-         heat = stellar_heat/rr_sph(l1:l2)**2.
-         if (lspherical_coords) then
-            if(m.eq.m1 .or. m.eq.m2) then
-               heat = heat*costh(m)  
-               ! don't double-heat the innermost radial point!
-               df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%rho1*p%TT1*heat
-!              df(l1,m,n,iss) = df(l1,m,n,iss) - p%rho1(l1)*p%TT1(l1) * &
-!                   heat(l1)
-!AB: Hi Steve, the first point is 1, not l1, because all pencils
-!AB: have dimensions nx, not mx. Axel
-               df(l1,m,n,iss) = df(l1,m,n,iss) - p%rho1(1)*p%TT1(1)*heat(1)
-            endif
-         else 
-            if(n.eq.n1.or.n.eq.n2) then
-               df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%rho1*p%TT1*heat
-            endif
-         endif
-      endif
-!
-! set temperature based on z-height and radial distance
-!
-!      do l=1,mx
-!         do m=1,my
-!            lnTTmid(l,m,:) = alog(T0)-(rr_sph(l)*costh(m))**2.
-!         end do
-!      end do
-!      Rgas=(1.-gamma11)/cp1
-!      f(:,:,:,iss)=gamma11/cp1*(lnTTmid+alog(Rgas)-gamma1*lnrho)
-!
-!      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%rho1*p%TT1*heat
-
-!
-    end subroutine disk_entropy
 !***********************************************************************
 
 endmodule Entropy
