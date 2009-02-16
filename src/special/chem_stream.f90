@@ -405,9 +405,9 @@ module Special
 
       l_sz=int(0.1*nxgrid)
 
-    !  df(l1:l_sz,m,n,ilnrho)=df(l1:l_sz,m,n,ilnrho)&  
-!            -3.*(x(l1:l_sz)-x(l_sz))**3/(Lxyz(1)-x(l_sz))**3 &
-!            /dt*(f(l1:l_sz,m,n,ilnrho)-f(l1,m,n,ilnrho))
+      df(l1:l_sz,m,n,ilnrho)=df(l1:l_sz,m,n,ilnrho)&  
+            -3.*(x(l1:l_sz)-x(l_sz))**3/(Lxyz(1)-x(l_sz))**3 &
+            /dt*(f(l1:l_sz,m,n,ilnrho)-f(l1,m,n,ilnrho))
      endif
 
 
@@ -449,8 +449,8 @@ module Special
      l_sz=int(0.1*nxgrid)
 
      df(l1:l_sz,m,n,iux)=df(l1:l_sz,m,n,iux)&  
-            !-3.*(x(l1:l_sz)-x(l_sz))**3/(Lxyz(1)-x(l_sz))**3 &
-            -1./(5*dt)*(f(l1:l_sz,m,n,iux)-f(l1,m,n,iux))
+            -3.*(x(l1:l_sz)-x(l_sz))**3/(Lxyz(1)-x(l_sz))**3 &
+            /dt*(f(l1:l_sz,m,n,iux)-f(l1,m,n,iux))
     endif
 
 
@@ -891,13 +891,20 @@ subroutine flame_spd_test(f)
       do k=1,mx 
         if (x(k)<x1_front) then
           f(k,:,:,ilnTT)=log(TT1_front)
+          f(k,:,:,ichemspec(1))=1.
+          f(k,:,:,ichemspec(2))=0.
         endif
         if (x(k)>x2_front) then
           f(k,:,:,ilnTT)=log(TT2_front)
+          f(k,:,:,ichemspec(1))=0.
+          f(k,:,:,ichemspec(2))=1.
         endif
         if (x(k)>x1_front .and. x(k)<x2_front) then
           f(k,:,:,ilnTT)=log((x(k)-x1_front)/(x2_front-x1_front) &
                *(TT2_front-TT1_front)+TT1_front)
+          f(k,:,:,ichemspec(1))=(x(k)-x1_front)/(x2_front-x1_front) &
+               *(0.-1.)+1.
+          f(k,:,:,ichemspec(2))=1.-f(k,:,:,ichemspec(1))
         endif
         mu1(k,:,:)=f(k,:,:,i_H2)/(2.*mH)+f(k,:,:,i_O2)/(2.*mO)
       enddo
@@ -905,6 +912,8 @@ subroutine flame_spd_test(f)
       do k=1,mx
         f(k,:,:,ilnrho)=init_lnrho!log(p2_front)-log(Rgas)-f(k,:,:,ilnTT)-log(mu1(k,:,:))
         f(k,:,:,iux)=init_ux!f(l1,:,:,iux)
+      !  f(k,:,:,ichemspec(1))=1.
+      !  f(k,:,:,ichemspec(2))=0.
       enddo
 
 endsubroutine flame_spd_test

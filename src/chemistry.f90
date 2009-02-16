@@ -47,7 +47,7 @@ module Chemistry
 
 !
   logical :: lone_spec=.false.
-  logical :: l1step_test=.false.
+ 
 !
 !  parameters related to chemical reactions
 !
@@ -70,6 +70,13 @@ module Chemistry
   real,    allocatable, dimension(:,:) :: kreactions_z
   real,    allocatable, dimension(:)   :: kreactions_m,kreactions_p
   character (len=30),allocatable, dimension(:) :: reaction_name
+
+! 1step_test case 
+
+    logical :: l1step_test=.false.
+    integer :: ipr=2
+    real :: Tc=470., Tinf=2000., beta=10., dim_omega_dot=.1
+
 !
 !  hydro-related parameters
 !
@@ -766,9 +773,13 @@ subroutine flame_front(f)
             mu1_full(:,:,:)=mu1_full(:,:,:)+f(:,:,:,ichemspec(k)) &
                 /species_constants(k,imass)
           enddo
-          mu1_full=mu1_full*unit_mass
 
-          
+          if (l1step_test) then
+             species_constants(:,imass)=1.
+             mu1_full=1.
+          endif
+
+          mu1_full=mu1_full*unit_mass
 
 !
 !  Mole fraction XX
@@ -1375,11 +1386,28 @@ subroutine flame_front(f)
      enddo
 !
       if (ldensity .and. lcheminp) then
+
+       if (l1step_test) then
+        sum_DYDt=0.
+        do i=1,nx 
+         if (p%TT(i)>Tc) then
+          sum_DYDt(i)=(Rgas-p%cp(i)*(Tinf-p%TT(1))/p%TT(i)) &
+            *(dim_omega_dot*f(l1,m,n,iux)**2*beta*(beta-1.) &
+            *((p%TT(i)-p%TT(1))/(Tinf-p%TT(1))-1.))
+         endif
+        enddo
+
+
+      !  sum_DYDt=(Rgas-p%cp*(Tinf-p%TT(1))/p%TT)*p%DYDt_reac(:,2)
+
+
+       else
         sum_DYDt=0.
         do k=1,nchemspec
           sum_DYDt=sum_DYDt+Rgas/species_constants(k,imass)*&
               (1.-H0_RT(l1:l2,m,n,k))*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
         enddo
+       endif
 !
         call dot_mn(p%ghYrho,p%uu,ghYrho_uu)
 
@@ -1923,6 +1951,7 @@ subroutine flame_front(f)
                 endif
               enddo
               species_constants(ind_chem,imass)=sum(MolMass)
+
 !
 ! Find temperature-ranges for low and high temperature fitting
 !
@@ -2483,8 +2512,6 @@ subroutine flame_front(f)
       real, dimension (nx) ::  kf_0,Kc_0,Pr,sum_sp,prod1_0,prod2_0
       integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
 
-      real :: T_c=1500., Tinf=2400., beta=10.
-
 !
       if (lwrite)  open(file_id,file=input_file)
 !
@@ -2700,9 +2727,11 @@ subroutine flame_front(f)
 !  For more details see Doom, et al., J. Comp. Phys., 226, 2007
 
       if (l1step_test) then
+       
         do i=1,nx
-         if (p%TT(i) >= T_c) then
-         vreact_p(i,reac)=beta*(beta-1.)*((p%TT(i)-p%TT(1))/(Tinf-p%TT(1))-1.)
+         if (p%TT(i) > Tc) then
+         vreact_p(i,reac)=dim_omega_dot*f(l1,m,n,iux)**2*beta*(beta-1.)*(1.-f(l1-1+i,m,n,ichemspec(ipr)))
+
         else
          vreact_p(i,reac)=0.
         endif
@@ -2756,11 +2785,7 @@ subroutine flame_front(f)
 !  Chemkin data case
 !
 
-      !  if (l1step_test) then
-      !   call get_reaction_rate_test(f,vreactions_p,vreactions_m,p)
-      !  else
          call get_reaction_rate(f,vreactions_p,vreactions_m,p)
-      !  endif
       endif
 !
 !  Calculate rate of progress variable (labeled q in the chemkin manual)
@@ -2773,12 +2798,17 @@ subroutine flame_front(f)
       do k=1,nchemspec  
         xdot=0.
         do j=1,nreactions
-          xdot=xdot+stoichio(k,j)*vreactions(:,j)  
+          xdot=xdot+stoichio(k,j)*vreactions(:,j)
         enddo
         if (lcheminp) then
+         if (l1step_test) then
+          xdot=-xdot
+         else
           xdot=-xdot*species_constants(k,imass)/p%rho
+         endif
         endif
         p%DYDt_reac(:,k)=xdot*unit_time
+
       enddo
 !
 ! NH:
@@ -3087,6 +3117,8 @@ subroutine flame_front(f)
         endif
       enddo
 !
+
+
     endsubroutine calc_diffusion_term
 !***************************************************************
     subroutine calc_heatcond_chemistry(f,df,p)
@@ -3110,11 +3142,13 @@ subroutine flame_front(f)
 !
 
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)  & 
-          + p%lambda(:)*(p%del2lnTT+g2TT+g2TTlnlambda)*p%cv1
+          + p%lambda(:)*(p%del2lnTT+g2TT+g2TTlnlambda)*p%cv1/p%rho(:)
       !/(p%cp-Rgas*p%mu1)
 !
+
+
       RHS_T_full(l1:l2,m,n)=RHS_T_full(l1:l2,m,n) &
-          + p%lambda(:)*(p%del2lnTT+g2TT+g2TTlnlambda)*p%cv1
+          + p%lambda(:)*(p%del2lnTT+g2TT+g2TTlnlambda)*p%cv1/p%rho(:)
 !
     endsubroutine calc_heatcond_chemistry
 !***********************************************************************
