@@ -29,12 +29,12 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   line  = strmid(hline,strpos(hline,'#')+1)
   line2 = strmid(hline,strpos(hline,'%')+1)
-  if strlen(line2) lt strlen(line) then line=line2
+  if (strlen(line2) lt strlen(line)) then line=line2
   labels = ['']
-  ;
-  ; strsplit() is not available in IDL prior to 5.3 (and str_sep() was
-  ; obsoleted after 5.2..), so we do this manually:
-  ;
+;
+; strsplit() is not available in IDL prior to 5.3 (and str_sep() was
+; obsoleted after 5.2..), so we do this manually:
+;
   while (line ne '') do begin
     repeat begin
       line = strmid(line,1)     ; remove first character
@@ -43,9 +43,9 @@ COMPILE_OPT IDL2,HIDDEN
     labels = [labels, strmid(line,0,endlb)]
     line = strmid(line,endlb)
   endwhile
-  ;
-  ;  eliminate empty labels
-  ;
+;
+;  Eliminate empty labels.
+;
   good = where(labels ne '')
   return, labels[good]
 end
@@ -53,7 +53,7 @@ end
 function list_idx, label, list
 COMPILE_OPT IDL2,HIDDEN
 ;
-;  Return index if label is contained in list, else 0
+;  Return index if label is contained in list, else 0.
 ;
   return, (where(list eq label))[0]
 end
@@ -61,30 +61,29 @@ end
 function in_list, label, list
 COMPILE_OPT IDL2,HIDDEN
 ;
-;  Return 1 if label is contained in list, else 0
+;  Return 1 if label is contained in list, else 0.
 ;
   return, (list_idx(label,list)+1) ne 0
 end
 ; ---------------------------------------------------------------------- ;
 pro pc_read_ts, $
-                FILENAME=filename,$
-                DATADIR=datadir, $
-                OBJECT=object, DOUBLE=DOUBLE, $ 
-                PRINT=PRINT, QUIET=QUIET, HELP=HELP, VERBOSE=VERBOSE, $
-                N=n, IT=it, T=t, DT=dt, DTC=dtc, URMS=urms, $
-                EKIN=ekin, ETH=eth, RHOM=rhom, SSM=ssm, TRIMFIRST=TRIMFIRST,  $
-                MOVINGAVERAGE=MOVINGAVERAGE, monotone=monotone, njump=njump
+    filename=filename, datadir=datadir, object=object, double=double, $ 
+    print=print, quiet=quiet, help=help, verbose=verbose, $
+    n=n, it=it, t=t, dt=dt, dtc=dtc, urms=urms, $
+    ekin=ekin, eth=eth, rhom=rhom, ssm=ssm, trimfirst=trimfirst,  $
+    movingaverage=movingaverage, monotone=monotone, njump=njump
 COMPILE_OPT IDL2,HIDDEN
-
-; If no meaningful parameters are given show some help!
-  IF ( keyword_set(HELP) ) THEN BEGIN
+;
+;  If no meaningful parameters are given show some help!
+;
+  if ( keyword_set(help) ) then begin
     print, "Usage: "
     print, ""
-    print, "pc_read_ts,  T=t,"
-    print, "             OBJECT=object," 
-    print, "             FILENAME=filename," 
-    print, "             MOVINGAVERAGE=maverage," 
-    print, "             /PRINT, /DOUBLE, /QUIET, /HELP"
+    print, "pc_read_ts,  t=t,"
+    print, "             object=object," 
+    print, "             filename=filename," 
+    print, "             movingaverage=maverage," 
+    print, "             /print, /double, /quiet, /help"
     print, ""
     print, "Read time series data from time_series.dat into separate "
     print, "variables or a structure."
@@ -114,29 +113,29 @@ COMPILE_OPT IDL2,HIDDEN
     print, "   object: optional structure in which to return all   [structure]"
     print, "           the above as tags   "
     print, ""
-    print, "  /DOUBLE: instruction to read all values as double precision    "
-    print, "   /PRINT: instruction to print all variables to standard output "
-    print, "/MONOTONE: trim data so that time is monotonously increasing"
-    print, "   /QUIET: instruction not to print any 'helpful' information    "
-    print, "    /HELP: display this usage information, and exit              "
+    print, "  /double: instruction to read all values as double precision    "
+    print, "   /print: instruction to print all variables to standard output "
+    print, "/monotone: trim data so that time is monotonously increasing"
+    print, "   /quiet: instruction not to print any 'helpful' information    "
+    print, "    /help: display this usage information, and exit              "
     return
-  ENDIF
-
-; Default data directory
-
+  endif
+;
+;  Default data directory.
+;
   if (not keyword_set(datadir)) then datadir=pc_get_datadir()
   default, filename, 'time_series.dat'
   default, monotone, 0
   default, njump, 1
-  default, MOVINGAVERAGE,0
-
+  default, movingaverage,0
+;
   if (strpos(filename,'/') eq -1) then begin
     fullfilename=datadir+'/'+filename
   endif else begin
     fullfilename=filename
   endelse
 ;
-; Initialize / set default returns for ALL variables
+;  Initialize / set default returns for ALL variables.
 ;
   n=0
   it=0.
@@ -148,14 +147,14 @@ COMPILE_OPT IDL2,HIDDEN
   eth=0.
   rhom=0.
   ssm=0.
-
-; Get a unit number
-  GET_LUN, file
-
+;
+;  Get a unit number.
+;
+  get_lun, file
 ;
 ;  read header
 ;
-; Check for existance and read the data
+; Check for existence and read the data
   dummy=findfile(fullfilename, COUNT=found)
   if (found gt 0) then begin
     if ( not keyword_set(QUIET) ) THEN print, 'Reading ' + fullfilename + '...'
@@ -171,14 +170,13 @@ COMPILE_OPT IDL2,HIDDEN
     endrep until ((hashpos ge 0) and (strmid(line,hashpos+1,2) eq '--'))
     point_lun,-file,fileposition
     close,file
-    FREE_LUN,file
+    free_lun,file
   end else begin
-    FREE_LUN,file
+    free_lun,file
     message, 'ERROR: cannot find file ' + fullfilename
   endelse
-
 ;
-;  read table
+;  Read table.
 ;
   newheader=line
   full_data=0.
@@ -189,13 +187,14 @@ COMPILE_OPT IDL2,HIDDEN
     ncols = n_elements(labels)
     newheader='^#--'
  
-    data = input_table(fullfilename,DOUBLE=double,  $
-                       STOP_AT=newheader,FILEPOSITION=fileposition,verbose=verbose)
+    data = input_table(fullfilename,double=double,  $
+           stop_at=newheader,fileposition=fileposition,verbose=verbose)
     if ((size(data))[1] ne ncols) then begin
       message, /INFO, 'Inconsistency: label number different from column number'
     endif
-
-  ; Merge read data into full data set
+;
+;  Merge read data into full data set.
+;
     if ((size(full_labels))[0] eq 0) then begin
     ;If it's the first time just chunk the data into place
       full_labels=labels
@@ -245,26 +244,26 @@ COMPILE_OPT IDL2,HIDDEN
       endfor   
     endelse
   endwhile
+;
+;  If we wish to throw away the initial diagnostics line:
+;
+  if (keyword_set(trimfirst)) then full_data=full_data[*,1:*]
 
-
-; If we wish to throw away the initial diagnostics line:
-  if keyword_set(TRIMFIRST) then full_data=full_data[*,1:*]
-
-  if ( MOVINGAVERAGE gt 0 ) then begin
+  if (movingaverage gt 0) then begin
     original_data=full_data
     sz=size(full_data)
     if (keyword_set(double)) then begin
-      full_data = dblarr(sz[1],sz[2]-MOVINGAVERAGE+1)
+      full_data = dblarr(sz[1],sz[2]-movingaverage+1)
       full_data[*,*] = 0D
     endif else begin
-      full_data = fltarr(sz[1],sz[2]-MOVINGAVERAGE+1)
+      full_data = fltarr(sz[1],sz[2]-movingaverage+1)
       full_data[*,*] = 0.
     endelse
-    for i=0,sz[2]-MOVINGAVERAGE do begin
-      for j=0,MOVINGAVERAGE-1 do begin
+    for i=0,sz[2]-movingaverage do begin
+      for j=0,movingaverage-1 do begin
         full_data[*,i]=full_data[*,i]+original_data[*,i+j]
       endfor
-      full_data[*,i]=full_data[*,i]/(1D*MOVINGAVERAGE)
+      full_data[*,i]=full_data[*,i]/(1D*movingaverage)
     endfor
   endif
 ;
@@ -284,7 +283,23 @@ COMPILE_OPT IDL2,HIDDEN
     ii=njump*lindgen(n_elements(full_data[0,*])/njump)
   endelse
 ;
-;  assemble the data
+;  Only read in first occurrence of a diagnostic variable.
+;
+  for i=0,n_elements(full_labels)-1 do begin
+    if (n_elements(full_labels2) eq 0) then begin
+      full_labels2=full_labels[i]
+    endif else begin
+      unique=total(full_labels[i] eq full_labels2)
+      if (unique eq 0) then begin
+        full_labels2=[full_labels2,full_labels[i]]
+      endif else begin
+        print, 'Warning: diagnostic variable '+full_labels[i]+' was found more than once in time_series.dat'
+      endelse
+    endelse
+  endfor
+  full_labels=full_labels2
+;
+;  Assemble the data.
 ;
   ncols = n_elements(full_labels)
   cmd = 'object = {'            ; build a command to execute
@@ -295,11 +310,12 @@ COMPILE_OPT IDL2,HIDDEN
                      + strtrim(i,2) + ',ii])'
   endfor
   cmd = cmd + ' }'
-
+;
   if (execute(cmd) ne 1) then $
       message, 'There was a problem executing <' + cmd + '>', /INFO
-
-; Unwrap and quantities that may have been separately requested from object
+;
+;  Unwrap and quantities that may have been separately requested from object.
+;
   n = (size(data))[1]
   if (in_list('t',full_labels))    then t = object.t
   if (in_list('dt',full_labels))   then dt = object.dt
@@ -309,12 +325,12 @@ COMPILE_OPT IDL2,HIDDEN
   if (in_list('eth',full_labels))  then eth = object.eth
   if (in_list('rhom',full_labels)) then rhom = object.rhom
   if (in_list('ssm',full_labels))  then ssm = object.ssm
-
-; If requested print a summary
-  if keyword_set(PRINT) then begin
+;
+;  If requested print a summary.
+;
+  if (keyword_set(print)) then begin
     print, 'For GLOBAL calculation domain:'
     print, '    NO SUMMARY INFORMATION CONFIGURED - edit pc_read_ts.pro'
   endif
-
+;
 end
-; ---------------------------------------------------------------------- ;
