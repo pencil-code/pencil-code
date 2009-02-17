@@ -78,12 +78,13 @@ module Testfield
   real, dimension(njtest) :: rescale_aatest=0.
   logical :: ltestfield_newz=.true.,leta_rank2=.true.
   logical :: ltestfield_taver=.false.
+  logical :: llorentzforce_testfield=.false.
   namelist /testfield_run_pars/ &
        B_ext,reinitialize_aatest,zextent,lsoca,lsoca_jxb, &
        lset_bbtest2,etatest,etatest1,itestfield,ktestfield, &
        lam_testfield,om_testfield,delta_testfield, &
        ltestfield_newz,leta_rank2,lphase_adjust,phase_testfield, &
-       ltestfield_taver, &
+       ltestfield_taver,llorentzforce_testfield, &
        luxb_as_aux,ljxb_as_aux,lignore_uxbtestm, &
        daainit,linit_aatest,bamp, &
        rescale_aatest
@@ -533,7 +534,7 @@ module Testfield
 
       real, dimension (nx,3) :: bb,aa,uxB,B0test=0,bbtest
       real, dimension (nx,3) :: uxbtest,duxbtest,jxbtest,djxbrtest
-      real, dimension (nx,3) :: J0test,jxB0rtest,J0xbrtest
+      real, dimension (nx,3) :: J0test=0,jxB0rtest,J0xbrtest
       real, dimension (nx,3,3,njtest) :: Mijpq
       real, dimension (nx,3,njtest) :: Eipq,bpq,jpq
       real, dimension (nx,3) :: del2Atest,uufluct
@@ -647,6 +648,34 @@ module Testfield
 !
           df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
             +uxB+etatest*del2Atest+duxbtest
+        endif
+!
+!  Calculate Lorentz force for sinlge B11 testfield and add to duu
+!
+        if (llorentzforce_testfield.and.lhydro) then
+          aatest=f(l1:l2,m,n,iaxtest:iaztest)
+          call gij(f,iaxtest,aijtest,1)
+          call gij_etc(f,iaxtest,aatest,aijtest,bijtest,del2Atest2,graddivatest)
+!
+!  calculate jpq and bpq
+!
+          call curl_mn(aijtest,bbtest,aatest)
+          call curl_mn(bijtest,jjtest,bbtest)
+!
+!  calculate jpq x B0pq
+!
+          select case(itestfield)
+            case('B11'); call set_J0test_B11_B21(J0test,jtest)
+            case('B=0') !(dont do anything)
+          case default
+            call fatal_error('daatest_dt','undefined itestfield value')
+          endselect
+          call cross_mn(J0test+jjtest,B0test+bbtest,jxbrtest)
+          call multsv_mn(p%rho1,jxbrtest,jxbrtest)
+!
+!  add them all together
+!
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+jxbrtest
         endif
 !
 !  Calculate Lorentz force
@@ -1219,7 +1248,7 @@ module Testfield
 !  set B0test for each of the 9 cases
 !
       select case(jtest)
-      case(1); B0test(:,1)=cz(n); B0test(:,2)=sz(n); B0test(:,3)=0.
+      case(1); B0test(:,1)=bamp*cz(n); B0test(:,2)=bamp*sz(n); B0test(:,3)=0.
       case default; B0test(:,:)=0.
       endselect
 !
@@ -1266,8 +1295,8 @@ module Testfield
 !  set J0test for each of the 9 cases
 !
       select case(jtest)
-      case(1); J0test(:,1)=0.; J0test(:,2)=-ktestfield*sz(n); J0test(:,3)=0.
-      case(2); J0test(:,1)=0.; J0test(:,2)=+ktestfield*cz(n); J0test(:,3)=0.
+      case(1); J0test(:,1)=0.; J0test(:,2)=-bamp*ktestfield*sz(n); J0test(:,3)=0.
+      case(2); J0test(:,1)=0.; J0test(:,2)=+bamp*ktestfield*cz(n); J0test(:,3)=0.
       case default; J0test(:,:)=0.
       endselect
 !
