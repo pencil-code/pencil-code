@@ -45,6 +45,10 @@ module Hydro
   real, target, dimension (nx,ny) :: divu_xy3,divu_xy4,u2_xy3,u2_xy4
   real, target, dimension (nx,ny) :: o2_xy3,o2_xy4
 !
+!  cosine and sine function for setting test fields and analysis
+!
+  real, dimension(mz) :: c2z,csz,s2z
+!
 !  precession matrices
 !
   real, dimension (3,3) :: mat_cori=0.,mat_cent=0.
@@ -172,6 +176,10 @@ module Hydro
   integer :: idiag_ux2m=0       ! DIAG_DOC: $\left<u_x^2\right>$
   integer :: idiag_uy2m=0       ! DIAG_DOC: $\left<u_y^2\right>$
   integer :: idiag_uz2m=0       ! DIAG_DOC: $\left<u_z^2\right>$
+  integer :: idiag_ux2ccm=0     ! DIAG_DOC: $\left<u_x^2\cos^2kz\right>$
+  integer :: idiag_ux2ssm=0     ! DIAG_DOC: $\left<u_x^2\sin^2kz\right>$
+  integer :: idiag_uy2ccm=0     ! DIAG_DOC: $\left<u_y^2\cos^2kz\right>$
+  integer :: idiag_uy2ssm=0     ! DIAG_DOC: $\left<u_y^2\sin^2kz\right>$
   integer :: idiag_ux2mx=0      ! DIAG_DOC: $\left<u_x^2\right>_{yz}$
   integer :: idiag_uy2mx=0      ! DIAG_DOC: $\left<u_y^2\right>_{yz}$
   integer :: idiag_uz2mx=0      ! DIAG_DOC: $\left<u_z^2\right>_{yz}$
@@ -421,6 +429,7 @@ module Hydro
       use SharedVariables,only:put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(mz) :: c,s
       logical :: lstarting
       integer :: ierr
 !
@@ -429,6 +438,15 @@ module Hydro
       if (.not. leos) then
         call stop_it('initialize_hydro: EOS=noeos but hydro requires an EQUATION OF STATE for the fluid')
       endif
+!
+!  calculate cosz*sinz, cos^2, and sinz^2, to take moments with
+!  of ux2, uxuy, etc.
+!
+      c=cos(z)
+      s=sin(z)
+      c2z=c**2
+      s2z=s**2
+      csz=c*s
 !
 !  r_int and r_ext override rdampint and rdampext if both are set
 !
@@ -1551,6 +1569,10 @@ module Hydro
         if (idiag_ux2m/=0)    call sum_mn_name(p%uu(:,1)**2,idiag_ux2m)
         if (idiag_uy2m/=0)    call sum_mn_name(p%uu(:,2)**2,idiag_uy2m)
         if (idiag_uz2m/=0)    call sum_mn_name(p%uu(:,3)**2,idiag_uz2m)
+        if (idiag_ux2ccm/=0)  call sum_mn_name(c2z(n)*p%uu(:,1)**2,idiag_ux2ccm)
+        if (idiag_ux2ssm/=0)  call sum_mn_name(s2z(n)*p%uu(:,1)**2,idiag_ux2ssm)
+        if (idiag_uy2ccm/=0)  call sum_mn_name(c2z(n)*p%uu(:,2)**2,idiag_uy2ccm)
+        if (idiag_uy2ssm/=0)  call sum_mn_name(s2z(n)*p%uu(:,2)**2,idiag_uy2ssm)
         if (idiag_uxuym/=0)   call sum_mn_name(p%uu(:,1)*p%uu(:,2),idiag_uxuym)
         if (idiag_uxuzm/=0)   call sum_mn_name(p%uu(:,1)*p%uu(:,3),idiag_uxuzm)
         if (idiag_uyuzm/=0)   call sum_mn_name(p%uu(:,2)*p%uu(:,3),idiag_uyuzm)
@@ -2735,6 +2757,10 @@ module Hydro
         idiag_ux2m=0
         idiag_uy2m=0
         idiag_uz2m=0
+        idiag_ux2ccm=0
+        idiag_ux2ssm=0
+        idiag_uy2ccm=0
+        idiag_uy2ssm=0
         idiag_rux2m=0
         idiag_ruy2m=0
         idiag_ruz2m=0
@@ -2920,6 +2946,10 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'ux2m',idiag_ux2m)
         call parse_name(iname,cname(iname),cform(iname),'uy2m',idiag_uy2m)
         call parse_name(iname,cname(iname),cform(iname),'uz2m',idiag_uz2m)
+        call parse_name(iname,cname(iname),cform(iname),'ux2ccm',idiag_ux2ccm)
+        call parse_name(iname,cname(iname),cform(iname),'ux2ssm',idiag_ux2ssm)
+        call parse_name(iname,cname(iname),cform(iname),'uy2ccm',idiag_uy2ccm)
+        call parse_name(iname,cname(iname),cform(iname),'uy2ssm',idiag_uy2ssm)
         call parse_name(iname,cname(iname),cform(iname),'rux2m',idiag_rux2m)
         call parse_name(iname,cname(iname),cform(iname),'ruy2m',idiag_ruy2m)
         call parse_name(iname,cname(iname),cform(iname),'ruz2m',idiag_ruz2m)
@@ -3197,6 +3227,10 @@ module Hydro
         write(3,*) 'i_ux2m=',idiag_ux2m
         write(3,*) 'i_uy2m=',idiag_uy2m
         write(3,*) 'i_uz2m=',idiag_uz2m
+        write(3,*) 'i_ux2ccm=',idiag_ux2ccm
+        write(3,*) 'i_ux2ssm=',idiag_ux2ssm
+        write(3,*) 'i_uy2ccm=',idiag_uy2ccm
+        write(3,*) 'i_uy2ssm=',idiag_uy2ssm
         write(3,*) 'i_rux2m=',idiag_rux2m
         write(3,*) 'i_ruy2m=',idiag_ruy2m
         write(3,*) 'i_ruz2m=',idiag_ruz2m
