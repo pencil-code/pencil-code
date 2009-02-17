@@ -42,6 +42,7 @@ module Chemistry
   real :: visc_const=impossible
   real :: diffus_const=impossible
   real :: Cp_const=impossible
+  real :: Cv_const=impossible
   real :: init_x1=-0.2,init_x2=0.2
   real :: init_TT1=400, init_TT2=2400., init_ux
 
@@ -112,7 +113,7 @@ module Chemistry
   namelist /chemistry_init_pars/ &
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
       amplchemk,amplchemk2, chem_diff,nu_spec, BinDif_simple, visc_simple, &
-      lambda_const, visc_const,Cp_const,diffus_const,init_x1,init_x2, &
+      lambda_const, visc_const,Cp_const,Cv_const,diffus_const,init_x1,init_x2, &
       init_TT1,init_TT2,init_ux,l1step_test
 
 
@@ -866,6 +867,10 @@ subroutine flame_front(f)
           endif
 
 
+          if (Cv_const<impossible) then
+            Cv_full=Cv_const
+          endif
+
 
 !
 !  Binary diffusion coefficients
@@ -1391,16 +1396,14 @@ subroutine flame_front(f)
         sum_DYDt=0.
         do i=1,nx 
          if (p%TT(i)>Tc) then
-          sum_DYDt(i)=(Rgas-p%cp(i)*(Tinf-p%TT(1))/p%TT(i)) &
-            *(dim_omega_dot*f(l1,m,n,iux)**2*beta*(beta-1.) &
-            *((p%TT(i)-p%TT(1))/(Tinf-p%TT(1))-1.))
+          sum_DYDt(i)=-f(l1,m,n,iux)*(p%TT(i)-Tinf)/p%TT(i) &
+            *Cp_const**2/lambda_const*p%rho(1)*beta*(beta-1.)*f(l1,m,n,iux)
+
+        !  sum_DYDt(i)=-(p%TT(i)-Tinf)/p%TT(i)*abs(f(l1,m,n,iux))/(x(nx)-x(1))
+        !  sum_DYDt(i)=f(l1,m,n,iux)/p%TT(i)*(Tinf-p%TT(1))/(x(nx)-x(1))
+
          endif
         enddo
-
-
-      !  sum_DYDt=(Rgas-p%cp*(Tinf-p%TT(1))/p%TT)*p%DYDt_reac(:,2)
-
-
        else
         sum_DYDt=0.
         do k=1,nchemspec
@@ -1417,6 +1420,7 @@ subroutine flame_front(f)
             -(hYrho_full(l1:l2,m,n)*p%divu(:)+ghYrho_uu(:))/p%TT(:)*p%cv1
 !
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + RHS_T_full(l1:l2,m,n)
+
 !
         if (lheatc_chemistry) call calc_heatcond_chemistry(f,df,p)
 !
