@@ -37,13 +37,13 @@ module Hydro
   real, target, dimension (nx,ny,3) :: oo_xy,oo_xy2,oo_xy3,oo_xy4
   real, target, dimension (nx,nz,3) :: oo_xz
   real, target, dimension (ny,nz,3) :: oo_yz
-  real, target, dimension (nx,ny) :: divu_xy,u2_xy,o2_xy
-  real, target, dimension (nx,ny) :: divu_xy2,u2_xy2,o2_xy2
-  real, target, dimension (nx,nz) :: divu_xz,u2_xz,o2_xz
-  real, target, dimension (ny,nz) :: divu_yz,u2_yz,o2_yz
+  real, target, dimension (nx,ny) :: divu_xy,u2_xy,o2_xy,mach_xy
+  real, target, dimension (nx,ny) :: divu_xy2,u2_xy2,o2_xy2,mach_xy2
+  real, target, dimension (nx,nz) :: divu_xz,u2_xz,o2_xz,mach_xz
+  real, target, dimension (ny,nz) :: divu_yz,u2_yz,o2_yz,mach_yz
   real, dimension (nz,3) :: uumz
-  real, target, dimension (nx,ny) :: divu_xy3,divu_xy4,u2_xy3,u2_xy4
-  real, target, dimension (nx,ny) :: o2_xy3,o2_xy4
+  real, target, dimension (nx,ny) :: divu_xy3,divu_xy4,u2_xy3,u2_xy4,mach_xy4
+  real, target, dimension (nx,ny) :: o2_xy3,o2_xy4,mach_xy3
 !
 !  cosine and sine function for setting test fields and analysis
 !
@@ -1526,6 +1526,12 @@ module Hydro
         if (n==iz3_loc) o2_xy3(:,m-m1+1)=p%o2
         if (n==iz4_loc) o2_xy4(:,m-m1+1)=p%o2
         if (othresh_per_orms/=0) call calc_othresh
+        if (m.eq.iy_loc)  mach_xz(:,n-n1+1)=p%Ma2
+        if (n.eq.iz_loc)  mach_xy(:,m-m1+1)=p%Ma2
+        if (n.eq.iz2_loc) mach_xy2(:,m-m1+1)=p%Ma2
+        if (n.eq.iz3_loc) mach_xy3(:,m-m1+1)=p%Ma2
+        if (n.eq.iz4_loc) mach_xy4(:,m-m1+1)=p%Ma2
+        mach_yz(m-m1+1,n-n1+1)=p%Ma2(ix_loc-l1+1)
         call vecout(41,trim(directory)//'/ovec',p%oo,othresh,novec)
       endif
 !
@@ -3430,6 +3436,17 @@ module Hydro
           slices%xy2=>o2_xy2
           if (lwrite_slice_xy3) slices%xy3=>o2_xy3
           if (lwrite_slice_xy4) slices%xy4=>o2_xy4
+          slices%ready = .true.
+!
+!  Mach number (derived variable)
+!
+        case ('mach')
+          slices%yz=>mach_yz
+          slices%xz=>mach_xz
+          slices%xy=>mach_xy
+          slices%xy2=>mach_xy2
+          if (lwrite_slice_xy3) slices%xy3=>mach_xy3
+          if (lwrite_slice_xy4) slices%xy4=>mach_xy4
           slices%ready = .true.
 !
       endselect
