@@ -1396,10 +1396,10 @@ subroutine flame_front(f)
         sum_DYDt=0.
         do i=1,nx 
          if (p%TT(i)>Tc) then
-        ! sum_DYDt(i)=-f(l1,m,n,iux)**2*(p%TT(i)-Tinf)/p%TT(i) &
-         !  *Cp_const**2/lambda_const*p%rho(1)*beta*(beta-1.)
+       !  sum_DYDt(i)=-f(l1,m,n,iux)**2*(p%TT(i)-Tinf)/p%TT(i) &
+       !    *Cp_const**2/lambda_const*p%rho(1)*beta*(beta-1.)
 
-           sum_DYDt(i)=f(l1,m,n,iux)**2*Tinf/p%TT(i) & !(-p%TT(i)+Tinf)
+           sum_DYDt(i)=f(l1,m,n,iux)**2*(Tinf-p%TT(1))/p%TT(i) & !(-p%TT(i)+Tinf)
             *Cp_const**2/lambda_const*p%rho(1)*beta*(beta-1.)* &
             (1.-f(l1-1+i,m,n,ichemspec(ipr)))
     
@@ -2738,7 +2738,7 @@ subroutine flame_front(f)
        
         do i=1,nx
          if (p%TT(i) > Tc) then
-         vreact_p(i,reac)=f(l1,m,n,iux)**2*Cp_const/lambda_const*beta*(beta-1.) &
+         vreact_p(i,reac)=f(l1,m,n,iux)**2*p%rho(1)*Cp_const/lambda_const*beta*(beta-1.) &
                           *(1.-f(l1-1+i,m,n,ichemspec(ipr)))
        !   vreact_p(i,reac)=f(l1,m,n,iux)**2*Cp_const/lambda_const*beta*(beta-1.) &
         !                  *(1.-p%TT(i)/Tinf)
