@@ -1023,7 +1023,7 @@ module Forcing
       real, dimension(nx,3,3) :: psi_ij,Tij
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: emm,iread,l,j,jf,ell,jalpha,Legendrel,lmindex,ilread,ilm,&
-                 aindex,ckno,ilist
+                 aindex,ckno,ilist,inx
       complex :: psi_ell_m
       real :: a_ell,anum,adenom,jlm,ylm,rphase1,fnorm,alphar,Balpha,& 
               Pell,psilm,RYlm,IYlm
@@ -1175,6 +1175,12 @@ module Forcing
        capitalH = capitalT + capitalS
        do j=1,3
          jf = iuu+j-1
+         if(r_ff .ne. 0.) then
+         do inx=1,nx
+            if(x(inx) .gt. r_ff) capitalH(inx,j) = 0
+         enddo
+         else
+         endif 
          if (lhelical_test) then
            if (lwrite_psi) then
              f(l1:l2,m,n,jf) = psif(l1:l2,m,n)
