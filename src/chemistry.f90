@@ -76,7 +76,7 @@ module Chemistry
 
     logical :: l1step_test=.false.
     integer :: ipr=2
-    real :: Tc=470., Tinf=2000., beta=10., dim_omega_dot=.1
+    real :: Tc=800., Tinf=2000., beta=10., dim_omega_dot=.1
 
 !
 !  hydro-related parameters
@@ -1395,12 +1395,13 @@ subroutine flame_front(f)
         sum_DYDt=0.
         do i=1,nx 
          if (p%TT(i)>Tc) then
-       !  sum_DYDt(i)=-f(l1,m,n,iux)**2*(p%TT(i)-Tinf)/p%TT(i) &
-       !    *Cp_const**2/lambda_const*p%rho(1)*beta*(beta-1.)
+      !     if (x(i)>0.) then
+         sum_DYDt(i)=-p%rho(1)*(p%TT(i)-Tinf)/p%TT(i) &
+           *Cp_const/lambda_const*beta*(beta-1.)*f(l1,m,n,iux)**2
 
-           sum_DYDt(i)=f(l1,m,n,iux)**2*(Tinf-p%TT(1))/p%TT(i) & !(-p%TT(i)+Tinf)
-            *Cp_const**2/lambda_const*p%rho(1)*beta*(beta-1.)* &
-            (1.-f(l1-1+i,m,n,ichemspec(ipr)))
+         !  sum_DYDt(i)=f(l1,m,n,iux)**2*(Tinf-p%TT(1))/p%TT(i) & !(-p%TT(i)+Tinf)
+         !   *Cp_const**2/lambda_const*p%rho(1)*beta*(beta-1.)* &
+         !   (1.-f(l1-1+i,m,n,ichemspec(ipr)))
     
        !  sum_DYDt(i)=-(p%TT(i)-Tinf)/p%TT(i)*abs(f(l1,m,n,iux))/(x(nx)-x(1))
         !  sum_DYDt(i)=f(l1,m,n,iux)/p%TT(i)*(Tinf-p%TT(1))/(x(nx)-x(1))
@@ -1418,13 +1419,21 @@ subroutine flame_front(f)
         call dot_mn(p%ghYrho,p%uu,ghYrho_uu)
 
 !
-        RHS_T_full(l1:l2,m,n)=(sum_DYDt(:)- Rgas*p%mu1*p%divu)*p%cv1 &
+
+        if (l1step_test) then
+          RHS_T_full(l1:l2,m,n)=sum_DYDt(:)
+        else
+          RHS_T_full(l1:l2,m,n)=(sum_DYDt(:)- Rgas*p%mu1*p%divu)*p%cv1 &
             !/(p%cp-Rgas*p%mu1)&
             -(hYrho_full(l1:l2,m,n)*p%divu(:)+ghYrho_uu(:))/p%TT(:)*p%cv1/p%rho(:)
+        endif
 !
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + RHS_T_full(l1:l2,m,n)
 
+!print*,'nat2',maxval(RHS_T_full),minval(RHS_T_full)
+
 !
+
         if (lheatc_chemistry) call calc_heatcond_chemistry(f,df,p)
 !
       endif
@@ -3143,7 +3152,7 @@ subroutine flame_front(f)
       real, dimension(mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 
-      real, dimension(nx) :: g2TT, g2TTlnlambda=0.
+      real, dimension(nx) :: g2TT, g2TTlnlambda=0., tmp1
 !
       call dot(p%glnTT,p%glnlambda,g2TTlnlambda)
       call dot(p%glnTT,p%glnTT,g2TT)
@@ -3151,14 +3160,17 @@ subroutine flame_front(f)
 !  Add heat conduction to RHS of temperature equation
 !
 
-      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)  & 
-          + p%lambda(:)*(p%del2lnTT+g2TT+g2TTlnlambda)*p%cv1/p%rho(:)
-      !/(p%cp-Rgas*p%mu1)
+      if (l1step_test) then
+       tmp1= p%lambda(:)*(p%del2lnTT+g2TT)*p%cv1/p%rho(:)
+      else
+       tmp1= p%lambda(:)*(p%del2lnTT+g2TT+g2TTlnlambda)*p%cv1/p%rho(:)
+      endif
+
+!print*,'nat3',maxval(tmp1),minval(tmp1)
+
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp1 
 !
-
-
-      RHS_T_full(l1:l2,m,n)=RHS_T_full(l1:l2,m,n) &
-          + p%lambda(:)*(p%del2lnTT+g2TT+g2TTlnlambda)*p%cv1/p%rho(:)
+      RHS_T_full(l1:l2,m,n)=RHS_T_full(l1:l2,m,n) + tmp1 
 !
 
     endsubroutine calc_heatcond_chemistry
