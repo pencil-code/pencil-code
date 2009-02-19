@@ -1486,7 +1486,7 @@ module Radiation
       real, dimension(nx) :: b2
       real :: kappa0, kappa0_cgs,k1,k2
       logical, save :: lfirst=.true.
-      integer :: i,inu
+      integer :: i,inu,ighost
 
       select case (opacity_type)
 
@@ -1597,12 +1597,6 @@ module Radiation
         if (iaa==0) then
           call stop_it("no magnetic field available")
         else
-          f(l1-radx:l1-1,:,:,ikapparho)=0.
-          f(l2+1:l2+radx,:,:,ikapparho)=0.
-          f(:,m1-rady:m1-1,:,ikapparho)=0.
-          f(:,m2+1:m2+rady,:,ikapparho)=0.
-          f(:,:,n1-radz:n1-1,ikapparho)=0.
-          f(:,:,n2+1:n2+radz,ikapparho)=0.
           do n=n1,n2
           do m=m1,m2
             aa=f(l1:l2,m,n,iax:iaz)
@@ -1611,6 +1605,18 @@ module Radiation
             call dot2_mn(bb,b2)
             f(l1:l2,m,n,ikapparho)=b2
           enddo
+          enddo
+!
+!  in the ghost zones, put the magnetic field equal to the value
+!  in the layer layer inside the domain.
+!
+          do ighost=1,nghost
+            f(l1-ighost,:,:,ikapparho)=f(l1,:,:,ikapparho)
+            f(l2+ighost,:,:,ikapparho)=f(l2,:,:,ikapparho)
+            f(:,m1-ighost,:,ikapparho)=f(:,m1,:,ikapparho)
+            f(:,m2+ighost,:,ikapparho)=f(:,m2,:,ikapparho)
+            f(:,:,n1-ighost,ikapparho)=f(:,:,n1,ikapparho)
+            f(:,:,n2+ighost,ikapparho)=f(:,:,n2,ikapparho)
           enddo
         endif
 
