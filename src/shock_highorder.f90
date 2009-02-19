@@ -35,10 +35,11 @@ module Shock
   integer :: ishock_max=1
   logical :: lgaussian_smooth=.false.
   logical :: lforce_periodic_shockviscosity=.false.
+  real    :: div_threshold=0.
 
   ! run parameters
   namelist /shock_run_pars/ &
-      ishock_max,lgaussian_smooth,lforce_periodic_shockviscosity
+      ishock_max,lgaussian_smooth,lforce_periodic_shockviscosity, div_threshold
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_shockmax=0
@@ -347,6 +348,7 @@ module Shock
 !  diffusion type terms.
 !
 !  23-nov-02/tony: coded
+!  17-dec-08/ccyang: add divergence threshold
 !
       use Cdata, only: m,n,mm,nn,necessary
       use Cdata, only: iuu,iux,iuy,iuz,ishock
@@ -384,6 +386,10 @@ module Shock
         f(l1:l2,m,n,ishock) = max(0.,-penc)
 !
       enddo
+!
+!  Cut off small divergence if requested.
+!
+      if (div_threshold > 0.) where(f(:,:,:,ishock) < div_threshold) f(:,:,:,ishock) = 0.
 !
 !  Take maximum over a number of grid cells
 !
