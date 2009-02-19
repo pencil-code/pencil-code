@@ -2854,7 +2854,7 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=130) :: file
-      character (len=5) :: ch='\_/^\'
+      character (len=5) :: ch
       logical :: lmagnetic_out
       integer,save :: ifirst=0
       integer :: j
