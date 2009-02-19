@@ -1597,6 +1597,12 @@ module Radiation
         if (iaa==0) then
           call stop_it("no magnetic field available")
         else
+          f(l1-radx:l1-1,:,:,ikapparho)=0.
+          f(l2+1:l2+radx,:,:,ikapparho)=0.
+          f(:,m1-rady:m1-1,:,ikapparho)=0.
+          f(:,m2+1:m2+rady,:,ikapparho)=0.
+          f(:,:,n1-radz:n1-1,ikapparho)=0.
+          f(:,:,n2+1:n2+radz,ikapparho)=0.
           do n=n1,n2
           do m=m1,m2
             aa=f(l1:l2,m,n,iax:iaz)

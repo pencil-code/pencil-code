@@ -170,9 +170,9 @@ module Hydro
   integer :: idiag_uxmax=0      ! DIAG_DOC: $\max(|u_x|)$
   integer :: idiag_uymax=0      ! DIAG_DOC: $\max(|u_y|)$
   integer :: idiag_uzmax=0      ! DIAG_DOC: $\max(|u_z|)$
-  integer :: idiag_uxm=0        ! DIAG_DOC: 
-  integer :: idiag_uym=0        ! DIAG_DOC: 
-  integer :: idiag_uzm=0        ! DIAG_DOC: 
+  integer :: idiag_uxm=0        ! DIAG_DOC: $\left<u_x\right>$
+  integer :: idiag_uym=0        ! DIAG_DOC: $\left<u_y\right>$
+  integer :: idiag_uzm=0        ! DIAG_DOC: $\left<u_z\right>$
   integer :: idiag_ux2m=0       ! DIAG_DOC: $\left<u_x^2\right>$
   integer :: idiag_uy2m=0       ! DIAG_DOC: $\left<u_y^2\right>$
   integer :: idiag_uz2m=0       ! DIAG_DOC: $\left<u_z^2\right>$
