@@ -517,10 +517,10 @@ module Slices
               call wslice(path//trim(slices%name)//'.xy2',slices%xy2, &
                                                      z(slices%iz2),nx,ny)
             if (associated(slices%xy3).and.lwrite_slice_xy3) &
-              call wslice(path//trim(slices%name)//'.xy2',slices%xy3, &
+              call wslice(path//trim(slices%name)//'.xy3',slices%xy3, &
                                                      z(slices%iz3),nx,ny)
             if (associated(slices%xy4).and.lwrite_slice_xy4) &
-              call wslice(path//trim(slices%name)//'.xy2',slices%xy4, &
+              call wslice(path//trim(slices%name)//'.xy4',slices%xy4, &
                                                      z(slices%iz4),nx,ny)
             inamev=inamev+1
            else
@@ -691,7 +691,7 @@ module Slices
         endif
       endif
 !
-!  Spherical admits only position 'sph'. Break if this is not met.
+!  Spherical admits only position 'w'. Break if this is not met.
 !  Also, turn extra r-theta slices to false in case of 
 !  non-spherical coordinates
 !
