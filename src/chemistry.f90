@@ -915,13 +915,12 @@ subroutine flame_front(f)
                   species_viscosity(:,:,:,k)/tmp_sum2
             enddo
     
-           
+              nu_full=nu_dyn/rho_full      
+
           endif
 
           if (visc_const<impossible) then
                 nu_full=visc_const
-          else
-                nu_full=nu_dyn/rho_full
           endif
 
 
@@ -994,7 +993,7 @@ subroutine flame_front(f)
            endif
           enddo
           enddo
-          
+ 
           if (lambda_const<impossible) then
             lambda_full=lambda_const
           endif
@@ -1421,7 +1420,7 @@ subroutine flame_front(f)
 !
         RHS_T_full(l1:l2,m,n)=(sum_DYDt(:)- Rgas*p%mu1*p%divu)*p%cv1 &
             !/(p%cp-Rgas*p%mu1)&
-            -(hYrho_full(l1:l2,m,n)*p%divu(:)+ghYrho_uu(:))/p%TT(:)/p%rho(:)*p%cv1
+            -(hYrho_full(l1:l2,m,n)*p%divu(:)+ghYrho_uu(:))/p%TT(:)*p%cv1/p%rho(:)
 !
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + RHS_T_full(l1:l2,m,n)
 
@@ -3161,6 +3160,7 @@ subroutine flame_front(f)
       RHS_T_full(l1:l2,m,n)=RHS_T_full(l1:l2,m,n) &
           + p%lambda(:)*(p%del2lnTT+g2TT+g2TTlnlambda)*p%cv1/p%rho(:)
 !
+
     endsubroutine calc_heatcond_chemistry
 !***********************************************************************
     subroutine calc_cs2x(cs2x,topbot,f)
