@@ -62,7 +62,7 @@ module Entropy
   real :: heat_uniform=0.,cool_RTV=0.
   real :: deltaT_poleq=0.,beta_hand=1.,r_bcz=0.
   real :: tau_cool=0.0, TTref_cool=0.0
-  real :: cs0hs,H0hs,rho0hs
+  real :: cs0hs=0.0,H0hs=0.0,rho0hs=0.0
   integer, parameter :: nheatc_max=4
   logical :: lturbulent_heat=.false.
   logical :: lheatc_Kprof=.false.,lheatc_Kconst=.false.
