@@ -3153,7 +3153,9 @@ subroutine flame_front(f)
       type (pencil_case) :: p
 
       real, dimension(nx) :: g2TT, g2TTlnlambda=0., tmp1
+      integer :: i
 !
+
       call dot(p%glnTT,p%glnlambda,g2TTlnlambda)
       call dot(p%glnTT,p%glnTT,g2TT)
 !
@@ -3163,7 +3165,7 @@ subroutine flame_front(f)
       if (l1step_test) then
        tmp1= p%lambda(:)*(p%del2lnTT+g2TT)*p%cv1/p%rho(:)
       else
-       tmp1= p%lambda(:)*(p%del2lnTT+g2TT+g2TTlnlambda)*p%cv1/p%rho(:)
+       tmp1= (p%lambda(:)*(p%del2lnTT+g2TT)+g2TTlnlambda)*p%cv1/p%rho(:)
       endif
 
 !print*,'nat3',maxval(tmp1),minval(tmp1)
