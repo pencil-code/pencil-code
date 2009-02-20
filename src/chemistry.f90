@@ -76,7 +76,7 @@ module Chemistry
 
     logical :: l1step_test=.false.
     integer :: ipr=2
-    real :: Tc=800., Tinf=2000., beta=10., dim_omega_dot=.1
+    real :: Tc=400., Tinf=2000., beta=1.5, dim_omega_dot=.1
 
 !
 !  hydro-related parameters
