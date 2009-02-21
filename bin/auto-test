@@ -76,13 +76,9 @@ my @sampdirs = qw(
                   geodynamo
                   interlocked-fluxrings
                  );
-# Test the following subdirs of runs/ :
-#my @runsdirs = qw( radiation/solar1d4);
-my @runsdirs = qw( );
 # ---------------------------------------------------------------------- #
 ## Override for testing:
 #@sampdirs = qw( no-modules helical-MHDturb cosmicray geodynamo );
-#@runsdirs = qw(  );
 
 my $ntests      = 0;                 # total number of tests run
 my $failed      = 0;
@@ -341,7 +337,6 @@ if (@ARGV) {
         # Use predefined directories
         @testdirs =
           ( map { "$topdir/samples/$_" } @sampdirs,
-            map { "$topdir/runs/$_"    } @runsdirs,
           );
     }
     $ntests = @testdirs;
