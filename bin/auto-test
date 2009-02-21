@@ -39,46 +39,57 @@ use vars qw{ %failed $test_status }; # do we really need global vars here?
 use IPC::Open2;
 
 # ---------------------------------------------------------------------- #
-# Test the following subdirs of samples/ :
-# [this is amanually updated list of canonical tests in the order in which
-# they are run (sorted roughly by total run time, i.e. the slowest tests
-# are run last)]
-my @sampdirs = qw(
-                  no-modules
-                  0d-tests/heating_noionize
-                  0d-tests/chemistry_H2_ignition_rkf
-                  chiral-diffusion
-                  cosmicray
-                  backwards-compatible
-                  1d-tests/sod_10
-		  1d-tests/ambipolar_diffusion
-                  helical-MHDturb
-                  2d-tests/selfgravitating-shearwave
-                  2d-tests/chemistry_GrayScott
-                  testfield_z
-                  0d-tests/heating_ionize
-                  most-modules
-                  random_uu_particles
-                  1d-tests/solar-atmosphere
-                  kin-dynamo
-                  meissner
-                  conv-slab-noequi
-                  conv-slab
-                  2d-tests/globaldisc
-		  2d-tests/cylindrical_gdisk
-		  0d-tests/solar_system
-		  mdwarf
-                  2d-tests/Kelvin-Helmholtz-disc
-                  dust-vortex
-                  MRI-turbulence_hyper
-		  dust_turb_globaldisk
-                  interstellar
-                  geodynamo
-                  interlocked-fluxrings
-                 );
+# Test the following subdirs of samples/ .
+# Tests are grouped by `level':
+# 0 is the absolute minimum,
+# 1 are the most important tests,
+# 2 is the standard program for nightly tests,
+# 3 adds the remaining tests under samples (most of which will curently
+# fail).
+# Within a level, tests should be roughly sorted by total run time, such
+# that the slowest tests are run last.
+my %tests = (
+             0 => [qw(
+                         no-modules
+                         most-modules
+                   )],
+             1 => [qw(
+                         backwards-compatible
+                         2d-tests/selfgravitating-shearwave
+                         2d-tests/chemistry_GrayScott
+                         0d-tests/heating_ionize
+                         dust-vortex
+                         interstellar
+                         interlocked-fluxrings
+                   )],
+             2 => [qw(
+                         0d-tests/heating_noionize
+                         0d-tests/chemistry_H2_ignition_rkf
+                         chiral-diffusion
+                         cosmicray
+                         1d-tests/sod_10
+                         1d-tests/ambipolar_diffusion
+                         helical-MHDturb
+                         testfield_z
+                         random_uu_particles
+                         1d-tests/solar-atmosphere
+                         kin-dynamo
+                         meissner
+                         conv-slab-noequi
+                         conv-slab
+                         2d-tests/globaldisc
+                         2d-tests/cylindrical_gdisk
+                         0d-tests/solar_system
+                         mdwarf
+                         2d-tests/Kelvin-Helmholtz-disc
+                         MRI-turbulence_hyper
+                         dust_turb_globaldisk
+                         geodynamo
+                    )]
+            );
 # ---------------------------------------------------------------------- #
 ## Override for testing:
-#@sampdirs = qw( no-modules helical-MHDturb cosmicray geodynamo );
+my @sampdirs = ( @{$tests{0}}, @{$tests{1}}, @{$tests{2}} );
 
 my $ntests      = 0;                 # total number of tests run
 my $failed      = 0;
