@@ -48,6 +48,7 @@ use IPC::Open2;
 # fail).
 # Within a level, tests should be roughly sorted by total run time, such
 # that the slowest tests are run last.
+my $default_level = 2;
 my %tests = (
              0 => [qw(
                          no-modules
@@ -85,11 +86,17 @@ my %tests = (
                          MRI-turbulence_hyper
                          dust_turb_globaldisk
                          geodynamo
-                    )]
+                    )],
+             3 => [qw(
+                         sound-spherical
+                         sound-spherical-noequi
+                         taylor-couette
+                         taylor-couette-cyl
+                   )],
             );
 # ---------------------------------------------------------------------- #
 ## Override for testing:
-my @sampdirs = ( @{$tests{0}}, @{$tests{1}}, @{$tests{2}} );
+my @sampdirs = get_sampdirs($default_level);
 
 my $ntests      = 0;                 # total number of tests run
 my $failed      = 0;
@@ -368,6 +375,19 @@ if (@ARGV) {
 }
 
 
+# ---------------------------------------------------------------------- #
+sub get_sampdirs {
+# Return a flat list of all sample dirs that belong to a level <= $level .
+    my $level = shift;
+
+    my @dirs;
+    my @levels = grep { $_ <= $level } keys %tests;
+    foreach my $lev (sort {$a <=> $b} @levels) {
+        push @dirs, @{$tests{$lev}};
+    }
+
+    return @dirs;
+}
 # ---------------------------------------------------------------------- #
 sub handle_lock_file {
 # Check for existing lock file and exit (if there is one) or write one.
