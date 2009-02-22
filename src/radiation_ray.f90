@@ -44,7 +44,7 @@ module Radiation
 !
 ! Slice precalculation buffers
 !
-  integer, parameter :: mnu=1
+  integer, parameter :: mnu=2
   real, target, dimension (nx,ny,mnu) :: Jrad_xy
   real, target, dimension (nx,ny,mnu) :: Jrad_xy2
   real, target, dimension (nx,ny,mnu) :: Jrad_xy3
@@ -95,7 +95,7 @@ module Radiation
 !
 !  Default values for one pair of vertical rays
 !
-  integer :: radx=0,rady=0,radz=1,rad2max=1
+  integer :: radx=0,rady=0,radz=1,rad2max=1,nnu=1
   integer, dimension (3) :: single_ray
 !
   logical :: lcooling=.true.,lrad_debug=.false.
@@ -119,7 +119,7 @@ module Radiation
   namelist /radiation_init_pars/ &
        radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst,kapparho_cst, &
        TT_top,TT_bot,tau_top,tau_bot,source_function_type,opacity_type, &
-       lsingle_ray,single_ray,Srad_const,amplSrad,radius_Srad, &
+       nnu,lsingle_ray,single_ray,Srad_const,amplSrad,radius_Srad, &
        kapparho_const,amplkapparho,radius_kapparho, &
        lintrinsic,lcommunicate,lrevision,lradflux, &
        Frad_boundary_ref,lrad_cool_diffus, lrad_pres_diffus, &
@@ -128,7 +128,7 @@ module Radiation
   namelist /radiation_run_pars/ &
        radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst, &
        TT_top,TT_bot,tau_top,tau_bot,source_function_type,opacity_type, &
-       lsingle_ray,single_ray,Srad_const,amplSrad,radius_Srad, &
+       nnu,lsingle_ray,single_ray,Srad_const,amplSrad,radius_Srad, &
        kx_Srad,ky_Srad,kz_Srad,kx_kapparho,ky_kapparho,kz_kapparho, &
        kapparho_const,amplkapparho,radius_kapparho, &
        lintrinsic,lcommunicate,lrevision,lcooling,lradflux,lradpressure, &
@@ -408,11 +408,17 @@ module Radiation
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(nx) :: Jrad
-      integer :: j,k,inu,nnu=1
+      integer :: j,k,inu
 !
 !  Identifier
 !
       if (ldebug.and.headt) print*,'radtransfer'
+!
+!  coninue only if we either have more than a single ray, or,
+!  if we do have a single ray, when also lvid.and.lfirst are true
+!  so that the result is used for visualization.
+!
+      if ((.not.lsingle_ray) .or. (lsingle_ray.and.lvid.and.lfirst)) then
 !
 !  Do loop over all frequency bins
 !
@@ -487,18 +493,21 @@ module Radiation
 !  calculate slices of J = S + Q/(4pi) 
 !
         if (lvid.and.lfirst) then
-          Jrad=Qrad(l1:l2,m,n)+Srad(l1:l2,m,n)
-          Jrad_yz(m-m1+1,n-n1+1,inu)=Jrad(ix_loc-l1+1)
-          if (m==iy_loc)  Jrad_xz(:,n-n1+1,inu)=Jrad
-          if (n==iz_loc)  Jrad_xy(:,m-m1+1,inu)=Jrad
-          if (n==iz2_loc) Jrad_xy2(:,m-m1+1,inu)=Jrad
-          if (n==iz3_loc) Jrad_xy3(:,m-m1+1,inu)=Jrad
-          if (n==iz4_loc) Jrad_xy4(:,m-m1+1,inu)=Jrad
+          Jrad_yz(:,:,inu)=Qrad(ix_loc,m1:m2,n1:n2)+Srad(ix_loc,m1:m2,n1:n2)
+          Jrad_xz(:,:,inu)=Qrad(l1:l2,iy_loc,n1:n2)+Srad(l1:l2,iy_loc,n1:n2)
+          Jrad_xy(:,:,inu)=Qrad(l1:l2,m1:m2,iz_loc)+Srad(l1:l2,m1:m2,iz_loc)
+          Jrad_xy2(:,:,inu)=Qrad(l1:l2,m1:m2,iz2_loc)+Srad(l1:l2,m1:m2,iz2_loc)
+          Jrad_xy3(:,:,inu)=Qrad(l1:l2,m1:m2,iz3_loc)+Srad(l1:l2,m1:m2,iz3_loc)
+          Jrad_xy4(:,:,inu)=Qrad(l1:l2,m1:m2,iz4_loc)+Srad(l1:l2,m1:m2,iz4_loc)
         endif
 !
 !  end of frequency loop (inu)
 !
       enddo
+!
+!  endif from single ray check
+!
+      endif
 !
     endsubroutine radtransfer
 !***********************************************************************
@@ -1386,17 +1395,13 @@ module Radiation
 !   3-apr-04/tobi: coded
 !   8-feb-09/axel: added B2 for visualisation purposes
 !
-      use Cdata, only: m,n,x,y,z,Lx,Ly,Lz,dx,dy,dz,pi,directory_snap,iaa,iax,iaz
-      use Sub, only: gij, curl_mn, dot2_mn
+      use Cdata, only: m,n,x,y,z,Lx,Ly,Lz,dx,dy,dz,pi,directory_snap
       use EquationOfState, only: eoscalc
       use Mpicomm, only: stop_it
       use IO, only: output
 
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       logical, save :: lfirst=.true.
-      real, dimension(nx,3,3) :: aij
-      real, dimension(nx,3) :: aa,bb
-      real, dimension(nx) :: b2
       real, dimension(mx) :: lnTT
       integer :: inu
 
@@ -1433,18 +1438,13 @@ module Radiation
 !  Needs to be done at every time step (not just when lfirst=.true.)
 !
       case ('B2')
-        if (iaa==0) then
-          call stop_it("no magnetic field available")
-        else
-          do n=n1,n2
-          do m=m1,m2
-            aa=f(l1:l2,m,n,iax:iaz)
-            call gij(f,iaa,aij,1)
-            call curl_mn(aij,bb,aa)
-            call dot2_mn(bb,b2)
-            Srad(l1:l2,m,n)=b2
-          enddo
-          enddo
+        call calc_Srad_B2(f,Srad)
+
+      case ('B2+W2')
+        if (inu==1) then
+          call calc_Srad_B2(f,Srad)
+        elseif (inu==2) then
+          call calc_Srad_W2(f,Srad)
         endif
 
       case ('nothing')
@@ -1473,20 +1473,16 @@ module Radiation
 !   8-feb-09/axel: added B2 for visualisation purposes
 !
       use Cdata, only: ilnrho,x,y,z,m,n,Lx,Ly,Lz,dx,dy,dz,pi,directory_snap
-      use Cdata, only: kappa_es,ikapparho, m_H, sigmaH_, iaa, iax, iaz
-      use Sub, only: gij, curl_mn, dot2_mn
+      use Cdata, only: kappa_es,ikapparho, m_H, sigmaH_
       use EquationOfState, only: eoscalc
       use Mpicomm, only: stop_it
       use IO, only: output
 
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx) :: tmp,lnrho,lnTT,yH
-      real, dimension(nx,3,3) :: aij
-      real, dimension(nx,3) :: aa,bb
-      real, dimension(nx) :: b2
       real :: kappa0, kappa0_cgs,k1,k2
       logical, save :: lfirst=.true.
-      integer :: i,inu,ighost
+      integer :: i,inu
 
       select case (opacity_type)
 
@@ -1594,18 +1590,117 @@ module Radiation
 !  Needs to be done at every time step (not just when lfirst=.true.)
 !
       case ('B2') !! magnetic field
-        if (iaa==0) then
-          call stop_it("no magnetic field available")
-        else
-          do n=n1,n2
-          do m=m1,m2
-            aa=f(l1:l2,m,n,iax:iaz)
-            call gij(f,iaa,aij,1)
-            call curl_mn(aij,bb,aa)
-            call dot2_mn(bb,b2)
-            f(l1:l2,m,n,ikapparho)=b2
-          enddo
-          enddo
+        call calc_kapparho_B2(f)
+
+      case ('B2+W2') !! magnetic field and vorticity
+        call calc_kapparho_B2_W2(f)
+
+      case ('nothing')
+        f(l1:l2,m,n,ikapparho)=0.
+
+      case default
+        call stop_it('no such opacity type: '//trim(opacity_type))
+
+      endselect
+
+    endsubroutine opacity
+!***********************************************************************
+    subroutine calc_Srad_B2(f,Srad)
+!
+!  Calculate B2 for special prescriptions of source function
+!
+!  21-feb-2009/axel: coded
+!
+      use Cdata, only: m,n,iaa,iax,iaz
+      use Sub, only: gij, curl_mn, dot2_mn
+      use Mpicomm, only: stop_it
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(mx,my,mz), intent(out) :: Srad
+      real, dimension(nx,3,3) :: aij
+      real, dimension(nx,3) :: aa,bb
+      real, dimension(nx) :: b2
+!
+!  Check whether B-field is available, and then calculate (curlA)^2
+!
+      if (iaa==0) then
+        call stop_it("no magnetic field available")
+      else
+        do n=n1,n2
+        do m=m1,m2
+          aa=f(l1:l2,m,n,iax:iaz)
+          call gij(f,iaa,aij,1)
+          call curl_mn(aij,bb,aa)
+          call dot2_mn(bb,b2)
+          Srad(l1:l2,m,n)=b2
+        enddo
+        enddo
+      endif
+!
+    endsubroutine calc_Srad_B2
+!***********************************************************************
+    subroutine calc_Srad_W2(f,Srad)
+!
+!  Calculate W2 for special prescriptions of source function
+!
+!  21-feb-2009/axel: coded
+!
+      use Cdata, only: m,n,iuu,iux,iuz
+      use Sub, only: gij, curl_mn, dot2_mn
+      use Mpicomm, only: stop_it
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(mx,my,mz), intent(out) :: Srad
+      real, dimension(nx,3,3) :: uij
+      real, dimension(nx,3) :: uu,oo
+      real, dimension(nx) :: o2
+!
+!  Check whether B-field is available, and then calculate (curlA)^2
+!
+      if (iuu==0) then
+        call stop_it("no magnetic field available")
+      else
+        do n=n1,n2
+        do m=m1,m2
+          uu=f(l1:l2,m,n,iux:iuz)
+          call gij(f,iuu,uij,1)
+          call curl_mn(uij,oo,uu)
+          call dot2_mn(oo,o2)
+          Srad(l1:l2,m,n)=o2
+        enddo
+        enddo
+      endif
+!
+    endsubroutine calc_Srad_W2
+!***********************************************************************
+    subroutine calc_kapparho_B2(f)
+!
+!  Calculate B2 for special prescriptions of opacity
+!
+!  21-feb-2009/axel: coded
+!
+      use Cdata, only: m,n,iaa,iax,iaz,ikapparho
+      use Sub, only: gij, curl_mn, dot2_mn
+      use Mpicomm, only: stop_it
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(nx,3,3) :: aij
+      real, dimension(nx,3) :: aa,bb
+      real, dimension(nx) :: b2
+      integer :: ighost
+!
+!  Check whether B-field is available, and then calculate (curlA)^2
+!
+      if (iaa==0) then
+        call stop_it("no magnetic field available")
+      else
+        do n=n1,n2
+        do m=m1,m2
+          aa=f(l1:l2,m,n,iax:iaz)
+          call gij(f,iaa,aij,1)
+          call curl_mn(aij,bb,aa)
+          call dot2_mn(bb,b2)
+          f(l1:l2,m,n,ikapparho)=b2
 !
 !  in the ghost zones, put the magnetic field equal to the value
 !  in the layer layer inside the domain.
@@ -1618,17 +1713,62 @@ module Radiation
             f(:,:,n1-ighost,ikapparho)=f(:,:,n1,ikapparho)
             f(:,:,n2+ighost,ikapparho)=f(:,:,n2,ikapparho)
           enddo
-        endif
-
-      case ('nothing')
-        f(l1:l2,m,n,ikapparho)=0.
-
-      case default
-        call stop_it('no such opacity type: '//trim(opacity_type))
-
-      endselect
-
-    endsubroutine opacity
+        enddo
+        enddo
+      endif
+!
+    endsubroutine calc_kapparho_B2
+!***********************************************************************
+    subroutine calc_kapparho_B2_W2(f)
+!
+!  Calculate B2+W2 for special prescriptions of opacity
+!  assume that both are opaque in all colors
+!
+!  21-feb-2009/axel: coded
+!
+      use Cdata, only: m,n,iaa,iax,iaz,iuu,iux,iuz,ikapparho
+      use Sub, only: gij, curl_mn, dot2_mn
+      use Mpicomm, only: stop_it
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(nx,3,3) :: aij,uij
+      real, dimension(nx,3) :: aa,bb,uu,oo
+      real, dimension(nx) :: b2,o2
+      integer :: ighost
+!
+!  Check whether B-field is available, and then calculate (curlA)^2
+!
+      if (iaa==0) then
+        call stop_it("no magnetic field available")
+      else
+        do n=n1,n2
+        do m=m1,m2
+          aa=f(l1:l2,m,n,iax:iaz)
+          uu=f(l1:l2,m,n,iux:iuz)
+          call gij(f,iaa,aij,1)
+          call gij(f,iuu,uij,1)
+          call curl_mn(aij,bb,aa)
+          call curl_mn(uij,oo,uu)
+          call dot2_mn(bb,b2)
+          call dot2_mn(oo,o2)
+          f(l1:l2,m,n,ikapparho)=b2+o2
+!
+!  in the ghost zones, put the magnetic field equal to the value
+!  in the layer layer inside the domain.
+!
+          do ighost=1,nghost
+            f(l1-ighost,:,:,ikapparho)=f(l1,:,:,ikapparho)
+            f(l2+ighost,:,:,ikapparho)=f(l2,:,:,ikapparho)
+            f(:,m1-ighost,:,ikapparho)=f(:,m1,:,ikapparho)
+            f(:,m2+ighost,:,ikapparho)=f(:,m2,:,ikapparho)
+            f(:,:,n1-ighost,ikapparho)=f(:,:,n1,ikapparho)
+            f(:,:,n2+ighost,ikapparho)=f(:,:,n2,ikapparho)
+          enddo
+        enddo
+        enddo
+      endif
+!
+    endsubroutine calc_kapparho_B2_W2
 !***********************************************************************
     subroutine init_rad(f)
 !
@@ -1907,7 +2047,7 @@ module Radiation
           !slices%xy2=.25*pi_1*f(l1:l2,m1:m2,iz2_loc,iQrad)+Srad(l1:l2,m1:m2,iz2_loc)
           !slices%ready = .true.
 !
-          if (slices%index >= mnu) then
+          if (slices%index >= nnu) then
             slices%ready = .false.
           else
             slices%index = slices%index+1
@@ -1917,7 +2057,7 @@ module Radiation
             slices%xy2=>Jrad_xy2(:,:,slices%index)
             slices%xy3=>Jrad_xy3(:,:,slices%index)
             slices%xy4=>Jrad_xy4(:,:,slices%index)
-            if (slices%index < mnu) slices%ready = .true.
+            if (slices%index < nnu) slices%ready = .true.
           endif
 !
 ! Source function

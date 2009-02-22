@@ -874,7 +874,10 @@ module Magnetic
         case('vfield2'); call vfield2(amplaa(j),f,iaa)
         case('vecpatternxy'); call vecpatternxy(amplaa(j),f,iaa)
         case('xjump'); call bjump(f,iaa,by_left,by_right,bz_left,bz_right,widthaa,'x')
-        case('fluxrings', '4'); call fluxrings(amplaa(j),f,iaa)
+        case('fluxrings', '4'); call fluxrings(amplaa(j),f,iaa,iaa)
+        case('fluxrings_WB'); call fluxrings(amplaa(j),f,iuu,iaa)
+        case('fluxrings_BW'); call fluxrings(amplaa(j),f,iaa,iuu)
+        case('fluxrings_WW'); call fluxrings(amplaa(j),f,iuu,iuu)
         case('sinxsinz'); call sinxsinz(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
         case('sinxsinz_Hz'); call sinxsinz(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j),KKz=kz_aa(j))
         case('sin2xsin2y'); call sin2x_sin2y_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
@@ -4215,7 +4218,7 @@ module Magnetic
 !
     endsubroutine alfvenz_rot_shear
 !***********************************************************************
-    subroutine fluxrings(ampl,f,ivar,profile)
+    subroutine fluxrings(ampl,f,ivar1,ivar2,profile)
 !
 !  Magnetic flux rings. Constructed from a canonical ring which is the
 !  rotated and translated:
@@ -4236,7 +4239,7 @@ module Magnetic
       real, dimension(3) :: axis,disp
       real :: ampl,phi,theta,ct,st,cp,sp
       real :: fring,Iring,R0,width
-      integer :: i,ivar
+      integer :: i,ivar,ivar1,ivar2
       character (len=*), optional :: profile
       character (len=labellen) :: prof
 !
@@ -4245,7 +4248,7 @@ module Magnetic
       else
         prof = 'tanh'
       endif
-
+!
       if (any((/fring1,fring2,Iring1,Iring2/) /= 0.)) then
         ! fringX is the magnetic flux, IringX the current
         if (lroot) then
@@ -4259,6 +4262,7 @@ module Magnetic
             width = wr1         ! ring thickness
             axis  = axisr1 ! orientation
             disp  = dispr1    ! position
+            ivar  = ivar1
           else
             fring = fring2
             Iring = Iring2
@@ -4266,6 +4270,7 @@ module Magnetic
             width = wr2
             axis  = axisr2
             disp  = dispr2
+            ivar  = ivar2
           endif
           phi   = atan2(axis(2),axis(1)+epsi)
           theta = atan2(sqrt(axis(1)**2+axis(2)**2)+epsi,axis(3))

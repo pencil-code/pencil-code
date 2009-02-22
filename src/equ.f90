@@ -666,10 +666,15 @@ module Equ
 
 !
 !  Calculate ionization degree (needed for thermodynamics)
-!  Radiation transport along rays
+!  Radiation transport along rays. If lsingle_ray, then this
+!  is only used for visualization and only needed when lvid
+!  (but this is decided in radtransfer itself)
 !
       if (leos_ionization.or.leos_temperature_ionization) call ioncalc(f)
       if (lradiation_ray) call radtransfer(f)
+!
+!  calculate shock profile (simple)
+!
       if (lshock) call calc_shock_profile_simple(f)
 !      if (lvisc_hyper.or.lvisc_smagorinsky) then
 !        if (.not.lvisc_first.or.lfirst) call calc_viscosity(f)
