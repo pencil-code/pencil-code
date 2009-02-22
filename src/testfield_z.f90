@@ -814,11 +814,16 @@ module Testfield
 !  Do this only for the leta_rank2=T option.
 !
         else
-          if (idiag_alp11/=0) call sum_mn_name(  +cz(n)*(Eipq(:,1,i1)-Eipq(:,1,iE0))+sz(n)*(Eipq(:,1,i2)-Eipq(:,1,iE0)),idiag_alp11)
-          if (idiag_alp21/=0) call sum_mn_name(  +cz(n)*(Eipq(:,2,i1)-Eipq(:,2,iE0))+sz(n)*(Eipq(:,2,i2)-Eipq(:,2,iE0)),idiag_alp21)
-          if (idiag_alp31/=0) call sum_mn_name(  +cz(n)*(Eipq(:,3,i1)-Eipq(:,3,iE0))+sz(n)*(Eipq(:,3,i2)-Eipq(:,3,iE0)),idiag_alp31)
-          if (idiag_eta12/=0) call sum_mn_name(-(-sz(n)*(Eipq(:,1,i1)-Eipq(:,1,iE0))+cz(n)*(Eipq(:,1,i2)-Eipq(:,1,iE0)))*ktestfield1,idiag_eta12)
-          if (idiag_eta22/=0) call sum_mn_name(-(-sz(n)*(Eipq(:,2,i1)-Eipq(:,2,iE0))+cz(n)*(Eipq(:,2,i2)-Eipq(:,2,iE0)))*ktestfield1,idiag_eta22)
+          if (idiag_alp11/=0) call sum_mn_name(  +cz(n)*(Eipq(:,1,i1)-Eipq(:,1,iE0)) &
+                                                 +sz(n)*(Eipq(:,1,i2)-Eipq(:,1,iE0)),idiag_alp11)
+          if (idiag_alp21/=0) call sum_mn_name(  +cz(n)*(Eipq(:,2,i1)-Eipq(:,2,iE0)) &
+                                                 +sz(n)*(Eipq(:,2,i2)-Eipq(:,2,iE0)),idiag_alp21)
+          if (idiag_alp31/=0) call sum_mn_name(  +cz(n)*(Eipq(:,3,i1)-Eipq(:,3,iE0)) &
+                                                 +sz(n)*(Eipq(:,3,i2)-Eipq(:,3,iE0)),idiag_alp31)
+          if (idiag_eta12/=0) call sum_mn_name(-(-sz(n)*(Eipq(:,1,i1)-Eipq(:,1,iE0)) &
+                                                 +cz(n)*(Eipq(:,1,i2)-Eipq(:,1,iE0)))*ktestfield1,idiag_eta12)
+          if (idiag_eta22/=0) call sum_mn_name(-(-sz(n)*(Eipq(:,2,i1)-Eipq(:,2,iE0)) &
+                                                 +cz(n)*(Eipq(:,2,i2)-Eipq(:,2,iE0)))*ktestfield1,idiag_eta22)
         endif
 !
 !  weighted averages alpha and eta
@@ -877,11 +882,16 @@ module Testfield
               if (idiag_eta22ss/=0) call sum_mn_name(s2z(n)*(-sz(n)*Eipq(:,2,i3)+cz(n)*Eipq(:,2,i4))*ktestfield1,idiag_eta22ss)
             endif
           else
-            if (idiag_alp12/=0) call sum_mn_name( +cz(n)*(Eipq(:,1,i3)-Eipq(:,1,iE0))+sz(n)*(Eipq(:,1,i4)-Eipq(:,1,iE0)),idiag_alp12)
-            if (idiag_alp22/=0) call sum_mn_name( +cz(n)*(Eipq(:,2,i3)-Eipq(:,2,iE0))+sz(n)*(Eipq(:,2,i4)-Eipq(:,2,iE0)),idiag_alp22)
-            if (idiag_alp32/=0) call sum_mn_name( +cz(n)*(Eipq(:,3,i3)-Eipq(:,3,iE0))+sz(n)*(Eipq(:,3,i4)-Eipq(:,3,iE0)),idiag_alp32)
-            if (idiag_eta11/=0) call sum_mn_name((-sz(n)*(Eipq(:,1,i3)-Eipq(:,1,iE0))+cz(n)*(Eipq(:,1,i4)-Eipq(:,1,iE0)))*ktestfield1,idiag_eta11)
-            if (idiag_eta21/=0) call sum_mn_name((-sz(n)*(Eipq(:,2,i3)-Eipq(:,2,iE0))+cz(n)*(Eipq(:,2,i4)-Eipq(:,2,iE0)))*ktestfield1,idiag_eta21)
+            if (idiag_alp12/=0) call sum_mn_name( +cz(n)*(Eipq(:,1,i3)-Eipq(:,1,iE0)) &
+                                                  +sz(n)*(Eipq(:,1,i4)-Eipq(:,1,iE0)),idiag_alp12)
+            if (idiag_alp22/=0) call sum_mn_name( +cz(n)*(Eipq(:,2,i3)-Eipq(:,2,iE0)) &
+                                                  +sz(n)*(Eipq(:,2,i4)-Eipq(:,2,iE0)),idiag_alp22)
+            if (idiag_alp32/=0) call sum_mn_name( +cz(n)*(Eipq(:,3,i3)-Eipq(:,3,iE0)) &
+                                                  +sz(n)*(Eipq(:,3,i4)-Eipq(:,3,iE0)),idiag_alp32)
+            if (idiag_eta11/=0) call sum_mn_name((-sz(n)*(Eipq(:,1,i3)-Eipq(:,1,iE0)) &
+                                                  +cz(n)*(Eipq(:,1,i4)-Eipq(:,1,iE0)))*ktestfield1,idiag_eta11)
+            if (idiag_eta21/=0) call sum_mn_name((-sz(n)*(Eipq(:,2,i3)-Eipq(:,2,iE0)) &
+                                                  +cz(n)*(Eipq(:,2,i4)-Eipq(:,2,iE0)))*ktestfield1,idiag_eta21)
           endif
         endif
 !
