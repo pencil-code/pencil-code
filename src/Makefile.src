@@ -434,7 +434,8 @@ LD_FFTW2=
 #FC=mpif90 #(damaskus|n00)
 #FFLAGS=-xT -ipo -O3 #(damaskus|n00)
 #FC=mpif90 #(ui.bfg.uni-freiburg.de)
-#FC=mpif90 #(bender)
+#FC=mpif90 #(bwui|bwui.bfg.uni-freiburg.de)
+#FFLAGS=-xT -ipo -O3 #(bwui|bwui.bfg.uni-freiburg.de)
 ##
 ## Toulouse's machines: efigi, shal, galileo, mithra, yang & star3
 ##
