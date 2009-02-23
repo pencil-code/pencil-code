@@ -262,7 +262,7 @@ COMPILE_OPT IDL2,HIDDEN
   default, global, 0
   if (global) then begin
     pc_read_global, obj=gg, proc=proc, $
-        param=param, dim=dim, datadir=datadir, /quiet
+        param=param, dim=dim, datadir=datadir, swap_endian=swap_endian, /quiet
     global_names=tag_names(gg)
   endif
 ;
