@@ -8968,6 +8968,8 @@ the latest set of parameters, you need to look at the code.
                    see Ref.~\cite{BMS95}),
                  \item[\code{'horizontal-shear'}] (forcing localized
                    horizontal sinusoidal shear).
+                 \item[\code{'variable_gravz'}] (time-dependent vertical
+                   gravity for forcing internal waves),
                  \end{description}
                  \\
   \var{iforce2} [$0$]
@@ -8994,6 +8996,11 @@ the latest set of parameters, you need to look at the code.
                & horizontal wavenumber of the fountain flow. \\
   \var{fountain} [$1.$]
                & amplitude of the fountain flow. \\
+  \var{omega_ff} [$1.$]
+               & frequency of the cos or sin forcing [e.g. cos(omega_ff*t)]. \\
+  \var{ampl_ff} [$1.$]
+               & amplitude of forcing in front of cos or sin [e.g.
+                 ampl_ff*cos(omega_ff*t)]. \\
 %
 \midrule
   \multicolumn{2}{c}{Namelist \name{grav_run_pars}} \\
