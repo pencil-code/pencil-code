@@ -2615,28 +2615,18 @@ module Hydro
 !
 !  2. damp motions for p%r_mn > rdampext or r_ext AND p%r_mn < rdampint or r_int
 !
-        if (lgravr) then        ! why lgravr here? to ensure we know p%r_mn??
-! geodynamo
-! original block
-!          pdamp = step(p%r_mn,rdamp,wdamp) ! damping profile
-!          do i=iux,iuz
-!            df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - dampuext*pdamp*f(l1:l2,m,n,i)
-!          enddo
-!
-          if (dampuext > 0.0 .and. rdampext /= impossible) then
-            pdamp = step(p%r_mn,rdampext,wdamp) ! outer damping profile
-            do i=iux,iuz
-              df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - dampuext*pdamp*f(l1:l2,m,n,i)
-            enddo
-          endif
+        if (dampuext > 0.0 .and. rdampext /= impossible) then
+          pdamp = step(p%r_mn,rdampext,wdamp) ! outer damping profile
+          do i=iux,iuz
+            df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - dampuext*pdamp*f(l1:l2,m,n,i)
+          enddo
+        endif
 
-          if (dampuint > 0.0) then
-            pdamp = 1 - step(p%r_mn,rdampint,wdamp) ! inner damping profile
-            do i=iux,iuz
-              df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - dampuint*pdamp*f(l1:l2,m,n,i)
-            enddo
-          endif
-! end geodynamo
+        if (dampuint > 0.0 .and. rdampint /= impossible) then
+          pdamp = 1 - step(p%r_mn,rdampint,wdamp) ! inner damping profile
+          do i=iux,iuz
+            df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - dampuint*pdamp*f(l1:l2,m,n,i)
+          enddo
         endif
 !
 !  coupling the above internal and external rotation rates to lgravr is not

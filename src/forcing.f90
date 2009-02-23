@@ -277,7 +277,8 @@ module Forcing
         case ('gaussianpot');     call forcing_gaussianpot(f,force)
         case ('hel_smooth');      call forcing_hel_smooth(f)
         case ('chandra_kendall'); call forcing_chandra_kendall(f)
-        case ('cktest'); call forcing_cktest(f)
+        case ('cktest');          call forcing_cktest(f)
+        case ('variable_gravz');  call forcing_gravz(f)
         case default; if (lroot) print*,'addforce: No such forcing iforce=',trim(iforce)
         endselect
       endif
@@ -3111,5 +3112,23 @@ module Forcing
 !
     endsubroutine rprint_forcing
 !***********************************************************************
-
+    subroutine forcing_gravz(f)
+!
+!  23-fev-09/dintrans: coded
+!  force internal waves using a time-dependent gravity in the vz-equation
+!  forcing term = -ampl_ff*cos(omega_ff*t)
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      if (headt) print*,'forcing_gravz: ENTER'
+!
+!  Add forcing only in vz
+!
+      f(l1:l2,m1:m2,n1:n2,iuz)=f(l1:l2,m1:m2,n1:n2,iuz) &
+                                   -ampl_ff*cos(omega_ff*t)
+!
+    endsubroutine forcing_gravz
+!***********************************************************************
 endmodule Forcing
