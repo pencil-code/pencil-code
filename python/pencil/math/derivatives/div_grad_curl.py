@@ -33,10 +33,11 @@ def grad(f,dx,dy,dz):
     
     return grad
 
-
-def curl(f,dx,dy,dz):
+def curl(f,dx,dy,dz,run2D=False):
     """
     take the curl of a pencil code vector array.
+    23-fev-2009/dintrans+morin: introduced the run2D parameter to deal
+    with pure 2-D snapshots (solved the (x,z)-plane pb)
     """
     if (f.shape[0] != 3):
         print "curl: must have vector 4-D array f[3,mz,my,mx] for curl"
@@ -44,12 +45,17 @@ def curl(f,dx,dy,dz):
 
     curl = N.empty_like(f)
     if (dy != 0. and dz != 0.):
+# 3-D case
       curl[0,...] = yder(f[2,...],dy) - zder(f[1,...],dz)
       curl[1,...] = zder(f[0,...],dz) - xder(f[2,...],dx)
       curl[2,...] = xder(f[1,...],dx) - yder(f[0,...],dy)
     elif (dy == 0.):
-      curl[0,...] = zder(f,dz)[0,...] - xder(f,dx)[2,...]
+# 2-D case in the (x,z)-plane
+# f[...,nz,1,nx] if run2D=False or f[...,nz,nx] if run2D=True
+      curl[0,...] = zder(f,dz,run2D)[0,...] - xder(f,dx)[2,...]
     else:
+# 2-D case in the (x,y)-plane
+# f[...,1,ny,nx] if run2D=False or f[...,ny,nx] if run2D=True
       curl[0,...] = xder(f,dx)[1,...] - yder(f,dy)[0,...]
     
     return curl

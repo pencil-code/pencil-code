@@ -52,7 +52,7 @@ def yder_6th(f,dy):
         
     return dfdy
 
-def zder_6th(f,dz):
+def zder_6th(f,dz,run2D=False):
     
     if (f.ndim != 3 and f.ndim != 4):
         print "%s dimension arrays not handled." % (str(f.ndim))
@@ -63,9 +63,20 @@ def zder_6th(f,dz):
     n1 = 3
     n2 = f.shape[1]-3
     if (n2 > n1):
-        dfdz[:,n1:n2,...] = dz2*(+45.*(f[:,n1+1:n2+1,...]-f[:,n1-1:n2-1,...]) 
-                                -9.*(f[:,n1+2:n2+2,...]-f[:,n1-2:n2-2,...]) 
-                                +(f[:,n1+3:n2+3,...]-f[:,n1-3:n2-3,...]) )
+       if (not run2D):
+# f[...,z,y,x]
+          dfdz[...,n1:n2,:,:] = dz2*(+45.*(f[...,n1+1:n2+1,:,:]
+                                -f[...,n1-1:n2-1,:,:])
+                                -9.*(f[...,n1+2:n2+2,:,:]
+                                -f[...,n1-2:n2-2,:,:]) 
+                                +(f[...,n1+3:n2+3,:,:]-f[...,n1-3:n2-3,:,:]) )
+       else:
+# f[...,z,x] or f[...,z,y]
+          dfdz[...,n1:n2,:] = dz2*(+45.*(f[...,n1+1:n2+1,:]
+                              -f[...,n1-1:n2-1,:])
+                              -9.*(f[...,n1+2:n2+2,:]
+                              -f[...,n1-2:n2-2,:]) 
+                              +(f[...,n1+3:n2+3,:]-f[...,n1-3:n2-3,:]) )
     else:
         dfdz=0
     return dfdz
