@@ -3766,8 +3766,8 @@ module Entropy
 !   call strat_heat(lnrho,temp,rhotop,rhobot)
 !   goto 20
 
-!  the bottom value that we want for density at r=r_bcz
-    rbot=1.
+!  the bottom value that we want for density at r=r_bcz, actually given by rho0
+    rbot=rho0
     rt_old=0.1*rbot
     rt_new=0.12*rbot
 
