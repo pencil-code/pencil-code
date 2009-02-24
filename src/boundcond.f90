@@ -606,9 +606,12 @@ module Boundcond
                 ! tell other modules not to change boundary value
                 call bc_freeze_var_z(topbot,j)
                 call bc_sym_z(f,-1,topbot,j,REL=.true.) ! antisymm wrt boundary
+              case ('fBs')
+                ! BCZ_DOC: frozen-in B-field (s)
+                call bc_frozen_in_bb(topbot,j)
+                call bc_sym_z(f,+1,topbot,j) ! symmetry
               case ('fB')
-                ! BCZ_DOC: frozen-in B-field
-                ! tell other modules not to change boundary value
+                ! BCZ_DOC: frozen-in B-field (a2)
                 call bc_frozen_in_bb(topbot,j)
                 call bc_sym_z(f,-1,topbot,j,REL=.true.) ! antisymm wrt boundary
               case ('g')
