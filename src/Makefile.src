@@ -1179,11 +1179,13 @@ run=run.o $(run_deps)
 shock_finder=$(SHOCK_FINDER).o $(shock_finder_deps)
 #merge_tony var2ascii_deps=cparam.o
 #merge_tony var2ascii=var2ascii.o $(var2ascii_deps)
+combine_videofiles_deps=cparam.o cdata.o general.o
+combine_videofiles=combine_videofiles.o $(combine_videofiles_deps)
 read_videofiles_deps=cparam.o cdata.o general.o
 read_videofiles=read_videofiles.o $(read_videofiles_deps)
 read_vectorfiles_deps=cparam.o cdata.o general.o
 read_vectorfiles=read_vectorfiles.o $(read_vectorfiles_deps)
-TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c read_videofiles.f90
+TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c combine_videofiles.f90 read_videofiles.f90
 PC_XMLEXPORT=$(PENCIL_HOME)/bin/pc_xmlexport
 
 # ---------------------------------------------------------------------- #
@@ -1210,7 +1212,7 @@ depend dep:
 	    '  rm src/Makefile.depend; pc_setupsrc' \
 	    '*********************************************'
 	rm -f Makefile.depend
-	scripts/mkdep start.f90 run.f90 read_videofiles.f90 read_vectorfiles.f90 equ.f90 debug_c.c $(GRID).f90 $(comm_deps:.o=.f90)  > Makefile.depend
+	scripts/mkdep start.f90 run.f90 combine_videofiles.f90 read_videofiles.f90 read_vectorfiles.f90 equ.f90 debug_c.c $(GRID).f90 $(comm_deps:.o=.f90)  > Makefile.depend
 
 # Help us finding out what compiler, MPI library, etc we have and give recommendations
 semiauto-conf:
@@ -1345,7 +1347,7 @@ nompicomm_.f90: nompicomm.f90
 	cp nompicomm.f90 nompicomm_.f90
 
 EXECUTABLES=start.x run.x \
-	read_videofiles.x read_vectorfiles.x
+	combine_videofiles.x read_videofiles.x read_vectorfiles.x
 
         # write_dummy_namelists.x
 # The last few object files to compile. We need to compile _all_ object
@@ -1362,7 +1364,7 @@ code: Makefile.inc cparam.inc
 	    $(MAKE) $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES) ; \
 	fi
 
-FASTEXECS=startfast.x runfast.x read_videofiles.x read_vectorfiles.x
+FASTEXECS=startfast.x runfast.x combine_videofiles.x read_videofiles.x read_vectorfiles.x
 fast:
 	@echo "$(MAKE) $(MAKEOPTS) $(FASTEXECS)"
 	@if [ ! -z "$(FCCLEANER)" ]; then \
@@ -1486,6 +1488,9 @@ distclean: cleanall
 ## ---------------------------------------------------------------------- #
 
 nograv.o:
+
+combine_videofiles.x: $(combine_videofiles)
+	$(LD) $(LDFLAGS) $(combine_videofiles) $(LD_MPI) -o combine_videofiles.x
 
 read_videofiles.x: $(read_videofiles)
 	$(LD) $(LDFLAGS) $(read_videofiles) $(LD_MPI) -o read_videofiles.x
