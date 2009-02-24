@@ -1259,7 +1259,7 @@ module Magnetic
           .or. idiag_exjmx/=0 .or. idiag_exjmy/=0 .or. idiag_exjmz/=0 &
          ) lpenc_diagnos(i_jj)=.true.
       if (idiag_b2m/=0 .or. idiag_bm2/=0 .or. idiag_brms/=0 .or. &
-          idiag_bmax/=0) lpenc_diagnos(i_b2)=.true.
+          idiag_bmax/=0 .or. idiag_b2mphi/=0) lpenc_diagnos(i_b2)=.true.
 ! to calculate the angle between magnetic field and current.
       if (idiag_cosjbm/=0) then
         lpenc_requested(i_jj)=.true.
