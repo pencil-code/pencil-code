@@ -1259,13 +1259,13 @@ module Magnetic
           .or. idiag_exjmx/=0 .or. idiag_exjmy/=0 .or. idiag_exjmz/=0 &
          ) lpenc_diagnos(i_jj)=.true.
       if (idiag_b2m/=0 .or. idiag_bm2/=0 .or. idiag_brms/=0 .or. &
-          idiag_bmax/=0 .or. idiag_b2mphi/=0) lpenc_diagnos(i_b2)=.true.
+          idiag_bmax/=0) lpenc_diagnos(i_b2)=.true.
 ! to calculate the angle between magnetic field and current.
       if (idiag_cosjbm/=0) then
         lpenc_requested(i_jj)=.true.
         lpenc_requested(i_jb)=.true.
-      else
       endif
+      if (idiag_b2mphi/=0) lpenc_diagnos2d(i_b2)=.true.
 !  pencils for meanfield dynamo diagnostics
 !
       if (idiag_EMFdotBm/=0) lpenc_diagnos(i_mf_EMFdotB)=.true.
@@ -1442,6 +1442,8 @@ module Magnetic
 ! bb
       if (lpencil(i_bb)) then
         call curl_mn(p%aij,p%bb,p%aa)
+! b2
+        if (lpencil(i_b2)) call dot2_mn(p%bb,p%b2)
 !
 !  save field before adding imposed field (for diagnostics)
 !
@@ -1531,8 +1533,6 @@ module Magnetic
           call u_dot_grad(f,iaa,p%aij,p%uu,p%uga,UPWIND=lupw_aa)
         endif
       endif
-! b2
-      if (lpencil(i_b2)) call dot2_mn(p%bb,p%b2)
 !
 !  bij, del2a, graddiva
 !  For non-cartesian coordinates jj is always required for del2a=graddiva-jj
