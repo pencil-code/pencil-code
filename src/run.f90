@@ -642,7 +642,7 @@
           if (dspec /= impossible) call powersnap(f,.true.)
         endif
 !
-!  Print wall clock time and time per step and processo  for diagnostic purposes
+!  Print wall clock time and time per step and processor  for diagnostic purposes
 !
         if (lroot) then
           wall_clock_time = time2-time1
