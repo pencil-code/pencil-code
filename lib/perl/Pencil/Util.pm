@@ -46,7 +46,7 @@ sub use_pencil_perl_module {
             croak "Perl: Can't locate $modulefile in \@INC\n"
                 . "You need to check out the Pencil library directory"
                 . " (including lib/perl):\n"
-                . "  (cd \$PENCIL_HOME; cvs up -dA lib)\n";
+                . "  (cd \$PENCIL_HOME; svn update lib)\n";
         } else {                # unknown error message
             croak "$@\n";
         }
