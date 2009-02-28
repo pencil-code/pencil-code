@@ -12,7 +12,7 @@ conv-slab                                Wolfgang Dobler <wdobler/gmail[dot]com>
 corona                                   Sven Bingert <mail@bingert.com>
 cosmicray                                Andrew Snodin <Andrew.Snodin@newcastle.ac.uk>
 dust_turb_globaldisk                     Wladimir Lyra <wlyra/astro[dot]uu[dot]se>
-dust-vortex                              Anders Johansen <johansen@mpia.de>
+dust-vortex                              Anders Johansen <johansen/mpia[dot]de>
 forced-boundary                          Sven <nobody[at]nowhere.net>
 geodynamo                                Graeme Sarson <G.R.Sarson@newcastle.ac.uk>
 helical-MHDturb                          Axel Brandenburg <brandenb/nordita[dot]dk>
@@ -25,8 +25,8 @@ mdwarf                                   Wolfgang Dobler <wdobler/gmail[dot]com>
 meissner                                 Wolfgang Dobler <wdobler/gmail[dot]com>
 MHD-ABCforcing                           Axel Brandenburg <brandenb/nordita[dot]dk>
 most-modules                             Wolfgang Dobler <wdobler/gmail[dot]com>
-MRI-turbulence_hyper                     Anders Johansen <johansen@mpia.de>
-MRI-turbulence_hyper_strict              Anders Johansen <johansen@mpia.de>
+MRI-turbulence_hyper                     Anders Johansen <johansen/mpia[dot]de>
+MRI-turbulence_hyper_strict              Anders Johansen <johansen/mpia[dot]de>
 multigrid                                Wolfgang Dobler <wdobler/gmail[dot]com>
 no-modules                               Wolfgang Dobler <wdobler/gmail[dot]com>
 random_uu_particles                      Anders <nobody[at]nowhere.net>
@@ -52,4 +52,4 @@ testfield_z                              Axel Brandenburg <brandenb/nordita[dot]
 2d-tests/globaldisc                      Wladimir Lyra <wlyra/astro[dot]uu[dot]se>
 2d-tests/GMSW1976                        Wolfgang Dobler <wdobler/gmail[dot]com>
 2d-tests/Kelvin-Helmholtz-disc           Anders <nobody[at]nowhere.net>
-2d-tests/selfgravitating-shearwave       Anders Johansen <johansen@mpia.de>
+2d-tests/selfgravitating-shearwave       Anders Johansen <johansen/mpia[dot]de>
