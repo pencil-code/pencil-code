@@ -2,9 +2,10 @@ Directory:
     ${PENCIL_HOME}/samples/interstellar
 CVS-Id:
     $Id$
-Maintainers:
-    Tony Mee <A.J.Mee@ncl.ac.uk>
+Maintainer:
     Axel Brandenburg <brandenb@nordita.dk>
+Original Maintainer:
+    Tony Mee <A.J.Mee@ncl.ac.uk>
 Added:
     29-Aug-2003
 Status:
