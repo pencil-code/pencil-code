@@ -1,48 +1,51 @@
 #$Id$
 #
-#  list of README file with maintainer names, produced using
-#  (grep -A4 Maintainer */{,*/}README | grep "<"; echo "") >> README 
+#  list of README file with maintainer names. Update with
+#    head -n7 README > toto.tmp; (grep -A1 Maintainer: */{,*/}README | grep -v 'Maintainer:' | perl -ne 'printf("%-40s %s\n", $1, $2) if (m{^(.*)/README-\s+(.*)})') >> toto.tmp; mv toto.tmp README
 #
 
-backwards-compatible/README-    Axel Brandenburg <brandenb@nordita.dk>
-chiral-diffusion/README-    Axel Brandenburg <brandenb@nordita.dk>
-conv-slab-noequi/README-    Wolfgang <nobody[at]nowhere.net>
-conv-slab-noequi/README-    Sven Bingert <mail@bingert.com>
-conv-slab/README-    Wolfgang Dobler <wdobler[at]ucalgary.ca>
-corona/README-    Sven Bingert <mail@bingert.com>
-cosmicray/README-    Andrew Snodin <Andrew.Snodin@newcastle.ac.uk>
-dust_turb_globaldisk/README-    Wladimir Lyra <wlyra@astro.uu.se>
-dust-vortex/README-    Anders <nobody[at]nowhere.net>
-forced-boundary/README-    Sven <nobody[at]nowhere.net>
-geodynamo/README-    Graeme Sarson <G.R.Sarson@newcastle.ac.uk>
-helical-MHDturb/README-    Axel Brandenburg <brandenb@nordita.dk>
-hexagon/README-    Wolfgang Dobler <wdobler[at]ucalgary.ca>
-interlocked-fluxrings/README-    Wolfgang Dobler <wdobler[at]ucalgary.ca>
-interstellar/README-    Tony Mee <A.J.Mee@ncl.ac.uk>
-interstellar/README-    Axel Brandenburg <brandenb@nordita.dk>
-kin-dynamo/README-    Axel Brandenburg <brandenb@nordita.dk>
-mdwarf/README-    Wolfgang Dobler <wdobler[at]ucalgary.ca>
-meissner/README-    Wolfgang Dobler <wdobler[at]ucalgary.ca>
-most-modules/README-    Wolfgang Dobler <wdobler[at]ucalgary.ca>
-MRI-turbulence_hyper/README-    Anders Johansen <johansen@mpia.de>
-MRI-turbulence_hyper_strict/README-    Anders Johansen <johansen@mpia.de>
-multigrid/README-    Wolfgang Dobler <wdobler[at]ucalgary.ca>
-no-modules/README-    Wolfgang Dobler <wdobler[at]ucalgary.ca>
-random_uu_particles/README-    Anders <nobody[at]nowhere.net>
-sound-spherical-noequi/README-    Wolfgang Dobler <wdobler[at]ucalgary.ca>
-testfield/README-    Axel Brandenburg <brandenb@nordita.dk>
-0d-tests/heating_ionize/README-    Tobias Heinemann <T.Heinemann@damtp.cam.ac.uk>
-0d-tests/heating_ionize/README-    Axel Brandenburg <brandenb@nordita.dk>
-1d-tests/ambipolar_diffusion/README-    Wladimir Lyra <wlyra@astro.uu.se>
-1d-tests/sod_10/README-    Axel Brandenburg <brandenb@nordita.dk>
-1d-tests/solar-atmosphere/README-    Tobi <nobody[at]nowhere.net>
-2d-tests/A3+chi11+Ra1e5/README-    Wolfgang Dobler <Wolfgang.Dobler@ucalgary.ca>
-2d-tests/A3+chi11+Ra1e5/README-    Axel Brandenburg <brandenb@nordita.dk>
-2d-tests/bubble/README-    Boris Dintrans <dintrans[at]ast.obs-mip.fr>
-2d-tests/conv-slab-MLT/README-    Boris Dintrans <dintrans[at]ast.obs-mip.fr>
-2d-tests/cylindrical_gdisk/README-    Wladimir Lyra <wlyra@astro.uu.se>
-2d-tests/globaldisc/README-    Wladimir Lyra <wlyra@astro.uu.se>
-2d-tests/GMSW1976/README-    Wolfgang Dobler <wdobler[at]ucalgary.ca>
-2d-tests/Kelvin-Helmholtz-disc/README-    Anders <nobody[at]nowhere.net>
-2d-tests/selfgravitating-shearwave/README-    Anders <nobody[at]nowhere.net>
 
+backwards-compatible                     Axel Brandenburg <brandenb@nordita.dk>
+chiral-diffusion                         Axel Brandenburg <brandenb@nordita.dk>
+conv-slab-noequi                         Wolfgang <nobody[at]nowhere.net>
+conv-slab                                Wolfgang Dobler <wdobler/gmail[dot]com>
+corona                                   Sven Bingert <mail@bingert.com>
+cosmicray                                Andrew Snodin <Andrew.Snodin@newcastle.ac.uk>
+dust_turb_globaldisk                     Wladimir Lyra <wlyra@astro.uu.se>
+dust-vortex                              Anders Johansen <johansen@mpia.de>
+forced-boundary                          Sven <nobody[at]nowhere.net>
+geodynamo                                Graeme Sarson <G.R.Sarson@newcastle.ac.uk>
+helical-MHDturb                          Axel Brandenburg <brandenb@nordita.dk>
+hexagon                                  Wolfgang Dobler <wdobler/gmail[dot]com>
+interlocked-fluxrings                    Wolfgang Dobler <wdobler/gmail[dot]com>
+kin-dynamo                               Axel Brandenburg <brandenb@nordita.dk>
+mdwarf                                   Wolfgang Dobler <wdobler/gmail[dot]com>
+meissner                                 Wolfgang Dobler <wdobler/gmail[dot]com>
+MHD-ABCforcing                           Axel Brandenburg <brandenb@nordita.org>
+most-modules                             Wolfgang Dobler <wdobler/gmail[dot]com>
+MRI-turbulence_hyper                     Anders Johansen <johansen@mpia.de>
+MRI-turbulence_hyper_strict              Anders Johansen <johansen@mpia.de>
+multigrid                                Wolfgang Dobler <wdobler/gmail[dot]com>
+no-modules                               Wolfgang Dobler <wdobler/gmail[dot]com>
+random_uu_particles                      Anders <nobody[at]nowhere.net>
+sound-spherical-bufferzone               Wolfgang Dobler <wdobler/gmail[dot]com>
+sound-spherical-noequi                   Wolfgang Dobler <wdobler/gmail[dot]com>
+testfield                                Axel Brandenburg <brandenb@nordita.dk>
+testfield_z                              Axel Brandenburg <brandenb@nordita.org>
+0d-tests/chemistry_aped                  Axel Brandenburg <brandenb@nordita.org>
+0d-tests/chemistry_H2_ignition_rkf       Nils Erland L. Haugen <nils.e.haugen@sintef.no>
+0d-tests/heating_ionize                  Tobias Heinemann <T.Heinemann@damtp.cam.ac.uk>
+0d-tests/solar_system                    Wladimir Lyra <wlyra@astro.uu.se>
+1d-tests/ambipolar_diffusion             Wladimir Lyra <wlyra@astro.uu.se>
+1d-tests/sod_10                          Axel Brandenburg <brandenb@nordita.dk>
+1d-tests/sod_10s                         Axel Brandenburg <brandenb@nordita.org>
+1d-tests/solar-atmosphere                Tobi <nobody[at]nowhere.net>
+2d-tests/A3+chi11+Ra1e5                  Wolfgang Dobler <Wolfgang.Dobler@ucalgary.ca>
+2d-tests/bubble                          Boris Dintrans <dintrans[at]ast.obs-mip.fr>
+2d-tests/chemistry_GrayScott             Axel Brandenburg <brandenb@nordita.org>
+2d-tests/conv-slab-MLT                   Boris Dintrans <dintrans[at]ast.obs-mip.fr>
+2d-tests/cylindrical_gdisk               Wladimir Lyra <wlyra@astro.uu.se>
+2d-tests/globaldisc                      Wladimir Lyra <wlyra@astro.uu.se>
+2d-tests/GMSW1976                        Wolfgang Dobler <wdobler/gmail[dot]com>
+2d-tests/Kelvin-Helmholtz-disc           Anders <nobody[at]nowhere.net>
+2d-tests/selfgravitating-shearwave       Anders Johansen <johansen@mpia.de>
