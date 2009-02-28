@@ -29,6 +29,19 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # - Remove directory from /var/tmp when encountering Ctl-c
 # - Treat `svn update' as separate stage that can be `OK' or not
 
+BEGIN {
+    # Make sure ${PENCIL_HOME}/lib/perl is in the Perl path
+    if (-d "$ENV{PENCIL_HOME}/lib/perl") {
+        unshift @INC, "$ENV{PENCIL_HOME}/lib/perl";
+    } else {
+        if ($0 =~ m!(.*[/\\])!) { unshift @INC, "$1../lib/perl"; }
+    }
+}
+
+use Pencil::Util;
+Pencil::Util::use_pencil_perl_module('Pencil::ReadmeReader')
+  or die;
+
 use strict;
 use constant NOQUIET     => 0;
 use constant QUIET       => 1;
@@ -1348,18 +1361,20 @@ sub write_to_file {
 # ---------------------------------------------------------------------- #
 sub get_maintainer_list {
 # Return comma-separated list of maintaners of directories listed in
-# %failed .
+# %failed, avoiding duplicate entries.
 
-    my @maintainers;
+    my %maintainers;
     foreach my $dir (keys %failed) {
-        push @maintainers, get_maintainer("$dir/README");
+        foreach my $maint (get_maintainers("$dir/README")) {
+            $maintainers{$maint}++;
+        }
     }
 
-    return join(',', grep /./, @maintainers);
+    return join(',', grep /./, keys %maintainers);
 }
 # ---------------------------------------------------------------------- #
-sub get_maintainer {
-# Given a run directory, extract the maintainer information from the
+sub get_maintainers {
+# Given a run directory, return list of maintainers extracted from the
 # README file.
     my $readme = shift;
     unless (-r $readme) {
@@ -1367,26 +1382,20 @@ sub get_maintainer {
         return undef;
     }
 
-    if (open(README, "< $readme")) {
-        while (defined(my $line = <README>)) {
-            next unless $line =~ /^Maintainer:/;
-            my $email = <README>;
-            chomp($email);
-            $email =~ s{(\[at\]|\@)}{/}; # obfuscate (may end up on the web)
-            $email =~ s{^\s*(.*?)\s*$}{$1}; # strip surrounding whitespace
-            if ($email =~ /<([^>]*)>/) {
-                $email = $1;
-            }
-            if ($email =~ m{[-.a-zA-Z_0-9]+/[-.a-zA-Z_0-9]+}) {
-                return $email;
-            } else {
-                return undef;
-            }
+    my @emails = ();
+    my $reader = Pencil::ReadmeReader->new($readme);
+    foreach my $maint ($reader->get_content('Maintainer')) {
+        $maint =~ s{(\[at\]|\@)}{/}; # obfuscate `@' (may end up on the web)
+        $maint =~ s{(\[dot\]|\.)}{:}g;   # obfuscate `.'
+        $maint =~ s{^\s*(.*?)\s*$}{$1}; # strip surrounding whitespace
+        if ($maint =~ /<([^>]*)>/) {
+            $maint = $1;
         }
-    } else {
-        warn "Cannot open $readme: $!\n";
-        undef;
+        if ($maint =~ m{[-.:a-zA-Z_0-9]+/[-:a-zA-Z_0-9]+}) {
+            push @emails, $maint;
+        }
     }
+    return @emails;
 }
 # ---------------------------------------------------------------------- #
 
