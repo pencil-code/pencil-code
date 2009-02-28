@@ -55,23 +55,8 @@ BEGIN {
     }
 }
 
-eval "use Fortran::F90Namelist";
-if ($@) {             # Error reading F90Namelist.pm -- give useful advice
-    my $error = join("\n",$@);
-    if ($error =~ m|Can't locate Fortran/F90Namelist.pm in \@INC|) {
-        if (! -d "$ENV{PENCIL_HOME}/lib/perl") { # forgot to cvs up -d perl
-            die "Perl: Can't locate Fortran/F90Namelist.pm in \@INC\n"
-              . "You need to check out the Pencil library (including lib/perl) directory:\n"
-              . "  (cd \$PENCIL_HOME; cvs up -d lib)\n";
-        } else {               # $PENCIL_HOME/lib/perl missing in PERL5LIB
-            die "Perl: Can't locate Fortran::F90Namelist.pm in \@INC\n"
-              ."Fortran::F90Namelist.pm must be missing from your working copy, try:\n"
-              ."(cd \$PENCIL_HOME/lib/perl; cvs up -dA)\n";
-        }
-    } else {                    # unknown error message
-        die "$@\n";
-    }
-}
+use Pencil::Util;
+Pencil::Util::use_pencil_perl_module('Fortran::F90Namelist') or die;
 
 use Getopt::Long;
 # Allow for `-Plp' as equivalent to `-P lp' etc:
