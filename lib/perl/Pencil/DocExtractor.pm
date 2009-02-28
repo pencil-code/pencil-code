@@ -5,9 +5,8 @@
 # Description:
 #   Extract Documentation strings following variable declarations and
 #   Collect in LaTeX longtable environment for inclusion in the manual.
-# Author: wd (wdobler [at] cpan.org)
-# $Date: 2008-02-07 23:03:59 $
-# $Revision: 1.3 $
+# Author: wd (wdobler#cpan:org =~ tr/:#/.@/)
+# $Id$
 #
 # This file is part of the Pencil Code and licensed under the GNU Public
 # License version 3 or later; see $PENCIL_HOME/license/GNU_public_license.txt.
