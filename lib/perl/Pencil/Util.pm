@@ -27,6 +27,10 @@ $VERSION = '0.1';
 sub use_pencil_perl_module {
 # Try to use a module from the Pencil Code lib/perl directory and give
 # useful advice if the module cannot be found.
+# E.g.
+#   use Pencil::Util;
+#   Pencil::Util::use_pencil_perl_module('Pencil::DocExtractor') or die;
+#   my $diag_doc = Pencil::DocExtractor->new([...]);
 #
     my $module = shift;
 
