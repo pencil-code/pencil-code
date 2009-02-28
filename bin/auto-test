@@ -154,20 +154,12 @@ my %tests = (
              # Level 6 for now contains all non-canonical tests that
              # start, but don't run successfully
              6 =>  [qw(
-                          forced-boundary
-                          random_uu_particles
-                          0d-tests/heating_ionize
-                          sound-spherical-bufferzone
-                          2d-tests/shearwave-dust-par
-                          2d-tests/Kelvin-Helmholtz-disc
-                          2d-tests/selfgrav-shearwave-dust-par
                      )],
              # Level 7 for now contains all non-canonical tests that
              # compile, but don't start sucessfully
              7 =>  [qw(
                           interstellar_ion
                           spherical-globaldisk
-                          interlocked-fluxrings
                           turb-cylindrical-disk
                           2d-tests/conv-slab-MLT
                           2d-tests/A3+chi11+Ra1e5
@@ -179,8 +171,6 @@ my %tests = (
                      )],
             );
 # ---------------------------------------------------------------------- #
-## Override for testing:
-my @sampdirs = get_sampdirs($default_level);
 
 my $ntests      = 0;                 # total number of tests run
 my $failed      = 0;
@@ -236,6 +226,8 @@ Options:
   -s,  --short             \tPrint short directory names only
   -p,  --postproc=PP       \tApply postprocessor PP to output from make
   -a,  --all-dirs          \tRecurse through all subdirectories of samples/
+       --level=LEV         \tRun only tests from level LEV
+       --max-level=LEV     \tRun all tests below with level <= LEV (default: 2)
        --time-limit=limit  \tUse reaper to limit time for run.x
        --rsh=RSH-PROG      \tUse the specified program as to get a remote shell
        --nodelist=NODE1,.. \tUse a forked remote shell to parallelize
@@ -247,10 +239,12 @@ Examples:
   auto-test -C   # run auto-test standard program, compiling from scratch
   auto-test .    # run auto-test in current directory
   auto-test -l   # list dirs in standard program
-  auto-test --time-limit=2m  # run standard program, killing (for each test)
-                             # any remaining run.x processes after 2 minutes
+  auto-test --time-limit=2m   # run standard program, killing (for each test)
+                              # any remaining run.x processes after 2 minutes
   auto-test -a   # run auto-test in all subdirs of samples/ with a
                  # referece.out{,.double} file
+  auto-test --level=1         # run all level 1 tests
+  auto-test -l --max-level=1  # list test dirs in levels 0 and 1
   auto-test -al  # list all dirs `auto-test -a' would run in
   auto-test -aL  # list all run dirs under samples/, even those without
                  # reference data
@@ -281,6 +275,8 @@ GetOptions(\%opts,
                -s   --short
                -p=s --postproc=s
                -a   --all-dirs
+                    --level=s
+                    --max-level=s
                     --time-limit=s
                     --rsh=s
                     --nodelist=s
@@ -314,6 +310,8 @@ my $datadir     = ($opts{'d'} || $opts{'datadir'}         || 0    );
 my $short       = ($opts{'s'} || $opts{'short'}           || 0    );
 my $postproc    = ($opts{'p'} || $opts{'postproc'}        || ''   );
 my $deep        = ($opts{'a'} || $opts{'all-dirs'}        || 0    );
+my $level       = (              $opts{'level'}                   );
+my $max_level   = (              $opts{'max-level'}               );
 my $time_limit  = (              $opts{'time-limit'}      || ''   );
 my $rsh         = (              $opts{'rsh'}             || 'ssh');
 my $nodelist    = (              $opts{'nodelist'}        || 0    );
@@ -437,6 +435,13 @@ if (@ARGV) {
         find_test_dirs("$topdir/samples"); # populates @testdirs
     } else {
         # Use predefined directories
+        my @sampdirs;
+        if (defined($level)) {
+            @sampdirs = get_sampdirs($level);
+        } else {
+            $max_level = $default_level unless defined($max_level);
+            @sampdirs = get_all_sampdirs($max_level);
+        }
         @testdirs =
           ( map { "$topdir/samples/$_" } @sampdirs,
           );
@@ -460,12 +465,25 @@ if (@ARGV) {
 
 
 # ---------------------------------------------------------------------- #
-sub get_sampdirs {
+sub get_all_sampdirs {
 # Return a flat list of all sample dirs that belong to a level <= $level .
     my $level = shift;
 
     my @dirs;
     my @levels = grep { $_ <= $level } keys %tests;
+    foreach my $lev (sort {$a <=> $b} @levels) {
+        push @dirs, @{$tests{$lev}};
+    }
+
+    return @dirs;
+}
+# ---------------------------------------------------------------------- #
+sub get_sampdirs {
+# Return list of sample dirs that belong to $level .
+    my $level = shift;
+
+    my @dirs;
+    my @levels = grep { $_ == $level } keys %tests;
     foreach my $lev (sort {$a <=> $b} @levels) {
         push @dirs, @{$tests{$lev}};
     }
