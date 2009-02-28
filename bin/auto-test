@@ -229,6 +229,7 @@ Options:
        --level=LEV         \tRun only tests from level LEV
        --max-level=LEV     \tRun all tests below with level <= LEV (default: 2)
        --time-limit=limit  \tUse reaper to limit time for run.x
+       --list-maintainers  \tPrint maintainer emails for failed tests
        --rsh=RSH-PROG      \tUse the specified program as to get a remote shell
        --nodelist=NODE1,.. \tUse a forked remote shell to parallelize
        --no-summary        \tDo not summarize at the end
@@ -252,7 +253,7 @@ Examples:
 
 ## Process command line options
 eval {
-    Getopt::Long::config("bundling"); # makes single-letter options case-sensitive
+    Getopt::Long::config("bundling"); # make single-letter opts. case-sensitive
 };
 GetOptions(\%opts,
            qw( -h   --help
@@ -278,6 +279,7 @@ GetOptions(\%opts,
                     --level=s
                     --max-level=s
                     --time-limit=s
+                    --list-maintainers
                     --rsh=s
                     --nodelist=s
                     --no-summary
@@ -313,6 +315,7 @@ my $deep        = ($opts{'a'} || $opts{'all-dirs'}        || 0    );
 my $level       = (              $opts{'level'}                   );
 my $max_level   = (              $opts{'max-level'}               );
 my $time_limit  = (              $opts{'time-limit'}      || ''   );
+my $list_maint  = (              $opts{'list-maintainers'} || 0   );
 my $rsh         = (              $opts{'rsh'}             || 'ssh');
 my $nodelist    = (              $opts{'nodelist'}        || 0    );
 my $nosummary   = (              $opts{'no-summary'}      || 0    );
@@ -1343,6 +1346,49 @@ sub write_to_file {
     }
 }
 # ---------------------------------------------------------------------- #
+sub get_maintainer_list {
+# Return comma-separated list of maintaners of directories listed in
+# %failed .
+
+    my @maintainers;
+    foreach my $dir (keys %failed) {
+        push @maintainers, get_maintainer("$dir/README");
+    }
+
+    return join(',', grep /./, @maintainers);
+}
+# ---------------------------------------------------------------------- #
+sub get_maintainer {
+# Given a run directory, extract the maintainer information from the
+# README file.
+    my $readme = shift;
+    unless (-r $readme) {
+        warn "Cannot open $readme\n";
+        return undef;
+    }
+
+    if (open(README, "< $readme")) {
+        while (defined(my $line = <README>)) {
+            next unless $line =~ /^Maintainer:/;
+            my $email = <README>;
+            chomp($email);
+            $email =~ s{(\[at\]|\@)}{/}; # obfuscate (may end up on the web)
+            $email =~ s{^\s*(.*?)\s*$}{$1}; # strip surrounding whitespace
+            if ($email =~ /<([^>]*)>/) {
+                $email = $1;
+            }
+            if ($email =~ m{[-.a-zA-Z_0-9]+/[-.a-zA-Z_0-9]+}) {
+                return $email;
+            } else {
+                return undef;
+            }
+        }
+    } else {
+        warn "Cannot open $readme: $!\n";
+        undef;
+    }
+}
+# ---------------------------------------------------------------------- #
 
 ## Summarize results
 END {
@@ -1398,6 +1444,11 @@ END {
             open(INFO,"< $infofile") or warn "Couldn't open $infofile\n";
             print while (<INFO>);
             close(INFO);
+        }
+
+        # List maintainers of failed tests
+        if ($list_maint && %failed) {
+            print 'Maintainers of failed tests: ', get_maintainer_list(), "\n";
         }
 
     }
