@@ -11,7 +11,7 @@ conv-slab-noequi                         Wolfgang <nobody[at]nowhere.net>
 conv-slab                                Wolfgang Dobler <wdobler/gmail[dot]com>
 corona                                   Sven Bingert <mail@bingert.com>
 cosmicray                                Andrew Snodin <Andrew.Snodin@newcastle.ac.uk>
-dust_turb_globaldisk                     Wladimir Lyra <wlyra@astro.uu.se>
+dust_turb_globaldisk                     Wladimir Lyra <wlyra/astro[dot]uu[dot]se>
 dust-vortex                              Anders Johansen <johansen@mpia.de>
 forced-boundary                          Sven <nobody[at]nowhere.net>
 geodynamo                                Graeme Sarson <G.R.Sarson@newcastle.ac.uk>
@@ -38,8 +38,8 @@ testfield_z                              Axel Brandenburg <brandenb/nordita[dot]
 0d-tests/chemistry_H2_ignition_rkf       Nils Erland L. Haugen <nils.e.haugen@sintef.no>
 0d-tests/heating_ionize                  Tobias Heinemann <T.Heinemann@damtp.cam.ac.uk>
 0d-tests/heating_ionize                  Axel Brandenburg <brandenb/nordita[dot]dk>
-0d-tests/solar_system                    Wladimir Lyra <wlyra@astro.uu.se>
-1d-tests/ambipolar_diffusion             Wladimir Lyra <wlyra@astro.uu.se>
+0d-tests/solar_system                    Wladimir Lyra <wlyra/astro[dot]uu[dot]se>
+1d-tests/ambipolar_diffusion             Wladimir Lyra <wlyra/astro[dot]uu[dot]se>
 1d-tests/sod_10                          Axel Brandenburg <brandenb/nordita[dot]dk>
 1d-tests/sod_10s                         Axel Brandenburg <brandenb/nordita[dot]dk>
 1d-tests/solar-atmosphere                Tobi <nobody[at]nowhere.net>
@@ -48,8 +48,8 @@ testfield_z                              Axel Brandenburg <brandenb/nordita[dot]
 2d-tests/bubble                          Boris Dintrans <dintrans[at]ast.obs-mip.fr>
 2d-tests/chemistry_GrayScott             Axel Brandenburg <brandenb/nordita[dot]dk>
 2d-tests/conv-slab-MLT                   Boris Dintrans <dintrans[at]ast.obs-mip.fr>
-2d-tests/cylindrical_gdisk               Wladimir Lyra <wlyra@astro.uu.se>
-2d-tests/globaldisc                      Wladimir Lyra <wlyra@astro.uu.se>
+2d-tests/cylindrical_gdisk               Wladimir Lyra <wlyra/astro[dot]uu[dot]se>
+2d-tests/globaldisc                      Wladimir Lyra <wlyra/astro[dot]uu[dot]se>
 2d-tests/GMSW1976                        Wolfgang Dobler <wdobler/gmail[dot]com>
 2d-tests/Kelvin-Helmholtz-disc           Anders <nobody[at]nowhere.net>
 2d-tests/selfgravitating-shearwave       Anders Johansen <johansen@mpia.de>
