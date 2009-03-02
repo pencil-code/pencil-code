@@ -1605,7 +1605,7 @@ module Hydro
           if (idiag_uypt/=0) call save_name(p%uu(lpoint-nghost,2),idiag_uypt)
           if (idiag_uzpt/=0) call save_name(p%uu(lpoint-nghost,3),idiag_uzpt)
         endif
-        if (idiag_u2mz/=0)  call zsum_mn_name_xy(p%u2,idiag_u2mz)
+        if (idiag_u2mz/=0)  call xysum_mn_name_z(p%u2,idiag_u2mz)
 !
 !  mean momenta
 !
