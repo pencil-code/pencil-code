@@ -96,6 +96,7 @@ module Entropy
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_TTmax=0    ! DIAG_DOC: $\max (T)$
+  integer :: idiag_gTmax=0    ! DIAG_DOC: $\max (|grad T|)$
   integer :: idiag_TTmin=0    ! DIAG_DOC: $\min (T)$
   integer :: idiag_TTm=0      ! DIAG_DOC: $\left< T \right>$
   integer :: idiag_fradtop=0  ! DIAG_DOC: $<-K{dT\over dz}>_{\text{top}}$ 
@@ -546,6 +547,7 @@ module Entropy
 !  Diagnostics
 !
       if (idiag_TTmax/=0) lpenc_diagnos(i_TT)  =.true.
+      if (idiag_gTmax/=0) lpenc_diagnos(i_gTT) =.true.
       if (idiag_TTmin/=0) lpenc_diagnos(i_TT)  =.true.
       if (idiag_TTm/=0)   lpenc_diagnos(i_TT)  =.true.
       if (idiag_fradtop/=0) then
@@ -781,6 +783,10 @@ module Entropy
 !
       if (ldiagnos) then
         if (idiag_TTmax/=0) call max_mn_name(p%TT,idiag_TTmax)
+        if (idiag_gTmax/=0) then
+           call dot2(p%gTT,tmp)
+           call max_mn_name(sqrt(tmp),idiag_gTmax)
+        endif
         if (idiag_TTmin/=0) call max_mn_name(-p%TT,idiag_TTmin,lneg=.true.)
         if (idiag_TTm/=0)   call sum_mn_name(p%TT,idiag_TTm)
         if (idiag_fradtop/=0.and.n==n2) then
@@ -1206,7 +1212,7 @@ module Entropy
 !
       if (lreset) then
         idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0; idiag_fradtop=0
-        idiag_yHmax=0; idiag_yHmin=0; idiag_yHm=0
+        idiag_yHmax=0; idiag_yHmin=0; idiag_yHm=0; idiag_gTmax=0
         idiag_eth=0; idiag_ssm=0; idiag_thcool=0
         idiag_dtchi=0; idiag_dtc=0
         idiag_eem=0; idiag_ppm=0; idiag_csm=0
@@ -1216,6 +1222,7 @@ module Entropy
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'TTmax',idiag_TTmax)
+        call parse_name(iname,cname(iname),cform(iname),'gTmax',idiag_gTmax)
         call parse_name(iname,cname(iname),cform(iname),'TTmin',idiag_TTmin)
         call parse_name(iname,cname(iname),cform(iname),'TTm',idiag_TTm)
         call parse_name(iname,cname(iname),cform(iname),'fradtop',idiag_fradtop)
@@ -1237,6 +1244,7 @@ module Entropy
         write(3,*) 'iyH=',iyH
         write(3,*) 'iss=',iss
         write(3,*) 'i_TTmax=',idiag_TTmax
+        write(3,*) 'i_gTmax=',idiag_gTmax
         write(3,*) 'i_TTmin=',idiag_TTmin
         write(3,*) 'i_TTm=',idiag_TTm
         write(3,*) 'i_fradtop=',idiag_fradtop
