@@ -65,6 +65,7 @@ module Chemistry
   logical :: lkreactions_profile=.false.
   integer :: nreactions=0,nreactions1=0,nreactions2=0
   real, dimension(2*nchemspec) :: kreactions_profile_width=0.
+  real :: Sc_number=1.
 
   integer :: mreactions
   integer, allocatable, dimension(:,:) :: stoichio,Sijm,Sijp
@@ -76,7 +77,7 @@ module Chemistry
 
     logical :: l1step_test=.false.
     integer :: ipr=2
-    real :: Tc=400., Tinf=2000., beta=1.5, dim_omega_dot=.1
+    real :: Tc=440., Tinf=2000., beta=1.09
 
 !
 !  hydro-related parameters
@@ -114,7 +115,7 @@ module Chemistry
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
       amplchemk,amplchemk2, chem_diff,nu_spec, BinDif_simple, visc_simple, &
       lambda_const, visc_const,Cp_const,Cv_const,diffus_const,init_x1,init_x2, &
-      init_TT1,init_TT2,init_ux,l1step_test
+      init_TT1,init_TT2,init_ux,l1step_test,Sc_number
 
 
 ! run parameters
@@ -934,7 +935,7 @@ subroutine flame_front(f)
 !    inverse? It's faster than dividing.
 !
               Diff_full(:,:,:,k)=species_viscosity(:,:,:,k)/&
-                  rho_full(:,:,:)/0.7
+                  rho_full(:,:,:)/Sc_number
             enddo
           else
             if (.not. lone_spec) then
@@ -951,6 +952,7 @@ subroutine flame_front(f)
               enddo
             endif
           endif
+
 
           if (diffus_const<impossible) then
                 Diff_full=diffus_const
@@ -1396,12 +1398,13 @@ subroutine flame_front(f)
         do i=1,nx 
          if (p%TT(i)>Tc) then
       !     if (x(i)>0.) then
-         sum_DYDt(i)=-p%rho(1)*(p%TT(i)-Tinf)/p%TT(i) &
-           *Cp_const/lambda_const*beta*(beta-1.)*f(l1,m,n,iux)**2
+        ! sum_DYDt(i)=-p%rho(1)*(p%TT(i)-Tinf)/p%TT(i) &
+        !   *Cp_const/lambda_const*beta*(beta-1.)*f(l1,m,n,iux)**2
 
-         !  sum_DYDt(i)=f(l1,m,n,iux)**2*(Tinf-p%TT(1))/p%TT(i) & !(-p%TT(i)+Tinf)
-         !   *Cp_const**2/lambda_const*p%rho(1)*beta*(beta-1.)* &
-         !   (1.-f(l1-1+i,m,n,ichemspec(ipr)))
+           sum_DYDt(i)=f(l1,m,n,iux)**2*(Tinf-p%TT(1))/p%TT(i) & !(-p%TT(i)+Tinf)
+       !      sum_DYDt(i)=f(l1,m,n,iux)**2*(Tinf-p%TT(i))/p%TT(i) & !(-p%TT(i)+Tinf)
+            *Cp_const/lambda_const*p%rho(1)*beta*(beta-1.)* &
+            (1.-f(l1-1+i,m,n,ichemspec(ipr)))
     
        !  sum_DYDt(i)=-(p%TT(i)-Tinf)/p%TT(i)*abs(f(l1,m,n,iux))/(x(nx)-x(1))
         !  sum_DYDt(i)=f(l1,m,n,iux)/p%TT(i)*(Tinf-p%TT(1))/(x(nx)-x(1))
@@ -2748,8 +2751,8 @@ subroutine flame_front(f)
          if (p%TT(i) > Tc) then
          vreact_p(i,reac)=f(l1,m,n,iux)**2*p%rho(1)*Cp_const/lambda_const*beta*(beta-1.) &
                           *(1.-f(l1-1+i,m,n,ichemspec(ipr)))
-       !   vreact_p(i,reac)=f(l1,m,n,iux)**2*Cp_const/lambda_const*beta*(beta-1.) &
-        !                  *(1.-p%TT(i)/Tinf)
+        !  vreact_p(i,reac)=f(l1,m,n,iux)**2*Cp_const/lambda_const*beta*(beta-1.) &
+         !                 *(1.-p%TT(i)/Tinf)
 
         else
          vreact_p(i,reac)=0.
