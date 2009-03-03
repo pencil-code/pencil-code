@@ -942,13 +942,20 @@ subroutine flame_front(f)
               do k=1,nchemspec
                 tmp_sum=0.
                 do j=1,nchemspec
-                  tmp_sum(:,:,:)=tmp_sum(:,:,:) &
-                      +f(:,:,:,ichemspec(j))*unit_mass &
-                      /species_constants(j,imass) &
-                      /Bin_Diff_coef(:,:,:,j,k)
+                !  tmp_sum(:,:,:)=tmp_sum(:,:,:) &
+                !      +f(:,:,:,ichemspec(j))*unit_mass &
+                !     /species_constants(j,imass) &
+                !     /Bin_Diff_coef(:,:,:,j,k)
+                
+                   tmp_sum(:,:,:)=tmp_sum(:,:,:) &
+                        +XX_full(:,:,:,j)/Bin_Diff_coef(:,:,:,j,k)
+
                 enddo
-                Diff_full(:,:,:,k)=(1.-f(:,:,:,ichemspec(k))) &
-                    *mu1_full(:,:,:)/tmp_sum
+          !      Diff_full(:,:,:,k)=(1.-f(:,:,:,ichemspec(k))) &
+          !          *mu1_full(:,:,:)/tmp_sum
+
+                 Diff_full(:,:,:,k)=(1.-f(:,:,:,ichemspec(k)))/tmp_sum
+
               enddo
             endif
           endif
