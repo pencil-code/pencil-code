@@ -2473,7 +2473,7 @@ k_loop:   do while (.not. (k>npar_loc))
       if (lsolid_cells) then
         k=1
         do while (k<=npar_loc)
-          if (in_solid_cell(fp(k,ixp:izp))) then
+          if (in_solid_cell(fp(k,ixp:izp),fp(k,iap))) then
             print*,k,fp(k,ixp:izp)
             call remove_particle(fp,npar_loc,ipar,k,dfp,ineargrid)
           endif

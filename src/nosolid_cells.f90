@@ -67,7 +67,7 @@ module Solid_Cells
 !
     endsubroutine freeze_solid_cells
 !***********************************************************************  
-    function in_solid_cell(part_pos )
+    function in_solid_cell(part_pos,part_rad)
 !
 !  Check if the position px,py,pz is within a colid cell
 !
@@ -75,10 +75,12 @@ module Solid_Cells
 !
       logical :: in_solid_cell
       real, dimension(3) :: part_pos
+      real :: part_rad
 !
       in_solid_cell=.false.
 !
-      call keep_compiler_quiet(part_pos )
+      call keep_compiler_quiet(part_rad)
+      call keep_compiler_quiet(part_pos)
 !
     end function in_solid_cell
 !***********************************************************************

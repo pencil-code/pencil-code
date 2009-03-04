@@ -399,7 +399,7 @@ module Solid_Cells
 !
     end subroutine interpolate_mirror_point
 !***********************************************************************  
-    function in_solid_cell(part_pos)
+    function in_solid_cell(part_pos,part_rad)
 !
 !  Check if the position px,py,pz is within a colid cell
 !
@@ -407,19 +407,19 @@ module Solid_Cells
 !
       logical :: in_solid_cell
       real, dimension(3) :: cyl_pos, part_pos
-      real :: rad,distance2
+      real :: cyl_rad,distance2,part_rad
       integer :: icyl, i
 !
       in_solid_cell=.false.
 !
       do icyl=1,ncylinders
-        rad=cylinder(icyl,1)
+        cyl_rad=cylinder(icyl,1)
         cyl_pos=cylinder(icyl,2:4)
         distance2=0
         do i=1,3
           distance2=distance2+(cyl_pos(i)-part_pos(i))**2
         enddo
-        if (sqrt(distance2)<rad) then
+        if (sqrt(distance2)<cyl_rad+part_rad) then
           in_solid_cell=.true.
         endif
       enddo
