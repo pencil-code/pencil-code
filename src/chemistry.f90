@@ -1007,6 +1007,9 @@ subroutine flame_front(f)
             lambda_full=lambda_const
           endif
 
+
+!print*,minval(lambda_full)
+
         else
           call stop_it('This case works only for cgs units system!')
         endif
@@ -3036,8 +3039,12 @@ subroutine flame_front(f)
 !
       lnT=f(:,:,:,ilnTT)+log(unit_temperature)
       TT=TT_full*unit_temperature
-      rho=rho_full*unit_mass/unit_length**3
+    
 !      
+
+    if (.not. BinDif_simple) then
+         
+      rho=rho_full*unit_mass/unit_length**3
       pp_full_cgs = Rgas_unit_sys*mu1_full/unit_mass*rho*TT
 !
        do j=1,my
@@ -3051,7 +3058,7 @@ subroutine flame_front(f)
        enddo
        enddo
 !
-      if (.not. BinDif_simple) then
+    
 !
         omega="Omega11"
         do k=1,nchemspec
