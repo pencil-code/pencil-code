@@ -671,17 +671,17 @@ LD_FFTW2=
 #LIBMPISUFFIX=_#(starlink)
 #MAKEOPTS=-j 3 #(starlink)
 #
-##   Charon & Triton - Wlad's laptops
-## + Titan             - Wlad's stationary
+##   Triton - Wlad's laptopÂÂ
+## + Titan  - Wlad's stationary
 #
-#FC =/opt/intel/fc/10.0.023/bin/ifort #(charon|triton)
+#FC =/opt/intel/fc/10.0.023/bin/ifort #(triton)
 #FC =/usr/bin/gfortran #(titan)
-#F77=$(FC) #(charon|triton|titan)
-#CC = gcc #(charon|triton|titan)
-#MPI_HOME=/usr/local#(charon|triton|titan)
-#FFLAGS=-O3 -I$(MPI_HOME)/include #(charon|triton|titan)
-#MPI_LDLIBS= -llammpi++ -llammpio -llamf77mpi -lmpi -llam #(charon|triton|titan)
-#LD_MPI=-L$(MPI_HOME)/lib -pthread $(MPI_LDLIBS) #(charon|triton|titan)
+#F77=$(FC) #(triton|titan)
+#CC = gcc #(triton|titan)
+#MPI_HOME=/usr/local#(triton|titan)
+#FFLAGS=-O3 -I$(MPI_HOME)/include #(triton|titan)
+#MPI_LDLIBS= -llammpi++ -llammpio -llamf77mpi -lmpi -llam #(triton|titan)
+#LD_MPI=-L$(MPI_HOME)/lib -pthread $(MPI_LDLIBS) #(triton|titan)
 #
 ##
 ## Andrew's Laptop (wkfg)
