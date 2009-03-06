@@ -35,10 +35,9 @@ module Poisson
 
   implicit none
 
-  real :: kmax=0.0,iteration_threshold=1e-3,rjac=1.,smooth_green=2.
+  real :: kmax=0.0,iteration_threshold=1e-3,rjac=1.
   logical :: lrazor_thin=.true.,lsolve_bessel=.false.,lsolve_cyl2cart=.false.
-  logical :: lsolve_direct=.false.,lsolve_logspirals=.false.
-  logical :: lsolve_relax_sor=.false.,lsmooth_green=.true.
+  logical :: lsolve_relax_sor=.false.
   character (len=labellen) :: ipoisson_method='nothing'
 
   integer, parameter :: mmax=8 !eight harmonics for the azimuthal direction
@@ -46,17 +45,9 @@ module Poisson
   include 'poisson.h'
 
   namelist /poisson_init_pars/ &
-       kmax,lrazor_thin,ipoisson_method,iteration_threshold,&
-       lsmooth_green,smooth_green
+       kmax,lrazor_thin,ipoisson_method,iteration_threshold
   namelist /poisson_run_pars/ &
-       kmax,lrazor_thin,ipoisson_method,iteration_threshold,&
-       lsmooth_green,smooth_green
-
-!
-! For the colvolution case, green functions
-!
-
-  real, dimension(nx,ny,nxgrid,nygrid) :: green_grid_2D
+       kmax,lrazor_thin,ipoisson_method,iteration_threshold
 !
 ! For the Bessel and Hankel transforms, the grid of Bessel functions
 !
@@ -109,16 +100,6 @@ module Poisson
              'Poisson solver that transforms to a periodic '//&
              'Cartesian grid and applies Fourier transforms there'
         lsolve_cyl2cart  =.true.
-
-      case('directsum','direct-sum')
-        if (lroot) print*,'Selecting the cylindrical '//&
-             'Poisson solver that performs direct summation'
-        lsolve_direct    =.true.
-
-      case('logspirals')
-        if (lroot) print*,'Selecting the cylindrical '//&
-             'Poisson solver that uses the method of logarithmic spirals'
-        lsolve_logspirals=.true.
 
       case('sor')
         if (lroot) print*,'Selecting the cylindrical '//&
@@ -184,9 +165,6 @@ module Poisson
       if (lsolve_bessel) &
            call calculate_cross_bessel_functions
 !
-      if (lsolve_direct) &
-           call calculate_cross_green_functions
-!
       if (lsolve_relax_sor) &
         call calculate_cross_legendre_functions
 !
@@ -214,8 +192,6 @@ module Poisson
         call inverse_laplacian_bessel(phi)
       else if (lsolve_cyl2cart) then
         call inverse_laplacian_cyl2cart(phi)
-      else if (lsolve_direct) then
-        call inverse_laplacian_directsum(phi)
       else if (lsolve_relax_sor) then
         call inverse_laplacian_sor(f,phi)
        else 
@@ -590,79 +566,6 @@ module Poisson
       phi=phi*fac
 !
     endsubroutine inverse_laplacian_bessel
-!***********************************************************************
-    subroutine inverse_laplacian_directsum(phi)
-!
-!  Solve the 2D Poisson equation in cylindrical coordinates
-!
-!  Direct summation phi=-G Int(rho/|r-r'| dV)
-!
-!  23-04-08/wlad: coded
-!
-      use Mpicomm
-!
-      real, dimension (nx,ny,nz)  :: phi
-      real, dimension (nx,nygrid) :: cross,integrand
-      real, dimension (nx,ny)     :: cross_proc
-      real, dimension (nx)        :: intr
-      integer :: ith,ir,ikr,ikt,imn,n
-      integer :: nnghost,i,j,ido,iup
-      real :: fac,tmp
-!
-      if (nzgrid/=1)  &
-           call fatal_error("inverse_laplacian_directsum",&
-           "currently only works for 2D simulations")
-      nnghost=npoint-nghost
-!
-      if (lmpicomm) then
-!
-! All processors send its density array to the root processor
-!
-        if (.not.lroot) then
-          call mpisend_real(phi(:,:,nnghost),(/nx,ny/),root,111)
-        else
-          cross_proc=phi(:,:,nnghost)
-!
-! The root processor receives all arrays and
-! stores them in a single big array of dimension
-! nx*nygrid
-!
-          do j=0,ncpus-1
-            if (j/=0) call mpirecv_real(cross_proc,(/nx,ny/),j,111)
-            ido= j  * ny + 1
-            iup=(j+1)*ny
-            cross(:,ido:iup)=cross_proc
-          enddo
-        endif
-!
-! Broadcast the density field to all processors
-!
-        call mpibcast_real(cross,(/nx,nygrid/))
-!
-      else
-!
-! For serial runs, ny=nygrid, so just copy the density
-!
-        cross(:,1:ny)=phi(:,1:ny,nnghost)
-!
-      endif
-!
-! Now integrate through direct summation
-!
-      do ir=1,nr 
-      do ith=1,nth
-!
-! the scaled green function already has the r*dr*dth term
-!
-        integrand=cross*green_grid_2D(ir,ith,:,:)
-!
-        phi(ir,ith,1:nz)=sum(integrand(2:nr-1,:)) + &
-             .5*sum(integrand(1,:) + integrand(nr,:)) 
-!
-      enddo
-      enddo
-!
-    endsubroutine inverse_laplacian_directsum
 !***********************************************************************
     subroutine inverse_laplacian_sor(f,phi)
 !
@@ -1076,7 +979,7 @@ module Poisson
         print*,'Pre-calculating the Bessel functions to '//&
         'solve the Poisson equation'
 !
-      nw=10*int(nr*nkr*nkt/10) ; count=0
+      nw=10*int(nr*nkr*nkt/10.) ; count=0
 !
       do ikt=1,nkt
         do ir=1,nr;do ikr=1,nkr
@@ -1099,100 +1002,6 @@ module Poisson
            print*,'Calculated all the needed Bessel functions'
 !
     endsubroutine calculate_cross_bessel_functions
-!***********************************************************************
-    subroutine calculate_cross_green_functions
-!
-!  Calculate the Green functions related to the 
-!  cylindrical grid (modified by the jacobian, the 
-!  gravitaional costant and the grid elements to 
-!  ease the amount of calculations in runtime)
-!
-!     green_grid(ir,ip,ir',ip')=-G./|r-r'| * r*dr*dth
-!
-!  06-03-08/wlad: coded
-!
-      use Mpicomm
-!
-      real, dimension(nygrid) :: tht_serial
-      real    :: jacobian,tmp,Delta,fac
-      integer :: ir,ith,ikr,ikt,ith_serial
-      integer :: nw,count
-!
-      if (lroot) &
-        print*,'Pre-calculating the Green functions to '//&
-        'solve the Poisson equation'
-!
-      fac=-.25*pi_1 ! -G = -rhs_poisson_const/4*pi
-!
-! Serial theta to compute the azimuthal displacement in parallel
-!
-      call get_serial_array(tht,tht_serial,'y')
-!
-! Define the smoothing length as the minimum resolution element present
-!
-      if (lsmooth_green) then
-        Delta=smooth_green*min(dr,dth)        
-      else
-        Delta=0
-      endif
-!
-      nw=10*int(nr**2*nth*nthgrid/10) ; count=0
-!
-      do ir =1,nr;do ith=1,nth
-      ith_serial=ith+ipy*nth  
-      do ikr=1,nr;do ikt=1,nthgrid
-!
-
-        jacobian=rad(ikr)*dr*dth
-!
-! The distance is 
-!
-!       tmp=sqrt(rad(ir)**2 + rad(ikr)**2 - &
-!            2*rad(ir)*rad(ikr)*cos(tht(ith)-tht_serial(ikt)) + &
-!            Delta**2)
-!
-! But it is better to work in terms of the indices, to avoid
-! rounding errors. Otherwise, we will get self-accelerations 
-! as the potential is not EXACTLY symmetric with respect to the 
-! particle. With single precision and 64x64, gpot=1e-5 instead of 0.
-! In double precision it goes down quite a lot, but still not zero. 
-! This explicit construction with indices pulls gpot to zero.
-!
-        if ((ir/=ikr).and.(ith_serial/=ikt)) then 
-          tmp=sqrt(rad(ir)**2 + rad(ikr)**2 - &
-              2*rad(ir)*rad(ikr)*cos(dth*(ith_serial-ikt)) + Delta**2)
-        endif
-        if ((ir/=ikr).and.(ith_serial==ikt)) then
-          !same azimuthal location
-          tmp=sqrt((dr*(ir-ikr))**2+Delta**2)
-        endif
-        if ((ir==ikr).and.(ith_serial/=ikt)) then
-          !same radial location
-          tmp=sqrt(2*rad(ir)**2*(1-cos(dth*(ith_serial-ikt))) + Delta**2)
-        endif
-        if ((ir==ikr).and.(ith_serial==ikt)) then
-          tmp=Delta
-        endif
-!
-        green_grid_2D(ir,ith,ikr,ikt)= fac*jacobian/tmp
-        if (.not.lsmooth_green) then 
-          if (tmp==0.) green_grid_2D(ir,ith,ikr,ikt)= 0.
-        endif
-!
-! Print progress
-!
-        if (lroot) then
-          count=count+1
-          if (mod(10*count,nw)==0) print*, 100.*count/nw,'% done'
-        endif
-!
-      enddo;enddo
-      enddo;enddo
-!
-      if (lroot) &
-           print*,'Calculated all the needed Green functions'
-!
-    endsubroutine calculate_cross_green_functions
 !***********************************************************************
     subroutine calculate_cross_legendre_functions
 ! 
