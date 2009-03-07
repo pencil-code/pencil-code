@@ -32,7 +32,7 @@ module Viscosity
   character (len=labellen), dimension(nvisc_max) :: ivisc=''
   real :: nu=0., nu_mol=0., nu_hyper2=0., nu_hyper3=0., nu_shock=0.
   real :: nu_jump=1., znu=0., xnu=0., xnu2=0.,widthnu=0.1, C_smag=0.0
-  real :: pnlaw=0.
+  real :: pnlaw=0., Lambda_V0=0.
   real, dimension(3) :: nu_aniso_hyper3=0.
 
   ! dummy logical
@@ -62,6 +62,7 @@ module Viscosity
   logical :: lvisc_snr_damp=.false.
   logical :: lvisc_heat_as_aux=.false.
   logical :: lvisc_mixture=.false.
+  logical :: llambda_effect=.false.
 
   ! input parameters
   !integer :: dummy1
@@ -70,7 +71,7 @@ module Viscosity
   namelist /viscosity_run_pars/ &
       nu, nu_hyper2, nu_hyper3, ivisc, nu_mol, C_smag, nu_shock, &
       nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,xnu,xnu2,widthnu, &
-      pnlaw
+      pnlaw,llambda_effect,Lambda_V0
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_fviscm=0     ! DIAG_DOC: Mean value of viscous acceleration
@@ -489,6 +490,10 @@ module Viscosity
         lpenc_requested(i_shock)=.true.
         lpenc_requested(i_gshock)=.true.
         lpenc_requested(i_divu)=.true.
+        lpenc_requested(i_glnrho)=.true.
+      endif
+      if (llambda_effect) then
+        lpenc_requested(i_uij)=.true.
         lpenc_requested(i_glnrho)=.true.
       endif
       if (lvisc_mixture) then
@@ -1036,6 +1041,13 @@ module Viscosity
           if (lfirstpoint) print*, 'calc_viscous_force: '// &
               "ldensity better be .true. for ivisc='smagorinsky'"
         endif
+     endif
+!
+!  Calculate Lambda effect
+!
+     if (llambda_effect) then
+       p%fvisc(:,iuz)=p%fvisc(:,iuz)+Lambda_V0*sinth(m)*( &
+                        p%uij(:,3,1)+p%uu(:,3)*p%glnrho(:,1))
      endif
 !
 !  Store viscous heating rate in auxiliary variable if requested.

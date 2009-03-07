@@ -1,4 +1,4 @@
-! $Id$
+! $iD: BOundcond.f90 10428 2009-02-24 10:14:46Z sven.bingert $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -13,6 +13,8 @@ module Boundcond
   use Cdata
   use Messages
   use Mpicomm
+  use Hydro
+  use Viscosity
 
   implicit none
 
