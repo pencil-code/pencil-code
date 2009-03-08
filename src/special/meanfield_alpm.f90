@@ -65,7 +65,10 @@ module Special
       use Cdata
       use FArrayManager
 !
+!  register ialpm in the f-array and set lalpm=.false.
+!
       call farray_register_pde('alpm',ialpm)
+      lalpm=.true.
 !
 !  Identify version number.
 !
