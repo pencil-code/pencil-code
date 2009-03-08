@@ -284,6 +284,22 @@ module Special
 !
     endsubroutine rprint_special
 !***********************************************************************
+    subroutine get_slices_special(f,slices)
+!
+!  Write slices for animation of special variables.
+!
+!  26-jun-06/tony: dummy
+!
+      use Sub, only: keep_compiler_quiet
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices%ready)
+!
+    endsubroutine get_slices_special
+!***********************************************************************
     subroutine calc_lspecial_pars(f)
 !
 !  dummy routine

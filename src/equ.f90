@@ -80,6 +80,8 @@ module Equ
 !  prevent zeros from less then 3-dimensional runs
 !  (maybe this should be 2pi, but maybe not )
 !
+          if (nx==1) intdr_rel=1.
+          if (ny==1) intdtheta_rel=1.
           if (nz==1) intdphi_rel=1.
           dVol_rel1=1./(intdr_rel*intdtheta_rel*intdphi_rel)
         elseif (lcylindrical_coords) then
