@@ -164,7 +164,7 @@ module Magnetic
   logical :: lfreeze_aint=.false.,lfreeze_aext=.false.
   logical :: lweyl_gauge=.false.
   logical :: lupw_aa=.false.
-  logical :: lforcing_continuous_aa=.false.
+  logical :: lforcing_cont_aa=.false.
   logical :: lelectron_inertia=.false.
   logical :: lremove_mean_emf=.false.
   logical :: lkinematic=.false.
@@ -178,7 +178,7 @@ module Magnetic
        meanfield_etat, lohmic_heat, lmeanfield_jxb, meanfield_Qs, &
        height_eta,eta_out,tau_aa_exterior, &
        kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
-       lforcing_continuous_aa,iforcing_continuous_aa, &
+       lforcing_cont_aa,iforcing_continuous_aa, &
        forcing_continuous_aa_phasefact, &
        forcing_continuous_aa_amplfact, &
        k1_ff,ampl_ff,swirl,radius, &
@@ -2033,9 +2033,10 @@ module Magnetic
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-(eta_out1*mu0)*p%jj
       endif
 !
-!  Add possibility of forcing that is not delta-correlated in time.
+!  add possibility of forcing that is not delta-correlated in time
 !
-      if (lforcing_continuous_aa) call forcing_continuous(df,p)
+      if (lforcing_cont_aa) &
+        df(l1:l2,m,n,iaa:iaa)=df(l1:l2,m,n,iaa:iaa)+p%fcont
 !
 !  Possibility of relaxation of A in exterior region.
 !
@@ -3138,6 +3139,7 @@ module Magnetic
 !  add a continuous forcing term (here currently only for localized rotors)
 !
 !  21-jan-07/axel: adapted from hydro
+!  24-feb-09/axel: calls to this routine are now replaced by adding p$fcont
 !
       use Cdata
       use Sub

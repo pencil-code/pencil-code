@@ -164,6 +164,7 @@ module Testfield
   integer :: idiag_E20z=0       ! DIAG_DOC: ${\cal E}_2^{0}$
   integer :: idiag_E30z=0       ! DIAG_DOC: ${\cal E}_3^{0}$
   integer :: idiag_EBpq=0       ! DIAG_DOC: ${\cal E}\cdot\Bv^{pq}$
+  integer :: idiag_E0Um=0       ! DIAG_DOC: ${\cal E}^0\cdot\Uv$
   integer :: idiag_E0Wm=0       ! DIAG_DOC: ${\cal E}^0\cdot\Wv$
   integer :: idiag_bx0mz=0      ! DIAG_DOC: $\left<b_{x}\right>_{xy}$
   integer :: idiag_by0mz=0      ! DIAG_DOC: $\left<b_{y}\right>_{xy}$
@@ -895,7 +896,12 @@ module Testfield
           endif
         endif
 !
+!  Volume-averaged dot products of mean emf and velocity and of mean emf and vorticity
+!
         if (iE0/=0) then
+          if (idiag_E0Um/=0) call sum_mn_name(uxbtestm(n,1,iE0)*p%uu(:,1) &
+                                             +uxbtestm(n,2,iE0)*p%uu(:,2) &
+                                             +uxbtestm(n,3,iE0)*p%uu(:,3),idiag_E0Um)
           if (idiag_E0Wm/=0) call sum_mn_name(uxbtestm(n,1,iE0)*p%oo(:,1) &
                                              +uxbtestm(n,2,iE0)*p%oo(:,2) &
                                              +uxbtestm(n,3,iE0)*p%oo(:,3),idiag_E0Wm)
@@ -1393,7 +1399,7 @@ module Testfield
         idiag_bx0mz=0; idiag_by0mz=0; idiag_bz0mz=0
         idiag_E111z=0; idiag_E211z=0; idiag_E311z=0
         idiag_E121z=0; idiag_E221z=0; idiag_E321z=0
-        idiag_E10z=0; idiag_E20z=0; idiag_E30z=0; idiag_EBpq=0; idiag_E0Wm=0
+        idiag_E10z=0; idiag_E20z=0; idiag_E30z=0; idiag_EBpq=0; idiag_E0Um=0; idiag_E0Wm=0
         idiag_alp11=0; idiag_alp21=0; idiag_alp31=0
         idiag_alp12=0; idiag_alp22=0; idiag_alp32=0
         idiag_eta11=0; idiag_eta21=0; idiag_eta31=0
@@ -1474,6 +1480,7 @@ module Testfield
         call parse_name(iname,cname(iname),cform(iname),'E22rms',idiag_E22rms)
         call parse_name(iname,cname(iname),cform(iname),'E0rms',idiag_E0rms)
         call parse_name(iname,cname(iname),cform(iname),'EBpq',idiag_EBpq)
+        call parse_name(iname,cname(iname),cform(iname),'E0Um',idiag_E0Um)
         call parse_name(iname,cname(iname),cform(iname),'E0Wm',idiag_E0Wm)
       enddo
 !
@@ -1586,6 +1593,7 @@ module Testfield
         write(3,*) 'idiag_M22z=',idiag_M22z
         write(3,*) 'idiag_M33z=',idiag_M33z
         write(3,*) 'idiag_EBpq=',idiag_EBpq
+        write(3,*) 'idiag_E0Um=',idiag_E0Um
         write(3,*) 'idiag_E0Wm=',idiag_E0Wm
         write(3,*) 'iaatest=',iaatest
         write(3,*) 'iaxtestpq=',iaxtestpq

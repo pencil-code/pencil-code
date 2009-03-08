@@ -13,7 +13,7 @@ module Boundcond
   use Cdata
   use Messages
   use Mpicomm
-  use Hydro
+!AB breaks auto-test  use Hydro
   use Viscosity
 
   implicit none
