@@ -1206,8 +1206,8 @@ module Hydro
           p%sij(:,2,1)=p%sij(:,1,2)
           p%sij(:,2,2)=p%sij(:,2,2)+r1_mn*p%uu(:,1) 
           p%sij(:,2,3)=p%sij(:,2,3)-.5*r1_mn*cotth(m)*p%uu(:,3)
-          p%sij(:,1,3)=p%sij(:,3,1)
-          p%sij(:,2,3)=p%sij(:,2,3)
+          p%sij(:,3,1)=p%sij(:,1,3)
+          p%sij(:,3,2)=p%sij(:,2,3)
           p%sij(:,3,3)=p%sij(:,3,3)+r1_mn*p%uu(:,1)+cotth(m)*r1_mn*p%uu(:,2) 
         elseif (lcylindrical_coords) then
           p%sij(:,1,2)=p%sij(:,1,2)-.5*rcyl_mn1*p%uu(:,2)
