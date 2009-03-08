@@ -21,7 +21,7 @@ module Initcond
   public :: gaunoise, posnoise
   public :: gaunoise_rprof
   public :: gaussian, gaussian3d, beltrami, rolls, tor_pert
-  public :: jump, bjump, bjumpz, stratification
+  public :: jump, bjump, bjumpz, stratification, stratification_x
   public :: modes, modev, modeb, crazy
   public :: trilinear, baroclinic
   public :: diffrot, olddiffrot
@@ -1691,6 +1691,123 @@ module Initcond
       close(19)
 !
     endsubroutine stratification
+!***********************************************************************
+    subroutine stratification_x(f,strati_type)
+!
+!  read mean stratification from "stratification.dat"
+!
+!   02-mar-09/petri: adapted from stratification
+!
+      use Mpicomm, only: stop_it
+      use EquationOfState, only: eoscalc,ilnrho_lnTT
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer, parameter :: ntotal=nx*nprocx,mtotal=nx*nprocx+2*nghost
+      real, dimension (mtotal) :: lnrho0,ss0,lnTT0
+      real :: tmp,var1,var2
+      logical :: exist
+      integer :: stat
+      character (len=labellen) :: strati_type
+!
+!  read mean stratification and write into array
+!  if file is not found in run directory, search under trim(directory)
+!
+      inquire(file='stratification.dat',exist=exist)
+      if (exist) then
+        open(19,file='stratification.dat')
+      else
+        inquire(file=trim(directory)//'/stratification.ascii',exist=exist)
+        if (exist) then
+          open(19,file=trim(directory)//'/stratification.ascii')
+        else
+          call stop_it('stratification: *** error *** - no input file')
+        endif
+      endif
+!
+!  read data
+!  first the entire stratification file
+!
+      select case(strati_type)
+      case('lnrho_ss')
+        do n=1,mtotal
+          read(19,*,iostat=stat) tmp,var1,var2
+          if (stat>=0) then
+            if (ip<5) print*,"stratification: ",tmp,var1,var2
+            if (ldensity) lnrho0(n)=var1
+            if (lentropy) ss0(n)=var2
+          else
+            exit
+          endif
+        enddo
+!
+      case('lnrho_lnTT')
+        do n=1,mtotal
+          read(19,*,iostat=stat) tmp,var1,var2
+          if (stat>=0) then
+            if (ip<5) print*,"stratification: ",tmp,var1,var2
+            if (ldensity) lnrho0(n)=var1
+            if (ltemperature) lnTT0(n)=var2
+            if (lentropy) then
+              call eoscalc(ilnrho_lnTT,var1,var2,ss=tmp)
+              ss0(n)=tmp
+            endif
+          else
+            exit
+          endif
+        enddo
+      endselect
+!
+!  select the right region for the processor afterwards
+!
+      select case (n)
+  !
+  !  without ghost zones
+  !
+      case (ntotal+1)
+        if (lentropy) then
+          do n=l1,l2
+            f(n,:,:,ilnrho)=lnrho0(ipx*nx+n-nghost)
+            f(n,:,:,iss)=ss0(ipx*nx+n-nghost)
+          enddo
+        endif
+        if (ltemperature) then
+          do n=l1,l2
+            f(n,:,:,ilnrho)=lnrho0(ipx*nx+n-nghost)
+            f(n,:,:,ilnTT)=lnTT0(ipx*nx+n-nghost)
+          enddo
+        endif
+  !
+  !  with ghost zones
+  !
+      case (mtotal+1)
+        if (lentropy) then
+          do n=1,mx
+            f(n,:,:,ilnrho)=lnrho0(ipx*nx+n)
+            f(n,:,:,iss)=ss0(ipx*nx+n)
+          enddo
+        endif
+        if (ltemperature) then
+          do n=1,mx
+            f(n,:,:,ilnrho)=lnrho0(ipx*nx+n)
+            f(n,:,:,ilnTT)=lnTT0(ipx*nx+n)
+          enddo
+        endif
+
+      case default
+        if (lroot) then
+          print '(A,I4,A,I4,A,I4,A)','ERROR: The stratification file '// &
+                'for this run is allowed to contain either',ntotal, &
+                ' lines (without ghost zones) or more than',mtotal, &
+                ' lines (with ghost zones). It does contain',n-1, &
+                ' lines though.'
+        endif
+        call stop_it('')
+
+      endselect
+!
+      close(19)
+!
+    endsubroutine stratification_x
 !***********************************************************************
     subroutine planet_hc(ampl,f,eps,radius,gamma,cs20,rho0,width)
 !
