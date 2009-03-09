@@ -1024,7 +1024,8 @@ subroutine flame_front(f)
         write(file_id,'(7E12.4)') 1./maxval(mu1_full/unit_mass)
         write(file_id,*) ''
         write(file_id,*) 'Density, g/cm^3'
-        write(file_id,'(7E12.4)') maxval(rho_full)*unit_mass/unit_length**3
+        write(file_id,'(7E12.4)') minval(rho_full)*unit_mass/unit_length**3, &
+                                  maxval(rho_full)*unit_mass/unit_length**3
         write(file_id,*) ''
         write(file_id,*) 'Themperature, K'
          ! Commented the next line out because
@@ -1043,15 +1044,30 @@ subroutine flame_front(f)
             minval(cp_full)/minval(cv_full)
         write(file_id,*) ''
         write(file_id,*) 'Viscosity, g/cm/s,'
-        write(file_id,'(7E12.4)') maxval(nu_dyn)*&
+        write(file_id,'(7E12.4)') minval(nu_dyn)*&
+            (unit_mass/unit_length/unit_time),maxval(nu_dyn)*&
             (unit_mass/unit_length/unit_time)
         write(file_id,*) ''
+        write(file_id,*) 'Species viscosity, g/cm/s,'
+        do k=1,nchemspec
+        write(file_id,'(7E12.4)') minval(species_viscosity(:,:,:,k)),  &
+                                  maxval(species_viscosity(:,:,:,k))
+        enddo
+        write(file_id,*) ''
         write(file_id,*) 'Thermal cond, erg/(cm K s),'
-        write(file_id,'(7E12.4)') maxval(0.5*(tmp_sum+1./tmp_sum2)*&
+        write(file_id,'(7E12.4)') minval(0.5*(tmp_sum+1./tmp_sum2)*&
+            unit_energy/unit_time/unit_length/unit_temperature), &
+                        maxval(0.5*(tmp_sum+1./tmp_sum2)*&
             unit_energy/unit_time/unit_length/unit_temperature)
         write(file_id,*) ''
-        write(file_id,*) ' Diffusion coefficient, cm^2/s'
-        write(file_id,'(7E12.4)') maxval(Diff_full)*unit_length**2/unit_time
+        write(file_id,*) 'Species  Diffusion coefficient, cm^2/s'
+        do k=1,nchemspec 
+        write(file_id,'(7E12.4)')minval(Diff_full(:,:,:,k))*unit_length**2/unit_time, &
+                                 maxval(Diff_full(:,:,:,k))*unit_length**2/unit_time
+        enddo
+        write(file_id,*) ''
+      
+       
         print*,'calc_for_chem_mixture: writing mix_quant.out file'
         close(file_id)
         lwrite=.false.
