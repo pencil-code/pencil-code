@@ -223,6 +223,7 @@ module Solid_Cells
         end do
         end do
         end do
+f(:,m2-5:m2,:,iux)=0
       case default
         !
         !  Catch unknown values
