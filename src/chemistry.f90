@@ -928,16 +928,16 @@ subroutine flame_front(f)
 !
 !  Diffusion coeffisient of a mixture
 !
-          if (BinDif_simple) then
-            do k=1,nchemspec
+        !  if (BinDif_simple) then
+        !    do k=1,nchemspec
 !
 !WL: if this 0.7 is a constant, why not multiply by its 
 !    inverse? It's faster than dividing.
 !
-              Diff_full(:,:,:,k)=species_viscosity(:,:,:,k)/&
-                  rho_full(:,:,:)/Sc_number
-            enddo
-          else
+        !      Diff_full(:,:,:,k)=species_viscosity(:,:,:,k)/&
+        !          rho_full(:,:,:)/Sc_number
+        !    enddo
+        !  else
             if (.not. lone_spec) then
               do k=1,nchemspec
                 tmp_sum=0.
@@ -958,7 +958,7 @@ subroutine flame_front(f)
 
               enddo
             endif
-          endif
+     !     endif
 
 
           if (diffus_const<impossible) then
@@ -1230,11 +1230,11 @@ subroutine flame_front(f)
 !  Allocate binary diffusion coefficient array
 !
       if (.not.lreloading) then
-        if (.not. BinDif_simple) then
+     !   if (.not. BinDif_simple) then
           allocate(Bin_Diff_coef(mx,my,mz,nchemspec,nchemspec),STAT=stat)
           if (stat>0) call stop_it("Couldn't allocate memory "//&
               "for binary diffusion coefficients") 
-	endif
+!	endif
       endif
 !
       if (tran_exist) then 
@@ -3046,7 +3046,7 @@ subroutine flame_front(f)
       real, dimension (mx,my,mz,mfarray) :: f
       intent(in) :: f
       real, dimension (mx,my,mz) :: Omega_kl, prefactor, lnT 
-      real, dimension (mx,my,mz) :: TT, lnTjk, pp_full_cgs, rho, lnTk
+      real, dimension (mx,my,mz) :: TT, lnTjk, pp_full_cgs_T, rho, lnTk
       real, dimension (mx,my,mz) :: tmp
       integer :: k,j
       real :: eps_jk, sigma_jk, m_jk, delta_jk, delta_st
@@ -3055,27 +3055,59 @@ subroutine flame_front(f)
 !
       lnT=f(:,:,:,ilnTT)+log(unit_temperature)
       TT=TT_full*unit_temperature
+      rho=rho_full*unit_mass/unit_length**3
+      pp_full_cgs_T = Rgas_unit_sys*mu1_full/unit_mass*rho
     
 !      
+    if (BinDif_simple) then
 
-    if (.not. BinDif_simple) then
-         
-      rho=rho_full*unit_mass/unit_length**3
-      pp_full_cgs = Rgas_unit_sys*mu1_full/unit_mass*rho*TT
-!
        do j=1,my
        do k=1,mz 
 
-        if (minval(pp_full_cgs(:,j,k))<=0.) then
+        if (minval(pp_full_cgs_T(:,j,k))<=0.) then
          prefactor(:,j,k)=0.
         else
-         prefactor(:,j,k)=3./16.*sqrt(2.*k_B_cgs**3*TT(:,j,k)**3)/pp_full_cgs(:,j,k)/sqrt(pi)
+         prefactor(:,j,k)=3./16.*(2.*k_B_cgs**3*TT(:,j,k)/pi)**0.5/pp_full_cgs_T(:,j,k)
         endif
        enddo
        enddo
 !
-    
+        omega="Omega11"
+        do k=1,nchemspec
+          do j=1,nchemspec
 !
+            eps_jk=(tran_data(j,2)*tran_data(k,2))**0.5
+            sigma_jk=0.5*(tran_data(j,3)+tran_data(k,3))*1e-8
+            delta_jk=0.5*tran_data(j,4)*tran_data(k,4)
+            m_jk=(species_constants(j,imass)*species_constants(k,imass)) &
+                /(species_constants(j,imass)+species_constants(k,imass))/Na
+!
+            lnTjk=lnT-log(eps_jk)
+!
+         !   call calc_collision_integral(omega,lnTjk,Omega_kl)
+
+            Omega_kl=1./(6.96945701E-1)
+!
+            Bin_Diff_coef(:,:,:,k,j)=prefactor/(m_jk)**0.5/sigma_jk**2 &
+                /(Omega_kl+0.19*delta_jk/(TT/eps_jk)) &
+                /(unit_length**2/unit_time)
+! 
+          enddo
+        enddo
+!
+      else
+         
+       do j=1,my
+       do k=1,mz 
+
+        if (minval(pp_full_cgs_T(:,j,k))<=0.) then
+         prefactor(:,j,k)=0.
+        else
+         prefactor(:,j,k)=3./16.*(2.*k_B_cgs**3*TT(:,j,k)/pi)**0.5/pp_full_cgs_T(:,j,k)
+        endif
+       enddo
+       enddo
+
         omega="Omega11"
         do k=1,nchemspec
           do j=1,nchemspec
@@ -3096,7 +3128,7 @@ subroutine flame_front(f)
 ! 
           enddo
         enddo
-!
+
       endif
 !
       omega="Omega22"
