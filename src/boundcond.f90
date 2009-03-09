@@ -4243,8 +4243,9 @@ module Boundcond
 !
       use MpiComm, only: stop_it
       use EquationOfState, only: cs0, cs20
-      use Deriv, only: der_onesided_4_slice, der_pencil
+      use Deriv, only: der_onesided_4_slice, der_pencil, der2_pencil
       use Chemistry
+      use Viscosity
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -4252,19 +4253,21 @@ module Boundcond
       logical, optional :: linlet
       logical :: llinlet, non_reflecting_inlet
       real, optional :: u_t
-      !real, parameter :: sigma = 1.
-      real, dimension(ny,nz) :: dlnrho_dx, du1_dx, du2_dx, du3_dx
+      real, dimension(ny,nz) :: dlnrho_dx
       real, dimension(ny,nz) :: rho0, L_1, L_3, L_4, L_5,parallell_term_uz
-      real, dimension(ny,nz) :: du2_dy,du3_dz,du2_dz,du3_dy
       real, dimension(ny,nz) :: parallell_term_rho,dlnrho_dy,dlnrho_dz
-      real, dimension(ny,nz) :: parallell_term_ux,du1_dy,du1_dz
+      real, dimension(ny,nz) :: parallell_term_ux,d2u1_dy2,d2u1_dz2
+      real, dimension(ny,nz) :: d2u2_dy2,d2u2_dz2,d2u3_dy2,d2u3_dz2
       real, dimension(ny,nz) :: prefac1, prefac2,parallell_term_uy
       real, dimension(ny,nz,3) :: div_rho
+      real, dimension(ny,nz,3,3) :: dui_dxj
       real, dimension (my,mz) :: cs0_ar,cs20_ar
       real, dimension (mx,my,mz) :: cs2_full
       real, dimension (my,mz) :: tmp22,tmp12,tmp2_lnrho,tmp33,tmp13,tmp3_lnrho
       real, dimension (my,mz) :: tmp23,tmp32
-      real :: Mach,KK
+      real, dimension (my) :: tmpy
+      real, dimension (mz) :: tmpz
+      real :: Mach,KK,nu
       integer lll,i
       integer sgn
 
@@ -4294,13 +4297,15 @@ module Boundcond
         rho0 = exp(f(lll,m1:m2,n1:n2,ilnrho))
       endif
 !
-
-      if (leos_chemistry) call get_cs2_full(cs2_full)
+!  Get viscoity
+!
+      call getnu(nu)
 !
 !  Set arrays for the speed of sound and for the speed of sound squared (is it
 !  really necessarry to have both arrays?) 
 !  Set prefactors to be used later.
 !
+      if (leos_chemistry) call get_cs2_full(cs2_full)
       if (leos_idealgas) then
         cs20_ar(m1:m2,n1:n2)=cs20
         cs0_ar(m1:m2,n1:n2)=cs0
@@ -4321,9 +4326,9 @@ module Boundcond
 !  Calculate one-sided derivatives in the boundary normal direction
 !
       call der_onesided_4_slice(f,sgn,ilnrho,div_rho(:,:,1),lll,1)
-      call der_onesided_4_slice(f,sgn,iux,du1_dx,lll,1)
-      call der_onesided_4_slice(f,sgn,iuy,du2_dx,lll,1)
-      call der_onesided_4_slice(f,sgn,iuz,du3_dx,lll,1)
+      call der_onesided_4_slice(f,sgn,iux,dui_dxj(:,:,1,1),lll,1)
+      call der_onesided_4_slice(f,sgn,iuy,dui_dxj(:,:,2,1),lll,1)
+      call der_onesided_4_slice(f,sgn,iuz,dui_dxj(:,:,3,1),lll,1)
 !
 !  Do central differencing in the directions parallell to the boundary 
 !  first in the y-direction......
@@ -4334,16 +4339,25 @@ module Boundcond
           call der_pencil(2,f(lll,:,i,ilnrho),tmp2_lnrho(:,i))
           call der_pencil(2,f(lll,:,i,iux),tmp12(:,i))
           call der_pencil(2,f(lll,:,i,iuz),tmp32(:,i))
+          call der2_pencil(2,f(lll,:,i,iux),tmpy)
+          d2u1_dy2(:,i)=tmpy(m1:m2)
+          call der2_pencil(2,f(lll,:,i,iuy),tmpy)
+          d2u2_dy2(:,i)=tmpy(m1:m2)
+          call der2_pencil(2,f(lll,:,i,iuz),tmpy)
+          d2u3_dy2(:,i)=tmpy(m1:m2)
         enddo
       else
         tmp32=0
         tmp22=0
         tmp12=0
         tmp2_lnrho=0
+        d2u1_dy2=0
+        d2u2_dy2=0
+        d2u3_dy2=0
       endif
-      du3_dy=tmp32(m1:m2,n1:n2)
-      du2_dy=tmp22(m1:m2,n1:n2)
-      du1_dy=tmp12(m1:m2,n1:n2)
+      dui_dxj(:,:,1,2)=tmp12(m1:m2,n1:n2)
+      dui_dxj(:,:,2,2)=tmp22(m1:m2,n1:n2)
+      dui_dxj(:,:,3,2)=tmp32(m1:m2,n1:n2)
       div_rho(:,:,2)=tmp2_lnrho(m1:m2,n1:n2)
 !
 !  .... then in the z-direction
@@ -4354,16 +4368,25 @@ module Boundcond
           call der_pencil(3,f(lll,i,:,ilnrho),tmp3_lnrho(i,:))
           call der_pencil(3,f(lll,i,:,iux),tmp13(i,:))
           call der_pencil(3,f(lll,i,:,iuy),tmp23(i,:))
+          call der2_pencil(3,f(lll,i,:,iux),tmpz)
+          d2u1_dz2(i,:)=tmpz(n1:n2)
+          call der2_pencil(3,f(lll,i,:,iuy),tmpz)
+          d2u2_dz2(i,:)=tmpz(n1:n2)
+          call der2_pencil(3,f(lll,i,:,iuz),tmpz)
+          d2u3_dz2(i,:)=tmpz(n1:n2)
         enddo
       else
         tmp33=0
         tmp23=0
         tmp13=0
         tmp3_lnrho=0
+        d2u1_dz2=0
+        d2u2_dz2=0
+        d2u3_dz2=0
       endif
-      du3_dz=tmp33(m1:m2,n1:n2)
-      du2_dz=tmp23(m1:m2,n1:n2)
-      du1_dz=tmp13(m1:m2,n1:n2)
+      dui_dxj(:,:,1,3)=tmp13(m1:m2,n1:n2)
+      dui_dxj(:,:,2,3)=tmp23(m1:m2,n1:n2)
+      dui_dxj(:,:,3,3)=tmp33(m1:m2,n1:n2)
       div_rho(:,:,3)=tmp3_lnrho(m1:m2,n1:n2)
 !
 !  Find divergence of rho if we solve for logarithm of rho
@@ -4377,17 +4400,21 @@ module Boundcond
 !  Find the L_i's (which really is the Lodi equations)
 !
       if (llinlet) then
-        L_1 = (f(lll,m1:m2,n1:n2,iux) - sgn*cs0_ar(m1:m2,n1:n2))*&
-             (cs20*div_rho(:,:,1) - sgn*rho0*cs0_ar(m1:m2,n1:n2)*du1_dx)
+!  This L_1 is correct only for p=cs^2*rho
+        L_1 = (f(lll,m1:m2,n1:n2,iux) - sgn*cs0_ar(m1:m2,n1:n2))&
+            *(cs20_ar(m1:m2,n1:n2)*div_rho(:,:,1) - sgn*rho0*cs0_ar(m1:m2,n1:n2)&
+            *dui_dxj(:,:,1,1))
         L_3=0
         L_4=0
         if (non_reflecting_inlet) then
 !
 !  The inlet in non-reflecting only when nscbc_sigma_in is set to 0, this 
-!  might however lead to problems ..... NILS: Must SPECIFY!!!!!!!!!!
+!  might however lead to problems as the inlet velocity will tend to drift 
+!  away from the target velocity u_t. This problem should be overcome by 
+!  setting a small but non-zero nscbc_sigma_in.
 !
           L_5 = nscbc_sigma_in*cs20_ar(m1:m2,n1:n2)*rho0&
-              *(sgn*f(lll,m1:m2,n1:n2,iux)-sgn*u_t)
+              *sgn*(f(lll,m1:m2,n1:n2,iux)-u_t)
         else
           L_5 = L_1
         endif
@@ -4406,36 +4433,51 @@ module Boundcond
 !  Find the parameter determining 
 !
         KK=nscbc_sigma_out*(1-Mach**2)*cs0/Lxyz(1)
-
-!print*,'Mach=',Mach
-!print*,rho0*cs20,p_infty
-
-!KK=0
-
+!
+!  Find the L_i's
+!
         L_1 = KK*(rho0*cs20-p_infty)
-        L_3 = f(lll,m1:m2,n1:n2,iux)*du2_dx
-        L_4 = f(lll,m1:m2,n1:n2,iux)*du3_dx
+        L_3 = f(lll,m1:m2,n1:n2,iux)*dui_dxj(:,:,2,1)
+        L_4 = f(lll,m1:m2,n1:n2,iux)*dui_dxj(:,:,3,1)
         L_5 = (f(lll,m1:m2,n1:n2,iux) - sgn*cs0_ar(m1:m2,n1:n2))*&
-             (cs0_ar(m1:m2,n1:n2)*div_rho(:,:,1)&
-             +rho0*cs0_ar(m1:m2,n1:n2)*du1_dx)
+             (cs20_ar(m1:m2,n1:n2)*div_rho(:,:,1)&
+             - sgn*rho0*cs0_ar(m1:m2,n1:n2)*dui_dxj(:,:,1,1))
       end if
 !
 !  Add terms due to derivatives parallell to the boundary
+!  NILS: Viscous terms in the x direction are missing!
 !
       parallell_term_rho &
-           =rho0*du2_dy+f(lll,m1:m2,n1:n2,iuy)*div_rho(:,:,2)&
-           +rho0*du3_dz+f(lll,m1:m2,n1:n2,iuz)*div_rho(:,:,3)
+           =rho0*dui_dxj(:,:,2,2)+f(lll,m1:m2,n1:n2,iuy)*div_rho(:,:,2)&
+           +rho0*dui_dxj(:,:,3,3)+f(lll,m1:m2,n1:n2,iuz)*div_rho(:,:,3)
       parallell_term_ux &
-           =f(lll,m1:m2,n1:n2,iuy)*du1_dy&
-           +f(lll,m1:m2,n1:n2,iuz)*du1_dz
+           =f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,1,2)&
+           +f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,1,3)&
+           +nu*(d2u1_dy2+d2u1_dz2)
       parallell_term_uy &
-           =f(lll,m1:m2,n1:n2,iuy)*du2_dy&
-           +f(lll,m1:m2,n1:n2,iuz)*du2_dz&
-           +cs20_ar(m1:m2,n1:n2)*div_rho(:,:,2)/rho0
+           =f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,2,2)&
+           +f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,2,3)&
+           +cs20_ar(m1:m2,n1:n2)*div_rho(:,:,2)/rho0&
+           +nu*(d2u2_dy2+d2u2_dz2)
       parallell_term_uz &
-           =f(lll,m1:m2,n1:n2,iuy)*du3_dy&
-           +f(lll,m1:m2,n1:n2,iuz)*du3_dz&
-           +cs20_ar(m1:m2,n1:n2)*div_rho(:,:,3)/rho0
+           =f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,3,2)&
+           +f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,3,3)&
+           +cs20_ar(m1:m2,n1:n2)*div_rho(:,:,3)/rho0&
+           +nu*(d2u3_dy2+d2u3_dz2)
+
+
+
+
+
+
+!
+!  NILS: Currently the implementation with the parallell terms does not 
+!  NILS: seem to work. Set at parallell terms to zero for now.
+!
+      parallell_term_rho=0
+      parallell_term_ux=0
+      parallell_term_uy=0
+      parallell_term_uz=0
 !
 !  Find the evolution equations at the boundary
 !
@@ -4443,12 +4485,11 @@ module Boundcond
       ! NB: For 'top' L_1 plays the role of L5 and L_5 the role of L1
       case('bot')
         df(lll,m1:m2,n1:n2,ilnrho) = prefac1*(L_5 + L_1)-parallell_term_rho
-        df(lll,m1:m2,n1:n2,iux) = prefac2*(L_5 - L_1)-parallell_term_ux
+        df(lll,m1:m2,n1:n2,iux) = prefac2*(L_1 - L_5)-parallell_term_ux
         df(lll,m1:m2,n1:n2,iuy) = -L_3-parallell_term_uy
         df(lll,m1:m2,n1:n2,iuz) = -L_4-parallell_term_uz
       case('top')
         df(lll,m1:m2,n1:n2,ilnrho) = prefac1*(L_1 + L_5)-parallell_term_rho
-!        df(lll,m1:m2,n1:n2,iux) = prefac2*(L_1 - L_5)
         df(lll,m1:m2,n1:n2,iux) = prefac2*(L_5 - L_1)-parallell_term_ux
         df(lll,m1:m2,n1:n2,iuy) = -L_3-parallell_term_uy
         df(lll,m1:m2,n1:n2,iuz) = -L_4-parallell_term_uz
@@ -4463,7 +4504,7 @@ module Boundcond
 ! Impose required variables at the boundary
 !
       if (llinlet) then
-        f(lll,m1:m2,n1:n2,iux) = u_t
+        if (.not. non_reflecting_inlet) f(lll,m1:m2,n1:n2,iux) = u_t
         f(lll,m1:m2,n1:n2,iuy) = 0
         f(lll,m1:m2,n1:n2,iuz) = 0
       endif
@@ -4481,8 +4522,9 @@ module Boundcond
 !
       use MpiComm, only: stop_it
       use EquationOfState, only: cs0, cs20
-      use Deriv, only: der_onesided_4_slice, der_pencil
+      use Deriv, only: der_onesided_4_slice, der_pencil, der2_pencil
       use Chemistry
+      use Viscosity
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -4492,18 +4534,20 @@ module Boundcond
       real, optional :: u_t
       !real, parameter :: sigma = 1.
       real, dimension(nx,nz) :: dlnrho_dx,dlnrho_dy,dlnrho_dz
-      real, dimension(nx,nz) :: du1_dy, du2_dy, du3_dy
       real, dimension(nx,nz) :: rho0, L_1, L_3, L_4, L_5,parallell_term_uz
-      real, dimension(nx,nz) :: du1_dx,du3_dz,du1_dz,du3_dx
       real, dimension(nx,nz) :: parallell_term_rho
-      real, dimension(nx,nz) :: parallell_term_ux,du2_dx,du2_dz
+      real, dimension(nx,nz) :: parallell_term_ux,d2u1_dx2,d2u1_dz2
+      real, dimension(nx,nz) :: d2u2_dx2,d2u2_dz2,d2u3_dx2,d2u3_dz2
       real, dimension(nx,nz) :: prefac1, prefac2,parallell_term_uy
       real, dimension(nx,nz,3) :: div_rho
+      real, dimension(nx,nz,3,3) :: dui_dxj
       real, dimension (mx,mz) :: cs0_ar,cs20_ar
       real, dimension (mx,my,mz) :: cs2_full
       real, dimension (mx,mz) :: tmp22,tmp12,tmp2_lnrho,tmp33,tmp13,tmp3_lnrho
       real, dimension (mx,mz) :: tmp23,tmp32
-      real :: Mach,KK
+      real, dimension (mx) :: tmpx
+      real, dimension (mz) :: tmpz
+      real :: Mach,KK,nu
       integer lll,i
       integer sgn
 
@@ -4533,13 +4577,15 @@ module Boundcond
         rho0 = exp(f(l1:l2,lll,n1:n2,ilnrho))
       endif
 !
-
-      if (leos_chemistry) call get_cs2_full(cs2_full)
+!  Get viscoity
+!
+      call getnu(nu)
 !
 !  Set arrays for the speed of sound and for the speed of sound squared (is it
 !  really necessarry to have both arrays?) 
 !  Set prefactors to be used later.
 !
+      if (leos_chemistry) call get_cs2_full(cs2_full)
       if (leos_idealgas) then
         cs20_ar(l1:l2,n1:n2)=cs20
         cs0_ar(l1:l2,n1:n2)=cs0
@@ -4560,29 +4606,38 @@ module Boundcond
 !  Calculate one-sided derivatives in the boundary normal direction
 !
       call der_onesided_4_slice(f,sgn,ilnrho,div_rho(:,:,2),lll,2)
-      call der_onesided_4_slice(f,sgn,iux,du1_dy,lll,2)
-      call der_onesided_4_slice(f,sgn,iuy,du2_dy,lll,2)
-      call der_onesided_4_slice(f,sgn,iuz,du3_dy,lll,2)
+      call der_onesided_4_slice(f,sgn,iux,dui_dxj(:,:,1,2),lll,2)
+      call der_onesided_4_slice(f,sgn,iuy,dui_dxj(:,:,2,2),lll,2)
+      call der_onesided_4_slice(f,sgn,iuz,dui_dxj(:,:,3,2),lll,2)
 !
 !  Do central differencing in the directions parallell to the boundary 
 !  first in the x-direction......
 !
       if (nxgrid /= 1) then
         do i=n1,n2
-          call der_pencil(2,f(:,lll,i,iuy),tmp22(:,i))
-          call der_pencil(2,f(:,lll,i,ilnrho),tmp2_lnrho(:,i))
-          call der_pencil(2,f(:,lll,i,iux),tmp12(:,i))
-          call der_pencil(2,f(:,lll,i,iuz),tmp32(:,i))
+          call der_pencil(1,f(:,lll,i,iuy),tmp22(:,i))
+          call der_pencil(1,f(:,lll,i,ilnrho),tmp2_lnrho(:,i))
+          call der_pencil(1,f(:,lll,i,iux),tmp12(:,i))
+          call der_pencil(1,f(:,lll,i,iuz),tmp32(:,i))
+          call der2_pencil(1,f(:,lll,i,iux),tmpx)
+          d2u1_dx2(:,i)=tmpx(l1:l2)
+          call der2_pencil(1,f(:,lll,i,iuy),tmpx)
+          d2u2_dx2(:,i)=tmpx(l1:l2)
+          call der2_pencil(1,f(:,lll,i,iuz),tmpx)
+          d2u3_dx2(:,i)=tmpx(l1:l2)
         enddo
       else
         tmp32=0
         tmp22=0
         tmp12=0
         tmp2_lnrho=0
+        d2u1_dx2=0
+        d2u2_dx2=0
+        d2u3_dx2=0
       endif
-      du3_dy=tmp32(l1:l2,n1:n2)
-      du2_dy=tmp22(l1:l2,n1:n2)
-      du1_dy=tmp12(l1:l2,n1:n2)
+      dui_dxj(:,:,3,2)=tmp32(l1:l2,n1:n2)
+      dui_dxj(:,:,2,2)=tmp22(l1:l2,n1:n2)
+      dui_dxj(:,:,1,2)=tmp12(l1:l2,n1:n2)
       div_rho(:,:,1)=tmp2_lnrho(l1:l2,n1:n2)
 !
 !  .... then in the z-direction
@@ -4593,16 +4648,25 @@ module Boundcond
           call der_pencil(3,f(i,lll,:,ilnrho),tmp3_lnrho(i,:))
           call der_pencil(3,f(i,lll,:,iux),tmp13(i,:))
           call der_pencil(3,f(i,lll,:,iuy),tmp23(i,:))
+          call der2_pencil(3,f(i,lll,:,iux),tmpz)
+          d2u1_dz2(i,:)=tmpz(n1:n2)
+          call der2_pencil(3,f(i,lll,:,iuy),tmpz)
+          d2u2_dz2(i,:)=tmpz(n1:n2)
+          call der2_pencil(3,f(i,lll,:,iuz),tmpz)
+          d2u3_dz2(i,:)=tmpz(n1:n2)
         enddo
       else
         tmp33=0
         tmp23=0
         tmp13=0
         tmp3_lnrho=0
+        d2u1_dz2=0
+        d2u2_dz2=0
+        d2u3_dz2=0
       endif
-      du3_dz=tmp33(l1:l2,n1:n2)
-      du2_dz=tmp23(l1:l2,n1:n2)
-      du1_dz=tmp13(l1:l2,n1:n2)
+      dui_dxj(:,:,3,3)=tmp33(l1:l2,n1:n2)
+      dui_dxj(:,:,2,3)=tmp23(l1:l2,n1:n2)
+      dui_dxj(:,:,1,3)=tmp13(l1:l2,n1:n2)
       div_rho(:,:,3)=tmp3_lnrho(l1:l2,n1:n2)
 !
 !  Find divergence of rho if we solve for logarithm of rho
@@ -4616,8 +4680,8 @@ module Boundcond
 !  Find the L_i's (which really is the Lodi equations)
 !
       if (llinlet) then
-        L_1 = (f(l1:l2,lll,n1:n2,iux) - sgn*cs0_ar(l1:l2,n1:n2))*&
-             (cs20*div_rho(:,:,2) - sgn*rho0*cs0_ar(l1:l2,n1:n2)*du2_dy)
+        L_1 = (f(l1:l2,lll,n1:n2,iuy) - sgn*cs0_ar(l1:l2,n1:n2))*&
+            (cs20*div_rho(:,:,2) - sgn*rho0*cs0_ar(l1:l2,n1:n2)*dui_dxj(:,:,2,2))
         L_3=0
         L_4=0
         if (non_reflecting_inlet) then
@@ -4626,7 +4690,7 @@ module Boundcond
 !  might however lead to problems ..... NILS: Must SPECIFY!!!!!!!!!!
 !
           L_5 = nscbc_sigma_in*cs20_ar(l1:l2,n1:n2)*rho0&
-              *(sgn*f(l1:l2,lll,n1:n2,iux)-sgn*u_t)
+              *(sgn*f(l1:l2,lll,n1:n2,iuy)-sgn*u_t)
         else
           L_5 = L_1
         endif
@@ -4640,27 +4704,45 @@ module Boundcond
 !  I think that what we really want is a Mach number averaged over the 
 !  timescale of several acoustic waves. How could this be done????)
 !
-        Mach=sum(f(l1:l2,lll,n1:n2,iux)/cs0_ar(l1:l2,n1:n2))/(nx*nz)
+        Mach=sum(f(l1:l2,lll,n1:n2,iuy)/cs0_ar(l1:l2,n1:n2))/(nx*nz)
 !
 !  Find the parameter determining 
 !
         KK=nscbc_sigma_out*(1-Mach**2)*cs0/Lxyz(1)
-
-!print*,'Mach=',Mach
-!print*,rho0*cs20,p_infty
-
-!KK=0
-
+!
+!  Find the L_i's
+!
         L_1 = KK*(rho0*cs20-p_infty)
-        L_3 = f(l1:l2,lll,n1:n2,iux)*du2_dy
-        L_4 = f(l1:l2,lll,n1:n2,iux)*du3_dy
-        L_5 = (f(l1:l2,lll,n1:n2,iux) - sgn*cs0_ar(l1:l2,n1:n2))*&
-             (cs0_ar(l1:l2,n1:n2)*div_rho(:,:,2)&
-             +rho0*cs0_ar(l1:l2,n1:n2)*du2_dy)
+        L_3 = f(l1:l2,lll,n1:n2,iuy)*dui_dxj(:,:,1,2)
+        L_4 = f(l1:l2,lll,n1:n2,iuy)*dui_dxj(:,:,3,2)
+        L_5 = (f(l1:l2,lll,n1:n2,iuy) - sgn*cs0_ar(l1:l2,n1:n2))*&
+             (cs20_ar(l1:l2,n1:n2)*div_rho(:,:,2)&
+             -sgn*rho0*cs0_ar(l1:l2,n1:n2)*dui_dxj(:,:,2,2))
       end if
 !
 !  Add terms due to derivatives parallell to the boundary
 !
+
+      parallell_term_rho &
+          =rho0*dui_dxj(:,:,1,1)+f(lll,l1:l2,n1:n2,iux)*div_rho(:,:,1)&
+          +rho0*dui_dxj(:,:,3,3)+f(lll,l1:l2,n1:n2,iuz)*div_rho(:,:,3)
+      parallell_term_ux &
+           =f(lll,l1:l2,n1:n2,iux)*dui_dxj(:,:,1,1)&
+           +f(lll,l1:l2,n1:n2,iuz)*dui_dxj(:,:,1,3)&
+           +cs20_ar(l1:l2,n1:n2)*div_rho(:,:,1)/rho0&
+           +nu*(d2u1_dx2+d2u1_dz2)
+      parallell_term_uy &
+           =f(lll,l1:l2,n1:n2,iux)*dui_dxj(:,:,2,1)&
+           +f(lll,l1:l2,n1:n2,iuz)*dui_dxj(:,:,2,3)&
+           +nu*(d2u2_dx2+d2u2_dz2)
+      parallell_term_uz &
+           =f(lll,l1:l2,n1:n2,iux)*dui_dxj(:,:,3,1)&
+           +f(lll,l1:l2,n1:n2,iuz)*dui_dxj(:,:,3,3)&
+           +cs20_ar(l1:l2,n1:n2)*div_rho(:,:,3)/rho0&
+           +nu*(d2u3_dx2+d2u3_dz2)
+
+
+
       parallell_term_rho=0
       parallell_term_ux=0
       parallell_term_uy=0
@@ -4672,14 +4754,13 @@ module Boundcond
       ! NB: For 'top' L_1 plays the role of L5 and L_5 the role of L1
       case('bot')
         df(l1:l2,lll,n1:n2,ilnrho) = prefac1*(L_5 + L_1)-parallell_term_rho
-        df(l1:l2,lll,n1:n2,iux) = prefac2*(L_5 - L_1)-parallell_term_ux
-        df(l1:l2,lll,n1:n2,iuy) = -L_3-parallell_term_uy
+        df(l1:l2,lll,n1:n2,iuy) = prefac2*(L_1 - L_5)-parallell_term_uy
+        df(l1:l2,lll,n1:n2,iux) = -L_3-parallell_term_ux
         df(l1:l2,lll,n1:n2,iuz) = -L_4-parallell_term_uz
       case('top')
         df(l1:l2,lll,n1:n2,ilnrho) = prefac1*(L_1 + L_5)-parallell_term_rho
-!       df(l1:l2,lll,n1:n2,iux) = prefac2*(L_1 - L_5)
-        df(l1:l2,lll,n1:n2,iux) = prefac2*(L_5 - L_1)-parallell_term_ux
-        df(l1:l2,lll,n1:n2,iuy) = -L_3-parallell_term_uy
+        df(l1:l2,lll,n1:n2,iuy) = prefac2*(L_5 - L_1)-parallell_term_uy
+        df(l1:l2,lll,n1:n2,iux) = -L_3-parallell_term_ux
         df(l1:l2,lll,n1:n2,iuz) = -L_4-parallell_term_uz
       endselect
 !
@@ -4692,8 +4773,8 @@ module Boundcond
 ! Impose required variables at the boundary
 !
       if (llinlet) then
-        f(l1:l2,lll,n1:n2,iux) = u_t
-        f(l1:l2,lll,n1:n2,iuy) = 0
+        f(l1:l2,lll,n1:n2,iux) = 0
+        if (.not. non_reflecting_inlet) f(l1:l2,lll,n1:n2,iuy) = u_t
         f(l1:l2,lll,n1:n2,iuz) = 0
       endif
 !
