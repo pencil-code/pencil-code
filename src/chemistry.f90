@@ -3097,7 +3097,6 @@ subroutine flame_front(f)
        tmp_local=3./16.*(2.*k_B_cgs**3/pi)**0.5
        prefactor=tmp_local*(TT)**0.5*pp_full_cgs_T_1
           
-
         omega="Omega11"
         do k=1,nchemspec
           do j=1,nchemspec
@@ -3143,10 +3142,7 @@ subroutine flame_front(f)
           (tran_data(k,3))**3*(1e-8**3)
 !
          call calc_collision_integral(omega,lnTk,Omega_kl)
-         tmp=5./16.*sqrt(k_B_cgs*species_constants(k,imass)/Na*TT/pi) &
-            /(tran_data(k,3)*1e-8)**2   &
-            /(Omega_kl+0.2*delta_st/(TT/tran_data(k,2))) 
-
+         tmp=TT**0.5/(Omega_kl+0.2*delta_st/(TT/tran_data(k,2)))*tmp_local2 
         endif
         species_viscosity(:,:,:,k)=(tmp)/(unit_mass/unit_length/unit_time)
 
