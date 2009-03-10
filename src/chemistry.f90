@@ -953,7 +953,7 @@ subroutine flame_front(f)
 
                  Diff_full(:,:,:,k)=(1.-f(:,:,:,ichemspec(k)))/tmp_sum
 
-print*,minval(Diff_full(:,4,4,k)),maxval(Diff_full(:,4,4,k)),k
+!print*,minval(Diff_full(:,4,4,k)),maxval(Diff_full(:,4,4,k)),k
 
               enddo
             endif
@@ -3050,7 +3050,7 @@ print*,minval(Diff_full(:,4,4,k)),maxval(Diff_full(:,4,4,k)),k
       integer :: k,j
       real :: eps_jk, sigma_jk, m_jk, delta_jk, delta_st
       character (len=7) :: omega
-      real :: Na=6.022E23,tmp_local
+      real :: Na=6.022E23,tmp_local,tmp_local2
 !
       lnT=f(:,:,:,ilnTT)+log(unit_temperature)
       TT=TT_full*unit_temperature
@@ -3061,8 +3061,7 @@ print*,minval(Diff_full(:,4,4,k)),maxval(Diff_full(:,4,4,k)),k
     if (BinDif_simple) then
 
        tmp_local=3./16.*(2.*k_B_cgs**3/pi)**0.5
-       prefactor=(TT)**0.5*pp_full_cgs_T_1
-       prefactor=prefactor*tmp_local
+       prefactor=tmp_local*(TT)**0.5*pp_full_cgs_T_1
 !
      
         omega="Omega11"
@@ -3093,18 +3092,11 @@ print*,minval(Diff_full(:,4,4,k)),maxval(Diff_full(:,4,4,k)),k
         enddo
 
       else
-       pp_full_cgs_T =Rgas_unit_sys*rho*mu1_full/unit_mass
-           
-       do j=1,my
-       do k=1,mz 
-
-        if (minval(pp_full_cgs_T(:,j,k))<=0.) then
-         prefactor(:,j,k)=0.
-        else
-         prefactor(:,j,k)=3./16.*(2.*k_B_cgs**3*TT(:,j,k)/pi)**0.5/pp_full_cgs_T(:,j,k)
-        endif
-       enddo
-       enddo
+   
+       pp_full_cgs_T_1 =unit_mass/Rgas_unit_sys/rho/mu1_full
+       tmp_local=3./16.*(2.*k_B_cgs**3/pi)**0.5
+       prefactor=tmp_local*(TT)**0.5*pp_full_cgs_T_1
+          
 
         omega="Omega11"
         do k=1,nchemspec
@@ -3130,17 +3122,35 @@ print*,minval(Diff_full(:,4,4,k)),maxval(Diff_full(:,4,4,k)),k
       endif
 !
       omega="Omega22"
+
+      tmp_local=5./16.*(k_B_cgs/Na/pi)**0.5/(1e-8)**2
+
       do k=1,nchemspec
 !
         lnTk=lnT-log(tran_data(k,2))
-        delta_st=tran_data(k,4)**2/2./tran_data(k,2)/&
-            (tran_data(k,3))**3*(1e-8**3)
+        tmp_local2=(species_constants(k,imass))**0.5/(tran_data(k,3))**2 &
+                   *tmp_local
+
+        if (visc_simple) then
+         Omega_kl=(6.33225679E-1 +3.14473541E-1*lnTk+1.78229325E-2*lnTk*lnTk &
+                   -3.99489493E-2*lnTk*lnTk*lnTk+8.98483088E-3*lnTk**4 &
+                  +7.00167217E-4*lnTk**5-3.82733808E-4*lnTk**6+2.97208112E-5*lnTk**7)
+
+         tmp=TT**0.5*(Omega_kl)*tmp_local2 
+  
+        else
+         delta_st=tran_data(k,4)**2/2./tran_data(k,2)/&
+          (tran_data(k,3))**3*(1e-8**3)
 !
-        call calc_collision_integral(omega,lnTk,Omega_kl)
-        tmp=5./16.*sqrt(k_B_cgs*species_constants(k,imass)/Na*TT/pi) &
+         call calc_collision_integral(omega,lnTk,Omega_kl)
+         tmp=5./16.*sqrt(k_B_cgs*species_constants(k,imass)/Na*TT/pi) &
             /(tran_data(k,3)*1e-8)**2   &
             /(Omega_kl+0.2*delta_st/(TT/tran_data(k,2))) 
+
+        endif
         species_viscosity(:,:,:,k)=(tmp)/(unit_mass/unit_length/unit_time)
+
+!print*,'spec_visk=',minval(species_viscosity(:,:,:,k)),maxval(species_viscosity(:,:,:,k)),k
 !
       enddo
 !
