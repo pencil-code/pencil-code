@@ -4804,20 +4804,20 @@ module Boundcond
 !
 
       parallell_term_rho &
-          =rho0*dui_dxj(:,:,1,1)+f(lll,l1:l2,n1:n2,iux)*div_rho(:,:,1)&
-          +rho0*dui_dxj(:,:,3,3)+f(lll,l1:l2,n1:n2,iuz)*div_rho(:,:,3)
+          =rho0*dui_dxj(:,:,1,1)+f(l1:l2,lll,n1:n2,iux)*div_rho(:,:,1)&
+          +rho0*dui_dxj(:,:,3,3)+f(l1:l2,lll,n1:n2,iuz)*div_rho(:,:,3)
       parallell_term_ux &
-           =f(lll,l1:l2,n1:n2,iux)*dui_dxj(:,:,1,1)&
-           +f(lll,l1:l2,n1:n2,iuz)*dui_dxj(:,:,1,3)&
+           =f(l1:l2,lll,n1:n2,iux)*dui_dxj(:,:,1,1)&
+           +f(l1:l2,lll,n1:n2,iuz)*dui_dxj(:,:,1,3)&
            +cs20_ar(l1:l2,n1:n2)*div_rho(:,:,1)/rho0&
            +nu*(d2u1_dx2+d2u1_dz2)
       parallell_term_uy &
-           =f(lll,l1:l2,n1:n2,iux)*dui_dxj(:,:,2,1)&
-           +f(lll,l1:l2,n1:n2,iuz)*dui_dxj(:,:,2,3)&
+           =f(l1:l2,lll,n1:n2,iux)*dui_dxj(:,:,2,1)&
+           +f(l1:l2,lll,n1:n2,iuz)*dui_dxj(:,:,2,3)&
            +nu*(d2u2_dx2+d2u2_dz2)
       parallell_term_uz &
-           =f(lll,l1:l2,n1:n2,iux)*dui_dxj(:,:,3,1)&
-           +f(lll,l1:l2,n1:n2,iuz)*dui_dxj(:,:,3,3)&
+           =f(l1:l2,lll,n1:n2,iux)*dui_dxj(:,:,3,1)&
+           +f(l1:l2,lll,n1:n2,iuz)*dui_dxj(:,:,3,3)&
            +cs20_ar(l1:l2,n1:n2)*div_rho(:,:,3)/rho0&
            +nu*(d2u3_dx2+d2u3_dz2)
 
