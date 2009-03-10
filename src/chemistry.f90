@@ -931,9 +931,6 @@ subroutine flame_front(f)
         !  if (BinDif_simple) then
         !    do k=1,nchemspec
 !
-!WL: if this 0.7 is a constant, why not multiply by its 
-!    inverse? It's faster than dividing.
-!
         !      Diff_full(:,:,:,k)=species_viscosity(:,:,:,k)/&
         !          rho_full(:,:,:)/Sc_number
         !    enddo
@@ -955,6 +952,8 @@ subroutine flame_front(f)
           !          *mu1_full(:,:,:)/tmp_sum
 
                  Diff_full(:,:,:,k)=(1.-f(:,:,:,ichemspec(k)))/tmp_sum
+
+print*,minval(Diff_full(:,4,4,k)),maxval(Diff_full(:,4,4,k)),k
 
               enddo
             endif
@@ -3046,57 +3045,56 @@ subroutine flame_front(f)
       real, dimension (mx,my,mz,mfarray) :: f
       intent(in) :: f
       real, dimension (mx,my,mz) :: Omega_kl, prefactor, lnT 
-      real, dimension (mx,my,mz) :: TT, lnTjk, pp_full_cgs_T, rho, lnTk
+      real, dimension (mx,my,mz) :: TT, lnTjk, pp_full_cgs_T, pp_full_cgs_T_1, rho, lnTk
       real, dimension (mx,my,mz) :: tmp
       integer :: k,j
       real :: eps_jk, sigma_jk, m_jk, delta_jk, delta_st
       character (len=7) :: omega
-      real :: Na=6.022E23
+      real :: Na=6.022E23,tmp_local
 !
       lnT=f(:,:,:,ilnTT)+log(unit_temperature)
       TT=TT_full*unit_temperature
       rho=rho_full*unit_mass/unit_length**3
-      pp_full_cgs_T = Rgas_unit_sys*mu1_full/unit_mass*rho
+      pp_full_cgs_T_1 = unit_mass/Rgas_unit_sys/rho/mu1_full
     
 !      
     if (BinDif_simple) then
 
-       do j=1,my
-       do k=1,mz 
-
-        if (minval(pp_full_cgs_T(:,j,k))<=0.) then
-         prefactor(:,j,k)=0.
-        else
-         prefactor(:,j,k)=3./16.*(2.*k_B_cgs**3*TT(:,j,k)/pi)**0.5/pp_full_cgs_T(:,j,k)
-        endif
-       enddo
-       enddo
+       tmp_local=3./16.*(2.*k_B_cgs**3/pi)**0.5
+       prefactor=(TT)**0.5*pp_full_cgs_T_1
+       prefactor=prefactor*tmp_local
 !
+     
         omega="Omega11"
         do k=1,nchemspec
-          do j=1,nchemspec
+          do j=k,nchemspec
 !
             eps_jk=(tran_data(j,2)*tran_data(k,2))**0.5
             sigma_jk=0.5*(tran_data(j,3)+tran_data(k,3))*1e-8
-            delta_jk=0.5*tran_data(j,4)*tran_data(k,4)
+         !   delta_jk=0.5*tran_data(j,4)*tran_data(k,4)
             m_jk=(species_constants(j,imass)*species_constants(k,imass)) &
                 /(species_constants(j,imass)+species_constants(k,imass))/Na
 !
             lnTjk=lnT-log(eps_jk)
 !
-         !   call calc_collision_integral(omega,lnTjk,Omega_kl)
-
-            Omega_kl=1./(6.96945701E-1)
+            Omega_kl=(6.96945701E-1 +3.39628861E-1*lnTjk)
 !
-            Bin_Diff_coef(:,:,:,k,j)=prefactor/(m_jk)**0.5/sigma_jk**2 &
-                /(Omega_kl+0.19*delta_jk/(TT/eps_jk)) &
-                /(unit_length**2/unit_time)
+            tmp_local=(m_jk)**(-0.5)/sigma_jk**2/(unit_length**2/unit_time)
+            Bin_Diff_coef(:,:,:,k,j)=prefactor*Omega_kl*tmp_local
 ! 
+
           enddo
         enddo
 !
+         do k=1,nchemspec
+          do j=1,k-1
+            Bin_Diff_coef(:,:,:,k,j)=Bin_Diff_coef(:,:,:,j,k)
+          enddo
+        enddo
+
       else
-         
+       pp_full_cgs_T =Rgas_unit_sys*rho*mu1_full/unit_mass
+           
        do j=1,my
        do k=1,mz 
 
