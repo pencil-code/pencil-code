@@ -48,7 +48,7 @@ module Entropy
   real :: center2_x=0., center2_y=0., center2_z=0.
   real :: kx_ss=1.,ky_ss=1.,kz_ss=1.
   real :: thermal_background=0., thermal_peak=0., thermal_scaling=1.
-  real :: cool_fac=1.
+  real :: cool_fac=1., chiB=0.
 !
   real, target :: hcond0=impossible,hcond1=impossible
   real, target :: Fbot=impossible,FbotKbot=impossible
@@ -141,7 +141,7 @@ module Entropy
       lturbulent_heat,deltaT_poleq, &
       tdown, allp,beta_glnrho_global,ladvection_entropy, &
       lviscosity_heat,r_bcz,lfreeze_sint,lfreeze_sext,lhcond_global, &
-      tau_cool,TTref_cool,mixinglength_flux
+      tau_cool,TTref_cool,mixinglength_flux,chiB
 
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
@@ -1469,7 +1469,7 @@ module Entropy
 !  generalised for cp/=1.
 !
       use Cdata
-      use Gravity, only: gravz
+      use Gravity, only: gravz, zinfty
       use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly, get_cp1
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -1488,7 +1488,7 @@ module Entropy
       do m=m1,m2
       do n=n1,n2
         z_mn = spread(z(n),1,nx)
-        TT = beta1*z_mn
+        TT = beta1*(z_mn-zinfty)
         lnrho=f(l1:l2,m,n,ilnrho)
         lnTT=log(TT)
         call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=ss)
@@ -2507,7 +2507,14 @@ module Entropy
       !        Ds/Dt = ... + K/rho*[del2lnTT+(glnTT)^2]
       !
       ! NB: chix = K/(cp rho) is needed for diffus_chi calculation
-      chix = p%rho1*hcond*p%cp1
+      !
+      !  put empirical heat transport suppression by the B-field
+      !
+      if (chiB==0.) then
+        chix = p%rho1*hcond*p%cp1
+      else
+        chix = p%rho1*hcond*p%cp1/(1.+chiB*p%b2)
+      endif
       call dot(p%glnTT,p%glnTT,g2)
       !
       if (pretend_lnTT) then

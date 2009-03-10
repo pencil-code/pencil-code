@@ -1524,7 +1524,7 @@ module EquationOfState
 
     endsubroutine Hminus_opacity
 !***********************************************************************
-    subroutine bc_ss_flux(f,topbot)
+    subroutine bc_ss_flux_orig(f,topbot)
 !
 !  constant flux boundary condition for entropy (called when bcz='c1')
 !
@@ -1645,6 +1645,179 @@ module EquationOfState
           f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+(cp-cv)* &
               (f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho)-2*i*dz*tmp_xy)
         enddo
+      case default
+        call fatal_error('bc_ss_flux','invalid argument')
+      endselect
+!
+    endsubroutine bc_ss_flux_orig
+!***********************************************************************
+    subroutine bc_ss_flux(f,topbot)
+!
+!  constant flux boundary condition for entropy (called when bcz='c1')
+!
+!  23-jan-2002/wolf: coded
+!  11-jun-2002/axel: moved into the entropy module
+!   8-jul-2002/axel: split old bc_ss into two
+!  26-aug-2003/tony: distributed across ionization modules
+!
+      use Cdata
+      use Gravity
+      use SharedVariables, only: get_shared_variable
+      use Mpicomm, only: stop_it
+!
+      real, pointer :: Fbot,Ftop,FtopKtop,FbotKbot,hcond0,hcond1,chi
+      logical, pointer :: lmultilayer, lheatc_chiconst
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my) :: tmp_xy,cs2_xy,rho_xy,lnrho_xy,ss_xy
+      real, dimension (mx,my) :: cs2_xy1,cs2_xy2,T_xy,T_xy1,T_xy2,Told4
+      real :: eps
+      integer :: i,ierr,iter,niter=4,j,k
+!
+      if (ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
+!
+!  Do the `c1' boundary condition (constant heat flux) for entropy.
+!  check whether we want to do top or bottom (this is precessor dependent)
+!
+!  Get the shared variables
+!
+      call get_shared_variable('hcond0',hcond0,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux: "//&
+           "there was a problem when getting hcond0")
+      call get_shared_variable('hcond1',hcond1,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux: "//&
+           "there was a problem when getting hcond1")
+      call get_shared_variable('Fbot',Fbot,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux: "//&
+           "there was a problem when getting Fbot")
+           call get_shared_variable('Ftop',Ftop,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux: "//&
+           "there was a problem when getting Ftop")
+      call get_shared_variable('FbotKbot',FbotKbot,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux: "//&
+           "there was a problem when getting FbotKbot")
+      call get_shared_variable('FtopKtop',FtopKtop,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux: "//&
+           "there was a problem when getting FtopKtop")
+      call get_shared_variable('chi',chi,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux: "//&
+           "there was a problem when getting chi")
+      call get_shared_variable('lmultilayer',lmultilayer,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux: "//&
+           "there was a problem when getting lmultilayer")
+      call get_shared_variable('lheatc_chiconst',lheatc_chiconst,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux: "//&
+           "there was a problem when getting lheatc_chiconst")
+!
+      select case(topbot)
+!
+!  bottom boundary
+!  ===============
+!
+      case('bot')
+        if (lmultilayer) then
+          if (headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
+        else
+          if (headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0
+        endif
+!
+!  calculate Fbot/(K*cs2)
+!
+        rho_xy=exp(f(:,:,n1,ilnrho))
+        cs2_xy=cs20*exp(gamma1*(f(:,:,n1,ilnrho)-lnrho0)+cv1*f(:,:,n1,iss))
+!
+!  check whether we have chi=constant at bottom, in which case
+!  we have the nonconstant rho_xy*chi in tmp_xy.
+!AB: are here any cp factors?
+!
+        if (lheatc_chiconst) then
+          tmp_xy=Fbot/(rho_xy*chi*cs2_xy)
+        else
+          tmp_xy=FbotKbot/cs2_xy
+        endif
+!
+!  enforce ds/dz + gamma1/gamma*dlnrho/dz = - gamma1/gamma*Fbot/(K*cs2)
+!
+        do i=1,nghost
+          f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+(cp-cv)* &
+              (f(:,:,n1+i,ilnrho)-f(:,:,n1-i,ilnrho)+2*i*dz*tmp_xy)
+        enddo
+!
+!  top boundary
+!  ============
+!
+      case('top')
+        if (lmultilayer) then
+          if (headtt) print*,'bc_ss_flux: Ftop,hcond=',Ftop,hcond0*hcond1
+        else
+          if (headtt) print*,'bc_ss_flux: Ftop,hcond=',Ftop,hcond0
+        endif
+!
+!  Compute Temperature at the first 3 levels inward
+!
+        lnrho_xy=f(:,:,n2,ilnrho)
+        cs2_xy =cs20*exp(gamma1*(f(:,:,n2  ,ilnrho)-lnrho0)+cv1*f(:,:,n2  ,iss))
+        cs2_xy1=cs20*exp(gamma1*(f(:,:,n2-1,ilnrho)-lnrho0)+cv1*f(:,:,n2-1,iss))
+        cs2_xy2=cs20*exp(gamma1*(f(:,:,n2-2,ilnrho)-lnrho0)+cv1*f(:,:,n2-2,iss))
+        T_xy=cs2_xy/(cp*gamma1)
+        T_xy1=cs2_xy1/(cp*gamma1)
+        T_xy2=cs2_xy2/(cp*gamma1)
+!
+!  calculate Ftop/(K*cs2)
+!  check whether we have chi=constant at bottom, in which case
+!  we have the nonconstant rho_xy*chi in tmp_xy.
+!
+        if (lheatc_chiconst) then
+          tmp_xy=Ftop/(rho_xy*chi*cs2_xy)
+        else
+          tmp_xy=FtopKtop/cs2_xy
+        endif
+!
+!  iterate
+!
+        eps=2.*dz/1.5**4/3.
+        do iter=1,niter
+          T_xy=(4*T_xy1-T_xy2)/3.-eps*(T_xy/1.5)**4
+          if (ip<8) print*,'iter, T_xy(l1,m1)=',iter,T_xy(l1,m1)
+        enddo
+!
+!  use EOS to work out ss on the boundary
+!
+        call eoscalc_pencil(ilnrho_TT,lnrho_xy,T_xy,ss=ss_xy)
+        f(:,:,n2,iss)=ss_xy
+!
+!  apply to ghost zones
+!
+          j=iss
+          k=n2+1
+          f(:,:,k,j)=7*f(:,:,k-1,j) &
+                   -21*f(:,:,k-2,j) &
+                   +35*f(:,:,k-3,j) &
+                   -35*f(:,:,k-4,j) &
+                   +21*f(:,:,k-5,j) &
+                    -7*f(:,:,k-6,j) &
+                      +f(:,:,k-7,j)
+          k=n2+2
+          f(:,:,k,j)=9*f(:,:,k-1,j) &
+                   -35*f(:,:,k-2,j) &
+                   +77*f(:,:,k-3,j) &
+                  -105*f(:,:,k-4,j) &
+                   +91*f(:,:,k-5,j) &
+                   -49*f(:,:,k-6,j) &
+                   +15*f(:,:,k-7,j) &
+                    -2*f(:,:,k-8,j)
+          k=n2+3
+          f(:,:,k,j)=9*f(:,:,k-1,j) &
+                   -45*f(:,:,k-2,j) &
+                  +147*f(:,:,k-3,j) &
+                  -315*f(:,:,k-4,j) &
+                  +441*f(:,:,k-5,j) &
+                  -399*f(:,:,k-6,j) &
+                  +225*f(:,:,k-7,j) &
+                   -72*f(:,:,k-8,j) &
+                   +10*f(:,:,k-9,j)
+
       case default
         call fatal_error('bc_ss_flux','invalid argument')
       endselect

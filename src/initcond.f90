@@ -2156,7 +2156,7 @@ module Initcond
 !
     endsubroutine crazy
 !***********************************************************************
-    subroutine htube(ampl,f,i1,i2,radius,epsilon_nonaxi)
+    subroutine htube(ampl,f,i1,i2,radius,eps,center1_x,center1_y,center1_z)
 !
 !  Horizontal flux tube (for vector potential, or passive scalar)
 !
@@ -2165,8 +2165,9 @@ module Initcond
 !
       integer :: i1,i2
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: tmp,modulate
-      real :: ampl,radius,epsilon_nonaxi,ky
+      real, dimension (nx) :: tmp,modulate,tube_radius_sqr
+      real :: ampl,radius,eps,ky
+      real :: center1_x,center1_y,center1_z
 !
       if (ampl==0) then
         f(:,:,:,i1:i2)=0
@@ -2175,14 +2176,16 @@ module Initcond
         ky=2*pi/Ly
         if (lroot) then
           print*,'htube: implement y-dependent flux tube in xz-plane; i1,i2=',i1,i2
-          print*,'htube: radius,epsilon_nonaxi=',radius,epsilon_nonaxi
+          print*,'htube: radius,eps=',radius,eps
         endif
 !
 ! completely quenched "gaussian"
 !
         do n=n1,n2; do m=m1,m2
-          modulate=1.+epsilon_nonaxi*sin(ky*y(m))
-          tmp=.5*ampl/modulate*exp(-(x(l1:l2)**2+z(n)**2)/(max((radius*modulate)**2-x(l1:l2)**2-z(n)**2,1e-6)))
+          tube_radius_sqr=(x(l1:l2)-center1_x)**2+(z(n)-center1_z)**2
+!         tmp=.5*ampl/modulate*exp(-tube_radius_sqr)/& 
+!                   (max((radius*modulate)**2-tube_radius_sqr,1e-6))
+          tmp=1./(1.+tube_radius_sqr/radius**2)
 !
 !  check whether vector or scalar
 !
@@ -2191,10 +2194,12 @@ module Initcond
             f(l1:l2,m,n,i1)=tmp
           elseif (i1+2==i2) then
             if (lroot) print*,'htube: set vector'
-            f(l1:l2,m,n,i1 )=+z(n)*tmp
-            f(l1:l2,m,n,i1+1)=0.
-            f(l1:l2,m,n,i1+2)=-x(l1:l2)*tmp
-          else
+            f(l1:l2,m,n,i1 )=+(z(n)-center1_z)*tmp
+            f(l1:l2,m,n,i1+1)=tmp*eps
+            f(l1:l2,m,n,i1+2)=-(x(l1:l2)-center1_x)*tmp
+!XX 
+!           write(*,*) 'DM', f((l1+l2)/2,m,n,i1+2),tmp,ampl,radius,n,m
+         else
             if (lroot) print*,'htube: bad value of i2=',i2
           endif
 !

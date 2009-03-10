@@ -101,6 +101,7 @@ module Magnetic
   real :: bmz=0, bmz_beltrami_phase=0.
   real :: etadust0=0.0
   real :: taareset=0.,daareset=0.
+  real :: center1_x=0., center1_y=0., center1_z=0.
   integer :: nbvec,nbvecmax=nx*ny*nz/4,va2power_jxb=5
   integer :: N_modes_aa=1, naareset
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
@@ -146,6 +147,7 @@ module Magnetic
        rmode,zmode,rm_int,rm_ext,lgauss,lcheck_positive_va2, &
        lbb_as_aux,ljj_as_aux,beta_const,lbext_curvilinear, &
        lbbt_as_aux,ljjt_as_aux, etadust0,lneutralion_heat, &
+       center1_x,center1_y,center1_z, &
        va2max_jxb,va2power_jxb
 
   ! run parameters
@@ -855,7 +857,8 @@ module Magnetic
         case('propto-uy'); call wave_uu(amplaa(j),f,iaa,ky=ky_aa(j))
         case('propto-uz'); call wave_uu(amplaa(j),f,iaa,kz=kz_aa(j))
         case('diffrot'); call diffrot(amplaa(j),f,iay)
-        case('hor-tube'); call htube(amplaa(j),f,iax,iaz,radius,epsilonaa)
+        case('hor-tube'); call htube(amplaa(j),f,iax,iaz,radius,epsilonaa, &
+                                     center1_x,center1_y,center1_z)
         case('hor-fluxlayer'); call hfluxlayer(amplaa(j),f,iaa,z0aa,widthaa)
         case('ver-fluxlayer'); call vfluxlayer(amplaa(j),f,iaa,x0aa,widthaa)
         case('mag-support'); call magsupport(amplaa(j),f,gravz,cs0,rho0)
