@@ -753,7 +753,7 @@ module Entropy
           case('zjump'); call jump(f,iss,ss_left,ss_right,widthss,'z')
         case('sinxsinz'); call sinxsinz(ampl_ss,f,iss,kx_ss,ky_ss,kz_ss)
           case('hor-fluxtube')
-            call htube(ampl_ss,f,iss,iss,radius_ss,epsilon_ss)
+            call htube(ampl_ss,f,iss,iss,radius_ss,epsilon_ss,center1_x,center1_y,center1_z)
           case('hor-tube')
             call htube2(ampl_ss,f,iss,iss,radius_ss,epsilon_ss)
           case('mixinglength')
