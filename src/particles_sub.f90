@@ -2328,6 +2328,8 @@ module Particles_sub
       write(20) fp(k,:)
       close(20)
 !
+      if (lroot.and.(ip<=8)) print*,'removed particle ',ipar(k)
+!
 !  Switch the removed particle with the last particle present in the processor
 !  npar_loc
 !
@@ -2335,7 +2337,6 @@ module Particles_sub
       if (present(dfp)) dfp(k,:)=dfp(npar_loc,:)
       if (present(ineargrid)) ineargrid(k,:)=ineargrid(npar_loc,:)
       ipar(k)=ipar(npar_loc)
-      if (lroot.and.(ip<=8)) print*,'removed particle ',ipar(npar_loc)
 !
 !  Reduce the number of particles by one.
 !
