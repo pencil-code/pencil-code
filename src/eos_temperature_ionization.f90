@@ -63,6 +63,7 @@ module EquationOfState
   real :: cs20=impossible, lnrho0=impossible
   logical :: lcalc_cp=.false.,lcalc_cp_full=.false.
   real :: gamma=5./3., gamma1=impossible, gamma11=impossible
+  real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=impossible, cs2top=impossible
   real :: cs2cool=impossible, ptlaw=impossible
   real :: mpoly=impossible, mpoly0=impossible

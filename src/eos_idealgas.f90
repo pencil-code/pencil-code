@@ -67,6 +67,7 @@ module EquationOfState
   real :: gamma1    !(=gamma-1)
   real :: gamma11   !(=1/gamma)
   real :: cp=impossible, cp1=impossible, cv=impossible, cv1=impossible
+  real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=1., cs2top=1.
   real :: cs2cool=0.
   real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
@@ -80,10 +81,12 @@ module EquationOfState
   logical :: leos_localisothermal=.false.
 
   ! input parameters
-  namelist /eos_init_pars/ xHe, mu, cp, cs0, rho0, gamma, error_cp, ptlaw
+  namelist /eos_init_pars/ xHe, mu, cp, cs0, rho0, gamma, error_cp, ptlaw, &
+    cs2top_ini, dcs2top_ini
 
   ! run parameters
-  namelist /eos_run_pars/  xHe, mu, cp, cs0, rho0, gamma, error_cp, ptlaw
+  namelist /eos_run_pars/  xHe, mu, cp, cs0, rho0, gamma, error_cp, ptlaw, &
+    cs2top_ini, dcs2top_ini
 
   contains
 
@@ -1922,16 +1925,20 @@ module EquationOfState
 !
       case('top')
 !
+!  Set (dcs2/dz) / (dcs2/dz)_ini = (cs2/cs2top_ini)^4
+!  Note that (dcs2/dz) = cs20*[(gamma-1)*dlnrho/dz + gamma*d(s/cp)/dz]
+!  So, ds/dz = - (cp-cv)*dlnrho/dz + cv*(dcs2/dz)/cs20
 !  calculate tmp_xy
 !
         cs2_xy=cs20*exp(gamma1*(f(:,:,n2,ilnrho)-lnrho0)+cv1*f(:,:,n2,iss))
-        tmp_xy=cp*gamma1/cs20*(cs2_xy/cs2top)**4
+        tmp_xy=cv*dcs2top_ini/cs20*(cs2_xy/cs2top_ini)**4
 !
 !  enforce ds/dz + gamma1/gamma*dlnrho/dz = - gamma1/gamma*Fbot/(K*cs2)
 !
         do i=1,nghost
-          f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+(cp-cv)* &
-              (f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho)-2*i*dz*tmp_xy)
+          f(:,:,n2+i,iss)=f(:,:,n2-i,iss) &
+              -(cp-cv)*(f(:,:,n2+i,ilnrho)-f(:,:,n2-i,ilnrho)) &
+              +2*i*dz*tmp_xy
         enddo
       case default
         call fatal_error('bc_ss_flux','invalid argument')

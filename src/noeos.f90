@@ -54,6 +54,7 @@ module EquationOfState
   real :: cs20=1., lnrho0=0.
   logical :: lcalc_cp=.false.
   real :: gamma=5./3., gamma1=2./3.,gamma11=3./5.
+  real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=1., cs2top=1.
   real :: cs2cool=0.,ptlaw=impossible
   real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5

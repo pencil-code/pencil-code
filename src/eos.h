@@ -41,7 +41,7 @@
 !Shouldn't be public, certainly means don't add anymore!!
 !,mu,Rgas    BREAKS THE AUTO-TEST
 
-  public :: gamma,gamma1,gamma11,cs2top,cs2bot
+  public :: gamma,gamma1,gamma11,cs2top,cs2bot,cs2top_ini,dcs2top_ini
   public :: beta_glnrho_global, beta_glnrho_scaled
   public :: cs2cool
   public :: mpoly, mpoly0, mpoly1, mpoly2

@@ -25,7 +25,7 @@ module Entropy
   use Viscosity
   use EquationOfState, only: gamma, gamma1, gamma11, cs20, cs2top, cs2bot, &
                          isothtop, mpoly0, mpoly1, mpoly2, cs2cool, &
-                         beta_glnrho_global
+                         beta_glnrho_global, cs2top_ini, dcs2top_ini
 
   implicit none
 
@@ -1479,9 +1479,14 @@ module Entropy
 !
 !  beta1 is the temperature gradient
 !  1/beta = (g/cp) 1./[(1-1/gamma)*(m+1)]
+!  Also set dcs2top_ini in case one uses radiative b.c.
+!  NOTE: cs2top_ini=cs20 would be wrong if zinfty is not correct in gravity
 !
       call get_cp1(cp1)
       beta1=cp1*gamma/gamma1*gravz/(mpoly+1)
+      dcs2top_ini=gamma1*gravz
+      cs2top_ini=cs20
+print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
 !
 !  set initial condition (first in terms of TT, and then in terms of ss)
 !
