@@ -1459,12 +1459,12 @@ f_loop:   do iv=1,mvar
         endif
 !
         if (lconsistent .and. lpenc_requested(penc)) then
-          if (lroot) print '(a,i4,a)', &
-              'pencil_consistency_check: possible overcalculation... pencil '// &
+          print '(a,i4,a)', &
+              'pencil_consistency_check: possible overcalculation... pencil '//&
               trim(pencil_names(penc))//' (',penc,')', &
               'is requested, but does not appear to be required!'
         elseif ( (.not. lconsistent) .and. (.not. lpenc_requested(penc)) ) then
-          if (lroot) print '(a,i4,a)', &
+          print '(a,i4,a)', &
               'pencil_consistency_check: MISSING PENCIL... pencil '// &
               trim(pencil_names(penc))//' (',penc,')', &
               'is not requested, but calculating it changes the results!'
@@ -1528,14 +1528,14 @@ f_loop:   do iv=1,mvar
 !
         if (lpencil_check_diagnos_opti .and. &
             lconsistent .and. lpenc_diagnos(penc) ) then
-          if (lroot) print '(a,i4,a)', &
+          print '(a,i4,a)', &
               'pencil_consistency_check: OPTIMISATION POTENTIAL... pencil '// &
               trim(pencil_names(penc))//' (',penc,')', &
               'is requested for diagnostics, '// &
               'but does not appear to be required!'
         elseif ( (.not. lconsistent) .and. (.not. lpenc_diagnos(penc)) .and. &
             (.not. lpenc_requested(penc)) ) then
-          if (lroot) print '(a,i4,a)', &
+          print '(a,i4,a)', &
               'pencil_consistency_check: MISSING PENCIL... pencil '// &
               trim(pencil_names(penc))//' (',penc,')', &
               'is not requested for diagnostics, '// &
