@@ -26,8 +26,9 @@ module Viscosity
   include 'viscosity.h'
 
   logical :: lvisc_first=.false.
+  logical :: llambda_effect=.false.
 
-  real :: nu_mol
+  real :: nu_mol, Lambda_V0=0.
   ! input parameters
   !namelist /viscosity_init_pars/ dummy
 
