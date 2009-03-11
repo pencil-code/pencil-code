@@ -1108,6 +1108,17 @@ k_loop:   do while (.not. (k>npar_loc))
             endif
           enddo
 !
+!  Explosion.
+!
+       case ('explosion')
+         do k=1,npar_loc
+           rad=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2)
+           fp(k,ivpx) = delta_vp0*fp(k,ixp)/rp_ext
+           fp(k,ivpy) = delta_vp0*fp(k,iyp)/rp_ext
+           fp(k,ivpz) = delta_vp0*fp(k,izp)/rp_ext
+         enddo
+!
+!
         case default
           if (lroot) &
               print*, 'init_particles: No such such value for initvvp: ', &
@@ -2462,9 +2473,11 @@ k_loop:   do while (.not. (k>npar_loc))
         do while (k<=npar_loc)
           rp=sqrt((fp(k,ixp)-xsinkpoint)**2+(fp(k,iyp)-ysinkpoint)**2+ &
              (fp(k,izp)-zsinkpoint)**2)
-          if (rp<rsinkpoint) &
-              call remove_particle(fp,npar_loc,ipar,k,dfp,ineargrid)
-          k=k+1
+          if (rp<rsinkpoint) then
+            call remove_particle(fp,npar_loc,ipar,k,dfp,ineargrid)
+          else
+            k=k+1
+          endif
         enddo
       endif
 !
@@ -2476,8 +2489,9 @@ k_loop:   do while (.not. (k>npar_loc))
           if (in_solid_cell(fp(k,ixp:izp),fp(k,iap))) then
             print*,k,fp(k,ixp:izp)
             call remove_particle(fp,npar_loc,ipar,k,dfp,ineargrid)
+          else
+            k=k+1
           endif
-          k=k+1
         enddo
       endif
 !
