@@ -1361,6 +1361,7 @@ module Equ
 !
       use Cdata
       use General, only: random_number_wrapper, random_seed_wrapper
+      use Mpicomm, only: mpireduce_and
       use Sub, only: notanumber
 !
       real, dimension(mx,my,mz,mfarray) :: f
@@ -1371,7 +1372,7 @@ module Equ
       real, dimension (nx) :: dt1_max_ref
       integer :: i,j,k,penc,iv
       integer, dimension (mseed) :: iseed_org
-      logical :: lconsistent=.true., ldie=.false.
+      logical :: lconsistent=.true., lconsistent_allproc=.false., ldie=.false.
       integer :: mem_stat1, mem_stat2, mem_stat3
 !
       if (lroot) print*, &
@@ -1443,6 +1444,7 @@ module Equ
 !  Compare results...
 !
         lconsistent=.true.
+        lconsistent_allproc=.false.
         do i=1,nx
           if (dt1_max(i)/=dt1_max_ref(i)) then
             lconsistent=.false.
@@ -1458,17 +1460,22 @@ f_loop:   do iv=1,mvar
           enddo f_loop
         endif
 !
-        if (lconsistent .and. lpenc_requested(penc)) then
-          print '(a,i4,a)', &
-              'pencil_consistency_check: possible overcalculation... pencil '//&
-              trim(pencil_names(penc))//' (',penc,')', &
-              'is requested, but does not appear to be required!'
-        elseif ( (.not. lconsistent) .and. (.not. lpenc_requested(penc)) ) then
-          print '(a,i4,a)', &
-              'pencil_consistency_check: MISSING PENCIL... pencil '// &
-              trim(pencil_names(penc))//' (',penc,')', &
-              'is not requested, but calculating it changes the results!'
-          ldie=.true.
+        call mpireduce_and(lconsistent,lconsistent_allproc)
+!
+        if (lroot) then
+          if (lconsistent_allproc .and. lpenc_requested(penc)) then
+            print '(a,i4,a)', 'pencil_consistency_check: '// &
+                'possible overcalculation... pencil '//&
+                trim(pencil_names(penc))//' (',penc,')', &
+                'is requested, but does not appear to be required!'
+          elseif ( (.not. lconsistent_allproc) .and. &
+                   (.not. lpenc_requested(penc)) ) then
+            print '(a,i4,a)','pencil_consistency_check: '// &
+                'MISSING PENCIL... pencil '// &
+                trim(pencil_names(penc))//' (',penc,')', &
+                'is not requested, but calculating it changes the results!'
+            ldie=.true.
+          endif
         endif
       enddo
 !
@@ -1490,7 +1497,7 @@ f_loop:   do iv=1,mvar
       ldiagnos=.true.
       call pde(f_other,df,p)
       fname_ref=fname
-
+!
       do penc=1,npencils
         df=0.0
         call random_seed_wrapper(put=iseed_org)
@@ -1509,10 +1516,13 @@ f_loop:   do iv=1,mvar
 !  Compare results...
 !
         lconsistent=.true.
+        lconsistent_allproc=.false.
         do k=1,mname
           lconsistent=(fname(k)==fname_ref(k))
           if (.not.lconsistent) exit
         enddo
+!
+        call mpireduce_and(lconsistent,lconsistent_allproc)
 !
 !  ref = result same as "correct" reference result
 !    d = swapped pencil set as diagnostic
@@ -1526,21 +1536,24 @@ f_loop:   do iv=1,mvar
 !  !ref + !d +  r = d needed and not set, r needed and set; all OK
 !  !ref + !d + !r = d needed and not set, r needed and not set; missing d
 !
-        if (lpencil_check_diagnos_opti .and. &
-            lconsistent .and. lpenc_diagnos(penc) ) then
-          print '(a,i4,a)', &
-              'pencil_consistency_check: OPTIMISATION POTENTIAL... pencil '// &
-              trim(pencil_names(penc))//' (',penc,')', &
-              'is requested for diagnostics, '// &
-              'but does not appear to be required!'
-        elseif ( (.not. lconsistent) .and. (.not. lpenc_diagnos(penc)) .and. &
-            (.not. lpenc_requested(penc)) ) then
-          print '(a,i4,a)', &
-              'pencil_consistency_check: MISSING PENCIL... pencil '// &
-              trim(pencil_names(penc))//' (',penc,')', &
-              'is not requested for diagnostics, '// &
-              'but calculating it changes the diagnostics!'
-          ldie=.true.
+        if (lroot) then
+          if (lpencil_check_diagnos_opti .and. &
+              lconsistent_allproc .and. lpenc_diagnos(penc) ) then
+            print '(a,i4,a)','pencil_consistency_check: '// &
+                'OPTIMISATION POTENTIAL... pencil '// &
+                trim(pencil_names(penc))//' (',penc,')', &
+                'is requested for diagnostics, '// &
+                'but does not appear to be required!'
+          elseif ( (.not. lconsistent_allproc) .and. &
+              (.not. lpenc_diagnos(penc)) .and. &
+              (.not. lpenc_requested(penc)) ) then
+            print '(a,i4,a)','pencil_consistency_check: '// &
+                'MISSING PENCIL... pencil '// &
+                trim(pencil_names(penc))//' (',penc,')', &
+                'is not requested for diagnostics, '// &
+                'but calculating it changes the diagnostics!'
+            ldie=.true.
+          endif
         endif
       enddo
 !

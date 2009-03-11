@@ -156,6 +156,11 @@ module Mpicomm
     module procedure mpireduce_or_scl
   endinterface
 
+  interface mpireduce_and
+    module procedure mpireduce_and_arr
+    module procedure mpireduce_and_scl
+  endinterface
+
 ! NOT POSSIBLE BECAUSE OF n-Dimensional array usage
 ! in equ.f90
 !  interface mpireduce_sum
@@ -2056,6 +2061,41 @@ module Mpicomm
       endif
 !
     endsubroutine mpireduce_or_scl
+!***********************************************************************
+    subroutine mpireduce_and_arr(fland_tmp,fland,nreduce)
+!
+!  11-mar-09/anders: coded
+!
+      integer :: nreduce
+      logical, dimension(nreduce) :: fland_tmp, fland
+!
+!  Calculate logical and over all procs and return to root.
+!
+      if (nprocs==1) then
+        fland=fland_tmp
+      else
+        call MPI_REDUCE(fland_tmp, fland, nreduce, MPI_LOGICAL, MPI_LAND, root,&
+                        MPI_COMM_WORLD, ierr)
+      endif
+!
+    endsubroutine mpireduce_and_arr
+!***********************************************************************
+    subroutine mpireduce_and_scl(fland_tmp,fland)
+!
+!  17-sep-05/anders: coded
+!
+      logical :: fland_tmp, fland
+!
+!  Calculate logical and over all procs and return to root.
+!
+      if (nprocs==1) then
+        fland=fland_tmp
+      else
+        call MPI_REDUCE(fland_tmp, fland, 1, MPI_LOGICAL, MPI_LAND, root, &
+                        MPI_COMM_WORLD, ierr)
+      endif
+!
+    endsubroutine mpireduce_and_scl
 !***********************************************************************
     subroutine start_serialize()
 !

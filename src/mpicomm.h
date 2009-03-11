@@ -14,7 +14,7 @@
   public :: mpireduce_sum, mpireduce_max, mpireduce_min
   public :: mpireduce_sum_scl, mpiallreduce_max, mpiallreduce_sum
   public :: mpireduce_sum_int, mpireduce_sum_double,mpiallreduce_sum_int
-  public :: mpireduce_or
+  public :: mpireduce_or, mpireduce_and
   public :: mpibcast_real,mpibcast_logical
   public :: mpibcast_real_arr
   public :: mpibcast_double

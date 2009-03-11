@@ -129,6 +129,11 @@ module Mpicomm
     module procedure mpireduce_or_arr
   endinterface
 
+  interface mpireduce_and
+    module procedure mpireduce_and_scl
+    module procedure mpireduce_and_arr
+  endinterface
+
   contains
 
 !***********************************************************************
@@ -876,6 +881,27 @@ module Mpicomm
       flor=flor_tmp
 !
     endsubroutine mpireduce_or_scl
+!***********************************************************************
+    subroutine mpireduce_and_arr(fland_tmp,fland,nreduce)
+!
+!  11-mar-09/anders: coded
+!
+      integer :: nreduce
+      logical, dimension(nreduce) :: fland_tmp, fland
+!
+      fland=fland_tmp
+!
+    endsubroutine mpireduce_and_arr
+!***********************************************************************
+    subroutine mpireduce_and_scl(fland_tmp,fland)
+!
+!  11-mar-09/anders: coded
+!
+      logical :: fland_tmp, fland
+!
+      fland=fland_tmp
+!
+    endsubroutine mpireduce_and_scl
 !***********************************************************************
     subroutine start_serialize()
     endsubroutine start_serialize
