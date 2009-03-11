@@ -93,6 +93,7 @@ module Magnetic
   real :: rmode=1.,rm_int=0.,rm_ext=0.
   real :: nu_ni=0.,nu_ni1,hall_term=0.
   real :: alpha_effect=0.,alpha_quenching=0.,delta_effect=0.,meanfield_etat=0.
+  real :: alpha_equator_gap=0.,alpha_gap_step=0.
   real :: meanfield_Qs=1.
   real :: displacement_gun=0.
   real :: pertamplaa=0., beta_const=1.0
@@ -178,6 +179,7 @@ module Magnetic
        lmeanfield_theory,alpha_effect,alpha_quenching,delta_effect, &
        lmeanfield_noalpm,alpha_profile, &
        meanfield_etat, lohmic_heat, lmeanfield_jxb, meanfield_Qs, &
+       alpha_equator_gap,alpha_gap_step,&
        height_eta,eta_out,tau_aa_exterior, &
        kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
        lforcing_cont_aa,iforcing_continuous_aa, &
@@ -1649,6 +1651,8 @@ module Magnetic
         case('const'); alpha_tmp=1.
         case('siny'); alpha_tmp=sin(y(m))
         case('cosy'); alpha_tmp=cos(y(m))
+        case('step'); alpha_tmp=(1.-step_scalar(y(m),pi/2.-alpha_equator_gap,alpha_gap_step)+&
+                       step_scalar(y(m),pi/2+alpha_equator_gap,alpha_gap_step))
         case('read'); alpha_tmp=alpha_input(l1:l2,m)
         case('nothing');
           call inevitably_fatal_error('calc_pencils_magnetic', &

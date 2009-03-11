@@ -13,8 +13,7 @@ module Boundcond
   use Cdata
   use Messages
   use Mpicomm
-!AB breaks auto-test  use Hydro
-  use Viscosity
+  use Viscosity, Only:llambda_effect,Lambda_V0
 
   implicit none
 
@@ -1610,11 +1609,17 @@ module Boundcond
 ! component of the strain matrix to be zero in spherical coordinate system. 
 ! This subroutine sets only the first part of this boundary condition for 'j'-th
 ! component of f. 
-!
+! Lambda effect : stresses due to Lambda effect are added to the stress-tensor. 
+! For rotation along the z direction and also for not very strong rotation such
+! that the breaking of rotational symmetry is only due to gravity, the only 
+! new term is appears in the r-phi component. This implies that this term
+! affects only the boundary condition of u_{\phi} for the radial boundary. 
+
 !  25-Aug-2007/dhruba: coded
 !
       character (len=3), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (my,mz) :: boundary_value
       integer, intent (in) :: j
 
 
@@ -1625,13 +1630,23 @@ module Boundcond
 ! The coding assumes we are using 6-th order centered finite difference for our
 ! derivatives. 
 !
-        f(l1-1,:,:,j)= f(l1+1,:,:,j) -  60.*f(l1,:,:,j)*dx/(45.*x(l1))
-        f(l1-2,:,:,j)= f(l1+2,:,:,j) -  60.*f(l1,:,:,j)*dx/(9.*x(l1))
-        f(l1-3,:,:,j)= f(l1+3,:,:,j) -  60.*f(l1,:,:,j)*dx/(x(l1))
+        if(llambda_effect) then
+          boundary_value(:,:)=f(l1,:,:,j)/x(l1)-Lambda_V0*f(l1,:,:,3)/x(l1)
+        else
+          boundary_value(:,:)=f(l1,:,:,j)/x(l1)  
+        endif
+        f(l1-1,:,:,j)= f(l1+1,:,:,j) -  60.*boundary_value(:,:)*dx/45.
+        f(l1-2,:,:,j)= f(l1+2,:,:,j) -  60.*boundary_value(:,:)*dx/9.
+        f(l1-3,:,:,j)= f(l1+3,:,:,j) -  60.*boundary_value(:,:)*dx
       case('top')               ! top boundary
-        f(l2+1,:,:,j)= f(l2-1,:,:,j) +  60.*f(l1,:,:,j)*dx/(45.*x(l2))
-        f(l2+2,:,:,j)= f(l2-2,:,:,j) +  60.*f(l1,:,:,j)*dx/(9.*x(l2))
-        f(l2+3,:,:,j)= f(l2-3,:,:,j) +  60.*f(l1,:,:,j)*dx/(x(l2))
+        if(llambda_effect) then
+          boundary_value(:,:)=f(l2,:,:,j)/x(l2)-Lambda_V0*f(l2,:,:,3)/x(l2)
+        else
+          boundary_value(:,:)=f(l2,:,:,j)/x(l2)  
+        endif
+        f(l2+1,:,:,j)= f(l2-1,:,:,j) +  60.*boundary_value(:,:)*dx/45.
+        f(l2+2,:,:,j)= f(l2-2,:,:,j) +  60.*boundary_value(:,:)*dx/9.
+        f(l2+3,:,:,j)= f(l2-3,:,:,j) +  60.*boundary_value(:,:)*dx
 
       case default
         call warning('bc_set_sfree_x',topbot//" should be `top' or `bot'")
