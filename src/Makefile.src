@@ -850,6 +850,12 @@ LD_FFTW2=
 #CC=mpicc -cc=pgcc#(ukmhd)
 #LD_MPI = -lmpich #(ukmhd) 
 ##
+## Piyali on nordita laptop on maths.qmul cluster
+##
+#FC=gfortran -fno-second-underscore  #(nordita-laptop)
+#FFLAGS=  -O3  #(nordita-laptop)
+#CC=gcc #(nordita-laptop)
+##
 ## Hoffman2 Cluster @ UCLA (Steve B)
 ##
 #FC=mpif90 #(i01|i02)

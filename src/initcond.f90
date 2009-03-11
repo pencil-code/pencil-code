@@ -2197,8 +2197,6 @@ module Initcond
             f(l1:l2,m,n,i1 )=+(z(n)-center1_z)*tmp
             f(l1:l2,m,n,i1+1)=tmp*eps
             f(l1:l2,m,n,i1+2)=-(x(l1:l2)-center1_x)*tmp
-!XX 
-!           write(*,*) 'DM', f((l1+l2)/2,m,n,i1+2),tmp,ampl,radius,n,m
          else
             if (lroot) print*,'htube: bad value of i2=',i2
           endif
