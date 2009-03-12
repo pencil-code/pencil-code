@@ -1048,7 +1048,7 @@ module Viscosity
      if (llambda_effect) then
        p%fvisc(:,iuz)=p%fvisc(:,iuz)+Lambda_V0*( &
                    +(p%uu(:,3)/x(l1:l2)**2) -p%uij(:,3,1)-p%uu(:,3)*p%glnrho(:,1)/x(l1:l2))
-       p%fvisc(:,iux)=p%fvisc(:,iux)+Lambda_V0*( -(p%uu(:,3)/x(l1:l2)**2))
+!       p%fvisc(:,iux)=p%fvisc(:,iux)+Lambda_V0*( -(p%uu(:,3)/x(l1:l2)**2))
      endif
 !
 !  Store viscous heating rate in auxiliary variable if requested.
