@@ -1651,8 +1651,8 @@ module Magnetic
         case('const'); alpha_tmp=1.
         case('siny'); alpha_tmp=sin(y(m))
         case('cosy'); alpha_tmp=cos(y(m))
-        case('step'); alpha_tmp=(1.-step_scalar(y(m),pi/2.-alpha_equator_gap,alpha_gap_step)+&
-                       step_scalar(y(m),pi/2+alpha_equator_gap,alpha_gap_step))
+        case('step'); alpha_tmp=(1.-step_scalar(y(m),pi/2.-alpha_equator_gap,alpha_gap_step)&
+                       -step_scalar(y(m),pi/2+alpha_equator_gap,alpha_gap_step))
         case('read'); alpha_tmp=alpha_input(l1:l2,m)
         case('nothing');
           call inevitably_fatal_error('calc_pencils_magnetic', &
