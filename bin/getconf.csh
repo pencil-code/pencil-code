@@ -1234,6 +1234,11 @@ else
   set mpirun = mpirun
 endif
 
+## ------------------------------
+## End of machine specific settings
+## ------------------------------
+
+
 ## MPI specific setup
 if ($mpi) then
   # Some mpiruns need special options
@@ -1281,8 +1286,6 @@ else # no MPI
   set nprocpernode = 1
 
 endif
-## End of machine specific settings
-## ------------------------------
 
 # Determine data directory (defaults to `data')
 #if (-r datadir.in) then
