@@ -210,7 +210,6 @@ endif
 set nprocpernode = `expr $ncpus / $nnodes`
 echo "$nnodes nodes, $nprocpernode CPU(s) per node"
 
-echo "Getting into Machine Specific regions"
 ## ------------------------------
 ## Choose machine specific settings
 ## ------------------------------
