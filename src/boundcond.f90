@@ -1622,25 +1622,29 @@ module Boundcond
       real, dimension (my,mz) :: boundary_value
       integer, intent (in) :: j
 
-
       select case(topbot)
-
-      case('bot')               ! bottom boundary
+!
+! bottom boundary
+!
+      case('bot')
 !
 ! The coding assumes we are using 6-th order centered finite difference for our
 ! derivatives. 
 !
         if(llambda_effect) then
-          boundary_value(:,:)=f(l1,:,:,j)/x(l1)-Lambda_V0*f(l1,:,:,3)/x(l1)
+          boundary_value(:,:)=f(l1,:,:,j)/x(l1)-Lambda_V0*f(l1,:,:,iuz)/x(l1)
         else
-          boundary_value(:,:)=f(l1,:,:,j)/x(l1)  
+          boundary_value(:,:)=f(l1,:,:,j)/x(l1)
         endif
         f(l1-1,:,:,j)= f(l1+1,:,:,j) -  60.*boundary_value(:,:)*dx/45.
         f(l1-2,:,:,j)= f(l1+2,:,:,j) -  60.*boundary_value(:,:)*dx/9.
         f(l1-3,:,:,j)= f(l1+3,:,:,j) -  60.*boundary_value(:,:)*dx
-      case('top')               ! top boundary
+!
+! top boundary
+!
+      case('top')
         if(llambda_effect) then
-          boundary_value(:,:)=f(l2,:,:,j)/x(l2)-Lambda_V0*f(l2,:,:,3)/x(l2)
+          boundary_value(:,:)=f(l2,:,:,j)/x(l2)-Lambda_V0*f(l2,:,:,iuz)/x(l2)
         else
           boundary_value(:,:)=f(l2,:,:,j)/x(l2)  
         endif
