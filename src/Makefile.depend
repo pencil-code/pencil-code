@@ -225,7 +225,15 @@ gsl_wrapper.o: gsl_wrapper.c
 	$(CC) $(CFLAGS) -c gsl_wrapper.c
 #
 gsl_wrapper_r8.o: gsl_wrapper_r8.c
-	$(CC) $(CFLAGS) -c gsl_wrapper_r8.c 
+	$(CC) $(CFLAGS) -c gsl_wrapper_r8.c
+
+
+## The following should probably be automatically generated, but most
+## likely are not:
+combine_videofiles.o:   combine_videofiles.f90 $(combine_videofiles_deps)
+read_videofiles.o:      read_videofiles.f90 $(read_videofiles_deps)
+read_vectorfiles.o:     read_vectorfiles.f90 $(read_vectorfiles_deps)
+
 ## ---------------------------------------------------------------------- #
 ## Automatically generatable dependencies
 ## ---------------------------------------------------------------------- #
