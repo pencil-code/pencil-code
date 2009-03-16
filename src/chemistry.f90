@@ -41,6 +41,7 @@ module Chemistry
   real :: lambda_const=impossible
   real :: visc_const=impossible
   real :: diffus_const=impossible
+  real :: Sc_number=0.7
   real :: Cp_const=impossible
   real :: Cv_const=impossible
   real :: init_x1=-0.2,init_x2=0.2
@@ -48,6 +49,7 @@ module Chemistry
 
 !
   logical :: lone_spec=.false.
+  logical :: lfix_Sc=.false.
  
 !
 !  parameters related to chemical reactions
@@ -65,7 +67,7 @@ module Chemistry
   logical :: lkreactions_profile=.false.
   integer :: nreactions=0,nreactions1=0,nreactions2=0
   real, dimension(2*nchemspec) :: kreactions_profile_width=0.
-  real :: Sc_number=1.
+
 
   integer :: mreactions
   integer, allocatable, dimension(:,:) :: stoichio,Sijm,Sijp
@@ -878,6 +880,8 @@ subroutine flame_front(f)
 !
           inquire(file='tran.dat',exist=tran_exist)
 
+
+
           if (tran_exist) then
             call calc_diff_visc_coef(f)
           endif
@@ -936,33 +940,42 @@ subroutine flame_front(f)
         !    enddo
         !  else
             if (.not. lone_spec) then
+
+             if (diffus_const<impossible) then
+                Diff_full=diffus_const
+             elseif (lfix_Sc) then
+               Diff_full(:,:,:,k)=species_viscosity(:,:,:,k)/rho_full/Sc_number
+             else
               do k=1,nchemspec
                 tmp_sum=0.
                 do j=1,nchemspec
                 !  tmp_sum(:,:,:)=tmp_sum(:,:,:) &
                 !      +f(:,:,:,ichemspec(j))*unit_mass &
-                !     /species_constants(j,imass) &
+                !     /species_constants(j,imass)/mu1_full(:,:,:) &
                 !     /Bin_Diff_coef(:,:,:,j,k)
                 
                    tmp_sum(:,:,:)=tmp_sum(:,:,:) &
                         +XX_full(:,:,:,j)/Bin_Diff_coef(:,:,:,j,k)
+
+                 
 
                 enddo
           !      Diff_full(:,:,:,k)=(1.-f(:,:,:,ichemspec(k))) &
           !          *mu1_full(:,:,:)/tmp_sum
 
                  Diff_full(:,:,:,k)=(1.-f(:,:,:,ichemspec(k)))/tmp_sum
+               
 
 !print*,minval(Diff_full(:,4,4,k)),maxval(Diff_full(:,4,4,k)),k
 
+!print*,'Diff=',(Diff_full(l2,4,4,k)),1./tmp_sum(l2,4,4),(f(l2,4,4,ichemspec(k))),k
+
               enddo
+             endif
+!print*, minval(Diff_full(:,4,4,:)),maxval(Diff_full(:,4,4,:))
+
             endif
-     !     endif
 
-
-          if (diffus_const<impossible) then
-                Diff_full=diffus_const
-          endif
 !
 !  Artificial Viscosity of a mixture
 !
@@ -1054,9 +1067,9 @@ subroutine flame_front(f)
         enddo
         write(file_id,*) ''
         write(file_id,*) 'Thermal cond, erg/(cm K s),'
-        write(file_id,'(7E12.4)') minval(0.5*(tmp_sum+1./tmp_sum2)*&
+        write(file_id,'(7E12.4)') (lambda_full(l1,4,4)*&
             unit_energy/unit_time/unit_length/unit_temperature), &
-                        maxval(0.5*(tmp_sum+1./tmp_sum2)*&
+                        (lambda_full(l2,4,4)*&
             unit_energy/unit_time/unit_length/unit_temperature)
         write(file_id,*) ''
         write(file_id,*) 'Species  Diffusion coefficient, cm^2/s'
@@ -1408,7 +1421,7 @@ subroutine flame_front(f)
 !
       if (lfilter) then
        do i=1,mx
-        if ((f(i,m,n,ichemspec(k))+df(i,m,n,ichemspec(k))*dt)<-1e-15 ) df(i,m,n,ichemspec(k))=-1e-15*dt
+        if ((f(i,m,n,ichemspec(k))+df(i,m,n,ichemspec(k))*dt)<-1e-25 ) df(i,m,n,ichemspec(k))=-1e-25*dt
         if ((f(i,m,n,ichemspec(k))+df(i,m,n,ichemspec(k))*dt)>1. ) df(i,m,n,ichemspec(k))=1.*dt
        enddo
       endif
@@ -3057,6 +3070,8 @@ subroutine flame_front(f)
       rho=rho_full*unit_mass/unit_length**3
       pp_full_cgs_T_1 = unit_mass/Rgas_unit_sys/rho/mu1_full
     
+   
+
 !      
     if (BinDif_simple) then
 
