@@ -117,7 +117,7 @@ module Chemistry
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
       amplchemk,amplchemk2, chem_diff,nu_spec, BinDif_simple, visc_simple, &
       lambda_const, visc_const,Cp_const,Cv_const,diffus_const,init_x1,init_x2, &
-      init_TT1,init_TT2,init_ux,l1step_test,Sc_number
+      init_TT1,init_TT2,init_ux,l1step_test,Sc_number,lfix_Sc
 
 
 ! run parameters
