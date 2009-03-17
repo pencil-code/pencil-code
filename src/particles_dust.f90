@@ -66,10 +66,11 @@ module Particles
   logical :: ldraglaw_epstein=.true.
   logical :: ldraglaw_epstein_stokes_linear=.false.
   logical :: ldraglaw_steadystate=.false.
-  logical :: lcoldstart_amplitude_correction=.false.
   logical :: ldraglaw_variable=.false.
   logical :: ldraglaw_epstein_transonic=.false.
   logical :: ldraglaw_eps_stk_transonic=.false.
+  logical :: ldraglaw_variable_density=.false.
+  logical :: lcoldstart_amplitude_correction=.false.
   logical :: luse_tau_ap=.true.
   logical :: lshort_friction_approx=.false.
   logical :: lbrownian_forces=.false.
@@ -137,7 +138,8 @@ module Particles
       ldraglaw_epstein, ldraglaw_epstein_stokes_linear, mean_free_path_gas, &
       ldraglaw_epstein_transonic, lcheck_exact_frontier, &
       ldraglaw_eps_stk_transonic, lshort_friction_approx, &
-      tausp_short_friction,ldraglaw_steadystate,tstart_liftforce_par, &
+      ldraglaw_variable_density, &
+      tausp_short_friction, ldraglaw_steadystate, tstart_liftforce_par, &
       tstart_brownian_par, lbrownian_forces, lenforce_policy, &
       interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, &
       brownian_T0, lnostore_uu, ldtgrav_par, ldragforce_radialonly, &
@@ -2530,7 +2532,7 @@ k_loop:   do while (.not. (k>npar_loc))
       real, optional :: rep, stocunn
 !
       real :: tausg1_point,OO
-      integer :: ix0, inx0, jspec
+      integer :: ix0, iy0, iz0, inx0, jspec
       logical :: nochange=.false.
 !
       intent(in) :: rep,uup
@@ -2545,7 +2547,8 @@ k_loop:   do while (.not. (k>npar_loc))
         nochange=.false.
       endif
 !
-      ix0=ineargrid(k,1);inx0=ix0-nghost
+      ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+      inx0=ix0-nghost
 !
 !  Epstein drag law.
 !
@@ -2560,10 +2563,21 @@ k_loop:   do while (.not. (k>npar_loc))
           else
             tmp=tausp1
           endif
+!
+!  Scale friction time with local density.
+!
+          if (ldraglaw_variable_density) then
+            if (ldensity_nolog) then
+              tausp1_par=tmp*f(ix0,iy0,iz0,ilnrho)
+            else
+              tausp1_par=tmp*exp(f(ix0,iy0,iz0,ilnrho))
+            endif
+!
 !  Discriminate between constant tau and special case for 
 !  1/tau=omega when omega is not constant (as, for instance, 
 !  global Keplerian disks, for which omega=rad**(-3/2)
-          if (ldraglaw_variable) then
+!
+          elseif (ldraglaw_variable) then
             if (lcartesian_coords) then
               OO=(fp(k,ixp)**2 + fp(k,iyp)**2)**(-0.75) 
             elseif (lcylindrical_coords) then
@@ -2575,6 +2589,9 @@ k_loop:   do while (.not. (k>npar_loc))
             endif
             tausp1_par=tmp*OO
           else
+!
+!  Constant friction time.
+!
             tausp1_par=tmp
           endif
         endif
