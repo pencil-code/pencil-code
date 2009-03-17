@@ -480,6 +480,7 @@ module Entropy
 
         case('single_polytrope')
           if (cool/=0.) cs2cool=cs0**2
+          mpoly=mpoly0  ! needed to compute Fbot when bc=c1 (L383)
 
       endselect
 !
