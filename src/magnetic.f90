@@ -153,6 +153,7 @@ module Magnetic
 
   ! run parameters
   real :: eta=0.,eta1=0.,eta_hyper2=0.,eta_hyper3=0.,height_eta=0.,eta_out=0.
+  real :: meanfield_molecular_eta=0.
   real :: eta_int=0.,eta_ext=0.,wresistivity=.01
   real :: tau_aa_exterior=0.
   real :: sigma_ratio=1.,eta_width=0.,eta_z0=1.
@@ -1200,6 +1201,10 @@ module Magnetic
       if (lmeanfield_theory) then
         if (alpha_effect/=0. .or. delta_effect/=0.) lpenc_requested(i_mf_EMF)=.true.
         if (delta_effect/=0.) lpenc_requested(i_oxj)=.true.
+! Dhruba: I am not sure if this is the right place. Nevertheless this works. 
+        Rm_alpm=meanfield_etat/eta
+        etat_alpm=meanfield_etat
+!        write(*,*)'Rm_alpm,etat_alpm',Rm_alpm,etat_alpm
       endif
 !
       if (idiag_jxbrxm/=0 .or. idiag_jxbrym/=0 .or. idiag_jxbrzm/=0) &
@@ -4521,7 +4526,7 @@ module Magnetic
 !  This mimics a neutron star just after the Meissner effect forced the
 !  internal field to become vertical (aligned with rotation axis).
 !
-!  AMPL represents mu/4 pi, where  mu = 1/2 Int rr Ã jj dV  is the
+!  AMPL represents mu/4 pi, where  mu = 1/2 Int rr Ã? jj dV  is the
 !  magnetic moment of the external dipole field.
 !  INCLAA is the inclination of the dipolar field.
 !

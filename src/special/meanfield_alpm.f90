@@ -26,7 +26,7 @@ module Special
   use Cparam
   use Cdata
   use Messages
-
+!  use Magnetic, only: eta
   implicit none
 
   include '../special.h'
@@ -42,11 +42,14 @@ module Special
        initalpm,amplalpm,kx_alpm,ky_alpm,kz_alpm
 
   ! run parameters
-  real :: etat_alpm=1., Rm_alpm=1., kf_alpm=1., alpmdiff=0.
+! Note that etat_alpm and Rm_alpm are defined in cdata
+!  real :: etat_alpm=1., Rm_alpm=1., kf_alpm=1., alpmdiff=0.
+  real :: kf_alpm=1., alpmdiff=0.
   logical :: ladvect_alpm=.false.
 
   namelist /special_run_pars/ &
-       etat_alpm,Rm_alpm,kf_alpm,ladvect_alpm,alpmdiff, &
+!       etat_alpm,Rm_alpm,kf_alpm,ladvect_alpm,alpmdiff, &
+       kf_alpm,ladvect_alpm,alpmdiff, &
        Omega_profile,Omega_ampl
 
   ! other variables (needs to be consistent with reset list below)
@@ -101,6 +104,9 @@ module Special
 !  set to zero and then call the same initial condition
 !  that was used in start.csh
 !   
+! set the magnetic Reynold number :
+!      Rm_alpm=etat_alpm/eta
+!      write(*,*) 'Dhruba', Rm_alpm,etat_alpm
       if (NO_WARN) print*,'f=',f
     endsubroutine initialize_special
 !***********************************************************************

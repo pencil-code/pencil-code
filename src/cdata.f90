@@ -137,6 +137,10 @@ module Cdata
 !
   real :: Omega=0.0, theta=0.0, qshear=0.0, Sshear=impossible, deltay=0.0
 !
+! Parameters defined in magnetic but needed for meanfield alpha effect. (Dhruba) 
+!
+  real :: Rm_alpm=impossible,etat_alpm=0.
+!
 !  Random numbers.
 !
   integer, dimension(mseed) :: seed=0
