@@ -2586,7 +2586,7 @@ module Density
 !***********************************************************************
     subroutine mass_source(f,df,p)
 !
-!  add mass sources and sinks
+!  Add mass sources and sinks.
 !
 !  28-apr-2005/axel: coded
 !
@@ -2601,21 +2601,28 @@ module Density
 !
       if (ldebug) print*,'mass_source: cs20,cs0=',cs20,cs0
 !
-!  choose between different possibilities
+!  Choose between different possibilities.
 !
-      if (mass_source_profile=='bump') then
+      if (mass_source_profile=='exponential') then
+        if (ldensity_nolog) then
+          df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+ &
+              mass_source_Mdot*f(l1:l2,m,n,ilnrho)
+        else
+          df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+mass_source_Mdot
+        endif
+      elseif (mass_source_profile=='bump') then
         fnorm=(2.*pi*mass_source_sigma**2)**1.5
         fprofile=exp(-.5*(p%r_mn/mass_source_sigma)**2)/fnorm
         df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+mass_source_Mdot*fprofile
       elseif (mass_source_profile=='cylindric') then
 !
-!  cylindrical profile for inner cylinder
+!  Cylindrical profile for inner cylinder.
 !
         pdamp=1-step(p%rcyl_mn,r_int,wdamp) ! inner damping profile
         fint=-damplnrho_int*pdamp*(f(l1:l2,m,n,ilnrho)-lnrho_int)
         df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+fint
 !
-!  cylindrical profile for outer cylinder
+!  Cylindrical profile for outer cylinder.
 !
         pdamp=step(p%rcyl_mn,r_ext,wdamp) ! outer damping profile
         fext=-damplnrho_ext*pdamp*(f(l1:l2,m,n,ilnrho)-lnrho_ext)
