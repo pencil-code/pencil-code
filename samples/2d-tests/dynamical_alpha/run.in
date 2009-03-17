@@ -16,6 +16,7 @@
   Omega_profile='(0,cosx*cosz,0)', Omega_ampl=1e3
 /
 &special_run_pars
-  etat_alpm=1., kf_alpm=5., Rm_alpm=100.
+!  etat_alpm=1., kf_alpm=5., Rm_alpm=100.
+  kf_alpm=5.
   Omega_profile='(0,cosx*cosz,0)', Omega_ampl=1e0
 /
