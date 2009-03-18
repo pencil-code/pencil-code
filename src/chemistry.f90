@@ -46,7 +46,7 @@ module Chemistry
   real :: Cv_const=impossible
   real :: init_x1=-0.2,init_x2=0.2
   real :: init_TT1=400, init_TT2=2400., init_ux
-
+  real :: init_pressure=10.13e5      
 !
   logical :: lone_spec=.false.
   logical :: lfix_Sc=.false.
@@ -117,7 +117,7 @@ module Chemistry
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
       amplchemk,amplchemk2, chem_diff,nu_spec, BinDif_simple, visc_simple, &
       lambda_const, visc_const,Cp_const,Cv_const,diffus_const,init_x1,init_x2, &
-      init_TT1,init_TT2,init_ux,l1step_test,Sc_number,lfix_Sc
+      init_TT1,init_TT2,init_ux,l1step_test,Sc_number,init_pressure,lfix_Sc
 
 
 ! run parameters
@@ -638,7 +638,6 @@ subroutine flame_front(f)
       real, dimension (mx,my,mz) :: mu1
       integer :: k,j,i
 
-      real :: p2_front=10.13e5
       real :: mO2, mH2, mN2, mH2O
       real :: log_inlet_density
       integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
@@ -707,7 +706,7 @@ subroutine flame_front(f)
       call calc_for_chem_mixture(f)
       do k=1,mx
         f(k,:,:,ilnrho)&
-            =log(p2_front)-log(Rgas)-f(k,:,:,ilnTT)-log(mu1_full(k,:,:))
+            =log(init_pressure)-log(Rgas)-f(k,:,:,ilnTT)-log(mu1_full(k,:,:))
       enddo
 !
 !  Find logaritm of density at inlet
@@ -717,7 +716,7 @@ subroutine flame_front(f)
           +initial_massfractions(ichem_O2)/(mO2)&
           +initial_massfractions(ichem_H2O)/(mH2O)&
           +initial_massfractions(ichem_N2)/(mN2)
-      log_inlet_density=log(p2_front)-log(Rgas)-log(init_TT1)-log(initial_mu1)
+      log_inlet_density=log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
 !
 !  Initialize velocity
 !
