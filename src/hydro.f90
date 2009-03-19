@@ -2467,6 +2467,13 @@ module Hydro
         print*, 'coriolis_spherical: Omega=', Omega
       endif
 !
+! Not yet coded for angular velocity at an angle with the z axis. 
+!
+      if (theta/=0) then
+         print*, 'coriolis_spherical: Omega=,theta=', Omega,theta
+         call fatal_error("coriolis_spherical:","not coded if the angular velocity is at an angle to the z axis. ")
+      endif
+!
 !  -2 Omega x u
 !
       if (lcoriolis_force) then 
@@ -2505,6 +2512,13 @@ module Hydro
 !
       if (headtt) &
           print*, 'coriolis_cylindrical: Omega=', Omega
+!
+! Not yet coded for angular velocity at an angle with the z axis. 
+!
+      if (theta/=0) then
+         print*, 'coriolis_cylindrical: Omega=,theta=', Omega,theta
+         call fatal_error("coriolis_cylindrical:","not coded if the angular velocity is at an angle to the z axis. ")
+      endif
 !
 !  -2 Omega x u
 !    

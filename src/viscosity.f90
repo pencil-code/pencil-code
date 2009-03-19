@@ -32,7 +32,7 @@ module Viscosity
   character (len=labellen), dimension(nvisc_max) :: ivisc=''
   real :: nu=0., nu_mol=0., nu_hyper2=0., nu_hyper3=0., nu_shock=0.
   real :: nu_jump=1., znu=0., xnu=0., xnu2=0.,widthnu=0.1, C_smag=0.0
-  real :: pnlaw=0., Lambda_V0=0.
+  real :: pnlaw=0., Lambda_V0=0.,Lambda_Omega=0.
   real, dimension(3) :: nu_aniso_hyper3=0.
 
   ! dummy logical
@@ -71,7 +71,7 @@ module Viscosity
   namelist /viscosity_run_pars/ &
       nu, nu_hyper2, nu_hyper3, ivisc, nu_mol, C_smag, nu_shock, &
       nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,xnu,xnu2,widthnu, &
-      pnlaw,llambda_effect,Lambda_V0
+      pnlaw,llambda_effect,Lambda_V0,Lambda_Omega
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_fviscm=0     ! DIAG_DOC: Mean value of viscous acceleration
@@ -1047,9 +1047,9 @@ module Viscosity
 !
      if (llambda_effect) then
        p%fvisc(:,iuz)=p%fvisc(:,iuz)+Lambda_V0*( &
-                   +(p%uu(:,3)/x(l1:l2)**2) -p%uij(:,3,1)-p%uu(:,3)*p%glnrho(:,1)/x(l1:l2))
-!       p%fvisc(:,iux)=p%fvisc(:,iux)+Lambda_V0*( -(p%uu(:,3)/x(l1:l2)**2))
-     endif
+                   +p%uu(:,3)/x(l1:l2)**2  -p%uij(:,3,1)/x(l1:l2) & 
+                      -(p%uu(:,3)/x(l1:l2)+Lambda_Omega*sinth(m))*p%glnrho(:,1))
+    endif
 !
 !  Store viscous heating rate in auxiliary variable if requested.
 !  Just neccessary immediately before writing snapshots, but how would we

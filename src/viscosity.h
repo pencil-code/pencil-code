@@ -13,5 +13,5 @@
 !ajwm SHOULDN'T BE SHARED
   public :: idiag_epsK
   public :: nu_mol,lvisc_first
-  public :: llambda_effect,lambda_V0
+  public :: llambda_effect,lambda_V0,Lambda_Omega
 !

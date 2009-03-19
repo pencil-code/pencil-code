@@ -13,7 +13,7 @@ module Boundcond
   use Cdata
   use Messages
   use Mpicomm
-  use Viscosity, Only:llambda_effect,Lambda_V0
+  use Viscosity, Only:llambda_effect,Lambda_V0,Lambda_Omega
 
   implicit none
 
@@ -1632,7 +1632,7 @@ module Boundcond
 ! derivatives. 
 !
         if(llambda_effect) then
-          boundary_value(:,:)=f(l1,:,:,j)/x(l1)-Lambda_V0*f(l1,:,:,iuz)/x(l1)
+          boundary_value(:,:)=f(l1,:,:,j)/x(l1)-Lambda_V0*(f(l1,:,:,iuz)/x(l1)+Lambda_Omega)
         else
           boundary_value(:,:)=f(l1,:,:,j)/x(l1)
         endif
