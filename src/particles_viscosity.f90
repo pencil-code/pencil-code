@@ -28,13 +28,14 @@ module Particles_viscosity
 !
   integer, parameter :: nviscp_max = 4
   character (len=labellen), dimension(nviscp_max) :: iviscp=''
-  real :: nup=0.0
+  real :: nup=0.0, gravr_pad=0.0
   logical :: lviscp_simplified=.false.
   logical :: lviscp_rhop_nup_const=.false.
   logical :: lviscp_nup_const=.false.
+  logical :: lpad_gas=.false., lpad_keplerian=.false.
 !
   namelist /particles_visc_run_pars/ &
-      nup, iviscp
+      nup, iviscp, lpad_gas, lpad_keplerian, gravr_pad
 !
   contains
 !***********************************************************************
@@ -127,6 +128,7 @@ module Particles_viscosity
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (nx,3) :: del2uup
+      real, dimension (nx) :: rad
       real, save :: dx_2, dy_2, dz_2
       logical, save :: lfirstcall=.true.
 !
@@ -139,6 +141,28 @@ module Particles_viscosity
 !  Map the particle velocities as a vector field on the grid.
 !
       call map_vvp_grid(f,fp,ineargrid)
+!
+!  Fill empty grid cells with prescribed velocity field.
+!
+      if (lpad_gas) then
+        do n=n1,n2; do m=m1,m2
+          where (f(l1:l2,m,n,irhop)==0.0)
+            f(l1:l2,m,n,iupx)=f(l1:l2,m,n,iux)
+            f(l1:l2,m,n,iupy)=f(l1:l2,m,n,iuy)
+            f(l1:l2,m,n,iupz)=f(l1:l2,m,n,iuz)
+          endwhere
+        enddo; enddo
+      endif
+!
+      if (lpad_keplerian) then
+        do n=n1,n2; do m=m1,m2
+          rad=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+          where (f(l1:l2,m,n,irhop)==0.0)
+            f(l1:l2,m,n,iupx)=-sqrt(gravr_pad)*rad**(-1.5)*y(m)
+            f(l1:l2,m,n,iupy)=+sqrt(gravr_pad)*rad**(-1.5)*x(l1:l2)
+          endwhere
+        enddo; enddo
+      endif
 !
 !  Put boundary conditions on mapped velocity field.
 !
@@ -230,23 +254,22 @@ module Particles_viscosity
 !
           if (lviscp_simplified) then
             dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + nup*fviscp
+            if (lfirst.and.ldt) dt1_max=max(dt1_max,0.25*dxyz_2*nup)
           endif
 !
 !  Viscous force dvp/dt = (mu/rho)*del2(uup). Conserves momentum and is
-!  a reasonable description of viscosity since nup=cs*lambda yields
+!  a reasonable description of viscosity since nup=cp*lambda yields
 !  nup*np=constant.
 !
           if (lviscp_rhop_nup_const) then
             dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)+nup*fviscp/f(ix0,iy0,iz0,irhop)
+            if (lfirst.and.ldt) &
+                dt1_max=max(dt1_max,0.25*dxyz_2*nup/f(ix0,iy0,iz0,irhop))
           endif
 !
         enddo
 !
       endif
-!
-!  Calculate viscosity time-step.
-!
-      if (lfirst.and.ldt) dt1_max=max(dt1_max,0.25*dxyz_2*nup)
 !
     endsubroutine dvvp_dt_viscosity_pencil
 !***********************************************************************
