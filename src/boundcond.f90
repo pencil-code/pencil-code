@@ -13,7 +13,6 @@ module Boundcond
   use Cdata
   use Messages
   use Mpicomm
-  use Viscosity, Only:llambda_effect,Lambda_V0,Lambda_Omega
 
   implicit none
 
@@ -1631,11 +1630,11 @@ module Boundcond
 ! The coding assumes we are using 6-th order centered finite difference for our
 ! derivatives. 
 !
-        if(llambda_effect) then
-          boundary_value(:,:)=f(l1,:,:,j)/x(l1)-Lambda_V0*(f(l1,:,:,iuz)/x(l1)+Lambda_Omega)
-        else
-          boundary_value(:,:)=f(l1,:,:,j)/x(l1)
-        endif
+!        if(llambda_effect) then
+!          boundary_value(:,:)=f(l1,:,:,j)/x(l1)-Lambda_V0*(f(l1,:,:,iuz)/x(l1)+Lambda_Omega)
+!        else
+!          boundary_value(:,:)=f(l1,:,:,j)/x(l1)
+!        endif
         f(l1-1,:,:,j)= f(l1+1,:,:,j) -  60.*boundary_value(:,:)*dx/45.
         f(l1-2,:,:,j)= f(l1+2,:,:,j) -  60.*boundary_value(:,:)*dx/9.
         f(l1-3,:,:,j)= f(l1+3,:,:,j) -  60.*boundary_value(:,:)*dx
