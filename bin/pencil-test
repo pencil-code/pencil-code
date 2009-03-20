@@ -65,7 +65,7 @@ use Getopt::Long;
 use constant SUCCESS     => 1;  # for writing `return 
 
 my (%opts);			# Variables written by GetOptions
-my (%emails,%pos,%neg,%sendmailto); # Info on mailing if tests fail
+my (%emails, %pos, %neg, %sendmailto); # Info on mailing if tests fail
 
 ## Process command line
 eval {
@@ -180,11 +180,19 @@ sub run_tests_on {
     }
     my ($line,$timings,$result);
     while (defined($line=<POUT>)) {
+        # Extract timing lines
         if ($line =~ /^#TIMING\s+(.*)/) {
             print "<$line>\n" if ($debug);
             print TIMINGS "$1\n";
             next;
         }
+
+        # Extract maintainers line
+        if ($line =~ /Maintainers of failed tests:\s*(.*?)\s*$/) {
+            parse_maintainers($1);
+        }
+
+        # Print all other lines
 	print $line;
 	$result .= $line;
     }
@@ -213,6 +221,7 @@ sub build_remote_cmd {
                             };
     $remcmd .= "; env PENCIL_HOME=$pencil_home ./bin/auto-test";
     $remcmd .= " --time";
+    if ($emails)            { $remcmd .= " --list-maintainers"; }
     if ($with_xml)          { $remcmd .= " --xml" };
     if ($clean)             { $remcmd .= " --clean" };
     if ($reload)            { $remcmd .= " --reload" };
@@ -365,7 +374,7 @@ sub notify_on_error {
                 my $neg_matches = any_match($fail,$neg{$address});
                 if (($def_matches || $pos_matches) && ! $neg_matches) {
                     if ($debug) {
-                        print STDERR "...", substr($fail,-15,15),
+                        print STDERR "...", substr($fail,-35,35),
                           ": \$sendmailto{$address}++\n";
                     }
                     $sendmailto{$address}++;
@@ -423,6 +432,18 @@ sub parse_emails {
     }
 }
 # ---------------------------------------------------------------------- #
+sub parse_maintainers {
+# Parse the email list into hashes
+    my ($maintainers) = @_;
+
+    print STDERR "Maintainers of failed test: $maintainers\n" if ($debug);
+
+    foreach my $address (split(/\s*,\s*/, $maintainers)) {
+        $address = deobfuscate($address);
+	$emails{$address}++ if ($address =~ /\S/);
+    }
+}
+# ---------------------------------------------------------------------- #
 sub any_match {
 # Match a string against a list of patterns
     my $string = shift;
@@ -448,11 +469,13 @@ sub send_mail {
     my @text    = grep /./, @_;
 
     if (!$mailer) {
-      if (in_PATH("mailx")) {
-      $mailer = "mailx";
-      } else {
-      $mailer = "mail";
-      }
+        if (in_PATH("sendmail")) {
+            $mailer = "sendmail";
+        } elsif (in_PATH("mailx")) {
+            $mailer = "mailx";
+        } else {
+            $mailer = "mail";
+        }
     }
 
     my $errmsg;
@@ -462,34 +485,129 @@ sub send_mail {
     } else {                    # most likely: lockfile exists
         $errmsg = "There are errors";
     }
-    my @cmdline = ($mailer);
+
     my $subject = "$errmsg from pencil-code autotest on $host";
 
     # Add Reply-To: field if we have enough information
+    my $reply_to = undef;
     my $mail = my $email = $ENV{EMAIL};
     if (defined($email)) {
+        $email = deobfuscate($email);
         if ($email =~ /<([^>]*)>/) {
             $mail = $1;
         } else {
             $mail = $email;
         }
-        if ($mail =~ /[-.a-zA-Z_0-9]+@[-.a-zA-Z_0-9]+/) {
-            # Hack: append extra header field to subject line (because not
-            # all `mail' versions have a `-a' option)
-            $subject .= "\nReply-To: $email";
+        if ($mail =~ /[-.a-zA-Z_0-9]+\@[-.a-zA-Z_0-9]+/) {
+            $reply_to = $email;
         }
     }
 
-    push @cmdline, '-s', $subject;
+    my $sep = "\n" . "-" x 70 . "\n\n";
+    my $body = join($sep, @text);
 
+    send_mail_dispatch($mailer, $address, $subject, $reply_to, $body);
+}
+# --------------------------------------------------------------------- #
+sub send_mail_dispatch {
+# Send email with a mailer that understands mail/mailx conventions
+# (`mailx -s Subject reci@pi.ent')
+    my ($mailer, @rest) = @_;
+
+    my %dispatch_table = (
+                          'sendmail'      => \&send_mail_sendmail,
+                          'mailx'         => \&send_mail_mailx,
+                          'mail'          => \&send_mail_mailx,
+                          'debug'         => \&send_mail_debug,
+                          'debug-to-file' => \&send_mail_debug_files,
+                     );
+    my $mailer_name = $mailer;
+    $mailer_name =~ s{.*/}{};
+    my $method = $dispatch_table{$mailer_name};
+    if (defined($method)) {
+        &$method($mailer, @rest);
+    } else {
+        warn "ERROR: No such mailer: $mailer\n";
+    }
+}
+
+# --------------------------------------------------------------------- #
+sub send_mail_mailx {
+# Send email with a mailer that understands mail/mailx conventions
+# (`mailx -s Subject reci@pi.ent')
+    my ($mailer, $address, $subject, $reply_to, $body) = @_;
+
+    my @cmdline = ($mailer);
+    push @cmdline, '-s', $subject;
     push @cmdline, "$address";
 
     if ($debug) { print STDERR "\@cmdline = @cmdline\n" };
-    my $sep = "\n" . "-" x 70 . "\n\n";
-    open (MAIL, '|-', @cmdline);
-    print MAIL join($sep, @text);
-    print MAIL "\n";
-    close MAIL;
+    open (MAILER, '|-', @cmdline);
+    print MAILER $body;
+    print MAILER "\n";
+    close MAILER;
+}
+# --------------------------------------------------------------------- #
+sub send_mail_sendmail {
+# Send email with sendmail
+    my ($mailer, $address, $subject, $reply_to, $body) = @_;
+
+    my @cmdline = ($mailer, '-oi', '-t');
+
+    if ($debug) { print STDERR "\@cmdline = @cmdline\n" };
+    open (MAILER, '|-', @cmdline);
+    print MAILER "To: $address\n";
+    print MAILER "Subject: $subject\n";
+    print MAILER "Reply-to: $reply_to\n" if defined($reply_to);
+    print MAILER "\n\n";      # header--body separator
+    print MAILER "$body\n";
+    close MAILER;
+}
+# --------------------------------------------------------------------- #
+sub send_mail_debug {
+# Don't send email -- just tell us what would be sent, in a format
+# inspired by sendmail
+    my ($mailer, $address, $subject, $reply_to, $body) = @_;
+
+    print STDERR "email: To: $address\n";
+    print STDERR "email: Subject: $subject\n";
+    if (defined($reply_to)) {
+        print STDERR "email: Reply-to: $reply_to\n";
+    } else {
+        print STDERR "email: <No Reply-to: field>\n";
+    }
+    print STDERR "email: \n";
+    print STDERR "email: \n";
+    print STDERR "email: $body\n";
+}
+# --------------------------------------------------------------------- #
+sub send_mail_debug_files {
+# Don't send email -- just tell us what would be sent, in a format
+# inspired by sendmail
+    my ($mailer, $address, $subject, $reply_to, $body) = @_;
+
+    my $file = "debug_$address";
+    open(my $fh, "> $file") or die "Cannot open file $file: $!\n";
+    print $fh "email: To: $address\n";
+    print $fh "email: Subject: $subject\n";
+    if (defined($reply_to)) {
+        print $fh "email: Reply-to: $reply_to\n";
+    } else {
+        print $fh "email: <No Reply-to: field>\n";
+    }
+    print $fh "email: \n";
+    print $fh "email: \n";
+    print $fh "email: $body\n";
+}
+# ---------------------------------------------------------------------- #
+sub deobfuscate {
+# Return obfuscated email to mailer-compliant form
+    my ($address) = @_;
+
+    $address =~ s{/|\[at\]|@}{@};
+    $address =~ s{:|\[dot\]|\.}{.}g;
+
+    return $address;
 }
 # --------------------------------------------------------------------- #
 sub in_PATH {
