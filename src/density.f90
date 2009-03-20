@@ -1332,7 +1332,9 @@ module Density
       integer :: i, mm, nn
 !
       intent(inout) :: f,p
+!
 ! lnrho
+!
       if (lpencil(i_lnrho)) then
         if (ldensity_nolog) then
           p%lnrho=log(f(l1:l2,m,n,ilnrho))
@@ -1340,7 +1342,9 @@ module Density
           p%lnrho=f(l1:l2,m,n,ilnrho)
         endif
       endif
+!
 ! rho1 and rho
+!
       if (ldensity_nolog) then
         if (lpencil(i_rho)) p%rho=f(l1:l2,m,n,ilnrho)
         if (lpencil(i_rho1)) p%rho1=1.0/p%rho
@@ -1348,7 +1352,9 @@ module Density
         if (lpencil(i_rho1)) p%rho1=exp(-f(l1:l2,m,n,ilnrho))
         if (lpencil(i_rho)) p%rho=1.0/p%rho1
       endif
+!
 ! glnrho and grho
+!
       if (lpencil(i_glnrho).or.lpencil(i_grho)) then
         if (ldensity_nolog) then
           call grad(f,ilnrho,p%grho)
@@ -1370,7 +1376,9 @@ module Density
           endif
         endif
       endif
+!
 ! uglnrho
+!
       if (lpencil(i_uglnrho)) then
         if (ldensity_nolog) then
           call dot(p%uu,p%glnrho,p%uglnrho)
@@ -1380,7 +1388,9 @@ module Density
           call u_dot_grad(f,ilnrho,p%glnrho,p%uu,p%uglnrho,UPWIND=lupw_lnrho)
         endif
       endif
+!
 ! ugrho
+!
       if (lpencil(i_ugrho)) then
         if (ldensity_nolog) then
           if (lupw_lnrho) call stop_it("calc_pencils_density: you switched "//&
@@ -1390,9 +1400,13 @@ module Density
           call dot(p%uu,p%grho,p%ugrho)
         endif
       endif
+!
 ! glnrho2
+!
       if (lpencil(i_glnrho2)) call dot2(p%glnrho,p%glnrho2)
+!
 ! del2lnrho
+!
       if (lpencil(i_del2lnrho)) then
         if (ldensity_nolog) then
           if (headtt) then
@@ -1403,7 +1417,9 @@ module Density
           call del2(f,ilnrho,p%del2lnrho)
         endif
       endif
+!
 ! del2rho
+!
       if (lpencil(i_del2rho)) then
         if (ldensity_nolog) then
           call del2(f,ilnrho,p%del2rho)
@@ -1417,7 +1433,9 @@ module Density
           endif
         endif
       endif
+!
 ! del6rho
+!
       if (lpencil(i_del6rho)) then
         if (ldensity_nolog) then
           call del6(f,ilnrho,p%del6rho)
@@ -1431,7 +1449,9 @@ module Density
           endif
         endif
       endif
+!
 ! del6lnrho
+!
       if (lpencil(i_del6lnrho)) then
         if (ldensity_nolog) then
           if (headtt) then
@@ -1442,7 +1462,9 @@ module Density
           call del6(f,ilnrho,p%del6lnrho)
         endif
       endif
+!
 ! hlnrho
+!
       if (lpencil(i_hlnrho)) then
         if (ldensity_nolog) then
           if (headtt) then
@@ -1453,9 +1475,13 @@ module Density
           call g2ij(f,ilnrho,p%hlnrho)
         endif
       endif
+!
 ! sglnrho
+!
       if (lpencil(i_sglnrho)) call multmv(p%sij,p%glnrho,p%sglnrho)
+!
 ! uij5glnrho
+!
       if (lpencil(i_uij5glnrho)) call multmv(p%uij5,p%glnrho,p%uij5glnrho)
 !
     endsubroutine calc_pencils_density

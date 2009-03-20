@@ -2296,7 +2296,15 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
         thdiff=chi*(p%del2lnTT+g2)/p%cp1
         if (chi_t/=0.) then
           call dot(p%glnrho+p%glnTT,p%gss,g2)
-          thdiff=thdiff+chi_t*(p%del2ss+g2)
+!
+!  Provisional expression for magnetic chi_t quenching;
+!  (Derivatives of B are still missing.
+!
+          if (chiB==0.) then
+            thdiff=thdiff+chi_t*(p%del2ss+g2)
+          else
+            thdiff=thdiff+chi_t*(p%del2ss+g2)/(1.+chiB*p%b2)
+          endif
         endif
       endif
 !
@@ -2773,6 +2781,7 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
 !
 !  "turbulent" entropy diffusion
 !  should only be present if g.gradss > 0 (unstable stratification)
+!  But this is not curently being checked.
 !
       if (chi_t/=0.) then
         if (headtt) then

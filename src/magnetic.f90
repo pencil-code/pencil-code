@@ -3709,7 +3709,7 @@ module Magnetic
         embmz=0.
       else
         embmz=sum(fnamez(:,:,idiag_bxmz)*fnamez(:,:,idiag_Exmz) &
-                +fnamez(:,:,idiag_bymz)*fnamez(:,:,idiag_Eymz))/(nz*nprocz)
+                 +fnamez(:,:,idiag_bymz)*fnamez(:,:,idiag_Eymz))/(nz*nprocz)
       endif
 !
 !  save the name in the idiag_embmz slot
