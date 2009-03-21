@@ -314,6 +314,7 @@ module Viscosity
 !  version of hyperviscosity.
 !
       call put_shared_variable('lvisc_hyper3_nu_const_strict',lvisc_hyper3_nu_const_strict,ierr)
+      call put_shared_variable('llambda_effect',llambda_effect,ierr)
 !
       call keep_compiler_quiet(lstarting)
 !

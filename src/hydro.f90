@@ -380,7 +380,7 @@ module Hydro
 !  6-nov-01/wolf: coded
 !
       use FArrayManager
-      use SharedVariables,only:put_shared_variable
+      use SharedVariables, only: put_shared_variable
       use Sub
 !
       integer :: ierr
@@ -430,7 +430,7 @@ module Hydro
         leos,iux,iuy,iuz,iuut,iuxt,iuyt,iuzt,ioot,ioxt,ioyt,iozt,lroot,&
         datadir,lfargo_advection
       use FArrayManager
-      use SharedVariables,only:put_shared_variable
+      use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(mz) :: c,s

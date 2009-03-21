@@ -1544,7 +1544,6 @@ module Boundcond
       character (len=3), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
-  
 
       select case(topbot)
 
@@ -1580,7 +1579,6 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
 
-
       select case(topbot)
 
       case('bot')               ! bottom boundary
@@ -1613,13 +1611,19 @@ module Boundcond
 ! that the breaking of rotational symmetry is only due to gravity, the only 
 ! new term is appears in the r-phi component. This implies that this term
 ! affects only the boundary condition of u_{\phi} for the radial boundary. 
-
+!
 !  25-Aug-2007/dhruba: coded
+!  21-Mar-2009/axel: get llambda_effect using get_shared_variable
+!
+      use SharedVariables, only : get_shared_variable
 !
       character (len=3), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension (my,mz) :: boundary_value
+      real, pointer :: Lambda_V0
+      logical, pointer :: llambda_effect
       integer, intent (in) :: j
+      integer :: ierr
 
       select case(topbot)
 !
@@ -1642,11 +1646,15 @@ module Boundcond
 ! top boundary
 !
       case('top')
-!       if(llambda_effect) then
-!         boundary_value(:,:)=f(l2,:,:,j)/x(l2)-Lambda_V0*f(l2,:,:,iuz)/x(l2)
-!       else
+        call get_shared_variable('Lambda_V0',Lambda_V0,ierr)
+        call get_shared_variable('llambda_effect',llambda_effect,ierr)
+        if (ierr/=0) call stop_it("bc_set_sfree_x: "//&
+             "there was a problem when getting llambda_effect")      
+        if(llambda_effect) then
+          boundary_value(:,:)=f(l2,:,:,j)/x(l2)-Lambda_V0*f(l2,:,:,iuz)/x(l2)
+        else
           boundary_value(:,:)=f(l2,:,:,j)/x(l2)  
-!       endif
+        endif
         f(l2+1,:,:,j)= f(l2-1,:,:,j) +  60.*boundary_value(:,:)*dx/45.
         f(l2+2,:,:,j)= f(l2-2,:,:,j) +  60.*boundary_value(:,:)*dx/9.
         f(l2+3,:,:,j)= f(l2-3,:,:,j) +  60.*boundary_value(:,:)*dx

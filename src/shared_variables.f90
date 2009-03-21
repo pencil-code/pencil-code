@@ -7,6 +7,9 @@
 !  This uses a linked list of pointers and is neither efficient
 !  nor easy to use.  THIS IS ON PURPOSE (a deterrent)!
 !
+!  The main point of using shared variables is that it avoids
+!  unnecesary dependencies between modules!
+!
 !  Shared variable should always be avoided for portability
 !  and generality reasons.  This module allows for the possibility
 !  when needs must but trys to protect agains screw ups that
@@ -22,6 +25,8 @@
 !  Currently only scalar and 1D reals and integers may be used
 !  2D could perhaps be added but 3D almost certainly should not
 !  be shared this way.
+!
+!  19-jul-06/tony: coded
 !
 module SharedVariables
 !
