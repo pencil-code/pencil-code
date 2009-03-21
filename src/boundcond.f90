@@ -1642,11 +1642,11 @@ module Boundcond
 ! top boundary
 !
       case('top')
-        if(llambda_effect) then
-          boundary_value(:,:)=f(l2,:,:,j)/x(l2)-Lambda_V0*f(l2,:,:,iuz)/x(l2)
-        else
+!       if(llambda_effect) then
+!         boundary_value(:,:)=f(l2,:,:,j)/x(l2)-Lambda_V0*f(l2,:,:,iuz)/x(l2)
+!       else
           boundary_value(:,:)=f(l2,:,:,j)/x(l2)  
-        endif
+!       endif
         f(l2+1,:,:,j)= f(l2-1,:,:,j) +  60.*boundary_value(:,:)*dx/45.
         f(l2+2,:,:,j)= f(l2-2,:,:,j) +  60.*boundary_value(:,:)*dx/9.
         f(l2+3,:,:,j)= f(l2-3,:,:,j) +  60.*boundary_value(:,:)*dx
