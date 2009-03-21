@@ -2538,9 +2538,10 @@ module Magnetic
 !
 !  idiag_bxmxy and idiag_bymxy also need to be calculated when
 !  ldiagnos and idiag_bmx and/or idiag_bmy, so
-! We may need to calculate bxmxy without calculating bmx. The following 
-! if condition was messing up calculation of bmxy_rms
-!        if (ldiagnos .and. (idiag_bmx/=0 .or. idiag_bmy/=0)) then
+!
+!  We may need to calculate bxmxy without calculating bmx. The following 
+!  if condition was messing up calculation of bmxy_rms
+!
         if (ldiagnos) then
           if (idiag_bxmxy/=0) call zsum_mn_name_xy(p%bb(:,1),idiag_bxmxy)
           if (idiag_bymxy/=0) call zsum_mn_name_xy(p%bb(:,2),idiag_bymxy)

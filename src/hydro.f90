@@ -209,13 +209,13 @@ module Hydro
   integer :: idiag_oxmz=0       ! DIAG_DOC: $\left< \omega_x \right>_{xy}$
   integer :: idiag_oymz=0       ! DIAG_DOC: $\left< \omega_y \right>_{xy}$
   integer :: idiag_ozmz=0       ! DIAG_DOC: $\left< \omega_z \right>_{xy}$
-  integer :: idiag_umx=0        ! DIAG_DOC: 
-  integer :: idiag_umy=0        ! DIAG_DOC: 
-  integer :: idiag_uxmy=0       ! DIAG_DOC: 
-  integer :: idiag_uymy=0       ! DIAG_DOC: 
-  integer :: idiag_uzmy=0       ! DIAG_DOC: 
-  integer :: idiag_u2mz=0       ! DIAG_DOC: 
-  integer :: idiag_umz=0        ! DIAG_DOC: 
+  integer :: idiag_umx=0        ! DIAG_DOC: $\left< u_x \right>$
+  integer :: idiag_umy=0        ! DIAG_DOC: $\left< u_y \right>$
+  integer :: idiag_umz=0        ! DIAG_DOC: $\left< u_z \right>$
+  integer :: idiag_uxmy=0       ! DIAG_DOC: $\left< u_x \right>_{y}$
+  integer :: idiag_uymy=0       ! DIAG_DOC: $\left< u_y \right>_{y}$
+  integer :: idiag_uzmy=0       ! DIAG_DOC: $\left< u_z \right>_{y}$
+  integer :: idiag_u2mz=0       ! DIAG_DOC: $\left< \uv^2 \right>_{y}$
   integer :: idiag_omumz=0      ! DIAG_DOC: $\left<\left<\Wv\right>_{xy}
                                 ! DIAG_DOC:   \cdot\left<\Uv\right>_{xy}
                                 ! DIAG_DOC:   \right>$ \quad($xy$-averaged
@@ -1859,6 +1859,19 @@ module Hydro
             call zsum_mn_name_xy(p%rho*p%uu(:,1)*p%uu(:,3),idiag_ruxuzmxy)
         if (idiag_ruyuzmxy/=0) &
             call zsum_mn_name_xy(p%rho*p%uu(:,2)*p%uu(:,3),idiag_ruyuzmxy)
+      else
+!
+!  idiag_uxmxy and idiag_uymxy also need to be calculated when
+!  ldiagnos and idiag_umx and/or idiag_umy, so
+!
+!  We may need to calculate uxmxy without calculating umx. The following 
+!  if condition was messing up calculation of umxy_rms
+!
+        if (ldiagnos) then
+          if (idiag_uxmxy/=0) call zsum_mn_name_xy(p%uu(:,1),idiag_uxmxy)
+          if (idiag_uymxy/=0) call zsum_mn_name_xy(p%uu(:,2),idiag_uymxy)
+          if (idiag_uzmxy/=0) call zsum_mn_name_xy(p%uu(:,3),idiag_uzmxy)
+        endif
       endif
 !
     endsubroutine duu_dt
@@ -3484,7 +3497,6 @@ module Hydro
 !  For vector output (of oo vectors) we need orms
 !  on all processors. It suffices to have this for times when lout=.true.,
 !  but we need to broadcast the result to all procs.
-!
 !
 !  calculate orms (this requires that orms is set in print.in)
 !  broadcast result to other processors
