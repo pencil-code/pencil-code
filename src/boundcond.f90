@@ -1633,7 +1633,6 @@ module Boundcond
       call get_shared_variable('Lambda_Omega',Lambda_Omega,ierr)
       if (ierr/=0) call stop_it("bc_set_sfree_x: "//&
           "there was a problem when getting Lambda_V0 or Lambda_Omega")      
-        write(*,*)'Lambda_V0,Lambda_Omega',Lambda_V0,Lambda_Omega
       else
       endif
       select case(topbot)

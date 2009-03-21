@@ -314,12 +314,9 @@ module Viscosity
 !  version of hyperviscosity.
 !
       call put_shared_variable('lvisc_hyper3_nu_const_strict',lvisc_hyper3_nu_const_strict,ierr)
-      if(llambda_effect) then
         call put_shared_variable('llambda_effect',llambda_effect,ierr)
         call put_shared_variable('Lambda_V0',Lambda_V0,ierr)
         call put_shared_variable('Lambda_Omega',Lambda_Omega,ierr)
-      else
-      endif
 !
       call keep_compiler_quiet(lstarting)
 !
