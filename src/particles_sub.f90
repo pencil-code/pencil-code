@@ -1065,6 +1065,7 @@ module Particles_sub
 !  30-dec-04/anders: coded
 !
       use Cdata
+      Use Solid_Cells
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1164,6 +1165,13 @@ module Particles_sub
           xp0*yp0*dxdy1*(g1-g2-g3+g4) + xp0*zp0*dxdz1*(g1-g2-g5+g6) + &
           yp0*zp0*dydz1*(g1-g3-g5+g7) + &
           xp0*yp0*zp0*dxdydz1*(-g1+g2+g3-g4+g5-g6-g7+g8)
+!
+!  If we have solid geometry we might want some special treatment very close
+!  to the surface of the solid geometry
+!
+      if (lsolid_cells) then
+        call close_interpolation(f,ix0,iy0,iz0,ivar1,ivar2,xxp,gp)
+      endif
 !
 !  Do a reality check on the interpolation scheme.
 !

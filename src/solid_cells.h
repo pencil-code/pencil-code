@@ -11,3 +11,4 @@ public ::  read_solid_cells_run_pars
 public ::  write_solid_cells_init_pars
 public ::  write_solid_cells_run_pars
 public ::  in_solid_cell
+public ::  close_interpolation

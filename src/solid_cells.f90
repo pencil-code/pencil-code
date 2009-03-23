@@ -801,4 +801,237 @@ f(:,m2-5:m2,:,iux)=0
 !
     end function ba_defined
 !***********************************************************************  
+    subroutine close_interpolation(f,ix0,iy0,iz0,ivar1,ivar2,xxp,gp)
+!
+!  20-mar-2009/nils: coded
+!
+! This routine check if any of the corners in the interpolation cell
+! are inside a solid geometry. If they are some special treatment is
+! required.
+! 
+! WARNING: This routine only works for cylinders with an infinitely long
+! WARNING: central axis in the z-direction!
+!
+! The particle is located at point p at the coordinates [xp,yp].
+! A normal to the cylinder surface from point s with coordinates [xs,ys] 
+! pass thourgh p.
+!
+! If a one of the corner points of the grid cell is within a solid geometry
+! the normal passing through both s and p are continued outward until a
+! grid line is reached. If this line has constant, say y, then the variables
+! constdir and vardir are given the values 2 and 1, respectively.  
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      integer, intent(in) :: ix0,iy0,iz0,ivar1,ivar2
+      real, dimension (ivar2-ivar1+1), intent(inout) :: gp
+      real :: x0,y0,z0,rs,verylarge=1e9,varval,rint1,rint2,fint,rps,rintp
+      integer :: index,ix1,iy1,iz1,min
+      real, dimension(3), intent(in) :: xxp
+      real, dimension(2,2) :: rij
+      real, dimension(3,2) :: bordervalue
+      integer, dimension(3,2) :: borderindex
+      integer, dimension(4) :: constdir_arr, vardir_arr, topbot_arr
+      real, dimension(2) :: xyint, p_cylinder
+      real :: xtemp,r,xp,yp,R1,Rsmall,xs,ys,rp,dist,yp_cylinder,xp_cylinder
+      integer :: constdir,vardir,topbot_tmp,dirconst,dirvar,icyl,counter,topbot
+      real :: x1,x2,f1,f2,rij_min,rij_max,inputvalue
+!
+! Define some help variables
+!
+      ix1=ix0+1
+      iy1=iy0+1
+      iz1=iz0+1
+      bordervalue(1,1)=x(ix0)
+      bordervalue(2,1)=y(iy0)
+      bordervalue(1,2)=x(ix1)
+      bordervalue(2,2)=y(iy1)
+      borderindex(1,1)=ix0
+      borderindex(2,1)=iy0
+      borderindex(1,2)=ix1
+      borderindex(2,2)=iy1
+      constdir_arr=(/2,2,1,1/)
+      vardir_arr=(/1,1,2,2/)
+      topbot_arr=(/2,1,2,1/)
+!
+! Loop over all cylinders to check for particles in partially solid cells
+!
+      do icyl=1,ncylinders
+        x0=cylinder(icyl,ixpos)
+        y0=cylinder(icyl,iypos)
+        z0=cylinder(icyl,izpos)
+        rs=cylinder(icyl,iradius)
+        xp=xxp(1)
+        yp=xxp(2)
+!
+! Check if the four neighboring points are outside the cylinder or not
+!
+        rij(1,1)=sqrt((x(ix0)-x0)**2+(y(iy0)-y0)**2)
+        rij(1,2)=sqrt((x(ix0)-x0)**2+(y(iy1)-y0)**2)
+        rij(2,1)=sqrt((x(ix1)-x0)**2+(y(iy0)-y0)**2)
+        rij(2,2)=sqrt((x(ix1)-x0)**2+(y(iy1)-y0)**2)            
+        if (minval(rij) < rs) then
+          R1=verylarge
+          Rsmall=verylarge/2.0
+!
+! Determine the point s on the cylinder surface where the normal to the
+! cylinder surface pass through the point p. 
+!
+          xs=rs/rp*xp
+          ys=rs/rp*yp
+!
+! Find distance from point p to point s
+!
+          dist=(xp-xs)**2+(yp-ys)**2
+!
+! Find the x and y coordinates of p in a coordiante system with origin
+! in the center of the cylinder
+!
+          yp_cylinder=yp-y0
+          xp_cylinder=xp-x0
+          p_cylinder(1)=xp_cylinder
+          p_cylinder(2)=yp_cylinder
+          rp=sqrt(xp_cylinder**2+yp_cylinder**2)
+!
+! Find which grid line is the closest one in the direction
+! away from the cylinder surface
+!
+! Check the distance etc. to all the four (in 2D) possible 
+! grid lines. Pick the grid line which the normal to the
+! cylinder surface (which also pass through the point [xp,yp])
+! cross first. This grid line should however
+! be OUTSIDE the point [xp,yp] compared to the cylinder surface.
+!
+          do counter=1,4
+            constdir=constdir_arr(counter)
+            vardir=vardir_arr(counter)
+            topbot_tmp=topbot_arr(counter)
+!
+! Find the position, xtemp, in the variable direction
+! where the normal cross the grid line
+!
+            xtemp=(p_cylinder(vardir)/(p_cylinder(constdir)+tini))*(bordervalue(constdir,topbot_tmp)-cylinder(icyl,constdir+1))
+!
+! Find the distance, r, from the center of the cylinder
+! to the point where the normal cross the grid line
+!
+            if (abs(xtemp) > verylarge) then
+              r=verylarge*2
+            else
+              r=sqrt(xtemp**2+(bordervalue(constdir,topbot_tmp)-cylinder(icyl,constdir+1))**2)
+            endif
+  !
+  ! Check if the point xtemp is outside the cylinder,
+  ! outside the point [xp,yp] and that it cross the grid
+  ! line within this grid cell
+  !
+            if ((r > rs) .and. (r > rp) &
+                .and.(xtemp+cylinder(icyl,vardir+1) > bordervalue(vardir,1))&
+                .and.(xtemp+cylinder(icyl,vardir+1) < bordervalue(vardir,2)))then
+              R1=r
+            else
+              R1=verylarge
+            endif
+  !
+  ! If we have a new all time low (in radius) go on....
+  !
+            if (R1 < Rsmall) then
+              Rsmall=R1                
+              xyint(vardir)=xtemp+cylinder(icyl,vardir+1)
+              xyint(constdir)=bordervalue(constdir,topbot_tmp)
+              dirconst=constdir
+              dirvar=vardir
+              topbot=topbot_tmp
+              if (constdir == 2) then
+                rij_min=rij(1,topbot_tmp)
+                rij_max=rij(2,topbot_tmp)
+              else
+                rij_min=rij(topbot_tmp,1)
+                rij_max=rij(topbot_tmp,2)
+              endif
+              inputvalue=bordervalue(constdir,topbot_tmp)-cylinder(icyl,constdir+1)
+            endif
+          end do
+!
+! Loop over all indeces
+!
+          do index=ivar1,ivar2
+!
+! Check if the endpoints in the variable direction are
+! outside the cylinder. If they are not define the endpoints
+! as where the grid line cross the cylinder surface.
+! Find the variable value at the endpoints.
+!
+            min=1
+            if (dirconst == 2) then
+              varval=f(borderindex(dirvar,1),borderindex(dirconst,topbot),iz0,index)
+            else
+              varval=f(borderindex(dirconst,topbot),borderindex(dirvar,1),iz0,index)
+            endif
+
+            call find_point(rij_min,rs,varval,inputvalue,x1,bordervalue(dirvar,1),bordervalue(dirvar,2),min,f1,cylinder(icyl,dirvar+1))
+            min=0
+            if (dirconst == 2) then
+              varval=f(borderindex(dirvar,2),borderindex(dirconst,topbot),iz0,index)
+            else
+              varval=f(borderindex(dirconst,topbot),borderindex(dirvar,2),iz0,index)
+            endif
+            call find_point(rij_max,rs,varval,inputvalue,x2,bordervalue(dirvar,1),bordervalue(dirvar,2),min,f2,cylinder(icyl,dirvar+1))
+!
+! Find the interpolation values between the two endpoints of
+! the line and the normal from the cylinder.
+!
+            rint1=xyint(dirvar)-x1
+            rint2=x2-xyint(dirvar)
+!
+! Find the interpolated value on the line
+!
+            fint=(rint1*f2+rint2*f1)/(x2-x1)
+!
+! Find the weigthing factors for the point on the line
+! and the point on the cylinder surface.
+!
+            rps=rp-rs
+            rintp=Rsmall-rp
+!
+! Perform the final interpolation
+!
+            gp(index)=(rps*fint+rintp*0)/(Rsmall-rs)
+          enddo
+        endif
+      enddo
+      !
+    end subroutine close_interpolation
+!***********************************************************************  
+    subroutine find_point(rij,rs,f,yin,xout,xmin,xmax,min,fout,x0)
+!
+! 20-mar-2009/nils: coded
+!
+! Check if a grid line has any of it ends inside a solid cell - if so
+! find the point where the grid line enters the solid cell.
+!
+      integer, intent(in) :: min
+      real, intent(in) :: xmin,xmax,rij,rs,f,yin,x0
+      real, intent(out) :: fout,xout
+      real :: xvar,xout0
+!
+      if (min == 1) then
+        xvar=xmin
+      else
+        xvar=xmax
+      endif
+!
+      if (rij > rs) then
+        xout=xvar
+        fout=f
+      else
+        xout0=sqrt(rs**2-yin**2)
+        xout=xout0+x0
+        if ((xout > xmax) .or. (xout < xmin)) then
+          xout=x0-xout0
+        endif
+        fout=0
+      endif
+!
+    end subroutine find_point
+!***********************************************************************  
   endmodule Solid_Cells
