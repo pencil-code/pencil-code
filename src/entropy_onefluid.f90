@@ -543,6 +543,8 @@ module Entropy
           enddo
 !
 !  Add pressure force from global density gradient.
+!  WARNING (AJ): This may be implemented inconsistently, since we have
+!  here linearised rho and P independently.
 !
           if (maxval(abs(beta_glnrho_global))/=0.0) then
             if (headtt) print*, 'dss_dt: adding global pressure gradient force'
