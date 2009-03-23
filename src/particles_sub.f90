@@ -2214,7 +2214,7 @@ module Particles_sub
 !
     endsubroutine particle_pencil_index
 !***********************************************************************
-    subroutine shepherd_neighbour(f,fp,ineargrid,kshepherd,kneighbour)
+    subroutine shepherd_neighbour(fp,ineargrid,kshepherd,kneighbour)
 !
 !  Create a shepherd/neighbour list of particles in the pencil.
 !
@@ -2222,7 +2222,6 @@ module Particles_sub
 !
       use Cdata, only: nghost
 !
-      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
       integer, dimension (nx) :: kshepherd

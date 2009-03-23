@@ -80,6 +80,7 @@ module Particles_number
       logical :: lstarting
 !
       allocate(kneighbour(mpar_loc))
+      lshepherd_neighbour=.true.
 !
       if (mp_tilde /= 0) then
         np_tilde0 = rhop_tilde/mp_tilde

@@ -8,6 +8,7 @@ module Particles_main
   use Messages
   use Particles
   use Particles_cdata
+  use Particles_collisions
   use Particles_nbody
   use Particles_number
   use Particles_radius
@@ -85,14 +86,15 @@ module Particles_main
         call fatal_error('particles_initialize_modules','')
       endif
 !
-      call initialize_particles          (lstarting)
-      call initialize_particles_radius   (lstarting)
-      call initialize_particles_spin     (lstarting)
-      call initialize_particles_number   (lstarting)
-      call initialize_particles_selfgrav (lstarting)
-      call initialize_particles_nbody    (lstarting)
-      call initialize_particles_viscosity(lstarting)
-      call initialize_particles_stalker  (lstarting)
+      call initialize_particles           (lstarting)
+      call initialize_particles_radius    (lstarting)
+      call initialize_particles_spin      (lstarting)
+      call initialize_particles_number    (lstarting)
+      call initialize_particles_selfgrav  (lstarting)
+      call initialize_particles_nbody     (lstarting)
+      call initialize_particles_viscosity (lstarting)
+      call initialize_particles_collisions(lstarting)
+      call initialize_particles_stalker   (lstarting)
 !
 !  Make sure all requested interpolation variables are available.
 !
@@ -207,6 +209,9 @@ module Particles_main
 !  07-jan-05/anders: coded
 !
       fp(1:npar_loc,:) = fp(1:npar_loc,:) + dt_beta_ts(itsub)*dfp(1:npar_loc,:)
+!
+      if (lparticles_collisions .and. itsub==itorder) &
+          call calc_particles_collisions(fp,ineargrid)
 !
     endsubroutine particles_timestep_second
 !***********************************************************************
@@ -379,8 +384,8 @@ module Particles_main
 !
 !  Create shepherd/neighbour list of required.
 !
-      if (allocated(kneighbour)) &
-          call shepherd_neighbour(f,fp,ineargrid,kshepherd,kneighbour)
+      if (lshepherd_neighbour) &
+          call shepherd_neighbour(fp,ineargrid,kshepherd,kneighbour)
 !
 !  Interpolate required quantities using the predefined policies. Variables
 !  are found in interp.
@@ -531,7 +536,7 @@ module Particles_main
       if (lparticles_stalker) then
         call read_pstalker_init_pars(unit,iostat)
         if (present(iostat).and.(iostat/=0)) &
-             call samplepar_startpars('particles_pstalker_init_pars',iostat)
+             call samplepar_startpars('particles_stalker_init_pars',iostat)
       endif
 !
     endsubroutine read_particles_init_pars_wrap
@@ -565,7 +570,7 @@ module Particles_main
         if (lparticles_viscosity) &
             print*,'&particles_visc_init_pars    /'
         if (lparticles_stalker) &
-            print*,'&particles_pstalker_init_pars/'
+            print*,'&particles_stalker_init_pars/'
         print*,'------END sample particles namelist -------'
         print*
         if (present(label)) &
@@ -638,10 +643,16 @@ module Particles_main
              call samplepar_runpars('particles_visc_run_pars',iostat)
       endif
 !
+      if (lparticles_collisions) then
+        call read_particles_coll_run_pars(unit,iostat)
+        if (iostat/=0) &
+             call samplepar_runpars('particles_coll_run_pars',iostat)
+      endif
+!
       if (lparticles_stalker) then
         call read_pstalker_run_pars(unit,iostat)
         if (iostat/=0) &
-             call samplepar_runpars('particles_pstalker_run_pars',iostat)
+             call samplepar_runpars('particles_stalker_run_pars',iostat)
       endif
 !
     endsubroutine read_particles_run_pars_wrap
@@ -663,7 +674,8 @@ module Particles_main
         if (lparticles_selfgravity) print*,'&particles_selfgrav_run_pars/'
         if (lparticles_nbody)       print*,'&particles_nbody_run_pars   /'
         if (lparticles_viscosity)   print*,'&particles_visc_run_pars    /'
-        if (lparticles_stalker)     print*,'&particles_pstalker_run_pars/'
+        if (lparticles_collisions)  print*,'&particles_coll_run_pars    /'
+        if (lparticles_stalker)     print*,'&particles_stalker_run_pars/'
         print*,'------END sample particle namelist -------'
         print*
         if (present(label)) &
@@ -688,6 +700,7 @@ module Particles_main
       if (lparticles_selfgravity) call write_particles_selfg_run_pars(unit)
       if (lparticles_nbody)       call write_particles_nbody_run_pars(unit)
       if (lparticles_viscosity)   call write_particles_visc_run_pars(unit)
+      if (lparticles_collisions)  call write_particles_coll_run_pars(unit)
       if (lparticles_stalker)     call write_pstalker_run_pars(unit)
 !
     endsubroutine write_particles_run_pars_wrap

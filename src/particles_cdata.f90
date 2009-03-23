@@ -35,15 +35,18 @@ module Particles_cdata
   character (len=2*bclen+1) :: bcpx='p',bcpy='p',bcpz='p'
   character (len=2*bclen+1) :: bcspx='p',bcspy='p',bcspz='p'
 
+  logical :: lshepherd_neighbour=.false.
   integer, dimension (nx) :: kshepherd
   integer, allocatable, dimension (:) :: kneighbour
 
   type quant_interp_penc
 !
 !  Interpolation toggles:
+!
     logical :: luu,loo,lTT,lrho
 !
 !  Interpolation policies:
+!
     integer :: pol_uu, pol_oo, pol_TT, pol_rho
   end type quant_interp_penc
   
@@ -51,6 +54,7 @@ module Particles_cdata
 !
 !  Interpolated quantities: moved outside type to conform to
 !  the f90 standard.
+!
     real, dimension(:,:), allocatable :: interp_uu, interp_oo
     real, dimension(:), allocatable :: interp_TT, interp_rho
 
