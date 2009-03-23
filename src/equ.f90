@@ -606,7 +606,7 @@ module Equ
 !
 !  Calculate quantities for a chemical mixture
 !
-    if (lchemistry .and. ldensity) call calc_for_chem_mixture(f)
+      if (lchemistry .and. ldensity) call calc_for_chem_mixture(f)
 !
 !  Prepare x-ghost zones; required before f-array communication
 !  AND shock calculation
