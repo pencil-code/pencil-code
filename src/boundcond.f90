@@ -1644,8 +1644,11 @@ module Boundcond
 ! The coding assumes we are using 6-th order centered finite difference for our
 ! derivatives. 
 !
-        if(llambda_effect) then
-          boundary_value(:,:)=f(l1,:,:,j)/x(l1)-Lambda_V0*(f(l1,:,:,iuz)/x(l1))
+        if((llambda_effect).and.(j.eq.iuz)) then
+          do iy=1,my
+             boundary_value(iy,:)=f(l1,iy,:,j)/x(l1)-Lambda_V0*(f(l1,iy,:,iuz)/x(l1)+&
+                Lambda_Omega*sin(y(iy)))
+          enddo
         else
           boundary_value(:,:)=f(l1,:,:,j)/x(l1)
         endif
@@ -1656,8 +1659,11 @@ module Boundcond
 ! top boundary
 !
       case('top')
-        if(llambda_effect) then
-          boundary_value(:,:)=f(l2,:,:,j)/x(l2)-Lambda_V0*f(l2,:,:,iuz)/x(l2)
+        if((llambda_effect).and.(j.eq.iuz)) then
+          do iy=1,my
+             boundary_value(iy,:)=f(l2,iy,:,j)/x(l2)-Lambda_V0*(f(l2,iy,:,iuz)/x(l2)+&
+                Lambda_Omega*sin(y(iy)))
+          enddo
         else
           boundary_value(:,:)=f(l2,:,:,j)/x(l2)  
         endif
