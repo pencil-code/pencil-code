@@ -92,12 +92,14 @@ module Sub
   interface keep_compiler_quiet ! Overload `keep_compiler_quiet' function
     module procedure keep_compiler_quiet_r
     module procedure keep_compiler_quiet_r1d
+    module procedure keep_compiler_quiet_r2d
     module procedure keep_compiler_quiet_r3d
     module procedure keep_compiler_quiet_r4d
     module procedure keep_compiler_quiet_p
     module procedure keep_compiler_quiet_bc
     module procedure keep_compiler_quiet_sl
     module procedure keep_compiler_quiet_i1d
+    module procedure keep_compiler_quiet_i2d
     module procedure keep_compiler_quiet_i
     module procedure keep_compiler_quiet_l1d
     module procedure keep_compiler_quiet_l
@@ -4833,7 +4835,7 @@ module Sub
         optional           ::     v2, v3, v4
 !
         if (NO_WARN) then
-          call error('keep_compiler_quiet_r3d', &
+          call error('keep_compiler_quiet_r1d', &
               '91 is a prime, and we never got here...')
           print*,                  minval(v1)
           if (present(v2)) print*, minval(v2)
@@ -4842,6 +4844,30 @@ module Sub
         endif
 !
       endsubroutine keep_compiler_quiet_r1d
+!***********************************************************************
+      subroutine keep_compiler_quiet_r2d(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+        use Cparam, only: NO_WARN
+!
+        real, dimension(:,:) :: v1, v2, v3, v4
+        optional             ::     v2, v3, v4
+!
+
+        if (NO_WARN) then
+          call error('keep_compiler_quiet_r2d', &
+              '91 is a prime, and we never got here...')
+          print*,                  minval(v1)
+          if (present(v2)) print*, minval(v2)
+          if (present(v3)) print*, minval(v3)
+          if (present(v4)) print*, minval(v4)
+        endif
+!
+      endsubroutine keep_compiler_quiet_r2d
 !***********************************************************************
       subroutine keep_compiler_quiet_r3d(v1,v2,v3,v4)
 !
@@ -4985,6 +5011,30 @@ module Sub
         endif
 !
       endsubroutine keep_compiler_quiet_i1d
+!***********************************************************************
+      subroutine keep_compiler_quiet_i2d(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+        use Cparam, only: NO_WARN
+!
+        integer, dimension(:,:)  :: v1, v2, v3, v4
+        optional                 ::     v2, v3, v4
+!
+
+        if (NO_WARN) then
+          call error('keep_compiler_quiet_i2d', &
+              'The world is a disk, and we never got here...')
+          print*,                  v1(1,1)
+          if (present(v2)) print*, v2(1,1)
+          if (present(v3)) print*, v3(1,1)
+          if (present(v4)) print*, v4(1,1)
+        endif
+!
+      endsubroutine keep_compiler_quiet_i2d
 !***********************************************************************
       subroutine keep_compiler_quiet_i(v1,v2,v3,v4)
 !
