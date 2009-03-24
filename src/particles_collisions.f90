@@ -27,9 +27,11 @@ module Particles_collisions
   include 'particles_collisions.h'
 !
   real :: lambda_mfp_single=1.0, coeff_restitution=1.0
+  logical :: lcollision_random_angle=.false., lcollision_big_ball=.false.
+  character (len=labellen) :: icoll='random-angle'
 !
   namelist /particles_coll_run_pars/ &
-      lambda_mfp_single, coeff_restitution
+      lambda_mfp_single, coeff_restitution, icoll
 !
   contains
 !***********************************************************************
@@ -38,6 +40,14 @@ module Particles_collisions
 !  07-oct-08/anders: coded
 !
       logical, intent(in) :: lstarting
+!
+      select case(icoll)
+      case ('random-angle'); lcollision_random_angle=.true.
+      case ('big-ball');     lcollision_big_ball=.true.
+      case default
+        if (lroot) print*, 'No such value for icoll: ', trim(icoll)
+        call fatal_error('initialize_particles_collisions','')
+      endselect
 !
       allocate(kneighbour(mpar_loc))
 !
@@ -55,11 +65,14 @@ module Particles_collisions
 !  23-mar-09/anders: coded
 !
       use General
+      use Sub, only: cross
 !
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real, dimension (3) :: vvpbar, vvkcmt, vvkcmtnew
+      real, dimension (3) :: vvcm, vvkcm, vvkcmnew
+      real, dimension (3) :: nvec, vvkcm_normal, vvkcm_parall
+      real, dimension (3) :: tmp1, tmp2
       real :: deltavjk, tau_coll1, prob, r, theta_rot, phi_rot
       integer :: l, j, k
 !
@@ -106,15 +119,22 @@ module Particles_collisions
                     if (ip<=6) then
                       print*, 'calc_particles_collisions: collision between'// &
                           ' superparticles ', ipar(k), ' and ', ipar(j)
-                      print*, 'calc_particles_collisions: fp(j,ivpx:ivpz)='
+                      print*, 'calc_particles_collisions: **before**'
+                      print*, 'calc_particles_collisions: vj, vk, vj+vk='
                       print*, '  ', fp(j,ivpx:ivpz)
-                      print*, 'calc_particles_collisions: fp(k,ivpx:ivpz)='
                       print*, '  ', fp(k,ivpx:ivpz)
-                      print*, 'calc_particles_collisions: Ej, Ek, Ej+Ek='
+                      print*, '  ', fp(j,ivpx:ivpz)+fp(k,ivpx:ivpz)
+                      print*, 'calc_particles_collisions: ej, ek, ej+ek='
                       print*, '  ', 0.5*(sum(fp(j,ivpx:ivpz)**2)), &
                           0.5*(sum(fp(k,ivpx:ivpz)**2)), &
                           0.5*(sum(fp(j,ivpx:ivpz)**2))+ &
                           0.5*(sum(fp(k,ivpx:ivpz)**2))
+                      print*, 'calc_particles_collisions: lj, lk, lj+lk='
+                      call cross(fp(j,ixp:izp),fp(j,ivpx:ivpz),tmp1)
+                      print*, '  ', tmp1
+                      call cross(fp(k,ixp:izp),fp(k,ivpx:ivpz),tmp2)
+                      print*, '  ', tmp2
+                      print*, '  ', tmp1+tmp2
                     endif
 !
 !  Choose random unit vector direction in COM frame. Here theta_rot is the
@@ -123,36 +143,75 @@ module Particles_collisions
 !  unit sphere are equally probable.
 !    (see http://mathworld.wolfram.com/SpherePointPicking.html)
 !
-                    call random_number_wrapper(theta_rot)
-                    theta_rot=acos(2*theta_rot-1)
-                    call random_number_wrapper(phi_rot)
-                    phi_rot  =phi_rot  *2*pi
-                    vvpbar=0.5*(fp(j,ivpx:ivpz)+fp(k,ivpx:ivpz))
-                    vvkcmt=fp(k,ivpx:ivpz)-vvpbar
-                    vvkcmtnew(1)=+sin(theta_rot)*cos(phi_rot)
-                    vvkcmtnew(2)=+sin(theta_rot)*sin(phi_rot)
-                    vvkcmtnew(3)=+cos(theta_rot)
+                    if (lcollision_random_angle) then
+                      call random_number_wrapper(theta_rot)
+                      theta_rot=acos(2*theta_rot-1)
+                      call random_number_wrapper(phi_rot)
+                      phi_rot  =phi_rot  *2*pi
+                      vvcm=0.5*(fp(j,ivpx:ivpz)+fp(k,ivpx:ivpz))
+                      vvkcm=fp(k,ivpx:ivpz)-vvcm
+                      vvkcmnew(1)=+sin(theta_rot)*cos(phi_rot)
+                      vvkcmnew(2)=+sin(theta_rot)*sin(phi_rot)
+                      vvkcmnew(3)=+cos(theta_rot)
+                      vvkcmnew(1)=+vvkcm(1)*cos(theta_rot) &
+                                  -vvkcm(3)*sin(theta_rot)
+                      vvkcmnew(2)=-vvkcm(1)*sin(phi_rot)*sin(theta_rot) &
+                                  +vvkcm(2)*cos(phi_rot) &
+                                  -vvkcm(3)*sin(phi_rot)*cos(theta_rot)
+                      vvkcmnew(3)=+vvkcm(1)*cos(phi_rot)*sin(theta_rot) &
+                                  +vvkcm(2)*sin(phi_rot) &
+                                  +vvkcm(3)*cos(phi_rot)*cos(theta_rot)
 !
 !  Multiply unit vector by length of velocity vector.
 !
-                    vvkcmtnew=vvkcmtnew* &
-                        sqrt(vvkcmt(1)**2+vvkcmt(2)**2+vvkcmt(3)**2)
+                      vvkcmnew=vvkcmnew* &
+                          sqrt(vvkcm(1)**2+vvkcm(2)**2+vvkcm(3)**2)
 !
 !  Dissipate some of the relative energy.
 !
-                    if (coeff_restitution/=1.0) &
-                        vvkcmtnew=vvkcmtnew*coeff_restitution
+                      if (coeff_restitution/=1.0) &
+                          vvkcmnew=vvkcmnew*coeff_restitution
 !
 !  Change velocity vectors in normal frame.
 !
-                    fp(k,ivpx:ivpz)=+vvkcmtnew+vvpbar
-                    fp(j,ivpx:ivpz)=-vvkcmtnew+vvpbar
+                      fp(k,ivpx:ivpz)=+vvkcmnew+vvcm
+                      fp(j,ivpx:ivpz)=-vvkcmnew+vvcm
+!
+                    endif
+!
+!  Alternative method for collisions where each particle is considered to be
+!  a big ball stretching to the surface of the other particle. We can then
+!  solve the collision problem with perfect conservation of momentum, energy
+!  and angular momentum.
+!
+                    if (lcollision_big_ball) then
+                      nvec=fp(j,ixp:izp)-fp(k,ixp:izp)
+                      nvec=nvec/sqrt(sum(nvec**2))
+                      vvcm=0.5*(fp(j,ivpx:ivpz)+fp(k,ivpx:ivpz))
+                      vvkcm=fp(k,ivpx:ivpz)-vvcm
+                      vvkcm_normal=nvec*(sum(vvkcm*nvec))
+                      vvkcm_parall=vvkcm-vvkcm_normal
+                      fp(k,ivpx:ivpz)=vvcm+vvkcm_parall-vvkcm_normal
+                      fp(j,ivpx:ivpz)=vvcm-vvkcm_parall+vvkcm_normal
+                    endif
+!
                     if (ip<=6) then
-                      print*, 'calc_particles_collisions: Ej2, Ek2, Ej2+Ek2='
+                      print*, 'calc_particles_collisions: **after**'
+                      print*, 'calc_particles_collisions: vj, vk, vj+vk='
+                      print*, '  ', fp(j,ivpx:ivpz)
+                      print*, '  ', fp(k,ivpx:ivpz)
+                      print*, '  ', fp(j,ivpx:ivpz)+fp(k,ivpx:ivpz)
+                      print*, 'calc_particles_collisions: ej, ek, ej+ek='
                       print*, '  ', 0.5*(sum(fp(j,ivpx:ivpz)**2)), &
                           0.5*(sum(fp(k,ivpx:ivpz)**2)), &
                           0.5*(sum(fp(j,ivpx:ivpz)**2))+ &
                           0.5*(sum(fp(k,ivpx:ivpz)**2))
+                      print*, 'calc_particles_collisions: lj, lk, lj+lk='
+                      call cross(fp(j,ixp:izp),fp(j,ivpx:ivpz),tmp1)
+                      print*, '  ', tmp1
+                      call cross(fp(k,ixp:izp),fp(k,ivpx:ivpz),tmp2)
+                      print*, '  ', tmp2
+                      print*, '  ', tmp1+tmp2
                     endif
                   endif
                 endif
