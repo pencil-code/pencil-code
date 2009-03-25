@@ -153,14 +153,6 @@ module Particles_collisions
                       vvkcmnew(1)=+sin(theta_rot)*cos(phi_rot)
                       vvkcmnew(2)=+sin(theta_rot)*sin(phi_rot)
                       vvkcmnew(3)=+cos(theta_rot)
-                      vvkcmnew(1)=+vvkcm(1)*cos(theta_rot) &
-                                  -vvkcm(3)*sin(theta_rot)
-                      vvkcmnew(2)=-vvkcm(1)*sin(phi_rot)*sin(theta_rot) &
-                                  +vvkcm(2)*cos(phi_rot) &
-                                  -vvkcm(3)*sin(phi_rot)*cos(theta_rot)
-                      vvkcmnew(3)=+vvkcm(1)*cos(phi_rot)*sin(theta_rot) &
-                                  +vvkcm(2)*sin(phi_rot) &
-                                  +vvkcm(3)*cos(phi_rot)*cos(theta_rot)
 !
 !  Multiply unit vector by length of velocity vector.
 !
