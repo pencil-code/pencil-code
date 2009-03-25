@@ -11,6 +11,5 @@
   public :: calc_visc_heat_ppd, getnu
 !
 !ajwm SHOULDN'T BE SHARED
-  public :: idiag_epsK
-  public :: nu_mol,lvisc_first
+  public :: lvisc_first
 !

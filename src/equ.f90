@@ -479,8 +479,7 @@ module Equ
       use Grid, only: calc_pencils_grid
       use Shock, only: calc_pencils_shock, calc_shock_profile, &
                        calc_shock_profile_simple
-      use Viscosity, only: calc_viscosity, calc_pencils_viscosity, &
-                           lvisc_first, idiag_epsK
+      use Viscosity, only: calc_viscosity, calc_pencils_viscosity
       use Hypervisc_strict, only: hyperviscosity_strict
       use Hyperresi_strict, only: hyperresistivity_strict
       use Interstellar, only: interstellar_before_boundary
@@ -678,9 +677,6 @@ module Equ
 !  calculate shock profile (simple)
 !
       if (lshock) call calc_shock_profile_simple(f)
-!      if (lvisc_hyper.or.lvisc_smagorinsky) then
-!        if (.not.lvisc_first.or.lfirst) call calc_viscosity(f)
-!      endif
 !
 !  Calculate averages, currently only required for certain settings
 !  in hydro of the testfield procedure (only when lsoca=.false.)

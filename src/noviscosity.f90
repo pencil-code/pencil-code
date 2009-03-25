@@ -15,32 +15,18 @@
 ! PENCILS PROVIDED gshock(3); shock; visc_heat
 !
 !***************************************************************
-
 module Viscosity
-
+!
   use Cdata
   use Messages
-
+!
   implicit none
-
+!
   include 'viscosity.h'
-
+!
   logical :: lvisc_first=.false.
-
-  real :: nu_mol
-
-  ! input parameters
-  !namelist /viscosity_init_pars/ dummy
-
-  ! run parameters
-  !namelist /viscosity_run_pars/ dummy
-
-  ! Not implemented but needed for bodged implementation in hydro
-  integer :: idiag_epsK=0
-  character (len=labellen) :: ivisc='nu-const'
-
+!
   contains
-
 !***********************************************************************
     subroutine register_viscosity()
 !
