@@ -36,7 +36,6 @@ module Gravity
   ! coefficients for potential
   real, dimension (5,ninit) :: cpot=0. !=(/ 0., 0., 0., 0., 0. /)
   real, dimension(ninit) :: g01=0.,rpot=0.
-  real :: nu_epicycle=1.
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: grav_const=1.,reduced_top=1.
   real :: g0=0.
@@ -49,7 +48,8 @@ module Gravity
 
   ! variables for compatibility with grav_z (used by Entropy and Density):
   real :: z1,z2,zref,zgrav,gravz,zinfty
-  character (len=labellen) :: grav_profile='const'
+  real :: nu_epicycle=1.0
+  character (len=labellen) :: grav_profile='const',gravz_profile='zero'
   logical :: lnumerical_equilibrium=.false.
   logical :: lgravity_gas=.true.
 
@@ -57,11 +57,11 @@ module Gravity
 
   namelist /grav_init_pars/ &
       ipotential,g0,r0_pot,r1_pot1,n_pot,n_pot1,lnumerical_equilibrium, &
-      qgshear,lgravity_gas,g01,rpot
+      qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle
 
   namelist /grav_run_pars/ &
       ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
-      qgshear,lgravity_gas,g01,rpot
+      qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle
 
   contains
 
@@ -290,6 +290,31 @@ module Gravity
         enddo
       endif
 !
+!  Add a simple vertical gravity as well.
+!
+      select case (gravz_profile)
+!
+      case('zero')
+!
+      case('const')
+        if (lroot) print*,'initialize_gravity: constant gravz=', gravz
+        do n=n1,n2; do m=m1,m2
+          f(l1:l2,m,n,iglobal_gg+2)=f(l1:l2,m,n,iglobal_gg+2)+gravz
+        enddo; enddo
+!
+      case('linear')
+        if (lroot) print*,'initialize_gravity: linear z-grav, nu=', nu_epicycle
+        do n=n1,n2; do m=m1,m2
+          f(l1:l2,m,n,iglobal_gg+2)=f(l1:l2,m,n,iglobal_gg+2)-nu_epicycle**2*z(n)
+        enddo; enddo
+!
+      case default
+        if (lroot) print*, &
+            'initialize_gravity: unknown gravz_profile ', gravz_profile
+        call fatal_error('initialize_gravity','chosen gravz_profile not valid')
+!
+      endselect
+!
     endsubroutine initialize_gravity
 !***********************************************************************
     subroutine read_gravity_init_pars(unit,iostat)
@@ -505,9 +530,9 @@ module Gravity
         if (present(xmn) .and. present(ymn) .and. present(zmn)) then
 !
           if (.not.lcartesian_coords) &
-               call stop_it("gravity_r: potential_penc with xmn,ymn,zmn is "//&
-               "not yet implemented for non-cartesiand coordinates. Fix the call "//&
-               "to  use radial distance instead")
+              call stop_it("gravity_r: potential_penc with xmn,ymn,zmn is "//&
+              "not yet implemented for non-cartesian coordinates. Fix the call "//&
+              "to use radial distance instead")
 !
           rad = sqrt(xmn**2+ymn**2+zmn**2)
         else
