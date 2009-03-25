@@ -1379,7 +1379,7 @@ sub get_maintainers {
     my $readme = shift;
     unless (-r $readme) {
         warn "Cannot open $readme\n";
-        return undef;
+        return ();
     }
 
     my @emails = ();
