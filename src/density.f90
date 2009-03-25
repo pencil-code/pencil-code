@@ -1325,6 +1325,7 @@ module Density
 !
       use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij
       use Mpicomm, only: stop_it
+      use Messages, only: fatal_error_local
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -1346,7 +1347,10 @@ module Density
 ! rho1 and rho
 !
       if (ldensity_nolog) then
-        if (lpencil(i_rho)) p%rho=f(l1:l2,m,n,ilnrho)
+        if (lpencil(i_rho)) then
+          p%rho=f(l1:l2,m,n,ilnrho)
+          if (any(p%rho <= 0.)) call fatal_error_local('calc_pencils_density', 'negative density detected')
+        endif
         if (lpencil(i_rho1)) p%rho1=1.0/p%rho
       else
         if (lpencil(i_rho1)) p%rho1=exp(-f(l1:l2,m,n,ilnrho))
