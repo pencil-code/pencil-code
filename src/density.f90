@@ -62,6 +62,7 @@ module Density
   logical :: lfreeze_lnrhosqu=.false.,lexponential_smooth=.false.
   logical :: lrho_as_aux=.false., ldiffusion_nolog=.false.
   logical :: lshare_plaw=.false.
+  logical :: lcheck_negative_density=.false.
 
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
   character (len=labellen) :: strati_type='lnrho_ss'
@@ -93,7 +94,8 @@ module Density
       wdamp,lfreeze_lnrhoint,lfreeze_lnrhoext,                      &
       lnrho_const,plaw,lcontinuity_gas,borderlnrho,                 &
       diffrho_hyper3_aniso,lfreeze_lnrhosqu,density_floor,          &
-      lanti_shockdiffusion,lrho_as_aux,ldiffusion_nolog
+      lanti_shockdiffusion,lrho_as_aux,ldiffusion_nolog,            &
+      lcheck_negative_density
 
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_rhom=0       ! DIAG_DOC: $\left<\varrho\right>$
@@ -1349,7 +1351,8 @@ module Density
       if (ldensity_nolog) then
         if (lpencil(i_rho)) then
           p%rho=f(l1:l2,m,n,ilnrho)
-          if (any(p%rho <= 0.)) call fatal_error_local('calc_pencils_density', 'negative density detected')
+          if (lcheck_negative_density .and. any(p%rho <= 0.)) &
+            call fatal_error_local('calc_pencils_density', 'negative density detected')
         endif
         if (lpencil(i_rho1)) p%rho1=1.0/p%rho
       else
