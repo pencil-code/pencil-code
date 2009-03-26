@@ -13,7 +13,6 @@ module Diagnostics
   use Mpicomm
   use Sub
 !
-!
   implicit none
 !
   private
@@ -27,7 +26,7 @@ module Diagnostics
 !***********************************************************************
     subroutine diagnostic
 !
-!  calculate diagnostic quantities
+!  Calculate diagnostic quantities.
 !
 !   2-sep-01/axel: coded
 !  14-aug-03/axel: began adding surface integrals
@@ -39,8 +38,10 @@ module Diagnostics
       logical, save :: first=.true.
       real, save :: dVol_rel1
       real :: intdr_rel,intdtheta_rel,intdphi_rel,intdz_rel
+
+      print*, '111', it, itsub
 !
-!  calculate relative volume integral
+!  Calculate relative volume integral.
 !
       if (first) then
         if (lspherical_coords) then
@@ -48,8 +49,8 @@ module Diagnostics
           intdtheta_rel = -(cos(xyz1(2))  -cos(xyz0(2)))/dy
           intdphi_rel   =      (xyz1(3)   -    xyz0(3)) /dz
 !
-!  prevent zeros from less then 3-dimensional runs
-!  (maybe this should be 2pi, but maybe not )
+!  Prevent zeros from less then 3-dimensional runs
+!  (maybe this should be 2pi, but maybe not).
 !
           if (nx==1) intdr_rel=1.
           if (ny==1) intdtheta_rel=1.
@@ -68,8 +69,8 @@ module Diagnostics
         if (lroot) print*,'box volume = ', dx*dy*dz/dVol_rel1
       endif
 !
-!  go through all print names, and sort into communicators
-!  corresponding to their type
+!  Go through all print names, and sort into communicators
+!  corresponding to their type.
 !
       imax_count=0
       isum_count=0
@@ -82,7 +83,8 @@ module Diagnostics
           isum_count=isum_count+1
           fsum_tmp(isum_count)=fname(iname)
           if (itype_name(iname)==ilabel_sum_weighted .or. &
-              itype_name(iname)==ilabel_sum_weighted_sqrt) then
+              itype_name(iname)==ilabel_sum_weighted_sqrt .or. &
+              itype_name(iname)==ilabel_sum_par) then
             fweight_tmp(isum_count)=fweight(iname)
             lweight_comm=.true.
           endif
@@ -91,51 +93,51 @@ module Diagnostics
       nmax_count=imax_count
       nsum_count=isum_count
 !
-!  communicate over all processors
+!  Communicate over all processors.
 !
       call mpireduce_max(fmax_tmp,fmax,nmax_count)
       call mpireduce_sum(fsum_tmp,fsum,nsum_count)
       if (lweight_comm) call mpireduce_sum(fweight_tmp,fweight,nsum_count)
 !
-!  the result is present only on the root processor
+!  The result is present only on the root processor.
 !
       if (lroot) then
 !
-!  sort back into original array
+!  Sort back into original array.
 !
          imax_count=0
          isum_count=0
          do iname=1,nname
            if (itype_name(iname)<0) then ! max
              imax_count=imax_count+1
-
+!
              if (itype_name(iname)==ilabel_max)            &
                  fname(iname)=fmax(imax_count)
-
+!
              if (itype_name(iname)==ilabel_max_sqrt)       &
                  fname(iname)=sqrt(fmax(imax_count))
-
+!
              if (itype_name(iname)==ilabel_max_dt)         &
                  fname(iname)=fmax(imax_count)
-
+!
              if (itype_name(iname)==ilabel_max_neg)        &
                  fname(iname)=-fmax(imax_count)
-
+!
              if (itype_name(iname)==ilabel_max_reciprocal) &
                  fname(iname)=1./fmax(imax_count)
-
+!
            elseif (itype_name(iname)>0) then ! sum
              isum_count=isum_count+1
-
+!
              if (itype_name(iname)==ilabel_sum)            &
                  fname(iname)=fsum(isum_count)*dVol_rel1
-
+!
              if (itype_name(iname)==ilabel_sum_sqrt)       &
                  fname(iname)=sqrt(fsum(isum_count)*dVol_rel1)
-
+!
              if (itype_name(iname)==ilabel_sum_par)        &
-                 fname(iname)=fsum(isum_count)/npar
-
+                 fname(iname)=fsum(isum_count)/fweight(isum_count)
+!
              if (itype_name(iname)==ilabel_integrate) then
                dv=1.
                if (nxgrid/=1.and.lequidist(1)) dv=dv*dx
@@ -143,10 +145,10 @@ module Diagnostics
                if (nzgrid/=1.and.lequidist(3)) dv=dv*dz
                fname(iname)=fsum(isum_count)*dv
               endif
-
+!
               if (itype_name(iname)==ilabel_surf)          &
                   fname(iname)=fsum(isum_count)
-
+!
               if (itype_name(iname)==ilabel_sum_lim) then
                  vol=1.
                  if (lcylinder_in_a_box)  vol=vol*pi*(r_ext**2-r_int**2)
@@ -154,7 +156,7 @@ module Diagnostics
                  if (lsphere_in_a_box)    vol=1.333333*pi*(r_ext**3-r_int**3)
                  fname(iname)=fsum(isum_count)/vol
               endif
-
+!
              if (itype_name(iname)==ilabel_sum_weighted) then
                if (fweight(isum_count)/=0.0) then
                  fname(iname)=fsum(isum_count)/fweight(isum_count)
@@ -162,7 +164,7 @@ module Diagnostics
                  fname(iname)=0.0
                endif
              endif
-
+!
              if (itype_name(iname)==ilabel_sum_weighted_sqrt) then
                if (fweight(isum_count)/=0.0) then
                  fname(iname)=sqrt(fsum(isum_count)/fweight(isum_count))
@@ -170,9 +172,9 @@ module Diagnostics
                  fname(iname)=0.0
                endif
              endif
-
+!
            endif
-
+!
          enddo
 !
       endif
@@ -182,15 +184,15 @@ module Diagnostics
     subroutine collect_UUmax
 !
 !  Calculate the maximum effective advection velocity in the domain;
-!  needed for determining dt at each timestep
+!  needed for determining dt at each timestep.
 !
 !   2-sep-01/axel: coded
 !
     real, dimension(1) :: fmax_tmp,fmax
 !
-!  communicate over all processors
-!  the result is then present only on the root processor
-!  reassemble using old names
+!  Communicate over all processors.
+!  The result is then present only on the root processor
+!  reassemble using old names.
 !
     fmax_tmp(1)=UUmax
     call mpireduce_max(fmax_tmp,fmax,1)
@@ -200,7 +202,7 @@ module Diagnostics
 !***********************************************************************
     subroutine initialize_time_integrals(f)
 !
-!  Initialize time_integrals for full chunks
+!  Initialize time_integrals for full chunks.
 !
 !  28-jun-07/axel+mreinhard: coded
 !
@@ -217,8 +219,7 @@ module Diagnostics
     subroutine time_integrals(f,p)
 !
 !  Calculate time_integrals within each pencil (as long as each
-!  pencil case p still contains the current data). This routine
-!  is now being called at the end of equ.
+!  pencil case p still contains the current data).
 !
 !  28-jun-07/axel+mreinhard: coded
 !  24-jun-08/axel: moved call to this routine to the individual pde routines
@@ -256,8 +257,8 @@ module Diagnostics
 !
       real, dimension (nz,nprocz,mnamez) :: fsumz
 !
-!  communicate over all processors
-!  the result is only present on the root processor
+!  Communicate over all processors.
+!  The result is only present on the root processor
 !
       if (nnamez>0) then
         call mpireduce_sum(fnamez,fsumz,nz*nprocz*nnamez)
@@ -275,8 +276,8 @@ module Diagnostics
 !
       real, dimension (ny,nprocy,mnamey) :: fsumy
 !
-!  communicate over all processors
-!  the result is only present on the root processor
+!  Communicate over all processors.
+!  The result is only present on the root processor.
 !
       if (nnamey>0) then
         call mpireduce_sum(fnamey,fsumy,ny*nprocy*nnamey)
@@ -315,8 +316,8 @@ module Diagnostics
       real, dimension (nrcyl) :: norm
       integer :: in,ir
 !
-!  communicate over all processors
-!  the result is only present on the root processor
+!  Communicate over all processors.
+!  The result is only present on the root processor.
 !
       if (nnamer>0) then
          !the extra slot is where the normalization is stored
@@ -342,8 +343,8 @@ module Diagnostics
 !
       real, dimension (nx,nz,nprocz,mnamexz) :: fsumxz
 !
-!  communicate over all processors
-!  the result is only present on the root processor
+!  Communicate over all processors.
+!  The result is only present on the root processor.
 !
       if (nnamexz>0) then
         call mpireduce_sum(fnamexz,fsumxz,nnamexz*nx*nz*nprocz)
@@ -364,8 +365,8 @@ module Diagnostics
 !
       real, dimension (nx,ny,nprocy,mnamexy) :: fsumxy
 !
-!  communicate over all processors
-!  the result is only present on the root processor
+!  Communicate over all processors.
+!  the result is only present on the root processor.
 !
       if (nnamexy>0) then
         call mpireduce_sum(fnamexy,fsumxy,nnamexy*nx*ny*nprocy)
@@ -387,9 +388,9 @@ module Diagnostics
       integer :: i
       real, dimension (nrcyl,0:nz,nprocz,mnamerz) :: fsumrz
 !
-!  communicate over all processors
-!  the result is only present on the root processor
-!  normalize by sum of unity which is accumulated in fnamerz(:,0,:,1)
+!  Communicate over all processors.
+!  The result is only present on the root processor
+!  normalize by sum of unity which is accumulated in fnamerz(:,0,:,1).
 !
       if (nnamerz>0) then
         call mpireduce_sum(fnamerz,fsumrz,mnamerz*nrcyl*(nz+1)*nprocz)

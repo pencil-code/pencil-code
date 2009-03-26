@@ -905,7 +905,8 @@ module Particles_sub
     subroutine sum_par_name(a,iname,lsqrt)
 !
 !  Successively calculate sum of a, which is supplied at each call.
-!  Works for particle diagnostics.
+!  Works for particle diagnostics. The number of particles is stored as
+!  a weight used later for normalisation of sum.
 !
 !  02-jan-05/anders: adapted from sum_mn_name
 !
@@ -920,9 +921,13 @@ module Particles_sub
 !
       if (iname/=0) then
 !
-        if (icount==0) fname(iname)=0
+        if (icount==0) then
+          fname(iname)=0.0
+          fweight(iname)=0.0
+        endif
 !
-        fname(iname)=fname(iname)+sum(a)
+        fname(iname)  =fname(iname)  +sum(a)
+        fweight(iname)=fweight(iname)+size(a)
 !
 !  Set corresponding entry in itype_name
 !
