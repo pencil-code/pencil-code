@@ -10,42 +10,44 @@
 !  17-aug-01/axel: ghost layers implemented
 !  11-sep-01/axel: adapted from burgers_phi
 !
-        use Cdata
-        use General
-        use Messages
-        use Mpicomm
-        use Sub
-        use IO
-        use Register
-        use Global
-        use Param_IO
-        use Equ
-        use Gravity
-        use Slices
-        use Print
-        use Timestep
-        use Snapshot
         use Boundcond
-        use Filter
-        use Power_spectrum
-        use Timeavg
-        use Interstellar,    only: check_SN
-        use Shear
-        use Testfield,       only: rescaling_testfield
-        use TestPerturb,     only: testperturb_begin, testperturb_finalize
-        use Forcing
-        use EquationOfState
+        use Cdata
+        use Diagnostics,     only: diagnostic
         use Dustvelocity,    only: init_uud
         use Dustdensity,     only: init_nd
+        use Entropy,         only: calc_heatcond_ADI
+        use Equ
+        use EquationOfState
+        use FArrayManager,   only: farray_clean_up
+        use Filter
+        use Forcing
+        use General
+        use Global
+        use Gravity
+        use Interstellar,    only: check_SN
+        use IO
+        use Magnetic,        only: rescaling_magnetic
+        use Messages
+        use Mpicomm
         use NeutralVelocity, only: init_uun
         use NeutralDensity,  only: init_lnrhon
-        use Magnetic,        only: rescaling_magnetic
+        use Param_IO
         use Particles_main
         use Particles_nbody, only: particles_nbody_read_snapshot,&
                                    particles_nbody_write_snapshot
-        use FArrayManager,   only: farray_clean_up
+        use Pencil_check,    only: pencil_consistency_check
+        use Power_spectrum
+        use Print
+        use Register
         use SharedVariables, only: sharedvars_clean_up
-        use Entropy,         only: calc_heatcond_ADI
+        use Shear
+        use Slices
+        use Snapshot
+        use Sub
+        use Testfield,       only: rescaling_testfield
+        use TestPerturb,     only: testperturb_begin, testperturb_finalize
+        use Timeavg
+        use Timestep
 !
         implicit none
 !

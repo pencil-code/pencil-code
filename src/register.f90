@@ -30,7 +30,7 @@ module Register
       use Mpicomm,          only: mpicomm_init,stop_it,stop_it_if_any
       use Sub
       use Param_IO,         only: get_datadir,get_snapdir
-      use Equ,              only: initialize_time_integrals
+      use Diagnostics,      only: initialize_time_integrals
       use IO,               only: register_io
       use Global,           only: register_global
       use EquationOfState,  only: register_eos
@@ -214,7 +214,7 @@ module Register
       use Viscosity,       only: initialize_viscosity
       use Special,         only: initialize_special
       use BorderProfiles,  only: initialize_border_profiles
-      use Equ,             only: initialize_time_integrals
+      use Diagnostics,     only: initialize_time_integrals
       use Solid_Cells,     only: initialize_solid_cells
 
       real, dimension(mx,my,mz,mfarray) :: f

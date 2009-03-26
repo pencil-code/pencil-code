@@ -21,9 +21,6 @@ GENERAL_SRC=general.f90
 MESSAGES_OBJ=messages.o
 MESSAGES_SRC=messages.f90
 #
-$(DERIV).oBJ=$(DERIV).o
-DERIV_SRC=deriv.f90
-#
 SHARED_VARIABLES_OBJ=shared_variables.o
 SHARED_VARIABLES_SRC=shared_variables.f90
 #
@@ -32,6 +29,12 @@ FARRAY_SRC=farray.f90
 #
 EQU_OBJ=equ.o
 EQU_SRC=equ.f90
+#
+DIAGNOSTICS_OBJ=diagnostics.o
+DIAGNOSTICS_SRC=diagnostics.f90
+#
+PENCIL_CHECK_OBJ=pencil_check.o
+PENCIL_CHECK_SRC=pencil_check.f90
 #
 INITCOND_OBJ=initcond.o
 INITCOND_SRC=initcond.f90
@@ -299,9 +302,13 @@ $(SUB_OBJ): sub.f90 $(CDATA_OBJ) $(MPICOMM_OBJ) $(DERIV).o $(MESSAGES_OBJ) $(GEN
 #
 param_io.o: param_io.f90 $(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(TIMESTEP_OBJ) $(TIMEAVG_OBJ) $(physics) $(PARTICLES_MAIN_OBJ) $(TESTPERTURB_OBJ)
 #
-register.o: register.f90 $(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(IO_OBJ) $(physics) $(TIMEAVG_OBJ) prints.o equ.o $(GRID_OBJ) $(TESTPERTURB_OBJ) $(SOLID_CELLS_OBJ)
+register.o: register.f90 $(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(IO_OBJ) $(physics) $(TIMEAVG_OBJ) prints.o equ.o $(GRID_OBJ) $(TESTPERTURB_OBJ) $(SOLID_CELLS_OBJ) $(DIAGNOSTICS_OBJ)
 #
-$(EQU_OBJ): $(EQU_SRC) $(CDATA_OBJ) $(MPICOMM_OBJ) $(GHOSTFOLD_OBJ) $(MESSAGES_OBJ) $(SUB_OBJ) $(physics) boundcond.o $(POISSON_OBJ) $(GLOBAL_OBJ) $(PARTICLES_MAIN_OBJ) $(INTERSTELLAR_OBJ) $(GRID_OBJ) snapshot.o $(FORCING_OBJ) $(SOLID_CELLS_OBJ)
+$(EQU_OBJ): $(EQU_SRC) $(CDATA_OBJ) $(MPICOMM_OBJ) $(GHOSTFOLD_OBJ) $(MESSAGES_OBJ) $(SUB_OBJ) $(physics) boundcond.o $(POISSON_OBJ) $(GLOBAL_OBJ) $(PARTICLES_MAIN_OBJ) $(INTERSTELLAR_OBJ) $(GRID_OBJ) snapshot.o $(FORCING_OBJ) $(SOLID_CELLS_OBJ) diagnostics.o
+#
+$(DIAGNOSTICS_OBJ): $(DIAGNOSTICS_SRC) $(CDATA_OBJ) $(MPICOMM_OBJ) $(MESSAGES_OBJ) $(HYDRO_OBJ) $(MAGNETIC_OBJ)
+#
+$(PENCIL_CHECK_OBJ): $(PENCIL_CHECK_SRC) $(EQU_OBJ) $(MPICOMM_OBJ) $(MESSAGES_OBJ) $(GENERAL_OBJ) $(SUB_OBJ)
 #
 boundcond.o: boundcond.f90 cdata.o cparam.o $(EOS_OBJ) farray.o $(FOURIER_OBJ) messages.o $(MPICOMM_FIX_OBJ) $(SHEAR_OBJ) $(SPECIAL_OBJ) $(CHEMISTRY_OBJ) $(VISCOSITY_OBJ)
 #
