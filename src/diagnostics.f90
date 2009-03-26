@@ -38,8 +38,6 @@ module Diagnostics
       logical, save :: first=.true.
       real, save :: dVol_rel1
       real :: intdr_rel,intdtheta_rel,intdphi_rel,intdz_rel
-
-      print*, '111', it, itsub
 !
 !  Calculate relative volume integral.
 !
