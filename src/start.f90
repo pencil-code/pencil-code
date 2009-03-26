@@ -3,9 +3,16 @@
 !***********************************************************************
 program start
 !
-!  start, to setup initial condition and file structure
+!  The Pencil Code is a high-order finite-difference code for compressible
+!  hydrodynamic flows with magnetic fields and particles. It is highly modular
+!  and can easily be adapted to different types of problems.
+!
+!  This program, start, sets up the initial condition and file structure.
 !
 !-----------------------------------------------------------------------
+!
+!  Revision history:
+!
 !  01-apr-01/axel+wolf: coded
 !  01-sep-01/axel: adapted to MPI
 !
