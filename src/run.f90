@@ -12,7 +12,6 @@
 !
         use Boundcond
         use Cdata
-        use Diagnostics,     only: diagnostic
         use Dustvelocity,    only: init_uud
         use Dustdensity,     only: init_nd
         use Entropy,         only: calc_heatcond_ADI
@@ -492,9 +491,8 @@
             count = count + 1     !  reliable loop count even for premature exit
           endif
 !
-!  Update time averages and time antegrals
+!  Update time averages and time integrals.
 !
-          call diagnostic
           if (ltavg) call update_timeavgs(f,dt)
 !
 !  Add forcing and/or do rescaling (if applicable)

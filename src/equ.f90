@@ -835,6 +835,10 @@ module Equ
 !
       if (lfirst.and.ldt) call collect_UUmax
 !
+!  Diagnostics
+!
+      if (ldiagnos) call diagnostic
+!
 !  1-D diagnostics
 !
       if (l1ddiagnos) then
