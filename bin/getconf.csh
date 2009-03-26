@@ -258,107 +258,111 @@ else if ($hn =~ giga[0-9][0-9].ncl.ac.uk) then
   endif
 #----------For qmul clusters ----------
 else if ($hn =~ *.maths.qmul.ac.uk) then
-         if ($masterhost =~ hyades*) then
-           echo "QMUL Maths cluster (hyades) - LONDON"
-           echo "******************************"
-           echo "Always use  multiple of 4 no. of processors .."
-           echo "..for multiprecossor jobs. "
-           echo " ******************************"
-           if ($?PBS_NODEFILE) then
-             echo "PBS job"
-             cat $PBS_NODEFILE >mpd.hosts
-             set local_disc = 0
-             set one_local_disc = 0
-             set local_binary = 0
-             set mpirun = /opt/mpich2/bin/mpiexec
-             echo "starting mpd demon .."
-             if ($ncpus =~ 1) then
-               /opt/mpich2/bin/mpdboot -n $ncpus -f mpd.hosts
-               set booted_mpd = 1
-             else
-               set myprocpernode = 4
-               set mynodes = `expr $ncpus / $myprocpernode `
-               echo "dhruba: $mynodes nodes, $myprocpernode CPU(s) per node"
-               /opt/mpich2/bin/mpdboot -n $mynodes --ncpus=4 -f mpd.hosts
-               set booted_mpd = 1
-               mpdtrace | perl -ne ' $_ =~ s/\n/:4\n/g, print "$_"' >nodes.proc
-               set mpirunops = "-machinefile nodes.proc"
-             endif
-             echo "..done"
-             # variables for automatic resubmission
-             set resub = "/opt/pbs/bin/qsub -d $PENCIL_WORKDIR"
-             set resubop1 = "-lnodes=$mynodes"
-             set resubop2 = ":ppn=4 run.csh"
-             set resubop = "$resubop1$resubop2" 
-             set run_resub = "ssh -t $masterhost $PENCIL_WORKDIR/rs >> $PBS_O_WORKDIR/resubmit.log"
-           else
-             echo "Non-PBS, running on `hostname`"
-           endif
-         else 
-           echo "QMUL Maths cluster (cluster) - LONDON"
-           if ($?PBS_NODEFILE) then
-             echo "PBS job"
-             set masterhost = cluster.maths.qmul.ac.uk
-             cat $PBS_NODEFILE >mpi.hosts
-             set local_disc = 0
-             set one_local_disc = 0
-             set local_binary = 0
-             set mpirun = /home/dhruba/mpich/bin/mpirun 
-             set mpirunops = "-machinefile mpi.hosts"
-             set myprocpernode = 4
-             set mynodes = `expr $ncpus / $myprocpernode `
-             # variables for automatic resubmission
-             set resub = "/opt/pbs/bin/qsub -d $PENCIL_WORKDIR"
-             set resubop1 = "-lnodes=$mynodes"
-             set resubop2 = ":ppn=4 run.csh"
-             set resubop = "$resubop1$resubop2" 
-             set run_resub = "ssh -t $masterhost $PENCIL_WORKDIR/rs >> $PBS_O_WORKDIR/resubmit.log"
-           else 
-             echo "Non-PBS, running on `hostname`"
-           endif
-         endif
+  if ($masterhost =~ hyades*) then
+    echo "QMUL Maths cluster (hyades) - LONDON"
+    echo "******************************"
+    echo "Always use  multiple of 4 no. of processors .."
+    echo "..for multiprecossor jobs. "
+    echo " ******************************"
+    if ($?PBS_NODEFILE) then
+      echo "PBS job"
+      cat $PBS_NODEFILE >mpd.hosts
+      set local_disc = 0
+      set one_local_disc = 0
+      set local_binary = 0
+      set mpirun = /opt/mpich2/bin/mpiexec
+      echo "starting mpd demon .."
+      if ($ncpus =~ 1) then
+        /opt/mpich2/bin/mpdboot -n $ncpus -f mpd.hosts
+        set booted_mpd = 1
+      else
+        set myprocpernode = 4
+        set mynodes = `expr $ncpus / $myprocpernode `
+        echo "dhruba: $mynodes nodes, $myprocpernode CPU(s) per node"
+        /opt/mpich2/bin/mpdboot -n $mynodes --ncpus=4 -f mpd.hosts
+        set booted_mpd = 1
+        mpdtrace | perl -ne ' $_ =~ s/\n/:4\n/g, print "$_"' >nodes.proc
+        set mpirunops = "-machinefile nodes.proc"
+      endif
+      echo "..done"
+      # variables for automatic resubmission
+      set resub = "/opt/pbs/bin/qsub -d $PENCIL_WORKDIR"
+      set resubop1 = "-lnodes=$mynodes"
+      set resubop2 = ":ppn=4 run.csh"
+      set resubop = "$resubop1$resubop2" 
+      set run_resub = "ssh -t $masterhost $PENCIL_WORKDIR/rs >> $PBS_O_WORKDIR/resubmit.log"
+    else
+      echo "Non-PBS, running on `hostname`"
+    endif
+  else 
+    echo "QMUL Maths cluster (cluster) - LONDON"
+    if ($?PBS_NODEFILE) then
+      echo "PBS job"
+      set masterhost = cluster.maths.qmul.ac.uk
+      cat $PBS_NODEFILE >mpi.hosts
+      set local_disc = 0
+      set one_local_disc = 0
+      set local_binary = 0
+      set mpirun = /home/dhruba/mpich/bin/mpirun 
+      set mpirunops = "-machinefile mpi.hosts"
+      set myprocpernode = 4
+      set mynodes = `expr $ncpus / $myprocpernode `
+      # variables for automatic resubmission
+      set resub = "/opt/pbs/bin/qsub -d $PENCIL_WORKDIR"
+      set resubop1 = "-lnodes=$mynodes"
+      set resubop2 = ":ppn=4 run.csh"
+      set resubop = "$resubop1$resubop2" 
+      set run_resub = "ssh -t $masterhost $PENCIL_WORKDIR/rs >> $PBS_O_WORKDIR/resubmit.log"
+    else 
+      echo "Non-PBS, running on `hostname`"
+    endif
+  endif
+#------------------------------------------------
 else if (($hn =~ comp*) || ($masterhost =~ andromeda)) then         
-       echo "QMUL Maths cluster (andromeda) - LONDON"
-       echo "******************************"
-       echo "Always use  multiple of 8 no. of processors .."
-       echo "..for multiprecossor jobs. "           
-       echo " ******************************"
-       source ${HOME}/.cshrc
-       set $mpirun=mpirun
+  echo "QMUL Maths cluster (andromeda) - LONDON"
+  echo "******************************"
+  echo "Always use  multiple of 8 no. of processors .."
+  echo "..for multiprecossor jobs. "           
+  echo " ******************************"
+  source ${HOME}/.cshrc
+  set $mpirun=mpirun
+#------------------------------------------------
 # For North-West Grid UK
 else if ($hn =~ lv1*) then
-       echo "Liverpool Grid - NW-grid"
-       set local_disc = 0
-       set one_local_disc = 0
-       set local_binary = 0
-       set mpirun = mpisub 
-       set myprocpernode = 4
-       set mpisub_myproc = "x4"
-       set mynodes = `expr $ncpus / $myprocpernode `
-       echo "dhruba: $mynodes nodes, $myprocpernode CPU(s) per node"
-       set npops  = "$mynodes$mpisub_myproc"
+  echo "Liverpool Grid - NW-grid"
+  set local_disc = 0
+  set one_local_disc = 0
+  set local_binary = 0
+  set mpirun = mpisub 
+  set myprocpernode = 4
+  set mpisub_myproc = "x4"
+  set mynodes = `expr $ncpus / $myprocpernode `
+  echo "dhruba: $mynodes nodes, $myprocpernode CPU(s) per node"
+  set npops  = "$mynodes$mpisub_myproc"
+#------------------------------------------------
 else if ($hn =~ penumbra*) then
-       echo "Lancaster Grid - NW-grid"
-       set local_disc = 0
-       set one_local_disc = 0
-       set local_binary = 0
-       set mpirun = mpisub 
-       set myprocpernode = 2
-       set mpisub_myproc = "x2"
-       set mynodes = `expr $ncpus / $myprocpernode `
-       echo "dhruba: $mynodes nodes, $myprocpernode CPU(s) per node"
-       set npops  = "$mynodes$mpisub_myproc"
+  echo "Lancaster Grid - NW-grid"
+  set local_disc = 0
+  set one_local_disc = 0
+  set local_binary = 0
+  set mpirun = mpisub 
+  set myprocpernode = 2
+  set mpisub_myproc = "x2"
+  set mynodes = `expr $ncpus / $myprocpernode `
+  echo "dhruba: $mynodes nodes, $myprocpernode CPU(s) per node"
+  set npops  = "$mynodes$mpisub_myproc"
+#------------------------------------------------
 else if ($hn =~ man2*) then
-       echo "Manchester Grid - NW-grid"
-       set local_disc = 0
-       set one_local_disc = 0
-       set local_binary = 0
-       set mpirun = mpisub 
-       set myprocpernode = 2
-       set mpisub_myproc = "x2"
-       set mynodes = `expr $ncpus / $myprocpernode `
-       echo "dhruba: $mynodes nodes, $myprocpernode CPU(s) per node"
-       set npops  = "$mynodes$mpisub_myproc"
+  echo "Manchester Grid - NW-grid"
+  set local_disc = 0
+  set one_local_disc = 0
+  set local_binary = 0
+  set mpirun = mpisub 
+  set myprocpernode = 2
+  set mpisub_myproc = "x2"
+  set mynodes = `expr $ncpus / $myprocpernode `
+  echo "dhruba: $mynodes nodes, $myprocpernode CPU(s) per node"
+  set npops  = "$mynodes$mpisub_myproc"
 #------------------------------------------------
 else if ($hn =~ ice[0-9]*_[0-9]*) then
   echo "Glacier in Vancouver"
@@ -783,7 +787,7 @@ else if (($hn =~ s[0-9]*p[0-9]*) || ($hn =~ 10_[0-9]*_[0-9]*_[0-9]*)) then
      set local_disc=0
   endif
 #-----------------------------------------------------------
-# Commented by DHRUBA as different configuration seems to be workin in Liverpool grid
+# Commented by Dhruba as different configuration seems to be workin in Liverpool grid
 # else if (($hn =~ lv1*.nw-grid.ac.uk) || ($hn =~ lv1*.st-and.ac.uk)) then
 #  echo "Liverpool Grid"
 #  if ($?PE) then                            # Are we running under SGE?   
