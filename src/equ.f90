@@ -4,9 +4,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-!
 !***************************************************************
-
 module Equ
 !
   use Cdata
@@ -21,34 +19,31 @@ module Equ
   public :: initialize_time_integrals, time_integrals
 !
   contains
-
 !***********************************************************************
-
-      include 'pencil_init.inc' ! defines subroutine initialize_pencils()
-
+    include 'pencil_init.inc' ! defines subroutine initialize_pencils()
 !***********************************************************************
-      subroutine collect_UUmax
+    subroutine collect_UUmax
 !
 !  Calculate the maximum effective advection velocity in the domain;
 !  needed for determining dt at each timestep
 !
 !   2-sep-01/axel: coded
 !
-      use Mpicomm
-      use Cdata
-      use Sub
+    use Mpicomm
+    use Cdata
+    use Sub
 !
-      real, dimension(1) :: fmax_tmp,fmax
+    real, dimension(1) :: fmax_tmp,fmax
 !
 !  communicate over all processors
 !  the result is then present only on the root processor
 !  reassemble using old names
 !
-      fmax_tmp(1)=UUmax
-      call mpireduce_max(fmax_tmp,fmax,1)
-      if (lroot) UUmax=fmax(1)
+    fmax_tmp(1)=UUmax
+    call mpireduce_max(fmax_tmp,fmax,1)
+    if (lroot) UUmax=fmax(1)
 !
-      endsubroutine collect_UUmax
+    endsubroutine collect_UUmax
 !***********************************************************************
     subroutine diagnostic
 !
