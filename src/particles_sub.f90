@@ -359,8 +359,13 @@ module Particles_sub
                   endif
                 endif
               else
-                call fatal_error_local('boundconds_particles',&
-                     'remove particles not ready for cartesian boxes')
+                if (fp(k,ixp)<=xyz0(1) .or. fp(k,ixp)>=xyz1(1)) then
+                  if (present(dfp)) then
+                    call remove_particle(fp,npar_loc,ipar,k,dfp)
+                  else
+                    call remove_particle(fp,npar_loc,ipar,k)
+                  endif
+                endif
               endif
             elseif (lspherical_coords) then 
               call fatal_error_local('boundconds_particles',&
@@ -403,14 +408,7 @@ module Particles_sub
             ! the star, for example, in a cylindrical simulation
           elseif (boundy=='rmv') then
             if (lcartesian_coords) then
-              if (fp(k,iyp) <= xyz0(2)) then
-                if (present(dfp)) then
-                  call remove_particle(fp,npar_loc,ipar,k,dfp)
-                else
-                  call remove_particle(fp,npar_loc,ipar,k)
-                endif
-
-              elseif (fp(k,iyp) >= xyz1(2)) then
+              if (fp(k,iyp)<=xyz0(2) .or. fp(k,iyp)>=xyz1(2)) then
                 if (present(dfp)) then
                   call remove_particle(fp,npar_loc,ipar,k,dfp)
                 else
@@ -453,6 +451,16 @@ module Particles_sub
           elseif (boundz=='out') then
             !let particles be out of the box, why not?
             !do nothing, the particle is happy
+          elseif (boundz=='rmv') then
+            if (lcartesian_coords) then
+              if (fp(k,iyp)<=xyz0(3) .or. fp(k,iyp)>=xyz1(3)) then
+                if (present(dfp)) then
+                  call remove_particle(fp,npar_loc,ipar,k,dfp)
+                else
+                  call remove_particle(fp,npar_loc,ipar,k)
+                endif
+              endif
+            endif
           else
             print*, 'boundconds_particles: No such boundary condition=', boundz
             call stop_it('boundconds_particles')
