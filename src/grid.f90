@@ -8,7 +8,7 @@
 ! PENCILS PROVIDED phix; phiy
 ! PENCILS PROVIDED pomx; pomy
 ! PENCILS PROVIDED rcyl_mn; rcyl_mn1; phi_mn
-! PENCILS PROVIDED evr(3); rr(3)
+! PENCILS PROVIDED evr(3); rr(3); evth(3)
 !
 !***************************************************************
 module Grid
@@ -541,6 +541,12 @@ module Grid
 !
       if (lpencil_in(i_rcyl_mn1)) lpencil_in(i_rcyl_mn)=.true.
       if (lpencil_in(i_evr)) lpencil_in(i_r_mn)=.true.
+      if (lpencil_in(i_evth)) then
+         lpencil_in(i_pomx)=.true.
+         lpencil_in(i_pomy)=.true.
+         lpencil_in(i_rcyl_mn)=.true.
+         lpencil_in(i_r_mn1)=.true.
+      endif
       if (  lpencil_in(i_pomx) &
        .or. lpencil_in(i_pomy) &
        .or. lpencil_in(i_phix) &
@@ -598,7 +604,7 @@ module Grid
         if (lpencil(i_rcyl_mn1)) p%rcyl_mn1=1./max(p%rcyl_mn,tini)
 !inverse spherical distance 1/r
         if (lpencil(i_r_mn1))    p%r_mn1   =1./max(p%r_mn,tini)
-!pomega unit vectors
+!pomega unit vectors: pomx=cos(phi) and pomy=sin(phi) where phi=azimuthal angle
         if (lpencil(i_pomx))     p%pomx    = x(l1:l2)*p%rcyl_mn1
         if (lpencil(i_pomy))     p%pomy    = y(  m  )*p%rcyl_mn1
 !phi unit vectors
@@ -659,6 +665,20 @@ module Grid
         else
           call fatal_error('calc_pencils_grid', &
               'radial unit vector not implemented for '//&
+              'non-cartesian coordinates')
+        endif
+      endif
+!
+!  evth is the latitudinal unit vector
+!
+      if (lpencil(i_evth)) then
+        if (lcartesian_coords) then
+          p%evth(:,1) = -z(n)*p%r_mn1*p%pomx
+          p%evth(:,2) = -z(n)*p%r_mn1*p%pomy
+          p%evth(:,3) = p%rcyl_mn*p%r_mn1
+        else
+          call fatal_error('calc_pencils_grid', &
+              'latitudinal unit vector not implemented for '//&
               'non-cartesian coordinates')
         endif
       endif

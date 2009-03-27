@@ -398,6 +398,8 @@ module Magnetic
   integer :: idiag_bpmphi=0     ! DIAG_DOC:
   integer :: idiag_bzmphi=0     ! DIAG_DOC:
   integer :: idiag_b2mphi=0     ! DIAG_DOC:
+  integer :: idiag_brsphmphi=0  ! DIAG_DOC:
+  integer :: idiag_bthmphi=0    ! DIAG_DOC:
   integer :: idiag_uxbrmphi=0   ! DIAG_DOC:
   integer :: idiag_uxbpmphi=0   ! DIAG_DOC:
   integer :: idiag_uxbzmphi=0   ! DIAG_DOC:
@@ -1279,6 +1281,8 @@ module Magnetic
         lpenc_requested(i_jb)=.true.
       endif
       if (idiag_b2mphi/=0) lpenc_diagnos2d(i_b2)=.true.
+      if (idiag_brsphmphi/=0) lpenc_diagnos2d(i_evr)=.true.
+      if (idiag_bthmphi/=0) lpenc_diagnos2d(i_evth)=.true.
 !  pencils for meanfield dynamo diagnostics
 !
       if (idiag_EMFdotBm/=0) lpenc_diagnos(i_mf_EMFdotB)=.true.
@@ -2485,6 +2489,10 @@ module Magnetic
 !
       if (l2davgfirst) then
         call phisum_mn_name_rz(p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy,idiag_brmphi)
+        call phisum_mn_name_rz(p%bb(:,1)*p%evr(:,1)+p%bb(:,2)*p%evr(:,2)+ &
+                               p%bb(:,3)*p%evr(:,3),idiag_brsphmphi)
+        call phisum_mn_name_rz(p%bb(:,1)*p%evth(:,1)+p%bb(:,2)*p%evth(:,2)+ &
+                               p%bb(:,3)*p%evth(:,3),idiag_bthmphi)
         call phisum_mn_name_rz(p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy,idiag_bpmphi)
         call phisum_mn_name_rz(p%bb(:,3),idiag_bzmphi)
         call phisum_mn_name_rz(p%b2,idiag_b2mphi)
@@ -5221,7 +5229,7 @@ module Magnetic
         idiag_bxmy=0; idiag_bymy=0; idiag_bzmy=0
         idiag_bx2my=0; idiag_by2my=0; idiag_bz2my=0
         idiag_mflux_x=0; idiag_mflux_y=0; idiag_mflux_z=0
-        idiag_bmxy_rms=0
+        idiag_bmxy_rms=0; idiag_brsphmphi=0; idiag_bthmphi=0
 !
       endif
 !
@@ -5485,6 +5493,8 @@ module Magnetic
 !
       do irz=1,nnamerz
         call parse_name(irz,cnamerz(irz),cformrz(irz),'brmphi'  ,idiag_brmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'brsphmphi',idiag_brsphmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'bthmphi',idiag_bthmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'bpmphi'  ,idiag_bpmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'bzmphi'  ,idiag_bzmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'b2mphi'  ,idiag_b2mphi)
@@ -5651,6 +5661,8 @@ module Magnetic
         write(3,*) 'i_bpmphi=',idiag_bpmphi
         write(3,*) 'i_bzmphi=',idiag_bzmphi
         write(3,*) 'i_b2mphi=',idiag_b2mphi
+        write(3,*) 'i_brsphmphi=',idiag_brsphmphi
+        write(3,*) 'i_bthmphi=',idiag_bthmphi
         write(3,*) 'i_armphi=',idiag_armphi
         write(3,*) 'i_apmphi=',idiag_apmphi
         write(3,*) 'i_azmphi=',idiag_azmphi
