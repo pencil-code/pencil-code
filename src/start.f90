@@ -1,20 +1,44 @@
 ! $Id$
 !
 !***********************************************************************
-program start
 !
 !  The Pencil Code is a high-order finite-difference code for compressible
-!  hydrodynamic flows with magnetic fields and particles. It is highly modular
-!  and can easily be adapted to different types of problems.
+!  hydrodynamic flows with magnetic fields and particles. It is highly
+!  modular and can easily be adapted to different types of problems.
 !
-!  This program, start, sets up the initial condition and file structure.
+!      MMMMMMMkOMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+!      MMMMMMMcoMMMMMMMMMMMMMMMMMMMWMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+!      MMMMMMX,:WMMMMMMMMMMMMMMMMMM:OMMMMMMMMMMMMMMMMMMMMMMMMMMM
+!      MMMMMMd:,OMMMMMMMMMMMMMMMMMX,oMMMMMMMMMMMMMMMMMMMkWMMMMMM
+!      MMMMMMc::oMMMMMMMMMMMMMMMMMx::WMMMMMMMMMMMMMMMMMX.OMMMMMM
+!      MMMMMK,::;WMMMMMMMMMMMMMMMMc:;OMMMMMMMMMMMMMMMMMd;oMMMMMM
+!      MMMMMd::c;kMMMMMMMMMMMMMMMK,:coMMMMMMMMMMMMMMMMMcc;WMMMMM
+!      MMMMM::::;:MMMMMMMMMMMMMMMd:::;NMMMMMMMMMMMMMMMK,:;kMMMMM
+!      MMMM0k0kdo:0MMMMMMMMMMMMMM::::;xMMMMMMMMMMMMMMMd::clMMMMM
+!      MMMMxWWNKOddMMMMMMMMMMMMM0lolcc:MMMMMMMMMMMMMMM::::;NMMMM
+!      MMMNxMWNKOxlMMMMMMMMMMMMMdWWX0k:0MMMMMMMMMMMMM0';::,dMMMM
+!      MMMkXMWNKOkc0MMMMMMMMMMMXxMWX0kddMMMMMMMMMMMMMdX0OxdcWMMM
+!      MMMkMMWNKOkddMMMMMMMMMMMkXMWXKOxcWMMMMMMMMMMMNdMWX0k:OMMM
+!      MMXOMMNNK0kxlWMMMMMMMMMMkMMNXKOkcOMMMMMMMMMMMkXMNX0kddMMM
+!      MMkNMMNNK0kxckMMMMMMMMMXkMMNXKOkddMMMMMMMMMMMkMMNXKkxcWMM
+!      MMxXMWN0O0kxllMMMMMMMMMkNMWNXKOkxcWMMMMMMMMMXkMMNXKOkcOMM
+!      MK:ddkOXKklcx;XMMMMMMMMkMMWNXK0kxckMMMMMMMMMkNMWNXKOkdoMM
+!      MKdkoKMMMM0dkoKMMMMMMM0ckXKO0Oxkll:MMMMMMMMMkMMWNXKOkxcNM
+!      MKdkcKMMMMKdkoKMMMMMMMOkkl0MMMNlxkdMMMMMMMM0oXMWXkO0ko:xM
+!      MKdklKMMMMKdkoKMMMMMMMOkkxMMMMMOkkxMMMMMMMMxoodOKNKkcodoM
+!      MKdk:KMMMMKdkoKMMMMMMMOkkxMMMMMOkkxMMMMMMMMOkkxMMMMMkkkkM
+!      MKdk:KMMMMKdkoKMMMMMMMOkkxMMMMMOkkxMMMMMMMMOkklMMMMMkkkkM
+!      MKdk:KMMMMKdkoKMMMMMMMOkkxMMMMMOkkxMMMMMMMMOkklMMMMMkkkkM
+!      MKdk:KMMMMKdkoKMMMMMMMOkkxMMMMMOkkxMMMMMMMMOkklMMMMMxkkkM
+!      MKdk:KMMMMKdkoKMMMMMMMOkkxMMMMMkxkxMMMMMMMMOkklMMMMMkkkkM
+!      MKdk:KMMMMKdkoKMMMMMMMOkkxMMMMMOkkxMMMMMMMMOkklMMMMMkkkkM
+!      MKdk:KMMMMKdkoKMMMMMMMOkkxMMMMMOkkxMMMMMMMMOkklMMMMMxkkkM
 !
-!-----------------------------------------------------------------------
+!  More information can be found in the Pencil Code manual and at the
+!  website http://www.nordita.org/software/pencil-code/.
 !
-!  Revision history:
-!
-!  01-apr-01/axel+wolf: coded
-!  01-sep-01/axel: adapted to MPI
+!***********************************************************************
+program start
 !
   use Boundcond,        only: update_ghosts
   use Cdata
