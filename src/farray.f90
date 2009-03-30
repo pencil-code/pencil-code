@@ -148,7 +148,7 @@ module FArrayManager
 !
       if (lroot) then 
         open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-        write(3,*) varname, '=', ivar
+        write(3,*) 'i'//varname, '=', ivar
         close(3)
       endif
 !
