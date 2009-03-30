@@ -153,29 +153,38 @@ varcontent[iglobal_ez_ext].idlinit    = INIT_SCALAR
 varcontent[iglobal_ez_ext].idlvarloc  = 'ez_ext_loc'
 varcontent[iglobal_ez_ext].idlinitloc = INIT_SCALAR_LOC
 ;
-default, cs2, 0
-if (cs2            ne 0) then cs2           =cs2            -dim.mvar-dim.maux
-varcontent[cs2].variable   = 'Sound speed'
-varcontent[cs2].idlvar     = 'cs2'
-varcontent[cs2].idlinit    = INIT_SCALAR
-varcontent[cs2].idlvarloc  = 'cs2_loc'
-varcontent[cs2].idlinitloc = INIT_SCALAR_LOC
+default, ics2, 0
+if (ics2 ne 0) then ics2=ics2-dim.mvar-dim.maux
+varcontent[ics2].variable   = 'Sound speed'
+varcontent[ics2].idlvar     = 'cs2'
+varcontent[ics2].idlinit    = INIT_SCALAR
+varcontent[ics2].idlvarloc  = 'cs2_loc'
+varcontent[ics2].idlinitloc = INIT_SCALAR_LOC
 ;
-default, gg, 0
-if (gg             ne 0) then gg            =gg            -dim.mvar-dim.maux
-varcontent[gg].variable   = 'Gravitational acceleration'
-varcontent[gg].idlvar     = 'gg'
-varcontent[gg].idlinit    = INIT_3VECTOR
-varcontent[gg].idlvarloc  = 'gg_loc'
-varcontent[gg].idlinitloc = INIT_3VECTOR_LOC
-varcontent[gg].skip = 2
+default, ilnTT, 0
+if (iglnTT ne 0) then iglnTT=iglnTT-dim.mvar-dim.maux
+varcontent[iglnTT].variable   = 'Gradient of logarithmic temperature'
+varcontent[iglnTT].idlvar     = 'glnTT'
+varcontent[iglnTT].idlinit    = INIT_3VECTOR
+varcontent[iglnTT].idlvarloc  = 'lnTT_loc'
+varcontent[iglnTT].idlinitloc = INIT_3VECTOR_LOC
+varcontent[iglnTT].skip       = 2
+;
+default, igg, 0
+if (igg ne 0) then igg=igg-dim.mvar-dim.maux
+varcontent[igg].variable   = 'Gravitational acceleration'
+varcontent[igg].idlvar     = 'gg'
+varcontent[igg].idlinit    = INIT_3VECTOR
+varcontent[igg].idlvarloc  = 'gg_loc'
+varcontent[igg].idlinitloc = INIT_3VECTOR_LOC
+varcontent[igg].skip       = 2
 ;
 ;  Zero out default definition in case it has been set by mistake.
 ;
 varcontent[0].variable = 'UNKNOWN'
 varcontent[0].idlvar   = 'UNKNOWN'
-varcontent[0].idlinit  = '0.'
-varcontent[0].skip  = 0
+varcontent[0].idlinit  = '0.0'
+varcontent[0].skip     = 0
 ;
 return, varcontent
 ;
