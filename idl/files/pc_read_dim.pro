@@ -143,9 +143,9 @@ if (found gt 0) then begin
     readf,file,nprocx,nprocy,nprocz
   endelse
   close,file 
-  FREE_LUN,file
+  free_lun,file
 endif else begin
-  FREE_LUN,file
+  free_lun,file
   message, 'ERROR: cannot find file ' + filename
 endelse
 
