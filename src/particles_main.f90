@@ -152,11 +152,9 @@ module Particles_main
       logical :: lsnap
 !
       if (present(flist)) then
-        call wsnap_particles(chsnap,fp,enum,lsnap,dsnap_par_minor, &
-            npar_loc,ipar,flist)
+        call wsnap_particles(chsnap,fp,enum,lsnap,dsnap_par_minor,dsnap_par,npar_loc,ipar,flist)
       else
-        call wsnap_particles(chsnap,fp,enum,lsnap,dsnap_par_minor, &
-            npar_loc,ipar)
+        call wsnap_particles(chsnap,fp,enum,lsnap,dsnap_par_minor,dsnap_par,npar_loc,ipar)
       endif
 !
     endsubroutine particles_write_snapshot
@@ -169,8 +167,7 @@ module Particles_main
 !
       character (len=*) :: chsnap
 !
-      call wsnap_particles(chsnap,dfp,.false.,.false.,0.0,npar_loc,ipar, &
-          nobound=.true.)
+      call wsnap_particles(chsnap,dfp,.false.,.false.,0.0,0.0,npar_loc,ipar,nobound=.true.)
 !
     endsubroutine particles_write_dsnapshot
 !***********************************************************************
