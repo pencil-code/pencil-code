@@ -399,14 +399,6 @@ if (dustcount gt 0L) then begin
   endelse
 endif
 ;
-default, igg, 0
-varcontent[igg].variable   = 'Gravitational acceleration (gg)'
-varcontent[igg].idlvar     = 'gg'
-varcontent[igg].idlinit    = INIT_3VECTOR
-varcontent[igg].idlvarloc  = 'gg_loc'
-varcontent[igg].idlinitloc = INIT_3VECTOR_LOC
-varcontent[igg].skip       = 2
-;
 ; Special condition as can be maux or mvar variable
 ;
 default, ilnTT, 0
