@@ -360,9 +360,14 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
     readu, file, dummy
   endelse
 ;;
-    it=it+1
+  it=it+1
 ;;
 endwhile
+;;
+;;  Close file.
+;;
+close, file
+free_lun,file
 ;;
 ;;  Revert to old settings for line and character thickness.
 ;;
