@@ -12,7 +12,7 @@
 ;;     Written by: Anders Johansen (johansen@mpia.de) on 13.07.2007
 ;;
 pro pc_read_pstalk, object=object, datadir=datadir, it1=it1, quiet=quiet, $
-    nout=nout
+    noutmax=noutmax
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;
@@ -38,11 +38,11 @@ endif
 ; Read the number of output times from file.
 ;
 tout=zero
-default, nout, -1
+default, noutmax, -1
 openr, 1, datadir+'/tstalk.dat'
-  readf, 1, tout, noutmax
+  readf, 1, tout, noutmaxfile
 close, 1
-if (nout eq -1 or nout gt noutmax) then nout=noutmax
+if (noutmax eq -1 or noutmax gt noutmaxfile) then nout=noutmaxfile else nout=noutmax
 ;
 ; Read header information from file.
 ;
@@ -59,7 +59,7 @@ fields_loc=fields+'_loc'
 if (not quiet) then begin
   print, 'Going to read the '+strtrim(nfields,2)+' fields: '
   print, '  ', fields
-  print, 'at ', strtrim(nout,2), ' times'
+  print, 'at ', strtrim(string(nout,format='(i)'),2), ' times'
 endif
 ;
 ; Initialize data arrays.
