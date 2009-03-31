@@ -214,11 +214,16 @@ class read_var:
         if (magic is not None):
             if ('bb' in magic):
                 # compute the magnetic field before doing trimall
-                self.bb=curl(f[5:8,...],dx,dy,dz)
+                self.bb=curl(f[5:8,...],dx,dy,dz,run2D=param.lwrite_2d)
                 if (trimall): self.bb=self.bb[:,dim.n1:dim.n2+1, 
                 dim.m1:dim.m2+1, dim.l1:dim.l2+1]
+            if ('vort' in magic):
+                # compute the vorticity field before doing trimall
+                self.vort=curl(f[0:3,...],dx,dy,dz,run2D=param.lwrite_2d)
+                if (trimall):self.vort=self.vort[:,dim.n1:dim.n2+1, 
+                dim.m1:dim.m2+1, dim.l1:dim.l2+1]
 
-        # trim ghost zones if asked
+        # trim the ghost zones of the global f-array if asked
         if trimall:
             self.x = x[dim.l1:dim.l2+1]
             self.y = y[dim.m1:dim.m2+1]
@@ -299,3 +304,4 @@ class read_var:
                               lnTT0-(gamma-1.)*(self.lnrho-lnrho0))
                 else:
                     sys.exit("pb in magic!")
+
