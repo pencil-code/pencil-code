@@ -1231,6 +1231,11 @@ else if ($hn =~ node* && $masterhost == 'vsl176') then
   set mpirunops2 = "-hostfile $PBS_NODEFILE"
   set start_x=$PBS_O_WORKDIR/src/start.x
   set run_x=$PBS_O_WORKDIR/src/run.x
+#---------------------------------------------------
+# NASA Pleiades system
+else if ($hn =~ p4fe1 || $hn =~ bridge[1,2] || $hn =~ pbspl1 || $hn =~ r{[1-9],[1-6][0-9],7[0-6],8[1-8],10[5-8],12[1-4]}i[0-3]n{[0-9],1[0-5]}) then
+  echo "Running on NASA Pleiades system"
+  set mpirun = "mpiexec"
 
 else
   echo "Generic setup; hostname is <$hn>"

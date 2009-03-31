@@ -798,6 +798,14 @@ LD_FFTW2=
 #CFLAGS=-O3 -ip -mp1 -DFUNDERSC=1 #(brahe|cfe2)
 #LD_MPI=-lmpi #(brahe|cfe2)
 ##
+## NASA Pleiades system (p4fe1)
+##
+#FC=ifort #(p4fe1)
+#CC=icc #(p4fe1)
+#FFLAGS=-O3 -axT -ip -mp1 -w -vec-report0 #(p4fe1)
+#CFLAGS=-O3 -axT -ip -mp1 -w -vec-report0 -DFUNDERSC=1 #(p4fe1)
+#LD_MPI=-lmpi #(p4fe1)
+##
 ## Toulouse's machines: 
 ## Opteron cluster (116+320 cores) + Altix 3700 (256 cores)
 ##
