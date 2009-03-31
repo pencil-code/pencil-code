@@ -18,6 +18,7 @@ import sys
 from param import read_param 
 from index import read_index
 from dim import read_dim 
+from pencil.math.derivatives import curl
 
 class read_var:
 # !!!  The file format written by output() (and used, e.g. in var.dat)
@@ -210,6 +211,13 @@ class read_var:
             #endif MPI run
         #endfor directories loop
 
+        if (magic is not None):
+            if ('bb' in magic):
+                # compute the magnetic field before doing trimall
+                self.bb=curl(f[5:8,...],dx,dy,dz)
+                if (trimall): self.bb=self.bb[:,dim.n1:dim.n2+1, 
+                dim.m1:dim.m2+1, dim.l1:dim.l2+1]
+
         # trim ghost zones if asked
         if trimall:
             self.x = x[dim.l1:dim.l2+1]
@@ -247,10 +255,10 @@ class read_var:
         if param.lshear:
             self.deltay = deltay
 
+        # do the rest of magic after the trimall (i.e. no additional curl...)
         self.magic = magic
         if self.magic is not None:
             self.magicAttributes(param)
-
 
     def magicAttributes(self, param):
         for field in self.magic:
