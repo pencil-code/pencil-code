@@ -778,6 +778,18 @@ module Hydro
             f(l1:l2,m,n,iuz)=f(l1:l2,m,n,iuz)-ampluu(j)*exp(-(x(l1:l2)**2+y(m)**2+z(n)**2)/widthuu)
           enddo; enddo
 
+
+        case('bullets_x')
+!
+!  blob-like velocity perturbations in x-direction (bullets)
+!
+          if (lroot) print*,'init_uu: velocity blobs in x-direction'
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iux)=uu_const(1)+f(l1:l2,m,n,iux) &
+              -ampluu(j)*exp(-(x(l1:l2)**2+y(m)**2+z(n)**2)/widthuu)
+          enddo; enddo
+
+
         case('Alfven-circ-x')
 !
 !  circularly polarised Alfven wave in x direction
