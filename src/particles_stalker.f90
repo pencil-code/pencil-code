@@ -69,6 +69,7 @@ module Particles_stalker
 !
       if (ivpx==0)         lstalk_vv=.false.
       if (.not. lhydro)    lstalk_uu=.false.
+      if (.not. lhydro)    lstalk_guu=.false.
       if (.not. ldensity)  lstalk_rho=.false.
       if (.not. ldensity)  lstalk_grho=.false.
       if (.not. lmagnetic) lstalk_bb=.false.
