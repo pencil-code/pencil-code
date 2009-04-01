@@ -196,7 +196,7 @@ module Entropy
       if (lpencil(i_fpres)) then
         do j=1,3
           if (llocal_iso) then
-            p%fpres(:,j)=-p%cs2*(p%glnrho(:,j)  + p%glnTT(:,j))
+            p%fpres(:,j)=-p%cs2*(p%glnrho(:,j)+p%glnTT(:,j))
           else
             p%fpres(:,j)=-p%cs2*p%glnrho(:,j)
           endif
