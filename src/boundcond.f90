@@ -5297,14 +5297,14 @@ module Boundcond
       endif
 !
 
-      select case(topbot)
-      case('bot')
-       do i=1,nghost; f(l1-i,:,:,ilnTT)=2*f(l1,:,:,ilnTT)-f(l1+i,:,:,ilnTT); enddo 
-      case('top')
-        do i=1,nghost; f(l2+i,:,:,ilnTT)=2*f(l2,:,:,ilnTT)-f(l2-i,:,:,ilnTT); enddo
-      case default
-        print*, "bc_nscbc_subin_x: ", topbot, " should be `top' or `bot'"
-      endselect
+     ! select case(topbot)
+     ! case('bot')
+     !  do i=1,nghost; f(l1-i,:,:,ilnTT)=2*f(l1,:,:,ilnTT)-f(l1+i,:,:,ilnTT); enddo 
+     ! case('top')
+     !  do i=1,nghost; f(l2+i,:,:,ilnTT)=2*f(l2,:,:,ilnTT)-f(l2-i,:,:,ilnTT); enddo
+     !case default
+     !  print*, "bc_nscbc_subin_x: ", topbot, " should be `top' or `bot'"
+     ! endselect
 
 
 
