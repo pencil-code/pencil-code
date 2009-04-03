@@ -943,7 +943,9 @@ subroutine flame_front(f)
              if (diffus_const<impossible) then
                 Diff_full=diffus_const
              elseif (lfix_Sc) then
+              do k=1,nchemspec 
                Diff_full(:,:,:,k)=species_viscosity(:,:,:,k)/rho_full/Sc_number
+              enddo
              else
               do k=1,nchemspec
                 tmp_sum=0.
