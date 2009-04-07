@@ -526,7 +526,7 @@ module Special
       ! idx2 and idy2 are essentially =2, but this makes compilers
       ! complain if nygrid=1 (in which case this is highly unlikely to be
       ! correct anyway), so we try to do this better:
-      if (ipz .eq. 0) then
+      if (ipz .eq. 0 .and. bmdi/=0) then
       if (it  .le. 1) then
          idx2 = min(2,nxgrid)
          idy2 = min(2,nygrid)
@@ -577,6 +577,7 @@ module Special
 !
 !  Do somehow Newton cooling
 !  
+      
       
       f(l1:l2,m1:m2,n1,iax) = f(l1:l2,m1:m2,n1,iax)*(1.-dt*bmdi) + &
            dt*bmdi * Ax_r(ipx*nx+1:(ipx+1)*nx+1,ipy*ny+1:(ipy+1)*ny+1)
@@ -734,7 +735,7 @@ module Special
 !
 !  limit the length of h
 !
-      quenchfactor=1./max(1.,3.*hhh2*dxmax)
+!      quenchfactor=1./max(1.,3.*hhh2*dxmax)
       call multsv_mn(quenchfactor,hhh,tmpv)
 !     
       call dot(tmpv,gts,rhs)
@@ -1049,6 +1050,26 @@ module Special
       endselect
        
     endsubroutine derij_special
+!***********************************************************************
+    subroutine special_calc_particles()
+    endsubroutine special_calc_particles
+!***********************************************************************
+    subroutine special_calc_particles_nbody()
+    endsubroutine special_calc_particles_nbody
+!***********************************************************************
+    subroutine special_after_timestep(f,df,dt)
+
+      use Sub, only: keep_compiler_quiet
+      
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real :: dt
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(dt)
+
+    endsubroutine special_after_timestep
 !***********************************************************************
     
 !********************************************************************
