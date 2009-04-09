@@ -301,6 +301,12 @@ module Hydro
   integer :: idiag_ruyuzm=0     ! DIAG_DOC: $\left<\varrho u_y u_z\right>$
                                 ! DIAG_DOC:   \quad(mean Reynolds stress)
   integer :: idiag_ruxuymz=0    ! DIAG_DOC:
+  integer :: idiag_rlxm=0       ! DIAG_DOC: $\left< \rho y u_z - z u_y \right>$
+  integer :: idiag_rlym=0       ! DIAG_DOC: $\left< \rho z u_x - x u_z \right>$
+  integer :: idiag_rlzm=0       ! DIAG_DOC: $\left< \rho x u_y - y u_x \right>$
+  integer :: idiag_rlx2m=0      ! DIAG_DOC: $\left<(\rho y u_z-z u_y)^2\right>$
+  integer :: idiag_rly2m=0      ! DIAG_DOC: $\left<(\rho z u_x-x u_z)^2\right>$
+  integer :: idiag_rlz2m=0      ! DIAG_DOC: $\left<(\rho x u_y-y u_x)^2\right>$
   integer :: idiag_rufm=0       ! DIAG_DOC:
   integer :: idiag_dtu=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta x
                                 ! DIAG_DOC:  /\max|\mathbf{u}|]$
@@ -1614,7 +1620,7 @@ module Hydro
              call sum_lim_mn_name(p%rho*(p%uu(:,2)*x(l1:l2)-p%uu(:,1)*y(m)),&
              idiag_totangmom,p)
 !
-!  kinetic field components at one point (=pt)
+!  Kinetic field components at one point (=pt).
 !
         if (lroot.and.m==mpoint.and.n==npoint) then
           if (idiag_uxpt/=0) call save_name(p%uu(lpoint-nghost,1),idiag_uxpt)
@@ -1623,20 +1629,35 @@ module Hydro
         endif
         if (idiag_u2mz/=0)  call xysum_mn_name_z(p%u2,idiag_u2mz)
 !
-!  mean momenta
+!  Mean momenta.
 !
         if (idiag_ruxm/=0) call sum_mn_name(p%rho*p%uu(:,1),idiag_ruxm)
         if (idiag_ruym/=0) call sum_mn_name(p%rho*p%uu(:,2),idiag_ruym)
         if (idiag_ruzm/=0) call sum_mn_name(p%rho*p%uu(:,3),idiag_ruzm)
 !
-!  mean dot product of forcing and velocity field, <f.u>
+!  Mean angular momenta.
+!
+        if (idiag_rlxm/=0) call sum_mn_name( &
+            p%rho*(y(m)*p%uu(:,3)-z(n)*p%uu(:,2)),idiag_rlxm)
+        if (idiag_rlym/=0) call sum_mn_name( &
+            p%rho*(z(n)*p%uu(:,1)-x(l1:l2)*p%uu(:,3)),idiag_rlym)
+        if (idiag_rlzm/=0) call sum_mn_name( &
+            p%rho*(x(l1:l2)*p%uu(:,2)-y(m)*p%uu(:,1)),idiag_rlzm)
+        if (idiag_rlx2m/=0) call sum_mn_name( &
+            (p%rho*(y(m)*p%uu(:,3)-z(n)*p%uu(:,2)))**2,idiag_rlx2m)
+        if (idiag_rly2m/=0) call sum_mn_name( &
+            (p%rho*(z(n)*p%uu(:,1)-x(l1:l2)*p%uu(:,3)))**2,idiag_rly2m)
+        if (idiag_rlz2m/=0) call sum_mn_name( &
+            (p%rho*(x(l1:l2)*p%uu(:,2)-y(m)*p%uu(:,1)))**2,idiag_rlz2m)
+!
+!  Mean dot product of forcing and velocity field, <f.u>.
 !
         if (idiag_fum/=0) then
           call dot(p%fcont,p%uu,fu)
           call sum_mn_name(fu,idiag_fum)
         endif
 !
-!  things related to vorticity
+!  Things related to vorticity.
 !
         if (idiag_oum/=0) call sum_mn_name(p%ou,idiag_oum)
         if (idiag_oumh/=0) then
@@ -2889,6 +2910,12 @@ module Hydro
         idiag_ruxm=0
         idiag_ruym=0
         idiag_ruzm=0
+        idiag_rlxm=0
+        idiag_rlym=0
+        idiag_rlzm=0
+        idiag_rlx2m=0
+        idiag_rly2m=0
+        idiag_rlz2m=0
         idiag_rumax=0
         idiag_rufm=0
         idiag_dtu=0
@@ -3015,6 +3042,12 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'ruxm',idiag_ruxm)
         call parse_name(iname,cname(iname),cform(iname),'ruym',idiag_ruym)
         call parse_name(iname,cname(iname),cform(iname),'ruzm',idiag_ruzm)
+        call parse_name(iname,cname(iname),cform(iname),'rlxm',idiag_rlxm)
+        call parse_name(iname,cname(iname),cform(iname),'rlym',idiag_rlym)
+        call parse_name(iname,cname(iname),cform(iname),'rlzm',idiag_rlzm)
+        call parse_name(iname,cname(iname),cform(iname),'rlx2m',idiag_rlx2m)
+        call parse_name(iname,cname(iname),cform(iname),'rly2m',idiag_rly2m)
+        call parse_name(iname,cname(iname),cform(iname),'rlz2m',idiag_rlz2m)
         call parse_name(iname,cname(iname),cform(iname),'rumax',idiag_rumax)
         call parse_name(iname,cname(iname),cform(iname),'umx',idiag_umx)
         call parse_name(iname,cname(iname),cform(iname),'umy',idiag_umy)
