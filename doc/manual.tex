@@ -303,6 +303,9 @@
 \renewcommand{\vec}[1]{{\boldsymbol #1}}
 \newcommand{\const}   {\mbox{\rm const}}
 
+\newcommand{\pderiv}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\pderivn}[3]{\frac{{\partial{}}^{#3} #1}{{\partial #2}^{#3}}}
+
 %% Maths variables
 
 %% Vectors
@@ -360,6 +363,7 @@
 \newcommand{\BBhat}{\hat{\vekt{B}}}
 
 \newcommand{\EE}[1]{\,{\times}\,10^{#1}}
+\newcommand{\ee}      {\mathrm{e}}
 
 \def\la{\mathrel{\mathchoice {\vcenter{\offinterlineskip\halign{\hfil
 $\displaystyle##$\hfil\cr<\cr\sim\cr}}}
@@ -682,6 +686,14 @@ Brandenburg, A., R\"adler, K.-H., Rheinhardt, M., \& K\"apyl\"a, P. J.\yapj{2008
 and shearing turbulence}
 (\arXiv{0710.4059})
 
+Lyra, W., Johansen, A., Klahr, H., \& Piskunov, N.\yana{2008}{491}{L41}{L44}{Embyros grown in the dead zone. Assembling the first protoplanetary cores in low-mass selfgravitating circumstellar disks of gas and solids}
+
+Lyra, W., Johansen, A., Klahr, H., \& Piskunov, N.\yana{2009}{493}{1125}{1139}{Standing on the shoulders of giants. Trojan Earths and vortex trapping in low-mass selfgravitating protoplanetary disks of gas and solids}
+
+Lyra, W., Johansen, A., Zsom, A., Klahr, H., \& Piskunov, N.
+{Planet formation bursts at the borders of the dead zone in 2D numerical simulations of circumstellar disks}
+(\arXiv{0901.1638})
+
 \end{list}
 
 \clearpage
@@ -833,7 +845,8 @@ Tobi Heinemann added the long characteristics method for
 radiative transfer as well as hydrogen ionization.
 He also added and/or improved shock diffusion for other variables
 and improved the resulting timestep control.
-Anders Johansen and Jeff Oishi contributed to the implementation of
+Anders Johansen, Wladimir (Wlad) Lyra and Jeff Oishi contributed 
+to the implementation of
 the dust equations (which now comprises an array of different components).
 Antony (Tony) Mee (University of Newcastle) implemented shock viscosity
 and added the interstellar module together with
@@ -847,6 +860,14 @@ He also added, together with Andrew Snodin, the evolution equations
 for the cosmic ray energy density.
 Vladimir Pariev (University of Rochester) contributed to the development
 and testing of the potential field boundary condition at an early stage.
+
+The implementation of spherical and cylindrical coordinates is due 
+to Dhrubaditya (Dhruba) Mitra and Wladimir. Wlad also 
+implemented the global set-up for protoplanetary 
+disks (as opposed to the local shearing sheet formalism). He also added a 
+$N$-body code (based on the particle module coded by Anders Johansen 
+and Tony), and implemented the coupled evolution equations of neutrals and 
+ions for two-fluid models of ambipolar diffusion. 
 
 Use of the PPARC supported supercomputers in St Andrews (Mhd) and
 Leicester (Ukaff) is acknowledged. We also acknowledge the Danish Center
@@ -2835,8 +2856,8 @@ Note the spurious checkerboard modulation in places, for example
 near $x=-0.5$ and $-2.5<y<-1.5$.
 This is an example of a hyperviscous turbulence simulations with
 $512^3$ meshpoints and a third order hyperviscosity of
-$\nu_3=5\times10^{-12}$.
-}\label{Ftimestepoverviscous}\end{figure}
+$\nu_3=5\times10^{-12}$. Hyperviscosity is explained in the 
+Appendix~\ref{high-freq-filters}.}\label{Ftimestepoverviscous}\end{figure}
 
 Timestepping is accomplished using the Runge-Kutta 2N scheme.
 Regarding details of this scheme see Sect.~\ref{S-2N-scheme}.
@@ -3502,7 +3523,6 @@ In addition one must edit
    FOURIER=fourier_fftpack
    POWER=power_spectrum
 \end{alltt}
-You should also make sure that \var{nxgrid}=\var{nygrid}=\var{nzgrid}.
 
 Running the code will now create the files \file{powerb.dat} and 
 \file{poweru.dat} containing the three-dimensional 
@@ -3520,8 +3540,10 @@ power at each wavenumber, from the smallest to the largest.
 If several snapshots have been saved, they are being stored immediately 
 following the preceding snapshot.
 
-It is limited for the case of different resolution when one direction is
-an integer multiple of the other. So, it can be done for
+A caveat of the implementation of Fourier transforms on the Pencil 
+code is that due to the parallelization, the permitted resolution 
+is limited to the case when one direction is an integer multiple of 
+the other. So, it can be done for
 
 \code{Nx = n*Ny}
 
@@ -3529,7 +3551,7 @@ Unfortunately, for some applications one wants \code{Nx < Ny}. Wlad experimented
 with arbitrary resolution by interpolating $x$ to the same resolution of $y$
 prior to transposing, then transform the interpolated array and then
 interpolating it back (check \file{fourier_transform_y} in
-\file{fourier_fftpack.f90}).
+\file{fourier_fftpack.f90}). 
 
 To visualize with \name{IDL} just type
 \cmd{power} and you get the last snapshot of the three-dimensional 
@@ -3745,6 +3767,7 @@ In practice, the names $(x,y,z)$ are still used, but they refer then
 to $(r,\theta,\phi)$ or $(r,\phi,z)$ instead.
 
 Bug reports, corrections, and improvements on these are appreciated.
+
 
 % ====================================================================== %
 
@@ -7002,6 +7025,229 @@ $\epsilon$ & $\sigma$ & $\delta$ \\
     \end{tabular}
   \end{center}
 \end{table}
+
+
+% ====================================================================== %
+
+\section{High-frequency filters}
+\label{high-freq-filters}
+
+Being high order, {\sc Pencil} has much reduced numerical dissipation. 
+In order to perform inviscid simulations, high-frequency filters can  
+be used to provide extra dissipation for modes approaching the 
+Nyquist frequency. Usual Laplacian viscosity $\nu\Laplace\uv$ is 
+equivalent to a multiplication by $k^2$ in Fourier space, where $k$ is 
+the wavenumber. Another tool is hyper-viscosity, which replaces the $k^2$ 
+dependency by a higher power-law, $k^n$, $n$$>$2. The idea behind it is to 
+provide large dissipation only where it is needed, at the grid scale 
+(high $k$), while minimizing it at the largest scales of the box (small $k$). 
+In principle, one can use as high $n$ as desired, but in practice we are 
+limited by the order of the code. A multiplication by $k^n$ is equivalent 
+to an operator $\nabla^n$ in real space. As {\sc Pencil} is of sixth order, 
+three ghost cells are available in each direction, thus the sixth-order 
+derivative is the highest we can compute. The hyper-dissipation we use is 
+therefore $\nabla^6$, or $k^6$ is Fourier space. Figure~\ref{hypervisc} 
+illustrates how such tool maximizes the inertial range of a simulation.
+
+% ---------------------------------------------------------------------- %
+\begin{figure}[htb]
+  \centering
+  \includegraphics%
+    [width=.9\textwidth,keepaspectratio]%
+    {diffcolor}
+  \caption{Dissipation acting on a scalar field $\psi$, for $n$=1 (Laplacian dissipation) and $n$=3 (third-order hyperdissipation). The field is initially seeded with noise (upper panel). For $n$=3 the large scale is not affected as much as in the $n$=1 case, which is seen by the larger wiggling of the latter in the middle panel. In Fourier space (lower panel) we see that near the grid scale 
+both formulations give strong dissipation. It also illustrates that at the large scales ($k$$\simeq$1), the effect of $n$=3 is indeed negligible.}
+  \label{hypervisc}
+\end{figure}
+% ---------------------------------------------------------------------- %
+
+\subsection{Conservative Hyperdissipation}
+
+It is desirable to have this high-frequency filter obeying the conservation laws. So, for density we want a mass conserving term, for velocities we want a momentum conserving term, for magnetic fields we want a term conserving magnetic flux, and for entropy we want an energy conserving term. These enter as hyperdiffusion, hyperviscosity, hyper-resistivity, and hyper heat conductivity terms in the evolution equations. To ensure conservation under transport, they must take the form of the divergence of the flux {$\mathcal J$} of the quantity $\psi$, so that Gauss theorem applies and we have
+
+\begin{equation}
+  \pderiv{\psi}{t} + \Div{{\mathcal J}} = 0
+\end{equation}
+
+For density, the flow due to mass diffusion is usually taken as the phenomenological Fick's Law
+
+\begin{equation}
+  \label{eq:fick}
+  {\mathcal J} = -D \grad \rho
+\end{equation}i.e., proportional to the density gradient, in the opposite direction. This leads to the usual Laplacian diffusion 
+
+\begin{equation}
+  \label{eq:diff}
+  \pderiv{\rho}{t} = D\Laplace{\rho}
+\end{equation}under the assumption that the diffusion coefficient $D$ is isotropic. Higher order hyperdiffusion of order $2n$ involves a generalization of Eq.~(\ref{eq:fick}), to 
+
+
+\begin{equation}
+  \label{eq:hyperfick}
+  {\mathcal J^{(n)}} = -D^{(n)} \grad^{2n-1} \rho,
+\end{equation}In our case, we are interested in the case $n=3$, so that the hyper-diffusion term is
+
+\begin{equation}
+  \label{eq:hyperdiff}
+  \pderiv{\rho}{t} = D^{(3)}\nabla^6{\rho}.
+\end{equation}
+
+The hyper diffusion coefficient $D^{(3)}$ can be calculated from $D$ assuming that at the Nyquist frequency the two formulations (\ref{eq:diff}) and (\ref{eq:hyperdiff}) yield the same quenching. Considering a wave as a Fourier series in one dimension ($x$), one element of the series is expressed as
+
+\begin{equation}
+  \psi_k = A \ee^{i(k x +  \omega t)} 
+\end{equation}
+
+Plugging it into the second order diffusion equation (\ref{eq:diff}) we have the dispersion condition $i\omega = -D k^2$. The sixth order version (\ref{eq:hyperdiff}) yields $i\omega = -D^{(3)} k^6$. Equating both we have  $D^{(3)} = D k^{-4}$. This condition should hold at the grid scale, where $k=\pi/\Delta x$, therefore
+
+\begin{equation}
+  \label{eq:diffrho-hyper}
+  D^{(3)} = D \left(\frac{{\Delta}x}{\pi}\right)^4 
+\end{equation}
+
+% mass conserving hyperdiffusion is intrinsically related to the numerical resolution. 
+
+For the magnetic potential, resistivity has the same formulation as mass diffusion 
+
+\begin{equation}
+  \pderiv{\Av}{t} = -\eta\curl{\Bv} = \eta\Laplace{\Av},
+\end{equation}where we used the Coulomb gauge $\Div{\Av}=0$. The algebra is the same as above, also yielding $\eta^{(3)}=\eta({\Delta}x/\pi)^4$. For entropy, the heat conduction term is 
+
+\begin{equation}
+  \pderiv{S}{t}=\frac{1}{\rho T}\Div\left(K\grad{T}\right),
+\end{equation}and requiring that $K$ be constant, we substitute it by 
+
+\begin{equation}
+  \pderiv{S}{t}=\frac{K^{(3)}}{\rho T}\nabla^6T.
+\end{equation}also with $K^{(3)}=K({\Delta}x/\pi)^4$.
+
+\subsection{Hyperviscosity}
+
+Viscosity has some caveats where subtleties apply. The difference is that the momentum flux due to viscosity is not proportional to the velocity gradient, but to the rate-of-strain tensor 
+
+\begin{equation}
+  \label{eq:strain}
+S_{ij} = \frac{1}{2}\left( \pderiv{u_i}{x_j} + \pderiv{u_j}{x_i} - \frac{1}{3}\delta_{ij}\Div{\uv}\right)
+\end{equation}which only allows the viscous acceleration to be reduced to the simple formulation $\nu\Laplace{\uv}$ under the condition of incompressibility and constant dynamical viscosity $\mu=\nu\rho$. Due to this, the general expression for conservative hyperviscosity involves more terms. In some cases, it is no great overhead, but for others, simpler formulations can be applied.
+
+\subsubsection{Conservative case}
+
+In the general case, the viscous acceleration is 
+
+\begin{equation}
+f_{\rm visc} = \rho^{-1} \Div{\left(2\rho\nu\Strain\right)}
+\end{equation}
+
+So, for the hyper-viscous force, we must replace the rate-of-strain tensor by a high order version 
+
+\begin{equation}
+  \label{eq:hypervisc}
+  f_{\rm visc}^{({\rm hyper})} = \rho^{-1} \Div{\left(2\rho\nu_n\Strain^{(n)}\right)}
+\end{equation}where the $n^{\rm th}$-order rate of strain tensor is 
+
+
+\begin{equation}
+\Strain^{(n)} = (-\nabla^2)^{n-1}\Strain.
+\end{equation}
+
+For the $n=3$ case it is
+
+\begin{equation}
+S^{(3)}_{ij} = \frac{1}{2} \left( \pderivn{u_j}{x_i}{5} + \pderivn{}{x_i}{4}\left(\pderiv{u_i}{x_j}\right) - \frac{1}{3}\pderivn{}{x_i}{4}\left(\Div{\uv}\right) \right)
+\end{equation}
+
+Plugging it into Eq.~(\ref{eq:hypervisc}), and assuming $\mu_3={\rm const}$
+
+\begin{equation}
+  \label{eq:hyper-mu-const}
+f_{\rm visc}^{({\rm hyper})} = \nu_3 \left(\nabla^6\uv + \frac{1}{3}\nabla^4({\grad({\Div{\uv}})}) \right) 
+\end{equation}
+
+
+For $\nu_3={\rm const}$, we have to derivate the density as well
+
+\begin{equation}
+  \label{eq:hyper-nu-const}
+f_{\rm visc}^{({\rm hyper})} = \nu_3 \left(\nabla^6\uv + \frac{1}{3}\nabla^4({\grad({\Div{\uv}})}) + 2\Strain^{(3)}\cdot\grad{\ln\rho} \right) 
+\end{equation}
+
+
+\subsubsection{Non-conservative cases}
+
+Equations (\ref{eq:hyper-mu-const}) and (\ref{eq:hyper-nu-const}) explicitly conserve linear {\em and} angular momentum. Although desirable properties, such expressions are cumbersome and numerically expensive, due to the fourth order derivatives of $\grad({\Div{\uv}})$. 
+
+
+This term, however, is only important when high compressibility is present (since it depends on the divergence of $\uv$). In practice we drop this term and use a simple hyper-viscosity 
+
+\begin{equation}
+  f_{\rm visc} = \left\{ 
+  \begin{array}{l r}
+    \nu_3 \nabla^6\uv   &\mbox{if $\mu={\rm const}$}                                                  \\
+    \nu_3 \left(\nabla^6\uv + 2\Strain^{(3)}\cdot\grad{\ln\rho} \right)   &\mbox{if $\nu={\rm const}$} 
+  \end{array}
+\right.  
+\end{equation}
+
+Notice that this can indeed be expressed as the divergence of a simple rate-of-strain tensor 
+
+\begin{equation}
+  \label{eq:weird-strain}
+  S_{ij}^{(3)} = \pderivn{u_i}{x_j}{5}
+\end{equation}so it does conserve linear momentum. It does {\it not}, however, conserve {\it angular} momentum, since the symmetry of the rate-of-strain tensor was dropped. Thus, vorticity sinks and sources may be spuriously generated at the grid scale.
+
+A symmetric tensor can be computed, that conserves angular momentum and can be easily implemented 
+
+\begin{equation}
+  \label{eq:symmetric-strain}
+S_{ij} = \frac{1}{2} \left(\pderivn{u_i}{x_j}{5} + \pderivn{u_j}{x_i}{5} \right)
+\end{equation}
+
+%S5 = this plus that 
+
+This tensor, however, is not traceless, and therefore accurate only for weak compressibility. It should work well if the turbulence is subsonic. Major differences are not expected, since the spectral range in which hyper-viscosity operates is very limited: as a numerical tool, only its performance as a high-frequency filter is needed. This also supports the usage of the highest order terms only, since these are the ones that provide quenching at high $k$. Momentum conservation is a cheap bonus. Angular momentum conservation is perhaps playing it too safe, at great computational expense. 
+
+\subsection{Anisotropic hyperdissipation}
+
+As we want quenching primarily at the Nyquist frequency, hyperdissipation 
+depends intrinsically on the resolution, according to 
+Eq.~(\ref{eq:diffrho-hyper}). Because of this, {\it isotropic}
+hyperdissipation only gives equal quenching in all spatial directions 
+if $\Delta x$=$\Delta y$=$\Delta z$, i.e., if the cells are cubic. For 
+non-cubic cells, anisotropic dissipation is required as different 
+directions may be better/worse sampled, thus needing less/more numerical 
+smoothing. Such generalization is straightforward. For that, we 
+replace Eq.~(\ref{eq:hyperfick}) by
+
+\begin{equation}
+  \label{eq:general-fick}
+  \mathbf{{\mathcal J}}=\left(D_x \pderivn{\rho}{x}{5}, D_y \pderivn{\rho}{y}{5}, D_z \pderivn{\rho}{z}{5}\right),
+\end{equation}
+so that different diffusion operates in different directions. Since $D_x$,
+$D_y$ and $D_z$ are constants, the divergence of this vector is 
+
+\begin{equation}
+  \label{eq:anisodiff}
+  \Div\mathbf{{\mathcal J}}=D_x \pderivn{\rho}{x}{6}+ 
+  D_y \pderivn{\rho}{y}{6}+
+  D_z \pderivn{\rho}{z}{6}.
+\end{equation}
+The formulation for resistivity and heat conductivity are strictly the same. For viscosity it also
+assumes the same form if we consider the simple non-conservative rate-of-strain tensor (\ref{eq:weird-strain}). 
+
+Mathematically, these operations can be written compactly by noticing that the
+coefficients in Eq.~(\ref{eq:anisodiff}) transform like diagonal tensors $\chi_{ij}^{(3)}=\chi_k^{(3)} \delta_{ijk}$,
+where $\delta_{ijk}$ is the unit diagonal third order tensor, $\mathbf{\chi}^{(3)}$ is the
+vector containing the dissipative coefficients (diffusion, viscosity, 
+resistivity, or heat conductivity) in $x$, $y$, and $z$, and summation over repeated indices applies.
+Therefore, for a scalar quantity $\psi$ (density, any of the three components
+of the velocity or magnetic potential), we can write
+
+\begin{equation}
+  \label{eq:component-6th}
+  \pderiv{\psi}{t} = 
+- \chi_{ij}^{(3)} {\partial{}}_i{\partial{}}_j^5\psi 
+= -\sum_{q}^{} {\chi_q^{(3)} \frac{\partial{}^6}{\partial{x_q^6}}\psi}.
+\end{equation}
 
 
 % ====================================================================== %
