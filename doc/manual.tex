@@ -363,7 +363,6 @@
 \newcommand{\BBhat}{\hat{\vekt{B}}}
 
 \newcommand{\EE}[1]{\,{\times}\,10^{#1}}
-\newcommand{\ee}      {\mathrm{e}}
 
 \def\la{\mathrel{\mathchoice {\vcenter{\offinterlineskip\halign{\hfil
 $\displaystyle##$\hfil\cr<\cr\sim\cr}}}
@@ -7095,7 +7094,7 @@ For density, the flow due to mass diffusion is usually taken as the phenomenolog
 The hyper diffusion coefficient $D^{(3)}$ can be calculated from $D$ assuming that at the Nyquist frequency the two formulations (\ref{eq:diff}) and (\ref{eq:hyperdiff}) yield the same quenching. Considering a wave as a Fourier series in one dimension ($x$), one element of the series is expressed as
 
 \begin{equation}
-  \psi_k = A \ee^{i(k x +  \omega t)} 
+  \psi_k = A {\mathrm e}^{i(k x +  \omega t)} 
 \end{equation}
 
 Plugging it into the second order diffusion equation (\ref{eq:diff}) we have the dispersion condition $i\omega = -D k^2$. The sixth order version (\ref{eq:hyperdiff}) yields $i\omega = -D^{(3)} k^6$. Equating both we have  $D^{(3)} = D k^{-4}$. This condition should hold at the grid scale, where $k=\pi/\Delta x$, therefore
