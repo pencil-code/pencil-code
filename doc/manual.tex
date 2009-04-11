@@ -4232,28 +4232,30 @@ through use of the {\it neutrals} module. That module solves the
 coupled equations of neutral and ionized gas, in a two-fluid model  
 
 \begin{eqnarray}
-  \pderiv{\rho_i}{t} &=& -\Div{(\rho_i \v{u}_i)} + G \label{ionized-continuity}\\
-  \pderiv{\rho_n}{t} &=& -\Div{(\rho_n \v{u}_n)} - G \label{neutral-continuity}\\
+  \pderiv{\rho_i}{t} &=& -\Div{(\rho_i \v{u}_i)} + {\mathcal G} \label{ionized-continuity}\\
+  \pderiv{\rho_n}{t} &=& -\Div{(\rho_n \v{u}_n)} - {\mathcal G} \label{neutral-continuity}\\
   \pderiv{(\rho_i \v{u}_i)}{t} &=& -\Div{(\rho_i \v{u}_i:\v{u}_i)} - 
-    \grad{\left(p_i + p_e + \frac{B^2}{2\mu_0}\right)} + F  \label{ionized-ns}\\
+    \grad{\left(p_i + p_e + \frac{B^2}{2\mu_0}\right)} + {\mathcal F}  \label{ionized-ns}\\
   \pderiv{(\rho_n \v{u}_n)}{t} &=& -\Div{(\rho_n \v{u}_n:\v{u}_n)} - 
-    \grad{p_n} - F                                          \label{neutral-ns}\\
+    \grad{p_n} - {\mathcal F}                                          \label{neutral-ns}\\
   \pderiv{\v{A}}{t} &=& \v{u}_i \times \v{B}
-\end{eqnarray}where the subscripts $n$ and $i$ are for neutral and ionized, respectively. 
-The terms $G$ and $F$, through which the two fluids exchange mass and momentum, are given by 
+\end{eqnarray}where the subscripts $n$ and $i$ are for neutral and ionized, 
+respectively. The terms ${\mathcal G}$ and ${\mathcal F}$, through which the two fluids exchange mass and 
+momentum, are given by 
 
 \begin{eqnarray}
-  G &=& \zeta\rho_n - \alpha \rho_i^2 \\
-  F &=& \zeta\rho_n\v{u}_n - \alpha \rho_i^2\v{u}_i + \gamma\rho_i\rho_n (\v{u}_n - \v{u}_i) \;.
+  {\mathcal G} &=& \zeta\rho_n - \alpha \rho_i^2 \\
+  {\mathcal F} &=& \zeta\rho_n\v{u}_n - \alpha \rho_i^2\v{u}_i + \gamma\rho_i\rho_n (\v{u}_n - \v{u}_i) \;.
 \end{eqnarray}In the above equations, $\zeta$ is the ionization coefficient, $\alpha$ is the 
 recombination coefficient, and $\gamma$ the collisional drag strength. By the time of writing 
 (spring 2009), these three quantities are supposed constant. The electron pressure $p_e$ is 
 also assumed equal to the ion pressure. Only isothermal neutrals are supported so far.
 
-In the code, \eq{ionized-continuity} and \eq{ionized-ns} are solved in \file{density.f90} and 
-\file{hydro.f90} respectively. Equation~\ref{neutral-continuity} is solved un \file{neutraldensity.f90} 
-and \eq{neutral-ns} in \file{neutralvelocity.f90}. The sample \file{1d-test/ambipolar-diffusion} has the 
-current setup for a two-fluid simulation with ions and neutrals.
+In the code, \eq{ionized-continuity} and \eq{ionized-ns} are solved in \file{density.f90} 
+and \file{hydro.f90} respectively. Equation~\ref{neutral-continuity} is solved in 
+\file{neutraldensity.f90} and \eq{neutral-ns} in \file{neutralvelocity.f90}. The sample 
+\file{1d-test/ambipolar-diffusion} has the current setup for a two-fluid simulation with 
+ions and neutrals.
 
 % ---------------------------------------------------------------------- %
 
