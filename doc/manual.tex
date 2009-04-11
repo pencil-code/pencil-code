@@ -301,6 +301,7 @@
 
 \newcommand{\vekt}[1] {\mathbf{#1}}
 \renewcommand{\vec}[1]{{\boldsymbol #1}}
+\renewcommand{\v}{\vec}
 \newcommand{\const}   {\mbox{\rm const}}
 
 \newcommand{\pderiv}[2]{\frac{\partial #1}{\partial #2}}
@@ -356,6 +357,9 @@
 
 \newcommand{\bra}[1]{\langle #1\rangle}
 \newcommand{\Eq}[1]{Eq.~(\ref{#1})}
+\newcommand{\Fig}[1]{Fig.~\ref{#1}}
+\newcommand{\eq}[1]{\Eq{#1}}
+\newcommand{\fig}[1]{\Fig{#1}}
 \newcommand{\nab}{\mbox{\boldmath $\nabla$} {}}
 \newcommand{\dd}{{\rm d} {}}
 
@@ -363,6 +367,8 @@
 \newcommand{\BBhat}{\hat{\vekt{B}}}
 
 \newcommand{\EE}[1]{\,{\times}\,10^{#1}}
+\newcommand{\ttimes}[1]{10^{#1}}
+\newcommand{\xtimes}[2]{#1 \times 10^{#2}}
 
 \def\la{\mathrel{\mathchoice {\vcenter{\offinterlineskip\halign{\hfil
 $\displaystyle##$\hfil\cr<\cr\sim\cr}}}
@@ -844,7 +850,7 @@ Tobi Heinemann added the long characteristics method for
 radiative transfer as well as hydrogen ionization.
 He also added and/or improved shock diffusion for other variables
 and improved the resulting timestep control.
-Anders Johansen, Wladimir (Wlad) Lyra and Jeff Oishi contributed 
+Anders Johansen, Wladimir (Wlad) Lyra, and Jeff Oishi contributed 
 to the implementation of
 the dust equations (which now comprises an array of different components).
 Antony (Tony) Mee (University of Newcastle) implemented shock viscosity
@@ -4483,6 +4489,69 @@ This can be set through the parameter \code{eps_todt} in
 the mesh using either NGP, CIC or TSC assignment. The same scheme is used both
 for interpolation and for assignment to avoid any risk of a particle
 accelerating itself (see Hockney \& Eastwood 1981).
+
+
+\subsection{$N$-body solver}
+
+The $N$-body code takes advantage of the existing Particles module, which was 
+coded with the initial intent of treating solid particles whose radius 
+$a_\bullet$ is comparable to the mean free path $\lambda$ of the gas, 
+for which a fluid description is not valid. A $N$-body implementation 
+based on that module only needed to include mass as extra state for the 
+particles, solve for the $N^2$ gravitational pair interactions and 
+distinguish between the $N$-body and the small bodies that are mapped 
+into the grid as a $\rho_p$ density field.
+
+The particles of the $N$-body ensemble evolve due to their mutual gravity 
+and by interacting with the gas and the swarm of small bodies. The equation 
+of motion for particle $i$ is 
+
+\begin{equation}
+  \frac{d{\v{v}}_{p_i}}{dt} = {\v{F}}_{g_i} -\sum_{j\neq i}^{N}\frac{G M_j}{{\mathcal R}_{ij}^2} \hat{\v{{\mathcal R}}}_{ij}
+  \label{eq:dust-dynamics}
+\end{equation}where ${\mathcal R}_{ij}=|\v{r}_{p_i}-{\v{r}}_{p_j}|$ is the
+distance between particles $i$ and $j$, and $\hat{\v{{\mathcal R}}}_{ij}$ is
+the unit vector pointing from particle $j$ to particle $i$. The first term of
+the R.H.S. is the combined gravity of the gas and of the dust particles onto the particle $i$, solved via 
+
+\begin{equation}
+  {\v{F}}_{g_i} = -G\int_{V} \frac{[\rho_g(\v{r})+\rho_p(\v{r})]\v{{\mathcal R}}_i}{({\mathcal R}_i^2 + b_i^2)^{3/2}} \de V, 
+  \label{eq:disk-gravity}
+\end{equation}where the integration is carried out over the whole disk. The
+smoothing distance $b_i$ is taken to be as small as possible 
+(a few grid cells). For few particles ($<$10), calculating the integral 
+for every particle is practical. For larger ensembles one would prefer to 
+solve the Poisson equation to calculate their combined gravitational 
+potential.
+
+The evolution of the particles is done with the same third-order Runge-Kutta 
+time-stepping routine used for the gas. The particles define the timestep also 
+by the Courant condition that they should not move more than one cell at a time. 
+For pure particle runs, where the grid is absent, one can adopt a 
+fixed time-step $t_p \ll 2\pi\varOmega_{\rm fp}^{-1}$ where 
+$\varOmega_{\rm fp}$ is the angular frequency of the fastest particle. 
+
+By now (spring 2009), no inertial accelerations are included in the $N$-body module, so only the 
+inertial frame - with origin at the baricenter of the $N$-body ensemble - 
+is available. For a simulation of the circular restricted three-body problem 
+with mass ratio $q$=$\ttimes{-3}$, the Jacobi constant of a test particle 
+initially placed at position $(x,y)$=(2,0) was found to be conserved up 
+to one part in $\ttimes{5}$ within the timespan of 100 orbits.
+
+
+We stress that the level of conservation is poor when compared to integrators designed to specifically 
+deal with long-term $N$-body problems. These integrators are usually symplectic, unlike the Runge-Kutta 
+scheme of the {\sc Pencil Code}. As such, {\sc Pencil} should not be used to deal with evolution over millions of 
+years. But for the time-span typical of astrophysical hydrodynamical 
+simulations, this degree of conservation of the Jacobi constant can be 
+deemed acceptable.
+
+As an extension of the particle's module, the $N$-body is fully compatible 
+with the parallel optimization of {\sc Pencil}, which further speeds up the 
+calculations. Parallelization, however, is not yet possible for pure particle 
+runs, since it relies on splitting the grid between the processors. At the 
+time of writing (spring 2009), the $N$-body code does not allow the particles 
+to have a time-evolving mass.
 
 \subsection{Testfield equations}
 \index{Testfield method}
