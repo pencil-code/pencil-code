@@ -417,7 +417,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \emph{$ $Date$ $,~ $ $Revision$ $}\\
   \url{http://www.nordita.org/software/pencil-code/}\\
-  \url{http://code.google.com/p/pencil-code/}
+  \url{http://pencil-code.googlecode.com/}
 
   \vspace{\stretch{3}}
 
@@ -465,10 +465,10 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
   tarek & \htmladdnormallink{Tarek A. Yousef}{http://www.pvv.org/~tarek/} & University of Trondheim\\
   steveb & \htmladdnormallink{Steve Berukoff}{http://www.physics.ucla.edu/~steveb/} & UCLA \\
   snod & \htmladdnormallink{Andrew Snodin}{http://www.ncl.ac.uk/math/postgrad/postgrads.htm} & University of Newcastle\\
-  pkapyla & \htmladdnormallink{Petri K\"apyl\"a}{http://cc.oulu.fi/~pkapyla/} & Oulu University and Kiepenheuer Institute\\
+  pkapyla & \htmladdnormallink{Petri K\"apyl\"a}{http://cc.oulu.fi/~pkapyla/} & University of Helsinki\\
   nils & \htmladdnormallink{Nils Erland L.\ Haugen}{http://www.phys.ntnu.no/~nilshau/index2.html} & University of Trondheim\\
   ngrs & \htmladdnormallink{Graeme R. Sarson}{http://www.mas.ncl.ac.uk/~ngrs/home.html} & University of Newcastle\\
-  nbabkovs & \htmladdnormallink{Natalia Babkovskaia}{http://www.nordita.org/~nbabkovs/} & Nordita\\
+  nbabkovs & \htmladdnormallink{Natalia Babkovskaia}{http://www.nordita.org/~nbabkovs/} & University of Helsinki\\
   mkorpi  & \htmladdnormallink{Maarit J.\ Korpi}{http://www.helsinki.fi/~mkorpi/} & University of Helsinki\\
   mee  & \htmladdnormallink{Antony (tOnY) Mee}{http://www.mas.ncl.ac.uk/~n7026413/pencil-code/movies/} & University of Newcastle\\
   mcmillan & \htmladdnormallink{David McMillan}{http://brunhes.eas.yorku.ca/dave/CV/} & York University, Toronto\\
@@ -519,7 +519,7 @@ and presentations the use of the code (or parts of it)
 be acknowledged with reference to the web site
 \url{http://www.nordita.org/software/pencil-code/}.
 As a courtesy to the people involved in developing particularly important
-parts of the program (use \cmd{cvs annotate src/*.f90} to find out who did what!)
+parts of the program (use \cmd{svsvnnnotate src/*.f90} to find out who did what!)
 we suggest to give appropriate reference to one or
 several of the following papers (listed here in temporal order):
 
@@ -613,53 +613,65 @@ several of the following papers (listed here in temporal order):
 \begin{list}{}{\leftmargin 3em \itemindent -3em\listparindent \itemindent
 \itemsep 0pt \parsep 1pt}\item[]
 
+% -- Isotropic homogeneous hydro turbulence --
 Dobler, W., Haugen, N. E. L., Yousef, T. A., \&
 Brandenburg, A.\yprN{2003}{E 68}{026304}
 {1-8}{Bottleneck effect in three-dimensional turbulence simulations}
 (\astroph{0303324})
 
+% -- Isotropic homogeneous MHD turbulence --
 Haugen, N. E. L., Brandenburg, A., \& Dobler, W.\yapjlS{2003}{597}{L141}
 {L144}{Is nonhelical hydromagnetic turbulence peaked at small scales?}
 (\astroph{0303372})
 
+% -- Passive scalar diffusion --
 Brandenburg, A., K\"apyl\"a, P., \& Mohammed, A.\ypf{2004}{16}{1020}
 {1027}{Non-Fickian diffusion and tau-approximation from numerical turbulence}
 (\astroph{0306521})
 
+% -- dust in the fluid approximation --
 Johansen, A., Andersen, A. C., \& Brandenburg, A.\yana{2004}{417}{361}
 {371}{Simulations of dust-trapping vortices in protoplanetary discs}
 (\astroph{0310059})
 
+% -- supersonic turbulence --
 Haugen, N. E. L., Brandenburg, A., \& Mee, A. J.\ymn{2004}{353}{947}
 {952}{Mach number dependence of the onset of dynamo action}
 (\astroph{0405453})
 
+% -- homochirality --
 Brandenburg, A., \& Multam\"aki, T.\yjourS{2004}{Int.\ J.\ Astrobiol.}{3}{209}
 {219}{How long can left and right handed life forms coexist?}
 (\qbio{0407008})
 
+% -- geodynamo --
 McMillan, D. G., \& Sarson, G. R.\ypepi{2005}{153}{124}
 {135}{Dynamo simulations in a spherical shell of ideal gas using a 
 high-order Cartesian magnetohydrodynamics code}
 
+% -- radiation transfer --
 Heinemann, T., Dobler, W., Nordlund, \AA., \&
 Brandenburg, A.\yana{2006}{448}{731}
 {737}{Radiative transfer in decomposed domains}
 (\astroph{0503510})
 
+% -- star-in-a-box simulation --
 Dobler, W., Stix, M., \& Brandenburg, A.\yapj{2006}{638}{336}
 {347}{Convection and magnetic field generation in fully convective spheres}
 (\astroph{0410645})
 
+% -- cosmic ray diffusion --
 Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\ymn{2006}{373}{643}
 {652}{Simulating field-aligned diffusion of a cosmic ray gas}
 (\astroph{0507176})
 
+% -- dust represented as particles --
 Johansen, A., Klahr, H., \& Henning, T.\yapj{2006}{636}{1121}
 {1134}{Dust sedimentation and self-sustained Kelvin-Helmholtz turbulence
 in protoplanetary disc mid-planes}
 (\astroph{0512272})
 
+% -- core accretion --
 de Val-Borro, M. and 22 coauthors (incl.\ Lyra, W.)\ymn{2006}{370}{529}
 %Edgar, R. G., Artymowicz, P., Ciecielag, P., Cresswell,
 %P., D'Angelo, G., Delgado-Donate, E. J., Dirksen, G., Fromang, S.,
@@ -669,20 +681,25 @@ de Val-Borro, M. and 22 coauthors (incl.\ Lyra, W.)\ymn{2006}{370}{529}
 {558}{A comparative study of disc-planet interaction}
 (\astroph{0605237})
 
+% -- dust represented as particles --
+%AB: do we need only one of the two?
 Johansen, A., Oishi, J. S., Mac Low, M. M., Klahr, H., Henning, T.,
 \& Youdin, A.\ynat{2007}{448}{1022}
 {1025}{Rapid planetesimal formation in turbulent circumstellar disks}
 (\arXiv{0708.3890})
 
+-- global models of protoplanetary disks --
 Lyra, W., Johansen, A., Klahr, H., \& Piskunov, N.\yana{2008}{479}{883}
 {901}{Global magnetohydrodynamical models of turbulence in protoplanetary disks I. A cylindrical potential on a Cartesian grid and transport of solids}
 (\arXiv{0705.4090})
 
+-- test-field method --
 Brandenburg, A., R\"adler, K.-H., Rheinhardt, M., \& K\"apyl\"a, P. J.\yapj{2008}{676}{740}
 {751}{Magnetic diffusivity tensor and dynamo effects in rotating
 and shearing turbulence}
 (\arXiv{0710.4059})
 
+-- global simulations of dead zones --
 Lyra, W., Johansen, A., Klahr, H., \& Piskunov, N.\yana{2008}{491}{L41}{L44}{Embyros grown in the dead zone. Assembling the first protoplanetary cores in low-mass selfgravitating circumstellar disks of gas and solids}
 
 Lyra, W., Johansen, A., Klahr, H., \& Piskunov, N.\yana{2009}{493}{1125}{1139}{Standing on the shoulders of giants. Trojan Earths and vortex trapping in low-mass selfgravitating protoplanetary disks of gas and solids}
@@ -982,7 +999,7 @@ Here is the upgrading procedure:
 %  \begin{alltt}
 %  \prompt{unix> } cd somewhere/pencil-code \
 %  \end{alltt}
-\item Perform a \cmd{cvs} update of the tree:
+\item Perform a \cmd{svn} update of the tree:
   \begin{alltt}
   \prompt{unix> } pc_svnup \
   \end{alltt}
@@ -1389,7 +1406,7 @@ For example, we have our own runs in a repository called
 \file[pencil-runs/]{pencil-runs}, so we do
 \begin{alltt}
   \prompt{unix> } cd \$PENCIL_HOME
-  \prompt{unix> } cvs co -d runs pencil-runs
+  \prompt{unix> } svn co runs pencil-runs
 \end{alltt}
 In this case, \file[runs/]{runs} contains individual run directories,
 grouped in
