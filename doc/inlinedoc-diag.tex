@@ -53,9 +53,16 @@
   \var{uxmax=0}   & $\max(|u_x|)$ \\
   \var{uymax=0}   & $\max(|u_y|)$ \\
   \var{uzmax=0}   & $\max(|u_z|)$ \\
+  \var{uxm=0}     & $\left<u_x\right>$ \\
+  \var{uym=0}     & $\left<u_y\right>$ \\
+  \var{uzm=0}     & $\left<u_z\right>$ \\
   \var{ux2m=0}    & $\left<u_x^2\right>$ \\
   \var{uy2m=0}    & $\left<u_y^2\right>$ \\
   \var{uz2m=0}    & $\left<u_z^2\right>$ \\
+  \var{ux2ccm=0}  & $\left<u_x^2\cos^2kz\right>$ \\
+  \var{ux2ssm=0}  & $\left<u_x^2\sin^2kz\right>$ \\
+  \var{uy2ccm=0}  & $\left<u_y^2\cos^2kz\right>$ \\
+  \var{uy2ssm=0}  & $\left<u_y^2\sin^2kz\right>$ \\
   \var{ux2mx=0}   & $\left<u_x^2\right>_{yz}$ \\
   \var{uy2mx=0}   & $\left<u_y^2\right>_{yz}$ \\
   \var{uz2mx=0}   & $\left<u_z^2\right>_{yz}$ \\
@@ -65,6 +72,25 @@
   \var{oxmz=0}    & $\left< \omega_x \right>_{xy}$ \\
   \var{oymz=0}    & $\left< \omega_y \right>_{xy}$ \\
   \var{ozmz=0}    & $\left< \omega_z \right>_{xy}$ \\
+  \var{umx=0}     & $\left< u_x \right>$ \\
+  \var{umy=0}     & $\left< u_y \right>$ \\
+  \var{umz=0}     & $\left< u_z \right>$ \\
+  \var{uxmy=0}    & $\left< u_x \right>_{y}$ \\
+  \var{uymy=0}    & $\left< u_y \right>_{y}$ \\
+  \var{uzmy=0}    & $\left< u_z \right>_{y}$ \\
+  \var{u2mz=0}    & $\left< \uv^2 \right>_{y}$ \\
+  \var{omumz=0}   & $\left<\left<\Wv\right>_{xy}
+                    \cdot\left<\Uv\right>_{xy}
+                    \right>$ \quad($xy$-averaged
+                    mean cross helicity production) \\
+  \var{umbmz=0}   & $\left<\left<\Uv\right>_{xy}
+                    \cdot\left<\Bv\right>_{xy}
+                    \right>$ \quad($xy$-averaged
+                    mean cross helicity production) \\
+  \var{umxbmz=0}  & $\left<\left<\Uv\right>_{xy}
+                    \times\left<\Bv\right>_{xy}
+                    \right>_z$ \quad($xy$-averaged
+                    mean emf) \\
   \var{uxmxy=0}   & $\left< u_x \right>_{z}$ \\
   \var{uymxy=0}   & $\left< u_y \right>_{z}$ \\
   \var{uzmxy=0}   & $\left< u_z \right>_{z}$ \\
@@ -106,6 +132,12 @@
                     \quad(mean Reynolds stress) \\
   \var{ruyuzm=0}  & $\left<\varrho u_y u_z\right>$
                     \quad(mean Reynolds stress) \\
+  \var{rlxm=0}    & $\left< \rho y u_z - z u_y \right>$ \\
+  \var{rlym=0}    & $\left< \rho z u_x - x u_z \right>$ \\
+  \var{rlzm=0}    & $\left< \rho x u_y - y u_x \right>$ \\
+  \var{rlx2m=0}   & $\left<(\rho y u_z-z u_y)^2\right>$ \\
+  \var{rly2m=0}   & $\left<(\rho z u_x-x u_z)^2\right>$ \\
+  \var{rlz2m=0}   & $\left<(\rho x u_y-y u_x)^2\right>$ \\
   \var{dtu=0}     & $\delta t/[c_{\delta t}\,\delta x
                     /\max|\mathbf{u}|]$
                     \quad(time step relative to
@@ -113,6 +145,7 @@
                     see \S~\ref{time-step}) \\
   \var{oum=0}     & $\left<\boldsymbol{\omega}
                     \cdot\uv\right>$ \\
+  \var{fum=0}     & $\left<\fv\cdot\uv\right>$ \\
   \var{o2m=0}     & $\left<\boldsymbol{\omega}^2\right>
                     \equiv \left<(\curl\uv)^2\right>$ \\
   \var{orms=0}    & $\left<\boldsymbol{\omega}^2
@@ -184,6 +217,9 @@
   \var{abms=0}    & $\left<\Av\cdot\Bv\right>$ \\
   \var{jbm=0}     & $\left<\jv\cdot\Bv\right>$ \\
   \var{ubm=0}     & $\left<\uv\cdot\Bv\right>$ \\
+  \var{ujm=0}     & $\left<\uv\cdot\Jv\right>$ \\
+  \var{fbm=0}     & $\left<\fv\cdot\Bv\right>$ \\
+  \var{fxbxm=0}   & $\left<f_x B_x\right>$ \\
   \var{epsM=0}    & $\left<2\eta\mu_0\jv^2\right>$ \\
   \var{epsAD=0}   & $\left<\rho^{-1} t_{\rm AD} (\vec{J}\times\vec{B})^2\right>$ (heating by ion-neutrals friction) \\
   \var{bxpt=0}    & $B_x(x_0,y_0,z_0,t)$ \\
@@ -263,10 +299,10 @@
   \var{bmzphe=0}  & Error of phase of a Beltrami field \\
   \var{bsinphz=0} & sine of phase of a Beltrami field \\
   \var{bcosphz=0} & cosine of phase of a Beltrami field \\
-  \var{ebmz=0}    & $\left<\left<\Ev\cdot\Bv\right>_{xy}
+  \var{embmz=0}   & $\left<\left<\Ev\right>_{xy}\cdot\left<\Bv\right>_{xy}
                     \right>$ \quad($xy$-averaged
                     mean field helicity production ) \\
-  \var{jmbmz=0}   & $\left<\left<\Jv\cdot\Bv\right>_{xy}
+  \var{jmbmz=0}   & $\left<\left<\Jv\right>_{xy}\cdot\left<\Bv\right>_{xy}
                     \right>$ \quad(current helicity
                     of $xy$-averaged mean field) \\
   \var{kmz=0}     & $\left<\left<\Jv\cdot\Bv\right>_{xy}\right>/
@@ -325,6 +361,7 @@
   \multicolumn{2}{c}{Module \file{temperature_idealgas.f90}} \\
 \midrule
   \var{TTmax=0}   & $\max (T)$ \\
+  \var{gTmax=0}   & $\max (|grad T|)$ \\
   \var{TTmin=0}   & $\min (T)$ \\
   \var{TTm=0}     & $\left< T \right>$ \\
   \var{fradtop=0} & $<-K{dT\over dz}>_{\text{top}}$
@@ -352,14 +389,30 @@
   \var{eta21=0}   & $\eta_{21}k$ \\
   \var{eta12=0}   & $\eta_{12}k$ \\
   \var{eta22=0}   & $\eta_{22}k$ \\
-  \var{alp11cc=0} & $\alpha_{11}\cos^2 kz$ \\
-  \var{alp21sc=0} & $\alpha_{21}\sin kz\cos kz$ \\
-  \var{alp12cs=0} & $\alpha_{12}\cos kz\sin kz$ \\
-  \var{alp22ss=0} & $\alpha_{22}\sin^2 kz$ \\
-  \var{eta11cc=0} & $\eta_{11}\cos^2 kz$ \\
-  \var{eta21sc=0} & $\eta_{21}\sin kz\cos kz$ \\
-  \var{eta12cs=0} & $\eta_{12}\cos kz\sin kz$ \\
-  \var{eta22ss=0} & $\eta_{22}\sin^2 kz$ \\
+  \var{alp11cc=0} & $\alpha_{11}\cos^2 kx$ \\
+  \var{alp21sc=0} & $\alpha_{21}\sin kx\cos kx$ \\
+  \var{alp12cs=0} & $\alpha_{12}\cos kx\sin kx$ \\
+  \var{alp22ss=0} & $\alpha_{22}\sin^2 kx$ \\
+  \var{eta11cc=0} & $\eta_{11}\cos^2 kx$ \\
+  \var{eta21sc=0} & $\eta_{21}\sin kx\cos kx$ \\
+  \var{eta12cs=0} & $\eta_{12}\cos kx\sin kx$ \\
+  \var{eta22ss=0} & $\eta_{22}\sin^2 kx$ \\
+  \var{alp11x=0}  & $\alpha_{11}x$ \\
+  \var{alp21x=0}  & $\alpha_{21}x$ \\
+  \var{alp12x=0}  & $\alpha_{12}x$ \\
+  \var{alp22x=0}  & $\alpha_{22}x$ \\
+  \var{eta11x=0}  & $\eta_{11}kx$ \\
+  \var{eta21x=0}  & $\eta_{21}kx$ \\
+  \var{eta12x=0}  & $\eta_{12}kx$ \\
+  \var{eta22x=0}  & $\eta_{22}kx$ \\
+  \var{alp11x2=0} & $\alpha_{11}x^2$ \\
+  \var{alp21x2=0} & $\alpha_{21}x^2$ \\
+  \var{alp12x2=0} & $\alpha_{12}x^2$ \\
+  \var{alp22x2=0} & $\alpha_{22}x^2$ \\
+  \var{eta11x2=0} & $\eta_{11}kx^2$ \\
+  \var{eta21x2=0} & $\eta_{21}kx^2$ \\
+  \var{eta12x2=0} & $\eta_{12}kx^2$ \\
+  \var{eta22x2=0} & $\eta_{22}kx^2$ \\
   \var{b11rms=0}  & $\left<b_{11}^2\right>^{1/2}$ \\
   \var{b21rms=0}  & $\left<b_{21}^2\right>^{1/2}$ \\
   \var{b12rms=0}  & $\left<b_{12}^2\right>^{1/2}$ \\
@@ -519,6 +572,13 @@
   \var{eta21sc=0} & $\eta_{21}\sin kz\cos kz$ \\
   \var{eta12cs=0} & $\eta_{12}\cos kz\sin kz$ \\
   \var{eta22ss=0} & $\eta_{22}\sin^2 kz$ \\
+  \var{M11=0}     & ${\cal M}_{11}$ \\
+  \var{M22=0}     & ${\cal M}_{22}$ \\
+  \var{M33=0}     & ${\cal M}_{33}$ \\
+  \var{M11cc=0}   & ${\cal M}_{11}\cos^2 kz$ \\
+  \var{M11ss=0}   & ${\cal M}_{11}\sin^2 kz$ \\
+  \var{M22cc=0}   & ${\cal M}_{22}\cos^2 kz$ \\
+  \var{M22ss=0}   & ${\cal M}_{22}\sin^2 kz$ \\
   \var{bx11pt=0}  & $b_x^{11}$ \\
   \var{bx21pt=0}  & $b_x^{21}$ \\
   \var{bx12pt=0}  & $b_x^{12}$ \\
@@ -566,9 +626,14 @@
   \var{E20z=0}    & ${\cal E}_2^{0}$ \\
   \var{E30z=0}    & ${\cal E}_3^{0}$ \\
   \var{EBpq=0}    & ${\cal E}\cdot\Bv^{pq}$ \\
+  \var{E0Um=0}    & ${\cal E}^0\cdot\Uv$ \\
+  \var{E0Wm=0}    & ${\cal E}^0\cdot\Wv$ \\
   \var{bx0mz=0}   & $\left<b_{x}\right>_{xy}$ \\
   \var{by0mz=0}   & $\left<b_{y}\right>_{xy}$ \\
   \var{bz0mz=0}   & $\left<b_{z}\right>_{xy}$ \\
+  \var{M11z=0}    & $\left<{\cal M}_{11}\right>_{xy}$ \\
+  \var{M22z=0}    & $\left<{\cal M}_{22}\right>_{xy}$ \\
+  \var{M33z=0}    & $\left<{\cal M}_{33}\right>_{xy}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{chemistry.f90}} \\
 \midrule

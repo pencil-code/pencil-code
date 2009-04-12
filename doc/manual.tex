@@ -74,7 +74,7 @@
 %\usepackage{ae}                 % To get good PDF with the T1 encoding
 \usepackage{newcent,helvet}
 \renewcommand{\ttdefault}{cmtt} % Courier is too broad
-\usepackage{amsmath}
+\usepackage{amsmath,amssymb}
 
 \usepackage[it,footnotesize]{caption2}
 \setlength{\abovecaptionskip}{5pt} % Space before caption
@@ -283,26 +283,18 @@
 
 \newcommand{\de}      {\mathrm{d}}
 \newcommand{\De}      {\mathrm{D}}
-% \newcommand{\arcosh} {\mathop{\rm arcosh}\nolimits}
-% \newcommand{\arcoth} {\mathop{\rm arcoth}\nolimits}
 \newcommand{\artanh}  {\mathop{\rm artanh}\nolimits}
-% \newcommand{\sgn}    {\mathop{\rm sgn}\nolimits}
-% \newcommand{\grad}    {\mathop{\rm grad}\nolimits}
-% \newcommand{\Div}     {\mathop{\rm div}\nolimits}
-% \newcommand{\curl}    {\mathop{\rm curl}\nolimits}
-% \newcommand{\Laplace} {\mathop{\Delta}\nolimits}
-\newcommand{\grad}    {\nabla}
-\newcommand{\Div}     {\nabla\cdot}
+\renewcommand{\vec}[1]{\mbox{\boldmath{$#1$}}}
+\newcommand{\vcs}[1]  {\mbox{\boldmath{$\scriptstyle{#1}$}}}
+\renewcommand{\v}{\vec}
+\newcommand{\const}   {\mbox{\rm const}}
+\newcommand{\grad}    {\vec{\nabla}}
+\newcommand{\Div}     {\vec{\nabla}\cdot}
 \newcommand{\curl}    {\nabla\times}
 \newcommand{\Laplace} {\nabla^2}
 \newcommand{\rot}     {\curl}
 \newcommand{\erfc}    {\mathop{\rm erfc}\nolimits}
 \newcommand{\erf}     {\mathop{\rm erf}\nolimits}
-
-\newcommand{\vekt}[1] {\mathbf{#1}}
-\renewcommand{\vec}[1]{{\boldsymbol #1}}
-\renewcommand{\v}{\vec}
-\newcommand{\const}   {\mbox{\rm const}}
 
 \newcommand{\pderiv}[2]{\frac{\partial #1}{\partial #2}}
 \newcommand{\pderivn}[3]{\frac{{\partial{}}^{#3} #1}{{\partial #2}^{#3}}}
@@ -310,27 +302,27 @@
 %% Maths variables
 
 %% Vectors
-\newcommand{\Av}            {\vekt{A}}
-% \newcommand{\av}            {\vekt{a}}
-\newcommand{\Bv}            {\vekt{B}}
-\newcommand{\Jv}            {\vekt{J}}
-\newcommand{\Uv}            {\vekt{U}}
-\newcommand{\Wv}            {\vekt{W}}
-% \newcommand{\bv}            {\vekt{b}}
-\newcommand{\ev}            {\vekt{e}}
-\newcommand{\Ev}            {\vekt{E}}
+\newcommand{\Av}            {\vec{A}}
+% \newcommand{\av}            {\vec{a}}
+\newcommand{\Bv}            {\vec{B}}
+\newcommand{\Jv}            {\vec{J}}
+\newcommand{\Uv}            {\vec{U}}
+\newcommand{\Wv}            {\vec{W}}
+% \newcommand{\bv}            {\vec{b}}
+\newcommand{\ev}            {\vec{e}}
+\newcommand{\Ev}            {\vec{E}}
 % \newcommand{\ex}            {\ev_{x}}
 % \newcommand{\ey}            {\ev_{y}}
 % \newcommand{\ez}            {\ev_{z}}
-\newcommand{\Fv}            {\vekt{F}}
-\newcommand{\fv}            {\vekt{f}}
-\newcommand{\gv}            {\vekt{g}}
-\newcommand{\jv}            {\vekt{j}}
-\newcommand{\kv}            {\vekt{k}}
-\newcommand{\uv}            {\vekt{u}}
-\newcommand{\bv}            {\vekt{b}}
-\newcommand{\xv}            {\vekt{x}}
-\newcommand{\zerovect}      {\vekt{0}}
+\newcommand{\Fv}            {\vec{F}}
+\newcommand{\fv}            {\vec{f}}
+\newcommand{\gv}            {\vec{g}}
+\newcommand{\jv}            {\vec{j}}
+\newcommand{\kv}            {\vec{k}}
+\newcommand{\uv}            {\vec{u}}
+\newcommand{\bv}            {\vec{b}}
+\newcommand{\xv}            {\vec{x}}
+\newcommand{\zerovect}      {\vec{0}}
 \newcommand{\omv}           {\boldsymbol{\omega}}
 
 % Reynolds numbers
@@ -364,7 +356,7 @@
 \newcommand{\dd}{{\rm d} {}}
 
 \newcommand{\Bhat}{\hat{B}}
-\newcommand{\BBhat}{\hat{\vekt{B}}}
+\newcommand{\BBhat}{\hat{\vec{B}}}
 
 \newcommand{\EE}[1]{\,{\times}\,10^{#1}}
 \newcommand{\ttimes}[1]{10^{#1}}
@@ -890,7 +882,7 @@ for Scientific Computing for granting time on Horseshoe, which is a
 
 \part{Using the {\sc Pencil Code}}
 
-\section{System Requirements}
+\section{System requirements}
 
 To use the code, you will need the following:
 
@@ -929,7 +921,7 @@ To use the code, you will need the following:
 
 % ====================================================================== %
 
-\section{Obtaining the Code}
+\section{Obtaining the code}
 
 The code is now distributed via
 \url{http://code.google.com/p/pencil-code/},
@@ -1036,7 +1028,7 @@ were different back then can cannot be reproduced.
 
 % ====================================================================== %
 
-\section{Getting Started}
+\section{Getting started}
 \label{S-getting-started}
 
 To get yourself started, you should run one or several examples which are
@@ -1679,7 +1671,7 @@ Each of the directories can contain the following files:
 
 % ====================================================================== %
 
-\section{Using the Code}
+\section{Using the code}
 \label{Input-params}
 
 \subsection{Adapting \file{Makefile.src}}
@@ -1994,7 +1986,7 @@ column formatted as \verb|(F10.3)|, followed by the mean squared velocity,
 \verb|(E13.4)|, the average density \var{rhom} ($\left<\varrho\right>$,
 which allows to monitor mass conservation) formatted \verb|(F10.5)| and
 the kinetic helicity \var{oum}
-(that is $\left<\vekt{\omega}\cdot\uv\right>$) in the last column with the
+(that is $\left<\vec{\omega}\cdot\uv\right>$) in the last column with the
 default format \verb|(E10.2)|.\footnote{
   The format specifiers are like in Fortran, apart from the fact that the
   \texttt{E} format will use standard scientific format, corresponding to
@@ -3776,7 +3768,7 @@ Bug reports, corrections, and improvements on these are appreciated.
 
 % ====================================================================== %
 
-\section{The Equations}
+\section{The equations}
 
 The equations solved by the {\sc Pencil Code} are basically the standard
 compressible MHD equations. However, the modular structure allows
@@ -3796,11 +3788,11 @@ In the code the continuity equation,
 $\partial\varrho/\partial t+\Div\varrho\uv=0$,
 is written in terms of $\ln\varrho$,
 \begin{equation}
-  \frac{D\ln\varrho}{Dt}
+  \frac{\De\ln\varrho}{\De t}
   = - \Div\uv \; .
 \end{equation}
 Here $\varrho$ denotes density, $\uv$ the fluid velocity, $t$ is time and
-$D/Dt \equiv \partial/\partial t + \uv\cdot\grad$ is the convective
+$\De/\De t \equiv \partial/\partial t + \uv\cdot\grad$ is the convective
 derivative.
 
 % ---------------------------------------------------------------------- %
@@ -3823,7 +3815,7 @@ and $\gamma=c_p/c_v$ is the ratio of specific heats, or \emph{adiabatic index}.
 
 The equation of motion is accordingly
 \begin{eqnarray}
-  \frac{D\uv}{Dt}
+  \frac{\De\uv}{\De t}
    =& &-\cs^2\grad\biggl(\frac{s}{c_p} + \ln\varrho\biggr)
       - \grad\Phi_{\rm grav}
       + \frac{\jv\times\Bv}{\varrho}  \nonumber \\
@@ -3910,7 +3902,7 @@ entropy gradient determines convective (in)stability, the
 of the associated hydrostatic reference solution, etc.
 The equation solved is
 \begin{equation} \label{entropy-eq}
-  \varrho T\frac{Ds}{Dt}
+  \varrho T\frac{\De s}{\De t}
    =  \Heat - \Cool
       + \Div(K\grad T)
       + \eta\mu_0 \jv^2
@@ -4031,7 +4023,7 @@ Here $c$ denotes the concentration (per unit mass) of the passive scalar and
 ${\cal D}$ its diffusion constant (assumed constant).
 In the code this equation is solved in terms of $\ln c$,
 \begin{equation}
-  \frac{D\ln c}{Dt}
+  \frac{\De\ln c}{\De t}
   = {\cal D} \left[ \Laplace\ln c + (\grad\ln\varrho+\grad\ln c)\cdot\grad\ln c
                \right].
 \end{equation}
@@ -4053,7 +4045,7 @@ However, for supersonic flows, or even otherwise, one might want to add a
 shock viscosity which, in its simplest formulation, take the form of a
 bulk viscosity.
 
-\subsubsection{Shock Viscosity}
+\subsubsection{Shock viscosity}
 \index{Shock viscosity}
 \label{ShockViscosity}
 
@@ -4069,11 +4061,11 @@ is usually chosen to be around unity.
 Assume that the shock viscosity only enters as a bulk viscosity,
 so the whole stress tensor is then
 \begin{equation}
-\vekt{\tau}_{ij}=2\varrho\nu{\sf S}_{ij}+\varrho\zeta_{\rm shock}\delta_{ij}\nab\cdot\uv.
+\vec{\tau}_{ij}=2\varrho\nu{\sf S}_{ij}+\varrho\zeta_{\rm shock}\delta_{ij}\nab\cdot\uv.
 \end{equation}
 Assume $\nu=\mbox{const}$, but $\zeta\neq\mbox{const}$, so
 \begin{equation}
-\varrho^{-1}\vekt{F}_{\rm visc}=
+\varrho^{-1}\vec{F}_{\rm visc}=
 \nu\left(\Laplace\uv+\frac{1}{3}\grad\Div\uv+2\Strain\cdot\grad\ln\varrho\right)
 +\zeta_{\rm shock}\left[\grad\Div\uv+\left(\grad\ln\varrho+\grad\ln\zeta_{\rm shock}\right)\Div\uv\right].
 \end{equation}
@@ -4293,7 +4285,7 @@ $\varPhi$ for simplicity) satisfies Poisson's equation
 \end{equation}
 The solution for a single Fourier component at scale $\vec{k}$ is
 \begin{equation}
-  \varPhi_\vec{k} = -\frac{4 \pi G \rho_\vec{k}}{k^2} \, .
+  \varPhi_{\vcs{k}} = -\frac{4 \pi G \rho_{\vcs{k}}}{k^2} \, .
 \end{equation}
 Here we have assumed periodic boundary conditions. The potential is obtained by
 Fourier-transforming the density, then finding the corresponding potential at
@@ -6357,7 +6349,7 @@ in Fig~\ref{cvsstat}.
 \end{table}
 % ---------------------------------------------------------------------- %
 % ====================================================================== %
-\section{Coding Standard}
+\section{Coding standard}
 \label{coding-standard}
 
 The numerous elements that make up the {\sc Pencil Code} are written
@@ -6401,7 +6393,7 @@ some form of capitalization for readability.
 In general all Fortran code including keywords, variable names etc. are
 written in lowercase. 
 
-\subsubsection{Indenting and Whitespace}
+\subsubsection{Indenting and whitespace}
 Whitespace should be removed from the end of lines.
 
 Blank lines are kept to a minimum, and when occurring in subroutines
@@ -6489,12 +6481,12 @@ after the `/' are either the users cvs login name or, where such exists
 amongst the {\sc Pencil Code} community, the accepted short form ($\approx 4$ 
 characters) of the authors name.
 
-\subsubsection{Module Names}
+\subsubsection{Module names}
 The names of modules are written with initial letter capitalization 
 of each word and the multiple words written consecutively without
 any separator.
 
-\subsubsection{Variable Names}
+\subsubsection{Variable names}
 Variable are given short but meaning full names and written
 in all lowercase.  Single character names are avoided except
 for commonly used loop indices and the two code data structures
@@ -7137,7 +7129,7 @@ $\epsilon$ & $\sigma$ & $\delta$ \\
 \section{High-frequency filters}
 \label{high-freq-filters}
 
-Being high order, {\sc Pencil} has much reduced numerical dissipation. 
+Being high order, {\sc Pencil Code} has much reduced numerical dissipation. 
 In order to perform inviscid simulations, high-frequency filters can  
 be used to provide extra dissipation for modes approaching the 
 Nyquist frequency. Usual Laplacian viscosity $\nu\Laplace\uv$ is 
@@ -7148,11 +7140,21 @@ provide large dissipation only where it is needed, at the grid scale
 (high $k$), while minimizing it at the largest scales of the box (small $k$). 
 In principle, one can use as high $n$ as desired, but in practice we are 
 limited by the order of the code. A multiplication by $k^n$ is equivalent 
-to an operator $\nabla^n$ in real space. As {\sc Pencil} is of sixth order, 
+to an operator $\nabla^n$ in real space. As {\sc Pencil Code} is of sixth order, 
 three ghost cells are available in each direction, thus the sixth-order 
 derivative is the highest we can compute. The hyper-dissipation we use is 
 therefore $\nabla^6$, or $k^6$ is Fourier space. Figure~\ref{hypervisc} 
 illustrates how such tool maximizes the inertial range of a simulation.
+
+Simplified hyperdiffusivity has been implemented for many dynamical variables
+and can be found in the respective modules. A strict generalization of
+viscosity and resistivity to higher order is implemented in the modules
+\file{hypervisc_strict_2nd} and \file{hyperresi_strict_2nd}.
+
+Hyperdiffusivity is meant purely as a numerical tool to dissipate energy at
+small scales and comes with no guarantee that results are convergent with
+regular second order dissipation. See Haugen \& Brandenburg (2004) for a
+discussion.
 
 % ---------------------------------------------------------------------- %
 \begin{figure}[htb]
@@ -7166,19 +7168,19 @@ both formulations give strong dissipation. It also illustrates that at the large
 \end{figure}
 % ---------------------------------------------------------------------- %
 
-\subsection{Conservative Hyperdissipation}
+\subsection{Conservative hyperdissipation}
 
 It is desirable to have this high-frequency filter obeying the conservation laws. So, for density we want a mass conserving term, for velocities we want a momentum conserving term, for magnetic fields we want a term conserving magnetic flux, and for entropy we want an energy conserving term. These enter as hyperdiffusion, hyperviscosity, hyper-resistivity, and hyper heat conductivity terms in the evolution equations. To ensure conservation under transport, they must take the form of the divergence of the flux {$\mathcal J$} of the quantity $\psi$, so that Gauss theorem applies and we have
 
 \begin{equation}
-  \pderiv{\psi}{t} + \Div{{\mathcal J}} = 0
+  \pderiv{\psi}{t} + \Div{\vec{\mathcal J}} = 0
 \end{equation}
 
 For density, the flow due to mass diffusion is usually taken as the phenomenological Fick's Law
 
 \begin{equation}
   \label{eq:fick}
-  {\mathcal J} = -D \grad \rho
+  \vec{\mathcal J} = -D \grad \rho
 \end{equation}i.e., proportional to the density gradient, in the opposite direction. This leads to the usual Laplacian diffusion 
 
 \begin{equation}
@@ -7189,7 +7191,7 @@ For density, the flow due to mass diffusion is usually taken as the phenomenolog
 
 \begin{equation}
   \label{eq:hyperfick}
-  {\mathcal J^{(n)}} = -D^{(n)} \grad^{2n-1} \rho,
+  \vec{\mathcal J}^{(n)} = (-1)^n D^{(n)} \grad^{2n-1} \rho,
 \end{equation}In our case, we are interested in the case $n=3$, so that the hyper-diffusion term is
 
 \begin{equation}
@@ -7325,14 +7327,14 @@ replace Eq.~(\ref{eq:hyperfick}) by
 
 \begin{equation}
   \label{eq:general-fick}
-  \mathbf{{\mathcal J}}=\left(D_x \pderivn{\rho}{x}{5}, D_y \pderivn{\rho}{y}{5}, D_z \pderivn{\rho}{z}{5}\right),
+  \vec{\mathcal J}=\left(D_x \pderivn{\rho}{x}{5}, D_y \pderivn{\rho}{y}{5}, D_z \pderivn{\rho}{z}{5}\right),
 \end{equation}
 so that different diffusion operates in different directions. Since $D_x$,
 $D_y$ and $D_z$ are constants, the divergence of this vector is 
 
 \begin{equation}
   \label{eq:anisodiff}
-  \Div\mathbf{{\mathcal J}}=D_x \pderivn{\rho}{x}{6}+ 
+  \Div\vec{\mathcal J}=D_x \pderivn{\rho}{x}{6}+ 
   D_y \pderivn{\rho}{y}{6}+
   D_z \pderivn{\rho}{z}{6}.
 \end{equation}
@@ -7643,7 +7645,7 @@ and reduces to the simpler form
 \fv_{\kv}=\left(\kv\times\ev\right)/\sqrt{\kv^2-(\kv\cdot\ev)^2}.
 \end{equation}
 For $0<|\sigma|<1$, the forcing function has fractional helicity, where
-$\sigma\approx\left<\vekt{\omega}\cdot\uv\right>/(k_{\rm f}
+$\sigma\approx\left<\vec{\omega}\cdot\uv\right>/(k_{\rm f}
 \left<\uv^2\right>)$; see Sect.~4.5 of Ref.~\cite{BDS02}.
 In the code and the \name{forcing_run_pars} namelist,
 $\sigma$ is called \var{relhel}.
@@ -8478,7 +8480,7 @@ modules
 
 % ====================================================================== %
 
-\section{Startup and Run-Time Parameters}
+\section{Startup and run-time parameters}
 \label{S-all-parameters}
 
 \subsection[Startup parameters for \File{start.in}]%
@@ -9568,7 +9570,7 @@ that are documented.
 % ---------------------------------------------------------------------- %
 
 
-\subsection{Initial Condition Parameter Dependence}
+\subsection{Initial condition parameter dependence}
 \label{S-all-init-depend}
 
 The following tables list which parameters from each Namelist are required 
@@ -9835,6 +9837,10 @@ initial condition.
   \emph{Month. Not. Roy. Soc.} \textbf{225}, 695--711 (1987)
   ``The stability of accretion tori -- II. Nonlinear evolution
   to discrete planets''
+
+\bibitem{HB04a}Haugen, N.~E.~L., \& Brandenburg, A.
+  \emph{Phys.~Rev.~E} \textbf{70}, 026405 (2004)
+  ``Inertial range scaling in numerical turbulence with hyperviscosity''
 
 \bibitem{HockneyEastwood1981}Hockney, R.~W., \& Eastwood, J.~W.,
   \emph{Computer Simulation Using Particles},
