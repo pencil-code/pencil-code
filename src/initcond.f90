@@ -28,7 +28,7 @@ module Initcond
   public :: powern, power_randomphase
   public :: planet, planet_hc
   public :: random_isotropic_KS
-  public :: htube, htube2, hat, hat3d
+  public :: htube, htube2, htube_x, hat, hat3d
   public :: htube_erf
   public :: wave_uu, wave, parabola
   public :: sinxsinz, cosx_cosy_cosz, cosx_coscosy_cosz
@@ -2206,6 +2206,62 @@ module Initcond
       endif
 !
     endsubroutine htube
+!***********************************************************************
+    subroutine htube_x(ampl,f,i1,i2,radius,eps,center1_x,center1_y,center1_z)
+!
+!  Horizontal flux tube pointing in the x-direction
+!  (for vector potential, or passive scalar)
+!
+!  14-apr-09/axel: adapted from htube
+!
+      integer :: i1,i2
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: tmp,modulate,tube_radius_sqr
+      real :: ampl,radius,eps,kx
+      real :: center1_x,center1_y,center1_z
+!
+      if (ampl==0) then
+        f(:,:,:,i1:i2)=0
+        if (lroot) print*,'htube_x: set variable to zero; i1,i2=',i1,i2
+      else
+        kx=2*pi/Lx
+        if (lroot) then
+          print*,'htube_x: implement y-dependent flux tube in xz-plane; i1,i2=',i1,i2
+          print*,'htube_x: radius,eps=',radius,eps
+        endif
+!
+!  modulation pattern
+!
+        if (eps==0.) then
+          modulate=1.
+        else
+          modulate=1.+eps*cos(kx*x(l1:l2))
+        endif
+!
+! completely quenched "gaussian"
+!
+        do n=n1,n2; do m=m1,m2
+          tube_radius_sqr=(y(m)-center1_y)**2+(z(n)-center1_z)**2
+          tmp=modulate/(1.+tube_radius_sqr/radius**2)
+!
+!  check whether vector or scalar
+!
+          if (i1==i2) then
+            if (lroot.and.ip<10) print*,'htube_x: set scalar'
+            f(l1:l2,m,n,i1)=tmp
+          elseif (i1+2==i2) then
+            if (lroot.and.ip<10) print*,'htube_x: set vector'
+            f(l1:l2,m,n,i1  )=+0.
+            f(l1:l2,m,n,i1+1)=-(z(n)-center1_z)*tmp
+            f(l1:l2,m,n,i1+2)=+(y(m)-center1_y)*tmp
+         else
+            if (lroot) print*,'htube_x: bad value of i2=',i2
+          endif
+!
+        enddo; enddo
+      endif
+!
+    endsubroutine htube_x
 !***********************************************************************
     subroutine htube_erf(ampl,f,i1,i2,a,eps,center1_x,center1_y,center1_z,width)
 !

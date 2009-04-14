@@ -865,6 +865,8 @@ module Magnetic
         case('diffrot'); call diffrot(amplaa(j),f,iay)
         case('hor-tube'); call htube(amplaa(j),f,iax,iaz,radius,epsilonaa, &
                                      center1_x,center1_y,center1_z)
+        case('hor-tube-x'); call htube_x(amplaa(j),f,iax,iaz,radius,epsilonaa, &
+                                     center1_x,center1_y,center1_z)
         case('hor-tube_erf'); call htube_erf(amplaa(j),f,iax,iaz,radius,epsilonaa, &
                                      center1_x,center1_y,center1_z,fluxtube_border_width)
         case('hor-fluxlayer'); call hfluxlayer(amplaa(j),f,iaa,z0aa,widthaa)
