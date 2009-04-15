@@ -131,7 +131,7 @@ module Magnetic
   logical :: lgauss=.false.
   logical :: lbb_as_aux=.false.,ljj_as_aux=.false.
   logical :: lbbt_as_aux=.false.,ljjt_as_aux=.false.
-  logical :: lbext_curvilinear=.true., lcheck_positive_va2=.false.
+  logical :: lbext_curvilinear=.false., lcheck_positive_va2=.false.
   logical :: lreset_aa=.false.
   character (len=labellen) :: pertaa='zero'
 
