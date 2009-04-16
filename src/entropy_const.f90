@@ -54,9 +54,8 @@ module Entropy
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_dtc=0,idiag_eth=0,idiag_ethdivum=0,idiag_ssm=0
   integer :: idiag_ugradpm=0,idiag_ethtot=0,idiag_dtchi=0,idiag_ssmphi=0
-
+!
   contains
-
 !***********************************************************************
     subroutine register_entropy()
 !
@@ -254,38 +253,6 @@ module Entropy
       endif
 !
     endsubroutine rprint_entropy
-!***********************************************************************
-    subroutine heatcond(x,y,z,hcond)
-!
-!  calculate the heat conductivity lambda
-!  NB: if you modify this profile, you *must* adapt gradloghcond below.
-!
-!  23-jan-02/wolf: coded
-!  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
-!
-      use Cdata, only: ip
-!
-      real, dimension (nx) :: x,y,z
-      real, dimension (nx) :: hcond
-      if (ip==1) print*,x,y,z,hcond  !(to remove compiler warnings)
-!
-    endsubroutine heatcond
-!***********************************************************************
-    subroutine gradloghcond(x,y,z,glhc)
-!
-!  calculate grad(log lambda), where lambda is the heat conductivity
-!  NB: *Must* be in sync with heatcond() above.
-!
-!  23-jan-02/wolf: coded
-!  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
-!
-      use Cdata, only: ip
-!
-      real, dimension (nx) :: x,y,z
-      real, dimension (nx,3) :: glhc
-      if (ip==1) print*,x,y,z,glhc  !(to remove compiler warnings)
-!
-    endsubroutine gradloghcond
 !***********************************************************************
 endmodule Entropy
 

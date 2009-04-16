@@ -1,5 +1,7 @@
 ! $Id$
 !
+! Calculates pressure gradient term for polytropic equation of state.
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -12,20 +14,16 @@
 ! PENCILS PROVIDED cs2; pp; TT1; Ma2; fpres(3); cv1
 !
 !***************************************************************
-
 module Entropy
-!
-! isothermal case; almost nothing to do
 !
   use Cparam
   use Cdata
   use Messages
-
+!
   implicit none
-
+!
   include 'entropy.h'
-
-! run parameters
+!
   real :: hcond0=0.,hcond1=impossible,chi=impossible
   real :: Fbot=impossible,FbotKbot=impossible,Kbot=impossible
   real :: Ftop=impossible,FtopKtop=impossible
@@ -33,22 +31,19 @@ module Entropy
   logical :: lheatc_chiconst=.false.
   logical, pointer :: lpressuregradient_gas ! Shared with Hydro module.
 
-! other variables (needs to be consistent with reset list below)
   integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
                                 ! DIAG_DOC:   /\max c_{\rm s}]$
                                 ! DIAG_DOC:   \quad(time step relative to 
                                 ! DIAG_DOC:   acoustic time step;
                                 ! DIAG_DOC:   see \S~\ref{time-step})
-  integer :: idiag_ssm=0
   integer :: idiag_ugradpm=0
   integer :: idiag_thermalpressure=0
-
+!
   contains
-
 !***********************************************************************
     subroutine register_entropy()
 !
-!  No energy equation is being solved; use isothermal equation of state
+!  No energy equation is being solved; use polytropic equation of state.
 !
 !  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
 !
@@ -111,9 +106,6 @@ module Entropy
     subroutine init_ss(f)
 !
 !  Initialise entropy; called from start.f90
-!
-!  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
-!  24-nov-02/tony: renamed for consistancy (i.e. init_[varaible name])
 !
       use Cdata
 !
@@ -209,7 +201,8 @@ module Entropy
 !**********************************************************************
     subroutine dss_dt(f,df,p)
 !
-!  Isothermal/polytropic equation of state
+!  Calculate pressure gradient term for isothermal/polytropic equation
+!  of state.
 !
       use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled
       use Sub
@@ -264,42 +257,51 @@ module Entropy
 !
     endsubroutine dss_dt
 !***********************************************************************
+    subroutine calc_heatcond_ADI(finit,f)
+!
+      real, dimension(mx,my,mz,mfarray) :: finit,f
+!
+    endsubroutine calc_heatcond_ADI
+!***********************************************************************
     subroutine read_entropy_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat) .and. (NO_WARN)) print*,iostat
       if (NO_WARN) print*,unit
-
+!
     endsubroutine read_entropy_init_pars
 !***********************************************************************
     subroutine write_entropy_init_pars(unit)
+!
       integer, intent(in) :: unit
-
+!
       if (NO_WARN) print*,unit
-
+!
     endsubroutine write_entropy_init_pars
 !***********************************************************************
     subroutine read_entropy_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat) .and. (NO_WARN)) print*,iostat
       if (NO_WARN) print*,unit
-
+!
     endsubroutine read_entropy_run_pars
 !***********************************************************************
     subroutine write_entropy_run_pars(unit)
+!
       integer, intent(in) :: unit
-
+!
       if (NO_WARN) print*,unit
+!
     endsubroutine write_entropy_run_pars
 !***********************************************************************
     subroutine rprint_entropy(lreset,lwrite)
 !
-!  reads and registers print parameters relevant to entropy
-!
-!   1-jun-02/axel: adapted from magnetic fields
+!  Reads and registers print parameters relevant to entropy.
 !
       use Cdata
       use Sub
@@ -315,7 +317,7 @@ module Entropy
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_dtc=0; idiag_ssm=0; idiag_ugradpm=0
+        idiag_dtc=0; idiag_ugradpm=0
       endif
 !
       do iname=1,nname
@@ -328,7 +330,6 @@ module Entropy
 !
       if (lwr) then
         write(3,*) 'i_dtc=',idiag_dtc
-        write(3,*) 'i_ssm=',idiag_ssm
         write(3,*) 'i_ugradpm=',idiag_ugradpm
         write(3,*) 'i_TTp=',idiag_thermalpressure
         write(3,*) 'nname=',nname
@@ -338,46 +339,4 @@ module Entropy
 !
     endsubroutine rprint_entropy
 !***********************************************************************
-    subroutine heatcond(x,y,z,hcond)
-!
-!  calculate the heat conductivity lambda
-!  NB: if you modify this profile, you *must* adapt gradloghcond below.
-!
-!  23-jan-02/wolf: coded
-!  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
-!
-      use Cdata, only: ip
-!
-      real, dimension (nx) :: x,y,z
-      real, dimension (nx) :: hcond
-      if (ip==1) print*,x,y,z,hcond  !(to remove compiler warnings)
-!
-    endsubroutine heatcond
-!***********************************************************************
-    subroutine gradloghcond(x,y,z,glhc)
-!
-!  calculate grad(log lambda), where lambda is the heat conductivity
-!  NB: *Must* be in sync with heatcond() above.
-!
-!  23-jan-02/wolf: coded
-!  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
-!
-      use Cdata, only: ip
-!
-      real, dimension (nx) :: x,y,z
-      real, dimension (nx,3) :: glhc
-      if (ip==1) print*,x,y,z,glhc  !(to remove compiler warnings)
-!
-    endsubroutine gradloghcond
-!***********************************************************************
-    subroutine calc_heatcond_ADI(finit,f)
-
-      use Cparam
-
-      implicit none
-
-      real, dimension(mx,my,mz,mfarray) :: finit,f
-
-    end subroutine calc_heatcond_ADI
-!**************************************************************
 endmodule Entropy
