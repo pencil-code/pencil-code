@@ -13,25 +13,24 @@
 ! PENCILS PROVIDED diva; del2a(3)
 !
 !***************************************************************
-
 module Magnetic
-
+!
   use Cparam
+  use Cdata
   use Messages
   use Sub, only: keep_compiler_quiet
-
+!
   implicit none
-
+!
   include 'magnetic.h'
-
+!
   real, dimension (ninit) :: amplaa=0.0,kx_aa=1.,ky_aa=1.,kz_aa=1.
   real :: kx=1.,ky=1.,kz=1.,ABC_A=1.,ABC_B=1.,ABC_C=1.
   real :: brms=0., bmz_beltrami_phase=0.
   real, dimension(nx) :: meanfield_EMFdotB
   real :: inertial_length=0.,linertial_2
   logical :: lelectron_inertia=.false.
-
-  ! other variables (needs to be consistent with reset list below)
+!
   integer :: idiag_b2m=0,idiag_bm2=0,idiag_j2m=0,idiag_jm2=0,idiag_abm=0
   integer :: idiag_jbm=0,idiag_epsM=0,idiag_vArms=0,idiag_vAmax=0
   integer :: idiag_brms=0,idiag_bmax=0,idiag_jrms=0,idiag_jmax=0
@@ -43,9 +42,8 @@ module Magnetic
   integer :: idiag_bmxy_rms=0
   integer :: idiag_bsinphz=0
   integer :: idiag_bcosphz=0
-
+!
   contains
-
 !***********************************************************************
     subroutine register_magnetic()
 !
@@ -69,7 +67,7 @@ module Magnetic
 !  Perform any post-parameter-read initialization
 !
 !  24-nov-2002/tony: dummy routine
-      use Cdata
+!
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
@@ -84,31 +82,13 @@ module Magnetic
 !***********************************************************************
     subroutine init_aa(f)
 !
-!  initialise magnetic field; called from start.f90
-!  3-may-2002/wolf: dummy routine
-!
-      use Cdata
-      use Sub
+!  Dummy routine
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
 !
     endsubroutine init_aa
-!***********************************************************************
-    subroutine pert_aa(f)
-!
-!   perturb magnetic field when reading old NON-magnetic snapshot
-!   called from run.f90
-!   30-july-2004/dave: coded
-!
-      use Cdata
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine pert_aa
 !***********************************************************************
     subroutine pencil_criteria_magnetic()
 !
@@ -144,11 +124,11 @@ module Magnetic
       intent(in)  :: f
       intent(inout) :: p
 !
-      if (lpencil(i_bb)) p%bb=0.
-      if (lpencil(i_b2)) p%b2=0.
-      if (lpencil(i_jxbr)) p%jxbr=0.
-      if (lpencil(i_bij)) p%bij=0.
-      if (lpencil(i_uxb)) p%uxb=0.
+      if (lpencil(i_bb)) p%bb=0.0
+      if (lpencil(i_b2)) p%b2=0.0
+      if (lpencil(i_jxbr)) p%jxbr=0.0
+      if (lpencil(i_bij)) p%bij=0.0
+      if (lpencil(i_uxb)) p%uxb=0.0
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
@@ -157,10 +137,7 @@ module Magnetic
 !***********************************************************************
     subroutine daa_dt(f,df,p)
 !
-!  magnetic field evolution
-!  3-may-2002/wolf: dummy routine
-!
-      use Cdata
+!  Dummy routine
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -175,9 +152,7 @@ module Magnetic
 !***********************************************************************
     subroutine time_integrals_magnetic(f,p)
 !
-!   1-jul-08/axel: dummy
-!
-      use Cdata
+!  Dummy routine
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -191,9 +166,7 @@ module Magnetic
 !***********************************************************************
     subroutine df_diagnos_magnetic(f,df,p)
 !
-!  11-oct-06/axel: dummy routine
-!
-      use Cdata
+!  Dummy routine
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -210,10 +183,6 @@ module Magnetic
 !
 !  Dummy routine
 !
-!  22-feb-05/axel: coded
-!
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
       intent(inout) :: f
@@ -223,35 +192,39 @@ module Magnetic
     endsubroutine rescaling_magnetic
 !***********************************************************************
     subroutine read_magnetic_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) call keep_compiler_quiet(iostat)
       call keep_compiler_quiet(unit)
-
+!
     endsubroutine read_magnetic_init_pars
 !***********************************************************************
     subroutine write_magnetic_init_pars(unit)
+!
       integer, intent(in) :: unit
-
+!
       call keep_compiler_quiet(unit)
-
+!
     endsubroutine write_magnetic_init_pars
 !***********************************************************************
     subroutine read_magnetic_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) call keep_compiler_quiet(iostat)
       call keep_compiler_quiet(unit)
-
+!
     endsubroutine read_magnetic_run_pars
 !***********************************************************************
     subroutine write_magnetic_run_pars(unit)
+!
       integer, intent(in) :: unit
-
+!
       call keep_compiler_quiet(unit)
-
+!
     endsubroutine write_magnetic_run_pars
 !***********************************************************************
     subroutine rprint_magnetic(lreset,lwrite)
@@ -260,8 +233,6 @@ module Magnetic
 !  dummy routine
 !
 !   3-may-02/axel: coded
-!
-      use Cdata
 !
       logical :: lreset,lwr
       logical, optional :: lwrite
@@ -319,9 +290,7 @@ module Magnetic
 !***********************************************************************
     subroutine get_slices_magnetic(f,slices)
 !
-!  Write slices for animation of magnetic variables.
-!
-!  26-jun-06/tony: dummy
+!  Dummy routine
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
@@ -341,8 +310,6 @@ module Magnetic
 !
 !  Dummy routine
 !
-!  18-aug-2006/tobi: coded
-!
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mx,3), intent (out) :: bb_hat
 
@@ -357,8 +324,6 @@ module Magnetic
 ! 
 !  Dummy routine
 ! 
-      use Cdata, only: lroot
-!
       integer :: id,lun
       logical :: done
 !
@@ -380,11 +345,9 @@ module Magnetic
 !
 !  Dummy routine
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mx,my,mz,mvar), intent (inout) :: df
-
+!
     endsubroutine remove_mean_emf
 !***********************************************************************
 endmodule Magnetic
