@@ -316,6 +316,7 @@ module Testfield
 !
       select case(itestfield)
         case('Beltrami'); iE0=1
+        case('B11-B22_lin'); iE0=0
         case('B11-B21+B=0'); iE0=3
         case('B11-B22+B=0'); iE0=5
         case('B11-B21'); iE0=0
@@ -602,6 +603,7 @@ module Testfield
         call del2v(f,iaxtest,del2Atest)
         select case(itestfield)
           case('Beltrami'); call set_bbtest_Beltrami(B0test,jtest)
+          case('B11-B22_lin'); call set_bbtest_B11_B22_lin(B0test,jtest)
           case('B11-B21+B=0'); call set_bbtest_B11_B21(B0test,jtest)
           case('B11-B22+B=0'); call set_bbtest_B11_B22(B0test,jtest)
           case('B11-B21'); call set_bbtest_B11_B21(B0test,jtest)
@@ -1375,6 +1377,32 @@ module Testfield
       endselect
 !
     endsubroutine set_bbtest_B11_B22
+!***********************************************************************
+    subroutine set_bbtest_B11_B22_lin (B0test,jtest)
+!
+!  set testfield
+!
+!  25-Mar-09/axel: adapted from set_bbtest_B11_B22
+!
+      use Cdata
+!
+      real, dimension (nx,3) :: B0test
+      integer :: jtest
+!
+      intent(in)  :: jtest
+      intent(out) :: B0test
+!
+!  set B0test for each of the 9 cases
+!
+      select case(jtest)
+      case(1); B0test(:,1)=bamp     ; B0test(:,2)=0.; B0test(:,3)=0.
+      case(2); B0test(:,1)=bamp*z(n); B0test(:,2)=0.; B0test(:,3)=0.
+      case(3); B0test(:,1)=0.; B0test(:,2)=bamp     ; B0test(:,3)=0.
+      case(4); B0test(:,1)=0.; B0test(:,2)=bamp*z(n); B0test(:,3)=0.
+      case default; B0test(:,:)=0.
+      endselect
+!
+    endsubroutine set_bbtest_B11_B22_lin
 !***********************************************************************
     subroutine rprint_testfield(lreset,lwrite)
 !

@@ -189,9 +189,9 @@ module Hydro
   integer :: idiag_ux2mz=0      ! DIAG_DOC: 
   integer :: idiag_uy2mz=0      ! DIAG_DOC: 
   integer :: idiag_uz2mz=0      ! DIAG_DOC: 
-  integer :: idiag_uxuym=0      ! DIAG_DOC: 
-  integer :: idiag_uxuzm=0      ! DIAG_DOC: 
-  integer :: idiag_uyuzm=0      ! DIAG_DOC: 
+  integer :: idiag_uxuym=0      ! DIAG_DOC: $\left<u_x u_y\right>$
+  integer :: idiag_uxuzm=0      ! DIAG_DOC: $\left<u_x u_z\right>$
+  integer :: idiag_uyuzm=0      ! DIAG_DOC: $\left<u_y u_z\right>$
   integer :: idiag_uxuymz=0     ! DIAG_DOC: 
   integer :: idiag_uxuzmz=0     ! DIAG_DOC: 
   integer :: idiag_uyuzmz=0     ! DIAG_DOC: 
@@ -761,6 +761,16 @@ module Hydro
           do n=n1,n2; do m=m1,m2
             prof=.5*(1.+tanh(x(l1:l2)/widthuu))
             f(l1:l2,m,n,iux)=uu_left+(uu_right-uu_left)*prof
+          enddo; enddo
+
+        case('tanhx')
+!
+!  Burgers shock
+!
+          if (lroot) print*,'init_uu: Burgers shock'
+          prof=-ampluu(j)*tanh(.5*x(l1:l2)/widthuu)
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iux)=prof
           enddo; enddo
 
         case('shock-sphere')

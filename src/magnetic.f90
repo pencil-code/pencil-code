@@ -403,7 +403,7 @@ module Magnetic
   integer :: idiag_uxbrmphi=0   ! DIAG_DOC:
   integer :: idiag_uxbpmphi=0   ! DIAG_DOC:
   integer :: idiag_uxbzmphi=0   ! DIAG_DOC:
-  integer :: idiag_ujxbm=0      ! DIAG_DOC:
+  integer :: idiag_ujxbm=0      ! DIAG_DOC: $\left<\uv\cdot(\Jv\times\Bv\right>|_x$
   integer :: idiag_jxbrmphi=0   ! DIAG_DOC:
   integer :: idiag_jxbpmphi=0   ! DIAG_DOC:
   integer :: idiag_jxbzmphi=0   ! DIAG_DOC:
