@@ -1,6 +1,6 @@
 ! $Id$
 !
-!  This module takes care of everything related to no particles.
+!  This module takes care of everything related to dust particles.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 !
@@ -13,16 +13,15 @@
 !
 !***************************************************************
 module Particles
-
+!
   use Cdata
   use Particles_cdata
-
+!
   implicit none
-
+!
   include 'particles.h'
-
+!
   contains
-
 !***********************************************************************
     subroutine register_particles()
 !
@@ -249,5 +248,4 @@ module Particles
 !
     endsubroutine rprint_particles
 !***********************************************************************
-
 endmodule Particles

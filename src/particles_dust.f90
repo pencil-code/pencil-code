@@ -1,6 +1,6 @@
 ! $Id$
 !
-!  This module takes care of everything related to dust particles
+!  This module takes care of everything related to dust particles.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 !
@@ -15,16 +15,16 @@
 !
 !***************************************************************
 module Particles
-
+!
   use Cdata
   use Particles_cdata
   use Particles_sub
   use Messages
-
+!
   implicit none
-
+!
   include 'particles.h'
-
+!
   complex, dimension (7) :: coeff=(0.0,0.0)
   real, dimension (npar_species) :: tausp_species=0.0, tausp1_species=0.0
   real :: xp0=0.0, yp0=0.0, zp0=0.0, vpx0=0.0, vpy0=0.0, vpz0=0.0
@@ -80,17 +80,17 @@ module Particles
   logical :: lsinkpoint=.false.
   logical, pointer:: lcoriolis_force
   logical, pointer:: lcentrifugal_force
-
+!
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
   character (len=labellen) :: interp_pol_TT ='ngp'
   character (len=labellen) :: interp_pol_rho='ngp'
-  
+!  
   character (len=labellen), dimension (ninit) :: initxxp='nothing'
   character (len=labellen), dimension (ninit) :: initvvp='nothing'
   character (len=labellen) :: gravx_profile='', gravz_profile=''
   character (len=labellen) :: gravr_profile=''
-
+!
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
       ldragforce_gas_par, ldragforce_dust_par, &
@@ -119,7 +119,7 @@ module Particles
       brownian_T0, lnostore_uu, ldtgrav_par, ldragforce_radialonly, &
       lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, &
       Lx0, Ly0, Lz0
-
+!
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
       ldragforce_gas_par, ldragforce_dust_par, &
@@ -144,7 +144,7 @@ module Particles
       interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, &
       brownian_T0, lnostore_uu, ldtgrav_par, ldragforce_radialonly, &
       lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint
-
+!
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0, idiag_rp2m=0
   integer :: idiag_vpxm=0, idiag_vpym=0, idiag_vpzm=0
@@ -163,9 +163,8 @@ module Particles
   integer :: idiag_dvpx2m=0, idiag_dvpy2m=0, idiag_dvpz2m=0
   integer :: idiag_dvpm=0,idiag_dvpmax=0
   integer :: idiag_rhopmxz=0, idiag_nparpmax=0
-
+!
   contains
-
 !***********************************************************************
     subroutine register_particles()
 !
@@ -1567,8 +1566,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  20-04-06/anders: coded
 !
-      use Cdata
-!
       if (ldragforce_gas_par) then
         lpenc_requested(i_epsp)=.true.
         lpenc_requested(i_np)=.true.
@@ -1673,7 +1670,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  25-apr-06/anders: coded
 !
-      use Cdata
       use Cparam, only: lparticles_spin
       use EquationOfState, only: cs20, gamma
       use Mpicomm, only: stop_it
@@ -2223,7 +2219,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  29-dec-04/anders: coded
 !
-      use Cdata
       use EquationOfState, only: cs20, gamma
       use Mpicomm, only: stop_it
       use Particles_number, only: get_nptilde
@@ -3471,7 +3466,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  28-jul-08/kapelrud: coded
 !
-      use Cdata, only: pi_1, k_B, dt
       use General, only: normal_deviate
       use Viscosity, only: getnu
 !
@@ -3579,7 +3573,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  29-dec-04/anders: coded
 !
-      use Cdata
       use Sub, only: parse_name
 !
       logical :: lreset
@@ -3732,5 +3725,4 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine rprint_particles
 !***********************************************************************
-
 endmodule Particles
