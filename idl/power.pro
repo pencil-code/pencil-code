@@ -135,7 +135,7 @@ end
 ;
 globalmin=1e12
 globalmax=1e-30
-i=1
+i=1L
 close,1
 openr,1, datatopdir+'/'+file1
   while not eof(1) do begin
@@ -143,7 +143,7 @@ openr,1, datatopdir+'/'+file1
     readf,1,spectrum1
     if (max(spectrum1(1:*)) gt globalmax) then globalmax=max(spectrum1(1:*))
     if (min(spectrum1(1:*)) lt globalmin) then globalmin=min(spectrum1(1:*))
-    i=i+1
+    i=i+1L
   endwhile
 close,1
 spec1=fltarr(imax,i-1)
@@ -184,7 +184,7 @@ endif else begin
     set_plot, 'x'   
 endelse
 ;
-i=1 
+i=1L
 openr,1, datatopdir+'/'+file1
     while not eof(1) do begin 
       	readf,1,time
@@ -241,7 +241,7 @@ openr,1, datatopdir+'/'+file1
             endif
 	  endif
        	endif
-       	i=i+1
+       	i=i+1L
         ;
         ;  check whether we want to write png file (for movies)
         ;
