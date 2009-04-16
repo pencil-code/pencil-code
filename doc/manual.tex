@@ -1288,7 +1288,7 @@ and lists
 \item the time step, \var{dt};
 \item the rms velocity, \var{urms}$\,=\sqrt{\left<\uv^2\right>}$;
 \item the maximum velocity, \var{umax}$\,=\max |\uv|$;
-\item the mean density, \var{rhom}$\,=\left<\varrho\right>$;
+\item the mean density, \var{rhom}$\,=\left<\rho\right>$;
 \item the mean entropy, \var{ssm}$\,=\left<s\right>/c_p$;
 \item the time step in units of the acoustic Courant step,
   \var{dtc}$\,=\delta t/({\cs}_0\,\delta x_{\rm min})$;
@@ -1312,7 +1312,7 @@ and should be identical to the content of \file{reference.out}.
     {pvert1}
   \caption{Stratification of the three-layer convection model in
     \file[conv-slab/]{samples/conv-slab} after $50$ timesteps ($t=0.428$).
-    Shown are (from left to right) density $\varrho$, vertical velocity
+    Shown are (from left to right) density $\rho$, vertical velocity
     $u_z$, entropy $s/c_p$ and temperature $T$ as functions of the
     vertical coordinate $z$ for about ten different vertical lines in the
     computational box.
@@ -1998,7 +1998,7 @@ A simple example of \file{print.in} may look like this:
 which means that the output table will contain time \var{t} in the first
 column formatted as \verb|(F10.3)|, followed by the mean squared velocity,
 \var{urms} (i.e.~$\left<\uv^2\right>^{1/2}$) in the second column with format
-\verb|(E13.4)|, the average density \var{rhom} ($\left<\varrho\right>$,
+\verb|(E13.4)|, the average density \var{rhom} ($\left<\rho\right>$,
 which allows to monitor mass conservation) formatted \verb|(F10.5)| and
 the kinetic helicity \var{oum}
 (that is $\left<\vec{\omega}\cdot\uv\right>$) in the last column with the
@@ -2241,17 +2241,17 @@ Azimuthal averages are written every \var{d2davg} time units to the files
 The file format of azimuthal-average files consists of the following
 \name[Fortran record]{Fortran records}:
 \begin{enumerate}
-\item number of radial points $N_{r,\rm \varphi-avg}$ [1],
-      number of vertical points $N_{z,\rm \varphi-avg}$ [1],
-      number of variables $N_{\rm var,\varphi-avg}$[1],
+\item number of radial points $N_{r,\rm \phi-avg}$ [1],
+      number of vertical points $N_{z,\rm \phi-avg}$ [1],
+      number of variables $N_{\rm var,\phi-avg}$[1],
       number of processors in $z$ direction [1]
 \item time $t$ [1],
-      positions of cylindrical radius $r_{\rm cyl}$ [$N_{r,\rm \varphi-avg}$]
-      and $z$ [$N_{z,\rm \varphi-avg}$] for the grid,
+      positions of cylindrical radius $r_{\rm cyl}$ [$N_{r,\rm \phi-avg}$]
+      and $z$ [$N_{z,\rm \phi-avg}$] for the grid,
       radial spacing $\delta r_{\rm cyl}$ [1],
       vertical spacing $\delta z$ [1]
-\item averaged data [$N_{r,\rm \varphi-avg} {\times} N_{z,\rm \varphi-avg}$]
-\item label length [1], labels of averaged variables [$N_{\rm var,\varphi-avg}$]
+\item averaged data [$N_{r,\rm \phi-avg} {\times} N_{z,\rm \phi-avg}$]
+\item label length [1], labels of averaged variables [$N_{\rm var,\phi-avg}$]
 \end{enumerate}
 All numbers are 4-byte numbers (floating-point numbers or integers),
 unless you use double precision (see \S\ref{double-precision}).
@@ -2677,9 +2677,9 @@ $\mu_0=1$ and $c_p=1$ used internally by the code\footnote{
   by \var{unit_temperature} as described below.
 }.
 This means that if your units for density and velocity are
-$[\varrho]$ and $[v]$, then magnetic fields will be in
+$[\rho]$ and $[v]$, then magnetic fields will be in
 \begin{equation} \label{unit-B}
-  [B] = \sqrt{\mu_0\,[\varrho]\,[v]^2} \; ,
+  [B] = \sqrt{\mu_0\,[\rho]\,[v]^2} \; ,
 \end{equation}
 and temperatures are in
 \begin{equation} \label{unit-T}
@@ -2690,7 +2690,7 @@ and temperatures are in
 \begin{table}[htbp]
   \centering
   \caption{Units of magnetic field and temperature for some choices of
-    $[\varrho]$ and $[v]$ according to Eqs.~(\ref{unit-B}) and
+    $[\rho]$ and $[v]$ according to Eqs.~(\ref{unit-B}) and
     (\ref{unit-T}).
     Values are for a monatomic gas ($\gamma=5/3$) of mean atomic
     weight $\bar{\mu}_{\rm g} = \bar{\mu}/\unit[1]{g}$ in grams.}
@@ -2698,7 +2698,7 @@ and temperatures are in
   \newcommand{\fracstrut}{\rule[-2.0ex]{0pt}{5.2ex}}%
   \begin{tabular}{ll@{\quad}ll}
   \toprule
-    $[\varrho]$    
+    $[\rho]$    
         & $[v]$ 
             & $[B]$
                 & $[T]$ \\
@@ -2792,7 +2792,7 @@ Often the largest possible value of $\mbox{Re}_{\rm mesh}$ is around 5.
 Similarly there exist mesh P\'eclet and mesh magnetic Reynolds numbers that
 should not be too small.
 
-Note that in some cases, `wiggles' in $\ln\varrho$ will develop despite
+Note that in some cases, `wiggles' in $\ln\rho$ will develop despite
 sufficiently large diffusion coefficients, essentially because the
 continuity equation contains no dissipative term.
 For convection runs (but not only for these), we have found that this can
@@ -2842,7 +2842,7 @@ $\cs$ and $\vA$ denoting sound speed and Alfv\'en speed, respectively;
 \end{equation}
 where
 $\nu$ denotes kinematic viscosity,
-$\chi = K/(c_p\varrho)$ thermal
+$\chi = K/(c_p\rho)$ thermal
 diffusivity and $\eta$ the magnetic diffusivity;
 and
 \begin{equation} \label{Hmax}
@@ -2923,7 +2923,7 @@ for periodic boundaries, or
 for non-periodic ones.
 Each element corresponds to one of the
 variables, which are those of the variables
-$u_x$, $u_y$, $u_z$, $\ln\varrho$, $s/c_p$, $A_x$, $A_y$, $A_z$, $\ln c$
+$u_x$, $u_y$, $u_z$, $\ln\rho$, $s/c_p$, $A_x$, $A_y$, $A_z$, $\ln c$
 that are actually used \emph{in this order}.
 The following conditions are available:
 \begin{description}
@@ -2936,17 +2936,17 @@ The following conditions are available:
   arbitrary value on the boundary, i.\,e.~vanishing
   second derivative
 \item[\option{c1}] special boundary condition for
-  $\ln\varrho$ and $s$: constant heat flux through the
+  $\ln\rho$ and $s$: constant heat flux through the
   boundary
 \item[\option{c2}] special boundary condition for
   $s$: constant temperature at the boundary --- requires boundary
-  condition \code{a2} for $\ln\varrho$
+  condition \code{a2} for $\ln\rho$
 \item[\option{cT}] special boundary condition for
   $s$ or $\ln\ T$: constant temperature at the boundary (for arbitrarily set
-  $\ln\varrho$)
+  $\ln\rho$)
 \item[\option{ce}] special boundary condition for
   $s$: set temperature in ghost points to value on boundary (for
-  arbitrarily set $\ln\varrho$)
+  arbitrarily set $\ln\rho$)
 \item[\option{db}] low-order one-sided derivatives (``no
     boundary condition'') for density
 \item[\option{she}] shearing-sheet boundary condition (default when the
@@ -2954,7 +2954,7 @@ The following conditions are available:
 \item[\option{g}] force the value of the corresponding field on vertical
 boundaries (should be used in combination with the force_lower_bound and
 force_upper_bound flags set in the namelist {\it init_pars})
-\item[\option{hs}] special boundary condition for $\ln\varrho$ and $s$
+\item[\option{hs}] special boundary condition for $\ln\rho$ and $s$
 which enforces hydrostatic equilibrium on vertical boundaries
 \end{description}
 The extended syntax $a$:$b$ (e.\,g.~`\code{c1:c2}') means: use
@@ -3800,13 +3800,13 @@ simplifications of these equations.
 \subsection{Continuity equation}
 
 In the code the continuity equation,
-$\partial\varrho/\partial t+\Div\varrho\uv=0$,
-is written in terms of $\ln\varrho$,
+$\partial\rho/\partial t+\Div\rho\uv=0$,
+is written in terms of $\ln\rho$,
 \begin{equation}
-  \frac{\De\ln\varrho}{\De t}
+  \frac{\De\ln\rho}{\De t}
   = - \Div\uv \; .
 \end{equation}
-Here $\varrho$ denotes density, $\uv$ the fluid velocity, $t$ is time and
+Here $\rho$ denotes density, $\uv$ the fluid velocity, $t$ is time and
 $\De/\De t \equiv \partial/\partial t + \uv\cdot\grad$ is the convective
 derivative.
 
@@ -3817,12 +3817,12 @@ derivative.
 
 In the equation of motion, using a perfect gas, the pressure term,
 can be expressed as
-$-\varrho^{-1}\grad p = -\cs^2(\grad s/c_p+\grad\ln\varrho)$, 
+$-\rho^{-1}\grad p = -\cs^2(\grad s/c_p+\grad\ln\rho)$, 
 where the squared sound speed is given by
 \begin{equation}
-  \cs^2 = \gamma \frac{p}{\varrho}
+  \cs^2 = \gamma \frac{p}{\rho}
         = c_{\rm s0}^2\exp\left[\gamma s/c_p
-                                + (\gamma{-}1)\ln\frac{\varrho}{\varrho_0}
+                                + (\gamma{-}1)\ln\frac{\rho}{\rho_0}
                                \right],
 \label{EOSsimple}
 \end{equation}
@@ -3831,11 +3831,11 @@ and $\gamma=c_p/c_v$ is the ratio of specific heats, or \emph{adiabatic index}.
 The equation of motion is accordingly
 \begin{eqnarray}
   \frac{\De\uv}{\De t}
-   =& &-\cs^2\grad\biggl(\frac{s}{c_p} + \ln\varrho\biggr)
+   =& &-\cs^2\grad\biggl(\frac{s}{c_p} + \ln\rho\biggr)
       - \grad\Phi_{\rm grav}
-      + \frac{\jv\times\Bv}{\varrho}  \nonumber \\
+      + \frac{\jv\times\Bv}{\rho}  \nonumber \\
     & &+ \nu \left( \Laplace\uv + \frac{1}{3}\grad\Div\uv
-      + 2\Strain\cdot\grad\ln\varrho\right) + \zeta\left(\grad\Div\uv\right); 
+      + 2\Strain\cdot\grad\ln\rho\right) + \zeta\left(\grad\Div\uv\right); 
 \label{DuDt}
 \end{eqnarray}
 Here $\Phi_{\rm grav}$ is the gravity potential,
@@ -3860,12 +3860,12 @@ See \S\ref{Bulkviscosity}.
 %$\nu = \const$ everywhere.
 %
 %If \code{ivisc='rho_nu-const'}, it is assumed that 
-%$\mu \equiv \varrho\nu = \const$ everywhere; in that
+%$\mu \equiv \rho\nu = \const$ everywhere; in that
 %case the input parameter \var{nu} is used to give the value of
-%$\mu/\varrho_0$ (\var{rho0} is another input parameter).
+%$\mu/\rho_0$ (\var{rho0} is another input parameter).
 %The term involving the
 %rate-of-strain tensor does not appear in the equation,
-%and $\nu$ is then replaced by $\mu/\varrho$, which is no longer constant.
+%and $\nu$ is then replaced by $\mu/\rho$, which is no longer constant.
 %
 %If \code{ivisc='simplified'}, a simplified version, $\nu\Laplace\uv$, of the
 %viscous term is used.
@@ -3908,7 +3908,7 @@ $\Phi=0$, where $\Phi$ denotes the scalar potential.
 The current thermodynamics module \name{entropy} formulates the thermal
 part of the physics in terms of \emph{entropy} $s$, rather than thermal
 energy $e$, which you may be more familiar with.
-Thus the two fundamental thermodynamical variables are $\ln\varrho$
+Thus the two fundamental thermodynamical variables are $\ln\rho$
 and $s$.
 The reason for this choice of variables is that entropy is the natural
 physical variable for (at least) convection processes: the sign of the
@@ -3917,11 +3917,11 @@ entropy gradient determines convective (in)stability, the
 of the associated hydrostatic reference solution, etc.
 The equation solved is
 \begin{equation} \label{entropy-eq}
-  \varrho T\frac{\De s}{\De t}
+  \rho T\frac{\De s}{\De t}
    =  \Heat - \Cool
       + \Div(K\grad T)
       + \eta\mu_0 \jv^2
-      + 2\varrho\nu\Strain^2 + \zeta\varrho\left(\Div\uv\right)^2\; .
+      + 2\rho\nu\Strain^2 + \zeta\rho\left(\Div\uv\right)^2\; .
 \end{equation}
 
 Here, $T$ is temperature, $c_p$ the specific heat at constant pressure,
@@ -3934,22 +3934,22 @@ In the entropy module we solve for the specific entropy, $s$.
 The heat conduction term on the right hand side can be written in the form
 \begin{eqnarray}
 \lefteqn{\frac{\Div(K\grad T)}
-              {\varrho T}} \\
+              {\rho T}} \\
 %
   &=&
   c_p\chi\Bigl[
         \Laplace\ln T
-        + \grad\ln T \cdot \grad(\ln T{+}\ln\chi{+}\ln\varrho)
+        + \grad\ln T \cdot \grad(\ln T{+}\ln\chi{+}\ln\rho)
       \Bigr] \\
 %
   &=&
-  c_p\chi \left[ \gamma\Laplace s/c_p + (\gamma{-}1)\Laplace\ln\varrho \right] \nonumber\\
+  c_p\chi \left[ \gamma\Laplace s/c_p + (\gamma{-}1)\Laplace\ln\rho \right] \nonumber\\
   & &   + c_p\chi \left[ \gamma\grad s/c_p
-                      + (\gamma{-}1)\grad\ln\varrho \right]
-          \cdot\left[ \gamma\left(\grad s/c_p + \grad\ln\varrho\right)
+                      + (\gamma{-}1)\grad\ln\rho \right]
+          \cdot\left[ \gamma\left(\grad s/c_p + \grad\ln\rho\right)
                       + \grad\ln\chi \right] \; ,
 \end{eqnarray}
-where $\chi = K/(\varrho c_p)$ is the thermal diffusivity.
+where $\chi = K/(\rho c_p)$ is the thermal diffusivity.
 The latter equation shows that the diffusivity for $s$ is $\gamma\chi$,
 which is what we have used in Eq.~(\ref{Dmax}).
 
@@ -3957,8 +3957,8 @@ In an alternative formulation for a constant $K$, the heat conduction
 term on the right hand side can also be written in the form
 \begin{eqnarray}
 \frac{\Div(K\grad T)}
-              {\varrho T} =
-  \frac{K}{\varrho}\Bigl[ \Laplace\ln T + (\grad \ln T)^2 \Bigr] 
+              {\rho T} =
+  \frac{K}{\rho}\Bigl[ \Laplace\ln T + (\grad \ln T)^2 \Bigr] 
 \end{eqnarray}
 which is the form used when constant $K$ is chosen.  
 \bigskip
@@ -4031,15 +4031,15 @@ where $\mathbf{RHS}$ is the right hand side of equation (\ref{entropy-eq}).
 
 In conservative form, the equation for a passive scalar is
 \begin{equation}
-{\partial\over\partial t}(\varrho c)+
-\Div\left[\varrho c\uv-\varrho{\cal D}\nabla c\right]=0.
+{\partial\over\partial t}(\rho c)+
+\Div\left[\rho c\uv-\rho{\cal D}\nabla c\right]=0.
 \end{equation}
 Here $c$ denotes the concentration (per unit mass) of the passive scalar and
 ${\cal D}$ its diffusion constant (assumed constant).
 In the code this equation is solved in terms of $\ln c$,
 \begin{equation}
   \frac{\De\ln c}{\De t}
-  = {\cal D} \left[ \Laplace\ln c + (\grad\ln\varrho+\grad\ln c)\cdot\grad\ln c
+  = {\cal D} \left[ \Laplace\ln c + (\grad\ln\rho+\grad\ln c)\cdot\grad\ln c
                \right].
 \end{equation}
 Using $\ln c$ instead of $c$ has the advantage that it enforces $c>0$ for all
@@ -4076,17 +4076,17 @@ is usually chosen to be around unity.
 Assume that the shock viscosity only enters as a bulk viscosity,
 so the whole stress tensor is then
 \begin{equation}
-\vec{\tau}_{ij}=2\varrho\nu{\sf S}_{ij}+\varrho\zeta_{\rm shock}\delta_{ij}\nab\cdot\uv.
+\vec{\tau}_{ij}=2\rho\nu{\sf S}_{ij}+\rho\zeta_{\rm shock}\delta_{ij}\nab\cdot\uv.
 \end{equation}
 Assume $\nu=\mbox{const}$, but $\zeta\neq\mbox{const}$, so
 \begin{equation}
-\varrho^{-1}\vec{F}_{\rm visc}=
-\nu\left(\Laplace\uv+\frac{1}{3}\grad\Div\uv+2\Strain\cdot\grad\ln\varrho\right)
-+\zeta_{\rm shock}\left[\grad\Div\uv+\left(\grad\ln\varrho+\grad\ln\zeta_{\rm shock}\right)\Div\uv\right].
+\rho^{-1}\vec{F}_{\rm visc}=
+\nu\left(\Laplace\uv+\frac{1}{3}\grad\Div\uv+2\Strain\cdot\grad\ln\rho\right)
++\zeta_{\rm shock}\left[\grad\Div\uv+\left(\grad\ln\rho+\grad\ln\zeta_{\rm shock}\right)\Div\uv\right].
 \end{equation}
 and
 \begin{equation}
-\varrho^{-1}\Gamma_{\rm visc}=2\nu\Strain^2+\zeta_{\rm shock}(\Div\uv)^2.
+\rho^{-1}\Gamma_{\rm visc}=2\nu\Strain^2+\zeta_{\rm shock}(\Div\uv)^2.
 \end{equation}
 In the special case with periodic boundary conditions, we have
 $2\langle\Strain^2\rangle=\langle\omv^2\rangle+{4\over3}\langle(\nab\cdot\uv)^2\rangle$.
@@ -4291,16 +4291,16 @@ The {\sc Pencil Code} can consider the self-gravity of the fluid in the simulati
 box by adding the term
 \begin{equation}
   \frac{\partial \vec{u}}{\partial t}
-      = \ldots - \nab \varPhi_{\rm self}
+      = \ldots - \nab \phi_{\rm self}
 \end{equation}
-to the equation of motion. The self-potential $\varPhi_{\rm self}$ (or just
-$\varPhi$ for simplicity) satisfies Poisson's equation
+to the equation of motion. The self-potential $\phi_{\rm self}$ (or just
+$\phi$ for simplicity) satisfies Poisson's equation
 \begin{equation}
-  \nabla^2 \varPhi = 4 \pi G \rho \, .
+  \nabla^2 \phi = 4 \pi G \rho \, .
 \end{equation}
 The solution for a single Fourier component at scale $\vec{k}$ is
 \begin{equation}
-  \varPhi_{\vcs{k}} = -\frac{4 \pi G \rho_{\vcs{k}}}{k^2} \, .
+  \phi_{\vcs{k}} = -\frac{4 \pi G \rho_{\vcs{k}}}{k^2} \, .
 \end{equation}
 Here we have assumed periodic boundary conditions. The potential is obtained by
 Fourier-transforming the density, then finding the corresponding potential at
@@ -4407,7 +4407,7 @@ The equation of state is $p_{\rm c}=(\gamma_{\rm c})e_{\rm c}$
 where the value of $\gamma_{\rm c}$ is usually somewhere between
 $14/9$ and $4/3$.
 In the momentum equation (\ref{DuDt}) the cosmic ray pressure force,
-$-\varrho^{-1}\nab p_{\rm c}$ is added on the right hand side, and
+$-\rho^{-1}\nab p_{\rm c}$ is added on the right hand side, and
 $e_{\rm c}$ satisfies the evolution equation
 \begin{equation}
 {\partial e_{\rm c}\over\partial t}+\nab\cdot(e_{\rm c}\uv)
@@ -6697,7 +6697,7 @@ are quite popular.
 Note, however, that the Gaussian profile (\ref{delta-Gaussian}) is the
 only one that yields a radially symmetric (with respect to the distance
 from the central line of the torus) magnetic field profile
-$B_varphi = B_\varphi(\sqrt{(r{-}R)^2{+}z^2})$
+$B_varphi = B_\phi(\sqrt{(r{-}R)^2{+}z^2})$
 if $\varepsilon$ is sufficiently small.
 
 In Cartesian coordinates, the vector potential (\ref{Av-flux-ring-cyl})
@@ -6735,7 +6735,7 @@ where $\nu_{\rm g}$ is the vertical epicyclic frequency. For a Keplerian
 accretion disc, $\nu_{\rm g}=\varOmega$. For galactic discs,
 $\nu_{\rm g}=0.5\varOmega$ is representative of the solar neighborhood.
 
-The value of $z_\infty$ is determined such that $\varrho=\varrho_0$ and
+The value of $z_\infty$ is determined such that $\rho=\rho_0$ and
 $c_{\rm s}^2=c_{\rm s0}^2$ at $z=z_{\rm ref}$. This depends on the
 values of $\gamma$ and the polytropic index $m$ (see below).
 
@@ -6744,7 +6744,7 @@ values of $\gamma$ and the polytropic index $m$ (see below).
 Here we want $c_{\rm s}=c_{\rm s0}=\mbox{const}$.
 Using \code{initlnrho='isothermal'} means
 \begin{equation} \label{constgrav-lnrho-init}
-  \ln\frac{\varrho}{\varrho_0}
+  \ln\frac{\rho}{\rho_0}
   = -\gamma \frac{\Phi}{c_{\rm s0}^2} \; .
 \end{equation}
 The entropy is then initialized to
@@ -6752,22 +6752,22 @@ The entropy is then initialized to
   \frac{s}{c_p}
   = (\gamma{-}1) \frac{\Phi}{c_{\rm s0}^2} \; .
 \end{equation}
-In order that $\varrho=\varrho_0$ and $c_{\rm s}^2=c_{\rm s0}^2$ at
+In order that $\rho=\rho_0$ and $c_{\rm s}^2=c_{\rm s0}^2$ at
 $z=z_{\rm ref}$, we have to choose $z_\infty=z_{\rm ref}$.
 
 \subsubsection{Polytropic atmosphere}
 
-For a polytropic equation of state, $p=K\varrho^\Gamma$, where generally
+For a polytropic equation of state, $p=K\rho^\Gamma$, where generally
 $\Gamma\neq\gamma$, we can write
 \begin{equation}
   -\grad h+T\grad s
-  = -\frac{1}{\varrho}\grad p
-  = -\grad\left(\frac{\Gamma K}{\Gamma{-}1}\varrho^{\Gamma{-}1}\right)
+  = -\frac{1}{\rho}\grad p
+  = -\grad\left(\frac{\Gamma K}{\Gamma{-}1}\rho^{\Gamma{-}1}\right)
 \equiv-\grad\tilde{h},
 \end{equation}
 where we have introduced a pseudo enthalpy $\tilde{h}$ as
 \begin{equation}
-  \tilde{h} = \frac{\Gamma K}{\Gamma{-}1}\varrho^{\Gamma{-}1}
+  \tilde{h} = \frac{\Gamma K}{\Gamma{-}1}\rho^{\Gamma{-}1}
   =\left[\left(1-\frac{1}{\gamma}\right)
     \left/\left(1-\frac{1}{\Gamma}\right)\right.\right]\,h\; .
 \end{equation}
@@ -6780,15 +6780,15 @@ index $m=1/(\Gamma{-}1)$. Thus, $\Gamma=1+1/m$, and
 \end{equation}
 
 This is consistent with a fixed entropy dependence,
-where $s$ only depends on $\varrho$ like
+where $s$ only depends on $\rho$ like
 \begin{equation}
   \frac{s}{c_p} = \left( \frac{\Gamma}{\gamma} - 1 \right)
-                        \ln\frac{\varrho}{\varrho_0} \; ,
+                        \ln\frac{\rho}{\rho_0} \; ,
 \end{equation}
 and implies that
 \begin{equation}
   \ln \frac{c_{\rm s}^2}{c_{\rm s0}^2}
-  = (\Gamma{-}1) \ln\frac{\varrho}{\varrho_0} \; .
+  = (\Gamma{-}1) \ln\frac{\rho}{\rho_0} \; .
 \end{equation}
 
 For hydrostatic equilibrium we require
@@ -6801,7 +6801,7 @@ Using $c_{\rm s}^2=(\gamma{-}1)h$ together with (\ref{hhtilde}) we find
 \begin{equation}
   c_{\rm s}^2 = -\frac{\gamma}{m{+}1}\,\Phi.
 \end{equation}
-In order that $\varrho=\varrho_0$ and $c_{\rm s}^2=c_{\rm s0}^2$ at
+In order that $\rho=\rho_0$ and $c_{\rm s}^2=c_{\rm s0}^2$ at
 $z=z_{\rm ref}$, we have to choose (remember that $g_z$ is normally negative!)
 \begin{equation}\label{zinfty}
   z_\infty = z_{\rm ref} + (m{+}1) \frac{c_{\rm s0}^2}{\gamma(-g_z)}
@@ -6821,7 +6821,7 @@ Thus, when using \code{initlnrho='polytropic\_simple'} we calculate
 \end{equation}
 and so the stratification is given by
 \begin{equation}
-  \ln\frac{\varrho}{\varrho_0}
+  \ln\frac{\rho}{\rho_0}
   = m\,\ln \frac{c_{\rm s}^2}{c_{\rm s0}^2} \; ,\quad
   %
   \frac{s}{c_p}
@@ -6873,7 +6873,7 @@ Table~\ref{Tdensitycontrast}.
     \label{Tdensitycontrast}
     \begin{tabular}{cccc}
     \toprule
-$\varrho_{\rm bot}/\varrho_{\rm top}$ &
+$\rho_{\rm bot}/\rho_{\rm top}$ &
 $z_{\rm bot}$ & $z_{\rm top}$ & $c_{\rm s0}$ \\
     \midrule
  1.5  & 3    & 2    & 1.291 \\
@@ -6937,12 +6937,12 @@ Assuming that the density in the ghost zones has already been
 updated, we can calculate the entropy gradient from
 \begin{equation}\label{Fbot}
 F_{\rm bot}=-{K\over c_p}{c_{\rm s}^2\over\gamma-1}\left(
-(\gamma-1){\dd\ln\varrho\over\dd z}+\gamma{\dd s/c_p\over\dd z}\right),
+(\gamma-1){\dd\ln\rho\over\dd z}+\gamma{\dd s/c_p\over\dd z}\right),
 \end{equation}
 which gives
 \begin{equation}\label{Fbot2}
 {\dd s/c_p\over\dd z}=-{\gamma-1\over\gamma}\left(
-c_p{F_{\rm bot}\over K c_{\rm s}^2}+{\dd\ln\varrho\over\dd z}\right)
+c_p{F_{\rm bot}\over K c_{\rm s}^2}+{\dd\ln\rho\over\dd z}\right)
 \end{equation}
 for the derivative of the entropy at the bottom.
 This is implemented as the \option{c1} boundary condition at the bottom.
@@ -7036,9 +7036,9 @@ using ghost points, we first write it as
   = 0
 \end{equation}
 and implement this as symmetry condition for the variable
-$\varphi(z) \equiv f(z)\,e^{\kappa z}$:
+$\phi(z) \equiv f(z)\,e^{\kappa z}$:
 \begin{equation}
-  \varphi_{N-j} = \varphi_{N+j} \; , \qquad j=1,2,3
+  \phi_{N-j} = \phi_{N+j} \; , \qquad j=1,2,3
 \end{equation}
 (where $z_N$ is the position of the top boundary and $z_{N+1}$, \ldots are
 the boundary points).
@@ -7592,7 +7592,7 @@ $\rho$  &  $p$  &  $s$  \\
     \caption{
         Combinations of $c_{\rm s}^2$, $p$, and $s/c_p$ that are
         relevant for the temperature shock problem with constant density,
-        $\varrho=1$, and different temperature ratios on the left and
+        $\rho=1$, and different temperature ratios on the left and
         right hand sides of the shock.
     }
     \label{Tshock2}
@@ -7827,7 +7827,7 @@ the MHD calculations presented below.
 \newcommand{\Order}[1]{O\left(#1\right)}
 
 High-order centered-difference convection simulations often show
-``wiggles'' (Nyquist zigzag pattern) in $\ln\varrho$, which are apparently
+``wiggles'' (Nyquist zigzag pattern) in $\ln\rho$, which are apparently
 caused by a velocity profile where the velocity approaches zero on the
 boundary or inside the box.\footnote{%
   A simple one-dimensional test profile would be $u(x) = 1-x^2$ on $x \in
@@ -7848,7 +7848,7 @@ instantaneously propagates into much of the whole box.
 
 Even if the stagnation point is on the boundary (and enforced by the
 boundary conditions), this behavior is hardly influenced by the boundary
-conditions on $\ln\varrho$ at all.
+conditions on $\ln\rho$ at all.
 A solution, however, is to apply upwinded derivative operators.
 The simplest upwind derivative is a finite-difference derivative operator
 where the point furthest downwind is excluded from the stencil.
@@ -8265,7 +8265,7 @@ or
 \begin{table}[htb]
   \renewcommand{\arraystretch}{2.3}
   \centering
-  \caption{Sums $\sqrt{4\pi}Y_l^m(\vartheta_i,\varphi_i)$ for special
+  \caption{Sums $\sqrt{4\pi}Y_l^m(\theta_i,\phi_i)$ for special
     sets of directions.
     For all degrees and orders up to $l=8$ not mentioned in this table,
     the sums are $0$.
@@ -8293,12 +8293,12 @@ or
 
 For angular integration over the full solid angle, we make the ansatz
 \begin{equation}
-  \int\limits_{4\pi} f(\vartheta,\varphi)\,\frac{d\omega}{4\pi}
-  = \sum_{i=1}^{N} w_i f(\vartheta_i,\varphi_i) + R_N \; .
+  \int\limits_{4\pi} f(\theta,\phi)\,\frac{d\omega}{4\pi}
+  = \sum_{i=1}^{N} w_i f(\theta_i,\phi_i) + R_N \; .
 \end{equation}
 Table \ref{Tab-Ylm-sums} shows the sums
-$\sqrt{4\pi}Y_l^m(\vartheta_i,\varphi_i)$ over special sets of directions
-$(\vartheta_i,\varphi_i)$.
+$\sqrt{4\pi}Y_l^m(\theta_i,\phi_i)$ over special sets of directions
+$(\theta_i,\phi_i)$.
 Using these numbers and requiring that angular integration is exact for
 $l\le l_{\rm max}$, we find the following weights $w_i$ for different sets
 of directions (see also \cite{Abramowitz-Stegun}, \S 25.4.65):
@@ -8416,9 +8416,9 @@ modules
     \file{nohydro.f90}    & no variable $\uv$: useful for kinematic dynamo
                             runs. \\
     \midrule
-    \file{density.f90}    & Add variable $\ln\varrho$ with continuity
+    \file{density.f90}    & Add variable $\ln\rho$ with continuity
                             equation; \\
-    \file{nodensity.f90}  & no variable $\ln\varrho$: useful for Burgers'
+    \file{nodensity.f90}  & no variable $\ln\rho$: useful for Burgers'
                             equation. \\
     \midrule
     \file{entropy.f90}    & Add variable $s$ with entropy equation (energy
@@ -8686,7 +8686,7 @@ double precision, $\varepsilon\approx10^{-15}$.
   \var{initlnrho} [\code{'zero'}]
                & initialization of density. Currently valid choices are
                  \begin{description}
-                 \item[\code{`zero'}] ($\ln\varrho=0$),
+                 \item[\code{`zero'}] ($\ln\rho=0$),
                  \item[\code{`isothermal'}] (isothermal stratification),
                  \item[\code{`polytropic\_simple'}] (polytropic stratification),
                  \item[\code{`hydrostatic-z-2'}] (hydrostatic vertical
@@ -8709,7 +8709,7 @@ double precision, $\varepsilon\approx10^{-15}$.
                    stratification for isentropic or isothermal sphere),
                  \item[\code{`sin-xy'}] (sine profile in $x$ and $y$),
                  \item[\code{`sin-xy-rho'}] (sine profile in $x$ and $y$, but
-                   in $\varrho$, not $\ln\varrho$),
+                   in $\rho$, not $\ln\rho$),
                  \item[\code{`linear'}] (linear profile in $\kv\cdot\xv$),
                  \item[\code{`planet'}] (planet solution; see \S\ref{S-planet}).
                  \end{description}
@@ -8740,7 +8740,7 @@ double precision, $\varepsilon\approx10^{-15}$.
   \var{zref} [$0.$]
                & \label{zref-init}%
                  reference height where in the initial stratification
-                 $c_{\rm s}^2=c_{\rm s0}^2$ and $\ln\varrho=\ln\varrho_0$.\\
+                 $c_{\rm s}^2=c_{\rm s0}^2$ and $\ln\rho=\ln\rho_0$.\\
   \var{gravz} [$-1.$]
                & vertical gravity component $g_z$.\\
   \var{grav_profile} \\{}
@@ -9089,13 +9089,13 @@ the latest set of parameters, you need to look at the code.
                  \begin{description}
                  \item[\code{'nu-const'}] -- viscous force for $\nu=\const$,
                    $\Fv_{\rm visc}=\nu(\Laplace\uv+{\textstyle{1\over3}}\grad\Div\uv
-                    + 2\mathsf{S}\cdot\grad\ln\varrho)$
+                    + 2\mathsf{S}\cdot\grad\ln\rho)$
                  \item[\code{'rho_nu-const'}] -- viscous force for
-                   $\mu\equiv\varrho\nu=\const$,
-                   $\Fv_{\rm visc}=(\mu/\varrho)(\Laplace\uv+{\textstyle{1\over3}}\grad\Div\uv)$.
+                   $\mu\equiv\rho\nu=\const$,
+                   $\Fv_{\rm visc}=(\mu/\rho)(\Laplace\uv+{\textstyle{1\over3}}\grad\Div\uv)$.
                    With this option, the input parameter \var{nu} actually
-                   sets the value of $\mu/\varrho_0$
-                   (\var{rho0}=$\varrho_0$ is another input parameter, see
+                   sets the value of $\mu/\rho_0$
+                   (\var{rho0}=$\rho_0$ is another input parameter, see
                    pp.~\pageref{cs0-rho0-init} and \pageref{cs0-rho0-run})
                  \item[\code{'simplified'}] -- simplified viscous force
                    $\Fv_{\rm visc}=\nu\Laplace\uv$
@@ -9106,13 +9106,13 @@ the latest set of parameters, you need to look at the code.
                  (note: the centrifugal force is turned off by default,
                  unless \code{lcentrifugal_force=T} is set).\\
   \var{theta} [$0.$]
-               & direction of angular velocity in degrees ($\vartheta=0$ for
-                 $z$-direction, $\vartheta=90$ for the negative $x$-direction,
+               & direction of angular velocity in degrees ($\theta=0$ for
+                 $z$-direction, $\theta=90$ for the negative $x$-direction,
                  corresponding to a box located at the equator of a
                  rotating sphere.
-                 Thus, e.g., $\vartheta=60$ corresponds to $30^\circ$ latitude.
+                 Thus, e.g., $\theta=60$ corresponds to $30^\circ$ latitude.
                  (Note: prior to April 29, 2007, there was a minus sign in
-                 the definition of $\vartheta$.)\\
+                 the definition of $\theta$.)\\
   \var{ttransient} [$0.$]
                & initial time span for which to do something special
                  (transient).
@@ -9164,7 +9164,7 @@ the latest set of parameters, you need to look at the code.
                  condition \option{c2}. \\
   \var{lupw_lnrho} [.false.]
                & use 5th-order upwind derivative operator for the
-               advection term $\uv\cdot\grad\ln\varrho$ to avoid spurious
+               advection term $\uv\cdot\grad\ln\rho$ to avoid spurious
                Nyquist signal (`wiggles'); see \S\ref{S-upwind}. \\
 %
 \midrule
@@ -9200,7 +9200,7 @@ the latest set of parameters, you need to look at the code.
                  \\
   \var{lcalc_heatcond_constchi} [F]
                & flag for assuming thermal diffusivity
-                 $\chi=K/(c_p\varrho)=\const$, rather than $K=\const$
+                 $\chi=K/(c_p\rho)=\const$, rather than $K=\const$
                  (which is the default).
                  \emph{This is currently only correct with
                  \file{noionization.f90}}.
@@ -9232,7 +9232,7 @@ the latest set of parameters, you need to look at the code.
                    (cool temperature toward $\cs^2=\var{cs2cool}$) with a
                    cooling term
                    \[
-                     -\mathcal{C} = -c_{\rm cool}\,\varrho\,
+                     -\mathcal{C} = -c_{\rm cool}\,\rho\,
                                      \frac{\cs^2-{\cs^2}_{\rm cool}}
                                           {{\cs^2}_{\rm cool}}
                    \]
@@ -9433,7 +9433,7 @@ possible inputs to the file \file{video.in}.
 \midrule
   \multicolumn{2}{c}{Module \file{density.f90}} \\
 \midrule
-  \var{lnrho} & logarithmic density $\ln\varrho$;
+  \var{lnrho} & logarithmic density $\ln\rho$;
                 writes \file[]{lnrho.\{xz,yz,xy,xy2\}}  \\
 %
 \midrule
@@ -9515,7 +9515,7 @@ possible inputs to the file \file{phiaver.in}.
 \midrule
   \var{rcylmphi} & cylindrical radius $\varpi = \sqrt{x^2+y^2}$
   (useful for debugging azimuthal averages)\\
-  \var{phimphi} & azimuthal angle $\varphi = \arctan\frac{y}{x}$
+  \var{phimphi} & azimuthal angle $\phi = \arctan\frac{y}{x}$
   (useful for debugging)\\
   \var{zmphi} & $z$-coordinate
   (useful for debugging)\\
@@ -9525,38 +9525,38 @@ possible inputs to the file \file{phiaver.in}.
 \midrule
   \multicolumn{2}{c}{Module \file{hydro.f90}} \\
 \midrule
-  \var{urmphi} & $\left<u_\varpi\right>_\varphi$ [cyl.\ polar coords $(\varpi,\varphi,z)$]\\
-  \var{upmphi} & $\left<u_\varphi\right>_\varphi$ \\
-  \var{uzmphi} & $\left<u_z\right>_\varphi$ \\
+  \var{urmphi} & $\left<u_\varpi\right>_\phi$ [cyl.\ polar coords $(\varpi,\phi,z)$]\\
+  \var{upmphi} & $\left<u_\phi\right>_\phi$ \\
+  \var{uzmphi} & $\left<u_z\right>_\phi$ \\
   \var{uumphi} & shorthand for \var{urmphi}, \var{upmphi} and \var{uzmphi}
                  together \\
-  \var{u2mphi} & $\left<\uv^2\right>_\varphi$ \\
-  \var{oumphi} & $\left<\omv\cdot\uv\right>_\varphi$ \\
+  \var{u2mphi} & $\left<\uv^2\right>_\phi$ \\
+  \var{oumphi} & $\left<\omv\cdot\uv\right>_\phi$ \\
 %
 \midrule
   \multicolumn{2}{c}{Module \file{density.f90}} \\
 \midrule
-  \var{lnrhomphi} & $\left<\ln\varrho\right>_\varphi$ \\
-  \var{rhomphi} & $\left<\varrho\right>_\varphi$ \\
+  \var{lnrhomphi} & $\left<\ln\rho\right>_\phi$ \\
+  \var{rhomphi} & $\left<\rho\right>_\phi$ \\
 %
 \midrule
   \multicolumn{2}{c}{Module \file{entropy.f90}} \\
 \midrule
-  \var{ssmphi} & $\left<s\right>_\varphi$ \\
-  \var{cs2mphi} & $\left<c^2_s\right>_\varphi$ \\
+  \var{ssmphi} & $\left<s\right>_\phi$ \\
+  \var{cs2mphi} & $\left<c^2_s\right>_\phi$ \\
 %
 \midrule
   \multicolumn{2}{c}{Module \file{magnetic.f90}} \\
 \midrule
-  \var{brmphi} & $\left<B_\varpi\right>_\varphi$ [cyl.\ polar coords $(\varpi,\varphi,z)$]\\
-  \var{bpmphi} & $\left<B_\varphi\right>_\varphi$ \\
-  \var{bzmphi} & $\left<B_z\right>_\varphi$ \\
+  \var{brmphi} & $\left<B_\varpi\right>_\phi$ [cyl.\ polar coords $(\varpi,\phi,z)$]\\
+  \var{bpmphi} & $\left<B_\phi\right>_\phi$ \\
+  \var{bzmphi} & $\left<B_z\right>_\phi$ \\
   \var{bbmphi} & shorthand for \var{brmphi}, \var{bpmphi} and \var{bzmphi}
                  together \\
-  \var{b2mphi} & $\left<\Bv^2\right>_\varphi$ \\
-  \var{jbmphi} & $\left<\Jv\cdot\Bv\right>_\varphi$ \\
-  \var{brsphmphi} & $\left<B_r\right>_\varphi$ \\
-  \var{bthmphi} & $\left<B_\vartheta\right>_\varphi$ \\
+  \var{b2mphi} & $\left<\Bv^2\right>_\phi$ \\
+  \var{jbmphi} & $\left<\Jv\cdot\Bv\right>_\phi$ \\
+  \var{brsphmphi} & $\left<B_r\right>_\phi$ \\
+  \var{bthmphi} & $\left<B_\theta\right>_\phi$ \\
 %
 \bottomrule
 \end{longtable}
