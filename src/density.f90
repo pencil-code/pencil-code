@@ -1,8 +1,7 @@
 ! $Id$
-
-!  This module is used both for the initial condition and during run time.
-!  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
-
+!
+!  This module takes care of the continuity equation.
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -17,23 +16,19 @@
 ! PENCILS PROVIDED hlnrho(3,3); sglnrho(3); uij5glnrho(3)
 !
 !***************************************************************
-
 module Density
-
+!
   use Cparam
   use Cdata
   use Messages
-  use EquationOfState, only: cs0,cs20,lnrho0,rho0, &
-                             gamma,gamma1,cs2top,cs2bot, &
-                             mpoly,beta_glnrho_global,&
-                             get_cp1,get_ptlaw
-
+  use EquationOfState
+!
   use Special
-
+!
   implicit none
-
+!
   include 'density.h'
-
+!
   real, dimension (ninit) :: ampllnrho=0.0, widthlnrho=0.1
   real, dimension (ninit) :: rho_left=1.0, rho_right=1.0
   real, dimension (ninit) :: amplrho=0.0, phase_lnrho=0.0, radius_lnrho=0.5
@@ -63,7 +58,7 @@ module Density
   logical :: lrho_as_aux=.false., ldiffusion_nolog=.false.
   logical :: lshare_plaw=.false.
   logical :: lcheck_negative_density=.false.
-
+!
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
   character (len=labellen) :: strati_type='lnrho_ss'
   character (len=labellen), dimension(ndiff_max) :: idiff=''
@@ -71,9 +66,9 @@ module Density
   character (len=labellen) :: mass_source_profile='cylindric'
   character (len=5) :: iinit_str
   complex :: coeflnrho=0.
-
+!
   integer :: iglobal_gg=0
-
+!
   namelist /density_init_pars/ &
       ampllnrho,initlnrho,widthlnrho,                    &
       rho_left,rho_right,lnrho_const,rho_const,cs2bot,cs2top,       &
@@ -85,7 +80,7 @@ module Density
       wdamp,plaw,lcontinuity_gas,density_floor,lanti_shockdiffusion,&
       rshift,lrho_as_aux,ldiffusion_nolog,lnrho_z_shift,            &
       lshare_plaw
-
+!
   namelist /density_run_pars/ &
       cdiffrho,diffrho,diffrho_hyper3,diffrho_shock,                &
       cs2bot,cs2top,lupw_lnrho,lupw_rho,idiff,lmass_source,         &
@@ -96,8 +91,7 @@ module Density
       diffrho_hyper3_aniso,lfreeze_lnrhosqu,density_floor,          &
       lanti_shockdiffusion,lrho_as_aux,ldiffusion_nolog,            &
       lcheck_negative_density
-
-  ! diagnostic variables (need to be consistent with reset list below)
+! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_rhom=0       ! DIAG_DOC: $\left<\varrho\right>$
                                 ! DIAG_DOC:   \quad(mean density)
   integer :: idiag_rho2m=0      ! DIAG_DOC:
@@ -118,9 +112,8 @@ module Density
   integer :: idiag_rhomxz=0     ! DIAG_DOC:
   integer :: idiag_rhomr=0      ! DIAG_DOC:
   integer :: idiag_totmass=0    ! DIAG_DOC:
-
+!
   contains
-
 !***********************************************************************
     subroutine register_density()
 !
@@ -134,7 +127,7 @@ module Density
 
       call farray_register_pde('lnrho',ilnrho)
 !
-!  identify version number (generated automatically by CVS)
+!  Identify version number (generated automatically by CVS).
 !
       if (lroot) call cvs_id( &
           "$Id$")
@@ -152,13 +145,11 @@ module Density
 !  24-nov-02/tony: coded
 !  31-aug-03/axel: normally, diffrho should be given in absolute units
 !
-!
 
       use CData, only: lfreeze_varext,lfreeze_varint,lreloading,&
                        ilnrho,lfreeze_varsquare,llocal_iso
       use Deriv, only: der_pencil,der2_pencil
       use FArrayManager
-      use EquationOfState, only: select_eos_variable
       use Gravity, only: lnumerical_equilibrium
       use Mpicomm
       use SharedVariables
@@ -361,47 +352,6 @@ module Density
 !
     endsubroutine initialize_density
 !***********************************************************************
-    subroutine read_density_init_pars(unit,iostat)
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
-
-      if (present(iostat)) then
-        read(unit,NML=density_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=density_init_pars,ERR=99)
-      endif
-
-
-99    return
-    endsubroutine read_density_init_pars
-!***********************************************************************
-    subroutine write_density_init_pars(unit)
-      integer, intent(in) :: unit
-
-      write(unit,NML=density_init_pars)
-
-    endsubroutine write_density_init_pars
-!***********************************************************************
-    subroutine read_density_run_pars(unit,iostat)
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
-
-      if (present(iostat)) then
-        read(unit,NML=density_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=density_run_pars,ERR=99)
-      endif
-
-99    return
-    endsubroutine read_density_run_pars
-!***********************************************************************
-    subroutine write_density_run_pars(unit)
-      integer, intent(in) :: unit
-
-      write(unit,NML=density_run_pars)
-
-    endsubroutine write_density_run_pars
-!***********************************************************************
     subroutine init_lnrho(f)
 !
 !  Initialise logarithmic or non-logarithmic density.
@@ -410,7 +360,6 @@ module Density
 !  28-jun-02/axel: added isothermal
 !  15-oct-03/dave: added spherical shell (kws)
 !
-      use EquationOfState
       use General, only: chn,complex_phase
       use Gravity, only: zref,z1,z2,gravz,nu_epicycle,potential, &
                          lnumerical_equilibrium
@@ -1119,7 +1068,6 @@ module Density
 !  21-aug-08/dhruba -- added spherical coordinates
 !
       use Gravity, only: g0,potential
-      use Cdata, only:lspherical_coords,lcylindrical_coords,lcartesian_coords
       use Mpicomm,only:stop_it
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -1210,8 +1158,6 @@ module Density
 !  All pencils that the Density module depends on are specified here.
 !
 !  19-11-04/anders: coded
-!
-      use Cdata
 !
       if (ldensity_nolog) lpenc_requested(i_rho)=.true.
       if (lcontinuity_gas) then
@@ -1327,7 +1273,6 @@ module Density
 !
       use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij
       use Mpicomm, only: stop_it
-      use Messages, only: fatal_error_local
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -1498,8 +1443,6 @@ module Density
 !  Actions to take before boundary conditions are set.
 !
 !   2-apr-08/anders: coded
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
@@ -1720,7 +1663,6 @@ module Density
 !  28-jul-06/wlad: coded
 !
       use BorderProfiles,  only: border_driving
-      use EquationOfState, only: cs0,cs20,gamma,gamma11
       use Sub,             only: power_law
       use Mpicomm,         only: stop_it
       use Gravity,         only: potential,acceleration
@@ -1831,128 +1773,6 @@ module Density
       endif
 !
     endsubroutine set_border_density
-!***********************************************************************
-    subroutine rprint_density(lreset,lwrite)
-!
-!  reads and registers print parameters relevant for compressible part
-!
-!   3-may-02/axel: coded
-!  27-may-02/axel: added possibility to reset list
-!
-      use Sub
-!
-      logical :: lreset
-      logical, optional :: lwrite
-!
-      integer :: iname, inamex, inamey, inamez, inamexy, inamexz, irz, inamer
-      logical :: lwr
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-!  reset everything in case of reset
-!  (this needs to be consistent with what is defined above!)
-!
-      if (lreset) then
-        idiag_rhom=0; idiag_rho2m=0; idiag_lnrho2m=0
-        idiag_drho2m=0; idiag_drhom=0
-        idiag_ugrhom=0; idiag_uglnrhom=0
-        idiag_rhomin=0; idiag_rhomax=0; idiag_dtd=0
-        idiag_lnrhomphi=0; idiag_rhomphi=0
-        idiag_rhomz=0; idiag_rhomy=0; idiag_rhomx=0 
-        idiag_rhomxy=0; idiag_rhomr=0; idiag_totmass=0
-        idiag_rhomxz=0
-      endif
-!
-!  iname runs through all possible names that may be listed in print.in
-!
-      if (lroot.and.ip<14) print*,'rprint_density: run through parse list'
-      do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'rhom',idiag_rhom)
-        call parse_name(iname,cname(iname),cform(iname),'rho2m',idiag_rho2m)
-        call parse_name(iname,cname(iname),cform(iname),'drho2m',idiag_drho2m)
-        call parse_name(iname,cname(iname),cform(iname),'drhom',idiag_drhom)
-        call parse_name(iname,cname(iname),cform(iname),'rhomin',idiag_rhomin)
-        call parse_name(iname,cname(iname),cform(iname),'rhomax',idiag_rhomax)
-        call parse_name(iname,cname(iname),cform(iname),'lnrho2m',idiag_lnrho2m)
-        call parse_name(iname,cname(iname),cform(iname),'ugrhom',idiag_ugrhom)
-        call parse_name(iname,cname(iname),cform(iname),'uglnrhom',idiag_uglnrhom)
-        call parse_name(iname,cname(iname),cform(iname),'dtd',idiag_dtd)
-        call parse_name(iname,cname(iname),cform(iname),'totmass',idiag_totmass)
-      enddo
-!
-!  check for those quantities for which we want xy-averages
-!
-      do inamez=1,nnamez
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhomz',idiag_rhomz)
-      enddo
-!
-!  check for those quantities for which we want xz-averages
-!
-      do inamey=1,nnamey
-        call parse_name(inamey,cnamey(inamey),cformy(inamey),'rhomy',idiag_rhomy)
-      enddo
-!
-!  check for those quantities for which we want yz-averages
-!
-      do inamex=1,nnamex
-        call parse_name(inamex,cnamex(inamex),cformx(inamex),'rhomx',idiag_rhomx)
-      enddo
-!
-!  check for those quantities for which we want phiz-averages
-!
-      do inamer=1,nnamer
-        call parse_name(inamer,cnamer(inamer),cformr(inamer),'rhomr',idiag_rhomr)
-      enddo
-!
-!  check for those quantities for which we want z-averages
-!
-      do inamexz=1,nnamexz
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'rhomxz',idiag_rhomxz)
-      enddo
-!
-!  check for those quantities for which we want z-averages
-!
-      do inamexy=1,nnamexy
-        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'rhomxy',idiag_rhomxy)
-      enddo
-!
-!  check for those quantities for which we want phi-averages
-!
-      do irz=1,nnamerz
-        call parse_name(irz,cnamerz(irz),cformrz(irz),&
-            'lnrhomphi',idiag_lnrhomphi)
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'rhomphi',idiag_rhomphi)
-      enddo
-!
-!  write column where which density variable is stored
-!
-      if (lwr) then
-        write(3,*) 'i_rhom=',idiag_rhom
-        write(3,*) 'i_rho2m=',idiag_rho2m
-        write(3,*) 'i_drho2m=',idiag_drho2m
-        write(3,*) 'i_drhom=',idiag_drhom
-        write(3,*) 'i_rhomin=',idiag_rhomin
-        write(3,*) 'i_rhomax=',idiag_rhomax
-        write(3,*) 'i_lnrho2m=',idiag_lnrho2m
-        write(3,*) 'i_ugrhom=',idiag_ugrhom
-        write(3,*) 'i_uglnrhom=',idiag_uglnrhom
-        write(3,*) 'i_rhomz=',idiag_rhomz
-        write(3,*) 'i_rhomy=',idiag_rhomy
-        write(3,*) 'i_rhomx=',idiag_rhomx
-        write(3,*) 'i_rhomxy=',idiag_rhomxy
-        write(3,*) 'i_rhomxz=',idiag_rhomxz
-        write(3,*) 'nname=',nname
-        write(3,*) 'ilnrho=',ilnrho
-        write(3,*) 'irho=',irho
-        write(3,*) 'i_lnrhomphi=',idiag_lnrhomphi
-        write(3,*) 'i_rhomphi=',idiag_rhomphi
-        write(3,*) 'i_rhomr=',idiag_rhomr
-        write(3,*) 'i_dtd=',idiag_dtd
-        write(3,*) 'i_totmass=',idiag_totmass
-      endif
-!
-    endsubroutine rprint_density
 !***********************************************************************
 !  Here comes a collection of different density stratification routines
 !***********************************************************************
@@ -2329,7 +2149,7 @@ module Density
       call correct_for_selfgravity(f)
 !
     endsubroutine exponential_fall
-!**********************************************************
+!***********************************************************************
     subroutine correct_for_selfgravity(f)
 !        
 !  Correct for the fluid's self-gravity in the 
@@ -2623,7 +2443,6 @@ module Density
 !
 !  28-apr-2005/axel: coded
 !
-      use Cdata
       use Sub, only: step
       use Gravity, only: lnrho_bot,lnrho_top,ss_bot,ss_top
 !
@@ -2671,8 +2490,6 @@ module Density
 !
 !  13-aug-2007/anders: implemented.
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       real :: density_floor_log
@@ -2694,5 +2511,173 @@ module Density
       endif
 !
     endsubroutine impose_density_floor
+!***********************************************************************
+    subroutine read_density_init_pars(unit,iostat)
+!
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+!
+      if (present(iostat)) then
+        read(unit,NML=density_init_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=density_init_pars,ERR=99)
+      endif
+!
+99    return
+!
+    endsubroutine read_density_init_pars
+!***********************************************************************
+    subroutine write_density_init_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      write(unit,NML=density_init_pars)
+!
+    endsubroutine write_density_init_pars
+!***********************************************************************
+    subroutine read_density_run_pars(unit,iostat)
+!
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+!
+      if (present(iostat)) then
+        read(unit,NML=density_run_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=density_run_pars,ERR=99)
+      endif
+!
+99    return
+!
+    endsubroutine read_density_run_pars
+!***********************************************************************
+    subroutine write_density_run_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      write(unit,NML=density_run_pars)
+!
+    endsubroutine write_density_run_pars
+!***********************************************************************
+    subroutine rprint_density(lreset,lwrite)
+!
+!  reads and registers print parameters relevant for compressible part
+!
+!   3-may-02/axel: coded
+!  27-may-02/axel: added possibility to reset list
+!
+      use Sub
+!
+      logical :: lreset
+      logical, optional :: lwrite
+!
+      integer :: iname, inamex, inamey, inamez, inamexy, inamexz, irz, inamer
+      logical :: lwr
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=lwrite
+!
+!  reset everything in case of reset
+!  (this needs to be consistent with what is defined above!)
+!
+      if (lreset) then
+        idiag_rhom=0; idiag_rho2m=0; idiag_lnrho2m=0
+        idiag_drho2m=0; idiag_drhom=0
+        idiag_ugrhom=0; idiag_uglnrhom=0
+        idiag_rhomin=0; idiag_rhomax=0; idiag_dtd=0
+        idiag_lnrhomphi=0; idiag_rhomphi=0
+        idiag_rhomz=0; idiag_rhomy=0; idiag_rhomx=0 
+        idiag_rhomxy=0; idiag_rhomr=0; idiag_totmass=0
+        idiag_rhomxz=0
+      endif
+!
+!  iname runs through all possible names that may be listed in print.in
+!
+      if (lroot.and.ip<14) print*,'rprint_density: run through parse list'
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'rhom',idiag_rhom)
+        call parse_name(iname,cname(iname),cform(iname),'rho2m',idiag_rho2m)
+        call parse_name(iname,cname(iname),cform(iname),'drho2m',idiag_drho2m)
+        call parse_name(iname,cname(iname),cform(iname),'drhom',idiag_drhom)
+        call parse_name(iname,cname(iname),cform(iname),'rhomin',idiag_rhomin)
+        call parse_name(iname,cname(iname),cform(iname),'rhomax',idiag_rhomax)
+        call parse_name(iname,cname(iname),cform(iname),'lnrho2m',idiag_lnrho2m)
+        call parse_name(iname,cname(iname),cform(iname),'ugrhom',idiag_ugrhom)
+        call parse_name(iname,cname(iname),cform(iname),'uglnrhom',idiag_uglnrhom)
+        call parse_name(iname,cname(iname),cform(iname),'dtd',idiag_dtd)
+        call parse_name(iname,cname(iname),cform(iname),'totmass',idiag_totmass)
+      enddo
+!
+!  check for those quantities for which we want xy-averages
+!
+      do inamez=1,nnamez
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhomz',idiag_rhomz)
+      enddo
+!
+!  check for those quantities for which we want xz-averages
+!
+      do inamey=1,nnamey
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'rhomy',idiag_rhomy)
+      enddo
+!
+!  check for those quantities for which we want yz-averages
+!
+      do inamex=1,nnamex
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'rhomx',idiag_rhomx)
+      enddo
+!
+!  check for those quantities for which we want phiz-averages
+!
+      do inamer=1,nnamer
+        call parse_name(inamer,cnamer(inamer),cformr(inamer),'rhomr',idiag_rhomr)
+      enddo
+!
+!  check for those quantities for which we want z-averages
+!
+      do inamexz=1,nnamexz
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'rhomxz',idiag_rhomxz)
+      enddo
+!
+!  check for those quantities for which we want z-averages
+!
+      do inamexy=1,nnamexy
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'rhomxy',idiag_rhomxy)
+      enddo
+!
+!  check for those quantities for which we want phi-averages
+!
+      do irz=1,nnamerz
+        call parse_name(irz,cnamerz(irz),cformrz(irz),&
+            'lnrhomphi',idiag_lnrhomphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'rhomphi',idiag_rhomphi)
+      enddo
+!
+!  write column where which density variable is stored
+!
+      if (lwr) then
+        write(3,*) 'i_rhom=',idiag_rhom
+        write(3,*) 'i_rho2m=',idiag_rho2m
+        write(3,*) 'i_drho2m=',idiag_drho2m
+        write(3,*) 'i_drhom=',idiag_drhom
+        write(3,*) 'i_rhomin=',idiag_rhomin
+        write(3,*) 'i_rhomax=',idiag_rhomax
+        write(3,*) 'i_lnrho2m=',idiag_lnrho2m
+        write(3,*) 'i_ugrhom=',idiag_ugrhom
+        write(3,*) 'i_uglnrhom=',idiag_uglnrhom
+        write(3,*) 'i_rhomz=',idiag_rhomz
+        write(3,*) 'i_rhomy=',idiag_rhomy
+        write(3,*) 'i_rhomx=',idiag_rhomx
+        write(3,*) 'i_rhomxy=',idiag_rhomxy
+        write(3,*) 'i_rhomxz=',idiag_rhomxz
+        write(3,*) 'nname=',nname
+        write(3,*) 'ilnrho=',ilnrho
+        write(3,*) 'irho=',irho
+        write(3,*) 'i_lnrhomphi=',idiag_lnrhomphi
+        write(3,*) 'i_rhomphi=',idiag_rhomphi
+        write(3,*) 'i_rhomr=',idiag_rhomr
+        write(3,*) 'i_dtd=',idiag_dtd
+        write(3,*) 'i_totmass=',idiag_totmass
+      endif
+!
+    endsubroutine rprint_density
 !***********************************************************************
 endmodule Density
