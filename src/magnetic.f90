@@ -131,7 +131,7 @@ module Magnetic
   logical :: lgauss=.false.
   logical :: lbb_as_aux=.false.,ljj_as_aux=.false.
   logical :: lbbt_as_aux=.false.,ljjt_as_aux=.false.
-  logical :: lbext_curvilinear=.false., lcheck_positive_va2=.false.
+  logical :: lbext_curvilinear=.true., lcheck_positive_va2=.false.
   logical :: lreset_aa=.false.
   character (len=labellen) :: pertaa='zero'
 
@@ -1106,14 +1106,6 @@ module Magnetic
         enddo
         enddo
       endif
-!
-!  Correct for the tension of the initial large scale magnetic field 
-!  in the momentum equation
-!
-      if ((lbext_curvilinear).and.&
-      ((B_ext(1).ne.0).or.&
-       (B_ext(2).ne.0).or.&
-       (B_ext(3).ne.0))) call correct_lorentz_force(f)
 !
     endsubroutine init_aa
 !***********************************************************************
