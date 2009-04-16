@@ -19,17 +19,14 @@
 !
 !***************************************************************
 module Hydro
-
-!  Note that Omega is already defined in cdata.
-
+!
   use Cparam
   use Cdata
   use Viscosity
   use Messages
-
-
+!
   implicit none
-
+!
   include 'hydro.h'
 !
 ! Slice precalculation buffers
@@ -87,6 +84,7 @@ module Hydro
 ! The following is useful to debug the forcing - Dhruba
   real :: outest
   logical :: loutest,ldiffrot_test=.false.
+!
   namelist /hydro_init_pars/ &
        ampluu, ampl_ux, ampl_uy, ampl_uz, phase_ux, phase_uy, phase_uz, &
        inituu, widthuu, radiusuu, urand, urandi, lpressuregradient_gas, &
@@ -98,8 +96,7 @@ module Hydro
        luut_as_aux,loot_as_aux, &
        velocity_ceiling, mu_omega, nb_rings, om_rings, gap, &
        lscale_tobox
-
-  ! run parameters
+! run parameters
   real :: tdamp=0.,dampu=0.,wdamp=0.
   real :: dampuint=0.0,dampuext=0.0,rdampint=-1e20,rdampext=impossible
   real :: ruxm=0.,ruym=0.,ruzm=0.
@@ -127,7 +124,7 @@ module Hydro
   real :: z1_interior_bc_hydro=0.
 !
   namelist /hydro_run_pars/ &
-       Omega,theta, &         ! remove and use viscosity_run_pars only
+       Omega,theta, &
        tdamp,dampu,dampuext,dampuint,rdampext,rdampint,wdamp, &
        tau_damp_ruxm,tau_damp_ruym,tau_damp_ruzm,tau_diffrot1, &
        ampl1_diffrot,ampl2_diffrot,uuprof, &
@@ -145,10 +142,7 @@ module Hydro
        loutest, ldiffrot_test,&
        interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
        velocity_ceiling
-
-! end geodynamo
-
-  ! diagnostic variables (need to be consistent with reset list below)
+! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_u2tm=0       ! DIAG_DOC: $\left<\uv(t)\cdot\int_0^t\uv(t')
                                 ! DIAG_DOC:   dt'\right>$
   integer :: idiag_uotm=0       ! DIAG_DOC: $\left<\uv(t)\cdot\int_0^t\omv(t')
@@ -374,9 +368,8 @@ module Hydro
   integer :: idiag_urmsn=0,idiag_urmss=0,idiag_urmsh=0
   integer :: idiag_ormsn=0,idiag_ormss=0,idiag_ormsh=0
   integer :: idiag_oumn=0,idiag_oums=0,idiag_oumh=0
-
+!
   contains
-
 !***********************************************************************
     subroutine register_hydro()
 !
@@ -432,9 +425,6 @@ module Hydro
 !  13-oct-03/dave: check parameters and warn (if nec.) about velocity damping
 !
       use Mpicomm, only: stop_it
-      use Cdata,   only: r_int,r_ext,lfreeze_varint,lfreeze_varext,epsi, &
-        leos,iux,iuy,iuz,iuut,iuxt,iuyt,iuzt,ioot,ioxt,ioyt,iozt,lroot,&
-        datadir,lfargo_advection
       use FArrayManager
       use SharedVariables, only: put_shared_variable
 !
@@ -580,52 +570,6 @@ module Hydro
 !
       endsubroutine initialize_hydro
 !***********************************************************************
-    subroutine read_hydro_init_pars(unit,iostat)
-!
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
-!
-      if (present(iostat)) then
-        read(unit,NML=hydro_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=hydro_init_pars,ERR=99)
-      endif
-!
-99    return
-!
-    endsubroutine read_hydro_init_pars
-!***********************************************************************
-    subroutine write_hydro_init_pars(unit)
-!    
-      integer, intent(in) :: unit
-!
-      write(unit,NML=hydro_init_pars)
-!
-    endsubroutine write_hydro_init_pars
-!***********************************************************************
-    subroutine read_hydro_run_pars(unit,iostat)
-!    
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
-!
-      if (present(iostat)) then
-        read(unit,NML=hydro_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=hydro_run_pars,ERR=99)
-      endif
-!
-99    return
-!
-    endsubroutine read_hydro_run_pars
-!***********************************************************************
-    subroutine write_hydro_run_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      write(unit,NML=hydro_run_pars)
-!
-    endsubroutine write_hydro_run_pars
-!***********************************************************************
     subroutine init_uu(f)
 !
 !  initialise uu and lnrho; called from start.f90
@@ -634,7 +578,6 @@ module Hydro
 !  07-nov-01/wolf: coded
 !  24-nov-02/tony: renamed for consistance (i.e. init_[variable name])
 !
-      use Cdata
       use EquationOfState, only: cs20, gamma, beta_glnrho_scaled
       use General
       use Gravity, only: grav_const,z1
@@ -1054,8 +997,6 @@ module Hydro
 !
 !  20-11-04/anders: coded
 !
-      use Cdata
-!
       if (ladvection_velocity) lpenc_requested(i_ugu)=.true.
       if (lprecession) lpenc_requested(i_rr)=.true.
       if (ldt) lpenc_requested(i_uu)=.true.
@@ -1154,8 +1095,6 @@ module Hydro
 !
 !  20-nov-04/anders: coded
 !
-      use Cdata, only: lcartesian_coords
-!
       logical, dimension(npencils) :: lpencil_in
 !
       if (lpencil_in(i_u2)) lpencil_in(i_uu)=.true.
@@ -1197,7 +1136,6 @@ module Hydro
 !  08-nov-04/tony: coded
 !  26-mar-07/axel: started using the gij_etc routine
 !
-      use Cdata
       use Deriv
       use Sub
       use Mpicomm, only: stop_it
@@ -1369,7 +1307,6 @@ module Hydro
 !  17-jun-03/ulf: ux2, uy2 and uz2 added as diagnostic quantities
 !  27-jun-07/dhruba: differential rotation as subroutine call
 !
-      use Cdata
       use Sub
       use IO
       use Mpicomm, only: stop_it
@@ -1929,8 +1866,6 @@ module Hydro
 !  24-jun-08/axel: moved call to this routine to the individual pde routines
 !   1-jul-08/axel: moved this part to hydro
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
@@ -1953,7 +1888,6 @@ module Hydro
 !   9-nov-06/axel: adapted from calc_ltestfield_pars
 !  31-jul-08/axel: Poincare force with O=(sinalp*cosot,sinalp*sinot,cosalp)
 !
-      use Cdata, only: iux,iuy,iuz,ilnrho,l1,l2,m1,m2,n1,n2,lroot,t,x,y
       use Mpicomm, only: mpiallreduce_sum
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2127,7 +2061,6 @@ module Hydro
 !
 !  28-jul-06/wlad: coded
 !
-      use Cdata
       use BorderProfiles,  only: border_driving
       use EquationOfState, only: cs0,cs20,get_ptlaw,rho0
       use Particles_nbody, only: get_totalmass
@@ -2343,7 +2276,6 @@ module Hydro
 !  04-jul-07/wlad: generalized for any shear
 !  08-sep-07/wlad: moved here from initcond
 !
-      use Cdata
       use Gravity, only: r0_pot,n_pot,acceleration,qgshear
       use Sub,     only: get_radial_distance,power_law
       use Mpicomm, only: stop_it
@@ -2448,8 +2380,6 @@ module Hydro
 !
 !  24-nov-03/axel: adapted from calc_bthresh
 !
-      use Cdata
-!
 !  give warning if orms is not set in prints.in
 !
       if (idiag_orms==0) then
@@ -2480,7 +2410,6 @@ module Hydro
 !
 !  19-jan-07/axel: added terms derived by Gailitis
 !
-      use Cdata
       use Mpicomm, only: stop_it
       use Sub, only: step,sum_mn_name
 !
@@ -2514,7 +2443,6 @@ module Hydro
 !
 !  21-feb-07/axel+dhruba: coded
 !
-      use Cdata
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -2561,7 +2489,6 @@ module Hydro
 !
 !  19-sep-07/steveb: coded
 !
-     use Cdata
      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -2603,7 +2530,6 @@ module Hydro
 !
 !  20-nov-04/axel: added cylindrical Couette flow
 !
-      use Cdata
       use Mpicomm, only: stop_it
       use Sub, only: step,sum_mn_name
 !
@@ -2763,8 +2689,6 @@ module Hydro
 ! 
 !  Dummy routine
 ! 
-      use Cdata, only: lroot
-!
       integer :: id,lun
       logical :: done
 ! 
@@ -2782,6 +2706,52 @@ module Hydro
 !
     endsubroutine output_persistent_hydro
 !***********************************************************************
+    subroutine read_hydro_init_pars(unit,iostat)
+!
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+!
+      if (present(iostat)) then
+        read(unit,NML=hydro_init_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=hydro_init_pars,ERR=99)
+      endif
+!
+99    return
+!
+    endsubroutine read_hydro_init_pars
+!***********************************************************************
+    subroutine write_hydro_init_pars(unit)
+!    
+      integer, intent(in) :: unit
+!
+      write(unit,NML=hydro_init_pars)
+!
+    endsubroutine write_hydro_init_pars
+!***********************************************************************
+    subroutine read_hydro_run_pars(unit,iostat)
+!    
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+!
+      if (present(iostat)) then
+        read(unit,NML=hydro_run_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=hydro_run_pars,ERR=99)
+      endif
+!
+99    return
+!
+    endsubroutine read_hydro_run_pars
+!***********************************************************************
+    subroutine write_hydro_run_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      write(unit,NML=hydro_run_pars)
+!
+    endsubroutine write_hydro_run_pars
+!***********************************************************************
     subroutine rprint_hydro(lreset,lwrite)
 !
 !  reads and registers print parameters relevant for hydro part
@@ -2789,7 +2759,6 @@ module Hydro
 !   3-may-02/axel: coded
 !  27-may-02/axel: added possibility to reset list
 !
-      use Cdata
       use Sub
 !
       integer :: iname,inamez,inamey,inamex,ixy,ixz,irz,inamer,iname_half
@@ -3441,8 +3410,6 @@ module Hydro
 !
 !  26-jul-06/tony: coded
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
@@ -3539,7 +3506,6 @@ module Hydro
 !   8-nov-02/axel: adapted from calc_mfield
 !   9-nov-02/axel: allowed mean flow to be compressible
 !
-      use Cdata
       use Mpicomm
       use Sub
 !
@@ -3649,7 +3615,6 @@ module Hydro
 !
 !  14-feb-09/axel: adapted from calc_umbmz
 !
-      use Cdata
       use Mpicomm
       use Sub
 !
@@ -3688,7 +3653,6 @@ module Hydro
 !
 !  26-jan-09/axel: adapted from calc_ebmz
 !
-      use Cdata
       use Magnetic, only: idiag_bxmz,idiag_bymz
       use Mpicomm
       use Sub
@@ -3728,7 +3692,6 @@ module Hydro
 !
 !  17-mar-09/axel: adapted from calc_umbmz
 !
-      use Cdata
       use Magnetic, only: idiag_bxmz,idiag_bymz
       use Mpicomm
       use Sub
@@ -3769,7 +3732,6 @@ module Hydro
 !
 !  15-nov-06/tobi: coded
 !
-      use Cdata, only: ilnrho,iux,iuz,ldensity_nolog
       use Mpicomm, only: mpiallreduce_sum
 
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
@@ -3833,7 +3795,6 @@ module Hydro
 !
 !  22-may-07/axel: adapted from remove_mean_momenta
 !
-      use Cdata, only: iux,iuz,ldensity_nolog
       use Mpicomm, only: mpiallreduce_sum
 
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
@@ -3881,8 +3842,6 @@ module Hydro
 !
 !  11-jun-08/axel: coded
 !
-      use Cdata, only: l1,l2,m,m1,m2,n,n1,n2,z,iux,iuz,lroot
-!
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer :: l1bc,l2bc
 !
@@ -3921,7 +3880,6 @@ module Hydro
 !  27-june-2007 dhruba: coded
 !
       use Mpicomm
-      use Cdata
       use Sub, only: step
       use Gravity, only: z1
       real :: slope,uinn,uext,zbot
@@ -4072,8 +4030,6 @@ module Hydro
 !  value (velocity_ceiling). Useful for debugging purposes.
 !
 !  13-aug-2007/anders: implemented.
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !

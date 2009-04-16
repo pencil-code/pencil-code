@@ -12,31 +12,27 @@
 ! PENCILS PROVIDED divu; uij5(3,3); graddivu(3)
 !
 !***************************************************************
-
 module Hydro
-
+!
   use Cparam
-  use Cdata, only: huge1
+  use Cdata
   use Messages
   use Sub, only: keep_compiler_quiet
-
+!
   implicit none
-
+!
   include 'record_types.h'
   include 'hydro.h'
-
+!
   real, dimension (nz,3) :: uumz=0.
   real :: u_out_kep=0.0
   real :: tphase_kinflow=-1.,phase1=0., phase2=0.
   logical :: lpressuregradient_gas=.true.,lcalc_uumean=.false.
-
+!
   real, allocatable, dimension (:,:) :: KS_k,KS_A,KS_B !or through whole field for each wavenumber?
   real, allocatable, dimension (:) :: KS_omega !or through whole field for each wavenumber?
   integer :: KS_modes = 3
-  !namelist /hydro_init_pars/ dummyuu
-  !namelist /hydro_run_pars/  dummyuu
-
-  ! other variables (needs to be consistent with reset list below)
+!
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
   integer :: idiag_dtu=0,idiag_urms=0,idiag_umax=0,idiag_uzrms=0
@@ -50,9 +46,8 @@ module Hydro
   integer :: idiag_urmphi=0,idiag_upmphi=0,idiag_uzmphi=0,idiag_u2mphi=0
   integer :: idiag_phase1=0,idiag_phase2=0
   integer :: idiag_ekintot=0, idiag_ekin=0
-
+!
   contains
-
 !***********************************************************************
     subroutine register_hydro()
 !
@@ -61,7 +56,6 @@ module Hydro
 !
 !  6-nov-01/wolf: coded
 !
-      use Cdata
       use Mpicomm, only: lroot,stop_it
       use SharedVariables
       use Sub
@@ -88,7 +82,6 @@ module Hydro
 !
 !  24-nov-02/tony: coded
 !
-      use Cdata
       use FArrayManager
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -135,38 +128,6 @@ module Hydro
 !
     endsubroutine initialize_hydro
 !***********************************************************************
-    subroutine read_hydro_init_pars(unit,iostat)
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
-
-      if (present(iostat)) call keep_compiler_quiet(iostat)
-      call keep_compiler_quiet(unit)
-
-    endsubroutine read_hydro_init_pars
-!***********************************************************************
-    subroutine write_hydro_init_pars(unit)
-      integer, intent(in) :: unit
-
-      call keep_compiler_quiet(unit)
-
-    endsubroutine write_hydro_init_pars
-!***********************************************************************
-    subroutine read_hydro_run_pars(unit,iostat)
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
-
-      if (present(iostat)) call keep_compiler_quiet(iostat)
-      call keep_compiler_quiet(unit)
-
-    endsubroutine read_hydro_run_pars
-!***********************************************************************
-    subroutine write_hydro_run_pars(unit)
-      integer, intent(in) :: unit
-
-      call keep_compiler_quiet(unit)
-
-    endsubroutine write_hydro_run_pars
-!***********************************************************************
     subroutine init_uu(f)
 !
 !  initialise uu and lnrho; called from start.f90
@@ -174,7 +135,6 @@ module Hydro
 !
 !   7-jun-02/axel: adapted from hydro
 !
-      use Cdata
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -188,8 +148,6 @@ module Hydro
 !  All pencils that the Hydro module depends on are specified here.
 !
 !  20-11-04/anders: coded
-!
-      use Cdata
 !
       if (kinflow/='') lpenc_requested(i_uu)=.true.
       if (idiag_urms/=0 .or. idiag_umax/=0 .or. idiag_u2m/=0 .or. &
@@ -235,7 +193,6 @@ module Hydro
 !
 !   08-nov-04/tony: coded
 !
-      use Cdata
       use Sub, only: dot_mn,dot2_mn, sum_mn_name, max_mn_name, &
         integrate_mn_name, quintic_step, quintic_der_step
       use Magnetic, only: ABC_A,ABC_B,ABC_C,kx_aa,ky_aa,kz_aa
@@ -590,7 +547,6 @@ kky_aa=2.*pi
 !
 !   7-jun-02/axel: adapted from hydro
 !
-      use Cdata
       use Sub
       use FArrayManager
 !
@@ -643,8 +599,6 @@ kky_aa=2.*pi
 !
 !   1-jul-08/axel: dummy
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
@@ -679,7 +633,6 @@ kky_aa=2.*pi
 !                    correct periodicity.
 !                    renamed from random_isotropic_KS_setup
 !
-    use Cdata, only: pi,Lxyz
     use Sub
     use General
 !
@@ -818,7 +771,6 @@ kky_aa=2.*pi
 !   03-feb-06/weezy: Attempted rewrite to guarantee periodicity of
 !                    KS modes.
 !
-    use Cdata, only: pi,Lxyz
     use Sub
     use General
 !
@@ -956,7 +908,6 @@ kky_aa=2.*pi
 !
 !   03-feb-06/weezy: modified from random_isotropic_KS_setup
 !
-    use Cdata, only: pi,Lxyz
     use Sub
     use General
 !
@@ -1065,7 +1016,6 @@ kky_aa=2.*pi
 !
 !  ! 28-mar-08/abag coded
 !
-   ! use Cdata, only: pi,Lxyz
    ! use Sub
    ! use General
    ! implicit none
@@ -1160,8 +1110,6 @@ kky_aa=2.*pi
 !
 !  12-apr-08/axel: adapted from input_persistent_forcing
 !
-      use Cdata, only: lroot
-!
       integer :: id,lun
       logical :: done
 !
@@ -1185,8 +1133,6 @@ kky_aa=2.*pi
 !
 !  12-apr-08/axel: adapted from output_persistent_forcing
 !
-      use Cdata, only: lroot
-!
       integer :: lun
 !
       if (lroot.and.ip<14) then
@@ -1205,13 +1151,48 @@ kky_aa=2.*pi
 !
     endsubroutine output_persistent_hydro
 !***********************************************************************
+    subroutine read_hydro_init_pars(unit,iostat)
+!
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+!
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(unit)
+!
+    endsubroutine read_hydro_init_pars
+!***********************************************************************
+    subroutine write_hydro_init_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      call keep_compiler_quiet(unit)
+!
+    endsubroutine write_hydro_init_pars
+!***********************************************************************
+    subroutine read_hydro_run_pars(unit,iostat)
+!
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+!
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(unit)
+!
+    endsubroutine read_hydro_run_pars
+!***********************************************************************
+    subroutine write_hydro_run_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      call keep_compiler_quiet(unit)
+!
+    endsubroutine write_hydro_run_pars
+!***********************************************************************
     subroutine rprint_hydro(lreset,lwrite)
 !
 !  reads and registers print parameters relevant for hydro part
 !
 !   8-jun-02/axel: adapted from hydro
 !
-      use Cdata
       use Sub
 !
       integer :: iname
