@@ -64,7 +64,7 @@ module Testscalar
   real :: lam_testscalar=0.,om_testscalar=0.,delta_testscalar=0.
   real :: delta_testscalar_next=0.
   integer, parameter :: mtestscalar=njtest
-  integer :: jtestz1=1,jtestz2=2,jtestx1=3,jtestx2=4
+  integer :: jtestz1=1,jtestz2=2,jtestx1=3,jtestx2=4,jtesty1=5,jtesty2=6
   integer :: nccinit
   real :: camp=1.,camp1=1.
   namelist /testscalar_init_pars/ &
@@ -121,6 +121,7 @@ module Testscalar
 !
   real, dimension (mz,mtestscalar) :: ugtestm
   real, dimension (nx,mtestscalar) :: ugtestmx
+  real, dimension (my,mtestscalar) :: ugtestmy
 
   contains
 
@@ -590,9 +591,9 @@ module Testscalar
         if (idiag_kap11/=0) call sum_mn_name(+cx(:)*Fipq(:,1,i3)+sx(:)*Fipq(:,1,i4),idiag_kap11)
         if (idiag_kap21/=0) call sum_mn_name(+cx(:)*Fipq(:,2,i3)+sx(:)*Fipq(:,2,i4),idiag_kap21)
         if (idiag_kap31/=0) call sum_mn_name(+cx(:)*Fipq(:,3,i3)+sx(:)*Fipq(:,3,i4),idiag_kap31)
-        if (idiag_kap12/=0) call sum_mn_name(+cz(n)*Fipq(:,1,i5)+sz(n)*Fipq(:,1,i6),idiag_kap12)
-        if (idiag_kap22/=0) call sum_mn_name(+cz(n)*Fipq(:,2,i5)+sz(n)*Fipq(:,2,i6),idiag_kap22)
-        if (idiag_kap32/=0) call sum_mn_name(+cz(n)*Fipq(:,3,i5)+sz(n)*Fipq(:,3,i6),idiag_kap32)
+        if (idiag_kap12/=0) call sum_mn_name(+cy(m)*Fipq(:,1,i5)+sy(m)*Fipq(:,1,i6),idiag_kap12)
+        if (idiag_kap22/=0) call sum_mn_name(+cy(m)*Fipq(:,2,i5)+sy(m)*Fipq(:,2,i6),idiag_kap22)
+        if (idiag_kap32/=0) call sum_mn_name(+cy(m)*Fipq(:,3,i5)+sy(m)*Fipq(:,3,i6),idiag_kap32)
         if (idiag_kap13/=0) call sum_mn_name(+cz(n)*Fipq(:,1,i1)+sz(n)*Fipq(:,1,i2),idiag_kap13)
         if (idiag_kap23/=0) call sum_mn_name(+cz(n)*Fipq(:,2,i1)+sz(n)*Fipq(:,2,i2),idiag_kap23)
         if (idiag_kap33/=0) call sum_mn_name(+cz(n)*Fipq(:,3,i1)+sz(n)*Fipq(:,3,i2),idiag_kap33)
@@ -678,13 +679,14 @@ module Testscalar
 !
       real, dimension (nz,nprocz,njtest) :: ugtestm1=0.,ugtestm1_tmp=0.
       real, dimension (nx,nprocy,nprocz,njtest) :: ugtestmx1=0.,ugtestmx1_tmp=0.
+      real, dimension (ny,nprocy,nprocz,njtest) :: ugtestmy1=0.,ugtestmy1_tmp=0.
 !
       real, dimension (nx) :: cctest,ugtest
       real, dimension (nx,3) :: ggtest
       integer :: jcctest,jtest,j,jug,jpy,jpz
-      integer :: nxy=nxgrid*nygrid,nyz=nygrid*nzgrid
+      integer :: nxy=nxgrid*nygrid,nyz=nygrid*nzgrid,nxz=nxgrid*nzgrid
       logical :: headtt_save
-      real :: fac_xy,fac_yz
+      real :: fac_xy,fac_yz,fac_xz
       type (pencil_case) :: p
 !
       intent(inout) :: f
@@ -695,6 +697,7 @@ module Testscalar
       headtt_save=headtt
       fac_xy=1./nxy
       fac_yz=1./nyz
+      fac_xz=1./nxz
 !
 !  do each of the 2+2 test fields at a time
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
@@ -744,6 +747,30 @@ module Testscalar
             enddo
           enddo
           ugtestmx1(:,ipy+1,ipz+1,jtest)=ugtestmx(:,jtest)
+        endif
+      enddo
+!
+!  Finally do y-dependent mean fields
+!
+      do jtest=jtesty1,jtesty2
+        jcctest=icctest+(jtest-1)
+        if (lsoca_ug) then
+          ugtestmy(:,jtest)=0.
+        else
+          ugtestmy(:,jtest)=0.
+          do m=m1,m2
+            do n=n1,n2
+              cctest=f(l1:l2,m,n,jcctest)
+              call calc_pencils_hydro(f,p)
+              call grad(f,jcctest,ggtest)
+              call dot_mn(p%uu,ggtest,ugtest)
+              jug=iug+(jtest-1)
+              if (iug/=0) f(l1:l2,m,n,jug)=ugtest
+              ugtestmy(m,jtest)=ugtestmy(m,jtest)+fac_xz*sum(ugtest)
+              headtt=.false.
+            enddo
+            ugtestmy1(m-m1+1,ipy+1,ipz+1,jtest)=ugtestmy(m,jtest)
+          enddo
         endif
       enddo
 !
