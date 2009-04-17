@@ -44,6 +44,7 @@ module Testscalar
 !  cosine and sine function for setting test fields and analysis
 !
   real, dimension(nx) :: cx,sx
+  real, dimension(my) :: cy,sy
   real, dimension(mz) :: cz,sz
 !
   character (len=labellen), dimension(ninit) :: initcctest='nothing'
@@ -77,6 +78,7 @@ module Testscalar
   real, dimension(njtest) :: rescale_cctest=0.
   logical :: ltestscalar_newz=.true.,leta_rank2=.false.
   logical :: ltestscalar_newx=.false.
+  logical :: ltestscalar_newy=.false.
   namelist /testscalar_run_pars/ &
        reinitialize_cctest,zextent,lsoca_ug, &
        lset_cctest2,kappatest,kappatest1,itestscalar,ktestscalar, &
@@ -90,6 +92,9 @@ module Testscalar
   integer :: idiag_kap11=0      ! DIAG_DOC: $\kappa_{11}$
   integer :: idiag_kap21=0      ! DIAG_DOC: $\kappa_{21}$
   integer :: idiag_kap31=0      ! DIAG_DOC: $\kappa_{31}$
+  integer :: idiag_kap12=0      ! DIAG_DOC: $\kappa_{12}$
+  integer :: idiag_kap22=0      ! DIAG_DOC: $\kappa_{22}$
+  integer :: idiag_kap32=0      ! DIAG_DOC: $\kappa_{32}$
   integer :: idiag_kap13=0      ! DIAG_DOC: $\kappa_{13}$
   integer :: idiag_kap23=0      ! DIAG_DOC: $\kappa_{23}$
   integer :: idiag_kap33=0      ! DIAG_DOC: $\kappa_{33}$
@@ -97,10 +102,14 @@ module Testscalar
   integer :: idiag_c2rms=0      ! DIAG_DOC: $\left<c_{2}^2\right>^{1/2}$
   integer :: idiag_c3rms=0      ! DIAG_DOC: $\left<c_{3}^2\right>^{1/2}$
   integer :: idiag_c4rms=0      ! DIAG_DOC: $\left<c_{4}^2\right>^{1/2}$
+  integer :: idiag_c5rms=0      ! DIAG_DOC: $\left<c_{5}^2\right>^{1/2}$
+  integer :: idiag_c6rms=0      ! DIAG_DOC: $\left<c_{6}^2\right>^{1/2}$
   integer :: idiag_c1pt=0       ! DIAG_DOC: $c^{1}$
   integer :: idiag_c2pt=0       ! DIAG_DOC: $c^{2}$
   integer :: idiag_c3pt=0       ! DIAG_DOC: $c^{3}$
   integer :: idiag_c4pt=0       ! DIAG_DOC: $c^{4}$
+  integer :: idiag_c5pt=0       ! DIAG_DOC: $c^{5}$
+  integer :: idiag_c6pt=0       ! DIAG_DOC: $c^{6}$
   integer :: idiag_F11z=0       ! DIAG_DOC: ${\cal F}_1^{1}$
   integer :: idiag_F21z=0       ! DIAG_DOC: ${\cal F}_2^{1}$
   integer :: idiag_F31z=0       ! DIAG_DOC: ${\cal F}_3^{1}$
@@ -122,6 +131,7 @@ module Testscalar
 !  potential: icctest, etc; increase nvar accordingly
 !
 !  26-nov-08/axel: adapted from testfield_z.f90
+!  17-apr-09/axel: added y column of kappa tensor
 !
       use Cdata
       use Mpicomm
@@ -185,7 +195,7 @@ module Testscalar
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx) :: xtestscalar
-!AXEL real, dimension(mz) :: ztestscalar, c, s
+      real, dimension(my) :: ytestscalar
       real, dimension(mz) :: ztestscalar
       real :: ktestscalar_effective
       integer :: jtest, jcctest
@@ -211,6 +221,19 @@ module Testscalar
       cx=cos(ktestscalar*xtestscalar)
       sx=sin(ktestscalar*xtestscalar)
 !
+!  Choice of using rescaled y-array or original y-array
+!  Define ktestscalar_effective to deal with boxes bigger than 2pi.
+!
+      if (ltestscalar_newy) then
+        ktestscalar_effective=ktestscalar*(2.*pi/Ly)
+        ytestscalar=ktestscalar_effective*(y-y0)-pi
+      else
+        ktestscalar_effective=ktestscalar
+        ytestscalar=y
+      endif
+      cy=cos(ktestscalar*ytestscalar)
+      sy=sin(ktestscalar*ytestscalar)
+!
 !  Choice of using rescaled z-array or original z-array
 !  Define ktestscalar_effective to deal with boxes bigger than 2pi.
 !
@@ -226,9 +249,6 @@ module Testscalar
 !
 !  Optionally, one can determine the phase in the actual field
 !  and modify the following calculations in calc_ltestscalar_pars.
-!
-!AXEL c=cos(z)
-!AXEL s=sin(z)
 !
 !  debug output
 !
@@ -416,6 +436,7 @@ module Testscalar
 !
 !  26-nov-08/axel: adapted from testfield_z.f90
 !  27-dec-08/axel: extended to x-dependent mean fields
+!  17-apr-09/axel: added y column of kappa tensor
 !
       use Cdata
       use Sub
@@ -432,7 +453,7 @@ module Testscalar
       real, dimension (nx,3,njtest) :: Fipq
       real, dimension (nx,njtest) :: cpq
       real, dimension (nx,3) :: uufluct
-      integer :: jcctest,jtest,jfnamez,j,i1=1,i2=2,i3=3,i4=4
+      integer :: jcctest,jtest,jfnamez,j,i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
       logical,save :: ltest_ug=.false.
 !
       intent(in)     :: f,p
@@ -479,7 +500,7 @@ module Testscalar
         endif
       endif
 !
-!  do each of the 2+2 test scalars at a time
+!  do each of the 2+2+2 test scalars at a time
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
 !  Note: the same block of lines occurs again further down in the file.
 !
@@ -569,6 +590,9 @@ module Testscalar
         if (idiag_kap11/=0) call sum_mn_name(+cx(:)*Fipq(:,1,i3)+sx(:)*Fipq(:,1,i4),idiag_kap11)
         if (idiag_kap21/=0) call sum_mn_name(+cx(:)*Fipq(:,2,i3)+sx(:)*Fipq(:,2,i4),idiag_kap21)
         if (idiag_kap31/=0) call sum_mn_name(+cx(:)*Fipq(:,3,i3)+sx(:)*Fipq(:,3,i4),idiag_kap31)
+        if (idiag_kap12/=0) call sum_mn_name(+cz(n)*Fipq(:,1,i5)+sz(n)*Fipq(:,1,i6),idiag_kap12)
+        if (idiag_kap22/=0) call sum_mn_name(+cz(n)*Fipq(:,2,i5)+sz(n)*Fipq(:,2,i6),idiag_kap22)
+        if (idiag_kap32/=0) call sum_mn_name(+cz(n)*Fipq(:,3,i5)+sz(n)*Fipq(:,3,i6),idiag_kap32)
         if (idiag_kap13/=0) call sum_mn_name(+cz(n)*Fipq(:,1,i1)+sz(n)*Fipq(:,1,i2),idiag_kap13)
         if (idiag_kap23/=0) call sum_mn_name(+cz(n)*Fipq(:,2,i1)+sz(n)*Fipq(:,2,i2),idiag_kap23)
         if (idiag_kap33/=0) call sum_mn_name(+cz(n)*Fipq(:,3,i1)+sz(n)*Fipq(:,3,i2),idiag_kap33)
@@ -578,6 +602,8 @@ module Testscalar
           if (idiag_c2pt/=0) call save_name(cpq(lpoint-nghost,i2),idiag_c2pt)
           if (idiag_c3pt/=0) call save_name(cpq(lpoint-nghost,i3),idiag_c3pt)
           if (idiag_c4pt/=0) call save_name(cpq(lpoint-nghost,i4),idiag_c4pt)
+          if (idiag_c5pt/=0) call save_name(cpq(lpoint-nghost,i5),idiag_c5pt)
+          if (idiag_c6pt/=0) call save_name(cpq(lpoint-nghost,i6),idiag_c6pt)
         endif
 !
 !  rms values of small scales fields cpq in response to the test fields Bpq
@@ -588,6 +614,8 @@ module Testscalar
         if (idiag_c2rms/=0) call sum_mn_name(cpq(:,i2)**2,idiag_c2rms,lsqrt=.true.)
         if (idiag_c3rms/=0) call sum_mn_name(cpq(:,i3)**2,idiag_c3rms,lsqrt=.true.)
         if (idiag_c4rms/=0) call sum_mn_name(cpq(:,i4)**2,idiag_c4rms,lsqrt=.true.)
+        if (idiag_c5rms/=0) call sum_mn_name(cpq(:,i5)**2,idiag_c5rms,lsqrt=.true.)
+        if (idiag_c6rms/=0) call sum_mn_name(cpq(:,i6)**2,idiag_c6rms,lsqrt=.true.)
 !
       endif
 !
@@ -822,6 +850,8 @@ module Testscalar
       case(2); G0test(:,1)=0.; G0test(:,2)=0.; G0test(:,3)=camp*sz(n)
       case(3); G0test(:,1)=camp*cx(:); G0test(:,2)=0.; G0test(:,3)=0.
       case(4); G0test(:,1)=camp*sx(:); G0test(:,2)=0.; G0test(:,3)=0.
+      case(5); G0test(:,1)=0.; G0test(:,2)=camp*cy(m); G0test(:,3)=0.
+      case(6); G0test(:,1)=0.; G0test(:,2)=camp*sy(m); G0test(:,3)=0.
       case default; G0test(:,:)=0.
       endselect
 !
@@ -851,6 +881,7 @@ module Testscalar
         idiag_F11z=0; idiag_F21z=0; idiag_F31z=0
         idiag_F12z=0; idiag_F22z=0; idiag_F32z=0
         idiag_kap11=0; idiag_kap21=0; idiag_kap31=0
+        idiag_kap12=0; idiag_kap22=0; idiag_kap32=0
         idiag_kap13=0; idiag_kap23=0; idiag_kap33=0
         idiag_c1rms=0; idiag_c2rms=0
         idiag_c1pt=0; idiag_c2pt=0
@@ -862,6 +893,9 @@ module Testscalar
         call parse_name(iname,cname(iname),cform(iname),'kap11',idiag_kap11)
         call parse_name(iname,cname(iname),cform(iname),'kap21',idiag_kap21)
         call parse_name(iname,cname(iname),cform(iname),'kap31',idiag_kap31)
+        call parse_name(iname,cname(iname),cform(iname),'kap12',idiag_kap12)
+        call parse_name(iname,cname(iname),cform(iname),'kap22',idiag_kap22)
+        call parse_name(iname,cname(iname),cform(iname),'kap32',idiag_kap32)
         call parse_name(iname,cname(iname),cform(iname),'kap13',idiag_kap13)
         call parse_name(iname,cname(iname),cform(iname),'kap23',idiag_kap23)
         call parse_name(iname,cname(iname),cform(iname),'kap33',idiag_kap33)
@@ -869,10 +903,14 @@ module Testscalar
         call parse_name(iname,cname(iname),cform(iname),'c2rms',idiag_c2rms)
         call parse_name(iname,cname(iname),cform(iname),'c3rms',idiag_c3rms)
         call parse_name(iname,cname(iname),cform(iname),'c4rms',idiag_c4rms)
+        call parse_name(iname,cname(iname),cform(iname),'c5rms',idiag_c5rms)
+        call parse_name(iname,cname(iname),cform(iname),'c6rms',idiag_c6rms)
         call parse_name(iname,cname(iname),cform(iname),'c1pt',idiag_c1pt)
         call parse_name(iname,cname(iname),cform(iname),'c2pt',idiag_c2pt)
         call parse_name(iname,cname(iname),cform(iname),'c3pt',idiag_c3pt)
         call parse_name(iname,cname(iname),cform(iname),'c4pt',idiag_c4pt)
+        call parse_name(iname,cname(iname),cform(iname),'c5pt',idiag_c5pt)
+        call parse_name(iname,cname(iname),cform(iname),'c6pt',idiag_c6pt)
       enddo
 !
 !  check for those quantities for which we want xy-averages
@@ -892,6 +930,9 @@ module Testscalar
         write(3,*) 'idiag_kap11=',idiag_kap11
         write(3,*) 'idiag_kap21=',idiag_kap21
         write(3,*) 'idiag_kap31=',idiag_kap31
+        write(3,*) 'idiag_kap12=',idiag_kap12
+        write(3,*) 'idiag_kap22=',idiag_kap22
+        write(3,*) 'idiag_kap32=',idiag_kap32
         write(3,*) 'idiag_kap13=',idiag_kap13
         write(3,*) 'idiag_kap23=',idiag_kap23
         write(3,*) 'idiag_kap33=',idiag_kap33
@@ -899,10 +940,14 @@ module Testscalar
         write(3,*) 'idiag_c2rms=',idiag_c2rms
         write(3,*) 'idiag_c3rms=',idiag_c3rms
         write(3,*) 'idiag_c4rms=',idiag_c4rms
+        write(3,*) 'idiag_c5rms=',idiag_c5rms
+        write(3,*) 'idiag_c6rms=',idiag_c6rms
         write(3,*) 'idiag_c1pt=',idiag_c1pt
         write(3,*) 'idiag_c2pt=',idiag_c2pt
         write(3,*) 'idiag_c3pt=',idiag_c3pt
         write(3,*) 'idiag_c4pt=',idiag_c4pt
+        write(3,*) 'idiag_c5pt=',idiag_c5pt
+        write(3,*) 'idiag_c6pt=',idiag_c6pt
         write(3,*) 'idiag_F11z=',idiag_F11z
         write(3,*) 'idiag_F21z=',idiag_F21z
         write(3,*) 'idiag_F31z=',idiag_F31z
