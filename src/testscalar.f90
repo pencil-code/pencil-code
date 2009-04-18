@@ -540,6 +540,8 @@ module Testscalar
               dugtest=ugtest-ugtestm(n,jtest)
             elseif (jtest>=jtestx1 .and. jtest<=jtestx2) then
               dugtest=ugtest-ugtestmx(:,jtest)
+            elseif (jtest>=jtesty1 .and. jtest<=jtesty2) then
+              dugtest=ugtest-ugtestmy(m,jtest)
             endif
           endif
 !
@@ -677,9 +679,9 @@ module Testscalar
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mz) :: c,s
 !
-      real, dimension (nz,nprocz,njtest) :: ugtestm1=0.,ugtestm1_tmp=0.
       real, dimension (nx,nprocy,nprocz,njtest) :: ugtestmx1=0.,ugtestmx1_tmp=0.
-      real, dimension (ny,nprocy,nprocz,njtest) :: ugtestmy1=0.,ugtestmy1_tmp=0.
+      real, dimension (ny,nprocy,njtest) :: ugtestmy1=0.,ugtestmy1_tmp=0.
+      real, dimension (nz,nprocz,njtest) :: ugtestm1=0.,ugtestm1_tmp=0.
 !
       real, dimension (nx) :: cctest,ugtest
       real, dimension (nx,3) :: ggtest
@@ -769,7 +771,7 @@ module Testscalar
               ugtestmy(m,jtest)=ugtestmy(m,jtest)+fac_xz*sum(ugtest)
               headtt=.false.
             enddo
-            ugtestmy1(m-m1+1,ipy+1,ipz+1,jtest)=ugtestmy(m,jtest)
+            ugtestmy1(m-m1+1,ipy+1,jtest)=ugtestmy(m,jtest)
           enddo
         endif
       enddo
@@ -798,6 +800,18 @@ module Testscalar
             do jpy=1,nprocy
               ugtestmx(:,jtest)=ugtestmx(:,jtest)+ugtestmx1_tmp(:,jpy,jpz,jtest)
             enddo
+          enddo
+        enddo
+      endif
+!
+!  Finally, do this for y-dependent mean fields
+!
+      if (nprocz>1) then
+        call mpireduce_sum(ugtestmy1,ugtestmy1_tmp,ny*nprocy*njtest)
+        call mpibcast_real_arr(ugtestmy1_tmp,ny*nprocy*njtest)
+        do jtest=1,njtest
+          do m=m1,m2
+            ugtestmy(m,jtest)=ugtestmy1_tmp(m-m1+1,ipy+1,jtest)
           enddo
         enddo
       endif
