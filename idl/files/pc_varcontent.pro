@@ -181,6 +181,15 @@ varcontent[iuutest].idlvarloc  = 'uutest_loc'
 varcontent[iuutest].idlinitloc = 'fltarr(mxloc,myloc,mzloc,ntestflow)*one'
 varcontent[iuutest].skip       = ntestflow-1
 ;
+default, icctest, 0
+default, ntestscalar, 0
+varcontent[icctest].variable   = 'Testflow (cctest)'
+varcontent[icctest].idlvar     = 'cctest'
+varcontent[icctest].idlinit    = 'fltarr(mx,my,mz,ntestscalar)*one'
+varcontent[icctest].idlvarloc  = 'cctest_loc'
+varcontent[icctest].idlinitloc = 'fltarr(mxloc,myloc,mzloc,ntestscalar)*one'
+varcontent[icctest].skip       = ntestscalar-1
+;
 ;default, iuxb, 0
 ;varcontent[iuxb].variable   = 'Testfield vector potential (uxb)'
 ;varcontent[iuxb].idlvar     = 'uxb'
