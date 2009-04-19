@@ -250,6 +250,7 @@ class read_var:
         #11-jun-2008/tgastine: temporary correction to deal
             # with shocks
         if index.index.has_key('shock'): index.index.pop('shock')
+        if index.index.has_key('gg'): index.index.pop('gg')
         for i in range(len(index.index.keys())):
             setattr(self, index.index.keys()[i],
                     self.f[index.index.values()[i]-1, ...])
