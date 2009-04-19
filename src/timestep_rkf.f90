@@ -67,7 +67,7 @@ module Timestep
 
       if (linterstellar.or.lshear.or.lparticles) &
             call fatal_error("rk_2n", &
-                   "Shear, interstallar and particles are not" // &
+                   "Shear, interstellar and particles are not" // &
                    " yet supported by the adaptive rkf scheme")
 
       lfirst=.true.

@@ -1,0 +1,18 @@
+$Id$
+
+This directory contains a sample of "special" files that deal with
+specialized applications. It allows the user to do completely new things
+with the code that have nothing to do with hydro or MHD, for example.
+
+The best way to start a new special module is to go to pencil-code/src/
+and copy nospecial.f90 to special/NewSpecialModule.f90 and start editing
+NewSpecialModule.f90 for your purposes. This approach is better than
+modifying an existing special module, because the tend to be too specialized!
+The nospecial.f90 module also contains lots of comments.
+
+Example:
+  cp nospecial.f90 special/oscillation_0D.f90
+
+However, looking for example also at special/lorenz_gauge.f90 might indeed
+be a good idea.
+
