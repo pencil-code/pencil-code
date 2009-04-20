@@ -25,6 +25,7 @@ module Initcond
   public :: modes, modev, modeb, crazy
   public :: trilinear, baroclinic
   public :: diffrot, olddiffrot
+  public :: const_omega
   public :: powern, power_randomphase
   public :: planet, planet_hc
   public :: random_isotropic_KS
@@ -3056,6 +3057,24 @@ module Initcond
       enddo; enddo
 !
     endsubroutine tor_pert
+!***********************************************************************
+    subroutine const_omega(ampl,f,ivar)
+!
+!  Set up profile for differential rotation
+!
+!  16-jul-03/axel: coded
+!
+      real :: ampl
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: ivar
+!
+      if (lroot) print*, 'const_omega: constant angular velcoity  = ', ivar
+!
+      do n=n1,n2; do m=m1,m2
+        f(l1:l2,m,n,ivar) = ampl*x(l1:l2)*sinth(m)
+      enddo; enddo
+!
+    endsubroutine const_omega
 !***********************************************************************
     subroutine diffrot(ampl,f,ivar)
 !

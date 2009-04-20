@@ -1646,7 +1646,7 @@ module Boundcond
 !
         if((llambda_effect).and.(j.eq.iuz)) then
           do iy=1,my
-             boundary_value(iy,:)=f(l1,iy,:,j)/x(l1)-Lambda_V0*(f(l1,iy,:,iuz)/x(l1)+&
+             boundary_value(iy,:)=f(l1,iy,:,j)/x(l1)+Lambda_V0*(f(l1,iy,:,iuz)/x(l1)+&
                 Lambda_Omega*sin(y(iy)))
           enddo
         else
@@ -1661,7 +1661,7 @@ module Boundcond
       case('top')
         if((llambda_effect).and.(j.eq.iuz)) then
           do iy=1,my
-             boundary_value(iy,:)=f(l2,iy,:,j)/x(l2)-Lambda_V0*(f(l2,iy,:,iuz)/x(l2)+&
+             boundary_value(iy,:)=f(l2,iy,:,j)/x(l2)+Lambda_V0*(f(l2,iy,:,iuz)/x(l2)+&
                 Lambda_Omega*sin(y(iy)))
           enddo
         else
@@ -1782,7 +1782,7 @@ module Boundcond
     subroutine bc_set_sfree_y(f,topbot,j)
 !
 ! Stress-free boundary condition for spherical coordinate system. 
-! d_{\theta}(u_{\phi}) = u_{\phi}cot(\theta)/r  with u_{\theta} = 0 sets 
+! d_{\theta}(u_{\phi}) = u_{\phi}cot(\theta)  with u_{\theta} = 0 sets 
 ! S_{\theta \phi} component of the strain matrix to be zero in spherical 
 ! coordinate system. This subroutine sets only the first part of this 
 ! boundary condition for 'j'-th component of f. 

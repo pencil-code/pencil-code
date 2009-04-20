@@ -452,7 +452,7 @@ module Magnetic
   integer :: idiag_etasmagmin=0 ! DIAG_DOC: Min of Smagorinsky resistivity
   integer :: idiag_etasmagmax=0 ! DIAG_DOC: Max of Smagorinsky resistivity
   integer :: idiag_cosjbm=0     ! DIAG_DOC: $\left<\Jv\cdot\Bv/(|\Jv|\,|\Bv|)\right>$
-
+  integer :: idiag_brmsn=0,idiag_brmss=0,idiag_brmsh=0
   contains
 
 !***********************************************************************
@@ -1268,7 +1268,8 @@ module Magnetic
           .or. idiag_exjmx/=0 .or. idiag_exjmy/=0 .or. idiag_exjmz/=0 &
          ) lpenc_diagnos(i_jj)=.true.
       if (idiag_b2m/=0 .or. idiag_bm2/=0 .or. idiag_brms/=0 .or. &
-          idiag_bmax/=0) lpenc_diagnos(i_b2)=.true.
+          idiag_bmax/=0 .or. idiag_brmsh/=0 .or. idiag_brmsn/=0 .or. idiag_brmss/=0 ) & 
+          lpenc_diagnos(i_b2)=.true.
 ! to calculate the angle between magnetic field and current.
       if (idiag_cosjbm/=0) then
         lpenc_requested(i_jj)=.true.
@@ -2137,6 +2138,14 @@ module Magnetic
         if (idiag_b2m/=0) call sum_mn_name(p%b2,idiag_b2m)
         if (idiag_bm2/=0) call max_mn_name(p%b2,idiag_bm2)
         if (idiag_brms/=0) call sum_mn_name(p%b2,idiag_brms,lsqrt=.true.)
+        if (idiag_brmsh/=0) then
+          call sum_mn_name_halfy(p%b2,idiag_brmsh)
+          fname(idiag_brmsn)=fname_half(idiag_brmsh,1)
+          fname(idiag_brmss)=fname_half(idiag_brmsh,2)
+          itype_name(idiag_brmsn)=ilabel_sum_sqrt
+          itype_name(idiag_brmss)=ilabel_sum_sqrt
+        else
+        endif
         if (idiag_bmax/=0) call max_mn_name(p%b2,idiag_bmax,lsqrt=.true.)
         if (idiag_bxmin/=0) call max_mn_name(-p%bb(:,1),idiag_bxmin,lneg=.true.)
         if (idiag_bymin/=0) call max_mn_name(-p%bb(:,2),idiag_bymin,lneg=.true.)
@@ -5224,6 +5233,8 @@ module Magnetic
         idiag_bx2my=0; idiag_by2my=0; idiag_bz2my=0
         idiag_mflux_x=0; idiag_mflux_y=0; idiag_mflux_z=0
         idiag_bmxy_rms=0; idiag_brsphmphi=0; idiag_bthmphi=0
+        idiag_brmsh=0;idiag_brmsn=0;idiag_brmss=0
+        idiag_abmh=0;idiag_abmn=0;idiag_abms=0
 !
       endif
 !
@@ -5254,6 +5265,8 @@ module Magnetic
             'epsM_LES',idiag_epsM_LES)
         call parse_name(iname,cname(iname),cform(iname),'epsAD',idiag_epsAD)
         call parse_name(iname,cname(iname),cform(iname),'brms',idiag_brms)
+        call parse_name(iname,cname(iname),cform(iname),'brmsn',idiag_brmsn)
+        call parse_name(iname,cname(iname),cform(iname),'brmss',idiag_brmss)
         call parse_name(iname,cname(iname),cform(iname),'bmax',idiag_bmax)
         call parse_name(iname,cname(iname),cform(iname),'bxmin',idiag_bxmin)
         call parse_name(iname,cname(iname),cform(iname),'bymin',idiag_bymin)
@@ -5358,6 +5371,11 @@ module Magnetic
       if ((idiag_abmn/=0).or.(idiag_abms/=0))then
         iname_half=iname_half+1
         idiag_abmh=iname_half
+      else
+      endif
+      if ((idiag_brmsn/=0).or.(idiag_brmss/=0))then
+        iname_half=iname_half+1
+        idiag_brmsh=iname_half
       else
       endif
       name_half_max=iname_half
@@ -5532,6 +5550,9 @@ module Magnetic
         write(3,*) 'i_abmh=',idiag_abmh
         write(3,*) 'i_abmn=',idiag_abmn
         write(3,*) 'i_abms=',idiag_abms
+        write(3,*) 'i_brmsn=',idiag_brmsn
+        write(3,*) 'i_brmss=',idiag_brmss
+        write(3,*) 'i_brmsh=',idiag_brmsh
         write(3,*) 'i_jbm=',idiag_jbm
         write(3,*) 'i_ubm=',idiag_ubm
         write(3,*) 'i_ujm=',idiag_ujm
