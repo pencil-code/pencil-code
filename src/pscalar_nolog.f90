@@ -221,6 +221,9 @@ module Pscalar
       select case(initcc)
         case('zero'); f(:,:,:,icc)=0.
         case('constant'); f(:,:,:,icc)=cc_const
+        case('hatwave-x'); call hatwave(amplcc,f,icc,widthcc,kx=kx_cc)
+        case('hatwave-y'); call hatwave(amplcc,f,icc,widthcc,ky=ky_cc)
+        case('hatwave-z'); call hatwave(amplcc,f,icc,widthcc,kz=kz_cc)
         case('hat-x'); call hat(amplcc,f,icc,widthcc,kx=kx_cc)
         case('hat-y'); call hat(amplcc,f,icc,widthcc,ky=ky_cc)
         case('hat-z'); call hat(amplcc,f,icc,widthcc,kz=kz_cc)

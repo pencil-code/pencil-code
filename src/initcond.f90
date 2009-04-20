@@ -1158,6 +1158,7 @@ module Initcond
         k=abs(kx)
         if (k==0) print*,'beltrami: k must not be zero!'
         fac=sign(sqrt(abs(ampl/k)),kx)
+        if (iproc==0) print*,'beltrami: fac=',fac
         if (ampl==0) then
           if (lroot) print*,'beltrami: ampl=0; kx=',k
         elseif (ampl>0) then
@@ -1387,7 +1388,7 @@ module Initcond
 !
     endsubroutine coswave
 !***********************************************************************
-    subroutine hatwave(ampl,f,i,kx,ky,kz)
+    subroutine hatwave(ampl,f,i,width,kx,ky,kz)
 !
 !  cosine wave (as initial condition)
 !
@@ -1396,7 +1397,7 @@ module Initcond
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
       real,optional :: kx,ky,kz
-      real :: ampl,k=1.,fac
+      real :: ampl,k=1.,fac,width
 !
 !  wavenumber k
 !
@@ -1408,7 +1409,7 @@ module Initcond
           if (lroot) print*,'hatwave: ampl=0; kx=',k
         else
           if (lroot) print*,'hatwave: kx,i=',k,i
-          f(:,:,:,i)=f(:,:,:,i)+fac*spread(spread(1+tanh(5*cos(k*x)),2,my),3,mz)
+          f(:,:,:,i)=f(:,:,:,i)+fac*spread(spread(1+tanh(cos(k*x)/width),2,my),3,mz)
         endif
       endif
 !

@@ -353,15 +353,15 @@ module Chemistry
           enddo
         case('hatwave-x')
           do k=1,nchemspec
-            call hatwave(amplchem,f,ichemspec(k),kx=kx_chem)
+            call hatwave(amplchem,f,ichemspec(k),widthchem,kx=kx_chem)
           enddo
         case('hatwave-y')
           do k=1,nchemspec
-            call hatwave(amplchem,f,ichemspec(k),ky=ky_chem)
+            call hatwave(amplchem,f,ichemspec(k),widthchem,ky=ky_chem)
           enddo
         case('hatwave-z')
           do k=1,nchemspec
-            call hatwave(amplchem,f,ichemspec(k),kz=kz_chem)
+            call hatwave(amplchem,f,ichemspec(k),widthchem,kz=kz_chem)
           enddo
         case('air')
           if (lroot ) print*, 'init_chem: air '
