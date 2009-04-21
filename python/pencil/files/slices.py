@@ -29,7 +29,7 @@ def read_slices(field='uu1',datadir='data/',proc=-1,
         filename = datadir+'/proc'+str(proc)+'/slice_'+field+'.'+extension
 
     # global dim
-    param = read_param(datadir)
+    param = read_param(datadir, quiet=True)
 
     dim = read_dim(datadir,proc) 
     if dim.precision == 'D':
