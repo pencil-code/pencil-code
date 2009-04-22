@@ -579,10 +579,10 @@ LD_FFTW2=
 ##
 ## Axel on Ferlin (ferlin)
 ##
-#FC=mpif90 #(a07c01n03.pdc.kth.se)
-#CC=mpicc #(a07c01n03.pdc.kth.se)
-#FFLAGS=-O3 -vec-report0 #(a07c01n03.pdc.kth.se)
-#LD_MPI=-lmpi #(a07c01n03.pdc.kth.se)
+#FC=mpif90 #(*.pdc.kth.se)
+#CC=mpicc #(*.pdc.kth.se)
+#FFLAGS=-O3 -vec-report0 #(*.pdc.kth.se)
+#LD_MPI=-lmpi #(*.pdc.kth.se)
 ##
 ##  Patrik's playstation
 ##
