@@ -108,16 +108,20 @@ my $bcy_doc = $bc_doc->new(marker  => qr/!\s*BCY_DOC:/);
 my $bcz_doc = $bc_doc->new(marker  => qr/!\s*BCZ_DOC:/);
 
 foreach my $file (@$src_files_ref) {
-    $diag_doc->parse($file) or print "No DIAG_DOC labels found in $file\n";
-    $bcx_doc ->parse($file) or print "No BCX_DOC found in $file\n";
-    $bcy_doc ->parse($file) or print "No BCY_DOC found in $file\n";
-    $bcz_doc ->parse($file) or print "No BCZ_DOC found in $file\n";
+    $diag_doc->parse($file);
+    $bcx_doc ->parse($file);
+    $bcy_doc ->parse($file);
+    $bcz_doc ->parse($file);
 }
 
 $diag_doc->write_to_file({ file          => 'inlinedoc-diag.tex',
                            sort_files    => 1,
                            print_empty   => 0,
                          });
+$phiavg_doc->write_to_file({ file          => 'inlinedoc-phiavg.tex',
+                             sort_files    => 1,
+                             print_empty   => 0,
+                           });
 $bcx_doc ->write_to_file({ file          => 'inlinedoc-bcx.tex',
                            sort_files    => 1,
                            print_empty   => 0,
