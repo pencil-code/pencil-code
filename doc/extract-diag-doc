@@ -93,7 +93,7 @@ my ($src_files_ref, $all_src) = get_src_files(@ARGV);
 
 my $diag_doc = Pencil::DocExtractor->new(
     marker  => qr/!\s*DIAG_DOC:/,
-    prefix  => qr/integer\s*::\s*idiag_(\S+)/,
+    prefix  => qr/integer\s*::\s*idiag_([a-zA-Z0-9_]+)/,
     verbose => $verbose,
     debug   => $debug
 );
