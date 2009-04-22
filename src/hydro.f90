@@ -107,6 +107,7 @@ module Hydro
   real :: othresh=0.,othresh_per_orms=0.,orms=0.,othresh_scl=1.
   real :: utop=0.,ubot=0.,omega_out=0.,omega_in=0.
   real :: width_ff_uu=1.,x1_ff_uu=0.,x2_ff_uu=0.
+  real :: eckmann_friction=0
   integer :: novec,novecmax=nx*ny*nz/4
   logical :: ldamp_fade=.false.,lOmega_int=.false.,lupw_uu=.false.
   logical :: lfreeze_uint=.false.,lfreeze_uext=.false.
@@ -141,7 +142,8 @@ module Hydro
        luut_as_aux,loot_as_aux, &
        loutest, ldiffrot_test,&
        interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
-       velocity_ceiling
+       velocity_ceiling,&
+       eckmann_friction
 ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_u2tm=0       ! DIAG_DOC: $\left<\uv(t)\cdot\int_0^t\uv(t')
                                 ! DIAG_DOC:   dt'\right>$
@@ -1004,7 +1006,7 @@ module Hydro
 !
       if (ladvection_velocity) lpenc_requested(i_ugu)=.true.
       if (lprecession) lpenc_requested(i_rr)=.true.
-      if (ldt) lpenc_requested(i_uu)=.true.
+      if (ldt.or.(eckmann_friction/=0)) lpenc_requested(i_uu)=.true.
       if (Omega/=0.0) lpenc_requested(i_uu)=.true.
 !
       if (tdamp/=0.or.dampuext/=0.or.dampuint/=0) then
@@ -1341,6 +1343,10 @@ module Hydro
 !
       if (ladvection_velocity) &
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
+!
+! Eckmann Friction, used only in two dimensional runs
+     if (eckmann_friction/=0) &
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-eckmann_friction*p%uu
 !
 !  Coriolis force, -2*Omega x u (unless lprecession=T)
 !  Omega=(-sin_theta, 0, cos_theta), where theta corresponds to

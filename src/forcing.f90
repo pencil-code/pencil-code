@@ -196,7 +196,7 @@ module Forcing
 !  x,y,z points and are then saved and used for all subsequent steps
 !  and pencils
 !
-      if (ip<=6) print*,'forcing_cont'
+      if (ip<=6) print*,'forcing_cont:','lforcing_cont=',lforcing_cont,iforcing_cont
       if (iforcing_cont=='ABC') then
         if (lroot) print*,'forcing_cont: ABC--calc sinx, cosx, etc'
         sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
@@ -215,6 +215,9 @@ module Forcing
         sinx=sin(k1_ff*x)
         siny=sin(k1_ff*y)
         sinz=sin(k1_ff*z)
+     elseif (iforcing_cont=='KolmogorovFlow-x') then
+        if (lroot) print*,'forcing_cont: Kolmogorov flow'
+        cosx=cos(k1_ff*x)
       elseif (iforcing_cont=='TG') then
         if (lroot) print*,'forcing_cont: TG'
         sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
@@ -2902,6 +2905,11 @@ module Forcing
           p%fcont(:,1)=-fact*cosx(l1:l2)*siny(m)
           p%fcont(:,2)=+fact*sinx(l1:l2)*cosy(m)
           p%fcont(:,3)=+fact*cosx(l1:l2)*cosy(m)*sqrt(2.)
+        elseif (iforcing_cont=='KolmogorovFlow-x') then
+          fact=ampl_ff
+          p%fcont(:,1)=0
+          p%fcont(:,2)=fact*cosx(l1:l2)
+          p%fcont(:,3)=0
         elseif (iforcing_cont=='RobertsFlow-zdep') then
           if (headtt) print*,'z-dependent Roberts flow; eps_fcont=',eps_fcont
           fpara=quintic_step(z(n),-1.+eps_fcont,eps_fcont) &
