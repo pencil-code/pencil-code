@@ -266,10 +266,15 @@ module Hydro
   integer :: idiag_u2u31mz=0    ! DIAG_DOC: 
   integer :: idiag_u3u12mz=0    ! DIAG_DOC: 
   integer :: idiag_u1u23mz=0    ! DIAG_DOC: 
-  integer :: idiag_urmphi=0     ! DIAG_DOC: 
-  integer :: idiag_upmphi=0     ! DIAG_DOC: 
-  integer :: idiag_uzmphi=0     ! DIAG_DOC: 
-  integer :: idiag_u2mphi=0     ! DIAG_DOC: 
+  integer :: idiag_urmphi=0     ! PHIAVG_DOC: $\left<u_\varpi\right>_\varphi$
+                                ! PHIAVG_DOC: [cyl.\ polar coords
+                                ! PHIAVG_DOC:  $(\varpi,\varphi,z)$]
+  integer :: idiag_upmphi=0     ! PHIAVG_DOC: $\left<u_\varphi\right>_\varphi$
+  integer :: idiag_uzmphi=0     ! PHIAVG_DOC: $\left<u_z\right>_\varphi$
+  ! For the manual: uumphi      ! PHIAVG_DOC: shorthand for \var{urmphi},
+                                ! PHIAVG_DOC: \var{upmphi} and \var{uzmphi}
+                                ! PHIAVG_DOC: together
+  integer :: idiag_u2mphi=0     ! PHIAVG_DOC: $\left<\uv^2\right>_\varphi$
   integer :: idiag_u2mr=0       ! DIAG_DOC: 
   integer :: idiag_urmr=0       ! DIAG_DOC: 
   integer :: idiag_upmr=0       ! DIAG_DOC: 
@@ -324,8 +329,8 @@ module Hydro
   integer :: idiag_oxoym=0      ! DIAG_DOC: $\left<\omega_x\omega_y\right>$
   integer :: idiag_oxozm=0      ! DIAG_DOC: $\left<\omega_x\omega_z\right>$
   integer :: idiag_oyozm=0      ! DIAG_DOC: $\left<\omega_y\omega_z\right>$
-  integer :: idiag_oumphi=0     ! DIAG_DOC: 
-  integer :: idiag_ozmphi=0     ! DIAG_DOC: 
+  integer :: idiag_oumphi=0     ! PHIAVG_DOC: $\left<\omv\cdot\uv\right>_\varphi$
+  integer :: idiag_ozmphi=0     ! PHIAVG_DOC: 
   integer :: idiag_ormr=0       ! DIAG_DOC: 
   integer :: idiag_opmr=0       ! DIAG_DOC: 
   integer :: idiag_ozmr=0       ! DIAG_DOC: 

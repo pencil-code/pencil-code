@@ -102,8 +102,8 @@ module Density
   integer :: idiag_rhomax=0     ! DIAG_DOC:
   integer :: idiag_ugrhom=0     ! DIAG_DOC: $\left<\uv\cdot\nabla\varrho\right>$
   integer :: idiag_uglnrhom=0   ! DIAG_DOC:
-  integer :: idiag_lnrhomphi=0  ! DIAG_DOC:
-  integer :: idiag_rhomphi=0    ! DIAG_DOC:
+  integer :: idiag_lnrhomphi=0  ! PHIAVG_DOC: $\left<\ln\varrho\right>_\varphi$
+  integer :: idiag_rhomphi=0    ! PHIAVG_DOC: $\left<\varrho\right>_\varphi$
   integer :: idiag_dtd=0        ! DIAG_DOC:
   integer :: idiag_rhomz=0      ! DIAG_DOC:
   integer :: idiag_rhomy=0      ! DIAG_DOC:

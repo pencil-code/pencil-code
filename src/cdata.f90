@@ -314,10 +314,18 @@ module Cdata
   integer :: idiag_walltime=0   ! DIAG_DOC: wall clock time since start of
                                 ! DIAG_DOC:   run.x, in seconds
   integer :: idiag_timeperstep=0! DIAG_DOC:
-  integer :: idiag_rcylmphi=0   ! DIAG_DOC:
-  integer :: idiag_phimphi=0    ! DIAG_DOC:
-  integer :: idiag_zmphi=0      ! DIAG_DOC:
-  integer :: idiag_rmphi=0      ! DIAG_DOC:
+  integer :: idiag_rcylmphi=0   ! PHIAVG_DOC: cylindrical radius
+                                ! PHIAVG_DOC: $\varpi = \sqrt{x^2+y^2}$
+                                ! PHIAVG_DOC: (useful for debugging
+                                ! PHIAVG_DOC:  azimuthal averages)
+  integer :: idiag_phimphi=0    ! PHIAVG_DOC: azimuthal angle
+                                ! PHIAVG_DOC: $\varphi = \arctan\frac{y}{x}$
+                                ! PHIAVG_DOC: (useful for debugging)
+  integer :: idiag_zmphi=0      ! PHIAVG_DOC: $z$-coordinate
+                                ! PHIAVG_DOC: (useful for debugging)
+  integer :: idiag_rmphi=0      ! PHIAVG_DOC: spherical radius
+                                ! PHIAVG_DOC: $r=\sqrt{\varpi^2+z^2}$
+                                ! PHIAVG_DOC: (useful for debugging)
   integer :: idiag_dtv=0        ! DIAG_DOC:
   integer :: idiag_dtdiffus=0   ! DIAG_DOC:
   integer :: idiag_nu_LES=0     ! DIAG_DOC:

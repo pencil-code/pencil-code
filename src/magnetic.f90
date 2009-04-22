@@ -371,7 +371,7 @@ module Magnetic
   integer :: idiag_jxbxbm=0     ! DIAG_DOC:
   integer :: idiag_gpxbm=0      ! DIAG_DOC:
   integer :: idiag_uxDxuxbm=0   ! DIAG_DOC:
-  integer :: idiag_jbmphi=0     ! DIAG_DOC:
+  integer :: idiag_jbmphi=0     ! PHIAVG_DOC: $\left<\Jv\cdot\Bv\right>_\varphi$
   integer :: idiag_b3b21m=0     ! DIAG_DOC:
   integer :: idiag_b1b32m=0     ! DIAG_DOC:
   integer :: idiag_b2b13m=0     ! DIAG_DOC:
@@ -395,19 +395,24 @@ module Magnetic
   integer :: idiag_dexbmy=0     ! DIAG_DOC: $\left<\nabla\times\Ev\times\Bv\right>|_y$
   integer :: idiag_dexbmz=0     ! DIAG_DOC: $\left<\nabla\times\Ev\times\Bv\right>|_z$
   integer :: idiag_uxjm=0       ! DIAG_DOC:
-  integer :: idiag_brmphi=0     ! DIAG_DOC:
-  integer :: idiag_bpmphi=0     ! DIAG_DOC:
-  integer :: idiag_bzmphi=0     ! DIAG_DOC:
-  integer :: idiag_b2mphi=0     ! DIAG_DOC:
-  integer :: idiag_brsphmphi=0  ! DIAG_DOC:
-  integer :: idiag_bthmphi=0    ! DIAG_DOC:
-  integer :: idiag_uxbrmphi=0   ! DIAG_DOC:
-  integer :: idiag_uxbpmphi=0   ! DIAG_DOC:
-  integer :: idiag_uxbzmphi=0   ! DIAG_DOC:
+  integer :: idiag_brmphi=0     ! PHIAVG_DOC: $\left<B_\varpi\right>_\varphi$
+                                ! PHIAVG_DOC: [cyl.\ polar coords
+                                ! PHIAVG_DOC:  $(\varpi,\varphi,z)$]
+  integer :: idiag_bpmphi=0     ! PHIAVG_DOC: $\left<B_\varphi\right>_\varphi$
+  integer :: idiag_bzmphi=0     ! PHIAVG_DOC: $\left<B_z\right>_\varphi$
+  ! For the manual: bbmphi      ! PHIAVG_DOC: shorthand for \var{brmphi},
+                                ! PHIAVG_DOC: \var{bpmphi} and \var{bzmphi}
+                                ! PHIAVG_DOC: together
+  integer :: idiag_b2mphi=0     ! PHIAVG_DOC: $\left<\Bv^2\right>_\varphi$
+  integer :: idiag_brsphmphi=0  ! PHIAVG_DOC: $\left<B_r\right>_\varphi$
+  integer :: idiag_bthmphi=0    ! PHIAVG_DOC: $\left<B_\vartheta\right>_\varphi$
+  integer :: idiag_uxbrmphi=0   ! PHIAVG_DOC:
+  integer :: idiag_uxbpmphi=0   ! PHIAVG_DOC:
+  integer :: idiag_uxbzmphi=0   ! PHIAVG_DOC:
   integer :: idiag_ujxbm=0      ! DIAG_DOC: $\left<\uv\cdot(\Jv\times\Bv\right>|_x$
-  integer :: idiag_jxbrmphi=0   ! DIAG_DOC:
-  integer :: idiag_jxbpmphi=0   ! DIAG_DOC:
-  integer :: idiag_jxbzmphi=0   ! DIAG_DOC:
+  integer :: idiag_jxbrmphi=0   ! PHIAVG_DOC:
+  integer :: idiag_jxbpmphi=0   ! PHIAVG_DOC:
+  integer :: idiag_jxbzmphi=0   ! PHIAVG_DOC:
   integer :: idiag_jxbrxm=0     ! DIAG_DOC:
   integer :: idiag_jxbrym=0     ! DIAG_DOC:
   integer :: idiag_jxbrzm=0     ! DIAG_DOC:
@@ -421,9 +426,9 @@ module Magnetic
   integer :: idiag_jxbrxmz=0    ! DIAG_DOC:
   integer :: idiag_jxbrymz=0    ! DIAG_DOC:
   integer :: idiag_jxbrzmz=0    ! DIAG_DOC:
-  integer :: idiag_armphi=0     ! DIAG_DOC:
-  integer :: idiag_apmphi=0     ! DIAG_DOC:
-  integer :: idiag_azmphi=0     ! DIAG_DOC:
+  integer :: idiag_armphi=0     ! PHIAVG_DOC:
+  integer :: idiag_apmphi=0     ! PHIAVG_DOC:
+  integer :: idiag_azmphi=0     ! PHIAVG_DOC:
   integer :: idiag_uxBrms=0     ! DIAG_DOC:
   integer :: idiag_Bresrms=0    ! DIAG_DOC:
   integer :: idiag_Rmrms=0      ! DIAG_DOC:

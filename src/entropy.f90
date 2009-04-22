@@ -171,8 +171,8 @@ module Entropy
                                 ! DIAG_DOC:   \quad(time step relative to time
                                 ! DIAG_DOC:   step based on heat conductivity;
                                 ! DIAG_DOC:   see \S~\ref{time-step})
-  integer :: idiag_ssmphi=0     ! DIAG_DOC:
-  integer :: idiag_cs2mphi=0    ! DIAG_DOC:
+  integer :: idiag_ssmphi=0     ! PHIAVG_DOC: $\left<s\right>_\varphi$
+  integer :: idiag_cs2mphi=0    ! PHIAVG_DOC: $\left<c^2_s\right>_\varphi$
   integer :: idiag_yHm=0        ! DIAG_DOC:
   integer :: idiag_yHmax=0      ! DIAG_DOC:
   integer :: idiag_TTm=0        ! DIAG_DOC:
