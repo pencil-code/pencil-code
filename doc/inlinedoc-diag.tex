@@ -28,172 +28,172 @@
 \midrule
   \multicolumn{2}{c}{Module \file{cdata.f90}} \\
 \midrule
-  \var{it=0}      & number of time step
+  \var{it}        & number of time step
                     \quad(since beginning of job only) \\
-  \var{t=0}       & time $t$ \quad(since start.csh) \\
-  \var{dt=0}      & time step $\delta t$ \\
-  \var{walltime=0} & wall clock time since start of
+  \var{t}         & time $t$ \quad(since start.csh) \\
+  \var{dt}        & time step $\delta t$ \\
+  \var{walltime}  & wall clock time since start of
                     run.x, in seconds \\
 \midrule
   \multicolumn{2}{c}{Module \file{hydro.f90}} \\
 \midrule
-  \var{u2tm=0}    & $\left<\uv(t)\cdot\int_0^t\uv(t')
+  \var{u2tm}      & $\left<\uv(t)\cdot\int_0^t\uv(t')
                     dt'\right>$ \\
-  \var{uotm=0}    & $\left<\uv(t)\cdot\int_0^t\omv(t')
+  \var{uotm}      & $\left<\uv(t)\cdot\int_0^t\omv(t')
                     dt'\right>$ \\
-  \var{outm=0}    & $\left<\omv(t)\cdot\int_0^t\uv(t')
+  \var{outm}      & $\left<\omv(t)\cdot\int_0^t\uv(t')
                     dt'\right>$ \\
-  \var{u2m=0}     & $\left<\uv^2\right>$ \\
-  \var{urms=0}    & $\left<\uv^2\right>^{1/2}$ \\
-  \var{umax=0}    & $\max(|\uv|)$ \\
-  \var{uzrms=0}   & $\left<u_z^2\right>^{1/2}$ \\
-  \var{uxmin=0}   & $\min(|u_x|)$ \\
-  \var{uymin=0}   & $\min(|u_y|)$ \\
-  \var{uzmin=0}   & $\min(|u_z|)$ \\
-  \var{uxmax=0}   & $\max(|u_x|)$ \\
-  \var{uymax=0}   & $\max(|u_y|)$ \\
-  \var{uzmax=0}   & $\max(|u_z|)$ \\
-  \var{uxm=0}     & $\left<u_x\right>$ \\
-  \var{uym=0}     & $\left<u_y\right>$ \\
-  \var{uzm=0}     & $\left<u_z\right>$ \\
-  \var{ux2m=0}    & $\left<u_x^2\right>$ \\
-  \var{uy2m=0}    & $\left<u_y^2\right>$ \\
-  \var{uz2m=0}    & $\left<u_z^2\right>$ \\
-  \var{ux2ccm=0}  & $\left<u_x^2\cos^2kz\right>$ \\
-  \var{ux2ssm=0}  & $\left<u_x^2\sin^2kz\right>$ \\
-  \var{uy2ccm=0}  & $\left<u_y^2\cos^2kz\right>$ \\
-  \var{uy2ssm=0}  & $\left<u_y^2\sin^2kz\right>$ \\
-  \var{ux2mx=0}   & $\left<u_x^2\right>_{yz}$ \\
-  \var{uy2mx=0}   & $\left<u_y^2\right>_{yz}$ \\
-  \var{uz2mx=0}   & $\left<u_z^2\right>_{yz}$ \\
-  \var{uxmz=0}    & $\left< u_x \right>_{x,y}$
+  \var{u2m}       & $\left<\uv^2\right>$ \\
+  \var{urms}      & $\left<\uv^2\right>^{1/2}$ \\
+  \var{umax}      & $\max(|\uv|)$ \\
+  \var{uzrms}     & $\left<u_z^2\right>^{1/2}$ \\
+  \var{uxmin}     & $\min(|u_x|)$ \\
+  \var{uymin}     & $\min(|u_y|)$ \\
+  \var{uzmin}     & $\min(|u_z|)$ \\
+  \var{uxmax}     & $\max(|u_x|)$ \\
+  \var{uymax}     & $\max(|u_y|)$ \\
+  \var{uzmax}     & $\max(|u_z|)$ \\
+  \var{uxm}       & $\left<u_x\right>$ \\
+  \var{uym}       & $\left<u_y\right>$ \\
+  \var{uzm}       & $\left<u_z\right>$ \\
+  \var{ux2m}      & $\left<u_x^2\right>$ \\
+  \var{uy2m}      & $\left<u_y^2\right>$ \\
+  \var{uz2m}      & $\left<u_z^2\right>$ \\
+  \var{ux2ccm}    & $\left<u_x^2\cos^2kz\right>$ \\
+  \var{ux2ssm}    & $\left<u_x^2\sin^2kz\right>$ \\
+  \var{uy2ccm}    & $\left<u_y^2\cos^2kz\right>$ \\
+  \var{uy2ssm}    & $\left<u_y^2\sin^2kz\right>$ \\
+  \var{ux2mx}     & $\left<u_x^2\right>_{yz}$ \\
+  \var{uy2mx}     & $\left<u_y^2\right>_{yz}$ \\
+  \var{uz2mx}     & $\left<u_z^2\right>_{yz}$ \\
+  \var{uxmz}      & $\left< u_x \right>_{x,y}$
                     \quad(horiz. averaged $x$
                     velocity) \\
-  \var{oxmz=0}    & $\left< \omega_x \right>_{xy}$ \\
-  \var{oymz=0}    & $\left< \omega_y \right>_{xy}$ \\
-  \var{ozmz=0}    & $\left< \omega_z \right>_{xy}$ \\
-  \var{umx=0}     & $\left< u_x \right>$ \\
-  \var{umy=0}     & $\left< u_y \right>$ \\
-  \var{umz=0}     & $\left< u_z \right>$ \\
-  \var{uxmy=0}    & $\left< u_x \right>_{y}$ \\
-  \var{uymy=0}    & $\left< u_y \right>_{y}$ \\
-  \var{uzmy=0}    & $\left< u_z \right>_{y}$ \\
-  \var{u2mz=0}    & $\left< \uv^2 \right>_{y}$ \\
-  \var{omumz=0}   & $\left<\left<\Wv\right>_{xy}
+  \var{oxmz}      & $\left< \omega_x \right>_{xy}$ \\
+  \var{oymz}      & $\left< \omega_y \right>_{xy}$ \\
+  \var{ozmz}      & $\left< \omega_z \right>_{xy}$ \\
+  \var{umx}       & $\left< u_x \right>$ \\
+  \var{umy}       & $\left< u_y \right>$ \\
+  \var{umz}       & $\left< u_z \right>$ \\
+  \var{uxmy}      & $\left< u_x \right>_{y}$ \\
+  \var{uymy}      & $\left< u_y \right>_{y}$ \\
+  \var{uzmy}      & $\left< u_z \right>_{y}$ \\
+  \var{u2mz}      & $\left< \uv^2 \right>_{y}$ \\
+  \var{omumz}     & $\left<\left<\Wv\right>_{xy}
                     \cdot\left<\Uv\right>_{xy}
                     \right>$ \quad($xy$-averaged
                     mean cross helicity production) \\
-  \var{umbmz=0}   & $\left<\left<\Uv\right>_{xy}
+  \var{umbmz}     & $\left<\left<\Uv\right>_{xy}
                     \cdot\left<\Bv\right>_{xy}
                     \right>$ \quad($xy$-averaged
                     mean cross helicity production) \\
-  \var{umxbmz=0}  & $\left<\left<\Uv\right>_{xy}
+  \var{umxbmz}    & $\left<\left<\Uv\right>_{xy}
                     \times\left<\Bv\right>_{xy}
                     \right>_z$ \quad($xy$-averaged
                     mean emf) \\
-  \var{uxmxy=0}   & $\left< u_x \right>_{z}$ \\
-  \var{uymxy=0}   & $\left< u_y \right>_{z}$ \\
-  \var{uzmxy=0}   & $\left< u_z \right>_{z}$ \\
-  \var{oxmxy=0}   & $\left< \omega_x \right>_{z}$ \\
-  \var{oymxy=0}   & $\left< \omega_y \right>_{z}$ \\
-  \var{ozmxy=0}   & $\left< \omega_z \right>_{z}$ \\
-  \var{ruxmxy=0}  & $\left< \rho u_x \right>_{z}$ \\
-  \var{ruymxy=0}  & $\left< \rho u_y \right>_{z}$ \\
-  \var{ruzmxy=0}  & $\left< \rho u_z \right>_{z}$ \\
-  \var{ux2mxy=0}  & $\left< u_x^2 \right>_{z}$ \\
-  \var{uy2mxy=0}  & $\left< u_y^2 \right>_{z}$ \\
-  \var{uz2mxy=0}  & $\left< u_z^2 \right>_{z}$ \\
-  \var{rux2mxy=0} & $\left< \rho u_x^2 \right>_{z}$ \\
-  \var{ruy2mxy=0} & $\left< \rho u_y^2 \right>_{z}$ \\
-  \var{ruz2mxy=0} & $\left< \rho u_z^2 \right>_{z}$ \\
-  \var{ruxuymxy=0} & $\left< \rho u_x u_y \right>_{z}$ \\
-  \var{ruxuzmxy=0} & $\left< \rho u_x u_z \right>_{z}$ \\
-  \var{ruyuzmxy=0} & $\left< \rho u_y u_z \right>_{z}$ \\
-  \var{rux2m=0}   & $\left<\rho u_x^2\right>$ \\
-  \var{ruy2m=0}   & $\left<\rho u_y^2\right>$ \\
-  \var{ruz2m=0}   & $\left<\rho u_z^2\right>$ \\
-  \var{uxmxz=0}   & $\left< u_x \right>_{y}$ \\
-  \var{uymxz=0}   & $\left< u_y \right>_{y}$ \\
-  \var{uzmxz=0}   & $\left< u_z \right>_{y}$ \\
-  \var{ux2mxz=0}  & $\left< u_x^2 \right>_{y}$ \\
-  \var{uy2mxz=0}  & $\left< u_y^2 \right>_{y}$ \\
-  \var{uz2mxz=0}  & $\left< u_z^2 \right>_{y}$ \\
-  \var{ruxm=0}    & $\left<\varrho u_x\right>$
+  \var{uxmxy}     & $\left< u_x \right>_{z}$ \\
+  \var{uymxy}     & $\left< u_y \right>_{z}$ \\
+  \var{uzmxy}     & $\left< u_z \right>_{z}$ \\
+  \var{oxmxy}     & $\left< \omega_x \right>_{z}$ \\
+  \var{oymxy}     & $\left< \omega_y \right>_{z}$ \\
+  \var{ozmxy}     & $\left< \omega_z \right>_{z}$ \\
+  \var{ruxmxy}    & $\left< \rho u_x \right>_{z}$ \\
+  \var{ruymxy}    & $\left< \rho u_y \right>_{z}$ \\
+  \var{ruzmxy}    & $\left< \rho u_z \right>_{z}$ \\
+  \var{ux2mxy}    & $\left< u_x^2 \right>_{z}$ \\
+  \var{uy2mxy}    & $\left< u_y^2 \right>_{z}$ \\
+  \var{uz2mxy}    & $\left< u_z^2 \right>_{z}$ \\
+  \var{rux2mxy}   & $\left< \rho u_x^2 \right>_{z}$ \\
+  \var{ruy2mxy}   & $\left< \rho u_y^2 \right>_{z}$ \\
+  \var{ruz2mxy}   & $\left< \rho u_z^2 \right>_{z}$ \\
+  \var{ruxuymxy}  & $\left< \rho u_x u_y \right>_{z}$ \\
+  \var{ruxuzmxy}  & $\left< \rho u_x u_z \right>_{z}$ \\
+  \var{ruyuzmxy}  & $\left< \rho u_y u_z \right>_{z}$ \\
+  \var{rux2m}     & $\left<\rho u_x^2\right>$ \\
+  \var{ruy2m}     & $\left<\rho u_y^2\right>$ \\
+  \var{ruz2m}     & $\left<\rho u_z^2\right>$ \\
+  \var{uxmxz}     & $\left< u_x \right>_{y}$ \\
+  \var{uymxz}     & $\left< u_y \right>_{y}$ \\
+  \var{uzmxz}     & $\left< u_z \right>_{y}$ \\
+  \var{ux2mxz}    & $\left< u_x^2 \right>_{y}$ \\
+  \var{uy2mxz}    & $\left< u_y^2 \right>_{y}$ \\
+  \var{uz2mxz}    & $\left< u_z^2 \right>_{y}$ \\
+  \var{ruxm}      & $\left<\varrho u_x\right>$
                     \quad(mean $x$-momentum density) \\
-  \var{ruym=0}    & $\left<\varrho u_y\right>$
+  \var{ruym}      & $\left<\varrho u_y\right>$
                     \quad(mean $y$-momentum density) \\
-  \var{ruzm=0}    & $\left<\varrho u_z\right>$
+  \var{ruzm}      & $\left<\varrho u_z\right>$
                     \quad(mean $z$-momentum density) \\
-  \var{rumax=0}   & $\max(\varrho |\uv|)$
+  \var{rumax}     & $\max(\varrho |\uv|)$
                     \quad(maximum modulus of momentum) \\
-  \var{ruxuym=0}  & $\left<\varrho u_x u_y\right>$
+  \var{ruxuym}    & $\left<\varrho u_x u_y\right>$
                     \quad(mean Reynolds stress) \\
-  \var{ruxuzm=0}  & $\left<\varrho u_x u_z\right>$
+  \var{ruxuzm}    & $\left<\varrho u_x u_z\right>$
                     \quad(mean Reynolds stress) \\
-  \var{ruyuzm=0}  & $\left<\varrho u_y u_z\right>$
+  \var{ruyuzm}    & $\left<\varrho u_y u_z\right>$
                     \quad(mean Reynolds stress) \\
-  \var{rlxm=0}    & $\left< \rho y u_z - z u_y \right>$ \\
-  \var{rlym=0}    & $\left< \rho z u_x - x u_z \right>$ \\
-  \var{rlzm=0}    & $\left< \rho x u_y - y u_x \right>$ \\
-  \var{rlx2m=0}   & $\left<(\rho y u_z-z u_y)^2\right>$ \\
-  \var{rly2m=0}   & $\left<(\rho z u_x-x u_z)^2\right>$ \\
-  \var{rlz2m=0}   & $\left<(\rho x u_y-y u_x)^2\right>$ \\
-  \var{dtu=0}     & $\delta t/[c_{\delta t}\,\delta x
+  \var{rlxm}      & $\left< \rho y u_z - z u_y \right>$ \\
+  \var{rlym}      & $\left< \rho z u_x - x u_z \right>$ \\
+  \var{rlzm}      & $\left< \rho x u_y - y u_x \right>$ \\
+  \var{rlx2m}     & $\left<(\rho y u_z-z u_y)^2\right>$ \\
+  \var{rly2m}     & $\left<(\rho z u_x-x u_z)^2\right>$ \\
+  \var{rlz2m}     & $\left<(\rho x u_y-y u_x)^2\right>$ \\
+  \var{dtu}       & $\delta t/[c_{\delta t}\,\delta x
                     /\max|\mathbf{u}|]$
                     \quad(time step relative to
                     advective time step;
                     see \S~\ref{time-step}) \\
-  \var{oum=0}     & $\left<\boldsymbol{\omega}
+  \var{oum}       & $\left<\boldsymbol{\omega}
                     \cdot\uv\right>$ \\
-  \var{fum=0}     & $\left<\fv\cdot\uv\right>$ \\
-  \var{o2m=0}     & $\left<\boldsymbol{\omega}^2\right>
+  \var{fum}       & $\left<\fv\cdot\uv\right>$ \\
+  \var{o2m}       & $\left<\boldsymbol{\omega}^2\right>
                     \equiv \left<(\curl\uv)^2\right>$ \\
-  \var{orms=0}    & $\left<\boldsymbol{\omega}^2
+  \var{orms}      & $\left<\boldsymbol{\omega}^2
                     \right>^{1/2}$ \\
-  \var{omax=0}    & $\max(|\boldsymbol{\omega}|)$ \\
-  \var{ox2m=0}    & $\left<\omega_x^2\right>$ \\
-  \var{oy2m=0}    & $\left<\omega_y^2\right>$ \\
-  \var{oz2m=0}    & $\left<\omega_z^2\right>$ \\
-  \var{oxoym=0}   & $\left<\omega_x\omega_y\right>$ \\
-  \var{oxozm=0}   & $\left<\omega_x\omega_z\right>$ \\
-  \var{oyozm=0}   & $\left<\omega_y\omega_z\right>$ \\
-  \var{oumx=0}    & $\left<\boldsymbol{\omega}
+  \var{omax}      & $\max(|\boldsymbol{\omega}|)$ \\
+  \var{ox2m}      & $\left<\omega_x^2\right>$ \\
+  \var{oy2m}      & $\left<\omega_y^2\right>$ \\
+  \var{oz2m}      & $\left<\omega_z^2\right>$ \\
+  \var{oxoym}     & $\left<\omega_x\omega_y\right>$ \\
+  \var{oxozm}     & $\left<\omega_x\omega_z\right>$ \\
+  \var{oyozm}     & $\left<\omega_y\omega_z\right>$ \\
+  \var{oumx}      & $\left<\boldsymbol{\omega}
                     \cdot\uv\right>_{yz}$ \\
-  \var{oumy=0}    & $\left<\boldsymbol{\omega}
+  \var{oumy}      & $\left<\boldsymbol{\omega}
                     \cdot\uv\right>_{xz}$ \\
-  \var{oumz=0}    & $\left<\boldsymbol{\omega}
+  \var{oumz}      & $\left<\boldsymbol{\omega}
                     \cdot\uv\right>_{xy}$ \\
-  \var{Marms=0}   & $\left<\uv^2/\cs^2\right>$
+  \var{Marms}     & $\left<\uv^2/\cs^2\right>$
                     \quad(rms Mach number) \\
-  \var{Mamax=0}   & $\max |\uv|/\cs$
+  \var{Mamax}     & $\max |\uv|/\cs$
                     \quad(maximum Mach number) \\
-  \var{ekin=0}    & $\left<{1\over2}\varrho\uv^2\right>$ \\
-  \var{ekintot=0} & $\int_V{1\over2}\varrho\uv^2\, dV$ \\
+  \var{ekin}      & $\left<{1\over2}\varrho\uv^2\right>$ \\
+  \var{ekintot}   & $\int_V{1\over2}\varrho\uv^2\, dV$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{density.f90}} \\
 \midrule
-  \var{rhom=0}    & $\left<\varrho\right>$
+  \var{rhom}      & $\left<\varrho\right>$
                     \quad(mean density) \\
-  \var{ugrhom=0}  & $\left<\uv\cdot\nabla\varrho\right>$ \\
+  \var{ugrhom}    & $\left<\uv\cdot\nabla\varrho\right>$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{entropy.f90}} \\
 \midrule
-  \var{dtc=0}     & $\delta t/[c_{\delta t}\,\delta_x
+  \var{dtc}       & $\delta t/[c_{\delta t}\,\delta_x
                     /\max c_{\rm s}]$
                     \quad(time step relative to
                     acoustic time step;
                     see \S~\ref{time-step}) \\
-  \var{eth=0}     & $\left<\varrho e\right>$
+  \var{eth}       & $\left<\varrho e\right>$
                     \quad(mean thermal
                     [=internal] energy).
                     [Shouldn't this be
                     \texttt{ethm} then?] \\
-  \var{ssm=0}     & $\left<s/c_p\right>$
+  \var{ssm}       & $\left<s/c_p\right>$
                     \quad(mean entropy) \\
-  \var{ethtot=0}  & $\int_V\varrho e\,dV$
+  \var{ethtot}    & $\int_V\varrho e\,dV$
                     \quad(total thermal
                     [=internal] energy) \\
-  \var{dtchi=0}   & $\delta t / [c_{\delta t,{\rm v}}\,
+  \var{dtchi}     & $\delta t / [c_{\delta t,{\rm v}}\,
                     \delta x^2/\chi_{\rm max}]$
                     \quad(time step relative to time
                     step based on heat conductivity;
@@ -201,177 +201,177 @@
 \midrule
   \multicolumn{2}{c}{Module \file{magnetic.f90}} \\
 \midrule
-  \var{b2tm=0}    & $\left<\bv(t)\cdot\int_0^t\bv(t')
+  \var{b2tm}      & $\left<\bv(t)\cdot\int_0^t\bv(t')
                     dt'\right>$ \\
-  \var{bjtm=0}    & $\left<\bv(t)\cdot\int_0^t\jv(t')
+  \var{bjtm}      & $\left<\bv(t)\cdot\int_0^t\jv(t')
                     dt'\right>$ \\
-  \var{jbtm=0}    & $\left<\jv(t)\cdot\int_0^t\bv(t')
+  \var{jbtm}      & $\left<\jv(t)\cdot\int_0^t\bv(t')
                     dt'\right>$ \\
-  \var{b2m=0}     & $\left<\Bv^2\right>$ \\
-  \var{bm2=0}     & $\max(\Bv^2)$ \\
-  \var{j2m=0}     & $\left<\jv^2\right>$ \\
-  \var{jm2=0}     & $\max(\jv^2)$ \\
-  \var{abm=0}     & $\left<\Av\cdot\Bv\right>$ \\
-  \var{abmh=0}    & $\left<\Av\cdot\Bv\right>$ \\
-  \var{abmn=0}    & $\left<\Av\cdot\Bv\right>$ \\
-  \var{abms=0}    & $\left<\Av\cdot\Bv\right>$ \\
-  \var{jbm=0}     & $\left<\jv\cdot\Bv\right>$ \\
-  \var{ubm=0}     & $\left<\uv\cdot\Bv\right>$ \\
-  \var{ujm=0}     & $\left<\uv\cdot\Jv\right>$ \\
-  \var{fbm=0}     & $\left<\fv\cdot\Bv\right>$ \\
-  \var{fxbxm=0}   & $\left<f_x B_x\right>$ \\
-  \var{epsM=0}    & $\left<2\eta\mu_0\jv^2\right>$ \\
-  \var{epsAD=0}   & $\left<\rho^{-1} t_{\rm AD} (\vec{J}\times\vec{B})^2\right>$ (heating by ion-neutrals friction) \\
-  \var{bxpt=0}    & $B_x(x_0,y_0,z_0,t)$ \\
-  \var{bypt=0}    & $B_y(x_0,y_0,z_0,t)$ \\
-  \var{bzpt=0}    & $B_z(x_0,y_0,z_0,t)$ \\
-  \var{Expt=0}    & ${\cal E}_x(x_0,y_0,z_0,t)$ \\
-  \var{Eypt=0}    & ${\cal E}_y(x_0,y_0,z_0,t)$ \\
-  \var{Ezpt=0}    & ${\cal E}_z(x_0,y_0,z_0,t)$ \\
-  \var{brms=0}    & $\left<\Bv^2\right>^{1/2}$ \\
-  \var{bmax=0}    & $\max(|\Bv|)$ \\
-  \var{bxmin=0}   & $\min(|B_x|)$ \\
-  \var{bymin=0}   & $\min(|B_y|)$ \\
-  \var{bzmin=0}   & $\min(|B_z|)$ \\
-  \var{bxmax=0}   & $\max(|B_x|)$ \\
-  \var{bymax=0}   & $\max(|B_y|)$ \\
-  \var{bzmax=0}   & $\max(|B_z|)$ \\
-  \var{jrms=0}    & $\left<\jv^2\right>^{1/2}$ \\
-  \var{jmax=0}    & $\max(|\jv|)$ \\
-  \var{vArms=0}   & $\left<\Bv^2/\varrho\right>^{1/2}$ \\
-  \var{vAmax=0}   & $\max(\Bv^2/\varrho)^{1/2}$ \\
-  \var{dtb=0}     & $\delta t / [c_{\delta t}\,\delta x
+  \var{b2m}       & $\left<\Bv^2\right>$ \\
+  \var{bm2}       & $\max(\Bv^2)$ \\
+  \var{j2m}       & $\left<\jv^2\right>$ \\
+  \var{jm2}       & $\max(\jv^2)$ \\
+  \var{abm}       & $\left<\Av\cdot\Bv\right>$ \\
+  \var{abmh}      & $\left<\Av\cdot\Bv\right>$ \\
+  \var{abmn}      & $\left<\Av\cdot\Bv\right>$ \\
+  \var{abms}      & $\left<\Av\cdot\Bv\right>$ \\
+  \var{jbm}       & $\left<\jv\cdot\Bv\right>$ \\
+  \var{ubm}       & $\left<\uv\cdot\Bv\right>$ \\
+  \var{ujm}       & $\left<\uv\cdot\Jv\right>$ \\
+  \var{fbm}       & $\left<\fv\cdot\Bv\right>$ \\
+  \var{fxbxm}     & $\left<f_x B_x\right>$ \\
+  \var{epsM}      & $\left<2\eta\mu_0\jv^2\right>$ \\
+  \var{epsAD}     & $\left<\rho^{-1} t_{\rm AD} (\vec{J}\times\vec{B})^2\right>$ (heating by ion-neutrals friction) \\
+  \var{bxpt}      & $B_x(x_0,y_0,z_0,t)$ \\
+  \var{bypt}      & $B_y(x_0,y_0,z_0,t)$ \\
+  \var{bzpt}      & $B_z(x_0,y_0,z_0,t)$ \\
+  \var{Expt}      & ${\cal E}_x(x_0,y_0,z_0,t)$ \\
+  \var{Eypt}      & ${\cal E}_y(x_0,y_0,z_0,t)$ \\
+  \var{Ezpt}      & ${\cal E}_z(x_0,y_0,z_0,t)$ \\
+  \var{brms}      & $\left<\Bv^2\right>^{1/2}$ \\
+  \var{bmax}      & $\max(|\Bv|)$ \\
+  \var{bxmin}     & $\min(|B_x|)$ \\
+  \var{bymin}     & $\min(|B_y|)$ \\
+  \var{bzmin}     & $\min(|B_z|)$ \\
+  \var{bxmax}     & $\max(|B_x|)$ \\
+  \var{bymax}     & $\max(|B_y|)$ \\
+  \var{bzmax}     & $\max(|B_z|)$ \\
+  \var{jrms}      & $\left<\jv^2\right>^{1/2}$ \\
+  \var{jmax}      & $\max(|\jv|)$ \\
+  \var{vArms}     & $\left<\Bv^2/\varrho\right>^{1/2}$ \\
+  \var{vAmax}     & $\max(\Bv^2/\varrho)^{1/2}$ \\
+  \var{dtb}       & $\delta t / [c_{\delta t}\,\delta x
                     /v_{\rm A,max}]$
                     \quad(time step relative to
                     Alfv{\'e}n time step;
                     see \S~\ref{time-step}) \\
-  \var{dteta=0}   & $\delta t/[c_{\delta t,{\rm v}}\,
+  \var{dteta}     & $\delta t/[c_{\delta t,{\rm v}}\,
                     \delta x^2/\eta_{\rm max}]$
                     \quad(time step relative to
                     resistive time step;
                     see \S~\ref{time-step}) \\
-  \var{beta1m=0}  & $\left<\Bv^2/(2\mu_0 p)\right>$
+  \var{beta1m}    & $\left<\Bv^2/(2\mu_0 p)\right>$
                     \quad(mean inverse plasma beta) \\
-  \var{beta1max=0} & $\max[\Bv^2/(2\mu_0 p)]$
+  \var{beta1max}  & $\max[\Bv^2/(2\mu_0 p)]$
                     \quad(maximum inverse plasma beta) \\
-  \var{bx2m=0}    & $\left<B_x^2\right>$ \\
-  \var{by2m=0}    & $\left<B_y^2\right>$ \\
-  \var{bz2m=0}    & $\left<B_z^2\right>$ \\
-  \var{bx2mx=0}   & $\left<B_x^2\right>_{yz}$ \\
-  \var{by2mx=0}   & $\left<B_y^2\right>_{yz}$ \\
-  \var{bz2mx=0}   & $\left<B_z^2\right>_{yz}$ \\
-  \var{bxbym=0}   & $\left<B_x B_y\right>$ \\
-  \var{bxbymx=0}  & $\left<B_x B_y\right>_{yz}$ \\
-  \var{bxmz=0}    & $\left<{\cal B}_x\right>_{xy}$ \\
-  \var{bymz=0}    & $\left<{\cal B}_y\right>_{xy}$ \\
-  \var{bzmz=0}    & $\left<{\cal B}_z\right>_{xy}$ \\
-  \var{jxmz=0}    & $\left<{\cal J}_x\right>_{xy}$ \\
-  \var{jymz=0}    & $\left<{\cal J}_y\right>_{xy}$ \\
-  \var{jzmz=0}    & $\left<{\cal J}_z\right>_{xy}$ \\
-  \var{Exmz=0}    & $\left<{\cal E}_x\right>_{xy}$ \\
-  \var{Eymz=0}    & $\left<{\cal E}_y\right>_{xy}$ \\
-  \var{Ezmz=0}    & $\left<{\cal E}_z\right>_{xy}$ \\
-  \var{bmx=0}     & $\left<\left<\Bv\right>_{yz}^2
+  \var{bx2m}      & $\left<B_x^2\right>$ \\
+  \var{by2m}      & $\left<B_y^2\right>$ \\
+  \var{bz2m}      & $\left<B_z^2\right>$ \\
+  \var{bx2mx}     & $\left<B_x^2\right>_{yz}$ \\
+  \var{by2mx}     & $\left<B_y^2\right>_{yz}$ \\
+  \var{bz2mx}     & $\left<B_z^2\right>_{yz}$ \\
+  \var{bxbym}     & $\left<B_x B_y\right>$ \\
+  \var{bxbymx}    & $\left<B_x B_y\right>_{yz}$ \\
+  \var{bxmz}      & $\left<{\cal B}_x\right>_{xy}$ \\
+  \var{bymz}      & $\left<{\cal B}_y\right>_{xy}$ \\
+  \var{bzmz}      & $\left<{\cal B}_z\right>_{xy}$ \\
+  \var{jxmz}      & $\left<{\cal J}_x\right>_{xy}$ \\
+  \var{jymz}      & $\left<{\cal J}_y\right>_{xy}$ \\
+  \var{jzmz}      & $\left<{\cal J}_z\right>_{xy}$ \\
+  \var{Exmz}      & $\left<{\cal E}_x\right>_{xy}$ \\
+  \var{Eymz}      & $\left<{\cal E}_y\right>_{xy}$ \\
+  \var{Ezmz}      & $\left<{\cal E}_z\right>_{xy}$ \\
+  \var{bmx}       & $\left<\left<\Bv\right>_{yz}^2
                     \right>^{1/2}$
                     \quad(energy of $yz$-averaged
                     mean field) \\
-  \var{bmy=0}     & $\left<\left<\Bv\right>_{xz}^2
+  \var{bmy}       & $\left<\left<\Bv\right>_{xz}^2
                     \right>^{1/2}$
                     \quad(energy of $xz$-averaged
                     mean field) \\
-  \var{bmz=0}     & $\left<\left<\Bv\right>_{xy}^2
+  \var{bmz}       & $\left<\left<\Bv\right>_{xy}^2
                     \right>^{1/2}$
                     \quad(energy of $xy$-averaged
                     mean field) \\
-  \var{jmx=0}     & $\left<\left<\Jv\right>_{yz}^2
+  \var{jmx}       & $\left<\left<\Jv\right>_{yz}^2
                     \right>^{1/2}$
                     \quad(energy of $yz$-averaged
                     mean current density) \\
-  \var{jmy=0}     & $\left<\left<\Jv\right>_{xz}^2
+  \var{jmy}       & $\left<\left<\Jv\right>_{xz}^2
                     \right>^{1/2}$
                     \quad(energy of $xz$-averaged
                     mean current density) \\
-  \var{jmz=0}     & $\left<\left<\Jv\right>_{xy}^2
+  \var{jmz}       & $\left<\left<\Jv\right>_{xy}^2
                     \right>^{1/2}$
                     \quad(energy of $xy$-averaged
                     mean current density) \\
-  \var{bmzph=0}   & Phase of a Beltrami field \\
-  \var{bmzphe=0}  & Error of phase of a Beltrami field \\
-  \var{bsinphz=0} & sine of phase of a Beltrami field \\
-  \var{bcosphz=0} & cosine of phase of a Beltrami field \\
-  \var{embmz=0}   & $\left<\left<\Ev\right>_{xy}\cdot\left<\Bv\right>_{xy}
+  \var{bmzph}     & Phase of a Beltrami field \\
+  \var{bmzphe}    & Error of phase of a Beltrami field \\
+  \var{bsinphz}   & sine of phase of a Beltrami field \\
+  \var{bcosphz}   & cosine of phase of a Beltrami field \\
+  \var{embmz}     & $\left<\left<\Ev\right>_{xy}\cdot\left<\Bv\right>_{xy}
                     \right>$ \quad($xy$-averaged
                     mean field helicity production ) \\
-  \var{jmbmz=0}   & $\left<\left<\Jv\right>_{xy}\cdot\left<\Bv\right>_{xy}
+  \var{jmbmz}     & $\left<\left<\Jv\right>_{xy}\cdot\left<\Bv\right>_{xy}
                     \right>$ \quad(current helicity
                     of $xy$-averaged mean field) \\
-  \var{kmz=0}     & $\left<\left<\Jv\cdot\Bv\right>_{xy}\right>/
+  \var{kmz}       & $\left<\left<\Jv\cdot\Bv\right>_{xy}\right>/
                     \left<\left<\Jv\cdot\Bv\right>_{xy}\right>$ \\
-  \var{bx2my=0}   & $\left< B_x^2 \right>_{xz}$ \\
-  \var{by2my=0}   & $\left< B_y^2 \right>_{xz}$ \\
-  \var{bz2my=0}   & $\left< B_z^2 \right>_{xz}$ \\
-  \var{bx2mz=0}   & $\left< B_x^2 \right>_{xy}$ \\
-  \var{by2mz=0}   & $\left< B_y^2 \right>_{xy}$ \\
-  \var{bz2mz=0}   & $\left< B_z^2 \right>_{xy}$ \\
-  \var{jbmz=0}    & $\left< \Jv\cdot\Bv\right>_{xy}$ \\
-  \var{bxmxy=0}   & $\left< B_x \right>_{xy}$ \\
-  \var{bymxy=0}   & $\left< B_y \right>_{xy}$ \\
-  \var{bzmxy=0}   & $\left< B_z \right>_{xy}$ \\
-  \var{jxmxy=0}   & $\left< J_x \right>_{xy}$ \\
-  \var{jymxy=0}   & $\left< J_y \right>_{xy}$ \\
-  \var{jzmxy=0}   & $\left< J_z \right>_{xy}$ \\
-  \var{axmxz=0}   & $\left< A_x \right>_{xz}$ \\
-  \var{aymxz=0}   & $\left< A_y \right>_{xz}$ \\
-  \var{azmxz=0}   & $\left< A_z \right>_{xz}$ \\
-  \var{bxmxz=0}   & $\left< B_x \right>_{xz}$ \\
-  \var{bymxz=0}   & $\left< B_y \right>_{xz}$ \\
-  \var{bzmxz=0}   & $\left< B_z \right>_{xz}$ \\
-  \var{bx2mxz=0}  & $\left< B_x^2 \right>_{xz}$ \\
-  \var{by2mxz=0}  & $\left< B_y^2 \right>_{xz}$ \\
-  \var{bz2mxz=0}  & $\left< B_z^2 \right>_{xz}$ \\
-  \var{bx2mxy=0}  & $\left< B_x^2 \right>_{z}$ \\
-  \var{by2mxy=0}  & $\left< B_y^2 \right>_{z}$ \\
-  \var{bz2mxy=0}  & $\left< B_z^2 \right>_{z}$ \\
-  \var{bxbymxy=0} & $\left< B_x B_y \right>_{z}$ \\
-  \var{bxbzmxy=0} & $\left< B_x B_z \right>_{z}$ \\
-  \var{bybzmxy=0} & $\left< B_y B_z \right>_{z}$ \\
-  \var{bxbymxz=0} & $\left< B_x B_y \right>_{y}$ \\
-  \var{bxbzmxz=0} & $\left< B_x B_z \right>_{y}$ \\
-  \var{bybzmxz=0} & $\left< B_y B_z \right>_{y}$ \\
-  \var{exjmx=0}   & $\left<\Ev\times\Jv\right>|_x$ \\
-  \var{exjmy=0}   & $\left<\Ev\times\Jv\right>|_y$ \\
-  \var{exjmz=0}   & $\left<\Ev\times\Jv\right>|_z$ \\
-  \var{dexbmx=0}  & $\left<\nabla\times\Ev\times\Bv\right>|_x$ \\
-  \var{dexbmy=0}  & $\left<\nabla\times\Ev\times\Bv\right>|_y$ \\
-  \var{dexbmz=0}  & $\left<\nabla\times\Ev\times\Bv\right>|_z$ \\
-  \var{bmxy_rms=0} & $\sqrt{[\left<b_x\right>_z(x,y)]^2 +
+  \var{bx2my}     & $\left< B_x^2 \right>_{xz}$ \\
+  \var{by2my}     & $\left< B_y^2 \right>_{xz}$ \\
+  \var{bz2my}     & $\left< B_z^2 \right>_{xz}$ \\
+  \var{bx2mz}     & $\left< B_x^2 \right>_{xy}$ \\
+  \var{by2mz}     & $\left< B_y^2 \right>_{xy}$ \\
+  \var{bz2mz}     & $\left< B_z^2 \right>_{xy}$ \\
+  \var{jbmz}      & $\left< \Jv\cdot\Bv\right>_{xy}$ \\
+  \var{bxmxy}     & $\left< B_x \right>_{xy}$ \\
+  \var{bymxy}     & $\left< B_y \right>_{xy}$ \\
+  \var{bzmxy}     & $\left< B_z \right>_{xy}$ \\
+  \var{jxmxy}     & $\left< J_x \right>_{xy}$ \\
+  \var{jymxy}     & $\left< J_y \right>_{xy}$ \\
+  \var{jzmxy}     & $\left< J_z \right>_{xy}$ \\
+  \var{axmxz}     & $\left< A_x \right>_{xz}$ \\
+  \var{aymxz}     & $\left< A_y \right>_{xz}$ \\
+  \var{azmxz}     & $\left< A_z \right>_{xz}$ \\
+  \var{bxmxz}     & $\left< B_x \right>_{xz}$ \\
+  \var{bymxz}     & $\left< B_y \right>_{xz}$ \\
+  \var{bzmxz}     & $\left< B_z \right>_{xz}$ \\
+  \var{bx2mxz}    & $\left< B_x^2 \right>_{xz}$ \\
+  \var{by2mxz}    & $\left< B_y^2 \right>_{xz}$ \\
+  \var{bz2mxz}    & $\left< B_z^2 \right>_{xz}$ \\
+  \var{bx2mxy}    & $\left< B_x^2 \right>_{z}$ \\
+  \var{by2mxy}    & $\left< B_y^2 \right>_{z}$ \\
+  \var{bz2mxy}    & $\left< B_z^2 \right>_{z}$ \\
+  \var{bxbymxy}   & $\left< B_x B_y \right>_{z}$ \\
+  \var{bxbzmxy}   & $\left< B_x B_z \right>_{z}$ \\
+  \var{bybzmxy}   & $\left< B_y B_z \right>_{z}$ \\
+  \var{bxbymxz}   & $\left< B_x B_y \right>_{y}$ \\
+  \var{bxbzmxz}   & $\left< B_x B_z \right>_{y}$ \\
+  \var{bybzmxz}   & $\left< B_y B_z \right>_{y}$ \\
+  \var{exjmx}     & $\left<\Ev\times\Jv\right>|_x$ \\
+  \var{exjmy}     & $\left<\Ev\times\Jv\right>|_y$ \\
+  \var{exjmz}     & $\left<\Ev\times\Jv\right>|_z$ \\
+  \var{dexbmx}    & $\left<\nabla\times\Ev\times\Bv\right>|_x$ \\
+  \var{dexbmy}    & $\left<\nabla\times\Ev\times\Bv\right>|_y$ \\
+  \var{dexbmz}    & $\left<\nabla\times\Ev\times\Bv\right>|_z$ \\
+  \var{bmxy_rms}  & $\sqrt{[\left<b_x\right>_z(x,y)]^2 +
                     [\left<b_y\right>_z(x,y)]^2 +
                     [\left<b_z\right>_z(x,y)]^2} $ \\
-  \var{etasmagm=0} & Mean of Smagorinsky resistivity \\
-  \var{etasmagmin=0} & Min of Smagorinsky resistivity \\
-  \var{etasmagmax=0} & Max of Smagorinsky resistivity \\
-  \var{cosjbm=0}  & $\left<\Jv\cdot\Bv/(|\Jv|\,|\Bv|)\right>$ \\
+  \var{etasmagm}  & Mean of Smagorinsky resistivity \\
+  \var{etasmagmin} & Min of Smagorinsky resistivity \\
+  \var{etasmagmax} & Max of Smagorinsky resistivity \\
+  \var{cosjbm}    & $\left<\Jv\cdot\Bv/(|\Jv|\,|\Bv|)\right>$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{pscalar.f90}} \\
 \midrule
-  \var{rhoccm=0}  & $\left<\varrho c\right>$ \\
-  \var{ccmax=0}   & $\max(c)$ \\
-  \var{ccglnrm=0} & $\left<c\nabla_z\varrho\right>$ \\
+  \var{rhoccm}    & $\left<\varrho c\right>$ \\
+  \var{ccmax}     & $\max(c)$ \\
+  \var{ccglnrm}   & $\left<c\nabla_z\varrho\right>$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{temperature_idealgas.f90}} \\
 \midrule
-  \var{TTmax=0}   & $\max (T)$ \\
-  \var{gTmax=0}   & $\max (|grad T|)$ \\
-  \var{TTmin=0}   & $\min (T)$ \\
-  \var{TTm=0}     & $\left< T \right>$ \\
-  \var{fradtop=0} & $<-K{dT\over dz}>_{\text{top}}$
+  \var{TTmax}     & $\max (T)$ \\
+  \var{gTmax}     & $\max (|grad T|)$ \\
+  \var{TTmin}     & $\min (T)$ \\
+  \var{TTm}       & $\left< T \right>$ \\
+  \var{fradtop}   & $<-K{dT\over dz}>_{\text{top}}$
                     \quad(radiative flux at the top) \\
-  \var{dtc=0}     & $\delta t/[c_{\delta t}\,\delta_x
+  \var{dtc}       & $\delta t/[c_{\delta t}\,\delta_x
                     /\max c_{\rm s}]$
                     \quad(time step relative to
                     acoustic time step;
                     see \S~\ref{time-step}) \\
-  \var{dtchi=0}   & $\delta t / [c_{\delta t,{\rm v}}\,
+  \var{dtchi}     & $\delta t / [c_{\delta t,{\rm v}}\,
                     \delta x^2/\chi_{\rm max}]$
                     \quad(time step relative to time
                     step based on heat conductivity;
@@ -379,114 +379,114 @@
 \midrule
   \multicolumn{2}{c}{Module \file{testfield_x.f90}} \\
 \midrule
-  \var{alp11=0}   & $\alpha_{11}$ \\
-  \var{alp21=0}   & $\alpha_{21}$ \\
-  \var{alp31=0}   & $\alpha_{31}$ \\
-  \var{alp12=0}   & $\alpha_{12}$ \\
-  \var{alp22=0}   & $\alpha_{22}$ \\
-  \var{alp32=0}   & $\alpha_{32}$ \\
-  \var{eta11=0}   & $\eta_{11}k$ \\
-  \var{eta21=0}   & $\eta_{21}k$ \\
-  \var{eta12=0}   & $\eta_{12}k$ \\
-  \var{eta22=0}   & $\eta_{22}k$ \\
-  \var{alp11cc=0} & $\alpha_{11}\cos^2 kx$ \\
-  \var{alp21sc=0} & $\alpha_{21}\sin kx\cos kx$ \\
-  \var{alp12cs=0} & $\alpha_{12}\cos kx\sin kx$ \\
-  \var{alp22ss=0} & $\alpha_{22}\sin^2 kx$ \\
-  \var{eta11cc=0} & $\eta_{11}\cos^2 kx$ \\
-  \var{eta21sc=0} & $\eta_{21}\sin kx\cos kx$ \\
-  \var{eta12cs=0} & $\eta_{12}\cos kx\sin kx$ \\
-  \var{eta22ss=0} & $\eta_{22}\sin^2 kx$ \\
-  \var{alp11x=0}  & $\alpha_{11}x$ \\
-  \var{alp21x=0}  & $\alpha_{21}x$ \\
-  \var{alp12x=0}  & $\alpha_{12}x$ \\
-  \var{alp22x=0}  & $\alpha_{22}x$ \\
-  \var{eta11x=0}  & $\eta_{11}kx$ \\
-  \var{eta21x=0}  & $\eta_{21}kx$ \\
-  \var{eta12x=0}  & $\eta_{12}kx$ \\
-  \var{eta22x=0}  & $\eta_{22}kx$ \\
-  \var{alp11x2=0} & $\alpha_{11}x^2$ \\
-  \var{alp21x2=0} & $\alpha_{21}x^2$ \\
-  \var{alp12x2=0} & $\alpha_{12}x^2$ \\
-  \var{alp22x2=0} & $\alpha_{22}x^2$ \\
-  \var{eta11x2=0} & $\eta_{11}kx^2$ \\
-  \var{eta21x2=0} & $\eta_{21}kx^2$ \\
-  \var{eta12x2=0} & $\eta_{12}kx^2$ \\
-  \var{eta22x2=0} & $\eta_{22}kx^2$ \\
-  \var{b11rms=0}  & $\left<b_{11}^2\right>^{1/2}$ \\
-  \var{b21rms=0}  & $\left<b_{21}^2\right>^{1/2}$ \\
-  \var{b12rms=0}  & $\left<b_{12}^2\right>^{1/2}$ \\
-  \var{b22rms=0}  & $\left<b_{22}^2\right>^{1/2}$ \\
-  \var{b0rms=0}   & $\left<b_{0}^2\right>^{1/2}$ \\
-  \var{E11rms=0}  & $\left<{\cal E}_{11}^2\right>^{1/2}$ \\
-  \var{E21rms=0}  & $\left<{\cal E}_{21}^2\right>^{1/2}$ \\
-  \var{E12rms=0}  & $\left<{\cal E}_{12}^2\right>^{1/2}$ \\
-  \var{E22rms=0}  & $\left<{\cal E}_{22}^2\right>^{1/2}$ \\
-  \var{E0rms=0}   & $\left<{\cal E}_{0}^2\right>^{1/2}$ \\
-  \var{E111z=0}   & ${\cal E}_1^{11}$ \\
-  \var{E211z=0}   & ${\cal E}_2^{11}$ \\
-  \var{E311z=0}   & ${\cal E}_3^{11}$ \\
-  \var{E121z=0}   & ${\cal E}_1^{21}$ \\
-  \var{E221z=0}   & ${\cal E}_2^{21}$ \\
-  \var{E321z=0}   & ${\cal E}_3^{21}$ \\
-  \var{E112z=0}   & ${\cal E}_1^{12}$ \\
-  \var{E212z=0}   & ${\cal E}_2^{12}$ \\
-  \var{E312z=0}   & ${\cal E}_3^{12}$ \\
-  \var{E122z=0}   & ${\cal E}_1^{22}$ \\
-  \var{E222z=0}   & ${\cal E}_2^{22}$ \\
-  \var{E322z=0}   & ${\cal E}_3^{22}$ \\
-  \var{E10z=0}    & ${\cal E}_1^{0}$ \\
-  \var{E20z=0}    & ${\cal E}_2^{0}$ \\
-  \var{E30z=0}    & ${\cal E}_3^{0}$ \\
-  \var{EBpq=0}    & ${\cal E}\cdot\Bv^{pq}$ \\
-  \var{bx0mz=0}   & $\left<b_{x}\right>_{xy}$ \\
-  \var{by0mz=0}   & $\left<b_{y}\right>_{xy}$ \\
-  \var{bz0mz=0}   & $\left<b_{z}\right>_{xy}$ \\
+  \var{alp11}     & $\alpha_{11}$ \\
+  \var{alp21}     & $\alpha_{21}$ \\
+  \var{alp31}     & $\alpha_{31}$ \\
+  \var{alp12}     & $\alpha_{12}$ \\
+  \var{alp22}     & $\alpha_{22}$ \\
+  \var{alp32}     & $\alpha_{32}$ \\
+  \var{eta11}     & $\eta_{11}k$ \\
+  \var{eta21}     & $\eta_{21}k$ \\
+  \var{eta12}     & $\eta_{12}k$ \\
+  \var{eta22}     & $\eta_{22}k$ \\
+  \var{alp11cc}   & $\alpha_{11}\cos^2 kx$ \\
+  \var{alp21sc}   & $\alpha_{21}\sin kx\cos kx$ \\
+  \var{alp12cs}   & $\alpha_{12}\cos kx\sin kx$ \\
+  \var{alp22ss}   & $\alpha_{22}\sin^2 kx$ \\
+  \var{eta11cc}   & $\eta_{11}\cos^2 kx$ \\
+  \var{eta21sc}   & $\eta_{21}\sin kx\cos kx$ \\
+  \var{eta12cs}   & $\eta_{12}\cos kx\sin kx$ \\
+  \var{eta22ss}   & $\eta_{22}\sin^2 kx$ \\
+  \var{alp11x}    & $\alpha_{11}x$ \\
+  \var{alp21x}    & $\alpha_{21}x$ \\
+  \var{alp12x}    & $\alpha_{12}x$ \\
+  \var{alp22x}    & $\alpha_{22}x$ \\
+  \var{eta11x}    & $\eta_{11}kx$ \\
+  \var{eta21x}    & $\eta_{21}kx$ \\
+  \var{eta12x}    & $\eta_{12}kx$ \\
+  \var{eta22x}    & $\eta_{22}kx$ \\
+  \var{alp11x2}   & $\alpha_{11}x^2$ \\
+  \var{alp21x2}   & $\alpha_{21}x^2$ \\
+  \var{alp12x2}   & $\alpha_{12}x^2$ \\
+  \var{alp22x2}   & $\alpha_{22}x^2$ \\
+  \var{eta11x2}   & $\eta_{11}kx^2$ \\
+  \var{eta21x2}   & $\eta_{21}kx^2$ \\
+  \var{eta12x2}   & $\eta_{12}kx^2$ \\
+  \var{eta22x2}   & $\eta_{22}kx^2$ \\
+  \var{b11rms}    & $\left<b_{11}^2\right>^{1/2}$ \\
+  \var{b21rms}    & $\left<b_{21}^2\right>^{1/2}$ \\
+  \var{b12rms}    & $\left<b_{12}^2\right>^{1/2}$ \\
+  \var{b22rms}    & $\left<b_{22}^2\right>^{1/2}$ \\
+  \var{b0rms}     & $\left<b_{0}^2\right>^{1/2}$ \\
+  \var{E11rms}    & $\left<{\cal E}_{11}^2\right>^{1/2}$ \\
+  \var{E21rms}    & $\left<{\cal E}_{21}^2\right>^{1/2}$ \\
+  \var{E12rms}    & $\left<{\cal E}_{12}^2\right>^{1/2}$ \\
+  \var{E22rms}    & $\left<{\cal E}_{22}^2\right>^{1/2}$ \\
+  \var{E0rms}     & $\left<{\cal E}_{0}^2\right>^{1/2}$ \\
+  \var{E111z}     & ${\cal E}_1^{11}$ \\
+  \var{E211z}     & ${\cal E}_2^{11}$ \\
+  \var{E311z}     & ${\cal E}_3^{11}$ \\
+  \var{E121z}     & ${\cal E}_1^{21}$ \\
+  \var{E221z}     & ${\cal E}_2^{21}$ \\
+  \var{E321z}     & ${\cal E}_3^{21}$ \\
+  \var{E112z}     & ${\cal E}_1^{12}$ \\
+  \var{E212z}     & ${\cal E}_2^{12}$ \\
+  \var{E312z}     & ${\cal E}_3^{12}$ \\
+  \var{E122z}     & ${\cal E}_1^{22}$ \\
+  \var{E222z}     & ${\cal E}_2^{22}$ \\
+  \var{E322z}     & ${\cal E}_3^{22}$ \\
+  \var{E10z}      & ${\cal E}_1^{0}$ \\
+  \var{E20z}      & ${\cal E}_2^{0}$ \\
+  \var{E30z}      & ${\cal E}_3^{0}$ \\
+  \var{EBpq}      & ${\cal E}\cdot\Bv^{pq}$ \\
+  \var{bx0mz}     & $\left<b_{x}\right>_{xy}$ \\
+  \var{by0mz}     & $\left<b_{y}\right>_{xy}$ \\
+  \var{bz0mz}     & $\left<b_{z}\right>_{xy}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{testflow_z.f90}} \\
 \midrule
-  \var{lam11=0}   & $\lambda_{11}$ \\
-  \var{lam21=0}   & $\lambda_{21}$ \\
-  \var{lam12=0}   & $\lambda_{12}$ \\
-  \var{lam22=0}   & $\lambda_{22}$ \\
-  \var{nu11=0}    & $\nu_{113}k$ \\
-  \var{nu21=0}    & $\nu_{213}k$ \\
-  \var{nu12=0}    & $\nu_{123}k$ \\
-  \var{nu22=0}    & $\nu_{223}k$ \\
-  \var{u0rms=0}   & $\left<u_{0}^2\right>$ \\
-  \var{u11rms=0}  & $\left<u_{11}^2\right>$ \\
-  \var{u21rms=0}  & $\left<u_{21}^2\right>$ \\
-  \var{u12rms=0}  & $\left<u_{12}^2\right>$ \\
-  \var{u22rms=0}  & $\left<u_{22}^2\right>$ \\
-  \var{F111z=0}   & ${\cal F}_1^{11}$ \\
-  \var{F211z=0}   & ${\cal F}_2^{11}$ \\
-  \var{F311z=0}   & ${\cal F}_3^{11}$ \\
-  \var{F121z=0}   & ${\cal F}_1^{21}$ \\
-  \var{F221z=0}   & ${\cal F}_2^{21}$ \\
-  \var{F321z=0}   & ${\cal F}_3^{21}$ \\
-  \var{F112z=0}   & ${\cal F}_1^{12}$ \\
-  \var{F212z=0}   & ${\cal F}_2^{12}$ \\
-  \var{F312z=0}   & ${\cal F}_3^{12}$ \\
-  \var{F122z=0}   & ${\cal F}_1^{22}$ \\
-  \var{F222z=0}   & ${\cal F}_2^{22}$ \\
-  \var{F322z=0}   & ${\cal F}_3^{22}$ \\
-  \var{F10z=0}    & ${\cal F}_1^{0}$ \\
-  \var{F20z=0}    & ${\cal F}_2^{0}$ \\
-  \var{F30z=0}    & ${\cal F}_3^{0}$ \\
-  \var{ux0mz=0}   & $\left<u_{x}\right>_{xy}$ \\
-  \var{uy0mz=0}   & $\left<u_{y}\right>_{xy}$ \\
-  \var{uz0mz=0}   & $\left<u_{z}\right>_{xy}$ \\
+  \var{lam11}     & $\lambda_{11}$ \\
+  \var{lam21}     & $\lambda_{21}$ \\
+  \var{lam12}     & $\lambda_{12}$ \\
+  \var{lam22}     & $\lambda_{22}$ \\
+  \var{nu11}      & $\nu_{113}k$ \\
+  \var{nu21}      & $\nu_{213}k$ \\
+  \var{nu12}      & $\nu_{123}k$ \\
+  \var{nu22}      & $\nu_{223}k$ \\
+  \var{u0rms}     & $\left<u_{0}^2\right>$ \\
+  \var{u11rms}    & $\left<u_{11}^2\right>$ \\
+  \var{u21rms}    & $\left<u_{21}^2\right>$ \\
+  \var{u12rms}    & $\left<u_{12}^2\right>$ \\
+  \var{u22rms}    & $\left<u_{22}^2\right>$ \\
+  \var{F111z}     & ${\cal F}_1^{11}$ \\
+  \var{F211z}     & ${\cal F}_2^{11}$ \\
+  \var{F311z}     & ${\cal F}_3^{11}$ \\
+  \var{F121z}     & ${\cal F}_1^{21}$ \\
+  \var{F221z}     & ${\cal F}_2^{21}$ \\
+  \var{F321z}     & ${\cal F}_3^{21}$ \\
+  \var{F112z}     & ${\cal F}_1^{12}$ \\
+  \var{F212z}     & ${\cal F}_2^{12}$ \\
+  \var{F312z}     & ${\cal F}_3^{12}$ \\
+  \var{F122z}     & ${\cal F}_1^{22}$ \\
+  \var{F222z}     & ${\cal F}_2^{22}$ \\
+  \var{F322z}     & ${\cal F}_3^{22}$ \\
+  \var{F10z}      & ${\cal F}_1^{0}$ \\
+  \var{F20z}      & ${\cal F}_2^{0}$ \\
+  \var{F30z}      & ${\cal F}_3^{0}$ \\
+  \var{ux0mz}     & $\left<u_{x}\right>_{xy}$ \\
+  \var{uy0mz}     & $\left<u_{y}\right>_{xy}$ \\
+  \var{uz0mz}     & $\left<u_{z}\right>_{xy}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{viscosity.f90}} \\
 \midrule
-  \var{fviscm=0}  & Mean value of viscous acceleration \\
-  \var{fviscmin=0} & Min value of viscous acceleration \\
-  \var{fviscmax=0} & Max value of viscous acceleration \\
-  \var{nusmagm=0} & Mean value of Smagorinsky viscosity \\
-  \var{nusmagmin=0} & Min value of Smagorinsky viscosity \\
-  \var{nusmagmax=0} & Max value of Smagorinsky viscosity \\
-  \var{epsK=0}    & $\left<2\nu\varrho\Strain^2\right>$ \\
-  \var{dtnu=0}    & $\delta t/[c_{\delta t,{\rm v}}\,
+  \var{fviscm}    & Mean value of viscous acceleration \\
+  \var{fviscmin}  & Min value of viscous acceleration \\
+  \var{fviscmax}  & Max value of viscous acceleration \\
+  \var{nusmagm}   & Mean value of Smagorinsky viscosity \\
+  \var{nusmagmin} & Min value of Smagorinsky viscosity \\
+  \var{nusmagmax} & Max value of Smagorinsky viscosity \\
+  \var{epsK}      & $\left<2\nu\varrho\Strain^2\right>$ \\
+  \var{dtnu}      & $\delta t/[c_{\delta t,{\rm v}}\,
                     \delta x^2/\nu_{\rm max}]$
                     \quad(time step relative to
                     viscous time step;
@@ -494,180 +494,180 @@
 \midrule
   \multicolumn{2}{c}{Module \file{testfield_xz.f90}} \\
 \midrule
-  \var{E111z=0}   & ${\cal E}_1^{11}$ \\
-  \var{E211z=0}   & ${\cal E}_2^{11}$ \\
-  \var{E311z=0}   & ${\cal E}_3^{11}$ \\
-  \var{E121z=0}   & ${\cal E}_1^{21}$ \\
-  \var{E221z=0}   & ${\cal E}_2^{21}$ \\
-  \var{E321z=0}   & ${\cal E}_3^{21}$ \\
-  \var{alp11=0}   & $\alpha_{11}$ \\
-  \var{alp21=0}   & $\alpha_{21}$ \\
-  \var{eta11=0}   & $\eta_{113}k$ \\
-  \var{eta21=0}   & $\eta_{213}k$ \\
-  \var{b11rms=0}  & $\left<b_{11}^2\right>$ \\
-  \var{b21rms=0}  & $\left<b_{21}^2\right>$ \\
+  \var{E111z}     & ${\cal E}_1^{11}$ \\
+  \var{E211z}     & ${\cal E}_2^{11}$ \\
+  \var{E311z}     & ${\cal E}_3^{11}$ \\
+  \var{E121z}     & ${\cal E}_1^{21}$ \\
+  \var{E221z}     & ${\cal E}_2^{21}$ \\
+  \var{E321z}     & ${\cal E}_3^{21}$ \\
+  \var{alp11}     & $\alpha_{11}$ \\
+  \var{alp21}     & $\alpha_{21}$ \\
+  \var{eta11}     & $\eta_{113}k$ \\
+  \var{eta21}     & $\eta_{213}k$ \\
+  \var{b11rms}    & $\left<b_{11}^2\right>$ \\
+  \var{b21rms}    & $\left<b_{21}^2\right>$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{shear.f90}} \\
 \midrule
-  \var{dtshear=0} & advec\_shear/cdt \\
-  \var{deltay=0}  & deltay \\
+  \var{dtshear}   & advec\_shear/cdt \\
+  \var{deltay}    & deltay \\
 \midrule
   \multicolumn{2}{c}{Module \file{testperturb.f90}} \\
 \midrule
-  \var{alp11=0}   & $\alpha_{11}$ \\
-  \var{alp21=0}   & $\alpha_{21}$ \\
-  \var{alp31=0}   & $\alpha_{31}$ \\
-  \var{alp12=0}   & $\alpha_{12}$ \\
-  \var{alp22=0}   & $\alpha_{22}$ \\
-  \var{alp32=0}   & $\alpha_{32}$ \\
-  \var{eta11=0}   & $\eta_{113}k$ \\
-  \var{eta21=0}   & $\eta_{213}k$ \\
-  \var{eta31=0}   & $\eta_{313}k$ \\
-  \var{eta12=0}   & $\eta_{123}k$ \\
-  \var{eta22=0}   & $\eta_{223}k$ \\
-  \var{eta32=0}   & $\eta_{323}k$ \\
+  \var{alp11}     & $\alpha_{11}$ \\
+  \var{alp21}     & $\alpha_{21}$ \\
+  \var{alp31}     & $\alpha_{31}$ \\
+  \var{alp12}     & $\alpha_{12}$ \\
+  \var{alp22}     & $\alpha_{22}$ \\
+  \var{alp32}     & $\alpha_{32}$ \\
+  \var{eta11}     & $\eta_{113}k$ \\
+  \var{eta21}     & $\eta_{213}k$ \\
+  \var{eta31}     & $\eta_{313}k$ \\
+  \var{eta12}     & $\eta_{123}k$ \\
+  \var{eta22}     & $\eta_{223}k$ \\
+  \var{eta32}     & $\eta_{323}k$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{testscalar.f90}} \\
 \midrule
-  \var{kap11=0}   & $\kappa_{11}$ \\
-  \var{kap21=0}   & $\kappa_{21}$ \\
-  \var{kap31=0}   & $\kappa_{31}$ \\
-  \var{kap13=0}   & $\kappa_{13}$ \\
-  \var{kap23=0}   & $\kappa_{23}$ \\
-  \var{kap33=0}   & $\kappa_{33}$ \\
-  \var{c1rms=0}   & $\left<c_{1}^2\right>^{1/2}$ \\
-  \var{c2rms=0}   & $\left<c_{2}^2\right>^{1/2}$ \\
-  \var{c3rms=0}   & $\left<c_{3}^2\right>^{1/2}$ \\
-  \var{c4rms=0}   & $\left<c_{4}^2\right>^{1/2}$ \\
-  \var{c1pt=0}    & $c^{1}$ \\
-  \var{c2pt=0}    & $c^{2}$ \\
-  \var{c3pt=0}    & $c^{3}$ \\
-  \var{c4pt=0}    & $c^{4}$ \\
-  \var{F11z=0}    & ${\cal F}_1^{1}$ \\
-  \var{F21z=0}    & ${\cal F}_2^{1}$ \\
-  \var{F31z=0}    & ${\cal F}_3^{1}$ \\
-  \var{F12z=0}    & ${\cal F}_1^{2}$ \\
-  \var{F22z=0}    & ${\cal F}_2^{2}$ \\
-  \var{F32z=0}    & ${\cal F}_3^{2}$ \\
+  \var{kap11}     & $\kappa_{11}$ \\
+  \var{kap21}     & $\kappa_{21}$ \\
+  \var{kap31}     & $\kappa_{31}$ \\
+  \var{kap13}     & $\kappa_{13}$ \\
+  \var{kap23}     & $\kappa_{23}$ \\
+  \var{kap33}     & $\kappa_{33}$ \\
+  \var{c1rms}     & $\left<c_{1}^2\right>^{1/2}$ \\
+  \var{c2rms}     & $\left<c_{2}^2\right>^{1/2}$ \\
+  \var{c3rms}     & $\left<c_{3}^2\right>^{1/2}$ \\
+  \var{c4rms}     & $\left<c_{4}^2\right>^{1/2}$ \\
+  \var{c1pt}      & $c^{1}$ \\
+  \var{c2pt}      & $c^{2}$ \\
+  \var{c3pt}      & $c^{3}$ \\
+  \var{c4pt}      & $c^{4}$ \\
+  \var{F11z}      & ${\cal F}_1^{1}$ \\
+  \var{F21z}      & ${\cal F}_2^{1}$ \\
+  \var{F31z}      & ${\cal F}_3^{1}$ \\
+  \var{F12z}      & ${\cal F}_1^{2}$ \\
+  \var{F22z}      & ${\cal F}_2^{2}$ \\
+  \var{F32z}      & ${\cal F}_3^{2}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{testfield_z.f90}} \\
 \midrule
-  \var{alp11=0}   & $\alpha_{11}$ \\
-  \var{alp21=0}   & $\alpha_{21}$ \\
-  \var{alp31=0}   & $\alpha_{31}$ \\
-  \var{alp12=0}   & $\alpha_{12}$ \\
-  \var{alp22=0}   & $\alpha_{22}$ \\
-  \var{alp32=0}   & $\alpha_{32}$ \\
-  \var{eta11=0}   & $\eta_{113}k$ or $\eta_{11}k$ if leta_rank2=T \\
-  \var{eta21=0}   & $\eta_{213}k$ or $\eta_{21}k$ if leta_rank2=T \\
-  \var{eta31=0}   & $\eta_{313}k$ \\
-  \var{eta12=0}   & $\eta_{123}k$ or $\eta_{12}k$ if leta_rank2=T \\
-  \var{eta22=0}   & $\eta_{223}k$ or $\eta_{22}k$ if leta_rank2=T \\
-  \var{eta32=0}   & $\eta_{323}k$ \\
-  \var{alp11cc=0} & $\alpha_{11}\cos^2 kz$ \\
-  \var{alp21sc=0} & $\alpha_{21}\sin kz\cos kz$ \\
-  \var{alp12cs=0} & $\alpha_{12}\cos kz\sin kz$ \\
-  \var{alp22ss=0} & $\alpha_{22}\sin^2 kz$ \\
-  \var{eta11cc=0} & $\eta_{11}\cos^2 kz$ \\
-  \var{eta21sc=0} & $\eta_{21}\sin kz\cos kz$ \\
-  \var{eta12cs=0} & $\eta_{12}\cos kz\sin kz$ \\
-  \var{eta22ss=0} & $\eta_{22}\sin^2 kz$ \\
-  \var{M11=0}     & ${\cal M}_{11}$ \\
-  \var{M22=0}     & ${\cal M}_{22}$ \\
-  \var{M33=0}     & ${\cal M}_{33}$ \\
-  \var{M11cc=0}   & ${\cal M}_{11}\cos^2 kz$ \\
-  \var{M11ss=0}   & ${\cal M}_{11}\sin^2 kz$ \\
-  \var{M22cc=0}   & ${\cal M}_{22}\cos^2 kz$ \\
-  \var{M22ss=0}   & ${\cal M}_{22}\sin^2 kz$ \\
-  \var{bx11pt=0}  & $b_x^{11}$ \\
-  \var{bx21pt=0}  & $b_x^{21}$ \\
-  \var{bx12pt=0}  & $b_x^{12}$ \\
-  \var{bx22pt=0}  & $b_x^{22}$ \\
-  \var{bx0pt=0}   & $b_x^{0}$ \\
-  \var{by11pt=0}  & $b_y^{11}$ \\
-  \var{by21pt=0}  & $b_y^{21}$ \\
-  \var{by12pt=0}  & $b_y^{12}$ \\
-  \var{by22pt=0}  & $b_y^{22}$ \\
-  \var{by0pt=0}   & $b_y^{0}$ \\
-  \var{b11rms=0}  & $\left<b_{11}^2\right>^{1/2}$ \\
-  \var{b21rms=0}  & $\left<b_{21}^2\right>^{1/2}$ \\
-  \var{b12rms=0}  & $\left<b_{12}^2\right>^{1/2}$ \\
-  \var{b22rms=0}  & $\left<b_{22}^2\right>^{1/2}$ \\
-  \var{b0rms=0}   & $\left<b_{0}^2\right>^{1/2}$ \\
-  \var{jb0m=0}    & $\left<jb_{0}\right>$ \\
-  \var{E11rms=0}  & $\left<{\cal E}_{11}^2\right>^{1/2}$ \\
-  \var{E21rms=0}  & $\left<{\cal E}_{21}^2\right>^{1/2}$ \\
-  \var{E12rms=0}  & $\left<{\cal E}_{12}^2\right>^{1/2}$ \\
-  \var{E22rms=0}  & $\left<{\cal E}_{22}^2\right>^{1/2}$ \\
-  \var{E0rms=0}   & $\left<{\cal E}_{0}^2\right>^{1/2}$ \\
-  \var{Ex11pt=0}  & ${\cal E}_x^{11}$ \\
-  \var{Ex21pt=0}  & ${\cal E}_x^{21}$ \\
-  \var{Ex12pt=0}  & ${\cal E}_x^{12}$ \\
-  \var{Ex22pt=0}  & ${\cal E}_x^{22}$ \\
-  \var{Ex0pt=0}   & ${\cal E}_x^{0}$ \\
-  \var{Ey11pt=0}  & ${\cal E}_y^{11}$ \\
-  \var{Ey21pt=0}  & ${\cal E}_y^{21}$ \\
-  \var{Ey12pt=0}  & ${\cal E}_y^{12}$ \\
-  \var{Ey22pt=0}  & ${\cal E}_y^{22}$ \\
-  \var{Ey0pt=0}   & ${\cal E}_y^{0}$ \\
-  \var{E111z=0}   & ${\cal E}_1^{11}$ \\
-  \var{E211z=0}   & ${\cal E}_2^{11}$ \\
-  \var{E311z=0}   & ${\cal E}_3^{11}$ \\
-  \var{E121z=0}   & ${\cal E}_1^{21}$ \\
-  \var{E221z=0}   & ${\cal E}_2^{21}$ \\
-  \var{E321z=0}   & ${\cal E}_3^{21}$ \\
-  \var{E112z=0}   & ${\cal E}_1^{12}$ \\
-  \var{E212z=0}   & ${\cal E}_2^{12}$ \\
-  \var{E312z=0}   & ${\cal E}_3^{12}$ \\
-  \var{E122z=0}   & ${\cal E}_1^{22}$ \\
-  \var{E222z=0}   & ${\cal E}_2^{22}$ \\
-  \var{E322z=0}   & ${\cal E}_3^{22}$ \\
-  \var{E10z=0}    & ${\cal E}_1^{0}$ \\
-  \var{E20z=0}    & ${\cal E}_2^{0}$ \\
-  \var{E30z=0}    & ${\cal E}_3^{0}$ \\
-  \var{EBpq=0}    & ${\cal E}\cdot\Bv^{pq}$ \\
-  \var{E0Um=0}    & ${\cal E}^0\cdot\Uv$ \\
-  \var{E0Wm=0}    & ${\cal E}^0\cdot\Wv$ \\
-  \var{bx0mz=0}   & $\left<b_{x}\right>_{xy}$ \\
-  \var{by0mz=0}   & $\left<b_{y}\right>_{xy}$ \\
-  \var{bz0mz=0}   & $\left<b_{z}\right>_{xy}$ \\
-  \var{M11z=0}    & $\left<{\cal M}_{11}\right>_{xy}$ \\
-  \var{M22z=0}    & $\left<{\cal M}_{22}\right>_{xy}$ \\
-  \var{M33z=0}    & $\left<{\cal M}_{33}\right>_{xy}$ \\
+  \var{alp11}     & $\alpha_{11}$ \\
+  \var{alp21}     & $\alpha_{21}$ \\
+  \var{alp31}     & $\alpha_{31}$ \\
+  \var{alp12}     & $\alpha_{12}$ \\
+  \var{alp22}     & $\alpha_{22}$ \\
+  \var{alp32}     & $\alpha_{32}$ \\
+  \var{eta11}     & $\eta_{113}k$ or $\eta_{11}k$ if leta_rank2=T \\
+  \var{eta21}     & $\eta_{213}k$ or $\eta_{21}k$ if leta_rank2=T \\
+  \var{eta31}     & $\eta_{313}k$ \\
+  \var{eta12}     & $\eta_{123}k$ or $\eta_{12}k$ if leta_rank2=T \\
+  \var{eta22}     & $\eta_{223}k$ or $\eta_{22}k$ if leta_rank2=T \\
+  \var{eta32}     & $\eta_{323}k$ \\
+  \var{alp11cc}   & $\alpha_{11}\cos^2 kz$ \\
+  \var{alp21sc}   & $\alpha_{21}\sin kz\cos kz$ \\
+  \var{alp12cs}   & $\alpha_{12}\cos kz\sin kz$ \\
+  \var{alp22ss}   & $\alpha_{22}\sin^2 kz$ \\
+  \var{eta11cc}   & $\eta_{11}\cos^2 kz$ \\
+  \var{eta21sc}   & $\eta_{21}\sin kz\cos kz$ \\
+  \var{eta12cs}   & $\eta_{12}\cos kz\sin kz$ \\
+  \var{eta22ss}   & $\eta_{22}\sin^2 kz$ \\
+  \var{M11}       & ${\cal M}_{11}$ \\
+  \var{M22}       & ${\cal M}_{22}$ \\
+  \var{M33}       & ${\cal M}_{33}$ \\
+  \var{M11cc}     & ${\cal M}_{11}\cos^2 kz$ \\
+  \var{M11ss}     & ${\cal M}_{11}\sin^2 kz$ \\
+  \var{M22cc}     & ${\cal M}_{22}\cos^2 kz$ \\
+  \var{M22ss}     & ${\cal M}_{22}\sin^2 kz$ \\
+  \var{bx11pt}    & $b_x^{11}$ \\
+  \var{bx21pt}    & $b_x^{21}$ \\
+  \var{bx12pt}    & $b_x^{12}$ \\
+  \var{bx22pt}    & $b_x^{22}$ \\
+  \var{bx0pt}     & $b_x^{0}$ \\
+  \var{by11pt}    & $b_y^{11}$ \\
+  \var{by21pt}    & $b_y^{21}$ \\
+  \var{by12pt}    & $b_y^{12}$ \\
+  \var{by22pt}    & $b_y^{22}$ \\
+  \var{by0pt}     & $b_y^{0}$ \\
+  \var{b11rms}    & $\left<b_{11}^2\right>^{1/2}$ \\
+  \var{b21rms}    & $\left<b_{21}^2\right>^{1/2}$ \\
+  \var{b12rms}    & $\left<b_{12}^2\right>^{1/2}$ \\
+  \var{b22rms}    & $\left<b_{22}^2\right>^{1/2}$ \\
+  \var{b0rms}     & $\left<b_{0}^2\right>^{1/2}$ \\
+  \var{jb0m}      & $\left<jb_{0}\right>$ \\
+  \var{E11rms}    & $\left<{\cal E}_{11}^2\right>^{1/2}$ \\
+  \var{E21rms}    & $\left<{\cal E}_{21}^2\right>^{1/2}$ \\
+  \var{E12rms}    & $\left<{\cal E}_{12}^2\right>^{1/2}$ \\
+  \var{E22rms}    & $\left<{\cal E}_{22}^2\right>^{1/2}$ \\
+  \var{E0rms}     & $\left<{\cal E}_{0}^2\right>^{1/2}$ \\
+  \var{Ex11pt}    & ${\cal E}_x^{11}$ \\
+  \var{Ex21pt}    & ${\cal E}_x^{21}$ \\
+  \var{Ex12pt}    & ${\cal E}_x^{12}$ \\
+  \var{Ex22pt}    & ${\cal E}_x^{22}$ \\
+  \var{Ex0pt}     & ${\cal E}_x^{0}$ \\
+  \var{Ey11pt}    & ${\cal E}_y^{11}$ \\
+  \var{Ey21pt}    & ${\cal E}_y^{21}$ \\
+  \var{Ey12pt}    & ${\cal E}_y^{12}$ \\
+  \var{Ey22pt}    & ${\cal E}_y^{22}$ \\
+  \var{Ey0pt}     & ${\cal E}_y^{0}$ \\
+  \var{E111z}     & ${\cal E}_1^{11}$ \\
+  \var{E211z}     & ${\cal E}_2^{11}$ \\
+  \var{E311z}     & ${\cal E}_3^{11}$ \\
+  \var{E121z}     & ${\cal E}_1^{21}$ \\
+  \var{E221z}     & ${\cal E}_2^{21}$ \\
+  \var{E321z}     & ${\cal E}_3^{21}$ \\
+  \var{E112z}     & ${\cal E}_1^{12}$ \\
+  \var{E212z}     & ${\cal E}_2^{12}$ \\
+  \var{E312z}     & ${\cal E}_3^{12}$ \\
+  \var{E122z}     & ${\cal E}_1^{22}$ \\
+  \var{E222z}     & ${\cal E}_2^{22}$ \\
+  \var{E322z}     & ${\cal E}_3^{22}$ \\
+  \var{E10z}      & ${\cal E}_1^{0}$ \\
+  \var{E20z}      & ${\cal E}_2^{0}$ \\
+  \var{E30z}      & ${\cal E}_3^{0}$ \\
+  \var{EBpq}      & ${\cal E}\cdot\Bv^{pq}$ \\
+  \var{E0Um}      & ${\cal E}^0\cdot\Uv$ \\
+  \var{E0Wm}      & ${\cal E}^0\cdot\Wv$ \\
+  \var{bx0mz}     & $\left<b_{x}\right>_{xy}$ \\
+  \var{by0mz}     & $\left<b_{y}\right>_{xy}$ \\
+  \var{bz0mz}     & $\left<b_{z}\right>_{xy}$ \\
+  \var{M11z}      & $\left<{\cal M}_{11}\right>_{xy}$ \\
+  \var{M22z}      & $\left<{\cal M}_{22}\right>_{xy}$ \\
+  \var{M33z}      & $\left<{\cal M}_{33}\right>_{xy}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{chemistry.f90}} \\
 \midrule
-  \var{Y1m=0}     & $\left<Y_1\right>$ \\
-  \var{Y2m=0}     & $\left<Y_2\right>$ \\
-  \var{Y3m=0}     & $\left<Y_3\right>$ \\
-  \var{Y4m=0}     & $\left<Y_4\right>$ \\
-  \var{Y5m=0}     & $\left<Y_5\right>$ \\
-  \var{Y6m=0}     & $\left<Y_6\right>$ \\
-  \var{Y7m=0}     & $\left<Y_7\right>$ \\
-  \var{Y8m=0}     & $\left<Y_8\right>$ \\
-  \var{Y9m=0}     & $\left<Y_9\right>$ \\
-  \var{dY1m=0}    & $\left<dY_1\right>$ \\
-  \var{dY2m=0}    & $\left<dY_2\right>$ \\
-  \var{dY3m=0}    & $\left<dY_3\right>$ \\
-  \var{dY4m=0}    & $\left<dY_4\right>$ \\
-  \var{dY5m=0}    & $\left<dY_5\right>$ \\
-  \var{dY6m=0}    & $\left<dY_6\right>$ \\
-  \var{dY7m=0}    & $\left<dY_7\right>$ \\
-  \var{dY8m=0}    & $\left<dY_8\right>$ \\
-  \var{dY9m=0}    & $\left<dY_9\right>$ \\
-  \var{Y1mz=0}    & $\left<Y_1\right>_{xy}(z)$ \\
-  \var{Y2mz=0}    & $\left<Y_2\right>_{xy}(z)$ \\
-  \var{Y3mz=0}    & $\left<Y_3\right>_{xy}(z)$ \\
-  \var{Y4mz=0}    & $\left<Y_4\right>_{xy}(z)$ \\
-  \var{Y5mz=0}    & $\left<Y_5\right>_{xy}(z)$ \\
-  \var{Y6mz=0}    & $\left<Y_6\right>_{xy}(z)$ \\
-  \var{Y7mz=0}    & $\left<Y_7\right>_{xy}(z)$ \\
-  \var{Y8mz=0}    & $\left<Y_8\right>_{xy}(z)$ \\
-  \var{Y9mz=0}    & $\left<Y_9\right>_{xy}(z)$ \\
+  \var{Y1m}       & $\left<Y_1\right>$ \\
+  \var{Y2m}       & $\left<Y_2\right>$ \\
+  \var{Y3m}       & $\left<Y_3\right>$ \\
+  \var{Y4m}       & $\left<Y_4\right>$ \\
+  \var{Y5m}       & $\left<Y_5\right>$ \\
+  \var{Y6m}       & $\left<Y_6\right>$ \\
+  \var{Y7m}       & $\left<Y_7\right>$ \\
+  \var{Y8m}       & $\left<Y_8\right>$ \\
+  \var{Y9m}       & $\left<Y_9\right>$ \\
+  \var{dY1m}      & $\left<dY_1\right>$ \\
+  \var{dY2m}      & $\left<dY_2\right>$ \\
+  \var{dY3m}      & $\left<dY_3\right>$ \\
+  \var{dY4m}      & $\left<dY_4\right>$ \\
+  \var{dY5m}      & $\left<dY_5\right>$ \\
+  \var{dY6m}      & $\left<dY_6\right>$ \\
+  \var{dY7m}      & $\left<dY_7\right>$ \\
+  \var{dY8m}      & $\left<dY_8\right>$ \\
+  \var{dY9m}      & $\left<dY_9\right>$ \\
+  \var{Y1mz}      & $\left<Y_1\right>_{xy}(z)$ \\
+  \var{Y2mz}      & $\left<Y_2\right>_{xy}(z)$ \\
+  \var{Y3mz}      & $\left<Y_3\right>_{xy}(z)$ \\
+  \var{Y4mz}      & $\left<Y_4\right>_{xy}(z)$ \\
+  \var{Y5mz}      & $\left<Y_5\right>_{xy}(z)$ \\
+  \var{Y6mz}      & $\left<Y_6\right>_{xy}(z)$ \\
+  \var{Y7mz}      & $\left<Y_7\right>_{xy}(z)$ \\
+  \var{Y8mz}      & $\left<Y_8\right>_{xy}(z)$ \\
+  \var{Y9mz}      & $\left<Y_9\right>_{xy}(z)$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{noentropy.f90}} \\
 \midrule
-  \var{dtc=0}     & $\delta t/[c_{\delta t}\,\delta_x
+  \var{dtc}       & $\delta t/[c_{\delta t}\,\delta_x
                     /\max c_{\rm s}]$
                     \quad(time step relative to
                     acoustic time step;
