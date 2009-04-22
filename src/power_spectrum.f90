@@ -280,7 +280,7 @@ module  power_spectrum
           a_re(:,im,in)=bbi  !(this corresponds to vorticity)
         enddo
       enddo
-      b_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
+      b_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)  !(this corresponds to velocity)
       a_im=0.
       b_im=0.
     elseif (sp=='mag') then
@@ -292,7 +292,19 @@ module  power_spectrum
           b_re(:,im,in)=bbi  !(this corresponds to magnetic field)
         enddo
       enddo
-      a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)
+      a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !(corresponds to vector potential)
+      a_im=0.
+      b_im=0.
+    elseif (sp=='u.b') then
+      do n=n1,n2
+        do m=m1,m2
+          call curli(f,iaa,bbi,ivec)
+          im=m-nghost
+          in=n-nghost
+          b_re(:,im,in)=bbi  !(this corresponds to magnetic field)
+        enddo
+      enddo
+      a_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)  !(this corresponds to velocity)
       a_im=0.
       b_im=0.
     elseif (sp=='uxj') then

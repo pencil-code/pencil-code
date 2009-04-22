@@ -93,7 +93,7 @@ module Param_IO
        cdts,cdtr,cdtc,isave,itorder, &
        dsnap,d2davg,dvid,dtmin,dspec,tmax,iwig,awig,ialive, max_walltime, &
        dtmax, &
-       vel_spec,mag_spec,uxj_spec,vec_spec,ou_spec,ab_spec, &
+       vel_spec,mag_spec,uxj_spec,vec_spec,ou_spec,ab_spec,ub_spec, &
        vel_phispec,mag_phispec,uxj_phispec,vec_phispec,ou_phispec,ab_phispec, &
        ro_spec,TT_spec,ss_spec,cc_spec,cr_spec,isaveglobal, &
        lr_spec,r2u_spec,r3u_spec, &
