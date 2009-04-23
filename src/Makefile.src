@@ -438,14 +438,15 @@ LD_FFTW2=
 #FC=mpif90 #(bwui|bwui.bfg.uni-freiburg.de)
 #FFLAGS=-xT -ipo -O3 #(bwui|bwui.bfg.uni-freiburg.de)
 ##
-## Toulouse's machines: efigi, shal, galileo, mithra, yang & star3
+## Toulouse's machines: ulysse, efigi, shal, galileo, mithra, yang & star3
 ##
-#FC=ifort #(shal|efigi|mithra|star3|galileo|yang)
+#FC=ifort #(shal|efigi|mithra|star3|galileo|yang|ulysse)
 #FFLAGS=-O3 -stand f90 -I/usr/include/lam #(mithra|galileo)
 #FFLAGS=-O3 -I/usr/include/openmpi -I/usr/include/openmpi/32 #(shal)
 #FFLAGS=-O3 -I/usr/lib/openmpi/1.2.5-gcc/include #(star3)
 #FFLAGS=-O3 -stand f90 -I/home/dintrans/LIB/LAM/include -assume nounderscore #(efigi)
 #FFLAGS=-O3 -vec-report0 -assume nounderscore -I/usr/local/openmpi_slurm/include/ #(yang)
+#FFLAGS=-O3 #(ulysse)
 #CC=gcc #(efigi)
 #CFLAGS=-O3 -m32 #(efigi|mithra|shal)
 #LD_MPI=-L/usr/lib/lam -lpthread -llammpio -llamf77mpi -lmpi -llam -lutil -ldl #(mithra)
@@ -1019,12 +1020,6 @@ LD_FFTW2=
 #FFLAGS=-O3 -I/usr/local/include #(norosx01)
 #CFLAGS=-DFUNDERSC=2 #(norosx01)
 #LD_MPI= -L/usr/local/include -llammpio -llamf77mpi -lmpi -llam -ldl #(norosx01)
-##
-## Boris' MacBook Pro
-##
-#FC=mpif90 #(ulysse)
-#FFLAGS=-O3 -vec-report0 #(ulysse)
-#LD_MPI= #(ulysse)
 ##
 ## Steve's MacBook Pro
 ##

@@ -149,11 +149,9 @@ module Entropy
                                 ! DIAG_DOC:   \quad(time step relative to 
                                 ! DIAG_DOC:   acoustic time step;
                                 ! DIAG_DOC:   see \S~\ref{time-step})
-  integer :: idiag_eth=0        ! DIAG_DOC: $\left<\varrho e\right>$
+  integer :: idiag_ethm=0       ! DIAG_DOC: $\left<\varrho e\right>$
                                 ! DIAG_DOC:   \quad(mean thermal
-                                ! DIAG_DOC:   [=internal] energy).
-                                ! DIAG_DOC:   [Shouldn't this be
-                                ! DIAG_DOC:   \texttt{ethm} then?]
+                                ! DIAG_DOC:   [=internal] energy)
   integer :: idiag_ethdivum=0   ! DIAG_DOC:
   integer :: idiag_ssm=0        ! DIAG_DOC: $\left<s/c_p\right>$
                                 ! DIAG_DOC:   \quad(mean entropy)
@@ -1886,7 +1884,7 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
            lpenc_diagnos(i_ss)=.true.
       lpenc_diagnos(i_rho)=.true.
       lpenc_diagnos(i_ee)=.true.
-      if (idiag_eth/=0 .or. idiag_ethtot/=0 .or. idiag_ethdivum/=0 ) then
+      if (idiag_ethm/=0 .or. idiag_ethtot/=0 .or. idiag_ethdivum/=0 ) then
           lpenc_diagnos(i_rho)=.true.
           lpenc_diagnos(i_ee)=.true.
       endif
@@ -2157,7 +2155,7 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
         if (idiag_yHm/=0)    call sum_mn_name(p%yH,idiag_yHm)
         if (idiag_dtc/=0) &
             call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
-        if (idiag_eth/=0)    call sum_mn_name(p%rho*p%ee,idiag_eth)
+        if (idiag_ethm/=0)    call sum_mn_name(p%rho*p%ee,idiag_ethm)
         if (idiag_ethtot/=0) call integrate_mn_name(p%rho*p%ee,idiag_ethtot)
         if (idiag_ethdivum/=0) &
             call sum_mn_name(p%rho*p%ee*p%divu,idiag_ethdivum)
@@ -3220,7 +3218,7 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_dtc=0; idiag_eth=0; idiag_ethdivum=0; idiag_ssm=0
+        idiag_dtc=0; idiag_ethm=0; idiag_ethdivum=0; idiag_ssm=0
         idiag_eem=0; idiag_ppm=0; idiag_csm=0; idiag_pdivum=0; idiag_heatm=0
         idiag_ugradpm=0; idiag_ethtot=0; idiag_dtchi=0; idiag_ssmphi=0
         idiag_yHmax=0; idiag_yHm=0; idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0
@@ -3237,7 +3235,7 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
         call parse_name(iname,cname(iname),cform(iname),'dtchi',idiag_dtchi)
         call parse_name(iname,cname(iname),cform(iname),'ethtot',idiag_ethtot)
         call parse_name(iname,cname(iname),cform(iname),'ethdivum',idiag_ethdivum)
-        call parse_name(iname,cname(iname),cform(iname),'eth',idiag_eth)
+        call parse_name(iname,cname(iname),cform(iname),'ethm',idiag_ethm)
         call parse_name(iname,cname(iname),cform(iname),'ssm',idiag_ssm)
         call parse_name(iname,cname(iname),cform(iname),'eem',idiag_eem)
         call parse_name(iname,cname(iname),cform(iname),'ppm',idiag_ppm)
@@ -3312,7 +3310,7 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
         write(3,*) 'i_dtchi=',idiag_dtchi
         write(3,*) 'i_ethtot=',idiag_ethtot
         write(3,*) 'i_ethdivum=',idiag_ethdivum
-        write(3,*) 'i_eth=',idiag_eth
+        write(3,*) 'i_ethm=',idiag_ethm
         write(3,*) 'i_ssm=',idiag_ssm
         write(3,*) 'i_eem=',idiag_eem
         write(3,*) 'i_ppm=',idiag_ppm
