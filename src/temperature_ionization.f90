@@ -61,7 +61,7 @@ module Entropy
   ! other variables (needs to be consistent with reset list below)
     integer :: idiag_TTmax=0,idiag_TTmin=0,idiag_TTm=0
     integer :: idiag_yHmax=0,idiag_yHmin=0,idiag_yHm=0
-    integer :: idiag_eth=0,idiag_ssm=0,idiag_cv=0,idiag_cp=0
+    integer :: idiag_ethm=0,idiag_ssm=0,idiag_cv=0,idiag_cp=0
     integer :: idiag_dtchi=0,idiag_dtc=0
     integer :: idiag_eem=0,idiag_ppm=0,idiag_csm=0
     integer :: idiag_mum=0
@@ -312,7 +312,7 @@ module Entropy
       if (idiag_yHmax/=0) lpenc_diagnos(i_yH)=.true.
       if (idiag_yHmin/=0) lpenc_diagnos(i_yH)=.true.
       if (idiag_yHm/=0) lpenc_diagnos(i_yH)=.true.
-      if (idiag_eth/=0) then
+      if (idiag_ethm/=0) then
         lpenc_diagnos(i_rho1)=.true.
         lpenc_diagnos(i_ee)=.true.
       endif
@@ -497,7 +497,7 @@ module Entropy
         if (idiag_yHmax/=0) call max_mn_name(p%yH,idiag_yHmax)
         if (idiag_yHmin/=0) call max_mn_name(-p%yH,idiag_yHmin,lneg=.true.)
         if (idiag_yHm/=0) call sum_mn_name(p%yH,idiag_yHm)
-        if (idiag_eth/=0) call sum_mn_name(p%ee/p%rho1,idiag_eth)
+        if (idiag_ethm/=0) call sum_mn_name(p%ee/p%rho1,idiag_ethm)
         if (idiag_ssm/=0) call sum_mn_name(p%ss,idiag_ssm)
         if (idiag_cv/=0) call sum_mn_name(p%cv,idiag_cv)
         if (idiag_cp/=0) call sum_mn_name(p%cp,idiag_cp)
@@ -637,7 +637,7 @@ module Entropy
       if (lreset) then
         idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0
         idiag_yHmax=0; idiag_yHmin=0; idiag_yHm=0
-        idiag_eth=0; idiag_ssm=0; idiag_cv=0; idiag_cp=0
+        idiag_ethm=0; idiag_ssm=0; idiag_cv=0; idiag_cp=0
         idiag_dtchi=0; idiag_dtc=0
         idiag_eem=0; idiag_ppm=0; idiag_csm=0
         idiag_mum=0
@@ -652,7 +652,7 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'yHmax',idiag_yHmax)
         call parse_name(iname,cname(iname),cform(iname),'yHmin',idiag_yHmin)
         call parse_name(iname,cname(iname),cform(iname),'yHm',idiag_yHm)
-        call parse_name(iname,cname(iname),cform(iname),'eth',idiag_eth)
+        call parse_name(iname,cname(iname),cform(iname),'ethm',idiag_ethm)
         call parse_name(iname,cname(iname),cform(iname),'ssm',idiag_ssm)
         call parse_name(iname,cname(iname),cform(iname),'cv',idiag_cv)
         call parse_name(iname,cname(iname),cform(iname),'cp',idiag_cp)
@@ -677,7 +677,7 @@ module Entropy
         write(3,*) 'i_yHmax=',idiag_yHmax
         write(3,*) 'i_yHmin=',idiag_yHmin
         write(3,*) 'i_yHm=',idiag_yHm
-        write(3,*) 'i_eth=',idiag_eth
+        write(3,*) 'i_ethm=',idiag_ethm
         write(3,*) 'i_ssm=',idiag_ssm
         write(3,*) 'i_cv=',idiag_cv
         write(3,*) 'i_cp=',idiag_cp

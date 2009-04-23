@@ -79,7 +79,7 @@ module Entropy
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_TTmax=0,idiag_TTmin=0,idiag_TTm=0
-  integer :: idiag_eth=0,idiag_ssm=0
+  integer :: idiag_ethm=0,idiag_ssm=0
   integer :: idiag_dtchi=0,idiag_dtc=0
   integer :: idiag_eem=0,idiag_ppm=0,idiag_csm=0
  
@@ -321,7 +321,7 @@ module Entropy
       if (idiag_TTmax/=0) lpenc_diagnos(i_TT)  =.true.
       if (idiag_TTmin/=0) lpenc_diagnos(i_TT)  =.true.
       if (idiag_TTm/=0)   lpenc_diagnos(i_TT)  =.true.
-      if (idiag_eth/=0) then
+      if (idiag_ethm/=0) then
                           lpenc_diagnos(i_rho1)=.true.
                           lpenc_diagnos(i_ee)  =.true.
       endif
@@ -466,7 +466,7 @@ module Entropy
         if (idiag_TTmax/=0) call max_mn_name(p%TT,idiag_TTmax)
         if (idiag_TTmin/=0) call max_mn_name(-p%TT,idiag_TTmin,lneg=.true.)
         if (idiag_TTm/=0)   call sum_mn_name(p%TT,idiag_TTm)
-        if (idiag_eth/=0)   call sum_mn_name(p%ee/p%rho1,idiag_eth)
+        if (idiag_ethm/=0)   call sum_mn_name(p%ee/p%rho1,idiag_ethm)
         if (idiag_ssm/=0)   call sum_mn_name(p%ss,idiag_ssm)
         if (idiag_dtc/=0) &
           call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
@@ -795,7 +795,7 @@ module Entropy
 !
       if (lreset) then
         idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0
-        idiag_eth=0; idiag_ssm=0
+        idiag_ethm=0; idiag_ssm=0
         idiag_dtchi=0; idiag_dtc=0
         idiag_eem=0; idiag_ppm=0; idiag_csm=0
       endif
@@ -806,7 +806,7 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'TTmax',idiag_TTmax)
         call parse_name(iname,cname(iname),cform(iname),'TTmin',idiag_TTmin)
         call parse_name(iname,cname(iname),cform(iname),'TTm',idiag_TTm)
-        call parse_name(iname,cname(iname),cform(iname),'eth',idiag_eth)
+        call parse_name(iname,cname(iname),cform(iname),'ethm',idiag_ethm)
         call parse_name(iname,cname(iname),cform(iname),'ssm',idiag_ssm)
         call parse_name(iname,cname(iname),cform(iname),'dtchi',idiag_dtchi)
         call parse_name(iname,cname(iname),cform(iname),'dtc',idiag_dtc)
@@ -824,7 +824,7 @@ module Entropy
         write(3,*) 'i_TTmax=',idiag_TTmax
         write(3,*) 'i_TTmin=',idiag_TTmin
         write(3,*) 'i_TTm=',idiag_TTm
-        write(3,*) 'i_eth=',idiag_eth
+        write(3,*) 'i_ethm=',idiag_ethm
         write(3,*) 'i_ssm=',idiag_ssm
         write(3,*) 'i_dtchi=',idiag_dtchi
         write(3,*) 'i_dtc=',idiag_dtc

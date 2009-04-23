@@ -52,7 +52,7 @@ module Entropy
       dummy
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: idiag_dtc=0,idiag_eth=0,idiag_ethdivum=0,idiag_ssm=0
+  integer :: idiag_dtc=0,idiag_ethm=0,idiag_ethdivum=0,idiag_ssm=0
   integer :: idiag_ugradpm=0,idiag_ethtot=0,idiag_dtchi=0,idiag_ssmphi=0
 !
   contains
@@ -214,7 +214,7 @@ module Entropy
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_dtc=0; idiag_eth=0; idiag_ethdivum=0; idiag_ssm=0
+        idiag_dtc=0; idiag_ethm=0; idiag_ethdivum=0; idiag_ssm=0
         idiag_ugradpm=0; idiag_ethtot=0; idiag_dtchi=0; idiag_ssmphi=0
       endif
 !
@@ -226,7 +226,7 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'ethtot',idiag_ethtot)
         call parse_name(iname,cname(iname),cform(iname),&
             'ethdivum',idiag_ethdivum)
-        call parse_name(iname,cname(iname),cform(iname),'eth',idiag_eth)
+        call parse_name(iname,cname(iname),cform(iname),'ethm',idiag_ethm)
         call parse_name(iname,cname(iname),cform(iname),'ssm',idiag_ssm)
         call parse_name(iname,cname(iname),cform(iname),'ugradpm',idiag_ugradpm)
       enddo
@@ -244,7 +244,7 @@ module Entropy
         write(3,*) 'i_dtchi=',idiag_dtchi
         write(3,*) 'i_ethtot=',idiag_ethtot
         write(3,*) 'i_ethdivum=',idiag_ethdivum
-        write(3,*) 'i_eth=',idiag_eth
+        write(3,*) 'i_ethm=',idiag_ethm
         write(3,*) 'i_ssm=',idiag_ssm
         write(3,*) 'i_ugradpm=',idiag_ugradpm
         write(3,*) 'nname=',nname
