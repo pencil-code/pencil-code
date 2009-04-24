@@ -673,19 +673,20 @@ LD_FFTW2=
 #LD_MpI=-L/usr/local/lib/idl/lam/lib -llammpio -lmpi -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(starlink)
 #LIBMPISUFFIX=_#(starlink)
 #MAKEOPTS=-j 3 #(starlink)
-#
-##   Triton - Wlad's laptopÂÂ
+##
+##   Triton - Wlad's laptop
 ## + Titan  - Wlad's stationary
-#
+##
 #FC =/opt/intel/fc/10.0.023/bin/ifort #(triton)
-#FC =/usr/bin/gfortran #(titan)
-#F77=$(FC) #(triton|titan)
-#CC = gcc #(triton|titan)
+#FC =/usr/bin/gfortran #(titan|aida98)
+#F77=$(FC) #(triton|titan|aida98)
+#CC = gcc #(triton|titan|aida98)
 #MPI_HOME=/usr/local#(triton|titan)
-#FFLAGS=-O3 -I$(MPI_HOME)/include #(triton|titan)
+#MPI_HOME=/home/lyra/mpich2-install#(aida98)
+#FFLAGS=-O3 -I$(MPI_HOME)/include #(triton|titan|aida98)
+#LD_MPI=-L$(MPI_HOME)/lib -pthread $(MPI_LDLIBS) #(triton|titan|aida98)
 #MPI_LDLIBS= -llammpi++ -llammpio -llamf77mpi -lmpi -llam #(triton|titan)
-#LD_MPI=-L$(MPI_HOME)/lib -pthread $(MPI_LDLIBS) #(triton|titan)
-#
+#MPI_LDLIBS= -lmpich #(aida98)
 ##
 ## Andrew's Laptop (wkfg)
 ##
