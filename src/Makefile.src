@@ -311,6 +311,7 @@ LD_FFTW2=
 #FFLAGS=-O3 -I/home/johansen/mpich/include/ #(opto[1-4])
 #LD_MPI=-Wl,-m elf_i386 -L/home/johansen/mpich/lib/ -lmpich #(opto[1-4])
 #FC=/afs/ipp/amd64_sles9/soft/mvapich/mvapich2-0.9.8-opteron-x/f95i.9.1/bin/mpif90 #(rio*|pia*)
+#FC=mpixlf95 -I/bgsys/drivers/ppcfloor/comm/include #(genius1)
 #FC=ifort #(eh[1-4])
 #FFLAGS=-O3 -I/opt/lam-7.1.2b24-ifort/include/ #(eh[1-4])
 #LD_MPI=-lltdl -L/opt/lam-7.1.2b24-ifort/lib -llamf77mpi -llammpio -lmpi -llam -lpthread #(eh[1-4])
