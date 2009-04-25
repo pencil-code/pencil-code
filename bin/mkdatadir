@@ -19,7 +19,7 @@ echo $cwd >! .tmp
 #
 set hn = `hostname`
 echo 'we are on' $hn', the new workspace will be'
-
+#
 if ($hn =~ mhd*.st-and.ac.uk) then
   set str='s/home/work2/g'
 else if ($hn =~ fend*.dcsc.ku.dk) then
@@ -117,6 +117,8 @@ else if (($hn =~ rio* || $hn =~ pia*) && ($USER =~ ajohan)) then
   endif
 else if (($hn =~ rio* || $hn =~ pia*) && ($USER =~ wlyra)) then
   set str='s/code/data/g'
+else if ($hn =~ genius*) then
+  set str='s/u\/ajohan\/BlueGene/ptmp\/ajohan/g'
 else if ($hn =~ *.uppmax.uu.se) then 
   set str='s/home/glob/g'
 else if ($hn =~ triton) then 
@@ -141,22 +143,22 @@ else if ($hn =~ andromeda ) then # andromeda.qmul.ac.uk
   echo $hn
   set str='s/users/andromeda\/scratch/g'
 else
-  #
-  #  set the default to empty string (to make local data directory; see below)
-  #
+#
+#  Set the default to empty string (to make local data directory; see below).
+#
   set str=''
 endif
 #
 if ("$str" == '') then
-  #
-  #  by default, make a local directory in the run directory
-  #
+#
+#  By default, make a local directory in the run directory.
+#
   echo "... in the current run directory"
   mkdir data
 else
-  #
-  #  make and link to scatch disk
-  #
+#
+#  Make and link to scatch disk.
+#
   sed -e "$str" .tmp >! .scr
   if ( -d data ) then
     echo Moving present data directory to: `cat .scr`
@@ -168,10 +170,9 @@ else
     mkdir -p `cat .scr`
   endif
   ln -s `cat .scr` data
-  #
-  #  Tidy up temporary files
-  #
-#  rm -f .scr .tmp
+#
+#  Tidy up temporary files.
+#
 endif
 #
 #  For certain people who like it like that...
