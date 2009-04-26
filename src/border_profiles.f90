@@ -208,21 +208,19 @@ module BorderProfiles
       do i=1,nx
         if ( &
             !inner stripe
-             ((p%rcyl_mn(i).ge.r_int).and.&
-              (p%rcyl_mn(i).le.r_int+2*wborder_int)).or.&
+             ((p%rborder_mn(i).ge.r_int).and.&
+              (p%rborder_mn(i).le.r_int+2*wborder_int)).or.&
             !outer stripe
-             ((p%rcyl_mn(i).ge.r_ext-2*wborder_ext).and.&
-              (p%rcyl_mn(i).le.r_ext))) then
+             ((p%rborder_mn(i).ge.r_ext-2*wborder_ext).and.&
+              (p%rborder_mn(i).le.r_ext))) then
 !        
           call get_drive_time(p,inverse_drive_time,i)
           call get_border(p,pborder,i)
         
           df(i+l1-1,m,n,j) = df(i+l1-1,m,n,j) &
                - (f(i+l1-1,m,n,j) - f_target(i))*pborder*inverse_drive_time
-          !if (j==ilnrho) print*,pborder,inverse_drive_time,f_target(i)
         endif
-      !else do nothing
-      !df(l1:l2,m,n,j) = df(l1:l2,m,n,j) 
+        !else do nothing
       enddo
 !
     endsubroutine border_driving
