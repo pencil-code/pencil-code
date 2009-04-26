@@ -89,8 +89,8 @@ if (! $?_sourceme) then		# called for the fist time?
   #
   #  additional aliases (for Axel)
   #
-  alias gb '\cd $gt ; set gg=$gb ; set gb=$gt ; set gt=$gg ; echo $gt "->" $gb'
-  alias gt 'set gt=$cwd; \cd \!^ ; set gb=$cwd ; echo $gt "->" $gb'
+  alias gb 'cd $gt ; set gg=$gb ; set gb=$gt ; set gt=$gg ; echo $gt "->" $gb'
+  alias gt 'set gt=$cwd; cd \!^ ; set gb=$cwd ; echo $gt "->" $gb'
   # alias d ls -sCF
   alias .. 'set pwd = $cwd ; cd ..'
   # alias local 'cp -p \!:1 tmp.$$; \rm \!:1; mv tmp.$$ \!:1; chmod u+w \!:1'
