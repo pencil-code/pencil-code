@@ -2098,6 +2098,9 @@ module Hydro
       real, dimension(mx) :: potential,gpotential
       logical :: err
 !
+      logical, save :: lsave=.true.
+      real, save, dimension(nx,ny,3) :: fsave_init
+!
 ! these tmps and where's are needed because these square roots
 ! go negative in the frozen inner disc if the sound speed is big enough
 ! (like a corona, no hydrostatic equilibrium)
@@ -2257,7 +2260,17 @@ module Hydro
       case('nothing')
          if (lroot.and.ip<=5) &
               print*,"set_border_hydro: borderuu='nothing'"
-
+!
+      case('initial-condition') 
+        if (lsave) then 
+          fsave_init(:,m-m1+1,:)=f(l1:l2,m,npoint,iux:iuy)
+          lsave=.false.
+          print*,'saving it=',it,itsub
+        endif
+        f_target(:,1)=fsave_init(:,m-m1+1,1)
+        f_target(:,2)=fsave_init(:,m-m1+1,2)
+        f_target(:,3)=fsave_init(:,m-m1+1,3)
+!
       case default
          write(unit=errormsg,fmt=*) &
               'set_border_hydro: No such value for borderuu: ', &
