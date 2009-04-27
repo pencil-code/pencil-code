@@ -46,6 +46,7 @@ module Chemistry
   real :: Cv_const=impossible
   real :: init_x1=-0.2,init_x2=0.2
   real :: init_TT1=400, init_TT2=2400., init_ux
+  real :: str_thick=0.02
   real :: init_pressure=10.13e5      
 !
   logical :: lone_spec=.false.
@@ -117,7 +118,7 @@ module Chemistry
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
       amplchemk,amplchemk2, chem_diff,nu_spec, BinDif_simple, visc_simple, &
       lambda_const, visc_const,Cp_const,Cv_const,diffus_const,init_x1,init_x2, &
-      init_TT1,init_TT2,init_ux,l1step_test,Sc_number,init_pressure,lfix_Sc
+      init_TT1,init_TT2,init_ux,l1step_test,Sc_number,init_pressure,lfix_Sc, str_thick
 
 
 ! run parameters
@@ -686,7 +687,7 @@ subroutine flame_front(f)
                /(init_TT2-init_TT1)
           f(k,:,:,i_H2)=initial_massfractions(ichem_H2) &
                *(exp(f(k,:,:,ilnTT))-init_TT2) &
-               /(init_TT1-init_TT2)          
+               /(init_TT1-init_TT2)
         endif
 !
 !  Initialize oxygen
@@ -720,7 +721,26 @@ subroutine flame_front(f)
 !
 !  Initialize velocity
 !
-      f(:,:,:,iux)=init_ux*exp(log_inlet_density)/exp(f(:,:,:,ilnrho))
+   !   f(:,:,:,iux)=init_ux*exp(log_inlet_density)/exp(f(:,:,:,ilnrho))
+
+      if (nygrid .le. 1) then
+       do k=1,mx
+        f(k,:,:,iux)=init_ux*exp(f(l1,:,:,ilnrho))/exp(f(k,:,:,ilnrho))
+       enddo
+      else
+        do k=1,mx
+        do j=1,my
+         if (abs(y(j))<str_thick) then
+          f(k,j,:,iux)=init_ux*(1.-(y(j)/str_thick)**2) &
+                      *exp(f(l1,j,:,ilnrho))/exp(f(k,j,:,ilnrho))
+         else
+          f(k,j,:,iux)=0.
+         endif
+        enddo
+        enddo
+      endif
+
+
 !
 !  Check if we want nolog of density
 !
@@ -954,21 +974,16 @@ subroutine flame_front(f)
                 !      +f(:,:,:,ichemspec(j))*unit_mass &
                 !     /species_constants(j,imass)/mu1_full(:,:,:) &
                 !     /Bin_Diff_coef(:,:,:,j,k)
-                
                    tmp_sum(:,:,:)=tmp_sum(:,:,:) &
                         +XX_full(:,:,:,j)/Bin_Diff_coef(:,:,:,j,k)
-
-                 
 
                 enddo
           !      Diff_full(:,:,:,k)=(1.-f(:,:,:,ichemspec(k))) &
           !          *mu1_full(:,:,:)/tmp_sum
 
                  Diff_full(:,:,:,k)=(1.-f(:,:,:,ichemspec(k)))/tmp_sum
-               
 
 !print*,minval(Diff_full(:,4,4,k)),maxval(Diff_full(:,4,4,k)),k
-
 !print*,'Diff=',(Diff_full(l2,4,4,k)),1./tmp_sum(l2,4,4),(f(l2,4,4,ichemspec(k))),k
 
               enddo

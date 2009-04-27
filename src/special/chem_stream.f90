@@ -81,6 +81,7 @@ module Special
   integer :: index_H2=0, index_O2=0, index_H2O=0, index_N2=0
   real :: init_x1=-0.2,init_x2=0.2, init_lnrho, init_ux
   real :: init_TT1=400.,init_TT2=2400.,init_lnTT1=5.7,init_p2=1.013e6
+  real :: str_thick=0.
 ! Keep some over used pencils
 !
 
@@ -89,7 +90,7 @@ module Special
    initstream,rho_init, T_init, Y1_init, Y2_init, Y3_init, H_max, ux_init, &
    index_H2, index_O2, index_H2O, &
    index_N2,init_TT1,init_TT2,init_lnTT1, init_x1, init_x2,  init_p2, &
-   left_buffer_zone, init_lnrho, init_ux, lT_prof1, lT_prof2
+   left_buffer_zone, init_lnrho, init_ux, lT_prof1, lT_prof2, str_thick
 ! run parameters
   namelist /chem_stream_run_pars/ &
    test
@@ -791,7 +792,7 @@ subroutine flame_spd_invert(f)
       !      
       !
       !
-      f(l2,:,:,i_O2)=(f(l1,:,:,i_O2)/32.-f(l1,:,:,i_H2)/4.)*32. 
+      
       f(l1,:,:,iux)=ux_init
       !
       do k=1,mx 
@@ -821,16 +822,44 @@ subroutine flame_spd_invert(f)
        endif
 
         !
-        if (x(k)>x1_front) then
-          f(k,:,:,i_H2O)=f(l1,:,:,i_H2)/2.*18. &
+
+
+        f(l2,:,:,i_O2)=(f(l1,:,:,i_O2)/32.-f(l1,:,:,i_H2)/4.)*32. 
+
+        if (nygrid .le. 1) then
+         if (x(k)>x1_front) then
+           f(k,:,:,i_H2O)=f(l1,:,:,i_H2)/2.*18. &
                *(exp(f(k,:,:,ilnTT))-TT1_front) &
                /(TT2_front-TT1_front)
-          f(k,:,:,i_H2)=f(l1,:,:,i_H2) &
+           f(k,:,:,i_H2)=f(l1,:,:,i_H2) &
                *(exp(f(k,:,:,ilnTT))-TT2_front) &
-               /(TT1_front-TT2_front)          
+               /(TT1_front-TT2_front)
+         endif
+        else
+         if (x(k)>x1_front) then
+           f(k,:,:,i_H2O)=f(l1,:,:,i_H2)/2.*18. &
+               *(exp(f(k,:,:,ilnTT))-TT1_front) &
+               /(TT2_front-TT1_front)
+         endif
+           f(k,:,:,i_H2)=0.
+
+    !     if (x(k)>x1_front) then
+    !      f(k,:,:,i_H2O)=f(l1,:,:,i_H2)/2.*18. &
+    !          *(exp(f(k,:,:,ilnTT))-TT1_front) &
+    !          /(TT2_front-TT1_front)
+    !     endif
+    !      do j=1,my
+    !         if (abs(y(j))<str_thick) then
+    !         f(k,j,:,i_H2)=f(l1,j,:,i_H2) &
+    !          *(exp(f(k,j,:,ilnTT))-TT2_front) &
+    !          /(TT1_front-TT2_front)
+    !         else
+    !          f(k,j,:,i_H2)=0.
+    !        endif 
+    !      enddo
         endif
 
-       
+
 
         !
         if (x(k)>x2_front) then
@@ -854,12 +883,27 @@ subroutine flame_spd_invert(f)
       !
  !     f(l1,:,:,iux)=ux_init*exp(f(l2,:,:,ilnrho))/exp(f(l1,:,:,ilnrho))
       !
-      do k=1,mx
+
+      if (nygrid .le. 1) then
+       do k=1,mx
 !        f(k,:,:,iux)=(f(l1,:,:,iux)-ux_init) &
 !             *(exp(f(k,:,:,ilnTT))-TT2_front)/(TT1_front-TT2_front)&
 !             +ux_init        
-      f(k,:,:,iux)=ux_init*exp(f(l1,:,:,ilnrho))/exp(f(k,:,:,ilnrho))
-      enddo
+        f(k,:,:,iux)=ux_init*exp(f(l1,:,:,ilnrho))/exp(f(k,:,:,ilnrho))
+       enddo
+      else
+       do k=1,mx
+        do j=1,my
+         if (abs(y(j))<str_thick) then
+          f(k,j,:,iux)=ux_init*(1.-(y(j)/str_thick)**2) &
+                      *exp(f(l1,j,:,ilnrho))/exp(f(k,j,:,ilnrho))
+         else
+          f(k,j,:,iux)=0.
+         endif
+        enddo
+       enddo
+      endif
+
       !
    endsubroutine flame_spd_invert
 !**************************************************************************
@@ -1053,7 +1097,7 @@ subroutine flame_spd_2D(f,x1_front,x2_front)
       integer :: i,i1,j,vr,k
       real :: value1, value2, yy0
 
-      yy0=3.
+    
 
       vr=bc%ivar
 
@@ -1066,16 +1110,17 @@ subroutine flame_spd_2D(f,x1_front,x2_front)
 
        if (vr==1) then
         do k=1,my
-            if (abs(y(k)) .lt. yy0) then
-              do i=0,nghost
-                   f(l1-i,k,:,vr)=value1*(1.-(y(k)/yy0)**2); 
-              enddo
+            if (abs(y(k)) .lt. str_thick) then
+           !   do i=0,nghost
+                   f(l1-i*0.,k,:,vr)=ux_init*(1.-(y(k)/str_thick)**2); 
+          !    enddo
             else
-              do i=0,nghost;   f(l1-i,k,:,vr)=0.;  enddo
-            !  do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)+sgn*f(l1+i,:,:,vr); enddo
+            !  do i=0,nghost; 
+                f(l1-i*0.,k,:,vr)=0.; 
+             !   enddo
             endif
-        
         enddo
+          do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)+sgn*f(l1+i,:,:,vr); enddo
        endif
 
 
