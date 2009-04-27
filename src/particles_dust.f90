@@ -863,6 +863,19 @@ k_loop:   do while (.not. (k>npar_loc))
           if (nygrid/=1) &
               fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
 
+        case ('gaussian-z-pure')
+          if (lroot) print*, 'init_particles: Gaussian particle positions'
+          do k=1,npar_loc
+            call random_number_wrapper(r)
+            call random_number_wrapper(p)
+            if (nprocz==2) then
+              if (ipz==0) fp(k,izp)=-abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
+              if (ipz==1) fp(k,izp)= abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
+            else
+              fp(k,izp)= zp0*sqrt(-2*alog(r))*cos(2*pi*p)
+            endif
+          enddo
+
         case ('gaussian-r')
           if (lroot) print*, 'init_particles: Gaussian particle positions'
           do k=1,npar_loc
@@ -1037,37 +1050,35 @@ k_loop:   do while (.not. (k>npar_loc))
             print*, 'init_particles: beta_glnrho_global=', beta_glnrho_global
           endif
           cs=sqrt(cs20)
-          if (ldragforce_gas_par) then
 !  Calculate average dust-to-gas ratio in box.
-            if (ldensity_nolog) then
-              eps = sum(f(l1:l2,m1:m2,n1:n2,irhop))/ &
-                  sum(f(l1:l2,m1:m2,n1:n2,ilnrho))
-            else
-              eps = sum(f(l1:l2,m1:m2,n1:n2,irhop))/ &
-                  sum(exp(f(l1:l2,m1:m2,n1:n2, ilnrho)))
-            endif
- 
-            if (lroot) print*, 'init_particles: average dust-to-gas ratio=', eps
-!  Set gas velocity field.
-            do l=l1,l2; do m=m1,m2; do n=n1,n2
-!  Take either global or local dust-to-gas ratio.
-              if (.not. ldragforce_equi_global_eps) then
-                if (ldensity_nolog) then
-                  eps = f(l,m,n,irhop)/f(l,m,n,ilnrho)
-                else
-                  eps = f(l,m,n,irhop)/exp(f(l,m,n,ilnrho))
-                endif
-              endif
- 
-              f(l,m,n,iux) = f(l,m,n,iux) - &
-                  beta_glnrho_global(1)*eps*Omega*tausp/ &
-                  ((1.0+eps)**2+(Omega*tausp)**2)*cs
-              f(l,m,n,iuy) = f(l,m,n,iuy) + &
-                  beta_glnrho_global(1)*(1+eps+(Omega*tausp)**2)/ &
-                  (2*((1.0+eps)**2+(Omega*tausp)**2))*cs
- 
-            enddo; enddo; enddo
+          if (ldensity_nolog) then
+            eps = sum(f(l1:l2,m1:m2,n1:n2,irhop))/ &
+                sum(f(l1:l2,m1:m2,n1:n2,ilnrho))
+          else
+            eps = sum(f(l1:l2,m1:m2,n1:n2,irhop))/ &
+                sum(exp(f(l1:l2,m1:m2,n1:n2, ilnrho)))
           endif
+
+          if (lroot) print*, 'init_particles: average dust-to-gas ratio=', eps
+!  Set gas velocity field.
+          do l=l1,l2; do m=m1,m2; do n=n1,n2
+!  Take either global or local dust-to-gas ratio.
+            if (.not. ldragforce_equi_global_eps) then
+              if (ldensity_nolog) then
+                eps = f(l,m,n,irhop)/f(l,m,n,ilnrho)
+              else
+                eps = f(l,m,n,irhop)/exp(f(l,m,n,ilnrho))
+              endif
+            endif
+
+            f(l,m,n,iux) = f(l,m,n,iux) - &
+                beta_glnrho_global(1)*eps*Omega*tausp/ &
+                ((1.0+eps)**2+(Omega*tausp)**2)*cs
+            f(l,m,n,iuy) = f(l,m,n,iuy) + &
+                beta_glnrho_global(1)*(1+eps+(Omega*tausp)**2)/ &
+                (2*((1.0+eps)**2+(Omega*tausp)**2))*cs
+
+          enddo; enddo; enddo
 !  Set particle velocity field.
           do k=1,npar_loc
 !  Take either global or local dust-to-gas ratio.
