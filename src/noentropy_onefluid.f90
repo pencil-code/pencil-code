@@ -5,6 +5,8 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lentropy = .false.
+! CPARAM logical, parameter :: ltemperature = .false.
+!
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
@@ -355,5 +357,17 @@ module Entropy
       if (ip==1) print*,x,y,z,glhc  !(to remove compiler warnings)
 !
     endsubroutine gradloghcond
+!***********************************************************************
+    subroutine calc_heatcond_ADI(finit,f)
+!
+!  Dummy subroutine.
+!
+      use Cparam
+! 
+      implicit none
+!
+      real, dimension(mx,my,mz,mfarray) :: finit,f
+! 
+    endsubroutine calc_heatcond_ADI
 !***********************************************************************
 endmodule Entropy
