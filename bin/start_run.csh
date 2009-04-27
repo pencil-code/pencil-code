@@ -250,20 +250,20 @@ endif
 # Write $PBS_JOBID or $LOADL_STEP_ID to file
 # (important when run is migrated within the same job)
 if ($?PBS_JOBID) then
-  echo $PBS_JOBID "  RUN STARTED on "$PBS_O_QUEUE `date` \
+  echo $PBS_JOBID "  # RUN STARTED on "$PBS_O_QUEUE `date` \
     >> $datadir/jobid.dat
 endif
 if ($?LOADL_STEP_ID) then
-  echo $LOADL_STEP_ID "  RUN STARTED on "$LOADL_STEP_CLASS `date` \
+  echo $LOADL_STEP_ID "  # RUN STARTED on "$LOADL_STEP_CLASS `date` \
     >> $datadir/jobid.dat
 endif
 if ($?SLURM_JOBID) then
-  echo $SLURM_JOBID "  RUN STARTED on "$SLURMD_NODENAME `date` \
+  echo $SLURM_JOBID "  # RUN STARTED on "$SLURMD_NODENAME `date` \
     >> $datadir/jobid.dat
 endif
 # EASY job (PDC):
 if ($?SP_JID) then
-  echo $SP_JID "  RUN STARTED on " `date` \
+  echo $SP_JID "  # RUN STARTED on " `date` \
     >> $datadir/jobid.dat
 endif
 
@@ -284,10 +284,15 @@ pc_deprecated_slice_links
 
 # Write $PBS_JOBID to file (important when run is migrated within the same job)
 if ($?PBS_JOBID) then
-  echo $PBS_JOBID " RUN FINISHED on "$PBS_O_QUEUE `date` >> $datadir/jobid.dat
+  echo $PBS_JOBID " # RUN FINISHED on "$PBS_O_QUEUE `date` >> $datadir/jobid.dat
 endif
 if ($?SLURM_JOBID) then
-  echo $SLURM_JOBID " RUN FINISHED on "$SLURMD_NODENAME `date` >> $datadir/jobid.dat
+  echo $SLURM_JOBID " # RUN FINISHED on "$SLURMD_NODENAME `date` >> $datadir/jobid.dat
+endif
+# EASY job (PDC):
+if ($?SP_JID) then
+  echo $SP_JID "  # RUN FINISHED on " `date` \
+    >> $datadir/jobid.dat
 endif
 
 # look for RERUN file 

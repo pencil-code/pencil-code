@@ -1107,8 +1107,12 @@ else if ($hn =~ *.pdc.kth.se) then
   echo "Linux cluster at PDC, KTH in Stockholm"
   module add i-compilers mpi easy
   set mpirun = mpirun
-  set mpirunops = "-machinefile $SP_HOSTFILE"
-  cat $SP_HOSTFILE > nodelist
+  if ($?SP_HOSTFILE) then
+    cat $SP_HOSTFILE > nodelist
+    set mpirunops = "-machinefile $SP_HOSTFILE"
+  else
+    set mpirunops = ""
+  endif
   #
   # use unique scratch directory name, just in case it wasn't cleaned up
   #
