@@ -1056,54 +1056,50 @@ k_loop:   do while (.not. (k>npar_loc))
                 sum(f(l1:l2,m1:m2,n1:n2,ilnrho))
           else
             eps = sum(f(l1:l2,m1:m2,n1:n2,irhop))/ &
-                sum(exp(f(l1:l2,m1:m2,n1:n2, ilnrho)))
+                sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
           endif
-
+!
           if (lroot) print*, 'init_particles: average dust-to-gas ratio=', eps
 !  Set gas velocity field.
           do l=l1,l2; do m=m1,m2; do n=n1,n2
 !  Take either global or local dust-to-gas ratio.
             if (.not. ldragforce_equi_global_eps) then
               if (ldensity_nolog) then
-                eps = f(l,m,n,irhop)/f(l,m,n,ilnrho)
+                eps=f(l,m,n,irhop)/f(l,m,n,ilnrho)
               else
-                eps = f(l,m,n,irhop)/exp(f(l,m,n,ilnrho))
+                eps=f(l,m,n,irhop)/exp(f(l,m,n,ilnrho))
               endif
             endif
-
+!
             f(l,m,n,iux) = f(l,m,n,iux) - &
                 beta_glnrho_global(1)*eps*Omega*tausp/ &
                 ((1.0+eps)**2+(Omega*tausp)**2)*cs
             f(l,m,n,iuy) = f(l,m,n,iuy) + &
                 beta_glnrho_global(1)*(1+eps+(Omega*tausp)**2)/ &
                 (2*((1.0+eps)**2+(Omega*tausp)**2))*cs
-
+!
           enddo; enddo; enddo
 !  Set particle velocity field.
           do k=1,npar_loc
 !  Take either global or local dust-to-gas ratio.
             if (.not. ldragforce_equi_global_eps) then
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-              if (ldragforce_gas_par) then
-                if (ldensity_nolog) then
-                  eps = f(ix0,iy0,iz0,irhop)/f(ix0,iy0,iz0,ilnrho)
-                else
-                  eps = f(ix0,iy0,iz0,irhop)/exp(f(ix0,iy0,iz0,ilnrho))
-                endif
+              if (ldensity_nolog) then
+                eps=f(ix0,iy0,iz0,irhop)/f(ix0,iy0,iz0,ilnrho)
               else
-                eps=0.0
+                eps=f(ix0,iy0,iz0,irhop)/exp(f(ix0,iy0,iz0,ilnrho))
               endif
             endif
-
+!
             fp(k,ivpx) = fp(k,ivpx) + &
                 beta_glnrho_global(1)*Omega*tausp/ &
                 ((1.0+eps)**2+(Omega*tausp)**2)*cs
             fp(k,ivpy) = fp(k,ivpy) + &
                 beta_glnrho_global(1)*(1+eps)/ &
                 (2*((1.0+eps)**2+(Omega*tausp)**2))*cs
-
+!
           enddo
-
+!
         case('dragforce_equi_dust')
 !
 !  Equilibrium between drag force and Coriolis force on the dust.
