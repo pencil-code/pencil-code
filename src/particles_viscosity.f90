@@ -331,11 +331,9 @@ module Particles_viscosity
 !*******************************************************************
     subroutine rprint_particles_viscosity(lreset,lwrite)
 !
-!  Writes ishock to index.pro file
+!  Read and register diagnostic parameters.
 !
-!  07-oct-08/anders: adapted
-!
-      use Sub
+!  28-mar-09/anders: adapted
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -352,7 +350,7 @@ module Particles_viscosity
         endif
       endif
 !
-      if (NO_WARN) print*,lreset  !(to keep compiler quiet)
+      call keep_compiler_quiet(lreset)
 !
     endsubroutine rprint_particles_viscosity
 !***********************************************************************
