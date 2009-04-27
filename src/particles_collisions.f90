@@ -30,6 +30,8 @@ module Particles_collisions
   logical :: lcollision_random_angle=.false., lcollision_big_ball=.false.
   character (len=labellen) :: icoll='random-angle'
 !
+  integer :: idiag_ncoll
+!
   namelist /particles_coll_run_pars/ &
       lambda_mfp_single, coeff_restitution, icoll
 !
@@ -65,7 +67,7 @@ module Particles_collisions
 !  23-mar-09/anders: coded
 !
       use General
-      use Sub, only: cross
+      use Sub, only: cross, sum_weighted_name
 !
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
@@ -73,8 +75,12 @@ module Particles_collisions
       real, dimension (3) :: vvcm, vvkcm, vvkcmnew
       real, dimension (3) :: nvec, vvkcm_normal, vvkcm_parall
       real, dimension (3) :: tmp1, tmp2
-      real :: deltavjk, tau_coll1, prob, r, theta_rot, phi_rot
+      real :: deltavjk, tau_coll1, prob, r, theta_rot, phi_rot, ncoll
       integer :: l, j, k
+!
+!  Reset collision counter.
+!
+      ncoll=0.0
 !
 !  Pencil loop.
 !
@@ -183,6 +189,8 @@ module Particles_collisions
                       vvkcm=fp(k,ivpx:ivpz)-vvcm
                       vvkcm_normal=nvec*(sum(vvkcm*nvec))
                       vvkcm_parall=vvkcm-vvkcm_normal
+                      if (coeff_restitution/=1.0) &
+                          vvkcm_normal=vvkcm_normal*coeff_restitution
                       fp(k,ivpx:ivpz)=vvcm+vvkcm_parall-vvkcm_normal
                       fp(j,ivpx:ivpz)=vvcm-vvkcm_parall+vvkcm_normal
                     endif
@@ -205,6 +213,7 @@ module Particles_collisions
                       print*, '  ', tmp2
                       print*, '  ', tmp1+tmp2
                     endif
+                    ncoll=ncoll+1.0
                   endif
                 endif
               enddo
@@ -215,6 +224,16 @@ module Particles_collisions
 !
         enddo
       enddo
+!
+      if (mod(it,it1)==0) then
+        if (ncoll/=0.0) then
+          if (idiag_ncoll/=0) &
+              call sum_weighted_name((/ncoll/),(/1.0/),idiag_ncoll)
+        else
+          if (idiag_ncoll/=0) &
+              call sum_weighted_name((/0.0/),(/0.0/),idiag_ncoll)
+        endif
+      endif
 !
     endsubroutine calc_particles_collisions
 !***********************************************************************
@@ -243,5 +262,28 @@ module Particles_collisions
       write(unit,NML=particles_coll_run_pars)
 !
     endsubroutine write_particles_coll_run_pars
+!*******************************************************************
+    subroutine rprint_particles_collisions(lreset,lwrite)
+!
+!  Read and register diagnostic parameters.
+!
+!  28-mar-09/anders: adapted
+!
+      use Sub
+!
+      logical :: lreset
+      logical, optional :: lwrite
+!
+      integer :: iname
+!
+      if (lreset) then
+        idiag_ncoll=0
+      endif
+!
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'ncoll',idiag_ncoll)
+      enddo
+!
+    endsubroutine rprint_particles_collisions
 !***********************************************************************
 endmodule Particles_collisions

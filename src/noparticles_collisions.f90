@@ -68,4 +68,13 @@ module Particles_collisions
 !
     endsubroutine write_particles_coll_run_pars
 !***********************************************************************
+    subroutine rprint_particles_collisions(lreset,lwrite)
+!
+      logical :: lreset
+      logical, optional :: lwrite
+!
+      call keep_compiler_quiet(lreset,lwrite)
+!
+    endsubroutine rprint_particles_collisions
+!*******************************************************************
 endmodule Particles_collisions

@@ -53,13 +53,14 @@ module Particles_main
 !
       if (lroot) open(3, file=trim(datadir)//'/index.pro', &
           STATUS='old', POSITION='append')
-      call rprint_particles          (lreset,LWRITE=lroot)
-      call rprint_particles_radius   (lreset,LWRITE=lroot)
-      call rprint_particles_spin     (lreset,LWRITE=lroot)
-      call rprint_particles_number   (lreset,LWRITE=lroot)
-      call rprint_particles_selfgrav (lreset,LWRITE=lroot)
-      call rprint_particles_nbody    (lreset,LWRITE=lroot)
-      call rprint_particles_viscosity(lreset,LWRITE=lroot)
+      call rprint_particles           (lreset,LWRITE=lroot)
+      call rprint_particles_radius    (lreset,LWRITE=lroot)
+      call rprint_particles_spin      (lreset,LWRITE=lroot)
+      call rprint_particles_number    (lreset,LWRITE=lroot)
+      call rprint_particles_selfgrav  (lreset,LWRITE=lroot)
+      call rprint_particles_nbody     (lreset,LWRITE=lroot)
+      call rprint_particles_viscosity (lreset,LWRITE=lroot)
+      call rprint_particles_collisions(lreset,LWRITE=lroot)
       if (lroot) close(3)
 !
     endsubroutine particles_rprint_list
