@@ -4,6 +4,7 @@
   public :: pencil_criteria_borderprofiles
   public :: calc_pencils_borderprofiles
   public :: border_quenching, border_driving
+  public :: set_border_initcond
 
   integer, parameter, public :: i_BORDER_ZERO    = 1
   integer, parameter, public :: i_BORDER_SPECIAL = 2

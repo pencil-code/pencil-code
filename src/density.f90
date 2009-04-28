@@ -217,7 +217,7 @@ module Density
         case ('shock','diff-shock','diffrho-shock')
           if (lroot) print*,'diffusion: shock diffusion'
           ldiff_shock=.true.
-        case ('')
+        case ('','none')
           if (lroot .and. (.not. lnothing)) print*,'diffusion: nothing'
         case default
           write(unit=errormsg,fmt=*) 'initialize_density: ', &
@@ -1201,14 +1201,6 @@ module Density
         if (mass_source_profile=='cylindric') lpenc_requested(i_rcyl_mn)=.true.
       endif
 !
-      if (borderlnrho=='stratification') then 
-        lpenc_requested(i_cs2)=.true.
-        lpenc_requested(i_r_mn)=.true.
-        lpenc_requested(i_rcyl_mn)=.true.
-      endif
-!
-      if (borderlnrho=='power-law') lpenc_requested(i_rcyl_mn)=.true.
-!
       lpenc_diagnos2d(i_lnrho)=.true.
       lpenc_diagnos2d(i_rho)=.true.
 !
@@ -1662,18 +1654,13 @@ module Density
 !
 !  28-jul-06/wlad: coded
 !
-      use BorderProfiles,  only: border_driving
-      use Sub,             only: power_law
-      use Mpicomm,         only: stop_it
-      use Gravity,         only: potential,acceleration
-      use FArrayManager
+      use BorderProfiles,  only: border_driving,set_border_initcond
+      use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx) :: f_target
-      real :: lnrhomid,strat,tmp1,tmp2,rmid,ptlaw
       type (pencil_case)  :: p
-      integer            :: i
 !
       select case(borderlnrho)
 !
@@ -1695,69 +1682,10 @@ module Density
           f_target=lnrho_const
         endif
 !
-      case('power-law')
-        if (plaw.eq.0) call stop_it("borderlnrho: no need to call a power-"//&
-             "law border for a flat density profile")
-        do i=1,nx
-          if ( ((p%rborder_mn(i).ge.r_int).and.&
-                (p%rborder_mn(i).le.r_int+2*wborder_int)).or.&
-               ((p%rborder_mn(i).ge.r_ext-2*wborder_ext).and.&
-                (p%rborder_mn(i).le.r_ext))) then
+      case('initial-condition')
+        call set_border_initcond(f,ilnrho,f_target)
 !
-            if (ldensity_nolog) then
-              call power_law(rho_const,p%rcyl_mn(i),plaw,f_target(i),r_ref)
-            else
-              f_target(i)=lnrho_const - plaw*log(p%rcyl_mn(i)/r_ref)
-            endif
-!
-          endif
-        enddo
-!
-      case('exponential')
-        if (ldensity_nolog) then
-          f_target = rho0*exp(-p%rcyl_mn/r_ref)
-        else
-          f_target = lnrho0 - p%rcyl_mn/r_ref
-        endif
-!
-      case('stratification')
-        if (lspherical_coords) call get_ptlaw(ptlaw)
-        do i=1,nx
-          if ( ((p%rborder_mn(i).ge.r_int).and.&
-                (p%rborder_mn(i).le.r_int+2*wborder_int)).or.&
-               ((p%rborder_mn(i).ge.r_ext-2*wborder_ext).and.&
-                (p%rborder_mn(i).le.r_ext))) then
-!            
-            if (lexponential_smooth) then
-              !radial_percent_smooth = percentage of the grid
-              !that the smoothing is applied
-              rmid=rshift+(xyz1(1)-xyz0(1))/radial_percent_smooth
-              lnrhomid=log(rho0) &
-                  + plaw*log((1-exp( -((p%rcyl_mn(i)-rshift)/rmid)**2 ))/&
-                  p%rcyl_mn(i))
-            else
-              lnrhomid=log(rho0)-&
-                  .5*plaw*log((p%rcyl_mn(i)/r_ref)**2+rsmooth**2)
-            endif
-            if (lspherical_coords) then 
-              call acceleration(R=p%r_mn(i),G_R=tmp1)
-              tmp2=-tmp1*p%r_mn(i) - p%cs2(i)*(plaw + ptlaw)*gamma11
-              !lat=pi/2-y(m)
-              strat=(tmp2*gamma/p%cs2(i)) * log(cos(pi/2-y(m)))
-            else 
-              call potential(R=p%r_mn(i),POT=tmp1)
-              call potential(R=p%rcyl_mn(i),POT=tmp2)
-              strat=-gamma*(tmp1-tmp2)/p%cs2(i)
-            endif
-!
-            f_target(i)=lnrhomid+strat
-!
-            if (ldensity_nolog) &
-                 f_target(i)=exp(f_target(i))
-          endif
-        enddo
-!
-     case('nothing')
+      case('nothing')
         if (lroot.and.ip<=5) &
              print*,"set_border_lnrho: borderlnrho='nothing'"
 !

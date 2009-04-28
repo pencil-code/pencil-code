@@ -180,6 +180,74 @@ module BorderProfiles
 !
     endsubroutine calc_pencils_borderprofiles
 !***********************************************************************
+    subroutine set_border_initcond(f,ivar,tmp)
+!
+      use Messages, only: fatal_error
+!
+      real, dimension (mx,my,mz,mfarray),intent(in) :: f
+      real, dimension (nx), intent(out) :: tmp
+      integer,intent(in) :: ivar
+!
+      if (lspherical_coords.or.lcylinder_in_a_box) then
+        call set_border_xy(f,ivar,tmp)
+      elseif (lcylindrical_coords) then
+        call set_border_xz(f,ivar,tmp)
+      else 
+        print*,'The system has no obvious symmetry. It is    '
+        print*,'better to stop and check how you want to save'
+        print*,'the initial condition for border profiles    '
+        call fatal_error('set_border_hydro','')
+      endif
+!
+    endsubroutine set_border_initcond
+!***********************************************************************
+    subroutine set_border_xy(f,ivar,tmp)
+!
+!  Save the initial condition for a quantity that is 
+!  symmetric in the z axis. That can be a vertically 
+!  symmetric box in cartesian coordinates or an 
+!  azimuthally symmetric box in spherical coordinates. 
+!
+!  28-apr-09/wlad: coded
+!
+      real, dimension (mx,my,mz,mfarray),intent(in) :: f
+      real, dimension (nx,ny,mvar), save :: fsave_init
+      real, dimension (nx), intent(out) :: tmp
+      integer,intent(in) :: ivar
+!
+      if (itsub==1.and.it==1) then
+        fsave_init(:,m-m1+1,ivar)=f(l1:l2,m,npoint,ivar)
+        if (headtt.and.ip <= 6) &
+             print*,'saving initial condition for ivar=',ivar
+      endif
+!
+      tmp=fsave_init(:,m-m1+1,ivar)
+!
+    endsubroutine set_border_xy
+!***********************************************************************
+    subroutine set_border_xz(f,ivar,tmp)
+!
+!  Save the initial condition for a quantity that is 
+!  symmetric in the y axis. An azimuthally symmetric 
+!  box in cylindrical coordinates, for instance.
+!
+!  28-apr-09/wlad: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,nz,mvar), save :: fsave_init
+      real, dimension (nx), intent(out) :: tmp
+      integer,intent(in) :: ivar
+!
+      if (itsub==1.and.it==1) then
+         fsave_init(:,n-n1+1,ivar)=f(l1:l2,mpoint,n,ivar)
+         if (headtt.and.ip <= 6) &
+              print*,'saving initial condition for ivar=',ivar
+      endif
+!
+      tmp=fsave_init(:,n-n1+1,ivar)
+!
+    endsubroutine set_border_xz
+!***********************************************************************
     subroutine border_driving(f,df,p,f_target,j)
 !
 !  Position-dependent driving term that attempts to drive pde

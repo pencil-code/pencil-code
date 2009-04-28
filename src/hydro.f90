@@ -1026,15 +1026,6 @@ module Hydro
         if (lcylinder_in_a_box) lpenc_requested(i_rcyl_mn)=.true.
       endif
 !
-      if ((borderuu=='global-shear'      .or. &
-           borderuu=='global-shear-mhs') .and. &
-           .not.lspherical_coords)             then
-        lpenc_requested(i_rcyl_mn)     =.true.
-        lpenc_requested(i_rcyl_mn1)    =.true.
-        lpenc_requested(i_phix)        =.true.
-        lpenc_requested(i_phiy)        =.true.
-      endif
-!
 !  1/rho needed for correcting the damping term
 !
       if (tau_damp_ruxm/=0..or.tau_damp_ruym/=0..or.tau_damp_ruzm/=0.) &
@@ -1478,7 +1469,7 @@ module Hydro
       if (tau_damp_ruzm/=0.) &
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-ruzm*p%rho1*tau_damp_ruzm1
 !
-!  interface for your personal subroutines calls
+!  Interface for your personal subroutines calls
 !
       if (lspecial) call special_calc_hydro(f,df,p)
 !
@@ -2084,204 +2075,34 @@ module Hydro
 !
 !  28-jul-06/wlad: coded
 !
-      use BorderProfiles,  only: border_driving
-      use EquationOfState, only: cs0,cs20,get_ptlaw,rho0
-      use Particles_nbody, only: get_totalmass
-      use Gravity,         only: g0,qgshear
-      use Sub,             only: power_law
+      use BorderProfiles,  only: border_driving,set_border_initcond
       use Mpicomm,         only: stop_it
-      use SharedVariables
-      use Deriv,           only: der_pencil
-      use General,         only: tridag
-      use Selfgravity,     only: rhs_poisson_const
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: f_target
-      real    :: ptlaw,g0_,B0
-      real :: tmp,OO,corr,corrmag
-      integer :: ju,j,i,ierr
-      real, pointer :: zmode,plaw
-!
-      real :: dr,r0,alpha
-      real, dimension(nx) :: tmp_nx,a_tri,b_tri,c_tri,d_tri,u_tri
-      real, dimension(nx) :: usg,corr_nx,uu_nx,dens
-      real, dimension(mx) :: potential,gpotential
-      logical :: err
-!
-      logical, save :: lsave=.true.
-      real, save, dimension(nx,ny,3) :: fsave_init
-!
-! these tmps and where's are needed because these square roots
-! go negative in the frozen inner disc if the sound speed is big enough
-! (like a corona, no hydrostatic equilibrium)
+      integer :: j,ju
 !
       select case(borderuu)
+!
       case('zero','0')
         f_target=0.
+!
       case('constant')
         do j=1,3
           f_target(:,j) = uu_const(j)
         enddo
-      case('keplerian')  
-        if (lcartesian_coords) &
-            call stop_it("keplerian border: not implemented"//& 
-            "for Cartesian grids yet")
-        if (lgrav) then 
-          g0_=g0
-        elseif (lparticles_nbody) then
-          call get_totalmass(g0_)
-        else 
-          call stop_it("set_border_hydro: can't get g0")
-        endif
-        !don't care about the pressure term, just drive it to Keplerian
-        !in the inner boundary ONLY!!
-        do i=1,nx
-          if ( ((p%rborder_mn(i).ge.r_int).and.&
-                (p%rborder_mn(i).le.r_int+2*wborder_int)).or.&
-               ((p%rborder_mn(i).ge.r_ext-2*wborder_ext).and.&
-                (p%rborder_mn(i).le.r_ext))) then
-            call power_law(g0_,p%r_mn(i),qgshear,OO)
-            f_target(i,1) = 0.
-            if (lspherical_coords) then
-              f_target(i,2) = 0.
-              f_target(i,3) = OO*p%r_mn(i)
-            elseif (lcylindrical_coords) then
-              f_target(i,2) = OO*p%r_mn(i)
-              f_target(i,3) = 0.
-            endif
-          endif
-        enddo
-
-      case('global-shear')
-        if (lspherical_coords) call fatal_error("set_border_hydro",&
-            "global-shear not implemented for spherical coords")
-        !get g0
-        if (lgrav) then 
-          g0_=g0
-        elseif (lparticles_nbody) then
-          call get_totalmass(g0_)
-        else 
-          call stop_it("set_border_hydro: can't get g0")
-        endif
-        !get the exponents for density and cs2
-        call get_ptlaw(ptlaw)
-        call get_shared_variable('plaw',plaw,ierr)
-        if (ierr/=0) call stop_it("borderuu: "//&
-             "there was a problem when getting plaw")
-        !no need to do the whole nx array. the border is all we need
-        do i=1,nx
-          if ( ((p%rborder_mn(i).ge.r_int).and.&
-                (p%rborder_mn(i).le.r_int+2*wborder_int)).or.&
-               ((p%rborder_mn(i).ge.r_ext-2*wborder_ext).and.&
-                (p%rborder_mn(i).le.r_ext))) then
-            call power_law(g0_,p%rcyl_mn(i),2*qgshear,tmp)
-            !minimize use of exponentials if no smoothing is used
-            if (rsmooth.ne.0.) then 
-              corr=cs20*(ptlaw+plaw)*(p%rcyl_mn(i)**2+rsmooth**2)**(-1-.5*ptlaw)
-            else
-              corr=cs20*(ptlaw+plaw)* p%rcyl_mn1(i)**(ptlaw+2)
-            endif
-            OO=sqrt(max(tmp - corr,0.))
-            f_target(i,1) = OO*p%phix(i)*p%rcyl_mn(i)
-            f_target(i,2) = OO*p%phiy(i)*p%rcyl_mn(i)
-            f_target(i,3) = 0.
-          endif
-        enddo
 !
-      case('global-shear-mhs')
-        if (lspherical_coords) call fatal_error("set_border_hydro",&
-            "global-shear-mhs not implemented for spherical coords")
-        !get g0
-        if (lgrav) then 
-          g0_=g0
-        elseif (lparticles_nbody) then
-          call get_totalmass(g0_)
-        else 
-          call stop_it("set_border_hydro: can't get g0")
-        endif
-        !get the exponents for density and cs2
-        call get_ptlaw(ptlaw)
-        call get_shared_variable('plaw',plaw,ierr)
-        if (ierr/=0) calL STOP_IT("borderuu: "//&
-               "there was a problem when getting plaw")
-        call get_shared_variable('zmode',zmode,ierr)
-        if (ierr/=0) call stop_it("borderuu: "//&
-             "there was a problem when getting zmode")
-        B0=Lxyz(3)/(2*zmode*pi)
-        !no need to do the whole nx array. the border is all we need
-        do i=1,nx
-          if ( ((p%rborder_mn(i).ge.r_int).and.&
-                (p%rborder_mn(i).le.r_int+2*wborder_int)).or.&
-               ((p%rborder_mn(i).ge.r_ext-2*wborder_ext).and.&
-                (p%rborder_mn(i).le.r_ext))) then
-            call power_law(g0_,p%rcyl_mn(i),2*qgshear,tmp)
-            !minimize use of exponentials if no smoothing is used
-            if (rsmooth.ne.0.) then 
-              corr=cs20*(ptlaw+plaw)*(p%rcyl_mn(i)**2+rsmooth**2)**(-1-.5*ptlaw)
-            else
-              corr=cs20*(ptlaw+plaw)* p%rcyl_mn1(i)**(ptlaw+2)
-            endif
-            corrmag=B0**2*qgshear*p%rcyl_mn1(i)**(2+2*qgshear) 
-            OO=sqrt(max(tmp-corr-corrmag,0.))
-            f_target(i,1) = OO*p%phix(i)*p%rcyl_mn(i)
-            f_target(i,2) = OO*p%phiy(i)*p%rcyl_mn(i)
-            f_target(i,3) = 0.
-          endif
-        enddo
-!
-      case('global-shear-selfg')
-        call get_ptlaw(ptlaw)
-        call get_shared_variable('plaw',plaw,ierr)
-        if (ierr/=0) call stop_it("borderuu: "//&
-             "there was a problem when getting plaw")
-        !minimize use of exponentials if no smoothing is used
-        !power law density - what's the potential?
-        call power_law(rho0,p%rcyl_mn,plaw,dens)
-        !get potential
-        dr=dx;r0=xyz0(1)
-        do i=2,nx-1
-          alpha= .5/((i-1)+r0/dr)
-          a_tri(i) = (1 - alpha)/dr**2
-          b_tri(i) =-2/dr**2 
-          c_tri(i) = (1 + alpha)/dr**2
-        enddo
-        b_tri(1)=-4/dr**2;c_tri(1) = 4/dr**2;a_tri(1) =0.
-        c_tri(nx)=1/dr**2;b_tri(nx)=-2/dr**2;a_tri(nx)=1/dr**2
-        d_tri = dens*rhs_poisson_const
-        d_tri(nx)=0.
-        call tridag(a_tri,b_tri,c_tri,d_tri,tmp_nx,err)
-        potential(l1:l2)=tmp_nx
-        !ghost zones of the potential
-        do i=1,nghost 
-          potential(l1-i)=2*potential(l1)-potential(l1+i)
-          potential(l2+i)=2*potential(l2)-potential(l2-i)
-        enddo
-        !take the gradient and correct the velocity with it  
-        call der_pencil(1,potential,gpotential)
-        usg=gpotential(l1:l2)*p%rcyl_mn
-        !pressure correction - assumes r_ref=1.
-        corr_nx=cs20*(ptlaw+plaw)* p%rcyl_mn1**(ptlaw)
-        call power_law(g0,p%rcyl_mn,2*qgshear-2,tmp_nx)
-        uu_nx=sqrt(max(tmp_nx -corr_nx + usg,0.))
-        !only for cylindrical
-        f_target(:,2) = uu_nx
-        f_target(:,1) = 0.;f_target(:,3) = 0.
+      case('initial-condition')
+        do j=1,3
+          ju=j+iuu-1
+          call set_border_initcond(f,ju,f_target(:,j))
+        enddo  
 !
       case('nothing')
-         if (lroot.and.ip<=5) &
-              print*,"set_border_hydro: borderuu='nothing'"
-!
-      case('initial-condition') 
-        if (lsave) then 
-          fsave_init(:,m-m1+1,:)=f(l1:l2,m,npoint,iux:iuy)
-          lsave=.false.
-          print*,'saving it=',it,itsub
-        endif
-        f_target(:,1)=fsave_init(:,m-m1+1,1)
-        f_target(:,2)=fsave_init(:,m-m1+1,2)
-        f_target(:,3)=fsave_init(:,m-m1+1,3)
+        if (lroot.and.ip<=5) &
+             print*,"set_border_hydro: borderuu='nothing'"
 !
       case default
          write(unit=errormsg,fmt=*) &

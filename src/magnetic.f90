@@ -1176,19 +1176,6 @@ module Magnetic
         lpenc_requested(i_j2)=.true.
       endif
       if (lresi_dust) lpenc_requested(i_rhop)=.true.
-
-      if ((borderaa=='Alfven-rz').or.(borderaa=='Alfven-zconst')) then
-        if (.not.lspherical_coords) then 
-          lpenc_requested(i_rcyl_mn) =.true.
-          lpenc_requested(i_rcyl_mn1)=.true.
-          lpenc_requested(i_phix)    =.true.
-          lpenc_requested(i_phiy)    =.true.
-        endif
-      endif
-
-      if (borderaa=='toroidal') &
-           lpenc_requested(i_rcyl_mn) =.true.
-
       if (lentropy .or. ltemperature .or. ldt) lpenc_requested(i_rho1)=.true.
       if (lentropy .or. ltemperature) lpenc_requested(i_TT1)=.true.
       if (ltemperature) lpenc_requested(i_cv1)=.true.
@@ -1987,7 +1974,8 @@ module Magnetic
 !  Induction equation
 !
       if (.not.lupw_aa) then
-        df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + p%uxb + fres
+        if (linduction) & 
+             df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + p%uxb + fres
       else
 !
 !  Use upwinding for the advection term.
@@ -2019,7 +2007,8 @@ module Magnetic
           endif
         enddo; enddo
 !  Full right hand side of the induction equation
-        df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + uxb_upw + fres
+        if (linduction) & 
+             df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + uxb_upw + fres
       endif
 !
 !  Hall term
@@ -2708,107 +2697,35 @@ module Magnetic
 !  28-jul-06/wlad: coded
 !
       use Cdata
-      use BorderProfiles, only: border_driving
+      use BorderProfiles, only: border_driving,set_border_initcond
       use Mpicomm, only: stop_it
-      use Gravity, only: qgshear
-      use SharedVariables
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: f_target
-      real :: kr,kr1,Aphi,B0,pblaw
-      real, pointer :: plaw 
-      integer :: ju,j,i,ierr
+      integer :: ju,j
 !
       select case(borderaa)
 !
       case('zero','0')
-         f_target=0.
+        f_target=0.
 !
-      case('toroidal')
-        if (any(initaa=='uniform-Bphi')) &
-             call stop_it("borderaa: this border profile "//&
-             "is to be used with alfven_rphi (sinusoidal azimuthal wave) only")
-        kr = 2*pi*rmode/(r_ext-r_int)
-        kr1 = 1./kr
-        do i=1,nx
-          if ( ((p%rborder_mn(i).ge.r_int).and.(p%rborder_mn(i).le.r_int+2*wborder_int)).or.&
-               ((p%rborder_mn(i).ge.r_ext-2*wborder_ext).and.(p%rborder_mn(i).le.r_ext))) then
-            f_target(i,1) = 0.
-            f_target(i,2) = 0.
-            f_target(i,3) = -amplaa(1)*kr1*sin(kr*(p%rcyl_mn(i)-r_int))
-          endif
-        enddo
-!
-      case('Alfven-rz')
-         kr = 2*pi*rmode/(r_ext-r_int)
-         kr1 = 1./kr
-         do i=1,nx
-           if ( ((p%rborder_mn(i).ge.r_int).and.(p%rborder_mn(i).le.r_int+2*wborder_int)).or.&
-                ((p%rborder_mn(i).ge.r_ext-2*wborder_ext).and.(p%rborder_mn(i).le.r_ext))) then
-!
-             Aphi =  amplaa(1)*kr1 * sin(kr*(p%rcyl_mn(i)-r_int)) + &
-                  amplaa(1)*kr1**2*p%rcyl_mn1(i)*cos(kr*(p%rcyl_mn(i)-r_int))
-!
-             f_target(i,1) = Aphi * p%phix(i)
-             f_target(i,2) = Aphi * p%phiy(i)
-             f_target(i,3) = 0.
-           endif
-         enddo
-!
-      case('Alfven-zconst')
-        if (lcartesian_coords.or.lcylindrical_coords) then
-          B0=Lxyz(3)/(2*zmode*pi)
-          do i=1,nx
-            if ( ((p%rborder_mn(i).ge.r_int)               .and.&
-                  (p%rborder_mn(i).le.r_int+2*wborder_int)).or. &
-                 ((p%rborder_mn(i).ge.r_ext-2*wborder_ext) .and.&
-                  (p%rborder_mn(i).le.r_ext)))              then
-!            
-              if ((qgshear.eq.1.5).and.(rsmooth.eq.0.)) then
-                !default unsmoothed keplerian
-                Aphi=2*B0*sqrt(p%rcyl_mn1(i))
-              else
-                Aphi=B0/(p%rcyl_mn(i)*(2-qgshear))*(p%rcyl_mn(i)**2+rsmooth**2)**(1-qgshear/2.)
-              endif
-!
-              f_target(i,1) = Aphi * p%phix(i)
-              f_target(i,2) = Aphi * p%phiy(i)
-              f_target(i,3) = 0.
-            endif
-          enddo
-        elseif (lspherical_coords) then 
-          B0=Lxyz(2)/(2*zmode*pi)
-          do i=1,nx
-            if ( ((p%rborder_mn(i).ge.r_int)               .and.&
-                  (p%rborder_mn(i).le.r_int+2*wborder_int)).or. &
-                 ((p%rborder_mn(i).ge.r_ext-2*wborder_ext) .and.&
-                  (p%rborder_mn(i).le.r_ext)))              then
-!            
-              call get_shared_variable('plaw',plaw,ierr)
-              if (ierr/=0) call stop_it("alfven_zconst: "//&
-                   "there was a problem when getting plaw")
-!
-              pblaw=1-qgshear-plaw/2.
-              Aphi=-B0/(pblaw+2)*p%rborder_mn(i)**(pblaw+1)*1
-!
-              f_target(i,1) = 0.
-              f_target(i,2) = 0.
-              f_target(i,3) = Aphi*sin1th(m)
-            endif
-          enddo
-        endif
+      case('initial-condition')
+        do j=1,3
+          ju=j+iaa-1
+          call set_border_initcond(f,ju,f_target(:,j))
+        enddo    
 !
       case('nothing')
-         if (lroot.and.ip<=5) &
-              print*,"set_border_magnetic: borderaa='nothing'"
+        if (lroot.and.ip<=5) &
+             print*,"set_border_magnetic: borderaa='nothing'"
 !
       case default
-         write(unit=errormsg,fmt=*) &
-              'set_border_magnetic: No such value for borderaa: ', &
-              trim(borderaa)
-         call fatal_error('set_border_magnetic',errormsg)
+        write(unit=errormsg,fmt=*) &
+             'set_border_magnetic: No such value for borderaa: ', &
+             trim(borderaa)
+        call fatal_error('set_border_magnetic',errormsg)
       endselect
 !
       if (borderaa /= 'nothing') then
