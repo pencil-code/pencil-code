@@ -83,6 +83,16 @@ module BorderProfiles
 !
     endsubroutine calc_pencils_borderprofiles
 !***********************************************************************
+    subroutine set_border_initcond(f,ivar,tmp)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: tmp
+      integer :: ivar
+!
+      if (NO_WARN) print*,f,ivar,tmp
+!
+    endsubroutine set_border_initcond
+!***********************************************************************
     subroutine border_driving(f,df,p,f_target,j)
 !
       real, dimension (mx,my,mz,mfarray) :: f
