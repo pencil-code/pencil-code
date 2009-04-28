@@ -496,6 +496,58 @@ module Special
 !
     endsubroutine special_calc_entropy
 !***********************************************************************
+    subroutine special_after_timestep(f,df,dt_)
+!
+!   Possibility to modify the f and df after df is updated
+!   Used for the fargo shift, for instance.
+!
+!   27-nov-08/wlad: coded
+!
+      use Cdata
+      use Sub, only: keep_compiler_quiet
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real :: dt_
+!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(dt_)
+!
+    endsubroutine  special_after_timestep
+!********************************************************************
+    subroutine special_calc_particles(fp)
+!
+!   Called before the loop, in case some particle value is needed 
+!   for the special density/hydro/magnetic/entropy
+!
+!   20-nov-08/wlad: coded
+!
+      use Cdata
+      use Sub, only: keep_compiler_quiet
+
+      real, dimension (:,:), intent(in) :: fp
+!
+      if (NO_WARN) print*,fp !(keep compiler quiet)
+!
+    endsubroutine special_calc_particles
+!***********************************************************************
+    subroutine special_calc_particles_nbody(fsp)
+!
+!   Called before the loop, in case some massive particles value 
+!   is needed for the special density/hydro/magnetic/entropy
+!
+!   20-nov-08/wlad: coded
+!
+      use Cdata
+      use Sub, only: keep_compiler_quiet
+
+      real, dimension (:,:), intent(in) :: fsp
+!
+      if (NO_WARN) print*,fsp !(keep compiler quiet)
+!
+!
+    endsubroutine special_calc_particles_nbody
+!***********************************************************************
     subroutine special_boundconds(f,bc)
 !
 !   calculate a additional 'special' term on the right hand side of the

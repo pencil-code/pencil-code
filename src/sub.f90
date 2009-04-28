@@ -7,7 +7,7 @@ module Sub
 
   private
 
-  public :: step,step_scalar
+  public :: step,step_scalar,stepdown
 
   public :: identify_bcs, parse_bc, parse_bc_rad, parse_bc_radg
   public :: parse_nscbc
@@ -4247,6 +4247,20 @@ module Sub
       der_step = 0.5/(width*cosh(arg)**2)
 !
       endfunction der_step
+!***********************************************************************
+    function stepdown(x,x0,width)
+!
+!  Smooth unit step function centred at x0; implemented as tanh profile
+!  23-jan-02/wolf: coded
+!
+      use Cdata, only: tini
+!
+      real, dimension(:) :: x
+      real, dimension(size(x,1)) :: stepdown
+      real :: x0,width
+      stepdown = -0.5*(1+tanh((x-x0)/(width+tini)))
+!
+    endfunction stepdown
 !***********************************************************************
       function cubic_step_pt(x,x0,width,shift)
 !
