@@ -23,7 +23,7 @@
 /
 &hydro_run_pars
   lfreeze_uint=T,lfreeze_uext=T
-  borderuu='global-shear-mhs'
+  borderuu='initial-condition'
 /
 &density_run_pars
   lfreeze_lnrhoint=T
@@ -31,7 +31,7 @@
   idiff='hyper3_aniso','shock'
   diffrho_hyper3_aniso=5e-12,5e-12,3e-13
   diffrho_shock=5.0
-  borderlnrho='constant'
+  borderlnrho='initial-condition'
 /
 &grav_run_pars
   ipotential='no-smooth'
@@ -43,7 +43,7 @@
   lfreeze_aint=T
   lfreeze_aext=T
   eta_shock=5.0
-  borderaa='Alfven-zconst'
+  borderaa='initial-condition'
 /
 &viscosity_run_pars
   ivisc='hyper3_nu-const_aniso','nu-shock'
