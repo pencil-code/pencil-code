@@ -76,6 +76,7 @@ module Param_IO
        bcx,bcy,bcz,r_int,r_ext,r_ref,rsmooth, &
        nscbc, &
        mu0,force_lower_bound,force_upper_bound, &
+       tstart, &
        fbcx1,fbcx2,fbcy1,fbcy2,fbcz1,fbcz2,fbcz1_1,fbcz1_2,fbcz2_1,fbcz2_2, &
        fbcx1_2,fbcx2_2, &
        xyz_step,xi_step_frac,xi_step_width, &

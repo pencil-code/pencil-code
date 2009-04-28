@@ -479,13 +479,27 @@ kky_aa=2.*pi
 !  Shearing wave
 !
       elseif (kinflow=='ShearingWave') then
-        if (headtt) print*,'ShearingWave flow; eps_kinflow=',eps_kinflow
+        if (headtt) print*,'ShearingWave flow; Sshear,eps_kinflow=',Sshear,eps_kinflow
         kky_aa=1.
-        kkx_aa=kky_aa*eps_kinflow*(10.-t)
+        kkx_aa=-kky_aa*Sshear*t
         k21=1./(kkx_aa**2+kky_aa**2)
         p%uu(:,1)=-kky_aa*k21*cos(kkx_aa*x(l1:l2)+kky_aa*y(m))
         p%uu(:,2)=+kkx_aa*k21*cos(kkx_aa*x(l1:l2)+kky_aa*y(m))
-        p%uu(:,3)=            cos(kkx_aa*x(l1:l2)+kky_aa*y(m))
+        p%uu(:,3)=eps_kinflow*cos(kkx_aa*x(l1:l2)+kky_aa*y(m))
+        if (lpencil(i_divu)) p%divu=0.
+!
+!  Helical Shearing wave
+!
+      elseif (kinflow=='HelicalShearingWave') then
+        if (headtt) print*,'ShearingWave flow; Sshear,eps_kinflow=',Sshear,eps_kinflow
+        kky_aa=1.
+        kkx_aa=-kky_aa*Sshear*t
+        k21=1./(kkx_aa**2+kky_aa**2)
+        fac=ampl_kinflow
+        eps1=1.-eps_kinflow
+        p%uu(:,1)=-fac*cos(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))*eps1
+        p%uu(:,2)=+fac*sin(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))*eps1
+        p%uu(:,3)=+fac*cos(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))*sqrt(2.)
         if (lpencil(i_divu)) p%divu=0.
 !
 !  KS-flow

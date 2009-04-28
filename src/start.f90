@@ -140,16 +140,16 @@ program start
   lequidist=(/.true.,.true.,.true. /) ! all directions equidistant grid
   lshift_origin=(/.false.,.false.,.false./) ! don't shift origin
 !
-!  Initialize start time
-!
-  t=0
-!
 !  read parameters from start.in
 !  call also rprint_list, because it writes iuu, ilnrho, iss, and iaa to disk.
 
   call read_startpars(FILE=.true.)
   call rprint_list(.false.)
   call particles_rprint_list(.false.)
+!
+!  Initialize start time
+!
+  t=tstart
 !
 !  Will we write all slots of f?
 !

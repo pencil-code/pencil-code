@@ -723,6 +723,18 @@ module Hydro
             f(l1:l2,m,n,iux)=prof
           enddo; enddo
 
+        case('tanhy')
+!
+!  Burgers shock
+!
+          if (lroot) print*,'init_uu: tangential discontinuity'
+          do m=m1,m2
+            prof=ampluu(j)*tanh(y(m)/widthuu)
+            do n=n1,n2
+              f(l1:l2,m,n,iux)=prof
+            enddo
+          enddo
+
         case('shock-sphere')
 !
 !  shock tube test (should be consistent with density module)
