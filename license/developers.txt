@@ -33,6 +33,7 @@ Graeme R. Sarson g.r.sarson/ncl.ac.uk      +44 191 222 5375
 Andrew Snodin    andrew.snodin/ncl.ac.uk
 Sharanya Sur     sur/iucaa.ernet.in        +91 2560 4115      +91 94 210 37 292
 Tarek A. Yousef, tarek/pvv.org,            +44 798 122 8515,
+Nishant K. Singh, nishant.cosmo@gmail.com, +91 9916785745
 
 Please add further names that have been forgotten so far!
 This file is located in the directory
