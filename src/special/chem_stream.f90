@@ -221,7 +221,7 @@ module Special
          case('flame_spd')
             call flame_spd(f)
          case('flame_spd_invert')
-            call flame_spd_invert(f)
+            call flame_spd(f)
          case('flame_spd_test')
             call flame_spd_test(f)
         case('default')
@@ -410,8 +410,6 @@ module Special
 !            -3.*(x(l1:l_sz)-x(l_sz))**3/(Lxyz(1)-x(l_sz))**3 &
 !            /dt*(f(l1:l_sz,m,n,ilnrho)-f(l1,m,n,ilnrho))
      endif
-
-
 !
 ! Keep compiler quiet by ensuring every parameter is used
 !
@@ -437,27 +435,17 @@ module Special
 
         pres(l1:l2,m,n)=p%pp(:)!/p%mu1(:)
         mmu1(l1:l2,m,n)=p%mu1(:)
-
-
      !    print*,'Natalia',p%pp(l1+1), p%fvisc(l1+1,1),mmu1(l1+1,4,4)
-      ldivtau=.true.
+        ldivtau=.true.
 
 ! buffer zone to damp the acustic waves!!!!!!!!!!!
-
-
     if (left_buffer_zone) then
-
-     l_sz=int(0.15*nxgrid)
-
-     df(l1:l_sz,m,n,iux)=df(l1:l_sz,m,n,iux)&  
+      l_sz=int(0.15*nxgrid)
+      df(l1:l_sz,m,n,iux)=df(l1:l_sz,m,n,iux)&  
             -3.*(x(l1:l_sz)-x(l_sz))**3/(Lxyz(1)-x(l_sz))**3 &
             /dt*(f(l1:l_sz,m,n,iux)-f(l1,m,n,iux))
     endif
-
-
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
     endsubroutine special_calc_hydro
 !***********************************************************************
     subroutine special_calc_magnetic(f,df,p)
@@ -479,24 +467,18 @@ module Special
 !!***********************************************************************
     subroutine special_calc_entropy(f,df,p)
 !
-
       use Cdata
-
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
       integer :: l_sz
 
-
      if (left_buffer_zone) then
-
       l_sz=int(0.15*nxgrid)
-
       df(l1:l_sz,m,n,ilnTT)=df(l1:l_sz,m,n,ilnTT)&  
             -3.*(x(l1:l_sz)-x(l_sz))**3/(Lxyz(1)-x(l_sz))**3 &
             /dt*(f(l1:l_sz,m,n,ilnTT)-f(l1,m,n,ilnTT))
      endif
-
 
 ! Keep compiler quiet by ensuring every parameter is used
       if (NO_WARN) print*,df,p
@@ -541,34 +523,6 @@ module Special
            call bc_gpress_wall(f,-1, bc)
          case (iBC_X_BOT)
            call bc_gpress_wall(f,-1, bc)
-         endselect
-         bc%done=.true.
-         case ('inp')
-         select case (bc%location)
-         case (iBC_X_TOP)
-           call spec_input(f,-1, bc)
-         case (iBC_X_BOT)
-           call spec_input(f,-1, bc)
-         endselect
-         bc%done=.true.
-         case ('eql')
-         select case (bc%location)
-         case (iBC_X_TOP)
-           call bc_equil_x(f,-1, bc)
-         case (iBC_X_BOT)
-           call bc_equil_x(f,-1, bc)
-         case (iBC_Y_TOP)
-           call bc_equil_y(f,-1, bc)
-         case (iBC_Y_BOT)
-           call bc_equil_y(f,-1, bc)
-         endselect
-         bc%done=.true.
-         case ('HAi')
-         select case (bc%location)
-         case (iBC_X_TOP)
-           call bc_HstreamAir_x(f,-1, bc)
-         case (iBC_X_BOT)
-           call bc_HstreamAir_x(f,-1, bc)
          endselect
          bc%done=.true.
       endselect
@@ -630,115 +584,8 @@ module Special
 
    endsubroutine bomb_field
 !**************************************************************************
- subroutine flame_spd(f)
-!
-! Natalia
-! Initialization of chem. species  in a case of the stream
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: mu1
-      integer :: k,j,i
-
-      real :: x1_front,x2_front
-      real :: rho1_front=1e-3, rho2_front=10./3.*1e-3
-      real :: TT1_front, TT2_front
-      real :: p2_front=10.13e5
-      real :: Rgas=83144726.8870299
-      real :: mH,mC,mN,mO,mAr,mHe
-      real :: YH2,YO2,YN2
-      integer :: i_H2, i_O2, i_H2O, i_N2
-      
-     
-      TT1_front=exp(init_lnTT1)
-      TT2_front=init_TT2
-
-      
-      x1_front=init_x1
-      x2_front=init_x2
-
-      p2_front=init_p2
-
-
-
-      mH=1.00794
-      mC=12.0107
-      mN=14.00674
-      mO=15.9994
-      mAr=39.948
-      mHe=4.0026
-      !     
-      ! Initialize some indexes
-      !
-      if (index_H2==0) &
-           call fatal_error('flame_spd','set index for H2 in start.in')
-      if (index_O2==0) &
-           call fatal_error('flame_spd','set index for O2 in start.in')
-      if (index_H2O==0)&
-           call fatal_error('flame_spd','set index for H2O in start.in')
-      if (index_N2==0) &
-           call fatal_error('flame_spd','set index for N2 in start.in')
-      i_H2=ichemspec(index_H2)
-      i_O2=ichemspec(index_O2)
-      i_N2=ichemspec(index_N2)
-      i_H2O=ichemspec(index_H2O)
-      !      
-      !
-      !
-      f(l1,:,:,i_O2)=(f(l2,:,:,i_O2)/32.-f(l2,:,:,i_H2)/4.)*32. 
-      f(l2,:,:,iux)=ux_init
-      !
-      do k=1,mx 
-        if (x(k)<x1_front) then
-          f(k,:,:,ilnTT)=log(TT1_front)
-        endif
-        if (x(k)>x2_front) then
-          f(k,:,:,ilnTT)=log(TT2_front)
-        endif
-        if (x(k)>x1_front .and. x(k)<x2_front) then
-          f(k,:,:,ilnTT)=log((x(k)-x1_front)/(x2_front-x1_front) &
-               *(TT2_front-TT1_front)+TT1_front)
-        endif
-        !
-        if (x(k)<x2_front) then
-          f(k,:,:,i_H2O)=f(l2,:,:,i_H2)/2.*18. &
-               *(exp(f(k,:,:,ilnTT))-TT2_front) &
-               /(TT1_front-TT2_front)
-          f(k,:,:,i_H2)=f(l2,:,:,i_H2) &
-               *(exp(f(k,:,:,ilnTT))-TT1_front) &
-               /(TT2_front-TT1_front)          
-        endif
-        !
-        if (x(k)<x1_front) then
-          f(k,:,:,i_O2)=f(l1,:,:,i_O2)
-        endif
-        !
-        if (x(k)>x1_front .and. x(k)<x2_front) then
-          f(k,:,:,i_O2)=(x(k)-x1_front)/(x2_front-x1_front) &
-               *(f(l2,:,:,i_O2)-f(l1,:,:,i_O2))+f(l1,:,:,i_O2)
-        endif
-        !
-        mu1(k,:,:)=f(k,:,:,i_H2)/(2.*mH)+f(k,:,:,i_O2)/(2.*mO) &
-             +f(k,:,:,i_H2O)/(2.*mH+mO)+f(k,:,:,i_N2)/(2.*mN)
-      enddo
-      !
-      !
-      !
-      do k=1,mx
-        f(k,:,:,ilnrho)=log(p2_front)-log(Rgas)-f(k,:,:,ilnTT)-log(mu1(k,:,:))
-      enddo
-      !
- !     f(l1,:,:,iux)=ux_init*exp(f(l2,:,:,ilnrho))/exp(f(l1,:,:,ilnrho))
-      !
-      do k=1,mx
-!        f(k,:,:,iux)=(f(l1,:,:,iux)-ux_init) &
-!             *(exp(f(k,:,:,ilnTT))-TT2_front)/(TT1_front-TT2_front)&
-!             +ux_init        
-      f(k,:,:,iux)=ux_init*exp(f(l2,:,:,ilnrho))/exp(f(k,:,:,ilnrho))
-      enddo
-      !
-   endsubroutine flame_spd
 !**************************************************************************
-subroutine flame_spd_invert(f)
+subroutine flame_spd(f)
 
 !
 ! Natalia
@@ -756,17 +603,12 @@ subroutine flame_spd_invert(f)
       real :: mH,mC,mN,mO,mAr,mHe
       real :: YH2,YO2,YN2
       integer :: i_H2, i_O2, i_H2O, i_N2
-      
 
       TT1_front=exp(init_lnTT1)
       TT2_front=init_TT2
-
-      
       x1_front=init_x1
       x2_front=init_x2
-
       p2_front=init_p2
-
 
       mH=1.00794
       mC=12.0107
@@ -789,10 +631,8 @@ subroutine flame_spd_invert(f)
       i_O2=ichemspec(index_O2)
       i_N2=ichemspec(index_N2)
       i_H2O=ichemspec(index_H2O)
-      !      
       !
       !
-      
       f(l1,:,:,iux)=ux_init
       !
       do k=1,mx 
@@ -807,7 +647,6 @@ subroutine flame_spd_invert(f)
           f(k,:,:,ilnTT)=log((x(k)-x1_front)/(x2_front-x1_front) &
                *(TT2_front-TT1_front)+TT1_front)
         endif
-
        endif
 
        if (lT_prof2) then
@@ -820,11 +659,8 @@ subroutine flame_spd_invert(f)
                         +(TT2_front-TT1_front)*(1.-1./beta*exp(-x(k)/del)))
         endif
        endif
-
         !
-
-
-        f(l2,:,:,i_O2)=(f(l1,:,:,i_O2)/32.-f(l1,:,:,i_H2)/4.)*32. 
+         f(l2,:,:,i_O2)=(f(l1,:,:,i_O2)/32.-f(l1,:,:,i_H2)/4.)*32. 
 
         if (nygrid .le. 1) then
          if (x(k)>x1_front) then
@@ -842,25 +678,7 @@ subroutine flame_spd_invert(f)
                /(TT2_front-TT1_front)
          endif
            f(k,:,:,i_H2)=0.
-
-    !     if (x(k)>x1_front) then
-    !      f(k,:,:,i_H2O)=f(l1,:,:,i_H2)/2.*18. &
-    !          *(exp(f(k,:,:,ilnTT))-TT1_front) &
-    !          /(TT2_front-TT1_front)
-    !     endif
-    !      do j=1,my
-    !         if (abs(y(j))<str_thick) then
-    !         f(k,j,:,i_H2)=f(l1,j,:,i_H2) &
-    !          *(exp(f(k,j,:,ilnTT))-TT2_front) &
-    !          /(TT1_front-TT2_front)
-    !         else
-    !          f(k,j,:,i_H2)=0.
-    !        endif 
-    !      enddo
         endif
-
-
-
         !
         if (x(k)>x2_front) then
           f(k,:,:,i_O2)=f(l2,:,:,i_O2)
@@ -883,12 +701,10 @@ subroutine flame_spd_invert(f)
       !
  !     f(l1,:,:,iux)=ux_init*exp(f(l2,:,:,ilnrho))/exp(f(l1,:,:,ilnrho))
       !
-
       if (nygrid .le. 1) then
        do k=1,mx
 !        f(k,:,:,iux)=(f(l1,:,:,iux)-ux_init) &
-!             *(exp(f(k,:,:,ilnTT))-TT2_front)/(TT1_front-TT2_front)&
-!             +ux_init        
+!          *(exp(f(k,:,:,ilnTT))-TT2_front)/(TT1_front-TT2_front)+ux_init
         f(k,:,:,iux)=ux_init*exp(f(l1,:,:,ilnrho))/exp(f(k,:,:,ilnrho))
        enddo
       else
@@ -903,11 +719,13 @@ subroutine flame_spd_invert(f)
         enddo
        enddo
       endif
-
       !
-   endsubroutine flame_spd_invert
+   endsubroutine flame_spd
 !**************************************************************************
 subroutine flame_spd_test(f)
+!
+! This is the initial conditions for the 1step_test case
+!
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) ::  mu1
@@ -920,16 +738,12 @@ subroutine flame_spd_test(f)
       real :: mH,mC,mN,mO,mAr,mHe
       real :: YH2,YO2,YN2
       integer :: i_H2, i_O2, i_H2O, i_N2
-      
 
       TT1_front=exp(init_lnTT1)
       TT2_front=init_TT2
 
-      
       x1_front=init_x1
       x2_front=init_x2
-
-
 
       mH=1.00794
       mC=12.0107
@@ -937,7 +751,7 @@ subroutine flame_spd_test(f)
       mO=15.9994
       mAr=39.948
       mHe=4.0026
-      !     
+      !
       ! Initialize some indexes
       !
       if (index_H2==0) &
@@ -947,10 +761,6 @@ subroutine flame_spd_test(f)
 
       i_H2=ichemspec(index_H2)
       i_O2=ichemspec(index_O2)
-
-    
-    
-
       !
       do k=1,mx 
         if (x(k)<x1_front) then
@@ -985,102 +795,6 @@ subroutine flame_spd_test(f)
 
 endsubroutine flame_spd_test
 !**************************************************************************
-subroutine flame_spd_2D(f,x1_front,x2_front)
-!
-! Natalia
-! Initialization of chem. species  in a case of the stream
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: mu1
-      integer :: k,j,i
-
-      real :: x1_front,x2_front
-      real :: rho1_front=1e-3, rho2_front=10./3.*1e-3
-      real :: TT1_front=2400., TT2_front=400.
-      real :: p2_front=10.13e5
-      real :: Rgas=83144726.8870299
-      real :: mH,mC,mN,mO,mAr,mHe
-      real :: YH2,YO2,YN2
-      integer :: i_H2, i_O2, i_H2O, i_N2
-      
-      mH=1.00794
-      mC=12.0107
-      mN=14.00674
-      mO=15.9994
-      mAr=39.948
-      mHe=4.0026
-      !     
-      ! Initialize some indexes
-      !
-      if (index_H2==0) &
-           call fatal_error('flame_spd','set index for H2 in start.in')
-      if (index_O2==0) &
-           call fatal_error('flame_spd','set index for O2 in start.in')
-      if (index_H2O==0)&
-           call fatal_error('flame_spd','set index for H2O in start.in')
-      if (index_N2==0) &
-           call fatal_error('flame_spd','set index for N2 in start.in')
-      i_H2=ichemspec(index_H2)
-      i_O2=ichemspec(index_O2)
-      i_N2=ichemspec(index_N2)
-      i_H2O=ichemspec(index_H2O)
-      !      
-      !
-      !
-      f(l1,:,:,i_O2)=(f(l2,:,:,i_O2)/32.-f(l2,:,:,i_H2)/4.)*32. 
-      f(l2,:,:,iux)=ux_init
-      !
-      do k=1,mx 
-        if (x(k)<x1_front) then
-          f(k,:,:,ilnTT)=log(TT1_front)
-        endif
-        if (x(k)>x2_front) then
-          f(k,:,:,ilnTT)=log(TT2_front)
-        endif
-        if (x(k)>x1_front .and. x(k)<x2_front) then
-          f(k,:,:,ilnTT)=log((x(k)-x1_front)/(x2_front-x1_front) &
-               *(TT2_front-TT1_front)+TT1_front)
-        endif
-        !
-        if (x(k)<x2_front) then
-          f(k,:,:,i_H2O)=f(l2,:,:,i_H2)/2.*18. &
-               *(exp(f(k,:,:,ilnTT))-TT2_front) &
-               /(TT1_front-TT2_front)
-          f(k,:,:,i_H2)=f(l2,:,:,i_H2) &
-               *(exp(f(k,:,:,ilnTT))-TT1_front) &
-               /(TT2_front-TT1_front)          
-        endif
-        !
-        if (x(k)<x1_front) then
-          f(k,:,:,i_O2)=f(l1,:,:,i_O2)
-        endif
-        !
-        if (x(k)>x1_front .and. x(k)<x2_front) then
-          f(k,:,:,i_O2)=(x(k)-x1_front)/(x2_front-x1_front) &
-               *(f(l2,:,:,i_O2)-f(l1,:,:,i_O2))+f(l1,:,:,i_O2)
-        endif
-        !
-        mu1(k,:,:)=f(k,:,:,i_H2)/(2.*mH)+f(k,:,:,i_O2)/(2.*mO) &
-             +f(k,:,:,i_H2O)/(2.*mH+mO)+f(k,:,:,i_N2)/(2.*mN)
-      enddo
-      !
-      !
-      !
-      do k=1,mx
-        f(k,:,:,ilnrho)=log(p2_front)-log(Rgas)-f(k,:,:,ilnTT)-log(mu1(k,:,:))
-      enddo
-      !
- !     f(l1,:,:,iux)=ux_init*exp(f(l2,:,:,ilnrho))/exp(f(l1,:,:,ilnrho))
-      !
-      do k=1,mx
-!        f(k,:,:,iux)=(f(l1,:,:,iux)-ux_init) &
-!             *(exp(f(k,:,:,ilnTT))-TT2_front)/(TT1_front-TT2_front)&
-!             +ux_init        
-      f(k,:,:,iux)=ux_init*exp(f(l2,:,:,ilnrho))/exp(f(k,:,:,ilnrho))
-      enddo
-      !
-   endsubroutine flame_spd_2D
-!**************************************************************************
 !**************************************************************************
 !       BOUNDARY CONDITIONS
 !*88888888888888888888888888888888888888888888888888888888888888888888888888
@@ -1096,8 +810,6 @@ subroutine flame_spd_2D(f,x1_front,x2_front)
       type (boundary_condition) :: bc
       integer :: i,i1,j,vr,k
       real :: value1, value2, yy0
-
-    
 
       vr=bc%ivar
 
@@ -1138,39 +850,19 @@ subroutine flame_spd_2D(f,x1_front,x2_front)
 
 
        if (vr==4 ) then
-         !  if (abs(y(k)) .lt. yy0) then
-      !      do i=0,nghost;  f(l1-i,m1:my,:,vr)=log(value1);  enddo
-         !  else
-          !  do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)+sgn*f(l1+i,:,:,vr); enddo
-          !  do i=0,nghost; f(l1-i,:,:,vr)=f(l1,:,:,vr); enddo
           do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)+sgn*f(l1+i,:,:,vr); enddo
-          !   do i=0,nghost
-          !      f(l1-i,:,:,vr)=0.5*(f(l1-i+1,:,:,vr)+f(l1-i-1,:,:,vr))
-          !   enddo
-          ! endif
        endif
 
 
        if (vr >= ichemspec(1)) then
-
          do i=0,nghost; 
           do k=1,my
              if (abs(y(k)) .lt. yy0) then
                 if (vr < ichemspec(nchemspec))  f(l1-i,k,:,vr)=value1
                 if (vr == ichemspec(nchemspec)) f(l1-i,k,:,vr)=value1*((l1-i)/(l1-0.))**4*0.
              else
-              !  if (vr < ichemspec(nchemspec)) then
-              !   f(l1-i,k,:,vr)=value1*0.
-              !  endif 
-              !  if (vr == ichemspec(nchemspec)) then
-              !        f(l1-i,k,:,vr)=value1!*((l1-i)/(l1-0.))**4*0.
-
-              ! do i=1,nghost
                  f(l1-i,:,:,vr)=2*f(l1,:,:,vr)+sgn*f(l1+i,:,:,vr)
-              ! enddo
-             !   f(l1-i,:,:,vr)=0.5*(f(l1-i+1,:,:,vr)+f(l1-i-1,:,:,vr))
-               endif
-            ! endif
+             endif
           enddo
          enddo
 
@@ -1261,237 +953,7 @@ subroutine flame_spd_2D(f,x1_front,x2_front)
       endif
 !
     endsubroutine bc_stream_z
- !********************************************************************
-  subroutine bc_equil_x(f,sgn,bc)
-!
-! Natalia
-!
-    use Cdata
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (my, nchemspec-1) :: mask
-      integer :: sgn
-      type (boundary_condition) :: bc
-      integer :: i,i1,j,vr,k
-      real :: value1, value2
-
-      vr=bc%ivar
-
-      value1=bc%value1
-      value2=bc%value2
-
-    if (bc%location==iBC_X_BOT) then
-      ! bottom boundary
-
-      if (vr==1) then
-           do i=0,nghost
-            f(l1-i,:,:,vr)=value1
-           enddo 
-      endif
-
-
-      if (vr==4) then
-           do i=0,nghost
-            f(l1-i,:,:,4)=f(l1,:,:,4)
-           enddo 
-      endif
-
-      if (vr==5) then
-          do i=0,nghost
-            f(l1-i,:,:,vr)=2.*f(l1,:,:,vr)-f(l1+i,:,:,vr)
-          enddo 
-      endif
-
-       if (vr >= ichemspec(1)) then
-         do i=0,nghost; 
-             f(l1-i,:,:,vr)=2.*f(l1,:,:,vr)-f(l1+i,:,:,vr)
-          enddo
-       endif
-
-      elseif (bc%location==iBC_X_TOP) then
-      ! top boundary
-
-      if (vr==1) then
-           do i=0,nghost
-            f(l2+i,:,:,vr)=value1
-           enddo 
-      endif
-
-
-      if (vr==4) then
-           do i=0,nghost
-            f(l2+i,:,:,vr)=f(l2,:,:,vr)
-           enddo 
-      endif
-
-      if (vr==5) then
-          do i=0,nghost
-            f(l2+i,:,:,vr)=2.*f(l2,:,:,vr)-f(l2-i,:,:,vr)
-          enddo 
-      endif
-
-       if (vr >= ichemspec(1)) then
-         do i=0,nghost; 
-             f(l2+i,:,:,vr)=2.*f(l2,:,:,vr)-f(l2-i,:,:,vr)
-          enddo
-       endif
-
-    !   do i=1,nghost
-     !     f(l2+i,:,:,vr)=f(l2,:,:,vr)!2*f(l2,:,:,vr)!+sgn*f(l2-i,:,:,vr);
-     !   enddo
-
-
-      else
-        print*, "bc_BL_x: ", bc%location, " should be `top(", &
-                        iBC_X_TOP,")' or `bot(",iBC_X_BOT,")'"
-      endif
-!
-    endsubroutine bc_equil_x
-!***********************************************************************
- subroutine bc_equil_y(f,sgn,bc)
-!
-! Natalia
-!
-    use Cdata
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (my, nchemspec-1) :: mask
-      integer :: sgn
-      type (boundary_condition) :: bc
-      integer :: i,i1,j,vr,k
-      real :: value1, value2
-
-      vr=bc%ivar
-
-      value1=bc%value1
-      value2=bc%value2
-
-    if (bc%location==iBC_Y_BOT) then
-      ! bottom boundary
-
-      if (vr==1) then
-           do i=0,nghost
-            f(:,m1-i,:,vr)=value1
-           enddo 
-      endif
-
-
-      if (vr==4) then
-           do i=0,nghost
-            f(:,m1-i,:,vr)=f(:,m1,:,vr)
-           enddo 
-      endif
-
-      if (vr==5) then
-          do i=0,nghost
-            f(:,m1-i,:,vr)=2.*f(:,m1,:,vr)-f(:,m1+i,:,vr)
-          enddo 
-      endif
-
-       if (vr >= ichemspec(1)) then
-         do i=0,nghost; 
-             f(:,m1-i,:,vr)=2.*f(:,m1,:,vr)-f(:,m1+i,:,vr)
-          enddo
-       endif
-
-      elseif (bc%location==iBC_Y_TOP) then
-      ! top boundary
-
-      if (vr==1) then
-           do i=0,nghost
-            f(:,m2+i,:,vr)=value1
-           enddo 
-      endif
-
-
-      if (vr==4) then
-           do i=0,nghost
-            f(:,m2+i,:,vr)=f(:,m2,:,vr)
-           enddo 
-      endif
-
-      if (vr==5) then
-          do i=0,nghost
-            f(:,m2+i,:,vr)=2.*f(:,m2,:,vr)-f(:,m2-i,:,vr)
-          enddo 
-      endif
-
-       if (vr >= ichemspec(1)) then
-         do i=0,nghost; 
-             f(:,m2+i,:,vr)=2.*f(:,m2,:,vr)-f(:,m2-i,:,vr)
-          enddo
-       endif
-
-    !   do i=1,nghost
-     !     f(l2+i,:,:,vr)=f(l2,:,:,vr)!2*f(l2,:,:,vr)!+sgn*f(l2-i,:,:,vr);
-     !   enddo
-
-
-      else
-        print*, "bc_BL_y: ", bc%location, " should be `top(", &
-                        iBC_X_TOP,")' or `bot(",iBC_X_BOT,")'"
-      endif
-!
-    endsubroutine bc_equil_y
-!**********************************************************************
-
-  subroutine spec_input(f,sgn,bc)
-   !
-! Natalia
-!
-    use Cdata
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (my, nchemspec-1) :: mask
-      integer :: sgn
-      type (boundary_condition) :: bc
-      integer :: i,i1,j,vr,k
-      real :: value1, value2
-
-      vr=bc%ivar
-
-      value1=bc%value1
-      value2=bc%value2
-
-        if (bc%location==iBC_X_BOT) then
-      ! bottom boundary
-
-        if (vr==1 ) then
-          do i=0,nghost;   f(l1-i,:,:,vr)=value1;  enddo
-        endif
-
-         if (vr==5 ) then
-          do i=0,nghost;   f(l1-i,:,:,vr)=log(value1);  enddo
-     !      print*,log(value1)
-        endif
-
-        if (vr==4) then
-          do i=0,nghost;   f(l1-i,:,:,vr)=f(l1,:,:,vr);  enddo
-        endif
-
-      !  if (vr==5 .or. vr==9) then
-       if (vr >= ichemspec(1)) then
-         if ( vr==9) then
-           do i=0,nghost;   f(l1-i,:,:,vr)=value1;  enddo
-        else
-           do i=0,nghost;   f(l1-i,:,:,vr)=f(l1,:,:,vr);  enddo
-        endif
-       endif
-
-        elseif (bc%location==iBC_X_TOP) then
-      ! top boundary
-
-        do i=1,nghost
-          f(l2+i,:,:,vr)=f(l2,:,:,vr)!2*f(l2,:,:,vr)!+sgn*f(l2-i,:,:,vr);
-        enddo
-
-
-        else
-          print*, "bc_BL_x: ", bc%location, " should be `top(", &
-                        iBC_X_TOP,")' or `bot(",iBC_X_BOT,")'"
-        endif
-!
-  endsubroutine spec_input
+ !*******************************************************************
 !***********************************************************************
  subroutine bc_gpress_wall(f,sgn,bc)
 !
@@ -1607,97 +1069,6 @@ subroutine flame_spd_2D(f,x1_front,x2_front)
 !
     endsubroutine bc_gpress_wall
 !***********************************************************************
-
- subroutine bc_HstreamAir_x(f,sgn,bc)
-!
-! Natalia
-!
-    use Cdata
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (my, nchemspec-1) :: mask
-      integer :: sgn
-      type (boundary_condition) :: bc
-      integer :: i,i1,j,vr,k
-      real :: value1, value2, yy0
-
-      yy0=3.
-
-      vr=bc%ivar
-
-      value1=bc%value1
-      value2=bc%value2
-
-
-    if (bc%location==iBC_X_BOT) then
-      ! bottom boundary
-
-       if (vr==1) then
-        do k=1,my
-            if (abs(y(k)) .lt. yy0) then
-              do i=0,nghost
-                   f(l1-i,k,:,vr)=value1*(1.-(y(k)/yy0)**2); 
-              enddo
-            else
-              do i=0,nghost;   f(l1-i,k,:,vr)=0.;  enddo
-            !  do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)+sgn*f(l1+i,:,:,vr); enddo
-            endif
-        
-        enddo
-       endif
-
-
-       if (vr==5 .or. vr==4 ) then
-         !  if (abs(y(k)) .lt. yy0) then
-            do i=0,nghost;  f(l1-i,m1:my,:,vr)=log(value1);  enddo
-         !  else
-          !  do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)+sgn*f(l1+i,:,:,vr); enddo
-          !  do i=0,nghost; f(l1-i,:,:,vr)=f(l1,:,:,vr); enddo
-          !   do i=0,nghost
-          !      f(l1-i,:,:,vr)=0.5*(f(l1-i+1,:,:,vr)+f(l1-i-1,:,:,vr))
-          !   enddo
-          ! endif
-       endif
-
-     !   if (vr==4 ) then
-     !       do i=0,nghost; f(l1-i,:,:,vr)=f(l1,:,:,vr); enddo
-     ! endif
-
-
-
-       if (vr >= ichemspec(1)) then
-
-         do i=0,nghost; 
-          do k=1,my
-             if (abs(y(k)) .lt. yy0) then
-                if (vr == ichemspec(nchemspec))  f(l1-i,k,:,vr)=value1*0.
-                if (vr < ichemspec(nchemspec)) f(l1-i,k,:,vr)=value1*((l1-i)/(l1-0.))**4*0.
-             else
-                if (vr < ichemspec(nchemspec)) then
-                 f(l1-i,k,:,vr)=value1*0.
-                endif 
-                if (vr == ichemspec(nchemspec)) then
-                      f(l1-i,k,:,vr)=value1*0.!*((l1-i)/(l1-0.))**4*0.
-             !    f(l1-i,:,:,vr)=2*f(l1,:,:,vr)+sgn*f(l1+i,:,:,vr)
-             !   f(l1-i,:,:,vr)=0.5*(f(l1-i+1,:,:,vr)+f(l1-i-1,:,:,vr))
-               endif
-             endif
-          enddo
-         enddo
-
-       endif
-
-      elseif (bc%location==iBC_X_TOP) then
-      ! top boundary
-        do i=1,nghost
-        f(l2+i,:,:,vr)=f(l2,:,:,vr)!2*f(l2,:,:,vr)+sgn*f(l2-i,:,:,vr); 
-        enddo
-      else
-        print*, "bc_BL_x: ", bc%location, " should be `top(", &
-                        iBC_X_TOP,")' or `bot(",iBC_X_BOT,")'"
-      endif
-!
-    endsubroutine bc_HstreamAir_x
  !******************************************************************** 
  !******************************************************************** 
 
