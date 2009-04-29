@@ -214,7 +214,9 @@ class read_var:
         if (magic is not None):
             if ('bb' in magic):
                 # compute the magnetic field before doing trimall
-                self.bb=curl(f[5:8,...],dx,dy,dz,run2D=param.lwrite_2d)
+                iax=index.index.get('ax')-1
+                iaz=index.index.get('az')
+                self.bb=curl(f[iax:iaz,...],dx,dy,dz,run2D=param.lwrite_2d)
                 if (trimall): self.bb=self.bb[:,dim.n1:dim.n2+1, 
                 dim.m1:dim.m2+1, dim.l1:dim.l2+1]
             if ('vort' in magic):
