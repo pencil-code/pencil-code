@@ -1,1 +1,1 @@
-__all__ = ["var", "ts","dim","param","slices","xyaver","yzaver"]
+__all__ = ["var","ts","dim","param","slices","xyaver","yzaver","power"]
