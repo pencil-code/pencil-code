@@ -725,7 +725,7 @@ module Hydro
 
         case('tanhy')
 !
-!  Burgers shock
+!  A*tanh(y/d) profile in the x-direction
 !
           if (lroot) print*,'init_uu: tangential discontinuity'
           do m=m1,m2

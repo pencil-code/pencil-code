@@ -507,6 +507,18 @@ module Density
             prof=0.5*(1.0+tanh(z(n)/widthlnrho(j)))
             f(l1:l2,m,n,ilnrho)=log(rho_left(j))+log(rho_left(j)/rho_right(j))*prof
           enddo; enddo
+!
+!  A*tanh(y/d) profile
+!
+        case('tanhy')
+          if (lroot) print*,'init_lnrho: tangential discontinuity'
+          do m=m1,m2
+            prof=ampllnrho(j)*tanh(y(m)/widthlnrho(j))
+            do n=n1,n2
+              f(l1:l2,m,n,ilnrho)=prof
+            enddo
+          enddo
+!
         case ('hydrostatic-z-2', '3')
 !
 !  Hydrostatic density stratification for isentropic atmosphere.
