@@ -571,6 +571,15 @@ LD_FFTW2=
 #FFLAGS= -freal=nan -finteger=-2147483648 -fbounds-check -Wall -Wno=140,141,109,112,137 -Werror#(norlx0*)
 #LD_MPI=#(norlx0*)
 ##
+##  Buenos Aires
+##
+#FC=mpif90 #(caps.iafe.uba.ar)
+#FFLAGS= -O3 #(caps.iafe.uba.ar)
+#CC=mpicc #(caps.iafe.uba.ar)
+#CFLAGS=-O3 -DFUNDERSC=1 #(caps.iafe.uba.ar)
+#LD_MPI= #(caps.iafe.uba.ar)
+#LIBMPISUFFIX=#(caps.iafe.uba.ar)
+##
 ##  Pencil-Code Servers
 ##
 #FC=/usr/bin/gfortran -I/usr/lib/openmpi/include #(norlx5*)
