@@ -912,7 +912,7 @@ module Magnetic
         case('magnetogram'); call mdi_init(f)
         case('cosxcoscosy'); call cosx_coscosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
         case('crazy', '5'); call crazy(amplaa(j),f,iaa)
-        case('sinwave-x'); call sinwave(amplaa(j),f,iaa,kx=kx_aa(j))
+        case('sinwave-x'); call sinwave(amplaa(j),f,iay,kx=kx_aa(j))
         case('coswave-Ax-kx'); call coswave(amplaa(j),f,iax,kx=kx_aa(j))
         case('coswave-Ax-ky'); call coswave(amplaa(j),f,iax,ky=ky_aa(j))
         case('coswave-Ax-kz'); call coswave(amplaa(j),f,iax,kz=kz_aa(j))
@@ -3841,8 +3841,9 @@ module Magnetic
     subroutine alfven_x(ampl,f,iuu,iaa,ilnrho,kx)
 !
 !  Alfven wave propagating in the x-direction
-!  ux = +sin(kx-ot), for B0x=1 and rho=1.
-!  Az = -cos(kx-ot), ie By = sin(kx-ot)
+!
+!  ux = +sink(x-vA*t)
+!  Az = -cosk(x-vA*t)*sqrt(rho*mu0)/k
 !
 !  Alfven and slow magnetosonic are the same here and both incompressible, and
 !  a fast magnetosonic (compressible) wave is also excited, but decoupled.
@@ -3854,19 +3855,29 @@ module Magnetic
 !  dBy/dt = B0*uy'  ==>  dAz/dt = -B0*ux
 !
 !   8-nov-03/axel: coded
+!  29-apr-03/axel: added sqrt(rho*mu0)/k factor
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: ampl,kx
+      real, dimension (nx) :: rho,ampl_Az
+      real :: ampl,kx,ampl_lr,ampl_ux,ampl_uy
       integer :: iuu,iaa,ilnrho
+!
+!  Amplitude factors
+!
+      ampl_lr=+0.
+      ampl_ux=+ampl
+      ampl_uy=+0.
 !
 !  ux and Ay.
 !  Don't overwrite the density, just add to the log of it.
 !
       do n=n1,n2; do m=m1,m2
-        f(l1:l2,m,n,ilnrho)=ampl*sin(kx*x(l1:l2))+f(l1:l2,m,n,ilnrho)
-        f(l1:l2,m,n,iuu+0)=+ampl*sin(kx*x(l1:l2))
-        f(l1:l2,m,n,iuu+1)=+ampl*sin(kx*x(l1:l2))
-        f(l1:l2,m,n,iaa+2)=-ampl*cos(kx*x(l1:l2))
+        f(l1:l2,m,n,ilnrho)=ampl_lr*(sin(kx*x(l1:l2))+f(l1:l2,m,n,ilnrho))
+        f(l1:l2,m,n,iuu+0 )=ampl_ux*sin(kx*x(l1:l2))
+        f(l1:l2,m,n,iuu+1 )=ampl_uy*sin(kx*x(l1:l2))
+        rho=exp(f(l1:l2,m,n,ilnrho))
+        ampl_Az=-ampl*sqrt(rho*mu0)/kx
+        f(l1:l2,m,n,iaa+2 )=ampl_Az*cos(kx*x(l1:l2))
       enddo; enddo
 !
     endsubroutine alfven_x
