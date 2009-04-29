@@ -459,6 +459,9 @@ module Magnetic
   integer :: idiag_etasmagmax=0 ! DIAG_DOC: Max of Smagorinsky resistivity
   integer :: idiag_cosjbm=0     ! DIAG_DOC: $\left<\Jv\cdot\Bv/(|\Jv|\,|\Bv|)\right>$
   integer :: idiag_brmsn=0,idiag_brmss=0,idiag_brmsh=0
+  integer :: idiag_Exmxz=0       ! DIAG_DOC: $\left<{\cal E}_x\right>_{xz}$
+  integer :: idiag_Eymxz=0       ! DIAG_DOC: $\left<{\cal E}_y\right>_{xz}$
+  integer :: idiag_Ezmxz=0       ! DIAG_DOC: $\left<{\cal E}_z\right>_{xz}$
   contains
 
 !***********************************************************************
@@ -2548,6 +2551,9 @@ module Magnetic
             call ysum_mn_name_xz(p%bb(:,1)*p%bb(:,3),idiag_bxbzmxz)
         if (idiag_bybzmxz/=0) &
             call ysum_mn_name_xz(p%bb(:,2)*p%bb(:,3),idiag_bybzmxz)
+        if (idiag_Exmxz/=0) call ysum_mn_name_xz(p%uxb(:,1),idiag_Exmxz)
+        if (idiag_Eymxz/=0) call ysum_mn_name_xz(p%uxb(:,2),idiag_Eymxz)
+        if (idiag_Ezmxz/=0) call ysum_mn_name_xz(p%uxb(:,3),idiag_Ezmxz)
       else
 !
 !  idiag_bxmxy and idiag_bymxy also need to be calculated when
@@ -5149,6 +5155,7 @@ module Magnetic
         idiag_bxbymxz=0; idiag_bxbzmxz=0; idiag_bybzmxz=0
         idiag_bxmxz=0; idiag_bymxz=0; idiag_bzmxz=0
         idiag_axmxz=0; idiag_aymxz=0; idiag_azmxz=0
+        idiag_Exmxz=0; idiag_Eymxz=0; idiag_Ezmxz=0
         idiag_uxbm=0; idiag_oxuxbm=0; idiag_jxbxbm=0.; idiag_gpxbm=0.
         idiag_uxDxuxbm=0.; idiag_uxbmx=0; idiag_uxbmy=0; idiag_uxbmz=0
         idiag_uxbcmx=0; idiag_uxbsmx=0; idiag_uxbcmy=0; idiag_uxbsmy=0
@@ -5426,6 +5433,9 @@ module Magnetic
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bxbymxz',idiag_bxbymxz)
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bxbzmxz',idiag_bxbzmxz)
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bybzmxz',idiag_bybzmxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'Exmxz',idiag_Exmxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'Eymxz',idiag_Eymxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'Ezmxz',idiag_Ezmxz)
       enddo
 !
 !  check for those quantities for which we want z-averages
@@ -5607,6 +5617,9 @@ module Magnetic
         write(3,*) 'i_bx2mxz=',idiag_bx2mxz
         write(3,*) 'i_by2mxz=',idiag_by2mxz
         write(3,*) 'i_bz2mxz=',idiag_bz2mxz
+        write(3,*) 'i_Exmxz=',idiag_Exmxz
+        write(3,*) 'i_Eymxz=',idiag_Eymxz
+        write(3,*) 'i_Ezmxz=',idiag_Ezmxz
         write(3,*) 'i_jbmz=',idiag_jbmz
         write(3,*) 'i_bx2mxy=',idiag_bx2mxy
         write(3,*) 'i_by2mxy=',idiag_by2mxy
