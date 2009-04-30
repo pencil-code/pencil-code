@@ -759,8 +759,8 @@ subroutine flame_front(f)
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) ::  tmp_sum,tmp_sum2, nuk_nuj, nu_dyn
-      real, dimension (mx,my,mz,nchemspec,nchemspec) :: Phi
+      real, dimension (mx,my,mz) ::  tmp_sum,tmp_sum2, nuk_nuj, nu_dyn, Phi
+   !   real, dimension (mx,my,mz,nchemspec,nchemspec) :: Phi
       real, dimension (mx,my,mz,nchemspec) :: species_cond
 !
       intent(in) :: f
@@ -917,27 +917,33 @@ subroutine flame_front(f)
             nu_full=nu_dyn/rho_full
           else 
 !
+            nu_dyn=0.
             do k=1,nchemspec
+              tmp_sum2=0.
               do j=1,nchemspec
                 !if (j .ne. k) then
                 mk_mj=species_constants(k,imass) &
                     /species_constants(j,imass)
                 nuk_nuj(:,:,:)=species_viscosity(:,:,:,k) &
                     /species_viscosity(:,:,:,j)
-                Phi(:,:,:,k,j)=1./sqrt(8.)*1./sqrt(1.+mk_mj) &
+                Phi(:,:,:)=1./sqrt(8.)*1./sqrt(1.+mk_mj) &
                     *(1.+sqrt(nuk_nuj)*mk_mj**(-0.25))**2
+                tmp_sum2=tmp_sum2+XX_full(:,:,:,j)*Phi(:,:,:)
                 !endif
-              enddo
-            enddo
-            nu_dyn=0.
-            do k=1,nchemspec 
-              tmp_sum2=0.
-              do j=1,nchemspec 
-                tmp_sum2=tmp_sum2+XX_full(:,:,:,j)*Phi(:,:,:,k,j) 
               enddo
               nu_dyn=nu_dyn+XX_full(:,:,:,k)*&
                   species_viscosity(:,:,:,k)/tmp_sum2
             enddo
+            
+          !  nu_dyn=0.
+          !  do k=1,nchemspec 
+          !    tmp_sum2=0.
+          !    do j=1,nchemspec 
+          !      tmp_sum2=tmp_sum2+XX_full(:,:,:,j)*Phi(:,:,:,k,j) 
+          !    enddo
+          !    nu_dyn=nu_dyn+XX_full(:,:,:,k)*&
+          !        species_viscosity(:,:,:,k)/tmp_sum2
+          !  enddo
     
               nu_full=nu_dyn/rho_full      
 
