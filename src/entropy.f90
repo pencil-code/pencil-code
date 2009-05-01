@@ -1743,9 +1743,9 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
       if (lpressuregradient_gas) lpenc_requested(i_fpres)=.true.
       if (ladvection_entropy) lpenc_requested(i_ugss)=.true.
       if (lviscosity.and.lviscosity_heat) then
-        lpencil_in(i_TT1)=.true.
+        lpenc_requested(i_TT1)=.true.
         lpenc_requested(i_visc_heat)=.true.
-        if (pretend_lnTT) lpencil_in(i_cv1)=.true.
+        if (pretend_lnTT) lpenc_requested(i_cv1)=.true.
       endif
       if (tau_cor>0.0) then
         lpenc_requested(i_cp1)=.true.
