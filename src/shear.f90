@@ -16,10 +16,11 @@ module Shear
   implicit none
 
   real, dimension (nz) :: uy0_extra, duy0dz_extra
-  real :: eps_vshear=0.0, x0_shear=0.0
+  real :: eps_vshear=0.0, x0_shear=0.0, Bshear=0.01
   logical :: luy0_extra=.false.,lshearadvection_as_shift=.false.
   logical :: lmagnetic_stretching=.true.,lrandomx0=.false.
   logical, target :: lcoriolis_force=.true., lcentrifugal_force=.false.
+  logical :: lglobal_baroclinic=.false.
 
   include 'shear.h'
 
@@ -29,7 +30,8 @@ module Shear
 
   namelist /shear_run_pars/ &
       qshear,Sshear,deltay,eps_vshear,Omega,lshearadvection_as_shift, &
-      lmagnetic_stretching,lrandomx0,x0_shear,lcoriolis_force,lcentrifugal_force
+      lmagnetic_stretching,lrandomx0,x0_shear,lcoriolis_force,lcentrifugal_force,&
+      lglobal_baroclinic,Bshear
 
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_dtshear=0    ! DIAG_DOC: advec\_shear/cdt
@@ -177,7 +179,54 @@ module Shear
 !
     endsubroutine shear_before_boundary
 !***********************************************************************
-    subroutine shearing(f,df)
+    subroutine pencil_criteria_shear()
+!
+!  All pencils that the Shear module depends on are specified here.
+!
+!  01-may-09/wlad: coded
+!
+      if (lhydro)    lpenc_requested(i_uu)=.true.
+      if (lmagnetic) lpenc_requested(i_aa)=.true.
+!
+      if (lglobal_baroclinic) then 
+        lpenc_requested(i_rho1)=.true.
+        lpenc_requested(i_uu)=.true.
+        if (lentropy) lpenc_requested(i_TT1)=.true.
+      endif
+!
+    endsubroutine pencil_criteria_shear
+!***********************************************************************
+    subroutine pencil_interdep_shear(lpencil_in)
+!
+!  Interdependency among pencils from the Shear module is specified here.
+!
+!  01-may-09/wlad: coded
+!
+      use Sub, only: keep_compiler_quiet
+      logical, dimension(npencils) :: lpencil_in
+      call keep_compiler_quiet(lpencil_in)
+!
+    endsubroutine pencil_interdep_shear
+!***********************************************************************
+    subroutine calc_pencils_shear(f,p)
+!
+!  Calculate Shear pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!  01-may-09/wlad: coded
+!
+      use Sub, only: keep_compiler_quiet
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
+      intent(in) :: f,p
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
+!
+    endsubroutine calc_pencils_shear
+!***********************************************************************
+    subroutine shearing(f,df,p)
 !
 !  Calculates the shear terms, -uy0*df/dy (shearing sheat approximation)
 !
@@ -192,6 +241,7 @@ module Shear
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
 !
       real, dimension (ny,nz) :: f_tmp_yz
       real, dimension (nx) :: uy0,dfdy
@@ -225,10 +275,10 @@ module Shear
 ! in hydro.
 !
       if (lhydro) then
-        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-Sshear*f(l1:l2,m,n,iux)
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-Sshear*p%uu(:,1)
 !
         if (luy0_extra) df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) &
-           -f(l1:l2,m,n,iuz)*duy0dz_extra(n-nghost)
+           -p%uu(:,3)*duy0dz_extra(n-nghost)
       endif
 !
 !  Loop over dust species
@@ -249,8 +299,9 @@ module Shear
 !  Magnetic stretching term (can be turned off for debugging purposes).
 !
       if (lmagnetic .and. lmagnetic_stretching) then
-        df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)-Sshear*f(l1:l2,m,n,iay)
-        if (luy0_extra) df(l1:l2,m,n,iaz)=df(l1:l2,m,n,iaz)-duy0dz_extra(n-nghost)*f(l1:l2,m,n,iay)
+        df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)-Sshear*p%aa(:,2)
+        if (luy0_extra) df(l1:l2,m,n,iaz)=df(l1:l2,m,n,iaz)&
+            -p%aa(:,2)*duy0dz_extra(n-nghost)
       endif
 !
 !  Testfield stretching term
@@ -277,6 +328,10 @@ module Shear
       if (iam/=0) then
         df(l1:l2,m,n,iamx)=df(l1:l2,m,n,iamx)-Sshear*f(l1:l2,m,n,iamy)
       endif
+!
+!  Global baroclinic term 
+!
+      if (lglobal_baroclinic) call global_baroclinic(f,df,p)
 !
 !  Take shear into account for calculating time step
 !
@@ -413,6 +468,44 @@ module Shear
       endif
 !
     endsubroutine fourier_shift_ghostzones
+!***********************************************************************
+    subroutine global_baroclinic(f,df,p)
+!
+      use EquationOfState, only: rho0,cs20,gamma11,gamma1
+      use Messages, only: fatal_error
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p     
+      real :: P0
+!
+!  x-momentum
+!      
+      P0=rho0*cs20*gamma11
+      df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-Bshear*P0/rho0*(p%rho1*rho0-1.)
+!
+!  entropy
+!
+      if (lentropy) then 
+        df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) + &
+            p%rho1*p%TT1*Bshear*P0*p%uu(:,1)/gamma1
+        if (pretend_lnTT) then 
+          print*,"Global baroclinity not implemented yet "
+          print*,"for pretend_lnTT."
+          call fatal_error("global baroclinic","") 
+        endif
+      elseif (ltemperature) then 
+        print*,"Global baroclinity not implemented yet "
+        print*,"for the temperature equation."
+        call fatal_error("global baroclinic","") 
+      else
+        print*,"You want to use a global baroclinic term but    "
+        print*,"you are NOT solving the energy equation. Better "
+        print*,"stop and check."
+        call fatal_error("global_baroclinic","")
+      endif
+!
+      endsubroutine global_baroclinic
 !***********************************************************************
     subroutine rprint_shear(lreset,lwrite)
 !

@@ -92,7 +92,45 @@ module Shear
 !
     endsubroutine shear_before_boundary
 !***********************************************************************
-    subroutine shearing(f,df)
+    subroutine pencil_criteria_shear()
+!
+!  All pencils that the Shear module depends on are specified here.
+!
+!  01-may-09/wlad: coded
+!
+    endsubroutine pencil_criteria_shear
+!***********************************************************************
+    subroutine pencil_interdep_shear(lpencil_in)
+!
+!  Interdependency among pencils from the Shear module is specified here.
+!
+!  01-may-09/wlad: coded
+!
+      use Sub, only: keep_compiler_quiet
+      logical, dimension(npencils) :: lpencil_in
+      call keep_compiler_quiet(lpencil_in)
+!
+    endsubroutine pencil_interdep_shear
+!***********************************************************************
+    subroutine calc_pencils_shear(f,p)
+!
+!  Calculate Shear pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!  01-may-09/wlad: coded
+!
+      use Sub, only: keep_compiler_quiet
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
+      intent(in) :: f,p
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
+!
+    endsubroutine calc_pencils_shear
+!***********************************************************************
+    subroutine shearing(f,df,p)
 !
 !  Calculates the actual shear terms
 !
@@ -103,8 +141,10 @@ module Shear
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
 !
-      if (NO_WARN) print*,f,df !(to keep compiler quiet)
+
+      if (NO_WARN) print*,f,df,p !(to keep compiler quiet)
     endsubroutine shearing
 !***********************************************************************
     subroutine advance_shear(f,df,dt_shear)

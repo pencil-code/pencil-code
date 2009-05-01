@@ -377,6 +377,7 @@ module Equ
         if (lcosmicrayflux)   call calc_pencils_cosmicrayflux(f,p)
         if (lchiral)          call calc_pencils_chiral(f,p)
         if (lradiation)       call calc_pencils_radiation(f,p)
+        if (lshear)           call calc_pencils_shear(f,p)
         if (lspecial)         call calc_pencils_special(f,p)
         if (lborder_profiles) call calc_pencils_borderprofiles(f,p)
         if (lparticles)       call particles_calc_pencils(f,p)
@@ -471,7 +472,7 @@ module Equ
 !
 !  Add shear if present
 !
-        if (lshear) call shearing(f,df)
+        if (lshear) call shearing(f,df,p)
 !
         if (lparticles) call particles_pde_pencil(f,df,p)
 !
