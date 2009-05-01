@@ -468,8 +468,9 @@ module Entropy
 !
       if (lviscosity.and.lviscosity_heat) then
         lpenc_requested(i_cv1)=.true.
-        lpenc_requested(i_TT1)=.true.
         lpenc_requested(i_visc_heat)=.true.
+        if (.not.ltemperature_nolog) &
+            lpenc_requested(i_TT1)=.true.
       endif
 !
       if (ldensity) then

@@ -544,7 +544,7 @@ module Entropy
         case ('shock')
           lheatc_shock=.true.
           if (lroot) print*, 'heat conduction: shock'
-        case ('hyper3_ss')
+        case ('hyper3_ss','hyper3')
           lheatc_hyper3ss=.true.
           if (lroot) print*, 'heat conduction: hyperdiffusivity of ss'
         case ('hyper3_cyl','hyper3-cyl','hyper3-sph','hyper3_sph')
@@ -1742,7 +1742,11 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
       if (ldt) lpenc_requested(i_cs2)=.true.
       if (lpressuregradient_gas) lpenc_requested(i_fpres)=.true.
       if (ladvection_entropy) lpenc_requested(i_ugss)=.true.
-      if (lviscosity_heat) lpenc_requested(i_visc_heat)=.true.
+      if (lviscosity.and.lviscosity_heat) then
+        lpencil_in(i_TT1)=.true.
+        lpenc_requested(i_visc_heat)=.true.
+        if (pretend_lnTT) lpencil_in(i_cv1)=.true.
+      endif
       if (tau_cor>0.0) then
         lpenc_requested(i_cp1)=.true.
         lpenc_requested(i_TT1)=.true.
