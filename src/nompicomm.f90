@@ -178,33 +178,6 @@ module Mpicomm
 !
     endsubroutine mpicomm_init
 !***********************************************************************
-    subroutine initiate_isendrcv_shockbdry(f,ivar1_opt,ivar2_opt)
-!
-!  for one processor, use periodic boundary conditions
-!  but in this dummy routine this is done in finalize_isendrcv_bdry
-!
-      use Cdata
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      integer, optional :: ivar1_opt, ivar2_opt
-!
-      if (NO_WARN) print*, f, ivar1_opt, ivar2_opt !(keep compiler quiet)
-!
-    endsubroutine initiate_isendrcv_shockbdry
-!***********************************************************************
-    subroutine finalize_isendrcv_shockbdry(f,ivar1_opt,ivar2_opt)
-!
-!  apply boundary conditions
-!
-      use Cparam
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      integer, optional :: ivar1_opt, ivar2_opt
-!
-      if (NO_WARN) print*, f, ivar1_opt, ivar2_opt !(keep compiler quiet)
-!
-    endsubroutine finalize_isendrcv_shockbdry
-!***********************************************************************
     subroutine initiate_isendrcv_bdry(f,ivar1_opt,ivar2_opt)
 !
 !  for one processor, use periodic boundary conditions

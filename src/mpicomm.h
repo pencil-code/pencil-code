@@ -24,7 +24,6 @@
 
   public :: start_serialize,end_serialize
   public :: initiate_isendrcv_bdry, finalize_isendrcv_bdry
-  public :: initiate_isendrcv_shockbdry, finalize_isendrcv_shockbdry
   public :: initiate_shearing, finalize_shearing
 
   public :: transp,transp_xy,transp_xz,transp_zx

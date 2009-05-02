@@ -439,7 +439,7 @@ module Shock
 ! Initiate asyncronous communication of contributions to other processors
 !
           if (nxgrid/=1) call bcshock_per_x(f)
-          call initiate_isendrcv_shockbdry(f,ishock,ishock)
+          call initiate_isendrcv_bdry(f,ishock,ishock)
 !
 ! Calculate all local shock profile contributions
 !
@@ -448,7 +448,7 @@ module Shock
 !
 ! Finalize all shock profile communications
 !
-          call finalize_isendrcv_shockbdry(f,ishock,ishock)
+          call finalize_isendrcv_bdry(f,ishock,ishock)
           if (nygrid/=1) call bcshock_per_y(f)
           if (nzgrid/=1) call bcshock_per_z(f)
 !FIX ME
