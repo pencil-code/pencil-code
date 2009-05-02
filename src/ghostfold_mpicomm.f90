@@ -31,12 +31,15 @@ module GhostFold
 !
       real, dimension (nx+2,ny+2,1,ivar2-ivar1+1) :: df_tmp_xy
       real, dimension (nx+2,1,nz,ivar2-ivar1+1) :: df_tmp_xz
-      real, dimension (ny,nz) :: df_tmp_yz
+      real, dimension (ny,nz,ivar2-ivar1+1) :: df_tmp_yz
+      real, dimension (ny,nz) :: df_tmp_yz_one
       integer :: nvar_fold, iproc_rcv, ivar
 !
       nvar_fold=ivar2-ivar1+1
+!
 !  The first ghost zone in the z-direction is folded (the corners will find
 !  their proper positions after folding in x and y as well).
+!
       if (nzgrid/=1) then
         if (nprocz==1) then
           df(l1-1:l2+1,m1-1:m2+1,n1,ivar1:ivar2)= &
@@ -70,7 +73,9 @@ module GhostFold
         df(l1-1:l2+1,m1-1:m2+1,n1-1,ivar1:ivar2)=0.0
         df(l1-1:l2+1,m1-1:m2+1,n2+1,ivar1:ivar2)=0.0
       endif
+!
 ! Then y.
+!
       if (nygrid/=1) then
         if (nprocy==1) then
           df(l1-1:l2+1,m1,n1:n2,ivar1:ivar2)= &
@@ -108,26 +113,51 @@ module GhostFold
 !
         if (nxgrid>1 .and. lshear) then
           do ivar=ivar1,ivar2
-            df_tmp_yz=df(l1-1,m1:m2,n1:n2,ivar)
-            call fourier_shift_yz_y(df_tmp_yz,-deltay)
-            df(l1-1,m1:m2,n1:n2,ivar)=df_tmp_yz
-            df_tmp_yz=df(l2+1,m1:m2,n1:n2,ivar)
-            call fourier_shift_yz_y(df_tmp_yz,+deltay)
-            df(l2+1,m1:m2,n1:n2,ivar)=df_tmp_yz
+            df_tmp_yz_one=df(l1-1,m1:m2,n1:n2,ivar)
+            call fourier_shift_yz_y(df_tmp_yz_one,-deltay)
+            df(l1-1,m1:m2,n1:n2,ivar)=df_tmp_yz_one
+            df_tmp_yz_one=df(l2+1,m1:m2,n1:n2,ivar)
+            call fourier_shift_yz_y(df_tmp_yz_one,+deltay)
+            df(l2+1,m1:m2,n1:n2,ivar)=df_tmp_yz_one
           enddo
         endif
 !
         df(l1-1:l2+1,m1-1,n1:n2,ivar1:ivar2)=0.0
         df(l1-1:l2+1,m2+1,n1:n2,ivar1:ivar2)=0.0
       endif
-! Then x (always at the same processor).
+!
+! Finally x.
+!
       if (nxgrid/=1) then
-        df(l1,m1:m2,n1:n2,ivar1:ivar2)=df(l1,m1:m2,n1:n2,ivar1:ivar2) + &
-            df(l2+1,m1:m2,n1:n,ivar1:ivar2)
-        df(l2,m1:m2,n1:n2,ivar1:ivar2)=df(l2,m1:m2,n1:n2,ivar1:ivar2) + &
-            df(l1-1,m1:m2,n1:n2,ivar1:ivar2)
-        df(l1-1,m1:m2,n1:n2,ivar1:ivar2)=0.0
-        df(l2+1,m1:m2,n1:n2,ivar1:ivar2)=0.0
+        if (nprocx==1) then
+          df(l1,m1:m2,n1:n2,ivar1:ivar2)=df(l1,m1:m2,n1:n2,ivar1:ivar2) + &
+              df(l2+1,m1:m2,n1:n,ivar1:ivar2)
+          df(l2,m1:m2,n1:n2,ivar1:ivar2)=df(l2,m1:m2,n1:n2,ivar1:ivar2) + &
+              df(l1-1,m1:m2,n1:n2,ivar1:ivar2)
+        else
+          do iproc_rcv=0,ncpus-1
+            if (iproc==iproc_rcv) then
+              call mpirecv_real(df_tmp_yz, &
+                  (/1,ny,nz,nvar_fold/), xlneigh, 10004)
+            elseif (iproc_rcv==xuneigh) then
+              call mpisend_real(df(l2+1,m1:m2,n1:n2,ivar1:ivar2), &
+                  (/1,ny,nz,nvar_fold/), xuneigh, 10004)
+            endif
+            if (iproc==iproc_rcv) df(l1,m1:m2,n1:n2,ivar1:ivar2)= &
+                df(l1,m1:m2,n1:n2,ivar1:ivar2) + df_tmp_yz
+            if (iproc==iproc_rcv) then
+              call mpirecv_real(df_tmp_yz, &
+                  (/1,ny,nz,nvar_fold/), xuneigh, 10005)
+            elseif (iproc_rcv==xlneigh) then
+              call mpisend_real(df(l1-1,m1:m2,n1:n2,ivar1:ivar2), &
+                  (/1,ny,nz,nvar_fold/), xlneigh, 10005)
+            endif
+            if (iproc==iproc_rcv) df(l2,m1:m2,n1:n2,ivar1:ivar2)= &
+                df(l2,m1:m2,n1:n2,ivar1:ivar2) + df_tmp_yz
+          enddo
+          df(l1-1,m1:m2,n1:n2,ivar1:ivar2)=0.0
+          df(l2+1,m1:m2,n1:n2,ivar1:ivar2)=0.0
+        endif
       endif
 !
     endsubroutine fold_df
@@ -146,13 +176,16 @@ module GhostFold
       integer :: ivar1, ivar2
 !
       real, dimension (nx+2,ny+2,1,ivar2-ivar1+1) :: f_tmp_xy
-      real, dimension (nx+2,1,nz,ivar2-ivar1+1) :: f_tmp_xz
-      real, dimension (ny,nz) :: f_tmp_yz
+      real, dimension (nx+2,1,nz,ivar2-ivar1+1)   :: f_tmp_xz
+      real, dimension (ny,nz,ivar2-ivar1+1) :: f_tmp_yz
+      real, dimension (ny,nz) :: f_tmp_yz_one
       integer :: nvar_fold, iproc_rcv, ivar
 !
       nvar_fold=ivar2-ivar1+1
+!
 !  The first ghost zone in the z-direction is folded (the corners will find
 !  their proper positions after folding in x and y as well).
+!
       if (nzgrid/=1) then
         if (nprocz==1) then
           f(l1-1:l2+1,m1-1:m2+1,n1,ivar1:ivar2)= &
@@ -186,7 +219,9 @@ module GhostFold
         f(l1-1:l2+1,m1-1:m2+1,n1-1,ivar1:ivar2)=0.0
         f(l1-1:l2+1,m1-1:m2+1,n2+1,ivar1:ivar2)=0.0
       endif
+!
 ! Then y.
+!
       if (nygrid/=1) then
         if (nprocy==1) then
           f(l1-1:l2+1,m1,n1:n2,ivar1:ivar2)= &
@@ -224,26 +259,51 @@ module GhostFold
 !
         if (nxgrid>1 .and. lshear) then
           do ivar=ivar1,ivar2
-            f_tmp_yz=f(l1-1,m1:m2,n1:n2,ivar)
-            call fourier_shift_yz_y(f_tmp_yz,-deltay)
-            f(l1-1,m1:m2,n1:n2,ivar)=f_tmp_yz
-            f_tmp_yz=f(l2+1,m1:m2,n1:n2,ivar)
-            call fourier_shift_yz_y(f_tmp_yz,+deltay)
-            f(l2+1,m1:m2,n1:n2,ivar)=f_tmp_yz
+            f_tmp_yz_one=f(l1-1,m1:m2,n1:n2,ivar)
+            call fourier_shift_yz_y(f_tmp_yz_one,-deltay)
+            f(l1-1,m1:m2,n1:n2,ivar)=f_tmp_yz_one
+            f_tmp_yz_one=f(l2+1,m1:m2,n1:n2,ivar)
+            call fourier_shift_yz_y(f_tmp_yz_one,+deltay)
+            f(l2+1,m1:m2,n1:n2,ivar)=f_tmp_yz_one
           enddo
         endif
 !
         f(l1-1:l2+1,m1-1,n1:n2,ivar1:ivar2)=0.0
         f(l1-1:l2+1,m2+1,n1:n2,ivar1:ivar2)=0.0
       endif
-! Then x (always at the same processor).
+!
+! Finally x.
+!
       if (nxgrid/=1) then
-        f(l1,m1:m2,n1:n2,ivar1:ivar2)=f(l1,m1:m2,n1:n2,ivar1:ivar2) + &
-            f(l2+1,m1:m2,n1:n,ivar1:ivar2)
-        f(l2,m1:m2,n1:n2,ivar1:ivar2)=f(l2,m1:m2,n1:n2,ivar1:ivar2) + &
-            f(l1-1,m1:m2,n1:n2,ivar1:ivar2)
-        f(l1-1,m1:m2,n1:n2,ivar1:ivar2)=0.0
-        f(l2+1,m1:m2,n1:n2,ivar1:ivar2)=0.0
+        if (nprocx==1) then
+          f(l1,m1:m2,n1:n2,ivar1:ivar2)=f(l1,m1:m2,n1:n2,ivar1:ivar2) + &
+              f(l2+1,m1:m2,n1:n,ivar1:ivar2)
+          f(l2,m1:m2,n1:n2,ivar1:ivar2)=f(l2,m1:m2,n1:n2,ivar1:ivar2) + &
+              f(l1-1,m1:m2,n1:n2,ivar1:ivar2)
+        else
+          do iproc_rcv=0,ncpus-1
+            if (iproc==iproc_rcv) then
+              call mpirecv_real(f_tmp_yz, &
+                  (/1,ny,nz,nvar_fold/), xlneigh, 10004)
+            elseif (iproc_rcv==xuneigh) then
+              call mpisend_real(f(l2+1,m1:m2,n1:n2,ivar1:ivar2), &
+                  (/1,ny,nz,nvar_fold/), xuneigh, 10004)
+            endif
+            if (iproc==iproc_rcv) f(l1,m1:m2,n1:n2,ivar1:ivar2)= &
+                f(l1,m1:m2,n1:n2,ivar1:ivar2) + f_tmp_yz
+            if (iproc==iproc_rcv) then
+              call mpirecv_real(f_tmp_yz, &
+                  (/1,ny,nz,nvar_fold/), xuneigh, 10005)
+            elseif (iproc_rcv==xlneigh) then
+              call mpisend_real(f(l1-1,m1:m2,n1:n2,ivar1:ivar2), &
+                  (/1,ny,nz,nvar_fold/), xlneigh, 10005)
+            endif
+            if (iproc==iproc_rcv) f(l2,m1:m2,n1:n2,ivar1:ivar2)= &
+                f(l2,m1:m2,n1:n2,ivar1:ivar2) + f_tmp_yz
+          enddo
+          f(l1-1,m1:m2,n1:n2,ivar1:ivar2)=0.0
+          f(l2+1,m1:m2,n1:n2,ivar1:ivar2)=0.0
+        endif
       endif
 !
     endsubroutine fold_f

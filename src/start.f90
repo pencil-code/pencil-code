@@ -218,12 +218,12 @@ program start
   Lxyz_loc(1)=Lxyz(1)/nprocx
   Lxyz_loc(2)=Lxyz(2)/nprocy
   Lxyz_loc(3)=Lxyz(3)/nprocz
-  xyz0_loc(1)=xyz0(1)
+  xyz0_loc(1)=xyz0(1)+ipx*Lxyz_loc(1)
   xyz0_loc(2)=xyz0(2)+ipy*Lxyz_loc(2)
   xyz0_loc(3)=xyz0(3)+ipz*Lxyz_loc(3)
-  xyz1_loc(1)=xyz1(1)
-  xyz1_loc(2)=xyz0(2)+(ipy+1)*Lxyz_loc(2)
-  xyz1_loc(3)=xyz0(3)+(ipz+1)*Lxyz_loc(3)
+  xyz1_loc(1)=xyz0_loc(1)+Lxyz_loc(1)
+  xyz1_loc(2)=xyz0_loc(2)+Lxyz_loc(2)
+  xyz1_loc(3)=xyz0_loc(3)+Lxyz_loc(3)
 !
 !  Calculate dimensionality of the run.
 !

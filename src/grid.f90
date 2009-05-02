@@ -70,7 +70,7 @@ module Grid
       use Cdata, only: xyz_step,xi_step_frac,xi_step_width
       use Cdata, only: lperi,lshift_origin,xyz_star,lequidist
       use Cdata, only: pi
-      use Cdata, only: procy_bounds,procz_bounds
+      use Cdata, only: procx_bounds,procy_bounds,procz_bounds
       use Messages
 
       real, dimension(mx), intent(out) :: x
@@ -90,6 +90,7 @@ module Grid
       real, dimension(my) :: g2,g2der1,g2der2,xi2,yprim2
       real, dimension(mz) :: g3,g3der1,g3der2,xi3,zprim2
 
+      real, dimension(0:2*nprocx+1) :: xi1proc,g1proc
       real, dimension(0:2*nprocy+1) :: xi2proc,g2proc
       real, dimension(0:2*nprocz+1) :: xi3proc,g3proc
 
@@ -138,6 +139,10 @@ module Grid
 !  should use these arrays to set g{2,3}proc using the grid function.
 !
       if (lparticles) then
+        do i=0,nprocx
+          xi1proc(2*i)  =i*nx-1
+          xi1proc(2*i+1)=i*nx
+        enddo
         do i=0,nprocy
           xi2proc(2*i)  =i*ny-1
           xi2proc(2*i+1)=i*ny
@@ -158,13 +163,14 @@ module Grid
 !
 !  x coordinate
 !
-      if (nxgrid == 1) then
+      if (nxgrid==1) then
         x = x00
         ! hopefully, we will only ever multiply by the following quantities:
         xprim = 0.
         xprim2 = 0.
         dx_1 = 0.
         dx_tilde = 0.
+        g1proc=x00
       else
         ! Test whether grid function is valid
         call grid_profile(dummy1,grid_func(1),dummy2,err=err)
@@ -184,6 +190,11 @@ module Grid
           xprim =    Lx*(g1der1*a   )/(g1up-g1lo)
           xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
 
+          if (lparticles) then
+            call grid_profile(a*(xi1proc-xi1star),grid_func(1),g1proc)
+            g1proc=x00+Lx*(g1proc  -  g1lo)/(g1up-g1lo)
+          endif
+
         case ('step-linear')
 
           xi_step(1,1)=xi_step_frac(1,1)*(nxgrid-1.0)
@@ -201,6 +212,12 @@ module Grid
           x     = x00 + g1-g1lo
           xprim = g1der1
           xprim2= g1der2
+          
+          if (lparticles) then
+            g1proc=x00+g1proc-g1lo
+            call grid_profile(xi1proc,grid_func(1),g1proc, &
+              dxyz=dxyz_step(2,:),xistep=xi_step(2,:),delta=xi_step_width(2,:))
+          endif
 
         case('duct')
           a = pi/(max(nxgrid-1,1))
@@ -211,6 +228,13 @@ module Grid
           x     =x00+Lx*(g1-g1lo)/2
           xprim =    Lx*(g1der1*a   )/2
           xprim2=    Lx*(g1der2*a**2)/2
+
+          if (lparticles) then
+            g1proc=x00+Lx*(g1proc-g1lo)/2
+            call grid_profile(a*xi1proc-pi/2,grid_func(1),g1proc)
+            g1proc(0)=g1proc(1)-x(l1+1)+x(l1)
+            g1proc(2*nprocx+1)=g1proc(2*nprocx)+x(l2)-x(l2-1)
+          endif
 
           if (ipx==0) then
             bound_prim1=x(l1+1)-x(l1)
@@ -286,7 +310,7 @@ module Grid
 !
 !  y coordinate
 !
-      if (nygrid == 1) then
+      if (nygrid==1) then
         y = y00
         ! hopefully, we will only ever multiply by the following quantities:
         yprim = 0.
@@ -393,7 +417,7 @@ module Grid
 !
 !  z coordinate
 !
-      if (nzgrid == 1) then
+      if (nzgrid==1) then
         z = z00
         ! hopefully, we will only ever multiply by the following quantities:
         zprim = 0.
@@ -462,10 +486,12 @@ module Grid
 !  boundaries
 !
       if (lparticles) then
+        do i=0,nprocx
+          procx_bounds(i)=(g1proc(2*i)+g1proc(2*i+1))*0.5
+        enddo
         do i=0,nprocy
           procy_bounds(i)=(g2proc(2*i)+g2proc(2*i+1))*0.5
         enddo
-!
         do i=0,nprocz
           procz_bounds(i)=(g3proc(2*i)+g3proc(2*i+1))*0.5
         enddo

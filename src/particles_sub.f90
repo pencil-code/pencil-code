@@ -520,7 +520,7 @@ module Particles_sub
       real, dimension (0:ncpus-1,npar_mig,mpvar) :: fp_mig, dfp_mig
       integer, dimension (0:ncpus-1,npar_mig) :: ipar_mig
       integer, dimension (0:ncpus-1,0:ncpus-1) :: nmig
-      integer :: i, j, k, iproc_rec, ipy_rec, ipz_rec
+      integer :: i, j, k, iproc_rec, ipx_rec, ipy_rec, ipz_rec
       logical :: lredo, lredo_all
 !
       intent (inout) :: fp, npar_loc, ipar, dfp
@@ -531,7 +531,7 @@ module Particles_sub
       do while (lredo_all)
         lredo=.false.
 !
-!  Find out which particles are not in the local processor's yz-interval.
+!  Find out which particles are not in the local processor's xyz-interval.
 !  Need to use special definition of processor boundaries for migration since
 !  the physical processor boundaries may be closer to a ghost point than to a
 !  physical grid point. Thus we need to define the boundary as the average
@@ -539,6 +539,23 @@ module Particles_sub
 !
         nmig=0
         do k=npar_loc,1,-1
+!  Find x index of receiving processor.
+          ipx_rec=ipx
+          if (fp(k,ixp)>=procx_bounds(ipx+1).and.ipx<nprocx-1) then
+            do j=ipx+1,nprocx-1
+              if (fp(k,ixp)<procx_bounds(j+1)) then
+                ipx_rec=j
+                exit
+              endif
+            enddo
+          else if (fp(k,ixp)<procx_bounds(ipx).and.ipx>0) then
+            do j=ipx-1,0,-1
+              if (fp(k,ixp)>procx_bounds(j)) then
+                ipx_rec=j
+                exit
+              endif
+            enddo
+          endif
 !  Find y index of receiving processor.
           ipy_rec=ipy
           if (fp(k,iyp)>=procy_bounds(ipy+1).and.ipy<nprocy-1) then
@@ -578,15 +595,23 @@ module Particles_sub
 !  box boundary and is assigned to a non-existing processor.
 !
           if (lcheck_exact_frontier) then
-            if (nprocy/=1) then 
+            if (nprocx/=1) then 
 !
-!  Check if the particle is really closer to a grid cell than to a  
-!  ghost one. Otherwise, this is a more serious particle position 
+!  check if the particle is really closer to a grid cell than to a  
+!  ghost one. otherwise, this is a more serious particle position 
 !  problem, that should be allowed to lead to a crash.
 !
-              if (ipy_rec==-1) then
-!  This hopefully doesn't happen often, so the division is not as bad as it
+              if (ipx_rec==-1) then
+!  this hopefully doesn't happen often, so the division is not as bad as it
 !  seems and makes it more legible.
+                if (xyz0(1)-fp(k,ixp)<=(x(l1)-x(l1-1))/2) ipx_rec=0
+              endif
+              if (ipx_rec==nprocx) then 
+                if (fp(k,ixp)-xyz1(1)<=(x(l2+1)-x(l2))/2) ipx_rec=nprocx-1
+              endif
+            endif
+            if (nprocy/=1) then 
+              if (ipy_rec==-1) then
                 if (xyz0(2)-fp(k,iyp)<=(y(m1)-y(m1-1))/2) ipy_rec=0
               endif
               if (ipy_rec==nprocy) then 
@@ -605,7 +630,7 @@ module Particles_sub
 !
 !  Calculate serial index of receiving processor.
 !
-          iproc_rec=ipy_rec+nprocy*ipz_rec
+          iproc_rec=ipx_rec+nprocx*ipy_rec+nprocy*ipz_rec
 !
 !  Migrate particle if it is no longer at the current processor.
 !
@@ -621,6 +646,8 @@ module Particles_sub
                   iproc, iproc_rec
               print*, 'redist_particles_procs: ipar(k), xxp=', &
                   ipar(k), fp(k,ixp:izp)
+              print*, 'redist_particles_procs: x0_mig, x1_mig=', &
+                  procx_bounds(ipx), procx_bounds(ipx+1)
               print*, 'redist_particles_procs: y0_mig, y1_mig=', &
                   procy_bounds(ipy), procy_bounds(ipy+1)
               print*, 'redist_particles_procs: z0_mig, z1_mig=', &
@@ -732,6 +759,17 @@ module Particles_sub
 !
             if (lmigration_real_check) then
               do k=npar_loc+1,npar_loc+nmig(i,iproc)
+                if (nxgrid/=1) then
+                  if (fp(k,ixp)<procx_bounds(ipx) .or. &
+                      fp(k,ixp)>=procx_bounds(ipx+1)) then
+                    print*, 'redist_particles_procs: received particle '// &
+                        'closer to ghost point than to physical grid point!'
+                    print*, 'redist_particles_procs: ipar, xxp=', &
+                        ipar(k), fp(k,ixp:izp)
+                    print*, 'redist_particles_procs: x0_mig, x1_mig=', &
+                        procx_bounds(ipx), procx_bounds(ipx+1)
+                  endif
+                endif
                 if (nygrid/=1) then
                   if (fp(k,iyp)<procy_bounds(ipy) .or. &
                       fp(k,iyp)>=procy_bounds(ipy+1)) then

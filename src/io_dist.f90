@@ -435,6 +435,7 @@ contains
       logical :: ioerr=.true.
 !
       open(20,FILE=file,FORM='unformatted',err=930)
+      write(20) procx_bounds
       write(20) procy_bounds
       write(20) procz_bounds
       close(20)
@@ -458,6 +459,7 @@ contains
       character (len=*) :: file
 !
       open(1,FILE=file,FORM='unformatted')
+      read(1) procx_bounds
       read(1) procy_bounds
       read(1) procz_bounds
       close(1)
