@@ -1353,7 +1353,7 @@ module Radiation
 !
       select case (trim(slices%name))
 !
-!  Surface intensity (derived variable)
+!  Surface intensity
 !     use precalculated buffers from Qrevision routine
 !
         case ('Isurf')
@@ -1375,7 +1375,7 @@ module Radiation
               if ((slices%index < ndir) slices%ready = .true.
             endif
 !
-!  Heating rate (auxiliary variable)
+!  Heating rate
 !
         case ('Qrad')
           slices%yz=f(ix_loc,m1:m2,n1:n2,iQrad)
@@ -1384,7 +1384,7 @@ module Radiation
           slices%xy2=f(l1:l2,m1:m2,iz2_loc,iQrad)
           slices%ready = .true.
 !
-!  Radiative Flux (auxiliary variable)
+!  Radiative Flux
 !
         case ('Frad')
           if (slices%index >= 3) then

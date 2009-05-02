@@ -19,6 +19,7 @@ module Entropy
   use Cparam
   use Cdata
   use Messages
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -47,7 +48,6 @@ module Entropy
 !
 !  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
 !
-      use Cdata
       use SharedVariables
       use Sub
 !
@@ -107,8 +107,6 @@ module Entropy
 !
 !  Initialise entropy; called from start.f90
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
       if (NO_WARN) print*, f ! keep compiler quiet
@@ -121,7 +119,6 @@ module Entropy
 !
 !  20-11-04/anders: coded
 !
-      use Cdata
       use EquationOfState, only: beta_glnrho_scaled
 !
       if (lhydro) lpenc_requested(i_fpres)=.true.
@@ -172,7 +169,6 @@ module Entropy
 !
 !  20-11-04/anders: coded
 !
-      use Cdata
       use EquationOfState, only: gamma,gamma1,cs20,lnrho0
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -303,7 +299,6 @@ module Entropy
 !
 !  Reads and registers print parameters relevant to entropy.
 !
-      use Cdata
       use Sub
 !
       integer :: iname
@@ -338,5 +333,15 @@ module Entropy
       endif
 !
     endsubroutine rprint_entropy
+!***********************************************************************
+    subroutine get_slices_entropy(f,slices)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices%ready)
+!
+    endsubroutine get_slices_entropy
 !***********************************************************************
 endmodule Entropy

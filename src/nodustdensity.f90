@@ -1,8 +1,7 @@
 ! $Id$
-
-!  This module is used both for the initial condition and during run time.
-!  It contains dlnrhod_dt and init_lnrhod, among other auxiliary routines.
-
+!
+!  This module takes care of everything related to dust density.
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -11,28 +10,20 @@
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
-
 module Dustdensity
-
-  use Cparam
+!
   use Cdata
+  use Cparam
   use Messages
-
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   include 'dustdensity.h'
-
-  !integer :: dummy              ! We cannot define empty namelists
+!
   logical :: ldustnulling=.false.
-
-  !namelist /dustdensity_init_pars/ dummy
-  !namelist /dustdensity_run_pars/  dummy
-
-  ! diagnostic variables (needs to be consistent with reset list below)
-  integer :: idiag_rhodm=0
-
+!
   contains
-
 !***********************************************************************
     subroutine register_dustdensity()
 !
@@ -59,8 +50,6 @@ module Dustdensity
 !  parameters.
 !
 !  18-mar-03/axel: adapted from dustdensity
-!
-!  do nothing
 !
     endsubroutine initialize_dustdensity
 !***********************************************************************
@@ -203,7 +192,6 @@ module Dustdensity
 !  write column where which dust density variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_rhodm=',idiag_rhodm
         write(3,*) 'nname=',nname
         write(3,*) 'ind=',ind
       endif
@@ -211,5 +199,14 @@ module Dustdensity
       if (NO_WARN) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_dustdensity
 !***********************************************************************
-
+    subroutine get_slices_dustdensity(f,slices)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices%ready)
+!
+    endsubroutine get_slices_dustdensity
+!***********************************************************************
 endmodule Dustdensity

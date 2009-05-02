@@ -3263,7 +3263,7 @@ module Hydro
 !***********************************************************************
     subroutine get_slices_hydro(f,slices)
 !
-!  Write slices for animation of hydro variables.
+!  Write slices for animation of Hydro variables.
 !
 !  26-jul-06/tony: coded
 !

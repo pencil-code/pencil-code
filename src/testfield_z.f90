@@ -1020,7 +1020,7 @@ module Testfield
 ! 
       select case (trim(slices%name))
 !
-!  Magnetic field (derived variable)
+!  Magnetic field
 !
         case ('bb11')
           if (slices%index >= 3) then

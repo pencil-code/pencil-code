@@ -12,7 +12,7 @@
                                                                                                        
   public :: register_eos
   public :: initialize_eos, units_eos
-  public :: rprint_eos
+  public :: rprint_eos, get_slices_eos
   public :: read_eos_init_pars, write_eos_init_pars
   public :: read_eos_run_pars,  write_eos_run_pars
 

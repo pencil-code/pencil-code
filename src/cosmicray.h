@@ -4,7 +4,7 @@
   public :: register_cosmicray, initialize_cosmicray
   public :: read_cosmicray_init_pars, write_cosmicray_init_pars
   public :: read_cosmicray_run_pars,  write_cosmicray_run_pars
-  public :: rprint_cosmicray
+  public :: rprint_cosmicray, get_slices_cosmicray
   public :: init_ecr, decr_dt
   public :: pencil_criteria_cosmicray, pencil_interdep_cosmicray
   public :: calc_pencils_cosmicray

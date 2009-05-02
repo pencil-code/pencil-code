@@ -412,7 +412,7 @@ module Chiral
 !***********************************************************************
     subroutine get_slices_chiral(f,slices)
 !
-!  Write slices for animation of chiral variables.
+!  Write slices for animation of Chiral variables.
 !
 !  26-jul-06/tony: coded
 !
@@ -429,7 +429,7 @@ module Chiral
 !
       select case (trim(slices%name))
 !
-!  Chirality fields: XX (code variable)
+!  Chirality fields: XX
 !
         case ('XX_chiral')
           slices%yz=f(ix_loc,m1:m2,n1:n2,iXX_chiral)
@@ -438,7 +438,7 @@ module Chiral
           slices%xy2=f(l1:l2,m1:m2,iz2_loc,iXX_chiral)
           slices%ready = .true.
 !
-!  Chirality fields: YY (code variable)
+!  Chirality fields: YY
 !
         case ('YY_chiral')
           slices%yz=f(ix_loc,m1:m2,n1:n2,iYY_chiral)
@@ -447,7 +447,7 @@ module Chiral
           slices%xy2=f(l1:l2,m1:m2,iz2_loc,iYY_chiral)
           slices%ready = .true.
 !
-!  chirality fields: DQ (derived variable)
+!  Chirality fields: DQ
 !
         case ('DQ_chiral')
           QQ_chiral_yz=f(ix_loc,m1:m2,n1:n2,iXX_chiral)-f(ix_loc,m1:m2,n1:n2,iYY_chiral)
@@ -465,6 +465,5 @@ module Chiral
 !
     endsubroutine get_slices_chiral
 !***********************************************************************
-
 endmodule Chiral
 

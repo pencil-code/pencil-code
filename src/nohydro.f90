@@ -1335,7 +1335,7 @@ kky_aa=2.*pi
 !***********************************************************************
     subroutine get_slices_hydro(f,slices)
 !
-!  Write slices for animation of hydro variables.
+!  Write slices for animation of Hydro variables.
 !
 !  26-jun-06/tony: dummy
 !

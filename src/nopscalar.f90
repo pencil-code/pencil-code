@@ -1,7 +1,7 @@
 ! $Id$
-
+!
 !  This modules solves the passive scalar advection equation
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -11,25 +11,22 @@
 ! PENCILS PROVIDED cc; cc1
 !
 !***************************************************************
-
 module Pscalar
-
-  use Cparam
+!
   use Cdata
+  use Cparam
   use Messages
-
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   include 'pscalar.h'
-
+!
 !ajwm needed by prints.f90 for some reason.
   real :: rhoccm=0., cc2m=0., gcc2m=0.
   integer :: idiag_gcc2m=0, idiag_cc2m=0, idiag_rhoccm=0
-  !namelist /pscalar_init_pars/ dummy
-  !namelist /pscalar_run_pars/  dummy
-
+!
   contains
-
 !***********************************************************************
     subroutine register_pscalar()
 !
@@ -38,7 +35,6 @@ module Pscalar
 !
 !  6-jul-02/axel: coded
 !
-      use Cdata
       use Mpicomm
       use Sub
 !
@@ -75,7 +71,6 @@ module Pscalar
 !
 !   6-jul-02/axel: coded
 !
-      use Cdata
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -111,8 +106,6 @@ module Pscalar
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  20-11-04/anders: coded
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -210,8 +203,17 @@ module Pscalar
 !
     endsubroutine rprint_pscalar
 !***********************************************************************
+    subroutine get_slices_pscalar(f,slices)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices%ready)
+!
+    endsubroutine get_slices_pscalar
+!***********************************************************************
     subroutine calc_mpscalar
     endsubroutine calc_mpscalar
 !***********************************************************************
-
 endmodule Pscalar

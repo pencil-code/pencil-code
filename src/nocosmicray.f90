@@ -17,6 +17,7 @@ module Cosmicray
   use Cparam
   use Cdata
   use Messages
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -31,8 +32,6 @@ module Cosmicray
 !
 !  09-oct-03/tony: coded
 !
-      use Cdata
-      use Mpicomm
       use Sub
 !
 !  Identify version number.
@@ -51,20 +50,18 @@ module Cosmicray
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-!  set to zero and then call the same initial condition
-!  that was used in start.csh
-!
       if (NO_WARN) print*,'f=',f
 !
     endsubroutine initialize_cosmicray
 !***************************************:********************************
     subroutine read_cosmicray_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat) .and. (NO_WARN)) print*,iostat
       if (NO_WARN) print*,unit
-
+!
     endsubroutine read_cosmicray_init_pars
 !***********************************************************************
     subroutine write_cosmicray_init_pars(unit)
@@ -102,7 +99,6 @@ module Cosmicray
 !
 !   6-jul-02/axel: coded
 !
-      use Cdata
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -151,7 +147,7 @@ module Cosmicray
 !***********************************************************************
     subroutine decr_dt(f,df,p)
 !
-!  cosmic ray density evolution
+!  Cosmic ray density evolution.
 !
 !   09-oct-03/tony: coded
 !
@@ -167,7 +163,7 @@ module Cosmicray
 !***********************************************************************
     subroutine rprint_cosmicray(lreset,lwrite)
 !
-!  reads and registers print parameters relevant for cosmic rays
+!  Reads and registers print parameters relevant for cosmic rays.
 !
 !   09-oct-03/tony: coded
 !
@@ -179,20 +175,22 @@ module Cosmicray
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-!  reset everything in case of reset
-!  (this needs to be consistent with what is defined above!)
-!
-      if (lreset) then
-!        idiag_rhoccm=0; idiag_ccmax=0; idiag_lnccm=0; idiag_lnccmz=0
-      endif
-!
-!  write column where which cosmic ray variable is stored
+!  Write column where which cosmic ray variable is stored.
 !
       if (lwr) then
-!        write(3,*) 'i_lnccmz=',idiag_lnccmz
         write(3,*) 'iecr=',iecr
       endif
 !
     endsubroutine rprint_cosmicray
+!***********************************************************************
+    subroutine get_slices_cosmicray(f,slices)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices%ready)
+!
+    endsubroutine get_slices_cosmicray
 !***********************************************************************
 endmodule Cosmicray

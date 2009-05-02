@@ -2006,7 +2006,7 @@ module Radiation
 !
       select case (trim(slices%name))
 !
-!  Surface intensity (derived variable)
+!  Surface intensity
 !
         case ('Isurf')
           if (slices%index >= nIsurf) then
@@ -2028,7 +2028,7 @@ module Radiation
             enddo
           endif
 !
-!  Heating rate (auxiliary variable)
+!  Heating rate
 !
         case ('Qrad')
           slices%yz=f(ix_loc,m1:m2,n1:n2,iQrad)
@@ -2037,7 +2037,7 @@ module Radiation
           slices%xy2=f(l1:l2,m1:m2,iz2_loc,iQrad)
           slices%ready = .true.
 !
-!  Mean intensity (auxiliary variable)
+!  Mean intensity
 !
         case ('Jrad')
           !J = S + Q/(4pi) 
@@ -2069,7 +2069,7 @@ module Radiation
           slices%xy2=Srad(l1:l2,m1:m2,iz2_loc)
           slices%ready = .true.
 !
-!  Opacity (auxiliary variable)
+!  Opacity
 !
         case ('kapparho')
           slices%yz=f(ix_loc,m1:m2,n1:n2,ikapparho)
@@ -2078,7 +2078,7 @@ module Radiation
           slices%xy2=f(l1:l2,m1:m2,iz2_loc,ikapparho)
           slices%ready = .true.
 !
-!  Radiative Flux (auxiliary variable)
+!  Radiative Flux
 !
         case ('Frad')
           if (slices%index >= 3) then

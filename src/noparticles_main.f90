@@ -288,7 +288,7 @@ module Particles_main
 !***********************************************************************
     subroutine get_slices_particles(f,slices)
 !
-!  Write slices for animation of particle variables.
+!  Write slices for animation of Particle variables.
 !
 !  26-jun-06/tony: dummy
 !

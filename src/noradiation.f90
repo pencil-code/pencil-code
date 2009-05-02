@@ -261,7 +261,7 @@ module Radiation
 !***********************************************************************
     subroutine get_slices_radiation(f,slices)
 !
-!  Write slices for animation of radiation variables.
+!  Write slices for animation of Radiation variables.
 !
 !  26-jun-06/tony: dummy
 !
@@ -269,7 +269,7 @@ module Radiation
       type (slice_data) :: slices
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(slices)
+      call keep_compiler_quiet(slices%ready)
 !
     endsubroutine get_slices_radiation
 !***********************************************************************

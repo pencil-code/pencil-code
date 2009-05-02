@@ -3212,7 +3212,7 @@ module Magnetic
 !***********************************************************************
     subroutine get_slices_magnetic(f,slices)
 !
-!  Write slices for animation of magnetic variables.
+!  Write slices for animation of Magnetic variables.
 !
 !  26-jul-06/tony: coded
 !

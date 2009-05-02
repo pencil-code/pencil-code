@@ -218,4 +218,14 @@ module Density
 !
     endsubroutine rprint_density
 !***********************************************************************
+    subroutine get_slices_density(f,slices)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices%ready)
+!
+    endsubroutine get_slices_density
+!***********************************************************************
 endmodule Density

@@ -1389,5 +1389,38 @@ module Dustvelocity
 !
     endsubroutine rprint_dustvelocity
 !***********************************************************************
-
+    subroutine get_slices_dustvelocity(f,slices)
+!
+!  Write slices for animation of Dustvelocity variables.
+!
+!  26-jul-06/tony: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+!
+!  Loop over slices
+!
+      select case (trim(slices%name))
+!
+!  Dustvelocity.
+!
+        case ('uud')
+          if (slices%index>=3) then
+            slices%ready=.false.
+          else
+            slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,iudx(1)+slices%index)
+            slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,iudx(1)+slices%index)
+            slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,iudx(1)+slices%index)
+            slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,iudx(1)+slices%index)
+            if (lwrite_slice_xy3) &
+            slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,iudx(1)+slices%index)
+            if (lwrite_slice_xy4) &
+            slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,iudx(1)+slices%index)
+            slices%index=slices%index+1
+            if (slices%index<3) slices%ready=.true.
+          endif
+      endselect
+!
+    endsubroutine get_slices_dustvelocity
+!***********************************************************************
 endmodule Dustvelocity

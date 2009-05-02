@@ -217,7 +217,7 @@ module Density
         case ('shock','diff-shock','diffrho-shock')
           if (lroot) print*,'diffusion: shock diffusion'
           ldiff_shock=.true.
-        case ('','none')
+        case ('')
           if (lroot .and. (.not. lnothing)) print*,'diffusion: nothing'
         case default
           write(unit=errormsg,fmt=*) 'initialize_density: ', &
@@ -507,18 +507,6 @@ module Density
             prof=0.5*(1.0+tanh(z(n)/widthlnrho(j)))
             f(l1:l2,m,n,ilnrho)=log(rho_left(j))+log(rho_left(j)/rho_right(j))*prof
           enddo; enddo
-!
-!  A*tanh(y/d) profile
-!
-        case('tanhy')
-          if (lroot) print*,'init_lnrho: tangential discontinuity'
-          do m=m1,m2
-            prof=ampllnrho(j)*tanh(y(m)/widthlnrho(j))
-            do n=n1,n2
-              f(l1:l2,m,n,ilnrho)=prof
-            enddo
-          enddo
-!
         case ('hydrostatic-z-2', '3')
 !
 !  Hydrostatic density stratification for isentropic atmosphere.
@@ -1213,6 +1201,14 @@ module Density
         if (mass_source_profile=='cylindric') lpenc_requested(i_rcyl_mn)=.true.
       endif
 !
+      if (borderlnrho=='stratification') then 
+        lpenc_requested(i_cs2)=.true.
+        lpenc_requested(i_r_mn)=.true.
+        lpenc_requested(i_rcyl_mn)=.true.
+      endif
+!
+      if (borderlnrho=='power-law') lpenc_requested(i_rcyl_mn)=.true.
+!
       lpenc_diagnos2d(i_lnrho)=.true.
       lpenc_diagnos2d(i_rho)=.true.
 !
@@ -1666,13 +1662,18 @@ module Density
 !
 !  28-jul-06/wlad: coded
 !
-      use BorderProfiles,  only: border_driving,set_border_initcond
-      use Mpicomm, only: stop_it
+      use BorderProfiles,  only: border_driving
+      use Sub,             only: power_law
+      use Mpicomm,         only: stop_it
+      use Gravity,         only: potential,acceleration
+      use FArrayManager
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx) :: f_target
+      real :: lnrhomid,strat,tmp1,tmp2,rmid,ptlaw
       type (pencil_case)  :: p
+      integer            :: i
 !
       select case(borderlnrho)
 !
@@ -1694,10 +1695,69 @@ module Density
           f_target=lnrho_const
         endif
 !
-      case('initial-condition')
-        call set_border_initcond(f,ilnrho,f_target)
+      case('power-law')
+        if (plaw.eq.0) call stop_it("borderlnrho: no need to call a power-"//&
+             "law border for a flat density profile")
+        do i=1,nx
+          if ( ((p%rborder_mn(i).ge.r_int).and.&
+                (p%rborder_mn(i).le.r_int+2*wborder_int)).or.&
+               ((p%rborder_mn(i).ge.r_ext-2*wborder_ext).and.&
+                (p%rborder_mn(i).le.r_ext))) then
 !
-      case('nothing')
+            if (ldensity_nolog) then
+              call power_law(rho_const,p%rcyl_mn(i),plaw,f_target(i),r_ref)
+            else
+              f_target(i)=lnrho_const - plaw*log(p%rcyl_mn(i)/r_ref)
+            endif
+!
+          endif
+        enddo
+!
+      case('exponential')
+        if (ldensity_nolog) then
+          f_target = rho0*exp(-p%rcyl_mn/r_ref)
+        else
+          f_target = lnrho0 - p%rcyl_mn/r_ref
+        endif
+!
+      case('stratification')
+        if (lspherical_coords) call get_ptlaw(ptlaw)
+        do i=1,nx
+          if ( ((p%rborder_mn(i).ge.r_int).and.&
+                (p%rborder_mn(i).le.r_int+2*wborder_int)).or.&
+               ((p%rborder_mn(i).ge.r_ext-2*wborder_ext).and.&
+                (p%rborder_mn(i).le.r_ext))) then
+!            
+            if (lexponential_smooth) then
+              !radial_percent_smooth = percentage of the grid
+              !that the smoothing is applied
+              rmid=rshift+(xyz1(1)-xyz0(1))/radial_percent_smooth
+              lnrhomid=log(rho0) &
+                  + plaw*log((1-exp( -((p%rcyl_mn(i)-rshift)/rmid)**2 ))/&
+                  p%rcyl_mn(i))
+            else
+              lnrhomid=log(rho0)-&
+                  .5*plaw*log((p%rcyl_mn(i)/r_ref)**2+rsmooth**2)
+            endif
+            if (lspherical_coords) then 
+              call acceleration(R=p%r_mn(i),G_R=tmp1)
+              tmp2=-tmp1*p%r_mn(i) - p%cs2(i)*(plaw + ptlaw)*gamma11
+              !lat=pi/2-y(m)
+              strat=(tmp2*gamma/p%cs2(i)) * log(cos(pi/2-y(m)))
+            else 
+              call potential(R=p%r_mn(i),POT=tmp1)
+              call potential(R=p%rcyl_mn(i),POT=tmp2)
+              strat=-gamma*(tmp1-tmp2)/p%cs2(i)
+            endif
+!
+            f_target(i)=lnrhomid+strat
+!
+            if (ldensity_nolog) &
+                 f_target(i)=exp(f_target(i))
+          endif
+        enddo
+!
+     case('nothing')
         if (lroot.and.ip<=5) &
              print*,"set_border_lnrho: borderlnrho='nothing'"
 !
@@ -2619,5 +2679,60 @@ module Density
       endif
 !
     endsubroutine rprint_density
+!***********************************************************************
+    subroutine get_slices_density(f,slices)
+!
+!  Write slices for animation of Density variables.
+!
+!  26-jul-06/tony: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+!
+!  Loop over slices
+!
+      select case (trim(slices%name))
+!
+!  Density.
+!
+        case ('rho')
+          if (ldensity_nolog) then
+            slices%yz =f(ix_loc,m1:m2,n1:n2,ilnrho)
+            slices%xz =f(l1:l2,iy_loc,n1:n2,ilnrho)
+            slices%xy =f(l1:l2,m1:m2,iz_loc,ilnrho)
+            slices%xy2=f(l1:l2,m1:m2,iz2_loc,ilnrho)
+            if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,ilnrho)
+            if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,ilnrho)
+          else
+            slices%yz =exp(f(ix_loc,m1:m2,n1:n2,ilnrho))
+            slices%xz =exp(f(l1:l2,iy_loc,n1:n2,ilnrho))
+            slices%xy =exp(f(l1:l2,m1:m2,iz_loc,ilnrho))
+            slices%xy2=exp(f(l1:l2,m1:m2,iz2_loc,ilnrho))
+            if (lwrite_slice_xy3) slices%xy3=exp(f(l1:l2,m1:m2,iz3_loc,ilnrho))
+            if (lwrite_slice_xy4) slices%xy4=exp(f(l1:l2,m1:m2,iz4_loc,ilnrho))
+          endif
+!
+!  Logarithmic density.
+!
+        case ('lnrho')
+          if (ldensity_nolog) then
+            slices%yz =alog(f(ix_loc,m1:m2,n1:n2,ilnrho))
+            slices%xz =alog(f(l1:l2,iy_loc,n1:n2,ilnrho))
+            slices%xy =alog(f(l1:l2,m1:m2,iz_loc,ilnrho))
+            slices%xy2=alog(f(l1:l2,m1:m2,iz2_loc,ilnrho))
+            if (lwrite_slice_xy3) slices%xy3=alog(f(l1:l2,m1:m2,iz3_loc,ilnrho))
+            if (lwrite_slice_xy4) slices%xy4=alog(f(l1:l2,m1:m2,iz4_loc,ilnrho))
+          else
+            slices%yz =f(ix_loc,m1:m2,n1:n2,ilnrho)
+            slices%xz =f(l1:l2,iy_loc,n1:n2,ilnrho)
+            slices%xy =f(l1:l2,m1:m2,iz_loc,ilnrho)
+            slices%xy2=f(l1:l2,m1:m2,iz2_loc,ilnrho)
+            if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,ilnrho)
+            if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,ilnrho)
+          endif
+!
+      endselect
+!
+    endsubroutine get_slices_density
 !***********************************************************************
 endmodule Density

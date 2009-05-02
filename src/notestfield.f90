@@ -134,8 +134,6 @@ module Testfield
 !
       use Sub, only: keep_compiler_quiet
 !
-!  Dummy routine
-!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !

@@ -463,6 +463,33 @@ module Cosmicray
 !
     endsubroutine rprint_cosmicray
 !***********************************************************************
+    subroutine get_slices_cosmicray(f,slices)
+!
+!  Write slices for animation of Cosmicray variables.
+!
+!  26-jul-06/tony: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+!
+!  Loop over slices
+!
+      select case (trim(slices%name))
+!
+!  Cosmic ray energy density.
+!
+        case ('ecr')
+          slices%yz =f(ix_loc,m1:m2,n1:n2,iecr)
+          slices%xz =f(l1:l2,iy_loc,n1:n2,iecr)
+          slices%xy =f(l1:l2,m1:m2,iz_loc,iecr)
+          slices%xy2=f(l1:l2,m1:m2,iz2_loc,iecr)
+          if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,iecr)
+          if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,iecr)
+!
+      endselect
+!
+    endsubroutine get_slices_cosmicray
+!***********************************************************************
     subroutine tensor_diffusion(f,df,gecr,bij,bb,vKperp,vKpara)
 !
 !  calculates tensor diffusion with variable tensor (or constant tensor)
@@ -639,6 +666,4 @@ module Cosmicray
 !
     endsubroutine tensor_diffusion
 !***********************************************************************
-
 endmodule Cosmicray
-

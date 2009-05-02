@@ -1,7 +1,7 @@
 ! $Id$
-
-!  Dummy routine for ideal gas
-
+!
+!  This module takes care of everything related to equation of state.
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -14,42 +14,33 @@
 ! PENCILS PROVIDED yH; hss(3,3); hlnTT(3,3); del2ss; del6ss; del2lnTT
 !
 !***************************************************************
-
 module EquationOfState
-
-  use Cparam
+!
   use Cdata
+  use Cparam
   use Messages
-
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   include 'eos.h'
-
+!
   interface eoscalc ! Overload subroutine `eoscalc' function
     module procedure eoscalc_pencil   ! explicit f implicit m,n
     module procedure eoscalc_point    ! explicit lnrho, ss
     module procedure eoscalc_farray   ! explicit lnrho, ss
   end interface
-
+!
   interface pressure_gradient ! Overload subroutine `pressure_gradient'
     module procedure pressure_gradient_farray  ! explicit f implicit m,n
     module procedure pressure_gradient_point   ! explicit lnrho, ss
   end interface
-
 ! integers specifying which independent variables to use in eoscalc
   integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3,ilnrho_lnTT=4
   integer, parameter :: ilnrho_TT=9
-
-  ! secondary parameters calculated in initialize
-
+!
   real :: cp=impossible, cp1=impossible
-
-  ! input parameters
-  !namelist /eos_init_pars/ dummy
-
-  ! run parameters
-  !namelist /eos_run_pars/ dummy
-
+!
   real :: cs0=1., rho0=1.
   real :: cs20=1., lnrho0=0.
   logical :: lcalc_cp=.false.
@@ -60,9 +51,8 @@ module EquationOfState
   real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
   integer :: isothtop=1
   real, dimension (3) :: beta_glnrho_global=0.0,beta_glnrho_scaled=0.0
-
+!
   contains
-
 !***********************************************************************
     subroutine register_eos()
 !
@@ -136,6 +126,16 @@ module EquationOfState
       if (NO_WARN) print*,lreset,present(lwrite)  !(keep compiler quiet)
 !
     endsubroutine rprint_eos
+!***********************************************************************
+    subroutine get_slices_eos(f,slices)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices%ready)
+!
+    endsubroutine get_slices_eos
 !***********************************************************************
     subroutine pencil_criteria_eos()
 !
@@ -303,8 +303,6 @@ module EquationOfState
 !   gP/rho=cs2*(glnrho+cp1tilde*gss)
 !
 !   12-dec-05/tony: adapted from subroutine temperature_gradient
-!
-      use Cdata
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx), intent(in) :: del2lnrho,del2ss
@@ -911,7 +909,6 @@ module EquationOfState
 !  27-sep-2002/axel: coded
 !  19-aug-2005/tobi: distributed across ionization modules
 !
-      use Cdata
       use Gravity
 !
       character (len=3) :: topbot
@@ -990,7 +987,6 @@ module EquationOfState
 !   1-may-2003/axel: added the same for top boundary
 !  19-aug-2005/tobi: distributed across ionization modules
 !
-      use Cdata
       use Gravity, only: lnrho_bot,lnrho_top,ss_bot,ss_top
 !
       character (len=3) :: topbot

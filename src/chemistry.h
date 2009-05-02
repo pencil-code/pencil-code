@@ -4,8 +4,7 @@
   public :: register_chemistry, initialize_chemistry
   public :: read_chemistry_init_pars, write_chemistry_init_pars
   public :: read_chemistry_run_pars,  write_chemistry_run_pars
-  public :: rprint_chemistry
-  public :: get_slices_chemistry
+  public :: rprint_chemistry, get_slices_chemistry
   public :: init_chemistry
 
   public :: dchemistry_dt

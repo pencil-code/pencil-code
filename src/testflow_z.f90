@@ -676,7 +676,7 @@ module Testflow
 ! 
       select case (trim(slices%name))
 !
-!  Magnetic field (derived variable)
+!  Magnetic field
 !
         case ('uu11')
           if (slices%index >= 3) then

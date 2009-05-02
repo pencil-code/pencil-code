@@ -150,53 +150,57 @@ module Slices
     subroutine wvid(f,path)
 !
 !  Write slices for animation of scalar field
-! (or one component of a vector field) on the perifery of a box.
+!  (or one component of a vector field) on the perifery of a box.
 !  Can be visualized in idl using rvid_box.pro.
-!  Data not derived from f (e.g. magnetic field) are prepared in pde.
 !
 !  13-nov-02/axel: added more fields, use wslice.
-!  16-aug-04/anders: put slices in the order code-aux-derived
 !  22-sep-07/axel: changed Xy to xy2, to be compatible with Mac
 !
-      use EquationOfState, only: eoscalc, ilnrho_ss
+      use Chemistry,       only: get_slices_chemistry
+      use Chiral,          only: get_slices_chiral
+      use Cosmicray,       only: get_slices_cosmicray
+      use Density,         only: get_slices_density
+      use Dustdensity,     only: get_slices_dustdensity
+      use Dustvelocity,    only: get_slices_dustvelocity
+      use EquationOfState, only: get_slices_eos
+      use Entropy,         only: get_slices_entropy
       use General
+      use Hydro,           only: get_slices_hydro
+      use Interstellar,    only: get_slices_interstellar
+      use Magnetic,        only: get_slices_magnetic
       use Messages
       use Particles_main,  only: get_slices_particles
-      use Interstellar,    only: get_slices_interstellar
-      use Shock,           only: get_slices_shock
-      use Magnetic,        only: get_slices_magnetic
-      use Testscalar,      only: get_slices_testscalar
-      use Testfield,       only: get_slices_testfield
-      use Testflow,        only: get_slices_testflow
-      use Hydro,           only: get_slices_hydro
+      use Pscalar,         only: get_slices_pscalar
       use Radiation,       only: get_slices_radiation
-      use Chiral,          only: get_slices_chiral
+      use Shock,           only: get_slices_shock
       use Special,         only: get_slices_special
       use Sub
+      use Testfield,       only: get_slices_testfield
+      use Testflow,        only: get_slices_testflow
+      use Testscalar,      only: get_slices_testscalar
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      type (slice_data) :: slices
       character(len=*) :: path
+!
+      type (slice_data) :: slices
       character(len=5) :: sindex
       logical, save :: lfirstloop=.true.
       logical :: lnewfile=.true.
       logical :: lslices_legacy=.true.
-      integer :: inamev,k
-      real :: tmpval
-      integer :: l
-
-      slices%ix=ix_loc
-      slices%iy=iy_loc
-      slices%iz=iz_loc
+      integer :: inamev
+!
+      slices%ix =ix_loc
+      slices%iy =iy_loc
+      slices%iz =iz_loc
       slices%iz2=iz2_loc
       slices%iz3=iz3_loc
       slices%iz4=iz4_loc
       slices%ready=.false.
       slices%index=0
 !
-!  Loop over slices
+!  Loop over slices.
 !
-      inamev = 1
+      inamev=1
       do while (inamev <= nnamev)
         slices%xy=>slice_xy
         slices%xz=>slice_xz
@@ -209,299 +213,35 @@ module Slices
         lslices_legacy=.true.       ! By default assume we're not
                                     ! using module hooks to get the
                                     ! slice contents
-        select case (slices%name)
 !
-!  Logarithmic density (code variable)
+!  Get slice information from the modules.
 !
-        case ('lnrho')
-          lnrho_yz=f(ix_loc,m1:m2,n1:n2,ilnrho)
-          lnrho_xz=f(l1:l2,iy_loc,n1:n2,ilnrho)
-          lnrho_xy=f(l1:l2,m1:m2,iz_loc,ilnrho)
-          lnrho_xy2=f(l1:l2,m1:m2,iz2_loc,ilnrho)
-          lnrho_xy3=f(l1:l2,m1:m2,iz3_loc,ilnrho)
-          lnrho_xy4=f(l1:l2,m1:m2,iz4_loc,ilnrho)
-          call wslice(path//'lnrho.yz',lnrho_yz,x(ix_loc),ny,nz)
-          call wslice(path//'lnrho.xz',lnrho_xz,y(iy_loc),nx,nz)
-          call wslice(path//'lnrho.xy',lnrho_xy,z(iz_loc),nx,ny)
-          call wslice(path//'lnrho.xy2',lnrho_xy2,z(iz2_loc),nx,ny)
-          if (lwrite_slice_xy3) &
-              call wslice(path//'lnrho.xy3',lnrho_xy3,z(iz3_loc),nx,ny)
-          if (lwrite_slice_xy4) & 
-              call wslice(path//'lnrho.xy4',lnrho_xy4,z(iz4_loc),nx,ny)
+        lslices_legacy=.false.
+        if (lchemistry)    call get_slices_chemistry   (f,slices)
+        if (lchiral)       call get_slices_chiral      (f,slices)
+        if (lcosmicray)    call get_slices_cosmicray   (f,slices)
+        if (ldensity)      call get_slices_density     (f,slices)
+        if (ldustdensity)  call get_slices_dustdensity (f,slices)
+        if (ldustvelocity) call get_slices_dustvelocity(f,slices)
+        if (lentropy)      call get_slices_entropy     (f,slices)
+        if (leos)          call get_slices_eos         (f,slices)
+        if (lhydro)        call get_slices_hydro       (f,slices)
+        if (linterstellar) call get_slices_interstellar(f,slices)
+        if (lmagnetic)     call get_slices_magnetic    (f,slices)
+        if (lparticles)    call get_slices_particles   (f,slices)
+        if (lpscalar)      call get_slices_pscalar     (f,slices)
+        if (lradiation)    call get_slices_radiation   (f,slices)
+        if (lshock)        call get_slices_shock       (f,slices)
+        if (lspecial)      call get_slices_special     (f,slices)
+        if (ltestfield)    call get_slices_testfield   (f,slices)
+        if (ltestflow)     call get_slices_testflow    (f,slices)
+        if (ltestscalar)   call get_slices_testscalar  (f,slices)
 !
-!  Entropy (code variable)
-!
-        case ('ss')
-          ss_yz=f(ix_loc,m1:m2,n1:n2,iss)
-          ss_xz=f(l1:l2,iy_loc,n1:n2,iss)
-          ss_xy=f(l1:l2,m1:m2,iz_loc,iss)
-          ss_xy2=f(l1:l2,m1:m2,iz2_loc,iss)
-          ss_xy3=f(l1:l2,m1:m2,iz3_loc,iss)
-          ss_xy4=f(l1:l2,m1:m2,iz4_loc,iss)
-          call wslice(path//'ss.yz',ss_yz,x(ix_loc),ny,nz)
-          call wslice(path//'ss.xz',ss_xz,y(iy_loc),nx,nz)
-          call wslice(path//'ss.xy',ss_xy,z(iz_loc),nx,ny)
-          call wslice(path//'ss.xy2',ss_xy2,z(iz2_loc),nx,ny)
-          if (lwrite_slice_xy3) &
-              call wslice(path//'ss.xy3',ss_xy3,z(iz3_loc),nx,ny)
-          if (lwrite_slice_xy4) & 
-              call wslice(path//'ss.xy4',ss_xy4,z(iz4_loc),nx,ny)
-!
-!  Passive scalar (code variable)
-!
-        case ('cc')
-          if (icc==0) then
-            if (lroot) print*,'slices: cannot write cc slice; icc=0'
-          else
-            cc_yz=f(ix_loc,m1:m2,n1:n2,icc)
-            cc_xz=f(l1:l2,iy_loc,n1:n2,icc)
-            cc_xy=f(l1:l2,m1:m2,iz_loc,icc)
-            cc_xy2=f(l1:l2,m1:m2,iz2_loc,icc)
-            call wslice(path//'cc.yz',cc_yz,x(ix_loc),ny,nz)
-            call wslice(path//'cc.xz',cc_xz,y(iy_loc),nx,nz)
-            call wslice(path//'cc.xy',cc_xy,z(iz_loc),nx,ny)
-            call wslice(path//'cc.xy2',cc_xy2,z(iz2_loc),nx,ny)
-          endif
-!
-!  Passive scalar (code variable)
-!
-        case ('lncc')
-          if (ilncc==0) then
-            if (lroot) print*,'slices: cannot write lncc slice; ilncc=0'
-          else
-            lncc_yz=f(ix_loc,m1:m2,n1:n2,ilncc)
-            lncc_xz=f(l1:l2,iy_loc,n1:n2,ilncc)
-            lncc_xy=f(l1:l2,m1:m2,iz_loc,ilncc)
-            lncc_xy2=f(l1:l2,m1:m2,iz2_loc,ilncc)
-            call wslice(path//'lncc.yz',lncc_yz,x(ix_loc),ny,nz)
-            call wslice(path//'lncc.xz',lncc_xz,y(iy_loc),nx,nz)
-            call wslice(path//'lncc.xy',lncc_xy,z(iz_loc),nx,ny)
-            call wslice(path//'lncc.xy2',lncc_xy2,z(iz2_loc),nx,ny)
-          endif
-!
-!  Dust velocity (code variable)
-!
-        case ('uud')
-          do k=1,ndustspec
-            call chn(k,sindex)
-            if (k == 1) sindex = ''
-            uud_yz=f(ix_loc,m1:m2,n1:n2,iudx(k):iudz(k))
-            uud_xz=f(l1:l2,iy_loc,n1:n2,iudx(k):iudz(k))
-            uud_xy=f(l1:l2,m1:m2,iz_loc,iudx(k):iudz(k))
-            uud_xy2=f(l1:l2,m1:m2,iz2_loc,iudx(k):iudz(k))
-            call wslice(path//'udx'//trim(sindex)//'.yz', &
-                uud_yz(:,:,1),x(ix_loc),ny,nz)
-            call wslice(path//'udy'//trim(sindex)//'.yz', &
-                uud_yz(:,:,2),x(ix_loc),ny,nz)
-            call wslice(path//'udz'//trim(sindex)//'.yz', &
-                uud_yz(:,:,3),x(ix_loc),ny,nz)
-            call wslice(path//'udx'//trim(sindex)//'.xz', &
-                uud_xz(:,:,1),y(iy_loc),nx,nz)
-            call wslice(path//'udy'//trim(sindex)//'.xz', &
-                uud_xz(:,:,2),y(iy_loc),nx,nz)
-            call wslice(path//'udz'//trim(sindex)//'.xz', &
-                uud_xz(:,:,3),y(iy_loc),nx,nz)
-            call wslice(path//'udx'//trim(sindex)//'.xy', &
-                uud_xy(:,:,1),z(iz_loc),nx,ny)
-            call wslice(path//'udy'//trim(sindex)//'.xy', &
-                uud_xy(:,:,2),z(iz_loc),nx,ny)
-            call wslice(path//'udz'//trim(sindex)//'.xy', &
-                uud_xy(:,:,3),z(iz_loc),nx,ny)
-            call wslice(path//'udx'//trim(sindex)//'.xy2', &
-                uud_xy2(:,:,1),z(iz2_loc),nx,ny)
-            call wslice(path//'udy'//trim(sindex)//'.xy2', &
-                uud_xy2(:,:,2),z(iz2_loc),nx,ny)
-            call wslice(path//'udz'//trim(sindex)//'.xy2', &
-                uud_xy2(:,:,3),z(iz2_loc),nx,ny)
-          enddo
-!
-!  Dust density (code variable)
-!
-        case ('nd')
-          do k=1,ndustspec
-            call chn(k,sindex)
-            if (k == 1) sindex = ''
-            if (ldustdensity) then
-              nd_yz=f(ix_loc,m1:m2,n1:n2,ind(k))
-              nd_xz=f(l1:l2,iy_loc,n1:n2,ind(k))
-              nd_xy=f(l1:l2,m1:m2,iz_loc,ind(k))
-              nd_xy2=f(l1:l2,m1:m2,iz2_loc,ind(k))
-              call wslice(path//'nd'//trim(sindex)//'.yz',nd_yz,x(ix_loc),ny,nz)
-              call wslice(path//'nd'//trim(sindex)//'.xz',nd_xz,y(iy_loc),nx,nz)
-              call wslice(path//'nd'//trim(sindex)//'.xy',nd_xy,z(iz_loc),nx,ny)
-              call wslice(path//'nd'//trim(sindex)//'.xy2',nd_xy2,z(iz2_loc),nx,ny)
-            else
-              if (lroot) call warning('WVID', &
-                  "Can't use 'nd' slices with nodustdensity")
-            endif
-          enddo
-!
-!  Chemical species mass fractions (code variable)
-!
-        case ('chemspec')
-          do k=1,nchemspec
-            call chn(k,sindex)
-            if (k == 1) sindex = ''
-            if (lchemistry) then
-              chemspec_yz=f(ix_loc,m1:m2,n1:n2,ichemspec(k))
-              chemspec_xz=f(l1:l2,iy_loc,n1:n2,ichemspec(k))
-              chemspec_xy=f(l1:l2,m1:m2,iz_loc,ichemspec(k))
-              chemspec_xy2=f(l1:l2,m1:m2,iz2_loc,ichemspec(k))
-              call wslice(path//'chemspec'//trim(sindex)//'.yz',chemspec_yz,x(ix_loc),ny,nz)
-              call wslice(path//'chemspec'//trim(sindex)//'.xz',chemspec_xz,y(iy_loc),nx,nz)
-              call wslice(path//'chemspec'//trim(sindex)//'.xy',chemspec_xy,z(iz_loc),nx,ny)
-              call wslice(path//'chemspec'//trim(sindex)//'.xy2',chemspec_xy2,z(iz2_loc),nx,ny)
-            else
-              if (lroot) call warning('WVID', &
-                  "Can't use 'chemspec' slices with nochemistry")
-            endif
-          enddo
-!
-!  Degree of ionization (auxiliary variable)
-!
-        case ('yH')
-          yH_yz=f(ix_loc,m1:m2,n1:n2,iyH)
-          yH_xz=f(l1:l2,iy_loc,n1:n2,iyH)
-          yH_xy=f(l1:l2,m1:m2,iz_loc,iyH)
-          yH_xy2=f(l1:l2,m1:m2,iz2_loc,iyH)
-          call wslice(path//'yH.yz',yH_yz,x(ix_loc),ny,nz)
-          call wslice(path//'yH.xz',yH_xz,y(iy_loc),nx,nz)
-          call wslice(path//'yH.xy',yH_xy,z(iz_loc),nx,ny)
-          call wslice(path//'yH.xy2',yH_xy2,z(iz2_loc),nx,ny)
-!
-!  Cosmic ray energy density (auxiliary variable)
-!
-        case ('ecr')
-          ecr_yz=f(ix_loc,m1:m2,n1:n2,iecr)
-          ecr_xz=f(l1:l2,iy_loc,n1:n2,iecr)
-          ecr_xy=f(l1:l2,m1:m2,iz_loc,iecr)
-          ecr_xy2=f(l1:l2,m1:m2,iz2_loc,iecr)
-          call wslice(path//'ecr.yz',ecr_yz,x(ix_loc),ny,nz)
-          call wslice(path//'ecr.xz',ecr_xz,y(iy_loc),nx,nz)
-          call wslice(path//'ecr.xy',ecr_xy,z(iz_loc),nx,ny)
-          call wslice(path//'ecr.xy2',ecr_xy2,z(iz2_loc),nx,ny)
-!
-!  Temperature (derived variable, sometimes code variable)
-!
-        case ('lnTT')
-          if (ilnTT .ne. 0) then
-            lnTT_yz=f(ix_loc,m1:m2,n1:n2,ilnTT)
-            lnTT_xz=f(l1:l2,iy_loc,n1:n2,ilnTT)
-            lnTT_xy=f(l1:l2,m1:m2,iz_loc,ilnTT)
-            lnTT_xy2=f(l1:l2,m1:m2,iz2_loc,ilnTT)
-            lnTT_xy3=f(l1:l2,m1:m2,iz3_loc,ilnTT)
-            lnTT_xy4=f(l1:l2,m1:m2,iz4_loc,ilnTT)
-          else
-            do m=m1,m2; do n=n1,n2
-              call eoscalc(ilnrho_ss,f(ix_loc,m,n,ilnrho),f(ix_loc,m,n,iss),lnTT=tmpval)
-              lnTT_yz(m-m1+1,n-n1+1)=tmpval
-            enddo; enddo
-            do l=l1,l2; do n=n1,n2
-              call eoscalc(ilnrho_ss,f(l,iy_loc,n,ilnrho),f(l,iy_loc,n,iss),lnTT=tmpval)
-              lnTT_xz(l-l1+1,n-n1+1)=tmpval
-            enddo; enddo
-            do l=l1,l2; do m=m1,m2
-              call eoscalc(ilnrho_ss,f(l,m,iz_loc,ilnrho),f(l,m,iz_loc,iss),lnTT=tmpval)
-              lnTT_xy(l-l1+1,m-m1+1)=tmpval
-              call eoscalc(ilnrho_ss,f(l,m,iz2_loc,ilnrho),f(l,m,iz2_loc,iss),lnTT=tmpval)
-              lnTT_xy2(l-l1+1,m-m1+1)=tmpval
-              call eoscalc(ilnrho_ss,f(l,m,iz3_loc,ilnrho),f(l,m,iz3_loc,iss),lnTT=tmpval)
-              lnTT_xy3(l-l1+1,m-m1+1)=tmpval
-              call eoscalc(ilnrho_ss,f(l,m,iz4_loc,ilnrho),f(l,m,iz4_loc,iss),lnTT=tmpval)
-              lnTT_xy4(l-l1+1,m-m1+1)=tmpval
-            enddo; enddo
-          endif
-          call wslice(path//'lnTT.yz',lnTT_yz,x(ix_loc),ny,nz)
-          call wslice(path//'lnTT.xz',lnTT_xz,y(iy_loc),nx,nz)
-          call wslice(path//'lnTT.xy',lnTT_xy,z(iz_loc),nx,ny)
-          call wslice(path//'lnTT.xy2',lnTT_xy2,z(iz2_loc),nx,ny)
-          if (lwrite_slice_xy3) &
-              call wslice(path//'lnTT.xy3',lnTT_xy3,z(iz3_loc),nx,ny)
-          if (lwrite_slice_xy4) & 
-              call wslice(path//'lnTT.xy4',lnTT_xy4,z(iz4_loc),nx,ny)
-!
-!  Pressure (derived variable)
-!
-        case ('pp')
-          do m=m1,m2; do n=n1,n2
-            call eoscalc(ilnrho_ss,f(ix_loc,m,n,ilnrho),f(ix_loc,m,n,iss),pp=tmpval)
-            pp_yz(m-m1+1,n-n1+1)=tmpval
-          enddo; enddo
-          do l=l1,l2; do n=n1,n2
-            call eoscalc(ilnrho_ss,f(l,iy_loc,n,ilnrho),f(l,iy_loc,n,iss),pp=tmpval)
-            pp_xz(l-l1+1,n-n1+1)=tmpval
-          enddo; enddo
-          do l=l1,l2; do m=m1,m2
-            call eoscalc(ilnrho_ss,f(l,m,iz_loc,ilnrho),f(l,m,iz_loc,iss),pp=tmpval)
-            pp_xy(l-l1+1,m-m1+1)=tmpval
-            call eoscalc(ilnrho_ss,f(l,m,iz2_loc,ilnrho),f(l,m,iz2_loc,iss),pp=tmpval)
-            pp_xy2(l-l1+1,m-m1+1)=tmpval
-            call eoscalc(ilnrho_ss,f(l,m,iz3_loc,ilnrho),f(l,m,iz3_loc,iss),pp=tmpval)
-            pp_xy3(l-l1+1,m-m1+1)=tmpval
-            call eoscalc(ilnrho_ss,f(l,m,iz4_loc,ilnrho),f(l,m,iz4_loc,iss),pp=tmpval)
-            pp_xy4(l-l1+1,m-m1+1)=tmpval
-          enddo; enddo
-          call wslice(path//'pp.yz',pp_yz,x(ix_loc),ny,nz)
-          call wslice(path//'pp.xz',pp_xz,y(iy_loc),nx,nz)
-          call wslice(path//'pp.xy',pp_xy,z(iz_loc),nx,ny)
-          call wslice(path//'pp.xy2',pp_xy2,z(iz2_loc),nx,ny)
-          if (lwrite_slice_xy3) &
-              call wslice(path//'pp.xy3',pp_xy3,z(iz3_loc),nx,ny)
-          if (lwrite_slice_xy4) & 
-              call wslice(path//'pp.xy4',pp_xy4,z(iz4_loc),nx,ny)
-!
-!
-!  Dust-to-gas mass ratio (derived variable)
-!
-        case ('epsd')
-          do k=1,ndustspec
-            call chn(k,sindex)
-            if (k == 1) sindex = ''
-            if (ldustdensity_log) then
-              nd_yz=exp(f(ix_loc,m1:m2,n1:n2,ind(k)))
-              nd_xz=exp(f(l1:l2,iy_loc,n1:n2,ind(k)))
-              nd_xy=exp(f(l1:l2,m1:m2,iz_loc,ind(k)))
-              nd_xy2=exp(f(l1:l2,m1:m2,iz2_loc,ind(k)))
-            else
-              nd_yz=f(ix_loc,m1:m2,n1:n2,ind(k))
-              nd_xz=f(l1:l2,iy_loc,n1:n2,ind(k))
-              nd_xy=f(l1:l2,m1:m2,iz_loc,ind(k))
-              nd_xy2=f(l1:l2,m1:m2,iz2_loc,ind(k))
-            endif
-            epsd_yz=md_yz(:,:,k)*nd_yz/exp(f(ix_loc,m1:m2,n1:n2,ilnrho))
-            epsd_xz=md_xz(:,:,k)*nd_xz/exp(f(l1:l2,iy_loc,n1:n2,ilnrho))
-            epsd_xy=md_xy(:,:,k)*nd_xy/exp(f(l1:l2,m1:m2,iz_loc,ilnrho))
-            epsd_xy2=md_xy2(:,:,k)*nd_xy2/exp(f(l1:l2,m1:m2,iz2_loc,ilnrho))
-            call wslice(path//'epsd'//trim(sindex)//'.yz',epsd_yz,x(ix_loc),ny,nz)
-            call wslice(path//'epsd'//trim(sindex)//'.xz',epsd_xz,y(iy_loc),nx,nz)
-            call wslice(path//'epsd'//trim(sindex)//'.xy',epsd_xy,z(iz_loc),nx,ny)
-            call wslice(path//'epsd'//trim(sindex)//'.xy2',epsd_xy2,z(iz2_loc),nx,ny)
-          enddo
-!
-        case default
-!
-! Add new slice providing routines here!
-!
-          lslices_legacy=.false.
-          if (lparticles)    call get_slices_particles   (f,slices)
-          if (lshock)        call get_slices_shock       (f,slices)
-          if (linterstellar) call get_slices_interstellar(f,slices)
-          if (lhydro)        call get_slices_hydro       (f,slices)
-          if (lmagnetic)     call get_slices_magnetic    (f,slices)
-          if (ltestscalar)   call get_slices_testscalar  (f,slices)
-          if (ltestfield)    call get_slices_testfield   (f,slices)
-          if (ltestflow)     call get_slices_testflow    (f,slices)
-          if (lradiation)    call get_slices_radiation   (f,slices)
-          if (lchiral)       call get_slices_chiral      (f,slices)
-          if (lspecial)      call get_slices_special     (f,slices)
-!
-        endselect
-
         if (lslices_legacy) then
           inamev=inamev+1
           cycle
         endif
-
+!
         if (slices%ready) then
           if (slices%index==0) then    ! If this wasn't a multi slice...
             if (associated(slices%yz)) &
@@ -562,7 +302,6 @@ module Slices
           inamev=inamev+1
         endif
       enddo
-!
 !
       lfirstloop=.false.
 !

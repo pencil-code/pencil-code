@@ -355,7 +355,7 @@ module Special
 !***********************************************************************
     subroutine get_slices_special(f,slices)
 !
-!  Write slices for animation of special variables.
+!  Write slices for animation of Special variables.
 !
 !  26-jun-06/tony: dummy
 !

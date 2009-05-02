@@ -106,7 +106,7 @@ module Interstellar
 !***********************************************************************
     subroutine get_slices_interstellar(f,slices)
 !
-!  Write slices for animation of particle variables.
+!  Write slices for animation of Interstellar variables.
 !
 !  26-jun-06/tony: dummy
 !

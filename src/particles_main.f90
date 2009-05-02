@@ -717,11 +717,7 @@ module Particles_main
 !***********************************************************************
     subroutine get_slices_particles(f,slices)
 !
-!  Write slices for animation of particle variables.
-!
-!  26-jun-06/anders: split from wvid
-!  26-jun-06/tony: Rewrote to give Slices module responsibility for
-!                  how and when slices are written
+!  Write slices for animation of Particle variables.
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
@@ -730,7 +726,7 @@ module Particles_main
 !
       select case (trim(slices%name))
 !
-!  Dust number density (auxiliary variable)
+!  Particle number density
 !
         case ('np')
           slices%yz= f(slices%ix,m1:m2    ,n1:n2     ,inp)
@@ -739,7 +735,7 @@ module Particles_main
           slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,inp)
           slices%ready = .true.
 !
-!  Dust density (auxiliary variable)
+!  Particle mass density
 !
         case ('rhop')
           if (irhop/=0) then

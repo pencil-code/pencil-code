@@ -958,7 +958,6 @@ module Dustdensity
 !
       use Sub
       use Mpicomm, only: stop_it
-      use Slices, only: md_xy,md_xy2,md_xz,md_yz
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -1145,25 +1144,6 @@ module Dustdensity
         enddo
         if (idiag_adm/=0) call sum_mn_name(sum(spread((md/(4/3.*pi))**(1/3.),1,nx)*p%nd,2)/sum(p%nd,2), idiag_adm)
         if (idiag_mdm/=0) call sum_mn_name(sum(spread(md,1,nx)*p%nd,2)/sum(p%nd,2), idiag_mdm)
-      endif
-!
-!  Write md slices for use in Slices
-!    (the variable md is not accesible to Slices)
-!
-      if (lvideo .and. lfirst) then
-        do k=1,ndustspec
-          if (lmdvar) then
-            md_yz(m-m1+1,n-n1+1,k) = f(ix_loc,m,n,imd(k))
-            if (m == iy_loc)  md_xz(:,n-n1+1,k)  = f(l1:l2,iy_loc,n,imd(k))
-            if (n == iz_loc)  md_xy(:,m-m1+1,k)  = f(l1:l2,m,iz_loc,imd(k))
-            if (n == iz2_loc) md_xy2(:,m-m1+1,k) = f(l1:l2,m,iz2_loc,imd(k))
-          else
-            md_yz(m-m1+1,n-n1+1,k) = md(k)
-            md_xz(:,n-n1+1,k)  = md(k)
-            md_xy(:,m-m1+1,k)  = md(k)
-            md_xy2(:,m-m1+1,k) = md(k)
-          endif
-        enddo
       endif
 !
     endsubroutine dndmd_dt
@@ -1640,5 +1620,32 @@ module Dustdensity
 !
     endsubroutine rprint_dustdensity
 !***********************************************************************
-
+    subroutine get_slices_dustdensity(f,slices)
+!
+!  Write slices for animation of Dustdensity variables.
+!
+!  26-jul-06/tony: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+!
+!  Loop over slices
+!
+      select case (trim(slices%name))
+!
+!  Dustdensity.
+!
+        case ('nd')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(1))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(1))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(1))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(1))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(1))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(1))
+      endselect
+!
+    endsubroutine get_slices_dustdensity
+!***********************************************************************
 endmodule Dustdensity

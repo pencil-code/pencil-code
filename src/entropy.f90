@@ -3350,6 +3350,60 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
 !
     endsubroutine rprint_entropy
 !***********************************************************************
+    subroutine get_slices_entropy(f,slices)
+!
+!  Write slices for animation of Entropy variables.
+!
+!  26-jul-06/tony: coded
+!
+      use EquationOfState, only: eoscalc, ilnrho_ss
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+!
+      real :: tmpval
+      integer :: l
+!
+!  Loop over slices
+!
+      select case (trim(slices%name))
+!
+!  Entropy.
+!
+        case ('ss')
+          slices%yz =f(ix_loc,m1:m2,n1:n2,iss)
+          slices%xz =f(l1:l2,iy_loc,n1:n2,iss)
+          slices%xy =f(l1:l2,m1:m2,iz_loc,iss)
+          slices%xy2=f(l1:l2,m1:m2,iz2_loc,iss)
+          if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,iss)
+          if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,iss)
+!
+!  Pressure.
+!
+        case ('pp')
+          do m=m1,m2; do n=n1,n2
+            call eoscalc(ilnrho_ss,f(ix_loc,m,n,ilnrho),f(ix_loc,m,n,iss),pp=tmpval)
+            slices%yz(m-m1+1,n-n1+1)=tmpval
+          enddo; enddo
+          do l=l1,l2; do n=n1,n2
+            call eoscalc(ilnrho_ss,f(l,iy_loc,n,ilnrho),f(l,iy_loc,n,iss),pp=tmpval)
+            slices%xz(l-l1+1,n-n1+1)=tmpval
+          enddo; enddo
+          do l=l1,l2; do m=m1,m2
+            call eoscalc(ilnrho_ss,f(l,m,iz_loc,ilnrho),f(l,m,iz_loc,iss),pp=tmpval)
+            slices%xy(l-l1+1,m-m1+1)=tmpval
+            call eoscalc(ilnrho_ss,f(l,m,iz2_loc,ilnrho),f(l,m,iz2_loc,iss),pp=tmpval)
+            slices%xy2(l-l1+1,m-m1+1)=tmpval
+            call eoscalc(ilnrho_ss,f(l,m,iz3_loc,ilnrho),f(l,m,iz3_loc,iss),pp=tmpval)
+            slices%xy3(l-l1+1,m-m1+1)=tmpval
+            call eoscalc(ilnrho_ss,f(l,m,iz4_loc,ilnrho),f(l,m,iz4_loc,iss),pp=tmpval)
+            slices%xy4(l-l1+1,m-m1+1)=tmpval
+          enddo; enddo
+!
+      endselect
+!   
+    endsubroutine get_slices_entropy
+!***********************************************************************
     subroutine calc_heatcond_zprof(zprof_hcond,zprof_glhc)
 !
 !  calculate z-profile of heat conduction for multilayer setup

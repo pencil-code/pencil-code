@@ -117,7 +117,7 @@ module Shock
 !***********************************************************************
     subroutine get_slices_shock(f,slices)
 !
-!  Write slices for animation of particle variables.
+!  Write slices for animation of Shock variables.
 !
 !  26-jun-06/tony: dummy
 !
