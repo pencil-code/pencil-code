@@ -388,7 +388,7 @@ module Testfield
 !  write B-slices for output in wvid in run.f90
 !  Note: ix is the index with respect to array with ghost zones.
 !
-      if (lvid.and.lfirst) then
+      if (lvideo.and.lfirst) then
         do j=1,3
           bb11_yz(m-m1+1,n-n1+1,j)=bpq(ix_loc-l1+1,j,1)
           if (m==iy_loc)  bb11_xz(:,n-n1+1,j)=bpq(:,j,1)

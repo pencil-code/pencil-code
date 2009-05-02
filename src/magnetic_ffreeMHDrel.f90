@@ -380,7 +380,7 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
 !  write B-slices for output in wvid in run.f90
 !  Note: ix is the index with respect to array with ghost zones.
 !
-        if (lvid.and.lfirst) then
+        if (lvideo.and.lfirst) then
           do j=1,3
             bb_yz(m-m1+1,n-n1+1,j)=bb(ix-l1+1,j)
             if (m.eq.iy)  bb_xz(:,n-n1+1,j)=bb(:,j)

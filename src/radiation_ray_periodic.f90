@@ -857,7 +857,7 @@ module Radiation
 !  16-jun-03/axel+tobi: coded
 !
       use Cdata, only: ldebug,headt,directory_snap
-      use Cdata, only: directory,lvid,lwrite_slices,cnamev
+      use Cdata, only: directory,lvideo,lwrite_slices,cnamev
       use Cdata, only: ix_loc,iy_loc,iz_loc,iz2_loc
       use Cdata, only: x,y,z
       use IO, only: output

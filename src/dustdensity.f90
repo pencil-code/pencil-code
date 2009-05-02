@@ -1150,7 +1150,7 @@ module Dustdensity
 !  Write md slices for use in Slices
 !    (the variable md is not accesible to Slices)
 !
-      if (lvid .and. lfirst) then
+      if (lvideo .and. lfirst) then
         do k=1,ndustspec
           if (lmdvar) then
             md_yz(m-m1+1,n-n1+1,k) = f(ix_loc,m,n,imd(k))

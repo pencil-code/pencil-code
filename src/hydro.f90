@@ -1481,7 +1481,7 @@ module Hydro
 !  This must be done outside the diagnostics loop (accessed at different times).
 !  Note: ix is the index with respect to array with ghost zones.
 !
-      if (lvid.and.lfirst) then
+      if (lvideo.and.lfirst) then
         divu_yz(m-m1+1,n-n1+1)=p%divu(ix_loc-l1+1)
         if (m.eq.iy_loc)  divu_xz(:,n-n1+1)=p%divu
         if (n.eq.iz_loc)  divu_xy(:,m-m1+1)=p%divu

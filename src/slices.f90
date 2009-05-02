@@ -111,7 +111,7 @@ module Slices
 !***********************************************************************
     subroutine wvid_prepare
 !
-!  Prepare lvid for writing slices into video file
+!  Prepare lvideo for writing slices into video file
 !  This is useful for visualization of scalar field (or one component
 !  of a vector field) on the perifery of a box.
 !  Can be visualized in idl using rvid_box.pro
@@ -136,14 +136,14 @@ module Slices
         ifirst=1
       endif
 !
-!  This routine sets lvid=T whenever its time to write a slice
+!  This routine sets lvideo=T whenever its time to write a slice
 !
-      call update_snaptime(file,tvid,nvid,dvid,t,lvid,ch,ENUM=.false.)
+      call update_snaptime(file,tvid,nvid,dvid,t,lvideo,ch,ENUM=.false.)
 !
 !  Save current time so that the time that is written out in wslice() is not
 !  from the next time step
 !
-      if (lvid) tslice = t
+      if (lvideo) tslice = t
 !
     endsubroutine wvid_prepare
 !***********************************************************************

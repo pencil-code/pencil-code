@@ -494,7 +494,7 @@ program run
       endif
     endif
 !
-!  If we want to write out video data, wvid sets lvid=.true.
+!  If we want to write out video data, wvid sets lvideo=.true.
 !  This allows pde to prepare some of the data
 !
     if (lwrite_slices) call wvid_prepare()
@@ -505,7 +505,7 @@ program run
     lpencil = lpenc_requested
     if (lout)   lpencil=lpencil .or. lpenc_diagnos
     if (l2davg) lpencil=lpencil .or. lpenc_diagnos2d
-    if (lvid)   lpencil=lpencil .or. lpenc_video
+    if (lvideo) lpencil=lpencil .or. lpenc_video
 !
 !  save state vector prior to update
 !
@@ -588,7 +588,7 @@ program run
 !
 !  Write slices (for animation purposes)
 !
-    if (lvid.and.lwrite_slices) call wvid(f,trim(directory)//'/slice_')
+    if (lvideo.and.lwrite_slices) call wvid(f,trim(directory)//'/slice_')
 !
 !  Save snapshot every isnap steps in case the run gets interrupted.
 !  The time needs also to be written

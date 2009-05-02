@@ -250,7 +250,7 @@ module Equ
 !
 !  Calculate ionization degree (needed for thermodynamics)
 !  Radiation transport along rays. If lsingle_ray, then this
-!  is only used for visualization and only needed when lvid
+!  is only used for visualization and only needed when lvideo
 !  (but this is decided in radtransfer itself)
 !
       if (leos_ionization.or.leos_temperature_ionization) call ioncalc(f)

@@ -281,7 +281,7 @@ module Cdata
   character (len=30) :: cnamer(mnamer),cformr(mnamer)
   character (len=30) :: cnamerz(mnamerz),cformrz(mnamerz)
   logical :: lout=.false.,headt=.false.,headtt=.true.,ldt,lfirst=.false.,llast=.false.
-  logical :: ldiagnos=.false.,lvid=.false.,lwrite_prof=.true.
+  logical :: ldiagnos=.false.,lvideo=.false.,lwrite_prof=.true.
   logical :: l2davg=.false.,l2davgfirst=.false.
   logical :: l1ddiagnos=.false.,l1dout=.false.,l1dphiavg=.false.
   logical :: lwrite_phizaverages=.true.

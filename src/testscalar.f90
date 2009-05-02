@@ -625,7 +625,7 @@ module Testscalar
 !  write B-slices for output in wvid in run.f90
 !  Note: ix is the index with respect to array with ghost zones.
 ! 
-      if (lvid.and.lfirst) then
+      if (lvideo.and.lfirst) then
         cc1_yz(m-m1+1,n-n1+1,1)=cpq(ix_loc-l1+1,1)
         if (m==iy_loc)  cc1_xz(:,n-n1+1,1)=cpq(:,1)
         if (n==iz_loc)  cc1_xy(:,m-m1+1,1)=cpq(:,1)

@@ -402,7 +402,7 @@ module Radiation
 !
 !  16-jun-03/axel+tobi: coded
 !
-      use Cdata, only: ldebug,headt,iQrad,iFrad,iFradx,iFradz,lvid,lfirst, &
+      use Cdata, only: ldebug,headt,iQrad,iFrad,iFradx,iFradz,lvideo,lfirst, &
         ix_loc,iy_loc,iz_loc,iz2_loc,iz3_loc,iz4_loc
       use Mpicomm, only: stop_it
 !
@@ -415,10 +415,10 @@ module Radiation
       if (ldebug.and.headt) print*,'radtransfer'
 !
 !  coninue only if we either have more than a single ray, or,
-!  if we do have a single ray, when also lvid.and.lfirst are true
+!  if we do have a single ray, when also lvideo.and.lfirst are true
 !  so that the result is used for visualization.
 !
-      if ((.not.lsingle_ray) .or. (lsingle_ray.and.lvid.and.lfirst)) then
+      if ((.not.lsingle_ray) .or. (lsingle_ray.and.lvideo.and.lfirst)) then
 !
 !  Do loop over all frequency bins
 !
@@ -492,7 +492,7 @@ module Radiation
 !
 !  calculate slices of J = S + Q/(4pi) 
 !
-        if (lvid.and.lfirst) then
+        if (lvideo.and.lfirst) then
           Jrad_yz(:,:,inu)=Qrad(ix_loc,m1:m2,n1:n2)+Srad(ix_loc,m1:m2,n1:n2)
           Jrad_xz(:,:,inu)=Qrad(l1:l2,iy_loc,n1:n2)+Srad(l1:l2,iy_loc,n1:n2)
           Jrad_xy(:,:,inu)=Qrad(l1:l2,m1:m2,iz_loc)+Srad(l1:l2,m1:m2,iz_loc)
