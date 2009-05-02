@@ -191,7 +191,15 @@ module Shear
       if (lglobal_baroclinic) then 
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_uu)=.true.
-        if (lentropy) lpenc_requested(i_TT1)=.true.
+!
+        if (lentropy.or.&
+           (ltemperature.and.(.not.ltemperature_nolog))) &
+           lpenc_requested(i_TT1)=.true.
+!
+        if (ltemperature.or.&
+           (lentropy.and.pretend_lnTT)) &
+           lpenc_requested(i_cv1)=.true.
+!
       endif
 !
     endsubroutine pencil_criteria_shear
@@ -476,6 +484,7 @@ module Shear
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx) :: rhs
       type (pencil_case) :: p     
       real :: P0
 !
@@ -484,20 +493,22 @@ module Shear
       P0=rho0*cs20*gamma11
       df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-Bshear*P0/rho0*(p%rho1*rho0-1.)
 !
-!  entropy
+!  Right hand side on the energy equation
+!
+      rhs=Bshear*P0*p%uu(:,1)/gamma1 
 !
       if (lentropy) then 
-        df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) + &
-            p%rho1*p%TT1*Bshear*P0*p%uu(:,1)/gamma1
         if (pretend_lnTT) then 
-          print*,"Global baroclinity not implemented yet "
-          print*,"for pretend_lnTT."
-          call fatal_error("global baroclinic","") 
+          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) + p%cv1*p%rho1*p%TT1*rhs
+        else
+          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) + p%rho1*p%TT1*rhs
         endif
-      elseif (ltemperature) then 
-        print*,"Global baroclinity not implemented yet "
-        print*,"for the temperature equation."
-        call fatal_error("global baroclinic","") 
+      else if (ltemperature) then 
+        if (ltemperature_nolog) then 
+          df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + p%cv1*p%rho1*rhs
+        else
+          df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + p%cv1*p%rho1*p%TT1*rhs
+        endif
       else
         print*,"You want to use a global baroclinic term but    "
         print*,"you are NOT solving the energy equation. Better "
