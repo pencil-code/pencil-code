@@ -1,113 +1,27 @@
 ! $Id$
-
+!
 !  This module produces slices for animation purposes
-
+!
 module Slices
-
+!
   use Cdata
-
+!
   implicit none
-
+!
   private
-
+!
   public :: wvid, wvid_prepare, setup_slices, wslice
-
-
-!  Variables for xy slices start here
-!!! New slice code reuses the following slice variables.
-  real, target, dimension (nx,ny) :: slice_xy  = 0., slice_xy2 = 0.
-  real, target, dimension (nx,nz) :: slice_xz = 0.
-  real, target, dimension (ny,nz) :: slice_yz = 0.
 !
-!  xy3 and xy4 for spherical slices  
-!
-  real, target, dimension (nx,ny) :: slice_xy3 = 0., slice_xy4 = 0.
-!
-!!! LEGACY SLICE VARIABLES FOLLOW
-!  Code variables
-!
-! Density Slices
-!
-  real, public, dimension (nx,ny) :: lnrho_xy
-!
-! EOS Slices
-!
-  real, public, dimension (nx,ny) :: ss_xy
-  real, public, dimension (nx,ny) :: yH_xy
-  real, public, dimension (nx,ny) :: lnTT_xy
-  real, public, dimension (nx,ny) :: pp_xy
-!
-! Pscalar Slices
-!
-  real, public, dimension (nx,ny) :: cc_xy,lncc_xy
-!
-! Dust slices
-!
-  real, public, dimension (nx,ny) :: nd_xy
-  real, public, dimension (nx,ny,ndustspec) :: md_xy
-  real, public, dimension (nx,ny,3) :: uud_xy,vvp_xy
-!
-! Chemistry slices
-!
-  real, public, dimension (nx,ny) :: chemspec_xy
-!
-!  Cosmic Ray slices
-!
-  real, public, dimension (nx,ny) :: ecr_xy
-!  Derived variables
-  real, public, dimension (nx,ny) :: epsd_xy
-!  Variables for xy2 slices start here
-!  Code variables
-  real, public, dimension (nx,ny,3) :: uud_xy2,vvp_xy2
-  real, public, dimension (nx,ny) :: lnrho_xy2,ss_xy2,cc_xy2,lncc_xy2
-  real, public, dimension (nx,ny) :: nd_xy2
-  real, public, dimension (nx,ny,ndustspec) :: md_xy2
-  real, public, dimension (nx,ny) :: chemspec_xy2
-!  Auxiliary variables
-  real, public, dimension (nx,ny) :: yH_xy2,ecr_xy2
-!  Derived variables
-  real, public, dimension (nx,ny) :: lnTT_xy2
-  real, public, dimension (nx,ny) :: epsd_xy2
-  real, public, dimension (nx,ny) :: pp_xy2
-!  Variables for xy3 and xy4, necessary for 
-!  spherical slices, start here
-  real, public, dimension (nx,ny) :: lnrho_xy3,lnrho_xy4
-  real, public, dimension (nx,ny) :: pp_xy3,pp_xy4
-  real, public, dimension (nx,ny) :: ss_xy3,ss_xy4
-  real, public, dimension (nx,ny) :: lnTT_xy3,lnTT_xy4
-!  Variables for xz slices start here
-!  Code variables
-  real, public, dimension (nx,nz,3) :: uud_xz,vvp_xz
-  real, public, dimension (nx,nz) :: lnrho_xz,ss_xz,cc_xz,lncc_xz
-  real, public, dimension (nx,nz) :: nd_xz
-  real, public, dimension (nx,nz,ndustspec) :: md_xz
-  real, public, dimension (nx,nz) :: chemspec_xz
-!  Auxiliary variables
-  real, public, dimension (nx,nz) :: yH_xz,ecr_xz
-!  Derived variables
-  real, public, dimension (nx,nz) :: lnTT_xz
-  real, public, dimension (nx,nz) :: epsd_xz
-  real, public, dimension (nx,nz) :: pp_xz
-!  Variables for yz slices start here
-!  Code variables
-  real, public, dimension (ny,nz,3) :: uud_yz,vvp_yz
-  real, public, dimension (ny,nz) :: lnrho_yz,ss_yz,cc_yz,lncc_yz
-  real, public, dimension (ny,nz) :: nd_yz
-  real, public, dimension (ny,nz,ndustspec) :: md_yz  
-  real, public, dimension (ny,nz) :: chemspec_yz
-!  Auxiliary variables
-  real, public, dimension (ny,nz) :: yH_yz,ecr_yz
-!  Derived variables
-  real, public, dimension (ny,nz) :: lnTT_yz
-  real, public, dimension (ny,nz) :: epsd_yz
-  real, public, dimension (ny,nz) :: pp_yz
+  real, target, dimension (nx,ny) :: slice_xy=0.0, slice_xy2=0.0
+  real, target, dimension (nx,nz) :: slice_xz=0.0
+  real, target, dimension (ny,nz) :: slice_yz=0.0
+  real, target, dimension (nx,ny) :: slice_xy3=0., slice_xy4=0.0
 !
   real, public :: tvid
   integer, public :: nvid
   real :: tslice
 !
   contains
-!
 !***********************************************************************
     subroutine wvid_prepare
 !
