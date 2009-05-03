@@ -302,7 +302,7 @@ $(SUB_OBJ): sub.f90 $(CDATA_OBJ) $(MPICOMM_OBJ) $(DERIV).o $(MESSAGES_OBJ) $(GEN
 #
 param_io.o: param_io.f90 $(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(TIMESTEP_OBJ) $(TIMEAVG_OBJ) $(physics) $(PARTICLES_MAIN_OBJ) $(TESTPERTURB_OBJ)
 #
-register.o: register.f90 $(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(IO_OBJ) $(physics) $(TIMEAVG_OBJ) prints.o equ.o $(GRID_OBJ) $(TESTPERTURB_OBJ) $(SOLID_CELLS_OBJ) $(DIAGNOSTICS_OBJ)
+register.o: register.f90 $(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(IO_OBJ) $(physics) $(TIMEAVG_OBJ) diagnostics.o equ.o $(GRID_OBJ) $(TESTPERTURB_OBJ) $(SOLID_CELLS_OBJ) $(DIAGNOSTICS_OBJ) param_io.o
 #
 $(EQU_OBJ): $(EQU_SRC) $(CDATA_OBJ) $(MPICOMM_OBJ) $(GHOSTFOLD_OBJ) $(MESSAGES_OBJ) $(SUB_OBJ) $(physics) boundcond.o $(POISSON_OBJ) $(GLOBAL_OBJ) $(PARTICLES_MAIN_OBJ) $(INTERSTELLAR_OBJ) $(GRID_OBJ) snapshot.o $(FORCING_OBJ) $(SOLID_CELLS_OBJ) diagnostics.o
 #
@@ -326,7 +326,7 @@ persist.o: persist.f90 $(CDATA_OBJ) $(GENERAL_OBJ) $(MAGNETIC_OBJ) $(HYDRO_OBJ) 
 #
 filter.o: filter.f90 $(CDATA_OBJ) $(SUB_OBJ) boundcond.o
 #
-prints.o: prints.f90 $(CDATA_OBJ) $(SUB_OBJ) param_io.o $(physics)
+# prints.o: prints.f90 $(CDATA_OBJ) $(SUB_OBJ) param_io.o $(physics)
 ##
 ## Explicit dependencies for the different physics modules.
 ##

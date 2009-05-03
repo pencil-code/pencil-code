@@ -188,7 +188,7 @@ module Register
       use CosmicrayFlux,   only: initialize_cosmicrayflux
       use Cosmicray,       only: initialize_cosmicray
       use Density,         only: initialize_density
-      use Diagnostics,     only: initialize_time_integrals
+      use Diagnostics,     only: initialize_time_integrals, initialize_prints
       use Dustdensity,     only: initialize_dustdensity
       use Dustvelocity,    only: initialize_dustvelocity
       use Entropy,         only: initialize_entropy
@@ -202,7 +202,6 @@ module Register
       use NeutralVelocity, only: initialize_neutralvelocity
       use Poisson,         only: initialize_poisson
       use Pscalar,         only: initialize_pscalar
-      use Print,           only: initialize_prints
       use Radiation,       only: initialize_radiation
       use Selfgravity,     only: initialize_selfgravity
       use Shear,           only: initialize_shear

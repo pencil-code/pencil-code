@@ -47,7 +47,7 @@ module Equ
       use Grid, only: calc_pencils_grid
       use Hydro
       use Interstellar, only: interstellar_before_boundary
-      use Magnetic
+      Use Magnetic
       use Hypervisc_strict, only: hyperviscosity_strict
       use Hyperresi_strict, only: hyperresistivity_strict
       use Mpicomm
@@ -839,7 +839,7 @@ module Equ
 !
 !  Collect from different processors max(uu) for the time step.
 !
-      if (lfirst.and.ldt) call collect_UUmax
+!      if (lfirst.and.ldt) call collect_UUmax
 !
 !  Diagnostics
 !
@@ -856,11 +856,11 @@ module Equ
 !
 !  2-D averages
 !
-     if (l2davgfirst) then
-       if (lwrite_yaverages) call yaverages_xz
-       if (lwrite_zaverages) call zaverages_xy
-       if (lwrite_phiaverages) call phiaverages_rz
-     endif
+      if (l2davgfirst) then
+        if (lwrite_yaverages)   call yaverages_xz
+        if (lwrite_zaverages)   call zaverages_xy
+        if (lwrite_phiaverages) call phiaverages_rz
+      endif
 !
 !  Note: zaverages_xy are also needed if bmx and bmy are to be calculated
 !  (Of course, yaverages_xz does not need to be calculated for that.)
@@ -869,7 +869,31 @@ module Equ
         if (lwrite_zaverages) call zaverages_xy
       endif
 !
-!  reset lwrite_prof
+!  Calculate mean fields
+!
+!      if (lmagnetic)  call calc_mfield
+!      if (lhydro)     call calc_mflow
+!      if (lpscalar)   call calc_mpscalar
+!
+!  calculate rhoccm and cc2m (this requires that these are set in print.in)
+!  broadcast result to other processors. This is needed for calculating PDFs.
+!
+!      if (idiag_rhoccm/=0) then
+!        if (iproc==0) rhoccm=fname(idiag_rhoccm)
+!        call mpibcast_real(rhoccm,1)
+!      endif
+!
+!      if (idiag_cc2m/=0) then
+!        if (iproc==0) cc2m=fname(idiag_cc2m)
+!        call mpibcast_real(cc2m,1)
+!      endif
+!
+!      if (idiag_gcc2m/=0) then
+!        if (iproc==0) gcc2m=fname(idiag_gcc2m)
+!        call mpibcast_real(gcc2m,1)
+!      endif
+!
+!  Reset lwrite_prof.
 !
       lwrite_prof=.false.
 !
@@ -922,5 +946,23 @@ module Equ
       endif
 !
     endsubroutine output_crash_files
+!***********************************************************************
+!    subroutine collect_UUmax
+!
+!  Calculate the maximum effective advection velocity in the domain;
+!  needed for determining dt at each timestep.
+!
+!   2-sep-01/axel: coded
+!
+!    real, dimension(1) :: fmax_tmp,fmax
+!
+!  Communicate over all processors. The result is then present only on the
+!  root processor reassemble using old names.
+!
+!    fmax_tmp(1)=UUmax
+!    call mpireduce_max(fmax_tmp,fmax,1)
+!    if (lroot) UUmax=fmax(1)
+!
+!    endsubroutine collect_UUmax
 !***********************************************************************
 endmodule Equ

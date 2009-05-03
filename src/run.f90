@@ -72,7 +72,6 @@ program run
                              particles_nbody_write_snapshot
   use Pencil_check,    only: pencil_consistency_check
   use Power_spectrum
-  use Print
   use Register
   use SharedVariables, only: sharedvars_clean_up
   use Shear
@@ -517,8 +516,14 @@ program run
 !
     call rk_2n(f,df,p)
 !
-! 07-Sep-07/dintrans+gastine: implicit advance of the radiative diffusion
-! in the temperature equation (using temperature_idealgas)
+!  Print diagnostic averages to screen and file.
+!
+    if (lout)   call prints()
+    if (lout)   call write_1daverages()
+    if (l2davg) call write_2daverages()
+!
+!  07-Sep-07/dintrans+gastine: implicit advance of the radiative diffusion
+!  in the temperature equation (using temperature_idealgas)
 !
     if (lADI) call calc_heatcond_ADI(finit,f)
     if (ltestperturb) call testperturb_finalize(f)
@@ -557,13 +562,6 @@ program run
       time_last_diagnostic = time_this_diagnostic
       call save_name(time_per_step,idiag_timeperstep)
     endif
-!
-    if (lout) call prints()
-!
-!  In regular intervals, calculate certain averages and do other output
-!
-    call write_1daverages()
-    call write_2daverages()
 !
 !  Setting ialive=1 can be useful on flaky machines!
 !  Each processor writes it's processor number (if it is alive!)

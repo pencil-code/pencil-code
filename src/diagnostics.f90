@@ -17,26 +17,169 @@ module Diagnostics
 !
   private
 !
+  public :: initialize_prints, prints
   public :: diagnostic, initialize_time_integrals
-  public :: collect_uumax, xyaverages_z, xzaverages_y, yzaverages_x
+  public :: xyaverages_z, xzaverages_y, yzaverages_x
   public :: phizaverages_r, yaverages_xz, zaverages_xy
   public :: phiaverages_rz
-  public :: expand_cname
-  public :: parse_name, save_name, max_name
+  public :: write_1daverages, write_2daverages
+  public :: write_2daverages_prepare, write_zaverages
+  public :: expand_cname, parse_name, save_name, max_name
   public :: max_mn_name,sum_mn_name,integrate_mn_name,sum_weighted_name
-  public :: sum_mn_name_halfy
-  public :: surf_mn_name,sum_lim_mn_name
+  public :: sum_mn_name_halfy, surf_mn_name,sum_lim_mn_name
   public :: xysum_mn_name_z, xzsum_mn_name_y, yzsum_mn_name_x
-  public :: phizsum_mn_name_r
-  public :: ysum_mn_name_xz, zsum_mn_name_xy, phisum_mn_name_rz
-  public :: calc_phiavg_profile
+  public :: phizsum_mn_name_r, ysum_mn_name_xz, zsum_mn_name_xy
+  public :: phisum_mn_name_rz, calc_phiavg_profile
   public :: yzintegrate_mn_name_x,xzintegrate_mn_name_y,xyintegrate_mn_name_z
+!
+  character (len=5) :: ch2davg
 !
   contains
 !***********************************************************************
+    subroutine initialize_prints()
+!
+!  Setup variables needed for output of diagnostic quantities and
+!  averages.
+!
+!  14-aug-03/axel: added dxy, dyz, and dxz
+!
+      integer :: i
+      real :: dxeff,dyeff,dzeff
+      logical, save :: first=.true.
+!
+      if (first) then
+!
+!  Initialize rcyl for the phi-averages grid. Does not need to be
+!  done after each reload of run.in, but this is the easiest way
+!  of doing it.
+!
+        if (nrcyl/=0) then 
+          drcyl=xyz1(1)/nrcyl
+        else
+          drcyl=0.0
+        endif
+        rcyl=(/ ((i-0.5)*drcyl, i=1,nrcyl) /)
+!
+!  Calculate the three surface elements. Take care of degenerate dimensions.
+!
+        if (nxgrid==1) then; dxeff=1.; else; dxeff=dx; endif
+        if (nygrid==1) then; dyeff=1.; else; dyeff=dy; endif
+        if (nzgrid==1) then; dzeff=1.; else; dzeff=dz; endif
+!
+        dsurfxy=dxeff*dyeff
+        dsurfyz=dyeff*dzeff
+        dsurfzx=dzeff*dxeff
+!
+!  Calculate the volume element.
+!
+        dvol=dxeff*dyeff*dzeff
+      endif
+!
+      first=.false.
+!
+    endsubroutine initialize_prints
+!***********************************************************************
+    subroutine prints
+!
+!  Reads and registers print parameters gathered from the different
+!  modules and marked in `print.in'.
+!
+!   3-may-02/axel: coded
+!
+      use General, only: safe_character_append
+      use Mpicomm
+      use Sub
+!
+      logical,save :: first=.true.
+      character (len=640) :: fform,legend,line
+      character (len=1) :: comma=','
+      integer :: iname,index_d,index_a
+!
+!  Add general (not module-specific) quantities for diagnostic output. If the
+!  timestep (=dt) is to be written, it is known only after rk_2n, so the best
+!  place to enter it into the save list is here Use 1.*(it-1) to have floating
+!  point or double precision.
+!
+      if (lroot) then
+        if (idiag_t/=0)   call save_name(tdiagnos,idiag_t)
+        if (idiag_dt/=0)  call save_name(dt,idiag_dt)
+        if (idiag_it/=0)  call save_name(1.0*(it-1),idiag_it)
+      endif
+!
+      if (lroot) then
+!
+!  Whenever itype_name=ilabel_max_dt, scale result by dt (for printing Courant
+!  time). This trick is necessary, because dt is not known at the time when the
+!  corresponding contribution to UUmax is known.
+!
+        do iname=1,nname
+          if (itype_name(iname)==ilabel_max_dt) fname(iname)=dt*fname(iname)
+        enddo
+!
+!  Produce the format.
+!  Must set cform(1) explicitly, and then do iname>=2 in loop.
+!
+        fform = '(' // cform(1)
+        legend=noform(cname(1))
+        do iname=2,nname
+          call safe_character_append(fform,  comma // cform(iname))
+          call safe_character_append(legend, noform(cname(iname)))
+        enddo
+        call safe_character_append(fform, ')')
+!
+        if (ldebug) then
+          write(0,*) 'PRINTS.prints: format = ', trim(fform)
+          write(0,*) 'PRINTS.prints: args   = ', fname(1:nname)
+        endif
+!
+!  This treats all numbers as floating point numbers.  Only those numbers are
+!  given (and computed) that are also listed in print.in.
+!
+        if (first) write(*,*)
+        if (first) write(*,'(" ",A)') trim(legend)
+!
+!  Write legend to extra file (might want to do only once after each lreset)
+!
+        if (first) then
+          open(1,file=trim(datadir)//'/legend.dat')
+          write(1,'(" ",A)') trim(legend)
+          close(1)
+        endif
+!
+!  Put output line into a string and remove spurious dots.
+!
+        if (ldebug) write(*,*) 'bef. writing prints'
+        write(line,trim(fform)) fname(1:nname)
+        index_d=index(line,'. ')
+        if (index_d >= 1) then
+          line(index_d:index_d)=' '
+        endif
+!
+!  If the line contains unreadable characters, then comment out line.
+!
+        index_a=(index(line,'***') +  index(line,'???'))
+        if (index_a > 0) then
+          line(1:1)=comment_char
+        endif
+!
+!  Append to diagnostics file.
+!
+        open(1,file=trim(datadir)//'/time_series.dat',position='append')
+        if (first) write(1,"('"//comment_char//"',a)") trim(legend)
+        write(1,'(a)') trim(line)
+        write(6,'(a)') trim(line)
+        close(1)
+!
+      endif                     ! (lroot)
+!
+      if (ldebug) write(*,*) 'exit prints'
+      first = .false.
+!
+    endsubroutine prints
+!***********************************************************************
     subroutine diagnostic
 !
-!  Calculate diagnostic quantities.
+!  Finalize calculation of diagnostic quantities (0-D).
 !
 !   2-sep-01/axel: coded
 !  14-aug-03/axel: began adding surface integrals
@@ -113,100 +256,81 @@ module Diagnostics
 !
 !  Sort back into original array.
 !
-         imax_count=0
-         isum_count=0
-         do iname=1,nname
-           if (itype_name(iname)<0) then ! max
-             imax_count=imax_count+1
+        imax_count=0
+        isum_count=0
+        do iname=1,nname
+          if (itype_name(iname)<0) then ! max
+            imax_count=imax_count+1
 !
-             if (itype_name(iname)==ilabel_max)            &
-                 fname(iname)=fmax(imax_count)
+            if (itype_name(iname)==ilabel_max)            &
+                fname(iname)=fmax(imax_count)
 !
-             if (itype_name(iname)==ilabel_max_sqrt)       &
-                 fname(iname)=sqrt(fmax(imax_count))
+            if (itype_name(iname)==ilabel_max_sqrt)       &
+                fname(iname)=sqrt(fmax(imax_count))
 !
-             if (itype_name(iname)==ilabel_max_dt)         &
-                 fname(iname)=fmax(imax_count)
+            if (itype_name(iname)==ilabel_max_dt)         &
+                fname(iname)=fmax(imax_count)
 !
-             if (itype_name(iname)==ilabel_max_neg)        &
-                 fname(iname)=-fmax(imax_count)
+            if (itype_name(iname)==ilabel_max_neg)        &
+                fname(iname)=-fmax(imax_count)
 !
-             if (itype_name(iname)==ilabel_max_reciprocal) &
-                 fname(iname)=1./fmax(imax_count)
+            if (itype_name(iname)==ilabel_max_reciprocal) &
+                fname(iname)=1./fmax(imax_count)
 !
-           elseif (itype_name(iname)>0) then ! sum
-             isum_count=isum_count+1
+          elseif (itype_name(iname)>0) then ! sum
+            isum_count=isum_count+1
 !
-             if (itype_name(iname)==ilabel_sum)            &
-                 fname(iname)=fsum(isum_count)*dVol_rel1
+            if (itype_name(iname)==ilabel_sum)            &
+                fname(iname)=fsum(isum_count)*dVol_rel1
 !
-             if (itype_name(iname)==ilabel_sum_sqrt)       &
-                 fname(iname)=sqrt(fsum(isum_count)*dVol_rel1)
+            if (itype_name(iname)==ilabel_sum_sqrt)       &
+                fname(iname)=sqrt(fsum(isum_count)*dVol_rel1)
 !
-             if (itype_name(iname)==ilabel_sum_par)        &
-                 fname(iname)=fsum(isum_count)/fweight(isum_count)
+            if (itype_name(iname)==ilabel_sum_par)        &
+                fname(iname)=fsum(isum_count)/fweight(isum_count)
 !
-             if (itype_name(iname)==ilabel_integrate) then
-               dv=1.
-               if (nxgrid/=1.and.lequidist(1)) dv=dv*dx
-               if (nygrid/=1.and.lequidist(2)) dv=dv*dy
-               if (nzgrid/=1.and.lequidist(3)) dv=dv*dz
-               fname(iname)=fsum(isum_count)*dv
-              endif
-!
-              if (itype_name(iname)==ilabel_surf)          &
-                  fname(iname)=fsum(isum_count)
-!
-              if (itype_name(iname)==ilabel_sum_lim) then
-                 vol=1.
-                 if (lcylinder_in_a_box)  vol=vol*pi*(r_ext**2-r_int**2)
-                 if (nzgrid/=1)           vol=vol*Lz
-                 if (lsphere_in_a_box)    vol=1.333333*pi*(r_ext**3-r_int**3)
-                 fname(iname)=fsum(isum_count)/vol
-              endif
-!
-             if (itype_name(iname)==ilabel_sum_weighted) then
-               if (fweight(isum_count)/=0.0) then
-                 fname(iname)=fsum(isum_count)/fweight(isum_count)
-               else
-                 fname(iname)=0.0
-               endif
+            if (itype_name(iname)==ilabel_integrate) then
+              dv=1.
+              if (nxgrid/=1.and.lequidist(1)) dv=dv*dx
+              if (nygrid/=1.and.lequidist(2)) dv=dv*dy
+              if (nzgrid/=1.and.lequidist(3)) dv=dv*dz
+              fname(iname)=fsum(isum_count)*dv
              endif
 !
-             if (itype_name(iname)==ilabel_sum_weighted_sqrt) then
-               if (fweight(isum_count)/=0.0) then
-                 fname(iname)=sqrt(fsum(isum_count)/fweight(isum_count))
-               else
-                 fname(iname)=0.0
-               endif
+             if (itype_name(iname)==ilabel_surf)          &
+                 fname(iname)=fsum(isum_count)
+!
+             if (itype_name(iname)==ilabel_sum_lim) then
+                vol=1.
+                if (lcylinder_in_a_box)  vol=vol*pi*(r_ext**2-r_int**2)
+                if (nzgrid/=1)           vol=vol*Lz
+                if (lsphere_in_a_box)    vol=1.333333*pi*(r_ext**3-r_int**3)
+                fname(iname)=fsum(isum_count)/vol
              endif
 !
-           endif
+            if (itype_name(iname)==ilabel_sum_weighted) then
+              if (fweight(isum_count)/=0.0) then
+                fname(iname)=fsum(isum_count)/fweight(isum_count)
+              else
+                fname(iname)=0.0
+              endif
+            endif
 !
-         enddo
+            if (itype_name(iname)==ilabel_sum_weighted_sqrt) then
+              if (fweight(isum_count)/=0.0) then
+                fname(iname)=sqrt(fsum(isum_count)/fweight(isum_count))
+              else
+                fname(iname)=0.0
+              endif
+            endif
+!
+          endif
+!
+        enddo
 !
       endif
 !
     endsubroutine diagnostic
-!***********************************************************************
-    subroutine collect_UUmax
-!
-!  Calculate the maximum effective advection velocity in the domain;
-!  needed for determining dt at each timestep.
-!
-!   2-sep-01/axel: coded
-!
-    real, dimension(1) :: fmax_tmp,fmax
-!
-!  Communicate over all processors.
-!  The result is then present only on the root processor
-!  reassemble using old names.
-!
-    fmax_tmp(1)=UUmax
-    call mpireduce_max(fmax_tmp,fmax,1)
-    if (lroot) UUmax=fmax(1)
-!
-    endsubroutine collect_UUmax
 !***********************************************************************
     subroutine initialize_time_integrals(f)
 !
@@ -217,10 +341,10 @@ module Diagnostics
       real, dimension (mx,my,mz,mfarray) :: f
       intent(inout) :: f
 !
-      if (iuut/=0) f(:,:,:,iuxt:iuzt)=0.
-      if (ioot/=0) f(:,:,:,ioxt:iozt)=0.
-      if (ibbt/=0) f(:,:,:,ibxt:ibzt)=0.
-      if (ijjt/=0) f(:,:,:,ijxt:ijzt)=0.
+      if (iuut/=0) f(:,:,:,iuxt:iuzt)=0.0
+      if (ioot/=0) f(:,:,:,ioxt:iozt)=0.0
+      if (ibbt/=0) f(:,:,:,ibxt:ibzt)=0.0
+      if (ijjt/=0) f(:,:,:,ijxt:ijzt)=0.0
 !
     endsubroutine initialize_time_integrals
 !***********************************************************************
@@ -386,6 +510,236 @@ module Diagnostics
       endif
 !
     endsubroutine phiaverages_rz
+!***********************************************************************
+    subroutine write_1daverages()
+!
+!  Write 1d averages (z-averages, .., i.e. quantities that are only  1d
+!  after averaging). These are written every it1 timesteps (like the
+!  diagnostic line) and appended to their individual files.
+!
+!   7-aug-03/wolf: coded
+!
+      call write_xyaverages()
+      call write_xzaverages()
+      call write_yzaverages()
+      call write_phizaverages()
+!
+    endsubroutine write_1daverages
+!***********************************************************************
+    subroutine write_2daverages_prepare()
+!
+!  Prepare l2davg for writing 2D averages.
+!  This needs to be done in the beginning of each time step, so
+!  the various routines know that they need to calculate averages.
+!
+!  23-nov-03/axel: adapted from write_2daverages and wvid_prepare
+!
+      use Sub, only: update_snaptime, read_snaptime
+!
+      real, save :: t2davg
+      integer, save :: n2davg
+      logical, save :: first=.true.
+      character (len=135) :: file
+!
+      file=trim(datadir)//'/t2davg.dat'
+      if (first) then
+        call read_snaptime(trim(file),t2davg,n2davg,d2davg,t)
+      endif
+      first = .false.
+!
+!  This routine sets l2davg=T whenever its time to write 2D averages
+!
+      call update_snaptime(file,t2davg,n2davg,d2davg,t,l2davg,ch2davg,ENUM=.true.)
+!
+    endsubroutine write_2daverages_prepare
+!***********************************************************************
+    subroutine write_2daverages()
+!
+!  Write 2d averages (z-averages, phi-averages, .., i.e. quantities that
+!  are still 2d after averaging) if it is time.
+!  In analogy to 3d output to VARN, the time interval between two writes
+!  is determined by a parameter (t2davg) in run.in.
+!  Note: this routine should only be called by the root processor
+!
+!   7-aug-03/wolf: adapted from wsnap
+!
+      if (lwrite_yaverages)   call write_yaverages(ch2davg)
+      if (lwrite_zaverages)   call write_zaverages(ch2davg)
+      if (lwrite_phiaverages) call write_phiaverages(ch2davg)
+!
+      if (ip<=10) write(*,*) 'write_2daverages: wrote phi(etc.)avgs'//ch2davg
+!
+    endsubroutine write_2daverages
+!***********************************************************************
+    subroutine write_xyaverages()
+!
+!  Write xy-averages (which are 1d data) that have been requested via
+!  `xyaver.in'
+!
+!   6-jun-02/axel: coded
+!
+      if (lroot.and.nnamez>0) then
+        open(1,file=trim(datadir)//'/xyaverages.dat',position='append')
+        write(1,'(1pe12.5)') t1ddiagnos
+        write(1,'(1p,8e14.5e3)') fnamez(:,:,1:nnamez)
+        close(1)
+      endif
+!
+    endsubroutine write_xyaverages
+!***********************************************************************
+    subroutine write_xzaverages()
+!
+!  Write xz-averages (which are 1d data) that have been requested via
+!  `xzaver.in'
+!
+!  12-oct-05/anders: adapted from write_xyaverages
+!
+      if (lroot.and.nnamey>0) then
+        open(1,file=trim(datadir)//'/xzaverages.dat',position='append')
+        write(1,'(1pe12.5)') t1ddiagnos
+        write(1,'(1p,8e14.5e3)') fnamey(:,:,1:nnamey)
+        close(1)
+      endif
+!
+    endsubroutine write_xzaverages
+!***********************************************************************
+    subroutine write_yzaverages()
+!
+!  Write yz-averages (which are 1d data) that have been requested via
+!  `yzaver.in'
+!
+!   2-oct-05/anders: adapted from write_xyaverages
+!
+      if (lroot.and.nnamex>0) then
+        open(1,file=trim(datadir)//'/yzaverages.dat',position='append')
+        write(1,'(1pe12.5)') t1ddiagnos
+        write(1,'(1p,8e14.5e3)') fnamex(:,:,1:nnamex)
+        close(1)
+      endif
+!
+    endsubroutine write_yzaverages
+!***********************************************************************
+    subroutine write_phizaverages()
+!
+!  Write phiz-averages (which are 1d data) that have been requested via
+!  `phizaver.in'
+!
+!  Also write rcyl to the output. It is needed just once, since it will
+!  not change over the simulation. The condition "if (it==1)" is not the
+!  best one, since it is reset upon restarting of a simulation and 
+!  therefore one has to manually remove the extra(s) rcyl from 
+!  the phizaverages.dat file
+!
+!  29-jan-07/wlad: adapted from write_yzaverages
+!
+      if (lroot.and.nnamer>0) then
+        open(1,file=trim(datadir)//'/phizaverages.dat',position='append')
+        if (it==1) write(1,'(1p,8e14.5e3)') rcyl
+        write(1,'(1pe12.5)') t1ddiagnos
+        write(1,'(1p,8e14.5e3)') fnamer(:,1:nnamer)
+        close(1)
+      endif
+!
+    endsubroutine write_phizaverages
+!***********************************************************************
+    subroutine write_yaverages(ch)
+!
+!  Write y-averages (which are 2d data) that have been requested via
+!  `yaver.in'
+!
+!   7-jun-05/axel: adapted from write_zaverages
+!
+      character (len=4) :: ch
+!
+      if (lroot.and.nnamexz>0) then
+        open(1, file=trim(datadir)//'/yaverages.dat', form='unformatted', &
+            position='append')
+        write(1) t2davgfirst
+        write(1) fnamexz(:,:,:,1:nnamexz)
+        close(1)
+      endif
+!
+      if (NO_WARN) write(*,*) ch       ! (keep compiler quiet)
+!
+    endsubroutine write_yaverages
+!***********************************************************************
+    subroutine write_zaverages(ch)
+!
+!  Write z-averages (which are 2d data) that have been requested via
+!  `zaver.in'
+!
+!  19-jun-02/axel: adapted from write_xyaverages
+!
+      character (len=4) :: ch
+!
+      if (lroot.and.nnamexy>0) then
+        open(1, file=trim(datadir)//'/zaverages.dat', form='unformatted', &
+            position='append')
+        write(1) t2davgfirst
+        write(1) fnamexy(:,:,:,1:nnamexy)
+        close(1)
+      endif
+!
+      if (NO_WARN) write(*,*) ch       ! (keep compiler quiet)
+!
+    endsubroutine write_zaverages
+!***********************************************************************
+    subroutine write_phiaverages(ch)
+!
+!  Write azimuthal averages (which are 2d data) that have been requested
+!  via `phiaver.in'.
+!  Note: fnamerz still has a third dimension indicating ipz, but the way
+!  we are writing we automatically end up with the full z-direction
+!  written contiguously.
+!
+!  File format:
+!    1. nr_phiavg, nz_phiavg, nvars, nprocz
+!    2. t, r_phiavg, z_phiavg, dr, dz
+!    3. data
+!    4. len(labels),labels
+!
+!   2-jan-03/wolf: adapted from write_zaverages
+!
+      use General, only: safe_character_assign,safe_character_append
+!
+      integer :: i
+      character (len=4) :: ch
+      character (len=80) :: avgdir,sname,fname
+      character (len=1024) :: labels
+!
+!  write result; normalization is already done in phiaverages_rz
+!
+      if (lroot.and.nnamerz>0) then
+        call safe_character_assign(avgdir, trim(datadir)//'/averages')
+        call safe_character_assign(sname, 'PHIAVG'//trim(ch))
+        call safe_character_assign(fname, trim(avgdir)//'/'//trim(sname))
+        open(1,FILE=fname,FORM='unformatted')
+        write(1) nrcyl,nzgrid,nnamerz,nprocz
+        write(1) t2davgfirst,rcyl, &
+                 z(n1)+(/(i*dz, i=0,nzgrid-1)/), &
+                 drcyl,dz
+        !ngrs: use pack to explicitly order the array before writing
+        !     (write was messing up on copson without this...)
+        write(1) pack(fnamerz(:,1:nz,:,1:nnamerz),.true.)
+!
+!  write labels at the end of file
+!
+        labels = trim(cnamerz(1))
+        do i=2,nnamerz
+          call safe_character_append(labels,",",trim(cnamerz(i)))
+        enddo
+        write(1) len(labels),labels
+        close(1)
+!
+!  write file name to file list
+!
+        open(1,FILE=trim(avgdir)//'/phiavg.files',POSITION='append')
+        write(1,'(A)') trim(sname)
+        close(1)
+!
+      endif
+!
+    endsubroutine write_phiaverages
 !***********************************************************************
     subroutine parse_name(iname,cname,cform,ctest,itest)
 !
