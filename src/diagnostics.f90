@@ -109,8 +109,7 @@ module Diagnostics
       if (lroot) then
 !
 !  Whenever itype_name=ilabel_max_dt, scale result by dt (for printing Courant
-!  time). This trick is necessary, because dt is not known at the time when the
-!  corresponding contribution to UUmax is known.
+!  time).
 !
         do iname=1,nname
           if (itype_name(iname)==ilabel_max_dt) fname(iname)=dt*fname(iname)

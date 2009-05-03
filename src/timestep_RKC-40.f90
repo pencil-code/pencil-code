@@ -70,7 +70,6 @@ contains
         call pde(f,df0,p)
         !
         ! In the first time substep we need to calculate timestep dt.
-        ! Done here because it uses UUmax which was calculated in pde.
         ! Only do this on root processor, then broadcast dt to all others.
         !
         if (ldt) then

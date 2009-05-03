@@ -86,7 +86,6 @@ module Timestep
         ds=ds+1.
 !
 !  If we are in the first time substep we need to calculate timestep dt.
-!  This is done here because it uses UUmax which was calculated in pde.
 !  Only do it on the root processor, then broadcast dt to all others.
 !
         if (lfirst.and.ldt) then

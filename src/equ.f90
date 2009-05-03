@@ -837,15 +837,11 @@ module Equ
        call fatal_error_local('pde','')
      endif
 !
-!  Collect from different processors max(uu) for the time step.
-!
-!      if (lfirst.and.ldt) call collect_UUmax
-!
-!  Diagnostics
+!  Diagnostics.
 !
       if (ldiagnos) call diagnostic
 !
-!  1-D diagnostics
+!  1-D diagnostics.
 !
       if (l1ddiagnos) then
         call xyaverages_z
@@ -854,7 +850,7 @@ module Equ
       endif
       if (l1dphiavg) call phizaverages_r
 !
-!  2-D averages
+!  2-D averages.
 !
       if (l2davgfirst) then
         if (lwrite_yaverages)   call yaverages_xz
@@ -863,7 +859,7 @@ module Equ
       endif
 !
 !  Note: zaverages_xy are also needed if bmx and bmy are to be calculated
-!  (Of course, yaverages_xz does not need to be calculated for that.)
+!  (of course, yaverages_xz does not need to be calculated for that).
 !
       if (.not.l2davgfirst.and.ldiagnos.and.ldiagnos_need_zaverages) then
         if (lwrite_zaverages) call zaverages_xy
@@ -946,23 +942,5 @@ module Equ
       endif
 !
     endsubroutine output_crash_files
-!***********************************************************************
-!    subroutine collect_UUmax
-!
-!  Calculate the maximum effective advection velocity in the domain;
-!  needed for determining dt at each timestep.
-!
-!   2-sep-01/axel: coded
-!
-!    real, dimension(1) :: fmax_tmp,fmax
-!
-!  Communicate over all processors. The result is then present only on the
-!  root processor reassemble using old names.
-!
-!    fmax_tmp(1)=UUmax
-!    call mpireduce_max(fmax_tmp,fmax,1)
-!    if (lroot) UUmax=fmax(1)
-!
-!    endsubroutine collect_UUmax
 !***********************************************************************
 endmodule Equ
