@@ -221,7 +221,9 @@ class read_var:
                 dim.m1:dim.m2+1, dim.l1:dim.l2+1]
             if ('vort' in magic):
                 # compute the vorticity field before doing trimall
-                self.vort=curl(f[0:3,...],dx,dy,dz,run2D=param.lwrite_2d)
+                iux=index.index.get('ux')-1
+                iuz=index.index.get('uz')
+                self.vort=curl(f[iux:iuz,...],dx,dy,dz,run2D=param.lwrite_2d)
                 if (trimall):self.vort=self.vort[:,dim.n1:dim.n2+1, 
                 dim.m1:dim.m2+1, dim.l1:dim.l2+1]
 
