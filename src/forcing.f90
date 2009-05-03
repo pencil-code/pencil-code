@@ -1,9 +1,9 @@
 ! $Id$
-
+!
 !  This module contains routines both for delta-correlated
 !  and continuous forcing. The fcont pencil is only provided
 !  for continuous forcing.
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -14,21 +14,18 @@
 ! PENCILS PROVIDED fcont(3)
 !
 !***************************************************************
-
+!
 module Forcing
-
-!  Module for forcing in the Navier-Stokes equation
-!  (or, in special cases, in the entropy equation).
-
+!
   use Cdata
   use General
   use Messages
-
+!
   implicit none
-
+!
   include 'record_types.h'
   include 'forcing.h'
-
+!
   real :: force=0.,force2=0.
   real :: relhel=1.,height_ff=0.,r_ff=0.,fountain=1.,width_ff=.5
   real :: dforce=0.,radius_ff,k1_ff=1.,slope_ff=0.,work_ff=0.
@@ -115,7 +112,6 @@ module Forcing
 !  add forcing in timestep()
 !  11-may-2002/wolf: coded
 !
-      use Cdata
       use Mpicomm
       use Sub
 !
@@ -133,7 +129,6 @@ module Forcing
 !  read seed field parameters
 !  nothing done from start.f90 (lstarting=.true.)
 !
-      use Cdata
       use Sub, only: inpui
 !
       logical, save :: first=.true.
@@ -241,8 +236,6 @@ module Forcing
 !  Since forcing is constant during one time step,
 !  this can be added as an Euler 1st order step
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
       logical, save :: lfirstforce=.true., lfirstforce2=.true.
@@ -321,7 +314,6 @@ module Forcing
 !  10-sep-01/axel: coded
 !
       use Mpicomm
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: force_ampl
@@ -417,11 +409,11 @@ module Forcing
 !  25-sep-02/axel: preset force_ampl to unity (in case slope is not controlled)
 !   9-nov-02/axel: corrected normalization factor for the case |relhel| < 1.
 !
-      use Mpicomm
-      use Cdata
-      use General
-      use Sub
+      use Diagnostics
       use EquationOfState, only: cs0
+      use General
+      use Mpicomm
+      use Sub
 !
       real :: phase,ffnorm,irufm
       real, save :: kav
@@ -781,7 +773,6 @@ module Forcing
 !  22-sep-08/dhruba: aped from forcing_hel
 
       use Mpicomm
-      use Cdata
       use General
       use Sub
       use EquationOfState, only: cs0
@@ -1014,7 +1005,6 @@ module Forcing
 !  25-jul-07/dhruba: adapted from forcing_hel
 !
       use Mpicomm
-      use Cdata
       use General
       use Sub
       use EquationOfState, only: cs0
@@ -1208,7 +1198,6 @@ module Forcing
 !  22-june-08/dhruba: adapted from forcing_chandrasekhar_kendall
 !
       use Mpicomm
-      use Cdata
       use General
       use Sub
       use EquationOfState, only: cs0
@@ -1380,7 +1369,6 @@ module Forcing
 !  24-jul-06/axel: coded
 !
       use Mpicomm
-      use Cdata
       use General
       use Sub
 !
@@ -1472,7 +1460,6 @@ module Forcing
 !   9-oct-04/axel: coded
 !
       use Mpicomm
-      use Cdata
       use General
       use Sub
 !
@@ -1573,9 +1560,9 @@ module Forcing
 !
 !  17-jul-06/axel: coded
 !
-      use Mpicomm
-      use Cdata
+      use Diagnostics
       use General
+      use Mpicomm
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1682,7 +1669,6 @@ module Forcing
 !  27-oct-04/axel: coded
 !
       use Mpicomm
-      use Cdata
       use General
       use Sub
 !
@@ -1782,7 +1768,6 @@ module Forcing
 !  19-dec-05/tony: coded
 !
       use Mpicomm
-      use Cdata
       use General
       use Sub
       use EquationOfState, only: cs0
@@ -1921,7 +1906,6 @@ module Forcing
 !
 !   7-sep-02/axel: coded
 !
-      use Cdata
       use Sub
       use Mpicomm
 !
@@ -1979,7 +1963,6 @@ module Forcing
 !  10-apr-00/axel: coded
 !
       use Mpicomm
-      use Cdata
       use General
       use Sub
       use EquationOfState, only: cs0
@@ -2185,7 +2168,6 @@ module Forcing
 !  30-may-02/axel: coded
 !
       use Mpicomm
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: sxx,cxx
@@ -2261,7 +2243,6 @@ module Forcing
 !  30-may-02/axel: coded
 !
       use Mpicomm
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: sxx,cxx
@@ -2336,7 +2317,6 @@ module Forcing
 !  19-jun-02/axel+bertil: coded
 !
       use Mpicomm
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: fx
@@ -2369,7 +2349,6 @@ module Forcing
 !  19-jul-02/axel: coded
 !
       use Mpicomm
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,nz) :: xx,zz,r2,tmp,fx,fz
@@ -2428,7 +2407,6 @@ module Forcing
 !  26-jul-02/axel: coded
 !
       use Mpicomm
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,nz) :: fx,fz,tmp
@@ -2473,7 +2451,6 @@ module Forcing
 !  28-jul-02/axel: coded
 !
       !use Mpicomm
-      use Cdata
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2508,7 +2485,6 @@ module Forcing
     subroutine forcing_hel_smooth(f)
 !
       use Mpicomm
-      use Cdata
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2650,7 +2626,6 @@ module Forcing
 !  17-jan-03/nils: adapted from forcing_hel
 !
       use Mpicomm
-      use Cdata
       use General
       use Sub
       use EquationOfState, only: cs0
@@ -2858,8 +2833,6 @@ module Forcing
 !
 !  24-mar-08/axel: adapted from density.f90
 !
-      use Cdata
-!
       if (lforcing_cont) lpenc_requested(i_fcont)=.true.
 !
     endsubroutine pencil_criteria_forcing
@@ -2955,7 +2928,7 @@ module Forcing
 !
 !  17-sep-06/axel: coded
 !
-      use Cdata
+      use Diagnostics
       use Sub
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -3028,8 +3001,6 @@ module Forcing
 !
 !  21-dec-05/tony: coded
 !
-      use Cdata, only: lroot
-!
       integer :: id,lun
       logical :: done
 !
@@ -3052,8 +3023,6 @@ module Forcing
 !
 !  21-dec-05/tony: coded
 !
-      use Cdata, only: lroot
-!
       integer :: lun
 !
       if (lroot) then
@@ -3075,8 +3044,7 @@ module Forcing
 !
 !  26-jan-04/axel: coded
 !
-      use Cdata
-      use Sub
+      use Diagnostics
 !
       integer :: iname
       logical :: lreset,lwr
@@ -3125,8 +3093,6 @@ module Forcing
 !  23-fev-09/dintrans: coded
 !  force internal waves using a time-dependent gravity in the vz-equation
 !  forcing term = -ampl_ff*cos(omega_ff*t)
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !

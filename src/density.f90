@@ -146,8 +146,6 @@ module Density
 !  31-aug-03/axel: normally, diffrho should be given in absolute units
 !
 
-      use CData, only: lfreeze_varext,lfreeze_varint,lreloading,&
-                       ilnrho,lfreeze_varsquare,llocal_iso
       use Deriv, only: der_pencil,der2_pencil
       use FArrayManager
       use Gravity, only: lnumerical_equilibrium
@@ -1457,10 +1455,11 @@ module Density
 !
 !   7-jun-02/axel: incoporated from subroutine pde
 !
+      use Deriv, only:der6
+      use Diagnostics
       use Mpicomm, only: stop_it
       use Special, only: special_calc_density
       use Sub
-      use Deriv,only:der6
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -2565,7 +2564,7 @@ module Density
 !   3-may-02/axel: coded
 !  27-may-02/axel: added possibility to reset list
 !
-      use Sub
+      use Diagnostics
 !
       logical :: lreset
       logical, optional :: lwrite

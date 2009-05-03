@@ -1,8 +1,8 @@
 ! $Id$
-
+!
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -16,28 +16,25 @@
 ! PENCILS PROVIDED visc_heat; nu; nu_art; gradnu(3); sgnu(3)
 !
 !***************************************************************
-
 module Viscosity
-
-  use Cparam
+!
   use Cdata
+  use Cparam
   use Messages
   use Sub, only: keep_compiler_quiet
-
+!
   implicit none
-
+!
   include 'viscosity.h'
-
+!
   integer, parameter :: nvisc_max = 4
   character (len=labellen), dimension(nvisc_max) :: ivisc=''
   real :: nu=0., nu_mol=0., nu_hyper2=0., nu_hyper3=0., nu_shock=0.
   real :: nu_jump=1., znu=0., xnu=0., xnu2=0.,widthnu=0.1, C_smag=0.0
   real :: pnlaw=0., Lambda_V0=0.,Lambda_Omega=0.
   real, dimension(3) :: nu_aniso_hyper3=0.
-
-  ! dummy logical
+!
   logical :: lvisc_first=.false.
-
   logical :: lvisc_simplified=.false.
   logical :: lvisc_rho_nu_const=.false.
   logical :: lvisc_nu_const=.false.
@@ -63,17 +60,12 @@ module Viscosity
   logical :: lvisc_heat_as_aux=.false.
   logical :: lvisc_mixture=.false.
   logical :: llambda_effect=.false.
-
-  ! input parameters
-  !integer :: dummy1
-  !namelist /viscosity_init_pars/ dummy1
-  ! run parameters
+!
   namelist /viscosity_run_pars/ &
       nu, nu_hyper2, nu_hyper3, ivisc, nu_mol, C_smag, nu_shock, &
       nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,xnu,xnu2,widthnu, &
       pnlaw,llambda_effect,Lambda_V0,Lambda_Omega
-
-  ! other variables (needs to be consistent with reset list below)
+! other variables (needs to be consistent with reset list below)
   integer :: idiag_fviscm=0     ! DIAG_DOC: Mean value of viscous acceleration
   integer :: idiag_fviscmin=0   ! DIAG_DOC: Min value of viscous acceleration
   integer :: idiag_fviscmax=0   ! DIAG_DOC: Max value of viscous acceleration
@@ -100,7 +92,6 @@ module Viscosity
 !
 !  19-nov-02/tony: coded
 !
-      use Cdata
       use Mpicomm
       use Sub
 !
@@ -119,7 +110,6 @@ module Viscosity
 !
 !  20-nov-02/tony: coded
 !
-      use Cdata
       use FArrayManager
       use Mpicomm, only: stop_it
       use SharedVariables
@@ -364,8 +354,7 @@ module Viscosity
 !
 !  24-nov-03/tony: adapted from rprint_ionization
 !
-      use Cdata
-      use Sub
+      use Diagnostics
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -550,8 +539,6 @@ module Viscosity
 !
 !  20-11-04/anders: coded
 !
-      use Cdata
-!
       logical, dimension (npencils) :: lpencil_in
 !
       if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
@@ -565,11 +552,11 @@ module Viscosity
 !
 !  20-11-04/anders: coded
 !
-      use Cdata
-      use Sub
-      use Interstellar, only: calc_snr_damping
       use Deriv, only: der5i1j,der6
+      use Diagnostics
+      use Interstellar, only: calc_snr_damping
       use Mpicomm, only: stop_it
+      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -1111,7 +1098,6 @@ module Viscosity
 !
 !  20-nov-02/tony: coded
 !
-      use Cdata
       use Mpicomm
       use Sub
 !
@@ -1148,12 +1134,12 @@ module Viscosity
 !***********************************************************************
     subroutine calc_viscous_force(df,p)
 !
-!  calculate viscous force term for right hand side of  equation
+!  Calculate viscous force term for right hand side of equation of motion.
 !
 !  20-nov-02/tony: coded
 !   9-jul-04/nils: added Smagorinsky viscosity
-
-      use Cdata
+!
+      use Diagnostics
       use Mpicomm
       use Sub
 !
@@ -1246,7 +1232,6 @@ module Viscosity
 ! 
 !  03/08 steveb
 ! 
-      use Cdata
       use Sub
       use Gravity, only: acceleration
 

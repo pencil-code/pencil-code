@@ -216,9 +216,10 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
 !  21-jul-03/axel: turned to ffreeMHDrel, adapted from magnetic
 !
       use Cdata
-      use Sub
+      use Diagnostics
       use IO
       use Slices
+      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -570,7 +571,7 @@ if (NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !  27-may-02/axel: added possibility to reset list
 !
       use Cdata
-      use Sub
+      use Diagnostics
 !
       integer :: iname,inamez,ixy,irz
       logical :: lreset,lwr

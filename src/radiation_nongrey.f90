@@ -1338,7 +1338,7 @@ module Radiation
 !  18-apr-07/wlad+heidar: adapted from radiation_ray
 !
       use Cdata
-      use Sub
+      use Diagnostics
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1399,7 +1399,7 @@ module Radiation
 !  17-may-06/axel: coded
 !
       use Cdata
-      use Sub
+      use Diagnostics
       use Mpicomm, only: stop_it
 
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1951,7 +1951,7 @@ module Radiation
 !  16-jul-02/nils: adapted from rprint_hydro
 !
       use Cdata
-      use Sub
+      use Diagnostics
 !
       integer :: iname,inamez
       logical :: lreset,lwr

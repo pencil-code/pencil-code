@@ -439,9 +439,10 @@ module NeutralVelocity
 !  28-feb-07/wlad: adapted
 !
       use Cdata
-      use Sub
+      use Diagnostics
       use IO
       use Mpicomm, only: stop_it
+      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -755,9 +756,10 @@ module NeutralVelocity
 !  28-feb-07/wlad: coded
 !
       use Cdata
+      use Deriv, only: der6
+      use Diagnostics
       use Mpicomm
       use Sub
-      use Deriv, only: der6
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -873,7 +875,7 @@ module NeutralVelocity
 !  28-feb-07/wlad: adapted
 !
       use Cdata
-      use Sub
+      use Diagnostics
 !
       integer :: iname,inamez,inamey,inamex,ixy,irz,inamer
       logical :: lreset,lwr

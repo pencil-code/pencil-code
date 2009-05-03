@@ -1083,7 +1083,7 @@ module EquationOfState
 !                   subroutine pressure_gradient
 !
       use Cdata
-      use Sub, only: max_mn_name, sum_mn_name
+      use Diagnostics, only: max_mn_name, sum_mn_name
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: psize

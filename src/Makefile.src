@@ -1172,7 +1172,7 @@ physics=$(GLOBAL).o $(VISCOSITY).o $(SHOCK).o $(HYDRO).o $(DENSITY).o $(FORCING)
 switchable=$(physics) $(BORDER_PROFILES).o
 #
 # special function module disabled for the time being.: dhruba 
-comm_deps=$(technical) sub.o $(IO).o snapshot.o param_io.o  $(MPICOMM_FIX).o ghostfold_$(MPICOMM).o $(switchable) $(POWER).o $(STRUCT_FUNC).o $(PARTICLES_MAIN).o $(PARTICLES_SUB).o
+comm_deps=$(technical) sub.o diagnostics.o $(IO).o snapshot.o param_io.o  $(MPICOMM_FIX).o ghostfold_$(MPICOMM).o $(switchable) $(POWER).o $(STRUCT_FUNC).o $(PARTICLES_MAIN).o $(PARTICLES_SUB).o
 
 #comm_deps=$(technical) sub.o $(IO).o snapshot.o param_io.o  $(MPICOMM_FIX).o ghostfold_$(MPICOMM).o $(switchable) $(POWER).o $(STRUCT_FUNC).o $(SPECIAL_FUNCTIONS).o $(PARTICLES_MAIN).o $(PARTICLES_SUB).o
 #
@@ -1180,7 +1180,7 @@ start_deps_f90=$(comm_deps) $(TESTPERTURB).o
 #
 start_deps=$(start_deps_f90) $(DEBUG).o $(GSL).o
 #
-run_deps_f90=$(comm_deps) diagnostics.o pencil_check.o equ.o $(TIMESTEP).o $(TESTPERTURB).o
+run_deps_f90=$(comm_deps) pencil_check.o equ.o $(TIMESTEP).o $(TESTPERTURB).o
 #
 run_deps=$(run_deps_f90) $(DEBUG).o $(GSL).o
 #

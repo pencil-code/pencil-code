@@ -17,20 +17,20 @@
 !
 !***************************************************************
 module Entropy
-
-  use Cparam
+!
   use Cdata
-  use Messages
-  use Interstellar
-  use Viscosity
+  use Cparam
   use EquationOfState, only: gamma, gamma1, gamma11, cs20, cs2top, cs2bot, &
                          isothtop, mpoly0, mpoly1, mpoly2, cs2cool, &
                          beta_glnrho_global, cs2top_ini, dcs2top_ini
-
+  use Interstellar
+  use Messages
+  use Viscosity
+!
   implicit none
-
+!
   include 'entropy.h'
-
+!
   !real, dimension (nx) :: cs2,TT1
   real :: radius_ss=0.1,ampl_ss=0.,widthss=2*epsi,epsilon_ss=0.
   real :: luminosity=0.,wheat=0.1,cool=0.,rcool=0.,wcool=0.1
@@ -82,17 +82,16 @@ module Entropy
 !
   integer :: iglobal_hcond=0
   integer :: iglobal_glhc=0
-
+!
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: borderss='nothing'
   character (len=labellen) :: pertss='zero'
   character (len=labellen) :: cooltype='Temp',cooling_profile='gaussian'
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   character (len=5) :: iinit_str
-
-  !
-  ! Parameters for subroutine cool_RTV in SI units (from Cook et al. 1989)
-  !
+!
+! Parameters for subroutine cool_RTV in SI units (from Cook et al. 1989)
+!
   double precision, parameter, dimension (10) :: &
        intlnT_1 =(/4.605, 8.959, 9.906, 10.534, 11.283, 12.434, 13.286, 14.541, 17.51, 20.723 /)
   double precision, parameter, dimension (9) :: &
@@ -205,7 +204,6 @@ module Entropy
 !
 !  6-nov-01/wolf: coded
 !
-      use Cdata
       use FArrayManager
       use SharedVariables
       use Sub
@@ -232,8 +230,6 @@ module Entropy
 !
 !  21-jul-02/wolf: coded
 !
-      use Cparam
-      use Cdata
       use FArrayManager
       use Gravity, only: gravz,g0
       use EquationOfState, only: cs0, get_soundspeed, get_cp1, &
@@ -688,7 +684,6 @@ module Entropy
 !  07-nov-2001/wolf: coded
 !  24-nov-2002/tony: renamed for consistancy (i.e. init_[variable name])
 !
-      use Cdata
       use Sub
       use Gravity
       use General, only: chn
@@ -1041,8 +1036,6 @@ module Entropy
 !
 !   6-may-07/axel: coded
 !
-     use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, optional :: xblob,yblob,zblob
       real :: ampl,radius,x01=0.,y01=0.,z01=0.
@@ -1264,7 +1257,6 @@ module Entropy
 !  12-jul-05/axel: coded
 !  17-Nov-05/dintrans: updated using strat_MLT
 !
-      use Cdata
       use Gravity, only: gravz, z1
       use General, only: safe_character_assign
       use EquationOfState, only: gamma, gamma1, rho0, lnrho0, cs0, &
@@ -1365,7 +1357,6 @@ module Entropy
 !  20-oct-03/dave -- coded
 !  21-aug-08/dhruba: added spherical coordinates
 !
-      use Cdata, only :lspherical_coords,lcylindrical_coords,lcartesian_coords
       use Gravity, only: g0
       use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly, get_cp1
       use Mpicomm, only:stop_it
@@ -1430,8 +1421,7 @@ module Entropy
 !
 !  22-june-04/dave -- coded
 !  21-aug-08/dhruba : added spherical coords
-      use Cdata, only :lspherical_coords,lcylindrical_coords,lcartesian_coords
-
+!
       real, dimension (nx), intent(out) :: pert_TT
       real, dimension (nx) :: xr,cos_4phi,sin_theta4,r_mn,rcyl_mn,phi_mn
       real :: ampl0=.885065
@@ -1467,7 +1457,6 @@ module Entropy
 !  for `conv_slab' style runs, with a layer of polytropic gas in [z0,z1].
 !  generalised for cp/=1.
 !
-      use Cdata
       use Gravity, only: gravz, zinfty
       use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly, get_cp1
 !
@@ -1734,7 +1723,6 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
 !
 !  20-11-04/anders: coded
 !
-      use Cdata
       use EquationOfState, only: beta_glnrho_scaled
 !
       if (lheatc_Kconst .or. lheatc_chiconst .or. lheatc_Kprof .or. &
@@ -1997,11 +1985,11 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
 !   9-jun-02/axel: pressure gradient added to du/dt already here
 !   2-feb-03/axel: added possibility of ionization
 !
-      use Cdata
+      use Diagnostics
       use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, gamma11, cs0
-      use Sub
       use Global
       use Special, only: special_calc_entropy
+      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -2258,9 +2246,9 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
 !  29-sep-02/axel: adapted from calc_heatcond_simple
 !  12-mar-06/axel: used p%glnTT and p%del2lnTT, so that general cp work ok
 !
-      use Cdata
-      use Sub
+      use Diagnostics
       use Gravity
+      use Sub
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -2338,9 +2326,6 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
 !
 !  17-jun-05/anders: coded
 !
-      use Cdata
-      use Sub
-!
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
@@ -2373,8 +2358,6 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
 !
 !  03-aug-08/wlad: coded
 !
-      use Cdata
-      use Sub
       use Deriv, only: der6
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2416,10 +2399,10 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
 !  20-jul-03/axel: adapted from calc_heatcond_constchi
 !  19-nov-03/axel: added chi_t also here.
 !
-      use Cdata
-      use Sub
-      use Gravity
+      use Diagnostics
       use EquationOfState, only: gamma
+      use Gravity
+      use Sub
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -2486,7 +2469,7 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
 !   8-jul-02/axel: adapted from Wolfgang's more complex version
 !  30-mar-06/ngrs: simplified calculations using p%glnTT and p%del2lnTT
 !
-      use Cdata
+      use Diagnostics
       use Sub
 !
       type (pencil_case) :: p
@@ -2691,10 +2674,10 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
 !  14-jul-05/axel: corrected expression for chi_t diffusion.
 !  30-mar-06/ngrs: simplified calculations using p%glnTT and p%del2lnTT
 !
-      use Cdata
-      use Sub
+      use Diagnostics
       use IO, only: output_pencil
       use Gravity
+      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -2858,10 +2841,10 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
 !
 !  02-jul-02/wolf: coded
 !
-      use Cdata
-      use Sub
+      use Diagnostics
       use Gravity
       use IO
+      use Sub
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -3181,7 +3164,6 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
 !
 !  29-jul-02/axel: coded
 !
-      use Cdata
       use Gravity
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -3207,8 +3189,7 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
 !
 !   1-jun-02/axel: adapted from magnetic fields
 !
-      use Cdata
-      use Sub
+      use Diagnostics
 !
       logical :: lreset,lwr
       logical, optional :: lwrite
@@ -3410,7 +3391,6 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
 !
 !  12-jul-05/axel: coded
 !
-      use Cdata
       use Sub
       use Gravity, only: z1, z2
 !
@@ -3654,7 +3634,6 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
 ! equations until rho=1 at the bottom of convection zone (z=z1)
 ! see Eqs. (20-21-22) in Brandenburg et al., AN, 326 (2005)
 !
-      use Cdata
       use Gravity, only: z1,z2,gravz
       use EquationOfState, only: gamma, gamma1
 !
@@ -3794,7 +3773,6 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
 !  20-dec-06/dintrans: coded
 !  28-nov-07/dintrans: merged with strat_heat_grav
 !
-    use Cdata
     use EquationOfState, only: gamma, gamma1, rho0, lnrho0, cs20, get_soundspeed,eoscalc, ilnrho_TT
     use FArrayManager
     use Sub, only: step, interp1, erfunc
@@ -4088,7 +4066,6 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
 !  06-sep-07/dintrans: coded a single polytrope of index mpoly0
 !  Note: both entropy and density are initialized there (compared to layer_ss)
 !
-      use Cdata
       use Gravity, only: gravz, g0
       use EquationOfState, only: eoscalc, ilnrho_TT, get_cp1, &
                                  gamma1, lnrho0
@@ -4136,14 +4113,11 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
     endsubroutine single_polytrope
 !***********************************************************************
     subroutine calc_heatcond_ADI(finit,f)
-
-      use Cparam
-
+!
       implicit none
-
+!
       real, dimension(mx,my,mz,mfarray) :: finit,f
-
+!
     end subroutine calc_heatcond_ADI
 !***********************************************************************
-
 endmodule Entropy

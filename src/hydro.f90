@@ -1317,10 +1317,11 @@ module Hydro
 !  17-jun-03/ulf: ux2, uy2 and uz2 added as diagnostic quantities
 !  27-jun-07/dhruba: differential rotation as subroutine call
 !
-      use Sub
+      use Diagnostics
       use IO
       use Mpicomm, only: stop_it
       use Special, only: special_calc_hydro
+      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -2269,7 +2270,6 @@ module Hydro
 !  19-jan-07/axel: added terms derived by Gailitis
 !
       use Mpicomm, only: stop_it
-      use Sub, only: step,sum_mn_name
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -2388,8 +2388,9 @@ module Hydro
 !
 !  20-nov-04/axel: added cylindrical Couette flow
 !
+      use Diagnostics, only: sum_mn_name
       use Mpicomm, only: stop_it
-      use Sub, only: step,sum_mn_name
+      use Sub, only: step
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -2617,7 +2618,7 @@ module Hydro
 !   3-may-02/axel: coded
 !  27-may-02/axel: added possibility to reset list
 !
-      use Sub
+      use Diagnostics
 !
       integer :: iname,inamez,inamey,inamex,ixy,ixz,irz,inamer,iname_half
       logical :: lreset,lwr
@@ -3364,8 +3365,8 @@ module Hydro
 !   8-nov-02/axel: adapted from calc_mfield
 !   9-nov-02/axel: allowed mean flow to be compressible
 !
+      use Diagnostics
       use Mpicomm
-      use Sub
 !
       logical,save :: first=.true.
       real, dimension(nx) :: uxmx,uymx,uzmx
@@ -3473,8 +3474,8 @@ module Hydro
 !
 !  14-feb-09/axel: adapted from calc_umbmz
 !
+      use Diagnostics
       use Mpicomm
-      use Sub
 !
       logical,save :: first=.true.
       real :: omumz
@@ -3511,9 +3512,9 @@ module Hydro
 !
 !  26-jan-09/axel: adapted from calc_ebmz
 !
+      use Diagnostics
       use Magnetic, only: idiag_bxmz,idiag_bymz
       use Mpicomm
-      use Sub
 !
       logical,save :: first=.true.
       real :: umbmz
@@ -3550,9 +3551,9 @@ module Hydro
 !
 !  17-mar-09/axel: adapted from calc_umbmz
 !
+      use Diagnostics
       use Magnetic, only: idiag_bxmz,idiag_bymz
       use Mpicomm
-      use Sub
 !
       logical,save :: first=.true.
       real :: umxbmz

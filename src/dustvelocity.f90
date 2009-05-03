@@ -18,14 +18,12 @@
 !***************************************************************
 
 module Dustvelocity
-
-!  Note that Omega is already defined in cdata.
-
+!
   use Cdata
   use Messages
-
+!
   implicit none
-
+!
   include 'dustvelocity.h'
 !ajwm SHOULDN'T REALLY BE SHARED
 !ajwm but are used consistently with the Dustdensity module
@@ -33,8 +31,7 @@ module Dustvelocity
   public :: dust_geometry, dimd1, rhods, surfd, mdplus, mdminus
   public :: ad, scolld, ustcst, tausd1, tausd
   public :: unit_md, dust_chemistry, mumon, mmon, mi, md
-
-  ! init parameters
+!
   complex, dimension (7) :: coeff
   real, dimension(ndustspec,ndustspec) :: scolld
   real, dimension(nx,ndustspec) :: tausd1
@@ -59,23 +56,21 @@ module Dustvelocity
   character (len=labellen), dimension(ninit) :: inituud='nothing'
   character (len=labellen) :: draglaw='epstein_cst',iviscd='simplified'
   character (len=labellen) :: dust_geometry='sphere', dust_chemistry='nothing'
-
+!
   namelist /dustvelocity_init_pars/ &
       ampl_udx, ampl_udy, ampl_udz, phase_udx, phase_udy, phase_udz, &
       rhods, md0, ad0, ad1, deltamd, draglaw, ampluud, inituud, &
       kx_uud, ky_uud, kz_uud, Omega_pseudo, u0_gas_pseudo, &
       dust_chemistry, dust_geometry, tausd, beta_dPdr_dust, coeff, &
       ldustcoagulation, ldustcondensation, lvshear_dust_global_eps, cdtd, &
-      ldustvelocity_shorttausd, scaleHtaus, z0taus, widthtaus
-
-  ! run parameters
+      ldustvelocity_shorttausd, scaleHtaus, z0taus
+!
   namelist /dustvelocity_run_pars/ &
       nud, nud_all, iviscd, betad, betad_all, tausd, tausd_all, draglaw, &
       ldragforce_dust, ldragforce_gas, ldustvelocity_shorttausd, &
       ladvection_dust, lcoriolisforce_dust, beta_dPdr_dust, tausgmin, cdtd, &
       nud_hyper3, scaleHtaus, z0taus, widthtaus, shorttauslimit
-
-  ! other variables (needs to be consistent with reset list below)
+!
   integer, dimension(ndustspec) :: idiag_ud2m=0
   integer, dimension(ndustspec) :: idiag_udxm=0,idiag_udym=0,idiag_udzm=0
   integer, dimension(ndustspec) :: idiag_udx2m=0,idiag_udy2m=0,idiag_udz2m=0
@@ -90,10 +85,8 @@ module Dustvelocity
   integer, dimension(ndustspec) :: idiag_dtud=0,idiag_dtnud=0
   integer, dimension(ndustspec) :: idiag_rdudxm=0,idiag_rdudym=0,idiag_rdudzm=0
   integer, dimension(ndustspec) :: idiag_rdudx2m=0
-
-
+!
   contains
-
 !***********************************************************************
     subroutine register_dustvelocity()
 !
@@ -102,7 +95,6 @@ module Dustvelocity
 !
 !  18-mar-03/axel+anders: adapted from hydro
 !
-      use Cdata
       use FArrayManager
       use General, only: chn
 !
@@ -386,7 +378,6 @@ module Dustvelocity
 !
 !  18-mar-03/axel+anders: adapted from hydro
 !
-      use Cdata
       use EquationOfState, only: gamma, beta_glnrho_global, beta_glnrho_scaled
       use Sub
       use Global
@@ -838,11 +829,11 @@ module Dustvelocity
 !
 !  18-mar-03/axel+anders: adapted from hydro
 !
-      use Cdata
-      use General
-      use Sub
+      use Diagnostics
       use EquationOfState, only: gamma
+      use General
       use IO
+      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -1177,7 +1168,6 @@ module Dustvelocity
 !
 !  Calculate stopping time depending on choice of drag law.
 !
-      use Cdata
       use Sub, only: dot2
 
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1256,8 +1246,7 @@ module Dustvelocity
 !   3-may-02/axel: coded
 !  27-may-02/axel: added possibility to reset list
 !
-      use Cdata
-      use Sub
+      use Diagnostics
       use General, only: chn
 !
       integer :: iname,inamez,k

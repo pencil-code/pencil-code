@@ -344,7 +344,7 @@ module Particles
 !
 !  25-apr-06/anders: coded
 !
-      use Sub
+      use Diagnostics
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -454,7 +454,7 @@ module Particles
 !
 !  02-jan-05/anders: coded
 !
-      use Sub
+      use Diagnostics
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -580,7 +580,7 @@ module Particles
 !  29-dec-04/anders: coded
 !
       use Cdata
-      use Sub, only: parse_name
+      use Diagnostics
 !
       logical :: lreset
       logical, optional :: lwrite

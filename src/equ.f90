@@ -494,7 +494,12 @@ module Equ
 !
 !  Do the vorticity integration here, before the omega pencil is overwritten.
 !
-      if (ltime_integrals) call time_integrals(f,p)
+      if (ltime_integrals) then
+        if (itsub==itorder) then
+          if (lhydro)    call time_integrals_hydro(f,p)
+          if (lmagnetic) call time_integrals_magnetic(f,p)
+        endif
+      endif
 !
 !  In max_mn maximum values of u^2 (etc) are determined sucessively
 !  va2 is set in magnetic (or nomagnetic)

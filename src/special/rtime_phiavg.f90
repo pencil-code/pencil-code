@@ -341,7 +341,7 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Sub
+      use Diagnostics
 !
 !  define diagnostics variable
 !

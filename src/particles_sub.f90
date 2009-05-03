@@ -3,14 +3,14 @@
 !  This module contains subroutines useful for the Particle module.
 !
 module Particles_sub
-
+!
   use Cdata
   use Particles_cdata
-
+!
   implicit none
-
+!
   private
-
+!
   public :: input_particles, output_particles
   public :: wsnap_particles, boundconds_particles
   public :: redist_particles_procs, dist_particles_evenly_procs
@@ -23,14 +23,13 @@ module Particles_sub
   public :: get_particles_interdistance
   public :: interpolation_consistency_check
   public :: interpolate_quantities, cleanup_interpolated_quantities
-
+!
   interface interp_field_pencil_wrap
     module procedure interp_field_pencil_0
     module procedure interp_field_pencil_1
   endinterface
-
+!
   contains
-
 !***********************************************************************
     subroutine input_particles(filename,fp,npar_loc,ipar)
 !
@@ -509,8 +508,7 @@ module Particles_sub
       use Messages, only: fatal_error, fatal_error_local, &
                           fatal_error_local_collect, warning
       use Mpicomm
-      use Sub, only: max_name
-      use Cdata, only: procy_bounds,procz_bounds
+      use Diagnostics, only: max_name
 !
       real, dimension (mpar_loc,mpvar) :: fp
       real, dimension (mpar_loc,mpvar), optional :: dfp
@@ -967,7 +965,6 @@ module Particles_sub
 !
 !  02-jan-05/anders: adapted from sum_mn_name
 !
-      use Cdata
       use Messages, only: fatal_error
 !
       real, dimension (:) :: a
@@ -1016,7 +1013,6 @@ module Particles_sub
 !
 !  22-aug-05/anders: adapted from sum_par_name
 !
-      use Cdata
       use Messages, only: fatal_error
 !
       real, dimension (:) :: a
@@ -1059,8 +1055,6 @@ module Particles_sub
 !
 !  28-nov-05/anders: adapted from max_par_name
 !
-      use Cdata
-!
       real, dimension (:) :: a
       integer :: iname
       logical, optional :: lneg
@@ -1089,7 +1083,6 @@ module Particles_sub
 !
 !  29-nov-05/anders: adapted from sum_par_name
 !
-      use Cdata
       use Messages, only: fatal_error
 !
       real, dimension (:) :: a
@@ -1134,7 +1127,6 @@ module Particles_sub
 !
 !  30-dec-04/anders: coded
 !
-      use Cdata
       Use Solid_Cells
       use Mpicomm, only: stop_it
 !
@@ -1322,7 +1314,6 @@ module Particles_sub
 !
 !  09-jun-06/anders: coded
 !
-      use Cdata
       use Messages, only: fatal_error
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1404,7 +1395,6 @@ module Particles_sub
 !
 !  10-jun-06/anders: coded
 !
-      use Cdata
       use Messages, only: fatal_error
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1555,7 +1545,6 @@ module Particles_sub
 !  23-jan-05/anders: coded
 !  08-jul-08/kapelrud: support for non-equidist. grids
 !
-      use Cdata
       use Messages
       use Mpicomm, only: stop_it
 !
@@ -1725,7 +1714,6 @@ module Particles_sub
 !
 !  20-apr-06/anders: coded
 !
-      use Cdata
       use General, only: safe_character_assign
       use Messages, only: fatal_error
 !
@@ -1890,7 +1878,6 @@ module Particles_sub
 !
 !  27-nov-05/anders: coded
 !
-      use Cdata
       use GhostFold, only: fold_f
       use Mpicomm,   only: stop_it
 !
@@ -2055,7 +2042,6 @@ module Particles_sub
 !
 !  07-oct-08/anders: coded
 !
-      use Cdata
       use GhostFold, only: fold_f
       use Mpicomm,   only: stop_it
 !
@@ -2250,7 +2236,6 @@ module Particles_sub
 !
 !  24-apr-06/anders: coded
 !
-      use Cdata
       use Mpicomm, only: stop_it
 !
       integer, dimension (mpar_loc,3) :: ineargrid
@@ -2289,8 +2274,6 @@ module Particles_sub
 !  Create a shepherd/neighbour list of particles in the pencil.
 !
 !  24-oct-05/anders: coded
-!
-      use Cdata, only: nghost
 !
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
@@ -2426,7 +2409,6 @@ module Particles_sub
 !  Check that all interpolation requirements are satisfied:
 !
       use Particles_cdata
-      use Cdata
       use Messages, only: fatal_error, warning
 !
       if (interp%luu .and. (.not.lhydro)) then
@@ -2459,7 +2441,6 @@ module Particles_sub
 !  28-jul-08/kapelrud: coded
 !
       use Particles_cdata
-      use Cdata
       use Messages, only: fatal_error
 !
       real,dimension(mx,my,mz,mfarray) :: f
@@ -2609,8 +2590,6 @@ module Particles_sub
 !  i1 & i2 sets the component to interpolate; ex.: iux:iuz, or iss:iss
 !
 !  16-jul-08/kapelrud: coded
-!
-      use Cdata
 !
       real, dimension(mx,my,mz,mfarray) :: f
       integer :: i1,i2

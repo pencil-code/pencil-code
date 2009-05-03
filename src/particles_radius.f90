@@ -12,41 +12,39 @@
 !
 !***************************************************************
 module Particles_radius
-
+!
   use Cdata
+  use Messages
   use Particles_cdata
   use Particles_sub
-
+!
   implicit none
-
+!
   include 'particles_radius.h'
-
+!
   real :: ap0=0.0, vthresh_sweepup=-1.0, deltavp12_floor=0.0
   real :: tstart_sweepup_par=0.0, cdtps=0.2
   logical :: lsweepup_par=.true.
   character (len=labellen), dimension(ninit) :: initap='nothing'
-
+!
   namelist /particles_radius_init_pars/ &
       initap, ap0, rhops, vthresh_sweepup, deltavp12_floor, &
       lsweepup_par, tstart_sweepup_par, cdtps
-
+!
   namelist /particles_radius_run_pars/ &
       rhops, vthresh_sweepup, deltavp12_floor, &
       lsweepup_par, tstart_sweepup_par, cdtps
-
+!
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
   integer :: idiag_dvp12m=0, idiag_dtsweepp=0
-
+!
   contains
-
 !***********************************************************************
     subroutine register_particles_radius()
 !
 !  Set up indices for access to the fp and dfp arrays
 !
 !  22-aug-05/anders: coded
-!
-      use Messages, only: fatal_error, cvs_id
 !
       if (lroot) call cvs_id( &
           "$Id$")
@@ -120,8 +118,6 @@ module Particles_radius
 !
 !  21-nov-06/anders: coded
 !
-      use Cdata
-!
       lpenc_requested(i_uu)=.true.
       lpenc_requested(i_rho)=.true.
       lpenc_requested(i_cc)=.true.
@@ -134,9 +130,8 @@ module Particles_radius
 !
 !  22-aug-05/anders: coded
 !
-      use Messages, only: fatal_error
+      use Diagnostics
       use Particles_number
-      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -303,8 +298,7 @@ module Particles_radius
 !
 !  22-aug-05/anders: coded
 !
-      use Cdata
-      use Sub, only: parse_name
+      use Diagnostics
 !
       logical :: lreset
       logical, optional :: lwrite

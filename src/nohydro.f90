@@ -193,10 +193,10 @@ module Hydro
 !
 !   08-nov-04/tony: coded
 !
-      use Sub, only: dot_mn,dot2_mn, sum_mn_name, max_mn_name, &
-        integrate_mn_name, quintic_step, quintic_der_step
-      use Magnetic, only: ABC_A,ABC_B,ABC_C,kx_aa,ky_aa,kz_aa
+      use Diagnostics
       use General
+      use Magnetic, only: ABC_A,ABC_B,ABC_C,kx_aa,ky_aa,kz_aa
+      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -561,7 +561,7 @@ kky_aa=2.*pi
 !
 !   7-jun-02/axel: adapted from hydro
 !
-      use Sub
+      use Diagnostics
       use FArrayManager
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1207,7 +1207,7 @@ kky_aa=2.*pi
 !
 !   8-jun-02/axel: adapted from hydro
 !
-      use Sub
+      use Diagnostics
 !
       integer :: iname
       logical :: lreset,lwr

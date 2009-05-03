@@ -158,6 +158,7 @@ module Special
 !
 !  18-nov-04/axel: coded
 !
+      use Diagnostics
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -251,7 +252,7 @@ module Special
 !
 !   6-jul-02/axel: coded
 !
-      use Sub
+      use Diagnostics
 !
       integer :: iname,inamez
       logical :: lreset,lwr

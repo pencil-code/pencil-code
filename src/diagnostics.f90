@@ -1,5 +1,5 @@
 ! $Id: equ.f90 10533 2009-03-26 11:01:45Z ajohan@strw.leidenuniv.nl $
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 !
 ! Declare (for generation of cparam.inc) the number of f array
@@ -20,7 +20,17 @@ module Diagnostics
   public :: diagnostic, initialize_time_integrals
   public :: collect_uumax, xyaverages_z, xzaverages_y, yzaverages_x
   public :: phizaverages_r, yaverages_xz, zaverages_xy
-  public :: time_integrals, phiaverages_rz
+  public :: phiaverages_rz
+  public :: expand_cname
+  public :: parse_name, save_name, max_name
+  public :: max_mn_name,sum_mn_name,integrate_mn_name,sum_weighted_name
+  public :: sum_mn_name_halfy
+  public :: surf_mn_name,sum_lim_mn_name
+  public :: xysum_mn_name_z, xzsum_mn_name_y, yzsum_mn_name_x
+  public :: phizsum_mn_name_r
+  public :: ysum_mn_name_xz, zsum_mn_name_xy, phisum_mn_name_rz
+  public :: calc_phiavg_profile
+  public :: yzintegrate_mn_name_x,xzintegrate_mn_name_y,xyintegrate_mn_name_z
 !
   contains
 !***********************************************************************
@@ -214,30 +224,6 @@ module Diagnostics
 !
     endsubroutine initialize_time_integrals
 !***********************************************************************
-    subroutine time_integrals(f,p)
-!
-!  Calculate time_integrals within each pencil (as long as each
-!  pencil case p still contains the current data).
-!
-!  28-jun-07/axel+mreinhard: coded
-!  24-jun-08/axel: moved call to this routine to the individual pde routines
-!
-      use Hydro, only: time_integrals_hydro
-      use Magnetic, only: time_integrals_magnetic
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
-!
-      intent(inout) :: f
-      intent(in) :: p
-!
-      if (itsub==itorder) then
-        if (lhydro) call time_integrals_hydro(f,p)
-        if (lmagnetic) call time_integrals_magnetic(f,p)
-      endif
-!
-    endsubroutine time_integrals
-!***********************************************************************
     subroutine xyaverages_z()
 !
 !  Calculate xy-averages (still depending on z)
@@ -400,5 +386,826 @@ module Diagnostics
       endif
 !
     endsubroutine phiaverages_rz
+!***********************************************************************
+    subroutine parse_name(iname,cname,cform,ctest,itest)
+!
+!  Parse name and format of scalar print variable
+!  On output, ITEST is set to INAME if CNAME matches CTEST
+!  and CFORM is set to the format given as default.
+!  E.g. if CTEST='bmax' *i.e. we are testing input line CNAME for 'bmax',
+!  CNAME='bmax' will be parsed to ITEST=INAME, CFORM='(1pe10.2)',
+!  CNAME='bmax(G5.1)' to ITEST=INAME, CFORM='G5.1',
+!  CNAME='brms' to ITEST=<unchanged, normally 0>, CFORM='(1pe10.2)'
+!
+!   4-may-02/axel: coded
+!   6-apr-04/wolf: more liberate format reading
+!
+      use General, only: safe_character_assign
+!
+      character (len=*) :: cname,cform
+      character (len=*) :: ctest
+      integer :: iname,itest,iform0,iform1,iform2,length,index_i
+!
+      intent(in)    :: iname,cname,ctest
+      intent(inout) :: itest,cform
+!      intent(out)   :: cform
+!
+!  check whether format is given
+!
+      iform0=index(cname,' ')
+      iform1=index(cname,'(')
+      iform2=index(cname,')')
+!
+!  set format; use default if not given
+!
+      if (iform1>0) then
+        cform=cname(iform1+1:iform2-1)
+        length=iform1-1
+      else
+        cform='1pE10.2'  !!(the nag-f95 compiler requires a comma after
+                         !! 1p [does it?])
+        length=iform0-1
+      endif
+!
+!  fix annoying Fortran 0p/1p stuff (Ew.d --> 1pEw.d, Fw.d --> 0pFw.d)
+!
+      if ((cform(1:1) == 'e') .or. (cform(1:1) == 'E') &
+          .or. (cform(1:1) == 'g') .or. (cform(1:1) == 'G')) then
+        call safe_character_assign(cform, '1p'//trim(cform))
+      endif
+      if ((cform(1:1) == 'f') .or. (cform(1:1) == 'F')) then
+        call safe_character_assign(cform, '0p'//trim(cform))
+      endif
+!
+!  if the name matches, we keep the name and can strip off the format.
+!  The remaining name can then be used for the legend.
+!
+      if (cname(1:length)==ctest .and. itest==0) then
+        itest=iname
+      endif
+!
+!  Integer formats are turned into floating point numbers
+!
+      index_i=index(cform,'i')
+      if (index_i/=0) then
+        cform(index_i:index_i)='f'
+        cform=trim(cform)//'.0'
+      endif
+!
+    endsubroutine parse_name
+!***********************************************************************
+    subroutine expand_cname(ccname,nname,vlabel,xlabel,ylabel,zlabel)
+!
+!  Expand string array cname with entries up to index nname such that
+!  vlabel is replaced by the three labels xlabel, ylabel, zlabel, and
+!  update nname accordingly.
+!
+!   1-apr-04/wolf: coded
+!
+      use Mpicomm, only: stop_it
+!
+      character (len=*), dimension(:) :: ccname
+      integer :: nname
+      character (len=*) :: vlabel,xlabel,ylabel,zlabel
+      integer :: mname
+      integer :: i
+!
+      intent(inout) :: ccname,nname
+      intent(in) :: vlabel,xlabel,ylabel,zlabel
+!
+      mname = size(ccname)
+      i = 1
+      do while (i <= nname)
+        if (ccname(i) == vlabel) then
+          if (nname+2 > mname) then ! sanity check
+            call stop_it("EXPAND_CNAME: Too many labels in list")
+          endif
+          ccname(i+3:nname+2) = ccname(i+1:nname)
+          ccname(i:i+2) = (/xlabel,ylabel,zlabel/)
+          i = i+2
+          nname = nname+2
+        endif
+        i = i+1
+      enddo
+
+    endsubroutine expand_cname
+!***********************************************************************
+    subroutine save_name(a,iname)
+!
+!  Lists the value of a (must be treated as real) in fname array
+!
+!  26-may-02/axel: adapted from max_mn_name
+!
+      real :: a
+      integer :: iname
+!
+!  Set corresponding entry in itype_name
+!  This routine is to be called only once per step
+!
+      fname(iname)=a
+      itype_name(iname)=ilabel_save
+!
+   endsubroutine save_name
+!***********************************************************************
+    subroutine max_name(a,iname)
+!
+!  Successively calculate maximum of a, which is supplied at each call.
+!
+!  29-aug-05/anders: adapted from save_name
+!
+      integer :: a, iname
+!
+      fname(iname)=a
+!
+!  set corresponding entry in itype_name
+!
+      itype_name(iname)=ilabel_max
+!
+    endsubroutine max_name
+!***********************************************************************
+    subroutine max_mn_name(a,iname,lsqrt,l_dt,lneg,lreciprocal)
+!
+!  successively calculate maximum of a, which is supplied at each call.
+!  Start from zero if lfirstpoint=.true.
+!
+!   1-apr-01/axel+wolf: coded
+!   4-may-02/axel: adapted for fname array
+!  23-jun-02/axel: allows for taking square root in the end
+!
+      real, dimension (nx) :: a
+      integer :: iname
+      logical, optional :: lsqrt,l_dt,lneg,lreciprocal
+!
+      if (lfirstpoint) then
+        fname(iname)=maxval(a)
+      else
+        fname(iname)=max(fname(iname),maxval(a))
+      endif
+!
+!  set corresponding entry in itype_name
+!
+      if (present(lsqrt)) then
+        itype_name(iname)=ilabel_max_sqrt
+      elseif (present(l_dt)) then
+        itype_name(iname)=ilabel_max_dt
+      elseif (present(lneg)) then
+        itype_name(iname)=ilabel_max_neg
+      elseif (present(lreciprocal)) then
+        itype_name(iname)=ilabel_max_reciprocal
+      else
+        itype_name(iname)=ilabel_max
+      endif
+!
+    endsubroutine max_mn_name
+!***********************************************************************
+    subroutine sum_mn_name(a,iname,lsqrt,lint,ipart)
+!
+!  successively calculate sum of a, which is supplied at each call.
+!  Start from zero if lfirstpoint=.true.
+!  TODO: for nonperiodic arrays we want to multiply boundary data by 1/2.
+!
+!   1-apr-01/axel+wolf: coded
+!   4-may-02/axel: adapted for fname array
+!  23-jun-02/axel: allows for taking square root in the end
+!  20-jun-07/dhruba: adapted for spherical polar coordinate system
+!  30-aug-07/wlad: adapted for cylindrical coordinates
+!  22-mar-08/axel: added ladd option, to add to previous values
+!
+!  Note [24-may-2004, wd]:
+!    This routine should incorporate a test for iname /= 0, so instead of
+!         if (idiag_b2m/=0)    call sum_mn_name(b2,idiag_b2m)
+!    we can just use
+!         call sum_mn_name(b2,idiag_b2m)
+!  Same holds for similar routines.
+!  Update [28-Sep-2004 wd]:
+!    Done here, but not yet in all other routines
+!
+      real, dimension (nx) :: a
+      real :: ppart=1.,qpart=0.
+      integer :: iname,isum
+      integer, optional :: ipart
+      logical, optional :: lsqrt, lint
+
+!
+      if (iname /= 0) then
+!
+!  set fraction if old and new stuff
+!
+        if (present(ipart)) then
+          ppart=1./float(ipart)
+          if (lfirstpoint) then
+            qpart=1.-ppart
+          else
+            qpart=1.
+          endif
+!
+!  use it
+!
+          if (lspherical_coords) then
+            fname(iname)=qpart*fname(iname)+ppart*sum(r2_weight*sinth_weight(m)*a)
+          elseif (lcylindrical_coords) then
+            fname(iname)=qpart*fname(iname)+ppart*sum(rcyl_weight*a)
+          else
+            fname(iname)=qpart*fname(iname)+ppart*sum(a)
+          endif
+!
+!  normal method
+!
+        else
+          if (lfirstpoint) then
+            if (lspherical_coords) then
+              fname(iname)=sum(r2_weight*sinth_weight(m)*a)
+            elseif (lcylindrical_coords) then
+              fname(iname)=sum(rcyl_weight*a)
+            else
+              fname(iname)=sum(a)
+            endif
+          else
+            if (lspherical_coords) then
+              fname(iname)=fname(iname)+sum(r2_weight*sinth_weight(m)*a)
+            elseif (lcylindrical_coords) then
+              fname(iname)=fname(iname)+sum(rcyl_weight*a)
+            else
+              fname(iname)=fname(iname)+sum(a)
+            endif
+          endif
+        endif
+!
+!  set corresponding entry in itype_name
+!
+
+        if (present(lsqrt)) then
+          itype_name(iname)=ilabel_sum_sqrt
+        elseif (present(lint)) then
+          itype_name(iname)=ilabel_integrate
+        else
+          itype_name(iname)=ilabel_sum
+        endif
+!
+      endif
+!
+    endsubroutine sum_mn_name
+!***********************************************************************
+    subroutine sum_mn_name_halfy(a,iname)
+!
+!
+!
+      real, dimension (nx) :: a
+      real :: sum_name
+      integer :: iname,isum
+
+!
+      if (iname /= 0) then
+        sum_name=0
+!
+        if (y(m).ge.yequator)then
+          sum_name=fname_half(iname,2)
+        else
+          sum_name=fname_half(iname,1)
+        endif
+!
+        if (lfirstpoint) then
+          fname_half(iname,1)=0
+          fname_half(iname,2)=0
+          sum_name=0
+          if (lspherical_coords) then
+            sum_name=sum(r2_weight*sinth_weight(m)*a)
+          elseif (lcylindrical_coords) then
+            sum_name=sum(rcyl_weight*a)
+          else
+            sum_name=sum(a)
+          endif
+        else
+          if (lspherical_coords) then
+            sum_name=sum_name+sum(r2_weight*sinth_weight(m)*a)
+          elseif (lcylindrical_coords) then
+            sum_name=sum_name+sum(rcyl_weight*a)
+          else
+            sum_name=sum_name+sum(a)
+          endif
+        endif
+!
+        if (y(m).ge.yequator)then
+          fname_half(iname,2)=sum_name
+        else
+          fname_half(iname,1)=sum_name
+        endif
+!
+      endif
+!
+    endsubroutine sum_mn_name_halfy
+!***********************************************************************
+    subroutine sum_weighted_name(a,weight,iname,lsqrt)
+!
+!  Succesively calculate the weighted sum of a. The result is divided by the
+!  total weight in the diagnostics subroutine.
+!
+!  17-apr-06/anders : coded
+!
+      real, dimension (:) :: a, weight
+      integer :: iname
+      logical, optional :: lsqrt
+!
+      integer, save :: it_save=-1, itsub_save=-1
+!
+      if (iname/=0) then
+!
+        if (it/=it_save .or. itsub/=itsub_save) then
+          fname(iname)=0.0
+          fweight(iname)=0.0
+          it_save=it
+          itsub_save=itsub
+        endif
+!
+        fname(iname)  =fname(iname)  +sum(weight*a)
+        fweight(iname)=fweight(iname)+sum(weight)
+!
+!  Set corresponding entry in itype_name
+!
+        if (present(lsqrt)) then
+          itype_name(iname)=ilabel_sum_weighted_sqrt
+        else
+          itype_name(iname)=ilabel_sum_weighted
+        endif
+!
+      endif
+!
+    endsubroutine sum_weighted_name
+!***********************************************************************
+    subroutine sum_lim_mn_name(a,iname,p)
+!
+!  Successively calculate integral of a, which is supplied at each call.
+!  Just takes values between r_int < r < r_ext
+!  The purpose is to compute quantities just inside a cylinder or sphere
+!
+!   2-nov-05/wlad: adapted from sum_mn_name
+!
+      real, dimension (nx) :: a,aux,rlim
+      type (pencil_case) :: p
+      real :: dv
+      integer :: iname,i,isum
+!
+      if (iname /= 0) then
+!
+        if (lcylinder_in_a_box) then
+          rlim=p%rcyl_mn
+        elseif (lsphere_in_a_box) then
+          rlim=p%r_mn
+        else
+          call warning("sum_lim_mn_name","no reason to call it if you are "//&
+               "not using a cylinder or a sphere embedded in a "//&
+               "Cartesian grid") 
+        endif
+!
+         dv=1.
+         if (nxgrid/=1) dv=dv*dx
+         if (nygrid/=1) dv=dv*dy
+         if (nzgrid/=1) dv=dv*dz
+!
+         do i=1,nx
+            if ((rlim(i) .le. r_ext).and.(rlim(i) .ge. r_int)) then
+               aux(i) = a(i)
+            else
+               aux(i) = 0.
+            endif
+         enddo
+!
+         if (lfirstpoint) then
+            if (lspherical_coords)then
+              fname(iname) = 0.
+              do isum=l1,l2
+                fname(iname)=fname(iname)+ & 
+                        x(isum)*x(isum)*sinth(m)*aux(isum)*dv
+              enddo
+            else
+              fname(iname)=sum(aux)*dv
+            endif
+         else
+            if (lspherical_coords)then
+              do isum=l1,l2
+                fname(iname)=fname(iname)+ &  
+                      x(isum)*x(isum)*sinth(isum)*aux(isum)*dv
+              enddo
+            else
+              fname(iname)=fname(iname)+sum(aux)*dv
+            endif
+         endif
+!
+         itype_name(iname)=ilabel_sum_lim
+!
+      endif
+!
+    endsubroutine sum_lim_mn_name
+!*********************************************************
+    subroutine surf_mn_name(a,iname)
+!
+!  successively calculate surface integral. This routine assumes
+!  that "a" contains the partial result for each pencil, so here
+!  we just need to add up the contributions from all processors.
+!  Start from zero if lfirstpoint=.true.
+!
+!  14-aug-03/axel: adapted from sum_mn_name
+!
+      real, intent(in) :: a
+      integer, intent(in) :: iname
+!
+      if (lfirstpoint) then
+        fname(iname)=a
+      else
+        fname(iname)=fname(iname)+a
+      endif
+!
+!  set corresponding entry in itype_name
+!
+      itype_name(iname)=ilabel_surf
+!
+    endsubroutine surf_mn_name
+!***********************************************************************
+    subroutine integrate_mn_name(a,iname)
+!
+!  successively calculate sum of a, which is supplied at each call.
+!  Start from zero if lfirstpoint=.true. ultimately multiply by dv
+!  to get the integral.  This differs from sum_mn_name by the
+!  setting of ilabel_integrate and hence in the behaviour in the final
+!  step.
+!
+!  Note, for regular integration (uniform meshes) it is better
+!  to use the usual sum_mn_name routine with lint=.true.
+!
+!   30-may-03/tony: adapted from sum_mn_name
+!   13-nov-06/tony: modified to handle stretched mesh
+!
+      real, dimension (nx) :: a,fac
+      integer :: iname
+!
+      fac=1.
+!
+!     equidistant case are handled in equ.f90
+!
+      if (.not.lequidist(1)) fac=fac*xprim(l1:l2)
+      if (.not.lequidist(2)) fac=fac*yprim(m)
+      if (.not.lequidist(3)) fac=fac*zprim(n)
+!
+      if (lfirstpoint) then
+        fname(iname)=sum(a*fac)
+      else
+        fname(iname)=fname(iname)+sum(a*fac)
+      endif
+!
+!  set corresponding entry in itype_name
+!
+      itype_name(iname)=ilabel_integrate
+!
+    endsubroutine integrate_mn_name
+!***********************************************************************
+    subroutine xysum_mn_name_z(a,iname)
+!
+!  Successively calculate sum over x,y of a, which is supplied at each call.
+!  The result fnamez is z-dependent.
+!  Start from zero if lfirstpoint=.true.
+!
+!   5-jun-02/axel: adapted from sum_mn_name
+!
+      real, dimension (nx) :: a
+      integer :: iname,n_nghost,isum
+!
+!  Initialize to zero, including other parts of the z-array
+!  which are later merged with an mpi reduce command.
+!
+      if (lfirstpoint) fnamez(:,:,iname)=0.0
+!
+!  n starts with nghost+1=4, so the correct index is n-nghost
+!
+      n_nghost=n-nghost
+      if (lspherical_coords.or.lcylindrical_coords)then
+        do isum=l1,l2
+          fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+ & 
+                              x(isum)*a(isum)
+        enddo
+      else
+        fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+sum(a)
+      endif
+!
+    endsubroutine xysum_mn_name_z
+!***********************************************************************
+    subroutine xzsum_mn_name_y(a,iname)
+!
+!  Successively calculate sum over x,z of a, which is supplied at each call.
+!  The result fnamey is y-dependent.
+!  Start from zero if lfirstpoint=.true.
+!
+!  12-oct-05/anders: adapted from xysum_mn_name_z
+!
+      real, dimension (nx) :: a
+      integer :: iname,m_nghost,isum
+!
+!  Initialize to zero, including other parts of the z-array
+!  which are later merged with an mpi reduce command.
+!
+      if (lfirstpoint) fnamey(:,:,iname)=0.0
+!
+!  m starts with mghost+1=4, so the correct index is m-nghost
+!
+      m_nghost=m-nghost
+      if (lspherical_coords)then
+        do isum=l1,l2
+          fnamey(m_nghost,ipy+1,iname)=fnamey(m_nghost,ipy+1,iname)+ &
+                              x(isum)*sinth(m)*a(isum)
+        enddo
+      else ! also correct for cylindrical
+        fnamey(m_nghost,ipy+1,iname)=fnamey(m_nghost,ipy+1,iname)+sum(a)
+      endif
+!
+    endsubroutine xzsum_mn_name_y
+!***********************************************************************
+    subroutine yzsum_mn_name_x(a,iname)
+!
+!  Successively calculate sum over y,z of a, which is supplied at each call.
+!  The result fnamex is x-dependent.
+!  Start from zero if lfirstpoint=.true.
+!
+!   2-oct-05/anders: adapted from xysum_mn_name_z
+!
+      real, dimension (nx) :: a
+      integer :: iname,isum
+!
+!  Initialize to zero.
+!
+      if (lfirstpoint) fnamex(:,:,iname)=0.0
+!
+      if (lspherical_coords)then
+        do isum=l1,l2
+          fnamex(isum,ipx+1,iname)=fnamex(isum,ipx+1,iname)+x(isum)*x(isum)*sinth(m)*a(isum)
+        enddo
+      elseif (lcylindrical_coords) then
+        do isum=l1,l2
+          fnamex(isum,ipx+1,iname)=fnamex(isum,ipx+1,iname)+x(isum)*a(isum)
+        enddo
+      else
+        fnamex(:,ipx+1,iname)=fnamex(:,ipx+1,iname)+a
+      endif
+!
+    endsubroutine yzsum_mn_name_x
+!***********************************************************************
+    subroutine xyintegrate_mn_name_z(a,iname)
+!
+!   Integrate over x and y. Apply trapezoidal rule properly in the case
+!   of non-periodic boundaries.
+!
+!   18-jun-07/tobi: adapted from xysum_mn_name_z
+!
+      real, dimension (nx) :: a
+      integer :: iname
+      real :: fac,suma
+!
+!  Initialize to zero, including other parts of the z-array
+!  which are later merged with an mpi reduce command.
+!
+      if (lfirstpoint) fnamez(:,:,iname) = 0.0
+!
+      fac=1.0
+!
+      if ((m==m1.and.ipy==0).or.(m==m2.and.ipy==nprocy-1)) then
+        if (.not.lperi(2)) fac = .5*fac
+      endif
+!
+      if (lperi(1)) then
+        suma = fac*sum(a)
+      else
+        suma = fac*(sum(a(2:nx-1))+.5*(a(1)+a(nx)))
+      endif
+!
+!  n starts with nghost+1=4, so the correct index is n-nghost
+!
+      fnamez(n-nghost,ipz+1,iname) = fnamez(n-nghost,ipz+1,iname) + suma
+!
+    endsubroutine xyintegrate_mn_name_z
+!***********************************************************************
+    subroutine xzintegrate_mn_name_y(a,iname)
+!
+!   Integrate over x and z. Apply trapezoidal rule properly in the case
+!   of non-periodic boundaries.
+!
+!   18-jun-07/tobi: adapted from xzsum_mn_name_y
+!
+      real, dimension (nx) :: a
+      integer :: iname
+      real :: fac,suma
+!
+!  Initialize to zero, including other parts of the z-array
+!  which are later merged with an mpi reduce command.
+!
+      if (lfirstpoint) fnamey(:,:,iname) = 0.
+
+      fac = 1.
+
+      if ((n==n1.and.ipz==0).or.(n==n2.and.ipz==nprocz-1)) then
+        if (.not.lperi(3)) fac = .5*fac
+      endif
+
+      if (lperi(1)) then
+        suma = fac*sum(a)
+      else
+        suma = fac*(sum(a(2:nx-1))+.5*(a(1)+a(nx)))
+      endif
+!
+!  m starts with mghost+1=4, so the correct index is m-nghost
+!
+      fnamey(m-nghost,ipy+1,iname) = fnamey(m-nghost,ipy+1,iname) + suma
+
+    endsubroutine xzintegrate_mn_name_y
+!***********************************************************************
+    subroutine yzintegrate_mn_name_x(a,iname)
+!
+!   Integrate over y and z. Apply trapezoidal rule properly in the case
+!   of non-periodic boundaries.
+!
+!   18-jun-07/tobi: adapted from yzsum_mn_name_x
+!
+      real, dimension (nx) :: a
+      integer :: iname
+      real :: fac
+!
+!  Initialize to zero.
+!
+      if (lfirstpoint) fnamex(:,:,iname) = 0.0
+!
+      fac=1.0
+!
+      if ((m==m1.and.ipy==0).or.(m==m2.and.ipy==nprocy-1)) then
+        if (.not.lperi(2)) fac = .5*fac
+      endif
+!
+      if ((n==n1.and.ipz==0).or.(n==n2.and.ipz==nprocz-1)) then
+        if (.not.lperi(3)) fac = .5*fac
+      endif
+!
+      fnamex(:,ipx+1,iname) = fnamex(:,ipx+1,iname) + fac*a
+!
+    endsubroutine yzintegrate_mn_name_x
+!***********************************************************************
+    subroutine phizsum_mn_name_r(a,iname)
+!
+!  Successively calculate sum over phi,z of a, which is supplied at each call.
+!  Start from zero if lfirstpoint=.true.
+!  The fnamer array uses one of its slots in mnamer where we put ones and sum
+!  them up in order to get the normalization correct.
+!
+!  29-jan-07/wlad: adapted from yzsum_mn_name_x and phisum_mn_name
+!
+      use Mpicomm, only: stop_it
+!
+      real, dimension (nx) :: a
+      integer :: iname,ir,nnghost
+!
+      if (lfirstpoint) fnamer(:,iname)=0.
+      if (lfirstpoint.and.iname==nnamer) fnamer(:,iname+1)=0.
+!
+      do ir=1,nrcyl
+         fnamer(ir,iname) = fnamer(ir,iname) + sum(a*phiavg_profile(ir,:))
+      enddo
+!
+! Normalization factor, just needs to be done once.
+! As is it a z-average, multiply by nz afterwards.
+!
+      nnghost=n-nghost
+      if ((iname==nnamer).and.(nnghost==1)) then
+!check if an extra slot is available on fnamer
+         if (nnamer==mnamer) &
+              call stop_it("no slot for phi-normalization. decrease nnamer")
+!
+         do ir=1,nrcyl
+            fnamer(ir,iname+1) &
+                 = fnamer(ir,iname+1) + sum(1.*phiavg_profile(ir,:))*nz
+         enddo
+      endif
+!
+    endsubroutine phizsum_mn_name_r
+!***********************************************************************
+    subroutine ysum_mn_name_xz(a,iname)
+!
+!  successively calculate sum over y of a, which is supplied at each call.
+!  The result fnamexz is xz-dependent.
+!  Start from zero if lfirstpoint=.true.
+!
+!   7-jun-05/axel: adapted from zsum_mn_name_xy
+!
+      real, dimension (nx) :: a
+      integer :: iname,n_nghost
+!
+!  Initialize to zero, including other parts of the xz-array
+!  which are later merged with an mpi reduce command.
+!
+      if (lfirstpoint) fnamexz(:,:,:,iname)=0.
+!
+!  n starts with nghost+1=4, so the correct index is n-nghost
+!  keep full x-dependence
+!
+      n_nghost=n-nghost
+      if (lspherical_coords.or.lcylindrical_coords)then
+        fnamexz(:,n_nghost,ipz+1,iname) = fnamexz(:,n_nghost,ipz+1,iname)+a*x(l1:l2)
+      else
+        fnamexz(:,n_nghost,ipz+1,iname)=fnamexz(:,n_nghost,ipz+1,iname)+a
+      endif
+!
+    endsubroutine ysum_mn_name_xz
+!***********************************************************************
+    subroutine zsum_mn_name_xy(a,iname)
+!
+!  successively calculate sum over z of a, which is supplied at each call.
+!  The result fnamexy is xy-dependent.
+!  Start from zero if lfirstpoint=.true.
+!
+!  19-jun-02/axel: adapted from xysum_mn_name
+!
+      real, dimension (nx) :: a
+      integer :: iname,m_nghost
+!
+!  Initialize to zero, including other parts of the xy-array
+!  which are later merged with an mpi reduce command.
+!
+      if (lfirstpoint) fnamexy(:,:,:,iname)=0.
+!
+!  m starts with nghost+1=4, so the correct index is m-nghost
+!  keep full x-dependence
+!
+      m_nghost=m-nghost
+      fnamexy(:,m_nghost,ipy+1,iname)=fnamexy(:,m_nghost,ipy+1,iname)+a
+!
+    endsubroutine zsum_mn_name_xy
+!***********************************************************************
+    subroutine calc_phiavg_profile(p)
+!
+!  Calculate profile for phi-averaging for given pencil
+!
+!   2-feb-03/wolf: coded
+!
+      type (pencil_case) :: p
+      real :: r0,width
+      integer :: ir
+!
+!  We use a quartic-Gaussian profile ~ exp(-r^4)
+!
+!      width = .5*drcyl
+      width = .7*drcyl
+      do ir=1,nrcyl
+        r0 = rcyl(ir)
+        phiavg_profile(ir,:) = exp(-0.5*((p%rcyl_mn-r0)/width)**4)
+      enddo
+!
+      if (.not.(lcylinder_in_a_box.or.lsphere_in_a_box)) &
+           call warning("calc_phiavg_profile","no reason to call it if you are "//&
+           "not using a cylinder or a sphere embedded in a "//&
+           "Cartesian grid") 
+!
+    endsubroutine calc_phiavg_profile
+!***********************************************************************
+    subroutine phisum_mn_name_rz(a,iname)
+!
+!  Successively calculate sum over phi of a, which is supplied at each call.
+!  Start from zero if lfirstpoint=.true.
+!  The fnamerz array has one extra slice in z where we put ones and sum
+!  them up in order to get the normalization correct.
+!
+!   2-feb-03/wolf: adapted from xysum_mn_name_z
+!
+      real, dimension (nx) :: a
+      integer :: iname,n_nghost,ir
+!
+      if (iname == 0) then
+!
+!  Nothing to be done (this variable was never asked for)
+!
+      else
+!
+!  Initialize to zero, including other parts of the rz-array
+!  which are later merged with an mpi reduce command.
+!  At least the root processor needs to reset all ipz slots, as it uses
+!  fnamerz(:,:,:,:) for the final averages to write [see
+!  phiaverages_rz()]; so we better reset everything:
+!      if (lfirstpoint) fnamerz(:,:,ipz+1,iname) = 0.
+        if (lfirstpoint) fnamerz(:,:,:,iname) = 0.
+!
+!  n starts with nghost+1=4, so the correct index is n-nghost
+!
+        n_nghost=n-nghost
+        do ir=1,nrcyl
+          fnamerz(ir,n_nghost,ipz+1,iname) &
+               = fnamerz(ir,n_nghost,ipz+1,iname) + sum(a*phiavg_profile(ir,:))
+        enddo
+!
+!  sum up ones for normalization; store result in fnamerz(:,0,:,1)
+!  Only do this for the first n, or we would sum up nz times too often
+!
+        if (iname==1 .and. n_nghost==1) then
+          do ir=1,nrcyl
+            fnamerz(ir,0,ipz+1,iname) &
+                 = fnamerz(ir,0,ipz+1,iname) + sum(1.*phiavg_profile(ir,:))
+          enddo
+        endif
+!
+      endif
+!
+    endsubroutine phisum_mn_name_rz
 !***********************************************************************
 endmodule Diagnostics

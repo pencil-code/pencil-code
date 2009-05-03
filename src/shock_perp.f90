@@ -240,7 +240,7 @@ module Shock
 !  24-nov-03/tony: adapted from rprint_ionization
 !
       use Cdata
-      use Sub
+      use Diagnostics
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -350,6 +350,7 @@ module Shock
 !  20-11-04/anders: coded
 !
       use Cdata
+      use Diagnostics
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f

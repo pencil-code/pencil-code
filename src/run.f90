@@ -47,6 +47,7 @@ program run
 !
   use Boundcond
   use Cdata
+  use Diagnostics
   use Dustdensity,     only: init_nd
   use Dustvelocity,    only: init_uud
   use Entropy,         only: calc_heatcond_ADI

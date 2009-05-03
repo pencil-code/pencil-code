@@ -1,5 +1,5 @@
 ! $Id$
-
+!
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
 !    nu_total = nu + nu_shock*dx^2*smooth(max5(-(div u))))
@@ -9,7 +9,7 @@
 !  boundary, unexpected things may happen, so you should monitor the
 !  behavior on the boundaries in this case.
 !
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -23,38 +23,34 @@
 ! PENCILS PROVIDED shock; gshock(3); shock_perp; gshock_perp(3)
 !
 !***************************************************************
-
 module Shock
-
+!
+  use Cdata
   use Cparam
-
+!
   implicit none
-
+!
   include 'shock.h'
-
+!
   integer :: ishock_max=1
   logical :: lgaussian_smooth=.false.
   logical :: lforce_periodic_shockviscosity=.false.
   real    :: div_threshold=0.
-
-  ! run parameters
+!
   namelist /shock_run_pars/ &
       ishock_max,lgaussian_smooth,lforce_periodic_shockviscosity, div_threshold
-
-  ! other variables (needs to be consistent with reset list below)
+! 
   integer :: idiag_shockmax=0
-
+!
   real, dimension (-3:3,-3:3,-3:3) :: smooth_factor
-
+!
   contains
-
 !***********************************************************************
     subroutine register_shock()
 !
 !  19-nov-02/tony: coded
 !  24-jan-05/tony: modified from visc_shock.f90
 !
-      use Cdata
       use FArrayManager
       use Messages, only: cvs_id
 !
@@ -78,7 +74,6 @@ module Shock
 !
 !  20-nov-02/tony: coded
 !
-       use Cdata, only: ishock,iux,iuy,iuz,lroot,bcx,bcy,bcz
        use Messages, only: fatal_error
 !
        real, dimension (mx,my,mz,mfarray) :: f
@@ -223,10 +218,7 @@ module Shock
 !
 !  24-nov-03/tony: adapted from rprint_ionization
 !
-      use Cdata, only: lroot,ip
-      use Cdata, only: nname,cname,cform
-      use Cdata, only: ishock
-      use Sub, only: parse_name
+      use Diagnostics
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -264,8 +256,6 @@ module Shock
 !  Write slices for animation of shock variable.
 !
 !  26-jul-06/tony: coded
-!
-      use Cdata, only: ishock
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
@@ -320,9 +310,8 @@ module Shock
 !
 !  20-11-04/anders: coded
 !
-      use Cdata, only: m,n,ishock
-      use Cdata, only: ldiagnos
-      use Sub, only: grad,max_mn_name
+      use Diagnostics
+      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -350,9 +339,6 @@ module Shock
 !  23-nov-02/tony: coded
 !  17-dec-08/ccyang: add divergence threshold
 !
-      use Cdata, only: m,n,mm,nn,necessary
-      use Cdata, only: iuu,iux,iuy,iuz,ishock
-      use Cdata, only: dxmax
       use Boundcond, only: boundconds_x,boundconds_y,boundconds_z
       use Mpicomm, only: initiate_isendrcv_bdry,finalize_isendrcv_bdry
       use sub, only: div

@@ -17,9 +17,9 @@
 module Particles
 !
   use Cdata
+  use Messages
   use Particles_cdata
   use Particles_sub
-  use Messages
 !
   implicit none
 !
@@ -1678,11 +1678,11 @@ k_loop:   do while (.not. (k>npar_loc))
 !  25-apr-06/anders: coded
 !
       use Cparam, only: lparticles_spin
+      use Diagnostics
       use EquationOfState, only: cs20, gamma
       use Mpicomm, only: stop_it
       use Particles_number, only: get_nptilde
       use Particles_spin, only: calc_liftforce
-      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -2226,10 +2226,10 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  29-dec-04/anders: coded
 !
+      use Diagnostics
       use EquationOfState, only: cs20, gamma
       use Mpicomm, only: stop_it
       use Particles_number, only: get_nptilde
-      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -2972,7 +2972,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  23-sep-06/anders: coded
 !
-      use Sub
+      use Diagnostics
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -3305,7 +3305,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !***********************************************************************
     subroutine calculate_rms_speed(fp,ineargrid,p)
 !
-      use Sub,only:sum_mn_name,max_mn_name
+      use Diagnostics
 !
 !  Calculate the rms speed dvpm=sqrt(<(vvp-<vvp>)^2>) of the 
 !  particle for diagnostic purposes
@@ -3580,7 +3580,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  29-dec-04/anders: coded
 !
-      use Sub, only: parse_name
+      use Diagnostics
 !
       logical :: lreset
       logical, optional :: lwrite

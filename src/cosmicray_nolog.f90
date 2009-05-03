@@ -259,6 +259,7 @@ module Cosmicray
 !
 !   09-oct-03/tony: coded
 !
+      use Diagnostics
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -416,7 +417,7 @@ module Cosmicray
 !
 !   6-jul-02/axel: coded
 !
-      use Sub
+      use Diagnostics
 !
       integer :: iname,inamez
       logical :: lreset,lwr

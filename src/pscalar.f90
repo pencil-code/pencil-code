@@ -1,7 +1,7 @@
 ! $Id$
-
+!
 !  This modules solves the passive scalar advection equation
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -13,40 +13,35 @@
 ! PENCILS PROVIDED hlncc(3,3)
 !
 !***************************************************************
-
 module Pscalar
-
-  use Cparam
+!
   use Cdata
+  use Cparam
   use Messages
-
+!
   implicit none
-
+!
   include 'pscalar.h'
-
+!
   character (len=labellen) :: initlncc='zero', initlncc2='zero'
   character (len=40) :: tensor_pscalar_file
   logical :: nopscalar=.false.
-
-  ! input parameters
   real, dimension(3) :: gradC0=(/0.0,0.0,0.0/)
   real :: ampllncc=0.1, widthlncc=0.5, cc_min=0.0, lncc_min
   real :: ampllncc2=0.0, kx_lncc=1.0, ky_lncc=1.0, kz_lncc=1.0, radius_lncc=0.0
   real :: epsilon_lncc=0.0, cc_const=0.0
   logical :: lupw_lncc=.false.
-
+!
   namelist /pscalar_init_pars/ &
       initlncc,initlncc2,ampllncc,ampllncc2,kx_lncc,ky_lncc,kz_lncc, &
       radius_lncc,epsilon_lncc,widthlncc,cc_min,cc_const,lupw_lncc
-
-  ! run parameters
+!
   real :: pscalar_diff=0.0, tensor_pscalar_diff=0.0
   real :: rhoccm=0.0, cc2m=0.0, gcc2m=0.0
-
+!
   namelist /pscalar_run_pars/ &
       pscalar_diff,nopscalar,tensor_pscalar_diff,gradC0,lupw_lncc
-
-  ! diagnostic variables (need to be consistent with reset list below)
+!
   integer :: idiag_rhoccm=0     ! DIAG_DOC: $\left<\varrho c\right>$
   integer :: idiag_ccmax=0      ! DIAG_DOC: $\max(c)$
   integer :: idiag_ccmin=0      ! DIAG_DOC:
@@ -84,9 +79,8 @@ module Pscalar
   integer :: idiag_ccmy=0       ! DIAG_DOC:
   integer :: idiag_ccmx=0       ! DIAG_DOC:
   integer :: idiag_ccglnrm=0    ! DIAG_DOC: $\left<c\nabla_z\varrho\right>$
-
+!
   contains
-
 !***********************************************************************
     subroutine register_pscalar()
 !
@@ -95,7 +89,6 @@ module Pscalar
 !
 !  6-jul-02/axel: coded
 !
-      use Cdata
       use FArrayManager
 !
       lpscalar = .true.
@@ -142,7 +135,6 @@ module Pscalar
 !
 !   6-jul-2001/axel: coded
 !
-      use Cdata
       use Mpicomm
       use Sub
       use Initcond
@@ -250,7 +242,6 @@ module Pscalar
 !
 !  20-11-04/anders: coded
 !
-      use Cdata
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -281,6 +272,7 @@ module Pscalar
 !
 !   6-jul-02/axel: coded
 !
+      use Diagnostics
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -417,7 +409,7 @@ module Pscalar
 !
 !   6-jul-02/axel: coded
 !
-      use Sub
+      use Diagnostics
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -545,8 +537,7 @@ module Pscalar
 !
 !  14-apr-03/axel: adaped from calc_mfield
 !
-      use Cdata
-      use Sub
+      use Diagnostics
 !
       logical,save :: first=.true.
       real :: lnccm

@@ -263,6 +263,7 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Cdata
+      use Diagnostics
       use Mpicomm
       use Sub
       use Global
@@ -341,7 +342,7 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Sub
+      use Diagnostics
 !
 !  define diagnostics variable
 !

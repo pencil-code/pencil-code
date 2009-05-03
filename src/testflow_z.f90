@@ -386,6 +386,7 @@ module Testflow
 !  24-jun-08/MR: modified
 
       use Cdata
+      use Diagnostics
       use Sub
       use Hydro, only: uumz,lcalc_uumean
       use Mpicomm, only: stop_it
@@ -1014,7 +1015,7 @@ print*,'unltestm,hnltestm=',unltestm,hnltestm
 !   3-jun-05/axel: adapted from rprint_magnetic
 !
       use Cdata
-      use Sub
+      use Diagnostics
 !
       integer :: iname,inamez,inamexz
       logical :: lreset,lwr

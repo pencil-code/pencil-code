@@ -257,8 +257,8 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Cdata
+      use Diagnostics
       use Mpicomm
-      use Sub
       use Global
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -337,7 +337,7 @@ endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
 !
-      use Sub
+      use Diagnostics
 !
 !  reads and registers print parameters relevant to special
 !

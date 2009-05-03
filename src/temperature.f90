@@ -173,9 +173,10 @@ module Entropy
 !  13-dec-02/axel+tobi: adapted from entropy
 !
       use Cdata
+      use Diagnostics
+      use Global
       use Mpicomm
       use Sub
-      use Global
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar)    :: df
@@ -623,7 +624,7 @@ endif
 !   1-jun-02/axel: adapted from magnetic fields
 !
       use Cdata
-      use Sub
+      use Diagnostics
 !
       integer :: iname
       logical :: lreset,lwr

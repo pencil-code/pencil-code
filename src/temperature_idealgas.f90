@@ -648,13 +648,14 @@ module Entropy
 !  13-dec-02/axel+tobi: adapted from entropy
 !
       use Cdata
-      use Mpicomm
-      use Sub
-      use Global
-      use Viscosity, only: calc_viscous_heat
-      use EquationOfState, only: gamma1,gamma
-      use Special, only: special_calc_entropy
       use Deriv, only: der6
+      use Diagnostics
+      use EquationOfState, only: gamma1,gamma
+      use Global
+      use Mpicomm
+      use Special, only: special_calc_entropy
+      use Sub
+      use Viscosity, only: calc_viscous_heat
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -817,8 +818,9 @@ module Entropy
 !  01-aug-08/wlad: adapted from entropy
 !
       use Cdata
-      use Sub
+      use Diagnostics
       use EquationOfState, only: gamma
+      use Sub
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -930,7 +932,8 @@ module Entropy
     endsubroutine rad_equil
 !***********************************************************************
     subroutine calc_heat_cool(f,df,p)
-
+!
+      use Diagnostics
       use EquationOfState, only: gamma,gamma1
       use Sub
 !
@@ -992,8 +995,9 @@ module Entropy
 !    TT version: cp*chi*Div(rho*gTT)/(rho*cv)
 !           = gamma*chi*(g2.gTT+g2TT) where g2=glnrho
 !
-      use Sub, only: max_mn_name,dot,del2,multsv
+      use Diagnostics
       use EquationOfState, only: gamma
+      use Sub
 
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -1028,8 +1032,9 @@ module Entropy
 !    TT version: gamma*K/rho/cp*del2(TT)=gamma*chi*del2(TT)
 !  Note: if ldensity=.false. then rho=1 and chi=K/cp
 !
-      use Sub, only: max_mn_name,dot,del2,multsv
+      use Diagnostics
       use EquationOfState, only: gamma
+      use Sub
 
       real, dimension(mx,my,mz,mvar) :: df
       type (pencil_case)  :: p
@@ -1068,8 +1073,9 @@ module Entropy
 !  calculate gamma/rho*cp*div(K *grad TT)=
 !    gamma*K/rho*cp*(grad LnK.grad TT + del2 TT)
 !
-      use Sub, only: multsv, dot, max_mn_name, write_zprof
+      use Diagnostics
       use EquationOfState, only: gamma
+      use Sub
 
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension (nx)   :: hcond, dhcond, g1, chix
@@ -1106,8 +1112,9 @@ module Entropy
 !  calculate gamma*K/rho*cp*div(T*grad lnTT)= 
 !              gamma*K/rho*cp*(gradlnTT.gradln(hcond*TT) + del2ln TT)
 !
-      use Sub, only: max_mn_name,dot,del2,multsv,step,der_step
+      use Diagnostics
       use EquationOfState, only: gamma
+      use Sub
 
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
@@ -1199,7 +1206,7 @@ module Entropy
 !
 !   1-jun-02/axel: adapted from magnetic fields
 !
-      use Sub, only: parse_name
+      use Diagnostics
 !
       integer :: iname
       logical :: lreset,lwr

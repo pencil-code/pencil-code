@@ -200,6 +200,7 @@ module Chiral
 !
 !  28-may-04/axel: adapted from pscalar
 !
+      use Diagnostics
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -357,7 +358,7 @@ module Chiral
 !
 !  28-may-04/axel: adapted from pscalar
 !
-      use Sub
+      use Diagnostics
 !
       integer :: iname,inamez
       logical :: lreset,lwr

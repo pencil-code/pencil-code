@@ -320,6 +320,7 @@ module Hydro
 !  21-jul-03/axel: coded
 !
       use Cdata
+      use Diagnostics
       use Sub
       use IO
 !
@@ -501,7 +502,7 @@ module Hydro
 !  27-may-02/axel: added possibility to reset list
 !
       use Cdata
-      use Sub
+      use Diagnostics
 !
       integer :: iname,inamez,ixy
       logical :: lreset,lwr

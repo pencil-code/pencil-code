@@ -188,8 +188,9 @@ module TestPerturb
 !
 !  19-mar-08/axel: coded
 !
-      use Timestep, only: rk_2n
+      use Diagnostics
       use Hydro, only: calc_pencils_hydro
+      use Timestep, only: rk_2n
 
       real, dimension (mx,my,mz,mfarray) :: fsave,f
       real, dimension (mx,my,mz,mvar) :: df
@@ -311,8 +312,9 @@ module TestPerturb
 !
 !  22-mar-08/axel: adapted from testperturb_begin
 !
-      use Hydro, only: calc_pencils_hydro
+      use Diagnostics
       use Equ, only: diagnostic
+      use Hydro, only: calc_pencils_hydro
 
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -420,7 +422,7 @@ module TestPerturb
 !  20-mar-08/axel: adapted from shear.f90
 !
       use Cdata
-      use Sub
+      use Diagnostics
 !
       integer :: iname
       logical :: lreset,lwr

@@ -656,9 +656,10 @@ module NeutralDensity
 !
 !  28-feb-07/wlad: adapted
 !
+      use Deriv, only: der6
+      use Diagnostics
       use Mpicomm, only: stop_it
       use Sub
-      use Deriv, only: der6
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -872,7 +873,7 @@ module NeutralDensity
 !
 !  28-feb-07/wlad: adapted
 !
-      use Sub
+      use Diagnostics
 !
       logical :: lreset
       logical, optional :: lwrite

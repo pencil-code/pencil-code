@@ -1,24 +1,23 @@
 ! $Id$
-
+!
 module Print
-
+!
   use Cdata
   use Hydro
   use Magnetic
-
+!
   implicit none
-
+!
   private
-
+!
   public :: initialize_prints, prints
   public :: write_1daverages, write_2daverages
   public :: write_2daverages_prepare
   public :: write_zaverages
-
+!
   character (len=5) :: ch2davg
-
+!
   contains
-
 !***********************************************************************
     subroutine initialize_prints()
 !
@@ -26,8 +25,6 @@ module Print
 !  averages.
 !
 !  14-aug-03/axel: added dxy, dyz, and dxz
-!
-      use Cdata
 !
       integer :: i
       real :: dxeff,dyeff,dzeff
@@ -77,13 +74,13 @@ module Print
 !  08-oct-02/tony: added safe_character_assign when appending to fform
 !   8-may-03/tarek: changed .or. to +. Could not compile with NAGf95 with .or.
 !
-      use Cdata
-      use Sub
+      use Diagnostics
+      use General, only: safe_character_append
       use Hydro
       use Magnetic
-      use Pscalar
       use Mpicomm
-      use General, only: safe_character_append
+      use Pscalar
+      use Sub
 !
       logical,save :: first=.true.
       character (len=640) :: fform,legend,line

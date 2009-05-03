@@ -267,6 +267,7 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Cdata
+      use Diagnostics
       use Mpicomm
       use Sub
       use Global

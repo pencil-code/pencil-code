@@ -275,8 +275,9 @@ module Testfield
 !   3-jun-05/axel: coded
 !
       use Cdata
-      use Sub
+      use Diagnostics
       use Mpicomm, only: stop_it
+      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -806,7 +807,7 @@ module Testfield
 !   3-jun-05/axel: adapted from rprint_magnetic
 !
       use Cdata
-      use Sub
+      use Diagnostics
 !
       integer :: iname,inamez,inamexz
       logical :: lreset,lwr

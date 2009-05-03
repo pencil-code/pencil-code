@@ -1381,6 +1381,7 @@ subroutine flame_front(f)
 !   20-feb-08/axel: included reactions
 !
       use Cdata
+      use Diagnostics
       use Mpicomm
       use Sub
       use Global
@@ -1671,7 +1672,7 @@ subroutine flame_front(f)
 !  13-aug-07/steveb: coded
 !
       use Cdata
-      use Sub
+      use Diagnostics
       use General, only: chn
 !
       integer :: iname,inamez
@@ -2846,6 +2847,7 @@ subroutine flame_front(f)
 !
 !  DOCUMENT ME!!
 !
+      use Diagnostics
       use Sub
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f

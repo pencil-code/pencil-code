@@ -243,6 +243,7 @@ print*,"init_ecr: initecr = ", initecr
 !   09-oct-03/tony: coded
 !   04-dec-03/snod: modified for lnecr (=ecr)
 !
+      use Diagnostics
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -358,7 +359,7 @@ print*,"init_ecr: initecr = ", initecr
 !
 !   6-jul-02/axel: coded
 !
-      use Sub
+      use Diagnostics
 !
       integer :: iname,inamez
       logical :: lreset,lwr

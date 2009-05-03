@@ -499,10 +499,11 @@ module Entropy
 !
 !  Calculate right hand side of entropy equation.
 !
+      use Diagnostics
       use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled
-      use Sub
       use Global
       use Special, only: special_calc_entropy
+      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -614,8 +615,9 @@ module Entropy
 !
 !  29-sep-02/axel: adapted from calc_heatcond_simple
 !
-      use Sub
+      use Diagnostics
       use Gravity
+      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -709,8 +711,9 @@ module Entropy
 !  20-jul-03/axel: adapted from calc_heatcond_constchi
 !  19-nov-03/axel: added chi_t also here.
 !
-      use Sub
+      use Diagnostics
       use Gravity
+      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -761,6 +764,7 @@ module Entropy
 !
 !   8-jul-02/axel: adapted from Wolfgang's more complex version
 !
+      use Diagnostics
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -813,9 +817,10 @@ module Entropy
 !  17-sep-01/axel: coded
 !  14-jul-05/axel: corrected expression for chi_t diffusion.
 !
-      use Sub
-      use IO
+      use Diagnostics
       use Gravity
+      use IO
+      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -955,7 +960,7 @@ module Entropy
 !
 !   1-jun-02/axel: adapted from magnetic fields
 !
-      use Sub
+      use Diagnostics
 !
       integer :: iname,inamez,inamey,inamex,irz
       logical :: lreset,lwr

@@ -1,9 +1,9 @@
 ! $Id$
-
+!
 !  This module contains routines both for delta-correlated
 !  and continuous forcing. The fcont pencil is only provided
 !  for continuous forcing.
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -14,18 +14,16 @@
 ! PENCILS PROVIDED fcont(3)
 !
 !***************************************************************
-
 module Forcing
 
 ! Dummy module for hydro/mhd without forcing
 
   use Cdata
-!  use General
   use Sub, only: keep_compiler_quiet
   use Messages
-
+!
   implicit none
-
+!
   include 'forcing.h'
 
   !namelist /forcing_init_pars/ dummy
@@ -42,7 +40,6 @@ module Forcing
 !  add forcing in timestep()
 !  11-may-2002/wolf: coded
 !
-      use Cdata
       use Mpicomm
       use Sub
 !
@@ -60,16 +57,12 @@ module Forcing
 !  initialize random number generator in processor-dependent fashion
 !  see comments in start.f90 for details
 !
-      use Cdata
-!
       logical :: lstarting
 !
       if (NO_WARN) print*,'lstarting=',lstarting !(to keep compiler quiet)
     endsubroutine initialize_forcing
 !***********************************************************************
     subroutine addforce(f)
-!
-      use Cdata
 !
 !  add forcing in timestep()
 !
@@ -124,7 +117,6 @@ module Forcing
 !
 !  dummy routine
 !
-      use Cdata
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
@@ -190,8 +182,7 @@ module Forcing
 !
 !  26-jan-04/axel: coded
 !
-      use Cdata
-      use Sub
+      use Diagnostics
 !
       integer :: iname
       logical :: lreset,lwr

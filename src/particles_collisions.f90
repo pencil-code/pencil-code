@@ -66,8 +66,9 @@ module Particles_collisions
 !
 !  23-mar-09/anders: coded
 !
+      use Diagnostics
       use General
-      use Sub, only: cross, sum_weighted_name
+      use Sub
 !
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
@@ -269,7 +270,7 @@ module Particles_collisions
 !
 !  28-mar-09/anders: adapted
 !
-      use Sub
+      use Diagnostics
 !
       logical :: lreset
       logical, optional :: lwrite

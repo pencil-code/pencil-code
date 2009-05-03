@@ -737,7 +737,7 @@ glnTT(:,i)=impossible
 !                   subroutine pressure_gradient
 !
       use Cdata
-      use Sub, only: max_mn_name, sum_mn_name
+      use Diagnostics
      
      ! type (pencil_case) :: p
 !

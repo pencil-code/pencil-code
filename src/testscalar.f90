@@ -440,6 +440,7 @@ module Testscalar
 !  17-apr-09/axel: added y column of kappa tensor
 !
       use Cdata
+      use Diagnostics
       use Sub
       use Hydro, only: uumz,lcalc_uumean
       use Mpicomm, only: stop_it
@@ -906,7 +907,7 @@ module Testscalar
 !  27-dec-08/axel: included kap11, kap21, and kap31
 !
       use Cdata
-      use Sub
+      use Diagnostics
 !
       integer :: iname,inamez,inamexz
       logical :: lreset,lwr

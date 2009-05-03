@@ -54,7 +54,6 @@ module Selfgravity
 !
 !  15-may-06/anders+jeff: adapted
 !
-      use Cdata
       use FArrayManager
 !
 !  Set indices for auxiliary variables
@@ -343,8 +342,8 @@ module Selfgravity
 !
 !  15-may-06/anders+jeff: coded
 !
-      use Sub
-
+      use Diagnostics
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -405,8 +404,8 @@ module Selfgravity
 !
 !  01-jul-07/wlad: coded 
 ! 
+      use Diagnostics, only: sum_mn_name
       use Mpicomm, only: stop_it
-      use Sub, only: sum_mn_name
 !
       real, dimension(nx) :: gpotr,gpotp,gpotz
       type (pencil_case) :: p
@@ -480,8 +479,8 @@ module Selfgravity
 !
 !  16-may-06/anders+jeff: adapted
 !
-      use Sub
-
+      use Diagnostics
+!
       logical :: lreset,lwr
       logical, optional :: lwrite
 !

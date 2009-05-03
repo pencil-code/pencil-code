@@ -12,41 +12,39 @@
 !
 !***************************************************************
 module Particles_number
-
+!
   use Cdata
+  use Messages
   use Particles_cdata
   use Particles_sub
-
+!
   implicit none
-
+!
   include 'particles_number.h'
-
+!
   real :: np_tilde0, vthresh_coagulation=0.0, deltavp22_floor=0.0
   real :: tstart_fragmentation_par=0.0, cdtpf=0.2
   logical :: lfragmentation_par=.true.
   character (len=labellen), dimension(ninit) :: initnptilde='nothing'
-
+!
   integer :: idiag_nptm=0, idiag_dvp22mwnp=0, idiag_dvp22mwnp2=0
   integer :: idiag_dtfragp=0
-
+!
   namelist /particles_number_init_pars/ &
       initnptilde, vthresh_coagulation, deltavp22_floor, &
       lfragmentation_par, tstart_fragmentation_par, cdtpf
-
+!
   namelist /particles_number_run_pars/ &
       initnptilde, vthresh_coagulation, deltavp22_floor, &
       lfragmentation_par, tstart_fragmentation_par, cdtpf
-
+!
   contains
-
 !***********************************************************************
     subroutine register_particles_number()
 !
 !  Set up indices for access to the fp and dfp arrays.
 !
 !  24-nov-05/anders: adapted
-!
-      use Messages, only: fatal_error, cvs_id
 !
       if (lroot) call cvs_id( &
           "$Id$")
@@ -74,8 +72,6 @@ module Particles_number
 !  parameters.
 !
 !  24-nov-05/anders: adapted
-!
-      use Messages
 !
       logical :: lstarting
 !
@@ -132,8 +128,6 @@ module Particles_number
 !
 !  21-nov-06/anders: coded
 !
-      use Cdata
-!
       lpenc_requested(i_rho1)=.true.
       lpenc_requested(i_cc1)=.true.
 !
@@ -145,8 +139,7 @@ module Particles_number
 !
 !  24-oct-05/anders: coded
 !
-      use Messages, only: fatal_error
-      use Sub
+      use Diagnostics
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -317,7 +310,6 @@ module Particles_number
 !
 !  21-nov-06/anders: coded
 !
-      use Messages, only: fatal_error
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -338,8 +330,6 @@ module Particles_number
 !  Get internal particle number.
 !
 !  25-oct-05/anders: coded
-!
-      use Messages, only: fatal_error
 !
       real, dimension (mpar_loc,mpvar) :: fp
       real :: np_tilde
@@ -409,8 +399,7 @@ module Particles_number
 !
 !  24-aug-05/anders: adapted
 !
-      use Cdata
-      use Sub, only: parse_name
+      use Diagnostics
 !
       logical :: lreset
       logical, optional :: lwrite

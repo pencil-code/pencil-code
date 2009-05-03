@@ -83,10 +83,6 @@ module Particles_spin
 !
 !  22-aug-05/anders: coded
 !
-      use Messages, only: fatal_error
-      use Particles_number
-      use Sub
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
@@ -105,8 +101,6 @@ module Particles_spin
 !  Evolution of particle spin.
 !
 !  21-nov-06/anders: coded
-!
-      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -162,7 +156,6 @@ module Particles_spin
 !  21-jul-08/kapelrud: adapted from particles_radius
 !
       use Cdata
-      use Sub, only: parse_name
 !
       logical :: lreset
       logical, optional :: lwrite

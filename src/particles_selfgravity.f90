@@ -14,31 +14,29 @@
 !
 !***************************************************************
 module Particles_selfgravity
-
+!
   use Cdata
   use Messages
   use Particles_cdata
   use Particles_sub
-
+!
   implicit none
-
+!
   include 'particles_selfgravity.h'
-
-  real :: dummy
+!
   real, pointer :: tstart_selfgrav
   logical :: lselfgravity_particles=.true.
   logical :: lselfgravity_nbodyparticles=.false.
-
+!
   namelist /particles_selfgrav_init_pars/ &
       lselfgravity_particles,lselfgravity_nbodyparticles
-
+!
   namelist /particles_selfgrav_run_pars/ &
       lselfgravity_particles,lselfgravity_nbodyparticles
-
+!
   integer :: idiag_gpotenp=0
-
+!
   contains
-
 !***********************************************************************
     subroutine register_particles_selfgrav()
 !
@@ -187,8 +185,8 @@ module Particles_selfgravity
 !
 !  14-jun-06/anders: coded
 !
+      use Diagnostics
       use Messages, only: fatal_error
-      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -335,8 +333,7 @@ module Particles_selfgravity
 !
 !  14-jun-06/anders: adapted
 !
-      use Cdata
-      use Sub, only: parse_name
+      use Diagnostics
 !
       logical :: lreset
       logical, optional :: lwrite

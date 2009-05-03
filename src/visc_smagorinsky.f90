@@ -90,6 +90,7 @@ module Viscosity
 !  16-july-04/nils: adapted from visc_shock
 !
       use Cdata
+      use Diagnostics
       use Sub
 !
       logical :: lreset
@@ -167,9 +168,9 @@ module Viscosity
 !
 !  16-july-04/nils: coded
 !
+      use Diagnostics
       use IO
       use Mpicomm
-      use Sub, only: sum_mn_name
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,2) :: tmp

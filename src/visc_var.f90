@@ -124,7 +124,7 @@ module Viscosity
 !  24-nov-03/tony: adapted from rprint_ionization
 !
       use Cdata
-      use Sub
+      use Diagnostics
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -207,6 +207,7 @@ module Viscosity
     subroutine calc_viscous_force(f,df,glnrho,divu,rho,rho1,shock,gshock,bij)
 !
       use Cdata
+      use Diagnostics
       use Mpicomm
       use Sub
 

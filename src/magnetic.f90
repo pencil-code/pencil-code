@@ -1,9 +1,10 @@
 ! $Id$ 
+!
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
 !  magnetically relevant subroutines listed in here.
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -22,15 +23,14 @@
 ! PENCILS PROVIDED jij(3,3); sj; ss12; mf_EMF(3); mf_EMFdotB
 !
 !***************************************************************
-
 module Magnetic
-
+!
   use Cdata
   use Cparam
   use Messages
-
+!
   implicit none
-
+!
   include 'record_types.h'
   include 'magnetic.h'
 !
@@ -472,7 +472,6 @@ module Magnetic
 !
 !  1-may-02/wolf: coded
 !
-      use Cdata
       use FArrayManager
 !
       call farray_register_pde('aa',iaa,vector=3)
@@ -504,7 +503,6 @@ module Magnetic
 !  24-nov-02/tony: dummy routine - nothing to do at present
 !  20-may-03/axel: reinitialize_aa added
 !
-      use Cdata
       use Messages, only: fatal_error
       use FArrayManager
       use SharedVariables
@@ -824,7 +822,6 @@ module Magnetic
 !
 !   7-nov-2001/wolf: coded
 !
-      use Cdata
       use EquationOfState
       use FArrayManager
       use Gravity, only: gravz, z1, z2
@@ -1124,8 +1121,6 @@ module Magnetic
 !
 !  19-11-04/anders: coded
 !
-      use Cdata
-!
       lpenc_requested(i_bb)=.true.
       lpenc_requested(i_uxb)=.true.
 !
@@ -1289,8 +1284,6 @@ module Magnetic
 !
 !  19-11-04/anders: coded
 !
-      use Cdata
-!
       logical, dimension(npencils) :: lpencil_in
 !
       if (lpencil_in(i_a2)) lpencil_in(i_aa)=.true.
@@ -1425,7 +1418,6 @@ module Magnetic
 !
 !  19-nov-04/anders: coded
 !
-      use Cdata
       use Sub
       use Deriv
       use Global, only: get_global
@@ -1710,8 +1702,8 @@ module Magnetic
 !  26-may-04/axel: ambipolar diffusion added
 !  18-jun-04/axel: Hall term added
 !
-      use Cdata
       use Deriv, only: der6
+      use Diagnostics
       use EquationOfState, only: eoscalc,gamma1
       use Io, only: output_pencil
       use Mpicomm, only: stop_it
@@ -2638,8 +2630,6 @@ module Magnetic
 !  24-jun-08/axel: moved call to this routine to the individual pde routines
 !   1-jul-08/axel: moved this part to magnetic
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
@@ -2660,7 +2650,7 @@ module Magnetic
 !
 !  10-oct-06/axel: coded
 !
-      use Cdata
+      use Diagnostics
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2702,7 +2692,6 @@ module Magnetic
 !
 !  28-jul-06/wlad: coded
 !
-      use Cdata
       use BorderProfiles, only: border_driving,set_border_initcond
       use Mpicomm, only: stop_it
 !
@@ -2747,7 +2736,6 @@ module Magnetic
 !
 !   24-nov-03/dave: coded
 !
-      use Cdata
       use Sub, only: step, der_step
 !
       type (pencil_case) :: p
@@ -2784,8 +2772,6 @@ module Magnetic
 !
 !   6-aug-03/axel: coded
 !
-      use Cdata
-!
 !  give warning if brms is not set in prints.in
 !
       if (idiag_brms==0) then
@@ -2817,7 +2803,6 @@ module Magnetic
 !  22-feb-05/axel: coded
 !  10-feb-09/petri: adapted from testfield
 !
-      use Cdata
       use Sub, only: update_snaptime, read_snaptime
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2860,7 +2845,6 @@ module Magnetic
 !
 !  29-jul-02/axel: coded
 !
-      use Cdata
       use Gravity
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2887,8 +2871,6 @@ module Magnetic
 !  Can do uniform shear (0,Sx,0), and the cosx*cosz profile (solar CZ).
 !
 !  30-apr-05/axel: coded
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -2977,8 +2959,7 @@ module Magnetic
 !
 !  14-aug-03/axel: coded
 !
-      use Cdata
-      use Sub
+      use Diagnostics
 !
       real, dimension (nx,3), intent(in) :: aa,uxb,jj
       real, dimension (nx,3) :: ee
@@ -3008,8 +2989,7 @@ module Magnetic
 !
 !  27-nov-03/axel: adapted from helflux
 !
-      use Cdata
-      use Sub
+      use Diagnostics
 !
       real, dimension (nx,3), intent(in) :: uxb,jj
       real, dimension (nx,3) :: ee
@@ -3040,8 +3020,7 @@ module Magnetic
 !
 !  27-nov-03/axel: adapted from helflux
 !
-      use Cdata
-      use Sub
+      use Diagnostics
 !
       real, dimension (nx,3), intent(in) :: uxb,jj
       real, dimension (nx,3) :: ee
@@ -3105,9 +3084,9 @@ module Magnetic
 !  21-jan-07/axel: adapted from hydro
 !  24-feb-09/axel: calls to this routine are now replaced by adding p$fcont
 !
-      use Cdata
-      use Sub
+      use Diagnostics
       use Mpicomm, only: mpibcast_real
+      use Sub
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: forcing_rhs
@@ -3328,7 +3307,6 @@ module Magnetic
 !  19-jun-02/axel: moved from print to here
 !   9-nov-02/axel: corrected bxmy(m,j); it used bzmy instead!
 !
-      use Cdata
       use Mpicomm
       use Sub
 !
@@ -3385,9 +3363,8 @@ module Magnetic
 !
 !   6-apr-08/axel: moved from calc_mfield to here
 !
-      use Cdata
+      use Diagnostics
       use Mpicomm
-      use Sub
 !
       logical,save :: first=.true.
       real, dimension(nx) :: bymx,bzmx
@@ -3428,9 +3405,8 @@ module Magnetic
 !
 !   6-apr-08/axel: moved from calc_mfield to here
 !
-      use Cdata
+      use Diagnostics
       use Mpicomm
-      use Sub
 !
       logical,save :: first=.true.
       real, dimension(ny,nprocy) :: bxmy,bzmy
@@ -3473,9 +3449,8 @@ module Magnetic
 !
 !   6-apr-08/axel: moved from calc_mfield to here
 !
-      use Cdata
+      use Diagnostics
       use Mpicomm
-      use Sub
 !
       logical,save :: first=.true.
       integer :: j
@@ -3511,9 +3486,8 @@ module Magnetic
 !
 !   6-apr-08/axel: moved from calc_mfield to here
 !
-      use Cdata
+      use Diagnostics
       use Mpicomm
-      use Sub
 !
       logical,save :: first=.true.
       real, dimension(nx) :: jymx,jzmx
@@ -3554,9 +3528,8 @@ module Magnetic
 !
 !   6-apr-08/axel: moved from calc_mfield to here
 !
-      use Cdata
+      use Diagnostics
       use Mpicomm
-      use Sub
 !
       logical,save :: first=.true.
       real, dimension(ny,nprocy) :: jxmy,jzmy
@@ -3599,9 +3572,8 @@ module Magnetic
 !
 !   6-apr-08/axel: moved from calc_mfield to here
 !
-      use Cdata
+      use Diagnostics
       use Mpicomm
-      use Sub
 !
       logical,save :: first=.true.
       real :: jmz
@@ -3638,9 +3610,8 @@ module Magnetic
 !
 !   6-apr-08/axel: moved from calc_mfield to here
 !
-      use Cdata
+      use Diagnostics
       use Mpicomm
-      use Sub
 !
       logical,save :: first=.true.
       real :: embmz
@@ -3677,9 +3648,8 @@ module Magnetic
 !
 !  21-apr-08/axel: adapted from calc_embmz
 !
-      use Cdata
+      use Diagnostics
       use Mpicomm
-      use Sub
 !
       logical,save :: first=.true.
       real :: jmbmz
@@ -3717,9 +3687,8 @@ module Magnetic
 !
 !   6-apr-08/axel: moved from calc_mfield to here
 !
-      use Cdata
+      use Diagnostics
       use Mpicomm
-      use Sub
 !
       logical,save :: first=.true.
       real :: bxmxy,bymxy,bzmxy,bmxy_rms,nVol2d,btemp,area
@@ -3781,9 +3750,8 @@ module Magnetic
 !   2-apr-08/MR: introduced phase calculation for Beltrami mean fields
 !   6-apr-08/axel: moved from calc_mfield to here
 !
-      use Cdata
+      use Diagnostics
       use Mpicomm
-      use Sub
 !
       logical,save :: first=.true.
       real :: bmz_belphase1,bmz_belphase2
@@ -3998,8 +3966,6 @@ module Magnetic
 !
 !  04-oct-06/wlad: coded
 !
-      use Cdata
-!
       real, dimension(mx,my,mz,mfarray) :: f
       real :: B0,mode
 !
@@ -4028,7 +3994,6 @@ module Magnetic
 !
 !  04-oct-06/wlad: coded
 !
-      use Cdata
       use Gravity, only: qgshear,r0_pot
       use SharedVariables
       use Mpicomm, only: stop_it
@@ -4081,7 +4046,6 @@ module Magnetic
 !
 !  04-oct-06/wlad: coded
 !
-      use Cdata
       use Mpicomm, only: stop_it
 !
       real :: B0,mode
@@ -4139,8 +4103,6 @@ module Magnetic
 !
 !  18-aug-02/axel: coded
 !
-      use Cdata, only: lroot
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl,kz,O,fac
       integer :: iuu,iaa
@@ -4171,8 +4133,6 @@ module Magnetic
 !  Assume B0=rho0=mu0=1
 !
 !  28-june-04/anders: coded
-!
-      use Cdata, only: lroot
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl,kz,O
@@ -4207,8 +4167,6 @@ module Magnetic
 !  routine.
 !  Optional argument `profile' allows to choose a different profile (see
 !  norm_ring())
-!
-      use Cdata, only: lroot, epsi
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: tmpv
@@ -4281,7 +4239,6 @@ module Magnetic
 !
 !   1-may-02/wolf: coded
 !
-      use Cdata, only: mx,my,mz
       use Mpicomm, only: stop_it
 !
       real, dimension (nx,3) :: vv
@@ -4401,7 +4358,6 @@ module Magnetic
 !
 !  30-may-04/tobi: coded
 !
-      use Cdata, only: x,y,z,lroot,directory,ip,m,n,pi,r_ref
       use Sub, only: hypergeometric2F1,gamma_function
       use Global, only: set_global
       use Deriv, only: der
@@ -4498,10 +4454,6 @@ module Magnetic
 !
 !  23-jul-05/wolf:coded
 !
-      use Cdata, only: pi,tini, &
-                       imn,m,n,mm,nn, &
-                       r_int,r_ext
-!
       real, intent(inout), dimension (mx,my,mz,mfarray) :: f
       real, intent(in) :: ampl,inclaa
       real, dimension (nx) :: r_1_mn,r_2_mn,sigma0,sigma1, r_mn
@@ -4552,7 +4504,6 @@ module Magnetic
 !
 !  30-june-04/grs: coded
 !
-      use Cdata
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -4851,7 +4802,6 @@ module Magnetic
 !  13-sep-07/wlad: adapted from remove_mean_momenta
 !
 !
-      use Cdata
       use Mpicomm, only: mpiallreduce_sum
       use Sub    , only: curl
 !
@@ -4905,7 +4855,6 @@ module Magnetic
 !  13-sep-07/wlad: adapted from remove_mean_momenta
 !
 !
-      use Cdata
       use Mpicomm,  only: mpiallreduce_sum
       use Messages, only: fatal_error
       use Sub    ,  only: curl
@@ -4977,8 +4926,6 @@ module Magnetic
 !
 !  16-aug-06/tobi: coded
 !
-      use Cdata
-
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mx,3), intent (out) :: bb_hat
 
@@ -5055,8 +5002,6 @@ module Magnetic
 ! 
 !   5-apr-08/axel: adapted from input_persistent_forcing
 !
-      use Cdata, only: lroot
-!
       integer :: id,lun
       logical :: done
 !
@@ -5078,8 +5023,6 @@ module Magnetic
 !  correction of the Beltrami wave forcing
 !
 !   5-apr-08/axel: adapted from output_persistent_forcing
-!
-      use Cdata, only: lroot
 !
       integer :: lun
 !
@@ -5105,8 +5048,7 @@ module Magnetic
 !   3-may-02/axel: coded
 !  27-may-02/axel: added possibility to reset list
 !
-      use Cdata
-      use Sub
+      use Diagnostics
 !
       integer :: iname,inamex,inamey,inamez,ixy,ixz,irz,inamer,iname_half
       logical :: lreset,lwr

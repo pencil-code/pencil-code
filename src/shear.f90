@@ -1,44 +1,42 @@
 ! $Id$
-
+!
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
 !  shear relevant subroutines listed in here.
 !  Shear can either be given relative to Omega (using qshear),
 !  or in absolute fashion via the parameters Sshear.
-
+!
 module Shear
-
-  use Sub
+!
   use Cdata
   use Messages
-
+  use Sub
+!
   implicit none
-
+!
   real, dimension (nz) :: uy0_extra, duy0dz_extra
   real :: eps_vshear=0.0, x0_shear=0.0, Bshear=0.01
   logical :: luy0_extra=.false.,lshearadvection_as_shift=.false.
   logical :: lmagnetic_stretching=.true.,lrandomx0=.false.
   logical, target :: lcoriolis_force=.true., lcentrifugal_force=.false.
   logical :: lglobal_baroclinic=.false.
-
+!
   include 'shear.h'
-
+!
   namelist /shear_init_pars/ &
       qshear,Sshear,deltay,eps_vshear,Omega,lshearadvection_as_shift, &
       lmagnetic_stretching,lrandomx0,x0_shear,lcoriolis_force,lcentrifugal_force
-
+!
   namelist /shear_run_pars/ &
       qshear,Sshear,deltay,eps_vshear,Omega,lshearadvection_as_shift, &
       lmagnetic_stretching,lrandomx0,x0_shear,lcoriolis_force,lcentrifugal_force,&
       lglobal_baroclinic,Bshear
-
-  ! diagnostic variables (need to be consistent with reset list below)
+!
   integer :: idiag_dtshear=0    ! DIAG_DOC: advec\_shear/cdt
   integer :: idiag_deltay=0     ! DIAG_DOC: deltay
-
+!
   contains
-
 !***********************************************************************
     subroutine register_shear()
 !
@@ -158,7 +156,6 @@ module Shear
 !
 !   1-may-08/anders: coded
 !
-      use Cdata
       use General
       use Mpicomm
 !
@@ -243,8 +240,8 @@ module Shear
 ! 16-aug-02/axel: use now Sshear which is calculated in param_io.f90
 ! 20-aug-02/axel: added magnetic stretching term
 !
-      use Cdata
       use Deriv
+      use Diagnostics
       use Fourier, only: fourier_shift_yz_y
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -363,7 +360,7 @@ module Shear
 !
 !  18-aug-02/axel: incorporated from nompicomm.f90
 !
-      use Cdata
+      use Diagnostics
       use Fourier, only: fourier_shift_y
       use Mpicomm, only: stop_it
 !
@@ -524,8 +521,7 @@ module Shear
 !
 !   2-jul-04/tobi: adapted from entropy
 !
-      use Cdata
-      use Sub
+      use Diagnostics
 !
       integer :: iname
       logical :: lreset,lwr

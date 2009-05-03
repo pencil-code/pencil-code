@@ -315,7 +315,7 @@ module Particles_spin
 !  21-jul-08/kapelrud: adapted from particles_radius
 !
       use Cdata
-      use Sub, only: parse_name
+      use Diagnostics
 !
       logical :: lreset
       logical, optional :: lwrite

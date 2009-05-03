@@ -942,7 +942,7 @@ module Radiation
 !  25-mar-03/axel+tobi: coded
 !
       use Cdata
-      use Sub
+      use Diagnostics
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -983,7 +983,7 @@ module Radiation
 !  17-may-06/axel: coded
 !
       use Cdata
-      use Sub
+      use Diagnostics
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -1276,7 +1276,7 @@ module Radiation
 !  16-jul-02/nils: adapted from rprint_hydro
 !
       use Cdata
-      use Sub
+      use Diagnostics
 !
       integer :: iname,inamez
       logical :: lreset,lwr

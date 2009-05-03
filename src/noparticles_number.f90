@@ -169,7 +169,6 @@ module Particles_number
 !  24-nov-05/anders: dummy
 !
       use Cdata
-      use Sub, only: parse_name
 !
       logical :: lreset
       logical, optional :: lwrite

@@ -1,20 +1,18 @@
 ! $Id$
-
-!!!  A module for setting up the f-array and related variables (`register' the
-!!!  entropy, magnetic, etc modules).
-
-
+!
+!  A module for setting up the f-array and related variables (`register' the
+!  entropy, magnetic, etc modules).
+!
 module Register
-
+!
   implicit none
-
+!
   private
-
+!
   public :: register_modules, initialize_modules, rprint_list
   public :: choose_pencils
-
+!
   contains
-
 !***********************************************************************
     subroutine register_modules()
 !
@@ -180,43 +178,44 @@ module Register
 ! 11-sep-04/axel: began adding spherical coordinates
 !
       use Cdata
-      use Sub, only: remove_zprof
+      use Diagnostics
       use Mpicomm, only: mpireduce_sum
       use Param_IO
-      use Print
-      use Timeavg,         only: initialize_timeavg
-      use EquationOfState, only: initialize_eos, units_eos
+      use Sub, only: remove_zprof
+      use BorderProfiles,  only: initialize_border_profiles
+      use Chemistry,       only: initialize_chemistry
+      use Chiral,          only: initialize_chiral
       use CosmicrayFlux,   only: initialize_cosmicrayflux
-      use Hydro,           only: initialize_hydro
+      use Cosmicray,       only: initialize_cosmicray
       use Density,         only: initialize_density
-      use Shock,           only: initialize_shock
-      use Gravity,         only: initialize_gravity
-      use Selfgravity,     only: initialize_selfgravity
-      use Poisson,         only: initialize_poisson
-      use Forcing,         only: initialize_forcing
+      use Diagnostics,     only: initialize_time_integrals
+      use Dustdensity,     only: initialize_dustdensity
+      use Dustvelocity,    only: initialize_dustvelocity
       use Entropy,         only: initialize_entropy
+      use EquationOfState, only: initialize_eos, units_eos
+      use Forcing,         only: initialize_forcing
+      use Gravity,         only: initialize_gravity
+      use Hydro,           only: initialize_hydro
+      use Interstellar,    only: initialize_interstellar
       use Magnetic,        only: initialize_magnetic
-      use Testscalar,      only: initialize_testscalar
+      use NeutralDensity,  only: initialize_neutraldensity
+      use NeutralVelocity, only: initialize_neutralvelocity
+      use Poisson,         only: initialize_poisson
+      use Pscalar,         only: initialize_pscalar
+      use Print,           only: initialize_prints
+      use Radiation,       only: initialize_radiation
+      use Selfgravity,     only: initialize_selfgravity
+      use Shear,           only: initialize_shear
+      use Shock,           only: initialize_shock
+      use Solid_Cells,     only: initialize_solid_cells
+      use Special,         only: initialize_special
       use Testfield,       only: initialize_testfield
       use Testflow,        only: initialize_testflow
-      use Radiation,       only: initialize_radiation
-      use Pscalar,         only: initialize_pscalar
-      use Chiral,          only: initialize_chiral
-      use Chemistry,       only: initialize_chemistry
-      use Dustvelocity,    only: initialize_dustvelocity
-      use Dustdensity,     only: initialize_dustdensity
-      use NeutralVelocity, only: initialize_neutralvelocity
-      use NeutralDensity,  only: initialize_neutraldensity
-      use Cosmicray,       only: initialize_cosmicray
-      use Interstellar,    only: initialize_interstellar
-      use Shear,           only: initialize_shear
       use TestPerturb,     only: initialize_testperturb
+      use Testscalar,      only: initialize_testscalar
+      use Timeavg,         only: initialize_timeavg
       use Viscosity,       only: initialize_viscosity
-      use Special,         only: initialize_special
-      use BorderProfiles,  only: initialize_border_profiles
-      use Diagnostics,     only: initialize_time_integrals
-      use Solid_Cells,     only: initialize_solid_cells
-
+!
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(my) :: lat
       real, dimension (nz,nprocz) :: z_allprocs_tmp
@@ -1050,7 +1049,7 @@ module Register
 !   8-jun-02/axel: adapted from hydro
 !
       use Cdata
-      use Sub
+      use Diagnostics
 !
       integer :: iname,irz
       logical :: lreset,lwr

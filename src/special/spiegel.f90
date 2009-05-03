@@ -241,6 +241,7 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Cdata
+      use Diagnostics
       use Mpicomm
       use Sub
       use Global
@@ -319,7 +320,7 @@ endsubroutine read_special_run_pars
 !
 !   06-oct-03/tony: coded
 !
-      use Sub
+      use Diagnostics
 !
 !  define diagnostics variable
 !

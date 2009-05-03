@@ -1,8 +1,8 @@
 ! $Id$
-
+!
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc.
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -14,15 +14,14 @@
 ! PENCILS PROVIDED del2cc; hcc(3,3); del6cc; g5cc(3); g5ccglnrho
 !
 !***************************************************************
-
 module Pscalar
-
-  use Cparam
+!
   use Cdata
+  use Cparam
   use Messages
-
+!
   implicit none
-
+!
   include 'pscalar.h'
 
   ! keep old name for backward compatibility
@@ -89,7 +88,6 @@ module Pscalar
 !
 !  6-jul-02/axel: coded
 !
-      use Cdata
       use FArrayManager
 !
       lpscalar = .true.
@@ -132,7 +130,6 @@ module Pscalar
 !
 !   6-jul-2001/axel: coded
 !
-      use Cdata
       use Mpicomm
       use Sub
       use Initcond
@@ -199,7 +196,6 @@ module Pscalar
 !
 !   6-jul-2001/axel: coded
 !
-      use Cdata
       use Mpicomm
       use Sub
       use Initcond
@@ -352,7 +348,6 @@ module Pscalar
 !
 !  20-11-04/anders: coded
 !
-      use Cdata
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -394,6 +389,7 @@ module Pscalar
 !
 !  20-may-03/axel: coded
 !
+      use Diagnostics
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -616,7 +612,7 @@ module Pscalar
 !
 !   6-jul-02/axel: coded
 !
-      use Sub
+      use Diagnostics
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -791,7 +787,6 @@ module Pscalar
 !
 !  14-apr-03/axel: adaped from calc_mfield
 !
-      use Cdata
       use Sub
 !
       logical,save :: first=.true.

@@ -1,8 +1,8 @@
 ! $Id$
-
+!
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -22,18 +22,17 @@
 ! PENCILS PROVIDED gndglnrho(ndustspec); glnndglnrho(ndustspec)
 !
 !***************************************************************
-
 module Dustdensity
-
-  use Cparam
+!
   use Cdata
-  use Messages
+  use Cparam
   use Dustvelocity
-
+  use Messages
+!
   implicit none
-
+!
   include 'dustdensity.h'
-
+!
   integer, parameter :: ndiffd_max=4
   real, dimension(nx,ndustspec,ndustspec) :: dkern
   real, dimension(0:5) :: coeff_smooth=0.0
@@ -56,32 +55,30 @@ module Dustdensity
   logical :: ldiffd_simplified=.false.,ldiffd_dusttogasratio=.false.
   logical :: ldiffd_hyper3=.false.,ldiffd_hyper3lnnd=.false.
   logical :: ldiffd_shock=.false.
-
+!
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0, mdave0, Hnd, &
       adpeak, amplnd, phase_nd, kx_nd, ky_nd, kz_nd, widthnd, Hepsd, Sigmad, &
       lcalcdkern, supsatfac, lkeepinitnd, ldustcontinuity, lupw_ndmdmi, &
       ldeltavd_thermal, ldeltavd_turbulent, ldustdensity_log, Ri0, &
       coeff_smooth, z0_smooth, z1_smooth, epsz1_smooth, deltavd_imposed
-
+!
   namelist /dustdensity_run_pars/ &
       rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, &
       lcalcdkern, supsatfac, ldustcontinuity, ldustnulling, ludstickmax, &
       idiffd, lreinit_dustvars_ndneg, lupw_ndmdmi, deltavd_imposed, &
       diffnd_shock
-
-  ! diagnostic variables (needs to be consistent with reset list below)
+!  Diagnostic variables (needs to be consistent with reset list below)
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
   integer :: idiag_ssrm=0,idiag_ssrmax=0,idiag_adm=0,idiag_mdm=0
   integer, dimension(ndustspec) :: idiag_ndm=0,idiag_ndmin=0,idiag_ndmax=0
   integer, dimension(ndustspec) :: idiag_nd2m=0,idiag_rhodm=0,idiag_epsdrms=0
   integer, dimension(ndustspec) :: idiag_ndmx=0,idiag_rhodmz=0
   integer, dimension(ndustspec) :: idiag_rhodmin=0,idiag_rhodmax=0
-
+!
   integer :: iglobal_nd=0
-
+!
   contains
-
 !***********************************************************************
     subroutine register_dustdensity()
 !
@@ -956,8 +953,9 @@ module Dustdensity
 !
 !   7-jun-02/axel: incoporated from subroutine pde
 !
-      use Sub
+      use Diagnostics
       use Mpicomm, only: stop_it
+      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -1263,11 +1261,10 @@ module Dustdensity
 !
 !  Calculate mass flux of condensing monomers
 !
-      use Cdata
-      use Mpicomm, only: stop_it
+      use Diagnostics
       use EquationOfState, only: getmu,eoscalc,ilnrho_ss
-      use Sub
-
+      use Mpicomm, only: stop_it
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: mfluxcond,rho,TT1,cc,pp,ppmon,ppsat,vth
       real, dimension (nx) :: supsatratio1
@@ -1510,7 +1507,7 @@ module Dustdensity
 !   3-may-02/axel: coded
 !  27-may-02/axel: added possibility to reset list
 !
-      use Sub
+      use Diagnostics
       use General, only: chn
 !
       integer :: iname,inamez,inamex,k

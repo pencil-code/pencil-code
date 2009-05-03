@@ -1,5 +1,5 @@
 ! $Id$
-
+!
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
 !    nu_total = nu + nu_shock*dx^2*smooth(max5(-(div u))))
@@ -9,7 +9,7 @@
 !  boundary, unexpected things may happen, so you should monitor the
 !  behavior on the boundaries in this case.
 !
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -23,17 +23,17 @@
 ! PENCILS PROVIDED shock; gshock(3); shock_perp; gshock_perp(3)
 !
 !***************************************************************
-
+!
 module Shock
-
-  use Cparam
+!
   use Cdata
+  use Cparam
   use Messages
-
+!
   implicit none
-
+!
   include 'shock.h'
-
+!
   logical :: lshock_first=.true.,lshock_max5=.false., lshock_max3_interp=.false.
   logical :: lwith_extreme_div=.false.
   logical :: lmax_smooth=.false.
@@ -44,14 +44,12 @@ module Shock
   logical :: lforce_periodic_shockviscosity=.false.
   real :: div_threshold=0., div_scaling=1.
   real, dimension (3,3,3) :: smooth_factor
-
-  ! run parameters
+!
   namelist /shock_run_pars/ &
       lshock_first, lshock_max5, div_threshold, div_scaling, &
       lmax_smooth, lgauss_integral, lcommunicate_uu, lgauss_integral_comm_uu, &
       lshock_max3_interp, lforce_periodic_shockviscosity
-
-  ! other variables (needs to be consistent with reset list below)
+!
   integer :: idiag_shockmax=0
 !
   interface shock_max3
@@ -78,14 +76,12 @@ module Shock
   endinterface
 !
   contains
-
 !***********************************************************************
     subroutine register_shock()
 !
 !  19-nov-02/tony: coded
 !  24-jan-05/tony: modified from visc_shock.f90
 !
-      use Cdata
       use FArrayManager
 !
       call farray_register_auxiliary('shock',ishock,communicated=.true.)
@@ -103,8 +99,6 @@ module Shock
 !
 !  20-nov-02/tony: coded
 !
-       use Cdata
-
        real, dimension (mx,my,mz,mfarray) :: f
        logical, intent(in) :: lstarting
 !
@@ -232,8 +226,7 @@ module Shock
 !
 !  24-nov-03/tony: adapted from rprint_ionization
 !
-      use Cdata
-      use Sub
+      use Diagnostics
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -317,8 +310,6 @@ module Shock
 !
 !  20-11-04/anders: coded
 !
-      use Cdata
-!
       logical, dimension (npencils) :: lpencil_in
 !
       if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
@@ -332,7 +323,7 @@ module Shock
 !
 !  20-11-04/anders: coded
 !
-      use Cdata
+      use Diagnostics
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -358,7 +349,6 @@ module Shock
 !  23-nov-02/tony: coded
 !
 !for debug      use IO
-     use Cdata
 !
      real, dimension (mx,my,mz,mfarray) :: f
      real, dimension (mx,my,mz) :: tmp
@@ -415,7 +405,6 @@ module Shock
 !
 !  12-apr-05/tony: coded
 !
-      use Cdata
       use Boundcond
       use Mpicomm
       use Sub
@@ -770,8 +759,6 @@ module Shock
 !  23-nov-02/tony: coded - from sub.f90 - nearmax
 !  26-may-03/axel: maxf and f where interchanged in y-chunk
 !
-      use Cdata
-!
       real, dimension (mx,my,mz) :: f
       real, dimension (mx,my,mz) :: maxf, tmp
 !
@@ -915,8 +902,6 @@ module Shock
 !
 !  29-nov-03/axel: adapted from shock_max5
 !
-      use Cdata
-!
       real, dimension (mx,my,mz) :: f
       real, dimension (mx,my,mz) :: maxf, tmp
 !
@@ -985,8 +970,6 @@ module Shock
 !  skipping 1 data point all round
 !
 !  27-apr-03/tony: adapted from shock_max3
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) :: maxf
@@ -1059,8 +1042,6 @@ module Shock
 !
 !  14-aug-06/tony: adapted from shock_max3
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) :: tmp_penc
       real, dimension (mx) :: maxf
@@ -1106,8 +1087,6 @@ module Shock
 !  skipping 1 data point all round
 !
 !  27-apr-03/tony: adapted from shock_max3
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) :: maxf
@@ -1176,8 +1155,6 @@ module Shock
 !  i.e. result valid ()
 !
 !  23-nov-02/tony: coded
-!
-      use Cdata, only: mx,my,mz
 !
       real, dimension (mx,my,mz) :: f
       real, dimension (mx,my,mz) :: smoothf, tmp
@@ -1252,8 +1229,6 @@ module Shock
 !
 !  23-nov-02/tony: coded
 !
-      use Cdata, only: mx,my,mz,m,n
-!
       real, dimension (mx,my,mz) :: f
       real, dimension (mx) :: smoothf
       integer :: ii,jj,kk
@@ -1315,8 +1290,6 @@ module Shock
 !
 !  23-nov-02/tony: coded
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: df
       real :: fac
@@ -1374,8 +1347,6 @@ module Shock
 !
 !  23-nov-02/tony: coded
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) :: df
       real :: fac
@@ -1412,8 +1383,6 @@ module Shock
 !  nabla_perp.uu = nabla.uu - (1/b2)*bb.(bb.nabla)*uu
 !
 !  16-aug-06/tobi: coded
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mx,3), intent (in) :: bb_hat
@@ -1467,7 +1436,6 @@ module Shock
 !
 !  01-apr-05/tony: coded
 !
-      use Cdata
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1562,7 +1530,6 @@ module Shock
 !***********************************************************************
     subroutine scale_and_chop_internalboundary(f)
 !
-      use Cdata
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1647,7 +1614,6 @@ module Shock
 !
 !  01-apr-05/tony: coded
 !
-      use Cdata
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1782,8 +1748,6 @@ module Shock
 !  periodic boundary condition
 !  11-nov-02/tony: coded
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
       if (nprocx==1.and.lperi(1))  then
@@ -1800,8 +1764,6 @@ module Shock
 !  periodic boundary condition
 !  11-nov-02/tony: coded
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
 
       if (nprocy==1.and.lperi(2)) then
@@ -1817,8 +1779,6 @@ module Shock
 !
 !  periodic boundary condition
 !  11-nov-02/tony: coded
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !

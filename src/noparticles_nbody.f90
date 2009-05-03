@@ -101,7 +101,6 @@ module Particles_nbody
 !  27-aug-06/wlad: coded
 !
       use Messages, only: fatal_error
-      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -248,7 +247,6 @@ module Particles_nbody
 !  14-jun-06/anders: adapted
 !
       use Cdata
-      use Sub, only: parse_name
 !
       logical :: lreset
       logical, optional :: lwrite

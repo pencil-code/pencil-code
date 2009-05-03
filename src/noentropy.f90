@@ -201,7 +201,7 @@ module Entropy
 !  of state.
 !
       use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled
-      use Sub
+      use Diagnostics
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -299,7 +299,7 @@ module Entropy
 !
 !  Reads and registers print parameters relevant to entropy.
 !
-      use Sub
+      use Diagnostics
 !
       integer :: iname
       logical :: lreset,lwr

@@ -11,31 +11,28 @@
 !
 !***************************************************************
 module Particles_nbody
-
+!
   use Cdata
   use Messages
   use Particles_cdata
   use Particles_sub
-
+!
   implicit none
-
+!
   include 'particles_nbody.h'
-
-  real,dimension(nspar,mspvar)  :: fsp
-  real,dimension(nspar)         :: xsp0=0.0, ysp0=0.0, zsp0=0.0
-  real,dimension(nspar)         :: vspx0=0.0, vspy0=0.0, vspz0=0.0
-  real,dimension(nspar)         :: pmass=0.,r_smooth=0.,pmass1
-  real,dimension(nspar)         :: accrete_hills_frac=0.2,final_ramped_mass=0.
-
+!
+  real, dimension(nspar,mspvar) :: fsp
+  real, dimension(nspar)        :: xsp0=0.0, ysp0=0.0, zsp0=0.0
+  real, dimension(nspar)        :: vspx0=0.0, vspy0=0.0, vspz0=0.0
+  real, dimension(nspar)        :: pmass=0.,r_smooth=0.,pmass1
+  real, dimension(nspar)        :: accrete_hills_frac=0.2,final_ramped_mass=0.
   logical, dimension(nspar)     :: lcylindrical_gravity_nbody=.false.
   logical, dimension(nspar)     :: lfollow_particle=.false.,laccretion=.false.
   logical, dimension(nspar)     :: ladd_mass=.false.
-
   real                          :: delta_vsp0=1.0,totmass,totmass1
   real                          :: create_jeans_constant=0.25,GNewton1
   real                          :: GNewton=impossible,prhs_cte
   real, pointer                 :: rhs_poisson_const,tstart_selfgrav
-
   logical :: lcalc_orbit=.true.,lbackreaction=.false.,lnorm=.true.
   logical :: lreset_cm=.false.,lnogravz_star=.false.,lexclude_frozen=.false.
   logical :: lnoselfgrav_star=.true.
@@ -47,9 +44,8 @@ module Particles_nbody
   integer :: ramp_orbits=5,mspar_orig=1
   integer :: iglobal_ggp=0,istar=1,imass=0
   integer :: maxsink=10*nspar,icreate=100
-
   character (len=labellen) :: initxxsp='random', initvvsp='nothing'
-
+!
   namelist /particles_nbody_init_pars/ &
        initxxsp, initvvsp, xsp0, ysp0, zsp0, vspx0, vspy0, vspz0, delta_vsp0, &
        pmass, r_smooth, lcylindrical_gravity_nbody, &
@@ -58,7 +54,7 @@ module Particles_nbody
        linterpolate_quadratic_spline,laccretion,accrete_hills_frac,istar,&
        maxsink,lcreate_sinks,icreate,lcreate_gas,lcreate_dust,ladd_mass,&
        laccrete_when_create
-
+!
   namelist /particles_nbody_run_pars/ &
        dsnap_par_minor, linterp_reality_check, lcalc_orbit, lreset_cm, &
        lnogravz_star,lfollow_particle, lbackreaction, lexclude_frozen, &
@@ -66,23 +62,20 @@ module Particles_nbody
        linterpolate_quadratic_spline,laccretion,accrete_hills_frac,istar,&
        maxsink,lcreate_sinks,icreate,lcreate_gas,lcreate_dust,ladd_mass,&
        laccrete_when_create
-
+!
   integer, dimension(nspar,3) :: idiag_xxspar=0,idiag_vvspar=0
   integer, dimension(nspar)   :: idiag_torqint=0,idiag_torqext=0
   integer                     :: idiag_totenergy=0,idiag_totangmom=0
-
+!
   logical :: ldust=.false.
-
+!
   contains
-
 !***********************************************************************
     subroutine register_particles_nbody()
 !
 !  Set up indices for access to the f and fsp
 !
 !  27-aug-06/wlad: adapted
-!
-      use Messages, only: fatal_error, cvs_id
 !
       if (lroot) call cvs_id( &
           "$Id$")
@@ -111,7 +104,7 @@ module Particles_nbody
 !
 !  27-aug-06/wlad: adapted
 !
-      use Mpicomm,only:stop_it
+      use Mpicomm, only: stop_it
       use FArrayManager
       use SharedVariables
 !
@@ -625,7 +618,7 @@ module Particles_nbody
 !
 !  07-sep-06/wlad: coded
 !
-      use Messages, only: fatal_error
+      use Diagnostics
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -784,7 +777,6 @@ module Particles_nbody
 !
 !  27-aug-06/wlad: coded
 !
-      use Cdata
       use Mpicomm, only: mpibcast_real,stop_it
       use Sub
 !
@@ -943,8 +935,6 @@ module Particles_nbody
 !  Works for individual particle diagnostics. 
 !
 !  07-mar-08/wlad: adapted from sum_par_name
-!
-      use Cdata
 !
       real ::  a
       integer :: iname
@@ -1330,8 +1320,6 @@ module Particles_nbody
 !
 !  07-mar-08/wlad: coded
 !
-      use Cdata,only: coord_system,x,y,z,l1,l2,&
-                      m,n,nx,lcylindrical_gravity
       use Mpicomm,only:stop_it
 !
       real, dimension(mx),intent(in) :: grr
@@ -1364,7 +1352,7 @@ module Particles_nbody
 !
 !  05-nov-05/wlad : coded
 !
-      use Sub
+      use Diagnostics
       use Mpicomm, only: stop_it
 !
       type (pencil_case) :: p
@@ -2391,8 +2379,7 @@ module Particles_nbody
 !
 !  17-nov-05/anders+wlad: adapted
 !
-      use Cdata
-      use Sub, only: parse_name
+      use Diagnostics
       use General, only: chn
 !
       logical :: lreset,lwr

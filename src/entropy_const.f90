@@ -146,6 +146,7 @@ module Entropy
 !   9-jun-02/axel: pressure gradient added to du/dt already here
 !
       use Density
+      use Diagnostics
       use Sub
       Use EquationOfState, only: pressure_gradient
 !
@@ -201,7 +202,7 @@ module Entropy
 !   1-jun-02/axel: adapted from magnetic fields
 !
       use Cdata
-      use Sub
+      use Diagnostics
 !
       integer :: iname,irz
       logical :: lreset,lwr

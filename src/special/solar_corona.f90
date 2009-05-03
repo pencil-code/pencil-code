@@ -300,7 +300,7 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Cdata
-      use Sub
+      use Diagnostics
 !!
 !!!   SAMPLE IMPLEMENTATION
 !!
@@ -682,7 +682,8 @@ module Special
     endsubroutine calc_heat_cool_newton
 !***********************************************************************
      subroutine calc_heatcond_tensor(f,df,p)
- 
+
+       use Diagnostics 
        use Sub
        use EquationOfState, only: gamma,gamma11
        use IO, only: output_pencil

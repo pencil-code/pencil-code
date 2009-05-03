@@ -387,8 +387,9 @@ module Entropy
 !   9-jun-02/axel: pressure gradient added to du/dt already here
 !   2-feb-03/axel: added possibility of ionization
 !
+      use Diagnostics
+      use Sub
       use Viscosity, only: calc_viscous_heat
-      use Sub, only: max_mn_name,sum_mn_name,identify_bcs,cubic_step
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension (mx,my,mz,mvar), intent (out) :: df
@@ -518,7 +519,8 @@ module Entropy
 !           =chi*(g2.glnTT+g2lnTT),
 !  where g2=glnrho+glnTT
 !
-      use Sub, only: max_mn_name,dot,del2,multsv
+      use Diagnostics
+      use Sub
 
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -559,7 +561,7 @@ module Entropy
 !
 !
 !
-      use Sub, only: max_mn_name
+      use Diagnostics
 
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -622,7 +624,7 @@ module Entropy
 !
 !   1-jun-02/axel: adapted from magnetic fields
 !
-      use Sub, only: parse_name
+      use Diagnostics
 !
       integer :: iname
       logical :: lreset,lwr

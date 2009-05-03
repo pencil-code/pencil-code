@@ -13,11 +13,10 @@
 ! COMMUNICATED AUXILIARIES 1
 !
 !***************************************************************
-
 module Interstellar
 !
-  use Cparam !, only: nx,labellen,impossible
-!  use Cdata, only: ilnrho,iss,ip,x,y,z
+  use Cdata
+  use Cparam
   use Messages
 !
   implicit none
@@ -359,7 +358,6 @@ module Interstellar
 !
 !  19-nov-02/tony: coded
 !
-      use Cdata
       use FArrayManager
 !
       call farray_register_auxiliary('cooling',icooling,communicated=.true.)
@@ -393,10 +391,6 @@ module Interstellar
 !
 !  read parameters from seed.dat and interstellar.dat
 !
-      use Cdata, only: datadir, directory, seed, nseed, lroot, pi, Lxyz, &
-                       unit_energy, unit_density, unit_length, unit_mass, &
-                       unit_temperature, unit_time, unit_velocity, unit_system, &
-                       dxmax, dx, dy, dz
       use General, only: random_seed_wrapper
       use Sub, only: inpui,inpup
       use Mpicomm, only: stop_it
@@ -575,8 +569,6 @@ module Interstellar
 !
 !  Read in the stored time of the next SNI
 !
-      use Cdata, only: lroot
-!
       integer :: id,lun,i
       logical :: done
 !
@@ -604,8 +596,6 @@ module Interstellar
 !
 !  Writes out the time of the next SNI
 !
-      use Cdata, only: lroot
-!
       integer :: lun, i, iSNR
 !
       if (lroot.and.lSNI.and.lSNII) &
@@ -629,8 +619,7 @@ module Interstellar
 !
 !   1-jun-02/axel: adapted from magnetic fields
 !
-      use Cdata, only: nname, cname, cform
-      use Sub, only: parse_name
+      use Diagnostics, only: parse_name
 !
       integer :: iname
       logical :: lreset,lwr
@@ -773,7 +762,6 @@ module Interstellar
 !  initialise some explosions etc.
 !  24-nov-2002/tony: coded
 !
-      use Cdata
       use General, only: chn
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -902,8 +890,6 @@ module Interstellar
 !  26-mar-05/tony: coded
 !  11-mar-06/axel: added idiag_nrhom
 !
-      use Cdata
-!
       lpenc_requested(i_ee)=.true.
       lpenc_requested(i_lnrho)=.true.
       lpenc_requested(i_lnTT)=.true.
@@ -924,11 +910,7 @@ module Interstellar
 !
 !  01-aug-06/tony: coded
 !
-      use Cdata, only: lroot, headtt, lfirst, ldiagnos, ldt, m, n,  &
-                       iss, ilnTT, unit_length, unit_velocity, dt1_max, z, &
-                       datadir, pretend_lnTT, t, ilnrho
-!
-      use Sub, only: max_mn_name, sum_mn_name
+      use Diagnostics, only: max_mn_name, sum_mn_name
       use EquationOfState, only: gamma, gamma11, eoscalc
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -1000,12 +982,9 @@ module Interstellar
 !  10-aug-03/axel: TT is used as input
 !   3-apr-06/axel: add ltemperature switch
 !
-      use Cdata, only: lroot, headtt, lfirst, ldiagnos, ldt, m, n,  &
-                       iss, ilnTT, unit_length, unit_velocity, dt1_max, z, &
-                       datadir, pretend_lnTT, t
-!
-      use Sub, only: max_mn_name, sum_mn_name, smooth_kernel, despike
+      use Diagnostics, only: max_mn_name, sum_mn_name
       use EquationOfState, only: gamma, gamma11
+      use Sub, only: smooth_kernel, despike
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -1142,8 +1121,6 @@ module Interstellar
 !  [Currently, coolT(1) is not modified, but this may be necessary
 !  to avoid creating gas too cold to resolve.]
 !
-      use Cdata
-!
       real, dimension (nx), intent(out) :: cool
       real, dimension (nx), intent(in) :: lnTT, lnrho
       integer :: i
@@ -1173,8 +1150,6 @@ cool_loop: do i=1,ncool
 !   'eql' -  Heating balancing the initial cooling function
 !  Default 'off'
 !  Default heating_rate = 0.015
-!
-      use Cdata
 !
       real, dimension (nx), intent(out) :: heat
       real, dimension (nx), intent(in) :: lnTT
@@ -1207,8 +1182,6 @@ cool_loop: do i=1,ncool
 !  Checks for SNe, and implements appropriately:
 !   relevant subroutines in entropy.f90
 !
-    use Cdata, only: headtt, t
-!
     real, dimension(mx,my,mz,mfarray) :: f
     real, dimension(mx,my,mz,mvar) :: df
     logical :: l_SNI=.false.   !only allow SNII if no SNI this step
@@ -1234,8 +1207,6 @@ cool_loop: do i=1,ncool
     subroutine check_SNI(f,df,l_SNI)
 !
 !  If time for next SNI, then implement, and calculate time of subsequent SNI
-!
-    use Cdata, only: headtt, lroot, t
 !
     real, dimension(mx,my,mz,mfarray) :: f
     real, dimension(mx,my,mz,mvar) :: df
@@ -1293,7 +1264,7 @@ cool_loop: do i=1,ncool
     endsubroutine check_SNI
 !***********************************************************************
     subroutine set_next_SNI()
-      use Cdata
+!
       use General, only: random_number_wrapper
 !
       real, dimension(1) :: franSN
@@ -1309,7 +1280,6 @@ cool_loop: do i=1,ncool
 !
 !  Check for SNII, via self-regulating scheme.
 !
-    use Cdata, only: dx, dy, dz, t, ilnrho, headtt, lroot
     use General, only: random_number_wrapper
     use Mpicomm, only: mpireduce_sum, mpibcast_real
     use EquationOfState, only: eoscalc
@@ -1402,9 +1372,6 @@ cool_loop: do i=1,ncool
 !
 !   determine position for next SN (w/ fixed scale-height)
 !
-    use Cdata, only: headtt, dx, dy, dz, lroot, lperi, xyz0
-!    use General
-!
     real, intent(in), dimension(mx,my,mz,mfarray) :: f
     type (SNRemnant), intent(inout) :: SNR
 
@@ -1455,10 +1422,7 @@ cool_loop: do i=1,ncool
 !
 !   determine position for next SN (w/ fixed scale-height)
 !
-    use Cdata, only: headtt, dx, dy, dz, lroot, lperi, xyz0, tini
     use General, only: random_number_wrapper
-!    use Mpicomm
-!    use General
 !
     real, intent(in), dimension(mx,my,mz,mfarray) :: f
     real, intent(in) :: h_SN
@@ -1526,10 +1490,7 @@ cool_loop: do i=1,ncool
 !
 !   determine position for next SN (w/ fixed scale-height)
 !
-    use Cdata, only: headtt, dx, dy, dz, lroot, lperi, xyz0
     use General, only: random_number_wrapper
-!    use Mpicomm
-!    use General
 !
     real, intent(in), dimension(mx,my,mz,mfarray) :: f
     type (SNRemnant), intent(inout) :: SNR
@@ -1581,9 +1542,7 @@ cool_loop: do i=1,ncool
 !  As a result, the SN position is *not* independent of ncpus (or of nprocy
 !  and nprocz).  (It is repeatable given fixed nprocy/z though.)
 !
-    use Cdata, only: lroot, iproc, ilnrho
     use General, only: random_number_wrapper
-!    use Mpicomm
     use EquationOfState, only: eoscalc
 !
     real, intent(in), dimension(mx,my,mz,mfarray) :: f
@@ -1670,12 +1629,9 @@ find_SN: do n=n1,n2
 !   Given a presently unsuitable SNI explosion site... Find the nearest
 !   suitable location
 !
-    use Cdata, only: headtt,iproc,ilnrho
     use EquationOfState, only: eoscalc
     use Mpicomm, only: mpibcast_int
-!    use Mpicomm
     use General, only: random_number_wrapper
-!    use EquationOfState
 !
     real, intent(in), dimension(mx,my,mz,mfarray) :: f
     type (SNRemnant), intent(inout) :: SNR
@@ -1764,7 +1720,6 @@ find_SN: do n=n1,n2
 !
 !   27-aug-2003/tony: coded
 !
-    use Cdata
     use EquationOfState, only: eoscalc,ilnrho_lnTT
     use Mpicomm, only: mpibcast_int, mpibcast_real
 !
@@ -1840,14 +1795,8 @@ find_SN: do n=n1,n2
       !  ??-nov-02/grs : coded from GalaxyCode
       !  20-may-03/tony: pencil formulation and broken into subroutines
       !
-      use Cdata, only: lroot,dimensionality, &
-                       ilnrho,iecr,ilntt,iyh, &
-                       iuu, iux, iuy, iuz, &
-                       it,t,datadir,m,n, pi, dxmax
       use EquationOfState, only: ilnrho_ee, eoscalc, getdensity, eosperturb
       use Mpicomm, only: mpireduce_max, mpibcast_real, mpibcast_double, mpireduce_sum_double
-!      use Sub, only: update_snaptime
-!      use Slices, only: tvid, nvid
 !
       real, intent(inout), dimension(mx,my,mz,mfarray) :: f
       real, intent(inout), dimension(mx,my,mz,mvar) :: df
@@ -2274,8 +2223,6 @@ find_SN: do n=n1,n2
 !!***********************************************************************
 !    subroutine calc_interstellar_SNR_smooth(f)
 !!
-!      use Cdata
-!!
 !      real, intent(inout), dimension(mx,my,mz,mfarray) :: f
 !      real, dimension(nx) :: ee, rho, profile_smooth
 !      real, dimension(nx) :: ee_new, rho_new
@@ -2320,7 +2267,6 @@ find_SN: do n=n1,n2
 !***********************************************************************
     subroutine calc_snr_damping_factor(f)
 !
-      use Cdata
       use Mpicomm
       use Sub
 !
@@ -2379,8 +2325,6 @@ find_SN: do n=n1,n2
 !***********************************************************************
     subroutine calc_snr_unshock(penc)
 !
-      use Cdata
-!
 !      real, intent(inout), dimension(mx,my,mz,mfarray) :: f
 !      integer, intent(in) :: ivar
       real, dimension(mx), intent(inout) :: penc
@@ -2399,7 +2343,6 @@ find_SN: do n=n1,n2
 !***********************************************************************
     subroutine calc_snr_damping(p)
 !
-      use Cdata
       use Sub, only: multsv, multsv_add, dot
 !
 !      real, intent(inout), dimension(mx,my,mz,mfarray) :: f
@@ -2453,7 +2396,6 @@ find_SN: do n=n1,n2
 !***********************************************************************
     subroutine calc_snr_damp_int(int_dt)
 !
-      use Cdata
       use Sub, only: multsv, multsv_add
       use EquationOfState, only: eoscalc, eosperturb
 !
@@ -2470,7 +2412,6 @@ find_SN: do n=n1,n2
 !***********************************************************************
     subroutine calc_snr_damping_add_heat(f)
 !
-      use Cdata
       use Mpicomm
       use Sub, only: multsv, multsv_add
       use EquationOfState, only: eoscalc, eosperturb
@@ -2516,7 +2457,6 @@ find_SN: do n=n1,n2
 !
 !  22-may-03/tony: coded
 !
-      use Cdata
       use Sub
       use Mpicomm
 !
@@ -2564,7 +2504,6 @@ find_SN: do n=n1,n2
 !
 !  22-may-03/tony: coded
 !
-      use Cdata, only: ilnrho,m,n
       use Mpicomm
 !
       real, intent(in), dimension(mx,my,mz,mfarray) :: f
@@ -2600,9 +2539,6 @@ find_SN: do n=n1,n2
 !
 !  20-may-03/tony: extracted from explode_SN code written by grs
 !  22-may-03/tony: pencil formulation
-!
-      use Cparam
-      use Cdata, only: Lx,Ly,Lz,x,y,z,lperi,m,n
 !
       type (SNRemnant), intent(in) :: SNR
 !
@@ -2649,9 +2585,6 @@ find_SN: do n=n1,n2
 !  20-may-03/tony: extracted from explode_SN code written by grs
 !  22-may-03/tony: pencil formulation
 !
-      use Cparam
-      use Cdata, only: Lx,Ly,Lz,x,y,z,lperi,m,n
-!
       type (SNRemnant), intent(in) :: SNR
       real,dimension(mx), intent(out) :: dr2_SN_mx
       real,dimension(mx) :: dx_SN, dr_SN
@@ -2689,7 +2622,6 @@ find_SN: do n=n1,n2
 !
 !  22-may-03/tony: coded
 !
-      use Cdata, only: dx,dy,dz,ilnrho,m,n
       use Mpicomm, only: mpibcast_double, mpireduce_sum_double
 !
       real, intent(in), dimension(mx,my,mz,mfarray) :: f
@@ -2746,8 +2678,6 @@ find_SN: do n=n1,n2
     subroutine make_cavity_rho(deltarho,width,depth, &
                              cnorm_dim,MMtot_SN)
 !
-      use Cdata, only: dimensionality
-!
       double precision, intent(in) :: width, depth, cnorm_dim
       double precision, intent(inout) :: MMtot_SN
       double precision, intent(out), dimension(nx) :: deltarho
@@ -2779,8 +2709,6 @@ find_SN: do n=n1,n2
 !***********************************************************************
     subroutine make_cavity_lnrho(lnrho,width,depth,mass_shell, &
                              cnorm_dim,MMtot_SN)
-!
-      use Cdata, only: dimensionality
 !
       double precision, intent(in) :: width, depth, mass_shell, cnorm_dim
       double precision, intent(inout) :: MMtot_SN
@@ -2832,7 +2760,6 @@ find_SN: do n=n1,n2
     endsubroutine make_cavity_lnrho
 !***********************************************************************
     subroutine injectenergy_SN(deltaEE,width,c_SN,EEtot_SN)
-!      use Cdata
       !
       double precision, intent(in) :: width,c_SN
       double precision, intent(inout) :: EEtot_SN
@@ -2865,7 +2792,6 @@ find_SN: do n=n1,n2
     endsubroutine injectenergy_SN
 !***********************************************************************
     subroutine injectmass_SN(deltarho,width,cmass_SN,MMtot_SN)
-!      use Cdata
       !
       double precision, intent(in) :: width,cmass_SN
       double precision, intent(inout) :: MMtot_SN
@@ -2897,8 +2823,6 @@ find_SN: do n=n1,n2
     endsubroutine injectmass_SN
 !***********************************************************************
     subroutine injectvelocity_SN(deltauu,width,cvelocity_SN)
-!
-      use Cdata
 !
       double precision, intent(in) :: width,cvelocity_SN
       double precision, intent(out), dimension(nx,3) :: deltauu
@@ -2971,8 +2895,6 @@ find_SN: do n=n1,n2
     endfunction get_free_SNR
 !***********************************************************************
     subroutine free_SNR(iSNR)
-!
-      use Cdata, only: lroot
 !
       integer :: get_free_SNR
       integer :: i,iSNR

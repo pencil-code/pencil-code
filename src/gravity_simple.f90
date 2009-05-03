@@ -1,5 +1,5 @@
 ! $Id$
-
+!
 !
 !  This module takes care of simple types of gravity, i.e. where
 !    gx=gx(x) or gy=gy(y) or gz=gz(z)
@@ -7,7 +7,7 @@
 !  gravz_zpencil only need to be calculated once, and then these can
 !  simply be added to the equations of motion again and again.
 !
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -18,31 +18,27 @@
 ! PENCILS PROVIDED gg(3); epot
 !
 !***************************************************************
-
 module Gravity
-
-  use Cdata, only: lgravx_gas,lgravy_gas,lgravz_gas
-  use Cdata, only: lgravx_dust,lgravy_dust,lgravz_dust
+!
+  use Cdata
   use Cparam
   use Messages
-
+!
   implicit none
-
+!
   include 'gravity.h'
-
+!
   interface potential
     module procedure potential_global
     module procedure potential_penc
     module procedure potential_point
   endinterface
-
+!
   interface acceleration
     module procedure acceleration_penc
     module procedure acceleration_penc_1D
     module procedure acceleration_point
   endinterface
-!
-!  Parameters used throughout entire module
 !
   real, dimension(mx) :: gravx_xpencil=0.,potx_xpencil=0.
   real, dimension(my) :: gravy_ypencil=0.,poty_ypencil=0.
@@ -71,7 +67,7 @@ module Gravity
   real :: g0=0.
   real :: lnrho_bot=0.,lnrho_top=0.,ss_bot=0.,ss_top=0.
   character (len=labellen) :: grav_profile='const'
-
+!
   namelist /grav_init_pars/ &
        gravx_profile,gravy_profile,gravz_profile,gravx,gravy,gravz, &
        xgrav,ygrav,zgrav,kx_gg,ky_gg,kz_gg,dgravx,nu_epicycle,pot_ratio, &
@@ -80,15 +76,13 @@ module Gravity
        xinfty,yinfty,zinfty, &
        reduced_top,lboussinesq,grav_profile,n_pot, &
        cs0hs,H0hs
-
+!
   namelist /grav_run_pars/ &
        gravx_profile,gravy_profile,gravz_profile,gravx,gravy,gravz, &
        xgrav,ygrav,zgrav,kx_gg,ky_gg,kz_gg,dgravx,nu_epicycle,pot_ratio, &
        lgravx_gas,lgravx_dust,lgravy_gas,lgravy_dust,lgravz_gas,lgravz_dust, &
        xinfty,yinfty,zinfty, &
        zref,reduced_top,lboussinesq,grav_profile,n_pot
-!
-!  Diagnostic variables (need to be consistent with reset list below)
 !
   integer :: idiag_epot=0
 !
@@ -100,7 +94,6 @@ module Gravity
 !
 !  12-nov-04/anders: coded
 !
-      use Cdata
       use Mpicomm
       use Sub
 !
@@ -123,7 +116,6 @@ module Gravity
 !
 !  12-nov-04/anders: coded, copied init conds from grav_x, grav_y and grav_y.
 !
-      use Cdata
       use SharedVariables
       use Sub, only: notanumber, cubic_step
 !
@@ -346,8 +338,6 @@ module Gravity
 !
 !  12-nov-04/anders: coded
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
 !  Don't do anything
@@ -385,8 +375,6 @@ module Gravity
 !
 !  12-nov-04/anders: coded
 !
-      use Cdata, only: m,n
-
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
@@ -417,8 +405,7 @@ module Gravity
 !  12-nov-04/anders: coded
 !   5-dec-06/petri: added Boussinesq approximation
 !
-      use Cdata
-      use Sub
+      use Diagnostics
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -492,8 +479,6 @@ module Gravity
 !
 !  13-nov-04/anders: coded
 !
-      use Cdata, only: m,n
-
       real, dimension (nx) :: pot
       real, optional :: ymn,zmn,pot0
       real, optional, dimension (nx) :: xmn,rmn
@@ -516,8 +501,6 @@ module Gravity
 !
 !  13-nov-04/anders: coded
 !  24-oct-06bing: added constant gravity profiles
-!
-      use Cdata, only: lroot
 !
       real :: pot
       real, optional :: x,y,z,r
@@ -585,8 +568,6 @@ module Gravity
 !
 !  21-apr-07/tobi: adapted from potential_penc
 !
-      use Cdata, only: nx,mx,m,n
-
       real, dimension (:,:), intent (out) :: gg
 !
 !  Calculate acceleration from master pencils defined in initialize_gravity
@@ -615,8 +596,6 @@ module Gravity
 !
 !  21-apr-07/tobi: adapted from potential_penc
 !
-      use Messages, only: fatal_error
-
       real, dimension (nx), intent (out) :: gr
 !
 !  Calculate acceleration from master pencils defined in initialize_gravity
@@ -708,8 +687,7 @@ module Gravity
 !
 !  12-jun-04/axel: adapted from grav_z
 !
-      use Cdata
-      use Sub
+      use Diagnostics
 !
       logical :: lreset
       logical, optional :: lwrite

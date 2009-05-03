@@ -1298,6 +1298,7 @@ module Radiation
 !  25-mar-03/axel+tobi: coded
 !
       use Cdata
+      use Diagnostics
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1353,6 +1354,7 @@ module Radiation
 !  17-may-06/axel: coded
 !
       use Cdata
+      use Diagnostics
       use Sub
 
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1920,7 +1922,7 @@ module Radiation
 !  16-jul-02/nils: adapted from rprint_hydro
 !
       use Cdata
-      use Sub
+      use Diagnostics
 !
       integer :: iname,inamez
       logical :: lreset,lwr
@@ -2103,10 +2105,11 @@ module Radiation
 !  12-apr-06/natalia: adapted from Wolfgang's more complex version
 !   3-nov-06/axel: included gradient of conductivity, gradK.gradT
 !
-      use Sub, only: max_mn_name,dot
       use Cdata
       use Cparam
+      use Diagnostics
       use EquationOfState
+      use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (pencil_case) :: p
