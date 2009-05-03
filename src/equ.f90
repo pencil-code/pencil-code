@@ -869,10 +869,6 @@ module Equ
         if (lwrite_zaverages) call zaverages_xy
       endif
 !
-!  Force reinitializing of dust variables if certain criteria are fulfilled
-!
-      call reinit_criteria_dust
-!
 !  reset lwrite_prof
 !
       lwrite_prof=.false.

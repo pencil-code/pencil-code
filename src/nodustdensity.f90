@@ -167,14 +167,6 @@ module Dustdensity
       if (NO_WARN) print*,f
     endsubroutine null_dust_vars
 !***********************************************************************
-    subroutine reinit_criteria_dust
-!
-!  Force reiniting of dust variables if certain criteria are fulfilled
-!
-!  Dummy subroutine
-!
-    endsubroutine reinit_criteria_dust
-!***********************************************************************
     subroutine rprint_dustdensity(lreset,lwrite)
 !
 !  reads and registers print parameters relevant for compressible part

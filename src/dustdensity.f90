@@ -51,7 +51,6 @@ module Dustdensity
   logical :: ldustnulling=.false.,lupw_ndmdmi=.false.
   logical :: ldeltavd_thermal=.false., ldeltavd_turbulent=.false.
   logical :: ldiffusion_dust=.true.
-  logical :: lreinit_dustvars_ndneg=.false.
   logical :: ldiffd_simplified=.false.,ldiffd_dusttogasratio=.false.
   logical :: ldiffd_hyper3=.false.,ldiffd_hyper3lnnd=.false.
   logical :: ldiffd_shock=.false.
@@ -66,7 +65,7 @@ module Dustdensity
   namelist /dustdensity_run_pars/ &
       rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, &
       lcalcdkern, supsatfac, ldustcontinuity, ldustnulling, ludstickmax, &
-      idiffd, lreinit_dustvars_ndneg, lupw_ndmdmi, deltavd_imposed, &
+      idiffd, lupw_ndmdmi, deltavd_imposed, &
       diffnd_shock
 !  Diagnostic variables (needs to be consistent with reset list below)
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
@@ -1472,33 +1471,6 @@ module Dustdensity
       enddo; enddo; enddo
 !
     endsubroutine null_dust_vars
-!***********************************************************************
-    subroutine reinit_criteria_dust
-!
-!  Force reiniting of dust variables if certain criteria are fulfilled
-!
-      use Sub, only: notanumber
-!
-      integer :: k
-!
-      if (.not. lreinit) then
-        if (lreinit_dustvars_ndneg) then
-          if (lroot .and. (.not. ldustdensity_log)) then
-            do k=1,ndustspec
-              if (fname(idiag_ndmin(k)) < 0. .or. &
-                  notanumber(fname(idiag_ndm(k)))) then
-                print*, 'reinit_criteria_dust: ndmin < 0., so reinit uud, nd'
-                lreinit=.true.
-                nreinit=2
-                reinit_vars(1)='uud'
-                reinit_vars(2)='nd'
-              endif
-            enddo
-          endif
-        endif
-      endif
-!
-    endsubroutine reinit_criteria_dust
 !***********************************************************************
     subroutine rprint_dustdensity(lreset,lwrite)
 !
