@@ -499,7 +499,7 @@ module Special
 !   16-jul-06/wlyra: coded
 !
       use Cdata
-      use Sub !, only : sum_lim_mn_name
+      use Diagnostics
 !
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -546,7 +546,7 @@ module Special
 !   06-oct-03/tony: coded
 !
      use Cdata
-     use Sub
+     use Diagnostics
      use Mpicomm
 
      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f

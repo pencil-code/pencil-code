@@ -16,11 +16,12 @@
 
 module Entropy
 
-  use Cparam
   use Cdata
-  use Messages
+  use Cparam
   use Hydro
   use Interstellar
+  use Messages
+  use Sub, only: keep_compiler_quiet
   use Viscosity
 
   implicit none

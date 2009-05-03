@@ -20,11 +20,12 @@
 !***************************************************************
 module Entropy
 
-  use Cparam
   use Cdata
-  use Messages
-  use Interstellar
+  use Cparam
   use EquationOfState, only: mpoly0,mpoly1
+  use Interstellar
+  use Messages
+  use Sub, only: keep_compiler_quiet
 
   implicit none
   public :: ADI_constK, ADI_Kprof

@@ -22,6 +22,7 @@ module Entropy
   use Cdata
   use Messages
   use Interstellar
+  use Sub, only: keep_compiler_quiet
 
   implicit none
 
