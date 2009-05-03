@@ -865,14 +865,16 @@ module Equ
         if (lwrite_zaverages) call zaverages_xy
       endif
 !
-!  Calculate mean fields
+!  Calculate mean fields.
 !
-!      if (lmagnetic)  call calc_mfield
-!      if (lhydro)     call calc_mflow
-!      if (lpscalar)   call calc_mpscalar
+      if (ldiagnos) then
+        if (lmagnetic) call calc_mfield
+        if (lhydro)    call calc_mflow
+        if (lpscalar)  call calc_mpscalar
+      endif
 !
-!  calculate rhoccm and cc2m (this requires that these are set in print.in)
-!  broadcast result to other processors. This is needed for calculating PDFs.
+!  Calculate rhoccm and cc2m (this requires that these are set in print.in).
+!  Broadcast result to other processors. This is needed for calculating PDFs.
 !
 !      if (idiag_rhoccm/=0) then
 !        if (iproc==0) rhoccm=fname(idiag_rhoccm)
