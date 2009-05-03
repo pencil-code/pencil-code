@@ -271,7 +271,7 @@ module Shock
           slices%xz= f(l1:l2    ,slices%iy,n1:n2     ,ishock)
           slices%xy= f(l1:l2    ,m1:m2    ,slices%iz ,ishock)
           slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,ishock)
-          slices%ready = .true.
+          slices%ready=.true.
 
       endselect
 !

@@ -1613,6 +1613,7 @@ module Dustdensity
           slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(1))
           if (lwrite_slice_xy4) &
           slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(1))
+          slices%ready=.true.
       endselect
 !
     endsubroutine get_slices_dustdensity

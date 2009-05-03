@@ -516,6 +516,7 @@ module Pscalar
           slices%xy2=exp(f(l1:l2,m1:m2,iz2_loc,icc))
           if (lwrite_slice_xy3) slices%xy3=exp(f(l1:l2,m1:m2,iz3_loc,icc))
           if (lwrite_slice_xy4) slices%xy4=exp(f(l1:l2,m1:m2,iz4_loc,icc))
+          slices%ready=.true.
 !
 !  Logarithmic passive scalar.
 !
@@ -526,6 +527,7 @@ module Pscalar
           slices%xy2=f(l1:l2,m1:m2,iz2_loc,icc)
           if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,icc)
           if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,icc)
+          slices%ready=.true.
 !
       endselect
 !   

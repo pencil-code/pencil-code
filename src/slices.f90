@@ -15,7 +15,7 @@ module Slices
   real, target, dimension (nx,ny) :: slice_xy=0.0, slice_xy2=0.0
   real, target, dimension (nx,nz) :: slice_xz=0.0
   real, target, dimension (ny,nz) :: slice_yz=0.0
-  real, target, dimension (nx,ny) :: slice_xy3=0., slice_xy4=0.0
+  real, target, dimension (nx,ny) :: slice_xy3=0.0, slice_xy4=0.0
 !
   real, public :: tvid
   integer, public :: nvid
@@ -177,7 +177,7 @@ module Slices
               call wslice(path//trim(slices%name)//'.xy4',slices%xy4, &
                                                      z(slices%iz4),nx,ny)
             inamev=inamev+1
-           else
+          else
             call chn(slices%index, sindex)
             if (associated(slices%yz)) &
               call wslice(path//trim(slices%name)//trim(sindex)//'.yz', &
@@ -229,10 +229,6 @@ module Slices
 !  26-jun-06/anders: moved from Slices
 !  22-sep-07/axel: changed Xy to xy2, to be compatible with Mac
 !
-      use Cdata, only: t, lwrite_slice_xy ,lwrite_slice_xy2, &
-                          lwrite_slice_xy3,lwrite_slice_xy4, &
-                          lwrite_slice_xz ,lwrite_slice_yz 
-!
       integer :: ndim1,ndim2
       character (len=*) :: filename
       real, dimension (ndim1,ndim2) :: a
@@ -260,7 +256,6 @@ module Slices
 !
 !  29-may-06/tobi: wrapped code from param_io.f90 into this subroutine
 !
-      use Cdata
       use Messages, only: fatal_error
 !
 !  set slice position. The default for slice_position is 'p' for periphery,
@@ -474,8 +469,6 @@ module Slices
 !
 !  18-nov-06/axel: coded
 !  14-oct-08/ccyang: use half-closed interval and include the top-most plane
-!
-      use Cdata, only: n1,n2,z
 !
       real :: zpos
       integer :: izpos,n

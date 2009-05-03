@@ -298,18 +298,18 @@ module Shock
 !  Shock profile
 !
         case ('shock')
-          slices%yz= f(slices%ix,m1:m2    ,n1:n2     ,ishock)
-          slices%xz= f(l1:l2    ,slices%iy,n1:n2     ,ishock)
-          slices%xy= f(l1:l2    ,m1:m2    ,slices%iz ,ishock)
+          slices%yz =f(slices%ix,m1:m2    ,n1:n2     ,ishock)
+          slices%xz =f(l1:l2    ,slices%iy,n1:n2     ,ishock)
+          slices%xy =f(l1:l2    ,m1:m2    ,slices%iz ,ishock)
           slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,ishock)
-          slices%ready = .true.
-
+          slices%ready=.true.
+!
         case ('shock_perp')
-          slices%yz= f(slices%ix,m1:m2    ,n1:n2     ,ishock_perp)
-          slices%xz= f(l1:l2    ,slices%iy,n1:n2     ,ishock_perp)
-          slices%xy= f(l1:l2    ,m1:m2    ,slices%iz ,ishock_perp)
+          slices%yz =f(slices%ix,m1:m2    ,n1:n2     ,ishock_perp)
+          slices%xz =f(l1:l2    ,slices%iy,n1:n2     ,ishock_perp)
+          slices%xy =f(l1:l2    ,m1:m2    ,slices%iz ,ishock_perp)
           slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,ishock_perp)
-          slices%ready = .true.
+          slices%ready=.true.
 !
       endselect
 !

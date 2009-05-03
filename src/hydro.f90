@@ -3276,83 +3276,83 @@ module Hydro
 !
       select case (trim(slices%name))
 !
-!  Velocity field (code variable)
+!  Velocity field.
 !
         case ('uu')
-          if (slices%index >= 3) then
-            slices%ready = .false.
+          if (slices%index>=3) then
+            slices%ready=.false.
           else
-            slices%yz=f(slices%ix,m1:m2    ,n1:n2,iux+slices%index)
-            slices%xz=f(l1:l2    ,slices%iy,n1:n2,iux+slices%index)
-            slices%xy=f(l1:l2    ,m1:m2    ,slices%iz,iux+slices%index)
+            slices%yz =f(slices%ix,m1:m2    ,n1:n2,iux+slices%index)
+            slices%xz =f(l1:l2    ,slices%iy,n1:n2,iux+slices%index)
+            slices%xy =f(l1:l2    ,m1:m2    ,slices%iz,iux+slices%index)
             slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,iux+slices%index)
             if (lwrite_slice_xy3) &
                  slices%xy3=f(l1:l2    ,m1:m2    ,slices%iz3,iux+slices%index)
             if (lwrite_slice_xy4) &
                  slices%xy4=f(l1:l2    ,m1:m2    ,slices%iz4,iux+slices%index)
-            slices%index = slices%index+1
-            if (slices%index < 3) slices%ready = .true.
+            slices%index=slices%index+1
+            if (slices%index<3) slices%ready=.true.
           endif
 !
-!  Divergence of velocity (derived variable)
+!  Divergence of velocity.
 !
         case ('divu')
-          slices%yz=>divu_yz
-          slices%xz=>divu_xz
-          slices%xy=>divu_xy
+          slices%yz =>divu_yz
+          slices%xz =>divu_xz
+          slices%xy =>divu_xy
           slices%xy2=>divu_xy2
           if (lwrite_slice_xy3) slices%xy3=>divu_xy3
           if (lwrite_slice_xy4) slices%xy4=>divu_xy4
-          slices%ready = .true.
+          slices%ready=.true.
 !
-!  Velocity squared (derived variable)
+!  Velocity squared.
 !
         case ('u2')
-          slices%yz=>u2_yz
-          slices%xz=>u2_xz
-          slices%xy=>u2_xy
+          slices%yz =>u2_yz
+          slices%xz =>u2_xz
+          slices%xy =>u2_xy
           slices%xy2=>u2_xy2
           if (lwrite_slice_xy3) slices%xy3=>u2_xy3
           if (lwrite_slice_xy4) slices%xy4=>u2_xy4
-          slices%ready = .true.
+          slices%ready=.true.
 !
-!  Vorticity (derived variable)
+!  Vorticity.
 !
         case ('oo')
-          if (slices%index == 3) then
-            slices%ready = .false.
+          if (slices%index==3) then
+            slices%ready=.false.
           else
-            slices%index = slices%index+1
-            slices%yz=>oo_yz(:,:,slices%index)
-            slices%xz=>oo_xz(:,:,slices%index)
-            slices%xy=>oo_xy(:,:,slices%index)
+            slices%index=slices%index+1
+            slices%yz =>oo_yz(:,:,slices%index)
+            slices%xz =>oo_xz(:,:,slices%index)
+            slices%xy =>oo_xy(:,:,slices%index)
             slices%xy2=>oo_xy2(:,:,slices%index)
             if (lwrite_slice_xy3) slices%xy3=>oo_xy3(:,:,slices%index)
             if (lwrite_slice_xy4) slices%xy4=>oo_xy4(:,:,slices%index)
-            if (slices%index < 3) slices%ready = .true.
+            if (slices%index<3) slices%ready=.true.
           endif
 !
-!  Vorticity squared (derived variable)
+!  Vorticity squared.
 !
         case ('o2')
-          slices%yz=>o2_yz
-          slices%xz=>o2_xz
-          slices%xy=>o2_xy
+          slices%yz =>o2_yz
+          slices%xz =>o2_xz
+          slices%xy =>o2_xy
           slices%xy2=>o2_xy2
           if (lwrite_slice_xy3) slices%xy3=>o2_xy3
           if (lwrite_slice_xy4) slices%xy4=>o2_xy4
-          slices%ready = .true.
+          slices%ready=.true.
 !
-!  Mach number (derived variable)
+!  Mach number.
 !
         case ('mach')
-          slices%yz=>mach_yz
-          slices%xz=>mach_xz
-          slices%xy=>mach_xy
+          slices%yz =>mach_yz
+          slices%xz =>mach_xz
+          slices%xy =>mach_xy
           slices%xy2=>mach_xy2
           if (lwrite_slice_xy3) slices%xy3=>mach_xy3
           if (lwrite_slice_xy4) slices%xy4=>mach_xy4
-          slices%ready = .true.
+          slices%ready=.true.
 !
       endselect
 !

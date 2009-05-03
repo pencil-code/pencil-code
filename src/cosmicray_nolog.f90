@@ -486,6 +486,7 @@ module Cosmicray
           slices%xy2=f(l1:l2,m1:m2,iz2_loc,iecr)
           if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,iecr)
           if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,iecr)
+          slices%ready=.true.
 !
       endselect
 !

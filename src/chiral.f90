@@ -433,20 +433,20 @@ module Chiral
 !  Chirality fields: XX
 !
         case ('XX_chiral')
-          slices%yz=f(ix_loc,m1:m2,n1:n2,iXX_chiral)
-          slices%xz=f(l1:l2,iy_loc,n1:n2,iXX_chiral)
-          slices%xy=f(l1:l2,m1:m2,iz_loc,iXX_chiral)
+          slices%yz =f(ix_loc,m1:m2,n1:n2,iXX_chiral)
+          slices%xz =f(l1:l2,iy_loc,n1:n2,iXX_chiral)
+          slices%xy =f(l1:l2,m1:m2,iz_loc,iXX_chiral)
           slices%xy2=f(l1:l2,m1:m2,iz2_loc,iXX_chiral)
-          slices%ready = .true.
+          slices%ready=.true.
 !
 !  Chirality fields: YY
 !
         case ('YY_chiral')
-          slices%yz=f(ix_loc,m1:m2,n1:n2,iYY_chiral)
-          slices%xz=f(l1:l2,iy_loc,n1:n2,iYY_chiral)
-          slices%xy=f(l1:l2,m1:m2,iz_loc,iYY_chiral)
+          slices%yz =f(ix_loc,m1:m2,n1:n2,iYY_chiral)
+          slices%xz =f(l1:l2,iy_loc,n1:n2,iYY_chiral)
+          slices%xy =f(l1:l2,m1:m2,iz_loc,iYY_chiral)
           slices%xy2=f(l1:l2,m1:m2,iz2_loc,iYY_chiral)
-          slices%ready = .true.
+          slices%ready=.true.
 !
 !  Chirality fields: DQ
 !
@@ -455,12 +455,11 @@ module Chiral
           QQ_chiral_xz=f(l1:l2,iy_loc,n1:n2,iXX_chiral)-f(l1:l2,iy_loc,n1:n2,iYY_chiral)
           QQ_chiral_xy=f(l1:l2,m1:m2,iz_loc,iXX_chiral)-f(l1:l2,m1:m2,iz_loc,iYY_chiral)
           QQ_chiral_xy2=f(l1:l2,m1:m2,iz2_loc,iXX_chiral)-f(l1:l2,m1:m2,iz2_loc,iYY_chiral)
-          slices%yz=QQ_chiral_yz*(1.-QQ_chiral_yz**2)/(1.+QQ_chiral_yz**2)
-          slices%xz=QQ_chiral_xz*(1.-QQ_chiral_xz**2)/(1.+QQ_chiral_xz**2)
-          slices%xy=QQ_chiral_xy*(1.-QQ_chiral_xy**2)/(1.+QQ_chiral_xy**2)
-          slices%xy2=&
-              QQ_chiral_xy2*(1.-QQ_chiral_xy2**2)/(1.+QQ_chiral_xy2**2)
-          slices%ready = .true.
+          slices%yz =QQ_chiral_yz*(1.-QQ_chiral_yz**2)/(1.+QQ_chiral_yz**2)
+          slices%xz =QQ_chiral_xz*(1.-QQ_chiral_xz**2)/(1.+QQ_chiral_xz**2)
+          slices%xy =QQ_chiral_xy*(1.-QQ_chiral_xy**2)/(1.+QQ_chiral_xy**2)
+          slices%xy2=QQ_chiral_xy2*(1.-QQ_chiral_xy2**2)/(1.+QQ_chiral_xy2**2)
+          slices%ready=.true.
 !
       endselect
 !

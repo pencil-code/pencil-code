@@ -865,7 +865,7 @@ module Equ
         if (lwrite_zaverages) call zaverages_xy
       endif
 !
-!  Calculate mean fields.
+!  Calculate mean fields and diagnostics related to mean fields.
 !
       if (ldiagnos) then
         if (lmagnetic) call calc_mfield

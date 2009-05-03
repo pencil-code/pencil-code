@@ -2702,6 +2702,7 @@ module Density
             slices%xy2=f(l1:l2,m1:m2,iz2_loc,ilnrho)
             if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,ilnrho)
             if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,ilnrho)
+            slices%ready=.true.
           else
             slices%yz =exp(f(ix_loc,m1:m2,n1:n2,ilnrho))
             slices%xz =exp(f(l1:l2,iy_loc,n1:n2,ilnrho))
@@ -2709,6 +2710,7 @@ module Density
             slices%xy2=exp(f(l1:l2,m1:m2,iz2_loc,ilnrho))
             if (lwrite_slice_xy3) slices%xy3=exp(f(l1:l2,m1:m2,iz3_loc,ilnrho))
             if (lwrite_slice_xy4) slices%xy4=exp(f(l1:l2,m1:m2,iz4_loc,ilnrho))
+            slices%ready=.true.
           endif
 !
 !  Logarithmic density.
@@ -2721,6 +2723,7 @@ module Density
             slices%xy2=alog(f(l1:l2,m1:m2,iz2_loc,ilnrho))
             if (lwrite_slice_xy3) slices%xy3=alog(f(l1:l2,m1:m2,iz3_loc,ilnrho))
             if (lwrite_slice_xy4) slices%xy4=alog(f(l1:l2,m1:m2,iz4_loc,ilnrho))
+            slices%ready=.true.
           else
             slices%yz =f(ix_loc,m1:m2,n1:n2,ilnrho)
             slices%xz =f(l1:l2,iy_loc,n1:n2,ilnrho)
@@ -2728,6 +2731,7 @@ module Density
             slices%xy2=f(l1:l2,m1:m2,iz2_loc,ilnrho)
             if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,ilnrho)
             if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,ilnrho)
+            slices%ready=.true.
           endif
 !
       endselect

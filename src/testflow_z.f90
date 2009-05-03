@@ -680,15 +680,15 @@ module Testflow
 !  Magnetic field
 !
         case ('uu11')
-          if (slices%index >= 3) then
-            slices%ready = .false.
+          if (slices%index>=3) then
+            slices%ready=.false.
           else
-            slices%index = slices%index+1
-            slices%yz=>uu11_yz(:,:,slices%index)
-            slices%xz=>uu11_xz(:,:,slices%index)
-            slices%xy=>uu11_xy(:,:,slices%index)
+            slices%index=slices%index+1
+            slices%yz =>uu11_yz(:,:,slices%index)
+            slices%xz =>uu11_xz(:,:,slices%index)
+            slices%xy =>uu11_xy(:,:,slices%index)
             slices%xy2=>uu11_xy2(:,:,slices%index)
-            if (slices%index < 3) slices%ready = .true.
+            if (slices%index<3) slices%ready=.true.
           endif
       endselect
 !

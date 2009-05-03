@@ -3358,6 +3358,7 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
           slices%xy2=f(l1:l2,m1:m2,iz2_loc,iss)
           if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,iss)
           if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,iss)
+          slices%ready=.true.
 !
 !  Pressure.
 !
@@ -3380,6 +3381,7 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
             call eoscalc(ilnrho_ss,f(l,m,iz4_loc,ilnrho),f(l,m,iz4_loc,iss),pp=tmpval)
             slices%xy4(l-l1+1,m-m1+1)=tmpval
           enddo; enddo
+          slices%ready=.true.
 !
       endselect
 !   
