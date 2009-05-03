@@ -28,7 +28,6 @@ module Register
       use Mpicomm,          only: mpicomm_init,stop_it,stop_it_if_any
       use Sub
       use Param_IO,         only: get_datadir,get_snapdir
-      use Diagnostics,      only: initialize_time_integrals
       use IO,               only: register_io
       use Global,           only: register_global
       use EquationOfState,  only: register_eos
@@ -178,7 +177,6 @@ module Register
 ! 11-sep-04/axel: began adding spherical coordinates
 !
       use Cdata
-      use Diagnostics
       use Mpicomm, only: mpireduce_sum
       use Param_IO
       use Sub, only: remove_zprof
@@ -188,7 +186,7 @@ module Register
       use CosmicrayFlux,   only: initialize_cosmicrayflux
       use Cosmicray,       only: initialize_cosmicray
       use Density,         only: initialize_density
-      use Diagnostics,     only: initialize_time_integrals, initialize_prints
+      use Diagnostics,     only: initialize_prints
       use Dustdensity,     only: initialize_dustdensity
       use Dustvelocity,    only: initialize_dustvelocity
       use Entropy,         only: initialize_entropy
