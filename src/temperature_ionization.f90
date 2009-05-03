@@ -693,15 +693,24 @@ module Entropy
 !
     endsubroutine rprint_entropy
 !***********************************************************************
-
+    subroutine get_slices_entropy(f,slices)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices%ready)
+!
+    endsubroutine get_slices_entropy
+!***********************************************************************
     subroutine calc_heatcond_ADI(finit,f)
-
+!
       use Cparam
-
+!
       implicit none
-
+!
       real, dimension(mx,my,mz,mfarray) :: finit,f
-
-    end subroutine calc_heatcond_ADI
+!
+    endsubroutine calc_heatcond_ADI
 !**************************************************************
 endmodule Entropy

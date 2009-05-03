@@ -1268,6 +1268,16 @@ module Entropy
 !
     endsubroutine rprint_entropy
 !***********************************************************************
+    subroutine get_slices_entropy(f,slices)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices%ready)
+!
+    endsubroutine get_slices_entropy
+!***********************************************************************
     subroutine single_polytrope(f)
 !
 ! 04-aug-07/dintrans: a single polytrope with index mpoly0

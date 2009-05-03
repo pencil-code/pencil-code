@@ -656,6 +656,16 @@ endif
 !
     endsubroutine rprint_entropy
 !***********************************************************************
+    subroutine get_slices_entropy(f,slices)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices%ready)
+!
+    endsubroutine get_slices_entropy
+!***********************************************************************
     subroutine heatcond(hcond)
 !
 !  calculate the heat conductivity hcond along a pencil.

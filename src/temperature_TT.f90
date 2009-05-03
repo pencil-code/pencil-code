@@ -840,7 +840,17 @@ module Entropy
 !
     endsubroutine rprint_entropy
 !***********************************************************************
-      subroutine ADI_constK(finit,f)
+    subroutine get_slices_entropy(f,slices)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices%ready)
+!
+    endsubroutine get_slices_entropy
+!***********************************************************************
+    subroutine ADI_constK(finit,f)
        
       use Cdata
       use Cparam
