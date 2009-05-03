@@ -787,7 +787,7 @@ module Pscalar
 !
 !  14-apr-03/axel: adaped from calc_mfield
 !
-      use Sub
+      use Diagnostics
 !
       logical,save :: first=.true.
       real :: ccm
