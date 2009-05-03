@@ -18,7 +18,7 @@ echo $cwd >! .tmp
 #  where workspace can be allocated.
 #
 set hn = `hostname`
-echo 'we are on' $hn', the new workspace will be'
+echo 'We are on the machine "'$hn'", so the new workspace will be'
 #
 if ($hn =~ mhd*.st-and.ac.uk) then
   set str='s/home/work2/g'
