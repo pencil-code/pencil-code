@@ -346,6 +346,16 @@ module EquationOfState
 !
     endsubroutine rprint_eos
 !***********************************************************************
+    subroutine get_slices_eos(f,slices)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices%ready)
+!
+    endsubroutine get_slices_eos
+!***********************************************************************
     subroutine pencil_criteria_eos()
 !
 !  All pencils that the EquationOfState module depends on are specified here.
