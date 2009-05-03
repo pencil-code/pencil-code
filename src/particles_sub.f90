@@ -5,6 +5,7 @@
 module Particles_sub
 !
   use Cdata
+  use Messages
   use Particles_cdata
 !
   implicit none
@@ -223,7 +224,6 @@ module Particles_sub
 !
 !  30-dec-04/anders: coded
 !
-      use Messages, only: fatal_error_local
       use Mpicomm
       use General, only: random_number_wrapper
 !
@@ -505,8 +505,6 @@ module Particles_sub
 !
 !  01-jan-05/anders: coded
 !
-      use Messages, only: fatal_error, fatal_error_local, &
-                          fatal_error_local_collect, warning
       use Mpicomm
       use Diagnostics, only: max_name
 !
@@ -628,7 +626,7 @@ module Particles_sub
 !
 !  Calculate serial index of receiving processor.
 !
-          iproc_rec=ipx_rec+nprocx*ipy_rec+nprocy*ipz_rec
+          iproc_rec=ipx_rec+nprocx*ipy_rec+nprocx*nprocy*ipz_rec
 !
 !  Migrate particle if it is no longer at the current processor.
 !
@@ -849,7 +847,6 @@ module Particles_sub
 !
 !  05-jan-05/anders: coded
 !
-      use Messages, only: fatal_error
       use Mpicomm,  only: mpibcast_int
 !
       integer :: npar_loc
@@ -965,8 +962,6 @@ module Particles_sub
 !
 !  02-jan-05/anders: adapted from sum_mn_name
 !
-      use Messages, only: fatal_error
-!
       real, dimension (:) :: a
       integer :: iname
       logical, optional :: lsqrt
@@ -1012,8 +1007,6 @@ module Particles_sub
 !  Works for particle diagnostics.
 !
 !  22-aug-05/anders: adapted from sum_par_name
-!
-      use Messages, only: fatal_error
 !
       real, dimension (:) :: a
       integer :: iname
@@ -1082,8 +1075,6 @@ module Particles_sub
 !  Works for particle diagnostics.
 !
 !  29-nov-05/anders: adapted from sum_par_name
-!
-      use Messages, only: fatal_error
 !
       real, dimension (:) :: a
       integer :: iname
@@ -1314,8 +1305,6 @@ module Particles_sub
 !
 !  09-jun-06/anders: coded
 !
-      use Messages, only: fatal_error
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (3) :: xxp
       integer, dimension (3) :: inear
@@ -1394,8 +1383,6 @@ module Particles_sub
 !  Quadratic spline interpolation of the function g to the point xxp=(xp,yp,zp).
 !
 !  10-jun-06/anders: coded
-!
-      use Messages, only: fatal_error
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (3) :: xxp
@@ -1545,7 +1532,6 @@ module Particles_sub
 !  23-jan-05/anders: coded
 !  08-jul-08/kapelrud: support for non-equidist. grids
 !
-      use Messages
       use Mpicomm, only: stop_it
 !
       real, dimension (mpar_loc,mpvar) :: fp
@@ -1715,7 +1701,6 @@ module Particles_sub
 !  20-apr-06/anders: coded
 !
       use General, only: safe_character_assign
-      use Messages, only: fatal_error
 !
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
@@ -2297,8 +2282,6 @@ module Particles_sub
 !***********************************************************************
     subroutine get_particles_interdistance(xx1,xx2,vector,distance,lsquare)
 !      
-      use Messages, only: fatal_error
-!
       real,dimension(3) :: xx1,xx2,evr
       real :: e1,e2,e3,e10,e20,e30
       real,dimension(3),optional :: vector
@@ -2346,8 +2329,6 @@ module Particles_sub
     endsubroutine get_particles_interdistance
 !***********************************************************************
     subroutine remove_particle(fp,npar_loc,ipar,k,dfp,ineargrid,ks)
-!
-      use Messages, only: fatal_error
 !
       real, dimension (mpar_loc,mpvar) :: fp
       real, dimension (mpar_loc,mpvar), optional :: dfp
@@ -2409,7 +2390,6 @@ module Particles_sub
 !  Check that all interpolation requirements are satisfied:
 !
       use Particles_cdata
-      use Messages, only: fatal_error, warning
 !
       if (interp%luu .and. (.not.lhydro)) then
         call warning('initialize_particles','interpolated uu '// &
@@ -2441,7 +2421,6 @@ module Particles_sub
 !  28-jul-08/kapelrud: coded
 !
       use Particles_cdata
-      use Messages, only: fatal_error
 !
       real,dimension(mx,my,mz,mfarray) :: f
       real,dimension(mpar_loc,mpvar) :: fp
