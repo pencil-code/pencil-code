@@ -1,7 +1,7 @@
 ! $Id$
-
+!
 !  Equation of state for an ideal gas without ionization.
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -14,49 +14,37 @@
 ! PENCILS PROVIDED yH; ee; ss; pp; delta
 !
 !***************************************************************
-
 module EquationOfState
-
-  use Cparam
+!
   use Cdata
+  use Cparam
   use Messages
-
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   include 'eos.h'
-
+!
   interface eoscalc ! Overload subroutine `eoscalc' function
     module procedure eoscalc_pencil   ! explicit f implicit m,n
     module procedure eoscalc_point    ! explicit lnrho, ss
     module procedure eoscalc_farray   ! explicit lnrho, ss
   end interface
-
+!
   interface pressure_gradient ! Overload subroutine `pressure_gradient'
     module procedure pressure_gradient_farray  ! explicit f implicit m,n
     module procedure pressure_gradient_point   ! explicit lnrho, ss
   end interface
-
-! integers specifying which independent variables to use in eoscalc
+!
   integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3
   integer, parameter :: ilnrho_lnTT=4,ilnrho_cs2=5
   integer, parameter :: irho_cs2=6, irho_ss=7, irho_lnTT=8, ilnrho_TT=9
-
+!
   integer :: iglobal_cs2, iglobal_glnTT
-
-  ! secondary parameters calculated in initialize
-!  real :: TT_ion=impossible,TT_ion_=impossible
-!  real :: ss_ion=impossible,kappa0=impossible
-!  real :: lnrho_H=impossible,lnrho_e=impossible,lnrho_e_=impossible
-!  real :: lnrho_p=impossible,lnrho_He=impossible
 !
   real :: lnTT0=impossible
 !
-!  initialize the helium fraction (by mass) to 0.
-!  and the mean molecular weight mu to unity.
-!
- ! real :: xHe=0.
   real :: mu=1.
-
   real :: cs0=1., rho0=1.
   real :: cs20=1., lnrho0=0.
   real :: ptlaw=3./4.
@@ -71,36 +59,26 @@ module EquationOfState
   real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
   real, dimension(3) :: beta_glnrho_global=0., beta_glnrho_scaled=0.
   integer :: isothtop=0
-
   integer :: ieosvars=-1, ieosvar1=-1, ieosvar2=-1, ieosvar_count=0
-
   logical :: leos_isothermal=.false., leos_isentropic=.false.
   logical :: leos_isochoric=.false., leos_isobaric=.false.
   logical :: leos_localisothermal=.false.
-
   character (len=20) :: input_file='chem.inp'
   logical, SAVE ::  lcheminp_eos=.false.
-
   logical :: l_gamma1=.false.
   logical :: l_gamma=.false.
   logical :: l_cp=.false.
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- 
-
-  ! input parameters
+!
   namelist /eos_init_pars/  mu, cp, cs0, rho0, gamma, error_cp, ptlaw
-
-  ! run parameters
+!
   namelist /eos_run_pars/   mu, cp, cs0, rho0, gamma, error_cp, ptlaw
-
+!
   contains
-
 !***********************************************************************
     subroutine register_eos()
 !
 !  14-jun-03/axel: adapted from register_eos
 !
-      use Cdata
       use Sub
 !
       leos=.true.
@@ -397,8 +375,6 @@ module EquationOfState
 !  14-jun-03/axel: adapted from rprint_radiation
 !  21-11-04/anders: moved diagnostics to entropy
 !
-      use Cdata
-!
       logical :: lreset
       logical, optional :: lwrite
 !
@@ -458,7 +434,6 @@ module EquationOfState
 !
 !  02-apr-06/tony: coded
 !
-      use Cparam
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -491,12 +466,9 @@ module EquationOfState
 !
 !  12-jul-03/tobi: coded
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx) :: lnrho,ss,yH,lnTT
 !
- 
     endsubroutine ioninit
 !***********************************************************************
     subroutine ioncalc(f)
@@ -506,12 +478,9 @@ module EquationOfState
 !
 !   13-jun-03/tobi: coded
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) :: lnrho,ss,yH,lnTT
 !
-
     endsubroutine ioncalc
 !***********************************************************************
 
@@ -571,15 +540,12 @@ module EquationOfState
 !
 !   17-nov-03/tobi: adapted from subroutine eoscalc
 !
-      use Cdata
-!
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx), intent(out) :: cs2,cp1tilde
       real, dimension(nx) :: lnrho,ss
-
-     cs2=impossible
-     cp1tilde=impossible
 !
+      cs2=impossible
+      cp1tilde=impossible
 !
     endsubroutine pressure_gradient_farray
 !***********************************************************************
@@ -591,7 +557,6 @@ module EquationOfState
 !
 !   17-nov-03/tobi: adapted from subroutine eoscalc
 !
-      use Cdata
       use Mpicomm, only: stop_it 
 !
       real, intent(in) :: lnrho,ss
@@ -619,8 +584,6 @@ module EquationOfState
 !   gP/rho=cs2*(glnrho+cp1*gss)
 !
 !   17-nov-03/tobi: adapted from subroutine eoscalc
-!
-      use Cdata
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx,3), intent(in) :: glnrho,gss
@@ -659,8 +622,6 @@ glnTT(:,i)=impossible
 !
 !   17-nov-03/tobi: adapted from subroutine eoscalc
 !
-      use Cdata
-!
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx), intent(in) :: del2lnrho,del2ss
       real, dimension(nx), intent(out) :: del2lnTT
@@ -691,8 +652,6 @@ glnTT(:,i)=impossible
 !   hP/rho=cs2*(hlnrho+cp1*hss)
 !
 !   17-nov-03/tobi: adapted from subroutine eoscalc
-!
-      use Cdata
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx,3,3), intent(in) :: hlnrho,hss
@@ -736,7 +695,6 @@ glnTT(:,i)=impossible
 !   17-nov-03/tobi: moved calculation of cs2 and cp1 to
 !                   subroutine pressure_gradient
 !
-      use Cdata
       use Diagnostics
      
      ! type (pencil_case) :: p
@@ -947,7 +905,6 @@ glnTT(:,i)=impossible
 !                   is just fine.
 !   22-jun-06/axel: reinstated cp,cp1,cv,cv1 in hopefully all the places.
 !
-      use Cdata
       use Mpicomm, only: stop_it 
 !
       integer, intent(in) :: ivars
@@ -1032,8 +989,6 @@ glnTT(:,i)=impossible
 !   31-mar-06/tony: I removed messy lcalc_cp stuff completely. cp=1.
 !                   is just fine.
 !   22-jun-06/axel: reinstated cp,cp1,cv,cv1 in hopefully all the places.
-!
-      use Cdata
 !
       integer, intent(in) :: ivars
       real, dimension(nx), intent(in) :: var1,var2
@@ -1214,8 +1169,6 @@ glnTT(:,i)=impossible
 !  17-oct-03/nils: works also with leos_ionization=T
 !  18-oct-03/tobi: distributed across ionization modules
 !
-      use Cdata
-!
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: T0
       real, dimension(nx) :: lnrho,ss,lnTT
@@ -1284,7 +1237,6 @@ glnTT(:,i)=impossible
 !   8-jul-2002/axel: split old bc_ss into two
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Cdata
       use Gravity
       use SharedVariables,only:get_shared_variable
       use Mpicomm, only:stop_it
@@ -1415,7 +1367,6 @@ glnTT(:,i)=impossible
 !  23-jun-2003/tony: implemented for leos_fixed_ionization
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Cdata
       use Gravity
 !
       character (len=3) :: topbot
@@ -1485,7 +1436,6 @@ glnTT(:,i)=impossible
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Cdata
       use Gravity
 !
       character (len=3) :: topbot
@@ -1564,7 +1514,6 @@ glnTT(:,i)=impossible
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Cdata
       use Gravity
 !
       character (len=3) :: topbot
@@ -1627,7 +1576,6 @@ glnTT(:,i)=impossible
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Cdata
       use Gravity
 !
       character (len=3) :: topbot
@@ -1714,7 +1662,6 @@ glnTT(:,i)=impossible
 !  27-sep-2002/axel: coded
 !  19-aug-2005/tobi: distributed across ionization modules
 !
-      use Cdata
       use Gravity
 !
       character (len=3) :: topbot
@@ -1796,7 +1743,6 @@ glnTT(:,i)=impossible
 !   1-may-2003/axel: added the same for top boundary
 !  19-aug-2005/tobi: distributed across ionization modules
 !
-      use Cdata
       use Gravity, only: lnrho_bot,lnrho_top,ss_bot,ss_top
 !
       character (len=3) :: topbot
@@ -1901,7 +1847,6 @@ glnTT(:,i)=impossible
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Cdata
       use Gravity
 !
       character (len=3) :: topbot
@@ -1960,7 +1905,6 @@ glnTT(:,i)=impossible
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Cdata
       use Gravity
 !
       character (len=3) :: topbot
@@ -2013,7 +1957,6 @@ glnTT(:,i)=impossible
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Cdata
       use Gravity
 !
       character (len=3) :: topbot
@@ -2065,7 +2008,6 @@ glnTT(:,i)=impossible
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Cdata
       use Gravity
 !
       character (len=3) :: topbot
@@ -2117,7 +2059,6 @@ glnTT(:,i)=impossible
 !  11-jul-2002/nils: moved into the entropy module
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Cdata
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2193,7 +2134,6 @@ glnTT(:,i)=impossible
 !
 !  21-aug-2006/wlad: coded
 !
-      use Cdata
       use Gravity
       use Sub, only: div
 
@@ -2294,7 +2234,6 @@ glnTT(:,i)=impossible
 !
 !  12-Juil-2006/dintrans: coded
 !
-      use Cdata
       use Gravity
       use Sub, only: div
 
@@ -2424,7 +2363,6 @@ glnTT(:,i)=impossible
 !
 !  05-jul-07/tobi: Adapted from bc_aa_pot3
 !
-      use Cdata
       use Fourier, only: fourier_transform_xy_xy, fourier_transform_other
       use Gravity, only: potential
 
@@ -2559,7 +2497,6 @@ glnTT(:,i)=impossible
 !  Does the same thing as bc_lnrho_hdss_z_iso, but for a local isothermal
 !  equation of state (as opposed to strictly isothermal).
 !
-      use Cdata
       use Fourier, only: fourier_transform_xy_xy, fourier_transform_other
       use Gravity, only: potential
 
@@ -2746,7 +2683,6 @@ glnTT(:,i)=impossible
 !  12-Jul-2006/dintrans: coded
 !  18-Jul-2007/wlad: adapted for local isothermal equation of state
 !
-      use Cdata
       use Gravity
 
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
