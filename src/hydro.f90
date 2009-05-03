@@ -107,7 +107,7 @@ module Hydro
   real :: othresh=0.,othresh_per_orms=0.,orms=0.,othresh_scl=1.
   real :: utop=0.,ubot=0.,omega_out=0.,omega_in=0.
   real :: width_ff_uu=1.,x1_ff_uu=0.,x2_ff_uu=0.
-  real :: eckmann_friction=0
+  real :: eckmann_friction=0.0
   integer :: novec,novecmax=nx*ny*nz/4
   logical :: ldamp_fade=.false.,lOmega_int=.false.,lupw_uu=.false.
   logical :: lfreeze_uint=.false.,lfreeze_uext=.false.
@@ -1333,7 +1333,7 @@ module Hydro
       intent(in) :: f,p
       intent(out) :: df
 !
-!  identify module and boundary conditions
+!  Identify module and boundary conditions.
 !
       if (headtt.or.ldebug) print*,'duu_dt: SOLVE'
       if (headtt) then
@@ -1342,14 +1342,10 @@ module Hydro
         call identify_bcs('uz',iuz)
       endif
 !
-!  advection term, -u.gradu
+!  Advection term.
 !
       if (ladvection_velocity) &
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
-!
-! Eckmann Friction, used only in two dimensional runs
-     if (eckmann_friction/=0) &
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-eckmann_friction*p%uu
 !
 !  Coriolis force, -2*Omega x u (unless lprecession=T)
 !  Omega=(-sin_theta, 0, cos_theta), where theta corresponds to
@@ -1437,13 +1433,18 @@ module Hydro
       endif
       if (headtt.or.ldebug) print*,'duu_dt: max(advec_uu) =',maxval(advec_uu)
 !
-!  add possibility of forcing that is not delta-correlated in time
+!  Eckmann Friction, used only in two dimensional runs.
+!
+     if (eckmann_friction/=0) &
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-eckmann_friction*p%uu
+!
+!  Add possibility of forcing that is not delta-correlated in time.
 !
       if (lforcing_cont_uu) &
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%fcont
 !
-!  damp motions in some regions for some time spans if desired
-!  for geodynamo: addition of dampuint evaluation
+!  Damp motions in some regions for some time spans if desired.
+!  For geodynamo: addition of dampuint evaluation.
 !
       if (tdamp/=0.or.dampuext/=0.or.dampuint/=0) call udamping(f,df,p)
 !
