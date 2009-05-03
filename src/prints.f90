@@ -34,32 +34,32 @@ module Print
       logical, save :: first=.true.
 !
       if (first) then
-        !
-        !  Initialize rcyl for the phi-averages grid. Does not need to be
-        !  done after each reload of run.in, but this is the easiest way
-        !  of doing it.
-        !
-        !drcyl = dx   !this just happens for nrcyl=nx/2
+!
+!  Initialize rcyl for the phi-averages grid. Does not need to be
+!  done after each reload of run.in, but this is the easiest way
+!  of doing it.
+!
+!drcyl = dx   !this just happens for nrcyl=nx/2
         if (nrcyl/=0) then 
            drcyl = xyz1(1)/nrcyl
         else
            drcyl = 0. 
         endif
         rcyl = (/ ((i-0.5)*drcyl, i=1,nrcyl) /)
-        !
-        !  Calculate the three surface elements.
-        !  Take care of degenerate dimensions.
-        !
+!
+!  Calculate the three surface elements.
+!  Take care of degenerate dimensions.
+!
         if (nxgrid==1) then; dxeff=1.; else; dxeff=dx; endif
         if (nygrid==1) then; dyeff=1.; else; dyeff=dy; endif
         if (nzgrid==1) then; dzeff=1.; else; dzeff=dz; endif
-        !
+!
         dsurfxy=dxeff*dyeff
         dsurfyz=dyeff*dzeff
         dsurfzx=dzeff*dxeff
-        !
-        !  Calculate the volume element.
-        !
+!
+!  Calculate the volume element.
+!
         dvol=dxeff*dyeff*dzeff
       endif
 !
@@ -204,6 +204,7 @@ module Print
 !
       if (ldebug) write(*,*) 'exit prints'
       first = .false.
+!
     endsubroutine prints
 !***********************************************************************
     subroutine write_1daverages()
@@ -323,7 +324,7 @@ module Print
       if (lroot.and.nnamex>0) then
         open(1,file=trim(datadir)//'/yzaverages.dat',position='append')
         write(1,'(1pe12.5)') t1ddiagnos
-        write(1,'(1p,8e14.5e3)') fnamex(:,1:nnamex)
+        write(1,'(1p,8e14.5e3)') fnamex(:,:,1:nnamex)
         close(1)
       endif
 !

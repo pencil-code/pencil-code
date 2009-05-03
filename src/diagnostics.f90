@@ -261,14 +261,14 @@ module Diagnostics
       if (nnamez>0) then
         call mpireduce_sum(fnamez,fsumz,nz*nprocz*nnamez)
         if (lroot) &
-            fnamez(:,:,1:nnamez)=fsumz(:,:,1:nnamez)/(nx*ny*nprocy)
+            fnamez(:,:,1:nnamez)=fsumz(:,:,1:nnamez)/(nx*ny*nprocx*nprocy)
       endif
 !
     endsubroutine xyaverages_z
 !***********************************************************************
     subroutine xzaverages_y()
 !
-!  Calculate xz-averages (still depending on y)
+!  Calculate xz-averages (still depending on y).
 !
 !  12-oct-05/anders: adapted from xyaverages_z
 !
@@ -280,7 +280,7 @@ module Diagnostics
       if (nnamey>0) then
         call mpireduce_sum(fnamey,fsumy,ny*nprocy*nnamey)
         if (lroot) &
-            fnamey(:,:,1:nnamey)=fsumy(:,:,1:nnamey)/(nx*nz*nprocz)
+            fnamey(:,:,1:nnamey)=fsumy(:,:,1:nnamey)/(nx*nz*nprocx*nprocz)
       endif
 !
     endsubroutine xzaverages_y
@@ -291,15 +291,15 @@ module Diagnostics
 !
 !   2-oct-05/anders: adapted from xyaverages_z
 !
-      real, dimension (nx,mnamex) :: fsumx
+      real, dimension (nx,nprocx,mnamex) :: fsumx
 !
 !  Communicate over all processors.
 !  The result is only present on the root processor.
 !
       if (nnamex>0) then
-        call mpireduce_sum(fnamex,fsumx,nx*nnamex)
+        call mpireduce_sum(fnamex,fsumx,nx*nprocx*nnamex)
         if (lroot) &
-            fnamex(:,1:nnamex)=fsumx(:,1:nnamex)/(ny*nprocy*nz*nprocz)
+            fnamex(:,:,1:nnamex)=fsumx(:,:,1:nnamex)/(ny*nz*nprocy*nprocz)
       endif
 !
     endsubroutine yzaverages_x

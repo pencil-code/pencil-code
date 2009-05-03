@@ -160,7 +160,7 @@ module Cdata
   logical :: lgrav=.false.,lgravx_gas=.true.,lgravy_gas=.true.,lgravz_gas=.true.
   logical :: lgravx_dust=.true.,lgravy_dust=.true.,lgravz_dust=.true.
   logical :: lgravr=.false.,lgravr_gas=.false.,lgravr_dust=.false.
-  logical :: lwrite_ic=.false.,lnowrite=.false.,lserial_io=.false.
+  logical :: lwrite_ic=.true.,lnowrite=.false.,lserial_io=.false.
   logical :: lroot=.true.,ldebug=.false.,lfft=.true.
   logical :: lshear=.false.,lpscalar=.false.,lpscalar_nolog=.false.
   logical :: lalpm=.false.
@@ -261,17 +261,17 @@ module Cdata
   integer, parameter :: mname=100,mnamev=100,mnamerz=20
   integer, parameter :: mnamez=30,mnamey=30,mnamex=30,mnamer=30
   integer, parameter :: mnamexy=6,mnamexz=6
-  integer, dimension (mname) :: itype_name=0.
+  integer, dimension (mname) :: itype_name=0
   real, dimension (mname) :: fname, fweight
-  real, dimension (nz,nprocz) :: z_allprocs=0.
-  real, dimension (nz,nprocz,mnamez) :: fnamez=0.
-  real, dimension (ny,nprocy,mnamey) :: fnamey=0.
-  real, dimension (nx,mnamex) :: fnamex=0.
+  real, dimension (nz,nprocz) :: z_allprocs=0.0
+  real, dimension (nx,nprocx,mnamex) :: fnamex=0.0
+  real, dimension (ny,nprocy,mnamey) :: fnamey=0.0
+  real, dimension (nz,nprocz,mnamez) :: fnamez=0.0
   real, dimension (nrcyl,mnamer) :: fnamer=0.
-  real, dimension (nx,ny,nprocy,mnamexy) :: fnamexy=0.
-  real, dimension (nx,nz,nprocz,mnamexz) :: fnamexz=0.
-  real, dimension (nrcyl,0:nz,nprocz,mnamerz) :: fnamerz=0.
-  real, dimension (nrcyl,nx) :: phiavg_profile=0.
+  real, dimension (nx,ny,nprocy,mnamexy) :: fnamexy=0.0
+  real, dimension (nx,nz,nprocz,mnamexz) :: fnamexz=0.0
+  real, dimension (nrcyl,0:nz,nprocz,mnamerz) :: fnamerz=0.0
+  real, dimension (nrcyl,nx) :: phiavg_profile=0.0
   character (len=30) :: cname(mname),cform(mname)
   character (len=30) :: cnamev(mname)
   character (len=30) :: cnamexy(mnamexy),cformxy(mnamexy)
