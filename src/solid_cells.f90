@@ -21,18 +21,21 @@ module Solid_Cells
   real, dimension(max_items)   :: cylinder_temp=703.0
   real, dimension(max_items) :: cylinder_xpos,cylinder_ypos,cylinder_zpos
   integer, dimension(mx,my,mz,4)  :: ba,ba_shift
-  real :: skin_depth=0, init_uu=0, ampl_noise=0
+  real :: skin_depth=0, init_uu=0, ampl_noise=0, cylinder_skin=0
+  real :: limit_close_linear
   character (len=labellen), dimension(ninit) :: initsolid_cells='nothing'
   character (len=labellen) :: interpolation_method='staircase'
   integer, parameter :: iradius=1, ixpos=2,iypos=3,izpos=4,itemp=5
+  logical :: lclose_interpolation=.false., lclose_linear=.false.
 !
   namelist /solid_cells_init_pars/ &
        cylinder_temp, ncylinders, cylinder_radius, cylinder_xpos, &
        cylinder_ypos, cylinder_zpos, initsolid_cells, skin_depth, init_uu, &
-       ampl_noise,interpolation_method
+       ampl_noise,interpolation_method,cylinder_skin,lclose_interpolation, &
+       lclose_linear
 !
   namelist /solid_cells_run_pars/  &
-       interpolation_method
+       interpolation_method,cylinder_skin,lclose_interpolation,lclose_linear
 !
   contains
 !***********************************************************************
@@ -247,9 +250,11 @@ f(:,m2-5:m2,:,iux)=0
       integer :: i,j,k,idir,xind,yind,zind,icyl
       
       real :: y_cyl, x_cyl, r_cyl, r_new, r_point, sin_theta, cos_theta
-      real :: xmirror, ymirror, phi
+      real :: xmirror, ymirror, phi, dr
       integer :: lower_i, upper_i, lower_j, upper_j, ii, jj
       logical :: bax, bay
+      real :: gpp
+      real, dimension(3) :: xxp
 !
 !  Find ghost points based on the mirror interpolation method
 !
@@ -257,8 +262,8 @@ f(:,m2-5:m2,:,iux)=0
         do i=l1,l2
         do j=m1,m2
         do k=n1,n2
-          bax=(ba(i,j,k,1) .ne. 0) .and. (ba(i,j,k,1) .ne. 9)
-          bay=(ba(i,j,k,2) .ne. 0) .and. (ba(i,j,k,2) .ne. 9)
+          bax=(ba(i,j,k,1) .ne. 0).and.(ba(i,j,k,1).ne.9).and.(ba(i,j,k,1).ne.10)
+          bay=(ba(i,j,k,2) .ne. 0).and.(ba(i,j,k,2).ne.9).and.(ba(i,j,k,2).ne.10)
 !
 !  Check if we are in a point which must be interpolated, i.e. we are inside
 !  a solid geometry AND we are not more than three grid points from the 
@@ -306,29 +311,47 @@ f(:,m2-5:m2,:,iux)=0
 !  First we use interpolations to find the value of the mirror point.
 !  Then we use the interpolated value to find the value of the ghost point
 !  by empoying either Dirichlet or Neuman boundary conditions.
-!  Note that the currently implemented interpolation routine should be updated
-!  for points close to the boundary where one of the corners are inside the
-!  solid geometry.
 !
-              call interpolate_mirror_point(f,phi,iux,k,lower_i,upper_i,lower_j,&
-                  upper_j,xmirror,ymirror)
-              f(i,j,k,iux)=-phi
-              call interpolate_mirror_point(f,phi,iuy,k,lower_i,upper_i,lower_j,&
-                  upper_j,xmirror,ymirror)
-              f(i,j,k,iuy)=-phi
-              call interpolate_mirror_point(f,phi,iuz,k,lower_i,upper_i,lower_j,&
-                  upper_j,xmirror,ymirror)
-              f(i,j,k,iuz)=-phi
-              if (ilnrho>0) then
-                call interpolate_mirror_point(f,phi,ilnrho,k,lower_i,upper_i,&
-                    lower_j,upper_j,xmirror,ymirror)
-                f(i,j,k,ilnrho)=phi
+            call interpolate_mirror_point(f,phi,iux,k,lower_i,upper_i,lower_j,&
+                upper_j,xmirror,ymirror)
+            f(i,j,k,iux)=-phi
+            call interpolate_mirror_point(f,phi,iuy,k,lower_i,upper_i,lower_j,&
+                upper_j,xmirror,ymirror)
+            f(i,j,k,iuy)=-phi
+            call interpolate_mirror_point(f,phi,iuz,k,lower_i,upper_i,lower_j,&
+                upper_j,xmirror,ymirror)
+            f(i,j,k,iuz)=-phi
+            if (ilnrho>0) then
+              call interpolate_mirror_point(f,phi,ilnrho,k,lower_i,upper_i,&
+                  lower_j,upper_j,xmirror,ymirror)
+              f(i,j,k,ilnrho)=phi
+            endif
+            if (ilnTT>0) then
+              call interpolate_mirror_point(f,phi,ilnTT,k,lower_i,upper_i,&
+                  lower_j,upper_j,xmirror,ymirror)
+              f(i,j,k,ilnTT)=2*cylinder_temp(icyl)-phi
+            endif
+          else
+!
+! For fluid points very close to the solid surface the value of the point
+! is found from interpolation between the value at the closest grid line
+! and the value at the solid surface.
+!
+            if (lclose_linear) then
+              icyl=ba(i,j,k,4)
+              x_cyl=cylinder(icyl,ixpos)
+              y_cyl=cylinder(icyl,iypos)
+              r_cyl=cylinder(icyl,iradius)
+              r_point=sqrt(((x(i)-x_cyl)**2+(y(j)-y_cyl)**2))
+              dr=r_point-r_cyl
+              if ((dr > 0) .and. (dr<limit_close_linear)) then
+                xxp=(/x(i),y(j),z(k)/)
+                call close_interpolation2(f,i,j,k,icyl,iux,iux,xxp,gpp)
+                f(i,j,k,iux)=gpp
+                call close_interpolation2(f,i,j,k,icyl,iuy,iuy,xxp,gpp)
+                f(i,j,k,iuy)=gpp
               endif
-              if (ilnTT>0) then
-                call interpolate_mirror_point(f,phi,ilnTT,k,lower_i,upper_i,&
-                    lower_j,upper_j,xmirror,ymirror)
-                f(i,j,k,ilnTT)=2*cylinder_temp(icyl)-phi
-              endif
+            endif
           endif
         enddo
         enddo
@@ -357,7 +380,7 @@ f(:,m2-5:m2,:,iux)=0
               endif
 !                
 !  Only update the solid cell "ghost points" if all indeces are non-zero.
-!  In this way we might loose the innermost "ghost point" if the processore
+!  In this way we might loose the innermost "ghost point" if the processor
 !  border is two grid cells inside the solid structure, but this will 
 !  probably just have a very minor effect.
 !
@@ -379,13 +402,16 @@ f(:,m2-5:m2,:,iux)=0
 !***********************************************************************  
     subroutine interpolate_mirror_point(f,phi,ivar,k,lower_i,upper_i,lower_j,upper_j,xmirror,ymirror)
 !
-!  Interpolate value in i mirror point from the four corner values
+!  Interpolate value in a mirror point from the four corner values
 !
 !  23-dec-2008/nils: coded
+!  22-apr-2009/nils: added special treatment close to the solid surface
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       integer :: lower_i,upper_i,lower_j,upper_j,k,ivar
       real :: xmirror,ymirror,phi, hx1, hy1,hy2,hx2
+      real, dimension(3) :: xxp
+      real, dimension(1) :: phi_tmp
 !
       hx1=xmirror-x(lower_i)
       hx2=x(upper_i)-xmirror
@@ -398,7 +424,226 @@ f(:,m2-5:m2,:,iux)=0
           +f(lower_i,lower_j,k,ivar)*hx2*hy2 &
           +f(upper_i,lower_j,k,ivar)*hx1*hy2)/((hx1+hx2)*(hy1+hy2))
 !
+! If the mirror point is very close to the surface of the cylinder 
+! some special treatment is required.
+!
+      if (lclose_interpolation .and. ivar < 4) then
+        xxp=(/xmirror,ymirror,0.0/)
+        phi_tmp(1)=phi
+        call close_interpolation(f,lower_i,lower_j,k,ivar,ivar,xxp,phi_tmp)
+        phi=phi_tmp(1)
+      endif
+!
     end subroutine interpolate_mirror_point
+!***********************************************************************  
+    subroutine close_interpolation2(f,ix0_,iy0_,iz0_,icyl,ivar1,ivar2,xxp,gpp)
+      !
+      !  20-mar-2009/nils: coded
+      !
+      ! WARNING: This routine only works for cylinders with an infinitely long
+      ! WARNING: central axis in the z-direction!
+      !
+      ! The interpolation point, named p, has coordinates [xp,yp].
+      ! The point s on the cylinder surface, with coordinates [xs,ys], is 
+      ! placed such that the line from s to p is a normal to the cylinder surface.
+      !
+      ! If a one of the corner points of the grid cell is within a solid geometry
+      ! the normal passing through both s and p are continued outward until a
+      ! grid line is reached. If this line has constant, say y, then the variables
+      ! constdir and vardir are given the values 2 and 1, respectively.  
+      !
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      integer, intent(in) :: ix0_,iy0_,iz0_,ivar1,ivar2
+      integer :: ix0,iy0,iz0
+      real, intent(inout) :: gpp
+      real :: x0,y0,z0,rs,verylarge=1e9,varval,rint1,rint2,fint,rps,rintp
+      integer :: index,ix1,iy1,iz1,min
+      real, dimension(3), intent(in) :: xxp
+      real, dimension(2,2) :: rij
+      real, dimension(3,2) :: bordervalue
+      integer, dimension(3,2) :: borderindex
+      integer, dimension(4) :: constdir_arr, vardir_arr, topbot_arr
+      real, dimension(2) :: xyint, p_cylinder
+      real :: xtemp,r,xp,yp,R1,Rsmall,xs,ys,rp,dist,yp_cylinder,xp_cylinder
+      integer :: constdir,vardir,topbot_tmp,dirconst,dirvar,icyl,counter,topbot
+      real :: x1,x2,f1,f2,rij_min,rij_max,inputvalue,smallx,gp
+!
+! Define some help variables
+!
+      smallx=dx*1e-5
+      x0=cylinder(icyl,ixpos)
+      y0=cylinder(icyl,iypos)
+      z0=cylinder(icyl,izpos)
+      rs=cylinder(icyl,iradius)
+      xp=xxp(1)
+      yp=xxp(2)
+      iz0=iz0_
+!
+!  Find the corner points of the grid cell we are in
+!
+      if (xp < x0) then
+        ix0=ix0_-1
+        xp=xp-smallx
+      else
+        ix0=ix0_
+        xp=xp+smallx
+      endif
+      if (yp < y0) then
+        iy0=iy0_-1
+        yp=yp-smallx
+      else
+        iy0=iy0_
+        yp=yp+smallx
+      endif
+      ix1=ix0+1
+      iy1=iy0+1
+      iz1=iz0+1
+!
+!  Put help variables into arrays
+!
+      bordervalue(1,1)=x(ix0)
+      bordervalue(2,1)=y(iy0)
+      bordervalue(1,2)=x(ix1)
+      bordervalue(2,2)=y(iy1)
+      borderindex(1,1)=ix0
+      borderindex(2,1)=iy0
+      borderindex(1,2)=ix1
+      borderindex(2,2)=iy1
+      constdir_arr=(/2,2,1,1/)
+      vardir_arr=(/1,1,2,2/)
+      topbot_arr=(/2,1,2,1/)
+      rij(1,1)=sqrt((x(ix0)-x0)**2+(y(iy0)-y0)**2)
+      rij(1,2)=sqrt((x(ix0)-x0)**2+(y(iy1)-y0)**2)
+      rij(2,1)=sqrt((x(ix1)-x0)**2+(y(iy0)-y0)**2)
+      rij(2,2)=sqrt((x(ix1)-x0)**2+(y(iy1)-y0)**2)            
+      R1=verylarge
+      Rsmall=verylarge/2.0
+!
+! Determine the point s on the cylinder surface where the normal to the
+! cylinder surface pass through the point p. 
+!
+      xs=rs/rp*xp
+      ys=rs/rp*yp
+!
+! Find distance from point p to point s
+!
+      dist=(xp-xs)**2+(yp-ys)**2
+!
+! Find the x and y coordinates of p in a coordiante system with origin
+! in the center of the cylinder
+!
+      yp_cylinder=yp-y0
+      xp_cylinder=xp-x0
+      p_cylinder(1)=xp_cylinder
+      p_cylinder(2)=yp_cylinder
+      rp=sqrt(xp_cylinder**2+yp_cylinder**2)
+!
+! Find which grid line is the closest one in the direction
+! away from the cylinder surface
+!
+! Check the distance etc. to all the four (in 2D) possible 
+! grid lines. Pick the grid line which the normal to the
+! cylinder surface (which also pass through the point [xp,yp])
+! cross first. This grid line should however
+! be OUTSIDE the point [xp,yp] compared to the cylinder surface.
+!
+      do counter=1,4
+        constdir=constdir_arr(counter)
+        vardir=vardir_arr(counter)
+        topbot_tmp=topbot_arr(counter)
+!
+! Find the position, xtemp, in the variable direction
+! where the normal cross the grid line
+!
+        xtemp=(p_cylinder(vardir)/(p_cylinder(constdir)+tini))*(bordervalue(constdir,topbot_tmp)-cylinder(icyl,constdir+1))
+!
+! Find the distance, r, from the center of the cylinder
+! to the point where the normal cross the grid line
+!
+        if (abs(xtemp) > verylarge) then
+          r=verylarge*2
+        else
+          r=sqrt(xtemp**2+(bordervalue(constdir,topbot_tmp)-cylinder(icyl,constdir+1))**2)
+        endif
+!
+! Check if the point xtemp is outside the cylinder,
+! outside the point [xp,yp] and that it cross the grid
+! line within this grid cell
+!
+        if ((r > rs) .and. (r > rp) &
+            .and.(xtemp+cylinder(icyl,vardir+1) > bordervalue(vardir,1))&
+            .and.(xtemp+cylinder(icyl,vardir+1) < bordervalue(vardir,2)))then
+          R1=r
+        else
+          R1=verylarge
+        endif
+!
+! If we have a new all time low (in radius) then go on....
+!
+        if (R1 < Rsmall) then
+          Rsmall=R1                
+          xyint(vardir)=xtemp+cylinder(icyl,vardir+1)
+          xyint(constdir)=bordervalue(constdir,topbot_tmp)
+          dirconst=constdir
+          dirvar=vardir
+          topbot=topbot_tmp
+          if (constdir == 2) then
+            rij_min=rij(1,topbot_tmp)
+            rij_max=rij(2,topbot_tmp)
+          else
+            rij_min=rij(topbot_tmp,1)
+            rij_max=rij(topbot_tmp,2)
+          endif
+          inputvalue=bordervalue(constdir,topbot_tmp)-cylinder(icyl,constdir+1)
+        endif
+      end do
+      !
+      ! Loop over all indeces
+      !
+!      do index=ivar1,ivar2
+index=ivar1
+        !
+        ! Check if the endpoints in the variable direction are
+        ! outside the cylinder. If they are not then define the endpoints
+        ! as where the grid line cross the cylinder surface.
+        ! Find the variable value at the endpoints.
+        !
+        min=1
+        if (dirconst == 2) then
+          varval=f(borderindex(dirvar,1),borderindex(dirconst,topbot),iz0,index)
+        else
+          varval=f(borderindex(dirconst,topbot),borderindex(dirvar,1),iz0,index)
+        endif
+        call find_point(rij_min,rs,varval,inputvalue,x1,bordervalue(dirvar,1),bordervalue(dirvar,2),min,f1,cylinder(icyl,dirvar+1))
+        min=0
+        if (dirconst == 2) then
+          varval=f(borderindex(dirvar,2),borderindex(dirconst,topbot),iz0,index)
+        else
+          varval=f(borderindex(dirconst,topbot),borderindex(dirvar,2),iz0,index)
+        endif
+        call find_point(rij_max,rs,varval,inputvalue,x2,bordervalue(dirvar,1),bordervalue(dirvar,2),min,f2,cylinder(icyl,dirvar+1))
+        !
+        ! Find the interpolation values between the two endpoints of
+        ! the line and the normal from the cylinder.
+        !
+        rint1=xyint(dirvar)-x1
+        rint2=x2-xyint(dirvar)
+        !
+        ! Find the interpolated value on the line
+        !
+        fint=(rint1*f2+rint2*f1)/(x2-x1)
+        !
+        ! Find the weigthing factors for the point on the line
+        ! and the point on the cylinder surface.
+        !
+        rps=rp-rs
+        rintp=Rsmall-rp
+        !
+        ! Perform the final interpolation
+        !
+        gpp=(rps*fint+rintp*0)/(Rsmall-rs)
+      !
+    end subroutine close_interpolation2
 !***********************************************************************  
     function in_solid_cell(part_pos,part_rad)
 !
@@ -420,7 +665,11 @@ f(:,m2-5:m2,:,iux)=0
         do i=1,3
           distance2=distance2+(cyl_pos(i)-part_pos(i))**2
         enddo
-        if (sqrt(distance2)<cyl_rad+part_rad) then
+!
+! The cylinder_skin is the closest a particle can get to the solid 
+! cell before it is captured (this variable is normally zero).
+!
+        if (sqrt(distance2)<cyl_rad+part_rad+cylinder_skin) then
           in_solid_cell=.true.
         endif
       enddo
@@ -429,13 +678,14 @@ f(:,m2-5:m2,:,iux)=0
 !***********************************************************************  
     subroutine freeze_solid_cells(df)
 !
-!  If we are in a solid cell set df=0 for all variables
+!  If we are in a solid cell (or in a cell where the value of the variables are
+!  found from interpolation) set df=0 for all variables
 !
 !  19-nov-2008/nils: coded
 !
       real, dimension (mx,my,mz,mvar) :: df
       integer :: i,j,k
-! 
+!
       do i=l1,l2
         if (&
              (ba(i,m,n,1).ne.0).or.&
@@ -495,6 +745,11 @@ f(:,m2-5:m2,:,iux)=0
 !  
 !  Store data in the ba array.
 !  If ba(ip,jp,kp,1)= 0 we are in a fluid cell (i.e. NOT inside a solid geometry)
+!  If ba(ip,jp,kp,1)=10 we are in a fluid cell which are so close to the 
+!                       surface of the solid geometry that we set the value of
+!                       this point by interpolating between the value at the 
+!                       solid surface and the interpolated value at the first
+!                       grid line crossed by the normal to the solid surface.
 !  If ba(ip,jp,kp,1)= 9 we are inside a solid geometry, but far from the boundary
 !  If ba(ip,jp,kp,1)=-1 we are inside a solid geometry, and the point at ip+1
 !                       is outside the geometry. 
@@ -508,6 +763,7 @@ f(:,m2-5:m2,:,iux)=0
 !
       integer :: i,j,k,icyl,cw
       real :: x2,y2,xval_p,xval_m,yval_p,yval_m
+      real :: dr,r_point,x_cyl,y_cyl,r_cyl
 !
 !  Initialize ba
 !
@@ -688,6 +944,32 @@ f(:,m2-5:m2,:,iux)=0
             enddo
           endif
         enddo
+!
+!  If we interpolate points which are very close to the solid surface
+!  these points has to be "marked" for later use
+!
+        if (lclose_linear) then
+          limit_close_linear=dxmin/2
+          x_cyl=cylinder(icyl,ixpos)
+          y_cyl=cylinder(icyl,iypos)
+          r_cyl=cylinder(icyl,iradius)
+!
+!  Loop over all points
+!
+          do i=l1,l2
+            do j=m1,m2
+              r_point=sqrt(((x(i)-x_cyl)**2+(y(j)-y_cyl)**2))
+              dr=r_point-r_cyl
+              if ((dr > 0) .and. (dr<limit_close_linear)) then
+                ba(i,j,:,1)=10
+                ba(i,j,:,4)=icyl
+              endif
+            enddo
+          enddo
+        endif
+!
+! Finalize loop over all cylinders
+!
       enddo
 !
     endsubroutine find_solid_cell_boundaries
@@ -801,7 +1083,7 @@ f(:,m2-5:m2,:,iux)=0
 !
     end function ba_defined
 !***********************************************************************  
-    subroutine close_interpolation(f,ix0,iy0,iz0,ivar1,ivar2,xxp,gp)
+    subroutine close_interpolation(f,ix0,iy0,iz0,ivar1,ivar2,xxp,gpp)
 !
 !  20-mar-2009/nils: coded
 !
@@ -812,9 +1094,9 @@ f(:,m2-5:m2,:,iux)=0
 ! WARNING: This routine only works for cylinders with an infinitely long
 ! WARNING: central axis in the z-direction!
 !
-! The particle is located at point p at the coordinates [xp,yp].
-! A normal to the cylinder surface from point s with coordinates [xs,ys] 
-! pass thourgh p.
+! The interpolation point, named p, has coordinates [xp,yp].
+! The point s on the cylinder surface, with coordinates [xs,ys], is 
+! placed such that the line from s to p is a normal to the cylinder surface.
 !
 ! If a one of the corner points of the grid cell is within a solid geometry
 ! the normal passing through both s and p are continued outward until a
@@ -823,7 +1105,7 @@ f(:,m2-5:m2,:,iux)=0
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: ix0,iy0,iz0,ivar1,ivar2
-      real, dimension (ivar2-ivar1+1), intent(inout) :: gp
+      real, dimension (ivar2-ivar1+1), intent(inout) :: gpp
       real :: x0,y0,z0,rs,verylarge=1e9,varval,rint1,rint2,fint,rps,rintp
       integer :: index,ix1,iy1,iz1,min
       real, dimension(3), intent(in) :: xxp
@@ -995,7 +1277,7 @@ f(:,m2-5:m2,:,iux)=0
 !
 ! Perform the final interpolation
 !
-            gp(index)=(rps*fint+rintp*0)/(Rsmall-rs)
+            gpp(index-ivar1+1)=(rps*fint+rintp*0)/(Rsmall-rs)
           enddo
         endif
       enddo
