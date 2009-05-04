@@ -4663,14 +4663,15 @@ module Boundcond
       real, dimension (mx,my,mz) :: cs2_full
       real, dimension (mx,mz) :: tmp22,tmp12,tmp2_lnrho,tmp33,tmp13,tmp3_lnrho
       real, dimension (mx,mz) :: tmp23,tmp32
-      real, dimension (mx) :: tmpx
-      real, dimension (mz) :: tmpz
+      real, dimension (nx) :: tmpx
+      real, dimension (nz) :: tmpz
       real :: Mach,KK,nu
       integer lll,i
       integer sgn
 
       intent(inout) :: f
       intent(inout) :: df
+
 
       llinlet = .false.
       if (present(linlet)) llinlet = linlet
@@ -4738,11 +4739,11 @@ module Boundcond
           call der_pencil(1,f(:,lll,i,iux),tmp12(:,i))
           call der_pencil(1,f(:,lll,i,iuz),tmp32(:,i))
           call der2_pencil(1,f(:,lll,i,iux),tmpx)
-          d2u1_dx2(:,i)=tmpx(l1:l2)
+          d2u1_dx2(:,i-n1+1)=tmpx
           call der2_pencil(1,f(:,lll,i,iuy),tmpx)
-          d2u2_dx2(:,i)=tmpx(l1:l2)
+          d2u2_dx2(:,i-n1+1)=tmpx
           call der2_pencil(1,f(:,lll,i,iuz),tmpx)
-          d2u3_dx2(:,i)=tmpx(l1:l2)
+          d2u3_dx2(:,i-n1+1)=tmpx
         enddo
       else
         tmp32=0
@@ -4767,11 +4768,11 @@ module Boundcond
           call der_pencil(3,f(i,lll,:,iux),tmp13(i,:))
           call der_pencil(3,f(i,lll,:,iuy),tmp23(i,:))
           call der2_pencil(3,f(i,lll,:,iux),tmpz)
-          d2u1_dz2(i,:)=tmpz(n1:n2)
+          d2u1_dz2(i,:)=tmpz
           call der2_pencil(3,f(i,lll,:,iuy),tmpz)
-          d2u2_dz2(i,:)=tmpz(n1:n2)
+          d2u2_dz2(i,:)=tmpz
           call der2_pencil(3,f(i,lll,:,iuz),tmpz)
-          d2u3_dz2(i,:)=tmpz(n1:n2)
+          d2u3_dz2(i,:)=tmpz
         enddo
       else
         tmp33=0
