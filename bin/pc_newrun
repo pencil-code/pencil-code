@@ -2,9 +2,9 @@
 #
 #  $Id$
 #
-#  This script uses mkdatadir which links the subdirectory data
+#  This script uses pc_mkdatadir which links the subdirectory data
 #  to some data disk (which is machine dependent and therefore
-#  you may want to adapt mkdatadir for your particular machine).
+#  you may want to adapt pc_mkdatadir for your particular machine).
 #
 #  Usage:
 #     new run1 run2
@@ -68,11 +68,11 @@ fi
 cd $newdir
 targetdir=`pwd`
 #
-#  In the new run directory, call mkdatadir, and
+#  In the new run directory, call pc_mkdatadir, and
 #  write file with name of directory from which
 #  the new one is generated
 #
-$PENCIL_HOME/bin/mkdatadir
+$PENCIL_HOME/bin/pc_mkdatadir
 
 [ -e data/new_from.dir ] || touch data/new_from.dir
 (echo $olddir; /bin/date) >> data/new_from.dir
@@ -120,6 +120,7 @@ cp *.in $targetdir
 [ -f tran.dat ] && cp tran.dat $targetdir
 [ -f air.dat ] && cp air.dat $targetdir
 [ -f alpha_in.dat ] && cp alpha_in.dat $targetdir
+[ -f *.py ] && cp *.py $targetdir
 #
 
 #
