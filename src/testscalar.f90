@@ -589,6 +589,18 @@ module Testscalar
         if (idiag_F22z/=0) call xysum_mn_name_z(Fipq(:,2,i2),idiag_F22z)
         if (idiag_F32z/=0) call xysum_mn_name_z(Fipq(:,3,i2),idiag_F32z)
 !
+!  check whether njtest is large enough
+!
+        if (idiag_kap11/=0.or.idiag_kap21/=0.or.idiag_kap31/=0) then
+          if (njtest<2) call stop_it('dcctest_dt: njtest < 2 is insufficient')
+        endif
+        if (idiag_kap12/=0.or.idiag_kap22/=0.or.idiag_kap32/=0) then
+          if (njtest<6) call stop_it('dcctest_dt: njtest < 6 is insufficient')
+        endif
+        if (idiag_kap13/=0.or.idiag_kap23/=0.or.idiag_kap33/=0) then
+          if (njtest<4) call stop_it('dcctest_dt: njtest < 4 is insufficient')
+        endif
+!
 !  averages of kappa
 !
         if (idiag_kap11/=0) call sum_mn_name(+cx(:)*Fipq(:,1,i3)+sx(:)*Fipq(:,1,i4),idiag_kap11)
