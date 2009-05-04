@@ -766,20 +766,20 @@ subroutine flame_spd_test(f)
       do k=1,mx 
         if (x(k)<x1_front) then
           f(k,:,:,ilnTT)=log(TT1_front)
-          f(k,:,:,ichemspec(1))=1.
-          f(k,:,:,ichemspec(2))=0.
+          f(k,:,:,ichemspec(i_H2))=1.
+          f(k,:,:,ichemspec(i_O2))=0.
         endif
         if (x(k)>x2_front) then
           f(k,:,:,ilnTT)=log(TT2_front)
-          f(k,:,:,ichemspec(1))=0.
-          f(k,:,:,ichemspec(2))=1.
+          f(k,:,:,ichemspec(i_H2))=0.
+          f(k,:,:,ichemspec(i_O2))=1.
         endif
         if (x(k)>x1_front .and. x(k)<x2_front) then
           f(k,:,:,ilnTT)=log((x(k)-x1_front)/(x2_front-x1_front) &
                *(TT2_front-TT1_front)+TT1_front)
-          f(k,:,:,ichemspec(1))=(x(k)-x1_front)/(x2_front-x1_front) &
+          f(k,:,:,ichemspec(i_H2))=(x(k)-x1_front)/(x2_front-x1_front) &
                *(0.-1.)+1.
-          f(k,:,:,ichemspec(2))=1.-f(k,:,:,ichemspec(1))
+          f(k,:,:,ichemspec(i_O2))=1.-f(k,:,:,ichemspec(1))
         endif
         mu1(k,:,:)=f(k,:,:,i_H2)/(2.*mH)+f(k,:,:,i_O2)/(2.*mO)
       enddo
@@ -810,7 +810,7 @@ endsubroutine flame_spd_test
       integer :: sgn
       type (boundary_condition) :: bc
       integer :: i,i1,j,vr,k
-      real :: value1, value2, yy0
+      real :: value1, value2
 
       vr=bc%ivar
 
@@ -825,11 +825,11 @@ endsubroutine flame_spd_test
         do k=1,my
             if (abs(y(k)) .lt. str_thick) then
            !   do i=0,nghost
-                   f(l1-i*0.,k,:,vr)=ux_init*(1.-(y(k)/str_thick)**2); 
+                   f(l1-i*0,k,:,vr)=ux_init*(1.-(y(k)/str_thick)**2); 
           !    enddo
             else
             !  do i=0,nghost; 
-                f(l1-i*0.,k,:,vr)=0.; 
+                f(l1-i*0,k,:,vr)=0.; 
              !   enddo
             endif
         enddo
@@ -858,7 +858,7 @@ endsubroutine flame_spd_test
        if (vr >= ichemspec(1)) then
          do i=0,nghost; 
           do k=1,my
-             if (abs(y(k)) .lt. yy0) then
+             if (abs(y(k)) .lt. str_thick) then
                 if (vr < ichemspec(nchemspec))  f(l1-i,k,:,vr)=value1
                 if (vr == ichemspec(nchemspec)) f(l1-i,k,:,vr)=value1*((l1-i)/(l1-0.))**4*0.
              else
