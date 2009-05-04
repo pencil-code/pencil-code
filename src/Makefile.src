@@ -597,6 +597,13 @@ LD_FFTW2=
 #FFLAGS=-O3 -vec-report0 #(a07c01n03.pdc.kth.se)
 #LD_MPI=-lmpi #(a07c01n03.pdc.kth.se)
 ##
+##  Simon's laptop
+##
+#FC=/usr/bin/gfortran-4.3 #(iomsn-laptop)
+#F77=$(FC) #(iomsn-laptop)
+#CC=gcc #(iomsn-laptop)
+#FFLAGS=-O3 #(iomsn-laptop)
+##
 ##  Patrik's playstation
 ##
 #FC=/usr/bin/gfortran #(playstation-desktop)
