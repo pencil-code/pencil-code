@@ -4383,8 +4383,8 @@ module Boundcond
       real, dimension (mx,my,mz) :: cs2_full
       real, dimension (my,mz) :: tmp22,tmp12,tmp2_lnrho,tmp33,tmp13,tmp3_lnrho
       real, dimension (my,mz) :: tmp23,tmp32
-      real, dimension (my) :: tmpy
-      real, dimension (mz) :: tmpz
+      real, dimension (ny) :: tmpy
+      real, dimension (nz) :: tmpz
       real :: Mach,KK,nu
       integer lll,i
       integer sgn
@@ -4458,11 +4458,11 @@ module Boundcond
           call der_pencil(2,f(lll,:,i,iux),tmp12(:,i))
           call der_pencil(2,f(lll,:,i,iuz),tmp32(:,i))
           call der2_pencil(2,f(lll,:,i,iux),tmpy)
-          d2u1_dy2(:,i)=tmpy(m1:m2)
+          d2u1_dy2(:,i-n1+1)=tmpy(:)
           call der2_pencil(2,f(lll,:,i,iuy),tmpy)
-          d2u2_dy2(:,i)=tmpy(m1:m2)
+          d2u2_dy2(:,i-n1+1)=tmpy(:)
           call der2_pencil(2,f(lll,:,i,iuz),tmpy)
-          d2u3_dy2(:,i)=tmpy(m1:m2)
+          d2u3_dy2(:,i-n1+1)=tmpy(:)
         enddo
       else
         tmp32=0
@@ -4487,11 +4487,11 @@ module Boundcond
           call der_pencil(3,f(lll,i,:,iux),tmp13(i,:))
           call der_pencil(3,f(lll,i,:,iuy),tmp23(i,:))
           call der2_pencil(3,f(lll,i,:,iux),tmpz)
-          d2u1_dz2(i,:)=tmpz(n1:n2)
+          d2u1_dz2(i-m1+1,:)=tmpz(:)
           call der2_pencil(3,f(lll,i,:,iuy),tmpz)
-          d2u2_dz2(i,:)=tmpz(n1:n2)
+          d2u2_dz2(i-m1+1,:)=tmpz(:)
           call der2_pencil(3,f(lll,i,:,iuz),tmpz)
-          d2u3_dz2(i,:)=tmpz(n1:n2)
+          d2u3_dz2(i-m1+1,:)=tmpz(:)
         enddo
       else
         tmp33=0
