@@ -1,19 +1,21 @@
 ! $Id$
 !
-!  This module performs some special mpifunctions that
-!  also require the Fourier routines.
+!  This module folds ghost zones for a multiple processor run.
 !
 module GhostFold
-
+!
+  use Cdata
   use Cparam
+  use Fourier
   use Messages
-
+  use Mpicomm
+!
   implicit none
-
+!
   private
-
+!
   public :: fold_df, fold_f
-
+!
   contains
 !***********************************************************************
     subroutine fold_df(df,ivar1,ivar2)
@@ -21,10 +23,6 @@ module GhostFold
 !  Fold first ghost zone of df into main part of df.
 !
 !  20-may-2006/anders: coded
-!
-      use Cdata
-      use Mpicomm
-      use Fourier
 !
       real, dimension (mx,my,mz,mvar) :: df
       integer :: ivar1, ivar2
@@ -167,10 +165,6 @@ module GhostFold
 !  Fold first ghost zone of f into main part of f.
 !
 !  20-may-2006/anders: coded
-!
-      use Cdata
-      use Mpicomm
-      use Fourier
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: ivar1, ivar2
