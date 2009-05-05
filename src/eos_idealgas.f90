@@ -1958,6 +1958,105 @@ module EquationOfState
 !
     endsubroutine bc_ss_flux
 !***********************************************************************
+    subroutine bc_ss_flux_turb(f,topbot)
+!
+!  constant flux boundary condition for entropy (called when bcz='c1')
+!
+!   4-may-2008/axel: to be adapted from bc_ss_flux
+!
+      use Cdata
+      use Gravity
+      use SharedVariables, only: get_shared_variable
+      use Mpicomm, only: stop_it
+!
+      real, pointer :: Fbot,Ftop,chi_t
+      logical, pointer :: lheatc_chiconst
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my) :: tmp_xy,cs2_xy,rho_xy,lnrho_xy,ss_xy
+      real, dimension (mx,my) :: cs2_xy1,cs2_xy2,T_xy,T_xy1,T_xy2,Told4
+      real :: eps
+      integer :: i,ierr,iter,niter=4,j,k
+!
+      if (ldebug) print*,'bc_ss_flux_turb: ENTER - cs20,cs0=',cs20,cs0
+!
+!  Do the `c1' boundary condition (constant heat flux) for entropy.
+!  check whether we want to do top or bottom (this is precessor dependent)
+!
+!  Get the shared variables
+!
+      call get_shared_variable('Fbot',Fbot,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_turb: "//&
+           "there was a problem when getting Fbot")
+!
+      call get_shared_variable('Ftop',Ftop,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_turb: "//&
+           "there was a problem when getting Ftop")
+!
+      call get_shared_variable('chi_t',chi_t,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_turb: "//&
+           "there was a problem when getting chi_t")
+      call get_shared_variable('lheatc_chiconst',lheatc_chiconst,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_turb: "//&
+           "there was a problem when getting lheatc_chiconst")
+!
+      select case(topbot)
+!
+!  bottom boundary
+!  ===============
+!
+      case('bot')
+        if (headtt) print*,'bc_ss_flux_turb: Fbot,chi_t=',Fbot,chi_t
+!
+!  calculate Fbot/(K*cs2)
+!
+        rho_xy=exp(f(:,:,n1,ilnrho))
+        cs2_xy=cs20*exp(gamma1*(f(:,:,n1,ilnrho)-lnrho0)+cv1*f(:,:,n1,iss))
+!
+!  check whether we have chi=constant at bottom, in which case
+!  we have the nonconstant rho_xy*chi in tmp_xy.
+!AB: are here any cp factors?
+!
+!       if (lheatc_chiconst) then
+!         tmp_xy=Fbot/(rho_xy*chi*cs2_xy)
+!       else
+!         tmp_xy=FbotKbot/cs2_xy
+!       endif
+!
+!  enforce ds/dz + gamma1/gamma*dlnrho/dz = - gamma1/gamma*Fbot/(K*cs2)
+!
+        do i=1,nghost
+          f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+(cp-cv)* &
+              (f(:,:,n1+i,ilnrho)-f(:,:,n1-i,ilnrho)+2*i*dz*tmp_xy)
+        enddo
+!
+!  top boundary
+!  ============
+!
+      case('top')
+!
+!  Set (dcs2/dz) / (dcs2/dz)_ini = (cs2/cs2top_ini)^4
+!  Note that (dcs2/dz) = cs20*[(gamma-1)*dlnrho/dz + gamma*d(s/cp)/dz]
+!  So, ds/dz = - (cp-cv)*dlnrho/dz + cv*(dcs2/dz)/cs20
+!  calculate tmp_xy
+!
+        cs2_xy=cs20*exp(gamma1*(f(:,:,n2,ilnrho)-lnrho0)+cv1*f(:,:,n2,iss))
+        tmp_xy=cv*dcs2top_ini/cs20*(cs2_xy/cs2top_ini)**4
+!
+!  enforce ds/dz + gamma1/gamma*dlnrho/dz = - gamma1/gamma*Fbot/(K*cs2)
+!
+!       do i=1,nghost
+!         f(:,:,n2+i,iss)=f(:,:,n2-i,iss) &
+!             -(cp-cv)*(f(:,:,n2+i,ilnrho)-f(:,:,n2-i,ilnrho)) &
+!             +2*i*dz*tmp_xy
+!       enddo
+      case default
+        call fatal_error('bc_ss_flux_turb','invalid argument')
+      endselect
+!
+    endsubroutine bc_ss_flux_turb
+!***********************************************************************
     subroutine bc_ss_temp_old(f,topbot)
 !
 !  boundary condition for entropy: constant temperature

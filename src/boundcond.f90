@@ -515,6 +515,9 @@ module Boundcond
                 if (j==iss) call bc_ss_flux(f,topbot)
                 if (j==iaa) call bc_aa_pot(f,topbot)
                 if (j==ilnTT) call bc_lnTT_flux_z(f,topbot)
+              case ('Fgs')
+                ! BCZ_DOC: Fconv = - chi_t*rho*T*grad(s)
+                if (j==iss) call bc_ss_flux_turb(f,topbot)
               case ('c3')
                 ! BCZ_DOC: constant flux at the bottom with a variable hcond
                 if (j==ilnTT) call bc_ADI_flux_z(f,topbot)

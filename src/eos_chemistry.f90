@@ -1357,6 +1357,19 @@ glnTT(:,i)=impossible
 !
     endsubroutine bc_ss_flux
 !***********************************************************************
+    subroutine bc_ss_flux_turb(f,topbot)
+!
+!  dummy routine
+!
+!   4-may-2009/axel: dummy routine
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      if (NO_WARN) print*,f,topbot  !(keep compiler quiet)
+!
+    endsubroutine bc_ss_flux_turb
+!***********************************************************************
     subroutine bc_ss_temp_old(f,topbot)
 !
 !  boundary condition for entropy: constant temperature

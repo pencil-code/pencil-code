@@ -776,7 +776,7 @@ module Forcing
 !  two forcing are merged at the "equator" (midplane) where both are smoothly
 !  set to zero. 
 !
-!  22-sep-08/dhruba: aped from forcing_hel
+!  22-sep-08/dhruba: adapted from forcing_hel
 
       use Mpicomm
       use General

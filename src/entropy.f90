@@ -563,8 +563,8 @@ module Entropy
       if (lheatc_Kprof .and. hcond0==0.0) then
         call warning('initialize_entropy', 'hcond0 is zero!')
       endif
-      if (lheatc_chiconst .and. chi==0.0) then
-        call warning('initialize_entropy','chi is zero!')
+      if (lheatc_chiconst .and. (chi==0.0 .and. chi_t==0.0)) then
+        call warning('initialize_entropy','chi and chi_t are zero!')
       endif
       if (all(iheatcond=='nothing') .and. hcond0/=0.0) then
         call warning('initialize_entropy', 'No heat conduction, but hcond0 /= 0')
