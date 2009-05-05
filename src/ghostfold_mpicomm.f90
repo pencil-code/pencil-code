@@ -31,7 +31,7 @@ module GhostFold
 !
       real, dimension (nx+2,ny+2,1,ivar2-ivar1+1) :: df_tmp_xy
       real, dimension (nx+2,1,nz,ivar2-ivar1+1) :: df_tmp_xz
-      real, dimension (ny,nz,ivar2-ivar1+1) :: df_tmp_yz
+      real, dimension (1,ny,nz,ivar2-ivar1+1) :: df_tmp_yz
       real, dimension (ny,nz) :: df_tmp_yz_one
       integer :: nvar_fold, iproc_rcv, ivar
 !
@@ -140,20 +140,20 @@ module GhostFold
               call mpirecv_real(df_tmp_yz, &
                   (/1,ny,nz,nvar_fold/), xlneigh, 10004)
             elseif (iproc_rcv==xuneigh) then
-              call mpisend_real(df(l2+1,m1:m2,n1:n2,ivar1:ivar2), &
+              call mpisend_real(df(l2+1:l2+1,m1:m2,n1:n2,ivar1:ivar2), &
                   (/1,ny,nz,nvar_fold/), xuneigh, 10004)
             endif
-            if (iproc==iproc_rcv) df(l1,m1:m2,n1:n2,ivar1:ivar2)= &
-                df(l1,m1:m2,n1:n2,ivar1:ivar2) + df_tmp_yz
+            if (iproc==iproc_rcv) df(l1:l1,m1:m2,n1:n2,ivar1:ivar2)= &
+                df(l1:l1,m1:m2,n1:n2,ivar1:ivar2) + df_tmp_yz
             if (iproc==iproc_rcv) then
               call mpirecv_real(df_tmp_yz, &
                   (/1,ny,nz,nvar_fold/), xuneigh, 10005)
             elseif (iproc_rcv==xlneigh) then
-              call mpisend_real(df(l1-1,m1:m2,n1:n2,ivar1:ivar2), &
+              call mpisend_real(df(l1-1:l1-1,m1:m2,n1:n2,ivar1:ivar2), &
                   (/1,ny,nz,nvar_fold/), xlneigh, 10005)
             endif
-            if (iproc==iproc_rcv) df(l2,m1:m2,n1:n2,ivar1:ivar2)= &
-                df(l2,m1:m2,n1:n2,ivar1:ivar2) + df_tmp_yz
+            if (iproc==iproc_rcv) df(l2:l2,m1:m2,n1:n2,ivar1:ivar2)= &
+                df(l2:l2,m1:m2,n1:n2,ivar1:ivar2) + df_tmp_yz
           enddo
           df(l1-1,m1:m2,n1:n2,ivar1:ivar2)=0.0
           df(l2+1,m1:m2,n1:n2,ivar1:ivar2)=0.0
@@ -177,7 +177,7 @@ module GhostFold
 !
       real, dimension (nx+2,ny+2,1,ivar2-ivar1+1) :: f_tmp_xy
       real, dimension (nx+2,1,nz,ivar2-ivar1+1)   :: f_tmp_xz
-      real, dimension (ny,nz,ivar2-ivar1+1) :: f_tmp_yz
+      real, dimension (1,ny,nz,ivar2-ivar1+1) :: f_tmp_yz
       real, dimension (ny,nz) :: f_tmp_yz_one
       integer :: nvar_fold, iproc_rcv, ivar
 !
@@ -286,20 +286,20 @@ module GhostFold
               call mpirecv_real(f_tmp_yz, &
                   (/1,ny,nz,nvar_fold/), xlneigh, 10004)
             elseif (iproc_rcv==xuneigh) then
-              call mpisend_real(f(l2+1,m1:m2,n1:n2,ivar1:ivar2), &
+              call mpisend_real(f(l2+1:l2+1,m1:m2,n1:n2,ivar1:ivar2), &
                   (/1,ny,nz,nvar_fold/), xuneigh, 10004)
             endif
-            if (iproc==iproc_rcv) f(l1,m1:m2,n1:n2,ivar1:ivar2)= &
-                f(l1,m1:m2,n1:n2,ivar1:ivar2) + f_tmp_yz
+            if (iproc==iproc_rcv) f(l1:l1,m1:m2,n1:n2,ivar1:ivar2)= &
+                f(l1:l1,m1:m2,n1:n2,ivar1:ivar2) + f_tmp_yz
             if (iproc==iproc_rcv) then
               call mpirecv_real(f_tmp_yz, &
                   (/1,ny,nz,nvar_fold/), xuneigh, 10005)
             elseif (iproc_rcv==xlneigh) then
-              call mpisend_real(f(l1-1,m1:m2,n1:n2,ivar1:ivar2), &
+              call mpisend_real(f(l1-1:l1-1,m1:m2,n1:n2,ivar1:ivar2), &
                   (/1,ny,nz,nvar_fold/), xlneigh, 10005)
             endif
-            if (iproc==iproc_rcv) f(l2,m1:m2,n1:n2,ivar1:ivar2)= &
-                f(l2,m1:m2,n1:n2,ivar1:ivar2) + f_tmp_yz
+            if (iproc==iproc_rcv) f(l2:l2,m1:m2,n1:n2,ivar1:ivar2)= &
+                f(l2:l2,m1:m2,n1:n2,ivar1:ivar2) + f_tmp_yz
           enddo
           f(l1-1,m1:m2,n1:n2,ivar1:ivar2)=0.0
           f(l2+1,m1:m2,n1:n2,ivar1:ivar2)=0.0
