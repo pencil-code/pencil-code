@@ -255,9 +255,9 @@ module Timestep
             !
             do lll=1,nx
               if (j.eq.ilnrho) then
-                scal(lll)=max(1e-8,abs(f(lll+l1-1,n,m,j)))            
+                scal(lll)=max(1e-8,abs(f(lll+l1-1,m,n,j)))            
               else              
-                scal(lll)=max(1e-8,abs(f(lll+l1-1,n,m,j)))            
+                scal(lll)=max(1e-8,abs(f(lll+l1-1,m,n,j)))            
               endif
             enddo
             errmaxs = max(maxval(abs(err/scal)),errmaxs)
