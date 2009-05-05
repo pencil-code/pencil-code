@@ -313,22 +313,22 @@ f(:,m2-5:m2,:,iux)=0
 !  by empoying either Dirichlet or Neuman boundary conditions.
 !
             call interpolate_mirror_point(f,phi,iux,k,lower_i,upper_i,lower_j,&
-                upper_j,xmirror,ymirror)
+                upper_j,icyl,xmirror,ymirror)
             f(i,j,k,iux)=-phi
             call interpolate_mirror_point(f,phi,iuy,k,lower_i,upper_i,lower_j,&
-                upper_j,xmirror,ymirror)
+                upper_j,icyl,xmirror,ymirror)
             f(i,j,k,iuy)=-phi
             call interpolate_mirror_point(f,phi,iuz,k,lower_i,upper_i,lower_j,&
-                upper_j,xmirror,ymirror)
+                upper_j,icyl,xmirror,ymirror)
             f(i,j,k,iuz)=-phi
             if (ilnrho>0) then
               call interpolate_mirror_point(f,phi,ilnrho,k,lower_i,upper_i,&
-                  lower_j,upper_j,xmirror,ymirror)
+                  lower_j,icyl,upper_j,xmirror,ymirror)
               f(i,j,k,ilnrho)=phi
             endif
             if (ilnTT>0) then
               call interpolate_mirror_point(f,phi,ilnTT,k,lower_i,upper_i,&
-                  lower_j,upper_j,xmirror,ymirror)
+                  lower_j,icyl,upper_j,xmirror,ymirror)
               f(i,j,k,ilnTT)=2*cylinder_temp(icyl)-phi
             endif
           else
@@ -338,18 +338,20 @@ f(:,m2-5:m2,:,iux)=0
 ! and the value at the solid surface.
 !
             if (lclose_linear) then
-              icyl=ba(i,j,k,4)
-              x_cyl=cylinder(icyl,ixpos)
-              y_cyl=cylinder(icyl,iypos)
-              r_cyl=cylinder(icyl,iradius)
-              r_point=sqrt(((x(i)-x_cyl)**2+(y(j)-y_cyl)**2))
-              dr=r_point-r_cyl
-              if ((dr > 0) .and. (dr<limit_close_linear)) then
-                xxp=(/x(i),y(j),z(k)/)
-                call close_interpolation2(f,i,j,k,icyl,iux,iux,xxp,gpp)
-                f(i,j,k,iux)=gpp
-                call close_interpolation2(f,i,j,k,icyl,iuy,iuy,xxp,gpp)
-                f(i,j,k,iuy)=gpp
+              if (ba(i,j,k,1)==10) then
+                icyl=ba(i,j,k,4)
+                x_cyl=cylinder(icyl,ixpos)
+                y_cyl=cylinder(icyl,iypos)
+                r_cyl=cylinder(icyl,iradius)
+                r_point=sqrt(((x(i)-x_cyl)**2+(y(j)-y_cyl)**2))
+                dr=r_point-r_cyl
+                if ((dr > 0) .and. (dr<limit_close_linear)) then
+                  xxp=(/x(i),y(j),z(k)/)
+                  call close_interpolation(f,i,j,k,icyl,iux,xxp,gpp,.true.)
+                  f(i,j,k,iux)=gpp
+                  call close_interpolation(f,i,j,k,icyl,iuy,xxp,gpp,.true.)
+                  f(i,j,k,iuy)=gpp
+                endif
               endif
             endif
           endif
@@ -400,7 +402,7 @@ f(:,m2-5:m2,:,iux)=0
 !
     endsubroutine update_solid_cells
 !***********************************************************************  
-    subroutine interpolate_mirror_point(f,phi,ivar,k,lower_i,upper_i,lower_j,upper_j,xmirror,ymirror)
+    subroutine interpolate_mirror_point(f,phi,ivar,k,lower_i,upper_i,lower_j,upper_j,icyl,xmirror,ymirror)
 !
 !  Interpolate value in a mirror point from the four corner values
 !
@@ -408,10 +410,11 @@ f(:,m2-5:m2,:,iux)=0
 !  22-apr-2009/nils: added special treatment close to the solid surface
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      integer, intent(in) :: icyl
       integer :: lower_i,upper_i,lower_j,upper_j,k,ivar
       real :: xmirror,ymirror,phi, hx1, hy1,hy2,hx2
       real, dimension(3) :: xxp
-      real, dimension(1) :: phi_tmp
+      real :: phi_tmp
 !
       hx1=xmirror-x(lower_i)
       hx2=x(upper_i)-xmirror
@@ -429,14 +432,12 @@ f(:,m2-5:m2,:,iux)=0
 !
       if (lclose_interpolation .and. ivar < 4) then
         xxp=(/xmirror,ymirror,0.0/)
-        phi_tmp(1)=phi
-        call close_interpolation(f,lower_i,lower_j,k,ivar,ivar,xxp,phi_tmp)
-        phi=phi_tmp(1)
+        call close_interpolation(f,lower_i,lower_j,k,icyl,ivar,xxp,phi,.false.)
       endif
 !
     end subroutine interpolate_mirror_point
 !***********************************************************************  
-    subroutine close_interpolation2(f,ix0_,iy0_,iz0_,icyl,ivar1,ivar2,xxp,gpp)
+    subroutine close_interpolation(f,ix0_,iy0_,iz0_,icyl,ivar1,xxp,gpp,fluid_point)
       !
       !  20-mar-2009/nils: coded
       !
@@ -453,7 +454,7 @@ f(:,m2-5:m2,:,iux)=0
       ! constdir and vardir are given the values 2 and 1, respectively.  
       !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      integer, intent(in) :: ix0_,iy0_,iz0_,ivar1,ivar2
+      integer, intent(in) :: ix0_,iy0_,iz0_,ivar1
       integer :: ix0,iy0,iz0
       real, intent(inout) :: gpp
       real :: x0,y0,z0,rs,verylarge=1e9,varval,rint1,rint2,fint,rps,rintp
@@ -467,76 +468,84 @@ f(:,m2-5:m2,:,iux)=0
       real :: xtemp,r,xp,yp,R1,Rsmall,xs,ys,rp,dist,yp_cylinder,xp_cylinder
       integer :: constdir,vardir,topbot_tmp,dirconst,dirvar,icyl,counter,topbot
       real :: x1,x2,f1,f2,rij_min,rij_max,inputvalue,smallx,gp
+      logical, intent(in) :: fluid_point
 !
 ! Define some help variables
 !
-      smallx=dx*1e-5
-      x0=cylinder(icyl,ixpos)
-      y0=cylinder(icyl,iypos)
-      z0=cylinder(icyl,izpos)
-      rs=cylinder(icyl,iradius)
-      xp=xxp(1)
-      yp=xxp(2)
-      iz0=iz0_
+        x0=cylinder(icyl,ixpos)
+        y0=cylinder(icyl,iypos)
+        z0=cylinder(icyl,izpos)
+        rs=cylinder(icyl,iradius)
+        xp=xxp(1)
+        yp=xxp(2)
 !
 !  Find the corner points of the grid cell we are in
 !
-      if (xp < x0) then
-        ix0=ix0_-1
-        xp=xp-smallx
-      else
-        ix0=ix0_
-        xp=xp+smallx
-      endif
-      if (yp < y0) then
-        iy0=iy0_-1
-        yp=yp-smallx
-      else
-        iy0=iy0_
-        yp=yp+smallx
-      endif
-      ix1=ix0+1
-      iy1=iy0+1
-      iz1=iz0+1
+        if (fluid_point) then
+          smallx=dx*1e-5
+          iz0=iz0_
+          if (xp < x0) then
+            ix0=ix0_-1
+            xp=xp-smallx
+          else
+            ix0=ix0_
+            xp=xp+smallx
+          endif
+          if (yp < y0) then
+            iy0=iy0_-1
+            yp=yp-smallx
+          else
+            iy0=iy0_
+            yp=yp+smallx
+          endif
+        else
+          ix0=ix0_
+          iy0=iy0_
+          iz0=iz0_
+        endif
+        ix1=ix0+1
+        iy1=iy0+1
+        iz1=iz0+1
 !
 !  Put help variables into arrays
 !
-      bordervalue(1,1)=x(ix0)
-      bordervalue(2,1)=y(iy0)
-      bordervalue(1,2)=x(ix1)
-      bordervalue(2,2)=y(iy1)
-      borderindex(1,1)=ix0
-      borderindex(2,1)=iy0
-      borderindex(1,2)=ix1
-      borderindex(2,2)=iy1
-      constdir_arr=(/2,2,1,1/)
-      vardir_arr=(/1,1,2,2/)
-      topbot_arr=(/2,1,2,1/)
-      rij(1,1)=sqrt((x(ix0)-x0)**2+(y(iy0)-y0)**2)
-      rij(1,2)=sqrt((x(ix0)-x0)**2+(y(iy1)-y0)**2)
-      rij(2,1)=sqrt((x(ix1)-x0)**2+(y(iy0)-y0)**2)
-      rij(2,2)=sqrt((x(ix1)-x0)**2+(y(iy1)-y0)**2)            
-      R1=verylarge
-      Rsmall=verylarge/2.0
+        bordervalue(1,1)=x(ix0)
+        bordervalue(2,1)=y(iy0)
+        bordervalue(1,2)=x(ix1)
+        bordervalue(2,2)=y(iy1)
+        borderindex(1,1)=ix0
+        borderindex(2,1)=iy0
+        borderindex(1,2)=ix1
+        borderindex(2,2)=iy1
+        constdir_arr=(/2,2,1,1/)
+        vardir_arr=(/1,1,2,2/)
+        topbot_arr=(/2,1,2,1/)
+        rij(1,1)=sqrt((x(ix0)-x0)**2+(y(iy0)-y0)**2)
+        rij(1,2)=sqrt((x(ix0)-x0)**2+(y(iy1)-y0)**2)
+        rij(2,1)=sqrt((x(ix1)-x0)**2+(y(iy0)-y0)**2)
+        rij(2,2)=sqrt((x(ix1)-x0)**2+(y(iy1)-y0)**2) 
+        if ((minval(rij) < rs) .or. fluid_point) then
+          R1=verylarge
+          Rsmall=verylarge/2.0
 !
 ! Determine the point s on the cylinder surface where the normal to the
 ! cylinder surface pass through the point p. 
 !
-      xs=rs/rp*xp
-      ys=rs/rp*yp
+          xs=rs/rp*xp
+          ys=rs/rp*yp
 !
 ! Find distance from point p to point s
 !
-      dist=(xp-xs)**2+(yp-ys)**2
+          dist=(xp-xs)**2+(yp-ys)**2
 !
 ! Find the x and y coordinates of p in a coordiante system with origin
 ! in the center of the cylinder
 !
-      yp_cylinder=yp-y0
-      xp_cylinder=xp-x0
-      p_cylinder(1)=xp_cylinder
-      p_cylinder(2)=yp_cylinder
-      rp=sqrt(xp_cylinder**2+yp_cylinder**2)
+          yp_cylinder=yp-y0
+          xp_cylinder=xp-x0
+          p_cylinder(1)=xp_cylinder
+          p_cylinder(2)=yp_cylinder
+          rp=sqrt(xp_cylinder**2+yp_cylinder**2)
 !
 ! Find which grid line is the closest one in the direction
 ! away from the cylinder surface
@@ -547,103 +556,113 @@ f(:,m2-5:m2,:,iux)=0
 ! cross first. This grid line should however
 ! be OUTSIDE the point [xp,yp] compared to the cylinder surface.
 !
-      do counter=1,4
-        constdir=constdir_arr(counter)
-        vardir=vardir_arr(counter)
-        topbot_tmp=topbot_arr(counter)
+          do counter=1,4
+            constdir=constdir_arr(counter)
+            vardir=vardir_arr(counter)
+            topbot_tmp=topbot_arr(counter)
 !
 ! Find the position, xtemp, in the variable direction
 ! where the normal cross the grid line
 !
-        xtemp=(p_cylinder(vardir)/(p_cylinder(constdir)+tini))*(bordervalue(constdir,topbot_tmp)-cylinder(icyl,constdir+1))
+            xtemp=(p_cylinder(vardir)/(p_cylinder(constdir)+tini))*(bordervalue(constdir,topbot_tmp)-cylinder(icyl,constdir+1))
 !
 ! Find the distance, r, from the center of the cylinder
 ! to the point where the normal cross the grid line
 !
-        if (abs(xtemp) > verylarge) then
-          r=verylarge*2
-        else
-          r=sqrt(xtemp**2+(bordervalue(constdir,topbot_tmp)-cylinder(icyl,constdir+1))**2)
-        endif
+            if (abs(xtemp) > verylarge) then
+              r=verylarge*2
+            else
+              r=sqrt(xtemp**2+(bordervalue(constdir,topbot_tmp)-cylinder(icyl,constdir+1))**2)
+            endif
 !
 ! Check if the point xtemp is outside the cylinder,
 ! outside the point [xp,yp] and that it cross the grid
 ! line within this grid cell
 !
-        if ((r > rs) .and. (r > rp) &
-            .and.(xtemp+cylinder(icyl,vardir+1) > bordervalue(vardir,1))&
-            .and.(xtemp+cylinder(icyl,vardir+1) < bordervalue(vardir,2)))then
-          R1=r
-        else
-          R1=verylarge
-        endif
+            if ((r > rs) .and. (r > rp) &
+                .and.(xtemp+cylinder(icyl,vardir+1) >= bordervalue(vardir,1))&
+                .and.(xtemp+cylinder(icyl,vardir+1) <= bordervalue(vardir,2)))then
+              R1=r
+            else
+              R1=verylarge
+            endif
 !
 ! If we have a new all time low (in radius) then go on....
 !
-        if (R1 < Rsmall) then
-          Rsmall=R1                
-          xyint(vardir)=xtemp+cylinder(icyl,vardir+1)
-          xyint(constdir)=bordervalue(constdir,topbot_tmp)
-          dirconst=constdir
-          dirvar=vardir
-          topbot=topbot_tmp
-          if (constdir == 2) then
-            rij_min=rij(1,topbot_tmp)
-            rij_max=rij(2,topbot_tmp)
-          else
-            rij_min=rij(topbot_tmp,1)
-            rij_max=rij(topbot_tmp,2)
+            if (R1 < Rsmall) then
+              Rsmall=R1                
+              xyint(vardir)=xtemp+cylinder(icyl,vardir+1)
+              xyint(constdir)=bordervalue(constdir,topbot_tmp)
+              dirconst=constdir
+              dirvar=vardir
+              topbot=topbot_tmp
+              if (constdir == 2) then
+                rij_min=rij(1,topbot_tmp)
+                rij_max=rij(2,topbot_tmp)
+              else
+                rij_min=rij(topbot_tmp,1)
+                rij_max=rij(topbot_tmp,2)
+              endif
+              inputvalue=bordervalue(constdir,topbot_tmp)-cylinder(icyl,constdir+1)
+            endif
+          end do
+!
+! Check that we have found a valid distance
+!
+          if (Rsmall==verylarge/2.0) then
+            print*,'xtemp=',xtemp
+            print*,'r,rs,rp=',r,rs,rp
+            print*,'R1,Rsmall=',R1,Rsmall
+            print*,'rij,rs=',rij,rs
+            print*,'x(ix0),xp,x(ix1)=',x(ix0),xp,x(ix1)
+            print*,'y(iy0),yp,y(iy1)=',y(iy0),yp,y(iy1)
+            print*,'dirvar,dirconst,topbot,iz0,index=',dirvar,dirconst,topbot,iz0,index
+             call fatal_error('close_interpolation',&
+                'A valid radius is not found!')            
           endif
-          inputvalue=bordervalue(constdir,topbot_tmp)-cylinder(icyl,constdir+1)
+!
+! Check if the endpoints in the variable direction are
+! outside the cylinder. If they are not then define the endpoints
+! as where the grid line cross the cylinder surface.
+! Find the variable value at the endpoints.
+!
+          min=1
+          if (dirconst == 2) then
+            varval=f(borderindex(dirvar,1),borderindex(dirconst,topbot),iz0,ivar1)
+          else
+            varval=f(borderindex(dirconst,topbot),borderindex(dirvar,1),iz0,ivar1)
+          endif
+          call find_point(rij_min,rs,varval,inputvalue,x1,bordervalue(dirvar,1),bordervalue(dirvar,2),min,f1,cylinder(icyl,dirvar+1))
+          min=0
+          if (dirconst == 2) then
+            varval=f(borderindex(dirvar,2),borderindex(dirconst,topbot),iz0,ivar1)
+          else
+            varval=f(borderindex(dirconst,topbot),borderindex(dirvar,2),iz0,ivar1)
+          endif
+          call find_point(rij_max,rs,varval,inputvalue,x2,bordervalue(dirvar,1),bordervalue(dirvar,2),min,f2,cylinder(icyl,dirvar+1))
+!
+! Find the interpolation values between the two endpoints of
+! the line and the normal from the cylinder.
+!
+          rint1=xyint(dirvar)-x1
+          rint2=x2-xyint(dirvar)
+!
+! Find the interpolated value on the line
+!
+          fint=(rint1*f2+rint2*f1)/(x2-x1)
+!
+! Find the weigthing factors for the point on the line
+! and the point on the cylinder surface.
+!
+          rps=rp-rs
+          rintp=Rsmall-rp
+!
+! Perform the final interpolation
+!
+          gpp=(rps*fint+rintp*0)/(Rsmall-rs)
         endif
-      end do
-      !
-      ! Loop over all indeces
-      !
-!      do index=ivar1,ivar2
-index=ivar1
-        !
-        ! Check if the endpoints in the variable direction are
-        ! outside the cylinder. If they are not then define the endpoints
-        ! as where the grid line cross the cylinder surface.
-        ! Find the variable value at the endpoints.
-        !
-        min=1
-        if (dirconst == 2) then
-          varval=f(borderindex(dirvar,1),borderindex(dirconst,topbot),iz0,index)
-        else
-          varval=f(borderindex(dirconst,topbot),borderindex(dirvar,1),iz0,index)
-        endif
-        call find_point(rij_min,rs,varval,inputvalue,x1,bordervalue(dirvar,1),bordervalue(dirvar,2),min,f1,cylinder(icyl,dirvar+1))
-        min=0
-        if (dirconst == 2) then
-          varval=f(borderindex(dirvar,2),borderindex(dirconst,topbot),iz0,index)
-        else
-          varval=f(borderindex(dirconst,topbot),borderindex(dirvar,2),iz0,index)
-        endif
-        call find_point(rij_max,rs,varval,inputvalue,x2,bordervalue(dirvar,1),bordervalue(dirvar,2),min,f2,cylinder(icyl,dirvar+1))
-        !
-        ! Find the interpolation values between the two endpoints of
-        ! the line and the normal from the cylinder.
-        !
-        rint1=xyint(dirvar)-x1
-        rint2=x2-xyint(dirvar)
-        !
-        ! Find the interpolated value on the line
-        !
-        fint=(rint1*f2+rint2*f1)/(x2-x1)
-        !
-        ! Find the weigthing factors for the point on the line
-        ! and the point on the cylinder surface.
-        !
-        rps=rp-rs
-        rintp=Rsmall-rp
-        !
-        ! Perform the final interpolation
-        !
-        gpp=(rps*fint+rintp*0)/(Rsmall-rs)
-      !
-    end subroutine close_interpolation2
+!
+    end subroutine close_interpolation
 !***********************************************************************  
     function in_solid_cell(part_pos,part_rad)
 !
@@ -1083,7 +1102,7 @@ index=ivar1
 !
     end function ba_defined
 !***********************************************************************  
-    subroutine close_interpolation(f,ix0,iy0,iz0,ivar1,ivar2,xxp,gpp)
+    subroutine close_interpolation_old(f,ix0,iy0,iz0,icyl,ivar1,xxp,gpp)
 !
 !  20-mar-2009/nils: coded
 !
@@ -1104,8 +1123,8 @@ index=ivar1
 ! constdir and vardir are given the values 2 and 1, respectively.  
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      integer, intent(in) :: ix0,iy0,iz0,ivar1,ivar2
-      real, dimension (ivar2-ivar1+1), intent(inout) :: gpp
+      integer, intent(in) :: ix0,iy0,iz0,ivar1,icyl
+      real, intent(inout) :: gpp
       real :: x0,y0,z0,rs,verylarge=1e9,varval,rint1,rint2,fint,rps,rintp
       integer :: index,ix1,iy1,iz1,min
       real, dimension(3), intent(in) :: xxp
@@ -1115,11 +1134,20 @@ index=ivar1
       integer, dimension(4) :: constdir_arr, vardir_arr, topbot_arr
       real, dimension(2) :: xyint, p_cylinder
       real :: xtemp,r,xp,yp,R1,Rsmall,xs,ys,rp,dist,yp_cylinder,xp_cylinder
-      integer :: constdir,vardir,topbot_tmp,dirconst,dirvar,icyl,counter,topbot
+      integer :: constdir,vardir,topbot_tmp,dirconst,dirvar,counter,topbot
       real :: x1,x2,f1,f2,rij_min,rij_max,inputvalue
 !
 ! Define some help variables
 !
+
+        x0=cylinder(icyl,ixpos)
+        y0=cylinder(icyl,iypos)
+        z0=cylinder(icyl,izpos)
+        rs=cylinder(icyl,iradius)
+        xp=xxp(1)
+        yp=xxp(2)
+
+
       ix1=ix0+1
       iy1=iy0+1
       iz1=iz0+1
@@ -1135,22 +1163,12 @@ index=ivar1
       vardir_arr=(/1,1,2,2/)
       topbot_arr=(/2,1,2,1/)
 !
-! Loop over all cylinders to check for particles in partially solid cells
-!
-      do icyl=1,ncylinders
-        x0=cylinder(icyl,ixpos)
-        y0=cylinder(icyl,iypos)
-        z0=cylinder(icyl,izpos)
-        rs=cylinder(icyl,iradius)
-        xp=xxp(1)
-        yp=xxp(2)
-!
 ! Check if the four neighboring points are outside the cylinder or not
 !
         rij(1,1)=sqrt((x(ix0)-x0)**2+(y(iy0)-y0)**2)
         rij(1,2)=sqrt((x(ix0)-x0)**2+(y(iy1)-y0)**2)
         rij(2,1)=sqrt((x(ix1)-x0)**2+(y(iy0)-y0)**2)
-        rij(2,2)=sqrt((x(ix1)-x0)**2+(y(iy1)-y0)**2)            
+        rij(2,2)=sqrt((x(ix1)-x0)**2+(y(iy1)-y0)**2)           
         if (minval(rij) < rs) then
           R1=verylarge
           Rsmall=verylarge/2.0
@@ -1207,8 +1225,8 @@ index=ivar1
   ! line within this grid cell
   !
             if ((r > rs) .and. (r > rp) &
-                .and.(xtemp+cylinder(icyl,vardir+1) > bordervalue(vardir,1))&
-                .and.(xtemp+cylinder(icyl,vardir+1) < bordervalue(vardir,2)))then
+                .and.(xtemp+cylinder(icyl,vardir+1) >= bordervalue(vardir,1))&
+                .and.(xtemp+cylinder(icyl,vardir+1) <= bordervalue(vardir,2)))then
               R1=r
             else
               R1=verylarge
@@ -1234,9 +1252,19 @@ index=ivar1
             endif
           end do
 !
-! Loop over all indeces
+! Check that we have found a valid distance
 !
-          do index=ivar1,ivar2
+          if (Rsmall==verylarge/2.0) then
+            print*,'xtemp=',xtemp
+            print*,'r,rs,rp=',r,rs,rp
+            print*,'R1,Rsmall=',R1,Rsmall
+            print*,'rij,rs=',rij,rs
+            print*,'x(ix0),xp,x(ix1)=',x(ix0),xp,x(ix1)
+            print*,'y(iy0),yp,y(iy1)=',y(iy0),yp,y(iy1)
+            print*,'dirvar,dirconst,topbot,iz0,index=',dirvar,dirconst,topbot,iz0,index
+             call fatal_error('close_interpolation',&
+                'A valid radius is not found!')            
+          endif
 !
 ! Check if the endpoints in the variable direction are
 ! outside the cylinder. If they are not define the endpoints
@@ -1245,17 +1273,17 @@ index=ivar1
 !
             min=1
             if (dirconst == 2) then
-              varval=f(borderindex(dirvar,1),borderindex(dirconst,topbot),iz0,index)
+              varval=f(borderindex(dirvar,1),borderindex(dirconst,topbot),iz0,ivar1)
             else
-              varval=f(borderindex(dirconst,topbot),borderindex(dirvar,1),iz0,index)
+              varval=f(borderindex(dirconst,topbot),borderindex(dirvar,1),iz0,ivar1)
             endif
 
             call find_point(rij_min,rs,varval,inputvalue,x1,bordervalue(dirvar,1),bordervalue(dirvar,2),min,f1,cylinder(icyl,dirvar+1))
             min=0
             if (dirconst == 2) then
-              varval=f(borderindex(dirvar,2),borderindex(dirconst,topbot),iz0,index)
+              varval=f(borderindex(dirvar,2),borderindex(dirconst,topbot),iz0,ivar1)
             else
-              varval=f(borderindex(dirconst,topbot),borderindex(dirvar,2),iz0,index)
+              varval=f(borderindex(dirconst,topbot),borderindex(dirvar,2),iz0,ivar1)
             endif
             call find_point(rij_max,rs,varval,inputvalue,x2,bordervalue(dirvar,1),bordervalue(dirvar,2),min,f2,cylinder(icyl,dirvar+1))
 !
@@ -1277,12 +1305,10 @@ index=ivar1
 !
 ! Perform the final interpolation
 !
-            gpp(index-ivar1+1)=(rps*fint+rintp*0)/(Rsmall-rs)
-          enddo
+            gpp=(rps*fint+rintp*0)/(Rsmall-rs)
         endif
-      enddo
       !
-    end subroutine close_interpolation
+    end subroutine close_interpolation_old
 !***********************************************************************  
     subroutine find_point(rij,rs,f,yin,xout,xmin,xmax,min,fout,x0)
 !
