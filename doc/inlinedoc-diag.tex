@@ -66,6 +66,9 @@
   \var{ux2mx}     & $\left<u_x^2\right>_{yz}$ \\
   \var{uy2mx}     & $\left<u_y^2\right>_{yz}$ \\
   \var{uz2mx}     & $\left<u_z^2\right>_{yz}$ \\
+  \var{uxuym}     & $\left<u_x u_y\right>$ \\
+  \var{uxuzm}     & $\left<u_x u_z\right>$ \\
+  \var{uyuzm}     & $\left<u_y u_z\right>$ \\
   \var{uxmz}      & $\left< u_x \right>_{x,y}$
                     \quad(horiz. averaged $x$
                     velocity) \\
@@ -183,11 +186,9 @@
                     \quad(time step relative to
                     acoustic time step;
                     see \S~\ref{time-step}) \\
-  \var{eth}       & $\left<\varrho e\right>$
+  \var{ethm}      & $\left<\varrho e\right>$
                     \quad(mean thermal
-                    [=internal] energy).
-                    [Shouldn't this be
-                    \texttt{ethm} then?] \\
+                    [=internal] energy) \\
   \var{ssm}       & $\left<s/c_p\right>$
                     \quad(mean entropy) \\
   \var{ethtot}    & $\int_V\varrho e\,dV$
@@ -215,6 +216,7 @@
   \var{abmh}      & $\left<\Av\cdot\Bv\right>$ \\
   \var{abmn}      & $\left<\Av\cdot\Bv\right>$ \\
   \var{abms}      & $\left<\Av\cdot\Bv\right>$ \\
+  \var{ajm}       & $\left<\jv\cdot\Av\right>$ \\
   \var{jbm}       & $\left<\jv\cdot\Bv\right>$ \\
   \var{ubm}       & $\left<\uv\cdot\Bv\right>$ \\
   \var{ujm}       & $\left<\uv\cdot\Jv\right>$ \\
@@ -344,6 +346,7 @@
   \var{dexbmx}    & $\left<\nabla\times\Ev\times\Bv\right>|_x$ \\
   \var{dexbmy}    & $\left<\nabla\times\Ev\times\Bv\right>|_y$ \\
   \var{dexbmz}    & $\left<\nabla\times\Ev\times\Bv\right>|_z$ \\
+  \var{ujxbm}     & $\left<\uv\cdot(\Jv\times\Bv\right>|_x$ \\
   \var{bmxy_rms}  & $\sqrt{[\left<b_x\right>_z(x,y)]^2 +
                     [\left<b_y\right>_z(x,y)]^2 +
                     [\left<b_z\right>_z(x,y)]^2} $ \\
@@ -351,6 +354,9 @@
   \var{etasmagmin} & Min of Smagorinsky resistivity \\
   \var{etasmagmax} & Max of Smagorinsky resistivity \\
   \var{cosjbm}    & $\left<\Jv\cdot\Bv/(|\Jv|\,|\Bv|)\right>$ \\
+  \var{Exmxz}     & $\left<{\cal E}_x\right>_{xz}$ \\
+  \var{Eymxz}     & $\left<{\cal E}_y\right>_{xz}$ \\
+  \var{Ezmxz}     & $\left<{\cal E}_z\right>_{xz}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{pscalar.f90}} \\
 \midrule
@@ -532,6 +538,9 @@
   \var{kap11}     & $\kappa_{11}$ \\
   \var{kap21}     & $\kappa_{21}$ \\
   \var{kap31}     & $\kappa_{31}$ \\
+  \var{kap12}     & $\kappa_{12}$ \\
+  \var{kap22}     & $\kappa_{22}$ \\
+  \var{kap32}     & $\kappa_{32}$ \\
   \var{kap13}     & $\kappa_{13}$ \\
   \var{kap23}     & $\kappa_{23}$ \\
   \var{kap33}     & $\kappa_{33}$ \\
@@ -539,10 +548,14 @@
   \var{c2rms}     & $\left<c_{2}^2\right>^{1/2}$ \\
   \var{c3rms}     & $\left<c_{3}^2\right>^{1/2}$ \\
   \var{c4rms}     & $\left<c_{4}^2\right>^{1/2}$ \\
+  \var{c5rms}     & $\left<c_{5}^2\right>^{1/2}$ \\
+  \var{c6rms}     & $\left<c_{6}^2\right>^{1/2}$ \\
   \var{c1pt}      & $c^{1}$ \\
   \var{c2pt}      & $c^{2}$ \\
   \var{c3pt}      & $c^{3}$ \\
   \var{c4pt}      & $c^{4}$ \\
+  \var{c5pt}      & $c^{5}$ \\
+  \var{c6pt}      & $c^{6}$ \\
   \var{F11z}      & ${\cal F}_1^{1}$ \\
   \var{F21z}      & ${\cal F}_2^{1}$ \\
   \var{F31z}      & ${\cal F}_3^{1}$ \\

@@ -521,7 +521,7 @@ and presentations the use of the code (or parts of it)
 be acknowledged with reference to the web site
 \url{http://www.nordita.org/software/pencil-code/}.
 As a courtesy to the people involved in developing particularly important
-parts of the program (use \cmd{svsvnnnotate src/*.f90} to find out who did what!)
+parts of the program (use \cmd{svn annotate src/*.f90} to find out who did what!)
 we suggest to give appropriate reference to one or
 several of the following papers (listed here in temporal order):
 
@@ -7143,13 +7143,16 @@ $\epsilon$ & $\sigma$ & $\delta$ \\
 
 \section{High-frequency filters}
 \label{high-freq-filters}
+\index{Filters}
+\index{Hyperviscosity}
+\index{hyperdiffusivity}
 
 Being high order, {\sc Pencil Code} has much reduced numerical dissipation. 
 In order to perform inviscid simulations, high-frequency filters can  
 be used to provide extra dissipation for modes approaching the 
 Nyquist frequency. Usual Laplacian viscosity $\nu\Laplace\uv$ is 
 equivalent to a multiplication by $k^2$ in Fourier space, where $k$ is 
-the wavenumber. Another tool is hyper-viscosity, which replaces the $k^2$ 
+the wavenumber. Another tool is hyperviscosity, which replaces the $k^2$ 
 dependency by a higher power-law, $k^n$, $n$$>$2. The idea behind it is to 
 provide large dissipation only where it is needed, at the grid scale 
 (high $k$), while minimizing it at the largest scales of the box (small $k$). 
@@ -7157,7 +7160,7 @@ In principle, one can use as high $n$ as desired, but in practice we are
 limited by the order of the code. A multiplication by $k^n$ is equivalent 
 to an operator $\nabla^n$ in real space. As {\sc Pencil Code} is of sixth order, 
 three ghost cells are available in each direction, thus the sixth-order 
-derivative is the highest we can compute. The hyper-dissipation we use is 
+derivative is the highest we can compute. The hyperdissipation we use is 
 therefore $\nabla^6$, or $k^6$ is Fourier space. Figure~\ref{hypervisc} 
 illustrates how such tool maximizes the inertial range of a simulation.
 
@@ -7207,20 +7210,28 @@ For density, the flow due to mass diffusion is usually taken as the phenomenolog
 \begin{equation}
   \label{eq:hyperfick}
   \vec{\mathcal J}^{(n)} = (-1)^n D^{(n)} \grad^{2n-1} \rho,
-\end{equation}In our case, we are interested in the case $n=3$, so that the hyper-diffusion term is
+\end{equation}In our case, we are interested in the case $n=3$, so that the hyperdiffusion term is
 
 \begin{equation}
   \label{eq:hyperdiff}
   \pderiv{\rho}{t} = D^{(3)}\nabla^6{\rho}.
 \end{equation}
 
-The hyper diffusion coefficient $D^{(3)}$ can be calculated from $D$ assuming that at the Nyquist frequency the two formulations (\ref{eq:diff}) and (\ref{eq:hyperdiff}) yield the same quenching. Considering a wave as a Fourier series in one dimension ($x$), one element of the series is expressed as
+The hyperdiffusion coefficient $D^{(3)}$ can be calculated
+from $D$ assuming that at the Nyquist frequency the two
+formulations (\ref{eq:diff}) and (\ref{eq:hyperdiff}) yield the same
+quenching. Considering a wave as a Fourier series in one dimension ($x$),
+one element of the series is expressed as
 
 \begin{equation}
   \psi_k = A {\mathrm e}^{i(k x +  \omega t)} 
 \end{equation}
 
-Plugging it into the second order diffusion equation (\ref{eq:diff}) we have the dispersion condition $i\omega = -D k^2$. The sixth order version (\ref{eq:hyperdiff}) yields $i\omega = -D^{(3)} k^6$. Equating both we have  $D^{(3)} = D k^{-4}$. This condition should hold at the grid scale, where $k=\pi/\Delta x$, therefore
+Plugging it into the second order diffusion equation (\ref{eq:diff})
+we have the dispersion condition $i\omega = -D k^2$. The sixth order
+version (\ref{eq:hyperdiff}) yields $i\omega = -D^{(3)} k^6$. Equating
+both we have  $D^{(3)} = D k^{-4}$. This condition should hold at the
+grid scale, where $k=\pi/\Delta x$, therefore
 
 \begin{equation}
   \label{eq:diffrho-hyper}
@@ -7244,6 +7255,7 @@ For the magnetic potential, resistivity has the same formulation as mass diffusi
 \end{equation}also with $K^{(3)}=K({\Delta}x/\pi)^4$.
 
 \subsection{Hyperviscosity}
+\index{Hyperviscosity}
 
 Viscosity has some caveats where subtleties apply. The difference is that the momentum flux due to viscosity is not proportional to the velocity gradient, but to the rate-of-strain tensor 
 
@@ -7260,7 +7272,7 @@ In the general case, the viscous acceleration is
 f_{\rm visc} = \rho^{-1} \Div{\left(2\rho\nu\Strain\right)}
 \end{equation}
 
-So, for the hyper-viscous force, we must replace the rate-of-strain tensor by a high order version 
+So, for the hyperviscous force, we must replace the rate-of-strain tensor by a high order version 
 
 \begin{equation}
   \label{eq:hypervisc}
@@ -7299,7 +7311,7 @@ f_{\rm visc}^{({\rm hyper})} = \nu_3 \left(\nabla^6\uv + \frac{1}{3}\nabla^4({\g
 Equations (\ref{eq:hyper-mu-const}) and (\ref{eq:hyper-nu-const}) explicitly conserve linear {\em and} angular momentum. Although desirable properties, such expressions are cumbersome and numerically expensive, due to the fourth order derivatives of $\grad({\Div{\uv}})$. 
 
 
-This term, however, is only important when high compressibility is present (since it depends on the divergence of $\uv$). In practice we drop this term and use a simple hyper-viscosity 
+This term, however, is only important when high compressibility is present (since it depends on the divergence of $\uv$). In practice we drop this term and use a simple hyperviscosity 
 
 \begin{equation}
   f_{\rm visc} = \left\{ 
@@ -7326,12 +7338,20 @@ S_{ij} = \frac{1}{2} \left(\pderivn{u_i}{x_j}{5} + \pderivn{u_j}{x_i}{5} \right)
 
 %S5 = this plus that 
 
-This tensor, however, is not traceless, and therefore accurate only for weak compressibility. It should work well if the turbulence is subsonic. Major differences are not expected, since the spectral range in which hyper-viscosity operates is very limited: as a numerical tool, only its performance as a high-frequency filter is needed. This also supports the usage of the highest order terms only, since these are the ones that provide quenching at high $k$. Momentum conservation is a cheap bonus. Angular momentum conservation is perhaps playing it too safe, at great computational expense. 
+This tensor, however, is not traceless, and therefore accurate only
+for weak compressibility. It should work well if the turbulence is
+subsonic. Major differences are not expected, since the spectral range
+in which hyperviscosity operates is very limited: as a numerical tool,
+only its performance as a high-frequency filter is needed. This also
+supports the usage of the highest order terms only, since these are
+the ones that provide quenching at high $k$. Momentum conservation is
+a cheap bonus. Angular momentum conservation is perhaps playing it too
+safe, at great computational expense. \index{Hyperviscosity}
 
 \subsection{Anisotropic hyperdissipation}
 
 As we want quenching primarily at the Nyquist frequency, hyperdissipation 
-depends intrinsically on the resolution, according to 
+depends intrinsically on the resolution, according to
 Eq.~(\ref{eq:diffrho-hyper}). Because of this, {\it isotropic}
 hyperdissipation only gives equal quenching in all spatial directions 
 if $\Delta x$=$\Delta y$=$\Delta z$, i.e., if the cells are cubic. For 
@@ -7819,7 +7839,8 @@ the Nyquist frequency. Accurate high order second derivatives (with no
 quenching factors) are important when calculating the current $\Jv$ in
 the Lorentz force $\Jv\times\Bv$ from a vector potential $\Av$ using
 $-\mu_0\Jv=\nabla^2\Av-\nab\nab\cdot\Av$. This will be important in
-the MHD calculations presented below.
+the MHD calculations presented below. \index{Hyperviscosity}
+
 
 \subsection{Upwind derivatives to avoid `wiggles'}
 \index{Upwinding}
@@ -7890,7 +7911,7 @@ The difference between central and fifth-order upwind derivative is
   = -\frac{\delta x^5}{60} f^{(6)}_{0} \; .
 \end{equation}
 In other words, 5th-order upwinding can be represented for any sign of $u$
-as hyper-diffusion (Dobler et al.\ 2006):
+as hyperdiffusion (Dobler et al.\ 2006): \index{Hyperviscosity}
 \begin{equation} \label{Eq-upwind-hyperdiff}
   -u f'_{\rm(up,5th)}
   = -u f'_{\rm(centr,6th)}  + \frac{|u|\,\delta x^5}{60} f^{(6)} \; .
@@ -7898,6 +7919,7 @@ as hyper-diffusion (Dobler et al.\ 2006):
 The advantage over adopting constant hyperdiffusion is that in the
 upwinding scheme hyperdiffusion is only applied where it is needed
 (i.e.~where advection is happening, hence the factor $|u|$).
+ \index{Hyperviscosity}
 
 The form (\ref{Eq-upwind-hyperdiff}) also suggests an easy way to get
 `stronger' upwinding: Rather than excluding more points in the downwind
