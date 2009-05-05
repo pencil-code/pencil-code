@@ -87,17 +87,13 @@ module Solid_Cells
       use Cdata
       use Sub
       use Initcond
-
-      real, dimension (mx,my,mz,mfarray) :: f
-
-      intent(inout) :: f
-      
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       integer, pointer :: iglobal_cs2,iglobal_glnTT
       real :: a2,rr2,pphi,wall_smoothing,rr2_low,rr2_high,shiftx,shifty
       real :: wall_smoothing_temp,xr,yr
       integer i,j,k,cyl,jj,icyl
-
-
+!
       do jj=1,ninit
       select case(initsolid_cells(jj))
 !
@@ -351,6 +347,8 @@ f(:,m2-5:m2,:,iux)=0
                   f(i,j,k,iux)=gpp
                   call close_interpolation(f,i,j,k,icyl,iuy,xxp,gpp,.true.)
                   f(i,j,k,iuy)=gpp
+                  call close_interpolation(f,i,j,k,icyl,iuz,xxp,gpp,.true.)
+                  f(i,j,k,iuz)=gpp
                 endif
               endif
             endif
@@ -437,22 +435,32 @@ f(:,m2-5:m2,:,iux)=0
 !
     end subroutine interpolate_mirror_point
 !***********************************************************************  
-    subroutine close_interpolation(f,ix0_,iy0_,iz0_,icyl,ivar1,xxp,gpp,fluid_point)
-      !
-      !  20-mar-2009/nils: coded
-      !
-      ! WARNING: This routine only works for cylinders with an infinitely long
-      ! WARNING: central axis in the z-direction!
-      !
-      ! The interpolation point, named p, has coordinates [xp,yp].
-      ! The point s on the cylinder surface, with coordinates [xs,ys], is 
-      ! placed such that the line from s to p is a normal to the cylinder surface.
-      !
-      ! If a one of the corner points of the grid cell is within a solid geometry
-      ! the normal passing through both s and p are continued outward until a
-      ! grid line is reached. If this line has constant, say y, then the variables
-      ! constdir and vardir are given the values 2 and 1, respectively.  
-      !
+    subroutine close_interpolation(f,ix0_,iy0_,iz0_,icyl,ivar1,xxp,gpp,&
+        fluid_point)
+!
+!  20-mar-2009/nils: coded
+!
+! If fluid_point=.true. this routine check if any of the corners in 
+! the interpolation cell are inside a solid geometry. 
+! If they are some special treatment is required.
+!
+! If fluid_point=.false. the routine use the value at the surface
+! of the solid geometry together with the interpolated value at the nearest
+! grid line in the direction away from the solid geometry to set a value
+! at a grid point which is very close to the solid geometry.
+!
+! WARNING: This routine only works for cylinders with an infinitely long
+! WARNING: central axis in the z-direction!
+!
+! The interpolation point, named p, has coordinates [xp,yp].
+! The point s on the cylinder surface, with coordinates [xs,ys], is 
+! placed such that the line from s to p is a normal to the cylinder surface.
+!
+! If a one of the corner points of the grid cell is within a solid geometry
+! the normal passing through both s and p are continued outward until a
+! grid line is reached. If this line has constant, say y, then the variables
+! constdir and vardir are given the values 2 and 1, respectively.  
+!
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: ix0_,iy0_,iz0_,ivar1
       integer :: ix0,iy0,iz0
@@ -710,7 +718,16 @@ f(:,m2-5:m2,:,iux)=0
              (ba(i,m,n,1).ne.0).or.&
              (ba(i,m,n,2).ne.0).or.&
              (ba(i,m,n,3).ne.0)) then
-          df(i,m,n,:)=0
+!
+! If this is a fluid point which has to be interpolated because it is very
+! close to the solid geometry (i.e. ba(i,m,n,1) == 10) then only the 
+! velocity components should be frozen.
+!
+          if (ba(i,m,n,1) == 10) then
+            df(i,m,n,iux:iuz)=0
+          else
+            df(i,m,n,:)=0
+          endif
         endif
       enddo
 !
@@ -1101,214 +1118,6 @@ f(:,m2-5:m2,:,iux)=0
       endif
 !
     end function ba_defined
-!***********************************************************************  
-    subroutine close_interpolation_old(f,ix0,iy0,iz0,icyl,ivar1,xxp,gpp)
-!
-!  20-mar-2009/nils: coded
-!
-! This routine check if any of the corners in the interpolation cell
-! are inside a solid geometry. If they are some special treatment is
-! required.
-! 
-! WARNING: This routine only works for cylinders with an infinitely long
-! WARNING: central axis in the z-direction!
-!
-! The interpolation point, named p, has coordinates [xp,yp].
-! The point s on the cylinder surface, with coordinates [xs,ys], is 
-! placed such that the line from s to p is a normal to the cylinder surface.
-!
-! If a one of the corner points of the grid cell is within a solid geometry
-! the normal passing through both s and p are continued outward until a
-! grid line is reached. If this line has constant, say y, then the variables
-! constdir and vardir are given the values 2 and 1, respectively.  
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      integer, intent(in) :: ix0,iy0,iz0,ivar1,icyl
-      real, intent(inout) :: gpp
-      real :: x0,y0,z0,rs,verylarge=1e9,varval,rint1,rint2,fint,rps,rintp
-      integer :: index,ix1,iy1,iz1,min
-      real, dimension(3), intent(in) :: xxp
-      real, dimension(2,2) :: rij
-      real, dimension(3,2) :: bordervalue
-      integer, dimension(3,2) :: borderindex
-      integer, dimension(4) :: constdir_arr, vardir_arr, topbot_arr
-      real, dimension(2) :: xyint, p_cylinder
-      real :: xtemp,r,xp,yp,R1,Rsmall,xs,ys,rp,dist,yp_cylinder,xp_cylinder
-      integer :: constdir,vardir,topbot_tmp,dirconst,dirvar,counter,topbot
-      real :: x1,x2,f1,f2,rij_min,rij_max,inputvalue
-!
-! Define some help variables
-!
-
-        x0=cylinder(icyl,ixpos)
-        y0=cylinder(icyl,iypos)
-        z0=cylinder(icyl,izpos)
-        rs=cylinder(icyl,iradius)
-        xp=xxp(1)
-        yp=xxp(2)
-
-
-      ix1=ix0+1
-      iy1=iy0+1
-      iz1=iz0+1
-      bordervalue(1,1)=x(ix0)
-      bordervalue(2,1)=y(iy0)
-      bordervalue(1,2)=x(ix1)
-      bordervalue(2,2)=y(iy1)
-      borderindex(1,1)=ix0
-      borderindex(2,1)=iy0
-      borderindex(1,2)=ix1
-      borderindex(2,2)=iy1
-      constdir_arr=(/2,2,1,1/)
-      vardir_arr=(/1,1,2,2/)
-      topbot_arr=(/2,1,2,1/)
-!
-! Check if the four neighboring points are outside the cylinder or not
-!
-        rij(1,1)=sqrt((x(ix0)-x0)**2+(y(iy0)-y0)**2)
-        rij(1,2)=sqrt((x(ix0)-x0)**2+(y(iy1)-y0)**2)
-        rij(2,1)=sqrt((x(ix1)-x0)**2+(y(iy0)-y0)**2)
-        rij(2,2)=sqrt((x(ix1)-x0)**2+(y(iy1)-y0)**2)           
-        if (minval(rij) < rs) then
-          R1=verylarge
-          Rsmall=verylarge/2.0
-!
-! Determine the point s on the cylinder surface where the normal to the
-! cylinder surface pass through the point p. 
-!
-          xs=rs/rp*xp
-          ys=rs/rp*yp
-!
-! Find distance from point p to point s
-!
-          dist=(xp-xs)**2+(yp-ys)**2
-!
-! Find the x and y coordinates of p in a coordiante system with origin
-! in the center of the cylinder
-!
-          yp_cylinder=yp-y0
-          xp_cylinder=xp-x0
-          p_cylinder(1)=xp_cylinder
-          p_cylinder(2)=yp_cylinder
-          rp=sqrt(xp_cylinder**2+yp_cylinder**2)
-!
-! Find which grid line is the closest one in the direction
-! away from the cylinder surface
-!
-! Check the distance etc. to all the four (in 2D) possible 
-! grid lines. Pick the grid line which the normal to the
-! cylinder surface (which also pass through the point [xp,yp])
-! cross first. This grid line should however
-! be OUTSIDE the point [xp,yp] compared to the cylinder surface.
-!
-          do counter=1,4
-            constdir=constdir_arr(counter)
-            vardir=vardir_arr(counter)
-            topbot_tmp=topbot_arr(counter)
-!
-! Find the position, xtemp, in the variable direction
-! where the normal cross the grid line
-!
-            xtemp=(p_cylinder(vardir)/(p_cylinder(constdir)+tini))*(bordervalue(constdir,topbot_tmp)-cylinder(icyl,constdir+1))
-!
-! Find the distance, r, from the center of the cylinder
-! to the point where the normal cross the grid line
-!
-            if (abs(xtemp) > verylarge) then
-              r=verylarge*2
-            else
-              r=sqrt(xtemp**2+(bordervalue(constdir,topbot_tmp)-cylinder(icyl,constdir+1))**2)
-            endif
-  !
-  ! Check if the point xtemp is outside the cylinder,
-  ! outside the point [xp,yp] and that it cross the grid
-  ! line within this grid cell
-  !
-            if ((r > rs) .and. (r > rp) &
-                .and.(xtemp+cylinder(icyl,vardir+1) >= bordervalue(vardir,1))&
-                .and.(xtemp+cylinder(icyl,vardir+1) <= bordervalue(vardir,2)))then
-              R1=r
-            else
-              R1=verylarge
-            endif
-  !
-  ! If we have a new all time low (in radius) go on....
-  !
-            if (R1 < Rsmall) then
-              Rsmall=R1                
-              xyint(vardir)=xtemp+cylinder(icyl,vardir+1)
-              xyint(constdir)=bordervalue(constdir,topbot_tmp)
-              dirconst=constdir
-              dirvar=vardir
-              topbot=topbot_tmp
-              if (constdir == 2) then
-                rij_min=rij(1,topbot_tmp)
-                rij_max=rij(2,topbot_tmp)
-              else
-                rij_min=rij(topbot_tmp,1)
-                rij_max=rij(topbot_tmp,2)
-              endif
-              inputvalue=bordervalue(constdir,topbot_tmp)-cylinder(icyl,constdir+1)
-            endif
-          end do
-!
-! Check that we have found a valid distance
-!
-          if (Rsmall==verylarge/2.0) then
-            print*,'xtemp=',xtemp
-            print*,'r,rs,rp=',r,rs,rp
-            print*,'R1,Rsmall=',R1,Rsmall
-            print*,'rij,rs=',rij,rs
-            print*,'x(ix0),xp,x(ix1)=',x(ix0),xp,x(ix1)
-            print*,'y(iy0),yp,y(iy1)=',y(iy0),yp,y(iy1)
-            print*,'dirvar,dirconst,topbot,iz0,index=',dirvar,dirconst,topbot,iz0,index
-             call fatal_error('close_interpolation',&
-                'A valid radius is not found!')            
-          endif
-!
-! Check if the endpoints in the variable direction are
-! outside the cylinder. If they are not define the endpoints
-! as where the grid line cross the cylinder surface.
-! Find the variable value at the endpoints.
-!
-            min=1
-            if (dirconst == 2) then
-              varval=f(borderindex(dirvar,1),borderindex(dirconst,topbot),iz0,ivar1)
-            else
-              varval=f(borderindex(dirconst,topbot),borderindex(dirvar,1),iz0,ivar1)
-            endif
-
-            call find_point(rij_min,rs,varval,inputvalue,x1,bordervalue(dirvar,1),bordervalue(dirvar,2),min,f1,cylinder(icyl,dirvar+1))
-            min=0
-            if (dirconst == 2) then
-              varval=f(borderindex(dirvar,2),borderindex(dirconst,topbot),iz0,ivar1)
-            else
-              varval=f(borderindex(dirconst,topbot),borderindex(dirvar,2),iz0,ivar1)
-            endif
-            call find_point(rij_max,rs,varval,inputvalue,x2,bordervalue(dirvar,1),bordervalue(dirvar,2),min,f2,cylinder(icyl,dirvar+1))
-!
-! Find the interpolation values between the two endpoints of
-! the line and the normal from the cylinder.
-!
-            rint1=xyint(dirvar)-x1
-            rint2=x2-xyint(dirvar)
-!
-! Find the interpolated value on the line
-!
-            fint=(rint1*f2+rint2*f1)/(x2-x1)
-!
-! Find the weigthing factors for the point on the line
-! and the point on the cylinder surface.
-!
-            rps=rp-rs
-            rintp=Rsmall-rp
-!
-! Perform the final interpolation
-!
-            gpp=(rps*fint+rintp*0)/(Rsmall-rs)
-        endif
-      !
-    end subroutine close_interpolation_old
 !***********************************************************************  
     subroutine find_point(rij,rs,f,yin,xout,xmin,xmax,min,fout,x0)
 !
