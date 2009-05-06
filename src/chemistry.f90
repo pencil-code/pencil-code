@@ -3725,5 +3725,31 @@ subroutine flame_front(f)
 !
     endsubroutine air_field
 !********************************************************************
+  subroutine chemistry_clean_up()
+
+  use Mpicomm
+
+
+  if (allocated(Bin_diff_coef))  deallocate(Bin_diff_coef)
+  if (allocated(stoichio))       deallocate(stoichio)
+  if (allocated(Sijm))           deallocate(Sijm)
+  if (allocated(Sijp))           deallocate(Sijp)
+  if (allocated(kreactions_z))   deallocate(kreactions_z)
+  if (allocated(kreactions_m))   deallocate(kreactions_m)
+  if (allocated(kreactions_p))   deallocate(kreactions_p)
+  if (allocated(reaction_name))  deallocate(reaction_name)
+  if (allocated(B_n))            deallocate(B_n)
+  if (allocated(alpha_n))        deallocate(alpha_n)
+  if (allocated(E_an))           deallocate(E_an)
+  if (allocated(low_coeff))      deallocate(low_coeff)
+  if (allocated(high_coeff))     deallocate(high_coeff)
+  if (allocated(troe_coeff))     deallocate(troe_coeff)
+  if (allocated(a_k4))           deallocate(a_k4)
+  if (allocated(Mplus_case))     deallocate(Mplus_case)
+
+
+!
+  endsubroutine chemistry_clean_up
+!********************************************************************
 endmodule Chemistry
 

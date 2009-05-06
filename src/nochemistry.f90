@@ -581,6 +581,15 @@ module Chemistry
    call keep_compiler_quiet(cs2_full)
 !
   endsubroutine get_cs2_full
+!*************************************************************
+subroutine chemistry_clean_up()
+
+  use Mpicomm
+  real, dimension(mx,my,mz,mfarray) :: f
+
+     call keep_compiler_quiet(f)
+!
+  endsubroutine chemistry_clean_up
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************

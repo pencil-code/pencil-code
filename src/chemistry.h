@@ -23,6 +23,8 @@
   public :: get_cs2_full
   public :: get_gamma_full
 
+  public :: chemistry_clean_up
+
 ! public :: chemistry_calc_density
 ! public :: chemistry_calc_hydro
 ! public :: chemistry_calc_entropy

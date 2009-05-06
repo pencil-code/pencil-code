@@ -47,6 +47,7 @@ program run
 !
   use Boundcond
   use Cdata
+  use Chemistry,       only: chemistry_clean_up
   use Diagnostics
   use Dustdensity,     only: init_nd
   use Dustvelocity,    only: init_uud
@@ -695,6 +696,7 @@ program run
 !
   call farray_clean_up()
   call sharedvars_clean_up()
+  call chemistry_clean_up()
   if (lADI) deallocate(finit)
 !
 endprogram run

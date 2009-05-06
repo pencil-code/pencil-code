@@ -621,7 +621,7 @@ LD_FFTW2=
 #FC=ifort #(pchelka)
 ##FC=ifort -fexceptions -fp-stack-check -fstack-security-check -ftrapuv  #(pchelka)
 ##FC=ifort -CB -WB -check all -g #(pchelka)
-##FC=g95 -finteger=-2147483648 #(pchelka)
+##FC=g95 -finteger=-2147483648 -fexceptions -fp-stack-check  -ftrapuv #(pchelka)
 ##
 ## rockall (ngrs's current laptop)
 ##
