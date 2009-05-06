@@ -12,23 +12,25 @@ pro pc_error_range2,tt,a,mean=am,error=err,oplot=oplot,accum=accum,col=col
 ;  determine 3 ranges for which separate errors are calculated
 ;
 nt=n_elements(tt)
-it1=0
-it4=nt-1
+it1=0L
+it4=nt-1L
 ;
 ;  calculate how many points does one correlationt time correspond to
 ;
-di=min(where(tt-tt(0) gt 1.))+1
+di=min(where(tt-tt(0) ge 1.))
 nt2=fix((it4-it1+1)/di)*di
-print,di,(it4-it1+1),nt2
 ;
 ;  reformat
 ;
 ndi=nt2/di
-a2=reform(a(it4-nt2+1:it4),di,ndi)
-am_di=total(a2,1)/di
+a2=reform(a(it4-nt2+1L:it4),di,ndi)
+am_di=total(a2,1L)/di
 ;
+nam_di=n_elements(am_di)
+help,am_di
 am=mean(am_di)
-err=sqrt(mean((am_di-am)^2))
+err=sqrt(mean((am_di-am)^2)/nam_di)
+print,'di,nam,(it4-it1+1L),nt2=',di,nam_di,(it4-it1+1L),nt2
 ;
 ;  possibility of overplotting error range
 ;
