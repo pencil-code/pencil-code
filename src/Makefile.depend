@@ -80,9 +80,6 @@ MAGNETIC_SRC=$(MAGNETIC).f90
 EOS_OBJ=$(EOS).o
 EOS_SRC=$(EOS).f90
 #
-SHOCK_FINDER_OBJ=$(SHOCK_FINDER).o
-SHOCK_FINDER_SRC=$(SHOCK_FINDER).f90
-#
 GRID_OBJ=$(GRID).o
 GRID_SRC=$(GRID).f90
 #
@@ -266,8 +263,6 @@ start.o: start.f90 $(start_deps)
 #
 run.o: run.f90 $(run_deps)
 #
-$(SHOCK_FINDER).o: $(SHOCK_FINDER).f90 $(shock_finder_deps)
-#
 read_videofiles.o: read_videofiles.f90 $(read_videofiles_deps)
 #
 read_vectorfiles.o: read_vectorfiles.f90 $(read_vectorfiles_deps)
@@ -280,11 +275,11 @@ $(GRID_OBJ): $(GRID_SRC) $(CDATA_OBJ) $(MPICOMM_OBJ) $(MESSAGES_OBJ)
 #
 $(GENERAL_OBJ): $(GENERAL_SRC) $(MESSAGES_OBJ) $(CPARAM_OBJ) $(CDATA_OBJ)
 #
-shock.o: shock.h shock.f90 shock_profile.inc $(CDATA_OBJ) $(CPARAM_OBJ) $(SUB_OBJ) boundcond.o $(FARRAY_OBJ) $(INTERSTELLAR_OBJ) $(MAGNETIC_OBJ)
+shock.o: shock.h shock.f90 $(CDATA_OBJ) $(CPARAM_OBJ) $(SUB_OBJ) boundcond.o $(FARRAY_OBJ) $(INTERSTELLAR_OBJ) $(MAGNETIC_OBJ)
 #
 shock_highorder.o: shock.h shock_highorder.f90 $(CDATA_OBJ) $(CPARAM_OBJ) $(SUB_OBJ) boundcond.o $(FARRAY_OBJ)
 #
-shock_perp.o: shock.h shock_perp.f90 shock_profile.inc $(CDATA_OBJ) $(CPARAM_OBJ) $(SUB_OBJ) boundcond.o $(FARRAY_OBJ) $(INTERSTELLAR_OBJ) $(MAGNETIC_OBJ)
+shock_perp.o: shock.h shock_perp.f90 $(CDATA_OBJ) $(CPARAM_OBJ) $(SUB_OBJ) boundcond.o $(FARRAY_OBJ) $(INTERSTELLAR_OBJ) $(MAGNETIC_OBJ)
 #
 noshock.o: shock.h noshock.f90 $(CDATA_OBJ) $(CPARAM_OBJ) $(SUB_OBJ) $(FARRAY_OBJ)
 #

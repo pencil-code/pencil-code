@@ -1774,7 +1774,7 @@ module Shock
 !
     endsubroutine shock_smooth_octagon7
 !
-    include 'shock_profile.inc'
+!    include 'shock_profile.inc'
 !
 !***********************************************************************
     subroutine bcshock_per_x(f)

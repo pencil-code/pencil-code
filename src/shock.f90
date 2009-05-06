@@ -423,7 +423,7 @@ module Shock
 !
 ! Calculate contributions to other processors
 !
-          call shock_calc_externalboundary(f)
+!          call shock_calc_externalboundary(f)
 !
 ! Initiate asyncronous communication of contributions to other processors
 !
@@ -432,8 +432,8 @@ module Shock
 !
 ! Calculate all local shock profile contributions
 !
-          call shock_calc_internalboundary(f)
-          call shock_calc_body(f)
+!          call shock_calc_internalboundary(f)
+!          call shock_calc_body(f)
 !
 ! Finalize all shock profile communications
 !
@@ -488,7 +488,7 @@ module Shock
 !
 ! Calculate all local shock profile contributions
 !
-            call shock_calc_body(f)
+!            call shock_calc_body(f)
           enddo
 !
 ! Scale and chop the shock profile, as needed
@@ -1740,7 +1740,7 @@ module Shock
 !
     endsubroutine shock_smooth_octagon7
 !
-    include 'shock_profile.inc'
+!    include 'shock_profile.inc'
 !
 !***********************************************************************
     subroutine bcshock_per_x(f)
