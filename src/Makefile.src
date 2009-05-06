@@ -67,8 +67,6 @@ PARTICLES_STALKER      = noparticles_stalker
 
 GHOSTFOLD              = noghostfold
 
-#SPECIAL_FUNCTIONS = nospecial_functions
-
 POISSON      = nopoisson
 
 TIMESTEP     = timestep
@@ -1147,11 +1145,9 @@ endif
 ifeq ($(GSL),gsl_wrapper_r8)
   LD_GSL=  -lgsl -lgslcblas
 endif
-
-
-
-
-## Generic rules:
+# 
+# Generic rules:
+# 
 .SUFFIXES:			# get rid of that annoying Modula rule
 .SUFFIXES: .f .f90 .c .o .inc .h .dot .ps .svg
 
@@ -1168,20 +1164,16 @@ endif
 	cat $*.dot | dot -Tps -o $*.ps
 .dot.svg:
 	cat $*.dot | dot -Tsvg -o $*.svg
-
 #
-# ---------------------------------------------------------------------- #
-## Abbreviations
+#  Abbreviations
+#
 technical=cparam.o cdata.o particles_cdata.o messages.o general.o farray.o shared_variables.o $(FOURIER).o slices.o $(DERIV).o boundcond.o filter.o initcond.o register.o diagnostics.o $(TIMEAVG).o persist.o $(GRID).o $(SOLID_CELLS).o
 #
 physics=$(GLOBAL).o $(VISCOSITY).o $(SHOCK).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(POISSON).o $(SELFGRAVITY).o $(INTERSTELLAR).o $(ENTROPY).o $(EOS).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(CHIRAL).o $(RADIATION).o $(CHEMISTRY).o $(DUSTVELOCITY).o $(DUSTDENSITY).o $(SPECIAL).o $(COSMICRAY).o $(COSMICRAYFLUX).o $(TESTSCALAR).o $(TESTFIELD).o $(TESTFLOW).o $(PARTICLES).o $(PARTICLES_RADIUS).o $(PARTICLES_SPIN).o $(PARTICLES_NUMBER).o $(PARTICLES_SELFGRAVITY).o $(PARTICLES_NBODY).o $(PARTICLES_VISCOSITY).o $(PARTICLES_COLLISIONS).o $(PARTICLES_STALKER).o $(NEUTRALVELOCITY).o $(NEUTRALDENSITY).o $(HYPERVISC_STRICT).o $(HYPERRESI_STRICT).o
 #
 switchable=$(physics) $(BORDER_PROFILES).o
 #
-# special function module disabled for the time being.: dhruba 
 comm_deps=$(technical) sub.o $(IO).o snapshot.o param_io.o  $(MPICOMM_FIX).o $(GHOSTFOLD).o $(switchable) $(POWER).o $(STRUCT_FUNC).o $(PARTICLES_MAIN).o $(PARTICLES_SUB).o
-
-#comm_deps=$(technical) sub.o $(IO).o snapshot.o param_io.o  $(MPICOMM_FIX).o $(GHOSTFOLD).o $(switchable) $(POWER).o $(STRUCT_FUNC).o $(SPECIAL_FUNCTIONS).o $(PARTICLES_MAIN).o $(PARTICLES_SUB).o
 #
 start_deps_f90=$(comm_deps) $(TESTPERTURB).o
 #
@@ -1192,13 +1184,10 @@ run_deps_f90=$(comm_deps) pencil_check.o equ.o $(TIMESTEP).o $(TESTPERTURB).o
 run_deps=$(run_deps_f90) $(DEBUG).o $(GSL).o
 #
 start_fast_deps=cparam.f90 cdata.f90 general.f90 $(MPICOMM_FIX).f90 $(GHOSTFOLD).f90 deriv.f90 sub.f90 $(PARTICLES_SUB).f90 $(DEBUG).o $(IO).f90 $(GLOBAL).f90 $(POISSON).o $(GRAVITY).f90 $(SELFGRAVITY).o $(EOS).f90 slices.f90 initcond.f90 $(SPECIAL).f90 $(DENSITY).f90 $(VISCOSITY).f90 $(SHOCK).f90 $(MAGNETIC).f90 $(COSMICRAY).f90 $(COSMICRAYFLUX).f90 $(HYDRO).f90 $(INTERSTELLAR).f90 $(ENTROPY).f90 $(RADIATION).f90 boundcond.f90 filter.f90 $(FORCING).f90 $(SHEAR).f90 $(TESTPERTURB).f90 $(PSCALAR).f90 $(CHIRAL).f90 $(CHEMISTRY).o $(DUSTVELOCITY).f90 $(DUSTDENSITY).f90 $(NEUTRALVELOCITY).f90 $(NEUTRALDENSITY).f90 $(PARTICLES).o $(TIMEAVG).f90 param_io.f90 diagnostics.f90 register.f90 $(POWER).f90 $(STRUCT_FUNC).f90 snapshot.f90 $(GRID).f90 start.f90
-# special functions module disabled 
-#start_fast_deps=cparam.f90 cdata.f90 general.f90 $(MPICOMM_FIX).f90 $(GHOSTFOLD).f90 deriv.f90 sub.f90 $(PARTICLES_SUB).f90 $(DEBUG).o $(IO).f90 $(GLOBAL).f90 $(POISSON).o $(GRAVITY).f90 $(SELFGRAVITY).o $(EOS).f90 slices.f90 initcond.f90 $(SPECIAL).f90 $(DENSITY).f90 $(VISCOSITY).f90 $(SHOCK).f90 $(MAGNETIC).f90 $(COSMICRAY).f90 $(COSMICRAYFLUX).f90 $(HYDRO).f90 $(INTERSTELLAR).f90 $(ENTROPY).f90 $(RADIATION).f90 boundcond.f90 filter.f90 $(FORCING).f90 $(SHEAR).f90 $(TESTPERTURB).f90 $(PSCALAR).f90 $(CHIRAL).f90 $(CHEMISTRY).o $(DUSTVELOCITY).f90 $(DUSTDENSITY).f90 $(NEUTRALVELOCITY).f90 $(NEUTRALDENSITY).f90 $(PARTICLES).o $(TIMEAVG).f90 param_io.f90 diagnostics.f90 register.f90 $(POWER).f90 $(STRUCT_FUNC).f90 $(SPECIAL_FUNCTIONS).f90 snapshot.f90 $(GRID).f90 start.f90
-
 #
 run_fast_deps=cparam.f90 cdata.f90 general.f90 $(MPICOMM_FIX).f90 $(GHOSTFOLD).f90 deriv.f90 sub.f90 $(PARTICLES_SUB).f90 $(DEBUG).o $(IO).f90 $(GLOBAL).f90 $(POISSON).o $(GRAVITY).f90 $(SELFGRAVITY).o $(EOS).f90 slices.f90 initcond.f90 $(SPECIAL).f90 $(DENSITY).f90 $(VISCOSITY).f90 $(SHOCK).f90 $(MAGNETIC).f90 $(COSMICRAY).f90 $(COSMICRAYFLUX).f90 $(HYDRO).f90 $(INTERSTELLAR).f90 $(ENTROPY).f90 $(RADIATION).f90 boundcond.f90 filter.f90 $(FORCING).f90 $(SHEAR).f90 $(TESTPERTURB).f90 $(PSCALAR).f90 $(CHIRAL).f90 $(CHEMISTRY).o $(DUSTVELOCITY).f90 $(DUSTDENSITY).f90 $(NEUTRALVELOCITY).f90 $(NEUTRALDENSITY).f90 $(PARTICLES).f90 equ.f90 $(TIMESTEP).f90 $(TIMEAVG).f90 param_io.f90 diagnostics.f90 register.f90 $(POWER).f90 $(STRUCT_FUNC).f90 snapshot.f90 run.f90
-# special functions module disabled. 
-run_fast_deps=cparam.f90 cdata.f90 general.f90 $(MPICOMM_FIX).f90 $(GHOSTFOLD).f90 deriv.f90 sub.f90 $(PARTICLES_SUB).f90 $(DEBUG).o $(IO).f90 $(GLOBAL).f90 $(POISSON).o $(GRAVITY).f90 $(SELFGRAVITY).o $(EOS).f90 slices.f90 initcond.f90 $(SPECIAL).f90 $(DENSITY).f90 $(VISCOSITY).f90 $(SHOCK).f90 $(MAGNETIC).f90 $(COSMICRAY).f90 $(COSMICRAYFLUX).f90 $(HYDRO).f90 $(INTERSTELLAR).f90 $(ENTROPY).f90 $(RADIATION).f90 boundcond.f90 filter.f90 $(FORCING).f90 $(SHEAR).f90 $(TESTPERTURB).f90 $(PSCALAR).f90 $(CHIRAL).f90 $(CHEMISTRY).o $(DUSTVELOCITY).f90 $(DUSTDENSITY).f90 $(NEUTRALVELOCITY).f90 $(NEUTRALDENSITY).f90 $(PARTICLES).f90 equ.f90 $(TIMESTEP).f90 $(TIMEAVG).f90 param_io.f90 diagnostics.f90 register.f90 $(POWER).f90 $(STRUCT_FUNC).f90 $(SPECIAL_FUNCTIONS).f90 snapshot.f90 run.f90
+# 
+run_fast_deps=cparam.f90 cdata.f90 general.f90 $(MPICOMM_FIX).f90 $(GHOSTFOLD).f90 deriv.f90 sub.f90 $(PARTICLES_SUB).f90 $(DEBUG).o $(IO).f90 $(GLOBAL).f90 $(POISSON).o $(GRAVITY).f90 $(SELFGRAVITY).o $(EOS).f90 slices.f90 initcond.f90 $(SPECIAL).f90 $(DENSITY).f90 $(VISCOSITY).f90 $(SHOCK).f90 $(MAGNETIC).f90 $(COSMICRAY).f90 $(COSMICRAYFLUX).f90 $(HYDRO).f90 $(INTERSTELLAR).f90 $(ENTROPY).f90 $(RADIATION).f90 boundcond.f90 filter.f90 $(FORCING).f90 $(SHEAR).f90 $(TESTPERTURB).f90 $(PSCALAR).f90 $(CHIRAL).f90 $(CHEMISTRY).o $(DUSTVELOCITY).f90 $(DUSTDENSITY).f90 $(NEUTRALVELOCITY).f90 $(NEUTRALDENSITY).f90 $(PARTICLES).f90 equ.f90 $(TIMESTEP).f90 $(TIMEAVG).f90 param_io.f90 diagnostics.f90 register.f90 $(POWER).f90 $(STRUCT_FUNC).f90 snapshot.f90 run.f90
 #
 start=start.o $(start_deps)
 #
@@ -1284,10 +1273,6 @@ buildinfo:
 	                       -e "TIMEAVG='$(TIMEAVG)';SPECIAL='$(SPECIAL)';PARTICLES='$(PARTICLES)';PARTICLES_SUB='$(PARTICLES_SUB)';" \
 	                       -e "PARTICLES_MAIN='$(PARTICLES_MAIN)';PARTICLES_RADIUS='$(PARTICLES_RADIUS)';PARTICLES_SPIN='$(PARTICLES_SPIN)';" > .buildinfo
 
-# special function module disabled above
-#-e "SPECIAL_FUNCTIONS='$(SPECIAL_FUNCTIONS)';" \
-# Ignore cparam dependencies upon .f90 files to save a few time consuming
-# recompiles! Just check for switching of modules instead.
 all.dot: Makefile.src Makefile.local scripts/mkdot
 	scripts/mkdot -T "All f90 dependencies" *.f90 | grep -v "RVID_BOX" | grep -v "SURFACEDATA" | grep -v "MAIN_PROGRAM" | grep -v "WRITE_DEFAULT_NAMELISTS" > all.dot
 all_nocdata.dot: all.dot
@@ -1364,7 +1349,6 @@ nompicomm_.f90: nompicomm.f90
 EXECUTABLES=start.x run.x \
 	combine_videofiles.x read_videofiles.x read_vectorfiles.x
 
-        # write_dummy_namelists.x
 # The last few object files to compile. We need to compile _all_ object
 # files before linking, because FC=g95_quick_and_dirty will otherwise
 # delete already compiled .x files:
@@ -1524,7 +1508,6 @@ write_dummy_namelists.x: $(write_dnlists_deps)
 #
 fft.o:	     fft.f Makefile.src
 nodebug.o:            nodebug.f90 cdata.o $(MPICOMM_FIX).o
-#$(TIMEAVG).o:        ctimeavg.local
 write_dummy_namelists.o: write_dummy_namelists.f90 $(comm_deps)
 
 ## ---------------------------------------------------------------------- #
