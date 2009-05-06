@@ -167,7 +167,7 @@ module Forcing
         profx_ampl=1.; profx_hel=1.
         profz_ampl=1.
         do n=1,mz
-          profz_hel(n)=sin(z(n))
+          profz_hel(n)=sin(2*pi*z(n)/Lz)
         enddo
       elseif (iforce_profile=='equator_hel=z') then
         profx_ampl=1.; profx_hel=1.
