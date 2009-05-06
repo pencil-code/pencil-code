@@ -1124,7 +1124,7 @@ module Particles_sub
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (3) :: xxp
       integer, dimension (3) :: inear
-      integer :: ivar1, ivar2, ivar
+      integer :: ivar1, ivar2, ivar, icyl=1
       real, dimension (ivar2-ivar1+1) :: gp
       integer, optional :: ipar
 !
@@ -1224,7 +1224,7 @@ module Particles_sub
 !
       if (lsolid_cells) then
         do ivar=ivar1,ivar2
-          call close_interpolation(f,ix0,iy0,iz0,ivar,xxp,gpp,.false.)
+          call close_interpolation(f,ix0,iy0,iz0,icyl,ivar,xxp,gpp,.false.)
           gp(ivar-ivar1+1)=gpp
         enddo
       endif

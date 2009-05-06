@@ -116,21 +116,24 @@ module Solid_Cells
 !
     endsubroutine write_solid_cells_run_pars
 !***********************************************************************  
-    subroutine close_interpolation(f,ix0,iy0,iz0,ivar1,ivar2,xxp,gp)
+    subroutine close_interpolation(f,ix0,iy0,iz0,icyl,ivar1,xxp,gpp,&
+        fluid_point)
       !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      integer, intent(in) :: ix0,iy0,iz0,ivar1,ivar2
-      real, dimension (ivar2-ivar1+1), intent(inout) :: gp
+      integer, intent(in) :: ix0,iy0,iz0,icyl,ivar1
+      real, intent(inout) :: gpp
       real, dimension(3), intent(in) :: xxp
+      logical, intent(in) :: fluid_point
       !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(ix0)
       call keep_compiler_quiet(iy0)
       call keep_compiler_quiet(iz0)
+      call keep_compiler_quiet(icyl)
       call keep_compiler_quiet(ivar1)
-      call keep_compiler_quiet(ivar2)
       call keep_compiler_quiet(xxp)
-      call keep_compiler_quiet(gp)
+      call keep_compiler_quiet(gpp)
+      call keep_compiler_quiet(fluid_point)
       !
     end subroutine close_interpolation
 !***********************************************************************  
