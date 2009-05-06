@@ -70,33 +70,40 @@ GHOSTFOLD              = noghostfold
 POISSON      = nopoisson
 
 TIMESTEP     = timestep
-
-## Extra compiler flags (what does the `GENERAL' refer to?)
+# 
+# Extra compiler flags (what does the `GENERAL' refer to?)
+#
 FFLAGS_GENERAL=
 CFLAGS_GENERAL=
-
-## Single vs. double precision
+# 
+# Single vs. double precision
+#
 REAL_PRECISION=default
-
+# 
 # Default double flags (can be overwritten in machine-specific section):
+#
 FFLAGS_DOUBLE=-r8
 CFLAGS_DOUBLE=-DDOUBLE_PRECISION
-
-## Overwrite settings that are local to each run directory
+# 
+# Overwrite settings that are local to each run directory
+#
 include Makefile.local
-
-## Double precision settings and similar. Must be included _after_
-## Makefile.local, so we can set REAL_PRECISION=double there
+# 
+# Double precision settings and similar. Must be included _after_
+# Makefile.local, so we can set REAL_PRECISION=double there
+#
 include Makefile.inc
-
-## Compile files with particle programming structure if particles are chosen.
+# 
+# Compile files with particle programming structure if particles are chosen.
+#
 ifneq ($(PARTICLES),noparticles)
   PARTICLES_MAIN =   particles_main
   PARTICLES_SUB  =   particles_sub
   GHOSTFOLD      =   ghostfold_$(MPICOMM)
 endif
-
-## Check for outdated features
+# 
+# Check for outdated features
+#
 ifneq ($(BORDER_PROF),)
 nograv_message:
 	@echo ";;; Cannot compile:"
@@ -142,8 +149,9 @@ grav_r_message:
 	@echo ";;;"
 	exit 1
 endif
-
-## Default settings
+# 
+# Default settings
+#
 FC=f90
 FFLAGS=-O3
 FFLAGS=
@@ -154,9 +162,6 @@ CFLAGS=-O3 -DFUNDERSC=1
 FCCLEANER=
 LIBMPISUFFIX=
 MAKEOPTS=
-
-
-
 #
 # Defaults for external libraries
 #
@@ -1113,8 +1118,8 @@ LD_FFTW2=
 LD=$(FC)
 LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL) $(LDONLYFLAGS)
 MPICOMM_FIX=$(MPICOMM)$(LIBMPISUFFIX)
-
-## Compile files with the proper FFT libraries.
+# 
+# Compile files with the proper FFT libraries.
 # If condition not really needed for source libraries but will be needed
 # for external libraries
 #
@@ -1146,7 +1151,7 @@ ifeq ($(GSL),gsl_wrapper_r8)
   LD_GSL=  -lgsl -lgslcblas
 endif
 # 
-# Generic rules:
+#  Generic rules
 # 
 .SUFFIXES:			# get rid of that annoying Modula rule
 .SUFFIXES: .f .f90 .c .o .inc .h .dot .ps .svg
@@ -1158,7 +1163,7 @@ endif
 .c.o:
 	$(CC) $(CFLAGS) $(CFLAGS_GENERAL) $(CFLAGS_FOURIER) -o $*.o -c $*.c
 #
-# Rules for creating images of dot dependency diagrams
+#  Rules for creating images of dot dependency diagrams
 #
 .dot.ps:
 	cat $*.dot | dot -Tps -o $*.ps
@@ -1201,10 +1206,9 @@ read_vectorfiles_deps=cparam.o cdata.o general.o
 read_vectorfiles=read_vectorfiles.o $(read_vectorfiles_deps)
 TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c combine_videofiles.f90 read_videofiles.f90
 PC_XMLEXPORT=$(PENCIL_HOME)/bin/pc_xmlexport
-
-# ---------------------------------------------------------------------- #
-## Symbolic targets
-
+# 
+# Symbolic targets
+#
 default: start_buildtime Makefile cparam.inc code stop_buildtime buildinfo
 
 pacx: pacx-makefile cparam.inc code
@@ -1227,8 +1231,10 @@ depend dep:
 	    '*********************************************'
 	rm -f Makefile.depend
 	scripts/mkdep start.f90 run.f90 combine_videofiles.f90 read_videofiles.f90 read_vectorfiles.f90 equ.f90 debug_c.c $(GRID).f90 $(comm_deps:.o=.f90)  > Makefile.depend
-
-# Help us finding out what compiler, MPI library, etc we have and give recommendations
+# 
+#  Help us finding out what compiler, MPI library, etc we have and give
+#  recommendations
+#
 semiauto-conf:
 	echo "Running semiauto-conf"
 	@scripts/semiauto-conf \
@@ -1246,8 +1252,9 @@ semiauto-conf:
 	  LD_FLAGS="$(LD_FLAGS)" \
 	  LD_FOURIER="$(LD_FOURIER)" \
 	  LIBMPISUFFIX="$(LIBMPISUFFIX)"
-
-# Generate files for automated debugging and testing etc.
+# 
+#  Generate files for automated debugging and testing etc.
+#
 start_buildtime:
 	@echo "<buildtime><timestamp type='start'>`date`</timestamp>" > .buildtime
 stop_buildtime:
@@ -1272,23 +1279,31 @@ buildinfo:
 	                       -e "TESTFLOW='$(TESTFLOW)';GRAVITY='$(GRAVITY)';FORCING='$(FORCING)';SHEAR='$(SHEAR)';" \
 	                       -e "TIMEAVG='$(TIMEAVG)';SPECIAL='$(SPECIAL)';PARTICLES='$(PARTICLES)';PARTICLES_SUB='$(PARTICLES_SUB)';" \
 	                       -e "PARTICLES_MAIN='$(PARTICLES_MAIN)';PARTICLES_RADIUS='$(PARTICLES_RADIUS)';PARTICLES_SPIN='$(PARTICLES_SPIN)';" > .buildinfo
-
+# 
 all.dot: Makefile.src Makefile.local scripts/mkdot
 	scripts/mkdot -T "All f90 dependencies" *.f90 | grep -v "RVID_BOX" | grep -v "SURFACEDATA" | grep -v "MAIN_PROGRAM" | grep -v "WRITE_DEFAULT_NAMELISTS" > all.dot
+# 
 all_nocdata.dot: all.dot
 	cat all.dot | grep -v "CDATA" | grep -v "CPARAM" > all_nocdata.dot
+# 
 all_nocdataexe.dot: all.dot
 	cat all.dot | grep -v "CDATA" | grep -v "CPARAM" | grep -v "RUN" | grep -v "START"| grep -v "READ_VIDEOFILES" | grep -v "READ_VECTORFILES" > all_nocdataexe.dot
+# 
 switchable.dot: Makefile.src Makefile.local scripts/mkdot
 	scripts/mkdot -T "Switchable Module Dependencies" $(switchable:.o=.f90) > switchable.dot
+# 
 run.dot: Makefile.src Makefile.local scripts/mkdot 
 	scripts/mkdot -T "Run Dependencies" $(run:.o=.f90) > run.dot
+# 
 start.dot: Makefile.src Makefile.local scripts/mkdot
 	scripts/mkdot -T "Start Dependencies" $(start:.o=.f90) > start.dot
+# 
 run_nocdata.dot: run.dot
 	cat run.dot | grep -v "CDATA" | grep -v "CPARAM" > run_nocdata.dot
+# 
 start_nocdata.dot: start.dot
 	cat start.dot | grep -v "CDATA" | grep -v "CPARAM" > start_nocdata.dot
+# 
 switchable_nocdata.dot: switchable.dot
 	cat switchable.dot | grep -v "CDATA" | grep -v "CPARAM" > switchable_nocdata.dot
 #
@@ -1320,7 +1335,6 @@ all_nocdataexe.svg: all_nocdataexe.dot
 #
 diagrams_svg: run.svg run_nocdata.svg start.svg start_nocdata.svg switchable.svg switchable_nocdata.svg all.svg all_nocdata.svg all_nocdataexe.svg
 #
-#
 cparam.inc: Makefile.src Makefile.local cparam.local scripts/mkcparam
 	scripts/mkcparam $(switchable:.o=.f90) grid.f90 cparam.local -o cparam.inc
 cparam.o:  cparam.f90 cparam.local cparam.inc
@@ -1331,27 +1345,32 @@ cparam.o:  cparam.f90 cparam.local cparam.inc
 	     ln -s cparam_pencils.inc cparam_pencils.inc;\
 	fi
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -o cparam.o -c cparam.f90
-
+# 
 special_dummies.inc:  nospecial.f90 $(SPECIAL).f90
 	scripts/mkdummyinc -d nospecial.f90 -s $(SPECIAL).f90 > special_dummies.inc
-
+# 
 mpicomm_double.f90: mpicomm.f90
 	sed -e 's/REAL/DOUBLE_PRECISION/g' mpicomm.f90 > mpicomm_double.f90
+# 
 ghostfold_mpicomm_double.f90: ghostfold_mpicomm.f90
 	ln -s ghostfold_mpicomm.f90 ghostfold_mpicomm_double.f90
+# 
 mpicomm_.f90: mpicomm.f90
 	perl -pe 's/(MPI_[A-Z1-9_]*)([ (])/$$1_$$2/g' mpicomm.f90 > mpicomm_.f90
+# 
 mpicomm_double_.f90: mpicomm_double.f90
 	perl -pe 's/(MPI_[A-Z1-9_]*)([ (])/$$1_$$2/g' mpicomm_double.f90 > mpicomm_double_.f90
+# 
 nompicomm_.f90: nompicomm.f90
 	cp nompicomm.f90 nompicomm_.f90
-
+# 
 EXECUTABLES=start.x run.x \
 	combine_videofiles.x read_videofiles.x read_vectorfiles.x
-
+# 
 # The last few object files to compile. We need to compile _all_ object
 # files before linking, because FC=g95_quick_and_dirty will otherwise
 # delete already compiled .x files:
+# 
 LAST_OBJ=$(EXECUTABLES:.x=.o)
 code: Makefile.inc cparam.inc
 	@# Realize error even when last command in pipe is FCCLEANER:
@@ -1394,28 +1413,35 @@ runfast.x: $(run_fast_deps) Makefile.local
 
 startfast.x: $(start_fast_deps) Makefile.local
 	$(FC) -o startfast.x $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) $(start_fast_deps) $(LDFLAGS) $(LD_MPI) $(LD_FOURIER) 
-
-# testing spatial differential operators 
+# 
+#  Testing spatial differential operators 
+#
 optest.x: $(optest) Makefile.local
 	$(LD) $(LDFLAGS) $(optest) $(LD_MPI) $(LD_FOURIER) -o optest.x
-# Handy for debugging; just compile by hand what is changed.
-# When you use this you must be certain that everying is consistent.
+# 
+#  Handy for debugging; just compile by hand what is changed.
+#  When you use this you must be certain that everying is consistent.
+#
 linkonly:
 	$(LD) $(LDFLAGS) $(start) $(LD_MPI) $(LD_FOURIER) -o start.x
 	$(LD) $(LDFLAGS) $(run) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) -o run.x
-#shorthand for this
+# 
+#  shorthand for this
+#
 l:
 	$(MAKE) $(MAKEOPTS) linkonly
-
+# 
 # Needed for the underscore trick:
+#
 mpicomm_.f90:      mpicomm.f90
-
+# 
 # Use sloppier compiler for MPICOMM and fftpack if specified:
 # If set, FFLAGS_SLOPPY overrides '$(FFLAGS) $(F90FLAGS)'. Use like this:
 #   FFLAGS_SLOPPY=-O4 -Wall
 #   F90FLAGS=$(FFLAGS_SLOPPY) -Werror
 #   F77FLAGS=$(FFLAGS_SLOPPY)
 # to restrict `-Werror' to F90 files other than MPICOMM.
+#
 $(MPICOMM_FIX).o: mpicomm.h $(MPICOMM_FIX).f90 cdata.o
 	@fflags="$(FFLAGS_SLOPPY)"; \
 	if [ -z "$$fflags" ]; then fflags="$(FFLAGS) $(F90FLAGS)"; fi; \
@@ -1424,38 +1450,43 @@ $(MPICOMM_FIX).o: mpicomm.h $(MPICOMM_FIX).f90 cdata.o
 	$(FC) $(FFLAGS_GENERAL) $$fflags $(FFLAGS_FOURIER) \
 	    -o $(MPICOMM_FIX).o -c $(MPICOMM_FIX).f90
 #
-
-# Shortcut for debugging radiation:
+# Shortcut for debugging radiation
+#
 rad:
 	ifc -c radiation_exp.f90
 	$(LD) $(LDFLAGS) $(start) $(LD_MPI) $(LD_FOURIER) -o start.x
 	$(LD) $(LDFLAGS) $(run) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) -o run.x
-
+# 
 # Remove all build files, but keep executables
 # (misleading name..)
+#
 run:
 	rm -f *.o *.mod *.d
 	rm -f work.pc work.pcl
-
+# 
 # Alternative to make run. To copy executables to parent directory.
 # Make clean(n) could then be run on the source.
 # (misleading name..)
+#
 install:
 	cp *.x ../
-
-# TAGS file for Emacs.
-# $(TAG_SOURCE) requires nofftpack.f90 or fft.f90 to exist, so we
-# temporarily create them
+# 
 nofftpack.f90:
 	@ touch nofftpack.f90
 fft.f90:
 	@ touch fft.f90
+# 
+# TAGS file for Emacs.
+# $(TAG_SOURCE) requires nofftpack.f90 or fft.f90 to exist, so we
+# temporarily create them
+#
 TAGS: $(TAG_SOURCE)
 	etags $(TAG_SOURCE)
 	@ if [ ! -s nofftpack.f90 ]; then rm -f nofftpack.f90; fi
 	@ if [ ! -s fft.f90 ]; then rm -f fft.f90; fi
-
+# 
 # Clean up, but leave makefile and TAGS
+#
 clean:
 	rm -f *.x *.o *.mod *.d cparam*.inc cparam_pencils*.inc *.il
 	rm -f special/*.o special/*.mod
@@ -1463,56 +1494,55 @@ clean:
 	rm -f *.dot *.ps  # Dependency diagram files
 	rm -f work.pc work.pcl .build*
 	printf "# %s\n" "Empty" "(This file was written by 'make')" > Makefile.inc
-
+# 
 # Clean up all
 # (there should be no Makefile_inc; but if there is, `make' just does nothing)
+#
 cleann: clean
 	rm -f Makefile Makefile_inc TAGS  *mpicomm_.f90 mpicomm_double*.f90
 	rm -rf semiauto-conf_tmp f90_qnd_log_dir
 	rm -f *.inc && touch Makefile.inc
 	$(MAKE) $(MAKEOPTS) -f Makefile.src Makefile
+# 
 # same thing
+#
 cleanall: cleann
-
+# 
 # Try to remove everything generated by pc_setupsrc, compilation, etc.
+#
 distclean: cleanall
 	find . -type l -print0 | xargs -0 rm -f
 	rm -rf special Makefile Makefile.inc Makefile.depend
 	rm -rf semiauto-conf* *.log history
-
-## ---------------------------------------------------------------------- #
-## Code targets
-## ---------------------------------------------------------------------- #
-
+#
+#  Code targets
+#
 nograv.o:
-
+# 
 combine_videofiles.x: $(combine_videofiles)
 	$(LD) $(LDFLAGS) $(combine_videofiles) $(LD_MPI) -o combine_videofiles.x
-
+# 
 read_videofiles.x: $(read_videofiles)
 	$(LD) $(LDFLAGS) $(read_videofiles) $(LD_MPI) -o read_videofiles.x
-
+# 
 read_vectorfiles.x: $(read_vectorfiles)
 	$(LD) $(LDFLAGS) $(read_vectorfiles) $(LD_MPI) -o read_vectorfiles.x
-
+# 
 var2ascii.x: $(var2ascii)
 	$(LD) $(LDFLAGS) $(var2ascii) $(LD_MPI) -o var2ascii.x
-
+# 
 write_dnlists_deps=write_dummy_namelists.o $(comm_deps) $(DEBUG).o
 write_dummy_namelists.x: $(write_dnlists_deps)
 	$(LD) $(LDFLAGS) $(write_dnlists_deps) $(LD_MPI) -o write_dummy_namelists.x
-
-## ---------------------------------------------------------------------- #
-## Non-F90 / undetectable dependencies
-## ---------------------------------------------------------------------- #
+# 
+#  Non-F90 / undetectable dependencies
 #
 fft.o:	     fft.f Makefile.src
 nodebug.o:            nodebug.f90 cdata.o $(MPICOMM_FIX).o
 write_dummy_namelists.o: write_dummy_namelists.f90 $(comm_deps)
-
-## ---------------------------------------------------------------------- #
-## Dependencies
-## ---------------------------------------------------------------------- #
+#
+# Dependencies
+#
 include Makefile.depend
 
 # DO NOT DELETE
