@@ -15,9 +15,8 @@ module Shear
 !
   implicit none
 !
-  real, dimension (nz) :: uy0_extra, duy0dz_extra
-  real :: eps_vshear=0.0, x0_shear=0.0, Bshear=0.01
-  logical :: luy0_extra=.false.,lshearadvection_as_shift=.false.
+  real :: x0_shear=0.0, Bshear=0.01
+  logical :: lshearadvection_as_shift=.false.
   logical :: lmagnetic_stretching=.true.,lrandomx0=.false.
   logical, target :: lcoriolis_force=.true., lcentrifugal_force=.false.
   logical :: lglobal_baroclinic=.false.
@@ -25,12 +24,13 @@ module Shear
   include 'shear.h'
 !
   namelist /shear_init_pars/ &
-      qshear,Sshear,deltay,eps_vshear,Omega,lshearadvection_as_shift, &
+      qshear,Sshear,deltay,Omega,lshearadvection_as_shift, &
       lmagnetic_stretching,lrandomx0,x0_shear,lcoriolis_force,lcentrifugal_force
 !
   namelist /shear_run_pars/ &
-      qshear,Sshear,deltay,eps_vshear,Omega,lshearadvection_as_shift, &
-      lmagnetic_stretching,lrandomx0,x0_shear,lcoriolis_force,lcentrifugal_force,&
+      qshear,Sshear,deltay,Omega,lshearadvection_as_shift, &
+      lmagnetic_stretching,lrandomx0,x0_shear, &
+      lcoriolis_force,lcentrifugal_force,&
       lglobal_baroclinic,Bshear
 !
   integer :: idiag_dtshear=0    ! DIAG_DOC: advec\_shear/cdt
@@ -70,15 +70,6 @@ module Shear
       if (qshear/=0.0) Sshear=-qshear*Omega
       if (lroot .and. ip<=12) &
           print*,'initialize_shear: Sshear,qshear=',Sshear,qshear
-!
-!  Possible to add extra rotation profile.
-!
-      if (eps_vshear/=0.0) then
-        if (lroot) print*, 'initialize_shear: eps_vshear=', eps_vshear
-        uy0_extra=Sshear*eps_vshear*Lx*cos(2*pi/Lz*z(n1:n2))
-        duy0dz_extra=-Sshear*eps_vshear*Lx*sin(2*pi/Lz*z(n1:n2))*2*pi/Lz
-        luy0_extra=.true.
-      endif
 !
 !  Share lcoriolis_force and lcentrifugal_force so the Particles module knows
 !  whether to apply them or not.
@@ -262,10 +253,6 @@ module Shear
 !
       uy0=Sshear*(x(l1:l2)-x0_shear)
 !
-!  Add extra rotation profile.
-!
-      if (luy0_extra) uy0=uy0+uy0_extra(n-nghost)
-!
 !  Advection of all variables by shear flow.
 !
       if (.not. lshearadvection_as_shift) then
@@ -279,12 +266,7 @@ module Shear
 ! we have got shear. The rest of the Coriolis force is calculated
 ! in hydro.
 !
-      if (lhydro) then
-        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-Sshear*p%uu(:,1)
-!
-        if (luy0_extra) df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) &
-           -p%uu(:,3)*duy0dz_extra(n-nghost)
-      endif
+      if (lhydro) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-Sshear*p%uu(:,1)
 !
 !  Loop over dust species
 !
@@ -305,8 +287,6 @@ module Shear
 !
       if (lmagnetic .and. lmagnetic_stretching) then
         df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)-Sshear*p%aa(:,2)
-        if (luy0_extra) df(l1:l2,m,n,iaz)=df(l1:l2,m,n,iaz)&
-            -p%aa(:,2)*duy0dz_extra(n-nghost)
       endif
 !
 !  Testfield stretching term
