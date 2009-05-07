@@ -105,7 +105,7 @@ for ivar = 0,3 do begin
       oplot, var[ixp[ix,iy],iyp[ix,iy],*], z
     endfor
   endfor
-  ophline, [z0,z1,z2,ztop]
+  ophline, [z0, par.z1, par.z2, z0+Lz]
   if (ivar eq 1) then opvline
 
 ;; overplot initial profiles

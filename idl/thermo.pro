@@ -25,6 +25,12 @@ pp  = cs20*rho0/gamma*exp(gamma*(ss/cp + lnrho-lnrho0))
 cs2 = cs20*exp(gamma*ss/cp + gamma1*(lnrho-lnrho0))
 TT  = cs2/gamma1/cp
 
+z1 = par.z1
+z2 = par.z2
+ztop = z0 + Lz
+zref = par.zref
+gravz = par.gravz
+
 ;; initial profiles of temperature, density and entropy for solar
 ;; convection runs
 ssinit = (lnrhoinit = (Tinit = 0.*z))
