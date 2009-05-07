@@ -153,7 +153,6 @@ module Special
       use Cdata
       use Mpicomm
       use Sub
-      use Global
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df     

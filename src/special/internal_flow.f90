@@ -192,7 +192,6 @@ module Special
       use Diagnostics
       use Mpicomm
       use Sub
-      use Global
       use Deriv, only: der_pencil
       use Viscosity, only: getnu
 !

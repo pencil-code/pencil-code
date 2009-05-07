@@ -259,7 +259,6 @@ module Special
       use Cdata
       use Diagnostics
       use Mpicomm
-      use Global
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df     

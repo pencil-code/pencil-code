@@ -380,7 +380,6 @@ module Special
       use Mpicomm
       use Sub
       use Deriv
-      use Global
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df     
