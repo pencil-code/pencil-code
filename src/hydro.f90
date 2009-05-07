@@ -579,8 +579,7 @@ module Hydro
 !***********************************************************************
     subroutine init_uu(f)
 !
-!  initialise uu and lnrho; called from start.f90
-!  Should be located in the Hydro module, if there was one.
+!  initialise velocity field ; called from start.f90
 !
 !  07-nov-01/wolf: coded
 !  24-nov-02/tony: renamed for consistance (i.e. init_[variable name])
