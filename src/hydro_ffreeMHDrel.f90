@@ -122,7 +122,6 @@ module Hydro
       use Cdata
       use Mpicomm, only: stop_it
       use Sub
-      use Global
       use General
       use Gravity
       use Initcond

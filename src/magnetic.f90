@@ -1434,7 +1434,6 @@ module Magnetic
 !
       use Sub
       use Deriv
-      use Global, only: get_global
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -1518,7 +1517,7 @@ module Magnetic
 !  add the external potential field
 !
         if (lB_ext_pot) then
-          call get_global(bb_ext_pot,m,n,'B_ext_pot')
+!          call get_global(bb_ext_pot,m,n,'B_ext_pot')
           p%bb=p%bb+bb_ext_pot
         endif
 !
@@ -4369,7 +4368,6 @@ module Magnetic
 !  30-may-04/tobi: coded
 !
       use Sub, only: hypergeometric2F1,gamma_function
-      use Global, only: set_global
       use Deriv, only: der
       use IO, only: output
 
@@ -4437,7 +4435,7 @@ module Magnetic
         bb_ext_pot(:,3)= bb_z
         call der(Ax_ext,bb_z,2)
         bb_ext_pot(:,3)=bb_ext_pot(:,3)-bb_z
-        call set_global(bb_ext_pot,m,n,'B_ext_pot',nx)
+!        call set_global(bb_ext_pot,m,n,'B_ext_pot',nx)
       enddo
       enddo
 

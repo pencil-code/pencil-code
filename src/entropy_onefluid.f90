@@ -501,7 +501,6 @@ module Entropy
 !
       use Diagnostics
       use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled
-      use Global
       use Special, only: special_calc_entropy
       use Sub
 !

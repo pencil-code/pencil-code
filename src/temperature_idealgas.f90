@@ -652,7 +652,6 @@ module Entropy
       use Deriv, only: der6
       use Diagnostics
       use EquationOfState, only: gamma1,gamma
-      use Global
       use Mpicomm
       use Special, only: special_calc_entropy
       use Sub

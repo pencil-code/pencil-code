@@ -243,7 +243,6 @@ module Dustdensity
 ! 28-jun-02/axel: added isothermal
 !
       use EquationOfState, only: cs0, cs20, gamma, gamma1, beta_glnrho_scaled
-      use Global
       use Gravity
       use Initcond
       use IO

@@ -408,7 +408,6 @@ module Entropy
       use Diagnostics
       use Mpicomm
       use Sub
-      use Global
       use Viscosity, only: calc_viscous_heat
       use EquationOfState, only: gamma1
 !

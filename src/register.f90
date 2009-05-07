@@ -29,7 +29,6 @@ module Register
       use Sub
       use Param_IO,         only: get_datadir,get_snapdir
       use IO,               only: register_io
-      use Global,           only: register_global
       use EquationOfState,  only: register_eos
       use Shock,            only: register_shock
       use Gravity,          only: register_gravity
@@ -104,7 +103,6 @@ module Register
 
 !
       call register_io
-      call register_global
       call register_eos
       call register_shock
       call register_viscosity

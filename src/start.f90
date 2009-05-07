@@ -59,7 +59,6 @@ program start
   use FArrayManager,    only: farray_clean_up
   use Filter
   use General
-  use Global
   use Gravity,          only: init_gg
   use Grid
   use Hydro,            only: init_uu
@@ -440,7 +439,6 @@ if (lhyperresistivity_strict) call hyperresistivity_strict(f)
 !
 !  write global variables:
 !
-  if (lglobal) call wglobal()
   if (mglobal/=0)  &
       call output_globals(trim(directory_snap)//'/global.dat', &
       f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)

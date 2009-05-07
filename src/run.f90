@@ -58,7 +58,6 @@ program run
   use Filter
   use Forcing
   use General
-  use Global
   use Gravity
   use Interstellar,    only: check_SN
   use IO
@@ -228,7 +227,6 @@ program run
 !  read time and global variables (if any)
 !
   call rtime(trim(directory)//'/time.dat',t)
-  if (lglobal) call rglobal()
   if (mglobal/=0)  &
       call input_globals(trim(directory_snap)//'/global.dat', &
       f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
@@ -312,7 +310,6 @@ program run
   call choose_pencils()
   call write_pencil_info()
 !
-  if (lglobal) call wglobal()
   if (mglobal/=0)  &
       call output_globals(trim(directory_snap)//'/global.dat', &
       f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
@@ -617,7 +614,6 @@ program run
 !
     if (isaveglobal/=0) then
       if (mod(it,isaveglobal)==0) then
-        if (lglobal) call wglobal()
         if (mglobal/=0)  &
           call output_globals(trim(directory_snap)//'/global.dat', &
               f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)

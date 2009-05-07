@@ -1987,7 +1987,6 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
 !
       use Diagnostics
       use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, gamma11, cs0
-      use Global
       use Special, only: special_calc_entropy
       use Sub
 !

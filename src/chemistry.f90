@@ -1384,7 +1384,6 @@ subroutine flame_front(f)
       use Diagnostics
       use Mpicomm
       use Sub
-      use Global
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -3212,7 +3211,6 @@ subroutine flame_front(f)
       use Cdata
       use Mpicomm
       use Sub
-      use Global
 !
       real, dimension (mx,my,mz,mfarray) :: f, Diff_full_add
       real, dimension (mx,my,mz,mvar) :: df

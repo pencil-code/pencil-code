@@ -380,7 +380,6 @@ module Dustvelocity
 !
       use EquationOfState, only: gamma, beta_glnrho_global, beta_glnrho_scaled
       use Sub
-      use Global
       use Gravity
       use Initcond
       use EquationOfState, only: pressure_gradient,cs20
