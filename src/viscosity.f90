@@ -705,15 +705,22 @@ module Viscosity
 !  -- here the nu viscosity depends on r; nu=nu_0/r^n
         pnu = nu*p%rcyl_mn**(-pnlaw)
 !  viscosity gradient
-        gradnu(:,1) = -pnlaw*nu*p%rcyl_mn**(-pnlaw-1)
-        gradnu(:,2) = 0.
-        gradnu(:,3) = 0.
+        if (lcylindrical_coords) then 
+          gradnu(:,1) = -pnlaw*nu*p%rcyl_mn**(-pnlaw-1)
+          gradnu(:,2) = 0.
+          gradnu(:,3) = 0.
+        elseif (lspherical_coords) then
+          gradnu(:,1) = -pnlaw*nu*p%rcyl_mn**(-pnlaw-1)*sinth(m)
+          gradnu(:,2) = -pnlaw*nu*p%rcyl_mn**(-pnlaw-1)*costh(m)
+          gradnu(:,3) = 0.
+        else 
+          print*,'power-law viscosity only implemented '
+          print*,'for spherical and cylindrical coordinates'
+          call fatal_error("calc_pencils_viscosity","")	  	
+	endif
+!
         call multmv(p%sij,gradnu,sgradnu)
         call multsv(pnu,2*p%sglnrho+p%del2u+1./3.*p%graddivu,tmp)
-        !tobi: The following only works with operator overloading for pencils
-        !      (see sub.f90). Commented out because it seems to be slower.
-        !p%fvisc=p%fvisc+2*pnu*p%sglnrho+pnu*(p%del2u+1./3.*p%graddivu) &
-        !        +2*sgradnu
         p%fvisc=p%fvisc+tmp+2*sgradnu
         if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat + 2*pnu*p%sij2
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+pnu
