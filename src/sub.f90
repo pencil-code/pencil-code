@@ -2222,71 +2222,6 @@ module Sub
 !
     endsubroutine del6fjv
 !***********************************************************************
-    subroutine u_dot_gradu_vec(f,k,gradf,uu,ugradf,upwind,ladd)
-!
-!  u.gradu
-!  for spherical coordinates works correctly for u.gradu,
-!  not for general u.gradA
-!
-!  21-feb-07/axel+dhruba: added spherical coordinates
-!  12-mar-07/wlad: added cylindrical coordinates
-!  24-jun-08/MR: ladd added for incremental work
-!
-!
-      intent(in) :: f,k,gradf,uu,upwind
-      intent(out) :: ugradf
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx,3,3) :: gradf
-      real, dimension (nx,3) :: uu,ugradf
-      real, dimension (nx) :: tmp
-      integer :: j,k
-      logical, optional :: upwind,ladd
-      logical :: ladd1=.false.
-!
-!  upwind
-!
-      if (present(ladd)) ladd1=ladd
-
-      if (present(upwind)) then
-        do j=1,3
-          call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp,UPWIND=upwind)
-          if (ladd1) then
-            ugradf(:,j)=ugradf(:,j)+tmp
-          else
-            ugradf(:,j)=tmp
-          endif
-        enddo
-      else
-        do j=1,3
-          call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp)
-          if (ladd1) then
-            ugradf(:,j)=ugradf(:,j)+tmp
-          else
-            ugradf(:,j)=tmp
-          endif
-        enddo
-      endif
-!
-!  adjustments for spherical coordinate system.
-!  The following now works for general u.gradA
-!
-      if (lspherical_coords) then
-        ugradf(:,1)=ugradf(:,1)-r1_mn*(uu(:,2)**2+uu(:,3)**2)
-        ugradf(:,2)=ugradf(:,2)+r1_mn*(uu(:,1)*uu(:,2)-cotth(m)*uu(:,3)**2)
-        ugradf(:,3)=ugradf(:,3)+r1_mn*(uu(:,1)*uu(:,3)+cotth(m)*uu(:,2)*uu(:,3))
-      endif
-! DM : this may need attention later
-!
-!  same... have to adjust it for the magnetic field or other vectors
-!
-      if (lcylindrical_coords) then
-         ugradf(:,1)=ugradf(:,1)-rcyl_mn1*(uu(:,2)**2)
-         ugradf(:,2)=ugradf(:,2)+rcyl_mn1*(uu(:,1)*uu(:,2))
-      endif
-!
-    endsubroutine u_dot_gradu_vec
-!***********************************************************************
     subroutine u_dot_grad_vec(f,k,gradf,uu,ugradf,upwind,ladd)
 !
 !  u.gradu
@@ -5228,8 +5163,8 @@ nameloop: do
           rcylmn= xc                      +tini
           rrmn  =sqrt(  rcylmn**2+z(n)**2)
         elseif (coord_system=='spherical') then
-          rcylmn=     xc*sin(y(m))+tini
-          rrmn  =     xc          +tini
+          rcylmn=     xc*sinth(m)+tini
+          rrmn  =     xc         +tini
         endif
       else
         if (coord_system=='cartesian') then
@@ -5239,10 +5174,10 @@ nameloop: do
           rcylmn=sqrt(xc**2+e1**2 - 2*xc*e1*cos(y(m)-e2))+tini
           rrmn  =sqrt(rcylmn**2+(z(n)-e3)**2)
         elseif (coord_system=='spherical') then
-          rcylmn=sqrt((xc*sin(y(m)))**2 + (e1*sin(e2))**2 - &
-               2*xc*e1*cos(y(m))*cos(e2))+tini
+          rcylmn=sqrt((xc*sinth(m))**2 + (e1*sin(e2))**2 - &
+               2*xc*e1*costh(m)*cos(e2))+tini
           rrmn  =sqrt(xc**2 + e1**2 - 2*xc*e1*&
-               (cos(y(m))*cos(e2)+sin(y(m))*sin(e2)*cos(z(n)-e3)))+tini
+               (costh(m)*cos(e2)+sinth(m)*sin(e2)*cos(z(n)-e3)))+tini
         endif
       endif
 !
