@@ -129,7 +129,7 @@ module Forcing
 !  read seed field parameters
 !  nothing done from start.f90 (lstarting=.true.)
 !
-      use Sub, only: inpui
+      use Sub, only: inpui,step_scalar
 !
       logical, save :: first=.true.
       logical :: lstarting
@@ -168,6 +168,12 @@ module Forcing
         profz_ampl=1.
         do n=1,mz
           profz_hel(n)=sin(2*pi*z(n)/Lz)
+        enddo
+      elseif (iforce_profile=='equator_step') then
+        profx_ampl=1.; profx_hel=1.
+        profz_ampl=1.
+        do n=1,mz
+          profz_hel(n)= -1.+2.*step_scalar(z(n),equator-ck_equator_gap,ck_gap_step)
         enddo
       elseif (iforce_profile=='equator_hel=z') then
         profx_ampl=1.; profx_hel=1.
@@ -942,7 +948,7 @@ module Forcing
 !  case one needs to scale by 2pi/Lx, etc.
 !
       fx=exp(cmplx(0.,kx*k1_ff*x+phase))*fact
-! only sines, to make sure that the force goes to zeroat the equator
+! only sines, to make sure that the force goes to zero at the equator
       fy=cmplx(0.,sin(ky*k1_ff*y))
       fz=exp(cmplx(0.,kz*k1_ff*z))
 

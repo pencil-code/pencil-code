@@ -295,7 +295,8 @@ module Cdata
 ! over northern hemisphere and the second contains the 
 ! quantity averaged over southern hemisphere.
 ! yequator = [xyz0(2)+0.5*Lxyz(2) assigned in start.f90   
-  real :: yequator
+  real :: yequator,zequator
+  logical :: lequatory,lequatorz
   integer, parameter :: mname_half=20
   integer, dimension (mname_half) :: itype_name_half=0.
   real, dimension (mname_half,2) :: fname_half

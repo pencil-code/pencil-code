@@ -87,7 +87,8 @@ module Param_IO
        lcylindrical_gravity,border_frac_x,border_frac_y, &
        border_frac_z,luse_latitude, &
        lshift_datacube_x,lfargo_advection,&
-       yequator, nscbc_sigma_in, nscbc_sigma_out, p_infty
+       yequator, nscbc_sigma_in, nscbc_sigma_out, p_infty,&
+       lequatory, lequatorz, zequator 
 
   namelist /run_pars/ &
        cvsid,ip,nt,it1,it1d,dt,cdt,ddt,cdtv,cdtv2,cdtv3,&

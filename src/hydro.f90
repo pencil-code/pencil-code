@@ -1016,6 +1016,8 @@ module Hydro
 !
 !  20-11-04/anders: coded
 !
+      use Mpicomm, only: stop_it
+!
       if (ladvection_velocity) lpenc_requested(i_ugu)=.true.
       if (lprecession) lpenc_requested(i_rr)=.true.
       if (ldt.or.(eckmann_friction/=0)) lpenc_requested(i_uu)=.true.
@@ -1096,6 +1098,16 @@ module Hydro
           idiag_uguxmy/=0 .or. idiag_uguymy/=0 .or. idiag_uguzmy/=0 .or. &
           idiag_uguxmz/=0 .or. idiag_uguymz/=0 .or. idiag_uguzmz/=0) &
           lpenc_diagnos(i_ugu)=.true.
+! check whether right variables are set for half-box calculations. 
+      if (idiag_urmsn/=0 .or. idiag_ormsn/=0 .or. idiag_oumn/=0) then
+        if((.not.lequatory).and.(.not.lequatorz)) then
+          call stop_it("You have to set either of lequatory or lequatorz to true to calculate averages over half the box")
+        else  
+          if(lequatory) write(*,*) 'pencil-criteria_hydro: box divided along y dirn'
+          if(lequatorz) write(*,*) 'pencil-criteria_hydro: box divided along z dirn'
+        endif
+      else
+      endif
 !
     endsubroutine pencil_criteria_hydro
 !***********************************************************************
@@ -1527,7 +1539,8 @@ module Hydro
         if (idiag_dtu/=0) call max_mn_name(advec_uu/cdt,idiag_dtu,l_dt=.true.)
         if (idiag_urms/=0)   call sum_mn_name(p%u2,idiag_urms,lsqrt=.true.)
         if (idiag_urmsh/=0) then
-          call sum_mn_name_halfy(p%u2,idiag_urmsh)
+          if (lequatory) call sum_mn_name_halfy(p%u2,idiag_urmsh)
+          if (lequatorz) call sum_mn_name_halfz(p%u2,idiag_urmsh)
           fname(idiag_urmsn)=fname_half(idiag_urmsh,1)
           fname(idiag_urmss)=fname_half(idiag_urmsh,2)
           itype_name(idiag_urmsn)=ilabel_sum_sqrt
@@ -1624,7 +1637,8 @@ module Hydro
 !
         if (idiag_oum/=0) call sum_mn_name(p%ou,idiag_oum)
         if (idiag_oumh/=0) then
-          call sum_mn_name_halfy(p%ou,idiag_oumh)
+          if (lequatory) call sum_mn_name_halfy(p%ou,idiag_oumh)
+          if (lequatorz) call sum_mn_name_halfz(p%ou,idiag_oumh)
           fname(idiag_oumn)=fname_half(idiag_oumh,1)
           fname(idiag_oums)=fname_half(idiag_oumh,2)
           itype_name(idiag_oumn)=ilabel_sum
@@ -1633,7 +1647,8 @@ module Hydro
         endif
         if (idiag_orms/=0) call sum_mn_name(p%o2,idiag_orms,lsqrt=.true.)
         if (idiag_ormsh/=0) then
-          call sum_mn_name_halfy(p%o2,idiag_ormsh)
+          if (lequatory) call sum_mn_name_halfy(p%o2,idiag_ormsh)
+          if (lequatorz) call sum_mn_name_halfz(p%o2,idiag_ormsh)
           fname(idiag_ormsn)=fname_half(idiag_ormsh,1)
           fname(idiag_ormss)=fname_half(idiag_ormsh,2)
           itype_name(idiag_ormsn)=ilabel_sum_sqrt

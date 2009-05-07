@@ -27,6 +27,7 @@ module Diagnostics
   public :: expand_cname, parse_name, save_name, max_name
   public :: max_mn_name,sum_mn_name,integrate_mn_name,sum_weighted_name
   public :: sum_mn_name_halfy, surf_mn_name,sum_lim_mn_name
+  public :: sum_mn_name_halfz
   public :: xysum_mn_name_z, xzsum_mn_name_y, yzsum_mn_name_x
   public :: phizsum_mn_name_r, ysum_mn_name_xz, zsum_mn_name_xy
   public :: phisum_mn_name_rz, calc_phiavg_profile
@@ -1000,8 +1001,9 @@ module Diagnostics
     endsubroutine sum_mn_name
 !***********************************************************************
     subroutine sum_mn_name_halfy(a,iname)
-!
-!
+! To calculate averages over half the size of box, useful for simulations
+! which includes equator (either cartesian or spherical).  
+! dhruba : aped from sum_mn_name
 !
       real, dimension (nx) :: a
       real :: sum_name
@@ -1047,6 +1049,57 @@ module Diagnostics
       endif
 !
     endsubroutine sum_mn_name_halfy
+!***********************************************************************
+    subroutine sum_mn_name_halfz(a,iname)
+! To calculate averages over half the size of box (this time divided along the z
+! direction), useful for simulations which includes equator (either cartesian 
+! or spherical).  
+! 7-May-2009 dhruba : aped from sum_mn_name_halfy
+!
+      real, dimension (nx) :: a
+      real :: sum_name
+      integer :: iname,isum
+
+!
+      if (iname /= 0) then
+        sum_name=0
+!
+        if (z(n).ge.zequator)then
+          sum_name=fname_half(iname,2)
+        else
+          sum_name=fname_half(iname,1)
+        endif
+!
+        if (lfirstpoint) then
+          fname_half(iname,1)=0
+          fname_half(iname,2)=0
+          sum_name=0
+          if (lspherical_coords) then
+            sum_name=sum(r2_weight*sinth_weight(m)*a)
+          elseif (lcylindrical_coords) then
+            sum_name=sum(rcyl_weight*a)
+          else
+            sum_name=sum(a)
+          endif
+        else
+          if (lspherical_coords) then
+            sum_name=sum_name+sum(r2_weight*sinth_weight(m)*a)
+          elseif (lcylindrical_coords) then
+            sum_name=sum_name+sum(rcyl_weight*a)
+          else
+            sum_name=sum_name+sum(a)
+          endif
+        endif
+!
+        if (z(n).ge.zequator)then
+          fname_half(iname,2)=sum_name
+        else
+          fname_half(iname,1)=sum_name
+        endif
+!
+      endif
+!
+    endsubroutine sum_mn_name_halfz
 !***********************************************************************
     subroutine sum_weighted_name(a,weight,iname,lsqrt)
 !
