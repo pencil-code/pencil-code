@@ -5,7 +5,6 @@
 
 LDMPI=-lmpi
 MPICOMM=nompicomm
-GLOBAL=noglobal
 GRAVITY=nogravity
 FORCING=noforcing
 ENTROPY=entropy

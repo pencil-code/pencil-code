@@ -7,7 +7,6 @@ MPICOMM               =   mpicomm
 IO                    =   io_dist
 TIMEAVG               =   timeavg
 
-GLOBAL                =   global_gg_halo
 
 HYDRO                 =   hydro
 SHOCK                 =   shock

@@ -6,7 +6,6 @@
 LDMPI    =-lmpi
 
 MPICOMM  =   mpicomm
-GLOBAL   = noglobal
 IO       =   io_dist
 
 HYDRO    =   hydro

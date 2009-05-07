@@ -7,7 +7,6 @@ LDMPI=-lmpi
 
 MPICOMM   =   mpicomm
 IO        =   io_dist
-GLOBAL    = noglobal
 
 HYDRO     =   hydro
 DENSITY   =   density

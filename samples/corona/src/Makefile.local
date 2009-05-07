@@ -3,7 +3,6 @@
 ### Included by `Makefile'
 ###
 MPICOMM   =   mpicomm
-GLOBAL    = noglobal
 
 HYDRO     =   hydro
 DENSITY   =   density

@@ -5,7 +5,6 @@
 
 MPICOMM      = nompicomm
 IO           =   io_dist
-GLOBAL       = noglobal
 
 HYDRO        =   hydro
 SHOCK        =   shock

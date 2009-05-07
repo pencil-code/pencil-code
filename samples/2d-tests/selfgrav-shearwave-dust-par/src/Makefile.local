@@ -4,7 +4,6 @@
 ###
 
 MPICOMM      = nompicomm
-GLOBAL       = noglobal
 
 HYDRO        = nohydro
 DENSITY      = nodensity

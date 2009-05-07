@@ -7,7 +7,6 @@ LIBSIG=-L$(HOME)/f90/lib
 LDMPI=-lmpi
 MPICOMM   = nompicomm
 IO        =   io_dist
-GLOBAL    = noglobal
 FFT       = nofft
 FFTPACK   = nofftpack
 

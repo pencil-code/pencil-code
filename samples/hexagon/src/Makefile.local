@@ -16,7 +16,6 @@ GRAVITY   =   gravity_simple
 #MPICOMM   = mpicomm
 MPICOMM   = nompicomm
 IO        =   io_dist
-GLOBAL    = noglobal
 
 
 

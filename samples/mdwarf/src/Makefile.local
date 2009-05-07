@@ -8,7 +8,6 @@ LDMPI=-lmpi
 
 MPICOMM   = nompicomm
 IO        =   io_dist
-GLOBAL    =   global_gg_halo
 
 HYDRO     =   hydro
 DENSITY   =   density

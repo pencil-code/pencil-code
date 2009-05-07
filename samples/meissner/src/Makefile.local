@@ -7,7 +7,6 @@ LDMPI     = -lmpi
 
 MPICOMM   = nompicomm
 IO        =   io_dist
-GLOBAL    =   global_gg_halo
 TIMEAVG   = notimeavg
 
 HYDRO     =   hydro

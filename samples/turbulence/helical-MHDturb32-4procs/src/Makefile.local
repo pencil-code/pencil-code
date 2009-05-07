@@ -6,7 +6,6 @@
 LIBSIG=-L$(HOME)/f90/lib
 LDMPI=-lmpi
 MPICOMM=mpicomm
-GLOBAL=noglobal
 GRAVITY=nogravity
 FORCING=forcing
 ENTROPY=noentropy
