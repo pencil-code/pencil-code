@@ -72,7 +72,7 @@ module Special
   real, dimension (mx,my,mz,3) :: divtau=0.
   real, dimension (mx,my,mz) :: pres=0., mmu1=0.
   logical :: ldivtau=.false.
-  logical :: lT_prof1=.true., lT_prof2=.false.
+  logical :: lT_prof1=.true., lT_prof2=.false.,lT_tanh=.false.
   real :: test, H_max
   real :: Rgas, Rgas_unit_sys=1.
 
@@ -90,7 +90,7 @@ module Special
    initstream,rho_init, T_init, Y1_init, Y2_init, Y3_init, H_max, ux_init, &
    index_H2, index_O2, index_H2O, &
    index_N2,init_TT1,init_TT2,init_lnTT1, init_x1, init_x2,  init_p2, &
-   left_buffer_zone, init_lnrho, init_ux, lT_prof1, lT_prof2, str_thick
+   left_buffer_zone, init_lnrho, init_ux, lT_prof1, lT_prof2,lT_tanh, str_thick
 ! run parameters
   namelist /chem_stream_run_pars/ &
    test
@@ -637,6 +637,9 @@ subroutine flame_spd(f)
       f(l1,:,:,iux)=ux_init
       !
       do k=1,mx 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!       Temperature
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
        if (lT_prof1) then
         if (x(k)<x1_front) then
           f(k,:,:,ilnTT)=log(TT1_front)
@@ -648,9 +651,7 @@ subroutine flame_spd(f)
           f(k,:,:,ilnTT)=log((x(k)-x1_front)/(x2_front-x1_front) &
                *(TT2_front-TT1_front)+TT1_front)
         endif
-       endif
-
-       if (lT_prof2) then
+       elseif (lT_prof2) then
         del=0.01!x2_front-x1_front
         if (x(k)<=0.) then
          f(k,:,:,ilnTT)=log(TT1_front+(TT2_front-TT1_front) &
@@ -659,11 +660,34 @@ subroutine flame_spd(f)
          f(k,:,:,ilnTT)=log(TT1_front &
                         +(TT2_front-TT1_front)*(1.-1./beta*exp(-x(k)/del)))
         endif
+       elseif(lT_tanh) then
+
+        del=x2_front-x1_front
+
+         f(k,:,:,ilnTT)=log((TT2_front+TT1_front)*0.5  &
+             +((TT2_front-TT1_front)*0.5)  &
+             *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del)))
+
        endif
         !
-         f(l2,:,:,i_O2)=(f(l1,:,:,i_O2)/32.-f(l1,:,:,i_H2)/4.)*32. 
 
-        if (nygrid .le. 1) then
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!         Species
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+       f(l2,:,:,i_O2)=(f(l1,:,:,i_O2)/32.-f(l1,:,:,i_H2)/4.)*32. 
+
+       if (nygrid == 1) then
+        if (lT_tanh) then
+         del=(x2_front-x1_front)/3.
+         f(k,:,:,i_H2)=(0.+f(l1,:,:,i_H2))*0.5  &
+           +(0.-f(l1,:,:,i_H2))*0.5  &
+           *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
+!
+         f(k,:,:,i_H2O)=(f(l1,:,:,i_H2)/2.*18.+f(l1,:,:,i_H2O))*0.5  &
+             +((f(l1,:,:,i_H2)/2.*18.-f(l1,:,:,i_H2O))*0.5)  &
+             *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
+!
+        else
          if (x(k)>x1_front) then
            f(k,:,:,i_H2O)=f(l1,:,:,i_H2)/2.*18. &
                *(exp(f(k,:,:,ilnTT))-TT1_front) &
@@ -672,15 +696,24 @@ subroutine flame_spd(f)
                *(exp(f(k,:,:,ilnTT))-TT2_front) &
                /(TT1_front-TT2_front)
          endif
-        else
+        endif
+       else
          if (x(k)>x1_front) then
            f(k,:,:,i_H2O)=f(l1,:,:,i_H2)/2.*18. &
                *(exp(f(k,:,:,ilnTT))-TT1_front) &
                /(TT2_front-TT1_front)
          endif
            f(k,:,:,i_H2)=0.
-        endif
-        !
+       endif
+ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!           O2
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+       if (lT_tanh) then
+        del=(x2_front-x1_front)
+        f(k,:,:,i_O2)=(f(l2,:,:,i_O2)+f(l1,:,:,i_O2))*0.5  &
+             +((f(l2,:,:,i_O2)-f(l1,:,:,i_O2))*0.5)  &
+             *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
+       else
         if (x(k)>x2_front) then
           f(k,:,:,i_O2)=f(l2,:,:,i_O2)
         endif
@@ -689,20 +722,23 @@ subroutine flame_spd(f)
           f(k,:,:,i_O2)=(x(k)-x2_front)/(x1_front-x2_front) &
                *(f(l1,:,:,i_O2)-f(l2,:,:,i_O2))+f(l2,:,:,i_O2)
         endif
-        !
+       endif
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         mu1(k,:,:)=f(k,:,:,i_H2)/(2.*mH)+f(k,:,:,i_O2)/(2.*mO) &
              +f(k,:,:,i_H2O)/(2.*mH+mO)+f(k,:,:,i_N2)/(2.*mN)
       enddo
       !
       !
       !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!      Density and velosity
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       do k=1,mx
         f(k,:,:,ilnrho)=log(p2_front)-log(Rgas)-f(k,:,:,ilnTT)-log(mu1(k,:,:))
       enddo
       !
- !     f(l1,:,:,iux)=ux_init*exp(f(l2,:,:,ilnrho))/exp(f(l1,:,:,ilnrho))
       !
-      if (nygrid .le. 1) then
+      if (nygrid == 1) then
        do k=1,mx
 !        f(k,:,:,iux)=(f(l1,:,:,iux)-ux_init) &
 !          *(exp(f(k,:,:,ilnTT))-TT2_front)/(TT1_front-TT2_front)+ux_init
@@ -732,7 +768,7 @@ subroutine flame_spd_test(f)
       real, dimension (mx,my,mz) ::  mu1
       integer :: k,j,i
 
-      real :: x1_front,x2_front
+      real :: x1_front,x2_front,del
       real :: TT1_front, TT2_front!=2400.
       real :: p2_front!=10.13e5
       real :: Rgas=83144726.8870299
@@ -740,12 +776,17 @@ subroutine flame_spd_test(f)
       real :: YH2,YO2,YN2
       integer :: i_H2, i_O2, i_H2O, i_N2
 
+     
+
       TT1_front=exp(init_lnTT1)
       TT2_front=init_TT2
 
       x1_front=init_x1
       x2_front=init_x2
 
+      del=x2_front-x1_front
+
+      
       mH=1.00794
       mC=12.0107
       mN=14.00674
@@ -760,27 +801,52 @@ subroutine flame_spd_test(f)
       if (index_O2==0) &
            call fatal_error('flame_spd','set index for O2 in start.in')
 
-      i_H2=ichemspec(index_H2)
-      i_O2=ichemspec(index_O2)
-      !
+      i_H2=index_H2
+      i_O2=index_O2
+
+
       do k=1,mx 
+
+      if (lT_prof1) then
         if (x(k)<x1_front) then
           f(k,:,:,ilnTT)=log(TT1_front)
-          f(k,:,:,ichemspec(i_H2))=1.
-          f(k,:,:,ichemspec(i_O2))=0.
         endif
         if (x(k)>x2_front) then
           f(k,:,:,ilnTT)=log(TT2_front)
-          f(k,:,:,ichemspec(i_H2))=0.
-          f(k,:,:,ichemspec(i_O2))=1.
         endif
         if (x(k)>x1_front .and. x(k)<x2_front) then
           f(k,:,:,ilnTT)=log((x(k)-x1_front)/(x2_front-x1_front) &
                *(TT2_front-TT1_front)+TT1_front)
+        endif
+      elseif(lT_tanh) then
+          f(k,:,:,ilnTT)=log((TT2_front+TT1_front)*0.5  &
+           +((TT2_front-TT1_front)*0.5)  &
+           *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del)))
+
+      endif
+      enddo
+      
+     !
+      do k=1,mx 
+       if (lT_prof1) then
+        if (x(k)<x1_front) then
+          f(k,:,:,ichemspec(i_H2))=1.
+          f(k,:,:,ichemspec(i_O2))=0.
+        endif
+        if (x(k)>x2_front) then
+          f(k,:,:,ichemspec(i_H2))=0.
+          f(k,:,:,ichemspec(i_O2))=1.
+        endif
+        if (x(k)>x1_front .and. x(k)<x2_front) then
           f(k,:,:,ichemspec(i_H2))=(x(k)-x1_front)/(x2_front-x1_front) &
                *(0.-1.)+1.
           f(k,:,:,ichemspec(i_O2))=1.-f(k,:,:,ichemspec(1))
         endif
+       elseif(lT_tanh) then
+         f(k,:,:,ichemspec(i_O2))=(1.+0.)*0.5+((1.-0.)*0.5)  &
+           *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
+         f(k,:,:,ichemspec(i_H2))=1.-f(k,:,:,ichemspec(i_O2))
+       endif
         mu1(k,:,:)=f(k,:,:,i_H2)/(2.*mH)+f(k,:,:,i_O2)/(2.*mO)
       enddo
       !
@@ -789,9 +855,9 @@ subroutine flame_spd_test(f)
         f(k,:,:,ilnrho)=init_lnrho!log(p2_front)-log(Rgas)-f(k,:,:,ilnTT)-log(mu1(k,:,:))
         f(k,:,:,iux)=init_ux!f(l1,:,:,iux)
       !   f(k,:,:,ilnTT)=f(l1,:,:,ilnTT)
-
       !  f(k,:,:,ichemspec(1))=1.
       !  f(k,:,:,ichemspec(2))=0.
+    
       enddo
 
 endsubroutine flame_spd_test
