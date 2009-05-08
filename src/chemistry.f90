@@ -722,24 +722,24 @@ subroutine flame_front(f)
 !
 !  Initialize velocity
 !
-   !   f(:,:,:,iux)=init_ux*exp(log_inlet_density)/exp(f(:,:,:,ilnrho))
+      f(:,:,:,iux)=f(:,:,:,iux)+init_ux*exp(log_inlet_density)/exp(f(:,:,:,ilnrho))
 
-      if (nygrid .le. 1) then
-       do k=1,mx
-        f(k,:,:,iux)=init_ux*exp(f(l1,:,:,ilnrho))/exp(f(k,:,:,ilnrho))
-       enddo
-      else
-        do k=1,mx
-        do j=1,my
-         if (abs(y(j))<str_thick) then
-          f(k,j,:,iux)=init_ux*(1.-(y(j)/str_thick)**2) &
-                      *exp(f(l1,j,:,ilnrho))/exp(f(k,j,:,ilnrho))
-         else
-          f(k,j,:,iux)=0.
-         endif
-        enddo
-        enddo
-      endif
+  !    if (nygrid .le. 1) then
+  !     do k=1,mx
+  !      f(k,:,:,iux)=init_ux*exp(f(l1,:,:,ilnrho))/exp(f(k,:,:,ilnrho))
+  !     enddo
+  !    else
+  !      do k=1,mx
+  !      do j=1,my
+  !       if (abs(y(j))<str_thick) then
+  !        f(k,j,:,iux)=init_ux*(1.-(y(j)/str_thick)**2) &
+  !                    *exp(f(l1,j,:,ilnrho))/exp(f(k,j,:,ilnrho))
+  !       else
+  !        f(k,j,:,iux)=0.
+  !       endif
+  !      enddo
+  !      enddo
+  !    endif
 
 
 !
