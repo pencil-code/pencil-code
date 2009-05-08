@@ -1518,7 +1518,7 @@ module Magnetic
 !
         if (lB_ext_pot) then
 !          call get_global(bb_ext_pot,m,n,'B_ext_pot')
-          p%bb=p%bb+bb_ext_pot
+!          p%bb=p%bb+bb_ext_pot
         endif
 !
 !  add external B-field.
@@ -4427,14 +4427,14 @@ module Magnetic
 
       do n=n1,n2
       do m=m1,m2
-        call der(Ay_ext,bb_x,3)
-        bb_ext_pot(:,1)=-bb_x
-        call der(Ax_ext,bb_y,3)
-        bb_ext_pot(:,2)= bb_y
-        call der(Ay_ext,bb_z,1)
-        bb_ext_pot(:,3)= bb_z
-        call der(Ax_ext,bb_z,2)
-        bb_ext_pot(:,3)=bb_ext_pot(:,3)-bb_z
+!        call der(Ay_ext,bb_x,3)
+!        bb_ext_pot(:,1)=-bb_x
+!        call der(Ax_ext,bb_y,3)
+!        bb_ext_pot(:,2)= bb_y
+!        call der(Ay_ext,bb_z,1)
+!        bb_ext_pot(:,3)= bb_z
+!        call der(Ax_ext,bb_z,2)
+!        bb_ext_pot(:,3)=bb_ext_pot(:,3)-bb_z
 !        call set_global(bb_ext_pot,m,n,'B_ext_pot',nx)
       enddo
       enddo
