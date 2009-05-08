@@ -31,7 +31,7 @@ module Chemistry
   include 'chemistry.h'
 
   real :: Rgas, Rgas_unit_sys=1.
-  real, dimension (mx,my,mz) :: cp_full,cv_full,mu1_full, nu_full
+  real, dimension (mx,my,mz) :: cp_full,cv_full,mu1_full, nu_full, pp_full
   real, dimension (mx,my,mz) :: lambda_full, rho_full, nu_art_full=0.
   real, dimension (mx,my,mz,nchemspec) :: cvspec_full
   real, dimension (mx,my,mz,nchemspec) ::  cp_R_spec
@@ -41,7 +41,7 @@ module Chemistry
   real :: lambda_const=impossible
   real :: visc_const=impossible
   real :: diffus_const=impossible
-  real :: Sc_number=0.7
+  real :: Sc_number=0.7, Pr_number=0.7
   real :: Cp_const=impossible
   real :: Cv_const=impossible
   real :: init_x1=-0.2,init_x2=0.2
@@ -50,7 +50,7 @@ module Chemistry
   real :: init_pressure=10.13e5      
 !
   logical :: lone_spec=.false.
-  logical :: lfix_Sc=.false.
+  logical :: lfix_Sc=.false., lfix_Pr=.false.
  
 !
 !  parameters related to chemical reactions
@@ -59,7 +59,7 @@ module Chemistry
   logical :: ladvection=.true.
   logical :: ldiffusion=.true.
 
-  logical :: lheatc_chemistry=.false.
+  logical :: lheatc_chemistry=.true.
 
   logical :: BinDif_simple=.false.
   logical :: visc_simple=.false.
@@ -93,7 +93,7 @@ module Chemistry
   character (len=labellen), dimension (2*nchemspec) :: kreactions_profile=''
 
   real, allocatable, dimension(:,:,:,:,:) :: Bin_Diff_coef
-  real, dimension (mx,my,mz,mfarray) :: Diff_full, XX_full
+  real, dimension (mx,my,mz,nchemspec) :: Diff_full, Diff_full_add, XX_full
   real, dimension (mx,my,mz,nchemspec) :: species_viscosity
   real, dimension(nchemspec) :: nu_spec=0., mobility=1.
 !
@@ -118,7 +118,8 @@ module Chemistry
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
       amplchemk,amplchemk2, chem_diff,nu_spec, BinDif_simple, visc_simple, &
       lambda_const, visc_const,Cp_const,Cv_const,diffus_const,init_x1,init_x2, &
-      init_TT1,init_TT2,init_ux,l1step_test,Sc_number,init_pressure,lfix_Sc, str_thick
+      init_TT1,init_TT2,init_ux,l1step_test,Sc_number,init_pressure,lfix_Sc, str_thick, &
+      lfix_Pr
 
 
 ! run parameters
@@ -254,15 +255,14 @@ module Chemistry
       character (len=15) :: file1='chemistry_m.dat',file2='chemistry_p.dat'
 !
       if (lcheminp) then
-        if (unit_temperature == impossible) then
-          write(0,*) 'unit_temperature = impossible here: ', unit_temperature
+        if (unit_temperature /= 1) then
           call fatal_error('initialize_chemistry', &
-              'unit_temperature = impossible here')
+              'unit_temperature must be unity when using chemistry!')
         endif
 !
         if (unit_system == 'cgs') then
           Rgas_unit_sys = k_B_cgs/m_u_cgs
-          Rgas=Rgas_unit_sys*unit_temperature/unit_energy
+          Rgas=Rgas_unit_sys/unit_energy
         endif
       endif
 !
@@ -463,7 +463,6 @@ module Chemistry
       type (pencil_case) :: p
       real, dimension (nx) :: mu1_cgs, cp_spec
       real, dimension (mx) :: tmp_sum, tmp_sum2
-      real, dimension (mx,my,mz) :: pp_full
       real, dimension (nchemspec,nchemspec) :: Phi
 !
       intent(in) :: f
@@ -562,7 +561,9 @@ module Chemistry
 !
         if (lpencil(i_rho1gpp)) then
 !
-          pp_full=Rgas*mu1_full*rho_full*TT_full
+! NILS: rho1gpp should be calculated from gradT, gradlnrho and gradmu 
+! NILS: instead. When this is implemented one should remove the 
+! NILS: calculation of pp_full
 !
           call grad(pp_full,p%rho1gpp)
 !
@@ -766,14 +767,14 @@ subroutine flame_front(f)
       intent(in) :: f
       integer :: k,i,j, j1,j2,j3
       integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
-      real :: T_local, T_up, T_mid, T_low, tmp,  lnT_local
+      real :: T_up, T_mid, T_low, tmp
       real :: mk_mj
 !
       logical :: tran_exist=.false.
       logical,save :: lwrite=.true.
 !
       character (len=20) :: output_file="./data/mix_quant.out"
-      integer :: file_id=123
+      integer :: file_id=123,lmid
 ! 
 ! Density and temperature
 !
@@ -787,13 +788,13 @@ subroutine flame_front(f)
         if (unit_system == 'cgs') then
 !
           Rgas_unit_sys = k_B_cgs/m_u_cgs
-          Rgas=Rgas_unit_sys*unit_temperature/unit_energy
+          Rgas=Rgas_unit_sys/unit_energy
 !
 !  Mean molecular weight
 !
           mu1_full=0.
           do k=1,nchemspec
-            mu1_full(:,:,:)=mu1_full(:,:,:)+f(:,:,:,ichemspec(k)) &
+            mu1_full(:,:,:)=mu1_full(:,:,:)+unit_mass*f(:,:,:,ichemspec(k)) &
                 /species_constants(k,imass)
           enddo
 
@@ -801,24 +802,27 @@ subroutine flame_front(f)
              species_constants(:,imass)=1.
              mu1_full=1.
           endif
-
-          mu1_full=mu1_full*unit_mass
-
 !
 !  Mole fraction XX
 !
           do k=1,nchemspec 
            do j2=1,my
             do j3=1,mz
-              if (minval(mu1_full(:,j2,j3))<=0) then
-                XX_full(:,j2,j3,k)=0.
-              else
+!!$              if (minval(mu1_full(:,j2,j3))<=0) then
+!!$                XX_full(:,j2,j3,k)=0.
+!!$              else
                 XX_full(:,j2,j3,k)=f(:,j2,j3,ichemspec(k))*unit_mass &
-                 /species_constants(k,imass)/mu1_full(:,j2,j3)
-              endif
+                 /(species_constants(k,imass)*mu1_full(:,j2,j3))
+!!$              endif
             enddo
            enddo
           enddo
+!
+! NILS: Is this really necesarry?
+!
+          if (lpencil(i_rho1gpp)) then
+            pp_full=Rgas*mu1_full*rho_full*TT_full
+          endif
 !
 !  Specific heat at constant pressure
 !
@@ -848,28 +852,27 @@ subroutine flame_front(f)
                     T_up=1e10
                   endif
 !
-                  T_local=TT_full(j1,j2,j3)*unit_temperature 
 
-                  if (T_local >=T_low .and. T_local <= T_mid) then
+                  if (TT_full(j1,j2,j3) >=T_low .and. TT_full(j1,j2,j3) <= T_mid) then
                     tmp=0. 
                     do j=1,5
-                      tmp=tmp+species_constants(k,iaa2(j))*T_local**(j-1) 
+                      tmp=tmp+species_constants(k,iaa2(j))*TT_full(j1,j2,j3)**(j-1) 
                     enddo
                     cp_R_spec(j1,j2,j3,k)=tmp
                     cvspec_full(j1,j2,j3,k)=cp_R_spec(j1,j2,j3,k)-1.
-                  elseif (T_local >=T_mid .and. T_local <= T_up) then
-                !  elseif (T_local >=T_mid ) then
+                  elseif (TT_full(j1,j2,j3) >=T_mid .and. TT_full(j1,j2,j3) <= T_up) then
+                !  elseif (TT_full(j1,j2,j3) >=T_mid ) then
                     tmp=0.
                     do j=1,5 
-                      tmp=tmp+species_constants(k,iaa1(j))*T_local**(j-1) 
+                      tmp=tmp+species_constants(k,iaa1(j))*TT_full(j1,j2,j3)**(j-1) 
                     enddo
                     cp_R_spec(j1,j2,j3,k)=tmp
                     cvspec_full(j1,j2,j3,k)=cp_R_spec(j1,j2,j3,k)-1.
                   else
-                    print*,'T_local=',T_local
+                    print*,'TT_full(j1,j2,j3)=',TT_full(j1,j2,j3)
                     print*,'j1,j2,j3=',j1,j2,j3
                     call fatal_error('calc_for_chem_mixture',&
-                        'T_local is outside range')
+                        'TT_full(j1,j2,j3) is outside range')
                   endif
                 enddo
               enddo
@@ -892,8 +895,6 @@ subroutine flame_front(f)
           if (Cv_const<impossible) then
             Cv_full=Cv_const
           endif
-
-
 !
 !  Binary diffusion coefficients
 !
@@ -916,12 +917,10 @@ subroutine flame_front(f)
             enddo
             nu_full=nu_dyn/rho_full
           else 
-!
             nu_dyn=0.
             do k=1,nchemspec
               tmp_sum2=0.
               do j=1,nchemspec
-                !if (j .ne. k) then
                 mk_mj=species_constants(k,imass) &
                     /species_constants(j,imass)
                 nuk_nuj(:,:,:)=species_viscosity(:,:,:,k) &
@@ -929,41 +928,19 @@ subroutine flame_front(f)
                 Phi(:,:,:)=1./sqrt(8.)*1./sqrt(1.+mk_mj) &
                     *(1.+sqrt(nuk_nuj)*mk_mj**(-0.25))**2
                 tmp_sum2=tmp_sum2+XX_full(:,:,:,j)*Phi(:,:,:)
-                !endif
               enddo
               nu_dyn=nu_dyn+XX_full(:,:,:,k)*&
                   species_viscosity(:,:,:,k)/tmp_sum2
             enddo
-            
-          !  nu_dyn=0.
-          !  do k=1,nchemspec 
-          !    tmp_sum2=0.
-          !    do j=1,nchemspec 
-          !      tmp_sum2=tmp_sum2+XX_full(:,:,:,j)*Phi(:,:,:,k,j) 
-          !    enddo
-          !    nu_dyn=nu_dyn+XX_full(:,:,:,k)*&
-          !        species_viscosity(:,:,:,k)/tmp_sum2
-          !  enddo
-    
               nu_full=nu_dyn/rho_full      
-
           endif
 
           if (visc_const<impossible) then
                 nu_full=visc_const
           endif
-
-
 !
 !  Diffusion coeffisient of a mixture
 !
-        !  if (BinDif_simple) then
-        !    do k=1,nchemspec
-!
-        !      Diff_full(:,:,:,k)=species_viscosity(:,:,:,k)/&
-        !          rho_full(:,:,:)/Sc_number
-        !    enddo
-        !  else
             if (.not. lone_spec) then
 
              if (diffus_const<impossible) then
@@ -976,40 +953,19 @@ subroutine flame_front(f)
               do k=1,nchemspec
                 tmp_sum=0.
                 do j=1,nchemspec
-                !  tmp_sum(:,:,:)=tmp_sum(:,:,:) &
-                !      +f(:,:,:,ichemspec(j))*unit_mass &
-                !     /species_constants(j,imass)/mu1_full(:,:,:) &
-                !     /Bin_Diff_coef(:,:,:,j,k)
                    tmp_sum(:,:,:)=tmp_sum(:,:,:) &
                         +XX_full(:,:,:,j)/Bin_Diff_coef(:,:,:,j,k)
-
                 enddo
-          !      Diff_full(:,:,:,k)=(1.-f(:,:,:,ichemspec(k))) &
-          !          *mu1_full(:,:,:)/tmp_sum
-
                  Diff_full(:,:,:,k)=(1.-f(:,:,:,ichemspec(k)))/tmp_sum
-
-!print*,minval(Diff_full(:,4,4,k)),maxval(Diff_full(:,4,4,k)),k
-!print*,'Diff=',(Diff_full(l2,4,4,k)),1./tmp_sum(l2,4,4),(f(l2,4,4,ichemspec(k))),k
-
               enddo
              endif
-!print*, minval(Diff_full(:,4,4,:)),maxval(Diff_full(:,4,4,:))
-
             endif
 
+            do k=1,nchemspec 
+              Diff_full_add(:,:,:,k)=Diff_full(:,:,:,k)*&
+                  species_constants(k,imass)/unit_mass*mu1_full(:,:,:)
+            enddo
 !
-!  Artificial Viscosity of a mixture
-!
-
-          !if (maxval(nu_spec)>0) then
-          !  nu_dyn=0.
-          !  tmp_sum2=0.
-          !  do k=1,nchemspec 
-          !    nu_dyn=nu_dyn+XX_full(:,:,:,k)*nu_spec(k)!/tmp_sum2
-          !  enddo
-          !  nu_art_full=nu_dyn/rho_full
-          !endif
 !
 !  Thermal diffusivity 
 !
@@ -1040,9 +996,77 @@ subroutine flame_front(f)
           if (lambda_const<impossible) then
             lambda_full=lambda_const
           endif
+!
+!  Dimensionless Standard-state molar enthalpy H0/RT
+!
+          do k=1,nchemspec
+            T_low=species_constants(k,iTemp1)
+            T_mid=species_constants(k,iTemp2)
+            T_up= species_constants(k,iTemp3)
+            do j3=n1,n2
+              do j2=m1,m2
+                do i=l1,l2
+                  if (TT_full(i,j2,j3) <= T_mid) then
+                    tmp=0. 
+                    do j=1,5
+                      tmp=tmp+species_constants(k,iaa2(j))*TT_full(i,j2,j3)**(j-1)/j 
+                    enddo
+                    H0_RT(i,j2,j3,k)=tmp+species_constants(k,iaa2(6))/TT_full(i,j2,j3)
+                  else               
+                    tmp=0. 
+                    do j=1,5
+                      tmp=tmp+species_constants(k,iaa1(j))*TT_full(i,j2,j3)**(j-1)/j 
+                    enddo
+                    H0_RT(i,j2,j3,k)=tmp+species_constants(k,iaa1(6))/TT_full(i,j2,j3)
+                  endif
+                enddo
+              enddo
+            enddo
+          enddo
+!
+!  Enthalpy flux
+!
+          hYrho_full=0.       
+          do k=1,nchemspec
+            hYrho_full(l1:l2,m1:m2,n1:n2)=hYrho_full(l1:l2,m1:m2,n1:n2)&
+                +H0_RT(l1:l2,m1:m2,n1:n2,k)&
+                *Rgas*TT_full(l1:l2,m1:m2,n1:n2)&
+                *f(l1:l2,m1:m2,n1:n2,ichemspec(k))/species_constants(k,imass)
+          enddo
+!
+! Also the values at the ghost zones are required for hYrho_full
+!
+          do i=1,nghost
+            hYrho_full(i,:,:)=hYrho_full(l1,:,:)
+            hYrho_full(l2+i,:,:)=hYrho_full(l2,:,:)
+            hYrho_full(:,i,:)=hYrho_full(:,m1,:)
+            hYrho_full(:,m2+i,:)=hYrho_full(:,m2,:)
+            hYrho_full(:,:,i)=hYrho_full(:,:,n1)
+            hYrho_full(:,:,n2+i)=hYrho_full(:,:,n2)
+          enddo
+!
+!  Internal energy
+!
+          e_int_full=hYrho_full-Rgas*TT_full*mu1_full
+          hYrho_full=hYrho_full*rho_full
+!
 
-
-!print*,minval(lambda_full)
+!!$if (lroot) then
+!!$lmid=(l2-l1)/2+l1
+!!$print*,'e_int_full=',e_int_full(l1,m1,n1),e_int_full(lmid,m1,n1),e_int_full(l2,m1,n1)
+!!$print*,'hYrho_full=',hYrho_full(l1,m1,n1),hYrho_full(lmid,m1,n1),hYrho_full(l2,m1,n1)
+!!$print*,'H0_RT=',H0_RT(l1,m1,n1,1),H0_RT(lmid,m1,n1,1),H0_RT(l2,m1,n1,1)
+!!$print*,'lambda_full=',lambda_full(l1,m1,n1),lambda_full(lmid,m1,n1),lambda_full(l2,m1,n1)
+!!$print*,'Diff_full=',Diff_full(l1,m1,n1,1),Diff_full(lmid,m1,n1,1),Diff_full(l2,m1,n1,1)
+!!$print*,'mu1_full=',mu1_full(l1,m1,n1),mu1_full(lmid,m1,n1),mu1_full(l2,m1,n1)
+!!$print*,'nu_full=',nu_full(l1,m1,n1),nu_full(lmid,m1,n1),nu_full(l2,m1,n1)
+!!$print*,'cp_full=',cp_full(l1,m1,n1),cp_full(lmid,m1,n1),cp_full(l2,m1,n1)
+!!$print*,'cv_full=',cv_full(l1,m1,n1),cv_full(lmid,m1,n1),cv_full(l2,m1,n1)
+!!$print*,'pp_full=',pp_full(l1,m1,n1),pp_full(lmid,m1,n1),pp_full(l2,m1,n1)
+!!$print*,'xx_full=',xx_full(l1,m1,n1,1),xx_full(lmid,m1,n1,1),xx_full(l2,m1,n1,1)
+!!$print*,'rho_full=',rho_full(l1,m1,n1),rho_full(lmid,m1,n1),rho_full(l2,m1,n1)
+!!$print*,'TT_full=',TT_full(l1,m1,n1),TT_full(lmid,m1,n1),TT_full(l2,m1,n1)
+!!$endif
 
         else
           call stop_it('This case works only for cgs units system!')
@@ -1102,7 +1126,7 @@ subroutine flame_front(f)
         write(file_id,*) ''
       
        
-        print*,'calc_for_chem_mixture: writing mix_quant.out file'
+        if (lroot) print*,'calc_for_chem_mixture: writing mix_quant.out file'
         close(file_id)
         lwrite=.false.
       endif
@@ -1129,7 +1153,7 @@ subroutine flame_front(f)
 !  Find number of ractions
 !
       mreactions=2*nchemspec
-      print*,'Number of reactions=',mreactions
+      if (lroot) print*,'Number of reactions=',mreactions
 !
 !  Allocate reaction arrays (but not during reloading!)
 !
@@ -1235,6 +1259,10 @@ subroutine flame_front(f)
             do n=1,mz
               kreactions_z(n,j)=1./cosh(z(n)/kreactions_profile_width(j))**2
             enddo
+          elseif (kreactions_profile(j)=='sin') then
+            do n=1,mz
+              kreactions_z(n,j)=sin((z(n)-xyz0(3))/kreactions_profile_width(j))
+            enddo
           endif
         enddo
       endif
@@ -1293,7 +1321,7 @@ subroutine flame_front(f)
 !  Find number of ractions
 !
       call read_reactions(input_file,NrOfReactions=mreactions)
-      print*,'Number of reactions=',mreactions
+      if (lroot) print*,'Number of reactions=',mreactions
       nreactions=mreactions
 !
 !  Allocate reaction arrays
@@ -1881,7 +1909,7 @@ subroutine flame_front(f)
         found_specie=.false.
       else
         found_specie=.true.
-        print*,species_name,'   species index= ',ind_chem
+        if (lroot) print*,species_name,'   species index= ',ind_chem
       endif
 !
     endsubroutine find_species_index
@@ -1911,7 +1939,7 @@ subroutine flame_front(f)
       case('He','HE') 
         MolMass=4.0026
       case default
-        print*,'element_name=',element_name
+        if (lroot) print*,'element_name=',element_name
         call stop_it('find_mass: Element not found!')
       end select
 !
@@ -2189,7 +2217,7 @@ subroutine flame_front(f)
                       if (ChemInpLine_add(i:i)==' ') then
                         i=i+1
                       elseif (ChemInpLine_add(i:i+2)=='LOW') then
-                        print*,ChemInpLine_add(i:i+2),&
+                        if (lroot) print*,ChemInpLine_add(i:i+2),&
                             '   coefficients for reaction ', &
                             reaction_name(k),'number ', k 
                         VarNumber_add=1; StartInd_add=i+4; StopInd_add=i+4
@@ -2205,15 +2233,12 @@ subroutine flame_front(f)
                             if (VarNumber_add==1) then
                               read (unit=ChemInpLine_add(StartInd_add:&
                                   StopInd_add),fmt='(E15.8)') low_coeff(1,k)
-                              print*,low_coeff(1,k)
                             elseif (VarNumber_add==2) then
                               read (unit=ChemInpLine_add(StartInd_add:&
                                   StopInd_add),fmt='(E15.8)') low_coeff(2,k)
-                              print*,low_coeff(2,k)
                             elseif (VarNumber_add==3) then
                               read (unit=ChemInpLine_add(StartInd_add:&
                                   StopInd_add),fmt='(E15.8)') low_coeff(3,k)
-                              print*,low_coeff(3,k)
                             else
                               call stop_it("No such VarNumber!")
                             endif
@@ -2226,7 +2251,7 @@ subroutine flame_front(f)
                         enddo
                         i=80
                       elseif (ChemInpLine_add(i:i+3)=='TROE') then
-                        print*,ChemInpLine_add(i:i+3),&
+                        if (lroot) print*,ChemInpLine_add(i:i+3),&
                             '   coefficients for reaction ', reaction_name(k),&
                             'number ', k 
                         VarNumber_add=1; StartInd_add=i+5; StopInd_add=i+5
@@ -2242,15 +2267,12 @@ subroutine flame_front(f)
                             if (VarNumber_add==1) then
                               read (unit=ChemInpLine_add(StartInd_add:&
                                   StopInd_add),fmt='(E15.8)') troe_coeff(1,k)
-                              print*,troe_coeff(1,k)
                             elseif (VarNumber_add==2) then
                               read (unit=ChemInpLine_add(StartInd_add:&
                                   StopInd_add),fmt='(E15.8)') troe_coeff(2,k)
-                              print*,troe_coeff(2,k)
                             elseif (VarNumber_add==3) then
                               read (unit=ChemInpLine_add(StartInd_add:&
                                   StopInd_add),fmt='(E15.8)') troe_coeff(3,k)
-                              print*,troe_coeff(3,k)
                             else
                               call stop_it("No such VarNumber!")
                             endif
@@ -2263,7 +2285,7 @@ subroutine flame_front(f)
                         enddo
                         i=80
                       elseif (ChemInpLine_add(i:i+3)=='HIGH') then
-                        print*,ChemInpLine_add(i:i+3),&
+                        if (lroot) print*,ChemInpLine_add(i:i+3),&
                             '   coefficients for reaction ', reaction_name(k),&
                             'number ', k 
                         VarNumber_add=1; StartInd_add=i+5; StopInd_add=i+5
@@ -2279,15 +2301,12 @@ subroutine flame_front(f)
                             if (VarNumber_add==1) then
                               read (unit=ChemInpLine_add(StartInd_add:&
                                   StopInd_add),fmt='(E15.8)') high_coeff(1,k)
-                              print*,high_coeff(1,k)
                             elseif (VarNumber_add==2) then
                               read (unit=ChemInpLine_add(StartInd_add:&
                                   StopInd_add),fmt='(E15.8)') high_coeff(2,k)
-                              print*,high_coeff(2,k)
                             elseif (VarNumber_add==3) then
                               read (unit=ChemInpLine_add(StartInd_add:&
                                   StopInd_add),fmt='(E15.8)') high_coeff(3,k)
-                              print*,high_coeff(3,k)
                             else
                               call stop_it("No such VarNumber!")
                             endif
@@ -2300,7 +2319,7 @@ subroutine flame_front(f)
                         enddo
                         i=80
                       else 
-                        print*,' --------------  a_k4 coefficients-------------'
+                        if (lroot) print*,' --------------  a_k4 coefficients-------------'
                         !                a_k4=0.
                         StartInd_add=i; StopInd_add=0; StopInd_add_=0
                         do while (ChemInpLine_add(i:i+1)/='  ')
@@ -2318,7 +2337,7 @@ subroutine flame_front(f)
                               if (found_specie) then
                                 read (unit=ChemInpLine_add(StartInd_add:&
                                     StopInd_add),fmt='(E15.8)') a_k4(ind_chem,k)
-                                print*, 'a_k4(ind_chem,k)=',a_k4(ind_chem,k),&
+                                if (lroot) print*, 'a_k4(ind_chem,k)=',a_k4(ind_chem,k),&
                                     ind_chem,k
                               else
                                 call stop_it("Did not find specie!")
@@ -2340,7 +2359,6 @@ subroutine flame_front(f)
 !
                       endif
                     enddo
-                    print*,' ------------------------------'
                     goto 100
 
 !
@@ -2470,9 +2488,9 @@ subroutine flame_front(f)
         write (143,*) 'specmass=fltarr(',nchemspec,')'
         do k=1,nchemspec
           call chn(k-1,ispec)
-          write (143,*) 'specname(',trim(ispec),')=',"'",&
+          write (143,*) 'specname[',trim(ispec),']=',"'",&
               trim(varname(ichemspec(k))),"'"
-          write (143,*) 'specmass(',trim(ispec),')=',species_constants(k,imass)
+          write (143,*) 'specmass[',trim(ispec),']=',species_constants(k,imass)
         enddo
         close (143)
       endif
@@ -2593,11 +2611,10 @@ subroutine flame_front(f)
       type (pencil_case) :: p
       real, dimension (nx) :: dSR=0.,dHRT=0.,Kp,Kc,prod1,prod2
       real, dimension (nx) :: kf=0., kr=0.
-      real, dimension (nx) :: T_cgs,rho_cgs,p_atm
-      real, dimension (mx,my,mz) :: T_cgs_full
+      real, dimension (nx) :: rho_cgs,p_atm
       real :: Rcal
       integer :: k , reac, j, i, v, t
-      real  :: sum_tmp=0., T_low, T_mid, T_up, T_local, lnT_local, tmp
+      real  :: sum_tmp=0., T_low, T_mid, T_up, tmp
       logical,save :: lwrite=.true.
       character (len=20) :: input_file="./data/react.out"
       integer :: file_id=123
@@ -2611,63 +2628,10 @@ subroutine flame_front(f)
 !  p is in atm units; atm/bar=1./10.13
 !
       Rcal=Rgas_unit_sys/4.14*1e-7
-      T_cgs=p%TT*unit_temperature
-      T_cgs_full=TT_full*unit_temperature
       rho_cgs=p%rho*unit_mass/unit_length**3
       p_atm=1e6*unit_length**3/unit_energy
-      if (lwrite)  write(file_id,*)'T= ',   T_cgs
+      if (lwrite)  write(file_id,*)'T= ',   p%TT
       if (lwrite)  write(file_id,*)'p_atm= ',   p_atm
-!
-!  Dimensionless Standard-state molar enthalpy H0/RT
-!
-      if (lwrite)  write(file_id,*)'**************************'
-      if (lwrite)  write(file_id,*)'H0_RT'
-      if (lwrite)  write(file_id,*)'**************************'
-      do k=1,nchemspec
-        T_low=species_constants(k,iTemp1)
-        T_mid=species_constants(k,iTemp2)
-        T_up= species_constants(k,iTemp3)
-        do v=1,mz
-          do t=1,my
-            do i=1,mx
-              T_local=(T_cgs_full(i,t,v))
-              if ( T_local <= T_mid) then
-                tmp=0. 
-                do j=1,5
-                  tmp=tmp+species_constants(k,iaa2(j))*T_local**(j-1)/j 
-                enddo
-                H0_RT(i,t,v,k)=tmp+species_constants(k,iaa2(6))/T_local
-              else               
-                tmp=0. 
-                do j=1,5
-                  tmp=tmp+species_constants(k,iaa1(j))*T_local**(j-1)/j 
-                enddo
-                H0_RT(i,t,v,k)=tmp+species_constants(k,iaa1(6))/T_local
-              endif
-            enddo
-          enddo
-        enddo
-!
-        if (lwrite) then    
-          write(file_id,*)&
-              varname(ichemspec(k)), &
-              maxval(H0_RT(:,:,:,k)),&
-              minval(H0_RT(:,:,:,k))
-        endif
-      enddo
-!
-!  Enthalpy flux
-!
-      hYrho_full=0.       
-      do k=1,nchemspec
-        hYrho_full=hYrho_full+H0_RT(:,:,:,k)*&
-            Rgas*TT_full(:,:,:)*f(:,:,:,ichemspec(k))/species_constants(k,imass)
-      enddo
-!
-!  Internal energy
-!
-      e_int_full=hYrho_full-Rgas*TT_full(:,:,:)*mu1_full
-      hYrho_full=hYrho_full*rho_full(:,:,:)
 !
 !  Dimensionless Standard-state molar entropy  S0/R
 !
@@ -2680,21 +2644,19 @@ subroutine flame_front(f)
         T_mid=species_constants(k,iTemp2)
         T_up= species_constants(k,iTemp3)
         do i=1,nx
-          T_local=T_cgs(i)
-          lnT_local=p%lnTT(i)+log(unit_temperature)
-          if (T_local <= T_mid) then
+          if (p%TT(i) <= T_mid) then
             tmp=0. 
             do j=2,5
-              tmp=tmp+species_constants(k,iaa2(j))*T_local**(j-1)/(j-1) 
+              tmp=tmp+species_constants(k,iaa2(j))*p%TT(i)**(j-1)/(j-1) 
             enddo
-            S0_R(i,k)=species_constants(k,iaa2(1))*lnT_local+tmp&
+            S0_R(i,k)=species_constants(k,iaa2(1))*p%lnTT(i)+tmp&
                 +species_constants(k,iaa2(7))
           else
             tmp=0. 
             do j=2,5 
-              tmp=tmp+species_constants(k,iaa1(j))*T_local**(j-1)/(j-1) 
+              tmp=tmp+species_constants(k,iaa1(j))*p%TT(i)**(j-1)/(j-1) 
             enddo
-            S0_R(i,k)=species_constants(k,iaa1(1))*lnT_local+tmp&
+            S0_R(i,k)=species_constants(k,iaa1(1))*p%lnTT(i)+tmp&
                 +species_constants(k,iaa1(7))
           endif
         enddo
@@ -2717,7 +2679,7 @@ subroutine flame_front(f)
 !
 !  Find forward rate constant for reaction 'reac'
 !
-        kf(:)=B_n(reac)*T_cgs(:)**alpha_n(reac)*exp(-E_an(reac)/Rcal/T_cgs(:))
+        kf(:)=B_n(reac)*p%TT(:)**alpha_n(reac)*exp(-E_an(reac)/Rcal/p%TT(:))
         if (lwrite)  write(file_id,*) 'Nreact= ',reac,  'kf=', maxval(kf)
 !
 !  Find backward rate constant for reaction 'reac'
@@ -2786,7 +2748,7 @@ subroutine flame_front(f)
           B_n_0=low_coeff(1,reac) 
           alpha_n_0=low_coeff(2,reac)
           E_an_0=low_coeff(3,reac)                      
-          kf_0(:)=B_n_0*T_cgs(:)**alpha_n_0*exp(-E_an_0/Rcal/T_cgs(:))
+          kf_0(:)=B_n_0*p%TT(:)**alpha_n_0*exp(-E_an_0/Rcal/p%TT(:))
           Pr=kf_0/kf*mix_conc
           kf=kf*(Pr/(1.+Pr))
           kr(:)=kf(:)/Kc_0
@@ -2794,7 +2756,7 @@ subroutine flame_front(f)
           B_n_0=high_coeff(1,reac) 
           alpha_n_0=high_coeff(2,reac)
           E_an_0=high_coeff(3,reac)                      
-          kf_0(:)=B_n_0*T_cgs(:)**alpha_n_0*exp(-E_an_0/Rcal/T_cgs(:))
+          kf_0(:)=B_n_0*p%TT(:)**alpha_n_0*exp(-E_an_0/Rcal/p%TT(:))
           Pr=kf_0/kf*mix_conc
           kf=kf*(1./(1.+Pr))
           kr(:)=kf(:)/Kc_0
@@ -2834,13 +2796,9 @@ subroutine flame_front(f)
        enddo 
          vreact_m(:,reac)=0.
       endif
-!******************************************************************
-
       enddo
 !
     endsubroutine get_reaction_rate
-!***************************************************************
-
 !***************************************************************
     subroutine calc_reaction_term(f,p)
 !
@@ -2974,7 +2932,7 @@ subroutine flame_front(f)
       StartInd_1=1; StopInd_1 =0
       open(file_id,file="tran.dat")
 !
-      print*, 'the following species are found '//&
+      if (lroot) print*, 'the following species are found '//&
           'in tran.dat: beginning of the list:'
 !
       dataloop: do
@@ -3035,7 +2993,7 @@ subroutine flame_front(f)
 
 1000  if (emptyFile)  call stop_it('The input file tran.dat was empty!')
 !
-      print*, 'the following species are found in tran.dat: end of the list:'
+      if (lroot) print*, 'the following species are found in tran.dat: end of the list:'
 !
       close(file_id)
 !
@@ -3044,7 +3002,9 @@ subroutine flame_front(f)
     subroutine  calc_collision_integral(omega,lnTst,Omega_kl)
 !
 !  Get coefficients for calculating of the collision integral 
-!
+!  This routind is called from calc_diff_visc_coeff, which again is called from
+!  calc_for_chem_mixture, which is why we work on full chunks of arrays here.  
+!  
 !  03-apr-08/natalia: coded
 !
       use Mpicomm
@@ -3089,67 +3049,48 @@ subroutine flame_front(f)
     subroutine calc_diff_visc_coef(f)
 !
 !  Calculation of Bin_Diff_coef
+!  This routind is called from calc_for_chem_mixture, 
+!  which is why we work on full chunks of arrays here.  
 !
 !  WHO, WHEN?
 !
       real, dimension (mx,my,mz,mfarray) :: f
       intent(in) :: f
-      real, dimension (mx,my,mz) :: Omega_kl, prefactor, lnT 
-      real, dimension (mx,my,mz) :: TT, lnTjk, pp_full_cgs_T, pp_full_cgs_T_1, rho, lnTk
-      real, dimension (mx,my,mz) :: tmp
+      real, dimension (mx,my,mz) :: Omega_kl, prefactor
+      real, dimension (mx,my,mz) :: lnTjk, lnTk
       integer :: k,j
       real :: eps_jk, sigma_jk, m_jk, delta_jk, delta_st
       character (len=7) :: omega
       real :: Na=6.022E23,tmp_local,tmp_local2
 !
-      lnT=f(:,:,:,ilnTT)+log(unit_temperature)
-      TT=TT_full*unit_temperature
-      rho=rho_full*unit_mass/unit_length**3
-      pp_full_cgs_T_1 = unit_mass/Rgas_unit_sys/rho/mu1_full
-    
-   
-
+      tmp_local=3./16.*(2.*k_B_cgs**3/pi)**0.5
+      prefactor=tmp_local*(TT_full)**0.5*unit_length**3&
+          /(Rgas_unit_sys*rho_full*mu1_full)          
+      omega="Omega11"
 !      
     if (BinDif_simple) then
-
-       tmp_local=3./16.*(2.*k_B_cgs**3/pi)**0.5
-       prefactor=tmp_local*(TT)**0.5*pp_full_cgs_T_1
-!
-     
-        omega="Omega11"
         do k=1,nchemspec
           do j=k,nchemspec
 !
             eps_jk=(tran_data(j,2)*tran_data(k,2))**0.5
             sigma_jk=0.5*(tran_data(j,3)+tran_data(k,3))*1e-8
-         !   delta_jk=0.5*tran_data(j,4)*tran_data(k,4)
             m_jk=(species_constants(j,imass)*species_constants(k,imass)) &
                 /(species_constants(j,imass)+species_constants(k,imass))/Na
 !
-            lnTjk=lnT-log(eps_jk)
+            lnTjk=f(:,:,:,ilnTT)-log(eps_jk)
 !
             Omega_kl=(6.96945701E-1 +3.39628861E-1*lnTjk)
 !
             tmp_local=(m_jk)**(-0.5)/sigma_jk**2/(unit_length**2/unit_time)
             Bin_Diff_coef(:,:,:,k,j)=prefactor*Omega_kl*tmp_local
-! 
-
           enddo
         enddo
-!
-         do k=1,nchemspec
+        do k=1,nchemspec
           do j=1,k-1
             Bin_Diff_coef(:,:,:,k,j)=Bin_Diff_coef(:,:,:,j,k)
           enddo
         enddo
-
       else
-   
-       pp_full_cgs_T_1 =unit_mass/Rgas_unit_sys/rho/mu1_full
-       tmp_local=3./16.*(2.*k_B_cgs**3/pi)**0.5
-       prefactor=tmp_local*(TT)**0.5*pp_full_cgs_T_1
-          
-        omega="Omega11"
         do k=1,nchemspec
           do j=1,nchemspec
 !
@@ -3159,12 +3100,12 @@ subroutine flame_front(f)
             m_jk=(species_constants(j,imass)*species_constants(k,imass)) &
                 /(species_constants(j,imass)+species_constants(k,imass))/Na
 !
-            lnTjk=lnT-log(eps_jk)
+            lnTjk=f(:,:,:,ilnTT)-log(eps_jk)
 !
             call calc_collision_integral(omega,lnTjk,Omega_kl)
 !
             Bin_Diff_coef(:,:,:,k,j)=prefactor/sqrt(m_jk)/sigma_jk**2 &
-                /(Omega_kl+0.19*delta_jk/(TT/eps_jk)) &
+                /(Omega_kl+0.19*delta_jk/(TT_full/eps_jk)) &
                 /(unit_length**2/unit_time)
 ! 
           enddo
@@ -3178,7 +3119,7 @@ subroutine flame_front(f)
 
       do k=1,nchemspec
 !
-        lnTk=lnT-log(tran_data(k,2))
+        lnTk=f(:,:,:,ilnTT)-log(tran_data(k,2))
         tmp_local2=(species_constants(k,imass))**0.5/(tran_data(k,3))**2 &
                    *tmp_local
 
@@ -3187,19 +3128,14 @@ subroutine flame_front(f)
                    -3.99489493E-2*lnTk*lnTk*lnTk+8.98483088E-3*lnTk**4 &
                   +7.00167217E-4*lnTk**5-3.82733808E-4*lnTk**6+2.97208112E-5*lnTk**7)
 
-         tmp=TT**0.5*(Omega_kl)*tmp_local2 
-  
+          species_viscosity(:,:,:,k)=TT_full**0.5*(Omega_kl)*tmp_local2/(unit_mass/unit_length/unit_time)
         else
          delta_st=tran_data(k,4)**2/2./tran_data(k,2)/&
           (tran_data(k,3))**3*(1e-8**3)
 !
          call calc_collision_integral(omega,lnTk,Omega_kl)
-         tmp=TT**0.5/(Omega_kl+0.2*delta_st/(TT/tran_data(k,2)))*tmp_local2 
+        species_viscosity(:,:,:,k)=TT_full**0.5/(Omega_kl+0.2*delta_st/(TT_full/tran_data(k,2)))*tmp_local2 /(unit_mass/unit_length/unit_time)
         endif
-        species_viscosity(:,:,:,k)=(tmp)/(unit_mass/unit_length/unit_time)
-
-!print*,'spec_visk=',minval(species_viscosity(:,:,:,k)),maxval(species_viscosity(:,:,:,k)),k
-!
       enddo
 !
     endsubroutine calc_diff_visc_coef
@@ -3212,7 +3148,7 @@ subroutine flame_front(f)
       use Mpicomm
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f, Diff_full_add
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx,3) :: gXX, gDiff_full_add, gchemspec
@@ -3242,10 +3178,7 @@ subroutine flame_front(f)
 !
           if (ldiffusion) then
 !
-            Diff_full_add(:,:,:,k)=Diff_full(:,:,:,k)*&
-                species_constants(k,imass)/unit_mass*mu1_full(:,:,:)
-!
-            call del2(XX_full,k,del2XX)
+            call del2(XX_full(:,:,:,k),del2XX)
             call grad(XX_full(:,:,:,k),gXX)
             call dot_mn(p%glnrho,gXX,diff_op1)
 !
@@ -3288,7 +3221,6 @@ subroutine flame_front(f)
        tmp1= (p%lambda(:)*(p%del2lnTT+g2TT)+g2TTlnlambda)*p%cv1/p%rho(:)
       endif
 
-!print*,'nat3',maxval(tmp1),minval(tmp1)
 
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp1 
 !
@@ -3422,7 +3354,7 @@ subroutine flame_front(f)
             StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
 !
             read (unit=ChemInpLine(StartInd:StopInd),fmt='(E14.7)'), PP
-            print*, ' Pressure, Pa   ', PP
+            if (lroot) print*, ' Pressure, Pa   ', PP
 !
           endif
         enddo dataloop
@@ -3432,7 +3364,6 @@ subroutine flame_front(f)
         if (emptyFile) then
           pp_infx(:,:,:)=0.
           read_P=.false.
-         ! if (lroot) print*, 'air.dat file is empty, then pp_inf=0 '
           call stop_it('air.dat file is empty')
         else
           pp_infx(:,:,:)=PP*10.
@@ -3502,7 +3433,7 @@ subroutine flame_front(f)
             StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
 !
             read (unit=ChemInpLine(StartInd:StopInd),fmt='(E14.7)'), PP
-            print*, ' Pressure, Pa   ', PP
+            if (lroot) print*, ' Pressure, Pa   ', PP
 !
           endif
         enddo dataloop
@@ -3634,7 +3565,7 @@ subroutine flame_front(f)
           StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
 !
           read (unit=ChemInpLine(StartInd:StopInd),fmt='(E14.7)'), TT
-          print*, ' Temperature, K   ', TT
+          if (lroot) print*, ' Temperature, K   ', TT
 !
         elseif (tmp_string == 'P') then
 !
@@ -3645,7 +3576,7 @@ subroutine flame_front(f)
           StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
 !
           read (unit=ChemInpLine(StartInd:StopInd),fmt='(E14.7)'), PP
-          print*, ' Pressure, Pa   ', PP
+          if (lroot) print*, ' Pressure, Pa   ', PP
 !
         else
 !
@@ -3659,7 +3590,7 @@ subroutine flame_front(f)
             StartInd=verify(ChemInpLine(StopInd:),' ')+StopInd-1
             StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
             read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)'), YY_k  
-            print*, ' volume fraction, %,    ', YY_k, &
+            if (lroot) print*, ' volume fraction, %,    ', YY_k, &
                 species_constants(ind_chem,imass)
 !
             air_mass=air_mass+YY_k*0.01/species_constants(ind_chem,imass)
@@ -3703,7 +3634,7 @@ subroutine flame_front(f)
       if (mvar < 5) then
         call fatal_error("air_field", "I can only set existing fields")
       endif
-      f(:,:,:,ilnTT)=log(TT/unit_temperature)
+      f(:,:,:,ilnTT)=log(TT)
 !
       f(:,:,:,ilnrho)=log((PP*10./(k_B_cgs/m_u_cgs)*&
           air_mass/TT)/unit_mass*unit_length**3)
