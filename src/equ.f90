@@ -643,7 +643,7 @@ module Equ
 !  Fold df from first ghost zone into main df.
 !  Currently only needed for smoothed out particle drag force.
 !
-!      if (lhydro .and. lfold_df) call fold_df(df,iux,iuz)
+      if (lhydro .and. lfold_df) call fold_df(df,iux,iuz)
 !
 !  -------------------------------------------------------------
 !  NO CALLS MODIFYING DF BEYOND THIS POINT (APART FROM FREEZING)
