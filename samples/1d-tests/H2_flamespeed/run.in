@@ -1,0 +1,24 @@
+!
+!  Run parameters for Kelvin-Helmholtz turbulence.
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.3 2009-03-17 10:59:27 nbabkovs Exp $',
+  nt=10, it1=2, cdtv=0.4, isave=100, itorder=5
+  dsnap=5e-4, dvid=5e-4, dtmin=1e-30, dt=1e-10
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+  lupw_lnrho=T
+/
+&entropy_run_pars
+  lupw_lnTT=T
+/
+&chemistry_run_pars
+   lfilter=T
+/
+&viscosity_run_pars
+ ivisc='nu-mixture'
+/
