@@ -9,12 +9,12 @@ elif [ -x /usr/bin/perl ]; then
 else
   perl=`which perl| sed 's/.*aliased to *//'`
 fi
-
+#
 exec $perl -x -S $0 "$@";     # -x: start from the following line
 #======================================================================#
 #! /Good_Path/perl -w 
 # line 17
-
+#
 # Name:   mkdummyinc
 # Author: Antony Mee (A.J.Mee@ncl.ac.uk)
 # Started:   18-Jul-2006
@@ -27,23 +27,25 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 #   local file src/$(XXXXXX_MODULE)_dummies.inc .
 # Example:
 #     mkdummy -d nospecial.f90 -s special/neutron_star.f90 > special_dummies.inc
-
+#
 # History:
 #   17-jul-06/tony: Created
+#   08-may-09/wlad: Commented and fixed problem with last dummy 
+#                   subroutine carrying the include line with it
 #
-
 # ---------------------------------------------------------------------- #
 my $fortran_routine  = '^\s*(subroutine|function)\s*([^\s(])\s*\(.*?\).*end $1 $2\s*$';
 # ---------------------------------------------------------------------- #
-
+#
 use strict;
 use Getopt::Long;
-
+#
 my @implemented;
-
+#
 (my $cmdname = $0) =~ s{.*/}{};
-
+#
 ## Process command line
+#
 my (%opts);	# Variables written by GetOptions
 GetOptions(\%opts,
 	   qw( -h   --help
@@ -51,20 +53,21 @@ GetOptions(\%opts,
 	       -d=s --dummy=s
 	       -s=s --src=s
                                ));
-
+#
 die usage() if ($opts{h} || $opts{help});
-
+#
 my $srcfile = ($opts{s} || $opts{src} || "-");
-
-my $dummyfile = ($opts{d} || $opts{dummyfile} || die "no dummy speficied");
-
+#
+my $dummyfile = ($opts{d} || $opts{dummyfile} || die "no dummy specified");
+#
 my $outfile = ($opts{o} || $opts{output} || "-");
 open(OUT, "> $outfile") or die "Can't open $outfile for writing";
-
+#
 find_implemented_routines($srcfile);
 write_dummies($dummyfile);
-
+#
 # ---------------------------------------------------------------------- #
+#
 sub usage {
 # Extract description and usage information from this file's header.
     my $thisfile = __FILE__;
@@ -84,7 +87,7 @@ sub usage {
 # ---------------------------------------------------------------------- #
 sub is_implemented {
     my $subname = shift;
-
+#
     foreach my $name (@implemented) {
       return 1 if ($subname =~ /^\s*$name\s*$/i);
     }
@@ -94,7 +97,7 @@ sub is_implemented {
 sub find_implemented_routines {
     my $file = shift;
     open(SRC,"<$file") || die "cannot open $file";
-
+#
     while( my $line = <SRC> ) {
 	  chop($line);
 	  my $lout = $line;
@@ -112,7 +115,7 @@ sub find_implemented_routines {
           push @implemented, $subname
 	  }
     }
-
+#
     close(SRC);
 }
 # ---------------------------------------------------------------------- #
@@ -133,13 +136,47 @@ sub write_dummies {
 !
 !***********************************************************************
 ";
+#
+# Get the input file, each line is read into $line
+#
     while ( my $line = <SRC> ) {
+#
+# Chop the last character, which is "\n", the new line carrier command. 
+# This effectively turns the input into a serial file. The same would 
+# happen using chomp($line), which is actually a more transparent usage. 
+# The difference between chop() and chomp() is that chomp only deletes the
+# "\n" character, while chop deletes the last character whatever it may be.  
+#
 	  chop($line);
+#
+# Define lout
+#
 	  my $lout = $line;
+#
+# Test the line. If is starts with subroutine, function, or integer followed 
+# by function (why this last thing?). The "^\s*" stuff means 
+#   ^: beggining of line, 
+#   *: zero or more of the last character 
+# So, "/^\s*subroutine/i" in english means "search for a line that starts 
+# with subroutine, ignoring whatever blank spaces between the start of the 
+# line and 'subroutine'" 
+#
 	  if(  $line =~ /^\s*subroutine/i || $line =~ /^\s*function/i ||
           	 $line =~ /^\s*integer\s*function/i ) {
+#
+# Define subname
+#
 	      my $subname;
+#
+# Split line using the null string as separators. Put the pieces into 
+# a "word" array ($ is for scalars, @ for arrays). This means that 
+# for $line="subroutine register_special", we have array[0]="subroutine", 
+# and array[1]="register_special".
+# 
 	      my @words = split " ", $line;
+#
+# Get the name of the subroutine
+#
 	      if( $words[1] =~ /^\s*function/i ) {
 	          ( $subname = $words[2] ) =~ tr/A-Z/a-z/;	#lower case
 	      } else {
@@ -147,12 +184,33 @@ sub write_dummies {
 	      }
 	      $subname =~ s/\s//g;			#remove whitespace
 	      $subname =~ s/\(.*$//;
+#
+# Flag the line for writing if the subroutine is not implemented in
+# the input file. This flag will follow all further lines until another
+# another line starting with "subroutine" or "function" is flagged and 
+# tested....
+#
           $write_line = ! is_implemented($subname);
-	  }
-
+	  }# endif
+#
+# Go printing...
+#
       print OUT "$lout\n" if ($write_line);
-    }
-
+#	  
+# Stop printing if it reaches endsubroutine or endfunction. This fix is needed because 
+# the last subroutine of the dummy file, if flagged (i.e., if not implemented on the 
+# input file), would continue printing until the end of the file. It would then print 
+# the line containing "input XXX_dummies.inc" and "endmodule XXX" onto the XXX_dummies.inc. 
+# This, in turn, causes an infinite loop. 
+#
+	  if ($write_line && ($line =~ /^\s*endsubroutine/i || $line =~ /^s\*function/i)) {
+#
+	      print OUT 
+"!*********************************************************************** \n";
+	      $write_line = 0;
+	  }      # End of if
+    }            # End of while
+#
     close(SRC);
-}
+}                # End of sub
 # End of file mkdummyinc
