@@ -1292,11 +1292,11 @@ subroutine flame_front(f)
 !  Allocate binary diffusion coefficient array
 !
       if (.not.lreloading) then
-     !   if (.not. BinDif_simple) then
+        if (.not. lfix_Sc) then
           allocate(Bin_Diff_coef(mx,my,mz,nchemspec,nchemspec),STAT=stat)
           if (stat>0) call stop_it("Couldn't allocate memory "//&
               "for binary diffusion coefficients") 
-!	endif
+        endif
       endif
 !
       if (tran_exist) then 
@@ -3068,6 +3068,9 @@ subroutine flame_front(f)
           /(Rgas_unit_sys*rho_full*mu1_full)          
       omega="Omega11"
 !      
+
+    if (.not. lfix_Sc) then
+
     if (BinDif_simple) then
         do k=1,nchemspec
           do j=k,nchemspec
@@ -3112,7 +3115,7 @@ subroutine flame_front(f)
         enddo
 
       endif
-!
+     endif
       omega="Omega22"
 
       tmp_local=5./16.*(k_B_cgs/Na/pi)**0.5/(1e-8)**2
