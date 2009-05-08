@@ -706,6 +706,8 @@ subroutine flame_front(f)
 !  Initialize density
 !
       call calc_for_chem_mixture(f)
+
+
       do k=1,mx
         f(k,:,:,ilnrho)&
             =log(init_pressure)-log(Rgas)-f(k,:,:,ilnTT)-log(mu1_full(k,:,:))
@@ -765,7 +767,7 @@ subroutine flame_front(f)
       real, dimension (mx,my,mz,nchemspec) :: species_cond
 !
       intent(in) :: f
-      integer :: k,i,j, j1,j2,j3
+      integer :: k,i,j, j1,j2,j3, mm1,mm2,nn1,nn2
       integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
       real :: T_up, T_mid, T_low, tmp
       real :: mk_mj
@@ -775,6 +777,25 @@ subroutine flame_front(f)
 !
       character (len=20) :: output_file="./data/mix_quant.out"
       integer :: file_id=123,lmid
+
+      if (nygrid==1) then
+       mm1=m1
+       mm2=m2
+      else
+       mm1=1
+       mm2=my
+      endif
+
+      if (nzgrid==1) then
+       nn1=n1
+       nn2=n2
+      else
+       nn1=1
+       nn2=mz
+      endif
+
+
+
 ! 
 ! Density and temperature
 !
@@ -794,8 +815,12 @@ subroutine flame_front(f)
 !
           mu1_full=0.
           do k=1,nchemspec
-            mu1_full(:,:,:)=mu1_full(:,:,:)+unit_mass*f(:,:,:,ichemspec(k)) &
+           do j2=mm1,mm2
+           do j3=nn1,nn2
+            mu1_full(:,j2,j3)=mu1_full(:,j2,j3)+unit_mass*f(:,j2,j3,ichemspec(k)) &
                 /species_constants(k,imass)
+           enddo
+           enddo
           enddo
 
           if (l1step_test) then
@@ -806,8 +831,8 @@ subroutine flame_front(f)
 !  Mole fraction XX
 !
           do k=1,nchemspec 
-           do j2=1,my
-            do j3=1,mz
+           do j2=mm1,mm2
+            do j3=nn1,nn2
 !!$              if (minval(mu1_full(:,j2,j3))<=0) then
 !!$                XX_full(:,j2,j3,k)=0.
 !!$              else
@@ -821,7 +846,12 @@ subroutine flame_front(f)
 ! NILS: Is this really necesarry?
 !
           if (lpencil(i_rho1gpp)) then
-            pp_full=Rgas*mu1_full*rho_full*TT_full
+           do j2=mm1,mm2
+           do j3=nn1,nn2
+            pp_full(:,j2,j3)=Rgas*mu1_full(:,j2,j3) &
+                            *rho_full(:,j2,j3)*TT_full(:,j2,j3)
+           enddo
+           enddo
           endif
 !
 !  Specific heat at constant pressure
@@ -833,8 +863,8 @@ subroutine flame_front(f)
             T_mid=species_constants(k,iTemp2)
             T_up= species_constants(k,iTemp3)
 !
-            do j3=1,mz
-              do j2=1,my
+            do j3=nn1,nn2
+              do j2=mm1,mm2
                 do j1=1,mx
 !
                   if (j1<=l1 .or. j2>=l2) then
@@ -874,14 +904,17 @@ subroutine flame_front(f)
                     call fatal_error('calc_for_chem_mixture',&
                         'TT_full(j1,j2,j3) is outside range')
                   endif
+
+
+                 cp_full(j1,j2,j3)=cp_full(j1,j2,j3)+f(j1,j2,j3,ichemspec(k))  &
+                  *cp_R_spec(j1,j2,j3,k)/species_constants(k,imass)*Rgas
+                 cv_full(j1,j2,j3)=cv_full(j1,j2,j3)+f(j1,j2,j3,ichemspec(k))  &
+                  *cvspec_full(j1,j2,j3,k)/species_constants(k,imass)*Rgas
+
+
                 enddo
               enddo
             enddo
-!
-            cp_full(:,:,:)=cp_full(:,:,:)+f(:,:,:,ichemspec(k))  &
-                *cp_R_spec(:,:,:,k)/species_constants(k,imass)*Rgas
-            cv_full(:,:,:)=cv_full(:,:,:)+f(:,:,:,ichemspec(k))  &
-                *cvspec_full(:,:,:,k)/species_constants(k,imass)*Rgas
 !
           enddo
 
@@ -908,32 +941,45 @@ subroutine flame_front(f)
 !
 !  Viscosity of a mixture
 !
+
+        do j3=nn1,nn2
+        do j2=mm1,mm2
+        do j1=1,mx
+
           if  (lone_spec) then
-            nu_full=species_viscosity(:,:,:,1)/rho_full
+            nu_full(j1,j2,j3)=species_viscosity(j1,j2,j3,1)/rho_full(j1,j2,j3)
           elseif (visc_simple) then
-            nu_dyn=0.
+            nu_dyn(j1,j2,j3)=0.
             do k=1,nchemspec 
-              nu_dyn=nu_dyn+XX_full(:,:,:,k)*species_viscosity(:,:,:,k)
+              nu_dyn(j1,j2,j3)=nu_dyn(j1,j2,j3)+XX_full(j1,j2,j3,k) &
+                              *species_viscosity(j1,j2,j3,k)
             enddo
-            nu_full=nu_dyn/rho_full
+            nu_full(j1,j2,j3)=nu_dyn(j1,j2,j3)/rho_full(j1,j2,j3)
           else 
-            nu_dyn=0.
+            nu_dyn(j1,j2,j3)=0.
             do k=1,nchemspec
-              tmp_sum2=0.
+              tmp_sum2(j1,j2,j3)=0.
               do j=1,nchemspec
                 mk_mj=species_constants(k,imass) &
                     /species_constants(j,imass)
-                nuk_nuj(:,:,:)=species_viscosity(:,:,:,k) &
-                    /species_viscosity(:,:,:,j)
-                Phi(:,:,:)=1./sqrt(8.)*1./sqrt(1.+mk_mj) &
-                    *(1.+sqrt(nuk_nuj)*mk_mj**(-0.25))**2
-                tmp_sum2=tmp_sum2+XX_full(:,:,:,j)*Phi(:,:,:)
+                nuk_nuj(j1,j2,j3)=species_viscosity(j1,j2,j3,k) &
+                    /species_viscosity(j1,j2,j3,j)
+                Phi(j1,j2,j3)=1./sqrt(8.)*1./sqrt(1.+mk_mj) &
+                    *(1.+sqrt(nuk_nuj(j1,j2,j3))*mk_mj**(-0.25))**2
+                tmp_sum2(j1,j2,j3)=tmp_sum2(j1,j2,j3) &
+                                  +XX_full(j1,j2,j3,j)*Phi(j1,j2,j3)
               enddo
-              nu_dyn=nu_dyn+XX_full(:,:,:,k)*&
-                  species_viscosity(:,:,:,k)/tmp_sum2
-            enddo
-              nu_full=nu_dyn/rho_full      
+              nu_dyn(j1,j2,j3)=nu_dyn(j1,j2,j3)+XX_full(j1,j2,j3,k)*&
+                  species_viscosity(j1,j2,j3,k)/tmp_sum2(j1,j2,j3)
+             enddo
+        
+              nu_full(j1,j2,j3)=nu_dyn(j1,j2,j3)/rho_full(j1,j2,j3)      
           endif
+         
+        enddo
+        enddo
+        enddo
+        
 
           if (visc_const<impossible) then
                 nu_full=visc_const
@@ -941,30 +987,38 @@ subroutine flame_front(f)
 !
 !  Diffusion coeffisient of a mixture
 !
+         do j3=nn1,nn2
+         do j2=mm1,mm2
+         do j1=1,mx
+
             if (.not. lone_spec) then
 
              if (diffus_const<impossible) then
-                Diff_full=diffus_const
+                Diff_full(j1,j2,j3,:)=diffus_const
              elseif (lfix_Sc) then
               do k=1,nchemspec 
-               Diff_full(:,:,:,k)=species_viscosity(:,:,:,k)/rho_full/Sc_number
+               Diff_full(j1,j2,j3,k)=species_viscosity(j1,j2,j3,k) &
+                                    /rho_full(j1,j2,j3)/Sc_number
               enddo
              else
               do k=1,nchemspec
-                tmp_sum=0.
+                tmp_sum(j1,j2,j3)=0.
                 do j=1,nchemspec
-                   tmp_sum(:,:,:)=tmp_sum(:,:,:) &
-                        +XX_full(:,:,:,j)/Bin_Diff_coef(:,:,:,j,k)
+                   tmp_sum(j1,j2,j3)=tmp_sum(j1,j2,j3) &
+                        +XX_full(j1,j2,j3,j)/Bin_Diff_coef(j1,j2,j3,j,k)
                 enddo
-                 Diff_full(:,:,:,k)=(1.-f(:,:,:,ichemspec(k)))/tmp_sum
+                 Diff_full(j1,j2,j3,k)=(1.-f(j1,j2,j3,ichemspec(k)))/tmp_sum(j1,j2,j3)
               enddo
              endif
             endif
 
             do k=1,nchemspec 
-              Diff_full_add(:,:,:,k)=Diff_full(:,:,:,k)*&
-                  species_constants(k,imass)/unit_mass*mu1_full(:,:,:)
+              Diff_full_add(j1,j2,j3,k)=Diff_full(j1,j2,j3,k)*&
+                  species_constants(k,imass)/unit_mass*mu1_full(j1,j2,j3)
             enddo
+         enddo
+         enddo
+         enddo
 !
 !
 !  Thermal diffusivity 
@@ -972,30 +1026,44 @@ subroutine flame_front(f)
 !
 ! NB: one should check the coefficient 15/4
 !
-          tmp_sum=0.
-          tmp_sum2=0.
+         do j3=nn1,nn2
+         do j2=mm1,mm2
+         do j1=1,mx
+
+          tmp_sum(j1,j2,j3)=0.
+          tmp_sum2(j1,j2,j3)=0.
 !
           do k=1,nchemspec 
-            species_cond(:,:,:,k)=(species_viscosity(:,:,:,k)) &
+            species_cond(j1,j2,j3,k)=(species_viscosity(j1,j2,j3,k)) &
                 /(species_constants(k,imass)/unit_mass)*Rgas*15./4.! 15./4.
-            tmp_sum=tmp_sum+XX_full(:,:,:,k)*species_cond(:,:,:,k)
-            tmp_sum2=tmp_sum2+XX_full(:,:,:,k)/species_cond(:,:,:,k)
+            tmp_sum(j1,j2,j3)=tmp_sum(j1,j2,j3)  &
+                             +XX_full(j1,j2,j3,k)*species_cond(j1,j2,j3,k)
+            tmp_sum2(j1,j2,j3)=tmp_sum2(j1,j2,j3) &
+                             +XX_full(j1,j2,j3,k)/species_cond(j1,j2,j3,k)
           enddo
-!
+         enddo
+         enddo
+         enddo
 
-          do j2=1,my
-          do j3=1,mz
-           if (minval(tmp_sum2(:,j2,j3))<=0.) then
-            lambda_full(:,j2,j3)=0.
+          do j1=1,mx
+          do j2=mm1,mm2
+          do j3=nn1,nn2
+           if ((tmp_sum2(j1,j2,j3))<=0.) then
+            lambda_full(j1,j2,j3)=0.
            else
-            lambda_full(:,j2,j3)=0.5*(tmp_sum(:,j2,j3)+1./tmp_sum2(:,j2,j3))
+            lambda_full(j1,j2,j3)=0.5*(tmp_sum(j1,j2,j3)+1./tmp_sum2(j1,j2,j3))
            endif
+
+           if (lambda_const<impossible) then
+            lambda_full(j1,j2,j3)=lambda_const
+           endif
+
+
+          enddo
           enddo
           enddo
  
-          if (lambda_const<impossible) then
-            lambda_full=lambda_const
-          endif
+         
 !
 !  Dimensionless Standard-state molar enthalpy H0/RT
 !
@@ -1005,51 +1073,80 @@ subroutine flame_front(f)
             T_up= species_constants(k,iTemp3)
             do j3=n1,n2
               do j2=m1,m2
-                do i=l1,l2
-                  if (TT_full(i,j2,j3) <= T_mid) then
+                do j1=l1,l2
+                  if (TT_full(j1,j2,j3) <= T_mid) then
                     tmp=0. 
                     do j=1,5
-                      tmp=tmp+species_constants(k,iaa2(j))*TT_full(i,j2,j3)**(j-1)/j 
+                      tmp=tmp+species_constants(k,iaa2(j))*TT_full(j1,j2,j3)**(j-1)/j 
                     enddo
-                    H0_RT(i,j2,j3,k)=tmp+species_constants(k,iaa2(6))/TT_full(i,j2,j3)
+                    H0_RT(j1,j2,j3,k)=tmp+species_constants(k,iaa2(6))/TT_full(j1,j2,j3)
                   else               
                     tmp=0. 
                     do j=1,5
-                      tmp=tmp+species_constants(k,iaa1(j))*TT_full(i,j2,j3)**(j-1)/j 
+                      tmp=tmp+species_constants(k,iaa1(j))*TT_full(j1,j2,j3)**(j-1)/j 
                     enddo
-                    H0_RT(i,j2,j3,k)=tmp+species_constants(k,iaa1(6))/TT_full(i,j2,j3)
+                    H0_RT(j1,j2,j3,k)=tmp+species_constants(k,iaa1(6))/TT_full(j1,j2,j3)
                   endif
                 enddo
               enddo
             enddo
           enddo
+
+!................................................
 !
 !  Enthalpy flux
 !
-          hYrho_full=0.       
+
+        do j3=nn1,nn2
+        do j2=mm1,mm2
+        do j1=1,mx
+
+          hYrho_full(j1,j2,j3)=0.       
           do k=1,nchemspec
-            hYrho_full(l1:l2,m1:m2,n1:n2)=hYrho_full(l1:l2,m1:m2,n1:n2)&
-                +H0_RT(l1:l2,m1:m2,n1:n2,k)&
-                *Rgas*TT_full(l1:l2,m1:m2,n1:n2)&
-                *f(l1:l2,m1:m2,n1:n2,ichemspec(k))/species_constants(k,imass)
-          enddo
-!
-! Also the values at the ghost zones are required for hYrho_full
-!
-          do i=1,nghost
-            hYrho_full(i,:,:)=hYrho_full(l1,:,:)
-            hYrho_full(l2+i,:,:)=hYrho_full(l2,:,:)
-            hYrho_full(:,i,:)=hYrho_full(:,m1,:)
-            hYrho_full(:,m2+i,:)=hYrho_full(:,m2,:)
-            hYrho_full(:,:,i)=hYrho_full(:,:,n1)
-            hYrho_full(:,:,n2+i)=hYrho_full(:,:,n2)
+            hYrho_full(j1,j2,j3)=hYrho_full(j1,j2,j3)&
+               +H0_RT(j1,j2,j3,k)*Rgas*TT_full(j1,j2,j3)&
+               *f(j1,j2,j3,ichemspec(k))/species_constants(k,imass)
           enddo
 !
 !  Internal energy
 !
-          e_int_full=hYrho_full-Rgas*TT_full*mu1_full
-          hYrho_full=hYrho_full*rho_full
+          e_int_full(j1,j2,j3)=hYrho_full(j1,j2,j3) &
+                    -Rgas*TT_full(j1,j2,j3)*mu1_full(j1,j2,j3)
+          hYrho_full(j1,j2,j3)=hYrho_full(j1,j2,j3)*rho_full(j1,j2,j3)
+        enddo
+        enddo
+        enddo
+
 !
+!.......................................................
+!................................................
+!  Enthalpy flux
+!
+   !       hYrho_full=0.       
+   !       do k=1,nchemspec
+   !         hYrho_full(l1:l2,m1:m2,n1:n2)=hYrho_full(l1:l2,m1:m2,n1:n2)&
+   !             +H0_RT(l1:l2,m1:m2,n1:n2,k)&
+   !             *Rgas*TT_full(l1:l2,m1:m2,n1:n2)&
+   !             *f(l1:l2,m1:m2,n1:n2,ichemspec(k))/species_constants(k,imass)
+   !       enddo
+!
+! Also the values at the ghost zones are required for hYrho_full
+!
+   !       do i=1,nghost
+   !         hYrho_full(i,:,:)=hYrho_full(l1,:,:)
+   !         hYrho_full(l2+i,:,:)=hYrho_full(l2,:,:)
+   !         hYrho_full(:,i,:)=hYrho_full(:,m1,:)
+   !         hYrho_full(:,m2+i,:)=hYrho_full(:,m2,:)
+   !         hYrho_full(:,:,i)=hYrho_full(:,:,n1)
+   !         hYrho_full(:,:,n2+i)=hYrho_full(:,:,n2)
+   !       enddo
+!
+!  Internal energy
+!
+    !      e_int_full=hYrho_full-Rgas*TT_full*mu1_full
+    !      hYrho_full=hYrho_full*rho_full
+!
+!.......................................................
 
 !!$if (lroot) then
 !!$lmid=(l2-l1)/2+l1
@@ -1515,7 +1612,6 @@ subroutine flame_front(f)
        endif
 !
         call dot_mn(p%ghYrho,p%uu,ghYrho_uu)
-
 !
 
         if (l1step_test) then
@@ -3139,14 +3235,16 @@ subroutine flame_front(f)
                    -3.99489493E-2*lnTk*lnTk*lnTk+8.98483088E-3*lnTk**4 &
                   +7.00167217E-4*lnTk**5-3.82733808E-4*lnTk**6+2.97208112E-5*lnTk**7)
 
-          species_viscosity(:,:,:,k)=TT_full**0.5*(Omega_kl)*tmp_local2/(unit_mass/unit_length/unit_time)
+          species_viscosity(:,:,:,k)=TT_full**0.5*(Omega_kl)*tmp_local2 &
+                                     /(unit_mass/unit_length/unit_time)
         else
          delta_st=tran_data(k,4)**2/2./tran_data(k,2)/&
           (tran_data(k,3))**3*(1e-8**3)
 !
          call calc_collision_integral(omega,lnTk,Omega_kl)
-        species_viscosity(:,:,:,k)=TT_full**0.5/(Omega_kl+0.2*delta_st/(TT_full/tran_data(k,2)))*tmp_local2 &
-             /(unit_mass/unit_length/unit_time)
+        species_viscosity(:,:,:,k)=TT_full**0.5/(Omega_kl &
+                                  +0.2*delta_st/(TT_full/tran_data(k,2)))*tmp_local2 &
+                                   /(unit_mass/unit_length/unit_time)
         endif
       enddo
 !
