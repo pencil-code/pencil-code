@@ -73,6 +73,11 @@ module Sub
     module procedure grad_other  ! grad of another field (mx,my,mz)
   endinterface
 !
+  interface del2                 ! Overload the `del2' function
+    module procedure del2_main   
+    module procedure del2_other  
+  endinterface
+!
   interface notanumber          ! Overload the `notanumber' function
     module procedure notanumber_0
     module procedure notanumber_1
@@ -1389,7 +1394,7 @@ module Sub
 !
     endsubroutine curli
 !***********************************************************************
-    subroutine del2(f,k,del2f)
+    subroutine del2_main(f,k,del2f)
 !
 !  calculate del2 of a scalar, get scalar
 !  12-sep-97/axel: coded
@@ -1422,7 +1427,41 @@ module Sub
        del2f=del2f+cotth(m)*r1_mn*tmp
      endif
 !
-    endsubroutine del2
+   endsubroutine del2_main
+!***********************************************************************
+    subroutine del2_other(f,del2f)
+!
+!  calculate del2 of a scalar, get scalar
+!   8-may-09/nils: adapted from del2
+!
+      use Deriv, only: der,der2
+      use Mpicomm, only: stop_it
+!
+      intent(in) :: f
+      intent(out) :: del2f
+!
+      real, dimension (mx,my,mz) :: f
+      real, dimension (nx) :: del2f,d2fdx,d2fdy,d2fdz,tmp
+      integer :: k
+!
+      call der2(f,d2fdx,1)
+      call der2(f,d2fdy,2)
+      call der2(f,d2fdz,3)
+      del2f=d2fdx+d2fdy+d2fdz
+!
+      if (lcylindrical_coords) then
+        call der(f,tmp,1)
+        del2f=del2f+tmp*rcyl_mn1
+      endif
+!
+     if (lspherical_coords) then
+       call der(f,tmp,1)
+       del2f=del2f+2.*r1_mn*tmp
+       call der(f,tmp,2)
+       del2f=del2f+cotth(m)*r1_mn*tmp
+     endif
+!
+   endsubroutine del2_other
 !***********************************************************************
     subroutine del2v(f,k,del2f,fij,pff)
 !
