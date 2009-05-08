@@ -1259,9 +1259,17 @@ subroutine flame_front(f)
             do n=1,mz
               kreactions_z(n,j)=1./cosh(z(n)/kreactions_profile_width(j))**2
             enddo
+          elseif (kreactions_profile(j)=='square') then
+            do n=1,mz
+              if (n < mz/2) then
+                kreactions_z(n,j)=kreactions_profile_width(j)
+              else 
+                kreactions_z(n,j)=0.
+              endif
+            enddo
           elseif (kreactions_profile(j)=='sin') then
             do n=1,mz
-              kreactions_z(n,j)=sin((z(n)-xyz0(3))/kreactions_profile_width(j))
+              kreactions_z(n,j)=0.5*(1+cos(pi*(z(n)-xyz0(3))/kreactions_profile_width(j)))
             enddo
           endif
         enddo
@@ -3137,7 +3145,8 @@ subroutine flame_front(f)
           (tran_data(k,3))**3*(1e-8**3)
 !
          call calc_collision_integral(omega,lnTk,Omega_kl)
-        species_viscosity(:,:,:,k)=TT_full**0.5/(Omega_kl+0.2*delta_st/(TT_full/tran_data(k,2)))*tmp_local2 /(unit_mass/unit_length/unit_time)
+        species_viscosity(:,:,:,k)=TT_full**0.5/(Omega_kl+0.2*delta_st/(TT_full/tran_data(k,2)))*tmp_local2 &
+             /(unit_mass/unit_length/unit_time)
         endif
       enddo
 !
