@@ -105,6 +105,7 @@ module Chiral
       use Mpicomm
       use Sub
       use Initcond
+      use InitialCondition, only: initial_condition_chiral
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -147,6 +148,10 @@ module Chiral
         case('cosx_cosy_cosz'); call cosx_cosy_cosz(amplYY_chiral,f,iYY_chiral,kx_YY_chiral,ky_YY_chiral,kz_YY_chiral)
         case default; call stop_it('init_chiral: bad init_chiral='//trim(initYY_chiral))
       endselect
+!
+!  Interface for user's own initial condition
+!
+      if (linitial_condition) call initial_condition_chiral(f)
 !
     endsubroutine init_chiral
 !***********************************************************************

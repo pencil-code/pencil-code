@@ -827,6 +827,7 @@ module Magnetic
       use FArrayManager
       use Gravity, only: gravz, z1, z2
       use Initcond
+      use InitialCondition, only: initial_condition_aa
       use Mpicomm
       use SharedVariables
       use Sub
@@ -1087,6 +1088,10 @@ module Magnetic
 !  End loop over initial conditions
 !
       enddo
+!
+!  Interface for user's own initial condition
+!
+      if (linitial_condition) call initial_condition_aa(f)
 !
 !  allow for pressure equilibrium (for isothermal tube)
 !  assume that ghost zones have already been set.

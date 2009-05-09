@@ -219,6 +219,7 @@ module NeutralVelocity
       use General
       use Gravity, only: grav_const,z1
       use Initcond
+      use InitialCondition, only: initial_condition_uun
       use Mpicomm, only: stop_it
       use Sub
 !
@@ -262,6 +263,10 @@ module NeutralVelocity
 !  End loop over initial conditions
 !
       enddo
+!
+!  Interface for user's own initial condition
+!
+      if (linitial_condition) call initial_condition_uun(f)
 !
     endsubroutine init_uun
 !***********************************************************************

@@ -266,6 +266,7 @@ module Testflow
       use Mpicomm
       use Initcond
       use Sub
+      use InitialCondition, only: initial_condition_uutest
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !     real, dimension (nx,3) :: bb
@@ -298,6 +299,10 @@ module Testflow
 
       endselect
       enddo
+!
+!  Interface for user's own initial condition
+!
+      if (linitial_condition) call initial_condition_uutest(f)
 !
     endsubroutine init_uutest
 !***********************************************************************

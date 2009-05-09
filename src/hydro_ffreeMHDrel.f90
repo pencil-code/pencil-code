@@ -125,6 +125,7 @@ module Hydro
       use General
       use Gravity
       use Initcond
+      use InitialCondition, only: initial_condition_uu
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: kabs,crit
@@ -284,7 +285,10 @@ module Hydro
         call stop_it("")
 
       endselect
-
+!
+!  Interface for user's own initial condition
+!
+      if (linitial_condition) call initial_condition_uu(f)
 !
 !  This allows an extra random velocity perturbation on
 !  top of the initialization so far.

@@ -688,6 +688,7 @@ module Entropy
       use Gravity
       use General, only: chn
       use Initcond
+      use InitialCondition, only: initial_condition_ss
       use EquationOfState,  only: mpoly, isothtop, &
                                 mpoly0, mpoly1, mpoly2, cs2cool, cs0, &
                                 rho0, lnrho0, isothermal_entropy, &
@@ -1017,6 +1018,10 @@ module Entropy
         call fatal_error('init_ss',errormsg)
 
       endselect
+!
+!  Interface fow user's own initial condition
+!
+      if (linitial_condition) call initial_condition_ss(f)
 !
 !  Replace ss by lnTT when pretend_lnTT is true.
 !

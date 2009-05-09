@@ -252,6 +252,7 @@ module Entropy
       use Gravity
       use General, only: chn
       use Initcond
+      use InitialCondition, only: initial_condition_ss
       use EquationOfState,  only: mpoly, isothtop, &
                                 rho0, lnrho0, isothermal_entropy, &
                                 isothermal_lnrho_ss, eoscalc, ilnrho_pp
@@ -292,6 +293,10 @@ module Entropy
         endif
 !
       enddo
+!
+!  Interface for user's own initial condition
+!
+      if (linitial_condition) call initial_condition_ss(f)
 !
     endsubroutine init_ss
 !***********************************************************************

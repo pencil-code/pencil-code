@@ -87,6 +87,7 @@ module Solid_Cells
       use Cdata
       use Sub
       use Initcond
+      use InitialCondition, only: initial_condition_solid_cells
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       integer, pointer :: iglobal_cs2,iglobal_glnTT
@@ -232,6 +233,10 @@ f(:,m2-5:m2,:,iux)=0
         call fatal_error('init_solid_cells','')
       endselect
     enddo
+!
+!  Interface for user's own initial condition
+!
+    if (linitial_condition) call initial_condition_solid_cells
 !
     endsubroutine init_solid_cells
 !***********************************************************************  

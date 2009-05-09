@@ -185,6 +185,7 @@ module Entropy
       use General, only: chn
       use Sub, only: blob
       use Initcond, only: jump
+      use InitialCondition, only: initial_condition_ss
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
 !
@@ -193,53 +194,57 @@ module Entropy
 !
       do j=1,ninit
 !
-      if (initlnTT(j)/='nothing') then
+        if (initlnTT(j)/='nothing') then
 !
-      lnothing=.false.
+          lnothing=.false.
 
-      call chn(j,iinit_str)
+          call chn(j,iinit_str)
 !
 !  select different initial conditions
 !
-      select case(initlnTT(j))
+          select case(initlnTT(j))
 
-        case('zero', '0'); f(:,:,:,ilnTT) = 0.
-        case('const_lnTT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+lnTT_const
-        case('const_TT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+log(TT_const)
-        case('blob'); call blob(ampl_lnTT,f,ilnTT,radius_lnTT,0.,0.,0.)
-        case('xwave')
-          do n=n1,n2; do m=m1,m2
-            f(l1:l2,m,n,ilnTT)=f(l1:l2,m,n,ilnTT)+ampl_lnTT*sin(kx_lnTT*x(l1:l2))
-          enddo; enddo
-        case('ywave')
-          do n=n1,n2; do m=m1,m2
-            f(l1:l2,m,n,ilnTT)=f(l1:l2,m,n,ilnTT)+ampl_lnTT*sin(ky_lnTT*y(m))
-          enddo; enddo
-        case('zwave')
-          do n=n1,n2; do m=m1,m2
-            f(l1:l2,m,n,ilnTT)=f(l1:l2,m,n,ilnTT)+ampl_lnTT*sin(kz_lnTT*z(n))
-          enddo; enddo
-        case('xjump'); call jump(f,ilnTT,lnTT_left,lnTT_right,widthlnTT,'x')
-        case('yjump'); call jump(f,ilnTT,lnTT_left,lnTT_right,widthlnTT,'y')
-        case('zjump'); call jump(f,ilnTT,lnTT_left,lnTT_right,widthlnTT,'z')
+          case('zero', '0'); f(:,:,:,ilnTT) = 0.
+          case('const_lnTT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+lnTT_const
+          case('const_TT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+log(TT_const)
+          case('blob'); call blob(ampl_lnTT,f,ilnTT,radius_lnTT,0.,0.,0.)
+          case('xwave')
+            do n=n1,n2; do m=m1,m2
+              f(l1:l2,m,n,ilnTT)=f(l1:l2,m,n,ilnTT)+ampl_lnTT*sin(kx_lnTT*x(l1:l2))
+            enddo; enddo
+          case('ywave')
+            do n=n1,n2; do m=m1,m2
+              f(l1:l2,m,n,ilnTT)=f(l1:l2,m,n,ilnTT)+ampl_lnTT*sin(ky_lnTT*y(m))
+            enddo; enddo
+          case('zwave')
+            do n=n1,n2; do m=m1,m2
+              f(l1:l2,m,n,ilnTT)=f(l1:l2,m,n,ilnTT)+ampl_lnTT*sin(kz_lnTT*z(n))
+            enddo; enddo
+          case('xjump'); call jump(f,ilnTT,lnTT_left,lnTT_right,widthlnTT,'x')
+          case('yjump'); call jump(f,ilnTT,lnTT_left,lnTT_right,widthlnTT,'y')
+          case('zjump'); call jump(f,ilnTT,lnTT_left,lnTT_right,widthlnTT,'z')
 !
-        case default
+          case default
 !
 !  Catch unknown values
 !
-          write(unit=errormsg,fmt=*) 'No such value for initss(' &
-                           //trim(iinit_str)//'): ',trim(initlnTT(j))
-          call fatal_error('init_ss',errormsg)
+            write(unit=errormsg,fmt=*) 'No such value for initss(' &
+                //trim(iinit_str)//'): ',trim(initlnTT(j))
+            call fatal_error('init_ss',errormsg)
 
-      endselect
+          endselect
 
-      if (lroot) print*,'init_ss: initss(' &
-                        //trim(iinit_str)//') = ',trim(initlnTT(j))
+          if (lroot) print*,'init_ss: initss(' &
+              //trim(iinit_str)//') = ',trim(initlnTT(j))
 
-      endif
+        endif
 
       enddo
-
+!
+!  Interface for user's own initial condition
+!
+      if (linitial_condition) call initial_condition_ss(f)
+!
       if (lnothing.and.lroot) print*,'init_ss: nothing'
 !
     endsubroutine init_ss

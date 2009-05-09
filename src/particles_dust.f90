@@ -537,6 +537,8 @@ module Particles
       use General, only: random_number_wrapper
       use Mpicomm, only: stop_it, mpireduce_sum_scl
       use Sub
+      use InitialCondition, only: initial_condition_xxp,&
+                                  initial_condition_vvp
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
@@ -917,6 +919,11 @@ k_loop:   do while (.not. (k>npar_loc))
 
       enddo ! do j=1,ninit
 !
+!  Interface for user's own initial condition for position
+!
+
+      if (linitial_condition) call initial_condition_xxp(f,fp)
+!
 !  Particles are not allowed to be present in non-existing dimensions.
 !  This would give huge problems with interpolation later.
 !
@@ -1164,6 +1171,10 @@ k_loop:   do while (.not. (k>npar_loc))
         endselect
 !
       enddo ! do j=1,ninit
+!
+!  Interface for user's own initial condition
+!
+      if (linitial_condition) call initial_condition_xxp(f,fp)
 !
 !  Map particle velocity on the grid.
 !

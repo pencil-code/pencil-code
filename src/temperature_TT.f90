@@ -229,51 +229,57 @@ module Entropy
       use General,  only: chn
       use Sub,      only: blob
       use Initcond, only: jump
+      use InitialCondition, only: initial_condition_ss
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       logical :: lnothing=.true.
 !
       do j=1,ninit
 !
-      if (initlnTT(j)/='nothing') then
+        if (initlnTT(j)/='nothing') then
 !
-      lnothing=.false.
+          lnothing=.false.
 
-      call chn(j,iinit_str)
+          call chn(j,iinit_str)
 !
 !  select different initial conditions
 !
-      select case(initlnTT(j))
-      case('zero', '0'); f(:,:,:,ilnTT) = 0.
-      case('const_lnTT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+lnTT_const
-      case('const_TT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+log(TT_const)
-      case('single_polytrope'); call single_polytrope(f)
-      case('rad_equil')
-          call rad_equil(f)
-          if (ampl_lnTT.ne.0.) then
-            print*,'add a bubble with:',ampl_lnTT,radius_lnTT,center1_x,center1_y,center1_z
+          select case(initlnTT(j))
+          case('zero', '0'); f(:,:,:,ilnTT) = 0.
+          case('const_lnTT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+lnTT_const
+          case('const_TT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+log(TT_const)
+          case('single_polytrope'); call single_polytrope(f)
+          case('rad_equil')
+            call rad_equil(f)
+            if (ampl_lnTT.ne.0.) then
+              print*,'add a bubble with:',ampl_lnTT,radius_lnTT,center1_x,center1_y,center1_z
+              call blob(ampl_lnTT,f,ilnTT,radius_lnTT,center1_x,center1_y,center1_z)
+              call blob(-ampl_lnTT,f,ilnrho,radius_lnTT,center1_x,center1_y,center1_z)
+            endif
+          case('bubble_hs')
+!         print*,'init_lnTT: put bubble in hydrostatic equilibrium: radius_lnTT,ampl_lnTT=',radius_lnTT,ampl_lnTT,center1_x,center1_y,center1_z
             call blob(ampl_lnTT,f,ilnTT,radius_lnTT,center1_x,center1_y,center1_z)
             call blob(-ampl_lnTT,f,ilnrho,radius_lnTT,center1_x,center1_y,center1_z)
-          endif
-      case('bubble_hs')
-!         print*,'init_lnTT: put bubble in hydrostatic equilibrium: radius_lnTT,ampl_lnTT=',radius_lnTT,ampl_lnTT,center1_x,center1_y,center1_z
-          call blob(ampl_lnTT,f,ilnTT,radius_lnTT,center1_x,center1_y,center1_z)
-          call blob(-ampl_lnTT,f,ilnrho,radius_lnTT,center1_x,center1_y,center1_z)
-         !
-        case default
+!
+          case default
           !
           !  Catch unknown values
           !
-          write(unit=errormsg,fmt=*) 'No such value for init_TT(' &
-                           //trim(iinit_str)//'): ',trim(initlnTT(j))
-          call fatal_error('init_TT',errormsg)
+            write(unit=errormsg,fmt=*) 'No such value for init_TT(' &
+                //trim(iinit_str)//'): ',trim(initlnTT(j))
+            call fatal_error('init_TT',errormsg)
 
-      endselect
+          endselect
 
-      if (lroot) print*,'init_TT: init_TT(' &
-                        //trim(iinit_str)//') = ',trim(initlnTT(j))
-      endif
+          if (lroot) print*,'init_TT: init_TT(' &
+              //trim(iinit_str)//') = ',trim(initlnTT(j))
+        endif
       enddo
+!
+!  Interface for user's own initial condition
+!
+      if (linitial_condition) call initial_condition_ss(f)
+!
       if (lnothing.and.lroot) print*,'init_ss: nothing'
 !
     endsubroutine init_ss

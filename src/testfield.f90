@@ -182,6 +182,7 @@ module Testfield
       use Gravity, only: gravz
       use Sub
       use Initcond
+      use InitialCondition, only: initial_condition_aatest
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: bb
@@ -200,6 +201,10 @@ module Testfield
         call stop_it("")
 
       endselect
+!
+!  Interface for user's own subroutine
+!
+      if (linitial_condition) call initial_condition_aatest(f)
 !
     endsubroutine init_aatest
 !***********************************************************************

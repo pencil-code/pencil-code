@@ -43,6 +43,7 @@ module Param_IO
   use Shock
   use Messages
   use Solid_Cells
+  use InitialCondition
 
   implicit none
 
@@ -347,6 +348,10 @@ module Param_IO
       if (ierr.ne.0) call sample_startpars('special_init_pars',ierr)
 
       call sgi_fix(lsgifix,1,'start.in')
+      call read_initial_condition_init_pars(1,IOSTAT=ierr)
+      if (ierr.ne.0) call sample_startpars('initial_condition_init_pars',ierr)
+
+      call sgi_fix(lsgifix,1,'start.in')
       call read_particles_init_pars_wrap(1,IOSTAT=ierr)
       if (ierr.ne.0) call sample_startpars('particles_init_pars_wrap',ierr)
 
@@ -475,6 +480,7 @@ module Param_IO
         !if (lshock       ) print*,'&shock_init_pars          /'
         ! no input parameters for viscosity
         if (lsolid_cells        ) print*,'&solid_cells_init_pars         /'
+        if (linitial_condition  ) print*,'&initial_condition_init_pars   /'
         print*,'------END sample namelist -------'
         print*
         if (present(label))  print*, 'Found error in input namelist "' // trim(label)
@@ -541,6 +547,7 @@ module Param_IO
         call write_particles_init_pars_wrap(unit)
         call write_shock_init_pars(unit)
         call write_solid_cells_init_pars(unit)
+        call write_initial_condition_init_pars(unit)
 !
         if (present(file)) then
           close(unit)
@@ -1038,7 +1045,7 @@ module Param_IO
            ltestscalar_var, ltestfield_var, ltestflow_var, &
            lhydro_var, lentropy_var, ldensity_var, lshock_var, &
            lcosmicray_var, lcosmicrayflux_var, linterstellar_var, &
-           datadir
+           linitial_condition,datadir
 !
       logical :: lhydro         = lhydro_var
       logical :: ldensity       = ldensity_var
@@ -1108,6 +1115,7 @@ module Param_IO
         call write_particles_init_pars_wrap(1)
         call write_shock_init_pars(1)
         call write_solid_cells_init_pars(1)
+        call write_initial_condition_init_pars(1)
         ! The following parameters need to be communicated to IDL
         write(1,NML=lphysics              )
         close(1)
@@ -1160,6 +1168,7 @@ module Param_IO
         call read_particles_init_pars_wrap(1)
         call read_shock_init_pars(1)
         call read_solid_cells_init_pars(1)
+        call read_initial_condition_init_pars(1)
         close(1)
 !
       if (lroot.and.ip<14) then
@@ -1249,6 +1258,6 @@ module Param_IO
      endif
 !
    endsubroutine write_pencil_info
-!
+!***********************************************************************
 endmodule Param_IO
 

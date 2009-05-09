@@ -366,6 +366,7 @@ module Density
       use Mpicomm
       use Selfgravity, only: rhs_poisson_const
       use Sub
+      use InitialCondition, only: initial_condition_lnrho
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !      
@@ -915,6 +916,10 @@ module Density
             trim(initlnrho(j))
 !
       enddo  ! End loop over initial conditions.
+!
+!  Interface for user's own initial condition
+!
+      if (linitial_condition) call initial_condition_lnrho(f)
 !
       if (lnothing.and.lroot) print*,'init_lnrho: nothing'
 !

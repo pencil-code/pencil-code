@@ -248,6 +248,7 @@ module Dustdensity
       use IO
       use Mpicomm
       use Selfgravity, only: rhs_poisson_const
+      use InitialCondition, only: initial_condition_nd
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -461,6 +462,10 @@ module Dustdensity
 !  End loop over initial conditions
 !
       enddo
+!
+!  Interface for user's own initial condition
+!
+      if (linitial_condition) call initial_condition_nd(f)
 !
 !  Initialize grain masses
 !

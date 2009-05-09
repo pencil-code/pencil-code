@@ -408,6 +408,7 @@ module Testfield
       use Mpicomm
       use Initcond
       use Sub
+      use InitialCondition, only: initial_condition_aatest
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: bb
@@ -445,6 +446,10 @@ module Testfield
 
       endselect
       enddo
+!
+!  Interface for user's own subroutine
+!
+      if (linitial_condition) call initial_condition_aatest(f)
 !
     endsubroutine init_aatest
 !***********************************************************************

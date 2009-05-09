@@ -1,7 +1,7 @@
 ! $Id$
 
 !  This module is used both for the initial condition and during run time.
-!  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
+!  It contains dlnrhon_dt and init_lnrhon, among other auxiliary routines.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -275,6 +275,7 @@ module NeutralDensity
                           lnumerical_equilibrium
       use Selfgravity,only: rhs_poisson_const
       use Initcond
+      use InitialCondition, only: initial_condition_lnrhon
       use IO
       use Mpicomm
       use Sub
@@ -351,7 +352,11 @@ module NeutralDensity
          endif
          
       enddo
-
+!
+!  Interface for user's own initial conditon
+!
+      if (linitial_condition) call initial_condition_lnrhon(f)
+!
       if (lnothing.and.lroot) print*,'init_lnrhon: nothing'
 !
 !  If unlogarithmic density considered, take exp of lnrhon resulting from

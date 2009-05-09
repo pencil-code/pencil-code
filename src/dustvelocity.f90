@@ -382,6 +382,7 @@ module Dustvelocity
       use Sub
       use Gravity
       use Initcond
+      use InitialCondition, only: initial_condition_uud
       use EquationOfState, only: pressure_gradient,cs20
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -656,6 +657,10 @@ module Dustvelocity
 !  End loop over initial conditions
 !
       enddo
+!
+!  Interface for user's own initial condition
+!
+      if (linitial_condition) call initial_condition_uud(f)
 !
     endsubroutine init_uud
 !***********************************************************************

@@ -122,6 +122,7 @@ module Cosmicray
       use Mpicomm
       use Sub
       use Initcond
+      use InitialCondition, only: initial_condition_ecr
 !
       real, dimension (mx,my,mz,mfarray) :: f
 print*,"init_ecr: ecr_const,ln(ecr_const) = ", ecr_const, alog(ecr_const)
@@ -164,6 +165,11 @@ print*,"init_ecr: initecr = ", initecr
 !  form lnecr from initecr
 !
 !         f(:,:,:,iecr)=alog(f(:,:,:,iecr))
+!
+!  Interface for user's own initial condition
+!
+      if (linitial_condition) call initial_condition_ecr(f)
+!
     endsubroutine init_ecr
 !***********************************************************************
     subroutine pencil_criteria_cosmicray()

@@ -138,6 +138,7 @@ module Pscalar
       use Mpicomm
       use Sub
       use Initcond
+      use InitialCondition, only: initial_condition_lncc
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -171,6 +172,10 @@ module Pscalar
       select case(initlncc2)
         case('wave-x'); call wave(ampllncc2,f,ilncc,ky=5.)
       endselect
+!
+!  Interface for user's own initial condition
+!
+      if (linitial_condition) call initial_condition_lncc(f)
 !
 !  add floor value if cc_min is set
 !

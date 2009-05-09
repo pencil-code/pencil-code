@@ -127,6 +127,7 @@ module Cosmicray
       use Mpicomm
       use Sub
       use Initcond
+      use InitialCondition, only: initial_condition_ecr
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -164,6 +165,10 @@ module Cosmicray
         case('constant'); f(:,:,:,iecr)=f(:,:,:,iecr)+ecr_const
         case('blob2'); call blob(amplecr,f,iecr,radius_ecr,x_pos_cr2,y_pos_cr2,0.)
       endselect
+!
+!  Interface for user's own initial condition
+!
+      if (linitial_condition) call initial_condition_ecr(f)
 !
     endsubroutine init_ecr
 !***********************************************************************

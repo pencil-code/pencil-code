@@ -359,6 +359,7 @@ module Entropy
       use General,  only: chn
       use Sub,      only: blob
       use Initcond, only: jump
+      use InitialCondition, only initial_condition_ss
       use EquationOfState, only: gamma, gamma1, cs2bot, cs2top, cs20, &
                                  lnrho0, get_cp1
       use Gravity, only: gravz
@@ -372,86 +373,91 @@ module Entropy
 !
       do j=1,ninit
 !
-      if (initlnTT(j)/='nothing') then
+        if (initlnTT(j)/='nothing') then
 !
-      lnothing=.false.
+          lnothing=.false.
 
-      call chn(j,iinit_str)
+          call chn(j,iinit_str)
 !
 !  select different initial conditions
 !
-      select case(initlnTT(j))
-        case('zero', '0'); f(:,:,:,ilnTT) = 0.
+          select case(initlnTT(j))
+          case('zero', '0'); f(:,:,:,ilnTT) = 0.
 !
-        case('const_lnTT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+lnTT_const
+          case('const_lnTT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+lnTT_const
 !
-        case('const_TT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+log(TT_const)
+          case('const_TT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+log(TT_const)
 !
-        case('single_polytrope'); call single_polytrope(f)
+          case('single_polytrope'); call single_polytrope(f)
 !
-        case('gaussian')
-          do n=n1,n2
-            f(l1:l2,4,n,ilnTT)=exp(-(x(l1:l2)/radius_lnTT)**2)* &
-                   exp(-((z(n)-0.5)/radius_lnTT)**2)
-          enddo
-          cs2bot=gamma1*f(l1,4,n1,ilnTT)
-          cs2top=gamma1*f(l1,4,n2,ilnTT)
+          case('gaussian')
+            do n=n1,n2
+              f(l1:l2,4,n,ilnTT)=exp(-(x(l1:l2)/radius_lnTT)**2)* &
+                  exp(-((z(n)-0.5)/radius_lnTT)**2)
+            enddo
+            cs2bot=gamma1*f(l1,4,n1,ilnTT)
+            cs2top=gamma1*f(l1,4,n2,ilnTT)
 !
-        case('rad_equil')
-          call rad_equil(f)
+          case('rad_equil')
+            call rad_equil(f)
 !
-        case('blob_hs')
-        if (lroot) print*, 'init_lnTT: hydrostatic blob with ', &
-               radius_lnTT, ampl_lnTT, center1_x, center1_y, center1_z
+          case('blob_hs')
+            if (lroot) print*, 'init_lnTT: hydrostatic blob with ', &
+                radius_lnTT, ampl_lnTT, center1_x, center1_y, center1_z
             call blob(ampl_lnTT,f,ilnTT,radius_lnTT,center1_x,center1_y,center1_z)
             call blob(-ampl_lnTT,f,ilnrho,radius_lnTT,center1_x,center1_y,center1_z)
 !
-        case('isothermal')
-          if (lroot) print*, 'init_lnTT: isothermal atmosphere'
-          if (ltemperature_nolog) then
-            f(:,:,:,ilnTT)=cs20/gamma1
-          else
-            f(:,:,:,ilnTT)=log(cs20/gamma1)
-          endif
-          haut=-cs20/gamma/gravz
-          do n=n1,n2
-            f(:,:,n,ilnrho)=lnrho0+(1.-z(n))/haut
-          enddo
-!
-        case('hydro_rad')
-          if (lroot) print*, 'init_lnTT: hydrostatic+radiative equilibria'
-          if (Fbot==impossible .or. hcond0==impossible) &
-            call stop_it("initialize_lnTT: Fbot or hcond0 not initialized")
-          call get_cp1(cp1)
-          Rgas=(1.-1./gamma)/cp1
-          Ttop=cs20/gamma1
-          beta=-Fbot/hcond0
-          alpha=Ttop-beta
-          expo=-gravz/beta/Rgas
-          do n=n1,n2
+          case('isothermal')
+            if (lroot) print*, 'init_lnTT: isothermal atmosphere'
             if (ltemperature_nolog) then
-              f(:,:,n,ilnTT)=beta*z(n)+alpha
+              f(:,:,:,ilnTT)=cs20/gamma1
             else
-              f(:,:,n,ilnTT)=log(beta*z(n)+alpha)
+              f(:,:,:,ilnTT)=log(cs20/gamma1)
             endif
-            f(:,:,n,ilnrho)=lnrho0+ &
-              (1.+expo)*log((1.+alpha/beta)/(z(n)+alpha/beta))
-          enddo
+            haut=-cs20/gamma/gravz
+            do n=n1,n2
+              f(:,:,n,ilnrho)=lnrho0+(1.-z(n))/haut
+            enddo
 !
-        case default
+          case('hydro_rad')
+            if (lroot) print*, 'init_lnTT: hydrostatic+radiative equilibria'
+            if (Fbot==impossible .or. hcond0==impossible) &
+                call stop_it("initialize_lnTT: Fbot or hcond0 not initialized")
+            call get_cp1(cp1)
+            Rgas=(1.-1./gamma)/cp1
+            Ttop=cs20/gamma1
+            beta=-Fbot/hcond0
+            alpha=Ttop-beta
+            expo=-gravz/beta/Rgas
+            do n=n1,n2
+              if (ltemperature_nolog) then
+                f(:,:,n,ilnTT)=beta*z(n)+alpha
+              else
+                f(:,:,n,ilnTT)=log(beta*z(n)+alpha)
+              endif
+              f(:,:,n,ilnrho)=lnrho0+ &
+                  (1.+expo)*log((1.+alpha/beta)/(z(n)+alpha/beta))
+            enddo
+          !
+          case default
           !
           !  Catch unknown values
           !
-          write(unit=errormsg,fmt=*) 'No such value for initss(' &
+            write(unit=errormsg,fmt=*) 'No such value for initss(' &
                            //trim(iinit_str)//'): ',trim(initlnTT(j))
-          call fatal_error('init_ss',errormsg)
+            call fatal_error('init_ss',errormsg)
 
-      endselect
+          endselect
 
-      if (lroot) print*,'init_ss: initss(' &
-                        //trim(iinit_str)//') = ',trim(initlnTT(j))
-      endif
+          if (lroot) print*,'init_ss: initss(' &
+              //trim(iinit_str)//') = ',trim(initlnTT(j))
+        endif
       enddo
+!
+!  Interface for user's own initial condition
+!
+      if (linitial_condition) call initial_condition_ss(f)
+!
       if (lnothing.and.lroot) print*,'init_ss: nothing'
 !
       if (ltemperature_nolog.and.linitial_log) &

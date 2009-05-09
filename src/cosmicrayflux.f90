@@ -104,6 +104,7 @@ module Cosmicrayflux
 !      use Gravity, only: gravz
       use Sub
       use Initcond
+      use InitialCondition, only: initial_condition_fcr
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !,tmp,prof
@@ -124,6 +125,9 @@ module Cosmicrayflux
 
       endselect
 !
+!  Interface for user's own initial condition
+!
+      if (linitial_condition) call initial_condition_fcr(f)
 !
     endsubroutine init_fcr
 !***********************************************************************

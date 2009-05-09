@@ -321,6 +321,7 @@ module Chemistry
 !
       use Cdata
       use Initcond
+      use InitialCondition, only: initial_condition_chemistry
       use Mpicomm
       use Sub
 !
@@ -395,6 +396,10 @@ module Chemistry
 !
         endselect
       enddo
+!
+!  Interface for user's own initial condition
+!
+      if (linitial_condition) call initial_condition_chemistry(f)
 !
       if (lone_spec) then
         f(:,:,:,ichemspec(1))=1.
