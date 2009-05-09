@@ -50,8 +50,6 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use Mpicomm, only: stop_it
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
 !  Initialize any module variables which are parameter dependent
