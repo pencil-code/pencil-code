@@ -1,3 +1,4 @@
+!  $Id$
 !
 !  Initial condition (density, magnetic field, velocity) 
 !  for magnetohydrostatical equilibrium in a global accretion
@@ -13,27 +14,23 @@
 ! CPARAM logical, parameter :: linitial_condition = .true.
 !
 !***************************************************************
-
 module InitialCondition
-
-  use Cparam
+!
   use Cdata
+  use Cparam
   use Messages
   use Sub, only: keep_compiler_quiet
-
+!
   implicit none
-
+!
   include 'initial_condition.h'
-
+!
   real :: density_power_law,temperature_power_law
-
-! input parameters
+!
   namelist /initial_condition_init_pars/ &
       density_power_law,temperature_power_law
 !
-
   contains
-
 !***********************************************************************
     subroutine register_initial_condition()
 !
@@ -41,8 +38,6 @@ module InitialCondition
 !  which should be know to be able to evaluate
 !
 !  6-oct-03/wlad: coded
-!
-      use Cdata
 !
 !  Identify CVS/SVN version information.
 !
@@ -55,8 +50,6 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use Cdata
-      use Sub,     only: keep_compiler_quiet
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -73,9 +66,6 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
 !  SAMPLE IMPLEMENTATION
@@ -92,11 +82,10 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use Cdata
-      use Sub, only: get_radial_distance,power_law,grad
       use EquationOfState, only: cs20,rho0
-      use Gravity, only: potential
       use FArrayManager, only: farray_use_global
+      use Gravity, only: potential
+      use Sub, only: get_radial_distance,power_law,grad
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
@@ -223,9 +212,6 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
 !  SAMPLE IMPLEMENTATION
@@ -240,9 +226,6 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
 !  SAMPLE IMPLEMENTATION
