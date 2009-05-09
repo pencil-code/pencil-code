@@ -1,5 +1,5 @@
 ! $Id: nospecial.f90 10661 2009-05-02 14:38:19Z ajohan@strw.leidenuniv.nl $
-
+!
 !  This module provide a way for users to specify custom initial conditions
 !
 !  The module provides a set of standard hooks into the Pencil-Code and
@@ -62,25 +62,22 @@
 ! This module is based on Tony's special module.
 !
 !--------------------------------------------------------------------
-
 module InitialCondition
-
-  use Cparam
+!
   use Cdata
+  use Cparam
   use Messages
   use Sub, only: keep_compiler_quiet
-
+!
   implicit none
-
+!
   include 'initial_condition.h'
-
+!
 !!  integer :: dummy
-
-!!! input parameters
+!
 !!  namelist /initial_condition_init_pars/ dummy
-
+!
   contains
-
 !***********************************************************************
     subroutine register_initial_condition()
 !
@@ -88,8 +85,6 @@ module InitialCondition
 !  which should be know to be able to evaluate
 !
 !  6-oct-03/wlad: coded
-!
-      use Cdata
 !
 !  Identify CVS/SVN version information.
 !
@@ -101,10 +96,6 @@ module InitialCondition
     subroutine initialize_initial_condition(f)
 !
 !  07-may-09/wlad: coded
-!
-      use Cdata
-      use Sub,     only: keep_compiler_quiet
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -120,9 +111,6 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
 !  SAMPLE IMPLEMENTATION
@@ -139,11 +127,7 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-
 !
 !  SAMPLE IMPLEMENTATION
 !
@@ -157,9 +141,6 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
 !  SAMPLE IMPLEMENTATION
@@ -174,9 +155,6 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
 !  SAMPLE IMPLEMENTATION
@@ -191,9 +169,6 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       call keep_compiler_quiet(f)
@@ -206,9 +181,6 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       call keep_compiler_quiet(f)
@@ -221,9 +193,6 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       call keep_compiler_quiet(f)
@@ -236,9 +205,6 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       call keep_compiler_quiet(f)
@@ -251,9 +217,6 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       call keep_compiler_quiet(f)
@@ -266,9 +229,6 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       call keep_compiler_quiet(f)
@@ -281,9 +241,6 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       call keep_compiler_quiet(f)
@@ -296,9 +253,6 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       call keep_compiler_quiet(f)
@@ -311,9 +265,6 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       call keep_compiler_quiet(f)
@@ -326,9 +277,6 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       call keep_compiler_quiet(f)
@@ -341,9 +289,6 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       call keep_compiler_quiet(f)
@@ -356,9 +301,6 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       call keep_compiler_quiet(f)
@@ -371,9 +313,6 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       call keep_compiler_quiet(f)
@@ -385,9 +324,6 @@ module InitialCondition
 !  Initialize particles' positions
 !
 !  07-may-09/wlad: coded
-!
-      use Cdata
-      use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (:,:), intent(inout) :: fp
@@ -403,9 +339,6 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (:,:), intent(inout) :: fp
 !
@@ -416,24 +349,21 @@ module InitialCondition
 !***********************************************************************
     subroutine read_initial_condition_init_pars(unit,iostat)
 !
-      use Sub, only: keep_compiler_quiet
-!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) call keep_compiler_quiet(iostat)
+!
       call keep_compiler_quiet(unit)
-
+!
     endsubroutine read_initial_condition_init_pars
 !***********************************************************************
     subroutine write_initial_condition_init_pars(unit)
 !
-      use Sub, only: keep_compiler_quiet
-!
       integer, intent(in) :: unit
-
+!
       call keep_compiler_quiet(unit)
-
+!
     endsubroutine write_initial_condition_init_pars
 !***********************************************************************
 
@@ -446,6 +376,4 @@ module InitialCondition
 !**                                                                **
     include 'initial_condition_dummies.inc'
 !********************************************************************
-
 endmodule InitialCondition
-
