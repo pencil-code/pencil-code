@@ -36,7 +36,7 @@
 ! --------------------
 !
 ! Change the line above 
-!    linitialcondition = .true.
+!    linitial_condition = .true.
 ! to enable use of custom initial conditions.
 !
 ! The rest of this file may be used as a template for your own initial
