@@ -1,9 +1,10 @@
 ! $Id$
 !
-!  This module provide a way for users to specify custom initial conditions
+!  This module provide a way for users to specify custom initial
+!  conditions.
 !
-!  The module provides a set of standard hooks into the Pencil-Code and
-!  currently allows the following customizations:
+!  The module provides a set of standard hooks into the Pencil Code
+!  and currently allows the following customizations:
 !
 !   Description                               | Relevant function call
 !  ------------------------------------------------------------------------
@@ -36,23 +37,32 @@
 !
 ! Change the line above 
 !    linitialcondition = .true.
-! to enable use of special hooks.
+! to enable use of custom initial conditions.
 !
-! The rest of this file may be used as a template for your own
-! initial conditions. Simply fill out the prototypes for the
-! features you want to use.
+! The rest of this file may be used as a template for your own initial
+! conditions. Simply fill out the prototypes for the features you want
+! to use.
 !
-! Save the file with a meaningful name, eg. mhs_equilibrium.f90 
-! and place it in the $PENCIL_HOME/src/initial_condition directory. 
-! This path has been created to allow users ot optionally check their 
-! contributions in to the Pencil-Code CVS repository.  This may be useful 
-! if you are working on/using an initial condition with somebody else or
-! may require some assistance from one of the main Pencil-Code team.
+! Save the file with a meaningful name, e.g. mhs_equilibrium.f90, and
+! place it in the $PENCIL_HOME/src/initial_condition directory.  This
+! path has been created to allow users to optionally check their
+! contributions in to the Pencil Code SVN repository (HOWEVER, less
+! general initial conditions should not go here, see below). This may
+! be useful if you are working on/using an initial condition with
+! somebody else or may require some assistance from one of the main
+! Pencil Code team.
 !
-! To use your additional initial condition code edit the Makefile.local
-! in the src directory under the run directory in which you wish to
-! use your initial condition.  Add a line with all the module
-! selections to say something like:
+! You can also place initial condition files directly in the run
+! directory. Simply create the folder 'initial_condition' at the same
+! level as the *.in files and place an initial condition file there.
+! With pc_setupsrc this file is linked automatically into the local
+! src directory. This is the preferred method for initial conditions
+! that are not very general.
+!
+! To use your additional initial condition code edit the
+! Makefile.local in the src directory under the run directory in which
+! you wish to use your initial condition.  Add a line with all the
+! module selections to say something like:
 !
 !    INITIAL_CONDITION=initial_condition/mhs_equilibrium
 !
