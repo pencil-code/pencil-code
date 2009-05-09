@@ -25,11 +25,11 @@ module InitialCondition
 
   include 'initial_condition.h'
 
-  real :: plaw,ptlaw
+  real :: density_power_law,temperature_power_law
 
 ! input parameters
   namelist /initial_condition_init_pars/ &
-      plaw,ptlaw
+      density_power_law,temperature_power_law
 !
 
   contains
@@ -112,19 +112,22 @@ module InitialCondition
       integer, pointer :: iglobal_cs2,iglobal_glnTT
       logical :: lheader
 !
+      p=-density_power_law 
+      q=-temperature_power_law
+!
       if (lroot) print*,&
            'initial_condition_lnrho: locally isothermal approximation'
-      if (lroot) print*,'Radial density stratification with power law=',plaw
-      if (lroot) print*,'Radial temperature stratification with power law=',ptlaw
+      if (lroot) print*,'Radial density stratification with power law=',p
+      if (lroot) print*,'Radial temperature stratification with power law=',q
 !
-!  Set the sound speed
+!  Set the sound speed - a power law in cylindrical radius.
 !
       do m=1,my
         do n=1,mz
           lheader=((m==1).and.(n==1).and.lroot)
           call get_radial_distance(rr_sph,rr_cyl)
           rr=rr_cyl
-          call power_law(cs20,rr,ptlaw,cs2,r_ref)
+          call power_law(cs20,rr,-q,cs2,r_ref)
 !
 !  Store cs2 in one of the free slots of the f-array
 !
@@ -135,17 +138,14 @@ module InitialCondition
           
           nullify(iglobal_glnTT)
           call farray_use_global('glnTT',iglobal_glnTT)
-          f(:,m,n,iglobal_glnTT  )=-ptlaw/rr_sph
-          f(:,m,n,iglobal_glnTT+1)=-ptlaw/rr_sph*cotth(m)
+          f(:,m,n,iglobal_glnTT  )=q/rr_sph
+          f(:,m,n,iglobal_glnTT+1)=q/rr_sph*cotth(m)
           f(:,m,n,iglobal_glnTT+2)=0.
 !
         enddo
       enddo
 !
 !  Pencilize the density allocation.
-!
-      p=-plaw 
-      q=-ptlaw
 !
       do n=1,mz
         do m=1,my
@@ -165,7 +165,11 @@ module InitialCondition
           strat=-(tmp1-tmp2)/cs2
           f(:,m,n,ilnrho) = lnrhomid+strat
 !
-!  Set the azimuthal velocities 
+!  Set the azimuthal velocities
+! 
+!  Commented out part with the analytical derivation, 
+!  since the numerical one (used below) yields better 
+!  cancelation.
 !
 !          call acceleration(g_r)
 !          OOK2=max(-g_r/(rr_sph*sinth(m)**3),0.)
@@ -179,9 +183,14 @@ module InitialCondition
         enddo
       enddo
 !
-      irho=iglobal_glnTT+2
-      !use now ilnrho as rho
+!  Use ilnrho as rho - works only for ldensity_nolog (which isn't passed 
+!  yet, but, hey, it's MY own custom initial condition file. I know what
+!  it does. :-) 
+!
+      irho=iglobal_glnTT+2  !take an empty slot of f to put irho
       f(:,:,:,irho)=exp(f(:,:,:,ilnrho))
+!
+!  Azimuthal speed that perfectly balances the pressure gradient. 
 !
       do m=m1,m2
         do n=n1,n2
@@ -201,6 +210,8 @@ module InitialCondition
 !
         enddo
       enddo
+!
+! Revert the free slot used for irho to its original value.
 !
       f(:,:,:,iglobal_glnTT+2)=0.
 !
