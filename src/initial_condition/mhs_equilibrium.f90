@@ -42,7 +42,7 @@ module InitialCondition
 !  Identify CVS/SVN version information.
 !
       if (lroot) call cvs_id( &
-           "$Id: nospecial.f90 10661 2009-05-02 14:38:19Z ajohan@strw.leidenuniv.nl $")
+           "$Id$")
 !
     endsubroutine register_initial_condition
 !***********************************************************************
