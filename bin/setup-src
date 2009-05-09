@@ -1,6 +1,2 @@
 #!/bin/sh
-#                       setup-src
-#                      -----------
-# Description:
-#   Deprecated... Please use pc_setupsrc instead.
-pc_setupsrc $@
+echo Deprecated... Please use pc_setupsrc instead.
