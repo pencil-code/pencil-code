@@ -67,6 +67,7 @@ module Chemistry
   logical :: lfilter=.false.
   logical :: lkreactions_profile=.false.
   integer :: nreactions=0,nreactions1=0,nreactions2=0
+  integer :: ll1,ll2,mm1,mm2,nn1,nn2
   real, dimension(2*nchemspec) :: kreactions_profile_width=0.
 
 
@@ -309,6 +310,34 @@ module Chemistry
         call stop_it('initialize_chemistry: there is no chemistry data file')
       endif
 !
+
+      
+      if (nxgrid==1) then
+       ll1=l1
+       ll2=l2
+      else
+       ll1=1
+       ll2=mx
+      endif
+
+      if (nygrid==1) then
+       mm1=m1
+       mm2=m2
+      else
+       mm1=1
+       mm2=my
+      endif
+
+      if (nzgrid==1) then
+       nn1=n1
+       nn2=n2
+      else
+       nn1=1
+       nn2=mz
+      endif
+
+
+
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_chemistry
@@ -654,7 +683,7 @@ subroutine flame_front(f)
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: mu1
-      integer :: k,j,i
+      integer :: k,j,i,j1,j2,j3
 
       real :: mO2, mH2, mN2, mH2O
       real :: log_inlet_density
@@ -718,16 +747,10 @@ subroutine flame_front(f)
                +final_massfrac_O2
         endif
       enddo
-!
-!  Initialize density
-!
+
       call calc_for_chem_mixture(f)
 
 
-      do k=1,mx
-        f(k,:,:,ilnrho)&
-            =log(init_pressure)-log(Rgas)-f(k,:,:,ilnTT)-log(mu1_full(k,:,:))
-      enddo
 !
 !  Find logaritm of density at inlet
 !
@@ -737,10 +760,25 @@ subroutine flame_front(f)
           +initial_massfractions(ichem_H2O)/(mH2O)&
           +initial_massfractions(ichem_N2)/(mN2)
       log_inlet_density=log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
+
+
+
+       do j3=nn1,nn2
+       do j2=mm1,mm2
+       do j1=ll1,ll2
+
+!
+!  Initialize density
+!
+   
+       f(j1,j2,j3,ilnrho)=log(init_pressure)-log(Rgas)  &
+           -f(j1,j2,j3,ilnTT)-log(mu1_full(j1,j2,j3))
+ 
 !
 !  Initialize velocity
 !
-      f(:,:,:,iux)=f(:,:,:,iux)+init_ux*exp(log_inlet_density)/exp(f(:,:,:,ilnrho))
+      f(j1,j2,j3,iux)=f(j1,j2,j3,iux)  &
+            +init_ux*exp(log_inlet_density)/exp(f(j1,j2,j3,ilnrho))
 
   !    if (nygrid .le. 1) then
   !     do k=1,mx
@@ -758,6 +796,10 @@ subroutine flame_front(f)
   !      enddo
   !      enddo
   !    endif
+
+       enddo
+       enddo
+       enddo
 
 
 !
@@ -783,7 +825,7 @@ subroutine flame_front(f)
       real, dimension (mx,my,mz,nchemspec) :: species_cond
 !
       intent(in) :: f
-      integer :: k,i,j, j1,j2,j3, mm1,mm2,nn1,nn2
+      integer :: k,i,j, j1,j2,j3
       integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
       real :: T_up, T_mid, T_low, tmp
       real :: mk_mj
@@ -793,24 +835,6 @@ subroutine flame_front(f)
 !
       character (len=20) :: output_file="./data/mix_quant.out"
       integer :: file_id=123,lmid
-
-      if (nygrid==1) then
-       mm1=m1
-       mm2=m2
-      else
-       mm1=1
-       mm2=my
-      endif
-
-      if (nzgrid==1) then
-       nn1=n1
-       nn2=n2
-      else
-       nn1=1
-       nn2=mz
-      endif
-
-
 
 ! 
 ! Density and temperature
@@ -3181,15 +3205,23 @@ subroutine flame_front(f)
       real, dimension (mx,my,mz,mfarray) :: f
       intent(in) :: f
       real, dimension (mx,my,mz) :: Omega_kl, prefactor
-      real, dimension (mx,my,mz) :: lnTjk, lnTk
-      integer :: k,j
+      real, dimension (mx,my,mz) :: lnTjk,lnTk_array
+      integer :: k,j,j1,j2,j3
       real :: eps_jk, sigma_jk, m_jk, delta_jk, delta_st
       character (len=7) :: omega
-      real :: Na=6.022E23,tmp_local,tmp_local2
-!
+      real :: Na=6.022E23,tmp_local,tmp_local2, lnTk
+
       tmp_local=3./16.*(2.*k_B_cgs**3/pi)**0.5
-      prefactor=tmp_local*(TT_full)**0.5*unit_length**3&
-          /(Rgas_unit_sys*rho_full*mu1_full)          
+
+      do j3=nn1,nn2
+      do j2=mm1,mm2   
+      do j1=ll1,ll2
+       prefactor(j1,j2,j3)=tmp_local*(TT_full(j1,j2,j3))**0.5*unit_length**3&
+          /(Rgas_unit_sys*rho_full(j1,j2,j3)*mu1_full(j1,j2,j3))          
+      enddo  
+      enddo 
+      enddo
+      
       omega="Omega11"
 !      
 
@@ -3198,27 +3230,40 @@ subroutine flame_front(f)
     if (BinDif_simple) then
         do k=1,nchemspec
           do j=k,nchemspec
-!
             eps_jk=(tran_data(j,2)*tran_data(k,2))**0.5
             sigma_jk=0.5*(tran_data(j,3)+tran_data(k,3))*1e-8
             m_jk=(species_constants(j,imass)*species_constants(k,imass)) &
                 /(species_constants(j,imass)+species_constants(k,imass))/Na
-!
-            lnTjk=f(:,:,:,ilnTT)-log(eps_jk)
-!
-            Omega_kl=(6.96945701E-1 +3.39628861E-1*lnTjk)
-!
             tmp_local=(m_jk)**(-0.5)/sigma_jk**2/(unit_length**2/unit_time)
-            Bin_Diff_coef(:,:,:,k,j)=prefactor*Omega_kl*tmp_local
+
+          do j3=nn1,nn2
+          do j2=mm1,mm2
+          do j1=ll1,ll2
+            lnTjk(j1,j2,j3)=f(j1,j2,j3,ilnTT)-log(eps_jk)
+            Omega_kl(j1,j2,j3)=(6.96945701E-1 +3.39628861E-1*lnTjk(j1,j2,j3))
+            Bin_Diff_coef(j1,j2,j3,k,j)=prefactor(j1,j2,j3)  &
+                                       *Omega_kl(j1,j2,j3)*tmp_local
+          enddo
+          enddo
+          enddo          
+
           enddo
         enddo
+
+       do j3=nn1,nn2
+       do j2=mm1,mm2
+       do j1=ll1,ll2
         do k=1,nchemspec
-          do j=1,k-1
-            Bin_Diff_coef(:,:,:,k,j)=Bin_Diff_coef(:,:,:,j,k)
-          enddo
+        do j=1,k-1
+            Bin_Diff_coef(j1,j2,j3,k,j)=Bin_Diff_coef(j1,j2,j3,j,k)
         enddo
+        enddo
+       enddo
+       enddo
+       enddo
+
       else
-        do k=1,nchemspec
+         do k=1,nchemspec
           do j=1,nchemspec
 !
             eps_jk=(tran_data(j,2)*tran_data(k,2))**0.5
@@ -3227,13 +3272,25 @@ subroutine flame_front(f)
             m_jk=(species_constants(j,imass)*species_constants(k,imass)) &
                 /(species_constants(j,imass)+species_constants(k,imass))/Na
 !
-            lnTjk=f(:,:,:,ilnTT)-log(eps_jk)
+            do j3=nn1,nn2
+            do j2=mm1,mm2
+            do j1=ll1,ll2
+             lnTjk=f(j1,j2,j3,ilnTT)-log(eps_jk)
+            enddo
+            enddo
+            enddo
 !
             call calc_collision_integral(omega,lnTjk,Omega_kl)
 !
-            Bin_Diff_coef(:,:,:,k,j)=prefactor/sqrt(m_jk)/sigma_jk**2 &
-                /(Omega_kl+0.19*delta_jk/(TT_full/eps_jk)) &
+            do j3=nn1,nn2
+            do j2=mm1,mm2
+            do j1=ll1,ll2
+             Bin_Diff_coef(j1,j2,j3,k,j)=prefactor(j1,j2,j3)/sqrt(m_jk)/sigma_jk**2 &
+                /(Omega_kl(j1,j2,j3)+0.19*delta_jk/(TT_full(j1,j2,j3)/eps_jk)) &
                 /(unit_length**2/unit_time)
+            enddo
+            enddo
+            enddo
 ! 
           enddo
         enddo
@@ -3246,25 +3303,47 @@ subroutine flame_front(f)
 
       do k=1,nchemspec
 !
-        lnTk=f(:,:,:,ilnTT)-log(tran_data(k,2))
-        tmp_local2=(species_constants(k,imass))**0.5/(tran_data(k,3))**2 &
+    !   lnTk=f(:,:,:,ilnTT)-log(tran_data(k,2))
+
+      tmp_local2=(species_constants(k,imass))**0.5/(tran_data(k,3))**2 &
                    *tmp_local
 
+       
+    !    tmp_local2=(species_constants(k,imass))**0.5 &
+    !               /(tran_data(k,3))**2*tmp_local
+       
+
         if (visc_simple) then
-         Omega_kl=(6.33225679E-1 +3.14473541E-1*lnTk+1.78229325E-2*lnTk*lnTk &
+          do j3=nn1,nn2
+          do j2=mm1,mm2
+          do j1=ll1,ll2
+           lnTk=f(j1,j2,j3,ilnTT)-log(tran_data(k,2))
+
+           Omega_kl(j1,j2,j3)=(6.33225679E-1 +3.14473541E-1*lnTk+1.78229325E-2*lnTk*lnTk &
                    -3.99489493E-2*lnTk*lnTk*lnTk+8.98483088E-3*lnTk**4 &
                   +7.00167217E-4*lnTk**5-3.82733808E-4*lnTk**6+2.97208112E-5*lnTk**7)
 
-          species_viscosity(:,:,:,k)=TT_full**0.5*(Omega_kl)*tmp_local2 &
-                                     /(unit_mass/unit_length/unit_time)
+           species_viscosity(j1,j2,j3,k)=TT_full(j1,j2,j3)**0.5 &
+                           *(Omega_kl(j1,j2,j3))*tmp_local2 &
+                           /(unit_mass/unit_length/unit_time)
+          enddo
+          enddo
+          enddo
         else
          delta_st=tran_data(k,4)**2/2./tran_data(k,2)/&
           (tran_data(k,3))**3*(1e-8**3)
 !
-         call calc_collision_integral(omega,lnTk,Omega_kl)
-        species_viscosity(:,:,:,k)=TT_full**0.5/(Omega_kl &
-                                  +0.2*delta_st/(TT_full/tran_data(k,2)))*tmp_local2 &
-                                   /(unit_mass/unit_length/unit_time)
+         lnTk_array=f(:,:,:,ilnTT)-log(tran_data(k,2))
+         call calc_collision_integral(omega,lnTk_array,Omega_kl)
+          do j3=nn1,nn2
+          do j2=mm1,mm2
+          do j1=ll1,ll2
+           species_viscosity(j1,j2,j3,k)=TT_full(j1,j2,j3)**0.5/(Omega_kl(j1,j2,j3) &
+                 +0.2*delta_st/(TT_full(j1,j2,j3)/tran_data(k,2)))*tmp_local2 &
+                 /(unit_mass/unit_length/unit_time)
+          enddo
+          enddo
+          enddo
         endif
       enddo
 !
