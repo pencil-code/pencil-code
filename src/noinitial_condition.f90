@@ -94,7 +94,7 @@ module InitialCondition
 !  Configure pre-initialised (i.e. before parameter read) variables
 !  which should be know to be able to evaluate
 !
-!  6-oct-03/wlad: coded
+!  07-may-09/wlad: coded
 !
 !  Identify CVS/SVN version information.
 !
@@ -359,6 +359,8 @@ module InitialCondition
 !***********************************************************************
     subroutine read_initial_condition_init_pars(unit,iostat)
 !
+!  07-may-09/wlad: coded
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
@@ -369,6 +371,8 @@ module InitialCondition
     endsubroutine read_initial_condition_init_pars
 !***********************************************************************
     subroutine write_initial_condition_init_pars(unit)
+!
+!  07-may-09/wlad: coded
 !
       integer, intent(in) :: unit
 !

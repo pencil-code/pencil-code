@@ -5,7 +5,7 @@
 !  disk with an imposed (cylindrically symmetric) sound speed 
 !  profile in spherical coordinates. 
 !
-!  07-may-09/axel: adapted from noinitial_condition.f90
+!  07-may-09/wlad: adapted from noinitial_condition.f90
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -37,7 +37,7 @@ module InitialCondition
 !  Configure pre-initialised (i.e. before parameter read) variables
 !  which should be know to be able to evaluate
 !
-!  6-oct-03/wlad: coded
+!  07-oct-09/wlad: coded
 !
 !  Identify CVS/SVN version information.
 !
@@ -233,6 +233,8 @@ module InitialCondition
     endsubroutine initial_condition_aa
 !***********************************************************************
     subroutine read_initial_condition_init_pars(unit,iostat)
+!
+!  07-may-09/wlad: coded
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
