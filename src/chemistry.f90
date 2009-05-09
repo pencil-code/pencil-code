@@ -246,7 +246,6 @@ module Chemistry
 !  13-aug-07/steveb: coded
 !  19-feb-08/axel: reads in chemistry.dat file
 !
-
       use Mpicomm, only: stop_it
 
       real, dimension (mx,my,mz,mfarray) :: f
@@ -254,11 +253,16 @@ module Chemistry
       logical :: exist,exist1,exist2
       character (len=15) :: file1='chemistry_m.dat',file2='chemistry_p.dat'
 !
+!  initialize chemistry
+!
       if (lcheminp) then
         if (unit_temperature /= 1) then
           call fatal_error('initialize_chemistry', &
               'unit_temperature must be unity when using chemistry!')
         endif
+!
+!  calculate universal gas constant based on Boltzmann constant
+!  and the proton mass
 !
         if (unit_system == 'cgs') then
           Rgas_unit_sys = k_B_cgs/m_u_cgs
@@ -273,14 +277,21 @@ module Chemistry
         ldiffusion=.false.
       endif
 !
+!  check for the existence of chemistry input files
+!
       inquire(file=file1,exist=exist1)
       inquire(file=file2,exist=exist2)
       inquire(file='chemistry.dat',exist=exist)
+!
+!  Read in data file in ChemKin format
 !
       if (lcheminp) then
         call chemkin_data(f)
         data_file_exit=.true.
       endif
+!
+!  Alternatively, read in stoichiometric matrices in explicit format.
+!  For historical reasons this is referred to as "astrobiology_data"
 !
       if (exist1 .and. exist2) then
         call astrobiology_data(f)
@@ -295,7 +306,7 @@ module Chemistry
 ! check the existence of a data file
 !
       if (.not. data_file_exit) then
-        call stop_it('there is no data file')
+        call stop_it('initialize_chemistry: there is no chemistry data file')
       endif
 !
       call keep_compiler_quiet(f)
@@ -1233,7 +1244,11 @@ subroutine flame_front(f)
 !**********************************************************************
     subroutine astrobiology_data(f)
 !
-!  DOCUMENT ME!!!
+!  Proceedure to read in stoichiometric matrices in explicit format for
+!  forward and backward reations. For historical reasons this is referred
+!  to as "astrobiology_data".
+!
+!  28-feb-08/axel: coded
 !
       use Cdata
       use Mpicomm, only: stop_it

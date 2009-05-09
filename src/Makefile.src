@@ -533,6 +533,7 @@ LD_FFTW2=
 ##LD_MPI=#(nl6)
 ##CFLAGS=-DFUNDERSC=1 #(nl6)
 ##
+##  Axel's laptop (nl6, 2.0 GHz)
 ##  the -CB options checks for out of bounds arrays
 ##
 #FC=ifort #(nl6)
