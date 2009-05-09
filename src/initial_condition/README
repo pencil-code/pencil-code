@@ -1,0 +1,20 @@
+$Id: README 10596 2009-04-19 20:32:49Z AxelBrandenburg $
+
+This directory contains a sample of "initial condition" files that deal with
+custom initial conditions. It allows a user to implement his/her initial 
+condition, without overload for other users. 
+
+The best way to start a new initial condition module is to go to 
+pencil-code/src/ and copy noinitial_condition.f90 to 
+initial_condition/NewInitialCondition.f90 and start editing
+NewInitialCondition.f90 for your purposes. This approach is better 
+than modifying an existing initial condition file, because they tend 
+to be too specialized! The noinitial_condition.f90 module also contains 
+lots of comments.
+
+Example:
+  cp noinitial_condition.f90 initial_condition/star_in_a_box.f90
+
+However, looking for example also at initial_condition/mhs_equilibrium.f90 
+might indeed be a good idea.
+
