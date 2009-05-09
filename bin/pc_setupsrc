@@ -127,6 +127,49 @@ link_special_files()
   cd $old_dir
 }
 
+make_initial_condition_dir()
+{
+  ## src subdirectory
+  [ -h $src/initial_condition ] && rm $src/initial_condition
+  if [ ! -d $src/initial_condition ]; then
+    echo "No initial_condition directory found: creating new one (`pwd`/src/initial_condition)."
+    mkdir $src/initial_condition
+  fi
+}
+#
+link_initial_condition_files()
+{
+  #
+  #  LINK all *.f90, *.f, and the Makefile to local src directory
+  #
+  echo "Linking files in '$src/initial_condition'."
+  old_dir="`pwd`"
+  cd $src/initial_condition
+  n=0
+  to_link=
+  for file in $srcdir/initial_condition/*.f90
+  do
+    if [ -f $file ] || [ -d $file ]; then
+      if [ -h "`basename $file`" ]; then
+        rm -f "`basename $file`"
+	to_link="$to_link $file"
+        #ln -s $file .
+      elif [ -f "`basename $file`" ] \
+        || [ -d "`basename $file`" ]; then
+        n="`expr $n + 1`"
+        existf="$existf`basename $file` "
+      else
+	to_link="$to_link $file"
+        #ln -s $file .
+      fi
+    else
+      echo "No such file: $file"
+    fi
+  done
+  [ "$to_link" ] && ln -s $to_link .
+  cd $old_dir
+}
+
 create_Makefile_inc()
 {
   #
@@ -261,6 +304,8 @@ make_src_dir
 link_src_files
 make_special_dir
 link_special_files
+make_initial_condition_dir
+link_initial_condition_files
 create_Makefile_inc
 #copy_local_files
 print_status
