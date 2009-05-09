@@ -339,7 +339,7 @@
       print*,'written full set of slices at t=',t,min_xy_loc,max_xy_loc
       enddo
 !
-999   	continue
+999   continue
 !
       if (lwritten_something) then
         print*,'last file read: ',trim(fullname)

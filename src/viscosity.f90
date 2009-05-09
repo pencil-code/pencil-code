@@ -716,8 +716,8 @@ module Viscosity
         else 
           print*,'power-law viscosity only implemented '
           print*,'for spherical and cylindrical coordinates'
-          call fatal_error("calc_pencils_viscosity","")	  	
-	endif
+          call fatal_error("calc_pencils_viscosity","")
+        endif
 !
         call multmv(p%sij,gradnu,sgradnu)
         call multsv(pnu,2*p%sglnrho+p%del2u+1./3.*p%graddivu,tmp)

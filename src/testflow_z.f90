@@ -443,7 +443,7 @@ module Testflow
 !
 !  rhomz is not currently calculated....
 !
-!!!	ghfluct=ghfluct-alog(rhomz(n))		!MR: noch falsch!!!
+!!!  ghfluct=ghfluct-alog(rhomz(n))  !MR: noch falsch!!!
 
       endif
 !
@@ -505,22 +505,22 @@ module Testflow
 !
         if ( jtest.gt.0 ) then
           if (lset_U0test) then
-			
+!
             call h_dot_grad(U0test,p%uij,uufluct,U0gutest)
             call multsv(uufluct(:,3),gU0test,ugU0test,ladd=.true.) 
 
             df(l1:l2,m,n,iuxtest:iuztest) = df(l1:l2,m,n,iuxtest:iuztest) - U0gutest-ugU0test
-		  
+!
             call multmv(p%sij,gH0test,U0gutest)
-			
+!
             call multsv(ghfluct(:,3),gU0test,ugU0test)
             call multsv(-(1./3.)*gU0test(:,3),ghfluct,ugU0test,ladd=.true.)
-            ghfluct(:,3)=0.			!MR: from here on ghfluct no longer valid 
+            ghfluct(:,3)=0.       !MR: from here on ghfluct no longer valid 
             call dot_mn(gU0test,ghfluct,help)
             ugU0test(:,3) = ugU0test(:,3) + help
 
             df(l1:l2,m,n,iuxtest:iuztest) = df(l1:l2,m,n,iuxtest:iuztest) + 2.*nutest*cs2test1*(U0gutest+ugU0test)
-			
+!
         endif
       endif
 !
@@ -750,7 +750,7 @@ module Testflow
 
 !  do each of the njtest (=2, 4, or 9) test flows at a time
 !  but exclude redundancies, e.g. if the averaged flows lacks x extent.
-!	
+!
       do jtest=0,njtest
     
         iuxtest=iuutest+4*jtest
@@ -762,12 +762,12 @@ module Testflow
           unltestm(n,:,jtest)=0.
           hnltestm(n,jtest)=0.
 
-          do m=m1,m2		
+          do m=m1,m2
 !
 !  calculate uufluct=U-Umean
 !
-            uufluct=f(l1:l2,m,n,iux:iux+2)	
-            hhfluct=f(l1:l2,m,n,iux+3)	
+            uufluct=f(l1:l2,m,n,iux:iux+2)
+            hhfluct=f(l1:l2,m,n,iux+3)
 
             if (lcalc_uumean) then
   
@@ -775,9 +775,9 @@ module Testflow
                 uufluct(:,j)=uufluct(:,j)-uumz(n,j)
               enddo
 
-!!!           hhfluct=hhfluct-alog(rhomz(n))		!MR: noch falsch!!!
+!!!           hhfluct=hhfluct-alog(rhomz(n))     !MR: noch falsch!!!
 
-            endif	  
+            endif
 !
 !  velocity vector and enthalpy gradient
 !
@@ -799,7 +799,7 @@ module Testflow
               enddo
 
               sijtest(:,j,j)=sijtest(:,j,j)-(1./3.)*divutest
-			
+
             enddo
 
             if ( jtest.eq.0 ) then    ! primary turbulence
@@ -809,7 +809,7 @@ module Testflow
               sij0 = sijtest
               iux0 = iuxtest
 
-!  u.gradu term	and u.gradh term
+!  u.gradu term and u.gradh term
 
               call u_dot_grad(f,iuxtest,uijtest,uutest,unltest)
               call dot_mn(uutest,ghtest,hnltest)
@@ -830,14 +830,14 @@ module Testflow
 
 !  calculate stress tensor sij from uij
 
-              if ( jtest.eq.0 )	then
+              if ( jtest.eq.0 ) then
 
                 call multmv(sijtest,ghtest,sghtest) 
 
               elseif ( .not.lsoca_testflow ) then
  
-                call multmv(sijtest,ghfluct,sghtest)		  
-                call multmv(sij0   ,ghtest ,sghtest, ladd=.true.)		  
+                call multmv(sijtest,ghfluct,sghtest)
+                call multmv(sij0   ,ghtest ,sghtest, ladd=.true.)
  
               endif
 
@@ -850,7 +850,7 @@ module Testflow
               df(l1:l2,m,n,jugu:jugu+2)=df(l1:l2,m,n,jugu:jugu+2)+unltest
               df(l1:l2,m,n,jugu+3     )=df(l1:l2,m,n,jugu+3     )+hnltest
 
-	    endif
+            endif
  
             do j=1,3
               unltestm(n,j,jtest)=unltestm(n,j,jtest)+fac*sum(unltest(:,j))
@@ -875,10 +875,10 @@ module Testflow
 !
     if (nprocy>1) then
  
-      call mpireduce_sum(unltestm1,unltestm1_tmp,nz*nprocz*3*njtest)		!MR: allreduce?
+      call mpireduce_sum(unltestm1,unltestm1_tmp,nz*nprocz*3*njtest)  !MR: allreduce?
 !!!   call mpibcast_real(unltestm1_tmp,nz*nprocz*3*njtest)
 
-      call mpireduce_sum(hnltestm1,hnltestm1_tmp,nz*nprocz*njtest)		!MR: allreduce?
+      call mpireduce_sum(hnltestm1,hnltestm1_tmp,nz*nprocz*njtest)  !MR: allreduce?
 !!!   call mpibcast_real(hnltestm1_tmp,nz*nprocz*njtest)
 
       do jtest=0,njtest

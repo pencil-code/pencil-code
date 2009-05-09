@@ -965,7 +965,7 @@ module Hydro
 !
 !  Interface for user's own initial condition
 !
-	if (linitial_condition) call initial_condition_uu(f)
+      if (linitial_condition) call initial_condition_uu(f)
 !
 !  This allows an extra random velocity perturbation on
 !  top of the initialization so far.
