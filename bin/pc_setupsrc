@@ -9,12 +9,12 @@
 #   $Id$
 #
 # Usage:
-#   setup-src [options] [src-dir]
+#   pc_setupsrc [options] [src-dir]
 # Options:
 #   --pencil-home <dir>   Specify the root path of the Pencil Code directory
-
+#
 IAM=$0
-
+#
 link_scripts()
 {
   echo "Linking job submission/execution scripts."
@@ -30,18 +30,18 @@ link_scripts()
   done
   [ "$to_link" ] && ln -s $to_link .
 }
-
+#
 link_root_makefile()
 {
-  ## Make a link to a root Makefile to allow make from the run directory
+## Make a link to a root Makefile to allow make from the run directory
   [ -h Makefile ] && rm -f Makefile 
   [ ! -f Makefile ] && ln -s $srcdir/Makefile.parent Makefile 
   echo Linked root Makefile.
 }
-
+#
 make_src_dir()
 {
-  ## src subdirectory
+## src subdirectory
   if [ ! -d $src ]; then
     echo "No src directory found: creating new one (`pwd`/src)."
     mkdir $src
@@ -50,9 +50,9 @@ make_src_dir()
 #
 link_src_files()
 {
-  #
-  #  LINK all *.f90, *.f, and the Makefile to local src directory
-  #
+#
+#  LINK all *.f90, *.f, and the Makefile to local src directory
+#
   echo "Linking files in '$src'."
   old_dir="`pwd`"
   cd $src
@@ -60,8 +60,7 @@ link_src_files()
   to_link=
   for file in $srcdir/*.f90 $srcdir/*.f $srcdir/*.c \
               $srcdir/Makefile.src $srcdir/Makefile.depend \
-              $srcdir/.cvsignore $srcdir/*.h $srcdir/scripts \
-              $srcdir/shock_profiles
+              $srcdir/.cvsignore $srcdir/*.h $srcdir/scripts
   do
     if [ -f $file ] || [ -d $file ]; then
       if [ -h "`basename $file`" ]; then
@@ -83,10 +82,10 @@ link_src_files()
   [ "$to_link" ] && ln -s $to_link .
   cd $old_dir
 }
-
+#
 make_special_dir()
 {
-  ## src subdirectory
+## src subdirectory
   [ -h $src/special ] && rm $src/special
   if [ ! -d $src/special ]; then
     echo "No special directory found: creating new one (`pwd`/src/special)."
@@ -96,9 +95,9 @@ make_special_dir()
 #
 link_special_files()
 {
-  #
-  #  LINK all *.f90, *.f, and the Makefile to local src directory
-  #
+#
+#  LINK all *.f90, *.f, and the Makefile to local src directory
+#
   echo "Linking files in '$src/special'."
   old_dir="`pwd`"
   cd $src/special
@@ -126,10 +125,10 @@ link_special_files()
   [ "$to_link" ] && ln -s $to_link .
   cd $old_dir
 }
-
+#
 make_initial_condition_dir()
 {
-  ## src subdirectory
+## src subdirectory
   [ -h $src/initial_condition ] && rm $src/initial_condition
   if [ ! -d $src/initial_condition ]; then
     echo "No initial_condition directory found: creating new one (`pwd`/src/initial_condition)."
@@ -139,9 +138,9 @@ make_initial_condition_dir()
 #
 link_initial_condition_files()
 {
-  #
-  #  LINK all *.f90, *.f, and the Makefile to local src directory
-  #
+#
+#  LINK all *.f90, *.f, and the Makefile to local src directory
+#
   echo "Linking files in '$src/initial_condition'."
   old_dir="`pwd`"
   cd $src/initial_condition
@@ -168,23 +167,31 @@ link_initial_condition_files()
   done
   [ "$to_link" ] && ln -s $to_link .
   cd $old_dir
+#
+#  Local initial condition subroutines can be saved in initial_condition
+#  folder in run directory.
+#
+  if [ -d "$old_dir/initial_condition" ]; then
+    echo "Linking files in '$old_dir/initial_condition'."
+    ln -fs $old_dir/initial_condition/* $src/initial_condition/
+  fi
 }
-
+#
 create_Makefile_inc()
 {
-  #
-  #  Create empty src/Makefile.inc, so `make' does not complain about its
-  #  absence when run for the first time
-  #
+#
+#  Create empty src/Makefile.inc, so `make' does not complain about its
+#  absence when run for the first time
+#
   printf "# %s\n" "Empty" "(This file was written by 'pc_setupsrc')" \
       > src/Makefile.inc
 }
-
+#
 copy_local_files()
 {
-  #
-  #  COPY all *.local files into local src directory
-  #
+#
+#  COPY all *.local files into local src directory
+#
   echo "Creating .local files in $src (if necessary)."
   old_dir="`pwd`"
   cd $src
@@ -194,8 +201,8 @@ copy_local_files()
   do
     if [ -f $file ]; then
       if [ ! -f "`basename $file`" ]; then
-	# Warn user about copying *.local, as these should normally come
-	# with each run directory: 
+# Warn user about copying *.local, as these should normally come
+# with each run directory: 
 	echo "Copying default file $file to src/ -- are you sure this is OK?"
 	to_copy="$to_copy $file"
         #cp $file .
@@ -211,25 +218,24 @@ copy_local_files()
   [ "$to_copy" ] && cp $to_copy .
   cd $old_dir
 }
-
-
+#
 print_status()
 {
   [ $n -eq 1 ] &&  echo "$existf already existed in $src"
   [ $n -gt 1 ] && echo "$n files already existed in $src"
 }
-
+#
 remove_broken_links()
 {
-  ## Remove any broken links...
+## Remove any broken links...
   find . $src -type l 2>/dev/null | perl -lne 'unlink $_ if (-l && ! -e)'
 }
-
+#
 prepare_for_compile()
 {
-  #
-  #  Generate Makefile
-  #
+#
+#  Generate Makefile
+#
   echo "Rebuilding Makefile from Makefile.src."
   old_dir="`pwd`"
   cd $src
@@ -238,12 +244,11 @@ prepare_for_compile()
   $srcdir/scripts/adapt-mkfile Makefile.src Makefile
   cd $old_dir
 }
-
+#
 scripts="start.csh start_run.csh run.csh getconf.csh"
 pencil_home_path=$PENCIL_HOME
-echo Using $pencil_home_path
 src="`pwd`/src"
-
+#
 while [ $# -gt 0 ]
 do
   case $1 in
@@ -279,24 +284,23 @@ do
     src=$1
   ;;
   esac
-
   shift
 done 
-
+#
 . $pencil_home_path/lib/sh/functions.sh
-
+#
 if [ ! "$pencil_home_path" ]; then
   echo " You need to provide the path to the Pencil Code, either via the"
   echo " --pencil-home option or you need to set PENCIL_HOME; "
   echo " consider sourcing sourceme.{,c}sh"
   exit 1
 fi
-
+#
 bindir=$pencil_home_path/bin
 srcdir=$pencil_home_path/src
-
+#
 echo "Files will be linked to the root code directory '$pencil_home_path'."
-
+#
 remove_broken_links
 link_scripts
 link_root_makefile
@@ -310,4 +314,3 @@ create_Makefile_inc
 #copy_local_files
 print_status
 prepare_for_compile
-
