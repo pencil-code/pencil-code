@@ -1,0 +1,18 @@
+Directory:
+    ${PENCIL_HOME}/samples/0d-tests/heating_ionize
+CVS-Id:
+    $Id$
+Maintainer:
+    Axel Brandenburg <brandenb/nordita[dot]org>
+Added:
+    2-Aug-2003
+Status:
+    Works since 2003/08/02
+Recommended resolution:
+    1x1x1 (zero-dimensional run)
+Comments:
+    As in the heating_ionize sample, here too we solve an ODE (hence 0-D):
+        rho T ds/dt = heat_uniform
+    However, unlike the heating_ionize sample, where we use eos_ionization,
+    here we use eos_fixed_ionization with xHe=.1, yH0=0.
+    Our units are again [rho]=1e-6 g/cm^3, [u]=km/s, [x]=Mm, [T]=K.

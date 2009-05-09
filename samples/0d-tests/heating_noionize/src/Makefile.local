@@ -3,15 +3,10 @@
 ### Included by `Makefile'
 ###
 
-LDMPI=-lmpi
 MPICOMM=nompicomm
 GRAVITY=nogravity
-FORCING=noforcing
 ENTROPY=entropy
 MAGNETIC=nomagnetic
 HYDRO=hydro
 DENSITY=density
-IO=io_dist
-FFTPACK=nofftpack
-POWER=nopower_spectrum
 EOS=eos_fixed_ionization
