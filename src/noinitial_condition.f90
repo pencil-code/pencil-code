@@ -30,12 +30,10 @@
 !
 !***************************************************************
 !
-!--------------------------------------------------------------------------
-!
 ! HOW TO USE THIS FILE
 ! --------------------
 !
-! Change the line above 
+! Change the line above to
 !    linitial_condition = .true.
 ! to enable use of custom initial conditions.
 !
@@ -44,13 +42,13 @@
 ! to use.
 !
 ! Save the file with a meaningful name, e.g. mhs_equilibrium.f90, and
-! place it in the $PENCIL_HOME/src/initial_condition directory.  This
+! place it in the $PENCIL_HOME/src/initial_condition directory. This
 ! path has been created to allow users to optionally check their
-! contributions in to the Pencil Code SVN repository (HOWEVER, less
-! general initial conditions should not go here, see below). This may
-! be useful if you are working on/using an initial condition with
-! somebody else or may require some assistance from one of the main
-! Pencil Code team.
+! contributions in to the Pencil Code SVN repository. This may be
+! useful if you are working on/using an initial condition with
+! somebody else or may require some assistance from one from the main
+! Pencil Code team. HOWEVER, less general initial conditions should
+! not go here (see below).
 !
 ! You can also place initial condition files directly in the run
 ! directory. Simply create the folder 'initial_condition' at the same
@@ -59,19 +57,17 @@
 ! src directory. This is the preferred method for initial conditions
 ! that are not very general.
 !
-! To use your additional initial condition code edit the
+! To use your additional initial condition code, edit the
 ! Makefile.local in the src directory under the run directory in which
-! you wish to use your initial condition.  Add a line with all the
-! module selections to say something like:
+! you wish to use your initial condition. Add a line that says e.g.
 !
-!    INITIAL_CONDITION=initial_condition/mhs_equilibrium
+!    INITIAL_CONDITION =   initial_condition/mhs_equilibrium
 !
-! Where mhs_equilibrium is replaced by the filename of your new file
-! upto and not including the .f90
+! Here mhs_equilibrium is replaced by the filename of your new file,
+! not including the .f90 extension.
 !
 ! This module is based on Tony's special module.
 !
-!--------------------------------------------------------------------
 module InitialCondition
 !
   use Cdata
@@ -91,12 +87,9 @@ module InitialCondition
 !***********************************************************************
     subroutine register_initial_condition()
 !
-!  Configure pre-initialised (i.e. before parameter read) variables
-!  which should be know to be able to evaluate
+!  Register variables associated with this module; likely none.
 !
 !  07-may-09/wlad: coded
-!
-!  Identify CVS/SVN version information.
 !
       if (lroot) call cvs_id( &
            "$Id$")
@@ -105,11 +98,11 @@ module InitialCondition
 !***********************************************************************
     subroutine initialize_initial_condition(f)
 !
+!  Initialize any module variables which are parameter dependent.
+!
 !  07-may-09/wlad: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-!
-!  Initialize any module variables which are parameter dependent
 !
       call keep_compiler_quiet(f)
 !
@@ -131,9 +124,8 @@ module InitialCondition
 !***********************************************************************
     subroutine initial_condition_lnrho(f)
 !
-!  Initialize logarithmic density. init_lnrho 
-!  will take care of converting it to linear 
-!  density if you use ldensity_nolog
+!  Initialize logarithmic density. init_lnrho will take care of
+!  converting it to linear density if you use ldensity_nolog.
 !
 !  07-may-09/wlad: coded
 !
@@ -161,7 +153,7 @@ module InitialCondition
 !********************************************************************
     subroutine initial_condition_aa(f)
 !
-!  Initialize the magnetic potential.
+!  Initialize the magnetic vector potential.
 !
 !  07-may-09/wlad: coded
 !
@@ -175,7 +167,7 @@ module InitialCondition
 !***********************************************************************
     subroutine initial_condition_aatest(f)
 !
-!  Initialize testfield
+!  Initialize testfield.
 !
 !  07-may-09/wlad: coded
 !
@@ -187,7 +179,7 @@ module InitialCondition
 !********************************************************************
     subroutine initial_condition_uutest(f)
 !
-!  Initialize testflow
+!  Initialize testflow.
 !
 !  07-may-09/wlad: coded
 !
@@ -199,7 +191,7 @@ module InitialCondition
 !********************************************************************
     subroutine initial_condition_lncc(f)
 !
-!  Initialize passive scalar
+!  Initialize passive scalar.
 !
 !  07-may-09/wlad: coded
 !
@@ -211,7 +203,7 @@ module InitialCondition
 !********************************************************************
     subroutine initial_condition_chiral(f)
 !
-!  Initialize chiral
+!  Initialize chiral.
 !
 !  07-may-09/wlad: coded
 !
@@ -223,7 +215,7 @@ module InitialCondition
 !********************************************************************
     subroutine initial_condition_chemistry(f)
 !
-!  Initialize chemistry
+!  Initialize chemistry.
 !
 !  07-may-09/wlad: coded
 !
@@ -235,7 +227,7 @@ module InitialCondition
 !********************************************************************
     subroutine initial_condition_uud(f)
 !
-!  Initialize dust fluid velocity
+!  Initialize dust fluid velocity.
 !
 !  07-may-09/wlad: coded
 !
@@ -247,7 +239,7 @@ module InitialCondition
 !********************************************************************
     subroutine initial_condition_nd(f)
 !
-!  Initialize dust fluid density
+!  Initialize dust fluid density.
 !
 !  07-may-09/wlad: coded
 !
@@ -259,7 +251,7 @@ module InitialCondition
 !********************************************************************
     subroutine initial_condition_uun(f)
 !
-!  Initialize neutral fluid velocity
+!  Initialize neutral fluid velocity.
 !
 !  07-may-09/wlad: coded
 !
@@ -271,7 +263,7 @@ module InitialCondition
 !********************************************************************
     subroutine initial_condition_lnrhon(f)
 !
-!  Initialize neutral fluid density
+!  Initialize neutral fluid density.
 !
 !  07-may-09/wlad: coded
 !
@@ -283,7 +275,7 @@ module InitialCondition
 !********************************************************************
     subroutine initial_condition_ecr(f)
 !
-!  Initialize cosmic rays
+!  Initialize cosmic rays.
 !
 !  07-may-09/wlad: coded
 !
@@ -295,7 +287,7 @@ module InitialCondition
 !********************************************************************
     subroutine initial_condition_fcr(f)
 !
-!  Initialize cosmic ray flux
+!  Initialize cosmic ray flux.
 !
 !  07-may-09/wlad: coded
 !
@@ -307,7 +299,7 @@ module InitialCondition
 !********************************************************************
     subroutine initial_condition_solid_cells(f)
 !
-!  Initialize solid cells
+!  Initialize solid cells.
 !
 !  07-may-09/wlad: coded
 !
@@ -319,7 +311,7 @@ module InitialCondition
 !********************************************************************
     subroutine initial_condition_cctest(f)
 !
-!  Initialize testscalar
+!  Initialize testscalar.
 !
 !  07-may-09/wlad: coded
 !
@@ -331,7 +323,7 @@ module InitialCondition
 !********************************************************************
     subroutine initial_condition_xxp(f,fp)
 !
-!  Initialize particles' positions
+!  Initialize particles' positions.
 !
 !  07-may-09/wlad: coded
 !
@@ -345,7 +337,7 @@ module InitialCondition
 !***********************************************************************
     subroutine initial_condition_vvp(f,fp)
 !
-!  Initialize particles' velocities
+!  Initialize particles' velocities.
 !
 !  07-may-09/wlad: coded
 !
@@ -380,7 +372,7 @@ module InitialCondition
 !
     endsubroutine write_initial_condition_init_pars
 !***********************************************************************
-
+!
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
