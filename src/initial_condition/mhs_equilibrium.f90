@@ -26,11 +26,11 @@ module InitialCondition
   include '../initial_condition.h'
 !
   real :: density_power_law,temperature_power_law,plasma_beta
-  logical :: lnumerical_equilibrium=.true.
+  logical :: lnumerical_mhsequilibrium=.true.
 !
   namelist /initial_condition_pars/ &
       density_power_law,temperature_power_law,plasma_beta,&
-      lnumerical_equilibrium
+      lnumerical_mhsequilibrium
 !
   contains
 !***********************************************************************
@@ -80,7 +80,7 @@ module InitialCondition
 !  is a lot better when it comes to reproduce what the code actually
 !  solves. 
 !
-      if (.not.lnumerical_equilibrium) then 
+      if (.not.lnumerical_mhsequilibrium) then 
 !
         if (lmagnetic) then 
           ksi=(1.+plasma_beta)/plasma_beta
@@ -169,7 +169,7 @@ module InitialCondition
 !  If the run is non-magnetic, this is the last routine called. 
 !  Enforce numerical equilibrium then
 !
-      if ((.not.lmagnetic).and.lnumerical_equilibrium) &
+      if ((.not.lmagnetic).and.lnumerical_mhsequilibrium) &
           call enforce_numerical_equilibrium(f,lhd=.true.)
 !
     endsubroutine initial_condition_lnrho
@@ -229,7 +229,7 @@ module InitialCondition
 !
 !  All quantities are set. Enforce numerical equilibrium.
 !
-      if (lnumerical_equilibrium) &
+      if (lnumerical_mhsequilibrium) &
           call enforce_numerical_equilibrium(f,lhd=.false.)
 !
     endsubroutine initial_condition_aa
