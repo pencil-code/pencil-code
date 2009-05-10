@@ -78,6 +78,7 @@ program run
   use Slices
   use Snapshot
   use Sub
+  use Testscalar,      only: rescaling_testscalar
   use Testfield,       only: rescaling_testfield
   use TestPerturb,     only: testperturb_begin, testperturb_finalize
   use Timeavg
@@ -395,13 +396,16 @@ program run
       if (lroot) inquire(FILE="RELOAD", EXIST=lreload_file)
       if (lroot) inquire(FILE="RELOAD_ALWAYS", EXIST=lreload_always_file)
       lreloading = lreload_file .or. lreload_always_file
+!
 ! In some compilers (particularly pathf90) the file reload is being give
 ! unit = 1 hence there is conflict during re-reading of parameters. 
 ! In this temporary fix, the RELOAD file is being removed just after it
 ! has been seen, not after RELOAD-ing has been completed. There must
 ! be a better solution. 
+!
       if (lroot .and. lreload_file) call remove_file("RELOAD")
       call mpibcast_logical(lreloading, 1)
+!
       if (lreloading) then
         if (lroot) write(0,*) 'Found RELOAD file -- reloading parameters'
 !  Re-read configuration
@@ -538,6 +542,7 @@ program run
 !
     if (lforcing) call addforce(f)
     if (lrescaling_magnetic)  call rescaling_magnetic(f)
+    if (lrescaling_testscalar) call rescaling_testscalar(f)
     if (lrescaling_testfield) call rescaling_testfield(f)
 !
 !  Check for SNe, and update f if necessary (see interstellar.f90)
