@@ -23,7 +23,7 @@ module InitialCondition
 !
   implicit none
 !
-  include 'initial_condition.h'
+  include '../initial_condition.h'
 !
   real :: density_power_law,temperature_power_law,plasma_beta
   logical :: lnumerical_equilibrium=.true.
