@@ -30,7 +30,7 @@
 #   Also link files from the bin directory ==> should be renamed
 # CVS $Id$
 # Usage:
-#   setup-src  [src-dir]
+#   pc_setupsrc  [src-dir]
 
 if (! $?PENCIL_HOME) then
   echo "You need to set PENCIL_HOME; consider sourcing sourceme.{,c}sh"
@@ -83,7 +83,7 @@ mv -f $srcdir $savesrcdir
 
 mkdir $srcdir
 mkdir $testdatadir
-(setup-src)
+(pc_setupsrc)
 
 if (-e $rundir/datadir.in) then
    mv -f $rundir/datadir.in $rundir/datadir.save

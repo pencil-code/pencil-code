@@ -1017,7 +1017,7 @@ else if ($hn =~ rio* || $hn =~ pia*) then
   chmod 600 ~/.mpdpasswd
   echo secretword=mofassa >! ~/.mpdpasswd
   \cp -p ~/.mpdpasswd ~/.mpd.conf
-  if ($#nodelist == 1) then
+  if ($ncpus == 1) then
     echo "Apparently an interactive run."
     set nodelist = `repeat $ncpus echo $nodelist`
     set mpirun = ' '

@@ -8,7 +8,7 @@
 #   Add the current run directory to a SVN repository. Assumes that the
 #   directory above (`..') is already under SVN.
 # Usage:
-#   [create new run directory; setup-src; mkinpars; tune parameters]
+#   [create new run directory; pc_setupsrc; mkinpars; tune parameters]
 #   newrundir>  cvs-add-rundir
 set rundir = `pwd`
 set commit = 0
