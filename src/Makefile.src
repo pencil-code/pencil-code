@@ -73,15 +73,6 @@ PARTICLES_VISCOSITY   = noparticles_viscosity
 #
 REAL_PRECISION = default
 # 
-# Overwrite settings that are local to each run directory.
-#
-include Makefile.local
-# 
-# Double precision settings and similar. Must be included _after_
-# Makefile.local, so we can set REAL_PRECISION=double there.
-#
-include Makefile.inc
-# 
 # Default compiler settings.
 #
 FC           = f90
@@ -112,6 +103,15 @@ CFLAGS_GENERAL =
 #
 FFLAGS_DOUBLE = -r8
 CFLAGS_DOUBLE = -DDOUBLE_PRECISION
+# 
+# Overwrite settings that are local to each run directory.
+#
+include Makefile.local
+# 
+# Double precision settings and similar. Must be included _after_
+# Makefile.local, so we can set REAL_PRECISION=double there.
+#
+include Makefile.inc
 # 
 # Compile files with particle programming structure if particles are chosen.
 #
@@ -355,8 +355,8 @@ endif
 #FFLAGS=-O3 #(genius1)
 #CFLAGS=-O3 #(genius1)
 #LD_MPI=-Wl,-relax #(genius1)
-#FFLAGS_DOUBLE=-qrealsize=8
-#CFLAGS_DOUBLE=-qrealsize=8
+#FFLAGS_DOUBLE=-qrealsize=8 #(genius1)
+#CFLAGS_DOUBLE=-qrealsize=8 #(genius1)
 #FC=ifort #(eh[1-4])
 #FFLAGS=-O3 -I/opt/lam-7.1.2b24-ifort/include/ #(eh[1-4])
 #LD_MPI=-lltdl -L/opt/lam-7.1.2b24-ifort/lib -llamf77mpi -llammpio -lmpi -llam -lpthread #(eh[1-4])
