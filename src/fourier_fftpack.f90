@@ -3,27 +3,22 @@
 !  This module contains FFT wrapper subroutines.
 !
 module Fourier
-
+!
   use Cdata
   use Cparam
   use Messages
   use Mpicomm, only: transp,transp_other
-
+!
   implicit none
-
-
+!
   include 'fourier.h'
-! Allocatable array which can be used for temporary storage
-! in FFT
-
 !
   interface fourier_transform_other
     module procedure fourier_transform_other_1
     module procedure fourier_transform_other_2
   endinterface
-
+!
   contains
-
 !***********************************************************************
     subroutine fourier_transform(a_re,a_im,linv)
 !
@@ -614,8 +609,6 @@ module Fourier
 !
 !  25-may-06/anders: adapted from transform_fftpack
 !
-      use Cdata, only: pi, Lx, x0, x, deltay, ky_fft
-!
       real, dimension (nx,ny,nz) :: a_re,a_im
       logical, optional :: linv
 !
@@ -783,8 +776,6 @@ module Fourier
 !  in the diagram, only in the opposite direction (starting lower right).
 !
 !  19-dec-06/anders: adapted from fourier_transform_shear
-!
-      use Cdata, only: pi, Lx, x0, x, deltay, ky_fft
 !
       real, dimension (nx,ny,nz) :: a_re,a_im
       logical, optional :: linv
@@ -1064,7 +1055,7 @@ module Fourier
 !   6-oct-2006/tobi: adapted from fourier_transform_other_2
 !
       use Mpicomm, only: transp_xy
-
+!
       real, dimension(nx,ny) :: a_re,a_im
       logical, optional :: linv
 !
@@ -1193,7 +1184,7 @@ module Fourier
 !                    and fourier_transform_other_2
 !
       use Mpicomm, only: transp_xy_other,transp_xy
-
+!
       real, dimension(:,:) :: a_re,a_im
       logical, optional :: linv
 !
@@ -1436,7 +1427,6 @@ module Fourier
 !
 !  19-jul-06/anders: coded
 !
-      use Cdata, only: ky_fft
       use Mpicomm
 !
       real, dimension (ny,nz) :: a_re
