@@ -307,7 +307,8 @@ boundcond.o: boundcond.f90 cdata.o cparam.o $(EOS_OBJ) farray.o $(FOURIER_OBJ) m
 #
 $(INITCOND_OBJ): initcond.f90 cdata.o $(EOS_OBJ) farray.o $(FOURIER_OBJ) general.o $(GRAVITY_OBJ) messages.o $(MPICOMM_FIX_OBJ) sub.o
 #
-$(INITIAL_CONDITION_OBJ): initial_condition.h $(INITIAL_CONDITION_SRC) initial_condition_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) farray.o $(FOURIER_OBJ) general.o#
+$(INITIAL_CONDITION_OBJ): initial_condition.h $(INITIAL_CONDITION_SRC) initial_condition_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) farray.o general.o
+#
 $(TIMESTEP_OBJ): $(TIMESTEP).f90 $(CDATA_OBJ) $(MPICOMM_OBJ) equ.o $(FORCING_OBJ) $(BORDER_PROFILES_OBJ)
 #
 snapshot.o: snapshot.f90 $(CDATA_OBJ) $(MPICOMM_OBJ) $(MESSAGES_OBJ) $(IO_OBJ) boundcond.o $(POWER_OBJ) $(STRUCT_FUNC_OBJ) $(RADIATION_OBJ) $(EOS_OBJ) $(MAGNETIC_OBJ) persist.o $(PARTICLES_MAIN_OBJ) $(SHOCK_OBJ)
