@@ -81,7 +81,7 @@ module InitialCondition
 !
 !!  integer :: dummy
 !
-!!  namelist /initial_condition_init_pars/ dummy
+!!  namelist /initial_condition_pars/ dummy
 !
   contains
 !***********************************************************************
@@ -349,7 +349,7 @@ module InitialCondition
 !
     endsubroutine initial_condition_vvp
 !***********************************************************************
-    subroutine read_initial_condition_init_pars(unit,iostat)
+    subroutine read_initial_condition_pars(unit,iostat)
 !
 !  07-may-09/wlad: coded
 !
@@ -360,9 +360,9 @@ module InitialCondition
 !
       call keep_compiler_quiet(unit)
 !
-    endsubroutine read_initial_condition_init_pars
+    endsubroutine read_initial_condition_pars
 !***********************************************************************
-    subroutine write_initial_condition_init_pars(unit)
+    subroutine write_initial_condition_pars(unit)
 !
 !  07-may-09/wlad: coded
 !
@@ -370,7 +370,7 @@ module InitialCondition
 !
       call keep_compiler_quiet(unit)
 !
-    endsubroutine write_initial_condition_init_pars
+    endsubroutine write_initial_condition_pars
 !***********************************************************************
 !
 !********************************************************************

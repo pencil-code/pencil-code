@@ -22,5 +22,5 @@
     public ::  initial_condition_cctest
     public ::  initial_condition_xxp
     public ::  initial_condition_vvp
-    public ::  read_initial_condition_init_pars
-    public ::  write_initial_condition_init_pars
+    public ::  read_initial_condition_pars
+    public ::  write_initial_condition_pars
