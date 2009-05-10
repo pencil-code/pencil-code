@@ -441,6 +441,7 @@ module EquationOfState
           lpencil_in(i_lnTT)=.true.
           lpencil_in(i_lnrho)=.true.
         endif
+        if (lpencil_in(i_pp1)) lpencil_in(i_pp)=.true.
         if (lpencil_in(i_TT1)) lpencil_in(i_lnTT)=.true.
         if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true.
         if (lpencil_in(i_lnTT)) then
@@ -512,6 +513,7 @@ module EquationOfState
           lpencil_in(i_lnTT)=.true.
           lpencil_in(i_lnrho)=.true.
         endif
+        if (lpencil_in(i_pp1)) lpencil_in(i_pp)=.true.
         if (leos_isentropic) then
           if (lpencil_in(i_lnTT)) lpencil_in(i_lnrho)=.true.
           if (lpencil_in(i_glnTT)) lpencil_in(i_glnrho)=.true.
@@ -533,6 +535,7 @@ module EquationOfState
         if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true.
         if (lpencil_in(i_ee)) lpencil_in(i_lnTT)=.true.
         if (lpencil_in(i_pp)) lpencil_in(i_rho)=.true.
+        if (lpencil_in(i_pp1)) lpencil_in(i_pp)=.true.
         if (leos_isothermal) then
           if (lpencil_in(i_ss)) lpencil_in(i_lnrho)=.true.
           if (lpencil_in(i_del2ss)) then 
@@ -651,6 +654,7 @@ module EquationOfState
         if (lpencil(i_yH)) p%yH=impossible
         if (lpencil(i_TT)) p%TT=exp(p%lnTT)
         if (lpencil(i_TT1)) p%TT1=exp(-p%lnTT)
+        if (lpencil(i_pp1)) p%pp1=1./p%pp
         if (lpencil(i_glnTT)) p%glnTT=gamma1*p%glnrho+cv1*p%gss
         if (lpencil(i_del2lnTT)) then
           if (ldensity_nolog) then
@@ -698,6 +702,7 @@ module EquationOfState
         if (lpencil(i_yH)) p%yH=impossible
         if (lpencil(i_TT)) p%TT=exp(p%lnTT)
         if (lpencil(i_TT1)) p%TT1=exp(-p%lnTT)
+        if (lpencil(i_pp1)) p%pp1=1./p%pp
         if (lpencil(i_gss)) p%gss=cv*(p%glnTT-gamma1*p%glnrho)
         if (lpencil(i_del2ss)) then
           if (ldensity_nolog) then
@@ -753,6 +758,7 @@ module EquationOfState
           if (lpencil(i_gss)) p%gss=-(cp-cv)*p%glnrho
           if (lpencil(i_hss)) p%hss=-(cp-cv)*p%hlnrho
           if (lpencil(i_pp)) p%pp=gamma11*p%rho*cs20
+          if (lpencil(i_pp1)) p%pp1=1./p%pp
         elseif (leos_localisothermal) then
           if (lpencil(i_cs2)) p%cs2=f(l1:l2,m,n,iglobal_cs2)
           if (lpencil(i_lnTT)) call fatal_error("calc_pencils_eos","temperature not needed for localisothermal")
@@ -764,6 +770,7 @@ module EquationOfState
           if (lpencil(i_gss)) call fatal_error("calc_pencils_eos","entropy gradient not needed for localisothermal")
           if (lpencil(i_hss)) call fatal_error("calc_pencils_eos","no gradients yet for localisothermal")
           if (lpencil(i_pp)) p%pp=p%rho*p%cs2
+          if (lpencil(i_pp1)) p%pp1=1./p%pp
         else
           call fatal_error("calc_pencils_eos","Full equation of state not implemented for ilnrho_cs2")
         endif
