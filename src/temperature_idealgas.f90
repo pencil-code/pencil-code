@@ -760,6 +760,11 @@ module Entropy
 !
       if (lheatc_shock) call calc_heatcond_shock(df,p)
 !
+!  Entry possibility for "personal" entries.
+!  In that case you'd need to provide your own "special" routine.
+!
+      if (lspecial) call special_calc_entropy(f,df,p)
+!
 !  Add thermal diffusion to temperature equation
 !
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + thdiff
@@ -781,11 +786,6 @@ module Entropy
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - gamma1*p%divu
         endif
       endif
-!
-!  Entry possibility for "personal" entries.
-!  In that case you'd need to provide your own "special" routine.
-!
-      if (lspecial) call special_calc_entropy(f,df,p)
 !
 !  Calculate entropy related diagnostics
 !

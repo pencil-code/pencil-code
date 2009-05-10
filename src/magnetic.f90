@@ -1936,6 +1936,10 @@ module Magnetic
         if (lfirst.and.ldt) diffus_eta=diffus_eta+nu_ni1*p%va2
       endif
 !
+!  Special contributions to this module are called here
+!
+      if (lspecial) call special_calc_magnetic(f,df,p)
+!
 !  Multiply resistivity by Nyquist scale, for resistive time-step.
 !  We include possible contribution from meanfield_etat, which is however
 !  only invoked in mean field models.
@@ -2104,10 +2108,6 @@ module Magnetic
           endif
         endif
       endif
-!
-!  Special contributions to this module are called here
-!
-      if (lspecial) call special_calc_magnetic(f,df,p)
 !
 !  Apply border profiles
 !
@@ -4458,7 +4458,7 @@ module Magnetic
 !  This mimics a neutron star just after the Meissner effect forced the
 !  internal field to become vertical (aligned with rotation axis).
 !
-!  AMPL represents mu/4 pi, where  mu = 1/2 Int rr Ã? jj dV  is the
+!  AMPL represents mu/4 pi, where  mu = 1/2 Int rr jj dV  is the
 !  magnetic moment of the external dipole field.
 !  INCLAA is the inclination of the dipolar field.
 !

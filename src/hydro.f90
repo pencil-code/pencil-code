@@ -1414,6 +1414,10 @@ module Hydro
         endif
       endif
 !
+!  Interface for your personal subroutines calls
+!
+      if (lspecial) call special_calc_hydro(f,df,p)
+!
 ! calculate viscous force
 !
       if (lviscosity) call calc_viscous_force(df,p)
@@ -1486,10 +1490,6 @@ module Hydro
         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-ruym*p%rho1*tau_damp_ruym1
       if (tau_damp_ruzm/=0.) &
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-ruzm*p%rho1*tau_damp_ruzm1
-!
-!  Interface for your personal subroutines calls
-!
-      if (lspecial) call special_calc_hydro(f,df,p)
 !
 !  Apply border profiles
 !

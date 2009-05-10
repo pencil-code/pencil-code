@@ -1600,6 +1600,10 @@ module Density
         if (headtt) print*,'dlnrho_dt: diffrho_shock=', diffrho_shock
       endif
 !
+!  Interface for your personal subroutines calls
+!
+      if (lspecial) call special_calc_density(f,df,p)
+!
 !  Add diffusion term to continuity equation
 !
       df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + fdiff
@@ -1614,10 +1618,6 @@ module Density
           print*,'dlnrho_dt: max(diffus_diffrho3) =', maxval(diffus_diffrho3)
         endif
       endif
-!
-!
-!
-      if (lspecial) call special_calc_density(f,df,p)
 !
 !  Apply border profile
 !

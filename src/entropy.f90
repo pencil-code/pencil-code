@@ -2074,6 +2074,11 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
 !
       if (lviscosity .and. lviscosity_heat) call calc_viscous_heat(f,df,p,Hmax)
 !
+!  Entry possibility for "personal" entries.
+!  In that case you'd need to provide your own "special" routine.
+!
+      if (lspecial) call special_calc_entropy(f,df,p)
+!
 !  Thermal conduction delegated to different subroutines.
 !
       if (lheatc_Kprof)    call calc_heatcond(f,df,p)
@@ -2117,11 +2122,6 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
 !  Possibility of entropy relaxation in exterior region.
 !
       if (tau_ss_exterior/=0.) call calc_tau_ss_exterior(df,p)
-!
-!  Entry possibility for "personal" entries.
-!  In that case you'd need to provide your own "special" routine.
-!
-      if (lspecial) call special_calc_entropy(f,df,p)
 !
 !  Apply border profile
 !
