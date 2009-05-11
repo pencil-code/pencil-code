@@ -3,14 +3,14 @@ pro rvid_plane,field,mpeg=mpeg,png=png,TRUEPNG=png_truecolor,tmin=tmin,$
                min=amin,extension=extension,nrepeat=nrepeat,wait=wait,$
                njump=njump,datadir=datadir,OLDFILE=OLDFILE,debug=debug,$
                proc=proc,ix=ix,iy=iy,ps=ps,iplane=iplane,imgdir=imgdir,$
-               global_scaling=global_scaling,shell=shell,r_int=r_int,$
+               global_scaling=global_scaling,shell=shell,r_int=r_int, $
                r_ext=r_ext,zoom=zoom,colmpeg=colmpeg,exponential=exponential, $
                contourplot=contourplot,color=color,sqroot=sqroot,tunit=tunit, $
                nsmooth=nsmooth, textsize=textsize, $
                _extra=_extra, $
                polar=polar, anglecoord=anglecoord, $
                style_polar=style_polar,nlevels=nlevels, $
-               doublebuffer=doublebuffer,wsx=wsx,wsy=wsy,log=log
+               doublebuffer=doublebuffer,wsx=wsx,wsy=wsy,log=log,stride=stride
 ;
 ; $Id$
 ;
@@ -60,6 +60,8 @@ default,style_polar,'fill'
 default,wsx,640
 default,wsy,480
 default,nlevels,30
+default,stride,0
+if (stride lt 0) then stride = 0
 ;
 tini=1e-30 ; a small number
 ;
@@ -335,13 +337,15 @@ if (keyword_set(global_scaling)) then begin
 endif
 ;
 close,1 & openr,1,file_slice,/f77
-ifirst=1
+iteration=0
 while (not eof(1)) do begin
+  iteration=iteration+1
   if (keyword_set(OLDFILE)) then begin ; For files without position
     readu,1,plane,t
   end else begin
     readu,1,plane,t,slice_z2pos
   end
+  if ((iteration-1) mod (stride+1) ne 0) then continue
 ;
 ; rescale data with optional parameter zoom
 ; WARNING: the scaling can produce artifacts at shearing boundaries. Contour
@@ -468,7 +472,7 @@ while (not eof(1)) do begin
 ;
 ; default: output on the screen
 ;
-          if (ifirst) then $
+          if (iteration eq 1) then $
               print, '----islice--------t----------min------------max--------'
           print,islice,t,min([plane2]),max([plane2])
         end
@@ -485,7 +489,6 @@ while (not eof(1)) do begin
     end
     islice=islice+1
   end
-  ifirst=0
 end
 close,1
 ;
