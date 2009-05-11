@@ -70,7 +70,7 @@ foreach label (ser par)
     set nprocz = `expr $ncpus / $nprocy`
     cp -rp src-orig src-$label
     rm -rf src-$label/CVS		# mustn't copy CVS subdirectory
-    setup-src src-$label
+    pc_setupsrc src-$label
     # Set mpi and mpio for src-$label:
     perl -i -p -e 's/MPICOMM\s*=\s*nompicomm/MPICOMM   =   mpicomm/;' \
                -e 's/IO\s*=\s*io.*/IO        =   io_mpio/;' \
