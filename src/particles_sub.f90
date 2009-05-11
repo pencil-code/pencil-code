@@ -513,11 +513,16 @@ module Particles_sub
       integer, dimension (mpar_loc) :: ipar
       integer :: npar_loc
 !
-      real, dimension (0:ncpus-1,npar_mig,mpvar) :: fp_mig, dfp_mig
-      integer, dimension (0:ncpus-1,npar_mig) :: ipar_mig
+      real, dimension (npar_mig,mpvar) :: fp_mig, dfp_mig
+      integer, dimension (npar_mig) :: ipar_mig, iproc_rec_array
+      integer, dimension (npar_mig) :: isort_array
       integer, dimension (0:ncpus-1) :: nmig_leave, nmig_enter
+      integer, dimension (0:ncpus-1) :: ileave_low, ileave_high
+      integer, dimension (0:ncpus-1) :: iproc_rec_count
       integer :: i, j, k, iproc_rec, ipx_rec, ipy_rec, ipz_rec
+      integer :: nmig_leave_total, ileave_high_max
       logical :: lredo, lredo_all
+      integer :: itag_nmig=500, itag_ipar=510, itag_fp=520, itag_dfp=530
 !
       intent (inout) :: fp, npar_loc, ipar, dfp
 !
@@ -534,7 +539,9 @@ module Particles_sub
 !  coordinate value of the last grid point and the first ghost point.
 !
         nmig_leave=0
+        nmig_leave_total=0
         nmig_enter=0
+!
         do k=npar_loc,1,-1
 !  Find x index of receiving processor.
           ipx_rec=ipx
@@ -655,6 +662,7 @@ module Particles_sub
 !  Copy migrating particle to the end of the fp array.
 !
             nmig_leave(iproc_rec)=nmig_leave(iproc_rec)+1
+            nmig_leave_total     =nmig_leave_total     +1
             if (sum(nmig_leave)>npar_mig) then
               print '(a,i3,a,i3,a)', &
                   'redist_particles_procs: too many particles migrating '// &
@@ -673,10 +681,10 @@ module Particles_sub
                 call fatal_error('redist_particles_procs','')
               endif
             endif
-            fp_mig(iproc_rec,nmig_leave(iproc_rec),:)=fp(k,:)
-            if (present(dfp)) &
-                dfp_mig(iproc_rec,nmig_leave(iproc_rec),:)=dfp(k,:)
-            ipar_mig(iproc_rec,nmig_leave(iproc_rec))=ipar(k)
+            fp_mig(nmig_leave_total,:)=fp(k,:)
+            if (present(dfp)) dfp_mig(nmig_leave_total,:)=dfp(k,:)
+            ipar_mig(nmig_leave_total)=ipar(k)
+            iproc_rec_array(nmig_leave_total)=iproc_rec
 !
 !  Move the particle with the highest index number to the empty spot left by
 !  the migrating particle.
@@ -707,10 +715,10 @@ module Particles_sub
 !
         do i=0,ncpus-1
           if (iproc/=i) then
-            call mpirecv_int(nmig_enter(i), 1, i, 111)
+            call mpirecv_int(nmig_enter(i),1,i,itag_nmig)
           else
             do j=0,ncpus-1
-              if (iproc/=j) call mpisend_int(nmig_leave(j), 1, j, 111)
+              if (iproc/=j) call mpisend_int(nmig_leave(j),1,j,itag_nmig)
             enddo
           endif
         enddo
@@ -725,17 +733,46 @@ module Particles_sub
         endif
         call fatal_error_local_collect()
 !
+!  Sort array of migrating particle in order of receiving processor.
+!
+        if (nmig_leave_total>=1) then
+          ileave_high_max=0
+          do i=0,ncpus-1
+            if (nmig_leave(i)>=1) then
+              ileave_low(i)  =ileave_high_max+1
+              ileave_high(i) =ileave_low(i)+nmig_leave(i)-1
+              ileave_high_max=ileave_high_max+nmig_leave(i)
+            else
+              ileave_low(i) =0
+              ileave_high(i)=0
+            endif
+          enddo
+          iproc_rec_count=0
+          do k=1,nmig_leave_total
+            isort_array(ileave_low(iproc_rec_array(k))+iproc_rec_count(iproc_rec_array(k)))=k
+            iproc_rec_count(iproc_rec_array(k))= &
+                iproc_rec_count(iproc_rec_array(k))+1
+          enddo
+          ipar_mig(1:nmig_leave_total)= &
+              ipar_mig(isort_array(1:nmig_leave_total))
+          fp_mig(1:nmig_leave_total,:)= &
+              fp_mig(isort_array(1:nmig_leave_total),:)
+          if (present(dfp)) &
+              dfp_mig(1:nmig_leave_total,:)= &
+                  dfp_mig(isort_array(1:nmig_leave_total),:)
+        endif
+!
 !  Set to receive.
 !
         do i=0,ncpus-1
           if (iproc/=i .and. nmig_enter(i)/=0) then
             call mpirecv_real(fp(npar_loc+1:npar_loc+nmig_enter(i),:), &
-                (/nmig_enter(i),mpvar/), i, 222)
+                (/nmig_enter(i),mpvar/),i,itag_fp)
             call mpirecv_int(ipar(npar_loc+1:npar_loc+nmig_enter(i)), &
-                nmig_enter(i), i, 223)
+                nmig_enter(i),i,itag_ipar)
             if (present(dfp)) &
                 call mpirecv_real(dfp(npar_loc+1:npar_loc+nmig_enter(i),:), &
-                (/nmig_enter(i),mpvar/), i, 333)
+                (/nmig_enter(i),mpvar/),i,itag_dfp)
             if (ip<=6) then
               print*, 'redist_particles_procs: iproc, iproc_send=', iproc, i
               print*, 'redist_particles_procs: received fp=', &
@@ -800,22 +837,22 @@ module Particles_sub
           if (iproc==i) then
             do j=0,ncpus-1
               if (iproc/=j .and. nmig_leave(j)/=0) then
-                call mpisend_real(fp_mig(j,1:nmig_leave(j),:), &
-                    (/nmig_leave(j),mpvar/), j, 222)
-                call mpisend_int(ipar_mig(j,1:nmig_leave(j)), &
-                    nmig_leave(j), j, 223)
+                call mpisend_real(fp_mig(ileave_low(j):ileave_high(j),:), &
+                    (/nmig_leave(j),mpvar/),j,itag_fp)
+                call mpisend_int(ipar_mig(ileave_low(j):ileave_high(j)), &
+                    nmig_leave(j),j,itag_ipar)
                 if (present(dfp)) &
-                    call mpisend_real(dfp_mig(j,1:nmig_leave(j),:), &
-                    (/nmig_leave(j),mpvar/), j, 333)
+                    call mpisend_real(dfp_mig(ileave_low(j):ileave_high(j),:), &
+                    (/nmig_leave(j),mpvar/),j,itag_dfp)
                 if (ip<=6) then
                   print*, 'redist_particles_proc: iproc, iproc_rec=', iproc, j
                   print*, 'redist_particles_proc: sent fp=', &
-                      fp_mig(j,1:nmig_leave(j),:)
+                      fp_mig(ileave_low(j):ileave_high(j),:)
                   print*, 'redist_particles_proc: sent ipar=', &
-                      ipar_mig(j,1:nmig_leave(j))
+                      ipar_mig(ileave_low(j):ileave_high(j))
                   if (present(dfp)) &
                       print*, 'redist_particles_proc: sent dfp=', &
-                      dfp_mig(j,1:nmig_leave(j),:)
+                      dfp_mig(ileave_low(j):ileave_high(j),:)
                 endif
               endif
             enddo
