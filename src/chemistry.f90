@@ -1410,7 +1410,7 @@ subroutine flame_front(f)
             enddo
           elseif (kreactions_profile(j)=='sin') then
             do n=1,mz
-              kreactions_z(n,j)=0.5*(1+cos(pi*(z(n)-xyz0(3))/kreactions_profile_width(j)))
+              kreactions_z(n,j)=0.5*(1+cos(pi*z(n)/kreactions_profile_width(j)))
             enddo
           endif
         enddo
@@ -2022,6 +2022,76 @@ subroutine flame_front(f)
           slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(1))
           if (lwrite_slice_xy4) &
           slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(1))
+          slices%ready=.true.
+        case ('chemspec2')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(2))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(2))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(2))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(2))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(2))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(2))
+          slices%ready=.true.
+        case ('chemspec3')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(3))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(3))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(3))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(3))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(3))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(3))
+          slices%ready=.true.
+        case ('chemspec4')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(4))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(4))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(4))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(4))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(4))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(4))
+          slices%ready=.true.
+        case ('chemspec5')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(5))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(5))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(5))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(5))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(5))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(5))
+          slices%ready=.true.
+        case ('chemspec6')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(6))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(6))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(6))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(6))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(6))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(6))
+          slices%ready=.true.
+        case ('chemspec7')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(7))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(7))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(7))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(7))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(7))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(7))
+          slices%ready=.true.
+        case ('chemspec8')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(8))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(8))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(8))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(8))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(8))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(8))
           slices%ready=.true.
       endselect
 !
