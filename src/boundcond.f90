@@ -5163,13 +5163,13 @@ module Boundcond
         lll = l1
         sgn = 1
         if (leos_chemistry) then 
-          call get_p_infx(p_infx,'bot')
+!          call get_p_infx(p_infx,'bot')
         endif
       case('top')
         lll = l2
         sgn = -1
         if (leos_chemistry) then
-          call get_p_infx(p_infx,'top')
+!          call get_p_infx(p_infx,'top')
         endif
       case default
         print*, "bc_nscbc_subin_x: ", topbot, " should be `top' or `bot'"
@@ -5242,15 +5242,15 @@ module Boundcond
             rho0(m1:m2,n1:n2)-p_infx)
         L_1 = (f(lll,m1:m2,n1:n2,iux) - cs0_ar(m1:m2,n1:n2))*&
             (dpp_dx- rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dux_dx)
-        call get_rhs_Y('bot',1,bound_rhs_Y)
-        call get_rhs_T('bot',1,bound_rhs_T)
+!        call get_rhs_Y('bot',1,bound_rhs_Y)
+!        call get_rhs_T('bot',1,bound_rhs_T)
      case('top')
         L_1=KK*(cs20_ar(m1:m2,n1:n2)/gamma0(m1:m2,n1:n2)*&
             rho0(m1:m2,n1:n2)-p_infx)
         L_5 = (f(lll,m1:m2,n1:n2,iux) + cs0_ar(m1:m2,n1:n2))*&
             ( dpp_dx+ rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dux_dx)
-        call get_rhs_Y('top',1,bound_rhs_Y)
-        call get_rhs_T('top',1,bound_rhs_T)
+!        call get_rhs_Y('top',1,bound_rhs_Y)
+!        call get_rhs_T('top',1,bound_rhs_T)
       endselect
 !
       L_2 = f(lll,m1:m2,n1:n2,iux)*(cs20_ar(m1:m2,n1:n2)*drho_dx-dpp_dx)
@@ -5356,7 +5356,7 @@ module Boundcond
         if (leos_chemistry) then 
 !          call calc_cs2y(cs2y,'bot',f)
 !          call get_gammay(gamma0,'bot')
-          call get_p_infy(p_infy,'bot')
+!          call get_p_infy(p_infy,'bot')
         endif
       case('top')
         mmm = m2
@@ -5364,7 +5364,7 @@ module Boundcond
         if (leos_chemistry) then
 !          call calc_cs2y(cs2y,'top',f)
 !          call get_gammay(gamma0,'top')
-          call get_p_infy(p_infy,'top')
+!          call get_p_infy(p_infy,'top')
         endif
       case default
         print*, "bc_nscbc_subin_y: ", topbot, " should be `top' or `bot'"

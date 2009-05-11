@@ -14,14 +14,14 @@
   public :: pencil_interdep_chemistry
 
 
-  public :: calc_for_chem_mixture
+!  public :: calc_for_chem_mixture
 
-  public :: get_p_infx
-  public :: get_p_infy
-  public :: get_rhs_Y
-  public :: get_rhs_T
-  public :: get_cs2_full
-  public :: get_gamma_full
+!  public :: get_p_infx
+!  public :: get_p_infy
+!  public :: get_rhs_Y
+!  public :: get_rhs_T
+!  public :: get_cs2_full
+!  public :: get_gamma_full
 
   public :: chemistry_clean_up
 
