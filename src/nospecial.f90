@@ -39,13 +39,11 @@
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
-
-!-------------------------------------------------------------------
 !
 ! HOW TO USE THIS FILE
 ! --------------------
 !
-! Change the line above 
+! Change the line above to
 !    lspecial = .true.
 ! to enable use of special hooks.
 !
@@ -71,39 +69,30 @@
 ! Where geo_kws it replaced by the filename of your new module
 ! upto and not including the .f90
 !
-!--------------------------------------------------------------------
-
 module Special
-
-  use Cparam
+!
   use Cdata
+  use Cparam
   use Messages
-  use Sub, only: keep_compiler_quiet
-
+  use Sub
+!
   implicit none
-
+!
   include 'special.h'
-
-!!  character, len(50) :: initcustom
-
-! input parameters
-!  namelist /special_init_pars/ dummy
-!!!eg.    initcustom
-! run parameters
-!  namelist /special_run_pars/ dummy
-
-!!
-!! Declare any index variables necessary for main or
-!!
+!
+!!  namelist /special_init_pars/ dummy
+!
+!!  namelist /special_run_pars/ dummy
+!
+! Declare index of new variables in f array (if any).
+!
 !!   integer :: iSPECIAL_VARIABLE_INDEX=0
-!!
-!! other variables (needs to be consistent with reset list below)
-!!
+!
+!! Diagnostic variables (needs to be consistent with reset list below).
+!
 !!   integer :: i_POSSIBLEDIAGNOSTIC=0
-!!
-
+!
   contains
-
 !***********************************************************************
     subroutine register_special()
 !
@@ -111,10 +100,6 @@ module Special
 !  which should be know to be able to evaluate
 !
 !  6-oct-03/tony: coded
-!
-      use Cdata
-!
-!  Identify CVS/SVN version information.
 !
       if (lroot) call cvs_id( &
            "$Id$")
@@ -127,16 +112,10 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      use Cdata
-      use Sub,     only: keep_compiler_quiet
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
-!!
-!!  Initialize any module variables which are parameter dependent
-!!
 !
-! DO NOTHING
       call keep_compiler_quiet(f)
 !
       if (lfargo_advection) then 
@@ -155,9 +134,7 @@ module Special
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
 !
-      use Cdata
       use Mpicomm
-      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -195,8 +172,6 @@ module Special
 !
 !  18-07-06/tony: coded
 !
-      use Sub, only: keep_compiler_quiet
-!
       logical, dimension(npencils) :: lpencil_in
 !
       call keep_compiler_quiet(lpencil_in)
@@ -209,9 +184,6 @@ module Special
 !  Most basic pencils should come first, as others may depend on them.
 !
 !   24-nov-04/tony: coded
-!
-      use Cdata
-      use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -238,9 +210,7 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
       use Mpicomm
-      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -264,55 +234,46 @@ module Special
 !!! see also integrate_mn_name
 !!        endif
 !!      endif
-
 ! Keep compiler quiet by ensuring every parameter is used
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
-
+!
     endsubroutine dspecial_dt
 !***********************************************************************
     subroutine read_special_init_pars(unit,iostat)
 !
-      use Sub, only: keep_compiler_quiet
-!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) call keep_compiler_quiet(iostat)
       call keep_compiler_quiet(unit)
-
+!
     endsubroutine read_special_init_pars
 !***********************************************************************
     subroutine write_special_init_pars(unit)
 !
-      use Sub, only: keep_compiler_quiet
-!
       integer, intent(in) :: unit
-
+!
       call keep_compiler_quiet(unit)
-
+!
     endsubroutine write_special_init_pars
 !***********************************************************************
     subroutine read_special_run_pars(unit,iostat)
 !
-      use Sub, only: keep_compiler_quiet
-!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) call keep_compiler_quiet(iostat)
       call keep_compiler_quiet(unit)
-
+!
     endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine write_special_run_pars(unit)
 !
-      use Sub, only: keep_compiler_quiet
-!
       integer, intent(in) :: unit
-
+!
       call keep_compiler_quiet(unit)
-
+!
     endsubroutine write_special_run_pars
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
@@ -321,8 +282,6 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
-      use Sub
 !!
 !!!   SAMPLE IMPLEMENTATION
 !!
@@ -349,7 +308,6 @@ module Special
 !!        write(3,*) 'i_SPECIAL_DIAGNOSTIC=',i_SPECIAL_DIAGNOSTIC
 !!      endif
 !!
-
     endsubroutine rprint_special
 !***********************************************************************
     subroutine get_slices_special(f,slices)
@@ -357,8 +315,6 @@ module Special
 !  Write slices for animation of Special variables.
 !
 !  26-jun-06/tony: dummy
-!
-      use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
@@ -373,8 +329,6 @@ module Special
 !  dummy routine
 !
 !  15-jan-08/axel: coded
-!
-      use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       intent(inout) :: f
@@ -392,9 +346,6 @@ module Special
 !   others may be calculated directly from the f array
 !
 !   06-oct-03/tony: coded
-!
-      use Cdata
-      use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -423,13 +374,9 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-
 !!
 !!  SAMPLE IMPLEMENTATION
 !!     (remember one must ALWAYS add to df)
@@ -455,13 +402,9 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-
 !!
 !!  SAMPLE IMPLEMENTATION
 !!     (remember one must ALWAYS add to df)
@@ -486,13 +429,9 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-
 !!
 !!  SAMPLE IMPLEMENTATION
 !!     (remember one must ALWAYS add to df)
@@ -513,9 +452,6 @@ module Special
 !
 !   27-nov-08/wlad: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-!
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real :: dt_
@@ -532,9 +468,6 @@ module Special
 !
 !   20-nov-08/wlad: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (:,:), intent(in) :: fp
 !
       if (NO_WARN) print*,fp !(keep compiler quiet)
@@ -548,9 +481,6 @@ module Special
 !
 !   20-nov-08/wlad: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (:,:), intent(in) :: fsp
 !
       if (NO_WARN) print*,fsp !(keep compiler quiet)
@@ -563,9 +493,6 @@ module Special
 !   others may be calculated directly from the f array
 !
 !   06-oct-03/tony: coded
-!
-      use Cdata
-      use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       type (boundary_condition) :: bc
@@ -585,9 +512,6 @@ module Special
 !
 !   06-jul-06/tony: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-!
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
 !
       call keep_compiler_quiet(f)
@@ -604,6 +528,4 @@ module Special
 !**                                                                **
     include 'special_dummies.inc'
 !********************************************************************
-
 endmodule Special
-
