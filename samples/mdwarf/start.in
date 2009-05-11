@@ -3,31 +3,32 @@
 !  Initialisation parameters
 !
 &init_pars
-  cvsid='$Id$',
-  ip=14,                        ! debugging parameter
+  cvsid = '$Id$',
+  ip = 14,                      ! debugging parameter
   xyz0  = -1.5,-1.5,-1.5,       ! first corner of box
   Lxyz  =  3. , 3. , 3.,        ! box size
   lperi =  F  , F  , F,         ! periodic direction?
-  random_gen='nr_f90'
+  random_gen = 'nr_f90'
+  lsphere_in_a_box = T
   r_ext = 1.
 /
 &eos_init_pars
-  cs0=1.5, rho0=1.,             ! values at r=0
+  cs0 = 1.5, rho0 = 1.,         ! values at r=0
 /
 &hydro_init_pars
- inituu='gaussian-noise-rprof',
-  ampluu=3e-2
+ inituu = 'gaussian-noise-rprof',
+  ampluu = 3e-2
 /
 &density_init_pars
-  initlnrho='isentropic-star',
+  initlnrho = 'isentropic-star',
 /
 &grav_init_pars
-  ipotential='M5-dwarf'
+  ipotential = 'M5-dwarf'
 /
 &entropy_init_pars
-  initss='isentropic-star'
+  initss = 'isentropic-star'
 /
 &magnetic_init_pars
-  initaa='gaussian-noise-rprof'
-  amplaa=1.e-6
+  initaa = 'gaussian-noise-rprof'
+  amplaa = 1.e-6
 /
