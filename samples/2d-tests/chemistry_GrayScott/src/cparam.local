@@ -5,9 +5,26 @@
 !  This file is included by cparam.f90
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxiliary variables added by this module
+! Use MVAR to reserve the appropriate workspace for testfield_z.f90
+! The MAUX number must be equally big and is used for uxb in the f-array.
+! At the end of this file, njtest must be set such that 3*njtest=MVAR.
+!
+! MVAR CONTRIBUTION 0
+! MAUX CONTRIBUTION 0
+!
+! Declare number of chemical species
 !
 ! NCHEMSPEC CONTRIBUTION 2*1
 !
 !***************************************************************
+!  Local settings concerning grid size and number of CPUs.
+!  This file is included by cparam.f90
+!
 integer, parameter :: ncpus=1,nprocy=1,nprocz=ncpus/nprocy,nprocx=1
 integer, parameter :: nxgrid=64,nygrid=nxgrid,nzgrid=1
+!
+!  note that MVAR=MAUX=3*njtest must be obeyed
+!
+integer, parameter :: njtest=4
