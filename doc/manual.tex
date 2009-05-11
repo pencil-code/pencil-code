@@ -1128,7 +1128,7 @@ In this case, you need to first undefine the environment variable
 
 With your environment set up correctly, you can now go to the directory
 you want to work in and set up subdirectories and links.
-This is accomplished by the script \file{setup-src}, which is located in
+This is accomplished by the script \file{pc_setupsrc}, which is located in
 \file[bin/]{\$PENCIL_HOME/bin} and is thus now in your executable path.
 
 For concreteness, let us assume you want to use
@@ -1138,7 +1138,7 @@ of solar convection.
 You then do the following:
 \begin{alltt}
   \prompt{unix> } cd samples/conv-slab
-  \prompt{unix> } setup-src
+  \prompt{unix> } pc_setupsrc
   src already exists
   2 files already exist in src
 \end{alltt}
@@ -1439,7 +1439,7 @@ To compile the samples, links the files \file[*.f90]{.f90},
 \file[*.c]{.c} and \file{Makefile.src} need to be linked from the top
 file[src/]{src} directory to the local directory \file[src/]{./src}.
 These links are set up by the script
-\cmd{setup-src}) when used in a the root of run directory.
+\cmd{pc_setupsrc}) when used in a the root of run directory.
 
 General-purpose visualization routines for \name{IDL} or \name{DX} are in the
 directories \file[idl/]{idl} and \file[dx/]{dx}, respectively.
@@ -2420,7 +2420,7 @@ Here is a list of the more important ones.
 \item[pacx-adapt-makefile] Version of adapt-makefile for highly 
   distributed runs using PACX MPI.
 \item[pc_newrun] Generates a new run directory from an old one. The new one
-  contains a copy of the old \file{*.local} files, runs \cmd{setup-src}, and
+  contains a copy of the old \file{*.local} files, runs \cmd{pc_setupsrc}, and
   makes also a copy of the old \file{*.in} and \file{k.dat} files.
 \item[pc_inspect_run] Check the execution of the current run: prints legend
   and the last few lines of the \file{time_series.dat} file. It also appends
@@ -2436,7 +2436,7 @@ Here is a list of the more important ones.
   condition; see \S~\ref{start-run-getconf}
 \item[scpdatadir] Make a tarball of data directory, \file[data/]{data/} and 
   use \code{scp} to secure copy to copy it to the specified destination.
-\item[setup-src] Link \file{start.csh}, \file{run.csh} and
+\item[pc_setupsrc] Link \file{start.csh}, \file{run.csh} and
   \file{getconf.csh} from \file[bin/]{\$PENCIL_HOME/bin}.
   Generate \file{src/} if necessary and link the source code files from
   \file[src/]{\$PENCIL_HOME/src} to that directory.
@@ -2810,7 +2810,14 @@ areas where it is necessary.
 
 \subsection{The time step}
 \label{time-step}
+\index{Runge-Kutta time step}
 \index{Time step}
+
+\subsubsection{The usual RK-2N time step}
+
+RK-2N refers to the third order Runge-Kutta scheme by Williamson (1980)
+with a memory consumption of two chunks.
+Therefore the 2N in the name.
 
 The time step is normally specified as Courant time step through the
 coefficients \var{cdt} ($c_{\delta t}$), \var{cdtv} ($c_{\delta t,{\rm v}}$)
@@ -2873,6 +2880,21 @@ Appendix~\ref{high-freq-filters}.}\label{Ftimestepoverviscous}\end{figure}
 
 Timestepping is accomplished using the Runge-Kutta 2N scheme.
 Regarding details of this scheme see Sect.~\ref{S-2N-scheme}.
+
+\subsubsection{The Runge-Kutta-Fehlberg time step}
+\index{Runge-Kutta-Fehlberg time step}
+
+A fifth order Runge-Kutta-Fehlberg time stepping procedure is available.
+It is used mostly for chemistry application, often together with the
+double precision option.
+In order to make this work, you need to compile with
+\begin{verbatim}
+TIMESTEP  =   timestep_rkf
+\end{verbatim}
+in \file{src/Makefile.local}.
+In addition, you must put \cmd{itorder=5} in \file{run.in}.
+An example application is \file{samples/1d-tests/H2_flamespeed}.
+This procedure is still experimental.
 
 % ---------------------------------------------------------------------- %
 
@@ -4618,7 +4640,7 @@ For technical details, see also Section~\ref{RestartingFromLessPhysics}.
 \subsubsection[Shell gives error message when sourcing
                {\file[sourceme]{sourceme.X}}]%
               {When sourcing the \file{sourceme.sh}/\file{sourceme.csh}
-  file or running \cmd{setup-src}, I get error messages from the shell,
+  file or running \cmd{pc_setupsrc}, I get error messages from the shell,
   like `if: Expression Syntax.'
   or `set: Variable name must begin with a letter.'}
 
@@ -4664,10 +4686,10 @@ For technical details, see also Section~\ref{RestartingFromLessPhysics}.
       \end{description}
     \end{enumerate}
 
-  \item If you have problems with \cmd{setup-src},
+  \item If you have problems with \cmd{pc_setupsrc},
     run it with \cmd{csh} in verbose mode:
     \begin{alltt}
-      \code{/bin/csh -v -x \$PENCIL_HOME/bin/setup-src}
+      \code{/bin/csh -v -x \$PENCIL_HOME/bin/pc_setupsrc}
     \end{alltt}
   \end{enumerate}
 }
@@ -4694,9 +4716,9 @@ This is because somebody added a new module (together with a corresponding
 \name{nomodule.f90} and a \name{module.h} file (chemistry in this case).
 These files didn't exist before, so you need to say:
 \begin{Verbatim}
-      setup-src
+      pc_setupsrc
 \end{Verbatim}
-If this does not help, say first \cmd{make clean} and then \cmd{setup-src}.
+If this does not help, say first \cmd{make clean} and then \cmd{pc_setupsrc}.
 }
 
 %%%
@@ -7439,7 +7461,7 @@ continue from \file{VAR1} at $128^3$ (on
   \prompt{tmp_64> } reprodir -l ../run_128 {\sl or } new run_128
   \prompt{tmp_64> } vi ../run_128/src/cparam.local
   {\sl{}# set nxgrid=128, ncpus=16, nprocy=4}
-  \prompt{tmp_64> } (cd ../run_128; crtmp; setup-src; make)
+  \prompt{tmp_64> } (cd ../run_128; crtmp; pc_setupsrc; make)
 \end{alltt}
 
 \item Setup and do remeshing
