@@ -252,7 +252,7 @@ endif
 
 ## Linux:
 ##
-## OS Defaults
+## old OS Defaults
 ##
 #FC=g95 -fno-second-underscore
 #F77=$(FC)
@@ -266,6 +266,14 @@ endif
 #CFLAGS_FFTW2=
 #FFLAGS_FFTW2=
 #LD_FFTW2=
+##
+##  New default settings
+##
+##FC=/usr/bin/gfortran -I/usr/lib/openmpi/include #(norlx5*)
+##F77=$(FC) #(norlx5*)
+##CC=gcc #(norlx5*)
+##FFLAGS=-O3 #(norlx5*)
+##FFLAGS_DOUBLE=-fdefault-real-8  #(norlx5*)
 ##
 ## Settings for individual machines
 ##
@@ -628,11 +636,11 @@ endif
 ##
 ##  Pencil-Code Servers
 ##
-#FC=/usr/bin/gfortran -I/usr/lib/openmpi/include #(norlx5*)
-#F77=$(FC) #(norlx5*)
-#CC=gcc #(norlx5*)
-#FFLAGS=-O3 #(norlx5*)
-#FFLAGS_DOUBLE=-fdefault-real-8  #(norlx5*)
+##FC=/usr/bin/gfortran -I/usr/lib/openmpi/include #(norlx5*)
+##F77=$(FC) #(norlx5*)
+##CC=gcc #(norlx5*)
+##FFLAGS=-O3 #(norlx5*)
+##FFLAGS_DOUBLE=-fdefault-real-8  #(norlx5*)
 ##LD_MPI=-L/usr/lib/openmpi/lib -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl #(norlx5*)
 ##
 ## Axel on Ferlin (ferlin)
