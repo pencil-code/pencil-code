@@ -291,7 +291,7 @@ module InitialCondition
       use Sub, only: grad,get_radial_distance,&
                      gij,curl_mn,gij_etc,cross_mn,multsv_mn
       use FArrayManager, only: farray_use_global
-      use BoundCond, only: update_ghosts
+!      use BoundCond, only: update_ghosts
 !
       real, dimension (mx,my,mz,mfarray) :: f      
       real, dimension (nx,3,3) :: aij,bij
@@ -321,7 +321,7 @@ module InitialCondition
         irho=ilnrho
       endif
 !
-      call update_ghosts(f)
+      !call update_ghosts(f)
 !
 !  Azimuthal speed that perfectly balances the pressure gradient. 
 !
