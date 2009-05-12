@@ -1,7 +1,7 @@
 pro rvid_plane,field,mpeg=mpeg,png=png,TRUEPNG=png_truecolor,tmin=tmin,$
                tmax=tmax,max=amax,$
                min=amin,extension=extension,nrepeat=nrepeat,wait=wait,$
-               njump=njump,datadir=datadir,OLDFILE=OLDFILE,debug=debug,$
+               stride=stride,datadir=datadir,OLDFILE=OLDFILE,debug=debug,$
                proc=proc,ix=ix,iy=iy,ps=ps,iplane=iplane,imgdir=imgdir,$
                global_scaling=global_scaling,shell=shell,r_int=r_int,$
                r_ext=r_ext,zoom=zoom,colmpeg=colmpeg,exponential=exponential, $
@@ -38,7 +38,7 @@ default,amin,-amax
 default,field,'lnrho'
 if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 default,nrepeat,0
-default,njump,0
+default,stride,0
 default,tmin,0.
 default,tmax,1e38
 default,tunit,1
@@ -269,10 +269,9 @@ end else if (keyword_set(mpeg)) then begin
   itmpeg=0 ;(image counter)
 end
 ;
-;  allow for jumping over njump time slices
-;  initialize counter
+;  Allow for skipping "stride" time slices.
 ;
-ijump=njump ;(make sure the first one is written)
+istride=stride ;(make sure the first one is written)
 ;
 if (keyword_set(global_scaling)) then begin
   first=1L
@@ -392,7 +391,7 @@ while (not eof(1)) do begin
     print, t, min([plane2,xy,xz,yz]), max([plane2,xy,xz,yz])
   endif else begin
     if ( (t ge tmin) and (t le tmax) ) then begin
-      if (ijump eq njump) then begin
+      if (istride eq stride) then begin
 ;
 ;  show image scaled between amin and amax and filling whole screen
 ;
@@ -472,7 +471,7 @@ while (not eof(1)) do begin
               print, '----islice--------t----------min------------max--------'
           print,islice,t,min([plane2]),max([plane2])
         end
-        ijump=0
+        istride=0
         wait,wait
 ;
 ; check whether file has been written
@@ -480,7 +479,7 @@ while (not eof(1)) do begin
         if (keyword_set(png)) then spawn,'ls -l '+imgname
 ;
       end else begin
-        ijump=ijump+1
+        istride=istride+1
       end
     end
     islice=islice+1

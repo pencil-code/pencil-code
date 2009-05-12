@@ -1,5 +1,5 @@
 pro rvid_line,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,max=amax,min=amin,$
-  nrepeat=nrepeat,wait=wait,njump=njump,datadir=datadir,OLDFILE=OLDFILE,$
+  nrepeat=nrepeat,wait=wait,stride=stride,datadir=datadir,OLDFILE=OLDFILE,$
   test=test,proc=proc,exponential=exponential,map=map,tt=tt,noplot=noplot,$
   extension=extension, sqroot=sqroot, nocontour=nocontour, $
   squared=squared, exsquared=exsquared, against_time=against_time,func=func, $
@@ -33,7 +33,7 @@ default,amin,-amax
 default,field,'lnrho'
 default,datadir,'data'
 default,nrepeat,0
-default,njump,0
+default,stride,0
 default,tmin,0.
 default,tmax,1e38
 default,wait,.03
@@ -155,10 +155,10 @@ endif else if (keyword_set(mpeg)) then begin
   itmpeg=0 ;(image counter)
 endif
 ;
-;  allow for jumping over njump time slices
+;  allow for skipping "stride" time slices
 ;  initialize counter
 ;
-ijump=njump ;(make sure the first one is written)
+istride=stride ;(make sure the first one is written)
 ;
 it=0
 close,1 & openr,1,file_slice,/f77
@@ -213,7 +213,7 @@ while (not eof(1)) do begin
         print,t,min([axz,xy,xz,yz]),max([axz,xy,xz,yz])
   endif else begin
     if (t ge tmin and t le tmax) then begin
-      if (ijump eq njump) then begin
+      if (istride eq stride) then begin
         if (not keyword_set(noplot)) then begin
           if (keyword_set(exponential)) then begin
             plot, xaxisscale, exp(axz), psym=-2, yrange=[amin,amax]
@@ -256,7 +256,7 @@ while (not eof(1)) do begin
 ;;
           if (not keyword_set(noplot)) then print,islice,t,min([axz]),max([axz])
         endelse
-        ijump=0
+        istride=0
         wait,wait
 ;;
 ;; check whether file has been written
@@ -264,7 +264,7 @@ while (not eof(1)) do begin
         if (keyword_set(png)) then spawn,'ls -l '+imgname
 ;;
       endif else begin
-          ijump=ijump+1
+        istride=istride+1
       endelse
     endif
     islice=islice+1

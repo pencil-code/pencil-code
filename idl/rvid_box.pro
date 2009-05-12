@@ -37,7 +37,7 @@
 pro rvid_box, field, $
   mpeg=mpeg, png=png, truepng=png_truecolor, tmin=tmin, tmax=tmax, $
   max=amax,min=amin, noborder=noborder, imgdir=imgdir, dev=dev, $
-  nrepeat=nrepeat, wait=wait, njump=njump, datadir=datatopdir, $
+  nrepeat=nrepeat, wait=wait, stride=stride, datadir=datatopdir, $
   noplot=noplot, fo=fo, swapz=swapz, xsize=xsize, ysize=ysize, $
   title=title, itpng=itpng, global_scaling=global_scaling, proc=proc, $
   exponential=exponential, sqroot=sqroot, logarithmic=logarithmic, $
@@ -61,7 +61,7 @@ default,field,'lnrho'
 default,dimfile,'dim.dat'
 default,varfile,'var.dat'
 default,nrepeat,0
-default,njump,0
+default,stride,0
 default,tmin,0.0
 default,tmax,1e38
 default,wait,0.0
@@ -253,7 +253,7 @@ islice=0L
 ;
 while ( (not eof(1)) and (t le tmax) ) do begin
 ;
-  if ( (t ge tmin) and (t le tmax) and (islice mod (njump+1) eq 0) ) then begin
+  if ( (t ge tmin) and (t le tmax) and (islice mod (stride+1) eq 0) ) then begin
     readu, 1, xy2, t, slice_z2pos
     readu, 2, xy, t, slice_zpos
     readu, 3, xz, t, slice_ypos
@@ -264,9 +264,9 @@ while ( (not eof(1)) and (t le tmax) ) do begin
     readu, 2, dummy & readu, 3, dummy & readu, 4, dummy
   endelse
 ;
-;  Possible to set time interval and to jump over njump slices.
+;  Possible to set time interval and to skip over "stride" slices.
 ;
-  if ( (t ge tmin) and (t le tmax) and (islice mod (njump+1) eq 0) ) then begin
+  if ( (t ge tmin) and (t le tmax) and (islice mod (stride+1) eq 0) ) then begin
 ;
 ;  Perform preset mathematical operation on data before plotting.
 ;
@@ -531,7 +531,7 @@ while ( (not eof(1)) and (t le tmax) ) do begin
     endelse
   endif else begin
 ;
-;  Skip this slice if not in time interval or if jumping.
+;  Skip this slice if not in time interval or if striding.
 ;
     if (not quiet_skip) then $
         print, 'Skipping slice number '+strtrim(islice,2)+ $
