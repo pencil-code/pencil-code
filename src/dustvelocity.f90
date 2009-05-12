@@ -6,6 +6,8 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
+! CPARAM logical, parameter :: ldustvelocity = .true.
+!
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
 !
@@ -100,8 +102,6 @@ module Dustvelocity
 !
       integer :: k, uud_tmp
       character(len=5) :: sdust
-!
-      ldustvelocity = .true.
 !
       do k=1,ndustspec
         call chn(k,sdust)
