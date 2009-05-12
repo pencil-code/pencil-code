@@ -1,11 +1,12 @@
-###  -*-Makefile-*- (for Emacs)    vim:set filetype=make:  (for vim)
-###
-### $Id$
-### Makefile dependencies for modular Pencil Code.
-###
+##  -*-Makefile-*- (for Emacs)    vim:set filetype=make:  (for vim)
 ##
-## Default names of unswitchable modules.
+## $Id$
 ##
+## Makefile dependencies for modular Pencil Code.
+##
+#
+# Default names of unswitchable modules.
+#
 CPARAM_OBJ=cparam.o
 CPARAM_SRC=cparam.f90
 #
@@ -39,14 +40,11 @@ PENCIL_CHECK_SRC=pencil_check.f90
 INITCOND_OBJ=initcond.o
 INITCOND_SRC=initcond.f90
 #
-GHOSTFOLD_OBJ=$(GHOSTFOLD).o
-GHOSTFOLD_SRC=$(GHOSTFOLD).f90
-#
 PARTICLES_CDATA_OBJ=particles_cdata.o
 PARTICLES_CDATA_SRC=particles_cdata.f90
-##
-## Default names of switchable modules.
-##
+#
+# Default names of switchable modules.
+#
 HYDRO_OBJ=$(HYDRO).o
 HYDRO_SRC=$(HYDRO).f90
 #
@@ -212,6 +210,9 @@ PARTICLES_COLLISIONS_SRC=$(PARTICLES_COLLISIONS).f90
 PARTICLES_STALKER_OBJ=$(PARTICLES_STALKER).o
 PARTICLES_STALKER_SRC=$(PARTICLES_STALKER).f90
 #
+GHOSTFOLD_OBJ=$(GHOSTFOLD).o
+GHOSTFOLD_SRC=$(GHOSTFOLD).f90
+#
 SOLID_CELLS_OBJ=$(SOLID_CELLS).o
 SOLID_CELLS_SRC=$(SOLID_CELLS).f90
 ##
@@ -229,24 +230,22 @@ gsl_wrapper.o: gsl_wrapper.c
 #
 gsl_wrapper_r8.o: gsl_wrapper_r8.c
 	$(CC) $(CFLAGS) -c gsl_wrapper_r8.c
-
-
-## The following should probably be automatically generated, but most
-## likely are not:
+#
+# The following should probably be automatically generated, but most
+# likely are not:
 combine_videofiles.o:   combine_videofiles.f90 $(combine_videofiles_deps)
 read_videofiles.o:      read_videofiles.f90 $(read_videofiles_deps)
 read_vectorfiles.o:     read_vectorfiles.f90 $(read_vectorfiles_deps)
-
-## ---------------------------------------------------------------------- #
-## Automatically generatable dependencies
-## ---------------------------------------------------------------------- #
+#
+# Automatically generatable dependencies
+#
 start.o:     start.f90 $(start_deps)
 run.o:       run.f90 $(run_deps)
 test.o:      test.f90 $(test_deps)
-##
-## Explict dependencies for the Fourier routines to allow them to pull in
-## different library routines.
-##
+#
+# Explict dependencies for the Fourier routines to allow them to pull in
+# different library routines.
+#
 fft.o : fft.f
 #
 fftpack.o : fftpack.f
@@ -256,9 +255,11 @@ nofourier.o: nofourier.f90 fourier.h $(MESSAGES_OBJ) $(MPICOMM_FIX).o cparam.o c
 fourier_fft.o: fourier_fft.f90 fft.o fourier.h $(MESSAGES_OBJ) $(MPICOMM_FIX).o cparam.o cdata.o
 #
 fourier_fftpack.o: fourier_fftpack.f90 fftpack.o fourier.h $(GENERAL_OBJ) $(MESSAGES_OBJ) $(MPICOMM_FIX).o cparam.o cdata.o
-##
-## Explicit dependencies for the different infrastructure modules.
-##
+#
+# Explicit dependencies for the different infrastructure modules.
+#
+COMMON_DEPS=$(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(DIAGNOSTICS_OBJ) $(MESSAGES_OBJ)
+#
 start.o: start.f90 $(start_deps)
 #
 run.o: run.f90 $(run_deps)
@@ -321,11 +322,7 @@ persist.o: persist.f90 $(CDATA_OBJ) $(GENERAL_OBJ) $(MAGNETIC_OBJ) $(HYDRO_OBJ) 
 #
 filter.o: filter.f90 $(CDATA_OBJ) $(SUB_OBJ) boundcond.o
 #
-# prints.o: prints.f90 $(CDATA_OBJ) $(SUB_OBJ) param_io.o $(physics)
-##
-## Explicit dependencies for the different physics modules.
-##
-COMMON_DEPS=$(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(DIAGNOSTICS_OBJ) $(MESSAGES_OBJ)
+# Explicit dependencies for the different physics modules.
 #
 $(MPICOMM_OBJ): mpicomm.h $(MPICOMM_SRC) $(CDATA_OBJ)
 #
