@@ -44,8 +44,6 @@ module Shear
 !
 !  2-july-02/nils: coded
 !
-      use Mpicomm
-!
       lshear = .true.
 !
 !  identify version number
@@ -534,4 +532,4 @@ module Shear
 !
     endsubroutine rprint_shear
 !***********************************************************************
-  endmodule Shear
+endmodule Shear
