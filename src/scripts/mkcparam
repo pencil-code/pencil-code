@@ -77,7 +77,7 @@ my $maux_com_decl = '^\s*!\s*COMMUNICATED\s*AUXILIARIES\s*([0-9]+)\s*$';
 my $mpvar_decl    = '^\s*!\s*MPVAR\s*CONTRIBUTION\s*([0-9]+)\s*$';
 my $dust_decl     = '^\s*!\s*NDUSTSPEC\s*CONTRIBUTION\s*([0-9]+\*[0-9])\s*$';
 my $chem_decl     = '^\s*!\s*NCHEMSPEC\s*CONTRIBUTION\s*([0-9]+\*[0-9])\s*$';
-my $pencils_decl  = '^\s*!\s*PENCILS\s*(PROVIDED|REQUIRED|OPTIONAL|DIAGNOSTIC)\s*(.*)\s*$';
+my $pencils_decl  = '^\s*!\s*PENCILS\s*PROVIDED\s*(.*)\s*$';
 my $cparam_decl   = '^\s*!\s*CPARAM\s*(.*?)\s*$';
 # ---------------------------------------------------------------------- #
 #
