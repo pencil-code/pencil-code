@@ -4362,184 +4362,184 @@ module Boundcond
 !  25-nov-08/nils: extended to work in multiple dimensions and with cross terms
 !                  i.e. not just the LODI equations.
 !
-      use MpiComm, only: stop_it
-      use EquationOfState, only: cs0, cs20
-      use Deriv, only: der_onesided_4_slice, der_pencil, der2_pencil
-      use Chemistry
-      use Viscosity
-
+!      use MpiComm, only: stop_it
+!      use EquationOfState, only: cs0, cs20
+!      use Deriv, only: der_onesided_4_slice, der_pencil, der2_pencil
+!      use Chemistry
+!      use Viscosity
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       character (len=3) :: topbot
       logical, optional :: linlet
       logical :: llinlet, non_reflecting_inlet
       real, optional :: u_t
-      real, dimension(ny,nz) :: dlnrho_dx
-      real, dimension(ny,nz) :: rho0, L_1, L_3, L_4, L_5,parallell_term_uz
-      real, dimension(ny,nz) :: parallell_term_rho,dlnrho_dy,dlnrho_dz
-      real, dimension(ny,nz) :: parallell_term_ux,d2u1_dy2,d2u1_dz2
-      real, dimension(ny,nz) :: d2u2_dy2,d2u2_dz2,d2u3_dy2,d2u3_dz2
-      real, dimension(ny,nz) :: prefac1, prefac2,parallell_term_uy
-      real, dimension(ny,nz,3) :: div_rho
-      real, dimension(ny,nz,3,3) :: dui_dxj
-      real, dimension (my,mz) :: cs0_ar,cs20_ar
+!      real, dimension(ny,nz) :: dlnrho_dx
+!      real, dimension(ny,nz) :: rho0, L_1, L_3, L_4, L_5,parallell_term_uz
+!      real, dimension(ny,nz) :: parallell_term_rho,dlnrho_dy,dlnrho_dz
+!      real, dimension(ny,nz) :: parallell_term_ux,d2u1_dy2,d2u1_dz2
+!      real, dimension(ny,nz) :: d2u2_dy2,d2u2_dz2,d2u3_dy2,d2u3_dz2
+!      real, dimension(ny,nz) :: prefac1, prefac2,parallell_term_uy
+!      real, dimension(ny,nz,3) :: div_rho
+!      real, dimension(ny,nz,3,3) :: dui_dxj
+!      real, dimension (my,mz) :: cs0_ar,cs20_ar
 !      real, dimension (mx,my,mz) :: cs2_full
-      real, dimension (my,mz) :: tmp22,tmp12,tmp2_lnrho,tmp33,tmp13,tmp3_lnrho
-      real, dimension (my,mz) :: tmp23,tmp32
-      real, dimension (ny) :: tmpy
-      real, dimension (nz) :: tmpz
-      real :: Mach,KK,nu
-      integer lll,i
-      integer sgn
+!      real, dimension (my,mz) :: tmp22,tmp12,tmp2_lnrho,tmp33,tmp13,tmp3_lnrho
+!      real, dimension (my,mz) :: tmp23,tmp32
+!      real, dimension (ny) :: tmpy
+!      real, dimension (nz) :: tmpz
+!      real :: Mach,KK,nu
+!      integer lll,i
+!      integer sgn
 
       intent(inout) :: f
       intent(inout) :: df
 
-      llinlet = .false.
-      if (present(linlet)) llinlet = linlet
-      if (llinlet.and..not.present(u_t)) call stop_it(&
-           'bc_nscbc_prf_x: when using linlet=T, you must also specify u_t)')
-      select case(topbot)
-      case('bot')
-        lll = l1
-        sgn = 1
-      case('top')
-        lll = l2
-        sgn = -1
-      case default
-        print*, "bc_nscbc_prf_x: ", topbot, " should be `top' or `bot'"
-      endselect
+!      llinlet = .false.
+!      if (present(linlet)) llinlet = linlet
+!      if (llinlet.and..not.present(u_t)) call stop_it(&
+!           'bc_nscbc_prf_x: when using linlet=T, you must also specify u_t)')
+!      select case(topbot)
+!      case('bot')
+!        lll = l1
+!        sgn = 1
+!      case('top')
+!        lll = l2
+!        sgn = -1
+!      case default
+!        print*, "bc_nscbc_prf_x: ", topbot, " should be `top' or `bot'"
+!      endselect
 !
 !  Find density
 !
-      if (ldensity_nolog) then
-        rho0 = f(lll,m1:m2,n1:n2,ilnrho)
-      else
-        rho0 = exp(f(lll,m1:m2,n1:n2,ilnrho))
-      endif
+!      if (ldensity_nolog) then
+!        rho0 = f(lll,m1:m2,n1:n2,ilnrho)
+!      else
+!        rho0 = exp(f(lll,m1:m2,n1:n2,ilnrho))
+!      endif
 !
 !  Get viscoity
 !
-      call getnu(nu)
+!      call getnu(nu)
 !
 !  Set arrays for the speed of sound and for the speed of sound squared (is it
 !  really necessarry to have both arrays?) 
 !  Set prefactors to be used later.
 !
 !      if (leos_chemistry) call get_cs2_full(cs2_full)
-      if (leos_idealgas) then
-        cs20_ar(m1:m2,n1:n2)=cs20
-        cs0_ar(m1:m2,n1:n2)=cs0
-        prefac1 = -1./(2.*cs20)
-        prefac2 = -1./(2.*rho0*cs0)
-      elseif (leos_chemistry) then
+!      if (leos_idealgas) then
+!        cs20_ar(m1:m2,n1:n2)=cs20
+!        cs0_ar(m1:m2,n1:n2)=cs0
+!        prefac1 = -1./(2.*cs20)
+!        prefac2 = -1./(2.*rho0*cs0)
+!      elseif (leos_chemistry) then
 !        cs20_ar=cs2_full(lll,:,:)
-        cs0_ar=cs20_ar**0.5
-        prefac1 = -1./(2.*cs20_ar(m1:m2,n1:n2))
-        prefac2 = -1./(2.*rho0*cs0_ar(m1:m2,n1:n2))
-      else
-        print*,"bc_nscbc_prf_x: leos_idealgas=",leos_idealgas,"."
-        print*,"NSCBC boundary treatment only implemented for an ideal gas." 
-        print*,"Boundary treatment skipped."
-        return
-      endif
+!        cs0_ar=cs20_ar**0.5
+!        prefac1 = -1./(2.*cs20_ar(m1:m2,n1:n2))
+!        prefac2 = -1./(2.*rho0*cs0_ar(m1:m2,n1:n2))
+!      else
+!        print*,"bc_nscbc_prf_x: leos_idealgas=",leos_idealgas,"."
+!        print*,"NSCBC boundary treatment only implemented for an ideal gas." 
+!        print*,"Boundary treatment skipped."
+!        return
+!      endif
 !
 !  Calculate one-sided derivatives in the boundary normal direction
 !
-      call der_onesided_4_slice(f,sgn,ilnrho,div_rho(:,:,1),lll,1)
-      call der_onesided_4_slice(f,sgn,iux,dui_dxj(:,:,1,1),lll,1)
-      call der_onesided_4_slice(f,sgn,iuy,dui_dxj(:,:,2,1),lll,1)
-      call der_onesided_4_slice(f,sgn,iuz,dui_dxj(:,:,3,1),lll,1)
+!      call der_onesided_4_slice(f,sgn,ilnrho,div_rho(:,:,1),lll,1)
+!      call der_onesided_4_slice(f,sgn,iux,dui_dxj(:,:,1,1),lll,1)
+!      call der_onesided_4_slice(f,sgn,iuy,dui_dxj(:,:,2,1),lll,1)
+!      call der_onesided_4_slice(f,sgn,iuz,dui_dxj(:,:,3,1),lll,1)
 !
 !  Do central differencing in the directions parallell to the boundary 
 !  first in the y-direction......
 !
-      if (nygrid /= 1) then
-        do i=n1,n2
-          call der_pencil(2,f(lll,:,i,iuy),tmp22(:,i))
-          call der_pencil(2,f(lll,:,i,ilnrho),tmp2_lnrho(:,i))
-          call der_pencil(2,f(lll,:,i,iux),tmp12(:,i))
-          call der_pencil(2,f(lll,:,i,iuz),tmp32(:,i))
-          call der2_pencil(2,f(lll,:,i,iux),tmpy)
-          d2u1_dy2(:,i-n1+1)=tmpy(:)
-          call der2_pencil(2,f(lll,:,i,iuy),tmpy)
-          d2u2_dy2(:,i-n1+1)=tmpy(:)
-          call der2_pencil(2,f(lll,:,i,iuz),tmpy)
-          d2u3_dy2(:,i-n1+1)=tmpy(:)
-        enddo
-      else
-        tmp32=0
-        tmp22=0
-        tmp12=0
-        tmp2_lnrho=0
-        d2u1_dy2=0
-        d2u2_dy2=0
-        d2u3_dy2=0
-      endif
-      dui_dxj(:,:,1,2)=tmp12(m1:m2,n1:n2)
-      dui_dxj(:,:,2,2)=tmp22(m1:m2,n1:n2)
-      dui_dxj(:,:,3,2)=tmp32(m1:m2,n1:n2)
-      div_rho(:,:,2)=tmp2_lnrho(m1:m2,n1:n2)
+!      if (nygrid /= 1) then
+!        do i=n1,n2
+!          call der_pencil(2,f(lll,:,i,iuy),tmp22(:,i))
+!          call der_pencil(2,f(lll,:,i,ilnrho),tmp2_lnrho(:,i))
+!          call der_pencil(2,f(lll,:,i,iux),tmp12(:,i))
+!          call der_pencil(2,f(lll,:,i,iuz),tmp32(:,i))
+!          call der2_pencil(2,f(lll,:,i,iux),tmpy)
+!          d2u1_dy2(:,i-n1+1)=tmpy(:)
+!          call der2_pencil(2,f(lll,:,i,iuy),tmpy)
+!          d2u2_dy2(:,i-n1+1)=tmpy(:)
+!          call der2_pencil(2,f(lll,:,i,iuz),tmpy)
+!          d2u3_dy2(:,i-n1+1)=tmpy(:)
+!        enddo
+!      else
+!        tmp32=0
+!        tmp22=0
+!        tmp12=0
+!        tmp2_lnrho=0
+!        d2u1_dy2=0
+!        d2u2_dy2=0
+!        d2u3_dy2=0
+!      endif
+!      dui_dxj(:,:,1,2)=tmp12(m1:m2,n1:n2)
+!      dui_dxj(:,:,2,2)=tmp22(m1:m2,n1:n2)
+!      dui_dxj(:,:,3,2)=tmp32(m1:m2,n1:n2)
+!      div_rho(:,:,2)=tmp2_lnrho(m1:m2,n1:n2)
 !
 !  .... then in the z-direction
 !
-      if (nzgrid /= 1) then
-        do i=m1,m2
-          call der_pencil(3,f(lll,i,:,iuz),tmp33(i,:))
-          call der_pencil(3,f(lll,i,:,ilnrho),tmp3_lnrho(i,:))
-          call der_pencil(3,f(lll,i,:,iux),tmp13(i,:))
-          call der_pencil(3,f(lll,i,:,iuy),tmp23(i,:))
-          call der2_pencil(3,f(lll,i,:,iux),tmpz)
-          d2u1_dz2(i-m1+1,:)=tmpz(:)
-          call der2_pencil(3,f(lll,i,:,iuy),tmpz)
-          d2u2_dz2(i-m1+1,:)=tmpz(:)
-          call der2_pencil(3,f(lll,i,:,iuz),tmpz)
-          d2u3_dz2(i-m1+1,:)=tmpz(:)
-        enddo
-      else
-        tmp33=0
-        tmp23=0
-        tmp13=0
-        tmp3_lnrho=0
-        d2u1_dz2=0
-        d2u2_dz2=0
-        d2u3_dz2=0
-      endif
-      dui_dxj(:,:,1,3)=tmp13(m1:m2,n1:n2)
-      dui_dxj(:,:,2,3)=tmp23(m1:m2,n1:n2)
-      dui_dxj(:,:,3,3)=tmp33(m1:m2,n1:n2)
-      div_rho(:,:,3)=tmp3_lnrho(m1:m2,n1:n2)
+!      if (nzgrid /= 1) then
+!        do i=m1,m2
+!          call der_pencil(3,f(lll,i,:,iuz),tmp33(i,:))
+!          call der_pencil(3,f(lll,i,:,ilnrho),tmp3_lnrho(i,:))
+!          call der_pencil(3,f(lll,i,:,iux),tmp13(i,:))
+!          call der_pencil(3,f(lll,i,:,iuy),tmp23(i,:))
+!          call der2_pencil(3,f(lll,i,:,iux),tmpz)
+!          d2u1_dz2(i-m1+1,:)=tmpz(:)
+!          call der2_pencil(3,f(lll,i,:,iuy),tmpz)
+!          d2u2_dz2(i-m1+1,:)=tmpz(:)
+!          call der2_pencil(3,f(lll,i,:,iuz),tmpz)
+!          d2u3_dz2(i-m1+1,:)=tmpz(:)
+!        enddo
+!      else
+!        tmp33=0
+!        tmp23=0
+!        tmp13=0
+!        tmp3_lnrho=0
+!        d2u1_dz2=0
+!        d2u2_dz2=0
+!        d2u3_dz2=0
+!      endif
+!      dui_dxj(:,:,1,3)=tmp13(m1:m2,n1:n2)
+!      dui_dxj(:,:,2,3)=tmp23(m1:m2,n1:n2)
+!      dui_dxj(:,:,3,3)=tmp33(m1:m2,n1:n2)
+!      div_rho(:,:,3)=tmp3_lnrho(m1:m2,n1:n2)
 !
 !  Find divergence of rho if we solve for logarithm of rho
 !
-      if (.not. ldensity_nolog) then
-        do i=1,3
-          div_rho(:,:,i)=div_rho(:,:,i)*rho0
-        enddo
-      endif
+!      if (.not. ldensity_nolog) then
+!        do i=1,3
+!          div_rho(:,:,i)=div_rho(:,:,i)*rho0
+!        enddo
+!      endif
 !
 !  Find the L_i's (which really is the Lodi equations)
 !
-      if (llinlet) then
+!      if (llinlet) then
 !  This L_1 is correct only for p=cs^2*rho
-        L_1 = (f(lll,m1:m2,n1:n2,iux) - sgn*cs0_ar(m1:m2,n1:n2))&
-            *(cs20_ar(m1:m2,n1:n2)*div_rho(:,:,1) - sgn*rho0*cs0_ar(m1:m2,n1:n2)&
-            *dui_dxj(:,:,1,1))
-        L_3=0
-        L_4=0
-        if (non_reflecting_inlet) then
+!        L_1 = (f(lll,m1:m2,n1:n2,iux) - sgn*cs0_ar(m1:m2,n1:n2))&
+!            *(cs20_ar(m1:m2,n1:n2)*div_rho(:,:,1) - sgn*rho0*cs0_ar(m1:m2,n1:n2)&
+!            *dui_dxj(:,:,1,1))
+!        L_3=0
+!        L_4=0
+!        if (non_reflecting_inlet) then
 !
 !  The inlet in non-reflecting only when nscbc_sigma_in is set to 0, this 
 !  might however lead to problems as the inlet velocity will tend to drift 
 !  away from the target velocity u_t. This problem should be overcome by 
 !  setting a small but non-zero nscbc_sigma_in.
 !
-          L_5 = nscbc_sigma_in*cs20_ar(m1:m2,n1:n2)*rho0&
-              *sgn*(f(lll,m1:m2,n1:n2,iux)-u_t)
-        else
-          L_5 = L_1
-        endif
-      else
+!          L_5 = nscbc_sigma_in*cs20_ar(m1:m2,n1:n2)*rho0&
+!              *sgn*(f(lll,m1:m2,n1:n2,iux)-u_t)
+!        else
+!          L_5 = L_1
+!        endif
+!      else
 !
 !  Find Mach number 
 !  (NILS: I do not think this is a good way to determine the Mach
@@ -4549,42 +4549,42 @@ module Boundcond
 !  I think that what we really want is a Mach number averaged over the 
 !  timescale of several acoustic waves. How could this be done????)
 !
-        Mach=sum(f(lll,m1:m2,n1:n2,iux)/cs0_ar(m1:m2,n1:n2))/(ny*nz)
+!        Mach=sum(f(lll,m1:m2,n1:n2,iux)/cs0_ar(m1:m2,n1:n2))/(ny*nz)
 !
 !  Find the parameter determining 
 !
-        KK=nscbc_sigma_out*(1-Mach**2)*cs0/Lxyz(1)
+!        KK=nscbc_sigma_out*(1-Mach**2)*cs0/Lxyz(1)
 !
 !  Find the L_i's
 !
-        L_1 = KK*(rho0*cs20-p_infty)
-        L_3 = f(lll,m1:m2,n1:n2,iux)*dui_dxj(:,:,2,1)
-        L_4 = f(lll,m1:m2,n1:n2,iux)*dui_dxj(:,:,3,1)
-        L_5 = (f(lll,m1:m2,n1:n2,iux) - sgn*cs0_ar(m1:m2,n1:n2))*&
-             (cs20_ar(m1:m2,n1:n2)*div_rho(:,:,1)&
-             - sgn*rho0*cs0_ar(m1:m2,n1:n2)*dui_dxj(:,:,1,1))
-      end if
+!        L_1 = KK*(rho0*cs20-p_infty)
+!        L_3 = f(lll,m1:m2,n1:n2,iux)*dui_dxj(:,:,2,1)
+!        L_4 = f(lll,m1:m2,n1:n2,iux)*dui_dxj(:,:,3,1)
+!        L_5 = (f(lll,m1:m2,n1:n2,iux) - sgn*cs0_ar(m1:m2,n1:n2))*&
+!             (cs20_ar(m1:m2,n1:n2)*div_rho(:,:,1)&
+!             - sgn*rho0*cs0_ar(m1:m2,n1:n2)*dui_dxj(:,:,1,1))
+!      end if
 !
 !  Add terms due to derivatives parallell to the boundary
 !  NILS: Viscous terms in the x direction are missing!
 !
-      parallell_term_rho &
-           =rho0*dui_dxj(:,:,2,2)+f(lll,m1:m2,n1:n2,iuy)*div_rho(:,:,2)&
-           +rho0*dui_dxj(:,:,3,3)+f(lll,m1:m2,n1:n2,iuz)*div_rho(:,:,3)
-      parallell_term_ux &
-           =f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,1,2)&
-           +f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,1,3)&
-           +nu*(d2u1_dy2+d2u1_dz2)
-      parallell_term_uy &
-           =f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,2,2)&
-           +f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,2,3)&
-           +cs20_ar(m1:m2,n1:n2)*div_rho(:,:,2)/rho0&
-           +nu*(d2u2_dy2+d2u2_dz2)
-      parallell_term_uz &
-           =f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,3,2)&
-           +f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,3,3)&
-           +cs20_ar(m1:m2,n1:n2)*div_rho(:,:,3)/rho0&
-           +nu*(d2u3_dy2+d2u3_dz2)
+!      parallell_term_rho &
+!           =rho0*dui_dxj(:,:,2,2)+f(lll,m1:m2,n1:n2,iuy)*div_rho(:,:,2)&
+!           +rho0*dui_dxj(:,:,3,3)+f(lll,m1:m2,n1:n2,iuz)*div_rho(:,:,3)
+!      parallell_term_ux &
+!           =f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,1,2)&
+!           +f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,1,3)&
+!           +nu*(d2u1_dy2+d2u1_dz2)
+!      parallell_term_uy &
+!           =f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,2,2)&
+!           +f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,2,3)&
+!           +cs20_ar(m1:m2,n1:n2)*div_rho(:,:,2)/rho0&
+!           +nu*(d2u2_dy2+d2u2_dz2)
+!      parallell_term_uz &
+!           =f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,3,2)&
+!           +f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,3,3)&
+!           +cs20_ar(m1:m2,n1:n2)*div_rho(:,:,3)/rho0&
+!           +nu*(d2u3_dy2+d2u3_dz2)
 
 
 
@@ -4595,40 +4595,40 @@ module Boundcond
 !  NILS: Currently the implementation with the parallell terms does not 
 !  NILS: seem to work. Set at parallell terms to zero for now.
 !
-      parallell_term_rho=0
-      parallell_term_ux=0
-      parallell_term_uy=0
-      parallell_term_uz=0
+!      parallell_term_rho=0
+!      parallell_term_ux=0
+!      parallell_term_uy=0
+!      parallell_term_uz=0
 !
 !  Find the evolution equations at the boundary
 !
-      select case(topbot)
+!      select case(topbot)
       ! NB: For 'top' L_1 plays the role of L5 and L_5 the role of L1
-      case('bot')
-        df(lll,m1:m2,n1:n2,ilnrho) = prefac1*(L_5 + L_1)-parallell_term_rho
-        df(lll,m1:m2,n1:n2,iux) = prefac2*(L_1 - L_5)-parallell_term_ux
-        df(lll,m1:m2,n1:n2,iuy) = -L_3-parallell_term_uy
-        df(lll,m1:m2,n1:n2,iuz) = -L_4-parallell_term_uz
-      case('top')
-        df(lll,m1:m2,n1:n2,ilnrho) = prefac1*(L_1 + L_5)-parallell_term_rho
-        df(lll,m1:m2,n1:n2,iux) = prefac2*(L_5 - L_1)-parallell_term_ux
-        df(lll,m1:m2,n1:n2,iuy) = -L_3-parallell_term_uy
-        df(lll,m1:m2,n1:n2,iuz) = -L_4-parallell_term_uz
-      endselect
+!      case('bot')
+!        df(lll,m1:m2,n1:n2,ilnrho) = prefac1*(L_5 + L_1)-parallell_term_rho
+!        df(lll,m1:m2,n1:n2,iux) = prefac2*(L_1 - L_5)-parallell_term_ux
+!        df(lll,m1:m2,n1:n2,iuy) = -L_3-parallell_term_uy
+!        df(lll,m1:m2,n1:n2,iuz) = -L_4-parallell_term_uz
+!      case('top')
+!        df(lll,m1:m2,n1:n2,ilnrho) = prefac1*(L_1 + L_5)-parallell_term_rho
+!        df(lll,m1:m2,n1:n2,iux) = prefac2*(L_5 - L_1)-parallell_term_ux
+!        df(lll,m1:m2,n1:n2,iuy) = -L_3-parallell_term_uy
+!        df(lll,m1:m2,n1:n2,iuz) = -L_4-parallell_term_uz
+!      endselect
 !
 !  Check if we are solving for logrho or rho
 !
-      if (.not. ldensity_nolog) then
-        df(lll,m1:m2,n1:n2,ilnrho)=df(lll,m1:m2,n1:n2,ilnrho)/rho0
-      endif
+!      if (.not. ldensity_nolog) then
+!        df(lll,m1:m2,n1:n2,ilnrho)=df(lll,m1:m2,n1:n2,ilnrho)/rho0
+!      endif
 !
 ! Impose required variables at the boundary
 !
-      if (llinlet) then
-        if (.not. non_reflecting_inlet) f(lll,m1:m2,n1:n2,iux) = u_t
-        f(lll,m1:m2,n1:n2,iuy) = 0
-        f(lll,m1:m2,n1:n2,iuz) = 0
-      endif
+!      if (llinlet) then
+!        if (.not. non_reflecting_inlet) f(lll,m1:m2,n1:n2,iux) = u_t
+!        f(lll,m1:m2,n1:n2,iuy) = 0
+!        f(lll,m1:m2,n1:n2,iuz) = 0
+!      endif
 !
     endsubroutine bc_nscbc_prf_x
 !***********************************************************************
@@ -4641,12 +4641,12 @@ module Boundcond
 !  25-nov-08/nils: extended to work in multiple dimensions and with cross terms
 !                  i.e. not just the LODI equations.
 !
-      use MpiComm, only: stop_it
-      use EquationOfState, only: cs0, cs20
-      use Deriv, only: der_onesided_4_slice, der_pencil, der2_pencil
-      use Chemistry
-      use Viscosity
-
+!      use MpiComm, only: stop_it
+!      use EquationOfState, only: cs0, cs20
+!      use Deriv, only: der_onesided_4_slice, der_pencil, der2_pencil
+!      use Chemistry
+!      use Viscosity
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       character (len=3) :: topbot
@@ -4654,169 +4654,169 @@ module Boundcond
       logical :: llinlet, non_reflecting_inlet
       real, optional :: u_t
       !real, parameter :: sigma = 1.
-      real, dimension(nx,nz) :: dlnrho_dx,dlnrho_dy,dlnrho_dz
-      real, dimension(nx,nz) :: rho0, L_1, L_3, L_4, L_5,parallell_term_uz
-      real, dimension(nx,nz) :: parallell_term_rho
-      real, dimension(nx,nz) :: parallell_term_ux,d2u1_dx2,d2u1_dz2
-      real, dimension(nx,nz) :: d2u2_dx2,d2u2_dz2,d2u3_dx2,d2u3_dz2
-      real, dimension(nx,nz) :: prefac1, prefac2,parallell_term_uy
-      real, dimension(nx,nz,3) :: div_rho
-      real, dimension(nx,nz,3,3) :: dui_dxj
-      real, dimension (mx,mz) :: cs0_ar,cs20_ar
+!      real, dimension(nx,nz) :: dlnrho_dx,dlnrho_dy,dlnrho_dz
+!      real, dimension(nx,nz) :: rho0, L_1, L_3, L_4, L_5,parallell_term_uz
+!      real, dimension(nx,nz) :: parallell_term_rho
+!      real, dimension(nx,nz) :: parallell_term_ux,d2u1_dx2,d2u1_dz2
+!      real, dimension(nx,nz) :: d2u2_dx2,d2u2_dz2,d2u3_dx2,d2u3_dz2
+!      real, dimension(nx,nz) :: prefac1, prefac2,parallell_term_uy
+!      real, dimension(nx,nz,3) :: div_rho
+!      real, dimension(nx,nz,3,3) :: dui_dxj
+!      real, dimension (mx,mz) :: cs0_ar,cs20_ar
 !      real, dimension (mx,my,mz) :: cs2_full
-      real, dimension (mx,mz) :: tmp22,tmp12,tmp2_lnrho,tmp33,tmp13,tmp3_lnrho
-      real, dimension (mx,mz) :: tmp23,tmp32
-      real, dimension (nx) :: tmpx
-      real, dimension (nz) :: tmpz
-      real :: Mach,KK,nu
-      integer lll,i
-      integer sgn
+!      real, dimension (mx,mz) :: tmp22,tmp12,tmp2_lnrho,tmp33,tmp13,tmp3_lnrho
+!      real, dimension (mx,mz) :: tmp23,tmp32
+!      real, dimension (nx) :: tmpx
+!      real, dimension (nz) :: tmpz
+!      real :: Mach,KK,nu
+!      integer lll,i
+!      integer sgn
 
-      intent(inout) :: f
-      intent(inout) :: df
+!      intent(inout) :: f
+!      intent(inout) :: df
 
 
-      llinlet = .false.
-      if (present(linlet)) llinlet = linlet
-      if (llinlet.and..not.present(u_t)) call stop_it(&
-           'bc_nscbc_prf_y: when using linlet=T, you must also specify u_t)')
-      select case(topbot)
-      case('bot')
-        lll = m1
-        sgn = 1
-      case('top')
-        lll = m2
-        sgn = -1
-      case default
-        print*, "bc_nscbc_prf_y: ", topbot, " should be `top' or `bot'"
-      endselect
+!      llinlet = .false.
+!      if (present(linlet)) llinlet = linlet
+!      if (llinlet.and..not.present(u_t)) call stop_it(&
+!           'bc_nscbc_prf_y: when using linlet=T, you must also specify u_t)')
+!      select case(topbot)
+!      case('bot')
+!        lll = m1
+!        sgn = 1
+!      case('top')
+!        lll = m2
+!        sgn = -1
+!      case default
+!        print*, "bc_nscbc_prf_y: ", topbot, " should be `top' or `bot'"
+!      endselect
 !
 !  Find density
 !
-      if (ldensity_nolog) then
-        rho0 = f(l1:l2,lll,n1:n2,ilnrho)
-      else
-        rho0 = exp(f(l1:l2,lll,n1:n2,ilnrho))
-      endif
+!      if (ldensity_nolog) then
+!        rho0 = f(l1:l2,lll,n1:n2,ilnrho)
+!      else
+!        rho0 = exp(f(l1:l2,lll,n1:n2,ilnrho))
+!      endif
 !
 !  Get viscoity
 !
-      call getnu(nu)
+!      call getnu(nu)
 !
 !  Set arrays for the speed of sound and for the speed of sound squared (is it
 !  really necessarry to have both arrays?) 
 !  Set prefactors to be used later.
 !
 !      if (leos_chemistry) call get_cs2_full(cs2_full)
-      if (leos_idealgas) then
-        cs20_ar(l1:l2,n1:n2)=cs20
-        cs0_ar(l1:l2,n1:n2)=cs0
-        prefac1 = -1./(2.*cs20)
-        prefac2 = -1./(2.*rho0*cs0)
-      elseif (leos_chemistry) then
+!      if (leos_idealgas) then
+!        cs20_ar(l1:l2,n1:n2)=cs20
+!        cs0_ar(l1:l2,n1:n2)=cs0
+!        prefac1 = -1./(2.*cs20)
+!        prefac2 = -1./(2.*rho0*cs0)
+!      elseif (leos_chemistry) then
 !        cs20_ar=cs2_full(:,lll,:)
-        cs0_ar=cs20_ar**0.5
-        prefac1 = -1./(2.*cs20_ar(l1:l2,n1:n2))
-        prefac2 = -1./(2.*rho0*cs0_ar(l1:l2,n1:n2))
-      else
-        print*,"bc_nscbc_prf_y: leos_idealgas=",leos_idealgas,"."
-        print*,"NSCBC boundary treatment only implemented for an ideal gas." 
-        print*,"Boundary treatment skipped."
-        return
-      endif
+!        cs0_ar=cs20_ar**0.5
+!        prefac1 = -1./(2.*cs20_ar(l1:l2,n1:n2))
+!        prefac2 = -1./(2.*rho0*cs0_ar(l1:l2,n1:n2))
+!      else
+!        print*,"bc_nscbc_prf_y: leos_idealgas=",leos_idealgas,"."
+!        print*,"NSCBC boundary treatment only implemented for an ideal gas." 
+!        print*,"Boundary treatment skipped."
+!        return
+!      endif
 !
 !  Calculate one-sided derivatives in the boundary normal direction
 !
-      call der_onesided_4_slice(f,sgn,ilnrho,div_rho(:,:,2),lll,2)
-      call der_onesided_4_slice(f,sgn,iux,dui_dxj(:,:,1,2),lll,2)
-      call der_onesided_4_slice(f,sgn,iuy,dui_dxj(:,:,2,2),lll,2)
-      call der_onesided_4_slice(f,sgn,iuz,dui_dxj(:,:,3,2),lll,2)
+!      call der_onesided_4_slice(f,sgn,ilnrho,div_rho(:,:,2),lll,2)
+!      call der_onesided_4_slice(f,sgn,iux,dui_dxj(:,:,1,2),lll,2)
+!      call der_onesided_4_slice(f,sgn,iuy,dui_dxj(:,:,2,2),lll,2)
+!      call der_onesided_4_slice(f,sgn,iuz,dui_dxj(:,:,3,2),lll,2)
 !
 !  Do central differencing in the directions parallell to the boundary 
 !  first in the x-direction......
 !
-      if (nxgrid /= 1) then
-        do i=n1,n2
-          call der_pencil(1,f(:,lll,i,iuy),tmp22(:,i))
-          call der_pencil(1,f(:,lll,i,ilnrho),tmp2_lnrho(:,i))
-          call der_pencil(1,f(:,lll,i,iux),tmp12(:,i))
-          call der_pencil(1,f(:,lll,i,iuz),tmp32(:,i))
-          call der2_pencil(1,f(:,lll,i,iux),tmpx)
-          d2u1_dx2(:,i-n1+1)=tmpx
-          call der2_pencil(1,f(:,lll,i,iuy),tmpx)
-          d2u2_dx2(:,i-n1+1)=tmpx
-          call der2_pencil(1,f(:,lll,i,iuz),tmpx)
-          d2u3_dx2(:,i-n1+1)=tmpx
-        enddo
-      else
-        tmp32=0
-        tmp22=0
-        tmp12=0
-        tmp2_lnrho=0
-        d2u1_dx2=0
-        d2u2_dx2=0
-        d2u3_dx2=0
-      endif
-      dui_dxj(:,:,3,2)=tmp32(l1:l2,n1:n2)
-      dui_dxj(:,:,2,2)=tmp22(l1:l2,n1:n2)
-      dui_dxj(:,:,1,2)=tmp12(l1:l2,n1:n2)
-      div_rho(:,:,1)=tmp2_lnrho(l1:l2,n1:n2)
+!      if (nxgrid /= 1) then
+!        do i=n1,n2
+!          call der_pencil(1,f(:,lll,i,iuy),tmp22(:,i))
+!          call der_pencil(1,f(:,lll,i,ilnrho),tmp2_lnrho(:,i))
+!          call der_pencil(1,f(:,lll,i,iux),tmp12(:,i))
+!          call der_pencil(1,f(:,lll,i,iuz),tmp32(:,i))
+!          call der2_pencil(1,f(:,lll,i,iux),tmpx)
+!          d2u1_dx2(:,i-n1+1)=tmpx
+!          call der2_pencil(1,f(:,lll,i,iuy),tmpx)
+!          d2u2_dx2(:,i-n1+1)=tmpx
+!          call der2_pencil(1,f(:,lll,i,iuz),tmpx)
+!          d2u3_dx2(:,i-n1+1)=tmpx
+!        enddo
+!      else
+!        tmp32=0
+!        tmp22=0
+!        tmp12=0
+!        tmp2_lnrho=0
+!        d2u1_dx2=0
+!        d2u2_dx2=0
+!        d2u3_dx2=0
+!      endif
+!      dui_dxj(:,:,3,2)=tmp32(l1:l2,n1:n2)
+!      dui_dxj(:,:,2,2)=tmp22(l1:l2,n1:n2)
+!      dui_dxj(:,:,1,2)=tmp12(l1:l2,n1:n2)
+!      div_rho(:,:,1)=tmp2_lnrho(l1:l2,n1:n2)
 !
 !  .... then in the z-direction
 !
-      if (nzgrid /= 1) then
-        do i=l1,l2
-          call der_pencil(3,f(i,lll,:,iuz),tmp33(i,:))
-          call der_pencil(3,f(i,lll,:,ilnrho),tmp3_lnrho(i,:))
-          call der_pencil(3,f(i,lll,:,iux),tmp13(i,:))
-          call der_pencil(3,f(i,lll,:,iuy),tmp23(i,:))
-          call der2_pencil(3,f(i,lll,:,iux),tmpz)
-          d2u1_dz2(i,:)=tmpz
-          call der2_pencil(3,f(i,lll,:,iuy),tmpz)
-          d2u2_dz2(i,:)=tmpz
-          call der2_pencil(3,f(i,lll,:,iuz),tmpz)
-          d2u3_dz2(i,:)=tmpz
-        enddo
-      else
-        tmp33=0
-        tmp23=0
-        tmp13=0
-        tmp3_lnrho=0
-        d2u1_dz2=0
-        d2u2_dz2=0
-        d2u3_dz2=0
-      endif
-      dui_dxj(:,:,3,3)=tmp33(l1:l2,n1:n2)
-      dui_dxj(:,:,2,3)=tmp23(l1:l2,n1:n2)
-      dui_dxj(:,:,1,3)=tmp13(l1:l2,n1:n2)
-      div_rho(:,:,3)=tmp3_lnrho(l1:l2,n1:n2)
+!      if (nzgrid /= 1) then
+!        do i=l1,l2
+!          call der_pencil(3,f(i,lll,:,iuz),tmp33(i,:))
+!          call der_pencil(3,f(i,lll,:,ilnrho),tmp3_lnrho(i,:))
+!          call der_pencil(3,f(i,lll,:,iux),tmp13(i,:))
+!          call der_pencil(3,f(i,lll,:,iuy),tmp23(i,:))
+!          call der2_pencil(3,f(i,lll,:,iux),tmpz)
+!          d2u1_dz2(i,:)=tmpz
+!          call der2_pencil(3,f(i,lll,:,iuy),tmpz)
+!          d2u2_dz2(i,:)=tmpz
+!          call der2_pencil(3,f(i,lll,:,iuz),tmpz)
+!          d2u3_dz2(i,:)=tmpz
+!        enddo
+!      else
+!        tmp33=0
+!        tmp23=0
+!        tmp13=0
+!        tmp3_lnrho=0
+!        d2u1_dz2=0
+!        d2u2_dz2=0
+!        d2u3_dz2=0
+!      endif
+!      dui_dxj(:,:,3,3)=tmp33(l1:l2,n1:n2)
+!      dui_dxj(:,:,2,3)=tmp23(l1:l2,n1:n2)
+!      dui_dxj(:,:,1,3)=tmp13(l1:l2,n1:n2)
+!      div_rho(:,:,3)=tmp3_lnrho(l1:l2,n1:n2)
 !
 !  Find divergence of rho if we solve for logarithm of rho
 !
-      if (.not. ldensity_nolog) then
-        do i=1,3
-          div_rho(:,:,i)=div_rho(:,:,i)*rho0
-        enddo
-      endif
+!      if (.not. ldensity_nolog) then
+!        do i=1,3
+!          div_rho(:,:,i)=div_rho(:,:,i)*rho0
+!        enddo
+!      endif
 !
 !  Find the L_i's (which really is the Lodi equations)
 !
-      if (llinlet) then
-        L_1 = (f(l1:l2,lll,n1:n2,iuy) - sgn*cs0_ar(l1:l2,n1:n2))*&
-            (cs20*div_rho(:,:,2) - sgn*rho0*cs0_ar(l1:l2,n1:n2)*dui_dxj(:,:,2,2))
-        L_3=0
-        L_4=0
-        if (non_reflecting_inlet) then
+!      if (llinlet) then
+!        L_1 = (f(l1:l2,lll,n1:n2,iuy) - sgn*cs0_ar(l1:l2,n1:n2))*&
+!            (cs20*div_rho(:,:,2) - sgn*rho0*cs0_ar(l1:l2,n1:n2)*dui_dxj(:,:,2,2))
+!        L_3=0
+!        L_4=0
+!        if (non_reflecting_inlet) then
 !
 !  The inlet in non-reflecting only when nscbc_sigma_in is set to 0, this 
 !  might however lead to problems ..... NILS: Must SPECIFY!!!!!!!!!!
 !
-          L_5 = nscbc_sigma_in*cs20_ar(l1:l2,n1:n2)*rho0&
-              *(sgn*f(l1:l2,lll,n1:n2,iuy)-sgn*u_t)
-        else
-          L_5 = L_1
-        endif
-      else
+!          L_5 = nscbc_sigma_in*cs20_ar(l1:l2,n1:n2)*rho0&
+!              *(sgn*f(l1:l2,lll,n1:n2,iuy)-sgn*u_t)
+!        else
+!          L_5 = L_1
+!        endif
+!      else
 !
 !  Find Mach number 
 !  (NILS: I do not think this is a good way to determine the Mach
@@ -4826,79 +4826,79 @@ module Boundcond
 !  I think that what we really want is a Mach number averaged over the 
 !  timescale of several acoustic waves. How could this be done????)
 !
-        Mach=sum(f(l1:l2,lll,n1:n2,iuy)/cs0_ar(l1:l2,n1:n2))/(nx*nz)
+!        Mach=sum(f(l1:l2,lll,n1:n2,iuy)/cs0_ar(l1:l2,n1:n2))/(nx*nz)
 !
 !  Find the parameter determining 
 !
-        KK=nscbc_sigma_out*(1-Mach**2)*cs0/Lxyz(1)
+!        KK=nscbc_sigma_out*(1-Mach**2)*cs0/Lxyz(1)
 !
 !  Find the L_i's
 !
-        L_1 = KK*(rho0*cs20-p_infty)
-        L_3 = f(l1:l2,lll,n1:n2,iuy)*dui_dxj(:,:,1,2)
-        L_4 = f(l1:l2,lll,n1:n2,iuy)*dui_dxj(:,:,3,2)
-        L_5 = (f(l1:l2,lll,n1:n2,iuy) - sgn*cs0_ar(l1:l2,n1:n2))*&
-             (cs20_ar(l1:l2,n1:n2)*div_rho(:,:,2)&
-             -sgn*rho0*cs0_ar(l1:l2,n1:n2)*dui_dxj(:,:,2,2))
-      end if
+!        L_1 = KK*(rho0*cs20-p_infty)
+!        L_3 = f(l1:l2,lll,n1:n2,iuy)*dui_dxj(:,:,1,2)
+!        L_4 = f(l1:l2,lll,n1:n2,iuy)*dui_dxj(:,:,3,2)
+!        L_5 = (f(l1:l2,lll,n1:n2,iuy) - sgn*cs0_ar(l1:l2,n1:n2))*&
+!             (cs20_ar(l1:l2,n1:n2)*div_rho(:,:,2)&
+!             -sgn*rho0*cs0_ar(l1:l2,n1:n2)*dui_dxj(:,:,2,2))
+!      end if
 !
 !  Add terms due to derivatives parallell to the boundary
 !
 
-      parallell_term_rho &
-          =rho0*dui_dxj(:,:,1,1)+f(l1:l2,lll,n1:n2,iux)*div_rho(:,:,1)&
-          +rho0*dui_dxj(:,:,3,3)+f(l1:l2,lll,n1:n2,iuz)*div_rho(:,:,3)
-      parallell_term_ux &
-           =f(l1:l2,lll,n1:n2,iux)*dui_dxj(:,:,1,1)&
-           +f(l1:l2,lll,n1:n2,iuz)*dui_dxj(:,:,1,3)&
-           +cs20_ar(l1:l2,n1:n2)*div_rho(:,:,1)/rho0&
-           +nu*(d2u1_dx2+d2u1_dz2)
-      parallell_term_uy &
-           =f(l1:l2,lll,n1:n2,iux)*dui_dxj(:,:,2,1)&
-           +f(l1:l2,lll,n1:n2,iuz)*dui_dxj(:,:,2,3)&
-           +nu*(d2u2_dx2+d2u2_dz2)
-      parallell_term_uz &
-           =f(l1:l2,lll,n1:n2,iux)*dui_dxj(:,:,3,1)&
-           +f(l1:l2,lll,n1:n2,iuz)*dui_dxj(:,:,3,3)&
-           +cs20_ar(l1:l2,n1:n2)*div_rho(:,:,3)/rho0&
-           +nu*(d2u3_dx2+d2u3_dz2)
+!      parallell_term_rho &
+!          =rho0*dui_dxj(:,:,1,1)+f(l1:l2,lll,n1:n2,iux)*div_rho(:,:,1)&
+!          +rho0*dui_dxj(:,:,3,3)+f(l1:l2,lll,n1:n2,iuz)*div_rho(:,:,3)
+!      parallell_term_ux &
+!           =f(l1:l2,lll,n1:n2,iux)*dui_dxj(:,:,1,1)&
+!           +f(l1:l2,lll,n1:n2,iuz)*dui_dxj(:,:,1,3)&
+!           +cs20_ar(l1:l2,n1:n2)*div_rho(:,:,1)/rho0&
+!           +nu*(d2u1_dx2+d2u1_dz2)
+!      parallell_term_uy &
+!           =f(l1:l2,lll,n1:n2,iux)*dui_dxj(:,:,2,1)&
+!           +f(l1:l2,lll,n1:n2,iuz)*dui_dxj(:,:,2,3)&
+!           +nu*(d2u2_dx2+d2u2_dz2)
+!      parallell_term_uz &
+!           =f(l1:l2,lll,n1:n2,iux)*dui_dxj(:,:,3,1)&
+!           +f(l1:l2,lll,n1:n2,iuz)*dui_dxj(:,:,3,3)&
+!           +cs20_ar(l1:l2,n1:n2)*div_rho(:,:,3)/rho0&
+!           +nu*(d2u3_dx2+d2u3_dz2)
 
 
 
-      parallell_term_rho=0
-      parallell_term_ux=0
-      parallell_term_uy=0
-      parallell_term_uz=0
+!      parallell_term_rho=0
+!      parallell_term_ux=0
+!      parallell_term_uy=0
+!      parallell_term_uz=0
 !
 !  Find the evolution equations at the boundary
 !
-      select case(topbot)
+!      select case(topbot)
       ! NB: For 'top' L_1 plays the role of L5 and L_5 the role of L1
-      case('bot')
-        df(l1:l2,lll,n1:n2,ilnrho) = prefac1*(L_5 + L_1)-parallell_term_rho
-        df(l1:l2,lll,n1:n2,iuy) = prefac2*(L_1 - L_5)-parallell_term_uy
-        df(l1:l2,lll,n1:n2,iux) = -L_3-parallell_term_ux
-        df(l1:l2,lll,n1:n2,iuz) = -L_4-parallell_term_uz
-      case('top')
-        df(l1:l2,lll,n1:n2,ilnrho) = prefac1*(L_1 + L_5)-parallell_term_rho
-        df(l1:l2,lll,n1:n2,iuy) = prefac2*(L_5 - L_1)-parallell_term_uy
-        df(l1:l2,lll,n1:n2,iux) = -L_3-parallell_term_ux
-        df(l1:l2,lll,n1:n2,iuz) = -L_4-parallell_term_uz
-      endselect
+!      case('bot')
+!        df(l1:l2,lll,n1:n2,ilnrho) = prefac1*(L_5 + L_1)-parallell_term_rho
+!        df(l1:l2,lll,n1:n2,iuy) = prefac2*(L_1 - L_5)-parallell_term_uy
+!        df(l1:l2,lll,n1:n2,iux) = -L_3-parallell_term_ux
+!        df(l1:l2,lll,n1:n2,iuz) = -L_4-parallell_term_uz
+!      case('top')
+!        df(l1:l2,lll,n1:n2,ilnrho) = prefac1*(L_1 + L_5)-parallell_term_rho
+!        df(l1:l2,lll,n1:n2,iuy) = prefac2*(L_5 - L_1)-parallell_term_uy
+!        df(l1:l2,lll,n1:n2,iux) = -L_3-parallell_term_ux
+!        df(l1:l2,lll,n1:n2,iuz) = -L_4-parallell_term_uz
+!      endselect
 !
 !  Check if we are solving for logrho or rho
 !
-      if (.not. ldensity_nolog) then
-        df(l1:l2,lll,n1:n2,ilnrho)=df(l1:l2,lll,n1:n2,ilnrho)/rho0
-      endif
+!      if (.not. ldensity_nolog) then
+!        df(l1:l2,lll,n1:n2,ilnrho)=df(l1:l2,lll,n1:n2,ilnrho)/rho0
+!      endif
 !
 ! Impose required variables at the boundary
 !
-      if (llinlet) then
-        f(l1:l2,lll,n1:n2,iux) = 0
-        if (.not. non_reflecting_inlet) f(l1:l2,lll,n1:n2,iuy) = u_t
-        f(l1:l2,lll,n1:n2,iuz) = 0
-      endif
+!      if (llinlet) then
+!        f(l1:l2,lll,n1:n2,iux) = 0
+!        if (.not. non_reflecting_inlet) f(l1:l2,lll,n1:n2,iuy) = u_t
+!        f(l1:l2,lll,n1:n2,iuz) = 0
+!      endif
 !
     endsubroutine bc_nscbc_prf_y
 !***********************************************************************
@@ -4909,9 +4909,9 @@ module Boundcond
 !
 !   7-jul-08/arne: coded.
 !
-      use MpiComm, only: stop_it
-      use EquationOfState, only: cs0, cs20
-      use Deriv, only: der_onesided_4_slice
+!      use MpiComm, only: stop_it
+!      use EquationOfState, only: cs0, cs20
+!      use Deriv, only: der_onesided_4_slice
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -4920,67 +4920,67 @@ module Boundcond
       logical :: llinlet,non_reflecting_inlet
       real, optional :: u_t
       !real, parameter :: sigma = 1.
-      real, dimension(nx,ny) :: du_dz, dlnrho_dz, rho0, L_1, L_5
-      real, dimension(nx,ny) :: dp_prefac, prefac1, prefac2
-      integer lll,sgn
+!      real, dimension(nx,ny) :: du_dz, dlnrho_dz, rho0, L_1, L_5
+!      real, dimension(nx,ny) :: dp_prefac, prefac1, prefac2
+!      integer lll,sgn
 
-      intent(in) :: f
-      intent(out) :: df
+!      intent(in) :: f
+!      intent(out) :: df
 
-      call fatal_error('bc_nscbc_prf_z',&
-           'This sub is not properly implemented yet! Adapt from bc_nscbc_prf_x')
+!      call fatal_error('bc_nscbc_prf_z',&
+!           'This sub is not properly implemented yet! Adapt from bc_nscbc_prf_x')
 
-      llinlet = .false.
-      if (present(linlet)) llinlet = linlet
-      if (llinlet.and..not.present(u_t)) call stop_it(&
-           'bc_nscbc_prf_z: when using linlet=T, you must also specify u_t)')
-
-      select case(topbot)
-      case('bot')
-        lll = n1
-        sgn = 1
-      case('top')
-        lll = n2
-        sgn = -1
-      case default
-        print*, "bc_nscbc_prf_z: ", topbot, " should be `top' or `bot'"
-      endselect
-      if (leos_idealgas) then
-        if (ldensity_nolog) then
-          rho0 = f(l1:l2,m1:m2,lll,ilnrho)
+!      llinlet = .false.
+!      if (present(linlet)) llinlet = linlet
+!      if (llinlet.and..not.present(u_t)) call stop_it(&
+!           'bc_nscbc_prf_z: when using linlet=T, you must also specify u_t)')
+!
+!      select case(topbot)
+!      case('bot')
+!        lll = n1
+!        sgn = 1
+!      case('top')
+!        lll = n2
+!        sgn = -1
+!      case default
+!        print*, "bc_nscbc_prf_z: ", topbot, " should be `top' or `bot'"
+!      endselect
+!      if (leos_idealgas) then
+!        if (ldensity_nolog) then
+!          rho0 = f(l1:l2,m1:m2,lll,ilnrho)
           ! ``dp = cs20*drho''
-          dp_prefac = cs20
-        else
-          rho0 = exp(f(l1:l2,m1:m2,lll,ilnrho))
+!          dp_prefac = cs20
+!        else
+!          rho0 = exp(f(l1:l2,m1:m2,lll,ilnrho))
           ! ``dp = cs20*rho0*dlnrho''
-          dp_prefac = cs20*rho0
-        endif
-        prefac1 = -1./(2*rho0*cs20)
-        prefac2 = -1./(2*rho0*cs0)
-      else
-        print*,"bc_nscbc_prf_y: leos_idealgas=",leos_idealgas,"." 
-        print*,"NSCBC boundary treatment only implemented for an ideal gas."
-        print*,"Boundary treatment skipped."
-        return
-      endif
-      call der_onesided_4_slice(f,sgn,ilnrho,dlnrho_dz,lll,3)
-      call der_onesided_4_slice(f,sgn,iuz,du_dz,lll,3)
-      L_1 = (f(l1:l2,m1:m2,lll,iuz) - sgn*cs0)*&
-            (dp_prefac*dlnrho_dz - sgn*rho0*cs0*du_dz)
-      if (llinlet) then
-        L_5 = nscbc_sigma_in*cs20*rho0*(sgn*f(l1:l2,m1:m2,lll,iuz)-sgn*u_t)
-      else
-        L_5 = 0
-      end if
-      select case(topbot)
+!          dp_prefac = cs20*rho0
+!        endif
+!        prefac1 = -1./(2*rho0*cs20)
+!        prefac2 = -1./(2*rho0*cs0)
+!      else
+!        print*,"bc_nscbc_prf_y: leos_idealgas=",leos_idealgas,"." 
+!        print*,"NSCBC boundary treatment only implemented for an ideal gas."
+!        print*,"Boundary treatment skipped."
+!        return
+!      endif
+!      call der_onesided_4_slice(f,sgn,ilnrho,dlnrho_dz,lll,3)
+!      call der_onesided_4_slice(f,sgn,iuz,du_dz,lll,3)
+!      L_1 = (f(l1:l2,m1:m2,lll,iuz) - sgn*cs0)*&
+!            (dp_prefac*dlnrho_dz - sgn*rho0*cs0*du_dz)
+!      if (llinlet) then
+!        L_5 = nscbc_sigma_in*cs20*rho0*(sgn*f(l1:l2,m1:m2,lll,iuz)-sgn*u_t)
+!      else
+!        L_5 = 0
+!      end if
+!      select case(topbot)
       ! NB: For 'top' L_1 plays the role of L5 and L_5 the role of L1
-      case('bot')
-        df(l1:l2,m1:m2,lll,ilnrho) = prefac1*(L_5 + L_1)
-        df(l1:l2,m1:m2,lll,iuz) = prefac2*(L_5 - L_1)
-      case('top')
-        df(l1:l2,m1:m2,lll,ilnrho) = prefac1*(L_1 + L_5)
-        df(l1:l2,m1:m2,lll,iuz) = prefac2*(L_1 - L_5)
-      endselect
+!      case('bot')
+!        df(l1:l2,m1:m2,lll,ilnrho) = prefac1*(L_5 + L_1)
+!        df(l1:l2,m1:m2,lll,iuz) = prefac2*(L_5 - L_1)
+!      case('top')
+!        df(l1:l2,m1:m2,lll,ilnrho) = prefac1*(L_1 + L_5)
+!        df(l1:l2,m1:m2,lll,iuz) = prefac2*(L_1 - L_5)
+!      endselect
 !
     endsubroutine bc_nscbc_prf_z
 !***********************************************************************
@@ -4993,110 +4993,110 @@ module Boundcond
 !
 !   16-nov-08/natalia: coded.
 !
-      use MpiComm, only: stop_it
+!      use MpiComm, only: stop_it
       !use EquationOfState, only: cs0, cs20
-      use Deriv, only: der_onesided_4_slice, der_pencil
-      use Chemistry
+!      use Deriv, only: der_onesided_4_slice, der_pencil
+!      use Chemistry
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !      real, dimension (mx,my,mz) :: mom2
       real, dimension (mx,my,mz,mvar) :: df
       character (len=3) :: topbot
-      real, dimension(ny,nz) :: dux_dx, L_1, L_2, L_5, dpp_dx
-      real, dimension(my,mz) :: rho0, gamma0, dmom2_dy, TT0 
-      real, dimension (my,mz) :: cs2x,cs0_ar,cs20_ar
+!      real, dimension(ny,nz) :: dux_dx, L_1, L_2, L_5, dpp_dx
+!      real, dimension(my,mz) :: rho0, gamma0, dmom2_dy, TT0 
+!      real, dimension (my,mz) :: cs2x,cs0_ar,cs20_ar
 !      real, dimension (mx,my,mz) :: cs2_full, gamma_full, rho_full, pp
-      real, dimension(nchemspec) :: YYi
+!      real, dimension(nchemspec) :: YYi
       real, dimension (mcom), optional :: val
-      integer :: lll,i, sgn,k
-      real :: Mach_num, u_t, T_t
+!      integer :: lll,i, sgn,k
+!      real :: Mach_num, u_t, T_t
 !
-      intent(inout) :: f
-      intent(out) :: df
+!      intent(inout) :: f
+!      intent(out) :: df
 !
 
-     if (.not.present(val)) call stop_it(&
-           'bc_nscbc_subin_x: you must specify fbcx)')
+!     if (.not.present(val)) call stop_it(&
+!           'bc_nscbc_subin_x: you must specify fbcx)')
 
-      u_t=val(iux)
-      T_t=val(ilnTT)
-      do k=1,nchemspec
-       YYi(k)=val(ichemspec(k))
-      enddo
+!      u_t=val(iux)
+!      T_t=val(ilnTT)
+!      do k=1,nchemspec
+!       YYi(k)=val(ichemspec(k))
+!      enddo
 
-      if (leos_chemistry) then
+!      if (leos_chemistry) then
 !        call get_cs2_full(cs2_full)
 !        call get_gamma_full(gamma_full)
-      endif
+!      endif
 !
-      select case(topbot)
-      case('bot')
-        lll = l1
-        sgn = 1
-      case('top')
-        lll = l2
-        sgn = -1
-      case default
-        print*, "bc_nscbc_subin_x: ", topbot, " should be `top' or `bot'"
-      endselect
+!      select case(topbot)
+!      case('bot')
+!        lll = l1
+!        sgn = 1
+!      case('top')
+!        lll = l2
+!        sgn = -1
+!      case default
+!        print*, "bc_nscbc_subin_x: ", topbot, " should be `top' or `bot'"
+!      endselect
 !
-      if (leos_chemistry) then
+!      if (leos_chemistry) then
 !         cs20_ar=cs2_full(lll,:,:)
 !         cs0_ar=cs2_full(lll,:,:)**0.5
 !         gamma0=gamma_full(lll,:,:)
-         TT0=exp(f(lll,:,:,ilnTT))
+!         TT0=exp(f(lll,:,:,ilnTT))
 !         rho_full=exp(f(:,:,:,ilnrho))
 !         rho0(:,:) = rho_full(lll,:,:)
 !         mom2(lll,:,:)=rho0(:,:)*f(lll,:,:,iuy)
-         do i=1,my
-         do k=1,mz
+!         do i=1,my
+!         do k=1,mz
 !          if (minval(gamma_full(:,i,k))<=0.) then
 !           pp(:,i,k)=0.
 !          else
 !           pp(:,i,k)=cs2_full(:,i,k)*rho_full(:,i,k)/gamma_full(:,i,k)
 !          endif
-         enddo
-         enddo
-      else
-        print*,"bc_nscbc_subin_x: leos_idealgas=",leos_idealgas,"."
-        print*,"NSCBC subsonic inflos is only implemented for "//&
-            "the chemistry case." 
-        print*,"Boundary treatment skipped."
-        return
-      endif
+!         enddo
+!         enddo
+!      else
+!        print*,"bc_nscbc_subin_x: leos_idealgas=",leos_idealgas,"."
+!        print*,"NSCBC subsonic inflos is only implemented for "//&
+!            "the chemistry case." 
+!        print*,"Boundary treatment skipped."
+!        return
+!      endif
 !
 !
       !  call der_onesided_4_slice(f,sgn,ilnrho,dlnrho_dx,lll,1)
-        call der_onesided_4_slice(f,sgn,iux,dux_dx,lll,1)
+!        call der_onesided_4_slice(f,sgn,iux,dux_dx,lll,1)
 !        call der_onesided_4_slice(pp,sgn,dpp_dx,lll,1)
 !
 !        do i=1,mz
 !          call der_pencil(2,mom2(lll,:,i),dmom2_dy(:,i))
 !        enddo
 
-        select case(topbot)
-        case('bot')
-          L_1 = (f(lll,m1:m2,n1:n2,iux) - cs0_ar(m1:m2,n1:n2))*&
-              (dpp_dx - rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dux_dx)
-          L_5 =L_1-2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*&
-              df(lll,m1:m2,n1:n2,iux)
-        case('top')
-          L_5 = (f(lll,m1:m2,n1:n2,iux) + cs0_ar(m1:m2,n1:n2))*&
-              (dpp_dx + rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dux_dx)
-          L_1 = L_5+2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*&
-              df(lll,m1:m2,n1:n2,iux)
-        endselect
-        L_2 = 0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1) &
-            +rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2)*df(lll,m1:m2,n1:n2,ilnTT)
-        if (ldensity_nolog) then
-          df(lll,m1:m2,n1:n2,ilnrho) = -1./cs20_ar(m1:m2,n1:n2)*&
-              (L_2+0.5*(L_5 + L_1)) ! -dmom2_dy(m1:m2,n1:n2)
-        else
-          df(lll,m1:m2,n1:n2,ilnrho) = &
-              -1./rho0(m1:m2,n1:n2)/cs20_ar(m1:m2,n1:n2) &
-              *(L_2+0.5*(L_5 + L_1)) !&
+!        select case(topbot)
+!        case('bot')
+!          L_1 = (f(lll,m1:m2,n1:n2,iux) - cs0_ar(m1:m2,n1:n2))*&
+!              (dpp_dx - rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dux_dx)
+!          L_5 =L_1-2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*&
+!              df(lll,m1:m2,n1:n2,iux)
+!        case('top')
+!          L_5 = (f(lll,m1:m2,n1:n2,iux) + cs0_ar(m1:m2,n1:n2))*&
+!              (dpp_dx + rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dux_dx)
+!          L_1 = L_5+2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*&
+!              df(lll,m1:m2,n1:n2,iux)
+!        endselect
+!        L_2 = 0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1) &
+!            +rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2)*df(lll,m1:m2,n1:n2,ilnTT)
+!        if (ldensity_nolog) then
+!          df(lll,m1:m2,n1:n2,ilnrho) = -1./cs20_ar(m1:m2,n1:n2)*&
+!              (L_2+0.5*(L_5 + L_1)) ! -dmom2_dy(m1:m2,n1:n2)
+!        else
+!          df(lll,m1:m2,n1:n2,ilnrho) = &
+!              -1./rho0(m1:m2,n1:n2)/cs20_ar(m1:m2,n1:n2) &
+!              *(L_2+0.5*(L_5 + L_1)) !&
           ! -1./rho0(m1:m2,n1:n2)*dmom2_dy(m1:m2,n1:n2)
-        endif
+!        endif
 
 !
 ! Natalia: this subroutine is still under construction
@@ -5136,139 +5136,139 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       character (len=3) :: topbot
-      real, dimension (my,mz) :: rho0,gamma0
+!      real, dimension (my,mz) :: rho0,gamma0
 !      real, dimension (mx,my,mz) :: mom2, rho_ux2, rho_uy2
 !      real, dimension (mx,my,mz) :: rho_gamma, rhoE_p, pp
-      real, dimension (ny,nz) :: dux_dx, drho_dx, dpp_dx,dYk_dx
-      real, dimension (ny,nz) :: drho_prefac,p_infx, KK, L_1, L_2, L_5
-      real, dimension (my,mz) :: cs2x,cs0_ar,cs20_ar,dmom2_dy
-      real, dimension (my,mz) :: drhoE_p_dy,dYk_dy, dux_dy
-      real, dimension (ny,nz,nchemspec) :: bound_rhs_Y
-      real, dimension (ny,nz) :: bound_rhs_T
+!      real, dimension (ny,nz) :: dux_dx, drho_dx, dpp_dx,dYk_dx
+!      real, dimension (ny,nz) :: drho_prefac,p_infx, KK, L_1, L_2, L_5
+!      real, dimension (my,mz) :: cs2x,cs0_ar,cs20_ar,dmom2_dy
+!      real, dimension (my,mz) :: drhoE_p_dy,dYk_dy, dux_dy
+!      real, dimension (ny,nz,nchemspec) :: bound_rhs_Y
+!      real, dimension (ny,nz) :: bound_rhs_T
 !      real, dimension (mx,my,mz) :: cs2_full, gamma_full, rho_full
 !
-      integer :: lll, sgn,i,j,k
-      real :: Mach_num
+!      integer :: lll, sgn,i,j,k
+!      real :: Mach_num
 !
-      intent(inout) :: f
-      intent(out) :: df
+!      intent(inout) :: f
+!      intent(out) :: df
 !
-      if (leos_chemistry) then
+!      if (leos_chemistry) then
 !        call get_cs2_full(cs2_full)
 !        call get_gamma_full(gamma_full)
-      endif
+!      endif
 !
-      select case(topbot)
-      case('bot')
-        lll = l1
-        sgn = 1
-        if (leos_chemistry) then 
+!      select case(topbot)
+!      case('bot')
+!        lll = l1
+!        sgn = 1
+!        if (leos_chemistry) then 
 !          call get_p_infx(p_infx,'bot')
-        endif
-      case('top')
-        lll = l2
-        sgn = -1
-        if (leos_chemistry) then
+!        endif
+!      case('top')
+!        lll = l2
+!        sgn = -1
+!        if (leos_chemistry) then
 !          call get_p_infx(p_infx,'top')
-        endif
-      case default
-        print*, "bc_nscbc_subin_x: ", topbot, " should be `top' or `bot'"
-      endselect
+!        endif
+!      case default
+!        print*, "bc_nscbc_subin_x: ", topbot, " should be `top' or `bot'"
+!      endselect
 !
-      if (leos_chemistry) then
+!      if (leos_chemistry) then
 !         cs20_ar=cs2_full(lll,:,:)
 !         cs0_ar=cs2_full(lll,:,:)**0.5
 !         gamma0=gamma_full(lll,:,:)
 !
-        if (ldensity_nolog) then
+!        if (ldensity_nolog) then
 !          rho_full = f(:,:,:,ilnrho)
-          rho0(:,:) = f(lll,:,:,ilnrho)
-          drho_prefac=-1./cs20_ar(m1:m2,n1:n2)
-        else
+!          rho0(:,:) = f(lll,:,:,ilnrho)
+!          drho_prefac=-1./cs20_ar(m1:m2,n1:n2)
+!        else
 !          rho_full = exp(f(:,:,:,ilnrho))
 !          rho0(:,:) = rho_full(lll,:,:)
-          drho_prefac=-1./rho0(m1:m2,n1:n2)/cs20_ar(m1:m2,n1:n2)
-        endif
+!          drho_prefac=-1./rho0(m1:m2,n1:n2)/cs20_ar(m1:m2,n1:n2)
+!        endif
          
-         do i=1,my
-         do k=1,mz
+!         do i=1,my
+!         do k=1,mz
 !          if (minval(gamma_full(:,i,k))<=0.) then
 !           pp(:,i,k)=0.
 !          else
 !           pp(:,i,k)=cs2_full(:,i,k)*rho_full(:,i,k)/gamma_full(:,i,k)
 !          endif
-         enddo
-         enddo
+!         enddo
+!         enddo
 
 !         mom2(lll,:,:)=rho0(:,:)*f(lll,:,:,iuy)
 !         rho_ux2(lll,:,:)=rho0(:,:)*f(lll,:,:,iux)*f(lll,:,:,iux)
 !         rho_uy2(lll,:,:)=rho0(:,:)*f(lll,:,:,iuy)*f(lll,:,:,iuy)
-         do i=1,my
-         do k=1,mz
-          if (gamma0(i,k)<=0.) then
+!         do i=1,my
+!         do k=1,mz
+!          if (gamma0(i,k)<=0.) then
 !           rho_gamma(lll,i,k)=0.
 !           rhoE_p(lll,i,k)=0.
-          else
+!          else
 !           rho_gamma(lll,i,k)=rho0(i,k)/gamma0(i,k)
 !           rhoE_p(lll,i,k)=0.5*rho_ux2(lll,i,k)+0.5*rho_uy2(lll,i,k) &
 !                         +cs20_ar(i,k)/(gamma0(i,k)-1.)*rho0(i,k)
-          endif
-         enddo
-         enddo
-      else
-        print*,"bc_nscbc_subin_x: leos_idealgas=",leos_idealgas,"."
-        print*,"NSCBC subsonic inflos is only implemented "//&
-            "for the chemistry case." 
-        print*,"Boundary treatment skipped."
-        return
-      endif
+!          endif
+!         enddo
+!         enddo
+!      else
+!        print*,"bc_nscbc_subin_x: leos_idealgas=",leos_idealgas,"."
+!        print*,"NSCBC subsonic inflos is only implemented "//&
+!            "for the chemistry case." 
+!        print*,"Boundary treatment skipped."
+!        return
+!      endif
 !
 !      call der_onesided_4_slice(rho_full,sgn,drho_dx,lll,1)
 !      call der_onesided_4_slice(pp,sgn,dpp_dx,lll,1)
-      call der_onesided_4_slice(f,sgn,iux,dux_dx,lll,1)
+!      call der_onesided_4_slice(f,sgn,iux,dux_dx,lll,1)
 !
-      do i=1,mz
+!      do i=1,mz
 !        call der_pencil(2,mom2(lll,:,i),dmom2_dy(:,i))
-        call der_pencil(2,f(lll,:,i,iux),dux_dy(:,i))
+!        call der_pencil(2,f(lll,:,i,iux),dux_dy(:,i))
 !        call der_pencil(2,rhoE_p(lll,:,i),drhoE_p_dy(:,i))
-      enddo
+!      enddo
 !
-      Mach_num=maxval(f(lll,m1:m2,n1:n2,iux)/cs0_ar(m1:m2,n1:n2))
-      KK=nscbc_sigma_out*(1.-Mach_num*Mach_num)*cs0_ar(m1:m2,n1:n2)/Lxyz(1)
+!      Mach_num=maxval(f(lll,m1:m2,n1:n2,iux)/cs0_ar(m1:m2,n1:n2))
+!      KK=nscbc_sigma_out*(1.-Mach_num*Mach_num)*cs0_ar(m1:m2,n1:n2)/Lxyz(1)
 !
-      select case(topbot)
-      case('bot')
-        L_5=KK*(cs20_ar(m1:m2,n1:n2)/gamma0(m1:m2,n1:n2)*&
-            rho0(m1:m2,n1:n2)-p_infx)
-        L_1 = (f(lll,m1:m2,n1:n2,iux) - cs0_ar(m1:m2,n1:n2))*&
-            (dpp_dx- rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dux_dx)
+!      select case(topbot)
+!      case('bot')
+!        L_5=KK*(cs20_ar(m1:m2,n1:n2)/gamma0(m1:m2,n1:n2)*&
+!            rho0(m1:m2,n1:n2)-p_infx)
+!        L_1 = (f(lll,m1:m2,n1:n2,iux) - cs0_ar(m1:m2,n1:n2))*&
+!            (dpp_dx- rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dux_dx)
 !        call get_rhs_Y('bot',1,bound_rhs_Y)
 !        call get_rhs_T('bot',1,bound_rhs_T)
-     case('top')
-        L_1=KK*(cs20_ar(m1:m2,n1:n2)/gamma0(m1:m2,n1:n2)*&
-            rho0(m1:m2,n1:n2)-p_infx)
-        L_5 = (f(lll,m1:m2,n1:n2,iux) + cs0_ar(m1:m2,n1:n2))*&
-            ( dpp_dx+ rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dux_dx)
+!     case('top')
+!        L_1=KK*(cs20_ar(m1:m2,n1:n2)/gamma0(m1:m2,n1:n2)*&
+!            rho0(m1:m2,n1:n2)-p_infx)
+!        L_5 = (f(lll,m1:m2,n1:n2,iux) + cs0_ar(m1:m2,n1:n2))*&
+!            ( dpp_dx+ rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dux_dx)
 !        call get_rhs_Y('top',1,bound_rhs_Y)
 !        call get_rhs_T('top',1,bound_rhs_T)
-      endselect
+!      endselect
 !
-      L_2 = f(lll,m1:m2,n1:n2,iux)*(cs20_ar(m1:m2,n1:n2)*drho_dx-dpp_dx)
+!      L_2 = f(lll,m1:m2,n1:n2,iux)*(cs20_ar(m1:m2,n1:n2)*drho_dx-dpp_dx)
 !
-      if (ldensity_nolog) then
-        df(lll,m1:m2,n1:n2,ilnrho) = &
-            drho_prefac*(L_2+0.5*(L_5 + L_1))!-dmom2_dy(m1:m2,n1:n2)
-      else
-        df(lll,m1:m2,n1:n2,ilnrho) = &
-            drho_prefac*(L_2+0.5*(L_5 + L_1)) !&
+!      if (ldensity_nolog) then
+!        df(lll,m1:m2,n1:n2,ilnrho) = &
+!            drho_prefac*(L_2+0.5*(L_5 + L_1))!-dmom2_dy(m1:m2,n1:n2)
+!      else
+!        df(lll,m1:m2,n1:n2,ilnrho) = &
+!            drho_prefac*(L_2+0.5*(L_5 + L_1)) !&
       !   -1./rho0(m1:m2,n1:n2)*dmom2_dy(m1:m2,n1:n2)
-      endif
-      df(lll,m1:m2,n1:n2,iux) = -1./&
-          (2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2))*(L_5 - L_1) !&
+!      endif
+!      df(lll,m1:m2,n1:n2,iux) = -1./&
+!          (2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2))*(L_5 - L_1) !&
       !      -f(lll,m1:m2,n1:n2,iux)*dux_dy(m1:m2,n1:n2)
-      df(lll,m1:m2,n1:n2,ilnTT) = -1./&
-          (rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*(-L_2 &
-          +0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1)) 
+!      df(lll,m1:m2,n1:n2,ilnTT) = -1./&
+!          (rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*(-L_2 &
+!          +0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1)) 
 !        -1./(rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))* &
 !        (gamma0(m1:m2,n1:n2)-1.) &
 !        *gamma0(m1:m2,n1:n2)*drhoE_p_dy(m1:m2,n1:n2) !&
@@ -5276,29 +5276,29 @@ module Boundcond
 !
      
 !
-      if (nchemspec>1) then
-       do k=1,nchemspec
-          call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dx,lll,1)
-          do i=1,mz
-            call der_pencil(2,f(lll,:,i,ichemspec(k)),dYk_dy(:,i))
-          enddo
-          df(lll,m1:m2,n1:n2,ichemspec(k))=&
-              -f(lll,m1:m2,n1:n2,iux)*dYk_dx &
-              -f(lll,m1:m2,n1:n2,iuy)*dYk_dy(m1:m2,n1:n2) &
-              +bound_rhs_Y(:,:,k)
+!      if (nchemspec>1) then
+!       do k=1,nchemspec
+!          call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dx,lll,1)
+!          do i=1,mz
+!            call der_pencil(2,f(lll,:,i,ichemspec(k)),dYk_dy(:,i))
+!          enddo
+!          df(lll,m1:m2,n1:n2,ichemspec(k))=&
+!              -f(lll,m1:m2,n1:n2,iux)*dYk_dx &
+!              -f(lll,m1:m2,n1:n2,iuy)*dYk_dy(m1:m2,n1:n2) &
+!              +bound_rhs_Y(:,:,k)
       
        ! if (lfilter) then
-         do i=m1,m2
-         do j=n1,n2
-           if ((f(lll,i,j,ichemspec(k))+df(lll,i,j,ichemspec(k))*dt)<-1e-25 ) df(lll,i,j,ichemspec(k))=-1e-25*dt
-           if ((f(lll,i,j,ichemspec(k))+df(lll,i,j,ichemspec(k))*dt)>1.) df(lll,i,j,ichemspec(k))=1.*dt
-         enddo
-         enddo
+!         do i=m1,m2
+!         do j=n1,n2
+!           if ((f(lll,i,j,ichemspec(k))+df(lll,i,j,ichemspec(k))*dt)<-1e-25 ) df(lll,i,j,ichemspec(k))=-1e-25*dt
+!           if ((f(lll,i,j,ichemspec(k))+df(lll,i,j,ichemspec(k))*dt)>1.) df(lll,i,j,ichemspec(k))=1.*dt
+!         enddo
+!         enddo
        ! endif
 
-       enddo
+!       enddo
 
-      endif
+!      endif
 !
 
      ! select case(topbot)
@@ -5324,66 +5324,66 @@ module Boundcond
 !
 !   16-nov-08/natalia: coded.
 !
-      use MpiComm, only: stop_it
+!      use MpiComm, only: stop_it
       !use EquationOfState, only: cs0, cs20
-      use Deriv, only: der_onesided_4_slice, der_pencil
-      use Chemistry
+!      use Deriv, only: der_onesided_4_slice, der_pencil
+!      use Chemistry
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       character (len=3) :: topbot
-      real, dimension (mx,mz) :: rho0,gamma0
+!      real, dimension (mx,mz) :: rho0,gamma0
 !      real, dimension (mx,my,mz) :: mom2, rho_ux2, rho_uy2, rho_gamma, rhoE_p
-      real, dimension (nx,nz) :: duy_dy, dlnrho_dy, L_1, L_2, L_5
-      real, dimension (nx,nz) :: dp_prefac,drho_prefac,p_infy, KK, dpp_dy
-      real, dimension (mx,mz) :: cs2y,cs0_ar,cs20_ar,dmom2_dx,drhoE_p_dx,duy_dx
+!      real, dimension (nx,nz) :: duy_dy, dlnrho_dy, L_1, L_2, L_5
+!      real, dimension (nx,nz) :: dp_prefac,drho_prefac,p_infy, KK, dpp_dy
+!      real, dimension (mx,mz) :: cs2y,cs0_ar,cs20_ar,dmom2_dx,drhoE_p_dx,duy_dx
 !      real, dimension (mx,my,mz) :: cs2_full,gamma_full,pp, rho_full
-      integer :: mmm, sgn,i
-      real :: Mach_num
+!      integer :: mmm, sgn,i
+!      real :: Mach_num
 !
-      intent(in) :: f
-      intent(out) :: df
+!      intent(in) :: f
+!      intent(out) :: df
 !
-      if (leos_chemistry) then 
+!      if (leos_chemistry) then 
 !        call get_cs2_full(cs2_full)
 !        call get_gamma_full(gamma_full)
-      endif
+!      endif
 !
-      select case(topbot)
-      case('bot')
-        mmm = m1
-        sgn = 1
-        if (leos_chemistry) then 
+!      select case(topbot)
+!      case('bot')
+!        mmm = m1
+!        sgn = 1
+!        if (leos_chemistry) then 
 !          call calc_cs2y(cs2y,'bot',f)
 !          call get_gammay(gamma0,'bot')
 !          call get_p_infy(p_infy,'bot')
-        endif
-      case('top')
-        mmm = m2
-        sgn = -1
-        if (leos_chemistry) then
+!        endif
+!      case('top')
+!        mmm = m2
+!        sgn = -1
+!        if (leos_chemistry) then
 !          call calc_cs2y(cs2y,'top',f)
 !          call get_gammay(gamma0,'top')
 !          call get_p_infy(p_infy,'top')
-        endif
-      case default
-        print*, "bc_nscbc_subin_y: ", topbot, " should be `top' or `bot'"
-      endselect
+!        endif
+!      case default
+!        print*, "bc_nscbc_subin_y: ", topbot, " should be `top' or `bot'"
+!      endselect
 !
-      if (leos_chemistry) then
+!      if (leos_chemistry) then
 !        cs20_ar=cs2_full(:,mmm,:)
 !        cs0_ar=cs2_full(:,mmm,:)**0.5
 !        gamma0=gamma_full(:,mmm,:)
-        if (ldensity_nolog) then
-          rho0(:,:) = f(:,mmm,:,ilnrho)
+!        if (ldensity_nolog) then
+!          rho0(:,:) = f(:,mmm,:,ilnrho)
 !          dp_prefac = cs20_ar(l1:l2,n1:n2)/gamma0(l1:l2,n1:n2)
-          drho_prefac=-1./cs20_ar(l1:l2,n1:n2)
-        else
-          rho0(:,:) = exp(f(:,mmm,:,ilnrho))
+!          drho_prefac=-1./cs20_ar(l1:l2,n1:n2)
+!        else
+!          rho0(:,:) = exp(f(:,mmm,:,ilnrho))
 !          dp_prefac = cs20_ar(l1:l2,n1:n2)*&
 !          rho0(l1:l2,n1:n2)/gamma0(l1:l2,n1:n2)
-          drho_prefac=-1./rho0(l1:l2,n1:n2)/cs20_ar(l1:l2,n1:n2)
-        endif
+!          drho_prefac=-1./rho0(l1:l2,n1:n2)/cs20_ar(l1:l2,n1:n2)
+!        endif
 !
 !        rho_full=exp(f(:,:,:,ilnrho))
 !        pp=cs2_full*rho_full/gamma_full
@@ -5393,58 +5393,58 @@ module Boundcond
 !        rho_gamma(:,mmm,:)=rho0(:,:)/gamma0(:,:)
 !        rhoE_p(:,mmm,:)=0.5*rho_ux2(:,mmm,:)+0.5*rho_uy2(:,mmm,:) &
 !            +cs20_ar(:,:)/(gamma0(:,:)-1.)*rho0(:,:)
-      else
-        print*,"bc_nscbc_subin_y: leos_idealgas=",leos_idealgas,"."
-        print*,"NSCBC subsonic inflow is only implemented "//&
-            "for the chemistry case." 
-        print*,"Boundary treatment skipped."
-        return
-      endif
+!      else
+!        print*,"bc_nscbc_subin_y: leos_idealgas=",leos_idealgas,"."
+!        print*,"NSCBC subsonic inflow is only implemented "//&
+!            "for the chemistry case." 
+!        print*,"Boundary treatment skipped."
+!        return
+!      endif
 !
-      call der_onesided_4_slice(f,sgn,ilnrho,dlnrho_dy,mmm,2)
-      call der_onesided_4_slice(f,sgn,iux,duy_dy,mmm,2)
+!      call der_onesided_4_slice(f,sgn,ilnrho,dlnrho_dy,mmm,2)
+!      call der_onesided_4_slice(f,sgn,iux,duy_dy,mmm,2)
 !      call der_onesided_4_slice(pp,sgn,dpp_dy,mmm,2)
 !
-      do i=1,mz
+!      do i=1,mz
 !        call der_pencil(1,mom2(:,mmm,i),dmom2_dx(:,i))
-        call der_pencil(1,f(:,mmm,i,iuy),duy_dx(:,i))
+!        call der_pencil(1,f(:,mmm,i,iuy),duy_dx(:,i))
 !        call der_pencil(1,rhoE_p(:,mmm,i),drhoE_p_dx(:,i))
-      enddo
+!      enddo
 !
-      Mach_num=maxval(f(l1:l2,mmm,n1:n2,iuy)/cs0_ar(l1:l2,n1:n2))
-      KK=nscbc_sigma_out*(1.-Mach_num*Mach_num)*cs0_ar(l1:l2,n1:n2)/Lxyz(2)
+!      Mach_num=maxval(f(l1:l2,mmm,n1:n2,iuy)/cs0_ar(l1:l2,n1:n2))
+!      KK=nscbc_sigma_out*(1.-Mach_num*Mach_num)*cs0_ar(l1:l2,n1:n2)/Lxyz(2)
 !
-      select case(topbot)
-      case('bot')
-        L_5 = KK*(cs20_ar(l1:l2,n1:n2)/&
-            gamma0(l1:l2,n1:n2)*rho0(l1:l2,n1:n2)-p_infy)
-        L_1 = (f(l1:l2,mmm,n1:n2,iuy) - cs0_ar(l1:l2,n1:n2))*&
-            (dpp_dy - rho0(l1:l2,n1:n2)*cs0_ar(l1:l2,n1:n2)*duy_dy)
-      case('top')
-        L_1 = KK*(cs20_ar(l1:l2,n1:n2)/&
-            gamma0(l1:l2,n1:n2)*rho0(l1:l2,n1:n2)-p_infy)
-        L_5 = (f(l1:l2,mmm,n1:n2,iuy) + cs0_ar(l1:l2,n1:n2))*&
-            (dpp_dy + rho0(l1:l2,n1:n2)*cs0_ar(l1:l2,n1:n2)*duy_dy)
-      endselect
-      L_2 = f(l1:l2,mmm,n1:n2,iuy)*(cs20_ar(l1:l2,n1:n2)*dlnrho_dy-dpp_dy)
+!      select case(topbot)
+!      case('bot')
+!        L_5 = KK*(cs20_ar(l1:l2,n1:n2)/&
+!            gamma0(l1:l2,n1:n2)*rho0(l1:l2,n1:n2)-p_infy)
+!        L_1 = (f(l1:l2,mmm,n1:n2,iuy) - cs0_ar(l1:l2,n1:n2))*&
+!            (dpp_dy - rho0(l1:l2,n1:n2)*cs0_ar(l1:l2,n1:n2)*duy_dy)
+!      case('top')
+!        L_1 = KK*(cs20_ar(l1:l2,n1:n2)/&
+!            gamma0(l1:l2,n1:n2)*rho0(l1:l2,n1:n2)-p_infy)
+!        L_5 = (f(l1:l2,mmm,n1:n2,iuy) + cs0_ar(l1:l2,n1:n2))*&
+!            (dpp_dy + rho0(l1:l2,n1:n2)*cs0_ar(l1:l2,n1:n2)*duy_dy)
+!      endselect
+!      L_2 = f(l1:l2,mmm,n1:n2,iuy)*(cs20_ar(l1:l2,n1:n2)*dlnrho_dy-dpp_dy)
 !
-      if (ldensity_nolog) then
-        df(l1:l2,mmm,n1:n2,ilnrho) = &
-            drho_prefac*(L_2+0.5*(L_5 + L_1))-dmom2_dx(l1:l2,n1:n2)
-      else
-        df(l1:l2,mmm,n1:n2,ilnrho) = drho_prefac*(L_2+0.5*(L_5 + L_1)) &
-            -1./rho0(l1:l2,n1:n2)*dmom2_dx(l1:l2,n1:n2)
-      endif
+!      if (ldensity_nolog) then
+!        df(l1:l2,mmm,n1:n2,ilnrho) = &
+!            drho_prefac*(L_2+0.5*(L_5 + L_1))-dmom2_dx(l1:l2,n1:n2)
+!      else
+!        df(l1:l2,mmm,n1:n2,ilnrho) = drho_prefac*(L_2+0.5*(L_5 + L_1)) &
+!            -1./rho0(l1:l2,n1:n2)*dmom2_dx(l1:l2,n1:n2)
+!      endif
 !
-      df(l1:l2,mmm,n1:n2,iuy) = -1./&
-          (2.*rho0(l1:l2,n1:n2)*cs0_ar(l1:l2,n1:n2))*(L_5 - L_1) &
-          -f(l1:l2,mmm,n1:n2,iuy)*duy_dx(l1:l2,n1:n2)
-      df(l1:l2,mmm,n1:n2,ilnTT) = -1./&
-          (rho0(l1:l2,n1:n2)*cs20_ar(l1:l2,n1:n2))*(-L_2 &
-          +0.5*(gamma0(l1:l2,n1:n2)-1.)*(L_5+L_1)) &
-          -1./(rho0(l1:l2,n1:n2)*cs20_ar(l1:l2,n1:n2))*&
-          (gamma0(l1:l2,n1:n2)-1.) &
-          *gamma0(l1:l2,n1:n2)*drhoE_p_dx(l1:l2,n1:n2)
+!      df(l1:l2,mmm,n1:n2,iuy) = -1./&
+!          (2.*rho0(l1:l2,n1:n2)*cs0_ar(l1:l2,n1:n2))*(L_5 - L_1) &
+!          -f(l1:l2,mmm,n1:n2,iuy)*duy_dx(l1:l2,n1:n2)
+!      df(l1:l2,mmm,n1:n2,ilnTT) = -1./&
+!          (rho0(l1:l2,n1:n2)*cs20_ar(l1:l2,n1:n2))*(-L_2 &
+!          +0.5*(gamma0(l1:l2,n1:n2)-1.)*(L_5+L_1)) &
+!          -1./(rho0(l1:l2,n1:n2)*cs20_ar(l1:l2,n1:n2))*&
+!          (gamma0(l1:l2,n1:n2)-1.) &
+!          *gamma0(l1:l2,n1:n2)*drhoE_p_dx(l1:l2,n1:n2)
 !
     endsubroutine bc_nscbc_nref_subout_y
 !***********************************************************************
