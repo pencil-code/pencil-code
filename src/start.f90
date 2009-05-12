@@ -90,8 +90,8 @@ program start
 !
   implicit none
 !
-!  define parameters
-!  The f-array includes auxiliary variables
+!  Define parameters.
+!  The f-array includes auxiliary variables.
 !  Although they are not necessary for start.f90, idl may want to read them,
 !  so we define therefore the full array and write it out.
 !
@@ -117,7 +117,9 @@ program start
   allocate( f(mx,my,mz,mfarray),STAT=stat); if (stat>0) call stop_it("Couldn't allocate memory for f ")
   allocate(df(mx,my,mz,mvar)     ,STAT=stat); if (stat>0) call stop_it("Couldn't allocate memory for df")
 !
-  call register_modules()         ! register modules, etc.
+!  Register variables in the f array.
+!
+  call register_modules()
   call particles_register_modules()
 !
 !  The logical headtt is sometimes referred to in start.x, even though it is
@@ -125,12 +127,12 @@ program start
 !
   headtt=lroot
 !
-!  identify version
+!  Identify version.
 !
   if (lroot) call cvs_id( &
        "$Id$")
 !
-!  set default values: box of size (2pi)^3
+!  Set default values: box of size (2pi)^3.
 !
   xyz0 = (/       -pi,        -pi,       -pi /) ! first corner
   xyz1 = (/impossible, impossible, impossible/) ! last corner
@@ -139,14 +141,14 @@ program start
   lequidist=(/.true.,.true.,.true. /) ! all directions equidistant grid
   lshift_origin=(/.false.,.false.,.false./) ! don't shift origin
 !
-!  read parameters from start.in
-!  call also rprint_list, because it writes iuu, ilnrho, iss, and iaa to disk.
-
+!  Read parameters from start.in.
+!  Call also rprint_list, because it writes iuu, ilnrho, iss, and iaa to disk.
+!
   call read_startpars(FILE=.true.)
   call rprint_list(.false.)
   call particles_rprint_list(.false.)
 !
-!  Initialize start time
+!  Initialize start time.
 !
   t=tstart
 !
@@ -158,19 +160,15 @@ program start
     mvar_io = mvar
   endif
 !
-!  print resolution
+!  Print resolution.
 !
   if (lroot) print*, 'nxgrid,nygrid,nzgrid=',nxgrid,nygrid,nzgrid
 !
-!  postprocess input parameters
+!  Postprocess input parameters.
 !
   gamma1 = gamma-1.
 !
-!  I don't think there was a good reason to write param.nml twice (but
-!  leave this around for some time [wd; rev. 1.71, 5-nov-2002]
-!        call wparam()
-!
-!  Set up directory names and check whether the directories exist
+!  Set up directory names and check whether the directories exist.
 !
   call directory_names()
 !
@@ -180,11 +178,10 @@ program start
 !        if (.not. exist) &
 !             call stop_it('Need directory <' // trim(directory_snap) // '>')
 !
-
 !
 !  Set box dimensions, make sure Lxyz and xyz1 are in sync.
-!  Box defaults to [-pi,pi] for all directions if none of xyz1 or Lxyz are set
-!  If luniform_z_mesh_aspect_ratio=T, the default Lz scales with nzgrid/nxgrid
+!  Box defaults to [-pi,pi] for all directions if none of xyz1 or Lxyz are set.
+!  If luniform_z_mesh_aspect_ratio=T, the default Lz scales with nzgrid/nxgrid.
 !
   do i=1,3
     if (Lxyz(i) == impossible) then
@@ -208,7 +205,7 @@ program start
   if (lequatory) yequator=xyz0(2)+0.5*Lxyz(2)
   if (lequatorz) zequator=xyz0(3)+0.5*Lxyz(3)
 !
-!  Abbreviations
+!  Abbreviations.
 !
   x0=xyz0(1); y0=xyz0(2); z0=xyz0(3)
   Lx=Lxyz(1); Ly=Lxyz(2); Lz=Lxyz(3)
@@ -229,7 +226,7 @@ program start
 !
   dimensionality=min(nxgrid-1,1)+min(nygrid-1,1)+min(nzgrid-1,1)
 !
-!  check consistency
+!  Check consistency.
 !
   if (.not.lperi(1).and.nxgrid<2) &
       call stop_it('for lperi(1)=F: must have nxgrid>1')
@@ -249,23 +246,23 @@ program start
   seed(1) = -(10+iproc)    ! different random numbers on different CPUs
   call random_seed_wrapper(put=seed(1:nseed))
 !
-!  generate grid
+!  Generate grid.
 !
   call construct_grid(x,y,z,dx,dy,dz,x00,y00,z00)
 !
-!  write grid.dat file
+!  Write grid.dat file.
 !
   call wgrid(trim(directory)//'/grid.dat')
   if (lparticles) &
     call wproc_bounds(trim(directory)//'/proc_bounds.dat')
 !
-!  write .general file for data explorer
+!  Write .general file for data explorer.
 !
   if (lroot) call write_dx_general( &
                     trim(datadir)//'/var.general', &
                     x0-nghost*dx, y0-nghost*dy, z0-nghost*dz)
 !
-!  populate wavenumber arrays for fft and calculate nyquist wavenumber
+!  Populate wavenumber arrays for fft and calculate nyquist wavenumber.
 !
   if (nxgrid/=1) then
     kx_fft=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*2*pi/Lx
@@ -298,26 +295,26 @@ program start
   call initialize_modules(f,lstarting=.true.)
   call particles_initialize_modules(lstarting=.true.)
 !
-!  Initial conditions: by default, we put f=0 (ss=lnrho=uu=0, etc)
+!  Initial conditions: by default, we put f=0 (ss=lnrho=uu=0, etc).
 !  alternatively: read existing snapshot and overwrite only some fields
 !  by the various procedures below.
 !
   if (lread_oldsnap) then
     call rsnap(trim(directory_snap)//'/var.dat',f, mvar)
   else
-    !
-    ! We used to have just f=0. here, but with GRAVITY=gravity_r,
-    ! the gravitational acceleration (which is computed in
-    ! initialize_gravity and stored in the f-array), is set to zero
-    ! by the statement f=0. After running start.csh, this can lead
-    ! to some confusion as to whether the gravity module actually
-    ! does anything or not.
-    !
-    !   So now we are more specific:
+!
+! We used to have just f=0. here, but with GRAVITY=gravity_r,
+! the gravitational acceleration (which is computed in
+! initialize_gravity and stored in the f-array), is set to zero
+! by the statement f=0. After running start.csh, this can lead
+! to some confusion as to whether the gravity module actually
+! does anything or not.
+!
+!   So now we are more specific:
     f(:,:,:,1:mvar)=0.
   endif
 !
-!  the following init routines do then only need to add to f.
+!  The following init routines do then only need to add to f.
 !  wd: also in the case where we have read in an existing snapshot??
 !
   if (lroot) print* !(empty line)
@@ -358,13 +355,13 @@ program start
     close(19)
   endif
 !
-!  check whether we want ionization
+!  Check whether we want ionization.
 !
   if (leos_ionization) call ioninit(f)
   if (leos_temperature_ionization) call ioncalc(f)
   if (lradiation_ray) call radtransfer(f)
 !
-!  filter initial velocity
+!  Filter initial velocity.
 !  NOTE: this procedure is currently not very efficient,
 !  because for all variables boundary conditions and communication
 !  are done again and again for each variable.
@@ -385,15 +382,15 @@ program start
 !  restivitity term for sixth order hyperresistivity with positive definite
 !  heating rate must also be precalculated.
 !
-if (lhyperviscosity_strict)   call hyperviscosity_strict(f)
-if (lhyperresistivity_strict) call hyperresistivity_strict(f)
+  if (lhyperviscosity_strict)   call hyperviscosity_strict(f)
+  if (lhyperresistivity_strict) call hyperresistivity_strict(f)
 !
-!  Set random seed independent of processor
+!  Set random seed independent of processor.
 !
   seed(1) = 1812
   call random_seed_wrapper(put=seed(1:nseed))
 !
-!  write to disk
+!  Write to disk.
 !
   if (lwrite_ic) then
     call wsnap(trim(directory_snap)//'/VAR0',f, &
@@ -407,9 +404,9 @@ if (lhyperresistivity_strict) call hyperresistivity_strict(f)
         ENUM=.false.,FLIST='spvarN.list')
   endif
 !
-!  The option lnowrite writes everything except the actual var.dat file
+!  The option lnowrite writes everything except the actual var.dat file.
 !  This can be useful if auxiliary files are outdated, and don't want
-!  to overwrite an existing var.dat
+!  to overwrite an existing var.dat.
 !
   inquire(FILE="NOERASE", EXIST=lnoerase)
   if (.not.lnowrite .and. .not.lnoerase) then
@@ -424,9 +421,8 @@ if (lhyperresistivity_strict) call hyperresistivity_strict(f)
     call wtime(trim(directory)//'/time.dat',t)
   endif
   call wdim(trim(directory)//'/dim.dat')
-
 !
-!  also write full dimensions to data/ :
+!  Also write full dimensions to data/.
 !
   if (lroot) then
     call wdim(trim(datadir)//'/dim.dat', &
@@ -437,30 +433,30 @@ if (lhyperresistivity_strict) call hyperresistivity_strict(f)
       call particles_nbody_write_spdim(trim(datadir)//'/spdim.dat')
   endif
 !
-!  write global variables:
+!  Write global variables.
 !
   if (mglobal/=0)  &
       call output_globals(trim(directory_snap)//'/global.dat', &
       f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
 !
 !  Write input parameters to a parameter file (for run.x and IDL).
-!  Do this late enough, so init_entropy etc. can adjust them
+!  Do this late enough, so init_entropy etc. can adjust them.
 !
   call wparam()
 !
-!  Write information about pencils to disc
+!  Write information about pencils to disc.
 !
   call write_pencil_info()
 !
   call mpifinalize
+!
   if (lroot) print*
   if (lroot) print*,'start.x has completed successfully'
   if (lroot) print* ! (finish with an empty line)
 !
-!  Free any allocated memory
+!  Free any allocated memory.
 !
   call farray_clean_up()
   call sharedvars_clean_up()
 !
 endprogram
-
