@@ -236,7 +236,7 @@ f(:,m2-5:m2,:,iux)=0
 !
 !  Interface for user's own initial condition
 !
-    if (linitial_condition) call initial_condition_solid_cells
+    if (linitial_condition) call initial_condition_solid_cells(f)
 !
     endsubroutine init_solid_cells
 !***********************************************************************  
