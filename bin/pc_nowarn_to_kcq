@@ -1,0 +1,45 @@
+#!/usr/bin/perl
+#
+#  $Id$
+#
+#  A small program to replace all instances of NO_WARN with keep_compiler_quiet.
+#  Use with extreme care, not all cases are handled automatically.
+#
+foreach $file (@ARGV){
+#
+  print "$file\n";
+#
+  open FILE, $file;
+    @lines = <FILE>;
+  close FILE;
+#
+  $i=0;
+  foreach $line (@lines){
+    if ($line =~ /NO_WARN/){
+      $indent=index($line,'if');
+      $then  =index($line,'then');
+      if ($indent ge 1 and $then eq -1) {
+        $comma =index($line,',');
+        $line=substr($line,$comma+1,length($line));
+        $line=~s/ //g;
+        $line=~s/$//g;
+        $line=~s/^//g;
+        $line=~s/\n//g;
+        $line=~s/\!.*//g;
+        @variables=split /,/, $line;
+        print "@variables\n";
+        $line="";
+        foreach $variable (@variables){
+          for ($i=0; $i<$indent; $i++){$line=$line." ";}
+          $line=$line."call keep_compiler_quiet($variable)\n";
+          }
+        }
+      }
+    $i++;
+    }
+#
+  open FILE, "> $file";
+    print FILE @lines;
+  close FILE;
+#
+}
