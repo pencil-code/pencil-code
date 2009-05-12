@@ -1,11 +1,12 @@
 ! $Id$
 !
-!  This module is used both for the initial condition and during run time.
-!  It contains dndrhod_dt and init_nd, among other auxiliary routines.
+!  This module takes care of everything related to dust density.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
+!
+! CPARAM logical, parameter :: ldustdensity = .true.
 !
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
@@ -89,8 +90,6 @@ module Dustdensity
       use FArrayManager
 !
       integer :: k, ind_tmp, imd_tmp, imi_tmp
-!
-      ldustdensity = .true.
 !
 !  Set ind to consecutive numbers nvar+1, nvar+2, ..., nvar+ndustspec
 !
@@ -1466,13 +1465,15 @@ module Dustdensity
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: k,l
 !
-      do l=l1,l2; do m=m1,m2; do n=n1,n2
-        do k=1,ndustspec
-          if (f(l,m,n,ind(k)) < 0.) f(l,m,n,ind(k)) = 0.
-          if (lmice .and. (f(l,m,n,imi(k)) < 0.)) f(l,m,n,imi(k)) = 0.
-        enddo
-        if (lpscalar_nolog .and. (f(l,m,n,ilncc) < 0.)) f(l,m,n,ilncc) = 1e-6
-      enddo; enddo; enddo
+      if (ldustnulling) then
+        do l=l1,l2; do m=m1,m2; do n=n1,n2
+          do k=1,ndustspec
+            if (f(l,m,n,ind(k)) < 0.) f(l,m,n,ind(k)) = 0.
+            if (lmice .and. (f(l,m,n,imi(k)) < 0.)) f(l,m,n,imi(k)) = 0.
+          enddo
+          if (lpscalar_nolog .and. (f(l,m,n,ilncc) < 0.)) f(l,m,n,ilncc) = 1e-6
+        enddo; enddo; enddo
+      endif
 !
     endsubroutine null_dust_vars
 !***********************************************************************

@@ -6,6 +6,8 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
+! CPARAM logical, parameter :: ldustdensity = .false.
+!
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
@@ -23,23 +25,11 @@ module Dustdensity
 !
   include 'dustdensity.h'
 !
-  logical :: ldustnulling=.false.
-!
   contains
 !***********************************************************************
     subroutine register_dustdensity()
 !
-!  Initialise variables which should know that we solve the
-!  compressible hydro equations: ilnrhod; increase nvar accordingly.
-!
-!  18-mar-03/axel: adapted from dustdensity
-!
-      use Mpicomm, only: stop_it
       use Sub
-!
-      ldustdensity = .false.
-!
-!  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
            "$Id$")
@@ -48,134 +38,105 @@ module Dustdensity
 !***********************************************************************
     subroutine initialize_dustdensity()
 !
-!  Perform any post-parameter-read initialization i.e. calculate derived
-!  parameters.
-!
-!  18-mar-03/axel: adapted from dustdensity
-!
     endsubroutine initialize_dustdensity
 !***********************************************************************
     subroutine init_nd(f)
 !
-!  initialise lnrhod; called from start.f90
-!
-!  18-mar-03/axel: adapted from dustdensity
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*,f ! keep compiler quiet
+      call keep_compiler_quiet(f)
+!
     endsubroutine init_nd
 !***********************************************************************
     subroutine pencil_criteria_dustdensity()
-!
-!  All pencils that the Dustdensity module depends on are specified here.
-!
-!  20-11-04/anders: coded
 !
     endsubroutine pencil_criteria_dustdensity
 !***********************************************************************
     subroutine pencil_interdep_dustdensity(lpencil_in)
 !
-!  Interdependency among pencils provided by the Dustdensity module
-!  is specified here.
-!
-!  20-11-04/anders: coded
-!
       logical, dimension(npencils) :: lpencil_in
 !
-      if (NO_WARN) print*, lpencil_in  !(keep compiler quiet)
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_dustdensity
 !***********************************************************************
     subroutine calc_pencils_dustdensity(f,p)
-!
-!  Calculate Dustdensity pencils.
-!  Most basic pencils should come first, as others may depend on them.
-!
-!  13-nov-04/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f, p
 !
-      if (NO_WARN) print*, f, p
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_dustdensity
 !***********************************************************************
     subroutine dndmd_dt(f,df,p)
 !
-!  continuity equation
-!  calculate dlnrhod/dt = - u.gradlnrhod - divud
-!
-!  18-mar-03/axel: adapted from dustdensity
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      if (NO_WARN) print*,f,df,p !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine dndmd_dt
 !***********************************************************************
     subroutine read_dustdensity_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
-
+!
+      if (present(iostat) .and. (NO_WARN)) call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(unit)
+!
     endsubroutine read_dustdensity_init_pars
 !***********************************************************************
     subroutine write_dustdensity_init_pars(unit)
+!
       integer, intent(in) :: unit
-
-      if (NO_WARN) print*,unit
-
+!
+      call keep_compiler_quiet(unit)
+!
     endsubroutine write_dustdensity_init_pars
 !***********************************************************************
     subroutine read_dustdensity_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
-
+!
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(unit)
+!
     endsubroutine read_dustdensity_run_pars
 !***********************************************************************
     subroutine write_dustdensity_run_pars(unit)
+!
       integer, intent(in) :: unit
-
-      if (NO_WARN) print*,unit
+!
+      call keep_compiler_quiet(unit)
+!
     endsubroutine write_dustdensity_run_pars
 !***********************************************************************
     subroutine redist_mdbins(f)
 !
-!  Redistribute dust number density and dust density in mass bins
-!
-!  4-may-2004/wolf: Adapted from dustdensity.f90
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*,f
+      call keep_compiler_quiet(f)
+!
     endsubroutine redist_mdbins
 !***********************************************************************
     subroutine null_dust_vars(f)
 !
-!  Dummy routine
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*,f
+      call keep_compiler_quiet(f)
+!
     endsubroutine null_dust_vars
 !***********************************************************************
     subroutine rprint_dustdensity(lreset,lwrite)
-!
-!  reads and registers print parameters relevant for compressible part
-!
-!   7-jun-02/axel: incoporated from subroutine pde
-!
-      use Sub
 !
       logical :: lreset,lwr
       logical, optional :: lwrite
@@ -183,14 +144,12 @@ module Dustdensity
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-!  write column where which dust density variable is stored
-!
       if (lwr) then
-        write(3,*) 'nname=',nname
         write(3,*) 'ind=',ind
       endif
 !
-      if (NO_WARN) print*,lreset  !(to keep compiler quiet)
+      call keep_compiler_quiet(lreset)
+!
     endsubroutine rprint_dustdensity
 !***********************************************************************
     subroutine get_slices_dustdensity(f,slices)

@@ -165,8 +165,7 @@ module Cdata
   logical :: lalpm=.false.
   logical :: lchiral=.false.
   logical :: lradiation=.false.,lradiation_ray=.false.,lradiation_fld=.false.
-  logical :: ldustdensity=.false.,ldustdensity_log=.false.
-  logical :: ldustvelocity=.false.
+  logical :: ldustdensity_log=.false.
   logical :: lneutraldensity=.false.,lneutraldensity_log=.false.
   logical :: lneutralvelocity=.false.
   logical :: lglobal=.false., lglobal_nolog_density=.false.

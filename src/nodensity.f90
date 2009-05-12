@@ -28,14 +28,7 @@ module Density
 !***********************************************************************
     subroutine register_density()
 !
-!  Initialise variables which should know that we solve the
-!  compressible hydro equations: ilnrho; increase nvar accordingly.
-!
-!   8-jun-02/axel: adapted from density
-!
       use Sub
-!
-!  Identify version number (generated automatically by CVS).
 !
       if (lroot) call cvs_id( &
           "$Id$")
@@ -65,8 +58,6 @@ module Density
     endsubroutine initialize_density
 !***********************************************************************
     subroutine init_lnrho(f)
-!
-!  Dummy.
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -137,8 +128,6 @@ module Density
 !***********************************************************************
     subroutine density_before_boundary(f)
 !
-!  Dummy routine.
-!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       call keep_compiler_quiet(f)
@@ -146,8 +135,6 @@ module Density
     endsubroutine density_before_boundary
 !***********************************************************************
     subroutine dlnrho_dt(f,df,p)
-!
-!  Continuity equation, dummy routine.
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -161,8 +148,6 @@ module Density
     endsubroutine dlnrho_dt
 !***********************************************************************
     subroutine impose_density_floor(f)
-!
-!  Dummy routine.
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
 !
@@ -207,8 +192,6 @@ module Density
     endsubroutine write_density_run_pars
 !***********************************************************************
     subroutine rprint_density(lreset,lwrite)
-!
-!  Dummy routine.
 !
       logical :: lreset,lwr
       logical, optional :: lwrite

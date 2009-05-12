@@ -1064,7 +1064,7 @@ module Param_IO
            ltestscalar,ltestfield,ltestflow, &
            lpscalar,lradiation, &
            lforcing,lgravz,lgravr,lshear,ltestperturb,linterstellar,lcosmicray, &
-           lcosmicrayflux,ldustvelocity,ldustdensity, &
+           lcosmicrayflux, &
            lshock,lradiation_fld, &
            leos_ionization,leos_fixed_ionization,lvisc_hyper,lchiral, &
            leos,leos_temperature_ionization,lneutralvelocity,lneutraldensity

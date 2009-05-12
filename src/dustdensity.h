@@ -8,5 +8,4 @@
   public :: init_nd, calc_pencils_dustdensity, dndmd_dt
   public :: pencil_criteria_dustdensity, pencil_interdep_dustdensity
 
-  public :: redist_mdbins,null_dust_vars,ldustnulling
-
+  public :: redist_mdbins,null_dust_vars
