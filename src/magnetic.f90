@@ -342,8 +342,11 @@ module Magnetic
   integer :: idiag_bx2mz=0      ! DIAG_DOC: $\left< B_x^2 \right>_{xy}$
   integer :: idiag_by2mz=0      ! DIAG_DOC: $\left< B_y^2 \right>_{xy}$
   integer :: idiag_bz2mz=0      ! DIAG_DOC: $\left< B_z^2 \right>_{xy}$
-  integer :: idiag_jbmz=0       ! DIAG_DOC: $\left< \Jv\cdot\Bv\right>_{xy}$
-  integer :: idiag_abmz=0       ! DIAG_DOC: $\left< \Av\cdot\Bv\right>_{xy}$
+  integer :: idiag_jbmz=0       ! DIAG_DOC: $\left<\Jv\cdot\Bv\right>|_{xy}$
+  integer :: idiag_abmz=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>|_{xy}$
+  integer :: idiag_examz1=0     ! DIAG_DOC: $\left<\Ev\times\Av\right>_{xy}|_x$
+  integer :: idiag_examz2=0     ! DIAG_DOC: $\left<\Ev\times\Av\right>_{xy}|_y$
+  integer :: idiag_examz3=0     ! DIAG_DOC: $\left<\Ev\times\Av\right>_{xy}|_z$
   integer :: idiag_bxmxy=0      ! DIAG_DOC: $\left< B_x \right>_{xy}$
   integer :: idiag_bymxy=0      ! DIAG_DOC: $\left< B_y \right>_{xy}$
   integer :: idiag_bzmxy=0      ! DIAG_DOC: $\left< B_z \right>_{xy}$
@@ -387,9 +390,9 @@ module Magnetic
   integer :: idiag_uxbcmy=0     ! DIAG_DOC:
   integer :: idiag_uxbsmx=0     ! DIAG_DOC:
   integer :: idiag_uxbsmy=0     ! DIAG_DOC:
-  integer :: idiag_examx=0      ! DIAG_DOC:
-  integer :: idiag_examy=0      ! DIAG_DOC:
-  integer :: idiag_examz=0      ! DIAG_DOC:
+  integer :: idiag_examx=0      ! DIAG_DOC: $\left<\Ev\times\Av\right>|_x$
+  integer :: idiag_examy=0      ! DIAG_DOC: $\left<\Ev\times\Av\right>|_y$
+  integer :: idiag_examz=0      ! DIAG_DOC: $\left<\Ev\times\Av\right>|_z$
   integer :: idiag_exjmx=0      ! DIAG_DOC: $\left<\Ev\times\Jv\right>|_x$
   integer :: idiag_exjmy=0      ! DIAG_DOC: $\left<\Ev\times\Jv\right>|_y$
   integer :: idiag_exjmz=0      ! DIAG_DOC: $\left<\Ev\times\Jv\right>|_z$
@@ -1235,7 +1238,8 @@ module Magnetic
            lpenc_diagnos2d(i_aa)=.true.
 !
       if (idiag_aybym2/=0 .or. idiag_exaym2/=0 .or. &
-          idiag_examx/=0 .or. idiag_examy/=0 .or. idiag_examz/=0 &
+          idiag_examx/=0 .or. idiag_examy/=0 .or. idiag_examz/=0 .or. &
+          idiag_examz1/=0 .or. idiag_examz2/=0 .or. idiag_examz3/=0 &
          ) lpenc_diagnos(i_aa)=.true.
       if (idiag_arms/=0 .or. idiag_amax/=0) lpenc_diagnos(i_a2)=.true.
       if (idiag_abm/=0 .or. idiag_abmh/=0 .or. idiag_abmz/=0) & 
@@ -1267,6 +1271,7 @@ module Magnetic
           .or. idiag_jmx/=0 .or. idiag_jmy/=0 .or. idiag_jmz/=0 &
           .or. idiag_jmbmz/=0 .or. idiag_kmz/=0 &
           .or. idiag_examx/=0 .or. idiag_examy/=0 .or. idiag_examz/=0 &
+          .or. idiag_examz1/=0 .or. idiag_examz2/=0 .or. idiag_examz3/=0 &
           .or. idiag_exjmx/=0 .or. idiag_exjmy/=0 .or. idiag_exjmz/=0 &
          ) lpenc_diagnos(i_jj)=.true.
       if (idiag_b2m/=0 .or. idiag_bm2/=0 .or. idiag_brms/=0 .or. &
@@ -2248,7 +2253,7 @@ module Magnetic
         if (idiag_jxbrzm/=0) call sum_mn_name(p%jxbr(:,3),idiag_jxbrzm)
         if (idiag_jxbr2m/=0) call sum_mn_name(p%jxbr2,idiag_jxbr2m)
 !
-!  <J.A} for calculating k_effective, for example
+!  <J.A> for calculating k_effective, for example
 !
         if (idiag_ajm/=0) then
           call dot (p%aa,p%jj,aj)
@@ -2316,7 +2321,7 @@ module Magnetic
           if (idiag_uxbsmy/=0) call sum_mn_name(uxbb(:,2)*sinkz(n),idiag_uxbsmy)
         endif
 !
-!  calculate magnetic helicity flux (for imposed field)
+!  calculate magnetic helicity flux (ExA contribution)
 !
         if (idiag_examx/=0 .or. idiag_examy/=0 .or. idiag_examz/=0) then
           call cross_mn(-p%uxb+eta*p%jj,p%aa,exa)
@@ -2464,6 +2469,18 @@ module Magnetic
         if (idiag_bz2mz/=0)  call xysum_mn_name_z(p%bb(:,3)**2,idiag_bz2mz)
         if (idiag_jbmz/=0)   call xysum_mn_name_z(p%jb,idiag_jbmz)
         if (idiag_abmz/=0)   call xysum_mn_name_z(p%ab,idiag_abmz)
+!
+!  calculate magnetic helicity flux (ExA contribution)
+!
+        if (idiag_examz1/=0 .or. idiag_examz2/=0 .or. idiag_examz3/=0) then
+          call cross_mn(-p%uxb+eta*p%jj,p%aa,exa)
+          if (idiag_examz1/=0) call xysum_mn_name_z(exa(:,1),idiag_examz1)
+          if (idiag_examz2/=0) call xysum_mn_name_z(exa(:,2),idiag_examz2)
+          if (idiag_examz3/=0) call xysum_mn_name_z(exa(:,3),idiag_examz3)
+        endif
+!
+!  Maxwell stress components
+!
         if (idiag_bxbymy/=0) &
             call xzsum_mn_name_y(p%bbb(:,1)*p%bbb(:,2),idiag_bxbymy)
         if (idiag_bxbzmy/=0) &
@@ -5115,6 +5132,7 @@ module Magnetic
         idiag_uxbm=0; idiag_oxuxbm=0; idiag_jxbxbm=0.; idiag_gpxbm=0.
         idiag_uxDxuxbm=0.; idiag_uxbmx=0; idiag_uxbmy=0; idiag_uxbmz=0
         idiag_uxbcmx=0; idiag_uxbsmx=0; idiag_uxbcmy=0; idiag_uxbsmy=0
+        idiag_examz1=0; idiag_examz2=0; idiag_examz3=0
         idiag_examx=0; idiag_examy=0; idiag_examz=0
         idiag_exjmx=0; idiag_exjmy=0; idiag_exjmz=0
         idiag_dexbmx=0; idiag_dexbmy=0; idiag_dexbmz=0
@@ -5373,6 +5391,9 @@ module Magnetic
             'mflux_z',idiag_mflux_z)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'jbmz',idiag_jbmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'abmz',idiag_abmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'examz1',idiag_examz1)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'examz2',idiag_examz2)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'examz3',idiag_examz3)
       enddo
 !
 !  check for those quantities for which we want y-averages
@@ -5579,6 +5600,9 @@ module Magnetic
         write(3,*) 'i_Ezmxz=',idiag_Ezmxz
         write(3,*) 'i_jbmz=',idiag_jbmz
         write(3,*) 'i_abmz=',idiag_abmz
+        write(3,*) 'i_examz1=',idiag_examz1
+        write(3,*) 'i_examz2=',idiag_examz2
+        write(3,*) 'i_examz3=',idiag_examz3
         write(3,*) 'i_bx2mxy=',idiag_bx2mxy
         write(3,*) 'i_by2mxy=',idiag_by2mxy
         write(3,*) 'i_bz2mxy=',idiag_bz2mxy

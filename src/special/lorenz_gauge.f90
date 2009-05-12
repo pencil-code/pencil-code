@@ -46,7 +46,11 @@ module Special
 !
 ! other variables (needs to be consistent with reset list below)
 !
-  integer :: idiag_phim=0,idiag_phipt=0,idiag_phip2=0
+  integer :: idiag_phim=0       ! DIAG_DOC: $\left<\phi\right>
+  integer :: idiag_phipt=0      ! DIAG_DOC: $\phi(x1,y1,z1)>
+  integer :: idiag_phip2=0      ! DIAG_DOC: $\phi(x2,y2,z2)>
+  integer :: idiag_phibzm=0     ! DIAG_DOC: $\left<\phi B_z\right>
+  integer :: idiag_phibzmz=0    ! DIAG_DOC: $\left<\phi B_z\right>_{xy}
 !
   contains
 
@@ -206,6 +210,7 @@ module Special
       if (ldiagnos) then
         phi=f(l1:l2,m,n,iphi)
         if (idiag_phim/=0) call sum_mn_name(phi,idiag_phim)
+        if (idiag_phibzm/=0) call sum_mn_name(phi*p%bb(:,3),idiag_phibzm)
 !
 !  check for point 1
 !
@@ -219,6 +224,10 @@ module Special
           if (idiag_phip2/=0) call save_name(phi(lpoint2-nghost),idiag_phip2)
         endif
 !
+      endif
+!
+      if (l1ddiagnos .or. (ldiagnos .and. ldiagnos_need_zaverages)) then
+        if (idiag_phibzmz/=0)   call xysum_mn_name_z(p%bb(:,3),idiag_phibzmz)
       endif
 !
     endsubroutine dspecial_dt
@@ -279,35 +288,43 @@ module Special
 !
       use Diagnostics
       use Sub
-!!
-!!!   SAMPLE IMPLEMENTATION
-!!
-      integer :: iname
+!
+!  define counters
+!
+      integer :: iname,inamez
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-!!!
-!!!  reset everything in case of reset
-!!!  (this needs to be consistent with what is defined above!)
-!!!
+!
+!  reset everything in case of reset
+!  (this needs to be consistent with what is defined above!)
+!
       if (lreset) then
         idiag_phim=0; idiag_phipt=0; idiag_phip2=0
+        idiag_phibzm=0; idiag_phibzmz=0
       endif
 !
 !  check for those quantities that we want to evaluate online
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'phim',idiag_phim)
+        call parse_name(iname,cname(iname),cform(iname),'phibzm',idiag_phibzm)
         call parse_name(iname,cname(iname),cform(iname),'phipt',idiag_phipt)
         call parse_name(iname,cname(iname),cform(iname),'phip2',idiag_phip2)
+      enddo
+!
+      do inamez=1,nnamez
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'phibzmz',idiag_phibzmz)
       enddo
 !
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
         write(3,*) 'i_phim=',idiag_phim
+        write(3,*) 'i_phibzm=',idiag_phibzm
+        write(3,*) 'i_phibzmz=',idiag_phibzmz
         write(3,*) 'i_phipt=',idiag_phipt
         write(3,*) 'i_phip2=',idiag_phip2
         write(3,*) 'iphi=',iphi
