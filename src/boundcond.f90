@@ -1,32 +1,25 @@
-! $iD: BOundcond.f90 10428 2009-02-24 10:14:46Z sven.bingert $
-
-!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!   boundcond.f90   !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!
-
-!!!  Module for boundary conditions. Extracted from (no)mpicomm, since
-!!!  all non-periodic (external) boundary conditions require the same
-!!!  code for serial and parallel runs.
-
+! $Id$
+!
+!  Module for boundary conditions. Extracted from (no)mpicomm, since
+!  all non-periodic (external) boundary conditions require the same
+!  code for serial and parallel runs.
+!
 module Boundcond
-
+!
   use Cdata
   use Messages
   use Mpicomm
-
+!
   implicit none
-
+!
   private
-
+!
   public :: boundconds, boundconds_x, boundconds_y, boundconds_z
   public :: bc_per_x, bc_per_y, bc_per_z
   public :: update_ghosts
   public :: nscbc_boundtreat
-
-  integer, pointer :: iglobal_gg
-
+!
   contains
-
 !***********************************************************************
     subroutine boundconds(f,ivar1_opt,ivar2_opt)
 !
