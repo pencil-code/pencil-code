@@ -13,8 +13,8 @@
 
 module Special
 
-  use Cparam
   use Cdata
+  use Cparam
   use Messages
   use Sub, only: keep_compiler_quiet
 
@@ -55,10 +55,6 @@ module Special
 !
 !  6-oct-03/tony: coded
 !
-      use Cdata
-!
-!  Identify CVS/SVN version information.
-!
       if (lroot) call cvs_id( &
            "$Id$")
 !
@@ -69,9 +65,6 @@ module Special
 !  called by run.f90 after reading parameters, but before the time loop
 !
 !  06-oct-03/tony: coded
-!
-      use Cdata
-      use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !!
@@ -88,7 +81,6 @@ module Special
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
 !
-      use Cdata
       use Mpicomm
       use Sub
       use Initcond
@@ -145,8 +137,6 @@ module Special
 !
 !  18-07-06/tony: coded
 !
-      use Sub, only: keep_compiler_quiet
-!
       logical, dimension(npencils) :: lpencil_in
 !
       call keep_compiler_quiet(lpencil_in)
@@ -159,9 +149,6 @@ module Special
 !  Most basic pencils should come first, as others may depend on them.
 !
 !   24-nov-04/tony: coded
-!
-      use Cdata
-      use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -188,7 +175,6 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
       use Diagnostics
       use Mpicomm
       use Sub
@@ -269,8 +255,6 @@ module Special
 !***********************************************************************
     subroutine read_special_init_pars(unit,iostat)
 !
-      use Sub, only: keep_compiler_quiet
-!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 
@@ -286,8 +270,6 @@ module Special
 !***********************************************************************
     subroutine write_special_init_pars(unit)
 !
-      use Sub, only: keep_compiler_quiet
-!
       integer, intent(in) :: unit
 
       write(unit,NML=internal_flow_init_pars)
@@ -295,8 +277,6 @@ module Special
     endsubroutine write_special_init_pars
 !***********************************************************************
     subroutine read_special_run_pars(unit,iostat)
-!
-      use Sub, only: keep_compiler_quiet
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -312,8 +292,6 @@ module Special
 !***********************************************************************
     subroutine write_special_run_pars(unit)
 !
-      use Sub, only: keep_compiler_quiet
-!
       integer, intent(in) :: unit
 
       write(unit,NML=internal_flow_run_pars)
@@ -326,7 +304,6 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
       use Diagnostics
       use Sub
 !
@@ -367,8 +344,6 @@ module Special
 !
 !  26-jun-06/tony: dummy
 !
-      use Sub, only: keep_compiler_quiet
-!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
       !
@@ -395,9 +370,6 @@ module Special
           if (slices%index < 3) slices%ready = .true.
         endif
       endselect
-
-!NILS      call keep_compiler_quiet(f)
-!NILS      call keep_compiler_quiet(slices%ready)
 !
     endsubroutine get_slices_special
 !***********************************************************************
@@ -407,7 +379,6 @@ module Special
 !
 !  14-mar-08/nils: coded
 !
-      use Cdata
       use Sub
       use Mpicomm, only: mpireduce_sum, mpibcast_real
 !
@@ -444,9 +415,6 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-!
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
@@ -474,9 +442,6 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
@@ -508,9 +473,6 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
@@ -539,9 +501,6 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
@@ -565,9 +524,6 @@ module Special
 !   others may be calculated directly from the f array
 !
 !   2008-06-19/nils: coded
-!
-      use Cdata
-      use Cparam
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       type (boundary_condition) :: bc
@@ -594,9 +550,6 @@ module Special
 !
 !   06-jul-06/tony: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-!
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
 !
       call keep_compiler_quiet(f)
@@ -620,7 +573,7 @@ module Special
       f(l1:l2,m1:m2,n1:n2,iux)=f(l1:l2,m1:m2,n1:n2,iux)+central_vel*&
            (1-(yy(l1:l2,m1:m2,n1:n2)-xyz0(2)-height)**2/h2)
       !
-    end subroutine poiseulle_flowx_wally
+    endsubroutine poiseulle_flowx_wally
 !***********************************************************************
     subroutine velocity_defect_flowx_wally(f,central_vel,Re_tau)
       !
@@ -708,7 +661,7 @@ endif
       if (ipy==0)        f(l1:l2,m1,n1:n2,iux)=0
       if (ipy==nprocy-1) f(l1:l2,m2,n1:n2,iux)=0
       !
-    end subroutine velocity_defect_flowx_wally
+    endsubroutine velocity_defect_flowx_wally
 !***********************************************************************
     subroutine log_law_flowx_wally(f,central_vel,Re_tau)
       !
@@ -774,15 +727,13 @@ endif
         f(l1:l2,m2-1,n1:n2,iux)=-(yy(l1,m2-1,n1)-xyz0(2)-Lxyz(2))/lw*utau
       endif
       !
-    end subroutine log_law_flowx_wally
+    endsubroutine log_law_flowx_wally
 !***********************************************************************
     subroutine bc_poi_x(f,sgn,topbot,j,rel,val)
 !
 ! Poiseulle inflow
 !
 !  03-jan-08/nils: Coded
-!
-      use Cdata
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f

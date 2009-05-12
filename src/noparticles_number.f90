@@ -11,19 +11,19 @@
 !
 !***************************************************************
 module Particles_number
-
+!
   use Cdata
   use Particles_cdata
   use Particles_sub
-
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   real :: np_tilde0
-
+!
   include 'particles_number.h'
-
+!
   contains
-
 !***********************************************************************
     subroutine register_particles_number()
 !
@@ -46,7 +46,7 @@ module Particles_number
       if (lroot) print*, 'initialize_particles_number: '// &
           'number density per particle np_tilde0=', np_tilde0
 !
-      if (NO_WARN) print*, lstarting
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_number
 !***********************************************************************
@@ -59,7 +59,8 @@ module Particles_number
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
 !
-      if (NO_WARN) print*, f, fp
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
 !
     endsubroutine init_particles_number
 !***********************************************************************
@@ -83,7 +84,11 @@ module Particles_number
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      if (NO_WARN) print*, f, df, fp, dfp, ineargrid
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine dnptilde_dt_pencil
 !***********************************************************************
@@ -98,7 +103,11 @@ module Particles_number
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      if (NO_WARN) print*, f, df, fp, dfp, ineargrid
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine dnptilde_dt
 !***********************************************************************
@@ -124,7 +133,7 @@ module Particles_number
 !
       np_tilde=np_tilde0
 !
-      if (NO_WARN) print*, fp
+      call keep_compiler_quiet(fp)
 !
     endsubroutine get_nptilde
 !***********************************************************************
@@ -133,7 +142,8 @@ module Particles_number
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
-      if (NO_WARN) print*, unit, iostat
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_particles_num_init_pars
 !***********************************************************************
@@ -141,7 +151,7 @@ module Particles_number
 !
       integer, intent (in) :: unit
 !
-      if (NO_WARN) print*, unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_particles_num_init_pars
 !***********************************************************************
@@ -150,7 +160,8 @@ module Particles_number
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
-      if (NO_WARN) print*, unit, iostat
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_particles_num_run_pars
 !***********************************************************************
@@ -158,7 +169,7 @@ module Particles_number
 !
       integer, intent (in) :: unit
 !
-      if (NO_WARN) print*, unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_particles_num_run_pars
 !***********************************************************************
@@ -182,7 +193,7 @@ module Particles_number
 !
       if (lwr) write(3,*) 'inptilde=', inptilde
 !
-      if (NO_WARN) print*, lreset
+      call keep_compiler_quiet(lreset)
 !
     endsubroutine rprint_particles_number
 !***********************************************************************

@@ -16,9 +16,10 @@
 module Particles
 !
   use Cdata
+  use Messages
   use Particles_cdata
   use Particles_sub
-  use Messages
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -428,7 +429,7 @@ module Particles
         if (idiag_epspmz/=0) call xysum_mn_name_z(p%epsp,idiag_epspmz)
       endif
 !
-      if (NO_WARN) print*, df
+      call keep_compiler_quiet(df)
 !
     endsubroutine dxxp_dt_pencil
 !***********************************************************************
@@ -444,7 +445,12 @@ module Particles
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      if (NO_WARN) print*, f, df, fp, dfp, p, ineargrid
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine dvvp_dt_pencil
 !***********************************************************************
@@ -476,7 +482,10 @@ module Particles
         if (idiag_nparmax/=0) call max_name(npar_loc,idiag_nparmax)
       endif
 !
-      if (NO_WARN) print*, f, df, dfp, ineargrid
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine dxxp_dt
 !***********************************************************************
@@ -491,7 +500,11 @@ module Particles
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      if (NO_WARN) print*, f, df, fp, dfp, ineargrid
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine dvvp_dt
 !***********************************************************************
@@ -501,7 +514,10 @@ module Particles
       real,    dimension (mpar_loc,mpvar)   :: fp, dfp
       integer, dimension (mpar_loc,3)       :: ineargrid
 !
-      if (NO_WARN) print*, f, fp, dfp, ineargrid
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine remove_particles_sink
 !***********************************************************************
@@ -511,7 +527,10 @@ module Particles
       real,    dimension (mpar_loc,mpvar)   :: fp, dfp
       integer, dimension (mpar_loc,3)       :: ineargrid
 !
-      if (NO_WARN) print*, f, fp, dfp, ineargrid
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine create_sink_particles
 !***********************************************************************
@@ -569,7 +588,7 @@ module Particles
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*, f
+      call keep_compiler_quiet(f)
 !
     endsubroutine powersnap_particles
 !***********************************************************************
@@ -579,7 +598,6 @@ module Particles
 !
 !  29-dec-04/anders: coded
 !
-      use Cdata
       use Diagnostics
 !
       logical :: lreset

@@ -131,11 +131,8 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray) :: f
-
+!
       real phi1,phi2
       integer i
 !
@@ -393,12 +390,10 @@ module Special
 !
 !  18-07-06/tony: coded
 !
-      use Sub, only: keep_compiler_quiet
-
       logical, dimension(npencils) :: lpencil_in
-
+!
       call keep_compiler_quiet(lpencil_in)
-
+!
     endsubroutine pencil_interdep_special
 !***********************************************************************
     subroutine calc_pencils_special(f,p)
@@ -406,18 +401,15 @@ module Special
 !   Manipulate Hydro pencils.
 !   Most basic pencils should come first, as others may depend on them.
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-
+!
       intent(in) :: f
       intent(inout) :: p
-
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
-
+!
     endsubroutine calc_pencils_special
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)
@@ -454,56 +446,49 @@ module Special
     endsubroutine dspecial_dt
 !***********************************************************************
     subroutine read_special_init_pars(unit,iostat)
-
-      use Sub, only: keep_compiler_quiet
-
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=flowaroundsphere_init_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=flowaroundsphere_init_pars,ERR=99)
       endif
-
+!
 99    return
-
+!
     endsubroutine read_special_init_pars
 !***********************************************************************
     subroutine write_special_init_pars(unit)
-
-      use Sub, only: keep_compiler_quiet
-
+!
       integer, intent(in) :: unit
-
+!
       write(unit,NML=flowaroundsphere_init_pars)
-
+!
     endsubroutine write_special_init_pars
 !***********************************************************************
     subroutine read_special_run_pars(unit,iostat)
-
-      use Sub, only: keep_compiler_quiet
-
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=flowaroundsphere_run_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=flowaroundsphere_run_pars,ERR=99)
       endif
-
+!
 99    return
+!
     endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine write_special_run_pars(unit)
-
-      use Sub, only: keep_compiler_quiet
-
+!
       integer, intent(in) :: unit
-
+!
       write(unit,NML=flowaroundsphere_run_pars)
-
+!
     endsubroutine write_special_run_pars
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
@@ -512,13 +497,12 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
       use Sub
-
+!
       integer :: iname
       logical :: lreset,lwr
       logical, optional :: lwrite
-
+!
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
@@ -533,14 +517,12 @@ module Special
 !
 !  26-jun-06/tony: dummy
 !
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
-
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(slices%ready)
-
+!
     endsubroutine get_slices_special
 !***********************************************************************
     subroutine calc_lspecial_pars(f)
@@ -549,13 +531,11 @@ module Special
 !
 !  15-jan-08/axel: coded
 !
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray) :: f
       intent(inout) :: f
-
+!
       call keep_compiler_quiet(f)
-
+!
     endsubroutine calc_lspecial_pars
 !***********************************************************************
     subroutine special_calc_density(f,df,p)
@@ -568,13 +548,9 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-
 !!
 !!  SAMPLE IMPLEMENTATION
 !!     (remember one must ALWAYS add to df)
@@ -585,7 +561,7 @@ module Special
 !!
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
-
+!
     endsubroutine special_calc_density
 !***********************************************************************
     subroutine special_calc_hydro(f,df,p)
@@ -598,16 +574,13 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-
+!
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
-
+!
     endsubroutine special_calc_hydro
 !***********************************************************************
     subroutine special_calc_magnetic(f,df,p)
@@ -620,13 +593,9 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-
 !!
 !!  SAMPLE IMPLEMENTATION
 !!     (remember one must ALWAYS add to df)
@@ -638,7 +607,7 @@ module Special
 !!
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
-
+!
     endsubroutine special_calc_magnetic
 !!***********************************************************************
     subroutine special_calc_entropy(f,df,p)
@@ -651,13 +620,9 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-
 !!
 !!  SAMPLE IMPLEMENTATION
 !!     (remember one must ALWAYS add to df)
@@ -668,7 +633,7 @@ module Special
 !!
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
-
+!
     endsubroutine special_calc_entropy
 !***********************************************************************
     subroutine special_boundconds(f,bc)
@@ -681,17 +646,9 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       type (boundary_condition) :: bc
-
-      integer i,j
-      ! integer, save :: istep
-
-      !select case (bc%bcname)
-      !end select
+!
     endsubroutine special_boundconds
 !***********************************************************************
     subroutine special_before_boundary(f)
@@ -704,12 +661,9 @@ module Special
 !
 !   06-jul-06/tony: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
 !
-!      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(f)
 !
     endsubroutine special_before_boundary
 !***********************************************************************
@@ -1043,7 +997,7 @@ module Special
       end do
 
       binary_search = low
-    end function
+    endfunction
 !***********************************************************************
     subroutine der_onesided_yzslice(f,sgn,k,df,pos,j)
       use Cdata

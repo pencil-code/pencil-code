@@ -313,22 +313,25 @@ module Viscosity
     endsubroutine initialize_viscosity
 !***********************************************************************
     subroutine read_viscosity_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      if (present(iostat).and.NO_WARN) print*,iostat
-      if (NO_WARN) print*,unit
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_viscosity_init_pars
 !***********************************************************************
     subroutine write_viscosity_init_pars(unit)
+!
       integer, intent(in) :: unit
 !
-      if (NO_WARN) print*,unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_viscosity_init_pars
 !***********************************************************************
     subroutine read_viscosity_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
@@ -342,6 +345,7 @@ module Viscosity
     endsubroutine read_viscosity_run_pars
 !***********************************************************************
     subroutine write_viscosity_run_pars(unit)
+!
       integer, intent(in) :: unit
 !
       write(unit,NML=viscosity_run_pars)
@@ -411,7 +415,7 @@ module Viscosity
         endif
       endif
 !
-      if (NO_WARN) print*,lreset  !(to keep compiler quiet)
+      call keep_compiler_quiet(lreset)
 !
     endsubroutine rprint_viscosity
 !***********************************************************************
@@ -541,7 +545,7 @@ module Viscosity
 !
       logical, dimension (npencils) :: lpencil_in
 !
-      if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_viscosity
 !***********************************************************************
@@ -1060,7 +1064,7 @@ module Viscosity
        if (idiag_nusmagmax/=0) call max_mn_name(nu_smag,idiag_nusmagmax)
      endif
 !
-     if (NO_WARN) print*, f    !(to keep compiler quiet)
+     call keep_compiler_quiet(f)
 !
     endsubroutine calc_pencils_viscosity
 !***********************************************************************
@@ -1068,7 +1072,7 @@ module Viscosity
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*,f  !(to keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine calc_viscosity
 !***********************************************************************
@@ -1231,7 +1235,7 @@ module Viscosity
         endif
       endif
 !
-    end subroutine calc_viscous_force
+    endsubroutine calc_viscous_force
 !***********************************************************************
     subroutine calc_visc_heat_ppd(f,df,p)
 !    
@@ -1271,7 +1275,7 @@ module Viscosity
 
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%TT1*diss
 
-    End subroutine calc_visc_heat_ppd
+    endsubroutine calc_visc_heat_ppd
 !***********************************************************************
     subroutine getnu(nu_)
 !

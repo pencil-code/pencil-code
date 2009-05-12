@@ -17,16 +17,17 @@
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
-
 module Magnetic
-
+!
+  use Cdata
   use Cparam
   use Messages
-
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   include 'magnetic.h'
-
+!
   character (len=labellen) :: initaa='zero',initaa2='zero'
 
   ! input parameters
@@ -86,7 +87,6 @@ module Magnetic
 !
 !  1-may-02/wolf: coded
 !
-      use Cdata
       use FArrayManager
 !
       call farray_register_pde('aa',iaa,vector=3)
@@ -116,8 +116,6 @@ module Magnetic
 !  Perform any post-parameter-read initialization
 !
 !  24-nov-2002/tony: dummy routine - nothing to do at present
-      use Cdata
-
       mu01=1./mu0
 
     endsubroutine initialize_magnetic
@@ -131,7 +129,6 @@ module Magnetic
 !
 !   7-nov-2001/wolf: coded
 !
-      use Cdata
       use Mpicomm
       use Gravity, only: gravz
       use Sub
@@ -220,7 +217,6 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
 !
 !  21-jul-03/axel: turned to ffreeMHDrel, adapted from magnetic
 !
-      use Cdata
       use Diagnostics
       use IO
       use Slices
@@ -488,7 +484,7 @@ if (ip<3.and.m==4.and.n==4) write(61) ss,Sij,curlS,divS,del2A,curlB
 if (ip<3.and.m==4.and.n==4) write(61) BB,B2,BgS,SgB,Bij,CC,EE,B21
 if (ip<3.and.m==4.and.n==4) write(61) divE,BdivS,CxE,curlBxB,curlE,curlExE,divEE
 !
-if (NO_WARN) print*,shock,gshock                !(keep compiler quiet)
+      call keep_compiler_quiet(shock,gshock(:,1))
 !
     endsubroutine daa_dt
 !***********************************************************************
@@ -501,7 +497,6 @@ if (NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !  06-feb-04/bing: coded
 !  27-mar-07/axel: this routine needs to be replaced by calc_pencils_magnetic
 !
-      use Cdata
       use Sub
 
       real, dimension (mx,my,mz,mfarray) :: f
@@ -575,7 +570,6 @@ if (NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !   3-may-02/axel: coded
 !  27-may-02/axel: added possibility to reset list
 !
-      use Cdata
       use Diagnostics
 !
       integer :: iname,inamez,ixy,irz
@@ -712,7 +706,6 @@ if (NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !  19-jun-02/axel: moved from print to here
 !   9-nov-02/axel: corrected bxmy(m,j); it used bzmy instead!
 !
-      use Cdata
       use Sub
 !
       logical,save :: first=.true.
@@ -811,7 +804,8 @@ if (NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 
       print*, 'WARNING:'
       print*, '  bc_frozen_in_bb_z not implemented for magnetic_ffreeMHDrel !!'
-      if (ip==1) print*,topbot  !(to keep compiler quiet)
+!
+      call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_frozen_in_bb_z
 !***********************************************************************
@@ -820,8 +814,6 @@ if (NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !  Set flags to indicate that magnetic flux is frozen-in at the
 !  z boundary. The implementation occurs in daa_dt where magnetic
 !  diffusion is switched off in that layer.
-!
-      use Cdata
 !
       character (len=3) :: topbot
 !
@@ -843,7 +835,6 @@ if (NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !  14-jun-2002/axel: adapted from similar
 !   8-jul-2002/axel: introduced topbot argument
 !
-      use Cdata
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
@@ -907,7 +898,6 @@ if (NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !  20-jan-00/axel+wolf: coded
 !  22-mar-00/axel: corrected sign (it is the same on both sides)
 !
-      use Cdata
       use Fourier
 !
       real, dimension (nx,ny) :: fac,kk,f1r,f1i,g1r,g1i,f2,f2r,f2i,f3,f3r,f3i
@@ -973,7 +963,6 @@ if (NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !
 !  22-mar-02/axel: coded
 !
-      use Cdata
       use Fourier
 !
       real, dimension (nx,ny) :: fac,kk,kkkx,kkky,f1r,f1i,g1r,g1i,f2,f2r,f2i,f3,f3r,f3i
@@ -1043,13 +1032,10 @@ if (NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mx,3), intent (out) :: bb_hat
-
-      if (NO_WARN) then
-        print *,f
-        bb_hat = 0.
-      endif
-
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(bb_hat)
+!
     endsubroutine bb_unitvec_shock
 !***********************************************************************
-
 endmodule Magnetic

@@ -2293,7 +2293,7 @@ module Initcond
         do n=n1,n2; do m=m1,m2;do l=l1,l2 
           radius= sqrt((x(l)-center1_x)**2+(z(n)-center1_z)**2)
           a_minus_r= a - radius
-          if(radius .gt. tini) then
+          if (radius .gt. tini) then
              tmp = (-(exp(-width*a_minus_r**2))/(4.*sqrt(pi)*width) +  &
                   radius*(1+erfunc(width*a_minus_r))/4. + & 
                   2*a*(exp(-(a**2)*(width**2)) - exp(-(a_minus_r**2)*(width**2)))/(8.*radius*width) + &

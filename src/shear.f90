@@ -330,7 +330,7 @@ module Shear
             call max_mn_name(advec_shear/cdt,idiag_dtshear,l_dt=.true.)
       endif
 !
-    end subroutine shearing
+    endsubroutine shearing
 !***********************************************************************
     subroutine advance_shear(f,df,dt_shear)
 !
@@ -395,7 +395,7 @@ module Shear
             call save_name(deltay,idiag_deltay)
       endif
 !
-    end subroutine advance_shear
+    endsubroutine advance_shear
 !***********************************************************************
     subroutine boundcond_shear(f,ivar1,ivar2)
 !

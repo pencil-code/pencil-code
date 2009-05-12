@@ -470,7 +470,7 @@ module Special
 !
       real, dimension (:,:), intent(in) :: fp
 !
-      if (NO_WARN) print*,fp !(keep compiler quiet)
+      call keep_compiler_quiet(fp)
 !
     endsubroutine special_calc_particles
 !***********************************************************************
@@ -483,7 +483,7 @@ module Special
 !
       real, dimension (:,:), intent(in) :: fsp
 !
-      if (NO_WARN) print*,fsp !(keep compiler quiet)
+      call keep_compiler_quiet(fsp)
 !
     endsubroutine special_calc_particles_nbody
 !***********************************************************************

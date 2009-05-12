@@ -124,7 +124,8 @@ module Hydro
         endif
       endif
 !
-      if (ip == 0) print*,f,lstarting  !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_hydro
 !***********************************************************************

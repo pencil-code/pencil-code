@@ -19,6 +19,7 @@ module Particles_selfgravity
   use Messages
   use Particles_cdata
   use Particles_sub
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -71,7 +72,7 @@ module Particles_selfgravity
       integer :: ierr
       logical :: lstarting
 !
-      if (NO_WARN) print*, lstarting
+      call keep_compiler_quiet(lstarting)
 !
       call get_shared_variable('tstart_selfgrav',tstart_selfgrav,ierr)
       if (ierr/=0) then
@@ -162,7 +163,7 @@ module Particles_selfgravity
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (NO_WARN) print*, lpencil_in
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_par_selfgrav
 !***********************************************************************
@@ -175,7 +176,8 @@ module Particles_selfgravity
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      if (NO_WARN) print*, f, p
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_par_selfgrav
 !***********************************************************************
@@ -200,7 +202,12 @@ module Particles_selfgravity
         if (idiag_gpotenp/=0) call sum_mn_name(p%potself*p%rhop,idiag_gpotenp)
       endif
 !
-      if (NO_WARN) print*, f, df, fp, dfp, p, ineargrid
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine dvvp_dt_selfgrav_pencil
 !***********************************************************************
@@ -277,7 +284,7 @@ module Particles_selfgravity
 !
       endif ! if (t>=tstart_selfgrav) then
 !
-      if (NO_WARN) print*, df
+      call keep_compiler_quiet(df)
 !
     endsubroutine dvvp_dt_selfgrav
 !***********************************************************************
@@ -362,5 +369,4 @@ module Particles_selfgravity
 !
     endsubroutine rprint_particles_selfgrav
 !***********************************************************************
-
 endmodule Particles_selfgravity

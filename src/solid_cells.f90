@@ -438,7 +438,7 @@ f(:,m2-5:m2,:,iux)=0
         call close_interpolation(f,lower_i,lower_j,k,icyl,ivar,xxp,phi,.false.)
       endif
 !
-    end subroutine interpolate_mirror_point
+    endsubroutine interpolate_mirror_point
 !***********************************************************************  
     subroutine close_interpolation(f,ix0_,iy0_,iz0_,icyl,ivar1,xxp,gpp,&
         fluid_point)
@@ -675,7 +675,7 @@ f(:,m2-5:m2,:,iux)=0
           gpp=(rps*fint+rintp*0)/(Rsmall-rs)
         endif
 !
-    end subroutine close_interpolation
+    endsubroutine close_interpolation
 !***********************************************************************  
     function in_solid_cell(part_pos,part_rad)
 !
@@ -706,7 +706,7 @@ f(:,m2-5:m2,:,iux)=0
         endif
       enddo
 !
-    end function in_solid_cell
+    endfunction in_solid_cell
 !***********************************************************************  
     subroutine freeze_solid_cells(df)
 !
@@ -1088,7 +1088,7 @@ f(:,m2-5:m2,:,iux)=0
         cw=-2
       endif
 !
-    end subroutine find_closest_wall
+    endsubroutine find_closest_wall
 !***********************************************************************  
     function ba_defined(i,j)
 !
@@ -1122,7 +1122,7 @@ f(:,m2-5:m2,:,iux)=0
         ba_defined=.false.
       endif
 !
-    end function ba_defined
+    endfunction ba_defined
 !***********************************************************************  
     subroutine find_point(rij,rs,f,yin,xout,xmin,xmax,min,fout,x0)
 !
@@ -1154,6 +1154,6 @@ f(:,m2-5:m2,:,iux)=0
         fout=0
       endif
 !
-    end subroutine find_point
+    endsubroutine find_point
 !***********************************************************************  
   endmodule Solid_Cells

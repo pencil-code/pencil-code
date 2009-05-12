@@ -12,30 +12,28 @@
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
-
 module Chiral
-
-  use Cparam
+!
   use Cdata
+  use Cparam
   use Messages
   use Sub, only: keep_compiler_quiet
-
+!
   implicit none
-
+!
   include 'chiral.h'
-
+!
   integer :: iXX_chiral=0,iYY_chiral=0
-
+!
   character (len=labellen) :: initXX_chiral='zero',initYY_chiral='zero'
-
-  ! input parameters
+!
   real :: amplXX_chiral=.1, widthXX_chiral=.5
   real :: amplYY_chiral=.1, widthYY_chiral=.5
   real :: kx_XX_chiral=1.,ky_XX_chiral=1.,kz_XX_chiral=1.,radiusXX_chiral=0.
   real :: kx_YY_chiral=1.,ky_YY_chiral=1.,kz_YY_chiral=1.,radiusYY_chiral=0.
   real :: xposXX_chiral=0.,yposXX_chiral=0.,zposXX_chiral=0.
   real :: xposYY_chiral=0.,yposYY_chiral=0.,zposYY_chiral=0.
-
+!
   namelist /chiral_init_pars/ &
        initXX_chiral,amplXX_chiral,kx_XX_chiral,ky_XX_chiral,kz_XX_chiral, &
        initYY_chiral,amplYY_chiral,kx_YY_chiral,ky_YY_chiral,kz_YY_chiral, &
@@ -43,20 +41,17 @@ module Chiral
        radiusYY_chiral,widthYY_chiral, &
        xposXX_chiral,yposXX_chiral,zposXX_chiral, &
        xposYY_chiral,yposYY_chiral,zposYY_chiral
-
-  ! run parameters
+!
   real :: chiral_diff=0., chiral_crossinhibition=1.,chiral_fidelity=1.
-
+!
   namelist /chiral_run_pars/ &
        chiral_diff,chiral_crossinhibition,chiral_fidelity
-
-  ! other variables (needs to be consistent with reset list below)
+!
   integer :: idiag_XX_chiralmax=0, idiag_XX_chiralm=0
   integer :: idiag_YY_chiralmax=0, idiag_YY_chiralm=0
   integer :: idiag_QQm_chiral=0, idiag_QQ21m_chiral=0, idiag_QQ21QQm_chiral=0
-
+!
   contains
-
 !***********************************************************************
     subroutine register_chiral()
 !
@@ -65,7 +60,6 @@ module Chiral
 !
 !  28-may-04/axel: adapted from pscalar
 !
-      use Cdata
       use FArrayManager
 !
       lchiral = .true.
@@ -92,7 +86,8 @@ module Chiral
 !  set to zero and then call the same initial condition
 !  that was used in start.csh
 !
-      if (NO_WARN) print*,'f=',f
+      call keep_compiler_quiet(f)
+!
     endsubroutine initialize_chiral
 !***********************************************************************
     subroutine init_chiral(f)
@@ -101,7 +96,6 @@ module Chiral
 !
 !  28-may-04/axel: adapted from pscalar
 !
-      use Cdata
       use Mpicomm
       use Sub
       use Initcond
@@ -160,8 +154,6 @@ module Chiral
 !  All pencils that the Chiral module depends on are specified here.
 !
 !  21-11-04/anders: coded
-!
-      use Cdata
 !
       lpenc_requested(i_uu)=.true.
 !
@@ -421,8 +413,6 @@ module Chiral
 !  Write slices for animation of Chiral variables.
 !
 !  26-jul-06/tony: coded
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices

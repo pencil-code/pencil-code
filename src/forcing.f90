@@ -20,6 +20,7 @@ module Forcing
   use Cdata
   use General
   use Messages
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -1181,9 +1182,9 @@ module Forcing
        capitalH = capitalT + capitalS
        do j=1,3
          jf = iuu+j-1
-         if(r_ff .ne. 0.) then
+         if (r_ff .ne. 0.) then
          do inx=1,nx
-            if(x(inx) .gt. r_ff) capitalH(inx,j) = 0
+            if (x(inx) .gt. r_ff) capitalH(inx,j) = 0
          enddo
          else
          endif 
@@ -2620,7 +2621,7 @@ module Forcing
         endif
       endif
 !
-    end subroutine forcing_hel_smooth
+    endsubroutine forcing_hel_smooth
 !***********************************************************************
     subroutine hel_vec(f,kx0,ky,kz,phase,kav,ifirst,force1)
 !
@@ -2820,7 +2821,7 @@ module Forcing
 !
       if (ip.le.9) print*,'hel_vec: forcing OK'
 !
-    end subroutine hel_vec
+    endsubroutine hel_vec
 !***********************************************************************
     subroutine calc_lforcing_cont_pars(f)
 !
@@ -2971,26 +2972,28 @@ module Forcing
     endsubroutine forcing_continuous
 !***********************************************************************
     subroutine read_forcing_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
-      if (present(iostat).and.NO_WARN) print*,iostat
-      if (NO_WARN) print *,unit
-       
-
+!
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+!
     endsubroutine read_forcing_init_pars
 !***********************************************************************
     subroutine write_forcing_init_pars(unit)
+!
       integer, intent(in) :: unit
-
-      if (NO_WARN) print *,unit
-
+!
+      call keep_compiler_quiet(unit)
+!
     endsubroutine write_forcing_init_pars
 !***********************************************************************
     subroutine read_forcing_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=forcing_run_pars,ERR=99, IOSTAT=iostat)
       else
@@ -2998,13 +3001,15 @@ module Forcing
       endif
 !
 99    return
+!
     endsubroutine read_forcing_run_pars
 !***********************************************************************
     subroutine write_forcing_run_pars(unit)
+!
       integer, intent(in) :: unit
-
+!
       write(unit,NML=forcing_run_pars)
-
+!
     endsubroutine write_forcing_run_pars
 !***********************************************************************
     subroutine input_persistent_forcing(id,lun,done)

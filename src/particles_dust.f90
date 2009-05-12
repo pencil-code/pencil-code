@@ -20,6 +20,7 @@ module Particles
   use Messages
   use Particles_cdata
   use Particles_sub
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -1678,7 +1679,12 @@ k_loop:   do while (.not. (k>npar_loc))
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      if (NO_WARN) print*, f, df, fp, dfp, p, ineargrid
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine dxxp_dt_pencil
 !***********************************************************************
@@ -2227,7 +2233,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if (lfirstcall) lfirstcall=.false.
 !
-      if (NO_WARN) print*, f, df, ineargrid
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine dxxp_dt
 !***********************************************************************
@@ -2500,7 +2508,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if (lfirstcall) lfirstcall=.false.
 !
-      if (NO_WARN) print*, f, df, ineargrid
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine dvvp_dt
 !***********************************************************************
@@ -2561,7 +2571,10 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension(mpar_loc,mpvar) :: fp, dfp
       integer, dimension(mpar_loc,3) :: ineargrid
 !
-      if (NO_WARN) print*, f, fp, dfp, ineargrid
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine create_sink_particles
 !***********************************************************************
@@ -2729,7 +2742,8 @@ k_loop:   do while (.not. (k>npar_loc))
 
       endif
 !
-      if (NO_WARN) print*, f, ineargrid
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine get_frictiontime
 !***********************************************************************

@@ -1,48 +1,41 @@
 ! $Id$
-
-module Timeavg
-
 !
-!   Dummy module
+module Timeavg
 !
   use Cdata
-
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   include 'timeavg.h'
 !
-!  real, dimension(mx,my,mz,mtavg) :: f_tavg
-!  integer, dimension(mtavg) :: idx_tavg=0
-!  real :: tavg=0.
-
   integer :: idx_tavg=0         ! just scalar, since unused and no mtavg known
-  real :: tavg=0.
-
+  real :: tavg=0.0
   logical :: ltavg=.false.
-
+!
   contains
-
 !***********************************************************************
     subroutine initialize_timeavg(a)
 !
       real, dimension(mx,my,mz,mfarray) :: a
-
+!
       intent (in) :: a
 !
-      if (ip < 0) print*, a
+      call keep_compiler_quiet(a)
 !
     endsubroutine initialize_timeavg
 !***********************************************************************
     subroutine update_timeavgs(a,dt,init)
 !
-!
       real, dimension(mx,my,mz,mfarray) :: a
       real :: dt
       logical, optional :: init
-
+!
       intent (in) :: a
 !
-      if (ip < 0) print*, a,dt,present(init)
+      call keep_compiler_quiet(a)
+      call keep_compiler_quiet(dt)
+      if (present(init)) call keep_compiler_quiet(init)
 !
     endsubroutine update_timeavgs
 !***********************************************************************
@@ -52,11 +45,10 @@ module Timeavg
       logical :: enum
       optional :: flist
 !
-      if (chsnap=='X') enum=.false. !(to keep compiler quiet)
-      if (NO_WARN) print*,flist !(to keep compiler quiet)
+      call keep_compiler_quiet(chsnap)
+      call keep_compiler_quiet(enum)
+      if (present(flist)) call keep_compiler_quiet(flist)
+!
     endsubroutine wsnap_timeavgs
 !***********************************************************************
-
 endmodule Timeavg
-
-!!! End of file timeavg.f90

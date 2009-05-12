@@ -113,14 +113,6 @@ module Cparam
   double precision, parameter :: c_light_cgs=2.99792458d10 ! [cm/s]
   double precision, parameter :: G_Newton_cgs=6.6742d-8    ! [cm3/g/s2]
 !
-!
-! Variable used in lines like:
-!    if (NO_WARN) print*,uu
-! which are added in dummy routines to prevent the compiler reporting
-! unused arguments.  It is never intended that these print statements
-! will ever actually get called. As a logical parameter however which
-! is false, the compiler should infact optimise all such lines away.
-!
   logical, parameter :: NO_WARN=.false.
 !
 !

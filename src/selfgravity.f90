@@ -20,6 +20,7 @@ module Selfgravity
   use Cdata
   use Cparam
   use Messages
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -230,7 +231,7 @@ module Selfgravity
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_selfgravity
 !***********************************************************************
@@ -394,7 +395,8 @@ module Selfgravity
         if (idiag_gpotenmxy/=0) call zsum_mn_name_xy(p%potself*p%rho,idiag_gpotenmxy)
       endif
 !
-      if (NO_WARN) print*, f, p !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine duu_dt_selfgrav
 !***********************************************************************

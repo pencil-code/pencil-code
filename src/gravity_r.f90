@@ -1,5 +1,7 @@
 ! $Id$
-
+!
+!  Radial gravity
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -9,30 +11,29 @@
 ! MGLOBAL CONTRIBUTION 3
 !
 !***************************************************************
-
 module Gravity
 !
-!  Radial gravity
-!
+  use Cdata
   use Cparam
   use Messages
-
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   include 'gravity.h'
-
+!
   interface potential
     module procedure potential_global
     module procedure potential_penc
     module procedure potential_point
   endinterface
-
+!
   interface acceleration
     module procedure acceleration_penc
     module procedure acceleration_penc_1D
     module procedure acceleration_point
   endinterface
-
+!
   ! coefficients for potential
   real, dimension (5,ninit) :: cpot=0. !=(/ 0., 0., 0., 0., 0. /)
   real, dimension(ninit) :: g01=0.,rpot=0.
@@ -58,13 +59,12 @@ module Gravity
   namelist /grav_init_pars/ &
       ipotential,g0,r0_pot,r1_pot1,n_pot,n_pot1,lnumerical_equilibrium, &
       qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle
-
+!
   namelist /grav_run_pars/ &
       ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
       qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle
-
+!
   contains
-
 !***********************************************************************
     subroutine register_gravity()
 !
@@ -72,7 +72,6 @@ module Gravity
 !
 !  10-jan-02/wolf: coded
 !
-      use Cdata
       use Mpicomm, only: stop_it
       use Sub
 !
@@ -97,7 +96,6 @@ module Gravity
 !  22-nov-02/tony: renamed
 !  15-mar-07/wlad: made it coordinate-independent
 !
-      use Cdata
       use Sub, only: poly, step, get_radial_distance
       use Mpicomm
       use FArrayManager
@@ -363,8 +361,6 @@ module Gravity
 !  10-jan-02/wolf: coded
 !  24-nov-02/tony: renamed from init_grav for consistancy (i.e. init_[variable name])
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
 ! Not doing anything (this might change if we decide to save gg to a file)
@@ -388,7 +384,7 @@ module Gravity
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_gravity
 !***********************************************************************
@@ -404,7 +400,8 @@ module Gravity
 !
       intent(in) :: f,p
 !
-      if (NO_WARN) print*, f, p  !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_gravity
 !***********************************************************************
@@ -414,7 +411,6 @@ module Gravity
 !
 !  10-jan-02/wolf: coded
 !
-      use Cdata
       use Sub
       use FArrayManager
 !
@@ -437,7 +433,8 @@ module Gravity
              + f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)
       endif
 !
-      if (NO_WARN) print*,f,p !(to keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine duu_dt_grav
 !***********************************************************************
@@ -448,7 +445,6 @@ module Gravity
 !
 !  16-jul-02/wolf: coded
 !
-      use Cdata
       use Sub,     only: poly
       use Mpicomm, only: stop_it 
 
@@ -510,7 +506,6 @@ module Gravity
 !  21-jan-02/wolf: coded
 !  29-aug-07/wlad: allow arrays of arbitrary dimension
 !
-      use Cdata,   only: nx,dx,lcartesian_coords
       use Sub,     only: poly
       use Mpicomm, only: stop_it
 
@@ -564,7 +559,7 @@ module Gravity
 !
       if (present(grav)) then
         call not_implemented("potential_penc", "optional argument grav")
-        if (NO_WARN) grav = 0.
+        call keep_compiler_quiet(grav)
       endif
 !
     endsubroutine potential_penc
@@ -575,7 +570,6 @@ module Gravity
 !
 !  20-dec-03/wolf: coded
 !
-      use Cdata,   only: dx,lcartesian_coords
       use Sub,     only: poly
       use Mpicomm, only: stop_it
 
@@ -627,7 +621,7 @@ module Gravity
 !
       if (present(grav)) then
         call not_implemented("potential_point", "optional argument grav")
-        if (NO_WARN) grav = 0.
+        call keep_compiler_quiet(grav)
       endif
 !
     endsubroutine potential_point
@@ -645,7 +639,7 @@ module Gravity
 !  Calculate acceleration from master pencils defined in initialize_gravity
 !
       call fatal_error("acceleration_penc","Not implemented")
-      if (NO_WARN) gg=0.
+      call keep_compiler_quiet(gg)
 !
     endsubroutine acceleration_penc
 !***********************************************************************
@@ -658,7 +652,6 @@ module Gravity
 !
 !  21-aug-07/wlad: coded
 !
-      use Cdata,  only: r_ref,lcylindrical_gravity,lroot
       use Mpicomm,only: stop_it
       use Sub,    only: get_radial_distance
 !     
@@ -714,7 +707,7 @@ module Gravity
         endselect
       enddo
 !
-      if (NO_WARN) print *,g_r
+      call keep_compiler_quiet(g_r)
 !
     endsubroutine acceleration_penc_1D
 !***********************************************************************
@@ -727,7 +720,6 @@ module Gravity
 !
 !  18-nov-08/wlad: coded
 !
-      use Cdata,  only: r_ref,lroot,lcartesian_coords
       use Mpicomm,only: stop_it
 !     
       real :: g_r,rad,pot
@@ -793,7 +785,7 @@ module Gravity
         endselect
       enddo
 !
-      if (NO_WARN) print *,g_r
+      call keep_compiler_quiet(g_r)
 !
     endsubroutine acceleration_point
 !***********************************************************************
@@ -802,8 +794,6 @@ module Gravity
 !  Calculate gravity field for different coordinate systems
 !
 !  15-mar-07/wlad: coded
-!
-      use Cdata
 !
       real, dimension(nx),intent(in) :: gr,rr_mn
       real, dimension(nx,3),intent(out) :: gg_mn
@@ -838,7 +828,6 @@ module Gravity
 !
 !  26-apr-03/axel: coded
 !
-      use Cdata
       use Sub
 !
       logical :: lreset,lwr
@@ -857,7 +846,7 @@ module Gravity
         write(3,*) 'igz=',igz
       endif
 !
-      if (NO_WARN) print*,lreset  !(to keep compiler quiet)
+      call keep_compiler_quiet(lreset)
 !
     endsubroutine rprint_gravity
 !***********************************************************************

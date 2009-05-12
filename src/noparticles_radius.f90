@@ -11,16 +11,16 @@
 !
 !***************************************************************
 module Particles_radius
-
+!
   use Cdata
   use Particles_cdata
-
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   include 'particles_radius.h'
-
+!
   contains
-
 !***********************************************************************
     subroutine register_particles_radius()
 !
@@ -39,9 +39,7 @@ module Particles_radius
 !
       logical :: lstarting
 !
-      !mp_tilde=1.0
-!
-      if (NO_WARN) print*, lstarting
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_radius
 !***********************************************************************
@@ -54,7 +52,8 @@ module Particles_radius
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
 !
-      if (NO_WARN) print*, f, fp
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
 !
     endsubroutine init_particles_radius
 !***********************************************************************
@@ -78,7 +77,11 @@ module Particles_radius
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      if (NO_WARN) print*, f, df, fp, dfp, ineargrid
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine dap_dt_pencil
 !***********************************************************************
@@ -93,7 +96,11 @@ module Particles_radius
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      if (NO_WARN) print*, f, df, fp, dfp, ineargrid
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine dap_dt
 !***********************************************************************
@@ -102,7 +109,8 @@ module Particles_radius
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
-      if (NO_WARN) print*, unit, iostat
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_particles_rad_init_pars
 !***********************************************************************
@@ -110,7 +118,7 @@ module Particles_radius
 !
       integer, intent (in) :: unit
 !
-      if (NO_WARN) print*, unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_particles_rad_init_pars
 !***********************************************************************
@@ -119,7 +127,8 @@ module Particles_radius
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
-      if (NO_WARN) print*, unit, iostat
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_particles_rad_run_pars
 !***********************************************************************
@@ -127,7 +136,7 @@ module Particles_radius
 !
       integer, intent (in) :: unit
 !
-      if (NO_WARN) print*, unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_particles_rad_run_pars
 !***********************************************************************
@@ -147,9 +156,8 @@ module Particles_radius
         write(3,*) 'iap=', iap
       endif
 !
-      if (NO_WARN) print*, lreset
+      call keep_compiler_quiet(lreset)
 !
     endsubroutine rprint_particles_radius
 !***********************************************************************
-
 endmodule Particles_radius

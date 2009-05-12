@@ -99,7 +99,8 @@ module Entropy
             'with beta_glnrho_global=', beta_glnrho_global
       endif
 !
-      if (NO_WARN) print*,f,lstarting ! keep compiler quiet
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_entropy
 !***********************************************************************
@@ -109,7 +110,7 @@ module Entropy
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*, f ! keep compiler quiet
+      call keep_compiler_quiet(f)
 !
     endsubroutine init_ss
 !***********************************************************************
@@ -191,7 +192,8 @@ module Entropy
         enddo
       endif
 !
-      if (NO_WARN) print*, f, p
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_entropy
 !**********************************************************************
@@ -249,7 +251,7 @@ module Entropy
             call sum_lim_mn_name(p%rho*p%cs2,idiag_thermalpressure,p)
       endif
 !
-      if (NO_WARN) print*,f !(keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine dss_dt
 !***********************************************************************
@@ -264,8 +266,8 @@ module Entropy
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_entropy_init_pars
 !***********************************************************************
@@ -273,7 +275,7 @@ module Entropy
 !
       integer, intent(in) :: unit
 !
-      if (NO_WARN) print*,unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_entropy_init_pars
 !***********************************************************************
@@ -282,8 +284,8 @@ module Entropy
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_entropy_run_pars
 !***********************************************************************
@@ -291,7 +293,7 @@ module Entropy
 !
       integer, intent(in) :: unit
 !
-      if (NO_WARN) print*,unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_entropy_run_pars
 !***********************************************************************

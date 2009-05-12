@@ -11,18 +11,18 @@
 !
 !***************************************************************
 module Particles_nbody
-
+!
   use Cdata
   use Messages
   use Particles_cdata
   use Particles_sub
-
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   include 'particles_nbody.h'
-
+!
   contains
-
 !***********************************************************************
     subroutine register_particles_nbody()
 !
@@ -42,7 +42,7 @@ module Particles_nbody
 !
       logical :: lstarting
 !
-      if (NO_WARN) print*, lstarting
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_nbody
 !***********************************************************************
@@ -56,7 +56,8 @@ module Particles_nbody
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mpar_loc,mpvar) :: fp
 !
-      if (NO_WARN) print*,f,fp
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
 !
     endsubroutine init_particles_nbody
 !***********************************************************************
@@ -77,7 +78,7 @@ module Particles_nbody
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (NO_WARN) print*, lpencil_in
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_par_nbody
 !***********************************************************************
@@ -90,7 +91,8 @@ module Particles_nbody
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      if (NO_WARN) print*, f, p
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_par_nbody
 !***********************************************************************
@@ -110,7 +112,12 @@ module Particles_nbody
 !
       intent (in) :: f, df, p, fp, dfp, ineargrid
 !
-      if (NO_WARN) print*, f, df, fp, dfp, p, ineargrid
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine dvvp_dt_nbody_pencil
 !***********************************************************************
@@ -118,7 +125,7 @@ module Particles_nbody
 !
       real, dimension(mpar_loc,mpvar) :: dfp
 !
-      if (NO_WARN) print*,dfp
+      call keep_compiler_quiet(dfp)
 !
     endsubroutine dxxp_dt_nbody
 !***********************************************************************
@@ -133,7 +140,11 @@ module Particles_nbody
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      if (NO_WARN) print*, f, df, fp, dfp, ineargrid
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine dvvp_dt_nbody
 !***********************************************************************
@@ -143,7 +154,10 @@ module Particles_nbody
       real,    dimension (mpar_loc,mpvar)   :: fp, dfp
       integer, dimension (mpar_loc,3)       :: ineargrid
 !
-      if (NO_WARN) print*, f, fp, dfp, ineargrid
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine remove_particles_sink_nbody
 !***********************************************************************
@@ -153,54 +167,79 @@ module Particles_nbody
       real,    dimension (mpar_loc,mpvar)   :: fp, dfp
       integer, dimension (mpar_loc,3)       :: ineargrid
 !
-      if (NO_WARN) print*, f, fp, dfp, ineargrid
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine create_sink_particles_nbody
 !***********************************************************************
     subroutine calc_nbodygravity_particles(f)
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      if (NO_WARN) print*, f
+!
+      call keep_compiler_quiet(f)
 !      
     endsubroutine calc_nbodygravity_particles
 !***********************************************************************
     subroutine read_particles_nbody_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
+!
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+!
     endsubroutine read_particles_nbody_init_pars
 !***********************************************************************
     subroutine write_particles_nbody_init_pars(unit)
+!
       integer, intent(in) :: unit
-      if (NO_WARN) print*,unit
+!
+      call keep_compiler_quiet(unit)
+!
     endsubroutine write_particles_nbody_init_pars
 !***********************************************************************
     subroutine read_particles_nbody_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
+!
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+!
     endsubroutine read_particles_nbody_run_pars
 !***********************************************************************
     subroutine write_particles_nbody_run_pars(unit)
+!
       integer, intent(in) :: unit
-      if (NO_WARN) print*,unit
+!
+      call keep_compiler_quiet(unit)
+!
     endsubroutine write_particles_nbody_run_pars
 !***********************************************************************
     subroutine get_totalmass(tmass)
+!
       real :: tmass
-      if (NO_WARN) print*,tmass
+!
+      call keep_compiler_quiet(tmass)
+!
     endsubroutine get_totalmass
 !***********************************************************************
     subroutine bcast_nbodyarray(fp)
+!
       real, dimension(mpar_loc,mpvar) :: fp
-      if (NO_WARN) print*, fp
+!
+      call keep_compiler_quiet(fp)
+!
     endsubroutine bcast_nbodyarray
 !************************************************************************
     subroutine particles_nbody_special
+!
       real :: dummy_=0.
-      if (NO_WARN) print*,dummy_
+!
+      call keep_compiler_quiet(dummy_)
+!
     endsubroutine particles_nbody_special
 !************************************************************************
     subroutine particles_nbody_read_snapshot(filename)
@@ -210,7 +249,7 @@ module Particles_nbody
 ! 01-apr-08/wlad: dummy
 !
       character (len=*) :: filename
-      if (NO_WARN) print*, filename
+      call keep_compiler_quiet(filename)
 !
     endsubroutine particles_nbody_read_snapshot
 !************************************************************************
@@ -224,7 +263,9 @@ module Particles_nbody
       logical :: enum
       optional :: flist
 !          
-      if (NO_WARN) print*, snapbase, enum, flist
+      call keep_compiler_quiet(snapbase)
+      call keep_compiler_quiet(enum)
+      call keep_compiler_quiet(flist)
 !
     endsubroutine particles_nbody_write_snapshot
 !************************************************************************
@@ -236,7 +277,7 @@ module Particles_nbody
 !
       character (len=*) :: filename
 !
-      if (NO_WARN) print*, filename
+      call keep_compiler_quiet(filename)
 !
     endsubroutine particles_nbody_write_spdim
 !***********************************************************************
@@ -246,8 +287,6 @@ module Particles_nbody
 !
 !  14-jun-06/anders: adapted
 !
-      use Cdata
-!
       logical :: lreset
       logical, optional :: lwrite
       logical :: lwr
@@ -255,7 +294,7 @@ module Particles_nbody
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-      if (NO_WARN) print*,lreset
+      call keep_compiler_quiet(lreset)
 !
     endsubroutine rprint_particles_nbody
 !***********************************************************************

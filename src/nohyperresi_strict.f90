@@ -1,11 +1,9 @@
 ! $Id$
-
 !
 !  This module applies a sixth order hyperresistivity to the induction
 !  equation (following Brandenburg & Sarson 2002). This hyperresistivity
 !  ensures that the energy dissipation rate is positive define everywhere.
 !
-
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -16,19 +14,16 @@
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
-
 module Hyperresi_strict
-
-  use Cparam
+!
   use Cdata
-  use Messages
-
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   include 'hyperresi_strict.h'
-
+!
   contains
-
 !***********************************************************************
     subroutine register_hyperresi_strict()
 !
@@ -47,9 +42,8 @@ module Hyperresi_strict
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*, f !(keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine hyperresistivity_strict
 !***********************************************************************
-
 endmodule Hyperresi_strict

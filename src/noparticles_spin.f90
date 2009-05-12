@@ -11,17 +11,17 @@
 !
 !***************************************************************
 module Particles_spin
-
+!
   use Cdata
   use Particles_cdata
   use Particles_sub
-
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   include 'particles_spin.h'
-
+!
   contains
-
 !***********************************************************************
     subroutine register_particles_spin()
 !
@@ -40,7 +40,7 @@ module Particles_spin
 !
       logical :: lstarting
 !
-      if (NO_WARN) print*, lstarting
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_spin
 !***********************************************************************
@@ -49,8 +49,6 @@ module Particles_spin
 !  Initial spin of particles.
 !
 !  21-jul-08/kapelrud: coded
-!
-      use Cdata, only: m,n
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
@@ -92,7 +90,11 @@ module Particles_spin
       intent (in) :: f, df, fp, ineargrid
       intent (inout) :: dfp
 !
-      if (NO_WARN) print*, f, df, fp, dfp, ineargrid
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine dps_dt_pencil
 !***********************************************************************
@@ -107,7 +109,11 @@ module Particles_spin
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      if (NO_WARN) print*, f, df, fp, dfp, ineargrid
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine dps_dt
 !***********************************************************************
@@ -116,7 +122,8 @@ module Particles_spin
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
-      if (NO_WARN) print*, unit, iostat
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_particles_spin_init_pars
 !***********************************************************************
@@ -124,7 +131,7 @@ module Particles_spin
 !
       integer, intent (in) :: unit
 !
-      if (NO_WARN) print*, unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_particles_spin_init_pars
 !***********************************************************************
@@ -133,11 +140,8 @@ module Particles_spin
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
-      if (present(iostat)) then
-        if (NO_WARN) print*, unit, iostat
-      else
-        if (NO_WARN) print*, unit
-      endif
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_particles_spin_run_pars
 !***********************************************************************
@@ -145,7 +149,7 @@ module Particles_spin
 !
       integer, intent (in) :: unit
 !
-      if (NO_WARN) print*, unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_particles_spin_run_pars
 !***********************************************************************
@@ -154,8 +158,6 @@ module Particles_spin
 !  Read and register print parameters relevant for particles spin.
 !
 !  21-jul-08/kapelrud: adapted from particles_radius
-!
-      use Cdata
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -169,7 +171,7 @@ module Particles_spin
       if (present(lwrite)) lwr=lwrite
       if (lwr) write(3,*) 'iox=', iox
 !
-      if (NO_WARN) print*, lreset
+      call keep_compiler_quiet(lreset)
 !
     endsubroutine rprint_particles_spin
 !***********************************************************************

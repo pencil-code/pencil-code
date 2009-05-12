@@ -89,7 +89,7 @@ module Dustdensity
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      if (present(iostat) .and. (NO_WARN)) call keep_compiler_quiet(iostat)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
       call keep_compiler_quiet(unit)
 !
     endsubroutine read_dustdensity_init_pars

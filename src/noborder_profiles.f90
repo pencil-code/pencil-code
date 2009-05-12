@@ -9,21 +9,19 @@
 ! PENCILS PROVIDED rborder_mn
 !
 !***************************************************************
-
 module BorderProfiles
-
-  use Cparam
+!
   use Cdata
-
+  use Cparam
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   private
-
+!
   include 'border_profiles.h'
 !
-
   contains
-
 !***********************************************************************
     subroutine initialize_border_profiles()
 !
@@ -89,7 +87,9 @@ module BorderProfiles
       real, dimension (nx) :: tmp
       integer :: ivar
 !
-      if (NO_WARN) print*,f,ivar,tmp
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(ivar)
+      call keep_compiler_quiet(tmp)
 !
     endsubroutine set_border_initcond
 !***********************************************************************
@@ -103,7 +103,11 @@ module BorderProfiles
 !
 !  Dummy routine
 !
-      if (NO_WARN) print*,j,f,p,df,f_target
+      call keep_compiler_quiet(j)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(f_target)
 !
     endsubroutine border_driving
 !***********************************************************************
@@ -114,7 +118,8 @@ module BorderProfiles
 !
 !  Dummy routine
 !
-      if (NO_WARN) print*,j,df
+      call keep_compiler_quiet(j)
+      call keep_compiler_quiet(df)
 !
     endsubroutine border_quenching
 !***********************************************************************

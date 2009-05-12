@@ -1,16 +1,16 @@
 ! $Id$
 !
-!  This module takes care of messages.
+!  This module takes care of code messages.
 !
 module Messages
-
+!
   use Cdata
   use Mpicomm
-
+!
   implicit none
-
+!
   private
-
+!
   public :: cvs_id
   public :: initialize_messages
   public :: information, warning, error
@@ -37,17 +37,13 @@ module Messages
   integer, public, parameter :: iterm_BG_BLUE   = 44
   integer, public, parameter :: iterm_BG_MAGENTA= 45
   integer, public, parameter :: iterm_BG_CYAN   = 46
-!
   integer, public, parameter :: iip_EVERYTHING  = 0
   integer, public, parameter :: iip_DEFAULT     = 0
-!
   integer, parameter :: iwarning_ip     = 1000
   integer, parameter :: iinformation_ip = 1000
-!
   integer :: warnings=0
   integer :: errors=0
   integer :: fatal_errors=0, fatal_errors_total=0
-!
   logical :: ldie_onwarning=.false.
   logical :: ldie_onerror=.true.
   logical :: ldie_onfatalerror=.true.
@@ -228,8 +224,6 @@ module Messages
 !  Print out colored warning.
 !
 !  30-jun-05/tony: coded
-!
-      use Cdata, only: ip
 !
       character (len=*) :: message,location
       integer, optional :: level

@@ -46,11 +46,11 @@
 
 module Special
 
-  use Cparam
   use Cdata
+  use Cparam
+  use EquationOfState
   use Messages
   use Sub, only: keep_compiler_quiet
-  use EquationOfState
 
   implicit none
 
@@ -119,10 +119,6 @@ module Special
 !
 !  6-oct-03/tony: coded
 !
-      use Cdata
-!
-!  Identify CVS/SVN version information.
-!
       if (lroot) call cvs_id( &
            "$Id$")
 !
@@ -134,7 +130,6 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      use Cdata
       use EquationOfState
       use Sub
 
@@ -164,7 +159,7 @@ module Special
       nd=3
       if (nzgrid==1) nd=2
 !
-      if (NO_WARN) print*,f  !(keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -173,8 +168,6 @@ module Special
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
 !
-      use Cdata
-   !   use Density
       use EquationOfState
       use Mpicomm
       use Sub
@@ -183,7 +176,7 @@ module Special
 !
       intent(inout) :: f
 !
-      if (NO_WARN) print*,f  !(keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine init_special
 !***********************************************************************
@@ -192,8 +185,6 @@ module Special
 !  Interdependency among pencils provided by this module are specified here.
 !
 !  18-07-06/tony: coded                                                         
-!
-      use Sub, only: keep_compiler_quiet
 !
       logical, dimension(npencils) :: lpencil_in
 !
@@ -246,7 +237,6 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
       use Mpicomm
       use Sub
 !
@@ -273,9 +263,11 @@ module Special
       !    call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
       !endif
 
-! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,f,df,p
-
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
+!
     endsubroutine dspecial_dt
 !***********************************************************************
     subroutine get_slices_special(f,slices)
@@ -283,8 +275,6 @@ module Special
 !  Write slices for animation of special variables.
 !
 !  26-jun-06/tony: dummy
-!
-      use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
@@ -295,16 +285,18 @@ module Special
     endsubroutine get_slices_special
 !***********************************************************************
     subroutine read_special_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=special_init_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=special_init_pars,ERR=99)
       endif
-
+!
 99    return
+!
     endsubroutine read_special_init_pars
 !***********************************************************************
     subroutine write_special_init_pars(unit)
@@ -472,8 +464,6 @@ module Special
 !
 !  15-jan-08/axel: coded
 !
-      use Sub, only: keep_compiler_quiet
-!
       real, dimension (mx,my,mz,mfarray) :: f
       intent(inout) :: f
 !
@@ -483,13 +473,12 @@ module Special
 !***********************************************************************
     subroutine special_calc_density(f,df,p)
 !
-      use Cdata
-
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      if (NO_WARN) print*,df,p
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine special_calc_density
 !***********************************************************************
@@ -497,7 +486,6 @@ module Special
 !
 !   16-jul-06/wlyra: coded
 !
-      use Cdata
       use Diagnostics
 !
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
@@ -536,7 +524,8 @@ module Special
              call phizsum_mn_name_r(p%rho*urad*2*pi*p%rcyl_mn*fac,idiag_mdotmr)
       endif
 !
-      if (NO_WARN) print*,df,p
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine special_calc_hydro
 !***********************************************************************
@@ -544,7 +533,6 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-     use Cdata
      use Diagnostics
      use Mpicomm
 
@@ -587,7 +575,8 @@ module Special
        df(l1:l2,m,n,iay) = df(l1:l2,m,n,iay) - puxb(:,2)
      endif
 ! Keep compiler quiet by ensuring every parameter is used
-     if (NO_WARN) print*,df,p
+     call keep_compiler_quiet(df)
+     call keep_compiler_quiet(p)
 
      br=p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy - bavg(:,1)
      bp=p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy - bavg(:,2)
@@ -612,13 +601,12 @@ module Special
 !***********************************************************************
     subroutine special_calc_entropy(f,df,p)
 !
-      use Cdata
-
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      if (NO_WARN) print*,df,p
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine special_calc_entropy
 !***********************************************************************
@@ -631,8 +619,6 @@ module Special
 !   others may be calculated directly from the f array
 !
 !   06-oct-03/tony: coded
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       type (boundary_condition) :: bc
@@ -652,7 +638,8 @@ module Special
 !         bc%done=.true.
 !      endselect
 
-      if (NO_WARN) print*,f(1,1,1,1),bc%bcname
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(bc%bcname)
 !
     endsubroutine special_boundconds
 !***********************************************************************
@@ -675,7 +662,6 @@ module Special
 !
 !   06-jul-06/tony: coded
 !
-      use Cdata
       use Mpicomm
       use Sub
 !
@@ -780,7 +766,7 @@ module Special
         enddo
       enddo
 !
-      if (NO_WARN) print*,f(1,1,1,1)
+      call keep_compiler_quiet(f)
 !
     endsubroutine special_before_boundary
 !**********************************************************************

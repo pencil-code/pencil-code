@@ -104,7 +104,7 @@ module Hyperresi_strict
         del2f(:,:,:,i)=tmp
       enddo
 !
-    end subroutine del2v_2nd
+    endsubroutine del2v_2nd
 !***********************************************************************
     subroutine del2_2nd(f,del2f,k)
 !

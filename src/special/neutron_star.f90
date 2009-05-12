@@ -49,22 +49,18 @@
 ! upto and not including the .f90
 !
 !--------------------------------------------------------------------
-
 module Special
-
-  use Cparam
+!
   use Cdata
+  use Cparam
+  use EquationOfState
   use Messages
   use Sub, only: keep_compiler_quiet
-!  use Density, only: rho_up
-  use EquationOfState
-
-
+!
   implicit none
-
+!
   include '../special.h'
-
-  ! input parameters
+!
   logical :: lmass_source_NS=.false.
   logical :: leffective_gravity=.false.
 
@@ -148,7 +144,6 @@ module Special
 !
 !  6-oct-03/tony: coded
 !
-      use Cdata
       use EquationOfState
 !
 !  Identify CVS/SVN version information.
@@ -164,8 +159,6 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      use Cdata
-   !   use Density
       use EquationOfState
 
 !
@@ -189,7 +182,7 @@ module Special
         gamma11 = 1.
       endif
 !
-      if (NO_WARN) print*,f  !(keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -198,8 +191,6 @@ module Special
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
 !
-      use Cdata
-   !   use Density
       use EquationOfState
       use Mpicomm
       use Sub
@@ -230,8 +221,6 @@ module Special
 !  All pencils that this special module depends on are specified here.
 !
 !  18-07-06/tony: coded
-!
-      use Cdata
 !
       if (laccelerat_zone)  lpenc_requested(i_rho)=.true.
     !  if (lmass_source_NS)  lpenc_requested(i_rho)=.true.
@@ -266,7 +255,6 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
       use Diagnostics
       use Mpicomm
       use Sub
@@ -294,10 +282,11 @@ module Special
         if (idiag_dtchi/=0) &
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
       endif
-
-! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,f,df,p
-
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
+!
     endsubroutine dspecial_dt
 !***********************************************************************
     subroutine read_special_init_pars(unit,iostat)
@@ -385,8 +374,6 @@ module Special
 !
 !  15-jan-08/axel: coded
 !
-      use Sub, only: keep_compiler_quiet
-!
       real, dimension (mx,my,mz,mfarray) :: f
       intent(inout) :: f
 !
@@ -397,8 +384,6 @@ module Special
     subroutine special_calc_density(f,df,p)
 !   06-oct-03/tony: coded
 !
-      use Cdata
-      ! use Viscosity
       use EquationOfState
 
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
@@ -538,7 +523,8 @@ module Special
 !
 ! Keep compiler quiet by ensuring every parameter is used
 !
-      if (NO_WARN) print*,df,p
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine special_calc_density
 !***********************************************************************
@@ -546,8 +532,6 @@ module Special
 !
 !
 !   16-jul-06/natalia: coded
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -737,8 +721,6 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
-
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
@@ -753,17 +735,14 @@ module Special
 !!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
 !!
 !!
-
-! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,df,p
-
+!
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
+!
     endsubroutine special_calc_magnetic
 !!***********************************************************************
     subroutine special_calc_entropy(f,df,p)
 !
-
-      use Cdata
-
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       real, dimension (nx) ::T_disk_ref
@@ -905,11 +884,10 @@ module Special
 
 
       endif
-
-
-! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,df,p
-
+!
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
+!
     endsubroutine special_calc_entropy
 !***********************************************************************
     subroutine special_boundconds(f,bc)
@@ -921,8 +899,6 @@ module Special
 !   others may be calculated directly from the f array
 !
 !   06-oct-03/tony: coded
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       type (boundary_condition) :: bc
@@ -941,8 +917,9 @@ module Special
          endselect
          bc%done=.true.
       endselect
-
-      if (NO_WARN) print*,f(1,1,1,1),bc%bcname
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(bc%bcname)
 !
     endsubroutine special_boundconds
 !***********************************************************************
@@ -1024,8 +1001,6 @@ module Special
 !  add mass sources and sinks
 !
 !  2006/Natalia
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -1182,8 +1157,6 @@ module Special
       !Natalia
       !Initialization of velocity in a case of the step-like distribution
 
-      use Cdata
-
       real, dimension (mx,my,mz,mvar+maux) :: f
       integer :: decel_zone
       real ::   ll
@@ -1244,8 +1217,6 @@ module Special
 !
 ! Natalia
 !  11-may-06
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       integer :: sgn
@@ -1308,7 +1279,6 @@ module Special
 !
 !  11-feb-06/nbabkovs
 !
-      use Cdata
       use EquationOfState
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -1434,11 +1404,9 @@ module Special
 !
 !   06-jul-06/tony: coded
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
 !
-      if (NO_WARN) print*,f(1,1,1,1)
+      call keep_compiler_quiet(f)
 !
     endsubroutine special_before_boundary
 !

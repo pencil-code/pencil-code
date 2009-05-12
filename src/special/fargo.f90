@@ -42,9 +42,10 @@
 
 module Special
 !
-  use Cparam
   use Cdata
+  use Cparam
   use Messages
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -290,7 +291,9 @@ module Special
         endif
       endif
 !
-      if (NO_WARN) print*, f, df, p
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine dspecial_dt
 !***********************************************************************
@@ -466,7 +469,8 @@ endsubroutine read_special_run_pars
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      if (NO_WARN) print*,df,p
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine special_calc_entropy
 !***********************************************************************
@@ -485,7 +489,8 @@ endsubroutine read_special_run_pars
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       type (boundary_condition) :: bc
 !
-      if (NO_WARN) print*,f(1,1,1,1),bc%bcname
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(bc%bcname)
 !
     endsubroutine special_boundconds
 !***********************************************************************

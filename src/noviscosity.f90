@@ -1,8 +1,8 @@
 ! $Id$
-
+!
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -19,6 +19,7 @@ module Viscosity
 !
   use Cdata
   use Messages
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -32,7 +33,6 @@ module Viscosity
 !
 !  19-nov-02/tony: coded
 !
-      use Cdata
       use Mpicomm
       use Sub
 !
@@ -45,54 +45,56 @@ module Viscosity
 !***********************************************************************
     subroutine initialize_viscosity(lstarting)
 !
-!  02-apr-02/tony: coded
       logical, intent(in) :: lstarting
-
-      if (NO_WARN) print*,lstarting
+!
+      call keep_compiler_quiet(lstarting)
+!
     endsubroutine initialize_viscosity
 !***********************************************************************
     subroutine read_viscosity_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
-      if (present(iostat).and.NO_WARN) print*,iostat
-      if (NO_WARN) print*,unit
-
+!
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+!
     endsubroutine read_viscosity_init_pars
 !***********************************************************************
     subroutine write_viscosity_init_pars(unit)
+!
       integer, intent(in) :: unit
-
-      if (NO_WARN) print*,unit
-
+!
+      call keep_compiler_quiet(unit)
+!
     endsubroutine write_viscosity_init_pars
 !***********************************************************************
     subroutine read_viscosity_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
-      if (present(iostat).and.NO_WARN) print*,iostat
-      if (NO_WARN) print*,unit
-
+!
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+!
     endsubroutine read_viscosity_run_pars
 !***********************************************************************
     subroutine write_viscosity_run_pars(unit)
+!
       integer, intent(in) :: unit
-
-      if (NO_WARN) print*,unit
-
+!
+      call keep_compiler_quiet(unit)
+!
     endsubroutine write_viscosity_run_pars
 !*******************************************************************
     subroutine rprint_viscosity(lreset,lwrite)
 !
-!  Writes ishock to index.pro file
-!
-!  02-apr-03/tony: adapted from visc_const
-!
       logical :: lreset
       logical, optional :: lwrite
 !
-      if (NO_WARN) print*,lreset,present(lwrite)  !(to keep compiler quiet)
+      call keep_compiler_quiet(lreset)
+      call keep_compiler_quiet(present(lwrite))
+!
     endsubroutine rprint_viscosity
 !***********************************************************************
     subroutine pencil_criteria_viscosity()
@@ -109,11 +111,9 @@ module Viscosity
 !
 !  20-11-04/anders: coded
 !
-      use Cdata
-!
       logical, dimension (npencils) :: lpencil_in
 !
-      if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_viscosity
 !***********************************************************************
@@ -124,8 +124,6 @@ module Viscosity
 !
 !  20-11-04/anders: coded
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
@@ -134,32 +132,24 @@ module Viscosity
 !
 !  define shock, gshock, visc_heat
 !
-      if (lpencil(i_shock)) p%shock=0.
-      if (lpencil(i_gshock)) p%gshock=0.
-      if (lpencil(i_visc_heat)) p%visc_heat=0.
+      if (lpencil(i_shock)) p%shock=0.0
+      if (lpencil(i_gshock)) p%gshock=0.0
+      if (lpencil(i_visc_heat)) p%visc_heat=0.0
 !
-      if (NO_WARN) print*, f
+      call keep_compiler_quiet(f)
 !
     endsubroutine calc_pencils_viscosity
-!!***********************************************************************
+!***********************************************************************
     subroutine calc_viscosity(f)
-!
-!
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*,f  !(to keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine calc_viscosity
-!!***********************************************************************
+!***********************************************************************
     subroutine calc_viscous_heat(f,df,p,Hmax)
 !
-!  calculate viscous heating term for right hand side of entropy equation
-!
-!  20-nov-02/tony: coded
-!
-      use Cdata
-
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar)    :: df
       type (pencil_case) :: p
@@ -168,51 +158,45 @@ module Viscosity
 !
       intent(in) :: df,p,Hmax
 !
-      if (NO_WARN) print*,df,p,Hmax  !(keep compiler quiet)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(Hmax)
 !
     endsubroutine calc_viscous_heat
 !***********************************************************************
     subroutine calc_viscous_force(df,p)
 !
-!  calculate viscous heating term for right hand side of entropy equation
-!
-!  20-nov-02/tony: coded
-!
-      use Cdata
-
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
       intent (in) :: df,p
 !
-      if (NO_WARN) print*,df,p  !(keep compiler quiet)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_viscous_force
 !***********************************************************************
     subroutine calc_visc_heat_ppd(f,df,p)
 !    
-!  Dummy routine
-! 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       intent (in) :: f,df,p
 !
-      if (NO_WARN) print*,f,df,p  !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_visc_heat_ppd
 !***********************************************************************
     subroutine getnu(nu_)
 !
-!  Dummy routine
-!
       real,intent(out) :: nu_
 !
       nu_=0.0
 !
-      if (NO_WARN) print*,nu_  !(keep compiler quiet)
+      call keep_compiler_quiet(nu_)
 !
     endsubroutine getnu
 !***********************************************************************
-
 endmodule Viscosity

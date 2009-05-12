@@ -1,34 +1,33 @@
 ! $Id$
-
-!!!!!!!!!!!!!!!!!!!!!!!
-!!!   io_dist.f90   !!!
-!!!!!!!!!!!!!!!!!!!!!!!
-
-!!!  Distributed IO (i.e. each process writes its own file data/procX)
-!!!  07-Nov-2001/wd: Put into separate module, so one can choose
-!!!  alternative IO mechanism.
-!!!
-!!!  The file format written by output() (and used, e.g. in var.dat)
-!!!  consists of the followinig Fortran records:
-!!!    1. data(mx,my,mz,nvar)
-!!!    2. t(1), x(mx), y(my), z(mz), dx(1), dy(1), dz(1), deltay(1)
-!!!  Here nvar denotes the number of slots, i.e. 1 for one scalar field, 3
-!!!  for one vector field, 8 for var.dat in the case of MHD with entropy.
-
+!
+!!!!!!!!!!!!!!!!!!!!!!
+!!   io_dist.f90   !!!
+!!!!!!!!!!!!!!!!!!!!!!
+!
+!  Distributed IO (i.e. each process writes its own file data/procX)
+!  07-Nov-2001/wd: Put into separate module, so one can choose
+!  alternative IO mechanism.
+!
+!  The file format written by output() (and used, e.g. in var.dat)
+!  consists of the followinig Fortran records:
+!    1. data(mx,my,mz,nvar)
+!    2. t(1), x(mx), y(my), z(mz), dx(1), dy(1), dz(1), deltay(1)
+!  Here nvar denotes the number of slots, i.e. 1 for one scalar field, 3
+!  for one vector field, 8 for var.dat in the case of MHD with entropy.
 module Io
-
+!
   use Messages
-
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   include 'io.h'
-
-
+!
   interface output              ! Overload the `output' function
     module procedure output_vect
     module procedure output_scal
   endinterface
-
+!
   interface output_pencil        ! Overload the `output_pencil' function
     module procedure output_pencil_vect
     module procedure output_pencil_scal
@@ -71,9 +70,8 @@ module Io
   !
   external output_penciled_scal_c
   external output_penciled_vect_c
-
+!
 contains
-
 !***********************************************************************
     subroutine register_io()
 !
@@ -418,7 +416,7 @@ contains
 !
       if (dxmin==0) call stop_it("rgrid: check Lx,Ly,Lz: is one of them 0?")
 !
-      if (NO_WARN) print*,tdummy  !(keep compiler quiet)
+      call keep_compiler_quiet(tdummy)
 !
     endsubroutine rgrid
 !***********************************************************************

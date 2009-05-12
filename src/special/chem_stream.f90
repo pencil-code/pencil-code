@@ -195,7 +195,7 @@ module Special
         gamma11 = 1.
       endif
 !
-      if (NO_WARN) print*,f  !(keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -292,7 +292,9 @@ module Special
       endif
 
 ! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,f,df,p
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 
     endsubroutine dspecial_dt
 !***********************************************************************
@@ -381,8 +383,6 @@ module Special
 !
 !  15-jan-08/axel: coded
 !
-      use Sub, only: keep_compiler_quiet
-!
       real, dimension (mx,my,mz,mfarray) :: f
       intent(inout) :: f
 !
@@ -414,7 +414,8 @@ module Special
 !
 ! Keep compiler quiet by ensuring every parameter is used
 !
-      if (NO_WARN) print*,df,p
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine special_calc_density
 !***********************************************************************
@@ -462,7 +463,8 @@ module Special
 
 
 ! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,df,p
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 
     endsubroutine special_calc_magnetic
 !!***********************************************************************
@@ -482,7 +484,8 @@ module Special
      endif
 
 ! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,df,p
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 
     endsubroutine special_calc_entropy
 !***********************************************************************
@@ -528,7 +531,8 @@ module Special
          bc%done=.true.
       endselect
 
-      if (NO_WARN) print*,f(1,1,1,1),bc%bcname
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(bc%bcname)
 !
     endsubroutine special_boundconds
 !***********************************************************************
@@ -1153,7 +1157,7 @@ endsubroutine flame_spd_test
 !
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
 !
-      if (NO_WARN) print*,f(1,1,1,1)
+      call keep_compiler_quiet(f)
 !
     endsubroutine special_before_boundary
 !

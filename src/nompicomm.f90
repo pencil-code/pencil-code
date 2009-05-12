@@ -8,134 +8,130 @@
 !!!  This allows code to be run on single cpu machine
 
 module Mpicomm
-
+!
+  use Cdata
   use Cparam
-  use Cdata, only: iproc,ipx,ipy,ipz,root,lroot, &
-                   ylneigh,zlneigh,yuneigh,zuneigh, &
-                   llcorn,lucorn,uucorn,ulcorn, &
-                   lemergency_brake
-
+!
   implicit none
-
+!
   include 'mpicomm.h'
-
+!
   interface mpirecv_logical
      module procedure mpirecv_logical_scl
      module procedure mpirecv_logical_arr
   endinterface
-
+!
   interface mpirecv_real
     module procedure mpirecv_real_scl
     module procedure mpirecv_real_arr
     module procedure mpirecv_real_arr2
     module procedure mpirecv_real_arr3
   endinterface
-
+!
   interface mpirecv_int
     module procedure mpirecv_int_scl
     module procedure mpirecv_int_arr
   endinterface
-
+!
   interface mpisend_logical
      module procedure mpisend_logical_scl
      module procedure mpisend_logical_arr
   endinterface
-
+!
   interface mpisend_real
     module procedure mpisend_real_scl
     module procedure mpisend_real_arr
     module procedure mpisend_real_arr2
     module procedure mpisend_real_arr3
   endinterface
-
+!
   interface mpisend_int
     module procedure mpisend_int_scl
     module procedure mpisend_int_arr
   endinterface
-
+!
   interface mpibcast_logical
     module procedure mpibcast_logical_scl
     module procedure mpibcast_logical_arr
     module procedure mpibcast_logical_arr2
   endinterface
-
+!
   interface mpibcast_int
     module procedure mpibcast_int_scl
     module procedure mpibcast_int_arr
   endinterface
-
+!
   interface mpibcast_real
     module procedure mpibcast_real_scl
     module procedure mpibcast_real_arr
     module procedure mpibcast_real_arr2
     module procedure mpibcast_real_arr3
- endinterface
-
+  endinterface
+!
   interface mpibcast_double
     module procedure mpibcast_double_scl
     module procedure mpibcast_double_arr
   endinterface
-
+!
   interface mpibcast_char
     module procedure mpibcast_char_scl
     module procedure mpibcast_char_arr
   endinterface
-
+!
   interface mpireduce_sum_double
     module procedure mpireduce_sum_double_scl
     module procedure mpireduce_sum_double_arr
   endinterface
-
+!
 ! Not possible because array version is used with
 ! a multi dimensional array!
 !  interface mpireduce_sum
 !    module procedure mpireduce_sum_scl
 !    module procedure mpireduce_sum_arr
 !  endinterface
-
+!
   interface mpireduce_sum_int
     module procedure mpireduce_sum_int_scl
     module procedure mpireduce_sum_int_arr
   endinterface
-
+!
   interface mpireduce_max
     module procedure mpireduce_max_scl
     module procedure mpireduce_max_arr
   endinterface
-
+!
   interface mpiallreduce_sum
     module procedure mpiallreduce_sum_scl
     module procedure mpiallreduce_sum_arr
     module procedure mpiallreduce_sum_arr2
   endinterface
-
+!
   interface mpiallreduce_sum_int
     module procedure mpiallreduce_sum_int_scl
     module procedure mpiallreduce_sum_int_arr
   endinterface
-
+!
   interface mpiallreduce_max
     module procedure mpiallreduce_max_scl
     module procedure mpiallreduce_max_arr
   endinterface
-
+!
   interface mpireduce_min
     module procedure mpireduce_min_scl
     module procedure mpireduce_min_arr
   endinterface
-
+!
   interface mpireduce_or
     module procedure mpireduce_or_scl
     module procedure mpireduce_or_arr
   endinterface
-
+!
   interface mpireduce_and
     module procedure mpireduce_and_scl
     module procedure mpireduce_and_arr
   endinterface
-
+!
   contains
-
 !***********************************************************************
     subroutine mpicomm_init()
 !
@@ -148,8 +144,6 @@ module Mpicomm
 !
 !   6-jun-02/axel: generalized to allow for ny=1
 !  23-nov-02/axel: corrected problem with ny=4 or less
-!
-      use Cdata, only: lmpicomm,iproc,ipx,ipy,ipz,lroot
 !
 !  sets iproc in order that we write in the correct directory
 !
@@ -182,8 +176,6 @@ module Mpicomm
 !
 !  for one processor, use periodic boundary conditions
 !  but in this dummy routine this is done in finalize_isendrcv_bdry
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
@@ -218,8 +210,6 @@ module Mpicomm
 !
 !  for one processor, use periodic boundary conditions
 !  but in this dummy routine this is done in finalize_isendrcv_bdry
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
@@ -1205,8 +1195,6 @@ module Mpicomm
 !
 !   8-oct-2006/tobi: Coded
 !
-      use Cdata, only: iax,iaz
-
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
 

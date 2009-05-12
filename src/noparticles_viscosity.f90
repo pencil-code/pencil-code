@@ -15,6 +15,7 @@ module Particles_viscosity
   use Cdata
   use Messages
   use Particles_cdata
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -34,7 +35,7 @@ module Particles_viscosity
 !
       logical, intent(in) :: lstarting
 !
-      if (NO_WARN) print*, lstarting
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_viscosity
 !***********************************************************************
@@ -46,7 +47,9 @@ module Particles_viscosity
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      if (NO_WARN) print*, f, fp, ineargrid
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine calc_particles_viscosity
 !***********************************************************************
@@ -61,7 +64,11 @@ module Particles_viscosity
 !
       intent (in) :: df, f, fp, dfp, ineargrid
 !
-      if (NO_WARN) print*, f, df, fp, dfp, ineargrid
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine dvvp_dt_viscosity_pencil
 !***********************************************************************
@@ -72,8 +79,8 @@ module Particles_viscosity
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      if (present(iostat).and.NO_WARN) print*,iostat
-      if (NO_WARN) print*, unit
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_particles_visc_init_pars
 !***********************************************************************
@@ -83,7 +90,7 @@ module Particles_viscosity
 !
       integer, intent(in) :: unit
 !
-      if (NO_WARN) print*, unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_particles_visc_init_pars
 !***********************************************************************
@@ -94,7 +101,8 @@ module Particles_viscosity
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      if (NO_WARN) print*, unit, iostat
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_particles_visc_run_pars
 !***********************************************************************
@@ -104,7 +112,7 @@ module Particles_viscosity
 !
       integer, intent(in) :: unit
 !
-      if (NO_WARN) print*, unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_particles_visc_run_pars
 !***********************************************************************
@@ -114,7 +122,7 @@ module Particles_viscosity
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*, f
+      call keep_compiler_quiet(f)
 !
     endsubroutine calc_viscosity
 !*******************************************************************
@@ -125,7 +133,8 @@ module Particles_viscosity
       logical :: lreset
       logical, optional :: lwrite
 !
-      if (NO_WARN) print*, lreset, lwrite
+      call keep_compiler_quiet(lreset)
+      call keep_compiler_quiet(lwrite)
 !
     endsubroutine rprint_particles_viscosity
 !***********************************************************************

@@ -16,6 +16,7 @@ module Particles
 !
   use Cdata
   use Particles_cdata
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -40,7 +41,7 @@ module Particles
 !
       logical :: lstarting
 !
-      if (NO_WARN) print*, lstarting
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles
 !***********************************************************************
@@ -53,7 +54,8 @@ module Particles
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
 !
-      if (NO_WARN) print*, f, fp
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
 !
     endsubroutine init_particles
 !***********************************************************************
@@ -74,7 +76,7 @@ module Particles
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (NO_WARN) print*, lpencil_in
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_particles
 !***********************************************************************
@@ -87,7 +89,8 @@ module Particles
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      if (NO_WARN) print*, f, p
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_particles
 !***********************************************************************
@@ -103,7 +106,12 @@ module Particles
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      if (NO_WARN) print*, f, df, fp, dfp, p, ineargrid
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine dxxp_dt_pencil
 !***********************************************************************
@@ -119,7 +127,12 @@ module Particles
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      if (NO_WARN) print*, f, df, fp, dfp, p, ineargrid
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine dvvp_dt_pencil
 !***********************************************************************
@@ -134,7 +147,11 @@ module Particles
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      if (NO_WARN) print*, f, df, fp, dfp, ineargrid
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine dxxp_dt
 !***********************************************************************
@@ -149,7 +166,11 @@ module Particles
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      if (NO_WARN) print*, f, df, fp, dfp, ineargrid
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine dvvp_dt
 !***********************************************************************
@@ -159,7 +180,10 @@ module Particles
       real,    dimension (mpar_loc,mpvar)   :: fp, dfp
       integer, dimension (mpar_loc,3)       :: ineargrid
 !
-      if (NO_WARN) print*, f, fp, dfp, ineargrid
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine remove_particles_sink
 !***********************************************************************
@@ -169,7 +193,10 @@ module Particles
       real,    dimension (mpar_loc,mpvar)   :: fp, dfp
       integer, dimension (mpar_loc,3)       :: ineargrid
 !
-      if (NO_WARN) print*, f, fp, dfp, ineargrid
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine create_sink_particles
 !***********************************************************************
@@ -178,7 +205,8 @@ module Particles
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
-      if (NO_WARN) print*, unit, iostat
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_particles_init_pars
 !***********************************************************************
@@ -186,7 +214,7 @@ module Particles
 !
       integer, intent (in) :: unit
 !
-      if (NO_WARN) print*, unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_particles_init_pars
 !***********************************************************************
@@ -195,7 +223,8 @@ module Particles
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
-      if (NO_WARN) print*, unit, iostat
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_particles_run_pars
 !***********************************************************************
@@ -203,7 +232,7 @@ module Particles
 !
       integer, intent (in) :: unit
 !
-       if (NO_WARN) print*, unit
+       call keep_compiler_quiet(unit)
 !
     endsubroutine write_particles_run_pars
 !***********************************************************************
@@ -215,7 +244,7 @@ module Particles
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*, f
+      call keep_compiler_quiet(f)
 !
     endsubroutine powersnap_particles
 !***********************************************************************
@@ -244,7 +273,7 @@ module Particles
         write(3,*) 'irho=0'
       endif
 !
-      if (NO_WARN) print*, lreset
+      call keep_compiler_quiet(lreset)
 !
     endsubroutine rprint_particles
 !***********************************************************************

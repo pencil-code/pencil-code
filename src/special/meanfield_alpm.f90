@@ -22,11 +22,12 @@
 !***************************************************************
 
 module Special
-
-  use Cparam
+!
   use Cdata
+  use Cparam
   use Messages
-!  use Magnetic, only: eta
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
 
   include '../special.h'
@@ -65,7 +66,6 @@ module Special
 !
 !  6-jul-02/axel: coded
 !
-      use Cdata
       use FArrayManager
 !
 !  register ialpm in the f-array and set lalpm=.false.
@@ -107,7 +107,8 @@ module Special
 ! set the magnetic Reynold number :
 !      Rm_alpm=etat_alpm/eta
 !      write(*,*) 'Dhruba', Rm_alpm,etat_alpm
-      if (NO_WARN) print*,'f=',f
+      call keep_compiler_quiet(f)
+!
     endsubroutine initialize_special
 !***********************************************************************
     subroutine init_special(f)
@@ -116,7 +117,6 @@ module Special
 !
 !   6-jul-2001/axel: coded
 !
-      use Cdata
       use Mpicomm
 !     use Density
       use Sub
@@ -139,15 +139,14 @@ module Special
 !
 !   24-nov-04/tony: coded
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mvar+maux) :: f       
       type (pencil_case) :: p
 !
       intent(in) :: f
       intent(inout) :: p
 !
-      if (NO_WARN) print*,f(1,1,1,1),p   !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -300,8 +299,6 @@ module Special
 !
 !  26-jun-06/tony: dummy
 !
-      use Sub, only: keep_compiler_quiet
-!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
@@ -315,8 +312,6 @@ module Special
 !  dummy routine
 !
 !  15-jan-08/axel: coded
-!
-      use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       intent(inout) :: f
@@ -335,8 +330,6 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
-
       real, dimension (mx,my,mz,mvar) :: f,df
       type (pencil_case) :: p
       !
@@ -350,10 +343,11 @@ module Special
 !!  df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + SOME NEW TERM
 !!
 !!
-
-! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,f,df,p
-
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
+!
     endsubroutine special_calc_density
 !***********************************************************************
     subroutine special_calc_hydro(f,df,p)
@@ -366,8 +360,6 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
-      
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
@@ -382,10 +374,11 @@ module Special
 !!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
 !!
 !!
-
-! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,f,df,p
-
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
+!
     endsubroutine special_calc_hydro
 !***********************************************************************
     subroutine special_calc_magnetic(f,df,p)
@@ -398,8 +391,6 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
-
       real, dimension (mx,my,mz,mvar) :: f,df
       type (pencil_case) :: p
       !
@@ -415,10 +406,10 @@ module Special
 !!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
 !!
 !!
-
-! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,df,p
-
+!
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
+!
     endsubroutine special_calc_magnetic
 !!***********************************************************************
     subroutine special_calc_entropy(f,df,p)
@@ -431,8 +422,6 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
-      
       real, dimension (mx,my,mz,mvar) :: f,df
       type (pencil_case) :: p
       !
@@ -446,10 +435,10 @@ module Special
 !!  df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + SOME NEW TERM
 !!
 !!
-
-! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,df,p
-
+!
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
+!
     endsubroutine special_calc_entropy
 !***********************************************************************
     subroutine divflux_from_Omega_effect(p,divflux)
@@ -458,8 +447,6 @@ module Special
 !  Can do uniform shear (0,Sx,0), and the cosx*cosz profile (solar CZ).
 !
 !  30-apr-05/axel: coded
-!
-      use Cdata
 !
       real, dimension (nx) :: divflux
       type (pencil_case) :: p
@@ -501,11 +488,9 @@ module Special
 !
 !   06-jul-06/tony: coded
 !
-      use Cdata
-!      
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
 !
-      if (NO_WARN) print*,f(1,1,1,1)
+      call keep_compiler_quiet(f)
 !
     endsubroutine special_before_boundary
 !***********************************************************************

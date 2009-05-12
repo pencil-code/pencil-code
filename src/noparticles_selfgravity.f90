@@ -12,17 +12,17 @@
 !
 !***************************************************************
 module Particles_selfgravity
-
+!
   use Cdata
   use Particles_cdata
   use Particles_sub
-
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   include 'particles_selfgravity.h'
-
+!
   contains
-
 !***********************************************************************
     subroutine register_particles_selfgrav()
 !
@@ -41,7 +41,7 @@ module Particles_selfgravity
 !
       logical :: lstarting
 !
-      if (NO_WARN) print*, lstarting
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_selfgrav
 !***********************************************************************
@@ -56,7 +56,10 @@ module Particles_selfgravity
       real :: rhs_poisson_const
       logical :: lcontinued
 !
-      if (NO_WARN) print*, f, rhs_poisson, rhs_poisson_const, lcontinued
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(rhs_poisson)
+      call keep_compiler_quiet(rhs_poisson_const)
+      call keep_compiler_quiet(lcontinued)
 !
     endsubroutine calc_selfpotential_particles
 !***********************************************************************
@@ -77,7 +80,7 @@ module Particles_selfgravity
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (NO_WARN) print*, lpencil_in
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_par_selfgrav
 !***********************************************************************
@@ -90,7 +93,8 @@ module Particles_selfgravity
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      if (NO_WARN) print*, f, p
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_par_selfgrav
 !***********************************************************************
@@ -111,7 +115,12 @@ module Particles_selfgravity
 !
       intent (in) :: f, df, p, fp, dfp, ineargrid
 !
-      if (NO_WARN) print*, f, df, fp, dfp, p, ineargrid
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine dvvp_dt_selfgrav_pencil
 !***********************************************************************
@@ -131,7 +140,11 @@ module Particles_selfgravity
 !
       intent (in) :: f, fp, dfp
 !
-      if (NO_WARN) print*, f, df, fp, dfp, ineargrid
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine dvvp_dt_selfgrav
 !***********************************************************************
@@ -139,9 +152,11 @@ module Particles_selfgravity
 !
 !  14-jun-06/anders: dummy
 !
-      integer, intent (in) :: unit, iostat
+      integer, intent (in) :: unit
+      integer, intent (inout), optional :: iostat
 !
-      if (NO_WARN) print*, unit, iostat
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_particles_selfg_init_pars
 !***********************************************************************
@@ -151,7 +166,7 @@ module Particles_selfgravity
 !
       integer, intent (in) :: unit
 !
-      if (NO_WARN) print*, unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_particles_selfg_init_pars
 !***********************************************************************
@@ -159,9 +174,11 @@ module Particles_selfgravity
 !
 !  14-jun-06/anders: dummy
 !
-      integer, intent (in) :: unit, iostat
+      integer, intent (in) :: unit
+      integer, intent (inout), optional :: iostat
 !
-      if (NO_WARN) print*, unit, iostat
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_particles_selfg_run_pars
 !***********************************************************************
@@ -171,7 +188,7 @@ module Particles_selfgravity
 !
       integer, intent (in) :: unit
 !
-      if (NO_WARN) print*, unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_particles_selfg_run_pars
 !***********************************************************************
@@ -199,9 +216,8 @@ module Particles_selfgravity
         write(3,*) 'igpotselfz=0'
       endif
 !
-      if (NO_WARN) print*, lreset
+      call keep_compiler_quiet(lreset)
 !
     endsubroutine rprint_particles_selfgrav
 !***********************************************************************
-
 endmodule Particles_selfgravity

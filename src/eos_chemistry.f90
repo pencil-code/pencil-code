@@ -378,7 +378,8 @@ module EquationOfState
       logical :: lreset
       logical, optional :: lwrite
 !
-      if (NO_WARN) print*, lreset, lwrite  !(keep compiler quiet)
+      call keep_compiler_quiet(lreset)
+      call keep_compiler_quiet(lwrite)
 !
     endsubroutine rprint_eos
 !***********************************************************************
@@ -423,7 +424,7 @@ module EquationOfState
       if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true.
       if (lpencil_in(i_TT1)) lpencil_in(i_TT)=.true.
 
-      if (NO_WARN) print *,lpencil_in
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_eos
 !***********************************************************************
@@ -453,7 +454,8 @@ module EquationOfState
 !Natalia: removed all previous staff and included my own
 
 
- if (NO_WARN) print *,f,p
+ call keep_compiler_quiet(f)
+ call keep_compiler_quiet(p)
 
 !  Natalia: 26.02.2008: calculation of additional penciles
 
@@ -490,9 +492,9 @@ module EquationOfState
      real, intent(inout) :: rho
 
      rho = EE * cv1 / TT
-      if (NO_WARN) print*,yH
+      call keep_compiler_quiet(yH)
 
-   end subroutine getdensity
+   endsubroutine getdensity
 !***********************************************************************
     subroutine get_cp1(cp1_)
 !
@@ -510,7 +512,7 @@ module EquationOfState
       call stop_it('chem.inp is found: pressure_gradient_point can not be used for this moment')
     endif
 !
-    end subroutine get_cp1
+    endsubroutine get_cp1
 !***********************************************************************
     subroutine get_ptlaw(ptlaw_)
 !
@@ -521,7 +523,7 @@ module EquationOfState
 !
       ptlaw_=ptlaw
 !
-    end subroutine get_ptlaw
+    endsubroutine get_ptlaw
 !***********************************************************************
     subroutine isothermal_density_ion(pot,tmp)
 !
@@ -530,7 +532,7 @@ module EquationOfState
 !
       tmp=pot
 !
-    end subroutine isothermal_density_ion
+    endsubroutine isothermal_density_ion
 !***********************************************************************
     subroutine pressure_gradient_farray(f,cs2,cp1tilde)
 !
@@ -611,7 +613,7 @@ glnTT(:,i)=impossible
         endif
       endif
 !
-      if (NO_WARN) print*,f !(keep compiler quiet)
+      call keep_compiler_quiet(f)
     endsubroutine temperature_gradient
 !***********************************************************************
     subroutine temperature_laplacian(f,del2lnrho,del2ss,del2lnTT)
@@ -642,7 +644,7 @@ glnTT(:,i)=impossible
         endif
       endif
 !
-      if (NO_WARN) print*,f !(keep compiler quiet)
+      call keep_compiler_quiet(f)
     endsubroutine temperature_laplacian
 !***********************************************************************
     subroutine temperature_hessian(f,hlnrho,hss,hlnTT)
@@ -663,7 +665,7 @@ glnTT(:,i)=impossible
 !
       hlnTT(:,:,:)=0
 !
-      if (NO_WARN) print*,f !(keep compiler quiet)
+      call keep_compiler_quiet(f)
     endsubroutine temperature_hessian
 !***********************************************************************
     subroutine eosperturb(f,psize,ee,pp,ss)
@@ -683,7 +685,7 @@ glnTT(:,i)=impossible
       else
         call not_implemented("eosperturb")
       endif
-    end subroutine eosperturb
+    endsubroutine eosperturb
 !***********************************************************************
     subroutine eoscalc_farray(f,psize,lnrho,yH,lnTT,ee,pp,kapparho)
 !
@@ -1111,7 +1113,7 @@ glnTT(:,i)=impossible
         call stop_it('chem.inp is found: get_soundspeed can not be used for this moment')
      endif 
 !
-    end subroutine get_soundspeed
+    endsubroutine get_soundspeed
 !***********************************************************************
     subroutine read_eos_init_pars(unit,iostat)
       integer, intent(in) :: unit
@@ -1206,7 +1208,9 @@ glnTT(:,i)=impossible
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: T0,rho0
 !
-      if (NO_WARN) print*,f,T0,rho0
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(T0)
+      call keep_compiler_quiet(rho0)
 !
     endsubroutine isothermal_lnrho_ss
 !***********************************************************************
@@ -1220,11 +1224,6 @@ glnTT(:,i)=impossible
  !     real, dimension(mx,my,mz), intent(out) :: kapparho
 
  !     call fatal_error('Hminus_opacity',"opacity_type='Hminus' may not be used with noionization")
-
- !     if (NO_WARN) then
- !       kapparho=0
- !       print*,f
- !     endif
 
  !   endsubroutine Hminus_opacity
 !***********************************************************************
@@ -1366,7 +1365,8 @@ glnTT(:,i)=impossible
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*,f,topbot  !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_ss_flux_turb
 !***********************************************************************
@@ -2115,7 +2115,7 @@ glnTT(:,i)=impossible
       call fatal_error('bc_ss_energy','invalid argument')
     endselect
 
-    end subroutine bc_ss_energy
+    endsubroutine bc_ss_energy
 !***********************************************************************
     subroutine bc_stellar_surface(f,topbot)
 !
@@ -2127,9 +2127,10 @@ glnTT(:,i)=impossible
       if (l_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
 
       call stop_it("bc_stellar_surface: NOT IMPLEMENTED IN EOS_IDEALGAS")
-      if (NO_WARN) print*,f,topbot
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
 !
-    end subroutine bc_stellar_surface
+    endsubroutine bc_stellar_surface
 !***********************************************************************
     subroutine bc_lnrho_cfb_r_iso(f,topbot,j)
 !
@@ -2228,7 +2229,7 @@ glnTT(:,i)=impossible
 
       endselect
 
-    end subroutine bc_lnrho_cfb_r_iso
+    endsubroutine bc_lnrho_cfb_r_iso
 !***********************************************************************
     subroutine bc_lnrho_hds_z_iso(f,topbot)
 !
@@ -2362,7 +2363,7 @@ glnTT(:,i)=impossible
 
       endselect
 
-    end subroutine bc_lnrho_hds_z_iso
+    endsubroutine bc_lnrho_hds_z_iso
 !***********************************************************************
     subroutine bc_lnrho_hdss_z_iso(f,topbot)
 !
@@ -2768,6 +2769,6 @@ glnTT(:,i)=impossible
 !        
       endselect
 !
-    end subroutine bc_lnrho_hds_z_liso
+    endsubroutine bc_lnrho_hds_z_liso
 !***********************************************************************
 endmodule EquationOfState

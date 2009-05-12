@@ -1,25 +1,21 @@
 ! $Id$
-
+!
 !  This modules deals with all aspects of shear; if no
-!  shear are invoked, a corresponding replacement dummy
+!  shear is invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
 !  shear relevant subroutines listed in here.
-
+!
 module Shear
-
-  use Sub
+!
   use Cdata
   use Messages
-
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   include 'shear.h'
-
-  !namelist /shear_init_pars/ dummy
-  !namelist /shear_run_pars/ dummy
-
+!
   contains
-
 !***********************************************************************
     subroutine register_shear()
 !
@@ -43,39 +39,44 @@ module Shear
 !  21-nov-02/tony: coded
 !  17-jul-04/axel: Sshear=0 is needed for forcing_hel to work correctly.
 !
-      Sshear=0.
+      Sshear=0.0
 !
     endsubroutine initialize_shear
 !***********************************************************************
     subroutine read_shear_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
-
+!
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+!
     endsubroutine read_shear_init_pars
 !***********************************************************************
     subroutine write_shear_init_pars(unit)
+!
       integer, intent(in) :: unit
-
-      if (NO_WARN) print*,unit
-
+!
+      call keep_compiler_quiet(unit)
+!
     endsubroutine write_shear_init_pars
 !***********************************************************************
     subroutine read_shear_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
-
+!
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+!
     endsubroutine read_shear_run_pars
 !***********************************************************************
     subroutine write_shear_run_pars(unit)
+!
       integer, intent(in) :: unit
-
-      if (NO_WARN) print*,unit
+!
+      call keep_compiler_quiet(unit)
+!
     endsubroutine write_shear_run_pars
 !***********************************************************************
     subroutine shear_before_boundary(f)
@@ -84,11 +85,9 @@ module Shear
 !
 !   1-may-08/anders: coded
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*, f
+      call keep_compiler_quiet(f)
 !
     endsubroutine shear_before_boundary
 !***********************************************************************
@@ -106,8 +105,8 @@ module Shear
 !
 !  01-may-09/wlad: coded
 !
-      use Sub, only: keep_compiler_quiet
       logical, dimension(npencils) :: lpencil_in
+!
       call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_shear
@@ -119,7 +118,6 @@ module Shear
 !
 !  01-may-09/wlad: coded
 !
-      use Sub, only: keep_compiler_quiet
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
@@ -136,15 +134,14 @@ module Shear
 !
 !  2-july-02/nils: coded
 !
-      use Cparam
-      use Deriv
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-
-      if (NO_WARN) print*,f,df,p !(to keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
+!
     endsubroutine shearing
 !***********************************************************************
     subroutine advance_shear(f,df,dt_shear)
@@ -152,8 +149,6 @@ module Shear
 !  Dummy routine: deltay remains unchanged.
 !
 !  18-aug-02/axel: incorporated from nompicomm.f90
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -163,7 +158,9 @@ module Shear
 !
       if (headtt.or.ldebug) print*,'advance_shear: deltay=const=',deltay
 !
-      if (NO_WARN) print*,f,df,dt_shear
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(dt_shear)
 !
     endsubroutine advance_shear
 !***********************************************************************
@@ -176,7 +173,9 @@ module Shear
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: ivar1, ivar2
 !
-      if (NO_WARN) print*, f, ivar1, ivar2
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(ivar1)
+      call keep_compiler_quiet(ivar2)
 !
     endsubroutine boundcond_shear
 !***********************************************************************
@@ -188,11 +187,9 @@ module Shear
 !
       logical :: lreset
       logical, optional :: lwrite
-
-      if (present(lwrite)) then
-        if (NO_WARN) print*,lreset
-      endif
-
+!
+      if (present(lwrite)) call keep_compiler_quiet(lreset)
+!
     endsubroutine rprint_shear
 !***********************************************************************
   endmodule Shear

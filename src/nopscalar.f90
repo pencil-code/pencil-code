@@ -59,7 +59,8 @@ module Pscalar
 !  set to zero and then call the same initial condition
 !  that was used in start.csh
 !
-      if (NO_WARN) print*,'f=',f
+      call keep_compiler_quiet(f)
+!
     endsubroutine initialize_pscalar
 !***********************************************************************
     subroutine init_lncc(f)
@@ -75,7 +76,7 @@ module Pscalar
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*,f !(prevent compiler warnings)
+      call keep_compiler_quiet(f)
 !
     endsubroutine init_lncc
 !***********************************************************************
@@ -96,7 +97,7 @@ module Pscalar
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_pscalar
 !***********************************************************************
@@ -117,7 +118,7 @@ module Pscalar
 ! cc1
       if (lpencil(i_cc1)) p%cc1=1.
 !
-      if (NO_WARN) print*, f
+      call keep_compiler_quiet(f)
 !
     endsubroutine calc_pencils_pscalar
 !***********************************************************************
@@ -135,39 +136,46 @@ module Pscalar
 !
       intent(in)  :: f,df,p
 !
-      if (NO_WARN) print*,f,df,p
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine dlncc_dt
 !***********************************************************************
     subroutine read_pscalar_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
-
+!
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+!
     endsubroutine read_pscalar_init_pars
 !***********************************************************************
     subroutine write_pscalar_init_pars(unit)
+!
       integer, intent(in) :: unit
-
-      if (NO_WARN) print*,unit
-
+!
+      call keep_compiler_quiet(unit)
+!
     endsubroutine write_pscalar_init_pars
 !***********************************************************************
     subroutine read_pscalar_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
-
+!
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+!
     endsubroutine read_pscalar_run_pars
 !***********************************************************************
     subroutine write_pscalar_run_pars(unit)
+!
       integer, intent(in) :: unit
-
-      if (NO_WARN) print*,unit
+!
+      call keep_compiler_quiet(unit)
+!
     endsubroutine write_pscalar_run_pars
 !***********************************************************************
     subroutine rprint_pscalar(lreset,lwrite)
@@ -214,6 +222,7 @@ module Pscalar
     endsubroutine get_slices_pscalar
 !***********************************************************************
     subroutine calc_mpscalar
+!
     endsubroutine calc_mpscalar
 !***********************************************************************
 endmodule Pscalar

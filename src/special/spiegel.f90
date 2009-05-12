@@ -53,11 +53,11 @@
 
 module Special
 
-  use Cparam
   use Cdata
-  use Messages
-!  use Density, only: rho_up
+  use Cparam
   use EquationOfState
+  use Messages
+  use Sub, only: keep_compiler_quiet
 
   implicit none
 
@@ -153,7 +153,7 @@ module Special
 
    
 ! DO NOTHING
-      if (NO_WARN) print*,f  !(keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -188,7 +188,7 @@ module Special
           call stop_it("")
       endselect
 !
-      if (NO_WARN) print*,f  !(keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine init_special
 !***********************************************************************
@@ -269,7 +269,9 @@ module Special
       endif
 
 ! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,f,df,p
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 
     endsubroutine dspecial_dt
 !***********************************************************************
@@ -358,8 +360,6 @@ endsubroutine read_special_run_pars
 !
 !  15-jan-08/axel: coded
 !
-      use Sub, only: keep_compiler_quiet
-!
       real, dimension (mx,my,mz,mfarray) :: f
       intent(inout) :: f
 !
@@ -411,7 +411,8 @@ endsubroutine read_special_run_pars
 !
 ! Keep compiler quiet by ensuring every parameter is used
 !
-      if (NO_WARN) print*,df,p
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine special_calc_density
 !***********************************************************************
@@ -487,7 +488,8 @@ endsubroutine read_special_run_pars
 !!
 
 ! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,df,p
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 
     endsubroutine special_calc_magnetic
 !!***********************************************************************
@@ -534,7 +536,8 @@ endsubroutine read_special_run_pars
       endif
 
 ! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,df,p
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 
     endsubroutine special_calc_entropy
 !***********************************************************************
@@ -564,7 +567,8 @@ endsubroutine read_special_run_pars
          bc%done=.true.
       endselect
 
-      if (NO_WARN) print*,f(1,1,1,1),bc%bcname
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(bc%bcname)
 !
     endsubroutine special_boundconds
 !***********************************************************************
@@ -797,7 +801,7 @@ endsubroutine read_special_run_pars
 !      
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
 !
-      if (NO_WARN) print*,f(1,1,1,1)
+      call keep_compiler_quiet(f)
 !
     endsubroutine special_before_boundary
 !

@@ -15,34 +15,33 @@
 ! PENCILS PROVIDED del2TT; del6TT
 !
 !***************************************************************
-
 module EquationOfState
-
-  use Cparam
+!
   use Cdata
+  use Cparam
   use Messages
-
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   include 'eos.h'
-
+!
   interface eoscalc ! Overload subroutine `eoscalc' function
     module procedure eoscalc_pencil   ! explicit f implicit m,n
     module procedure eoscalc_point    ! explicit lnrho, ss
     module procedure eoscalc_farray   ! explicit lnrho, ss
   end interface
-
+!
   interface pressure_gradient ! Overload subroutine `pressure_gradient'
     module procedure pressure_gradient_farray  ! explicit f implicit m,n
     module procedure pressure_gradient_point   ! explicit lnrho, ss
   end interface
-
 ! integers specifying which independent variables to use in eoscalc
   integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3
   integer, parameter :: ilnrho_lnTT=4,ilnrho_cs2=5
   integer, parameter :: irho_cs2=6, irho_ss=7, irho_lnTT=8, ilnrho_TT=9
   integer, parameter :: irho_TT=10
-
+!
   integer :: iglobal_cs2, iglobal_glnTT
 
   ! secondary parameters calculated in initialize
@@ -394,7 +393,8 @@ module EquationOfState
       logical :: lreset
       logical, optional :: lwrite
 !
-      if (NO_WARN) print*, lreset, lwrite  !(keep compiler quiet)
+      call keep_compiler_quiet(lreset)
+      call keep_compiler_quiet(lwrite)
 !
     endsubroutine rprint_eos
 !***********************************************************************
@@ -799,7 +799,7 @@ module EquationOfState
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      if (NO_WARN) print*,f  !(keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine ioninit
 !***********************************************************************
@@ -807,18 +807,18 @@ module EquationOfState
 !
     real, dimension (mx,my,mz,mfarray) :: f
 !
-    if (NO_WARN) print*,f  !(keep compiler quiet)
+    call keep_compiler_quiet(f)
 !
     endsubroutine ioncalc
 !***********************************************************************
     subroutine getdensity(EE,TT,yH,rho)
-
+!
       real, intent(in) :: EE,TT,yH
       real, intent(inout) :: rho
-
+!
       rho = EE * cv1 / TT
-      if (NO_WARN) print*,yH
-
+      call keep_compiler_quiet(yH)
+!
     endsubroutine getdensity
 !***********************************************************************
     subroutine get_cp1(cp1_)
@@ -948,7 +948,8 @@ module EquationOfState
         glnTT=gamma1*glnrho+cv1*gss
       endif
 !
-      if (NO_WARN) print*,f !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+!
     endsubroutine temperature_gradient
 !***********************************************************************
     subroutine temperature_laplacian(f,p)
@@ -983,7 +984,8 @@ module EquationOfState
         endif
       endif
 !
-      if (NO_WARN) print*,f !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+!
     endsubroutine temperature_laplacian
 !***********************************************************************
     subroutine temperature_hessian(f,hlnrho,hss,hlnTT)
@@ -1010,7 +1012,8 @@ module EquationOfState
         hlnTT=gamma1*hlnrho+cv1*hss
       endif
 !
-      if (NO_WARN) print*,f !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+!
     endsubroutine temperature_hessian
 !***********************************************************************
     subroutine eosperturb(f,psize,ee,pp,ss)
@@ -1517,7 +1520,9 @@ module EquationOfState
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: T0,rho0
 !
-      if (NO_WARN) print*,f,T0,rho0
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(T0)
+      call keep_compiler_quiet(rho0)
 !
     endsubroutine isothermal_lnrho_ss
 !***********************************************************************
@@ -1529,14 +1534,12 @@ module EquationOfState
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mx,my,mz), intent(out) :: kapparho
-
+!
       call fatal_error('Hminus_opacity',"opacity_type='Hminus' may not be used with noionization")
-
-      if (NO_WARN) then
-        kapparho=0
-        print*,f
-      endif
-
+!
+      call keep_compiler_quiet(kapparho)
+      call keep_compiler_quiet(f)
+!
     endsubroutine Hminus_opacity
 !***********************************************************************
     subroutine bc_ss_flux_orig(f,topbot)
@@ -2793,7 +2796,8 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_stellar_surface: NOT IMPLEMENTED IN EOS_IDEALGAS")
-      if (NO_WARN) print*,f,topbot
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_stellar_surface
 !***********************************************************************

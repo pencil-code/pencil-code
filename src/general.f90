@@ -330,7 +330,7 @@ module General
         endif
       endselect
 !
-      if (.false.) print*, dummy ! (keep compiler quiet)
+      if (NO_WARN) print*, dummy
 !
     endsubroutine random_seed_wrapper
 !***********************************************************************
@@ -703,7 +703,7 @@ module General
       end do
 
       spline_derivative=d
-    end function spline_derivative
+    endfunction spline_derivative
 !***********************************************************************
     function spline_derivative_double(z,f)
 !
@@ -780,7 +780,7 @@ module General
       end do
 
       spline_derivative_double=d
-    end function spline_derivative_double
+    endfunction spline_derivative_double
 !***********************************************************************
     function spline_integral(z,f,q0)
 !
@@ -811,7 +811,7 @@ module General
       end do
 
       spline_integral=q
-    end function spline_integral
+    endfunction spline_integral
 !***********************************************************************
     function spline_integral_double(z,f,q0)
 !
@@ -844,7 +844,7 @@ module General
       end do
 
       spline_integral_double=q
-    end function spline_integral_double
+    endfunction spline_integral_double
 !***********************************************************************
     subroutine tridag(a,b,c,r,u,err)
 !

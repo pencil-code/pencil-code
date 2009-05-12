@@ -18,6 +18,7 @@ module Pscalar
   use Cdata
   use Cparam
   use Messages
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -126,7 +127,8 @@ module Pscalar
 !  set to zero and then call the same initial condition
 !  that was used in start.csh
 !
-      if (NO_WARN) print*,'f=',f
+      call keep_compiler_quiet(f)
+!
     endsubroutine initialize_pscalar
 !***********************************************************************
     subroutine init_lncc(f)

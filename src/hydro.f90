@@ -20,10 +20,11 @@
 !***************************************************************
 module Hydro
 !
-  use Cparam
   use Cdata
+  use Cparam
   use Viscosity
   use Messages
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -573,7 +574,8 @@ module Hydro
         endif
       endif
 !
-      if (NO_WARN) print*,f,lstarting  !(to keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
 !
       endsubroutine initialize_hydro
 !***********************************************************************
@@ -1104,11 +1106,11 @@ module Hydro
           lpenc_diagnos(i_ugu)=.true.
 ! check whether right variables are set for half-box calculations. 
       if (idiag_urmsn/=0 .or. idiag_ormsn/=0 .or. idiag_oumn/=0) then
-        if((.not.lequatory).and.(.not.lequatorz)) then
+        if ((.not.lequatory).and.(.not.lequatorz)) then
           call stop_it("You have to set either of lequatory or lequatorz to true to calculate averages over half the box")
         else  
-          if(lequatory) write(*,*) 'pencil-criteria_hydro: box divided along y dirn'
-          if(lequatorz) write(*,*) 'pencil-criteria_hydro: box divided along z dirn'
+          if (lequatory) write(*,*) 'pencil-criteria_hydro: box divided along y dirn'
+          if (lequatorz) write(*,*) 'pencil-criteria_hydro: box divided along z dirn'
         endif
       else
       endif
@@ -2570,7 +2572,9 @@ module Hydro
       integer :: id,lun
       logical :: done
 ! 
-      if (NO_WARN) print*,id,lun,done
+      call keep_compiler_quiet(id)
+      call keep_compiler_quiet(lun)
+      call keep_compiler_quiet(done)
 ! 
     endsubroutine input_persistent_hydro
 !***********************************************************************
@@ -2580,7 +2584,7 @@ module Hydro
 ! 
       integer :: lun
 ! 
-      if (NO_WARN) print*,lun
+      call keep_compiler_quiet(lun)
 !
     endsubroutine output_persistent_hydro
 !***********************************************************************

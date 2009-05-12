@@ -103,15 +103,17 @@ module Dustvelocity
     endsubroutine duud_dt
 !***********************************************************************
     subroutine read_dustvelocity_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      if (present(iostat) .and. (NO_WARN)) call keep_compiler_quiet(iostat)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
       call keep_compiler_quiet(unit)
 !
     endsubroutine read_dustvelocity_init_pars
 !***********************************************************************
     subroutine write_dustvelocity_init_pars(unit)
+!
       integer, intent(in) :: unit
 !
       call keep_compiler_quiet(unit)

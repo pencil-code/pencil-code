@@ -605,7 +605,7 @@ module Entropy
         endif
       endif
 
-    end subroutine calc_heatcond_constchi
+    endsubroutine calc_heatcond_constchi
 !***********************************************************************
     subroutine calc_heatcond_constK(df,p)
 !
@@ -925,7 +925,7 @@ module Entropy
 !
       call BC_CT(f(:,4,:,ilnTT))
 !
-      end subroutine ADI_constK
+      endsubroutine ADI_constK
 !**************************************************************
       subroutine ADI_Kprof(finit,f)
        
@@ -1023,7 +1023,7 @@ module Entropy
       call BC_flux(f,chiprof)
       call hcond_ADI(f,chiprof,dchi)
 !
-      end subroutine ADI_Kprof
+      endsubroutine ADI_Kprof
 !**************************************************************
       subroutine BC_CT(f_2d)
 
@@ -1038,7 +1038,7 @@ module Entropy
       f_2d(1:l1-1,:)=f_2d(l2i:l2,:)
       f_2d(l2+1:mx,:)=f_2d(l1:l1i,:)
 
-      end subroutine BC_CT
+      endsubroutine BC_CT
 !**************************************************************
       subroutine BC_flux(f,chiprof)
 
@@ -1054,7 +1054,7 @@ module Entropy
       f(1:l1-1,:,:,ilnTT)=f(l2i:l2,:,:,ilnTT)
       f(l2+1:mx,:,:,ilnTT)=f(l1:l1i,:,:,ilnTT)
 
-      end subroutine BC_flux
+      endsubroutine BC_flux
 !**************************************************************
       subroutine hcond_ADI(f,chiprof,dchi)
 
@@ -1078,7 +1078,7 @@ module Entropy
 !      call write_zprof('hcond',chiprof(10,n1:n2))
 !      call write_zprof('dhcond/dT',dchi(10,n1:n2))
 
-      end subroutine hcond_ADI
+      endsubroutine hcond_ADI
 !**************************************************************
       subroutine tridag(a,b,c,r,u,n)
 
@@ -1102,7 +1102,7 @@ module Entropy
 12    continue
 !
       return
-      end subroutine tridag
+      endsubroutine tridag
 !**************************************************************
       subroutine cyclic(a,b,c,alpha,beta,r,x,n)
 !
@@ -1135,6 +1135,6 @@ module Entropy
 13    continue
 !
       return
-      end subroutine cyclic
+      endsubroutine cyclic
 !***************************************************************
 endmodule Entropy

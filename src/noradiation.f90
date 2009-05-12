@@ -184,35 +184,39 @@ module Radiation
     endsubroutine de_dt
 !***********************************************************************
     subroutine read_radiation_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+!
       call keep_compiler_quiet(unit)
-
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+!
     endsubroutine read_radiation_init_pars
 !***********************************************************************
     subroutine write_radiation_init_pars(unit)
+!
       integer, intent(in) :: unit
-
+!
       call keep_compiler_quiet(unit)
-
+!
     endsubroutine write_radiation_init_pars
 !***********************************************************************
     subroutine read_radiation_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) call keep_compiler_quiet(iostat)
       call keep_compiler_quiet(unit)
-
+!
     endsubroutine read_radiation_run_pars
 !***********************************************************************
     subroutine write_radiation_run_pars(unit)
+!
       integer, intent(in) :: unit
-
+!
       call keep_compiler_quiet(unit)
-
+!
     endsubroutine write_radiation_run_pars
 !*******************************************************************
     subroutine rprint_radiation(lreset,lwrite)

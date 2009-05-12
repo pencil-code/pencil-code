@@ -1,9 +1,8 @@
 ! $Id$
-
 !
 !  Thermodynamics with Fixed ionization fraction
 !
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -16,24 +15,23 @@
 ! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv1
 !
 !***************************************************************
-
 module EquationOfState
-
+!
   use Cparam
   use Cdata
   use Messages
   use Sub, only: keep_compiler_quiet
-
+!
   implicit none
-
+!
   include 'eos.h'
-
+!
   interface eoscalc ! Overload subroutine `eoscalc'
     module procedure eoscalc_farray   ! explicit f implicit m,n
     module procedure eoscalc_point    ! explicit lnrho, ss
     module procedure eoscalc_pencil
   end interface
-
+!
   interface pressure_gradient ! Overload subroutine `pressure_gradient'
     module procedure pressure_gradient_farray ! explicit f implicit m,n
     module procedure pressure_gradient_point  ! explicit lnrho, ss
@@ -55,14 +53,10 @@ module EquationOfState
 
   real :: yH0=.0,xHe=0.1,xH2=0.,kappa_cst=1.
   character (len=labellen) :: opacity_type='ionized_H'
-
-  ! input parameters
+!
   namelist /eos_init_pars/ yH0,xHe,xH2,opacity_type,kappa_cst
-
-
-  ! run parameters
+!
   namelist /eos_run_pars/ yH0,xHe,xH2,opacity_type,kappa_cst
-
 !ajwm  can't use impossible else it breaks reading param.nml
 !ajwm  SHOULDN'T BE HERE... But can wait till fully unwrapped
   real :: cs0=1., rho0=1., cp=1.
@@ -78,9 +72,8 @@ module EquationOfState
   real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
   real, dimension (3) :: beta_glnrho_global=0.0,beta_glnrho_scaled=0.0
   integer :: isothtop=0
-
+!
   contains
-
 !***********************************************************************
     subroutine register_eos()
 !
@@ -245,7 +238,8 @@ module EquationOfState
       character (len=*), intent(in) :: variable
       integer, intent(in) :: findex
 !
-      if (NO_WARN) print*,variable,findex
+      call keep_compiler_quiet(variable)
+      call keep_compiler_quiet(findex)
 !  DUMMY ideagas version below
 !!      integer :: this_var=0
 !!      integer, save :: ieosvar=0
@@ -343,7 +337,7 @@ module EquationOfState
       logical :: lreset
       logical, optional :: lwrite
 !
-      if (NO_WARN) print*,lreset  !(to keep compiler quiet)
+      call keep_compiler_quiet(lreset)
 !
     endsubroutine rprint_eos
 !***********************************************************************
@@ -464,7 +458,7 @@ module EquationOfState
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      if (NO_WARN) print*,f  !(keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine ioninit
 !***********************************************************************
@@ -472,7 +466,7 @@ module EquationOfState
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*,f  !(keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine ioncalc
 !***********************************************************************
@@ -487,7 +481,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       lnrho = log(EE) - log(1.5*(1.+yH+xHe-xH2)*ss_ion*TT + yH*ee_ion)
 
       rho=exp(max(lnrho,-15.))
-    end subroutine getdensity
+    endsubroutine getdensity
 !***********************************************************************
     subroutine get_cp1(cp1_)
 !
@@ -502,7 +496,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       call fatal_error('get_cp1','SHOULD NOT BE CALLED WITH eos_fixed_ion...')
       cp1_=impossible
 !
-    end subroutine get_cp1
+    endsubroutine get_cp1
 !***********************************************************************
     subroutine get_ptlaw(ptlaw_)
 !
@@ -514,7 +508,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       call fatal_error('get_ptlaw','SHOULD NOT BE CALLED WITH eos_fixed_ion...')
       ptlaw_=impossible
 !
-    end subroutine get_ptlaw
+    endsubroutine get_ptlaw
 !***********************************************************************
     subroutine pressure_gradient_farray(f,cs2,cp1tilde)
 !
@@ -597,7 +591,9 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       call not_implemented('temperature_laplacian')
 !
       p%del2lnTT=0.
-      if (NO_WARN) print*,f,p%del2lnrho,p%del2ss !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p%del2lnrho)
+      call keep_compiler_quiet(p%del2ss)
     endsubroutine temperature_laplacian
 !***********************************************************************
     subroutine temperature_hessian(f,hlnrho,hss,hlnTT)
@@ -631,7 +627,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 
       call not_implemented("eosperturb")
 
-    end subroutine eosperturb
+    endsubroutine eosperturb
 !***********************************************************************
     subroutine eoscalc_farray(f,psize,lnrho,ss,yH,lnTT,ee,pp,kapparho)
 !
@@ -878,10 +874,9 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
       call stop_it("get_soundspeed: with ionization, lnrho needs to be known here")
 !
-      if (NO_WARN) print*,TT       ! (keep compiler quiet)
-      if (NO_WARN) cs2=0.         ! (keep compiler quiet)
+      call keep_compiler_quiet(TT,cs2)
 !
-    end subroutine get_soundspeed
+    endsubroutine get_soundspeed
 !***********************************************************************
     subroutine isothermal_entropy(f,T0)
 !
@@ -977,7 +972,9 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_ss_flux: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
-      if (NO_WARN) print*,f,topbot
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_ss_flux
 !***********************************************************************
@@ -990,7 +987,8 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*,f,topbot  !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_ss_flux_turb
 !***********************************************************************
@@ -1010,7 +1008,9 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_ss_temp_old: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
-      if (NO_WARN) print*,f,topbot
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_ss_temp_old
 !***********************************************************************
@@ -1027,7 +1027,9 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_ss_temp_x: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
-      if (NO_WARN) print*,f,topbot
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_ss_temp_x
 !***********************************************************************
@@ -1044,7 +1046,9 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_ss_temp_y: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
-      if (NO_WARN) print*,f,topbot
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_ss_temp_y
 !***********************************************************************
@@ -1063,7 +1067,9 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       integer :: i
 !
       call stop_it("bc_ss_temp_z: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
-      if (NO_WARN) print*,f,topbot
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_ss_temp_z
 !***********************************************************************
@@ -1080,7 +1086,9 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_lnrho_temp_z: NOT IMPLEMENTED IN EOS_IONIZATION")
-      if (NO_WARN) print*,f,topbot
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_lnrho_temp_z
 !***********************************************************************
@@ -1097,7 +1105,9 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_lnrho_pressure_z: NOT IMPLEMENTED IN EOS_IONIZATION")
-      if (NO_WARN) print*,f,topbot
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_lnrho_pressure_z
 !***********************************************************************
@@ -1115,7 +1125,9 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_ss_temp2_z: NOT IMPLEMENTED IN EOS_IONIZATION")
-      if (NO_WARN) print*,f,topbot
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_ss_temp2_z
 !***********************************************************************
@@ -1132,7 +1144,9 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_ss_stemp_x: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
-      if (NO_WARN) print*,f,topbot
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_ss_stemp_x
 !***********************************************************************
@@ -1148,8 +1162,10 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
-        call stop_it("bc_ss_stemp_y: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
-      if (NO_WARN) print*,f,topbot
+      call stop_it("bc_ss_stemp_y: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_ss_stemp_y
 !***********************************************************************
@@ -1166,7 +1182,9 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_ss_stemp_z: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
-      if (NO_WARN) print*,f,topbot
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_ss_stemp_z
 !***********************************************************************
@@ -1190,9 +1208,10 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !  This assumes that the density is already set (ie density must register
 !  first!)
 !
-      if (NO_WARN) print*,f,topbot
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
 !
-    end subroutine bc_ss_energy
+    endsubroutine bc_ss_energy
 !***********************************************************************
     subroutine bc_stellar_surface(f,topbot)
 !
@@ -1202,50 +1221,82 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_stellar_surface: NOT IMPLEMENTED IN EOS_IDEALGAS")
-      if (NO_WARN) print*,f,topbot
 !
-    end subroutine bc_stellar_surface
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+!
+    endsubroutine bc_stellar_surface
 !***********************************************************************
     subroutine bc_lnrho_cfb_r_iso(f,topbot,j)
+!
       use Mpicomm, only: stop_it
+!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
+!
       call stop_it("bc_lnrho_cfb_r_iso: NOT IMPLEMENTED IN NOEOS")
-      if (NO_WARN) print*,f,topbot,j
-    end subroutine bc_lnrho_cfb_r_iso
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+      call keep_compiler_quiet(j)
+!
+    endsubroutine bc_lnrho_cfb_r_iso
 !***********************************************************************
     subroutine bc_lnrho_hds_z_iso(f,topbot)
+!
       use Mpicomm, only: stop_it
+!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
+!
       call stop_it("bc_lnrho_hds_z_iso: NOT IMPLEMENTED IN NOEOS")
-      if (NO_WARN) print*,f,topbot
-    end subroutine bc_lnrho_hds_z_iso
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+!
+    endsubroutine bc_lnrho_hds_z_iso
 !***********************************************************************
     subroutine bc_lnrho_hds_z_liso(f,topbot)
+!
       use Mpicomm, only: stop_it
+!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
+!
       call stop_it("bc_lnrho_hds_z_liso: NOT IMPLEMENTED IN NOEOS")
-      if (NO_WARN) print*,f,topbot
-    end subroutine bc_lnrho_hds_z_liso
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+!
+    endsubroutine bc_lnrho_hds_z_liso
 !***********************************************************************
     subroutine bc_lnrho_hdss_z_iso(f,topbot)
+!
       use Mpicomm, only: stop_it
+!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
+!
       call stop_it("bc_lnrho_hdss_z_iso: NOT IMPLEMENTED IN NOEOS")
-      if (NO_WARN) print*,f,topbot
-    end subroutine bc_lnrho_hdss_z_iso
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+!
+    endsubroutine bc_lnrho_hdss_z_iso
 !***********************************************************************
     subroutine bc_lnrho_hdss_z_liso(f,topbot)
+!
       use Mpicomm, only: stop_it
+!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
+!
       call stop_it("bc_lnrho_hdss_z_liso: NOT IMPLEMENTED IN NOEOS")
-      if (NO_WARN) print*,f,topbot
-    end subroutine bc_lnrho_hdss_z_liso
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+!
+    endsubroutine bc_lnrho_hdss_z_liso
 !***********************************************************************
 endmodule EquationOfState
-

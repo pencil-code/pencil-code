@@ -1,8 +1,12 @@
 ! $Id$
-
+!  Radiation (solves transfer equation along rays)
+!  The direction of the ray is given by the vector (lrad,mrad,nrad),
+!  and the parameters radx0,rady0,radz0 gives the maximum number of
+!  steps of the direction vector in the corresponding direction.
+!
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -11,27 +15,22 @@
 ! MAUX CONTRIBUTION 5
 !
 !***************************************************************
-
 module Radiation
-
-!  Radiation (solves transfer equation along rays)
-!  The direction of the ray is given by the vector (lrad,mrad,nrad),
-!  and the parameters radx0,rady0,radz0 gives the maximum number of
-!  steps of the direction vector in the corresponding direction.
-
+!
+  use Cdata
   use Cparam
   use Messages
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
-
+!
   include 'radiation.h'
-
 !
   type Qbound !Qbc
     real :: val
     logical :: set
   endtype Qbound
-
+!
   type Qpoint !Qpt
     real, pointer :: val
     logical, pointer :: set
@@ -1151,11 +1150,10 @@ module Radiation
 !  15-jul-2002/nils: dummy routine
 !
       use Cdata
-      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*,f !(keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine init_rad
 !***********************************************************************
@@ -1191,7 +1189,7 @@ module Radiation
 !
       logical, dimension (npencils) :: lpencil_in
 !
-      if (NO_WARN) print*, lpencil_in  !(keep compiler quiet)
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_radiation
 !***********************************************************************
@@ -1207,7 +1205,7 @@ module Radiation
 !
       intent(in) :: f,p
 !
-      if (NO_WARN) print*, f !(keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine calc_pencils_radiation
 !***********************************************************************
@@ -1222,7 +1220,10 @@ module Radiation
       type (pencil_case) :: p
       real :: gamma
 !
-      if (NO_WARN) print*,f,df,p,gamma !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(gamma)
 !
     endsubroutine de_dt
 !***********************************************************************
@@ -1332,7 +1333,7 @@ module Radiation
         write(3,*) 'iFradz=',iFradz
       endif
 !
-      if (NO_WARN) print*,lreset  !(to keep compiler quiet)
+      call keep_compiler_quiet(lreset)
 !
     endsubroutine rprint_radiation
 !***********************************************************************

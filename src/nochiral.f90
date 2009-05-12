@@ -1,9 +1,9 @@
 ! $Id$
-
+!
 !  This modules solves two reactive scalar advection equations
 !  This is used for modeling the spatial evolution of left and
 !  right handed aminoacids.
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -12,27 +12,25 @@
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
-
 module Chiral
-
-  use Cparam
+!
   use Cdata
+  use Cparam
   use Messages
   use Sub, only: keep_compiler_quiet
-
+!
   implicit none
-
+!
   include 'chiral.h'
-
+!
   integer :: dummy           ! We cannot define empty namelists
+!
   namelist /chiral_init_pars/ dummy
   namelist /chiral_run_pars/  dummy
-
-  ! other variables (needs to be consistent with reset list below)
+!
   integer :: idiag_XX_chiralmax=0, idiag_YY_chiralmax=0
-
+!
   contains
-
 !***********************************************************************
     subroutine register_chiral()
 !
@@ -65,7 +63,7 @@ module Chiral
 !  set to zero and then call the same initial condition
 !  that was used in start.csh
 !
-      if (NO_WARN) print*,'f=',f
+      call keep_compiler_quiet(f)
 !
     endsubroutine initialize_chiral
 !***********************************************************************
@@ -133,38 +131,45 @@ module Chiral
 !
       intent(in)  :: f,df,p
 !
-      if (NO_WARN) print*,f,df,p
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
     endsubroutine dXY_chiral_dt
 !***********************************************************************
     subroutine read_chiral_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
-
+!
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+!
     endsubroutine read_chiral_init_pars
 !***********************************************************************
     subroutine write_chiral_init_pars(unit)
+!
       integer, intent(in) :: unit
-
-      if (NO_WARN) print*,unit
-
+!
+      call keep_compiler_quiet(unit)
+!
     endsubroutine write_chiral_init_pars
 !***********************************************************************
     subroutine read_chiral_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
-
+!
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+!
     endsubroutine read_chiral_run_pars
 !***********************************************************************
     subroutine write_chiral_run_pars(unit)
+!
       integer, intent(in) :: unit
-
-      if (NO_WARN) print*,unit
+!
+      call keep_compiler_quiet(unit)
+!
     endsubroutine write_chiral_run_pars
 !***********************************************************************
     subroutine rprint_chiral(lreset,lwrite)
@@ -212,5 +217,4 @@ module Chiral
 !
     endsubroutine get_slices_chiral
 !***********************************************************************
-
 endmodule Chiral

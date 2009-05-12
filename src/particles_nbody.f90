@@ -16,6 +16,7 @@ module Particles_nbody
   use Messages
   use Particles_cdata
   use Particles_sub
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -289,7 +290,7 @@ module Particles_nbody
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (NO_WARN) print*, lpencil_in
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_par_nbody
 !***********************************************************************
@@ -302,7 +303,8 @@ module Particles_nbody
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      if (NO_WARN) print*, f, p
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_par_nbody
 !***********************************************************************
@@ -1856,7 +1858,10 @@ module Particles_nbody
       real, dimension(mpar_loc,mpvar) :: fp, dfp
       integer, dimension(mpar_loc,3) :: ineargrid
 !
-      if (NO_WARN) print*, f, fp, dfp, ineargrid
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine remove_particles_sink_nbody
 !**************************************************************************

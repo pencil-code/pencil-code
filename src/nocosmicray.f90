@@ -50,7 +50,7 @@ module Cosmicray
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*,'f=',f
+      call keep_compiler_quiet(f)
 !
     endsubroutine initialize_cosmicray
 !***************************************:********************************
@@ -59,8 +59,8 @@ module Cosmicray
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_cosmicray_init_pars
 !***********************************************************************
@@ -68,17 +68,17 @@ module Cosmicray
 !
       integer, intent(in) :: unit
 !
-      if (NO_WARN) print*,unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_cosmicray_init_pars
 !***********************************************************************
     subroutine read_cosmicray_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-!
-      if (NO_WARN) print*,unit
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_cosmicray_run_pars
 !***********************************************************************
@@ -86,7 +86,7 @@ module Cosmicray
 !
       integer, intent(in) :: unit
 !
-      if (NO_WARN) print*,unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_cosmicray_run_pars
 !***********************************************************************
@@ -103,7 +103,7 @@ module Cosmicray
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*,f !(prevent compiler warnings)
+      call keep_compiler_quiet(f)
 !
     endsubroutine init_ecr
 !***********************************************************************
@@ -125,7 +125,7 @@ module Cosmicray
 !
       logical, dimension (npencils) :: lpencil_in
 !
-      if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_cosmicray
 !***********************************************************************
@@ -141,7 +141,8 @@ module Cosmicray
 !
       intent(in) :: f,p
 !
-      if (NO_WARN) print*, f, p !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_cosmicray
 !***********************************************************************
@@ -157,7 +158,9 @@ module Cosmicray
 !
       intent(in) :: f,df,p
 !
-      if (NO_WARN) print*,f,df,p
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine decr_dt
 !***********************************************************************

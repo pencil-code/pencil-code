@@ -23,9 +23,10 @@
 
 module Entropy
 
-  use Cparam
   use Cdata
+  use Cparam
   use Messages
+  use Sub, only: keep_compiler_quiet
 
   implicit none
 
@@ -192,7 +193,15 @@ module Entropy
         endif
       endif
 !
-      if (ip==1) print*,f,df,uu,divu,rho1,shock,gshock,bb,bij  !(compiler)
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(uu)
+      call keep_compiler_quiet(divu)
+      call keep_compiler_quiet(rho1)
+      call keep_compiler_quiet(shock)
+      call keep_compiler_quiet(gshock)
+      call keep_compiler_quiet(bb)
+      call keep_compiler_quiet(bij)
+!
     endsubroutine dss_dt
 !***********************************************************************
     subroutine rprint_entropy(lreset,lwrite)

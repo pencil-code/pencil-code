@@ -29,9 +29,9 @@ module Radiation
 !  simplistic way a cold disk that is illuminated by a star 
 !  in visible wavelengths and re-radiates all the energy in infrared.
 !
-
   use Cparam
   use Messages
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
 
@@ -1809,11 +1809,10 @@ module Radiation
 !  15-jul-2002/nils: dummy routine
 !
       use Cdata
-      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*,f !(keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine init_rad
 !***********************************************************************
@@ -1866,7 +1865,7 @@ module Radiation
 !
       logical, dimension (npencils) :: lpencil_in
 !
-      if (NO_WARN) print*, lpencil_in  !(keep compiler quiet)
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_radiation
 !***********************************************************************
@@ -1882,7 +1881,7 @@ module Radiation
 !
       intent(in) :: f,p
 !
-      if (NO_WARN) print*, f !(keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine calc_pencils_radiation
 !***********************************************************************
@@ -1897,7 +1896,10 @@ module Radiation
       type (pencil_case) :: p
       real :: gamma
 !
-      if (NO_WARN) print*,f,df,p,gamma !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(gamma)
 !
     endsubroutine de_dt
 !***********************************************************************
@@ -2021,7 +2023,7 @@ module Radiation
         write(3,*) 'iFradz2=',iFradz2
       endif
 !
-      if (NO_WARN) print*,lreset  !(to keep compiler quiet)
+      call keep_compiler_quiet(lreset)
 !
     endsubroutine rprint_radiation
 !***********************************************************************

@@ -28,6 +28,7 @@ module Magnetic
   use Cdata
   use Cparam
   use Messages
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -810,7 +811,7 @@ module Magnetic
         coskz=cos(k1_ff*z)
       endif
 !
-      if (NO_WARN) print*, lstarting
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_magnetic
 !***********************************************************************
@@ -1286,11 +1287,11 @@ module Magnetic
       if (lisotropic_advection) lpenc_requested(i_va2)=.true.
 ! check whether right variables are set for half-box calculations. 
       if (idiag_brmsn/=0 .or. idiag_abmn/=0 ) then
-        if((.not.lequatory).and.(.not.lequatorz)) then
+        if ((.not.lequatory).and.(.not.lequatorz)) then
           call stop_it("You have to set either of lequatory or lequatorz to true to calculate averages over half the box")
         else  
-          if(lequatory) write(*,*) 'pencil-criteria_magnetic: box divided along y dirn'
-          if(lequatorz) write(*,*) 'pencil-criteria_magnetic: box divided along z dirn'
+          if (lequatory) write(*,*) 'pencil-criteria_magnetic: box divided along y dirn'
+          if (lequatorz) write(*,*) 'pencil-criteria_magnetic: box divided along z dirn'
         endif
       else
       endif

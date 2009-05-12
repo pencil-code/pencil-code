@@ -1121,10 +1121,13 @@ module Param_IO
         close(1)
       endif
 !
-      if (NO_WARN) print*, lhydro, ldensity, lentropy, lmagnetic, &
-                           ltestscalar,ltestfield,ltestflow, &
-                           lpscalar, lradiation, lcosmicray, lcosmicrayflux, &
-                           linterstellar, lshock
+      call keep_compiler_quiet(lhydro)
+      call keep_compiler_quiet(ldensity)
+      call keep_compiler_quiet(lentropy)
+      call keep_compiler_quiet(lmagnetic)
+      call keep_compiler_quiet(ltestscalar,ltestfield,ltestflow)
+      call keep_compiler_quiet(lpscalar,lradiation,lcosmicray,lcosmicrayflux)
+      call keep_compiler_quiet(linterstellar,lshock)
 !
     endsubroutine wparam
 !***********************************************************************

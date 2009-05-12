@@ -12,15 +12,15 @@
 !
 !***************************************************************
 module Particles_stalker
-
+!
   use Cdata
-
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   include 'particles_stalker.h'
-
+!
   contains
-
 !***********************************************************************
     subroutine initialize_particles_stalker(lstarting)
 !
@@ -28,7 +28,7 @@ module Particles_stalker
 !
       logical :: lstarting
 !
-      if (NO_WARN) print*, lstarting
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_stalker
 !***********************************************************************
@@ -40,7 +40,9 @@ module Particles_stalker
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      if (NO_WARN) print*, f, fp, ineargrid
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ineargrid)
 !    
     endsubroutine particles_stalker_sub
 !***********************************************************************
@@ -49,7 +51,8 @@ module Particles_stalker
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
-      if (NO_WARN) print*, unit, iostat
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_pstalker_init_pars
 !***********************************************************************
@@ -57,7 +60,7 @@ module Particles_stalker
 !
       integer, intent (in) :: unit
 !
-      if (NO_WARN) print*, unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_pstalker_init_pars
 !***********************************************************************
@@ -66,7 +69,8 @@ module Particles_stalker
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
-      if (NO_WARN) print*, unit, iostat
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_pstalker_run_pars
 !***********************************************************************
@@ -74,7 +78,7 @@ module Particles_stalker
 !
       integer, intent (in) :: unit
 !
-      if (NO_WARN) print*, unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_pstalker_run_pars
 !***********************************************************************

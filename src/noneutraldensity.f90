@@ -1,8 +1,8 @@
 ! $Id$
-
+!
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrhon_dt and init_lnrhon, among other auxiliary routines.
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -12,28 +12,22 @@
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
-
 module Neutraldensity
- 
-  use Cparam
+! 
   use Cdata
+  use Cparam
   use Messages
-
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   include 'neutraldensity.h'
-
-  !integer :: dummy              ! We cannot define empty namelists
+!
   logical :: lneutraldensity_nolog=.false.
-
-  !namelist /neutraldensity_init_pars/ dummy
-  !namelist /neutraldensity_run_pars/  dummy
-
-  ! diagnostic variables (needs to be consistent with reset list below)
+!
   integer :: idiag_rhonm=0
-
+!
   contains
-
 !***********************************************************************
     subroutine register_neutraldensity()
 !
@@ -73,7 +67,7 @@ module Neutraldensity
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*,f ! keep compiler quiet
+      call keep_compiler_quiet(f)
 !
     endsubroutine init_lnrhon
 !***********************************************************************
@@ -94,7 +88,7 @@ module Neutraldensity
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (NO_WARN) print*, lpencil_in  !(keep compiler quiet)
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_neutraldensity
 !***********************************************************************
@@ -110,7 +104,8 @@ module Neutraldensity
 !
       intent(in) :: f, p
 !
-      if (NO_WARN) print*, f, p
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_neutraldensity
 !***********************************************************************
@@ -125,39 +120,46 @@ module Neutraldensity
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      if (NO_WARN) print*,f,df,p !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine dlnrhon_dt
 !***********************************************************************
     subroutine read_neutraldensity_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
-
+!
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+!
     endsubroutine read_neutraldensity_init_pars
 !***********************************************************************
     subroutine write_neutraldensity_init_pars(unit)
+!
       integer, intent(in) :: unit
-
-      if (NO_WARN) print*,unit
-
+!
+      call keep_compiler_quiet(unit)
+!
     endsubroutine write_neutraldensity_init_pars
 !***********************************************************************
     subroutine read_neutraldensity_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
-
+!
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+!
     endsubroutine read_neutraldensity_run_pars
 !***********************************************************************
     subroutine write_neutraldensity_run_pars(unit)
+!
       integer, intent(in) :: unit
-
-      if (NO_WARN) print*,unit
+!
+      call keep_compiler_quiet(unit)
+!
     endsubroutine write_neutraldensity_run_pars
 !***********************************************************************
     subroutine rprint_neutraldensity(lreset,lwrite)
@@ -182,8 +184,7 @@ module Neutraldensity
         write(3,*) 'ilnrhon=',ilnrhon
       endif
 !
-      if (NO_WARN) print*,lreset  !(to keep compiler quiet)
+      call keep_compiler_quiet(lreset)
     endsubroutine rprint_neutraldensity
 !***********************************************************************
-
 endmodule Neutraldensity

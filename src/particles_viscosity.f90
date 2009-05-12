@@ -275,29 +275,23 @@ module Particles_viscosity
 !***********************************************************************
     subroutine read_particles_visc_init_pars(unit,iostat)
 !
-!
-!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      if (present(iostat).and.NO_WARN) print*,iostat
-      if (NO_WARN) print*,unit
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_particles_visc_init_pars
 !***********************************************************************
     subroutine write_particles_visc_init_pars(unit)
 !
-!
-!
       integer, intent(in) :: unit
 !
-      if (NO_WARN) print*,unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_particles_visc_init_pars
 !***********************************************************************
     subroutine read_particles_visc_run_pars(unit,iostat)
-!
-!
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -313,8 +307,6 @@ module Particles_viscosity
 !***********************************************************************
     subroutine write_particles_visc_run_pars(unit)
 !
-!
-!
       integer, intent(in) :: unit
 !
       write(unit,NML=particles_visc_run_pars)
@@ -325,7 +317,7 @@ module Particles_viscosity
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*,f  !(to keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine calc_viscosity
 !*******************************************************************

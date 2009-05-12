@@ -15,7 +15,7 @@ module Interstellar
   use Cparam
   use Cdata
   use Messages
-  use sub, only: keep_compiler_quiet
+  use Sub, only: keep_compiler_quiet
 
   implicit none
 
@@ -51,8 +51,7 @@ module Interstellar
 !
       logical :: lstarting
 !
-! (to keep compiler quiet)
-      if (NO_WARN) print*,lstarting
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_interstellar
 !***********************************************************************
@@ -63,7 +62,9 @@ module Interstellar
       integer :: id,lun
       logical :: done
 !
-      if (NO_WARN) print*,id,lun,done
+      call keep_compiler_quiet(id)
+      call keep_compiler_quiet(lun)
+      call keep_compiler_quiet(done)
 !
     endsubroutine input_persistent_interstellar
 !***********************************************************************
@@ -74,7 +75,7 @@ module Interstellar
 !
       integer :: lun
 !
-      if (NO_WARN) print*,lun
+      call keep_compiler_quiet(lun)
 !
     endsubroutine output_persistent_interstellar
 !***********************************************************************
@@ -100,7 +101,7 @@ module Interstellar
         write(3,*) 'i_taucmin=0'
       endif
 !
-      if (NO_WARN) print*,lreset
+      call keep_compiler_quiet(lreset)
 !
     endsubroutine rprint_interstellar
 !***********************************************************************

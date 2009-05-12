@@ -1,14 +1,16 @@
 ! $Id: equ.f90 10533 2009-03-26 11:01:45Z ajohan@strw.leidenuniv.nl $
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
 !***************************************************************
+!
 module Pencil_check
 !
   use Cdata
   use Messages
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -255,7 +257,7 @@ f_loop:   do iv=1,mvar
 !
       if (ldie) call fatal_error('pencil_consistency_check','DYING')
 !
-      if (NO_WARN) print*, f !(keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine pencil_consistency_check
 !***********************************************************************

@@ -4,15 +4,15 @@
 !  This can be used e.g. in order to simulate a cylinder in a cross flow.
 !
 module Solid_Cells
-
-  use Cparam
+!
   use Cdata
+  use Cparam
   use Sub, only: keep_compiler_quiet
-
+!
   implicit none
-
+!
   include 'solid_cells.h'
-
+!
   contains
 !***********************************************************************
     subroutine initialize_solid_cells
@@ -31,14 +31,11 @@ module Solid_Cells
 ! 
 !  28-nov-2008/nils: coded
 !
-      use Cdata
-      use Sub
-
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
 !
-    end subroutine init_solid_cells
+    endsubroutine init_solid_cells
 !***********************************************************************  
     subroutine update_solid_cells(f)
 !
@@ -82,7 +79,7 @@ module Solid_Cells
       call keep_compiler_quiet(part_rad)
       call keep_compiler_quiet(part_pos)
 !
-    end function in_solid_cell
+    endfunction in_solid_cell
 !***********************************************************************
     subroutine read_solid_cells_init_pars(unit,iostat)
       integer, intent(in) :: unit
@@ -118,13 +115,13 @@ module Solid_Cells
 !***********************************************************************  
     subroutine close_interpolation(f,ix0,iy0,iz0,icyl,ivar1,xxp,gpp,&
         fluid_point)
-      !
+!
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: ix0,iy0,iz0,icyl,ivar1
       real, intent(inout) :: gpp
       real, dimension(3), intent(in) :: xxp
       logical, intent(in) :: fluid_point
-      !
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(ix0)
       call keep_compiler_quiet(iy0)
@@ -134,7 +131,7 @@ module Solid_Cells
       call keep_compiler_quiet(xxp)
       call keep_compiler_quiet(gpp)
       call keep_compiler_quiet(fluid_point)
-      !
-    end subroutine close_interpolation
+!
+    endsubroutine close_interpolation
 !***********************************************************************  
   endmodule Solid_Cells

@@ -15,41 +15,30 @@
 !***************************************************************
 
 module Entropy
-
-  !
-  ! isothermal case; almost nothing to do
-  !
-
-  use Cparam
+!
   use Cdata
+  use Cparam
   use Messages
-
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   include 'entropy.h'
-
-  !namelist /entropy_init_pars/ dummyss
-  !namelist /entropy_run_pars/ dummyss
-
-  ! run parameters
+!
   real :: hcond0=0.,hcond1=impossible,chi=impossible
   real :: Fbot=impossible,FbotKbot=impossible,Kbot=impossible
   real :: Ftop=impossible,FtopKtop=impossible
   logical :: lmultilayer=.true.
   logical :: lheatc_chiconst=.false.
-
-  ! other variables (needs to be consistent with reset list below)
   integer :: idiag_dtc=0,idiag_ssm=0,idiag_ugradpm=0
-
+!
   contains
-
 !***********************************************************************
     subroutine register_entropy()
 !
 !  no energy equation is being solved; use isothermal equation of state
 !  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
 !
-      use Cdata
       use Sub
 !
 !  identify version number
@@ -71,7 +60,8 @@ module Entropy
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
-      if (ip == 0) print*,f,lstarting ! keep compiler quiet
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
 !
 !  For global density gradient beta=H/r*dlnrho/dlnr, calculate actual
 !  gradient dlnrho/dr = beta/H
@@ -90,11 +80,9 @@ module Entropy
 !  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
 !  24-nov-02/tony: renamed for consistancy (i.e. init_[varaible name])
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (ip==1) print*,f !(to remove compiler warnings)
+      call keep_compiler_quiet(f)
 !
     endsubroutine init_ss
 !***********************************************************************
@@ -104,7 +92,6 @@ module Entropy
 !
 !  20-11-04/anders: coded
 !
-      use Cdata
       use EquationOfState, only: beta_glnrho_scaled
 !
       if (leos.and.ldt) lpenc_requested(i_cs2)=.true.
@@ -148,7 +135,6 @@ module Entropy
 !
 !  20-11-04/anders: coded
 !
-      use Cdata
       use EquationOfState, only: gamma,gamma1,cs20,lnrho0
       use Sub
 !
@@ -250,39 +236,44 @@ module Entropy
             call sum_mn_name(p%rho*p%cs2*p%uglnrho,idiag_ugradpm)
       endif
 !
-      if (NO_WARN) print*,f !(keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine dss_dt
 !***********************************************************************
     subroutine read_entropy_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
-
+!
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+!
     endsubroutine read_entropy_init_pars
 !***********************************************************************
     subroutine write_entropy_init_pars(unit)
+!
       integer, intent(in) :: unit
-
-      if (NO_WARN) print*,unit
-
+!
+      call keep_compiler_quiet(unit)
+!
     endsubroutine write_entropy_init_pars
 !***********************************************************************
     subroutine read_entropy_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
-
+!
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+!
     endsubroutine read_entropy_run_pars
 !***********************************************************************
     subroutine write_entropy_run_pars(unit)
+!
       integer, intent(in) :: unit
-
-      if (NO_WARN) print*,unit
+!
+      call keep_compiler_quiet(unit)
+!
     endsubroutine write_entropy_run_pars
 !***********************************************************************
     subroutine rprint_entropy(lreset,lwrite)
@@ -291,7 +282,6 @@ module Entropy
 !
 !   1-jun-02/axel: adapted from magnetic fields
 !
-      use Cdata
       use Sub
 !
       integer :: iname
@@ -334,11 +324,10 @@ module Entropy
 !  23-jan-02/wolf: coded
 !  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
 !
-      use Cdata, only: ip
-!
       real, dimension (nx) :: x,y,z
       real, dimension (nx) :: hcond
-      if (ip==1) print*,x,y,z,hcond  !(to remove compiler warnings)
+!      
+      call keep_compiler_quiet(x,y,z,hcond)
 !
     endsubroutine heatcond
 !***********************************************************************
@@ -350,11 +339,10 @@ module Entropy
 !  23-jan-02/wolf: coded
 !  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
 !
-      use Cdata, only: ip
-!
       real, dimension (nx) :: x,y,z
       real, dimension (nx,3) :: glhc
-      if (ip==1) print*,x,y,z,glhc  !(to remove compiler warnings)
+!
+      call keep_compiler_quiet(x,y,z,glhc(:,1))
 !
     endsubroutine gradloghcond
 !***********************************************************************
@@ -362,8 +350,6 @@ module Entropy
 !
 !  Dummy subroutine.
 !
-      use Cparam
-! 
       implicit none
 !
       real, dimension(mx,my,mz,mfarray) :: finit,f

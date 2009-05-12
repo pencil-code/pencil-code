@@ -328,7 +328,9 @@ module Magnetic
       integer :: id,lun
       logical :: done
 !
-      if (NO_WARN) print*,id,lun,done
+      call keep_compiler_quiet(id)
+      call keep_compiler_quiet(lun)
+      call keep_compiler_quiet(done)
 !
     endsubroutine input_persistent_magnetic
 !***********************************************************************
@@ -338,7 +340,7 @@ module Magnetic
 !
       integer :: lun
 !
-      if (NO_WARN) print*,lun
+      call keep_compiler_quiet(lun)
 !
     endsubroutine output_persistent_magnetic
 !***********************************************************************

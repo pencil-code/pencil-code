@@ -12,24 +12,26 @@
 !
 !***************************************************************
 module Grid
-
+!
+  use Cdata
   use Cparam
   use Messages
-
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   private
-
+!
   public :: construct_grid
   public :: pencil_criteria_grid
   public :: pencil_interdep_grid
   public :: calc_pencils_grid
-
+!
   interface grid_profile        ! Overload the grid_profile' subroutine
     module procedure grid_profile_point
     module procedure grid_profile_1d
   endinterface
-
+!
   contains
 !***********************************************************************
     subroutine construct_grid(x,y,z,dx,dy,dz,x00,y00,z00)
@@ -55,24 +57,6 @@ module Grid
 !
 !  25-jun-04/tobi+wolf: coded
 !
-      use Cdata, only:lcartesian_coords,lcylindrical_coords,lspherical_coords
-      use Cdata, only: nx,ny,nz
-      use Cdata, only: mx,my,mz
-      use Cdata, only: Lx,Ly,Lz
-      use Cdata, only: dx_1,dy_1,dz_1,sinth
-      use Cdata, only: xprim,yprim,zprim
-      use Cdata, only: dx_tilde,dy_tilde,dz_tilde
-      use Cdata, only: dxmin, dxmax
-      use Cdata, only: x0,y0,z0
-      use Cdata, only: nxgrid,nygrid,nzgrid
-      use Cdata, only: ipx,ipy,ipz
-      use Cdata, only: nghost,coeff_grid,grid_func
-      use Cdata, only: xyz_step,xi_step_frac,xi_step_width
-      use Cdata, only: lperi,lshift_origin,xyz_star,lequidist
-      use Cdata, only: pi
-      use Cdata, only: procx_bounds,procy_bounds,procz_bounds
-      use Messages
-
       real, dimension(mx), intent(out) :: x
       real, dimension(my), intent(out) :: y
       real, dimension(mz), intent(out) :: z
@@ -543,8 +527,6 @@ module Grid
 !
 !  15-nov-06/tony: coded
 !
-      use Cdata
-!
       if (any(lfreeze_varext).or.any(lfreeze_varint)) then
         if (lcylinder_in_a_box.or.lcylindrical_coords) then
           lpenc_requested(i_rcyl_mn)=.true.
@@ -560,8 +542,6 @@ module Grid
 !  Interdependency among pencils provided by this module are specified here.
 !
 !  15-nov-06/tony: coded
-!
-      use Cdata,only:lcartesian_coords,lspherical_coords
 !
       logical, dimension(npencils) :: lpencil_in
 !
@@ -603,10 +583,6 @@ module Grid
 !
 !   15-nov-06/tony: coded
 !   27-aug-07/wlad: generalized for cyl. and sph. coordinates
-!
-      use Cparam
-      use Cdata
-      use Messages
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -709,7 +685,7 @@ module Grid
         endif
       endif
 !
-      if (NO_WARN) print*,f   !(keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine calc_pencils_grid
 !***********************************************************************
@@ -832,7 +808,6 @@ module Grid
 !
 !  25-jun-04/tobi+wolf: coded
 !
-      use Cdata, only: Lx,Ly,Lz
       real, dimension(:)                    :: xi
       character(len=*)                      :: grid_func
       real, dimension(size(xi,1))           :: g
@@ -933,9 +908,6 @@ module Grid
 !
 !  25-jun-04/tobi+wolf: coded
 !
-      use Cdata, only: epsi
-      use Messages
-
       real, intent(in) :: xi_lo,xi_up,x_lo,x_up,x_star
       character(len=*), intent(in) :: grid_func
 

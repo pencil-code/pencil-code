@@ -17,17 +17,17 @@
 !
 !***************************************************************
 module Entropy
-
+!
   use Cparam
   use Cdata
   use Messages
   use Interstellar
   use Sub, only: keep_compiler_quiet
-
+!
   implicit none
-
+!
   include 'entropy.h'
-
+!
   real :: radius_lnTT=0.1,ampl_lnTT=0.,widthlnTT=2*epsi
   real :: lnTT_left=1.0,lnTT_right=1.0,lnTT_const=0.0,TT_const=1.0
   real :: kx_lnTT=1.0,ky_lnTT=1.0,kz_lnTT=1.0
@@ -41,34 +41,30 @@ module Entropy
   logical :: lviscous_heat=.true.
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
   character (len=5) :: iinit_str
-
+!
   ! Delete (or use) me asap!
   real :: hcond0,hcond1,Fbot,FbotKbot,Ftop,Kbot,FtopKtop
   logical :: lmultilayer
-
-  ! input parameters
+!
   namelist /entropy_init_pars/ &
       initlnTT,radius_lnTT,ampl_lnTT,widthlnTT, &
       lnTT_left,lnTT_right,lnTT_const,TT_const, &
       kx_lnTT,ky_lnTT,kz_lnTT
-
-  ! run parameters
+!
   namelist /entropy_run_pars/ &
       lupw_lnTT,lpressuregradient_gas,ladvection_temperature, &
       heat_uniform,chi,tau_heat_cor,tau_damp_cor,zcor,TT_cor, &
       lheatc_chiconst_accurate,lheatc_hyper3,chi_hyper3, &
       lviscous_heat
-
-  ! other variables (needs to be consistent with reset list below)
-    integer :: idiag_TTmax=0,idiag_TTmin=0,idiag_TTm=0
-    integer :: idiag_yHmax=0,idiag_yHmin=0,idiag_yHm=0
-    integer :: idiag_ethm=0,idiag_ssm=0,idiag_cv=0,idiag_cp=0
-    integer :: idiag_dtchi=0,idiag_dtc=0
-    integer :: idiag_eem=0,idiag_ppm=0,idiag_csm=0
-    integer :: idiag_mum=0
-
+!
+  integer :: idiag_TTmax=0,idiag_TTmin=0,idiag_TTm=0
+  integer :: idiag_yHmax=0,idiag_yHmin=0,idiag_yHm=0
+  integer :: idiag_ethm=0,idiag_ssm=0,idiag_cv=0,idiag_cp=0
+  integer :: idiag_dtchi=0,idiag_dtc=0
+  integer :: idiag_eem=0,idiag_ppm=0,idiag_csm=0
+  integer :: idiag_mum=0
+!
   contains
-
 !***********************************************************************
     subroutine register_entropy()
 !
@@ -134,7 +130,8 @@ module Entropy
       lheatc_chiconst = (chi > tiny(chi))
       lheatc_hyper3 = (chi_hyper3 > tiny(chi_hyper3))
 
-      if (NO_WARN) print*,f,lstarting  !(to keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
 !
       endsubroutine initialize_entropy
 !***********************************************************************
@@ -561,7 +558,7 @@ module Entropy
         endif
       endif
 
-    end subroutine calc_heatcond_constchi
+    endsubroutine calc_heatcond_constchi
 !***********************************************************************
     subroutine calc_heatcond_hyper3(df,p)
 !
@@ -587,7 +584,7 @@ module Entropy
         endif
       endif
 
-    end subroutine calc_heatcond_hyper3
+    endsubroutine calc_heatcond_hyper3
 !***********************************************************************
     subroutine calc_heat_cool(f,df,p)
 

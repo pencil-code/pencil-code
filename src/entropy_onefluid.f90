@@ -20,18 +20,19 @@
 !
 !***************************************************************
 module Entropy
-
-  use Cparam
+!
   use Cdata
-  use Messages
-  use Interstellar
-  use Viscosity
+  use Cparam
   use EquationOfState, only: gamma, gamma1, cs20, beta_glnrho_global
-
+  use Interstellar
+  use Messages
+  use Sub, only: keep_compiler_quiet
+  use Viscosity
+!
   implicit none
-
+!
   include 'entropy.h'
-
+!
   real :: chi=0.,chi_t=0.,chi_shock=0.,chi_hyper3=0.
   real :: ss_const=0.
   real :: T0=1.
@@ -46,27 +47,23 @@ module Entropy
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   character (len=5) :: iinit_str
-
-! input parameters
+!
   namelist /entropy_init_pars/ &
       initss, grads0, ss_const, T0, kx_ss, beta_glnrho_global, &
       ladvection_entropy
-
-! run parameters
+!
   namelist /entropy_run_pars/ &
       hcond0, chi_t, chi_shock, chi, iheatcond, &
       Kbot, lupw_ss,chi_hyper3, lpressuregradient_gas, &
       beta_glnrho_global, ladvection_entropy
-
-! other variables (needs to be consistent with reset list below)
+!
   integer :: idiag_dtc=0,idiag_ethm=0,idiag_ethdivum=0,idiag_ssm=0
   integer :: idiag_ugradpm=0,idiag_ethtot=0,idiag_dtchi=0,idiag_ssmphi=0
   integer :: idiag_yHm=0,idiag_yHmax=0,idiag_TTm=0,idiag_TTmax=0,idiag_TTmin=0
   integer :: idiag_fconvz=0,idiag_dcoolz=0,idiag_fradz=0,idiag_fturbz=0
   integer :: idiag_ssmz=0,idiag_ssmy=0,idiag_ssmx=0,idiag_TTmz=0
-
+!
   contains
-
 !***********************************************************************
     subroutine register_entropy()
 !
@@ -200,7 +197,8 @@ module Entropy
         call warning('initialize_entropy','chi_shock is zero!')
       endif
 !
-      if (NO_WARN) print*,f,lstarting  !(to keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
 !
       endsubroutine initialize_entropy
 !***********************************************************************
@@ -949,8 +947,6 @@ module Entropy
     subroutine calc_heatcond_ADI(finit,f)
 !
 !  Dummy subroutine.
-!
-      use Cparam
 !
       implicit none
 !

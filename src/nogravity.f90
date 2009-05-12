@@ -10,32 +10,29 @@
 ! PENCILS PROVIDED gg(3)
 !
 !***************************************************************
-
 module Gravity
-
 !
-!  Dummy model: no gravity
-!
-
+  use Cdata
   use Cparam
   use Messages
-
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   include 'gravity.h'
-
+!
   interface potential
     module procedure potential_global
     module procedure potential_penc
     module procedure potential_point
   endinterface
-
+!
   interface acceleration
     module procedure acceleration_penc
     module procedure acceleration_penc_1D
     module procedure acceleration_point
   endinterface
-
+!
   real :: z1,z2,zref,zgrav,gravz,zinfty,nu_epicycle=1.
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: grav_const=1.,reduced_top=1.
@@ -43,12 +40,8 @@ module Gravity
   integer :: n_pot=10
   character (len=labellen) :: grav_profile='const'  !(used by Density)
   logical :: lnumerical_equilibrium=.false.
-
-  !namelist /grav_init_pars/ dummy
-  !namelist /grav_run_pars/  dummy
-
+!
   contains
-
 !***********************************************************************
     subroutine register_gravity()
 !
@@ -57,7 +50,6 @@ module Gravity
 !  9-jan-02/wolf: coded
 ! 28-mar-02/axel: adapted from grav_z
 !
-      use Cdata
       use Mpicomm
       use Sub
 !
@@ -81,7 +73,8 @@ module Gravity
       real, dimension(mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
-      if (NO_WARN) print*,f,lstarting
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_gravity
 !***********************************************************************
@@ -90,9 +83,8 @@ module Gravity
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-!
-      if (NO_WARN) print*,unit
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_gravity_init_pars
 !***********************************************************************
@@ -100,7 +92,7 @@ module Gravity
 !
       integer, intent(in) :: unit
 !
-      if (NO_WARN) print*,unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_gravity_init_pars
 !***********************************************************************
@@ -109,9 +101,8 @@ module Gravity
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-!
-      if (NO_WARN) print*,unit
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_gravity_run_pars
 !***********************************************************************
@@ -119,7 +110,7 @@ module Gravity
 !
       integer, intent(in) :: unit
 !
-      if (NO_WARN) print*,unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_gravity_run_pars
 !***********************************************************************
@@ -127,8 +118,6 @@ module Gravity
 !
 !  initialise gravity; called from start.f90
 !   9-jan-02/wolf: coded
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -153,7 +142,7 @@ module Gravity
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_gravity
 !***********************************************************************
@@ -172,7 +161,7 @@ module Gravity
 !
       if (lpencil(i_gg)) p%gg=0.
 !
-      if (NO_WARN) print*, f !(keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine calc_pencils_gravity
 !***********************************************************************
@@ -186,7 +175,9 @@ module Gravity
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      if (NO_WARN) print*,f,df,p  !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine duu_dt_grav
 !***********************************************************************
@@ -194,8 +185,6 @@ module Gravity
 !
 !  gravity potential
 !  28-mar-02/axel: adapted from grav_z
-!
-      use Cdata, only: mx,my,mz,lroot
 !
       real, dimension (mx,my,mz) :: pot
       real, optional :: pot0
@@ -213,8 +202,6 @@ module Gravity
 !  gravity potential
 !  28-mar-02/axel: adapted from grav_z
 !
-      use Cdata, only: nx,lroot
-!
       real, dimension (nx) :: pot
       real, optional :: ymn,zmn,pot0
       real, optional, dimension (nx) :: xmn,rmn
@@ -227,7 +214,11 @@ module Gravity
       pot = 0.
       if (present(pot0)) pot0 = 0.
 !
-      if (NO_WARN) print*,xmn,ymn,zmn,rmn,grav
+      call keep_compiler_quiet(xmn)
+      call keep_compiler_quiet(ymn)
+      call keep_compiler_quiet(zmn)
+      call keep_compiler_quiet(rmn)
+      call keep_compiler_quiet(grav)
 !
     endsubroutine potential_penc
 !***********************************************************************
@@ -250,7 +241,13 @@ module Gravity
 !
       pot = 0.
 !
-      if (NO_WARN) print*,x,y,z,r,pot,pot0,grav     !(to keep compiler quiet)
+      call keep_compiler_quiet(x)
+      call keep_compiler_quiet(y)
+      call keep_compiler_quiet(z)
+      call keep_compiler_quiet(r)
+      call keep_compiler_quiet(pot)
+      call keep_compiler_quiet(pot0)
+      call keep_compiler_quiet(grav)
 !
     endsubroutine potential_point
 !***********************************************************************
@@ -267,8 +264,8 @@ module Gravity
 !  Calculate acceleration from master pencils defined in initialize_gravity
 !
       call fatal_error("acceleration_penc","Not implemented")
-
-      if (NO_WARN) gg=0.
+!
+      call keep_compiler_quiet(gg)
 !
     endsubroutine acceleration_penc
 !***********************************************************************
@@ -286,7 +283,7 @@ module Gravity
 !
       call fatal_error("acceleration_penc_1D","Not implemented")
 
-      if (NO_WARN) gr=0.
+      call keep_compiler_quiet(gr)
 !
     endsubroutine acceleration_penc_1D
 !***********************************************************************
@@ -308,7 +305,11 @@ module Gravity
 !
       g_r = 0.
 !
-      if (NO_WARN) print*,x,y,z,r,g_r     !(to keep compiler quiet)
+      call keep_compiler_quiet(x)
+      call keep_compiler_quiet(y)
+      call keep_compiler_quiet(z)
+      call keep_compiler_quiet(r)
+      call keep_compiler_quiet(g_r)
 !
     endsubroutine acceleration_point
 !***********************************************************************
@@ -318,8 +319,6 @@ module Gravity
 !  dummy routine
 !
 !  26-apr-03/axel: coded
-!
-      use Cdata
 !
       logical :: lreset,lwr
       logical, optional :: lwrite
@@ -337,9 +336,8 @@ module Gravity
         write(3,*) 'igz=',igz
       endif
 !
-      if (NO_WARN) print*,lreset  !(to keep compiler quiet)
+      call keep_compiler_quiet(lreset)
 !
     endsubroutine rprint_gravity
 !***********************************************************************
-
 endmodule Gravity

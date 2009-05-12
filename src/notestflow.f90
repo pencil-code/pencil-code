@@ -15,29 +15,27 @@
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
-
 module Testflow
-
+!
+  use Cdata
   use Cparam
   use Messages
-
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   include 'testflow.h'
-
+!
   real :: dummy
   namelist /testflow_init_pars/ dummy
-
+!
   namelist /testflow_run_pars/ dummy
-
+!
   contains
-
 !***********************************************************************
     subroutine register_testflow()
 !
 !  Dummy routine
-!
-      use Cdata
 !
     endsubroutine register_testflow
 !***********************************************************************
@@ -45,11 +43,9 @@ module Testflow
 !
 !  Dummy routine
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (ip==0) print*,f  !(to keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine initialize_testflow
 !***********************************************************************
@@ -57,11 +53,9 @@ module Testflow
 !
 !  Dummy routine
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (ip==0) print*,f  !(to keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine init_uutest
 !***********************************************************************
@@ -69,66 +63,65 @@ module Testflow
 !
 !  Dummy routine
 !
-      use Cdata
-!
     endsubroutine pencil_criteria_testflow
 !***********************************************************************
     subroutine pencil_interdep_testflow(lpencil_in)
 !
 !  Dummy routine
 !
-      use Cdata
-!
       logical, dimension(npencils) :: lpencil_in
 !
     endsubroutine pencil_interdep_testflow
 !***********************************************************************
     subroutine read_testflow_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
-      if (present(iostat).and.NO_WARN) print*,iostat
-      if (NO_WARN) print*,unit !(keep compiler quiet)
+!
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_testflow_init_pars
 !***********************************************************************
     subroutine write_testflow_init_pars(unit)
+!
       integer, intent(in) :: unit
-
-      if (NO_WARN) print*,unit !(keep compiler quiet)
-
+!
+      call keep_compiler_quiet(unit)
+!
     endsubroutine write_testflow_init_pars
 !***********************************************************************
     subroutine read_testflow_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
-      if (present(iostat).and.NO_WARN) print*,iostat
-      if (NO_WARN) print*,unit !(keep compiler quiet)
-
+!
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+!
     endsubroutine read_testflow_run_pars
 !***********************************************************************
     subroutine write_testflow_run_pars(unit)
+!
       integer, intent(in) :: unit
-
-      if (NO_WARN) print*,unit !(keep compiler quiet)
-
+!
+      call keep_compiler_quiet(unit)
+!
     endsubroutine write_testflow_run_pars
 !***********************************************************************
     subroutine duutest_dt(f,df,p)
 !
 !  Dummy routine
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-
+!
       intent(in)     :: f,p
       intent(inout)  :: df
 !
-      if (ip==0) print*, f, df, p  !(to keep compiler quiet)
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine duutest_dt
 !***********************************************************************
@@ -148,13 +141,11 @@ module Testflow
 !
 !  Dummy routine
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       intent(inout) :: f,df
 !
-      if (NO_WARN) print*, f
+      call keep_compiler_quiet(f)
 !
     endsubroutine calc_ltestflow_nonlin_terms
 !***********************************************************************
@@ -162,12 +153,12 @@ module Testflow
 !
 !  Dummy routine
 !
-      use Cdata
-!
       logical :: lreset
       logical, optional :: lwrite
 !
-      if (ip==0) print*,lreset,lwrite  !(to keep compiler quiet)
+      call keep_compiler_quiet(lreset)
+      if (present(lwrite)) call keep_compiler_quiet(lwrite)
+!
     endsubroutine rprint_testflow
-
+!***********************************************************************
 endmodule Testflow

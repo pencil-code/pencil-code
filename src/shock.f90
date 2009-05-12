@@ -29,6 +29,7 @@ module Shock
   use Cdata
   use Cparam
   use Messages
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -185,22 +186,25 @@ module Shock
     endsubroutine initialize_shock
 !***********************************************************************
     subroutine read_shock_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      if (present(iostat).and.NO_WARN) print*,iostat
-      if (NO_WARN) print*,unit
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_shock_init_pars
 !***********************************************************************
     subroutine write_shock_init_pars(unit)
+!
       integer, intent(in) :: unit
 !
-      if (NO_WARN) print*,unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_shock_init_pars
 !***********************************************************************
     subroutine read_shock_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
@@ -211,13 +215,15 @@ module Shock
       endif
 !
 99    return
+!
     endsubroutine read_shock_run_pars
 !***********************************************************************
     subroutine write_shock_run_pars(unit)
+!
       integer, intent(in) :: unit
-
+!
       write(unit,NML=shock_run_pars)
-
+!
     endsubroutine write_shock_run_pars
 !*******************************************************************
     subroutine rprint_shock(lreset,lwrite)
@@ -260,7 +266,8 @@ module Shock
         endif
       endif
 !
-      if (NO_WARN) print*,lreset  !(to keep compiler quiet)
+      call keep_compiler_quiet(lreset)
+!
     endsubroutine rprint_shock
 !***********************************************************************
     subroutine get_slices_shock(f,slices)
@@ -312,7 +319,7 @@ module Shock
 !
       logical, dimension (npencils) :: lpencil_in
 !
-      if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_shock
 !***********************************************************************

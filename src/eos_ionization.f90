@@ -17,9 +17,10 @@
 !***************************************************************
 module EquationOfState
 !
-  use Cparam
   use Cdata
+  use Cparam
   use Messages
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -76,7 +77,6 @@ module EquationOfState
 !   2-feb-03/axel: adapted from Interstellar module
 !   13-jun-03/tobi: re-adapted from visc_shock module
 !
-      use Cdata
       use FArrayManager
       use Sub
 !
@@ -125,7 +125,6 @@ module EquationOfState
 !
 !   2-feb-03/axel: adapted from Interstellar module
 !
-      use Cdata
       use General
       use Mpicomm, only: stop_it
 !
@@ -202,7 +201,8 @@ module EquationOfState
       character (len=*), intent(in) :: variable
       integer, intent(in) :: findex
 !
-      if (NO_WARN) print*,variable,findex
+      call keep_compiler_quiet(variable)
+      call keep_compiler_quiet(findex)
 !  DUMMY ideagas version below
 !!      integer :: this_var=0
 !!      integer, save :: ieosvar=0
@@ -295,12 +295,10 @@ module EquationOfState
 !  14-jun-03/axel: adapted from rprint_radiation
 !  21-11-04/anders: moved diagnostics to entropy
 !
-      use Cdata
-!
       logical :: lreset
       logical, optional :: lwrite
 !
-      if (NO_WARN) print*,lreset  !(to keep compiler quiet)
+      call keep_compiler_quiet(lreset)
 !
     endsubroutine rprint_eos
 !***********************************************************************
@@ -475,8 +473,6 @@ module EquationOfState
 !
 !  12-jul-03/tobi: coded
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx) :: lnrho,ss,yH,lnTT
 !
@@ -491,8 +487,6 @@ module EquationOfState
 !   This routine is called from equ.f90 and operates on the full 3-D array.
 !
 !   13-jun-03/tobi: coded
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) :: lnrho,ss,yH,lnTT
@@ -527,7 +521,7 @@ module EquationOfState
 
       rho=EE/(1.5*(1.+yH+xHe)*ss_ion*TT+yH*ee_ion)
 
-    end subroutine getdensity
+    endsubroutine getdensity
 !***********************************************************************
     subroutine get_cp1(cp1_)
 !
@@ -544,7 +538,7 @@ module EquationOfState
       call fatal_error('get_cp1','SHOULD NOT BE CALLED WITH eos_ionization')
       cp1_=impossible
 !
-    end subroutine get_cp1
+    endsubroutine get_cp1
 !***********************************************************************
     subroutine get_ptlaw(ptlaw_)
 !
@@ -556,7 +550,7 @@ module EquationOfState
       call fatal_error('get_ptlaw','SHOULD NOT BE CALLED WITH eos_ionization')
       ptlaw_=impossible
 !
-    end subroutine get_ptlaw
+    endsubroutine get_ptlaw
 !***********************************************************************
     subroutine pressure_gradient_farray(f,cs2,cp1tilde)
 !
@@ -565,8 +559,6 @@ module EquationOfState
 !   gP/rho=cs2*(glnrho+cp1tilde*gss)
 !
 !   17-nov-03/tobi: adapted from subroutine eoscalc
-!
-      use Cdata
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx), intent(out) :: cs2,cp1tilde
@@ -600,8 +592,6 @@ module EquationOfState
 !   gP/rho=cs2*(glnrho+cp1tilde*gss)
 !
 !   17-nov-03/tobi: adapted from subroutine eoscalc
-!
-      use Cdata
 !
       real, intent(in) :: lnrho,ss
       real, intent(out) :: cs2,cp1tilde
@@ -638,8 +628,6 @@ module EquationOfState
 !
 !   17-nov-03/tobi: adapted from subroutine eoscalc
 !
-      use Cdata
-!
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx,3), intent(in) :: glnrho,gss
       real, dimension(nx,3), intent(out) :: glnTT
@@ -674,15 +662,16 @@ module EquationOfState
 !
 !   12-dec-05/tony: adapted from subroutine temperature_gradient
 !
-      use Cdata
-!
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       type (pencil_case) :: p
 !
       call not_implemented('temperature_laplacian')
 !
-      p%del2lnTT=0.
-      if (NO_WARN) print*,f,p%del2lnrho,p%del2ss !(keep compiler quiet)
+      p%del2lnTT=0.0
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p%del2lnrho)
+      call keep_compiler_quiet(p%del2ss)
+!
     endsubroutine temperature_laplacian
 !***********************************************************************
     subroutine temperature_hessian(f,hlnrho,hss,hlnTT)
@@ -692,8 +681,6 @@ module EquationOfState
 !   hP/rho=cs2*(hlnrho+cp1tilde*hss)
 !
 !   10-apr-04/axel: adapted from temperature_gradient
-!
-      use Cdata
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx,3,3), intent(in) :: hlnrho,hss
@@ -731,7 +718,7 @@ module EquationOfState
 
       call not_implemented("eosperturb")
 
-    end subroutine eosperturb
+    endsubroutine eosperturb
 !***********************************************************************
     subroutine eoscalc_farray(f,psize,lnrho,ss,yH,lnTT,ee,pp,kapparho)
 !
@@ -743,7 +730,6 @@ module EquationOfState
 !   17-nov-03/tobi: moved calculation of cs2 and cp1tilde to
 !                   subroutine pressure_gradient
 !
-      use Cdata
       use Sub
       use Mpicomm, only: stop_it
 !
@@ -806,7 +792,6 @@ module EquationOfState
 !
 !   i13-mar-04/tony: modified
 !
-      use Cdata
       use Mpicomm, only: stop_it
 !
       integer, intent(in) :: ivars
@@ -908,7 +893,6 @@ module EquationOfState
 !   17-nov-03/tobi: moved calculation of cs2 and cp1tilde to
 !                   subroutine pressure_gradient
 !
-      use Cdata
       use Mpicomm, only: stop_it
 !
       integer, intent(in) :: ivars
@@ -1122,8 +1106,6 @@ module EquationOfState
 !   safe newton raphson algorithm (adapted from NR) !
 !   09-apr-03/tobi: changed to subroutine
 !
-      use Cdata
-!
       integer, intent(in)            :: ivars
       real, intent(in)               :: var1,var2
       real, intent(in)               :: yHlb,yHub
@@ -1241,10 +1223,9 @@ module EquationOfState
 !
       call stop_it("get_soundspeed: with ionization, lnrho needs to be known here")
 !
-      if (NO_WARN) print*, lnTT     !(keep compiler quiet)
-      if (NO_WARN) cs2=0          !(keep compiler quiet)
+      call keep_compiler_quiet(lnTT,cs2)
 !
-    end subroutine get_soundspeed
+    endsubroutine get_soundspeed
 !***********************************************************************
     subroutine isothermal_entropy(f,T0)
 !
@@ -1261,8 +1242,6 @@ module EquationOfState
 !                  to allow isothermal condition for arbitrary density
 !  17-oct-03/nils: works also with leos_ionization=T
 !  18-oct-03/tobi: distributed across ionization modules
-!
-      use Cdata
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: T0
@@ -1308,7 +1287,9 @@ module EquationOfState
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: T0,rho0
 !
-      if (NO_WARN) print*,f,T0,rho0
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(T0)
+      call keep_compiler_quiet(rho0)
 !
     endsubroutine isothermal_lnrho_ss
 !***********************************************************************
@@ -1322,7 +1303,6 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       use Mpicomm, only: stop_it
-      use Cdata
       use Gravity
       use SharedVariables,only:get_shared_variable
 !
@@ -1455,7 +1435,8 @@ module EquationOfState
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*,f,topbot  !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_ss_flux_turb
 !***********************************************************************
@@ -1470,13 +1451,15 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       use Mpicomm, only: stop_it
-      use Cdata
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_ss_temp_old: NOT IMPLEMENTED IN EOS_IONIZATION")
-      if (NO_WARN) print*,f,topbot
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+!
     endsubroutine bc_ss_temp_old
 !***********************************************************************
     subroutine bc_ss_temp_x(f,topbot)
@@ -1487,13 +1470,14 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       use Mpicomm, only: stop_it
-      use Cdata
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_ss_temp_x: NOT IMPLEMENTED IN EOS_IONIZATION")
-      if (NO_WARN) print*,f,topbot
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_ss_temp_x
 !***********************************************************************
@@ -1505,13 +1489,14 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       use Mpicomm, only: stop_it
-      use Cdata
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_ss_temp_y: NOT IMPLEMENTED IN EOS_IONIZATION")
-      if (NO_WARN) print*,f,topbot
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_ss_temp_y
 !***********************************************************************
@@ -1523,13 +1508,14 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       use Mpicomm, only: stop_it
-      use Cdata
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_ss_temp_z: NOT IMPLEMENTED IN EOS_IONIZATION")
-      if (NO_WARN) print*,f,topbot
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_ss_temp_z
 !***********************************************************************
@@ -1540,13 +1526,14 @@ module EquationOfState
 !  19-aug-2005/tobi: distributed across ionization modules
 !
       use Mpicomm, only: stop_it
-      use Cdata
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_lnrho_temp_z: NOT IMPLEMENTED IN EOS_IONIZATION")
-      if (NO_WARN) print*,f,topbot
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_lnrho_temp_z
 !***********************************************************************
@@ -1557,13 +1544,14 @@ module EquationOfState
 !  19-aug-2005/tobi: distributed across ionization modules
 !
       use Mpicomm, only: stop_it
-      use Cdata
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_lnrho_pressure_z: NOT IMPLEMENTED IN EOS_IONIZATION")
-      if (NO_WARN) print*,f,topbot
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_lnrho_pressure_z
 !***********************************************************************
@@ -1575,13 +1563,14 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       use Mpicomm, only: stop_it
-      use Cdata
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_ss_temp2_z: NOT IMPLEMENTED IN EOS_IONIZATION")
-      if (NO_WARN) print*,f,topbot
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_ss_temp2_z
 !***********************************************************************
@@ -1593,13 +1582,14 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       use Mpicomm, only: stop_it
-      use Cdata
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_ss_stemp_x: NOT IMPLEMENTED IN EOS_IONIZATION")
-      if (NO_WARN) print*,f,topbot
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_ss_stemp_x
 !***********************************************************************
@@ -1611,13 +1601,14 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       use Mpicomm, only: stop_it
-      use Cdata
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_ss_stemp_y: NOT IMPLEMENTED IN EOS_IONIZATION")
-      if (NO_WARN) print*,f,topbot
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_ss_stemp_y
 !***********************************************************************
@@ -1628,7 +1619,6 @@ module EquationOfState
 !  26-sep-2003/tony: coded
 !
       use Mpicomm, only: stop_it
-      use Cdata
       use Gravity
 !
       character (len=3) :: topbot
@@ -1726,7 +1716,6 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       use Mpicomm, only: stop_it
-      use Cdata
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1737,9 +1726,11 @@ module EquationOfState
 !  first!)
 !
       call stop_it("bc_ss_stemp_y: NOT IMPLEMENTED IN EOS_IONIZATION")
-      if (NO_WARN) print*,f,topbot
 !
-    end subroutine bc_ss_energy
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+!
+    endsubroutine bc_ss_energy
 !***********************************************************************
     subroutine bc_stellar_surface(f,topbot)
 !
@@ -1749,49 +1740,82 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_stellar_surface: NOT IMPLEMENTED IN EOS_IDEALGAS")
-      if (NO_WARN) print*,f,topbot
 !
-    end subroutine bc_stellar_surface
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+!
+    endsubroutine bc_stellar_surface
 !***********************************************************************
     subroutine bc_lnrho_cfb_r_iso(f,topbot,j)
+!
       use Mpicomm, only: stop_it
+!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
+!
       call stop_it("bc_lnrho_cfb_r_iso: NOT IMPLEMENTED IN NOEOS")
-      if (NO_WARN) print*,f,topbot,j
-    end subroutine bc_lnrho_cfb_r_iso
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+      call keep_compiler_quiet(j)
+!
+    endsubroutine bc_lnrho_cfb_r_iso
 !***********************************************************************
     subroutine bc_lnrho_hds_z_iso(f,topbot)
+!
       use Mpicomm, only: stop_it
+!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
+!
       call stop_it("bc_lnrho_hds_z_iso: NOT IMPLEMENTED IN NOEOS")
-      if (NO_WARN) print*,f,topbot
-    end subroutine bc_lnrho_hds_z_iso
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+!
+    endsubroutine bc_lnrho_hds_z_iso
 !***********************************************************************
     subroutine bc_lnrho_hds_z_liso(f,topbot)
+!
       use Mpicomm, only: stop_it
+!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
+!
       call stop_it("bc_lnrho_hds_z_liso: NOT IMPLEMENTED IN NOEOS")
-      if (NO_WARN) print*,f,topbot
-    end subroutine bc_lnrho_hds_z_liso
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+!
+    endsubroutine bc_lnrho_hds_z_liso
 !***********************************************************************
     subroutine bc_lnrho_hdss_z_iso(f,topbot)
+!
       use Mpicomm, only: stop_it
+!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
+!
       call stop_it("bc_lnrho_hdss_z_iso: NOT IMPLEMENTED IN NOEOS")
-      if (NO_WARN) print*,f,topbot
-    end subroutine bc_lnrho_hdss_z_iso
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+!
+    endsubroutine bc_lnrho_hdss_z_iso
 !***********************************************************************
     subroutine bc_lnrho_hdss_z_liso(f,topbot)
+!
       use Mpicomm, only: stop_it
+!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
+!
       call stop_it("bc_lnrho_hdss_z_liso: NOT IMPLEMENTED IN NOEOS")
-      if (NO_WARN) print*,f,topbot
-    end subroutine bc_lnrho_hdss_z_liso
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+!
+    endsubroutine bc_lnrho_hdss_z_liso
 !***********************************************************************
 endmodule EquationOfState

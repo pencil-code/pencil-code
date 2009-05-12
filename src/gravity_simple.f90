@@ -23,6 +23,7 @@ module Gravity
   use Cdata
   use Cparam
   use Messages
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -328,7 +329,7 @@ module Gravity
 !
       call put_shared_variable('nu_epicycle',nu_epicycle,ierr)
 !
-      if (NO_WARN) print*,f
+      call keep_compiler_quiet(f)
 !
     endsubroutine initialize_gravity
 !***********************************************************************
@@ -389,7 +390,7 @@ module Gravity
 !
       if (lpencil(i_epot)) p%epot = p%rho*(potx_xpencil(l1:l2) + poty_ypencil(m) + potz_zpencil(n))
 !
-      if (NO_WARN) print*, f
+      call keep_compiler_quiet(f)
 !
     endsubroutine calc_pencils_gravity
 !***********************************************************************
@@ -453,7 +454,8 @@ module Gravity
         if (idiag_epot/=0) call sum_mn_name(p%epot,idiag_epot)
       endif
 !
-      if (NO_WARN) print*,f,p !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine duu_dt_grav
 !***********************************************************************
@@ -469,7 +471,8 @@ module Gravity
       call fatal_error('potential_global','this subroutine has been '// &
           'deprecated for gravity_simple')
 !
-      if (NO_WARN) print*,pot(1,1,1),pot0  !(keep compiler quiet)
+      call keep_compiler_quiet(pot)
+      call keep_compiler_quiet(pot0)
 !
     endsubroutine potential_global
 !***********************************************************************
@@ -491,7 +494,12 @@ module Gravity
 !
       pot = potx_xpencil(l1:l2) + poty_ypencil(m) + potz_zpencil(n)
 !
-      if (NO_WARN) print*, xmn, ymn, zmn, pot0, grav, rmn
+      call keep_compiler_quiet(xmn)
+      call keep_compiler_quiet(ymn)
+      call keep_compiler_quiet(zmn)
+      call keep_compiler_quiet(pot0)
+      call keep_compiler_quiet(grav)
+      call keep_compiler_quiet(rmn)
 !
     endsubroutine potential_penc
 !***********************************************************************
@@ -601,8 +609,8 @@ module Gravity
 !  Calculate acceleration from master pencils defined in initialize_gravity
 !
       call fatal_error("acceleration_penc_1D","Not implemented")
-
-      if (NO_WARN) gr=0.
+!
+      call keep_compiler_quiet(gr)
 !
     endsubroutine acceleration_penc_1D
 !***********************************************************************
@@ -624,7 +632,11 @@ module Gravity
 !
       g_r = 0.
 !
-      if (NO_WARN) print*,x,y,z,r,g_r     !(to keep compiler quiet)
+      call keep_compiler_quiet(x)
+      call keep_compiler_quiet(y)
+      call keep_compiler_quiet(z)
+      call keep_compiler_quiet(r)
+      call keep_compiler_quiet(g_r)
 !
     endsubroutine acceleration_point
 !***********************************************************************

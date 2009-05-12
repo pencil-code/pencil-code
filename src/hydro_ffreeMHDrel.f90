@@ -18,6 +18,7 @@ module Hydro
   use Cparam
   use Viscosity
   use Messages
+  use Sub, only: keep_compiler_quiet
 
   implicit none
 
@@ -107,7 +108,8 @@ module Hydro
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
-      if (ip == 0) print*,f,lstarting
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_hydro
 !***********************************************************************
@@ -717,7 +719,7 @@ module Hydro
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
 !
-      if (NO_WARN) print*, f(1,1,1,1)
+      call keep_compiler_quiet(f)
 !
     endsubroutine impose_velocity_ceiling
 !***********************************************************************

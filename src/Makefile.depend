@@ -250,7 +250,7 @@ fft.o : fft.f
 #
 fftpack.o : fftpack.f
 #
-nofourier.o: nofourier.f90 fourier.h $(MESSAGES_OBJ) $(MPICOMM_FIX).o cparam.o cdata.o
+nofourier.o: nofourier.f90 fourier.h $(MESSAGES_OBJ) $(MPICOMM_FIX).o sub.o cparam.o cdata.o
 #
 fourier_fft.o: fourier_fft.f90 fft.o fourier.h $(MESSAGES_OBJ) $(MPICOMM_FIX).o cparam.o cdata.o
 #
@@ -272,7 +272,7 @@ $(CPARAM_OBJ): $(CPARAM_SRC) cparam.local cparam.inc
 #
 $(CDATA_OBJ): $(CDATA_SRC) $(CPARAM_OBJ)
 #
-$(GRID_OBJ): $(GRID_SRC) $(CDATA_OBJ) $(MPICOMM_OBJ) $(MESSAGES_OBJ)
+$(GRID_OBJ): $(GRID_SRC) $(CDATA_OBJ) $(MPICOMM_OBJ) $(MESSAGES_OBJ) sub.o
 #
 $(GENERAL_OBJ): $(GENERAL_SRC) $(MESSAGES_OBJ) $(CPARAM_OBJ) $(CDATA_OBJ)
 #
@@ -292,7 +292,7 @@ $(BORDER_PROFILES_OBJ): $(CDATA_OBJ) $(BORDER_PROFILES_SRC) $(SUB_OBJ)
 #
 slices.o: slices.f90 $(CDATA_OBJ) $(SUB_OBJ) $(EOS_OBJ) $(PARTICLES_MAIN_OBJ) $(SHOCK_OBJ) $(INTERSTELLAR_OBJ) $(DENSITY_OBJ) $(ENTROPY_OBJ) $(PSCALAR_OBJ) $(EOS_OBJ) $(COSMICRAY_OBJ) $(DUSTDENSITY_OBJ) $(DUSTVELOCITY_OBJ) $(CHEMISTRY_OBJ) $(HYDRO_OBJ) $(RADIATION_OBJ) $(MAGNETIC_OBJ) $(SPECIAL_OBJ) $(CHIRAL_OBJ)  $(TESTSCALAR_OBJ) $(TESTFIELD_OBJ) $(TESTFLOW_OBJ) diagnostics.o
 #
-$(SUB_OBJ): sub.f90 $(CDATA_OBJ) $(MPICOMM_OBJ) $(DERIV).o $(MESSAGES_OBJ) $(GENERAL_OBJ) $(GRID_OBJ)
+$(SUB_OBJ): sub.f90 $(CDATA_OBJ) $(MPICOMM_OBJ) $(DERIV).o $(MESSAGES_OBJ) $(GENERAL_OBJ)
 #
 param_io.o: param_io.f90 $(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(TIMESTEP_OBJ) $(TIMEAVG_OBJ) $(physics) $(PARTICLES_MAIN_OBJ) $(TESTPERTURB_OBJ)
 #

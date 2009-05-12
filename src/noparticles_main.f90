@@ -4,16 +4,16 @@
 !
 !***********************************************************************
 module Particles_main
-
+!
   use Cdata
   use Particles_cdata
-
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   include 'particles_main.h'
-
+!
   contains
-
 !***********************************************************************
     subroutine particles_register_modules()
 !
@@ -31,7 +31,7 @@ module Particles_main
 !
       logical :: lreset
 !
-      if (NO_WARN) print*, lreset
+      call keep_compiler_quiet(lreset)
 !
     endsubroutine particles_rprint_list
 !***********************************************************************
@@ -43,7 +43,7 @@ module Particles_main
 !
       logical :: lstarting
 !
-      if (NO_WARN) print*, lstarting
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine particles_initialize_modules
 !***********************************************************************
@@ -55,7 +55,7 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*, f
+      call keep_compiler_quiet(f)
 !
     endsubroutine particles_init
 !***********************************************************************
@@ -67,7 +67,7 @@ module Particles_main
 !
       character (len=*) :: filename
 !
-      if (NO_WARN) print*, filename
+      call keep_compiler_quiet(filename)
 !
     endsubroutine particles_read_snapshot
 !***********************************************************************
@@ -81,7 +81,9 @@ module Particles_main
       character (len=*) :: chsnap,flist
       optional :: flist
 !
-      if (NO_WARN) print*, chsnap, enum, flist
+      call keep_compiler_quiet(chsnap)
+      call keep_compiler_quiet(enum)
+      call keep_compiler_quiet(flist)
 !
     endsubroutine particles_write_snapshot
 !***********************************************************************
@@ -93,7 +95,7 @@ module Particles_main
 !
       character (len=*) :: chsnap
 !
-      if (NO_WARN) print*, chsnap
+      call keep_compiler_quiet(chsnap)
 !
     endsubroutine particles_write_dsnapshot
 !***********************************************************************
@@ -105,7 +107,7 @@ module Particles_main
 !
       character (len=*) :: filename
 !
-      if (NO_WARN) print*, filename
+      call keep_compiler_quiet(filename)
 !
     endsubroutine particles_write_pdim
 !***********************************************************************
@@ -133,7 +135,7 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*, f
+      call keep_compiler_quiet(f)
 !
     endsubroutine particles_boundconds
 !***********************************************************************
@@ -153,7 +155,7 @@ module Particles_main
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (NO_WARN) print*, lpencil_in
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine particles_pencil_interdep
 !***********************************************************************
@@ -166,7 +168,8 @@ module Particles_main
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      if (NO_WARN) print*, f, p
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine particles_calc_pencils
 !***********************************************************************
@@ -181,7 +184,10 @@ module Particles_main
       real :: rhs_poisson_const
       logical :: lcontinued
 !
-      if (NO_WARN) print*, f, rhs_poisson, rhs_poisson_const, lcontinued
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(rhs_poisson)
+      call keep_compiler_quiet(rhs_poisson_const)
+      call keep_compiler_quiet(lcontinued)
 !
     endsubroutine particles_calc_selfpotential
 !***********************************************************************
@@ -189,7 +195,7 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*, f
+      call keep_compiler_quiet(f)
 !
     endsubroutine particles_before_boundary
 !***********************************************************************
@@ -197,7 +203,7 @@ module Particles_main
 !
       real :: dummy_=0.
 !
-      if (NO_WARN) print*,dummy_
+      call keep_compiler_quiet(dummy_)
 !
     endsubroutine particles_special
 !***********************************************************************
@@ -210,7 +216,8 @@ module Particles_main
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
 !
-      if (NO_WARN) print*, f, df
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
 !
     endsubroutine particles_pde
 !***********************************************************************
@@ -224,7 +231,9 @@ module Particles_main
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      if (NO_WARN) print*, f, df, p
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine particles_pde_pencil
 !***********************************************************************
@@ -236,7 +245,7 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*,f
+      call keep_compiler_quiet(f)
 !
     endsubroutine particles_create_sinks
 !***********************************************************************
@@ -245,7 +254,8 @@ module Particles_main
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
-      if (NO_WARN) print*, unit, iostat
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_particles_init_pars_wrap
 !***********************************************************************
@@ -253,7 +263,7 @@ module Particles_main
 !
       integer, intent (in) :: unit
 !
-      if (NO_WARN) print*, unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_particles_init_pars_wrap
 !***********************************************************************
@@ -262,7 +272,8 @@ module Particles_main
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
-      if (NO_WARN) print*, unit, iostat
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_particles_run_pars_wrap
 !***********************************************************************
@@ -270,7 +281,7 @@ module Particles_main
 !
       integer, intent (in) :: unit
 !
-      if (NO_WARN) print*, unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_particles_run_pars_wrap
 !***********************************************************************
@@ -282,7 +293,7 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*, f
+      call keep_compiler_quiet(f)
 !
     endsubroutine particles_powersnap
 !***********************************************************************
@@ -295,7 +306,8 @@ module Particles_main
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
-      if (NO_WARN) print*, f, slices%ready
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices%ready)
 !
     endsubroutine get_slices_particles
 !***********************************************************************

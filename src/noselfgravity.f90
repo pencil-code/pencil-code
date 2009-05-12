@@ -8,31 +8,28 @@
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
-
 module Selfgravity
-
+!
   use Cdata
   use Cparam
   use Messages
-
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   include 'selfgravity.h'
-
+!
   real :: rhs_poisson_const=0.
-
+!
   integer :: idiag_gpoten=0
-
+!
   contains
-
 !***********************************************************************
     subroutine register_selfgravity()
 !
 !  Register self gravity variables.
 !
 !  15-may-06/anders+jeff: dummy
-!
-      use Cdata
 !
       lselfgravity=.false.
 !
@@ -63,7 +60,7 @@ module Selfgravity
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_selfgravity
 !***********************************************************************
@@ -79,7 +76,8 @@ module Selfgravity
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      if (NO_WARN) print*, f, p !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_selfgravity
 !***********************************************************************
@@ -91,7 +89,7 @@ module Selfgravity
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*, f
+      call keep_compiler_quiet(f)
 !
     endsubroutine calc_selfpotential
 !***********************************************************************
@@ -105,7 +103,9 @@ module Selfgravity
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      if (NO_WARN) print*, f, df, p !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine duu_dt_selfgrav
 !***********************************************************************
@@ -116,7 +116,8 @@ module Selfgravity
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      if (NO_WARN) print*, unit, iostat
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_selfgravity_init_pars
 !***********************************************************************
@@ -126,7 +127,7 @@ module Selfgravity
 !
       integer, intent(in) :: unit
 !
-      if (NO_WARN) print*, unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_selfgravity_init_pars
 !***********************************************************************
@@ -137,7 +138,8 @@ module Selfgravity
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      if (NO_WARN) print*, unit, iostat
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_selfgravity_run_pars
 !***********************************************************************
@@ -147,7 +149,7 @@ module Selfgravity
 !
       integer, intent(in) :: unit
 !
-      if (NO_WARN) print*, unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_selfgravity_run_pars
 !***********************************************************************
@@ -164,7 +166,7 @@ module Selfgravity
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-      if (NO_WARN) print*, lreset !(to keep compiler quiet)
+      call keep_compiler_quiet(lreset)
 !
 !  write column where which variable is stored
 !

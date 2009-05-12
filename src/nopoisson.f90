@@ -10,19 +10,18 @@
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
-
 module Poisson
-
+!
   use Cdata
   use Cparam
   use Messages
-
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   include 'poisson.h'
-
+!
   contains
-
 !***********************************************************************
     subroutine initialize_poisson()
 !
@@ -41,7 +40,7 @@ module Poisson
 !
       real, dimension (nx,ny,nz) :: phi
 !
-      if (NO_WARN) print*, phi
+      call keep_compiler_quiet(phi)
 !
     endsubroutine inverse_laplacian
 !***********************************************************************
@@ -54,7 +53,8 @@ module Poisson
       integer :: unit
       integer, optional :: iostat
 !
-      if (NO_WARN) print*, unit, iostat
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_poisson_init_pars
 !***********************************************************************
@@ -66,7 +66,7 @@ module Poisson
 !
       integer :: unit
 !
-      if (NO_WARN) print*, unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_poisson_init_pars
 !***********************************************************************
@@ -79,7 +79,8 @@ module Poisson
       integer :: unit
       integer, optional :: iostat
 !
-      if (NO_WARN) print*, unit, iostat
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_Poisson_run_pars
 !***********************************************************************
@@ -91,7 +92,7 @@ module Poisson
 !
       integer :: unit
 !
-      if (NO_WARN) print*, unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_poisson_run_pars
 !***********************************************************************

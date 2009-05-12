@@ -3,23 +3,22 @@
 !  This module contains FFT wrapper subroutines.
 !
 module Fourier
-
+!
   use Cdata
   use Cparam
   use Messages
-  use Mpicomm, only: transp
-
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   include 'fourier.h'
-
+!
   interface fourier_transform_other
     module procedure fourier_transform_other_1
     module procedure fourier_transform_other_2
   endinterface
-
+!
   contains
-
 !***********************************************************************
     subroutine fourier_transform(a_re,a_im,linv)
 !
@@ -31,7 +30,9 @@ module Fourier
       call fatal_error('fourier_transform', &
           'this sub is not available in nofourier.f90!')
 !
-      if (NO_WARN) print*, a_re, a_im, linv
+      call keep_compiler_quiet(a_re)
+      call keep_compiler_quiet(a_im)
+      call keep_compiler_quiet(linv)
 !
     endsubroutine fourier_transform
 !***********************************************************************
@@ -45,7 +46,9 @@ module Fourier
       call fatal_error('fourier_transform_xy', &
           'this sub is not available in nofourier.f90!')
 !
-      if (NO_WARN) print*, a_re, a_im, linv
+      call keep_compiler_quiet(a_re)
+      call keep_compiler_quiet(a_im)
+      call keep_compiler_quiet(linv)
 !
     endsubroutine fourier_transform_xy
 !***********************************************************************
@@ -59,7 +62,9 @@ module Fourier
       call fatal_error('fourier_transform_xz', &
           'this sub is not available in nofourier.f90!')
 !
-      if (NO_WARN) print*, a_re, a_im, linv
+      call keep_compiler_quiet(a_re)
+      call keep_compiler_quiet(a_im)
+      call keep_compiler_quiet(linv)
 !
     endsubroutine fourier_transform_xz
 !***********************************************************************
@@ -73,7 +78,9 @@ module Fourier
       call fatal_error('fourier_transform_x', &
           'this sub is not available in nofourier.f90!')
 !
-      if (NO_WARN) print*, a_re, a_im, linv
+      call keep_compiler_quiet(a_re)
+      call keep_compiler_quiet(a_im)
+      call keep_compiler_quiet(linv)
 !
     endsubroutine fourier_transform_x
 !***********************************************************************
@@ -87,7 +94,9 @@ module Fourier
       call fatal_error('fourier_transform_y', &
           'this sub is not available in nofourier.f90!')
 !
-      if (NO_WARN) print*, a_re, a_im, linv
+      call keep_compiler_quiet(a_re)
+      call keep_compiler_quiet(a_im)
+      call keep_compiler_quiet(linv)
 !
     endsubroutine fourier_transform_y
 !***********************************************************************
@@ -101,7 +110,9 @@ module Fourier
       call fatal_error('fourier_transform_shear', &
           'this sub is not available in nofourier.f90!')
 !
-      if (NO_WARN) print*, a_re, a_im, linv
+      call keep_compiler_quiet(a_re)
+      call keep_compiler_quiet(a_im)
+      call keep_compiler_quiet(linv)
 !
     endsubroutine fourier_transform_shear
 !***********************************************************************
@@ -116,7 +127,9 @@ module Fourier
       call fatal_error('fourier_transform_shear_xy', &
           'this sub is not available in nofourier.f90!')
 !
-      if (NO_WARN) print*, a_re, a_im, linv
+      call keep_compiler_quiet(a_re)
+      call keep_compiler_quiet(a_im)
+      call keep_compiler_quiet(linv)
 !
     endsubroutine fourier_transform_shear_xy
 !***********************************************************************
@@ -130,7 +143,9 @@ module Fourier
       call fatal_error('fourier_transform_other_1', &
           'this sub is not available in nofourier.f90!')
 !
-      if (NO_WARN) print*, a_re, a_im, linv
+      call keep_compiler_quiet(a_re)
+      call keep_compiler_quiet(a_im)
+      call keep_compiler_quiet(linv)
 !
     endsubroutine fourier_transform_other_1
 !***********************************************************************
@@ -144,7 +159,9 @@ module Fourier
       call fatal_error('fourier_transform_other_2', &
           'this sub is not available in nofourier.f90!')
 !
-      if (NO_WARN) print*, a_re, a_im, linv
+      call keep_compiler_quiet(a_re)
+      call keep_compiler_quiet(a_im)
+      call keep_compiler_quiet(linv)
 !
     endsubroutine fourier_transform_other_2
 !***********************************************************************
@@ -158,7 +175,9 @@ module Fourier
       call fatal_error('fourier_transform_xy_xy', &
           'this sub is not available in nofourier.f90!')
 !
-      if (NO_WARN) print*, a_re, a_im, linv
+      call keep_compiler_quiet(a_re)
+      call keep_compiler_quiet(a_im)
+      call keep_compiler_quiet(linv)
 !
     endsubroutine fourier_transform_xy_xy
 !***********************************************************************
@@ -172,7 +191,9 @@ module Fourier
       call fatal_error('fourier_transform_xy_xy', &
           'this sub is not available in nofourier.f90!')
 !
-      if (NO_WARN) print*, a_re, a_im, linv
+      call keep_compiler_quiet(a_re)
+      call keep_compiler_quiet(a_im)
+      call keep_compiler_quiet(linv)
 !
     endsubroutine fourier_transform_xy_xy_other
 !***********************************************************************
@@ -186,7 +207,9 @@ module Fourier
       call fatal_error('fourier_transform_y_y', &
           'this sub is not available in nofourier.f90!')
 !
-      if (NO_WARN) print*, a_re, a_im, linv
+      call keep_compiler_quiet(a_re)
+      call keep_compiler_quiet(a_im)
+      call keep_compiler_quiet(linv)
 !
     endsubroutine fourier_transform_y_y
 !***********************************************************************
@@ -203,7 +226,8 @@ module Fourier
       call fatal_error('fourier_shift_yz_y', &
           'this sub is not available in nofourier.f90!')
 !
-      if (NO_WARN) print*, a_re, shift_y
+      call keep_compiler_quiet(a_re)
+      call keep_compiler_quiet(shift_y)
 !
     endsubroutine fourier_shift_yz_y
 !***********************************************************************
@@ -219,7 +243,8 @@ module Fourier
       call fatal_error('fourier_transform_y', &
           'this sub is not available in nofourier.f90!')
 !
-      if (NO_WARN) print*, a_re, shift_y
+      call keep_compiler_quiet(a_re)
+      call keep_compiler_quiet(shift_y)
 !
     endsubroutine fourier_shift_y
 !***********************************************************************
@@ -232,7 +257,10 @@ module Fourier
       logical, optional :: linv
       real, dimension(2*na+15),optional :: wsavex_temp
 !
-      if (NO_WARN) print*,a,na,ifirst_fft,linv
+      call keep_compiler_quiet(a)
+      call keep_compiler_quiet(na)
+      call keep_compiler_quiet(ifirst_fft)
+      call keep_compiler_quiet(linv)
 !
     endsubroutine fourier_transform_real_1
 !***********************************************************************

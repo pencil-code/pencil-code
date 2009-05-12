@@ -809,7 +809,7 @@ module Boundcond
           endselect
         endif
       end do
-    end subroutine
+    endsubroutine
 !***********************************************************************
     subroutine bc_per_x(f,topbot,j)
 !
@@ -1631,7 +1631,7 @@ module Boundcond
       call get_shared_variable('llambda_effect',llambda_effect,ierr)
       if (ierr/=0) call stop_it("bc_set_sfree_x: "//&
           "there was a problem when getting llambda_effect")      
-      if(llambda_effect) then 
+      if (llambda_effect) then 
       call get_shared_variable('Lambda_V0',Lambda_V0,ierr)
       call get_shared_variable('Lambda_Omega',Lambda_Omega,ierr)
       if (ierr/=0) call stop_it("bc_set_sfree_x: "//&
@@ -1647,7 +1647,7 @@ module Boundcond
 ! The coding assumes we are using 6-th order centered finite difference for our
 ! derivatives. 
 !
-        if((llambda_effect).and.(j.eq.iuz)) then
+        if ((llambda_effect).and.(j.eq.iuz)) then
           do iy=1,my
              boundary_value(iy,:)=f(l1,iy,:,j)/x(l1)+Lambda_V0*(f(l1,iy,:,iuz)/x(l1)+&
                 Lambda_Omega*sin(y(iy)))
@@ -1662,7 +1662,7 @@ module Boundcond
 ! top boundary
 !
       case('top')
-        if((llambda_effect).and.(j.eq.iuz)) then
+        if ((llambda_effect).and.(j.eq.iuz)) then
           do iy=1,my
              boundary_value(iy,:)=f(l2,iy,:,j)/x(l2)+Lambda_V0*(f(l2,iy,:,iuz)/x(l2)+&
                 Lambda_Omega*sin(y(iy)))
@@ -5472,7 +5472,7 @@ module Boundcond
       if (ierr/=0) call stop_it("bc_lnTT_flux_z: "//&
            "there was a problem when getting Fbot")      
  
-      if(headtt) print*,'bc_ADI_flux_z: Fbot,hcond,dz=',Fbot,hcond,dz
+      if (headtt) print*,'bc_ADI_flux_z: Fbot,hcond,dz=',Fbot,hcond,dz
 
       if (topbot.eq.'bot') then
         tmp_x=-Fbot/hcond

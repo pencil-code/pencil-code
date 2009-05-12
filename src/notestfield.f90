@@ -1,10 +1,10 @@
 ! $Id$
-
+!
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
 !  testfield relevant subroutines listed in here.
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -15,24 +15,24 @@
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
-
 module Testfield
-
+!
+  use Cdata
   use Cparam
-
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   include 'testfield.h'
-
+!
   real :: dummy=0.
-
+!
   namelist /testfield_init_pars/ &
-       dummy
+      dummy
   namelist /testfield_run_pars/ &
-       dummy
-
+      dummy
+!
   contains
-
 !***********************************************************************
     subroutine register_testfield()
 !
@@ -44,22 +44,19 @@ module Testfield
 !
 !  Dummy routine
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (ip==0) print*,f  !(to keep compiler quiet)
+      call keep_compiler_quiet(f)
+!
     endsubroutine initialize_testfield
 !***********************************************************************
     subroutine init_aatest(f)
 !
 !  Dummy routine
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (ip==0) print*,f  !(to keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine init_aatest
 !***********************************************************************
@@ -73,51 +70,50 @@ module Testfield
 !
 !  Dummy routine
 !
-      use Cdata
-!
       logical, dimension(npencils) :: lpencil_in
 !
-      if (NO_WARN) print*, lpencil_in
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_testfield
 !***********************************************************************
     subroutine read_testfield_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      if (present(iostat).and.NO_WARN) print*,iostat
-      if (NO_WARN) print*,unit !(keep compiler quiet)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(unit)
 !
     endsubroutine read_testfield_init_pars
 !***********************************************************************
     subroutine write_testfield_init_pars(unit)
       integer, intent(in) :: unit
 !
-      if (NO_WARN) print*,unit !(keep compiler quiet)
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_testfield_init_pars
 !***********************************************************************
     subroutine read_testfield_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      if (present(iostat).and.NO_WARN) print*,iostat
-      if (NO_WARN) print*,unit !(keep compiler quiet)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(unit)
 !
     endsubroutine read_testfield_run_pars
 !***********************************************************************
     subroutine write_testfield_run_pars(unit)
+!
       integer, intent(in) :: unit
-
-      if (NO_WARN) print*,unit !(keep compiler quiet)
-
+!
+      call keep_compiler_quiet(unit)
+!
     endsubroutine write_testfield_run_pars
 !***********************************************************************
     subroutine daatest_dt(f,df,p)
 !
 !  Dummy routine
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -126,7 +122,8 @@ module Testfield
       intent(in)     :: f, p
       intent(inout)  :: df
 !
-      if (ip==0) print*, f, df, p  !(to keep compiler quiet)
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine daatest_dt
 !***********************************************************************
@@ -149,7 +146,7 @@ module Testfield
       real, dimension (mx,my,mz,mfarray) :: f
       intent(in)     :: f
 !
-      if (NO_WARN) print*, f
+      call keep_compiler_quiet(f)
 !
     endsubroutine calc_ltestfield_pars
 !***********************************************************************
@@ -160,7 +157,7 @@ module Testfield
       real, dimension (mx,my,mz,mfarray) :: f
       intent(inout) :: f
 !
-      if (NO_WARN) print*, f
+      call keep_compiler_quiet(f)
 !
     endsubroutine rescaling_testfield
 !***********************************************************************
@@ -168,13 +165,12 @@ module Testfield
 !
 !  Dummy routine
 !
-      use Cdata
-!
       logical :: lreset
       logical, optional :: lwrite
 !
-      if (ip==0) print*,lreset,lwrite  !(to keep compiler quiet)
+      call keep_compiler_quiet(lreset)
+      if (present(lwrite)) call keep_compiler_quiet(lwrite)
+!
     endsubroutine rprint_testfield
 !***********************************************************************
-
 endmodule Testfield

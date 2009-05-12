@@ -659,7 +659,7 @@ module Diagnostics
         close(1)
       endif
 !
-      if (NO_WARN) write(*,*) ch       ! (keep compiler quiet)
+      call keep_compiler_quiet(ch)
 !
     endsubroutine write_yaverages
 !***********************************************************************
@@ -680,7 +680,7 @@ module Diagnostics
         close(1)
       endif
 !
-      if (NO_WARN) write(*,*) ch       ! (keep compiler quiet)
+      call keep_compiler_quiet(ch)
 !
     endsubroutine write_zaverages
 !***********************************************************************

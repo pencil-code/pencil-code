@@ -70,9 +70,10 @@
 
 module Special
 
-  use Cparam
   use Cdata
+  use Cparam
   use Messages
+  use Sub, only: keep_compiler_quiet
 
   implicit none
 
@@ -152,7 +153,6 @@ module Special
 ! 
 !  6-oct-03/tony: coded
 !
-      use Cdata
       use FArrayManager
 ! 
 ! Set any required f-array indexes to the next available slot 
@@ -171,8 +171,6 @@ module Special
 !  called by run.f90 after reading parameters, but before the time loop
 !
 !  06-oct-03/tony: coded
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real :: rr, r2, bdry_depth, inner_radius, proximity
@@ -240,7 +238,7 @@ module Special
       endif
 !
 ! DO NOTHING
-      if (NO_WARN) print*,f  !(keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -249,7 +247,6 @@ module Special
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
 !
-      use Cdata
       use Mpicomm
       use Sub
 !
@@ -339,7 +336,7 @@ module Special
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (NO_WARN) print*,lpencil_in(1)
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_special
 !***********************************************************************
@@ -350,15 +347,14 @@ module Special
 !
 !   24-nov-04/tony: coded
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mvar+maux) :: f       
       type (pencil_case) :: p
 !
       intent(in) :: f
       intent(inout) :: p
 !     
-      if (NO_WARN) print*,f(1,1,1,1),p   !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -376,7 +372,6 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
       use Mpicomm
       use Sub
       use Deriv
@@ -498,7 +493,9 @@ module Special
       endif
 
 ! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,f,df,p
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 
     endsubroutine dspecial_dt
 !***********************************************************************
@@ -548,9 +545,8 @@ endsubroutine read_special_run_pars
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
       use Sub
-
+!
       integer :: iname
       logical :: lreset,lwr
       logical, optional :: lwrite
@@ -576,8 +572,7 @@ endsubroutine read_special_run_pars
         write(3,*) 'ipsi_real=',ipsi_real
         write(3,*) 'ipsi_imag=',ipsi_imag
       endif
-
-
+!
     endsubroutine rprint_special
 !***********************************************************************
     subroutine get_slices_special(f,slices)
@@ -585,8 +580,6 @@ endsubroutine read_special_run_pars
 !  Write slices for animation of gross_pitaevskii variables.
 !
 !  26-jul-06/tony: coded
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (slice_data) :: slices
@@ -620,8 +613,6 @@ endsubroutine read_special_run_pars
 !
 !  15-jan-08/axel: coded
 !
-      use Sub, only: keep_compiler_quiet
-!
       real, dimension (mx,my,mz,mfarray) :: f
       intent(inout) :: f
 !
@@ -639,8 +630,6 @@ endsubroutine read_special_run_pars
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
-      
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 
@@ -652,10 +641,9 @@ endsubroutine read_special_run_pars
 !!  df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + SOME NEW TERM
 !!
 !!
-
-! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,df,p
-
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
+!
     endsubroutine special_calc_density
 !***********************************************************************
     subroutine special_calc_hydro(f,df,p)
@@ -668,12 +656,9 @@ endsubroutine read_special_run_pars
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
-      
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-
 !!
 !!  SAMPLE IMPLEMENTATION
 !!     (remember one must ALWAYS add to df)
@@ -684,10 +669,9 @@ endsubroutine read_special_run_pars
 !!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
 !!
 !!
-
-! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,df,p
-
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
+!
     endsubroutine special_calc_hydro
 !***********************************************************************
     subroutine special_calc_magnetic(df,p)
@@ -700,8 +684,6 @@ endsubroutine read_special_run_pars
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
-      
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 
@@ -715,10 +697,9 @@ endsubroutine read_special_run_pars
 !!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
 !!
 !!
-
-! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,df,p
-
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
+!
     endsubroutine special_calc_magnetic
 !!***********************************************************************
     subroutine special_calc_entropy(df,p)
@@ -731,8 +712,6 @@ endsubroutine read_special_run_pars
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
-      
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 
@@ -744,27 +723,25 @@ endsubroutine read_special_run_pars
 !!  df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + SOME NEW TERM
 !!
 !!
-
-! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,df,p
-
+!
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
+!
     endsubroutine special_calc_entropy
 !***********************************************************************
     function vortex_line(vl)
-      ! Vortex line initial condition
-      use Cdata
-      
+! Vortex line initial condition
       real, dimension(nx,2) :: vortex_line
       type (line_param), intent(in) :: vl
       real, dimension(nx) :: vort_r, vort_theta
-  
+!  
       call get_r(vl%x0, vl%y0, vl%amp, vl%ll, vort_r)
       call get_theta(vl%x0, vl%y0, vl%amp, vl%ll, vl%sgn, vort_theta)
-  
+!  
       vortex_line(:,1) = amp(vort_r) * cos(vort_theta)
       vortex_line(:,2) = amp(vort_r) * sin(vort_theta)
-      
-    end function vortex_line
+!      
+    endfunction vortex_line
 !***********************************************************************
     function vortex_ring(vr)
       ! Vortex ring initial condition
@@ -794,7 +771,7 @@ endsubroutine read_special_run_pars
       vortex_ring(:,2) = rr1*rr2*scal**2*((x(l1:l2)-vr%x0) * &
                           (vr%dir*2.*vr%r0))
   
-    end function vortex_ring
+    endfunction vortex_ring
 !***********************************************************************
 !    function vortex_ring2(x0, y0, r0, dir)
 !      ! Vortex ring initial condition
@@ -837,59 +814,50 @@ endsubroutine read_special_run_pars
 !      end do
 !  
 !      return
-!    end function vortex_ring2
+!    endfunction vortex_ring2
 !***********************************************************************
     subroutine get_r(vort_x0, vort_y0, vort_a, vort_ll, vort_r)
-      ! Get the cylindrical-polar radius r**2=x**2+y**2
-      use Cdata
-  
+! Get the cylindrical-polar radius r**2=x**2+y**2
       real, intent(in)  :: vort_x0, vort_y0, vort_a, vort_ll
       real, dimension(nx), intent(out) :: vort_r
-  
+!  
        vort_r = sqrt((x(l1:l2)-vort_x0)**2 +  &
             spread((y(m)-vort_y0-vort_a*cos(2.0*pi*z(n)/vort_ll))**2,1,nx))
-  
-    end subroutine get_r
+!  
+    endsubroutine get_r
 !***********************************************************************
     subroutine get_s(s, sy0)
-      ! Another radial variable
-      use Cdata
-  
+! Another radial variable
       real, intent(in)  :: sy0
       real, intent(out) :: s
-  
+!  
       s = sqrt((y(m)-sy0)**2 + z(n)**2)
-
-    end subroutine get_s
+!
+    endsubroutine get_s
 !***********************************************************************
     subroutine get_theta(vort_x0, vort_y0, vort_a, vort_ll, vort_sgn, vort_theta)
-      ! Get the argument theta=arctan(y/x)
-      use Cdata
-  
+! Get the argument theta=arctan(y/x)
       real, intent(in) :: vort_x0, vort_y0, vort_a, vort_ll, vort_sgn
       real, dimension(nx), intent(out) :: vort_theta
-  
+!  
       vort_theta = vort_sgn * atan2( &
             spread(y(m)-vort_y0-vort_a*cos(2.0*pi*z(n)/vort_ll),1,nx), &
                          x(l1:l2)-vort_x0)
-  
-    end subroutine get_theta
+!  
+    endsubroutine get_theta
 !***********************************************************************
     subroutine get_rr(r,rr)
-      ! R in psi=R(r)exp(i*theta)
-      use Cdata
-  
+! R in psi=R(r)exp(i*theta)
       real, dimension(nx), intent(in)  :: r
       real, dimension(nx), intent(out) :: rr
-      
+!      
       rr = sqrt( ((0.3437+0.0286*r**2)) / &
                   (1.0+(0.3333*r**2)+(0.0286*r**4)) )
-  
-    end subroutine get_rr
+!  
+    endsubroutine get_rr
 !***********************************************************************
   function complex_mult(a,b)
     ! Amplitude of a vortex line
-    use Cdata
 
     real, dimension(nx,2), intent(in) :: a, b
     real, dimension(nx,2) :: complex_mult
@@ -897,11 +865,10 @@ endsubroutine read_special_run_pars
     complex_mult(:,1) = a(:,1)*b(:,1)-a(:,2)*b(:,2)
     complex_mult(:,2) = a(:,2)*b(:,1)+a(:,1)*b(:,2)
 
-  end function complex_mult
+  endfunction complex_mult
 !***********************************************************************
   function amp(vort_r)
     ! Amplitude of a vortex line
-    use Cdata
 
     real, dimension(nx) :: amp
     real, dimension(nx), intent(in) :: vort_r
@@ -910,10 +877,9 @@ endsubroutine read_special_run_pars
 
     amp = 1.0 - exp(c1*vort_r**c2)
 
-  end function amp
+  endfunction amp
 !***********************************************************************
   function imaged_sphere(sx,sy,sz,level)
-    use Cdata
     implicit none
 
     real, intent(in) :: sx,sy,sz
@@ -939,10 +905,9 @@ endsubroutine read_special_run_pars
     !                         tanh(sqrt(x(i)**2+y(j)**2+z(k)**2)-rad)-&
     !                         eps),0.0)
 
-  end function imaged_sphere
+  endfunction imaged_sphere
 !***********************************************************************
   function sphere(sx,sy,sz)
-    use Cdata
     implicit none
 
     real, intent(in) :: sx,sy,sz
@@ -952,10 +917,9 @@ endsubroutine read_special_run_pars
 !    sphere = 0.5*(1.0+tanh(sqrt((x(l1:l2)-sx)**2+(y(m)-sy)**2+(z(n)-sz)**2)-test_sphere_radius-eps))
     sphere = tanh(sqrt((x(l1:l2)-sx)**2+(y(m)-sy)**2+(z(n)-sz)**2)-test_sphere_radius)
 
-  end function sphere
+  endfunction sphere
 !***********************************************************************
   function sphere_sharp(sx,sy,sz)
-    use Cdata
     implicit none
 
     real, intent(in) :: sx,sy,sz
@@ -965,7 +929,7 @@ endsubroutine read_special_run_pars
 
     sphere_sharp = max(tanh(sqrt((x(l1:l2)-sx)**2+(y(m)-sy)**2+(z(n)-sz)**2)-rad-eps),0.)
 
-  end function sphere_sharp
+  endfunction sphere_sharp
 !***********************************************************************
     subroutine special_boundconds(f,bc)
 !
@@ -977,12 +941,12 @@ endsubroutine read_special_run_pars
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
 !      
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       type (boundary_condition) :: bc
 !
-      if (NO_WARN) print*,f(1,1,1,1),bc%bcname
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(bc%bcname)
 !
     endsubroutine special_boundconds
 !***********************************************************************
@@ -992,7 +956,6 @@ endsubroutine read_special_run_pars
 !
 !  10-jun-06/anders: coded
 !
-      use Cdata
       use Messages, only: fatal_error
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -1144,8 +1107,6 @@ endsubroutine read_special_run_pars
 !
 !   06-jul-06/tony: coded
 !
-      use Cdata
-!      
       real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
       real, dimension (2)  :: bdry_value
       integer :: i

@@ -15,25 +15,18 @@
 !
 !***************************************************************
 module Forcing
-
-! Dummy module for hydro/mhd without forcing
-
+!
   use Cdata
-  use Sub, only: keep_compiler_quiet
   use Messages
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
   include 'forcing.h'
-
-  !namelist /forcing_init_pars/ dummy
-  !namelist /forcing_run_pars/  dummy
-
-  ! other variables (needs to be consistent with reset list below)
+!
   integer :: idiag_rufm=0
-
+!
   contains
-
 !***********************************************************************
     subroutine register_forcing()
 !
@@ -59,7 +52,8 @@ module Forcing
 !
       logical :: lstarting
 !
-      if (NO_WARN) print*,'lstarting=',lstarting !(to keep compiler quiet)
+      call keep_compiler_quiet(lstarting)
+!
     endsubroutine initialize_forcing
 !***********************************************************************
     subroutine addforce(f)
@@ -120,39 +114,45 @@ module Forcing
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      if (NO_WARN) print*,df,p
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine forcing_continuous
 !***********************************************************************
     subroutine read_forcing_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
-
+!
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+!
     endsubroutine read_forcing_init_pars
 !***********************************************************************
     subroutine write_forcing_init_pars(unit)
+!
       integer, intent(in) :: unit
-
-      if (NO_WARN) print*,unit
-
+!
+      call keep_compiler_quiet(unit)
+!
     endsubroutine write_forcing_init_pars
 !***********************************************************************
     subroutine read_forcing_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
-
+!
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+!
     endsubroutine read_forcing_run_pars
 !***********************************************************************
     subroutine write_forcing_run_pars(unit)
+!
       integer, intent(in) :: unit
-
-      if (NO_WARN) print*,unit
+!
+      call keep_compiler_quiet(unit)
+!
     endsubroutine write_forcing_run_pars
 !***********************************************************************
     subroutine input_persistent_forcing(id,lun,done)
@@ -162,7 +162,9 @@ module Forcing
       integer :: id,lun
       logical :: done
 !
-      if (NO_WARN) print*,id,lun,done
+      call keep_compiler_quiet(id)
+      call keep_compiler_quiet(lun)
+      call keep_compiler_quiet(done)
 !
     endsubroutine input_persistent_forcing
 !***********************************************************************
@@ -172,7 +174,7 @@ module Forcing
 !
       integer :: lun
 !
-      if (NO_WARN) print*,lun
+      call keep_compiler_quiet(lun)
 !
     endsubroutine output_persistent_forcing
 !***********************************************************************
@@ -213,5 +215,4 @@ module Forcing
 !
     endsubroutine rprint_forcing
 !***********************************************************************
-
 endmodule Forcing

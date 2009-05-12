@@ -14,16 +14,15 @@
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
-
 module Special
-
+!
   use Cparam
   use Cdata
   use Messages
   use Sub, only: keep_compiler_quiet
-
+!
   implicit none
-
+!
   include '../special.h'
 !
 !  square of wave speed for gauge field
@@ -80,9 +79,6 @@ module Special
 !  called by run.f90 after reading parameters, but before the time loop
 !
 !  06-oct-03/tony: coded
-!
-      use Cdata
-      use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -158,8 +154,6 @@ module Special
 !
 !  18-07-06/tony: coded
 !
-      use Sub, only: keep_compiler_quiet
-!
       logical, dimension(npencils) :: lpencil_in
 !
       call keep_compiler_quiet(lpencil_in)
@@ -172,9 +166,6 @@ module Special
 !  Most basic pencils should come first, as others may depend on them.
 !
 !   24-nov-04/tony: coded
-!
-      use Cdata
-      use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -295,12 +286,8 @@ module Special
 !***********************************************************************
     subroutine read_special_init_pars(unit,iostat)
 !
-      use Sub, only: keep_compiler_quiet
-!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-!
-!  read namelist
 !
       if (present(iostat)) then
         read(unit,NML=special_init_pars,ERR=99, IOSTAT=iostat)
@@ -309,6 +296,7 @@ module Special
       endif
 !
 99    return
+!
     endsubroutine read_special_init_pars
 !***********************************************************************
     subroutine write_special_init_pars(unit)
@@ -491,9 +479,6 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-!
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
@@ -521,9 +506,6 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
@@ -553,9 +535,6 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
@@ -584,9 +563,6 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
@@ -614,9 +590,6 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-!
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       type (boundary_condition) :: bc
 !
@@ -634,9 +607,6 @@ module Special
 !   others may be calculated directly from the f array
 !
 !   06-jul-06/tony: coded
-!
-      use Cdata
-      use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
 !

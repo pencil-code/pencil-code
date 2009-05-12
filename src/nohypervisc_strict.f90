@@ -15,18 +15,16 @@
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
-
 module Hypervisc_strict
-
+!
   use Cdata
   use Cparam
-  use Fourier
   use Messages
-
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   contains
-
 !***********************************************************************
     subroutine register_hypervisc_strict()
 !
@@ -45,10 +43,9 @@ module Hypervisc_strict
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*, f !(keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine hyperviscosity_strict
 !***********************************************************************
-
 endmodule Hypervisc_strict
 

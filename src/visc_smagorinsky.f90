@@ -13,33 +13,27 @@
 ! MAUX CONTRIBUTION 1
 !
 !***************************************************************
-
 module Viscosity
-
+!
   use Cparam
   use Cdata
-  use Messages
   use Density
-
+  use Messages
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   character (len=labellen) :: ivisc='smagorinsky'
   integer :: idiag_dtnu=0
   real :: maxeffectivenu,nu_mol,C_smag=0.0
   logical :: lvisc_first=.false.
-
-  ! input parameters
+!
   integer :: dummy
   namelist /viscosity_init_pars/ dummy
-
-  ! run parameters
+!
   namelist /viscosity_run_pars/ nu, lvisc_first,ivisc,c_smag
-
-  ! other variables (needs to be consistent with reset list below)
-  !integer :: idiag_nu_LES=0
-
+!
   contains
-
 !***********************************************************************
     subroutine register_viscosity()
 !
@@ -119,7 +113,8 @@ module Viscosity
         endif
       endif
 !
-      if (NO_WARN) print*,lreset  !(to keep compiler quiet)
+      call keep_compiler_quiet(lreset)
+!
     endsubroutine rprint_viscosity
 !***********************************************************************
     subroutine pencil_criteria_viscosity()
@@ -140,7 +135,7 @@ module Viscosity
 !
       logical, dimension (npencils) :: lpencil_in
 !
-      if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_viscosity
 !***********************************************************************
@@ -158,7 +153,8 @@ module Viscosity
 !
       intent(in) :: f,p
 !
-      if (NO_WARN) print*, f, p !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_viscosity
 !***********************************************************************
@@ -277,7 +273,7 @@ module Viscosity
                             + 3.*var(:,:,mz  ))/(2.*dz)
       endif
 !
-    end subroutine der_2nd_nof
+    endsubroutine der_2nd_nof
 
 !!***********************************************************************
     subroutine calc_viscous_heat(f,df,glnrho,divu,rho1,cs2,TT1,shock,Hmax)
@@ -304,9 +300,15 @@ module Viscosity
        case default
          if (headtt) print*,'no heating: ivisc=',ivisc
       endselect
-      if (NO_WARN) print*,f,cs2,divu,glnrho,shock,Hmax  !(keep compiler quiet)
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(cs2)
+      call keep_compiler_quiet(divu)
+      call keep_compiler_quiet(glnrho)
+      call keep_compiler_quiet(shock)
+      call keep_compiler_quiet(Hmax)
+!
     endsubroutine calc_viscous_heat
-
 !***********************************************************************
     subroutine calc_viscous_force(f,df,glnrho,divu,rho,rho1,shock,gshock,bij)
 !
@@ -404,8 +406,10 @@ module Viscosity
         call max_mn_name(diffus_nu/cdtv,idiag_dtnu,l_dt=.true.)
       endif
 !
-      if (NO_WARN) print*,divu,shock,gshock  !(keep compiler quiet)
+      call keep_compiler_quiet(divu)
+      call keep_compiler_quiet(shock)
+      call keep_compiler_quiet(gshock)
+!
     endsubroutine calc_viscous_force
 !***********************************************************************
-
 endmodule Viscosity

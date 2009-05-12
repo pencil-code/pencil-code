@@ -47,11 +47,11 @@
 
 module Special
 
-  use Cparam
   use Cdata
+  use EquationOfState
+  use Cparam
   use Messages
   use Sub, only: keep_compiler_quiet
-  use EquationOfState
 
   implicit none
 
@@ -113,10 +113,6 @@ module Special
 !
 !  6-oct-03/tony: coded
 !
-      use Cdata
-!
-!  Identify CVS/SVN version information.
-!
       if (lroot) call cvs_id( &
           "$Id$")
 !
@@ -128,7 +124,6 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      use Cdata
       use EquationOfState
       use Sub
 
@@ -141,7 +136,7 @@ module Special
       rmask1=1./rmask
       rmask12=rmask1**2
 !
-      if (NO_WARN) print*,f  !(keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -150,13 +145,11 @@ module Special
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
       intent(inout) :: f
 !
-      if (NO_WARN) print*,f  !(keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine init_special
 !***********************************************************************
@@ -165,8 +158,6 @@ module Special
 !  Interdependency among pencils provided by this module are specified here.
 !
 !  18-07-06/tony: coded                                                         
-!
-      use Sub, only: keep_compiler_quiet
 !
       logical, dimension(npencils) :: lpencil_in
 !
@@ -224,8 +215,6 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -233,7 +222,9 @@ module Special
       intent(in) :: f,p
       intent(inout) :: df
 !
-      if (NO_WARN) print*,f,df,p
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine dspecial_dt
 !***********************************************************************
@@ -242,8 +233,6 @@ module Special
 !  Write slices for animation of special variables.
 !
 !  26-jun-06/tony: dummy
-!
-      use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
@@ -358,8 +347,6 @@ module Special
 !
 !  15-jan-08/axel: coded
 !
-      use Sub, only: keep_compiler_quiet
-!
       real, dimension (mx,my,mz,mfarray) :: f
       intent(inout) :: f
 !
@@ -369,7 +356,6 @@ module Special
 !***********************************************************************
     subroutine special_calc_density(f,df,p)
 !
-      use Cdata
       use Sub
 !
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
@@ -400,8 +386,7 @@ module Special
 !
 !   16-jul-06/wlyra: coded
 !
-      use Cdata
-      use Sub !, only : sum_lim_mn_name
+      use Sub
 !
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -426,8 +411,6 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-     use Cdata
-!
      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
      real, dimension (mx,my,mz,mvar), intent(inout) :: df
      type (pencil_case), intent(in) :: p
@@ -447,20 +430,17 @@ module Special
 !***********************************************************************
     subroutine special_calc_entropy(f,df,p)
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      if (NO_WARN) print*,df,p
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine special_calc_entropy
 !***********************************************************************
     subroutine special_calc_particles(fp)
 !      
-      use Cdata
-!
       real, dimension(mpar_loc,mpvar) :: fp
 !
     endsubroutine special_calc_particles
@@ -471,8 +451,6 @@ module Special
 !  do it analytically than to use grad on the shock_mask array.
 !  
 !  10-dec-08/wlad: coded
-!
-      use Cdata
 !
       real, dimension(nspar,mpvar) :: fsp
       real, dimension(nx,3) :: tmp
@@ -570,8 +548,6 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       type (boundary_condition) :: bc
 !
@@ -590,7 +566,8 @@ module Special
 !         bc%done=.true.
 !      endselect
 
-      if (NO_WARN) print*,f(1,1,1,1),bc%bcname
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(bc%bcname)
 !
     endsubroutine special_boundconds
 !***********************************************************************
@@ -611,13 +588,11 @@ module Special
 !
 !   06-jul-06/tony: coded
 !
-      use Cdata
       use Mpicomm
-      use Sub
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      if (NO_WARN) print*,f(1,1,1,1)
+      call keep_compiler_quiet(f)
 !
     endsubroutine special_before_boundary
 !**********************************************************************

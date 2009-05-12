@@ -11,22 +11,21 @@
 !
 !
 !***************************************************************
-
 module Cosmicrayflux
-
+!
+  use Cdata
   use Cparam
   use Messages
-
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   include 'cosmicrayflux.h'
-
+!
   contains
-
 !***********************************************************************
     subroutine register_cosmicrayflux()
 !
-      use Cdata
       use Mpicomm
       use Sub
 !
@@ -39,34 +38,35 @@ module Cosmicrayflux
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*,'f=',f
+      call keep_compiler_quiet(f)
 !
     endsubroutine initialize_cosmicrayflux
 !***************************************:********************************
     subroutine read_cosmicrayflux_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
-
+!
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+!
     endsubroutine read_cosmicrayflux_init_pars
 !***********************************************************************
     subroutine write_cosmicrayflux_init_pars(unit)
 !
       integer, intent(in) :: unit
 !
-      if (NO_WARN) print*,unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_cosmicrayflux_init_pars
 !***********************************************************************
     subroutine read_cosmicrayflux_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-!
-      if (NO_WARN) print*,unit
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_cosmicrayflux_run_pars
 !***********************************************************************
@@ -74,18 +74,17 @@ module Cosmicrayflux
 !
       integer, intent(in) :: unit
 !
-      if (NO_WARN) print*,unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_cosmicrayflux_run_pars
 !***********************************************************************
     subroutine init_fcr(f)
 !
-      use Cdata
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*,f !(prevent compiler warnings)
+      call keep_compiler_quiet(f)
 !
     endsubroutine init_fcr
 !***********************************************************************
@@ -99,7 +98,7 @@ module Cosmicrayflux
 !
       logical, dimension (npencils) :: lpencil_in
 !
-      if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_cosmicrayflux
 !***********************************************************************
@@ -110,7 +109,8 @@ module Cosmicrayflux
 !
       intent(in) :: f,p
 !
-      if (NO_WARN) print*, f, p !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_cosmicrayflux
 !***********************************************************************
@@ -122,7 +122,9 @@ module Cosmicrayflux
 !
       intent(in) :: f,df,p
 !
-      if (NO_WARN) print*,f,df,p
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine dfcr_dt
 !***********************************************************************

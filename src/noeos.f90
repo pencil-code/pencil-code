@@ -98,7 +98,8 @@ module EquationOfState
       character (len=*), intent(in) :: variable
       integer, intent(in) :: findex
 !
-      if (NO_WARN) print*,variable,findex
+      call keep_compiler_quiet(variable)
+      call keep_compiler_quiet(findex)
 !
     endsubroutine select_eos_variable
 !*******************************************************************
@@ -123,7 +124,8 @@ module EquationOfState
       logical :: lreset
       logical, optional :: lwrite
 !
-      if (NO_WARN) print*,lreset,present(lwrite)  !(keep compiler quiet)
+      call keep_compiler_quiet(lreset)
+      call keep_compiler_quiet(present(lwrite))
 !
     endsubroutine rprint_eos
 !***********************************************************************
@@ -155,7 +157,7 @@ module EquationOfState
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (NO_WARN) print*,lpencil_in
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_eos
 !***********************************************************************
@@ -176,7 +178,8 @@ module EquationOfState
 !
       if (lpencil(i_cp1)) p%cp1=0.
 !
-      if (NO_WARN) print*,f,p
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_eos
 !***********************************************************************
@@ -184,7 +187,7 @@ module EquationOfState
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      if (NO_WARN) print*,f  !(keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine ioninit
 !***********************************************************************
@@ -192,7 +195,7 @@ module EquationOfState
 !
     real, dimension (mx,my,mz,mfarray) :: f
 !
-    if (NO_WARN) print*,f  !(keep compiler quiet)
+    call keep_compiler_quiet(f)
 !
     endsubroutine ioncalc
 !***********************************************************************
@@ -203,9 +206,11 @@ module EquationOfState
 
       call fatal_error('getdensity','SHOULD NOT BE CALLED WITH NOEOS')
       rho = 0.
-      if (NO_WARN) print*,yH,EE,TT  !(keep compiler quiet)
+      call keep_compiler_quiet(yH)
+      call keep_compiler_quiet(EE)
+      call keep_compiler_quiet(TT)
 
-    end subroutine getdensity
+    endsubroutine getdensity
 !***********************************************************************
     subroutine get_cp1(cp1_)
 !
@@ -215,7 +220,7 @@ module EquationOfState
 !
       cp1_=impossible
 !
-    end subroutine get_cp1
+    endsubroutine get_cp1
 !***********************************************************************
     subroutine get_ptlaw(ptlaw_)
 !
@@ -226,7 +231,7 @@ module EquationOfState
 !
       ptlaw_=impossible
 !
-    end subroutine get_ptlaw
+    endsubroutine get_ptlaw
 !***********************************************************************
     subroutine isothermal_density_ion(pot,tmp)
 !
@@ -235,9 +240,9 @@ module EquationOfState
 !
       tmp=0.
       call fatal_error('isothermal_density_ion','SHOULD NOT BE CALLED WITH NOEOS')
-      if (NO_WARN) print*,pot  !(keep compiler quiet)
+      call keep_compiler_quiet(pot)
 !
-    end subroutine isothermal_density_ion
+    endsubroutine isothermal_density_ion
 !***********************************************************************
     subroutine pressure_gradient_farray(f,cs2,cp1tilde)
 !
@@ -255,7 +260,7 @@ module EquationOfState
       cs2=impossible
       cp1tilde=impossible
       call fatal_error('pressure_gradient_farray','SHOULD NOT BE CALLED WITH NOEOS')
-      if (NO_WARN) print*,f  !(keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine pressure_gradient_farray
 !***********************************************************************
@@ -273,7 +278,8 @@ module EquationOfState
       cs2=impossible
       cp1tilde=impossible
       call fatal_error('pressure_gradient_point','SHOULD NOT BE CALLED WITH NOEOS')
-      if (NO_WARN) print*,lnrho,ss  !(keep compiler quiet)
+      call keep_compiler_quiet(lnrho)
+      call keep_compiler_quiet(ss)
 !
     endsubroutine pressure_gradient_point
 !***********************************************************************
@@ -293,7 +299,9 @@ module EquationOfState
 !
       glnTT=0.
       call fatal_error('temperature_gradient','SHOULD NOT BE CALLED WITH NOEOS')
-      if (NO_WARN) print*,f,glnrho,gss  !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(glnrho)
+      call keep_compiler_quiet(gss)
     endsubroutine temperature_gradient
 !***********************************************************************
     subroutine temperature_laplacian(f,del2lnrho,del2ss,del2lnTT)
@@ -311,7 +319,9 @@ module EquationOfState
       call fatal_error('temperature_laplacian','SHOULD NOT BE CALLED WITH NOEOS')
 !
       del2lnTT=0.
-      if (NO_WARN) print*,f,del2lnrho,del2ss !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(del2lnrho)
+      call keep_compiler_quiet(del2ss)
     endsubroutine temperature_laplacian
 !***********************************************************************
     subroutine temperature_hessian(f,hlnrho,hss,hlnTT)
@@ -329,7 +339,9 @@ module EquationOfState
       call fatal_error('temperature_hessian','now I do not believe you'// &
                            ' intended to call this!')
 !
-      if (NO_WARN) print*,f,hlnrho,hss !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(hlnrho)
+      call keep_compiler_quiet(hss)
 !
     endsubroutine temperature_hessian
 !***********************************************************************
@@ -341,7 +353,7 @@ module EquationOfState
 
       call not_implemented("eosperturb")
 
-    end subroutine eosperturb
+    endsubroutine eosperturb
 !***********************************************************************
     subroutine eoscalc_farray(f,psize,lnrho,ss,yH,mu1,lnTT,ee,pp,kapparho)
 !
@@ -367,7 +379,7 @@ module EquationOfState
       ee=0.
       pp=0.
       kapparho=0.
-      if (NO_WARN) print*,f  !(keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine eoscalc_farray
 !***********************************************************************
@@ -392,7 +404,9 @@ module EquationOfState
       if (present(lnTT)) lnTT=0.
       if (present(ee)) ee=0.
       if (present(pp)) pp=0.
-      if (NO_WARN) print*,ivars,var1,var2  !(keep compiler quiet)
+      call keep_compiler_quiet(ivars)
+      call keep_compiler_quiet(var1)
+      call keep_compiler_quiet(var2)
 !
     endsubroutine eoscalc_point
 !***********************************************************************
@@ -421,7 +435,9 @@ module EquationOfState
       if (present(lnTT)) lnTT=0.
       if (present(ee)) ee=0.
       if (present(pp)) pp=0.
-      if (NO_WARN) print*,ivars,var1,var2  !(keep compiler quiet)
+      call keep_compiler_quiet(ivars)
+      call keep_compiler_quiet(var1)
+      call keep_compiler_quiet(var2)
 !
     endsubroutine eoscalc_pencil
 !***********************************************************************
@@ -436,23 +452,25 @@ module EquationOfState
 !
       call not_implemented('get_soundspeed')
       cs2=0.
-      if (NO_WARN) print*,lnTT
+      call keep_compiler_quiet(lnTT)
 !
-    end subroutine get_soundspeed
+    endsubroutine get_soundspeed
 !***********************************************************************
     subroutine read_eos_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      if (present(iostat).and.NO_WARN) print*,iostat
-      if (NO_WARN) print*,unit !(keep compiler quiet)
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_eos_init_pars
 !***********************************************************************
     subroutine write_eos_init_pars(unit)
+!
       integer, intent(in) :: unit
 !
-      if (NO_WARN) print*,unit !(keep compiler quiet)
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_eos_init_pars
 !***********************************************************************
@@ -460,16 +478,17 @@ module EquationOfState
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      if (present(iostat).and.NO_WARN) print*,iostat
-      if (NO_WARN) print*,unit !(keep compiler quiet)
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_eos_run_pars
 !***********************************************************************
     subroutine write_eos_run_pars(unit)
+!
       integer, intent(in) :: unit
-
-      if (NO_WARN) print*,unit !(keep compiler quiet)
-
+!
+      call keep_compiler_quiet(unit)
+!
     endsubroutine write_eos_run_pars
 !***********************************************************************
     subroutine isothermal_entropy(f,T0)
@@ -524,7 +543,9 @@ module EquationOfState
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: T0,rho0
 !
-      if (NO_WARN) print*,f,T0,rho0
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(T0)
+      call keep_compiler_quiet(rho0)
 !
     endsubroutine isothermal_lnrho_ss
 !***********************************************************************
@@ -665,7 +686,8 @@ module EquationOfState
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*,f,topbot  !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_ss_flux_turb
 !***********************************************************************
@@ -1344,7 +1366,7 @@ module EquationOfState
       call fatal_error('bc_ss_energy','invalid argument')
     endselect
 
-    end subroutine bc_ss_energy
+    endsubroutine bc_ss_energy
 !***********************************************************************
     subroutine bc_stellar_surface(f,topbot)
 !
@@ -1354,9 +1376,10 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_stellar_surface: NOT IMPLEMENTED IN EOS_IDEALGAS")
-      if (NO_WARN) print*,f,topbot
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
 !
-    end subroutine bc_stellar_surface
+    endsubroutine bc_stellar_surface
 !***********************************************************************
     subroutine bc_lnrho_cfb_r_iso(f,topbot,j)
       use Mpicomm, only: stop_it
@@ -1364,39 +1387,45 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
       call stop_it("bc_lnrho_cfb_r_iso: NOT IMPLEMENTED IN NOEOS")
-      if (NO_WARN) print*,f,topbot,j
-    end subroutine bc_lnrho_cfb_r_iso
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+      call keep_compiler_quiet(j)
+    endsubroutine bc_lnrho_cfb_r_iso
 !***********************************************************************
     subroutine bc_lnrho_hds_z_iso(f,topbot)
       use Mpicomm, only: stop_it
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       call stop_it("bc_lnrho_hds_z_iso: NOT IMPLEMENTED IN NOEOS")
-      if (NO_WARN) print*,f,topbot
-    end subroutine bc_lnrho_hds_z_iso
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+    endsubroutine bc_lnrho_hds_z_iso
 !***********************************************************************
     subroutine bc_lnrho_hds_z_liso(f,topbot)
       use Mpicomm, only: stop_it
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       call stop_it("bc_lnrho_hds_z_liso: NOT IMPLEMENTED IN NOEOS")
-      if (NO_WARN) print*,f,topbot
-    end subroutine bc_lnrho_hds_z_liso
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+    endsubroutine bc_lnrho_hds_z_liso
 !***********************************************************************
     subroutine bc_lnrho_hdss_z_iso(f,topbot)
       use Mpicomm, only: stop_it
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       call stop_it("bc_lnrho_hdss_z_iso: NOT IMPLEMENTED IN NOEOS")
-      if (NO_WARN) print*,f,topbot
-    end subroutine bc_lnrho_hdss_z_iso
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+    endsubroutine bc_lnrho_hdss_z_iso
 !***********************************************************************
     subroutine bc_lnrho_hdss_z_liso(f,topbot)
       use Mpicomm, only: stop_it
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       call stop_it("bc_lnrho_hdss_z_liso: NOT IMPLEMENTED IN NOEOS")
-      if (NO_WARN) print*,f,topbot
-    end subroutine bc_lnrho_hdss_z_liso
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+    endsubroutine bc_lnrho_hdss_z_liso
 !***********************************************************************
 endmodule EquationOfState

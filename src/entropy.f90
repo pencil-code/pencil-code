@@ -25,13 +25,13 @@ module Entropy
                          beta_glnrho_global, cs2top_ini, dcs2top_ini
   use Interstellar
   use Messages
+  use Sub, only: keep_compiler_quiet
   use Viscosity
 !
   implicit none
 !
   include 'entropy.h'
 !
-  !real, dimension (nx) :: cs2,TT1
   real :: radius_ss=0.1,ampl_ss=0.,widthss=2*epsi,epsilon_ss=0.
   real :: luminosity=0.,wheat=0.1,cool=0.,rcool=0.,wcool=0.1
   real :: TT_int,TT_ext,cs2_int,cs2_ext,cool_int=0.,cool_ext=0.,ampl_TT=0.
@@ -648,7 +648,8 @@ module Entropy
       if (ierr/=0) call stop_it("initialize_entropy: "//&
            "there was a problem when putting lcalc_heatcond_constchi")
 !
-      if (NO_WARN) print*,f,lstarting  !(to keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
 !
       endsubroutine initialize_entropy
 !***********************************************************************
@@ -4170,6 +4171,6 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
 !
       real, dimension(mx,my,mz,mfarray) :: finit,f
 !
-    end subroutine calc_heatcond_ADI
+    endsubroutine calc_heatcond_ADI
 !***********************************************************************
 endmodule Entropy

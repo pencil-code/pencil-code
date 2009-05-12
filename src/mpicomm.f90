@@ -48,22 +48,19 @@
 !                        m1i+2:m2i-2
 
 module Mpicomm
-
+!
+  use Cdata
   use Cparam
-  use Cdata, only: iproc,ipx,ipy,ipz,root,lroot, &
-                   xlneigh,ylneigh,zlneigh,xuneigh,yuneigh,zuneigh, &
-                   llcorn,lucorn,uucorn,ulcorn, &
-                   lemergency_brake
-
+!
   implicit none
-
+!
   include 'mpicomm.h'
-
+!
   interface mpirecv_logical
      module procedure mpirecv_logical_scl
      module procedure mpirecv_logical_arr
   endinterface
-
+!
   interface mpirecv_real
     module procedure mpirecv_real_scl
     module procedure mpirecv_real_arr
@@ -71,18 +68,18 @@ module Mpicomm
     module procedure mpirecv_real_arr3
     module procedure mpirecv_real_arr4
   endinterface
-
+!
   interface mpirecv_int
     module procedure mpirecv_int_scl
     module procedure mpirecv_int_arr
     module procedure mpirecv_int_arr2
   endinterface
-
+!
   interface mpisend_logical
      module procedure mpisend_logical_scl
      module procedure mpisend_logical_arr
   endinterface
-
+!
   interface mpisend_real
     module procedure mpisend_real_scl
     module procedure mpisend_real_arr
@@ -90,94 +87,94 @@ module Mpicomm
     module procedure mpisend_real_arr3
     module procedure mpisend_real_arr4
   endinterface
-
+!
   interface mpisend_int
     module procedure mpisend_int_scl
     module procedure mpisend_int_arr
     module procedure mpisend_int_arr2
- endinterface
-
+  endinterface
+!
   interface mpibcast_logical
     module procedure mpibcast_logical_scl
     module procedure mpibcast_logical_arr
     module procedure mpibcast_logical_arr2
   endinterface
-
+!
   interface mpibcast_int
     module procedure mpibcast_int_scl
     module procedure mpibcast_int_arr
   endinterface
-
+!
   interface mpibcast_real
     module procedure mpibcast_real_scl
     module procedure mpibcast_real_arr
     module procedure mpibcast_real_arr2
     module procedure mpibcast_real_arr3
   endinterface
-
+!
   interface mpibcast_double
     module procedure mpibcast_double_scl
     module procedure mpibcast_double_arr
   endinterface
-
+!
   interface mpibcast_char
     module procedure mpibcast_char_scl
     module procedure mpibcast_char_arr
   endinterface
-
+!
   interface mpiallreduce_sum
     module procedure mpiallreduce_sum_arr2
     module procedure mpiallreduce_sum_arr
     module procedure mpiallreduce_sum_scl
   endinterface
-
+!
   interface mpiallreduce_sum_int
      module procedure mpiallreduce_sum_int_arr
      module procedure mpiallreduce_sum_int_scl
   endinterface
-
+!
   interface mpiallreduce_max
     module procedure mpiallreduce_max_arr
     module procedure mpiallreduce_max_scl
   endinterface
-
+!
   interface mpireduce_max
     module procedure mpireduce_max_arr
     module procedure mpireduce_max_scl
   endinterface
-
+!
   interface mpireduce_min
     module procedure mpireduce_min_arr
     module procedure mpireduce_min_scl
   endinterface
-
+!
   interface mpireduce_or
     module procedure mpireduce_or_arr
     module procedure mpireduce_or_scl
   endinterface
-
+!
   interface mpireduce_and
     module procedure mpireduce_and_arr
     module procedure mpireduce_and_scl
   endinterface
-
+!
 ! NOT POSSIBLE BECAUSE OF n-Dimensional array usage
 ! in equ.f90
 !  interface mpireduce_sum
 !    module procedure mpireduce_sum_arr
 !    module procedure mpireduce_sum_scl
 !  endinterface
-
+!
   interface mpireduce_sum_double
     module procedure mpireduce_sum_double_arr
     module procedure mpireduce_sum_double_scl
   endinterface
-
+!
   interface mpireduce_sum_int
     module procedure mpireduce_sum_int_arr
     module procedure mpireduce_sum_int_scl
   endinterface
-
+!
   include 'mpif.h'
 !
 !  initialize debug parameter for this routine
@@ -249,8 +246,6 @@ module Mpicomm
 !  21-may-02/axel: communication of corners added
 !   6-jun-02/axel: generalized to allow for ny=1
 !  23-nov-02/axel: corrected problem with ny=4 or less
-!
-      use Cdata, only: lmpicomm,lprocz_slowest
 !
 !  get processor number, number of procs, and whether we are root
 !
@@ -458,8 +453,6 @@ module Mpicomm
 !***********************************************************************
     subroutine finalize_isendrcv_bdry(f,ivar1_opt,ivar2_opt)
 !
-      use Cdata, only: bcx1,bcx2,bcy1,bcy2,bcz1,bcz2
-!
 !  Make sure the communications initiated with initiate_isendrcv_bdry are
 !  finished and insert the just received boundary values.
 !   Receive requests do not need to (and on OSF1 cannot) be explicitly
@@ -567,8 +560,6 @@ module Mpicomm
 !
 !   2-may-09/anders: coded
 !
-      use Cdata, only: bcx1,bcx2
-!
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
@@ -613,8 +604,6 @@ module Mpicomm
 !  Subroutine for shearing sheet boundary conditions
 !
 !  20-june-02/nils: adapted from pencil_mpi
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
@@ -716,8 +705,6 @@ module Mpicomm
 !  Subroutine for shearing sheet boundary conditions
 !
 !  20-june-02/nils: adapted from pencil_mpi
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
@@ -2722,8 +2709,6 @@ module Mpicomm
 !
 !   8-oct-2006/tobi: Coded
 !
-      use Cdata, only: iax,iaz
-
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
 

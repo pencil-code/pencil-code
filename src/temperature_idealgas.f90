@@ -1028,7 +1028,7 @@ module Entropy
         endif
       endif
 
-    end subroutine calc_heatcond_constchi
+    endsubroutine calc_heatcond_constchi
 !***********************************************************************
     subroutine calc_heatcond_constK(df,p)
 !
@@ -1350,7 +1350,7 @@ module Entropy
         endif
       endif
 !
-    end subroutine calc_heatcond_ADI
+    endsubroutine calc_heatcond_ADI
 !***********************************************************************
     subroutine ADI_Kconst(finit,f)
 !
@@ -1443,7 +1443,7 @@ module Entropy
 !
       call boundary_ADI(f(:,4,:,ilnTT))
 !
-    end subroutine ADI_Kconst
+    endsubroutine ADI_Kconst
 !***********************************************************************
     subroutine ADI_Kprof(finit,f)
 !
@@ -1571,7 +1571,7 @@ module Entropy
       call heatcond_TT(f(:,4,n1,ilnTT),hcondADI,dhcondADI)
       call put_shared_variable('hcond0',hcondADI,ierr)
 !
-    end subroutine ADI_Kprof
+    endsubroutine ADI_Kprof
 !***********************************************************************
     subroutine heatcond_TT_2d(TT,hcond,dhcond)
 !
@@ -1586,7 +1586,7 @@ module Entropy
       hcond=Kmax+hole_alpha*(-pi/2.+atan(arg))
       dhcond=2.*hole_alpha/(1.+arg**2)*hole_slope*(TT-Tbump)
 !
-    end subroutine heatcond_TT_2d
+    endsubroutine heatcond_TT_2d
 !***********************************************************************
     subroutine heatcond_TT_1d(TT,hcond,dhcond)
 !
@@ -1602,7 +1602,7 @@ module Entropy
       hcond=Kmax+hole_alpha*(-pi/2.+atan(arg))
       dhcond=2.*hole_alpha/(1.+arg**2)*hole_slope*(TT-Tbump)
 !
-    end subroutine heatcond_TT_1d
+    endsubroutine heatcond_TT_1d
 !***********************************************************************
     subroutine heatcond_TT_point(TT, hcond, dhcond)
 !
@@ -1617,7 +1617,7 @@ module Entropy
       hcond=Kmax+hole_alpha*(-pi/2.+atan(arg))
       dhcond=2.*hole_alpha/(1.+arg**2)*hole_slope*(TT-Tbump)
 !
-    end subroutine heatcond_TT_point
+    endsubroutine heatcond_TT_point
 !***********************************************************************
     subroutine boundary_ADI(f_2d,hcond)
 
@@ -1657,7 +1657,7 @@ module Entropy
           endif
       endselect
 
-    end subroutine boundary_ADI
+    endsubroutine boundary_ADI
 !***********************************************************************
     subroutine cyclic(a,b,c,alpha,beta,r,x,n)
 !
@@ -1692,7 +1692,7 @@ module Entropy
 13    continue
 !
       return
-    end subroutine cyclic
+    endsubroutine cyclic
 !***********************************************************************
     subroutine ADI_Kconst_1d(finit,f)
 !
@@ -1758,7 +1758,7 @@ module Entropy
         enddo
       endif
 !
-    end subroutine ADI_Kconst_1d
+    endsubroutine ADI_Kconst_1d
 !***********************************************************************
     subroutine ADI_Kprof_1d(finit,f)
 !
@@ -1830,6 +1830,6 @@ module Entropy
         enddo
       endif
 !
-    end subroutine ADI_Kprof_1d
+    endsubroutine ADI_Kprof_1d
 !***********************************************************************
 endmodule Entropy

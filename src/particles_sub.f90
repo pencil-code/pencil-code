@@ -7,6 +7,7 @@ module Particles_sub
   use Cdata
   use Messages
   use Particles_cdata
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -1410,7 +1411,7 @@ module Particles_sub
            cc(4,:)*dzp        + cc(5,:)*dzp**2     + cc(6,:)*dxp*dzp       + &
            cc(7,:)*dxp**2*dzp + cc(8,:)*dxp*dzp**2 + cc(9,:)*dxp**2*dzp**2
 !
-      if (NO_WARN) print*, ipar
+      call keep_compiler_quiet(ipar)
 !
     endsubroutine interpolate_quadratic
 !***********************************************************************
@@ -1557,7 +1558,7 @@ module Particles_sub
                                 f(ix0-1,iy0-1,iz0  ,ivar1:ivar2)*fac_y_m1 )
       endif
 !
-      if (NO_WARN) print*, ipar
+      call keep_compiler_quiet(ipar)
 !
     endsubroutine interpolate_quadratic_spline
 !***********************************************************************

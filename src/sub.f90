@@ -100,6 +100,7 @@ module Sub
     module procedure keep_compiler_quiet_i
     module procedure keep_compiler_quiet_l1d
     module procedure keep_compiler_quiet_l
+    module procedure keep_compiler_quiet_c
   endinterface
 !
   interface cross
@@ -256,7 +257,7 @@ module Sub
 !  INTERFACE getenv
 !    SUBROUTINE GETENV (VAR, VALUE)
 !      CHARACTER(LEN=*) VAR, VALUE
-!    END SUBROUTINE
+!    endsubroutine
 !  END INTERFACE
 
   real, dimension(7,7,7), parameter :: smth_kernel = reshape((/ &
@@ -724,7 +725,7 @@ module Sub
         end do
       end do
 !
-    end subroutine multvv_mat_mn
+    endsubroutine multvv_mat_mn
 !***********************************************************************
     subroutine multmm_sc_mn(a,b,c)
 !
@@ -743,7 +744,7 @@ module Sub
          end do
       end do
 !
-    end subroutine multmm_sc_mn
+    endsubroutine multmm_sc_mn
 !***********************************************************************
     subroutine multm2_mn(a,b)
 !
@@ -762,7 +763,7 @@ module Sub
          end do
       end do
 !
-    end subroutine multm2_mn
+    endsubroutine multm2_mn
 !***********************************************************************
     subroutine multmv_mn(a,b,c,ladd)
 !
@@ -1212,7 +1213,7 @@ module Sub
         g=g+rcyl_mn1*f(l1:l2,m,n,k1+1)
       endif
 !
-    end subroutine div
+    endsubroutine div
 !***********************************************************************
     subroutine div_other(f,g)
 ! 
@@ -1237,7 +1238,7 @@ module Sub
         g=g+rcyl_mn1*f(l1:l2,m,n,1)
       endif
 !
-    end subroutine div_other
+    endsubroutine div_other
 !***********************************************************************
     subroutine div_mn(aij,b,a)
 !
@@ -3848,7 +3849,6 @@ module Sub
         real, dimension(:,:) :: v1, v2, v3, v4
         optional             ::     v2, v3, v4
 !
-
         if (NO_WARN) then
           call error('keep_compiler_quiet_r2d', &
               '91 is a prime, and we never got here...')
@@ -3870,7 +3870,6 @@ module Sub
         real, dimension(:,:,:) :: v1, v2, v3, v4
         optional               ::     v2, v3, v4
 !
-
         if (NO_WARN) then
           call error('keep_compiler_quiet_r3d', &
               '91 is a prime, and we never got here...')
@@ -3913,7 +3912,6 @@ module Sub
         type (pencil_case) :: v1, v2, v3, v4
         optional           ::     v2, v3, v4
 !
-
         if (NO_WARN) then
           call error('keep_compiler_quiet_p', &
               'The world is a disk, and we never got here...')
@@ -3935,7 +3933,6 @@ module Sub
         type (boundary_condition) :: v1, v2, v3, v4
         optional                  ::     v2, v3, v4
 !
-
         if (NO_WARN) then
           call error('keep_compiler_quiet_p', &
               'The world is a disk, and we never got here...')
@@ -3957,7 +3954,6 @@ module Sub
         type (slice_data) :: v1, v2, v3, v4
         optional          ::     v2, v3, v4
 !
-
         if (NO_WARN) then
           call error('keep_compiler_quiet_p', &
               'The world is a disk, and we never got here...')
@@ -3979,7 +3975,6 @@ module Sub
         integer, dimension(:)  :: v1, v2, v3, v4
         optional               ::     v2, v3, v4
 !
-
         if (NO_WARN) then
           call error('keep_compiler_quiet_i1d', &
               'The world is a disk, and we never got here...')
@@ -4001,7 +3996,6 @@ module Sub
         integer, dimension(:,:)  :: v1, v2, v3, v4
         optional                 ::     v2, v3, v4
 !
-
         if (NO_WARN) then
           call error('keep_compiler_quiet_i2d', &
               'The world is a disk, and we never got here...')
@@ -4023,7 +4017,6 @@ module Sub
         integer  :: v1, v2, v3, v4
         optional ::     v2, v3, v4
 !
-
         if (NO_WARN) then
           call error('keep_compiler_quiet_1', &
               'The world is a disk, and we never got here...')
@@ -4045,7 +4038,6 @@ module Sub
         logical, dimension(:)  :: v1, v2, v3, v4
         optional               ::     v2, v3, v4
 !
-
         if (NO_WARN) then
           call error('keep_compiler_quiet_l1d', &
               'The world is a disk, and we never got here...')
@@ -4067,7 +4059,6 @@ module Sub
         logical  :: v1, v2, v3, v4
         optional ::     v2, v3, v4
 !
-
         if (NO_WARN) then
           call error('keep_compiler_quiet_l', &
               'The world is a disk, and we never got here...')
@@ -4078,6 +4069,27 @@ module Sub
         endif
 !
       endsubroutine keep_compiler_quiet_l
+!***********************************************************************
+      subroutine keep_compiler_quiet_c(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+        character (len=*) :: v1, v2, v3, v4
+        optional          ::     v2, v3, v4
+!
+        if (NO_WARN) then
+          call error('keep_compiler_quiet_l', &
+              'The world is a disk, and we never got here...')
+          print*,                  v1
+          if (present(v2)) print*, v2
+          if (present(v3)) print*, v3
+          if (present(v4)) print*, v4
+        endif
+!
+      endsubroutine keep_compiler_quiet_c
 !***********************************************************************
       subroutine parse_bc(bc,bc1,bc2)
 !
@@ -5073,7 +5085,7 @@ nameloop: do
     if ( x.lt.0.0 ) dumerfc = 2.0 - dumerfc
     erfunc_pt = 1.0 - dumerfc
 
-    end function erfunc_pt
+    endfunction erfunc_pt
 !***********************************************************************
     function erfunc_mn(x)
 
@@ -5102,7 +5114,7 @@ nameloop: do
 
     erfunc_mn = 1.0 - dumerfc
 
-    end function erfunc_mn
+    endfunction erfunc_mn
 !***********************************************************************
     subroutine power_law_mn(const,dist,plaw_,output,xref)
 !

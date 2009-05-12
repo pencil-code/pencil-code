@@ -1,10 +1,9 @@
 ! $Id$
-
+!
 !  This modules solves the cosmic ray energy density equation.
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
 !  ZEUS 3D implementation.
 !
-
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -17,57 +16,52 @@
 ! PENCILS PROVIDED ecr; gecr(3); ugecr; bgecr; bglnrho
 !
 !***************************************************************
-
 module Cosmicray
-
-  use Cparam
+!
   use Cdata
+  use Cparam
   use Messages
-
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   include 'cosmicray.h'
-
+!
   character (len=labellen) :: initecr='zero', initecr2='zero'
-
-  ! input parameters
+!
   real :: gammacr=4./3.,gammacr1
   real :: amplecr=.1,widthecr=.5,ecr_min=0.,ecr_const=0.
   real :: x_pos_cr=.0,y_pos_cr=.0,z_pos_cr=.0
   real :: x_pos_cr2=.0,y_pos_cr2=.0,z_pos_cr2=.0,ampl_Qcr2=0.
   real :: amplecr2=0.,kx_ecr=1.,ky_ecr=1.,kz_ecr=1.,radius_ecr=1.,epsilon_ecr=0.
-
   logical :: lnegl = .false.
   logical :: lvariable_tensor_diff = .false.
   logical :: lalfven_advect = .false.
-
-
+!
   namelist /cosmicray_init_pars/ &
        initecr,initecr2,amplecr,amplecr2,kx_ecr,ky_ecr,kz_ecr, &
        radius_ecr,epsilon_ecr,widthecr,ecr_const, &
        gammacr, lnegl, lvariable_tensor_diff,x_pos_cr,y_pos_cr,z_pos_cr, &
        x_pos_cr2, y_pos_cr2, z_pos_cr2
-
-  ! run parameters
+!
   real :: cosmicray_diff=0., Kperp=0., Kpara=0., ampl_Qcr=0.
   real :: limiter_cr=1.,blimiter_cr=0.
   logical :: simplified_cosmicray_tensor=.false.
   logical :: luse_diff_constants = .false.
-
+!
   namelist /cosmicray_run_pars/ &
        cosmicray_diff,Kperp,Kpara, &
        gammacr,simplified_cosmicray_tensor,lnegl,lvariable_tensor_diff, &
        luse_diff_constants,ampl_Qcr,ampl_Qcr2, &
        limiter_cr,blimiter_cr, &
        lalfven_advect
-
-  ! other variables (needs to be consistent with reset list below)
+!
   integer :: idiag_ecrm=0,idiag_ecrmax=0,idiag_ecrpt=0
   integer :: idiag_ecrdivum=0
   integer :: idiag_kmax=0
-
+!
   contains
-
+!
 !***********************************************************************
     subroutine register_cosmicray()
 !
@@ -76,7 +70,6 @@ module Cosmicray
 !
 !  09-oct-03/tony: coded
 !
-      use Cdata
       use FArrayManager
 !
       call farray_register_pde('ecr',iecr)
@@ -114,7 +107,8 @@ module Cosmicray
       gammacr1=gammacr-1.
       if (lroot) print*,'gammacr1=',gammacr1
 !
-      if (NO_WARN) print*,'f=',f
+      call keep_compiler_quiet(f)
+!
     endsubroutine initialize_cosmicray
 !***********************************************************************
     subroutine init_ecr(f)
@@ -123,7 +117,6 @@ module Cosmicray
 !
 !   09-oct-03/tony: coded
 !
-      use Cdata
       use Mpicomm
       use Sub
       use Initcond
@@ -177,8 +170,6 @@ module Cosmicray
 !  The current module's criteria for which pencils are needed
 !
 !  20-11-04/anders: coded
-!
-      use Cdata
 !
       lpenc_requested(i_ecr)=.true.
       lpenc_requested(i_ugecr)=.true.

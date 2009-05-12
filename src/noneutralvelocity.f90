@@ -11,21 +11,18 @@
 ! PENCILS PROVIDED uun(3); divun; snij(3,3)
 !
 !***************************************************************
-
 module NeutralVelocity
-
+!
+  use Cdata
   use Cparam
   use Messages
-
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   include 'neutralvelocity.h'
-
-  !namelist /neutralvelocity_init_pars/ dummy
-  !namelist /neutralvelocity_run_pars/  dummy
-
+!
   contains
-
 !***********************************************************************
     subroutine register_neutralvelocity()
 !
@@ -34,7 +31,6 @@ module NeutralVelocity
 !
 !  18-mar-03/axel: dummy routine
 !
-      use Cdata
       use Mpicomm, only: stop_it
       use Sub
 !
@@ -64,7 +60,7 @@ module NeutralVelocity
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*,f !(keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine init_uun
 !***********************************************************************
@@ -85,7 +81,7 @@ module NeutralVelocity
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (NO_WARN) print*, lpencil_in  !(keep compiler quiet)
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_neutralvelocity
 !***********************************************************************
@@ -101,7 +97,8 @@ module NeutralVelocity
 !
       intent(in) :: f,p
 !
-      if (NO_WARN) print*, f, p
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_neutralvelocity
 !***********************************************************************
@@ -113,45 +110,50 @@ module NeutralVelocity
 !
 !  18-mar-03/axel: dummy routine
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      if (NO_WARN) print*,f,df,p !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine duun_dt
 !***********************************************************************
     subroutine read_neutralvelocity_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
-
+!
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+!
     endsubroutine read_neutralvelocity_init_pars
 !***********************************************************************
     subroutine write_neutralvelocity_init_pars(unit)
+!
       integer, intent(in) :: unit
-
-      if (NO_WARN) print*,unit
-
+!
+      call keep_compiler_quiet(unit)
+!
     endsubroutine write_neutralvelocity_init_pars
 !***********************************************************************
     subroutine read_neutralvelocity_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
-
+!
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+!
     endsubroutine read_neutralvelocity_run_pars
 !***********************************************************************
     subroutine write_neutralvelocity_run_pars(unit)
+!
       integer, intent(in) :: unit
-
-      if (NO_WARN) print*,unit
+!
+      call keep_compiler_quiet(unit)
+!
     endsubroutine write_neutralvelocity_run_pars
 !***********************************************************************
     subroutine rprint_neutralvelocity(lreset,lwrite)
@@ -161,7 +163,6 @@ module NeutralVelocity
 !   3-may-02/axel: coded
 !  27-may-02/axel: added possibility to reset list
 !
-      use Cdata
       use Sub
 !
       logical :: lreset,lwr
@@ -180,8 +181,7 @@ module NeutralVelocity
         write(3,*) 'iunz=',iunz
       endif
 !
-      if (NO_WARN) print*,lreset  !(to keep compiler quiet)
+      call keep_compiler_quiet(lreset)
     endsubroutine rprint_neutralvelocity
 !***********************************************************************
-
 endmodule NeutralVelocity
