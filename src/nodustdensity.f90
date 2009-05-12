@@ -9,6 +9,8 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
+! PENCILS PROVIDED rhod(ndustspec)
+!
 !***************************************************************
 module Dustdensity
 !
