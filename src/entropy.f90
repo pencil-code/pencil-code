@@ -49,6 +49,7 @@ module Entropy
   real :: kx_ss=1.,ky_ss=1.,kz_ss=1.
   real :: thermal_background=0., thermal_peak=0., thermal_scaling=1.
   real :: cool_fac=1., chiB=0.
+  real, dimension(3) :: chi_hyper3_aniso=0.
 !
   real, target :: hcond0=impossible,hcond1=impossible
   real, target :: Fbot=impossible,FbotKbot=impossible
@@ -71,7 +72,7 @@ module Entropy
   logical :: lheatc_hubeny=.false.
   logical :: lheatc_corona=.false.
   logical :: lheatc_shock=.false.,lheatc_hyper3ss=.false.
-  logical :: lheatc_hyper3ss_polar=.false.
+  logical :: lheatc_hyper3ss_polar=.false.,lheatc_hyper3ss_aniso=.false.
   logical :: lupw_ss=.false.
   logical, target :: lmultilayer=.true.
   logical :: ladvection_entropy=.true.
@@ -140,7 +141,7 @@ module Entropy
       lturbulent_heat,deltaT_poleq, &
       tdown, allp,beta_glnrho_global,ladvection_entropy, &
       lviscosity_heat,r_bcz,lfreeze_sint,lfreeze_sext,lhcond_global, &
-      tau_cool,TTref_cool,mixinglength_flux,chiB
+      tau_cool,TTref_cool,mixinglength_flux,chiB,chi_hyper3_aniso
 
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
@@ -508,6 +509,7 @@ module Entropy
       lheatc_shock=.false.
       lheatc_hyper3ss=.false.
       lheatc_hyper3ss_polar=.false.
+      lheatc_hyper3ss_aniso=.false.
 !
       lnothing=.false.
 !
@@ -543,6 +545,10 @@ module Entropy
         case ('hyper3_ss','hyper3')
           lheatc_hyper3ss=.true.
           if (lroot) print*, 'heat conduction: hyperdiffusivity of ss'
+       case ('hyper3_aniso','hyper3-aniso')
+          if (lroot) print*, 'heat conduction: anisotropic '//&
+               'hyperdiffusivity of ss'
+          lheatc_hyper3ss_aniso=.true.
         case ('hyper3_cyl','hyper3-cyl','hyper3-sph','hyper3_sph')
           lheatc_hyper3ss_polar=.true.
           if (lroot) print*, 'heat conduction: hyperdiffusivity of ss'
@@ -581,6 +587,12 @@ module Entropy
       if (lheatc_hyper3ss_polar .and. chi_hyper3==0.0) then
         call warning('initialize_entropy','chi_hyper3 is zero!')
       endif
+      if ( (lheatc_hyper3ss_aniso) .and.  &
+           ((chi_hyper3_aniso(1)==0. .and. nxgrid/=1 ).or. &
+            (chi_hyper3_aniso(2)==0. .and. nygrid/=1 ).or. &
+            (chi_hyper3_aniso(3)==0. .and. nzgrid/=1 )) ) &
+           call fatal_error('initialize_entropy', &
+           'A diffusivity coefficient of chi_hyper3 is zero!')
       if (lheatc_shock .and. chi_shock==0.0) then
         call warning('initialize_entropy','chi_shock is zero!')
       endif
@@ -2104,6 +2116,7 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
         endif
       endif
       if (lheatc_hyper3ss_polar) call calc_heatcond_hyper3_polar(f,df,p)
+      if (lheatc_hyper3ss_aniso) call calc_heatcond_hyper3_aniso(f,df,p)
 !
 !  Explicit heating/cooling terms.
 !
@@ -2356,9 +2369,42 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
 !
     endsubroutine calc_heatcond_hyper3
 !***********************************************************************
+    subroutine calc_heatcond_hyper3_aniso(f,df,p)
+!
+!  Naive anisotropic hyperdiffusivity of entropy.
+!
+!  11-may-09/wlad: coded
+!
+      use Sub, only: del6fj
+!
+      real, dimension (mx,my,mz,mfarray),intent(in) :: f
+      real, dimension (mx,my,mz,mvar),intent(out) :: df
+      type (pencil_case) :: p
+!
+      real, dimension (nx) :: thdiff,tmp
+!
+!  check that chi_hyper3_aniso is ok
+!
+      if (headtt) print*, &
+           'calc_heatcond_hyper3_aniso: chi_hyper3_aniso=', &
+           chi_hyper3_aniso
+!
+!  Heat conduction
+!
+      call del6fj(f,chi_hyper3_aniso,iss,tmp)
+      thdiff = tmp
+      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
+!
+      if (lfirst.and.ldt) diffus_chi3=diffus_chi3+ &
+           (chi_hyper3_aniso(1)*dx_1(l1:l2)**6 + & 
+            chi_hyper3_aniso(2)*dy_1(  m  )**6 + & 
+            chi_hyper3_aniso(3)*dz_1(  n  )**6)
+!
+    endsubroutine calc_heatcond_hyper3_aniso
+!***********************************************************************
     subroutine calc_heatcond_hyper3_polar(f,df,p)
 !
-!  Naive hyperdiffusivity of entropyin polar coordinates
+!  Naive hyperdiffusivity of entropy in polar coordinates
 !
 !  03-aug-08/wlad: coded
 !

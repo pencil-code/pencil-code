@@ -206,7 +206,7 @@ module Density
         case ('hyper3lnrho')
           if (lroot) print*,'diffusion: (d^6/dx^6+d^6/dy^6+d^6/dz^6)lnrho'
           ldiff_hyper3lnrho=.true.
-       case ('hyper3_aniso')
+       case ('hyper3_aniso','hyper3-aniso')
           if (lroot) print*,'diffusion: (Dx*d^6/dx^6 + Dy*d^6/dy^6 + Dz*d^6/dz^6)rho'
           ldiff_hyper3_aniso=.true.
         case ('hyper3_cyl','hyper3-cyl','hyper3_sph','hyper3-sph')
