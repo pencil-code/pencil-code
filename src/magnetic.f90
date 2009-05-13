@@ -291,6 +291,9 @@ module Magnetic
   integer :: idiag_bxbzmz=0     ! DIAG_DOC:
   integer :: idiag_bybzmz=0     ! DIAG_DOC:
   integer :: idiag_b2mz=0       ! DIAG_DOC:
+  integer :: idiag_axmz=0       ! DIAG_DOC: $\left<{\cal A}_x\right>_{xy}$
+  integer :: idiag_aymz=0       ! DIAG_DOC: $\left<{\cal A}_y\right>_{xy}$
+  integer :: idiag_azmz=0       ! DIAG_DOC: $\left<{\cal A}_z\right>_{xy}$
   integer :: idiag_bxmz=0       ! DIAG_DOC: $\left<{\cal B}_x\right>_{xy}$
   integer :: idiag_bymz=0       ! DIAG_DOC: $\left<{\cal B}_y\right>_{xy}$
   integer :: idiag_bzmz=0       ! DIAG_DOC: $\left<{\cal B}_z\right>_{xy}$
@@ -328,6 +331,9 @@ module Magnetic
   integer :: idiag_bmzphe=0     ! DIAG_DOC: Error of phase of a Beltrami field
   integer :: idiag_bsinphz=0    ! DIAG_DOC: sine of phase of a Beltrami field
   integer :: idiag_bcosphz=0    ! DIAG_DOC: cosine of phase of a Beltrami field
+  integer :: idiag_emxamz3=0    ! DIAG_DOC: $\left<\left<\Ev\right>_{xy}\times\left<\Av\right>_{xy}
+                                ! DIAG_DOC:   \right>$ \quad($xy$-averaged
+                                ! DIAG_DOC:   mean field helicity flux)
   integer :: idiag_embmz=0      ! DIAG_DOC: $\left<\left<\Ev\right>_{xy}\cdot\left<\Bv\right>_{xy}
                                 ! DIAG_DOC:   \right>$ \quad($xy$-averaged
                                 ! DIAG_DOC:   mean field helicity production )
@@ -2455,6 +2461,9 @@ module Magnetic
         if (idiag_bx2my/=0)  call xzsum_mn_name_y(p%bb(:,1)**2,idiag_bx2my)
         if (idiag_by2my/=0)  call xzsum_mn_name_y(p%bb(:,2)**2,idiag_by2my)
         if (idiag_bz2my/=0)  call xzsum_mn_name_y(p%bb(:,3)**2,idiag_bz2my)
+        if (idiag_axmz/=0)   call xysum_mn_name_z(p%aa(:,1),idiag_axmz)
+        if (idiag_aymz/=0)   call xysum_mn_name_z(p%aa(:,2),idiag_aymz)
+        if (idiag_azmz/=0)   call xysum_mn_name_z(p%aa(:,3),idiag_azmz)
         if (idiag_bxmz/=0)   call xysum_mn_name_z(p%bb(:,1),idiag_bxmz)
         if (idiag_bymz/=0)   call xysum_mn_name_z(p%bb(:,2),idiag_bymz)
         if (idiag_bzmz/=0)   call xysum_mn_name_z(p%bb(:,3),idiag_bzmz)
@@ -3364,6 +3373,7 @@ module Magnetic
         if (idiag_jmx/=0) call calc_jmx
         if (idiag_jmy/=0) call calc_jmy
         if (idiag_jmz/=0) call calc_jmz
+        if (idiag_emxamz3/=0) call calc_emxamz3
         if (idiag_embmz/=0) call calc_embmz
         if (idiag_jmbmz/=0.or.idiag_kmz/=0) call calc_jmbmz
         if (idiag_bmxy_rms/=0) call calc_bmxy_rms
@@ -3671,6 +3681,44 @@ module Magnetic
       first=.false.
 !
     endsubroutine calc_embmz
+!***********************************************************************
+    subroutine calc_emxamz3
+!
+!  Magnetic helicity flux of mean field
+!  The axmz and aymz as well as Exmz and Eymz must have been calculated,
+!  so they are present on the root processor.
+!
+!   6-apr-08/axel: moved from calc_mfield to here
+!
+      use Diagnostics
+      use Mpicomm
+!
+      logical,save :: first=.true.
+      real :: emxamz3
+      integer :: j
+!
+!  This only works if bxmz and bzmz are in xyaver,
+!  so print warning if this is not ok.
+!
+      if (idiag_Exmz==0.or.idiag_Eymz==0) then
+        if (first) then
+          print*,"calc_mfield: WARNING"
+          print*,"NOTE: to get emxamz3, set axmz, aymz, Exmz, and Eymz in xyaver"
+          print*,"We proceed, but you'll get emxamz3=0"
+        endif
+        emxamz3=0.
+      else
+        emxamz3=sum(fnamez(:,:,idiag_Exmz)*fnamez(:,:,idiag_aymz) &
+                   -fnamez(:,:,idiag_Eymz)*fnamez(:,:,idiag_axmz))/(nz*nprocz)
+      endif
+!
+!  save the name in the idiag_emxamz3 slot
+!  and set first to false
+!
+      call save_name(emxamz3,idiag_emxamz3)
+      first=.false.
+!
+    endsubroutine calc_emxamz3
 !***********************************************************************
     subroutine calc_jmbmz
 !
@@ -5115,8 +5163,9 @@ module Magnetic
         idiag_bxbymz=0; idiag_bxbzmz=0; idiag_bybzmz=0
         idiag_b2mz=0; idiag_jbmz=0; idiag_abmz=0
         idiag_bxbym=0; idiag_bxbzm=0; idiag_bybzm=0; idiag_djuidjbim=0
+        idiag_axmz=0; idiag_aymz=0; idiag_azmz=0
         idiag_bxmz=0; idiag_bymz=0; idiag_bzmz=0
-        idiag_bmx=0; idiag_bmy=0; idiag_bmz=0; idiag_embmz=0
+        idiag_bmx=0; idiag_bmy=0; idiag_bmz=0; idiag_embmz=0; idiag_emxamz3=0
         idiag_jmx=0; idiag_jmy=0; idiag_jmz=0; idiag_jmbmz=0; idiag_kmz=0
         idiag_bmzph=0; idiag_bmzphe=0
         idiag_bcosphz=0; idiag_bsinphz=0
@@ -5269,6 +5318,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'bmzphe',idiag_bmzphe)
         call parse_name(iname,cname(iname),cform(iname),'bcosphz',idiag_bcosphz)
         call parse_name(iname,cname(iname),cform(iname),'bsinphz',idiag_bsinphz)
+        call parse_name(iname,cname(iname),cform(iname),'emxamz3',idiag_emxamz3)
         call parse_name(iname,cname(iname),cform(iname),'embmz',idiag_embmz)
         call parse_name(iname,cname(iname),cform(iname),'jmbmz',idiag_jmbmz)
         call parse_name(iname,cname(iname),cform(iname),'kmz',idiag_kmz)
@@ -5359,6 +5409,9 @@ module Magnetic
             'mflux_y',idiag_mflux_y)
       enddo
       do inamez=1,nnamez
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'axmz',idiag_axmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'aymz',idiag_aymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'azmz',idiag_azmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'bxmz',idiag_bxmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'bymz',idiag_bymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'bzmz',idiag_bzmz)
@@ -5547,6 +5600,9 @@ module Magnetic
         write(3,*) 'i_EMFdotBm=',idiag_EMFdotBm
         write(3,*) 'i_udotxbm=',idiag_udotxbm
         write(3,*) 'i_uxbdotm=',idiag_uxbdotm
+        write(3,*) 'i_axmz=',idiag_axmz
+        write(3,*) 'i_aymz=',idiag_aymz
+        write(3,*) 'i_azmz=',idiag_azmz
         write(3,*) 'i_bxmz=',idiag_bxmz
         write(3,*) 'i_bymz=',idiag_bymz
         write(3,*) 'i_bzmz=',idiag_bzmz
@@ -5556,9 +5612,9 @@ module Magnetic
         write(3,*) 'i_Exmz=',idiag_Exmz
         write(3,*) 'i_Eymz=',idiag_Eymz
         write(3,*) 'i_Ezmz=',idiag_Ezmz
-        write(3,*) 'i_bx2mz=',idiag_bxmz
-        write(3,*) 'i_by2mz=',idiag_bymz
-        write(3,*) 'i_bz2mz=',idiag_bzmz
+        write(3,*) 'i_bx2mz=',idiag_bx2mz
+        write(3,*) 'i_by2mz=',idiag_by2mz
+        write(3,*) 'i_bz2mz=',idiag_bz2mz
         write(3,*) 'i_bxbymz=',idiag_bxbymz
         write(3,*) 'i_b2mz=',idiag_b2mz
         write(3,*) 'i_bmx=',idiag_bmx
@@ -5571,6 +5627,7 @@ module Magnetic
         write(3,*) 'i_bmzphe=',idiag_bmzphe
         write(3,*) 'i_bcosphz=',idiag_bcosphz
         write(3,*) 'i_bsinphz=',idiag_bsinphz
+        write(3,*) 'i_emxamz3=',idiag_emxamz3
         write(3,*) 'i_embmz=',idiag_embmz
         write(3,*) 'i_jmbmz=',idiag_jmbmz
         write(3,*) 'i_kmz=',idiag_kmz
