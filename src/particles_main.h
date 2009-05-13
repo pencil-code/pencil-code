@@ -10,9 +10,7 @@
   public :: particles_read_snapshot, particles_before_boundary
   public :: particles_write_snapshot,particles_write_dsnapshot
   public :: particles_pde, particles_pde_pencil, particles_write_pdim
-  public :: read_particles_init_pars_wrap
-  public :: write_particles_init_pars_wrap
-  public :: read_particles_run_pars_wrap
-  public :: write_particles_run_pars_wrap
+  public :: particles_read_startpars, particles_rparam, particles_wparam
+  public :: particles_read_runpars, particles_wparam2
   public :: particles_powersnap, get_slices_particles
   public :: particles_doprepencil_calc

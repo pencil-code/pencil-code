@@ -249,7 +249,7 @@ module Particles_main
 !
     endsubroutine particles_create_sinks
 !***********************************************************************
-    subroutine read_particles_init_pars_wrap(unit,iostat)
+    subroutine particles_read_startpars(unit,iostat)
 !
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
@@ -257,17 +257,25 @@ module Particles_main
       call keep_compiler_quiet(unit)
       if (present(iostat)) call keep_compiler_quiet(iostat)
 !
-    endsubroutine read_particles_init_pars_wrap
+    endsubroutine particles_read_startpars
 !***********************************************************************
-    subroutine write_particles_init_pars_wrap(unit)
+    subroutine particles_rparam(unit)
 !
       integer, intent (in) :: unit
 !
       call keep_compiler_quiet(unit)
 !
-    endsubroutine write_particles_init_pars_wrap
+    endsubroutine particles_rparam
 !***********************************************************************
-    subroutine read_particles_run_pars_wrap(unit,iostat)
+    subroutine particles_wparam(unit)
+!
+      integer, intent (in) :: unit
+!
+      call keep_compiler_quiet(unit)
+!
+    endsubroutine particles_wparam
+!***********************************************************************
+    subroutine particles_read_runpars(unit,iostat)
 !
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
@@ -275,15 +283,15 @@ module Particles_main
       call keep_compiler_quiet(unit)
       if (present(iostat)) call keep_compiler_quiet(iostat)
 !
-    endsubroutine read_particles_run_pars_wrap
+    endsubroutine particles_read_runpars
 !***********************************************************************
-    subroutine write_particles_run_pars_wrap(unit)
+    subroutine particles_wparam2(unit)
 !
       integer, intent (in) :: unit
 !
       call keep_compiler_quiet(unit)
 !
-    endsubroutine write_particles_run_pars_wrap
+    endsubroutine particles_wparam2
 !***********************************************************************
     subroutine particles_powersnap(f)
 !

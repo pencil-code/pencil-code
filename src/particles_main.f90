@@ -101,12 +101,10 @@ module Particles_main
 !
       call interpolation_consistency_check()
 !
-!  Set internal and external radii of particles
-!  (moved here from start.f90)
+!  Set internal and external radii of particles.
 !
-      if (rp_int == -impossible .and. r_int > epsi) &
-           rp_int = r_int
-      if (rp_ext == -impossible) rp_ext = r_ext
+      if (rp_int==-impossible .and. r_int>epsi) rp_int=r_int
+      if (rp_ext==-impossible)                  rp_ext=r_ext
 !
     endsubroutine particles_initialize_modules
 !***********************************************************************
@@ -312,7 +310,7 @@ module Particles_main
 !***********************************************************************
     subroutine particles_special
 !
-!  Fetch fp (and fsp) array to special module
+!  Fetch fp (and fsp) array to special module.
 !
 !  01-mar-08/wlad: coded
 !
@@ -423,7 +421,7 @@ module Particles_main
       intent (in)  :: f
       intent (out) :: df
 !
-!  Write information about local environment to file.
+!  Write information about local particle environment to file.
 !
       if (itsub==1)               call particles_stalker_sub(f,fp,ineargrid)
 !
@@ -438,7 +436,7 @@ module Particles_main
       if (lparticles_nbody)       call dxxp_dt_nbody(dfp)
       if (lparticles_nbody)       call dvvp_dt_nbody(f,df,fp,dfp,ineargrid)
 !
-!  Correct for curvilinear geometry
+!  Correct for curvilinear geometry.
 !
       call correct_curvilinear
 !
@@ -458,7 +456,7 @@ module Particles_main
 
       do k=1,npar_loc
 !
-! Correct acceleration
+!  Correct acceleration.
 !
         if (lcylindrical_coords) then
           rad=fp(k,ixp);raddot=fp(k,ivpx);phidot=fp(k,ivpy)/max(rad,tini)
@@ -481,71 +479,103 @@ module Particles_main
 !
     endsubroutine correct_curvilinear
 !***********************************************************************
-    subroutine read_particles_init_pars_wrap(unit,iostat)
+    subroutine particles_read_startpars(unit,iostat)
 !
-! 01-sep-05/anders: coded
+!  Read particle parameters from start.in.
 !
-! 17-aug-08/wlad: added individual check for  
-!                 the modules inside the wrap
+!  01-sep-05/anders: coded
+!  17-aug-08/wlad: added individual check for the modules inside the wrap
 !
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
       call read_particles_init_pars(unit,iostat)
-      if (present(iostat).and.(iostat/=0)) &
-        call samplepar_startpars('particles_init_pars',iostat)
+      if (present(iostat)) then
+        if (iostat/=0) call samplepar_startpars('particles_init_pars',iostat)
+      endif
 !
       if (lparticles_radius) then 
         call read_particles_rad_init_pars(unit,iostat)
-        if (present(iostat).and.(iostat/=0)) &
-             call samplepar_startpars('particles_rad_init_pars',iostat)
+        if (present(iostat)) then
+          if (iostat/=0) &
+              call samplepar_startpars('particles_rad_init_pars',iostat)
+        endif
       endif
 !
       if (lparticles_spin) then
         call read_particles_spin_init_pars(unit,iostat)
-        if (present(iostat).and.(iostat/=0)) &
-             call samplepar_startpars('particles_spin_init_pars',iostat)
+        if (present(iostat)) then
+          if (iostat/=0) &
+              call samplepar_startpars('particles_spin_init_pars',iostat)
+        endif
       endif
 !
       if (lparticles_number) then 
         call read_particles_num_init_pars(unit,iostat)
-        if (present(iostat).and.(iostat/=0)) &
-             call samplepar_startpars('particles_num_init_pars',iostat)
+        if (present(iostat)) then
+          if (iostat/=0) &
+              call samplepar_startpars('particles_num_init_pars',iostat)
+        endif
       endif
 !
       if (lparticles_selfgravity) then
         call read_particles_selfg_init_pars(unit,iostat)
-        if (present(iostat).and.(iostat/=0)) &
-             call samplepar_startpars('particles_selg_init_pars',iostat)
+        if (present(iostat)) then
+          if (iostat/=0) &
+              call samplepar_startpars('particles_selg_init_pars',iostat)
+        endif
       endif
 !
       if (lparticles_nbody) then
         call read_particles_nbody_init_pars(unit,iostat)
-        if (present(iostat).and.(iostat/=0)) &
-             call samplepar_startpars('particles_nbody_init_pars',iostat)
+        if (present(iostat)) then
+          if (iostat/=0) &
+              call samplepar_startpars('particles_nbody_init_pars',iostat)
+        endif
       endif
 !
       if (lparticles_viscosity) then
         call read_particles_visc_init_pars(unit,iostat)
-        if (present(iostat).and.(iostat/=0)) &
-             call samplepar_startpars('particles_visc_init_pars',iostat)
+        if (present(iostat)) then
+          if (iostat/=0) &
+              call samplepar_startpars('particles_visc_init_pars',iostat)
+        endif
       endif
 !
       if (lparticles_stalker) then
         call read_pstalker_init_pars(unit,iostat)
-        if (present(iostat).and.(iostat/=0)) &
-             call samplepar_startpars('particles_stalker_init_pars',iostat)
+        if (present(iostat)) then
+          if (iostat/=0) &
+              call samplepar_startpars('particles_stalker_init_pars',iostat)
+        endif
       endif
 !
-    endsubroutine read_particles_init_pars_wrap
+    endsubroutine particles_read_startpars
+!***********************************************************************
+    subroutine particles_rparam(unit)
+!
+!  Read particle parameters from start.in.
+!
+!  13-may-09/anders: coded
+!
+      integer, intent (in) :: unit
+!
+      call read_particles_init_pars(unit)
+      if (lparticles_radius)      call read_particles_rad_init_pars(unit)
+      if (lparticles_spin)        call read_particles_spin_init_pars(unit)
+      if (lparticles_number)      call read_particles_num_init_pars(unit)
+      if (lparticles_selfgravity) call read_particles_selfg_init_pars(unit)
+      if (lparticles_nbody)       call read_particles_nbody_init_pars(unit)
+      if (lparticles_viscosity)   call read_particles_visc_init_pars(unit)
+      if (lparticles_stalker)     call read_pstalker_init_pars(unit)
+!
+    endsubroutine particles_rparam
 !***********************************************************************
     subroutine samplepar_startpars(label,iostat)
 !
-! 17-aug-08/wlad: copied from param_io. By some 
-!                 reason my compiler does not 
-!                 accept it in general.f90
+!  Print sample of particle part of start.in.
 !
-      use Mpicomm, only: stop_it
+!  17-aug-08/wlad: copied from param_io
 !
       character (len=*), optional :: label
       integer, optional :: iostat
@@ -577,11 +607,14 @@ module Particles_main
         if (present(iostat).or.present(label)) &
             print*,  '-- use sample above.'
       endif
-      call stop_it('')
+!
+      call fatal_error('samplepar_startpars','')
 !
     endsubroutine samplepar_startpars
 !***********************************************************************
-    subroutine write_particles_init_pars_wrap(unit)
+    subroutine particles_wparam(unit)
+!
+!  Write particle start parameters to file.
 !
       integer, intent (in) :: unit
 !
@@ -594,70 +627,90 @@ module Particles_main
       if (lparticles_viscosity)   call write_particles_visc_init_pars(unit)
       if (lparticles_stalker)     call write_pstalker_init_pars(unit)
 !
-    endsubroutine write_particles_init_pars_wrap
+    endsubroutine particles_wparam
 !***********************************************************************
-    subroutine read_particles_run_pars_wrap(unit,iostat)
+    subroutine particles_read_runpars(unit,iostat)
+!
+!  Read particle run parameters from run.in.
 !
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
       call read_particles_run_pars(unit,iostat)
-      if (iostat/=0) &
-           call samplepar_runpars('particles_run_pars',iostat)
+      if (present(iostat)) then
+        if (iostat/=0) &
+            call samplepar_runpars('particles_run_pars',iostat)
+      endif
 !      
       if (lparticles_radius) then 
         call read_particles_rad_run_pars(unit,iostat)
-        if (iostat/=0) &
-             call samplepar_runpars('particles_rad_run_pars',iostat)
+        if (present(iostat)) then
+          if (iostat/=0) &
+              call samplepar_runpars('particles_rad_run_pars',iostat)
+        endif
       endif
 !
       if (lparticles_spin) then
         call read_particles_spin_run_pars(unit,iostat)
-        if (iostat/=0) &
-             call samplepar_runpars('particles_spin_run_pars',iostat)
+        if (present(iostat)) then
+          if (iostat/=0) &
+              call samplepar_runpars('particles_spin_run_pars',iostat)
+        endif
       endif
 !
       if (lparticles_number) then
         call read_particles_num_run_pars(unit,iostat)
-        if (iostat/=0) &
-             call samplepar_runpars('particles_num_run_pars',iostat)
+        if (present(iostat)) then
+          if (iostat/=0) &
+              call samplepar_runpars('particles_num_run_pars',iostat)
+        endif
       endif
 !
       if (lparticles_selfgravity) then
         call read_particles_selfg_run_pars(unit,iostat)
-        if (iostat/=0) &
-             call samplepar_runpars('particles_selfg_run_pars',iostat)
+        if (present(iostat)) then
+          if (iostat/=0) &
+              call samplepar_runpars('particles_selfg_run_pars',iostat)
+        endif
       endif
 !
       if (lparticles_nbody) then
         call read_particles_nbody_run_pars(unit,iostat)
-        if (iostat/=0) &
-             call samplepar_runpars('particles_nbody_run_pars',iostat)
+        if (present(iostat)) then
+          if (iostat/=0) &
+              call samplepar_runpars('particles_nbody_run_pars',iostat)
+        endif
       endif
 !
       if (lparticles_viscosity) then
         call read_particles_visc_run_pars(unit,iostat)
-        if (iostat/=0) &
-             call samplepar_runpars('particles_visc_run_pars',iostat)
+        if (present(iostat)) then
+          if (iostat/=0) &
+              call samplepar_runpars('particles_visc_run_pars',iostat)
+        endif
       endif
 !
       if (lparticles_collisions) then
         call read_particles_coll_run_pars(unit,iostat)
-        if (iostat/=0) &
-             call samplepar_runpars('particles_coll_run_pars',iostat)
+        if (present(iostat)) then
+          if (iostat/=0) &
+              call samplepar_runpars('particles_coll_run_pars',iostat)
+        endif
       endif
 !
       if (lparticles_stalker) then
         call read_pstalker_run_pars(unit,iostat)
-        if (iostat/=0) &
-             call samplepar_runpars('particles_stalker_run_pars',iostat)
+        if (present(iostat)) then
+          if (iostat/=0) &
+              call samplepar_runpars('particles_stalker_run_pars',iostat)
+        endif
       endif
 !
-    endsubroutine read_particles_run_pars_wrap
+    endsubroutine particles_read_runpars
 !***********************************************************************
     subroutine samplepar_runpars(label,iostat)
 !
-      use Mpicomm, only: stop_it
+!  Print sample of particle part of run.in.
 !
       character (len=*), optional :: label
       integer, optional :: iostat
@@ -687,7 +740,9 @@ module Particles_main
 !
     endsubroutine samplepar_runpars
 !***********************************************************************
-    subroutine write_particles_run_pars_wrap(unit)
+    subroutine particles_wparam2(unit)
+!
+!  Write particle run parameters to file.
 !
       integer, intent (in) :: unit
 !
@@ -701,7 +756,7 @@ module Particles_main
       if (lparticles_collisions)  call write_particles_coll_run_pars(unit)
       if (lparticles_stalker)     call write_pstalker_run_pars(unit)
 !
-    endsubroutine write_particles_run_pars_wrap
+    endsubroutine particles_wparam2
 !***********************************************************************
     subroutine particles_powersnap(f)
 !
