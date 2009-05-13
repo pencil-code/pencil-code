@@ -32,6 +32,7 @@ module GhostFold
       real, dimension (1,ny,nz,ivar2-ivar1+1) :: df_tmp_yz
       real, dimension (ny,nz) :: df_tmp_yz_one
       integer :: nvar_fold, iproc_rcv, ivar
+      integer :: itag1=10, itag2=11, itag3=12, itag4=13, itag5=14, itag6=15
 !
       nvar_fold=ivar2-ivar1+1
 !
@@ -50,19 +51,19 @@ module GhostFold
           do iproc_rcv=0,ncpus-1
             if (iproc==iproc_rcv) then
               call mpirecv_real(df_tmp_xy, &
-                  (/nx+2,ny+2,1,nvar_fold/), zlneigh, 10000)
+                  (/nx+2,ny+2,1,nvar_fold/),zlneigh,itag1)
             elseif (iproc_rcv==zuneigh) then
               call mpisend_real(df(l1-1:l2+1,m1-1:m2+1,n2+1:n2+1,ivar1:ivar2), &
-                  (/nx+2,ny+2,1,nvar_fold/), zuneigh, 10000)
+                  (/nx+2,ny+2,1,nvar_fold/),zuneigh,itag1)
             endif
             if (iproc==iproc_rcv) df(l1-1:l2+1,m1-1:m2+1,n1:n1,ivar1:ivar2)= &
                 df(l1-1:l2+1,m1-1:m2+1,n1:n1,ivar1:ivar2) + df_tmp_xy
             if (iproc==iproc_rcv) then
               call mpirecv_real(df_tmp_xy, &
-                  (/nx+2,ny+2,1,nvar_fold/), zuneigh, 10001)
+                  (/nx+2,ny+2,1,nvar_fold/),zuneigh,itag2)
             elseif (iproc_rcv==zlneigh) then
               call mpisend_real(df(l1-1:l2+1,m1-1:m2+1,n1-1:n1-1,ivar1:ivar2), &
-                  (/nx+2,ny+2,1,nvar_fold/), zlneigh, 10001)
+                  (/nx+2,ny+2,1,nvar_fold/),zlneigh,itag2)
             endif
             if (iproc==iproc_rcv) df(l1-1:l2+1,m1-1:m2+1,n2:n2,ivar1:ivar2)= &
                 df(l1-1:l2+1,m1-1:m2+1,n2:n2,ivar1:ivar2) + df_tmp_xy
@@ -86,19 +87,19 @@ module GhostFold
           do iproc_rcv=0,ncpus-1
             if (iproc==iproc_rcv) then
               call mpirecv_real(df_tmp_xz, &
-                  (/nx+2,1,nz,nvar_fold/), ylneigh, 10002)
+                  (/nx+2,1,nz,nvar_fold/),ylneigh,itag3)
             elseif (iproc_rcv==yuneigh) then
               call mpisend_real(df(l1-1:l2+1,m2+1:m2+1,n1:n2,ivar1:ivar2), &
-                  (/nx+2,1,nz,nvar_fold/), yuneigh, 10002)
+                  (/nx+2,1,nz,nvar_fold/),yuneigh,itag3)
             endif
             if (iproc==iproc_rcv) df(l1-1:l2+1,m1:m1,n1:n2,ivar1:ivar2)= &
                 df(l1-1:l2+1,m1:m1,n1:n2,ivar1:ivar2) + df_tmp_xz
             if (iproc==iproc_rcv) then
               call mpirecv_real(df_tmp_xz, &
-                  (/nx+2,1,nz,nvar_fold/), yuneigh, 10003)
+                  (/nx+2,1,nz,nvar_fold/),yuneigh,itag4)
             elseif (iproc_rcv==ylneigh) then
               call mpisend_real(df(l1-1:l2+1,m1-1:m1-1,n1:n2,ivar1:ivar2), &
-                  (/nx+2,1,nz,nvar_fold/), ylneigh, 10003)
+                  (/nx+2,1,nz,nvar_fold/),ylneigh,itag4)
             endif
             if (iproc==iproc_rcv) df(l1-1:l2+1,m2:m2,n1:n2,ivar1:ivar2)= &
                 df(l1-1:l2+1,m2:m2,n1:n2,ivar1:ivar2) + df_tmp_xz
@@ -112,6 +113,7 @@ module GhostFold
         if (nxgrid>1 .and. lshear) then
           do ivar=ivar1,ivar2
             df_tmp_yz_one=df(l1-1,m1:m2,n1:n2,ivar)
+            call fourier_shift_yz_y(df_tmp_yz_one,-deltay)
             call fourier_shift_yz_y(df_tmp_yz_one,-deltay)
             df(l1-1,m1:m2,n1:n2,ivar)=df_tmp_yz_one
             df_tmp_yz_one=df(l2+1,m1:m2,n1:n2,ivar)
@@ -136,19 +138,19 @@ module GhostFold
           do iproc_rcv=0,ncpus-1
             if (iproc==iproc_rcv) then
               call mpirecv_real(df_tmp_yz, &
-                  (/1,ny,nz,nvar_fold/), xlneigh, 10004)
+                  (/1,ny,nz,nvar_fold/),xlneigh,itag5)
             elseif (iproc_rcv==xuneigh) then
               call mpisend_real(df(l2+1:l2+1,m1:m2,n1:n2,ivar1:ivar2), &
-                  (/1,ny,nz,nvar_fold/), xuneigh, 10004)
+                  (/1,ny,nz,nvar_fold/),xuneigh,itag5)
             endif
             if (iproc==iproc_rcv) df(l1:l1,m1:m2,n1:n2,ivar1:ivar2)= &
                 df(l1:l1,m1:m2,n1:n2,ivar1:ivar2) + df_tmp_yz
             if (iproc==iproc_rcv) then
               call mpirecv_real(df_tmp_yz, &
-                  (/1,ny,nz,nvar_fold/), xuneigh, 10005)
+                  (/1,ny,nz,nvar_fold/),xuneigh,itag6)
             elseif (iproc_rcv==xlneigh) then
               call mpisend_real(df(l1-1:l1-1,m1:m2,n1:n2,ivar1:ivar2), &
-                  (/1,ny,nz,nvar_fold/), xlneigh, 10005)
+                  (/1,ny,nz,nvar_fold/),xlneigh,itag6)
             endif
             if (iproc==iproc_rcv) df(l2:l2,m1:m2,n1:n2,ivar1:ivar2)= &
                 df(l2:l2,m1:m2,n1:n2,ivar1:ivar2) + df_tmp_yz
@@ -174,6 +176,7 @@ module GhostFold
       real, dimension (1,ny,nz,ivar2-ivar1+1) :: f_tmp_yz
       real, dimension (ny,nz) :: f_tmp_yz_one
       integer :: nvar_fold, iproc_rcv, ivar
+      integer :: itag1=10, itag2=11, itag3=12, itag4=13, itag5=14, itag6=15
 !
       nvar_fold=ivar2-ivar1+1
 !
@@ -192,19 +195,19 @@ module GhostFold
           do iproc_rcv=0,ncpus-1
             if (iproc==iproc_rcv) then
               call mpirecv_real(f_tmp_xy, &
-                  (/nx+2,ny+2,1,nvar_fold/), zlneigh, 10000)
+                  (/nx+2,ny+2,1,nvar_fold/),zlneigh,itag1)
             elseif (iproc_rcv==zuneigh) then
               call mpisend_real(f(l1-1:l2+1,m1-1:m2+1,n2+1:n2+1,ivar1:ivar2), &
-                  (/nx+2,ny+2,1,nvar_fold/), zuneigh, 10000)
+                  (/nx+2,ny+2,1,nvar_fold/),zuneigh,itag1)
             endif
             if (iproc==iproc_rcv) f(l1-1:l2+1,m1-1:m2+1,n1:n1,ivar1:ivar2)= &
                 f(l1-1:l2+1,m1-1:m2+1,n1:n1,ivar1:ivar2) + f_tmp_xy
             if (iproc==iproc_rcv) then
               call mpirecv_real(f_tmp_xy, &
-                  (/nx+2,ny+2,1,nvar_fold/), zuneigh, 10001)
+                  (/nx+2,ny+2,1,nvar_fold/),zuneigh,itag2)
             elseif (iproc_rcv==zlneigh) then
               call mpisend_real(f(l1-1:l2+1,m1-1:m2+1,n1-1:n1-1,ivar1:ivar2), &
-                  (/nx+2,ny+2,1,nvar_fold/), zlneigh, 10001)
+                  (/nx+2,ny+2,1,nvar_fold/),zlneigh,itag2)
             endif
             if (iproc==iproc_rcv) f(l1-1:l2+1,m1-1:m2+1,n2:n2,ivar1:ivar2)= &
                 f(l1-1:l2+1,m1-1:m2+1,n2:n2,ivar1:ivar2) + f_tmp_xy
@@ -228,19 +231,19 @@ module GhostFold
           do iproc_rcv=0,ncpus-1
             if (iproc==iproc_rcv) then
               call mpirecv_real(f_tmp_xz, &
-                  (/nx+2,1,nz,nvar_fold/), ylneigh, 10002)
+                  (/nx+2,1,nz,nvar_fold/),ylneigh,itag3)
             elseif (iproc_rcv==yuneigh) then
               call mpisend_real(f(l1-1:l2+1,m2+1:m2+1,n1:n2,ivar1:ivar2), &
-                  (/nx+2,1,nz,nvar_fold/), yuneigh, 10002)
+                  (/nx+2,1,nz,nvar_fold/),yuneigh,itag3)
             endif
             if (iproc==iproc_rcv) f(l1-1:l2+1,m1:m1,n1:n2,ivar1:ivar2)= &
                 f(l1-1:l2+1,m1:m1,n1:n2,ivar1:ivar2) + f_tmp_xz
             if (iproc==iproc_rcv) then
               call mpirecv_real(f_tmp_xz, &
-                  (/nx+2,1,nz,nvar_fold/), yuneigh, 10003)
+                  (/nx+2,1,nz,nvar_fold/),yuneigh,itag4)
             elseif (iproc_rcv==ylneigh) then
               call mpisend_real(f(l1-1:l2+1,m1-1:m1-1,n1:n2,ivar1:ivar2), &
-                  (/nx+2,1,nz,nvar_fold/), ylneigh, 10003)
+                  (/nx+2,1,nz,nvar_fold/),ylneigh,itag4)
             endif
             if (iproc==iproc_rcv) f(l1-1:l2+1,m2:m2,n1:n2,ivar1:ivar2)= &
                 f(l1-1:l2+1,m2:m2,n1:n2,ivar1:ivar2) + f_tmp_xz
@@ -278,19 +281,19 @@ module GhostFold
           do iproc_rcv=0,ncpus-1
             if (iproc==iproc_rcv) then
               call mpirecv_real(f_tmp_yz, &
-                  (/1,ny,nz,nvar_fold/), xlneigh, 10004)
+                  (/1,ny,nz,nvar_fold/),xlneigh,itag5)
             elseif (iproc_rcv==xuneigh) then
               call mpisend_real(f(l2+1:l2+1,m1:m2,n1:n2,ivar1:ivar2), &
-                  (/1,ny,nz,nvar_fold/), xuneigh, 10004)
+                  (/1,ny,nz,nvar_fold/),xuneigh,itag5)
             endif
             if (iproc==iproc_rcv) f(l1:l1,m1:m2,n1:n2,ivar1:ivar2)= &
                 f(l1:l1,m1:m2,n1:n2,ivar1:ivar2) + f_tmp_yz
             if (iproc==iproc_rcv) then
               call mpirecv_real(f_tmp_yz, &
-                  (/1,ny,nz,nvar_fold/), xuneigh, 10005)
+                  (/1,ny,nz,nvar_fold/),xuneigh,itag6)
             elseif (iproc_rcv==xlneigh) then
               call mpisend_real(f(l1-1:l1-1,m1:m2,n1:n2,ivar1:ivar2), &
-                  (/1,ny,nz,nvar_fold/), xlneigh, 10005)
+                  (/1,ny,nz,nvar_fold/),xlneigh,itag6)
             endif
             if (iproc==iproc_rcv) f(l2:l2,m1:m2,n1:n2,ivar1:ivar2)= &
                 f(l2:l2,m1:m2,n1:n2,ivar1:ivar2) + f_tmp_yz
