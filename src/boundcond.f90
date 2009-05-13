@@ -724,7 +724,10 @@ module Boundcond
 !   j = 1, 2 or 3 for x, y or z-boundaries respectively.
 !
 !   7-jul-08/arne: coded.
+
 !
+      use Chemistry, only: bc_nscbc_subin_x,bc_nscbc_nref_subout_x
+
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       character (len=nscbc_len), dimension(3) :: bc12
@@ -797,7 +800,7 @@ module Boundcond
           case('subsonic_inflow')
 ! Subsonic inflow 
             if (j==1) then
-              call bc_nscbc_subin_x(f,df,topbot,val=valx)
+              call bc_nscbc_subin_x(f,df,topbot,valx)
             elseif (j==2) then
             endif
           case('subson_nref_outflow')
@@ -4954,7 +4957,7 @@ module Boundcond
 !
     endsubroutine bc_nscbc_prf_z
 !***********************************************************************
-    subroutine bc_nscbc_subin_x(f,df,topbot,val)
+    subroutine bc_nscbc_subin_x_(f,df,topbot,val)
 !
 !   nscbc case 
 !   subsonic inflow boundary conditions
@@ -5085,9 +5088,9 @@ module Boundcond
    !      df(lll,m1:m2,n1:n2,ilnTT)=0.
 
 
-    endsubroutine bc_nscbc_subin_x
+    endsubroutine bc_nscbc_subin_x_
 !***********************************************************************
-    subroutine bc_nscbc_nref_subout_x(f,df,topbot)
+    subroutine bc_nscbc_nref_subout_x_(f,df,topbot)
 !
 !   nscbc case 
 !   subsonic non-reflecting outflow boundary conditions
@@ -5280,7 +5283,7 @@ module Boundcond
 
 
 
-    endsubroutine bc_nscbc_nref_subout_x
+    endsubroutine bc_nscbc_nref_subout_x_
 !***********************************************************************
     subroutine bc_nscbc_nref_subout_y(f,df,topbot)
 !

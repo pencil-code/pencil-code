@@ -14,6 +14,10 @@
   public :: pencil_interdep_chemistry
 
   public :: calc_for_chem_mixture
+  public :: bc_nscbc_subin_x
+  public :: bc_nscbc_nref_subout_x
+
+
 
 !  public :: get_p_infx
 !  public :: get_p_infy
