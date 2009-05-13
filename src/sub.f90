@@ -3788,7 +3788,9 @@ module Sub
                   print*,'nan_inform: t, it, itsub   = ', t, it, itsub
                   print*,'nan_inform: l, m, n, iproc = ', a, b, c, iproc
                   print*,'----------------------------'
-                  if (present(lstop) .and. lstop) call stop_it('nan_stop')
+                  if (present(lstop)) then
+                    if (lstop) call stop_it('nan_stop')
+                  endif
                 endif
               enddo
             enddo
