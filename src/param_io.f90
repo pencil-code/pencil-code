@@ -1030,6 +1030,8 @@ module Param_IO
       logical :: lentropy       = lentropy_var
       logical :: lshock         = lshock_var
       logical :: lmagnetic      = lmagnetic_var
+      logical :: ldustvelocity  = ldustvelocity_var
+      logical :: ldustdensity   = ldustdensity_var
       logical :: ltestscalar    = ltestscalar_var
       logical :: ltestfield     = ltestfield_var
       logical :: ltestflow      = ltestflow_var
@@ -1040,7 +1042,7 @@ module Param_IO
       namelist /lphysics/ &
           lhydro,ldensity,lentropy,lmagnetic, &
           ltestscalar,ltestfield,ltestflow, &
-          lpscalar,lradiation, &
+          lpscalar,lradiation,ldustvelocity,ldustdensity, &
           lforcing,lgravz,lgravr,lshear,ltestperturb,linterstellar,lcosmicray, &
           lcosmicrayflux, &
           lshock,lradiation_fld, &
