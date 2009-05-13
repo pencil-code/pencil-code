@@ -7,6 +7,7 @@
 module Boundcond
 !
   use Cdata
+  use Cparam
   use Messages
   use Mpicomm
 !
@@ -14,12 +15,28 @@ module Boundcond
 !
   private
 !
+  public :: update_ghosts
   public :: boundconds, boundconds_x, boundconds_y, boundconds_z
   public :: bc_per_x, bc_per_y, bc_per_z
-  public :: update_ghosts
   public :: nscbc_boundtreat
 !
   contains
+!***********************************************************************
+    subroutine update_ghosts(a)
+!
+!  Update all ghost zones of a.
+!
+!  21-sep-02/wolf: extracted from wsnaps
+!
+      real, dimension (mx,my,mz,mfarray) :: a
+!
+      call boundconds_x(a)
+      call initiate_isendrcv_bdry(a)
+      call finalize_isendrcv_bdry(a)
+      call boundconds_y(a)
+      call boundconds_z(a)
+!
+    endsubroutine update_ghosts
 !***********************************************************************
     subroutine boundconds(f,ivar1_opt,ivar2_opt)
 !
@@ -29,8 +46,6 @@ module Boundcond
 !
 !  10-oct-02/wolf: coded
 !
-      use Cparam
-!
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
@@ -39,7 +54,7 @@ module Boundcond
       ivar1=1; ivar2=mcom
       if (present(ivar1_opt)) ivar1=ivar1_opt
       if (present(ivar2_opt)) ivar2=ivar2_opt
-
+!
       call boundconds_x(f,ivar1,ivar2)
       call boundconds_y(f,ivar1,ivar2)
       call boundconds_z(f,ivar1,ivar2)
@@ -412,7 +427,6 @@ module Boundcond
       !use Density
       use EquationOfState
       !use SharedVariables, only : get_shared_variable
-      !use Mpicomm,         only : stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
@@ -3237,24 +3251,6 @@ module Boundcond
 !
     endsubroutine bc_freeze_var_z
 !***********************************************************************
-    subroutine update_ghosts(a)
-!
-!  update all ghost zones of a
-!  21-sep-02/wolf: extracted from wsnaps
-!
-      use Cparam
-      use Mpicomm
-!
-      real, dimension (mx,my,mz,mfarray) :: a
-!
-      call boundconds_x(a)
-      call initiate_isendrcv_bdry(a)
-      call finalize_isendrcv_bdry(a)
-      call boundconds_y(a)
-      call boundconds_z(a)
-!
-    endsubroutine update_ghosts
-!***********************************************************************
      subroutine uu_driver(f)
 !
 !  Simulated velocity field used as photospherec motions
@@ -3814,7 +3810,6 @@ module Boundcond
 !  11-oct-06/wolf: Adapted from Tobi's bc_aa_pot2
 !
       use Fourier, only: fourier_transform_xy_xy
-      use Mpicomm, only: communicate_bc_aa_pot
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
@@ -3932,7 +3927,6 @@ module Boundcond
 !  10-oct-06/tobi: Coded
 !
       use Fourier, only: fourier_transform_xy_xy, fourier_transform_y_y
-      use Mpicomm, only: communicate_bc_aa_pot
 
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
@@ -4057,8 +4051,6 @@ module Boundcond
 !
 !  14-jun-2002/axel: adapted from similar
 !   8-jul-2002/axel: introduced topbot argument
-!
-      use Mpicomm, only: stop_it,communicate_bc_aa_pot
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -4256,8 +4248,6 @@ module Boundcond
 !  
 !  18-06-2008/bing: coded
 !
-      use Mpicomm, only: mpisend_real,mpirecv_real,stop_it
-
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,ipt,ntb
@@ -4355,7 +4345,6 @@ module Boundcond
 !  25-nov-08/nils: extended to work in multiple dimensions and with cross terms
 !                  i.e. not just the LODI equations.
 !
-      use MpiComm, only: stop_it
       use EquationOfState, only: cs0, cs20
       use Deriv, only: der_onesided_4_slice, der_pencil, der2_pencil
       use Chemistry
@@ -4624,7 +4613,6 @@ module Boundcond
 !  25-nov-08/nils: extended to work in multiple dimensions and with cross terms
 !                  i.e. not just the LODI equations.
 !
-!      use MpiComm, only: stop_it
 !      use EquationOfState, only: cs0, cs20
 !      use Deriv, only: der_onesided_4_slice, der_pencil, der2_pencil
 !      use Chemistry
@@ -4892,7 +4880,6 @@ module Boundcond
 !
 !   7-jul-08/arne: coded.
 !
-!      use MpiComm, only: stop_it
 !      use EquationOfState, only: cs0, cs20
 !      use Deriv, only: der_onesided_4_slice
 
@@ -4976,7 +4963,6 @@ module Boundcond
 !
 !   16-nov-08/natalia: coded.
 !
-!      use MpiComm, only: stop_it
       !use EquationOfState, only: cs0, cs20
 !      use Deriv, only: der_onesided_4_slice, der_pencil
 !      use Chemistry
@@ -5111,7 +5097,6 @@ module Boundcond
 !
 !   16-nov-08/natalia: coded.
 !
-      use MpiComm, only: stop_it
       !use EquationOfState, only: cs0, cs20
       use Deriv, only: der_onesided_4_slice,der_pencil
       use Chemistry
@@ -5307,7 +5292,6 @@ module Boundcond
 !
 !   16-nov-08/natalia: coded.
 !
-!      use MpiComm, only: stop_it
       !use EquationOfState, only: cs0, cs20
 !      use Deriv, only: der_onesided_4_slice, der_pencil
 !      use Chemistry
