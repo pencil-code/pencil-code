@@ -1875,6 +1875,7 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
       if (tau_cool/=0.0) then
         lpenc_requested(i_cp)=.true.
         lpenc_requested(i_TT)=.true.
+        lpenc_requested(i_rho)=.true.
       endif
 !
       if (maxval(abs(beta_glnrho_scaled))/=0.0) lpenc_requested(i_cs2)=.true.
@@ -3086,7 +3087,8 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
 !
 !  Add cooling with constant time-scale to TTref_cool.
 !
-      if (tau_cool/=0.0) heat=heat-p%cp*(p%TT-TTref_cool)/tau_cool
+      if (tau_cool/=0.0) &
+          heat=heat-p%rho*p%cp*gamma11*(p%TT-TTref_cool)/tau_cool
 !
 !  Add "coronal" heating (to simulate a hot corona).
 !  Assume a linearly increasing reference profile.
