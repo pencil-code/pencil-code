@@ -13,8 +13,7 @@
   public :: pencil_criteria_chemistry
   public :: pencil_interdep_chemistry
 
-
-!  public :: calc_for_chem_mixture
+  public :: calc_for_chem_mixture
 
 !  public :: get_p_infx
 !  public :: get_p_infy

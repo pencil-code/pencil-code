@@ -63,6 +63,14 @@ module Chemistry
       call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_chemistry
+!***********************************************************************
+    subroutine calc_for_chem_mixture(f)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine calc_for_chem_mixture
 !**********************************************************************
     subroutine dchemistry_dt(f,df,p)
 !
@@ -80,7 +88,8 @@ module Chemistry
       integer :: unit
       integer, optional :: iostat
 !
-      call keep_compiler_quiet(unit,iostat)
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_chemistry_init_pars
 !***********************************************************************
@@ -97,7 +106,8 @@ module Chemistry
       integer :: unit
       integer, optional :: iostat
 !
-      call keep_compiler_quiet(unit,iostat)
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_chemistry_run_pars
 !***********************************************************************
