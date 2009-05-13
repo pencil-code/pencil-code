@@ -922,7 +922,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Interface for user's own initial condition for position
 !
-
       if (linitial_condition) call initial_condition_xxp(f,fp)
 !
 !  Particles are not allowed to be present in non-existing dimensions.
