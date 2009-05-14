@@ -37,6 +37,8 @@ module Fourier
       integer :: l,m,n
       logical :: lforward
 !
+      if (nprocx>1) call fatal_error('fourier_transform','Must have nprocx=1!')
+!
       lforward=.true.
       if (present(linv)) then
         if (linv) lforward=.false.
@@ -187,6 +189,9 @@ module Fourier
       integer :: l,m,n
       logical :: lforward
 !
+      if (nprocx>1) &
+          call fatal_error('fourier_transform_xy','Must have nprocx=1!')
+!
       lforward=.true.
       if (present(linv)) then
         if (linv) lforward=.false.
@@ -286,6 +291,9 @@ module Fourier
       real, dimension(4*nx+15) :: wsavex
       integer :: l,m,n
 !
+      if (nprocx>1) &
+          call fatal_error('fourier_transform_xz','Must have nprocx=1!')
+!
       if (present(linv)) then
         if (linv) then
           if (lroot) print*, 'fourier_transform_xz: only implemented for '// &
@@ -354,6 +362,18 @@ module Fourier
       integer :: m,n
       logical :: lforward
 !
+      if (nprocx>1) &
+          call fatal_error('fourier_transform_x','Must have nprocx=1!')
+!
+!  Check whether nxgrid=nygrid=nzgrid.
+!
+      if ( (nygrid/=1.and.nygrid/=nxgrid) .or. &
+           (nzgrid/=1.and.nzgrid/=nxgrid) ) then
+        if (lroot) &
+            print*, 'fourier_transform_x: must have nxgrid=nygrid=nzgrid!'
+        call fatal_error('fourier_transform_x','')
+      endif
+!
       lforward=.true.
       if (present(linv)) then
         if (linv) lforward=.false.
@@ -362,15 +382,6 @@ module Fourier
 !  need to initialize cfft only once, because nxgrid=nygrid
 !
       call cffti(nx,wsavex)
-!
-!  check whether nxgrid=nygrid=nzgrid
-!
-      if ( (nygrid/=1.and.nygrid/=nxgrid) .or. &
-           (nzgrid/=1.and.nzgrid/=nxgrid) ) then
-        if (lroot) &
-            print*, 'fourier_transform_x: must have nxgrid=nygrid=nzgrid!'
-        call fatal_error('fourier_transform_x','')
-      endif
 !
       if (lforward) then
 !
@@ -451,6 +462,9 @@ module Fourier
       logical :: lforward,lnormalize,err,lfirstcall=.true.
       logical, optional :: linv
       logical, optional :: lnorm
+!
+      if (nprocx>1) &
+          call fatal_error('fourier_transform_y','Must have nprocx=1!')
 !
 ! Separate the problem in two cases. nxgrid>= nygrid and its
 ! opposite
@@ -620,12 +634,8 @@ module Fourier
       integer :: l,m,n,two
       logical :: lforward
 !
-      two = 2         ! avoid `array out of bounds' below for nygrid=1
-!
-      lforward=.true.
-      if (present(linv)) then
-        if (linv) lforward=.false.
-      endif
+      if (nprocx>1) &
+          call fatal_error('fourier_transform_shear','Must have nprocx=1!')
 !
 !  If nxgrid/=nygrid/=nzgrid, stop.
 !
@@ -638,6 +648,13 @@ module Fourier
         print*,'fourier_transform_shear: '// &
             'need to have nzgrid=nxgrid if nzgrid/=1.'
         call fatal_error('fourier_transform_shear','')
+      endif
+!
+      two = 2         ! avoid `array out of bounds' below for nygrid=1
+!
+      lforward=.true.
+      if (present(linv)) then
+        if (linv) lforward=.false.
       endif
 !
 !  Need to initialize cfft only once, because we require nxgrid=nygrid=nzgrid.
@@ -788,19 +805,22 @@ module Fourier
       integer :: l,m,n,two
       logical :: lforward
 !
-      two = 2         ! avoid `array out of bounds' below for nygrid=1
+      if (nprocx>1) &
+          call fatal_error('fourier_transform_shear_xy','Must have nprocx=1!')
 !
-      lforward=.true.
-      if (present(linv)) then
-        if (linv) lforward=.false.
-      endif
-!
-!  if nxgrid/=nygrid/=nzgrid, stop.
+!  If nxgrid/=nygrid/=nzgrid, stop.
 !
       if (nygrid/=nxgrid .and. nygrid /= 1) then
         print*, 'fourier_transform_shear_xy: '// &
             'need to have nygrid=nxgrid if nygrid/=1.'
         call fatal_error('fourier_transform_shear','')
+      endif
+!
+      two = 2         ! avoid `array out of bounds' below for nygrid=1
+!
+      lforward=.true.
+      if (present(linv)) then
+        if (linv) lforward=.false.
       endif
 !
 !  Need to initialize cfft only once, because we require nxgrid=nygrid=nzgrid.
@@ -1067,10 +1087,11 @@ module Fourier
       integer :: l,m,ibox
       logical :: lforward
 !
-      if (mod(nxgrid,nygrid)/=0) then
-        call fatal_error('fourier_transform_xy_xy', &
-                         'nxgrid needs to be an integer multiple of nygrid.')
-      endif
+      if (nprocx>1) &
+          call fatal_error('fourier_transform_shear_xy_xy','Must have nprocx=1!')
+!
+      if (mod(nxgrid,nygrid)/=0) call fatal_error('fourier_transform_xy_xy', &
+          'nxgrid needs to be an integer multiple of nygrid.')
 !
       lforward=.true.
       if (present(linv)) then
