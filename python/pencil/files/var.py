@@ -214,16 +214,14 @@ class read_var:
         if (magic is not None):
             if ('bb' in magic):
                 # compute the magnetic field before doing trimall
-                iax=index.index.get('ax')-1
-                iaz=index.index.get('az')
-                self.bb=curl(f[iax:iaz,...],dx,dy,dz,run2D=param.lwrite_2d)
+                aa = f[index['ax']-1:index['az'],...]
+                self.bb = curl(aa,dx,dy,dz,run2D=param.lwrite_2d)
                 if (trimall): self.bb=self.bb[:,dim.n1:dim.n2+1, 
                 dim.m1:dim.m2+1, dim.l1:dim.l2+1]
             if ('vort' in magic):
                 # compute the vorticity field before doing trimall
-                iux=index.index.get('ux')-1
-                iuz=index.index.get('uz')
-                self.vort=curl(f[iux:iuz,...],dx,dy,dz,run2D=param.lwrite_2d)
+                uu = f[index['ux']-1:index['uz'],...]
+                self.vort = curl(uu,dx,dy,dz,run2D=param.lwrite_2d)
                 if (trimall):self.vort=self.vort[:,dim.n1:dim.n2+1, 
                 dim.m1:dim.m2+1, dim.l1:dim.l2+1]
 
@@ -253,11 +251,19 @@ class read_var:
             
         #11-jun-2008/tgastine: temporary correction to deal
             # with shocks
-        if index.index.has_key('shock'): index.index.pop('shock')
-        if index.index.has_key('gg'): index.index.pop('gg')
-        for i in range(len(index.index.keys())):
-            setattr(self, index.index.keys()[i],
-                    self.f[index.index.values()[i]-1, ...])
+        if index.has_key('shock'): index.pop('shock')
+        if index.has_key('gg'): index.pop('gg')
+
+        # Assign an attribute to self for each variable defined in
+        # 'data/index.pro' so that e.g. self.ux is the x-velocity
+        for key,value in index.items():
+          setattr(self,key,self.f[value-1,...])
+        # Special treatment for vector quantities
+        if index.has_key('uu'):
+          self.uu = self.f[index['ux']-1:index['uz'],...]
+        if index.has_key('aa'):
+          self.aa = self.f[index['ax']-1:index['az'],...]
+
         self.t = t
         self.dx = dx
         self.dy = dy
