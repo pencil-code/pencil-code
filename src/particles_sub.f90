@@ -676,6 +676,7 @@ module Particles_sub
                     'consider setting npar_mig'
                 print*, '                        higher in cparam.local)'
                 nmig_leave(iproc_rec)=nmig_leave(iproc_rec)-1
+                nmig_leave_total     =nmig_leave_total     -1
                 lredo=.true.
                 exit
               else
