@@ -1001,8 +1001,10 @@ module Diagnostics
     endsubroutine sum_mn_name
 !***********************************************************************
     subroutine sum_mn_name_halfy(a,iname)
+!
 ! To calculate averages over half the size of box, useful for simulations
 ! which includes equator (either cartesian or spherical).  
+!
 ! dhruba : aped from sum_mn_name
 !
       real, dimension (nx) :: a
@@ -1051,9 +1053,11 @@ module Diagnostics
     endsubroutine sum_mn_name_halfy
 !***********************************************************************
     subroutine sum_mn_name_halfz(a,iname)
+!
 ! To calculate averages over half the size of box (this time divided along the z
 ! direction), useful for simulations which includes equator (either cartesian 
 ! or spherical).  
+!
 ! 7-May-2009 dhruba : aped from sum_mn_name_halfy
 !
       real, dimension (nx) :: a

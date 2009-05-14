@@ -158,9 +158,12 @@ module Entropy
   integer :: idiag_eem=0        ! DIAG_DOC:
   integer :: idiag_ppm=0        ! DIAG_DOC:
   integer :: idiag_csm=0        ! DIAG_DOC:
-  integer :: idiag_pdivum=0     ! DIAG_DOC:
+  integer :: idiag_pdivum=0     ! DIAG_DOC: $\left<p\nabla\uv\right>$
   integer :: idiag_heatm=0      ! DIAG_DOC:
   integer :: idiag_ugradpm=0    ! DIAG_DOC:
+  integer :: idiag_fradbot=0    ! DIAG_DOC: $\int F_{\rm bot}\cdot d\Sv$
+  integer :: idiag_fradtop=0    ! DIAG_DOC: $\int F_{\rm top}\cdot d\Sv$
+  integer :: idiag_TTtop=0      ! DIAG_DOC: $\int T_{\rm top} d\Sv$
   integer :: idiag_ethtot=0     ! DIAG_DOC: $\int_V\varrho e\,dV$
                                 ! DIAG_DOC:   \quad(total thermal
                                 ! DIAG_DOC:   [=internal] energy)
@@ -2015,7 +2018,7 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
 !
       real, dimension (nx) :: rhs,Hmax=0.
       real, dimension (nx) :: vKpara,vKperp
-      real :: ztop,xi,profile_cor,uT
+      real :: ztop,xi,profile_cor,uT,fradz,TTtop
       integer :: j,ju
 !
       intent(inout)  :: f,p
@@ -2176,12 +2179,49 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
         if (idiag_csm/=0) call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
         if (idiag_ugradpm/=0) &
             call sum_mn_name(p%cs2*(p%uglnrho+p%ugss),idiag_ugradpm)
+!
+!  radiative heat flux at the bottom (assume here that hcond=hcond0=const)
+!
+        if (idiag_fradbot/=0) then
+          if (ipz==0       .and.n==n1) then
+            fradz=sum(-hcond0*p%TT*p%glnTT(:,3)*dsurfxy)
+          else
+            fradz=0.
+          endif
+          call surf_mn_name(fradz,idiag_fradbot)
+        endif
+!
+!  radiative heat flux at the top (assume here that hcond=hcond0=const)
+!
+        if (idiag_fradtop/=0) then
+          if (ipz==nprocz-1.and.n==n2) then
+            fradz=sum(-hcond0*p%TT*p%glnTT(:,3)*dsurfxy)
+          else
+            fradz=0.
+          endif
+          call surf_mn_name(fradz,idiag_fradtop)
+        endif
+!
+!  mean temperature at the top
+!
+        if (idiag_TTtop/=0) then
+          if (ipz==nprocz-1.and.n==n2) then
+            TTtop=sum(p%TT*dsurfxy)
+          else
+            TTtop=0.
+          endif
+          call surf_mn_name(TTtop,idiag_TTtop)
+        endif
+!
+!  calculate integrated temperature in in limited radial range
+!
         if (idiag_TTp/=0) call sum_lim_mn_name(p%rho*p%cs2*gamma11,idiag_TTp,p)
       endif
 !
 !  1-D averages.
 !
       if (l1ddiagnos) then
+        if (idiag_fradz/=0) call xysum_mn_name_z(-hcond0*p%TT*p%glnTT(:,3),idiag_fradz)
         if (idiag_fconvz/=0) &
             call xysum_mn_name_z(p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
         if (idiag_ssmz/=0)  call xysum_mn_name_z(p%ss,idiag_ssmz)
@@ -3259,6 +3299,7 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
         idiag_dtc=0; idiag_ethm=0; idiag_ethdivum=0; idiag_ssm=0
         idiag_eem=0; idiag_ppm=0; idiag_csm=0; idiag_pdivum=0; idiag_heatm=0
         idiag_ugradpm=0; idiag_ethtot=0; idiag_dtchi=0; idiag_ssmphi=0
+        idiag_fradbot=0; idiag_fradtop=0; idiag_TTtop=0
         idiag_yHmax=0; idiag_yHm=0; idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0
         idiag_fconvz=0; idiag_dcoolz=0; idiag_fradz=0; idiag_fturbz=0
         idiag_ssmz=0; idiag_ssmy=0; idiag_ssmx=0; idiag_ssmr=0; idiag_TTmr=0
@@ -3281,6 +3322,9 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
         call parse_name(iname,cname(iname),cform(iname),'heatm',idiag_heatm)
         call parse_name(iname,cname(iname),cform(iname),'csm',idiag_csm)
         call parse_name(iname,cname(iname),cform(iname),'ugradpm',idiag_ugradpm)
+        call parse_name(iname,cname(iname),cform(iname),'fradbot',idiag_fradbot)
+        call parse_name(iname,cname(iname),cform(iname),'fradtop',idiag_fradtop)
+        call parse_name(iname,cname(iname),cform(iname),'TTtop',idiag_TTtop)
         call parse_name(iname,cname(iname),cform(iname),'yHm',idiag_yHm)
         call parse_name(iname,cname(iname),cform(iname),'yHmax',idiag_yHmax)
         call parse_name(iname,cname(iname),cform(iname),'TTm',idiag_TTm)
@@ -3356,6 +3400,9 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
         write(3,*) 'i_heatm=',idiag_heatm
         write(3,*) 'i_csm=',idiag_csm
         write(3,*) 'i_ugradpm=',idiag_ugradpm
+        write(3,*) 'i_fradbot=',idiag_fradbot
+        write(3,*) 'i_fradtop=',idiag_fradtop
+        write(3,*) 'i_TTtop=',idiag_TTtop
         write(3,*) 'i_ssmphi=',idiag_ssmphi
         write(3,*) 'i_cs2mphi=',idiag_cs2mphi
         write(3,*) 'i_fturbz=',idiag_fturbz
