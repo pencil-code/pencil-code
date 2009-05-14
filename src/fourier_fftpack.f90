@@ -576,7 +576,7 @@ module Fourier
     subroutine fourier_transform_shear(a_re,a_im,linv)
 !
 !  Subroutine to do Fourier transform in shearing coordinates.
-!  The routine overwrites the input data
+!  The routine overwrites the input data.
 !
 !  The transform from real space to Fourier space goes as follows:
 !
@@ -612,10 +612,10 @@ module Fourier
       real, dimension (nx,ny,nz) :: a_re,a_im
       logical, optional :: linv
 !
-      complex, dimension (nxgrid) :: ax
-      complex, dimension (nxgrid) :: ay
-      complex, dimension (nxgrid) :: az
-      real, dimension (4*nxgrid+15) :: wsave
+      complex, dimension (nx) :: ax
+      complex, dimension (nx) :: ay
+      complex, dimension (nx) :: az
+      real, dimension (4*nx+15) :: wsave
       real :: deltay_x
       integer :: l,m,n,two
       logical :: lforward
@@ -627,7 +627,7 @@ module Fourier
         if (linv) lforward=.false.
       endif
 !
-!  if nxgrid/=nygrid/=nzgrid, stop.
+!  If nxgrid/=nygrid/=nzgrid, stop.
 !
       if (nygrid/=nxgrid .and. nygrid /= 1) then
         print*, 'fourier_transform_shear: '// &
@@ -759,7 +759,7 @@ module Fourier
     subroutine fourier_transform_shear_xy(a_re,a_im,linv)
 !
 !  Subroutine to do Fourier transform in shearing coordinates.
-!  The routine overwrites the input data
+!  The routine overwrites the input data.
 !
 !  The transform from real space to Fourier space goes as follows:
 !
@@ -780,10 +780,10 @@ module Fourier
       real, dimension (nx,ny,nz) :: a_re,a_im
       logical, optional :: linv
 !
-      complex, dimension (nxgrid) :: ax
-      complex, dimension (nxgrid) :: ay
-      complex, dimension (nxgrid) :: az
-      real, dimension (4*nxgrid+15) :: wsave
+      complex, dimension (nx) :: ax
+      complex, dimension (nx) :: ay
+      complex, dimension (nx) :: az
+      real, dimension (4*nx+15) :: wsave
       real :: deltay_x
       integer :: l,m,n,two
       logical :: lforward
@@ -1059,9 +1059,9 @@ module Fourier
       real, dimension(nx,ny) :: a_re,a_im
       logical, optional :: linv
 !
-      complex, dimension(nxgrid) :: ax
+      complex, dimension(nx) :: ax
       complex, dimension(nygrid) :: ay
-      real, dimension(4*nxgrid+15) :: wsavex
+      real, dimension(4*nx+15) :: wsavex
       real, dimension(4*nygrid+15) :: wsavey
       real, dimension(ny) :: deltay_x
       integer :: l,m,ibox
@@ -1311,7 +1311,7 @@ module Fourier
       real, dimension(nygrid) :: a_re_full, a_im_full
       complex, dimension(nygrid) :: ay
       real, dimension(4*nygrid+15) :: wsavey
-      integer :: ipy_send
+      integer :: ipy_send, itag1=100, itag2=200
       logical :: lforward
 !
       lforward=.true.
@@ -1330,13 +1330,13 @@ module Fourier
             a_im_full(1:ny)=a_im
             do ipy_send=1,nprocy-1
               call mpirecv_real(a_re_full(ipy_send*ny+1:(ipy_send+1)*ny), &
-                  ny,iproc+ipy_send,111)
+                  ny,iproc+ipy_send,itag1)
               call mpirecv_real(a_im_full(ipy_send*ny+1:(ipy_send+1)*ny), &
-                  ny,iproc+ipy_send,222)
+                  ny,iproc+ipy_send,itag2)
             enddo
           else
-            call mpisend_real(a_re,ny,iproc-ipy,111)
-            call mpisend_real(a_im,ny,iproc-ipy,222)
+            call mpisend_real(a_re,ny,iproc-ipy,itag1)
+            call mpisend_real(a_im,ny,iproc-ipy,itag2)
           endif
 !
           if (ipy==0) then
@@ -1353,13 +1353,13 @@ module Fourier
 !
             do ipy_send=1,nprocy-1
               call mpisend_real(a_re_full(ipy_send*ny+1:(ipy_send+1)*ny), &
-                  ny,iproc+ipy_send,111)
+                  ny,iproc+ipy_send,itag1)
               call mpisend_real(a_im_full(ipy_send*ny+1:(ipy_send+1)*ny), &
-                  ny,iproc+ipy_send,222)
+                  ny,iproc+ipy_send,itag2)
             enddo
           else
-            call mpirecv_real(a_re,ny,iproc-ipy,111)
-            call mpirecv_real(a_im,ny,iproc-ipy,222)
+            call mpirecv_real(a_re,ny,iproc-ipy,itag1)
+            call mpirecv_real(a_im,ny,iproc-ipy,itag2)
           endif
 !
         endif
@@ -1374,13 +1374,13 @@ module Fourier
             a_im_full(1:ny)=a_im
             do ipy_send=1,nprocy-1
               call mpirecv_real(a_re_full(ipy_send*ny+1:(ipy_send+1)*ny), &
-                  ny,iproc+ipy_send,111)
+                  ny,iproc+ipy_send,itag1)
               call mpirecv_real(a_im_full(ipy_send*ny+1:(ipy_send+1)*ny), &
-                  ny,iproc+ipy_send,222)
+                  ny,iproc+ipy_send,itag2)
             enddo
           else
-            call mpisend_real(a_re,ny,iproc-ipy,111)
-            call mpisend_real(a_im,ny,iproc-ipy,222)
+            call mpisend_real(a_re,ny,iproc-ipy,itag1)
+            call mpisend_real(a_im,ny,iproc-ipy,itag2)
           endif
 !
           if (ipy==0) then
@@ -1397,13 +1397,13 @@ module Fourier
 !
             do ipy_send=1,nprocy-1
               call mpisend_real(a_re_full(ipy_send*ny+1:(ipy_send+1)*ny), &
-                  ny,iproc+ipy_send,111)
+                  ny,iproc+ipy_send,itag1)
               call mpisend_real(a_im_full(ipy_send*ny+1:(ipy_send+1)*ny), &
-                  ny,iproc+ipy_send,222)
+                  ny,iproc+ipy_send,itag2)
             enddo
           else
-            call mpirecv_real(a_re,ny,iproc-ipy,111)
-            call mpirecv_real(a_im,ny,iproc-ipy,222)
+            call mpirecv_real(a_re,ny,iproc-ipy,itag1)
+            call mpirecv_real(a_im,ny,iproc-ipy,itag2)
           endif
 !
         endif
@@ -1435,6 +1435,7 @@ module Fourier
       complex, dimension(nygrid) :: a_cmplx, cmplx_shift
       real, dimension(nygrid,max(nz/nprocy,1)) :: a_re_new, a_im_new
       integer :: n, nz_new, ipy_from, ipy_to, iproc_from, iproc_to
+      integer :: itag=666
 !
 !  Fourier transform of the subdivided y-interval is done by collecting
 !  pencils of length nygrid at each processor. Consider the processor space
@@ -1473,21 +1474,21 @@ module Fourier
       if (nprocy/=1) then
         if (nzgrid==1) then
 !
-!  Degenerate z-direction. Let root processor do the shift of the single nygrid
-!  pencil.
+!  Degenerate z-direction. Let y-root processor do the shift of the single
+!  nygrid pencil.
 !
-          do iproc_from=1,ncpus-1
-            if (lroot) then
+          do ipy_from=1,nprocy-1
+            if (ipy==0) then
               call mpirecv_real( &
-                  a_re_new(iproc_from*ny+1:(iproc_from+1)*ny,1), &
-                  ny, iproc_from, 666)
+                  a_re_new(ipy_from*ny+1:(ipy_from+1)*ny,1), &
+                  ny,ipy_from*nprocx+ipx,itag)
             else
-              iproc_to=0
-              if (iproc==iproc_from) &
-                  call mpisend_real(a_re(:,1), ny, iproc_to, 666)
+              ipy_to=0
+              if (ipy==ipy_from) &
+                  call mpisend_real(a_re(:,1),ny,ipy_to*nprocx+ipx,itag)
             endif
           enddo
-          if (lroot) a_re_new(1:ny,1)=a_re(:,1)
+          if (ipy==0) a_re_new(1:ny,1)=a_re(:,1)
         else
 !
 !  Present z-direction. Here nz must be a whole multiple of nprocy (e.g. nz=8,
@@ -1501,19 +1502,19 @@ module Fourier
           endif
 !
           do ipy_from=0,nprocy-1
-            iproc_from=ipz*nprocy+ipy_from
+            iproc_from=ipz*nprocy*nprocx+ipy_from*nprocx+ipx
             if (ipy/=ipy_from) then
               call mpirecv_real( &
                   a_re_new(ipy_from*ny+1:(ipy_from+1)*ny,:), &
-                  (/ny,nz_new/), iproc_from, 666)
+                  (/ny,nz_new/),iproc_from,itag)
             else
               a_re_new(ipy*ny+1:(ipy+1)*ny,:) = &
                   a_re(:,ipy*nz_new+1:(ipy+1)*nz_new)
               do ipy_to=0,nprocy-1
-                iproc_to=ipz*nprocy+ipy_to
+                iproc_to=ipz*nprocy*nprocx+ipy_to*nprocx+ipx
                 if (ipy/=ipy_to) call mpisend_real( &
                     a_re(:,ipy_to*nz_new+1:(ipy_to+1)*nz_new), &
-                    (/ny,nz_new/), iproc_to, 666)
+                    (/ny,nz_new/),iproc_to,itag)
               enddo
             endif
           enddo
@@ -1549,33 +1550,33 @@ module Fourier
       if (nprocy/=1) then
         if (nzgrid==1) then
 !  No z-direction.
-          if (.not. lroot) then
-            iproc_from=0
-            call mpirecv_real(a_re(:,1), ny, iproc_from, 666)
+          if (ipy/=0) then
+            ipy_from=0
+            call mpirecv_real(a_re(:,1),ny,ipy_from*nprocx+ipx,itag)
           else
-            do iproc_to=1,ncpus-1
+            do ipy_to=1,nprocy-1
               call mpisend_real( &
-                  a_re_new(iproc_to*ny+1:(iproc_to+1)*ny,1), &
-                  ny, iproc_to, 666)
+                  a_re_new(ipy_to*ny+1:(ipy_to+1)*ny,1), &
+                  ny,ipy_to*nprocx+ipx,itag)
             enddo
           endif
-          if (lroot) a_re(:,1)=a_re_new(1:ny,1)
+          if (ipy==0) a_re(:,1)=a_re_new(1:ny,1)
         else
 !  Present z-direction.
           do ipy_from=0,nprocy-1
-            iproc_from=ipz*nprocy+ipy_from
+            iproc_from=ipz*nprocy*nprocx+ipy_from*nprocx+ipx
             if (ipy/=ipy_from) then
               call mpirecv_real( &
                   a_re(:,ipy_from*nz_new+1:(ipy_from+1)*nz_new), &
-                  (/ny,nz_new/), iproc_from, 666)
+                  (/ny,nz_new/),iproc_from,itag)
             else
               a_re(:,ipy*nz_new+1:(ipy+1)*nz_new)= &
                   a_re_new(ipy*ny+1:(ipy+1)*ny,:)
               do ipy_to=0,nprocy-1
-                iproc_to=ipz*nprocy+ipy_to
+                iproc_to=ipz*nprocy*nprocx+ipy_to*nprocx+ipx
                 if (ipy/=ipy_to) call mpisend_real( &
                     a_re_new(ipy_to*ny+1:(ipy_to+1)*ny,:), &
-                    (/ny,nz_new/), iproc_to, 666)
+                    (/ny,nz_new/),iproc_to,itag)
               enddo
             endif
           enddo
@@ -1598,8 +1599,8 @@ module Fourier
       real, dimension (nx) :: shift_y
 !
       real, dimension (nx,ny,nz) :: a_im
-      complex, dimension (nxgrid) :: ay
-      real, dimension (4*nxgrid+15) :: wsave
+      complex, dimension (nx) :: ay
+      real, dimension (4*nx+15) :: wsave
       integer :: l,m,n,two
 !
       two = 2         ! avoid `array out of bounds' below for nygrid=1
