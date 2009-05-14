@@ -2,7 +2,7 @@
 
 from param import read_param
 
-class read_index:
+class read_index(dict):
     """
      read index.pro and returns a read_index class which is composed
      of a python dictionnary
@@ -28,7 +28,6 @@ class read_index:
             param = read_param(datadir=datadir, quiet=True)
 
         f = open(datadir+'index.pro')
-        self.index = {}
         for line in f.readlines():
             clean = line.strip()
 
@@ -38,4 +37,4 @@ class read_index:
                 name = val[0]
                 if (name == 'lnTT' and param.ltemperature_nolog):
                     name = 'tt'
-                self.index[name] = int(val[1])
+                self[name] = int(val[1])
