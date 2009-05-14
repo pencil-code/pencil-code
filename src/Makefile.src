@@ -966,6 +966,7 @@ endif
 ##
 #FC=g95 -fno-second-underscore -std=f95 -I/usr/lib/openmpi/include #(frenesi)
 #FFLAGS=-O3 #(frenesi)
+#FFLAGS_DOUBLE=-r8 #(frenesi)
 #FFLAGS_SLOPPY=$(FFLAGS) -Wno=154,155 -I/usr/lib/openmpi/include #(frenesi)
 #CC=gcc #(frenesi)
 #CFLAGS=-O3 -DFUNDERSC=1 #(frenesi)
