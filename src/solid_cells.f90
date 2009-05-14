@@ -483,6 +483,12 @@ f(:,m2-5:m2,:,iux)=0
       real :: x1,x2,f1,f2,rij_min,rij_max,inputvalue,smallx,gp
       logical, intent(in) :: fluid_point
 !
+! Check if we really want this special treatment close to the fluid-solid 
+! interface
+!
+      if ((.not. fluid_point .and. lclose_interpolation) &
+          .or. ( fluid_point .and. lclose_linear)) then
+!
 ! Define some help variables
 !
         x0=cylinder(icyl,ixpos)
@@ -674,6 +680,7 @@ f(:,m2-5:m2,:,iux)=0
 !
           gpp=(rps*fint+rintp*0)/(Rsmall-rs)
         endif
+endif
 !
     endsubroutine close_interpolation
 !***********************************************************************  
