@@ -1,15 +1,9 @@
 !  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
-!
-! Initialisation parameters for interstellar
-!
 &init_pars
   cvsid='$Id$'
-
   unit_length=3.16e21, unit_velocity=1e5, unit_density=1e-24
   r_int=0.5, r_ext=1.
-
 /
-
 &eos_init_pars                 /
 &hydro_init_pars               /
 &density_init_pars             /
@@ -35,11 +29,9 @@
 &shear_init_pars
   qshear=1.
 /
-!&viscosity_init_pars          /
 &special_init_pars             /
 &particles_init_pars           /
 &particles_radius_init_pars    /
 &particles_number_init_pars    /
 &particles_selfgrav_init_pars  /
 &particles_nbody_init_pars     /
-&shock_init_pars               /

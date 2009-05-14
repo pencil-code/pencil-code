@@ -34,7 +34,6 @@ PARTICLES_SELFGRAVITY =   particles_selfgravity
 PARTICLES_SUB         =   particles_sub
 
 SPECIAL               =   special/meanfield_alpm
-#INITCOND_SPEC         =   ../../../anders/src/kepvor.f90
 
 GRAVITY               =   gravity_simple
 SELFGRAVITY           =   selfgravity
