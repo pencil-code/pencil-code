@@ -324,12 +324,12 @@ f(:,m2-5:m2,:,iux)=0
             f(i,j,k,iuz)=-phi
             if (ilnrho>0) then
               call interpolate_mirror_point(f,phi,ilnrho,k,lower_i,upper_i,&
-                  lower_j,icyl,upper_j,xmirror,ymirror)
+                  lower_j,upper_j,icyl,xmirror,ymirror)
               f(i,j,k,ilnrho)=phi
             endif
             if (ilnTT>0) then
               call interpolate_mirror_point(f,phi,ilnTT,k,lower_i,upper_i,&
-                  lower_j,icyl,upper_j,xmirror,ymirror)
+                  lower_j,upper_j,icyl,xmirror,ymirror)
               f(i,j,k,ilnTT)=2*cylinder_temp(icyl)-phi
             endif
           else
