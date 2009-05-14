@@ -359,7 +359,7 @@ module Entropy
       use General,  only: chn
       use Sub,      only: blob
       use Initcond, only: jump
-      use InitialCondition, only initial_condition_ss
+      use InitialCondition, only: initial_condition_ss
       use EquationOfState, only: gamma, gamma1, cs2bot, cs2top, cs20, &
                                  lnrho0, get_cp1
       use Gravity, only: gravz
