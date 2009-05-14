@@ -39,6 +39,9 @@ module Entropy
                                 ! DIAG_DOC:   see \S~\ref{time-step})
   integer :: idiag_ugradpm=0
   integer :: idiag_thermalpressure=0
+  integer :: idiag_ethm=0       ! DIAG_DOC: $\left<\varrho e\right>$
+                                ! DIAG_DOC:   \quad(mean thermal
+                                ! DIAG_DOC:   [=internal] energy)
 !
   contains
 !***********************************************************************
@@ -135,6 +138,11 @@ module Entropy
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_cs2)=.true.
         lpenc_diagnos(i_rcyl_mn)=.true.
+      endif
+!
+      if (idiag_ethm/=0) then
+        lpenc_diagnos(i_rho)=.true.
+        lpenc_diagnos(i_ee)=.true.
       endif
 !
     endsubroutine pencil_criteria_entropy
@@ -249,6 +257,7 @@ module Entropy
             call sum_mn_name(p%rho*p%cs2*p%uglnrho,idiag_ugradpm)
         if (idiag_thermalpressure/=0) &
             call sum_lim_mn_name(p%rho*p%cs2,idiag_thermalpressure,p)
+        if (idiag_ethm/=0) call sum_mn_name(p%rho*p%ee,idiag_ethm)
       endif
 !
       call keep_compiler_quiet(f)
@@ -314,13 +323,14 @@ module Entropy
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_dtc=0; idiag_ugradpm=0
+        idiag_dtc=0; idiag_ugradpm=0; idiag_thermalpressure=0; idiag_ethm=0;
       endif
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'dtc',idiag_dtc)
         call parse_name(iname,cname(iname),cform(iname),'ugradpm',idiag_ugradpm)
         call parse_name(iname,cname(iname),cform(iname),'TTp',idiag_thermalpressure)
+        call parse_name(iname,cname(iname),cform(iname),'ethm',idiag_ethm)
       enddo
 !
 !  write column where which magnetic variable is stored
@@ -329,6 +339,7 @@ module Entropy
         write(3,*) 'i_dtc=',idiag_dtc
         write(3,*) 'i_ugradpm=',idiag_ugradpm
         write(3,*) 'i_TTp=',idiag_thermalpressure
+        write(3,*) 'i_ethm=',idiag_ethm
         write(3,*) 'nname=',nname
         write(3,*) 'iss=',iss
         write(3,*) 'iyH=0'
