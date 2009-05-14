@@ -110,11 +110,15 @@ module GhostFold
 !  With shearing boundary conditions we must take care that the information is
 !  shifted properly before the final fold.
 !
-        if (nxgrid>1 .and. lshear .and. (ipx==0 .or. ipx==nprocx-1)) then
+        if (nxgrid>1 .and. lshear .and. ipx==0) then
           do ivar=ivar1,ivar2
             df_tmp_yz_one=df(l1-1,m1:m2,n1:n2,ivar)
             call fourier_shift_yz_y(df_tmp_yz_one,-deltay)
             df(l1-1,m1:m2,n1:n2,ivar)=df_tmp_yz_one
+          enddo
+        endif
+        if (nxgrid>1 .and. lshear .and. ipx==nprocx-1) then
+          do ivar=ivar1,ivar2
             df_tmp_yz_one=df(l2+1,m1:m2,n1:n2,ivar)
             call fourier_shift_yz_y(df_tmp_yz_one,+deltay)
             df(l2+1,m1:m2,n1:n2,ivar)=df_tmp_yz_one
@@ -253,11 +257,15 @@ module GhostFold
 !  With shearing boundary conditions we must take care that the information is
 !  shifted properly before the final fold.
 !
-        if (nxgrid>1 .and. lshear .and. (ipx==0 .or. ipx==nprocx-1)) then
+        if (nxgrid>1 .and. lshear .and. ipx==0) then
           do ivar=ivar1,ivar2
             f_tmp_yz_one=f(l1-1,m1:m2,n1:n2,ivar)
             call fourier_shift_yz_y(f_tmp_yz_one,-deltay)
             f(l1-1,m1:m2,n1:n2,ivar)=f_tmp_yz_one
+          enddo
+        endif
+        if (nxgrid>1 .and. lshear .and. ipx==nprocx-1) then
+          do ivar=ivar1,ivar2
             f_tmp_yz_one=f(l2+1,m1:m2,n1:n2,ivar)
             call fourier_shift_yz_y(f_tmp_yz_one,+deltay)
             f(l2+1,m1:m2,n1:n2,ivar)=f_tmp_yz_one
