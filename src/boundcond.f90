@@ -107,9 +107,7 @@ module Boundcond
 !
         one = min(1,mcom)
         if (any(bcx1(1:one)=='she')) then
-          if (.not. lstart) then
-            call boundcond_shear(f,ivar1,ivar2)
-          endif
+          call boundcond_shear(f,ivar1,ivar2)
         else
           do k=1,2                ! loop over 'bot','top'
             if (k==1) then
