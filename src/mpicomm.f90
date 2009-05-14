@@ -190,9 +190,8 @@ module Mpicomm
   real, dimension (mx,nghost,nghost,mcom) :: llbufo,lubufo,uubufo,ulbufo
 !
   real, dimension (nghost,my,mz,mcom) :: fahi,falo,fbhi,fblo,fao,fbo ! For shear
-  integer :: nextya, nextyb, lastya, lastyb, displs ! For shear
-  integer :: ierr
-  integer :: nprocs
+  integer :: ipx_partner, nextya, nextyb, lastya, lastyb, displs ! For shear
+  integer :: nprocs, ierr
 !
 !  mpi tags
 !
@@ -620,7 +619,7 @@ module Mpicomm
 !
       deltay_dy=deltay/dy
       displs=int(deltay_dy)
-      if (nprocy==1) then
+      if (nprocx==1 .and. nprocy==1) then
         frak=deltay_dy-displs
         c1 = -          (frak+1.)*frak*(frak-1.)*(frak-2.)*(frak-3.)/120.
         c2 = +(frak+2.)          *frak*(frak-1.)*(frak-2.)*(frak-3.)/24.
@@ -648,53 +647,56 @@ module Mpicomm
 !  interpolate over data from two different CPUs.  Likewise two different
 !  CPUs will require data from this CPU.
 !
-        ystep = displs/ny
-        nextya = ipz*nprocy+modulo(ipy-ystep,nprocy)
-        lastya = ipz*nprocy+modulo(ipy-ystep-1,nprocy)
-        lastyb = ipz*nprocy+modulo(ipy+ystep,nprocy)
-        nextyb = ipz*nprocy+modulo(ipy+ystep+1,nprocy)
-        fao(:,:,:,ivar1:ivar2) = f(l1:l1i,:,:,ivar1:ivar2)
-        fbo(:,:,:,ivar1:ivar2) = f(l2i:l2,:,:,ivar1:ivar2)
-        nbufx_gh=my*mz*nghost*(ivar2-ivar1+1)
-        if (lastya/=iproc) then
-          call MPI_ISEND(fao(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,lastya, &
-              tonextyb,MPI_COMM_WORLD,isend_rq_tolastya,ierr)
-        endif
-        if (nextyb==iproc) then
-          fbhi(:,:,:,ivar1:ivar2)=fao(:,:,:,ivar1:ivar2)
-        else
-          call MPI_IRECV(fbhi(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,nextyb, &
-              tonextyb,MPI_COMM_WORLD,irecv_rq_fromnextyb,ierr)
-        endif
-        if (nextya/=iproc) then
-          call MPI_ISEND(fao(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,nextya, &
-              tolastyb,MPI_COMM_WORLD,isend_rq_tonextya,ierr)
-        endif
-        if (lastyb==iproc) then
-          fblo(:,:,:,ivar1:ivar2)=fao(:,:,:,ivar1:ivar2)
-        else
-          call MPI_IRECV(fblo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,lastyb, &
-              tolastyb,MPI_COMM_WORLD,irecv_rq_fromlastyb,ierr)
-        endif
-        if (lastyb/=iproc) then
-          call MPI_ISEND(fbo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,lastyb, &
-              tonextya,MPI_COMM_WORLD,isend_rq_tolastyb,ierr)
-        endif
-        if (nextya==iproc) then
-          fahi(:,:,:,ivar1:ivar2)=fbo(:,:,:,ivar1:ivar2)
-        else
-          call MPI_IRECV(fahi(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,nextya, &
-              tonextya,MPI_COMM_WORLD,irecv_rq_fromnextya,ierr)
-        endif
-        if (nextyb/=iproc) then
-          call MPI_ISEND(fbo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,nextyb, &
-              tolastya,MPI_COMM_WORLD,isend_rq_tonextyb,ierr)
-        endif
-        if (lastya==iproc) then
-          falo(:,:,:,ivar1:ivar2)=fbo(:,:,:,ivar1:ivar2)
-        else
-          call MPI_IRECV(falo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,lastya, &
-              tolastya,MPI_COMM_WORLD,irecv_rq_fromlastya,ierr)
+        if (ipx==0 .or. ipx==nprocx-1) then
+          ipx_partner=(nprocx-ipx-1)
+          ystep = displs/ny
+          nextya=ipz*nprocy*nprocx+modulo(ipy-ystep,nprocy)  *nprocx+ipx_partner
+          lastya=ipz*nprocy*nprocx+modulo(ipy-ystep-1,nprocy)*nprocx+ipx_partner
+          lastyb=ipz*nprocy*nprocx+modulo(ipy+ystep,nprocy)  *nprocx+ipx_partner
+          nextyb=ipz*nprocy*nprocx+modulo(ipy+ystep+1,nprocy)*nprocx+ipx_partner
+          fao(:,:,:,ivar1:ivar2) = f(l1:l1i,:,:,ivar1:ivar2)
+          fbo(:,:,:,ivar1:ivar2) = f(l2i:l2,:,:,ivar1:ivar2)
+          nbufx_gh=my*mz*nghost*(ivar2-ivar1+1)
+          if (lastya/=iproc) then
+            call MPI_ISEND(fao(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,lastya, &
+                tonextyb,MPI_COMM_WORLD,isend_rq_tolastya,ierr)
+          endif
+          if (nextyb==iproc) then
+            fbhi(:,:,:,ivar1:ivar2)=fao(:,:,:,ivar1:ivar2)
+          else
+            call MPI_IRECV(fbhi(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,nextyb, &
+                tonextyb,MPI_COMM_WORLD,irecv_rq_fromnextyb,ierr)
+          endif
+          if (nextya/=iproc) then
+            call MPI_ISEND(fao(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,nextya, &
+                tolastyb,MPI_COMM_WORLD,isend_rq_tonextya,ierr)
+          endif
+          if (lastyb==iproc) then
+            fblo(:,:,:,ivar1:ivar2)=fao(:,:,:,ivar1:ivar2)
+          else
+            call MPI_IRECV(fblo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,lastyb, &
+                tolastyb,MPI_COMM_WORLD,irecv_rq_fromlastyb,ierr)
+          endif
+          if (lastyb/=iproc) then
+            call MPI_ISEND(fbo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,lastyb, &
+                tonextya,MPI_COMM_WORLD,isend_rq_tolastyb,ierr)
+          endif
+          if (nextya==iproc) then
+            fahi(:,:,:,ivar1:ivar2)=fbo(:,:,:,ivar1:ivar2)
+          else
+            call MPI_IRECV(fahi(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,nextya, &
+                tonextya,MPI_COMM_WORLD,irecv_rq_fromnextya,ierr)
+          endif
+          if (nextyb/=iproc) then
+            call MPI_ISEND(fbo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,nextyb, &
+                tolastya,MPI_COMM_WORLD,isend_rq_tonextyb,ierr)
+          endif
+          if (lastya==iproc) then
+            falo(:,:,:,ivar1:ivar2)=fbo(:,:,:,ivar1:ivar2)
+          else
+            call MPI_IRECV(falo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,lastya, &
+                tolastya,MPI_COMM_WORLD,irecv_rq_fromlastya,ierr)
+          endif
         endif
       endif
 !
@@ -705,6 +707,9 @@ module Mpicomm
 !  Subroutine for shearing sheet boundary conditions
 !
 !  20-june-02/nils: adapted from pencil_mpi
+!
+!  Sliding periodic boundary conditions in x
+!  ulf:02-mar-02
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
@@ -721,46 +726,48 @@ module Mpicomm
       if (present(ivar1_opt)) ivar1=ivar1_opt
       if (present(ivar2_opt)) ivar2=ivar2_opt
 !
-!  Sliding periodic boundary conditions in x
-!  ulf:02-mar-02
+!  Need to wait till all communication has been recived.
 !
-! need to wait till all communication has been recived
+      if (nprocx>1 .or. nprocy>1 .and. (ipx==0 .or. ipx==nprocx-1)) then
+        if (lastyb/=iproc) &
+            call MPI_WAIT(irecv_rq_fromlastyb,irecv_stat_fbl,ierr)
+        if (nextyb/=iproc) &
+            call MPI_WAIT(irecv_rq_fromnextyb,irecv_stat_fbn,ierr)
+        if (lastya/=iproc) &
+            call MPI_WAIT(irecv_rq_fromlastya,irecv_stat_fal,ierr)
+        if (nextya/=iproc) &
+            call MPI_WAIT(irecv_rq_fromnextya,irecv_stat_fan,ierr)
 !
-      if (lastyb/=iproc) call MPI_WAIT(irecv_rq_fromlastyb,irecv_stat_fbl,ierr)
-      if (nextyb/=iproc) call MPI_WAIT(irecv_rq_fromnextyb,irecv_stat_fbn,ierr)
-      if (lastya/=iproc) call MPI_WAIT(irecv_rq_fromlastya,irecv_stat_fal,ierr)
-      if (nextya/=iproc) call MPI_WAIT(irecv_rq_fromnextya,irecv_stat_fan,ierr)
+!  Reading communicated information into f.
 !
-! reading communicated information into f
-!
-      deltay_dy=deltay/dy
-      m2long = 2*my-3*nghost
-      fa(:,1:m2,:,ivar1:ivar2) = falo(:,1:m2,:,ivar1:ivar2)
-      fa(:,m2+1:2*my-2*nghost,:,ivar1:ivar2) = fahi(:,m1:my,:,ivar1:ivar2)
-      fb(:,1:m2,:,ivar1:ivar2) = fblo(:,1:m2,:,ivar1:ivar2)
-      fb(:,m2+1:2*my-2*nghost,:,ivar1:ivar2) = fbhi(:,m1:my,:,ivar1:ivar2)
-      displs = modulo(int(deltay_dy),ny)
-      frak = deltay_dy - int(deltay_dy)
-      c1 = -          (frak+1.)*frak*(frak-1.)*(frak-2.)*(frak-3.)/120.
-      c2 = +(frak+2.)          *frak*(frak-1.)*(frak-2.)*(frak-3.)/24.
-      c3 = -(frak+2.)*(frak+1.)     *(frak-1.)*(frak-2.)*(frak-3.)/12.
-      c4 = +(frak+2.)*(frak+1.)*frak          *(frak-2.)*(frak-3.)/12.
-      c5 = -(frak+2.)*(frak+1.)*frak*(frak-1.)          *(frak-3.)/24.
-      c6 = +(frak+2.)*(frak+1.)*frak*(frak-1.)*(frak-2.)          /120.
-      f(1:l1-1,m1:m2,:,ivar1:ivar2) = &
-           c1*fa(:,m2long-ny-displs+3:m2long-displs+2,:,ivar1:ivar2) &
-          +c2*fa(:,m2long-ny-displs+2:m2long-displs+1,:,ivar1:ivar2) &
-          +c3*fa(:,m2long-ny-displs+1:m2long-displs-0,:,ivar1:ivar2) &
-          +c4*fa(:,m2long-ny-displs-0:m2long-displs-1,:,ivar1:ivar2) &
-          +c5*fa(:,m2long-ny-displs-1:m2long-displs-2,:,ivar1:ivar2) &
-          +c6*fa(:,m2long-ny-displs-2:m2long-displs-3,:,ivar1:ivar2)
-      f(l2+1:mx,m1:m2,:,ivar1:ivar2)= &
-           c1*fb(:,m1+displs-2:m2+displs-2,:,ivar1:ivar2) &
-          +c2*fb(:,m1+displs-1:m2+displs-1,:,ivar1:ivar2) &
-          +c3*fb(:,m1+displs  :m2+displs  ,:,ivar1:ivar2) &
-          +c4*fb(:,m1+displs+1:m2+displs+1,:,ivar1:ivar2) &
-          +c5*fb(:,m1+displs+2:m2+displs+2,:,ivar1:ivar2) &
-          +c6*fb(:,m1+displs+3:m2+displs+3,:,ivar1:ivar2)
+        deltay_dy=deltay/dy
+        m2long = 2*my-3*nghost
+        fa(:,1:m2,:,ivar1:ivar2) = falo(:,1:m2,:,ivar1:ivar2)
+        fa(:,m2+1:2*my-2*nghost,:,ivar1:ivar2) = fahi(:,m1:my,:,ivar1:ivar2)
+        fb(:,1:m2,:,ivar1:ivar2) = fblo(:,1:m2,:,ivar1:ivar2)
+        fb(:,m2+1:2*my-2*nghost,:,ivar1:ivar2) = fbhi(:,m1:my,:,ivar1:ivar2)
+        displs = modulo(int(deltay_dy),ny)
+        frak = deltay_dy - int(deltay_dy)
+        c1 = -          (frak+1.)*frak*(frak-1.)*(frak-2.)*(frak-3.)/120.
+        c2 = +(frak+2.)          *frak*(frak-1.)*(frak-2.)*(frak-3.)/24.
+        c3 = -(frak+2.)*(frak+1.)     *(frak-1.)*(frak-2.)*(frak-3.)/12.
+        c4 = +(frak+2.)*(frak+1.)*frak          *(frak-2.)*(frak-3.)/12.
+        c5 = -(frak+2.)*(frak+1.)*frak*(frak-1.)          *(frak-3.)/24.
+        c6 = +(frak+2.)*(frak+1.)*frak*(frak-1.)*(frak-2.)          /120.
+        f(1:l1-1,m1:m2,:,ivar1:ivar2) = &
+             c1*fa(:,m2long-ny-displs+3:m2long-displs+2,:,ivar1:ivar2) &
+            +c2*fa(:,m2long-ny-displs+2:m2long-displs+1,:,ivar1:ivar2) &
+            +c3*fa(:,m2long-ny-displs+1:m2long-displs-0,:,ivar1:ivar2) &
+            +c4*fa(:,m2long-ny-displs-0:m2long-displs-1,:,ivar1:ivar2) &
+            +c5*fa(:,m2long-ny-displs-1:m2long-displs-2,:,ivar1:ivar2) &
+            +c6*fa(:,m2long-ny-displs-2:m2long-displs-3,:,ivar1:ivar2)
+        f(l2+1:mx,m1:m2,:,ivar1:ivar2)= &
+             c1*fb(:,m1+displs-2:m2+displs-2,:,ivar1:ivar2) &
+            +c2*fb(:,m1+displs-1:m2+displs-1,:,ivar1:ivar2) &
+            +c3*fb(:,m1+displs  :m2+displs  ,:,ivar1:ivar2) &
+            +c4*fb(:,m1+displs+1:m2+displs+1,:,ivar1:ivar2) &
+            +c5*fb(:,m1+displs+2:m2+displs+2,:,ivar1:ivar2) &
+            +c6*fb(:,m1+displs+3:m2+displs+3,:,ivar1:ivar2)
 !
 !  Filling also the x-y corners in order to avoid only zeros at these corners.
 !  One should acctually have communicated with an extra processor in order to
@@ -774,12 +781,14 @@ module Mpicomm
 !        f(l2+1:mx,m2+i,:,ivar1:ivar2)=f(l2+1:mx,m2-i+1     ,:,ivar1:ivar2)
 !      enddo
 !
-!  need to wait till buffer is empty before re-using it again
+!  Need to wait till buffer is empty before re-using it again.
 !
-      if (nextyb/=iproc) call MPI_WAIT(isend_rq_tonextyb,isend_stat_tnb,ierr)
-      if (lastyb/=iproc) call MPI_WAIT(isend_rq_tolastyb,isend_stat_tlb,ierr)
-      if (nextya/=iproc) call MPI_WAIT(isend_rq_tonextya,isend_stat_tna,ierr)
-      if (lastya/=iproc) call MPI_WAIT(isend_rq_tolastya,isend_stat_tla,ierr)
+        if (nextyb/=iproc) call MPI_WAIT(isend_rq_tonextyb,isend_stat_tnb,ierr)
+        if (lastyb/=iproc) call MPI_WAIT(isend_rq_tolastyb,isend_stat_tlb,ierr)
+        if (nextya/=iproc) call MPI_WAIT(isend_rq_tonextya,isend_stat_tna,ierr)
+        if (lastya/=iproc) call MPI_WAIT(isend_rq_tolastya,isend_stat_tla,ierr)
+!
+      endif
 !
     endsubroutine finalize_shearing
 !***********************************************************************

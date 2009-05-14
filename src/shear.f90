@@ -413,7 +413,7 @@ module Shear
         call fourier_shift_ghostzones(f,ivar1,ivar2)
       else
         call initiate_shearing(f,ivar1,ivar2)
-        if (nprocy>1 .or. (.not. lmpicomm)) call finalize_shearing(f,ivar1,ivar2)
+        call finalize_shearing(f,ivar1,ivar2)
       endif
 !
     endsubroutine boundcond_shear
