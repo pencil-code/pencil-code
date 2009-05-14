@@ -44,6 +44,10 @@
 /
 &special_run_pars
 /
+&shock_run_pars
+  lshock_first=T
+  lshock_max5=T
+/
 &particles_run_pars
   ldragforce_dust_par=F
   lcheck_exact_frontier=T
@@ -51,8 +55,4 @@
 &particles_nbody_run_pars
   lnogravz_star=T
   lfollow_particle=T,T
-/
-&shock_run_pars
-  lshock_first=T
-  lshock_max5=T
 /
