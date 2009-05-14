@@ -53,13 +53,13 @@
 &special_run_pars
   llarge_scale_Bz=T
 /
+&shock_run_pars
+  lshock_first=T
+  lshock_max5=T
+/
 &particles_run_pars
   ldragforce_dust_par=T, ldragforce_gas_par=F
   lmigration_redo=T
   gravr_profile='newtonian-central', gravr=1.0
   lparticlemesh_tsc=T
-/
-&shock_run_pars
-  lshock_first=T
-  lshock_max5=T
 /
