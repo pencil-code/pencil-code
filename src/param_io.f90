@@ -347,15 +347,16 @@ module Param_IO
       if (ierr/=0) call sample_startpars('initial_condition_pars',ierr)
 !
       call sgi_fix(lsgifix,1,'start.in')
-      call particles_read_startpars(1,IOSTAT=ierr)
-!
-      call sgi_fix(lsgifix,1,'start.in')
       call read_shock_init_pars(1,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('shock_init_pars',ierr)
 !
       call sgi_fix(lsgifix,1,'start.in')
       call read_solid_cells_init_pars(1,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('solid_cells_init_pars',ierr)
+!
+      call sgi_fix(lsgifix,1,'start.in')
+      call particles_read_startpars(1,IOSTAT=ierr)
+      if (ierr/=0) call sample_startpars('particles_init_pars_wrap',ierr)
 !
       ! no input parameters for viscosity
       label='[none]'
@@ -436,47 +437,36 @@ module Param_IO
       if (lroot) then
         print*
         print*,'-----BEGIN sample namelist ------'
-                              print*,'&init_pars                 /'
-        if (leos            ) print*,'&eos_init_pars             /'
-        if (lhydro          ) print*,'&hydro_init_pars           /'
-        if (ldensity        ) print*,'&density_init_pars         /'
-        if (lgrav           ) print*,'&grav_init_pars            /'
-        if (lselfgravity    ) print*,'&selfgrav_init_pars        /'
-        if (lpoisson        ) print*,'&poisson_init_pars         /'
-        if (lentropy        ) print*,'&entropy_init_pars         /'
-        if (ltemperature    ) print*,'&entropy_init_pars         /'
-        if (lmagnetic       ) print*,'&magnetic_init_pars        /'
-        if (ltestscalar     ) print*,'&testscalar_init_pars      /'
-        if (ltestfield      ) print*,'&testfield_init_pars       /'
-        if (ltestflow       ) print*,'&testflow_init_pars        /'
-        if (lradiation      ) print*,'&radiation_init_pars       /'
-        if (lpscalar        ) print*,'&pscalar_init_pars         /'
-        if (lchiral         ) print*,'&chiral_init_pars          /'
-        if (lchemistry      ) print*,'&chemistry_init_pars       /'
-        if (ldustvelocity   ) print*,'&dustvelocity_init_pars    /'
-        if (ldustdensity    ) print*,'&dustdensity_init_pars     /'
-        if (lneutralvelocity) print*,'&neutralvelocity_init_pars /'
-        if (lneutraldensity ) print*,'&neutraldensity_init_pars  /'
-        if (lcosmicray      ) print*,'&cosmicray_init_pars       /'
-        if (lcosmicrayflux  ) print*,'&cosmicrayflux_init_pars   /'
-        if (linterstellar   ) print*,'&interstellar_init_pars    /'
-        if (lshear          ) print*,'&shear_init_pars           /'
-        if (ltestperturb    ) print*,'&testperturb_init_pars     /'
-        if (lspecial        ) print*,'&special_init_pars         /'
-        if (lparticles) &
-            print*,'&particles_init_pars         /'
-        if (lparticles_radius) &
-            print*,'&particles_radius_init_pars  /'
-        if (lparticles_spin) &
-            print*,'&particles_spin_init_pars  /'
-        if (lparticles_number) &
-            print*,'&particles_number_init_pars  /'
-        if (lparticles_selfgravity) &
-            print*,'&particles_selfgrav_init_pars/'
-        if (lparticles_nbody) &
-            print*,'&particles_nbody_init_pars   /'
-        if (lsolid_cells        ) print*,'&solid_cells_init_pars         /'
-        if (linitial_condition  ) print*,'&initial_condition_pars   /'
+                                print*,'&init_pars                 /'
+        if (linitial_condition) print*,'&initial_condition_pars    /'
+        if (leos              ) print*,'&eos_init_pars             /'
+        if (lhydro            ) print*,'&hydro_init_pars           /'
+        if (ldensity          ) print*,'&density_init_pars         /'
+        if (lgrav             ) print*,'&grav_init_pars            /'
+        if (lselfgravity      ) print*,'&selfgrav_init_pars        /'
+        if (lpoisson          ) print*,'&poisson_init_pars         /'
+        if (lentropy          ) print*,'&entropy_init_pars         /'
+        if (ltemperature      ) print*,'&entropy_init_pars         /'
+        if (lmagnetic         ) print*,'&magnetic_init_pars        /'
+        if (ltestscalar       ) print*,'&testscalar_init_pars      /'
+        if (ltestfield        ) print*,'&testfield_init_pars       /'
+        if (ltestflow         ) print*,'&testflow_init_pars        /'
+        if (lradiation        ) print*,'&radiation_init_pars       /'
+        if (lpscalar          ) print*,'&pscalar_init_pars         /'
+        if (lchiral           ) print*,'&chiral_init_pars          /'
+        if (lchemistry        ) print*,'&chemistry_init_pars       /'
+        if (ldustvelocity     ) print*,'&dustvelocity_init_pars    /'
+        if (ldustdensity      ) print*,'&dustdensity_init_pars     /'
+        if (lneutralvelocity  ) print*,'&neutralvelocity_init_pars /'
+        if (lneutraldensity   ) print*,'&neutraldensity_init_pars  /'
+        if (lcosmicray        ) print*,'&cosmicray_init_pars       /'
+        if (lcosmicrayflux    ) print*,'&cosmicrayflux_init_pars   /'
+        if (linterstellar     ) print*,'&interstellar_init_pars    /'
+        if (lshear            ) print*,'&shear_init_pars           /'
+        if (ltestperturb      ) print*,'&testperturb_init_pars     /'
+        if (lspecial          ) print*,'&special_init_pars         /'
+        if (lsolid_cells      ) print*,'&solid_cells_init_pars     /'
+        if (lparticles        ) print*,'&particles_init_pars_wrap  /'
         print*,'------END sample namelist -------'
         print*
         if (present(label))  print*, 'Found error in input namelist "' // trim(label)
@@ -513,6 +503,7 @@ module Param_IO
 !
         write(unit,NML=init_pars          )
 !
+        call write_initial_condition_pars(unit)
         call write_eos_init_pars(unit)
         call write_hydro_init_pars(unit)
         call write_density_init_pars(unit)
@@ -542,7 +533,6 @@ module Param_IO
         call write_special_init_pars(unit)
         call write_shock_init_pars(unit)
         call write_solid_cells_init_pars(unit)
-        call write_initial_condition_pars(unit)
         call particles_wparam(unit)
 !
         if (present(file)) then
@@ -712,6 +702,7 @@ module Param_IO
 !
       call sgi_fix(lsgifix,1,'run.in')
       call particles_read_runpars(1,IOSTAT=ierr)
+      if (ierr/=0) call sample_runpars('particles_run_pars_wrap',ierr)
 !
       label='[none]'
       close(1)
@@ -820,20 +811,9 @@ module Param_IO
         if (ltestperturb    ) print*,'&testperturb_run_pars     /'
         if (lviscosity      ) print*,'&viscosity_run_pars       /'
         if (lspecial        ) print*,'&special_run_pars         /'
-        if (lparticles) &
-            print*,'&particles_run_pars         /'
-        if (lparticles_radius) &
-            print*,'&particles_radius_run_pars  /'
-        if (lparticles_spin) &
-            print*,'&particles_spin_run_pars  /'
-        if (lparticles_number) &
-            print*,'&particles_number_run_pars  /'
-        if (lparticles_selfgravity) &
-            print*,'&particles_selfgrav_run_pars/'
-        if (lparticles_nbody) &
-            print*,'&particles_nbody_run_pars   /'
-        if (lshock        ) print*,'&shock_run_pars           /'
-        if (lsolid_cells    ) print*,'&solid_cells_run_pars         /'
+        if (lshock          ) print*,'&shock_run_pars           /'
+        if (lsolid_cells    ) print*,'&solid_cells_run_pars     /'
+        if (lparticles      ) print*,'&particles_run_pars_wrap  /'
         print*,'------END sample namelist -------'
         print*
         if (present(label))  print*, 'Found error in input namelist "' // trim(label)
