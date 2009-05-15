@@ -136,7 +136,8 @@ module Param_IO
        lbidiagonal_derij,lisotropic_advection, &
        crash_file_dtmin_factor,niter_poisson, &
        lADI,ltestperturb,eps_rkf, timestep_scaling, nscbc_sigma_in,&
-       nscbc_sigma_out, p_infty
+       nscbc_sigma_out, p_infty, &
+       lequatory, lequatorz, zequator 
   contains
 !***********************************************************************
     subroutine get_datadir(dir)
