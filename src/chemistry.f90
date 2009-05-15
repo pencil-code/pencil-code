@@ -1111,9 +1111,9 @@ subroutine flame_front(f)
             T_low=species_constants(k,iTemp1)
             T_mid=species_constants(k,iTemp2)
             T_up= species_constants(k,iTemp3)
-            do j3=n1,n2
-              do j2=m1,m2
-                do j1=l1,l2
+            do j3=nn1,nn2
+              do j2=mm1,mm2
+                do j1=1,mx
                   if (TT_full(j1,j2,j3) <= T_mid) then
                     tmp=0. 
                     do j=1,5
