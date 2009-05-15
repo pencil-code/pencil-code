@@ -4635,7 +4635,7 @@ module Boundcond
       real, dimension(nx,nz,3,3) :: dui_dxj
       real, dimension (mx,mz) :: cs0_ar,cs20_ar
       real, dimension (mx,mz) :: tmp22,tmp12,tmp2_lnrho,tmp33,tmp13,tmp3_lnrho
-      real, dimension (mx,mz) :: tmp23,tmp32
+      real, dimension (mx,mz) :: tmp23,tmp32,tmp21,tmp31,tmp11,tmp1_lnrho
       real, dimension (nx) :: tmpx
       real, dimension (nz) :: tmpz
       real :: Mach,KK,nu
@@ -4704,10 +4704,10 @@ module Boundcond
 !
       if (nxgrid /= 1) then
         do i=n1,n2
-          call der_pencil(1,f(:,lll,i,iuy),tmp22(:,i))
-          call der_pencil(1,f(:,lll,i,ilnrho),tmp2_lnrho(:,i))
-          call der_pencil(1,f(:,lll,i,iux),tmp12(:,i))
-          call der_pencil(1,f(:,lll,i,iuz),tmp32(:,i))
+          call der_pencil(1,f(:,lll,i,iuy),tmp21(:,i))
+          call der_pencil(1,f(:,lll,i,ilnrho),tmp1_lnrho(:,i))
+          call der_pencil(1,f(:,lll,i,iux),tmp11(:,i))
+          call der_pencil(1,f(:,lll,i,iuz),tmp31(:,i))
           call der2_pencil(1,f(:,lll,i,iux),tmpx)
           d2u1_dx2(:,i-n1+1)=tmpx
           call der2_pencil(1,f(:,lll,i,iuy),tmpx)
@@ -4716,18 +4716,18 @@ module Boundcond
           d2u3_dx2(:,i-n1+1)=tmpx
         enddo
       else
-        tmp32=0
-        tmp22=0
-        tmp12=0
-        tmp2_lnrho=0
+        tmp31=0
+        tmp21=0
+        tmp11=0
+        tmp1_lnrho=0
         d2u1_dx2=0
         d2u2_dx2=0
         d2u3_dx2=0
       endif
-      dui_dxj(:,:,3,2)=tmp32(l1:l2,n1:n2)
-      dui_dxj(:,:,2,2)=tmp22(l1:l2,n1:n2)
-      dui_dxj(:,:,1,2)=tmp12(l1:l2,n1:n2)
-      div_rho(:,:,1)=tmp2_lnrho(l1:l2,n1:n2)
+      dui_dxj(:,:,3,1)=tmp31(l1:l2,n1:n2)
+      dui_dxj(:,:,2,1)=tmp21(l1:l2,n1:n2)
+      dui_dxj(:,:,1,1)=tmp11(l1:l2,n1:n2)
+      div_rho(:,:,1)=tmp1_lnrho(l1:l2,n1:n2)
 !
 !  .... then in the z-direction
 !
