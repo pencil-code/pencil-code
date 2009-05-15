@@ -420,6 +420,7 @@ module Magnetic
   integer :: idiag_uxbrmphi=0   ! PHIAVG_DOC:
   integer :: idiag_uxbpmphi=0   ! PHIAVG_DOC:
   integer :: idiag_uxbzmphi=0   ! PHIAVG_DOC:
+  integer :: idiag_b2divum=0    ! DIAG_DOC: $\left<\Bv^2\nabla\cdot\uv\right>|_x$
   integer :: idiag_ujxbm=0      ! DIAG_DOC: $\left<\uv\cdot(\Jv\times\Bv\right>|_x$
   integer :: idiag_jxbrmphi=0   ! PHIAVG_DOC:
   integer :: idiag_jxbpmphi=0   ! PHIAVG_DOC:
@@ -1269,6 +1270,8 @@ module Magnetic
       if (idiag_uxBrms/=0 .or. idiag_Rmrms/=0) lpenc_diagnos(i_uxb2)=.true.
       if (idiag_beta1m/=0 .or. idiag_beta1max/=0) lpenc_diagnos(i_beta)=.true.
       if (idiag_djuidjbim/=0) lpenc_diagnos(i_djuidjbi)=.true.
+      if (idiag_b2divum/=0) lpenc_diagnos(i_divu)=.true.
+      if (idiag_b2divum/=0) lpenc_diagnos(i_b2)=.true.
       if (idiag_ujxbm/=0) lpenc_diagnos(i_ujxb)=.true.
       if (idiag_gpxbm/=0) lpenc_diagnos(i_glnrhoxb)=.true.
       if (idiag_jxbxbm/=0) lpenc_diagnos(i_jxbxb)=.true.
@@ -2374,6 +2377,11 @@ module Magnetic
           if (idiag_Rmrms/=0) &
               call sum_mn_name(p%uxb2/fres2,idiag_Rmrms,lsqrt=.true.)
         endif
+!
+!  calculate <b^2*divu>, which is part of <u.(jxb)>.
+!  Note that <u.(jxb)>=1/2*<b^2*divu>+<u.bgradb>.
+!
+        if (idiag_b2divum/=0) call sum_mn_name(p%b2*p%divu,idiag_b2divum)
 !
 !  calculate <u.(jxb)>
 !
@@ -5185,7 +5193,7 @@ module Magnetic
         idiag_examx=0; idiag_examy=0; idiag_examz=0
         idiag_exjmx=0; idiag_exjmy=0; idiag_exjmz=0
         idiag_dexbmx=0; idiag_dexbmy=0; idiag_dexbmz=0
-        idiag_uxjm=0; idiag_ujxbm=0
+        idiag_uxjm=0; idiag_ujxbm=0; idiag_b2divum=0
         idiag_b3b21m=0; idiag_b1b32m=0; idiag_b2b13m=0
         idiag_EMFdotBm=0
         idiag_udotxbm=0; idiag_uxbdotm=0
@@ -5297,6 +5305,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'dexbmz',idiag_dexbmz)
         call parse_name(iname,cname(iname),cform(iname),'uxjm',idiag_uxjm)
         call parse_name(iname,cname(iname),cform(iname),'ujxbm',idiag_ujxbm)
+        call parse_name(iname,cname(iname),cform(iname),'b2divum',idiag_b2divum)
         call parse_name(iname,cname(iname),cform(iname),'jxbxbm',idiag_jxbxbm)
         call parse_name(iname,cname(iname),cform(iname),'oxuxbm',idiag_oxuxbm)
         call parse_name(iname,cname(iname),cform(iname),'gpxbm',idiag_gpxbm)
@@ -5590,6 +5599,7 @@ module Magnetic
         write(3,*) 'i_dexbmz=',idiag_dexbmz
         write(3,*) 'i_uxjm=',idiag_uxjm
         write(3,*) 'i_ujxbm=',idiag_ujxbm
+        write(3,*) 'i_b2divum=',idiag_b2divum
         write(3,*) 'i_oxuxbm=',idiag_oxuxbm
         write(3,*) 'i_jxbxbm=',idiag_jxbxbm
         write(3,*) 'i_gpxbm=',idiag_gpxbm
