@@ -202,15 +202,18 @@ program start
     endif
   enddo
   xyz1=xyz0+Lxyz
-  if (lequatory) yequator=xyz0(2)+0.5*Lxyz(2)
-  if (lequatorz) zequator=xyz0(3)+0.5*Lxyz(3)
 !
-!  Abbreviations.
+!  Abbreviations
 !
   x0=xyz0(1); y0=xyz0(2); z0=xyz0(3)
   Lx=Lxyz(1); Ly=Lxyz(2); Lz=Lxyz(3)
 !
-!  Size of box at local processor.
+!  position of equator (if any)
+!
+  if (lequatory) yequator=xyz0(2)+0.5*Lxyz(2)
+  if (lequatorz) zequator=xyz0(3)+0.5*Lxyz(3)
+!
+!  Size of box at local processor
 !
   Lxyz_loc(1)=Lxyz(1)/nprocx
   Lxyz_loc(2)=Lxyz(2)/nprocy

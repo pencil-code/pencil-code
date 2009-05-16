@@ -24,7 +24,7 @@ module Diagnostics
   public :: phiaverages_rz
   public :: write_1daverages, write_2daverages
   public :: write_2daverages_prepare, write_zaverages
-  public :: expand_cname, parse_name, save_name, max_name
+  public :: expand_cname, parse_name, save_name, save_name_halfz, max_name
   public :: max_mn_name,sum_mn_name,integrate_mn_name,sum_weighted_name
   public :: sum_mn_name_halfy, surf_mn_name,sum_lim_mn_name
   public :: sum_mn_name_halfz
@@ -861,6 +861,23 @@ module Diagnostics
 !
    endsubroutine save_name
 !***********************************************************************
+    subroutine save_name_halfz(a,iname)
+!
+!  Lists the value of a (must be treated as real) in fname array
+!
+!  16-may-09/axel: adapted from save_name
+!
+      real, dimension(2) :: a
+      integer :: iname
+!
+!  Set corresponding entry in itype_name
+!  This routine is to be called only once per step
+!
+      fname_half(iname,1)=a(1)
+      fname_half(iname,2)=a(2)
+!
+   endsubroutine save_name_halfz
+!***********************************************************************
     subroutine max_name(a,iname)
 !
 !  Successively calculate maximum of a, which is supplied at each call.
@@ -1058,17 +1075,16 @@ module Diagnostics
 ! direction), useful for simulations which includes equator (either cartesian 
 ! or spherical).  
 !
-! 7-May-2009 dhruba : aped from sum_mn_name_halfy
+!  7-may-09/dhruba: aped from sum_mn_name_halfy
 !
       real, dimension (nx) :: a
       real :: sum_name
       integer :: iname,isum
-
 !
       if (iname /= 0) then
         sum_name=0
 !
-        if (z(n).ge.zequator)then
+        if (z(n).ge.zequator) then
           sum_name=fname_half(iname,2)
         else
           sum_name=fname_half(iname,1)
@@ -1095,7 +1111,7 @@ module Diagnostics
           endif
         endif
 !
-        if (z(n).ge.zequator)then
+        if (z(n).ge.zequator) then
           fname_half(iname,2)=sum_name
         else
           fname_half(iname,1)=sum_name

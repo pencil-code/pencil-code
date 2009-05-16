@@ -218,9 +218,9 @@ module Magnetic
   integer :: idiag_j2m=0        ! DIAG_DOC: $\left<\jv^2\right>$
   integer :: idiag_jm2=0        ! DIAG_DOC: $\max(\jv^2)$
   integer :: idiag_abm=0        ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$
-  integer :: idiag_abmh=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$
-  integer :: idiag_abmn=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$
-  integer :: idiag_abms=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$
+  integer :: idiag_abmh=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$ (temp)
+  integer :: idiag_abmn=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$ (north)
+  integer :: idiag_abms=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$ (south)
   integer :: idiag_ajm=0        ! DIAG_DOC: $\left<\jv\cdot\Av\right>$
   integer :: idiag_jbm=0        ! DIAG_DOC: $\left<\jv\cdot\Bv\right>$
   integer :: idiag_ubm=0        ! DIAG_DOC: $\left<\uv\cdot\Bv\right>$
@@ -337,6 +337,14 @@ module Magnetic
   integer :: idiag_embmz=0      ! DIAG_DOC: $\left<\left<\Ev\right>_{xy}\cdot\left<\Bv\right>_{xy}
                                 ! DIAG_DOC:   \right>$ \quad($xy$-averaged
                                 ! DIAG_DOC:   mean field helicity production )
+  integer :: idiag_ambmz=0      ! DIAG_DOC: $\left<\left<\Av\right>_{xy}\cdot\left<\Bv\right>_{xy}\right>$ 
+                                ! DIAG_DOC:   \quad (magnetic helicity of $xy$-averaged mean field)
+  integer :: idiag_ambmzh=0     ! DIAG_DOC: $\left<\left<\Av\right>_{xy}\cdot\left<\Bv\right>_{xy}\right>$ 
+                                ! DIAG_DOC:   \quad (magnetic helicity of $xy$-averaged mean field, temp)
+  integer :: idiag_ambmzn=0     ! DIAG_DOC: $\left<\left<\Av\right>_{xy}\cdot\left<\Bv\right>_{xy}\right>$ 
+                                ! DIAG_DOC:   \quad (magnetic helicity of $xy$-averaged mean field, north)
+  integer :: idiag_ambmzs=0     ! DIAG_DOC: $\left<\left<\Av\right>_{xy}\cdot\left<\Bv\right>_{xy}\right>$ 
+                                ! DIAG_DOC:   \quad (magnetic helicity of $xy$-averaged mean field, south)
   integer :: idiag_jmbmz=0      ! DIAG_DOC: $\left<\left<\Jv\right>_{xy}\cdot\left<\Bv\right>_{xy}
                                 ! DIAG_DOC:   \right>$ \quad(current helicity
                                 ! DIAG_DOC:   of $xy$-averaged mean field)
@@ -1278,7 +1286,7 @@ module Magnetic
       if (idiag_oxuxbm/=0) lpenc_diagnos(i_oxuxb)=.true.
       if (idiag_exaym2/=0 .or. idiag_exjm2/=0 &
           .or. idiag_jmx/=0 .or. idiag_jmy/=0 .or. idiag_jmz/=0 &
-          .or. idiag_jmbmz/=0 .or. idiag_kmz/=0 &
+          .or. idiag_ambmz/=0 .or. idiag_jmbmz/=0 .or. idiag_kmz/=0 &
           .or. idiag_examx/=0 .or. idiag_examy/=0 .or. idiag_examz/=0 &
           .or. idiag_examz1/=0 .or. idiag_examz2/=0 .or. idiag_examz3/=0 &
           .or. idiag_exjmx/=0 .or. idiag_exjmy/=0 .or. idiag_exjmz/=0 &
@@ -2181,6 +2189,9 @@ module Magnetic
         if (idiag_aybym2/=0) &
             call sum_mn_name(2*p%aa(:,2)*p%bb(:,2),idiag_aybym2)
         if (idiag_abm/=0) call sum_mn_name(p%ab,idiag_abm)
+!
+!  hemispheric magnetic helicity of total field
+!
         if (idiag_abmh/=0) then
           if (lequatory) call sum_mn_name_halfy(p%ab,idiag_abmh)
           if (lequatorz) call sum_mn_name_halfz(p%ab,idiag_abmh)
@@ -2188,7 +2199,6 @@ module Magnetic
           fname(idiag_abms)=fname_half(idiag_abmh,2)
           itype_name(idiag_abmn)=ilabel_sum
           itype_name(idiag_abms)=ilabel_sum
-        else
         endif
 !
 !  mean dot product of forcing and magnetic field, <f.b>
@@ -3383,6 +3393,8 @@ module Magnetic
         if (idiag_jmz/=0) call calc_jmz
         if (idiag_emxamz3/=0) call calc_emxamz3
         if (idiag_embmz/=0) call calc_embmz
+        if (idiag_ambmz/=0) call calc_ambmz
+        if (idiag_ambmzh/=0) call calc_ambmzh
         if (idiag_jmbmz/=0.or.idiag_kmz/=0) call calc_jmbmz
         if (idiag_bmxy_rms/=0) call calc_bmxy_rms
         if (idiag_bmzph/=0) call calc_bmz_beltrami_phase
@@ -3692,7 +3704,7 @@ module Magnetic
 !***********************************************************************
     subroutine calc_emxamz3
 !
-!  Magnetic helicity flux of mean field
+!  Volume average of magnetic helicity flux of the mean field.
 !  The axmz and aymz as well as Exmz and Eymz must have been calculated,
 !  so they are present on the root processor.
 !
@@ -3727,6 +3739,99 @@ module Magnetic
       first=.false.
 !
     endsubroutine calc_emxamz3
+!***********************************************************************
+    subroutine calc_ambmz
+!
+!  Magnetic helicity of the xy-averaged mean field
+!  The bxmz and bymz as well as axmz and aymz must have been calculated,
+!  so they are present on the root processor.
+!
+!  16-may-09/axel: adapted from calc_jmbmz
+!
+      use Diagnostics
+      use Mpicomm
+!
+      logical,save :: first=.true.
+      real :: ambmz
+      integer :: j
+!
+!  This only works if bxmz and bzmz are in xyaver,
+!  so print warning if this is not ok.
+!
+      if (idiag_axmz==0.or.idiag_aymz==0) then
+        if (first) then
+          print*,"calc_mfield: WARNING"
+          print*,"NOTE: to get ambmz, set bxmz, bymz, axmz, and aymz in xyaver"
+          print*,"We proceed, but you'll get ambmz=0"
+        endif
+        ambmz=0.
+      else
+        ambmz=sum(fnamez(:,:,idiag_bxmz)*fnamez(:,:,idiag_axmz) &
+                 +fnamez(:,:,idiag_bymz)*fnamez(:,:,idiag_aymz))/(nz*nprocz)
+      endif
+!
+!  save the name in the idiag_ambmz slot
+!  and set first to false
+!
+      if (idiag_ambmz/=0) call save_name(ambmz,idiag_ambmz)
+      first=.false.
+!
+    endsubroutine calc_ambmz
+!***********************************************************************
+    subroutine calc_ambmzh
+!
+!  Hemispheric magnetic helicity of the xy-averaged mean field
+!  The bxmz and bymz as well as axmz and aymz must have been calculated,
+!  so they are present on the root processor.
+!
+!  16-may-09/axel: adapted from calc_ambmz
+!
+      use Diagnostics
+      use Mpicomm
+!
+      logical,save :: first=.true.
+      real, dimension(2) :: ambmzh
+      real :: ambmz_tmp,fact
+      integer :: j,iprocz
+!
+!  This only works if bxmz and bzmz are in xyaver,
+!  so print warning if this is not ok.
+!  Loop over all processors, but don't use (overwrite) ipz for that
+!
+      if (idiag_axmz==0.or.idiag_aymz==0) then
+        if (first) then
+          print*,"calc_mfield: WARNING"
+          print*,"NOTE: to get ambmzh, set bxmz, bymz, axmz, and aymz in xyaver"
+          print*,"We proceed, but you'll get ambmzh=0"
+        endif
+        ambmzh=0.
+      else
+        fact=1./(nz*nprocz)
+        do n=1,nz
+        do iprocz=1,nprocz
+          ambmz_tmp=fact*( &
+             fnamez(n,iprocz,idiag_bxmz)*fnamez(n,iprocz,idiag_axmz)&
+            +fnamez(n,iprocz,idiag_bymz)*fnamez(n,iprocz,idiag_aymz))
+          if (z_allprocs(n,iprocz).ge.zequator) then
+            ambmzh(2)=ambmzh(2)+ambmz_tmp
+          else
+            ambmzh(1)=ambmzh(1)+ambmz_tmp
+          endif
+        enddo
+        enddo
+      endif
+!
+!  save the name in the idiag_ambmz slot
+!  and set first to false
+!
+      if (idiag_ambmzh/=0) call save_name_halfz(ambmzh,idiag_ambmzh)
+      fname(idiag_ambmzn)=fname_half(idiag_ambmzh,1)
+      fname(idiag_ambmzs)=fname_half(idiag_ambmzh,2)
+      itype_name(idiag_ambmzn)=ilabel_save
+      itype_name(idiag_ambmzs)=ilabel_save
+      first=.false.
+!
+    endsubroutine calc_ambmzh
 !***********************************************************************
     subroutine calc_jmbmz
 !
@@ -5152,7 +5257,7 @@ module Magnetic
         idiag_bjtm=0
         idiag_jbtm=0
         idiag_b2m=0; idiag_bm2=0; idiag_j2m=0; idiag_jm2=0; idiag_abm=0
-        idiag_abmh=0;idiag_abmn=0;idiag_abms=0
+        idiag_abmh=0; idiag_abmn=0; idiag_abms=0
         idiag_ajm=0
         idiag_jbm=0; idiag_ubm=0; idiag_ujm=0; idiag_fbm=0; idiag_fxbxm=0
         idiag_epsM=0; idiag_epsM_LES=0; idiag_epsAD=0
@@ -5174,7 +5279,9 @@ module Magnetic
         idiag_axmz=0; idiag_aymz=0; idiag_azmz=0
         idiag_bxmz=0; idiag_bymz=0; idiag_bzmz=0
         idiag_bmx=0; idiag_bmy=0; idiag_bmz=0; idiag_embmz=0; idiag_emxamz3=0
-        idiag_jmx=0; idiag_jmy=0; idiag_jmz=0; idiag_jmbmz=0; idiag_kmz=0
+        idiag_jmx=0; idiag_jmy=0; idiag_jmz=0
+        idiag_ambmz=0; idiag_jmbmz=0; idiag_kmz=0
+        idiag_ambmzh=0;idiag_ambmzn=0;idiag_ambmzs=0
         idiag_bmzph=0; idiag_bmzphe=0
         idiag_bcosphz=0; idiag_bsinphz=0
         idiag_bx2mz=0; idiag_by2mz=0; idiag_bz2mz=0
@@ -5214,8 +5321,7 @@ module Magnetic
         idiag_bx2my=0; idiag_by2my=0; idiag_bz2my=0
         idiag_mflux_x=0; idiag_mflux_y=0; idiag_mflux_z=0
         idiag_bmxy_rms=0; idiag_brsphmphi=0; idiag_bthmphi=0
-        idiag_brmsh=0;idiag_brmsn=0;idiag_brmss=0
-        idiag_abmh=0;idiag_abmn=0;idiag_abms=0
+        idiag_brmsh=0; idiag_brmsn=0; idiag_brmss=0
 !
       endif
 !
@@ -5329,6 +5435,9 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'bsinphz',idiag_bsinphz)
         call parse_name(iname,cname(iname),cform(iname),'emxamz3',idiag_emxamz3)
         call parse_name(iname,cname(iname),cform(iname),'embmz',idiag_embmz)
+        call parse_name(iname,cname(iname),cform(iname),'ambmz',idiag_ambmz)
+        call parse_name(iname,cname(iname),cform(iname),'ambmzn',idiag_ambmzn)
+        call parse_name(iname,cname(iname),cform(iname),'ambmzs',idiag_ambmzs)
         call parse_name(iname,cname(iname),cform(iname),'jmbmz',idiag_jmbmz)
         call parse_name(iname,cname(iname),cform(iname),'kmz',idiag_kmz)
         call parse_name(iname,cname(iname),cform(iname),'bxpt',idiag_bxpt)
@@ -5352,16 +5461,30 @@ module Magnetic
 ! Quantities which are averaged over half (north-south) the box
 !
       iname_half=name_half_max
-      if ((idiag_abmn/=0).or.(idiag_abms/=0))then
+!
+!  magnetic helicity (north and south) of total field
+!
+      if ((idiag_abmn/=0).or.(idiag_abms/=0)) then
         iname_half=iname_half+1
         idiag_abmh=iname_half
-      else
       endif
-      if ((idiag_brmsn/=0).or.(idiag_brmss/=0))then
+!
+!  magnetic energy (north and south) of total field
+!
+      if ((idiag_brmsn/=0).or.(idiag_brmss/=0)) then
         iname_half=iname_half+1
         idiag_brmsh=iname_half
-      else
       endif
+!
+!  magnetic helicity (north and south) of mean field
+!
+      if ((idiag_ambmzn/=0).or.(idiag_ambmzs/=0)) then
+        iname_half=iname_half+1
+        idiag_ambmzh=iname_half
+      endif
+!
+!  update name_half_max
+!
       name_half_max=iname_half
 !
 ! Currently need to force zaverage calculation at every lout step for
@@ -5639,6 +5762,10 @@ module Magnetic
         write(3,*) 'i_bsinphz=',idiag_bsinphz
         write(3,*) 'i_emxamz3=',idiag_emxamz3
         write(3,*) 'i_embmz=',idiag_embmz
+        write(3,*) 'i_ambmz=',idiag_ambmz
+        write(3,*) 'i_ambmzh=',idiag_ambmzh
+        write(3,*) 'i_ambmzn=',idiag_ambmzn
+        write(3,*) 'i_ambmzs=',idiag_ambmzs
         write(3,*) 'i_jmbmz=',idiag_jmbmz
         write(3,*) 'i_kmz=',idiag_kmz
         write(3,*) 'i_bxpt=',idiag_bxpt

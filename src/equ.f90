@@ -605,7 +605,7 @@ module Equ
 !  end of loops over m and n
 !
         headtt=.false.
-     enddo
+      enddo
 !
 !  Calculate the gradient of the potential if there is room allocated in the
 !  f-array.
