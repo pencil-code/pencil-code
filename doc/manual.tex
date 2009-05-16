@@ -2081,12 +2081,12 @@ floating point numbers, unless you use double precision (see
 \S\ref{double-precision}, in which case all numbers are 8-byte floating
 point numbers, while the record markers remain 4-byte integers.
 
-The script \cmd{tsnap} allows you to determine the time $t$ of a snapshot
+The script \cmd{pc_tsnap} allows you to determine the time $t$ of a snapshot
 file:
 \begin{alltt}
-  \prompt{unix> } tsnap data/proc0/var.dat
+  \prompt{unix> } pc_tsnap data/proc0/var.dat
   data/proc0/var.dat:        t = 8.32456
-  \prompt{unix> } tsnap data/proc0/VAR2
+  \prompt{unix> } pc_tsnap data/proc0/VAR2
   data/proc0/VAR2:           t = 2.00603     
 \end{alltt}
 
@@ -2444,11 +2444,9 @@ Here is a list of the more important ones.
   \S~\ref{start-run-getconf}
 \item[summarize-history] Evaluate \file{params.log} and print a history 
   of changes.
-\item[tst.csh] Execute \code{start.csh} and \code{run.csh} placing any output
-  into a file called \code{.TEST.{`\it timestr}`}.
 \item[timestr] Generate a unique time string that can be appended to file
   names from shell scripts through the backtick mechanism.
-\item[tsnap] Extract time information from a snapshot file, \file{VAR$N$}.
+\item[pc_tsnap] Extract time information from a snapshot file, \file{VAR$N$}.
 \end{description}
 
 \vspace{5cm}
@@ -9942,7 +9940,7 @@ $ $Id$ $}
 % LocalWords:  hcond whcond mpoly isothtop ampl init urand cs nt dt cdt CFL bc
 % LocalWords:  cdtv Alfv isave isave iorder iorder Kutta dsnap dsnap dvid dtmin
 % LocalWords:  tinit tdamp dampu dampuext rdamp wdamp ivisc cdiffrho tvid std
-% LocalWords:  wcool iforce relhel tsnap isothermality initaa jbm Peclet Eq Ra
+% LocalWords:  wcool iforce relhel pc_tsnap isothermality initaa jbm Peclet Eq Ra
 % LocalWords:  meshpoints jb mn rprint xy Compaq MB resol linux magn noentro nq
 % LocalWords:  ukaff jun sourcefile kbd env rm dfn MNRAS url html dobler Exp ic
 % LocalWords:  ODEs PDEs iterform ccccccc pscalar nopscalar urms rhom Lxyz xyz
