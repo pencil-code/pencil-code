@@ -1570,6 +1570,6 @@ write_dummy_namelists.o: write_dummy_namelists.f90 $(comm_deps)
 #
 # Dependencies
 #
-include Makefile.depend
+#include Makefile.depend
 
 # DO NOT DELETE

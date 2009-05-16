@@ -3794,6 +3794,12 @@ module Magnetic
       real :: ambmz_tmp,fact
       integer :: j,iprocz
 !
+!  initialize ambmzh to zero each time, because its two elements
+!  are integration counters. If idiag_axmz etc are not set, the
+!  routine escapes, but even then it needs to be initialized.
+!
+      ambmzh=0.
+!
 !  This only works if bxmz and bzmz are in xyaver,
 !  so print warning if this is not ok.
 !  Loop over all processors, but don't use (overwrite) ipz for that
@@ -3804,7 +3810,6 @@ module Magnetic
           print*,"NOTE: to get ambmzh, set bxmz, bymz, axmz, and aymz in xyaver"
           print*,"We proceed, but you'll get ambmzh=0"
         endif
-        ambmzh=0.
       else
         fact=1./(nz*nprocz)
         do n=1,nz
