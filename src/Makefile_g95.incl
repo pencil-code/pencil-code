@@ -1,0 +1,11 @@
+##  -*-Makefile-*- (for Emacs)    vim:set filetype=make:  (for vim)
+##
+## $Id: Makefile.src 10829 2009-05-14 10:17:22Z wdobler $
+## Makefile fragment for Pencil Code
+# 
+# Default settings for g95 compiler
+#
+
+FC=g95 -fno-second-underscore -std=f95
+FFLAGS=-O3
+FFLAGS_DOUBLE=-r8

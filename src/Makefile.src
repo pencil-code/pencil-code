@@ -969,9 +969,7 @@ endif
 ##
 ## Wolfgang's laptop frenesi (g95 + Open MPI, August 2007)
 ##
-#FC=g95 -fno-second-underscore -std=f95 -I/usr/lib/openmpi/include #(frenesi)
-#FFLAGS=-O3 #(frenesi)
-#FFLAGS_DOUBLE=-r8 #(frenesi)
+#include $(PENCIL_HOME)/src/Makefile_g95.incl #(frenesi)
 #FFLAGS_SLOPPY=$(FFLAGS) -Wno=154,155 -I/usr/lib/openmpi/include #(frenesi)
 #CC=gcc #(frenesi)
 #CFLAGS=-O3 -DFUNDERSC=1 #(frenesi)
