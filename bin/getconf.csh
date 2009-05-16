@@ -1057,6 +1057,17 @@ else if ($hostname =~ *huygens.sara.nl*) then
   setenv SSH "ssh -q -x"
   setenv SCP "scp -q"
   setenv SCRATCH_DIR /scratch/shared/$USER
+#---------------------------------------------------
+else if ($hostname =~ genius1.rzg.mpg.de) then
+  echo "Blue Gene/P at RZG"
+  set local_disc = 0
+  set one_local_disc = 1
+  set mpirun = mpirun
+  set mpirunops = "-mode VN"
+  set npops = ''
+  setenv SSH "ssh -q -x"
+  setenv SCP "scp -q"
+  setenv SCRATCH_DIR /ptmp/ajohan/$USER
 #----------------------------------------------------
 else if ($hn =~ *mckenzie*) then
   echo "McKenzie cluster at CITA"

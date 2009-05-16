@@ -362,7 +362,6 @@ endif
 #F77=xlf_r #(genius1)
 #FFLAGS=-O3 #(genius1)
 #CFLAGS=-O3 #(genius1)
-#LD_MPI=-Wl,-relax #(genius1)
 #FFLAGS_DOUBLE=-qrealsize=8 #(genius1)
 #CFLAGS_DOUBLE=-qrealsize=8 #(genius1)
 #FC=ifort #(eh[1-4])
