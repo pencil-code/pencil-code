@@ -625,10 +625,10 @@ endif
 ##
 ##  norlx01 Nordita computer
 ##
-#FC=g95 -fno-second-underscore #(norlx0*)
-#FFLAGS= -freal=nan -finteger=-2147483648 -fbounds-check ftrace=full -Wall -Wno=140,141,109,112,137 -Werror#(norlx0*)
-#FFLAGS= -freal=nan -finteger=-2147483648 -fbounds-check -Wall -Wno=140,141,109,112,137 -Werror#(norlx0*)
-#LD_MPI=#(norlx0*)
+#FC=g95 -fno-second-underscore #(norlx01)
+#FFLAGS= -freal=nan -finteger=-2147483648 -fbounds-check ftrace=full -Wall -Wno=140,141,109,112,137 -Werror#(norlx01)
+#FFLAGS= -freal=nan -finteger=-2147483648 -fbounds-check -Wall -Wno=140,141,109,112,137 -Werror#(norlx01)
+#LD_MPI=#(norlx01)
 ##
 ##  Buenos Aires
 ##
@@ -1570,6 +1570,6 @@ write_dummy_namelists.o: write_dummy_namelists.f90 $(comm_deps)
 #
 # Dependencies
 #
-#include Makefile.depend
+include Makefile.depend
 
 # DO NOT DELETE
