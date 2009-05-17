@@ -3569,6 +3569,7 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
 !
       if (lgravz) then
         if (lmultilayer) then
+          glhc(:,1:2) = 0.
           glhc(:,3) = (hcond1-1.)*der_step(p%z_mn,z1,-widthss) &
                       + (hcond2-1.)*der_step(p%z_mn,z2,widthss)
           glhc(:,3) = hcond0*glhc(:,3)
