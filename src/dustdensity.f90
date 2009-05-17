@@ -118,7 +118,7 @@ module Dustdensity
 !
 !  Identify version number (generated automatically by CVS).
 !
-      if (lroot) call cvs_id( &
+      if (lroot) call svn_id( &
           "$Id$")
 !
 !  Ensure dust density variables are contiguous with dust velocity

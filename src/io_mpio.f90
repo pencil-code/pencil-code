@@ -109,7 +109,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id( &
+      if (lroot) call svn_id( &
            "$Id$")
 !
 !  consistency check

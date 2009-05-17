@@ -38,7 +38,7 @@ module NeutralVelocity
 !
 !  identify version number (generated automatically by CVS)
 !
-      if (lroot) call cvs_id( &
+      if (lroot) call svn_id( &
           "$Id$")
 !
     endsubroutine register_neutralvelocity

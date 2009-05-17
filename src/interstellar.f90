@@ -365,7 +365,7 @@ module Interstellar
 !
 !  identify version number
 !
-      if (lroot) call cvs_id( &
+      if (lroot) call svn_id( &
            "$Id$")
 !
 ! Invalidate all SNRs

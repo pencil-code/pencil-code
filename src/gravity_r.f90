@@ -77,7 +77,7 @@ module Gravity
 !
 !  Identify version number.
 !
-      if (lroot) call cvs_id("$Id$")
+      if (lroot) call svn_id("$Id$")
 !
       lgrav =.true.
       lgravr=.true.

@@ -407,7 +407,7 @@ module Hydro
 !
 !  Identify version number (generated automatically by CVS).
 !
-      if (lroot) call cvs_id( &
+      if (lroot) call svn_id( &
            "$Id$")
 !
 !  Writing files for use with IDL

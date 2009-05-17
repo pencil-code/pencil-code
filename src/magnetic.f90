@@ -499,7 +499,7 @@ module Magnetic
 !
 !  Identify version number.
 !
-      if (lroot) call cvs_id( &
+      if (lroot) call svn_id( &
           "$Id$")
 !
 !  Writing files for use with IDL

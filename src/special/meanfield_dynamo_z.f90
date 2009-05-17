@@ -69,7 +69,7 @@ module Special
       call farray_register_pde('am',iam,nvector=3)
       iamx=iam; iamy=iamx+1; iamz=iamx+2
 !
-      if (lroot) call cvs_id( &
+      if (lroot) call svn_id( &
            "$Id$")
 !
     endsubroutine register_special

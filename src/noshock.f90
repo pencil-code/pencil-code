@@ -42,7 +42,7 @@ module Shock
 !
 !  identify version number
 !
-      if (lroot) call cvs_id( &
+      if (lroot) call svn_id( &
            "$Id$")
 !
     endsubroutine register_shock

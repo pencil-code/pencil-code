@@ -46,7 +46,7 @@ module Particles_radius
 !
 !  22-aug-05/anders: coded
 !
-      if (lroot) call cvs_id( &
+      if (lroot) call svn_id( &
           "$Id$")
 !
 !  Index for particle radius.

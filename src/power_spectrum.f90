@@ -44,7 +44,7 @@ module  power_spectrum
   !
   !  identify version
   !
-  if (lroot .AND. ip<10) call cvs_id( &
+  if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
   !
   !  Define wave vector, defined here for the *full* mesh.
@@ -147,7 +147,7 @@ module  power_spectrum
   !
   !  identify version
   !
-  if (lroot .AND. ip<10) call cvs_id( &
+  if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
   !
   !  Define wave vector, defined here for the *full* mesh.
@@ -247,7 +247,7 @@ module  power_spectrum
   !
   !  identify version
   !
-  if (lroot .AND. ip<10) call cvs_id( &
+  if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
   !
   !  Define wave vector, defined here for the *full* mesh.
@@ -400,7 +400,7 @@ module  power_spectrum
   !
   !  identify version
   !
-  if (lroot .AND. ip<10) call cvs_id( &
+  if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
   !
   !  Define wave vector, defined here for the *full* mesh.
@@ -499,7 +499,7 @@ module  power_spectrum
 !
 !  identify version
 !
-    if (lroot .AND. ip<10) call cvs_id( &
+    if (lroot .AND. ip<10) call svn_id( &
         "$Id$")
 !
 !  In fft, real and imaginary parts are handled separately.
@@ -816,7 +816,7 @@ endsubroutine pdf
   !
   !  identify version
   !
-  if (lroot .AND. ip<10) call cvs_id( &
+  if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
 !--------------Makes sense only in spherical coordinate system -----------
   if (.not.lspherical_coords) call stop_it("power_phi works only in spherical coordinates")
@@ -926,7 +926,7 @@ endsubroutine pdf
 !
 !  identify version
 !
-  if (lroot .AND. ip<10) call cvs_id( &
+  if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
 !--------------Makes sense only in spherical coordinate system -----------
   if (.not.lspherical_coords) call stop_it("powerhel_phi works only in spherical coordinates")

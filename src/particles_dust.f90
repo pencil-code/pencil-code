@@ -176,7 +176,7 @@ module Particles
       use FArrayManager
       use Mpicomm, only: stop_it
 !
-      if (lroot) call cvs_id( &
+      if (lroot) call svn_id( &
            "$Id$")
 !
 !  Indices for particle position.

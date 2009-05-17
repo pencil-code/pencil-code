@@ -129,7 +129,7 @@ program start
 !
 !  Identify version.
 !
-  if (lroot) call cvs_id( &
+  if (lroot) call svn_id( &
        "$Id$")
 !
 !  Set default values: box of size (2pi)^3.

@@ -112,7 +112,7 @@ program run
 !
 !  identify version
 !
-  if (lroot) call cvs_id( &
+  if (lroot) call svn_id( &
        "$Id$")
 !
 !  read parameters from start.x (default values; may be overwritten by

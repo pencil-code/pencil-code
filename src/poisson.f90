@@ -133,7 +133,7 @@ module Poisson
 !
 !  Identify version.
 !
-      if (lroot .and. ip<10) call cvs_id( &
+      if (lroot .and. ip<10) call svn_id( &
         "$Id$")
 !
 !  The right-hand-side of the Poisson equation is purely real.
@@ -246,7 +246,7 @@ module Poisson
 !
 !  identify version
 !
-      if (lroot .and. ip<10) call cvs_id( &
+      if (lroot .and. ip<10) call svn_id( &
         "$Id$")
 !
 !  The right-hand-side of the Poisson equation is purely real.
@@ -360,7 +360,7 @@ module Poisson
 !
 !  Identify version.
 !
-      if (lroot .and. ip<10) call cvs_id( &
+      if (lroot .and. ip<10) call svn_id( &
         "$Id$")
 !
 !  Break if lshear or 3D

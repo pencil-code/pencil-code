@@ -71,7 +71,7 @@ module Viscosity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id( &
+      if (lroot) call svn_id( &
            "$Id$")
 !
 ! Check we aren't registering too many auxiliary variables

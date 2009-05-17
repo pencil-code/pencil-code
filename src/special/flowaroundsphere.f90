@@ -120,7 +120,7 @@ module Special
 !
 !  Identify CVS/SVN version information.
 !
-      if (lroot) call cvs_id( &
+      if (lroot) call svn_id( &
           "$Id$")
 !
     endsubroutine register_special

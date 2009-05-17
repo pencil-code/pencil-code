@@ -47,7 +47,7 @@ module Hydro
 !
 !  identify version number (generated automatically by CVS)
 !
-      if (lroot) call cvs_id( &
+      if (lroot) call svn_id( &
            "$RCSfile: nohydro_file.f90,v $", &
            "$Revision: 1.32 $", &
            "$Date: 2008-07-02 00:31:46 $")

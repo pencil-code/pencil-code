@@ -106,7 +106,7 @@ module Testfield
 !
 !  identify version number
 !
-      if (lroot) call cvs_id( &
+      if (lroot) call svn_id( &
            "$Id$")
 !
       if (nvar > mvar) then

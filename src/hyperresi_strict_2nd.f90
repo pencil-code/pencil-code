@@ -37,7 +37,7 @@ module Hyperresi_strict
 !
       use FArrayManager
 !
-      if (lroot) call cvs_id( &
+      if (lroot) call svn_id( &
           "$Id$")
 !
 !  Set indices for auxiliary variables

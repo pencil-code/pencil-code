@@ -87,7 +87,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id$")
+      if (lroot) call svn_id("$Id$")
 !
     endsubroutine register_io
 !

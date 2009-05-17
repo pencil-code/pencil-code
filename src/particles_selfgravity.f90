@@ -46,9 +46,9 @@ module Particles_selfgravity
 !  14-jun-06/anders: adapted
 !
       use FArrayManager
-      use Messages, only: cvs_id
+      use Messages, only: svn_id
 !
-      if (lroot) call cvs_id( &
+      if (lroot) call svn_id( &
            "$Id$")
 !
 !  Index for gradient for the self-potential and for the smooth particle

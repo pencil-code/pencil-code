@@ -218,7 +218,7 @@ module Entropy
 !
 !  identify version number
 !
-      if (lroot) call cvs_id( &
+      if (lroot) call svn_id( &
           "$Id$")
 !
 !  Get the shared variable lpressuregradient_gas from Hydro module.

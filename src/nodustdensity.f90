@@ -31,7 +31,7 @@ module Dustdensity
 !
       use Sub
 !
-      if (lroot) call cvs_id( &
+      if (lroot) call svn_id( &
            "$Id$")
 !
     endsubroutine register_dustdensity

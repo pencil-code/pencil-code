@@ -66,7 +66,7 @@ module Poisson
 !
 !  identify version
 !
-      if (lroot .and. ip<10) call cvs_id( &
+      if (lroot .and. ip<10) call svn_id( &
         "$Id$")
 !
       if (lshear) then
@@ -106,7 +106,7 @@ module Poisson
 ! !
 ! !  identify version
 ! !
-!       if (lroot .and. ip<10) call cvs_id( &
+!       if (lroot .and. ip<10) call svn_id( &
 !         "$Id$")
 ! !
 !       if (present(kmax)) then

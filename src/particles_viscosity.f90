@@ -48,7 +48,7 @@ module Particles_viscosity
 !
 !  Identify version number.
 !
-      if (lroot) call cvs_id( &
+      if (lroot) call svn_id( &
           '$Id$')
 !
 !  Set indices for auxiliary variables.

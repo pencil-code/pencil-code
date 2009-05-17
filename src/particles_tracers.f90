@@ -59,7 +59,7 @@ module Particles
 !
       use FArrayManager
 !
-      if (lroot) call cvs_id( &
+      if (lroot) call svn_id( &
           "$Id$")
 !
 !  Indices for particle position.

@@ -59,7 +59,7 @@ module Special
 !
 !  Identify CVS/SVN version information.
 !
-      if (lroot) call cvs_id( &
+      if (lroot) call svn_id( &
            "$Id: nospecial.f90 10347 2009-02-08 13:23:41Z ajohan@strw.leidenuniv.nl $")
 !
       call farray_register_pde('ispecial',ispecial,vector=2)

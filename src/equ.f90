@@ -82,7 +82,7 @@ module Equ
       headtt = headt .and. lfirst .and. lroot
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
-      if (headtt) call cvs_id( &
+      if (headtt) call svn_id( &
            "$Id$")
 !
 !  Initialize counter for calculating and communicating print results.

@@ -55,10 +55,10 @@ module Particles_spin
       use Cdata
       use FArrayManager
       use Mpicomm, only: stop_it
-      use Messages, only: cvs_id
+      use Messages, only: svn_id
       use Cparam
 !
-      if (lroot) call cvs_id( &
+      if (lroot) call svn_id( &
            "$Id$")
 !
 !  Indices for flow field vorticity. The vorticity is a communicated auxiliary

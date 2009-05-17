@@ -365,7 +365,7 @@ module Param_IO
 !
 !  Print cvs id from first line.
 !
-      if (lroot) call cvs_id(cvsid)
+      if (lroot) call svn_id(cvsid)
 !
 !  Give online feedback if called with the PRINT optional argument.
 !  Note: Some compiler's [like Compaq's] code crashes with the more
@@ -714,7 +714,7 @@ module Param_IO
 !
 !  Print cvs id from first line.
 !
-      if (lroot) call cvs_id(cvsid)
+      if (lroot) call svn_id(cvsid)
 !
 !  Set debug logical (easier to use than the combination of ip and lroot).
 !

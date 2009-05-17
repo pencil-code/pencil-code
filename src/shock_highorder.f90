@@ -53,13 +53,13 @@ module Shock
 !  24-jan-05/tony: modified from visc_shock.f90
 !
       use FArrayManager
-      use Messages, only: cvs_id
+      use Messages, only: svn_id
 !
       call farray_register_auxiliary('shock',ishock,communicated=.true.)
 !
 !  Identify version number.
 !
-      if (lroot) call cvs_id( &
+      if (lroot) call svn_id( &
            "$Id$")
 !
 !  Writing files for use with IDL

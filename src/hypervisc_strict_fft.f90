@@ -42,7 +42,7 @@ module Hypervisc_strict
 !
       use FArrayManager
 !
-      if (lroot) call cvs_id( &
+      if (lroot) call svn_id( &
            "$Id$")
 !
 !  Set indices for auxiliary variables.
@@ -77,7 +77,7 @@ module Hypervisc_strict
 !
 !  Identify version
 !
-      if (lroot .and. ip<10) call cvs_id( &
+      if (lroot .and. ip<10) call svn_id( &
         "$Id$")
 !
 !  Derivatives are taken in k-space due to the complicated cross terms.

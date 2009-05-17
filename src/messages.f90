@@ -11,7 +11,7 @@ module Messages
 !
   private
 !
-  public :: cvs_id
+  public :: svn_id
   public :: initialize_messages
   public :: information, warning, error
   public :: fatal_error, inevitably_fatal_error, not_implemented
@@ -51,9 +51,9 @@ module Messages
 !
   logical :: ltermcap_color=.false.
 !
-  interface cvs_id              ! Overload the cvs_id function
-    module procedure cvs_id_1
-    module procedure cvs_id_3
+  interface svn_id              ! Overload the svn_id function
+    module procedure svn_id_1
+    module procedure svn_id_3
   endinterface
 !
   contains
@@ -235,103 +235,119 @@ module Messages
 !
     endsubroutine information
 !***********************************************************************
-    subroutine cvs_id_1(cvsid)
+    subroutine svn_id_1(svnid)
 !
-!  print CVS Revision info in a compact, yet structured form
-!  Expects the standard CVS Id: line as argument
+!  print SVN Revision info in a compact, yet structured form
+!  Expects the standard SVN Id: line as argument
 !  25-jun-02/wolf: coded
 !
-      character (len=*) :: cvsid
+      character (len=*) :: svnid
 !
-      character (len=20) :: rcsfile, revision, author, date
+      character (len=20) :: filename, revision, author, date
       character (len=200) :: fmt
       character (len=20) :: tmp1,tmp2,tmp3,tmp4
-      integer :: ir0,ir1,iv0,iv1,id0,id2,ia0,ia1
-      integer :: rw=18, vw=12, aw=10, dw=19 ! width of individual fields
+      integer :: if0,if1,iv0,iv1,iy0,iy1,it0,it1,ia0,ia1,iat
+      integer :: wf=18, wv=7, wa=15, wd=19 ! width of individual fields
+      integer :: wd1=0
       logical, save :: lfirstcall=.true.
 !
-!  rcs file name
+!  Write string to screen and to 'svnid.dat' file.
 !
-      ir0 = index(cvsid, ": ") + 2
-      ir1 = ir0 + index(cvsid(ir0+1:), ",") - 1
-      rcsfile = cvsid(ir0:ir1)
-!
-!  Version number
-!
-      iv0 = ir1 + 4
-      iv1 = iv0 + index(cvsid(iv0+1:), " ") - 1
-      revision = cvsid(iv0:iv1)
-!
-!  Date
-!
-      id0 = iv1 + 2             ! first char of date
-      ! id1 = iv1 + 12            ! position of space
-      id2 = iv1 + 20            ! last char of time
-      date = cvsid(id0:id2)
-!
-!  Author
-!
-      ia0 = id2 + 2
-      ia1 = ia0 + index(cvsid(ia0+1:), " ") - 1
-      author = cvsid(ia0:ia1)
+      if (lfirstcall) then
+        open(1, file=trim(datadir)//'/svnid.dat', status='replace')
+        lfirstcall=.false.
+      else
+        open(1, file=trim(datadir)//'/svnid.dat', status='old', position='append')
+      endif
 !
 !  Construct format
 !  Need to set explicit format below, to avoid problems when the
 !  -i8 compiler option is invoked. Hope that the format i5 is sufficient.
 !
-      write(tmp1,'(i5)') rw
-      write(tmp2,'(i5)') 6+rw
-      write(tmp3,'(i5)') 6+rw+4+vw
-      write(tmp4,'(i5)') 6+rw+4+vw+2+aw
+      write(tmp1,'(i5)') wf
+      write(tmp2,'(i5)') 6+wf
+      write(tmp3,'(i5)') 6+wf+4+wv
+      write(tmp4,'(i5)') 6+wf+4+wv+2+wd
 !      fmt = '(A, A' // trim(adjustl(tmp1)) &
       fmt = '(A, A' &
            // ', T' // trim(adjustl(tmp2)) &
            // ', " v. ", A, T' // trim(adjustl(tmp3)) &
            // ', " (", A, T' // trim(adjustl(tmp4)) &
            // ', ") ", A)'
+      if ((svnid(1:1) == "$") .and. (svnid(2:4) == "Id:")) then
+      ! starts with `$...' --> SVN Id: line
 !
-!  Write string to screen and to 'cvsid.dat' file.
+!  file name
 !
-      if (lfirstcall) then
-        open(1, file=trim(datadir)//'/cvsid.dat', status='replace')
-        lfirstcall=.false.
-      else
-        open(1, file=trim(datadir)//'/cvsid.dat', status='old', position='append')
-      endif
+        if0 = index(svnid, ": ") + 2
+        if1 = if0 + index(svnid(if0+1:), " ") - 1
+        filename = svnid(if0:if1)
 !
-      if (index(cvsid, "$") == 1) then ! starts with `$' --> CVS line
-        write(*,fmt) "CVS: ", &
-             trim(rcsfile), &
-             revision(1:vw), &
-             author(1:aw), &
-             date(1:dw)
-        write(1,fmt) "CVS: ", &
-             trim(rcsfile), &
-             revision(1:vw), &
-             author(1:aw), &
-             date(1:dw)
-      else                      ! not a CVS line; maybe `[No ID given]'
-        write(*,fmt) "CVS: ", &
-             '???????', &
-             '', &
-             '', &
-             cvsid(1:dw)
-        write(1,fmt) "CVS: ", &
-             '???????', &
-             '', &
-             '', &
-             cvsid(1:dw)
+!  Revision number
+!
+        iv0 = if1 + 2
+        iv1 = iv0 + index(svnid(iv0+1:), " ") - 1
+        revision = svnid(iv0:iv1)
+!
+!  Date
+!
+        iy0 = iv1 + 2             ! first char of year
+        iy1 = iy0 + 10            ! last char of year
+        it0 = iy1 + 2             ! first char of time-of-day
+        it1 = it0 + index(svnid(it0+1:), " ") - 1
+        if (svnid(it1:it1) == "Z") then
+          date = svnid(iy0:it1-1) ! strip trailing `Z'
+        else
+          date = svnid(iy0:it1)
+        endif
+write(0,*) 'date = ', date
+!
+!  Author
+!
+        ia0 = it1 + 2
+        ! strip @some.where part off some user names
+        iat = index(svnid(ia0+1:), "@")
+        if (iat > 0) then
+          ia1 = ia0 + iat - 1
+        else
+          ia1 = ia0 + index(svnid(ia0+1:), " ") - 1
+        endif
+        author = svnid(ia0:ia1)
+!
+        write(*,fmt) "SVN: ", &
+            trim(filename), &
+            revision(1:wv), &
+            date(1:wd), &
+            trim(author)
+ 
+        write(1,fmt) "SVN: ", &
+            trim(filename), &
+            revision(1:wv), &
+            date(1:wd), &
+            trim(author)
+      else                      ! not a SVN line; maybe `[No ID given]'
+        wd1 = min(wd, len(svnid))
+        write(*,fmt) "SVN: ", &
+            '-------', &
+            '', &
+            '', &
+            svnid(1:wd1)
+        write(1,fmt) "SVN: ", &
+            '-------', &
+            '', &
+            '', &
+            svnid(1:wd1)
       endif
       !write(*,'(A)') '123456789|123456789|123456789|123456789|123456789|12345'
       !write(*,'(A)') '         1         2         3         4         5'
 !
       close(1)
 !
-    endsubroutine cvs_id_1
+    endsubroutine svn_id_1
 !***********************************************************************
-    subroutine cvs_id_3(rcsfile, revision, date)
+    subroutine svn_id_3(rcsfile, revision, date)
 !
-!  print CVS revision info in a compact, yet structured form
+!  print SVN revision info in a compact, yet structured form
 !  Old version: expects filename, version and date as three separate arguments
 !  17-jan-02/wolf: coded
 !
@@ -341,12 +357,12 @@ module Messages
       rcsflen=len(rcsfile)
       revlen =len(revision)
       datelen=len(date)
-      write(*,'(A,A,T28," version ",A,T50," of ",A)') "CVS: ", &
+      write(*,'(A,A,T28," version ",A,T50," of ",A)') "SVN: ", &
            rcsfile(10:rcsflen-4), &
            revision(12:revlen-1), &
            date(8:datelen-1)
 !
-    endsubroutine cvs_id_3
+    endsubroutine svn_id_3
 !***********************************************************************
     subroutine life_support_off(message)
 !
