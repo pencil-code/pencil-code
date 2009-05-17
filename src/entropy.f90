@@ -161,9 +161,9 @@ module Entropy
   integer :: idiag_pdivum=0     ! DIAG_DOC: $\left<p\nabla\uv\right>$
   integer :: idiag_heatm=0      ! DIAG_DOC:
   integer :: idiag_ugradpm=0    ! DIAG_DOC:
-  integer :: idiag_fradbot=0    ! DIAG_DOC: $\int F_{\rm bot}\cdot d\Sv$
-  integer :: idiag_fradtop=0    ! DIAG_DOC: $\int F_{\rm top}\cdot d\Sv$
-  integer :: idiag_TTtop=0      ! DIAG_DOC: $\int T_{\rm top} d\Sv$
+  integer :: idiag_fradbot=0    ! DIAG_DOC: $\int F_{\rm bot}\cdot d\vec{S}$
+  integer :: idiag_fradtop=0    ! DIAG_DOC: $\int F_{\rm top}\cdot d\vec{S}$
+  integer :: idiag_TTtop=0      ! DIAG_DOC: $\int T_{\rm top} d\vec{S}$
   integer :: idiag_ethtot=0     ! DIAG_DOC: $\int_V\varrho e\,dV$
                                 ! DIAG_DOC:   \quad(total thermal
                                 ! DIAG_DOC:   [=internal] energy)
