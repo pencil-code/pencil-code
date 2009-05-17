@@ -2,7 +2,7 @@
 # CVS: $Id$
 # -*-perl-*-
 #
-# Name:   tsnap
+# Name:   pc_tsnap (used to be called tsnap until 17-may-09)
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   2-Oct-1999
 # Version: 0.52
@@ -11,7 +11,7 @@
 #   written to the file:
 #     write a
 #     write t [,x,y,z]
-# Usage:  tsnap  [-s|--sort]  <file1> [<file2> ..]
+# Usage:  pc_tsnap  [-s|--sort]  <file1> [<file2> ..]
 
 #======================================================================#
 # Run the right perl version:
