@@ -7,7 +7,6 @@
   cvsid='$Id$',
   nt=50, it1=10, isave=200, itorder=3,
   dsnap=1., cdt=0.25,
-  lpencil_check=T
 /
 &eos_run_pars
 /
@@ -20,7 +19,7 @@
 /
 &entropy_run_pars
   cooling_profile='cubic_step', cool=10., wcool=0.1,
-  iheatcond='K-profile', lhcond_global=T,
+  iheatcond='K-profile',
   lupw_ss=T
 /
 &viscosity_run_pars
