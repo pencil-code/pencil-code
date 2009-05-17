@@ -127,11 +127,6 @@ program run
   x0 = xyz0(1) ; y0 = xyz0(2) ; z0 = xyz0(3)
   Lx = Lxyz(1) ; Ly = Lxyz(2) ; Lz = Lxyz(3)
 !
-!  position of equator (if any)
-!
-  if (lequatory) yequator=xyz0(2)+0.5*Lxyz(2)
-  if (lequatorz) zequator=xyz0(3)+0.5*Lxyz(3)
-!
 !  Size of box at local processor
 !
   Lxyz_loc(1)=Lxyz(1)/nprocx
@@ -175,11 +170,17 @@ program run
   call read_runpars()
   call rprint_list(LRESET=.false.)
 !
+!  position of equator (if any)
+!
+  if (lequatory) yequator=xyz0(2)+0.5*Lxyz(2)
+  if (lequatorz) zequator=xyz0(3)+0.5*Lxyz(3)
+!
 !  inner radius for freezing variables defaults to r_min
 !  Note: currently (July 2005), hydro.f90 uses a different approach:
 !  r_int will override rdampint, which doesn't seem to make much sense (if
 !  you want rdampint to be overridden, then don't specify it in the first
 !  place)
+!
   if (rfreeze_int == -impossible .and. r_int > epsi) &
        rfreeze_int = r_int
   if (rfreeze_ext == -impossible) rfreeze_ext = r_ext
