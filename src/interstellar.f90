@@ -879,6 +879,10 @@ module Interstellar
 !
       if (lnothing.and.lroot) print*,'init_interstellar: nothing'
 !
+!  Initialize cooling to avoid errors from shearing boundary conditions.
+!
+!      f(l1:l2,m1:m2,n1:n2,icooling)=0.0
+!
       call tidy_SNRs
 !
     endsubroutine init_interstellar
