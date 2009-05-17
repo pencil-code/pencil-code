@@ -51,11 +51,6 @@ module Messages
 !
   logical :: ltermcap_color=.false.
 !
-  interface svn_id              ! Overload the svn_id function
-    module procedure svn_id_1
-    module procedure svn_id_3
-  endinterface
-!
   contains
 !***********************************************************************
     subroutine initialize_messages
@@ -235,7 +230,7 @@ module Messages
 !
     endsubroutine information
 !***********************************************************************
-    subroutine svn_id_1(svnid)
+    subroutine svn_id(svnid)
 !
 !  print SVN Revision info in a compact, yet structured form
 !  Expects the standard SVN Id: line as argument
@@ -343,26 +338,7 @@ write(0,*) 'date = ', date
 !
       close(1)
 !
-    endsubroutine svn_id_1
-!***********************************************************************
-    subroutine svn_id_3(rcsfile, revision, date)
-!
-!  print SVN revision info in a compact, yet structured form
-!  Old version: expects filename, version and date as three separate arguments
-!  17-jan-02/wolf: coded
-!
-      character (len=*) :: rcsfile, revision, date
-      integer :: rcsflen, revlen, datelen
-
-      rcsflen=len(rcsfile)
-      revlen =len(revision)
-      datelen=len(date)
-      write(*,'(A,A,T28," version ",A,T50," of ",A)') "SVN: ", &
-           rcsfile(10:rcsflen-4), &
-           revision(12:revlen-1), &
-           date(8:datelen-1)
-!
-    endsubroutine svn_id_3
+    endsubroutine svn_id
 !***********************************************************************
     subroutine life_support_off(message)
 !
