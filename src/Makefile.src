@@ -627,6 +627,15 @@ endif
 #FFLAGS= -freal=nan -finteger=-2147483648 -fbounds-check -Wall -Wno=140,141,109,112,137 -Werror#(norlx01)
 #LD_MPI=#(norlx01)
 ##
+##  norlx50 Nordita computer
+##
+#FC=g95 -fno-second-underscore #(norlx50)
+#FFLAGS= -freal=nan -finteger=-2147483648 -fbounds-check ftrace=full -Wall -Wno=140,141,109,112,137 -Werror#(norlx50)
+#FFLAGS= -freal=nan -finteger=-2147483648 -fbounds-check -Wall -Wno=140,141,109,112,137 -Werror#(norlx50)
+#F77=g95 #(norlx50)
+#F77FLAGS= #(norlx50)
+#LD_MPI=#(norlx50)
+##
 ##  Buenos Aires
 ##
 #FC=mpif90 #(caps.iafe.uba.ar)
@@ -1176,7 +1185,7 @@ MPICOMM_FIX=$(MPICOMM)$(LIBMPISUFFIX)
 .SUFFIXES: .f .f90 .c .o .inc .h .dot .ps .svg
 # 
 .f.o:
-	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F77FLAGS)  -o $*.o -c $*.f
+	$(F77) $(F77FLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) -o $*.o -c $*.f
 .f90.o:
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o $*.o -c $*.f90
 .c.o:

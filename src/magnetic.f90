@@ -1308,7 +1308,7 @@ module Magnetic
 !
       if (lisotropic_advection) lpenc_requested(i_va2)=.true.
 ! check whether right variables are set for half-box calculations. 
-      if (idiag_brmsn/=0 .or. idiag_abmn/=0 ) then
+      if (idiag_brmsn/=0 .or. idiag_abmn/=0 .or. idiag_ambmzn/=0 ) then
         if ((.not.lequatory).and.(.not.lequatorz)) then
           call stop_it("You have to set either of lequatory or lequatorz to true to calculate averages over half the box")
         else  
@@ -2191,6 +2191,7 @@ module Magnetic
         if (idiag_abm/=0) call sum_mn_name(p%ab,idiag_abm)
 !
 !  hemispheric magnetic helicity of total field
+!  North means 1 and south means 2.
 !
         if (idiag_abmh/=0) then
           if (lequatory) call sum_mn_name_halfy(p%ab,idiag_abmh)
@@ -3826,6 +3827,7 @@ module Magnetic
         enddo
       endif
 !
+!  North means 1 and south means 2.
 !  save the name in the idiag_ambmz slot
 !  and set first to false
 !

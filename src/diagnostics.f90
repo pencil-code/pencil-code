@@ -1084,6 +1084,10 @@ module Diagnostics
       if (iname /= 0) then
         sum_name=0
 !
+!  Note: north means 1 and south means 2.
+!  However, north corresponds to z < zequator,
+!  in analogy to theta < !pi/2 for north.
+!
         if (z(n).ge.zequator) then
           sum_name=fname_half(iname,2)
         else
@@ -1110,6 +1114,10 @@ module Diagnostics
             sum_name=sum_name+sum(a)
           endif
         endif
+!
+!  North means 1 and south means 2.
+!  However, north corresponds to z < zequator,
+!  in analogy to theta < !pi/2 for north.
 !
         if (z(n).ge.zequator) then
           fname_half(iname,2)=sum_name
