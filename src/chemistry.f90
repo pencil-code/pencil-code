@@ -2001,10 +2001,12 @@ subroutine flame_front(f)
 !  Write slices for animation of Chemistry variables.
 !
 !  13-aug-07/steveb: dummy
+!  16-may-09/raphael: added more slices
 !
       use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8
       type (slice_data) :: slices
 !
 !  Loop over slices
@@ -2014,84 +2016,94 @@ subroutine flame_front(f)
 !  Chemical species mass fractions.
 !
         case ('chemspec')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(1))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(1))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(1))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(1))
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(i1))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(i1))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(i1))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(i1))
           if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(1))
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(i1))
           if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(1))
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(i1))
           slices%ready=.true.
         case ('chemspec2')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(2))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(2))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(2))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(2))
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(i2))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(i2))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(i2))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(i2))
           if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(2))
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(i2))
           if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(2))
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(i2))
           slices%ready=.true.
         case ('chemspec3')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(3))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(3))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(3))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(3))
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(i3))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(i3))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(i3))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(i3))
           if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(3))
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(i3))
           if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(3))
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(i3))
           slices%ready=.true.
         case ('chemspec4')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(4))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(4))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(4))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(4))
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(i4))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(i4))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(i4))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(i4))
           if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(4))
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(i4))
           if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(4))
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(i4))
           slices%ready=.true.
         case ('chemspec5')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(5))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(5))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(5))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(5))
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(i5))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(i5))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(i5))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(i5))
           if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(5))
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(i5))
           if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(5))
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(i5))
           slices%ready=.true.
         case ('chemspec6')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(6))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(6))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(6))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(6))
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(i6))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(i6))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(i6))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(i6))
           if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(6))
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(i6))
           if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(6))
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(i6))
           slices%ready=.true.
         case ('chemspec7')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(7))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(7))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(7))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(7))
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(i7))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(i7))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(i7))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(i7))
           if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(7))
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(i7))
           if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(7))
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(i7))
           slices%ready=.true.
         case ('chemspec8')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(8))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(8))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(8))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(8))
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(i8))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(i8))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(i8))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(i8))
           if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(8))
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(i8))
           if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(8))
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(i8))
+          slices%ready=.true.
+        case ('chemspec9')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(i9))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(i9))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(i9))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(i9))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(i9))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(i9))
           slices%ready=.true.
       endselect
 !
