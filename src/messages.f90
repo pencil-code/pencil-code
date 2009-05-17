@@ -295,7 +295,6 @@ module Messages
         else
           date = svnid(iy0:it1)
         endif
-write(0,*) 'date = ', date
 !
 !  Author
 !
