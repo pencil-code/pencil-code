@@ -1080,6 +1080,12 @@ subroutine flame_front(f)
                              +XX_full(j1,j2,j3,k)*species_cond(j1,j2,j3,k)
             tmp_sum2(j1,j2,j3)=tmp_sum2(j1,j2,j3) &
                              +XX_full(j1,j2,j3,k)/species_cond(j1,j2,j3,k)
+if (species_cond(j1,j2,j3,k) == 0.) then
+
+ print*, species_cond(j1,j2,j3,k),j1,j2,j3,k
+
+endif
+
           enddo
          enddo
          enddo
@@ -1235,8 +1241,9 @@ subroutine flame_front(f)
         write(file_id,'(7E12.4)') maxval(cp_full)/Rgas*Rgas_unit_sys
         write(file_id,*) ''
         write(file_id,*) 'gamma,max,min'
-        write(file_id,'(7E12.4)') maxval(cp_full)/maxval(cv_full),&
-            minval(cp_full)/minval(cv_full)
+        write(file_id,'(7E12.4)') maxval(cp_full(l1:l2,m1:m2,n1:n2)) &
+                                 /maxval(cv_full(l1:l2,m1:m2,n1:n2)),&
+          minval(cp_full(l1:l2,m1:m2,n1:n2))/minval(cv_full(l1:l2,m1:m2,n1:n2))
         write(file_id,*) ''
         write(file_id,*) 'Viscosity, g/cm/s,'
         write(file_id,'(7E12.4)') minval(nu_dyn)*&
