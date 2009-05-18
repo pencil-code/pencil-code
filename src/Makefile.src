@@ -637,6 +637,15 @@ endif
 #F77FLAGS= #(norlx50)
 #LD_MPI=#(norlx50)
 ##
+##  norlx51 Nordita computer
+##
+#FC=g95 -fno-second-underscore #(norlx51)
+#F90FLAGS= -freal=nan -finteger=-2147483648 -fbounds-check ftrace=full -Wall -Wno=140,141,109,112,137 -Werror#(norlx51)
+#F90FLAGS= -freal=nan -finteger=-2147483648 -fbounds-check -Wall -Wno=140,141,109,112,137 -Werror#(norlx51)
+#F77=g95 #(norlx51)
+#F77FLAGS= #(norlx51)
+#LD_MPI=#(norlx51)
+##
 ##  Buenos Aires
 ##
 #FC=mpif90 #(caps.iafe.uba.ar)
