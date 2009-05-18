@@ -1185,7 +1185,7 @@ MPICOMM_FIX=$(MPICOMM)$(LIBMPISUFFIX)
 .SUFFIXES: .f .f90 .c .o .inc .h .dot .ps .svg
 # 
 .f.o:
-	$(F77) $(F77FLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) -o $*.o -c $*.f
+	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F77FLAGS) -o $*.o -c $*.f
 .f90.o:
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o $*.o -c $*.f90
 .c.o:
