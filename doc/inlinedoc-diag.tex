@@ -191,6 +191,10 @@
                     [=internal] energy) \\
   \var{ssm}       & $\left<s/c_p\right>$
                     \quad(mean entropy) \\
+  \var{pdivum}    & $\left<p\nabla\uv\right>$ \\
+  \var{fradbot}   & $\int F_{\rm bot}\cdot d\vec{S}$ \\
+  \var{fradtop}   & $\int F_{\rm top}\cdot d\vec{S}$ \\
+  \var{TTtop}     & $\int T_{\rm top} d\vec{S}$ \\
   \var{ethtot}    & $\int_V\varrho e\,dV$
                     \quad(total thermal
                     [=internal] energy) \\
@@ -213,9 +217,9 @@
   \var{j2m}       & $\left<\jv^2\right>$ \\
   \var{jm2}       & $\max(\jv^2)$ \\
   \var{abm}       & $\left<\Av\cdot\Bv\right>$ \\
-  \var{abmh}      & $\left<\Av\cdot\Bv\right>$ \\
-  \var{abmn}      & $\left<\Av\cdot\Bv\right>$ \\
-  \var{abms}      & $\left<\Av\cdot\Bv\right>$ \\
+  \var{abmh}      & $\left<\Av\cdot\Bv\right>$ (temp) \\
+  \var{abmn}      & $\left<\Av\cdot\Bv\right>$ (north) \\
+  \var{abms}      & $\left<\Av\cdot\Bv\right>$ (south) \\
   \var{ajm}       & $\left<\jv\cdot\Av\right>$ \\
   \var{jbm}       & $\left<\jv\cdot\Bv\right>$ \\
   \var{ubm}       & $\left<\uv\cdot\Bv\right>$ \\
@@ -264,6 +268,9 @@
   \var{bz2mx}     & $\left<B_z^2\right>_{yz}$ \\
   \var{bxbym}     & $\left<B_x B_y\right>$ \\
   \var{bxbymx}    & $\left<B_x B_y\right>_{yz}$ \\
+  \var{axmz}      & $\left<{\cal A}_x\right>_{xy}$ \\
+  \var{aymz}      & $\left<{\cal A}_y\right>_{xy}$ \\
+  \var{azmz}      & $\left<{\cal A}_z\right>_{xy}$ \\
   \var{bxmz}      & $\left<{\cal B}_x\right>_{xy}$ \\
   \var{bymz}      & $\left<{\cal B}_y\right>_{xy}$ \\
   \var{bzmz}      & $\left<{\cal B}_z\right>_{xy}$ \\
@@ -301,9 +308,20 @@
   \var{bmzphe}    & Error of phase of a Beltrami field \\
   \var{bsinphz}   & sine of phase of a Beltrami field \\
   \var{bcosphz}   & cosine of phase of a Beltrami field \\
+  \var{emxamz3}   & $\left<\left<\Ev\right>_{xy}\times\left<\Av\right>_{xy}
+                    \right>$ \quad($xy$-averaged
+                    mean field helicity flux) \\
   \var{embmz}     & $\left<\left<\Ev\right>_{xy}\cdot\left<\Bv\right>_{xy}
                     \right>$ \quad($xy$-averaged
                     mean field helicity production ) \\
+  \var{ambmz}     & $\left<\left<\Av\right>_{xy}\cdot\left<\Bv\right>_{xy}\right>$
+                    \quad (magnetic helicity of $xy$-averaged mean field) \\
+  \var{ambmzh}    & $\left<\left<\Av\right>_{xy}\cdot\left<\Bv\right>_{xy}\right>$
+                    \quad (magnetic helicity of $xy$-averaged mean field, temp) \\
+  \var{ambmzn}    & $\left<\left<\Av\right>_{xy}\cdot\left<\Bv\right>_{xy}\right>$
+                    \quad (magnetic helicity of $xy$-averaged mean field, north) \\
+  \var{ambmzs}    & $\left<\left<\Av\right>_{xy}\cdot\left<\Bv\right>_{xy}\right>$
+                    \quad (magnetic helicity of $xy$-averaged mean field, south) \\
   \var{jmbmz}     & $\left<\left<\Jv\right>_{xy}\cdot\left<\Bv\right>_{xy}
                     \right>$ \quad(current helicity
                     of $xy$-averaged mean field) \\
@@ -315,8 +333,11 @@
   \var{bx2mz}     & $\left< B_x^2 \right>_{xy}$ \\
   \var{by2mz}     & $\left< B_y^2 \right>_{xy}$ \\
   \var{bz2mz}     & $\left< B_z^2 \right>_{xy}$ \\
-  \var{jbmz}      & $\left< \Jv\cdot\Bv\right>_{xy}$ \\
-  \var{abmz}      & $\left< \Av\cdot\Bv\right>_{xy}$ \\
+  \var{jbmz}      & $\left<\Jv\cdot\Bv\right>|_{xy}$ \\
+  \var{abmz}      & $\left<\Av\cdot\Bv\right>|_{xy}$ \\
+  \var{examz1}    & $\left<\Ev\times\Av\right>_{xy}|_x$ \\
+  \var{examz2}    & $\left<\Ev\times\Av\right>_{xy}|_y$ \\
+  \var{examz3}    & $\left<\Ev\times\Av\right>_{xy}|_z$ \\
   \var{bxmxy}     & $\left< B_x \right>_{xy}$ \\
   \var{bymxy}     & $\left< B_y \right>_{xy}$ \\
   \var{bzmxy}     & $\left< B_z \right>_{xy}$ \\
@@ -341,12 +362,16 @@
   \var{bxbymxz}   & $\left< B_x B_y \right>_{y}$ \\
   \var{bxbzmxz}   & $\left< B_x B_z \right>_{y}$ \\
   \var{bybzmxz}   & $\left< B_y B_z \right>_{y}$ \\
+  \var{examx}     & $\left<\Ev\times\Av\right>|_x$ \\
+  \var{examy}     & $\left<\Ev\times\Av\right>|_y$ \\
+  \var{examz}     & $\left<\Ev\times\Av\right>|_z$ \\
   \var{exjmx}     & $\left<\Ev\times\Jv\right>|_x$ \\
   \var{exjmy}     & $\left<\Ev\times\Jv\right>|_y$ \\
   \var{exjmz}     & $\left<\Ev\times\Jv\right>|_z$ \\
   \var{dexbmx}    & $\left<\nabla\times\Ev\times\Bv\right>|_x$ \\
   \var{dexbmy}    & $\left<\nabla\times\Ev\times\Bv\right>|_y$ \\
   \var{dexbmz}    & $\left<\nabla\times\Ev\times\Bv\right>|_z$ \\
+  \var{b2divum}   & $\left<\Bv^2\nabla\cdot\uv\right>|_x$ \\
   \var{ujxbm}     & $\left<\uv\cdot(\Jv\times\Bv\right>|_x$ \\
   \var{bmxy_rms}  & $\sqrt{[\left<b_x\right>_z(x,y)]^2 +
                     [\left<b_y\right>_z(x,y)]^2 +
@@ -686,6 +711,9 @@
                     \quad(time step relative to
                     acoustic time step;
                     see \S~\ref{time-step}) \\
+  \var{ethm}      & $\left<\varrho e\right>$
+                    \quad(mean thermal
+                    [=internal] energy) \\
 %
 \bottomrule
 \end{longtable}
