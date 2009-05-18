@@ -1,8 +1,0 @@
-work.pc work.pcl
-makefile Makefile
-*.d
-*.inc
-*.il
-*.mod
-nompicomm_.*
-.build*
