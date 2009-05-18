@@ -10,6 +10,7 @@
 use strict;
 
 my $debug = 1;
+my $dry_run = 0;
 
 my $make = ( $ENV{MAKE}      || 'make');
 my @makeflags = ();
@@ -74,22 +75,37 @@ sub run_cmd {
 #
     my @args = @_;
 
-    print "system(@args)\n" if ($debug);
-    system(@args) == 0 or die "$args[0] failed: $!\n";
+    print "@args\n" if ($debug);
+    unless ($dry_run) {
+        system(@args) == 0 or die "$args[0] failed: $!\n";
+    }
 }
+
 # ---------------------------------------------------------------------- #
 sub set_env_vars {
 #
 # Set a number of G95_XXX environment variables for runtime debugging
 #
-    # $ENV{'G95_FPU_PRECISION'}  = '53';
-    $ENV{'G95_MEM_INIT'}       = 'NAN';
-    $ENV{'G95_FPU_EXCEPTIONS'} = 'Yes';
-    $ENV{'G95_MEM_MAXALLOC'}   = 'Yes';
-    $ENV{'G95_FPU_ZERODIV'}    = 'Yes';
-    $ENV{'G95_FPU_OVERFLOW'}   = 'Yes';
-    $ENV{'G95_SHOW_LOCUS'}     = 'Yes';
-    $ENV{'G95_FPU_INVALID'}    = 'Yes';
+    # setenv('G95_FPU_PRECISION', '53');
+    setenv('G95_MEM_INIT',       'NAN');
+    setenv('G95_FPU_EXCEPTIONS', 'Yes');
+    setenv('G95_MEM_MAXALLOC',   'Yes');
+    setenv('G95_FPU_ZERODIV',    'Yes');
+    setenv('G95_FPU_OVERFLOW',   'Yes');
+    setenv('G95_SHOW_LOCUS',     'Yes');
+    setenv('G95_FPU_INVALID',    'Yes');
+}
+
+# ---------------------------------------------------------------------- #
+sub setenv {
+#
+# Set one environment variable
+#
+    my ($var, $value) = @_;
+    print "export $var=$value\n" if ($debug);
+    unless ($dry_run) {
+        $ENV{$var} = $value;
+    }
 }
 
 # End of file debug
