@@ -269,11 +269,11 @@ endif
 ##
 ##  New default settings
 ##
-##FC=gfortran
-##FFLAGS=-O3
+#FC=gfortran
+#FFLAGS=-O3
 ##FFLAGS_DOUBLE=-fdefault-real-8
-##F77=$(FC)
-##CC=gcc
+#F77=$(FC)
+#CC=gcc
 ##
 ## Settings for individual machines
 ##
