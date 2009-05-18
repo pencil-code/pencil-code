@@ -60,7 +60,7 @@ link_src_files()
   to_link=
   for file in $srcdir/*.f90 $srcdir/*.f $srcdir/*.c \
               $srcdir/Makefile.src $srcdir/Makefile.depend \
-              $srcdir/.cvsignore $srcdir/*.h $srcdir/scripts
+              $srcdir/*.h $srcdir/scripts
   do
     if [ -f $file ] || [ -d $file ]; then
       if [ -h "`basename $file`" ]; then
