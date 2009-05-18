@@ -862,9 +862,9 @@ module Interstellar
           enddo
 
         case default
-          !
-          !  Catch unknown values
-          !
+!
+!  Catch unknown values
+!
           write(unit=errormsg,fmt=*) 'No such value for initinterstellar(' &
                            //trim(iinit_str)//'): ',trim(initinterstellar(j))
           call fatal_error('init_interstellar',errormsg)
@@ -881,7 +881,7 @@ module Interstellar
 !
 !  Initialize cooling to avoid errors from shearing boundary conditions.
 !
-!      f(l1:l2,m1:m2,n1:n2,icooling)=0.0
+      f(l1:l2,m1:m2,n1:n2,icooling)=0.0
 !
       call tidy_SNRs
 !
