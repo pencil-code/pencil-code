@@ -1,0 +1,32 @@
+! vim:set filetype=fortran:
+!
+! Kappa-mechanism in vertically stratified atmosphere
+! Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.4 2009/02/02 10:44:01 dintrans Exp $',
+  ip    = 14,                  ! debugging parameter
+  xyz0  = 0., 0., 0.,          ! first corner of box
+  xyz1  = 0., 0., 1.,          ! second corner of box
+  lperi = T , T , F,           ! periodic direction?
+  bcz   = 's','s','a','a2','c3:cT',
+  lwrite_ic=T,
+  lwrite_2d=T
+/
+&eos_init_pars
+  cs0=0.8165, rho0=2.5e-3
+/
+&hydro_init_pars
+  inituu='gaussian-noise', ampluu=3e-4
+/
+&density_init_pars
+/
+&grav_init_pars
+  gravz_profile='const', gravz=-7.
+/
+&entropy_init_pars
+  ltemperature_nolog=T,
+  initlnTT(1)='rad_equil', Fbot=2e-2, Kmax=1e-2, Kmin=3e-3, Tbump=2.1,
+  hole_slope=7.,hole_width=0.4,
+  initlnTT(2)='blob_hs', ampl_lnTT=0.1, center1_z=0.8
+/

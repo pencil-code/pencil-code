@@ -1,0 +1,29 @@
+!  vim:set filetype=fortran:  (for vim)
+!                               -*-f90-*-   (for emacs)
+!
+! Convection in vertically stratified atmosphere/solar convection zone
+! Run parameters
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.5 2009/04/26 16:08:32 dintrans Exp $',
+  nt=100, it1=10, isave=1000, itorder=3, 
+  dsnap=0.25, dvid=0.25,
+  lADI=T, !dt=1e-4
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+  lupw_lnrho=T
+/
+&grav_run_pars
+/
+&entropy_run_pars
+  !lupw_lnTT=T
+  !hcond0=1e-3
+  !iheatcond='K-arctan'
+/
+&viscosity_run_pars
+  ivisc='nu-const', nu=5e-4
+/
