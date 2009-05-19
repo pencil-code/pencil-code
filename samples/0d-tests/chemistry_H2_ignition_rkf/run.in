@@ -19,10 +19,14 @@
 /
 &entropy_run_pars
   lupw_lnTT=T
+  lviscous_heat=F
+  ladvection_temperature=F
 /
 &chemistry_run_pars
    ldiffusion=F
    ladvection=F
+   lheatc_chemistry=F
+   lreactions=T
 /
 &viscosity_run_pars
  ivisc='nu-mixture'
