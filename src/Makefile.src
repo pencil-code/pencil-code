@@ -271,7 +271,10 @@ endif
 ##
 #FC=gfortran
 #FFLAGS=-O3
+###############################
+## This line damages the chemistry auto-test
 ##FFLAGS_DOUBLE=-fdefault-real-8
+###############################
 #F77=$(FC)
 #CC=gcc
 ##

@@ -311,7 +311,14 @@ module Chemistry
       endif
 !
 
-      
+      if ((nxgrid==1) .and. (nygrid==1) .and. (nzgrid==1)) then
+       ll1=1
+       ll2=mx
+       mm1=m1
+       mm2=m2
+       nn1=n1
+       nn2=n2
+      else
       if (nxgrid==1) then
        ll1=l1
        ll2=l2
@@ -336,6 +343,7 @@ module Chemistry
        nn2=mz
       endif
 
+     endif
 
 
       call keep_compiler_quiet(f)
@@ -1572,7 +1580,7 @@ endif
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: gchemspec
-      real, dimension (nx) :: ugchemspec, sum_DYDT, ghYrho_uu
+      real, dimension (nx) :: ugchemspec, sum_DYDT, ghYrho_uu=0.
       type (pencil_case) :: p
 !
 !  indices
@@ -1594,6 +1602,7 @@ endif
 !
 !  loop over all chemicals
 !
+
       do k=1,nchemspec
 !
 !  advection terms
@@ -1662,7 +1671,9 @@ endif
         enddo
        endif
 !
+       if (nxgrid >1) then
         call dot_mn(p%ghYrho,p%uu,ghYrho_uu)
+       endif
 !
 
         if (l1step_test) then
@@ -1672,15 +1683,15 @@ endif
             !/(p%cp-Rgas*p%mu1)&
             -(hYrho_full(l1:l2,m,n)*p%divu(:)+ghYrho_uu(:))/p%TT(:)*p%cv1/p%rho(:)
         endif
-!
+
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + RHS_T_full(l1:l2,m,n)
 
 !print*,'nat2',maxval(RHS_T_full),minval(RHS_T_full)
 
 !
-
         if (lheatc_chemistry) call calc_heatcond_chemistry(f,df,p)
 !
+
       endif
 !
 !  For the timestep calculation, need maximum diffusion
@@ -4068,7 +4079,7 @@ endif
         endif
 
 !
-! Natalia: this subroutine is still under construction
+! falia: this subroutine is still under construction
 ! Please, do not remove this commented part !!!!!
 !
   
