@@ -4039,8 +4039,8 @@ module Magnetic
 !  Amplitude factors
 !
       ampl_lr=+0.
-      ampl_ux=+ampl
-      ampl_uy=+0.
+      ampl_ux=+0.
+      ampl_uy=+ampl
 !
 !  ux and Ay.
 !  Don't overwrite the density, just add to the log of it.
