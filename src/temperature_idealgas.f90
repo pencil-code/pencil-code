@@ -161,12 +161,12 @@ module Entropy
       use EquationOfState, only : cs2bot, cs2top, gamma, gamma1, &
                                   select_eos_variable
       use Sub, only: step,der_step
-      use SharedVariables, only: put_shared_variable
       use Mpicomm, only: stop_it
+      use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: hcond, dhcond
-      real, dimension (mx) :: hcondADI, dhcondADI
+      real, dimension (mx) :: hcondADI
       logical :: lstarting, lnothing
       type (pencil_case) :: p
       integer :: i, ierr
@@ -306,9 +306,9 @@ module Entropy
 !  as shared variables
 !
       if (initlnTT(1).eq.'rad_equil') then
-        call heatcond_TT(f(:,4,n1,ilnTT), hcondADI, dhcondADI)
-!       hcondADI=spread(Kmax, 1, mx)
+        call heatcond_TT(f(:,4,n1,ilnTT), hcondADI)
         call put_shared_variable('hcond0', hcondADI, ierr)
+        tmp_ADI=hcondADI
       else
         call put_shared_variable('hcond0', hcond0, ierr)
       endif
@@ -1573,34 +1573,36 @@ module Entropy
 !
     endsubroutine ADI_Kprof
 !***********************************************************************
-    subroutine heatcond_TT_2d(TT,hcond,dhcond)
+    subroutine heatcond_TT_2d(TT, hcond, dhcond)
 !
 ! 07-Sep-07/gastine: computed 2-D radiative conductivity hcond(T) with
 ! its derivative dhcond=dhcond(T)/dT.
 !
       implicit none
 
-      real, dimension(mx,mz) :: TT, arg, hcond, dhcond
+      real, dimension(mx,mz) :: TT, arg, hcond
+      real, dimension(mx,mz), optional :: dhcond
 !
       arg=hole_slope*(TT-Tbump-hole_width)*(TT-Tbump+hole_width)
       hcond=Kmax+hole_alpha*(-pi/2.+atan(arg))
-      dhcond=2.*hole_alpha/(1.+arg**2)*hole_slope*(TT-Tbump)
+      if (present(dhcond)) dhcond=2.*hole_alpha/(1.+arg**2)*hole_slope*(TT-Tbump)
 !
     endsubroutine heatcond_TT_2d
 !***********************************************************************
-    subroutine heatcond_TT_1d(TT,hcond,dhcond)
+    subroutine heatcond_TT_1d(TT, hcond, dhcond)
 !
 ! 18-Sep-07/dintrans: computed 1-D radiative conductivity 
 ! hcond(T) with its derivative dhcond=dhcond(T)/dT.
 !
       implicit none
 
-      real, dimension(:)          :: TT, hcond, dhcond
-      real, dimension(size(TT,1)) :: arg
+      real, dimension(:)           :: TT, hcond
+      real, dimension(:), optional :: dhcond
+      real, dimension(size(TT,1))  :: arg
 !
       arg=hole_slope*(TT-Tbump-hole_width)*(TT-Tbump+hole_width)
       hcond=Kmax+hole_alpha*(-pi/2.+atan(arg))
-      dhcond=2.*hole_alpha/(1.+arg**2)*hole_slope*(TT-Tbump)
+      if (present(dhcond)) dhcond=2.*hole_alpha/(1.+arg**2)*hole_slope*(TT-Tbump)
 !
     endsubroutine heatcond_TT_1d
 !***********************************************************************
@@ -1611,11 +1613,12 @@ module Entropy
 !
       implicit none
 
-      real :: TT, arg, hcond, dhcond
+      real :: TT, arg, hcond
+      real, optional :: dhcond
 !
       arg=hole_slope*(TT-Tbump-hole_width)*(TT-Tbump+hole_width)
       hcond=Kmax+hole_alpha*(-pi/2.+atan(arg))
-      dhcond=2.*hole_alpha/(1.+arg**2)*hole_slope*(TT-Tbump)
+      if (present(dhcond)) dhcond=2.*hole_alpha/(1.+arg**2)*hole_slope*(TT-Tbump)
 !
     endsubroutine heatcond_TT_point
 !***********************************************************************

@@ -5417,20 +5417,23 @@ module Boundcond
 !
       use SharedVariables, only: get_shared_variable
 !
-      real, dimension(:), pointer :: hcond
+!     real, dimension(:), pointer :: hcond
       real, pointer :: Fbot
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx) :: tmp_x
+      real, dimension (mx) :: tmp_x, hcond
       integer :: i,ierr
 !
 !  Do the `c3' boundary condition (constant heat flux) for TT
 !  at the bottom _only_ in the ADI case where hcond is variable.
 !  TT version: enforce dT/dz = - Fbot/K
 !      
-      call get_shared_variable('hcond0', hcond, ierr)
-      if (ierr/=0) call stop_it("bc_lnTT_flux_z: "//&
-           "there was a problem when getting hcond")      
+! 19-mai-2009/dintrans: temporary trick to fix the pointer pb with gfortran
+! --> get hcond from tmp_ADI (cdata.f90) instead of get_shared_variable
+!     call get_shared_variable('hcond0', hcond, ierr)
+!     if (ierr/=0) call stop_it("bc_lnTT_flux_z: "//&
+!          "there was a problem when getting hcond")      
+      hcond=tmp_ADI
       call get_shared_variable('Fbot', Fbot, ierr)
       if (ierr/=0) call stop_it("bc_lnTT_flux_z: "//&
            "there was a problem when getting Fbot")      

@@ -106,6 +106,9 @@ module Cdata
   logical :: lfirstpoint=.false.,llastpoint=.false.
   logical :: lmaxadvec_sum=.false.,old_cdtv=.false.
   character (len=20) :: timestep_scaling(mvar)='cons_err'
+! 19-mai-2009/dintrans: temporary trick to fix the pointer pb with gfortran (for
+! the implicit computation of the radiative term)
+  real, dimension (mx) :: tmp_ADI
 !
 !  Input/output of data.
 !
