@@ -165,11 +165,11 @@ module Entropy
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx)   :: hcond,dhcond
+      real, dimension (nx) :: hcond, dhcond
+      real, dimension (mx) :: hcondADI, dhcondADI
       logical :: lstarting, lnothing
       type (pencil_case) :: p
       integer :: i, ierr
-      real, dimension (mx) :: hcondADI,dhcondADI
 !
       if (.not. leos) then
          call fatal_error('initialize_entropy','EOS=noeos but temperature_idealgas requires an EQUATION OF STATE for the fluid')
@@ -306,15 +306,15 @@ module Entropy
 !  as shared variables
 !
       if (initlnTT(1).eq.'rad_equil') then
-        call heatcond_TT(f(:,4,n1,ilnTT),hcondADI,dhcondADI)
-        print*,'Kmax,hcond=',Kmax,hcondADI
-        call put_shared_variable('hcond0',hcondADI,ierr)
+        call heatcond_TT(f(:,4,n1,ilnTT), hcondADI, dhcondADI)
+!       hcondADI=spread(Kmax, 1, mx)
+        call put_shared_variable('hcond0', hcondADI, ierr)
       else
-        call put_shared_variable('hcond0',hcond0,ierr)
+        call put_shared_variable('hcond0', hcond0, ierr)
       endif
       if (ierr/=0) call stop_it("initialize_entropy: "//&
            "there was a problem when putting hcond0")
-      call put_shared_variable('Fbot',Fbot,ierr)
+      call put_shared_variable('Fbot', Fbot, ierr)
       if (ierr/=0) call stop_it("initialize_entropy: "//&
            "there was a problem when putting Fbot")
 !
