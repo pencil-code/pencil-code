@@ -454,6 +454,22 @@ module Shear
 !***********************************************************************
     subroutine global_baroclinic(f,df,p)
 !
+!  This subroutine adds the terms to the shearing box equations that 
+!  come from an underlying large scale entropy gradient. If the pressure
+!  falls like P=P0/(r/R)**beta, then a Taylor expansion around R leads to
+!  P=P0*(1-beta/R0*x), since r=R0+x. This extra term enters on the equations
+!  as 
+!
+!     d(ux)/dt = usual terms + beta*P0/(rho*R0) - beta*P0/(rho0*R0) 
+!     d(EE)/dt = usual terms + beta*E0*ux/R0
+!
+!  The last term on the RHS of the momentum equation is because the underlying 
+!  entropy gradient also leads to a further reduction of the rotational velocity. 
+!  Having only the second term implemented would lead to a large scale wind as 
+!  the momentum equation tries to adjust to the new rotational speed. 
+!  
+!  10-apr-09/wlad: coded
+!
       use EquationOfState, only: rho0,cs20,gamma11,gamma1
       use Messages, only: fatal_error
 !
@@ -466,9 +482,9 @@ module Shear
 !  x-momentum
 !      
       P0=rho0*cs20*gamma11
-      df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-Bshear*P0/rho0*(p%rho1*rho0-1.)
+      df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+Bshear*P0/rho0*(p%rho1*rho0-1.)
 !
-!  Right hand side on the energy equation
+!  Right hand side on the energy equation - background energy gradient
 !
       rhs=Bshear*P0*p%uu(:,1)/gamma1 
 !
