@@ -306,6 +306,7 @@ module Entropy
 !  as shared variables
 !
       if (initlnTT(1).eq.'rad_equil') then
+        print*, 'f(:,4,n1,ilnTT)=', f(:,4,n1,ilnTT)
         call heatcond_TT(f(:,4,n1,ilnTT), hcondADI)
         call put_shared_variable('hcond0', hcondADI, ierr)
         tmp_ADI=hcondADI
@@ -666,7 +667,7 @@ module Entropy
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension(nx) :: Hmax=0., hcond, dhcond, thdiff
+      real, dimension(nx) :: Hmax=0., hcond, thdiff
       real, dimension (nx) :: vKpara,vKperp,rhs,tmp
       real :: fradtop
       integer :: j,ju
@@ -798,9 +799,9 @@ module Entropy
         if (idiag_TTmin/=0) call max_mn_name(-p%TT,idiag_TTmin,lneg=.true.)
         if (idiag_TTm/=0)   call sum_mn_name(p%TT,idiag_TTm)
         if (idiag_fradtop/=0.and.n==n2) then
-          call heatcond_TT(p%TT,hcond,dhcond)
+          call heatcond_TT(p%TT, hcond)
           fradtop=sum(-hcond*p%glnTT(:,3))/nx
-          call save_name(fradtop,idiag_fradtop)
+          call save_name(fradtop, idiag_fradtop)
         endif
         if (idiag_ethm/=0)   call sum_mn_name(p%ee/p%rho1,idiag_ethm)
         if (idiag_ssm/=0)   call sum_mn_name(p%ss,idiag_ssm)
@@ -881,7 +882,7 @@ module Entropy
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mz) :: temp,lnrho
-      real :: hcond, dhcond, dtemp, dlnrho, ss
+      real :: hcond, dtemp, dlnrho, ss
       integer :: i
 !
       if (.not. ltemperature_nolog) &
@@ -898,7 +899,7 @@ module Entropy
 !
 ! Calculate the n2-1 gridpoint thanks to a 1st order forward Euler scheme
 !
-      call heatcond_TT(temp(n2),hcond,dhcond)
+      call heatcond_TT(temp(n2), hcond)
       dtemp=Fbot/hcond
       temp(n2-1)=temp(n2)+dz*dtemp
       dlnrho=(-gamma/gamma1*gravz-dtemp)/temp(n2)
@@ -909,7 +910,7 @@ module Entropy
 ! Now we use a 2nd order centered scheme for the other gridpoints
 !
       do i=n2-1,n1+1,-1
-        call heatcond_TT(temp(i),hcond,dhcond)
+        call heatcond_TT(temp(i), hcond)
         dtemp=Fbot/hcond
         temp(i-1)=temp(i+1)+2.*dz*dtemp
         dlnrho=(-gamma/gamma1*gravz-dtemp)/temp(i)
@@ -929,7 +930,7 @@ module Entropy
         write(11,'(5a14)') 'z','rho','temp','ss','hcond'
         do i=n2,n1,-1
           call eoscalc(ilnrho_TT,lnrho(i),temp(i),ss=ss)
-          call heatcond_TT(temp(i),hcond,dhcond)
+          call heatcond_TT(temp(i), hcond)
           write(11,'(5e14.5)') z(i),exp(lnrho(i)),temp(i),ss,hcond
         enddo
         close(11)
@@ -1467,16 +1468,16 @@ module Entropy
       implicit none
 
       integer :: i,j,ierr
-      real, dimension(mx,my,mz,mfarray) :: finit,f
-      real, dimension(mx,mz) :: source,hcond,dhcond,finter,val,TT,rho
+      real, dimension(mx,my,mz,mfarray) :: finit, f
+      real, dimension(mx,mz) :: source, hcond, dhcond, finter, val, TT, rho
       real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
-      real, dimension(mx)    :: hcondADI, dhcondADI
+      real, dimension(mx)    :: hcondADI
       real    :: alpha, aalpha, bbeta
       real    :: dx_2, dz_2, cp1
 
       source=(f(:,4,:,ilnTT)-finit(:,4,:,ilnTT))/dt
-      call heatcond_TT(finit(:,4,:,ilnTT),hcond,dhcond)
+      call heatcond_TT(finit(:,4,:,ilnTT), hcond, dhcond)
       call get_cp1(cp1)
       dx_2=1./dx**2
       dz_2=1./dz**2
@@ -1568,8 +1569,8 @@ module Entropy
 !
 ! refresh hcond needed for the 'c3' condition in boundcond.f90
 !
-      call heatcond_TT(f(:,4,n1,ilnTT),hcondADI,dhcondADI)
-      call put_shared_variable('hcond0',hcondADI,ierr)
+      call heatcond_TT(f(:,4,n1,ilnTT), hcondADI)
+      call put_shared_variable('hcond0', hcondADI, ierr)
 !
     endsubroutine ADI_Kprof
 !***********************************************************************
@@ -1826,8 +1827,8 @@ module Entropy
         f(:,:,n1-1,ilnTT)=2.*f(:,:,n1,ilnTT)-f(:,:,n1+1,ilnTT)
       else
 ! Constant flux at the bottom: compute new hcond(n1) before
-! use available hcondp and hcondm to save memory
-        call heatcond_TT(f(4,4,n1,ilnTT), hcondp, hcondm)
+! use available hcondp to save memory
+        call heatcond_TT(f(4,4,n1,ilnTT), hcondp)
         do i=1,nghost
           f(:,:,n1-i,ilnTT)=f(:,:,n1+i,ilnTT)+2.*i*dz*Fbot/hcondp
         enddo

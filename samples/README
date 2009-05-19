@@ -45,6 +45,7 @@ testfield_z                         Axel Brandenburg <brandenb/nordita[dot]dk>
 1d-tests/sod_10                     Axel Brandenburg <brandenb/nordita[dot]dk>
 1d-tests/sod_10s                    Axel Brandenburg <brandenb/nordita[dot]dk>
 1d-tests/solar-atmosphere           Tobias Heinemann <T.Heinemann/damtp[dot]cam[dot]ac[dot]uk>
+1d-tests/implicit_diffusion         Boris Dintrans <dintrans/ast[dot]obs-mip[dot]fr>
 2d-tests/A3+chi11+Ra1e5             Wolfgang Dobler <wdobler/gmail[dot]com>
 2d-tests/A3+chi11+Ra1e5             Axel Brandenburg <brandenb/nordita[dot]dk>
 2d-tests/bubble                     Boris Dintrans <dintrans/ast[dot]obs-mip[dot]fr>
