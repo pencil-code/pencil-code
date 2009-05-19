@@ -271,10 +271,7 @@ endif
 ##
 #FC=gfortran
 #FFLAGS=-O3
-###############################
-## This line damages the chemistry auto-test
-##FFLAGS_DOUBLE=-fdefault-real-8
-###############################
+#FFLAGS_DOUBLE=-fdefault-real-8
 #F77=$(FC)
 #CC=gcc
 ##
@@ -350,7 +347,6 @@ endif
 #FFLAGS=-O3 -I /home/ajohan/local/openmpi/include/ #(dintel)
 #CFLAGS=-DFUNDERSC=2 #(dintel)
 #LD_MPI=-L /home/ajohan/local/openmpi/lib -lmpi -lmpi_f77 #(dintel)
-#FFLAGS_DOUBLE=-fdefault-real-8 #(dintel)
 #FC=ifort #(milipeia)
 #FC=ifort #(swift)
 #FFLAGS=-O3 -I/usr/local/mpich/include #(swift)
