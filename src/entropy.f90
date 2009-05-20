@@ -117,6 +117,7 @@ module Entropy
       widthss,    &
       epsilon_ss, &
       mixinglength_flux, &
+      chi_t, &
       pp_const, &
       ss_left,ss_right,ss_const,mpoly0,mpoly1,mpoly2,isothtop, &
       khor_ss,thermal_background,thermal_peak,thermal_scaling,cs2cool, &
@@ -644,6 +645,9 @@ module Entropy
       call put_shared_variable('chi',chi,ierr)
       if (ierr/=0) call stop_it("initialize_entropy: "//&
            "there was a problem when putting chi")
+      call put_shared_variable('chi_t',chi_t,ierr)
+      if (ierr/=0) call stop_it("initialize_entropy: "//&
+           "there was a problem when putting chi_t")
       call put_shared_variable('lmultilayer',lmultilayer,ierr)
       if (ierr/=0) call stop_it("initialize_entropy: "//&
            "there was a problem when putting lmultilayer")
@@ -2359,7 +2363,7 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
 !
 !  add heat conduction to entropy equation
 !
-      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
+      df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+thdiff
       if (headtt) print*,'calc_heatcond_constchi: added thdiff'
 !
 !  check maximum diffusion from thermal diffusion

@@ -243,6 +243,7 @@ module Register
           //'unit_velocity, unit_density, etc, are in cgs'
         hbar=hbar_cgs/(unit_energy*unit_time)
         k_B=k_B_cgs/(unit_energy/unit_temperature)
+        mu0=mu0_cgs*unit_density*(unit_velocity/unit_magnetic)**2
         sigmaSB=sigmaSB_cgs/(unit_flux/unit_temperature**4)
         m_u=m_u_cgs/unit_mass
         m_p=m_p_cgs/unit_mass
@@ -257,6 +258,7 @@ module Register
             'initialize_modules: unit_velocity, unit_density, etc, are in SI'
         hbar=hbar_cgs*1e-7/(unit_energy*unit_time)
         k_B=1e-7*k_B_cgs/(unit_energy/unit_temperature)
+        mu0=1e-7*mu0_cgs*unit_density*(unit_velocity/unit_magnetic)**2
         m_u=m_u_cgs*1e-3/unit_mass
         m_p=m_p_cgs*1e-3/unit_mass
         m_e=m_e_cgs*1e-3/unit_mass

@@ -13,11 +13,6 @@ module Cdata
 !
   public
 !
-!  pi and its derivatives.
-!
-  real, parameter :: pi=3.14159265358979324D0
-  real, parameter :: pi_1=1./pi,pi4_1=pi**(-4)
-!
 !  Tiny and huge numbers.
 !
   real, parameter :: epsi=5*epsilon(1.0),tini=5*tiny(1.0),huge1=0.2*huge(1.0)
@@ -129,6 +124,7 @@ module Cdata
   character (len=3) :: unit_system='cgs'
   double precision :: unit_length=impossible,unit_velocity=impossible
   double precision :: unit_density=impossible,unit_temperature=impossible
+  double precision :: unit_magnetic=sqrt(4*pi)
 !  Derived units
   double precision :: unit_mass,unit_energy,unit_time,unit_flux
   double precision :: k_B,m_u,m_p,m_e,m_H,m_He,eV, &

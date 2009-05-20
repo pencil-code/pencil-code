@@ -74,7 +74,6 @@ module Cparam
   real, parameter :: impossible=3.9085e37
   integer, parameter :: impossible_int= 1000000000
 !
-!
 ! Diagnostic variable types
 !
 !  Values > 0 get maxed across all  processors before any
@@ -92,11 +91,18 @@ module Cparam
   integer, parameter :: ilabel_sum_weighted=7,ilabel_sum_weighted_sqrt=8
   integer, parameter :: ilabel_sum_lim=9
 !
+!  pi and its derivatives
+!
+  real, parameter :: pi=3.14159265358979324D0
+  real, parameter :: pi_1=1./pi,pi4_1=pi**(-4)
+!
 ! physical constants, taken from:
 ! http://physics.nist.gov/cuu/Constants/index.html
+!
   double precision, parameter :: hbar_cgs=1.054571596d-27  ! [erg*s]
   double precision, parameter :: k_B_cgs=1.3806505d-16     ! [erg/K]
   double precision, parameter :: m_u_cgs=1.66053886d-24    ! [g]
+  double precision, parameter :: mu0_cgs=4*pi              ! [cgs]
   ! Better express R_cgs as a derive quantity (i.e. don't define here...)
   ! (Not done yet since it breaks the interstellar test)
   !double precision, parameter :: R_cgs=k_B_cgs/m_u_cgs     ! [erg/K]
@@ -114,7 +120,6 @@ module Cparam
   double precision, parameter :: G_Newton_cgs=6.6742d-8    ! [cm3/g/s2]
 !
   logical, parameter :: NO_WARN=.false.
-!
 !
 ! Data structure used to gather slice information from
 ! the various modules.
@@ -153,7 +158,4 @@ module Cparam
   integer, parameter :: iBC_Z_TOP=3
   integer, parameter :: iBC_Z_BOT=-3
 !
-!
-!
 endmodule Cparam
-

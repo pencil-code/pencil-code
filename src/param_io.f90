@@ -66,6 +66,7 @@ module Param_IO
        coord_system,lequidist,coeff_grid,zeta_grid0,grid_func,xyz_star, &
        lwrite_ic,lnowrite,luniform_z_mesh_aspect_ratio, &
        unit_system,unit_length,unit_velocity,unit_density,unit_temperature, &
+       unit_magnetic, &
        c_light,G_Newton,hbar, &
        random_gen,nfilter,lserial_io, &
        lread_oldsnap,lread_oldsnap_nomag,lread_oldsnap_nopscalar, &
