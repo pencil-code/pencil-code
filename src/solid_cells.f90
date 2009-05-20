@@ -13,30 +13,42 @@ module Solid_Cells
   
   include 'solid_cells.h'
 
-  integer, parameter           :: max_items=10
-  integer                      :: ncylinders,nrectangles,dummy
-  real, dimension(max_items,5) :: cylinder
-  real, dimension(max_items,7) :: rectangle
-  real, dimension(max_items)   :: cylinder_radius
-  real, dimension(max_items)   :: cylinder_temp=703.0
-  real, dimension(max_items) :: cylinder_xpos,cylinder_ypos,cylinder_zpos
-  integer, dimension(mx,my,mz,4)  :: ba,ba_shift
+  integer, parameter            :: max_items=10
+  integer                       :: ncylinders,nrectangles,nforcepoints,dummy
+  real, dimension(max_items,5)  :: cylinder
+  real, dimension(max_items,7)  :: rectangle
+  real, dimension(max_items)    :: cylinder_radius
+  real, dimension(max_items)    :: cylinder_temp=703.0
+  real, dimension(max_items)    :: cylinder_xpos,cylinder_ypos,cylinder_zpos
+  integer, dimension(mx,my,mz,4):: ba,ba_shift
   real :: skin_depth=0, init_uu=0, ampl_noise=0, cylinder_skin=0
   real :: limit_close_linear
   character (len=labellen), dimension(ninit) :: initsolid_cells='nothing'
   character (len=labellen) :: interpolation_method='staircase'
   integer, parameter :: iradius=1, ixpos=2,iypos=3,izpos=4,itemp=5
   logical :: lclose_interpolation=.false., lclose_linear=.false.
+  real                          :: c_dragx, c_dragy
+  real                          :: rhosum
+  integer                       :: irhocount
+
+!!ForDebug->!!! Debug:
+!!ForDebug->  real                          :: testcpx,testcpy,testctx,testcty
+!!ForDebug->  integer                       :: testcounter
 !
   namelist /solid_cells_init_pars/ &
        cylinder_temp, ncylinders, cylinder_radius, cylinder_xpos, &
        cylinder_ypos, cylinder_zpos, initsolid_cells, skin_depth, init_uu, &
-       ampl_noise,interpolation_method,cylinder_skin,lclose_interpolation, &
-       lclose_linear
+       ampl_noise,interpolation_method, nforcepoints,cylinder_skin,&
+       lclose_interpolation,lclose_linear
 !
   namelist /solid_cells_run_pars/  &
        interpolation_method,cylinder_skin,lclose_interpolation,lclose_linear
 !
+  ! diagnostic variables (need to be consistent with reset list below)
+  integer :: idiag_c_dragx=0       ! DIAG_DOC: 
+  integer :: idiag_c_dragy=0       ! DIAG_DOC: 
+!
+  integer, allocatable :: fpnearestgrid(:,:,:)
   contains
 !***********************************************************************
     subroutine initialize_solid_cells
@@ -74,6 +86,15 @@ module Solid_Cells
       call find_solid_cell_boundaries
       call calculate_shift_matrix
 !
+      !
+      ! Find nearest grid point of the "forcepoints" on all cylinders
+      ! (needs also to be called elsewhere if cylinders move)
+      !
+      allocate(fpnearestgrid(ncylinders,nforcepoints,3))
+      call fp_nearest_grid
+      rhosum    = 0.0
+      irhocount = 0
+      !
     endsubroutine initialize_solid_cells
 !***********************************************************************
     subroutine init_solid_cells(f)
@@ -223,6 +244,7 @@ module Solid_Cells
         end do
         end do
         end do
+if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
       case default
         !
         !  Catch unknown values
@@ -239,6 +261,423 @@ module Solid_Cells
 !
     endsubroutine init_solid_cells
 !***********************************************************************  
+  subroutine fp_nearest_grid
+    !
+    ! Find coordinates for nearest grid point of all the 
+    ! "forcepoints" (fp) for each cylinder (assume cylinder with axis
+    ! parallel to the z direction. Assign values to fpnearestgrid.
+    !
+    ! mar-2009/kragset: coded
+    !
+    
+    integer              :: icyl,iforcepoint, ipoint, inearest, icoordinates(8,3)
+    integer              :: ixl, iyl, izl, ixu, iyu, izu, ju, jl, jm
+    real                 :: rcyl, xcyl, ycyl, zcyl,fpx, fpy, fpz
+    real                 :: dx1, dy1, dz1
+    real                 :: dist_to_fp2(8), dist_to_cent2(8), twopi
+    
+    dx1=1/dx
+    dy1=1/dy
+    dz1=1/dz
+
+    twopi=2.*pi
+
+    ! Loop over all cylinders 
+    do icyl=1,ncylinders
+      rcyl = cylinder(icyl,iradius)
+      xcyl = cylinder(icyl,ixpos)
+      ycyl = cylinder(icyl,iypos)
+      zcyl = z(n)
+      
+      ! Loop over all forcepoints on each cylinder, icyl
+      do iforcepoint=1,nforcepoints
+        
+        fpx = xcyl - rcyl * sin(twopi*(iforcepoint)/nforcepoints)
+        fpy = ycyl - rcyl * cos(twopi*(iforcepoint)/nforcepoints)
+        fpz = z(n)
+        !
+        !  Find nearest grid point in x-direction
+        !          
+        if (nxgrid/=1) then
+          if (fpx .ge. x(l1-1) .and. fpx .le. x(l2+1)) then
+            if (lequidist(1)) then
+              ixl = int((fpx-x(1))*dx1) + 1
+              ixu = ixl+1
+            else
+              !
+              ! Find nearest grid point by bisection if grid is not equidistant
+              !
+              ju=l2+1; jl=l1-1
+              do while((ju-jl)>1)
+                jm=(ju+jl)/2
+                if (fpx > x(jm)) then
+                  jl=jm
+                else
+                  ju=jm
+                endif
+              enddo
+              ixl=jl
+              ixu=ju
+            endif
+          else
+            ixl=xcyl
+            ixu=xcyl
+          endif
+        else
+          print*,"Need nxgrid > 1."
+        endif
+        !
+        !  Find nearest grid point in y-direction
+        !          
+        if (nygrid/=1) then
+          if (fpy .ge. y(m1-1) .and. fpy .le. y(m2+1)) then
+            if (lequidist(2)) then
+              iyl = int((fpy-y(1))*dy1) + 1
+              iyu = iyl+1
+            else
+              !
+              ! Find nearest grid point by bisection if grid is not equidistant
+              !
+              ju=m2; jl=m1
+              do while((ju-jl)>1)
+                jm=(ju+jl)/2
+                if (fpy > y(jm)) then
+                  jl=jm
+                else
+                  ju=jm
+                endif
+              enddo
+              iyl=jl
+              iyu=ju
+            endif
+          else
+            iyl=ycyl
+            iyu=ycyl
+          end if
+        else
+          print*,"Need nygrid > 1."
+        endif
+        !
+        !  Find nearest grid point in z-direction
+        !          
+        if (nzgrid/=1) then
+          if (fpz .ge. z(n1-1) .and. fpz .le. z(n2+1)) then
+            if (lequidist(3)) then
+              izl = int((fpz-z(1))*dz1) + 1
+              izu = izl+1
+            else
+              !
+              ! Find nearest grid point by bisection if grid is not equidistant
+              !
+              ju=n2; jl=n1
+              do while((ju-jl)>1)
+                jm=(ju+jl)/2
+                if (fpz > z(jm)) then
+                  jl=jm
+                else
+                  ju=jm
+                endif
+              enddo
+              izl=jl
+              izu=ju
+            endif
+          else
+            izl=zcyl
+            izu=zcyl
+          end if
+        else
+          ! z direction is irrelevant when in 2D
+          izl=n1
+          izu=n1
+        endif
+        
+        !
+        ! Now, we have the upper and lower (x,y,z)-coordinates: 
+        ! ixl, ixu, iyl, iyu, izl, izu,
+        ! i.e. the eight corners of the grid cell containing the forcepoint (fp).
+        ! Decide which ones are outside the cylinder, and which one of these
+        ! is the closest one to fp:
+        !
+        dist_to_fp2(1) = (x(ixl)-fpx)**2+(y(iyl)-fpy)**2+(z(izl)-fpz)**2 
+        dist_to_fp2(2) = (x(ixu)-fpx)**2+(y(iyl)-fpy)**2+(z(izl)-fpz)**2 
+        dist_to_fp2(3) = (x(ixu)-fpx)**2+(y(iyu)-fpy)**2+(z(izl)-fpz)**2 
+        dist_to_fp2(4) = (x(ixl)-fpx)**2+(y(iyu)-fpy)**2+(z(izl)-fpz)**2 
+        dist_to_fp2(5) = (x(ixl)-fpx)**2+(y(iyl)-fpy)**2+(z(izu)-fpz)**2 
+        dist_to_fp2(6) = (x(ixu)-fpx)**2+(y(iyl)-fpy)**2+(z(izu)-fpz)**2 
+        dist_to_fp2(7) = (x(ixu)-fpx)**2+(y(iyu)-fpy)**2+(z(izu)-fpz)**2 
+        dist_to_fp2(8) = (x(ixl)-fpx)**2+(y(iyu)-fpy)**2+(z(izu)-fpz)**2 
+        dist_to_cent2(1) = (x(ixl)-xcyl)**2+(y(iyl)-ycyl)**2+(z(izl)-zcyl)**2 
+        dist_to_cent2(2) = (x(ixu)-xcyl)**2+(y(iyl)-ycyl)**2+(z(izl)-zcyl)**2 
+        dist_to_cent2(3) = (x(ixu)-xcyl)**2+(y(iyu)-ycyl)**2+(z(izl)-zcyl)**2 
+        dist_to_cent2(4) = (x(ixl)-xcyl)**2+(y(iyu)-ycyl)**2+(z(izl)-zcyl)**2 
+        dist_to_cent2(5) = (x(ixl)-xcyl)**2+(y(iyl)-ycyl)**2+(z(izu)-zcyl)**2 
+        dist_to_cent2(6) = (x(ixu)-xcyl)**2+(y(iyl)-ycyl)**2+(z(izu)-zcyl)**2 
+        dist_to_cent2(7) = (x(ixu)-xcyl)**2+(y(iyu)-ycyl)**2+(z(izu)-zcyl)**2 
+        dist_to_cent2(8) = (x(ixl)-xcyl)**2+(y(iyu)-ycyl)**2+(z(izu)-zcyl)**2
+        icoordinates(1,:) = (/ixl,iyl,izl/)
+        icoordinates(2,:) = (/ixu,iyl,izl/)
+        icoordinates(3,:) = (/ixu,iyu,izl/)
+        icoordinates(4,:) = (/ixl,iyu,izl/)
+        icoordinates(5,:) = (/ixl,iyl,izu/)
+        icoordinates(6,:) = (/ixu,iyl,izu/)
+        icoordinates(7,:) = (/ixu,iyu,izu/)
+        icoordinates(8,:) = (/ixl,iyu,izu/)
+        inearest=0
+        do ipoint=1,8 ! Actually, 4 is sufficient in 2D 
+          if (dist_to_cent2(ipoint) .ge. rcyl**2 .and. inearest .eq. 0) then
+            inearest=ipoint
+          else if (dist_to_cent2(ipoint) .ge. rcyl**2) then
+            if (dist_to_fp2(ipoint) .le. dist_to_fp2(inearest)) then
+              inearest=ipoint
+            end if
+          end if
+        end do
+
+        ! Coordinates of nearest grid point. Zero if outside local domain.
+        if (inearest > 0) then
+          fpnearestgrid(icyl,iforcepoint,:) = icoordinates(inearest,:)
+        else
+          fpnearestgrid(icyl,iforcepoint,:) = 0
+        end if
+
+      end do
+    end do
+    
+  end subroutine fp_nearest_grid
+  !***********************************************************************  
+  subroutine dsolid_dt(f,df,p)
+    !
+    ! Find pressure and stress in all the forcepoints (fp) positioned on 
+    ! cylinder surface, based on values in nearest grid point.
+    !
+    ! mar-2009/kragset: coded
+    !
+    use viscosity, only: getnu
+    
+    real, dimension (mx,my,mz,mfarray), intent(in):: f
+    real, dimension (mx,my,mz,mvar), intent(in)   :: df
+    type (pencil_case), intent(in)                :: p
+
+    real    :: fp_pressure
+    real    :: fp_stress(3,3)
+    integer :: icyl,ifp,ix0,iy0,iz0, i
+    real    :: nu, twonu, xr, yr, rr2, a2
+    real    :: force_x, force_y
+    real    :: twopi, nvec(3)
+
+    if (ldiagnos) then
+      
+      ! Reset cumulating quantities before calculations in first pencil
+      if (imn .eq. 1) then
+        c_dragx=0.
+        c_dragy=0.
+        rhosum=0
+        irhocount=0
+        
+!!ForDebug->!!! Debug:
+!!ForDebug->        testcpx=0
+!!ForDebug->        testctx=0
+!!ForDebug->        testcpy=0
+!!ForDebug->        testcty=0
+!!ForDebug->        testcounter = 0
+
+!!        open(unit=81, file='nvec.dat', position = 'APPEND')
+!!        if (t > 0) then
+!!          close(81)
+!!          STOP
+!!        end if
+
+      end if
+
+
+      if (idiag_c_dragx .ne. 0 .or. idiag_c_dragy .ne. 0) then 
+        call getnu(nu)
+        twopi=2.*3.14159265
+        twonu=2.*nu
+
+        do icyl=1,ncylinders
+          do ifp=1,nforcepoints
+            iy0=fpnearestgrid(icyl,ifp,2)
+            iz0=fpnearestgrid(icyl,ifp,3)
+
+            ! Test: Use this pencil for force calculation?
+            if (iy0 .eq. m .and. iz0 .eq. n) then
+              ix0=fpnearestgrid(icyl,ifp,1)
+              ! Test: ix0 in local domain?
+              if (ix0 .ge. l1 .and. ix0 .le. l2) then
+                !
+                ! Acquire pressure and stress from grid point (ix0,iy0,iz0).
+                !
+                fp_pressure=p%pp(ix0-nghost)
+                fp_stress(:,:)=twonu*p%rho(ix0-nghost)*p%sij(ix0-nghost,:,:)
+                
+                nvec(1) = -sin(twopi*ifp/nforcepoints)
+                nvec(2) = -cos(twopi*ifp/nforcepoints)
+                nvec(3) = 0
+
+!!                write(81,82) t, nvec(1),nvec(2),ifp
+!!82              format(1F15.8, 2F12.8,1I5)
+  
+                ! Force in x direction
+                force_x = -fp_pressure*nvec(1) &
+                    + fp_stress(1,1)*nvec(1) &
+                    + fp_stress(1,2)*nvec(2) & 
+                    + fp_stress(1,3)*nvec(3) 
+                
+                ! Force in y direction
+                force_y = -fp_pressure*nvec(2) &
+                    + fp_stress(2,1)*nvec(1) &
+                    + fp_stress(2,2)*nvec(2) & 
+                    + fp_stress(2,3)*nvec(3) 
+                
+                c_dragx = c_dragx + force_x
+                c_dragy = c_dragy + force_y
+
+!!ForDebug->!!! Debug:
+!!ForDebug->                testcpx=testcpx - fp_pressure*nvec(1)
+!!ForDebug->                testcpy=testcpy - fp_pressure*nvec(2)
+!!ForDebug->                testctx=testctx &
+!!ForDebug->                    + fp_stress(1,1)*nvec(1) &
+!!ForDebug->                    + fp_stress(1,2)*nvec(2) & 
+!!ForDebug->                    + fp_stress(1,3)*nvec(3) 
+!!ForDebug->                testcty=testcty &
+!!ForDebug->                    + fp_stress(2,1)*nvec(1) &
+!!ForDebug->                    + fp_stress(2,2)*nvec(2) & 
+!!ForDebug->                    + fp_stress(2,3)*nvec(3) 
+!!ForDebug->                testcounter = testcounter+1
+
+              end if
+            end if
+          end do
+        end do
+
+        !
+        ! Calculate average density of the domain, excluded
+        ! solid cell regions:
+        !
+        do i=l1,l2
+          do icyl=1,ncylinders
+            a2 = cylinder(icyl,1)**2
+            xr=x(i)-cylinder(icyl,2)
+            yr=y(m)-cylinder(icyl,3)
+            rr2 = xr**2 + yr**2
+            
+            if (ncylinders > 1) then 
+              ! If-test below will not detect if grid point is inside cylinder 
+              ! if more than one cylinder are present. Yet to be implemented.
+              write(*,*) "WARNING: Rho-averaging not implemented for ncylinders > 1"
+            end if
+            if (rr2 .gt. a2) then
+              rhosum = rhosum + p%rho(i-nghost)
+              irhocount = irhocount+1
+            end if
+          end do
+        end do
+
+      end if
+    end if
+
+  end subroutine dsolid_dt
+  !***********************************************************************  
+  subroutine dsolid_dt_integrate
+    !
+    ! Calculate drag- and lift-coefficients for solid cell cylinders
+    ! by integrating fluid force on cylinder surface. 
+    !
+    ! mar-2009/kragset: coded
+    !
+    
+    use mpicomm
+
+    real    :: rhosum_all, c_dragx_all, c_dragy_all, cpx,ctx,cpy,cty
+    integer :: irhocount_all, testcounter_all
+    real    :: norm, refrho0
+
+
+
+    if (ldiagnos) then
+      if (idiag_c_dragx .ne. 0 .or. idiag_c_dragy .ne. 0) then 
+
+        ! Collect and sum rhosum, irhocount, c_dragx and c_dragy
+        call mpireduce_sum_scl(rhosum,rhosum_all)
+        call mpireduce_sum_int(irhocount,irhocount_all)
+        call mpireduce_sum_scl(c_dragx,c_dragx_all)
+        call mpireduce_sum_scl(c_dragy,c_dragy_all)
+
+!!ForDebug->!!! Debug:
+!!ForDebug->        call mpireduce_sum_scl(testcpx,cpx)
+!!ForDebug->        call mpireduce_sum_scl(testcpy,cpy)
+!!ForDebug->        call mpireduce_sum_scl(testctx,ctx)
+!!ForDebug->        call mpireduce_sum_scl(testcty,cty)
+!!ForDebug->        call mpireduce_sum_int(testcounter,testcounter_all)
+        
+        if (lroot) then          
+          refrho0 = rhosum_all / irhocount_all
+          norm = 2. * pi / (ncylinders*nforcepoints*refrho0*init_uu**2)
+          
+          c_dragx = c_dragx_all * norm
+          c_dragy = c_dragy_all * norm
+
+!!ForDebug->!!! Debug:
+!!ForDebug->          cpx=cpx*norm
+!!ForDebug->          cpy=cpy*norm
+!!ForDebug->          ctx=ctx*norm
+!!ForDebug->          cty=cty*norm
+!!ForDebug->          open(unit=81, file='coeffs.dat', position = 'APPEND')
+!!ForDebug->          write(81,82) t, c_dragx, c_dragy, cpx,ctx,cpy,cty,testcounter_all
+!!ForDebug->          close(81)
+!!ForDebug->82        format(1F15.8, 4F12.8, 2X,F15.8,2X,F12.8,1I5)
+          
+        end if
+      end if
+      if (idiag_c_dragx .ne. 0) fname(idiag_c_dragx)=c_dragx
+      if (idiag_c_dragy .ne. 0) fname(idiag_c_dragy)=c_dragy
+    end if
+    
+  end subroutine dsolid_dt_integrate
+  !***********************************************************************  
+  subroutine rprint_solid_cells(lreset,lwrite)
+    !
+    !  Reads and registers print parameters relevant for solid cells
+    !
+    !   mar-2009/kragset: coded
+    !
+    
+    use cdata
+    use sub
+    use diagnostics
+    
+    integer :: iname
+    logical :: lreset,lwr
+    logical, optional :: lwrite
+
+    lwr = .false.
+    if (present(lwrite)) lwr=lwrite
+
+    !
+    !  Reset everything in case of reset
+    ! 
+    if (lreset) then
+      idiag_c_dragx=0 
+      idiag_c_dragy=0
+    end if
+    !
+    !  check for those quantities that we want to evaluate online
+    !
+    do iname=1,nname
+      call parse_name(iname,cname(iname),cform(iname),'c_dragx',idiag_c_dragx)
+      call parse_name(iname,cname(iname),cform(iname),'c_dragy',idiag_c_dragy)
+    end do
+    !
+    !  write column, idiag_XYZ, where our variable XYZ is stored
+    !
+    if (lwr) then
+      write(3,*) 'i_c_dragx=',idiag_c_dragx
+      write(3,*) 'i_c_dragy=',idiag_c_dragy
+    end if
+    
+  end subroutine rprint_solid_cells
+  !***********************************************************************  
     subroutine update_solid_cells(f)
 !
 !  Set the boundary values of the solid area such that we get a 
@@ -1161,5 +1600,20 @@ endif
       endif
 !
     endsubroutine find_point
+!***********************************************************************  
+    subroutine pencil_criteria_solid_cells()
+      !
+      !  All pencils that the Solid_Cells module depends on are specified here.
+      !
+      !  mar-2009/kragset: coded
+      !
+      use Cdata
+      !
+      !! Request p and sij-pencils here
+      !! Request rho-pencil
+      lpenc_requested(i_pp)=.true.
+      lpenc_requested(i_sij)=.true.
+      lpenc_requested(i_rho)=.true.
+    end subroutine pencil_criteria_solid_cells
 !***********************************************************************  
   endmodule Solid_Cells

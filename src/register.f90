@@ -693,6 +693,7 @@ module Register
       use Shear,           only: pencil_criteria_shear
       use Special,         only: pencil_criteria_special
       use Particles_main,  only: particles_pencil_criteria
+      use Solid_cells,     only: pencil_criteria_solid_cells
 !
       call pencil_criteria_grid()
       call pencil_criteria_borderprofiles()
@@ -722,6 +723,7 @@ module Register
       call pencil_criteria_radiation()
       call pencil_criteria_shear()
       call pencil_criteria_special()
+      call pencil_criteria_solid_cells()
       if (lparticles) call particles_pencil_criteria()
 !
     endsubroutine pencil_criteria
@@ -832,6 +834,7 @@ module Register
       use Selfgravity,     only: rprint_selfgravity
       use Special,         only: rprint_special
       use Shock,           only: rprint_shock
+      use solid_cells,     only: rprint_solid_cells
       use Viscosity,       only: rprint_viscosity
       use Shear,           only: rprint_shear
       use TestPerturb,     only: rprint_testperturb
@@ -1030,6 +1033,7 @@ module Register
       call rprint_selfgravity     (lreset,LWRITE=lroot)
       call rprint_special         (lreset,LWRITE=lroot)
       call rprint_shock           (lreset,LWRITE=lroot)
+      call rprint_solid_cells     (lreset,LWRITE=lroot)
       call rprint_viscosity       (lreset,LWRITE=lroot)
       call rprint_shear           (lreset,LWRITE=lroot)
       call rprint_testperturb     (lreset,LWRITE=lroot)

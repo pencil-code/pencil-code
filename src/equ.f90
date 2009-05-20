@@ -60,7 +60,8 @@ module Equ
       use Shear
       use Shock, only: calc_pencils_shock, calc_shock_profile, &
                        calc_shock_profile_simple
-      use Solid_Cells, only: update_solid_cells, freeze_solid_cells
+      use Solid_Cells, only: update_solid_cells, freeze_solid_cells, &
+          dsolid_dt,dsolid_dt_integrate
       use Special
       use Sub
       use Testfield
@@ -469,6 +470,12 @@ module Equ
           call radiative_pressure(f,df,p)
         endif
 !
+!  Find diagnostics related to solid cells (e.g. drag and lift).
+!  Integrating to the full result is done after loops over m and n.
+!
+        if (lsolid_cells) call dsolid_dt(f,df,p)
+!
+!
 !  Add shear if present
 !
         if (lshear) call shearing(f,df,p)
@@ -606,6 +613,11 @@ module Equ
 !
         headtt=.false.
       enddo
+!     
+!  Integrate diagnostics related to solid cells (e.g. drag and lift).
+! 
+     if (lsolid_cells) call dsolid_dt_integrate
+
 !
 !  Calculate the gradient of the potential if there is room allocated in the
 !  f-array.

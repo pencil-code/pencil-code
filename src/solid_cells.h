@@ -11,4 +11,8 @@ public ::  read_solid_cells_run_pars
 public ::  write_solid_cells_init_pars
 public ::  write_solid_cells_run_pars
 public ::  in_solid_cell
+public ::  dsolid_dt
+public ::  dsolid_dt_integrate
+public ::  rprint_solid_cells
+public ::  pencil_criteria_solid_cells
 public ::  close_interpolation

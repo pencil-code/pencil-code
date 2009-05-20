@@ -13,6 +13,11 @@ module Solid_Cells
 !
   include 'solid_cells.h'
 !
+  ! diagnostic variables (need to be consistent with reset list below)
+  integer :: idiag_c_dragx=0       ! DIAG_DOC: 
+  integer :: idiag_c_dragy=0       ! DIAG_DOC: 
+  
+
   contains
 !***********************************************************************
     subroutine initialize_solid_cells
@@ -72,12 +77,11 @@ module Solid_Cells
 !
       logical :: in_solid_cell
       real, dimension(3) :: part_pos
-      real :: part_rad
+      real    :: part_rad
 !
       in_solid_cell=.false.
 !
-      call keep_compiler_quiet(part_rad)
-      call keep_compiler_quiet(part_pos)
+      call keep_compiler_quiet(part_pos )
 !
     endfunction in_solid_cell
 !***********************************************************************
@@ -112,6 +116,80 @@ module Solid_Cells
       call keep_compiler_quiet(unit)
 !
     endsubroutine write_solid_cells_run_pars
+!***********************************************************************
+    subroutine dsolid_dt(f,df,p)
+      real, dimension (mx,my,mz,mfarray):: f
+      real, dimension (mx,my,mz,mvar):: df
+      type (pencil_case):: p
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine dsolid_dt
+!***********************************************************************
+    subroutine dsolid_dt_integrate
+      integer :: unit
+!
+      call keep_compiler_quiet(unit)
+!
+    endsubroutine dsolid_dt_integrate
+!***********************************************************************
+    subroutine rprint_solid_cells(lreset,lwrite)
+      !
+      !  reads and registers print parameters relevant for solid cells
+      !  dummy routine
+      !
+      !   mar-2009/kragset: coded
+      !
+      use Cdata
+      use sub
+      use diagnostics
+      !
+      logical :: lreset,lwr
+      logical, optional :: lwrite
+      integer :: iname
+      !
+      lwr = .false.
+      if (present(lwrite)) lwr=lwrite
+      
+      !
+      !  Reset everything in case of reset
+      ! 
+      if (lreset) then
+        idiag_c_dragx=0 
+        idiag_c_dragy=0
+      end if
+      !
+      !  check for those quantities that we want to evaluate online
+      !
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'c_dragx',idiag_c_dragx)
+        call parse_name(iname,cname(iname),cform(iname),'c_dragy',idiag_c_dragy)
+      end do
+      
+      !
+      !  write column, idiag_XYZ, where our variable XYZ is stored
+      !  idl needs this even if everything is zero
+      !
+      if (lwr) then
+        write(3,*) 'i_c_dragx=',idiag_c_dragx
+        write(3,*) 'i_c_dragy=',idiag_c_dragy
+      end if
+      
+      call keep_compiler_quiet(lreset)
+      
+    end subroutine rprint_solid_cells
+!***********************************************************************  
+    subroutine pencil_criteria_solid_cells()
+      !
+      !  All pencils that the Solid_Cells module depends on are specified here.
+      !
+      !  mar-2009/kragset: dummy
+      !
+      integer :: unit
+!
+      call keep_compiler_quiet(unit)
+!
+    end subroutine pencil_criteria_solid_cells
 !***********************************************************************  
     subroutine close_interpolation(f,ix0,iy0,iz0,icyl,ivar1,xxp,gpp,&
         fluid_point)
@@ -134,4 +212,4 @@ module Solid_Cells
 !
     endsubroutine close_interpolation
 !***********************************************************************  
-  endmodule Solid_Cells
+ endmodule Solid_Cells
