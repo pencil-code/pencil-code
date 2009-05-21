@@ -37,9 +37,9 @@ module Entropy
   include 'entropy.h'
 
   interface heatcond_TT ! Overload subroutine `hcond_TT' function
-    module procedure heatcond_TT_point  ! get one value (hcond, dhcond)
-    module procedure heatcond_TT_1d     ! get 1d-arrays (hcond, dhcond)
-    module procedure heatcond_TT_2d     ! get 2d-arrays (hcond, dhcond)
+    module procedure heatcond_TT_0d  ! get one value (hcond, dhcond)
+    module procedure heatcond_TT_1d  ! get 1d-arrays (hcond, dhcond)
+    module procedure heatcond_TT_2d  ! get 2d-arrays (hcond, dhcond)
   end interface
 
   real :: radius_lnTT=0.1,ampl_lnTT=0.,widthlnTT=2*epsi
@@ -1601,7 +1601,7 @@ module Entropy
 !
     endsubroutine heatcond_TT_1d
 !***********************************************************************
-    subroutine heatcond_TT_point(TT, hcond, dhcond)
+    subroutine heatcond_TT_0d(TT, hcond, dhcond)
 !
 ! 07-Sep-07/gastine: computed the radiative conductivity hcond(T) 
 ! with its derivative dhcond=dhcond(T)/dT at a given temperature.
@@ -1615,7 +1615,7 @@ module Entropy
       hcond=Kmax+hole_alpha*(-pi/2.+atan(arg))
       if (present(dhcond)) dhcond=2.*hole_alpha/(1.+arg**2)*hole_slope*(TT-Tbump)
 !
-    endsubroutine heatcond_TT_point
+    endsubroutine heatcond_TT_0d
 !***********************************************************************
     subroutine boundary_ADI(f_2d,hcond)
 
