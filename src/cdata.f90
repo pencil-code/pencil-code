@@ -101,9 +101,6 @@ module Cdata
   logical :: lfirstpoint=.false.,llastpoint=.false.
   logical :: lmaxadvec_sum=.false.,old_cdtv=.false.
   character (len=20) :: timestep_scaling(mvar)='cons_err'
-! 19-mai-2009/dintrans: temporary trick to fix the pointer pb with gfortran (for
-! the implicit computation of the radiative term)
-  real, dimension (mx) :: tmp_ADI
 !
 !  Input/output of data.
 !
@@ -467,6 +464,7 @@ module Cdata
 !  Implicit advance of the radiative diffusion in the temperature equation.
 !
   logical :: lADI=.false.
+  real, dimension (mx) :: hcondADI
 !
 !  Particle-mesh schemes, such as drag force and particle self-gravity,
 !  sometimes add force to ghost zones. In that case we must fold the force

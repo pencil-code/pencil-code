@@ -166,7 +166,6 @@ module Entropy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: hcond, dhcond
-      real, dimension (mx) :: hcondADI
       logical :: lstarting, lnothing
       type (pencil_case) :: p
       integer :: i, ierr
@@ -306,15 +305,13 @@ module Entropy
 !  as shared variables
 !
       if (initlnTT(1).eq.'rad_equil') then
-        print*, 'f(:,4,n1,ilnTT)=', f(:,4,n1,ilnTT)
-        call heatcond_TT(f(:,4,n1,ilnTT), hcondADI)
-        call put_shared_variable('hcond0', hcondADI, ierr)
-        tmp_ADI=hcondADI
+        ! use hcondADI to dynamically share with boundcond() for the 'c3' BC
+        call heatcond_TT_1d(f(:,4,n1,ilnTT), hcondADI)
       else
         call put_shared_variable('hcond0', hcond0, ierr)
-      endif
-      if (ierr/=0) call stop_it("initialize_entropy: "//&
+        if (ierr/=0) call stop_it("initialize_entropy: "//&
            "there was a problem when putting hcond0")
+      endif
       call put_shared_variable('Fbot', Fbot, ierr)
       if (ierr/=0) call stop_it("initialize_entropy: "//&
            "there was a problem when putting Fbot")
@@ -1463,7 +1460,6 @@ module Entropy
       use Cparam
       use EquationOfState, only: gamma, gamma1, cs2bot, cs2top, get_cp1
       use General, only: tridag
-      use SharedVariables, only: put_shared_variable
 
       implicit none
 
@@ -1472,7 +1468,6 @@ module Entropy
       real, dimension(mx,mz) :: source, hcond, dhcond, finter, val, TT, rho
       real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
-      real, dimension(mx)    :: hcondADI
       real    :: alpha, aalpha, bbeta
       real    :: dx_2, dz_2, cp1
 
@@ -1570,7 +1565,6 @@ module Entropy
 ! refresh hcond needed for the 'c3' condition in boundcond.f90
 !
       call heatcond_TT(f(:,4,n1,ilnTT), hcondADI)
-      call put_shared_variable('hcond0', hcondADI, ierr)
 !
     endsubroutine ADI_Kprof
 !***********************************************************************
@@ -1777,7 +1771,7 @@ module Entropy
 
       implicit none
 
-      integer :: i, j, jj
+      integer :: i, j, jj, ierr
       real, dimension(mx,my,mz,mfarray) :: finit,f
       real, dimension(mz) :: source, rho, TT, hcond, dhcond, arg, hcond1
       real, dimension(nz) :: a, b, c, rhs, work
@@ -1819,20 +1813,9 @@ module Entropy
       call tridag(a,b,c,rhs,work)
       f(4,4,n1:n2,ilnTT)=work+TT(n1:n2)
 !
-! Update ghost zones: always constant temperature at the top while
-! T=cte or Flux=cte at the bottom
-      f(:,:,n2+1,ilnTT)=2.*f(:,:,n2,ilnTT)-f(:,:,n2-1,ilnTT)
-      if (bcz1(ilnTT)=='cT') then
-! Constant temperature at the bottom
-        f(:,:,n1-1,ilnTT)=2.*f(:,:,n1,ilnTT)-f(:,:,n1+1,ilnTT)
-      else
-! Constant flux at the bottom: compute new hcond(n1) before
-! use available hcondp to save memory
-        call heatcond_TT(f(4,4,n1,ilnTT), hcondp)
-        do i=1,nghost
-          f(:,:,n1-i,ilnTT)=f(:,:,n1+i,ilnTT)+2.*i*dz*Fbot/hcondp
-        enddo
-      endif
+! Update the bottom value of hcond as needed in boundcond for the 'c3' BC
+!
+      call heatcond_TT_1d(f(:,4,n1,ilnTT), hcondADI)
 !
     endsubroutine ADI_Kprof_1d
 !***********************************************************************

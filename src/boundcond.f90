@@ -5412,41 +5412,33 @@ module Boundcond
 !***********************************************************************
     subroutine bc_ADI_flux_z(f,topbot)
 !
-!  constant flux boundary condition for temperature (called when bcz='c3')
+!  Constant flux boundary condition for temperature (called when bcz='c3')
+!  at the bottom _only_ in the ADI case where hcond(n1)=hcond(x)
+!  TT version: enforce dT/dz = - Fbot/K
 !  30-jan-2009/dintrans: coded 
 !
       use SharedVariables, only: get_shared_variable
 !
-!     real, dimension(:), pointer :: hcond
       real, pointer :: Fbot
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx) :: tmp_x, hcond
-      integer :: i,ierr
-!
-!  Do the `c3' boundary condition (constant heat flux) for TT
-!  at the bottom _only_ in the ADI case where hcond is variable.
-!  TT version: enforce dT/dz = - Fbot/K
-!      
-! 19-mai-2009/dintrans: temporary trick to fix the pointer pb with gfortran
-! --> get hcond from tmp_ADI (cdata.f90) instead of get_shared_variable
-!     call get_shared_variable('hcond0', hcond, ierr)
-!     if (ierr/=0) call stop_it("bc_lnTT_flux_z: "//&
-!          "there was a problem when getting hcond")      
-      hcond=tmp_ADI
+      real, dimension (mx) :: tmp_x
+      integer :: i, ierr
+      
       call get_shared_variable('Fbot', Fbot, ierr)
       if (ierr/=0) call stop_it("bc_lnTT_flux_z: "//&
            "there was a problem when getting Fbot")      
  
-      if (headtt) print*,'bc_ADI_flux_z: Fbot,hcond,dz=',Fbot,hcond,dz
+      if (headtt) print*,'bc_ADI_flux_z: Fbot, hcondADI, dz=', &
+           Fbot, hcondADI, dz
 
       if (topbot.eq.'bot') then
-        tmp_x=-Fbot/hcond
+        tmp_x=-Fbot/hcondADI
         do i=1,nghost
           f(:,4,n1-i,ilnTT)=f(:,4,n1+i,ilnTT)-2.*i*dz*tmp_x
         enddo
       else
-        call fatal_error('bc_ADI_flux_z','invalid argument')
+        call fatal_error('bc_ADI_flux_z', 'invalid argument')
       endif
 !
     endsubroutine bc_ADI_flux_z
