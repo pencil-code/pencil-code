@@ -293,7 +293,7 @@ module Cdata
 ! yequator = [xyz0(2)+0.5*Lxyz(2) assigned in start.f90 and run.f90
 ! zequator = [xyz0(3)+0.5*Lxyz(3) assigned in start.f90 and run.f90
 !
-  real :: yequator,zequator
+  real :: yequator=0.,zequator=0.
   logical :: lequatory,lequatorz
   integer, parameter :: mname_half=20
   integer, dimension (mname_half) :: itype_name_half=0.
