@@ -283,7 +283,8 @@ def animate_multislices(field=['uu1'],datadir='data/',proc=-1,extension='xz',for
 
 
 def time_slices(field=['uu1'],datadir='data/',proc=-1,extension='xz',format='native',
-                tmin=0.,tmax=1.e38,amin=0.,amax=1.,transform='plane[0]',dtstep=1,oldfile=False):
+                tmin=0.,tmax=1.e38,amin=0.,amax=1.,transform='plane[0]',dtstep=1,
+                deltat=0,oldfile=False):
     """
     read a list of 1D slice files, combine them, and plot the slice in one dimension, and time in the other one.
 
@@ -300,6 +301,7 @@ def time_slices(field=['uu1'],datadir='data/',proc=-1,extension='xz',format='nat
      amax --- maximum value for image scaling
      transform --- insert arbitrary numerical code to combine the slices
      dtstep --- only plot every dt step
+     deltat --- if set to nonzero, plot at fixed time interval rather than step
     """
     
     datadir = os.path.expanduser(datadir)
@@ -341,6 +343,7 @@ def time_slices(field=['uu1'],datadir='data/',proc=-1,extension='xz',format='nat
     islice = 0
     plotplane=[]
     dt=0
+    nextt=tmin
     while 1:
         try:
             raw_data=[]
@@ -373,7 +376,14 @@ def time_slices(field=['uu1'],datadir='data/',proc=-1,extension='xz',format='nat
                 
                 ifirst = False
                 islice += 1
-            dt=(dt+1)%dtstep
+                nextt=t+deltat
+            if deltat==0:
+                dt=(dt+1)%dtstep
+            elif t >= nextt:
+                dt=0
+                nextt=t+deltat
+            else:
+                dt=1
 
     ax = P.axes()
     ax.set_xlabel('t')
