@@ -1472,10 +1472,14 @@ module Entropy
       real    :: dx_2, dz_2, cp1
 
       source=(f(:,4,:,ilnTT)-finit(:,4,:,ilnTT))/dt
-      call heatcond_TT(finit(:,4,:,ilnTT), hcond, dhcond)
       call get_cp1(cp1)
       dx_2=1./dx**2
       dz_2=1./dz**2
+! BC important not for the x-direction (always periodic) but for 
+! the z-direction as we must impose the 'c3' BC at the 2nd-order
+! before going in the implicit stuff
+      call heatcond_TT_2d(finit(:,4,:,ilnTT), hcond, dhcond)
+      call boundary_ADI(finit(:,4,:,ilnTT), hcond(:,n1))
       TT=finit(:,4,:,ilnTT)
       if (ldensity) then
         rho=exp(f(:,4,:,ilnrho))
@@ -1560,11 +1564,9 @@ module Entropy
 !
       f(:,4,:,ilnTT)=finit(:,4,:,ilnTT)+dt*val
 !
-      call boundary_ADI(f(:,4,:,ilnTT),hcond)
+! update hcond used for the 'c3' condition in boundcond.f90
 !
-! refresh hcond needed for the 'c3' condition in boundcond.f90
-!
-      call heatcond_TT(f(:,4,n1,ilnTT), hcondADI)
+      call heatcond_TT_1d(f(:,4,n1,ilnTT), hcondADI)
 !
     endsubroutine ADI_Kprof
 !***********************************************************************
@@ -1617,41 +1619,37 @@ module Entropy
 !
     endsubroutine heatcond_TT_0d
 !***********************************************************************
-    subroutine boundary_ADI(f_2d,hcond)
+    subroutine boundary_ADI(f_2d, hcond)
 
 ! 13-Sep-07/gastine: computed two different types of boundary 
 ! conditions for the implicit solver:
 !     - Always periodic in x-direction
 !     - Possibility to choose between 'cT' and 'c3' in z direction
-! Note: 'c3' means that the flux is constant at the _bottom_ 
-! boundary and the temperature is constant at the top
+! Note: 'c3' means that the flux is constant at the *bottom only*
+!
       implicit none
 
       real, dimension(mx,mz) :: f_2d
-      real, dimension(mx,mz), optional :: hcond
-      integer :: i
+      real, dimension(mx), optional :: hcond
 
 ! x-direction: periodic
       f_2d(1:l1-1,:)=f_2d(l2i:l2,:)
       f_2d(l2+1:mx,:)=f_2d(l1:l1i,:)
-! z-direction: always constant temperature at the top and cT or c3 at
-! the bottom
-      f_2d(:,n2+1)=2.*f_2d(:,n2)-f_2d(:,n2-1)
-
-      select case (bcz1(ilnTT))
-        case('cT')
-          f_2d(:,n1-1)=2.*f_2d(:,n1)-f_2d(:,n1+1)
 !
-! Constant flux at the bottom
-        case('c3')
+! top boundary condition z=z(n2): always constant temperature
+!
+      f_2d(:,n2+1)=2.*f_2d(:,n2)-f_2d(:,n2-1)
+!
+! bottom bondary condition z=z(n1): constant T or imposed flux dT/dz
+!
+      select case (bcz1(ilnTT))
+        case('cT') ! constant temperature
+          f_2d(:,n1-1)=2.*f_2d(:,n1)-f_2d(:,n1+1)
+        case('c3') ! constant flux
           if (.not. present(hcond)) then
-            do i=1,nghost
-              f_2d(:,n1-i)=f_2d(:,n1+i)+2.*i*dz*Fbot/hcond0
-            enddo
+            f_2d(:,n1-1)=f_2d(:,n1+1)+2.*dz*Fbot/hcond0
           else 
-            do i=1,nghost
-              f_2d(:,n1-i)=f_2d(:,n1+i)+2.*i*dz*Fbot/hcond(:,n1)
-            enddo
+            f_2d(:,n1-1)=f_2d(:,n1+1)+2.*dz*Fbot/hcond(:)
           endif
       endselect
 
@@ -1781,8 +1779,11 @@ module Entropy
       call get_cp1(cp1)
       dz_2=1./dz**2
       rho=exp(f(4,4,:,ilnrho))
+! need to set up the 'c3' BC at the 2nd-order before the implicit stuff
+      call heatcond_TT_1d(finit(4,4,:,ilnTT), hcond, dhcond)
+      hcondADI=spread(hcond(1), 1, mx)
+      call boundary_ADI(finit(:,4,:,ilnTT), hcondADI)
       TT=finit(4,4,:,ilnTT)
-      call heatcond_TT(TT, hcond, dhcond)
 !
       do j=n1,n2
         jj=j-nghost
@@ -1813,7 +1814,7 @@ module Entropy
       call tridag(a,b,c,rhs,work)
       f(4,4,n1:n2,ilnTT)=work+TT(n1:n2)
 !
-! Update the bottom value of hcond as needed in boundcond for the 'c3' BC
+! Update the bottom value of hcond used for the 'c3' BC in boundcond
 !
       call heatcond_TT_1d(f(:,4,n1,ilnTT), hcondADI)
 !
