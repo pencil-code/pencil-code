@@ -15,7 +15,7 @@ module Initcond
   implicit none
 
   private
-  public :: arcade_x, vecpatternxy
+  public :: arcade_x, vecpatternxy,  bipolar
   public :: soundwave,sinwave,sinwave_phase,coswave,coswave_phase,cos_cos_sin
   public :: hatwave
   public :: gaunoise, posnoise
@@ -1265,26 +1265,47 @@ module Initcond
 !
     endsubroutine robertsflow
 !***********************************************************************
-    subroutine vecpatternxy(ampl,f,i)
+    subroutine vecpatternxy(ampl,f,i,kx,ky,kz)
 !
-!  Roberts Flow (as initial condition)
+!  horizontal pattern with exponential decay (as initial condition)
 !
 !   9-jun-05/axel: coded
 !
       integer :: i,j
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: ampl,k=1.,kf,fac1
+      real :: ampl,kx,ky,kz
 !
 !  prepare coefficients
 !
-      kf=k*sqrt(2.)
-      fac1=sqrt(2.)*ampl*k/kf
-!
-      j=i+0; f(:,:,:,j)=f(:,:,:,j)-fac1*spread(spread(sin(k*y),1,mx),3,mz)
-!
-      j=i+1; f(:,:,:,j)=f(:,:,:,j)+fac1*spread(spread(sin(k*x),2,my),3,mz)
+      j=i+0; f(:,:,:,j)=f(:,:,:,j)-ampl*spread(spread(sin(ky*y),1,mx),3,mz) &
+        *spread(spread(exp(-abs(kz*z)),1,mx),2,my)
+      j=i+1; f(:,:,:,j)=f(:,:,:,j)+ampl*spread(spread(sin(kx*x),2,my),3,mz) &
+        *spread(spread(exp(-abs(kz*z)),1,mx),2,my)
 !
     endsubroutine vecpatternxy
+!***********************************************************************
+    subroutine bipolar(ampl,f,i,kx,ky,kz)
+!
+!  horizontal pattern with exponential decay (as initial condition)
+!
+!  24-may-09/axel: coded
+!
+      integer :: i,j
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: ampl,kx,ky,kz
+!
+!  sets up a nearly force-free bipolar region
+!
+      j=i+1; f(:,:,:,j)=f(:,:,:,j)+ampl &
+        *spread(spread(exp(-(kx*x)**2),2,my),3,mz) &
+        *spread(spread(exp(-(ky*y)**2),1,mx),3,mz) &
+        *spread(spread(exp(-abs(kz*z)),1,mx),2,my)
+      j=i+2; f(:,:,:,j)=f(:,:,:,j)+ampl &
+        *spread(spread(exp(-(kx*x)**2)*(-2*x),2,my),3,mz) &
+        *spread(spread(exp(-(ky*y)**2),1,mx),3,mz) &
+        *spread(spread(exp(-abs(kz*z)),1,mx),2,my)
+!
+    endsubroutine bipolar
 !***********************************************************************
     subroutine soundwave(ampl,f,i,kx,ky,kz)
 !
@@ -2477,8 +2498,10 @@ module Initcond
         endif
 !
         do n=n1,n2; do m=m1,m2
-          f(l1:l2,m,n,i+1)=f(l1:l2,m,n,i+1)+ampl*exp(-.5*(kx*x(l1:l2))**2)* &
-            cos(min(abs(kz*(z(n)-zmid)),.5*pi))
+!         f(l1:l2,m,n,i+1)=f(l1:l2,m,n,i+1)+ampl*exp(-.5*(kx*x(l1:l2))**2)* &
+!           cos(min(abs(kz*(z(n)-zmid)),.5*pi))
+          f(l1:l2,m,n,i+1)=f(l1:l2,m,n,i+1) &
+            +ampl*cos(kx*x(l1:l2))*exp(-abs(kz*z(n)))
         enddo; enddo
 !
       endif

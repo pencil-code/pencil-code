@@ -428,15 +428,15 @@ module Magnetic
   integer :: idiag_uxbrmphi=0   ! PHIAVG_DOC:
   integer :: idiag_uxbpmphi=0   ! PHIAVG_DOC:
   integer :: idiag_uxbzmphi=0   ! PHIAVG_DOC:
-  integer :: idiag_b2divum=0    ! DIAG_DOC: $\left<\Bv^2\nabla\cdot\uv\right>|_x$
-  integer :: idiag_ujxbm=0      ! DIAG_DOC: $\left<\uv\cdot(\Jv\times\Bv\right>|_x$
+  integer :: idiag_b2divum=0    ! DIAG_DOC: $\left<\Bv^2\nabla\cdot\uv\right>$
+  integer :: idiag_ujxbm=0      ! DIAG_DOC: $\left<\uv\cdot(\Jv\times\Bv\right>$
   integer :: idiag_jxbrmphi=0   ! PHIAVG_DOC:
   integer :: idiag_jxbpmphi=0   ! PHIAVG_DOC:
   integer :: idiag_jxbzmphi=0   ! PHIAVG_DOC:
   integer :: idiag_jxbrxm=0     ! DIAG_DOC:
   integer :: idiag_jxbrym=0     ! DIAG_DOC:
   integer :: idiag_jxbrzm=0     ! DIAG_DOC:
-  integer :: idiag_jxbr2m=0     ! DIAG_DOC:
+  integer :: idiag_jxbr2m=0     ! DIAG_DOC: $\left<(\Jv\times\Bv/\rho)^2\right>$
   integer :: idiag_jxbrxmx=0    ! DIAG_DOC:
   integer :: idiag_jxbrymx=0    ! DIAG_DOC:
   integer :: idiag_jxbrzmx=0    ! DIAG_DOC:
@@ -899,7 +899,6 @@ module Magnetic
         case('hor-fluxlayer'); call hfluxlayer(amplaa(j),f,iaa,z0aa,widthaa)
         case('ver-fluxlayer'); call vfluxlayer(amplaa(j),f,iaa,x0aa,widthaa)
         case('mag-support'); call magsupport(amplaa(j),f,gravz,cs0,rho0)
-        case('pattern-xy'); call vecpatternxy(amplaa(j),f,iaa)
         case('arcade-x'); call arcade_x(amplaa(j),f,iaa,kx_aa(j),kz_aa(j))
         case('halfcos-Bx'); call halfcos_x(amplaa(j),f,iaa)
         case('uniform-Bx'); call uniform_x(amplaa(j),f,iaa)
@@ -912,7 +911,8 @@ module Magnetic
           call gaunoise(1.0e-5*amplaa(j),f,iax,iaz)
         case('Bz(x)', '3'); call vfield(amplaa(j),f,iaa)
         case('vfield2'); call vfield2(amplaa(j),f,iaa)
-        case('vecpatternxy'); call vecpatternxy(amplaa(j),f,iaa)
+        case('bipolar'); call bipolar(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
+        case('vecpatternxy'); call vecpatternxy(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
         case('xjump'); call bjump(f,iaa,by_left,by_right,bz_left,bz_right,widthaa,'x')
         case('fluxrings', '4'); call fluxrings(amplaa(j),f,iaa,iaa)
         case('fluxrings_WB'); call fluxrings(amplaa(j),f,iuu,iaa)
