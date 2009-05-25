@@ -887,8 +887,10 @@ module Particles_sub
       integer :: npar_loc
       integer, dimension (mpar_loc) :: ipar
 !
-      integer :: i,k,jspec,npar_per_species,npar_rest
-      integer, dimension (0:ncpus-1) :: ipar1, ipar2, npar_loc_array
+      integer :: i, k, jspec, npar_per_species, npar_rest, icycle, iproc_rec
+      integer :: npar_per_species_missed
+      integer, dimension (0:ncpus-1) :: ipar1, ipar2
+      integer, dimension (0:ncpus-1) :: npar_loc_array, npar_rest_array
 !
       intent (inout) :: npar_loc,ipar
 !
@@ -925,7 +927,7 @@ module Particles_sub
           endif
         enddo
         npar_loc=npar_loc_array(iproc)
-        if (lroot) print*, 'dist_particles_evenly_procs: npar_loc_array =', &
+        if (lroot) print*, 'dist_particles_evenly_procs: npar_loc_array     =',&
             npar_loc_array
 !
 !  If there are zero particles on a processor, set ipar1 and ipar2 to zero.
@@ -957,31 +959,75 @@ module Particles_sub
           enddo
         else
 !
-!  Must be possible to have same number of particles of each species at each
-!  processor.
+!  Must have same number of particles in each species.
 !
-          if (mod(npar_loc,npar_species)/=0) then
+          if (mod(npar,npar_species)/=0) then
             if (lroot) then
               print*, 'dist_particles_evenly_procs: npar_species '// &
-                  'must be a whole multiple of npar_loc!'
-              print*, 'npar_species, npar_loc=', npar_species, npar_loc
+                  'must be a whole multiple of npar!'
+              print*, 'npar_species, npar=', npar_species, npar
             endif
             call fatal_error('dist_particles_evenly_procs','')
           endif
 !
-!  Make sure that particle species are evenly distributed.
+!  Distribute particle species evenly among processors.
 !        
           npar_per_species=npar/npar_species
+!
           do jspec=1,npar_species
-            if (lroot) &
-                print*, 'dist_particles_evenly_procs: spec', jspec, &
-                'interval:', &
-                1+npar_per_species*(jspec-1)+iproc*npar_per_species/ncpus, &
-                npar_per_species*(jspec-1)+(iproc+1)*npar_per_species/ncpus
             do k=1,npar_per_species/ncpus
               ipar(k+npar_per_species/ncpus*(jspec-1))= &
-                 k+npar_per_species*(jspec-1)+iproc*npar_per_species/ncpus
+                 k+npar_per_species*(jspec-1)+iproc*(npar_per_species/ncpus)
             enddo
+          enddo
+!
+!  Calculate right index for each species.
+!
+          ipar_fence_species(1)=npar_per_species
+          ipar_fence_species(npar_species)=npar
+          ipar_fence_species(1)=npar_per_species
+          ipar_fence_species(npar_species)=npar
+!
+          do jspec=2,npar_species-1
+            ipar_fence_species(jspec)= &
+                ipar_fence_species(jspec-1)+npar_per_species
+          enddo
+!
+          if (lroot) then
+            print*, 'dist_particles_evenly_procs: npar_per_species   =', &
+                npar_per_species
+            print*, 'dist_particles_evenly_procs: ipar_fence_species =', &
+                ipar_fence_species
+          endif
+!
+!  It is not always possible to have the same number of particles of each
+!  species at each processor. In that case we place the remaining particles
+!  by hand in order of increasing processor number.
+!
+          npar_rest_array=npar_loc_array-npar_per_species/ncpus*npar_species
+!
+          if (lroot .and. (minval(npar_rest_array)/=0)) &
+              print*, 'dist_particles_evenly_procs: npar_rest_array    =', &
+              npar_rest_array
+!
+          npar_per_species_missed = &
+              npar_per_species-ncpus*(npar_per_species/ncpus)
+          icycle   =1
+          iproc_rec=0
+          do k=1,npar_per_species_missed*npar_species
+            jspec=(k-1)/npar_per_species_missed+1
+            if (iproc==iproc_rec) &
+                ipar(npar_loc-npar_rest_array(iproc_rec)+icycle)= &
+                ipar_fence_species(jspec)-jspec*npar_per_species_missed+k
+            if (lroot) print*, 'dist_particles_evenly_procs: placed ', &
+                'particle', ipar_fence_species(jspec)- &
+                jspec*npar_per_species_missed+k, &
+                ' on proc', iproc_rec, ' in species', jspec
+            iproc_rec=iproc_rec+1
+            if (iproc_rec==ncpus) then
+              iproc_rec=0
+              icycle=icycle+1
+            endif
           enddo
         endif
 !
