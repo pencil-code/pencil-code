@@ -53,7 +53,6 @@ module Particles
   real :: xsinkpoint=0.0, ysinkpoint=0.0, zsinkpoint=0.0, rsinkpoint=0.0
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iscratch_short_friction=0
-  integer, dimension (npar_species) :: ipar_fence_species=0
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
   logical :: ldragforce_radialonly=.false.
   logical :: ldragforce_heat=.false., lcollisional_heat=.false.
@@ -106,7 +105,7 @@ module Particles
       lparticlemesh_cic, lparticlemesh_tsc, linterpolate_spline, &
       tstart_dragforce_par, tstart_grav_par, taucool, &
       lcollisional_cooling_taucool, lcollisional_cooling_rms, &
-      lcollisional_cooling_twobody, ipar_fence_species, tausp_species, &
+      lcollisional_cooling_twobody, tausp_species, &
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
       tstart_collisional_cooling, tausg_min, l_hole, m_hole, n_hole, &
       epsp_friction_increase,lcollisional_dragforce_cooling, &
@@ -260,24 +259,6 @@ module Particles
                 tausp1_species(jspec)=1/tausp_species(jspec)
           enddo
         endif
-!
-!  If not explicitly set in start.in, the index fence between the particle
-!  species is set automatically here.
-!
-        if (maxval(ipar_fence_species)==0) then
-          npar_per_species=npar/npar_species
-          ipar_fence_species(1)=npar_per_species
-          ipar_fence_species(npar_species)=npar
-          do jspec=2,npar_species-1
-            ipar_fence_species(jspec)= &
-                ipar_fence_species(jspec-1)+npar_per_species
-          enddo
-          if (lroot) print*, &
-              'initialize_particles: Equally many particles in each species'
-        endif
-        if (lroot) print*, &
-            'initialize_particles: Species fences at particle index ', &
-            ipar_fence_species
       else
         tausp_species(1)=tausp
         if (tausp_species(1)/=0.0) &
