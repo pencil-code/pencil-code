@@ -1,7 +1,6 @@
 it(f8.0)
 t(f9.3)
 dt(e10.3)
-walltime(e11.3)
 nmigmax(e11.3)
 nparmax(e11.3)
 dtdragp(e11.3)
