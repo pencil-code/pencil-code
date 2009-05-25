@@ -73,7 +73,7 @@ module GhostFold
         df(l1-1:l2+1,m1-1:m2+1,n2+1,ivar1:ivar2)=0.0
       endif
 !
-! Then y.
+!  Then y.
 !
       if (nygrid/=1) then
         if (nprocy==1) then
@@ -129,7 +129,7 @@ module GhostFold
         df(l1-1:l2+1,m2+1,n1:n2,ivar1:ivar2)=0.0
       endif
 !
-! Finally x.
+!  Finally x.
 !
       if (nxgrid/=1) then
         if (nprocx==1) then
@@ -158,9 +158,9 @@ module GhostFold
             if (iproc==iproc_rcv) df(l2:l2,m1:m2,n1:n2,ivar1:ivar2)= &
                 df(l2:l2,m1:m2,n1:n2,ivar1:ivar2) + df_tmp_yz
           enddo
-          df(l1-1,m1:m2,n1:n2,ivar1:ivar2)=0.0
-          df(l2+1,m1:m2,n1:n2,ivar1:ivar2)=0.0
         endif
+        df(l1-1,m1:m2,n1:n2,ivar1:ivar2)=0.0
+        df(l2+1,m1:m2,n1:n2,ivar1:ivar2)=0.0
       endif
 !
     endsubroutine fold_df
@@ -220,7 +220,7 @@ module GhostFold
         f(l1-1:l2+1,m1-1:m2+1,n2+1,ivar1:ivar2)=0.0
       endif
 !
-! Then y.
+!  Then y.
 !
       if (nygrid/=1) then
         if (nprocy==1) then
@@ -276,7 +276,7 @@ module GhostFold
         f(l1-1:l2+1,m2+1,n1:n2,ivar1:ivar2)=0.0
       endif
 !
-! Finally x.
+!  Finally x.
 !
       if (nxgrid/=1) then
         if (nprocx==1) then
@@ -305,9 +305,9 @@ module GhostFold
             if (iproc==iproc_rcv) f(l2:l2,m1:m2,n1:n2,ivar1:ivar2)= &
                 f(l2:l2,m1:m2,n1:n2,ivar1:ivar2) + f_tmp_yz
           enddo
-          f(l1-1,m1:m2,n1:n2,ivar1:ivar2)=0.0
-          f(l2+1,m1:m2,n1:n2,ivar1:ivar2)=0.0
         endif
+        f(l1-1,m1:m2,n1:n2,ivar1:ivar2)=0.0
+        f(l2+1,m1:m2,n1:n2,ivar1:ivar2)=0.0
       endif
 !
     endsubroutine fold_f
