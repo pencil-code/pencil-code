@@ -665,16 +665,20 @@ module Particles_sub
             nmig_leave(iproc_rec)=nmig_leave(iproc_rec)+1
             nmig_leave_total     =nmig_leave_total     +1
             if (sum(nmig_leave)>npar_mig) then
-              print '(a,i3,a,i3,a)', &
-                  'redist_particles_procs: too many particles migrating '// &
-                  'from proc ', iproc, ' to proc ', iproc_rec
-              print*, '                       (npar_mig=', npar_mig, 'nmig=',sum(nmig_leave),')'
-              if (lmigration_redo) then
-                print*, '                       Going to do one more '// &
-                    'migration iteration!'
-                print*, '                       (this is time consuming - '// &
-                    'consider setting npar_mig'
-                print*, '                        higher in cparam.local)'
+              if (.not. lstart) then
+                print '(a,i3,a,i3,a)', &
+                    'redist_particles_procs: too many particles migrating '// &
+                    'from proc ', iproc, ' to proc ', iproc_rec
+                print*, '                       (npar_mig=', npar_mig, 'nmig=',sum(nmig_leave),')'
+              endif
+              if (lstart.or.lmigration_redo) then
+                if (.not. lstart) then
+                  print*, '                       Going to do one more '// &
+                      'migration iteration!'
+                  print*, '                       (this is time consuming - '//&
+                      'consider setting npar_mig'
+                  print*, '                        higher in cparam.local)'
+                endif
                 nmig_leave(iproc_rec)=nmig_leave(iproc_rec)-1
                 nmig_leave_total     =nmig_leave_total     -1
                 lredo=.true.
@@ -863,7 +867,7 @@ module Particles_sub
 !
 !  Sum up processors that have not had place to let all migrating particles go.
 !
-        if (lmigration_redo) then   !  5-10% slowdown of code
+        if (lstart.or.lmigration_redo) then   !  5-10% slowdown of code
           call mpireduce_or(lredo, lredo_all)
           call mpibcast_logical(lredo_all, 1)
         else
