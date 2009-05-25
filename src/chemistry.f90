@@ -3317,11 +3317,11 @@ subroutine flame_front(f)
       tmp_local=3./16.*(2.*k_B_cgs**3/pi)**0.5
 
       do j3=nn1,nn2
-      do j2=mm1,mm2   
+      do j2=mm1,mm2
       do j1=ll1,ll2
        prefactor(j1,j2,j3)=tmp_local*(TT_full(j1,j2,j3))**0.5*unit_length**3&
-          /(Rgas_unit_sys*rho_full(j1,j2,j3)*mu1_full(j1,j2,j3))          
-      enddo  
+          /(Rgas_unit_sys*rho_full(j1,j2,j3)*mu1_full(j1,j2,j3))
+      enddo
       enddo 
       enddo
 
@@ -3437,11 +3437,8 @@ subroutine flame_front(f)
       tmp_local2=(species_constants(k,imass))**0.5/(tran_data(k,3))**2 &
                    *tmp_local
 
-       
     !    tmp_local2=(species_constants(k,imass))**0.5 &
     !               /(tran_data(k,3))**2*tmp_local
-       
-
         if (visc_simple) then
           do j3=nn1,nn2
           do j2=mm1,mm2
