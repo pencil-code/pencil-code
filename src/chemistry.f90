@@ -1068,10 +1068,6 @@ subroutine flame_front(f)
          enddo
          enddo
 
-do k=1,nchemspec 
-print*, Diff_full_add(l1,m1,n1,k),Diff_full_add(l2,m1,n1,k),k
-enddo
-
 !
 !
 !  Thermal diffusivity 
