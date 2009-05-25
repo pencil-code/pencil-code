@@ -654,6 +654,9 @@ module Entropy
       call put_shared_variable('lheatc_chiconst',lheatc_chiconst,ierr)
       if (ierr/=0) call stop_it("initialize_entropy: "//&
            "there was a problem when putting lcalc_heatcond_constchi")
+      call put_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
+      if (ierr/=0) call stop_it("initialize_entropy: "//&
+           "there was a problem when putting lviscosity_heat")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)

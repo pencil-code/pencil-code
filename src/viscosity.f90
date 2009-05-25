@@ -60,6 +60,7 @@ module Viscosity
   logical :: lvisc_heat_as_aux=.false.
   logical :: lvisc_mixture=.false.
   logical :: llambda_effect=.false.
+  logical, pointer:: lviscosity_heat
 !
   namelist /viscosity_run_pars/ &
       nu, nu_hyper2, nu_hyper3, ivisc, nu_mol, C_smag, nu_shock, &
@@ -86,7 +87,6 @@ module Viscosity
   integer :: idiag_nuD2uxbzm=0  ! DIAG_DOC:
 
   contains
-
 !***********************************************************************
     subroutine register_viscosity()
 !
@@ -300,13 +300,13 @@ module Viscosity
         endif
       endif
 !
-!  Let Hypervisc_strict module know if we wish the more complicated nu=const
-!  version of hyperviscosity.
+!  Shared variables.
 !
       call put_shared_variable('lvisc_hyper3_nu_const_strict',lvisc_hyper3_nu_const_strict,ierr)
-        call put_shared_variable('llambda_effect',llambda_effect,ierr)
-        call put_shared_variable('Lambda_V0',Lambda_V0,ierr)
-        call put_shared_variable('Lambda_Omega',Lambda_Omega,ierr)
+      call put_shared_variable('llambda_effect',llambda_effect,ierr)
+      call put_shared_variable('Lambda_V0',Lambda_V0,ierr)
+      call put_shared_variable('Lambda_Omega',Lambda_Omega,ierr)
+      call get_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
 !
       call keep_compiler_quiet(lstarting)
 !
@@ -434,7 +434,8 @@ module Viscosity
       if (lvisc_rho_nu_const .or. lvisc_nu_const .or. &
            lvisc_nu_prof .or. lvisc_nu_profx .or. &
            lvisc_nu_profr .or. lvisc_nu_profr_powerlaw) then
-        if (lentropy.or.ltemperature) lpenc_requested(i_sij2)=.true.
+        if ((lentropy.or.ltemperature).and.lviscosity_heat) &
+            lpenc_requested(i_sij2)=.true.
         lpenc_requested(i_graddivu)=.true.
       endif
       if (lvisc_smag_simplified .or. lvisc_smag_cross_simplified) &
@@ -462,7 +463,7 @@ module Viscosity
           lpenc_requested(i_del6u)=.true.
       if (lvisc_hyper3_rho_nu_const_symm) then
         lpenc_requested(i_grad5divu)=.true.
-        if (lentropy) then
+        if ((lentropy.or.ltemperature).and.lviscosity_heat) then
           lpenc_requested(i_uij5)=.true.
           lpenc_requested(i_uij)=.true.
         endif
