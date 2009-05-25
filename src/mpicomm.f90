@@ -781,18 +781,6 @@ module Mpicomm
             +c5*fb(:,m1+displs+2:m2+displs+2,:,ivar1:ivar2) &
             +c6*fb(:,m1+displs+3:m2+displs+3,:,ivar1:ivar2)
 !
-!  Filling also the x-y corners in order to avoid only zeros at these corners.
-!  One should acctually have communicated with an extra processor in order to
-!  fill these corners with the right values, but this does not seem to be
-!  necessary.
-!
-!      do i=1,nghost
-!        f(1:l1-1 ,i   ,:,ivar1:ivar2)=f(1:l1-1 ,m1+nghost-i,:,ivar1:ivar2)
-!        f(1:l1-1 ,m2+i,:,ivar1:ivar2)=f(1:l1-1 ,m2-i+1     ,:,ivar1:ivar2)
-!        f(l2+1:mx,i   ,:,ivar1:ivar2)=f(l2+1:mx,m1+nghost-i,:,ivar1:ivar2)
-!        f(l2+1:mx,m2+i,:,ivar1:ivar2)=f(l2+1:mx,m2-i+1     ,:,ivar1:ivar2)
-!      enddo
-!
 !  Need to wait till buffer is empty before re-using it again.
 !
         if (nextyb/=iproc) call MPI_WAIT(isend_rq_tonextyb,isend_stat_tnb,ierr)
