@@ -1,12 +1,8 @@
 ! $Id$
-
-!!!!!!!!!!!!!!!!!!!!!!!
-!!!  nompicomm.f90  !!!
-!!!!!!!!!!!!!!!!!!!!!!!
-
-!!!  Module with dummy MPI stuff.
-!!!  This allows code to be run on single cpu machine
-
+!
+!  Dummy module for MPU communcation. This allows the code to run on a single
+!  CPU.
+!
 module Mpicomm
 !
   use Cdata

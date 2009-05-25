@@ -1,11 +1,7 @@
 ! $Id$
-
-!!!!!!!!!!!!!!!!!!!!!
-!!!  mpicomm.f90  !!!
-!!!!!!!!!!!!!!!!!!!!!
-
-!!! Module with MPI stuff
-
+!
+!  This module takes care of MPI communication.
+!
 !  Data layout for each processor (`-' marks ghost points, `+' real
 !  points of the processor shown)
 !
@@ -46,7 +42,7 @@
 !    inner points for general bc (i.e. points where 7-point derivatives are
 !    unaffected by ghost information plus boundcond for m1,m2):
 !                        m1i+2:m2i-2
-
+!
 module Mpicomm
 !
   use Cdata
@@ -234,10 +230,9 @@ module Mpicomm
 !***********************************************************************
     subroutine mpicomm_init()
 !
-!  Initialise MPI communication and set up some variables
+!  Initialise MPI communication and set up some variables.
 !  The arrays leftneigh and rghtneigh give the processor numbers
 !  to the left and to the right.
-!
 !
 !  20-aug-01/wolf: coded
 !  31-aug-01/axel: added to 3-D
@@ -246,7 +241,7 @@ module Mpicomm
 !   6-jun-02/axel: generalized to allow for ny=1
 !  23-nov-02/axel: corrected problem with ny=4 or less
 !
-!  get processor number, number of procs, and whether we are root
+!  Get processor number, number of procs, and whether we are root.
 !
       lmpicomm = .true.
       call MPI_INIT(ierr)
@@ -254,39 +249,33 @@ module Mpicomm
       call MPI_COMM_RANK(MPI_COMM_WORLD, iproc , ierr)
       lroot = (iproc==root)
 !
-!  consistency checks
+!  Check consistency in processor layout.
 !
-      if (nprocx /= 1) then
-        if (lroot) print*,'WARNING: nprocx > 1 is not yet well tested'
-      endif
-!
-!  check total number of processors
-!
-      if (nprocs /= nprocx*nprocy*nprocz) then
+      if (ncpus/=nprocx*nprocy*nprocz) then
         if (lroot) then
-          print*, 'Compiled with NCPUS = ', ncpus, &
-          ', but running on ', nprocs, ' processors'
+          print*, 'Compiled with ncpus = ', ncpus, &
+              ', but nprocx*nprocy*nprocz=', nprocx*nprocy*nprocz
         endif
-        call stop_it('Inconsistency 1')
+        call stop_it('mpicomm_init')
       endif
 !
-!  preliminary additions for nprocx \= 1
-!  write the value of nprocx*nx at the end for compatibility reasons
+!  Check total number of processors.
 !
-      if ((nprocx*nx /= nxgrid) .or. &
-          (nprocy*ny /= nygrid) .or. &
-          (nprocz*nz /= nzgrid)) then
+      if (nprocs/=nprocx*nprocy*nprocz) then
         if (lroot) then
-          write(6,'(A,3I4,A,3I4,A)') &
-               'nproc[x-z]*n[x-z] = (', &
-               nprocy*ny, nprocz*nz, nprocx*nx, &
-               ') /= n[xyz]grid= (', &
-               nygrid, nzgrid, nxgrid, ")"
+          print*, 'Compiled with ncpus = ', ncpus, &
+              ', but running on ', nprocs, ' processors'
         endif
-        call stop_it('Inconsistency 2')
+        call stop_it('mpicomm_init')
       endif
 !
-!  avoid overlapping ghost zones
+!  Warn the user if using nprocx>1 (this warning should eventually be deleted).
+!
+      if (nprocx/=1) then
+        if (lroot) print*, 'WARNING: nprocx > 1 is not yet well tested'
+      endif
+!
+!  Avoid overlapping ghost zones.
 !
       if ((nx<nghost) .and. (nxgrid/=1)) &
            call stop_it('Overlapping ghost zones in x-direction: reduce nprocx')
@@ -295,7 +284,7 @@ module Mpicomm
       if ((nz<nghost) .and. (nzgrid/=1)) &
            call stop_it('Overlapping ghost zones in z-direction: reduce nprocz')
 !
-!  position on the processor grid
+!  Position on the processor grid.
 !  x is fastest direction, z slowest (this is the default)
 !
       if (lprocz_slowest) then
@@ -308,7 +297,7 @@ module Mpicomm
         ipz = modulo(iproc/nprocx, nprocy)
        endif
 !
-!  set up `lower' and `upper' neighbours
+!  Set up `lower' and `upper' neighbours.
 !
       xlneigh = (ipz*nprocx*nprocy+ipy*nprocx+modulo(ipx-1,nprocx))
       xuneigh = (ipz*nprocx*nprocy+ipy*nprocx+modulo(ipx+1,nprocx))
@@ -317,17 +306,18 @@ module Mpicomm
       zlneigh = (modulo(ipz-1,nprocz)*nprocx*nprocy+ipy*nprocx+ipx)
       zuneigh = (modulo(ipz+1,nprocz)*nprocx*nprocy+ipy*nprocx+ipx)
 !
-!  set the four corners in the yz-plane (in cyclic order)
+!  Set the four corners in the yz-plane (in cyclic order).
 !
       llcorn=ipx+(modulo(ipy-1,nprocy)+modulo(ipz-1,nprocz)*nprocy)*nprocx
       ulcorn=ipx+(modulo(ipy+1,nprocy)+modulo(ipz-1,nprocz)*nprocy)*nprocx
       uucorn=ipx+(modulo(ipy+1,nprocy)+modulo(ipz+1,nprocz)*nprocy)*nprocx
       lucorn=ipx+(modulo(ipy-1,nprocy)+modulo(ipz+1,nprocz)*nprocy)*nprocx
 !
-!  this value is not yet the one read in, but the one initialized in cparam.f90
+!  This value is not yet the one read in, but the one initialized in cparam.f90.
 !
 !  Print neighbors in counterclockwise order (including the corners),
 !  starting with left neighbor.
+!
 !  Example with 4x4 processors
 !   3 |  0   1   2   3 |  0
 !  ---+----------------+---
@@ -339,7 +329,7 @@ module Mpicomm
 !  15 | 12  13  14  15 | 12
 !  should print (3,15,12,13,1,5,4,7) for iproc=0
 !
-!  print processor numbers and those of their neighbors
+!  Print processor numbers and those of their neighbors.
 !  NOTE: the ip print parameter has *not* yet been read at this point.
 !  Therefore it must be invoked by resetting ldebug_mpi appropriately.
 !
@@ -355,7 +345,7 @@ module Mpicomm
       call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipz, ipy, MPI_COMM_ROW, ierr)
 !
 !  Do the same for columns - all processes sharing the same value of 
-!  ipy. The rank within MPI_COMM_WORLD is given by ipz
+!  ipy. The rank within MPI_COMM_WORLD is given by ipz.
 !
       call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipy, ipz, MPI_COMM_COLUMN, ierr)
 !
