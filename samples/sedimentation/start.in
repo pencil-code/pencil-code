@@ -1,0 +1,40 @@
+!                              -*-f90-*-     (for emacs)
+&init_pars
+  cvsid='$Id$',
+  xyz0  =  -0.10,  -0.10,  -0.10
+  Lxyz  =   0.20,   0.20,   0.20
+  lperi =      T,      T,      F
+  lcopysnapshots_exp=T, lwrite_ic=T, lwrite_aux=T
+  bcz='s','s','a','s','s'
+  ip=14
+/
+&eos_init_pars
+  gamma=1.666667, rho0=1.0, cs0=1.0
+/
+&hydro_init_pars
+  inituu='nothing'
+  Omega=1.0
+/
+&density_init_pars
+  initlnrho='isothermal'
+  beta_glnrho_global=-0.1,0.0,0.0
+  ldensity_nolog=T
+/
+&grav_init_pars
+  gravz_profile='linear', nu_epicycle=1.0
+/
+&entropy_init_pars
+  initss='nothing'
+/
+&shear_init_pars
+  qshear=1.5
+/
+&particles_init_pars
+  initxxp='gaussian-z',initvvp='dragforce_equilibrium'
+  zp0=0.01
+  tausp=0.5, eps_dtog=0.02
+  gravz_profile='linear', nu_epicycle=1.0
+  lparticlemesh_tsc=T
+  tausp_species=0.10,0.20,0.30,0.40
+  lmigration_redo=T
+/
