@@ -1692,6 +1692,8 @@ module Magnetic
         select case(alpha_profile)
         case('const'); alpha_tmp=1.
         case('siny'); alpha_tmp=sin(y(m))
+        case('sinz'); alpha_tmp=sin(z(n))
+        case('z'); alpha_tmp=z(n)
         case('cosy'); alpha_tmp=cos(y(m))
         case('step'); alpha_tmp=(1.-step_scalar(y(m),alpha_equator-alpha_equator_gap,alpha_gap_step)&
                        -step_scalar(y(m),alpha_equator+alpha_equator_gap,alpha_gap_step))
