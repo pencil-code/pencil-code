@@ -98,7 +98,7 @@ my %tests = (
                          2d-tests/cylindrical_gdisk
                          0d-tests/solar_system
                          mdwarf
-                         2d-tests/Kelvin-Helmholtz-disc
+                         sedimentation
                          MRI-turbulence_hyper
                          dust_turb_globaldisk
                          geodynamo
@@ -128,7 +128,6 @@ my %tests = (
              #   random_uu_particles
              #   interstellar
              #   geodynamo
-             #   2d-tests/Kelvin-Helmholtz-disc
              #   0d-tests/heating_ionize
              4 => [qw(
                          forced-boundary
