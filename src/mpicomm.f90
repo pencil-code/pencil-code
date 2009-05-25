@@ -585,10 +585,12 @@ module Mpicomm
         call MPI_WAIT(irecv_rq_fromuppx,irecv_stat_fu,ierr)
         call MPI_WAIT(irecv_rq_fromlowx,irecv_stat_fl,ierr)
         do j=ivar1,ivar2
-          if (ipx/=0 .or. bcx1(j)=='p') then
+          if (ipx/=0 .or. bcx1(j)=='p' .or. &
+              (bcx1(j)=='she'.and.nygrid==1)) then
             f( 1:l1-1,m1:m2,n1:n2,j)=lbufxi(:,:,:,j)  !!(set lower buffer)
           endif
-          if (ipx/=nprocx-1 .or. bcx2(j)=='p') then
+          if (ipx/=nprocx-1 .or. bcx2(j)=='p' .or. &
+              (bcx2(j)=='she'.and.nygrid==1)) then
             f(l2+1:mx,m1:m2,n1:n2,j)=ubufxi(:,:,:,j)  !!(set upper buffer)
           endif
         enddo
@@ -620,31 +622,37 @@ module Mpicomm
       deltay_dy=deltay/dy
       displs=int(deltay_dy)
       if (nprocx==1 .and. nprocy==1) then
-        frak=deltay_dy-displs
-        c1 = -          (frak+1.)*frak*(frak-1.)*(frak-2.)*(frak-3.)/120.
-        c2 = +(frak+2.)          *frak*(frak-1.)*(frak-2.)*(frak-3.)/24.
-        c3 = -(frak+2.)*(frak+1.)     *(frak-1.)*(frak-2.)*(frak-3.)/12.
-        c4 = +(frak+2.)*(frak+1.)*frak          *(frak-2.)*(frak-3.)/12.
-        c5 = -(frak+2.)*(frak+1.)*frak*(frak-1.)          *(frak-3.)/24.
-        c6 = +(frak+2.)*(frak+1.)*frak*(frak-1.)*(frak-2.)          /120.
-        f(1:l1-1,m1:m2,:,ivar1:ivar2) = &
-             c1*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs+2,2) &
-            +c2*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs+1,2) &
-            +c3*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs  ,2) &
-            +c4*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs-1,2) &
-            +c5*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs-2,2) &
-            +c6*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs-3,2)
-        f(l2+1:mx,m1:m2,:,ivar1:ivar2) = &
-             c1*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs-2,2) &
-            +c2*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs-1,2) &
-            +c3*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs  ,2) &
-            +c4*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs+1,2) &
-            +c5*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs+2,2) &
-            +c6*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs+3,2)
+        if (nygrid==1) then ! Periodic boundary conditions.
+          f(   1:l1-1,m1:m2,:,ivar1:ivar2) = f(l2i:l2,m1:m2,:,ivar1:ivar2)
+          f(l2+1:mx  ,m1:m2,:,ivar1:ivar2) = f(l1:l1i,m1:m2,:,ivar1:ivar2)
+        else
+          frak=deltay_dy-displs
+          c1 = -          (frak+1.)*frak*(frak-1.)*(frak-2.)*(frak-3.)/120.
+          c2 = +(frak+2.)          *frak*(frak-1.)*(frak-2.)*(frak-3.)/24.
+          c3 = -(frak+2.)*(frak+1.)     *(frak-1.)*(frak-2.)*(frak-3.)/12.
+          c4 = +(frak+2.)*(frak+1.)*frak          *(frak-2.)*(frak-3.)/12.
+          c5 = -(frak+2.)*(frak+1.)*frak*(frak-1.)          *(frak-3.)/24.
+          c6 = +(frak+2.)*(frak+1.)*frak*(frak-1.)*(frak-2.)          /120.
+          f(1:l1-1,m1:m2,:,ivar1:ivar2) = &
+               c1*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs+2,2) &
+              +c2*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs+1,2) &
+              +c3*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs  ,2) &
+              +c4*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs-1,2) &
+              +c5*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs-2,2) &
+              +c6*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs-3,2)
+          f(l2+1:mx,m1:m2,:,ivar1:ivar2) = &
+               c1*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs-2,2) &
+              +c2*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs-1,2) &
+              +c3*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs  ,2) &
+              +c4*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs+1,2) &
+              +c5*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs+2,2) &
+              +c6*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs+3,2)
+        endif
       else
+        if (nygrid==1) return ! Periodic boundary conditions already set.
 !
 !  With more than one CPU in the y-direction it will become necessary to
-!  interpolate over data from two different CPUs.  Likewise two different
+!  interpolate over data from two different CPUs. Likewise two different
 !  CPUs will require data from this CPU.
 !
         if (ipx==0 .or. ipx==nprocx-1) then
@@ -726,9 +734,13 @@ module Mpicomm
       if (present(ivar1_opt)) ivar1=ivar1_opt
       if (present(ivar2_opt)) ivar2=ivar2_opt
 !
+!  Some special cases have already finished in initiate_shearing.
+!
+      if (nygrid/=1 .and. (nprocx>1 .or. nprocy>1) .and. &
+          (ipx==0 .or. ipx==nprocx-1)) then
+!
 !  Need to wait till all communication has been recived.
 !
-      if (nprocx>1 .or. nprocy>1 .and. (ipx==0 .or. ipx==nprocx-1)) then
         if (lastyb/=iproc) &
             call MPI_WAIT(irecv_rq_fromlastyb,irecv_stat_fbl,ierr)
         if (nextyb/=iproc) &

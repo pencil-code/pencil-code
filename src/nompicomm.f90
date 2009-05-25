@@ -221,9 +221,9 @@ module Mpicomm
       if (present(ivar1_opt)) ivar1=ivar1_opt
       if (present(ivar2_opt)) ivar2=ivar2_opt
 !
-!  Periodic boundary conditions in x, with shearing sheet
+!  Shear-periodic boundary conditions in x.
 !
-      if (nygrid==1) then !If 2D
+      if (nygrid==1) then ! Periodic boundary conditions.
         f( 1:l1-1,:,:,ivar1:ivar2) = f(l2i:l2,:,:,ivar1:ivar2)
         f(l2+1:mx,:,:,ivar1:ivar2) = f(l1:l1i,:,:,ivar1:ivar2)
       else
