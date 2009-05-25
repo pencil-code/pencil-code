@@ -1052,8 +1052,11 @@ subroutine flame_front(f)
               do k=1,nchemspec
                 tmp_sum(j1,j2,j3)=0.
                 do j=1,nchemspec
+		 if (j== k) then
+		 else
                    tmp_sum(j1,j2,j3)=tmp_sum(j1,j2,j3) &
                         +XX_full(j1,j2,j3,j)/Bin_Diff_coef(j1,j2,j3,j,k)
+	         endif	
                 enddo
                  Diff_full(j1,j2,j3,k)=(1.-f(j1,j2,j3,ichemspec(k)))/tmp_sum(j1,j2,j3)
               enddo
