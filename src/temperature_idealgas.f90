@@ -342,6 +342,10 @@ module Entropy
         if (chi /= impossible) call warning('initialize_entropy', 'No heat conduction, but chi /= 0')
       endif
 
+      call put_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
+      if (ierr/=0) call stop_it("initialize_entropy in temperature_idealgas: "//&
+           "there was a problem when putting lviscosity_heat")
+
     endsubroutine initialize_entropy
 !***********************************************************************
     subroutine init_ss(f)
