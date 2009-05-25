@@ -1020,14 +1020,14 @@ subroutine flame_front(f)
               nu_dyn(j1,j2,j3)=nu_dyn(j1,j2,j3)+XX_full(j1,j2,j3,k)*&
                   species_viscosity(j1,j2,j3,k)/tmp_sum2(j1,j2,j3)
              enddo
-        
+
               nu_full(j1,j2,j3)=nu_dyn(j1,j2,j3)/rho_full(j1,j2,j3)      
           endif
-         
+
         enddo
         enddo
         enddo
-        
+
 
           if (visc_const<impossible) then
                 nu_full=visc_const
@@ -1067,6 +1067,11 @@ subroutine flame_front(f)
          enddo
          enddo
          enddo
+
+do k=1,nchemspec 
+print*, Diff_full_add(l1,m1,n1,k),Diff_full_add(l2,m1,n1,k),k
+enddo
+
 !
 !
 !  Thermal diffusivity 
@@ -1088,11 +1093,6 @@ subroutine flame_front(f)
                              +XX_full(j1,j2,j3,k)*species_cond(j1,j2,j3,k)
             tmp_sum2(j1,j2,j3)=tmp_sum2(j1,j2,j3) &
                              +XX_full(j1,j2,j3,k)/species_cond(j1,j2,j3,k)
-if (species_cond(j1,j2,j3,k) == 0.) then
-
- print*, species_cond(j1,j2,j3,k),j1,j2,j3,k
-
-endif
 
           enddo
          enddo
@@ -3321,9 +3321,8 @@ endif
       enddo  
       enddo 
       enddo
-      
+
       omega="Omega11"
-!      
 
     if (.not. lfix_Sc) then
 
@@ -3334,13 +3333,25 @@ endif
             sigma_jk=0.5*(tran_data(j,3)+tran_data(k,3))*1e-8
             m_jk=(species_constants(j,imass)*species_constants(k,imass)) &
                 /(species_constants(j,imass)+species_constants(k,imass))/Na
-            tmp_local=(m_jk)**(-0.5)/sigma_jk**2/(unit_length**2/unit_time)
+            tmp_local=(m_jk)**(-0.5)*(sigma_jk*unit_length)**(-2)*unit_time
 
           do j3=nn1,nn2
           do j2=mm1,mm2
           do j1=ll1,ll2
             lnTjk(j1,j2,j3)=f(j1,j2,j3,ilnTT)-log(eps_jk)
-            Omega_kl(j1,j2,j3)=(6.96945701E-1 +3.39628861E-1*lnTjk(j1,j2,j3))
+          !  Omega_kl(j1,j2,j3)=(6.96945701E-1 +3.39628861E-1*lnTjk(j1,j2,j3))
+
+
+           Omega_kl(j1,j2,j3)= &
+                 (6.96945701E-1   +3.39628861E-1*lnTjk(j1,j2,j3) &
+                  +1.32575555E-2*lnTjk(j1,j2,j3)*lnTjk(j1,j2,j3) &
+                  -3.41509659E-2*lnTjk(j1,j2,j3)**3 &
+                  +7.71359429E-3*lnTjk(j1,j2,j3)**4 &
+                  +6.16106168E-4*lnTjk(j1,j2,j3)**5 &
+                  -3.27101257E-4*lnTjk(j1,j2,j3)**6 &
+                  +2.51567029E-5*lnTjk(j1,j2,j3)**7)
+
+
             Bin_Diff_coef(j1,j2,j3,k,j)=prefactor(j1,j2,j3)  &
                                        *Omega_kl(j1,j2,j3)*tmp_local
           enddo
@@ -3375,7 +3386,7 @@ endif
             do j3=nn1,nn2
             do j2=mm1,mm2
             do j1=ll1,ll2
-             lnTjk=f(j1,j2,j3,ilnTT)-log(eps_jk)
+             lnTjk(j1,j2,j3)=f(j1,j2,j3,ilnTT)-log(eps_jk)
             enddo
             enddo
             enddo
