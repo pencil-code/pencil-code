@@ -78,6 +78,7 @@ module Particles
   logical :: lnostore_uu=.true.
   logical :: ldtgrav_par=.false.
   logical :: lsinkpoint=.false.
+  logical :: lglobalrandom=.false.
   logical, pointer:: lcoriolis_force
   logical, pointer:: lcentrifugal_force
 !
@@ -118,7 +119,7 @@ module Particles
       interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, &
       brownian_T0, lnostore_uu, ldtgrav_par, ldragforce_radialonly, &
       lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, &
-      Lx0, Ly0, Lz0
+      Lx0, Ly0, Lz0, lglobalrandom
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -526,7 +527,7 @@ module Particles
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real, dimension (3) :: uup
+      real, dimension (3) :: uup, Lxyz_par, xyz0_par, xyz1_par
       real :: vpx_sum, vpy_sum, vpz_sum
       real :: r, p, q, px, py, pz, eps, cs, k2_xxp, rp2
       real :: dim1, npar_loc_x, npar_loc_y, npar_loc_z, dx_par, dy_par, dz_par
@@ -535,6 +536,20 @@ module Particles
       logical :: lequidistant=.false.
 !
       intent (out) :: f, fp, ineargrid
+!
+!  Use either a local random position or a global random position for certain
+!  initial conditions. The default is a local random position, but the equal
+!  number of particles per processors means that this is not completely random.
+!
+      if (lglobalrandom) then
+        Lxyz_par=Lxyz
+        xyz0_par=xyz0
+        xyz1_par=xyz1
+      else
+        Lxyz_par=Lxyz_loc
+        xyz0_par=xyz0_loc
+        xyz1_par=xyz1_loc
+      endif
 !
 !  Initial particle position.
 !
@@ -568,11 +583,11 @@ module Particles
             if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
           enddo
           if (nxgrid/=1) &
-              fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
+              fp(1:npar_loc,ixp)=xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
           if (nygrid/=1) &
-              fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
+              fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
           if (nzgrid/=1) &
-              fp(1:npar_loc,izp)=xyz0_loc(3)+fp(1:npar_loc,izp)*Lxyz_loc(3)
+              fp(1:npar_loc,izp)=xyz0_par(3)+fp(1:npar_loc,izp)*Lxyz_par(3)
 
         case ('random-circle')
           if (lroot) print*, 'init_particles: Random particle positions'
@@ -637,7 +652,7 @@ module Particles
                if (nxgrid/=1) fp(k,ixp)=rad*cos(phi)
                if (nygrid/=1) fp(k,iyp)=rad*sin(phi)
              elseif (lcylindrical_coords) then
-               phi = xyz0_loc(2)+phi*Lxyz_loc(2)
+               phi = xyz0_par(2)+phi*Lxyz_par(2)
                if (nxgrid/=1) fp(k,ixp)=rad
                if (nygrid/=1) fp(k,iyp)=phi
              elseif (lspherical_coords) then
@@ -647,7 +662,7 @@ module Particles
 !
              if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
              if (nzgrid/=1) &
-               fp(k,izp)=xyz0_loc(3)+fp(k,izp)*Lxyz_loc(3)
+                 fp(k,izp)=xyz0_par(3)+fp(k,izp)*Lxyz_par(3)
 !
           enddo
 
@@ -843,9 +858,9 @@ k_loop:   do while (.not. (k>npar_loc))
             endif
           enddo
           if (nxgrid/=1) &
-              fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
+              fp(1:npar_loc,ixp)=xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
           if (nygrid/=1) &
-              fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
+              fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
 
         case ('gaussian-z-pure')
           if (lroot) print*, 'init_particles: Gaussian particle positions'
