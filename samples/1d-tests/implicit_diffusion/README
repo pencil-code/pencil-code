@@ -1,6 +1,6 @@
 Directory:
     ${PENCIL_HOME}/samples/1d-tests/implicit_diffusion
-CVS-Id:
+SVN Id:
     $Id$
 Maintainer:
     Boris Dintrans <dintrans/ast[dot]obs-mip[dot]fr>

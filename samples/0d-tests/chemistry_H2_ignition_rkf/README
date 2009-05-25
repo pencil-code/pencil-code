@@ -1,6 +1,6 @@
 Directory:
     ${PENCIL_HOME}/samples/0d-tests/chemistry_H2_ignition_rkf
-CVS-Id:
+SVN Id:
     $Id$
 Maintainer:
     Nils Erland L. Haugen <nils.e.haugen/sintef[dot]no>
