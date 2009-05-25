@@ -75,10 +75,12 @@ module Magnetic
   real, dimension(3) :: B_ext=(/0.,0.,0./),B1_ext,B_ext_tmp,eta_aniso_hyper3
   real, dimension(3) :: axisr1=(/0,0,1/),dispr1=(/0.,0.5,0./)
   real, dimension(3) :: axisr2=(/1,0,0/),dispr2=(/0.,-0.5,0./)
+  real, dimension(3) :: axisr3=(/1,0,0/),dispr3=(/0.,-0.5,0./)
   real, dimension(nx,3) :: uxbb !(temporary)
   real, target :: zmode=1. !(temporary)
   real :: fring1=0.,Iring1=0.,Rring1=1.,wr1=0.3
   real :: fring2=0.,Iring2=0.,Rring2=1.,wr2=0.3
+  real :: fring3=0.,Iring3=0.,Rring3=1.,wr3=0.3
   real :: radius=.1,epsilonaa=1e-2,widthaa=.5,x0aa=0.,z0aa=0.
   real :: by_left=0.,by_right=0.,bz_left=0.,bz_right=0.
   real :: ABC_A=1.,ABC_B=1.,ABC_C=1.
@@ -107,6 +109,7 @@ module Magnetic
   real :: fluxtube_border_width=impossible
   integer :: nbvec,nbvecmax=nx*ny*nz/4,va2power_jxb=5
   integer :: N_modes_aa=1, naareset
+  integer :: nrings=2
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
   logical :: llorentzforce=.true.,linduction=.true.
   logical :: lresi_eta_const=.false.
@@ -140,6 +143,8 @@ module Magnetic
        B_ext, lohmic_heat, &
        fring1,Iring1,Rring1,wr1,axisr1,dispr1, &
        fring2,Iring2,Rring2,wr2,axisr2,dispr2, &
+       fring3,Iring3,Rring3,wr3,axisr3,dispr3, &
+       nrings, &
        radius,epsilonaa,x0aa,z0aa,widthaa, &
        by_left,by_right,bz_left,bz_right, &
        initaa,amplaa,kx_aa,ky_aa,kz_aa,coefaa,coefbb, &
@@ -4368,13 +4373,15 @@ module Magnetic
 !  Optional argument `profile' allows to choose a different profile (see
 !  norm_ring())
 !
+      use Mpicomm, only: stop_it
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: tmpv
       real, dimension (nx) :: xx1,yy1,zz1
       real, dimension(3) :: axis,disp
       real :: ampl,phi,theta,ct,st,cp,sp
       real :: fring,Iring,R0,width
-      integer :: i,ivar,ivar1,ivar2
+      integer :: i,ivar,ivar1,ivar2,ivar3
       character (len=*), optional :: profile
       character (len=labellen) :: prof
 !
@@ -4384,21 +4391,27 @@ module Magnetic
         prof = 'tanh'
       endif
 !
+!  fix ivar3=ivar1 (for now)
+!
+      ivar3=ivar1
+!
+!  initialize each ring
+!
       if (any((/fring1,fring2,Iring1,Iring2/) /= 0.)) then
         ! fringX is the magnetic flux, IringX the current
         if (lroot) then
           print*, 'fluxrings: Initialising magnetic flux rings'
         endif
-        do i=1,2
+        do i=1,nrings
           if (i==1) then
             fring = fring1      ! magnetic flux along ring
             Iring = Iring1      ! current along ring (for twisted flux tube)
             R0    = Rring1      ! radius of ring
             width = wr1         ! ring thickness
-            axis  = axisr1 ! orientation
-            disp  = dispr1    ! position
+            axis  = axisr1      ! orientation
+            disp  = dispr1      ! position
             ivar  = ivar1
-          else
+          elseif (i==2) then
             fring = fring2
             Iring = Iring2
             R0    = Rring2
@@ -4406,6 +4419,16 @@ module Magnetic
             axis  = axisr2
             disp  = dispr2
             ivar  = ivar2
+          elseif (i==3) then
+            fring = fring3
+            Iring = Iring3
+            R0    = Rring3
+            width = wr3
+            axis  = axisr3
+            disp  = dispr3
+            ivar  = ivar3
+          else
+            call stop_it('fluxrings: nrings is too big')
           endif
           phi   = atan2(axis(2),axis(1)+epsi)
           theta = atan2(sqrt(axis(1)**2+axis(2)**2)+epsi,axis(3))
