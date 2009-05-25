@@ -1,16 +1,44 @@
 Directory:
     ${PENCIL_HOME}/samples/randum_uu_particles
-CVS-Id:
+SVN-Id:
     $Id$
 Maintainer:
-    Anders Johansen <johansen/mpia[dot]de>
+    Anders Johansen <ajohan@strw.leidenuniv.nl>
 Added:
-    00-Mon-200?
+    June 2005
 Status:
     succeeds # One of [succeeds|failing since <date>|obsolete| ...]
 Recommended resolution:
-    128x128x128 (nu=eta=1.3e-3)
+    64x64x64 (nu=2.0e-4)
 Comments:
-    Comments can start on this line,
-    and continue later, as long as they are indented.
+    Tests drag force coupling between gas and particles, including heating.
 
+    For momentum conservation, try:
+    IDL> pc_read_const, obj=cst
+    IDL> pc_read_dim, obj=dim
+    IDL> pc_read_pdim, obj=pdim
+    IDL> rhopm=cst.rhop_tilde*pdim.npar/double(dim.nx*dim.ny*dim.nz)
+    IDL> pc_read_ts, obj=ts
+    IDL> plot, ts.t, ts.ruxm, yrange=[-1.0,1.0]*5.0e-5, /nodata
+    IDL> oplot, ts.t, ts.ruxm, col=50
+    IDL> oplot, ts.t, ts.vpxm*rhopm, col=100
+    IDL> oplot, ts.t, ts.ruxm+ts.vpxm*rhopm
+    IDL> plot, ts.t, ts.ruym, yrange=[-1.0,1.0]*2.0e-4, /nodata
+    IDL> oplot, ts.t, ts.ruym, col=50
+    IDL> oplot, ts.t, ts.vpym*rhopm, col=100
+    IDL> oplot, ts.t, ts.ruym+ts.vpym*rhopm
+    IDL> plot, ts.t, ts.ruzm, yrange=[-1.0,1.0]*1.0e-4, /nodata
+    IDL> oplot, ts.t, ts.ruzm, col=50
+    IDL> oplot, ts.t, ts.vpzm, col=100
+    IDL> oplot, ts.t, ts.ruzm+ts.vpzm*rhopm
+
+    For energy conservation, try:
+    IDL> pc_read_ts, obj=ts
+    IDL> plot, ts.t, ts.ethm, yrange=[-1.0,1.0]*2.0e-3, /nodata
+    IDL> oplot, ts.t, ts.ethm-0.9, col=50
+    IDL> oplot, ts.t, ts.ekin, col=100
+    IDL> oplot, ts.t, ts.ekinp, col=150
+    IDL> oplot, ts.t, ts.ethm+ts.ekin+ts.ekinp-0.9
+
+    The slight non-conservation is probably due to numerical viscosity, since
+    the drag force scheme is constructed to conserve momentum.

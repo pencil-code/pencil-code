@@ -4,11 +4,10 @@
 !
 &run_pars
   cvsid='$Id$',
-  nt=50, it1=10, cdt=0.4, cdtv=0.4, isave=100, itorder=3
-  dsnap=10.0, dvid=0.5, ip=20
+  nt=50, it1=10, cdt=0.4, cdtv=0.25, isave=100, itorder=3
+  dsnap=1.0, dvid=0.1, ip=20
   lbidiagonal_derij=F
   lpencil_check=T
-  dt=1.0e-3
 /
 &eos_run_pars
 /
@@ -24,7 +23,6 @@
 /
 &particles_run_pars
   tausp=0.1, cdtp=0.2
-  ldragforce_dust_par=T, ldragforce_gas_par=F
+  ldragforce_dust_par=T, ldragforce_gas_par=T
   ldragforce_heat=T
-  lnostore_uu=T
 /
