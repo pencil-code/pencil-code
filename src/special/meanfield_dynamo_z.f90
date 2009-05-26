@@ -66,7 +66,7 @@ module Special
       use Cdata
       use FArrayManager
 !
-      call farray_register_pde('am',iam,nvector=3)
+      call farray_register_pde('am',iam,vector=3)
       iamx=iam; iamy=iamx+1; iamz=iamx+2
 !
       if (lroot) call svn_id( &

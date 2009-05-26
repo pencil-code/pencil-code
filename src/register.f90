@@ -449,12 +449,15 @@ module Register
 !
 !  weighted coordinates for integration purposes
 !  Need to modify for 2-D and 1-D cases!
+!AB: for now, allow only if nxgrid>1. Dhruba, please check
 !
         r2_weight=x(l1:l2)**2
         sinth_weight=sinth
-        do itheta=0,nygrid-1
-          sinth_weight_across_proc(itheta)=sin(xyz0(2)+dy*itheta)
-        enddo
+        if (nxgrid>1) then
+          do itheta=0,nygrid-1
+            sinth_weight_across_proc(itheta)=sin(xyz0(2)+dy*itheta)
+          enddo
+        endif
 ! Calculate the volume of the box, for non-cartesian coordinates
         nVol=0.
         do xj=l1,l2

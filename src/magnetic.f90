@@ -1429,7 +1429,13 @@ module Magnetic
         lpencil_in(i_b2)=.true.
         lpencil_in(i_bb)=.true.
         if (delta_effect/=0.) lpencil_in(i_oxJ)=.true.
-        if (meanfield_etat/=0.) lpencil_in(i_jj)=.true.
+        if (meanfield_etat/=0.) then
+          if (lweyl_gauge) then
+            lpencil_in(i_jj)=.true.
+          else
+            lpencil_in(i_del2a)=.true.
+          endif
+        endif
       endif
       if (lpencil_in(i_del2A)) then
         if (lspherical_coords) then 
@@ -1720,7 +1726,13 @@ module Magnetic
 !  add possible delta x J effect and turbulent diffusion to EMF
 !
         if (delta_effect/=0.) p%mf_EMF=p%mf_EMF+delta_effect*p%oxJ
-        if (meanfield_etat/=0.) p%mf_EMF=p%mf_EMF-meanfield_etat*p%jj
+        if (meanfield_etat/=0.) then
+          if (lweyl_gauge) then
+            p%mf_EMF=p%mf_EMF-meanfield_etat*p%jj
+          else
+            p%mf_EMF=p%mf_EMF+meanfield_etat*p%del2a
+          endif
+        endif
       endif
       if (lpencil(i_mf_EMFdotB)) call dot_mn(p%mf_EMF,p%bb,p%mf_EMFdotB)
 !

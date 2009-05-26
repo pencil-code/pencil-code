@@ -1341,7 +1341,9 @@ module Diagnostics
 !  m starts with mghost+1=4, so the correct index is m-nghost
 !
       m_nghost=m-nghost
-      if (lspherical_coords)then
+!     if (lspherical_coords)then
+!AB: Dhruba, please check what to do
+      if (lspherical_coords.and.nxgrid>1)then
         do isum=l1,l2
           fnamey(m_nghost,ipy+1,iname)=fnamey(m_nghost,ipy+1,iname)+ &
                               x(isum)*sinth(m)*a(isum)

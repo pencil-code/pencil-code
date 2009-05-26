@@ -1,6 +1,6 @@
 ! $Id$
 !
-!  Lorentz gauge, dphi/dt = -cphi2*divA
+!  Lorenz gauge, dphi/dt = -cphi2*divA
 !
 !  25-feb-07/axel: adapted from nospecial.f90
 !
@@ -31,14 +31,14 @@ module Special
   real :: cphi2
 
   ! input parameters
-  real :: cphi=1.,ampl=1e-3,kx=1.,ky=0.,kz=0.
+  real :: cphi=1.,etaphi=0.,ampl=1e-3,kx=1.,ky=0.,kz=0.
   character(len=50) :: init='zero'
   namelist /special_init_pars/ &
-    cphi,init,ampl,kx,ky,kz
+    cphi,etaphi,init,ampl,kx,ky,kz
 
   ! run parameters
   namelist /special_run_pars/ &
-    cphi
+    cphi,etaphi
 !
 ! Declare any index variables necessary for main or 
 ! 
@@ -187,7 +187,7 @@ module Special
       type (pencil_case) :: p
 !
       real, dimension (nx,3) :: gphi
-      real, dimension (nx) :: phi
+      real, dimension (nx) :: phi,del2phi
 !
       intent(in) :: f,p
       intent(inout) :: df
@@ -201,7 +201,12 @@ module Special
 !
       if (lmagnetic) then
         call grad(f,iphi,gphi)
-        df(l1:l2,m,n,iphi)=df(l1:l2,m,n,iphi)-cphi2*p%diva
+        if (etaphi/=0.) then
+          call del2(f,iphi,del2phi)
+          df(l1:l2,m,n,iphi)=df(l1:l2,m,n,iphi)-cphi2*p%diva+etaphi*del2phi
+        else
+          df(l1:l2,m,n,iphi)=df(l1:l2,m,n,iphi)-cphi2*p%diva
+        endif
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-gphi
       endif
 !
