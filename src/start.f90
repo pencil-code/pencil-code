@@ -296,7 +296,7 @@ program start
 !  example).
 !
   call initialize_modules(f,lstarting=.true.)
-  call particles_initialize_modules(lstarting=.true.)
+  call particles_initialize_modules(f,lstarting=.true.)
 !
 !  Initial conditions: by default, we put f=0 (ss=lnrho=uu=0, etc).
 !  alternatively: read existing snapshot and overwrite only some fields

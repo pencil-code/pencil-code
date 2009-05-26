@@ -37,10 +37,11 @@ module Particles_collisions
 !
   contains
 !***********************************************************************
-    subroutine initialize_particles_collisions(lstarting)
+    subroutine initialize_particles_collisions(f,lstarting)
 !
 !  07-oct-08/anders: coded
 !
+      real, dimension (mx,my,mz,mfarray) :: f
       logical, intent(in) :: lstarting
 !
       select case(icoll)
@@ -52,6 +53,9 @@ module Particles_collisions
       endselect
 !
       allocate(kneighbour(mpar_loc))
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_collisions
 !***********************************************************************

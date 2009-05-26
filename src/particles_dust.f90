@@ -209,7 +209,7 @@ module Particles
 !
     endsubroutine register_particles
 !***********************************************************************
-    subroutine initialize_particles(lstarting)
+    subroutine initialize_particles(f,lstarting)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -220,11 +220,11 @@ module Particles
       use FArrayManager
       use SharedVariables,only:get_shared_variable
 !
-      integer :: jspec
+      real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
       real :: rhom
-      integer :: npar_per_species,ierr
+      integer :: ierr, jspec
 !
 !  Distribute particles evenly among processors to begin with.
 !
@@ -507,6 +507,8 @@ module Particles
           write (1,*) 'rhop_tilde=', rhop_tilde
         close (1)
       endif
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine initialize_particles
 !***********************************************************************

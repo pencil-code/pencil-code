@@ -93,7 +93,7 @@ module Particles_spin
 !
     endsubroutine register_particles_spin
 !***********************************************************************
-    subroutine initialize_particles_spin(lstarting)
+    subroutine initialize_particles_spin(f,lstarting)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -102,7 +102,14 @@ module Particles_spin
 !
       use Particles_radius
 !
+      real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
+!
+!  Initialize vorticity field to zero.
+!
+      f(:,:,:,iox)=0.0
+      f(:,:,:,ioy)=0.0
+      f(:,:,:,ioz)=0.0
 !
       if (lroot) print*,'initialize_particles_spin: '// &
           'using communicated auxiliary variables.'
@@ -127,7 +134,6 @@ module Particles_spin
       real, dimension (mpar_loc,mpvar) :: fp
 !
       intent(inout) :: f
-!
  !     integer :: j
 !
       if (lroot) print*,'init_particles_spin: oo will be generated '// &

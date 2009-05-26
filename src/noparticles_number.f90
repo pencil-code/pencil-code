@@ -33,19 +33,21 @@ module Particles_number
 !
     endsubroutine register_particles_number
 !***********************************************************************
-    subroutine initialize_particles_number(lstarting)
+    subroutine initialize_particles_number(f,lstarting)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
 !  25-nov-05/anders: coded
 !
+      real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
       np_tilde0=rhop_tilde/mp_tilde
       if (lroot) print*, 'initialize_particles_number: '// &
           'number density per particle np_tilde0=', np_tilde0
 !
+      call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_number

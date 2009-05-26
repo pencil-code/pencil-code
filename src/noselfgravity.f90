@@ -35,12 +35,16 @@ module Selfgravity
 !
     endsubroutine register_selfgravity
 !***********************************************************************
-    subroutine initialize_selfgravity()
+    subroutine initialize_selfgravity(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
 !  15-may-06/anders+jeff: dummy
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine initialize_selfgravity
 !***********************************************************************

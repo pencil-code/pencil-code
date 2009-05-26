@@ -65,12 +65,13 @@ module Particles_main
 !
     endsubroutine particles_rprint_list
 !***********************************************************************
-    subroutine particles_initialize_modules(lstarting)
+    subroutine particles_initialize_modules(f,lstarting)
 !
 !  Initialize particle modules.
 !
 !  07-jan-05/anders: coded
 !
+      real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
 !  Check if there is enough total space allocated for particles.
@@ -87,15 +88,15 @@ module Particles_main
         call fatal_error('particles_initialize_modules','')
       endif
 !
-      call initialize_particles           (lstarting)
-      call initialize_particles_radius    (lstarting)
-      call initialize_particles_spin      (lstarting)
-      call initialize_particles_number    (lstarting)
-      call initialize_particles_selfgrav  (lstarting)
-      call initialize_particles_nbody     (lstarting)
-      call initialize_particles_viscosity (lstarting)
-      call initialize_particles_collisions(lstarting)
-      call initialize_particles_stalker   (lstarting)
+      call initialize_particles           (f,lstarting)
+      call initialize_particles_radius    (f,lstarting)
+      call initialize_particles_spin      (f,lstarting)
+      call initialize_particles_number    (f,lstarting)
+      call initialize_particles_selfgrav  (f,lstarting)
+      call initialize_particles_nbody     (f,lstarting)
+      call initialize_particles_viscosity (f,lstarting)
+      call initialize_particles_collisions(f,lstarting)
+      call initialize_particles_stalker   (f,lstarting)
 !
 !  Make sure all requested interpolation variables are available.
 !

@@ -60,7 +60,7 @@ module Particles_selfgravity
 !
     endsubroutine register_particles_selfgrav
 !***********************************************************************
-    subroutine initialize_particles_selfgrav(lstarting)
+    subroutine initialize_particles_selfgrav(f,lstarting)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -69,10 +69,14 @@ module Particles_selfgravity
 !
       use SharedVariables
 !
-      integer :: ierr
+      real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
-      call keep_compiler_quiet(lstarting)
+      integer :: ierr
+!
+!  Initialize gravitational acceleration to zero.
+!
+      f(:,:,:,igpotselfx:igpotselfz)=0.0
 !
       call get_shared_variable('tstart_selfgrav',tstart_selfgrav,ierr)
       if (ierr/=0) then
@@ -81,7 +85,7 @@ module Particles_selfgravity
         call fatal_error('initialize_particles_selfgrav','')
       endif
 !
-! Boundary condition consistency
+!  Boundary condition consistency.
 !
       if (any(bcx(igpotselfx:igpotselfz)=='p') .and. .not.(bcx(ipotself)=='p')) then
         if (lroot) then
@@ -110,6 +114,8 @@ module Particles_selfgravity
         endif
         call fatal_error('initialize_particles_selfgrav','')
       endif
+!
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_selfgrav
 !***********************************************************************

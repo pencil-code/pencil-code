@@ -17,6 +17,7 @@ module Particles_number
   use Messages
   use Particles_cdata
   use Particles_sub
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -66,13 +67,14 @@ module Particles_number
 !
     endsubroutine register_particles_number
 !***********************************************************************
-    subroutine initialize_particles_number(lstarting)
+    subroutine initialize_particles_number(f,lstarting)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
 !  24-nov-05/anders: adapted
 !
+      real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
       allocate(kneighbour(mpar_loc))
@@ -85,9 +87,12 @@ module Particles_number
             "Cowardly refusing to divide by zero -- did you set ap0?")
         np_tilde0 = 1
       endif
-
+!
       if (lroot) print*, 'initialize_particles_number: '// &
           'number density per particle np_tilde0=', np_tilde0
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_number
 !***********************************************************************

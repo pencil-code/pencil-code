@@ -17,6 +17,7 @@ module Particles_radius
   use Messages
   use Particles_cdata
   use Particles_sub
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -66,13 +67,14 @@ module Particles_radius
 !
     endsubroutine register_particles_radius
 !***********************************************************************
-    subroutine initialize_particles_radius(lstarting)
+    subroutine initialize_particles_radius(f,lstarting)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
 !  22-aug-05/anders: coded
 !
+      real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
 !  Calculate the number density of bodies within a superparticle.
@@ -80,6 +82,8 @@ module Particles_radius
       mp_tilde=4/3.*pi*rhops*ap0**3
       if (lroot) print*, 'initialize_particles_radius: '// &
           'mass per dust grain mp_tilde=', mp_tilde
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine initialize_particles_radius
 !***********************************************************************

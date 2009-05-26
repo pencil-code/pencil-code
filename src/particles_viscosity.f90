@@ -60,7 +60,7 @@ module Particles_viscosity
 !
     endsubroutine register_particles_viscosity
 !***********************************************************************
-    subroutine initialize_particles_viscosity(lstarting)
+    subroutine initialize_particles_viscosity(f,lstarting)
 !
 !  07-oct-08/anders: coded
 !
@@ -68,9 +68,14 @@ module Particles_viscosity
       use Mpicomm, only: stop_it
       use SharedVariables
 !
+      real, dimension (mx,my,mz,mfarray) :: f
       logical, intent(in) :: lstarting
 !
       integer :: i, ierr
+!
+!  Initialize assigned velocity field to zero.
+!
+      f(:,:,:,iupx:iupz)=0.0
 !
 !  Some viscosity types need the rate-of-strain tensor and grad(lnrho)
 !
@@ -108,6 +113,7 @@ module Particles_viscosity
             'Viscosity coefficient nup is zero!')
       endif
 !
+      call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_viscosity

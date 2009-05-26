@@ -32,15 +32,17 @@ module Particles
 !
     endsubroutine register_particles
 !***********************************************************************
-    subroutine initialize_particles(lstarting)
+    subroutine initialize_particles(f,lstarting)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
 !  22-aug-05/anders: dummy
 !
+      real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
+      call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles

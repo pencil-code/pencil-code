@@ -85,13 +85,14 @@ module Particles
 !
     endsubroutine register_particles
 !***********************************************************************
-    subroutine initialize_particles(lstarting)
+    subroutine initialize_particles(f,lstarting)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
 !  29-dec-04/anders: coded
 !
+      real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
       real :: rhom
@@ -144,6 +145,8 @@ module Particles
         gravz_profile='linear'
         nu_epicycle2=nu_epicycle**2
       endif
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine initialize_particles
 !***********************************************************************

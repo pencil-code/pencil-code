@@ -22,12 +22,14 @@ module Particles_stalker
 !
   contains
 !***********************************************************************
-    subroutine initialize_particles_stalker(lstarting)
+    subroutine initialize_particles_stalker(f,lstarting)
 !
 !  13-nov-07/anders: dummy
 !
+      real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
+      call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_stalker

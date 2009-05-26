@@ -30,15 +30,17 @@ module Particles_radius
 !
     endsubroutine register_particles_radius
 !***********************************************************************
-    subroutine initialize_particles_radius(lstarting)
+    subroutine initialize_particles_radius(f,lstarting)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
 !  25-nov-05/anders: coded
 !
+      real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
+      call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_radius

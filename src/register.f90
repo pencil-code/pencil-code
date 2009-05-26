@@ -220,23 +220,24 @@ module Register
       integer :: itheta
 !
 !  Defaults for some logicals; will later be set to true if needed
+!
       lpenc_requested(:) = .false.
 !
-!  evaluate physical units
-!  used currently only in eos, but later also in
-!  the interstellar and radiation modules, for example
+!  Evaluate physical units.
+!  Used currently only in eos, but later also in
+!  the interstellar and radiation modules, for example.
 !
       call units_general()
       call units_eos()
 !
-!  calculated derived units
+!  Calculated derived units.
 !
       unit_mass=unit_density*unit_length**3
       unit_energy=unit_mass*unit_velocity**2
       unit_time=unit_length/unit_velocity
       unit_flux=unit_energy/(unit_length**2*unit_time)
 !
-!  convert physical constants to code units
+!  Convert physical constants to code units.
 !
       if (unit_system=='cgs') then
         if (lroot.and.leos_ionization.and.ip<14) print*,'initialize_modules: ' &
@@ -270,14 +271,14 @@ module Register
         G_Newton=G_Newton_cgs*1e-3*unit_length**2*unit_density/unit_velocity**2
       endif
 !
-!  calculate additional constants (now all in code units)
+!  Calculate additional constants (now all in code units).
 !
       m_H=m_p+m_e
       m_He=3.97153*m_H
       chiH=13.6*eV
       chiH_=0.754*eV
 !
-!  print parameters in code units, but only when used
+!  Print parameters in code units, but only when used.
 !
       if (lroot.and.ip<14) then
          if (leos_ionization.or.lradiation.or.lradiation_ray.or.linterstellar) then
@@ -285,18 +286,18 @@ module Register
          endif
       endif
 !
-!  run rest of initialization of individual modules
+!  Run rest of initialization of individual modules.
 !
       call initialize_prints()
-      call initialize_timeavg(f) ! initialize time averages
+      call initialize_timeavg(f)
       call initialize_eos()
       call initialize_gravity(f,lstarting)
-      call initialize_selfgravity()
+      call initialize_selfgravity(f)
       call initialize_poisson()
       call initialize_density(f,lstarting)
       call initialize_hydro(f,lstarting)
-      call initialize_forcing(lstarting)   ! get random seed from file, ..
-      call initialize_entropy(f,lstarting) ! calculate radiative conductivity,..
+      call initialize_forcing(lstarting)
+      call initialize_entropy(f,lstarting)
       call initialize_magnetic(f,lstarting)
       call initialize_testscalar(f)
       call initialize_testfield(f)

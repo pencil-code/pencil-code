@@ -32,15 +32,17 @@ module Particles_selfgravity
 !
     endsubroutine register_particles_selfgrav
 !***********************************************************************
-    subroutine initialize_particles_selfgrav(lstarting)
+    subroutine initialize_particles_selfgrav(f,lstarting)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
 !  14-jun-06/anders: dummy
 !
+      real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
+      call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_selfgrav

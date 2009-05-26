@@ -98,7 +98,7 @@ module Particles_nbody
 !
     endsubroutine register_particles_nbody
 !***********************************************************************
-    subroutine initialize_particles_nbody(lstarting)
+    subroutine initialize_particles_nbody(f,lstarting)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -109,8 +109,10 @@ module Particles_nbody
       use FArrayManager
       use SharedVariables
 !
-      integer :: ierr,ks
+      real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
+!
+      integer :: ierr,ks
 !
 !  look for initialized masses
 !
@@ -256,6 +258,9 @@ module Particles_nbody
              'if linterpolate_gravity is false'
         call fatal_error("initialize_particles_nbody","")
       endif
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_nbody
 !***********************************************************************

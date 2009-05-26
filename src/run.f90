@@ -294,7 +294,7 @@ program run
 !
   if (lparticles) then
     call particles_rprint_list(.false.)
-    call particles_initialize_modules(LSTARTING=.false.)
+    call particles_initialize_modules(f,lstarting=.false.)
   endif
 !
 !  Allocate the finit array if lADI=.true.
@@ -421,7 +421,7 @@ program run
         call initialize_modules(f,LSTARTING=.false.)
         if (lparticles) then
           call particles_rprint_list(.false.)
-          call particles_initialize_modules(LSTARTING=.false.)
+          call particles_initialize_modules(f,lstarting=.false.)
         endif
         call choose_pencils()
         call wparam2()

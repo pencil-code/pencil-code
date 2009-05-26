@@ -28,12 +28,14 @@ module Particles_collisions
 !
   contains
 !***********************************************************************
-    subroutine initialize_particles_collisions(lstarting)
+    subroutine initialize_particles_collisions(f,lstarting)
 !
 !  23-mar-09/anders: dummy
 !
+      real, dimension (mx,my,mz,mfarray) :: f
       logical, intent(in) :: lstarting
 !
+      call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_collisions

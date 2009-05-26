@@ -72,7 +72,7 @@ module Selfgravity
 !
     endsubroutine register_selfgravity
 !***********************************************************************
-    subroutine initialize_selfgravity()
+    subroutine initialize_selfgravity(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -81,12 +81,16 @@ module Selfgravity
 !
       use SharedVariables
 !
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: ierr=0
 !
-      if (gravitational_const .ne. 0) then 
-        !gravitational const was set, re-define rhs_poisson_const
-        rhs_poisson_const=4*pi*gravitational_const
-      endif
+!  Initialize gravitational potential to zero.
+!
+      f(:,:,:,ipotself)=0.0
+!
+!  If gravitational constant was set, re-define rhs_poisson_const.
+!
+      if (gravitational_const/=0.0) rhs_poisson_const=4*pi*gravitational_const
 !
       if (.not.lpoisson) then
         if (lroot) print*, 'initialize_selfgravity: must choose a Poisson '// &

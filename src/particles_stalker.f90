@@ -43,7 +43,7 @@ module Particles_stalker
   contains
 
 !***********************************************************************
-    subroutine initialize_particles_stalker(lstarting)
+    subroutine initialize_particles_stalker(f,lstarting)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -52,6 +52,7 @@ module Particles_stalker
 !
       use FArrayManager
 !
+      real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
 !  Stop if no particles are stalked.
@@ -116,6 +117,8 @@ module Particles_stalker
           close(1)
         endif
       endif
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine initialize_particles_stalker
 !***********************************************************************
