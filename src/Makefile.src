@@ -691,7 +691,7 @@ endif
 #FC=ifort #(naiad|sky1)
 #FFLAGS=-O3 #(naiad|sky1)
 #FFLAGS_DOUBLE = -r8 #(naiad|sky1)
-#include $(PENCIL_HOME)/src/Makefile_ifort.incl #(naiad|sky1)
+#include $(PENCIL_HOME)/src/Makefile_ifort.incl #(naiad|sky1|pchelka)
 #FC=ifort #(hikari)
 #FC=ifort #(pchelka)
 ##FC=ifort -fexceptions -fp-stack-check -fstack-security-check -ftrapuv  #(pchelka)
