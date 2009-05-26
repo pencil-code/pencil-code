@@ -1738,44 +1738,44 @@ module Particles_sub
 !  physical point. Either stop the code with a fatal error or fix problem
 !  by forcing the nearest grid point to be a physical point.
 !
-          if (lcheck_exact_frontier .and. &
-               any(ineargrid(k,:)==(/l1-1,m1-1,n1-1/)) .or.  &
-               any(ineargrid(k,:)==(/l2+1,m2+1,n2+1/))) then
- 
-            if (ineargrid(k,1)==l1-1) then
-              ineargrid(k,1)=l1
-            elseif (ineargrid(k,1)==l2+1) then
-              ineargrid(k,1)=l2
-            elseif (ineargrid(k,2)==m1-1) then
-              ineargrid(k,2)=m1
-            elseif (ineargrid(k,2)==m2+1) then
-              ineargrid(k,2)=m2
-            elseif (ineargrid(k,3)==n1-1) then
-              ineargrid(k,3)=n1
-            elseif (ineargrid(k,3)==n2+1) then
-              ineargrid(k,3)=n2
+          if (ineargrid(k,1)==l1-1.or.ineargrid(k,1)==l2+1.or. &
+              ineargrid(k,2)==m1-1.or.ineargrid(k,2)==m2+1.or. &
+              ineargrid(k,3)==n1-1.or.ineargrid(k,3)==n2+1) then
+            if (lcheck_exact_frontier) then
+              if (ineargrid(k,1)==l1-1) then
+                ineargrid(k,1)=l1
+              elseif (ineargrid(k,1)==l2+1) then
+                ineargrid(k,1)=l2
+              elseif (ineargrid(k,2)==m1-1) then
+                ineargrid(k,2)=m1
+              elseif (ineargrid(k,2)==m2+1) then
+                ineargrid(k,2)=m2
+              elseif (ineargrid(k,3)==n1-1) then
+                ineargrid(k,3)=n1
+              elseif (ineargrid(k,3)==n2+1) then
+                ineargrid(k,3)=n2
+              endif
+            else
+              print*, 'map_nearest_grid: particle must never be closer to a '//&
+                      'ghost point than'
+              print*, '                  to a physical point.'
+              print*, '                  Consider using double precision to '//&
+                      'avoid this problem'
+              print*, '                  or set lcheck_exact_frontier in '// &
+                      '&particles_run_pars.'
+              print*, 'Information about what went wrong:'
+              print*, '----------------------------------'
+              print*, 'it, itsub, t=', it, itsub, t
+              print*, 'ipar, k     =', ipar(k), k
+              print*, 'xxp         =', fp(k,ixp:izp)
+              print*, 'vvp         =', fp(k,ivpx:ivpz)
+              print*, 'ineargrid   =', ineargrid(k,:)
+              print*, 'l1, m1, n1  =', l1, m1, n1
+              print*, 'l2, m2, n2  =', l2, m2, n2
+              print*, 'x1, y1, z1  =', x(l1), y(m1), z(n1)
+              print*, 'x2, y2, z2  =', x(l2), y(m2), z(n2)
+              call fatal_error_local('map_nearest_grid','')
             endif
-          elseif (any(ineargrid(k,:)<(/l1,m1,n1/)) .or.  &
-                  any(ineargrid(k,:)>(/l2,m2,n2/))) then
-            print*, 'map_nearest_grid: particle must never be closer to a '// &
-                    'ghost point than'
-            print*, '                  to a physical point.'
-            print*, '                  Consider using double precision to '// &
-                    'avoid this problem'
-            print*, '                  or set lcheck_exact_frontier in '// &
-                    '&particles_run_pars.'
-            print*, 'Information about what went wrong:'
-            print*, '----------------------------------'
-            print*, 'it, itsub, t=', it, itsub, t
-            print*, 'ipar, k     =', ipar(k), k
-            print*, 'xxp         =', fp(k,ixp:izp)
-            print*, 'vvp         =', fp(k,ivpx:ivpz)
-            print*, 'ineargrid   =', ineargrid(k,:)
-            print*, 'l1, m1, n1  =', l1, m1, n1
-            print*, 'l2, m2, n2  =', l2, m2, n2
-            print*, 'x1, y1, z1  =', x(l1), y(m1), z(n1)
-            print*, 'x2, y2, z2  =', x(l2), y(m2), z(n2)
-            call fatal_error_local('map_nearest_grid','')
           endif
         endif
       enddo
