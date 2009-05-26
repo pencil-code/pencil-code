@@ -96,6 +96,7 @@ module Magnetic
   real :: rmode=1.,rm_int=0.,rm_ext=0.
   real :: nu_ni=0.,nu_ni1,hall_term=0.
   real :: alpha_effect=0.,alpha_quenching=0.,delta_effect=0.,meanfield_etat=0.
+  real :: alpha_eps=0.
   real :: alpha_equator=impossible,alpha_equator_gap=0.,alpha_gap_step=0.
   real :: meanfield_Qs=1.
   real :: displacement_gun=0.
@@ -185,6 +186,7 @@ module Magnetic
   namelist /magnetic_run_pars/ &
        eta,eta1,eta_hyper2,eta_hyper3,B_ext,omega_Bz_ext,nu_ni,hall_term, &
        lmeanfield_theory,alpha_effect,alpha_quenching,delta_effect, &
+       alpha_eps, &
        lmeanfield_noalpm,alpha_profile, &
        meanfield_etat, lohmic_heat, lmeanfield_jxb, meanfield_Qs, &
        alpha_equator,alpha_equator_gap,alpha_gap_step,&
@@ -1480,7 +1482,7 @@ module Magnetic
       real, dimension (nx,3) :: bb_ext,bb_ext_pot,ee_ext,jj_ext
       real, dimension (nx) :: rho1_jxb,alpha_total
       real, dimension (nx) :: alpha_tmp
-      real :: B2_ext,c,s
+      real :: B2_ext,c,s,kx
       integer :: i,j
 !
       intent(inout) :: f,p
@@ -1695,12 +1697,14 @@ module Magnetic
 ! needed if a mean field (mf) model is calculated
 !
       if (lpencil(i_mf_EMF)) then
+        kx=2*pi/Lx
         select case(alpha_profile)
         case('const'); alpha_tmp=1.
         case('siny'); alpha_tmp=sin(y(m))
         case('sinz'); alpha_tmp=sin(z(n))
         case('z'); alpha_tmp=z(n)
         case('cosy'); alpha_tmp=cos(y(m))
+        case('y*(1+eps*sinx)'); alpha_tmp=y(m)*(1.+alpha_eps*sin(kx*x(l1:l2)))
         case('step'); alpha_tmp=(1.-step_scalar(y(m),alpha_equator-alpha_equator_gap,alpha_gap_step)&
                        -step_scalar(y(m),alpha_equator+alpha_equator_gap,alpha_gap_step))
         case('read'); alpha_tmp=alpha_input(l1:l2,m)
@@ -2960,6 +2964,7 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      real kx
 !
       intent(in) :: f
       intent(inout) :: df
@@ -2981,6 +2986,11 @@ module Magnetic
             *sin(x(l1:l2))*cos(z(n))
         df(l1:l2,m,n,iaz)=df(l1:l2,m,n,iaz)+Omega_ampl*f(l1:l2,m,n,iay) &
             *cos(x(l1:l2))*sin(z(n))
+      case('(0,0,cosx)')
+        kx=2*pi/Lx
+        if (headtt) print*,'Omega_effect: (0,0,cosx), S,kx=',Omega_ampl,kx
+        df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)+Omega_ampl*f(l1:l2,m,n,iaz) &
+            *kx*sin(kx*x(l1:l2))
       case default; print*,'Omega_profile=unknown'
       endselect
 !
