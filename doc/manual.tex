@@ -2020,14 +2020,6 @@ The corresponding diagnostic output will look like
      0.126   1.6980E-02  14.42457 -1.93E-06
 \end{verbatim}
 
-In the file \file{xyaver.in}, $z$-dependent (horizontal) averages are listed.
-They are written to the file \file[xyaverages.dat]{data/xyaverages.dat}.
-We can also output in \file{print.in} the associated mean square value
-of the horizontal field, but this requires that in \file{xyaver.in} the
-quantities \code{bxmz} and \code{bymz} are set.
-In \code{idl} such $xy$-averages can be read using the procedure
-\file{pc_read_xyaver}.
-
 % ---------------------------------------------------------------------- %
 
 \subsection{Data files}
@@ -2218,9 +2210,42 @@ for a $y$-$z$ slice):
 
 \subsubsection{Horizontal averages}
 \label{S-hor-averages}
-See Secs.~\ref{diagnostic-IO}, \ref{S-new-hor-averages} and
-\ref{S-other-averages} for how to use horizontal averages [we should
-reorganize this material].
+
+In the file \file{xyaver.in}, $z$-dependent (horizontal) averages are listed.
+They are written to the file \file[xyaverages.dat]{data/xyaverages.dat}.
+Currently, only the horizontally $xy$-averaged $x$ and $y$ components
+of the magnetic and velocity fields can be written.
+A new line of averages is written every time \file{var.dat} is updated
+(i.e.\ every \var{it1}th time steps).
+See Secs.~\ref{S-new-output-diagnostics} on how to add new averages.
+
+We can also output in \file{print.in} the associated mean square value
+of the horizontal field, but this requires that in \file{xyaver.in} the
+quantities \code{bxmz} and \code{bymz} are set.
+
+In \code{idl} such $xy$-averages can be read using the procedure
+\file{pc_read_xyaver}.
+
+
+\subsubsection{Vertical averages}
+\label{S-ver-averages}
+
+There is the possibility to output also vertical $xz$- and $yz$- averages.
+This is done by averaging first in the $z$-direction only, so
+the result (which is available on the root processor) depends on $x$
+and $y$. From these planes we calculate then (on the root processor)
+the $xz$- and $yz$-averages.
+The energies of the so defined mean magnetic fields
+are referred to as \var{bmy} and \var{bmx}, respectively,
+and the energies of the so defined mean velocity fields
+are referred to as \var{umy}, \var{umx}, and \var{umz}, respectively,
+(The last letter indicates the direction on which the averaged
+quantity still depends.)
+
+{\it Disadvantage}: one needs to set the file \file{zaver.in} with
+the entries \var{bxmxy}, \var{bymxy}, \var{bzmxy}, which produces a
+rather big file \file[zaverages.dat]{data/zaverages.dat}.
+
 
 \subsubsection{Azimuthal averages}
 \label{S-phi-averages}
@@ -5592,6 +5617,7 @@ These and other issues are discussed in more depth and with examples in
 Appendix~\ref{coding-standard}.
 
 \subsection{Adding new output diagnostics}
+\label{S-new-output-diagnostics}
 
 With the implementation of new physics and the development of new procedures
 it will become necessary to monitor new diagnostic quantities that
@@ -5685,44 +5711,11 @@ in the code, and we were only now adding it, we would need to do the following
 If, instead of a mean value, you want a new maximum quantity, you need to
 replace \code{sum\_mn\_name()} by \code{max\_mn\_name()}.
 
+Sec.~\ref{S-hor-averages} describes how to output horizontal averages
+of the magnetic and velocity fields. New such averages can be added to
+the code by using the existing averaging procedures \code{calc\_bmz()}
+or \code{calc\_jmz()} as examples.
 
-% ---------------------------------------------------------------------- %
-
-\subsubsection{Outputting new horizontal averages}
-\label{S-new-hor-averages}
-
-Currently, only the horizontally $xy$-averaged $x$ and $y$ components
-of the magnetic and velocity fields can be written.
-This is determined by the existence
-and content of the file \file{xyaver.in}; a new line of averages is
-written every time \file{var.dat} is updated (i.e.\ every \var{it1}th time
-steps).
-New such variables can be added by using the existing averaging
-procedures as examples.
-
-% ---------------------------------------------------------------------- %
-
-\subsubsection{Other averages}
-\label{S-other-averages}
-
-There is the possibility to output also $xz$ and $yz$
-averages. This is done by averaging first in the $z$-direction only, so
-the result (which is available on the root processor) depends on $x$
-and $y$. From these planes we calculate then (on the root processor)
-the $xz$ and $yz$ averages.
-The energies of the so defined mean magnetic fields
-are referred to as \var{bmy} and \var{bmx}, respectively,
-and the energies of the so defined mean velocity fields
-are referred to as \var{umy}, \var{umx}, and \var{umz}, respectively,
-(The last letter indicates the direction on which the averaged
-quantity still depends.)
-
-{\it Disadvantage}: one needs to set the file \file{zaver.in} with
-the entries \var{bxmxy}, \var{bymxy}, \var{bzmxy}, which produces a
-rather big file \file[zaverages.dat]{data/zaverages.dat}.
-
-
-% ---------------------------------------------------------------------- %
 \subsection{The f-array}
 \label{f-array}
 \index{f-array}
