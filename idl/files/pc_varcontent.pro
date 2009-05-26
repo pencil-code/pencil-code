@@ -65,7 +65,7 @@ varcontent=replicate({varcontent_all, $
     idlinitloc:'fltarr(mxloc,myloc,mzloc)*one', $
     skip:0}, totalvars+1)
 ;
-;  Predefine some variable types used regularly
+;  Predefine some variable types used regularly.
 ;
 if (keyword_set(run2D)) then begin
 ;
@@ -257,7 +257,7 @@ varcontent[iYY_chiral].idlvarloc  = 'YY_chiral_loc'
 varcontent[iYY_chiral].idlinitloc = INIT_SCALAR_LOC
 ;
 default, ispecial, 0
-varcontent[ispecial].variable   = 'special'
+varcontent[ispecial].variable   = 'Special'
 varcontent[ispecial].idlvar     = 'special'
 varcontent[ispecial].idlinit    = INIT_SCALAR
 varcontent[ispecial].idlvarloc  = 'special_loc'
@@ -412,11 +412,11 @@ endif
 ;
 default, ilnTT, 0
 if ((ilnTT le dim.mvar) or (param.lwrite_aux ne 0)) then begin
-    varcontent[ilnTT].variable   = 'Log temperature (lnTT)'
-    varcontent[ilnTT].idlvar     = 'lnTT'
-    varcontent[ilnTT].idlinit    = INIT_SCALAR
-    varcontent[ilnTT].idlvarloc  = 'lnTT_loc'
-    varcontent[ilnTT].idlinitloc = INIT_SCALAR_LOC
+  varcontent[ilnTT].variable   = 'Log temperature (lnTT)'
+  varcontent[ilnTT].idlvar     = 'lnTT'
+  varcontent[ilnTT].idlinit    = INIT_SCALAR
+  varcontent[ilnTT].idlvarloc  = 'lnTT_loc'
+  varcontent[ilnTT].idlinitloc = INIT_SCALAR_LOC
 end
 ;
 ;  Auxiliary variables (only if they have been saved).
@@ -546,6 +546,13 @@ if ((param.lwrite_aux ne 0) and (not noaux)) then begin
   varcontent[ihypres].idlvarloc  = 'hyr_loc'
   varcontent[ihypres].idlinitloc = INIT_3VECTOR_LOC
   varcontent[ihypres].skip       = 2
+;
+  default, ispecaux, 0
+  varcontent[ispecaux].variable   = 'Special aux'
+  varcontent[ispecaux].idlvar     = 'specaux'
+  varcontent[ispecaux].idlinit    = INIT_SCALAR
+  varcontent[ispecaux].idlvarloc  = 'specaux_loc'
+  varcontent[ispecaux].idlinitloc = INIT_SCALAR_LOC
 endif
 ;
 ;  Turn vector quantities into scalars if requested.
