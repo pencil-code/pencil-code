@@ -15,8 +15,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #! /Good_Path/perl -w 
 # line 17
 
-# Name:   o-to-data
-# Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
+# Name:   frecords
+# Author: wd (wdobler2s [at] gmail [dot] com)
 # Date:   27-Nov-2003
 # Description:
 #   Summarize the individual records in a Fortran unformatted file.

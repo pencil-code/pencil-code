@@ -2,10 +2,15 @@ ${PENCIL_HOME}/utils/wolf
 -------------------------
 
 Pencil Code utilities by wd. All scripts in this directory are licensed
-under the GPL 2 or any later version.
+under the GPL 3 or any later version.
 
 Manifest:
 
+  frecords      -- Summarize the individual records in a Fortran unformatted file.
   run_code.csh  -- parallel debugging; you'll need to type `r' manually
                    for each process
-  run_gdb.csh   -- parallel debugging; does `r' and `backtrace' for you
+  start_gdb.csh -- parallel debugging; opens one xterm per MPI process and
+                   does `r' and `backtrace' for you
+  run_gdb.csh   -- parallel debugging; opens one xterm per MPI process and
+                   does `r' and `backtrace' for you
+
