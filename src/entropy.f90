@@ -605,8 +605,8 @@ module Entropy
 !  compute hcond and glhc and put the results in global arrays
 !
       if (lhcond_global) then
-        call farray_register_global("hcond",iglobal_hcond)
-        call farray_register_global("glhc",iglobal_glhc,vector=3)
+        call farray_register_auxiliary("hcond",iglobal_hcond)
+        call farray_register_auxiliary("glhc",iglobal_glhc,vector=3)
         do n=n1,n2
         do m=m1,m2
           if (lgravz) then
