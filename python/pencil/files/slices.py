@@ -164,8 +164,8 @@ def animate_slices(field='uu1',datadir='data/',proc=-1,extension='xz',format='na
             manager.canvas.draw()
             
             if ifirst:
-                print "----islice----------t---------min-------max"
-            print "%10i %10.3e %10.3e %10.3e" % (islice,t,plane.min(),plane.max())
+                print "----islice----------t---------min-------max-------delta"
+            print "%10i %10.3e %10.3e %10.3e %10.3e" % (islice,t,plane.min(),plane.max(),plane.max()-plane.min())
                 
             ifirst = False
             islice += 1
@@ -271,8 +271,8 @@ def animate_multislices(field=['uu1'],datadir='data/',proc=-1,extension='xz',for
             manager.canvas.draw()
             
             if ifirst:
-                print "----islice----------t---------min-------max"
-            print "%10i %10.3e %10.3e %10.3e" % (islice,t,plotplane.min(),plotplane.max())
+                print "----islice----------t---------min-------max-------delta"
+            print "%10i %10.3e %10.3e %10.3e %10.3e" % (islice,t,plotplane.min(),plotplane.max(),plotplane.max()-plotplane.min())
                 
             ifirst = False
             islice += 1
@@ -371,8 +371,8 @@ def time_slices(field=['uu1'],datadir='data/',proc=-1,extension='xz',format='nat
                 plotplane += tempplane.tolist()
             
                 if ifirst:
-                    print "----islice----------t---------min-------max"
-                print "%10i %10.3e %10.3e %10.3e" % (islice,t,tempplane.min(),tempplane.max())
+                    print "----islice----------t---------min-------max-------delta"
+                print "%10i %10.3e %10.3e %10.3e %10.3e" % (islice,t,tempplane.min(),tempplane.max(),tempplane.max()-tempplane.min())
                 
                 ifirst = False
                 islice += 1
