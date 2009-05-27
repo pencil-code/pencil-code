@@ -29,7 +29,7 @@ module Forcing
 !
   real :: force=0.,force2=0.
   real :: relhel=1.,height_ff=0.,r_ff=0.,fountain=1.,width_ff=.5
-  real :: dforce=0.,radius_ff,k1_ff=1.,slope_ff=0.,work_ff=0.
+  real :: dforce=0.,radius_ff=0.,k1_ff=1.,slope_ff=0.,work_ff=0.
   real :: omega_ff=1.
   real :: tforce_stop=impossible,tforce_stop2=impossible
   real :: tforce_start=0.,tforce_start2=0.
@@ -50,7 +50,7 @@ module Forcing
   logical :: old_forcing_evector=.false.
   character (len=labellen) :: iforce='zero', iforce2='zero'
   character (len=labellen) :: iforce_profile='nothing'
-  real :: equator
+  real :: equator=0.
 ! For helical forcing in sphreical polar coordinate system
   real,allocatable,dimension(:,:,:) :: psif
   real,allocatable,dimension(:,:) :: cklist
