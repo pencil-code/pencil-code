@@ -41,7 +41,23 @@ function yder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
     d1=yder(f)
   endelse
 ;
-  if (s[0] eq 3) then begin
+  if (s[0] eq 2) then begin
+    if (m2 gt m1) then begin
+      if (lequidist[1] eq 0) then begin
+        dy2 =    spread(dy2,     [0,2],[s[1],s[3]])
+        dd  = d1*spread(dy_tilde,[0,2],[s[1],s[3]])
+        ; will also work on slices like yder2(ss[10,*,*])
+      endif
+      d[l1:l2,m1:m2]=dy2* $
+          (-490.*f[l1:l2,m1:m2] $
+           +270.*(f[l1:l2,m1-1:m2-1]+f[l1:l2,m1+1:m2+1]) $
+            -27.*(f[l1:l2,m1-2:m2-2]+f[l1:l2,m1+2:m2+2]) $
+             +2.*(f[l1:l2,m1-3:m2-3]+f[l1:l2,m1+3:m2+3]) )
+    endif else begin
+      d[l1:l2,m1:m2,n1:n2]=0.
+    endelse
+;
+  endif else if (s[0] eq 3) then begin
     if (m2 gt m1) then begin
       if (lequidist[1] eq 0) then begin
         dy2 =    spread(dy2,     [0,2],[s[1],s[3]])

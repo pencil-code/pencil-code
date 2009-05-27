@@ -41,7 +41,22 @@ function xder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
     d1=xder(f)
   endelse
 ;
-  if (s[0] eq 3) then begin
+  if (s[0] eq 2) then begin
+    if (l2 gt l1) then begin
+      if (lequidist[0] eq 0) then begin
+        dx2 =    spread(dx2,     [1,2],[s[2],s[3]])
+        dd  = d1*spread(dx_tilde,[1,2],[s[2],s[3]])
+      endif
+      d[l1:l2,m1:m2]=dx2* $
+          (-490.*f[l1:l2,m1:m2] $
+           +270.*(f[l1-1:l2-1,m1:m2]+f[l1+1:l2+1,m1:m2]) $
+            -27.*(f[l1-2:l2-2,m1:m2]+f[l1+2:l2+2,m1:m2]) $
+             +2.*(f[l1-3:l2-3,m1:m2]+f[l1+3:l2+3,m1:m2]) )
+    endif else begin
+      d[l1:l2,m1:m2,n1:n2]=0.
+    endelse
+;
+  endif else if (s[0] eq 3) then begin
     if (l2 gt l1) then begin
       if (lequidist[0] eq 0) then begin
         dx2 =    spread(dx2,     [1,2],[s[2],s[3]])

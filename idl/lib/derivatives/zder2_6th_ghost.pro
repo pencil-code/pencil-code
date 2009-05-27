@@ -41,7 +41,10 @@ function zder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
     d1=zder(f)
   endelse
 ;
-  if (s[0] eq 3) then begin
+  if (s[0] eq 2) then begin
+    d[l1:l2,m1:m2]=0.
+;
+  endif else if (s[0] eq 3) then begin
     if (n2 gt n1) then begin
       if (lequidist[2] eq 0) then begin
         dz2 =    spread(dz2,     [0,0],[s[2],s[1]])
