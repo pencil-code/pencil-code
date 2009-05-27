@@ -382,7 +382,7 @@ module Interstellar
 !
     endsubroutine register_interstellar
 !***********************************************************************
-    subroutine initialize_interstellar(lstarting)
+    subroutine initialize_interstellar(f,lstarting)
 !
 !  Perform any post-parameter-read initialization eg. set derived
 !  parameters
@@ -396,10 +396,14 @@ module Interstellar
       use Mpicomm, only: stop_it
       use EquationOfState, only: getmu
 !
-      logical, save :: first=.true.
+      real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
+!
+      logical, save :: first=.true.
       logical :: exist
       real :: mu
+!
+      f(:,:,:,icooling)=0.0
 !
       if (lroot) print*,'initialize_interstellar: t_next_SNI',t_next_SNI
 !
@@ -878,10 +882,6 @@ module Interstellar
       enddo
 !
       if (lnothing.and.lroot) print*,'init_interstellar: nothing'
-!
-!  Initialize cooling to avoid errors from shearing boundary conditions.
-!
-      f(l1:l2,m1:m2,n1:n2,icooling)=0.0
 !
       call tidy_SNRs
 !

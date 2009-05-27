@@ -312,7 +312,7 @@ module Register
       call initialize_neutralvelocity()
       call initialize_cosmicray(f)
       call initialize_cosmicrayflux(f)
-      call initialize_interstellar(lstarting)
+      call initialize_interstellar(f,lstarting)
       call initialize_shear()
       call initialize_testperturb()
       call initialize_shock(f,lstarting)

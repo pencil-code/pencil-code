@@ -9,29 +9,23 @@
 ! CPARAM logical, parameter :: linterstellar = .false.
 !
 !***************************************************************
-
 module Interstellar
-
-  use Cparam
+!
   use Cdata
+  use Cparam
   use Messages
   use Sub, only: keep_compiler_quiet
-
+!
   implicit none
-
+!
   include 'interstellar.h'
-
-  !namelist /interstellar_init_pars/ dummy
-  !namelist /interstellar_run_pars/ dummy
-
+!
   contains
-
 !***********************************************************************
     subroutine register_interstellar()
 !
 !  19-nov-02/tony: coded
 !
-      use Cdata
       use Mpicomm
       use Sub
 !
@@ -42,15 +36,17 @@ module Interstellar
 !
     endsubroutine register_interstellar
 !***********************************************************************
-    subroutine initialize_interstellar(lstarting)
+    subroutine initialize_interstellar(f,lstarting)
 !
 !  Perform any post-parameter-read initialization eg. set derived
 !  parameters
 !
 !  24-nov-02/tony: coded - dummy
 !
+      real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
+      call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_interstellar
@@ -72,7 +68,6 @@ module Interstellar
 !
 !  Writes out the time of the next SNI
 !
-!
       integer :: lun
 !
       call keep_compiler_quiet(lun)
@@ -85,10 +80,8 @@ module Interstellar
 !
 !   1-jun-02/axel: adapted from magnetic fields
 !
-      use Cdata
       use Sub
 !
-!      integer :: iname
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -156,7 +149,6 @@ endsubroutine write_interstellar_init_pars
 !  initialise magnetic field; called from start.f90
 !  30-jul-2006/tony: dummy routine
 !
-      use Cdata
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -183,8 +175,6 @@ endsubroutine write_interstellar_init_pars
 !
 !  01-aug-06/tony: coded
 !
-      use Cparam
-!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       call keep_compiler_quiet(f)
@@ -194,8 +184,6 @@ endsubroutine write_interstellar_init_pars
     subroutine calc_heat_cool_interstellar(f,df,p,Hmax)
 !
 !  adapted from calc_heat_cool
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz,mvar), intent(in) :: df
@@ -212,8 +200,6 @@ endsubroutine write_interstellar_init_pars
 !
 !  dummy routine for checking for SNe (interstellar)
 !
-    use Cdata
-!
     real, dimension(mx,my,mz,mfarray) :: f
     real, dimension(mx,my,mz,mvar) :: df
 !
@@ -223,8 +209,6 @@ endsubroutine write_interstellar_init_pars
 !***********************************************************************
     subroutine calc_snr_unshock(penc)
 !
-      use Cdata
-!
       real, dimension(mx), intent(inout) :: penc
 !
       call keep_compiler_quiet(penc)
@@ -232,8 +216,6 @@ endsubroutine write_interstellar_init_pars
     endsubroutine calc_snr_unshock
 !***********************************************************************
     subroutine calc_snr_damping(p)
-!
-      use Cdata
 !
       type (pencil_case) :: p
 !
@@ -243,7 +225,6 @@ endsubroutine write_interstellar_init_pars
 !***********************************************************************
     subroutine calc_snr_damp_int(int_dt)
 !
-      use Cdata
       real :: int_dt
 !
       call keep_compiler_quiet(int_dt)
