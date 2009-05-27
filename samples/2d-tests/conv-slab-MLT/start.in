@@ -6,12 +6,13 @@
 &init_pars
   cvsid='$Id$',
   ip=14,                         ! debugging parameter
-  lwrite_ic = T,                 ! write the initial setup in VAR0
-  lwrite_2D = T,                 ! write snapshots in the (x,z) plane ONLY
   xyz0  = -2., -0.5, -2.,        ! first corner of box
   xyz1  =  2.,  0.5,  1.2,       ! second corner of box
   lperi =  T ,   T ,   F,        ! periodic direction?
-  bcz   = 's','s','a','a2','c1:cT'
+  bcz   = 's','s','a','a2','c1:cT',
+  lwrite_ic = T,                 ! write the initial setup in VAR0
+  lwrite_2D = T,                 ! write snapshots in the (x,z) plane ONLY
+  lwrite_aux = F                 ! do not write the auxiliary hcond & glhc
 /
 &eos_init_pars
   cs0=0.57735, rho0=1.
