@@ -220,6 +220,8 @@ module Magnetic
                                 ! DIAG_DOC:   dt'\right>$
   integer :: idiag_jbtm=0       ! DIAG_DOC: $\left<\jv(t)\cdot\int_0^t\bv(t')
                                 ! DIAG_DOC:   dt'\right>$
+  integer :: idiag_b2uzm=0      ! DIAG_DOC: $\left<\Bv^2u_z\right>$
+  integer :: idiag_ubbzm=0      ! DIAG_DOC: $\left<(\uv\cdot\Bv)B_z\right>$
   integer :: idiag_b2m=0        ! DIAG_DOC: $\left<\Bv^2\right>$
   integer :: idiag_bm2=0        ! DIAG_DOC: $\max(\Bv^2)$
   integer :: idiag_j2m=0        ! DIAG_DOC: $\left<\jv^2\right>$
@@ -1278,7 +1280,7 @@ module Magnetic
       if (idiag_jbm/=0 .or. idiag_jbmz/=0) lpenc_diagnos(i_jb)=.true.
       if (idiag_jbmphi/=0) lpenc_diagnos2d(i_jb)=.true.
       if (idiag_vArms/=0 .or. idiag_vAmax/=0 .or. idiag_vA2m/=0) lpenc_diagnos(i_va2)=.true.
-      if (idiag_ubm/=0) lpenc_diagnos(i_ub)=.true.
+      if (idiag_ubm/=0 .or. idiag_ubbzm/=0) lpenc_diagnos(i_ub)=.true.
       if (idiag_djuidjbim/=0 .or. idiag_uxDxuxbm/=0) lpenc_diagnos(i_uij)=.true.
       if (idiag_uxjm/=0) lpenc_diagnos(i_uxj)=.true.
       if (idiag_vArms/=0 .or. idiag_vAmax/=0) lpenc_diagnos(i_va2)=.true.
@@ -1298,7 +1300,7 @@ module Magnetic
           .or. idiag_examz1/=0 .or. idiag_examz2/=0 .or. idiag_examz3/=0 &
           .or. idiag_exjmx/=0 .or. idiag_exjmy/=0 .or. idiag_exjmz/=0 &
          ) lpenc_diagnos(i_jj)=.true.
-      if (idiag_b2m/=0 .or. idiag_bm2/=0 .or. idiag_brms/=0 .or. &
+      if (idiag_b2uzm/=0 .or. idiag_b2m/=0 .or. idiag_bm2/=0 .or. idiag_brms/=0 .or. &
           idiag_bmax/=0 .or. idiag_brmsh/=0 .or. idiag_brmsn/=0 .or. idiag_brmss/=0 ) & 
           lpenc_diagnos(i_b2)=.true.
 ! to calculate the angle between magnetic field and current.
@@ -2189,6 +2191,15 @@ module Magnetic
           call dot(p%bb,f(l1:l2,m,n,ijxt:ijzt),bjt)
           call sum_mn_name(bjt,idiag_bjtm)
         endif
+!
+!  Contributions to vertical Poynting vector. Consider them here
+!  separately, because the contribution b^2*uz may be a good indicator
+!  of magnetic buoyancy.
+!
+        if (idiag_b2uzm/=0) call sum_mn_name(p%b2*p%uu(:,3),idiag_b2uzm)
+        if (idiag_ubbzm/=0) call sum_mn_name(p%ub*p%bb(:,3),idiag_ubbzm)
+!
+!  Mean squared and maximum squared magnetic field
 !
         if (idiag_b2m/=0) call sum_mn_name(p%b2,idiag_b2m)
         if (idiag_bm2/=0) call max_mn_name(p%b2,idiag_bm2)
@@ -5310,6 +5321,7 @@ module Magnetic
         idiag_b2tm=0
         idiag_bjtm=0
         idiag_jbtm=0
+        idiag_b2uzm=0; idiag_ubbzm=0
         idiag_b2m=0; idiag_bm2=0; idiag_j2m=0; idiag_jm2=0; idiag_abm=0
         idiag_abmh=0; idiag_abmn=0; idiag_abms=0
         idiag_ajm=0
@@ -5398,6 +5410,8 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'ujm',idiag_ujm)
         call parse_name(iname,cname(iname),cform(iname),'fbm',idiag_fbm)
         call parse_name(iname,cname(iname),cform(iname),'fxbxm',idiag_fxbxm)
+        call parse_name(iname,cname(iname),cform(iname),'b2uzm',idiag_b2uzm)
+        call parse_name(iname,cname(iname),cform(iname),'ubbzm',idiag_ubbzm)
         call parse_name(iname,cname(iname),cform(iname),'b2m',idiag_b2m)
         call parse_name(iname,cname(iname),cform(iname),'bm2',idiag_bm2)
         call parse_name(iname,cname(iname),cform(iname),'j2m',idiag_j2m)
@@ -5730,6 +5744,8 @@ module Magnetic
         write(3,*) 'i_ujm=',idiag_ujm
         write(3,*) 'i_fbm=',idiag_fbm
         write(3,*) 'i_fxbxm=',idiag_fxbxm
+        write(3,*) 'i_b2uzm=',idiag_b2uzm
+        write(3,*) 'i_ubbzm=',idiag_ubbzm
         write(3,*) 'i_b2m=',idiag_b2m
         write(3,*) 'i_bm2=',idiag_bm2
         write(3,*) 'i_j2m=',idiag_j2m
