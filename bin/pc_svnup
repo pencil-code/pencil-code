@@ -24,6 +24,10 @@ else
   set stat=0
 endif
 #
+echo svn up -N $PENCIL_HOME/
+svn up -N $PENCIL_HOME
+if ($stat) svn status -N $PENCIL_HOME
+#
 echo svn up $PENCIL_HOME/src
 svn up $PENCIL_HOME/src
 if ($stat) svn status $PENCIL_HOME/src
