@@ -279,7 +279,7 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
         device, filename=imgdir+'/'+imgname, xsize=xsize, ysize=ysize, $
             color=1, /encapsulated, bits_per_pixel=8
         ps_fonts
-        !p.font=-1
+        !p.font=0
       endif else if (png) then begin
 ;;  Plot to png.
       endif else begin
