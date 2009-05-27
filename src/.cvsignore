@@ -1,0 +1,17 @@
+work.pc work.pcl
+special
+initial_condition
+makefile Makefile
+*.d
+*.inc
+*.il
+*.mod
+*.x
+nompicomm_.f90
+mpicomm_.f90
+mpicomm_double.f90
+mpicomm_double_.f90
+.buildinfo
+.buildtime
+.build-history
+.current-precision
