@@ -105,8 +105,9 @@ module Dustvelocity
 !
       do k=1,ndustspec
         call chn(k,sdust)
+        sdust='('//trim(sdust)//')'
         if (ndustspec == 1) sdust = ''
-        call farray_register_pde('uud('//trim(sdust)//')',uud_tmp,vector=3)
+        call farray_register_pde('uud'//sdust,uud_tmp,vector=3)
         iuud(k) = uud_tmp
         iudx(k) = iuud(k)
         iudy(k) = iuud(k)+1
