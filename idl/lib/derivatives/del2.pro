@@ -21,6 +21,11 @@ function del2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
   s=size(f)
 ;
+  if (s[0] eq 2) then begin
+;
+    w=make_array(n_elements(f[*,0]),n_elements(f[0,*]))
+    w=xder2(f)+yder2(f)+zder2(f)
+;
   if (s[0] eq 3) then begin
 ;
     w=make_array(n_elements(f[*,0,0]),n_elements(f[0,*,0]),n_elements(f[0,0,*]),3)
