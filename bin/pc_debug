@@ -1,16 +1,53 @@
 #!/usr/bin/perl -w
 
-# Name:   pc_deb\ug
+# Name:   pc_debug
 # Author: wd (wdobler [at] gmail [dot] com)
 # Date:   06-May-2009
 # Description:
 #   Compile and run the code with the maximum of available diagnostic
 #   options
+# Usage:
+#   [name] [-v|-h]
+# Options:
+#   -n, --dry-run   Don't do anything, just show what would be done
+#   -h, --help      This help
+#   -v, --version   Print version number
+#   -q, --quiet     Be quiet
+
+# Copyright (C) 2009  Wolfgang Dobler
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the same conditions as Perl or under the GNU General Public
+# License, version 3 or later.
 
 use strict;
 
-my $debug = 1;
-my $dry_run = 0;
+use Getopt::Long;
+# Allow for `-Plp' as equivalent to `-P lp' etc:
+Getopt::Long::config("bundling");
+
+my (%opts);			# Options hash for GetOptions
+
+## Process command line
+GetOptions(\%opts,
+	   qw( -h   --help
+               -n   --dry-run
+	            --debug
+	       -q   --quiet
+               -v   --version ));
+
+my $debug = ($opts{'debug'} ? 1 : 0 ); # undocumented debug option
+if ($debug) {
+    printopts(\%opts);
+    print "\@ARGV = `@ARGV'\n";
+}
+
+if ($opts{'h'} || $opts{'help'})    { die usage();   }
+if ($opts{'v'} || $opts{'version'}) { die version(); }
+
+my $dry_run = ($opts{'n'} || $opts{'dry-run'} || 0 );
+my $quiet   = ($opts{'q'} || $opts{'quiet'}   || '');
+
 
 my $make = ( $ENV{MAKE}      || 'make');
 my @makeflags = ();
@@ -75,7 +112,7 @@ sub run_cmd {
 #
     my @args = @_;
 
-    print "@args\n" if ($debug);
+    print shell_escape(@args), "\n" unless ($quiet);
     unless ($dry_run) {
         system(@args) == 0 or die "$args[0] failed: $!\n";
     }
@@ -86,6 +123,8 @@ sub set_env_vars {
 #
 # Set a number of G95_XXX environment variables for runtime debugging
 #
+    print "export" unless ($quiet);
+
     # setenv('G95_FPU_PRECISION', '53');
     setenv('G95_MEM_INIT',       'NAN');
     setenv('G95_FPU_EXCEPTIONS', 'Yes');
@@ -94,6 +133,8 @@ sub set_env_vars {
     setenv('G95_FPU_OVERFLOW',   'Yes');
     setenv('G95_SHOW_LOCUS',     'Yes');
     setenv('G95_FPU_INVALID',    'Yes');
+
+    print "\n" unless ($quiet);
 }
 
 # ---------------------------------------------------------------------- #
@@ -102,10 +143,70 @@ sub setenv {
 # Set one environment variable
 #
     my ($var, $value) = @_;
-    print "export $var=$value\n" if ($debug);
+    print " $var=$value" unless($quiet);
     unless ($dry_run) {
         $ENV{$var} = $value;
     }
 }
+
+# ---------------------------------------------------------------------- #
+sub shell_escape {
+#
+# Format sequence of <flag>=<value> entries such that the resulting string
+# is suitable for cut-and-paste.
+# Currently, this is pretty dull and just adds single quoatation marks for
+# each <value> containing whitespace or dollar signs.
+#
+    my @entries = @_;
+    my @escaped;
+    my $string;
+    foreach my $entry (@entries) {
+        if ($entry =~ /\s|\$/
+            && $entry =~ /^\s*([^=]+)=(.*)/) {
+            $entry = "$1='$2'";
+        }
+        push @escaped, $entry;
+    }
+    return join(' ', @escaped);
+}
+# ---------------------------------------------------------------------- #
+sub printopts {
+# Print command line options
+    my $optsref = shift;
+    my %opts = %$optsref;
+    foreach my $opt (keys(%opts)) {
+	print STDERR "\$opts{$opt} = `$opts{$opt}'\n";
+    }
+}
+
+# ---------------------------------------------------------------------- #
+sub usage {
+# Extract description and usage information from this file's header.
+    my $thisfile = __FILE__;
+    local $/ = '';              # Read paragraphs
+    open(FILE, "<$thisfile") or die "Cannot open $thisfile\n";
+    while (<FILE>) {
+	# Paragraph _must_ contain `Description:' or `Usage:'
+        next unless /^\s*\#\s*(Description|Usage):/m;
+        # Drop `Author:', etc. (anything before `Description:' or `Usage:')
+        s/.*?\n(\s*\#\s*(Description|Usage):\s*\n.*)/$1/s;
+        # Don't print comment sign:
+        s/^\s*# ?//mg;
+        last;                        # ignore body
+    }
+    return $_ or "<No usage information found>\n";
+}
+
+# ---------------------------------------------------------------------- #
+sub version {
+# Return CVS data and version info.
+    my $doll='\$';		# Need this to trick SVN
+    my $cmdname = (split('/', $0))[-1];
+    my $rev = '$Id: magnetic.f90 10900 2009-05-19 05:45:46Z AxelBrandenburg $';
+    $rev =~ s/${doll}Id:\s*(?:\S+)\s+([0-9]+)\s+(\S+)\s+(\S+).*/$1 ($2 $3)/;
+
+    return "$cmdname rev. $rev\n";
+}
+# ---------------------------------------------------------------------- #
 
 # End of file debug
