@@ -984,6 +984,13 @@ else if ($hn =~ swift) then
   setenv SSH ssh
   setenv SCP scp
   setenv SCRATCH_DIR /var/tmp/$USER
+#-------------------------------------------
+else if ($hn =~ goose) then
+  echo "goose laptop (Anders)"
+  set mpirun = ~/local/openmpi/bin/mpirun
+  setenv SSH ssh
+  setenv SCP scp
+  setenv SCRATCH_DIR /var/tmp/$USER
 #------------------------------------------------
 else if ($hn =~ lfc*) then
   echo "opteron cluster at MPIK with SGE queue."
