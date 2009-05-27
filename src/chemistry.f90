@@ -76,7 +76,7 @@ module Chemistry
   real,    allocatable, dimension(:,:) :: kreactions_z
   real,    allocatable, dimension(:)   :: kreactions_m,kreactions_p
   character (len=30),allocatable, dimension(:) :: reaction_name
-
+  logical :: lT_tanh=.false.
 ! 1step_test case 
 
     logical :: l1step_test=.false.
@@ -120,7 +120,7 @@ module Chemistry
       amplchemk,amplchemk2, chem_diff,nu_spec, BinDif_simple, visc_simple, &
       lambda_const, visc_const,Cp_const,Cv_const,diffus_const,init_x1,init_x2, &
       init_TT1,init_TT2,init_ux,l1step_test,Sc_number,init_pressure,lfix_Sc, str_thick, &
-      lfix_Pr
+      lfix_Pr,lT_tanh
 
 
 ! run parameters
@@ -128,7 +128,7 @@ module Chemistry
       lkreactions_profile,kreactions_profile,kreactions_profile_width, &
       chem_diff,chem_diff_prefactor, nu_spec, ldiffusion, ladvection, &
       lreactions,lchem_cdtc,lheatc_chemistry, BinDif_simple, visc_simple, &
-      lmobility,mobility, lfilter
+      lmobility,mobility, lfilter,lT_tanh
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -694,7 +694,7 @@ subroutine flame_front(f)
       integer :: k,j,i,j1,j2,j3
 
       real :: mO2, mH2, mN2, mH2O
-      real :: log_inlet_density
+      real :: log_inlet_density, del
       integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
       real :: initial_mu1, final_massfrac_O2
       logical :: found_specie
@@ -722,19 +722,39 @@ subroutine flame_front(f)
 !
 !  Initialize temperature
 !
-        if (x(k)<init_x1) then
-          f(k,:,:,ilnTT)=log(init_TT1)
-        endif
-        if (x(k)>init_x2) then
-          f(k,:,:,ilnTT)=log(init_TT2)
-        endif
-        if (x(k)>init_x1 .and. x(k)<init_x2) then
-          f(k,:,:,ilnTT)=log((x(k)-init_x1)/(init_x2-init_x1) &
+
+       if(lT_tanh) then
+        del=init_x2-init_x1
+         f(k,:,:,ilnTT)=log((init_TT2+init_TT1)*0.5  &
+             +((init_TT2-init_TT1)*0.5)  &
+             *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del)))
+       else
+         if (x(k)<init_x1) then
+           f(k,:,:,ilnTT)=log(init_TT1)
+         endif
+         if (x(k)>init_x2) then
+           f(k,:,:,ilnTT)=log(init_TT2)
+         endif
+         if (x(k)>init_x1 .and. x(k)<init_x2) then
+           f(k,:,:,ilnTT)=log((x(k)-init_x1)/(init_x2-init_x1) &
                *(init_TT2-init_TT1)+init_TT1)
+         endif
         endif
 !
 !  Initialize steam and hydrogen
 !
+
+       if (lT_tanh) then
+         del=(init_x2-init_x1)/3.
+         f(k,:,:,i_H2)=(0.+f(l1,:,:,i_H2))*0.5  &
+           +(0.-f(l1,:,:,i_H2))*0.5  &
+           *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
+!
+         f(k,:,:,i_H2O)=(f(l1,:,:,i_H2)/2.*18.+f(l1,:,:,i_H2O))*0.5  &
+             +((f(l1,:,:,i_H2)/2.*18.-f(l1,:,:,i_H2O))*0.5)  &
+             *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
+!
+       else
         if (x(k)>init_x1) then
           f(k,:,:,i_H2O)=initial_massfractions(ichem_H2)/mH2*mH2O &
                *(exp(f(k,:,:,ilnTT))-init_TT1) &
@@ -743,9 +763,18 @@ subroutine flame_front(f)
                *(exp(f(k,:,:,ilnTT))-init_TT2) &
                /(init_TT1-init_TT2)
         endif
+       endif
 !
 !  Initialize oxygen
 !
+
+       if (lT_tanh) then
+        del=(init_x2-init_x1)
+        f(k,:,:,i_O2)=(f(l2,:,:,i_O2)+f(l1,:,:,i_O2))*0.5  &
+             +((f(l2,:,:,i_O2)-f(l1,:,:,i_O2))*0.5)  &
+             *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
+       else
+
         if (x(k)>init_x2) then
           f(k,:,:,i_O2)=final_massfrac_O2
         endif
@@ -754,6 +783,7 @@ subroutine flame_front(f)
                *(initial_massfractions(ichem_O2)-final_massfrac_O2)&
                +final_massfrac_O2
         endif
+       endif
       enddo
 
       call calc_for_chem_mixture(f)
@@ -787,23 +817,6 @@ subroutine flame_front(f)
 !
       f(j1,j2,j3,iux)=f(j1,j2,j3,iux)  &
             +init_ux*exp(log_inlet_density)/exp(f(j1,j2,j3,ilnrho))
-
-  !    if (nygrid .le. 1) then
-  !     do k=1,mx
-  !      f(k,:,:,iux)=init_ux*exp(f(l1,:,:,ilnrho))/exp(f(k,:,:,ilnrho))
-  !     enddo
-  !    else
-  !      do k=1,mx
-  !      do j=1,my
-  !       if (abs(y(j))<str_thick) then
-  !        f(k,j,:,iux)=init_ux*(1.-(y(j)/str_thick)**2) &
-  !                    *exp(f(l1,j,:,ilnrho))/exp(f(k,j,:,ilnrho))
-  !       else
-  !        f(k,j,:,iux)=0.
-  !       endif
-  !      enddo
-  !      enddo
-  !    endif
 
        enddo
        enddo
@@ -1052,11 +1065,11 @@ subroutine flame_front(f)
               do k=1,nchemspec
                 tmp_sum(j1,j2,j3)=0.
                 do j=1,nchemspec
-		 if (j== k) then
-		 else
+                 if (j== k) then
+                 else
                    tmp_sum(j1,j2,j3)=tmp_sum(j1,j2,j3) &
                         +XX_full(j1,j2,j3,j)/Bin_Diff_coef(j1,j2,j3,j,k)
-	         endif	
+                 endif	
                 enddo
                  Diff_full(j1,j2,j3,k)=(1.-f(j1,j2,j3,ichemspec(k)))/tmp_sum(j1,j2,j3)
               enddo
@@ -1072,7 +1085,7 @@ subroutine flame_front(f)
          enddo
 !
 !do k=1,nchemspec 
-!print*, Diff_full(l1,m1,n1,k),Diff_full(l2,m1,n1,k),k
+!print*, Diff_full_add(l1,m1,n1,k),Diff_full_add(l2,m1,n1,k),k
 !enddo
 !
 !
