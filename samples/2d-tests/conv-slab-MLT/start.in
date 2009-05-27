@@ -11,8 +11,7 @@
   lperi =  T ,   T ,   F,        ! periodic direction?
   bcz   = 's','s','a','a2','c1:cT',
   lwrite_ic = T,                 ! write the initial setup in VAR0
-  lwrite_2D = T,                 ! write snapshots in the (x,z) plane ONLY
-  lwrite_aux = F                 ! do not write the auxiliary hcond & glhc
+  lwrite_2D = T                  ! write snapshots in the (x,z) plane ONLY
 /
 &eos_init_pars
   cs0=0.57735, rho0=1.
