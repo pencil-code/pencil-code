@@ -95,38 +95,23 @@ module Testfield
 !   3-jun-05/axel: adapted from register_magnetic
 !
       use Cdata
+      use FArrayManager
       use Mpicomm
       use Sub
 !
       logical, save :: first=.true.
       integer :: j
 !
-      iaatest = nvar+1          ! indices to access aa
-      ntestfield=mtestfield
-      nvar = nvar+ntestfield    ! added ntestfield variables
+!  Register test field.
 !
-      if ((ip<=8) .and. lroot) then
-        print*, 'register_testfield: nvar = ', nvar
-        print*, 'register_testfield: iaatest = ', iaatest
-      endif
+      call farray_register_pde('aatest',iaatest,vector=mtestfield)
 !
-!  Put variable names in array
-!
-      do j=1,ntestfield
-        varname(j) = 'aatest'
-      enddo
-!
-!  identify version number
+!  Identify version number.
 !
       if (lroot) call svn_id( &
            "$Id$")
 !
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('register_testfield: nvar > mvar')
-      endif
-!
-!  Writing files for use with IDL
+!  Writing files for use with IDL.
 !
       if (lroot) then
         if (maux == 0) then
