@@ -216,15 +216,15 @@ while (not eof(1)) do begin
       if (istride eq stride) then begin
         if (not keyword_set(noplot)) then begin
           if (keyword_set(exponential)) then begin
-            plot, xaxisscale, exp(axz), psym=-2, yrange=[amin,amax]
+;           plot, xaxisscale, exp(axz), psym=-2, yrange=[amin,amax]
           endif else begin
-            plot, xaxisscale, axz, psym=-2, yrange=[amin,amax], _extra=_extra
+;           plot, xaxisscale, axz, psym=-2, yrange=[amin,amax], _extra=_extra
           endelse
         endif else begin
           if (keyword_set(exponential)) then begin
-            plot, xaxisscale, exp(axz), yrange=[amin,amax]
+;           plot, xaxisscale, exp(axz), yrange=[amin,amax]
           endif else begin
-            plot, xaxisscale, axz, yrange=[amin,amax], _extra=_extra
+;           plot, xaxisscale, axz, yrange=[amin,amax], _extra=_extra
           endelse
         endelse
         if (keyword_set(png)) then begin
@@ -249,12 +249,12 @@ while (not eof(1)) do begin
             mpeg_put, mpegID, window=2, FRAME=itmpeg, /ORDER
             itmpeg=itmpeg+1 ;(counter)
           end
-          print,islice,itmpeg,t,min([axz]),max([axz])
+;         print,islice,itmpeg,t,min([axz]),max([axz])
         endif else begin
 ;;
 ;; default: output on the screen
 ;;
-          if (not keyword_set(noplot)) then print,islice,t,min([axz]),max([axz])
+;         if (not keyword_set(noplot)) then print,islice,t,min([axz]),max([axz])
         endelse
         istride=0
         wait,wait
