@@ -258,11 +258,6 @@ class read_var:
             self.n1 = dim.n1
             self.n2 = dim.n2+1
             
-        #11-jun-2008/tgastine: temporary correction to deal
-            # with shocks
-        if index.has_key('shock'): index.pop('shock')
-        if index.has_key('gg'): index.pop('gg')
-
         # Assign an attribute to self for each variable defined in
         # 'data/index.pro' so that e.g. self.ux is the x-velocity
         for key,value in index.items():
