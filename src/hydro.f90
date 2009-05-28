@@ -84,6 +84,7 @@ module Hydro
   logical :: lscale_tobox=.true.
 ! The following is useful to debug the forcing - Dhruba
   real :: outest
+  real :: ampl_Omega
   logical :: loutest,ldiffrot_test=.false.
 !
   namelist /hydro_init_pars/ &
@@ -96,7 +97,7 @@ module Hydro
        ladvection_velocity, lprecession, omega_precession, alpha_precession, &
        luut_as_aux,loot_as_aux, &
        velocity_ceiling, mu_omega, nb_rings, om_rings, gap, &
-       lscale_tobox
+       lscale_tobox, ampl_Omega
 ! run parameters
   real :: tdamp=0.,dampu=0.,wdamp=0.
   real :: dampuint=0.0,dampuext=0.0,rdampint=-1e20,rdampext=impossible
@@ -117,6 +118,7 @@ module Hydro
   logical :: lalways_use_gij_etc=.false.
   logical :: lcalc_uumean=.false.
   logical :: lforcing_cont_uu=.false.
+  logical :: lcoriolis_xdep=.false.
   character (len=labellen) :: uuprof='nothing'
 !
 !  parameters for interior boundary conditions
@@ -144,7 +146,7 @@ module Hydro
        loutest, ldiffrot_test,&
        interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
        velocity_ceiling,&
-       eckmann_friction
+       eckmann_friction, ampl_Omega, lcoriolis_xdep
 ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_u2tm=0       ! DIAG_DOC: $\left<\uv(t)\cdot\int_0^t\uv(t')
                                 ! DIAG_DOC:   dt'\right>$
@@ -1416,6 +1418,10 @@ module Hydro
         endif
       endif
 !
+!  Coriolis force with in Cartesian domain with Omega=Omega(x)
+!
+      if (lcoriolis_xdep) call coriolis_xdep(df,p)
+!
 !  Interface for your personal subroutines calls
 !
       if (lspecial) call special_calc_hydro(f,df,p)
@@ -2402,6 +2408,36 @@ module Hydro
 !  Note, there is no z-component
 !
     endsubroutine coriolis_cylindrical
+!***********************************************************************
+    subroutine coriolis_xdep(df,p)
+!
+!  Coriolis terms in Cartesian coordinates with Omega depending 
+!  on x, i.e. Omega=Omega0*(-sin(k_x*x),0,cos(l_x*x)) with k_x=2pi/Lx.  
+!
+!  28-may-09/PJK: coded
+!
+     use Mpicomm, only: stop_it
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, dimension(nx) :: c1, c2
+!
+!  info about coriolis_cylindrical term
+!
+      if (headtt) &
+          print*, 'coriolis_xdep: ampl_Omega=', ampl_Omega
+!
+!  -2 Omega x u
+!    
+      c1=-2*ampl_Omega*sin(pi*((x(l1:l2))-x0)/Lx)
+      c2= 2*ampl_Omega*cos(pi*((x(l1:l2))-x0)/Lx)
+      df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)             +c2*p%uu(:,2)
+      df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+c1*p%uu(:,3)-c2*p%uu(:,1)
+      df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-c1*p%uu(:,2)
+!
+!  Centrifugal force not coded yet
+!
+    endsubroutine coriolis_xdep
 !***********************************************************************
     subroutine udamping(f,df,p)
 !
