@@ -173,15 +173,8 @@ else
     mkdir -p `cat .scr`
   endif
   ln -s `cat .scr` data
-#
-#  Tidy up temporary files.
-#
 endif
 #
-#  For certain people who like it like that...
-#  Create a default .cvsignore file in the data directory
+#  Delete temporary files.
 #
-if (($USER =~ mee) || ($USER =~ n7026413) || ($USER =~ hpeukue2)) then
-  ln -s $PENCIL_HOME/src/data.cvsignore data/.cvsignore
-endif
-#
+\rm -f .scr .tmp
