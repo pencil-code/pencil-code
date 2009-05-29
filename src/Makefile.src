@@ -896,7 +896,7 @@ endif
 #CC=icc #(brahe|cfe2)
 #FFLAGS=-O3 -ip -mp1 #(brahe|cfe2)
 #CFLAGS=-O3 -ip -mp1 -DFUNDERSC=1 #(brahe|cfe2)
-#FFLAGS_DOUBLE=-autodouble #(p4fe1)
+#FFLAGS_DOUBLE=-autodouble #(brahe|cfe2)
 #LD_MPI=-lmpi #(brahe|cfe2)
 ##
 ## NASA Pleiades system (p4fe1)
