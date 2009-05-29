@@ -120,6 +120,7 @@ module Timestep
     ! Explicit fifth order Runge--Kutta--Fehlberg time stepping
       use Cdata
       use Mpicomm, only: mpiallreduce_max
+      use Messages
       use Equ
     ! RK parameters by Cash and Karp
       real, parameter :: b21      = 0.2
