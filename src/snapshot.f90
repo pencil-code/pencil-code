@@ -1,46 +1,41 @@
 ! $Id$
-
-!!!!!!!!!!!!!!!!!!!!!!!
-!!!   wsnaps.f90   !!!
-!!!!!!!!!!!!!!!!!!!!!!!
-
-!!!  Write snapshot files (variables and powerspectra). Is a separate
-!!!  module, so it can be used with whatever IO module we want.
-
+!
+!  Write snapshot files (variables and power spectra).
+!
 module Snapshot
-
+!
+  use Cdata
+  use Cparam
   use Messages
-
+!
   implicit none
-
+!
   private
-
+!
   integer :: lun_output=92
-
+!
   public :: rsnap, wsnap, powersnap
   public :: output_globals, input_globals
-
-contains
-
+!
+  contains
 !***********************************************************************
     subroutine wsnap(chsnap,a,msnap,enum,flist,noghost)
 !
 !  Write snapshot file, labelled consecutively if enum==.true.
-!  Otherwise just write a snapshot without label (used for var.dat)
+!  Otherwise just write a snapshot without label (used for var.dat).
 !
 !  30-sep-97/axel: coded
 !  08-oct-02/tony: expanded file to handle 120 character datadir // '/tsnap.dat'
 !   5-apr-03/axel: possibility for additional (hard-to-get) output
 !  31-may-03/axel: wsnap can write either w/ or w/o auxiliary variables
 !
-      use Cdata
       use Mpicomm
       use Boundcond, only: update_ghosts
       use General, only: safe_character_assign
       use Sub, only: read_snaptime,update_snaptime
       use IO, only: log_filename_to_file
 !
-!  the dimension msnap can either be mfarray (for f-array in run.f90)
+!  The dimension msnap can either be mfarray (for f-array in run.f90)
 !  or just mvar (for f-array in start.f90 or df-array in run.f90
 !
       character (len=*) :: chsnap, flist
@@ -100,16 +95,14 @@ contains
 !***********************************************************************
     subroutine rsnap(chsnap,f,msnap)
 !
-!  Read snapshot file
+!  Read snapshot file.
 !
 !  24-jun-05/tony: coded from snap reading code in run.f90
 !
-      use Cdata
       use Mpicomm
-!     use Magnetic, only: pert_aa
 !
-!  the dimension msnap can either be mfarray (for f-array in run.f90)
-!  or just mvar (for f-array in start.f90 or df-array in run.f90
+!  The dimension msnap can either be mfarray (for f-array in run.f90)
+!  or just mvar (for f-array in start.f90 or df-array in run.f90.
 !
       integer :: msnap
       real, dimension (mx,my,mz,msnap) :: f
@@ -118,8 +111,8 @@ contains
 !
         if (ip<=6.and.lroot) print*,'reading var files'
 !
-!  no need to read maux variables as they will be calculated
-!  at the first time step -- even if lwrite_aux is set
+!  No need to read maux variables as they will be calculated
+!  at the first time step -- even if lwrite_aux is set.
 !  Allow for the possibility to read in files that didn't
 !  have magnetic fields or passive scalar in it.
 !  NOTE: for this to work one has to modify *manually* data/param.nml
@@ -136,7 +129,7 @@ contains
             f(:,:,:,iax:iaz)=0.
           endif
 !
-!  read data without passive scalar into new run with passive scalar
+!  Read data without passive scalar into new run with passive scalar.
 !
         elseif (lread_oldsnap_nopscalar) then
           print*,'read old snapshot file (but without passive scalar)'
@@ -149,7 +142,7 @@ contains
             f(:,:,:,ilncc)=0.
           endif
 !
-!  read data without testfield into new run with testfield
+!  Read data without testfield into new run with testfield.
 !
         elseif (lread_oldsnap_notestfield) then
           print*,'read old snapshot file (but without testfield),iaatest,iaztestpq,mvar,msnap=',iaatest,iaztestpq,mvar,msnap
@@ -169,7 +162,7 @@ contains
 !***********************************************************************
    subroutine powersnap(a,lwrite_only)
 !
-!  Write a snapshot of power spectrum
+!  Write a snapshot of power spectrum.
 !
 !  30-sep-97/axel: coded
 !  07-oct-02/nils: adapted from wsnap
@@ -177,7 +170,6 @@ contains
 !  28-dec-02/axel: call structure from herel; allow optional lwrite_only
 !
       use Boundcond
-      use Cdata
       use IO
       use Mpicomm
       use Particles_main
@@ -197,18 +189,18 @@ contains
       integer :: ivec,im,in
       real, dimension (nx) :: bb
 !
-!  set llwrite_only
+!  Set llwrite_only.
 !
       if (present(lwrite_only)) llwrite_only=lwrite_only
       ldo_all=.not.llwrite_only
 !
-!  Output snapshot in 'tpower' time intervals
-!  file keeps the information about time of last snapshot
+!  Output snapshot in 'tpower' time intervals.
+!  File keeps the information about time of last snapshot.
 !
       file=trim(datadir)//'/tspec.dat'
 !
-!  at first call, need to initialize tspec
-!  tspec calculated in read_snaptime, but only available to root processor
+!  At first call, need to initialize tspec.
+!  tspec calculated in read_snaptime, but only available to root processor.
 !
       if (ldo_all.and.ifirst==0) then
         call read_snaptime(file,tspec,nspec,dspec,t)
@@ -216,7 +208,7 @@ contains
       endif
 !
 !  Check whether we want to output power snapshot. If so, then
-!  update ghost zones for var.dat (cheap, since done infrequently)
+!  update ghost zones for var.dat (cheap, since done infrequently).
 !
       if (ldo_all) &
            call update_snaptime(file,tspec,nspec,dspec,t,lspec,ch,ENUM=.false.)
@@ -263,39 +255,39 @@ contains
 !
         if (lparticles) call particles_powersnap(a)
 !
-!  Structure functions
+!  Structure functions.
 !
         do ivec=1,3
-           if (lsfb .or. lsfz1 .or. lsfz2 .or. lsfflux .or. lpdfb .or. &
-               lpdfz1 .or. lpdfz2) then
-              do n=n1,n2
-                do m=m1,m2
-                  call curli(a,iaa,bb,ivec)
-                  im=m-nghost
-                  in=n-nghost
-                  b_vec(:,im,in)=bb
-                enddo
-             enddo
-             b_vec=b_vec/sqrt(exp(a(l1:l2,m1:m2,n1:n2,ilnrho)))
-           endif
-           if (lsfu)     call structure(a,ivec,b_vec,'u')
-           if (lsfb)     call structure(a,ivec,b_vec,'b')
-           if (lsfz1)    call structure(a,ivec,b_vec,'z1')
-           if (lsfz2)    call structure(a,ivec,b_vec,'z2')
-           if (lsfflux)  call structure(a,ivec,b_vec,'flux')
-           if (lpdfu)    call structure(a,ivec,b_vec,'pdfu')
-           if (lpdfb)    call structure(a,ivec,b_vec,'pdfb')
-           if (lpdfz1)   call structure(a,ivec,b_vec,'pdfz1')
-           if (lpdfz2)   call structure(a,ivec,b_vec,'pdfz2')
-         enddo
+          if (lsfb .or. lsfz1 .or. lsfz2 .or. lsfflux .or. lpdfb .or. &
+              lpdfz1 .or. lpdfz2) then
+             do n=n1,n2
+               do m=m1,m2
+                 call curli(a,iaa,bb,ivec)
+                 im=m-nghost
+                 in=n-nghost
+                 b_vec(:,im,in)=bb
+               enddo
+            enddo
+            b_vec=b_vec/sqrt(exp(a(l1:l2,m1:m2,n1:n2,ilnrho)))
+          endif
+          if (lsfu)     call structure(a,ivec,b_vec,'u')
+          if (lsfb)     call structure(a,ivec,b_vec,'b')
+          if (lsfz1)    call structure(a,ivec,b_vec,'z1')
+          if (lsfz2)    call structure(a,ivec,b_vec,'z2')
+          if (lsfflux)  call structure(a,ivec,b_vec,'flux')
+          if (lpdfu)    call structure(a,ivec,b_vec,'pdfu')
+          if (lpdfb)    call structure(a,ivec,b_vec,'pdfb')
+          if (lpdfz1)   call structure(a,ivec,b_vec,'pdfz1')
+          if (lpdfz2)   call structure(a,ivec,b_vec,'pdfz2')
+        enddo
 !
-!  do pdf of passive scalar field (if present)
+!  Do pdf of passive scalar field (if present).
 !
-         if (rhocc_pdf) call pdf(a,'rhocc',rhoccm,sqrt(cc2m))
-         if (cc_pdf)    call pdf(a,'cc'   ,rhoccm,sqrt(cc2m))
-         if (lncc_pdf)  call pdf(a,'lncc' ,rhoccm,sqrt(cc2m))
-         if (gcc_pdf)   call pdf(a,'gcc'  ,0.    ,sqrt(gcc2m))
-         if (lngcc_pdf) call pdf(a,'lngcc',0.    ,sqrt(gcc2m))
+        if (rhocc_pdf) call pdf(a,'rhocc',rhoccm,sqrt(cc2m))
+        if (cc_pdf)    call pdf(a,'cc'   ,rhoccm,sqrt(cc2m))
+        if (lncc_pdf)  call pdf(a,'lncc' ,rhoccm,sqrt(cc2m))
+        if (gcc_pdf)   call pdf(a,'gcc'  ,0.    ,sqrt(gcc2m))
+        if (lngcc_pdf) call pdf(a,'lngcc',0.    ,sqrt(gcc2m))
 !
       endif
 !
@@ -303,12 +295,11 @@ contains
 !***********************************************************************
     subroutine output_snap(file,a,nv)
 !
-!  write snapshot file, always write time and mesh, could add other things
-!  version for vector field
+!  Write snapshot file, always write time and mesh, could add other things
+!  version for vector field.
 !
 !  11-apr-97/axel: coded
 !
-      use Cdata
       use Mpicomm, only: start_serialize,end_serialize
       use Persist, only: output_persistent
 !
@@ -331,9 +322,8 @@ contains
       else
         write(lun_output) a
       endif
-!     write(lun_output) a(:,4,:,:)
 !
-!  write shear at the end of x,y,z,dx,dy,dz.
+!  Write shear at the end of x,y,z,dx,dy,dz.
 !  At some good moment we may want to treat deltay like with
 !  other modules and call a corresponding i/o parameter module.
 !
@@ -351,10 +341,10 @@ contains
 !***********************************************************************
     subroutine input_snap(file,a,nv,mode)
 !
-!  read snapshot file, possibly with mesh and time (if mode=1)
+!  Read snapshot file, possibly with mesh and time (if mode=1).
+!
 !  11-apr-97/axel: coded
 !
-      use Cdata
       use Mpicomm, only: start_serialize,end_serialize
       use Persist, only: input_persistent
 !
@@ -379,7 +369,7 @@ contains
       if (ip<=8) print*,'input_snap: read ',file
       if (mode==1) then
 !
-!  check whether we want to read deltay from snapshot
+!  Check whether we want to read deltay from snapshot.
 !
         if (lshear) then
           read(1) t,x,y,z,dx,dy,dz,deltay
@@ -396,16 +386,15 @@ contains
       call input_persistent(1)
       close(1)
       if (lserial_io) call end_serialize()
-
+!
     endsubroutine input_snap
 !***********************************************************************
     subroutine output_globals(file,a,nv)
 !
-!  write snapshot file of globals, always write mesh,
+!  Write snapshot file of globals, always write mesh.
 !
 !  10-nov-06/tony: coded
 !
-      use Cdata
       use Mpicomm, only: start_serialize,end_serialize
 !
       integer :: nv
@@ -437,10 +426,10 @@ contains
 !***********************************************************************
     subroutine input_globals(filename,a,nv)
 !
-!  read globals snapshot file, ignoring mesh
+!  Read globals snapshot file, ignoring mesh.
+!
 !  10-nov-06/tony: coded
 !
-      use Cdata
       use Mpicomm, only: start_serialize,end_serialize
 !
       character (len=*) :: filename
@@ -473,16 +462,14 @@ contains
     endsubroutine input_globals
 !***********************************************************************
     subroutine update_auxiliaries(a)
-
-      use Cparam
-      use Cdata
+!
       use Shock, only: calc_shock_profile,calc_shock_profile_simple
       use EquationOfState, only: ioncalc
       use Radiation, only: radtransfer
       use Viscosity, only: lvisc_first,calc_viscosity
-
+!
       real, dimension (mx,my,mz,mfarray), intent (inout) :: a
-
+!
       if (lshock) then
         call calc_shock_profile(a)
         call calc_shock_profile_simple(a)
@@ -492,8 +479,7 @@ contains
       if (lvisc_hyper.or.lvisc_smagorinsky) then
         if (.not.lvisc_first.or.lfirst) call calc_viscosity(a)
       endif
-
+!
     endsubroutine update_auxiliaries
 !***********************************************************************
 endmodule Snapshot
-
