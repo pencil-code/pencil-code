@@ -1,6 +1,6 @@
 ! $Id$
 !
-!  Dummy module
+!  Dummy module.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -100,10 +100,6 @@ module Interstellar
 !***********************************************************************
     subroutine get_slices_interstellar(f,slices)
 !
-!  Write slices for animation of Interstellar variables.
-!
-!  26-jun-06/tony: dummy
-!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
@@ -111,37 +107,40 @@ module Interstellar
       call keep_compiler_quiet(slices%ready)
 !
     endsubroutine get_slices_interstellar
-!!***********************************************************************
+!***********************************************************************
     subroutine read_interstellar_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+!
       call keep_compiler_quiet(unit)
-
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+!
     endsubroutine read_interstellar_init_pars
 !***********************************************************************
     subroutine write_interstellar_init_pars(unit)
+!
       integer, intent(in) :: unit
-
+!
       call keep_compiler_quiet(unit)
-
-endsubroutine write_interstellar_init_pars
+!
+    endsubroutine write_interstellar_init_pars
 !***********************************************************************
     subroutine read_interstellar_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+!
       call keep_compiler_quiet(unit)
-
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+!
     endsubroutine read_interstellar_run_pars
 !***********************************************************************
     subroutine write_interstellar_run_pars(unit)
+!
       integer, intent(in) :: unit
-
+!
       call keep_compiler_quiet(unit)
-
+!
     endsubroutine write_interstellar_run_pars
 !***********************************************************************
     subroutine init_interstellar(f)
@@ -162,9 +161,6 @@ endsubroutine write_interstellar_init_pars
 !  All pencils that the Interstellar module depends on are specified here.
 !
 !  26-03-05/tony: coded
-!
-!
-!     DUMMY
 !
     endsubroutine pencil_criteria_interstellar
 !***********************************************************************
@@ -231,5 +227,4 @@ endsubroutine write_interstellar_init_pars
 !
     endsubroutine calc_snr_damp_int
 !***********************************************************************
-
 endmodule interstellar

@@ -107,8 +107,8 @@ module Dustvelocity
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      if (present(iostat)) call keep_compiler_quiet(iostat)
       call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_dustvelocity_init_pars
 !***********************************************************************
@@ -125,8 +125,8 @@ module Dustvelocity
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      if (present(iostat)) call keep_compiler_quiet(iostat)
       call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_dustvelocity_run_pars
 !***********************************************************************
