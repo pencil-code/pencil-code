@@ -139,14 +139,17 @@ module Testfield
 !
     endsubroutine get_slices_testfield
 !***********************************************************************
-    subroutine calc_ltestfield_pars(f)
+    subroutine calc_ltestfield_pars(f,p)
 !
 !  29-jan-06/axel: dummy routine
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
       intent(in)     :: f
 !
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_ltestfield_pars
 !***********************************************************************

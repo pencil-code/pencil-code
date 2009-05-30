@@ -264,12 +264,12 @@ module Equ
 !  in hydro of the testfield procedure (only when lsoca=.false.)
 !
       if (lhydro.and.ldensity) call calc_lhydro_pars(f)
-      if (lforcing_cont) call calc_lforcing_cont_pars(f)
-      if (lforcing_cont) call calc_lforcing_cont_pars(f)
-      if (ltestscalar) call calc_ltestscalar_pars(f)
-      if (ltestfield) call calc_ltestfield_pars(f)
-      if (ltestflow) call calc_ltestflow_nonlin_terms(f,df)
-      if (lspecial) call calc_lspecial_pars(f)
+      if (lforcing_cont)       call calc_lforcing_cont_pars(f)
+      if (lforcing_cont)       call calc_lforcing_cont_pars(f)
+      if (ltestscalar)         call calc_ltestscalar_pars(f)
+      if (ltestfield)          call calc_ltestfield_pars(f,p)
+      if (ltestflow)           call calc_ltestflow_nonlin_terms(f,df)
+      if (lspecial)            call calc_lspecial_pars(f)
 !
 !  do loop over y and z
 !  set indices and check whether communication must now be completed

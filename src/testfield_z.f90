@@ -1043,7 +1043,7 @@ module Testfield
 !
     endsubroutine get_slices_testfield
 !***********************************************************************
-    subroutine calc_ltestfield_pars(f)
+    subroutine calc_ltestfield_pars(f,p)
 !
 !  calculate <uxb>, which is needed when lsoca=.false.
 !
@@ -1056,6 +1056,7 @@ module Testfield
       use Mpicomm, only: mpireduce_sum, mpibcast_real, mpibcast_real_arr
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
       real, dimension (mz) :: c,s
 !
       real, dimension (nz,nprocz,3,njtest) :: uxbtestm1=0.,uxbtestm1_tmp=0.
@@ -1067,7 +1068,6 @@ module Testfield
       integer :: jtest,j,nxy=nxgrid*nygrid,juxb,jjxb
       logical :: headtt_save
       real :: fac, bcosphz, bsinphz, fac1=0., fac2=1.
-      type (pencil_case) :: p
 !
       intent(inout) :: f
 !
