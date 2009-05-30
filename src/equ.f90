@@ -1,11 +1,8 @@
 ! $Id$
-
-!** AUTOMATIC CPARAM.INC GENERATION ****************************
 !
-! Declare (for generation of cparam.inc) the number of f array
-! variables and auxiliary variables added by this module
+!  This module adds evolution terms to the dynamical equations, calling
+!  subroutines in the chosen set of physics modules.  
 !
-!***************************************************************
 module Equ
 !
   use Cdata
@@ -121,8 +118,7 @@ module Equ
       early_finalize=test_nonblocking.or.leos_ionization.or.lradiation_ray.or. &
                      lhyperviscosity_strict.or.lhyperresistivity_strict.or. &
                      ltestscalar.or.ltestfield.or.ltestflow.or. &
-                     lparticles_prepencil_calc.or. &
-                     lsolid_cells
+                     lparticles_prepencil_calc.or.lsolid_cells
 !
 !  Write crash snapshots to the hard disc if the time-step is very low.
 !  The user must have set crash_file_dtmin_factor>0.0 in &run_pars for
@@ -297,21 +293,38 @@ module Equ
 !  (note: advec_cs2 and advec_va2 are inverse _squared_ timesteps)
 !
         if (lfirst) then
-          advec_uu=0.; advec_shear=0.; advec_hall=0.; advec_uun=0;
-          advec_cs2=0.; advec_va2=0.; advec_crad2=0.; advec_uud=0;
-          advec_csn2=0
-          diffus_nu=0.; diffus_nu2=0.; diffus_nu3=0.
-          diffus_diffrho=0.; diffus_diffrho3=0.
-          diffus_eta=0.; diffus_eta2=0.; diffus_eta3=0.
-          diffus_chi=0.; diffus_chi3=0.
-          diffus_pscalar=0.; diffus_pscalar3=0.
-          diffus_chiral=0.
-          diffus_chem=0.
-          diffus_cr=0.
-          diffus_nud=0.; diffus_nud3=0.
-          diffus_diffnd=0.; diffus_diffnd3=0.
-          diffus_nun=0.; diffus_nun3=0.
-          diffus_diffrhon=0.; diffus_diffrhon3=0.
+          advec_crad2=0.0
+          advec_cs2=0.0
+          advec_csn2=0.0
+          advec_hall=0.0
+          advec_shear=0.0
+          advec_uu=0.0
+          advec_uud=0.0
+          advec_uun=0.0
+          advec_va2=0.0
+          diffus_chem=0.0
+          diffus_chi=0.0
+          diffus_chi3=0.0
+          diffus_chiral=0.0
+          diffus_cr=0.0
+          diffus_diffnd=0.0
+          diffus_diffnd3=0.0
+          diffus_diffrho=0.0
+          diffus_diffrho3=0.0
+          diffus_diffrhon=0.0
+          diffus_diffrhon3=0.0
+          diffus_eta=0.0
+          diffus_eta2=0.0
+          diffus_eta3=0.0
+          diffus_nu=0.0
+          diffus_nu2=0.0
+          diffus_nu3=0.0
+          diffus_nud=0.0
+          diffus_nud3=0.0
+          diffus_nun=0.0
+          diffus_nun3=0.0
+          diffus_pscalar=0.0
+          diffus_pscalar3=0.0
         endif
 !
 !  The following is only kept for backwards compatibility.
@@ -489,7 +502,7 @@ module Equ
           if (lmagnetic) call df_diagnos_magnetic(f,df,p)
         endif
 !
-!  general phiaverage quantities -- useful for debugging
+!  General phiaverage quantities -- useful for debugging.
 !
         if (l2davgfirst) then
           call phisum_mn_name_rz(p%rcyl_mn,idiag_rcylmphi)
@@ -777,7 +790,7 @@ module Equ
         if (lfrozen_bcs_y) then ! are there any frozen vars at all?
 !
 !  Only need to do this for nonperiodic y direction, on bottom/top-most
-!  processor and in bottom/top-most pencils
+!  processor and in bottom/top-most pencils.
 !
           if (.not. lperi(2)) then
             if ((ipy == 0) .and. (m == m1)) then
@@ -798,7 +811,7 @@ module Equ
         if (lfrozen_bcs_z) then ! are there any frozen vars at all?
 !
 !  Only need to do this for nonperiodic z direction, on bottom/top-most
-!  processor and in bottom/top-most pencils
+!  processor and in bottom/top-most pencils.
 !
           if (.not. lperi(3)) then
             if ((ipz == 0) .and. (n == n1)) then
@@ -814,7 +827,7 @@ module Equ
           endif
         endif
 !
-!  Set df=0 for all solid cells
+!  Set df=0 for all solid cells.
 !
       call freeze_solid_cells(df)
 !
@@ -910,7 +923,7 @@ module Equ
 !***********************************************************************
     subroutine debug_imn_arrays
 !
-!  for debug purposes: writes out the mm, nn, and necessary arrays
+!  For debug purposes: writes out the mm, nn, and necessary arrays.
 !
 !  23-nov-02/axel: coded
 !
