@@ -156,9 +156,9 @@ module Entropy
   integer :: idiag_ethdivum=0   ! DIAG_DOC:
   integer :: idiag_ssm=0        ! DIAG_DOC: $\left<s/c_p\right>$
                                 ! DIAG_DOC:   \quad(mean entropy)
-  integer :: idiag_eem=0        ! DIAG_DOC:
-  integer :: idiag_ppm=0        ! DIAG_DOC:
-  integer :: idiag_csm=0        ! DIAG_DOC:
+  integer :: idiag_eem=0        ! DIAG_DOC: $\left<e\right>$
+  integer :: idiag_ppm=0        ! DIAG_DOC: $\left<p\right>$
+  integer :: idiag_csm=0        ! DIAG_DOC: $\left<c_{\rm s}\right>$
   integer :: idiag_pdivum=0     ! DIAG_DOC: $\left<p\nabla\uv\right>$
   integer :: idiag_heatm=0      ! DIAG_DOC:
   integer :: idiag_ugradpm=0    ! DIAG_DOC:

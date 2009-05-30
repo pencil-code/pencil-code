@@ -604,7 +604,7 @@ program run
     if (isave/=0.and..not.lnowrite) then
       if (mod(it,isave)==0) then
         call wsnap(trim(directory_snap)//'/var.dat', &
-                   f,mvar_io,ENUM=.false.)
+                   f,mvar_io,ENUM=.false.,noghost=noghost_for_isave)
         if (lparticles) &
             call particles_write_snapshot( &
             trim(directory_snap)//'/pvar.dat',ENUM=.false.)

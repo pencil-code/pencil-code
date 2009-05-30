@@ -115,6 +115,7 @@ module Cdata
   logical :: lread_oldsnap_nopscalar=.false.
   logical :: lread_oldsnap_notestfield=.false.
   logical :: save_lastsnap=.true.
+  logical :: noghost_for_isave=.false.
 !
 !  Units (need to be in double precision).
 !

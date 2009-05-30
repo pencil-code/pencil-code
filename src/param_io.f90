@@ -107,6 +107,7 @@ module Param_IO
        lrmwig_rho,lrmwig_full,lrmwig_xyaverage, &
        ltime_integrals, &
        lnowrite, &
+       noghost_for_isave, &
        lwrite_yaverages,lwrite_zaverages,lwrite_phiaverages,test_nonblocking, &
        lread_oldsnap_nomag,lread_oldsnap_nopscalar, &
        lread_oldsnap_notestfield, &
