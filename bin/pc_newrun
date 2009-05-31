@@ -90,6 +90,12 @@ $PENCIL_HOME/bin/pc_mkdatadir
   echo "Use *.local files from:" `pwd`; ls -l *.local
   cd ..
 #
+  if [ -d $olddir/initial_condition ]; then
+     echo "copying existing initial condition directory" 
+     mkdir ./initial_condition
+     cp $olddir/initial_condition/*f90 ./initial_condition
+  fi
+#
 #  if there exists a bin/pc_setupsrc.local file
 #  it is being executed prior to pc_setupsrc
 #  This gives the possibility to link your own routines
