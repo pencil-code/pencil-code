@@ -4161,13 +4161,14 @@ subroutine flame_front(f)
       real, dimension (my,mz) :: rho0,gamma0
       real, dimension (mx,my,mz) :: mom2, rho_ux2, rho_uy2
       real, dimension (mx,my,mz) :: rho_gamma, rhoE_p, pp
-      real, dimension (ny,nz) :: dux_dx, drho_dx, dpp_dx,dYk_dx
-      real, dimension (ny,nz) :: drho_prefac,p_infx, KK, L_1, L_2, L_5
+      real, dimension (ny,nz) :: dux_dx,duy_dx,duz_dx, drho_dx, dpp_dx,dYk_dx
+      real, dimension (ny,nz) :: drho_prefac,p_infx, KK, L_1, L_2, L_3,L_4, L_5
       real, dimension (my,mz) :: cs2x,cs0_ar,cs20_ar,dmom2_dy
       real, dimension (my,mz) :: drhoE_p_dy,dYk_dy, dux_dy
       real, dimension (ny,nz,nchemspec) :: bound_rhs_Y
       real, dimension (ny,nz) :: bound_rhs_T
       real, dimension (mx,my,mz) :: cs2_full, gamma_full, rho_full
+!      real, dimension(ny,nz,3,3) :: dui_dxj
 !
       integer :: lll, sgn,i,j,k
       real :: Mach_num
@@ -4248,6 +4249,14 @@ subroutine flame_front(f)
       call der_onesided_4_slice(rho_full,sgn,drho_dx,lll,1)
       call der_onesided_4_slice(pp,sgn,dpp_dx,lll,1)
       call der_onesided_4_slice(f,sgn,iux,dux_dx,lll,1)
+      
+      call der_onesided_4_slice(f,sgn,iuy,duy_dx,lll,1) 
+      call der_onesided_4_slice(f,sgn,iuz,duz_dx,lll,1)
+
+  !    call der_onesided_4_slice(f,sgn,ilnrho,div_rho(:,:,1),lll,1)
+  !    call der_onesided_4_slice(f,sgn,iux,dui_dxj(:,:,1,1),lll,1)
+  !    call der_onesided_4_slice(f,sgn,iuy,dui_dxj(:,:,2,1),lll,1)
+  !    call der_onesided_4_slice(f,sgn,iuz,dui_dxj(:,:,3,1),lll,1)
 
       do i=1,mz
         call der_pencil(2,mom2(lll,:,i),dmom2_dy(:,i))
@@ -4257,6 +4266,7 @@ subroutine flame_front(f)
 !
       Mach_num=maxval(f(lll,m1:m2,n1:n2,iux)/cs0_ar(m1:m2,n1:n2))
       KK=nscbc_sigma_out*(1.-Mach_num*Mach_num)*cs0_ar(m1:m2,n1:n2)/Lxyz(1)
+
 !
       select case(topbot)
       case('bot')
@@ -4276,6 +4286,8 @@ subroutine flame_front(f)
       endselect
 !
       L_2 = f(lll,m1:m2,n1:n2,iux)*(cs20_ar(m1:m2,n1:n2)*drho_dx-dpp_dx)
+      L_3 = f(lll,m1:m2,n1:n2,iux)*duy_dx(:,:)
+      L_4 = f(lll,m1:m2,n1:n2,iux)*duz_dx(:,:)
 !
       if (ldensity_nolog) then
         df(lll,m1:m2,n1:n2,ilnrho) = &
@@ -4288,6 +4300,8 @@ subroutine flame_front(f)
       df(lll,m1:m2,n1:n2,iux) = -1./&
           (2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2))*(L_5 - L_1) !&
      !      -f(lll,m1:m2,n1:n2,iux)*dux_dy(m1:m2,n1:n2)
+      df(lll,m1:m2,n1:n2,iuy) = -L_3
+      df(lll,m1:m2,n1:n2,iuz) = -L_4
       df(lll,m1:m2,n1:n2,ilnTT) = -1./&
           (rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*(-L_2 &
           +0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1)) 
@@ -4351,6 +4365,7 @@ subroutine flame_front(f)
 
 !***********************************************************
     subroutine bc_nscbc_nref_subout_x(f,df,topbot)
+
 !
 !   nscbc case 
 !   subsonic non-reflecting outflow boundary conditions
@@ -4371,13 +4386,14 @@ subroutine flame_front(f)
       real, dimension (my,mz) :: rho0,gamma0
       real, dimension (mx,my,mz) :: mom2, rho_ux2, rho_uy2
       real, dimension (mx,my,mz) :: rho_gamma, rhoE_p, pp
-      real, dimension (ny,nz) :: dux_dx, drho_dx, dpp_dx,dYk_dx
-      real, dimension (ny,nz) :: drho_prefac,p_infx, KK, L_1, L_2, L_5
+      real, dimension (ny,nz) :: dux_dx,duy_dx,duz_dx, drho_dx, dpp_dx,dYk_dx
+      real, dimension (ny,nz) :: drho_prefac,p_infx, KK, L_1, L_2, L_3,L_4, L_5
       real, dimension (my,mz) :: cs2x,cs0_ar,cs20_ar,dmom2_dy
       real, dimension (my,mz) :: drhoE_p_dy,dYk_dy, dux_dy
       real, dimension (ny,nz,nchemspec) :: bound_rhs_Y
       real, dimension (ny,nz) :: bound_rhs_T
       real, dimension (mx,my,mz) :: cs2_full, gamma_full, rho_full
+!      real, dimension(ny,nz,3,3) :: dui_dxj
 !
       integer :: lll, sgn,i,j,k
       real :: Mach_num
@@ -4458,6 +4474,14 @@ subroutine flame_front(f)
       call der_onesided_4_slice(rho_full,sgn,drho_dx,lll,1)
       call der_onesided_4_slice(pp,sgn,dpp_dx,lll,1)
       call der_onesided_4_slice(f,sgn,iux,dux_dx,lll,1)
+      
+      call der_onesided_4_slice(f,sgn,iuy,duy_dx,lll,1) 
+      call der_onesided_4_slice(f,sgn,iuz,duz_dx,lll,1)
+
+  !    call der_onesided_4_slice(f,sgn,ilnrho,div_rho(:,:,1),lll,1)
+  !    call der_onesided_4_slice(f,sgn,iux,dui_dxj(:,:,1,1),lll,1)
+  !    call der_onesided_4_slice(f,sgn,iuy,dui_dxj(:,:,2,1),lll,1)
+  !    call der_onesided_4_slice(f,sgn,iuz,dui_dxj(:,:,3,1),lll,1)
 
       do i=1,mz
         call der_pencil(2,mom2(lll,:,i),dmom2_dy(:,i))
@@ -4467,6 +4491,7 @@ subroutine flame_front(f)
 !
       Mach_num=maxval(f(lll,m1:m2,n1:n2,iux)/cs0_ar(m1:m2,n1:n2))
       KK=nscbc_sigma_out*(1.-Mach_num*Mach_num)*cs0_ar(m1:m2,n1:n2)/Lxyz(1)
+
 !
       select case(topbot)
       case('bot')
@@ -4486,6 +4511,8 @@ subroutine flame_front(f)
       endselect
 !
       L_2 = f(lll,m1:m2,n1:n2,iux)*(cs20_ar(m1:m2,n1:n2)*drho_dx-dpp_dx)
+      L_3 = f(lll,m1:m2,n1:n2,iux)*duy_dx(:,:)
+      L_4 = f(lll,m1:m2,n1:n2,iux)*duz_dx(:,:)
 !
       if (ldensity_nolog) then
         df(lll,m1:m2,n1:n2,ilnrho) = &
@@ -4498,6 +4525,8 @@ subroutine flame_front(f)
       df(lll,m1:m2,n1:n2,iux) = -1./&
           (2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2))*(L_5 - L_1) !&
      !      -f(lll,m1:m2,n1:n2,iux)*dux_dy(m1:m2,n1:n2)
+      df(lll,m1:m2,n1:n2,iuy) = -L_3
+      df(lll,m1:m2,n1:n2,iuz) = -L_4
       df(lll,m1:m2,n1:n2,ilnTT) = -1./&
           (rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*(-L_2 &
           +0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1)) 
@@ -4533,7 +4562,27 @@ subroutine flame_front(f)
        ! endif
        enddo
       endif
-
+!
+  !    select case(topbot)
+  !    case('bot')
+  !     do i=1,nghost; f(l1-i,:,:,ilnTT)=2*f(l1,:,:,ilnTT)-f(l1+i,:,:,ilnTT); enddo 
+  !     do i=1,nghost; f(l1-i,:,:,ilnrho)=2*f(l1,:,:,ilnrho)-f(l1+i,:,:,ilnrho); enddo 
+  !     do i=1,nghost; f(l1-i,:,:,iux)=2*f(l1,:,:,iux)-f(l1+i,:,:,iux); enddo 
+  !     do k=1,nchemspec
+  !      do i=1,nghost; f(l1-i,:,:,ichemspec(k))=2*f(l1,:,:,ichemspec(k))  &
+  !                          -f(l1+i,:,:,ichemspec(k)); enddo 
+  !     enddo
+  !    case('top')
+  !     do i=1,nghost; f(l2+i,:,:,ilnTT)=2*f(l2,:,:,ilnTT)-f(l2-i,:,:,ilnTT); enddo
+  !     do i=1,nghost; f(l2+i,:,:,ilnrho)=2*f(l2,:,:,ilnrho)-f(l2-i,:,:,ilnrho); enddo
+  !     do i=1,nghost; f(l2+i,:,:,iux)=2*f(l2,:,:,iux)-f(l2-i,:,:,iux); enddo
+  !     do k=1,nchemspec
+  !      do i=1,nghost; f(l2+i,:,:,ichemspec(k))=2*f(l2,:,:,ichemspec(k))  &
+  !                          -f(l2-i,:,:,ichemspec(k)); enddo 
+  !     enddo
+  !   case default
+  !     print*, "bc_nscbc_subin_x: ", topbot, " should be `top' or `bot'"
+  !    endselect
 
 
        select case(topbot)
