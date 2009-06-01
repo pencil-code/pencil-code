@@ -4140,6 +4140,216 @@ subroutine flame_front(f)
 
     endsubroutine bc_nscbc_subin_x
 !***********************************************************
+    subroutine bc_nscbc_nref_subout_x_(f,df,topbot)
+!
+!   nscbc case 
+!   subsonic non-reflecting outflow boundary conditions
+!   now it is 2D case (should be corrected for 3D case)
+!    drho. dT, dux, duy  are calculated, p_inf can be 
+!   fixed (if nscbc_sigma <>0)
+!
+!   16-nov-08/natalia: coded.
+!
+      use MpiComm, only: stop_it
+      use EquationOfState, only: cs0, cs20
+      use Deriv, only: der_onesided_4_slice,der_pencil
+!      use Chemistry
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      character (len=3) :: topbot
+      real, dimension (my,mz) :: rho0,gamma0
+      real, dimension (mx,my,mz) :: mom2, rho_ux2, rho_uy2
+      real, dimension (mx,my,mz) :: rho_gamma, rhoE_p, pp
+      real, dimension (ny,nz) :: dux_dx, drho_dx, dpp_dx,dYk_dx
+      real, dimension (ny,nz) :: drho_prefac,p_infx, KK, L_1, L_2, L_5
+      real, dimension (my,mz) :: cs2x,cs0_ar,cs20_ar,dmom2_dy
+      real, dimension (my,mz) :: drhoE_p_dy,dYk_dy, dux_dy
+      real, dimension (ny,nz,nchemspec) :: bound_rhs_Y
+      real, dimension (ny,nz) :: bound_rhs_T
+      real, dimension (mx,my,mz) :: cs2_full, gamma_full, rho_full
+!
+      integer :: lll, sgn,i,j,k
+      real :: Mach_num
+!
+      intent(inout) :: f
+      intent(out) :: df
+!
+      if (leos_chemistry) then
+        call get_cs2_full(cs2_full)
+        call get_gamma_full(gamma_full)
+      endif
+!
+      select case(topbot)
+      case('bot')
+        lll = l1
+        sgn = 1
+        if (leos_chemistry) then 
+          call get_p_infx(p_infx,'bot')
+        endif
+      case('top')
+        lll = l2
+        sgn = -1
+        if (leos_chemistry) then
+          call get_p_infx(p_infx,'top')
+        endif
+      case default
+        print*, "bc_nscbc_subin_x: ", topbot, " should be `top' or `bot'"
+      endselect
+
+      if (leos_chemistry) then
+         cs20_ar=cs2_full(lll,:,:)
+         cs0_ar=cs2_full(lll,:,:)**0.5
+         gamma0=gamma_full(lll,:,:)
+
+        if (ldensity_nolog) then
+          rho_full = f(:,:,:,ilnrho)
+          rho0(:,:) = f(lll,:,:,ilnrho)
+          drho_prefac=-1./cs20_ar(m1:m2,n1:n2)
+        else
+          rho_full = exp(f(:,:,:,ilnrho))
+          rho0(:,:) = rho_full(lll,:,:)
+          drho_prefac=-1./rho0(m1:m2,n1:n2)/cs20_ar(m1:m2,n1:n2)
+        endif
+
+         do i=1,my
+         do k=1,mz
+          if (minval(gamma_full(:,i,k))<=0.) then
+           pp(:,i,k)=0.
+          else
+           pp(:,i,k)=cs2_full(:,i,k)*rho_full(:,i,k)/gamma_full(:,i,k)
+          endif
+         enddo
+         enddo
+
+         mom2(lll,:,:)=rho0(:,:)*f(lll,:,:,iuy)
+         rho_ux2(lll,:,:)=rho0(:,:)*f(lll,:,:,iux)*f(lll,:,:,iux)
+         rho_uy2(lll,:,:)=rho0(:,:)*f(lll,:,:,iuy)*f(lll,:,:,iuy)
+         do i=1,my
+         do k=1,mz
+          if (gamma0(i,k)<=0.) then
+           rho_gamma(lll,i,k)=0.
+           rhoE_p(lll,i,k)=0.
+          else
+           rho_gamma(lll,i,k)=rho0(i,k)/gamma0(i,k)
+           rhoE_p(lll,i,k)=0.5*rho_ux2(lll,i,k)+0.5*rho_uy2(lll,i,k) &
+                         +cs20_ar(i,k)/(gamma0(i,k)-1.)*rho0(i,k)
+          endif
+         enddo
+         enddo
+      else
+        print*,"bc_nscbc_subin_x: leos_idealgas=",leos_idealgas,"."
+        print*,"NSCBC subsonic inflos is only implemented "//&
+            "for the chemistry case." 
+        print*,"Boundary treatment skipped."
+        return
+      endif
+
+      call der_onesided_4_slice(rho_full,sgn,drho_dx,lll,1)
+      call der_onesided_4_slice(pp,sgn,dpp_dx,lll,1)
+      call der_onesided_4_slice(f,sgn,iux,dux_dx,lll,1)
+
+      do i=1,mz
+        call der_pencil(2,mom2(lll,:,i),dmom2_dy(:,i))
+        call der_pencil(2,f(lll,:,i,iux),dux_dy(:,i))
+        call der_pencil(2,rhoE_p(lll,:,i),drhoE_p_dy(:,i))
+      enddo
+!
+      Mach_num=maxval(f(lll,m1:m2,n1:n2,iux)/cs0_ar(m1:m2,n1:n2))
+      KK=nscbc_sigma_out*(1.-Mach_num*Mach_num)*cs0_ar(m1:m2,n1:n2)/Lxyz(1)
+!
+      select case(topbot)
+      case('bot')
+        L_5=KK*(cs20_ar(m1:m2,n1:n2)/gamma0(m1:m2,n1:n2)*&
+            rho0(m1:m2,n1:n2)-p_infx)
+        L_1 = (f(lll,m1:m2,n1:n2,iux) - cs0_ar(m1:m2,n1:n2))*&
+            (dpp_dx- rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dux_dx)
+        call get_rhs_Y('bot',1,bound_rhs_Y)
+        call get_rhs_T('bot',1,bound_rhs_T)
+     case('top')
+        L_1=KK*(cs20_ar(m1:m2,n1:n2)/gamma0(m1:m2,n1:n2)*&
+            rho0(m1:m2,n1:n2)-p_infx)
+        L_5 = (f(lll,m1:m2,n1:n2,iux) + cs0_ar(m1:m2,n1:n2))*&
+            ( dpp_dx+ rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dux_dx)
+        call get_rhs_Y('top',1,bound_rhs_Y)
+        call get_rhs_T('top',1,bound_rhs_T)
+      endselect
+!
+      L_2 = f(lll,m1:m2,n1:n2,iux)*(cs20_ar(m1:m2,n1:n2)*drho_dx-dpp_dx)
+!
+      if (ldensity_nolog) then
+        df(lll,m1:m2,n1:n2,ilnrho) = &
+            drho_prefac*(L_2+0.5*(L_5 + L_1))!-dmom2_dy(m1:m2,n1:n2)
+      else
+        df(lll,m1:m2,n1:n2,ilnrho) = &
+            drho_prefac*(L_2+0.5*(L_5 + L_1)) !&
+     !   -1./rho0(m1:m2,n1:n2)*dmom2_dy(m1:m2,n1:n2)
+      endif
+      df(lll,m1:m2,n1:n2,iux) = -1./&
+          (2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2))*(L_5 - L_1) !&
+     !      -f(lll,m1:m2,n1:n2,iux)*dux_dy(m1:m2,n1:n2)
+      df(lll,m1:m2,n1:n2,ilnTT) = -1./&
+          (rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*(-L_2 &
+          +0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1)) 
+ !       -1./(rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))* &
+ !       (gamma0(m1:m2,n1:n2)-1.) &
+ !      *gamma0(m1:m2,n1:n2)*drhoE_p_dy(m1:m2,n1:n2) !&
+    !    +bound_rhs_T(:,:)
+
+
+
+      if (nchemspec>1) then
+       do k=1,nchemspec
+          call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dx,lll,1)
+          do i=1,mz
+            call der_pencil(2,f(lll,:,i,ichemspec(k)),dYk_dy(:,i))
+          enddo
+          df(lll,m1:m2,n1:n2,ichemspec(k))=&
+              -f(lll,m1:m2,n1:n2,iux)*dYk_dx &
+              -f(lll,m1:m2,n1:n2,iuy)*dYk_dy(m1:m2,n1:n2) &
+              +bound_rhs_Y(:,:,k)
+
+       ! if (lfilter) then
+         do i=m1,m2
+         do j=n1,n2
+           if ((f(lll,i,j,ichemspec(k))+df(lll,i,j,ichemspec(k))*dt)<-1e-25 ) then
+             df(lll,i,j,ichemspec(k))=-1e-25*dt
+           endif
+           if ((f(lll,i,j,ichemspec(k))+df(lll,i,j,ichemspec(k))*dt)>1.) then
+             f(lll,i,j,ichemspec(k))=1.*dt
+           endif
+         enddo
+         enddo
+       ! endif
+       enddo
+      endif
+!
+  !    select case(topbot)
+  !    case('bot')
+  !     do i=1,nghost; f(l1-i,:,:,ilnTT)=2*f(l1,:,:,ilnTT)-f(l1+i,:,:,ilnTT); enddo 
+  !     do i=1,nghost; f(l1-i,:,:,ilnrho)=2*f(l1,:,:,ilnrho)-f(l1+i,:,:,ilnrho); enddo 
+  !     do i=1,nghost; f(l1-i,:,:,iux)=2*f(l1,:,:,iux)-f(l1+i,:,:,iux); enddo 
+  !     do k=1,nchemspec
+  !      do i=1,nghost; f(l1-i,:,:,ichemspec(k))=2*f(l1,:,:,ichemspec(k))  &
+  !                          -f(l1+i,:,:,ichemspec(k)); enddo 
+  !     enddo
+  !    case('top')
+  !     do i=1,nghost; f(l2+i,:,:,ilnTT)=2*f(l2,:,:,ilnTT)-f(l2-i,:,:,ilnTT); enddo
+  !     do i=1,nghost; f(l2+i,:,:,ilnrho)=2*f(l2,:,:,ilnrho)-f(l2-i,:,:,ilnrho); enddo
+  !     do i=1,nghost; f(l2+i,:,:,iux)=2*f(l2,:,:,iux)-f(l2-i,:,:,iux); enddo
+  !     do k=1,nchemspec
+  !      do i=1,nghost; f(l2+i,:,:,ichemspec(k))=2*f(l2,:,:,ichemspec(k))  &
+  !                          -f(l2-i,:,:,ichemspec(k)); enddo 
+  !     enddo
+  !   case default
+  !     print*, "bc_nscbc_subin_x: ", topbot, " should be `top' or `bot'"
+  !    endselect
+
+
+    endsubroutine bc_nscbc_nref_subout_x_
+!***********************************************************************
+
+!***********************************************************
     subroutine bc_nscbc_nref_subout_x(f,df,topbot)
 !
 !   nscbc case 
@@ -4323,6 +4533,59 @@ subroutine flame_front(f)
        ! endif
        enddo
       endif
+
+
+
+       select case(topbot)
+      case('bot')
+       do i=1,nghost; f(l1-i,1:m1-1,1:n1-1,ilnTT) &
+         =2*f(l1,1:m1-1,1:n1-1,ilnTT)-f(l1+i,1:m1-1,1:n1-1,ilnTT); enddo 
+       do i=1,nghost; f(l1-i,m2+1:my,n2+1:mz,ilnTT) &
+         =2*f(l1,m2+1:my,n2+1:mz,ilnTT)-f(l1+i,m2+1:my,n2+1:mz,ilnTT); enddo 
+       do i=1,nghost; f(l1-i,1:m1-1,1:n1-1,ilnrho) &
+          =2*f(l1,1:m1-1,1:n1-1,ilnrho)-f(l1+i,1:m1-1,1:n1-1,ilnrho); enddo 
+       do i=1,nghost; f(l1-i,m2+1:my,n2+1:mz,ilnrho) &
+          =2*f(l1,m2+1:my,n2+1:mz,ilnrho)-f(l1+i,m2+1:my,n2+1:mz,ilnrho); enddo 
+       do i=1,nghost; f(l1-i,1:m1-1,1:n1-1,iux) &
+          =2*f(l1,1:m1-1,1:n1-1,iux)-f(l1+i,1:m1-1,1:n1-1,iux); enddo 
+       do i=1,nghost; f(l1-i,m2+1:my,n2+1:mz,iux) &
+          =2*f(l1,m2+1:my,n2+1:mz,iux)-f(l1+i,m2+1:my,n2+1:mz,iux); enddo 
+
+       do k=1,nchemspec
+        do i=1,nghost; f(l1-i,1:m1-1,1:n1-1,ichemspec(k))  &
+                            =2*f(l1,1:m1-1,1:n1-1,ichemspec(k))  &
+                            -f(l1+i,1:m1-1,1:n1-1,ichemspec(k)); enddo 
+       enddo
+
+       do k=1,nchemspec
+        do i=1,nghost; f(l1-i,m2+1:my,n2+1:mz,ichemspec(k))  &
+                         =2*f(l1,m2+1:my,n2+1:mz,ichemspec(k))  &
+                         -f(l1+i,m2+1:my,n2+1:mz,ichemspec(k)); enddo 
+       enddo
+      case('top')
+       do i=1,nghost; f(l2+i,1:m1-1,1:n1-1,ilnTT) &
+             =2*f(l2,1:m1-1,1:n1-1,ilnTT)-f(l2-i,1:m1-1,1:n1-1,ilnTT); enddo
+       do i=1,nghost; f(l2+i,m2+1:my,n2+1:mz,ilnTT)  &
+             =2*f(l2,m2+1:my,n2+1:mz,ilnTT)-f(l2-i,m2+1:my,n2+1:mz,ilnTT); enddo
+
+       do i=1,nghost; f(l2+i,1:m1-1,1:n1-1,ilnrho)  &
+             =2*f(l2,1:m1-1,1:n1-1,ilnrho)-f(l2-i,1:m1-1,1:n1-1,ilnrho); enddo
+        do i=1,nghost; f(l2+i,m2+1:my,n2+1:mz,ilnrho) &
+             =2*f(l2,m2+1:my,n2+1:mz,ilnrho)-f(l2-i,m2+1:my,n2+1:mz,ilnrho); enddo
+
+
+       do i=1,nghost; f(l2+i,1:m1-1,1:n1-1,iux)  &
+                       =2*f(l2,1:m1-1,1:n1-1,iux)-f(l2-i,1:m1-1,1:n1-1,iux); enddo
+       do k=1,nchemspec
+        do i=1,nghost; f(l2+i,m2+1:my,n2+1:mz,ichemspec(k))  &
+                            =2*f(l2,m2+1:my,n2+1:mz,ichemspec(k))  &
+                            -f(l2-i,m2+1:my,n2+1:mz,ichemspec(k)); enddo 
+     enddo
+     case default
+       print*, "bc_nscbc_subin_x: ", topbot, " should be `top' or `bot'"
+      endselect
+
+
 !
   !    select case(topbot)
   !    case('bot')
