@@ -848,7 +848,7 @@ subroutine flame_front(f)
       intent(in) :: f
       integer :: k,i,j, j1,j2,j3
       integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
-      real :: T_up, T_mid, T_low, tmp
+      real :: T_up, T_mid, T_low, T_loc, tmp
       real :: mk_mj
 !
       logical :: tran_exist=.false.
@@ -923,10 +923,13 @@ subroutine flame_front(f)
             T_low=species_constants(k,iTemp1)
             T_mid=species_constants(k,iTemp2)
             T_up= species_constants(k,iTemp3)
+            
 !
             do j3=nn1,nn2
               do j2=mm1,mm2
                 do j1=1,mx
+
+                 T_loc=TT_full(j1,j2,j3)
 !
                   if (j1<=l1 .or. j2>=l2) then
                     T_low=0.
@@ -944,23 +947,23 @@ subroutine flame_front(f)
                   endif
 !
 
-                  if (TT_full(j1,j2,j3) >=T_low .and. TT_full(j1,j2,j3) <= T_mid) then
+                  if (T_loc >=T_low .and. T_loc <= T_mid) then
                     tmp=0. 
                     do j=1,5
-                      tmp=tmp+species_constants(k,iaa2(j))*TT_full(j1,j2,j3)**(j-1) 
+                      tmp=tmp+species_constants(k,iaa2(j))*T_loc**(j-1) 
                     enddo
                     cp_R_spec(j1,j2,j3,k)=tmp
                     cvspec_full(j1,j2,j3,k)=cp_R_spec(j1,j2,j3,k)-1.
-                  elseif (TT_full(j1,j2,j3) >=T_mid .and. TT_full(j1,j2,j3) <= T_up) then
+                  elseif (T_loc >=T_mid .and. T_loc<= T_up) then
                 !  elseif (TT_full(j1,j2,j3) >=T_mid ) then
                     tmp=0.
                     do j=1,5 
-                      tmp=tmp+species_constants(k,iaa1(j))*TT_full(j1,j2,j3)**(j-1) 
+                      tmp=tmp+species_constants(k,iaa1(j))*T_loc**(j-1) 
                     enddo
                     cp_R_spec(j1,j2,j3,k)=tmp
                     cvspec_full(j1,j2,j3,k)=cp_R_spec(j1,j2,j3,k)-1.
                   else
-                    print*,'TT_full(j1,j2,j3)=',TT_full(j1,j2,j3)
+                    print*,'TT_full(j1,j2,j3)=',T_loc
                     print*,'j1,j2,j3=',j1,j2,j3
                     call fatal_error('calc_for_chem_mixture',&
                         'TT_full(j1,j2,j3) is outside range')
@@ -3873,7 +3876,7 @@ subroutine flame_front(f)
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: sum_Y
 !
-      logical :: IsSpecie=.false., emptyfile
+      logical :: IsSpecie=.false., emptyfile=.true.
       logical ::  found_specie
       integer :: file_id=123, ind_glob, ind_chem
       character (len=80) :: ChemInpLine
@@ -4127,11 +4130,11 @@ subroutine flame_front(f)
 !  check withour them
 !
 
-!        do k=1,nchemspec
-!         f(lll,m1:m2,n1:n2,ichemspec(k))=YYi(k)  
-!        enddo
+   !     do k=1,nchemspec
+   !      f(lll,m1:m2,n1:n2,ichemspec(k))=YYi(k)  
+   !     enddo
    !      f(lll,m1:m2,n1:n2,iux) = u_t
-   !      f(lll,m1:m2,n1:n2,ilnTT) = T_t
+   !     f(lll,m1:m2,n1:n2,ilnTT) = T_t
    !      df(lll,m1:m2,n1:n2,ilnTT)=0.
 
 
@@ -4321,14 +4324,28 @@ subroutine flame_front(f)
        enddo
       endif
 !
-     ! select case(topbot)
-     ! case('bot')
-     !  do i=1,nghost; f(l1-i,:,:,ilnTT)=2*f(l1,:,:,ilnTT)-f(l1+i,:,:,ilnTT); enddo 
-     ! case('top')
-     !  do i=1,nghost; f(l2+i,:,:,ilnTT)=2*f(l2,:,:,ilnTT)-f(l2-i,:,:,ilnTT); enddo
-     !case default
-     !  print*, "bc_nscbc_subin_x: ", topbot, " should be `top' or `bot'"
-     ! endselect
+  !    select case(topbot)
+  !    case('bot')
+  !     do i=1,nghost; f(l1-i,:,:,ilnTT)=2*f(l1,:,:,ilnTT)-f(l1+i,:,:,ilnTT); enddo 
+  !     do i=1,nghost; f(l1-i,:,:,ilnrho)=2*f(l1,:,:,ilnrho)-f(l1+i,:,:,ilnrho); enddo 
+  !     do i=1,nghost; f(l1-i,:,:,iux)=2*f(l1,:,:,iux)-f(l1+i,:,:,iux); enddo 
+  !     do k=1,nchemspec
+  !      do i=1,nghost; f(l1-i,:,:,ichemspec(k))=2*f(l1,:,:,ichemspec(k))  &
+  !                          -f(l1+i,:,:,ichemspec(k)); enddo 
+  !     enddo
+  !    case('top')
+  !     do i=1,nghost; f(l2+i,:,:,ilnTT)=2*f(l2,:,:,ilnTT)-f(l2-i,:,:,ilnTT); enddo
+  !     do i=1,nghost; f(l2+i,:,:,ilnrho)=2*f(l2,:,:,ilnrho)-f(l2-i,:,:,ilnrho); enddo
+  !     do i=1,nghost; f(l2+i,:,:,iux)=2*f(l2,:,:,iux)-f(l2-i,:,:,iux); enddo
+  !     do k=1,nchemspec
+  !      do i=1,nghost; f(l2+i,:,:,ichemspec(k))=2*f(l2,:,:,ichemspec(k))  &
+  !                          -f(l2-i,:,:,ichemspec(k)); enddo 
+  !     enddo
+  !   case default
+  !     print*, "bc_nscbc_subin_x: ", topbot, " should be `top' or `bot'"
+  !    endselect
+
+
     endsubroutine bc_nscbc_nref_subout_x
 !***********************************************************************
 !***********************************************************************
