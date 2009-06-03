@@ -420,8 +420,8 @@ module Density
         case('blob')
           call blob(ampllnrho(j),f,ilnrho,radius_lnrho(j),xblob,yblob,zblob)
         case('blob_hs')
-          print*, 'init_lnrho: put a blob in hydrostatic equilibrium: &
-          radius_lnrho, ampllnrho, position=',radius_lnrho(j), &
+          print*, 'init_lnrho: put a blob in hydrostatic equilibrium:'// &
+          'radius_lnrho, ampllnrho, position=',radius_lnrho(j), &
           ampllnrho(j), xblob, yblob, zblob
           call blob(ampllnrho(j),f,ilnrho,radius_lnrho(j),xblob,yblob,zblob)
           call blob(-ampllnrho(j),f,iss,radius_lnrho(j),xblob,yblob,zblob)

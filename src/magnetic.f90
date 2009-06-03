@@ -674,7 +674,7 @@ module Magnetic
 !  corresponds to the chosen resistivity type is not set.
 !
       if (lrun) then
-        if (lresi_eta_const.and.eta==0.0) &
+        if (lresi_eta_const.and.(eta==0.0.and.meanfield_etat==0.0)) &
             call warning('initialize_magnetic', &
             'Resistivity coefficient eta is zero!')
         if (lresi_hyper2.and.eta_hyper2==0.0) &
@@ -3002,6 +3002,10 @@ module Magnetic
         if (headtt) print*,'Omega_effect: (0,0,cosx), S,kx=',Omega_ampl,kx
         df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)+Omega_ampl*f(l1:l2,m,n,iaz) &
             *kx*sin(kx*x(l1:l2))
+      case('(0,0,siny)')
+        if (headtt) print*,'Omega_effect: (0,0,siny), Omega_ampl=',Omega_ampl
+        df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)+Omega_ampl*f(l1:l2,m,n,iaz) &
+            *sin(y(m))
       case default; print*,'Omega_profile=unknown'
       endselect
 !
