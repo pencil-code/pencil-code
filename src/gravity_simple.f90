@@ -117,7 +117,7 @@ module Gravity
 !
 !  12-nov-04/anders: coded, copied init conds from grav_x, grav_y and grav_y.
 !
-      use SharedVariables
+      use SharedVariables, only: put_shared_variable
       use Sub, only: notanumber, cubic_step
 !
       real, dimension(mx,my,mz,mfarray) :: f
@@ -150,9 +150,10 @@ module Gravity
         lgravx_dust=.false.
 
       case('const')
-        if (lroot) print*,'initialize_gravity: constant x-grav=',gravx
+        if (lroot) print*,'initialize_gravity: constant x-grav=', gravx
         gravx_xpencil=gravx
         potx_xpencil=-gravx*(x-xinfty)
+        call put_shared_variable('gravx', gravx, ierr)
 !
 !  tanh profile
 !  for isothermal EOS, we have 0=-cs2*dlnrho+gravx

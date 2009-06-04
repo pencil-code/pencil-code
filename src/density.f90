@@ -367,17 +367,18 @@ module Density
       use Selfgravity, only: rhs_poisson_const
       use Sub
       use InitialCondition, only: initial_condition_lnrho
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-!      
       real, dimension (nx) :: pot,prof
       real, dimension (ninit) :: lnrho_left,lnrho_right
       real :: lnrhoint,cs2int,pot0
       real :: pot_ext,lnrho_ext,cs2_ext,tmp1,k_j2
       real :: zbot,ztop,haut
       real, dimension (nx) :: r_mn,lnrho,TT,ss
+      real, pointer :: gravx
       complex :: omega_jeans
-      integer :: j
+      integer :: j, ierr
       logical :: lnothing
 !
       intent(inout) :: f
@@ -579,19 +580,18 @@ module Density
             enddo
           endif
         case ('cylind_isoth')
-          if (lgravr) then
-            if (lroot) print*, 'init_lnrho: isothermal cylindrical ring'
-            haut=cs20/gamma
-            TT=spread(cs20/gamma1,1,nx)
-            do n=n1,n2
-            do m=m1,m2
-              lnrho=lnrho0-(x(l1:l2)-r_ext)/haut
-              f(l1:l2,m,n,ilnrho)=lnrho
-              call eoscalc(ilnrho_TT,lnrho,TT,ss=ss)
-              f(l1:l2,m,n,iss)=ss
-            enddo
-            enddo
-          endif
+          call get_shared_variable('gravx', gravx, ierr)
+          if (lroot) print*, 'init_lnrho: isothermal cylindrical ring with gravx=', gravx
+          haut=-cs20/gamma/gravx
+          TT=spread(cs20/gamma1,1,nx)
+          do n=n1,n2
+          do m=m1,m2
+            lnrho=lnrho0-(x(l1:l2)-r_ext)/haut
+            f(l1:l2,m,n,ilnrho)=lnrho
+            call eoscalc(ilnrho_TT,lnrho,TT,ss=ss)
+            f(l1:l2,m,n,iss)=ss
+          enddo
+          enddo
         case ('isentropic-star')
 !
 !  Isentropic/isothermal hydrostatic sphere"
