@@ -581,6 +581,8 @@ module Density
           endif
         case ('cylind_isoth')
           call get_shared_variable('gravx', gravx, ierr)
+          if (ierr/=0) call stop_it("init_lnrho: "//&
+             "there was a problem when getting gravx")
           if (lroot) print*, 'init_lnrho: isothermal cylindrical ring with gravx=', gravx
           haut=-cs20/gamma/gravx
           TT=spread(cs20/gamma1,1,nx)

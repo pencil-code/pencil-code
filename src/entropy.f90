@@ -4179,17 +4179,24 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
       use Gravity, only: gravz, g0
       use EquationOfState, only: eoscalc, ilnrho_TT, get_cp1, &
                                  gamma1, lnrho0
+      use SharedVariables, only: get_shared_variable
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho, TT, ss, z_mn
       real :: beta, cp1, lnrho_dummy=0., zbot, ztop, TT0
+      real, pointer :: gravx
+      integer :: ierr
 !
 !  beta is the (negative) temperature gradient
 !  beta = (g/cp) 1./[(1-1/gamma)*(m+1)]
 !
       call get_cp1(cp1)
       if (lcylindrical_coords) then
-        beta=-cp1*gamma/gamma1*g0/(mpoly0+1)
+        call get_shared_variable('gravx', gravx, ierr)
+        if (ierr/=0) call stop_it("single_polytrope: "//&
+           "there was a problem when getting gravx")
+        beta=cp1*gamma/gamma1*gravx/(mpoly0+1)
       else
         beta=cp1*gamma/gamma1*gravz/(mpoly0+1)
         ztop=xyz0(3)+Lxyz(3)
