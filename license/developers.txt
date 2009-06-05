@@ -15,6 +15,8 @@ Natalia Babkovskaia nbabkovskaia/gmail.com  +358 8 553 1939   +358 40 5286784
 Steve Berukoff   steveb/physics.ucla.edu
 Sven Bingert     bingert/kis.uni-freiburg.de 
 Axel Brandenburg, brandenb/nordita.org,     +46 8 5537 8707 +46 70 574 0650, brandenb, axelbrandenburg
+Simon Candelaresi, iomsn1@gmail.com        +46 8 5537 8277,   +46 737204349, iomsn, iomsn1
+Fabio del Sordo, fabio@nordita.org         +46 8 5537 8277
 Boris Dintrans   dintrans/ast.obs-mip.fr   +33 5 6133 2811    +33 6 61 24 79 83, boris.dintrans, bdintrans
 Wolfgang Dobler, wdobler/gmail.com,        +49 33201 43791,   +49 1520 4056 762, +49 305331 12083 (office), wdobler, ,
 Anders Johansen  johansen/mpia-hd.mpg.de   +31 71 527 8454    +31 648 211 427
@@ -30,13 +32,11 @@ Jeffrey S. Oishi joishi/amnh.org           +1 212 313 7439
 Raphael Plasson, +46 7 3575 8374,  
 Matthias Rheinhardt, mreinhardt/aip.de,                     , +49 49 3044 19348, rei,
 Graeme R. Sarson g.r.sarson/ncl.ac.uk      +44 191 222 5375
+Nishant K. Singh, nishant.cosmo@gmail.com, +91 9916785745
 Andrew Snodin    andrew.snodin/ncl.ac.uk
 Sharanya Sur     sur/iucaa.ernet.in        +91 2560 4115      +91 94 210 37 292
 Tarek A. Yousef, tarek/pvv.org,            +44 798 122 8515,
-Nishant K. Singh, nishant.cosmo@gmail.com, +91 9916785745
-Fabio del Sordo, fabio@nordita.org         +46 8 5537 8277
-Simon Candelaresi, iomsn1@gmail.com        +46 8 5537 8277,   +46 737204349, iomsn, iomsn1
 
-Please add further names that have been forgotten so far!
+Please add further names (in alphabetical order) that have been forgotten so far!
 This file is located in the directory
    $PENCIL_HOME/license
