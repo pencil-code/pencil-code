@@ -3724,9 +3724,9 @@ subroutine flame_front(f)
 !
       select case(topbot)
       case('bot')               ! bottom boundary
-        p_infx(ny,nz)=pp_infx(1,ny,nz)
+        p_infx(1:ny,1:nz)=pp_infx(1,1:ny,1:nz)
       case('top')               ! top boundary
-        p_infx(ny,nz)=pp_infx(2,ny,nz)
+        p_infx(1:ny,1:nz)=pp_infx(2,1:ny,1:nz)
       case default
         print*, "get_p_infx: ", topbot, " should be `top' or `bot'"
       endselect
