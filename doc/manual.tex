@@ -9177,7 +9177,7 @@ the latest set of parameters, you need to look at the code.
   \var{rdampext} [impossible], 
                & radius of external damping region, used in place of 
                  former variable \var{rdamp} \\
-  \var{wdamp} [$0.2$]
+  \var{wdamp} [$0.2$],
                & permanently damp motions in $|\xv|<r_{\rm dampint}$ 
                  with damping term 
                  $-\var{damp}_uint \,\uv\,\chi(r{-}r_{\rm dampint})$
@@ -9185,6 +9185,16 @@ the latest set of parameters, you need to look at the code.
                  $-\var{damp}_uext \,\uv\,\chi(r{-}r_{\rm dampext})$,
                  where $\chi(\cdot)$ is a smooth profile of width
                  \var{wdamp}. \\
+  \var{ampl_forc} [$0.$], 
+               & amplitude of the ux-forcing on the vertical boundaries 
+                 that is of the form 
+                 $u\_x(t)=ampl\_forc*sin(kx\_forc*x)*cos(w\_forc*t)$
+                 [must be used in connection with bcz=`g' and 
+                 force_lower_bound=`ux_time' or force_upper_bound=`ux_time'] \\
+  \var{kx_forc} [$0.$], 
+               & corresponding horizontal wavenumber \\
+  \var{w_forc} [$0.$]
+               & corresponding frequency \\
 %
 \midrule
   \multicolumn{2}{c}{Namelist \name{density_run_pars}} \\
