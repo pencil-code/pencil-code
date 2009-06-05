@@ -2980,6 +2980,8 @@ module Boundcond
          !   call bc_force_kepler(f,n1,j)
          case ('cT')
             f(:,:,n1,j) = log(cs2bot/gamma1)
+         case ('ux_time')
+            call bc_force_ux_time(f,n1,j)
          case default
             if (lroot) print*, "No such value for force_lower_bound: <", &
                  trim(force_lower_bound),">"
@@ -3004,6 +3006,8 @@ module Boundcond
          !   call bc_force_kepler(f,n2,j)
          case ('cT')
             f(:,:,n2,j) = log(cs2top/gamma1)
+         case ('ux_time')
+            call bc_force_ux_time(f,n2,j)
          case default
             if (lroot) print*, "No such value for force_upper_bound: <", &
                  trim(force_upper_bound),">"
@@ -5447,5 +5451,42 @@ module Boundcond
       endif
 !
     endsubroutine bc_ADI_flux_z
+!***********************************************************************
+    subroutine bc_force_ux_time(f, idz, j)
+!
+!  Set ux = ampl_forc*sin(kx_forc*x)*cos(w_forc*t) 
+!
+!  05-jun-2009/dintrans: coded from bc_force_uxy_sin_cos
+!  Note: the ampl_forc, kx_forc & w_forc run parameters are set in 
+!  'hydro' and shared using the 'shared_variables' module
+!
+      use SharedVariables, only : get_shared_variable
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: idz, j, ierr
+      real    :: kx
+      real, pointer :: ampl_forc, kx_forc, w_forc
+!
+      if (headtt) then
+        if (iuz == 0) call stop_it("BC_FORCE_UX_TIME: Bad idea...")
+        if (Lx  == 0) call stop_it("BC_FORCE_UX_TIME: Lx cannot be 0")
+        if (j /= iux) call stop_it("BC_FORCE_UX_TIME: only valid for ux")
+      endif
+      call get_shared_variable('ampl_forc', ampl_forc, ierr)
+      if (ierr/=0) call stop_it("BC_FORCE_UX_TIME: "//&
+           "there was a problem when getting ampl_forc")      
+      call get_shared_variable('kx_forc', kx_forc, ierr)
+      if (ierr/=0) call stop_it("BC_FORCE_UX_TIME: "//&
+           "there was a problem when getting kx_forc")      
+      call get_shared_variable('w_forc', w_forc, ierr)
+      if (ierr/=0) call stop_it("BC_FORCE_UX_TIME: "//&
+           "there was a problem when getting w_forc")      
+      if (headtt) print*, 'bc_force_ux_time: ampl_forc, kx_forc, w_forc=',&
+           ampl_forc, kx_forc, w_forc
+!
+      kx=2*pi/Lx*kx_forc
+      f(:,:,idz,j) = spread(ampl_forc*sin(kx*x)*cos(w_forc*t), 2, my)
+!
+    endsubroutine bc_force_ux_time
 !***********************************************************************
 endmodule Boundcond

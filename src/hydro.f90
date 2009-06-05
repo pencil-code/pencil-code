@@ -110,6 +110,7 @@ module Hydro
   real :: utop=0.,ubot=0.,omega_out=0.,omega_in=0.
   real :: width_ff_uu=1.,x1_ff_uu=0.,x2_ff_uu=0.
   real :: eckmann_friction=0.0
+  real :: ampl_forc=0., kx_forc=0., w_forc=0.
   integer :: novec,novecmax=nx*ny*nz/4
   logical :: ldamp_fade=.false.,lOmega_int=.false.,lupw_uu=.false.
   logical :: lfreeze_uint=.false.,lfreeze_uext=.false.
@@ -146,7 +147,8 @@ module Hydro
        loutest, ldiffrot_test,&
        interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
        velocity_ceiling,&
-       eckmann_friction, ampl_Omega, lcoriolis_xdep
+       eckmann_friction, ampl_Omega, lcoriolis_xdep,&
+       ampl_forc, kx_forc, w_forc
 ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_u2tm=0       ! DIAG_DOC: $\left<\uv(t)\cdot\int_0^t\uv(t')
                                 ! DIAG_DOC:   dt'\right>$
@@ -576,6 +578,13 @@ module Hydro
         endif
       endif
 !
+
+      if (force_lower_bound == 'ux_time' .or. force_upper_bound == 'ux_time') then
+        call put_shared_variable('ampl_forc', ampl_forc, ierr)
+        call put_shared_variable('kx_forc', kx_forc, ierr)
+        call put_shared_variable('w_forc', w_forc, ierr)
+      endif
+
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
