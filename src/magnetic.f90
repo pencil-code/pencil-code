@@ -4493,6 +4493,106 @@ module Magnetic
 !
     endsubroutine fluxrings
 !***********************************************************************
+    subroutine trefoil_knot_fluxtube(ampl,f,profile)
+!
+!  Magnetic flux ring which has the form of a trefoil knot. This knot has
+!  a linking number 3.
+!
+!  Created 2009-06-05 by Simon Candelaresi (Iomsn)
+
+! WARNING: DO NOT USE THIS SUBROUTINE, THIS IS STILL WORK IN PROGRESS
+
+      use Mpicomm, only: stop_it
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (3) :: magnetic_field
+!       real, dimension (nx,3) :: tmpv
+!       real, dimension (nx) :: xx1,yy1,zz1
+!       real, dimension(3) :: axis,disp
+      real :: ampl!,phi,theta,ct,st,cp,sp
+!       real :: fring,Iring,R0,width
+!       integer :: i,ivar,ivar1,ivar2,ivar3
+      character (len=*), optional :: profile
+      character (len=labellen) :: prof
+!
+      if (present(profile)) then
+        prof = profile
+      else
+        prof = 'tanh'
+      endif
+
+!
+!  initialize the magnetic flux tube
+!
+      do n=n1,n2; do m=m1,m2
+        
+      enddo
+!
+!  calculate the vector potential from the magnetic field
+!
+      
+
+!
+! Put all into f
+!
+
+      if (any((/fring1,fring2,Iring1,Iring2/) /= 0.)) then
+        ! fringX is the magnetic flux, IringX the current
+        if (lroot) then
+          print*, 'fluxrings: Initialising magnetic flux rings'
+        endif
+        do i=1,nrings
+          if (i==1) then
+            fring = fring1      ! magnetic flux along ring
+            Iring = Iring1      ! current along ring (for twisted flux tube)
+            R0    = Rring1      ! radius of ring
+            width = wr1         ! ring thickness
+            axis  = axisr1      ! orientation
+            disp  = dispr1      ! position
+            ivar  = ivar1
+          elseif (i==2) then
+            fring = fring2
+            Iring = Iring2
+            R0    = Rring2
+            width = wr2
+            axis  = axisr2
+            disp  = dispr2
+            ivar  = ivar2
+          elseif (i==3) then
+            fring = fring3
+            Iring = Iring3
+            R0    = Rring3
+            width = wr3
+            axis  = axisr3
+            disp  = dispr3
+            ivar  = ivar3
+          else
+            call stop_it('fluxrings: nrings is too big')
+          endif
+          phi   = atan2(axis(2),axis(1)+epsi)
+          theta = atan2(sqrt(axis(1)**2+axis(2)**2)+epsi,axis(3))
+          ct = cos(theta); st = sin(theta)
+          cp = cos(phi)  ; sp = sin(phi)
+          ! Calculate D^(-1)*(xxx-disp)
+          do n=n1,n2; do m=m1,m2
+            xx1= ct*cp*(x(l1:l2)-disp(1))+ct*sp*(y(m)-disp(2))-st*(z(n)-disp(3))
+            yy1=-   sp*(x(l1:l2)-disp(1))+   cp*(y(m)-disp(2))
+            zz1= st*cp*(x(l1:l2)-disp(1))+st*sp*(y(m)-disp(2))+ct*(z(n)-disp(3))
+            call norm_ring(xx1,yy1,zz1,fring,Iring,R0,width,tmpv,PROFILE=prof)
+            ! calculate D*tmpv
+            f(l1:l2,m,n,ivar  ) = f(l1:l2,m,n,ivar  ) + ampl*( &
+                 + ct*cp*tmpv(:,1) - sp*tmpv(:,2) + st*cp*tmpv(:,3))
+            f(l1:l2,m,n,ivar+1) = f(l1:l2,m,n,ivar+1) + ampl*( &
+                 + ct*sp*tmpv(:,1) + cp*tmpv(:,2) + st*sp*tmpv(:,3))
+            f(l1:l2,m,n,ivar+2) = f(l1:l2,m,n,ivar+2) + ampl*( &
+                 - st   *tmpv(:,1)                + ct   *tmpv(:,3))
+          enddo; enddo
+        enddo
+      endif
+      if (lroot) print*, 'fluxrings: Magnetic flux rings initialized'
+
+    endsubroutine trefoil_knot_fluxtube
+!***********************************************************************
     subroutine norm_ring(xx1,yy1,zz1,fring,Iring,R0,width,vv,profile)
 !
 !  Generate vector potential for a flux ring of magnetic flux FRING,
