@@ -4563,26 +4563,26 @@ subroutine flame_front(f)
        enddo
       endif
 !
-      select case(topbot)
-      case('bot')
-       do i=1,nghost; f(l1-i,:,:,ilnTT)=2*f(l1,:,:,ilnTT)-f(l1+i,:,:,ilnTT); enddo 
-       do i=1,nghost; f(l1-i,:,:,ilnrho)=2*f(l1,:,:,ilnrho)-f(l1+i,:,:,ilnrho); enddo 
-       do i=1,nghost; f(l1-i,:,:,iux)=2*f(l1,:,:,iux)-f(l1+i,:,:,iux); enddo 
-       do k=1,nchemspec
-        do i=1,nghost; f(l1-i,:,:,ichemspec(k))=2*f(l1,:,:,ichemspec(k))  &
-                            -f(l1+i,:,:,ichemspec(k)); enddo 
-       enddo
-      case('top')
-       do i=1,nghost; f(l2+i,:,:,ilnTT)=2*f(l2,:,:,ilnTT)-f(l2-i,:,:,ilnTT); enddo
-       do i=1,nghost; f(l2+i,:,:,ilnrho)=2*f(l2,:,:,ilnrho)-f(l2-i,:,:,ilnrho); enddo
-       do i=1,nghost; f(l2+i,:,:,iux)=2*f(l2,:,:,iux)-f(l2-i,:,:,iux); enddo
-       do k=1,nchemspec
-        do i=1,nghost; f(l2+i,:,:,ichemspec(k))=2*f(l2,:,:,ichemspec(k))  &
-                            -f(l2-i,:,:,ichemspec(k)); enddo 
-       enddo
-     case default
-       print*, "bc_nscbc_subin_x: ", topbot, " should be `top' or `bot'"
-      endselect
+  !    select case(topbot)
+  !    case('bot')
+  !     do i=1,nghost; f(l1-i,:,:,ilnTT)=2*f(l1,:,:,ilnTT)-f(l1+i,:,:,ilnTT); enddo 
+  !     do i=1,nghost; f(l1-i,:,:,ilnrho)=2*f(l1,:,:,ilnrho)-f(l1+i,:,:,ilnrho); enddo 
+  !     do i=1,nghost; f(l1-i,:,:,iux)=2*f(l1,:,:,iux)-f(l1+i,:,:,iux); enddo 
+  !     do k=1,nchemspec
+  !      do i=1,nghost; f(l1-i,:,:,ichemspec(k))=2*f(l1,:,:,ichemspec(k))  &
+  !                          -f(l1+i,:,:,ichemspec(k)); enddo 
+  !     enddo
+  !    case('top')
+  !     do i=1,nghost; f(l2+i,:,:,ilnTT)=2*f(l2,:,:,ilnTT)-f(l2-i,:,:,ilnTT); enddo
+  !    do i=1,nghost; f(l2+i,:,:,ilnrho)=2*f(l2,:,:,ilnrho)-f(l2-i,:,:,ilnrho); enddo
+  !     do i=1,nghost; f(l2+i,:,:,iux)=2*f(l2,:,:,iux)-f(l2-i,:,:,iux); enddo
+  !     do k=1,nchemspec
+  !      do i=1,nghost; f(l2+i,:,:,ichemspec(k))=2*f(l2,:,:,ichemspec(k))  &
+  !                          -f(l2-i,:,:,ichemspec(k)); enddo 
+  !     enddo
+  !   case default
+  !     print*, "bc_nscbc_subin_x: ", topbot, " should be `top' or `bot'"
+  !    endselect
 
 
        select case(topbot)
