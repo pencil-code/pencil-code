@@ -4599,6 +4599,10 @@ subroutine flame_front(f)
           =2*f(l1,1:m1-1,1:n1-1,iux)-f(l1+i,1:m1-1,1:n1-1,iux); enddo 
        do i=1,nghost; f(l1-i,m2+1:my,n2+1:mz,iux) &
           =2*f(l1,m2+1:my,n2+1:mz,iux)-f(l1+i,m2+1:my,n2+1:mz,iux); enddo 
+       do i=1,nghost; f(l1-i,1:m1-1,1:n1-1,iuy) &
+          =2*f(l1,1:m1-1,1:n1-1,iuy)-f(l1+i,1:m1-1,1:n1-1,iuy); enddo 
+       do i=1,nghost; f(l1-i,m2+1:my,n2+1:mz,iuy) &
+          =2*f(l1,m2+1:my,n2+1:mz,iuy)-f(l1+i,m2+1:my,n2+1:mz,iuy); enddo
 
        do k=1,nchemspec
         do i=1,nghost; f(l1-i,1:m1-1,1:n1-1,ichemspec(k))  &
@@ -4625,6 +4629,8 @@ subroutine flame_front(f)
 
        do i=1,nghost; f(l2+i,1:m1-1,1:n1-1,iux)  &
                        =2*f(l2,1:m1-1,1:n1-1,iux)-f(l2-i,1:m1-1,1:n1-1,iux); enddo
+       do i=1,nghost; f(l2+i,1:m1-1,1:n1-1,iuy)  &
+                       =2*f(l2,1:m1-1,1:n1-1,iuy)-f(l2-i,1:m1-1,1:n1-1,iuy); enddo
        do k=1,nchemspec
         do i=1,nghost; f(l2+i,m2+1:my,n2+1:mz,ichemspec(k))  &
                             =2*f(l2,m2+1:my,n2+1:mz,ichemspec(k))  &
