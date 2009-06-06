@@ -3796,9 +3796,9 @@ subroutine flame_front(f)
 !
       select case(topbot)
       case('bot')               ! bottom boundary
-        p_infy(nx,nz)=pp_infy(1,nx,nz)
+        p_infy(:,:)=pp_infy(1,:,:)
       case('top')               ! top boundary
-        p_infy(nx,nz)=pp_infy(2,nx,nz)
+        p_infy(:,:)=pp_infy(2,:,:)
       case default
         print*, "get_p_infy: ", topbot, " should be `top' or `bot'"
       endselect
