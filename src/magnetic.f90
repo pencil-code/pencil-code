@@ -4493,49 +4493,53 @@ module Magnetic
 !
     endsubroutine fluxrings
 !***********************************************************************
-!     subroutine trefoil_knot_fluxtube(ampl,f,profile)
-! !
-! !  Magnetic flux ring which has the form of a trefoil knot. This knot has
-! !  a linking number 3.
-! !
-! !  Created 2009-06-05 by Simon Candelaresi (Iomsn)
-! 
-! ! WARNING: DO NOT USE THIS SUBROUTINE, THIS IS STILL WORK IN PROGRESS
-! 
-!       use Mpicomm, only: stop_it
-! !
-!       real, dimension (mx,my,mz,mfarray) :: f
-!       real, dimension (mx,my,mz,3) :: magnetic_field
-! !       real, dimension (nx,3) :: tmpv
-! !       real, dimension (nx) :: xx1,yy1,zz1
-! !       real, dimension(3) :: axis,disp
-!       real :: ampl!,phi,theta,ct,st,cp,sp
-! !       real :: fring,Iring,R0,width
-! !       integer :: i,ivar,ivar1,ivar2,ivar3
-!       character (len=*), optional :: profile
-!       character (len=labellen) :: prof
-! !
-!       if (present(profile)) then
-!         prof = profile
-!       else
-!         prof = 'tanh'
-!       endif
-! 
-! !
-! !  initialize the magnetic flux tube
-! !
-!       do n=n1,n2; do m=m1,m2
-!         b
-!       enddo
-! !
-! !  calculate the vector potential from the magnetic field
-! !
-!       
-! 
-! !
-! ! Put all into f
-! !
-! 
+    subroutine trefoil_knot_fluxtube(ampl,f,profile)
+!
+!  Magnetic flux ring which has the form of a trefoil knot. This knot has
+!  a linking number 3.
+!
+!  Created 2009-06-05 by Simon Candelaresi (Iomsn)
+
+! WARNING: DO NOT USE THIS SUBROUTINE, THIS IS STILL WORK IN PROGRESS
+
+      use Mpicomm, only: stop_it
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,3) :: magnetic_field
+      real :: width, depth, height
+      real :: curve_parameter, circle_parameter
+      integer :: l ! increment variable for the x component
+!       real, dimension (nx,3) :: tmpv
+!       real, dimension (nx) :: xx1,yy1,zz1
+!       real, dimension(3) :: axis,disp
+      real :: ampl!,phi,theta,ct,st,cp,sp
+!       real :: fring,Iring,R0,width
+!       integer :: i,ivar,ivar1,ivar2,ivar3
+      character (len=*), optional :: profile
+      character (len=labellen) :: prof
+!
+      if (present(profile)) then
+        prof = profile
+      else
+        prof = 'tanh'
+      endif
+
+!
+!  initialize the magnetic flux tube
+!
+      width = l2-l1; depth = m2-m1; height = n2-n1
+      do l=l1,l2; do n=n1,n2; do m=m1,m2
+!         b(l,m,n,1) = 
+      enddo; enddo; enddo
+!
+!  calculate the vector potential from the magnetic field
+!
+      
+
+!
+! Put all into f
+!
+
 !       if (any((/fring1,fring2,Iring1,Iring2/) /= 0.)) then
 !         ! fringX is the magnetic flux, IringX the current
 !         if (lroot) then
@@ -4590,8 +4594,8 @@ module Magnetic
 !         enddo
 !       endif
 !       if (lroot) print*, 'fluxrings: Magnetic flux rings initialized'
-! 
-!     endsubroutine trefoil_knot_fluxtube
+
+    endsubroutine trefoil_knot_fluxtube
 !***********************************************************************
     subroutine norm_ring(xx1,yy1,zz1,fring,Iring,R0,width,vv,profile)
 !
