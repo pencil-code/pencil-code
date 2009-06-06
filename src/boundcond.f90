@@ -152,12 +152,6 @@ module Boundcond
                   ! BCX_DOC: constant temperature (implemented as
                   ! BCX_DOC: condition for entropy $s$ or temperature $T$) 
                   call bc_ss_temp_x(f,topbot)
-                  !if (j==iss) 
-                  !if (j==ilnTT)  then
-                  !  force_lower_bound='cT'
-                  !  force_upper_bound='cT'
-                  !  call bc_force_x(f,-1,topbot,j)
-                  !endif
                 case ('c1')
                   ! BCX_DOC: constant temperature (or maybe rather constant
                   ! BCX_DOC: conductive flux??)
@@ -244,6 +238,9 @@ module Boundcond
                     print*,'not implemented for other than cylindrical'
                     stop
                   endif
+                case ('g')
+                  ! BCX_DOC: set to given value(s) or function
+                  call bc_force_x(f, -1, topbot, j)
                 case ('')
                   ! BCX_DOC: do nothing; assume that everything is set
                 case default
@@ -2980,7 +2977,7 @@ module Boundcond
          !   call bc_force_kepler(f,n1,j)
          case ('cT')
             f(:,:,n1,j) = log(cs2bot/gamma1)
-         case ('ux_time')
+         case ('vel_time')
             call bc_force_ux_time(f,n1,j)
          case default
             if (lroot) print*, "No such value for force_lower_bound: <", &
@@ -3006,7 +3003,7 @@ module Boundcond
          !   call bc_force_kepler(f,n2,j)
          case ('cT')
             f(:,:,n2,j) = log(cs2top/gamma1)
-         case ('ux_time')
+         case ('vel_time')
             call bc_force_ux_time(f,n2,j)
          case default
             if (lroot) print*, "No such value for force_upper_bound: <", &
@@ -3023,17 +3020,18 @@ module Boundcond
 !
     endsubroutine bc_force_z
 !***********************************************************************
-    subroutine bc_force_x(f,sgn,topbot,j)
+    subroutine bc_force_x(f, sgn, topbot, j)
 !
 !  Force values of j-th variable on x-boundaries topbot.
 !
 !  09-mar-2007/dintrans: coded
 !
-      use EquationOfState, only: gamma1, cs2top, cs2bot
+      use SharedVariables, only : get_shared_variable
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: sgn,i,j
+      real, pointer :: ampl_forc, k_forc, w_forc
+      integer :: sgn, i, j, ierr
 !
       select case(topbot)
 !
@@ -3041,8 +3039,20 @@ module Boundcond
 !
       case('bot')
          select case (force_lower_bound)
-         case ('cT')
-            f(l1,:,:,ilnTT) = log(cs2bot/gamma1)
+         case ('vel_time')
+            if (j /= iuy) call stop_it("BC_FORCE_X: only valid for uy")
+            call get_shared_variable('ampl_forc', ampl_forc, ierr)
+            if (ierr/=0) call stop_it("BC_FORCE_X: "//&
+                   "there was a problem when getting ampl_forc")      
+            call get_shared_variable('k_forc', k_forc, ierr)
+            if (ierr/=0) call stop_it("BC_FORCE_X: "//&
+                   "there was a problem when getting k_forc")      
+            call get_shared_variable('w_forc', w_forc, ierr)
+            if (ierr/=0) call stop_it("BC_FORCE_X: "//&
+                   "there was a problem when getting w_forc")      
+            if (headtt) print*, 'BC_FORCE_X: ampl_forc, k_forc, w_forc=',&
+                   ampl_forc, k_forc, w_forc
+            f(l1,:,:,iuy) = spread(ampl_forc*sin(k_forc*y)*cos(w_forc*t), 2, mz)
          case default
             if (lroot) print*, "No such value for force_lower_bound: <", &
                  trim(force_lower_bound),">"
@@ -3057,8 +3067,20 @@ module Boundcond
 !
       case('top')
          select case (force_upper_bound)
-         case ('cT')
-            f(l2,:,:,ilnTT) = log(cs2top/gamma1)
+         case ('vel_time')
+            if (j /= iuy) call stop_it("BC_FORCE_X: only valid for uy")
+            call get_shared_variable('ampl_forc', ampl_forc, ierr)
+            if (ierr/=0) call stop_it("BC_FORCE_X: "//&
+                   "there was a problem when getting ampl_forc")      
+            call get_shared_variable('k_forc', k_forc, ierr)
+            if (ierr/=0) call stop_it("BC_FORCE_X: "//&
+                   "there was a problem when getting k_forc")      
+            call get_shared_variable('w_forc', w_forc, ierr)
+            if (ierr/=0) call stop_it("BC_FORCE_X: "//&
+                   "there was a problem when getting w_forc")      
+            if (headtt) print*, 'BC_FORCE_X: ampl_forc, k_forc, w_forc=',&
+                   ampl_forc, k_forc, w_forc
+            f(l2,:,:,iuy) = spread(ampl_forc*sin(k_forc*y)*cos(w_forc*t), 2, mz)
          case default
             if (lroot) print*, "No such value for force_upper_bound: <", &
                  trim(force_upper_bound),">"
@@ -5454,10 +5476,10 @@ module Boundcond
 !***********************************************************************
     subroutine bc_force_ux_time(f, idz, j)
 !
-!  Set ux = ampl_forc*sin(kx_forc*x)*cos(w_forc*t) 
+!  Set ux = ampl_forc*sin(k_forc*x)*cos(w_forc*t) 
 !
 !  05-jun-2009/dintrans: coded from bc_force_uxy_sin_cos
-!  Note: the ampl_forc, kx_forc & w_forc run parameters are set in 
+!  Note: the ampl_forc, k_forc & w_forc run parameters are set in 
 !  'hydro' and shared using the 'shared_variables' module
 !
       use SharedVariables, only : get_shared_variable
@@ -5465,7 +5487,7 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: idz, j, ierr
       real    :: kx
-      real, pointer :: ampl_forc, kx_forc, w_forc
+      real, pointer :: ampl_forc, k_forc, w_forc
 !
       if (headtt) then
         if (iuz == 0) call stop_it("BC_FORCE_UX_TIME: Bad idea...")
@@ -5475,16 +5497,16 @@ module Boundcond
       call get_shared_variable('ampl_forc', ampl_forc, ierr)
       if (ierr/=0) call stop_it("BC_FORCE_UX_TIME: "//&
            "there was a problem when getting ampl_forc")      
-      call get_shared_variable('kx_forc', kx_forc, ierr)
+      call get_shared_variable('k_forc', k_forc, ierr)
       if (ierr/=0) call stop_it("BC_FORCE_UX_TIME: "//&
-           "there was a problem when getting kx_forc")      
+           "there was a problem when getting k_forc")      
       call get_shared_variable('w_forc', w_forc, ierr)
       if (ierr/=0) call stop_it("BC_FORCE_UX_TIME: "//&
            "there was a problem when getting w_forc")      
-      if (headtt) print*, 'bc_force_ux_time: ampl_forc, kx_forc, w_forc=',&
-           ampl_forc, kx_forc, w_forc
+      if (headtt) print*, 'bc_force_ux_time: ampl_forc, k_forc, w_forc=',&
+           ampl_forc, k_forc, w_forc
 !
-      kx=2*pi/Lx*kx_forc
+      kx=2*pi/Lx*k_forc
       f(:,:,idz,j) = spread(ampl_forc*sin(kx*x)*cos(w_forc*t), 2, my)
 !
     endsubroutine bc_force_ux_time
