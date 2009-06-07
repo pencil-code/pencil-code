@@ -4554,6 +4554,7 @@ module Magnetic
           tangent(2) = sin(knotParam)
           tangent(3) = cos(knotParam)
         elseif (knotParam .le. 1.*PI*3./2. + 1.) then
+!           print*, "line1"
           knotPos(1) = -1.
           knotPos(2) = -(knotParam-PI*3./2.)
           knotPos(3) = 0.
@@ -4568,6 +4569,7 @@ module Magnetic
           tangent(2) = -cos(knotParam-(1.*PI*3./2.+1.))
           tangent(3) = 2./3.*sin((knotParam-(1.*PI*3./2.+1.))/3.)*cos((knotParam-(1.*PI*3./2.+1.))/3.)
         elseif (knotParam .le. 2.*PI*3./2. + 2.) then
+!           print*, "line2"
           knotPos(1) = -(knotParam-(2.*PI*3./2.+1.))
           knotPos(2) = 0.
           knotPos(3) = 1.
@@ -4582,7 +4584,7 @@ module Magnetic
           tangent(2) = -2./3.*sin((knotParam-(2.*pi*3./2.+2.))/3.)*cos((knotParam-(2.*pi*3./2.+2.))/3.)
           tangent(3) = -sin(knotParam-(2.*pi*3./2.+2.))
         else
-          print*, "last line"
+!           print*, "line3"
           knotPos(1) = 0.
           knotPos(2) = -1.
           knotPos(3) = knotParam-(3.*PI*3./2.+2.)
