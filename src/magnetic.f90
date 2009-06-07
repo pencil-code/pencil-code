@@ -4501,18 +4501,19 @@ module Magnetic
 !  a linking number 3.
 !
 !  Created 2009-06-05 by Simon Candelaresi (Iomsn)
+!  Last modified
 
-! WARNING: DO NOT USE THIS SUBROUTINE, THIS IS STILL WORK IN PROGRESS
+!  WARNING: DO NOT USE THIS SUBROUTINE, THIS IS STILL WORK IN PROGRESS
 
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,3) :: magneticField
-      real :: domainWidth, domainDepth, domainHeight
       real :: knotParam, circleParam, circleR
       real :: deltaKnotParam, deltaCircleParam, deltaCircleR
       real, dimension(3) :: knotPos, circlePos, tangent, normal
       real :: widthRing
+      integer :: domainWidth, domainDepth, domainHeight
       integer :: l ! increment variable for the x component
 !       real, dimension (nx,3) :: tmpv
 !       real, dimension (nx) :: xx1,yy1,zz1
@@ -4533,17 +4534,17 @@ module Magnetic
 !  initialize the magnetic flux tube
 !
       domainWidth = l2-l1; domainDepth = m2-m1; domainHeight = n2-n1
-! Calculate the minimum step size of the curve parameters to avoid discretation
-! issues, like mesh points without magnetic field
+!  Calculate the minimum step size of the curve parameters to avoid discretation
+!  issues, like mesh points without magnetic field
       deltaKnotParam = (2.*PI)/max(domainWidth,domainDepth,domainHeight)
       deltaCircleParam = deltaKnotParam/(widthRing/2.)
       deltaCircleR = deltaCircleParam
 
       knotParam = 0.
-! loop which moves along the trefoil knot
+!  loop which moves along the trefoil knot
       do
         if (knotParam .gt. 3.*PI*3./2.+3.) exit
-! At which stage of the knot are we?
+!  At which stage of the knot are we?
         if (knotParam .le. 1.*PI*3./2. + 0.) then
           knotPos(1) = -sin(knotParam/3.)*sin(knotParam/3.)
           knotPos(2) = -cos(knotParam)
@@ -4590,7 +4591,7 @@ module Magnetic
         tangent = tangent / &
         sqrt(tangent(1)*tangent(1)+tangent(2)*tangent(2)+tangent(3)*tangent(3))
 
-! Find vector which is orthogonal (normal) to tangent vector.
+!  Find vector which is orthogonal (normal) to tangent vector.
         if (tangent(1) .ge. 1e-5) then
           normal(1) = 1.; normal(2) = 0.; normal(3) = 0.
         else
@@ -4601,27 +4602,39 @@ module Magnetic
           normal(3) = tangent(3)*tangent(1) / &
           sqrt(tangent(1)*tangent(1)+tangent(2)*tangent(2)+tangent(3)*tangent(3))
 
-! Noramlize the normal vector
+!  Noramlize the normal vector
           normal = normal / &
           sqrt(normal(1)*normal(1)+normal(2)*normal(2)+normal(3)*normal(3))
         endif
 
         circleR = 0.
-! loop which changes the circles radius
+!  loop which changes the circles radius
         do
           if (circleR .gt. widthRing/2.) exit
           circleParam = 0.
-! loop which goes around the circle
+!  loop which goes around the circle
           do
-            if (circleParam .gt. 2*PI) exit
+            if (circleParam .gt. 2.*PI) exit
             circlePos(1) = knotPos(1) + circleR * &
-            (tangent(1)*tangent(1)*(1-cos(circleParam))+cos(circleParam)*normal(1) + &
-            (tangent(1)*tangent(2)*(1-cos(circleParam))-tangent(3)*sin(circleParam))*normal(2) )
+            ((tangent(1)*tangent(1)*(1-cos(circleParam))+cos(circleParam))*normal(1) + &
+            (tangent(1)*tangent(2)*(1-cos(circleParam))-tangent(3)*sin(circleParam))*normal(2) + &
+            (tangent(1)*tangent(3)*(1-cos(circleParam))+tangent(2)*sin(circleParam))*normal(3))
+            circlePos(2) = knotPos(2) + circleR * &
+            ((tangent(1)*tangent(2)*(1-cos(circleParam))+tangent(3)*sin(circleParam))*normal(1) + &
+            (tangent(2)*tangent(2)*(1-cos(circleParam))+cos(circleParam))*normal(2) + &
+            (tangent(2)*tangent(3)*(1-cos(circleParam))-tangent(1)*sin(circleParam))*normal(3))
+            circlePos(3) = knotPos(3) + circleR * &
+            ((tangent(1)*tangent(3)*(1-cos(circleParam))-tangent(2)*sin(circleParam))*normal(1) + &
+            (tangent(2)*tangent(3)*(1-cos(circleParam))+tangent(1)*sin(circleParam))*normal(2)) + &
+            (tangent(3)*tangent(3)*(1-cos(circleParam))+cos(circleParam))*normal(3)
 
+!  Find the corresponding mesh point to this position.
+            l = nint((circlePos(1)+PI)/(2.*PI)*domainWidth)+1
+            m = nint((circlePos(2)+PI)/(2.*PI)*domainDepth)+1
+            n = nint((circlePos(3)+PI)/(2.*PI)*domainHeight)+1
 
-! Find the corresponding mesh point to this position.
-
-! Write the magnetic field b.
+!  Write the magnetic field b.            
+            magneticField(l,m,n,1:3) = tangent*ampl
 
             circleParam = circleParam + deltaCircleParam
           enddo
@@ -4630,18 +4643,13 @@ module Magnetic
         knotParam = knotParam + deltaKnotParam
       enddo
 
-
-
-      do l=l1,l2; do n=n1,n2; do m=m1,m2
-!         magneticField(l,m,n,1) = 
-      enddo; enddo; enddo
 !
 !  calculate the vector potential from the magnetic field
 !
       
 
 !
-! Put all into f
+!  Put all into f
 !
 
 !       if (any((/fring1,fring2,Iring1,Iring2/) /= 0.)) then
