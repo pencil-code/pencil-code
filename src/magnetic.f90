@@ -4547,7 +4547,7 @@ module Magnetic
         if (knotParam .gt. 3.*PI*3./2.+3.) exit
 !  At which stage of the knot are we?
         if (knotParam .le. 1.*PI*3./2. + 0.) then
-          knotPos(1) = -sin(knotParam/3.)*sin(knotParam/3.)
+          knotPos(1) = -sin(knotParam/3.)**2
           knotPos(2) = -cos(knotParam)
           knotPos(3) = sin(knotParam)+1.
           tangent(1) = -2./3.*sin(knotParam/3.)*cos(knotParam/3.)
@@ -4563,7 +4563,7 @@ module Magnetic
         elseif (knotParam .le. 2.*PI*3./2. + 1.) then
           knotPos(1) = -cos(knotParam-(1.*PI*3./2.+1.))
           knotPos(2) = -sin(knotParam-(1.*PI*3./2.+1.))-1.
-          knotPos(3) = sin((knotParam-(1.*PI*3./2.+1.))/3.)*sin((knotParam-(1.*PI*3./2.+1.))/3.)
+          knotPos(3) = sin((knotParam-(1.*PI*3./2.+1.))/3.)**2
           tangent(1) = sin(knotParam-(1.*PI*3./2.+1.))
           tangent(2) = -cos(knotParam-(1.*PI*3./2.+1.))
           tangent(3) = 2./3.*sin((knotParam-(1.*PI*3./2.+1.))/3.)*cos((knotParam-(1.*PI*3./2.+1.))/3.)
@@ -4574,9 +4574,9 @@ module Magnetic
           tangent(1) = -1.
           tangent(2) = 0.
           tangent(3) = 0.
-        elseif (knotParam .le. 3.*PI*3./2. + 3.) then
+        elseif (knotParam .le. 3.*PI*3./2. + 2.) then
           knotPos(1) = -sin(knotParam-(2.*pi*3./2.+2.))-1.
-          knotPos(2) = -sin((knotParam-(2.*pi*3./2.+2.))/3.)*sin((knotParam-(2.*pi*3./2.+2.))/3.)
+          knotPos(2) = -sin((knotParam-(2.*pi*3./2.+2.))/3.)**2
           knotPos(3) = cos(knotParam-(2.*pi*3./2.+2.))
           tangent(1) = -cos(knotParam-(2.*pi*3./2.+2.))
           tangent(2) = -2./3.*sin((knotParam-(2.*pi*3./2.+2.))/3.)*cos((knotParam-(2.*pi*3./2.+2.))/3.)
