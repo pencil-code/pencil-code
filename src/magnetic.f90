@@ -4582,6 +4582,7 @@ module Magnetic
           tangent(2) = -2./3.*sin((knotParam-(2.*pi*3./2.+2.))/3.)*cos((knotParam-(2.*pi*3./2.+2.))/3.)
           tangent(3) = -sin(knotParam-(2.*pi*3./2.+2.))
         else
+          print*, "last line"
           knotPos(1) = 0.
           knotPos(2) = -1.
           knotPos(3) = knotParam-(3.*PI*3./2.+2.)
@@ -4634,7 +4635,7 @@ module Magnetic
             m = nint((circlePos(2)+PI)/(2.*PI)*domainDepth)+1
             n = nint((circlePos(3)+PI)/(2.*PI)*domainHeight)+1
 
-!  Write the magnetic field b.            
+!  Write the magnetic field b.
 !           magneticField(l,m,n,1:3) = tangent*ampl
             f(l,m,n,iax:iaz) = tangent*ampl
 
@@ -4654,60 +4655,7 @@ module Magnetic
 !  Put all into f
 !
 
-!       if (any((/fring1,fring2,Iring1,Iring2/) /= 0.)) then
-!         ! fringX is the magnetic flux, IringX the current
-!         if (lroot) then
-!           print*, 'fluxrings: Initialising magnetic flux rings'
-!         endif
-!         do i=1,nrings
-!           if (i==1) then
-!             fring = fring1      ! magnetic flux along ring
-!             Iring = Iring1      ! current along ring (for twisted flux tube)
-!             R0    = Rring1      ! radius of ring
-!             width = wr1         ! ring thickness
-!             axis  = axisr1      ! orientation
-!             disp  = dispr1      ! position
-!             ivar  = ivar1
-!           elseif (i==2) then
-!             fring = fring2
-!             Iring = Iring2
-!             R0    = Rring2
-!             width = wr2
-!             axis  = axisr2
-!             disp  = dispr2
-!             ivar  = ivar2
-!           elseif (i==3) then
-!             fring = fring3
-!             Iring = Iring3
-!             R0    = Rring3
-!             width = wr3
-!             axis  = axisr3
-!             disp  = dispr3
-!             ivar  = ivar3
-!           else
-!             call stop_it('fluxrings: nrings is too big')
-!           endif
-!           phi   = atan2(axis(2),axis(1)+epsi)
-!           theta = atan2(sqrt(axis(1)**2+axis(2)**2)+epsi,axis(3))
-!           ct = cos(theta); st = sin(theta)
-!           cp = cos(phi)  ; sp = sin(phi)
-!           ! Calculate D^(-1)*(xxx-disp)
-!           do n=n1,n2; do m=m1,m2
-!             xx1= ct*cp*(x(l1:l2)-disp(1))+ct*sp*(y(m)-disp(2))-st*(z(n)-disp(3))
-!             yy1=-   sp*(x(l1:l2)-disp(1))+   cp*(y(m)-disp(2))
-!             zz1= st*cp*(x(l1:l2)-disp(1))+st*sp*(y(m)-disp(2))+ct*(z(n)-disp(3))
-!             call norm_ring(xx1,yy1,zz1,fring,Iring,R0,width,tmpv,PROFILE=prof)
-!             ! calculate D*tmpv
-!             f(l1:l2,m,n,ivar  ) = f(l1:l2,m,n,ivar  ) + ampl*( &
-!                  + ct*cp*tmpv(:,1) - sp*tmpv(:,2) + st*cp*tmpv(:,3))
-!             f(l1:l2,m,n,ivar+1) = f(l1:l2,m,n,ivar+1) + ampl*( &
-!                  + ct*sp*tmpv(:,1) + cp*tmpv(:,2) + st*sp*tmpv(:,3))
-!             f(l1:l2,m,n,ivar+2) = f(l1:l2,m,n,ivar+2) + ampl*( &
-!                  - st   *tmpv(:,1)                + ct   *tmpv(:,3))
-!           enddo; enddo
-!         enddo
-!       endif
-!       if (lroot) print*, 'fluxrings: Magnetic flux rings initialized'
+
 
     endsubroutine trefoil_knot_fluxtube
 !***********************************************************************
