@@ -69,7 +69,8 @@ module Magnetic
   character (len=labellen), dimension(ninit) :: initaa='nothing'
   character (len=labellen) :: borderaa='nothing'
   character (len=labellen), dimension(nresi_max) :: iresistivity=''
-  character (len=labellen) :: Omega_profile='nothing',alpha_profile='const',b_profile='const'
+  character (len=labellen) :: Omega_profile='nothing',alpha_profile='const'
+  character (len=labellen) :: fring_profile='tanh'
   ! input parameters
   complex, dimension(3) :: coefaa=(/0.,0.,0./), coefbb=(/0.,0.,0./)
   real, dimension(3) :: B_ext=(/0.,0.,0./),B1_ext,B_ext_tmp,eta_aniso_hyper3
@@ -145,7 +146,7 @@ module Magnetic
        fring1,Iring1,Rring1,wr1,axisr1,dispr1, &
        fring2,Iring2,Rring2,wr2,axisr2,dispr2, &
        fring3,Iring3,Rring3,wr3,axisr3,dispr3, &
-       nrings, &
+       fring_profile,nrings, &
        radius,epsilonaa,x0aa,z0aa,widthaa, &
        by_left,by_right,bz_left,bz_right, &
        initaa,amplaa,kx_aa,ky_aa,kz_aa,coefaa,coefbb, &
@@ -923,11 +924,11 @@ module Magnetic
         case('bipolar'); call bipolar(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
         case('vecpatternxy'); call vecpatternxy(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
         case('xjump'); call bjump(f,iaa,by_left,by_right,bz_left,bz_right,widthaa,'x')
-        case('fluxrings', '4'); call fluxrings(amplaa(j),f,iaa,iaa)
-        case('fluxrings_WB'); call fluxrings(amplaa(j),f,iuu,iaa)
-        case('fluxrings_BW'); call fluxrings(amplaa(j),f,iaa,iuu)
-        case('fluxrings_WW'); call fluxrings(amplaa(j),f,iuu,iuu)
-        case('trefoil_knot_fluxtube'); call trefoil_knot_fluxtube(amplaa(j),f,widthaa,b_profile)
+        case('fluxrings', '4'); call fluxrings(amplaa(j),f,iaa,iaa,fring_profile)
+        case('fluxrings_WB'); call fluxrings(amplaa(j),f,iuu,iaa,fring_profile)
+        case('fluxrings_BW'); call fluxrings(amplaa(j),f,iaa,iuu,fring_profile)
+        case('fluxrings_WW'); call fluxrings(amplaa(j),f,iuu,iuu,fring_profile)
+        case('trefoil_knot_fluxtube'); call trefoil_knot_fluxtube(amplaa(j),f,widthaa,fring_profile)
         case('sinxsinz'); call sinxsinz(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
         case('sinxsinz_Hz'); call sinxsinz(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j),KKz=kz_aa(j))
         case('sin2xsin2y'); call sin2x_sin2y_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
@@ -4706,7 +4707,8 @@ module Magnetic
 !  current Iring (not correctly normalized), radius R0 and thickness
 !  WIDTH in normal orientation (lying in the x-y plane, centred at (0,0,0)).
 !
-!   1-may-02/wolf: coded
+!   1-may-02/wolf: coded (see the manual, Section C.3)
+!   7-jun-09/axel: added gaussian and constant (or box) profiles
 !
       use Mpicomm, only: stop_it
 !
@@ -4715,18 +4717,38 @@ module Magnetic
       real :: fring,Iring,R0,width
       character (len=*) :: profile
 !
-      vv = 0.0
-!
-!  magnetic ring
+!  magnetic ring, define r-R
 !
       tmp = sqrt(xx1**2+yy1**2)-R0
-
+!
+!  choice of different profile functions
+!
       select case(profile)
-
+!
+!  gaussian profile, exp(-.5*(x/w)^2)/(sqrt(2*pi)*eps),
+!  so its derivative is .5*(1.+erf(-x/(sqrt(2)*eps))
+!
+      case('gaussian')
+        vv(:,3) = - fring * .5*(1.+erf(tmp/(sqrt(2.)*width))) &
+                          * exp(-.5*(zz1/width)**2)/(sqrt(2.*pi)*width)
+!
+!  tanh profile, so the delta function is approximated by 1/cosh^2.
+!  The name tanh is misleading, because the actual B frofile is
+!  1./cosh^2, but this is harder to write.
+!
       case('tanh')
         vv(:,3) = - fring * 0.5*(1+tanh(tmp/width)) &
                           * 0.5/width/cosh(zz1/width)**2
-
+!
+!  constant profile, so the delta function is approximated by the function
+!  delta(x) = 1/2w, if -w < x < w.
+!
+      case('const')
+        vv(:,3) = - fring * 0.5*(1.+max(-1.,min(tmp/width,1.))) &
+                          * 0.25/width*(1.-sign(1.,abs(zz1)-width))
+!
+!  there is no default option here
+!
       case default
         call stop_it('norm_ring: No such fluxtube profile')
       endselect
