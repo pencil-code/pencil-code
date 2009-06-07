@@ -4536,7 +4536,8 @@ module Magnetic
       domainWidth = l2-l1; domainDepth = m2-m1; domainHeight = n2-n1
 !  Calculate the minimum step size of the curve parameters to avoid discretation
 !  issues, like mesh points without magnetic field
-      deltaKnotParam = (2.*PI)/max(domainWidth,domainDepth,domainHeight)
+!     deltaKnotParam = (2.*PI)/max(domainWidth,domainDepth,domainHeight)
+      deltaKnotParam = 1./max(domainWidth,domainDepth,domainHeight)
       deltaCircleParam = deltaKnotParam/(widthRing/2.)
       deltaCircleR = deltaCircleParam
 
