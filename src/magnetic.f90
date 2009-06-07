@@ -4508,7 +4508,7 @@ module Magnetic
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,3) :: magneticField
+!     real, dimension (mx,my,mz,3) :: magneticField
       real :: knotParam, circleParam, circleR
       real :: deltaKnotParam, deltaCircleParam, deltaCircleR
       real, dimension(3) :: knotPos, circlePos, tangent, normal
@@ -4634,7 +4634,8 @@ module Magnetic
             n = nint((circlePos(3)+PI)/(2.*PI)*domainHeight)+1
 
 !  Write the magnetic field b.            
-            magneticField(l,m,n,1:3) = tangent*ampl
+!           magneticField(l,m,n,1:3) = tangent*ampl
+            f(l,m,n,iax:iaz) = tangent*ampl
 
             circleParam = circleParam + deltaCircleParam
           enddo
