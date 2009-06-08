@@ -91,6 +91,7 @@ module Magnetic
   real :: omega_Bz_ext=0.
   real :: mu_r=-0.5 !(still needed for backwards compatibility)
   real :: mu_ext_pot=-0.5,inclaa=0.
+  real :: mu012=.5 !(=1/2mu0)
   real :: rescale_aa=0.
   real :: ampl_B0=0.,D_smag=0.17,B_ext21,B_ext11
   real :: Omega_ampl=0.
@@ -249,6 +250,7 @@ module Magnetic
   integer :: idiag_aybym2=0     ! DIAG_DOC:
   integer :: idiag_exaym2=0     ! DIAG_DOC:
   integer :: idiag_exjm2=0      ! DIAG_DOC:
+  integer :: idiag_emag=0       ! DIAG_DOC: $\int_V{1\over2\mu_0}\Bv^2\, dV$
   integer :: idiag_brms=0       ! DIAG_DOC: $\left<\Bv^2\right>^{1/2}$
   integer :: idiag_bmax=0       ! DIAG_DOC: $\max(|\Bv|)$
   integer :: idiag_bxmin=0      ! DIAG_DOC: $\min(|B_x|)$
@@ -280,9 +282,9 @@ module Magnetic
                                 ! DIAG_DOC:   \quad(mean inverse plasma beta)
   integer :: idiag_beta1max=0   ! DIAG_DOC: $\max[\Bv^2/(2\mu_0 p)]$
                                 ! DIAG_DOC:   \quad(maximum inverse plasma beta)
-  integer :: idiag_bxm=0        ! DIAG_DOC:
-  integer :: idiag_bym=0        ! DIAG_DOC:
-  integer :: idiag_bzm=0        ! DIAG_DOC:
+  integer :: idiag_bxm=0        ! DIAG_DOC: $\left<\left<B\right>_{yz}^2\right>_x^{1/2}$
+  integer :: idiag_bym=0        ! DIAG_DOC: $\left<\left<B\right>_{zx}^2\right>_y^{1/2}$
+  integer :: idiag_bzm=0        ! DIAG_DOC: $\left<\left<B\right>_{xy}^2\right>_z^{1/2}$
   integer :: idiag_bx2m=0       ! DIAG_DOC: $\left<B_x^2\right>$
   integer :: idiag_by2m=0       ! DIAG_DOC: $\left<B_y^2\right>$
   integer :: idiag_bz2m=0       ! DIAG_DOC: $\left<B_z^2\right>$
@@ -544,6 +546,7 @@ module Magnetic
 !  Precalculate 1/mu (moved here from register.f90)
 !
       mu01=1./mu0
+      mu012=.5*mu01
 !
 !  Precalculate eta if 1/eta (==eta1) is given instead
 !
@@ -1302,8 +1305,10 @@ module Magnetic
           .or. idiag_examz1/=0 .or. idiag_examz2/=0 .or. idiag_examz3/=0 &
           .or. idiag_exjmx/=0 .or. idiag_exjmy/=0 .or. idiag_exjmz/=0 &
          ) lpenc_diagnos(i_jj)=.true.
-      if (idiag_b2uzm/=0 .or. idiag_b2m/=0 .or. idiag_bm2/=0 .or. idiag_brms/=0 .or. &
-          idiag_bmax/=0 .or. idiag_brmsh/=0 .or. idiag_brmsn/=0 .or. idiag_brmss/=0 ) & 
+      if (idiag_b2uzm/=0 .or. idiag_b2m/=0 .or. idiag_bm2/=0 .or. &
+          idiag_brmsh/=0 .or. idiag_brmsn/=0 .or. idiag_brmss/=0 .or. &
+          idiag_brms/=0 .or. idiag_bmax/=0 .or. &
+          idiag_emag/=0 ) & 
           lpenc_diagnos(i_b2)=.true.
 ! to calculate the angle between magnetic field and current.
       if (idiag_cosjbm/=0) then
@@ -2206,6 +2211,7 @@ module Magnetic
         if (idiag_b2m/=0) call sum_mn_name(p%b2,idiag_b2m)
         if (idiag_bm2/=0) call max_mn_name(p%b2,idiag_bm2)
         if (idiag_brms/=0) call sum_mn_name(p%b2,idiag_brms,lsqrt=.true.)
+        if (idiag_emag/=0) call integrate_mn_name(mu012*p%b2,idiag_emag)
         if (idiag_brmsh/=0) then
           if (lequatory) call sum_mn_name_halfy(p%b2,idiag_brmsh)
           if (lequatorz) call sum_mn_name_halfz(p%b2,idiag_brmsh)
@@ -5524,6 +5530,7 @@ module Magnetic
         idiag_Expt=0; idiag_Eypt=0; idiag_Ezpt=0
         idiag_aybym2=0; idiag_exaym2=0; idiag_exjm2=0
         idiag_brms=0; idiag_bmax=0; idiag_jrms=0; idiag_jmax=0; idiag_vArms=0
+        idiag_emag=0
         idiag_bxmin=0; idiag_bymin=0; idiag_bzmin=0
         idiag_bxmax=0; idiag_bymax=0; idiag_bzmax=0
         idiag_vAmax=0; idiag_dtb=0; idiag_arms=0; idiag_amax=0
@@ -5613,6 +5620,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),&
             'epsM_LES',idiag_epsM_LES)
         call parse_name(iname,cname(iname),cform(iname),'epsAD',idiag_epsAD)
+        call parse_name(iname,cname(iname),cform(iname),'emag',idiag_emag)
         call parse_name(iname,cname(iname),cform(iname),'brms',idiag_brms)
         call parse_name(iname,cname(iname),cform(iname),'brmsn',idiag_brmsn)
         call parse_name(iname,cname(iname),cform(iname),'brmss',idiag_brmss)
@@ -5945,6 +5953,7 @@ module Magnetic
         write(3,*) 'i_jm2=',idiag_jm2
         write(3,*) 'i_epsM=',idiag_epsM
         write(3,*) 'i_epsM_LES=',idiag_epsM_LES
+        write(3,*) 'i_emag=',idiag_emag
         write(3,*) 'i_brms=',idiag_brms
         write(3,*) 'i_bmax=',idiag_bmax
         write(3,*) 'i_jrms=',idiag_jrms
