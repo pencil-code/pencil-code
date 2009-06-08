@@ -4677,6 +4677,7 @@ module Magnetic
 !   7-jun-09/axel: added gaussian and constant (or box) profiles
 !
       use Mpicomm, only: stop_it
+      use Sub
 !
       real, dimension (nx,3) :: vv
       real, dimension (nx) :: xx1,yy1,zz1,phi,tmp
@@ -4695,7 +4696,7 @@ module Magnetic
 !  so its derivative is .5*(1.+erf(-x/(sqrt(2)*eps))
 !
       case('gaussian')
-        vv(:,3) = - fring * .5*(1.+erf(tmp/(sqrt(2.)*width))) &
+        vv(:,3) = - fring * .5*(1.+erfunc(tmp/(sqrt(2.)*width))) &
                           * exp(-.5*(zz1/width)**2)/(sqrt(2.*pi)*width)
 !
 !  tanh profile, so the delta function is approximated by 1/cosh^2.
