@@ -1931,11 +1931,11 @@ module Hydro
 !***********************************************************************
     subroutine calc_lhydro_pars(f)
 !
-!  calculate <rho*ux> and <rho*uy> when tau_damp_ruxm, tau_damp_ruym,
+!  Calculate <rho*ux> and <rho*uy> when tau_damp_ruxm, tau_damp_ruym,
 !  or tau_damp_ruzm are different from zero. Was used to remove net
 !  momenta in any of the three directions. A better method is now
 !  to set lremove_mean_momenta=T in the call to remove_mean_momenta.
-!  calculate <U>, when lcalc_uumean=.true.
+!  Calculates <U>, when lcalc_uumean=.true.
 !
 !   9-nov-06/axel: adapted from calc_ltestfield_pars
 !  31-jul-08/axel: Poincare force with O=(sinalp*cosot,sinalp*sinot,cosalp)
@@ -3715,7 +3715,7 @@ module Hydro
 !***********************************************************************
     subroutine remove_mean_flow(f)
 !
-!  Substract mean x-flow over density from the x-velocity field.
+!  Substract mean x-flow from the x-velocity field.
 !  Useful to avoid unphysical winds in shearing box simulations.
 !  Note: this is possibly not useful when there is rotation, because
 !  then epicyclic motions don't usually grow catastrophically.
