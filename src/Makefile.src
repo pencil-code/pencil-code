@@ -296,37 +296,13 @@ endif
 #FFLAGS=-I /usr/local/Packages/mpich-1.2.6/ch-p4/include #(lfc101)
 #LD_MPI=-L /usr/local/Packages/mpich-1.2.6/ch-p4/lib/ -lmpich #(lfc101)
 #LDONLYFLAGS=farg.o #(lfc101)
-#FC=ifort #(nw[0-9]+|hamlet|lynx|brahe|nq[0-9]*|aida25)
-#FFLAGS=-O3 -I/home/johansen/mpich/include -static-libcxa #(aida25)
-#LD_MPI=-L /home/johansen/mpich/lib -lmpich #(aida25)
-#FC=g95-andy #(nw[0-9]+|hamlet|lynx|brahe|nq[0-9]*|aida69)
-#FFLAGS=-fno-second-underscore -O3 -I/home/johansen/local/mpich2/include #(aida69)
-#LD_MPI=-l pthread -L /home/johansen/local/mpich2/lib -lmpich #(aida69)
+#FC=ifort #(nw[0-9]+|hamlet|lynx|brahe|nq[0-9]*)
+#FC=g95-andy #(nw[0-9]+|hamlet|lynx|brahe|nq[0-9]*)
 ##
 ## Andrej's Laptop
 ##
 #FC=ifort #(helios-thinkpad)
 #FFLAGS=-O3 #(helios-thinkpad)
-##
-## Andrej's Desktop - tau and non-tau setup
-##
-##FC=gfortran #(aida90)
-##TAUROOTDIR    = /home/bicanski/tau-pdt/tau-2.17 #(aida90)
-##include $(TAUROOTDIR)/include/Makefile #(aida90)
-##MAKEFILE              = Makefile #(aida90)
-##PDTPARSE := /home/bicanski/tau-pdt/pdtoolkit-3.12/x86_64/bin/f90parse #(aida90)
-##TAUINSTR := /home/bicanski/tau-pdt/tau-2.17/x86_64/bin/tau_instrumentor  #(aida90)
-##.f90.o: #(aida90)
-##      $(PDTPARSE) $< $(FFLAGS)  #(aida90)
-##      $(TAUINSTR) $*.pdb $< -o $*.inst.f ; #(aida90)
-##      ifort $(FFLAGS) -c $*.inst.f -o $@ ;  #(aida90)
-##      rm -f $*.pdb ;  #(aida90)
-#FC=ifort #(aida90)
-#FFLAGS=-O3 -I/home/bicanski/mpich2-install/include #(aida90)
-#LD_MPI=-L /home/bicanski/mpich2-install/lib -lmpich #(aida90)
-##FFLAGS=-prof-genx -g -O0 -I/home/bicanski/mpich2-install/include #(aida90)
-##FFLAGS=-pg -O0 -g -I/home/bicanski/mpich2-install/include #(aida90)
-##F90FLAGS=-g #(aida90)
 ##
 ## Andrej on PIA cluster
 ##
@@ -773,16 +749,22 @@ endif
 ##   Triton - Wlad's laptop
 ## + Titan  - Wlad's stationary
 ##
-#FC =/opt/intel/fc/10.0.023/bin/ifort #(triton)
-#FC =/usr/bin/gfortran #(titan|aida98)
-#F77=$(FC) #(triton|titan|aida98)
-#CC = gcc #(triton|titan|aida98)
+#FC =ifort #(triton)
+#F77=$(FC) #(triton|titan)
+#CC = gcc #(triton|titan)
 #MPI_HOME=/usr/local#(triton|titan)
-#MPI_HOME=/home/lyra/mpich2-install#(aida98)
-#FFLAGS=-O3 -I$(MPI_HOME)/include #(triton|titan|aida98)
-#LD_MPI=-L$(MPI_HOME)/lib -pthread $(MPI_LDLIBS) #(triton|titan|aida98)
+#FFLAGS=-O3 -I$(MPI_HOME)/include #(triton|titan)
+#LD_MPI=-L$(MPI_HOME)/lib -pthread $(MPI_LDLIBS) #(triton|titan)
 #MPI_LDLIBS= -llammpi++ -llammpio -llamf77mpi -lmpi -llam #(triton|titan)
-#MPI_LDLIBS= -lmpich #(aida98)
+##
+##  Aida workstations at MPIA-Heidelberg
+##
+#F77=$(FC) #(aida*)
+#CC = gcc #(aida*)
+#MPI_HOME=/usr/local/misc/mpich/mpich2-1.0.8p1-exe#(aida*)
+#FFLAGS=-O3 -I$(MPI_HOME)/include #(aida*)
+#LD_MPI=-L$(MPI_HOME)/lib -pthread $(MPI_LDLIBS) #(aida*)
+#MPI_LDLIBS= -lmpich #(aida*)
 ##
 ## Andrew's Laptop (wkfg)
 ##
