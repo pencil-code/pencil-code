@@ -235,10 +235,10 @@ module Timestep
           case('per_var_err')
             !
             ! Per variable error
-            !    
+            !
             scal=  ( &
                  sqrt(f(l1:l2,m,n,1)**2+f(l1:l2,m,n,2)**2)  + &
-                 sqrt(k(l1:l2,m,n,1,1)**2 + k(l1:l2,m,n,2,2)**2) + &
+                 sqrt(k(l1:l2,m,n,1,1)**2 + k(l1:l2,m,n,2,1)**2) + &
                  1e-30)
             errmaxs = max(maxval(abs(err/scal)),errmaxs)
             !scal=  ( &
@@ -254,17 +254,13 @@ module Timestep
             ! Constant error
             !
             do lll=1,nx
-              if (j.eq.ilnrho) then
-                scal(lll)=max(1e-8,abs(f(lll+l1-1,m,n,j)))            
-              else              
-                scal(lll)=max(1e-8,abs(f(lll+l1-1,m,n,j)))            
-              endif
+              scal(lll)=max(1e-8,abs(f(lll+l1-1,m,n,j)))
             enddo
             errmaxs = max(maxval(abs(err/scal)),errmaxs)
             !
           case('none')
             !
-            ! No error check 
+            ! No error check
             !
             errmaxs = 0
             !
@@ -278,7 +274,7 @@ module Timestep
         !
       call mpiallreduce_max(errmaxs,errmax)
 
-  endsubroutine rkck
+    endsubroutine rkck
 !***********************************************************************
     subroutine timestep_autopsy
 !
