@@ -51,7 +51,7 @@ module Chemistry
 !
   logical :: lone_spec=.false.
   logical :: lfix_Sc=.false., lfix_Pr=.false.
- 
+
 !
 !  parameters related to chemical reactions
 !
@@ -63,7 +63,7 @@ module Chemistry
 
   logical :: BinDif_simple=.false.
   logical :: visc_simple=.false.
-  
+
   logical :: lfilter=.false.
   logical :: lkreactions_profile=.false.
   integer :: nreactions=0,nreactions1=0,nreactions2=0
@@ -77,7 +77,7 @@ module Chemistry
   real,    allocatable, dimension(:)   :: kreactions_m,kreactions_p
   character (len=30),allocatable, dimension(:) :: reaction_name
   logical :: lT_tanh=.false.
-! 1step_test case 
+! 1step_test case
 
     logical :: l1step_test=.false.
     integer :: ipr=2
@@ -170,7 +170,7 @@ module Chemistry
   integer :: idiag_h7m=0
   integer :: idiag_h8m=0
   integer :: idiag_h9m=0
-  
+
   integer :: idiag_cpfull=0
   integer :: idiag_cvfull=0
 
@@ -535,7 +535,7 @@ module Chemistry
 !
 !  Mean molecular weight
 !
-        if (lpencil(i_mu1)) then 
+        if (lpencil(i_mu1)) then
           p%mu1=mu1_full(l1:l2,m,n)
         endif
 !
@@ -544,7 +544,7 @@ module Chemistry
 !  Mole fraction XX
 !
         !if (lpencil(i_XX)) then
-        !  do k=1,nchemspec 
+        !  do k=1,nchemspec
         !    p%XX(:,k)=p%YY(:,k)/species_constants(ichemspec(k),imass)/p%mu1
         !  enddo
         !endif
@@ -604,7 +604,7 @@ module Chemistry
 !  Sound speed
 !
         !if (lpencil(i_cs2)) p%cs2=p%cp*p%TT*p%gamma1*p%mu1
-!     
+!
 !------------------------------------------
 !  NB:this is wrong for the chemistry case
 !------------------------------------------
@@ -614,8 +614,8 @@ module Chemistry
 !
         if (lpencil(i_rho1gpp)) then
 !
-! NILS: rho1gpp should be calculated from gradT, gradlnrho and gradmu 
-! NILS: instead. When this is implemented one should remove the 
+! NILS: rho1gpp should be calculated from gradT, gradlnrho and gradmu
+! NILS: instead. When this is implemented one should remove the
 ! NILS: calculation of pp_full
 !
           call grad(pp_full,p%rho1gpp)
@@ -646,16 +646,16 @@ module Chemistry
       if (lpencil(i_nu_art)) then
         p%nu_art=nu_art_full(l1:l2,m,n)
       endif
-! 
-! Calculate the reaction term and the corresponding pencil 
+!
+! Calculate the reaction term and the corresponding pencil
 !
       if (lreactions .and. lpencil(i_DYDt_reac)) then
         call calc_reaction_term(f,p)
       else
         p%DYDt_reac=0.
       endif
-! 
-! Calculate the diffusion term and the corresponding pencil 
+!
+! Calculate the diffusion term and the corresponding pencil
 !
       if (ldiffusion .and. lpencil(i_DYDt_diff)) then
         call calc_diffusion_term(f,p)
@@ -685,7 +685,7 @@ module Chemistry
 !**************************************************************************
 subroutine flame_front(f)
 !
-! 06.05.2009/Nils Erland L. Haugen: adapted from similar 
+! 06.05.2009/Nils Erland L. Haugen: adapted from similar
 !                                   routine in special/chem_stream.f90
 ! This routine set up the initial profiles used in 1D flame speed measurments
 !
@@ -698,7 +698,7 @@ subroutine flame_front(f)
       integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
       real :: initial_mu1, final_massfrac_O2
       logical :: found_specie
-!     
+!
 ! Initialize some indexes
 !
       call find_species_index('H2' ,i_H2 ,ichem_H2 ,found_specie)
@@ -709,16 +709,16 @@ subroutine flame_front(f)
       mH2 =species_constants(ichem_H2 ,imass)
       mH2O=species_constants(ichem_H2O,imass)
       mN2 =species_constants(ichem_N2 ,imass)
-!      
+!
 ! Find approximate value for the mass fraction of O2 after the flame front
 !
       final_massfrac_O2&
           =(initial_massfractions(ichem_O2)/mO2&
-          -initial_massfractions(ichem_H2)/(2*mH2))*mO2 
+          -initial_massfractions(ichem_H2)/(2*mH2))*mO2
 !
 !  Initialize temperature and species
 !
-      do k=1,mx 
+      do k=1,mx
 !
 !  Initialize temperature
 !
@@ -808,10 +808,10 @@ subroutine flame_front(f)
 !
 !  Initialize density
 !
-   
+
        f(j1,j2,j3,ilnrho)=log(init_pressure)-log(Rgas)  &
            -f(j1,j2,j3,ilnTT)-log(mu1_full(j1,j2,j3))
- 
+
 !
 !  Initialize velocity
 !
@@ -857,7 +857,7 @@ subroutine flame_front(f)
       character (len=20) :: output_file="./data/mix_quant.out"
       integer :: file_id=123,lmid
 
-! 
+!
 ! Density and temperature
 !
       rho_full=exp(f(:,:,:,ilnrho))
@@ -891,7 +891,7 @@ subroutine flame_front(f)
 !
 !  Mole fraction XX
 !
-          do k=1,nchemspec 
+          do k=1,nchemspec
            do j2=mm1,mm2
             do j3=nn1,nn2
 !!$              if (minval(mu1_full(:,j2,j3))<=0) then
@@ -923,7 +923,7 @@ subroutine flame_front(f)
             T_low=species_constants(k,iTemp1)
             T_mid=species_constants(k,iTemp2)
             T_up= species_constants(k,iTemp3)
-            
+
 !
             do j3=nn1,nn2
               do j2=mm1,mm2
@@ -948,17 +948,17 @@ subroutine flame_front(f)
 !
 
                   if (T_loc >=T_low .and. T_loc <= T_mid) then
-                    tmp=0. 
+                    tmp=0.
                     do j=1,5
-                      tmp=tmp+species_constants(k,iaa2(j))*T_loc**(j-1) 
+                      tmp=tmp+species_constants(k,iaa2(j))*T_loc**(j-1)
                     enddo
                     cp_R_spec(j1,j2,j3,k)=tmp
                     cvspec_full(j1,j2,j3,k)=cp_R_spec(j1,j2,j3,k)-1.
                   elseif (T_loc >=T_mid .and. T_loc<= T_up) then
                 !  elseif (TT_full(j1,j2,j3) >=T_mid ) then
                     tmp=0.
-                    do j=1,5 
-                      tmp=tmp+species_constants(k,iaa1(j))*T_loc**(j-1) 
+                    do j=1,5
+                      tmp=tmp+species_constants(k,iaa1(j))*T_loc**(j-1)
                     enddo
                     cp_R_spec(j1,j2,j3,k)=tmp
                     cvspec_full(j1,j2,j3,k)=cp_R_spec(j1,j2,j3,k)-1.
@@ -1014,12 +1014,12 @@ subroutine flame_front(f)
             nu_full(j1,j2,j3)=species_viscosity(j1,j2,j3,1)/rho_full(j1,j2,j3)
           elseif (visc_simple) then
             nu_dyn(j1,j2,j3)=0.
-            do k=1,nchemspec 
+            do k=1,nchemspec
               nu_dyn(j1,j2,j3)=nu_dyn(j1,j2,j3)+XX_full(j1,j2,j3,k) &
                               *species_viscosity(j1,j2,j3,k)
             enddo
             nu_full(j1,j2,j3)=nu_dyn(j1,j2,j3)/rho_full(j1,j2,j3)
-          else 
+          else
             nu_dyn(j1,j2,j3)=0.
             do k=1,nchemspec
               tmp_sum2(j1,j2,j3)=0.
@@ -1037,7 +1037,7 @@ subroutine flame_front(f)
                   species_viscosity(j1,j2,j3,k)/tmp_sum2(j1,j2,j3)
              enddo
 
-              nu_full(j1,j2,j3)=nu_dyn(j1,j2,j3)/rho_full(j1,j2,j3)      
+              nu_full(j1,j2,j3)=nu_dyn(j1,j2,j3)/rho_full(j1,j2,j3)
           endif
 
         enddo
@@ -1060,7 +1060,7 @@ subroutine flame_front(f)
              if (diffus_const<impossible) then
                 Diff_full(j1,j2,j3,:)=diffus_const
              elseif (lfix_Sc) then
-              do k=1,nchemspec 
+              do k=1,nchemspec
                Diff_full(j1,j2,j3,k)=species_viscosity(j1,j2,j3,k) &
                                     /rho_full(j1,j2,j3)/Sc_number
               enddo
@@ -1072,14 +1072,14 @@ subroutine flame_front(f)
                  else
                    tmp_sum(j1,j2,j3)=tmp_sum(j1,j2,j3) &
                         +XX_full(j1,j2,j3,j)/Bin_Diff_coef(j1,j2,j3,j,k)
-                 endif	
+                 endif
                 enddo
                  Diff_full(j1,j2,j3,k)=(1.-f(j1,j2,j3,ichemspec(k)))/tmp_sum(j1,j2,j3)
               enddo
              endif
             endif
 
-            do k=1,nchemspec 
+            do k=1,nchemspec
               Diff_full_add(j1,j2,j3,k)=Diff_full(j1,j2,j3,k)*&
                   species_constants(k,imass)/unit_mass*mu1_full(j1,j2,j3)
             enddo
@@ -1087,13 +1087,13 @@ subroutine flame_front(f)
          enddo
          enddo
 !
-!do k=1,nchemspec 
+!do k=1,nchemspec
 !print*, Diff_full_add(l1,m1,n1,k),Diff_full_add(l2,m1,n1,k),k
 !enddo
 !
 !
 !
-!  Thermal diffusivity 
+!  Thermal diffusivity
 !
 !
 ! NB: one should check the coefficient 15/4
@@ -1105,7 +1105,7 @@ subroutine flame_front(f)
           tmp_sum(j1,j2,j3)=0.
           tmp_sum2(j1,j2,j3)=0.
 !
-          do k=1,nchemspec 
+          do k=1,nchemspec
             species_cond(j1,j2,j3,k)=(species_viscosity(j1,j2,j3,k)) &
                 /(species_constants(k,imass)/unit_mass)*Rgas*15./4.! 15./4.
             tmp_sum(j1,j2,j3)=tmp_sum(j1,j2,j3)  &
@@ -1135,8 +1135,8 @@ subroutine flame_front(f)
           enddo
           enddo
           enddo
- 
-         
+
+
 !
 !  Dimensionless Standard-state molar enthalpy H0/RT
 !
@@ -1148,15 +1148,15 @@ subroutine flame_front(f)
               do j2=mm1,mm2
                 do j1=1,mx
                   if (TT_full(j1,j2,j3) <= T_mid) then
-                    tmp=0. 
+                    tmp=0.
                     do j=1,5
-                      tmp=tmp+species_constants(k,iaa2(j))*TT_full(j1,j2,j3)**(j-1)/j 
+                      tmp=tmp+species_constants(k,iaa2(j))*TT_full(j1,j2,j3)**(j-1)/j
                     enddo
                     H0_RT(j1,j2,j3,k)=tmp+species_constants(k,iaa2(6))/TT_full(j1,j2,j3)
-                  else               
-                    tmp=0. 
+                  else
+                    tmp=0.
                     do j=1,5
-                      tmp=tmp+species_constants(k,iaa1(j))*TT_full(j1,j2,j3)**(j-1)/j 
+                      tmp=tmp+species_constants(k,iaa1(j))*TT_full(j1,j2,j3)**(j-1)/j
                     enddo
                     H0_RT(j1,j2,j3,k)=tmp+species_constants(k,iaa1(6))/TT_full(j1,j2,j3)
                   endif
@@ -1174,7 +1174,7 @@ subroutine flame_front(f)
         do j2=mm1,mm2
         do j1=1,mx
 
-          hYrho_full(j1,j2,j3)=0.       
+          hYrho_full(j1,j2,j3)=0.
           do k=1,nchemspec
             hYrho_full(j1,j2,j3)=hYrho_full(j1,j2,j3)&
                +H0_RT(j1,j2,j3,k)*Rgas*TT_full(j1,j2,j3)&
@@ -1195,7 +1195,7 @@ subroutine flame_front(f)
 !................................................
 !  Enthalpy flux
 !
-   !       hYrho_full=0.       
+   !       hYrho_full=0.
    !       do k=1,nchemspec
    !         hYrho_full(l1:l2,m1:m2,n1:n2)=hYrho_full(l1:l2,m1:m2,n1:n2)&
    !             +H0_RT(l1:l2,m1:m2,n1:n2,k)&
@@ -1290,13 +1290,13 @@ subroutine flame_front(f)
             unit_energy/unit_time/unit_length/unit_temperature)
         write(file_id,*) ''
         write(file_id,*) 'Species  Diffusion coefficient, cm^2/s'
-        do k=1,nchemspec 
+        do k=1,nchemspec
         write(file_id,'(7E12.4)')minval(Diff_full(:,:,:,k))*unit_length**2/unit_time, &
                                  maxval(Diff_full(:,:,:,k))*unit_length**2/unit_time
         enddo
         write(file_id,*) ''
-      
-       
+
+
         if (lroot) print*,'calc_for_chem_mixture: writing mix_quant.out file'
         close(file_id)
         lwrite=.false.
@@ -1359,7 +1359,7 @@ subroutine flame_front(f)
 !
       inquire(file=file1,exist=exist1)
       inquire(file=file2,exist=exist2)
-! 
+!
       if (exist1.and.exist2) then
 !
 !  if both chemistry1.dat and chemistry2.dat are present,
@@ -1394,7 +1394,7 @@ subroutine flame_front(f)
           call stop_it('nreactions1/=nreactions2')
         endif
 !
-      else 
+      else
 !
 !  old method: read chemistry data, if present
 !
@@ -1438,7 +1438,7 @@ subroutine flame_front(f)
             do n=1,mz
               if (n < mz/2) then
                 kreactions_z(n,j)=kreactions_profile_width(j)
-              else 
+              else
                 kreactions_z(n,j)=0.
               endif
             enddo
@@ -1457,7 +1457,7 @@ subroutine flame_front(f)
     subroutine chemkin_data(f)
 !
 !  if the file with chemkin data exists
-! 
+!
 !  DOCUMENT ME FURTHER!!!
 !
       use Cdata
@@ -1478,11 +1478,11 @@ subroutine flame_front(f)
         if (.not. lfix_Sc) then
           allocate(Bin_Diff_coef(mx,my,mz,nchemspec,nchemspec),STAT=stat)
           if (stat>0) call stop_it("Couldn't allocate memory "//&
-              "for binary diffusion coefficients") 
+              "for binary diffusion coefficients")
         endif
       endif
 !
-      if (tran_exist) then 
+      if (tran_exist) then
         if (lroot) then
           print*,'tran.dat file with transport data is found.'
         endif
@@ -1522,14 +1522,14 @@ subroutine flame_front(f)
         if (stat>0) call stop_it("Couldn't allocate memory for kreactions_m")
         allocate(reaction_name(mreactions),STAT=stat)
         if (stat>0) call stop_it("Couldn't allocate memory for reaction_name")
-        
+
         allocate(B_n(mreactions),STAT=stat)
         if (stat>0) call stop_it("Couldn't allocate memory for B_n")
         allocate(alpha_n(mreactions),STAT=stat)
         if (stat>0) call stop_it("Couldn't allocate memory for alpha_n")
         allocate(E_an(mreactions),STAT=stat)
         if (stat>0) call stop_it("Couldn't allocate memory for E_an")
-        
+
         allocate(low_coeff(3,nreactions),STAT=stat)
         low_coeff=0.
         if (stat>0) call stop_it("Couldn't allocate memory for low_coeff")
@@ -1540,10 +1540,10 @@ subroutine flame_front(f)
         troe_coeff=0.
         if (stat>0) call stop_it("Couldn't allocate memory for troe_coeff")
         allocate(a_k4(nchemspec,nreactions),STAT=stat)
-        a_k4=impossible 
+        a_k4=impossible
         if (stat>0) call stop_it("Couldn't allocate memory for troe_coeff")
         allocate(Mplus_case(nreactions),STAT=stat)
-        Mplus_case=.false. 
+        Mplus_case=.false.
         if (stat>0) call stop_it("Couldn't allocate memory for Mplus_case")
       endif
 !
@@ -1625,9 +1625,9 @@ subroutine flame_front(f)
       do k=1,nchemspec
 !
 !  advection terms
-! 
-        if (ladvection) then 
-          call grad(f,ichemspec(k),gchemspec) 
+!
+        if (ladvection) then
+          call grad(f,ichemspec(k),gchemspec)
           call dot_mn(p%uu,gchemspec,ugchemspec)
           if (lmobility) ugchemspec=ugchemspec*mobility(k)
           df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))-ugchemspec
@@ -1635,13 +1635,13 @@ subroutine flame_front(f)
 !
 !  diffusion operator
 !
-!  Temporary we check the existence of chem.imp data, 
-!  further one should check the existence of a file with 
+!  Temporary we check the existence of chem.imp data,
+!  further one should check the existence of a file with
 !  binary diffusion coefficients!
 !
         if (ldiffusion) then
           df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+&
-              p%DYDt_diff(:,k) 
+              p%DYDt_diff(:,k)
         endif
 !
 !  chemical reactions:
@@ -1667,19 +1667,19 @@ subroutine flame_front(f)
 
        if (l1step_test) then
         sum_DYDt=0.
-        do i=1,nx 
-  
+        do i=1,nx
+
         sum_DYDt(i)=-p%rho(1)*(p%TT(i)-Tinf)/p%TT(i) &
            *Cp_const/lambda_const*beta*(beta-1.)*f(l1,m,n,iux)**2
-  
+
       !   if (p%TT(i)>Tc) then
       !     if (x(i)>0.) then
 
     !        sum_DYDt(i)=f(l1,m,n,iux)**2*(Tinf-p%TT(i))/p%TT(i) & !(-p%TT(i)+Tinf)
     !        *Cp_const/lambda_const*p%rho(1)*beta*(beta-1.)* &
     !        (1.-f(l1-1+i,m,n,ichemspec(ipr)))
-    
-      
+
+
       !   endif
         enddo
        else
@@ -1723,7 +1723,7 @@ subroutine flame_front(f)
             if (ldiffusion) then
 !
 !--------------------------------------
-!  This expression should be discussed 
+!  This expression should be discussed
 !--------------------------------------
 !
               diffus_chem(j)=diffus_chem(j)+&
@@ -1770,10 +1770,10 @@ subroutine flame_front(f)
       if (ldiagnos) then
 !
 !  WL: instead of hardcoding Y1-Y9, wouldn't it be possible
-!      to have them all in the same array? The particles_nbody 
-!      module, for instance, has idiag_xxspar and idiag_vvspar, which 
-!      allows the user to add output the positions and velocities 
-!      of as many particle he/she wants. 
+!      to have them all in the same array? The particles_nbody
+!      module, for instance, has idiag_xxspar and idiag_vvspar, which
+!      allows the user to add output the positions and velocities
+!      of as many particle he/she wants.
 !
         if (idiag_Y1m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i1)),idiag_Y1m)
         if (idiag_Y2m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i2)),idiag_Y2m)
@@ -1908,7 +1908,7 @@ subroutine flame_front(f)
         idiag_h5m=0; idiag_h6m=0; idiag_h7m=0; idiag_h8m=0;
         idiag_h9m=0
         idiag_cp1m=0; idiag_cp2m=0; idiag_cp3m=0; idiag_cp4m=0;
-        idiag_cp5m=0; idiag_cp6m=0; idiag_cp7m=0; idiag_cp8m=0; 
+        idiag_cp5m=0; idiag_cp6m=0; idiag_cp7m=0; idiag_cp8m=0;
         idiag_cp9m=0; idiag_cpfull=0; idiag_cvfull=0
         idiag_e_intm=0
         idiag_Y1mz=0; idiag_Y2mz=0; idiag_Y3mz=0; idiag_Y4mz=0
@@ -2193,17 +2193,17 @@ subroutine flame_front(f)
       real, intent(out) :: MolMass
 !
       select case (element_name)
-      case('H')  
+      case('H')
         MolMass=1.00794
-      case('C')  
+      case('C')
         MolMass=12.0107
-      case('N')  
+      case('N')
         MolMass=14.00674
-      case('O')  
+      case('O')
         MolMass=15.9994
-      case('Ar','AR') 
+      case('Ar','AR')
         MolMass=39.948
-      case('He','HE') 
+      case('He','HE')
         MolMass=4.0026
       case default
         if (lroot) print*,'element_name=',element_name
@@ -2273,7 +2273,7 @@ subroutine flame_front(f)
 !********************************************************************
     subroutine read_thermodyn(input_file)
 !
-!  This subroutine reads the thermodynamical data for all species 
+!  This subroutine reads the thermodynamical data for all species
 !  from chem.inp. See the chemkin manual for more information on
 !  the syntax of chem.inp.
 !
@@ -2321,7 +2321,7 @@ subroutine flame_front(f)
 ! Find molar mass
 !
               MolMass=0
-              do iElement=1,4                
+              do iElement=1,4
                 In1=25+(iElement-1)*5
                 In2=26+(iElement-1)*5
                 In3=27+(iElement-1)*5
@@ -2397,7 +2397,7 @@ subroutine flame_front(f)
       integer, save :: ind_glob, ind_chem
       integer :: i,k,file_id=123, StartInd, StopInd, StartInd_add
       integer :: StopInd_add, StopInd_add_,StopIndName
-      integer :: VarNumber, VarNumber_add, SeparatorInd 
+      integer :: VarNumber, VarNumber_add, SeparatorInd
       integer :: StartSpecie,stoi, PlusInd
       integer :: LastLeftCharacter,ParanthesisInd,Mplussind
       character (len=80) :: ChemInpLine, ChemInpLine_add
@@ -2486,7 +2486,7 @@ subroutine flame_front(f)
                       elseif (ChemInpLine_add(i:i+2)=='LOW') then
                         if (lroot) print*,ChemInpLine_add(i:i+2),&
                             '   coefficients for reaction ', &
-                            reaction_name(k),'number ', k 
+                            reaction_name(k),'number ', k
                         VarNumber_add=1; StartInd_add=i+4; StopInd_add=i+4
                         do while (VarNumber_add<4)
                           StopInd_add=index(ChemInpLine_add(StartInd_add:),&
@@ -2520,7 +2520,7 @@ subroutine flame_front(f)
                       elseif (ChemInpLine_add(i:i+3)=='TROE') then
                         if (lroot) print*,ChemInpLine_add(i:i+3),&
                             '   coefficients for reaction ', reaction_name(k),&
-                            'number ', k 
+                            'number ', k
                         VarNumber_add=1; StartInd_add=i+5; StopInd_add=i+5
                         do while (VarNumber_add<4)
                           StopInd_add=index(ChemInpLine_add(StartInd_add:),&
@@ -2554,7 +2554,7 @@ subroutine flame_front(f)
                       elseif (ChemInpLine_add(i:i+3)=='HIGH') then
                         if (lroot) print*,ChemInpLine_add(i:i+3),&
                             '   coefficients for reaction ', reaction_name(k),&
-                            'number ', k 
+                            'number ', k
                         VarNumber_add=1; StartInd_add=i+5; StopInd_add=i+5
                         do while (VarNumber_add<4)
                           StopInd_add=index(ChemInpLine_add(StartInd_add:),&
@@ -2585,7 +2585,7 @@ subroutine flame_front(f)
                           StopInd_add=StartInd_add
                         enddo
                         i=80
-                      else 
+                      else
                         if (lroot) print*,' --------------  a_k4 coefficients-------------'
                         !                a_k4=0.
                         StartInd_add=i; StopInd_add=0; StopInd_add_=0
@@ -2722,7 +2722,7 @@ subroutine flame_front(f)
     subroutine write_thermodyn()
 !
 !  This subroutine writes the thermodynamical data for every specie
-!  to ./data/chem.out. 
+!  to ./data/chem.out.
 !
 !  06-mar-08/nils: coded
 !
@@ -2859,19 +2859,19 @@ subroutine flame_front(f)
       write(file_id,*) 'END'
       write(file_id,*) '(M+) case: ',Mplus_case
 !
-      close(file_id) 
+      close(file_id)
 !
     endsubroutine write_reactions
 !***************************************************************
     subroutine get_reaction_rate(f,vreact_p,vreact_m,p)
 !
-!  This subroutine calculates forward and reverse reaction rates, 
+!  This subroutine calculates forward and reverse reaction rates,
 !  if chem.inp file exists.
 !  For more details see Chemkin Theory Manual
 !
 !  17-mar-08/natalia: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f 
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (nx,nreactions), intent(out) :: vreact_p, vreact_m
       real, dimension (nx):: mix_conc
 !
@@ -2912,16 +2912,16 @@ subroutine flame_front(f)
         T_up= species_constants(k,iTemp3)
         do i=1,nx
           if (p%TT(i) <= T_mid) then
-            tmp=0. 
+            tmp=0.
             do j=2,5
-              tmp=tmp+species_constants(k,iaa2(j))*p%TT(i)**(j-1)/(j-1) 
+              tmp=tmp+species_constants(k,iaa2(j))*p%TT(i)**(j-1)/(j-1)
             enddo
             S0_R(i,k)=species_constants(k,iaa2(1))*p%lnTT(i)+tmp&
                 +species_constants(k,iaa2(7))
           else
-            tmp=0. 
-            do j=2,5 
-              tmp=tmp+species_constants(k,iaa1(j))*p%TT(i)**(j-1)/(j-1) 
+            tmp=0.
+            do j=2,5
+              tmp=tmp+species_constants(k,iaa1(j))*p%TT(i)**(j-1)/(j-1)
             enddo
             S0_R(i,k)=species_constants(k,iaa1(1))*p%lnTT(i)+tmp&
                 +species_constants(k,iaa1(7))
@@ -2956,7 +2956,7 @@ subroutine flame_front(f)
         sum_tmp=0.
         do k=1,nchemspec
           dSR(:) =dSR(:)+(Sijm(k,reac) -Sijp(k,reac))*S0_R(:,k)
-          dHRT(:)=dHRT(:)+(Sijm(k,reac)-Sijp(k,reac))*H0_RT(l1:l2,m,n,k)  
+          dHRT(:)=dHRT(:)+(Sijm(k,reac)-Sijp(k,reac))*H0_RT(l1:l2,m,n,k)
           sum_tmp=sum_tmp+(Sijm(k,reac)-Sijp(k,reac))
         enddo
         if (lwrite) write(file_id,*) 'Nreact= ',reac,'dSR= ', maxval(dSR)
@@ -2998,7 +2998,7 @@ subroutine flame_front(f)
 !
         if (minval(a_k4(:,reac))<impossible) then
           sum_sp=0.
-          do k=1,nchemspec  
+          do k=1,nchemspec
             sum_sp=sum_sp+a_k4(k,reac)*f(l1:l2,m,n,ichemspec(k))  &
                 *rho_cgs(:)/species_constants(k,imass)
           enddo
@@ -3012,27 +3012,27 @@ subroutine flame_front(f)
 !
         Kc_0=Kc
         if (maxval(abs(low_coeff(:,reac))) > 0.) then
-          B_n_0=low_coeff(1,reac) 
+          B_n_0=low_coeff(1,reac)
           alpha_n_0=low_coeff(2,reac)
-          E_an_0=low_coeff(3,reac)                      
+          E_an_0=low_coeff(3,reac)
           kf_0(:)=B_n_0*p%TT(:)**alpha_n_0*exp(-E_an_0/Rcal/p%TT(:))
           Pr=kf_0/kf*mix_conc
           kf=kf*(Pr/(1.+Pr))
           kr(:)=kf(:)/Kc_0
         elseif (maxval(abs(high_coeff(:,reac))) > 0.) then
-          B_n_0=high_coeff(1,reac) 
+          B_n_0=high_coeff(1,reac)
           alpha_n_0=high_coeff(2,reac)
-          E_an_0=high_coeff(3,reac)                      
+          E_an_0=high_coeff(3,reac)
           kf_0(:)=B_n_0*p%TT(:)**alpha_n_0*exp(-E_an_0/Rcal/p%TT(:))
           Pr=kf_0/kf*mix_conc
           kf=kf*(1./(1.+Pr))
           kr(:)=kf(:)/Kc_0
         endif
 !
-!  Find forward (vreact_p) and backward (vreact_m) rate of 
-!  progress variable. 
+!  Find forward (vreact_p) and backward (vreact_m) rate of
+!  progress variable.
 !  (vreact_p - vreact_m) is labeled q in the chemkin manual
-! 
+!
         if (Mplus_case(reac)) then
           vreact_p(:,reac)=prod1*kf
           vreact_m(:,reac)=prod2*kr
@@ -3044,12 +3044,12 @@ subroutine flame_front(f)
 
 
  ! This part calculates forward and reverse reaction rates
-!  for the test case R->P 
+!  for the test case R->P
 !
 !  For more details see Doom, et al., J. Comp. Phys., 226, 2007
 
       if (l1step_test) then
-       
+
         do i=1,nx
          if (p%TT(i) > Tc) then
          vreact_p(i,reac)=f(l1,m,n,iux)**2*p%rho(1)*Cp_const/lambda_const*beta*(beta-1.) &
@@ -3060,7 +3060,7 @@ subroutine flame_front(f)
         else
          vreact_p(i,reac)=0.
         endif
-       enddo 
+       enddo
          vreact_m(:,reac)=0.
       endif
       enddo
@@ -3103,7 +3103,7 @@ subroutine flame_front(f)
           enddo
         enddo
       else
-!        
+!
 !  Chemkin data case
 !
 
@@ -3114,10 +3114,10 @@ subroutine flame_front(f)
 !
       vreactions=vreactions_p-vreactions_m
 !
-!  Calculate production rate for all species k (called \dot(\omega)_k 
+!  Calculate production rate for all species k (called \dot(\omega)_k
 !  in the chemkin manual)
 !
-      do k=1,nchemspec  
+      do k=1,nchemspec
         xdot=0.
         do j=1,nreactions
           xdot=xdot+stoichio(k,j)*vreactions(:,j)
@@ -3178,8 +3178,8 @@ subroutine flame_front(f)
 !
     endsubroutine calc_reaction_term
 !***************************************************************
-    subroutine read_transport_data  
-! 
+    subroutine read_transport_data
+!
 !  Reading of the chemkin transport data
 !
 !  01-apr-08/natalia: coded
@@ -3207,15 +3207,15 @@ subroutine flame_front(f)
         read(file_id,'(80A)',end=1000) ChemInpLine(1:80)
         emptyFile=.false.
 !
-        StopInd_1=index(ChemInpLine,' ') 
-        specie_string=trim(ChemInpLine(1:StopInd_1-1)) 
+        StopInd_1=index(ChemInpLine,' ')
+        specie_string=trim(ChemInpLine(1:StopInd_1-1))
 !
         call find_species_index(specie_string,ind_glob,ind_chem,found_specie)
 !
         if (found_specie) then
 !
           VarNumber=1; StartInd=1; StopInd =0
-          stringloop: do while (VarNumber<7) 
+          stringloop: do while (VarNumber<7)
 !
             StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
             StartInd=verify(ChemInpLine(StopInd:),' ')+StopInd-1
@@ -3226,22 +3226,22 @@ subroutine flame_front(f)
             else
               if (VarNumber==1) then
                 read (unit=ChemInpLine(StartInd:StopInd),fmt='(E1.0)')  &
-                    tran_data(ind_chem,VarNumber) 
+                    tran_data(ind_chem,VarNumber)
               elseif (VarNumber==2) then
                 read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
-                    tran_data(ind_chem,VarNumber) 
+                    tran_data(ind_chem,VarNumber)
               elseif (VarNumber==3) then
                 read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
-                    tran_data(ind_chem,VarNumber) 
+                    tran_data(ind_chem,VarNumber)
               elseif (VarNumber==4) then
                 read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
-                    tran_data(ind_chem,VarNumber) 
+                    tran_data(ind_chem,VarNumber)
               elseif (VarNumber==5) then
                 read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
-                    tran_data(ind_chem,VarNumber) 
+                    tran_data(ind_chem,VarNumber)
               elseif (VarNumber==6) then
                 read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
-                    tran_data(ind_chem,VarNumber) 
+                    tran_data(ind_chem,VarNumber)
               else
                 call stop_it("No such VarNumber!")
               endif
@@ -3268,10 +3268,10 @@ subroutine flame_front(f)
 !***************************************************************
     subroutine  calc_collision_integral(omega,lnTst,Omega_kl)
 !
-!  Get coefficients for calculating of the collision integral 
+!  Get coefficients for calculating of the collision integral
 !  This routind is called from calc_diff_visc_coeff, which again is called from
-!  calc_for_chem_mixture, which is why we work on full chunks of arrays here.  
-!  
+!  calc_for_chem_mixture, which is why we work on full chunks of arrays here.
+!
 !  03-apr-08/natalia: coded
 !
       use Mpicomm
@@ -3279,7 +3279,7 @@ subroutine flame_front(f)
       character (len=*), intent(in) :: omega
       real,  dimension(mx,my,mz), intent(in)  :: lnTst
       real,  dimension(mx,my,mz), intent(out) :: Omega_kl
-      integer :: i 
+      integer :: i
       real, dimension(8) :: aa
 !
       select case (omega)
@@ -3292,7 +3292,7 @@ subroutine flame_front(f)
         aa(6)= 6.16106168E-4
         aa(7)=-3.27101257E-4
         aa(8)= 2.51567029E-5
-      case('Omega22')  
+      case('Omega22')
         aa(1)= 6.33225679E-1
         aa(2)= 3.14473541E-1
         aa(3)= 1.78229325E-2
@@ -3316,8 +3316,8 @@ subroutine flame_front(f)
     subroutine calc_diff_visc_coef(f)
 !
 !  Calculation of Bin_Diff_coef
-!  This routind is called from calc_for_chem_mixture, 
-!  which is why we work on full chunks of arrays here.  
+!  This routind is called from calc_for_chem_mixture,
+!  which is why we work on full chunks of arrays here.
 !
 !  WHO, WHEN?
 !
@@ -3338,7 +3338,7 @@ subroutine flame_front(f)
        prefactor(j1,j2,j3)=tmp_local*(TT_full(j1,j2,j3))**0.5*unit_length**3&
           /(Rgas_unit_sys*rho_full(j1,j2,j3)*mu1_full(j1,j2,j3))
       enddo
-      enddo 
+      enddo
       enddo
 
       omega="Omega11"
@@ -3436,7 +3436,7 @@ subroutine flame_front(f)
             enddo
             enddo
             enddo
-! 
+!
           enddo
         enddo
 
@@ -3504,28 +3504,28 @@ subroutine flame_front(f)
       type (pencil_case) :: p
       real, dimension (nx,3) :: gXX, gDiff_full_add, gchemspec
       real, dimension (nx) :: del2chemspec
-      real, dimension (nx) :: diff_op,diff_op1,diff_op2,xdot, del2XX 
+      real, dimension (nx) :: diff_op,diff_op1,diff_op2,xdot, del2XX
       real :: diff_k
       integer :: j,k
 !
       intent(in) :: f
-!      
+!
       p%DYDt_diff=0.
       diff_k=chem_diff
 !
       do k=1,nchemspec
 !
-        if (.not. lcheminp) then  
+        if (.not. lcheminp) then
           if (chem_diff/=0.) then
             diff_k=chem_diff*chem_diff_prefactor(k)
             if (headtt) print*,'dchemistry_dt: k,diff_k=',k,diff_k
-            call del2(f,ichemspec(k),del2chemspec) 
-            call grad(f,ichemspec(k),gchemspec) 
+            call del2(f,ichemspec(k),del2chemspec)
+            call grad(f,ichemspec(k),gchemspec)
             call dot_mn(p%glnrho,gchemspec,diff_op)
             diff_op=diff_op+del2chemspec
             p%DYDt_diff(:,k)=diff_k*diff_op
           endif
-        else 
+        else
 !
           if (ldiffusion) then
 !
@@ -3573,9 +3573,9 @@ subroutine flame_front(f)
       endif
 
 
-      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp1 
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp1
 !
-      RHS_T_full(l1:l2,m,n)=RHS_T_full(l1:l2,m,n) + tmp1 
+      RHS_T_full(l1:l2,m,n)=RHS_T_full(l1:l2,m,n) + tmp1
 !
 
     endsubroutine calc_heatcond_chemistry
@@ -3635,7 +3635,7 @@ subroutine flame_front(f)
       intent(out) :: gamma_full
 
       integer :: j,k
-!      
+!
       do j=1,my
       do k=1,mz
        if (minval(cv_full(:,j,k))<=0) then
@@ -3665,7 +3665,7 @@ subroutine flame_front(f)
       integer :: file_id=123
       character (len=80) :: ChemInpLine
       character (len=10) :: specie_string
-      character (len=1)  :: tmp_string 
+      character (len=1)  :: tmp_string
       integer :: VarNumber,i,j,k=1
       character (len=20) :: input_file='air.dat'
 !
@@ -3683,7 +3683,7 @@ subroutine flame_front(f)
 !
         if (lroot) print*, 'the following parameters '//&
             'and species are found in air.dat (volume fraction fraction in %): '
-!        
+!
         dataloop: do
 !
           read(file_id,'(80A)',IOSTAT=iostat) ChemInpLine(1:80)
@@ -3691,9 +3691,9 @@ subroutine flame_front(f)
           if (iostat < 0) exit dataloop
           emptyFile=.false.
           StartInd_1=1; StopInd_1=0
-          StopInd_1=index(ChemInpLine,' ') 
-          specie_string=trim(ChemInpLine(1:StopInd_1-1)) 
-          tmp_string=trim(ChemInpLine(1:1)) 
+          StopInd_1=index(ChemInpLine,' ')
+          specie_string=trim(ChemInpLine(1:StopInd_1-1))
+          tmp_string=trim(ChemInpLine(1:1))
 !
           if (tmp_string == '!' .or. tmp_string == ' ') then
           elseif (tmp_string == 'P') then
@@ -3748,7 +3748,7 @@ subroutine flame_front(f)
       integer :: file_id=123
       character (len=80) :: ChemInpLine
       character (len=10) :: specie_string
-      character (len=1)  :: tmp_string 
+      character (len=1)  :: tmp_string
       integer :: VarNumber,i,j,k=1
 !
       integer :: StartInd,StopInd,StartInd_1,StopInd_1
@@ -3770,9 +3770,9 @@ subroutine flame_front(f)
           if (iostat < 0) exit dataloop
           emptyFile=.false.
           StartInd_1=1; StopInd_1=0
-          StopInd_1=index(ChemInpLine,' ') 
-          specie_string=trim(ChemInpLine(1:StopInd_1-1)) 
-          tmp_string=trim(ChemInpLine(1:1)) 
+          StopInd_1=index(ChemInpLine,' ')
+          specie_string=trim(ChemInpLine(1:StopInd_1-1))
+          tmp_string=trim(ChemInpLine(1:1))
 !
           if (tmp_string == '!' .or. tmp_string == ' ') then
           elseif (tmp_string == 'P') then
@@ -3881,10 +3881,10 @@ subroutine flame_front(f)
       integer :: file_id=123, ind_glob, ind_chem
       character (len=80) :: ChemInpLine
       character (len=10) :: specie_string
-      character (len=1)  :: tmp_string 
+      character (len=1)  :: tmp_string
       integer :: VarNumber,i,j,k=1
       real :: YY_k, air_mass, TT=300., PP=10.13e4
-      real, dimension(nchemspec)    :: stor2 
+      real, dimension(nchemspec)    :: stor2
       integer, dimension(nchemspec) :: stor1
 !
       integer :: StartInd,StopInd,StartInd_1,StopInd_1
@@ -3903,9 +3903,9 @@ subroutine flame_front(f)
         if (iostat < 0) exit dataloop
         emptyFile=.false.
         StartInd_1=1; StopInd_1=0
-        StopInd_1=index(ChemInpLine,' ') 
-        specie_string=trim(ChemInpLine(1:StopInd_1-1)) 
-        tmp_string=trim(ChemInpLine(1:1)) 
+        StopInd_1=index(ChemInpLine,' ')
+        specie_string=trim(ChemInpLine(1:StopInd_1-1))
+        tmp_string=trim(ChemInpLine(1:1))
 !
         if (tmp_string == '!' .or. tmp_string == ' ') then
         elseif (tmp_string == 'T') then
@@ -3940,7 +3940,7 @@ subroutine flame_front(f)
             StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
             StartInd=verify(ChemInpLine(StopInd:),' ')+StopInd-1
             StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
-            read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)'), YY_k  
+            read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)'), YY_k
             if (lroot) print*, ' volume fraction, %,    ', YY_k, &
                 species_constants(ind_chem,imass)
 !
@@ -3961,7 +3961,7 @@ subroutine flame_front(f)
       if (emptyFile)  call stop_it('The input file tran.dat was empty!')
       air_mass=1./air_mass
 !
-      do j=1,k-1 
+      do j=1,k-1
         f(:,:,:,ichemspec(stor1(j)))=stor2(j)*0.01
 
       enddo
@@ -3969,7 +3969,7 @@ subroutine flame_front(f)
       !do j=1,nchemspec
       ! if (maxval(f(:,:,:,ichemspec(j)))<1e-15) then
       !     f(:,:,:,ichemspec(j))=1e-15
-      !  endif 
+      !  endif
       !enddo
 !
       sum_Y=0.
@@ -4008,10 +4008,10 @@ subroutine flame_front(f)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine bc_nscbc_subin_x(f,df,topbot,val)
 !
-!   nscbc case 
+!   nscbc case
 !   subsonic inflow boundary conditions
 !   now it is 2D case (should be corrected for 3D case)
-!    ux,uy,T are fixed, drho  is calculated 
+!    ux,uy,T are fixed, drho  is calculated
 !
 !   16-nov-08/natalia: coded.
 !
@@ -4025,7 +4025,7 @@ subroutine flame_front(f)
       real, dimension (mx,my,mz,mvar) :: df
       character (len=3) :: topbot
       real, dimension(ny,nz) :: dux_dx, L_1, L_2, L_5, dpp_dx
-      real, dimension(my,mz) :: rho0, gamma0, dmom2_dy, TT0 
+      real, dimension(my,mz) :: rho0, gamma0, dmom2_dy, TT0
       real, dimension (my,mz) :: cs2x,cs0_ar,cs20_ar
       real, dimension (mx,my,mz) :: cs2_full, gamma_full, rho_full, pp
       real, dimension(nchemspec) :: YYi
@@ -4082,7 +4082,7 @@ subroutine flame_front(f)
       else
         print*,"bc_nscbc_subin_x: leos_idealgas=",leos_idealgas,"."
         print*,"NSCBC subsonic inflos is only implemented for "//&
-            "the chemistry case." 
+            "the chemistry case."
         print*,"Boundary treatment skipped."
         return
       endif
@@ -4124,14 +4124,14 @@ subroutine flame_front(f)
 ! falia: this subroutine is still under construction
 ! Please, do not remove this commented part !!!!!
 !
-  
+
 !
-!  this conditions can be important! 
+!  this conditions can be important!
 !  check withour them
 !
 
    !     do k=1,nchemspec
-   !      f(lll,m1:m2,n1:n2,ichemspec(k))=YYi(k)  
+   !      f(lll,m1:m2,n1:n2,ichemspec(k))=YYi(k)
    !     enddo
    !      f(lll,m1:m2,n1:n2,iux) = u_t
    !     f(lll,m1:m2,n1:n2,ilnTT) = T_t
@@ -4142,10 +4142,10 @@ subroutine flame_front(f)
 !***********************************************************
     subroutine bc_nscbc_nref_subout_x_(f,df,topbot)
 !
-!   nscbc case 
+!   nscbc case
 !   subsonic non-reflecting outflow boundary conditions
 !   now it is 2D case (should be corrected for 3D case)
-!    drho. dT, dux, duy  are calculated, p_inf can be 
+!    drho. dT, dux, duy  are calculated, p_inf can be
 !   fixed (if nscbc_sigma <>0)
 !
 !   16-nov-08/natalia: coded.
@@ -4185,7 +4185,7 @@ subroutine flame_front(f)
       case('bot')
         lll = l1
         sgn = 1
-        if (leos_chemistry) then 
+        if (leos_chemistry) then
           call get_p_infx(p_infx,'bot')
         endif
       case('top')
@@ -4241,7 +4241,7 @@ subroutine flame_front(f)
       else
         print*,"bc_nscbc_subin_x: leos_idealgas=",leos_idealgas,"."
         print*,"NSCBC subsonic inflos is only implemented "//&
-            "for the chemistry case." 
+            "for the chemistry case."
         print*,"Boundary treatment skipped."
         return
       endif
@@ -4249,8 +4249,8 @@ subroutine flame_front(f)
       call der_onesided_4_slice(rho_full,sgn,drho_dx,lll,1)
       call der_onesided_4_slice(pp,sgn,dpp_dx,lll,1)
       call der_onesided_4_slice(f,sgn,iux,dux_dx,lll,1)
-      
-      call der_onesided_4_slice(f,sgn,iuy,duy_dx,lll,1) 
+
+      call der_onesided_4_slice(f,sgn,iuy,duy_dx,lll,1)
       call der_onesided_4_slice(f,sgn,iuz,duz_dx,lll,1)
 
   !    call der_onesided_4_slice(f,sgn,ilnrho,div_rho(:,:,1),lll,1)
@@ -4304,7 +4304,7 @@ subroutine flame_front(f)
       df(lll,m1:m2,n1:n2,iuz) = -L_4
       df(lll,m1:m2,n1:n2,ilnTT) = -1./&
           (rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*(-L_2 &
-          +0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1)) 
+          +0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1))
  !       -1./(rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))* &
  !       (gamma0(m1:m2,n1:n2)-1.) &
  !      *gamma0(m1:m2,n1:n2)*drhoE_p_dy(m1:m2,n1:n2) !&
@@ -4340,12 +4340,12 @@ subroutine flame_front(f)
 !
       select case(topbot)
       case('bot')
-       do i=1,nghost; f(l1-i,:,:,ilnTT)=2*f(l1,:,:,ilnTT)-f(l1+i,:,:,ilnTT); enddo 
-       do i=1,nghost; f(l1-i,:,:,ilnrho)=2*f(l1,:,:,ilnrho)-f(l1+i,:,:,ilnrho); enddo 
-       do i=1,nghost; f(l1-i,:,:,iux)=2*f(l1,:,:,iux)-f(l1+i,:,:,iux); enddo 
+       do i=1,nghost; f(l1-i,:,:,ilnTT)=2*f(l1,:,:,ilnTT)-f(l1+i,:,:,ilnTT); enddo
+       do i=1,nghost; f(l1-i,:,:,ilnrho)=2*f(l1,:,:,ilnrho)-f(l1+i,:,:,ilnrho); enddo
+       do i=1,nghost; f(l1-i,:,:,iux)=2*f(l1,:,:,iux)-f(l1+i,:,:,iux); enddo
        do k=1,nchemspec
         do i=1,nghost; f(l1-i,:,:,ichemspec(k))=2*f(l1,:,:,ichemspec(k))  &
-                            -f(l1+i,:,:,ichemspec(k)); enddo 
+                            -f(l1+i,:,:,ichemspec(k)); enddo
        enddo
       case('top')
        do i=1,nghost; f(l2+i,:,:,ilnTT)=2*f(l2,:,:,ilnTT)-f(l2-i,:,:,ilnTT); enddo
@@ -4353,7 +4353,7 @@ subroutine flame_front(f)
       do i=1,nghost; f(l2+i,:,:,iux)=2*f(l2,:,:,iux)-f(l2-i,:,:,iux); enddo
        do k=1,nchemspec
         do i=1,nghost; f(l2+i,:,:,ichemspec(k))=2*f(l2,:,:,ichemspec(k))  &
-                            -f(l2-i,:,:,ichemspec(k)); enddo 
+                            -f(l2-i,:,:,ichemspec(k)); enddo
        enddo
      case default
        print*, "bc_nscbc_subin_x: ", topbot, " should be `top' or `bot'"
@@ -4367,10 +4367,10 @@ subroutine flame_front(f)
     subroutine bc_nscbc_nref_subout_x(f,df,topbot)
 
 !
-!   nscbc case 
+!   nscbc case
 !   subsonic non-reflecting outflow boundary conditions
 !   now it is 2D case (should be corrected for 3D case)
-!    drho. dT, dux, duy  are calculated, p_inf can be 
+!    drho. dT, dux, duy  are calculated, p_inf can be
 !   fixed (if nscbc_sigma <>0)
 !
 !   16-nov-08/natalia: coded.
@@ -4410,7 +4410,7 @@ subroutine flame_front(f)
       case('bot')
         lll = l1
         sgn = 1
-        if (leos_chemistry) then 
+        if (leos_chemistry) then
           call get_p_infx(p_infx,'bot')
         endif
       case('top')
@@ -4466,7 +4466,7 @@ subroutine flame_front(f)
       else
         print*,"bc_nscbc_subin_x: leos_idealgas=",leos_idealgas,"."
         print*,"NSCBC subsonic inflos is only implemented "//&
-            "for the chemistry case." 
+            "for the chemistry case."
         print*,"Boundary treatment skipped."
         return
       endif
@@ -4474,8 +4474,8 @@ subroutine flame_front(f)
       call der_onesided_4_slice(rho_full,sgn,drho_dx,lll,1)
       call der_onesided_4_slice(pp,sgn,dpp_dx,lll,1)
       call der_onesided_4_slice(f,sgn,iux,dux_dx,lll,1)
-      
-      call der_onesided_4_slice(f,sgn,iuy,duy_dx,lll,1) 
+
+      call der_onesided_4_slice(f,sgn,iuy,duy_dx,lll,1)
       call der_onesided_4_slice(f,sgn,iuz,duz_dx,lll,1)
 
   !    call der_onesided_4_slice(f,sgn,ilnrho,div_rho(:,:,1),lll,1)
@@ -4529,7 +4529,7 @@ subroutine flame_front(f)
       df(lll,m1:m2,n1:n2,iuz) = -L_4
       df(lll,m1:m2,n1:n2,ilnTT) = -1./&
           (rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*(-L_2 &
-          +0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1)) 
+          +0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1))
  !       -1./(rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))* &
  !       (gamma0(m1:m2,n1:n2)-1.) &
  !      *gamma0(m1:m2,n1:n2)*drhoE_p_dy(m1:m2,n1:n2) !&
@@ -4565,12 +4565,12 @@ subroutine flame_front(f)
 !
   !    select case(topbot)
   !    case('bot')
-  !     do i=1,nghost; f(l1-i,:,:,ilnTT)=2*f(l1,:,:,ilnTT)-f(l1+i,:,:,ilnTT); enddo 
-  !     do i=1,nghost; f(l1-i,:,:,ilnrho)=2*f(l1,:,:,ilnrho)-f(l1+i,:,:,ilnrho); enddo 
-  !     do i=1,nghost; f(l1-i,:,:,iux)=2*f(l1,:,:,iux)-f(l1+i,:,:,iux); enddo 
+  !     do i=1,nghost; f(l1-i,:,:,ilnTT)=2*f(l1,:,:,ilnTT)-f(l1+i,:,:,ilnTT); enddo
+  !     do i=1,nghost; f(l1-i,:,:,ilnrho)=2*f(l1,:,:,ilnrho)-f(l1+i,:,:,ilnrho); enddo
+  !     do i=1,nghost; f(l1-i,:,:,iux)=2*f(l1,:,:,iux)-f(l1+i,:,:,iux); enddo
   !     do k=1,nchemspec
   !      do i=1,nghost; f(l1-i,:,:,ichemspec(k))=2*f(l1,:,:,ichemspec(k))  &
-  !                          -f(l1+i,:,:,ichemspec(k)); enddo 
+  !                          -f(l1+i,:,:,ichemspec(k)); enddo
   !     enddo
   !    case('top')
   !     do i=1,nghost; f(l2+i,:,:,ilnTT)=2*f(l2,:,:,ilnTT)-f(l2-i,:,:,ilnTT); enddo
@@ -4578,7 +4578,7 @@ subroutine flame_front(f)
   !     do i=1,nghost; f(l2+i,:,:,iux)=2*f(l2,:,:,iux)-f(l2-i,:,:,iux); enddo
   !     do k=1,nchemspec
   !      do i=1,nghost; f(l2+i,:,:,ichemspec(k))=2*f(l2,:,:,ichemspec(k))  &
-  !                          -f(l2-i,:,:,ichemspec(k)); enddo 
+  !                          -f(l2-i,:,:,ichemspec(k)); enddo
   !     enddo
   !   case default
   !     print*, "bc_nscbc_subin_x: ", topbot, " should be `top' or `bot'"
@@ -4588,32 +4588,32 @@ subroutine flame_front(f)
        select case(topbot)
       case('bot')
        do i=1,nghost; f(l1-i,1:m1-1,1:n1-1,ilnTT) &
-         =2*f(l1,1:m1-1,1:n1-1,ilnTT)-f(l1+i,1:m1-1,1:n1-1,ilnTT); enddo 
+         =2*f(l1,1:m1-1,1:n1-1,ilnTT)-f(l1+i,1:m1-1,1:n1-1,ilnTT); enddo
        do i=1,nghost; f(l1-i,m2+1:my,n2+1:mz,ilnTT) &
-         =2*f(l1,m2+1:my,n2+1:mz,ilnTT)-f(l1+i,m2+1:my,n2+1:mz,ilnTT); enddo 
+         =2*f(l1,m2+1:my,n2+1:mz,ilnTT)-f(l1+i,m2+1:my,n2+1:mz,ilnTT); enddo
        do i=1,nghost; f(l1-i,1:m1-1,1:n1-1,ilnrho) &
-          =2*f(l1,1:m1-1,1:n1-1,ilnrho)-f(l1+i,1:m1-1,1:n1-1,ilnrho); enddo 
+          =2*f(l1,1:m1-1,1:n1-1,ilnrho)-f(l1+i,1:m1-1,1:n1-1,ilnrho); enddo
        do i=1,nghost; f(l1-i,m2+1:my,n2+1:mz,ilnrho) &
-          =2*f(l1,m2+1:my,n2+1:mz,ilnrho)-f(l1+i,m2+1:my,n2+1:mz,ilnrho); enddo 
+          =2*f(l1,m2+1:my,n2+1:mz,ilnrho)-f(l1+i,m2+1:my,n2+1:mz,ilnrho); enddo
        do i=1,nghost; f(l1-i,1:m1-1,1:n1-1,iux) &
-          =2*f(l1,1:m1-1,1:n1-1,iux)-f(l1+i,1:m1-1,1:n1-1,iux); enddo 
+          =2*f(l1,1:m1-1,1:n1-1,iux)-f(l1+i,1:m1-1,1:n1-1,iux); enddo
        do i=1,nghost; f(l1-i,m2+1:my,n2+1:mz,iux) &
-          =2*f(l1,m2+1:my,n2+1:mz,iux)-f(l1+i,m2+1:my,n2+1:mz,iux); enddo 
+          =2*f(l1,m2+1:my,n2+1:mz,iux)-f(l1+i,m2+1:my,n2+1:mz,iux); enddo
        do i=1,nghost; f(l1-i,1:m1-1,1:n1-1,iuy) &
-          =2*f(l1,1:m1-1,1:n1-1,iuy)-f(l1+i,1:m1-1,1:n1-1,iuy); enddo 
+          =2*f(l1,1:m1-1,1:n1-1,iuy)-f(l1+i,1:m1-1,1:n1-1,iuy); enddo
        do i=1,nghost; f(l1-i,m2+1:my,n2+1:mz,iuy) &
           =2*f(l1,m2+1:my,n2+1:mz,iuy)-f(l1+i,m2+1:my,n2+1:mz,iuy); enddo
 
        do k=1,nchemspec
         do i=1,nghost; f(l1-i,1:m1-1,1:n1-1,ichemspec(k))  &
                             =2*f(l1,1:m1-1,1:n1-1,ichemspec(k))  &
-                            -f(l1+i,1:m1-1,1:n1-1,ichemspec(k)); enddo 
+                            -f(l1+i,1:m1-1,1:n1-1,ichemspec(k)); enddo
        enddo
 
        do k=1,nchemspec
         do i=1,nghost; f(l1-i,m2+1:my,n2+1:mz,ichemspec(k))  &
                          =2*f(l1,m2+1:my,n2+1:mz,ichemspec(k))  &
-                         -f(l1+i,m2+1:my,n2+1:mz,ichemspec(k)); enddo 
+                         -f(l1+i,m2+1:my,n2+1:mz,ichemspec(k)); enddo
        enddo
       case('top')
        do i=1,nghost; f(l2+i,1:m1-1,1:n1-1,ilnTT) &
@@ -4634,7 +4634,7 @@ subroutine flame_front(f)
        do k=1,nchemspec
         do i=1,nghost; f(l2+i,m2+1:my,n2+1:mz,ichemspec(k))  &
                             =2*f(l2,m2+1:my,n2+1:mz,ichemspec(k))  &
-                            -f(l2-i,m2+1:my,n2+1:mz,ichemspec(k)); enddo 
+                            -f(l2-i,m2+1:my,n2+1:mz,ichemspec(k)); enddo
      enddo
      case default
        print*, "bc_nscbc_subin_x: ", topbot, " should be `top' or `bot'"
@@ -4644,12 +4644,12 @@ subroutine flame_front(f)
 !
   !    select case(topbot)
   !    case('bot')
-  !     do i=1,nghost; f(l1-i,:,:,ilnTT)=2*f(l1,:,:,ilnTT)-f(l1+i,:,:,ilnTT); enddo 
-  !     do i=1,nghost; f(l1-i,:,:,ilnrho)=2*f(l1,:,:,ilnrho)-f(l1+i,:,:,ilnrho); enddo 
-  !     do i=1,nghost; f(l1-i,:,:,iux)=2*f(l1,:,:,iux)-f(l1+i,:,:,iux); enddo 
+  !     do i=1,nghost; f(l1-i,:,:,ilnTT)=2*f(l1,:,:,ilnTT)-f(l1+i,:,:,ilnTT); enddo
+  !     do i=1,nghost; f(l1-i,:,:,ilnrho)=2*f(l1,:,:,ilnrho)-f(l1+i,:,:,ilnrho); enddo
+  !     do i=1,nghost; f(l1-i,:,:,iux)=2*f(l1,:,:,iux)-f(l1+i,:,:,iux); enddo
   !     do k=1,nchemspec
   !      do i=1,nghost; f(l1-i,:,:,ichemspec(k))=2*f(l1,:,:,ichemspec(k))  &
-  !                          -f(l1+i,:,:,ichemspec(k)); enddo 
+  !                          -f(l1+i,:,:,ichemspec(k)); enddo
   !     enddo
   !    case('top')
   !     do i=1,nghost; f(l2+i,:,:,ilnTT)=2*f(l2,:,:,ilnTT)-f(l2-i,:,:,ilnTT); enddo
@@ -4657,7 +4657,7 @@ subroutine flame_front(f)
   !     do i=1,nghost; f(l2+i,:,:,iux)=2*f(l2,:,:,iux)-f(l2-i,:,:,iux); enddo
   !     do k=1,nchemspec
   !      do i=1,nghost; f(l2+i,:,:,ichemspec(k))=2*f(l2,:,:,ichemspec(k))  &
-  !                          -f(l2-i,:,:,ichemspec(k)); enddo 
+  !                          -f(l2-i,:,:,ichemspec(k)); enddo
   !     enddo
   !   case default
   !     print*, "bc_nscbc_subin_x: ", topbot, " should be `top' or `bot'"
