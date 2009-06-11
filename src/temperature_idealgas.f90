@@ -1661,6 +1661,8 @@ module Entropy
 !***********************************************************************
     subroutine cyclic(a,b,c,alpha,beta,r,x,n)
 !
+! DOCUMENT ME!
+!
       use General, only: tridag
 !
       implicit none
@@ -1671,25 +1673,25 @@ module Entropy
       real, dimension(n)    :: a,b,c,r,x,bb,u,z
 !     real, dimension(NMAX) :: bb,u,z
 !
-      if (n.le.2)pause 'n too small in cyclic'
-      if (n.gt.NMAX)pause 'NMAX too small in cyclic'
+      if (n <= 2) call fatal_error('cyclic', 'n too small in cyclic')
+      if (n > NMAX) call fatal_error('cyclic', 'NMAX too small in cyclic')
       gamma=-b(1)
       bb(1)=b(1)-gamma
       bb(n)=b(n)-alpha*beta/gamma
-      do 11 i=2,n-1
+      do i=2,n-1
         bb(i)=b(i)
-11    continue
+      enddo
       call tridag(a,bb,c,r,x)
       u(1)=gamma
       u(n)=alpha
-      do 12 i=2,n-1
+      do i=2,n-1
         u(i)=0.
-12    continue
+      enddo
       call tridag(a,bb,c,u,z)
       fact=(x(1)+beta*x(n)/gamma)/(1.+z(1)+beta*z(n)/gamma)
-      do 13 i=1,n
+      do i=1,n
         x(i)=x(i)-fact*z(i)
-13    continue
+      enddo
 !
       return
     endsubroutine cyclic
