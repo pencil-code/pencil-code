@@ -1601,6 +1601,14 @@ module Entropy
       real, dimension(:), optional :: dhcond
       real, dimension(size(TT,1))  :: arg
 !
+
+      write(0,*) 'hole_slope = ', hole_slope
+      write(0,*) 'TT = ', TT
+      write(0,*) 'Tbump= ', Tbump
+      write(0,*) 'hole_width = ', hole_width
+      write(0,*) 'TT-Tbump-hole_width = ', TT-Tbump-hole_width
+      write(0,*) 'TT-Tbump+hole_width = ', TT-Tbump+hole_width
+
       arg=hole_slope*(TT-Tbump-hole_width)*(TT-Tbump+hole_width)
       hcond=Kmax+hole_alpha*(-pi/2.+atan(arg))
       if (present(dhcond)) dhcond=2.*hole_alpha/(1.+arg**2)*hole_slope*(TT-Tbump)
