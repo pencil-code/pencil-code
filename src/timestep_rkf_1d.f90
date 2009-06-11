@@ -279,10 +279,7 @@ module Timestep
             !
             ! Constant error
             !
-            do lll=1,nx
-                scal(lll)=max(1e-8,abs(f(lll+l1-1,n,m,j)))
-              endif
-            enddo
+            scal = max(abs(f(l1:l2,n,m,j)), 1e-8)
             errmaxs = max(maxval(abs(err/scal)),errmaxs)
             !
           case('none')
