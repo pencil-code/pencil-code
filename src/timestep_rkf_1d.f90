@@ -215,7 +215,7 @@ module Timestep
           + b43*k(:,m1:m2,n1:n2,:,3)
       tmp2(:,m1:m2,n1:n2,:) = 0.
       call pde(tmp1,tmp2,p)
-      k(:,m1:m2,n1:n2,:,4) = tmp2(:,m1:m2,n1:n2,:) 
+      k(:,m1:m2,n1:n2,:,4) = tmp2(:,m1:m2,n1:n2,:)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
           k(l1:l2,m,n,j,4) = dt*k(l1:l2,m,n,j,4)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
@@ -261,10 +261,10 @@ module Timestep
           case('per_var_err')
             !
             ! Per variable error
-            !    
+            !
             scal=  ( &
                  sqrt(f(l1:l2,m,n,1)**2+f(l1:l2,m,n,2)**2)  + &
-                 sqrt(k(l1:l2,m,n,1,1)**2 + k(l1:l2,m,n,2,2)**2) + &
+                 sqrt(k(l1:l2,m,n,1,1)**2 + k(l1:l2,m,n,2,1)**2) + &
                  1e-30)
             errmaxs = max(maxval(abs(err/scal)),errmaxs)
             !scal=  ( &
@@ -280,17 +280,14 @@ module Timestep
             ! Constant error
             !
             do lll=1,nx
-              if (j.eq.ilnrho) then
-                scal(lll)=max(1e-8,abs(f(lll+l1-1,n,m,j)))            
-              else              
-                scal(lll)=max(1e-8,abs(f(lll+l1-1,n,m,j)))            
+                scal(lll)=max(1e-8,abs(f(lll+l1-1,n,m,j)))
               endif
             enddo
             errmaxs = max(maxval(abs(err/scal)),errmaxs)
             !
           case('none')
             !
-            ! No error check 
+            ! No error check
             !
             errmaxs = 0
             !
@@ -304,7 +301,7 @@ module Timestep
         !
       call mpiallreduce_max(errmaxs,errmax)
 
-  endsubroutine rkck
+    endsubroutine rkck
 !***********************************************************************
     subroutine timestep_autopsy
 !
