@@ -114,8 +114,19 @@ program start
 !  limits), but they did and now don't. Also, the present approach runs
 !  up to nx=ny=nz=135, but not for even slightly larger grids.
 !
-  allocate( f(mx,my,mz,mfarray),STAT=stat); if (stat>0) call stop_it("Couldn't allocate memory for f ")
-  allocate(df(mx,my,mz,mvar)     ,STAT=stat); if (stat>0) call stop_it("Couldn't allocate memory for df")
+  allocate( f(mx,my,mz,mfarray),STAT=stat)
+  if (stat>0) call stop_it("Couldn't allocate memory for f ")
+
+  allocate(df(mx,my,mz,mvar)   ,STAT=stat)
+  if (stat>0) call stop_it("Couldn't allocate memory for df")
+
+!
+!  Pre-initialize f and df to absurd value (to crash the code should we
+!  later use uninitialized slots of thos fields)
+!
+  f = huge(1.0);
+  df = huge(1.0);
+
 !
 !  Register variables in the f array.
 !
