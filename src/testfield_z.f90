@@ -762,10 +762,11 @@ module Testfield
           call curl_mn(aijtest,bbtest,aatest)
           call cross_mn(p%uu,bbtest,uxbtest)
           call dyadic2(bbtest,Mijtest)
+          bpq(:,:,jtest)=bbtest
+          Eipq(:,:,jtest)=uxbtest*bamp1
+          Mijpq(:,:,:,jtest)=Mijtest*bamp12
         endif
-        bpq(:,:,jtest)=bbtest
-        Eipq(:,:,jtest)=uxbtest*bamp1
-        Mijpq(:,:,:,jtest)=Mijtest*bamp12
+
         if (ldiagnos.and.idiag_jb0m/=0) jpq(:,:,jtest)=jjtest
       enddo
 !
