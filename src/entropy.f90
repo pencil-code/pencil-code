@@ -607,8 +607,14 @@ module Entropy
       if (lhcond_global) then
         call farray_register_auxiliary("hcond",iglobal_hcond)
         call farray_register_auxiliary("glhc",iglobal_glhc,vector=3)
-        do n=n1,n2
-        do m=m1,m2
+        if (coord_system=='spherical')then
+          call read_hcond(hcond,glhc)
+          f(l1:l2,m,n,iglobal_hcond)=hcond(l1:l2)
+          f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)=glhc(l1:l2,1:3)
+          FbotKbot=Fbot/hcond(1)
+        else
+          do n=n1,n2
+          do m=m1,m2
           if (lgravz) then
             p%z_mn=spread(z(n),1,nx)
           else
@@ -618,8 +624,9 @@ module Entropy
           call gradloghcond(glhc,p)
           f(l1:l2,m,n,iglobal_hcond)=hcond
           f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)=glhc
-        enddo
-        enddo
+          enddo
+          enddo
+        endif
       endif
 !
 ! Shared variables
@@ -4236,5 +4243,54 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
       real, dimension(mx,my,mz,mfarray) :: finit,f
 !
     endsubroutine calc_heatcond_ADI
+!***********************************************************************
+    subroutine read_hcond(hcond,glhc)
+!
+!  read radial profiles of hcond and glhc from an ascii-file.
+!
+!  11-jun-09/pjk: coded
+!
+      use Mpicomm, only: stop_it
+!
+      real, dimension(nx) :: hcond
+      real, dimension(nx,3) :: glhc
+      integer, parameter :: ntotal=nx*nprocx
+      real :: var1,var2
+      logical :: exist
+      integer :: stat
+!
+!  read hcond and glhc and write into an array
+!  if file is not found in run directory, search under trim(directory)
+!
+      inquire(file='hcond_glhc.dat',exist=exist)
+      if (exist) then
+        open(31,file='hcond_glhc.dat')
+      else
+        inquire(file=trim(directory)//'/hcond_glhc.ascii',exist=exist)
+        if (exist) then
+          open(31,file=trim(directory)//'/hcond_glhc.ascii')
+        else
+          call stop_it('read_hcond: *** error *** - no input file')
+        endif
+      endif
+!
+!  read profiles
+!
+      do n=1,ntotal
+        read(31,*,iostat=stat) var1,var2
+        if (stat>=0) then
+          if (ip<5) print*,"hcond, glhc: ",var1,var2
+          hcond(n)=var1
+          glhc(n,1)=0.
+          glhc(n,2)=0.
+          glhc(n,3)=var2
+        else
+          exit
+        endif
+      enddo
+!
+      close(31)
+!
+    endsubroutine read_hcond
 !***********************************************************************
 endmodule Entropy
