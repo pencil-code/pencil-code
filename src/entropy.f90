@@ -608,10 +608,11 @@ module Entropy
         call farray_register_auxiliary("hcond",iglobal_hcond)
         call farray_register_auxiliary("glhc",iglobal_glhc,vector=3)
         if (coord_system=='spherical')then
-          call read_hcond(hcond,glhc)
-          f(l1:l2,m,n,iglobal_hcond)=hcond(l1:l2)
-          f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)=glhc(l1:l2,1:3)
-          FbotKbot=Fbot/hcond(1)
+           print*,'Nothing to see here yet'
+!          call read_hcond(hcond,glhc)
+!          f(l1:l2,m,n,iglobal_hcond)=hcond(l1:l2)
+!          f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)=glhc(l1:l2,1:3)
+!          FbotKbot=Fbot/hcond(1)
         else
           do n=n1,n2
           do m=m1,m2
