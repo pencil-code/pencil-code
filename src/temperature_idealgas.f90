@@ -306,7 +306,11 @@ module Entropy
 !
       if (initlnTT(1).eq.'rad_equil') then
         ! use hcondADI to dynamically share with boundcond() for the 'c3' BC
-        call heatcond_TT_1d(f(:,4,n1,ilnTT), hcondADI)
+        if (lrun) then
+          call heatcond_TT_1d(f(:,4,n1,ilnTT), hcondADI)
+        else
+          hcondADI=spread(Kmax, 1, mx)
+        endif
       else
         call put_shared_variable('hcond0', hcond0, ierr)
         if (ierr/=0) call stop_it("initialize_entropy: "//&
@@ -900,7 +904,7 @@ module Entropy
 !
 ! Calculate the n2-1 gridpoint thanks to a 1st order forward Euler scheme
 !
-      call heatcond_TT(temp(n2), hcond)
+      call heatcond_TT_0d(temp(n2), hcond)
       dtemp=Fbot/hcond
       temp(n2-1)=temp(n2)+dz*dtemp
       dlnrho=(-gamma/gamma1*gravz-dtemp)/temp(n2)
