@@ -1038,6 +1038,17 @@ endif
 ##
 #FC=mpif90  #(enyo)
 #CC=mpicc   #(enyo)
+##
+##  IBM BCX/5120, Cineca, Bologna
+##
+#FC=mpif90 #(node[0-9]*)
+#F77=$(FC)  #(node[0-9]*)
+#FFLAGS=-O3 -ip -ipo -xW -i_dynamic #(node[0-9]*)
+#F90FLAGS=  #(node[0-9]*)
+#F77FLAGS=   #(node[0-9]*)
+#FFLAGS_DOUBLE=-fdefault-real-8 #(node[0-9]*)
+#CC=mpicc     #(node[0-9]*)
+#CFLAGS=-O3 -DFUNDERSC=1   #(node[0-9]*)
 
 
 ## Darwin:
