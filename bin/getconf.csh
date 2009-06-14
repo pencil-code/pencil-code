@@ -171,7 +171,8 @@ else if ($?SLURM_NODELIST) then
   #   n41 n43 n44 n45 n46 n47 n48 n49 n69 n70 n111 n112 n113 n114
   # using a Perl ``one-liner'':
   if ($SLURM_NNODES != 1) then
-    set nodelist = `echo "$SLURM_NODELIST" | perl -ne 'next if /^\s*(#.*)?$/; if (/\s*([^[]+)\[([^\]]*)/) { ($prefix,$list)=($1,$2); $list =~ s/([0-9]+)-([0-9]+)/join(" ", $1..$2)/eg; $list =~ s/([ ,]+)/ $prefix/g}; print "$prefix$list\n";'`
+    set nodelist = `echo "$SLURM_
+NODELIST" | perl -ne 'next if /^\s*(#.*)?$/; if (/\s*([^[]+)\[([^\]]*)/) { ($prefix,$list)=($1,$2); $list =~ s/([0-9]+)-([0-9]+)/join(" ", $1..$2)/eg; $list =~ s/([ ,]+)/ $prefix/g}; print "$prefix$list\n";'`
   else
     set nodelist = $SLURM_NODELIST
   endif
@@ -483,6 +484,19 @@ else if (($hn =~ columbia*) || ($hn =~ cfe*)) then
   set run_x=$PBS_O_WORKDIR/src/run.x
   set local_disc = 0
 #------------------------------------------
+else if (($hn =~ node[0-9][0-9]*) && ($USER =~ csc01114)) then
+  echo "IBM BCX/5120 - Cineca, Bologna, Italy"
+  if ( $?PBS_JOBID ) then
+    echo "Running job: $PBS_JOBID"
+  endif
+  set mpirunops = ''
+  set mpirun = 'mpirun.lsf'
+  set npops = "-n $ncpus"
+  set local_disc = 0
+  set one_local_disc = 0
+  set remote_top     = 1
+  set local_binary = 0
+#---------------------------------------------------
 else if ($hn =~ node[0-9]* && $masterhost != 'vsl176') then
   echo "CLX - CINECA, Bologna (IBM Linux Cluster)"
   if ( $?PBS_JOBID ) then
@@ -1253,7 +1267,7 @@ else if ($hn =~ node* && $masterhost == 'vsl176') then
   set mpirunops2 = "-hostfile $PBS_NODEFILE"
   set start_x=$PBS_O_WORKDIR/src/start.x
   set run_x=$PBS_O_WORKDIR/src/run.x
-#---------------------------------------------------
+#----------------------------------------------
 # NASA Pleiades system
 else if ($hn =~ p4fe1 || $hn =~ bridge[1,2] || $hn =~ pbspl1 || $hn =~ r{[1-9],[1-6][0-9],7[0-6],8[1-8],10[5-8],12[1-4]}i[0-3]n{[0-9],1[0-5]}) then
   echo "Running on NASA Pleiades system"
