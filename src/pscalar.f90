@@ -1,6 +1,6 @@
 ! $Id$
 !
-!  This modules solves the passive scalar advection equation
+!  This modules solves the passive scalar advection equation.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -86,7 +86,7 @@ module Pscalar
     subroutine register_pscalar()
 !
 !  Initialise variables which should know that we solve for passive
-!  scalar: ilncc; increase nvar accordingly
+!  scalar: ilncc; increase nvar accordingly.
 !
 !  6-jul-02/axel: coded
 !
@@ -117,15 +117,12 @@ module Pscalar
 !***********************************************************************
     subroutine initialize_pscalar(f)
 !
-!  Perform any necessary post-parameter read initialization
+!  Perform any necessary post-parameter read initialization.
 !  Dummy routine
 !
 !  24-nov-02/tony: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-!
-!  set to zero and then call the same initial condition
-!  that was used in start.csh
 !
       call keep_compiler_quiet(f)
 !
@@ -133,7 +130,7 @@ module Pscalar
 !***********************************************************************
     subroutine init_lncc(f)
 !
-!  initialise passive scalar field; called from start.f90
+!  Initialise passive scalar field; called from start.f90.
 !
 !   6-jul-2001/axel: coded
 !
@@ -169,17 +166,17 @@ module Pscalar
         case default; call stop_it('init_lncc: bad initlncc='//trim(initlncc))
       endselect
 !
-!  superimpose something else
+!  Superimpose something else.
 !
       select case(initlncc2)
         case('wave-x'); call wave(ampllncc2,f,ilncc,ky=5.)
       endselect
 !
-!  Interface for user's own initial condition
+!  Interface for user's own initial condition.
 !
       if (linitial_condition) call initial_condition_lncc(f)
 !
-!  add floor value if cc_min is set
+!  Add floor value if cc_min is set
 !
       if (cc_min/=0.) then
         lncc_min=log(cc_min)
@@ -274,12 +271,14 @@ module Pscalar
 !***********************************************************************
     subroutine dlncc_dt(f,df,p)
 !
-!  passive scalar evolution
-!  calculate dc/dt=-uu.glncc + pscaler_diff*[del2lncc + (glncc+glnrho).glncc]
+!  Passive scalar evolution.
+
+!  Calculate dc/dt=-uu.glncc + pscaler_diff*[del2lncc + (glncc+glnrho).glncc]
 !
 !   6-jul-02/axel: coded
 !
       use Diagnostics
+      use Special, only: special_calc_pscalar
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -292,7 +291,7 @@ module Pscalar
       intent(in)  :: f
       intent(out) :: df
 !
-!  identify module and boundary conditions
+!  Identify module and boundary conditions.
 !
       if (nopscalar) then
         if (headtt.or.ldebug) print*,'not SOLVED: dlncc_dt'
@@ -301,17 +300,17 @@ module Pscalar
       endif
       if (headtt) call identify_bcs('cc',ilncc)
 !
-!  gradient of passive scalar
-!  allow for possibility to turn off passive scalar
+!  Gradient of passive scalar.
+!  Allow for possibility to turn off passive scalar
 !  without changing file size and recompiling everything.
 !
       if (.not. nopscalar) then ! i.e. if (pscalar)
 !
-!  passive scalar equation
+!  Passive scalar equation.
 !
         if (lhydro) df(l1:l2,m,n,ilncc) = df(l1:l2,m,n,ilncc) - p%uglncc
 !
-!  diffusion operator
+!  Diffusion operator.
 !
         if (pscalar_diff/=0.) then
           if (headtt) print*,'dlncc_dt: pscalar_diff=',pscalar_diff
@@ -320,8 +319,8 @@ module Pscalar
           df(l1:l2,m,n,ilncc) = df(l1:l2,m,n,ilncc) + pscalar_diff*diff_op
         endif
 !
-!  add advection of imposed constant gradient of lncc (called gradC0)
-!  makes sense really only for periodic boundary conditions
+!  Add advection of imposed constant gradient of lncc (called gradC0).
+!  Makes sense really only for periodic boundary conditions.
 !  This gradient can have arbitary direction.
 !
         do j=1,3
@@ -330,14 +329,16 @@ module Pscalar
           endif
         enddo
 !
-!  tensor diffusion (but keep the isotropic one)
+!  Tensor diffusion (but keep the isotropic one).
 !
         if (tensor_pscalar_diff/=0.) &
             call tensor_diff(f,df,p,tensor_pscalar_diff)
 !
+        if (lspecial) call special_calc_pscalar(f,df,p)
+!
       endif
 !
-!  diagnostics
+!  Diagnostics.
 !
 !  output for double and triple correlators (assume z-gradient of cc)
 !  <u_k u_j d_j c> = <u_k c uu.gradlncc>
@@ -369,50 +370,54 @@ module Pscalar
     endsubroutine dlncc_dt
 !***********************************************************************
     subroutine read_pscalar_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=pscalar_init_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=pscalar_init_pars,ERR=99)
       endif
-
-
+!
 99    return
+!
     endsubroutine read_pscalar_init_pars
 !***********************************************************************
     subroutine write_pscalar_init_pars(unit)
+!
       integer, intent(in) :: unit
-
+!
       write(unit,NML=pscalar_init_pars)
-
+!
     endsubroutine write_pscalar_init_pars
 !***********************************************************************
     subroutine read_pscalar_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=pscalar_run_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=pscalar_run_pars,ERR=99)
       endif
-
-
+!
 99    return
+!
     endsubroutine read_pscalar_run_pars
 !***********************************************************************
     subroutine write_pscalar_run_pars(unit)
+!
       integer, intent(in) :: unit
-
+!
       write(unit,NML=pscalar_run_pars)
-
+!
     endsubroutine write_pscalar_run_pars
 !***********************************************************************
     subroutine rprint_pscalar(lreset,lwrite)
 !
-!  reads and registers print parameters relevant for passive scalar
+!  Reads and registers print parameters relevant for passive scalar.
 !
 !   6-jul-02/axel: coded
 !
@@ -427,7 +432,7 @@ module Pscalar
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-!  reset everything in case of reset
+!  Reset everything in case of reset.
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
@@ -438,7 +443,7 @@ module Pscalar
         idiag_ccmz=0; idiag_ccmy=0; idiag_ccmx=0; idiag_ccglnrm=0
       endif
 !
-!  check for those quantities that we want to evaluate online
+!  Check for those quantities that we want to evaluate online.
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'mcct',idiag_mcct)
@@ -454,7 +459,7 @@ module Pscalar
         call parse_name(iname,cname(iname),cform(iname),'ccglnrm',idiag_ccglnrm)
       enddo
 !
-!  check for those quantities for which we want xy-averages
+!  Check for those quantities for which we want xy-averages.
 !
       do inamez=1,nnamez
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
@@ -463,7 +468,7 @@ module Pscalar
             'ccmz',idiag_ccmz)
       enddo
 !
-!  check for those quantities for which we want xz-averages
+!  Check for those quantities for which we want xz-averages.
 !
       do inamey=1,nnamey
         call parse_name(inamey,cnamey(inamey),cformy(inamey), &
@@ -472,7 +477,7 @@ module Pscalar
             'ccmy',idiag_ccmy)
       enddo
 !
-!  check for those quantities for which we want yz-averages
+!  Check for those quantities for which we want yz-averages.
 !
       do inamex=1,nnamex
         call parse_name(inamex,cnamex(inamex),cformx(inamex), &
@@ -481,7 +486,7 @@ module Pscalar
             'ccmx',idiag_ccmx)
       enddo
 !
-!  write column where which passive scalar variable is stored
+!  Write column where which passive scalar variable is stored.
 !
       if (lwr) then
         write(3,*) 'i_rhoccm=',idiag_rhoccm
@@ -619,10 +624,7 @@ module Pscalar
       df(l1:l2,m,n,ilncc)=df(l1:l2,m,n,ilncc)+tensor_pscalar_diff*tmp
 !
       first=.false.
+!
     endsubroutine tensor_diff
 !***********************************************************************
-
 endmodule Pscalar
-
-
-

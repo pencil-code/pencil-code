@@ -1,7 +1,7 @@
 ! $Id$
 !
 !  This modules solves the passive scalar advection equation
-!  Solves for c, not lnc.
+!  Solves for c, not ln(c).
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -23,49 +23,43 @@ module Pscalar
   implicit none
 !
   include 'pscalar.h'
-
-  ! keep old name for backward compatibility
+! keep old name for backward compatibility
   character (len=labellen) :: initlncc='impossible', initlncc2='impossible'
-
+!
   character (len=labellen) :: initcc='zero', initcc2='zero'
   character (len=40) :: tensor_pscalar_file
   logical :: nopscalar=.false., reinitalize_cc=.false.
   logical :: reinitalize_lncc=.false.
-
-  ! keep old name for backward compatibility
+! keep old name for backward compatibility
   real :: ampllncc=impossible, widthlncc=impossible, lncc_min
   real :: ampllncc2=impossible, radius_lncc=impossible
   real :: kx_lncc=impossible, ky_lncc=impossible,kz_lncc=impossible
   real :: epsilon_lncc=impossible
-
-  ! input parameters
+! input parameters
   real :: amplcc=0.1, widthcc=0.5, cc_min=0.0
   real :: amplcc2=0.0, kx_cc=1.0, ky_cc=1.0, kz_cc=1.0, radius_cc=0.0
   real :: epsilon_cc=0.0, cc_const=1.0
   real, dimension(3) :: gradC0=(/0.0,0.0,0.0/)
-
+!
   namelist /pscalar_init_pars/ &
        initcc,initcc2,amplcc,amplcc2,kx_cc,ky_cc,kz_cc, &
        radius_cc,epsilon_cc,widthcc,cc_min,cc_const, &
-       ! keep old names
        initlncc,initlncc2,ampllncc,ampllncc2,kx_lncc,ky_lncc,kz_lncc, &
        radius_lncc,epsilon_lncc,widthlncc
-
-  ! run parameters
+! run parameters
   real :: pscalar_diff=0.0, tensor_pscalar_diff=0.0, soret_diff=0.0
   real :: pscalar_diff_hyper3=0.0, rhoccm=0.0, cc2m=0.0, gcc2m=0.0
   real :: pscalar_sink=0.0, Rpscalar_sink=0.5
   real :: lam_gradC=0., om_gradC=0., lambda_cc=0.
   logical :: lpscalar_sink, lgradC_profile=.false., lreactions=.false.
-
+!
   namelist /pscalar_run_pars/ &
        pscalar_diff,nopscalar,tensor_pscalar_diff,gradC0,soret_diff, &
        pscalar_diff_hyper3,reinitalize_lncc,reinitalize_cc, &
        lpscalar_sink,pscalar_sink,Rpscalar_sink, &
        lreactions, lambda_cc, &
        lam_gradC, om_gradC, lgradC_profile
-
-  ! other variables (needs to be consistent with reset list below)
+! other variables (needs to be consistent with reset list below)
   integer :: idiag_rhoccm=0, idiag_ccmax=0, idiag_ccmin=0., idiag_ccm=0
   integer :: idiag_Qrhoccm=0, idiag_Qpsclm=0, idiag_mcct=0
   integer :: idiag_gcc5m=0, idiag_gcc10m=0
@@ -77,9 +71,8 @@ module Pscalar
   integer :: idiag_gcc1m=0, idiag_gcc2m=0, idiag_gcc3m=0, idiag_gcc4m=0
   integer :: idiag_gcc6m=0, idiag_gcc7m=0, idiag_gcc8m=0, idiag_gcc9m=0
   integer :: idiag_ccmx=0, idiag_ccmy=0, idiag_ccmz=0, idiag_ccglnrm=0
-
+!
   contains
-
 !***********************************************************************
     subroutine register_pscalar()
 !
@@ -389,12 +382,13 @@ module Pscalar
 !***********************************************************************
     subroutine dlncc_dt(f,df,p)
 !
-!  passive scalar evolution
-!  calculate dc/dt=-uu.gcc + pscalar_diff*[del2cc + glnrho.gcc]
+!  Passive scalar evolution.
+!  Calculate dc/dt=-uu.gcc + pscalar_diff*[del2cc + glnrho.gcc].
 !
 !  20-may-03/axel: coded
 !
       use Diagnostics
+      use Special, only: special_calc_pscalar
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -408,7 +402,7 @@ module Pscalar
       intent(in)  :: f
       intent(out) :: df
 !
-!  identify module and boundary conditions
+!  Identify module and boundary conditions.
 !
       if (nopscalar) then
         if (headtt.or.ldebug) print*,'not SOLVED: dlncc_dt'
@@ -417,39 +411,31 @@ module Pscalar
       endif
       if (headtt) call identify_bcs('cc',icc)
 !
-!  gradient of passive scalar
-!  allow for possibility to turn off passive scalar
+!  Gradient of passive scalar.
+!  Allow for possibility to turn off passive scalar
 !  without changing file size and recompiling everything.
 !
       if (.not. nopscalar) then ! i.e. if (pscalar)
 !
-!  passive scalar equation
+!  Passive scalar equation.
 !
         df(l1:l2,m,n,icc) = df(l1:l2,m,n,icc) - p%ugcc
 !
-!  reaction term
-!  Simple Fisher term for now
+!  Reaction term. Simple Fisher term for now.
 !
         if (lreactions) then
-          df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)+lambda_cc*p%cc*(1.-p%cc)
+          df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)+lambda_cc*p%cc*(1.0-p%cc)
         endif
 !
-!  passive scalar sink
+!  Passive scalar sink.
 !
         if (lpscalar_sink) then
-!          if (lagrangian) then
-!            call interp(rsink,usink,ir,iuu,f)
-!            rsink=rsink+usink*dt
-!          else
-!            rsink=0.
-!          endif
           bump=pscalar_sink* &
-          exp(-.5*(x(l1:l2)**2+y(m)**2+z(n)**2)/Rpscalar_sink**2)
-!          exp(-.5*((x(l1:l2)-rsink(0))**2+(y(m)-rsink(1))**2+(z(n)-rsink(2))**2)/Rpscalar_sink**2)
+              exp(-0.5*(x(l1:l2)**2+y(m)**2+z(n)**2)/Rpscalar_sink**2)
           df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)-bump*f(l1:l2,m,n,icc)
         endif
 !
-!  diffusion operator
+!  Diffusion operator.
 !
         if (pscalar_diff/=0.) then
           if (headtt) print*,'dlncc_dt: pscalar_diff=',pscalar_diff
@@ -458,7 +444,7 @@ module Pscalar
           df(l1:l2,m,n,icc) = df(l1:l2,m,n,icc) + pscalar_diff*diff_op
         endif
 !
-!  hyperdiffusion operator
+!  Hyperdiffusion operator.
 !
         if (pscalar_diff_hyper3/=0.) then
           if (headtt) &
@@ -467,7 +453,7 @@ module Pscalar
               pscalar_diff_hyper3*(p%del6cc+p%g5ccglnrho)
         endif
 !
-!  Soret diffusion
+!  Soret diffusion.
 !
         if (soret_diff/=0.) then
           if (headtt) print*,'dlncc_dt: soret_diff=',soret_diff
@@ -476,7 +462,7 @@ module Pscalar
           df(l1:l2,m,n,icc) = df(l1:l2,m,n,icc) + soret_diff*diff_op2
         endif
 !
-!  time-dependent prefactor for the imposed passive scalar gradient
+!  Time-dependent prefactor for the imposed passive scalar gradient.
 !
         if (lam_gradC/=0..or.om_gradC/=0.) then
           if (lam_gradC/=0.) lam_gradC_fact=exp(lam_gradC*t)
@@ -484,14 +470,14 @@ module Pscalar
           gradC_fact=lam_gradC_fact*om_gradC_fact
         endif
 !
-!  possibility of an additional z-profile on gradC_fact
+!  Possibility of an additional z-profile on gradC_fact.
 !
         if (lgradC_profile) then
           gradC_fact=gradC_fact*cos(z(n))
         endif
 !
-!  add diffusion of imposed spatially constant gradient of c.
-!  This makes sense really only for periodic boundary conditions
+!  Add diffusion of imposed spatially constant gradient of c.
+!  This makes sense really only for periodic boundary conditions.
 !
         do j=1,3
           if (gradC0(j)/=0.) then
@@ -499,21 +485,23 @@ module Pscalar
           endif
         enddo
 !
-!  tensor diffusion (but keep the isotropic one)
+!  Tensor diffusion (but keep the isotropic one).
 !
         if (tensor_pscalar_diff/=0.) &
             call tensor_diff(f,df,p,tensor_pscalar_diff)
 !
-!  For the timestep calculation, need maximum diffusion
+!  For the timestep calculation, need maximum diffusion.
 !
         if (lfirst.and.ldt) then
           diffus_pscalar =(pscalar_diff+tensor_pscalar_diff)*dxyz_2
           diffus_pscalar3=pscalar_diff_hyper3*dxyz_6
         endif
 !
+        if (lspecial) call special_calc_pscalar(f,df,p)
+!
       endif
 !
-!  diagnostics
+!  Diagnostics.
 !
 !  output for double and triple correlators (assume z-gradient of cc)
 !  <u_k u_j d_j c> = <u_k c uu.gradcc>
@@ -570,50 +558,54 @@ module Pscalar
     endsubroutine dlncc_dt
 !***********************************************************************
     subroutine read_pscalar_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=pscalar_init_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=pscalar_init_pars,ERR=99)
       endif
-
-
+!
 99    return
+!
     endsubroutine read_pscalar_init_pars
 !***********************************************************************
     subroutine write_pscalar_init_pars(unit)
+!
       integer, intent(in) :: unit
-
+!
       write(unit,NML=pscalar_init_pars)
-
+!
     endsubroutine write_pscalar_init_pars
 !***********************************************************************
     subroutine read_pscalar_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=pscalar_run_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=pscalar_run_pars,ERR=99)
       endif
-
-
+!
 99    return
+!
     endsubroutine read_pscalar_run_pars
 !***********************************************************************
     subroutine write_pscalar_run_pars(unit)
+!
       integer, intent(in) :: unit
-
+!
       write(unit,NML=pscalar_run_pars)
-
+!
     endsubroutine write_pscalar_run_pars
 !***********************************************************************
     subroutine rprint_pscalar(lreset,lwrite)
 !
-!  reads and registers print parameters relevant for passive scalar
+!  Reads and registers print parameters relevant for passive scalar.
 !
 !   6-jul-02/axel: coded
 !
@@ -628,7 +620,7 @@ module Pscalar
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-!  reset everything in case of reset
+!  Reset everything in case of reset.
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
@@ -644,7 +636,7 @@ module Pscalar
         idiag_gcc9m=0; idiag_gcc10m=0; idiag_ccglnrm=0
       endif
 !
-!  check for those quantities that we want to evaluate online
+!  Check for those quantities that we want to evaluate online.
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'Qpsclm',idiag_Qpsclm)
@@ -685,25 +677,25 @@ module Pscalar
         call parse_name(iname,cname(iname),cform(iname),'ccglnrm',idiag_ccglnrm)
       enddo
 !
-!  check for those quantities for which we want xy-averages
+!  Check for those quantities for which we want xy-averages.
 !
       do inamez=1,nnamez
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ccmz',idiag_ccmz)
       enddo
 !
-!  check for those quantities for which we want xz-averages
+!  Check for those quantities for which we want xz-averages.
 !
       do inamey=1,nnamey
         call parse_name(inamey,cnamey(inamey),cformy(inamey),'ccmy',idiag_ccmy)
       enddo
 !
-!  check for those quantities for which we want yz-averages
+!  Check for those quantities for which we want yz-averages.
 !
       do inamex=1,nnamex
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'ccmx',idiag_ccmx)
       enddo
 !
-!  write column where which passive scalar variable is stored
+!  Write column where which passive scalar variable is stored.
 !
       if (lwr) then
         write(3,*) 'i_Qpsclm=',idiag_Qpsclm
@@ -790,7 +782,7 @@ module Pscalar
 !***********************************************************************
     subroutine calc_mpscalar
 !
-!  calculate mean magnetic field from xy- or z-averages
+!  Calculate mean magnetic field from xy- or z-averages.
 !
 !  14-apr-03/axel: adaped from calc_mfield
 !
@@ -819,7 +811,7 @@ module Pscalar
 !***********************************************************************
     subroutine tensor_diff(f,df,p,tensor_pscalar_diff)
 !
-!  reads file
+!  Reads file.
 !
 !  11-jul-02/axel: coded
 !
@@ -867,10 +859,7 @@ module Pscalar
       df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)+tensor_pscalar_diff*tmp
 !
       first=.false.
+!
     endsubroutine tensor_diff
 !***********************************************************************
-
 endmodule Pscalar
-
-
-

@@ -1,6 +1,6 @@
 ! $Id$
 !
-!  This modules solves the passive scalar advection equation
+!  This modules solves the passive scalar advection equation.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
