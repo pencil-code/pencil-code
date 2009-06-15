@@ -2359,9 +2359,9 @@ module Hydro
 !  -2 Omega x u
 !
       if (lcoriolis_force) then 
-        c2=2*Omega*costh(m)
-        s2=2*Omega*sinth(m)
-        df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+s2*p%uu(:,3)
+        c2= 2*Omega*costh(m)
+        s2=-2*Omega*sinth(m)
+        df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-s2*p%uu(:,3)
         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+c2*p%uu(:,3)
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-c2*p%uu(:,2)+s2*p%uu(:,1)
       endif
