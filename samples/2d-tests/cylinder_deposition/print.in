@@ -6,4 +6,7 @@ umax(F8.4)
 rhom(F8.4)
 ozm(E12.3)
 oz2m(E12.3)
+vpxmax(e13.6)
+vpymax(e13.6)
+vpzmax(e13.6)
 
