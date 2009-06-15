@@ -1,0 +1,37 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Run parameters
+!
+&run_pars
+  ip=14,
+  nt=100, it1=10, isave=10000, itorder=3, ialive=0
+  cdt=0.4,
+  cdtv=0.4,
+  dtmin=1e-8
+  dsnap=0.1
+  dvid=2e-2
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+  lupw_rho=T
+/
+&viscosity_run_pars
+  ivisc='nu-const'
+  nu=8e-3
+/
+&solid_cells_run_pars
+  lclose_interpolation=T
+  lclose_linear=T
+/
+&particles_run_pars
+  ldragforce_dust_par=T
+  ldraglaw_steadystate=T
+  lnostore_uu=F
+/
+&particles_radius_run_pars
+/
+&particles_stalker_run_pars
+/

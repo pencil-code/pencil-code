@@ -1,0 +1,74 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!
+
+&init_pars
+  ip = 14
+  xyz0 = -0.1, 0.0, -1.,
+  xyz1 = 0.1, 0.4, 1.,
+  lperi=T,F,T
+  nscbc_sigma_in=0.0
+  nscbc_sigma_out=0.2
+  fbcy1 = 0.0,5.0,0.,1.0
+  lperi=T,F,T
+  bcy = 'e2','e2','e2','e2'
+  nscbc = '','ref_inlet:part_ref_outlet',''
+  p_infty=400
+/
+&eos_init_pars
+  cs0=20
+  cp=1.0
+/
+&hydro_init_pars
+/
+&density_init_pars
+  ldensity_nolog=T
+  initlnrho='const_lnrho'
+  lnrho_const=0.0
+/
+&solid_cells_init_pars
+  ncylinders=1
+  cylinder_radius=16.85e-3
+  cylinder_xpos=0
+  cylinder_ypos=0.2
+  cylinder_zpos=0.0
+  initsolid_cells='cylinderstream_y'
+  init_uu=5.0
+  skin_depth=4e-3
+  ampl_noise=0.1
+  interpolation_method='mirror'
+/
+&particles_init_pars
+  initxxp='random-box'
+  initvvp='follow-gas'
+  bcpx='p'
+  bcpy='rmv'
+  bcpz='p'
+!  rp_int=0.01
+  xp0=-16.85e-3
+  yp0=-0.399
+  zp0=0
+  Lx0=33.7e-3
+  Ly0=0.48
+  Lz0=0
+  mean_free_path_gas=67e-9
+  interp_pol_rho='cic'
+  interp_pol_TT='cic'
+  interp_pol_uu='cic'
+/
+&particles_radius_init_pars
+  initap='constant'
+  ap0=190e-6
+  lsweepup_par=F
+  rhops=1e3
+/
+&particles_stalker_init_pars
+  dstalk=5e-4
+  lstalk_xx=T 
+  lstalk_vv=F
+  lstalk_uu=F
+  lstalk_guu=F
+  lstalk_rho=F
+  lstalk_grho=F
+  lstalk_bb=F
+/

@@ -1,0 +1,9 @@
+it(F9.0)
+t(F13.6)
+dt(E10.3)
+urms(F8.4)
+umax(F8.4)
+rhom(F8.4)
+ozm(E12.3)
+oz2m(E12.3)
+
