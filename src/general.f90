@@ -160,10 +160,10 @@ module General
       integer :: id,lun
       logical :: done
 !
-      call random_seed_wrapper(get=seed(1:nseed))
+      call random_seed_wrapper(GET=seed)
       if (id==id_record_RANDOM_SEEDS) then
         read (lun) seed(1:nseed)
-        call random_seed_wrapper(put=seed(1:nseed))
+        call random_seed_wrapper(PUT=seed)
         done=.true.
       endif
 !
@@ -179,7 +179,7 @@ module General
 !
       integer :: lun
 !
-      call random_seed_wrapper(get=seed(1:nseed))
+      call random_seed_wrapper(GET=seed)
       write (lun) id_record_RANDOM_SEEDS
       write (lun) seed(1:nseed)
 !
@@ -319,13 +319,15 @@ module General
       case default ! 'nr_f90'
         nseed=2
         if (present(size)) size=nseed
-        if (present(get))  get=rstate(1:nseed)
+        if (present(get)) then
+          get(1:nseed)=rstate(1:nseed)
+        endif
         if (present(put)) then
           if (put(2)==0) then   ! state cannot be result from previous
                                 ! call, so initialize
             dummy = mars_ran(put(1))
           else
-            rstate(1:nseed)=put
+            rstate(1:nseed)=put(1:nseed)
           endif
         endif
       endselect
@@ -364,7 +366,7 @@ module General
 !
 ! "Minimal" random number generator of Park and Miller, combined
 ! with a Marsaglia shift sequence, with a period of supposedly
-! ~ 3.1×10^18.
+! ~ 3.1x10^18.
 ! Returns a uniform random number in (0, 1).
 ! Call with (INIT=ival) to initialize.
 !
@@ -430,7 +432,7 @@ module General
       ! calling sequence with a random deviate as the returned function
       ! value: call with iseed1 a negative integer to initialize;
       ! thereafter, do not alter iseed1 except to reinitialize. The period
-      ! of this generator is about 3.1×10^18.
+      ! of this generator is about 3.1x10^18.
 
       real, save :: am
       integer(ikind), parameter :: ia=16807,im=2147483647,iq=127773,ir=2836

@@ -91,8 +91,8 @@ module Pencil_check
       headt=.false.
       itsub=1                   ! some modules like dustvelocity.f90
                                 ! reference dt_beta_ts(itsub)
-      call random_seed_wrapper(get=iseed_org)
-      call random_seed_wrapper(put=iseed_org)
+      call random_seed_wrapper(GET=iseed_org)
+      call random_seed_wrapper(PUT=iseed_org)
       do i=1,mfarray
         call random_number_wrapper(f_other(:,:,:,i))
       enddo
@@ -109,7 +109,7 @@ module Pencil_check
 !
       do penc=1,npencils
         df=0.0
-        call random_seed_wrapper(put=iseed_org)
+        call random_seed_wrapper(PUT=iseed_org)
         do i=1,mvar+maux
           call random_number_wrapper(f_other(:,:,:,i))
         enddo

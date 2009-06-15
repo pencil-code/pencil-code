@@ -256,9 +256,9 @@ program start
 !  so we need to retain most of the initial entropy of the generator.
 !
   call get_nseed(nseed)   ! get state length of random number generator
-  call random_seed_wrapper(get=seed(1:nseed))
+  call random_seed_wrapper(GET=seed)
   seed(1) = -(10+iproc)    ! different random numbers on different CPUs
-  call random_seed_wrapper(put=seed(1:nseed))
+  call random_seed_wrapper(PUT=seed)
 !
 !  Generate grid.
 !
@@ -402,7 +402,7 @@ program start
 !  Set random seed independent of processor.
 !
   seed(1) = 1812
-  call random_seed_wrapper(put=seed(1:nseed))
+  call random_seed_wrapper(PUT=seed)
 !
 !  Write to disk.
 !

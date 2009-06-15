@@ -276,7 +276,7 @@ program run
   if (exist.and.(lforcing .or. linterstellar)) then
      if (lroot.and.ip<14) print*, 'run: reading seed file'
      call inpui(trim(directory)//'/seed.dat',seed,nseed)
-     call random_seed_wrapper(put=seed(1:nseed))
+     call random_seed_wrapper(PUT=seed)
   endif
 !
 !  Allow modules to do any physics modules do parameter dependent
