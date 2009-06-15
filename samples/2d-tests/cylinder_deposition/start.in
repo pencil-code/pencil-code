@@ -37,6 +37,7 @@
   skin_depth=4e-3
   ampl_noise=0.1
   interpolation_method='mirror'
+  nforcepoints=100
 /
 &particles_init_pars
   initxxp='random-box'

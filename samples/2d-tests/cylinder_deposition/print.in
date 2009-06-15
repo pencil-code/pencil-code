@@ -9,4 +9,5 @@ oz2m(E12.3)
 vpxmax(e13.6)
 vpymax(e13.6)
 vpzmax(e13.6)
-
+c_dragx(e13.6)
+c_dragy(e13.6)
