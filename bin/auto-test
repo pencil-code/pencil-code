@@ -102,7 +102,6 @@ my %tests = (
                          MRI-turbulence_hyper
                          dust_turb_globaldisk
                          geodynamo
-                         1d-tests/implicit_diffusion
                     )],
              # Level 3 for now contains all non-canonical tests that run
              # successfully
