@@ -56,7 +56,7 @@ module Gravity
   real, parameter :: g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
   double precision :: g_B, g_D
   double precision, parameter :: g_B_cgs=6.172D20, g_D_cgs=3.086D21
-  real :: cs0hs, H0hs
+  real :: cs0hs=0.0, H0hs=0.0
   integer :: n_pot=10  ! exponent for smoothed potential
   character (len=labellen) :: gravx_profile='zero',gravy_profile='zero'
   character (len=labellen) :: gravz_profile='zero'

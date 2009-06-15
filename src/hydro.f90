@@ -84,7 +84,7 @@ module Hydro
   logical :: lscale_tobox=.true.
 ! The following is useful to debug the forcing - Dhruba
   real :: outest
-  real :: ampl_Omega
+  real :: ampl_Omega=0.0
   logical :: loutest,ldiffrot_test=.false.
 !
   namelist /hydro_init_pars/ &
