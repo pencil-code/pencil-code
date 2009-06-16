@@ -252,7 +252,7 @@ module Entropy
       real, dimension (3) :: gg_mn=0.
       real :: beta1, cp1, lnrho_dummy=0., beta0, TT_crit
       real :: r_mn, flumi, g_r, u
-      integer :: i, ierr
+      integer :: i, ierr, q
       integer, pointer :: iglobal_gg
       logical :: lnothing,lcompute_grav
       type (pencil_case) :: p
@@ -608,11 +608,14 @@ module Entropy
         call farray_register_auxiliary("hcond",iglobal_hcond)
         call farray_register_auxiliary("glhc",iglobal_glhc,vector=3)
         if (coord_system=='spherical')then
-           print*,'Nothing to see here yet'
-!          call read_hcond(hcond,glhc)
-!          f(l1:l2,m,n,iglobal_hcond)=hcond(l1:l2)
-!          f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)=glhc(l1:l2,1:3)
-!          FbotKbot=Fbot/hcond(1)
+          do q=n1,n2
+          do m=m1,m2
+          call read_hcond(hcond,glhc)
+          f(l1:l2,m,q,iglobal_hcond)=hcond
+          f(l1:l2,m,q,iglobal_glhc:iglobal_glhc+2)=glhc
+          enddo
+          enddo
+          FbotKbot=Fbot/hcond(1)
         else
           do n=n1,n2
           do m=m1,m2
@@ -4282,9 +4285,9 @@ print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
         if (stat>=0) then
           if (ip<5) print*,"hcond, glhc: ",var1,var2
           hcond(n)=var1
-          glhc(n,1)=0.
+          glhc(n,1)=var2
           glhc(n,2)=0.
-          glhc(n,3)=var2
+          glhc(n,3)=0.
         else
           exit
         endif
