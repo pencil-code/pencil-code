@@ -446,25 +446,25 @@ if ( keyword_set(stats) and (not quiet) ) then begin
         if (ivec eq 0) then ind='x'
         if (ivec eq 1) then ind='y'
         if (ivec eq 2) then ind='z'
-        print, ' '+variables[iv]+'_'+ind+'    -->', $
-            minval, maxval, meanval, stdval
+        print, ' '+variables[iv]+'_'+ind, '-->', $
+            minval, maxval, meanval, stdval, format='(A-10,A5,4e15.6)'
       endfor
     endif else begin
 ;  Scalar.
-      command='minval=min('+variables[iv]
+      command='minval=min('+variables[iv]+')'
       result=execute(command)
-      command='maxval=max('+variables[iv]
+      command='maxval=max('+variables[iv]+')'
       result=execute(command)
-      command='meanval=mean('+variables[iv]
+      command='meanval=mean('+variables[iv]+')'
       result=execute(command)
       if (npar ge 2) then begin
-        command='stdval=stddev('+variables[iv]
+        command='stdval=stddev('+variables[iv]+')'
         result=execute(command)
       endif else begin
         stdval=0.0d
       endelse
-      print, ' '+variables[iv]+'  '+'    -->', $
-          minval, maxval, meanval, stdval
+      print, ' '+variables[iv], '-->', $
+          minval, maxval, meanval, stdval, format='(A-10,A5,4e15.6)'
     endelse
   endfor
 endif
