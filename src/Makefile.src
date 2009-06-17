@@ -39,10 +39,12 @@ HYDRO             = nohydro
 HYPERRESI_STRICT  = nohyperresi_strict
 HYPERVISC_STRICT  = nohypervisc_strict
 INTERSTELLAR      = nointerstellar
+LORENZ_GAUGE      = nolorenz_gauge
 MAGNETIC          = nomagnetic
 NEUTRALDENSITY    = noneutraldensity
 NEUTRALVELOCITY   = noneutralvelocity
 POISSON           = nopoisson
+POLYMER           = nopolymer
 PSCALAR           = nopscalar
 RADIATION         = noradiation
 SELFGRAVITY       = noselfgravity
@@ -1214,7 +1216,7 @@ technical=cparam.o cdata.o particles_cdata.o messages.o general.o farray.o share
 #
 #  Switchable physics modules.
 #
-physics=$(VISCOSITY).o $(SHOCK).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(POISSON).o $(SELFGRAVITY).o $(INTERSTELLAR).o $(ENTROPY).o $(EOS).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(CHIRAL).o $(RADIATION).o $(CHEMISTRY).o $(DUSTVELOCITY).o $(DUSTDENSITY).o $(SPECIAL).o $(COSMICRAY).o $(COSMICRAYFLUX).o $(TESTSCALAR).o $(TESTFIELD).o $(TESTFLOW).o $(PARTICLES).o $(PARTICLES_RADIUS).o $(PARTICLES_SPIN).o $(PARTICLES_NUMBER).o $(PARTICLES_SELFGRAVITY).o $(PARTICLES_NBODY).o $(PARTICLES_VISCOSITY).o $(PARTICLES_COLLISIONS).o $(PARTICLES_STALKER).o $(NEUTRALVELOCITY).o $(NEUTRALDENSITY).o $(HYPERVISC_STRICT).o $(HYPERRESI_STRICT).o
+physics=$(VISCOSITY).o $(SHOCK).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(POISSON).o $(SELFGRAVITY).o $(INTERSTELLAR).o $(ENTROPY).o $(EOS).o $(MAGNETIC).o $(LORENZ_GAUGE).o $(POLYMER).o $(SHEAR).o $(PSCALAR).o $(CHIRAL).o $(RADIATION).o $(CHEMISTRY).o $(DUSTVELOCITY).o $(DUSTDENSITY).o $(SPECIAL).o $(COSMICRAY).o $(COSMICRAYFLUX).o $(TESTSCALAR).o $(TESTFIELD).o $(TESTFLOW).o $(PARTICLES).o $(PARTICLES_RADIUS).o $(PARTICLES_SPIN).o $(PARTICLES_NUMBER).o $(PARTICLES_SELFGRAVITY).o $(PARTICLES_NBODY).o $(PARTICLES_VISCOSITY).o $(PARTICLES_COLLISIONS).o $(PARTICLES_STALKER).o $(NEUTRALVELOCITY).o $(NEUTRALDENSITY).o $(HYPERVISC_STRICT).o $(HYPERRESI_STRICT).o
 #
 #  Add switchable non-physics modules.
 #
@@ -1228,9 +1230,9 @@ run_deps_f90=$(comm_deps) pencil_check.o equ.o $(TIMESTEP).o $(TESTPERTURB).o
 #
 run_deps=$(run_deps_f90) $(DEBUG).o $(GSL).o
 #
-start_fast_deps=cparam.f90 cdata.f90 general.f90 $(MPICOMM_FIX).f90 $(GHOSTFOLD).f90 deriv.f90 sub.f90 $(PARTICLES_SUB).f90 $(DEBUG).o $(IO).f90 $(POISSON).o $(GRAVITY).f90 $(SELFGRAVITY).o $(EOS).f90 slices.f90 initcond.f90 $(SPECIAL).f90 $(DENSITY).f90 $(VISCOSITY).f90 $(SHOCK).f90 $(MAGNETIC).f90 $(COSMICRAY).f90 $(COSMICRAYFLUX).f90 $(HYDRO).f90 $(INTERSTELLAR).f90 $(ENTROPY).f90 $(RADIATION).f90 boundcond.f90 filter.f90 $(FORCING).f90 $(SHEAR).f90 $(TESTPERTURB).f90 $(PSCALAR).f90 $(CHIRAL).f90 $(CHEMISTRY).o $(DUSTVELOCITY).f90 $(DUSTDENSITY).f90 $(NEUTRALVELOCITY).f90 $(NEUTRALDENSITY).f90 $(PARTICLES).o $(TIMEAVG).f90 param_io.f90 diagnostics.f90 register.f90 $(POWER).f90 $(STRUCT_FUNC).f90 snapshot.f90 $(GRID).f90 start.f90
+start_fast_deps=cparam.f90 cdata.f90 general.f90 $(MPICOMM_FIX).f90 $(GHOSTFOLD).f90 deriv.f90 sub.f90 $(PARTICLES_SUB).f90 $(DEBUG).o $(IO).f90 $(POISSON).o $(GRAVITY).f90 $(SELFGRAVITY).o $(EOS).f90 slices.f90 initcond.f90 $(SPECIAL).f90 $(DENSITY).f90 $(VISCOSITY).f90 $(SHOCK).f90 $(MAGNETIC).f90 $(LORENZ_GAUGE).f90 $(POLYMER).f90 $(COSMICRAY).f90 $(COSMICRAYFLUX).f90 $(HYDRO).f90 $(INTERSTELLAR).f90 $(ENTROPY).f90 $(RADIATION).f90 boundcond.f90 filter.f90 $(FORCING).f90 $(SHEAR).f90 $(TESTPERTURB).f90 $(PSCALAR).f90 $(CHIRAL).f90 $(CHEMISTRY).o $(DUSTVELOCITY).f90 $(DUSTDENSITY).f90 $(NEUTRALVELOCITY).f90 $(NEUTRALDENSITY).f90 $(PARTICLES).o $(TIMEAVG).f90 param_io.f90 diagnostics.f90 register.f90 $(POWER).f90 $(STRUCT_FUNC).f90 snapshot.f90 $(GRID).f90 start.f90
 # 
-run_fast_deps=cparam.f90 cdata.f90 general.f90 $(MPICOMM_FIX).f90 $(GHOSTFOLD).f90 deriv.f90 sub.f90 $(PARTICLES_SUB).f90 $(DEBUG).o $(IO).f90 $(POISSON).o $(GRAVITY).f90 $(SELFGRAVITY).o $(EOS).f90 slices.f90 initcond.f90 $(SPECIAL).f90 $(DENSITY).f90 $(VISCOSITY).f90 $(SHOCK).f90 $(MAGNETIC).f90 $(COSMICRAY).f90 $(COSMICRAYFLUX).f90 $(HYDRO).f90 $(INTERSTELLAR).f90 $(ENTROPY).f90 $(RADIATION).f90 boundcond.f90 filter.f90 $(FORCING).f90 $(SHEAR).f90 $(TESTPERTURB).f90 $(PSCALAR).f90 $(CHIRAL).f90 $(CHEMISTRY).o $(DUSTVELOCITY).f90 $(DUSTDENSITY).f90 $(NEUTRALVELOCITY).f90 $(NEUTRALDENSITY).f90 $(PARTICLES).f90 equ.f90 $(TIMESTEP).f90 $(TIMEAVG).f90 param_io.f90 diagnostics.f90 register.f90 $(POWER).f90 $(STRUCT_FUNC).f90 snapshot.f90 run.f90
+run_fast_deps=cparam.f90 cdata.f90 general.f90 $(MPICOMM_FIX).f90 $(GHOSTFOLD).f90 deriv.f90 sub.f90 $(PARTICLES_SUB).f90 $(DEBUG).o $(IO).f90 $(POISSON).o $(GRAVITY).f90 $(SELFGRAVITY).o $(EOS).f90 slices.f90 initcond.f90 $(SPECIAL).f90 $(DENSITY).f90 $(VISCOSITY).f90 $(SHOCK).f90 $(MAGNETIC).f90 $(LORENZ_GAUGE).f90 $(POLYMER).f90  $(COSMICRAY).f90 $(COSMICRAYFLUX).f90 $(HYDRO).f90 $(INTERSTELLAR).f90 $(ENTROPY).f90 $(RADIATION).f90 boundcond.f90 filter.f90 $(FORCING).f90 $(SHEAR).f90 $(TESTPERTURB).f90 $(PSCALAR).f90 $(CHIRAL).f90 $(CHEMISTRY).o $(DUSTVELOCITY).f90 $(DUSTDENSITY).f90 $(NEUTRALVELOCITY).f90 $(NEUTRALDENSITY).f90 $(PARTICLES).f90 equ.f90 $(TIMESTEP).f90 $(TIMEAVG).f90 param_io.f90 diagnostics.f90 register.f90 $(POWER).f90 $(STRUCT_FUNC).f90 snapshot.f90 run.f90
 #
 start=start.o $(start_deps)
 #
@@ -1307,6 +1309,8 @@ buildinfo:
 	                       -e "POWER='$(POWER)';DEBUG='$(DEBUG)';HYDRO='$(HYDRO)';TESTPERTURB='$(TESTPERTURB)';" \
 	                       -e "VISCOSITY='$(VISCOSITY)';DENSITY='$(DENSITY)';ENTROPY='$(ENTROPY)';" \
 	                       -e "MAGNETIC='$(MAGNETIC)';RADIATION='$(RADIATION)';PSCALAR='$(PSCALAR)';" \
+	                       -e "LORENZ_GAUGE='$(LORENZ_GAUGE)';" \
+	                       -e "POLYMER='$(POLYMER)';" \
 	                       -e "CHIRAL='$(CHIRAL)';CHEMISTRY='$(CHEMISTRY)';DUSTVELOCITY='$(DUSTVELOCITY)';DUSTDENSITY='$(DUSTDENSITY)';" \
                                -e "NEUTRALVELOCITY='$(NEUTRALVELOCITY)';NEUTRALDENSITY='$(NEUTRALDENSITY)';" \
 	                       -e "INTERSTELLAR='$(INTERSTELLAR)';COSMICRAY='$(COSMICRAY)';COSMICRAYFLUX='$(COSMICRAYFLUX)';" \

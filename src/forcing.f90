@@ -820,6 +820,7 @@ module Forcing
 !
       if (ifirst==0) then
         if (lroot) print*,'forcing_hel_both: opening k.dat'
+        if (lroot) print*,'Equator',equator
         open(9,file='k.dat')
         read(9,*) nk,kav
         if (lroot) print*,'forcing_hel_both: average k=',kav

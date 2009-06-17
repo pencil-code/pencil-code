@@ -359,6 +359,7 @@ module Cdata
   logical, parameter :: lentropy_var=lentropy
   logical, parameter :: lshock_var=lshock
   logical, parameter :: lmagnetic_var=lmagnetic
+  logical, parameter :: llorenz_gauge_var=llorenz_gauge
   logical, parameter :: ldustvelocity_var=ldustvelocity
   logical, parameter :: ldustdensity_var=ldustdensity
   logical, parameter :: ltestscalar_var=ltestscalar

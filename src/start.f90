@@ -68,6 +68,7 @@ program start
   use Interstellar,     only: init_interstellar
   use IO
   use Magnetic,         only: init_aa
+  use Lorenz_gauge,     only: init_lorenz_gauge
   use Messages
   use Mpicomm
   use NeutralDensity,   only: init_lnrhon
@@ -341,6 +342,7 @@ program start
     call init_lnrho     (f)
     call init_ss        (f)
     call init_aa        (f)
+    call init_lorenz_gauge (f)
     call init_aatest    (f)
     call init_uutest    (f)
     call init_rad       (f)

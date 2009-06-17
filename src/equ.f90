@@ -44,6 +44,7 @@ module Equ
       use Hydro
       use Interstellar, only: interstellar_before_boundary
       Use Magnetic
+      Use Lorenz_gauge
       use Hypervisc_strict, only: hyperviscosity_strict
       use Hyperresi_strict, only: hyperresistivity_strict
       use Mpicomm
@@ -378,6 +379,7 @@ module Equ
         if (lforcing_cont)    call calc_pencils_forcing(f,p)
                               call calc_pencils_entropy(f,p)
         if (lmagnetic)        call calc_pencils_magnetic(f,p)
+        if (llorenz_gauge)        call calc_pencils_lorenz_gauge(f,p)
         if (lgrav)            call calc_pencils_gravity(f,p)
         if (lselfgravity)     call calc_pencils_selfgravity(f,p)
         if (lpscalar)         call calc_pencils_pscalar(f,p)
@@ -408,6 +410,10 @@ module Equ
 !  Magnetic field evolution
 !
         if (lmagnetic) call daa_dt(f,df,p)
+!
+!  Lorenz Gauge evolution
+!
+        if (llorenz_gauge) call dlorenz_gauge_dt(f,df,p)
 !
 !  Testscalar evolution
 !

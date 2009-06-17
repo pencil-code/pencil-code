@@ -25,6 +25,7 @@ module Param_IO
   use InitialCondition
   use Interstellar
   use Magnetic
+  use Lorenz_gauge
   use Messages
   use NeutralDensity
   use NeutralVelocity
@@ -274,6 +275,10 @@ module Param_IO
       if (ierr/=0) call sample_startpars('magnetic_init_pars',ierr)
 !
       call sgi_fix(lsgifix,1,'start.in')
+      call read_lorenz_gauge_init_pars(1,IOSTAT=ierr)
+      if (ierr/=0) call sample_startpars('lorenz_gauge_init_pars',ierr)
+!
+      call sgi_fix(lsgifix,1,'start.in')
       call read_testscalar_init_pars(1,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('testscalar_init_pars',ierr)
 !
@@ -451,6 +456,7 @@ module Param_IO
         if (lentropy          ) print*,'&entropy_init_pars         /'
         if (ltemperature      ) print*,'&entropy_init_pars         /'
         if (lmagnetic         ) print*,'&magnetic_init_pars        /'
+        if (llorenz_gauge     ) print*,'&lorenz_gauge_init_pars        /'
         if (ltestscalar       ) print*,'&testscalar_init_pars      /'
         if (ltestfield        ) print*,'&testfield_init_pars       /'
         if (ltestflow         ) print*,'&testflow_init_pars        /'
@@ -516,6 +522,7 @@ module Param_IO
         call write_poisson_init_pars(unit)
         call write_entropy_init_pars(unit)
         call write_magnetic_init_pars(unit)
+        call write_lorenz_gauge_init_pars(unit)
         call write_testscalar_init_pars(unit)
         call write_testfield_init_pars(unit)
         call write_testflow_init_pars(unit)
@@ -622,6 +629,10 @@ module Param_IO
       call sgi_fix(lsgifix,1,'run.in')
       call read_magnetic_run_pars(1,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('magnetic_run_pars',ierr)
+!
+      call sgi_fix(lsgifix,1,'run.in')
+      call read_lorenz_gauge_run_pars(1,IOSTAT=ierr)
+      if (ierr/=0) call sample_runpars('lorenz_gauge_run_pars',ierr)
 !
       call sgi_fix(lsgifix,1,'run.in')
       call read_testscalar_run_pars(1,IOSTAT=ierr)
@@ -796,6 +807,7 @@ module Param_IO
         if (lentropy        ) print*,'&entropy_run_pars         /'
         if (ltemperature    ) print*,'&entropy_run_pars         /'
         if (lmagnetic       ) print*,'&magnetic_run_pars        /'
+        if (llorenz_gauge   ) print*,'&lorenz_gauge_run_pars    /'
         if (ltestscalar     ) print*,'&testscalar_run_pars      /'
         if (ltestfield      ) print*,'&testfield_run_pars       /'
         if (ltestflow       ) print*,'&testflow_run_pars        /'
@@ -884,6 +896,7 @@ module Param_IO
         call write_poisson_run_pars(unit)
         call write_entropy_run_pars(unit)
         call write_magnetic_run_pars(unit)
+        call write_lorenz_gauge_run_pars(unit)
         call write_testscalar_run_pars(unit)
         call write_testfield_run_pars(unit)
         call write_testflow_run_pars(unit)
@@ -1013,6 +1026,7 @@ module Param_IO
       logical :: lentropy       = lentropy_var
       logical :: lshock         = lshock_var
       logical :: lmagnetic      = lmagnetic_var
+      logical :: llorenz_gauge  = llorenz_gauge_var
       logical :: ldustvelocity  = ldustvelocity_var
       logical :: ldustdensity   = ldustdensity_var
       logical :: ltestscalar    = ltestscalar_var
@@ -1023,7 +1037,7 @@ module Param_IO
       logical :: lcosmicrayflux = lcosmicrayflux_var
 !
       namelist /lphysics/ &
-          lhydro,ldensity,lentropy,lmagnetic, &
+          lhydro,ldensity,lentropy,lmagnetic, llorenz_gauge, &
           ltestscalar,ltestfield,ltestflow, &
           lpscalar,lradiation,ldustvelocity,ldustdensity, &
           lforcing,lgravz,lgravr,lshear,ltestperturb,linterstellar,lcosmicray, &
@@ -1057,6 +1071,7 @@ module Param_IO
         call write_poisson_init_pars(1)
         call write_entropy_init_pars(1)
         call write_magnetic_init_pars(1)
+        call write_lorenz_gauge_init_pars(1)
         call write_testscalar_init_pars(1)
         call write_testfield_init_pars(1)
         call write_testflow_init_pars(1)
