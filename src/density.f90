@@ -431,6 +431,7 @@ module Density
         case('power-law'); call power_law_disk(f)
         case('galactic-disk'); call exponential_fall(f)
         case('stratification'); call stratification(f,strati_type)
+        case('stratification-x'); call stratification_x(f,strati_type)
         case('polytropic_simple'); call polytropic_simple(f)
         case('hydrostatic-z', '1')
           print*, 'init_lnrho: use polytropic_simple instead!'
