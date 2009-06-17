@@ -932,10 +932,10 @@ endif
 ##
 ## Dhruba's Desktop (starpc37) 
 ##
-#FC=g95 -fno-second-underscore   # (starpc37.maths.qmul.ac.uk)
+#FC=mpif90   # (starpc37.maths.qmul.ac.uk)
 #F77=$(FC) #(starpc37.maths.qmul.ac.uk)
-#FFLAGS=-O3 -L/misc/network/dhruba/Library/lib/ #(starpc37.maths.qmul.ac.uk)
-#CC=gcc -I/misc/network/dhruba/Library/include/  #(starpc37.maths.qmul.ac.uk)
+#FFLAGS=-O3 -fno-second-underscore  -I/home/network/dhruba/mpich2/include -L/home/network/dhruba/mpich2/lib -L/home/network/dhruba/Library/lib#(starpc37.maths.qmul.ac.uk)
+#CC=mpicc -I/home/network/dhruba/Library/include/  #(starpc37.maths.qmul.ac.uk)
 #CFLAGS=-O3 -DFUNDERSC=1  #(starpc37.maths.qmul.ac.uk)
 ##
 ## Dhruba on ukmhd cluster
@@ -987,7 +987,6 @@ endif
 #FFLAGS=-O3 -m64 -march=opteron -I/usr/local/include -L/lib64 -L/usr/lib64 -L/usr/local/lib64 -L/usr/lib -L/usr/local/lib -I/usr/include -fno-second-underscore #(asd|kool)
 #FFLAGS_DOUBLE=-fdefault-real-8 #(asd|kool)
 #LDFLAGS=-m64 -m64 -march=opteron #(asd|kool)
-#LD_MPI=-lmpich -lfmpich -lmpichf90 -lpthread #(asd|kool)
 #CC=gcc #(asd|kool)
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall -march=opteron #(asd|kool)
 ##
@@ -1187,6 +1186,7 @@ endif
 
 
 ### End machine dependent
+
 LD=$(FC)
 LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL) $(LDONLYFLAGS)
 MPICOMM_FIX=$(MPICOMM)$(LIBMPISUFFIX)

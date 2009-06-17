@@ -1,4 +1,4 @@
-! $Id: polymer.f90 $
+! $Id: nopolymer.f90 $
 !  This modules deals with all aspects of polymers.
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
