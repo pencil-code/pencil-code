@@ -599,7 +599,7 @@ module Mpicomm
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
-      double precision :: deltay_dy, frak, c1, c2, c3, c4, c5, c6
+      double precision :: deltay_dy, frac, c1, c2, c3, c4, c5, c6
       integer :: ivar1, ivar2, ystep, nbufx_gh
       integer :: tolastya=11, tolastyb=12, tonextya=13, tonextyb=14
 !
@@ -616,13 +616,13 @@ module Mpicomm
           f(   1:l1-1,m1:m2,:,ivar1:ivar2) = f(l2i:l2,m1:m2,:,ivar1:ivar2)
           f(l2+1:mx  ,m1:m2,:,ivar1:ivar2) = f(l1:l1i,m1:m2,:,ivar1:ivar2)
         else
-          frak=deltay_dy-displs
-          c1 = -          (frak+1.)*frak*(frak-1.)*(frak-2.)*(frak-3.)/120.
-          c2 = +(frak+2.)          *frak*(frak-1.)*(frak-2.)*(frak-3.)/24.
-          c3 = -(frak+2.)*(frak+1.)     *(frak-1.)*(frak-2.)*(frak-3.)/12.
-          c4 = +(frak+2.)*(frak+1.)*frak          *(frak-2.)*(frak-3.)/12.
-          c5 = -(frak+2.)*(frak+1.)*frak*(frak-1.)          *(frak-3.)/24.
-          c6 = +(frak+2.)*(frak+1.)*frak*(frak-1.)*(frak-2.)          /120.
+          frac=deltay_dy-displs
+          c1 = -          (frac+1.)*frac*(frac-1.)*(frac-2.)*(frac-3.)/120.
+          c2 = +(frac+2.)          *frac*(frac-1.)*(frac-2.)*(frac-3.)/24.
+          c3 = -(frac+2.)*(frac+1.)     *(frac-1.)*(frac-2.)*(frac-3.)/12.
+          c4 = +(frac+2.)*(frac+1.)*frac          *(frac-2.)*(frac-3.)/12.
+          c5 = -(frac+2.)*(frac+1.)*frac*(frac-1.)          *(frac-3.)/24.
+          c6 = +(frac+2.)*(frac+1.)*frac*(frac-1.)*(frac-2.)          /120.
           f(1:l1-1,m1:m2,:,ivar1:ivar2) = &
                c1*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs+2,2) &
               +c2*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs+1,2) &
@@ -718,7 +718,7 @@ module Mpicomm
       integer, dimension (MPI_STATUS_SIZE) :: isend_stat_tna, isend_stat_tla
       integer, dimension (MPI_STATUS_SIZE) :: isend_stat_tnb, isend_stat_tlb
       integer :: ivar1, ivar2, m2long, i
-      double precision :: deltay_dy, frak, c1, c2, c3, c4, c5, c6
+      double precision :: deltay_dy, frac, c1, c2, c3, c4, c5, c6
 !
       ivar1=1; ivar2=mcom
       if (present(ivar1_opt)) ivar1=ivar1_opt
@@ -749,13 +749,13 @@ module Mpicomm
         fb(:,1:m2,:,ivar1:ivar2) = fblo(:,1:m2,:,ivar1:ivar2)
         fb(:,m2+1:2*my-2*nghost,:,ivar1:ivar2) = fbhi(:,m1:my,:,ivar1:ivar2)
         displs = modulo(int(deltay_dy),ny)
-        frak = deltay_dy - int(deltay_dy)
-        c1 = -          (frak+1.)*frak*(frak-1.)*(frak-2.)*(frak-3.)/120.
-        c2 = +(frak+2.)          *frak*(frak-1.)*(frak-2.)*(frak-3.)/24.
-        c3 = -(frak+2.)*(frak+1.)     *(frak-1.)*(frak-2.)*(frak-3.)/12.
-        c4 = +(frak+2.)*(frak+1.)*frak          *(frak-2.)*(frak-3.)/12.
-        c5 = -(frak+2.)*(frak+1.)*frak*(frak-1.)          *(frak-3.)/24.
-        c6 = +(frak+2.)*(frak+1.)*frak*(frak-1.)*(frak-2.)          /120.
+        frac = deltay_dy - int(deltay_dy)
+        c1 = -          (frac+1.)*frac*(frac-1.)*(frac-2.)*(frac-3.)/120.
+        c2 = +(frac+2.)          *frac*(frac-1.)*(frac-2.)*(frac-3.)/24.
+        c3 = -(frac+2.)*(frac+1.)     *(frac-1.)*(frac-2.)*(frac-3.)/12.
+        c4 = +(frac+2.)*(frac+1.)*frac          *(frac-2.)*(frac-3.)/12.
+        c5 = -(frac+2.)*(frac+1.)*frac*(frac-1.)          *(frac-3.)/24.
+        c6 = +(frac+2.)*(frac+1.)*frac*(frac-1.)*(frac-2.)          /120.
         f(1:l1-1,m1:m2,:,ivar1:ivar2) = &
              c1*fa(:,m2long-ny-displs+3:m2long-displs+2,:,ivar1:ivar2) &
             +c2*fa(:,m2long-ny-displs+2:m2long-displs+1,:,ivar1:ivar2) &
