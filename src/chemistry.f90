@@ -548,17 +548,21 @@ module Chemistry
         !    p%XX(:,k)=p%YY(:,k)/species_constants(ichemspec(k),imass)/p%mu1
         !  enddo
         !endif
+!_--------------------------------------------------------------
+!   moved to eos_chemistry.f90 
 !
 !  Temperature
 !
-        if (lpencil(i_lnTT)) p%lnTT=f(l1:l2,m,n,ilnTT)
-        if (lpencil(i_TT)) p%TT=exp(p%lnTT)
-        if (lpencil(i_TT1)) p%TT1=1./p%TT!
+   !     if (lpencil(i_lnTT)) p%lnTT=f(l1:l2,m,n,ilnTT)
+   !     if (lpencil(i_TT)) p%TT=exp(p%lnTT)
+   !     if (lpencil(i_TT1)) p%TT1=1./p%TT!
 !
 !  Temperature laplacian and gradient
 !
-        if (lpencil(i_glnTT)) call grad(f,ilnTT,p%glnTT)
-        if (lpencil(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
+    !    if (lpencil(i_glnTT)) call grad(f,ilnTT,p%glnTT)
+    !    if (lpencil(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
+
+!-----------------------------------------------------------------
 !
 !  Density
 !

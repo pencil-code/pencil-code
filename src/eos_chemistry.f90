@@ -454,6 +454,19 @@ module EquationOfState
 !Natalia: removed all previous staff and included my own
 
 
+!
+!  Temperature
+!
+       if (lpencil(i_lnTT)) p%lnTT=f(l1:l2,m,n,ilnTT)
+       if (lpencil(i_TT)) p%TT=exp(p%lnTT)
+       if (lpencil(i_TT1)) p%TT1=1./p%TT!
+!
+!  Temperature laplacian and gradient
+!
+        if (lpencil(i_glnTT)) call grad(f,ilnTT,p%glnTT)
+        if (lpencil(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
+
+
  call keep_compiler_quiet(f)
  call keep_compiler_quiet(p)
 
