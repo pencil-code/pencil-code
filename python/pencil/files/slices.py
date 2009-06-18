@@ -284,7 +284,7 @@ def animate_multislices(field=['uu1'],datadir='data/',proc=-1,extension='xz',for
 
 def time_slices(field=['uu1'],datadir='data/',proc=-1,extension='xz',format='native',
                 tmin=0.,tmax=1.e38,amin=0.,amax=1.,transform='plane[0]',dtstep=1,
-                deltat=0,oldfile=False):
+                deltat=0,oldfile=False,outfile=""):
     """
     read a list of 1D slice files, combine them, and plot the slice in one dimension, and time in the other one.
 
@@ -302,9 +302,12 @@ def time_slices(field=['uu1'],datadir='data/',proc=-1,extension='xz',format='nat
      transform --- insert arbitrary numerical code to combine the slices
      dtstep --- only plot every dt step
      deltat --- if set to nonzero, plot at fixed time interval rather than step
+     outfile --- if set, write the slice values in the text file
     """
     
     datadir = os.path.expanduser(datadir)
+    if outfile != "":
+        outslice=file(outfile,"w")
     filename=[]
     if proc < 0:
         for i in field:
@@ -373,7 +376,10 @@ def time_slices(field=['uu1'],datadir='data/',proc=-1,extension='xz',format='nat
                 if ifirst:
                     print "----islice----------t---------min-------max-------delta"
                 print "%10i %10.3e %10.3e %10.3e %10.3e" % (islice,t,tempplane.min(),tempplane.max(),tempplane.max()-tempplane.min())
-                
+                if outfile != "":
+                    outslice.write("%10i %10.3e %10.3e %10.3e %10.3e" % (islice,t,tempplane.min(),tempplane.max(),tempplane.max()-tempplane.min()))
+                    outslice.write("\n")
+
                 ifirst = False
                 islice += 1
                 nextt=t+deltat
@@ -395,3 +401,5 @@ def time_slices(field=['uu1'],datadir='data/',proc=-1,extension='xz',format='nat
 
     for i in infile:
         i.close()
+    if outfile != "":
+        outslice.close()

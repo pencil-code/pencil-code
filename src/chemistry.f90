@@ -68,7 +68,7 @@ module Chemistry
   logical :: lkreactions_profile=.false.
   integer :: nreactions=0,nreactions1=0,nreactions2=0
   integer :: ll1,ll2,mm1,mm2,nn1,nn2
-  real, dimension(2*nchemspec) :: kreactions_profile_width=0.
+  real, dimension(3*nchemspec) :: kreactions_profile_width=0.
 
 
   integer :: mreactions
@@ -91,7 +91,7 @@ module Chemistry
   real :: amplchem=1.,kx_chem=1.,ky_chem=1.,kz_chem=1.,widthchem=1.
   real :: chem_diff=0.
   character (len=labellen), dimension (ninit) :: initchem='nothing'
-  character (len=labellen), dimension (2*nchemspec) :: kreactions_profile=''
+  character (len=labellen), dimension (3*nchemspec) :: kreactions_profile=''
 
   real, allocatable, dimension(:,:,:,:,:) :: Bin_Diff_coef
   real, dimension (mx,my,mz,nchemspec) :: Diff_full, Diff_full_add, XX_full
@@ -1331,7 +1331,7 @@ subroutine flame_front(f)
 !
 !  Find number of ractions
 !
-      mreactions=2*nchemspec
+      mreactions=3*nchemspec
       if (lroot) print*,'Number of reactions=',mreactions
 !
 !  Allocate reaction arrays (but not during reloading!)
