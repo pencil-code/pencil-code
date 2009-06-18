@@ -68,8 +68,7 @@ module Chemistry
   logical :: lkreactions_profile=.false.
   integer :: nreactions=0,nreactions1=0,nreactions2=0
   integer :: ll1,ll2,mm1,mm2,nn1,nn2
-  real, dimension(3*nchemspec) :: kreactions_profile_width=0.
-
+  real, allocatable, dimension(:) :: kreactions_profile_width
 
   integer :: mreactions
   integer, allocatable, dimension(:,:) :: stoichio,Sijm,Sijp
@@ -91,7 +90,7 @@ module Chemistry
   real :: amplchem=1.,kx_chem=1.,ky_chem=1.,kz_chem=1.,widthchem=1.
   real :: chem_diff=0.
   character (len=labellen), dimension (ninit) :: initchem='nothing'
-  character (len=labellen), dimension (3*nchemspec) :: kreactions_profile=''
+  character (len=labellen), allocatable, dimension (:) :: kreactions_profile
 
   real, allocatable, dimension(:,:,:,:,:) :: Bin_Diff_coef
   real, dimension (mx,my,mz,nchemspec) :: Diff_full, Diff_full_add, XX_full
@@ -125,7 +124,7 @@ module Chemistry
 
 ! run parameters
   namelist /chemistry_run_pars/ &
-      lkreactions_profile,kreactions_profile,kreactions_profile_width, &
+      lkreactions_profile, &
       chem_diff,chem_diff_prefactor, nu_spec, ldiffusion, ladvection, &
       lreactions,lchem_cdtc,lheatc_chemistry, BinDif_simple, visc_simple, &
       lmobility,mobility, lfilter,lT_tanh
@@ -1326,12 +1325,21 @@ subroutine flame_front(f)
       character (len=15) :: file1='chemistry_m.dat',file2='chemistry_p.dat'
       character (len=20) :: input_file='chem.inp'
       real, dimension (mx,my,mz,mfarray) :: f
+      real :: dummy
       logical :: exist,exist1,exist2
       integer :: i,j,k,stat,reac,spec
 !
-!  Find number of ractions
+!  Find number of ractions by reading how many lines we have in file2
 !
-      mreactions=3*nchemspec
+      j=1
+      open(19,file=file2)
+      read(19,*) chemicals
+      do while (.true.)
+        read(19,*,end=996) dummy
+        j=j+1
+      enddo
+996   close(19)
+      mreactions=j-1
       if (lroot) print*,'Number of reactions=',mreactions
 !
 !  Allocate reaction arrays (but not during reloading!)
@@ -1351,6 +1359,10 @@ subroutine flame_front(f)
         if (stat>0) call stop_it("Couldn't allocate memory for kreactions_m")
         allocate(reaction_name(mreactions),STAT=stat)
         if (stat>0) call stop_it("Couldn't allocate memory for reaction_name")
+        allocate(kreactions_profile(mreactions),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for kreactions_profile")
+        allocate(kreactions_profile_width(mreactions),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for kreactions_profile_width")
       endif
 !
 !  Initialize data
@@ -1384,9 +1396,13 @@ subroutine flame_front(f)
         open(19,file=file2)
         read(19,*) chemicals
         do j=1,mreactions
-          read(19,*,end=992) kreactions_p(j),(Sijp(i,j),i=1,nchemspec)
+          if (lkreactions_profile) then
+            read(19,*) kreactions_p(j),(Sijp(i,j),i=1,nchemspec),kreactions_profile(j),kreactions_profile_width(j)
+          else
+            read(19,*) kreactions_p(j),(Sijp(i,j),i=1,nchemspec)
+          endif
         enddo
-992     close(19)
+        close(19)
         nreactions2=j-1
 !
 !  calculate stoichio and nreactions
