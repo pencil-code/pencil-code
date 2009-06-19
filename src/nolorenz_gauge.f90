@@ -191,8 +191,7 @@ module Lorenz_gauge
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 
-
-99  endsubroutine read_lorenz_gauge_run_pars
+    endsubroutine read_lorenz_gauge_run_pars
 !***********************************************************************
     subroutine write_lorenz_gauge_run_pars(unit)
       integer, intent(in) :: unit
@@ -214,8 +213,6 @@ module Lorenz_gauge
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
-
-
     endsubroutine rprint_lorenz_gauge
 !***********************************************************************
     subroutine get_slices_lorenz_gauge(f,slices)
@@ -228,10 +225,9 @@ module Lorenz_gauge
       type (slice_data) :: slices
 !
       integer :: inamev
-
+!
       call keep_compiler_quiet(f)
-
-
+!
     endsubroutine get_slices_lorenz_gauge
 !***********************************************************************
 endmodule Lorenz_gauge
