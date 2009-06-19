@@ -1326,13 +1326,18 @@ subroutine flame_front(f)
       use Sub, only: keep_compiler_quiet
       use General, only: chn
 !
-      character (len=80) :: chemicals=''
+      character (len=80) :: chemicals='' 
+      ! Careful, limits the absolut size of the input matrix !!!
       character (len=15) :: file1='chemistry_m.dat',file2='chemistry_p.dat'
       character (len=20) :: input_file='chem.inp'
       real, dimension (mx,my,mz,mfarray) :: f
       real :: dummy
       logical :: exist,exist1,exist2
       integer :: i,j,k,stat,reac,spec
+      integer :: nchemspectemp
+      character :: tmpchar
+      logical :: inside
+
 !
 !  Find number of ractions by reading how many lines we have in file2
 !
@@ -1346,6 +1351,26 @@ subroutine flame_front(f)
 996   close(19)
       mreactions=j-1
       if (lroot) print*,'Number of reactions=',mreactions
+      open(19,file=file1)
+      read(19,fmt="(a80)") chemicals
+      nchemspectemp=0
+      inside=.true.
+      do i=1,len_trim(chemicals)
+        tmpchar=chemicals(i:i)
+        if (tmpchar == ' ') then
+          if (.not. inside) then
+            inside = .true.
+            nchemspectemp=nchemspectemp+1
+          end if
+        else
+          inside=.false.
+        end if
+      end do
+      if (inside) nchemspectemp=nchemspectemp-1
+      close(19)
+      if (lroot) print*,'Number of compounds=',nchemspectemp
+      if (nchemspectemp>nchemspec) call &
+          stop_it("Too much chemicals! Change NCHEMSPEC in src/cparam.local")
 !
 !  Allocate reaction arrays (but not during reloading!)
 !
@@ -1391,7 +1416,7 @@ subroutine flame_front(f)
         open(19,file=file1)
         read(19,*) chemicals
         do j=1,mreactions
-          read(19,*,end=994) kreactions_m(j),(Sijm(i,j),i=1,nchemspec)
+          read(19,*,end=994) kreactions_m(j),(Sijm(i,j),i=1,nchemspectemp)
         enddo
 994     close(19)
         nreactions1=j-1
@@ -1402,9 +1427,9 @@ subroutine flame_front(f)
         read(19,*) chemicals
         do j=1,mreactions
           if (lkreactions_profile) then
-            read(19,*) kreactions_p(j),(Sijp(i,j),i=1,nchemspec),kreactions_profile(j),kreactions_profile_width(j)
+            read(19,*) kreactions_p(j),(Sijp(i,j),i=1,nchemspectemp),kreactions_profile(j),kreactions_profile_width(j)
           else
-            read(19,*) kreactions_p(j),(Sijp(i,j),i=1,nchemspec)
+            read(19,*) kreactions_p(j),(Sijp(i,j),i=1,nchemspectemp)
           endif
         enddo
         close(19)
@@ -1418,6 +1443,7 @@ subroutine flame_front(f)
         else
           call stop_it('nreactions1/=nreactions2')
         endif
+        if (nreactions /= mreactions) call stop_it('nreactions/=mreactions')
 !
       else
 !
@@ -1443,7 +1469,7 @@ subroutine flame_front(f)
 !  print input data for verification
 !
       if (lroot) then
-        print*,'chemicals=',chemicals
+!        print*,'chemicals=',chemicals
         print*,'kreactions_m=',kreactions_m(1:nreactions)
         print*,'kreactions_p=',kreactions_p(1:nreactions)
         print*,'Sijm:' ; write(*,100),Sijm(:,1:nreactions)
