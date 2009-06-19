@@ -24,7 +24,8 @@
 &entropy_init_pars
 /
 &chemistry_init_pars
-  initchem='air','flame_front'
+  initchem='flame_front'
+!  initchem='air','flame_front'
   BInDif_simple=T
   visc_simple=T
   init_pressure=1.013e6
