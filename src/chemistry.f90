@@ -1339,7 +1339,7 @@ subroutine flame_front(f)
       logical :: inside
 
 !
-!  Find number of ractions by reading how many lines we have in file2
+!  Find number of reactions by reading how many lines we have in file2
 !
       j=1
       open(19,file=file2)
@@ -1351,6 +1351,9 @@ subroutine flame_front(f)
 996   close(19)
       mreactions=j-1
       if (lroot) print*,'Number of reactions=',mreactions
+!
+!  Find number of compounds by reading how many columns we have in file1
+!
       open(19,file=file1)
       read(19,fmt="(a80)") chemicals
       nchemspectemp=0
