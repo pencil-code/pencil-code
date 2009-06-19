@@ -649,6 +649,7 @@ endif
 #CC=mpicc #(a07c01n03.pdc.kth.se)
 #FFLAGS=-O3 -vec-report0 #(a07c01n03.pdc.kth.se)
 #LD_MPI=-lmpi #(a07c01n03.pdc.kth.se)
+#FFLAGS_DOUBLE=-r8 #(a07c01n03.pdc.kth.se)
 ##
 ##  Simon's laptop
 ##

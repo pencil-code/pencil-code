@@ -45,7 +45,7 @@ module Hydro
 !
 !  cosine and sine function for setting test fields and analysis
 !
-  real, dimension(mz) :: c2z,csz,s2z
+  real, dimension(mz) :: c2z,csz,s2z,cz,sz
 !
 !  precession matrices
 !
@@ -457,6 +457,8 @@ module Hydro
 !
       c=cos(z)
       s=sin(z)
+      cz=c
+      sz=s
       c2z=c**2
       s2z=s**2
       csz=c*s

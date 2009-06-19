@@ -224,6 +224,7 @@ module Magnetic
                                 ! DIAG_DOC:   dt'\right>$
   integer :: idiag_b2uzm=0      ! DIAG_DOC: $\left<\Bv^2u_z\right>$
   integer :: idiag_ubbzm=0      ! DIAG_DOC: $\left<(\uv\cdot\Bv)B_z\right>$
+  integer :: idiag_b1m=0        ! DIAG_DOC: $\left<|\Bv|\right>$
   integer :: idiag_b2m=0        ! DIAG_DOC: $\left<\Bv^2\right>$
   integer :: idiag_bm2=0        ! DIAG_DOC: $\max(\Bv^2)$
   integer :: idiag_j2m=0        ! DIAG_DOC: $\left<\jv^2\right>$
@@ -1305,7 +1306,8 @@ module Magnetic
           .or. idiag_examz1/=0 .or. idiag_examz2/=0 .or. idiag_examz3/=0 &
           .or. idiag_exjmx/=0 .or. idiag_exjmy/=0 .or. idiag_exjmz/=0 &
          ) lpenc_diagnos(i_jj)=.true.
-      if (idiag_b2uzm/=0 .or. idiag_b2m/=0 .or. idiag_bm2/=0 .or. &
+      if (idiag_b2uzm/=0 .or. &
+          idiag_b1m/=0 .or. idiag_b2m/=0 .or. idiag_bm2/=0 .or. &
           idiag_brmsh/=0 .or. idiag_brmsn/=0 .or. idiag_brmss/=0 .or. &
           idiag_brms/=0 .or. idiag_bmax/=0 .or. &
           idiag_emag/=0 ) & 
@@ -2208,6 +2210,7 @@ module Magnetic
 !
 !  Mean squared and maximum squared magnetic field
 !
+        if (idiag_b1m/=0) call sum_mn_name(sqrt(p%b2),idiag_b1m)
         if (idiag_b2m/=0) call sum_mn_name(p%b2,idiag_b2m)
         if (idiag_bm2/=0) call max_mn_name(p%b2,idiag_bm2)
         if (idiag_brms/=0) call sum_mn_name(p%b2,idiag_brms,lsqrt=.true.)
@@ -5522,7 +5525,8 @@ module Magnetic
         idiag_bjtm=0
         idiag_jbtm=0
         idiag_b2uzm=0; idiag_ubbzm=0
-        idiag_b2m=0; idiag_bm2=0; idiag_j2m=0; idiag_jm2=0; idiag_abm=0
+        idiag_b1m=0; idiag_b2m=0; idiag_bm2=0
+        idiag_j2m=0; idiag_jm2=0; idiag_abm=0
         idiag_abmh=0; idiag_abmn=0; idiag_abms=0
         idiag_ajm=0
         idiag_jbm=0; idiag_ubm=0; idiag_ujm=0; idiag_fbm=0; idiag_fxbxm=0
@@ -5613,6 +5617,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'fxbxm',idiag_fxbxm)
         call parse_name(iname,cname(iname),cform(iname),'b2uzm',idiag_b2uzm)
         call parse_name(iname,cname(iname),cform(iname),'ubbzm',idiag_ubbzm)
+        call parse_name(iname,cname(iname),cform(iname),'b1m',idiag_b1m)
         call parse_name(iname,cname(iname),cform(iname),'b2m',idiag_b2m)
         call parse_name(iname,cname(iname),cform(iname),'bm2',idiag_bm2)
         call parse_name(iname,cname(iname),cform(iname),'j2m',idiag_j2m)
@@ -5948,6 +5953,7 @@ module Magnetic
         write(3,*) 'i_fxbxm=',idiag_fxbxm
         write(3,*) 'i_b2uzm=',idiag_b2uzm
         write(3,*) 'i_ubbzm=',idiag_ubbzm
+        write(3,*) 'i_b1m=',idiag_b1m
         write(3,*) 'i_b2m=',idiag_b2m
         write(3,*) 'i_bm2=',idiag_bm2
         write(3,*) 'i_j2m=',idiag_j2m
