@@ -181,7 +181,7 @@ module Entropy
 !
       use General, only: chn
       use Sub, only: blob
-      use Initcond, only: jump
+      use Initcond, only: jump, gaunoise
       use InitialCondition, only: initial_condition_ss
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
@@ -220,6 +220,7 @@ module Entropy
           case('xjump'); call jump(f,ilnTT,lnTT_left,lnTT_right,widthlnTT,'x')
           case('yjump'); call jump(f,ilnTT,lnTT_left,lnTT_right,widthlnTT,'y')
           case('zjump'); call jump(f,ilnTT,lnTT_left,lnTT_right,widthlnTT,'z')
+          case('gaussian-noise'); call gaunoise(ampl_lnTT,f,ilnTT)
 !
           case default
 !

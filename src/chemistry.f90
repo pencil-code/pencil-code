@@ -78,7 +78,7 @@ module Chemistry
   logical :: lT_tanh=.false.
 ! 1step_test case
 
-    logical :: l1step_test=.false.
+    logical :: l1step_test=.false., lflame_front=.false.
     integer :: ipr=2
     real :: Tc=440., Tinf=2000., beta=1.09
 
@@ -701,6 +701,11 @@ subroutine flame_front(f)
       integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
       real :: initial_mu1, final_massfrac_O2
       logical :: found_specie
+ 
+      lflame_front=.true.
+
+      call air_field(f)
+
 !
 ! Initialize some indexes
 !
@@ -728,18 +733,18 @@ subroutine flame_front(f)
 
        if(lT_tanh) then
         del=init_x2-init_x1
-         f(k,:,:,ilnTT)=log((init_TT2+init_TT1)*0.5  &
+         f(k,:,:,ilnTT)=f(k,:,:,ilnTT)+log((init_TT2+init_TT1)*0.5  &
              +((init_TT2-init_TT1)*0.5)  &
              *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del)))
        else
          if (x(k)<init_x1) then
-           f(k,:,:,ilnTT)=log(init_TT1)
+           f(k,:,:,ilnTT)=f(k,:,:,ilnTT)+log(init_TT1)
          endif
          if (x(k)>init_x2) then
-           f(k,:,:,ilnTT)=log(init_TT2)
+           f(k,:,:,ilnTT)=f(k,:,:,ilnTT)+log(init_TT2)
          endif
          if (x(k)>init_x1 .and. x(k)<init_x2) then
-           f(k,:,:,ilnTT)=log((x(k)-init_x1)/(init_x2-init_x1) &
+           f(k,:,:,ilnTT)=f(k,:,:,ilnTT)+log((x(k)-init_x1)/(init_x2-init_x1) &
                *(init_TT2-init_TT1)+init_TT1)
          endif
         endif
@@ -4005,10 +4010,16 @@ subroutine flame_front(f)
       if (mvar < 5) then
         call fatal_error("air_field", "I can only set existing fields")
       endif
-      f(:,:,:,ilnTT)=log(TT)
+
+
+      if (.not. lflame_front) then
+
+       f(:,:,:,ilnTT)=f(:,:,:,ilnTT)!+log(TT)
 !
-      f(:,:,:,ilnrho)=log((PP*10./(k_B_cgs/m_u_cgs)*&
+       f(:,:,:,ilnrho)=log((PP*10./(k_B_cgs/m_u_cgs)*&
           air_mass/TT)/unit_mass*unit_length**3)
+
+      endif
 
    !   f(:,:,:,iux)=init_ux
 

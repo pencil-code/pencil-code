@@ -671,10 +671,12 @@ endif
 #FFLAGS_DOUBLE = -r8 #(naiad|sky1)
 #include $(PENCIL_HOME)/src/Makefile_ifort.incl #(naiad|sky1|pchelka)
 #FC=ifort #(hikari)
-#FC=ifort #(pchelka)
+##FC=ifort #(pchelka)
+##FFLAGS=-g -O0 #(pchelka)
 ##FC=ifort -fexceptions -fp-stack-check -fstack-security-check -ftrapuv  #(pchelka)
 ##FC=ifort -CB -WB -check all -g #(pchelka)
 ##FC=g95 -finteger=-2147483648 -fexceptions #(pchelka|naiad)
+#FC=g95  #(pchelka)
 ##
 ## rockall (ngrs's current laptop)
 ##
