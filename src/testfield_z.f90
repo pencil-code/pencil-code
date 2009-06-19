@@ -117,6 +117,7 @@ module Testfield
   integer :: idiag_M11ss=0      ! DIAG_DOC: ${\cal M}_{11}\sin^2 kz$
   integer :: idiag_M22cc=0      ! DIAG_DOC: ${\cal M}_{22}\cos^2 kz$
   integer :: idiag_M22ss=0      ! DIAG_DOC: ${\cal M}_{22}\sin^2 kz$
+  integer :: idiag_M12cs=0      ! DIAG_DOC: ${\cal M}_{12}\cos kz\sin kz$
   integer :: idiag_bx11pt=0     ! DIAG_DOC: $b_x^{11}$
   integer :: idiag_bx21pt=0     ! DIAG_DOC: $b_x^{21}$
   integer :: idiag_bx12pt=0     ! DIAG_DOC: $b_x^{12}$
@@ -755,6 +756,7 @@ module Testfield
            idiag_b12rms/=0.or.idiag_b22rms/=0.or. &
            idiag_M11cc/=0.or.idiag_M11ss/=0.or. &
            idiag_M22cc/=0.or.idiag_M22ss/=0.or. &
+           idiag_M12cs/=0.or. &
            idiag_M11/=0.or.idiag_M22/=0.or.idiag_M33/=0.or. &
            idiag_M11z/=0.or.idiag_M22z/=0.or.idiag_M33z/=0)) then
           aatest=f(l1:l2,m,n,iaxtest:iaztest)
@@ -855,6 +857,7 @@ module Testfield
         if (idiag_M11ss/=0) call sum_mn_name(s2z(n)*Mijpq(:,1,1,i1),idiag_M11ss)
         if (idiag_M22cc/=0) call sum_mn_name(c2z(n)*Mijpq(:,2,2,i1),idiag_M22cc)
         if (idiag_M22ss/=0) call sum_mn_name(s2z(n)*Mijpq(:,2,2,i1),idiag_M22ss)
+        if (idiag_M12cs/=0) call sum_mn_name(cz(n)*sz(n)*Mijpq(:,1,2,i1),idiag_M12cs)
 !
 !  Projection of EMF from testfield against testfield itself
 !
@@ -1443,6 +1446,7 @@ module Testfield
         idiag_eta11cc=0; idiag_eta21sc=0; idiag_eta12cs=0; idiag_eta22ss=0
         idiag_M11=0; idiag_M22=0; idiag_M33=0
         idiag_M11cc=0; idiag_M11ss=0; idiag_M22cc=0; idiag_M22ss=0
+        idiag_M12cs=0
         idiag_M11z=0; idiag_M22z=0; idiag_M33z=0
         idiag_jb0m=0; idiag_b0rms=0; idiag_E0rms=0
         idiag_b11rms=0; idiag_b21rms=0; idiag_b12rms=0; idiag_b22rms=0
@@ -1483,6 +1487,7 @@ module Testfield
         call parse_name(iname,cname(iname),cform(iname),'M11ss',idiag_M11ss)
         call parse_name(iname,cname(iname),cform(iname),'M22cc',idiag_M22cc)
         call parse_name(iname,cname(iname),cform(iname),'M22ss',idiag_M22ss)
+        call parse_name(iname,cname(iname),cform(iname),'M12cs',idiag_M12cs)
         call parse_name(iname,cname(iname),cform(iname),'bx11pt',idiag_bx11pt)
         call parse_name(iname,cname(iname),cform(iname),'bx21pt',idiag_bx21pt)
         call parse_name(iname,cname(iname),cform(iname),'bx12pt',idiag_bx12pt)
@@ -1575,6 +1580,7 @@ module Testfield
         write(3,*) 'idiag_M11ss=',idiag_M11ss
         write(3,*) 'idiag_M22cc=',idiag_M22cc
         write(3,*) 'idiag_M22ss=',idiag_M22ss
+        write(3,*) 'idiag_M12cs=',idiag_M12cs
         write(3,*) 'idiag_bx11pt=',idiag_bx11pt
         write(3,*) 'idiag_bx21pt=',idiag_bx21pt
         write(3,*) 'idiag_bx12pt=',idiag_bx12pt

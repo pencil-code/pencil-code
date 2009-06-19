@@ -184,6 +184,7 @@ module Hydro
   integer :: idiag_ux2mx=0      ! DIAG_DOC: $\left<u_x^2\right>_{yz}$
   integer :: idiag_uy2mx=0      ! DIAG_DOC: $\left<u_y^2\right>_{yz}$
   integer :: idiag_uz2mx=0      ! DIAG_DOC: $\left<u_z^2\right>_{yz}$
+  integer :: idiag_uxuycsm=0    ! DIAG_DOC: $\left<u_xu_y\cos kz\sin kz\right>$
   integer :: idiag_ux2my=0      ! DIAG_DOC: 
   integer :: idiag_uy2my=0      ! DIAG_DOC: 
   integer :: idiag_uz2my=0      ! DIAG_DOC: 
@@ -1598,6 +1599,7 @@ module Hydro
         if (idiag_ux2ssm/=0)  call sum_mn_name(s2z(n)*p%uu(:,1)**2,idiag_ux2ssm)
         if (idiag_uy2ccm/=0)  call sum_mn_name(c2z(n)*p%uu(:,2)**2,idiag_uy2ccm)
         if (idiag_uy2ssm/=0)  call sum_mn_name(s2z(n)*p%uu(:,2)**2,idiag_uy2ssm)
+        if (idiag_uxuycsm/=0) call sum_mn_name(cz(n)*sz(n)*p%uu(:,1)*p%uu(:,2),idiag_uxuycsm)
         if (idiag_uxuym/=0)   call sum_mn_name(p%uu(:,1)*p%uu(:,2),idiag_uxuym)
         if (idiag_uxuzm/=0)   call sum_mn_name(p%uu(:,1)*p%uu(:,3),idiag_uxuzm)
         if (idiag_uyuzm/=0)   call sum_mn_name(p%uu(:,2)*p%uu(:,3),idiag_uyuzm)
@@ -2727,6 +2729,7 @@ module Hydro
         idiag_ux2ssm=0
         idiag_uy2ccm=0
         idiag_uy2ssm=0
+        idiag_uxuycsm=0
         idiag_rux2m=0
         idiag_ruy2m=0
         idiag_ruz2m=0
@@ -2923,6 +2926,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'ux2ssm',idiag_ux2ssm)
         call parse_name(iname,cname(iname),cform(iname),'uy2ccm',idiag_uy2ccm)
         call parse_name(iname,cname(iname),cform(iname),'uy2ssm',idiag_uy2ssm)
+        call parse_name(iname,cname(iname),cform(iname),'uxuycsm',idiag_uxuycsm)
         call parse_name(iname,cname(iname),cform(iname),'rux2m',idiag_rux2m)
         call parse_name(iname,cname(iname),cform(iname),'ruy2m',idiag_ruy2m)
         call parse_name(iname,cname(iname),cform(iname),'ruz2m',idiag_ruz2m)
@@ -3211,6 +3215,7 @@ module Hydro
         write(3,*) 'i_ux2ssm=',idiag_ux2ssm
         write(3,*) 'i_uy2ccm=',idiag_uy2ccm
         write(3,*) 'i_uy2ssm=',idiag_uy2ssm
+        write(3,*) 'i_uxuycsm=',idiag_uxuycsm
         write(3,*) 'i_rux2m=',idiag_rux2m
         write(3,*) 'i_ruy2m=',idiag_ruy2m
         write(3,*) 'i_ruz2m=',idiag_ruz2m
