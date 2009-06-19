@@ -2,20 +2,20 @@
 !
 !  Lorenz gauge, dphi/dt = -cphi2*divA
 !
-!  25-feb-07/axel: adapted from nospecial.f90
+!  25-feb-07/axel: adapted from nolorenz_gauge.f90
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: lspecial = .true.
+! CPARAM logical, parameter :: llorenz_gauge = .true.
 !
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
 
-module Special
+module Lorenz_gauge
 
   use Cdata
   use Cparam
@@ -24,7 +24,7 @@ module Special
 
   implicit none
 
-  include '../special.h'
+  include 'lorenz_gauge.h'
 !
 !  square of wave speed for gauge field
 !
@@ -33,11 +33,11 @@ module Special
   ! input parameters
   real :: cphi=1.,etaphi=0.,ampl=1e-3,kx=1.,ky=0.,kz=0.
   character(len=50) :: init='zero'
-  namelist /special_init_pars/ &
+  namelist /lorenz_gauge_init_pars/ &
     cphi,etaphi,init,ampl,kx,ky,kz
 
   ! run parameters
-  namelist /special_run_pars/ &
+  namelist /lorenz_gauge_run_pars/ &
     cphi,etaphi
 !
 ! Declare any index variables necessary for main or 
@@ -55,7 +55,7 @@ module Special
   contains
 
 !***********************************************************************
-    subroutine register_special()
+    subroutine register_lorenz_gauge()
 !
 !  Configure pre-initialised (i.e. before parameter read) variables
 !  which should be know to be able to evaluate
@@ -69,9 +69,9 @@ module Special
       if (lroot) call svn_id( &
            "$Id$")
 !
-    endsubroutine register_special
+    endsubroutine register_lorenz_gauge
 !***********************************************************************
-    subroutine initialize_special(f)
+    subroutine initialize_lorenz_gauge(f)
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
@@ -86,11 +86,11 @@ module Special
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine initialize_special
+    endsubroutine initialize_lorenz_gauge
 !***********************************************************************
-    subroutine init_special(f)
+    subroutine init_lorenz_gauge(f)
 !
-!  initialise special condition; called from start.f90
+!  initialise lorenz_gauge condition; called from start.f90
 !  06-oct-2003/tony: coded
 !
       use Initcond
@@ -104,7 +104,7 @@ module Special
 !  SAMPLE IMPLEMENTATION
 !
       select case(init)
-        case('nothing'); if (lroot) print*,'init_special: nothing'
+        case('nothing'); if (lroot) print*,'init_lorenz_gauge: nothing'
         case('zero'); f(:,:,:,iphi)=0.
         case('sinwave-x'); call sinwave(ampl,f,iphi,kx=kx)
         case('sinwave-y'); call sinwave(ampl,f,iphi,ky=ky)
@@ -114,17 +114,17 @@ module Special
           !
           !  Catch unknown values
           !
-          if (lroot) print*,'init_special: No such value for init: ', trim(init)
+          if (lroot) print*,'init_lorenz_gauge: No such value for init: ', trim(init)
           call stop_it("")
       endselect
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine init_special
+    endsubroutine init_lorenz_gauge
 !***********************************************************************
-    subroutine pencil_criteria_special()
+    subroutine pencil_criteria_lorenz_gauge()
 !
-!  All pencils that this special module depends on are specified here.
+!  All pencils that this lorenz_gauge module depends on are specified here.
 !
 !  25-feb-07/axel: adapted
 !
@@ -132,9 +132,9 @@ module Special
         lpenc_requested(i_diva)=.true.
       endif
 !
-    endsubroutine pencil_criteria_special
+    endsubroutine pencil_criteria_lorenz_gauge
 !***********************************************************************
-    subroutine pencil_interdep_special(lpencil_in)
+    subroutine pencil_interdep_lorenz_gauge(lpencil_in)
 !
 !  Interdependency among pencils provided by this module are specified here.
 !
@@ -144,9 +144,9 @@ module Special
 !
       call keep_compiler_quiet(lpencil_in)
 !
-    endsubroutine pencil_interdep_special
+    endsubroutine pencil_interdep_lorenz_gauge
 !***********************************************************************
-    subroutine calc_pencils_special(f,p)
+    subroutine calc_pencils_lorenz_gauge(f,p)
 !
 !  Calculate Hydro pencils.
 !  Most basic pencils should come first, as others may depend on them.
@@ -162,9 +162,9 @@ module Special
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
 !
-    endsubroutine calc_pencils_special
+    endsubroutine calc_pencils_lorenz_gauge
 !***********************************************************************
-    subroutine dspecial_dt(f,df,p)
+    subroutine dlorenz_gauge_dt(f,df,p)
 !
 !  calculate right hand side of ONE OR MORE extra coupled PDEs
 !  along the 'current' Pencil, i.e. f(l1:l2,m,n) where
@@ -194,7 +194,7 @@ module Special
 !
 !  identify module and boundary conditions
 !
-      if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dSPECIAL_dt'
+      if (headtt.or.ldebug) print*,'dlorenz_gauge_dt: SOLVE dLORENZ_GAUGE_dt'
 !!      if (headtt) call identify_bcs('ss',iss)
 !
 !  solve gauge condition
@@ -235,9 +235,9 @@ module Special
         if (idiag_phibzmz/=0)   call xysum_mn_name_z(p%bb(:,3),idiag_phibzmz)
       endif
 !
-    endsubroutine dspecial_dt
+    endsubroutine dlorenz_gauge_dt
 !***********************************************************************
-    subroutine read_special_init_pars(unit,iostat)
+    subroutine read_lorenz_gauge_init_pars(unit,iostat)
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -245,49 +245,49 @@ module Special
 !  read namelist
 !
       if (present(iostat)) then
-        read(unit,NML=special_init_pars,ERR=99, IOSTAT=iostat)
+        read(unit,NML=lorenz_gauge_init_pars,ERR=99, IOSTAT=iostat)
       else
-        read(unit,NML=special_init_pars,ERR=99)
+        read(unit,NML=lorenz_gauge_init_pars,ERR=99)
       endif
 !
 99    return
-    endsubroutine read_special_init_pars
+    endsubroutine read_lorenz_gauge_init_pars
 !***********************************************************************
-    subroutine write_special_init_pars(unit)
+    subroutine write_lorenz_gauge_init_pars(unit)
       integer, intent(in) :: unit
 !
 !  write name list
 !
-      write(unit,NML=special_init_pars)
+      write(unit,NML=lorenz_gauge_init_pars)
 !
-    endsubroutine write_special_init_pars
+    endsubroutine write_lorenz_gauge_init_pars
 !***********************************************************************
-    subroutine read_special_run_pars(unit,iostat)
+    subroutine read_lorenz_gauge_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
 !  write name list
 !
       if (present(iostat)) then
-        read(unit,NML=special_run_pars,ERR=99, IOSTAT=iostat)
+        read(unit,NML=lorenz_gauge_run_pars,ERR=99, IOSTAT=iostat)
       else
-        read(unit,NML=special_run_pars,ERR=99)
+        read(unit,NML=lorenz_gauge_run_pars,ERR=99)
       endif
 !
-99  endsubroutine read_special_run_pars
+99  endsubroutine read_lorenz_gauge_run_pars
 !***********************************************************************
-    subroutine write_special_run_pars(unit)
+    subroutine write_lorenz_gauge_run_pars(unit)
       integer, intent(in) :: unit
 !
 !  write name list
 !
-      write(unit,NML=special_run_pars)
+      write(unit,NML=lorenz_gauge_run_pars)
 !
-    endsubroutine write_special_run_pars
+    endsubroutine write_lorenz_gauge_run_pars
 !***********************************************************************
-    subroutine rprint_special(lreset,lwrite)
+    subroutine rprint_lorenz_gauge(lreset,lwrite)
 !
-!  reads and registers print parameters relevant to special
+!  reads and registers print parameters relevant to lorenz_gauge
 !
 !   06-oct-03/tony: coded
 !
@@ -335,9 +335,9 @@ module Special
         write(3,*) 'iphi=',iphi
       endif
 !
-    endsubroutine rprint_special
+    endsubroutine rprint_lorenz_gauge
 !***********************************************************************
-    subroutine get_slices_special(f,slices)
+    subroutine get_slices_lorenz_gauge(f,slices)
 !
 !  Write slices for animation of electric potential
 !
@@ -363,219 +363,7 @@ module Special
 !
       endselect
 !
-    endsubroutine get_slices_special
+    endsubroutine get_slices_lorenz_gauge
 !***********************************************************************
-    subroutine calc_lspecial_pars(f)
-!
-!  dummy routine
-!
-!  15-jan-08/axel: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine calc_lspecial_pars
-!***********************************************************************
-    subroutine special_calc_density(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!
-!!
-!!  df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + SOME NEW TERM
-!!
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_density
-!***********************************************************************
-    subroutine special_calc_hydro(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!
-!!
-!!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
-!!
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_hydro
-!***********************************************************************
-    subroutine special_calc_magnetic(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!
-!!
-!!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_magnetic
-!!***********************************************************************
-    subroutine special_calc_entropy(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!
-!!
-!!  df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + SOME NEW TERM
-!!
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_entropy
-!***********************************************************************
-    subroutine special_after_timestep(f,df,dt_)
-!
-!   Possibility to modify the f and df after df is updated
-!   Used for the fargo shift, for instance.
-!
-!   27-nov-08/wlad: coded
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      real :: dt_
-!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(dt_)
-!
-    endsubroutine  special_after_timestep
-!********************************************************************
-    subroutine special_calc_particles(fp)
-!
-!   Called before the loop, in case some particle value is needed 
-!   for the special density/hydro/magnetic/entropy
-!
-!   20-nov-08/wlad: coded
-!
-      real, dimension (:,:), intent(in) :: fp
-!
-      call keep_compiler_quiet(fp)
-!
-    endsubroutine special_calc_particles
-!***********************************************************************
-    subroutine special_calc_particles_nbody(fsp)
-!
-!   Called before the loop, in case some massive particles value 
-!   is needed for the special density/hydro/magnetic/entropy
-!
-!   20-nov-08/wlad: coded
-!
-      real, dimension (:,:), intent(in) :: fsp
-!
-      call keep_compiler_quiet(fsp)
-!
-!
-    endsubroutine special_calc_particles_nbody
-!***********************************************************************
-    subroutine special_boundconds(f,bc)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      type (boundary_condition) :: bc
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(bc)
-!
-    endsubroutine special_boundconds
-!***********************************************************************
-    subroutine special_before_boundary(f)
-!
-!   Possibility to modify the f array before the boundaries are
-!   communicated.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-jul-06/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine special_before_boundary
-!***********************************************************************
-
-!********************************************************************
-!************        DO NOT DELETE THE FOLLOWING       **************
-!********************************************************************
-!**  This is an automatically generated include file that creates  **
-!**  copies dummy routines from nospecial.f90 for any Special      **
-!**  routines not implemented in this file                         **
-!**                                                                **
-    include '../special_dummies.inc'
-!********************************************************************
-
-endmodule Special
+endmodule Lorenz_gauge
 
