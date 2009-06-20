@@ -190,6 +190,54 @@ module Chemistry
 !
     endsubroutine bc_nscbc_nref_subout_x
 !***********************************************************************
+ subroutine bc_nscbc_nref_subout_y(f,df,topbot)
+!
+!   nscbc case 
+!   subsonic non-reflecting outflow boundary conditions
+!   now it is 2D case (should be corrected for 3D case)
+!    drho. dT, dux, duy  are calculated, p_inf can be 
+!   fixed (if nscbc_sigma <>0)
+!
+!   16-nov-08/natalia: coded.
+!
+      use MpiComm, only: stop_it
+      !use EquationOfState, only: cs0, cs20
+      use Deriv, only: der_onesided_4_slice,der_pencil
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      character (len=3) :: topbot
+
+     
+     call keep_compiler_quiet(f)
+     call keep_compiler_quiet(df)
+!
+    endsubroutine bc_nscbc_nref_subout_y
+!***********************************************************************
+ subroutine bc_nscbc_nref_subout_z(f,df,topbot)
+!
+!   nscbc case 
+!   subsonic non-reflecting outflow boundary conditions
+!   now it is 2D case (should be corrected for 3D case)
+!    drho. dT, dux, duy  are calculated, p_inf can be 
+!   fixed (if nscbc_sigma <>0)
+!
+!   16-nov-08/natalia: coded.
+!
+      use MpiComm, only: stop_it
+      !use EquationOfState, only: cs0, cs20
+      use Deriv, only: der_onesided_4_slice,der_pencil
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      character (len=3) :: topbot
+
+     
+     call keep_compiler_quiet(f)
+     call keep_compiler_quiet(df)
+!
+    endsubroutine bc_nscbc_nref_subout_z
+!***********************************************************************
   subroutine chemistry_clean_up()
 !
   endsubroutine chemistry_clean_up

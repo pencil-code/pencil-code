@@ -726,7 +726,7 @@ module Boundcond
 !   7-jul-08/arne: coded.
 
 !
-      use Chemistry, only: bc_nscbc_subin_x,bc_nscbc_nref_subout_x
+      use Chemistry, only: bc_nscbc_subin_x,bc_nscbc_nref_subout_x,bc_nscbc_nref_subout_y
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df

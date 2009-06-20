@@ -16,7 +16,8 @@
   public :: calc_for_chem_mixture
   public :: bc_nscbc_subin_x
   public :: bc_nscbc_nref_subout_x
-
+  public :: bc_nscbc_nref_subout_y
+  public :: bc_nscbc_nref_subout_z
 
 
 !  public :: get_p_infx

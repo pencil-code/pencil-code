@@ -216,8 +216,12 @@ module Special
 
 !!
       select case(initstream)
-         case('bomb')
-            call bomb_field(f)
+         case('bomb_x')
+            call bomb_field(f,1)
+         case('bomb_y')
+            call bomb_field(f,2)
+         case('bomb_z')
+            call bomb_field(f,3)
          case('flame_spd')
             call flame_spd(f)
          case('flame_spd_invert')
@@ -563,29 +567,80 @@ module Special
 !   INITIAL CONDITIONS
 !
 !***********************************************************************
-   subroutine bomb_field(f)
+   subroutine bomb_field(f,direction)
 !
 ! Natalia
 ! Initialization of chem. species  in a case of the stream
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      integer :: k,j,i
+      real, dimension (mx,my,mz) ::  mu1
+      integer :: k,j,i,direction
+       
+      real :: mH,mC,mN,mO,mAr,mHe
+      real :: YH2,YO2,YN2
+      integer :: i_H2, i_O2, i_H2O, i_N2
 
-     do k=1,mx 
+      mH=1.00794
+      mC=12.0107
+      mN=14.00674
+      mO=15.9994
+      mAr=39.948
+      mHe=4.0026
+      !     
+      ! Initialize some indexes
+      !
+      if (index_H2==0) &
+           call fatal_error('flame_spd','set index for H2 in start.in')
+      if (index_O2==0) &
+           call fatal_error('flame_spd','set index for O2 in start.in')
+      if (index_H2O==0)&
+           call fatal_error('flame_spd','set index for H2O in start.in')
+      if (index_N2==0) &
+           call fatal_error('flame_spd','set index for N2 in start.in')
+      i_H2=ichemspec(index_H2)
+      i_O2=ichemspec(index_O2)
+      i_N2=ichemspec(index_N2)
+      i_H2O=ichemspec(index_H2O)
 
-      if (abs(x(k))<0.2) then
-       f(k,:,:,ilnrho)=log(rho_init)! &
-         ! +log(1.1)*((0.2-abs(x(k)))/0.2)**2
-        f(k,:,:,ilnTT)=log(T_init)+log(2.)*((0.2-abs(x(k)))/0.2)**2
-      else
-        f(k,:,:,ilnrho)=log(rho_init)
-        f(k,:,:,ilnTT)=log(T_init)
-      endif
+      select case(direction)
+       case(1)
+        do k=1,mx 
+         if (abs(x(k))<0.2) then
+          f(k,:,:,ilnTT)=log(T_init)+log(2.)*((0.2-abs(x(k)))/0.2)**2
+         else
+          f(k,:,:,ilnTT)=log(T_init)
+         endif
+          mu1(k,:,:)=f(k,:,:,i_H2)/(2.*mH)+f(k,:,:,i_O2)/(2.*mO) &
+              +f(k,:,:,i_H2O)/(2.*mH+mO)+f(k,:,:,i_N2)/(2.*mN)
+          f(k,:,:,ilnrho)=log(init_p2)-log(Rgas)-f(k,:,:,ilnTT)-log(mu1(k,:,:))
+        enddo
+       case(2)
+        do k=1,my 
+         if (abs(y(k))<0.2) then
+          f(:,k,:,ilnTT)=log(T_init)+log(2.)*((0.2-abs(y(k)))/0.2)**2
+         else
+          f(:,k,:,ilnTT)=log(T_init)
+         endif
+          mu1(:,k,:)=f(:,k,:,i_H2)/(2.*mH)+f(:,k,:,i_O2)/(2.*mO) &
+              +f(:,k,:,i_H2O)/(2.*mH+mO)+f(:,k,:,i_N2)/(2.*mN)
+          f(:,k,:,ilnrho)=log(init_p2)-log(Rgas)-f(:,k,:,ilnTT)-log(mu1(:,k,:))
+        enddo
+       case(3)
+        do k=1,mz 
+         if (abs(z(k))<0.2) then
+          f(:,:,k,ilnTT)=log(T_init)+log(2.)*((0.2-abs(z(k)))/0.2)**2
+         else
+          f(:,:,k,ilnTT)=log(T_init)
+         endif
+          mu1(:,:,k)=f(:,:,k,i_H2)/(2.*mH)+f(:,:,k,i_O2)/(2.*mO) &
+              +f(:,:,k,i_H2O)/(2.*mH+mO)+f(:,:,k,i_N2)/(2.*mN)
+          f(:,:,k,ilnrho)=log(init_p2)-log(Rgas)-f(:,:,k,ilnTT)-log(mu1(:,:,k))
+        enddo
+      endselect
 
-     enddo
+      f(:,:,:,iux)=ux_init
 
-     f(l1:mx,:,:,ichemspec(nchemspec))=Y3_init
-     f(:,:,:,iux)=ux_init
+     print*,'bomb_field'
 
    endsubroutine bomb_field
 !**************************************************************************
