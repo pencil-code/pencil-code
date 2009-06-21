@@ -24,7 +24,7 @@ module Diagnostics
   public :: phiaverages_rz
   public :: write_1daverages, write_2daverages
   public :: write_2daverages_prepare, write_zaverages
-  public :: expand_cname, parse_name, save_name, save_name_halfz, max_name
+  public :: expand_cname, parse_name, save_name, save_name_halfz, max_name, sum_name
   public :: max_mn_name,sum_mn_name,integrate_mn_name,sum_weighted_name
   public :: sum_mn_name_halfy, surf_mn_name,sum_lim_mn_name
   public :: sum_mn_name_halfz
@@ -893,6 +893,23 @@ module Diagnostics
       itype_name(iname)=ilabel_max
 !
     endsubroutine max_name
+!***********************************************************************
+    subroutine sum_name(a,iname)
+!
+!  Calculate the summation of a, which is supplied at each call.
+!
+!  17-jun-09/ccyang: adapted from max_name
+!
+      real, intent(in) :: a
+      integer, intent(in) :: iname
+!
+      fname(iname)=a
+!
+!  set corresponding entry in itype_name
+!
+      itype_name(iname)=ilabel_sum
+!
+    endsubroutine sum_name
 !***********************************************************************
     subroutine max_mn_name(a,iname,lsqrt,l_dt,lneg,lreciprocal)
 !
