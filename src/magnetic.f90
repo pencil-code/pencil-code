@@ -21,6 +21,7 @@
 ! PENCILS PROVIDED ujxb; oxu(3); oxuxb(3); jxbxb(3); jxbrxb(3)
 ! PENCILS PROVIDED glnrhoxb(3); del4a(3); del6a(3); oxj(3); diva
 ! PENCILS PROVIDED jij(3,3); sj; ss12; mf_EMF(3); mf_EMFdotB
+! PENCILS PROVIDED cosjb,jparallel;jperp 
 !
 !***************************************************************
 module Magnetic
@@ -100,6 +101,7 @@ module Magnetic
   real :: alpha_effect=0.,alpha_quenching=0.,delta_effect=0.,meanfield_etat=0.
   real :: alpha_eps=0.
   real :: alpha_equator=impossible,alpha_equator_gap=0.,alpha_gap_step=0.
+  real :: alpha_cutoff_up=0.,alpha_cutoff_down=0.
   real :: meanfield_Qs=1.
   real :: displacement_gun=0.
   real :: pertamplaa=0., beta_const=1.0
@@ -192,6 +194,7 @@ module Magnetic
        lmeanfield_noalpm,alpha_profile, &
        meanfield_etat, lohmic_heat, lmeanfield_jxb, meanfield_Qs, &
        alpha_equator,alpha_equator_gap,alpha_gap_step,&
+       alpha_cutoff_up,alpha_cutoff_down,&
        height_eta,eta_out,tau_aa_exterior, &
        kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
        lforcing_cont_aa,iforcing_continuous_aa, &
@@ -491,6 +494,10 @@ module Magnetic
   integer :: idiag_etasmagmin=0 ! DIAG_DOC: Min of Smagorinsky resistivity
   integer :: idiag_etasmagmax=0 ! DIAG_DOC: Max of Smagorinsky resistivity
   integer :: idiag_cosjbm=0     ! DIAG_DOC: $\left<\Jv\cdot\Bv/(|\Jv|\,|\Bv|)\right>$
+  integer :: idiag_jparallelm=0 ! DIAG_DOC: Mean value of the component 
+                                ! DIAG_DOC: of J parallel to B 
+  integer :: idiag_jperpm=0     ! DIAG_DOC: Mean value of the component 
+                                ! DIAG_DOC: of J perpendicular to B 
   integer :: idiag_brmsn=0,idiag_brmss=0,idiag_brmsh=0
   integer :: idiag_Exmxz=0       ! DIAG_DOC: $\left<{\cal E}_x\right>_{xz}$
   integer :: idiag_Eymxz=0       ! DIAG_DOC: $\left<{\cal E}_y\right>_{xz}$
@@ -948,7 +955,9 @@ module Magnetic
         case('magnetogram'); call mdi_init(f)
         case('cosxcoscosy'); call cosx_coscosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
         case('crazy', '5'); call crazy(amplaa(j),f,iaa)
-        case('sinwave-x'); call sinwave(amplaa(j),f,iay,kx=kx_aa(j))
+!DM
+        case('strange'); call strange(amplaa(j),f,iaa)
+        case('sinwave-x'); call sinwave(amplaa(j),f,iaa,kx=kx_aa(j))
         case('coswave-Ax-kx'); call coswave(amplaa(j),f,iax,kx=kx_aa(j))
         case('coswave-Ax-ky'); call coswave(amplaa(j),f,iax,ky=ky_aa(j))
         case('coswave-Ax-kz'); call coswave(amplaa(j),f,iax,kz=kz_aa(j))
@@ -1231,7 +1240,7 @@ module Magnetic
           lpenc_requested(i_oo)=.true.
       if (nu_ni/=0.) lpenc_requested(i_va2)=.true.
       if (lmeanfield_theory) then
-        if (alpha_effect/=0. .or. delta_effect/=0.) lpenc_requested(i_mf_EMF)=.true.
+        if (alpha_effect/=0. .or. delta_effect/=0. .or. meanfield_etat/=0.) lpenc_requested(i_mf_EMF)=.true.
         if (delta_effect/=0.) lpenc_requested(i_oxj)=.true.
 ! Dhruba: I am not sure if this is the right place. Nevertheless this works. 
         Rm_alpm=meanfield_etat/eta
@@ -1314,8 +1323,12 @@ module Magnetic
           lpenc_diagnos(i_b2)=.true.
 ! to calculate the angle between magnetic field and current.
       if (idiag_cosjbm/=0) then
-        lpenc_requested(i_jj)=.true.
-        lpenc_requested(i_jb)=.true.
+        lpenc_requested(i_cosjb)=.true.
+      endif
+      if ((idiag_jparallelm/=0).or.(idiag_jperpm/=0)) then
+        lpenc_requested(i_cosjb)=.true.
+        lpenc_requested(i_jparallel)=.true.
+        lpenc_requested(i_jperp)=.true.
       endif
       if (idiag_b2mphi/=0) lpenc_diagnos2d(i_b2)=.true.
       if (idiag_brsphmphi/=0) lpenc_diagnos2d(i_evr)=.true.
@@ -1346,6 +1359,14 @@ module Magnetic
 !
       logical, dimension(npencils) :: lpencil_in
 !
+      if(lpencil_in(i_jparallel).or.lpencil_in(i_jperp)) then
+        lpencil_in(i_cosjb)=.true.
+      endif
+      if (lpencil_in(i_cosjb)) then 
+        lpencil_in(i_b2)=.true.
+        lpencil_in(i_j2)=.true.
+        lpencil_in(i_jb)=.true.
+      endif
       if (lpencil_in(i_a2)) lpencil_in(i_aa)=.true.
       if (lpencil_in(i_ab)) then
         lpencil_in(i_aa)=.true.
@@ -1439,6 +1460,10 @@ module Magnetic
         lpencil_in(i_bb)=.true.
       endif
       if (lpencil_in(i_mf_EMF)) then
+        if (lspherical_coords) then
+          lpencil_in(i_jj)=.true.
+          lpencil_in(i_graddivA)=.true.
+        endif
         lpencil_in(i_b2)=.true.
         lpencil_in(i_bb)=.true.
         if (delta_effect/=0.) lpencil_in(i_oxJ)=.true.
@@ -1493,6 +1518,7 @@ module Magnetic
       real, dimension (nx,3) :: bb_ext,bb_ext_pot,ee_ext,jj_ext
       real, dimension (nx) :: rho1_jxb,alpha_total
       real, dimension (nx) :: alpha_tmp
+      real, dimension (nx) :: sinjb 
       real :: B2_ext,c,s,kx
       integer :: i,j
 !
@@ -1647,6 +1673,15 @@ module Magnetic
 ! jxbr
       if (lpencil(i_jxbr)) then
         rho1_jxb=p%rho1
+      if (lpencil(i_cosjb)) then
+        p%cosjb=p%jb/sqrt(p%j2*p%b2)
+      endif
+! jparallel and jperp 
+      if (lpencil(i_jparallel).or.lpencil(i_jperp)) then
+        p%jparallel=sqrt(p%j2)*p%cosjb
+        sinjb=sqrt(1-p%cosjb*p%cosjb)
+        p%jperp=sqrt(p%j2)*sinjb
+      endif
 !  set rhomin_jxb>0 in order to limit the jxb term at very low densities.
 !  set va2max_jxb>0 in order to limit the jxb term at very high Alfven speeds.
 !  set va2power_jxb to an integer value in order to specify the power
@@ -1718,6 +1753,11 @@ module Magnetic
         case('y*(1+eps*sinx)'); alpha_tmp=y(m)*(1.+alpha_eps*sin(kx*x(l1:l2)))
         case('step'); alpha_tmp=(1.-step_scalar(y(m),alpha_equator-alpha_equator_gap,alpha_gap_step)&
                        -step_scalar(y(m),alpha_equator+alpha_equator_gap,alpha_gap_step))
+        case('step-drop'); alpha_tmp=(1. &
+                -step_scalar(y(m),pi/2.-alpha_equator_gap,alpha_gap_step) &
+                -step_scalar(y(m),pi/2+alpha_equator_gap,alpha_gap_step) &
+                -step_scalar(alpha_cutoff_up,y(m),alpha_gap_step) &
+                +step_scalar(y(m),alpha_cutoff_down,alpha_gap_step)) 
         case('read'); alpha_tmp=alpha_input(l1:l2,m)
         case('nothing');
           call inevitably_fatal_error('calc_pencils_magnetic', &
@@ -2102,7 +2142,7 @@ module Magnetic
 !  Alpha effect
 !  additional terms if Mean Field Theory is included
 !
-      if (lmeanfield_theory.and.(alpha_effect/=0..or.delta_effect/=0.)) then
+      if (lmeanfield_theory.and.(alpha_effect/=0..or.delta_effect/=0..or. meanfield_etat/=0)) then
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%mf_EMF
         if (lOmega_effect) call Omega_effect(f,df)
       endif
@@ -2334,7 +2374,9 @@ module Magnetic
         if (idiag_jmax/=0) call max_mn_name(p%j2,idiag_jmax,lsqrt=.true.)
         if (idiag_epsM_LES/=0) call sum_mn_name(eta_smag*p%j2,idiag_epsM_LES)
         if (idiag_dteta/=0)  call max_mn_name(diffus_eta/cdtv,idiag_dteta,l_dt=.true.)
-        if (idiag_cosjbm/=0) call sum_mn_name((p%jb/sqrt(p%j2*p%b2)),idiag_cosjbm)
+        if (idiag_cosjbm/=0) call sum_mn_name(p%cosjb,idiag_cosjbm)
+        if (idiag_jparallelm/=0) call sum_mn_name(p%jparallel,idiag_jparallelm)
+        if (idiag_jperpm/=0) call sum_mn_name(p%jperp,idiag_jperpm)
 !
 !  Resistivity.
 !
@@ -5730,6 +5772,8 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'etasmagmin',idiag_etasmagmin)
         call parse_name(iname,cname(iname),cform(iname),'etasmagmax',idiag_etasmagmax)
         call parse_name(iname,cname(iname),cform(iname),'cosjbm',idiag_cosjbm)
+        call parse_name(iname,cname(iname),cform(iname),'jparallelm',idiag_jparallelm)
+        call parse_name(iname,cname(iname),cform(iname),'jperpm',idiag_jperpm)
 !
       enddo
 !
@@ -6127,6 +6171,8 @@ module Magnetic
         write(3,*) 'ihypres=',ihypres
         write(3,*) 'idiag_bmxy_rms=',idiag_bmxy_rms
         write(3,*) 'idiag_cosjbm=',idiag_cosjbm
+        write(3,*) 'idiag_jparallel=',idiag_jparallelm
+        write(3,*) 'idiag_jperp=',idiag_jperpm
       endif
 !
     endsubroutine rprint_magnetic

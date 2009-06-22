@@ -48,6 +48,7 @@ module Initcond
   public :: corona_init,mdi_init
   public :: innerbox
   public :: couette, couette_rings
+  public :: strange
 
   interface posnoise            ! Overload the `posnoise' function
     module procedure posnoise_vect
@@ -2179,6 +2180,31 @@ module Initcond
         spread(spread(cos(2*z),1,mx),2,my)
 !
     endsubroutine crazy
+!***********************************************************************
+    subroutine strange(ampl,f,i)
+!
+!  A strange initial condition !
+!
+!  24-april-09/dhruba: coded
+!
+      integer :: i,ix,iy
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: ampl
+      real :: arg1,arg2,sy
+!
+      if (lroot) print*, 'strange: magnetic field that satisfies open vf condn: for debugging purposes'
+      if (lroot) write(*,*)'DM',xyz0(1),xyz0(2),xyz0(3),xyz1(1),xyz1(2),xyz1(3)
+      do ix=l1,l2
+        do iy=m1,m2
+!          arg1= pi*(x(ix)-xyz0(1))/(xyz1(1)-xyz0(1))
+!          arg2= pi*(y(iy)-xyz0(2))/(xyz1(2)-xyz0(2))
+          f(ix,iy,:,i)=ampl*cos(y(iy))
+          f(ix,iy,:,i+1)=0.
+          f(ix,iy,:,i+2)=0.
+       enddo
+     enddo 
+!
+    endsubroutine strange
 !***********************************************************************
     subroutine htube(ampl,f,i1,i2,radius,eps,center1_x,center1_y,center1_z)
 !
