@@ -142,7 +142,7 @@ module Entropy
       lturbulent_heat,deltaT_poleq, &
       tdown, allp,beta_glnrho_global,ladvection_entropy, &
       lviscosity_heat,r_bcz,lfreeze_sint,lfreeze_sext,lhcond_global, &
-      tau_cool,TTref_cool,mixinglength_flux,chiB,chi_hyper3_aniso
+      tau_cool,TTref_cool,mixinglength_flux,chiB,chi_hyper3_aniso, Ftop
 
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
@@ -616,6 +616,7 @@ module Entropy
           enddo
           enddo
           FbotKbot=Fbot/hcond(1)
+          FtopKtop=Ftop/hcond(nx)
         else
           do n=n1,n2
           do m=m1,m2
