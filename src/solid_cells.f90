@@ -1089,14 +1089,16 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
           else
             varval=f(borderindex(dirconst,topbot),borderindex(dirvar,1),iz0,ivar1)
           endif
-          call find_point(rij_min,rs,varval,inputvalue,x1,bordervalue(dirvar,1),bordervalue(dirvar,2),min,f1,cylinder(icyl,dirvar+1))
+          call find_point(rij_min,rs,varval,inputvalue,x1,bordervalue(dirvar,1),&
+              bordervalue(dirvar,2),min,f1,cylinder(icyl,dirvar+1))
           min=0
           if (dirconst == 2) then
             varval=f(borderindex(dirvar,2),borderindex(dirconst,topbot),iz0,ivar1)
           else
             varval=f(borderindex(dirconst,topbot),borderindex(dirvar,2),iz0,ivar1)
           endif
-          call find_point(rij_max,rs,varval,inputvalue,x2,bordervalue(dirvar,1),bordervalue(dirvar,2),min,f2,cylinder(icyl,dirvar+1))
+          call find_point(rij_max,rs,varval,inputvalue,x2,bordervalue(dirvar,1),&
+              bordervalue(dirvar,2),min,f2,cylinder(icyl,dirvar+1))
 !
 ! Find the interpolation values between the two endpoints of
 ! the line and the normal from the cylinder.
