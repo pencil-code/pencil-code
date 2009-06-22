@@ -51,6 +51,7 @@ module Particles_stalker
 !  13-nov-07/anders: coded
 !
       use FArrayManager
+      use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
