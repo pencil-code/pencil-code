@@ -25,7 +25,8 @@ module Sub
 !
   public :: get_nseed
 !
-  public :: grad, grad5, div, div_mn, curl, curli, curl_mn, div_other
+  public :: grad, grad5, div, div_mn, curl, curli, curl_mn, curl_other
+  public :: div_other
   public :: gij, g2ij, gij_etc
   public :: gij_psi, gij_psi_etc
   public :: der_step
@@ -1346,6 +1347,47 @@ module Sub
       endif
 !
     endsubroutine curl
+!***********************************************************************
+    subroutine curl_other(f,g)
+!
+!  calculate curl of a non-mvar vector, get vector
+!  23-june-09/wlad: adapted from curl
+!
+      use Deriv, only: der
+!
+      real, dimension (mx,my,mz,3) :: f
+      real, dimension (nx,3) :: g
+      real, dimension (nx) :: tmp1,tmp2
+      integer :: k,k1
+!
+      intent(in) :: f
+      intent(out) :: g
+!
+      call der(f(:,:,:,3),tmp1,2)
+      call der(f(:,:,:,2),tmp2,3)
+      g(:,1)=tmp1-tmp2
+!
+      call der(f(:,:,:,1),tmp1,3)
+      call der(f(:,:,:,3),tmp2,1)
+      g(:,2)=tmp1-tmp2
+!
+      call der(f(:,:,:,2),tmp1,1)
+      call der(f(:,:,:,1),tmp2,2)
+      g(:,3)=tmp1-tmp2
+!
+!  adjustments for spherical corrdinate system
+!
+      if (lspherical_coords) then
+        g(:,1)=g(:,1)+f(l1:l2,m,n,3)*r1_mn*cotth(m)
+        g(:,2)=g(:,2)-f(l1:l2,m,n,3)*r1_mn
+        g(:,3)=g(:,3)+f(l1:l2,m,n,2)*r1_mn
+      endif
+!
+      if (lcylindrical_coords) then
+        g(:,3)=g(:,3)+f(l1:l2,m,n,2)*rcyl_mn1
+      endif
+!
+    endsubroutine curl_other
 !***********************************************************************
     subroutine curli(f,k,g,i)
 !
