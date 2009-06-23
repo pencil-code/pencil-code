@@ -15,7 +15,7 @@ module Initcond
   implicit none
 
   private
-  public :: arcade_x, vecpatternxy,  bipolar
+  public :: arcade_x, vecpatternxy, bipolar, bipolar_restzero
   public :: soundwave,sinwave,sinwave_phase,coswave,coswave_phase,cos_cos_sin
   public :: hatwave
   public :: gaunoise, posnoise
@@ -1302,11 +1302,36 @@ module Initcond
         *spread(spread(exp(-(ky*y)**2),1,mx),3,mz) &
         *spread(spread(exp(-abs(kz*z)),1,mx),2,my)
       j=i+2; f(:,:,:,j)=f(:,:,:,j)+ampl &
-        *spread(spread(exp(-(kx*x)**2)*(-2*x),2,my),3,mz) &
+        *spread(spread(exp(-(kx*x)**2)*(-2*x),2,my),3,mz)*kx**2 &
         *spread(spread(exp(-(ky*y)**2),1,mx),3,mz) &
         *spread(spread(exp(-abs(kz*z)),1,mx),2,my)
 !
     endsubroutine bipolar
+!***********************************************************************
+    subroutine bipolar_restzero(ampl,f,i,kx,ky,kz)
+!
+!  horizontal pattern with exponential decay (as initial condition)
+!
+      use Cdata, only: ipz
+!
+!  24-may-09/axel: coded
+!
+      integer :: i,j
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: ampl,kx,ky,kz
+!
+!  sets up a nearly force-free bipolar region
+!
+      if (ipz==0) then
+        j=i+1; f(:,:,n1,j)=f(:,:,n1,j)+ampl &
+          *spread(exp(-(kx*x)**2),2,my) &
+          *spread(exp(-(ky*y)**2),1,mx)
+        j=i+2; f(:,:,n1,j)=f(:,:,n1,j)+ampl &
+          *spread(exp(-(kx*x)**2)*(-2*x),2,my)*kx**2 &
+          *spread(exp(-(ky*y)**2),1,mx)
+      endif
+!
+    endsubroutine bipolar_restzero
 !***********************************************************************
     subroutine soundwave(ampl,f,i,kx,ky,kz)
 !

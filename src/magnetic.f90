@@ -933,6 +933,7 @@ module Magnetic
         case('Bz(x)', '3'); call vfield(amplaa(j),f,iaa)
         case('vfield2'); call vfield2(amplaa(j),f,iaa)
         case('bipolar'); call bipolar(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
+        case('bipolar_restzero'); call bipolar_restzero(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
         case('vecpatternxy'); call vecpatternxy(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
         case('xjump'); call bjump(f,iaa,by_left,by_right,bz_left,bz_right,widthaa,'x')
         case('fluxrings', '4'); call fluxrings(amplaa(j),f,iaa,iaa,fring_profile)
@@ -1183,7 +1184,8 @@ module Magnetic
           (lweyl_gauge) .or. (lspherical_coords) ) &
 !  WL: but doesn't seem to be needed for the cylindrical case
           lpenc_requested(i_jj)=.true.
-      if (eta/=0..and.(.not.lweyl_gauge)) lpenc_requested(i_del2a)=.true.
+      if ((eta/=0..or.meanfield_etat/=0.).and. &
+          (.not.lweyl_gauge)) lpenc_requested(i_del2a)=.true.
       if (dvid/=0.) lpenc_video(i_jb)=.true.
       if (lresi_eta_const .or. lresi_shell .or. &
           lresi_eta_shock .or. lresi_smagorinsky .or. &
@@ -1240,9 +1242,13 @@ module Magnetic
           lpenc_requested(i_oo)=.true.
       if (nu_ni/=0.) lpenc_requested(i_va2)=.true.
       if (lmeanfield_theory) then
-        if (alpha_effect/=0. .or. delta_effect/=0. .or. meanfield_etat/=0.) lpenc_requested(i_mf_EMF)=.true.
+        if (meanfield_etat/=0. .or. alpha_effect/=0. .or. delta_effect/=0.) &
+            lpenc_requested(i_mf_EMF)=.true.
         if (delta_effect/=0.) lpenc_requested(i_oxj)=.true.
-! Dhruba: I am not sure if this is the right place. Nevertheless this works. 
+!
+!  Determine Rm_alpm as the ratio of etat and eta, and
+!  set etat_alpm to meanfield_etat to make sure the two are the same
+!
         Rm_alpm=meanfield_etat/eta
         etat_alpm=meanfield_etat
 !        write(*,*)'Rm_alpm,etat_alpm',Rm_alpm,etat_alpm
@@ -1323,12 +1329,12 @@ module Magnetic
           lpenc_diagnos(i_b2)=.true.
 ! to calculate the angle between magnetic field and current.
       if (idiag_cosjbm/=0) then
-        lpenc_requested(i_cosjb)=.true.
+        lpenc_diagnos(i_cosjb)=.true.
       endif
       if ((idiag_jparallelm/=0).or.(idiag_jperpm/=0)) then
-        lpenc_requested(i_cosjb)=.true.
-        lpenc_requested(i_jparallel)=.true.
-        lpenc_requested(i_jperp)=.true.
+        lpenc_diagnos(i_cosjb)=.true.
+        lpenc_diagnos(i_jparallel)=.true.
+        lpenc_diagnos(i_jperp)=.true.
       endif
       if (idiag_b2mphi/=0) lpenc_diagnos2d(i_b2)=.true.
       if (idiag_brsphmphi/=0) lpenc_diagnos2d(i_evr)=.true.
@@ -1675,11 +1681,13 @@ module Magnetic
         rho1_jxb=p%rho1
       if (lpencil(i_cosjb)) then
         p%cosjb=p%jb/sqrt(p%j2*p%b2)
+if (lpencil(i_j2).and.lpencil(i_cosjb)) print*,'AB: lpencil(i_j2),lpencil(i_cosjb),p%cosjb=',p%cosjb(1)
       endif
 ! jparallel and jperp 
       if (lpencil(i_jparallel).or.lpencil(i_jperp)) then
         p%jparallel=sqrt(p%j2)*p%cosjb
         sinjb=sqrt(1-p%cosjb*p%cosjb)
+print*,'AB: p%cosjb=',p%cosjb(1),sinjb
         p%jperp=sqrt(p%j2)*sinjb
       endif
 !  set rhomin_jxb>0 in order to limit the jxb term at very low densities.
@@ -2142,7 +2150,8 @@ module Magnetic
 !  Alpha effect
 !  additional terms if Mean Field Theory is included
 !
-      if (lmeanfield_theory.and.(alpha_effect/=0..or.delta_effect/=0..or. meanfield_etat/=0)) then
+      if (lmeanfield_theory.and. &
+        (meanfield_etat/=0..or.alpha_effect/=0..or.delta_effect/=0.)) then
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%mf_EMF
         if (lOmega_effect) call Omega_effect(f,df)
       endif
