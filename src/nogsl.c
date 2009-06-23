@@ -11,8 +11,8 @@
 
 DUMMY_ROUTINE(sp_besselj_l)
 DUMMY_ROUTINE(sp_bessely_l)
-DUMMY_ROUTINE(sp_bessel_jnu)
-DUMMY_ROUTINE(sp_bessel_ynu)
+DUMMY_ROUTINE(cyl_bessel_jnu)
+DUMMY_ROUTINE(cyl_bessel_ynu)
 DUMMY_ROUTINE(sp_harm_real)
 DUMMY_ROUTINE(sp_harm_imag)
 DUMMY_ROUTINE(legendre_pl)

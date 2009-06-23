@@ -85,6 +85,7 @@ module Hydro
 ! The following is useful to debug the forcing - Dhruba
   real :: outest
   real :: ampl_Omega=0.0
+  real :: omega_ini=0.0
   logical :: loutest,ldiffrot_test=.false.
 !
   namelist /hydro_init_pars/ &
@@ -97,7 +98,7 @@ module Hydro
        ladvection_velocity, lprecession, omega_precession, alpha_precession, &
        luut_as_aux,loot_as_aux, &
        velocity_ceiling, mu_omega, nb_rings, om_rings, gap, &
-       lscale_tobox, ampl_Omega
+       lscale_tobox, ampl_Omega,omega_ini
 ! run parameters
   real :: tdamp=0.,dampu=0.,wdamp=0.
   real :: dampuint=0.0,dampuext=0.0,rdampint=-1e20,rdampext=impossible
@@ -850,7 +851,20 @@ module Hydro
 !
           if (lroot) print*,'init_uu: constant z-velocity'
           f(:,:,:,iuz) = ampluu(j)
-
+!
+        case('omega-z')
+!
+!  constant x-velocity
+!
+          if (lroot) print*,'init_uu: constant angular velocity omega_ini=',omega_ini
+          f(:,:,:,iux) = 0
+          f(:,:,:,iuy) = 0
+          do n=n1,n2
+            do m=m1,m2
+              f(l1:l2,m,n,iuz) = omega_ini*x(l1:l2)*sinth(m)
+            enddo
+          enddo
+!
         case('tang-discont-z')
 !
 !  tangential discontinuity: velocity is directed along x,

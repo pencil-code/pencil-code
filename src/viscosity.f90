@@ -1050,11 +1050,11 @@ module Viscosity
      if (llambda_effect) then
 !      p%fvisc(:,iuz)=p%fvisc(:,iuz)+Lambda_V0*( &
 !                  -p%uu(:,3)/x(l1:l2)**2  +p%uij(:,3,1)/x(l1:l2) & 
-!                     +(p%uu(:,3)/x(l1:l2)+Lambda_Omega*sinth(m))*p%glnrho(:,1))
+!                     +(p%uu(:,3)/x(l1:l2)+gLambda_Omega*sinth(m))*p%glnrho(:,1))
 !
 !AB: Dhruba, please check the following expression that we adopted from
 !AB: the BMT92 paper.
-!
+!DM: The two are actually the same expression. 
 !  viscosity might be added here
 !
        p%fvisc(:,iuz)=p%fvisc(:,iuz)-Lambda_V0/x(l1:l2)*( &

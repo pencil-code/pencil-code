@@ -25,14 +25,14 @@ void FTNIZE(sp_bessely_l)
 
 //cylindrical bessel functions
 
-void FTNIZE(sp_bessel_jnu)
+void FTNIZE(cyl_bessel_jnu)
      (REAL* y, REAL*nu, REAL* x) {
    *y =  gsl_sf_bessel_Jnu(*nu,*x);
 }
 
 /* ---------------------------------------------------------------------- */
 
-void FTNIZE(sp_bessel_ynu)
+void FTNIZE(cyl_bessel_ynu)
      (REAL *y, REAL*nu, REAL* x) {
    *y =  gsl_sf_bessel_Ynu(*nu,*x);
 }

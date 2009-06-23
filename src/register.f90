@@ -39,6 +39,7 @@ module Register
       use Entropy,          only: register_entropy
       use Magnetic,         only: register_magnetic
       use Lorenz_gauge,     only: register_lorenz_gauge
+      use Polymer,     only: register_polymer
       use Testscalar,       only: register_testscalar
       use Testfield,        only: register_testfield
       use Testflow,         only: register_testflow
@@ -115,6 +116,7 @@ module Register
       call register_entropy
       call register_magnetic
       call register_lorenz_gauge
+      call register_polymer
       call register_testscalar
       call register_testfield
       call register_testflow
@@ -197,6 +199,7 @@ module Register
       use Interstellar,    only: initialize_interstellar
       use Magnetic,        only: initialize_magnetic
       use Lorenz_gauge,    only: initialize_lorenz_gauge
+      use Polymer,    only: initialize_polymer
       use NeutralDensity,  only: initialize_neutraldensity
       use NeutralVelocity, only: initialize_neutralvelocity
       use Poisson,         only: initialize_poisson
@@ -303,6 +306,7 @@ module Register
       call initialize_entropy(f,lstarting)
       call initialize_magnetic(f,lstarting)
       call initialize_lorenz_gauge(f)
+      call initialize_polymer(f,lstarting)
       call initialize_testscalar(f)
       call initialize_testfield(f)
       call initialize_testflow(f)
@@ -693,6 +697,7 @@ module Register
       use NeutralDensity,  only: pencil_criteria_neutraldensity
       use Magnetic,        only: pencil_criteria_magnetic
       use Lorenz_gauge,    only: pencil_criteria_lorenz_gauge
+      use Polymer,    only: pencil_criteria_polymer
       use Testscalar,      only: pencil_criteria_testscalar
       use Testfield,       only: pencil_criteria_testfield
       use Testflow,        only: pencil_criteria_testflow
@@ -726,6 +731,7 @@ module Register
       call pencil_criteria_neutraldensity()
       call pencil_criteria_magnetic()
       call pencil_criteria_lorenz_gauge()
+      call pencil_criteria_polymer()
       call pencil_criteria_testscalar()
       call pencil_criteria_testfield()
       call pencil_criteria_testflow()
@@ -764,6 +770,7 @@ module Register
       use Selfgravity, only: pencil_interdep_selfgravity
       use Magnetic, only: pencil_interdep_magnetic
       use Lorenz_gauge, only: pencil_interdep_lorenz_gauge
+      use Polymer, only: pencil_interdep_polymer
       use Testscalar, only: pencil_interdep_testscalar
       use Testfield, only: pencil_interdep_testfield
       use Testflow, only: pencil_interdep_testflow
@@ -802,6 +809,7 @@ module Register
       call pencil_interdep_pscalar(lpencil_in)
       call pencil_interdep_magnetic(lpencil_in)
       call pencil_interdep_lorenz_gauge(lpencil_in)
+      call pencil_interdep_polymer(lpencil_in)
       call pencil_interdep_testscalar(lpencil_in)
       call pencil_interdep_testfield(lpencil_in)
       call pencil_interdep_testflow(lpencil_in)
@@ -830,6 +838,7 @@ module Register
       use Entropy,         only: rprint_entropy
       use Magnetic,        only: rprint_magnetic
       use Lorenz_gauge,    only: rprint_lorenz_gauge
+      use Polymer,    only: rprint_polymer
       use Testscalar,      only: rprint_testscalar
       use Testfield,       only: rprint_testfield
       use Testflow,        only: rprint_testflow
@@ -1030,6 +1039,7 @@ module Register
       call rprint_entropy         (lreset,LWRITE=lroot)
       call rprint_magnetic        (lreset,LWRITE=lroot)
       call rprint_lorenz_gauge    (lreset,LWRITE=lroot)
+      call rprint_polymer    (lreset,LWRITE=lroot)
       call rprint_testscalar      (lreset,LWRITE=lroot)
       call rprint_testfield       (lreset,LWRITE=lroot)
       call rprint_testflow        (lreset,LWRITE=lroot)
