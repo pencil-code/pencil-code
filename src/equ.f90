@@ -491,7 +491,6 @@ module Equ
 !
         if (lsolid_cells) call dsolid_dt(f,df,p)
 !
-!
 !  Add shear if present
 !
         if (lshear) call shearing(f,df,p)
