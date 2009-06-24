@@ -1677,29 +1677,23 @@ module Magnetic
 ! jxb
       if (lpencil(i_jxb)) call cross_mn(p%jj,p%bb,p%jxb)
 ! jxbr
-      if (lpencil(i_jxbr)) then
-        rho1_jxb=p%rho1
-      if (lpencil(i_cosjb)) then
-        p%cosjb=p%jb/sqrt(p%j2*p%b2)
-      endif
-!
-!  jparallel and jperp 
-!  added a min function for 1-cos^2, to prevent the lpencil_check from failing
-!
+      if (lpencil(i_jxbr)) rho1_jxb=p%rho1
+! cosjb
+      if (lpencil(i_cosjb)) p%cosjb=p%jb/sqrt(p%j2*p%b2)
+! jparallel and jperp 
       if (lpencil(i_jparallel).or.lpencil(i_jperp)) then
         p%jparallel=sqrt(p%j2)*p%cosjb
-        if (lpencil_check) then
-          sinjb=sqrt(1-min(p%cosjb**2,1.))
-        else
-          sinjb=sqrt(1-p%cosjb**2)
-        endif
+        sinjb=0.0
+        where (abs(p%cosjb)<=1.0) sinjb=sqrt(1-p%cosjb**2)
         p%jperp=sqrt(p%j2)*sinjb
       endif
+! jxbr
+      if (lpencil(i_jxbr)) then
 !
-!  set rhomin_jxb>0 in order to limit the jxb term at very low densities.
-!  set va2max_jxb>0 in order to limit the jxb term at very high Alfven speeds.
-!  set va2power_jxb to an integer value in order to specify the power
-!  of the limiting term,
+!  Set rhomin_jxb>0 in order to limit the jxb term at very low densities.
+!  Set va2max_jxb>0 in order to limit the jxb term at very high Alfven speeds.
+!  Set va2power_jxb to an integer value in order to specify the power of the
+!  limiting term,
 !
         if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
         if (va2max_jxb>0) then
