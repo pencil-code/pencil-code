@@ -3325,6 +3325,7 @@ module Sub
 !  Optional argument SHIFT shifts center:
 !  for shift=1. the interval is [x0    ,x0+2*w],
 !  for shift=-1. it is          [x0-2*w,x0    ].
+!  This is to make sure the interior region is not affected.
 !  Maximum slope is 3/2=1.5 times that of a linear profile.
 !
 !  This version is for scalar args.

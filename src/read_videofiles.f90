@@ -27,7 +27,8 @@
       integer :: ipx,ipy,ipz,iproc,it,nt=999999,ipz_top,ipz_bottom,ipy_front
       integer :: ipz_mid1,ipz_mid2
       integer :: lun,lun1=1,lun2=2,lun3=3,lun4=4,lun5=5,lun6=6
-      integer :: itdebug=2
+      integer :: itdebug=2,nevery=1
+      integer :: isep1=0,isep2=0
       logical :: eof=.false.,slice_position_ok=.false.
       logical :: err=.false.,err_timestep=.false.
       real :: t
@@ -35,12 +36,12 @@
       real :: slice_z3pos=0., slice_z4pos=0.
 !
       character (len=120) :: file='',fullname='',wfile=''
-      character (len=120) :: datadir='data',path=''
+      character (len=120) :: datadir='data',path='',cfield=''
       character (len=5) :: chproc=''
       character (len=20) :: field='lnrho'
       character (len=1) :: slice_position='p'
 !
-      logical :: exists, lwritten_something=.false.
+      logical :: exists, lwritten_something=.false.,lwrite=.true.
 !
       real :: min_xy_loc,min_xy2_loc,min_xz_loc,min_yz_loc
       real :: max_xy_loc,max_xy2_loc,max_xz_loc,max_yz_loc
@@ -56,13 +57,18 @@
       min_yz_loc=huge(min_yz_loc); max_yz_loc=-huge(max_yz_loc)
       min_xy3_loc=huge(min_xy3_loc); max_xy3_loc=-huge(max_xy3_loc)
       min_xy4_loc=huge(min_xy4_loc); max_xy4_loc=-huge(max_xy4_loc)
-      
 !
 !  read name of the field (must coincide with file extension)
 !
-      !call getarg (1,field)
-      write(*,'(a)',ADVANCE='NO') 'enter name of variable (lnrho, uu1, ..., bb3): '
-      read*,field
+      write(*,'(a)',ADVANCE='NO') 'enter variable (lnrho, uu1, ..., bb3) and stride (e.g. 10): '
+      read(*,'(a)') cfield
+!
+!  read stride from internal reader
+!
+      isep1=index(cfield,' ')
+      isep2=len(cfield)
+      field=cfield(1:isep1)
+      if (cfield(isep1+1:isep2)/=' ') read(cfield(isep1:isep2),*) nevery
 !
 !  periphery or middle of the box?
 !  This information is now written in a file.
@@ -126,6 +132,11 @@
         err_timestep=.false.
         lun=10
 !
+!  Check whether this is a time where we want to write data,
+!  or whether we want to skip it.
+!
+      lwrite=(mod(it,nevery)==0)
+!
 !  Top xy2-plane:
 !  need data where ipz=nprocz-1
 !  (or ipz=nprocz/4, in case of slice_position='w')                
@@ -155,7 +166,7 @@
       call safe_character_assign(wfile,trim(datadir)//trim(file))
       err_timestep=err
       if (.not.err_timestep) then
-        call wslice(trim(wfile),xy2,slice_z2pos,nxgrid,nygrid,t,it,lun1)
+        call wslice(trim(wfile),xy2,slice_z2pos,nxgrid,nygrid,t,it,lun1,lwrite)
         lwritten_something=.true.
       else
         print*,'skip writing because of error; t=',t
@@ -189,7 +200,7 @@
       call safe_character_assign(wfile,trim(datadir)//trim(file))
       err_timestep=err_timestep.or.err
       if (.not.err_timestep) then
-        call wslice(trim(wfile),xy,slice_zpos,nxgrid,nygrid,t,it,lun2)
+        call wslice(trim(wfile),xy,slice_zpos,nxgrid,nygrid,t,it,lun2,lwrite)
         lwritten_something=.true.
       else
         print*,'skip writing because of error; t=',t
@@ -223,7 +234,7 @@
       call safe_character_assign(wfile,trim(datadir)//trim(file))
       err_timestep=err_timestep.or.err
       if (.not.err_timestep) then
-        call wslice(trim(wfile),xz,slice_ypos,nxgrid,nzgrid,t,it,lun3)
+        call wslice(trim(wfile),xz,slice_ypos,nxgrid,nzgrid,t,it,lun3,lwrite)
         lwritten_something=.true.
       else
         print*,'skip writing because of error; t=',t
@@ -259,7 +270,7 @@
       call safe_character_assign(wfile,trim(datadir)//trim(file))
       err_timestep=err_timestep.or.err
       if (.not.err_timestep) then
-        call wslice(trim(wfile),yz,slice_xpos,nygrid,nzgrid,t,it,lun4)
+        call wslice(trim(wfile),yz,slice_xpos,nygrid,nzgrid,t,it,lun4,lwrite)
         lwritten_something=.true.
       else
         print*,'skip writing because of error; t=',t
@@ -295,7 +306,7 @@
         call safe_character_assign(wfile,trim(datadir)//trim(file))
         err_timestep=err
         if (.not.err_timestep) then
-          call wslice(trim(wfile),xy3,slice_z3pos,nxgrid,nygrid,t,it,lun5)
+          call wslice(trim(wfile),xy3,slice_z3pos,nxgrid,nygrid,t,it,lun5,lwrite)
           lwritten_something=.true.
         else
           print*,'skip writing because of error; t=',t
@@ -329,14 +340,18 @@
         call safe_character_assign(wfile,trim(datadir)//trim(file))
         err_timestep=err
         if (.not.err_timestep) then
-          call wslice(trim(wfile),xy4,slice_z4pos,nxgrid,nygrid,t,it,lun6)
+          call wslice(trim(wfile),xy4,slice_z4pos,nxgrid,nygrid,t,it,lun6,lwrite)
           lwritten_something=.true.
         else
           print*,'skip writing because of error; t=',t
         endif
       endif
 !
-      print*,'written full set of slices at t=',t,min_xy_loc,max_xy_loc
+!  confirm writing only if lwrite=.true.
+!
+      if (lwrite) then
+        print*,'written full set of slices at t=',t,min_xy_loc,max_xy_loc
+      endif
       enddo
 !
 999   continue
@@ -441,7 +456,7 @@
 !
     endsubroutine rslice
 !***********************************************************************
-    subroutine wslice(file,a,pos,ndim1,ndim2,t,it,lun)
+    subroutine wslice(file,a,pos,ndim1,ndim2,t,it,lun,lwrite)
 !
 !  appending to an existing slice file
 !
@@ -450,12 +465,13 @@
       integer :: ndim1,ndim2
       character (len=*) :: file
       real, dimension (ndim1,ndim2) :: a
+      logical :: lwrite
       integer :: it,lun
       real :: t, pos
 
 !
       if (it==1) open(lun,file=file,form='unformatted')
-      write(lun) a,t,pos
+      if (lwrite) write(lun) a,t,pos
 !
     endsubroutine wslice
 !***********************************************************************

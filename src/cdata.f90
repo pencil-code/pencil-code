@@ -425,6 +425,7 @@ module Cdata
   real :: rfreeze_int=-impossible,rfreeze_ext=-impossible
   real :: wfreeze=0.,wfreeze_int=0.,wfreeze_ext=0.
   real :: wborder=0.,wborder_int=0.,wborder_ext=0.
+  real :: tborder=0.
   real :: fshift_int=-1.,fshift_ext=1.
   real, dimension(2) :: border_frac_x=0.0,border_frac_y=0.0,border_frac_z=0.0
   logical :: lfrozen_bcs_x=.false.,lfrozen_bcs_y=.false.,lfrozen_bcs_z=.false.

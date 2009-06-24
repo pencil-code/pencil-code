@@ -253,7 +253,6 @@ module BorderProfiles
 !  Position-dependent driving term that attempts to drive pde
 !  the variable toward some target solution on the boundary.
 !
-!
 !  The driving is applied in the inner stripe between
 !  r_int and r_int+2*w, and in the outer stripe between
 !  r_ext-2*w and r_ext, as sketched below
@@ -273,18 +272,28 @@ module BorderProfiles
       real :: pborder,inverse_drive_time
       integer :: i,j
 !
+!  Perform "border_driving" only if r < r_int or r > r_ext, but
+!  take into acount that the profile further inside on both ends.
+!
       do i=1,nx
         if ( &
             !inner stripe
-             ((p%rborder_mn(i).ge.r_int).and.&
-              (p%rborder_mn(i).le.r_int+2*wborder_int)).or.&
+             (p%rborder_mn(i).le.r_int+2*wborder_int).or.&
             !outer stripe
-             ((p%rborder_mn(i).ge.r_ext-2*wborder_ext).and.&
-              (p%rborder_mn(i).le.r_ext))) then
+             (p%rborder_mn(i).ge.r_ext-2*wborder_ext)) then
+!
+!AB: Wlad, please check and make this a special option
+!AB: if you really want to keep the configuration below.
+!
+!           !inner stripe
+!            ((p%rborder_mn(i).ge.r_int).and.&
+!             (p%rborder_mn(i).le.r_int+2*wborder_int)).or.&
+!           !outer stripe
+!            ((p%rborder_mn(i).ge.r_ext-2*wborder_ext).and.&
+!             (p%rborder_mn(i).le.r_ext))) then
 !        
           call get_drive_time(p,inverse_drive_time,i)
           call get_border(p,pborder,i)
-        
           df(i+l1-1,m,n,j) = df(i+l1-1,m,n,j) &
                - (f(i+l1-1,m,n,j) - f_target(i))*pborder*inverse_drive_time
         endif
@@ -300,7 +309,7 @@ module BorderProfiles
 ! from r_int to r_int+2*wborder_int, and
 ! from r_ext-2*wborder_ext to r_ext
 !
-! Regions away from these limits are unaffected.
+! Regions away from these limits are unaffected, because we use SHIFT=+/-1.
 !
 ! 28-Jul-06/wlad : coded
 !
@@ -329,24 +338,33 @@ module BorderProfiles
 !***********************************************************************
     subroutine get_drive_time(p,inverse_drive_time,i)
 !
-! This is problem-dependent, since the driving should occur in the
-! typical time-scale of the problem. Currently, only the keplerian
-! orbital time is implemented.
+!  This is problem-dependent, since the driving should occur in the
+!  typical time-scale of the problem. tborder can be specified as input.
+!  Alternatively (tborder=0), the keplerian orbital time is used.
 !
-! 28-Jul-06/wlad : coded
+!  28-jul-06/wlad: coded
+!  24-jun-09/axel: added tborder as input
 !
       real, intent(out) :: inverse_drive_time
       real :: uphi
       type (pencil_case) :: p
       integer :: i
 !
-      if (lcartesian_coords.or.lcylindrical_coords) then
-        uphi=p%uu(i,1)*p%phix(i)+p%uu(i,2)*p%phiy(i)
-      elseif (lspherical_coords) then
-        uphi=p%uu(i,3)
-      endif
+!  calculate orbital time
 !
-      inverse_drive_time = .5*pi_1*uphi/p%rborder_mn(i)
+      if (tborder==0.) then
+        if (lcartesian_coords.or.lcylindrical_coords) then
+          uphi=p%uu(i,1)*p%phix(i)+p%uu(i,2)*p%phiy(i)
+        elseif (lspherical_coords) then
+          uphi=p%uu(i,3)
+        endif
+        inverse_drive_time = .5*pi_1*uphi/p%rborder_mn(i)
+!
+!  specify tborder as input
+!
+      else
+        inverse_drive_time=1./tborder
+      endif
 !
     endsubroutine get_drive_time
 !***********************************************************************

@@ -120,6 +120,7 @@ module Param_IO
        xfreeze_square,yfreeze_square,rfreeze_int,rfreeze_ext, &
        wfreeze,wfreeze_int,wfreeze_ext, &
        wborder,wborder_int,wborder_ext, &
+       tborder, &
        fshift_int,fshift_ext, &
        fbcx1,fbcx2,fbcy1,fbcy2,fbcz1,fbcz2, &
        fbcx1_2,fbcx2_2,&

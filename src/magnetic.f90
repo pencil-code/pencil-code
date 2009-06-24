@@ -1681,19 +1681,26 @@ module Magnetic
         rho1_jxb=p%rho1
       if (lpencil(i_cosjb)) then
         p%cosjb=p%jb/sqrt(p%j2*p%b2)
-if (lpencil(i_j2).and.lpencil(i_cosjb)) print*,'AB: lpencil(i_j2),lpencil(i_cosjb),p%cosjb=',p%cosjb(1)
       endif
-! jparallel and jperp 
+!
+!  jparallel and jperp 
+!  added a min function for 1-cos^2, to prevent the lpencil_check from failing
+!
       if (lpencil(i_jparallel).or.lpencil(i_jperp)) then
         p%jparallel=sqrt(p%j2)*p%cosjb
-        sinjb=sqrt(1-p%cosjb*p%cosjb)
-print*,'AB: p%cosjb=',p%cosjb(1),sinjb
+        if (lpencil_check) then
+          sinjb=sqrt(1-min(p%cosjb**2,1.))
+        else
+          sinjb=sqrt(1-p%cosjb**2)
+        endif
         p%jperp=sqrt(p%j2)*sinjb
       endif
+!
 !  set rhomin_jxb>0 in order to limit the jxb term at very low densities.
 !  set va2max_jxb>0 in order to limit the jxb term at very high Alfven speeds.
 !  set va2power_jxb to an integer value in order to specify the power
 !  of the limiting term,
+!
         if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
         if (va2max_jxb>0) then
           rho1_jxb = rho1_jxb &
@@ -2897,9 +2904,11 @@ print*,'AB: p%cosjb=',p%cosjb(1),sinjb
 !***********************************************************************
     subroutine eta_shell(p,eta_mn,geta)
 !
-!   24-nov-03/dave: coded
+!  24-nov-03/dave: coded
+!  23-jun-09/axel: generalized to lcylinder_in_a_box
 !
       use Sub, only: step, der_step
+      use Mpicomm, only: stop_it
 !
       type (pencil_case) :: p
       real, dimension (nx) :: eta_mn
@@ -2912,20 +2921,46 @@ print*,'AB: p%cosjb=',p%cosjb(1),sinjb
       if (eta_int > 0.) d_int=eta_int-eta
       if (eta_ext > 0.) d_ext=eta_ext-eta
 !
-!     calculate steps in resistivity
+!  calculate steps in resistivity
+!  make this dependent on the geometry used
 !
-      prof=step(p%r_mn,r_int,wresistivity)
-      eta_mn=d_int*(1-prof)
-      prof=step(p%r_mn,r_ext,wresistivity)
-      eta_mn=eta+eta_mn+d_ext*prof
+!  (i) lcylinder_in_a_box
+!
+      if (lcylinder_in_a_box.or.lcylindrical_coords) then
+        prof=step(p%rcyl_mn,r_int,wresistivity)
+        eta_mn=d_int*(1-prof)
+        prof=step(p%rcyl_mn,r_ext,wresistivity)
+        eta_mn=eta+eta_mn+d_ext*prof
 !
 !     calculate radial derivative of steps and gradient of eta
 !
-      prof=der_step(p%r_mn,r_int,wresistivity)
-      eta_r=-d_int*prof
-      prof=der_step(p%r_mn,r_ext,wresistivity)
-      eta_r=eta_r+d_ext*prof
-      geta=p%evr*spread(eta_r,2,3)
+        prof=der_step(p%rcyl_mn,r_int,wresistivity)
+        eta_r=-d_int*prof
+        prof=der_step(p%rcyl_mn,r_ext,wresistivity)
+        eta_r=eta_r+d_ext*prof
+        geta=p%evr*spread(eta_r,2,3)
+!
+!  (ii) lsphere_in_a_box
+!
+      elseif (lsphere_in_a_box.or.lspherical_coords) then
+        prof=step(p%r_mn,r_int,wresistivity)
+        eta_mn=d_int*(1-prof)
+        prof=step(p%r_mn,r_ext,wresistivity)
+        eta_mn=eta+eta_mn+d_ext*prof
+!
+!     calculate radial derivative of steps and gradient of eta
+!
+        prof=der_step(p%r_mn,r_int,wresistivity)
+        eta_r=-d_int*prof
+        prof=der_step(p%r_mn,r_ext,wresistivity)
+        eta_r=eta_r+d_ext*prof
+        geta=p%evr*spread(eta_r,2,3)
+!
+!  (iii) other cases are not implemented yet
+!
+      else
+        call stop_it("eta_shell works only for spheres or cylinders")
+      endif
 !
     endsubroutine eta_shell
 !***********************************************************************
