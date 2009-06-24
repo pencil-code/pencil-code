@@ -264,7 +264,8 @@ module Shear
 ! we have got shear. The rest of the Coriolis force is calculated
 ! in hydro.
 !
-      if (lhydro) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-Sshear*p%uu(:,1)
+      if (lhydro.and.lcoriolis_force) &
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-Sshear*p%uu(:,1)
 !
 !  Loop over dust species
 !
@@ -273,7 +274,8 @@ module Shear
 !
 !  Correct Coriolis force term for all dust species
 !
-           df(l1:l2,m,n,iudy(k)) = df(l1:l2,m,n,iudy(k)) &
+          if (lcoriolis_force) &
+              df(l1:l2,m,n,iudy(k)) = df(l1:l2,m,n,iudy(k)) &
               - Sshear*f(l1:l2,m,n,iudx(k))
 !
 !  End loop over dust species
