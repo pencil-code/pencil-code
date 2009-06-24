@@ -281,9 +281,10 @@ module Testfield
 !  in the main calculation (lmagnetic=.true.) with phase zero.
 !  Optionally, one can determine the phase in the actual field
 !  and modify the following calculations in calc_ltestfield_pars.
+!  They should also be with respect to k*z, not just z.
 !
-      c=cos(z)
-      s=sin(z)
+      c=cz
+      s=sz
       c2z=c**2
       s2z=s**2
       csz=c*s

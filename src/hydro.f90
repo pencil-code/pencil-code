@@ -127,7 +127,7 @@ module Hydro
 !
   character (len=labellen) :: interior_bc_hydro_profile='nothing'
   logical :: lhydro_bc_interior=.false.
-  real :: z1_interior_bc_hydro=0.
+  real :: z1_interior_bc_hydro=0.,kz_analysis=1.
 !
   namelist /hydro_run_pars/ &
        Omega,theta, &
@@ -135,6 +135,7 @@ module Hydro
        tau_damp_ruxm,tau_damp_ruym,tau_damp_ruzm,tau_diffrot1, &
        ampl1_diffrot,ampl2_diffrot,uuprof, &
        xexp_diffrot,kx_diffrot,kz_diffrot, &
+       kz_analysis, &
        lremove_mean_momenta,lremove_mean_flow, &
        lOmega_int,Omega_int, ldamp_fade, lupw_uu, othresh,othresh_per_orms, &
        borderuu, lfreeze_uint, lpressuregradient_gas, &
@@ -456,8 +457,8 @@ module Hydro
 !  calculate cosz*sinz, cos^2, and sinz^2, to take moments with
 !  of ux2, uxuy, etc.
 !
-      c=cos(z)
-      s=sin(z)
+      c=cos(kz_analysis*z)
+      s=sin(kz_analysis*z)
       cz=c
       sz=s
       c2z=c**2
