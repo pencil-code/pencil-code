@@ -1689,6 +1689,7 @@ module Magnetic
       endif
 ! jxbr
       if (lpencil(i_jxbr)) then
+        rho1_jxb=p%rho1
 !
 !  Set rhomin_jxb>0 in order to limit the jxb term at very low densities.
 !  Set va2max_jxb>0 in order to limit the jxb term at very high Alfven speeds.
