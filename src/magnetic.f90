@@ -4682,24 +4682,24 @@ module Magnetic
           tangent(2) = 0.
           tangent(3) = 1.
         endif
-        tangent = tangent / &
-        sqrt(tangent(1)*tangent(1)+tangent(2)*tangent(2)+tangent(3)*tangent(3))
+        tangent = tangent / sqrt(tangent(1)**2+tangent(2)**2+tangent(3)**2)
 
 !  Find vector which is orthogonal (normal) to tangent vector.
-        if (tangent(1) .ge. 1e-5) then
-          normal(1) = 1.; normal(2) = 0.; normal(3) = 0.
+        if (abs(tangent(1)) .le. 0.5) then
+          normal(1) = tangent(1)**2 - 1.0
+          normal(2) = tangent(2)*tangent(1)
+          normal(3) = tangent(3)*tangent(1)
+        elseif (abs(tangent(2)) .le. 0.5) then
+          normal(1) = tangent(1)*tangent(2)
+          normal(2) = tangent(2)**2 - 1.0
+          normal(3) = tangent(3)*tangent(2)
         else
-          normal(1) = -1. + tangent(1)*tangent(1) / &
-          sqrt(tangent(1)*tangent(1)+tangent(2)*tangent(2)+tangent(3)*tangent(3))
-          normal(2) = tangent(2)*tangent(1) / &
-          sqrt(tangent(1)*tangent(1)+tangent(2)*tangent(2)+tangent(3)*tangent(3))
-          normal(3) = tangent(3)*tangent(1) / &
-          sqrt(tangent(1)*tangent(1)+tangent(2)*tangent(2)+tangent(3)*tangent(3))
-
-!  Noramlize the normal vector
-          normal = normal / &
-          sqrt(normal(1)*normal(1)+normal(2)*normal(2)+normal(3)*normal(3))
+          normal(1) = tangent(1)*tangent(3)
+          normal(2) = tangent(2)*tangent(3)
+          normal(3) = tangent(3)**2 - 1.0
         endif
+!  normalize the normal vector
+        normal = normal / sqrt(normal(1)**2+normal(2)**2+normal(3)**2)
 
         circleR = 0.
 !  loop which changes the circles radius
@@ -4719,8 +4719,15 @@ module Magnetic
             (tangent(2)*tangent(3)*(1-cos(circleParam))-tangent(1)*sin(circleParam))*normal(3))
             circlePos(3) = knotPos(3) + circleR * &
             ((tangent(1)*tangent(3)*(1-cos(circleParam))-tangent(2)*sin(circleParam))*normal(1) + &
-            (tangent(2)*tangent(3)*(1-cos(circleParam))+tangent(1)*sin(circleParam))*normal(2)) + &
-            (tangent(3)*tangent(3)*(1-cos(circleParam))+cos(circleParam))*normal(3)
+            (tangent(2)*tangent(3)*(1-cos(circleParam))+tangent(1)*sin(circleParam))*normal(2) + &
+            (tangent(3)*tangent(3)*(1-cos(circleParam))+cos(circleParam))*normal(3))
+
+! debuging
+!             if(((circlePos(1)-knotPos(1))**2 + (circlePos(2)-knotPos(2))**2 + &
+!             (circlePos(3)-knotPos(3))**2) .gt. ((widthRing/2.)**2+0.1)) then
+! !               print*, "flux tube radius =" 
+!               circlePos = knotPos
+!             endif
 
 !  Find the corresponding mesh point to this position.
             l = nint((circlePos(1)+PI)/(2.*PI)*domainWidth)+1
@@ -4730,6 +4737,9 @@ module Magnetic
 !  Write the magnetic field b.
 !           magneticField(l,m,n,1:3) = tangent*ampl
             f(l,m,n,iax:iaz) = tangent*ampl
+!             f(l,m,n,iax:iaz) = normal*ampl
+!             f(l,m,n,iax:iaz) = tangent(1)*normal(1)+tangent(2)*normal(2)+tangent(3)*normal(3)
+!             f(l,m,n,iax:iaz) = (circlePos(1) - knotPos(1))**2 + (circlePos(2) - knotPos(2))**2 + (circlePos(3) - knotPos(3))**2
 
             circleParam = circleParam + deltaCircleParam
           enddo
