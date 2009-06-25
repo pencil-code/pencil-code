@@ -13,6 +13,7 @@
   bcx = 'a','s','s', 'a2',  'a2', 'a','s','s', 's'
   bcy = 's','a','s', 'a2',  'a2', 's','a','s', 's'
   bcz = 's','s','a', 'a2',  'a2', 's','s','a', 's'
+  lsphere_in_a_box = T
   r_int=1.0,                    ! radius of interior spherical boundary
   r_ext=1.3,                    ! radius of exterior spherical boundary
 /
