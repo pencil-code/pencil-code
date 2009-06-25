@@ -18,20 +18,17 @@ module Shear
   real :: x0_shear=0.0, Bshear=0.01
   logical :: lshearadvection_as_shift=.false.
   logical :: lmagnetic_stretching=.true.,lrandomx0=.false.
-!AB: would it be ok to delete all lcoriolis_force and lcentrifugal_force ?
-  logical, target :: lcoriolis_force=.true., lcentrifugal_force=.false.
   logical :: lglobal_baroclinic=.false.
 !
   include 'shear.h'
 !
   namelist /shear_init_pars/ &
       qshear,Sshear,deltay,Omega,lshearadvection_as_shift, &
-      lmagnetic_stretching,lrandomx0,x0_shear,lcoriolis_force,lcentrifugal_force
+      lmagnetic_stretching,lrandomx0,x0_shear
 !
   namelist /shear_run_pars/ &
       qshear,Sshear,deltay,Omega,lshearadvection_as_shift, &
       lmagnetic_stretching,lrandomx0,x0_shear, &
-      lcoriolis_force,lcentrifugal_force,&
       lglobal_baroclinic,Bshear
 !
   integer :: idiag_dtshear=0    ! DIAG_DOC: advec\_shear/cdt
@@ -41,13 +38,13 @@ module Shear
 !***********************************************************************
     subroutine register_shear()
 !
-!  Initialise variables
+!  Initialise variables.
 !
 !  2-july-02/nils: coded
 !
-      lshear = .true.
+      lshear=.true.
 !
-!  identify version number
+!  Identify version number.
 !
       if (lroot) call svn_id( &
            "$Id$")
@@ -59,7 +56,7 @@ module Shear
 !  21-nov-02/tony: coded
 !  08-jul-04/anders: Sshear calculated whenever qshear /= 0
 !
-!  calculate shear flow velocity; if qshear is given then Sshear=-qshear*Omega
+!  Calculate shear flow velocity; if qshear is given then Sshear=-qshear*Omega
 !  is calculated. Otherwise Sshear keeps its value from the input list.
 !
       use SharedVariables, only: put_shared_variable
@@ -70,25 +67,11 @@ module Shear
       if (lroot .and. ip<=12) &
           print*,'initialize_shear: Sshear,qshear=',Sshear,qshear
 !
-!  Share lcoriolis_force and lcentrifugal_force so the Particles module knows
-!  whether to apply them or not.
-!
-      if (lparticles.and.Omega/=0.0.and.(.not.lhydro)) then
-        call put_shared_variable('lcoriolis_force',&
-            lcoriolis_force,ierr)
-        if (ierr/=0) call fatal_error('register_shear',&
-            'there was a problem sharing lcoriolis_force')
-        call put_shared_variable('lcentrifugal_force',&
-            lcentrifugal_force,ierr)
-        if (ierr/=0) call fatal_error('register_shear',&
-            'there was a problem sharing lcentrifugal_force')
-      endif
-!
     endsubroutine initialize_shear
 !***********************************************************************
     subroutine read_shear_init_pars(unit,iostat)
 !
-!  read initial shear parameters
+!  Read initial shear parameters.
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -105,7 +88,7 @@ module Shear
 !***********************************************************************
     subroutine write_shear_init_pars(unit)
 !
-!  write initial shear parameters
+!  Write initial shear parameters.
 !
       integer, intent(in) :: unit
 !
@@ -115,7 +98,7 @@ module Shear
 !***********************************************************************
     subroutine read_shear_run_pars(unit,iostat)
 !
-!  read run shear parameters
+!  Read run shear parameters.
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -132,7 +115,7 @@ module Shear
 !***********************************************************************
     subroutine write_shear_run_pars(unit)
 !
-!  write run shear parameters
+!  Write run shear parameters.
 !
       integer, intent(in) :: unit
 !
@@ -223,7 +206,7 @@ module Shear
 !***********************************************************************
     subroutine shearing(f,df,p)
 !
-!  Calculates the shear terms, -uy0*df/dy (shearing sheat approximation)
+!  Calculates the shear terms -uy0*df/dy (shearing sheat approximation).
 !
 !  2-jul-02/nils: coded
 !  6-jul-02/axel: runs through all nvar variables; added timestep check
@@ -244,11 +227,11 @@ module Shear
 !
       intent(in)  :: f
 !
-!  print identifier
+!  Print identifier.
 !
       if (headtt.or.ldebug) print*, 'shearing: Sshear,qshear=', Sshear, qshear
 !
-!  add shear term, -uy0*df/dy, for all variables
+!  Add shear term, -uy0*df/dy, for all variables.
 !
       uy0=Sshear*(x(l1:l2)-x0_shear)
 !
@@ -261,14 +244,13 @@ module Shear
         enddo
       endif
 !
-! Taking care of the fact that the Coriolis force changes when
-! we have got shear. The rest of the Coriolis force is calculated
-! in hydro.
+!  Advection of background velocity profile. Appears like a correction
+!  to the Coriolis force, but is actually not related to the Coriolis
+!  force.
 !
-      if (lhydro) &
-          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-Sshear*p%uu(:,1)
+      if (lhydro) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-Sshear*p%uu(:,1)
 !
-!  Add shear term for all dust species
+!  Add shear term for all dust species.
 !
       if (ldustvelocity) then
         do k=1,ndustspec
@@ -283,8 +265,8 @@ module Shear
         df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)-Sshear*p%aa(:,2)
       endif
 !
-!  Testfield stretching term
-!  Loop through all the dax/dt equations and add -S*ay contribution
+!  Testfield stretching term.
+!  Loop through all the dax/dt equations and add -S*ay contribution.
 !
       if (ltestfield) then
         do j=iaatest,iaxtestpq,3
@@ -292,8 +274,8 @@ module Shear
         enddo
       endif
 !
-!  Testflow stretching term
-!  Loop through all the duy/dt equations and add -S*ux contribution
+!  Testflow stretching term.
+!  Loop through all the duy/dt equations and add -S*ux contribution.
 !
       if (ltestflow) then
         do j=iuutest+1,iuxtestpq,3
@@ -301,23 +283,23 @@ module Shear
         enddo
       endif
 !
-!  Meanfield stretching term
-!  Loop through all the dax/dt equations and add -S*ay contribution
+!  Meanfield stretching term.
+!  Loop through all the dax/dt equations and add -S*ay contribution.
 !
       if (iam/=0) then
         df(l1:l2,m,n,iamx)=df(l1:l2,m,n,iamx)-Sshear*f(l1:l2,m,n,iamy)
       endif
 !
-!  Global baroclinic term 
+!  Global baroclinic term .
 !
       if (lglobal_baroclinic) call global_baroclinic(f,df,p)
 !
-!  Take shear into account for calculating time step
+!  Take shear into account for calculating time step.
 !
       if (lfirst.and.ldt.and.(.not.lshearadvection_as_shift)) &
           advec_shear=abs(uy0*dy_1(m))
 !
-!  Calculate shearing related diagnostics
+!  Calculate shearing related diagnostics.
 !
       if (ldiagnos) then
         if (idiag_dtshear/=0) &
@@ -503,11 +485,11 @@ module Shear
         call fatal_error("global_baroclinic","")
       endif
 !
-      endsubroutine global_baroclinic
+    endsubroutine global_baroclinic
 !***********************************************************************
     subroutine rprint_shear(lreset,lwrite)
 !
-!  reads and registers print parameters relevant to shearing
+!  Reads and registers print parameters relevant to shearing.
 !
 !   2-jul-04/tobi: adapted from entropy
 !
@@ -520,7 +502,7 @@ module Shear
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-!  reset everything in case of reset
+!  Reset everything in case of reset.
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
@@ -528,14 +510,14 @@ module Shear
         idiag_deltay=0
       endif
 !
-!  iname runs through all possible names that may be listed in print.in
+!  iname runs through all possible names that may be listed in print.in.
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'dtshear',idiag_dtshear)
         call parse_name(iname,cname(iname),cform(iname),'deltay',idiag_deltay)
       enddo
 !
-!  write column where which shear variable is stored
+!  Write column where which shear variable is stored.
 !
       if (lwr) then
         write(3,*) 'i_dtshear=',idiag_dtshear
