@@ -572,6 +572,9 @@ module Special
 ! Natalia
 ! Initialization of chem. species  in a case of the stream
 !
+
+! use Chemistry
+
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) ::  mu1
       integer :: k,j,i,direction
@@ -637,6 +640,10 @@ module Special
           f(:,:,k,ilnrho)=log(init_p2)-log(Rgas)-f(:,:,k,ilnTT)-log(mu1(:,:,k))
         enddo
       endselect
+
+!print*,'nat'
+    !  call calc_for_chem_mixture(f)
+!print*,'nat2'
 
       f(:,:,:,iux)=ux_init
 
