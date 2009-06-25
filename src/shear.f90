@@ -18,6 +18,7 @@ module Shear
   real :: x0_shear=0.0, Bshear=0.01
   logical :: lshearadvection_as_shift=.false.
   logical :: lmagnetic_stretching=.true.,lrandomx0=.false.
+!AB: would it be ok to delete all lcoriolis_force and lcentrifugal_force ?
   logical, target :: lcoriolis_force=.true., lcentrifugal_force=.false.
   logical :: lglobal_baroclinic=.false.
 !
@@ -264,22 +265,15 @@ module Shear
 ! we have got shear. The rest of the Coriolis force is calculated
 ! in hydro.
 !
-      if (lhydro.and.lcoriolis_force) &
+      if (lhydro) &
           df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-Sshear*p%uu(:,1)
 !
-!  Loop over dust species
+!  Add shear term for all dust species
 !
       if (ldustvelocity) then
         do k=1,ndustspec
-!
-!  Correct Coriolis force term for all dust species
-!
-          if (lcoriolis_force) &
-              df(l1:l2,m,n,iudy(k)) = df(l1:l2,m,n,iudy(k)) &
-              - Sshear*f(l1:l2,m,n,iudx(k))
-!
-!  End loop over dust species
-!
+          df(l1:l2,m,n,iudy(k))=df(l1:l2,m,n,iudy(k)) &
+            -Sshear*f(l1:l2,m,n,iudx(k))
         enddo
       endif
 !
