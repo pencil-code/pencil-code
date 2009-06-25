@@ -13,6 +13,7 @@
   bcy = 's','a','s','a2','a2','s','s','a'
   bcz = 's','s','a','s:a2','s:a2','s','s','s:a'
   random_gen='nr_f90',
+  lsphere_in_a_box = T
   r_int=0.5,                    ! radius of interior spherical boundary
   r_ext=1.0,                    ! radius of exterior spherical boundary
 /
