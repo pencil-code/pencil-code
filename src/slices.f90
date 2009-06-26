@@ -109,13 +109,13 @@ module Slices
       slices%iz2=iz2_loc
       slices%iz3=iz3_loc
       slices%iz4=iz4_loc
-      slices%ready=.false.
       slices%index=0
 !
 !  Loop over slices.
 !
       inamev=1
       do while (inamev <= nnamev)
+        slices%ready=.false.
         slices%xy=>slice_xy
         slices%xz=>slice_xz
         slices%yz=>slice_yz
@@ -124,9 +124,10 @@ module Slices
         slices%xy4=>slice_xy4
 !
         slices%name=trim(cnamev(inamev))
-        lslices_legacy=.true.       ! By default assume we're not
-                                    ! using module hooks to get the
-                                    ! slice contents
+!
+!  By default assume we're not using module hooks to get the slice contents
+!
+        lslices_legacy=.true.
 !
 !  Get slice information from the modules.
 !
