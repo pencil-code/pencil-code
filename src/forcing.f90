@@ -287,7 +287,7 @@ module Forcing
         case ('hel_smooth');      call forcing_hel_smooth(f)
         case ('chandra_kendall'); call forcing_chandra_kendall(f)
         case ('cktest');          call forcing_cktest(f)
-        case ('variable_gravz');  call forcing_gravz(f)
+        case ('variable_grav');   call forcing_gravity(f)
         case default; if (lroot) print*,'addforce: No such forcing iforce=',trim(iforce)
         endselect
       endif
@@ -3106,21 +3106,33 @@ module Forcing
 !
     endsubroutine rprint_forcing
 !***********************************************************************
-    subroutine forcing_gravz(f)
+    subroutine forcing_gravity(f)
 !
 !  23-fev-09/dintrans: coded
-!  force internal waves using a time-dependent gravity in the vz-equation
+!  force internal waves using a time-dependent gravity in x or z-direction (or
+!  both)
 !  forcing term = -ampl_ff*cos(omega_ff*t)
 !
+      use Gravity, only: gravz
+      use SharedVariables, only: get_shared_variable
+      use Mpicomm, only: stop_it
+
       real, dimension (mx,my,mz,mfarray) :: f
+      real, pointer :: gravx
+      integer :: ierr
 !
-      if (headt) print*,'forcing_gravz: ENTER'
+      if (headt) print*,'forcing_gravity: ENTER'
 !
-!  Add forcing only in vz
+!  Add forcing only in vx and vz
 !
+      call get_shared_variable('gravx', gravx, ierr)
+      if (ierr/=0) call stop_it("forcing: "//&
+           "there was a problem when getting gravx")
+      f(l1:l2,m1:m2,n1:n2,iux)=f(l1:l2,m1:m2,n1:n2,iux) &
+                                   +gravx*ampl_ff*cos(omega_ff*t)
       f(l1:l2,m1:m2,n1:n2,iuz)=f(l1:l2,m1:m2,n1:n2,iuz) &
-                                   -ampl_ff*cos(omega_ff*t)
+                                   +gravz*ampl_ff*cos(omega_ff*t)
 !
-    endsubroutine forcing_gravz
+    endsubroutine forcing_gravity
 !***********************************************************************
 endmodule Forcing

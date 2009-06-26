@@ -2483,7 +2483,7 @@ module Hydro
 !
       real, dimension(nx) :: pdamp,fint_work,fext_work
       real, dimension(nx,3) :: fint,fext
-      real :: zbot,ztop,t_infl,t_span,tau,pfade
+      real :: zbot,ztop,t_infl,t_span,tau,pfade, xm, xp
       integer :: i,j
 !
 !  warn about the damping term
@@ -2567,6 +2567,11 @@ module Hydro
         endif
 
         if (dampuint > 0.0 .and. rdampint /= impossible) then
+!         x0=z(n)
+!         pdamp = step(x(l1:l2), x0, wdamp)
+!         xp=sqrt(1.+z(n)/0.8)
+!         xm=-sqrt(1.+z(n)/0.8)
+!         pdamp = 1.-step(x(l1:l2), xm, wdamp)*step(x(l1:l2), xp, -wdamp)
           pdamp = 1 - step(p%r_mn,rdampint,wdamp) ! inner damping profile
           do i=iux,iuz
             df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - dampuint*pdamp*f(l1:l2,m,n,i)

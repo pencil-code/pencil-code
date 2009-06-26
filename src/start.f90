@@ -123,7 +123,7 @@ program start
 
 !
 !  Pre-initialize f and df to absurd value (to crash the code should we
-!  later use uninitialized slots of thos fields)
+!  later use uninitialized slots of those fields)
 !
   f = huge(1.0);
   df = huge(1.0);
