@@ -118,7 +118,13 @@ module Snapshot
 !  NOTE: for this to work one has to modify *manually* data/param.nml
 !  by adding an entry for MAGNETIC_INIT_PARS or PSCALAR_INIT_PARS.
 !
+!DM: I do not understand why we need to shift the data below. 
+! I seem to need to set f(:,:,:,iax:iaz) = 0 . Otherwise 
+! the vector potential is initialised as junk data. And then
+! init_aa just adds to it, so junk remains junk. Anyhow
+! the initialisation to zero cannot do any harm.  
         if (lread_oldsnap_nomag) then
+          f(:,:,:,iax:iaz)=0.
           print*,'read old snapshot file (but without magnetic field)'
           call input_snap(trim(directory_snap)//'/var.dat',f,msnap-3,1)
           ! shift the rest of the data
@@ -354,7 +360,7 @@ module Snapshot
 !
       if (lserial_io) call start_serialize()
       open(1,FILE=file,FORM='unformatted')
-      if (ip<=8) print*,'input_snap: open, mx,my,mz,nv=',mx,my,mz,nv
+!      if (ip<=8) print*,'input_snap: open, mx,my,mz,nv=',mx,my,mz,nv
       if (lwrite_2d) then
         if (nx==1) then
           read(1) a(4,:,:,:)
