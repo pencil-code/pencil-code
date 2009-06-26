@@ -1,5 +1,5 @@
 Directory:
-    ${PENCIL_HOME}/samples/ShearBuoyancy
+    ${PENCIL_HOME}/samples/shear-buoyancy
 SVN Id:
     $Id: README 10936 2009-05-25 04:47:00Z ajohan@strw.leidenuniv.nl $
 Maintainer:
