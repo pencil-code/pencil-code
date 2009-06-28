@@ -1679,12 +1679,17 @@ module Magnetic
 ! jxbr
       if (lpencil(i_jxbr)) rho1_jxb=p%rho1
 ! cosjb
-      if (lpencil(i_cosjb)) p%cosjb=p%jb/sqrt(p%j2*p%b2)
+      if (lpencil(i_cosjb)) then
+        p%cosjb=p%jb/sqrt(p%j2*p%b2)
+        if (lpencil_check) then
+          ! map penc0 value back to interval [-1,1]
+          p%cosjb = modulo(p%cosjb + 1.0, 2.0) - 1
+        endif
+      endif
 ! jparallel and jperp 
       if (lpencil(i_jparallel).or.lpencil(i_jperp)) then
         p%jparallel=sqrt(p%j2)*p%cosjb
-        sinjb=0.0
-        where (abs(p%cosjb)<=1.0) sinjb=sqrt(1-p%cosjb**2)
+        sinjb=sqrt(1-p%cosjb**2)
         p%jperp=sqrt(p%j2)*sinjb
       endif
 ! jxbr
