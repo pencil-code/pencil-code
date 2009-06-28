@@ -160,12 +160,12 @@ for i=0,ncpus-1 do begin
 ;
   get_lun, file
   close, file
-  openr, file, filename, /f77, swap_endian=swan_endian
+  openr, file, filename, /f77, swap_endian=swap_endian
 ;
 ;  Read the number of particles at the local processor together with their
 ;  global index numbers.
 ;
-  readu, file, npar_loc 
+  readu, file, npar_loc
 ;
 ;  Read particle data (if any).
 ;
