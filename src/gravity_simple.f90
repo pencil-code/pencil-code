@@ -1,6 +1,5 @@
 ! $Id$
 !
-!
 !  This module takes care of simple types of gravity, i.e. where
 !    gx=gx(x) or gy=gy(y) or gz=gz(z)
 !  Here the gravity master pencils gravx_xpencil, gravy_ypencil and
@@ -41,9 +40,9 @@ module Gravity
     module procedure acceleration_point
   endinterface
 !
-  real, dimension(mx) :: gravx_xpencil=0.,potx_xpencil=0.
+  real, dimension(mx) :: gravx_xpencil=0.,potx_xpencil=0.,xdep=0.
   real, dimension(my) :: gravy_ypencil=0.,poty_ypencil=0.
-  real, dimension(mz) :: gravz_zpencil=0.,potz_zpencil=0.
+  real, dimension(mz) :: gravz_zpencil=0.,potz_zpencil=0.,zdep=0.
   real :: gravx=0.,gravy=0.,gravz=0.
   real :: kx_gg=1.,ky_gg=1.,kz_gg=1.,grav_const=1.,reduced_top=1.
   real :: xgrav=impossible,ygrav=impossible,zgrav=impossible
@@ -51,6 +50,7 @@ module Gravity
   real :: dgravx=0.,pot_ratio=1.
   real :: z1=0.,z2=1.,zref=0.,qgshear=1.5
   real :: nu_epicycle=1.,nu_epicycle2=1.
+  real :: nux_epicycle=0.,nux_epicycle2=0.
   real :: r0_pot=0.    ! peak radius for smoothed potential
   real :: g_A, g_C
   real, parameter :: g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
@@ -64,25 +64,31 @@ module Gravity
 !  Parameters used by other modules (only defined for other gravities)
 !
   logical :: lnumerical_equilibrium=.false.
+  logical :: lxyzdependence=.false.
   logical :: lboussinesq=.false.
   real :: g0=0.
   real :: lnrho_bot=0.,lnrho_top=0.,ss_bot=0.,ss_top=0.
+  real :: kappa_x1=0.,kappa_x2=0.,kappa_z1=0.,kappa_z2=0.
   character (len=labellen) :: grav_profile='const'
 !
   namelist /grav_init_pars/ &
        gravx_profile,gravy_profile,gravz_profile,gravx,gravy,gravz, &
-       xgrav,ygrav,zgrav,kx_gg,ky_gg,kz_gg,dgravx,nu_epicycle,pot_ratio, &
+       xgrav,ygrav,zgrav,kx_gg,ky_gg,kz_gg,dgravx,pot_ratio, &
+       nux_epicycle,nu_epicycle, &
        z1,z2,zref,lnrho_bot,lnrho_top,ss_bot,ss_top, &
        lgravx_gas,lgravx_dust,lgravy_gas,lgravy_dust,lgravz_gas,lgravz_dust, &
        xinfty,yinfty,zinfty, &
+       lxyzdependence,kappa_x1,kappa_x2,kappa_z1,kappa_z2, &
        reduced_top,lboussinesq,grav_profile,n_pot, &
        cs0hs,H0hs
 !
   namelist /grav_run_pars/ &
        gravx_profile,gravy_profile,gravz_profile,gravx,gravy,gravz, &
-       xgrav,ygrav,zgrav,kx_gg,ky_gg,kz_gg,dgravx,nu_epicycle,pot_ratio, &
+       xgrav,ygrav,zgrav,kx_gg,ky_gg,kz_gg,dgravx,pot_ratio, &
+       nux_epicycle,nu_epicycle, &
        lgravx_gas,lgravx_dust,lgravy_gas,lgravy_dust,lgravz_gas,lgravz_dust, &
        xinfty,yinfty,zinfty, &
+       lxyzdependence,kappa_x1,kappa_x2,kappa_z1,kappa_z2, &
        zref,reduced_top,lboussinesq,grav_profile,n_pot
 !
   integer :: idiag_epot=0
@@ -154,6 +160,18 @@ module Gravity
         gravx_xpencil=gravx
         potx_xpencil=-gravx*(x-xinfty)
         call put_shared_variable('gravx', gravx, ierr)
+!
+!  Linear gravity potential with additional z dependence
+!  Calculate zdep here, but don't multiply it onto gravx_xpencil
+!  or potx_xpencil, so they will not be correct yet!
+!
+      case('linear_zdep')      !  Linear gravity profile (for accretion discs)
+        nux_epicycle2=nux_epicycle**2
+        if (lroot) print*,'initialize_gravity: linear x-grav with z dep, nu=', &
+          nux_epicycle,kappa_z1,kappa_z2
+        zdep=(1.+kappa_z1*z+.5*(kappa_z1*z)**2)
+        gravx_xpencil = -nux_epicycle2*x
+        potx_xpencil=0.5*nux_epicycle2*(x**2-xinfty**2)
 !
 !  tanh profile
 !  for isothermal EOS, we have 0=-cs2*dlnrho+gravx
@@ -254,6 +272,18 @@ module Gravity
       case('linear')      !  Linear gravity profile (for accretion discs)
         nu_epicycle2=nu_epicycle**2
         if (lroot) print*,'initialize_gravity: linear z-grav, nu=', nu_epicycle
+        gravz_zpencil = -nu_epicycle2*z
+        potz_zpencil=0.5*nu_epicycle2*(z**2-zinfty**2)
+!
+!  Linear gravity potential with additional x dependence.
+!  Calculate xdep here, but don't multiply it onto gravz_zpencil
+!  or potz_zpencil, so they will not be correct yet!
+!
+      case('linear_xdep')      !  Linear gravity profile (for accretion discs)
+        nu_epicycle2=nu_epicycle**2
+        if (lroot) print*,'initialize_gravity: linear z-grav with x dep, nu=', &
+          nu_epicycle,kappa_x1,kappa_x2
+        xdep=(1.+kappa_x1*x+.5*(kappa_x1*x)**2)
         gravz_zpencil = -nu_epicycle2*z
         potz_zpencil=0.5*nu_epicycle2*(z**2-zinfty**2)
 
@@ -430,9 +460,15 @@ module Gravity
             if (headtt) print*,'duu_dt_grav: lbounssinesq w/o lentropy not ok!'
           endif
         else
-          if (lgravx_gas) df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + p%gg(:,1)
-          if (lgravy_gas) df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + p%gg(:,2)
-          if (lgravz_gas) df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + p%gg(:,3)
+          if (lxyzdependence) then
+            if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+p%gg(:,1)*zdep(n)
+            if (lgravy_gas) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+p%gg(:,2)
+            if (lgravz_gas) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+p%gg(:,3)*xdep(l1:l2)
+          else
+            if (lgravx_gas) df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + p%gg(:,1)
+            if (lgravy_gas) df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + p%gg(:,2)
+            if (lgravz_gas) df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + p%gg(:,3)
+          endif
         endif
       endif
 !
@@ -493,7 +529,13 @@ module Gravity
 !
 !  Calculate potential from master pencils defined in initialize_gravity
 !
-      pot = potx_xpencil(l1:l2) + poty_ypencil(m) + potz_zpencil(n)
+      if (lxyzdependence) then
+        pot = potx_xpencil(l1:l2)*zdep(n) &
+            + poty_ypencil(m) &
+            + potz_zpencil(n)*xdep(l1:l2)
+      else
+        pot = potx_xpencil(l1:l2) + poty_ypencil(m) + potz_zpencil(n)
+      endif
 !
       call keep_compiler_quiet(xmn)
       call keep_compiler_quiet(ymn)
@@ -515,7 +557,7 @@ module Gravity
       real, optional :: x,y,z,r
       real, optional :: pot0,grav
       real :: potx_xpoint,poty_ypoint,potz_zpoint
-      real :: prof
+      real :: prof,xdep,zdep
       integer :: i
 !
       potx_xpoint=0.
@@ -528,6 +570,9 @@ module Gravity
           if (lroot) print*,'potential_point: no x-gravity'
         case('const')
           potx_xpoint=-gravx*(x-xinfty)
+        case('linear_zdep')
+          zdep=(1.+kappa_z1*z+.5*(kappa_z1*z)**2)
+          potx_xpoint=0.5*(x**2-xinfty**2)*nux_epicycle**2*zdep
         case('kepler')
           potx_xpoint=-gravx/x
         case default
@@ -556,6 +601,9 @@ module Gravity
           potz_zpoint=-gravz*(z-zinfty)
         case('linear')
           potz_zpoint=0.5*(z**2-zinfty**2)*nu_epicycle**2
+        case('linear_xdep')
+          xdep=(1.+kappa_x1*x+.5*(kappa_x1*x)**2)
+          potz_zpoint=0.5*(z**2-zinfty**2)*nu_epicycle**2*xdep
         case('linear_smoothed')
           prof = 1. + (z/zref)**(2*n_pot)
           potz_zpoint = 0.5*(nu_epicycle*z)**2/prof**(1./n_pot)
@@ -584,18 +632,24 @@ module Gravity
       if (size(gg,2) /= 3) then
         call fatal_error("acceleration_penc","Expecting a 3-vector pencil.")
       endif
-
+!
+!  note: the following would not yet work if lxyzdependence is set to true.
+!
       select case (size(gg,1))
       case (nx)
         gg(:,1) = gravx_xpencil(l1:l2)
+        !ABlater: gg(:,1) = gravx_xpencil(l1:l2)*zdep(n)
       case (mx)
         gg(:,1) = gravx_xpencil
+        !ABlater: gg(:,1) = gravx_xpencil*zdep
       case default
         call fatal_error("acceleration_penc","Wrong pencil size.")
       endselect
 
       gg(:,2) = gravy_ypencil(m)
       gg(:,3) = gravz_zpencil(n)
+!
+      !ABlater: gg(:,3) = gravz_zpencil(n)*xdep(:)
 !
     endsubroutine acceleration_penc
 !***********************************************************************

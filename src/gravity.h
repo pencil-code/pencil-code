@@ -12,8 +12,8 @@
   public :: potential,acceleration
 
 !ajwm SHOULDN'T BE SHARED
-  public :: gravz,nu_epicycle,g0,grav_const,r0_pot,n_pot,qgshear
-  public :: grav_profile
+  public :: gravz,nu_epicycle,g0,gravz_const,r0_pot,n_pot,qgshear
+  public :: gravz_profile
   public :: zref,z1,z2,zinfty,zgrav,reduced_top
   public :: lnrho_bot,lnrho_top
   public :: ss_bot,ss_top

@@ -2271,7 +2271,7 @@ module Density
 !
 !   8-jul-02/axel: incorporated/adapted from init_lnrho
 !
-      use Gravity, only: grav_profile,gravz,zinfty,zref,zgrav,  &
+      use Gravity, only: gravz_profile,gravz,zinfty,zref,zgrav,  &
                              potential,nu_epicycle
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2287,13 +2287,13 @@ module Density
 !  Note: gravz is normally negative!
 !
       if (lgravz) then
-        if (grav_profile=='const') then
+        if (gravz_profile=='const') then
           if (lroot.and.gravz==0.) print*,'polytropic_simple: divide by gravz=0'
           zref=zinfty-(mpoly+1.)*cs20/(-gamma*gravz)
-        elseif (grav_profile=='const_zero') then
+        elseif (gravz_profile=='const_zero') then
           if (lroot.and.gravz==0.) print*,'polytropic_simple: divide by gravz=0'
           zref=zinfty-(mpoly+1.)*cs20/(-gamma*gravz)
-        elseif (grav_profile=='linear') then
+        elseif (gravz_profile=='linear') then
           if (lroot.and.gravz==0.) print*,'polytropic_simple: divide by gravz=0'
           zref2=zinfty**2-(mpoly+1.)*cs20/(0.5*gamma*nu_epicycle**2)
           if (zref2<0) then

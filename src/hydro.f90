@@ -604,7 +604,7 @@ module Hydro
 !
       use EquationOfState, only: cs20, gamma, beta_glnrho_scaled
       use General
-      use Gravity, only: grav_const,z1
+      use Gravity, only: gravz_const,z1
       use Initcond
       use InitialCondition, only: initial_condition_uu
       use Mpicomm, only: stop_it
@@ -711,7 +711,7 @@ module Hydro
 !
 !  sound wave (should be consistent with density module)
 !
-          crit=cs20-grav_const/kx_uu**2
+          crit=cs20-gravz_const/kx_uu**2
           if (lroot) print*,'init_uu: x-wave in uu; crit,ampluu(j)=',crit,ampluu(j)
           do n=n1,n2; do m=m1,m2
             if (crit>0.) then

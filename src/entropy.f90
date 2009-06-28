@@ -1514,7 +1514,6 @@ module Entropy
       beta1=cp1*gamma/gamma1*gravz/(mpoly+1)
       dcs2top_ini=gamma1*gravz
       cs2top_ini=cs20
-print*,'set cs2top_ini,dcs2top_ini=',cs2top_ini,dcs2top_ini
 !
 !  set initial condition (first in terms of TT, and then in terms of ss)
 !
