@@ -176,7 +176,7 @@ for i=0,ncpus-1 do begin
 ;
 ;  Register particle indices for later check if all particles have been read.
 ;  
-    for k=0,npar_loc-1 do begin
+    for k=0L,npar_loc-1 do begin
       ipar[ipar_loc[k]-1]=ipar[ipar_loc[k]-1]+1
     endfor
 ;
@@ -187,7 +187,7 @@ for i=0,ncpus-1 do begin
 ;
 ;  Put local processor data into proper place in global data array
 ;
-    for k=0,npar_loc-1 do begin
+    for k=0L,npar_loc-1 do begin
       if (ipar_loc[k] le npar_max) then array[ipar_loc[k]-1,*]=array_loc[k,*]
     endfor
 ;
@@ -446,8 +446,13 @@ if ( keyword_set(stats) and (not quiet) ) then begin
         if (ivec eq 0) then ind='x'
         if (ivec eq 1) then ind='y'
         if (ivec eq 2) then ind='z'
-        print, ' '+variables[iv]+'_'+ind, '-->', $
-            minval, maxval, meanval, stdval, format='(A-10,A5,4e15.6)'
+        if (!prompt eq 'GDL> ') then begin  ; GDL does not understand A-10
+          print, ' '+variables[iv]+'_'+ind, '-->', $
+              minval, maxval, meanval, stdval, format='(A10,A5,4e15.6)'
+        endif else begin
+          print, ' '+variables[iv]+'_'+ind, '-->', $
+              minval, maxval, meanval, stdval, format='(A-10,A5,4e15.6)'
+        endelse
       endfor
     endif else begin
 ;  Scalar.
@@ -463,8 +468,13 @@ if ( keyword_set(stats) and (not quiet) ) then begin
       endif else begin
         stdval=0.0d
       endelse
-      print, ' '+variables[iv], '-->', $
-          minval, maxval, meanval, stdval, format='(A-10,A5,4e15.6)'
+      if (!prompt eq 'GDL> ') then begin  ; GDL does not understand A-10
+        print, ' '+variables[iv], '-->', $
+            minval, maxval, meanval, stdval, format='(A10,A5,4e15.6)'
+      endif else begin
+        print, ' '+variables[iv], '-->', $
+            minval, maxval, meanval, stdval, format='(A-10,A5,4e15.6)'
+      endelse
     endelse
   endfor
 endif
