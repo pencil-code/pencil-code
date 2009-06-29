@@ -240,6 +240,10 @@ module Param_IO
       read(1,NML=init_pars                 ,ERR=99, IOSTAT=ierr)
 !
       call sgi_fix(lsgifix,1,'start.in')
+      call read_initial_condition_pars(1,IOSTAT=ierr)
+      if (ierr/=0) call sample_startpars('initial_condition_pars',ierr)
+!
+      call sgi_fix(lsgifix,1,'start.in')
       call read_eos_init_pars(1,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('eos_init_pars',ierr)
 !
@@ -350,10 +354,6 @@ module Param_IO
       call sgi_fix(lsgifix,1,'start.in')
       call read_special_init_pars(1,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('special_init_pars',ierr)
-!
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_initial_condition_pars(1,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('initial_condition_pars',ierr)
 !
       call sgi_fix(lsgifix,1,'start.in')
       call read_shock_init_pars(1,IOSTAT=ierr)
