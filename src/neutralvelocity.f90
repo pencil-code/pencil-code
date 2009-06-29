@@ -217,7 +217,7 @@ module NeutralVelocity
       use Cdata
       use EquationOfState, only: cs20, gamma
       use General
-      use Gravity, only: grav_const,z1
+      use Gravity, only: z1
       use Initcond
       use InitialCondition, only: initial_condition_uun
       use Mpicomm, only: stop_it

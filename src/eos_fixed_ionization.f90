@@ -919,20 +919,20 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
 !  Uses T=T0 everywhere in the box and rho=rho0 in the mid-plane
 !
-!  Currently only works with grav_profile='linear', but can easily be
+!  Currently only works with gravz_profile='linear', but can easily be
 !  generalised.
 !
 !  11-feb-04/anders: Programmed more or less from scratch
 !
       use Cdata
-      use Gravity, only: grav_profile
+      use Gravity, only: gravz_profile
       use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: T0,rho0
       real, dimension(nx) :: lnrho,ss,lnTT
 !
-      if (grav_profile /= 'linear') call stop_it &
+      if (gravz_profile /= 'linear') call stop_it &
           ('isothermal_lnrho_ss: Only implemented for linear gravity profile')
 !
 !  First calculate hydrostatic density stratification when T=T0
