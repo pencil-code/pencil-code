@@ -38,7 +38,7 @@ module Gravity
   real, dimension (5,ninit) :: cpot=0. !=(/ 0., 0., 0., 0., 0. /)
   real, dimension(ninit) :: g01=0.,rpot=0.
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
-  real :: grav_const=1.,reduced_top=1.
+  real :: gravz_const=1.,reduced_top=1.
   real :: g0=0.
   real :: r0_pot=0.,r1_pot1=0.    ! peak radius for smoothed potential
   integer :: n_pot=10,n_pot1=10   ! exponent for smoothed potential
