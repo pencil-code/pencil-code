@@ -6,7 +6,6 @@
 !  gravz_zpencil only need to be calculated once, and then these can
 !  simply be added to the equations of motion again and again.
 !
-!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -40,18 +39,20 @@ module Gravity
     module procedure acceleration_point
   endinterface
 !
-  real, dimension(mx) :: gravx_xpencil=0.,potx_xpencil=0.,xdep=0.
-  real, dimension(my) :: gravy_ypencil=0.,poty_ypencil=0.
-  real, dimension(mz) :: gravz_zpencil=0.,potz_zpencil=0.,zdep=0.
-  real :: gravx=0.,gravy=0.,gravz=0.
-  real :: kx_gg=1.,ky_gg=1.,kz_gg=1.,gravz_const=1.,reduced_top=1.
+  real, dimension(mx) :: gravx_xpencil=0.0,potx_xpencil=0.0
+  real, dimension(my) :: gravy_ypencil=0.0,poty_ypencil=0.0
+  real, dimension(mz) :: gravz_zpencil=0.0,potz_zpencil=0.0
+  real, dimension(mx) :: xdep=0.0
+  real, dimension(mz) :: zdep=0.0
+  real :: gravx=0.0,gravy=0.0,gravz=0.0
+  real :: kx_gg=1.0,ky_gg=1.0,kz_gg=1.0,gravz_const=1.0,reduced_top=1.0
   real :: xgrav=impossible,ygrav=impossible,zgrav=impossible
-  real :: xinfty=0.,yinfty=0.,zinfty=0.
-  real :: dgravx=0.,pot_ratio=1.
-  real :: z1=0.,z2=1.,zref=0.,qgshear=1.5
-  real :: nu_epicycle=1.,nu_epicycle2=1.
-  real :: nux_epicycle=0.,nux_epicycle2=0.
-  real :: r0_pot=0.    ! peak radius for smoothed potential
+  real :: xinfty=0.0,yinfty=0.0,zinfty=0.0
+  real :: dgravx=0.0,pot_ratio=1.0
+  real :: z1=0.0,z2=1.0,zref=0.0,qgshear=1.5
+  real :: nu_epicycle=1.0,nu_epicycle2=1.0
+  real :: nux_epicycle=0.0,nux_epicycle2=0.0
+  real :: r0_pot=0.0    ! peak radius for smoothed potential
   real :: g_A, g_C
   real, parameter :: g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
   double precision :: g_B, g_D
@@ -109,8 +110,7 @@ module Gravity
       if (lroot) call svn_id( &
            "$Id$")
 !
-!  Set lgrav and lgravz (the latter for backwards compatibility)
-!  Set lgravz only when gravz_profile is set.
+!  Set lgrav.
 !
       lgrav=.true.
 !
@@ -148,13 +148,13 @@ module Gravity
 !
       if (gravx/=0) lgravx=.true.
       select case (gravx_profile)
-
+!
       case('zero')
         if (lroot) print*,'initialize_gravity: no x-gravity'
         gravx_xpencil=0.
         lgravx_gas=.false.
         lgravx_dust=.false.
-
+!
       case('const')
         if (lroot) print*,'initialize_gravity: constant x-grav=', gravx
         gravx_xpencil=gravx
@@ -184,83 +184,83 @@ module Gravity
         gravx=-alog(pot_ratio)/dgravx
         gravx_xpencil=gravx*.5/cosh((x-xgrav)/dgravx)**2
         potx_xpencil=-gravx*.5*(1.+tanh((x-xgrav)/dgravx))*dgravx
-
+!
       case('sinusoidal')
         if (lroot) print*,'initialize_gravity: sinusoidal x-grav, gravx=',gravx
         gravx_xpencil = -gravx*sin(kx_gg*x)
-
+!
       case('kepler')
         if (lroot) print*,'initialize_gravity: kepler x-grav, gravx=',gravx
         gravx_xpencil=-gravx/x**2
         potx_xpencil=-gravx/x
         g0=gravx
-
+!
       case default
         if (lroot) print*, &
             'initialize_gravity: unknown gravx_profile ', gravx_profile
         call fatal_error('initialize_gravity','chosen gravx_profile not valid')
-
+!
       endselect
 !
 !  Different y-gravity profiles
 !
       select case (gravy_profile)
-
+!
       case('zero')
         if (lroot) print*,'initialize_gravity: no y-gravity'
         gravy_ypencil=0.
         lgravy_gas=.false.
         lgravy_dust=.false.
-
+!
       case('const')
         if (lroot) print*,'initialize_gravity: constant y-grav=', gravy
         gravy_ypencil=gravy
         poty_ypencil=-gravy*(y-yinfty)
-
+!
       case('sinusoidal')
         if (lroot) print*,'initialize_gravity: sinusoidal y-grav, gravy=', gravy
         gravy_ypencil = -gravy*sin(ky_gg*y)
-
+!
       case('kepler')
         if (lroot) print*,'initialize_gravity: kepler gravy, y-grav=', gravy
         gravy_ypencil = -gravy/y**2
-
+!
       case default
         if (lroot) print*, &
             'initialize_gravity: unknown gravy_profile ', gravy_profile
         call fatal_error('initialize_gravity','chosen gravy_profile not valid')
-
+!
       endselect
 !
 !  Different z-gravity profiles
 !  Set lgravz=T only when gravz_profile is not zero
 !
       if (gravz_profile/='zero') lgravz=.true.
-
+!
       select case (gravz_profile)
-
+!
       case('zero')
         if (lroot) print*,'initialize_gravity: no z-gravity'
         gravz_zpencil=0.
         lgravz_gas=.false.
         lgravz_dust=.false.
-
+!
       case('const')
         if (lroot) print*,'initialize_gravity: constant gravz=', gravz
         gravz_zpencil=gravz
         potz_zpencil=-gravz*(z-zinfty)
-
+!
       case('tanh')
         if (lroot) print*,'initialize_gravity: tanh gravz=', gravz
         gravz_zpencil=-gravz*tanh(z/zref)
         potz_zpencil=gravz*zref*alog(cosh(z/zref))
-
+!
       case('boussinesq')
         if (lroot) print*,'initialize_gravity: boussinesq gravz=', gravz
         gravz_zpencil=gravz
         potz_zpencil=-gravz*(z-zinfty)
         lboussinesq=.true.
-
+!
       case('const_zero')  !  Const. gravity acc. (but zero for z>zgrav)
         if (headtt) print*,'initialize_gravity: const_zero gravz=', gravz
         if (zgrav==impossible .and. lroot) &
@@ -268,25 +268,31 @@ module Gravity
         do n=n1,n2
           if (z(n)<=zgrav) gravz_zpencil(n) = gravz
         enddo
-
+!
       case('linear')      !  Linear gravity profile (for accretion discs)
         nu_epicycle2=nu_epicycle**2
         if (lroot) print*,'initialize_gravity: linear z-grav, nu=', nu_epicycle
-        gravz_zpencil = -nu_epicycle2*z
+        gravz_zpencil=-nu_epicycle2*z
         potz_zpencil=0.5*nu_epicycle2*(z**2-zinfty**2)
+!
+      case('spherical')
+        nu_epicycle2=nu_epicycle**2
+        if (lroot) print*,'initialize_gravity: spherical z-grav, nu, z1=', nu_epicycle, z1
+        gravz_zpencil=-nu_epicycle2*z/(1.0+(z/z1)**2)
+        potz_zpencil=0.5*nu_epicycle2*z1**2*alog(1.0+(z/z1)**2)
 !
 !  Linear gravity potential with additional x dependence.
 !  Calculate xdep here, but don't multiply it onto gravz_zpencil
 !  or potz_zpencil, so they will not be correct yet!
 !
-      case('linear_xdep')      !  Linear gravity profile (for accretion discs)
+      case('linear_xdep')
         nu_epicycle2=nu_epicycle**2
         if (lroot) print*,'initialize_gravity: linear z-grav with x dep, nu=', &
           nu_epicycle,kappa_x1,kappa_x2
         xdep=(1.+kappa_x1*x+.5*(kappa_x1*x)**2)
         gravz_zpencil = -nu_epicycle2*z
         potz_zpencil=0.5*nu_epicycle2*(z**2-zinfty**2)
-
+!
       case('linear_smoothed')
         nu_epicycle2=nu_epicycle**2
         if (lroot) print*,'initialize_gravity: linear z-grav, '// &
@@ -294,16 +300,16 @@ module Gravity
         prof = 1. + (z/zref)**(2*n_pot)
         gravz_zpencil = -nu_epicycle2*z/prof**(1./n_pot+1.)
         potz_zpencil = 0.5*nu_epicycle2*z**2/prof**(1./n_pot)
-
+!
       case('sinusoidal')
         if (lroot) print*,'initialize_gravity: sinusoidal z-grav, gravz=', gravz
         gravz_zpencil = -gravz*sin(kz_gg*z)
         potz_zpencil = -gravz/kz_gg*cos(kz_gg*z)
-
+!
       case('kepler')
         if (lroot) print*,'initialize_gravity: kepler z-grav, gravz=', gravz
         gravz_zpencil = -gravz/z**2
-
+!
       case('Ferriere')
 !
 !  Set up physical units.
@@ -324,26 +330,26 @@ module Gravity
 !AB: These numbers should be inserted in the appropriate units.
 !AB: As it is now, it can never make much sense.
         gravz_zpencil = -(g_A*z/sqrt(z**2+g_B**2) + g_C*z/g_D)
-
+!
       case('Galactic-hs')
         if (lroot) print*,'Galactic hydrostatic equilibrium gravity profile'
         if (lroot.and.(cs0hs==0.or.H0hs==0)) &
             call fatal_error('initialize-gravity', &
             'Set cs0hs and H0hs in grav_init_pars!')
         gravz_zpencil = -z*(cs0hs/H0hs)**2/sqrt(1 + (z/H0hs)**2)
-
+!
       case('reduced_top')
         if (lroot) print*,'initialize_gravity: reduced, gravz=',gravz
         if (zgrav==impossible.and.lroot) print*,'zgrav is not set!'
         ztop = xyz0(3)+Lxyz(3)
         prof = cubic_step(z,(zgrav+ztop)/2,(ztop-zgrav)/2)
         gravz_zpencil = (1 - prof*(1-reduced_top))*gravz
-
+!
       case default
         if (lroot) print*, &
             'initialize_gravity: unknown gravz_profile ', gravz_profile
         call fatal_error('initialize_gravity','chosen gravz_profile not valid')
-
+!
       endselect
 !
 !  Sanity check
@@ -601,6 +607,8 @@ module Gravity
           potz_zpoint=-gravz*(z-zinfty)
         case('linear')
           potz_zpoint=0.5*(z**2-zinfty**2)*nu_epicycle**2
+        case('spherical')
+          potz_zpoint=0.5*nu_epicycle**2*z1**2*alog(1.0+(z/z1)**2)
         case('linear_xdep')
           xdep=(1.+kappa_x1*x+.5*(kappa_x1*x)**2)
           potz_zpoint=0.5*(z**2-zinfty**2)*nu_epicycle**2*xdep
@@ -633,7 +641,7 @@ module Gravity
         call fatal_error("acceleration_penc","Expecting a 3-vector pencil.")
       endif
 !
-!  note: the following would not yet work if lxyzdependence is set to true.
+!  Note: the following would not yet work if lxyzdependence is set to true.
 !
       select case (size(gg,1))
       case (nx)
@@ -645,7 +653,7 @@ module Gravity
       case default
         call fatal_error("acceleration_penc","Wrong pencil size.")
       endselect
-
+!
       gg(:,2) = gravy_ypencil(m)
       gg(:,3) = gravz_zpencil(n)
 !
@@ -749,8 +757,7 @@ module Gravity
 !***********************************************************************
     subroutine rprint_gravity(lreset,lwrite)
 !
-!  reads and registers print parameters relevant for gravity advance
-!  dummy routine
+!  Reads and registers print parameters relevant for gravity advance.
 !
 !  12-jun-04/axel: adapted from grav_z
 !
@@ -765,7 +772,7 @@ module Gravity
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-!  reset everything in case of reset
+!  Reset everything in case of reset.
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
@@ -778,8 +785,8 @@ module Gravity
         call parse_name(iname,cname(iname),cform(iname),'epot',idiag_epot)
       enddo
 !
-!  write column, idiag_XYZ, where our variable XYZ is stored
-!  idl needs this even if everything is zero
+!  Write column, idiag_XYZ, where our variable XYZ is stored.
+!  IDL needs this even if everything is zero.
 !
       if (lwr) then
         write(3,*) 'igg=',igg
