@@ -104,11 +104,10 @@ module Magnetic
   real :: alpha_cutoff_up=0.,alpha_cutoff_down=0.
   real :: meanfield_Qs=1.
   real :: displacement_gun=0.
-  real :: pertamplaa=0., beta_const=1.0
+  real :: pertamplaa=0.
   real :: initpower_aa=0.,cutoff_aa=0.,brms_target=1.,rescaling_fraction=1.
   real :: phase_beltrami=0., ampl_beltrami=0.
   real :: bmz=0, bmz_beltrami_phase=0.
-  real :: etadust0=0.0
   real :: taareset=0.,daareset=0.
   real :: center1_x=0., center1_y=0., center1_z=0.
   real :: fluxtube_border_width=impossible
@@ -158,8 +157,8 @@ module Magnetic
        mu_ext_pot,lB_ext_pot,lforce_free_test, &
        ampl_B0,initpower_aa,cutoff_aa,N_modes_aa, &
        rmode,zmode,rm_int,rm_ext,lgauss,lcheck_positive_va2, &
-       lbb_as_aux,ljj_as_aux,beta_const,lbext_curvilinear, &
-       lbbt_as_aux,ljjt_as_aux, etadust0,lneutralion_heat, &
+       lbb_as_aux,ljj_as_aux,lbext_curvilinear, &
+       lbbt_as_aux,ljjt_as_aux, lneutralion_heat, &
        center1_x,center1_y,center1_z,fluxtube_border_width, &
        va2max_jxb,va2power_jxb
 
@@ -216,7 +215,7 @@ module Magnetic
        lelectron_inertia,inertial_length,lbext_curvilinear, &
        lbb_as_aux,ljj_as_aux,lremove_mean_emf,lkinematic, &
        lbbt_as_aux,ljjt_as_aux, &
-       etadust0,lneutralion_heat, lreset_aa, daareset
+       lneutralion_heat, lreset_aa, daareset
 
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_b2tm=0       ! DIAG_DOC: $\left<\bv(t)\cdot\int_0^t\bv(t')
@@ -818,15 +817,6 @@ module Magnetic
         endif
       endif
 !
-!  Register global variables
-!
-      if (any(initaa=='hydrostatic_magnetic')) then
-        call farray_register_global('iglobal_by_ext',iglobal_by_ext)
-        call farray_register_global('iglobal_jx_ext',iglobal_jx_ext)
-        if (any(amplaa/=0)) &
-            call farray_register_global('iglobal_jz_ext',iglobal_jz_ext)
-      endif
-!
       if (any(initaa=='Alfven-zconst')) then    
         call put_shared_variable('zmode',zmode,ierr)
         if (ierr/=0) call fatal_error('initialize_magnetic',&
@@ -876,8 +866,8 @@ module Magnetic
 !
       real, dimension (mz) :: tmp
       real, dimension (nx,3) :: bb
-      real, dimension (nx) :: b2,fact,rho,rhomid
-      real :: beq2, scaleH
+      real, dimension (nx) :: b2,fact
+      real :: beq2
       real, pointer :: nu_epicycle
       integer :: j, ierr
 !
@@ -1016,110 +1006,8 @@ module Magnetic
           enddo;enddo
         case('geo-benchmark-case1','geo-benchmark-case2'); call geo_benchmark_B(f)
 !
-!  Magnetohydrostatic equilibrium initial condition.
-!
-        case('hydrostatic_disk')
-          call get_shared_variable('nu_epicycle',nu_epicycle,ierr)
-          if (ierr/=0) then
-            if (lroot) print*, 'init_aa: '// &
-                'there was a problem when getting nu_epicycle!'
-            call fatal_error('init_aa','')
-          endif
-          if (lroot) &
-            print*, 'init_aa: hydrostatic_disk: '// &
-                'fetched shared variable nu_epicycle=', nu_epicycle
-!  This assumes an isothermal equation of state
-          scaleH = (cs0/nu_epicycle)*sqrt(1+1/beta_const)
-          if (lroot) print*, 'init_aa: hydrostatic_disk: scaleH=', scaleH
-!  Possible to have the mid-plane density vary as a cosine.
-          rhomid=rho0+amplaa(j)*cos(kx_aa(j)*x(l1:l2))
-          do n=n1,n2; do m=m1,m2
-            if (ldensity_nolog) then
-              f(l1:l2,m,n,ilnrho) = rhomid*exp(-0.5*(z(n)/scaleH)**2)
-              rho=f(l1:l2,m,n,ilnrho)
-            else
-              f(l1:l2,m,n,ilnrho) = alog(rhomid)-0.5*(z(n)/scaleH)**2
-              rho=exp(f(l1:l2,m,n,ilnrho))
-            endif
-            f(l1:l2,m,n,iax) = scaleH*sqrt(2*mu0*pi*rhomid*cs20/beta_const) &
-                *erfunc(0.5*z(n)/scaleH)
-            if (Omega/=0.0) f(l1:l2,m,n,iuy) = &
-                1/(2*Omega)*cs20*(1+1/beta_const)* &
-                1/rhomid*(-amplaa(j)*kx_aa(j)*sin(kx_aa(j)*x(l1:l2)))
-          enddo; enddo
-!
-!  Magnetohydrostatic equilibrium initial condition with external By field.
-!  This ensures perfect balance between pressure and gravity, at least if
-!  logarithmic density is used.
-!
-        case('hydrostatic_magnetic')
-          scaleH=1.0*sqrt(1+1/beta_const)
-          if (lroot) print*, 'init_aa: hydrostatic_magnetic: scaleH=', scaleH
-          rhomid=rho0+amplaa(j)*cos(kx_aa(j)*x(l1:l2))
-          do m=m1,m2; do n=n1,n2
-            if (ldensity_nolog) then
-              f(l1:l2,m,n,ilnrho) = rhomid*exp(-0.5*(z(n)/scaleH)**2)
-              rho=f(l1:l2,m,n,ilnrho)
-            else
-              f(l1:l2,m,n,ilnrho) = alog(rhomid)-0.5*(z(n)/scaleH)**2
-              rho=exp(f(l1:l2,m,n,ilnrho))
-            endif
-            f(l1:l2,m,n,iglobal_by_ext) = &
-                sqrt(2*mu0*1.0**2*rho/beta_const)
-            f(l1:l2,m,n,iglobal_jx_ext) = &
-                sqrt(0.5*mu0*1.0**2/beta_const)*sqrt(rho)*z(n)/scaleH**2
-            if (amplaa(j)/=0.0) then
-              f(l1:l2,m,n,iglobal_jz_ext) = &
-                  sqrt(0.5*mu0*1.0**2/beta_const)*1/sqrt(rhomid)* &
-                  (-amplaa(j)*kx_aa(j)*sin(kx_aa(j)*x(l1:l2)))* &
-                  exp(-z(n)**2/(4*scaleH**2))
-              if (Omega/=0.0) f(l1:l2,m,n,iuy)= &
-                  1/(2*Omega)*cs20*(1+1/beta_const)* &
-                  1/rhomid*(-amplaa(j)*kx_aa(j)*sin(kx_aa(j)*x(l1:l2)))
-            endif
-          enddo; enddo
-!
-!  Magnetohydrostatic equilibrium initial condition for tanh gravity.
-!  Requires gravz_profile='tanh' and zref=2*scaleH to work!        
-!
-        case('hydrostatic_disk-tanh')
-          scaleH = cs20*(1+1/beta_const)/1.0
-          print*, 'init_aa: hydrostatic_disk-tanh: scaleH=', scaleH
-          do n=n1,n2; do m=m1,m2
-            if (ldensity_nolog) then
-              f(l1:l2,m,n,ilnrho) = rho0*exp(-2*alog(cosh(z(n)/(2*scaleH))))
-            else
-              f(l1:l2,m,n,ilnrho) = alog(rho0)-2*alog(cosh(z(n)/(2*scaleH)))
-            endif
-            f(l1:l2,m,n,iax) = sqrt(2*mu0*rho0*cs20/beta_const) * &
-                              4*scaleH*atan(tanh(z(n)/(4*scaleH)))
-          enddo; enddo
-
-        case('hydrostatic_disk_sinx')
-          call get_shared_variable('nu_epicycle',nu_epicycle,ierr)
-          if (ierr/=0) then
-            if (lroot) print*, 'init_aa: '// &
-                'there was a problem when getting nu_epicycle!'
-            call fatal_error('init_aa','')
-          endif
-          if (lroot) &
-            print*, 'init_aa: hydrostatic_disk_sinx: '// &
-                'fetched shared variable nu_epicycle=', nu_epicycle
-          ! This assumes an isothermal equation of state
-          scaleH = (cs0/nu_epicycle)*sqrt(1+1/beta_const)
-          print*, 'init_aa: hydrostatic_disk_sinx: scaleH=', scaleH
-          do n=n1,n2; do m=m1,m2
-            if (ldensity_nolog) then
-              f(l1:l2,m,n,ilnrho) = rho0*exp(-0.5*(z(n)/scaleH)**2)
-            else
-              f(l1:l2,m,n,ilnrho) = alog(rho0)-0.5*(z(n)/scaleH)**2
-            endif
-            f(l1:l2,m,n,iax) = 2*scaleH*sqrt(2*mu0*pi*rho0*cs20/beta_const) &
-                              *sin(kx_aa(j)*x(l1:l2))*erfunc(0.5*z(n)/scaleH)
-          enddo; enddo
-
         case('torus-test'); call torus_test(amplaa(j),f,iaa)
-
+!
         case default
 !
 !  Catch unknown values
@@ -1925,18 +1813,6 @@ module Magnetic
         enddo
         if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_z(n)
         etatotal=etatotal+eta_z(n)
-      endif
-!
-      if (lresi_dust) then 
-        if (lweyl_gauge) then
-          etadust=etadust0*p%rhop
-          do j=1,3; fres(:,j)=fres(:,j)-etadust*p%jj(:,j); enddo
-        else
-          if (lroot) print*, 'daa_dt: dust resistivity only works with Weyl gauge'
-          call fatal_error('daa_dt','')
-        endif
-        if (lfirst.and.ldt) diffus_eta=diffus_eta+etadust
-        etatotal=etatotal+etadust
       endif
 !
       if (lresi_hyper2) then
