@@ -25,41 +25,42 @@ module Register
 !
       use Cdata
       use General,          only: setup_mm_nn
+      use Io,               only: register_io
       use Mpicomm,          only: mpicomm_init,stop_it,stop_it_if_any
+      use Param_Io,         only: get_datadir,get_snapdir
       use Sub
-      use Param_IO,         only: get_datadir,get_snapdir
-      use IO,               only: register_io
-      use EquationOfState,  only: register_eos
-      use Shock,            only: register_shock
-      use Gravity,          only: register_gravity
-      use Selfgravity,      only: register_selfgravity
-      use Hydro,            only: register_hydro
-      use Density,          only: register_density
-      use Forcing,          only: register_forcing
-      use Entropy,          only: register_entropy
-      use Magnetic,         only: register_magnetic
-      use Lorenz_gauge,     only: register_lorenz_gauge
-      use Polymer,     only: register_polymer
-      use Testscalar,       only: register_testscalar
-      use Testfield,        only: register_testfield
-      use Testflow,         only: register_testflow
-      use Radiation,        only: register_radiation
-      use Pscalar,          only: register_pscalar
-      use Chiral,           only: register_chiral
       use Chemistry,        only: register_chemistry
+      use Chiral,           only: register_chiral
+      use CosmicrayFlux,    only: register_cosmicrayflux
+      use Cosmicray,        only: register_cosmicray
+      use Density,          only: register_density
       use Dustdensity,      only: register_dustdensity
       use Dustvelocity,     only: register_dustvelocity
+      use Entropy,          only: register_entropy
+      use EquationOfState,  only: register_eos
+      use Forcing,          only: register_forcing
+      use Gravity,          only: register_gravity
+      use Hydro,            only: register_hydro
+      use Hyperresi_strict, only: register_hyperresi_strict
+      use Hypervisc_strict, only: register_hypervisc_strict
+      use InitialCondition, only: register_initial_condition
+      use Interstellar,     only: register_interstellar
+      use Lorenz_gauge,     only: register_lorenz_gauge
+      use Magnetic,         only: register_magnetic
       use NeutralDensity,   only: register_neutraldensity
       use NeutralVelocity,  only: register_neutralvelocity
-      use Cosmicray,        only: register_cosmicray
-      use CosmicrayFlux,    only: register_cosmicrayflux
-      use Interstellar,     only: register_interstellar
+      use Polymer,          only: register_polymer
+      use Pscalar,          only: register_pscalar
+      use Radiation,        only: register_radiation
+      use Selfgravity,      only: register_selfgravity
       use Shear,            only: register_shear
-      use TestPerturb,      only: register_testperturb
-      use Viscosity,        only: register_viscosity
-      use Hypervisc_strict, only: register_hypervisc_strict
-      use Hyperresi_strict, only: register_hyperresi_strict
+      use Shock,            only: register_shock
       use Special,          only: register_special
+      use Testfield,        only: register_testfield
+      use Testflow,         only: register_testflow
+      use TestPerturb,      only: register_testperturb
+      use Testscalar,       only: register_testscalar
+      use Viscosity,        only: register_viscosity
 !
       logical :: ioerr
 !
@@ -105,6 +106,7 @@ module Register
 
 !
       call register_io
+      call register_initial_condition
       call register_eos
       call register_shock
       call register_viscosity
@@ -838,7 +840,7 @@ module Register
       use Entropy,         only: rprint_entropy
       use Magnetic,        only: rprint_magnetic
       use Lorenz_gauge,    only: rprint_lorenz_gauge
-      use Polymer,    only: rprint_polymer
+      use Polymer,         only: rprint_polymer
       use Testscalar,      only: rprint_testscalar
       use Testfield,       only: rprint_testfield
       use Testflow,        only: rprint_testflow
@@ -1031,7 +1033,7 @@ module Register
 !  For the convenience of idl users, the indices of variables in
 !  the f-array and the time_series.dat files are written to data/index.pro
 !
-      if (lroot) open(3,file=trim(datadir)//'/index.pro')
+      if (lroot) open(3,file=trim(datadir)//'/index.pro',position='append')
       call rprint_general         (lreset,LWRITE=lroot)
       call rprint_hydro           (lreset,LWRITE=lroot)
       call rprint_density         (lreset,LWRITE=lroot)
@@ -1039,7 +1041,7 @@ module Register
       call rprint_entropy         (lreset,LWRITE=lroot)
       call rprint_magnetic        (lreset,LWRITE=lroot)
       call rprint_lorenz_gauge    (lreset,LWRITE=lroot)
-      call rprint_polymer    (lreset,LWRITE=lroot)
+      call rprint_polymer         (lreset,LWRITE=lroot)
       call rprint_testscalar      (lreset,LWRITE=lroot)
       call rprint_testfield       (lreset,LWRITE=lroot)
       call rprint_testflow        (lreset,LWRITE=lroot)
