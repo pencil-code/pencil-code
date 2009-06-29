@@ -105,6 +105,10 @@ program start
 !
   lstart = .true.
 !
+!  Initialize index.pro file.
+!
+  if (lroot) open(3,file=trim(datadir)//'/index.pro',status='replace')
+!
 !  Initialize the message subsystem, eg. color setting etc.
 !
   call initialize_messages()
@@ -117,17 +121,14 @@ program start
 !
   allocate( f(mx,my,mz,mfarray),STAT=stat)
   if (stat>0) call stop_it("Couldn't allocate memory for f ")
-
   allocate(df(mx,my,mz,mvar)   ,STAT=stat)
   if (stat>0) call stop_it("Couldn't allocate memory for df")
-
 !
 !  Pre-initialize f and df to absurd value (to crash the code should we
-!  later use uninitialized slots of those fields)
+!  later use uninitialized slots of those fields).
 !
-  f = huge(1.0);
-  df = huge(1.0);
-
+  f =huge(1.0)
+  df=huge(1.0)
 !
 !  Register variables in the f array.
 !

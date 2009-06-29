@@ -106,6 +106,8 @@ program run
 !
   if (lroot) open(3,file=trim(datadir)//'/index.pro',status='replace')
 !
+!  Initialize the message subsystem, eg. color setting etc.
+!
   call initialize_messages()
 !
 !  Initialize MPI and register physics modules.
