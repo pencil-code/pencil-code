@@ -102,32 +102,36 @@ program run
 !
   lrun = .true.
 !
+!  Initialize index.pro file.
+!
+  if (lroot) open(3,file=trim(datadir)//'/index.pro',status='replace')
+!
   call initialize_messages()
 !
-!  initialize MPI and register physics modules
+!  Initialize MPI and register physics modules.
 !  (must be done before lroot can be used, for example)
 !
   call register_modules()
   if (lparticles) call particles_register_modules()
 !
-!  identify version
+!  Identify version.
 !
   if (lroot) call svn_id( &
        "$Id$")
 !
-!  read parameters from start.x (default values; may be overwritten by
-!  read_runpars)
+!  Read parameters from start.x (default values; may be overwritten by
+!  read_runpars).
 !
   call rparam()
 !
-!  derived parameters (that may still be overwritten)
+!  Derived parameters (that may still be overwritten).
 !  [might better be put into another routine, possibly even in rparam or
 !  read_runpars]
 !
   x0 = xyz0(1) ; y0 = xyz0(2) ; z0 = xyz0(3)
   Lx = Lxyz(1) ; Ly = Lxyz(2) ; Lz = Lxyz(3)
 !
-!  Size of box at local processor
+!  Size of box at local processor.
 !
   Lxyz_loc(1)=Lxyz(1)/nprocx
   Lxyz_loc(2)=Lxyz(2)/nprocy
@@ -139,7 +143,7 @@ program run
   xyz1_loc(2)=xyz0_loc(2)+Lxyz_loc(2)
   xyz1_loc(3)=xyz0_loc(3)+Lxyz_loc(3)
 !
-!  populate wavenumber arrays for fft and calculate nyquist wavenumber
+!  Populate wavenumber arrays for fft and calculate Nyquist wavenumber.
 !
   if (nxgrid/=1) then
     kx_fft=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*2*pi/Lx
@@ -165,21 +169,21 @@ program run
     kz_ny = 0.0
   endif
 !
-!  read parameters and output parameter list
+!  Read parameters and output parameter list.
 !
   call read_runpars()
   call rprint_list(LRESET=.false.)
 !
-!  position of equator (if any)
+!  Position of equator (if any).
 !
   if (lequatory) yequator=xyz0(2)+0.5*Lxyz(2)
   if (lequatorz) zequator=xyz0(3)+0.5*Lxyz(3)
 !
-!  inner radius for freezing variables defaults to r_min
+!  Inner radius for freezing variables defaults to r_min.
 !  Note: currently (July 2005), hydro.f90 uses a different approach:
 !  r_int will override rdampint, which doesn't seem to make much sense (if
 !  you want rdampint to be overridden, then don't specify it in the first
-!  place)
+!  place).
 !
   if (rfreeze_int == -impossible .and. r_int > epsi) &
        rfreeze_int = r_int
@@ -193,13 +197,13 @@ program run
     mvar_io = mvar
   endif
 !
-!  print resolution and dimension of the simulation
+!  Print resolution and dimension of the simulation.
 !
   dimensionality=min(nxgrid-1,1)+min(nygrid-1,1)+min(nzgrid-1,1)
   if (lroot) write(*,'(a,i1,a)') 'This is a ',dimensionality,'-D run'
   if (lroot) print*, 'nxgrid,nygrid,nzgrid=',nxgrid,nygrid,nzgrid
 !
-!  check if we want to divide cdtv by dimensionality
+!  Check if we want to divide cdtv by dimensionality.
 !  (old_cdtv defaults to .false.)
 !  [This is obsolete now that we calculate the time step in a different
 !   manner -- could somebody please adjust visc_var and remove cdtvDim?]
@@ -210,40 +214,39 @@ program run
     cdtvDim=cdtv/max(dimensionality,1)
   endif
 !
-!  set up directory names `directory' and `directory_snap'
+!  Set up directory names `directory' and `directory_snap'.
 !
   call directory_names()
 !
-!  get state length of random number generator
+!  Get state length of random number generator.
 !
   call get_nseed(nseed)
 !
-!  read data
-!  snapshot data are saved in the tmp subdirectory.
+!  Read data.
+!  Snapshot data are saved in the tmp subdirectory.
 !  This directory must exist, but may be linked to another disk.
 !  NOTE: for io_dist, rtime doesn't read the time, only for io_mpio.
 !
-!--     call rsnap(trim(directory_snap)//'/var.dat',f,mvar_io)
   call rsnap(trim(directory_snap)//'/var.dat',f,mvar)
   if (lparticles) &
      call particles_read_snapshot(trim(directory_snap)//'/pvar.dat')
   if (lparticles_nbody) &
        call particles_nbody_read_snapshot(&
        trim(datadir)//'/proc0/spvar.dat')
-
-!  read time and global variables (if any)
+!
+!  Read time and global variables (if any).
 !
   call rtime(trim(directory)//'/time.dat',t)
   if (mglobal/=0)  &
       call input_globals(trim(directory_snap)//'/global.dat', &
       f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
 !
-!  read coordinates
+!  Read coordinates.
 !
   if (ip<=6.and.lroot) print*,'reading grid coordinates'
   call rgrid(trim(directory)//'/grid.dat')
 !
-!  read processor boundaries
+!  Read processor boundaries.
 !
   if (lparticles) then
     if (ip<=6.and.lroot) print*,'reading processor boundaries'
@@ -251,7 +254,7 @@ program run
   endif
 !
 !  The following is here to avoid division in sub.f90 for diagnostic
-!  outputs of integrated values in the non equidistant case
+!  outputs of integrated values in the non equidistant case.
 !
  if (.not. lequidist(1)) xprim=1./dx_1
  if (.not. lequidist(2)) yprim=1./dy_1
@@ -263,7 +266,7 @@ program run
   call setup_slices()
 !
 !  Write parameters to log file (done after reading var.dat, since we
-!  want to output time t
+!  want to output time t.
 !
   call print_runpars(FILE=trim(datadir)//'/params.log', &
                      ANNOTATION='Running')
@@ -285,7 +288,7 @@ program run
 !
   call initialize_modules(f,LSTARTING=.false.)
 !
-!  initialize ionization array
+!  Initialize ionization array.
 !
   if (leos_ionization) call ioninit(f)
   if (leos_temperature_ionization) call ioncalc(f)
@@ -302,17 +305,17 @@ program run
 !
   if (lADI) allocate(finit(mx,my,mz,mfarray))
 !
-!  Write data to file for IDL
+!  Write data to file for IDL.
 !
   call wparam2()
 !
-!  possible debug output (can only be done after "directory" is set)
-!  check whether mn array is correct
+!  Possible debug output (can only be done after "directory" is set).
+!  Check whether mn array is correct.
 !
   if (ip<=3) call debug_imn_arrays
 !
 !  Find out which pencils are needed and write information about required,
-!  requested and diagnostic pencils to disc
+!  requested and diagnostic pencils to disc.
 !
   call choose_pencils()
   call write_pencil_info()
@@ -321,26 +324,26 @@ program run
       call output_globals(trim(directory_snap)//'/global.dat', &
       f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
 !
-!  update ghost zones, so rprint works corrected for at the first
-!  time step even if we didn't read ghost zones
+!  Update ghost zones, so rprint works corrected for at the first
+!  time step even if we didn't read ghost zones.
 !
   call update_ghosts(f)
 !
-!  save spectrum snapshot
+!  Save spectrum snapshot.
 !
   if (dspec/=impossible) call powersnap(f)
 !
-!  Initialize pencils in the pencil_case...
+!  Initialize pencils in the pencil_case.
 !
   if (lpencil_init) call initialize_pencils(p,0.0)
 !
-!  Perform pencil_case consistency check if requested
+!  Perform pencil_case consistency check if requested.
 !
   if (lpencil_check) call pencil_consistency_check(f,df,p)
 !
-!  Start timing for final timing statistics
+!  Start timing for final timing statistics.
 !  Initialize timestep diagnostics during the run (whether used or not,
-!  see idiag_timeperstep)
+!  see idiag_timeperstep).
 !
   if (lroot) then
     time1 = mpiwtime()
@@ -357,14 +360,14 @@ program run
     endif
   endif
 !
-!  Do loop in time
+!  Do loop in time.
 !
   Time_loop: do while (it<=nt)
     lout=mod(it-1,it1).eq.0
     l1dout=mod(it-1,it1d).eq.0
     if (lout) then
 !
-!  Exit do loop if file `STOP' exists
+!  Exit do loop if file `STOP' exists.
 !
       if (lroot) inquire(FILE="STOP", EXIST=stop)
       call mpibcast_logical(stop, 1)
@@ -383,7 +386,7 @@ program run
         exit Time_loop
       endif
 !
-!  Exit do loop if wall_clock_time has exeeded max_walltime
+!  Exit do loop if wall_clock_time has exceeded max_walltime.
 !
       if (lroot.and.max_walltime > 0.0) then
         if (wall_clock_time > max_walltime) timeover=.true.
@@ -439,7 +442,7 @@ program run
         open(1,file='REINIT',action='read',form='formatted')
         nreinit=1
 !
-!  Read variable names from REINIT file
+!  Read variable names from REINIT file.
 !
         ierr=0
         do while (ierr == 0)
@@ -457,7 +460,7 @@ program run
         call mpibcast_int(nreinit, 1)
         call mpibcast_char(reinit_vars, 10)
 !
-!  Reinit all variables present in reinit_vars array
+!  Reinit all variables present in reinit_vars array.
 !
         do ivar=1,nreinit
           select case (reinit_vars(ivar))
@@ -503,24 +506,24 @@ program run
     endif
 !
 !  If we want to write out video data, wvid sets lvideo=.true.
-!  This allows pde to prepare some of the data
+!  This allows pde to prepare some of the data.
 !
     if (lwrite_slices) call wvid_prepare()
     if (lwrite_2daverages) call write_2daverages_prepare()
 !
-!  Find out which pencils to calculate at current time-step
+!  Find out which pencils to calculate at current time-step.
 !
     lpencil = lpenc_requested
     if (lout)   lpencil=lpencil .or. lpenc_diagnos
     if (l2davg) lpencil=lpencil .or. lpenc_diagnos2d
     if (lvideo) lpencil=lpencil .or. lpenc_video
 !
-!  save state vector prior to update
+!  Save state vector prior to update.
 !
     if (lADI)   finit=f
     if (ltestperturb) call testperturb_begin(f,df)
 !
-!  Time advance
+!  Time advance.
 !
     call rk_2n(f,df,p)
 !
@@ -530,8 +533,8 @@ program run
     if (lout)   call write_1daverages()
     if (l2davg) call write_2daverages()
 !
-!  07-Sep-07/dintrans+gastine: implicit advance of the radiative diffusion
-!  in the temperature equation (using temperature_idealgas)
+!  07-Sep-07/dintrans+gastine: Implicit advance of the radiative diffusion
+!  in the temperature equation (using temperature_idealgas).
 !
     if (lADI) call calc_heatcond_ADI(finit,f)
     if (ltestperturb) call testperturb_finalize(f)
@@ -544,14 +547,14 @@ program run
 !
     if (ltavg) call update_timeavgs(f,dt)
 !
-!  Add forcing and/or do rescaling (if applicable)
+!  Add forcing and/or do rescaling (if applicable).
 !
     if (lforcing) call addforce(f)
     if (lrescaling_magnetic)  call rescaling_magnetic(f)
     if (lrescaling_testscalar) call rescaling_testscalar(f)
     if (lrescaling_testfield) call rescaling_testfield(f)
 !
-!  Check for SNe, and update f if necessary (see interstellar.f90)
+!  Check for SNe, and update f if necessary (see interstellar.f90).
 !
     if (linterstellar) call check_SN(f,df)
 !
@@ -574,7 +577,7 @@ program run
 !
 !  Setting ialive=1 can be useful on flaky machines!
 !  Each processor writes it's processor number (if it is alive!)
-!  Set ialive=0 to fully switch this off
+!  Set ialive=0 to fully switch this off.
 !
     if (ialive /= 0) then
       if (mod(it,ialive)==0) &
@@ -594,12 +597,12 @@ program run
     call wsnap_timeavgs(trim(directory_snap)//'/TAVG',ENUM=.true., &
          FLIST='tavgN.list')
 !
-!  Write slices (for animation purposes)
+!  Write slices (for animation purposes).
 !
     if (lvideo.and.lwrite_slices) call wvid(f,trim(directory)//'/slice_')
 !
 !  Save snapshot every isnap steps in case the run gets interrupted.
-!  The time needs also to be written
+!  The time needs also to be written.
 !
     if (isave/=0.and..not.lnowrite) then
       if (mod(it,isave)==0) then
@@ -617,7 +620,7 @@ program run
       endif
     endif
 !
-!  Save spectrum snapshot
+!  Save spectrum snapshot.
 !
     if (dspec/=impossible) call powersnap(f)
 !
@@ -654,7 +657,7 @@ program run
   if (lroot) time2=mpiwtime()
 !
 !  Write data at end of run for restart.
-!  dvar is written for analysis purposes only
+!  dvar is written for analysis purposes only.
 !
   if (lroot) print*, 'Writing final snapshot for t=', t
   call wtime(trim(directory)//'/time.dat',t)
@@ -678,13 +681,14 @@ program run
          call wsnap(trim(directory)//'/dcrash.dat',df,mvar,ENUM=.false.)
   endif
 !
-!  Save spectrum snapshot
+!  Save spectrum snapshot.
 !
   if (save_lastsnap) then
     if (dspec /= impossible) call powersnap(f,.true.)
   endif
 !
-!  Print wall clock time and time per step and processor  for diagnostic purposes
+!  Print wall clock time and time per step and processor for diagnostic
+!  purposes.
 !
   if (lroot) then
     wall_clock_time = time2-time1
@@ -699,7 +703,7 @@ program run
   endif
   call mpifinalize
 !
-!  Free any allocated memory
+!  Free any allocated memory.
 !
   call farray_clean_up()
   call sharedvars_clean_up()
