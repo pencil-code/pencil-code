@@ -562,6 +562,7 @@ endif
 ##FFLAGS=-O4  -I/home/brandenb/library/include/gsl-1.9/include/ -L/home/brandenb/library/include/gsl-1.9/ #(nl6)
 ##LD_MPI=#(nl6)
 ##CFLAGS=-DFUNDERSC=1 #(nl6)
+##FFLAGS_DOUBLE = -r8 #(nl6)
 ##
 ##  Axel's laptop (nl6, 2.0 GHz)
 ##  the -CB options checks for out of bounds arrays
@@ -574,6 +575,8 @@ endif
 #LD_MPI=-L/usr/lib/openmpi/lib -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl #(nl6)
 #CC=icc #(nl6)
 #CFLAGS=-O3 -DFUNDERSC=1 #(nl6)
+#FFLAGS_DOUBLE=-autodouble #(nl6)
+##include $(PENCIL_HOME)/src/Makefile_ifort.incl #(nl6)
 ##
 ## Axel on fe03 (ifc 8.1)
 ##

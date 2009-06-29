@@ -44,7 +44,7 @@ module Gravity
   real, dimension(my) :: gravy_ypencil=0.,poty_ypencil=0.
   real, dimension(mz) :: gravz_zpencil=0.,potz_zpencil=0.,zdep=0.
   real :: gravx=0.,gravy=0.,gravz=0.
-  real :: kx_gg=1.,ky_gg=1.,kz_gg=1.,grav_const=1.,reduced_top=1.
+  real :: kx_gg=1.,ky_gg=1.,kz_gg=1.,gravz_const=1.,reduced_top=1.
   real :: xgrav=impossible,ygrav=impossible,zgrav=impossible
   real :: xinfty=0.,yinfty=0.,zinfty=0.
   real :: dgravx=0.,pot_ratio=1.
