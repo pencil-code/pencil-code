@@ -161,7 +161,7 @@ varcontent[ics2].idlinit    = INIT_SCALAR
 varcontent[ics2].idlvarloc  = 'cs2_loc'
 varcontent[ics2].idlinitloc = INIT_SCALAR_LOC
 ;
-default, ilnTT, 0
+default, iglnTT, 0
 if (iglnTT ne 0) then iglnTT=iglnTT-dim.mvar-dim.maux
 varcontent[iglnTT].variable   = 'Gradient of logarithmic temperature'
 varcontent[iglnTT].idlvar     = 'glnTT'
