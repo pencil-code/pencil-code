@@ -118,7 +118,8 @@ module Polymer
 !
 !  polymer evolution
 !
-      real, dimension (mx,my,mz,mfarray) :: f,df
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
       call keep_compiler_quiet(f)
