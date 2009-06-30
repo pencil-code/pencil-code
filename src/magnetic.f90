@@ -1618,7 +1618,7 @@ module Magnetic
 ! cosub
       if (lpencil(i_cosub)) then
         do ix=1,nx
-          if((abs(p%uu(ix)).le.tini).or.(abs(p%bbb(ix)).le.tini))then 
+          if((abs(p%uu(ix)).le.tini).or.(abs(p%bb(ix)).le.tini))then 
             p%cosub(ix)=0.
           else
             p%cosub(ix)=p%ub(ix)/(abs(p%uu(ix))*abs(p%bb(ix)))
