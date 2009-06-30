@@ -63,6 +63,9 @@ module Sub
 !
   public :: smooth_kernel, despike
 !
+  public :: ludcmp
+  public :: lubksb
+!
   interface poly                ! Overload the `poly' function
     module procedure poly_0
     module procedure poly_1
@@ -5305,4 +5308,77 @@ nameloop: do
 
     endfunction interp1
 !***********************************************************************
-endmodule Sub
+    subroutine ludcmp(a,indx)
+!
+!  25-jun-09/rplasson: coded (adapted from numerical recipe)
+!
+!  Computes the LU decomposition of the matrix a
+!  The result is placed in the matrix a
+!  The row permutations are returned in indx
+!
+      real, dimension(:,:), intent(INOUT) :: a
+      integer, dimension(:), intent(OUT) :: indx
+      real, dimension(size(a,1)) :: vv,swap 
+      integer :: j,n,imax
+      integer, dimension(1) :: tmp
+      
+      n=size(a,1)
+      if (n /= size(a,2)) call fatal_error('ludcmp','non square matrix')
+      if (n /= size(indx)) call fatal_error('ludcmp', 'bad dimension for indx')
+      vv=maxval(abs(a),dim=2)
+      if (any(vv == 0.0)) call fatal_error('ludcmp','singular matrix')
+      vv=1.0/vv
+      do j=1,n
+        tmp=maxloc(vv(j:n)*abs(a(j:n,j)))
+        imax=(j-1)+tmp(1)
+        if (j /= imax) then
+          swap=a(imax,:)
+          a(imax,:)=a(j,:)
+          a(j,:)=swap
+          vv(imax)=vv(j)
+        end if
+        indx(j)=imax
+        if (a(j,j) == 0.0) a(j,j)=tiny(0.)
+        a(j+1:n,j)=a(j+1:n,j)/a(j,j)
+        a(j+1:n,j+1:n)=a(j+1:n,j+1:n)-spread(a(j+1:n,j),dim=2,ncopies=(n-j)) * &
+            spread(a(j,j+1:n),dim=1,ncopies=(n-j))
+      end do
+    end subroutine ludcmp
+!***********************************************************************
+    subroutine lubksb(a,indx,b)
+!
+!  25-jun-09/rplasson: coded (adapted from numerical recipe)
+!
+!  Solves the equation A.X=B
+!  'a' must contain the LU decomposition of matrix A obtained by ludcmp
+!  'indx' is the permutation vector obtained by ludcmp
+!  'b' contains B, and returns the solution vector X 
+!
+      real, dimension(:,:), intent(IN) :: a
+      integer, dimension(:), intent(IN) :: indx
+      real, dimension(:), intent(INOUT) :: b
+      integer :: i,n,ii,ll
+      real :: summ
+      
+      n=size(a,1)
+      if (n /= size(a,2)) call fatal_error('lubksb','non square matrix')
+      if (n /= size(indx)) call fatal_error('lubksb', 'bad dimension for indx')
+      ii=0
+      do i=1,n
+        ll=indx(i)
+        summ=b(ll)
+        b(ll)=b(i)
+        if (ii /= 0) then
+          summ=summ-dot_product(a(i,ii:i-1),b(ii:i-1))
+        else if (summ /= 0.0) then
+          ii=i
+        end if
+        b(i)=summ
+      end do
+      do i=n,1,-1
+        b(i) = (b(i)-dot_product(a(i,i+1:n),b(i+1:n)))/a(i,i)
+      end do
+    end subroutine lubksb
+!***********************************************************************
+  endmodule Sub
+  

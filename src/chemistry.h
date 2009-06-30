@@ -19,6 +19,7 @@
   public :: bc_nscbc_nref_subout_y
   public :: bc_nscbc_nref_subout_z
 
+  public :: jacobn
 
 !  public :: get_p_infx
 !  public :: get_p_infy

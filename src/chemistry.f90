@@ -4756,6 +4756,82 @@ subroutine flame_blob(f)
 
     endsubroutine bc_nscbc_nref_subout_z
 !***********************************************************************
+    subroutine jacobn(f,jacob)
+! Compute the jacobian, i.e. the matrix  jacob(nchemspec x nchemspec)
+! where jacob(i,j)=dv_i/dc_j
+! v is the vector of dimension nchemspec of the rates dc_j/dt
+! (the c_j being concentrations, stocked in f among other)
+!
+!  28-may-09/rplasson: coded
+!
+
+! Check what is necessary...
+!
+      use Diagnostics
+      use Mpicomm
+      use Sub
+!
+      implicit none
+!   exchange data
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,nchemspec,nchemspec) :: jacob
+      
+      intent(in) :: f
+      intent(out) :: jacob
+!   internal data
+!
+!   indices
+      integer :: i,j,k,l,ii
+!
+!   temporary 
+      real :: tmp_p,tmp_m
+!   Code
+
+      jacob=0.
+      
+!  identify module 
+!
+      if (headtt.or.ldebug) print*,'jacobn: compute the jacobian matrix'
+!
+      if (lreactions) then
+        do n=n1,n2; do m=m1,m2;do l=l1,l2
+          do i=1,nchemspec 
+            do j=1,nchemspec
+              ! Compute dv_i/dc_j 
+              do k=1,nreactions
+                ! Check if compound i participate in reaction k
+                if (Sijp(k,i)/=Sijm(k,i)) then
+                  ! Compute the contribution of reaction k to dv_i/dc_j
+                  tmp_p=Sijp(k,i)*kreactions_p(k)*kreactions_z(n,k)
+                  tmp_m=Sijm(k,i)*kreactions_m(k)*kreactions_z(n,k)
+                  do  ii=1,nchemspec
+                    ! Compute the contribution of compound ii in reaction k
+                    if (ii/=j) then
+                      tmp_p=tmp_p*f(l,m,n,ichemspec(ii))**Sijm(k,ii)
+                      tmp_m=tmp_m*f(l,m,n,ichemspec(ii))**Sijp(k,ii)
+                    else
+                      if (Sijm(k,ii)==0) then 
+                        tmp_p=0.
+                      elseif (Sijm(k,ii)>1) then
+                        tmp_p=(Sijm(k,ii)-1)*tmp_p*f(l,m,n,ichemspec(ii))**(Sijm(k,ii)-1) 
+                      endif
+                      if (Sijp(k,ii)==0) then
+                        tmp_m=0.
+                      elseif (Sijp(k,ii)>1) then
+                        tmp_m=(Sijp(k,ii)-1)*tmp_m*f(l,m,n,ichemspec(ii))**(Sijp(k,ii)-1) 
+                      endif
+                    endif
+                  enddo
+                  ! Add the contribution of reaction k to dv_i/dc_j
+                  jacob(l,m,n,i,j)=jacob(l,m,n,i,j)+tmp_p-tmp_m
+                endif
+              enddo
+            enddo
+          enddo
+        enddo; enddo; enddo
+      endif
+      
+    end subroutine jacobn
 !***********************************************************************
 
 !********************************************************************
