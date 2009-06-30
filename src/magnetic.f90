@@ -1298,8 +1298,8 @@ module Magnetic
       endif
       if (lpencil_in(i_cosub)) then
         lpencil_in(i_ub)=.true.
-        lpencil_in(i_uu)=.true.
-        lpencil_in(i_bb)=.true.
+        lpencil_in(i_u2)=.true.
+        lpencil_in(i_b2)=.true.
       endif
       if (lpencil_in(i_ub)) then
         lpencil_in(i_uu)=.true.
@@ -1618,10 +1618,10 @@ module Magnetic
 ! cosub
       if (lpencil(i_cosub)) then
         do ix=1,nx
-          if((abs(p%uu(ix)).le.tini).or.(abs(p%bb(ix)).le.tini))then 
+          if((abs(p%u2(ix)).le.tini).or.(abs(p%b2(ix)).le.tini))then 
             p%cosub(ix)=0.
           else
-            p%cosub(ix)=p%ub(ix)/(abs(p%uu(ix))*abs(p%bb(ix)))
+            p%cosub(ix)=p%ub(ix)/sqrt(p%u2(ix)*p%b2(ix))
           endif
         enddo
         if (lpencil_check) then
