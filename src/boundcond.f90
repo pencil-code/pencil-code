@@ -3547,14 +3547,14 @@ module Boundcond
       use EquationOfState, only: gamma, gamma1, lnrho0, cs20
       use SharedVariables, only: get_shared_variable
 !
-      real, pointer :: FbotKbot
+      real, pointer :: FbotKbot, FtopKtop
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (my,mz) :: tmp_yz,cs2_yz
       integer :: i,ierr
 !
 !  Do the `c1' boundary condition (constant heat flux) for entropy.
-!  check whether we want to do top or bottom (this is precessor dependent)
+!  check whether we want to do top or bottom (this is processor dependent)
 !
       call get_shared_variable('FbotKbot',FbotKbot,ierr)
       if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
@@ -3586,11 +3586,30 @@ module Boundcond
 !  ============
 !
       case('top')
-        call fatal_error('bc_ss_flux_x','not implemented for top')
-
+!
+        call get_shared_variable('FtopKtop',FtopKtop,ierr)
+        if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
+             "there was a problem when getting FtopKtop")
+!
+        if (headtt) print*,'bc_ss_flux_x: FtopKtop=',FtopKtop
+!
+!  calculate Ftop/(K*cs2)
+!
+        cs2_yz=cs20*exp(gamma1*(f(l2,:,:,ilnrho)-lnrho0)+gamma*f(l2,:,:,iss))
+        tmp_yz=FtopKtop/cs2_yz
+!
+!  enforce ds/dx + gamma1/gamma*dlnrho/dx = - gamma1/gamma*Ftop/(K*cs2)
+!
+        do i=1,nghost
+          f(l2+i,:,:,iss)=f(l2-i,:,:,iss)+gamma1/gamma* &
+              (f(l2-i,:,:,ilnrho)-f(l2+i,:,:,ilnrho)-2*i*dx*tmp_yz)
+!          f(l1-i,:,:,iss)=f(l1+i,:,:,iss)+gamma1/gamma* &
+!              (f(l1+i,:,:,ilnrho)-f(l1-i,:,:,ilnrho)+2*i*dx*tmp_yz)
+        enddo
+!
       case default
         call fatal_error('bc_ss_flux_x','invalid argument')
-
+!
       endselect
 !
     endsubroutine bc_ss_flux_x
