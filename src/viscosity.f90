@@ -1048,19 +1048,24 @@ module Viscosity
 !  Calculate Lambda effect
 !
      if (llambda_effect) then
-!      p%fvisc(:,iuz)=p%fvisc(:,iuz)+Lambda_V0*( &
-!                  -p%uu(:,3)/x(l1:l2)**2  +p%uij(:,3,1)/x(l1:l2) & 
-!                     +(p%uu(:,3)/x(l1:l2)+gLambda_Omega*sinth(m))*p%glnrho(:,1))
+      p%fvisc(:,iuz)=p%fvisc(:,iuz)+Lambda_V0*( &
+                  -p%uu(:,3)/x(l1:l2)**2  +p%uij(:,3,1)/x(l1:l2) & 
+                     +(p%uu(:,3)/x(l1:l2)+Lambda_Omega*sinth(m))*p%glnrho(:,1))
+!                  +p%uu(:,3)/x(l1:l2)**2  +p%uij(:,3,1)/x(l1:l2) & 
+!                     +(p%uu(:,3)/x(l1:l2)+Lambda_Omega*sinth(m))*p%glnrho(:,1))
 !
 !AB: Dhruba, please check the following expression that we adopted from
 !AB: the BMT92 paper.
 !DM: The two are actually the same expression. 
 !  viscosity might be added here
 !
-       p%fvisc(:,iuz)=p%fvisc(:,iuz)-Lambda_V0/x(l1:l2)*( &
-         p%uij(:,3,1)+Lambda_Omega*sinth(m) & 
-          +(p%uu(:,3)+Lambda_Omega*sinth(m))*(p%glnrho(:,1)+2./x(l1:l2)))
+!       p%fvisc(:,iuz)=p%fvisc(:,iuz)-Lambda_V0/x(l1:l2)*( &
+!         p%uij(:,3,1)+Lambda_Omega*sinth(m) & 
+!          +(p%uu(:,3)+Lambda_Omega*sinth(m))*(p%glnrho(:,1)+2./x(l1:l2)))
     endif
+! DM the above is possibly dimensionally wrong, as the two following terms 
+! p%uu(:,3)+Lambda_Omega*sinth(m)  
+! do not have the same dimension. 
 !
 !  Store viscous heating rate in auxiliary variable if requested.
 !  Just neccessary immediately before writing snapshots, but how would we

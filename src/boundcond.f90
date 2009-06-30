@@ -726,7 +726,7 @@ module Boundcond
 !   7-jul-08/arne: coded.
 
 !
-      use Chemistry, only: bc_nscbc_subin_x,bc_nscbc_nref_subout_x,bc_nscbc_nref_subout_y
+      use Chemistry, only: bc_nscbc_subin_x,bc_nscbc_nref_subout_x
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -1659,8 +1659,9 @@ module Boundcond
 !
         if ((llambda_effect).and.(j.eq.iuz)) then
           do iy=1,my
-             boundary_value(iy,:)=f(l1,iy,:,j)/x(l1)+Lambda_V0*(f(l1,iy,:,iuz)/x(l1)+&
-                Lambda_Omega*sin(y(iy)))
+             boundary_value(iy,:)=f(l1,iy,:,j)/x(l1)-Lambda_V0*(f(l1,iy,:,iuz)/x(l1))
+!+&
+!                Lambda_Omega*sin(y(iy)))
           enddo
         else
           boundary_value(:,:)=f(l1,:,:,j)/x(l1)
@@ -1674,8 +1675,9 @@ module Boundcond
       case('top')
         if ((llambda_effect).and.(j.eq.iuz)) then
           do iy=1,my
-             boundary_value(iy,:)=f(l2,iy,:,j)/x(l2)+Lambda_V0*(f(l2,iy,:,iuz)/x(l2)+&
-                Lambda_Omega*sin(y(iy)))
+             boundary_value(iy,:)=f(l2,iy,:,j)/x(l2)-Lambda_V0*(f(l2,iy,:,iuz)/x(l2))
+!+&
+!                Lambda_Omega*sin(y(iy)))
           enddo
         else
           boundary_value(:,:)=f(l2,:,:,j)/x(l2)  
@@ -3545,7 +3547,7 @@ module Boundcond
       use EquationOfState, only: gamma, gamma1, lnrho0, cs20
       use SharedVariables, only: get_shared_variable
 !
-      real, pointer :: FbotKbot, FtopKtop
+      real, pointer :: FbotKbot
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (my,mz) :: tmp_yz,cs2_yz
@@ -3584,27 +3586,8 @@ module Boundcond
 !  ============
 !
       case('top')
-!
-        call get_shared_variable('FtopKtop',FtopKtop,ierr)
-        if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
-             "there was a problem when getting FtopKtop")
-!
-        if (headtt) print*,'bc_ss_flux_x: FtopKtop=',FtopKtop
-!
-!  calculate Ftop/(K*cs2)
-!
-        cs2_yz=cs20*exp(gamma1*(f(l2,:,:,ilnrho)-lnrho0)+gamma*f(l2,:,:,iss))
-        tmp_yz=FtopKtop/cs2_yz
-!
-!  enforce ds/dx + gamma1/gamma*dlnrho/dx = - gamma1/gamma*Ftop/(K*cs2)
-!
-        do i=1,nghost
-          f(l2+i,:,:,iss)=f(l2-i,:,:,iss)+gamma1/gamma* &
-              (f(l2-i,:,:,ilnrho)-f(l2+i,:,:,ilnrho)-2*i*dx*tmp_yz)
-!          f(l1-i,:,:,iss)=f(l1+i,:,:,iss)+gamma1/gamma* &
-!              (f(l1+i,:,:,ilnrho)-f(l1-i,:,:,ilnrho)+2*i*dx*tmp_yz)
-        enddo
-!
+        call fatal_error('bc_ss_flux_x','not implemented for top')
+
       case default
         call fatal_error('bc_ss_flux_x','invalid argument')
 

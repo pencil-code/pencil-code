@@ -148,11 +148,8 @@ module Lorenz_gauge
 !***********************************************************************
     subroutine calc_pencils_lorenz_gauge(f,p)
 !
-!  Calculate Hydro pencils.
-!  Most basic pencils should come first, as others may depend on them.
-!
-!   24-nov-04/tony: coded
-!
+! Calculates pencils of the lorenz gauge
+! 
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
