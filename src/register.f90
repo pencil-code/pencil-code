@@ -64,11 +64,15 @@ module Register
 !
       logical :: ioerr
 !
-!  initialize all mpi stuff
+!  Initialize all mpi stuff.
 !
       call mpicomm_init
 !
-!  overwrite datadir from datadir.in, if that exists
+!  Initialize index.pro file.
+!
+      if (lroot) open(3,file=trim(datadir)//'/index.pro',status='replace')
+!
+!  Overwrite datadir from datadir.in, if that exists.
 !
       call get_datadir(datadir)
       call get_snapdir(datadir_snap)
@@ -77,13 +81,13 @@ module Register
 !
       call setup_mm_nn
 !
-!  initialize nvar; is increased by the following routines
+!  Initialize nvar; is increased by the following routines.
 !
       nvar     = 0
       naux     = 0
       naux_com = 0
 !
-!  Writing files for use with IDL
+!  Writing files for use with IDL.
 !
       ioerr = .true.            ! will be overridden unless we go 911
       if (lroot) then
@@ -96,14 +100,15 @@ module Register
       endif
       ioerr = .false.
 !
-!  Initialize file for writing constants to be read by IDL
+!  Initialize file for writing constants to be read by IDL.
 !
       if (lroot) then
         open (1,file=trim(datadir)//'/pc_constants.pro')
         write (1,*) '; This file contain pc constants of interest to IDL'
         close (1)
       endif
-
+!
+!  Register variables in the f-array.
 !
       call register_io
       call register_initial_condition
@@ -138,7 +143,7 @@ module Register
       call register_hyperresi_strict
       call register_special
 !
-!  Writing files for use with IDL
+!  Writing files for use with IDL.
 !
       if (lroot) then
         do aux_count=1,maux
@@ -154,14 +159,13 @@ module Register
            'Check your MVAR and/or MAUX CONTRIBUTION in cparam.local')
       endif
 !
-!  initialize headt for root processor only
+!  Initialize headt for root processor only.
 !
       if (lroot) headt=.true.
 !
 !  Something went wrong. Catches cases that would make mpich 1.x hang,
-!  provided that this is the first attempt to write a file
+!  provided that this is the first attempt to write a file.
 !
-
 911   call stop_it_if_any(ioerr, &
           "Cannot open "//datadir//"/def_var.pro for writing" // &
           " -- is data/ visible from root node?")
