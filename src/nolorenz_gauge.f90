@@ -183,8 +183,6 @@ module Lorenz_gauge
 !
 !  write name list
 !
-      write(unit,NML=lorenz_gauge_init_pars)
-!
     endsubroutine write_lorenz_gauge_init_pars
 !***********************************************************************
     subroutine read_lorenz_gauge_run_pars(unit,iostat)

@@ -53,6 +53,7 @@ module Equ
       use Particles_main
       use Poisson
       use Pscalar
+      use Polymer
       use Radiation
       use Selfgravity
       use Shear
@@ -384,6 +385,7 @@ module Equ
                               call calc_pencils_entropy(f,p)
         if (llorenz_gauge)     call calc_pencils_lorenz_gauge(f,p)
         if (lmagnetic)        call calc_pencils_magnetic(f,p)
+        if (lpolymer)        call calc_pencils_polymer(f,p)
         if (lgrav)            call calc_pencils_gravity(f,p)
         if (lselfgravity)     call calc_pencils_selfgravity(f,p)
         if (lpscalar)         call calc_pencils_pscalar(f,p)
@@ -417,6 +419,11 @@ module Equ
 !  Lorenz gauge evolution
 !
         if (llorenz_gauge) call dlorenz_gauge_dt(f,df,p)
+!
+!  Polymer evolution 
+!DM: This is harmless because no polymer is checked in yet. 
+!
+        if (lpolymer) call dpp_dt(f,df,p)
 !
 !  Testscalar evolution
 !

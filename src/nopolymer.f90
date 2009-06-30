@@ -1,4 +1,4 @@
-! $Id: nopolymer.f90 $
+! $Id: nopolymer.f90 dhruba.mitra $
 !  This modules deals with all aspects of polymers.
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -17,7 +17,7 @@ module Polymer
   use Cdata
   use Cparam
   use Messages
-
+  use Sub, only: keep_compiler_quiet
   implicit none
 
   include 'record_types.h'
@@ -37,7 +37,9 @@ module Polymer
       use Cdata
       use Mpicomm
       use Sub
-
+!
+      if (lroot) call svn_id( &
+           "$Id: nopolymer.f90 $")
 !
     endsubroutine register_polymer
 !***********************************************************************
@@ -102,6 +104,13 @@ module Polymer
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+
+!
+      intent(in) :: f
+      intent(inout) :: p
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
        
     endsubroutine calc_pencils_polymer
 !***********************************************************************
@@ -111,6 +120,10 @@ module Polymer
 !
       real, dimension (mx,my,mz,mfarray) :: f,df
       type (pencil_case) :: p
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine dpp_dt
 !***********************************************************************
