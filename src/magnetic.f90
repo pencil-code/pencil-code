@@ -22,6 +22,7 @@
 ! PENCILS PROVIDED glnrhoxb(3); del4a(3); del6a(3); oxj(3); diva
 ! PENCILS PROVIDED jij(3,3); sj; ss12; mf_EMF(3); mf_EMFdotB
 ! PENCILS PROVIDED cosjb,jparallel;jperp 
+! PENCILS PROVIDED cosub 
 !
 !***************************************************************
 module Magnetic
@@ -238,6 +239,7 @@ module Magnetic
   integer :: idiag_ajm=0        ! DIAG_DOC: $\left<\jv\cdot\Av\right>$
   integer :: idiag_jbm=0        ! DIAG_DOC: $\left<\jv\cdot\Bv\right>$
   integer :: idiag_ubm=0        ! DIAG_DOC: $\left<\uv\cdot\Bv\right>$
+  integer :: idiag_cosubm=0     ! DIAG_DOC: $\left<\Uv\cdot\Bv/(|\Uv|\,|\Bv|)\right>$
   integer :: idiag_ujm=0        ! DIAG_DOC: $\left<\uv\cdot\Jv\right>$
   integer :: idiag_fbm=0        ! DIAG_DOC: $\left<\fv\cdot\Bv\right>$
   integer :: idiag_fxbxm=0      ! DIAG_DOC: $\left<f_x B_x\right>$
@@ -1189,6 +1191,7 @@ module Magnetic
       if (idiag_jbm/=0 .or. idiag_jbmz/=0) lpenc_diagnos(i_jb)=.true.
       if (idiag_jbmphi/=0) lpenc_diagnos2d(i_jb)=.true.
       if (idiag_vArms/=0 .or. idiag_vAmax/=0 .or. idiag_vA2m/=0) lpenc_diagnos(i_va2)=.true.
+      if (idiag_cosubm/=0) lpenc_diagnos(i_cosub)=.true.
       if (idiag_ubm/=0 .or. idiag_ubbzm/=0) lpenc_diagnos(i_ub)=.true.
       if (idiag_djuidjbim/=0 .or. idiag_uxDxuxbm/=0) lpenc_diagnos(i_uij)=.true.
       if (idiag_uxjm/=0) lpenc_diagnos(i_uxj)=.true.
@@ -1290,6 +1293,11 @@ module Magnetic
       endif
       if (lpencil_in(i_uxb2)) lpencil_in(i_uxb)=.true.
       if (lpencil_in(i_uxb)) then
+        lpencil_in(i_uu)=.true.
+        lpencil_in(i_bb)=.true.
+      endif
+      if (lpencil_in(i_cosub)) then
+        lpencil_in(i_ub)=.true.
         lpencil_in(i_uu)=.true.
         lpencil_in(i_bb)=.true.
       endif
@@ -1414,7 +1422,7 @@ module Magnetic
       real, dimension (nx) :: alpha_tmp
       real, dimension (nx) :: sinjb 
       real :: B2_ext,c,s,kx
-      integer :: i,j
+      integer :: i,j,ix
 !
       intent(inout) :: f,p
 ! aa
@@ -1568,9 +1576,15 @@ module Magnetic
       if (lpencil(i_jxbr)) rho1_jxb=p%rho1
 ! cosjb
       if (lpencil(i_cosjb)) then
-        p%cosjb=p%jb/sqrt(p%j2*p%b2)
+        do ix=1,nx
+          if((abs(p%j2(ix)).le.tini).or.(abs(p%b2(ix)).le.tini))then 
+            p%cosjb(ix)=0.
+          else
+            p%cosjb(ix)=p%jb(ix)/sqrt(p%j2(ix)*p%b2(ix))
+          endif
+        enddo
         if (lpencil_check) then
-          ! map penc0 value back to interval [-1,1]
+        ! map penc0 value back to interval [-1,1]
           p%cosjb = modulo(p%cosjb + 1.0, 2.0) - 1
         endif
       endif
@@ -1601,6 +1615,20 @@ module Magnetic
       if (lpencil(i_jxbr2)) call dot2_mn(p%jxbr,p%jxbr2)
 ! ub
       if (lpencil(i_ub)) call dot_mn(p%uu,p%bb,p%ub)
+! cosub
+      if (lpencil(i_cosub)) then
+        do ix=1,nx
+          if((abs(p%uu(ix)).le.tini).or.(abs(p%bbb(ix)).le.tini))then 
+            p%cosub(ix)=0.
+          else
+            p%cosub(ix)=p%ub(ix)/(abs(p%uu(ix))*abs(p%bb(ix)))
+          endif
+        enddo
+        if (lpencil_check) then
+        ! map penc0 value back to interval [-1,1]
+          p%cosub = modulo(p%cosub + 1.0, 2.0) - 1
+        endif
+      endif
 ! uxb2
       if (lpencil(i_uxb2)) call dot2_mn(p%uxb,p%uxb2)
 ! uxj
@@ -2194,6 +2222,7 @@ module Magnetic
 !  cross helicity (linkage between vortex tubes and flux tubes)
 !
         if (idiag_ubm/=0) call sum_mn_name(p%ub,idiag_ubm)
+        if (idiag_cosubm/=0) call sum_mn_name(p%cosub,idiag_cosubm)
 !
 !  current-vortex cross helicity
 !  (linkage between vortex tubes and current tubes)
@@ -5501,6 +5530,7 @@ module Magnetic
         idiag_j2m=0; idiag_jm2=0; idiag_abm=0
         idiag_abmh=0; idiag_abmn=0; idiag_abms=0
         idiag_ajm=0
+        idiag_cosubm=0
         idiag_jbm=0; idiag_ubm=0; idiag_ujm=0; idiag_fbm=0; idiag_fxbxm=0
         idiag_epsM=0; idiag_epsM_LES=0; idiag_epsAD=0
         idiag_bxpt=0; idiag_bypt=0; idiag_bzpt=0
@@ -5584,6 +5614,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'ajm',idiag_ajm)
         call parse_name(iname,cname(iname),cform(iname),'jbm',idiag_jbm)
         call parse_name(iname,cname(iname),cform(iname),'ubm',idiag_ubm)
+        call parse_name(iname,cname(iname),cform(iname),'cosubm',idiag_ubm)
         call parse_name(iname,cname(iname),cform(iname),'ujm',idiag_ujm)
         call parse_name(iname,cname(iname),cform(iname),'fbm',idiag_fbm)
         call parse_name(iname,cname(iname),cform(iname),'fxbxm',idiag_fxbxm)
@@ -5922,6 +5953,7 @@ module Magnetic
         write(3,*) 'i_brmsh=',idiag_brmsh
         write(3,*) 'i_jbm=',idiag_jbm
         write(3,*) 'i_ubm=',idiag_ubm
+        write(3,*) 'i_cosubm=',idiag_cosubm
         write(3,*) 'i_ujm=',idiag_ujm
         write(3,*) 'i_fbm=',idiag_fbm
         write(3,*) 'i_fxbxm=',idiag_fxbxm
