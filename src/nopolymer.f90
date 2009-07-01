@@ -34,12 +34,10 @@ module Polymer
 !
 !  14-Aug-08 : Dhruba 
 !
-      use Cdata
       use Mpicomm
-      use Sub
 !
       if (lroot) call svn_id( &
-           "$Id: nopolymer.f90 $")
+           "$Id: nopolymer.f90 dhruba.mitra $")
 !
     endsubroutine register_polymer
 !***********************************************************************
@@ -49,8 +47,7 @@ module Polymer
 !
 !  14-aug-08/dhruba: initialize polymer field (dummy at present)
 !
-      use Cdata
-!
+
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       logical :: lstarting
@@ -67,7 +64,8 @@ module Polymer
       use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
-
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine init_pp
 !***********************************************************************

@@ -28,6 +28,7 @@ module Sub
   public :: grad, grad5, div, div_mn, curl, curli, curl_mn, curl_other
   public :: div_other
   public :: gij, g2ij, gij_etc
+  public :: gijk_symmetric
   public :: gij_psi, gij_psi_etc
   public :: der_step
   public :: u_dot_grad, h_dot_grad
@@ -750,6 +751,46 @@ module Sub
 !
     endsubroutine multmm_sc_mn
 !***********************************************************************
+    subroutine mult_matrix_inner_mn(a,b,c)
+!
+!  Matrix multiplication of two pencil variables. Contracts inner index. 
+!
+      real, dimension (nx,3,3) :: a,b
+      real, dimension (nx,3,3) :: c
+      integer :: i,j,k
+!
+      c=0
+      do i=1,3
+        do j=1,3
+          do k=1,3
+            c(:,i,j)=c(:,i,j)+a(:,i,k)*b(:,k,j)
+          enddo
+        enddo
+      enddo
+
+!
+    endsubroutine mult_matrix_inner_mn
+!***********************************************************************
+    subroutine mult_matrix_outer_mn(a,b,c)
+!
+!  Matrix multiplication of two pencil variables. Contracts outer index. 
+!
+      real, dimension (nx,3,3) :: a,b
+      real, dimension (nx,3,3) :: c
+      integer :: i,j,k
+!
+      c=0
+      do i=1,3
+        do j=1,3
+          do k=1,3
+            c(:,i,j)=c(:,i,j)+a(:,k,i)*b(:,j,k)
+          enddo
+        enddo
+      enddo
+
+!
+    endsubroutine mult_matrix_outer_mn
+!***********************************************************************
     subroutine multm2_mn(a,b)
 !
 !  matrix squared, gives scalar
@@ -1090,6 +1131,56 @@ module Sub
       enddo
 !
     endsubroutine gij
+!***********************************************************************
+    subroutine gijk_symmetric(f,k,g,nder)
+!
+!  calculate gradient of a (symmetric) second rank matrix, return 3rd rank matrix
+!   18-aug-08/dhruba: coded
+!
+      use Deriv, only: der,der2,der3,der4,der5,der6
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,3,3,3) :: g
+      real, dimension (nx,2,3,3) :: tmpg
+      real, dimension (nx) :: tmp
+      integer :: i,j,l,l1,k,k1,nder
+!
+      intent(in) :: f,k
+      intent(out) :: g
+!
+      k1=k-1
+      do i=1,2
+        do l=1,3
+          l1=l-1
+          do j=1,3
+            if (nder == 1) then
+              call der(f,k1+i+l1,tmp,j)
+            elseif (nder == 2) then
+              call der2(f,k1+i+l1,tmp,j)
+            elseif (nder == 3) then
+              call der3(f,k1+i+l1,tmp,j)
+            elseif (nder == 4) then
+              call der4(f,k1+i+l1,tmp,j)
+            elseif (nder == 5) then
+              call der5(f,k1+i+l1,tmp,j)
+            elseif (nder == 6) then
+              call der6(f,k1+i+l1,tmp,j)
+            endif
+            tmpg(:,i,l,j)=tmp
+          enddo
+        enddo
+      enddo
+      g(:,1,1,:) = tmpg(:,1,1,:)
+      g(:,2,2,:) = tmpg(:,1,2,:)
+      g(:,3,3,:) = tmpg(:,1,3,:)
+      g(:,1,2,:) = tmpg(:,2,1,:)
+      g(:,2,1,:) = g(:,1,2,:)
+      g(:,1,3,:) = tmpg(:,2,2,:)
+      g(:,3,1,:) = g(:,1,3,:)
+      g(:,2,3,:) = tmpg(:,2,3,:)
+      g(:,3,2,:) = g(:,2,3,:)
+!
+    endsubroutine gijk_symmetric
 !***********************************************************************
     subroutine gij_psi(psif,ee,g)
 !

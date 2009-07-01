@@ -67,8 +67,8 @@ program start
   use Initcond
   use Interstellar,     only: init_interstellar
   use IO
-  use Magnetic,         only: init_aa
   use Lorenz_gauge,     only: init_lorenz_gauge
+  use Magnetic,         only: init_aa
   use Messages
   use Mpicomm
   use NeutralDensity,   only: init_lnrhon
@@ -77,6 +77,7 @@ program start
   use Particles_main
   use Particles_nbody,  only: particles_nbody_write_snapshot, &
                               particles_nbody_write_spdim
+  use Polymer, only: init_pp
   use PScalar,          only: init_lncc
   use Radiation,        only: init_rad, radtransfer
   use Register
@@ -340,6 +341,7 @@ program start
     call init_ss        (f)
     call init_aa        (f)
     call init_lorenz_gauge (f)
+    call init_pp        (f)
     call init_aatest    (f)
     call init_uutest    (f)
     call init_rad       (f)
