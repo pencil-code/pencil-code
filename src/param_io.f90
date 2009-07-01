@@ -139,7 +139,7 @@ module Param_IO
        lpencil_check,lpencil_check_diagnos_opti,lpencil_init,lwrite_2d, &
        lbidiagonal_derij,lisotropic_advection, &
        crash_file_dtmin_factor,niter_poisson, &
-       lADI,ltestperturb,eps_rkf, timestep_scaling, nscbc_sigma_in,&
+       lADI,ltestperturb,eps_rkf,eps_stiff,timestep_scaling, nscbc_sigma_in,&
        nscbc_sigma_out, p_infty, &
        lequatory, lequatorz, zequator 
   contains

@@ -1572,9 +1572,18 @@ subroutine flame_blob(f)
 !        print*,'chemicals=',chemicals
         print*,'kreactions_m=',kreactions_m(1:nreactions)
         print*,'kreactions_p=',kreactions_p(1:nreactions)
-        print*,'Sijm:' ; write(*,100),Sijm(:,1:nreactions)
-        print*,'Sijp:' ; write(*,100),Sijp(:,1:nreactions)
-        print*,'stoichio=' ; write(*,100),stoichio(:,1:nreactions)
+        print*,'Sijm:'
+        do i=1,nreactions
+          print*,Sijm(:,i)
+        enddo
+        print*,'Sijp:'
+        do i=1,nreactions
+          print*,Sijp(:,i)
+        enddo
+        print*,'stoichio='
+        do i=1,nreactions
+          print*,stoichio(:,i)
+        enddo
       endif
 !
 !  possibility of z-dependent kreactions_z profile
@@ -4798,32 +4807,47 @@ subroutine flame_blob(f)
           do i=1,nchemspec 
             do j=1,nchemspec
               ! Compute dv_i/dc_j 
+!              print*,"dv_",i,"/dc_",j,"="
               do k=1,nreactions
                 ! Check if compound i participate in reaction k
-                if (Sijp(k,i)/=Sijm(k,i)) then
+                if (Sijp(i,k)/=Sijm(i,k)) then
                   ! Compute the contribution of reaction k to dv_i/dc_j
-                  tmp_p=Sijp(k,i)*kreactions_p(k)*kreactions_z(n,k)
-                  tmp_m=Sijm(k,i)*kreactions_m(k)*kreactions_z(n,k)
+!                  print*,"+(",(Sijp(i,k)-Sijm(i,k)),"k_",k,"(+/-)"
+                  tmp_p=(Sijp(i,k)-Sijm(i,k))*kreactions_p(k)*kreactions_z(n,k)
+                  tmp_m=(Sijm(i,k)-Sijp(i,k))*kreactions_m(k)*kreactions_z(n,k)
                   do  ii=1,nchemspec
                     ! Compute the contribution of compound ii in reaction k
+!                    print*,"**-",Sijm(ii,k),Sijp(ii,k),"-**"
                     if (ii/=j) then
-                      tmp_p=tmp_p*f(l,m,n,ichemspec(ii))**Sijm(k,ii)
-                      tmp_m=tmp_m*f(l,m,n,ichemspec(ii))**Sijp(k,ii)
+!                      print*,"c_",ii,"^",Sijm(ii,k)," (/) ","c_",ii,"^",Sijp(ii,k)
+                      tmp_p=tmp_p*f(l,m,n,ichemspec(ii))**Sijm(ii,k)
+                      tmp_m=tmp_m*f(l,m,n,ichemspec(ii))**Sijp(ii,k)
                     else
-                      if (Sijm(k,ii)==0) then 
+                      if (Sijm(ii,k)==0) then 
+!                        print*,"0*c_",ii
                         tmp_p=0.
-                      elseif (Sijm(k,ii)>1) then
-                        tmp_p=(Sijm(k,ii)-1)*tmp_p*f(l,m,n,ichemspec(ii))**(Sijm(k,ii)-1) 
+                      elseif (Sijm(ii,k)>1) then
+!                        print*,Sijm(ii,k),"*c_",ii,"^",(Sijm(ii,k)-1)
+                        tmp_p=Sijm(ii,k)*tmp_p*f(l,m,n,ichemspec(ii))**(Sijm(ii,k)-1) 
+!                      else
+!                        print*,"c_",ii,"^0"
                       endif
-                      if (Sijp(k,ii)==0) then
+!                      print*," (/) "
+                      if (Sijp(ii,k)==0) then
+!                        print*,"0*c_",ii
                         tmp_m=0.
-                      elseif (Sijp(k,ii)>1) then
-                        tmp_m=(Sijp(k,ii)-1)*tmp_m*f(l,m,n,ichemspec(ii))**(Sijp(k,ii)-1) 
+                      elseif (Sijp(ii,k)>1) then
+!                        print*,Sijp(ii,k),"*c_",ii,"^",(Sijp(ii,k)-1)
+                        tmp_m=Sijp(ii,k)*tmp_m*f(l,m,n,ichemspec(ii))**(Sijp(ii,k)-1) 
+!                      else
+!                        print*,"c_",ii,"^0"
                       endif
                     endif
                   enddo
+!                  print*,")"
                   ! Add the contribution of reaction k to dv_i/dc_j
                   jacob(l,m,n,i,j)=jacob(l,m,n,i,j)+tmp_p-tmp_m
+!                  print*,"(=",tmp_p," (-) ",tmp_m,")"
                 endif
               enddo
             enddo

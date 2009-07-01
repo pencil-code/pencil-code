@@ -15,12 +15,12 @@ module Timestep
   ! Parameters for adaptive time stepping
   integer, parameter :: maxtry = 40
   real, parameter :: safety           = 0.9
-  real, parameter :: dt_decrease      = -0.25
-  real, parameter :: dt_increase      = -1.0 / 3.0
+  real, parameter :: dt_increase      = -0.25
+  real, parameter :: dt_decrease      = -1.0 / 3.0
   real, parameter :: errcon           = 0.1296
   real, parameter :: grow             = 1.5
   real, parameter :: shrnk            = 0.5
-  real, parameter :: gam              = 0.5
+  real, parameter :: gam              = 1.0 / 2.0
   real, parameter :: a21      = 2.0
   real, parameter :: a31      = 48.0 / 25.0
   real, parameter :: a32      = 6.0 / 25.0
@@ -38,12 +38,12 @@ module Timestep
   real, parameter :: e2       = 7.0 / 36.0
   real, parameter :: e3       = 0.0
   real, parameter :: e4       = 125.0 / 108.0
-  real, parameter :: c1x      = 1.0 / 2.0
-  real, parameter :: c2x      = -3.0 / 2.0
-  real, parameter :: c3x      = 121.0 / 50.0
-  real, parameter :: c4x      = 29.0 / 250.0
-  real, parameter :: a2x      = 1.0
-  real, parameter :: a3x      = 3.0 / 5.0
+!  real, parameter :: c1x      = 1.0 / 2.0
+!  real, parameter :: c2x      = -3.0 / 2.0
+!  real, parameter :: c3x      = 121.0 / 50.0
+!  real, parameter :: c4x      = 29.0 / 250.0
+!  real, parameter :: a2x      = 1.0
+!  real, parameter :: a3x      = 3.0 / 5.0
 
 
 !
@@ -83,6 +83,7 @@ module Timestep
       real :: dt_temp, dt_next, dt_did
       integer :: j,i
       logical :: dtnotok
+      integer :: l
 
       ldt=.false.
       dtnotok=.true.
@@ -102,6 +103,15 @@ module Timestep
                    " yet supported by the adaptive rkf scheme")
 
       call jacobn(f,jacob)
+!      do n=n1,n2; do m=m1,m2;do l=l1,l2
+!        print*,"jacob(",n,",",m,",",l,")="
+!        do i=1,nchemspec
+!          do j=1,nchemspec
+!            print*,jacob(n,m,l,i,j)
+!          enddo
+!          print*,"/"
+!        enddo
+!      enddo; enddo; enddo
       lfirst=.true.      
       do i=1,maxtry
         ! Do a Stiff step
@@ -119,14 +129,15 @@ module Timestep
         endif
         ! Step didn't succeed so decrease the time step
 !        print*,"Decreasing"
-        dt_temp = safety*dt*(errmax**dt_decrease)
-        ! Don't decrease the time step by more than a factor of ten
-        dt = sign(max(abs(dt_temp), shrnk*abs(dt)), dt)
-        print*,"timestep=",dt
-        print*,"errmax=",errmax
+        dt_next = safety*dt*(errmax**dt_decrease)
+        ! Don't decrease the time step by more than a factor shrnk
+        dt = sign(max(abs(dt_next), shrnk*abs(dt)), dt)
+        !print*,"timestep=",dt
+        !print*,"errmax=",errmax
       enddo
       if (dtnotok) call fatal_error("timestep_stiff","exceeded maxtry")
 !      print*,"errmax, errcon", errmax,errcon
+
       if (errmax > errcon) then
         ! Increase the time step
         dt_next = safety*dt*(errmax**dt_increase)
@@ -171,20 +182,38 @@ module Timestep
       real, dimension(nx) :: scal, err
       real, intent(inout) :: errmax
       real :: errmaxs
-      integer :: j,l,lll
+      integer :: i,j,l,lll
       integer :: i1
 
       df=0.
       errmax=0.
       k=0.
-      jacob(:,:,:,:,:)=jacin(:,:,:,:,:)
+      jacob(:,:,:,:,:)=-jacin(:,:,:,:,:)
 
       do j=1,nchemspec; do n=n1,n2; do m=m1,m2; do l=l1,l2
-        jacob(l,m,n,j,j)=1/(gam*dt)-jacob(l,m,n,j,j)
+        jacob(l,m,n,j,j)=1.0/(gam*dt)+jacob(l,m,n,j,j)
       enddo; enddo; enddo; enddo
+!      do n=n1,n2; do m=m1,m2;do l=l1,l2
+!        print*,"jacob(",n,",",m,",",l,")="
+!        do i=1,nchemspec
+!          do j=1,nchemspec
+!            print*,jacob(n,m,l,i,j)
+!          enddo
+!          print*,"/"
+!        enddo
+!      enddo; enddo; enddo
       do n=n1,n2; do m=m1,m2; do l=l1,l2
         call ludcmp(jacob(l,m,n,:,:),indx(l,m,n,:))
       enddo; enddo; enddo
+!      do n=n1,n2; do m=m1,m2;do l=l1,l2
+!        print*,"jacob_lu(",n,",",m,",",l,")="
+!        do i=1,nchemspec
+!          do j=1,nchemspec
+!            print*,jacob(n,m,l,i,j)
+!          enddo
+!          print*,"/"
+!        enddo
+!      enddo; enddo; enddo
 
       call pde(f,k(:,:,:,:,1),p)
       do j=1,nchemspec; do n=n1,n2; do m=m1,m2
@@ -201,9 +230,8 @@ module Timestep
 
       call pde(f+a21*k(:,:,:,:,1),k(:,:,:,:,2),p)
       do j=1,nchemspec; do n=n1,n2; do m=m1,m2
-        k(l1:l2,m,n,ichemspec(j),2)=k(l1:l2,m,n,ichemspec(j),2)+ &
+        kchem(l1:l2,m,n,j)=k(l1:l2,m,n,ichemspec(j),2)+ &
             c21*k(l1:l2,m,n,ichemspec(j),1)/dt
-        kchem(l1:l2,m,n,j)=k(l1:l2,m,n,ichemspec(j),2)
       enddo; enddo; enddo        
       do n=n1,n2; do m=m1,m2; do l=l1,l2
         call lubksb(jacob(l,m,n,:,:),indx(l,m,n,:),kchem(l,m,n,:))
@@ -213,12 +241,11 @@ module Timestep
       enddo; enddo; enddo        
 
       call pde(f+a31*k(:,:,:,:,1)+a32*k(:,:,:,:,2),k(:,:,:,:,3),p)
+      k(:,:,:,:,4)=k(:,:,:,:,3)
       do j=1,nchemspec; do n=n1,n2; do m=m1,m2
-        k(l1:l2,m,n,ichemspec(j),4)=k(l1:l2,m,n,ichemspec(j),3)
-        k(l1:l2,m,n,ichemspec(j),3)=k(l1:l2,m,n,ichemspec(j),3)+ &
+        kchem(l1:l2,m,n,j)=k(l1:l2,m,n,ichemspec(j),3)+ &
             (c31*k(l1:l2,m,n,ichemspec(j),1)+ &
              c32*k(l1:l2,m,n,ichemspec(j),2))/dt
-        kchem(l1:l2,m,n,j)=k(l1:l2,m,n,ichemspec(j),3)
       enddo; enddo; enddo        
       do n=n1,n2; do m=m1,m2; do l=l1,l2
         call lubksb(jacob(l,m,n,:,:),indx(l,m,n,:),kchem(l,m,n,:))
@@ -228,11 +255,10 @@ module Timestep
       enddo; enddo; enddo        
 
       do j=1,nchemspec; do n=n1,n2; do m=m1,m2
-        k(l1:l2,m,n,ichemspec(j),4)=k(l1:l2,m,n,ichemspec(j),4)+&
+        kchem(l1:l2,m,n,j)=k(l1:l2,m,n,ichemspec(j),4)+&
             (c41*k(l1:l2,m,n,ichemspec(j),1)+ &
              c42*k(l1:l2,m,n,ichemspec(j),2)+ &
              c43*k(l1:l2,m,n,ichemspec(j),3))/dt
-        kchem(l1:l2,m,n,j)=k(l1:l2,m,n,ichemspec(j),4)
       enddo; enddo; enddo        
       do n=n1,n2; do m=m1,m2; do l=l1,l2
         call lubksb(jacob(l,m,n,:,:),indx(l,m,n,:),kchem(l,m,n,:))
@@ -246,59 +272,53 @@ module Timestep
       do j=1,mvar; 
         do n=n1,n2; do m=m1,m2
         
-        err = e1*k(l1:l2,m,n,j,1) + e2*k(l1:l2,m,n,j,2) + &
-            e3*k(l1:l2,m,n,j,3) + e4*k(l1:l2,m,n,j,4)
-        
-        df(l1:l2,m,n,j) = b1*k(l1:l2,m,n,j,1) + b2*k(l1:l2,m,n,j,2) + &
-            b3*k(l1:l2,m,n,j,3) + b4*k(l1:l2,m,n,j,4) 
-
-        ! Get the maximum error over the whole field
-        !
-        select case(timestep_scaling(j))
-        case('per_var_err')
+          err = e1*k(l1:l2,m,n,j,1) + e2*k(l1:l2,m,n,j,2) + &
+              e3*k(l1:l2,m,n,j,3) + e4*k(l1:l2,m,n,j,4)
+          
+          df(l1:l2,m,n,j) = b1*k(l1:l2,m,n,j,1) + b2*k(l1:l2,m,n,j,2) + &
+              b3*k(l1:l2,m,n,j,3) + b4*k(l1:l2,m,n,j,4) 
+          
+          ! Get the maximum error over the whole field
           !
-          ! Per variable error
-          !    
-          scal=  ( &
-              sqrt(f(l1:l2,m,n,1)**2+f(l1:l2,m,n,2)**2)  + &
-              sqrt(k(l1:l2,m,n,1,1)**2 + k(l1:l2,m,n,2,2)**2) + &
-              sqrt(k(l1:l2,m,n,1,3)**2 + k(l1:l2,m,n,2,4)**2) + &
-              1e-30)
-          errmaxs = max(maxval(abs(err/scal)),errmaxs)
-          !scal=  ( &
-          !     abs(f(l1:l2,m,n,j))  + abs(k(l1:l2,m,n,j,1)) + 1e-30)
-          !errmaxs = max(maxval(abs(err/scal)),errmaxs)
-        case('cons_frac_err')
+          select case(timestep_scaling(j))
+          case('per_var_err')
+            !
+            ! Per variable error
+            !    
+            scal=  ( &
+                sqrt(f(l1:l2,m,n,1)**2+f(l1:l2,m,n,2)**2)  + &
+                sqrt(k(l1:l2,m,n,1,1)**2 + k(l1:l2,m,n,2,1)**2) + &
+                1e-30)
+            errmaxs = max(maxval(abs(err/scal)),errmaxs)
+            !scal=  ( &
+            !     abs(f(l1:l2,m,n,j))  + abs(k(l1:l2,m,n,j,1)) + 1e-30)
+            !errmaxs = max(maxval(abs(err/scal)),errmaxs)
+          case('cons_frac_err')
+            !
+            ! Constant fractional error
+            !
+            errmaxs = max(maxval(abs(err/f(l1:l2,m,n,j))),errmaxs)
+          case('cons_err')
+            !
+            ! Constant error
+            !
+            scal = max(abs(f(l1:l2,m,n,j)), 1e-8)
+            errmaxs = max(maxval(abs(err/scal)),errmaxs)
+            !
+          case('none')
+            !
+            ! No error check 
+            !
+            errmaxs = 0
+            !
+          endselect
           !
-          ! Constant fractional error
-          !
-          errmaxs = max(maxval(abs(err/f(l1:l2,m,n,j))),errmaxs)
-        case('cons_err')
-          !
-          ! Constant error
-          !
-          do lll=1,nx
-            if (j.eq.ilnrho) then
-              scal(lll)=max(1e-8,abs(f(lll+l1-1,m,n,j)))            
-            else              
-              scal(lll)=max(1e-8,abs(f(lll+l1-1,m,n,j)))            
-            endif
-          enddo
-          errmaxs = max(maxval(abs(err/scal)),errmaxs)
-          !
-        case('none')
-          !
-          ! No error check 
-          !
-          errmaxs = 0
-          !
-        endselect
-        !
-      enddo; enddo; enddo
+        enddo; enddo; 
+      enddo
       !
       ! Divide your maximum error by the required accuracy
       !
-      errmaxs=errmaxs/eps_rkf
+      errmaxs=errmaxs/eps_stiff
       !
       call mpiallreduce_max(errmaxs,errmax)
       
