@@ -20,7 +20,8 @@ module Timestep
   real, parameter :: errcon           = 0.1296
   real, parameter :: grow             = 1.5
   real, parameter :: shrnk            = 0.5
-  real, parameter :: gam              = 1.0 / 2.0
+! Shampine parameters
+  real, parameter :: gam      = 1.0 / 2.0
   real, parameter :: a21      = 2.0
   real, parameter :: a31      = 48.0 / 25.0
   real, parameter :: a32      = 6.0 / 25.0
@@ -38,13 +39,28 @@ module Timestep
   real, parameter :: e2       = 7.0 / 36.0
   real, parameter :: e3       = 0.0
   real, parameter :: e4       = 125.0 / 108.0
-!  real, parameter :: c1x      = 1.0 / 2.0
-!  real, parameter :: c2x      = -3.0 / 2.0
-!  real, parameter :: c3x      = 121.0 / 50.0
-!  real, parameter :: c4x      = 29.0 / 250.0
-!  real, parameter :: a2x      = 1.0
-!  real, parameter :: a3x      = 3.0 / 5.0
-
+!
+! Kaps-Rentrop parameters (possible alternative for above. 
+! On some tests, slightly more accurate, but slower)
+!
+!  real, parameter :: gam              = 0.231
+!  real, parameter :: a21      = 2.0                 
+!  real, parameter :: a31      = 4.52470820736       
+!  real, parameter :: a32      = 4.16352878860       
+!  real, parameter :: c21      = -5.07167533877      
+!  real, parameter :: c31      = 6.02015272865       
+!  real, parameter :: c32      = 0.159750684673      
+!  real, parameter :: c41      = -1.856343618677     
+!  real, parameter :: c42      = -8.50538085819      
+!  real, parameter :: c43      = -2.08407513602      
+!  real, parameter :: b1       =3.95750374663        
+!  real, parameter :: b2       =4.62489238836        
+!  real, parameter :: b3       =0.617477263873       
+!  real, parameter :: b4       =1.282612945268       
+!  real, parameter :: e1       =-2.30215540292       
+!  real, parameter :: e2       =-3.07363448539       
+!  real, parameter :: e3       =0.873280801802       
+!  real, parameter :: e4       =1.282612945268       
 
 !
 !  border_prof_[x-z] could be of size n[x-z], but having the same
@@ -67,7 +83,6 @@ module Timestep
       use Mpicomm
       use Cdata
       use Messages
-      use Chemistry, only: jacobn
 !!      use Particles_main
 !!      use Interstellar, only: calc_snr_damp_int
 !!      use Shear, only: advance_shear
@@ -102,20 +117,12 @@ module Timestep
                    "Shear, interstellar and particles are not" // &
                    " yet supported by the adaptive rkf scheme")
 
-      call jacobn(f,jacob)
-!      do n=n1,n2; do m=m1,m2;do l=l1,l2
-!        print*,"jacob(",n,",",m,",",l,")="
-!        do i=1,nchemspec
-!          do j=1,nchemspec
-!            print*,jacob(n,m,l,i,j)
-!          enddo
-!          print*,"/"
-!        enddo
-!      enddo; enddo; enddo
       lfirst=.true.      
       do i=1,maxtry
+!        print*,"i=",i,"   trying dt=",dt
         ! Do a Stiff step
-        call stiff(f(:,:,:,1:mvar), df, jacob, p, errmax)
+        call stiff(f(:,:,:,1:mvar), df, p, errmax)
+!        print*,"errmax=",errmax
         ! Step succeeded so exit
         ! New time
         tnew = t+dt
@@ -164,21 +171,22 @@ module Timestep
 !
     endsubroutine rk_2n
 !***********************************************************************
-    subroutine stiff(f, df, jacin, p, errmax)
+    subroutine stiff(f, df, p, errmax)
     ! Stiff algorithm for time stepping
       use Cdata
       use Mpicomm, only: mpiallreduce_max
       use Equ
       use Sub, only: ludcmp, lubksb
+      use Chemistry, only: jacobn
 
       real, dimension (mx,my,mz,mvar), intent(in) :: f
-      real, dimension (mx,my,mz,nchemspec,nchemspec), intent(in) :: jacin
+      real, dimension (mx,my,mz,mvar) :: fscal
       real, dimension (mx,my,mz,nchemspec,nchemspec) :: jacob
       real, dimension (mx,my,mz,mvar), intent(out) :: df
       type (pencil_case), intent(inout) :: p
       integer, dimension (mx,my,mz,nchemspec) :: indx
       real, dimension(mx,my,mz,mvar,4) :: k
-      real, dimension(mx,my,mz,nchemspec) :: kchem
+      real, dimension(mx,my,mz,nchemspec) :: ktemp
       real, dimension(nx) :: scal, err
       real, intent(inout) :: errmax
       real :: errmaxs
@@ -188,11 +196,20 @@ module Timestep
       df=0.
       errmax=0.
       k=0.
-      jacob(:,:,:,:,:)=-jacin(:,:,:,:,:)
-
-      do j=1,nchemspec; do n=n1,n2; do m=m1,m2; do l=l1,l2
-        jacob(l,m,n,j,j)=1.0/(gam*dt)+jacob(l,m,n,j,j)
-      enddo; enddo; enddo; enddo
+      call jacobn(f,jacob)
+!      do n=n1,n2; do m=m1,m2;do l=l1,l2
+!        print*,"jacob(",n,",",m,",",l,")="
+!        do i=1,nchemspec
+!          do j=1,nchemspec
+!            print*,jacob(n,m,l,i,j)
+!          enddo
+!          print*,"/"
+!        enddo
+!      enddo; enddo; enddo
+      jacob(:,:,:,:,:)=-jacob(:,:,:,:,:)
+      do j=1,nchemspec; do n=n1,n2; do m=m1,m2
+        jacob(l1:l2,m,n,j,j)=1.0/(gam*dt)+jacob(l1:l2,m,n,j,j)
+      enddo; enddo; enddo
 !      do n=n1,n2; do m=m1,m2;do l=l1,l2
 !        print*,"jacob(",n,",",m,",",l,")="
 !        do i=1,nchemspec
@@ -216,60 +233,82 @@ module Timestep
 !      enddo; enddo; enddo
 
       call pde(f,k(:,:,:,:,1),p)
+
+      do j=1,mvar; do n=n1,n2; do m=m1,m2
+        fscal(l1:l2,m,n,j) = abs(f(l1:l2,m,n,j))+abs(df(l1:l2,m,n,j)*dt)+1e-8!tiny(0.)
+      enddo; enddo; enddo        
+        
+!      print*,"before:"
       do j=1,nchemspec; do n=n1,n2; do m=m1,m2
-        kchem(l1:l2,m,n,j)=k(l1:l2,m,n,ichemspec(j),1)
+        ktemp(l1:l2,m,n,j)=k(l1:l2,m,n,ichemspec(j),1)
+!        print*,ktemp(l1:l2,m,n,j)
       enddo; enddo; enddo        
       do n=n1,n2; do m=m1,m2; do l=l1,l2
-        call lubksb(jacob(l,m,n,:,:),indx(l,m,n,:),kchem(l,m,n,:))
+        call lubksb(jacob(l,m,n,:,:),indx(l,m,n,:),ktemp(l,m,n,:))
       enddo; enddo; enddo
+!      print*,"after:"
       do j=1,nchemspec; do n=n1,n2; do m=m1,m2
-        k(l1:l2,m,n,ichemspec(j),1)=kchem(l1:l2,m,n,j)
+        k(l1:l2,m,n,ichemspec(j),1)=ktemp(l1:l2,m,n,j)
+!        print*,ktemp(l1:l2,m,n,j)
       enddo; enddo; enddo        
 
       lfirst=.false.
 
       call pde(f+a21*k(:,:,:,:,1),k(:,:,:,:,2),p)
+!      print*,"before:"
       do j=1,nchemspec; do n=n1,n2; do m=m1,m2
-        kchem(l1:l2,m,n,j)=k(l1:l2,m,n,ichemspec(j),2)+ &
+        ktemp(l1:l2,m,n,j)=k(l1:l2,m,n,ichemspec(j),2)+ &
             c21*k(l1:l2,m,n,ichemspec(j),1)/dt
+!        print*,ktemp(l1:l2,m,n,j)
       enddo; enddo; enddo        
       do n=n1,n2; do m=m1,m2; do l=l1,l2
-        call lubksb(jacob(l,m,n,:,:),indx(l,m,n,:),kchem(l,m,n,:))
+        call lubksb(jacob(l,m,n,:,:),indx(l,m,n,:),ktemp(l,m,n,:))
       enddo; enddo; enddo
+!      print*,"after:"
       do j=1,nchemspec; do n=n1,n2; do m=m1,m2
-        k(l1:l2,m,n,ichemspec(j),2)=kchem(l1:l2,m,n,j)
+        k(l1:l2,m,n,ichemspec(j),2)=ktemp(l1:l2,m,n,j)
+!        print*,ktemp(l1:l2,m,n,j)
       enddo; enddo; enddo        
 
       call pde(f+a31*k(:,:,:,:,1)+a32*k(:,:,:,:,2),k(:,:,:,:,3),p)
       k(:,:,:,:,4)=k(:,:,:,:,3)
+!      print*,"before:"
       do j=1,nchemspec; do n=n1,n2; do m=m1,m2
-        kchem(l1:l2,m,n,j)=k(l1:l2,m,n,ichemspec(j),3)+ &
+        ktemp(l1:l2,m,n,j)=k(l1:l2,m,n,ichemspec(j),3)+ &
             (c31*k(l1:l2,m,n,ichemspec(j),1)+ &
              c32*k(l1:l2,m,n,ichemspec(j),2))/dt
+!        print*,ktemp(l1:l2,m,n,j)
       enddo; enddo; enddo        
       do n=n1,n2; do m=m1,m2; do l=l1,l2
-        call lubksb(jacob(l,m,n,:,:),indx(l,m,n,:),kchem(l,m,n,:))
+        call lubksb(jacob(l,m,n,:,:),indx(l,m,n,:),ktemp(l,m,n,:))
       enddo; enddo; enddo
+!      print*,"after:"
       do j=1,nchemspec; do n=n1,n2; do m=m1,m2
-        k(l1:l2,m,n,ichemspec(j),3)=kchem(l1:l2,m,n,j)
+        k(l1:l2,m,n,ichemspec(j),3)=ktemp(l1:l2,m,n,j)
+!        print*,ktemp(l1:l2,m,n,j)
       enddo; enddo; enddo        
 
+!      print*,"before:"
       do j=1,nchemspec; do n=n1,n2; do m=m1,m2
-        kchem(l1:l2,m,n,j)=k(l1:l2,m,n,ichemspec(j),4)+&
+        ktemp(l1:l2,m,n,j)=k(l1:l2,m,n,ichemspec(j),4)+&
             (c41*k(l1:l2,m,n,ichemspec(j),1)+ &
              c42*k(l1:l2,m,n,ichemspec(j),2)+ &
              c43*k(l1:l2,m,n,ichemspec(j),3))/dt
+!        print*,ktemp(l1:l2,m,n,j)
       enddo; enddo; enddo        
       do n=n1,n2; do m=m1,m2; do l=l1,l2
-        call lubksb(jacob(l,m,n,:,:),indx(l,m,n,:),kchem(l,m,n,:))
+        call lubksb(jacob(l,m,n,:,:),indx(l,m,n,:),ktemp(l,m,n,:))
       enddo; enddo; enddo
+!      print*,"after:"
       do j=1,nchemspec; do n=n1,n2; do m=m1,m2
-        k(l1:l2,m,n,ichemspec(j),4)=kchem(l1:l2,m,n,j)
+        k(l1:l2,m,n,ichemspec(j),4)=ktemp(l1:l2,m,n,j)
+!        print*,ktemp(l1:l2,m,n,j)
       enddo; enddo; enddo        
 
       errmaxs=0.
  
-      do j=1,mvar; 
+      do j=1,mvar 
+!        print*,"j=",j
         do n=n1,n2; do m=m1,m2
         
           err = e1*k(l1:l2,m,n,j,1) + e2*k(l1:l2,m,n,j,2) + &
@@ -278,6 +317,7 @@ module Timestep
           df(l1:l2,m,n,j) = b1*k(l1:l2,m,n,j,1) + b2*k(l1:l2,m,n,j,2) + &
               b3*k(l1:l2,m,n,j,3) + b4*k(l1:l2,m,n,j,4) 
           
+!          print*,df(l1:l2,m,n,j)," (",err,")"
           ! Get the maximum error over the whole field
           !
           select case(timestep_scaling(j))
@@ -302,8 +342,8 @@ module Timestep
             !
             ! Constant error
             !
-            scal = max(abs(f(l1:l2,m,n,j)), 1e-8)
-            errmaxs = max(maxval(abs(err/scal)),errmaxs)
+            !scal = abs(f(l1:l2,m,n,j))+abs(df(l1:l2,m,n,j)*dt)+1e-30!tiny(0.)
+            errmaxs = max(maxval(abs(err/fscal(l1:l2,m,n,j))),errmaxs)
             !
           case('none')
             !
@@ -313,7 +353,8 @@ module Timestep
             !
           endselect
           !
-        enddo; enddo; 
+        enddo; enddo
+!        print*,"j=",j," errmaxs=",errmaxs
       enddo
       !
       ! Divide your maximum error by the required accuracy
