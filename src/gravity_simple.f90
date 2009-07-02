@@ -163,8 +163,8 @@ module Gravity
         call put_shared_variable('gravx', gravx, ierr)
 !
       case('const_tilt')
-        if (lroot) print*,'initialize_gravity: constant x-grav=', gravx
         gravx=sin(grav_tilt*pi/180.)
+        if (lroot) print*,'initialize_gravity: constant gravx=', gravx
         gravx_xpencil=gravx
         potx_xpencil=-gravx*(x-xinfty)
         call put_shared_variable('gravx', gravx, ierr)
@@ -259,8 +259,8 @@ module Gravity
         potz_zpencil=-gravz*(z-zinfty)
 !
       case('const_tilt')
-        if (lroot) print*,'initialize_gravity: constant gravz=', gravz
         gravz=-cos(grav_tilt*pi/180.)
+        if (lroot) print*,'initialize_gravity: constant gravz=', gravz
         gravz_zpencil=gravz
         potz_zpencil=-gravz*(z-zinfty)
 !
