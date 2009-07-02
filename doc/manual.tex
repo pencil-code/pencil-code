@@ -3054,7 +3054,7 @@ a new directory) and then to overwrite the
 \file[var.dat]{data/proc*/var.dat} files with the correct ones.
 
 For restarting from runs that didn't have magnetic fields, passive scalar
-fields, or testfields, see Section~\ref{RestartingFromLessPhysics}.
+fields, or test fields, see Section~\ref{RestartingFromLessPhysics}.
 
 % ---------------------------------------------------------------------- %
 
@@ -4658,10 +4658,10 @@ to have a time-evolving mass.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Testfield equations}
+\subsection{Test-field equations}
 \index{Testfield method}
 
-The testfield method is used to calculate turbulent transport coefficients
+The test-field method is used to calculate turbulent transport coefficients
 for magnetohydrodynamics.
 This a rapidly evolving field and we refer the interested reader to
 recent papers in this field, e.g.\ by Sur et al.\ (2008) or
@@ -7506,7 +7506,7 @@ First, prepare a new run directory with the new physics included.
 By new physics, we mean that the new run wants to read in more fields
 (e.g.\ magnetic fields, if the old run didn't have magnetic fields).
 
-Example for testfields:
+Example for test fields:
 
 \begin{enumerate}
 \item Prepare \file{src/cparam.local}
@@ -7552,19 +7552,21 @@ if \file{../32c} is the name of the new run directory.
 This procedure copies all the files from the processor tree, plus
 files like \file{param.nml}, but this file may need some manual
 modification (or you could just us one from another runs with the
-new physics included).
+new physics included, which is definitely the simplest!).
 
 \item Prepare \file{run.in}
 
 Set \code{lread_oldsnap_notestfield=T} in \name{run_pars}.
 This means (as the name says) that one reads an old snapshot that
-did not have testfields in it.
+did not have test fields in it.
 
 Reset boundary conditions and add stuff for the newly added fields, e.g.,
 \code{bcz='a:s','a','a:s','a2','p','p','p','p','p','p','p','p','p','p','p','p'}
 in \name{run_pars}.
+If you don't do this, that's fine too, because it only produces warnings
+that you can ignore.
 
-Add the following text fragments in the right position
+Add something like the following text fragments in the right position
 (after \name{grav_run_pars} and \name{magnetic_run_pars},
 but before \name{shear_run_pars} and \name{viscosity_run_pars}.
 \begin{alltt}
@@ -7609,7 +7611,7 @@ like this:
   ! lread_oldsnap_notestfield=T
 /
 \end{alltt}
-because otherwise you won't read in your precious testfield data next
+because otherwise you won't read in your precious test field data next
 time you restart the code!
 
 \end{enumerate}
