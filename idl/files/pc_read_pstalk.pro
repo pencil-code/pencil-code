@@ -11,8 +11,8 @@
 ;; MODIFICATION HISTORY:
 ;;     Written by: Anders Johansen (johansen@mpia.de) on 13.07.2007
 ;;
-pro pc_read_pstalk, object=object, datadir=datadir, it1=it1, quiet=quiet, $
-    noutmax=noutmax
+pro pc_read_pstalk, object=object, datadir=datadir, it0=it0, it1=it1, $
+    quiet=quiet, noutmax=noutmax
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;
@@ -20,6 +20,7 @@ COMMON pc_precision, zero, one
 ;
 default, quiet, 0
 default, it1, -1
+default, it0, 0
 if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 ;
 ; Read dimensions and set precision.
@@ -71,45 +72,52 @@ array=fltarr(nfields,pdim.npar_stalk,nout)*zero
 ;
 for iproc=0,dim.nprocx*dim.nprocy*dim.nprocz-1 do begin
 
-  if (not quiet) then print, 'Reading data from processor '+ $
-      strtrim(iproc,2)+'/'+strtrim(dim.nprocx*dim.nprocy*dim.nprocz-1,2)
+  if (not quiet) then begin
+    print, 'Reading data from processor '+ $
+        strtrim(iproc,2)+'/'+strtrim(dim.nprocx*dim.nprocy*dim.nprocz-1,2)
+    print, '-------- iproc ------ it --------- t ----------- npar ------- '
+  endif
 ;
 ; Initialize variables.
 ;
   it=0
+  ntread=0
   t_loc=zero
   npar_stalk_loc=0L
   ipar=0L
 ;
   openr, 1, datadir+'/proc'+strtrim(iproc,2)+'/particles_stalker.dat', /f77
-    while (it lt nout and not eof(1)) do begin
-      readu, 1, t_loc, npar_stalk_loc
-
-      if (not quiet) then begin
-        if (it eq 0) then $
-            print, '-------- iproc ------ it --------- t ----------- npar ------- '
-        if ( (it1 ne -1) and (it mod it1 eq 0) ) then $
-            print, iproc, it, t_loc, npar_stalk_loc
-      endif
-
+  while (ntread lt nout and not eof(1)) do begin
+    readu, 1, t_loc, npar_stalk_loc
+;
+    if (it ge it0) then begin
+      if ( (it1 ne -1) and (it mod it1 eq 0) ) then $
+          print, iproc, it, t_loc, npar_stalk_loc
+;
       if (npar_stalk_loc ge 1) then begin
-
         ipar_loc=lonarr(npar_stalk_loc)
         readu, 1, ipar_loc
- 
+;
         array_loc=fltarr(nfields,npar_stalk_loc)*zero
         readu, 1, array_loc
-
-        array[*,ipar_loc-1,it]=array_loc
-
+        array[*,ipar_loc-1,it-it0]=array_loc
+;
+        ntread=ntread+1
       endif
-
-      t[it]=t_loc
-
-      it=it+1
-    endwhile
+;
+      t[it-it0]=t_loc
+    endif else begin
+      if (npar_stalk_loc ge 1) then begin
+        dummyinteger=0L & readu, 1, dummyinteger
+        dummyreal=zero  & readu, 1, dummyreal
+      endif
+    endelse
+;
+    it=it+1
+;
+  endwhile
   close, 1
-
+;
 endfor
 ;
 ; Build structure of all the variables.
