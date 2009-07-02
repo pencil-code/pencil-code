@@ -101,7 +101,7 @@ module Hydro
        lscale_tobox, ampl_Omega,omega_ini
 ! run parameters
   real :: tdamp=0.,dampu=0.,wdamp=0.
-  real :: dampuint=0.0,dampuext=0.0,rdampint=-1e20,rdampext=impossible
+  real :: dampuint=0.0,dampuext=0.0,rdampint=impossible,rdampext=impossible
   real :: ruxm=0.,ruym=0.,ruzm=0.
   real :: tau_damp_ruxm1=0.,tau_damp_ruym1=0.,tau_damp_ruzm1=0.
   real :: tau_damp_ruxm=0.,tau_damp_ruym=0.,tau_damp_ruzm=0.,tau_diffrot1=0.
@@ -2567,11 +2567,8 @@ module Hydro
         endif
 
         if (dampuint > 0.0 .and. rdampint /= impossible) then
-!         x0=z(n)
+!         x0=abs(z(n))
 !         pdamp = step(x(l1:l2), x0, wdamp)
-!         xp=sqrt(1.+z(n)/0.8)
-!         xm=-sqrt(1.+z(n)/0.8)
-!         pdamp = 1.-step(x(l1:l2), xm, wdamp)*step(x(l1:l2), xp, -wdamp)
           pdamp = 1 - step(p%r_mn,rdampint,wdamp) ! inner damping profile
           do i=iux,iuz
             df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - dampuint*pdamp*f(l1:l2,m,n,i)

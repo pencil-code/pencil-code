@@ -2931,6 +2931,10 @@ module Forcing
           p%fcont(:,1)=fact*phi1_ff(m    )
           p%fcont(:,2)=fact*phi2_ff(l1:l2)
           p%fcont(:,3)=fact*(phi1_ff(m)+phi2_ff(l1:l2))
+        elseif (iforcing_cont=='grav') then
+          p%fcont(:,1)=0
+          p%fcont(:,2)=0
+          p%fcont(:,3)=ampl_ff*cos(omega_ff*t)
         endif
       endif
 !
