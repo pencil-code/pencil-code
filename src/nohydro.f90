@@ -148,9 +148,21 @@ module Hydro
 !
 !  All pencils that the Hydro module depends on are specified here.
 !
-!  20-11-04/anders: coded
+!  20-nov-04/anders: coded
+!   1-jul-09/axel: added more for kinflow
 !
-      if (kinflow/='') lpenc_requested(i_uu)=.true.
+!  pencils for kinflow
+!
+      if (kinflow/='') then
+        lpenc_requested(i_uu)=.true.
+        if (kinflow=='eddy') then
+          lpenc_requested(i_rcyl_mn)=.true.
+          lpenc_requested(i_rcyl_mn1)=.true.
+        endif
+      endif
+!
+!  disgnostic pencils
+!
       if (idiag_urms/=0 .or. idiag_umax/=0 .or. idiag_u2m/=0 .or. &
           idiag_um2/=0) lpenc_diagnos(i_u2)=.true.
       if (idiag_oum/=0) lpenc_diagnos(i_ou)=.true.
@@ -161,7 +173,7 @@ module Hydro
 !
 !  Interdependency among pencils from the Hydro module is specified here
 !
-!  20-11-04/anders: coded
+!  20-nov-04/anders: coded
 !
       logical, dimension (npencils) :: lpencil_in
 !
@@ -202,7 +214,8 @@ module Hydro
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      real, dimension(nx) :: kdotxwt,cos_kdotxwt,sin_kdotxwt
+      real, dimension(nx) :: kdotxwt, cos_kdotxwt, sin_kdotxwt
+      real, dimension(nx) :: tmp_mn
       real :: kkx_aa,kky_aa,kkz_aa, fac, fpara, dfpara, ecost, esint, epst
       integer :: modeN
       real :: sqrt2, sqrt21k1, eps1=1., WW=0.25, k21
@@ -238,6 +251,19 @@ module Hydro
           p%uu(:,1)=ABC_A*sin(kkz_aa*z(n))    +ABC_C*cos(kky_aa*y(m))
           p%uu(:,2)=ABC_B*sin(kkx_aa*x(l1:l2))+ABC_A*cos(kkz_aa*z(n))
           p%uu(:,3)=ABC_C*sin(kky_aa*y(m))    +ABC_B*cos(kkx_aa*x(l1:l2))
+        endif
+! divu
+        if (lpencil(i_divu)) p%divu=0.
+!
+!  nocosine or Archontis flow
+!
+      elseif (kinflow=='nocos') then
+! uu
+        if (lpencil(i_uu)) then
+          if (headtt) print*,'nocosine or Archontis flow'
+          p%uu(:,1)=ABC_A*sin(kkz_aa*z(n))
+          p%uu(:,2)=ABC_B*sin(kkx_aa*x(l1:l2))
+          p%uu(:,3)=ABC_C*sin(kky_aa*y(m))
         endif
 ! divu
         if (lpencil(i_divu)) p%divu=0.
@@ -475,6 +501,17 @@ kky_aa=2.*pi
         p%uu(:,1)=0.
         p%uu(:,2)=eps_kinflow*z(n)*sin(kkx_aa*x(l1:l2))
         p%uu(:,3)=1.+cos(kkx_aa*x(l1:l2))
+        if (lpencil(i_divu)) p%divu=0.
+!
+!  Eddy (Brandenburg & Zweibel 1994)
+!
+      elseif (kinflow=='eddy') then
+        if (headtt) print*,'eddy flow; eps_kinflow,kx=',eps_kinflow,kkx_aa
+        tmp_mn=-.5*pi*p%rcyl_mn1*sin(.5*pi*p%rcyl_mn)*ampl_kinflow* &
+          4.*max(cos(.5*pi*p%rcyl_mn),0.)**3
+        p%uu(:,1)=+tmp_mn*y(m)
+        p%uu(:,2)=-tmp_mn*x(l1:l2)
+        p%uu(:,3)=0.
         if (lpencil(i_divu)) p%divu=0.
 !
 !  Shearing wave

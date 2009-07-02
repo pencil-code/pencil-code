@@ -24,9 +24,8 @@ module Chiral
   include 'chiral.h'
 !
   integer :: iXX_chiral=0,iYY_chiral=0
-!
   character (len=labellen) :: initXX_chiral='zero',initYY_chiral='zero'
-!
+  logical :: linitialize_aa_from_Euler_potentials
   real :: amplXX_chiral=.1, widthXX_chiral=.5
   real :: amplYY_chiral=.1, widthYY_chiral=.5
   real :: kx_XX_chiral=1.,ky_XX_chiral=1.,kz_XX_chiral=1.,radiusXX_chiral=0.
@@ -43,13 +42,19 @@ module Chiral
        xposYY_chiral,yposYY_chiral,zposYY_chiral
 !
   real :: chiral_diff=0., chiral_crossinhibition=1.,chiral_fidelity=1.
+  real, dimension(3) :: gradX0=(/0.0,0.0,0.0/), gradY0=(/0.0,0.0,0.0/)
+  character (len=labellen) :: chiral_reaction='BAHN_model'
+  logical :: limposed_gradient=.false.
 !
   namelist /chiral_run_pars/ &
-       chiral_diff,chiral_crossinhibition,chiral_fidelity
+       chiral_diff,chiral_crossinhibition,chiral_fidelity, &
+       chiral_reaction,limposed_gradient,gradX0,gradY0, &
+       linitialize_aa_from_Euler_potentials
 !
   integer :: idiag_XX_chiralmax=0, idiag_XX_chiralm=0
   integer :: idiag_YY_chiralmax=0, idiag_YY_chiralm=0
   integer :: idiag_QQm_chiral=0, idiag_QQ21m_chiral=0, idiag_QQ21QQm_chiral=0
+  integer :: idiag_gXXxgYYrms=0, idiag_gXXxgYYmax=0
 !
   contains
 !***********************************************************************
@@ -115,6 +120,7 @@ module Chiral
         case('gaussian-x'); call gaussian(amplXX_chiral,f,iXX_chiral,kx=kx_XX_chiral)
         case('gaussian-y'); call gaussian(amplXX_chiral,f,iXX_chiral,ky=ky_XX_chiral)
         case('gaussian-z'); call gaussian(amplXX_chiral,f,iXX_chiral,kz=kz_XX_chiral)
+        case('gaussian-noise'); call gaunoise(amplXX_chiral,f,iXX_chiral)
         case('positive-noise'); call posnoise(amplXX_chiral,f,iXX_chiral)
         case('wave-x'); call wave(amplXX_chiral,f,iXX_chiral,kx=kx_XX_chiral)
         case('wave-y'); call wave(amplXX_chiral,f,iXX_chiral,ky=ky_XX_chiral)
@@ -135,6 +141,7 @@ module Chiral
         case('gaussian-x'); call gaussian(amplYY_chiral,f,iYY_chiral,kx=kx_YY_chiral)
         case('gaussian-y'); call gaussian(amplYY_chiral,f,iYY_chiral,ky=ky_YY_chiral)
         case('gaussian-z'); call gaussian(amplYY_chiral,f,iYY_chiral,kz=kz_YY_chiral)
+        case('gaussian-noise'); call gaunoise(amplYY_chiral,f,iYY_chiral)
         case('positive-noise'); call posnoise(amplYY_chiral,f,iYY_chiral)
         case('wave-x'); call wave(amplYY_chiral,f,iYY_chiral,kx=kx_YY_chiral)
         case('wave-y'); call wave(amplYY_chiral,f,iYY_chiral,ky=ky_YY_chiral)
@@ -196,6 +203,7 @@ module Chiral
 !  calculate chirality equations in reduced form; see q-bio/0401036
 !
 !  28-may-04/axel: adapted from pscalar
+!   1-jul-09/axel: included gradX, gradY, and allowed for different reactions
 !
       use Diagnostics
       use Sub
@@ -204,7 +212,8 @@ module Chiral
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 
-      real, dimension (nx,3) :: gXX_chiral,gYY_chiral
+      real, dimension (nx,3) :: gXX_chiral,gYY_chiral,gXXxgYY
+      real, dimension (nx) :: gXXxgYY2
       real, dimension (nx) :: XX_chiral,ugXX_chiral,del2XX_chiral,dXX_chiral
       real, dimension (nx) :: YY_chiral,ugYY_chiral,del2YY_chiral,dYY_chiral
       real, dimension (nx) :: RRXX_chiral,XX2_chiral
@@ -214,7 +223,8 @@ module Chiral
       real :: pp,qq,lamchiral
       integer :: j
 !
-      intent(in)  :: f,p
+      intent(in)  :: p
+      intent(inout) :: f
       intent(out) :: df
 !
 !  identify module and boundary conditions
@@ -230,10 +240,24 @@ module Chiral
       call dot_mn(p%uu,gXX_chiral,ugXX_chiral)
       call dot_mn(p%uu,gYY_chiral,ugYY_chiral)
 !
+!  linitialize_aa_from_Euler_potentials
+!
+      if (linitialize_aa_from_Euler_potentials) then
+        if (t==0.) then
+          if (lmagnetic) then
+            do j=1,3
+              f(l1:l2,m,n,j+iaa-1)=.5*( &
+                f(l1:l2,m,n,iXX_chiral)*gYY_chiral(:,j) &
+               -f(l1:l2,m,n,iYY_chiral)*gXX_chiral(:,j))
+            enddo
+          endif
+        endif
+      endif
+!
 !  advection term
 !
-      if (lhydro) df(l1:l2,m,n,iXX_chiral)=df(l1:l2,m,n,iXX_chiral)-ugXX_chiral
-      if (lhydro) df(l1:l2,m,n,iYY_chiral)=df(l1:l2,m,n,iYY_chiral)-ugYY_chiral
+      df(l1:l2,m,n,iXX_chiral)=df(l1:l2,m,n,iXX_chiral)-ugXX_chiral
+      df(l1:l2,m,n,iYY_chiral)=df(l1:l2,m,n,iYY_chiral)-ugYY_chiral
 !
 !  diffusion term
 !
@@ -241,6 +265,26 @@ module Chiral
       call del2(f,iYY_chiral,del2YY_chiral)
       df(l1:l2,m,n,iXX_chiral)=df(l1:l2,m,n,iXX_chiral)+chiral_diff*del2XX_chiral
       df(l1:l2,m,n,iYY_chiral)=df(l1:l2,m,n,iYY_chiral)+chiral_diff*del2YY_chiral
+!
+!  Add diffusion of imposed spatially constant gradient of X or Y.
+!  This makes sense mainly for periodic boundary conditions.
+!
+      if (limposed_gradient) then
+        do j=1,3
+          if (gradX0(j)/=0.) df(l1:l2,m,n,iXX_chiral)= &
+            df(l1:l2,m,n,iXX_chiral)-gradX0(j)*p%uu(:,j)
+          if (gradY0(j)/=0.) df(l1:l2,m,n,iYY_chiral)= &
+            df(l1:l2,m,n,iYY_chiral)-gradY0(j)*p%uu(:,j)
+        enddo
+      endif
+!
+!  selection of different reaction terms
+!
+      select case(chiral_reaction)
+!
+!  BAHN model
+!
+      case('BAHN_model')
 !
 !  reaction terms
 !  X^2/Rtilde^2 - X*R
@@ -273,6 +317,16 @@ module Chiral
       df(l1:l2,m,n,iXX_chiral)=df(l1:l2,m,n,iXX_chiral)+dXX_chiral
       df(l1:l2,m,n,iYY_chiral)=df(l1:l2,m,n,iYY_chiral)+dYY_chiral
 !
+      case('nothing')
+        if (lroot.and.ip<=5) print*,"chiral_reaction='nothing'"
+!
+      case default
+        write(unit=errormsg,fmt=*) &
+             'dXY_chiral_dt: No such value for chiral_reaction: ', &
+             trim(chiral_reaction)
+        call fatal_error('chiral_reaction',errormsg)
+      endselect
+!
 !  For the timestep calculation, need maximum diffusion
 !
       if (lfirst.and.ldt) diffus_chiral=diffus_chiral+chiral_diff*dxyz_2
@@ -303,6 +357,14 @@ module Chiral
             call sum_mn_name(QQ21_chiral,idiag_QQ21m_chiral)
         if (idiag_QQ21QQm_chiral/=0) &
             call sum_mn_name(QQ21QQ_chiral,idiag_QQ21QQm_chiral)
+        if (idiag_gXXxgYYrms/=0.or.idiag_gXXxgYYmax/=0) then
+          call cross(gXX_chiral,gYY_chiral,gXXxgYY)
+          call dot2(gXXxgYY,gXXxgYY2)
+          if (idiag_gXXxgYYrms/=0) &
+              call sum_mn_name(gXXxgYY2,idiag_gXXxgYYrms,lsqrt=.true.)
+          if (idiag_gXXxgYYmax/=0) &
+              call max_mn_name(gXXxgYY2,idiag_gXXxgYYmax,lsqrt=.true.)
+        endif
       endif
 !
     endsubroutine dXY_chiral_dt
@@ -371,6 +433,7 @@ module Chiral
         idiag_XX_chiralmax=0; idiag_XX_chiralm=0
         idiag_YY_chiralmax=0; idiag_YY_chiralm=0
         idiag_QQm_chiral=0; idiag_QQ21m_chiral=0; idiag_QQ21QQm_chiral=0
+        idiag_gXXxgYYrms=0; idiag_gXXxgYYmax=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -390,6 +453,10 @@ module Chiral
             'QQ21m',idiag_QQ21m_chiral)
         call parse_name(iname,cname(iname),cform(iname),&
             'QQ21QQm',idiag_QQ21QQm_chiral)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'gXXxgYYrms',idiag_gXXxgYYrms)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'gXXxgYYmax',idiag_gXXxgYYmax)
       enddo
 !
 !  write column where which chiral variable is stored
@@ -402,6 +469,8 @@ module Chiral
         write(3,*) 'i_QQm_chiral=',idiag_QQm_chiral
         write(3,*) 'i_QQ21m_chiral=',idiag_QQ21m_chiral
         write(3,*) 'i_QQ21QQm_chiral=',idiag_QQ21QQm_chiral
+        write(3,*) 'i_gXXxgYYrms=',idiag_gXXxgYYrms
+        write(3,*) 'i_gXXxgYYmax=',idiag_gXXxgYYmax
         write(3,*) 'iXX_chiral=',iXX_chiral
         write(3,*) 'iYY_chiral=',iYY_chiral
       endif
