@@ -1,4 +1,4 @@
-! $Id: nopolymer.f90 dhruba.mitra $
+! $Id$
 !
 !  This modules deals with all aspects of polymers.
 !
@@ -36,7 +36,7 @@ module Polymer
 !
       use Mpicomm
 !
-      if (lroot) call svn_id("$Id: nopolymer.f90 dhruba.mitra $")
+      if (lroot) call svn_id("$Id$")
 !
     endsubroutine register_polymer
 !***********************************************************************
