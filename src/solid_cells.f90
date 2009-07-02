@@ -985,6 +985,15 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
           R1=verylarge
           Rsmall=verylarge/2.0
 !
+! Find the x and y coordinates of p in a coordiante system with origin
+! in the center of the cylinder
+!
+          yp_cylinder=yp-y0
+          xp_cylinder=xp-x0
+          p_cylinder(1)=xp_cylinder
+          p_cylinder(2)=yp_cylinder
+          rp=sqrt(xp_cylinder**2+yp_cylinder**2)
+!
 ! Determine the point s on the cylinder surface where the normal to the
 ! cylinder surface pass through the point p. 
 !
@@ -994,15 +1003,6 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 ! Find distance from point p to point s
 !
           dist=(xp-xs)**2+(yp-ys)**2
-!
-! Find the x and y coordinates of p in a coordiante system with origin
-! in the center of the cylinder
-!
-          yp_cylinder=yp-y0
-          xp_cylinder=xp-x0
-          p_cylinder(1)=xp_cylinder
-          p_cylinder(2)=yp_cylinder
-          rp=sqrt(xp_cylinder**2+yp_cylinder**2)
 !
 ! Find which grid line is the closest one in the direction
 ! away from the cylinder surface
@@ -1120,7 +1120,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !
           gpp=(rps*fint+rintp*0)/(Rsmall-rs)
         endif
-endif
+      endif
 !
     endsubroutine close_interpolation
 !***********************************************************************  
