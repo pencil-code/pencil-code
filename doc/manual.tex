@@ -696,7 +696,7 @@ and shearing turbulence}
 (\arXiv{0710.4059})
 
 % -- Global simulations of planet formation --
-Lyra, W., Johansen, A., Klahr, H., \& Piskunov, N.\yana{2008}{491}{L41}{L44}{Embyros grown in the dead zone. Assembling the first protoplanetary cores in low-mass selfgravitating circumstellar disks of gas and solids}
+Lyra, W., Johansen, A., Klahr, H., \& Piskunov, N.\yana{2008}{491}{L41}{L44}{Embryos grown in the dead zone. Assembling the first protoplanetary cores in low-mass selfgravitating circumstellar disks of gas and solids}
 
 % -- N-body solver --
 Lyra, W., Johansen, A., Klahr, H., \& Piskunov, N.\yana{2009}{493}{1125}{1139}{Standing on the shoulders of giants. Trojan Earths and vortex trapping in low-mass selfgravitating protoplanetary disks of gas and solids}
@@ -805,10 +805,16 @@ Furthermore, one can change the list of variables for monitoring
 code reload new parameters or exit gracefully at runtime.
 
 The requirements for using the Pencil-MPI code are modest: you can use it
-on any Unix system with a F90/F95 compiler. If you have \name{IDL} as
+on any Linux or Unix system with a F90/F95 compiler.
+Although the {\sc Pencil Code} is mainly designed to run on supercomputers,
+about 50\% of the users run their code also on Macs, and the other half
+uses either directly Linux on their laptops or they use VirtualBox
+on their Windows machine on which they install Ubuntu Linux.
+If you have \name{IDL} as
 well, you will be able to visualize the results (a number of sample
 procedures are provided), but other tools such as
-\name{DX} (OpenDX, data explorer) can also be used.
+\name{Python}, \name{DX} (OpenDX, data explorer) can also be used
+and some relevant tools and routines come with the {\sc Pencil Code}.
 
 \bigskip
 
@@ -911,7 +917,7 @@ To use the code, you will need the following:
 \item Used heavily (if you don't have one of these, you will need to
   adjust many things manually):
   \begin{itemize}
-  \item a \name{Unix}-type system with \name{make} and \name{csh}
+  \item a \name{Unix}/\name{Linux}-type system with \name{make} and \name{csh}
   \item \name{Perl} (remember: if it doesn't run Perl, it's not a
     computer)
   \end{itemize}
@@ -2213,24 +2219,34 @@ for a $y$-$z$ slice):
 
 In the file \file{xyaver.in}, $z$-dependent (horizontal) averages are listed.
 They are written to the file \file[xyaverages.dat]{data/xyaverages.dat}.
-Currently, only the horizontally $xy$-averaged $x$ and $y$ components
-of the magnetic and velocity fields can be written.
-A new line of averages is written every time \file{var.dat} is updated
-(i.e.\ every \var{it1}th time steps).
+%Currently, only the horizontally $xy$-averaged $x$ and $y$ components
+%of the magnetic and velocity fields can be written.
+%AB: there are many more
+%A new line of averages is written every time \file{var.dat} is updated
+%(i.e.\ every \var{it1}th time steps).
+%AB: it1 and isave are in general not the same.
+A new line of averages is written every \var{it1}th time steps.
 See Sec.~\ref{S-new-output-diagnostics} on how to add new averages.
 
 We can also output in \file{print.in} the associated mean square value
 of the horizontal field, but this requires that in \file{xyaver.in} the
 quantities \code{bxmz} and \code{bymz} are set.
+If this is not the case, a corresponding warning message will be written
+on the command line.
 
 In \code{idl} such $xy$-averages can be read using the procedure
 \file{pc_read_xyaver}.
 
 
-\subsubsection{Vertical averages}
+%\subsubsection{Vertical averages}
+%AB: a vertical average would be zaver.in, which also exists.
+%AB: So I changed it to "planar averages". OK?
+\subsubsection{Other planar averages}
 \label{S-ver-averages}
 
-There is the possibility to output also vertical $xz$- and $yz$- averages.
+%There is the possibility to output also vertical $xz$- and $yz$- averages.
+%AB: planar.
+There is the possibility to output also $xz$- and $yz$- averages.
 This is done by averaging first in the $z$-direction only, so
 the result (which is available on the root processor) depends on $x$
 and $y$. From these planes we calculate then (on the root processor)
@@ -6191,6 +6207,7 @@ where \code{nw=nx*ny*nz}.
                               & nomag/entro &  46 MB &  7-oct-02 & AB \\
    8 & Hwwsx5& 0.50 & $256^3$ & convstar     & 8.6 GB & 29-jan-03 & WD \\
    8 &Neolith& 0.444& $128^3$ & magn/noentro &        &  6-dec-07 & AB \\
+   8 &Ferlin & 0.450&  $64^3$ &1test/noentro &        & 21-jun-09 & AB \\
   16 & fe1   & 1.77 &  $64^3$ & convstar     &        &  9-feb-03 & AB \\
   16 & copson& 0.596& $128^3$ & geodynamo/ks95 &      & 21-nov-03 & DM \\
   16 & fe1   & 0.94 & $128^3$ & magn/noentro &  4x4   &  8-sep-02 & AB \\
@@ -6241,8 +6258,10 @@ where \code{nw=nx*ny*nz}.
   64 & Gridur& 0.25 & $256^3$ & magn/noentro &        & 19-aug-02 & NE \\
   64 & Ukaff & 0.17 & $512^3$ & magn/noentro &        & 21-may-02 & AB \\
   64 & Steno & 0.075& $512^3$ & magn/noentro &  8x16  & 19-oct-06 & AB \\
-  64 &Neolith& 0.0695&$256^3$ & magn/noentro &        &  6-dec-07 & AB \\
- 128 & fe1   & 0.44 & $256^3$ & nomag/entro/rad8/ion &  4x32  & 10-mar-04 & TH \\
+  64 &Neolith&0.0695& $256^3$ & magn/noentro &        &  6-dec-07 & AB \\
+  64 &Ferlin & 8.51&$150\times128^2$&Li mechanism& 8x8& 21-jun-09 & AB \\
+  64 &Ferlin & 0.156& $256^3$ & magn/noentro &  8x8   & 14-jun-09 & AB \\
+ 128 & fe1   & 0.44 & $256^3$ &nomag/entro/rad8/ion&4x32&10-mar-04& TH \\
  128 & fe1   & 2.8  & $512^3$ & magn/noentro & 16x8   &  5-sep-02 & AB \\
  128 & fe1   & 0.51 & $512^3$ & magn/noentro & 8x16   &  5-sep-02 & AB \\
  128 & fe1   & 0.27 & $512^3$ & magn/noentro & 4x32   &  5-sep-02 & AB \\
@@ -6664,7 +6683,7 @@ Obtained with \code{inituu='Beltrami-z'} or \code{initaa='Beltrami-z'}.
 This initial condition sets up two interlocked thin magnetic tori
 (i.\,e.~thin, torus-shaped magnetic flux tubes).
 One torus of radius $R$ lying in the plane $z=0$ can be described in
-cylindrical coordinates by the
+cylindrical coordinates, $(r,\varphi,z)$, by the
 vector potential
 \begin{equation} \label{Av-flux-ring-cyl}
   \Av = 
@@ -6707,10 +6726,18 @@ or
   = \frac{1}{2} \left( 1 + \tanh\frac{x}{\varepsilon} \right)
 \end{equation}
 are quite popular.
+Another possibility is a constant or box-like profile with
+\begin{equation}
+  \delta_\varepsilon(x)
+  = \frac{1}{2\varepsilon}\Heavi(|x|-\varepsilon) \; ,
+  \quad
+  \Heavi_\varepsilon(x)
+  = \frac{1}{2} \left\{ 1 + \max[-1,\min(x/\varepsilon),1] \right\}
+\end{equation}
 Note, however, that the Gaussian profile (\ref{delta-Gaussian}) is the
 only one that yields a radially symmetric (with respect to the distance
 from the central line of the torus) magnetic field profile
-$B_varphi = B_\phi(\sqrt{(r{-}R)^2{+}z^2})$
+$B_\varphi = B_\phi(\sqrt{(r{-}R)^2{+}z^2})$
 if $\varepsilon$ is sufficiently small.
 
 In Cartesian coordinates, the vector potential (\ref{Av-flux-ring-cyl})
