@@ -70,6 +70,7 @@ module Gravity
   real :: g0=0.
   real :: lnrho_bot=0.,lnrho_top=0.,ss_bot=0.,ss_top=0.
   real :: kappa_x1=0.,kappa_x2=0.,kappa_z1=0.,kappa_z2=0.
+  real :: grav_tilt=0.
   character (len=labellen) :: grav_profile='const'
 !
   namelist /grav_init_pars/ &
@@ -81,7 +82,7 @@ module Gravity
        xinfty,yinfty,zinfty, &
        lxyzdependence,kappa_x1,kappa_x2,kappa_z1,kappa_z2, &
        reduced_top,lboussinesq,grav_profile,n_pot, &
-       cs0hs,H0hs
+       cs0hs,H0hs,grav_tilt
 !
   namelist /grav_run_pars/ &
        gravx_profile,gravy_profile,gravz_profile,gravx,gravy,gravz, &
@@ -90,7 +91,7 @@ module Gravity
        lgravx_gas,lgravx_dust,lgravy_gas,lgravy_dust,lgravz_gas,lgravz_dust, &
        xinfty,yinfty,zinfty, &
        lxyzdependence,kappa_x1,kappa_x2,kappa_z1,kappa_z2, &
-       zref,reduced_top,lboussinesq,grav_profile,n_pot
+       zref,reduced_top,lboussinesq,grav_profile,n_pot,grav_tilt
 !
   integer :: idiag_epot=0
 !
@@ -157,6 +158,13 @@ module Gravity
 !
       case('const')
         if (lroot) print*,'initialize_gravity: constant x-grav=', gravx
+        gravx_xpencil=gravx
+        potx_xpencil=-gravx*(x-xinfty)
+        call put_shared_variable('gravx', gravx, ierr)
+!
+      case('const_tilt')
+        if (lroot) print*,'initialize_gravity: constant x-grav=', gravx
+        gravx=sin(grav_tilt*pi/180.)
         gravx_xpencil=gravx
         potx_xpencil=-gravx*(x-xinfty)
         call put_shared_variable('gravx', gravx, ierr)
@@ -247,6 +255,12 @@ module Gravity
 !
       case('const')
         if (lroot) print*,'initialize_gravity: constant gravz=', gravz
+        gravz_zpencil=gravz
+        potz_zpencil=-gravz*(z-zinfty)
+!
+      case('const_tilt')
+        if (lroot) print*,'initialize_gravity: constant gravz=', gravz
+        gravz=-cos(grav_tilt*pi/180.)
         gravz_zpencil=gravz
         potz_zpencil=-gravz*(z-zinfty)
 !
