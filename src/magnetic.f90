@@ -1222,6 +1222,9 @@ module Magnetic
       if (idiag_cosjbm/=0) then
         lpenc_diagnos(i_cosjb)=.true.
       endif
+      if (idiag_cosubm/=0) then
+        lpenc_diagnos(i_cosub)=.true.
+      endif
       if ((idiag_jparallelm/=0).or.(idiag_jperpm/=0)) then
         lpenc_diagnos(i_cosjb)=.true.
         lpenc_diagnos(i_jparallel)=.true.
@@ -1618,7 +1621,7 @@ module Magnetic
 ! cosub
       if (lpencil(i_cosub)) then
         do ix=1,nx
-          if((abs(p%u2(ix)).le.tini).or.(abs(p%b2(ix)).le.tini))then 
+          if ((abs(p%u2(ix)).le.tini).or.(abs(p%b2(ix)).le.tini)) then 
             p%cosub(ix)=0.
           else
             p%cosub(ix)=p%ub(ix)/sqrt(p%u2(ix)*p%b2(ix))

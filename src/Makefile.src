@@ -1117,7 +1117,9 @@ endif
 ##
 #FC=g95 #(norosx01)
 #F77=$(FC) #(norosx01)
-#FFLAGS=-O3 -I/usr/local/include #(norosx01)
+#FFLAGS=-O3 -I/usr/local/include -freal=nan -finteger=-2147483648 #(norosx01)
+#FFLAGS=-O3 -I/usr/local/include -freal=nan -finteger=-2147483648 -fbounds-check -ftrace=full -Wall -Wno=140,141,109,112,137 -Werror #(norosx01)
+#FFLAGS=-O3 -I/usr/local/include -freal=nan -finteger=-2147483648 -fbounds-check -ftrace=full -Wall -Wno=140,141,109,112,137 #(norosx01)
 #CFLAGS=-DFUNDERSC=2 #(norosx01)
 #LD_MPI= -L/usr/local/include -llammpio -llamf77mpi -lmpi -llam -ldl #(norosx01)
 ##
