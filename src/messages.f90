@@ -276,13 +276,13 @@ module Messages
 !
         if0 = index(svnid, ": ") + 2
         if1 = if0 + index(svnid(if0+1:), " ") - 1
-        filename = svnid(if0:if1)
+        call extract_substring(svnid, if0, if1, filename)
 !
 !  Revision number
 !
         iv0 = if1 + 2
         iv1 = iv0 + index(svnid(iv0+1:), " ") - 1
-        revision = svnid(iv0:iv1)
+        call extract_substring(svnid, iv0, iv1, revision)
 !
 !  Date
 !
@@ -291,9 +291,9 @@ module Messages
         it0 = iy1 + 2             ! first char of time-of-day
         it1 = it0 + index(svnid(it0+1:), " ") - 1
         if (svnid(it1:it1) == "Z") then
-          date = svnid(iy0:it1-1) ! strip trailing `Z'
+          call extract_substring(svnid, iy0, it1-1, date) ! strip trailing `Z'
         else
-          date = svnid(iy0:it1)
+          call extract_substring(svnid, iy0, it1, date)
         endif
 !
 !  Author
@@ -306,7 +306,7 @@ module Messages
         else
           ia1 = ia0 + index(svnid(ia0+1:), " ") - 1
         endif
-        author = svnid(ia0:ia1)
+        call extract_substring(svnid, ia0, ia1, author)
 !
         write(*,fmt) "SVN: ", &
             trim(filename), &
@@ -338,6 +338,22 @@ module Messages
       close(1)
 !
     endsubroutine svn_id
+!***********************************************************************
+    subroutine extract_substring(string, idx0, idx1, substring)
+!
+!  Extract a substring after sanity check
+!
+      character(len=*) :: string
+      integer :: idx0, idx1
+      character(len=*) substring
+
+      if (1 <= idx0 .and. idx0 <= idx1 .and. idx1 <= len(string)) then
+        substring = string(idx0:idx1)
+      else
+        substring = "???"
+      endif
+
+    endsubroutine extract_substring
 !***********************************************************************
     subroutine life_support_off(message)
 !
