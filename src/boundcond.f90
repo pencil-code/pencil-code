@@ -5507,8 +5507,8 @@ module Boundcond
 
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: idz, j, ierr
-      real    :: kx
-      real, pointer :: ampl_forc, k_forc, w_forc
+      real    :: kx, sig
+      real, pointer :: ampl_forc, k_forc, w_forc, x_forc, dx_forc
 !
       if (headtt) then
         if (iuz == 0) call stop_it("BC_FORCE_UX_TIME: Bad idea...")
@@ -5524,11 +5524,22 @@ module Boundcond
       call get_shared_variable('w_forc', w_forc, ierr)
       if (ierr/=0) call stop_it("BC_FORCE_UX_TIME: "//&
            "there was a problem when getting w_forc")      
-      if (headtt) print*, 'bc_force_ux_time: ampl_forc, k_forc, w_forc=',&
-           ampl_forc, k_forc, w_forc
+      call get_shared_variable('x_forc', x_forc, ierr)
+      if (ierr/=0) call stop_it("BC_FORCE_UX_TIME: "//&
+           "there was a problem when getting x_forc")      
+      call get_shared_variable('dx_forc', dx_forc, ierr)
+      if (ierr/=0) call stop_it("BC_FORCE_UX_TIME: "//&
+           "there was a problem when getting dx_forc")      
+      if (headtt) print*, 'bc_force_ux_time: ampl_forc, k_forc, '//&
+           'w_forc, x_forc, dx_forc=', ampl_forc, k_forc, w_forc, &
+           x_forc, dx_forc
 !
-      kx=2*pi/Lx*k_forc
-      f(:,:,idz,j) = spread(ampl_forc*sin(kx*x)*cos(w_forc*t), 2, my)
+      if (k_forc /= impossible) then
+        kx=2*pi/Lx*k_forc
+        f(:,:,idz,j) = spread(ampl_forc*sin(kx*x)*cos(w_forc*t), 2, my)
+      else
+        f(:,:,idz,j) = spread(ampl_forc*exp(-((x-x_forc)/dx_forc)**2)*cos(w_forc*t), 2, my)
+      endif
 !
     endsubroutine bc_force_ux_time
 !***********************************************************************
