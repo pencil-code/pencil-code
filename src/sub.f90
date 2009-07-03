@@ -32,6 +32,7 @@ module Sub
   public :: gij_psi, gij_psi_etc
   public :: der_step
   public :: u_dot_grad, h_dot_grad
+  public :: u_dot_grad_mat
   public :: del2, del2v, del2v_etc
   public :: del4v, del4, del2vi_etc
   public :: del6_nodx, del6v, del6, del6_other, del6fj, del6fjv
@@ -46,6 +47,7 @@ module Sub
   public :: multmm_sc
   public :: multm2, multm2_mn
   public :: multmv, multmv_mn, multmv_transp
+  public :: mult_matrix
 !
   public :: read_line_from_file, noform
   public :: remove_file
@@ -517,6 +519,60 @@ module Sub
 !
     endsubroutine dot_mn
 !***********************************************************************
+    subroutine vec_dot_3tensor(a,b,c,ladd)
+!
+!  dot product of a vector with 3 tensor,
+!   c_ij = a_k b_ijk
+!   28-aug-08/dhruba : coded
+
+      real, dimension (nx,3) :: a
+      real, dimension (nx,3,3) :: c
+      real, dimension (nx,3,3,3) :: b
+      integer :: i,j
+!
+      logical, optional :: ladd
+      logical :: ladd1=.false.
+
+      intent(in) :: a,b,ladd
+      intent(out) :: c
+
+      if (present(ladd)) ladd1=ladd
+!
+      do i=1,3
+        do j=1,3
+          if (ladd1) then
+            c(:,i,j)=c(:,i,j)+a(:,1)*b(:,i,j,1)+a(:,2)*b(:,i,j,2)+a(:,3)*b(:,i,j,3)
+          else
+            c(:,i,j)=a(:,1)*b(:,i,j,1)+a(:,2)*b(:,i,j,2)+a(:,3)*b(:,i,j,3)
+          endif
+        enddo
+      enddo
+!
+    endsubroutine vec_dot_3tensor
+!***********************************************************************
+    subroutine contract_jk3(a,c)
+!
+!  contracts the jk of a_ijk
+!  20-aug-08/dhruba: coded
+
+      real, dimension (nx,3,3,3) :: a
+      real, dimension (nx,3) :: c
+      integer :: i,j,k
+!
+      intent(in) :: a
+      intent(out) :: c
+!
+      c=0
+      do i=1,3
+        do j=1,3
+          do k=1,3
+            c(:,i)=c(:,i)+a(:,i,j,k)
+          enddo
+      enddo
+    enddo
+!
+    endsubroutine contract_jk3
+!***********************************************************************
     subroutine dot_mn_sv(a,b,c)
 !
 !  dot product, c=a.b, between non-pencilized vector and  pencil array
@@ -751,9 +807,9 @@ module Sub
 !
     endsubroutine multmm_sc_mn
 !***********************************************************************
-    subroutine mult_matrix_inner_mn(a,b,c)
+    subroutine mult_matrix(a,b,c)
 !
-!  Matrix multiplication of two pencil variables. Contracts inner index. 
+!  Matrix multiplication of two pencil variables. 
 !
       real, dimension (nx,3,3) :: a,b
       real, dimension (nx,3,3) :: c
@@ -769,27 +825,7 @@ module Sub
       enddo
 
 !
-    endsubroutine mult_matrix_inner_mn
-!***********************************************************************
-    subroutine mult_matrix_outer_mn(a,b,c)
-!
-!  Matrix multiplication of two pencil variables. Contracts outer index. 
-!
-      real, dimension (nx,3,3) :: a,b
-      real, dimension (nx,3,3) :: c
-      integer :: i,j,k
-!
-      c=0
-      do i=1,3
-        do j=1,3
-          do k=1,3
-            c(:,i,j)=c(:,i,j)+a(:,k,i)*b(:,j,k)
-          enddo
-        enddo
-      enddo
-
-!
-    endsubroutine mult_matrix_outer_mn
+    endsubroutine mult_matrix
 !***********************************************************************
     subroutine multm2_mn(a,b)
 !
@@ -2401,8 +2437,6 @@ module Sub
     subroutine u_dot_grad_vec(f,k,gradf,uu,ugradf,upwind,ladd)
 !
 !  u.gradu
-!  for spherical coordinates works correctly for u.gradu,
-!  not for general u.gradA
 !
 !  21-feb-07/axel+dhruba: added spherical coordinates
 !   7-mar-07/wlad: added cylindrical coordinates
@@ -2464,6 +2498,45 @@ module Sub
       endif
 !
     endsubroutine u_dot_grad_vec
+!***********************************************************************
+    subroutine u_dot_grad_mat(f,k,gradM,u_dot_gradM)
+!
+!  u.grad(M)
+! where M is a second rank matrix
+!
+!  dhruba: addapted from udotgradA
+!
+      intent(in) :: f,k,gradM
+      intent(out) :: u_dot_gradM
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,3,3,3) :: gradM
+      real,dimension(nx,3) :: uu
+      real, dimension (nx,3,3) :: u_dot_gradM
+      real, dimension (nx) :: tmp
+      integer :: j,k
+!
+!  upwind
+!
+      uu=f(l1:l2,m,n,k:k+2)
+      call vec_dot_3tensor(uu,gradM,u_dot_gradM)
+!
+!  adjustments for spherical coordinate system.
+!  The following now works for general u.gradA
+!
+      if (lspherical_coords) then
+          call inevitably_fatal_error('u_dot_gradM', &
+            'spherical coordinates not implemented yet') 
+      endif
+!
+!  the following now works for general u.gradA
+!
+      if (lcylindrical_coords) then
+          call inevitably_fatal_error('u_dot_gradM', &
+            'cylindrical coordinates not implemented yet') 
+      endif
+!
+    endsubroutine u_dot_grad_mat
 !***********************************************************************
     subroutine u_dot_grad_scl(f,k,gradf,uu,ugradf,upwind)
 !
