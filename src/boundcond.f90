@@ -5507,7 +5507,7 @@ module Boundcond
 
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: idz, j, ierr
-      real    :: kx, sig
+      real    :: kx
       real, pointer :: ampl_forc, k_forc, w_forc, x_forc, dx_forc
 !
       if (headtt) then
