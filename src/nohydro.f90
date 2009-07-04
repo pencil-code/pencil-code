@@ -215,7 +215,7 @@ module Hydro
       type (pencil_case) :: p
 !
       real, dimension(nx) :: kdotxwt, cos_kdotxwt, sin_kdotxwt
-      real, dimension(nx) :: tmp_mn
+      real, dimension(nx) :: tmp_mn, cos1_mn, cos2_mn
       real :: kkx_aa,kky_aa,kkz_aa, fac, fpara, dfpara, ecost, esint, epst
       integer :: modeN
       real :: sqrt2, sqrt21k1, eps1=1., WW=0.25, k21
@@ -507,11 +507,13 @@ kky_aa=2.*pi
 !
       elseif (kinflow=='eddy') then
         if (headtt) print*,'eddy flow; eps_kinflow,kx=',eps_kinflow,kkx_aa
+        cos1_mn=max(cos(.5*pi*p%rcyl_mn),0.)
+        cos2_mn=cos1_mn**2
         tmp_mn=-.5*pi*p%rcyl_mn1*sin(.5*pi*p%rcyl_mn)*ampl_kinflow* &
-          4.*max(cos(.5*pi*p%rcyl_mn),0.)**3
+          4.*cos2_mn*cos1_mn
         p%uu(:,1)=+tmp_mn*y(m)
         p%uu(:,2)=-tmp_mn*x(l1:l2)
-        p%uu(:,3)=0.
+        p%uu(:,3)=eps_kinflow*ampl_kinflow*cos2_mn**2
         if (lpencil(i_divu)) p%divu=0.
 !
 !  Shearing wave

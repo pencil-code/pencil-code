@@ -184,6 +184,7 @@ module Magnetic
   logical :: lelectron_inertia=.false.
   logical :: lremove_mean_emf=.false.
   logical :: lkinematic=.false.
+  logical :: luse_Bext_in_b2=.false.
   character (len=labellen) :: zdep_profile='fs'
   character (len=labellen) :: iforcing_continuous_aa='fixed_swirl'
 
@@ -216,7 +217,8 @@ module Magnetic
        lelectron_inertia,inertial_length,lbext_curvilinear, &
        lbb_as_aux,ljj_as_aux,lremove_mean_emf,lkinematic, &
        lbbt_as_aux,ljjt_as_aux, &
-       lneutralion_heat, lreset_aa, daareset
+       lneutralion_heat, lreset_aa, daareset, &
+       luse_Bext_in_b2
 
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_b2tm=0       ! DIAG_DOC: $\left<\bv(t)\cdot\int_0^t\bv(t')
@@ -1439,8 +1441,6 @@ module Magnetic
 ! bb
       if (lpencil(i_bb)) then
         call curl_mn(p%aij,p%bb,p%aa)
-! b2
-        if (lpencil(i_b2)) call dot2_mn(p%bb,p%b2)
 !
 !  save field before adding imposed field (for diagnostics)
 !
@@ -1509,6 +1509,15 @@ module Magnetic
         if (iglobal_bx_ext/=0) p%bb(:,1)=p%bb(:,1)+f(l1:l2,m,n,iglobal_bx_ext)
         if (iglobal_by_ext/=0) p%bb(:,2)=p%bb(:,2)+f(l1:l2,m,n,iglobal_by_ext)
         if (iglobal_bz_ext/=0) p%bb(:,3)=p%bb(:,3)+f(l1:l2,m,n,iglobal_bz_ext)
+      endif
+!
+! b2 (default is that B_ext is not included), but this can be changed
+! by setting luse_Bext_in_b2=.true.
+!
+      if (luse_Bext_in_b2) then
+        if (lpencil(i_b2)) call dot2_mn(p%bb,p%b2)
+      else
+        if (lpencil(i_b2)) call dot2_mn(p%bbb,p%b2)
       endif
 ! ab
       if (lpencil(i_ab)) call dot_mn(p%aa,p%bbb,p%ab)

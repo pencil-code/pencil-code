@@ -56,6 +56,7 @@ module Chiral
   integer :: idiag_QQm_chiral=0, idiag_QQ21m_chiral=0, idiag_QQ21QQm_chiral=0
   integer :: idiag_brmsEP=0, idiag_bmaxEP=0
   integer :: idiag_jrmsEP=0, idiag_jmaxEP=0
+  integer :: idiag_jbmEP=0
 !
   contains
 !***********************************************************************
@@ -215,7 +216,7 @@ module Chiral
 
       real, dimension (nx,3,3) :: gXXij_chiral,gYYij_chiral
       real, dimension (nx,3) :: gXX_chiral,gYY_chiral,bbEP,jjEP
-      real, dimension (nx) :: bbEP2,jjEP2
+      real, dimension (nx) :: bbEP2,jjEP2,jbEP
       real, dimension (nx) :: XX_chiral,ugXX_chiral,del2XX_chiral,dXX_chiral
       real, dimension (nx) :: YY_chiral,ugYY_chiral,del2YY_chiral,dYY_chiral
       real, dimension (nx) :: RRXX_chiral,XX2_chiral
@@ -239,11 +240,21 @@ module Chiral
 !
       call grad(f,iXX_chiral,gXX_chiral)
       call grad(f,iYY_chiral,gYY_chiral)
-      call dot_mn(p%uu,gXX_chiral,ugXX_chiral)
-      call dot_mn(p%uu,gYY_chiral,ugYY_chiral)
+!
+!  Add diffusion of imposed spatially constant gradient of X or Y.
+!  This makes sense mainly for periodic boundary conditions.
+!
+      if (limposed_gradient) then
+        do j=1,3
+          gXX_chiral(:,j)=gXX_chiral(:,j)+gradX0(j)
+          gYY_chiral(:,j)=gYY_chiral(:,j)+gradY0(j)
+        enddo
+      endif
 !
 !  advection term
 !
+      call dot_mn(p%uu,gXX_chiral,ugXX_chiral)
+      call dot_mn(p%uu,gYY_chiral,ugYY_chiral)
       df(l1:l2,m,n,iXX_chiral)=df(l1:l2,m,n,iXX_chiral)-ugXX_chiral
       df(l1:l2,m,n,iYY_chiral)=df(l1:l2,m,n,iYY_chiral)-ugYY_chiral
 !
@@ -253,18 +264,6 @@ module Chiral
       call del2(f,iYY_chiral,del2YY_chiral)
       df(l1:l2,m,n,iXX_chiral)=df(l1:l2,m,n,iXX_chiral)+chiral_diff*del2XX_chiral
       df(l1:l2,m,n,iYY_chiral)=df(l1:l2,m,n,iYY_chiral)+chiral_diff*del2YY_chiral
-!
-!  Add diffusion of imposed spatially constant gradient of X or Y.
-!  This makes sense mainly for periodic boundary conditions.
-!
-      if (limposed_gradient) then
-        do j=1,3
-          if (gradX0(j)/=0.) df(l1:l2,m,n,iXX_chiral)= &
-            df(l1:l2,m,n,iXX_chiral)-gradX0(j)*p%uu(:,j)
-          if (gradY0(j)/=0.) df(l1:l2,m,n,iYY_chiral)= &
-            df(l1:l2,m,n,iYY_chiral)-gradY0(j)*p%uu(:,j)
-        enddo
-      endif
 !
 !  selection of different reaction terms
 !
@@ -345,6 +344,9 @@ module Chiral
             call sum_mn_name(QQ21_chiral,idiag_QQ21m_chiral)
         if (idiag_QQ21QQm_chiral/=0) &
             call sum_mn_name(QQ21QQ_chiral,idiag_QQ21QQm_chiral)
+!
+!  Calculate BB = gXX_chiral x gYY_chiral
+!
         if (idiag_brmsEP/=0.or.idiag_bmaxEP/=0) then
           call cross(gXX_chiral,gYY_chiral,bbEP)
           call dot2(bbEP,bbEP2)
@@ -357,7 +359,7 @@ module Chiral
 !  Calculate Ji = Xi*del2Y - Yi*del2X + Xij Yj - Yij Xj
 !  and then the max and rms values of that
 !
-        if (idiag_jrmsEP/=0.or.idiag_jmaxEP/=0) then
+        if (idiag_jrmsEP/=0.or.idiag_jmaxEP/=0.or.idiag_jbmEP/=0) then
           do j=1,3
             jjEP(:,j)=gXX_chiral(:,j)*del2YY_chiral &
                      -gYY_chiral(:,j)*del2XX_chiral
@@ -371,6 +373,13 @@ module Chiral
               call sum_mn_name(jjEP2,idiag_jrmsEP,lsqrt=.true.)
           if (idiag_jmaxEP/=0) &
               call max_mn_name(jjEP2,idiag_jmaxEP,lsqrt=.true.)
+          if (idiag_jbmEP/=0) then
+            if (idiag_brmsEP==0.and.idiag_bmaxEP==0) then
+              call cross(gXX_chiral,gYY_chiral,bbEP)
+            endif
+            call dot(jjEP,bbEP,jbEP)
+            call sum_mn_name(jbEP,idiag_jbmEP)
+          endif
         endif
       endif
 !
@@ -480,6 +489,7 @@ module Chiral
         idiag_QQm_chiral=0; idiag_QQ21m_chiral=0; idiag_QQ21QQm_chiral=0
         idiag_brmsEP=0; idiag_bmaxEP=0
         idiag_jrmsEP=0; idiag_jmaxEP=0
+        idiag_jbmEP=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -507,6 +517,8 @@ module Chiral
             'jrmsEP',idiag_jrmsEP)
         call parse_name(iname,cname(iname),cform(iname),&
             'jmaxEP',idiag_jmaxEP)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'jbmEP',idiag_jbmEP)
       enddo
 !
 !  write column where which chiral variable is stored
@@ -523,6 +535,7 @@ module Chiral
         write(3,*) 'i_bmaxEP=',idiag_bmaxEP
         write(3,*) 'i_jrmsEP=',idiag_jrmsEP
         write(3,*) 'i_jmaxEP=',idiag_jmaxEP
+        write(3,*) 'i_jbmEP=',idiag_jbmEP
         write(3,*) 'iXX_chiral=',iXX_chiral
         write(3,*) 'iYY_chiral=',iYY_chiral
       endif
