@@ -61,6 +61,7 @@ if (! $?output) set output = \$\(job_name\).\$\(jobid\).out
 if (! $?error) set error = $output
 if (! $?resources) set resources = 
 if (! $?notification) set notification = never
+if (! $?notify_user) set notify_user =
 #
 # write temporary jobscript
 #
@@ -82,6 +83,7 @@ echo "# @ input = $input" >> pc_llsubmit.tmp
 echo "# @ output = $output" >> pc_llsubmit.tmp
 echo "# @ error =  $error" >> pc_llsubmit.tmp
 echo "# @ notification = $notification" >> pc_llsubmit.tmp
+echo "# @ notify_user = $notify_user" >> pc_llsubmit.tmp
 echo "# @ resources = $resources" >> pc_llsubmit.tmp
 echo "# @ queue" >> pc_llsubmit.tmp
 echo "cd `pwd`" >> pc_llsubmit.tmp
@@ -91,7 +93,9 @@ echo "./$filename" >> pc_llsubmit.tmp
 #
 if (! $?quiet) cat pc_llsubmit.tmp
 #
-# submit temporary jobscript and remove it afterwards
+# Submit temporary jobscript and remove it afterwards.
 #
 llsubmit pc_llsubmit.tmp && rm -f pc_llsubmit.tmp
+#
 # End of file pc_llsubmit
+#
