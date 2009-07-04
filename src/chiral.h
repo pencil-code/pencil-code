@@ -9,3 +9,4 @@
   public :: init_chiral, dXY_chiral_dt
   public :: pencil_criteria_chiral, pencil_interdep_chiral
   public :: calc_pencils_chiral
+  public :: chiral_before_boundary

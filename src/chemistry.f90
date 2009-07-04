@@ -1610,8 +1610,6 @@ subroutine flame_blob(f)
         enddo
       endif
 !
-100   format(8i4)
-!
     endsubroutine astrobiology_data
 !**********************************************************************
     subroutine chemkin_data(f)

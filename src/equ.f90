@@ -117,7 +117,8 @@ module Equ
 !  when radiation transfer of global ionization is calculatearsd.
 !  This could in principle be avoided (but it not worth it now)
 !
-      early_finalize=test_nonblocking.or.leos_ionization.or.lradiation_ray.or. &
+      early_finalize=test_nonblocking.or. &
+                     leos_ionization.or.lradiation_ray.or. &
                      lhyperviscosity_strict.or.lhyperresistivity_strict.or. &
                      ltestscalar.or.ltestfield.or.ltestflow.or. &
                      lparticles_prepencil_calc.or.lsolid_cells.or.lchemistry
@@ -171,6 +172,7 @@ module Equ
       if (linterstellar) call interstellar_before_boundary(f)
       if (ldensity)      call density_before_boundary(f)
       if (lshear)        call shear_before_boundary(f)
+      if (lchiral)       call chiral_before_boundary(f)
       if (lspecial)      call special_before_boundary(f)
       if (lparticles)    call particles_before_boundary(f)
 !
@@ -182,7 +184,6 @@ module Equ
 !  communication along processor/periodic boundaries.
 !
       if (lshock) call calc_shock_profile(f)
-
 !
 !  Prepare x-ghost zones; required before f-array communication
 !  AND shock calculation
@@ -203,8 +204,8 @@ module Equ
         call boundconds_z(f)
       endif
 !
-! update solid cell "ghost points". This must be done in order to get the correct
-! boundary layer close to the solid geometry, i.e. no-slip conditions.
+! update solid cell "ghost points". This must be done in order to get the
+! correct boundary layer close to the solid geometry, i.e. no-slip conditions.
 !
         call update_solid_cells(f)
 !
@@ -241,7 +242,6 @@ module Equ
           dt1_max=0.
         endif
       endif
-
 !
 !  Calculate ionization degree (needed for thermodynamics)
 !  Radiation transport along rays. If lsingle_ray, then this
@@ -265,8 +265,6 @@ module Equ
       if (ltestfield)          call calc_ltestfield_pars(f,p)
       if (ltestflow)           call calc_ltestflow_nonlin_terms(f,df)
       if (lspecial)            call calc_lspecial_pars(f)
-
-
 !
 !  Calculate quantities for a chemical mixture
 !
@@ -281,7 +279,7 @@ module Equ
         m=mm(imn)
         lfirstpoint=(imn==1)      ! true for very first m-n loop
         llastpoint=(imn==(ny*nz)) ! true for very last m-n loop
-
+!
 !        if (loptimise_ders) der_call_count=0 !DERCOUNT
 !
 ! make sure all ghost points are set
@@ -373,7 +371,9 @@ module Equ
             (l1dphiavg  .and.lwrite_phizaverages))  &
             call calc_phiavg_profile(p)
 !            
-!  Calculate pencils for the pencil_case
+!  Calculate pencils for the pencil_case.
+!  Note: some no-modules (e.g. nohydro) also calculate some pencils,
+!  so it would be wrong to check for lhydro etc in such cases.
 !
                               call calc_pencils_hydro(f,p)
                               call calc_pencils_density(f,p)
@@ -421,7 +421,6 @@ module Equ
         if (llorenz_gauge) call dlorenz_gauge_dt(f,df,p)
 !
 !  Polymer evolution 
-!DM: This is harmless because no polymer is checked in yet. 
 !
         if (lpolymer) call dpp_dt(f,df,p)
 !
@@ -463,15 +462,15 @@ module Equ
 !
         if (lselfgravity) call duu_dt_selfgrav(f,df,p)
 !
-!  cosmic ray energy density
+!  Cosmic ray energy density
 !
         if (lcosmicray) call decr_dt(f,df,p)
 !
-!  cosmic ray flux
+!  Cosmic ray flux
 !
         if (lcosmicrayflux) call dfcr_dt(f,df,p)
 !
-!  chirality of left and right handed aminoacids
+!  Chirality of left and right handed aminoacids
 !
         if (lchiral) call dXY_chiral_dt(f,df,p)
 !

@@ -136,6 +136,19 @@ module Chiral
       call keep_compiler_quiet(p)
     endsubroutine dXY_chiral_dt
 !***********************************************************************
+    subroutine chiral_before_boundary(f)
+!
+!  dummy routine
+!
+!   4-jul-09/axel: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      intent(inout) :: f
+!
+      call keep_compiler_quiet(f)
+    endsubroutine chiral_before_boundary
+!***********************************************************************
     subroutine read_chiral_init_pars(unit,iostat)
 !
       integer, intent(in) :: unit

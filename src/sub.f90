@@ -2202,7 +2202,7 @@ module Sub
 !***********************************************************************
     subroutine g2ij(f,k,g)
 !
-!  calculates all second derivative of a scalar
+!  calculates the Hessian, i.e. all second derivatives of a scalar
 !
 !  11-jul-02/axel: coded
 !

@@ -25,7 +25,7 @@ module Chiral
 !
   integer :: iXX_chiral=0,iYY_chiral=0
   character (len=labellen) :: initXX_chiral='zero',initYY_chiral='zero'
-  logical :: linitialize_aa_from_Euler_potentials
+  logical :: linitialize_aa_from_EP
   real :: amplXX_chiral=.1, widthXX_chiral=.5
   real :: amplYY_chiral=.1, widthYY_chiral=.5
   real :: kx_XX_chiral=1.,ky_XX_chiral=1.,kz_XX_chiral=1.,radiusXX_chiral=0.
@@ -49,12 +49,13 @@ module Chiral
   namelist /chiral_run_pars/ &
        chiral_diff,chiral_crossinhibition,chiral_fidelity, &
        chiral_reaction,limposed_gradient,gradX0,gradY0, &
-       linitialize_aa_from_Euler_potentials
+       linitialize_aa_from_EP
 !
   integer :: idiag_XX_chiralmax=0, idiag_XX_chiralm=0
   integer :: idiag_YY_chiralmax=0, idiag_YY_chiralm=0
   integer :: idiag_QQm_chiral=0, idiag_QQ21m_chiral=0, idiag_QQ21QQm_chiral=0
-  integer :: idiag_gXXxgYYrms=0, idiag_gXXxgYYmax=0
+  integer :: idiag_brmsEP=0, idiag_bmaxEP=0
+  integer :: idiag_jrmsEP=0, idiag_jmaxEP=0
 !
   contains
 !***********************************************************************
@@ -212,8 +213,9 @@ module Chiral
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 
-      real, dimension (nx,3) :: gXX_chiral,gYY_chiral,gXXxgYY
-      real, dimension (nx) :: gXXxgYY2
+      real, dimension (nx,3,3) :: gXXij_chiral,gYYij_chiral
+      real, dimension (nx,3) :: gXX_chiral,gYY_chiral,bbEP,jjEP
+      real, dimension (nx) :: bbEP2,jjEP2
       real, dimension (nx) :: XX_chiral,ugXX_chiral,del2XX_chiral,dXX_chiral
       real, dimension (nx) :: YY_chiral,ugYY_chiral,del2YY_chiral,dYY_chiral
       real, dimension (nx) :: RRXX_chiral,XX2_chiral
@@ -239,20 +241,6 @@ module Chiral
       call grad(f,iYY_chiral,gYY_chiral)
       call dot_mn(p%uu,gXX_chiral,ugXX_chiral)
       call dot_mn(p%uu,gYY_chiral,ugYY_chiral)
-!
-!  linitialize_aa_from_Euler_potentials
-!
-      if (linitialize_aa_from_Euler_potentials) then
-        if (t==0.) then
-          if (lmagnetic) then
-            do j=1,3
-              f(l1:l2,m,n,j+iaa-1)=.5*( &
-                f(l1:l2,m,n,iXX_chiral)*gYY_chiral(:,j) &
-               -f(l1:l2,m,n,iYY_chiral)*gXX_chiral(:,j))
-            enddo
-          endif
-        endif
-      endif
 !
 !  advection term
 !
@@ -357,17 +345,74 @@ module Chiral
             call sum_mn_name(QQ21_chiral,idiag_QQ21m_chiral)
         if (idiag_QQ21QQm_chiral/=0) &
             call sum_mn_name(QQ21QQ_chiral,idiag_QQ21QQm_chiral)
-        if (idiag_gXXxgYYrms/=0.or.idiag_gXXxgYYmax/=0) then
-          call cross(gXX_chiral,gYY_chiral,gXXxgYY)
-          call dot2(gXXxgYY,gXXxgYY2)
-          if (idiag_gXXxgYYrms/=0) &
-              call sum_mn_name(gXXxgYY2,idiag_gXXxgYYrms,lsqrt=.true.)
-          if (idiag_gXXxgYYmax/=0) &
-              call max_mn_name(gXXxgYY2,idiag_gXXxgYYmax,lsqrt=.true.)
+        if (idiag_brmsEP/=0.or.idiag_bmaxEP/=0) then
+          call cross(gXX_chiral,gYY_chiral,bbEP)
+          call dot2(bbEP,bbEP2)
+          if (idiag_brmsEP/=0) &
+              call sum_mn_name(bbEP2,idiag_brmsEP,lsqrt=.true.)
+          if (idiag_bmaxEP/=0) &
+              call max_mn_name(bbEP2,idiag_bmaxEP,lsqrt=.true.)
+        endif
+!
+!  Calculate Ji = Xi*del2Y - Yi*del2X + Xij Yj - Yij Xj
+!  and then the max and rms values of that
+!
+        if (idiag_jrmsEP/=0.or.idiag_jmaxEP/=0) then
+          do j=1,3
+            jjEP(:,j)=gXX_chiral(:,j)*del2YY_chiral &
+                     -gYY_chiral(:,j)*del2XX_chiral
+          enddo
+          call g2ij(f,iXX_chiral,gXXij_chiral)
+          call g2ij(f,iYY_chiral,gYYij_chiral)
+          call multmv_mn(+gXXij_chiral,gYY_chiral,jjEP,ladd=.true.)
+          call multmv_mn(-gYYij_chiral,gXX_chiral,jjEP,ladd=.true.)
+          call dot2(jjEP,jjEP2)
+          if (idiag_jrmsEP/=0) &
+              call sum_mn_name(jjEP2,idiag_jrmsEP,lsqrt=.true.)
+          if (idiag_jmaxEP/=0) &
+              call max_mn_name(jjEP2,idiag_jmaxEP,lsqrt=.true.)
         endif
       endif
 !
     endsubroutine dXY_chiral_dt
+!***********************************************************************
+    subroutine chiral_before_boundary(f)
+!
+!  initialize aa from Euler potentials (EP), but only once when t=0
+!
+!   4-jul-09/axel: coded
+!
+      use Cdata
+      use Sub
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,3) :: gXX_chiral,gYY_chiral
+      integer :: j
+!
+      intent(inout) :: f
+!
+!  gradient of passive scalar
+!
+      if (linitialize_aa_from_EP) then
+        if (t==0.) then
+          if (lmagnetic) then
+            do n=n1,n2
+            do m=m1,m2
+              call grad(f,iXX_chiral,gXX_chiral)
+              call grad(f,iYY_chiral,gYY_chiral)
+              do j=1,3
+                f(l1:l2,m,n,j+iaa-1)=.5*( &
+                  f(l1:l2,m,n,iXX_chiral)*gYY_chiral(:,j) &
+                 -f(l1:l2,m,n,iYY_chiral)*gXX_chiral(:,j))
+              enddo
+            enddo
+            enddo
+          endif
+          if (lroot) print*,'linitialize_aa_from_EP: done'
+        endif
+      endif
+!
+    endsubroutine chiral_before_boundary
 !***********************************************************************
     subroutine read_chiral_init_pars(unit,iostat)
       integer, intent(in) :: unit
@@ -433,7 +478,8 @@ module Chiral
         idiag_XX_chiralmax=0; idiag_XX_chiralm=0
         idiag_YY_chiralmax=0; idiag_YY_chiralm=0
         idiag_QQm_chiral=0; idiag_QQ21m_chiral=0; idiag_QQ21QQm_chiral=0
-        idiag_gXXxgYYrms=0; idiag_gXXxgYYmax=0
+        idiag_brmsEP=0; idiag_bmaxEP=0
+        idiag_jrmsEP=0; idiag_jmaxEP=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -454,9 +500,13 @@ module Chiral
         call parse_name(iname,cname(iname),cform(iname),&
             'QQ21QQm',idiag_QQ21QQm_chiral)
         call parse_name(iname,cname(iname),cform(iname),&
-            'gXXxgYYrms',idiag_gXXxgYYrms)
+            'brmsEP',idiag_brmsEP)
         call parse_name(iname,cname(iname),cform(iname),&
-            'gXXxgYYmax',idiag_gXXxgYYmax)
+            'bmaxEP',idiag_bmaxEP)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'jrmsEP',idiag_jrmsEP)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'jmaxEP',idiag_jmaxEP)
       enddo
 !
 !  write column where which chiral variable is stored
@@ -469,8 +519,10 @@ module Chiral
         write(3,*) 'i_QQm_chiral=',idiag_QQm_chiral
         write(3,*) 'i_QQ21m_chiral=',idiag_QQ21m_chiral
         write(3,*) 'i_QQ21QQm_chiral=',idiag_QQ21QQm_chiral
-        write(3,*) 'i_gXXxgYYrms=',idiag_gXXxgYYrms
-        write(3,*) 'i_gXXxgYYmax=',idiag_gXXxgYYmax
+        write(3,*) 'i_brmsEP=',idiag_brmsEP
+        write(3,*) 'i_bmaxEP=',idiag_bmaxEP
+        write(3,*) 'i_jrmsEP=',idiag_jrmsEP
+        write(3,*) 'i_jmaxEP=',idiag_jmaxEP
         write(3,*) 'iXX_chiral=',iXX_chiral
         write(3,*) 'iYY_chiral=',iYY_chiral
       endif
