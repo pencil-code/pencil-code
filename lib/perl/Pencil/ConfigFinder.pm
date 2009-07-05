@@ -86,6 +86,8 @@ sub get_host_ids {
     add_host_id_from_file("./host-ID", \@ids);
     add_host_id_from_file("$ENV{HOME}/.pencil/host-ID", \@ids);
     add_host_id_from_hostname(\@ids);
+    add_host_id_from_scraping_system_info(\@ids);
+    push @ids, strip_whitespace(`uname -s`);
 
     debug("get_host_ids: <" . join(">, <", @ids) . ">");
     return @ids;
@@ -111,7 +113,7 @@ sub add_host_id_from_file {
             warn "Cannot open file <$file>\n";
             return;
         }
-        push @$ids_ref, strip_host_id(<$fh>);
+        push @$ids_ref, strip_whitespace(<$fh>);
         close($fh);
     } else {
         log_msg("Not readable: <$file>");
@@ -130,19 +132,21 @@ sub add_host_id_from_hostname {
     my $fqdname = `hostname --fqdn`;
     chomp($fqdname);
     debug("Fully-qualified domain name: <$fqdname>");
-    push @$ids_ref, strip_host_id($fqdname);
+    push @$ids_ref, strip_whitespace($fqdname);
 }
 
 # ---------------------------------------------------------------------- #
 
-sub strip_host_id {
+sub strip_whitespace {
 #
 # Remove leading and trailing whitespace from a host ID
 #
-    my ($id) = @_;
+    my ($text) = @_;
 
-    chomp($id);
-    $id =~ m{^\s*(.*?)\s*$};
+    return $text unless defined($text);
+
+    chomp($text);
+    $text =~ m{^\s*(.*?)\s*$};
     return $1;
 
 }
