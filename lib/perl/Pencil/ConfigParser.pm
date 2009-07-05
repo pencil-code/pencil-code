@@ -279,10 +279,10 @@ Pencil::ConfigParser - Parse Pencil Code configuration files
   my $parser = Pencil::ConfigParser->new('mycomputer.conf');
 
   my %make_params = $parser->get_makefile_params();
-  print $parser->get_makefile_param('FFLAGS');
+  print $parser->get_makefile_params->{'FFLAGS'};
 
   my %runtime_params = $parser->get_runtime_params();
-  print $parser->get_runtime_param('local_disc');
+  print $parser->get_runtime_params->{'local_disc'};
 
   my @all_make_keys = $parser->get_makefile_keys();
   my @all_run_keys = $parser->get_runtime_keys();
@@ -298,29 +298,38 @@ expanding `%include' macros.
 =over 4
 
 
-=item B<$doc-E<gt>new>($filename)
+=item B<new>($filename)
 
-Create a new object.
-I<$filename> is
+Create a new object. I<$filename> will be parsed lazily, i.e. at the point
+where results from parsing are actually needed.
 
-=item B<$doc-E<gt>debug>([$debug])
+=item B<debug>([$debug])
 
 With argument: set debugging flag.
 Returns the debugging flag.
 
-=item B<$doc-E<gt>parse>(file)
+=item B<get_makefile_params>()
 
-Bla, bla...
+Return a hashref of the parmeters defined in the `Makefile' section:
 
-=item B<$doc-E<gt>path(@path)
+  { KEY1 => value1, KEY2 => value2, ...}
 
-Set the internal config search path to @path (an array of path name
-strings).
-If @path is I<undef>, don't change the search path.
-Returns the new search path.
+=item B<get_runtime_params>()
 
-[Note: this doesn't really work: we need to set @path before the file
-name...]
+Return a hashref of the parmeters defined in the `runtime' section:
+
+  { key1 => value1, key1 => value2, ...}
+
+=item B<get_makefile_keys>()
+
+Return arrayref of all keys in the `Makefile' section, in the order in
+which they occured int the config files.
+
+=item B<get_runtime_keys>()
+
+Return arrayref of all keys in the `runtime' section, in the order in
+which they occured int the config files.
+
 
 =head1 BUGS AND LIMITATIONS
 
