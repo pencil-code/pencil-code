@@ -78,6 +78,11 @@ print STDERR "Found config file <$config_file>\n" if ($debug);
 
 my $parser = new Pencil::ConfigParser($config_file);
 
+my @make_args = @{$parser->get_makefile_args()};
+print STDERR "Make args: @make_args\n" if ($debug);
+
+system('make', @make_args) == 0
+  or die "Make failed: <$!>\n";
 
 # ---------------------------------------------------------------------- #
 sub printopts {
