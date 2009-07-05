@@ -1,0 +1,110 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.26
+Creation-Date: Wed, 27 May 2009 06:57:44 +0200
+Modification-Date: Mon, 08 Jun 2009 16:51:55 +0200
+
+====== Documentation of the New Configuration Scheme ======
+Created Wednesday 27 May 2009
+
+Configuration files tell ''make'' and the ''start''/''run'' commands how to compile and run the code.
+
+Here is a sample file:
+
+'''
+# Sample configuration
+
+# Global section
+%include os/Linux
+%include mpi/open-mpi
+
+# Makefile section
+%section Makefile
+  %include compilers/g95
+  %include compilers/gcc
+  FFLAGS = -O0 \
+           -g
+%endsection Makefile
+
+# Runtime section
+%section runtime
+  %include runtime-common
+  local_disc = 1
+%endsection runtime
+
+# End of file
+'''
+
+
+==== Sections ====
+
+A configuration file consists of up to three sections. The //Makefile section// and the //runtime section// are delineated by ''%section ...'' and ''%endsection ...'' , while any statements outside a ''%section''/''%endsection'' block make up the //global section//.
+
+Statements inside a section are either
+//assignements//, like ''FFLAGS = -O4''
+or
+//include statements//, like ''%include compilers/g95''.
+
+
+==== Assignments ====
+
+An assignment has the form ''key = value value value...''. Whitespace around the ''='' sign is insignificant, and repeated whitespace in the value part is compressed to one space character unless it is quoted [not implemented yet].
+
+A backslash at the end of the line continues the assignment statement to the following line:
+
+'''
+CFLAGS = -O3 \
+         -ffast-math \
+         -fprefetch-loop-arrays \
+         -I../include \
+         -Wall
+'''
+
+
+==== Include statements ====
+
+Statements of the form ''%include <config-file>'' are recursively replaced by the content of the file ''<config>.conf''.
+
+If the ''<config-file>'' starts with “''./''”, the search path for the included file contains just the directory where the current file (containing the ''%include'' statement) is located.
+Otherwise, the search path used for finding that file consists of
+* the directory ''${HOME}/.pencil-config'' if it exists;
+* the directory ''${PENCIL_HOME}/config'' .
+
+Thus, a file ''${PENCIL_HOME}/config/os/Linux'' can include ''${PENCIL_HOME}/config/os/Unix'' with either of
+
+'''
+%include os/Unix  # absolute file name, rooted at ${PENCIL_HOME}/config
+%include ./Unix   # relative file name
+'''
+
+
+==== Finding the config file for your computer ====
+
+=== Determining the host ID ===
+
+When you run ''make'' or one of ''start.sh'', ''run.csh'', ''start_run.sh'', //configure// [???] first assigns a host id to the computer it is running on. For computers with a permanent (global) IP address, this will normally just be the fully-qualified domain name, like ''workhorse.pencil.org''.
+  However, when submitting MPI jobs to dedicated compute clusters, this will no longer work, since the IP addresses of the cluster nodes are in the private subnet range and are thus no longer globally unique. Nor are host names, which are often of the form //node0//, //node1// or  //node000//, //node001//, etc. For those cases, //configure// tries to construct a unique ID using other pieces of information.
+
+The algorithm for determining the host ID is as follows.
+
+1. If the file ''./.pencil/host-ID'' exists, its first line is used as host ID.
+2. If the file ''~/.pencil/host-ID'' exists, its first line is used as host ID.
+3. If the IP number of the current computer is not in the private range and it is possible to determine its fully-qualified host name (i.e. the host and domain name), then this is used as host ID.
+4. [Describe some desparate measures, generating a host ID from the ''uname'', ''/etc/issue'', etc. ''uname'' will be needed anyway for the `default Linux' setup and the like.]
+
+If no configuration file for that host ID is found, the output from “''uname -s''” is tried as host ID.
+
+If still no configuration file for that host ID is found, the host ID “''default''” is tried.
+If still no configuration is found, //configure// aborts with an error message.
+
+Along the way, //configure// indicates which host IDs were tried (by default, or only with ''-v''?).
+
+\footnote{ Note that the files in 1. and 2. can be soft links, which could be used to produce different host IDs on different NFS clients if ''~'' or ''.' is shared via NFS.}
+
+=== Locating the config file ===
+
+The host ID is then used to find the appropriate config file for the given computer (which will include other config files as needed). E.g. if the host ID is ''workhorse.pencil.org'', //configure// will look for a file ''workhorse.pencil.org'' in all directories below
+1. ''~/.pencil/config/computers''
+2. ''${PENCIL_HOME}/config/computers''
+
+
+
