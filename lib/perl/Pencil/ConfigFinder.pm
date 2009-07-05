@@ -26,7 +26,12 @@ use constant NO_CONFIG_FILE_FOUND => 15;
 $VERSION = '0.1';
 
 my $quiet = 0;
-my $debug = 1;
+my $debug = 0;
+
+my @config_path = (
+            "$ENV{HOME}/.pencil/config",
+            "$ENV{PENCIL_HOME}/config"
+           );
 
 # ---------------------------------------------------------------------- #
 
@@ -36,30 +41,65 @@ sub find_config_file {
 # config file found.
 # If no config file is found, exit with status 15.
 #
+    my $config_file;
+
     for my $host_id (get_host_ids()) {
-        my $config_file = find_config_file_for_host_id($host_id);
+        $config_file = find_config_file_for_computer($host_id);
         return $config_file if defined($config_file);
     }
 
+    # Fall back on OS name
+    my $os = strip_whitespace(first_line_from_cmd('uname -o'));
+    $config_file = find_config_file_for_os($os);
+    return $config_file if defined($config_file);
+
+    # Fall back on `default'
+    $config_file = find_config_file_for('default', '.');
+    return $config_file if defined($config_file);
+
+    # Fail
     exit NO_CONFIG_FILE_FOUND;
 }
 
 # ---------------------------------------------------------------------- #
 
-sub find_config_file_for_host_id {
+sub find_config_file_for_computer {
 #
 # Return config file for the given host ID, or undef.
 #
     my ($host_id) = @_;
 
-    my @path = (
-                "$ENV{HOME}/.pencil/config/computers",
-                "$ENV{PENCIL_HOME}/config/computers"
-               );
-    for my $dir (@path) {
+    find_config_file_for($host_id, 'computers');
+}
+
+# ---------------------------------------------------------------------- #
+
+sub find_config_file_for_os {
+#
+# Return config file for the given host ID, or undef.
+#
+    my ($host_id) = @_;
+
+    find_config_file_for($host_id, 'os');
+}
+
+# ---------------------------------------------------------------------- #
+
+sub find_config_file_for {
+#
+# Return config file for $id in $subdir, or undef.
+#
+    my ($id, $subdir) = @_;
+
+    return undef unless (defined $id);
+
+    # Replace whitespace and '/' by _ to avoid problems in file names
+    $id =~ s{(\s|/)+}{_}g;
+
+    for my $dir (@config_path) {
         debug("Trying dir <$dir>");
 
-        my $file = "${dir}/${host_id}.conf";
+        my $file = "${dir}/${subdir}/${id}.conf";
         unless (-e $file) {
             debug("No such file: <$file>\n");
             next;
@@ -87,7 +127,6 @@ sub get_host_ids {
     add_host_id_from_file("$ENV{HOME}/.pencil/host-ID", \@ids);
     add_host_id_from_fqdn(\@ids);
     add_host_id_from_scraping_system_info(\@ids);
-    push @ids, strip_whitespace(first_line_from_cmd('uname -s'));
 
     debug("get_host_ids: <" . join(">, <", @ids) . ">");
     return @ids;
@@ -101,7 +140,7 @@ sub add_host_id_from_file {
 #
     my ($file, $ids_ref) = @_;
 
-    unless (-x $file) {
+    unless (-e $file) {
         debug("No such file <$file>");
         return;
     }
@@ -132,6 +171,34 @@ sub add_host_id_from_fqdn {
 
 # ---------------------------------------------------------------------- #
 
+sub add_host_id_from_scraping_system_info {
+#
+# Try various sources of information to construct a host ID
+#
+    my ($ids_ref) = @_;
+
+    my $hostname = strip_whitespace(first_line_from_cmd('uname -n'));
+
+    my $os = strip_whitespace(first_line_from_cmd('uname -o'));
+    $os =~ s{/}{_}g;            # GNU/Linux -> GNU_Linux
+
+    my $linux_type =
+      ( strip_whitespace(first_word_from_file('/etc/issue'))
+        || strip_whitespace(first_word_from_file('/etc/version'))
+      );
+
+    my $id = 'host';
+    $id .= "-$hostname"   if (defined $hostname  );
+    $id .= "-$os"         if (defined $os        );
+    $id .= "-$linux_type" if (defined $linux_type);
+
+    if ($id ne 'host') {
+        push @$ids_ref, $id;
+    }
+}
+
+# ---------------------------------------------------------------------- #
+
 sub strip_whitespace {
 #
 # Remove leading and trailing whitespace from a host ID
@@ -154,7 +221,7 @@ sub first_line_from_file {
 #
     my ($file) = @_;
 
-    unless (-x $file) {
+    unless (-e $file) {
         log_msg("No such file: <$file>");
         return undef;
     }
@@ -170,6 +237,22 @@ sub first_line_from_file {
         return $line;
     } else {
         log_msg("Not readable: <$file>");
+        return undef;
+    }
+}
+
+# ---------------------------------------------------------------------- #
+
+sub first_word_from_file {
+#
+# Extract the first word from the first line of the given file
+#
+    my ($file) = @_;
+
+    my $line = first_line_from_file($file);
+    if (defined $line) {
+        $line =~ m{^ \s* (\S+) .*? $}x;
+    } else {
         return undef;
     }
 }
@@ -240,7 +323,7 @@ Pencil::ConfigFinder - Find the appropriate Pencil Code configuration file
   my $config_file = Pencil::ConfigFinder::find_config_file();
 
   # Try host ID "toto" first, then fall back on default algorithm
-  my $file = ( Pencil::ConfigFinder::find_config_file_for_host_id('toto')
+  my $file = ( Pencil::ConfigFinder::find_config_file_for_computer('toto')
                || Pencil::ConfigFinder::find_config_file() );
 
 
@@ -262,7 +345,7 @@ curent host.
 
 If no matching file is found, exit with status 15.
 
-=item B<find_config_file_for_host_id($host_ID)>
+=item B<find_config_file_for_computer($host_ID)>
 
 Return the full path name of the (first) matching config file for the
 given host ID.
