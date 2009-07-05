@@ -148,6 +148,10 @@ if ($local) {
     die usage() unless (@ARGV);
 }
 
+# Make sure we have /usr/sbin in path (which is where sendmail is often
+# located)
+$ENV{PATH} = "$ENV{PATH}:/usr/sbin"
+    unless ($ENV{PATH} =~ m{(^|:)/usr/sbin($|:)});
 
 print_header();
 
@@ -489,7 +493,7 @@ sub send_mail {
     my $nerrors = shift;
     my @text    = grep /./, @_;
 
-    if (!$mailer) {
+    if (! $mailer) {
         if (in_PATH("sendmail")) {
             $mailer = "sendmail";
         } elsif (in_PATH("mailx")) {
@@ -498,6 +502,8 @@ sub send_mail {
             $mailer = "mail";
         }
     }
+
+    print STDERR "\$mailer = $mailer\n" if ($debug);
 
     my $errmsg;
     if ($nerrors =~ /[0-9]+/) { # number of failing individual tests
