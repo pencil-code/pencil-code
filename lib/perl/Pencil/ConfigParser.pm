@@ -190,7 +190,7 @@ sub parse {
             $self->{RUNTIME_PARAMS} = $map_ref;
             $self->{RUNTIME_KEYS} = $keys_ref;
         } else {
-            carp "Unknown section <$section> encountered\n";
+            carp "Warning: Unknown section <$section>\n";
         }
     }
 
@@ -223,7 +223,6 @@ sub get_sections {
     print STDERR "get_sections($file, $enclosing_section)\n" if ($debug);
 
     my @sections = ($enclosing_section);
-
     my $line_fragment = '';
 
     open(my $fh, "< $file") or croak "Cannot open $file for reading: $!";
@@ -241,18 +240,26 @@ sub get_sections {
         }
 
         if ($line =~ /^\s*%section\s+(\S+)\s*$/) { # start section
-            print STDERR "  %section $1\n" if ($debug);
-            push @sections, $1;
+            my $sect = $1;
+            print STDERR "  %section $sect\n" if ($debug);
+            push @sections, $sect;
             next line;
         }
 
         if ($line =~ /^\s*%endsection\s+(\S+)\s*$/) { # end section
-            print STDERR "  %endsection $1\n" if ($debug);
-            my $ending_section = $1;
+            my $sect = $1;
+            print STDERR "  %endsection $sect\n" if ($debug);
+            my $ending_section = $sect;
             unless ($ending_section eq pop(@sections)) {
                 croak "Ending section <$ending_section> that is not open:\n"
                   . "  $file:$.: $line\n";
             }
+            next line;
+        }
+
+        # Ignore current line if it is in the wrong section:
+        unless ( ($sections[-1] eq $enclosing_section)
+             || ($enclosing_section eq '__GLOBAL__')) {
             next line;
         }
 
@@ -280,8 +287,8 @@ sub get_sections {
           . " in file $file\n";
     }
 }
-
 # ---------------------------------------------------------------------- #
+
 sub find_include_file {
 #
 # Locate a file for $fragment, looking in the following directories:
@@ -316,7 +323,6 @@ sub find_include_file {
 
     croak "Couldn't find file $fragment.conf in path (@path)\n";
 }
-
 # ---------------------------------------------------------------------- #
 
 sub parse_lines{
