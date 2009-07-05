@@ -172,7 +172,7 @@ sub get_sections {
         }
 
         if ($line =~ /^\s*%include\s+(\S+)\s*$/) { # include config file
-            my $include_file = $1;
+            my $include_file = find_include_file($1, $file);
             get_sections($include_file, $sections[-1], $section_map_ref);
             next line;
         }
@@ -188,6 +188,42 @@ sub get_sections {
         croak "Section <" . pop(@sections) . "> not closed"
           . " in file $file\n";
     }
+}
+
+# ---------------------------------------------------------------------- #
+sub find_include_file {
+#
+# Locate a file for $fragment, looking in the following directories:
+#
+# If $fragment starts with `./', only the directory part of $base_file is
+# considered.
+# Otherwise, the search path consists of
+# 1. ${HOME}/.pencil-config ,
+# 2. ${PENCIL_HOME}/config .
+#
+    my ($fragment, $base_file) = @_;
+
+    my @path = ();
+    if ($fragment =~ m{^\./(.*)}) {
+        $fragment = $1;
+        push @path, ".";
+    } else {
+        for my $dir ("$ENV{HOME}/.pencil-config", "$ENV{PENCIL_HOME}/config") {
+            push @path, $dir if (-d $dir);
+        }
+    }
+    if (@path < 1) {
+        croak("No elements in path\n");
+    }
+
+    for my $dir (@path) {
+        my $file = "$dir/$fragment.conf";
+        if (-e $file) {
+            return $file;
+        }
+    }
+
+    croak "Couldn't find file $fragment.conf in path (@path)\n";
 }
 
 # ---------------------------------------------------------------------- #
