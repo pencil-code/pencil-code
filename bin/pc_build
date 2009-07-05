@@ -74,6 +74,8 @@ my $quiet = ($opts{'q'} || $opts{'quiet'} || '');
 
 my $config_file = Pencil::ConfigFinder::find_config_file()
   or die "Couldn't find config file";
+warn "Found config file <$config_file>\n" if ($debug);
+
 my $parser = new Pencil::ConfigParser($config_file);
 
 
