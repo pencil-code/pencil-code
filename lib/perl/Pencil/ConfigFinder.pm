@@ -57,11 +57,15 @@ sub find_config_file_for_host_id {
                 "$ENV{PENCIL_HOME}/config/computers"
                );
     for my $dir (@path) {
+        debug("Trying dir <$dir>");
+
         my $file = "${dir}/${host_id}.conf";
         unless (-e $file) {
             debug("No such file: <$file>\n");
             next;
         }
+
+        debug("Found file: <$file>\n");
         if (-f $file) {
             return $file;
         } else {
@@ -82,6 +86,9 @@ sub get_host_ids {
     add_host_id_from_file("./host-ID", \@ids);
     add_host_id_from_file("$ENV{HOME}/.pencil/host-ID", \@ids);
     add_host_id_from_hostname(\@ids);
+
+    debug("get_host_ids: <" . join(">, <", @ids) . ">");
+    return @ids;
 }
 
 # ---------------------------------------------------------------------- #
@@ -97,6 +104,7 @@ sub add_host_id_from_file {
         return;
     }
 
+    debug("Reading host id from file <$file>");
     if (-r $file) {
         my $fh;
         unless (open($fh, "< $file")) {
