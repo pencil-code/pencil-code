@@ -89,7 +89,7 @@ The algorithm for determining the host ID is as follows.
 1. If the file ''./.pencil/host-ID'' exists, its first line is used as host ID.
 2. If the file ''~/.pencil/host-ID'' exists, its first line is used as host ID.
 3. If the IP number of the current computer is not in the private range and it is possible to determine its fully-qualified host name (i.e. the host and domain name), then this is used as host ID.
-4. [Describe some desparate measures, generating a host ID from the ''uname'', ''/etc/issue'', etc. ''uname'' will be needed anyway for the `default Linux' setup and the like.]
+4. [Describe some desperate measures, generating a host ID from the ''uname'', ''/etc/issue'', etc. ''uname'' will be needed anyway for the `default Linux' setup and the like.]
 
 If no configuration file for that host ID is found, the output from “''uname -s''” is tried as host ID.
 
