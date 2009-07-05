@@ -70,15 +70,69 @@ sub new {
 ## Public methods
 ##
 
+# ---------------------------------------------------------------------- #
+
 sub get_makefile_params {
 #
-# Return a hashref containing the Makefile parameters
+# Return hash ref of Makefile parameters
 #
     my $self = shift();
 
     $self->parse() unless ($self->{PARSED});
 
-    return $self->{MAKE_PARAMS_REF};
+    return $self->{MAKEFILE_PARAMS};
+}
+
+# ---------------------------------------------------------------------- #
+
+sub get_makefile_keys {
+#
+# Return arra ref of Makefile keys
+#
+    my $self = shift();
+
+    $self->parse() unless ($self->{PARSED});
+
+    return $self->{MAKEFILE_KEYS};
+}
+
+# ---------------------------------------------------------------------- #
+
+sub get_runtime_params {
+#
+# Return hash ref of runtime parameters
+#
+    my $self = shift();
+
+    $self->parse() unless ($self->{PARSED});
+
+    return $self->{RUNTIME_PARAMS};
+}
+
+# ---------------------------------------------------------------------- #
+
+sub get_runtime_keys {
+#
+# Return arra ref of Makefile keys
+#
+    my $self = shift();
+
+    $self->parse() unless ($self->{PARSED});
+
+    return $self->{RUNTIME_KEYS};
+}
+
+# ---------------------------------------------------------------------- #
+
+sub get_section_hash {
+#
+# For debugging only -- to be removed
+#
+    my $self = shift();
+
+    $self->parse() unless ($self->{PARSED});
+
+    return $self->{SECTIONS};
 }
 
 # ---------------------------------------------------------------------- #
@@ -96,19 +150,6 @@ sub debug {
     return $self->{DEBUG};
 }
 
-# ---------------------------------------------------------------------- #
-
-sub get_section_hash {
-#
-# For debugging only -- to be removed
-#
-    my $self = shift();
-
-    $self->parse() unless ($self->{PARSED});
-
-    return $self->{SECTIONS};
-}
-
 # ====================================================================== #
 
 ##
@@ -122,11 +163,36 @@ sub parse {
     my $self = shift;
     carp "Why am I parsing this twice?" if ($self->{PARSED});
 
+    # Parse everything into %section_map:
+    #   { section1 => [line11, line12, ...],
+    #     section2 => [line21, line22, ...], ... }
     my %section_map;
     get_sections(
         $self->{FILENAME}, '__GLOBAL__', \%section_map, $self->{DEBUG}
     );
-    $self->{SECTIONS} = \%section_map;
+    if ($self->{DEBUG}) {
+        eval {
+            require Data::Dumper;
+            print STDERR '\%section_map = ',
+              Data::Dumper::Dumper(\%section_map);
+        }
+    }
+
+    # Parse %section_map into XYZ_params hashes and keys (for retaining
+    # order information)
+    foreach my $section (keys %section_map) {
+        my ($map_ref, $keys_ref)
+          = parse_lines($section_map{$section}, $self->{DEBUG});
+        if ($section eq 'Makefile') {
+            $self->{MAKEFILE_PARAMS} = $map_ref;
+            $self->{MAKEFILE_KEYS} = $keys_ref;
+        } elsif ($section eq 'runtime') {
+            $self->{RUNTIME_PARAMS} = $map_ref;
+            $self->{RUNTIME_KEYS} = $keys_ref;
+        } else {
+            carp "Unknown section <$section> encountered\n";
+        }
+    }
 
     $self->{PARSED} = 1;
 }
@@ -252,6 +318,31 @@ sub find_include_file {
 }
 
 # ---------------------------------------------------------------------- #
+
+sub parse_lines{
+#
+# Parse an arrayref of lines
+#   ['VAR1 = rhs1', 'VAR2 = rhs2', ...]
+# into a hash
+#   { 'VAR1' => 'rhs1', 'VAR2' => 'rhs2', ... }
+# and the ordered list of keys
+#   ['VAR1', 'VAR2', ...]
+#
+    my ($lines_ref, $debug) = @_;
+
+    my (%map, @keys);
+    foreach my $line (@$lines_ref) {
+        ($line =~ /^\s*([^=]*?)\s*=\s*(.*?)\s*$/)
+          or croak "Cannot parse line <$line>\n";
+        my ($key, $val) = ($1, $2);
+        $map{$key} = $val;
+        push @keys, $key;
+    }
+
+    return (\%map, \@keys);
+}
+# ---------------------------------------------------------------------- #
+
 sub normalize_line {
 #
 # Strip irrelevant whitespace from $line
