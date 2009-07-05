@@ -85,7 +85,7 @@ sub get_host_ids {
     my @ids = ();
     add_host_id_from_file("./host-ID", \@ids);
     add_host_id_from_file("$ENV{HOME}/.pencil/host-ID", \@ids);
-    add_host_id_from_hostname(\@ids);
+    add_host_id_from_fqdn(\@ids);
     add_host_id_from_scraping_system_info(\@ids);
     push @ids, strip_whitespace(`uname -s`);
 
@@ -113,7 +113,7 @@ sub add_host_id_from_file {
 
 # ---------------------------------------------------------------------- #
 
-sub add_host_id_from_hostname {
+sub add_host_id_from_fqdn {
 #
 # Try finding the fully-qualified domain name and append it to array
 #
@@ -121,8 +121,13 @@ sub add_host_id_from_hostname {
 
     my $fqdname = `hostname --fqdn`;
     chomp($fqdname);
-    debug("Fully-qualified domain name: <$fqdname>");
-    push @$ids_ref, strip_whitespace($fqdname);
+
+    if ($fqdname =~ /^ [^.]+ \. .* \. [^.]+$/x) {
+        debug("Fully-qualified domain name: <$fqdname>");
+        push @$ids_ref, strip_whitespace($fqdname);
+    } else {
+        debug("Not a fully-qualified domain name: <$fqdname>");
+    }
 }
 
 # ---------------------------------------------------------------------- #
