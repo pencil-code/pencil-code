@@ -87,7 +87,7 @@ sub get_host_ids {
     add_host_id_from_file("$ENV{HOME}/.pencil/host-ID", \@ids);
     add_host_id_from_fqdn(\@ids);
     add_host_id_from_scraping_system_info(\@ids);
-    push @ids, strip_whitespace(`uname -s`);
+    push @ids, strip_whitespace(first_line_from_cmd('uname -s'));
 
     debug("get_host_ids: <" . join(">, <", @ids) . ">");
     return @ids;
@@ -172,6 +172,24 @@ sub first_line_from_file {
         log_msg("Not readable: <$file>");
         return undef;
     }
+}
+
+# ---------------------------------------------------------------------- #
+
+sub first_line_from_cmd {
+#
+# Extract the first line from the output of the given command
+#
+    my ($cmd) = @_;
+
+    my $fh;
+    unless (open($fh, "$cmd |")) {
+        warn "Cannot start <$cmd>\n";
+        return undef;
+    }
+    my $line = <$fh>;
+    chomp($line);
+    return $line;
 }
 
 # ---------------------------------------------------------------------- #
