@@ -83,6 +83,21 @@ sub get_makefile_params {
 
 # ---------------------------------------------------------------------- #
 
+sub debug {
+#
+# Get/set debugging flag
+#
+    my $self = shift();
+    my ($debug) = @_;
+
+    if (defined($debug)) {
+        $self->{DEBUG} = $debug;
+    }
+    return $self->{DEBUG};
+}
+
+# ---------------------------------------------------------------------- #
+
 sub get_section_hash {
 #
 # For debugging only -- to be removed
@@ -109,7 +124,7 @@ sub parse {
 
     my %section_map;
     get_sections(
-        $self->{FILENAME}, '__GLOBAL__', \%section_map
+        $self->{FILENAME}, '__GLOBAL__', \%section_map, $self->{DEBUG}
     );
     $self->{SECTIONS} = \%section_map;
 
@@ -137,7 +152,9 @@ sub get_sections {
 #     name2 => [line21, line22, ...],
 #     ... }
 #
-    my ($file, $enclosing_section, $section_map_ref) = @_;
+    my ($file, $enclosing_section, $section_map_ref, $debug) = @_;
+
+    print STDERR "get_sections($file, $enclosing_section)\n" if ($debug);
 
     my @sections = ($enclosing_section);
 
@@ -158,11 +175,13 @@ sub get_sections {
         }
 
         if ($line =~ /^\s*%section\s+(\S+)\s*$/) { # start section
+            print STDERR "  %section $1\n" if ($debug);
             push @sections, $1;
             next line;
         }
 
         if ($line =~ /^\s*%endsection\s+(\S+)\s*$/) { # end section
+            print STDERR "  %endsection $1\n" if ($debug);
             my $ending_section = $1;
             unless ($ending_section eq pop(@sections)) {
                 croak "Ending section <$ending_section> that is not open:\n"
@@ -173,11 +192,17 @@ sub get_sections {
 
         if ($line =~ /^\s*%include\s+(\S+)\s*$/) { # include config file
             my $include_file = find_include_file($1, $file);
-            get_sections($include_file, $sections[-1], $section_map_ref);
+            print STDERR "  %include $1 -> $include_file\n" if ($debug);
+            get_sections($include_file, $sections[-1], $section_map_ref, $debug);
             next line;
         }
 
         my $complete_line = $line_fragment . $line;
+        if ($debug) {
+            my $output = substr($complete_line, 0, 30);
+            chomp($output);
+            print STDERR "  $output\n" if ($debug);
+        }
         push @{$section_map_ref->{$sections[-1]}},
             normalize_line($complete_line);
         $line_fragment = '';
@@ -277,6 +302,11 @@ expanding `%include' macros.
 
 Create a new object.
 I<$filename> is
+
+=item B<$doc-E<gt>debug>([$debug])
+
+With argument: set debugging flag.
+Returns the debugging flag.
 
 =item B<$doc-E<gt>parse>(file)
 
