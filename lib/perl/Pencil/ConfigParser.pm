@@ -87,13 +87,36 @@ sub get_makefile_params {
 
 sub get_makefile_keys {
 #
-# Return arra ref of Makefile keys
+# Return array ref of Makefile keys
 #
     my $self = shift();
 
     $self->parse() unless ($self->{PARSED});
 
     return $self->{MAKEFILE_KEYS};
+}
+
+# ---------------------------------------------------------------------- #
+
+sub get_makefile_args {
+#
+# Return array ref of Makefile arguments
+#   [ 'VAR1=val1', 'VAR2='val2', ... ]
+# that can be interpolated into a `make' command line.
+#
+# Note that whitespace in a value is currently _not_ escaped, so
+# the array is best used in a system() call with list argument.
+#
+    my $self = shift();
+
+    $self->parse() unless ($self->{PARSED});
+
+    my @args;
+    for my $key (@{$self->{MAKEFILE_KEYS}}) {
+        push @args, "$key=$self->{MAKEFILE_PARAMS}->{$key}";
+    }
+
+    return \@args;
 }
 
 # ---------------------------------------------------------------------- #
@@ -410,6 +433,17 @@ Returns the debugging flag.
 Return a hashref of the parmeters defined in the `Makefile' section:
 
   { KEY1 => value1, KEY2 => value2, ...}
+
+=item B<get_makefile_args>()
+
+Return array ref of Makefile arguments
+
+  [ 'VAR1=val1', 'VAR2='val2', ... ]
+
+that can be interpolated into a `make' command line
+
+Note that whitespace in a value is currently _not_ escaped, so
+the array is best used in a system() call with list argument.
 
 =item B<get_runtime_params>()
 
