@@ -131,7 +131,9 @@ sub get_sections {
 #     name2 => [line21, line22, ...],
 #     ... }
 #
-    my ($file, $section) = @_;
+    my ($file, $section0) = @_;
+
+    my @sections = ($section0);
 
     my %section_map;
     my $line_fragment = '';
@@ -151,20 +153,29 @@ sub get_sections {
         }
 
         if ($line =~ /^\s*%section\s+(\S+)\s*$/) { # start section
-            $section = $1;
+            push @sections, $1;
             next line;
         }
 
         if ($line =~ /^\s*%endsection\s+(\S+)\s*$/) { # end section
-            $section = '__GLOBAL__';
+            my $ending_section = $1;
+            unless ($ending_section eq pop(@sections)) {
+                croak "Ending section <$ending_section> that is not open:\n"
+                  . "  $file:$.: $line\n";
+            }
             next line;
         }
 
         my $complete_line = $line_fragment . $line;
-        push @{$section_map{$section}}, normalize_line($complete_line);
+        push @{$section_map{$sections[-1]}}, normalize_line($complete_line);
         $line_fragment = '';
     }
     close $fh;
+
+    if (@sections != 1) {
+        croak "Section <" . pop(@sections) . "> not closed"
+          . " in file $file\n";
+    }
 
     return \%section_map;
 }
