@@ -1,0 +1,15 @@
+Directory:
+    ${PENCIL_HOME}/samples/1d-tests/H2_flamespeed
+SVN Id:
+    $Id: README 10936 2009-05-25 04:47:00Z ajohan@strw.leidenuniv.nl $
+Maintainer:
+    Natalia Babkovskaia <nbabkovskaia/gmail[dot]com>
+Added:
+    08-May-2009
+Status:
+    succeeds
+Recommended resolution:
+    128x1x1
+Comments:
+    This is a 1-D flame in a frame where the flame front is stationary
+    The temperatures on the two ends are 750K and 2500K, respectively.
