@@ -96,8 +96,6 @@ sub find_config_file_for {
     $id =~ s{(\s|/)+}{_}g;
 
     for my $dir (@config_path) {
-        debug("Trying dir <$dir>");
-
         my $file = "${dir}/${subdir}/${id}.conf";
         unless (-e $file) {
             debug("No such file: <$file>\n");
@@ -371,9 +369,11 @@ C<find_config_file()> tries the following host IDs, in this order:
 =over 4
 
 =item 1.
+
 Command line options I<[not yet implemented]>
 
 =item 2.
+
 If the file C<./host-ID> exists, its first line (without
 leading/trailing whitespace) is the host ID.
 [This should become part of some larger per-run-directory configuration
@@ -381,42 +381,80 @@ setting, either in one file C<./pencil-config> with sections and the like,
 or in its own file C<./pencil-config/host-ID>]
 
 =item 3.
+
 If the file ~/.pencil/host-ID exists, its first line (without
-leading/trailing whitespace)is the host ID.
+leading/trailing whitespace) is the host ID.
 [Again: should this be one file under C<~/.pencil> or one section/line in
 C<~/.pencil-config> or C<~/.pencilrc>?]
 
 =item 4.
-If the IP number of the current computer is not in the private range [it
-looks like there is no fast, portable way to get hold of the ip number
-(and there could be several)] and it is possible to determine its
-fully-qualified host name (i.e. the host and domain name), then this is
-used as host ID.
+
+If it is possible to determine the computer's fully-qualified host name
+(i.e. the host and domain name), then this is used as host ID.
 
 =item 5.
-[Describe some desperate measures, generating a host ID from the uname,
-/etc/issue, etc. uname will be needed anyway for the `default Linux' setup
-and the like.]
 
-=item 6.
-If no configuration file for that host ID is found, the output
-from `C<uname -s>' is tried as host ID.
-
-=item 7.
-If still no configuration file for that host ID is found, the host ID
-`C<default>' is tried.
-
-=item 8.
-If still no configuration is found, Pencil::ConfigFinder aborts with a
-specific error code.
-
+Scrape different sorts of system information to build a host ID like
+`host-frenesi-GNU_Linux-Ubuntu' (for a computer with hostname `frenesi',
+runnung an Ubuntu distribution of GNU/Linux.
 
 =back
 
 For each host ID, Pencil::ConfigFinder looks for a corresponding
-configuration file (see L</"Locating the config file"> below).
-If such a file is found, C<find_config_file()> exits and returns that
-file's name.
+configuration file (see L</"Locating the config file"> below) in the
+following directories:
+
+=over 4
+
+=item a.
+C<~/.pencil/config/computers>
+
+=item b.
+${PENCIL_HOME}/config/computers
+
+=back
+
+If such a file is found, C<find_config_file()> exits and returns its
+file name.
+
+If no file was found, two fallbacks are tried:
+
+=over 4
+
+=item 1.
+
+The output from `C<uname -o>' (the operationg system) is tried as
+host ID in the directories
+
+=over 8
+
+=item a.
+C<~/.pencil/config/os>
+
+=item b.
+${PENCIL_HOME}/config/os
+
+=back
+
+
+=item 1.
+If still no configuration file for that host ID is found, the host ID
+`C<default>' is tried.
+
+=over 8
+
+=item a.
+C<~/.pencil/config>
+
+=item b.
+${PENCIL_HOME}/config
+
+=back
+
+=back
+
+
+If still no configuration is found, C<find_config_file()> returns undef;.
 
 
 =head2 Locating the config file
@@ -424,18 +462,9 @@ file's name.
 For a given host ID, C<find_config_file()> looks for a config file.
 
 E.g. if the host ID is workhorse.pencil.org, C<find_config_file()> will
-look for a file C<workhorse.pencil.org.conf>. in the following
-directories:
+look for a file C<workhorse.pencil.org.conf>. in the directories listed
+below.
 
-=over 4
-
-=item 1.
-C<~/.pencil/config/computers>
-
-=item 2.
-${PENCIL_HOME}/config/computers
-
-=back
 
 
 =head1 BUGS AND LIMITATIONS
