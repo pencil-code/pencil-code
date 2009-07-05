@@ -107,7 +107,13 @@ sub parse {
     my $self = shift;
     carp "Why am I parsing this twice?" if ($self->{PARSED});
 
-    $self->{SECTIONS} = get_sections($self->{FILENAME}, '__GLOBAL__');
+    my %section_map;
+    get_sections(
+        $self->{FILENAME}, '__GLOBAL__', \%section_map
+    );
+    $self->{SECTIONS} = \%section_map;
+
+    $self->{PARSED} = 1;
 }
 
 # ====================================================================== #
@@ -125,17 +131,16 @@ sub get_sections {
 # - connecting continuation lines
 # - recursively expanding %include statements
 #
-# Return the given section (or all sections foun, if $section is the
-# global section) as a hash
+# Store the given section (or all sections found, if $section is the
+# global section) in the hash referenced by the third argument:
 #   { name1 => [line11, line12, ...],
 #     name2 => [line21, line22, ...],
 #     ... }
 #
-    my ($file, $section0) = @_;
+    my ($file, $enclosing_section, $section_map_ref) = @_;
 
-    my @sections = ($section0);
+    my @sections = ($enclosing_section);
 
-    my %section_map;
     my $line_fragment = '';
 
     open(my $fh, "< $file") or croak "Cannot open $file for reading: $!";
@@ -166,8 +171,15 @@ sub get_sections {
             next line;
         }
 
+        if ($line =~ /^\s*%include\s+(\S+)\s*$/) { # include config file
+            my $include_file = $1;
+            get_sections($include_file, $sections[-1], $section_map_ref);
+            next line;
+        }
+
         my $complete_line = $line_fragment . $line;
-        push @{$section_map{$sections[-1]}}, normalize_line($complete_line);
+        push @{$section_map_ref->{$sections[-1]}},
+            normalize_line($complete_line);
         $line_fragment = '';
     }
     close $fh;
@@ -176,8 +188,6 @@ sub get_sections {
         croak "Section <" . pop(@sections) . "> not closed"
           . " in file $file\n";
     }
-
-    return \%section_map;
 }
 
 # ---------------------------------------------------------------------- #
