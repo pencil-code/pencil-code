@@ -107,18 +107,8 @@ sub add_host_id_from_file {
     }
 
     debug("Reading host id from file <$file>");
-    if (-r $file) {
-        my $fh;
-        unless (open($fh, "< $file")) {
-            warn "Cannot open file <$file>\n";
-            return;
-        }
-        push @$ids_ref, strip_whitespace(<$fh>);
-        close($fh);
-    } else {
-        log_msg("Not readable: <$file>");
-    }
-
+    my $line = first_line_from_file($file);
+    push @$ids_ref, strip_whitespace($line) if defined($line);
 }
 
 # ---------------------------------------------------------------------- #
@@ -149,6 +139,34 @@ sub strip_whitespace {
     $text =~ m{^\s*(.*?)\s*$};
     return $1;
 
+}
+
+# ---------------------------------------------------------------------- #
+
+sub first_line_from_file {
+#
+# Extract the first line from the given file
+#
+    my ($file) = @_;
+
+    unless (-x $file) {
+        log_msg("No such file: <$file>");
+        return undef;
+    }
+
+    if (-r $file) {
+        my $fh;
+        unless (open($fh, "< $file")) {
+            warn "Cannot open file <$file>\n";
+            return undef;
+        }
+        my $line = <$fh>;
+        chomp($line);
+        return $line;
+    } else {
+        log_msg("Not readable: <$file>");
+        return undef;
+    }
 }
 
 # ---------------------------------------------------------------------- #
