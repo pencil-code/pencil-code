@@ -73,8 +73,8 @@ if ($opts{'v'} || $opts{'version'}) { die version(); }
 my $quiet = ($opts{'q'} || $opts{'quiet'} || '');
 
 my $config_file = Pencil::ConfigFinder::find_config_file()
-  or die "Couldn't find config file";
-warn "Found config file <$config_file>\n" if ($debug);
+  or die "Fatal: Couldn't find config file.\n";
+print STDERR "Found config file <$config_file>\n" if ($debug);
 
 my $parser = new Pencil::ConfigParser($config_file);
 

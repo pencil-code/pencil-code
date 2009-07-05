@@ -19,7 +19,6 @@ use warnings;
 use strict;
 use Carp;
 use vars qw($VERSION);
-use constant NO_CONFIG_FILE_FOUND => 15;
 
 ##use critic
 
@@ -39,7 +38,7 @@ sub find_config_file {
 #
 # Try all host IDs listed in ConfigFinder's specs and return the first
 # config file found.
-# If no config file is found, exit with status 15.
+# If no config file is found, return undef.
 #
     my $config_file;
 
@@ -58,7 +57,7 @@ sub find_config_file {
     return $config_file if defined($config_file);
 
     # Fail
-    exit NO_CONFIG_FILE_FOUND;
+    return undef
 }
 
 # ---------------------------------------------------------------------- #
@@ -343,7 +342,7 @@ C<Pencil::ConfigFinder> provides only two functions:
 Return the full path name of the (first) matching config file for the
 curent host.
 
-If no matching file is found, exit with status 15.
+If no matching file is found, return undef.
 
 =item B<find_config_file_for_computer($host_ID)>
 
