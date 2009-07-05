@@ -50,7 +50,7 @@ sub new {
         $class = $proto;
     }
 
-    croak "Usage: ConfigParser->new(\$filename)" unless (@argv = 1);
+    croak "Usage: ConfigParser->new(\$filename)" unless (@argv == 1);
     $self->{FILENAME}  = pop(@argv);
 
     $self->{DEBUG}   = 0;
@@ -63,6 +63,7 @@ sub new {
     bless($self, $class);
     return($self);
 }
+
 # ====================================================================== #
 
 ##
@@ -82,6 +83,19 @@ sub get_makefile_params {
 
 # ---------------------------------------------------------------------- #
 
+sub get_section_hash {
+#
+# For debugging only -- to be removed
+#
+    my $self = shift();
+
+    $self->parse() unless ($self->{PARSED});
+
+    return $self->{SECTIONS};
+}
+
+# ====================================================================== #
+
 ##
 ## Private methods
 ##
@@ -93,32 +107,79 @@ sub parse {
     my $self = shift;
     carp "Why am I parsing this twice?" if ($self->{PARSED});
 
-    $self->{file};
+    $self->{SECTIONS} = get_sections($self->{FILENAME}, '__GLOBAL__');
 }
 
-# ---------------------------------------------------------------------- #
+# ====================================================================== #
+
 
 ##
 ## Utility (class) methods
 ##
 
-
-sub expand_includes {
+# ---------------------------------------------------------------------- #
+sub get_sections {
 #
-# Recursively expand any %include statements in $section, verifying that
-# the included %begin and %end statements match.
-# Use $dir as bae directory for relative %includes.
+# Read file line by line,
+# - discarding comment lines
+# - connecting continuation lines
+# - recursively expanding %include statements
 #
+# Return the given section (or all sections foun, if $section is the
+# global section) as a hash
+#   { name1 => [line11, line12, ...],
+#     name2 => [line21, line22, ...],
+#     ... }
+#
+    my ($file, $section) = @_;
 
-# Note: A section consists of a name and an array ref of pairs:
-#   [name, [key1 => val1, key2 => val2, ...]]
-# (which in Perl5 fact is the same as just
-# [name, [key1, val1, key2, val2, ...]])
-    my ($section, $dir) = @_;
+    my %section_map;
+    my $line_fragment = '';
 
-    my @sections;
+    open(my $fh, "< $file") or croak "Cannot open $file for reading: $!";
+    line: while (defined(my $line = <$fh>)) {
+
+        $line =~ s{#.*}{};       # remove comments
+
+        if ($line =~ /^\s*$/) { # whitespace line
+            next line;
+        }
+
+        if ($line =~ /(.*)\\\s*$/) { # continuation line
+            $line_fragment .= $1;
+            next line;
+        }
+
+        if ($line =~ /^\s*%section\s+(\S+)\s*$/) { # start section
+            $section = $1;
+            next line;
+        }
+
+        if ($line =~ /^\s*%endsection\s+(\S+)\s*$/) { # end section
+            $section = '__GLOBAL__';
+            next line;
+        }
+
+        my $complete_line = $line_fragment . $line;
+        push @{$section_map{$section}}, normalize_line($complete_line);
+        $line_fragment = '';
+    }
+    close $fh;
+
+    return \%section_map;
 }
 
+# ---------------------------------------------------------------------- #
+sub normalize_line {
+#
+# Strip irrelevant whitespace from $line
+#
+    my ($line) = @_;
+
+    $line =~ s{^\s*(.*?)\s*$}{$1};
+
+    return $line;
+}
 # ---------------------------------------------------------------------- #
 
 1;
