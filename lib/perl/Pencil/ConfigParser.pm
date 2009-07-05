@@ -449,9 +449,8 @@ Wolfgang Dobler <wdobler [at] cpan [dot] org
 Copyright (c) 2009, Wolfgang Dobler <wdobler [at] cpan [dot] org>.
 All rights reserved.
 
-This program is free software; you can redistribute it and/or modify it
-under the same conditions as Perl or under the GNU General Public
-License, version 3 or later.
+This file is part of the Pencil Code and licensed under the GNU Public
+License version 3 or later; see $PENCIL_HOME/license/GNU_public_license.txt.
 
 
 =head1 DISCLAIMER OF WARRANTY
