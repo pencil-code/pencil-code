@@ -13,18 +13,160 @@
 # License version 3 or later; see $PENCIL_HOME/license/GNU_public_license.txt.
 #
 
-package Pencil::ConfigParser;
+package Pencil::ConfigFinder;
 
 use warnings;
 use strict;
 use Carp;
 use vars qw($VERSION);
+use constant NO_CONFIG_FILE_FOUND => 15;
 
 ##use critic
 
 $VERSION = '0.1';
 
+my $quiet = 0;
+my $debug = 1;
+
 # ---------------------------------------------------------------------- #
+
+sub find_config_file {
+#
+# Try all host IDs listed in ConfigFinder's specs and return the first
+# config file found.
+# If no config file is found, exit with status 15.
+#
+    for my $host_id (get_host_ids()) {
+        my $config_file = find_config_file_for_host_id($host_id);
+        return $config_file if defined($config_file);
+    }
+
+    exit NO_CONFIG_FILE_FOUND;
+}
+
+# ---------------------------------------------------------------------- #
+
+sub find_config_file_for_host_id {
+#
+# Return config file for the given host ID, or undef.
+#
+    my ($host_id) = @_;
+
+    my @path = (
+                "$ENV{HOME}/.pencil/config/computers",
+                "$ENV{PENCIL_HOME}/config/computers"
+               );
+    for my $dir (@path) {
+        my $file = "${dir}/${host_id}.conf";
+        unless (-e $file) {
+            debug("No such file: <$file>\n");
+            next;
+        }
+        if (-f $file) {
+            return $file;
+        } else {
+            warn "Not a regular file: <$file>\n";
+        }
+    }
+
+    return undef;               # no file found
+}
+
+# ---------------------------------------------------------------------- #
+
+sub get_host_ids {
+#
+# Return list of host IDs to try
+#
+    my @ids = ();
+    add_host_id_from_file("./host-ID", \@ids);
+    add_host_id_from_file("$ENV{HOME}/.pencil/host-ID", \@ids);
+    add_host_id_from_hostname(\@ids);
+}
+
+# ---------------------------------------------------------------------- #
+
+sub add_host_id_from_file {
+#
+# Take the first line from $file and append it to array
+#
+    my ($file, $ids_ref) = @_;
+
+    unless (-x $file) {
+        debug("No such file <$file>");
+        return;
+    }
+
+    if (-r $file) {
+        my $fh;
+        unless (open($fh, "< $file")) {
+            warn "Cannot open file <$file>\n";
+            return;
+        }
+        push @$ids_ref, strip_host_id(<$fh>);
+        close($fh);
+    } else {
+        log_msg("Not readable: <$file>");
+    }
+
+}
+
+# ---------------------------------------------------------------------- #
+
+sub add_host_id_from_hostname {
+#
+# Try finding the fully-qualified domain name and append it to array
+#
+    my ($ids_ref) = @_;
+
+    my $fqdname = `hostname --fqdn`;
+    chomp($fqdname);
+    debug("Fully-qualified domain name: <$fqdname>");
+    push @$ids_ref, strip_host_id($fqdname);
+}
+
+# ---------------------------------------------------------------------- #
+
+sub strip_host_id {
+#
+# Remove leading and trailing whitespace from a host ID
+#
+    my ($id) = @_;
+
+    chomp($id);
+    $id =~ m{^\s*(.*?)\s*$};
+    return $1;
+
+}
+
+# ---------------------------------------------------------------------- #
+
+sub debug {
+#
+# Print the given line to STDERR if the $debug flag is set.
+#
+    my ($text) = @_;
+
+    if ($debug) {
+        chomp($text);
+        print STDERR "DEBUG: $text\n";
+    }
+}
+
+# ---------------------------------------------------------------------- #
+
+sub log_msg {
+#
+# Print the given line to STDERR if the $debug flag is set.
+#
+    my ($text) = @_;
+
+    if ((! $quiet) || $debug) {
+        chomp($text);
+        print STDERR "$text\n";
+    }
+}
+
 # ---------------------------------------------------------------------- #
 
 1;
@@ -40,7 +182,13 @@ Pencil::ConfigFinder - Find the appropriate Pencil Code configuration file
 =head1 SYNOPSIS
 
   use Pencil::ConfigFinder;
+
+  # Find config file using default algorithm
   my $config_file = Pencil::ConfigFinder::find_config_file();
+
+  # Try host ID "toto" first, then fall back on default algorithm
+  my $file = ( Pencil::ConfigFinder::find_config_file_for_host_id('toto')
+               || Pencil::ConfigFinder::find_config_file() );
 
 
 =head1 DESCRIPTION
@@ -50,20 +198,22 @@ computer and directory.
 
 =head2 Functions
 
-C<Pencil::ConfigFinder> provides only one function:
+C<Pencil::ConfigFinder> provides only two functions:
 
 =over 4
 
 =item B<find_config_file()>
 
-=item B<find_config_file($host_ID)>
-
-Return the full path name of the (first) matching config file.
-
-If $host_ID is defined, try it as host ID string before falling back on
-other methods (see L<"The Host ID"> below).
+Return the full path name of the (first) matching config file for the
+curent host.
 
 If no matching file is found, exit with status 15.
+
+=item B<find_config_file_for_host_id($host_ID)>
+
+Return the full path name of the (first) matching config file for the
+given host ID.
+If not such file is found, return undef.
 
 =back
 
@@ -86,20 +236,27 @@ C<find_config_file()> tries the following host IDs, in this order:
 =over 4
 
 =item 1.
-I<[Command line options]>
+Command line options I<[not yet implemented]>
 
 =item 2.
-If the file C<./.pencil/host-ID> exists, its first line (without
+If the file C<./host-ID> exists, its first line (without
 leading/trailing whitespace) is the host ID.
+[This should become part of some larger per-run-directory configuration
+setting, either in one file C<./pencil-config> with sections and the like,
+or in its own file C<./pencil-config/host-ID>]
 
 =item 3.
 If the file ~/.pencil/host-ID exists, its first line (without
 leading/trailing whitespace)is the host ID.
+[Again: should this be one file under C<~/.pencil> or one section/line in
+C<~/.pencil-config> or C<~/.pencilrc>?]
 
 =item 4.
-If the IP number of the current computer is not in the private
-range and it is possible to determine its fully-qualified host name (i.e.
-the host and domain name), then this is used as host ID.
+If the IP number of the current computer is not in the private range [it
+looks like there is no fast, portable way to get hold of the ip number
+(and there could be several)] and it is possible to determine its
+fully-qualified host name (i.e. the host and domain name), then this is
+used as host ID.
 
 =item 5.
 [Describe some desperate measures, generating a host ID from the uname,
@@ -129,10 +286,10 @@ file's name.
 
 =head2 Locating the config file
 
-For a given host ID, C<find_config_file()> looks for a config file. E.g. if
-the host ID is workhorse.pencil.org, C<find_config_file()> will look for a
-file C<workhorse.pencil.org.conf>. in the . E.g. if the host ID is
-workhorse.pencil.org, configure will look for a file in the following
+For a given host ID, C<find_config_file()> looks for a config file.
+
+E.g. if the host ID is workhorse.pencil.org, C<find_config_file()> will
+look for a file C<workhorse.pencil.org.conf>. in the following
 directories:
 
 =over 4
