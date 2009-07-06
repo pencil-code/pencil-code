@@ -1603,7 +1603,12 @@ module Magnetic
 ! jparallel and jperp 
       if (lpencil(i_jparallel).or.lpencil(i_jperp)) then
         p%jparallel=sqrt(p%j2)*p%cosjb
-        sinjb=sqrt(1-p%cosjb**2)
+        !AB: Anders, I hope we can avoid this soon.
+        if (lpencil_check) then
+          sinjb=sqrt(1-(modulo(p%cosjb + 1.0, 2.0) - 1)**2)
+        else
+          sinjb=sqrt(1-p%cosjb**2)
+        endif
         p%jperp=sqrt(p%j2)*sinjb
       endif
 ! jxbr
