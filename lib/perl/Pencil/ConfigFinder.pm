@@ -25,7 +25,10 @@ use vars qw($VERSION);
 $VERSION = '0.1';
 
 my $quiet = 0;
-my $debug = 0;
+our $debug = 0;
+
+#$quiet = 0 if ($debug);
+
 
 my @config_path = (
             "$ENV{HOME}/.pencil/config",
