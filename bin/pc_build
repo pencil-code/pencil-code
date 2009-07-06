@@ -72,11 +72,15 @@ if ($opts{'v'} || $opts{'version'}) { die version(); }
 
 my $quiet = ($opts{'q'} || $opts{'quiet'} || '');
 
+mention($Pencil::ConfigFinder::debug);
+$Pencil::ConfigFinder::debug = 1 if ($debug);
+
 my $config_file = Pencil::ConfigFinder::find_config_file()
   or die "Fatal: Couldn't find config file.\n";
 print STDERR "Found config file <$config_file>\n" if ($debug);
 
 my $parser = new Pencil::ConfigParser($config_file);
+$parser->debug(1) if ($debug);
 
 my @make_args = @{$parser->get_makefile_args()};
 print STDERR "Make args: @make_args\n" if ($debug);
@@ -84,6 +88,13 @@ print STDERR "Make args: @make_args\n" if ($debug);
 system('make', @make_args) == 0
   or die "Make failed: <$!>\n";
 
+# ---------------------------------------------------------------------- #
+sub mention {
+# Reference a variable without doing anything.
+# Use this to suppress ``Name "Pencil::ConfigFinder::debug" used only
+# once'' warning
+    my @args = @_;
+}
 # ---------------------------------------------------------------------- #
 sub printopts {
 # Print command line options
