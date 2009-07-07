@@ -1263,6 +1263,7 @@ module Magnetic
 !
       if(lpencil_in(i_jparallel).or.lpencil_in(i_jperp)) then
         lpencil_in(i_cosjb)=.true.
+        lpencil_in(i_jxb)=.true.
       endif
       if (lpencil_in(i_cosjb)) then 
         lpencil_in(i_b2)=.true.
@@ -1422,10 +1423,10 @@ module Magnetic
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      real, dimension (nx,3) :: bb_ext,bb_ext_pot,ee_ext,jj_ext
+      real, dimension (nx,3) :: bb_ext,bb_ext_pot,ee_ext,jj_ext,jcrossb
       real, dimension (nx) :: rho1_jxb,alpha_total
       real, dimension (nx) :: alpha_tmp
-      real, dimension (nx) :: sinjb 
+      real, dimension (nx) :: sinjb,jcrossb2 
       real :: B2_ext,c,s,kx
       integer :: i,j,ix
 !
@@ -1603,13 +1604,20 @@ module Magnetic
 ! jparallel and jperp 
       if (lpencil(i_jparallel).or.lpencil(i_jperp)) then
         p%jparallel=sqrt(p%j2)*p%cosjb
-        !AB: Anders, I hope we can avoid this soon.
-        if (lpencil_check) then
-          sinjb=sqrt(1-(modulo(p%cosjb + 1.0, 2.0) - 1)**2)
-        else
-          sinjb=sqrt(1-p%cosjb**2)
-        endif
-        p%jperp=sqrt(p%j2)*sinjb
+        call dot2_mn(p%jxb,jcrossb2)
+        do ix=1,nx
+          if((abs(p%j2(ix)).le.tini).or.(abs(p%b2(ix)).le.tini))then 
+            p%jperp=0
+          else
+            p%jperp=sqrt(jcrossb2(ix))/sqrt(p%b2(ix))
+          endif
+        enddo
+!        if (lpencil_check) then
+!          sinjb=sqrt(1-(modulo(p%cosjb + 1.0, 2.0) - 1)**2)
+!        else
+!          sinjb=sqrt(1-p%cosjb**2)
+!        endif
+!        p%jperp=sqrt(p%j2)*sinjb
       endif
 ! jxbr
       if (lpencil(i_jxbr)) then

@@ -205,7 +205,7 @@ module Register
       use Interstellar,    only: initialize_interstellar
       use Magnetic,        only: initialize_magnetic
       use Lorenz_gauge,    only: initialize_lorenz_gauge
-      use Polymer,    only: initialize_polymer
+      use Polymer,         only: initialize_polymer
       use NeutralDensity,  only: initialize_neutraldensity
       use NeutralVelocity, only: initialize_neutralvelocity
       use Poisson,         only: initialize_poisson
