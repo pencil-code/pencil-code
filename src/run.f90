@@ -239,6 +239,10 @@ program run
       call input_globals(trim(directory_snap)//'/global.dat', &
       f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
 !
+! set initial time to zero if requested
+!
+  if(lini_t_eq_zero) t=0
+!
 !  Read coordinates.
 !
   if (ip<=6.and.lroot) print*,'reading grid coordinates'

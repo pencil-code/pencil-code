@@ -141,7 +141,8 @@ module Param_IO
        crash_file_dtmin_factor,niter_poisson, &
        lADI,ltestperturb,eps_rkf,eps_stiff,timestep_scaling, nscbc_sigma_in,&
        nscbc_sigma_out, p_infty, &
-       lequatory, lequatorz, zequator 
+       lequatory, lequatorz, zequator,&
+       lini_t_eq_zero
   contains
 !***********************************************************************
     subroutine get_datadir(dir)
