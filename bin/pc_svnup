@@ -4,9 +4,6 @@
 #
 # Script to update the Pencil Code tree from svn.
 #
-# Update all the necessaries but nothing else, i.e. miss out the runs
-# directory. Works from anywhere in the Pencil Code tree.
-#
 if ("$1" == "-h" || "$1" == "-help") then
   echo 'Update all the necessaries but nothing else, i.e. miss out the runs'
   echo 'directory. Works from anywhere in the Pencil Code tree.'
@@ -32,61 +29,54 @@ echo svn up $PENCIL_HOME/src
 svn up $PENCIL_HOME/src
 if ($stat) svn status $PENCIL_HOME/src
 #
-#  Don't do the following directories unless
-#  we only want the important ones (pc_svnup -I).
-#
 if ("$1" != "-src") then
   echo svn up $PENCIL_HOME/bin
   svn up $PENCIL_HOME/bin
   if ($stat) svn status $PENCIL_HOME/bin
-  #
-  #  Don't do the following directories unless
-  #  we only want the important ones (pc_svnup -I).
-  #
+#
   if ("$1" != "-I") then
     echo svn up $PENCIL_HOME/samples
     svn up $PENCIL_HOME/samples
     if ($stat) svn status $PENCIL_HOME/samples
-    #
+#
     echo svn up $PENCIL_HOME/lib
     svn up $PENCIL_HOME/lib
     if ($stat) svn status $PENCIL_HOME/lib
-    #
+#
+    echo svn up $PENCIL_HOME/config
+    svn up $PENCIL_HOME/config
+    if ($stat) svn status $PENCIL_HOME/config
+#
     echo svn up $PENCIL_HOME/doc
     svn up $PENCIL_HOME/doc
     if ($stat) svn status $PENCIL_HOME/doc
-    #
+#
     echo svn up $PENCIL_HOME/idl
     svn up $PENCIL_HOME/idl
     if ($stat) svn status $PENCIL_HOME/idl
-    #
+#
     echo svn up $PENCIL_HOME/python
     svn up $PENCIL_HOME/python
     if ($stat) svn status $PENCIL_HOME/python
-    #
-    #  Don't do the following directories unless
-    #  we only want the important ones (pc_svnup -i).
-    #
-    if ("$1" != "-i") then
-      echo svn up $PENCIL_HOME/license
-      svn up $PENCIL_HOME/license
-      if ($stat) svn status $PENCIL_HOME/license
-      #
-      echo svn up $PENCIL_HOME/bugs
-      svn up $PENCIL_HOME/bugs
-      if ($stat) svn status $PENCIL_HOME/bugs
-      #
-      echo svn up $PENCIL_HOME/dx
-      svn up $PENCIL_HOME/dx
-      if ($stat) svn status $PENCIL_HOME/dx
-      #
-      echo svn up $PENCIL_HOME/misc
-      svn up $PENCIL_HOME/misc
-      if ($stat) svn status $PENCIL_HOME/misc
-      #
-      echo svn up $PENCIL_HOME/utils
-      svn up $PENCIL_HOME/utils
-      if ($stat) svn status $PENCIL_HOME/utils
-    endif
+#
+    echo svn up $PENCIL_HOME/license
+    svn up $PENCIL_HOME/license
+    if ($stat) svn status $PENCIL_HOME/license
+#
+    echo svn up $PENCIL_HOME/bugs
+    svn up $PENCIL_HOME/bugs
+    if ($stat) svn status $PENCIL_HOME/bugs
+#
+    echo svn up $PENCIL_HOME/dx
+    svn up $PENCIL_HOME/dx
+    if ($stat) svn status $PENCIL_HOME/dx
+#
+    echo svn up $PENCIL_HOME/misc
+    svn up $PENCIL_HOME/misc
+    if ($stat) svn status $PENCIL_HOME/misc
+#
+    echo svn up $PENCIL_HOME/utils
+    svn up $PENCIL_HOME/utils
+    if ($stat) svn status $PENCIL_HOME/utils
   endif
 endif
