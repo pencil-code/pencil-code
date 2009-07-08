@@ -238,6 +238,8 @@ module Hydro
   integer :: idiag_oxmxy=0      ! DIAG_DOC: $\left< \omega_x \right>_{z}$
   integer :: idiag_oymxy=0      ! DIAG_DOC: $\left< \omega_y \right>_{z}$
   integer :: idiag_ozmxy=0      ! DIAG_DOC: $\left< \omega_z \right>_{z}$
+  integer :: idiag_pvzmxy=0     ! DIAG_DOC: $\left< (\omega_z + 2\Omega)/\varrho \right>_{z}$
+                                ! DIAG_DOC: \quad(z component of potential vorticity)
   integer :: idiag_ruxmxy=0     ! DIAG_DOC: $\left< \rho u_x \right>_{z}$
   integer :: idiag_ruymxy=0     ! DIAG_DOC: $\left< \rho u_y \right>_{z}$
   integer :: idiag_ruzmxy=0     ! DIAG_DOC: $\left< \rho u_z \right>_{z}$
@@ -339,8 +341,10 @@ module Hydro
   integer :: idiag_oxoym=0      ! DIAG_DOC: $\left<\omega_x\omega_y\right>$
   integer :: idiag_oxozm=0      ! DIAG_DOC: $\left<\omega_x\omega_z\right>$
   integer :: idiag_oyozm=0      ! DIAG_DOC: $\left<\omega_y\omega_z\right>$
-  integer :: idiag_oumphi=0     ! PHIAVG_DOC: $\left<\omv\cdot\uv\right>_\varphi$
-  integer :: idiag_ozmphi=0     ! PHIAVG_DOC: 
+  integer :: idiag_pvzm=0       ! DIAG_DOC: $\left<\omega_z + 2\Omega/\varrho\right>$
+                                ! DIAG_DOC: \quad(z component of potential vorticity)
+  integer :: idiag_oumphi=0     ! DIAG_DOC: $\left<\omv\cdot\uv\right>_\varphi$
+  integer :: idiag_ozmphi=0     ! DIAG_DOC: 
   integer :: idiag_ormr=0       ! DIAG_DOC: 
   integer :: idiag_opmr=0       ! DIAG_DOC: 
   integer :: idiag_ozmr=0       ! DIAG_DOC: 
@@ -1088,7 +1092,8 @@ module Hydro
       if (idiag_u2mphi/=0) lpenc_diagnos2d(i_u2)=.true.
       if (idiag_ox2m/=0 .or. idiag_oy2m/=0 .or. idiag_oz2m/=0 .or. &
           idiag_oxm /=0 .or. idiag_oym /=0 .or. idiag_ozm /=0 .or. &
-          idiag_oxoym/=0 .or. idiag_oxozm/=0 .or. idiag_oyozm/=0) &
+          idiag_oxoym/=0 .or. idiag_oxozm/=0 .or. idiag_oyozm/=0 .or. &
+          idiag_pvzm /=0) &
           lpenc_diagnos(i_oo)=.true.
       if (idiag_orms/=0 .or. idiag_omax/=0 .or. idiag_o2m/=0 .or. &
           idiag_ormsh/=0 )  lpenc_diagnos(i_o2)=.true.
@@ -1107,13 +1112,15 @@ module Hydro
       if (idiag_duxdzma/=0 .or. idiag_duydzma/=0) lpenc_diagnos(i_uij)=.true.
       if (idiag_fmassz/=0 .or. idiag_ruxuym/=0 .or. idiag_ruxuymz/=0 .or. &
           idiag_ruxm/=0 .or. idiag_ruym/=0 .or. idiag_ruzm/=0 .or. &
-          idiag_ruxuzm/=0 .or. idiag_ruyuzm/=0) &
+          idiag_ruxuzm/=0 .or. idiag_ruyuzm/=0 .or. idiag_pvzm/=0) &
           lpenc_diagnos(i_rho)=.true.
       if (idiag_ormr/=0 .or. idiag_opmr/=0 .or. idiag_ozmr/=0) &
           lpenc_diagnos(i_oo)=.true.
       if (idiag_oxmxy/=0 .or. idiag_oymxy/=0 .or. idiag_ozmxy/=0 .or. &
-          idiag_oxmz/=0 .or. idiag_oymz/=0 .or. idiag_ozmz/=0) &
+          idiag_oxmz/=0 .or. idiag_oymz/=0 .or. idiag_ozmz/=0 .or. &
+          idiag_pvzmxy/=0) &
           lpenc_diagnos2d(i_oo)=.true.
+      if (idiag_pvzmxy/=0) lpenc_diagnos2d(i_rho)=.true.
       if (idiag_totangmom/=0 ) lpenc_diagnos(i_rcyl_mn)=.true.
       if (idiag_urmr/=0 .or.  idiag_ormr/=0 .or. idiag_urmphi/=0) then
         lpenc_diagnos(i_pomx)=.true.
@@ -1708,6 +1715,7 @@ module Hydro
         if (idiag_oxoym/=0) call sum_mn_name(p%oo(:,1)*p%oo(:,2),idiag_oxoym)
         if (idiag_oxozm/=0) call sum_mn_name(p%oo(:,1)*p%oo(:,3),idiag_oxozm)
         if (idiag_oyozm/=0) call sum_mn_name(p%oo(:,2)*p%oo(:,3),idiag_oyozm)
+        if (idiag_pvzm/=0) call sum_mn_name((p%oo(:,3) + 2.*Omega)/p%rho,idiag_pvzm)
 !
 !  Mach number, rms and max
 !
@@ -1891,6 +1899,7 @@ module Hydro
         if (idiag_oxmxy/=0) call zsum_mn_name_xy(p%oo(:,1),idiag_oxmxy)
         if (idiag_oymxy/=0) call zsum_mn_name_xy(p%oo(:,2),idiag_oymxy)
         if (idiag_ozmxy/=0) call zsum_mn_name_xy(p%oo(:,3),idiag_ozmxy)
+        if (idiag_pvzmxy/=0) call zsum_mn_name_xy((p%oo(:,3)+2.*Omega)/p%rho,idiag_pvzmxy)
         if (idiag_ruxmxy/=0) call zsum_mn_name_xy(p%rho*p%uu(:,1),idiag_ruxmxy)
         if (idiag_ruymxy/=0) call zsum_mn_name_xy(p%rho*p%uu(:,2),idiag_ruymxy)
         if (idiag_ruzmxy/=0) call zsum_mn_name_xy(p%rho*p%uu(:,3),idiag_ruzmxy)
@@ -2835,6 +2844,7 @@ module Hydro
         idiag_oxmxy=0
         idiag_oymxy=0
         idiag_ozmxy=0
+        idiag_pvzmxy=0
         idiag_ruxmxy=0
         idiag_ruymxy=0
         idiag_ruzmxy=0
@@ -2873,6 +2883,7 @@ module Hydro
         idiag_oxoym=0
         idiag_oxozm=0
         idiag_oyozm=0
+        idiag_pvzm=0
         idiag_oumx=0
         idiag_oumy=0
         idiag_oumz=0
@@ -2976,6 +2987,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'oxoym',idiag_oxoym)
         call parse_name(iname,cname(iname),cform(iname),'oxozm',idiag_oxozm)
         call parse_name(iname,cname(iname),cform(iname),'oyozm',idiag_oyozm)
+        call parse_name(iname,cname(iname),cform(iname),'pvzm',idiag_pvzm)
         call parse_name(iname,cname(iname),cform(iname),'orms',idiag_orms)
         call parse_name(iname,cname(iname),cform(iname),'ormsn',idiag_ormsn)
         call parse_name(iname,cname(iname),cform(iname),'ormss',idiag_ormss)
@@ -3175,6 +3187,7 @@ module Hydro
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'oxmxy',idiag_oxmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'oymxy',idiag_oymxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ozmxy',idiag_ozmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'pvzmxy',idiag_pvzmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ruxmxy',idiag_ruxmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ruymxy',idiag_ruymxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ruzmxy',idiag_ruzmxy)
@@ -3265,6 +3278,7 @@ module Hydro
         write(3,*) 'i_oxoym=',idiag_oxoym
         write(3,*) 'i_oxozm=',idiag_oxozm
         write(3,*) 'i_oyozm=',idiag_oyozm
+        write(3,*) 'i_pvzm=',idiag_pvzm
         write(3,*) 'i_orms=',idiag_orms
         write(3,*) 'i_ormsn=',idiag_ormsn
         write(3,*) 'i_ormss=',idiag_ormss
