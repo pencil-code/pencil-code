@@ -1051,7 +1051,7 @@ module Hydro
 !
 !  All pencils that the Hydro module depends on are specified here.
 !
-!  20-11-04/anders: coded
+!  20-nov-04/anders: coded
 !
       use Mpicomm, only: stop_it
 !
@@ -2377,7 +2377,17 @@ module Hydro
          call fatal_error("coriolis_spherical:","not coded if the angular velocity is at an angle to the z axis. ")
       endif
 !
-!  -2 Omega x u
+!  In (r,theta,phi) coords, we have Omega=(costh, -sinth, 0). Thus,
+!
+!                    ( costh)   (u1)      (+sinth*u3)
+!  -2Omega x U = -2O*(-sinth) X (u2) = 2O*(+costh*u3)
+!                    (   0  )   (u3)      (-costh*u2-sinth*u1)
+!
+!  With c2=2*Omega*costh and s2=-2*Omega*sinth we have then
+!
+!                (-s2*u3)
+!  -2Omega x U = (+c2*u3)
+!                (-c2*u2+s2*u1)
 !
       if (lcoriolis_force) then 
         c2= 2*Omega*costh(m)
