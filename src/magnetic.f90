@@ -432,6 +432,9 @@ module Magnetic
   integer :: idiag_dexbmx=0     ! DIAG_DOC: $\left<\nabla\times\Ev\times\Bv\right>|_x$
   integer :: idiag_dexbmy=0     ! DIAG_DOC: $\left<\nabla\times\Ev\times\Bv\right>|_y$
   integer :: idiag_dexbmz=0     ! DIAG_DOC: $\left<\nabla\times\Ev\times\Bv\right>|_z$
+  integer :: idiag_phibmx=0     ! DIAG_DOC: $\left<\phi\Bv\right>|_x$
+  integer :: idiag_phibmy=0     ! DIAG_DOC: $\left<\phi\Bv\right>|_y$
+  integer :: idiag_phibmz=0     ! DIAG_DOC: $\left<\phi\Bv\right>|_z$
   integer :: idiag_uxjm=0       ! DIAG_DOC:
   integer :: idiag_brmphi=0     ! PHIAVG_DOC: $\left<B_\varpi\right>_\varphi$
                                 ! PHIAVG_DOC: [cyl.\ polar coords
@@ -1214,6 +1217,8 @@ module Magnetic
           .or. idiag_examz1/=0 .or. idiag_examz2/=0 .or. idiag_examz3/=0 &
           .or. idiag_exjmx/=0 .or. idiag_exjmy/=0 .or. idiag_exjmz/=0 &
          ) lpenc_diagnos(i_jj)=.true.
+      if (idiag_phibmx/=0 .or. idiag_phibmy/=0 .or. idiag_phibmz/=0 &
+         ) lpenc_diagnos(i_diva)=.true.
       if (idiag_b2uzm/=0 .or. &
           idiag_b1m/=0 .or. idiag_b2m/=0 .or. idiag_bm2/=0 .or. &
           idiag_brmsh/=0 .or. idiag_brmsn/=0 .or. idiag_brmss/=0 .or. &
@@ -1785,9 +1790,12 @@ module Magnetic
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx,3) :: geta,uxDxuxb,fres,uxb_upw,tmp2,exa,exj,dexb
-      real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0,uj,aj
-      real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,b3b21,b1b32,b2b13,sign_jo,rho1_jxb
+      real, dimension (nx,3) :: geta,uxDxuxb,fres,uxb_upw,tmp2
+      real, dimension (nx,3) :: exa,exj,dexb,phib
+      real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
+      real, dimension (nx) :: uj,aj,phi
+      real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,b3b21,b1b32,b2b13
+      real, dimension (nx) :: sign_jo,rho1_jxb
       real, dimension (nx) :: B1dot_glnrhoxb,tmp1,fb,fxbx
       real, dimension (nx) :: b2t,bjt,jbt
       real, dimension (nx) :: eta_mn,eta_smag,etadust,etatotal
@@ -2374,13 +2382,27 @@ module Magnetic
           if (idiag_uxbsmy/=0) call sum_mn_name(uxbb(:,2)*sinkz(n),idiag_uxbsmy)
         endif
 !
-!  calculate magnetic helicity flux (ExA contribution)
+!  calculate part I of magnetic helicity flux (ExA contribution)
 !
         if (idiag_examx/=0 .or. idiag_examy/=0 .or. idiag_examz/=0) then
           call cross_mn(-p%uxb+eta*p%jj,p%aa,exa)
           if (idiag_examx/=0) call sum_mn_name(exa(:,1),idiag_examx)
           if (idiag_examy/=0) call sum_mn_name(exa(:,2),idiag_examy)
           if (idiag_examz/=0) call sum_mn_name(exa(:,3),idiag_examz)
+        endif
+!
+!  calculate part II of magnetic helicity flux (phi*B contribution)
+!
+        if (idiag_phibmx/=0 .or. idiag_phibmy/=0 .or. idiag_phibmz/=0) then
+          if (lweyl_gauge) then
+            phi=0.
+          else
+            phi=eta*p%diva
+          endif
+          call multvs(p%bb,phi,phib)
+          if (idiag_phibmx/=0) call sum_mn_name(phib(:,1),idiag_phibmx)
+          if (idiag_phibmy/=0) call sum_mn_name(phib(:,2),idiag_phibmy)
+          if (idiag_phibmz/=0) call sum_mn_name(phib(:,3),idiag_phibmz)
         endif
 !
 !  calculate part I of current helicity flux (for imposed field)
@@ -5598,6 +5620,7 @@ module Magnetic
         idiag_examx=0; idiag_examy=0; idiag_examz=0
         idiag_exjmx=0; idiag_exjmy=0; idiag_exjmz=0
         idiag_dexbmx=0; idiag_dexbmy=0; idiag_dexbmz=0
+        idiag_phibmx=0; idiag_phibmy=0; idiag_phibmz=0
         idiag_uxjm=0; idiag_ujxbm=0; idiag_b2divum=0
         idiag_b3b21m=0; idiag_b1b32m=0; idiag_b2b13m=0
         idiag_EMFdotBm=0
@@ -5712,6 +5735,9 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'dexbmx',idiag_dexbmx)
         call parse_name(iname,cname(iname),cform(iname),'dexbmy',idiag_dexbmy)
         call parse_name(iname,cname(iname),cform(iname),'dexbmz',idiag_dexbmz)
+        call parse_name(iname,cname(iname),cform(iname),'phibmx',idiag_phibmx)
+        call parse_name(iname,cname(iname),cform(iname),'phibmy',idiag_phibmy)
+        call parse_name(iname,cname(iname),cform(iname),'phibmz',idiag_phibmz)
         call parse_name(iname,cname(iname),cform(iname),'uxjm',idiag_uxjm)
         call parse_name(iname,cname(iname),cform(iname),'ujxbm',idiag_ujxbm)
         call parse_name(iname,cname(iname),cform(iname),'b2divum',idiag_b2divum)
@@ -6030,6 +6056,9 @@ module Magnetic
         write(3,*) 'i_dexbmx=',idiag_dexbmx
         write(3,*) 'i_dexbmy=',idiag_dexbmy
         write(3,*) 'i_dexbmz=',idiag_dexbmz
+        write(3,*) 'i_phibmx=',idiag_phibmx
+        write(3,*) 'i_phibmy=',idiag_phibmy
+        write(3,*) 'i_phibmz=',idiag_phibmz
         write(3,*) 'i_uxjm=',idiag_uxjm
         write(3,*) 'i_ujxbm=',idiag_ujxbm
         write(3,*) 'i_b2divum=',idiag_b2divum

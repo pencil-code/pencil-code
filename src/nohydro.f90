@@ -216,7 +216,8 @@ module Hydro
 !
       real, dimension(nx) :: kdotxwt, cos_kdotxwt, sin_kdotxwt
       real, dimension(nx) :: tmp_mn, cos1_mn, cos2_mn
-      real :: kkx_aa,kky_aa,kkz_aa, fac, fpara, dfpara, ecost, esint, epst
+      real :: kkx_aa, kky_aa, kkz_aa, fac, fac2
+      real :: fpara, dfpara, ecost, esint, epst
       integer :: modeN
       real :: sqrt2, sqrt21k1, eps1=1., WW=0.25, k21
 !
@@ -399,6 +400,22 @@ if (ip.eq.11.and.m==4.and.n==4) write(21,*) t,kkx_aa
         p%uu(:,1)=-fac*sin(kky_aa*y(m)    +esint)
         p%uu(:,2)=+fac*sin(kkx_aa*x(l1:l2)+ecost)
         p%uu(:,3)=-fac*(cos(kkx_aa*x(l1:l2)+ecost)+cos(kky_aa*y(m)+esint))
+        if (lpencil(i_divu)) p%divu=0.
+        if (lpencil(i_oo)) p%oo=-kkx_aa*p%uu
+!
+!  Galloway-Proctor flow, U=-z x grad(psi) - z k psi, where
+!  psi = U0/kH * (cosX+cosY), so U = U0 * (-sinY, sinX, -cosX-cosY).
+!  This makes sense only for kkx_aa=kky_aa
+!
+      elseif (kinflow=='Galloway-Proctor-nohel') then
+        if (headtt) print*,'nonhelical Galloway-Proctor flow; kx_aa,ky_aa=',kkx_aa,kky_aa
+        fac=ampl_kinflow*sqrt(1.5)
+        fac2=ampl_kinflow*sqrt(6.)
+        ecost=eps_kinflow*cos(omega_kinflow*t)
+        esint=eps_kinflow*sin(omega_kinflow*t)
+        p%uu(:,1)=+fac*cos(kky_aa*y(m)    +esint)
+        p%uu(:,2)=+fac*sin(kkx_aa*x(l1:l2)+ecost)
+        p%uu(:,3)=-fac2*(sin(kkx_aa*x(l1:l2)+ecost)*cos(kky_aa*y(m)+esint))
         if (lpencil(i_divu)) p%divu=0.
         if (lpencil(i_oo)) p%oo=-kkx_aa*p%uu
 !
