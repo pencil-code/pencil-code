@@ -5395,6 +5395,47 @@ only avoids overflow.
 \end{Verbatim}
 
 %%%
+\subsubsection{{\sc Can I run the code on a Mac?}
+
+\medskip
+
+Macs work well for Linux stuff, except that the file structure is slightly
+different. Problems when following Linux installs can usually be traced to
+the PATH. For general reference, if you need to set an environment variable
+for an entire OSX login session, google environment.plist. That won't be
+needed here.
+
+For a Mac install, the following should work:
+
+\begin{itemize}
+\item[a)]
+Install Dev Tools (an optional install on the MacOS install disks).
+Unfortunately, last time I checked the svn version that comes with DevTools
+is obsolete. So:
+\item[b)]
+Install MacPorts (download from web). Note that MacPorts installs to a
+non-standard location, and will need to be sourced. The installation
+normally drops an appropriate line in .profile. If it does so, make sure
+that that line gets sourced. Otherwise
+
+\begin{Verbatim}
+  export PATH=/opt/local/bin:/opt/local/sbin:$PATH
+  export MANPATH=/opt/local/share/man:$MANPATH
+\end{Verbatim}
+
+\item[c)]
+Install g95 (download from web). Make sure it is linked in /bin.
+\item[d)]
+execute macports svn install
+\item[e)]
+download the pencil-code and enjoy.
+\begin{itemize}
+
+Note: the above way to get svn works. It takes a while however, so there
+are certainly faster ways out there. If you already have a non-obsolete svn
+version, use that instead.
+
+%%%
 \subsubsection{{\sc Pencil Code} discussion forum}
   Do I just need to send an email somewhere to subscribe or what?
 
