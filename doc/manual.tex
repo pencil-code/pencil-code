@@ -5024,6 +5024,39 @@ Under SunOS, I get an error message like
   SunOS version `5.8 Generic_108528-11'.
 }
 
+%%%
+\subsubsection{After some dirty tricks I got pencil code to compile with
+MPI, but it doesn't work}
+
+\begin{Verbatim}
+ > Before that i installed lam-7.1.4 from source.
+
+Goodness gracious me, you shouldn't have to compile your own MPI library.
+\end{Verbatim}
+
+\medskip
+
+{\em
+Then don't use the old LAM-MPI. It is long superseded by open-mpi now.
+Open-mpi doesn't need a daemon to be running. I am using the version that
+ships with Ubuntu (e.g. 9.04):
+}
+
+\begin{Verbatim}
+  frenesi:~> aptitude -w 210 search openmpi | grep '^i'
+
+i   libopenmpi-dev - high performance message passing library -- header files
+i A libopenmpi1    - high performance message passing library -- shared library
+i   openmpi-bin    - high performance message passing library -- binaries
+i A openmpi-common - high performance message passing library -- common files
+i   openmpi-doc    - high performance message passing library -- man pages
+\end{Verbatim}
+
+{\em
+Install that and keep your configuration (Makefile.src and getconf.csh)
+close to that for `frenesi' or `norlx50'. That should work.
+}
+
 % ---------------------------------------------------------------------- %
 
 \subsection{Running}
@@ -5395,7 +5428,7 @@ only avoids overflow.
 \end{Verbatim}
 
 %%%
-\subsubsection{{\sc Can I run the code on a Mac?}
+\subsubsection{Can I run the code on a Mac?}
 
 \medskip
 
@@ -5429,22 +5462,21 @@ Install g95 (download from web). Make sure it is linked in /bin.
 execute macports svn install
 \item[e)]
 download the pencil-code and enjoy.
-\begin{itemize}
+\end{itemize}
 
 Note: the above way to get svn works. It takes a while however, so there
 are certainly faster ways out there. If you already have a non-obsolete svn
 version, use that instead.
 
 %%%
-\subsubsection{{\sc Pencil Code} discussion forum}
+\subsubsection{Pencil Code discussion forum}
   Do I just need to send an email somewhere to subscribe or what?
 
 \medskip
 
 The answer is yes; just go to:
 \begin{Verbatim}
-   http://lists.albanova.se/AlbaNova/listinfo/pencilcode-discuss
-   http://lists.albanova.se/pipermail/AlbaNova/pencilcode-discuss/
+   http://groups.google.com/group/pencil-code-discuss
 \end{Verbatim}
 
 %%%
