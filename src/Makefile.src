@@ -668,7 +668,9 @@ endif
 #FC=/usr/bin/gfortran-4.3 #(iomsn-laptop)
 #F77=$(FC) #(iomsn-laptop)
 #CC=gcc #(iomsn-laptop)
-#FFLAGS=-O3 #(iomsn-laptop)
+#FFLAGS_SLOPPY=$(FFLAGS) -I/usr/lib/openmpi/include #(iomsn-laptop)
+#CFLAGS=-O3 -DFUNDERSC=1 #(iomsn-laptop)
+#LD_MPI=-L/usr/lib/openmpi/lib -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl #(iomsn-laptop)
 ##
 ##  Patrik's playstation
 ##
