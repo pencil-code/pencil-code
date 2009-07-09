@@ -123,7 +123,7 @@ module Magnetic
   logical :: lresi_hyper3=.false.
   logical :: lresi_hyper3_polar=.false.
   logical :: lresi_hyper3_strict=.false.
-  logical :: lresi_zdep=.false., lresi_dust=.false.
+  logical :: lresi_zdep=.false., lresi_dust=.false., lresi_rdep=.false.
   logical :: lresi_hyper3_aniso=.false.
   logical :: lresi_eta_shock=.false.
   logical :: lresi_eta_shock_perp=.false.
@@ -175,6 +175,8 @@ module Magnetic
   real :: inertial_length=0.,linertial_2
   real :: forcing_continuous_aa_phasefact=1.
   real :: forcing_continuous_aa_amplfact=1.
+  real, dimension(nx,my) :: eta_r
+  real, dimension(nx,my,3) :: geta_r
   real, dimension(mz) :: coskz,sinkz,eta_z
   real, dimension(mz,3) :: geta_z
   logical :: lfreeze_aint=.false.,lfreeze_aext=.false.
@@ -186,6 +188,7 @@ module Magnetic
   logical :: lkinematic=.false.
   logical :: luse_Bext_in_b2=.false.
   character (len=labellen) :: zdep_profile='fs'
+  character (len=labellen) :: rdep_profile='schnack89'
   character (len=labellen) :: iforcing_continuous_aa='fixed_swirl'
 
   namelist /magnetic_run_pars/ &
@@ -646,6 +649,10 @@ module Magnetic
         case('hyper3_strict')
           if (lroot) print*, 'resistivity: strict hyper3 with positive definite heating rate'
           lresi_hyper3_strict=.true.
+	case('rdep')
+          if (lroot) print*, 'resistivity: r-dependent'
+          lresi_rdep=.true.
+          call eta_rdep(eta_r,geta_r,rdep_profile)
         case('zdep')
           if (lroot) print*, 'resistivity: z-dependent'
           lresi_zdep=.true.
@@ -1084,7 +1091,7 @@ module Magnetic
       if (dvid/=0.) lpenc_video(i_jb)=.true.
       if (lresi_eta_const .or. lresi_shell .or. &
           lresi_eta_shock .or. lresi_smagorinsky .or. &
-          lresi_zdep .or. &
+          lresi_zdep .or. lresi_rdep .or. &
           lresi_smagorinsky_cross) lpenc_requested(i_del2a)=.true.
       if (lresi_eta_shock) then
         lpenc_requested(i_shock)=.true.
@@ -1112,7 +1119,7 @@ module Magnetic
         lpenc_requested(i_uu)=.true.
         lpenc_requested(i_aij)=.true.
       endif
-      if (lresi_shell .or. lresi_zdep) lpenc_requested(i_diva)=.true.
+      if (lresi_shell .or. lresi_zdep .or. lresi_rdep) lpenc_requested(i_diva)=.true.
       if (lresi_smagorinsky_cross) lpenc_requested(i_jo)=.true.
       if (lresi_hyper2) lpenc_requested(i_del4a)=.true.
       if (lresi_hyper3) lpenc_requested(i_del6a)=.true.
@@ -1866,6 +1873,14 @@ module Magnetic
         enddo
         if (lfirst.and.ldt) diffus_eta=diffus_eta+etaSS+eta
         etatotal=etatotal+etaSS+eta
+      endif
+!
+      if (lresi_rdep) then 
+        do j=1,3
+          fres(:,j)=fres(:,j)+eta_r(:,m)*p%del2a(:,j)+geta_r(:,m,j)*p%diva
+        enddo
+        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_r(:,m)
+        etatotal=etatotal+eta_r(:,m)
       endif
 !
       if (lresi_zdep) then 
@@ -5114,6 +5129,58 @@ module Magnetic
      endif
 
     endsubroutine geo_benchmark_B
+!***********************************************************************
+    subroutine eta_rdep(eta_r,geta_r,rdep_profile)
+!
+!   2-jul-2009/koen: creates an r-dependent resistivity for RFP studies
+!
+      real, dimension(nx,my) :: eta_r,r2,rmax2,gradr_eta_r
+      real, dimension(nx,my,3)  :: geta_r
+      character (len=labellen) :: rdep_profile
+      integer :: i,j
+!     
+      intent(out) :: eta_r,geta_r
+!
+!  adapted from etazdep
+!  Note the usage of mixed array lengths (nx and my)
+!
+      select case (rdep_profile)
+        case('schnack89')
+	  do i=1,nx
+	  do j=1,my
+            r2(i,j)=x(i+l1-1)**2+y(j)**2
+            rmax2=1. !value should come from start.in?
+	  enddo
+	  enddo
+!
+!  define eta_r: resistivity profile from Y.L. Ho, S.C. Prager & D.D. Schnack, Phys rev letters vol 62 nr 13 1989
+!  and define gradr_eta_r: 1/r *d_r(eta_r))
+!
+	  eta_r = eta*(1+9*(r2/rmax2)**15)**2
+	  gradr_eta_r= 540*eta*(1+9*(r2/rmax2)**15)*(r2/rmax2)**14/rmax2**0.5
+!
+!  gradient
+!
+          do i=1,nx 
+            geta_r(i,:,1) = x(i+l1-1)*gradr_eta_r(i,:)
+          enddo
+	  do i=1,my 
+            geta_r(:,i,2) = y(i)*gradr_eta_r(:,i)
+          enddo
+	  geta_r(:,:,3) = 0.
+!
+!  possibility of constant eta_r (as a test)
+!
+	case('constant')
+	  eta_r=eta
+     
+! 	 gradient
+          geta_r(:,:,1) = 0.
+          geta_r(:,:,2) = 0.
+          geta_r(:,:,3) = 0.
+      endselect
+!
+    endsubroutine eta_rdep
 !***********************************************************************
     subroutine eta_zdep(eta_z,geta_z,zdep_profile)
 !
