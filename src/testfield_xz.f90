@@ -421,7 +421,7 @@ module Testfield
 !  Magnetic field
 !
         case ('bb11')
-          if (slices%index>=3) then
+          if (slices%index>3) then
             slices%ready=.false.
           else
             slices%index=slices%index+1
@@ -429,7 +429,7 @@ module Testfield
             slices%xz =>bb11_xz(:,:,slices%index)
             slices%xy =>bb11_xy(:,:,slices%index)
             slices%xy2=>bb11_xy2(:,:,slices%index)
-            if (slices%index<3) slices%ready=.true.
+            if (slices%index<=3) slices%ready=.true.
           endif
       endselect
 !

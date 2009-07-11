@@ -1399,7 +1399,7 @@ module Dustvelocity
 !  Dustvelocity.
 !
         case ('uud')
-          if (slices%index>=3) then
+          if (slices%index>3) then
             slices%ready=.false.
           else
             slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,iudx(1)+slices%index)
@@ -1411,7 +1411,7 @@ module Dustvelocity
             if (lwrite_slice_xy4) &
             slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,iudx(1)+slices%index)
             slices%index=slices%index+1
-            if (slices%index<3) slices%ready=.true.
+            if (slices%index<=3) slices%ready=.true.
           endif
       endselect
 !

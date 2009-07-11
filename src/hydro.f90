@@ -3397,7 +3397,7 @@ module Hydro
 !  Velocity field.
 !
         case ('uu')
-          if (slices%index>=3) then
+          if (slices%index>3) then
             slices%ready=.false.
           else
             slices%yz =f(slices%ix,m1:m2    ,n1:n2,iux+slices%index)
@@ -3409,7 +3409,7 @@ module Hydro
             if (lwrite_slice_xy4) &
                  slices%xy4=f(l1:l2    ,m1:m2    ,slices%iz4,iux+slices%index)
             slices%index=slices%index+1
-            if (slices%index<3) slices%ready=.true.
+            if (slices%index<=3) slices%ready=.true.
           endif
 !
 !  Divergence of velocity.
@@ -3437,7 +3437,7 @@ module Hydro
 !  Vorticity.
 !
         case ('oo')
-          if (slices%index==3) then
+          if (slices%index>3) then
             slices%ready=.false.
           else
             slices%index=slices%index+1
@@ -3447,7 +3447,7 @@ module Hydro
             slices%xy2=>oo_xy2(:,:,slices%index)
             if (lwrite_slice_xy3) slices%xy3=>oo_xy3(:,:,slices%index)
             if (lwrite_slice_xy4) slices%xy4=>oo_xy4(:,:,slices%index)
-            if (slices%index<3) slices%ready=.true.
+            if (slices%index<=3) slices%ready=.true.
           endif
 !
 !  Vorticity squared.

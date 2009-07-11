@@ -3380,7 +3380,7 @@ module Magnetic
 !  Magnetic vector potential (code variable)
 !
         case ('aa')
-          if (slices%index>=3) then
+          if (slices%index>3) then
             slices%ready=.false.
           else
             slices%yz =f(slices%ix,m1:m2    ,n1:n2     ,iax+slices%index)
@@ -3392,13 +3392,13 @@ module Magnetic
             if (lwrite_slice_xy4) &
                  slices%xy4=f(l1:l2    ,m1:m2    ,slices%iz4,iax+slices%index)
             slices%index=slices%index+1
-            if (slices%index<3) slices%ready=.true.
+            if (slices%index<=3) slices%ready=.true.
           endif
 !
 !  Magnetic field (derived variable)
 !
         case ('bb')
-          if (slices%index>=3) then
+          if (slices%index>3) then
             slices%ready=.false.
           else
             slices%index=slices%index+1
@@ -3410,13 +3410,13 @@ module Magnetic
                  slices%xy3=>bb_xy3(:,:,slices%index)
             if (lwrite_slice_xy4) &
                  slices%xy4=>bb_xy4(:,:,slices%index)
-            if (slices%index<3) slices%ready=.true.
+            if (slices%index<=3) slices%ready=.true.
           endif
 !
 !  Magnetic field (derived variable)
 !
         case ('jj')
-          if (slices%index>=3) then
+          if (slices%index>3) then
             slices%ready=.false.
           else
             slices%index=slices%index+1
@@ -3428,7 +3428,7 @@ module Magnetic
                  slices%xy3=>jj_xy3(:,:,slices%index)
             if (lwrite_slice_xy4) &
                  slices%xy4=>jj_xy4(:,:,slices%index)
-            if (slices%index<3) slices%ready=.true.
+            if (slices%index<=3) slices%ready=.true.
           endif
 !
 !  Magnetic field squared (derived variable)
