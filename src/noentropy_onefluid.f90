@@ -1,5 +1,5 @@
 ! $Id$
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -13,7 +13,6 @@
 ! PENCILS PROVIDED cs2; pp; TT1; Ma2
 !
 !***************************************************************
-
 module Entropy
 !
   use Cdata
@@ -36,12 +35,13 @@ module Entropy
 !***********************************************************************
     subroutine register_entropy()
 !
-!  no energy equation is being solved; use isothermal equation of state
+!  No energy equation is being solved; use isothermal equation of state.
+!
 !  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
 !
       use Sub
 !
-!  identify version number
+!  Identify version number.
 !
       if (lroot) call svn_id( &
            "$Id$")
@@ -55,16 +55,28 @@ module Entropy
 !
 !  24-nov-02/tony: coded
 !
-      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, cs0
+      use EquationOfState
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
+!
+!  Tell the equation of state that we're here and what f variable we use.
+!
+      if (llocal_iso) then
+        call select_eos_variable('cs2',-2) !special local isothermal
+      else
+        if (gamma1 == 0.) then
+          call select_eos_variable('cs2',-1) !isothermal => polytropic
+        else
+          call select_eos_variable('ss',-1) !isentropic => polytropic
+        endif
+      endif
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
 !  For global density gradient beta=H/r*dlnrho/dlnr, calculate actual
-!  gradient dlnrho/dr = beta/H
+!  gradient dlnrho/dr = beta/H.
 !
       if (maxval(abs(beta_glnrho_global))/=0.0) then
         beta_glnrho_scaled=beta_glnrho_global*Omega/cs0
@@ -76,9 +88,7 @@ module Entropy
 !***********************************************************************
     subroutine init_ss(f)
 !
-!  initialise entropy; called from start.f90
-!  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
-!  24-nov-02/tony: renamed for consistancy (i.e. init_[varaible name])
+!  Initialise entropy; called from start.f90.
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -173,22 +183,14 @@ module Entropy
       if (lpencil(i_uud)) p%uud(:,:,1)=p%uu
 ! divud (for dust continuity equation in one fluid approximation)
       if (lpencil(i_divud)) p%divud(:,1)=p%divu
-! uij5glnrho
-!      if (lpencil(i_uij5glnrho)) then
-!        eps=exp(f(l1:l2,m,n,ind(1)))/exp(f(l1:l2,m,n,ilnrho))
-!        call grad(f,ind(1),glnrhod)
-!        do i=1,3
-!          glnrhotot(:,i)=1/(1+eps)*p%glnrho(:,i)+eps/(1+eps)*glnrhod(:,i)
-!        enddo
-!        call multmv_mn(p%uij5,glnrhotot,p%uij5glnrho)
-!      endif
 !
     endsubroutine calc_pencils_entropy
 !**********************************************************************
     subroutine dss_dt(f,df,p)
 !
-!  Isothermal/polytropic equation of state
+!  Isothermal/polytropic equation of state.
 !
+      use Diagnostics
       use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled
       use Sub
 !
@@ -201,14 +203,7 @@ module Entropy
       intent(in) :: f,p
       intent(out) :: df
 !
-!  ``cs2/dx^2'' for timestep
-!
-      if (leos) then            ! no sound waves without equation of state
-        if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
-        if (headtt.or.ldebug) print*,'dss_dt: max(advec_cs2) =',maxval(advec_cs2)
-      endif
-!
-!  add isothermal/polytropic pressure term in momentum equation
+!  Add isothermal/polytropic pressure term in momentum equation.
 !
       if (lhydro) then
         do j=1,3
@@ -227,13 +222,20 @@ module Entropy
         endif
       endif
 !
-!  Calculate entropy related diagnostics
+!  Calculate entropy related diagnostics.
 !
       if (ldiagnos) then
         if (idiag_dtc/=0) &
             call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
         if (idiag_ugradpm/=0) &
             call sum_mn_name(p%rho*p%cs2*p%uglnrho,idiag_ugradpm)
+      endif
+!
+!  ``cs2/dx^2'' for timestep
+!
+      if (leos) then            ! no sound waves without equation of state
+        if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
+        if (headtt.or.ldebug) print*,'dss_dt: max(advec_cs2) =',maxval(advec_cs2)
       endif
 !
       call keep_compiler_quiet(f)
@@ -278,11 +280,11 @@ module Entropy
 !***********************************************************************
     subroutine rprint_entropy(lreset,lwrite)
 !
-!  reads and registers print parameters relevant to entropy
+!  Reads and registers print parameters relevant to entropy.
 !
 !   1-jun-02/axel: adapted from magnetic fields
 !
-      use Sub
+      use Diagnostics
 !
       integer :: iname
       logical :: lreset,lwr
@@ -291,7 +293,7 @@ module Entropy
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-!  reset everything in case of reset
+!  Reset everything in case of reset.
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
@@ -303,7 +305,7 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'ugradpm',idiag_ugradpm)
       enddo
 !
-!  write column where which entropy variable is stored
+!  Write column where which entropy variable is stored.
 !
       if (lwr) then
         write(3,*) 'i_dtc=',idiag_dtc
@@ -316,13 +318,17 @@ module Entropy
 !
     endsubroutine rprint_entropy
 !***********************************************************************
+    subroutine get_slices_entropy(f,slices)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices%ready)
+!
+    endsubroutine get_slices_entropy
+!***********************************************************************
     subroutine heatcond(x,y,z,hcond)
-!
-!  calculate the heat conductivity lambda
-!  NB: if you modify this profile, you *must* adapt gradloghcond below.
-!
-!  23-jan-02/wolf: coded
-!  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
 !
       real, dimension (nx) :: x,y,z
       real, dimension (nx) :: hcond
@@ -333,12 +339,6 @@ module Entropy
 !***********************************************************************
     subroutine gradloghcond(x,y,z,glhc)
 !
-!  calculate grad(log lambda), where lambda is the heat conductivity
-!  NB: *Must* be in sync with heatcond() above.
-!
-!  23-jan-02/wolf: coded
-!  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
-!
       real, dimension (nx) :: x,y,z
       real, dimension (nx,3) :: glhc
 !
@@ -347,8 +347,6 @@ module Entropy
     endsubroutine gradloghcond
 !***********************************************************************
     subroutine calc_heatcond_ADI(finit,f)
-!
-!  Dummy subroutine.
 !
       implicit none
 !

@@ -1,9 +1,9 @@
 ! $Id$
-
+!
 !  This module takes care of entropy (initial condition
 !  and time advance) for a fluid consisting of gas and perfectly
 !  coupled pressureless dust.
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -67,8 +67,8 @@ module Entropy
 !***********************************************************************
     subroutine register_entropy()
 !
-!  initialise variables which should know that we solve an entropy
-!  equation: iss, etc; increase nvar accordingly
+!  Initialise variables which should know that we solve an entropy
+!  equation: iss, etc; increase nvar accordingly.
 !
 !  6-nov-01/wolf: coded
 !
@@ -81,30 +81,16 @@ module Entropy
       if (lroot) call svn_id( &
           "$Id$")
 !
-!  Writing files for use with IDL
-!
-      if (lroot) then
-        if (maux == 0) then
-          if (nvar < mvar) write(4,*) ',ss $'
-          if (nvar == mvar) write(4,*) ',ss'
-        else
-          write(4,*) ',ss $'
-        endif
-        write(15,*) 'ss = fltarr(mx,my,mz)*one'
-      endif
-!
     endsubroutine register_entropy
 !***********************************************************************
     subroutine initialize_entropy(f,lstarting)
 !
-!  called by run.f90 after reading parameters, but before the time loop
+!  Called by run.f90 after reading parameters, but before the time loop.
 !
 !  21-jul-2002/wolf: coded
 !
       use Gravity, only: gravz,g0
-      use EquationOfState, only: cs0, &
-                                 beta_glnrho_global, beta_glnrho_scaled, &
-                                 select_eos_variable
+      use EquationOfState
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
@@ -112,7 +98,7 @@ module Entropy
       integer :: i
       logical :: lnothing
 !
-! Check any module dependencies
+!  check any module dependencies.
 !
       if (.not. leos) then
         call fatal_error('initialize_entropy','EOS=noeos but entropy requires an EQUATION OF STATE for the fluid')
@@ -120,7 +106,7 @@ module Entropy
       call select_eos_variable('ss',iss)
 !
 !  For global density gradient beta=H/r*dlnrho/dlnr, calculate actual
-!  gradient dlnrho/dr = beta/H
+!  gradient dlnrho/dr = beta/H.
 !
       if (maxval(abs(beta_glnrho_global))/=0.0) then
         beta_glnrho_scaled=beta_glnrho_global*Omega/cs0
@@ -147,7 +133,7 @@ module Entropy
 !
       lnothing=.false.
 !
-!  select which radiative heating we are using
+!  Select which radiative heating we are using.
 !
       if (lroot) print*,'initialize_entropy: nheatc_max,iheatcond=',nheatc_max,iheatcond(1:nheatc_max)
       do i=1,nheatc_max
@@ -203,48 +189,54 @@ module Entropy
       endsubroutine initialize_entropy
 !***********************************************************************
     subroutine read_entropy_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=entropy_init_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=entropy_init_pars,ERR=99)
       endif
-
+!
 99    return
+!
     endsubroutine read_entropy_init_pars
 !***********************************************************************
     subroutine write_entropy_init_pars(unit)
+!
       integer, intent(in) :: unit
 !
       write(unit,NML=entropy_init_pars)
+!
     endsubroutine write_entropy_init_pars
 !***********************************************************************
     subroutine read_entropy_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=entropy_run_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=entropy_run_pars,ERR=99)
       endif
-
+!
 99    return
+!
     endsubroutine read_entropy_run_pars
 !***********************************************************************
     subroutine write_entropy_run_pars(unit)
+!
       integer, intent(in) :: unit
-
+!
       write(unit,NML=entropy_run_pars)
+!
     endsubroutine write_entropy_run_pars
 !***********************************************************************
     subroutine init_ss(f)
 !
-!  initialise entropy; called from start.f90
-!  07-nov-2001/wolf: coded
-!  24-nov-2002/tony: renamed for consistancy (i.e. init_[variable name])
+!  Initialise entropy; called from start.f90.
 !
       use Sub
       use Gravity
@@ -517,26 +509,15 @@ module Entropy
       intent(inout)  :: f,p
       intent(out) :: df
 !
-!  identify module and boundary conditions
+!  Identify module and boundary conditions.
 !
       if (headtt.or.ldebug) print*,'dss_dt: SOLVE dss_dt'
       if (headtt) call identify_bcs('ss',iss)
 !
-!  calculate cs2, TT1, and cp1tilde in a separate routine
-!  With IONIZATION=noionization, assume perfect gas with const coeffs
-!
-      if (headtt) print*,'dss_dt: lnTT,cs2,cp1tilde=', &
-          p%lnTT(1), p%cs2(1), p%cp1tilde(1)
-!
-!  ``cs2/dx^2'' for timestep
-!
-      if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
-      if (headtt.or.ldebug) print*,'dss_dt: max(advec_cs2) =',maxval(advec_cs2)
-!
       if (lhydro) then
 !
-!  pressure term in momentum equation (setting lpressuregradient_gas to
-!  .false. allows suppressing pressure term for test purposes)
+!  Pressure term in momentum equation (setting lpressuregradient_gas to
+!  .false. allows suppressing pressure term for test purposes).
 !
         if (lpressuregradient_gas) then
           do j=1,3
@@ -559,11 +540,11 @@ module Entropy
           endif
         endif
 !
-!  advection term
+!  Advection term.
 !
       if (ladvection_entropy) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%ugss
 !
-!  Calculate viscous contribution to entropy
+!  Calculate viscous contribution to entropy.
 !
       if (lviscosity) call calc_viscous_heat(f,df,p,Hmax)
 !
@@ -574,12 +555,16 @@ module Entropy
       if (lheatc_chiconst) call calc_heatcond_constchi(f,df,p)
       if (lheatc_hyper3ss) call calc_heatcond_hyper3(f,df,p)
 !
-!  entry possibility for "personal" entries.
-!  In that case you'd need to provide your own "special" routine.
+!  Entry possibility for "personal" entries.
 !
       if (lspecial) call special_calc_entropy(f,df,p)
 !
-!  Calculate entropy related diagnostics
+!  ``cs2/dx^2'' for timestep
+!
+      if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
+      if (headtt.or.ldebug) print*,'dss_dt: max(advec_cs2) =',maxval(advec_cs2)
+!
+!  Calculate entropy related diagnostics.
 !
       if (ldiagnos) then
         if (idiag_TTmax/=0) call max_mn_name(p%TT,idiag_TTmax)
@@ -587,7 +572,7 @@ module Entropy
         if (idiag_TTm/=0) call sum_mn_name(p%TT,idiag_TTm)
         if (idiag_dtc/=0) &
             call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
-        if (idiag_ethm/=0) call sum_mn_name(p%rho*p%ee,idiag_ethm)
+        if/(idiag_ethm/=0) call sum_mn_name(p%rho*p%ee,idiag_ethm)
         if (idiag_ethtot/=0) call integrate_mn_name(p%rho*p%ee,idiag_ethtot)
         if (idiag_ethdivum/=0) &
             call sum_mn_name(p%rho*p%ee*p%divu,idiag_ethdivum)
@@ -954,9 +939,19 @@ module Entropy
 !
     endsubroutine calc_heatcond_ADI
 !***********************************************************************
+    subroutine get_slices_entropy(f,slices)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices%ready)
+!
+    endsubroutine get_slices_entropy
+!***********************************************************************
     subroutine rprint_entropy(lreset,lwrite)
 !
-!  reads and registers print parameters relevant to entropy
+!  Reads and registers print parameters relevant to entropy.
 !
 !   1-jun-02/axel: adapted from magnetic fields
 !
@@ -969,7 +964,7 @@ module Entropy
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-!  reset everything in case of reset
+!  Reset everything in case of reset.
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
@@ -997,7 +992,7 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'TTmin',idiag_TTmin)
       enddo
 !
-!  check for those quantities for which we want xy-averages
+!  Check for those quantities for which we want xy-averages.
 !
       do inamez=1,nnamez
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fturbz',idiag_fturbz)
@@ -1008,25 +1003,25 @@ module Entropy
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'TTmz',idiag_TTmz)
       enddo
 !
-!  check for those quantities for which we want xz-averages
+!  Check for those quantities for which we want xz-averages.
 !
       do inamey=1,nnamey
         call parse_name(inamey,cnamey(inamey),cformy(inamey),'ssmy',idiag_ssmy)
       enddo
 !
-!  check for those quantities for which we want yz-averages
+!  Check for those quantities for which we want yz-averages.
 !
       do inamex=1,nnamex
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'ssmx',idiag_ssmx)
       enddo
 !
-!  check for those quantities for which we want phi-averages
+!  Check for those quantities for which we want phi-averages.
 !
       do irz=1,nnamerz
         call parse_name(irz,cnamerz(irz),cformrz(irz),'ssmphi',idiag_ssmphi)
       enddo
 !
-!  write column where which entropy variable is stored
+!  Write column where which entropy variable is stored.
 !
       if (lwr) then
         write(3,*) 'i_dtc=',idiag_dtc
