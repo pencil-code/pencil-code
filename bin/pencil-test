@@ -556,6 +556,11 @@ sub send_mail_dispatch {
     } else {
         warn "ERROR: No such mailer: $mailer\n";
     }
+
+    if ($debug) {
+        &send_mail_debug('debug', @rest);
+    }
+
 }
 
 # --------------------------------------------------------------------- #
