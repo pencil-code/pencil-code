@@ -157,6 +157,8 @@ module Slices
           cycle
         endif
 !
+!  Slice, or component of slice, ready for saving.
+!
         if (slices%ready) then
           if (slices%index==0) then    ! If this wasn't a multi slice...
             if (associated(slices%yz)) &
