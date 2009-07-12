@@ -36,7 +36,7 @@ cvs_check_status() {
   else
     echo "ok"
   fi
-  
+
 }
 
 cvs_check_root() {
@@ -65,7 +65,7 @@ cvs_check_root() {
 }
 
 cvs_latest_src_change() {
-  echo -n "Latest source code change: "  
+  echo -n "Latest source code change: "
   (cd $PENCIL_HOME; cvs -Q log -r HEAD src | perl -ne 'next if ! /^date:\s*(.*);\s*author:\s*(.*?);/; print "$1 by $2\n";' | sort -k 1,2 | tail -n 1 2>/dev/null)
 }
 
@@ -96,5 +96,5 @@ else
   do
     $1
     shift
-  done 
+  done
 fi

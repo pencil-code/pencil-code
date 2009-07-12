@@ -38,7 +38,7 @@ prepare_scratch_disk
 create_lock
 
 job_finished=no
-until [ "$job_finished" = "yes" ]  # Allow NEWDIR job migration 
+until [ "$job_finished" = "yes" ]  # Allow NEWDIR job migration
 do
   #  If necessary, distribute var.dat from the server to the various nodes
   distribute_data_to_nodes
@@ -63,7 +63,7 @@ do
     save_jobid "RUN FINISHED"
 
     check_RERUN
-  done  
+  done
 
   # On machines with local scratch disc, copy var.dat back to the data directory
   final_copy_snapshots
@@ -79,7 +79,7 @@ tidy_scratch_disk
 
 # Shut down lam if we have started it
 [ "$booted_lam" = "yes" ] && lamhalt
-exit $run_status		# propagate status of mpirun
+exit $run_status                # propagate status of mpirun
 
 # cut & paste for job submission on the mhd machine
 # bsub -n  4 -q 4cpu12h -o run.`timestr` -e run.`timestr` run.csh

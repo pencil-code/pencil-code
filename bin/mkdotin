@@ -12,7 +12,7 @@ fi
 
 exec $perl -x -S $0 "$@";     # -x: start from the following line
 #======================================================================#
-#! /Good_Path/perl -w 
+#! /Good_Path/perl -w
 # line 17
 
 # Name:   mkstartrun
@@ -36,8 +36,8 @@ my @runlist =
     qw{HYDRO DENSITY FORCING GRAVITY ENTROPY MAGNETIC PSCALAR SHEAR};
 # Short names (`nicknames') that are used with suffices _{init,run}_pars:
 my %nick = ( # MODULE_NAME => nickname
-	     GRAVITY => 'grav'
-	   );
+             GRAVITY => 'grav'
+           );
 my $identifier = "[a-zA-Z0-9_]"; # module names must consist of these
 my ($startfile,$runfile) = ("start.in", "run.in");
 # ---------------------------------------------------------------------- #
@@ -49,8 +49,8 @@ Getopt::Long::config("bundling");
 
 my ($line,$MOD,$label,$header,$file,@list,$stage);
 my (%modules);
-my $dollar = "\$";		# keep CVS from expanding some strings
-my (%opts);			# Variables written by GetOptions
+my $dollar = "\$";              # keep CVS from expanding some strings
+my (%opts);                     # Variables written by GetOptions
 
 (my $cmdname = $0) =~ s{.*/}{};
 my $usage =
@@ -122,14 +122,14 @@ foreach my $infile (@ARGV) {
     open(INPUT,"< $infile") || die "Can't open $infile for reading";
     # Cycle through lines in file
   file: while (defined($line=<INPUT>)) {
-	# Only definitions of Make variables are interesting:
-	next unless ($line =~ /^\s*$identifier+\s*=\s*$identifier/);
-	# cycle through module lists and extract entries
-	foreach $MOD (@list) {
-	    if ($line =~ /^\s*$MOD\s*=\s*($identifier*)($|\s)/) {
-		$modules{$MOD} = $1;
-	    }
-	}
+        # Only definitions of Make variables are interesting:
+        next unless ($line =~ /^\s*$identifier+\s*=\s*$identifier/);
+        # cycle through module lists and extract entries
+        foreach $MOD (@list) {
+            if ($line =~ /^\s*$MOD\s*=\s*($identifier*)($|\s)/) {
+                $modules{$MOD} = $1;
+            }
+        }
     }
 }
 
@@ -152,21 +152,21 @@ sub write_file {
     my $stage   = shift;
 
     if (-e $fname) {
-	if (-e "$fname.bak") {
-	    warn "Not backing up $fname twice\n";
-	} else {
-	    rename("$fname","$fname.bak")
-	}
+        if (-e "$fname.bak") {
+            warn "Not backing up $fname twice\n";
+        } else {
+            rename("$fname","$fname.bak")
+        }
     }
     open (FILE,"> $fname") or die "Can't open $fname";
     print FILE $header;
     #
     foreach $MOD (@$modlist) {
-	if ($$modules{$MOD} !~ /^no/){
-	    # get nickname if it exists
-	    $label = "\L$MOD" unless defined($label=$nick{$MOD});
-	    print FILE "&", "$label", "_${stage}_pars\n/\n";
-	}
+        if ($$modules{$MOD} !~ /^no/){
+            # get nickname if it exists
+            $label = "\L$MOD" unless defined($label=$nick{$MOD});
+            print FILE "&", "$label", "_${stage}_pars\n/\n";
+        }
     }
 
 }

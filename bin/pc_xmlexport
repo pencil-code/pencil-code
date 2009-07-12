@@ -1,4 +1,4 @@
-#!/bin/sh 
+#!/bin/sh
 # Name:   pc_xmlexport
 # Author: Antony Mee (A.J.Mee@ncl.ac.uk)
 # Started:   04-Aug-2005
@@ -44,7 +44,7 @@ module ()
     module_source="${module_setting}.c"
   else
     module_source=""
-  fi 
+  fi
 
 #  if [ -f "$module_source" ]; then
 #    cvs_get_status $module_source
@@ -66,7 +66,7 @@ rundirinfo ()
     cd $restorecwd
     return
   fi
-  
+
   echo "<rundirinfo>"
   if [ -d CVS ]; then
     echo "<path>`pwd`</path>"
@@ -106,45 +106,45 @@ cat <<EOF
   </makeinfo>
   `rundirinfo`
   <moduleinfo>
-    `module MPICOMM` 
-    `module GLOBAL` 
-    `module GRID` 
-    `module IO` 
-    `module FFT` 
-    `module FFTPACK` 
-    `module POWER` 
-    `module DEBUG` 
-    `module HYDRO` 
-    `module VISCOSITY` 
-    `module DENSITY` 
-    `module ENTROPY` 
-    `module MAGNETIC` 
-    `module RADIATION` 
-    `module PSCALAR` 
-    `module CHIRAL` 
-    `module DUSTVELOCITY` 
-    `module DUSTDENSITY` 
-    `module INTERSTELLAR` 
-    `module COSMICRAY` 
-    `module COSMICRAYFLUX` 
-    `module EOS` 
-    `module STRUCT_FUNC` 
-    `module INITCOND_SPEC` 
-    `module SHOCK` 
-    `module TESTFIELD` 
-    `module TESTFLOW` 
-    `module TESTPERTURB` 
-    `module GRAVITY` 
-    `module FORCING` 
-    `module SHEAR` 
-    `module TIMEAVG` 
-    `module SPECIAL` 
-    `module PARTICLES` 
-    `module PARTICLES_SUB` 
-    `module PARTICLES_MAIN` 
-    `module PARTICLES_RADIUS` 
-    `module SHOCK_PROFILE` 
-    `module SHOCK_FINDER` 
+    `module MPICOMM`
+    `module GLOBAL`
+    `module GRID`
+    `module IO`
+    `module FFT`
+    `module FFTPACK`
+    `module POWER`
+    `module DEBUG`
+    `module HYDRO`
+    `module VISCOSITY`
+    `module DENSITY`
+    `module ENTROPY`
+    `module MAGNETIC`
+    `module RADIATION`
+    `module PSCALAR`
+    `module CHIRAL`
+    `module DUSTVELOCITY`
+    `module DUSTDENSITY`
+    `module INTERSTELLAR`
+    `module COSMICRAY`
+    `module COSMICRAYFLUX`
+    `module EOS`
+    `module STRUCT_FUNC`
+    `module INITCOND_SPEC`
+    `module SHOCK`
+    `module TESTFIELD`
+    `module TESTFLOW`
+    `module TESTPERTURB`
+    `module GRAVITY`
+    `module FORCING`
+    `module SHEAR`
+    `module TIMEAVG`
+    `module SPECIAL`
+    `module PARTICLES`
+    `module PARTICLES_SUB`
+    `module PARTICLES_MAIN`
+    `module PARTICLES_RADIUS`
+    `module SHOCK_PROFILE`
+    `module SHOCK_FINDER`
   </moduleinfo>
 </buildinfo>
 EOF
@@ -171,7 +171,7 @@ EOF
 #            <pubDate>Mon, 8 Aug 2005 10:01:22 -0700</pubDate>
 #            <author>nobody@flickr.com (onlymee)</author>
 #            <guid isPermaLink="false">tag:flickr.com,2004:/photo/32324192</guid>
-#            <media:content url="http://photos21.flickr.com/32324192_55247dc614_o.jpg" 
+#            <media:content url="http://photos21.flickr.com/32324192_55247dc614_o.jpg"
 #                       type="image/jpeg"
 #                       height="2592"
 #                       width="1944"/>
@@ -224,6 +224,6 @@ do
   esac
 
   shift
-done 
+done
 
 [ $flag_buildinfo ] && buildinfo

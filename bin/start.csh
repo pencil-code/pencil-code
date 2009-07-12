@@ -116,7 +116,7 @@ rm -f 'ERROR'
 date
 echo "$mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops"
 time $mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops
-set start_status=$status	# save for exit
+set start_status=$status        # save for exit
 echo ""
 date
 
@@ -143,7 +143,7 @@ if ($local_disc) then
   endif
 endif
 
-# Shut down mpd if we have started it 
+# Shut down mpd if we have started it
 if ($?booted_mpd) then
   echo "Shutting down mpd .."
   mpdallexit
@@ -179,5 +179,5 @@ exit ( $start_status | $start_status2 )        # propagate status of mpirun
 # qsub -l nodes=4:ppn=1,mem=500mb,cput=24:00:00 -q p-long start.csh
 # qsub -l ncpus=4,mem=1gb,cput=100:00:00 -q parallel start.csh
 # qsub -l nodes=128,mem=64gb,walltime=1:00:00 -q workq start.csh
-# For Andromeda 
+# For Andromeda
 # qsub $QSUB_OPTIONS $qstring   -pe $PE $nodes $FILE

@@ -68,7 +68,7 @@ if ($?varfile) then
     endif
 ##
 ## Copy all $varfile you find (on all nodes) to the data directory
-## (not efficient on dual-CPU systems, unless we would delete files 
+## (not efficient on dual-CPU systems, unless we would delete files
 ## after copying..)
 ##
     if ($debug) printf "  ##Copying proc*/$varfile and allprocs/$varfile to data directory\n\n"
@@ -76,9 +76,9 @@ if ($?varfile) then
     set remcmd = 'cd '"$SCRATCH_DIR"'; for f in `ls proc*/'"$varfile"' allprocs/'"$varfile"' 2> /dev/null`; do echo "Copying '"$SCRATCH_DIR"'/$f to '"$targetdir"'/$f"; cp '"$SCRATCH_DIR"'/$f '"$targetdir"'/$f; done'
 
     if ($debug) echo "Now running <$SSH $node sh -c $remcmd>"
-    
+
     $SSH $node sh -c "'$remcmd'"
-    
+
     if ($debug) then
       printf "\n  ##Checking for changes to $varfile in data directory\n"
       printf "\n$SSH $node ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile :\n"
@@ -99,7 +99,7 @@ else
   while (1)
     echo
     echo "=========  "`date`"  ========="
-##    
+##
 ## Is there something to copy? (It is sufficient to copy once the
 ## files show up for the master process of this job -- might depend on
 ## the queuing system etc.)
@@ -131,9 +131,9 @@ else
         printf " ##in proc*/varN.list from all nodes to the data directory.\n"
       endif
 ##
-##  Go to all nodes and copy everything from proc*/varN.list to the 
+##  Go to all nodes and copy everything from proc*/varN.list to the
 ##  data directory (this is the so-called new method for copying snapshots).
-##      
+##
       foreach node ($nodelist)
         echo "------------------ working on node: $node ----------------------"
 ##
@@ -152,16 +152,16 @@ else
 ##           fi
 ##       done
 ##   done
-##        
+##
 ## This runs as a POSIX (Bourne) shell script on the remote
 ## side, so wo can write a full for(each) loop in one line.
-##      
+##
         set remcmd = 'for d in `cd "'"$SCRATCH_DIR"'"; ls -d allprocs proc* 2> /dev/null`; do fdir="'"$SCRATCH_DIR"'/$d"; for f in `cat $fdir/*.list 2> /dev/null`; do file=$fdir/$f; if [ -e $file ]; then echo "Moving $file to '"$targetdir"'/$d/"; mv -f $file "'"$targetdir"'/$d/"; fi; done; done;'
         if ($debug) echo "Now running <$SSH $node sh -c $remcmd>"
         $SSH $node sh -c "'$remcmd'"
-	    echo "--------------------------------------------------------------"
+            echo "--------------------------------------------------------------"
       end
-    
+
       if (`ps -p $PARENT_PID | fgrep -c $PARENT_PID` <= 0) then
         echo "No parent process (pid $PARENT_PID) -- exiting"
         exit 1

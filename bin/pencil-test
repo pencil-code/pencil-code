@@ -70,7 +70,7 @@ use strict;
 use Getopt::Long;
 use constant SUCCESS => 1;      # return value
 
-my (%opts);			# Variables written by GetOptions
+my (%opts);                     # Variables written by GetOptions
 my (%emails, %pos, %neg, %sendmailto); # Info on mailing if tests fail
 
 ## Process command line
@@ -78,28 +78,28 @@ eval {
     Getopt::Long::config("bundling");
 };
 GetOptions(\%opts,
-	   qw( -h   --help
-	            --debug
-	       -v   --version
-	       -l   --local
-	       -H   --html
-	       -X   --xml
-	       -u   --update
-	       -U   --up-samples
-	       -r   --reload
-	       -s   --short
-	       -c   --clean
-	       -D=s --pencil-home=s
-	       -N=s --nice=s
+           qw( -h   --help
+                    --debug
+               -v   --version
+               -l   --local
+               -H   --html
+               -X   --xml
+               -u   --update
+               -U   --up-samples
+               -r   --reload
+               -s   --short
+               -c   --clean
+               -D=s --pencil-home=s
+               -N=s --nice=s
                -i=s --infofile=s
-	       -m=s --mail=s
-	       -M=s --Mailer=s
-	       -p=s --postproc=s
+               -m=s --mail=s
+               -M=s --Mailer=s
+               -p=s --postproc=s
                -T=s --timings-file=s
-	            --tag-stable=s
-	            --tag-broken=s
+                    --tag-stable=s
+                    --tag-broken=s
                -W=s --auto-test-options=s
-	       )) or die "$!\n";
+               )) or die "$!\n";
 die '$Id$ ' . "\n"
             if    ($opts{'v'} || $opts{'version'});
 die usage() if    ($opts{'h'} || $opts{'help'});
@@ -180,11 +180,11 @@ sub run_tests_on {
     $shost = "\u$shost";
 
     if ($html) {
-	unless ($first) { print "</pre>\n<p>\n<hr>\n<p>\n" };
-	print "<h2>$shost:</h2>\n\n<pre>\n";
+        unless ($first) { print "</pre>\n<p>\n<hr>\n<p>\n" };
+        print "<h2>$shost:</h2>\n\n<pre>\n";
     } else {
-	unless ($first) { print "\n\n" };
-	print "  $host:\n================\n";
+        unless ($first) { print "\n\n" };
+        print "  $host:\n================\n";
     }
 
     ## Construct and execute remote command
@@ -217,8 +217,8 @@ sub run_tests_on {
         }
 
         # Print all other lines
-	print $line;
-	$result .= $line;
+        print $line;
+        $result .= $line;
     }
     if ($timingsfile ne '') {
         close TIMINGS;
@@ -438,22 +438,22 @@ sub parse_emails {
     my ($entry,$address,$spec);
     print STDERR "Checking who to alert by email\n" if ($debug);
     while ($emaillist) {
-	$emaillist =~ /^([^\}\{,]*(?:\{[^\}]*\})?),?(.*)/
-	  or warn "Cannot parse email list <$emaillist>\n";
-	($entry,$emaillist) = ($1,$2);
-	($address,$spec) = ($entry =~ /([^\}\{]*)\{?([^\}]*)\}?/);
-	$emails{$address}++ if ($address =~ /\S/);
-	foreach my $sp (split(/,/,$spec)) {
-	    if ($sp =~ /^\-:(.*)/) {
-		push @{$neg{$address}}, $1
-#		push @{$neg{$1}}, $address;
-	    } elsif ($sp =~ /^\+:(.*)/) {
-		push @{$pos{$address}}, $1
-#		push @{$pos{$1}}, $address;
-	    } else {
-		warn "Strange specification: <$spec>\n";
-	    }
-	}
+        $emaillist =~ /^([^\}\{,]*(?:\{[^\}]*\})?),?(.*)/
+          or warn "Cannot parse email list <$emaillist>\n";
+        ($entry,$emaillist) = ($1,$2);
+        ($address,$spec) = ($entry =~ /([^\}\{]*)\{?([^\}]*)\}?/);
+        $emails{$address}++ if ($address =~ /\S/);
+        foreach my $sp (split(/,/,$spec)) {
+            if ($sp =~ /^\-:(.*)/) {
+                push @{$neg{$address}}, $1
+#               push @{$neg{$1}}, $address;
+            } elsif ($sp =~ /^\+:(.*)/) {
+                push @{$pos{$address}}, $1
+#               push @{$pos{$1}}, $address;
+            } else {
+                warn "Strange specification: <$spec>\n";
+            }
+        }
     }
 }
 # ---------------------------------------------------------------------- #
@@ -465,7 +465,7 @@ sub parse_maintainers {
 
     foreach my $address (split(/\s*,\s*/, $maintainers)) {
         $address = deobfuscate($address);
-	$emails{$address}++ if ($address =~ /\S/);
+        $emails{$address}++ if ($address =~ /\S/);
     }
 }
 # ---------------------------------------------------------------------- #
@@ -476,7 +476,7 @@ sub any_match {
     my @patterns = ();
 
     if (ref($pattern_pointer) eq 'ARRAY') {
-	@patterns = @{$pattern_pointer}
+        @patterns = @{$pattern_pointer}
     };
 
     foreach my $patt (@patterns) {

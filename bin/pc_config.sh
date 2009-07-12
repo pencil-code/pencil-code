@@ -30,7 +30,7 @@ determine_ncpus
 
 ##--------------------------- DEFAULT SETTINGS ----------------------------
 ##---------------- can be overwritten per machine below -------------------
-# Location of executables 
+# Location of executables
 start_x="src/start.x"
 run_x="src/run.x"
 x_ops=''         # arguments to both start.x and run.x
@@ -46,7 +46,7 @@ mpirunops=''
 # local_binary   = yes  means copy executable to local scratch area of master node
 # remote_top     = yes means get `top' output in regular intervals
 local_disc=no
-one_local_disc=yes		# probably the more common case
+one_local_disc=yes              # probably the more common case
 local_binary=no
 remove_scratch_root=no
 export SCRATCH_DIR=/scratch
@@ -86,8 +86,8 @@ elif ishost "kis.uni-freiburg.de" ; then
 elif ishost "giga[0-9][0-9].ncl.ac.uk" ; then
   echo "Newcastle e-Science Cluster"
   queue_submit() # Override queue submission shell function
-  { 
-    qsub -pe mpi2 `expr \(\( $ncpus + 1 \) / 2 \) * 2`  -N $2 $1 
+  {
+    qsub -pe mpi2 `expr \(\( $ncpus + 1 \) / 2 \) * 2`  -N $2 $1
   }
   export LD_LIBRARY_PATH=/addon/shared/intel/compiler70/ia32/bin:$LD_LIBRARY_PATH
   if [ -n "$PE" ]; then
@@ -110,7 +110,7 @@ elif ishost "giga[0-9][0-9].ncl.ac.uk" ; then
   mpirun=/addon/shared/lam/bin/mpirun
   mpirunops="-O -ssi rpi tcp -s n0 -x LD_ASSUME_KERNEL=2.4.1" #Fix bug in Redhat 9
   if [ "$local_disc" = "yes" ]; then
-    export SCRATCH_DIR=/work/$JOB_ID 
+    export SCRATCH_DIR=/work/$JOB_ID
     remove_scratch_root=no
   fi
 
@@ -126,7 +126,7 @@ elif ishost "giga[0-9][0-9]" ; then
     echo "Non-PBS, running on `hostname`"
     echo `hostname` >lamhosts
   fi
-  # lamboot with logging to file 
+  # lamboot with logging to file
   echo "lambooting.."
   echo 'pidof lamd | xargs ps -lfwww :' >lamboot.log
   pidof lamd | xargs ps -lfwww 2>&1 >>lamboot.log
@@ -169,10 +169,10 @@ elif ishost cincinnatus || ishost owen || ishost master || ishost node || ishost
     elif [ `egrep -c 'MPICHX|MPICH_DEBUG_ERRS' src/start.x` -gt 0 ]; then # mpich
       [ -x /usr/lib/mpich/bin/mpirun ] && mpirun=/usr/lib/mpich/bin/mpirun
       [ -x /opt/mpich/bin/mpirun ] && mpirun=/opt/mpich/bin/mpirun
-      if [ -d $SGE_O_WORKDIR ]; then	# sge job 
+      if [ -d $SGE_O_WORKDIR ]; then    # sge job
         mpirunops="-nolocal -machinefile $SGE_O_WORKDIR/machines-$JOB_NAME-$JOB_ID"
-      else			# interactive run
-	    mpirunops="-nolocal" # or we get one CPU less
+      else                      # interactive run
+            mpirunops="-nolocal" # or we get one CPU less
       fi
       else
       mpirun='Cannot_find_out_which_mpirun_to_use'
@@ -191,7 +191,7 @@ elif ishost "nq[0-9]*" || ishost "ns[0-9]*" ; then
     echo "Non-PBS, running on `hostname`"
     echo `hostname` >lamhosts
   fi
-  # lamboot with logging to file 
+  # lamboot with logging to file
   echo "lambooting.."
   echo 'pidof lamd | xargs ps -lfwww :' &>lamboot.log
   pidof lamd | xargs ps -lfwww 2>&1 >>lamboot.log
@@ -236,14 +236,14 @@ elif ishost "s[0-9]*p[0-9]*" || ishost "10_[0-9]*_[0-9]*_[0-9]*" ; then
     one_local_disc=no
     remote_top=yes
     local_binary=yes
-    export SSH=rsh 
+    export SSH=rsh
     export SCP=rcp
   else # (no MPI)
     echo "Batch job: non-MPI single processor run"
     cat $PBS_NODEFILE >lamhosts
-    lamboot -v lamhosts 
+    lamboot -v lamhosts
     booted_lam=yes
-    echo "lamnodes:" 
+    echo "lamnodes:"
     lamnodes
     mpirunops=''
     mpirun=''
@@ -263,22 +263,22 @@ elif ishost "giga[0-9]*" ; then
 elif ishost "copson\.st-and\.ac\.uk" || ishost "comp[0-9]*.st-and.ac.uk" ; then
   echo "Copson Cluster - St. Andrews"
   queue_submit() # Override queue submission shell function
-  { 
-    qsub -pe gm $ncpus -N $2 $1 
+  {
+    qsub -pe gm $ncpus -N $2 $1
   }
-   if [ -n "$PE" ]; then                            # Are we running under SGE?   
+   if [ -n "$PE" ]; then                            # Are we running under SGE?
     if [ "$PE" = "gm" ]; then                    # Using Myrinet?
       export SSH=/usr/bin/rsh
       export SCP=/usr/bin/rcp
       cat $PE_HOSTFILE | sed 's/\([[:alnum:].-]*\)\ \([0-9]*\).*/for ( i=0 \; i < 2 \; i++ ){print "\1\\n"};/' | bc >hostfile
-      mpirun=/usr/local/mpich-gm_INTEL/bin/mpirun 
+      mpirun=/usr/local/mpich-gm_INTEL/bin/mpirun
       mpirunops="-local -machinefile hostfile"
       export SCRATCH_DIR=`cat $TMPDIR/scratch`
       local_disc=yes
       one_local_disc=no
       nprocpernode=2
       echo '--------------- MPI_HOSTFILE ----------------'
-      cat hostfile 
+      cat hostfile
       echo '----------- MPI_HOSTFILE - END --------------'
     elif [ "$PE" = "score" ]; then             # Using SCore?
       #set mpirunops = "-wait -F $HOME/.score/ndfile.$JOB_ID -e /tmp/scrun.$JOB_ID"
@@ -286,7 +286,7 @@ elif ishost "copson\.st-and\.ac\.uk" || ishost "comp[0-9]*.st-and.ac.uk" ; then
       #cat $PE_HOSTFILE
       #echo '----------- PE_HOSTFILE - END --------------'
       mpirunops="-wait -F $PE_HOSTFILE -e $TMPDIR/scrun.$JOB_ID"
-      mpirun=/opt/score/bin/scout 
+      mpirun=/opt/score/bin/scout
       #setenv SCRATCH_DIR /scratch/$JOB_ID
       export SCRATCH_DIR=$TMPDIR
       local_disc=yes
@@ -294,12 +294,12 @@ elif ishost "copson\.st-and\.ac\.uk" || ishost "comp[0-9]*.st-and.ac.uk" ; then
     fi
   else
       echo $hn >hostfile
-      mpirun=/usr/local/mpich-gm_INTEL/bin/mpirun 
+      mpirun=/usr/local/mpich-gm_INTEL/bin/mpirun
       mpirunops="-local -machinefile hostfile"
       local_disc=no
   fi
 
-elif ishost rasmussen ; then 
+elif ishost rasmussen ; then
   echo "Rasmussen"
   ulimit -s unlimited
   mpirun='mpirun'
@@ -307,31 +307,15 @@ elif ishost rasmussen ; then
   npops=''
   ncpus=1
 
-elif ishost hwwsr8k ; then 
+elif ishost hwwsr8k ; then
   echo "Hitachi in Stuttgart"
   nnodes=`echo "precision=0; ($ncpus-1)/8+1" | bc` # Hitachi-specific
   mpirun=mpiexec
   mpirunops="-p multi -N $nnodes"
   x_ops='-Fport(nmlist(2))'
   local_disc=yes
-  one_local_disc=yes	# (the default anyway)
+  one_local_disc=yes    # (the default anyway)
   local_binary=no
-  if [ -d $SCRDIR ]; then
-    export SCRATCH_DIR="$SCRDIR"
-  else
-    echo 'NO SUCH DIRECTORY: $SCRDIR'="<$SCRDIR> -- ABORTING"
-    kill $$			# full-featured suicide
-  fi
-  export SSH=rsh 
-  export SCP=rcp
-
-elif ishost hwwsx5 ; then 
-  echo "NEC-SX5 in Stuttgart"
-  mpirun=mpiexec
-  mpirunops=''
-  local_disc=yes
-  one_local_disc=yes        # (the default anyway)
-  local_binary=no 
   if [ -d $SCRDIR ]; then
     export SCRATCH_DIR="$SCRDIR"
   else
@@ -341,7 +325,23 @@ elif ishost hwwsx5 ; then
   export SSH=rsh
   export SCP=rcp
 
-elif ishost cosmo ; then 
+elif ishost hwwsx5 ; then
+  echo "NEC-SX5 in Stuttgart"
+  mpirun=mpiexec
+  mpirunops=''
+  local_disc=yes
+  one_local_disc=yes        # (the default anyway)
+  local_binary=no
+  if [ -d $SCRDIR ]; then
+    export SCRATCH_DIR="$SCRDIR"
+  else
+    echo 'NO SUCH DIRECTORY: $SCRDIR'="<$SCRDIR> -- ABORTING"
+    kill $$                     # full-featured suicide
+  fi
+  export SSH=rsh
+  export SCP=rcp
+
+elif ishost cosmo ; then
   mpirunops='-x NLSPATH'
 
 else
@@ -360,7 +360,7 @@ fi
 determine_mpi_processor_options
 
 # Determine data directory (defaults to `data')
-# plus a list of subdirs and procdirs 
+# plus a list of subdirs and procdirs
 determine_datadir
 
 

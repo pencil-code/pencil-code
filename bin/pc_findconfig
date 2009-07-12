@@ -17,7 +17,7 @@
 #  into your .bashrc
 
 if [ -z $PENCIL_HOME ]; then
-  echo "pc_findconfig: Need to set PENCIL_HOME first.  Try using the" 
+  echo "pc_findconfig: Need to set PENCIL_HOME first.  Try using the"
   echo "sourceme.??? script in the root of your pencil-code directory"
   echo "or see the manual."
   exit 0
@@ -33,11 +33,11 @@ if [ -z $PENCIL_CONFIG ]; then
   PC_SYSTEM=`uname -s`
   config_root=$PENCIL_HOME/config
   for _dir in   $config_root/$PC_SYSTEM/$PC_DOMAIN/$PC_HOST/ \
-	            $config_root/$PC_SYSTEM/$PC_HOST.$PC_DOMAIN/ \
+                    $config_root/$PC_SYSTEM/$PC_HOST.$PC_DOMAIN/ \
                 $config_root/$PC_SYSTEM/$PC_HOST/ \
-	            $config_root/$PC_SYSTEM/$PC_DOMAIN/ \
-	            $config_root/$PC_SYSTEM/ \
-	            $config_root/ ;  do
+                    $config_root/$PC_SYSTEM/$PC_DOMAIN/ \
+                    $config_root/$PC_SYSTEM/ \
+                    $config_root/ ;  do
     if ( [ -d $_dir ] && \
          [ -e $_dir/Makefile ]
        ); then
@@ -56,4 +56,4 @@ if [ -z $PENCIL_CONFIG ]; then
 fi
 
 if [ -z $_sourceme_quiet ]; then echo "PENCIL_CONFIG = <$PENCIL_CONFIG>"; fi
- 
+

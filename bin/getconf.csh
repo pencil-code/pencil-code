@@ -57,15 +57,15 @@ if (-e "LOCK") then
     echo "No NEWDIR file -- exiting"
     echo
     # exit                        # won't work in a sourced file
-    (sleep 1; kill -KILL $$ >& /dev/null) &	  # schedule full-featured suicide
-    kill -TERM $$	  	  # .. but try exiting in civilized manner
+    (sleep 1; kill -KILL $$ >& /dev/null) &       # schedule full-featured suicide
+    kill -TERM $$                 # .. but try exiting in civilized manner
   endif
 endif
 # The LOCK is ours:
 if (! -e "NEVERLOCK") touch LOCK
 
 # Are we running the MPI version?
-#set mpi = `egrep -c '^[ 	]*MPICOMM[ 	]*=[ 	]*mpicomm' src/Makefile`
+#set mpi = `egrep -c '^[        ]*MPICOMM[      ]*=[    ]*mpicomm' src/Makefile`
 set mpi = `fgrep -c 'mpicomm_init: MPICOMM neighbors' src/start.x`
 # Determine number of CPUS
 set ncpus = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*ncpus\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
@@ -101,7 +101,7 @@ if { ( grep particles_nbody_init_pars start.in >& /dev/null ) } set lparticles_n
 # local_binary   = 1 means copy executable to local scratch area of master node
 # remote_top     = 1 means get `top' output in regular intervals
 set local_disc     = 0
-set one_local_disc = 1		# probably the more common case
+set one_local_disc = 1          # probably the more common case
 set remote_top     = 0
 set local_binary   = 0
 set remove_scratch_root = 0
@@ -622,7 +622,7 @@ else if ( ($hn =~ node*.clusters.com) || ($hn =~ fire) ) then
 #---------------------------------------------------
 else if ( ($hn =~ cincinnatus*) || ($hn =~ owen*) \
           || ($hn =~ master) || ($hn =~ node* && $masterhost == '') \
-	  || ($hn =~ ns0*) ) then
+          || ($hn =~ ns0*) ) then
   echo "KIS cluster or Ns0"
   if ($mpi) then
     # Choose appropriate mpirun version (LAM vs. MPICH)
@@ -634,15 +634,15 @@ else if ( ($hn =~ cincinnatus*) || ($hn =~ owen*) \
       if (-x /usr/lib/mpich/bin/mpirun)   set mpirun=/usr/lib/mpich/bin/mpirun
       if (-x /opt/mpich/bin/mpirun)       set mpirun=/opt/mpich/bin/mpirun
       if (-x /opt/mpich/ch-p4/bin/mpirun) set mpirun=/opt/mpich/ch-p4/bin/mpirun
-      if ($?SGE_O_WORKDIR) then	# sge job
-	set mpirunops = "-nolocal -machinefile $SGE_O_WORKDIR/machines-$JOB_NAME-$JOB_ID"
-      else			# interactive run
-	set mpirunops = "-nolocal" # or we get one CPU less with older mpich
+      if ($?SGE_O_WORKDIR) then # sge job
+        set mpirunops = "-nolocal -machinefile $SGE_O_WORKDIR/machines-$JOB_NAME-$JOB_ID"
+      else                      # interactive run
+        set mpirunops = "-nolocal" # or we get one CPU less with older mpich
       endif
       if ($mpirun == '/opt/mpich/ch-p4/bin/mpirun') then
-	# Don't use -nolocal with newer mpich versions, otherwise we are
-	# not able to run on single-CPU test machines
-	set mpirunops = "`echo $mpirunops | sed 's/ \?-nolocal \?/ /'`"
+        # Don't use -nolocal with newer mpich versions, otherwise we are
+        # not able to run on single-CPU test machines
+        set mpirunops = "`echo $mpirunops | sed 's/ \?-nolocal \?/ /'`"
       endif
       else
       set mpirun 'Cannot_find_out_which_mpirun_to_use'
@@ -899,13 +899,13 @@ else if ($hn == hwwsr8k) then
   set mpirunops = "-p multi -N $nnodes"
   set x_ops = '-Fport(nmlist(2))'
   set local_disc = 1
-  set one_local_disc = 1	# (the default anyway)
+  set one_local_disc = 1        # (the default anyway)
   set local_binary = 0
   if (($?SCRDIR) && (-d $SCRDIR)) then
     setenv SCRATCH_DIR "$SCRDIR"
   else
     echo 'NO SUCH DIRECTORY: $SCRDIR'="<$SCRDIR> -- ABORTING"
-    kill $$			# full-featured suicide
+    kill $$                     # full-featured suicide
   endif
   setenv SSH rsh
   setenv SCP rcp
@@ -1411,20 +1411,20 @@ if ($debug) then
   echo '$npops          = ' "<$npops>"
   echo '$local_disc     = ' "<$local_disc>"
   echo '$one_local_disc = ' "<$one_local_disc>"
-  echo '$remote_top   	= ' "<$remote_top>"
-  echo '$local_binary 	= ' "<$local_binary>"
-  echo '$datadir      	= ' "<$datadir>"
-  echo '$SCRATCH_DIR  	= ' "<$SCRATCH_DIR>"
-  echo '$hn           	= ' "<$hn>"
-  echo '$masterhost	= ' "<$masterhost>"
-  echo '$mpirun       	= ' "<$mpirun>"
-  echo '$mpirunops    	= ' "<$mpirunops>"
-  echo '$mpirunops2   	= ' "<$mpirunops2>"
-  echo '$x_ops        	= ' "<$x_ops>"
-  echo '$NODELIST     	= ' "<$NODELIST>"
-  echo '$SSH          	= ' "<$SSH>"
-  echo '$SCP          	= ' "<$SCP>"
-  echo '$PARENT_PID   	= ' "<$PARENT_PID>"
+  echo '$remote_top     = ' "<$remote_top>"
+  echo '$local_binary   = ' "<$local_binary>"
+  echo '$datadir        = ' "<$datadir>"
+  echo '$SCRATCH_DIR    = ' "<$SCRATCH_DIR>"
+  echo '$hn             = ' "<$hn>"
+  echo '$masterhost     = ' "<$masterhost>"
+  echo '$mpirun         = ' "<$mpirun>"
+  echo '$mpirunops      = ' "<$mpirunops>"
+  echo '$mpirunops2     = ' "<$mpirunops2>"
+  echo '$x_ops          = ' "<$x_ops>"
+  echo '$NODELIST       = ' "<$NODELIST>"
+  echo '$SSH            = ' "<$SSH>"
+  echo '$SCP            = ' "<$SCP>"
+  echo '$PARENT_PID     = ' "<$PARENT_PID>"
   echo '$copysnapshots  = ' "<$copysnapshots>"
   echo '$particles      = ' "<$lparticles>"
   echo '$particles_nbody= ' "<$lparticles_nbody>"

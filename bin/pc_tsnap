@@ -23,18 +23,18 @@ else
   perl=`which perl| sed 's/.*aliased to *//'`
 fi
 
-exec $perl -x -S $0 "$@"	# -x: start from the following line
+exec $perl -x -S $0 "$@"        # -x: start from the following line
 #======================================================================#
-#! /good_path/perl -w 
+#! /good_path/perl -w
 # line 29
 
 require 5;
 use strict;
 use Getopt::Long;
 
-my (%opts);	# Variables written by GetOptions
+my (%opts);     # Variables written by GetOptions
 my ($usage,$real,$fmt,$file,$N,$N_swap,$endi);
-my $nn=0; my $nn1=0; my $t=0;	# Initialise these for Antares
+my $nn=0; my $nn1=0; my $t=0;   # Initialise these for Antares
 
 # Process command line:
 $usage = "Usage:  $0  [-s|--sort] [-d|--double] <file1> [<file2> ..]\n";
@@ -67,24 +67,24 @@ foreach $file (@ARGV) {
     eval { binmode(INPUT,":raw") };
 
     # The first four bytes contain the size nx*ny*nz*nw*4 of f (first
-    # record size) 
+    # record size)
     read INPUT, $nn, 4;
-    $N = unpack("I",$nn);	# Interpret $N as a 4-byte integer
+    $N = unpack("I",$nn);       # Interpret $N as a 4-byte integer
 
-    $N_swap = unpack("I",reverse($nn));	# Same in swapped byte order
+    $N_swap = unpack("I",reverse($nn)); # Same in swapped byte order
     # Skip $N bytes and check record end for consistency
     if (!defined($N) || $N == 0) { print "$file:\t  (corrupt)\n"; next; }
     if (seek(INPUT,$N+4,0) && read(INPUT,$nn1,4) && ($nn1 eq $nn)
-	&& seek(INPUT,4,1) && read(INPUT, $t, $real)) {
-	$endi=0;
-	$t = unpack($fmt,$t);
+        && seek(INPUT,4,1) && read(INPUT, $t, $real)) {
+        $endi=0;
+        $t = unpack($fmt,$t);
     } elsif (seek(INPUT,$N_swap+4,0) && read(INPUT,$nn1,4) && ($nn1 eq $nn)
-	     && seek(INPUT,4,1) && read(INPUT, $t, $real)) {
-	$endi=1;
-	$t = unpack($fmt,reverse($t));
+             && seek(INPUT,4,1) && read(INPUT, $t, $real)) {
+        $endi=1;
+        $t = unpack($fmt,reverse($t));
     } else {
-	print "$file:\t  (Corrupt)\n";
-	next;
+        print "$file:\t  (Corrupt)\n";
+        next;
     }
     printf("$file:\t  t = %-12.6g", $t);
     if ($endi) { print "  (swapped byte order)"; }
@@ -104,11 +104,11 @@ sub by_first_num {
     ($a1,$b1) = ($a,$b);
     $a1 =~ s|(.*/)?\D*(\d*\.?\d*]*).*|$2|;
     $b1 =~ s|(.*/)?\D*(\d*\.?\d*]*).*|$2|;
-    if ($a1 ne '') {		# NOT `if ($a1)', since $a1='0' would give false
-	if ($b1 ne '') {
-	    return ($a1 <=> $b1);
-	} else { return -1; }
+    if ($a1 ne '') {            # NOT `if ($a1)', since $a1='0' would give false
+        if ($b1 ne '') {
+            return ($a1 <=> $b1);
+        } else { return -1; }
     } else {
-	if ($b1 ne '') { return 1; } else { $a cmp $b; }
+        if ($b1 ne '') { return 1; } else { $a cmp $b; }
     }
 }

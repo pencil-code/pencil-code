@@ -75,7 +75,7 @@ else if (($hn =~ giga*) && ($USER =~ n7026413)) then
 else if ($hn =~ giga*) then
   set str='s/home/work/g'
 else if (($hn =~ gridur) && ($USER =~ nilshau))then
-  echo "special entry for Nils Erland" 
+  echo "special entry for Nils Erland"
   echo $cwd/data >! .tmp
   set str='s/home\/u./mnt\/mldwork2\/work2/g'
 else if ($hn =~ gridur) then
@@ -122,9 +122,9 @@ else if (($hn =~ rio* || $hn =~ pia*) && ($USER =~ wlyra)) then
   set str='s/code/data/g'
 else if ($hn =~ genius*) then
   set str='s/u\/ajohan\/BlueGene/ptmp\/ajohan/g'
-else if ($hn =~ *.uppmax.uu.se) then 
+else if ($hn =~ *.uppmax.uu.se) then
   set str='s/home/glob/g'
-else if ($hn =~ triton) then 
+else if ($hn =~ triton) then
   set str='s/home/var\/tmp/g'
 else if ($hn =~ gwdu102) then
   set str='s/\/usr\/users/\/home\/temp1/g'

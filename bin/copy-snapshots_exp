@@ -68,7 +68,7 @@ if ($?varfile) then
     endif
 ##
 ## Copy all $varfile you find (on all nodes) to the data directory
-## (not efficient on dual-CPU systems, unless we would delete files 
+## (not efficient on dual-CPU systems, unless we would delete files
 ## after copying..)
 ##
     if ($debug) printf "  ##Copying proc*/$varfile and allprocs/$varfile to data directory\n\n"
@@ -76,9 +76,9 @@ if ($?varfile) then
     set remcmd = 'cd '"$SCRATCH_DIR"'; for f in `\\ls proc*/'"$varfile"' allprocs/'"$varfile"' 2> /dev/null`; do echo "Copying '"$SCRATCH_DIR"'/$f to '"$targetdir"'/$f"; cp '"$SCRATCH_DIR"'/$f '"$targetdir"'/$f; done'
 
     if ($debug) echo "Now running <$SSH $node sh -c $remcmd>"
-    
+
     $SSH $node sh -c "'$remcmd'"
-    
+
     if ($debug) then
       printf "\n  ##Checking for changes to $varfile in data directory\n"
       printf "\n$SSH $node \\ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile :\n"
@@ -99,8 +99,8 @@ else
   while (1)
     echo
     echo "=========  "`date`"  ========="
-##    
-## Check for files to copy by diffing the files moved-files.list 
+##
+## Check for files to copy by diffing the files moved-files.list
 ## and move-me.list in the data directory
 ##
     set move_me=$targetdir/move-me.list
@@ -116,7 +116,7 @@ else
     echo "cat $moved_files $move_me | sort | uniq -u"
 ##
 ## Only do the diff once (there could be changes in the mean time)
-##                  
+##
     set lines=`cat $moved_files $move_me | sort | uniq -u`
     echo
     echo $lines
@@ -132,7 +132,7 @@ else
         $SSH $node \mv -f $SCRATCH_DIR/proc$i/$file $targetdir/proc$i/
 ##
 ## Check exit status and output whether move was succesful or not
-##                        
+##
         if (! $status) then
           echo " copy-snapshots: Move successful (exit status 0)"
         else
@@ -143,12 +143,12 @@ else
       end
 ##
 ## Inform moved-files.list that the file has been (attempted) moved
-##                        
+##
       echo $file >> $moved_files
     end
 ##
 ## Execute user supplied script copy-snapshots-eval-me.csh in data directory
-##  
+##
     if (-e $eval_me) then
       echo
       echo cat $eval_me
@@ -157,7 +157,7 @@ else
 ##
 ## The eval command does not stop the program when encountering an error in
 ## the script, as opposed to source and exec.
-##            
+##
       eval $eval_me >> $targetdir/copy-snapshots-eval-me.log
       \mv -f $eval_me ${eval_me}.used
     endif
@@ -167,7 +167,7 @@ else
     if ($?run_only_once) break
 ##
 ## Check if parent process still alive
-##                  
+##
     if (`ps -p $PARENT_PID | fgrep -c $PARENT_PID` <= 0) then
       echo " copy-snapshots: No parent process (pid $PARENT_PID) -- exiting"
       exit 1

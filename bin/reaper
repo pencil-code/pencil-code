@@ -197,7 +197,7 @@ sub kill_processes {
         wait;
 
         if ($num_killed > 0 && ! $quiet) {
-            print STDERR 
+            print STDERR
               "reaper: Reached time limit of ${total_time}s --"
               . " killed $num_killed process"
               . ($num_killed > 1 ? 'es' : '')

@@ -188,7 +188,7 @@ rm -f 'ERROR'
 date
 echo "$mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops"
 time $mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops
-set start_status=$status	# save for exit
+set start_status=$status        # save for exit
 echo ""
 date
 
@@ -276,7 +276,7 @@ date
 echo "$mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops"
 echo $mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops >! run_command.log
 time $mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops
-set run_status=$status		# save for exit
+set run_status=$status          # save for exit
 date
 
 # Create symlinks for deprecated slices
@@ -295,7 +295,7 @@ if ($?SP_JID) then
     >> $datadir/jobid.dat
 endif
 
-# look for RERUN file 
+# look for RERUN file
 # With this method one can only reload a new executable.
 # One cannot change directory, nor are the var.dat files returned to server.
 # See the NEWDIR method below for more options.
@@ -342,9 +342,9 @@ echo "Done"
 
 checknewdir:
 
-# look for NEWDIR file 
+# look for NEWDIR file
 # if NEWDIR contains a directory name, then continue run in that directory
-if (-e "NEWDIR") then 
+if (-e "NEWDIR") then
   if (-s "NEWDIR") then
     # Remove LOCK file before going to other directory
     if (-e "LOCK") rm -f LOCK
@@ -406,5 +406,5 @@ exit ( $run_status | $run_status2 ) # propagate status of mpirun
 # qsub -l nodes=128,mem=64gb,walltime=1:00:00 -q workq start_run.csh
 # eval `env-setup lam`; qsub -v PATH -pe lam 8 -j y -o run.log run.csh
 # cut & paste for job submission for SGE with parallel environment openmpi (e.g. andromeda)
-qsub -pe openmpi 1 ./start_run.csh 
-qsub -pe openmpi 8 ./start_run.csh 
+qsub -pe openmpi 1 ./start_run.csh
+qsub -pe openmpi 8 ./start_run.csh

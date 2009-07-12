@@ -12,7 +12,7 @@ fi
 
 exec $perl -x -S $0 "$@"     # -x: start from the following line
 #======================================================================#
-#! /Good_Path/perl -w 
+#! /Good_Path/perl -w
 # line 17
 
 # Name:   summarize-history
@@ -29,9 +29,9 @@ my $has_filetmp = eval("require File::Temp") || 0;
 if ($has_filetmp) { import File::Temp qw/tempfile/ };
 
 my $parfile = "data/params.log"; # Default parameter file
-#my $diff = "diff";		 # Shell `diff' function to use
-my $diff = "sdiff";		# Shell `diff' function to use
-my @diff_opts = qw/-s -w78/;	# Options for $diff
+#my $diff = "diff";              # Shell `diff' function to use
+my $diff = "sdiff";             # Shell `diff' function to use
+my @diff_opts = qw/-s -w78/;    # Options for $diff
 my $id = "[a-zA-Z](?:[a-zA-Z0-9_])*"; # allowed namelist/variable identifiers
 my $need_cleanup = 0;
 my ($tmp1,$tmp2,$tmpname1,$tmpname2) = ('fh01', 'fh02');
@@ -52,15 +52,15 @@ Options:
 
 if (@ARGV > 0) {
     if ($ARGV[0] =~ /^(-h|--help)/) {
-	die $usage;
+        die $usage;
     }
     elsif ($ARGV[0] =~ /^(--debug)/) {
-	$debug = 1;
-	shift;
+        $debug = 1;
+        shift;
     }
     elsif ($ARGV[0] =~ /^(-f|--full)/) {
-	$full = 1;
-	shift;
+        $full = 1;
+        shift;
     }
 }
 
@@ -71,7 +71,7 @@ $parfile = $ARGV[0] || $parfile;
 if ($diff eq 'sdiff') {
     my $status = system("sdiff -W /dev/null /dev/null 2>/dev/null");
     unless ($status) {
-	push @diff_opts, '-W';
+        push @diff_opts, '-W';
     }
 }
 
@@ -103,10 +103,10 @@ if (@entries < 2) {
 }
 
 ## Open temporary files (will be automaticalle removed at exit)
-if ($has_filetmp) {		# use File::Temp if available
+if ($has_filetmp) {             # use File::Temp if available
     ($tmp1,$tmpname1) = tempfile("/tmp/summarize_history_XXXXXX", UNLINK => 1);
     ($tmp2,$tmpname2) = tempfile("/tmp/summarize_history_XXXXXX", UNLINK => 1);
-} else {			# manually set and open temporary files
+} else {                        # manually set and open temporary files
     $need_cleanup = 1;
     $tmpname1 = "/tmp/summarize_history_${$}_a";
     $tmpname2 = "/tmp/summarize_history_${$}_b";
@@ -138,17 +138,17 @@ while (@entries) {
     # Remove context lines written by some sdiffs:
     $difference =~ s/^[0-9]+(,[0-9]+)?[adc][0-9]+(,[0-9]+)?\s*\n//mg;
     if ($full || ($difference =~ /^\s*[^#\s]/sm)) {
-	print $difference;
-	print "$sepline\n";
+        print $difference;
+        print "$sepline\n";
     }
 }
 
 END {
     if (!$has_filetmp && $need_cleanup) {
-	close($tmp1) if defined($tmp1);
-	close($tmp2) if defined($tmp2);
-	unlink($tmpname1);
-	unlink($tmpname2);
+        close($tmp1) if defined($tmp1);
+        close($tmp2) if defined($tmp2);
+        unlink($tmpname1);
+        unlink($tmpname2);
     }
 }
 
@@ -161,33 +161,33 @@ sub canonical {
     my ($head,$vars);
 
     if ($line =~ /^((?:\s*#[^\n]*\n)*)(.*)/s) {
-	($head,$vars) = ($1,$2);
-	# Normalize and add marker, so diff will print all header lines
-	chomp($head);
-	$head =~ s/(^\s*#)/$1$mark1/gm;
+        ($head,$vars) = ($1,$2);
+        # Normalize and add marker, so diff will print all header lines
+        chomp($head);
+        $head =~ s/(^\s*#)/$1$mark1/gm;
 
-#	print STDERR "HEAD:<$head>\n";
-#	print STDERR "VARS:<", substr($vars,0,50),">\n";
+#       print STDERR "HEAD:<$head>\n";
+#       print STDERR "VARS:<", substr($vars,0,50),">\n";
 
-	$vars =~ s/\n//g;	# join namelist stuff
-	# Separate different namelists by newlines:
-	$vars =~ s{(/?)\s*(\&$id)}{\n$1\n$2\n}g; # `.. / &next_nl var=val ..'
-	$vars =~ s{/\s*$}{\n/};	# Final `/'
+        $vars =~ s/\n//g;       # join namelist stuff
+        # Separate different namelists by newlines:
+        $vars =~ s{(/?)\s*(\&$id)}{\n$1\n$2\n}g; # `.. / &next_nl var=val ..'
+        $vars =~ s{/\s*$}{\n/}; # Final `/'
 
-	# Pretty-print the special `impossible' value (needs to be adapted
-	# for different output formats used by different compilers)
-	$vars =~ s/3\.90850*[EeDd]\+?0?37/<impossible>/g;
+        # Pretty-print the special `impossible' value (needs to be adapted
+        # for different output formats used by different compilers)
+        $vars =~ s/3\.90850*[EeDd]\+?0?37/<impossible>/g;
 
-	# Now split between variables and splice in newlines
-	my @vars = split_vars($vars);
-	join("\n",$head,@vars);
+        # Now split between variables and splice in newlines
+        my @vars = split_vars($vars);
+        join("\n",$head,@vars);
     } else {
-	printf STDERR "Something fishy with entry (no header or so):\n";
-	my $quoted = $line;
-	$quoted =~ s/\n/\\n/g;
-	$quoted =~ s/\s\s+/ /g;
-	printf STDERR "  " . substr("$quoted",0,70) . " [..]\n";
-	"";
+        printf STDERR "Something fishy with entry (no header or so):\n";
+        my $quoted = $line;
+        $quoted =~ s/\n/\\n/g;
+        $quoted =~ s/\s\s+/ /g;
+        printf STDERR "  " . substr("$quoted",0,70) . " [..]\n";
+        "";
     }
 }
 

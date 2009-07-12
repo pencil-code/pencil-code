@@ -14,7 +14,7 @@ dir=${pwd##*/}
 
 if [ "$hn" = "gridur" ]; then str='s/f90/www/g'; fi
 
-www=`echo $pwd | sed -e $str` 
+www=`echo $pwd | sed -e $str`
 
 echo  www directory set to $www
 mkdir -p $www
@@ -27,7 +27,7 @@ index='index.html'
 if [ -e $index ]; then echo $index exists. Delete it and try again; else
 #-------------------------------------------------------
 
-cat >  $index<<EOF 
+cat >  $index<<EOF
 <HTML>
 <HEAD> <TITLE> $title </TITLE></HEAD>
 <BODY>
@@ -42,12 +42,12 @@ cat >> $index <<EOF
 <PRE>
 EOF
 cat $pwd/start.in >>   $index
-cat >> $index <<EOF 
+cat >> $index <<EOF
 </PRE>
 <H2> Run Parameters</H2>
 <PRE>
 EOF
-cat $pwd/start.in >>   $index 
+cat $pwd/start.in >>   $index
 cat >> $index<<EOF
 </PRE>
 <H2>Results</H2>
@@ -57,8 +57,8 @@ cat >> $index<<EOF
 made on the `date` by `whoami`  <br/>
 CVS: \$Id$
 
-</BODY>  
-</HTML> 
+</BODY>
+</HTML>
 EOF
 #-----------------------------------------------
 fi

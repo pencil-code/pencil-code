@@ -45,13 +45,13 @@ source getconf.csh
 #  If necessary, distribute var.dat from the server to the various nodes
 #
 if ($local_disc) then
-  if ($one_local_disc) then	# one common local disc
+  if ($one_local_disc) then     # one common local disc
     foreach node ($nodelist)
       foreach d (`cd $datadir; \ls -d proc* allprocs`)
         if (-e $datadir/$d/var.dat) $SCP $datadir/$d/var.dat ${node}:$SCRATCH_DIR/$d/
         if (-e $datadir/$d/global.dat) $SCP $datadir/$d/global.dat ${node}:$SCRATCH_DIR/$d/
         if ($lparticles) $SCP $datadir/$d/pvar.dat ${node}:$SCRATCH_DIR/$d/
-	    if ($lparticles_nbody) $SCP $datadir/$d/spvar.dat ${node}:$SCRATCH_DIR/$d/
+            if ($lparticles_nbody) $SCP $datadir/$d/spvar.dat ${node}:$SCRATCH_DIR/$d/
         $SCP $datadir/$d/timeavg.dat ${node}:$SCRATCH_DIR/$d/
       end
       if (-e $datadir/allprocs/dxyz.dat) $SCP $datadir/allprocs/dxyz.dat ${node}:$SCRATCH_DIR/allprocs
@@ -67,13 +67,13 @@ if ($local_disc) then
         set k = `expr $nprocpernode \* $i + $j`
         if ($?notserial_procN) set k = `expr $i + $nnodes \* $j`
         $SCP $datadir/proc$k/var.dat ${node}:$SCRATCH_DIR/proc$k/
-	if (-e $datadir/proc$k/global.dat) then 
-	  $SCP $datadir/proc$k/global.dat ${node}:$SCRATCH_DIR/proc$k/
+        if (-e $datadir/proc$k/global.dat) then
+          $SCP $datadir/proc$k/global.dat ${node}:$SCRATCH_DIR/proc$k/
         endif
         if ($lparticles) then
           $SCP $datadir/proc$k/pvar.dat ${node}:$SCRATCH_DIR/proc$k/
         endif
-	if ($lparticles_nbody) then
+        if ($lparticles_nbody) then
           $SCP $datadir/proc$k/spvar.dat ${node}:$SCRATCH_DIR/proc$k/
         endif
 
@@ -148,7 +148,7 @@ date
 echo "$mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops"
 echo $mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops >! run_command.log
 time $mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops
-set run_status=$status		# save for exit
+set run_status=$status          # save for exit
 date
 
 # Create symlinks for deprecated slices
@@ -159,7 +159,7 @@ if ($?PBS_JOBID) then
   echo $PBS_JOBID " RUN FINISHED on "$PBS_O_QUEUE `date` >> $datadir/jobid.dat
 endif
 
-# look for RERUN file 
+# look for RERUN file
 # With this method one can only reload a new executable.
 # One cannot change directory, nor are the var.dat files returned to server.
 # See the NEWDIR method below for more options.
@@ -181,7 +181,7 @@ if ($local_disc) then
   echo "Copying all var.dat, VAR*, TIMEAVG*, dxyz.dat, timeavg.dat and crash.dat back from local scratch disks"
   $copysnapshots -v var.dat     >&! copy-snapshots2.log
   if ($lparticles) $copysnapshots -v pvar.dat >>& copy-snapshots2.log
-  if ($lparticles_nbody) $copysnapshots -v spvar.dat >>& copy-snapshots2.log  
+  if ($lparticles_nbody) $copysnapshots -v spvar.dat >>& copy-snapshots2.log
   $copysnapshots -v -1          >>& copy-snapshots2.log
   $copysnapshots -v dxyz.dat    >>& copy-snapshots2.log
   $copysnapshots -v timeavg.dat >>& copy-snapshots2.log
@@ -204,9 +204,9 @@ endif
 
 echo "Done"
 
-# look for NEWDIR file 
+# look for NEWDIR file
 # if NEWDIR contains a directory name, then continue run in that directory
-if (-e "NEWDIR") then 
+if (-e "NEWDIR") then
   if (-s "NEWDIR") then
     # Remove LOCK file before going to other directory
     if (-e "LOCK") rm -f LOCK
@@ -242,7 +242,7 @@ endif
 # Shut down lam if we have started it
 if ($booted_lam) lamhalt
 
-# Shut down mpd if we have started it 
+# Shut down mpd if we have started it
 if ($?booted_mpd) then
   echo "Shutting down mpd .."
   mpdallexit
@@ -271,7 +271,7 @@ else
       echo "=====================" >> resubmit.log
     else
       $run_resub >resubmit.log
-      date >>resubmit.log 
+      date >>resubmit.log
       echo "=====================" >> resubmit.log
     endif
   else

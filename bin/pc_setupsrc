@@ -23,10 +23,10 @@ link_scripts()
   do
     if [ -f $bindir/$script ]; then
       [ -h ./$script ] && rm -f $script
-      [ ! -f ./$script ] && to_link="$to_link $bindir/$script" 
+      [ ! -f ./$script ] && to_link="$to_link $bindir/$script"
     else
       echo "No such file: $bindir/$script"
-    fi 
+    fi
   done
   [ "$to_link" ] && ln -s $to_link .
 }
@@ -34,8 +34,8 @@ link_scripts()
 link_root_makefile()
 {
 ## Make a link to a root Makefile to allow make from the run directory
-  [ -h Makefile ] && rm -f Makefile 
-  [ ! -f Makefile ] && ln -s $srcdir/Makefile.parent Makefile 
+  [ -h Makefile ] && rm -f Makefile
+  [ ! -f Makefile ] && ln -s $srcdir/Makefile.parent Makefile
   echo Linked root Makefile.
 }
 #
@@ -65,14 +65,14 @@ link_src_files()
     if [ -f $file ] || [ -d $file ]; then
       if [ -h "`basename $file`" ]; then
         rm -f "`basename $file`"
-	to_link="$to_link $file"
+        to_link="$to_link $file"
         #ln -s $file .
       elif [ -f "`basename $file`" ] \
         || [ -d "`basename $file`" ]; then
         n="`expr $n + 1`"
         existf="$existf`basename $file` "
       else
-	to_link="$to_link $file"
+        to_link="$to_link $file"
         #ln -s $file .
       fi
     else
@@ -108,14 +108,14 @@ link_special_files()
     if [ -f $file ] || [ -d $file ]; then
       if [ -h "`basename $file`" ]; then
         rm -f "`basename $file`"
-	to_link="$to_link $file"
+        to_link="$to_link $file"
         #ln -s $file .
       elif [ -f "`basename $file`" ] \
         || [ -d "`basename $file`" ]; then
         n="`expr $n + 1`"
         existf="$existf`basename $file` "
       else
-	to_link="$to_link $file"
+        to_link="$to_link $file"
         #ln -s $file .
       fi
     else
@@ -151,14 +151,14 @@ link_initial_condition_files()
     if [ -f $file ] || [ -d $file ]; then
       if [ -h "`basename $file`" ]; then
         rm -f "`basename $file`"
-	to_link="$to_link $file"
+        to_link="$to_link $file"
         #ln -s $file .
       elif [ -f "`basename $file`" ] \
         || [ -d "`basename $file`" ]; then
         n="`expr $n + 1`"
         existf="$existf`basename $file` "
       else
-	to_link="$to_link $file"
+        to_link="$to_link $file"
         #ln -s $file .
       fi
     else
@@ -202,9 +202,9 @@ copy_local_files()
     if [ -f $file ]; then
       if [ ! -f "`basename $file`" ]; then
 # Warn user about copying *.local, as these should normally come
-# with each run directory: 
-	echo "Copying default file $file to src/ -- are you sure this is OK?"
-	to_copy="$to_copy $file"
+# with each run directory:
+        echo "Copying default file $file to src/ -- are you sure this is OK?"
+        to_copy="$to_copy $file"
         #cp $file .
       else
         # echo "`basename $file` already exists"
@@ -239,8 +239,8 @@ prepare_for_compile()
   echo "Rebuilding Makefile from Makefile.src."
   old_dir="`pwd`"
   cd $src
-  rm -f Makefile			# for old run directories
-  rm -f makefile			# for old run directories
+  rm -f Makefile                        # for old run directories
+  rm -f makefile                        # for old run directories
   $srcdir/scripts/adapt-mkfile Makefile.src Makefile
   cd $old_dir
 }
@@ -285,7 +285,7 @@ do
   ;;
   esac
   shift
-done 
+done
 #
 . $pencil_home_path/lib/sh/functions.sh
 #

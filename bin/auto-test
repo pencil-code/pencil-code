@@ -202,7 +202,7 @@ my $cfloat = '([+-]?)(?=\d|\.\d)\d*(\.\d*)?([Ee]([+-]?\d+))?'; # regexp
 my $ieee_float = "(?:$cfloat|[+-]?(?:NaN|Inf))"; # C float | ±NaN | ±Inf
 my $res;
 my ($t_comp,$t_start,$t_run,$t_res) = (1,1,1,1); # test everything by default
-my (%opts);			# variables written by GetOptions
+my (%opts);                     # variables written by GetOptions
 (my $cmdname = $0) =~ s{.*/}{};
 my $help  = 0;
 my $itest = 1;
@@ -363,14 +363,14 @@ my %time_summary;               # hash to accumulate timing summary
 
 ## Debugging output:
 if ($debug) {
-    eval("use Data::Dumper");	# Need eval here to calm down compiler
+    eval("use Data::Dumper");   # Need eval here to calm down compiler
     print STDERR Dumper(\%opts);
     print STDERR
-	"(\$t_comp,\$t_start,\$t_run,\$t_res)"
-	. " = ($t_comp,$t_start,$t_run,$t_res)\n";
-    print STDERR 
-	"(\$debug,\$help,\$short)           "
-	. " = ($debug,$help,$short)\n";
+        "(\$t_comp,\$t_start,\$t_run,\$t_res)"
+        . " = ($t_comp,$t_start,$t_run,$t_res)\n";
+    print STDERR
+        "(\$debug,\$help,\$short)           "
+        . " = ($debug,$help,$short)\n";
 }
 
 # $t_comp .. $t_res form a hierarchy: We can't test running without
@@ -398,8 +398,8 @@ my $prunedirs = '^(data|src|CVS|RCS|_darcs|.hg|.svn)$';
 # Autoflush stdout:
 $| = 1;
 
-@ARGV = grep { /./ } @ARGV;	# Eliminate empty @ARGV list (needed under
-				# OSF1, no clue why)
+@ARGV = grep { /./ } @ARGV;     # Eliminate empty @ARGV list (needed under
+                                # OSF1, no clue why)
 
 if ($list_only && ! $short) {
     print "Test directories:\n"
@@ -420,7 +420,7 @@ if (@ARGV) {
     @ARGV = map { s{^(?!/)}{$cwd/}; $_ } @ARGV; # Make `.' and similar work
     $ntests = @ARGV;
     for my $d (@ARGV) {
-	test_rundir("$d",$makeopts);
+        test_rundir("$d",$makeopts);
     }
     if ((scalar @ARGV)==1) {
         if (%failed) {
@@ -571,42 +571,42 @@ sub do_tests_in_parallel {
     my %nodes;
 
     for my $node (@$nodelist) {
-	$nodes{$node}{'busy'} = 0;
-	$nodes{$node}{'pid'}  = 0;
+        $nodes{$node}{'busy'} = 0;
+        $nodes{$node}{'pid'}  = 0;
     }
     my $running = 0;
     my $queued = scalar @queue;
     while ((scalar @queue) || $running) {
-	if (scalar @queue) {
-	    foreach my $node (keys %nodes) {
-		next if $nodes{$node}{'busy'};
-		my $job = shift @queue;
-		$nodes{$node}{'busy'}=$job;
-		$running++;
-		if (! ($nodes{$node}{'pid'} = fork)) {
-		    my $nodeb=$node;
-		    exec "$rsh $node auto-test --no-summary $passthru_opts $job | sed 's/^/$nodeb : /'";
-		    # didn't get here
-		}
-	    }
-	}
-	if ($running) {
-	    my $pid = wait;
-	    if ($pid != -1) {
-		my $result = $?;
-		$running--;
-		foreach my $node (keys %nodes) {
-		    if ($nodes{$node}{'pid'} == $pid) {
-			my $exit_code = ($result >> 8);
-			$failed{$nodes{$node}{'busy'}}
-			  = $exit_status[$exit_code-1] if ($exit_code);
-			$nodes{$node}{'busy'} = 0;
-			$nodes{$node}{'pid'}  = 0;
-			last;
-		    }
-		}
-	    }
-	}
+        if (scalar @queue) {
+            foreach my $node (keys %nodes) {
+                next if $nodes{$node}{'busy'};
+                my $job = shift @queue;
+                $nodes{$node}{'busy'}=$job;
+                $running++;
+                if (! ($nodes{$node}{'pid'} = fork)) {
+                    my $nodeb=$node;
+                    exec "$rsh $node auto-test --no-summary $passthru_opts $job | sed 's/^/$nodeb : /'";
+                    # didn't get here
+                }
+            }
+        }
+        if ($running) {
+            my $pid = wait;
+            if ($pid != -1) {
+                my $result = $?;
+                $running--;
+                foreach my $node (keys %nodes) {
+                    if ($nodes{$node}{'pid'} == $pid) {
+                        my $exit_code = ($result >> 8);
+                        $failed{$nodes{$node}{'busy'}}
+                          = $exit_status[$exit_code-1] if ($exit_code);
+                        $nodes{$node}{'busy'} = 0;
+                        $nodes{$node}{'pid'}  = 0;
+                        last;
+                    }
+                }
+            }
+        }
     }
 }
 # ---------------------------------------------------------------------- #
@@ -636,15 +636,15 @@ sub my_ok {
 
     # Allow for calls like `ok(0)' or `ok(1)':
     if (!defined($arg2)) {
-	$arg2 = $arg1 ? $arg1 : 1;
+        $arg2 = $arg1 ? $arg1 : 1;
     }
     if ($arg1 eq $arg2) {
-	print " ok      $timestr\n" unless ($quiet);
+        print " ok      $timestr\n" unless ($quiet);
     } else {
-	print " not ok: $timestr\n$mesg\n";
-	$test_status = 1;
-	# report only first failure:
-	$failed{$dir} = $phase unless defined($failed{$dir});
+        print " not ok: $timestr\n$mesg\n";
+        $test_status = 1;
+        # report only first failure:
+        $failed{$dir} = $phase unless defined($failed{$dir});
     }
 
     # Record time usage in an easily greppable format
@@ -714,7 +714,7 @@ sub test_shell_cmd {
     my $cmd   = shift;
     my $dir   = (shift || "<Unknown directory>");
     my $phase = (shift || "<Unknown phase>");
-    my $quiet = (shift || 0);	# flag for suppressing the `ok'
+    my $quiet = (shift || 0);   # flag for suppressing the `ok'
     my $t_ref = shift;
 
     print STDERR "\nRunning `$cmd`" if ($debug);
@@ -723,8 +723,8 @@ sub test_shell_cmd {
     print STDERR " ..done \n" if ($debug);
     chomp($res);
     if (($phase eq 'compilation') && ($postproc ne '')) {
-	print STDERR "Postprocessing output..\n" if ($debug);
-	$res = postprocess($res);
+        print STDERR "Postprocessing output..\n" if ($debug);
+        $res = postprocess($res);
     }
     my $dt;
     $dt = get_time()-$t_ref if (defined($t_ref));  # otherwise leave undefined
@@ -747,11 +747,11 @@ sub test_timelimited_shell_cmd {
 sub test_compile {
 # Test compilation only
     if ($t_comp) {
-	my $dir = shift;
-	my @makeopts = (shift); # gets one string ("" or "-j N")
+        my $dir = shift;
+        my @makeopts = (shift); # gets one string ("" or "-j N")
         my $t_ref = shift;      # start time
 
-	print "    Compiling..          ";
+        print "    Compiling..          ";
 
         # First pc_setupsrc, then make clean (if requested). Must be done
         # in this order as pc_setupsrc links the Makefile to the run directory.
@@ -759,11 +759,11 @@ sub test_compile {
                        $dir,
                        "setting up directory",
                        QUIET);
-	return 'ERROR calling pc_setupsrc' if ($test_status);
-	if ($clean) {
-	    test_shell_cmd('make cleann', $dir, "cleaning up", QUIET);
-	    return 'ERROR running make cleann' if ($test_status);
-	}
+        return 'ERROR calling pc_setupsrc' if ($test_status);
+        if ($clean) {
+            test_shell_cmd('make cleann', $dir, "cleaning up", QUIET);
+            return 'ERROR running make cleann' if ($test_status);
+        }
 
         # Compile in double precision if we have data for that
         if (-r 'print.in.double' && -r 'reference.out.double') {
@@ -775,7 +775,7 @@ sub test_compile {
             printf "$indi_fmt ", '';
         }
         print STDERR "\@makeopts = @makeopts\n" if ($debug);
-	test_shell_cmd("$nice make @makeopts", $dir, "compilation",
+        test_shell_cmd("$nice make @makeopts", $dir, "compilation",
                        NOQUIET, $t_ref);
     }
 }
@@ -786,7 +786,7 @@ sub test_start {
     my $t_ref = shift;          # start time
 
     if ($t_start) {
-	print "    Starting..           ";
+        print "    Starting..           ";
         printf "$indi_fmt ", '';
 
         if ($time_limit) {
@@ -812,7 +812,7 @@ sub test_run {
     my $t_ref = shift;          # start time
 
     if ($t_run) {
-	print "    Running..            ";
+        print "    Running..            ";
 
         # Handle KEEP_RELOADING file (our -r/--reload option)
         my $reload_file = "$dir/KEEP_RELOADING";
@@ -855,35 +855,35 @@ sub test_results {
     my $dir = shift;
 
     if ($t_res) {
-	my ($rdmsg,$diagn);
+        my ($rdmsg,$diagn);
         print "    Validating results.. ";
         printf "$indi_fmt ", '';
 
-	my @output;
+        my @output;
         if ($res_from_file) {
             @output = read_lines('data/time_series.dat', $rdmsg);
-	    if ($rdmsg) {
+            if ($rdmsg) {
                 my_ok(0,1,"[$rdmsg]",$dir,"results");
                 return;
             }
         } else {
             @output = split(/[\n\r]+/,$res);
         }
-	my_ok(0,0,"",$dir,"results","quiet");
+        my_ok(0,0,"",$dir,"results","quiet");
 
-	my @foutput = extract_results(\@output); # filtered output
-	if ($foutput[0] ne "$noheader") {
-	    my @ref_output = read_lines($reference_out,$rdmsg);
-	    if ($rdmsg) {
-		print " [$rdmsg]\n";
-	    } else {
-		my $comp = compare_results(\@ref_output,\@foutput,$diagn);
-		my_ok($comp,1,$diagn,$dir,"results");
-	    }
-	} else { # No header line found
+        my @foutput = extract_results(\@output); # filtered output
+        if ($foutput[0] ne "$noheader") {
+            my @ref_output = read_lines($reference_out,$rdmsg);
+            if ($rdmsg) {
+                print " [$rdmsg]\n";
+            } else {
+                my $comp = compare_results(\@ref_output,\@foutput,$diagn);
+                my_ok($comp,1,$diagn,$dir,"results");
+            }
+        } else { # No header line found
             warn " No header line found\n";
-	    my_ok(0,1,join("\n",@output),$dir,"results");
-	}
+            my_ok(0,1,join("\n",@output),$dir,"results");
+        }
     }
 }
 # ---------------------------------------------------------------------- #
@@ -895,27 +895,27 @@ sub extract_results {
 
     my @results = ();
     my @labels = ();
-    my $body = 0;		# true after header line
+    my $body = 0;               # true after header line
     my $ncols;
 
     line: foreach my $line (@lines) {
-	unless ($body) {
-	    # Before or at header line
-	    next line unless ($line =~ /$headerpat/);
-	    push @results, $line;
-	    $body = 1;
-	    @labels = grep { /\S/ } split(/-+/,$line); # ignore empty labels
-	    $ncols = @labels;
-	} else {
-	    # After header line
-	    next unless ($line =~ /^(\s+$ieee_float){$ncols}\s*$/i);
-	    push @results, $line;
-	}
+        unless ($body) {
+            # Before or at header line
+            next line unless ($line =~ /$headerpat/);
+            push @results, $line;
+            $body = 1;
+            @labels = grep { /\S/ } split(/-+/,$line); # ignore empty labels
+            $ncols = @labels;
+        } else {
+            # After header line
+            next unless ($line =~ /^(\s+$ieee_float){$ncols}\s*$/i);
+            push @results, $line;
+        }
     }
     if ($body) {
-	@results;
+        @results;
     } else {
-	($noheader);
+        ($noheader);
     }
 }
 # ---------------------------------------------------------------------- #
@@ -926,14 +926,14 @@ sub read_lines {
     my $msg = "";
 
     {
-	local $/ = undef;	# read in whole file
-	if (open (REF, "< $file")) {
-	    @lines = grep { /\S/ } split(/[\n\r]+/,<REF>);
-	    # Remove leading comment sign from header line:
-	    $lines[0] =~ s/^(\s*)#/$1 /;
-	} else {
-	    $msg = "Couldn't open $file";
-	}
+        local $/ = undef;       # read in whole file
+        if (open (REF, "< $file")) {
+            @lines = grep { /\S/ } split(/[\n\r]+/,<REF>);
+            # Remove leading comment sign from header line:
+            $lines[0] =~ s/^(\s*)#/$1 /;
+        } else {
+            $msg = "Couldn't open $file";
+        }
     }
     $_[0] = $msg;
     @lines;
@@ -952,19 +952,19 @@ sub compare_results {
     my $diagn = "";
     my $equal = 1;
     for my $i (0..$N) {
-	my $line1 = ($$arr1[$i] || ""); chomp $line1;
-	my $line2 = ($$arr2[$i] || ""); chomp $line2;
-	unless (compare_lines_fuzzily($line1,$line2)) {
-	    $diagn .= $pref[0] . $line1 . "\n" if ($line1);
-	    $diagn .= $pref[1] . $line2 . "\n" if ($line2);
-	    $equal = 0;
-	} else {
-	    if ($i == 0) {	# Keep header line for easier reading
-		$diagn .= $pref[2] . $line1 . "\n";
-	    }
-	}
+        my $line1 = ($$arr1[$i] || ""); chomp $line1;
+        my $line2 = ($$arr2[$i] || ""); chomp $line2;
+        unless (compare_lines_fuzzily($line1,$line2)) {
+            $diagn .= $pref[0] . $line1 . "\n" if ($line1);
+            $diagn .= $pref[1] . $line2 . "\n" if ($line2);
+            $equal = 0;
+        } else {
+            if ($i == 0) {      # Keep header line for easier reading
+                $diagn .= $pref[2] . $line1 . "\n";
+            }
+        }
     }
-    $_[0] = $diagn;		# the remaining argument (was the third one)
+    $_[0] = $diagn;             # the remaining argument (was the third one)
     $equal;
 }
 # ---------------------------------------------------------------------- #
@@ -978,20 +978,20 @@ sub compare_lines_fuzzily {
     my $equal = 1;
 
     if ($xline =~ /$headerpat/) { # header lines --> string comparison
-	$equal = 0 unless ($xline eq $yline);
-    } else {			  #  diagnostic lines --> fuzzy comparison
-	my @x = split(/\s+/,$xline);
-	my @y = split(/\s+/,$yline);
-	@x = grep(/([0-9]|NaN|Inf)/i, @x);	# weed out empty entries
-	@y = grep(/([0-9]|NaN|Inf)/i, @y);
+        $equal = 0 unless ($xline eq $yline);
+    } else {                      #  diagnostic lines --> fuzzy comparison
+        my @x = split(/\s+/,$xline);
+        my @y = split(/\s+/,$yline);
+        @x = grep(/([0-9]|NaN|Inf)/i, @x);      # weed out empty entries
+        @y = grep(/([0-9]|NaN|Inf)/i, @y);
 
-	return 0 unless ($#x == $#y); # lengths must match
-	foreach my $i (0..$#x) {
-	    my ($x,$y) = ($x[$i], $y[$i]);
-	    $equal = 0 unless (compare_numbers_fuzzily($x,$y));
+        return 0 unless ($#x == $#y); # lengths must match
+        foreach my $i (0..$#x) {
+            my ($x,$y) = ($x[$i], $y[$i]);
+            $equal = 0 unless (compare_numbers_fuzzily($x,$y));
             print STDERR "compare_lines_fuzzily: \$equal = $equal for <$x>, <$y>\n"
               if ($debug);
-	}
+        }
     }
 
     return $equal;
@@ -1036,7 +1036,7 @@ sub compare_numbers_fuzzily {
     # correctly compare stuff like [1.3599, 1.36] (succeeds) and [1.3598,
     # 1.36] (fails) in both directions.
     if (length($x1) < length($y1)) {
-	($x,$x1,$x2, $y,$y1,$y2) = ($y,$y1,$y2, $x,$x1,$x2);
+        ($x,$x1,$x2, $y,$y1,$y2) = ($y,$y1,$y2, $x,$x1,$x2);
     }
 
     # Do comparison
@@ -1047,9 +1047,9 @@ sub compare_numbers_fuzzily {
       unless defined($xint);
     my $delta;
     if (length($xfrac) > 0) {
-	$delta = '0.' . '0'x(length($xfrac)-1) . '1';
+        $delta = '0.' . '0'x(length($xfrac)-1) . '1';
     } else {
-	$delta = 1;
+        $delta = 1;
     }
     my $x1_p = $x1 + $delta;
     my $x1_m = $x1 - $delta;
@@ -1071,9 +1071,9 @@ sub compare_numbers_fuzzily {
     print STDERR "Ergo: ", (($y >= $x_m) && ($y <= $x_p)), "\n" if ($debug);
 
     if (($y >= $x_m) && ($y <= $x_p)) {
-	return 1;
+        return 1;
     } else {
-	return 0;
+        return 0;
     }
 }
 # ---------------------------------------------------------------------- #
@@ -1085,26 +1085,26 @@ sub test_rundir {
     my $created_datadir = 0;
     my $t0 = get_time();
 
-    $test_status = 0;		#  so far, everything is OK
+    $test_status = 0;           #  so far, everything is OK
     %time_summary =();
 
     # Indicate current run directory in process name (for ps)
     my $shortdir = $dir;
-    $shortdir =~ s{^$topdir/}{};	# remove common directory prefix
-    $shortdir =~ s{^samples/}{};	# remove leading 'samples/'
+    $shortdir =~ s{^$topdir/}{};        # remove common directory prefix
+    $shortdir =~ s{^samples/}{};        # remove leading 'samples/'
     $0 =~ s/^\s*(\[.*?\])?\s*/[$shortdir] /;
 
     # Go to directory and identify it
     if (! -d $dir) {
-	print STDERR "No such directory: $dir\n";
-	return;
+        print STDERR "No such directory: $dir\n";
+        return;
     }
     chdir $dir;
     my $cwd = cwd();
     if ($short) { $cwd =~ s{.*pencil[^/]*/}{}i };
     if ($list_only) {
-	print "$cwd\n";
-	return;
+        print "$cwd\n";
+        return;
     }
     print "\n$cwd:";
     print " ($itest/$ntests)" if ($ntests>1);
@@ -1113,10 +1113,10 @@ sub test_rundir {
 
     # Make sure we have everything we need
     if (! defined(-e 'src/run.f90')) { # has `pc_setupsrc' been run yet?
-	my $res = `pc_setupsrc --pencil-home $pencil_home 2>&1`;
-	if ($?) {
-	    print "    Problems running pc_setupsrc:\n", $res;
-	}
+        my $res = `pc_setupsrc --pencil-home $pencil_home 2>&1`;
+        if ($?) {
+            print "    Problems running pc_setupsrc:\n", $res;
+        }
     }
 
     # 1. Test compilation
@@ -1148,8 +1148,8 @@ sub test_rundir {
     # Clean up if necessary
   cleanup:
     if ($created_datadir) {
-	system("rm", "data");
-	system("rm", "-r", "$tmpdir");
+        system("rm", "data");
+        system("rm", "-r", "$tmpdir");
     }
 
     # Summarize timings in human-readable form
@@ -1172,10 +1172,10 @@ sub test_rundir {
 }
 # ---------------------------------------------------------------------- #
 sub write_timing_summary_header {
-# Write comment to make timing summary files more comprehensible 
+# Write comment to make timing summary files more comprehensible
     printf "%s %s\n", '#TIMING ',
         '# --------------------------------------------------';
-    printf "%s %s\n", '#TIMING ', '# Date: ' . localtime() . ", host: $host"; 
+    printf "%s %s\n", '#TIMING ', '# Date: ' . localtime() . ", host: $host";
     printf "%s %-45s %-12s %-12s %-7s\n",
       '#TIMING ', '# directory', 'phase', 'time-stamp', 'seconds';
 }
@@ -1326,20 +1326,20 @@ sub postprocess {
     # fork() a child to avoid deadlock if $text is large
     my $child_id;
 
-    if ($child_id=fork()) {		# parent --> read output
-	close UNPROCD;		# important
-	local $/ = undef;	# get it all at once
-	$text = <POSTPROCD>;
-	close POSTPROCD;	# not necessary, I guess
-	waitpid($child_id,0);	# wait for child to finish to avoid zombie
-	wait();			# bizarre enough there is another zombie..
-    } else {			# child --> write to postproc
-	die "Cannot fork: $!" unless defined($child_id);
-	$nosummary = 1;		# don't waffle when exiting
- 	close POSTPROCD;	# apparently not necessary
-	print UNPROCD $text;
-	close UNPROCD;
-	exit 1;			# irrelevant
+    if ($child_id=fork()) {             # parent --> read output
+        close UNPROCD;          # important
+        local $/ = undef;       # get it all at once
+        $text = <POSTPROCD>;
+        close POSTPROCD;        # not necessary, I guess
+        waitpid($child_id,0);   # wait for child to finish to avoid zombie
+        wait();                 # bizarre enough there is another zombie..
+    } else {                    # child --> write to postproc
+        die "Cannot fork: $!" unless defined($child_id);
+        $nosummary = 1;         # don't waffle when exiting
+        close POSTPROCD;        # apparently not necessary
+        print UNPROCD $text;
+        close UNPROCD;
+        exit 1;                 # irrelevant
     }
     print STDERR "  PP: done postprocessing\n" if ($debug);
     $text;
@@ -1417,7 +1417,7 @@ sub get_maintainers {
 ## Summarize results
 END {
     unless ($help || $nosummary || $list_only) {
-	print "\n" . "-" x 70 . "\n";
+        print "\n" . "-" x 70 . "\n";
 
         # Print failure header that can be identified by pencil-test
         if ($failed || %failed) {
@@ -1430,28 +1430,28 @@ END {
         }
 
         # Failed during some of the individual tests
-	if (%failed) {
-	    print "Failed ", scalar(keys %failed),
-	      " test(s) out of $ntests:\n";
-	    while (my ($dir,$phase) = each %failed) {
-		print "  $dir ($phase)\n";
-	    }
-	} else {
-	    if ($ntests == 1) {
+        if (%failed) {
+            print "Failed ", scalar(keys %failed),
+              " test(s) out of $ntests:\n";
+            while (my ($dir,$phase) = each %failed) {
+                print "  $dir ($phase)\n";
+            }
+        } else {
+            if ($ntests == 1) {
                 print "Test succeeded.\n";
             } elsif ($ntests > 1) {
                 print "All $ntests tests succeeded.\n";
             }
-	    elsif (($ntests < 1) && ! $failed) {
+            elsif (($ntests < 1) && ! $failed) {
                 print "There was no test to run???\n";
             }
-	}
+        }
 
         # Print timing numbers
-	if ($time) {
-	    my @t = times();
-	    print "\nCPU time (including compilation): ",
-	          s_to_hms($t[2], 7) . "u ",
+        if ($time) {
+            my @t = times();
+            print "\nCPU time (including compilation): ",
+                  s_to_hms($t[2], 7) . "u ",
                   s_to_hms($t[3]   ) . "s\n";
 
             my $t1_global = time(); # end time
@@ -1460,7 +1460,7 @@ END {
               " = ", s_to_hms($t_global{'compile'}),
               " + ", s_to_hms($t_global{'start+run'}),
               "\n";
-	}
+        }
 
         # Print info from file
         if (-r $infofile) {

@@ -4,8 +4,8 @@
 #  Author: Anders Johansen
 #
 #  Usage:
-#    pc_copyvar var1 var2 source dest  
-#    pc_copyvar var1 var2 dest  
+#    pc_copyvar var1 var2 source dest
+#    pc_copyvar var1 var2 dest
 #
 #  Example:
 #    pc_copyvar var.dat VAR9 ../othersim

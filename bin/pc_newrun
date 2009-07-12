@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 #
 #  $Id$
 #
@@ -91,7 +91,7 @@ $PENCIL_HOME/bin/pc_mkdatadir
   cd ..
 #
   if [ -d $olddir/initial_condition ]; then
-     echo "copying existing initial condition directory" 
+     echo "copying existing initial condition directory"
      mkdir ./initial_condition
      cp $olddir/initial_condition/*f90 ./initial_condition
   fi

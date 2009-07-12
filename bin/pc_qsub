@@ -21,11 +21,11 @@ do
     shift
   elif [ "$1" = "-help" ]; then
     echo "Some help you are."
-    exit 1 
+    exit 1
   else
     found=no
   fi
-done 
+done
 
 # Make a meaningfully named link point to the job script
 # use the last directory name in the path

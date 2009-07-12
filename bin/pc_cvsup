@@ -3,7 +3,7 @@
 # Script to update the Pencil-Code tree from CVS
 #
 # Update all the necessaries but nothing else.
-#  (eg. miss out the runs directory)   
+#  (eg. miss out the runs directory)
 #
 cmdname=`basename $0`
 warn_sticky()
@@ -11,7 +11,7 @@ warn_sticky()
 [ $1 ] || return
 cat <<!
 *************************************************
-***  WARNING: Sticky Tags Found               *** 
+***  WARNING: Sticky Tags Found               ***
 *************************************************
 * Sticky tags/keywords/dates have been found    *
 * on files in the following paths:              *
@@ -22,9 +22,9 @@ cat <<!
   done
 cat <<!
 *                    (-kb and -ko are ignored)  *
-* Paths relative to: $PENCIL_HOME          
+* Paths relative to: $PENCIL_HOME
 *************************************************
-***  Try using "$cmdname -A" to clear them.  *** 
+***  Try using "$cmdname -A" to clear them.  ***
 *************************************************
 !
 }
@@ -75,23 +75,23 @@ add_update_path_nonewdir()
 
 if [ ! "$PENCIL_HOME" ]; then
   echo PENCIL_HOME variable not set! Exiting...
-  exit 1 
+  exit 1
 fi
 if [ ! -d "$PENCIL_HOME/" ]; then
   echo PENCIL_HOME variable set but is not an existing directory! Exiting...
-  exit 1 
+  exit 1
 fi
 
 while expr "$1" : '\-' >/dev/null; do
   case $1 in
-    -a) 
+    -a)
       include_rundirs=1
     ;;
-    -A) 
+    -A)
       EXTRA_ARGS=-A
       echo "Found STICKY CLEANER"
     ;;
-    -A) 
+    -A)
       EXTRA_ARGS=-A
       echo "Found STICKY CLEANER"
       shift
@@ -109,16 +109,16 @@ EXTRA_ARGS="$EXTRA_ARGS $@"
 UPDATE_PATHS="src bin lib idl license"
 UPDATE_PATHS_NONEWDIR=""
 
-# Conditionally add some other directories to the full update 
+# Conditionally add some other directories to the full update
 #   (if they exist!)
 add_update_path samples doc
 
 #  Add other, perhaps personal trees to the shallow update
 [ $include_rundirs ] && add_update_path_nonewdir runs pencil-runs
 [ $include_rundirs ] && add_update_path_nonewdir tony pencil-tony
-[ $include_rundirs ] && add_update_path_nonewdir anders pencil-anders 
+[ $include_rundirs ] && add_update_path_nonewdir anders pencil-anders
 
-# Shallow update other paths in the selected subdirectories 
+# Shallow update other paths in the selected subdirectories
 if [ "$UPDATE_PATHS_NONEWDIR" ]; then
   echo "Updating the subtrees of $PENCIL_HOME ($UPDATE_PATHS_NONEWDIR)"
   cvs -q up -P $EXTRA_ARGS $UPDATE_PATHS_NONEWDIR
@@ -130,7 +130,7 @@ echo "Updating the root of $PENCIL_HOME"
 cvs -q up -l $EXTRA_ARGS .
 check_for_sticky_local .
 
-# Update files in the selected subdirectories 
+# Update files in the selected subdirectories
 echo "Updating the subtrees of $PENCIL_HOME ($UPDATE_PATHS)"
 cvs -q up -dP $EXTRA_ARGS $UPDATE_PATHS
 check_for_sticky $UPDATE_PATHS

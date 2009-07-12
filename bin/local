@@ -19,9 +19,9 @@ endif
 set tmpfile = tmp.$$
 
 if (`uname -s` =~ Linux) then
-  set deref = "-L"		# flag to cp for dereferencing links
+  set deref = "-L"              # flag to cp for dereferencing links
 else
-  set deref = ""		# OK at least under OSF1
+  set deref = ""                # OK at least under OSF1
 endif
 
 foreach f ( $* )
@@ -29,9 +29,9 @@ foreach f ( $* )
     if ($hard) then
       ln -f `readlink $f` $f
     else
-      if (-d $f) then		# link to directory
+      if (-d $f) then           # link to directory
         cp -rp $deref $f $tmpfile && rm $f && mv $tmpfile $f
-      else			# link to file
+      else                      # link to file
         cp -p $f $tmpfile && rm $f && mv $tmpfile $f
       endif
     endif

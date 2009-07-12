@@ -16,7 +16,7 @@ endif
 
 
 set varfile = 'var\.dat'
-if ($#argv > 0) then 
+if ($#argv > 0) then
   if ($1 != 0) set varfile = "VAR$1"
 endif
 set processor = 'proc0'

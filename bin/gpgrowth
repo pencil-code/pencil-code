@@ -22,7 +22,7 @@ exec $perl -x -S $0 "$@"        # -x: start from the following line
 # Line numbers in perl warnings are counted from the following line as
 # line zero.
 #======================================================================#
-#! /good_path/perl -w 
+#! /good_path/perl -w
 #line 26
 
 # TO DO:
@@ -40,7 +40,7 @@ my $gpscript = 'data/gplot.tmp';
 #my $numeral = '(?:[+-]?[0-9]*\.?[0-9]\.?[0-9]*(?:[EeDd][+-]?[0-9]+)?)';
 my ($rows,$cols) = get_tty_rc(); # get terminal size
 $rows--;
-my $term = "dumb $cols $rows";	# only default value
+my $term = "dumb $cols $rows";  # only default value
 my $plotstyle ='';
 my $gpsetup;
 my $count = 0;
@@ -83,11 +83,11 @@ Purpose:
 GetOptions(\%opts,
            qw( -h   --help
                     --x11
-	            --tek
+                    --tek
                -a=s --ascii=s
-	       -x=s --xrange=s
-	       -y=s --yrange=s
-	       -v=s --var=s
+               -x=s --xrange=s
+               -y=s --yrange=s
+               -v=s --var=s
                -l   --linear
              ));
 
@@ -139,7 +139,7 @@ foreach $i (0..$#cols) {
     $plotcmd .= "'$tmpfile' using 2:$cols[$i] title '$title[$i]'"
                 . $plotstyle;
     if ($i < $#cols) {
-	$plotcmd .= ", ";
+        $plotcmd .= ", ";
     }
 }
 
@@ -158,12 +158,12 @@ open(LOG,"< $ts_file") or die "Can't open file $ts_file";
 open(TMP,"> $tmpfile") or die "Can't open file $tmpfile";
 while(defined($line = <LOG>)){
     if ($line =~ /^\s*[+-\.]?[0-9][-+ 0-9\.EeDd]*$/) {
-	@array = split(' ',$line);
+        @array = split(' ',$line);
         if (@array >= $ncols) {  # Don't accept shorter lines
             print TMP $line;
             $count++;
             $ncols = @array;
-	}
+        }
     }
 }
 close TMP;
@@ -179,7 +179,7 @@ close SCRIPT;
 
 # Plot
 if ($term =~ /^tek/) {
-    print "\033[?38h\0338";	# switch to TEK mode
+    print "\033[?38h\0338";     # switch to TEK mode
     $| = 1; $| = 0; # flush STDOUT
 }
 system("gnuplot $gpscript");
@@ -200,8 +200,8 @@ sub get_tty_rc {
     require POSIX;
     my $stty = "stty";
     if ((POSIX::uname())[0] =~ /SunOS/) {
-	$stty = "/usr/bin/stty"; # Must use this instead of /usr/ucb/stty,
-				 # to avoid `stty: : Invalid argument'
+        $stty = "/usr/bin/stty"; # Must use this instead of /usr/ucb/stty,
+                                 # to avoid `stty: : Invalid argument'
     }
 #
     my ($entry,$first,$last);
@@ -209,15 +209,15 @@ sub get_tty_rc {
     my @lines = grep(/columns|rows/, `$stty -a`);
     # Join the (possibly two) lines and then split them at the semicolons
     foreach (split(/(?:\s*;\s*)+/, join(";", @lines))) {
-	if (/columns|rows/i) {
-	    s/=/ /;		# SunOS writes an equal sign
-	    ($first,$last) = split;
-	    if ($first =~ /columns|rows/i) {
-		$geom{"\L$first"} = $last; # Downcase is probably unnecessary
-	    } else {
-		$geom{"\L$last"} = $first;
-	    }
-	}
+        if (/columns|rows/i) {
+            s/=/ /;             # SunOS writes an equal sign
+            ($first,$last) = split;
+            if ($first =~ /columns|rows/i) {
+                $geom{"\L$first"} = $last; # Downcase is probably unnecessary
+            } else {
+                $geom{"\L$last"} = $first;
+            }
+        }
     }
     ($geom{rows}||24, $geom{columns}||80);
 }

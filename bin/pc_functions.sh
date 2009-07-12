@@ -21,12 +21,12 @@ if match "$0" "pc_functions.sh" ; then
   echo " anything when executed I'm going to die now.  Good bye.....           "
   echo "---------------------------------------------------------------------- "
   unset match
-#  kill $$  
+#  kill $$
   exit 1
 fi
 
 #------------------------------------------------------------------------------
-#-- Information Routines                        
+#-- Information Routines
 #------------------------------------------------------------------------------
 show_config()
 {
@@ -36,25 +36,25 @@ show_config()
   echo '$npops          = ' "<$npops>"
   echo '$local_disc     = ' "<$local_disc>"
   echo '$one_local_disc = ' "<$one_local_disc>"
-  echo '$remote_top   	= ' "<$remote_top>"
-  echo '$local_binary 	= ' "<$local_binary>"
-  echo '$datadir      	= ' "<$datadir>"
-  echo '$SCRATCH_DIR  	= ' "<$SCRATCH_DIR>"
-  echo '$hn           	= ' "<$hn>"
-  echo '$start_x       	= ' "<$start_x>"
-  echo '$run_x       	= ' "<$run_x>"
-  echo '$mpirun       	= ' "<$mpirun>"
-  echo '$mpirunops    	= ' "<$mpirunops>"
-  echo '$x_ops        	= ' "<$x_ops>"
-  echo '$NODELIST     	= ' "<$NODELIST>"
-  echo '$SSH          	= ' "<$SSH>"
-  echo '$SCP          	= ' "<$SCP>"
-  echo '$PARENT_PID   	= ' "<$PARENT_PID>"
+  echo '$remote_top     = ' "<$remote_top>"
+  echo '$local_binary   = ' "<$local_binary>"
+  echo '$datadir        = ' "<$datadir>"
+  echo '$SCRATCH_DIR    = ' "<$SCRATCH_DIR>"
+  echo '$hn             = ' "<$hn>"
+  echo '$start_x        = ' "<$start_x>"
+  echo '$run_x          = ' "<$run_x>"
+  echo '$mpirun         = ' "<$mpirun>"
+  echo '$mpirunops      = ' "<$mpirunops>"
+  echo '$x_ops          = ' "<$x_ops>"
+  echo '$NODELIST       = ' "<$NODELIST>"
+  echo '$SSH            = ' "<$SSH>"
+  echo '$SCP            = ' "<$SCP>"
+  echo '$PARENT_PID     = ' "<$PARENT_PID>"
 }
 
 
 #------------------------------------------------------------------------------
-#-- Scratch Directory Routines                        
+#-- Scratch Directory Routines
 #------------------------------------------------------------------------------
 prepare_scratch_disk()
 {
@@ -74,9 +74,9 @@ prepare_scratch_disk()
   # them under $datadir/)
   if [ "$local_disc" = "yes" ]; then
     echo "Creating directory structure on scratch disc(s)"
-    for host in $nodelist 
+    for host in $nodelist
     do
-      $SSH $host "if (! -e $SCRATCH_DIR ) mkdir -p $SCRATCH_DIR; cd $SCRATCH_DIR; mkdir -p $procdirs $subdirs" 
+      $SSH $host "if (! -e $SCRATCH_DIR ) mkdir -p $SCRATCH_DIR; cd $SCRATCH_DIR; mkdir -p $procdirs $subdirs"
     done
   fi
 }
@@ -96,7 +96,7 @@ tidy_scratch_disk()
 
 
 #------------------------------------------------------------------------------
-#-- Data Directory Routines                        
+#-- Data Directory Routines
 #------------------------------------------------------------------------------
 determine_datadir()
 {
@@ -146,7 +146,7 @@ prepare_datadir()
 }
 
 #------------------------------------------------------------------------------
-#-- Execution Control and Monitoring Routines                        
+#-- Execution Control and Monitoring Routines
 #------------------------------------------------------------------------------
 background_remote_top()
 {
@@ -181,7 +181,7 @@ pencil_code_start()
   echo "$mpirun $mpirunops $npops $start_x $x_ops"
   echo "$mpirun $mpirunops $npops $start_x $x_ops" > run_command.log
   time $mpirun $mpirunops $npops $start_x $x_ops
-  start_status=$?		# save for exit
+  start_status=$?               # save for exit
   date
 }
 
@@ -189,10 +189,10 @@ pencil_code_run()
 {
   # Run run.x timestamping and timing appropriately
   date
-  echo "$mpirun $mpirunops $npops $run_x $x_ops" 
+  echo "$mpirun $mpirunops $npops $run_x $x_ops"
   echo "$mpirun $mpirunops $npops $run_x $x_ops" > run_command.log
   time $mpirun $mpirunops $npops $run_x $x_ops
-  run_status=$?		# save for exit
+  run_status=$?         # save for exit
   date
 }
 
@@ -200,37 +200,37 @@ queue_submit()
 {
   # Submit a pencil-code run to the queue system
   # This function should be over ridden in pc_config.sh
-  
-  echo "------------------------------------------------------------------"  
-  echo " ERROR: NO QUEUE SUBMISSION DEFINED           "  
-  echo "                                              "  
+
+  echo "------------------------------------------------------------------"
+  echo " ERROR: NO QUEUE SUBMISSION DEFINED           "
+  echo "                                              "
   echo " You have not defined how to submit to the queue on this machine. "
   echo " To do so add a definition of the queue_submit shell function     "
   echo " to the appropriate machine dependent section of pc_config.sh.    "
-  echo "                                              "  
-  echo " eg.                                          "  
-  echo "  queue_submit()                              "  
-  echo "  {                                           "  
-  echo "    qsub -pe mpi \$ncpus \$1                  "  
-  echo "  }                                           "  
-  echo "                                              "  
+  echo "                                              "
+  echo " eg.                                          "
+  echo "  queue_submit()                              "
+  echo "  {                                           "
+  echo "    qsub -pe mpi \$ncpus \$1                  "
+  echo "  }                                           "
+  echo "                                              "
   echo "  You may use and variables like \$ncpus defined by running the    "
-  echo "  pc_config.sh script. \$1 will contain the name of the executable "  
+  echo "  pc_config.sh script. \$1 will contain the name of the executable "
   echo "  script suggested for submission. \$2 will contain the suggested  "
   echo "  for the job. \$3, ..., etc. will contain any other parameters    "
   echo "  passed on the pc_qsub command line.                              "
   echo "    NB. one may use 'shift 2' to get rid of \$1, \$2 then \$@ to   "
   echo "        refer to the rest of the parameters.                       "
-  echo "-------------------------------------------------------------------"  
+  echo "-------------------------------------------------------------------"
 }
 
 check_RERUN()
 {
-  # look for RERUN file 
+  # look for RERUN file
   # With this method one can only reload a new executable.
   # One cannot change directory, nor are the var.dat files returned to server.
   # See the NEWDIR method below for more options.
-  if [ -f RERUN ]; then 
+  if [ -f RERUN ]; then
     rm -f RERUN
     echo
     echo "------------------------------------------------------------------------------"
@@ -240,14 +240,14 @@ check_RERUN()
     echo
   else
     run_finished=yes
-  fi  
+  fi
 }
 
 check_NEWDIR()
 {
-  # look for NEWDIR file 
+  # look for NEWDIR file
   # if NEWDIR contains a directory name, then continue run in that directory
-  if [ -f NEWDIR ]; then 
+  if [ -f NEWDIR ]; then
     if [ -s NEWDIR ]; then
       remove_lock
       olddir=$cwd
@@ -275,12 +275,12 @@ check_NEWDIR()
     fi
   else
     job_finished=yes
-  fi  
+  fi
 }
 
 
 #------------------------------------------------------------------------------
-#-- Data/Binary Distribution and Collection Routines                        
+#-- Data/Binary Distribution and Collection Routines
 #------------------------------------------------------------------------------
 distribute_data_to_nodes()
 {
@@ -288,7 +288,7 @@ distribute_data_to_nodes()
   #  If necessary, distribute var.dat from the server to the various nodes
   #
   if [ "$local_disc" = "yes" ]; then
-    if [ "$one_local_disc" = "yes" ]; then     # one common local disc 
+    if [ "$one_local_disc" = "yes" ]; then     # one common local disc
       echo -n "Distributing data to nodes...  "
       for node in $nodelist
       do
@@ -310,11 +310,11 @@ distribute_data_to_nodes()
         do
           echo -n "$i "
           $SCP ${remote_data_path}$datadir/proc$i/var.dat ${node}:$SCRATCH_DIR/proc$i/ 2>/dev/null
-          $SCP ${remote_data_path}$datadir/proc$i/timeavg.dat ${node}:$SCRATCH_DIR/proc$i/ 2>/dev/null 
+          $SCP ${remote_data_path}$datadir/proc$i/timeavg.dat ${node}:$SCRATCH_DIR/proc$i/ 2>/dev/null
           i=`expr $i + 1`
           j=`expr $j - 1`
         done
-        $SCP $datadir/allprocs/dxyz.dat ${node}:$SCRATCH_DIR/allprocs/ 2>/dev/null      
+        $SCP $datadir/allprocs/dxyz.dat ${node}:$SCRATCH_DIR/allprocs/ 2>/dev/null
       done
       echo " Done."
     fi
@@ -322,7 +322,7 @@ distribute_data_to_nodes()
 }
 
 distribute_binary()
-{ 
+{
   # If necessary copy executable to $SCRATCH_DIR of master node
   if [ "$local_binary" = "yes" ]; then
     echo "ls $1 $SCRATCH_DIR before copying:"
@@ -346,23 +346,23 @@ copy_snapshots ()
     debug=yes
     shift
   fi
-  
+
   #[ "$debug" = "yes" ] && (set verbose;  set echo)
-  
+
   varfile=$1
   [ "$debug" = "yes" ] && echo "varfile = <$varfile>"
-  
+
   pwd=`pwd`
   targetdir=$pwd/data
   nodelist=`echo $NODELIST | sed 's/:/ /g'` # unpack NODELIST
-  
+
   if [ "$debug" = "yes" ]; then
     echo "SCRATCH_DIR = <$SCRATCH_DIR>"
     echo "targetdir   = <$targetdir>"
     echo "nodelist    = <$nodelist>"
   fi
-  
-  if [ -n "$varfile" ]; then		# explicit filename given
+
+  if [ -n "$varfile" ]; then            # explicit filename given
     for node in $nodelist
     do
       echo "---------------------- $node ---------------------------"
@@ -391,9 +391,9 @@ copy_snapshots ()
       printf "\n$SSH $node ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile :\n"
       $SSH $node "ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile"
       echo "--------------------------------------------------------"
-    done 
-  else				# no explicit file given -- copy VARN, TAVGN
-    if [ -f COPY_IN_PROGRESS ]; then    
+    done
+  else                          # no explicit file given -- copy VARN, TAVGN
+    if [ -f COPY_IN_PROGRESS ]; then
       echo "ERROR: Copy already in progress! Exiting..."
       return 1
     fi
@@ -401,7 +401,7 @@ copy_snapshots ()
     touch COPY_IN_PROGRESS
     while [ -f COPY_IN_PROGRESS ];   # loop until killed
     do
-      sleep 60 &			# only check every minute
+      sleep 60 &                        # only check every minute
       save_sleep_pid=$!
       trap "kill $save_sleep_pid; rm -f COPY_IN_PROGRESS" SIGQUIT
       wait $save_sleep_pid
@@ -449,7 +449,7 @@ copy_snapshots ()
           ## Old scheme
           echo "Old scheme for copying (size-based)-- will be removed at some point"
         fi
-  
+
         if [ `ps -p $PARENT_PID | fgrep -c $PARENT_PID` -le 0 ]; then
           echo "No parent process (pid $PARENT_PID) -- exiting"
           exit 1
@@ -459,7 +459,7 @@ copy_snapshots ()
   fi
 
   [ "$debug" = "yes" ] && echo "copy_snapshots: done"
-}  
+}
 
 #copy_snapshots ()
 #{
@@ -473,23 +473,23 @@ copy_snapshots ()
 #    debug=yes
 #    shift
 #  fi
-#  
+#
 #  #[ "$debug" = "yes" ] && (set verbose;  set echo)
-#  
+#
 #  local varfile=$1
 #  [ "$debug" = "yes" ] && echo "varfile = <$varfile>"
-#  
+#
 #  local pwd=`pwd`
 #  local targetdir=$pwd/data
 ##  local nodelist=`echo $NODELIST | sed 's/:/ /g'` # unpack NODELIST
-#  
+#
 #  if [ "$debug" = "yes" ]; then
 #    echo "SCRATCH_DIR = <$SCRATCH_DIR>"
 #    echo "targetdir   = <$targetdir>"
 #    echo "nodelist    = <$nodelist>"
 #  fi
-#  
-#  if [ -n "$varfile" ]; then		# explicit filename given
+#
+#  if [ -n "$varfile" ]; then           # explicit filename given
 #    for node in $nodelist
 #    do
 #      echo "---------------------- $node ---------------------------"
@@ -518,9 +518,9 @@ copy_snapshots ()
 #      printf "\n$SSH $node ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile :\n"
 #      $SSH $node "ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile" 2>/dev/null
 #      echo "--------------------------------------------------------"
-#    done 
-#  else				# no explicit file given -- copy VARN, TAVGN
-#    if [ -f COPY_IN_PROGRESS ]; then    
+#    done
+#  else                         # no explicit file given -- copy VARN, TAVGN
+#    if [ -f COPY_IN_PROGRESS ]; then
 #      echo "ERROR: Copy already in progress! Exiting..."
 #      return 1
 #    fi
@@ -576,7 +576,7 @@ copy_snapshots ()
 #          ## Old scheme
 #          echo "Old scheme for copying (size-based)-- will be removed at some point"
 #        fi
-#  
+#
 #        if [ `ps -p $PARENT_PID | fgrep -c $PARENT_PID` -le 0 ]; then
 #          rm -f COPY_IN_PROGRESS
 #          echo "No parent process (pid $PARENT_PID) -- exiting"
@@ -589,7 +589,7 @@ copy_snapshots ()
 #  rm -f COPY_IN_PROGRESS
 #
 #  [ "$debug" = "yes" ] && echo "copy_snapshots: done"
-#}  
+#}
 
 background_copy_snapshots()
 {
@@ -630,7 +630,7 @@ unbackground_copy_snapshots()
 }
 
 #------------------------------------------------------------------------------
-#-- Run Lock Manipulation 
+#-- Run Lock Manipulation
 #------------------------------------------------------------------------------
 check_is_run_directory()
 {
@@ -649,7 +649,7 @@ check_is_run_directory()
   if [ ! "$isrundir" = "yes" ]; then
     echo "This does not appear to be a run directory! Exiting... "
     exit 1
-#    kill -SIGKILL $$			# full-featured suicide
+#    kill -SIGKILL $$                   # full-featured suicide
   fi
 }
 
@@ -663,7 +663,7 @@ check_not_locked()
     echo "If this is a mistake (eg after a crash), remove the LOCK file by hand:"
     echo "rm LOCK"
     exit 1                        # won't work in a sourced file
-#    kill -SIGKILL $$			# full-featured suicide
+#    kill -SIGKILL $$                   # full-featured suicide
   fi
 }
 
@@ -676,12 +676,12 @@ create_lock()
 remove_lock()
 {
   # Prevent code from running twice (and removing files by accident)
-  [ -f LOCK ] && rm -f LOCK 
+  [ -f LOCK ] && rm -f LOCK
 }
 
 
 #------------------------------------------------------------------------------
-#-- System / Run Enquiry Routines                        
+#-- System / Run Enquiry Routines
 #------------------------------------------------------------------------------
 check_sgi_fix()
 {
@@ -696,8 +696,8 @@ check_sgi_fix()
 determine_mpi()
 {
   # Are we running the MPI version?
-  if [ -f src/Makefile.local ]; then 
-    egrep -c '^[ 	]*MPICOMM[ 	]*=[ 	]*mpicomm' src/Makefile.local >/dev/null
+  if [ -f src/Makefile.local ]; then
+    egrep -c '^[        ]*MPICOMM[      ]*=[    ]*mpicomm' src/Makefile.local >/dev/null
     if [ $? -eq 0 ]; then
       mpi=yes
       echo "Running under MPI"
@@ -713,7 +713,7 @@ determine_mpi()
 determine_ncpus()
 {
   # Determine number of CPUS
-  if [ -f src/cparam.local ]; then 
+  if [ -f src/cparam.local ]; then
     ncpus=`perl -ne '$_ =~ /^\s*integer\b[^\\!]*ncpus\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
     nprocpernode=1
     echo $ncpus CPUs
@@ -759,7 +759,7 @@ determine_mpi_processor_options()
       npops="-n $ncpus"
     elif match "$mpirun" "scout" ; then
       nnode=`expr $NSLOTS - 1`
-      nprocpernode=`expr $ncpus / $nnode` 
+      nprocpernode=`expr $ncpus / $nnode`
       npops="-nodes=${nnode}x${nprocpernode}"
     elif match "$mpirun" "poe" ; then
       nprocpernode=1
@@ -781,8 +781,8 @@ determine_mpi_processor_options()
 check_reference_data()
 {
   if [ -f reference.out ] && [ -f data/time_series.dat ]; then
-    diff reference.out data/time_series.dat > /dev/null 
-    if [ $? -ne 0 ]; then 
+    diff reference.out data/time_series.dat > /dev/null
+    if [ $? -ne 0 ]; then
       echo "Found reference data: reference.out"
       echo "WARNING: Time series output does not match reference data."
     else
@@ -821,7 +821,7 @@ ishost() {
 
 
 #------------------------------------------------------------------------------
-#-- Variable Defaults                        
+#-- Variable Defaults
 #------------------------------------------------------------------------------
 TIMEFORMAT="real %3lR, system %3S, user %3U, cpu usage %P%%"
 

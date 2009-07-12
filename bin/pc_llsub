@@ -61,12 +61,12 @@ my $pipe = "| llsubmit -";
 
 # Get command line options
 GetOptions('help'       => \$help,
-	   'ncpus=i'    => \$ncpus,
+           'ncpus=i'    => \$ncpus,
            'tasks=i'    => \$tasks,
            'queue=s'    => \$queue,
            'walltime=s' => \$walltime,
-	   'account=s'  => \$account,
-	   'mail=s'     => \$mail,
+           'account=s'  => \$account,
+           'mail=s'     => \$mail,
            'output'     => \$output,
            'restart'    => \$restart);
 

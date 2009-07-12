@@ -30,7 +30,7 @@ fi
 # Determine whether this is MPI, how many CPUS etc.
 # This implicitly sources pc_functions.sh too.
 debug=yes
-. pc_config.sh 
+. pc_config.sh
 
 # Prevent code from running twice (and removing files by accident)
 check_not_locked
@@ -54,7 +54,7 @@ pencil_code_start
 final_copy_snapshots
 tidy_scratch_disk
 
-exit $start_status		# propagate status of mpirun
+exit $start_status              # propagate status of mpirun
 
 # cut & paste for job submission on the mhd machine
 # bsub -n  4 -q 4cpu12h mpijob dmpirun src/start.x

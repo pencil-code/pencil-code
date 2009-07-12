@@ -6,12 +6,12 @@ make_links()
   shift
   new=$1
   shift
-  
+
   while [ $1 ]; do
     dir=`dirname $1`
     current=`basename $1`
     oldname=`echo $current | perl -pe "s/slice_$new/slice_$old/;"`
- 
+
     (cd $dir; [ -h "$oldname" ] && rm -f "$oldname"; ln -sf $current $oldname)
     shift
   done
