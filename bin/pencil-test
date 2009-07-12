@@ -95,6 +95,7 @@ GetOptions(\%opts,
                -m=s --mail=s
                -M=s --Mailer=s
                -p=s --postproc=s
+               -t=s --time-limit=s
                -T=s --timings-file=s
                     --tag-stable=s
                     --tag-broken=s
