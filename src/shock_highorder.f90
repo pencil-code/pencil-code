@@ -41,7 +41,8 @@ module Shock
   namelist /shock_run_pars/ &
       ishock_max,lgaussian_smooth,lforce_periodic_shockviscosity, div_threshold
 ! 
-  integer :: idiag_shockmax=0
+  integer :: idiag_shockm=0, idiag_shockmin=0, idiag_shockmax=0
+  integer :: idiag_shockmx=0, idiag_shockmy=0, idiag_shockmz=0
 !
   real, dimension (-3:3,-3:3,-3:3) :: smooth_factor
 !
@@ -227,13 +228,15 @@ module Shock
 !
       logical :: lreset
       logical, optional :: lwrite
-      integer :: iname
 !
-!  reset everything in case of reset
+      integer :: iname, inamex, inamey, inamez
+!
+!  Reset everything in case of reset.
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_shockmax=0
+        idiag_shockm=0; idiag_shockmin=0; idiag_shockmax=0
+        idiag_shockmx=0; idiag_shockmy=0; idiag_shockmz=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -241,19 +244,37 @@ module Shock
       if (lroot.and.ip<14) print*,'rprint_shock: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),&
+            'shockm',idiag_shockm)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'shockmin',idiag_shockmin)
+        call parse_name(iname,cname(iname),cform(iname),&
             'shockmax',idiag_shockmax)
       enddo
 !
-!  write column where which shock variable is stored
+!  Check for those quantities for which we want yz-averages.
+!
+      do inamex=1,nnamex
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'shockmx',idiag_shockmx)
+      enddo
+!
+!  Check for those quantities for which we want xz-averages.
+!
+      do inamey=1,nnamey
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'shockmy',idiag_shockmy)
+      enddo
+!
+!  Check for those quantities for which we want xy-averages.
+!
+      do inamez=1,nnamez
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'shockmz',idiag_shockmz)
+      enddo
+!
+!  Write column where which shock variable is stored.
 !
       if (present(lwrite)) then
-        if (lwrite) then
-          write(3,*) 'i_shockmax=',idiag_shockmax
-          write(3,*) 'ishock=',ishock
-        endif
+        if (lwrite) write(3,*) 'ishock=',ishock
       endif
 !
-      call keep_compiler_quiet(lreset)
     endsubroutine rprint_shock
 !***********************************************************************
     subroutine get_slices_shock(f,slices)
@@ -277,7 +298,7 @@ module Shock
           slices%xy= f(l1:l2    ,m1:m2    ,slices%iz ,ishock)
           slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,ishock)
           slices%ready=.true.
-
+!
       endselect
 !
     endsubroutine get_slices_shock
@@ -288,10 +309,9 @@ module Shock
 !
 !  20-11-04/anders: coded
 !
-!   dummy
-!
-      if (idiag_shockmax/=0) then
-          lpenc_diagnos(i_shock)=.true.
+      if (idiag_shockm/=0 .or. idiag_shockmin/=0 .or. idiag_shockmax/=0 .or. &
+          idiag_shockmx/=0 .or. idiag_shockmy/=0 .or. idiag_shockmz/=0) then
+        lpenc_diagnos(i_shock)=.true.
       endif
 !
     endsubroutine pencil_criteria_shock
@@ -323,15 +343,21 @@ module Shock
 !
       intent(in) :: f
       intent(inout) :: p
-!
-      ! shock
+! shock
       if (lpencil(i_shock)) p%shock=f(l1:l2,m,n,ishock)
-!
-      ! gshock
+! gshock
       if (lpencil(i_gshock)) call grad(f,ishock,p%gshock)
 !
       if (ldiagnos) then
+        if (idiag_shockm/=0)   call sum_mn_name(p%shock,idiag_shockm)
+        if (idiag_shockmin/=0) call max_mn_name(-p%shock,idiag_shockmin,lneg=.true.)
         if (idiag_shockmax/=0) call max_mn_name(p%shock,idiag_shockmax)
+      endif
+!
+      if (l1ddiagnos) then
+        if (idiag_shockmx/=0)  call yzsum_mn_name_x(p%shock,idiag_shockmx)
+        if (idiag_shockmy/=0)  call xzsum_mn_name_y(p%shock,idiag_shockmy)
+        if (idiag_shockmz/=0)  call xysum_mn_name_z(p%shock,idiag_shockmz)
       endif
 !
     endsubroutine calc_pencils_shock
@@ -456,7 +482,6 @@ module Shock
         tmp(l1:l2,m,n) = penc
 !
       enddo
-
 !
 !  Scale by dxmax**2
 !
