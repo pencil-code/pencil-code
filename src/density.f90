@@ -1642,10 +1642,10 @@ module Density
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
 !
       if (l1ddiagnos) then
-         if (idiag_rhomr/=0)    call phizsum_mn_name_r(p%rho,idiag_rhomr)
-         if (idiag_rhomz/=0)    call xysum_mn_name_z(p%rho,idiag_rhomz)
-         if (idiag_rhomx/=0)    call yzsum_mn_name_x(p%rho,idiag_rhomx)
-         if (idiag_rhomy/=0)    call xzsum_mn_name_y(p%rho,idiag_rhomy)
+        if (idiag_rhomr/=0)    call phizsum_mn_name_r(p%rho,idiag_rhomr)
+        if (idiag_rhomz/=0)    call xysum_mn_name_z(p%rho,idiag_rhomz)
+        if (idiag_rhomx/=0)    call yzsum_mn_name_x(p%rho,idiag_rhomx)
+        if (idiag_rhomy/=0)    call xzsum_mn_name_y(p%rho,idiag_rhomy)
       endif
 !
 !  Calculate density diagnostics
