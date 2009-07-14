@@ -3402,6 +3402,11 @@ module Magnetic
             slices%ready=.false.
           else
             slices%index=slices%index+1
+            ! START TEMPORARY
+            if (slices%index > size(bb_yz, 3)) then
+              call fatal_error("get_slices_magnetic", "Could somebody at last fix this?")
+            endif
+            ! END TEMPORARY
             slices%yz =>bb_yz(:,:,slices%index)
             slices%xz =>bb_xz(:,:,slices%index)
             slices%xy =>bb_xy(:,:,slices%index)
