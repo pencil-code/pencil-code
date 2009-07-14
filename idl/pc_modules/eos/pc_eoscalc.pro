@@ -63,8 +63,8 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,lntt=lntt,cs2=cs2, $
        message,"Thermodynamic combination not implemented yet: /pp,/lnrho_lnTT"
       endif else if keyword_set(ss) then begin
        ;result = fn of  where var1,var2 = lnrho, lnTT
-       lnrho=var1
-       if (param.ltemperature_nolog) then lnTT=alog(var2) else lnTT=var2 
+       if (param.ldensity_nolog)     then lnrho=alog(var1) else lnrho=var1
+       if (param.ltemperature_nolog) then lnTT =alog(var2) else lnTT=var2 
       ;
        cs20=param.cs0^2
        lnrho0=alog(param.rho0)
@@ -87,7 +87,7 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,lntt=lntt,cs2=cs2, $
 
     endif else begin ; Standard eos ideal gas with lnrho and ss
 
-      lnrho=var1
+      if (param.ldensity_nolog) then lnrho=alog(var1) else lnrho=var1
       ss=var2
 
 ;     @data/pc_constants.pro
@@ -186,7 +186,7 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,lntt=lntt,cs2=cs2, $
 
       ;Assume lnrho_ss unless specified
 
-      lnrho=var1
+      if (param.ldensity_nolog) then lnrho=alog(var1) else lnrho=var1
       ss=var2
 
 ;     @data/pc_constants.pro
@@ -242,7 +242,7 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,lntt=lntt,cs2=cs2, $
 
       ;Assume lnrho_ss unless specified
 
-      lnrho=var1
+      if (param.ldensity_nolog) then lnrho=alog(var1) else lnrho=var1
       ss=var2
 
 ;     @data/pc_constants.pro
