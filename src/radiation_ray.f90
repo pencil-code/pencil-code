@@ -2089,11 +2089,11 @@ module Radiation
           if (slices%index >= 3) then
             slices%ready = .false.
           else
-            slices%yz=f(slices%ix,m1:m2    ,n1:n2,iFradx+slices%index)
-            slices%xz=f(l1:l2    ,slices%iy,n1:n2,iFradx+slices%index)
-            slices%xy=f(l1:l2    ,m1:m2    ,slices%iz,iFradx+slices%index)
-            slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,iFradx+slices%index)
             slices%index = slices%index+1
+            slices%yz =f(slices%ix,m1:m2    ,n1:n2     ,iFradx-1+slices%index)
+            slices%xz =f(l1:l2    ,slices%iy,n1:n2     ,iFradx-1+slices%index)
+            slices%xy =f(l1:l2    ,m1:m2    ,slices%iz ,iFradx-1+slices%index)
+            slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,iFradx-1+slices%index)
             if (slices%index < 3) slices%ready = .true.
           endif
 !

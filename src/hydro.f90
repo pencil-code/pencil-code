@@ -3400,15 +3400,15 @@ module Hydro
           if (slices%index>3) then
             slices%ready=.false.
           else
-            slices%yz =f(slices%ix,m1:m2    ,n1:n2,iux+slices%index)
-            slices%xz =f(l1:l2    ,slices%iy,n1:n2,iux+slices%index)
-            slices%xy =f(l1:l2    ,m1:m2    ,slices%iz,iux+slices%index)
-            slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,iux+slices%index)
-            if (lwrite_slice_xy3) &
-                 slices%xy3=f(l1:l2    ,m1:m2    ,slices%iz3,iux+slices%index)
-            if (lwrite_slice_xy4) &
-                 slices%xy4=f(l1:l2    ,m1:m2    ,slices%iz4,iux+slices%index)
             slices%index=slices%index+1
+            slices%yz =f(slices%ix,m1:m2    ,n1:n2     ,iux-1+slices%index)
+            slices%xz =f(l1:l2    ,slices%iy,n1:n2     ,iux-1+slices%index)
+            slices%xy =f(l1:l2    ,m1:m2    ,slices%iz ,iux-1+slices%index)
+            slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,iux-1+slices%index)
+            if (lwrite_slice_xy3) &
+                 slices%xy3=f(l1:l2,m1:m2,slices%iz3,iux-1+slices%index)
+            if (lwrite_slice_xy4) &
+                 slices%xy4=f(l1:l2,m1:m2,slices%iz4,iux-1+slices%index)
             if (slices%index<=3) slices%ready=.true.
           endif
 !
