@@ -2,27 +2,26 @@
 #$Id$
 #
 #  Examples:
-#     nohup copy-VAR-to-var 10 .
-#     nohup copy-VAR-to-var 40 ../hydro256e
+#     nohup copy-var-to-VAR0 .
+#     nohup copy-var-to-VAR0 ../hydro256e
 #
 #  Usage:
-#     will copy all VAR5 files to var.dat in each proc directory.
+#     will copy all var.dat files to VAR0 in each proc directory.
 #
 #  Description:
-#     Used for restarting from a given VAR file.
-#     Copies all VARx files to var.dat in each proc directory.
+#     Used for restarting from a given var.dat file.
+#     Copies all var.dat files to VAR0 in each proc directory.
 #     Run this command from run directory, not data directory.
-#     The first argument gives the number of the snapshot.
-#     The second argument gives the target directory.
+#     The first argument gives the target directory.
 #
 #  14-nov-02/axel: coded
 #  16-nov-02/axel: enhanced comments
 
-/bin/pwd >>! $2/data/copied_from.dir
-/bin/date >>! $2/data/copied_from.dir
+/bin/pwd >>! $1/data/copied_from.dir
+/bin/date >>! $1/data/copied_from.dir
 
 set procdirs  =  `\ls data/ | grep proc `
 foreach proc ($procdirs)
-  echo "\\cp data/$proc/var.dat data/$proc/VAR0"
-  \cp data/$proc/var.dat data/$proc/VAR0
+  echo "\\cp data/$proc/var.dat $1/data/$proc/VAR0"
+  \cp data/$proc/var.dat $1/data/$proc/VAR0
 end
