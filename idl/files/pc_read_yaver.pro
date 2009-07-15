@@ -14,7 +14,7 @@ pro pc_read_yaver, object=object, varfile=varfile, datadir=datadir, $
     noaxes=noaxes, thick=thick, charsize=charsize, loge=loge, log10=log10, $
     t_title=t_title, t_scale=t_scale, t_zero=t_zero, interp=interp, $
     ceiling=ceiling, position=position, fillwindow=fillwindow, $
-    tformat=tformat, $
+    tformat=tformat, swap_endian=swap_endian, $
     tmin=tmin, njump=njump, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
     xsize=xsize, ysize=ysize, it1=it1, variables=variables, $
     colorbar=colorbar, bartitle=bartitle, xshift=xshift, $
@@ -60,6 +60,7 @@ default, loge, 0
 default, log10, 0
 default, fillwindow, 0
 default, tformat, '(f5.1)'
+default, swap_endian, 0
 default, it1, 10
 default, variables, ''
 default, colorbar, 0
@@ -169,7 +170,7 @@ if (not countfile gt 0) then begin
   stop
 endif
 close, file
-openr, file, filename, /f77
+openr, file, filename, /f77, swap_endian=swap_endian
 ;;
 ;; For png output, open z buffer already now.
 ;;
