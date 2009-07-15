@@ -171,8 +171,7 @@ else if ($?SLURM_NODELIST) then
   #   n41 n43 n44 n45 n46 n47 n48 n49 n69 n70 n111 n112 n113 n114
   # using a Perl ``one-liner'':
   if ($SLURM_NNODES != 1) then
-    set nodelist = `echo "$SLURM_
-NODELIST" | perl -ne 'next if /^\s*(#.*)?$/; if (/\s*([^[]+)\[([^\]]*)/) { ($prefix,$list)=($1,$2); $list =~ s/([0-9]+)-([0-9]+)/join(" ", $1..$2)/eg; $list =~ s/([ ,]+)/ $prefix/g}; print "$prefix$list\n";'`
+    set nodelist = `echo "$SLURM_NODELIST" | perl -ne 'next if /^\s*(#.*)?$/; if (/\s*([^[]+)\[([^\]]*)/) { ($prefix,$list)=($1,$2); $list =~ s/([0-9]+)-([0-9]+)/join(" ", $1..$2)/eg; $list =~ s/([ ,]+)/ $prefix/g}; print "$prefix$list\n";'`
   else
     set nodelist = $SLURM_NODELIST
   endif
