@@ -65,6 +65,33 @@ sub find_config_file {
 
 # ---------------------------------------------------------------------- #
 
+sub locate_config_files {
+#
+# Return the full path to each of the config files given, searching in
+# the @config_path.
+# If no config file is found, return empty list.
+#
+    my (@files) = @_;
+
+    my @config_files;
+    file: for my $file (@files) {
+        $file .= '.conf' unless ($file =~ /\.conf$/); # add suffix if necessary
+        dir: for my $dir (@config_path) {
+            my $filepath = "$dir/$file";
+            if (-e $filepath) {
+                push @config_files, $filepath;
+                next file;
+            }
+        }
+    }
+
+#    TODO -- support relative file names like './conf'?
+
+    return @config_files;
+}
+
+# ---------------------------------------------------------------------- #
+
 sub find_config_file_for_computer {
 #
 # Return config file for the given host ID, or undef.
@@ -350,6 +377,23 @@ If no matching file is found, return undef.
 Return the full path name of the (first) matching config file for the
 given host ID.
 If not such file is found, return undef.
+
+=item B<locate_config_files(@files)>
+
+Return list of full path names representing the files listed in C<@files>.
+After appending a C<.conf> suffix if needed, B<locate_config_files()>
+looks for the files in the path given below.
+
+E.g.,
+
+  locate_config_files('os/GNU_Linux', 'mpi/open-mpi')
+
+might return the list
+
+  ( '/home/USER/pencil-code/config/os/GNU_Linux.conf',
+    '/home/USER/.pencil/config/mpi/open-mpi.conf' )
+
+.
 
 =back
 
