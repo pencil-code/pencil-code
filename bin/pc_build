@@ -34,12 +34,17 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   -v, --version   Print version number
 #   -q, --quiet     Be quiet
 # Examples:
+#   pc_build
+#       use host ID mechanism to identify the appropriate config file.
 #   pc_build -f os/GNU_Linux,mpi/open-mpi
 #       will use the configuration files
 #       ${PENCIL_HOME}/config/os/GNU_Linux.conf and
 #       ${PENCIL_HOME}/config/mpi/open-mpi.conf (unless you have analogous
 #       files under ~/.pencil/config to override the ones in
 #       ${PENCIL_HOME}).
+#   pc_build -f /home/USER/myconfig
+#       will use the configuration file /home/USER/myconfig.conf if it
+#       exists.
 
 # Copyright (C) 2009  Wolfgang Dobler
 #

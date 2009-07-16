@@ -76,11 +76,19 @@ sub locate_config_files {
     my @config_files;
     file: for my $file (@files) {
         $file .= '.conf' unless ($file =~ /\.conf$/); # add suffix if necessary
-        dir: for my $dir (@config_path) {
-            my $filepath = "$dir/$file";
-            if (-e $filepath) {
-                push @config_files, $filepath;
-                next file;
+        if ($file =~ m{^/}) {   # absolute path
+            if (-e $file) {
+                push @config_files, $file;
+            } else {
+                warn("No such file: $file\n") unless ($quiet);
+            }
+        } else {
+            dir: for my $dir (@config_path) {
+                my $filepath = "$dir/$file";
+                if (-e $filepath) {
+                    push @config_files, $filepath;
+                    next file;
+                }
             }
         }
     }
@@ -381,8 +389,13 @@ If not such file is found, return undef.
 =item B<locate_config_files(@files)>
 
 Return list of full path names representing the files listed in C<@files>.
-After appending a C<.conf> suffix if needed, B<locate_config_files()>
-looks for the files in the path given below.
+
+Each of the file names in C<@files> gets a C<.conf> suffix appended if
+needed.
+
+If the file name starts with `/', it is treated as an abolute path name.
+If it does not start with a slash, B<locate_config_files()> looks for the
+files in the path given below.
 
 E.g.,
 
@@ -393,7 +406,15 @@ might return the list
   ( '/home/USER/pencil-code/config/os/GNU_Linux.conf',
     '/home/USER/.pencil/config/mpi/open-mpi.conf' )
 
-.
+, while
+
+  locate_config_files('/home/USER/myconfig')
+
+will return
+
+  ( '/home/USER/myconfig.conf' )
+
+if that file exists, or an empty list otherwise.
 
 =back
 
