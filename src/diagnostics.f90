@@ -211,6 +211,12 @@ module Diagnostics
           intdr_rel   =      (xyz1(1)**2-    xyz0(1)**2)/(2.*dx)
           intdphi_rel =      (xyz1(2)   -    xyz0(2)) /dy
           intdz_rel   =      (xyz1(3)   -    xyz0(3)) /dz
+!
+!  Prevent zeros from less then 3-dimensional runs
+!
+          if (nx==1) intdr_rel=1.
+          if (ny==1) intdphi_rel=1.
+          if (nz==1) intdz_rel=1.
           dVol_rel1=1./(intdr_rel*intdphi_rel*intdz_rel)
         else
           dVol_rel1=1./(nw*ncpus)
