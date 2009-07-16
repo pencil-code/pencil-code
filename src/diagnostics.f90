@@ -200,7 +200,7 @@ module Diagnostics
           intdtheta_rel = -(cos(xyz1(2))  -cos(xyz0(2)))/dy
           intdphi_rel   =      (xyz1(3)   -    xyz0(3)) /dz
 !
-!  Prevent zeros from less then 3-dimensional runs
+!  Prevent zeros from less than 3-dimensional runs
 !  (maybe this should be 2pi, but maybe not).
 !
           if (nx==1) intdr_rel=1.
@@ -212,7 +212,7 @@ module Diagnostics
           intdphi_rel =      (xyz1(2)   -    xyz0(2)) /dy
           intdz_rel   =      (xyz1(3)   -    xyz0(3)) /dz
 !
-!  Prevent zeros from less then 3-dimensional runs
+!  Prevent zeros from less than 3-dimensional runs
 !
           if (nx==1) intdr_rel=1.
           if (ny==1) intdphi_rel=1.
