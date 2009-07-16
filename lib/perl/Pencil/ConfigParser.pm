@@ -353,21 +353,34 @@ sub find_include_file {
 sub parse_lines{
 #
 # Parse an arrayref of lines
-#   ['VAR1 = rhs1', 'VAR2 = rhs2', ...]
+#   ['VAR1 = rhs1', 'VAR2 = rhs2a', 'VAR3 = rhs3', 'VAR2 += rhs2b', ...]
 # into a hash
-#   { 'VAR1' => 'rhs1', 'VAR2' => 'rhs2', ... }
+#   { 'VAR1' => 'rhs1', 'VAR2' => 'rhs2a rhs2b', 'VAR3' => 'rhs3', ... }
 # and the ordered list of keys
-#   ['VAR1', 'VAR2', ...]
+#   ['VAR1', 'VAR2', 'VAR3', ...]
 #
     my ($lines_ref, $debug) = @_;
 
     my (%map, @keys);
     foreach my $line (@$lines_ref) {
-        ($line =~ /^\s*([^=]*?)\s*=\s*(.*?)\s*$/)
+        ($line =~ /^\s*([^=]*?)\s*(\+?=)\s*(.*?)\s*$/)
           or croak "Cannot parse line <$line>\n";
-        my ($key, $val) = ($1, $2);
-        $map{$key} = $val;
-        push @keys, $key;
+        my ($key, $op, $val) = ($1, $2, $3);
+
+        push @keys, $key unless defined($map{$key});
+
+        if ($op eq '=') {
+            $map{$key} = $val;
+        } elsif ($op eq '+=') {
+            my $oldval = $map{$key};
+            if (defined $oldval) {
+                $map{$key} .= " " . $val;
+            } else {
+                $map{$key} = $val;
+            }
+        } else {
+            die "Unexpected assignment operator `$op'\n";
+        }
     }
 
     return (\%map, \@keys);
