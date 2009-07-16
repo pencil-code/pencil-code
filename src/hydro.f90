@@ -384,6 +384,9 @@ module Hydro
   integer :: idiag_fxbxm=0      ! DIAG_DOC: 
   integer :: idiag_fxbym=0      ! DIAG_DOC: 
   integer :: idiag_fxbzm=0      ! DIAG_DOC: 
+  integer :: idiag_uxglnrym=0   ! DIAG_DOC: 
+  integer :: idiag_uyglnrxm=0   ! DIAG_DOC: 
+  integer :: idiag_uxuydivum=0  ! DIAG_DOC: 
   integer :: idiag_urmsn=0,idiag_urmss=0,idiag_urmsh=0
   integer :: idiag_ormsn=0,idiag_ormss=0,idiag_ormsh=0
   integer :: idiag_oumn=0,idiag_oums=0,idiag_oumh=0
@@ -1644,6 +1647,9 @@ module Hydro
         if (idiag_totangmom/=0) &
              call sum_lim_mn_name(p%rho*(p%uu(:,2)*x(l1:l2)-p%uu(:,1)*y(m)),&
              idiag_totangmom,p)
+        if (idiag_uxglnrym/=0)  call sum_mn_name(p%uu(:,1)*p%glnrho(:,2),idiag_uxglnrym)
+        if (idiag_uyglnrxm/=0)  call sum_mn_name(p%uu(:,2)*p%glnrho(:,1),idiag_uyglnrxm)
+        if (idiag_uxuydivum/=0) call sum_mn_name(p%uu(:,1)*p%uu(:,2)*p%divu,idiag_uxuydivum)
 !
 !  Kinetic field components at one point (=pt).
 !
@@ -2924,6 +2930,9 @@ module Hydro
         idiag_uguxmz=0
         idiag_uguymz=0
         idiag_uguzmz=0
+        idiag_uxglnrym=0
+        idiag_uyglnrxm=0
+        idiag_uxuydivum=0
         idiag_urmsh=0;idiag_urmsn=0;idiag_urmss=0
         idiag_ormsh=0;idiag_ormsn=0;idiag_ormss=0
         idiag_oumh=0;idiag_oumn=0;idiag_oums=0
@@ -3040,6 +3049,9 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'uguym',idiag_uguym)
         call parse_name(iname,cname(iname),cform(iname),'uguzm',idiag_uguzm)
         call parse_name(iname,cname(iname),cform(iname),'ugu2m',idiag_ugu2m)
+        call parse_name(iname,cname(iname),cform(iname),'uxglnrym',idiag_uxglnrym)
+        call parse_name(iname,cname(iname),cform(iname),'uyglnrxm',idiag_uyglnrxm)
+        call parse_name(iname,cname(iname),cform(iname),'uxuydivum',idiag_uxuydivum)
       enddo
 !
 ! Quantities which are averaged over half (north-south) the box
