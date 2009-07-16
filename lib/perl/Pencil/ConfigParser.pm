@@ -31,7 +31,7 @@ $VERSION = '0.1';
 
 sub new {
 #
-#   Pencil::ConfigParser->new($filename);
+#   Pencil::ConfigParser->new(@filenames);
 #
     my $proto = shift;          # either classref or object ref or string
     my @argv  = @_;
@@ -50,8 +50,8 @@ sub new {
         $class = $proto;
     }
 
-    croak "Usage: ConfigParser->new(\$filename)" unless (@argv == 1);
-    $self->{FILENAME}  = pop(@argv);
+    croak "Usage: ConfigParser->new(\@filenames)" unless (@argv >= 1);
+    $self->{FILENAMES}  = \@argv;
 
     $self->{DEBUG}   = 0;
     $self->{VERBOSE} = 0;
@@ -190,9 +190,11 @@ sub parse {
     #   { section1 => [line11, line12, ...],
     #     section2 => [line21, line22, ...], ... }
     my %section_map;
-    get_sections(
-        $self->{FILENAME}, '__GLOBAL__', \%section_map, $self->{DEBUG}
-    );
+    for my $filename (@{$self->{FILENAMES}}) {
+        get_sections(
+            $filename, '__GLOBAL__', \%section_map, $self->{DEBUG}
+        );
+    }
     if ($self->{DEBUG}) {
         eval {
             require Data::Dumper;
@@ -397,6 +399,7 @@ Pencil::ConfigParser - Parse Pencil Code configuration files
 
   use Pencil::ConfigParser;
   my $parser = Pencil::ConfigParser->new('mycomputer.conf');
+  my $parser = Pencil::ConfigParser->new('os/GNU_Linux.conf', 'mpi/mpich.conf');
 
   my %make_params = $parser->get_makefile_params();
   print $parser->get_makefile_params->{'FFLAGS'};
@@ -418,10 +421,12 @@ expanding `%include' macros.
 =over 4
 
 
-=item B<new>($filename)
+=item B<new>(@filenames)
 
-Create a new object. I<$filename> will be parsed lazily, i.e. at the point
-where results from parsing are actually needed.
+Create a new object that will accumulate all entries from the files listed
+in @filenames (and their included files).
+Parsing is done lazily, i.e. occurs at the point where results from
+parsing are actually needed.
 
 =item B<debug>([$debug])
 
