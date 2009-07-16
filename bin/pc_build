@@ -88,7 +88,9 @@ my $parser = new Pencil::ConfigParser(@config_files);
 $parser->debug(1) if ($debug);
 
 my @make_args = @{$parser->get_makefile_args()};
-print STDERR "Make args: @make_args\n" if ($debug);
+
+print STDERR "Running make '", join("' '", @make_args), "'\n"
+  unless ($quiet);
 
 system('make', @make_args) == 0
   or die "Make failed: <$!>\n";
