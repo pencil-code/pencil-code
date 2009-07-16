@@ -170,7 +170,7 @@ sub locate_config_file {
     my $file = "${root}/${id}.conf";
     unless (-e $file) {
         debug("No such file: <$file>\n");
-        next;
+        return undef;
     }
 
     debug("Found file: <$file>\n");
@@ -191,6 +191,7 @@ sub get_host_ids {
 #
     my @ids = ();
     add_host_id_from_file("./host-ID", \@ids);
+    add_host_id_from_file("$ENV{PENCIL_HOME}/host-ID", \@ids);
     add_host_id_from_file("$ENV{HOME}/.pencil/host-ID", \@ids);
     add_host_id_from_fqdn(\@ids);
     add_host_id_from_scraping_system_info(\@ids);
