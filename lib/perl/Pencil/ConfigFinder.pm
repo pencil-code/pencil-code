@@ -106,7 +106,7 @@ sub find_config_file_for_computer {
 #
     my ($host_id) = @_;
 
-    find_config_file_for($host_id, 'computers');
+    find_config_file_for($host_id, 'hosts');
 }
 
 # ---------------------------------------------------------------------- #
