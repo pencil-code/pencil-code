@@ -107,8 +107,8 @@ Along the way, //configure// indicates which host IDs were tried (by default, or
 === Locating the config file ===
 
 The host ID is then used to find the appropriate config file for the given computer (which will include other config files as needed). E.g. if the host ID is ''workhorse.pencil.org'', //configure// will look for a file ''workhorse.pencil.org'' in all directories below
-1. ''~/.pencil/config/computers''
-2. ''${PENCIL_HOME}/config/computers''
+1. ''~/.pencil/config/hosts''
+2. ''${PENCIL_HOME}/config/hosts''
 
 
 

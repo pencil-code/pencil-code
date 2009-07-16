@@ -106,7 +106,7 @@ sub find_config_file_for_computer {
 #
     my ($host_id) = @_;
 
-    find_config_file_for($host_id, 'hosts');
+    find_config_file_for($host_id, 'hosts', 1);
 }
 
 # ---------------------------------------------------------------------- #
@@ -124,9 +124,12 @@ sub find_config_file_for_os {
 
 sub find_config_file_for {
 #
-# Return config file for $id in $subdir, or undef.
+# Return config file for $id in subdir $subdir of each dir in
+# @config_path.
+# If the $recurse flag is set, try all subdirectories below subdir/, too.
+# If no file is found, return undef;
 #
-    my ($id, $subdir) = @_;
+    my ($id, $subdir, $recurse) = @_;
 
     return undef unless (defined $id);
 
@@ -134,21 +137,50 @@ sub find_config_file_for {
     $id =~ s{(\s|/)+}{_}g;
 
     for my $dir (@config_path) {
-        my $file = "${dir}/${subdir}/${id}.conf";
-        unless (-e $file) {
-            debug("No such file: <$file>\n");
-            next;
-        }
-
-        debug("Found file: <$file>\n");
-        if (-f $file) {
-            return $file;
-        } else {
-            warn "Not a regular file: <$file>\n";
-        }
+        my $subdir_path = "${dir}/${subdir}";
+        my $file = locate_config_file($subdir_path, $id, $recurse);
+        return $file if (defined $file);
     }
 
     return undef;               # no file found
+}
+
+# ---------------------------------------------------------------------- #
+
+sub locate_config_file {
+#
+# Return config file for $id in directory $root.
+# If the $recurse flag is set, try all subdirectories below $root, too.
+# If no file is found, return undef;
+#
+    my ($root, $id, $recurse) = @_;
+    return undef unless (-d $root);
+
+    # Recursive
+    if ($recurse) {
+        my @dirs = split("\0", `find $root -type d -print0`);
+        for my $dir (@dirs) {
+            my $file = locate_config_file($dir, $id, 0);
+            return $file if (defined $file);
+        }
+        return undef;
+    }
+
+    # Non-recursive
+    my $file = "${root}/${id}.conf";
+    unless (-e $file) {
+        debug("No such file: <$file>\n");
+        next;
+    }
+
+    debug("Found file: <$file>\n");
+    if (-f $file) {
+        return $file;
+    } else {
+        warn "Not a regular file: <$file>\n";
+    }
+
+    return undef;
 }
 
 # ---------------------------------------------------------------------- #
