@@ -23,10 +23,23 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   the appropriate configuration files.
 # Usage:
 #   pc_build [-v|-h]
+#   pc_build -f <file1,file2,...>
 # Options:
 #   -h, --help      This help
+#   -f <files>,
+#       --config-files=<files>
+#                   Use the given <files> (a comma-separated list) as
+#                   configuration files, rather than trying to find a
+#                   config file base on a host ID.
 #   -v, --version   Print version number
 #   -q, --quiet     Be quiet
+# Examples:
+#   pc_build -f os/GNU_Linux,mpi/open-mpi
+#       will use the configuration files
+#       ${PENCIL_HOME}/config/os/GNU_Linux.conf and
+#       ${PENCIL_HOME}/config/mpi/open-mpi.conf (unless you have analogous
+#       files under ~/.pencil/config to override the ones in
+#       ${PENCIL_HOME}).
 
 # Copyright (C) 2009  Wolfgang Dobler
 #
@@ -72,11 +85,13 @@ if ($opts{'h'} || $opts{'help'})    { die usage();   }
 if ($opts{'v'} || $opts{'version'}) { die version(); }
 
 my $quiet        = ($opts{'q'} || $opts{'quiet'}        || '');
-my $config_files = ($opts{'f'} || $opts{'config-files'} || '');
+my $config_files = ($opts{'f'} || $opts{'config-files'} || undef);
 
 my @config_files;
-push @config_files, split(",", $config_files) if ($config_files);
-unless (@config_files) {
+if (defined $config_files) {
+    my @files = split(",", $config_files);
+    @config_files = Pencil::ConfigFinder::locate_config_files(@files) ;
+} else {
     mention($Pencil::ConfigFinder::debug);
     $Pencil::ConfigFinder::debug = 1 if ($debug);
     push @config_files, Pencil::ConfigFinder::find_config_file()
