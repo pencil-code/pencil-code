@@ -1,7 +1,7 @@
 Content-Type: text/x-zim-wiki
 Wiki-Format: zim 0.26
 Creation-Date: Wed, 27 May 2009 06:57:44 +0200
-Modification-Date: Mon, 08 Jun 2009 16:51:55 +0200
+Modification-Date: Thu, 09 Jul 2009 15:05:50 +0200
 
 ====== Documentation of the New Configuration Scheme ======
 Created Wednesday 27 May 2009
@@ -23,6 +23,7 @@ Here is a sample file:
   %include compilers/gcc
   FFLAGS = -O0 \
            -g
+  CFLAGS += -g
 %endsection Makefile
 
 # Runtime section
@@ -40,14 +41,15 @@ Here is a sample file:
 A configuration file consists of up to three sections. The //Makefile section// and the //runtime section// are delineated by ''%section ...'' and ''%endsection ...'' , while any statements outside a ''%section''/''%endsection'' block make up the //global section//.
 
 Statements inside a section are either
-//assignements//, like ''FFLAGS = -O4''
+//assignements//, like ''FFLAGS = -O4'', ''CFLAGS += -g''
 or
 //include statements//, like ''%include compilers/g95''.
 
 
 ==== Assignments ====
 
-An assignment has the form ''key = value value value...''. Whitespace around the ''='' sign is insignificant, and repeated whitespace in the value part is compressed to one space character unless it is quoted [not implemented yet].
+A simple assignment has the form ''key = value value value...''. Whitespace around the ''='' sign is insignificant, and repeated whitespace in the value part is compressed to one space character unless it is quoted [not implemented yet].
+It associates the (space-separated) values with the given key, erasing any previous association from earlier assignments to the given key.
 
 A backslash at the end of the line continues the assignment statement to the following line:
 
@@ -58,6 +60,8 @@ CFLAGS = -O3 \
          -I../include \
          -Wall
 '''
+
+An incremental assignment has the form ''key += value value value...''. It behaves like a simple assignment, except that it appends the values (with one space character as separator) to any values already associated with the key.
 
 
 ==== Include statements ====
