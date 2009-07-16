@@ -217,6 +217,7 @@ sub parse {
         } else {
             carp "Warning: Unknown section <$section>\n";
         }
+
     }
 
     $self->{PARSED} = 1;
@@ -373,7 +374,7 @@ sub parse_lines{
             $map{$key} = $val;
         } elsif ($op eq '+=') {
             my $oldval = $map{$key};
-            if (defined $oldval) {
+            if (defined $oldval && $oldval !~ /^\s*$/) {
                 $map{$key} .= " " . $val;
             } else {
                 $map{$key} = $val;
