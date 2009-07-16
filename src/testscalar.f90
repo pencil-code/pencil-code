@@ -668,7 +668,7 @@ module Testscalar
 !  Testfield slice
 !
         case ('cc1')
-          if (slices%index>3) then
+          if (slices%index>=3) then
             slices%ready=.false.
           else
             slices%index=slices%index+1

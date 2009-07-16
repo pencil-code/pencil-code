@@ -2049,7 +2049,7 @@ module Radiation
 !
         case ('Isurf')
           if (slices%index >= nIsurf) then
-            slices%ready = .false.
+            slices%ready=.false.
           else
             if (slices%index == 0) idir_last=0
             nullify(slices%yz)
@@ -2059,8 +2059,8 @@ module Radiation
               nrad=dir(idir,3)
               if (nrad>0) then
                 slices%xy2=>Isurf(idir)%xy2
-                slices%index = slices%index+1
-                if (slices%index < nIsurf) slices%ready = .true.
+                slices%index=slices%index+1
+                if (slices%index<nIsurf) slices%ready=.true.
                 idir_last=idir
                 exit
               endif
@@ -2088,15 +2088,15 @@ module Radiation
 !  Radiative Flux
 !
         case ('Frad')
-          if (slices%index >= 3) then
-            slices%ready = .false.
+          if (slices%index>=3) then
+            slices%ready=.false.
           else
-            slices%index = slices%index+1
+            slices%index=slices%index+1
             slices%yz =abs(f(slices%ix,m1:m2    ,n1:n2     ,iFradx-1+slices%index))
             slices%xz =abs(f(l1:l2    ,slices%iy,n1:n2     ,iFradx-1+slices%index))
             slices%xy =abs(f(l1:l2    ,m1:m2    ,slices%iz ,iFradx-1+slices%index))
             slices%xy2=abs(f(l1:l2    ,m1:m2    ,slices%iz2,iFradx-1+slices%index))
-            if (slices%index < 3) slices%ready = .true.
+            if (slices%index<3) slices%ready = .true.
           endif
 !
       endselect

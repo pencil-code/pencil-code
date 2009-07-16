@@ -3380,7 +3380,7 @@ module Magnetic
 !  Magnetic vector potential (code variable)
 !
         case ('aa')
-          if (slices%index>3) then
+          if (slices%index>=3) then
             slices%ready=.false.
           else
             slices%index=slices%index+1
@@ -3398,7 +3398,7 @@ module Magnetic
 !  Magnetic field (derived variable)
 !
         case ('bb')
-          if (slices%index>3) then
+          if (slices%index>=3) then
             slices%ready=.false.
           else
             slices%index=slices%index+1
@@ -3414,7 +3414,7 @@ module Magnetic
 !  Magnetic field (derived variable)
 !
         case ('jj')
-          if (slices%index>3) then
+          if (slices%index>=3) then
             slices%ready=.false.
           else
             slices%index=slices%index+1

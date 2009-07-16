@@ -3397,7 +3397,7 @@ module Hydro
 !  Velocity field.
 !
         case ('uu')
-          if (slices%index>3) then
+          if (slices%index>=3) then
             slices%ready=.false.
           else
             slices%index=slices%index+1
@@ -3437,7 +3437,7 @@ module Hydro
 !  Vorticity.
 !
         case ('oo')
-          if (slices%index>3) then
+          if (slices%index>=3) then
             slices%ready=.false.
           else
             slices%index=slices%index+1

@@ -1360,9 +1360,9 @@ module Radiation
         case ('Isurf')
           if (nrad>0) then
             if (slices%index >= ndir) then
-              slices%ready = .false.
+              slices%ready=.false.
             else
-              slices%index = slices%index+1
+              slices%index=slices%index+1
               if (lrad==0.and.mrad==0.and.nrad==1) then
                 slices%xy=Qrad(l1:l2,m1:m2,nnstop)+Srad(l1:l2,m1:m2,nnstop)
               endif
@@ -1370,8 +1370,8 @@ module Radiation
               slices%xz=0.0
               slices%xy =>Isurf_xy(:,:,idir)
               slices%xy2=>Isurf_xy2(:,:,idir)
-              slices%ready = .true.
-              if ((slices%index < ndir) slices%ready = .true.
+              slices%ready=.true.
+              if ((slices%index<ndir) slices%ready=.true.
             endif
 !
 !  Heating rate
@@ -1381,13 +1381,13 @@ module Radiation
           slices%xz=f(l1:l2,iy_loc,n1:n2,iQrad)
           slices%xy=f(l1:l2,m1:m2,iz_loc,iQrad)
           slices%xy2=f(l1:l2,m1:m2,iz2_loc,iQrad)
-          slices%ready = .true.
+          slices%ready=.true.
 !
 !  Radiative Flux
 !
         case ('Frad')
-          if (slices%index >= 3) then
-            slices%ready = .false.
+          if (slices%index>=3) then
+            slices%ready=.false.
           else
             slices%index=slices%index+1
             slices%yz=f(slices%ix,m1:m2    ,n1:n2     ,iFradx-1+slices%index)

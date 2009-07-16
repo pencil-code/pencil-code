@@ -2014,10 +2014,10 @@ module Radiation
 !  Surface intensity
 !
         case ('Isurf')
-          if (slices%index >= nIsurf) then
-            slices%ready = .false.
+          if (slices%index>=nIsurf) then
+            slices%ready=.false.
           else
-            if (slices%index == 0) idir_last=0
+            if (slices%index==0) idir_last=0
             nullify(slices%yz)
             nullify(slices%xz)
             nullify(slices%xy)
@@ -2025,8 +2025,8 @@ module Radiation
               nrad=dir(idir,3)
               if (nrad>0) then
                 slices%xy2=>Isurf(idir)%xy2
-                slices%index = slices%index+1
-                if (slices%index < nIsurf) slices%ready = .true.
+                slices%index=slices%index+1
+                if (slices%index<nIsurf) slices%ready=.true.
                 idir_last=idir
                 exit
               endif
@@ -2040,7 +2040,7 @@ module Radiation
           slices%xz=f(l1:l2,iy_loc,n1:n2,iQrad)
           slices%xy=f(l1:l2,m1:m2,iz_loc,iQrad)
           slices%xy2=f(l1:l2,m1:m2,iz2_loc,iQrad)
-          slices%ready = .true.
+          slices%ready=.true.
 !
 !  Mean intensity
 !
@@ -2052,17 +2052,17 @@ module Radiation
           !slices%xy2=.25*pi_1*f(l1:l2,m1:m2,iz2_loc,iQrad)+Srad(l1:l2,m1:m2,iz2_loc)
           !slices%ready = .true.
 !
-          if (slices%index >= nnu) then
-            slices%ready = .false.
+          if (slices%index>=nnu) then
+            slices%ready=.false.
           else
-            slices%index = slices%index+1
+            slices%index=slices%index+1
             slices%yz=>Jrad_yz(:,:,slices%index)
             slices%xz=>Jrad_xz(:,:,slices%index)
             slices%xy=>Jrad_xy(:,:,slices%index)
             slices%xy2=>Jrad_xy2(:,:,slices%index)
             slices%xy3=>Jrad_xy3(:,:,slices%index)
             slices%xy4=>Jrad_xy4(:,:,slices%index)
-            if (slices%index < nnu) slices%ready = .true.
+            if (slices%index<nnu) slices%ready=.true.
           endif
 !
 ! Source function
@@ -2072,7 +2072,7 @@ module Radiation
           slices%xz=Srad(l1:l2,iy_loc,n1:n2)
           slices%xy=Srad(l1:l2,m1:m2,iz_loc)
           slices%xy2=Srad(l1:l2,m1:m2,iz2_loc)
-          slices%ready = .true.
+          slices%ready=.true.
 !
 !  Opacity
 !
@@ -2081,20 +2081,20 @@ module Radiation
           slices%xz=f(l1:l2,iy_loc,n1:n2,ikapparho)
           slices%xy=f(l1:l2,m1:m2,iz_loc,ikapparho)
           slices%xy2=f(l1:l2,m1:m2,iz2_loc,ikapparho)
-          slices%ready = .true.
+          slices%ready=.true.
 !
 !  Radiative Flux
 !
         case ('Frad')
-          if (slices%index >= 3) then
-            slices%ready = .false.
+          if (slices%index>=3) then
+            slices%ready=.false.
           else
-            slices%index = slices%index+1
+            slices%index=slices%index+1
             slices%yz =f(slices%ix,m1:m2    ,n1:n2     ,iFradx-1+slices%index)
             slices%xz =f(l1:l2    ,slices%iy,n1:n2     ,iFradx-1+slices%index)
             slices%xy =f(l1:l2    ,m1:m2    ,slices%iz ,iFradx-1+slices%index)
             slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,iFradx-1+slices%index)
-            if (slices%index < 3) slices%ready = .true.
+            if (slices%index<3) slices%ready=.true.
           endif
 !
       endselect
