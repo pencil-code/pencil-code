@@ -384,9 +384,9 @@ module Hydro
   integer :: idiag_fxbxm=0      ! DIAG_DOC: 
   integer :: idiag_fxbym=0      ! DIAG_DOC: 
   integer :: idiag_fxbzm=0      ! DIAG_DOC: 
-  integer :: idiag_uxglnrym=0   ! DIAG_DOC: 
-  integer :: idiag_uyglnrxm=0   ! DIAG_DOC: 
-  integer :: idiag_uxuydivum=0  ! DIAG_DOC: 
+  integer :: idiag_uxglnrym=0   ! DIAG_DOC: $\left<u_x\partial_y\ln\varrho\right>$
+  integer :: idiag_uyglnrxm=0   ! DIAG_DOC: $\left<u_y\partial_x\ln\varrho\right>$
+  integer :: idiag_uxuydivum=0  ! DIAG_DOC: $\left<u_x u_y\nabla\cdot\uv\right>$
   integer :: idiag_urmsn=0,idiag_urmss=0,idiag_urmsh=0
   integer :: idiag_ormsn=0,idiag_ormss=0,idiag_ormsh=0
   integer :: idiag_oumn=0,idiag_oums=0,idiag_oumh=0
