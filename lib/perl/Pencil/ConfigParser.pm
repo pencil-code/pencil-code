@@ -260,8 +260,8 @@ sub get_sections {
             next line;
         }
 
-        if ($line =~ /(.*)\\\s*$/) { # continuation line
-            $line_fragment .= $1;
+        if ($line =~ /(.*) \\ \s* $/x) { # continuation line
+            $line_fragment = join_fragments($line_fragment, $1);
             next line;
         }
 
@@ -296,7 +296,7 @@ sub get_sections {
             next line;
         }
 
-        my $complete_line = $line_fragment . $line;
+        my $complete_line = join_fragments($line_fragment, $line);
         if ($debug) {
             my $output = substr($complete_line, 0, 30);
             chomp($output);
@@ -397,6 +397,21 @@ sub normalize_line {
     $line =~ s{^\s*(.*?)\s*$}{$1};
 
     return $line;
+}
+# ---------------------------------------------------------------------- #
+
+sub join_fragments {
+#
+# Join two strings, replacing any whitespace around the contact point with
+# exactly one space chacater.
+#
+    my ($left, $right) = @_;
+
+    $left  =~ s{\s*$}{};
+    $right =~ s{^\s*}{};
+
+    return $left . ' ' . $right;
+
 }
 # ---------------------------------------------------------------------- #
 
