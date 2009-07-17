@@ -20,7 +20,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # $Date: 2008-07-11 05:02:53 $
 # $Revision: 1.40 $
 # Description:
-#   Run the pencil code's auto-test on some remote host(s) and wrap
+#   Run the pencil code's auto test on some remote host(s) and wrap
 #   results in HTML if required. Can be used from crontab.
 # Usage:
 #   pencil-test [options] host1 [host2 [host3 ..]]
@@ -51,9 +51,13 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #       --time-limit=<limit>  -- Limit total time for each {start,run}.x phase
 #   -T <file>,
 #       --timings-file=<file> -- Append timings to <file>
+#   -b
+#       --use-pc_auto-test    -- Run pc_auto-test as backend, not auto-test
+#                                (mnemonic: compile with `build', not `make').
+#                                Eventually, this will become the default.
 #   -Wa,<options>
 #       --auto-test-options=<options>
-#                             -- Pass <options> to auto-test. If <options>
+#                             -- Pass <options> to pc_auto-test. If <options>
 #                                contains commas, it is split into multiple
 #                                options at the commas
 #
@@ -99,6 +103,7 @@ GetOptions(\%opts,
                -T=s --timings-file=s
                     --tag-stable=s
                     --tag-broken=s
+               -b   --use-pc_auto-test
                -W=s --auto-test-options=s
                )) or die "$!\n";
 die '$Id$ ' . "\n"
@@ -124,6 +129,7 @@ my $postproc    = ($opts{'p'} || $opts{'postproc'}    || '');
 my $time_limit  = ($opts{'t'} || $opts{'time-limit'}  || '');
 my $timingsfile = ($opts{'T'} || $opts{'timings-file'}|| '');
 my $with_xml    = ($opts{'x'} || $opts{'xml'}         || '');
+my $use_build   = ($opts{'b'} || $opts{'--use-pc_auto-test'} || '');
 
 my @auto_test_options = ();
 if (defined $opts{'W'}) {
@@ -244,7 +250,11 @@ sub build_remote_cmd {
     if ($UPDATE)            { $remcmd .=
                                 "; svn -q update samples bin"
                             };
-    $remcmd .= "; env PENCIL_HOME=$pencil_home ./bin/auto-test";
+    if ($use_build) {
+        $remcmd .= "; env PENCIL_HOME=$pencil_home ./bin/pc_auto-test";
+    } else {
+        $remcmd .= "; env PENCIL_HOME=$pencil_home ./bin/auto-test";
+    }
     $remcmd .= " --time";
     if ($emails)            { $remcmd .= " --list-maintainers"; }
     if ($with_xml)          { $remcmd .= " --xml" };
