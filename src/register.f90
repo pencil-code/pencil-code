@@ -70,7 +70,10 @@ module Register
 !
 !  Initialize index.pro file.
 !
-      if (lroot) open(3,file=trim(datadir)//'/index.pro',status='replace')
+      if (lroot) then
+        open(3,file=trim(datadir)//'/index.pro',status='replace')
+        close(3)
+      endif
 !
 !  Overwrite datadir from datadir.in, if that exists.
 !
