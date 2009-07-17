@@ -221,7 +221,7 @@ my $usage =
 Options:
   -h,  --help              \tShow usage overview
   -v,  --version           \tPrint version number
-  -C,  --clean             \tClean up (make cleann) before compiling
+  -C,  --clean             \tClean up (pc_build cleanall) before compiling
   -c,  --compile-only      \tTest compilation only
   -n,  --norun             \tTest compilation and starting only
   -f,  --results-from-file \tDon't run, read results from data/timeseries.dat
@@ -761,8 +761,8 @@ sub test_compile {
                        QUIET);
         return 'ERROR calling pc_setupsrc' if ($test_status);
         if ($clean) {
-            test_shell_cmd('make cleann', $dir, "cleaning up", QUIET);
-            return 'ERROR running make cleann' if ($test_status);
+            test_shell_cmd('pc_build --cleanall', $dir, "cleaning up", QUIET);
+            return 'ERROR running pc_build --cleanall' if ($test_status);
         }
 
         # Compile in double precision if we have data for that

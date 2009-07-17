@@ -76,6 +76,8 @@ my (%opts);                     # Options hash for GetOptions
 GetOptions(\%opts,
            qw( -h   --help
                     --debug
+                    --clean
+                    --cleanall
                -f=s --config-files=s
                -q   --quiet
                -v   --version ));
@@ -89,8 +91,22 @@ if ($debug) {
 if ($opts{'h'} || $opts{'help'})    { die usage();   }
 if ($opts{'v'} || $opts{'version'}) { die version(); }
 
-my $quiet        = ($opts{'q'} || $opts{'quiet'}        || '');
+my $clean        = (              $opts{'clean'}        || '');
+my $cleanall     = (              $opts{'cleanall'}     || '');
 my $config_files = ($opts{'f'} || $opts{'config-files'} || undef);
+my $quiet        = ($opts{'q'} || $opts{'quiet'}        || '');
+
+
+if ($cleanall) {
+    system('make', 'cleanall');
+    exit 0;
+}
+
+if ($clean) {
+    system('make', 'clean');
+    exit 0;
+}
+
 
 my @config_files;
 if (defined $config_files) {
