@@ -25,14 +25,17 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   pc_build [-v|-h]
 #   pc_build -f <file1,file2,...>
 # Options:
-#   -h, --help      This help
+#   -h, --help      This help.
+#   -H <id>
+#       --host-id=<id>
+#                   Use the given <id> as host ID.
 #   -f <files>,
 #       --config-files=<files>
 #                   Use the given <files> (a comma-separated list) as
 #                   configuration files, rather than trying to find a
 #                   config file base on a host ID.
-#   -v, --version   Print version number
-#   -q, --quiet     Be quiet
+#   -v, --version   Print version number.
+#   -q, --quiet     Be quiet.
 # Examples:
 #   pc_build
 #       use host ID mechanism to identify the appropriate config file.
@@ -78,9 +81,11 @@ GetOptions(\%opts,
                     --debug
                     --clean
                     --cleanall
+               -H=s --host-id=s
                -f=s --config-files=s
                -q   --quiet
-               -v   --version ));
+               -v   --version )
+          ) or die "Aborting.\n";
 
 my $debug = ($opts{'debug'} ? 1 : 0 ); # undocumented debug option
 if ($debug) {
@@ -94,6 +99,7 @@ if ($opts{'v'} || $opts{'version'}) { die version(); }
 my $clean        = (              $opts{'clean'}        || '');
 my $cleanall     = (              $opts{'cleanall'}     || '');
 my $config_files = ($opts{'f'} || $opts{'config-files'} || undef);
+my $host_id      = ($opts{'H'} || $opts{'host-id'}      || undef);
 my $quiet        = ($opts{'q'} || $opts{'quiet'}        || '');
 
 
@@ -115,8 +121,14 @@ if (defined $config_files) {
 } else {
     mention($Pencil::ConfigFinder::debug);
     $Pencil::ConfigFinder::debug = 1 if ($debug);
-    push @config_files, Pencil::ConfigFinder::find_config_file()
-      or die "Fatal: Couldn't find config file.\n";
+    my $config_file;
+    if (defined $host_id) {
+        $config_file = Pencil::ConfigFinder::find_config_file_for_host($host_id);
+    } else {
+        $config_file = Pencil::ConfigFinder::find_config_file()
+    }
+    die "Fatal: Couldn't find config file.\n" unless (defined $config_file);
+    push @config_files, $config_file;
     print STDERR "Found config file <$config_files[0]>\n" unless ($quiet);
 }
 
