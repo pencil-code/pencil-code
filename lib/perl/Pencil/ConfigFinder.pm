@@ -46,7 +46,7 @@ sub find_config_file {
     my $config_file;
 
     for my $host_id (get_host_ids()) {
-        $config_file = find_config_file_for_computer($host_id);
+        $config_file = find_config_file_for_host($host_id);
         return $config_file if defined($config_file);
     }
 
@@ -100,7 +100,7 @@ sub locate_config_files {
 
 # ---------------------------------------------------------------------- #
 
-sub find_config_file_for_computer {
+sub find_config_file_for_host {
 #
 # Return config file for the given host ID, or undef.
 #
@@ -391,7 +391,7 @@ Pencil::ConfigFinder - Find the appropriate Pencil Code configuration file
   my $config_file = Pencil::ConfigFinder::find_config_file();
 
   # Try host ID "toto" first, then fall back on default algorithm
-  my $file = ( Pencil::ConfigFinder::find_config_file_for_computer('toto')
+  my $file = ( Pencil::ConfigFinder::find_config_file_for_host('toto')
                || Pencil::ConfigFinder::find_config_file() );
 
 
@@ -413,7 +413,7 @@ curent host.
 
 If no matching file is found, return undef.
 
-=item B<find_config_file_for_computer($host_ID)>
+=item B<find_config_file_for_host($host_ID)>
 
 Return the full path name of the (first) matching config file for the
 given host ID.
