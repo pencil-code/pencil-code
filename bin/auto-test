@@ -1,0 +1,1486 @@
+#!/bin/sh
+#  -*-Perl-*-  (for Emacs)    vim:set filetype=perl:  (for vim)
+#======================================================================#
+# Run the right perl version:
+if [ -x /usr/local/bin/perl ]; then
+  perl=/usr/local/bin/perl
+elif [ -x /usr/bin/perl ]; then
+  perl=/usr/bin/perl
+else
+  perl=`which perl| sed 's/.*aliased to *//'`
+fi
+
+exec $perl -x -S $0 "$@"     # -x: start from the following line
+#======================================================================#
+#! /Good_Path/perl -w
+# line 17
+
+# Name:   auto-test
+# Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
+# Date:   12-Aug-2002
+# SVN: $Id$
+# Description:
+#   Test compilation and results on a set of sample directories to
+#   validate the pencil code. Uses Perl because I started to do this with
+#   the Test/Test::Harness module and because we need to do pattern
+#   matching to extract the relevant output lines.
+# To Do:
+# - Add an option to exclude those tests that use MPI
+# - Remove directory from /var/tmp when encountering Ctl-c
+# - Treat `svn update' as separate stage that can be `OK' or not
+
+BEGIN {
+    # Make sure ${PENCIL_HOME}/lib/perl is in the Perl path
+    if (-d "$ENV{PENCIL_HOME}/lib/perl") {
+        unshift @INC, "$ENV{PENCIL_HOME}/lib/perl";
+    } else {
+        if ($0 =~ m!(.*[/\\])!) { unshift @INC, "$1../lib/perl"; }
+    }
+}
+
+use Pencil::Util;
+Pencil::Util::use_pencil_perl_module('Pencil::ReadmeReader')
+  or die;
+
+use strict;
+use constant NOQUIET     => 0;
+use constant QUIET       => 1;
+use constant LOCK_FAILED => 128; # return status if we can't get lock
+use Cwd;
+use POSIX qw(floor);
+use Getopt::Long;
+use vars qw{ %failed $test_status }; # do we really need global vars here?
+use IPC::Open2;
+
+# ---------------------------------------------------------------------- #
+# Test the following subdirs of samples/ .
+# Tests are grouped by `level':
+# 0 is the absolute minimum,
+# 1 are the most important tests,
+# 2 is the standard program for nightly tests,
+# 3 adds the remaining tests under samples (most of which will curently
+# fail).
+# [Note: until we get closer to have all test running, we will use more
+# levels to distinguish the different degrees of failures]
+# Within a level, tests should be roughly sorted by total run time, such
+# that the slowest tests are run last.
+my $default_level = 2;
+my %tests = (
+             0 => [qw(
+                         no-modules
+                         most-modules
+                    )],
+             1 => [qw(
+                         backwards-compatible
+                         2d-tests/selfgravitating-shearwave
+                         2d-tests/chemistry_GrayScott
+                         0d-tests/heating_ionize
+                         dust-vortex
+                         interstellar
+                         interlocked-fluxrings
+                    )],
+             2 => [qw(
+                         0d-tests/heating_noionize
+                         1d-tests/H2_flamespeed
+                         chiral-diffusion
+                         cosmicray
+                         1d-tests/sod_10
+                         1d-tests/ambipolar_diffusion
+                         helical-MHDturb
+                         testfield_z
+                         random_uu_particles
+                         1d-tests/solar-atmosphere
+                         kin-dynamo
+                         meissner
+                         conv-slab-noequi
+                         conv-slab
+                         2d-tests/globaldisc
+                         2d-tests/cylindrical_gdisk
+                         0d-tests/solar_system
+                         mdwarf
+                         sedimentation
+                         MRI-turbulence_hyper
+                         dust_turb_globaldisk
+                         geodynamo
+                    )],
+             # Level 3 for now contains all non-canonical tests that run
+             # successfully
+             3 =>  [qw(
+                          0d-tests/coagulation-fragmentation
+                          0d-tests/heating_ionize_planck
+                          1d-tests/jeans-drag-dustpar-x
+                          1d-tests/jeans-x
+                          1d-tests/sod_10s
+                          1d-tests/toomre-x
+                          2d-tests/bubble
+                          2d-tests/conv-slab-MLT
+                          conv-slab-flat
+                          testfield
+                     )],
+             # Level 4 for now contains overlong tests (e.g. test that
+             # compile, start and then run for more than 5 minutes on
+             # Frenesi -- this is at least as good as the tests in level
+             # 5, but not practical).
+             #
+             # Note: The following _canonical_ tests fail to finish within 5
+             # minutes:
+             #   random_uu_particles
+             #   interstellar
+             #   geodynamo
+             #   0d-tests/heating_ionize
+             4 => [qw(
+                         forced-boundary
+                         sound-spherical-bufferzone
+                         2d-tests/shearwave-dust-par
+                         2d-tests/selfgrav-shearwave-dust-par
+                    )],
+             # Level 5 for now contains all non-canonical tests that run,
+             # but produce wrong results
+             5 =>  [qw(
+                          corona
+                          hexagon
+                          MHD-ABCforcing
+                          taylor-couette
+                          potential_field
+                          1d-tests/sod_100
+                          1d-tests/sod_10y
+                          geodynamo-noequi
+                          1d-tests/sod_1000
+                          1d-tests/sod_100s
+                          1d-tests/sod_10sy
+                          1d-tests/sod_10sz
+                          2d-tests/GMSW1976
+                          1d-tests/sod_1000s
+                          1d-tests/sod_10sho
+                          taylor-couette-cyl
+                          0d-tests/chemistry_aped
+                          2d-tests/GMSW1976_cpne1
+                          0d-tests/coag_kernel_lin
+                          2d-tests/dynamical_alpha
+                          2d-tests/potential_field
+                          2d-tests/spherical_gdisk
+                          solar-atmosphere-magnetic
+                          MRI-turbulence_hyper_strict
+                          0d-tests/heating_ionize_temp
+                          1d-tests/solar-atmosphere-temperature
+                     )],
+             # Level 6 for now contains all non-canonical tests that
+             # start, but don't run successfully
+             6 =>  [qw(
+                     )],
+             # Level 7 for now contains all non-canonical tests that
+             # compile, but don't start sucessfully
+             7 =>  [qw(
+                          interstellar_ion
+                          spherical-globaldisk
+                          turb-cylindrical-disk
+                          2d-tests/A3+chi11+Ra1e5
+                     )],
+             # Level 8 for now contains all non-canonical tests that don't
+             # compile sucessfully
+             8 =>  [qw(
+                          multigrid
+                     )],
+            );
+# ---------------------------------------------------------------------- #
+
+my $ntests      = 0;                 # total number of tests run
+my $failed      = 0;
+my $remove_lock = 0;
+my $failure_message = '';
+my $reference_out = 'reference.out'; # automatically changed to
+                                     # reference.out.double below for
+                                     # double precision runs
+my $user        = $ENV{USER} || $ENV{LOGNAME} || 'unknown';
+my $tmpdir      = "/var/tmp/pencil-tmp-$user-$$";
+my $lockdir     = '/var/tmp';     # put / check for lock file here
+my $lockfile    = "$lockdir/pencil-auto-test-$user.pid";
+my $headerpat   = '^-*\s*(-+\s*[A-Za-z0-9_]+)+-*\s*$'; # regexp for header line
+my $noheader    = "Couldn't find header line";
+my $cfloat = '([+-]?)(?=\d|\.\d)\d*(\.\d*)?([Ee]([+-]?\d+))?'; # regexp
+                                                               # for C float
+my $ieee_float = "(?:$cfloat|[+-]?(?:NaN|Inf))"; # C float | ±NaN | ±Inf
+my $res;
+my ($t_comp,$t_start,$t_run,$t_res) = (1,1,1,1); # test everything by default
+my (%opts);                     # variables written by GetOptions
+(my $cmdname = $0) =~ s{.*/}{};
+my $help  = 0;
+my $itest = 1;
+my $indi_fmt = '%-17s';        # allow that much space for indicators like
+                               # `[double]' or `[KEEP_RELOADING]'
+
+my $usage =
+"Usage:  $cmdname [options] [dir1 [dir2 [..]]]
+  Test compilation and results on a set of sample directories (or on the
+  list of directories given in the command line) to validate the pencil code.
+  Uses Perl because we need to do pattern matching to extract the relevant
+  output lines.
+    If you don't have a data directory, $cmdname creates a link to
+  $tmpdir -- both link and directory are removed after
+  each run.
+Options:
+  -h,  --help              \tShow usage overview
+  -v,  --version           \tPrint version number
+  -C,  --clean             \tClean up (make cleann) before compiling
+  -c,  --compile-only      \tTest compilation only
+  -n,  --norun             \tTest compilation and starting only
+  -f,  --results-from-file \tDon't run, read results from data/timeseries.dat
+  -r,  --reload            \tKeep reloading parameters (using KEEP_RELOADING)
+  -l,  --list              \tList test directories (don't run any tests)
+  -L,  --list-all          \tList even test dirs lacking reference.out
+  -t,  --time              \tPrint CPU time used
+  -T,  --summarize-times   \tPrint timings line for pencil-test and statistics
+  -i,  --infofile=<file>   \tAfter last test, print content of <file>
+  -D,  --pencil-home=<dir> \tSet PENCIL_HOME directory to <dir>
+  -N,  --nice=<n>          \tRun tests with nice value <n>
+  -j,  --jobs=<n>          \tPass through -j option to make
+  -d,  --datadir           \tUse mkdir if data/ is needed, don't ln -s /var/tmp
+  -s,  --short             \tPrint short directory names only
+  -p,  --postproc=PP       \tApply postprocessor PP to output from make
+  -a,  --all-dirs          \tRecurse through all subdirectories of samples/
+       --level=LEV         \tRun only tests from level LEV
+       --max-level=LEV     \tRun all tests below with level <= LEV (default: 2)
+       --time-limit=limit  \tUse reaper to limit time for {start,run}.x
+       --list-maintainers  \tPrint maintainer emails for failed tests
+       --rsh=RSH-PROG      \tUse the specified program as to get a remote shell
+       --nodelist=NODE1,.. \tUse a forked remote shell to parallelize
+       --no-summary        \tDo not summarize at the end
+       --no-lock           \tIgnore and don't write lock file
+       --debug             \tPrint lots of debugging output
+Examples:
+  auto-test      # run auto-test standard program, recycling .o files
+  auto-test -C   # run auto-test standard program, compiling from scratch
+  auto-test .    # run auto-test in current directory
+  auto-test -l   # list dirs in standard program
+  auto-test --time-limit=2m   # run standard program, killing (for each test)
+                              # any remaining start.x or run.x processes
+                              # after 2 minutes.
+                              # Mainly useful for run.x, but we also limit
+                              # start.x o avoid hour-long runaway processes
+  auto-test -a   # run auto-test in all subdirs of samples/ with a
+                 # referece.out{,.double} file
+  auto-test --level=1         # run all level 1 tests
+  auto-test -l --max-level=1  # list test dirs in levels 0 and 1
+  auto-test -al  # list all dirs `auto-test -a' would run in
+  auto-test -aL  # list all run dirs under samples/, even those without
+                 # reference data
+";
+
+## Process command line options
+eval {
+    Getopt::Long::config("bundling"); # make single-letter opts. case-sensitive
+};
+GetOptions(\%opts,
+           qw( -h   --help
+               -v   --version
+                    --debug
+               -C   --clean
+               -c   --compile-only
+               -n   --norun
+               -f   --results-from-file
+               -r   --reload
+               -l   --list
+               -L   --list-all
+               -t   --time
+               -T   --summarize-times
+               -i=s --infofile=s
+               -D=s --pencil-home=s
+               -N=s --nice=s
+               -j=n --jobs=n
+               -d   --datadir
+               -s   --short
+               -p=s --postproc=s
+               -a   --all-dirs
+                    --level=s
+                    --max-level=s
+                    --time-limit=s
+                    --list-maintainers
+                    --rsh=s
+                    --nodelist=s
+                    --no-summary
+                    --nolock      --no-lock
+               )) or $help=1, die "$!\n";
+
+if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
+if ($opts{'v'} || $opts{'version'}) {
+    $help=1;
+    die '$Id$ ' . "\n";
+}
+if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
+if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
+my $res_from_file = ($opts{'f'} || $opts{'res_from_file'} || 0 );
+if ($res_from_file) { $t_comp=$t_start=$t_run=0 };
+
+my $debug       = (              $opts{'debug'}           || 0    );
+my $clean       = ($opts{'C'} || $opts{'clean'}           || 0    );
+my $reload      = ($opts{'r'} || $opts{'reload'}          || 0    );
+my $list_only   = ($opts{'l'} || $opts{'list'}            || 0    );
+my $list_all    = ($opts{'L'} || $opts{'list-all'}        || 0    );
+my $time        = ($opts{'t'} || $opts{'time'}            || 0    );
+my $summarize_t = ($opts{'T'} || $opts{'summarize-times'} || 0    );
+my $infofile    = ($opts{'i'} || $opts{'infofile'}        || ''   );
+my $pencil_home = ($opts{'D'} || $opts{'pencil-home'}     || "$ENV{PENCIL_HOME}"
+                                                             || '');
+my $niceval     = ($opts{'N'} || $opts{'nice'}            || 0    );
+my $makejobs    = ($opts{'j'} || $opts{'jobs'}            || 0    );
+my $datadir     = ($opts{'d'} || $opts{'datadir'}         || 0    );
+my $short       = ($opts{'s'} || $opts{'short'}           || 0    );
+my $postproc    = ($opts{'p'} || $opts{'postproc'}        || ''   );
+my $deep        = ($opts{'a'} || $opts{'all-dirs'}        || 0    );
+my $level       = (              $opts{'level'}                   );
+my $max_level   = (              $opts{'max-level'}               );
+my $time_limit  = (              $opts{'time-limit'}      || ''   );
+my $list_maint  = (              $opts{'list-maintainers'} || 0   );
+my $rsh         = (              $opts{'rsh'}             || 'ssh');
+my $nodelist    = (              $opts{'nodelist'}        || 0    );
+my $nosummary   = (              $opts{'no-summary'}      || 0    );
+my $nolock      = (              $opts{'nolock'}          || $opts{'no-lock'}
+                                                             || 0 );
+
+my @exit_status=('setting up directory',
+                 'cleaning up',
+                 'compilation',
+                 'starting',
+                 'running',
+                 'results');
+
+$list_only = 1 if ($list_all);
+
+my $makeopts  = '';
+if ($makejobs) { $makeopts = "-j $makejobs"; }
+
+my $host = `hostname`;
+chomp($host);
+
+my $nice="";
+if ($niceval != 0) { $nice = "\\nice -n $niceval" };
+# Note: Csh's builtin `nice' cmd has a different calling syntax, so we
+# need to use ther real nice cmd here.
+
+my @testdirs;                   # full names of all dirs to run tests in
+my %time_summary;               # hash to accumulate timing summary
+                                # within each run
+
+## Debugging output:
+if ($debug) {
+    eval("use Data::Dumper");   # Need eval here to calm down compiler
+    print STDERR Dumper(\%opts);
+    print STDERR
+        "(\$t_comp,\$t_start,\$t_run,\$t_res)"
+        . " = ($t_comp,$t_start,$t_run,$t_res)\n";
+    print STDERR
+        "(\$debug,\$help,\$short)           "
+        . " = ($debug,$help,$short)\n";
+}
+
+# $t_comp .. $t_res form a hierarchy: We can't test running without
+# compiling and starting
+$t_start &&= $t_comp;
+$t_run   &&= $t_start;
+$t_res   &&= ($t_run || $res_from_file);
+
+# Check for lock file and write one
+handle_lock_file() or exit(LOCK_FAILED) unless ($list_only);
+
+# Remember current directory
+my $cwd = `pwd`; chomp($cwd);
+
+# Make sure we are in the top directory and have the right PATH
+die "Need to set environment variable PENCIL_HOME\n"
+    unless (defined($pencil_home));
+my $topdir = "$pencil_home";
+chdir $topdir;
+$ENV{PATH} .= ":$pencil_home/bin";
+
+# Don't follow these boring subdirectories when recursing through whole tree:
+my $prunedirs = '^(data|src|CVS|RCS|_darcs|.hg|.svn)$';
+
+# Autoflush stdout:
+$| = 1;
+
+@ARGV = grep { /./ } @ARGV;     # Eliminate empty @ARGV list (needed under
+                                # OSF1, no clue why)
+
+if ($list_only && ! $short) {
+    print "Test directories:\n"
+}
+
+if ($summarize_t) {
+    write_timing_summary_header();
+}
+
+my %t_global = (
+                'compile'   => 0,
+                'start+run' => 0,
+               );
+my $t0_global = get_time();         # remember start time
+
+if (@ARGV) {
+    ## Process dirs given in cmd line
+    @ARGV = map { s{^(?!/)}{$cwd/}; $_ } @ARGV; # Make `.' and similar work
+    $ntests = @ARGV;
+    for my $d (@ARGV) {
+        test_rundir("$d",$makeopts);
+    }
+    if ((scalar @ARGV)==1) {
+        if (%failed) {
+            # Do some bizarre chicken sacrifice voodoo
+            # [wd 29-Jan-2007:] Tried to sanitize this without knowing what
+            #                   it was supposed to do
+
+            # Assuming that the exit code is supposed to indicate the
+            # worst phase that failed (i.e., 2 means setting up directory
+            # failed, ..., 7 means results are wrong, 8 means something
+            # unexpected failed, see @exit_status above):
+            my $exit_code=1;
+            # Loop through exit codes, starting with most serious one:
+            foreach my $status (@exit_status) {
+                # Exit if any of the exit codes stored in %failed matches
+                # $status:
+                if (grep /^$status$/, values %failed) {
+                    exit $exit_code;
+                } else {
+                    $exit_code++;
+                }
+            }
+            exit $exit_code;    # Still here? Then exit now.
+        }
+    }
+} else {
+    ## No dirs in cmd line -> do standard program
+    if ($deep) {
+        # Scan samples/ tree recursively
+        find_test_dirs("$topdir/samples"); # populates @testdirs
+    } else {
+        # Use predefined directories
+        my @sampdirs;
+        if (defined($level)) {
+            @sampdirs = get_sampdirs($level);
+        } else {
+            $max_level = $default_level unless defined($max_level);
+            @sampdirs = get_all_sampdirs($max_level);
+        }
+        @testdirs =
+          ( map { "$topdir/samples/$_" } @sampdirs,
+          );
+    }
+    $ntests = @testdirs;
+    if ($nodelist) {
+        # Run tests in parallel
+        my @nodes=split /,/ , $nodelist;
+        my $passthru_opts = '';
+        if ($clean)    { $passthru_opts .= '-C '; }
+        if ($makejobs) { $passthru_opts .= " -j $makejobs"; }
+        if ($opts{'c'} || $opts{'compile-only'}) { $passthru_opts .= ' -c'; }
+        do_tests_in_parallel(\@testdirs,\@nodes,$passthru_opts);
+    } else {
+        # Run tests consecutively
+        for my $d (@testdirs) {
+            test_rundir("$d",$makeopts);
+        }
+    }
+}
+
+
+# ---------------------------------------------------------------------- #
+sub get_all_sampdirs {
+# Return a flat list of all sample dirs that belong to a level <= $level .
+    my $level = shift;
+
+    my @dirs;
+    my @levels = grep { $_ <= $level } keys %tests;
+    foreach my $lev (sort {$a <=> $b} @levels) {
+        push @dirs, @{$tests{$lev}};
+    }
+
+    return @dirs;
+}
+# ---------------------------------------------------------------------- #
+sub get_sampdirs {
+# Return list of sample dirs that belong to $level .
+    my $level = shift;
+
+    my @dirs;
+    my @levels = grep { $_ == $level } keys %tests;
+    foreach my $lev (sort {$a <=> $b} @levels) {
+        push @dirs, @{$tests{$lev}};
+    }
+
+    return @dirs;
+}
+# ---------------------------------------------------------------------- #
+sub handle_lock_file {
+# Check for existing lock file and exit (if there is one) or write one.
+
+    return(1) if ($nolock);     # skip it
+
+    my $got_lock = 0;           # need to deserve this first..
+
+    if (-e $lockfile) {         # lock file exists -> get and check pid
+        open(LOCK,"< $lockfile") or die "Cannot read <$lockfile>";
+        my $pid = <LOCK>;
+        close LOCK;
+        $pid =~ s/^\s*([0-9]+)\s*$/$1/
+          or die "$lockfile contains garbage instead of pid: <$pid>\n";
+        my $pid_cmd = `ps -p $pid -o args=`;
+
+        # Who runs with pid from lockfile?
+        if ($pid_cmd =~ /^\S*$/) { # no process for this pid
+            print "Removing stale lock file (no process with pid $pid)\n";
+            unlink $lockfile or die "Cannot unlink <$lockfile>\n";
+            $got_lock = 1;
+        } elsif ($pid_cmd =~ /auto-test\s*$/) { # pid belongs to auto-test
+            print "Failed getting lock (lock file is $lockfile):\n"
+                  . "Another auto-test is running as pid $pid\n"
+                  . "You can use `auto-test --nolock' to ignore the lock file\n";
+            $got_lock = 0;
+        } else {                # pid belongs to other process
+            print "Failed getting lock (lock file is <$lockfile>):\n"
+                  . "Another process runs as pid $pid (this is weird...)\n"
+                  . "You can use `auto-test --nolock' to ignore the lock file\n";
+            $got_lock = 0;
+        }
+    } else {
+        print STDERR "handle_lock_file: Found no lock file\n" if ($debug);
+        $got_lock = 1;
+    }
+
+    # Write our own lock file
+    if ($got_lock) {
+        print STDERR "Writing <$$> to lock file $lockfile\n" if ($debug);
+        write_to_file($lockfile, "$$", 0, 1);
+        $remove_lock = 1;       # clean up lock at END
+    }
+
+    print STDERR "handle_lock_file: \$got_lock = $got_lock\n" if ($debug);
+
+    unless ($got_lock) {
+        $failed++;
+        $failure_message .= "Couldn't get lock file\n";
+    }
+    return ($got_lock);
+}
+# ---------------------------------------------------------------------- #
+sub do_tests_in_parallel {
+# Distribute auto-tests over nodes contained in $nodelist
+    my $jobs          = shift;
+    my $nodelist      = shift;
+    my $passthru_opts = shift;
+
+    my @queue=@$jobs;
+    my %nodes;
+
+    for my $node (@$nodelist) {
+        $nodes{$node}{'busy'} = 0;
+        $nodes{$node}{'pid'}  = 0;
+    }
+    my $running = 0;
+    my $queued = scalar @queue;
+    while ((scalar @queue) || $running) {
+        if (scalar @queue) {
+            foreach my $node (keys %nodes) {
+                next if $nodes{$node}{'busy'};
+                my $job = shift @queue;
+                $nodes{$node}{'busy'}=$job;
+                $running++;
+                if (! ($nodes{$node}{'pid'} = fork)) {
+                    my $nodeb=$node;
+                    exec "$rsh $node auto-test --no-summary $passthru_opts $job | sed 's/^/$nodeb : /'";
+                    # didn't get here
+                }
+            }
+        }
+        if ($running) {
+            my $pid = wait;
+            if ($pid != -1) {
+                my $result = $?;
+                $running--;
+                foreach my $node (keys %nodes) {
+                    if ($nodes{$node}{'pid'} == $pid) {
+                        my $exit_code = ($result >> 8);
+                        $failed{$nodes{$node}{'busy'}}
+                          = $exit_status[$exit_code-1] if ($exit_code);
+                        $nodes{$node}{'busy'} = 0;
+                        $nodes{$node}{'pid'}  = 0;
+                        last;
+                    }
+                }
+            }
+        }
+    }
+}
+# ---------------------------------------------------------------------- #
+sub my_ok {
+# Similar to Test's and Test::Harness' ok() function: consider success if
+# first two argumets are equal, otherwise report a problem and print the
+# third argument (which should normally contain the output from the shell
+# calls that we are normally testing here).
+# Args #4 and #5 are the current run directory and the phase (compilation,
+# starting, running) we are in.
+
+    my $arg1 = shift;
+    my $arg2 = shift;
+    my $mesg = (shift || "<No diagnostics>");
+    chomp($mesg);
+    my $dir = shift;
+    my $phase = shift;
+    my $quiet = (shift || 0);
+    my $dt    = shift;
+
+    my $timestr;
+    if (defined($dt) && $time) {
+        $timestr = s_to_hms($dt,7);
+    } else {
+        $timestr = '';
+    }
+
+    # Allow for calls like `ok(0)' or `ok(1)':
+    if (!defined($arg2)) {
+        $arg2 = $arg1 ? $arg1 : 1;
+    }
+    if ($arg1 eq $arg2) {
+        print " ok      $timestr\n" unless ($quiet);
+    } else {
+        print " not ok: $timestr\n$mesg\n";
+        $test_status = 1;
+        # report only first failure:
+        $failed{$dir} = $phase unless defined($failed{$dir});
+    }
+
+    # Record time usage in an easily greppable format
+    if ($summarize_t) {
+        record_time($phase, $dt);
+    }
+
+}
+# ---------------------------------------------------------------------- #
+sub record_time {
+# Store a time value so we can summarize times when done with this
+    # directory
+    my ($phase, $time) = @_;
+    if (defined($time)) {
+        $time_summary{$phase} = $time;
+    }
+}
+# ---------------------------------------------------------------------- #
+sub find_test_dirs {
+# Traverse the samples/ directory tree and find all run directories
+    eval { require File::Find };
+    if ($@) {
+        die "Could not load File::Find (required for the --deep option):\n"
+          . "$@\n";
+    }
+    import File::Find qw( find );
+
+    my @rootdirs = @_;
+
+    find( { wanted      => \&FF_wanted,
+            follow      => 1,
+            follow_skip => 2,
+          },
+          @rootdirs);
+
+
+#      $File::Find::prune = 1;
+
+}
+# ---------------------------------------------------------------------- #
+sub FF_wanted {
+# `wanted' function for File::Find, i.e. callback function that is called
+# from each file or directory found.
+
+    my $name = $File::Find::name;
+
+    # Suppress spurious `used only once' warning:
+    my $dummy = "$File::Find::prune $File::Find::name";
+
+    if (-d $name) {
+        if ($_ =~ /$prunedirs/) {
+            # Don't recurse into well-known boring dirs:
+            $File::Find::prune = 1;
+        } else {
+            # Directory, but not boring:
+            if ( $list_all
+                 || -r "$name/reference.out"
+                 || -r "$name/reference.out.double" ) {
+                push @testdirs, $name;
+            }
+        }
+    }
+}
+# ---------------------------------------------------------------------- #
+sub test_shell_cmd {
+# As the name says...
+    my $cmd   = shift;
+    my $dir   = (shift || "<Unknown directory>");
+    my $phase = (shift || "<Unknown phase>");
+    my $quiet = (shift || 0);   # flag for suppressing the `ok'
+    my $t_ref = shift;
+
+    print STDERR "\nRunning `$cmd`" if ($debug);
+    my $res = (`$cmd 2>&1` || "Very BAD: `$cmd` returned undef");
+    my $cmdstatus = $?;
+    print STDERR " ..done \n" if ($debug);
+    chomp($res);
+    if (($phase eq 'compilation') && ($postproc ne '')) {
+        print STDERR "Postprocessing output..\n" if ($debug);
+        $res = postprocess($res);
+    }
+    my $dt;
+    $dt = get_time()-$t_ref if (defined($t_ref));  # otherwise leave undefined
+
+    my_ok($cmdstatus, 0, $res, $dir, $phase, $quiet, $dt);
+    # $? = 0 means success
+    return $res;           # Return output so we can analyze it if desired
+}
+# ---------------------------------------------------------------------- #
+sub test_timelimited_shell_cmd {
+# Test shell command, but run it through reaper to limit total time it is
+# allowed to take
+    my $cmd      = shift;
+    my $maxtime  = shift;
+    my $procname = shift;
+    my @rest = @_;
+    return test_shell_cmd("reaper -t '$maxtime,$procname' $cmd", @rest);
+}
+# ---------------------------------------------------------------------- #
+sub test_compile {
+# Test compilation only
+    if ($t_comp) {
+        my $dir = shift;
+        my @makeopts = (shift); # gets one string ("" or "-j N")
+        my $t_ref = shift;      # start time
+
+        print "    Compiling..          ";
+
+        # First pc_setupsrc, then make clean (if requested). Must be done
+        # in this order as pc_setupsrc links the Makefile to the run directory.
+        test_shell_cmd("pc_setupsrc --pencil-home $pencil_home",
+                       $dir,
+                       "setting up directory",
+                       QUIET);
+        return 'ERROR calling pc_setupsrc' if ($test_status);
+        if ($clean) {
+            test_shell_cmd('make cleann', $dir, "cleaning up", QUIET);
+            return 'ERROR running make cleann' if ($test_status);
+        }
+
+        # Compile in double precision if we have data for that
+        if (-r 'print.in.double' && -r 'reference.out.double') {
+            push @makeopts, 'REAL_PRECISION=double';
+            $reference_out = 'reference.out.double';
+            printf "$indi_fmt ", '[double]';
+        } else {
+            $reference_out = 'reference.out';
+            printf "$indi_fmt ", '';
+        }
+        print STDERR "\@makeopts = @makeopts\n" if ($debug);
+        test_shell_cmd("$nice make @makeopts", $dir, "compilation",
+                       NOQUIET, $t_ref);
+    }
+}
+# ---------------------------------------------------------------------- #
+sub test_start {
+# Test starting only
+    my $dir   = shift;          # not used...
+    my $t_ref = shift;          # start time
+
+    if ($t_start) {
+        print "    Starting..           ";
+        printf "$indi_fmt ", '';
+
+        if ($time_limit) {
+            test_timelimited_shell_cmd(
+                "$nice start.csh",
+                $time_limit, 'run.x',
+                $dir, "starting",
+                NOQUIET, $t_ref
+            );
+        } else {
+            test_shell_cmd(
+                "$nice start.csh",
+                $dir, "starting",
+                NOQUIET, $t_ref
+            );
+        }
+    }
+}
+# ---------------------------------------------------------------------- #
+sub test_run {
+# Test running only (does not analyze output, but returns it)
+    my $dir   = shift;
+    my $t_ref = shift;          # start time
+
+    if ($t_run) {
+        print "    Running..            ";
+
+        # Handle KEEP_RELOADING file (our -r/--reload option)
+        my $reload_file = "$dir/KEEP_RELOADING";
+        if (-e $reload_file) {
+            warn "Found file $reload_file -- deleting\n";
+            unlink $reload_file or die "Cannot unlink $reload_file!\n";
+        }
+        if ($reload) {
+            write_to_file($reload_file, '');
+            printf "$indi_fmt ", '[KEEP_RELOADING]';
+        } else {
+            printf "$indi_fmt ", '';
+        }
+
+        # Run the Code
+        if ($time_limit) {
+            $res = test_timelimited_shell_cmd(
+                "$nice run.csh",
+                $time_limit, 'run.x',
+                $dir, "running",
+                NOQUIET, $t_ref
+            );
+        } else {
+            $res = test_shell_cmd(
+                "$nice run.csh",
+                $dir, "running",
+                NOQUIET, $t_ref
+            );
+        }
+
+        # Clean up
+        if (-e $reload_file) {
+            unlink $reload_file or die "Cannot unlink $reload_file!\n";
+        }
+    }
+}
+# ---------------------------------------------------------------------- #
+sub test_results {
+# Analyze results from code
+    my $dir = shift;
+
+    if ($t_res) {
+        my ($rdmsg,$diagn);
+        print "    Validating results.. ";
+        printf "$indi_fmt ", '';
+
+        my @output;
+        if ($res_from_file) {
+            @output = read_lines('data/time_series.dat', $rdmsg);
+            if ($rdmsg) {
+                my_ok(0,1,"[$rdmsg]",$dir,"results");
+                return;
+            }
+        } else {
+            @output = split(/[\n\r]+/,$res);
+        }
+        my_ok(0,0,"",$dir,"results","quiet");
+
+        my @foutput = extract_results(\@output); # filtered output
+        if ($foutput[0] ne "$noheader") {
+            my @ref_output = read_lines($reference_out,$rdmsg);
+            if ($rdmsg) {
+                print " [$rdmsg]\n";
+            } else {
+                my $comp = compare_results(\@ref_output,\@foutput,$diagn);
+                my_ok($comp,1,$diagn,$dir,"results");
+            }
+        } else { # No header line found
+            warn " No header line found\n";
+            my_ok(0,1,join("\n",@output),$dir,"results");
+        }
+    }
+}
+# ---------------------------------------------------------------------- #
+sub extract_results {
+# Extract result lines (header line and numerical data) from the output of
+# the code
+    my $lineptr = shift;
+    my @lines = @$lineptr;
+
+    my @results = ();
+    my @labels = ();
+    my $body = 0;               # true after header line
+    my $ncols;
+
+    line: foreach my $line (@lines) {
+        unless ($body) {
+            # Before or at header line
+            next line unless ($line =~ /$headerpat/);
+            push @results, $line;
+            $body = 1;
+            @labels = grep { /\S/ } split(/-+/,$line); # ignore empty labels
+            $ncols = @labels;
+        } else {
+            # After header line
+            next unless ($line =~ /^(\s+$ieee_float){$ncols}\s*$/i);
+            push @results, $line;
+        }
+    }
+    if ($body) {
+        @results;
+    } else {
+        ($noheader);
+    }
+}
+# ---------------------------------------------------------------------- #
+sub read_lines {
+# Read file an return hash of non-empty lines
+    my $file = shift;
+    my @lines = ();
+    my $msg = "";
+
+    {
+        local $/ = undef;       # read in whole file
+        if (open (REF, "< $file")) {
+            @lines = grep { /\S/ } split(/[\n\r]+/,<REF>);
+            # Remove leading comment sign from header line:
+            $lines[0] =~ s/^(\s*)#/$1 /;
+        } else {
+            $msg = "Couldn't open $file";
+        }
+    }
+    $_[0] = $msg;
+    @lines;
+}
+# ---------------------------------------------------------------------- #
+sub compare_results {
+# Compare two arrays of lines linewise; if all lines are the same, return
+# 1; if not, return 0 and write report to third argument
+    my $arr1 = shift;
+    my $arr2 = shift;
+
+    my @pref = ("< ", "> ", "  "); # prefixes to mark differing lines
+    my $n1 = $#$arr1;
+    my $n2 = $#$arr2;
+    my $N = ($n2>$n1 ? $n2 : $n1);
+    my $diagn = "";
+    my $equal = 1;
+    for my $i (0..$N) {
+        my $line1 = ($$arr1[$i] || ""); chomp $line1;
+        my $line2 = ($$arr2[$i] || ""); chomp $line2;
+        unless (compare_lines_fuzzily($line1,$line2)) {
+            $diagn .= $pref[0] . $line1 . "\n" if ($line1);
+            $diagn .= $pref[1] . $line2 . "\n" if ($line2);
+            $equal = 0;
+        } else {
+            if ($i == 0) {      # Keep header line for easier reading
+                $diagn .= $pref[2] . $line1 . "\n";
+            }
+        }
+    }
+    $_[0] = $diagn;             # the remaining argument (was the third one)
+    $equal;
+}
+# ---------------------------------------------------------------------- #
+sub compare_lines_fuzzily {
+# Compare the numerical values in two lines fuzzily. Return 1 if numbers
+# are approximately equal (differ by 1 or less in the last decimal), zero
+# otherwise.
+    my $xline = shift;
+    my $yline = shift;
+
+    my $equal = 1;
+
+    if ($xline =~ /$headerpat/) { # header lines --> string comparison
+        $equal = 0 unless ($xline eq $yline);
+    } else {                      #  diagnostic lines --> fuzzy comparison
+        my @x = split(/\s+/,$xline);
+        my @y = split(/\s+/,$yline);
+        @x = grep(/([0-9]|NaN|Inf)/i, @x);      # weed out empty entries
+        @y = grep(/([0-9]|NaN|Inf)/i, @y);
+
+        return 0 unless ($#x == $#y); # lengths must match
+        foreach my $i (0..$#x) {
+            my ($x,$y) = ($x[$i], $y[$i]);
+            $equal = 0 unless (compare_numbers_fuzzily($x,$y));
+            print STDERR "compare_lines_fuzzily: \$equal = $equal for <$x>, <$y>\n"
+              if ($debug);
+        }
+    }
+
+    return $equal;
+}
+# ---------------------------------------------------------------------- #
+sub compare_numbers_fuzzily {
+# Compare two numbers and return true if they differ only by one in the
+# last digit, else false.
+    my $x = shift;
+    my $y = shift;
+
+    my $debug = 0;
+
+
+    # Short-circuit NaN/Inf -- they will be taken care of as they will make
+    # any comparison fail
+    return 1 if (   ($x =~ /^([+-]?(NaN|Inf))$/i)
+                 || ($y =~ /^([+-]?(NaN|Inf))$/i) );
+
+    # Regexp for general float, groups into pre-exponent and
+    # post-exponent part
+    my $numeric = '((?:[+-]?)(?=\d|\.\d)\d*(?:\.\d*)?)((?:[EeDd](?:[+-]?\d+))?)';
+    my ($x1,$x2) = ($x =~ /^\s*$numeric\s*$/);
+    $x2 = '' unless defined($x2);
+    print STDERR "(\$x1,\$x2) = ($x1,$x2)\n" if ($debug);
+
+    my ($y1,$y2) = ($y =~ /^\s*$numeric\s*$/);
+    $y2 = '' unless defined($y2);
+    print STDERR "(\$y1,\$y2) = ($y1,$y2)\n" if ($debug);
+
+    # Are $x, $y really numeric?
+    unless(defined($x1) && defined($y1)) {
+        warn "Not a numerical value: <$x> or <$y>\n";
+        return 0;
+    }
+
+    # Short-circuit identical numbers (so Perl's rounding errors to double
+    # precision can't screw them up)
+    return 1 if ("$x1#$x2" eq "$y1#$y2");
+
+    # Choose the longer string for decrementing/incrementing, so we
+    # correctly compare stuff like [1.3599, 1.36] (succeeds) and [1.3598,
+    # 1.36] (fails) in both directions.
+    if (length($x1) < length($y1)) {
+        ($x,$x1,$x2, $y,$y1,$y2) = ($y,$y1,$y2, $x,$x1,$x2);
+    }
+
+    # Do comparison
+    $x1 =~ /([+-]?[0-9]*)\.?([0-9]*)/;
+    my ($xint,$xfrac) = ($1, $2);
+
+    die "Cannot split <$x1> into int/fract parts (should not happen)"
+      unless defined($xint);
+    my $delta;
+    if (length($xfrac) > 0) {
+        $delta = '0.' . '0'x(length($xfrac)-1) . '1';
+    } else {
+        $delta = 1;
+    }
+    my $x1_p = $x1 + $delta;
+    my $x1_m = $x1 - $delta;
+    ($x1_m, $x1_p) = sort  { $a <=> $b } $x1_m, $x1_p;
+    my ($x_m, $x_p) = ("${x1_m}${x2}", "${x1_p}${x2}");
+
+    # Are the constructed numbers $x_m, $x_p really numerical?
+    eval { my $dummy = 1 + $x_m + $x_p };
+    if ($@) {
+        warn "$@";
+        return 0;
+    }
+
+    printf STDERR
+      "%8s -> %8s -> <%6s>.<%6s> -> %8s -> [%8s, %8s]\n",
+      $x, $x1, $xint, $xfrac, $delta, $x_m, $x_p   if ($debug);
+    print STDERR "$y >= $x_m  =  ", ($y >= $x_m), "\n" if ($debug);
+    print STDERR "$y <= $x_p  =  ", ($y <= $x_p), "\n" if ($debug);
+    print STDERR "Ergo: ", (($y >= $x_m) && ($y <= $x_p)), "\n" if ($debug);
+
+    if (($y >= $x_m) && ($y <= $x_p)) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+# ---------------------------------------------------------------------- #
+sub test_rundir {
+# Full program for one run directory: Test compilation, starting, running
+# and results
+    my $dir      = shift;
+    my $makeopts = shift;
+    my $created_datadir = 0;
+    my $t0 = get_time();
+
+    $test_status = 0;           #  so far, everything is OK
+    %time_summary =();
+
+    # Indicate current run directory in process name (for ps)
+    my $shortdir = $dir;
+    $shortdir =~ s{^$topdir/}{};        # remove common directory prefix
+    $shortdir =~ s{^samples/}{};        # remove leading 'samples/'
+    $0 =~ s/^\s*(\[.*?\])?\s*/[$shortdir] /;
+
+    # Go to directory and identify it
+    if (! -d $dir) {
+        print STDERR "No such directory: $dir\n";
+        return;
+    }
+    chdir $dir;
+    my $cwd = cwd();
+    if ($short) { $cwd =~ s{.*pencil[^/]*/}{}i };
+    if ($list_only) {
+        print "$cwd\n";
+        return;
+    }
+    print "\n$cwd:";
+    print " ($itest/$ntests)" if ($ntests>1);
+    print "\n";
+    $itest++;
+
+    # Make sure we have everything we need
+    if (! defined(-e 'src/run.f90')) { # has `pc_setupsrc' been run yet?
+        my $res = `pc_setupsrc --pencil-home $pencil_home 2>&1`;
+        if ($?) {
+            print "    Problems running pc_setupsrc:\n", $res;
+        }
+    }
+
+    # 1. Test compilation
+    test_compile($dir,$makeopts,$t0);
+    return if ($test_status);
+
+    my $t1 = get_time();
+    $t_global{'compile'} += ($t1-$t0);
+
+    # 2. Ensure we have a data directory and test starting...
+    if ($t_start) {         # no need for a data directory unless we start
+                            # the code
+        $created_datadir = check_for_datadir();
+        test_start($dir,$t1);
+        goto cleanup if ($test_status);
+    }
+
+    # 3 ..and running (we only get here if compiling and starting was OK)
+    my $t2 = get_time();
+    test_run($dir,$t2);
+    return if ($test_status);
+
+    my $t3 = get_time();
+    $t_global{'start+run'} += ($t3-$t1);
+
+    # 4. Check the output
+    test_results($dir);
+
+    # Clean up if necessary
+  cleanup:
+    if ($created_datadir) {
+        system("rm", "data");
+        system("rm", "-r", "$tmpdir");
+    }
+
+    # Summarize timings in human-readable form
+    my $t4 = get_time();
+    if ($time) {
+        print "    Time used: ",
+          s_to_hms(time_diff($t0,$t3), 44),
+          " = ", s_to_hms(time_diff($t0,$t1)),
+          " + ", s_to_hms(time_diff($t1,$t3)),
+          "\n";
+    }
+
+    # Write timings in greppable form
+    if (%time_summary) {
+        record_time('total', time_diff($t0,$t3));
+        for my $phase qw( compilation starting running total ) {
+            write_timing_summary($dir, $phase, \%time_summary);
+        }
+    }
+}
+# ---------------------------------------------------------------------- #
+sub write_timing_summary_header {
+# Write comment to make timing summary files more comprehensible
+    printf "%s %s\n", '#TIMING ',
+        '# --------------------------------------------------';
+    printf "%s %s\n", '#TIMING ', '# Date: ' . localtime() . ", host: $host";
+    printf "%s %-45s %-12s %-12s %-7s\n",
+      '#TIMING ', '# directory', 'phase', 'time-stamp', 'seconds';
+}
+# ---------------------------------------------------------------------- #
+sub write_timing_summary {
+# Write timings summary in greppable form
+    my ($dir, $phase, $summary_ref) = @_;
+
+    my $time = $summary_ref->{$phase};
+    if (defined($phase) && defined($time)) {
+        printf "%s %-45s %-12s %12.1f %7.3f\n",
+          '#TIMING ', compactify(quote($dir)), ($phase), time_stamp(), $time;
+    }
+}
+# ---------------------------------------------------------------------- #
+sub check_for_datadir {
+# Make sure we have an appropriate data directory
+    my $created_datadir = 0;
+    if (! -d 'data') {
+        if (!$datadir) {
+            if (-l 'data') {
+                print "        data is file or empty link;\n"
+                    . "        removing and generating data -> $tmpdir\n";
+                system("rm", "data");
+            }
+            else {
+                print "        No data directory; generating data -> $tmpdir\n";
+            }
+            system("mkdir -p $tmpdir; ln -s $tmpdir data");
+            $created_datadir = 1;
+        }
+        else {
+            if (-l 'data') {
+                print "        data is file or empty link;\n"
+                    . "        removing and generating data directory \n";
+                system("rm", "data");
+            }
+            else {
+                print "        No data directory; generating data directory\n";
+            }
+            system("mkdir -p data");
+        }
+    }
+    return $created_datadir;
+}
+# ---------------------------------------------------------------------- #
+sub time_diff{
+# Return difference of times if both args are defined, undef otherwise
+    my $t1 = shift;
+    my $t2 = shift;
+
+    if (defined($t1) && defined($t2)) {
+        return $t2-$t1;
+    } else {
+        return undef;
+    }
+}
+# ---------------------------------------------------------------------- #
+sub s_to_hms{
+# Convert no. of seconds to [ddd][hh:]mm:ss string
+    my $secs  = shift;
+    my $width = (shift || 0);
+
+    my $string;
+
+    # Not much to do if arg is undef:
+    if (! defined($secs)) {
+        $string = 'undef';
+    } else {
+        my $ss = $secs % 60;
+        my $mm = floor($secs/60) % 60;
+        my $hh = floor($secs/3600) % 24;
+        my $dd = floor($secs/86400);
+
+        $string = sprintf("%02d:%02d", $mm,$ss);
+        if ($hh) { $string = sprintf("%02d:", $hh) . $string };
+        if ($dd) { $string = sprintf("%dd", $dd) . $string };
+    }
+
+    if (length($string) < $width) {
+        $string = (" " x ($width-length($string))) . $string;
+    };
+
+    return $string;
+}
+# ---------------------------------------------------------------------- #
+sub quote {
+# Quote most non-word characters in a string, but not a foew common ones
+    my ($text) = @_;
+    $text = "\Q$text\E";
+    $text =~ s{\\(/|-|_)}{$1}g;  # unquote some chars
+    return $text;
+}
+# ---------------------------------------------------------------------- #
+sub compactify {
+# Remove uninteresting parts from a rund directory's file name
+    my ($text) = @_;
+    $text =~ s{/+\\\.$}{};      # drop trailing `/.' from path names
+    $text =~ s|.*$ENV{PENCIL_HOME}/||;
+    $text =~ s{.*/pencil-(code|auto-test)/}{};
+    return $text;
+}
+# ---------------------------------------------------------------------- #
+sub time_stamp {
+# Return a time stamp based on unix time (epoch 1970/1/1)
+    return get_time() - get_unix_epoch_start();
+}
+# ---------------------------------------------------------------------- #
+sub get_unix_epoch_start {
+# Get the time value for 1970/01/01 0:00 UTC -- even on operating systems
+# that use a different epoch.
+# On Unix, this function returns 0.
+    my $t0;
+    {
+        require POSIX;
+        my $old_TZ = $ENV{TZ};
+        $ENV{TZ} = 'UCT';
+        POSIX::tzset();
+        $t0 = POSIX::mktime(0, 0, 0, 1, 0, 70);
+        if (defined $old_TZ) {
+            $ENV{TZ} = $old_TZ;
+        } else {
+            delete $ENV{TZ};
+        }
+    }
+    return $t0;
+}
+# ---------------------------------------------------------------------- #
+sub get_time {
+# Wrapper around time() that uses Time::HiRes if possible
+    my $time = 0;
+    eval {
+        require Time::HiRes;
+        $time = Time::HiRes::time();
+    };
+    return $time || time();
+}
+# ---------------------------------------------------------------------- #
+sub postprocess {
+# Clean compiler output with postprocessor
+    my $text = shift;
+
+    print STDERR "  PP: Cleaning compiler output with <$postproc>\n"
+      if ($debug);
+    # open read/write pipe to postprocessor (see `man perlipc')
+    my $pid = open2(\*POSTPROCD,\*UNPROCD, "$postproc 2>&1");
+    die "Couldn't start $postproc" unless defined($pid);
+    # fork() a child to avoid deadlock if $text is large
+    my $child_id;
+
+    if ($child_id=fork()) {             # parent --> read output
+        close UNPROCD;          # important
+        local $/ = undef;       # get it all at once
+        $text = <POSTPROCD>;
+        close POSTPROCD;        # not necessary, I guess
+        waitpid($child_id,0);   # wait for child to finish to avoid zombie
+        wait();                 # bizarre enough there is another zombie..
+    } else {                    # child --> write to postproc
+        die "Cannot fork: $!" unless defined($child_id);
+        $nosummary = 1;         # don't waffle when exiting
+        close POSTPROCD;        # apparently not necessary
+        print UNPROCD $text;
+        close UNPROCD;
+        exit 1;                 # irrelevant
+    }
+    print STDERR "  PP: done postprocessing\n" if ($debug);
+    $text;
+}
+# ---------------------------------------------------------------------- #
+sub write_to_file {
+# Write TEXT to file FILE, aborting if file exists (unless OVERWRITE is
+# set), and write a helpful header (unless NOHEADER is set)
+    my $file      = shift;
+    my $text      = shift || '';
+    my $overwrite = shift || 0;
+    my $noheader  = shift || 0;
+    my $header = !$noheader;    # Avoid iterated negation (=spinning head)
+
+    if (-e $file && !$overwrite) {
+        die "File $file exists!\n";
+    } else {
+        open(FILE,"> $file") or die "Cannot open file $file for writing\n";
+        if ($header) {
+            my $shortfile = $file;
+            $shortfile =~ s{/\./}{/}g; # remove `./' path components
+            $shortfile =~ s{^.*?([^/]*/?[^/]*)$}{$1}g; # keep only last path component
+            print FILE "$shortfile\n";
+            print FILE "-" x length($shortfile), "\n";
+            print FILE "Created: ", scalar localtime(), "\n\n";
+            print FILE "This file was automatically generated by auto-test,"
+                     . " so think twice before\nyou modify it.\n\n";
+        }
+        chomp($text);
+        print FILE "$text\n" if (length($text));
+        close FILE or die "Cannot close file $file\n";
+    }
+}
+# ---------------------------------------------------------------------- #
+sub get_maintainer_list {
+# Return comma-separated list of maintaners of directories listed in
+# %failed, avoiding duplicate entries.
+
+    my %maintainers;
+    foreach my $dir (keys %failed) {
+        foreach my $maint (get_maintainers("$dir/README")) {
+            $maintainers{$maint}++;
+        }
+    }
+
+    return join(',', grep /./, keys %maintainers);
+}
+# ---------------------------------------------------------------------- #
+sub get_maintainers {
+# Given a run directory, return list of maintainers extracted from the
+# README file.
+    my $readme = shift;
+    unless (-r $readme) {
+        warn "Cannot open $readme\n";
+        return ();
+    }
+
+    my @emails = ();
+    my $reader = Pencil::ReadmeReader->new($readme);
+    foreach my $maint ($reader->get_content('Maintainer')) {
+        $maint =~ s{(\[at\]|\@)}{/}; # obfuscate `@' (may end up on the web)
+        $maint =~ s{(\[dot\]|\.)}{:}g;   # obfuscate `.'
+        $maint =~ s{^\s*(.*?)\s*$}{$1}; # strip surrounding whitespace
+        if ($maint =~ /<([^>]*)>/) {
+            $maint = $1;
+        }
+        if ($maint =~ m{[-.:a-zA-Z_0-9]+/[-:a-zA-Z_0-9]+}) {
+            push @emails, $maint;
+        }
+    }
+    return @emails;
+}
+# ---------------------------------------------------------------------- #
+
+## Summarize results
+END {
+    unless ($help || $nosummary || $list_only) {
+        print "\n" . "-" x 70 . "\n";
+
+        # Print failure header that can be identified by pencil-test
+        if ($failed || %failed) {
+            print "### auto-test failed ###\n";
+        }
+
+        # Failed outside individual tests (e.g. other auto-test is running)
+        if ($failed) {
+            print "$failure_message";
+        }
+
+        # Failed during some of the individual tests
+        if (%failed) {
+            print "Failed ", scalar(keys %failed),
+              " test(s) out of $ntests:\n";
+            while (my ($dir,$phase) = each %failed) {
+                print "  $dir ($phase)\n";
+            }
+        } else {
+            if ($ntests == 1) {
+                print "Test succeeded.\n";
+            } elsif ($ntests > 1) {
+                print "All $ntests tests succeeded.\n";
+            }
+            elsif (($ntests < 1) && ! $failed) {
+                print "There was no test to run???\n";
+            }
+        }
+
+        # Print timing numbers
+        if ($time) {
+            my @t = times();
+            print "\nCPU time (including compilation): ",
+                  s_to_hms($t[2], 7) . "u ",
+                  s_to_hms($t[3]   ) . "s\n";
+
+            my $t1_global = time(); # end time
+            print "Total wall-clock time:            ",
+                     s_to_hms(time_diff($t0_global,$t1_global), 7),
+              " = ", s_to_hms($t_global{'compile'}),
+              " + ", s_to_hms($t_global{'start+run'}),
+              "\n";
+        }
+
+        # Print info from file
+        if (-r $infofile) {
+            print "\n------------  Other info:  ------------\n";
+            open(INFO,"< $infofile") or warn "Couldn't open $infofile\n";
+            print while (<INFO>);
+            close(INFO);
+        }
+
+        # List maintainers of failed tests
+        if ($list_maint && %failed) {
+            print 'Maintainers of failed tests: ', get_maintainer_list(), "\n";
+        }
+
+    }
+
+    # Remove lock file
+    if ($remove_lock) {
+        unlink $lockfile or warn "Couldn't remove lockfile <$lockfile>\n";
+    }
+}
+
+# End of file auto-test
