@@ -5057,6 +5057,44 @@ Install that and keep your configuration (Makefile.src and getconf.csh)
 close to that for `frenesi' or `norlx50'. That should work.
 }
 
+%%%
+\subsubsection{Error: Symbol 'mpi_comm_world' at (1) has no IMPLICIT type}
+
+\begin{Verbatim}
+I installed the pencil code on Ubuntu system and tested "run.csh"
+in ...\samples\conv-slab.  Here the code worked pretty well.
+Nevertheless, running (auto-test), I found there are some errors.
+
+The messages are,
+
+Error: Symbol 'mpi_comm_world' at (1) has no IMPLICIT type
+Fatal Error: Error count reached limit of 25.
+make[2]: *** [mpicomm_double.o] Error 1
+make[2]: Leaving directory
+`/home/pkiwan/Desktop/pencil-code/samples/2d-tests/selfgravitating-shearwave/src'
+make[1]: *** [code] Error 2
+make[1]: Leaving directory
+`/home/pkiwan/Desktop/pencil-code/samples/2d-tests/selfgravitating-shearwave/src'
+make: *** [default] Error 2
+
+Finally, ### auto-test failed ###
+
+Will it be OK? Or, how can I fix this?
+\end{Verbatim}
+
+\medskip
+
+{\em
+Thanks for letting me know about the status, and congratulations
+on your progress! Those tests that fail are those that use MPI.
+If your machine is a dual or multi core machine, you could run
+faster by running under MPI. But this is probably not crucial for
+you at this point. (I just noticed that there is a ToDo listed
+in the auto-test command to implement the option not to run the
+MPI tests, but this hasn't been done yet. So I guess you can start
+with the science next.
+}
+
 % ---------------------------------------------------------------------- %
 
 \subsection{Running}
