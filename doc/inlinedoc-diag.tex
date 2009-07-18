@@ -105,6 +105,8 @@
   \var{oxmxy}     & $\left< \omega_x \right>_{z}$ \\
   \var{oymxy}     & $\left< \omega_y \right>_{z}$ \\
   \var{ozmxy}     & $\left< \omega_z \right>_{z}$ \\
+  \var{pvzmxy}    & $\left< (\omega_z + 2\Omega)/\varrho \right>_{z}$
+                    \quad(z component of potential vorticity) \\
   \var{ruxmxy}    & $\left< \rho u_x \right>_{z}$ \\
   \var{ruymxy}    & $\left< \rho u_y \right>_{z}$ \\
   \var{ruzmxy}    & $\left< \rho u_z \right>_{z}$ \\
@@ -165,6 +167,9 @@
   \var{oxoym}     & $\left<\omega_x\omega_y\right>$ \\
   \var{oxozm}     & $\left<\omega_x\omega_z\right>$ \\
   \var{oyozm}     & $\left<\omega_y\omega_z\right>$ \\
+  \var{pvzm}      & $\left<\omega_z + 2\Omega/\varrho\right>$
+                    \quad(z component of potential vorticity) \\
+  \var{oumphi}    & $\left<\omv\cdot\uv\right>_\varphi$ \\
   \var{oumx}      & $\left<\boldsymbol{\omega}
                     \cdot\uv\right>_{yz}$ \\
   \var{oumy}      & $\left<\boldsymbol{\omega}
@@ -177,6 +182,9 @@
                     \quad(maximum Mach number) \\
   \var{ekin}      & $\left<{1\over2}\varrho\uv^2\right>$ \\
   \var{ekintot}   & $\int_V{1\over2}\varrho\uv^2\, dV$ \\
+  \var{uxglnrym}  & $\left<u_x\partial_y\ln\varrho\right>$ \\
+  \var{uyglnrxm}  & $\left<u_y\partial_x\ln\varrho\right>$ \\
+  \var{uxuydivum} & $\left<u_x u_y\nabla\cdot\uv\right>$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{density.f90}} \\
 \midrule
@@ -387,6 +395,9 @@
   \var{dexbmx}    & $\left<\nabla\times\Ev\times\Bv\right>|_x$ \\
   \var{dexbmy}    & $\left<\nabla\times\Ev\times\Bv\right>|_y$ \\
   \var{dexbmz}    & $\left<\nabla\times\Ev\times\Bv\right>|_z$ \\
+  \var{phibmx}    & $\left<\phi\Bv\right>|_x$ \\
+  \var{phibmy}    & $\left<\phi\Bv\right>|_y$ \\
+  \var{phibmz}    & $\left<\phi\Bv\right>|_z$ \\
   \var{b2divum}   & $\left<\Bv^2\nabla\cdot\uv\right>$ \\
   \var{ujxbm}     & $\left<\uv\cdot(\Jv\times\Bv\right>$ \\
   \var{jxbr2m}    & $\left<(\Jv\times\Bv/\rho)^2\right>$ \\
