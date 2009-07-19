@@ -15,10 +15,9 @@ module Shear
 !
   implicit none
 !
-  real :: x0_shear=0.0, Bshear=0.01
+  real :: x0_shear=0.0
   logical :: lshearadvection_as_shift=.false.
   logical :: lmagnetic_stretching=.true.,lrandomx0=.false.
-  logical :: lglobal_baroclinic=.false.
 !
   include 'shear.h'
 !
@@ -28,8 +27,7 @@ module Shear
 !
   namelist /shear_run_pars/ &
       qshear,Sshear,deltay,Omega,lshearadvection_as_shift, &
-      lmagnetic_stretching,lrandomx0,x0_shear, &
-      lglobal_baroclinic,Bshear
+      lmagnetic_stretching,lrandomx0,x0_shear
 !
   integer :: idiag_dtshear=0    ! DIAG_DOC: advec\_shear/cdt
   integer :: idiag_deltay=0     ! DIAG_DOC: deltay
@@ -158,20 +156,6 @@ module Shear
       if (lhydro)    lpenc_requested(i_uu)=.true.
       if (lmagnetic) lpenc_requested(i_aa)=.true.
 !
-      if (lglobal_baroclinic) then 
-        lpenc_requested(i_rho1)=.true.
-        lpenc_requested(i_uu)=.true.
-!
-        if (lentropy.or.&
-           (ltemperature.and.(.not.ltemperature_nolog))) &
-           lpenc_requested(i_TT1)=.true.
-!
-        if (ltemperature.or.&
-           (lentropy.and.pretend_lnTT)) &
-           lpenc_requested(i_cv1)=.true.
-!
-      endif
-!
     endsubroutine pencil_criteria_shear
 !***********************************************************************
     subroutine pencil_interdep_shear(lpencil_in)
@@ -289,10 +273,6 @@ module Shear
       if (iam/=0) then
         df(l1:l2,m,n,iamx)=df(l1:l2,m,n,iamx)-Sshear*f(l1:l2,m,n,iamy)
       endif
-!
-!  Global baroclinic term .
-!
-      if (lglobal_baroclinic) call global_baroclinic(f,df,p)
 !
 !  Take shear into account for calculating time step.
 !
@@ -429,63 +409,6 @@ module Shear
       endif
 !
     endsubroutine fourier_shift_ghostzones
-!***********************************************************************
-    subroutine global_baroclinic(f,df,p)
-!
-!  This subroutine adds the terms to the shearing box equations that 
-!  come from an underlying large scale entropy gradient. If the pressure
-!  falls like P=P0/(r/R)**beta, then a Taylor expansion around R leads to
-!  P=P0*(1-beta/R0*x), since r=R0+x. This extra term enters on the equations
-!  as 
-!
-!     d(ux)/dt = usual terms + beta*P0/(rho*R0) - beta*P0/(rho0*R0) 
-!     d(EE)/dt = usual terms + beta*E0*ux/R0
-!
-!  The last term on the RHS of the momentum equation is because the underlying 
-!  entropy gradient also leads to a further reduction of the rotational velocity. 
-!  Having only the second term implemented would lead to a large scale wind as 
-!  the momentum equation tries to adjust to the new rotational speed. 
-!  
-!  10-apr-09/wlad: coded
-!
-      use EquationOfState, only: rho0,cs20,gamma11,gamma1
-      use Messages, only: fatal_error
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: rhs
-      type (pencil_case) :: p     
-      real :: P0
-!
-!  x-momentum
-!      
-      P0=rho0*cs20*gamma11
-      df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+Bshear*P0/rho0*(p%rho1*rho0-1.)
-!
-!  Right hand side on the energy equation - background energy gradient
-!
-      rhs=Bshear*P0*p%uu(:,1)/gamma1 
-!
-      if (lentropy) then 
-        if (pretend_lnTT) then 
-          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) + p%cv1*p%rho1*p%TT1*rhs
-        else
-          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) + p%rho1*p%TT1*rhs
-        endif
-      else if (ltemperature) then 
-        if (ltemperature_nolog) then 
-          df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + p%cv1*p%rho1*rhs
-        else
-          df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + p%cv1*p%rho1*p%TT1*rhs
-        endif
-      else
-        print*,"You want to use a global baroclinic term but    "
-        print*,"you are NOT solving the energy equation. Better "
-        print*,"stop and check."
-        call fatal_error("global_baroclinic","")
-      endif
-!
-    endsubroutine global_baroclinic
 !***********************************************************************
     subroutine rprint_shear(lreset,lwrite)
 !
