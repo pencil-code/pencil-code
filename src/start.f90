@@ -155,8 +155,14 @@ program start
 !  Call also rprint_list, because it writes iuu, ilnrho, iss, and iaa to disk.
 !
   call read_startpars(FILE=.true.)
+!
+!  Allocate diagnostic arrays
+!
+    call allocate_diagnostic()
+!
   call rprint_list(.false.)
   call particles_rprint_list(.false.)
+
 !
 !  Initialize start time.
 !

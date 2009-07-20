@@ -170,8 +170,13 @@ program run
 !  Read parameters and output parameter list.
 !
   call read_runpars()
-  call rprint_list(LRESET=.false.)
 !
+!  Allocate diagnostic arrays
+!
+    call allocate_diagnostic()
+!
+  call rprint_list(LRESET=.false.)
+
 !  Position of equator (if any).
 !
   if (lequatory) yequator=xyz0(2)+0.5*Lxyz(2)

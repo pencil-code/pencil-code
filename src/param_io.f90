@@ -89,7 +89,9 @@ module Param_IO
        border_frac_z,luse_latitude, &
        lshift_datacube_x,lfargo_advection,&
        yequator, nscbc_sigma_in, nscbc_sigma_out, p_infty,&
-       lequatory, lequatorz, zequator 
+       lequatory, lequatorz, zequator,&
+       mnamexy,mnamexz
+
 !
   namelist /run_pars/ &
        cvsid,ip,nt,it1,it1d,dt,cdt,ddt,cdtv,cdtv2,cdtv3,&
@@ -142,7 +144,8 @@ module Param_IO
        lADI,ltestperturb,eps_rkf,eps_stiff,timestep_scaling, nscbc_sigma_in,&
        nscbc_sigma_out, p_infty, &
        lequatory, lequatorz, zequator,&
-       lini_t_eq_zero
+       lini_t_eq_zero,&
+       mnamexy,mnamexz
   contains
 !***********************************************************************
     subroutine get_datadir(dir)
