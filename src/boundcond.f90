@@ -1601,9 +1601,9 @@ module Boundcond
         f(l1-2,:,:,j)= f(l1+2,:,:,j) +  60.*f(l1,:,:,j)*dx/(9.*x(l1))
         f(l1-3,:,:,j)= f(l1+3,:,:,j) +  60.*f(l1,:,:,j)*dx/(x(l1))
       case('top')               ! top boundary
-        f(l2+1,:,:,j)= f(l2-1,:,:,j) -  60.*f(l1,:,:,j)*dx/(45.*x(l2))
-        f(l2+2,:,:,j)= f(l2-2,:,:,j) -  60.*f(l1,:,:,j)*dx/(9.*x(l2))
-        f(l2+3,:,:,j)= f(l2-3,:,:,j) -  60.*f(l1,:,:,j)*dx/(x(l2))
+        f(l2+1,:,:,j)= f(l2-1,:,:,j) -  60.*f(l2,:,:,j)*dx/(45.*x(l2))
+        f(l2+2,:,:,j)= f(l2-2,:,:,j) -  60.*f(l2,:,:,j)*dx/(9.*x(l2))
+        f(l2+3,:,:,j)= f(l2-3,:,:,j) -  60.*f(l2,:,:,j)*dx/(x(l2))
 
       case default
         call warning('bc_set_nfr_x',topbot//" should be `top' or `bot'")
