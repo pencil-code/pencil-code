@@ -1816,15 +1816,21 @@ module Boundcond
 ! The coding assumes we are using 6-th order centered finite difference for our
 ! derivatives. 
 !
-        cottheta= cotth(m1)
-        f(:,m1-1,:,j)= f(:,m1+1,:,j) -  60.*dy*cottheta*f(:,m1,:,j)/45.
-        f(:,m1-2,:,j)= f(:,m1+2,:,j) -  60.*dy*cottheta*f(:,m1,:,j)/9.
-        f(:,m1-3,:,j)= f(:,m1+3,:,j) -  60.*dy*cottheta*f(:,m1,:,j)
+ !       cottheta= cotth(m1)
+ !       f(:,m1-1,:,j)= f(:,m1+1,:,j) -  60.*dy*cottheta*f(:,m1,:,j)/45.
+ !       f(:,m1-2,:,j)= f(:,m1+2,:,j)! -  60.*dy*cottheta*f(:,m1,:,j)/9.
+ !       f(:,m1-3,:,j)= f(:,m1+3,:,j)! -  60.*dy*cottheta*f(:,m1,:,j)
+        f(:,m1-1,:,j)= f(:,m1+1,:,j)*sinth(m1-1)/sinth(m1+1)
+        f(:,m1-2,:,j)= f(:,m1+2,:,j)*sinth(m1-2)/sinth(m1+2)
+        f(:,m1-3,:,j)= f(:,m1+3,:,j)*sinth(m1-3)/sinth(m1+3)
       case('top')               ! top boundary
-        cottheta= cotth(m2)
-        f(:,m2+1,:,j)= f(:,m2-1,:,j) +  60.*dy*cottheta*f(:,m2,:,j)/45.
-        f(:,m2+2,:,j)= f(:,m2-2,:,j) +  60.*dy*cottheta*f(:,m2,:,j)/9.
-        f(:,m2+3,:,j)= f(:,m2-3,:,j) +  60.*dy*cottheta*f(:,m2,:,j)
+        f(:,m2+1,:,j)= f(:,m2-1,:,j)*sinth(m2+1)/sinth(m2-1)
+        f(:,m2+2,:,j)= f(:,m2-2,:,j)*sinth(m2+2)/sinth(m2-2)
+        f(:,m2+3,:,j)= f(:,m2-3,:,j)*sinth(m2+3)/sinth(m2-3)
+!        cottheta= cotth(m2)
+!        f(:,m2+1,:,j)= f(:,m2-1,:,j) +  60.*dy*cottheta*f(:,m2,:,j)/45.
+!        f(:,m2+2,:,j)= f(:,m2-2,:,j)! +  60.*dy*cottheta*f(:,m2,:,j)/9.
+!        f(:,m2+3,:,j)= f(:,m2-3,:,j)! +  60.*dy*cottheta*f(:,m2,:,j)
 
       case default
         call warning('bc_set_sfree_y',topbot//" should be `top' or `bot'")
