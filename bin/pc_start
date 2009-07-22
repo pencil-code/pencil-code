@@ -1,0 +1,4 @@
+#!/bin/sh
+
+echo "This script has been renamed to 'pc_start-old'"
+exit 1
