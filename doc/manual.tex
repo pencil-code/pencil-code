@@ -7289,6 +7289,127 @@ $\epsilon$ & $\sigma$ & $\delta$ \\
   \end{center}
 \end{table}
 
+% ====================================================================== %
+
+\section{Some specific boundary conditions}
+\label{s-boundary-conditions}
+
+With the addition of spherical and cylindrical coordinate systems more
+complicated boundary conditions has now been implemented in the code. 
+So specific examples are discussed below. 
+
+\subsection{Prefect-conductor boundary condition}
+
+This boundary condition is often needed to be implemented for the magnetic
+field. This implies that 
+\begin{equation}
+  B_n = 0
+\end{equation}
+at a boundary, where the subscript $n$ denotes the normal component. 
+Implementing this in cartesian case is generally achieved by setting
+the two tangential components of $A$ to be zero. In the case of
+spherical coordinates, let us first consider a radial boundary. In that
+case we must have
+\begin{equation}
+B_r = \frac{1}{r}\partial_{ \theta}A_{\phi} - 
+      \frac{1}{r\sin(\theta)}\partial_{\phi}A_{\theta} 
+      + \frac{\cot(\theta)}{r} A_{\phi} = 0 \/.
+\end{equation}
+This can be achieved by 
+\begin{equation}
+A_{\phi}=A_{\theta}=0
+\end{equation}
+Note that this does not set any condition on the radial component of the 
+vector potential.  Next, on a boundary with constant $\theta$ 
+we must have
+\begin{equation}
+B_{\theta} = \frac{1}{r\sin(\theta)}\partial_{\phi}A_{r} - 
+            \partial_{r}A_{\phi} 
+      - \frac{1}{r} A_{\phi} = 0 \/.
+\end{equation}
+Again this can be achieved by $A_{r}=A_{\phi}=0$. 
+
+\subsection{Stress-free boundary condition}
+This needs to be often imposed on the velocity. This is generally accomponied
+by setting the normal component of the velocity at the boundary
+to be zero. At the radial boundary
+the relevent component of the strain tensor that is to be set to 
+zero are:
+\begin{equation}
+S_{r\theta}=\frac{1}{r}\partial_{\theta}U_r + \partial_r U_{\theta}
+           -\frac{1}{r}U_{\theta} = 0
+S_{r\phi}=\frac{1}{r\sin(\theta)}\partial_{\phi}U_r + \partial_r U_{\phi}
+           -\frac{1}{r}U_{\phi} = 0
+\end{equation}
+With $U_r=0$ we need to set 
+$\partial_r U_{\theta} -\frac{1}{r}U_{\theta} = 0$. This is best done
+by writing the above condition in the following way, 
+$\partial_r(\frac{U_{\theta}}{r}) = 0$. We then set the symmetric 
+condition on $ \frac{U_{\theta}}{r}$. Actually a more general but related
+boundary condition can be set, which is 
+\begin{equation}
+\partial_r U_{\theta} -\frac{\alpha}{r}U_{\theta} = 0
+\end{equation}
+where $\alpha$ is a constant. This can be set by setting the symmetric
+condition on 
+$\partial_r(\frac{U_{\theta}}{r^{\alpha}}) = 0$
+
+At the boundary with consant $\theta$ the stress-free boundary 
+condition will take the form, 
+\begin{equation}
+S_{r\theta}=\frac{1}{r}\partial_{\theta}U_r + \partial_r U_{\theta}
+           -\frac{1}{r}U_{\theta} = 0
+S_{\theta\phi}=\frac{1}{r\sin(\theta)}\partial_{\phi}U_{\theta} + 
+                \frac{1}{r}\partial_{\theta}U_{\phi}
+              -\frac{\cot(\theta)}{r}U_{\phi}
+\end{equation}
+with $U_{\theta} = 0$. The first case can be satisfied by,
+$U_r=0$. The second case can be satisfied by 
+$\frac{1}{r}\partial_{\theta}U_{\phi}-\frac{\cot(\theta)}{r}U_{\phi}$ 
+which we write as, $\partial_{\theta}\frac{U_{\phi}}{\sin(\theta)}=0$
+And thus is implemented as a symmetric boundary condition on
+$\frac{U_{\phi}}{\sin(\theta)}$
+
+\subsection{Normal-field-radial boundary condition}
+This boundary condition is mostly used to set a boundary condition on
+the magnetic field. This implies that the normal component of the
+magnetic field at the boundary is left unconstrained, and the two
+tangential components of the field is set to zero. At the radial boundary,
+in terms of the vector potential, this is implemented as:
+\begin{equation}
+B_{\theta} = \frac{1}{r\sin(\theta)}\partial_r A_r - \partial_r A_{\phi} 
+            - \frac{1}{r}A_{\phi} = 0 
+\end{equation}
+and 
+\begin{equation}
+B_{\phi} = \partial_{r}A_{\theta} - 
+            \partial_{\theta}A_{r} 
+      + \frac{1}{r} A_{\theta} = 0 .
+\end{equation}
+Which are set by setting $A_r=0$ and 
+$\partial_r A_{\phi} + \frac{1}{r}A_{\phi}=0 $ and 
+$\partial_r A_{\theta} + \frac{1}{r}A_{\theta}=0 $ which are set by 
+setting anti-symmetric condition for $A_r$ and symmetric condition
+for $rA_{\theta}$ and $rA_{\phi}$. 
+
+On the boundary with constant $\theta$ is condition is set by 
+\begin{equation}
+B_{r} = \frac{1}{r}\partial_{\theta}A_{\phi}- 
+    \frac{1}{r\sin(\theta)}\partial_{\phi}A_{\theta} 
+      + \frac{\cot(\theta)}{r} A_{\phi} = 0 \/.
+\end{equation}
+and 
+\begin{equation}
+B_{\phi} = \partial_{r}A_{\theta} - 
+            \partial_{\theta}A_{r} 
+      + \frac{1}{r} A_{\theta} = 0 .
+\end{equation}
+which can be achieved by setting $A_{\theta} = 0$ and
+$\partial_{\theta}A_{\phi}+\frac{\cot(\theta)} A_{\phi} = 0$
+and 
+$\partial_{\theta}A_{r}=0$. These can be achieved by setting the
+antisymmetric condition for $A_{\theta}$, symmetric condition for
+$A_r$ and symmetric condition on $\sin(\theta)A_{\phi}$. 
 
 % ====================================================================== %
 
