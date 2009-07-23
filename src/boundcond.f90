@@ -1595,15 +1595,15 @@ module Boundcond
       select case(topbot)
 
       case('bot')               ! bottom boundary
-! The coding assumes we are using 6-th order centered finite difference for our
-! derivatives. 
-        f(l1-1,:,:,j)= f(l1+1,:,:,j) +  60.*f(l1,:,:,j)*dx/(45.*x(l1))
-        f(l1-2,:,:,j)= f(l1+2,:,:,j) +  60.*f(l1,:,:,j)*dx/(9.*x(l1))
-        f(l1-3,:,:,j)= f(l1+3,:,:,j) +  60.*f(l1,:,:,j)*dx/(x(l1))
-      case('top')               ! top boundary
-        f(l2+1,:,:,j)= f(l2-1,:,:,j) -  60.*f(l2,:,:,j)*dx/(45.*x(l2))
-        f(l2+2,:,:,j)= f(l2-2,:,:,j) -  60.*f(l2,:,:,j)*dx/(9.*x(l2))
-        f(l2+3,:,:,j)= f(l2-3,:,:,j) -  60.*f(l2,:,:,j)*dx/(x(l2))
+
+        f(l1-1,:,:,j)= f(l1+1,:,:,j)*(x(l1+1)/x(l1-1))
+        f(l1-2,:,:,j)= f(l1+2,:,:,j)*(x(l1+1)/x(l1-2))
+        f(l1-3,:,:,j)= f(l1+3,:,:,j)*(x(l1+3)/x(l1-3))
+! 
+     case('top')               ! top boundary
+       f(l2+1,:,:,j)= f(l2-1,:,:,j)*(x(l2-1)/x(l2+1))
+       f(l2+2,:,:,j)= f(l2-2,:,:,j)*(x(l2-2)/x(l2+2))
+       f(l2+3,:,:,j)= f(l2-3,:,:,j)*(x(l2-3)/x(l2+3))
 
       case default
         call warning('bc_set_nfr_x',topbot//" should be `top' or `bot'")
@@ -1658,33 +1658,27 @@ module Boundcond
 ! derivatives. 
 !
         if ((llambda_effect).and.(j.eq.iuz)) then
-          do iy=1,my
-             boundary_value(iy,:)=f(l1,iy,:,j)/x(l1)-Lambda_V0*(f(l1,iy,:,iuz)/x(l1))
-!+&
-!                Lambda_Omega*sin(y(iy)))
-          enddo
+          f(l1-1,:,:,j)= f(l1+1,:,:,j)*(x(l1-1)/x(l1+1)**(1-Lambda_V0))
+          f(l1-2,:,:,j)= f(l1+2,:,:,j)*(x(l1-1)/x(l1+2)**(1-Lambda_V0))
+          f(l1-3,:,:,j)= f(l1+3,:,:,j)*(x(l1-3)/x(l1+3)**(1-Lambda_V0))
         else
-          boundary_value(:,:)=f(l1,:,:,j)/x(l1)
+          f(l1-1,:,:,j)= f(l1+1,:,:,j)*(x(l1-1)/x(l1+1))
+          f(l1-2,:,:,j)= f(l1+2,:,:,j)*(x(l1-1)/x(l1+2))
+          f(l1-3,:,:,j)= f(l1+3,:,:,j)*(x(l1-3)/x(l1+3))
         endif
-        f(l1-1,:,:,j)= f(l1+1,:,:,j) -  60.*boundary_value(:,:)*dx/45.
-        f(l1-2,:,:,j)= f(l1+2,:,:,j) -  60.*boundary_value(:,:)*dx/9.
-        f(l1-3,:,:,j)= f(l1+3,:,:,j) -  60.*boundary_value(:,:)*dx
 !
 ! top boundary
 !
       case('top')
         if ((llambda_effect).and.(j.eq.iuz)) then
-          do iy=1,my
-             boundary_value(iy,:)=f(l2,iy,:,j)/x(l2)-Lambda_V0*(f(l2,iy,:,iuz)/x(l2))
-!+&
-!                Lambda_Omega*sin(y(iy)))
-          enddo
+          f(l2+1,:,:,j)= f(l2-1,:,:,j)*(x(l2+1)/x(l2-1)**(1-Lambda_V0))
+          f(l2+2,:,:,j)= f(l2-2,:,:,j)*(x(l2+2)/x(l2-2)**(1-Lambda_V0))
+          f(l2+3,:,:,j)= f(l2-3,:,:,j)*(x(l2+3)/x(l2-3)**(1-Lambda_V0))
         else
-          boundary_value(:,:)=f(l2,:,:,j)/x(l2)  
+          f(l2+1,:,:,j)= f(l2-1,:,:,j)*(x(l2+1)/x(l2-1))
+          f(l2+2,:,:,j)= f(l2-2,:,:,j)*(x(l2+2)/x(l2-2))
+          f(l2+3,:,:,j)= f(l2-3,:,:,j)*(x(l2+3)/x(l2-3))
         endif
-        f(l2+1,:,:,j)= f(l2-1,:,:,j) +  60.*boundary_value(:,:)*dx/45.
-        f(l2+2,:,:,j)= f(l2-2,:,:,j) +  60.*boundary_value(:,:)*dx/9.
-        f(l2+3,:,:,j)= f(l2-3,:,:,j) +  60.*boundary_value(:,:)*dx
 
       case default
         call warning('bc_set_sfree_x',topbot//" should be `top' or `bot'")
@@ -1774,18 +1768,14 @@ module Boundcond
 
       case('bot')               ! bottom boundary
 !
-! The coding assumes we are using 6-th order centered finite difference for our
-! derivatives. 
-!
-        cottheta= cotth(m1)
-        f(:,m1-1,:,j)= f(:,m1+1,:,j) +  60.*dy*cottheta*f(:,m1,:,j)/45.
-        f(:,m1-2,:,j)= f(:,m1+2,:,j) -  60.*dy*cottheta*f(:,m1,:,j)/9.
-        f(:,m1-3,:,j)= f(:,m1+3,:,j) +  60.*dy*cottheta*f(:,m1,:,j)
+        f(:,m1-1,:,j)= f(:,m1+1,:,j)*sinth(m1+1)/sinth(m1-1)
+        f(:,m1-2,:,j)= f(:,m1+2,:,j)*sinth(m1+2)/sinth(m1-2)
+        f(:,m1-3,:,j)= f(:,m1+3,:,j)*sinth(m1+3)/sinth(m1-3)
       case('top')               ! top boundary
-        cottheta= cotth(m2)
-        f(:,m2+1,:,j)= f(:,m2-1,:,j) -  60.*dy*cottheta*f(:,m2,:,j)/45.
-        f(:,m2+2,:,j)= f(:,m2-2,:,j) +  60.*dy*cottheta*f(:,m2,:,j)/9.
-        f(:,m2+3,:,j)= f(:,m2-3,:,j) -  60.*dy*cottheta*f(:,m2,:,j)
+        f(:,m2+1,:,j)= f(:,m2-1,:,j)*sinth(m2-1)/sinth(m2+1)
+        f(:,m2+2,:,j)= f(:,m2-2,:,j)*sinth(m2-2)/sinth(m2+2)
+        f(:,m2+3,:,j)= f(:,m2-3,:,j)*sinth(m2-3)/sinth(m2+3)
+!
 !
       case default
         call warning('bc_set_nfr_y',topbot//" should be `top' or `bot'")
@@ -1812,14 +1802,6 @@ module Boundcond
       select case(topbot)
 
       case('bot')               ! bottom boundary
-!
-! The coding assumes we are using 6-th order centered finite difference for our
-! derivatives. 
-!
- !       cottheta= cotth(m1)
- !       f(:,m1-1,:,j)= f(:,m1+1,:,j) -  60.*dy*cottheta*f(:,m1,:,j)/45.
- !       f(:,m1-2,:,j)= f(:,m1+2,:,j)! -  60.*dy*cottheta*f(:,m1,:,j)/9.
- !       f(:,m1-3,:,j)= f(:,m1+3,:,j)! -  60.*dy*cottheta*f(:,m1,:,j)
         f(:,m1-1,:,j)= f(:,m1+1,:,j)*sinth(m1-1)/sinth(m1+1)
         f(:,m1-2,:,j)= f(:,m1+2,:,j)*sinth(m1-2)/sinth(m1+2)
         f(:,m1-3,:,j)= f(:,m1+3,:,j)*sinth(m1-3)/sinth(m1+3)
@@ -1827,12 +1809,8 @@ module Boundcond
         f(:,m2+1,:,j)= f(:,m2-1,:,j)*sinth(m2+1)/sinth(m2-1)
         f(:,m2+2,:,j)= f(:,m2-2,:,j)*sinth(m2+2)/sinth(m2-2)
         f(:,m2+3,:,j)= f(:,m2-3,:,j)*sinth(m2+3)/sinth(m2-3)
-!        cottheta= cotth(m2)
-!        f(:,m2+1,:,j)= f(:,m2-1,:,j) +  60.*dy*cottheta*f(:,m2,:,j)/45.
-!        f(:,m2+2,:,j)= f(:,m2-2,:,j)! +  60.*dy*cottheta*f(:,m2,:,j)/9.
-!        f(:,m2+3,:,j)= f(:,m2-3,:,j)! +  60.*dy*cottheta*f(:,m2,:,j)
-
-      case default
+!
+     case default
         call warning('bc_set_sfree_y',topbot//" should be `top' or `bot'")
 !
       endselect
