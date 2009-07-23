@@ -1094,10 +1094,9 @@ endif
 ##
 ## Petri's laptop (MacBook Pro)
 ##
-#FC=ifort #(Chandrasekhar)
-#FFLAGS= -I/usr/local/include -O3 -stand f90 -assume no2underscores -vec-report0 #(Chandrasekhar)
+#FC=mpif90 #(Chandrasekhar)
+#FFLAGS= -O3 #(Chandrasekhar)
 #CFLAGS=-DFUNDERSC=1 #(Chandrasekhar)
-#LD_MPI= -L/usr/local/include -llammpio -llamf77mpi -lmpi -llam -ldl #(Chandrasekhar)
 ##
 ## Dhruba's laptop 
 ##
