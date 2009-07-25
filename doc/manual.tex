@@ -7377,13 +7377,13 @@ magnetic field at the boundary is left unconstrained, and the two
 tangential components of the field is set to zero. At the radial boundary,
 in terms of the vector potential, this is implemented as:
 \begin{equation}
-B_{\theta} = \frac{1}{r\sin(\theta)}\partial_r A_r - \partial_r A_{\phi} 
+B_{\theta} = \frac{1}{r\sin(\theta)}\partial_{\phi} A_r - \partial_r A_{\phi} 
             - \frac{1}{r}A_{\phi} = 0 
 \end{equation}
 and 
 \begin{equation}
 B_{\phi} = \partial_{r}A_{\theta} - 
-            \partial_{\theta}A_{r} 
+            \frac{1}{r}\partial_{\theta}A_{r} 
       + \frac{1}{r} A_{\theta} = 0 .
 \end{equation}
 Which are set by setting $A_r=0$ and 
