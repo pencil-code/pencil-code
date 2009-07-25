@@ -2286,7 +2286,7 @@ module Initcond
 !  Horizontal flux tube pointing in the x-direction
 !  (for vector potential, or passive scalar)
 !
-!  14-apr-09/axel: adapted from htube
+!  14-apr-09/axel: adapted from htube, used in paper with Violaine Auger
 !
       integer :: i1,i2
       real, dimension (mx,my,mz,mfarray) :: f
