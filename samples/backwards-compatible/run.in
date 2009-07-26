@@ -4,12 +4,10 @@
 !
 &run_pars
   cvsid='$Id$',
-  nt=10, it1=2, cdt=0.4, cdtv=0.30, isave=100, itorder=3,
-  dsnap=50, dvid=0.5,
+  nt=10, it1=2, isave=100, itorder=3
   random_gen='nr_f90'
   save_lastsnap=F
   lpencil_check=T
-  lbidiagonal_derij=F  !(use old derij scheme for compatibility)
 /
 &eos_run_pars
 /
@@ -18,10 +16,10 @@
 &density_run_pars
 /
 &forcing_run_pars
-  iforce='helical', force=0.07, relhel=1.,
+  iforce='helical', force=0.07, relhel=1.
 /
 &magnetic_run_pars
-  eta=5e-1,
+  eta=5e-1
 /
 &viscosity_run_pars
   nu=5e-1

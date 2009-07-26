@@ -3,8 +3,6 @@
 ### Included by `Makefile'
 ###
 
-LIBSIG=-L$(HOME)/f90/lib
-LDMPI=
 MPICOMM = nompicomm
 GRAVITY = nogravity
 FORCING =   forcing
