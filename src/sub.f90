@@ -49,13 +49,14 @@ module Sub
   public :: multmv, multmv_mn, multmv_transp
   public :: mult_matrix
 !
-  public :: read_line_from_file, noform
-  public :: remove_file
+  public :: read_line_from_file, remove_file, control_file_exists
+  public :: noform
+
 !
   public :: update_snaptime, read_snaptime
   public :: inpui, outpui, inpup, outpup
   public :: parse_shell
-  public :: date_time_string,get_radial_distance,power_law
+  public :: date_time_string, get_radial_distance, power_law
 !
   public :: max_for_dt
 !
@@ -4538,6 +4539,35 @@ nameloop: do
         close(1)
 !
       endsubroutine touch_file
+!***********************************************************************
+      function control_file_exists(fname, delete)
+!
+!  Does the given control file exist?
+!  If DELETE is true, delete the file after checking for existence.
+!  Does nothing and returns .false. on any non-root MPI node.
+!
+!  24-jul-09/wolf: coded
+!
+        logical :: control_file_exists
+        character (len=*) :: fname
+        logical, optional :: delete
+        logical :: exist
+!
+        if (lroot) then
+          inquire(FILE=fname, EXIST=exist)
+!
+          if (present(delete)) then
+            if (delete) then
+              call remove_file(fname)
+            endif
+          endif
+!
+          control_file_exists = exist
+        else
+          control_file_exists = .false.
+        endif
+!
+      endfunction control_file_exists
 !***********************************************************************
       function read_line_from_file(fname)
 !

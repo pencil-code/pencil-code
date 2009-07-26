@@ -343,17 +343,15 @@ program run
 !
 !  Exit do loop if file `STOP' exists.
 !
-      if (lroot) inquire(FILE="STOP", EXIST=stop)
+      stop = control_file_exists("STOP", DELETE=.true.)
       call mpibcast_logical(stop, 1)
-      if (stop.or.t>tmax) then
+      if (stop .or. t>tmax) then
         if (lroot) then
           if (stop) print*, "done: found STOP file"
           if (t>tmax) print*, "done: t > tmax"
-          call remove_file("STOP")
-          inquire(FILE="RESUBMIT", EXIST=resubmit)
+          resubmit = control_file_exists("RESUBMIT", DELETE=.true.)
           if (resubmit) then 
             print*, "Cannot be resubmitted"
-            call remove_file("RESUBMIT")
           else
           endif
         endif
@@ -376,8 +374,8 @@ program run
 !  Re-read parameters if file `RELOAD_ALWAYS' exists; don't remove file
 !  (only useful for debugging RELOAD issues).
 !
-      if (lroot) inquire(FILE="RELOAD", EXIST=lreload_file)
-      if (lroot) inquire(FILE="RELOAD_ALWAYS", EXIST=lreload_always_file)
+      lreload_file = control_file_exists("RELOAD", DELETE=.true.)
+      lreload_always_file = control_file_exists("RELOAD_ALWAYS")
       lreloading = lreload_file .or. lreload_always_file
 !
 ! In some compilers (particularly pathf90) the file reload is being give
@@ -386,7 +384,6 @@ program run
 ! has been seen, not after RELOAD-ing has been completed. There must
 ! be a better solution. 
 !
-      if (lroot .and. lreload_file) call remove_file("RELOAD")
       call mpibcast_logical(lreloading, 1)
 !
       if (lreloading) then
@@ -410,7 +407,7 @@ program run
 !
 !  Reinit variables found in `REINIT' file; then remove the file.
 !
-      if (lroot) inquire(FILE="REINIT", EXIST=lreinit_file)
+      lreinit_file = control_file_exists("REINIT")
       if (lroot .and. lreinit_file) then
         if (lroot) print*, 'Found REINIT file'
         open(1,file='REINIT',action='read',form='formatted')

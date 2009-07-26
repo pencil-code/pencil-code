@@ -429,7 +429,7 @@ program start
 !  This can be useful if auxiliary files are outdated, and don't want
 !  to overwrite an existing var.dat.
 !
-  inquire(FILE="NOERASE", EXIST=lnoerase)
+  lnoerase = control_file_exists("NOERASE")
   if (.not.lnowrite .and. .not.lnoerase) then
     if (ip<12) print*,'START: writing to ' // trim(directory_snap)//'/var.dat'
     call wsnap(trim(directory_snap)//'/var.dat',f,mvar_io,ENUM=.false.)
