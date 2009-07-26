@@ -3,6 +3,7 @@ Wiki-Format: zim 0.26
 Creation-Date: Wed, 27 May 2009 06:57:44 +0200
 Modification-Date: Thu, 09 Jul 2009 15:05:50 +0200
 
+
 ====== Documentation of the New Configuration Scheme ======
 Created Wednesday 27 May 2009
 
@@ -104,6 +105,7 @@ Along the way, //configure// indicates which host IDs were tried (by default, or
 
 \footnote{ Note that the files in 1. and 2. can be soft links, which could be used to produce different host IDs on different NFS clients if ''~'' or ''.' is shared via NFS.}
 
+
 === Locating the config file ===
 
 The host ID is then used to find the appropriate config file for the given computer (which will include other config files as needed). E.g. if the host ID is ''workhorse.pencil.org'', //configure// will look for a file ''workhorse.pencil.org'' in all directories below
@@ -111,4 +113,40 @@ The host ID is then used to find the appropriate config file for the given compu
 2. ''${PENCIL_HOME}/config/hosts''
 
 
+===== Design decisions for discussion =====
 
+[] Run pencil consistency check by default (''pc_run'' requires extra flag to suppress consistency check).
+//Rationale:// Otherwise, we will hardly ever see the pencil-check output, because ''auto-test'' suppresses output from successful tests and in case of failing tests, we are just interested in the error message.
+
+
+[] Command-line interface of ''pc_run'':
+
+'''
+pc_run
+pc_run start
+pc_run run
+pc_run start run run run
+pc_run start run^3
+pc_run ^3
+
+pc_run stop
+pc_run reload
+'''
+
+[In particular: get rid of non-intuitive ''start_run.csh'' that has long ago stopped to start and run]
+
+
+[] The ''./runtime/'' directory is strictly ephemeral:
+   [] is cleaned each time ''pc_run'' starts;
+   [] is ignored by SVN;
+   [] is the place for ''STOP'', ''RELOAD'', ''RELOAD_ALWAYS'', ''RESUBMIT'', ''REINIT'', ''KEEP_RELOADING'', ''LOCK''
+   [] is the place for ''NO_PENCIL_CONSISTENCY_CHECK''
+   [] is //not// the place for ''NEVERLOCK''
+   [] What happens to ''COLOR'', ''NOERASE'', ''SGIFIX''?
+
+   [] Possible alternative: All control files are moved to ''./runtime/''.
+      ⊕ All control files in one place
+      ⊖ Mix of permanent (SVN-controlled) and ephemeral control files in one directory: More complicated SVN setup; only insiders know whether control file is permanent or not
+
+[] Sources of information for the host ID
+   * Try permanent IP? [Problem: DNS resolution takes a long time to fail when offline]
