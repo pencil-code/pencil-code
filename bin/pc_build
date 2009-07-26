@@ -48,9 +48,16 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   pc_build -f /home/USER/myconfig
 #       will use the configuration file /home/USER/myconfig.conf if it
 #       exists.
-# To do:
+#   pc_build -H workhorse will look for, and use the configuration file
+#       for host ID `workhorse'. If no config file is found, pc_build
+#       exits with an error message.
+# To do / ideas:
 #   - Allow make-style assignement arguments:
 #       pc_build FC=myf90 FFLAGS+='-O0 -g'
+#   - Allow handing down flags to `make' with
+#       -Wm,<flag1>,<flag2>,...
+#       --make-flags=<flag1>,<flag2>,...
+#   - Allow setting the search path
 
 # Copyright (C) 2009  Wolfgang Dobler
 #
@@ -192,9 +199,5 @@ sub version {
     return "$cmdname version $rev ($date)\n";
 }
 # ---------------------------------------------------------------------- #
-
-# End of file [name]
-
-
 
 # End of file build
