@@ -318,6 +318,8 @@ module Hydro
   integer :: idiag_rlx2m=0      ! DIAG_DOC: $\left<(\rho y u_z-z u_y)^2\right>$
   integer :: idiag_rly2m=0      ! DIAG_DOC: $\left<(\rho z u_x-x u_z)^2\right>$
   integer :: idiag_rlz2m=0      ! DIAG_DOC: $\left<(\rho x u_y-y u_x)^2\right>$
+  integer :: idiag_tot_ang_mom=0! DIAG_DOC: Total angular momentum in spherical
+                                ! DIAG_DOC: coordinates about the axis.  
   integer :: idiag_rufm=0       ! DIAG_DOC:
   integer :: idiag_dtu=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta x
                                 ! DIAG_DOC:  /\max|\mathbf{u}|]$
@@ -1681,6 +1683,12 @@ module Hydro
         if (idiag_rlz2m/=0) call sum_mn_name( &
             (p%rho*(x(l1:l2)*p%uu(:,2)-y(m)*p%uu(:,1)))**2,idiag_rlz2m)
 !
+!  Total angular momentum in spherical coordinates
+! 
+        if (idiag_tot_ang_mom/=0) call sum_mn_name( &
+            p%rho*x(l1:l2)*sin(y(m))*p%uu(:,3),idiag_tot_ang_mom)
+
+!
 !  Mean dot product of forcing and velocity field, <f.u>.
 !
         if (idiag_fum/=0) then
@@ -2872,6 +2880,7 @@ module Hydro
         idiag_rlx2m=0
         idiag_rly2m=0
         idiag_rlz2m=0
+        idiag_tot_ang_mom=0
         idiag_rumax=0
         idiag_rufm=0
         idiag_dtu=0
@@ -3010,6 +3019,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'rlx2m',idiag_rlx2m)
         call parse_name(iname,cname(iname),cform(iname),'rly2m',idiag_rly2m)
         call parse_name(iname,cname(iname),cform(iname),'rlz2m',idiag_rlz2m)
+        call parse_name(iname,cname(iname),cform(iname),'tot_ang_mom',idiag_tot_ang_mom)
         call parse_name(iname,cname(iname),cform(iname),'rumax',idiag_rumax)
         call parse_name(iname,cname(iname),cform(iname),'umx',idiag_umx)
         call parse_name(iname,cname(iname),cform(iname),'umy',idiag_umy)
