@@ -4542,13 +4542,40 @@ nameloop: do
 !***********************************************************************
       function control_file_exists(fname, delete)
 !
-!  Does the given control file exist?
+!  Does the given control file exist in either ./ or ./runtime/ ?
+!  If DELETE is true, delete the file after checking for existence.
+!  Does nothing and returns .false. on any non-root MPI node.
+!
+!  26-jul-09/wolf: coded
+!
+        logical :: control_file_exists
+        character (len=*) :: fname
+        logical, optional :: delete
+        logical :: delete1, exists
+!
+        if (present(delete)) then
+          delete1 = delete
+        else
+          delete1 = .false.
+        endif
+
+        exists = file_exists(trim("./" // fname), delete1)
+        if (.not. exists) then
+          exists = file_exists(trim("./runtime/" // fname), delete1)
+        endif
+        control_file_exists = exists
+
+      endfunction control_file_exists
+!***********************************************************************
+      function file_exists(fname, delete)
+!
+!  Does the given file exist?
 !  If DELETE is true, delete the file after checking for existence.
 !  Does nothing and returns .false. on any non-root MPI node.
 !
 !  24-jul-09/wolf: coded
 !
-        logical :: control_file_exists
+        logical :: file_exists
         character (len=*) :: fname
         logical, optional :: delete
         logical :: exist
@@ -4562,12 +4589,12 @@ nameloop: do
             endif
           endif
 !
-          control_file_exists = exist
+          file_exists = exist
         else
-          control_file_exists = .false.
+          file_exists = .false.
         endif
 !
-      endfunction control_file_exists
+      endfunction file_exists
 !***********************************************************************
       function read_line_from_file(fname)
 !
