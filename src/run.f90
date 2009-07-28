@@ -70,6 +70,7 @@ program run
   double precision :: time1,time2
   integer :: count, ierr
   logical :: stop=.false.,timeover=.false.,resubmit=.false.
+  logical :: suppress_pencil_check=.false.
   logical :: lreinit_file=.false., exist=.false.
   logical :: lreload_file=.false., lreload_always_file=.false.
   real :: wall_clock_time=0., time_per_step=0.
@@ -313,7 +314,11 @@ program run
 !
 !  Perform pencil_case consistency check if requested.
 !
-  if (lpencil_check) call pencil_consistency_check(f,df,p)
+  suppress_pencil_check = control_file_exists("NO-CONSISTENCY-CHECK")
+  call mpibcast_logical(suppress_pencil_check, 1)
+  if (lpencil_check .and. .not. suppress_pencil_check) then
+    call pencil_consistency_check(f,df,p)
+  endif
 !
 !  Start timing for final timing statistics.
 !  Initialize timestep diagnostics during the run (whether used or not,
