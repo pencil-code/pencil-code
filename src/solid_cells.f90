@@ -14,7 +14,8 @@ module Solid_Cells
   include 'solid_cells.h'
 
   integer, parameter            :: max_items=10
-  integer                       :: ncylinders,nrectangles,nforcepoints,dummy
+  integer                       :: ncylinders,nrectangles,dummy
+  integer                       :: nforcepoints=100
   real, dimension(max_items,5)  :: cylinder
   real, dimension(max_items,7)  :: rectangle
   real, dimension(max_items)    :: cylinder_radius
