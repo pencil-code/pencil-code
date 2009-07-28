@@ -58,6 +58,13 @@ sub new {
     # debugging implies verbosity:
     $self->{VERBOSE} = $self->{DEBUG} || 0;
 
+    my %empty_map;
+    my @empty_list;
+    $self->{MAKEFILE_PARAMS} = \%empty_map;
+    $self->{MAKEFILE_KEYS}   = \@empty_list;
+    $self->{RUNTIME_PARAMS}  = \%empty_map;
+    $self->{RUNTIME_KEYS}    = \@empty_list;
+
     $self->{PARSED} = 0;
 
     bless($self, $class);
