@@ -19,7 +19,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Author: wd (wdobler [at] gmail [dot] com)
 # Date:   24-Jul-2009
 # Description:
-#   Compile the Pencil Code, using settings from the `Makefile' section in
+#   Run the Pencil Code, using settings from the `runtime' section in
 #   the appropriate configuration files.
 # Usage:
 #   pc_run [-v|-h]
