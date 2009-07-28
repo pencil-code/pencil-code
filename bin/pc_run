@@ -134,34 +134,131 @@ my @runtime_keys = @{$parser->get_runtime_keys()};
 
 ## Global variables
 my $runtime_dir = './runtime';
+my %dispatch_table = (
+                      start  => \&start_cmd,
+                      run    => \&run_cmd,
+                      stop   => \&stop_cmd,
+                      reload => \&reload_cmd,
+                     );
+my $Ncpus = extract_N_cpus();
+print STDERR "\$Ncpus = $Ncpus\n" if ($debug);
+my @subcmds = expand_cmd_sequence(@ARGV);
+print STDERR "Commands: <", join(">, <", @subcmds), ">\n" if ($debug);
 
-## Clean up and set up ./runtime/ directory
-# Create dir
-unless (-d $runtime_dir) {
-    mkdir $runtime_dir or die "Cannot create $runtime_dir: $!\n";
-}
 
-# Clean dir
-if (<$runtime_dir/*>) {
-    system("rm $runtime_dir/*") == 0
-      or die "Cannot clean ./runtime/: $!\n";
-}
+## Start working
+update_runtime_dir();
 
-# Write files
-unless (-e "$runtime_dir/README") {
-    touch("$runtime_dir/README",
-          "runtime/\n"
-          . "--------\n"
-          . "This directory is created by $cmdname.\n"
-          . "It can be safely removed while the code is not running.\n");
-}
 if ($suppress_check) {
     touch("$runtime_dir/NO-CONSISTENCY-CHECK");
 }
 
-system('src/start.x') == 0
-  or die "start.x failed: <$!>\n";
+for my $subcmd (@subcmds) {
+    my $action = $dispatch_table{$subcmd};
+    if (defined($action)) {
+        print STDERR "Subcommand: $subcmd\n" unless ($quiet);
+        &$action();
+    } else {
+        warn "No such subcommand: <$subcmd>\n\n";
+        die usage();
+    }
+}
 
+# ---------------------------------------------------------------------- #
+sub start_cmd {
+# Run start.x
+    run_system_cmd('src/start.x');
+}
+# ---------------------------------------------------------------------- #
+sub run_cmd {
+# Run run.x
+    run_system_cmd('src/run.x');
+}
+# ---------------------------------------------------------------------- #
+sub run_system_cmd {
+#
+    my @cmd_line = @_;
+    system(@cmd_line) == 0
+      or die "@cmd_line failed: $!\n";
+}
+# ---------------------------------------------------------------------- #
+sub update_runtime_dir {
+# Make sure ./runtime/ directory exists and is up to date.
+
+    # Create dir
+    unless (-d $runtime_dir) {
+        mkdir $runtime_dir or die "Cannot create $runtime_dir: $!\n";
+    }
+
+    # Clean dir
+    if (<$runtime_dir/*>) {
+        system("rm $runtime_dir/*") == 0
+          or die "Cannot clean ./runtime/: $!\n";
+    }
+
+    # Write files
+    unless (-e "$runtime_dir/README") {
+        touch("$runtime_dir/README",
+              "runtime/\n"
+              . "--------\n"
+              . "This directory is created by $cmdname.\n"
+              . "It can be safely removed while the code is not running.\n");
+    }
+}
+# ---------------------------------------------------------------------- #
+sub expand_cmd_sequence {
+# Expand subcommand sequence, replacing <cmd>^n by <cmd> <cmd> ...
+    my @cmds = @_;
+
+    my @sequence;
+    if (@cmds) {                # `pc_run' with subcommands
+        for my $command (@cmds) {
+            if ($command =~ /^ \s* (.*) \^ ([0-9])+ \s* $/x) {
+                my ($cmd, $multiplier) = ($1, $2);
+                push @sequence, ($cmd) x $multiplier;
+            } else {
+                push @sequence, $command;
+            }
+        }
+    } else {                    # `pc_run' without subcommands
+        my $lastproc = $Ncpus - 1;
+        if (-s "data/proc${lastproc}/var.dat") { # exists & non-empty
+            push @sequence, 'run';
+        } else {
+            push @sequence, 'start', 'run';
+        }
+    }
+
+    return @sequence;
+}
+# ---------------------------------------------------------------------- #
+sub extract_N_cpus {
+# Look at cparam.local to determine number of CPUs
+    my ($n) = match_line_ix(
+        '^ \s* integer\b [^\!]* ncpus \s*=\s* ([0-9]*)', 'src/cparam.local');
+    return $n;
+}
+# ---------------------------------------------------------------------- #
+sub match_line_ix {
+# Cycle through the lines of file $filename and try matching them
+# case-insensitively (modifier i) with the extended (modifier x) $regexp.
+# For the first matching line, return the matched parts.
+# If no line matches, return undef;
+    my ($regexp, $filename) = @_;
+
+    open(my $fh, "< $filename")
+      or die "Cannot open $filename for reading: $!\n";
+    while (defined (my $line = <$fh>)) {
+        my @matches = ($line =~ /$regexp/ix);
+        if (@matches) {
+            close $fh or die "Cannot close $filename: $!\n";
+            return @matches;
+        }
+    }
+
+    close $fh or die "Cannot close $filename: $!\n";
+    return undef;
+}
 # ---------------------------------------------------------------------- #
 sub touch {
 # Create a file with current time stamp.
