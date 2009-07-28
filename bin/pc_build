@@ -26,14 +26,14 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   pc_build -f <file1,file2,...>
 # Options:
 #   -h, --help      This help.
-#   -H <id>
-#       --host-id=<id>
-#                   Use the given <id> as host ID.
 #   -f <files>,
 #       --config-files=<files>
 #                   Use the given <files> (a comma-separated list) as
 #                   configuration files, rather than trying to find a
 #                   config file base on a host ID.
+#   -H <id>
+#       --host-id=<id>
+#                   Use the given <id> as host ID.
 #   -v, --version   Print version number.
 #   -q, --quiet     Be quiet.
 # Examples:
@@ -91,8 +91,8 @@ GetOptions(\%opts,
                     --debug
                     --clean
                     --cleanall
-               -H=s --host-id=s
                -f=s --config-files=s
+               -H=s --host-id=s
                -q   --quiet
                -v   --version )
           ) or die "Aborting.\n";
