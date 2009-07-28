@@ -4556,7 +4556,7 @@ nameloop: do
         if (lroot) then
           inquire(FILE=fname, EXIST=exist)
 !
-          if (present(delete)) then
+          if (exist .and. present(delete)) then
             if (delete) then
               call remove_file(fname)
             endif
