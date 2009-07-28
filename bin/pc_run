@@ -1,4 +1,232 @@
 #!/bin/sh
+#  -*-Perl-*-  (for Emacs)    vim:set filetype=perl:  (for vim)
+#======================================================================#
+# Run the right perl version:
+if [ -x /usr/local/bin/perl ]; then
+  perl=/usr/local/bin/perl
+elif [ -x /usr/bin/perl ]; then
+  perl=/usr/bin/perl
+else
+  perl=`which perl| sed 's/.*aliased to *//'`
+fi
 
-echo "This script has been renamed to 'pc_run-old'"
-exit 1
+exec $perl -x -S $0 "$@"     # -x: start from the following line
+#======================================================================#
+#! /Good_Path/perl -w
+# line 17
+
+# Name:   pc_build
+# Author: wd (wdobler [at] gmail [dot] com)
+# Date:   24-Jul-2009
+# Description:
+#   Compile the Pencil Code, using settings from the `Makefile' section in
+#   the appropriate configuration files.
+# Usage:
+#   pc_run [-v|-h]
+#   pc_run [start|run]
+#   pc_run [stop|reload]
+# Options:
+#   -h, --help      This help.
+#   -f <files>,
+#       --config-files=<files>
+#                   Use the given <files> (a comma-separated list) as
+#                   configuration files, rather than trying to find a
+#                   config file base on a host ID.
+#   -H <id>
+#       --host-id=<id>
+#                   Use the given <id> as host ID.
+#   -v, --version   Print version number.
+#   -q, --quiet     Be quiet.
+# Examples:
+#   pc_run start              # just start
+#   pc_run run                # just run
+#   pc_run                    # start if necessary, then run
+#   pc_run start run run run  # start, then run 3 times
+#   pc_run start run^3        # ditto
+#   pc_run ^3                 # start if necessary, then run 3 times
+#
+#   pc_run stop               # stop pencil job running in current directory
+#   pc_run reload             # make running pencil job reload run.in
+#
+# To do / ideas:
+#   - Extract common code for finding and parsing config file from here
+#     and pc_run and put it into Pencil::ConfigFinder (or some 3rd module,
+#     or Pencil::Util)
+
+# Copyright (C) 2009  Wolfgang Dobler
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the same conditions as Perl or under the GNU General Public
+# License, version 3 or later.
+
+use strict;
+BEGIN {
+    # Make sure ${PENCIL_HOME}/lib/perl is in the Perl path
+    if (-d "$ENV{PENCIL_HOME}/lib/perl") {
+        unshift @INC, "$ENV{PENCIL_HOME}/lib/perl";
+    } else {
+        if ($0 =~ m{( .* [/\\] )}x) { unshift @INC, "$1../lib/perl"; }
+    }
+}
+
+use Pencil::Util;
+Pencil::Util::use_pencil_perl_module('Pencil::ConfigFinder') or die;
+Pencil::Util::use_pencil_perl_module('Pencil::ConfigParser') or die;
+
+use Getopt::Long;
+# Allow for `-Plp' as equivalent to `-P lp' etc:
+Getopt::Long::config("bundling");
+
+my %opts;                     # Options hash for GetOptions
+
+## Process command line
+GetOptions(\%opts,
+           qw( -h   --help
+                    --debug
+               -f=s --config-files=s
+               -H=s --host-id=s
+               -N   --no-consistency-check
+               -q   --quiet
+               -v   --version )
+          ) or die "Aborting.\n";
+
+my $debug = ($opts{'debug'} ? 1 : 0 ); # undocumented debug option
+if ($debug) {
+    printopts(\%opts);
+    print "\@ARGV = `@ARGV'\n";
+}
+
+my $cmdname = (split('/', $0))[-1];
+
+if ($opts{'h'} || $opts{'help'})    { die usage();   }
+if ($opts{'v'} || $opts{'version'}) { die version(); }
+
+my $config_files   = ($opts{'f'} || $opts{'config-files'}         || undef);
+my $host_id        = ($opts{'H'} || $opts{'host-id'}              || undef);
+my $suppress_check = ($opts{'N'} || $opts{'no-consistency-check'} || '');
+my $quiet          = ($opts{'q'} || $opts{'quiet'}                || '');
+
+my @config_files;
+if (defined $config_files) {
+    my @files = split(",", $config_files);
+    @config_files = Pencil::ConfigFinder::locate_config_files(@files) ;
+} else {
+    mention($Pencil::ConfigFinder::debug);
+    $Pencil::ConfigFinder::debug = 1 if ($debug);
+    my $config_file;
+    if (defined $host_id) {
+        $config_file = Pencil::ConfigFinder::find_config_file_for_host($host_id);
+    } else {
+        $config_file = Pencil::ConfigFinder::find_config_file()
+    }
+    die "Fatal: Couldn't find config file.\n" unless (defined $config_file);
+    push @config_files, $config_file;
+    print STDERR "Found config file <$config_files[0]>\n" unless ($quiet);
+}
+
+my $parser = new Pencil::ConfigParser(@config_files);
+$parser->debug(1) if ($debug);
+
+
+my %runtime_params = %{$parser->get_runtime_params()};
+my @runtime_keys = @{$parser->get_runtime_keys()};
+
+
+## Global variables
+my $runtime_dir = './runtime';
+
+## Clean up and set up ./runtime/ directory
+# Create dir
+unless (-d $runtime_dir) {
+    mkdir $runtime_dir or die "Cannot create $runtime_dir: $!\n";
+}
+
+# Clean dir
+if (<$runtime_dir/*>) {
+    system("rm $runtime_dir/*") == 0
+      or die "Cannot clean ./runtime/: $!\n";
+}
+
+# Write files
+unless (-e "$runtime_dir/README") {
+    touch("$runtime_dir/README",
+          "runtime/\n"
+          . "--------\n"
+          . "This directory is created by $cmdname.\n"
+          . "It can be safely removed while the code is not running.\n");
+}
+if ($suppress_check) {
+    touch("$runtime_dir/NO-CONSISTENCY-CHECK");
+}
+
+system('src/start.x') == 0
+  or die "start.x failed: <$!>\n";
+
+# ---------------------------------------------------------------------- #
+sub touch {
+# Create a file with current time stamp.
+# Write $text to file if defined, otherwise write short note identifying
+# this script.
+    my ($filename, $text) = @_;
+
+    open(my $fh, "> $filename")
+      or die "Cannot open $filename for writing: $!\n";
+    unless (defined($text)) {
+        use POSIX qw(strftime);
+        $text = "File: $filename\n"
+          . "Generator: $cmdname\n"
+          . "Time stamp: "
+          . strftime("%a %Y-%m-%e %H:%M:%S", localtime())
+          . "\n";
+    }
+    chomp $text;
+    print $fh $text, "\n";
+    close $fh or die "Cannot close file $filename\n";
+}
+# ---------------------------------------------------------------------- #
+sub mention {
+# Reference a variable without doing anything.
+# Use this to suppress ``Name "Pencil::ConfigFinder::debug" used only
+# once'' warning
+    my @args = @_;
+}
+# ---------------------------------------------------------------------- #
+sub printopts {
+# Print command line options
+    my $optsref = shift;
+    my %options = %$optsref;
+    foreach my $opt (keys(%options)) {
+        print STDERR "\$options{$opt} = `$options{$opt}'\n";
+    }
+}
+# ---------------------------------------------------------------------- #
+sub usage {
+# Extract description and usage information from this file's header.
+    my $thisfile = __FILE__;
+    local $/ = '';              # Read paragraphs
+    open(FILE, "<$thisfile") or die "Cannot open $thisfile\n";
+    while (<FILE>) {
+        # Paragraph _must_ contain `Description:' or `Usage:'
+        next unless /^\s*\#\s*(Description|Usage):/m;
+        # Drop `Author:', etc. (anything before `Description:' or `Usage:')
+        s/.*?\n(\s*\#\s*(Description|Usage):\s*\n.*)/$1/s;
+        # Don't print comment sign:
+        s/^\s*# ?//mg;
+        last;                        # ignore body
+    }
+    return $_ or "<No usage information found>\n";
+}
+# ---------------------------------------------------------------------- #
+sub version {
+# Return SVN/CVS data and version info.
+    my $doll='\$';              # Need this to trick SVN/CVS
+    my $rev = '$Revision: 1.12 $';
+    my $date = '$Date: 2008/07/07 21:37:16 $';
+    $rev =~ s/${doll}Revision:\s*(\S+).*/$1/;
+    $date =~ s/${doll}Date:\s*(\S+).*/$1/;
+
+    return "$cmdname version $rev ($date)\n";
+}
+# ---------------------------------------------------------------------- #
+
+# End of file build
