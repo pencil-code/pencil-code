@@ -198,6 +198,9 @@ module Entropy
   integer :: idiag_uxTTmz=0     ! DIAG_DOC:
   integer :: idiag_uyTTmz=0     ! DIAG_DOC:
   integer :: idiag_uzTTmz=0     ! DIAG_DOC:
+  integer :: idiag_ssmxy=0      ! DIAG_DOC: $\left< s \right>_{z}$
+  integer :: idiag_ssmxz=0      ! DIAG_DOC: $\left< s \right>_{y}$
+
 
   contains
 
@@ -2263,6 +2266,8 @@ module Entropy
       if (l2davgfirst) then
         if (idiag_TTmxy/=0) call zsum_mn_name_xy(p%TT,idiag_TTmxy)
         if (idiag_TTmxz/=0) call ysum_mn_name_xz(p%TT,idiag_TTmxz)
+        if (idiag_ssmxy/=0) call zsum_mn_name_xy(p%ss,idiag_ssmxy)
+        if (idiag_ssmxz/=0) call ysum_mn_name_xz(p%ss,idiag_ssmxz)
       endif
 !
     endsubroutine dss_dt
@@ -3323,6 +3328,7 @@ module Entropy
         idiag_ssmz=0; idiag_ssmy=0; idiag_ssmx=0; idiag_ssmr=0; idiag_TTmr=0
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_TTmxy=0; idiag_TTmxz=0
         idiag_uxTTmz=0; idiag_uyTTmz=0; idiag_uzTTmz=0; idiag_cs2mphi=0
+        idiag_ssmxy=0; idiag_ssmxz=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -3388,12 +3394,14 @@ module Entropy
 !
       do inamexy=1,nnamexy
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'TTmxy',idiag_TTmxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'ssmxy',idiag_ssmxy)
       enddo
 !
 !  check for those quantities for which we want y-averages
 !
       do inamexz=1,nnamexz
         call parse_name(inamexz,cnamexy(inamexz),cformxy(inamexz),'TTmxz',idiag_TTmxz)
+        call parse_name(inamexz,cnamexy(inamexz),cformxy(inamexz),'ssmxz',idiag_ssmxz)
       enddo
 !
 !  check for those quantities for which we want phi-averages
@@ -3445,6 +3453,9 @@ module Entropy
         write(3,*) 'iyH=',iyH
         write(3,*) 'ilnTT=',ilnTT
         write(3,*) 'i_TTmxy=',idiag_TTmxy
+        write(3,*) 'i_TTmxz=',idiag_TTmxz
+        write(3,*) 'i_ssmxy=',idiag_ssmxy
+        write(3,*) 'i_ssmxz=',idiag_ssmxz
       endif
 !
     endsubroutine rprint_entropy
