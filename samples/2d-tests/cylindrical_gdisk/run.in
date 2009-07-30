@@ -23,4 +23,7 @@
 &viscosity_run_pars
   ivisc='nu-const'
   nu=1e-5
+  !!radially varying viscosity nu(r)=nu/r^pnlaw
+  !ivisc='power-law'
+  !pnlaw=-0.5
 /
