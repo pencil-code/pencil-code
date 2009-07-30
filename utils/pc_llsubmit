@@ -61,6 +61,8 @@ if (! $?output) set output = \$\(job_name\).\$\(jobid\).out
 if (! $?error) set error = $output
 if (! $?resources) set resources = 
 if (! $?notification) set notification = never
+if (! $?bg_size) set bg_size =
+if (! $?bg_connection) set bg_connection =
 if (! $?notify_user) set notify_user =
 #
 # write temporary jobscript
@@ -68,14 +70,16 @@ if (! $?notify_user) set notify_user =
 echo "#\!/bin/sh" > pc_llsubmit.tmp
 echo "# @ job_name = $job_name" >> pc_llsubmit.tmp
 echo "# @ job_type = $job_type" >> pc_llsubmit.tmp
-echo "# @ node = $node" >> pc_llsubmit.tmp
-if ($?tasks_per_node) then
-  echo "# @ tasks_per_node = $tasks_per_node" >> pc_llsubmit.tmp
-else
-  echo "# @ total_tasks = $total_tasks" >> pc_llsubmit.tmp
+if ($node!='') echo "# @ node = $node" >> pc_llsubmit.tmp
+if ($tasks_per_node!='') then
+  if ($?tasks_per_node) then
+    echo "# @ tasks_per_node = $tasks_per_node" >> pc_llsubmit.tmp
+  else
+    echo "# @ total_tasks = $total_tasks" >> pc_llsubmit.tmp
+  endif
 endif
 echo "# @ wall_clock_limit = $wall_clock_limit" >> pc_llsubmit.tmp
-echo "# @ network.MPI = $networkMPI" >> pc_llsubmit.tmp
+if ($networkMPI!='') echo "# @ network.MPI = $networkMPI" >> pc_llsubmit.tmp
 echo "# @ class = $class" >> pc_llsubmit.tmp
 echo "# @ environment = $environment" >> pc_llsubmit.tmp
 echo "# @ executable = $filename" >> pc_llsubmit.tmp
@@ -85,6 +89,8 @@ echo "# @ error =  $error" >> pc_llsubmit.tmp
 echo "# @ notification = $notification" >> pc_llsubmit.tmp
 echo "# @ notify_user = $notify_user" >> pc_llsubmit.tmp
 echo "# @ resources = $resources" >> pc_llsubmit.tmp
+echo "# @ bg_size = $bg_size" >> pc_llsubmit.tmp
+echo "# @ bg_connection = $bg_connection" >> pc_llsubmit.tmp
 echo "# @ queue" >> pc_llsubmit.tmp
 echo "cd `pwd`" >> pc_llsubmit.tmp
 echo "./$filename" >> pc_llsubmit.tmp
