@@ -314,7 +314,7 @@ program run
 !
 !  Perform pencil_case consistency check if requested.
 !
-  suppress_pencil_check = control_file_exists("NO-CONSISTENCY-CHECK")
+  suppress_pencil_check = control_file_exists("NO-PENCIL-CHECK")
   call mpibcast_logical(suppress_pencil_check, 1)
   if (lpencil_check .and. .not. suppress_pencil_check) then
     call pencil_consistency_check(f,df,p)

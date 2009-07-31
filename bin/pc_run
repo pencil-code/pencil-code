@@ -35,7 +35,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   -H <id>
 #       --host-id=<id>
 #                   Use the given <id> as host ID.
-#   -N, --no-consistency-check
+#   -N, --no-pencil-check
 #                   Suppress pencil consistency check, irrespective of
 #                   &run_pars.lpencil_check .
 #   -v, --version   Print version number.
@@ -88,7 +88,7 @@ GetOptions(\%opts,
                     --debug
                -f=s --config-files=s
                -H=s --host-id=s
-               -N   --no-consistency-check
+               -N   --no-pencil-check
                -q   --quiet
                -v   --version )
           ) or die "Aborting.\n";
@@ -104,10 +104,10 @@ my $cmdname = (split('/', $0))[-1];
 if ($opts{'h'} || $opts{'help'})    { die usage();   }
 if ($opts{'v'} || $opts{'version'}) { die version(); }
 
-my $config_files   = ($opts{'f'} || $opts{'config-files'}         || undef);
-my $host_id        = ($opts{'H'} || $opts{'host-id'}              || undef);
-my $suppress_check = ($opts{'N'} || $opts{'no-consistency-check'} || '');
-my $quiet          = ($opts{'q'} || $opts{'quiet'}                || '');
+my $config_files   = ($opts{'f'} || $opts{'config-files'}    || undef);
+my $host_id        = ($opts{'H'} || $opts{'host-id'}         || undef);
+my $suppress_check = ($opts{'N'} || $opts{'no-pencil-check'} || '');
+my $quiet          = ($opts{'q'} || $opts{'quiet'}           || '');
 
 my @config_files;
 if (defined $config_files) {
@@ -153,7 +153,7 @@ print STDERR "Commands: <", join(">, <", @subcmds), ">\n" if ($debug);
 update_runtime_dir();
 
 if ($suppress_check) {
-    touch("$runtime_dir/NO-CONSISTENCY-CHECK");
+    touch("$runtime_dir/NO-PENCIL-CHECK");
 }
 
 for my $subcmd (@subcmds) {
