@@ -792,7 +792,7 @@ sub test_start {
         if ($time_limit) {
             test_timelimited_shell_cmd(
                 "$nice start.csh",
-                $time_limit, 'run.x',
+                $time_limit, 'start.x',
                 $dir, "starting",
                 NOQUIET, $t_ref
             );
