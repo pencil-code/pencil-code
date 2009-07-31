@@ -356,6 +356,8 @@ module Hydro
                                 ! DIAG_DOC: \cdot\uv\right>_{xz}$
   integer :: idiag_oumz=0       ! DIAG_DOC: $\left<\boldsymbol{\omega}
                                 ! DIAG_DOC: \cdot\uv\right>_{xy}$
+  integer :: idiag_oumxy=0      ! DIAG_DOC: $\left<\boldsymbol{\omega}
+                                ! DIAG_DOC: \cdot\uv\right>_{z}$
   integer :: idiag_uguxm=0      ! DIAG_DOC:
   integer :: idiag_uguym=0      ! DIAG_DOC:
   integer :: idiag_uguzm=0      ! DIAG_DOC:
@@ -1103,7 +1105,7 @@ module Hydro
       if (idiag_orms/=0 .or. idiag_omax/=0 .or. idiag_o2m/=0 .or. &
           idiag_ormsh/=0 )  lpenc_diagnos(i_o2)=.true.
       if (idiag_oum/=0 .or. idiag_oumx/=0.or.idiag_oumy/=0.or.idiag_oumz/=0 .or. &
-           idiag_oumh/=0 ) lpenc_diagnos(i_ou)=.true.
+           idiag_oumh/=0 .or. idiag_oumxy/=0 ) lpenc_diagnos(i_ou)=.true.
       if (idiag_Marms/=0 .or. idiag_Mamax/=0) lpenc_diagnos(i_Ma2)=.true.
       if (idiag_u3u21m/=0 .or. idiag_u3u21mz/=0) lpenc_diagnos(i_u3u21)=.true.
       if (idiag_u1u32m/=0 .or. idiag_u1u32mz/=0) lpenc_diagnos(i_u1u32)=.true.
@@ -1913,6 +1915,7 @@ module Hydro
         if (idiag_oxmxy/=0) call zsum_mn_name_xy(p%oo(:,1),idiag_oxmxy)
         if (idiag_oymxy/=0) call zsum_mn_name_xy(p%oo(:,2),idiag_oymxy)
         if (idiag_ozmxy/=0) call zsum_mn_name_xy(p%oo(:,3),idiag_ozmxy)
+        if (idiag_oumxy/=0) call zsum_mn_name_xy(p%ou,idiag_oumxy)
         if (idiag_pvzmxy/=0) call zsum_mn_name_xy((p%oo(:,3)+2.*Omega)/p%rho,idiag_pvzmxy)
         if (idiag_ruxmxy/=0) call zsum_mn_name_xy(p%rho*p%uu(:,1),idiag_ruxmxy)
         if (idiag_ruymxy/=0) call zsum_mn_name_xy(p%rho*p%uu(:,2),idiag_ruymxy)
@@ -2902,6 +2905,7 @@ module Hydro
         idiag_oumx=0
         idiag_oumy=0
         idiag_oumz=0
+        idiag_oumxy=0
         idiag_oumphi=0
         idiag_ozmphi=0
         idiag_ormr=0
@@ -3209,6 +3213,7 @@ module Hydro
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'oxmxy',idiag_oxmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'oymxy',idiag_oymxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ozmxy',idiag_ozmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'oumxy',idiag_oumxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'pvzmxy',idiag_pvzmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ruxmxy',idiag_ruxmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ruymxy',idiag_ruymxy)
@@ -3353,6 +3358,7 @@ module Hydro
         write(3,*) 'i_uxmxy=',idiag_uxmxy
         write(3,*) 'i_uymxy=',idiag_uymxy
         write(3,*) 'i_uzmxy=',idiag_uzmxy
+        write(3,*) 'i_oumxy=',idiag_oumxy
         write(3,*) 'i_ruxmxy=',idiag_ruxmxy
         write(3,*) 'i_ruymxy=',idiag_ruymxy
         write(3,*) 'i_ruzmxy=',idiag_ruzmxy
