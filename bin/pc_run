@@ -35,6 +35,9 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   -H <id>
 #       --host-id=<id>
 #                   Use the given <id> as host ID.
+#   -N, --no-consistency-check
+#                   Suppress pencil consistency check, irrespective of
+#                   &run_pars.lpencil_check .
 #   -v, --version   Print version number.
 #   -q, --quiet     Be quiet.
 # Examples:
