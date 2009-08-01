@@ -791,14 +791,14 @@ sub test_start {
 
         if ($time_limit) {
             test_timelimited_shell_cmd(
-                "$nice start.csh",
+                "$nice pc_run start",
                 $time_limit, 'start.x',
                 $dir, "starting",
                 NOQUIET, $t_ref
             );
         } else {
             test_shell_cmd(
-                "$nice start.csh",
+                "$nice pc_run start",
                 $dir, "starting",
                 NOQUIET, $t_ref
             );
@@ -830,14 +830,14 @@ sub test_run {
         # Run the Code
         if ($time_limit) {
             $res = test_timelimited_shell_cmd(
-                "$nice run.csh",
+                "$nice pc_run run",
                 $time_limit, 'run.x',
                 $dir, "running",
                 NOQUIET, $t_ref
             );
         } else {
             $res = test_shell_cmd(
-                "$nice run.csh",
+                "$nice pc_run run",
                 $dir, "running",
                 NOQUIET, $t_ref
             );
