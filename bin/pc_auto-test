@@ -789,16 +789,17 @@ sub test_start {
         print "    Starting..           ";
         printf "$indi_fmt ", '';
 
+        my $start_cmd = 'pc_run start';
         if ($time_limit) {
             test_timelimited_shell_cmd(
-                "$nice pc_run start",
+                "$nice $start_cmd",
                 $time_limit, 'start.x',
                 $dir, "starting",
                 NOQUIET, $t_ref
             );
         } else {
             test_shell_cmd(
-                "$nice pc_run start",
+                "$nice $start_cmd",
                 $dir, "starting",
                 NOQUIET, $t_ref
             );
@@ -828,16 +829,17 @@ sub test_run {
         }
 
         # Run the Code
+        my $run_cmd = 'pc_run run';
         if ($time_limit) {
             $res = test_timelimited_shell_cmd(
-                "$nice pc_run run",
+                "$nice $run_cmd",
                 $time_limit, 'run.x',
                 $dir, "running",
                 NOQUIET, $t_ref
             );
         } else {
             $res = test_shell_cmd(
-                "$nice pc_run run",
+                "$nice $run_cmd",
                 $dir, "running",
                 NOQUIET, $t_ref
             );
