@@ -23,7 +23,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   the appropriate configuration files.
 # Usage:
 #   pc_build [-v|-h]
-#   pc_build -f <file1,file2,...>
+#   pc_build [-f <file1,file2,...>] [-H <host_ID>]
+#   pc_build [<options>] [<MAKE_VAR1=val1> [<MAKE_VAR2>=val2 ...]]
 # Options:
 #   -h, --help      This help.
 #   -f <files>,
@@ -39,6 +40,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Examples:
 #   pc_build
 #       use host ID mechanism to identify the appropriate config file.
+#   pc_build REAL_PRECISION=double
+#       run `make REAL_PRECISION=double', i.e. compile for double precision
 #   pc_build -f os/GNU_Linux,mpi/open-mpi
 #       will use the configuration files
 #       ${PENCIL_HOME}/config/os/GNU_Linux.conf and
@@ -48,9 +51,11 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   pc_build -f /home/USER/myconfig
 #       will use the configuration file /home/USER/myconfig.conf if it
 #       exists.
+#   pc_build -H workhorse
+#       will look for, and use the configuration file for host ID
+#       `workhorse'. If no config file is found, pc_build exits with an
+#       error message.
 #   pc_build -H workhorse will look for, and use the configuration file
-#       for host ID `workhorse'. If no config file is found, pc_build
-#       exits with an error message.
 # To do / ideas:
 #   - Allow make-style assignement arguments:
 #       pc_build FC=myf90 FFLAGS+='-O0 -g'
@@ -112,6 +117,7 @@ my $config_files = ($opts{'f'} || $opts{'config-files'} || undef);
 my $host_id      = ($opts{'H'} || $opts{'host-id'}      || undef);
 my $quiet        = ($opts{'q'} || $opts{'quiet'}        || '');
 
+my @extra_make_args = @ARGV;
 
 if ($cleanall) {
     system('make', 'cleanall');
@@ -146,6 +152,7 @@ my $parser = new Pencil::ConfigParser(@config_files);
 $parser->debug(1) if ($debug);
 
 my @make_args = @{$parser->get_makefile_args()};
+push @make_args, @extra_make_args;
 
 print STDERR "Running make '", join("' '", @make_args), "'\n"
   unless ($quiet);
