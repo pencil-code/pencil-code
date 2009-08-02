@@ -134,7 +134,7 @@ module GhostFold
       if (nxgrid/=1) then
         if (nprocx==1) then
           df(l1,m1:m2,n1:n2,ivar1:ivar2)=df(l1,m1:m2,n1:n2,ivar1:ivar2) + &
-              df(l2+1,m1:m2,n1:n,ivar1:ivar2)
+              df(l2+1,m1:m2,n1:n2,ivar1:ivar2)
           df(l2,m1:m2,n1:n2,ivar1:ivar2)=df(l2,m1:m2,n1:n2,ivar1:ivar2) + &
               df(l1-1,m1:m2,n1:n2,ivar1:ivar2)
         else
@@ -281,7 +281,7 @@ module GhostFold
       if (nxgrid/=1) then
         if (nprocx==1) then
           f(l1,m1:m2,n1:n2,ivar1:ivar2)=f(l1,m1:m2,n1:n2,ivar1:ivar2) + &
-              f(l2+1,m1:m2,n1:n,ivar1:ivar2)
+              f(l2+1,m1:m2,n1:n2,ivar1:ivar2)
           f(l2,m1:m2,n1:n2,ivar1:ivar2)=f(l2,m1:m2,n1:n2,ivar1:ivar2) + &
               f(l1-1,m1:m2,n1:n2,ivar1:ivar2)
         else
