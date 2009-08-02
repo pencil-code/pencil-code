@@ -241,43 +241,43 @@ module Particles_stalker
             allocate(values(nvar_stalk,npar_stalk_loc))
             ivalue=0
             if (lstalk_xx) then
-              ivalue=ivalue+1; values(ivalue,:)=xp(1:npar_stalk)
-              ivalue=ivalue+1; values(ivalue,:)=yp(1:npar_stalk)
-              ivalue=ivalue+1; values(ivalue,:)=zp(1:npar_stalk)
+              ivalue=ivalue+1; values(ivalue,:)=xp(1:npar_stalk_loc)
+              ivalue=ivalue+1; values(ivalue,:)=yp(1:npar_stalk_loc)
+              ivalue=ivalue+1; values(ivalue,:)=zp(1:npar_stalk_loc)
             endif
             if (lstalk_vv) then
-              ivalue=ivalue+1; values(ivalue,:)=vpx(1:npar_stalk)
-              ivalue=ivalue+1; values(ivalue,:)=vpy(1:npar_stalk)
-              ivalue=ivalue+1; values(ivalue,:)=vpz(1:npar_stalk)
+              ivalue=ivalue+1; values(ivalue,:)=vpx(1:npar_stalk_loc)
+              ivalue=ivalue+1; values(ivalue,:)=vpy(1:npar_stalk_loc)
+              ivalue=ivalue+1; values(ivalue,:)=vpz(1:npar_stalk_loc)
             endif
             if (lstalk_uu) then
-              ivalue=ivalue+1; values(ivalue,:)=ux(1:npar_stalk)
-              ivalue=ivalue+1; values(ivalue,:)=uy(1:npar_stalk)
-              ivalue=ivalue+1; values(ivalue,:)=uz(1:npar_stalk)
+              ivalue=ivalue+1; values(ivalue,:)=ux(1:npar_stalk_loc)
+              ivalue=ivalue+1; values(ivalue,:)=uy(1:npar_stalk_loc)
+              ivalue=ivalue+1; values(ivalue,:)=uz(1:npar_stalk_loc)
             endif
             if (lstalk_guu) then
-              ivalue=ivalue+1; values(ivalue,:)=duxdx(1:npar_stalk)
-              ivalue=ivalue+1; values(ivalue,:)=duxdy(1:npar_stalk)
-              ivalue=ivalue+1; values(ivalue,:)=duxdz(1:npar_stalk)
-              ivalue=ivalue+1; values(ivalue,:)=duydx(1:npar_stalk)
-              ivalue=ivalue+1; values(ivalue,:)=duydy(1:npar_stalk)
-              ivalue=ivalue+1; values(ivalue,:)=duydz(1:npar_stalk)
-              ivalue=ivalue+1; values(ivalue,:)=duzdx(1:npar_stalk)
-              ivalue=ivalue+1; values(ivalue,:)=duzdy(1:npar_stalk)
-              ivalue=ivalue+1; values(ivalue,:)=duzdz(1:npar_stalk)
+              ivalue=ivalue+1; values(ivalue,:)=duxdx(1:npar_stalk_loc)
+              ivalue=ivalue+1; values(ivalue,:)=duxdy(1:npar_stalk_loc)
+              ivalue=ivalue+1; values(ivalue,:)=duxdz(1:npar_stalk_loc)
+              ivalue=ivalue+1; values(ivalue,:)=duydx(1:npar_stalk_loc)
+              ivalue=ivalue+1; values(ivalue,:)=duydy(1:npar_stalk_loc)
+              ivalue=ivalue+1; values(ivalue,:)=duydz(1:npar_stalk_loc)
+              ivalue=ivalue+1; values(ivalue,:)=duzdx(1:npar_stalk_loc)
+              ivalue=ivalue+1; values(ivalue,:)=duzdy(1:npar_stalk_loc)
+              ivalue=ivalue+1; values(ivalue,:)=duzdz(1:npar_stalk_loc)
             endif
             if (lstalk_rho) then
-              ivalue=ivalue+1; values(ivalue,:)=rho(1:npar_stalk)
+              ivalue=ivalue+1; values(ivalue,:)=rho(1:npar_stalk_loc)
             endif
             if (lstalk_grho) then
-              ivalue=ivalue+1; values(ivalue,:)=drhodx(1:npar_stalk)
-              ivalue=ivalue+1; values(ivalue,:)=drhody(1:npar_stalk)
-              ivalue=ivalue+1; values(ivalue,:)=drhodz(1:npar_stalk)
+              ivalue=ivalue+1; values(ivalue,:)=drhodx(1:npar_stalk_loc)
+              ivalue=ivalue+1; values(ivalue,:)=drhody(1:npar_stalk_loc)
+              ivalue=ivalue+1; values(ivalue,:)=drhodz(1:npar_stalk_loc)
             endif
             if (lstalk_bb) then
-              ivalue=ivalue+1; values(ivalue,:)=bx(1:npar_stalk)
-              ivalue=ivalue+1; values(ivalue,:)=by(1:npar_stalk)
-              ivalue=ivalue+1; values(ivalue,:)=bz(1:npar_stalk)
+              ivalue=ivalue+1; values(ivalue,:)=bx(1:npar_stalk_loc)
+              ivalue=ivalue+1; values(ivalue,:)=by(1:npar_stalk_loc)
+              ivalue=ivalue+1; values(ivalue,:)=bz(1:npar_stalk_loc)
             endif
             write(1) values
           endif
