@@ -148,6 +148,8 @@
   \var{rlx2m}     & $\left<(\rho y u_z-z u_y)^2\right>$ \\
   \var{rly2m}     & $\left<(\rho z u_x-x u_z)^2\right>$ \\
   \var{rlz2m}     & $\left<(\rho x u_y-y u_x)^2\right>$ \\
+  \var{tot_ang_mom} & Total angular momentum in spherical
+                    coordinates about the axis. \\
   \var{dtu}       & $\delta t/[c_{\delta t}\,\delta x
                     /\max|\mathbf{u}|]$
                     \quad(time step relative to
@@ -176,6 +178,8 @@
                     \cdot\uv\right>_{xz}$ \\
   \var{oumz}      & $\left<\boldsymbol{\omega}
                     \cdot\uv\right>_{xy}$ \\
+  \var{oumxy}     & $\left<\boldsymbol{\omega}
+                    \cdot\uv\right>_{z}$ \\
   \var{Marms}     & $\left<\uv^2/\cs^2\right>$
                     \quad(rms Mach number) \\
   \var{Mamax}     & $\max |\uv|/\cs$
@@ -219,6 +223,8 @@
                     \quad(time step relative to time
                     step based on heat conductivity;
                     see \S~\ref{time-step}) \\
+  \var{ssmxy}     & $\left< s \right>_{z}$ \\
+  \var{ssmxz}     & $\left< s \right>_{y}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{magnetic.f90}} \\
 \midrule
