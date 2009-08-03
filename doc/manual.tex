@@ -7,7 +7,7 @@
 %%           ab (Axel.Brandenburg@nordita.org)
 %%  CVS: $Id$
 %%  Description:
-%     User manual for the Pencil Code 
+%     User manual for the Pencil Code
 %   Process with:
 %     latex manual; makeindex -s dotted.idxsty manual; makeindex -s dotted.idxsty manual.vidx -o manual.vind; makeindex -s dotted.idxsty manual.fidx -o manual.find; latex manual
 %   Macros for files, variables, etc (list loosely adopted from texinfo):
@@ -51,7 +51,7 @@
 %                   use CVS with the option \option{-q}
 %     \dfn:     A definition:
 %                   a \dfn{definition} is a specification sufficiently
-%                   obfuscated to be misunderstood 
+%                   obfuscated to be misunderstood
 %     \acronym: An acronym (hardly ever used here):
 %                   should we call the code \acronym{PROMPT}?
 
@@ -200,9 +200,9 @@
 
 %% Symbols for dependency tables
 %% required
-\newcommand{\req}{$\bullet$}  
+\newcommand{\req}{$\bullet$}
 %% optional
-\newcommand{\opt}{$\diamond$}  
+\newcommand{\opt}{$\diamond$}
 
 %% keys, names, paths, files, etc.
 %% Examples: \name{Greeks} \name[Trojans]{Greeks}
@@ -648,7 +648,7 @@ Brandenburg, A., \& Multam\"aki, T.\yjourS{2004}{Int.\ J.\ Astrobiol.}{3}{209}
 
 % -- Geodynamo --
 McMillan, D. G., \& Sarson, G. R.\ypepi{2005}{153}{124}
-{135}{Dynamo simulations in a spherical shell of ideal gas using a 
+{135}{Dynamo simulations in a spherical shell of ideal gas using a
 high-order Cartesian magnetohydrodynamics code}
 
 % -- Radiation transfer --
@@ -863,7 +863,7 @@ Tobi Heinemann added the long characteristics method for
 radiative transfer as well as hydrogen ionization.
 He also added and/or improved shock diffusion for other variables
 and improved the resulting timestep control.
-Anders Johansen, Wladimir (Wlad) Lyra, and Jeff Oishi contributed 
+Anders Johansen, Wladimir (Wlad) Lyra, and Jeff Oishi contributed
 to the implementation of
 the dust equations (which now comprises an array of different components).
 Antony (Tony) Mee (University of Newcastle) implemented shock viscosity
@@ -879,13 +879,13 @@ for the cosmic ray energy density.
 Vladimir Pariev (University of Rochester) contributed to the development
 and testing of the potential field boundary condition at an early stage.
 
-The implementation of spherical and cylindrical coordinates is due 
-to Dhrubaditya (Dhruba) Mitra and Wladimir. Wlad also 
-implemented the global set-up for protoplanetary 
-disks (as opposed to the local shearing sheet formalism). He also added a 
-$N$-body code (based on the particle module coded by Anders Johansen 
-and Tony), and implemented the coupled evolution equations of neutrals and 
-ions for two-fluid models of ambipolar diffusion. 
+The implementation of spherical and cylindrical coordinates is due
+to Dhrubaditya (Dhruba) Mitra and Wladimir. Wlad also
+implemented the global set-up for protoplanetary
+disks (as opposed to the local shearing sheet formalism). He also added a
+$N$-body code (based on the particle module coded by Anders Johansen
+and Tony), and implemented the coupled evolution equations of neutrals and
+ions for two-fluid models of ambipolar diffusion.
 
 Use of the PPARC supported supercomputers in St Andrews (Mhd) and
 Leicester (Ukaff) is acknowledged. We also acknowledge the Danish Center
@@ -1008,10 +1008,10 @@ Here is the upgrading procedure:
   \prompt{unix> } pc_svnup \
   \end{alltt}
 % (This is equivalent to typing \cmd{cvs -q update -dP} from the top directory
-% of the code, except that it only performs a full update of the core 
+% of the code, except that it only performs a full update of the core
 % {\sc Pencil Code} directories.  This for example avoids the problem of having
 % a partially checked out \file{runs} directory under your {\sc Pencil Code}
-% which would otherwise be checked out in full if the simple cvs command 
+% which would otherwise be checked out in full if the simple cvs command
 % were used.)
 \item Fix any conflicts you encounter and make sure the examples in the
   directory \file{samples/} are still working.
@@ -1155,8 +1155,8 @@ to that directory:
 \begin{alltt}
   \prompt{unix> } ls -F
   reference.out  src/
-  start.csh@     run.csh@  getconf.csh@ 
-  start.in       run.in    print.in            
+  start.csh@     run.csh@  getconf.csh@
+  start.in       run.in    print.in
 \end{alltt}
 
 
@@ -1213,9 +1213,9 @@ Even if you don't have an NFS-mounted directory (say, on your notebook
 computer), it is probably still a good idea to have code and data well
 separated by a scheme like the one described above.
 
-An alternative to symbolic links, is to provide a file called 
+An alternative to symbolic links, is to provide a file called
 \file{datadir.in} in the root of the run directory.  This file
-should contain one line of text specifying the absolute or relative data 
+should contain one line of text specifying the absolute or relative data
 directory path to use.  This facility is useful if one wishes to switch
 one run directory between different data directories.  It is suggested
 that in such cases symbolic links are again made in the run directory
@@ -1234,19 +1234,19 @@ You are now ready to start the code:
   Fri Aug  8 21:36:43 CEST 2003
      src/start.x
   CVS: io_dist.f90        v. 1.61         (brandenb  ) 2003/08/03 09:26:55
-  {\sl{}[\ldots]}  
+  {\sl{}[\ldots]}
   CVS: start.in           v. 1.4          (dobler    ) 2002/10/02 20:11:14
    nxgrid,nygrid,nzgrid=          32          32          32
    thermodynamics: assume cp=1
-   
+
    uu: up-down
    piecewise polytropic vertical stratification (lnrho)
-   init_lnrho: cs2bot,cs2top=   1.450000      0.3333330    
+   init_lnrho: cs2bot,cs2top=   1.450000      0.3333330
    e.g. for ionization runs: cs2bot,cs2top not yet set
    piecewise polytropic vertical stratification (ss)
-   
+
    start.x has completed successfully
-   
+
   0.070u 0.020s 0:00.14 64.2%     0+0k 0+0io 180pf+0w
 
   Fri Aug  8 21:36:43 CEST 2003
@@ -1289,7 +1289,7 @@ The relevant part of the code's output looks like\\
 \end{minipage}
 and lists
 \begin{enumerate}
-\item the number \var{it} of the current time step; 
+\item the number \var{it} of the current time step;
 \item the time, \var{t};
 \item the time step, \var{dt};
 \item the rms velocity, \var{urms}$\,=\sqrt{\left<\uv^2\right>}$;
@@ -1420,7 +1420,7 @@ The current list of classes in our own \file[pencil-runs/]{pencil-runs}
 repository is
 \begin{verbatim}
   1d-tests/   disc/          kinematic/  rings/
-  2d-tests/   discont/       Misc/       slab_conv/ 
+  2d-tests/   discont/       Misc/       slab_conv/
   3d-tests/   discussion/    OLD/        test/
   buoy_tube/  forced/        pass_only/
   convstar/   interstellar/  radiation/
@@ -1521,7 +1521,7 @@ For example, the settings for forced turbulent MHD simulations are
   MAGNETIC  =   magnetic
   GRAVITY   = nogravity
   FORCING   =   forcing
-    
+
   MPICOMM   = nompicomm
   GLOBAL    = noglobal
   IO        =   io_dist
@@ -1542,7 +1542,7 @@ only need to set the non-standard ones in \file{Makefile.local}).
 It is by using this switching mechanism through \cmd{make} that we achieve
 high flexibility without resorting to excessive amounts of cryptic
 preprocessor directives or other switches within the code.
- 
+
 Many possible combinations of modules have already been tested
 and examples are part of the distribution, but you may be interested in a
 combination which was never tried before and which may not work yet, since the
@@ -1653,9 +1653,9 @@ are invoked.
 This is a temporary solution and the file may disappear in future
 releases.
 
-\paragraph{\file[interstellar.dat]{data/interstellar.dat}} 
-Unformatted file containing the time at which the next supernova event will 
-occur, under certain supernova schemes.  
+\paragraph{\file[interstellar.dat]{data/interstellar.dat}}
+Unformatted file containing the time at which the next supernova event will
+occur, under certain supernova schemes.
 (Only needed by the \name{interstellar} module.)
 
 \paragraph{\file[proc$N$]{data/proc0}, \file[proc1]{data/proc1}, \ldots}
@@ -1724,12 +1724,12 @@ options \option[-lmpi]{-lmpi -llam} for \name{MPI}.
 The \file{Makefile.src} you need will have the following section:
 \begin{alltt}
   ### Begin machine dependent
-  
+
   ## IRIX64:
   {\sl{}[\ldots]   (leave as it is in the original Makefile)}
   ## OSF1:
   {\sl{}[\ldots]   (leave as it is in the original Makefile)}
-  
+
   ## Linux:
   {\sl{}[\ldots]   (leave everything from original Makefile and add:)}
   #FC=f95
@@ -1737,7 +1737,7 @@ The \file{Makefile.src} you need will have the following section:
   #FC=f90             #(Janus)
   #FFLAGS=-O3         #(Janus)
   #LDMPI=-lmpi -llam  #(Janus)
-  
+
   ## SunOS:
   {\sl{}[\ldots]   (leave as it is in the original Makefile)}
   ## UNICOS/mk:
@@ -1746,7 +1746,7 @@ The \file{Makefile.src} you need will have the following section:
   {\sl{}[\ldots]   (leave as it is in the original Makefile)}
   ## AIX:
   {\sl{}[\ldots]   (leave as it is in the original Makefile)}
-  
+
   ### End machine dependent
 \end{alltt}
 
@@ -1868,7 +1868,7 @@ For \code{grid_function='sinh'}, the function $z(\zeta)$ is given by
     + L_z \frac{\sinh a(\zeta  {-}\zeta_*) + \sinh a(\zeta_*{-}\zeta_1)}
                {\sinh a(\zeta_2{-}\zeta_*) + \sinh a(\zeta_*{-}\zeta_1)} \; ,
 \end{equation}
-where $z_0$ and $z_0+L_z$ are the lowest and uppermost levels, 
+where $z_0$ and $z_0+L_z$ are the lowest and uppermost levels,
 $\zeta_1$, $\zeta_2$ are the $\zeta$ values representing those levels
 (normally $\zeta_1 = 0, \zeta_2 = N_z-1$ for a grid of $N_z$ vertical
 layers [excluding ghost layers]), and $\zeta_*$ is the
@@ -2085,7 +2085,7 @@ file:
   \prompt{unix> } pc_tsnap data/proc0/var.dat
   data/proc0/var.dat:        t = 8.32456
   \prompt{unix> } pc_tsnap data/proc0/VAR2
-  data/proc0/VAR2:           t = 2.00603     
+  data/proc0/VAR2:           t = 2.00603
 \end{alltt}
 
 % ---------------------------------------------------------------------- %
@@ -2102,14 +2102,14 @@ The output frequency of these video snapshots is set by the parameter
 When output to video files is activated (by some settings in \file{run.in}
 and the existence of \file{video.in}, slices are written for four planes:
 \begin{enumerate}
-\item $x$-$z$ plane ($y$ index \var{iy}; file suffix \code{.xz}) 
+\item $x$-$z$ plane ($y$ index \var{iy}; file suffix \code{.xz})
 \item $y$-$z$ plane ($y$ index \var{ix}; suffix \code{.yz})
 \item $x$-$y$ plane ($y$ index \var{iz}; suffix \code{.xy})
 \item another slice parallel to the $x$-$y$ plane
   ($y$ index \var{iz2}; suffix \code{.xy2})
 \end{enumerate}
 You can specify the position of the slice planes by setting the parameters
-\var{ix}, \var{iy}, \var{iz} and \var{iz2} in the namelist \name{run_pars} 
+\var{ix}, \var{iy}, \var{iz} and \var{iz2} in the namelist \name{run_pars}
 in \file{run.in}.
 Alternatively, you can set the input parameter \var{slice_position} to one
 of \code{'p'} (periphery of box) or \code{'m'} (middle of box).
@@ -2416,7 +2416,7 @@ Here is a list of the more important ones.
 \item[copy-var-to-var] Copies all \file{var.dat} files from current directory
   to file{var.dat} in another run directory.
   Used for restarting in a different directory.
-\item[copy-VARN-to-var] Used to restart a run from a particular snapshot 
+\item[copy-VARN-to-var] Used to restart a run from a particular snapshot
   \file{VAR$N$}. Copies a specified snapshot \file{VAR$N$} to \file{var.dat}
   where $N$ and the target run directory are given on the command line.
 \item[cvs-add-rundir] Add the current run directory to the \name{svn} repository.
@@ -2426,9 +2426,9 @@ Here is a list of the more important ones.
   \file[index.pro]{data/index.pro} for subsequent processing in
   \name{IDL} on another machine.
   This is particularly useful if collaborators want to check each others' runs.
-\item[dx_*] These script perform several data collection or reformatting 
+\item[dx_*] These script perform several data collection or reformatting
   exercises required to read particular files into \name{DX}.  They are
-  called internally by some of the \name{DX} macros in the 
+  called internally by some of the \name{DX} macros in the
   \file[dx/macros/]{dx/macros/} directory.
 \item[getconf.csh] See \S~\ref{start-run-getconf}
 \item[gpgrowth] Plot simple time evolution with Gnuplot's ASCII graphics
@@ -2436,7 +2436,7 @@ Here is a list of the more important ones.
 \item[local] Materialize a symbolic link
 \item[mkcparam] Based on \file{Makefile} and \file{Makefile.local},
   generate \file[cparam.inc]{src/cparam.inc}, which specifies the number
-  \var{mvar} of fundamental variables, and \var{maux} of auxiliary 
+  \var{mvar} of fundamental variables, and \var{maux} of auxiliary
   variables. Called by the \file{Makefile}.
 \item[mkdatadir] Creates a link to a data directory in a suitable workspace.
   By default this is on \samp{/var/tmp/}, but different locations
@@ -2445,8 +2445,8 @@ Here is a list of the more important ones.
   based on \file{Makefile} and \file{Makefile.local}.
 \item[mkinpars] Wrapper around \samp{mkdotin} --- needs proper
   documentation.
-\item[mkproc-tree] Generates a multi-processor(\file{proc$N$}/), directory 
-  structure. Useful when copying data files in a processor tree, 
+\item[mkproc-tree] Generates a multi-processor(\file{proc$N$}/), directory
+  structure. Useful when copying data files in a processor tree,
   such as slice files.
 \item[mkwww] Generates a template HTML file for describing a run of the code,
   showing input parameters and results.
@@ -2458,7 +2458,7 @@ Here is a list of the more important ones.
   \name{IDL} structure.
   Generates an \name{IDL} file that can be sourced from \file{start.pro}
   or \file{run.pro}.
-\item[pacx-adapt-makefile] Version of adapt-makefile for highly 
+\item[pacx-adapt-makefile] Version of adapt-makefile for highly
   distributed runs using PACX MPI.
 \item[pc_newrun] Generates a new run directory from an old one. The new one
   contains a copy of the old \file{*.local} files, runs \cmd{pc_setupsrc}, and
@@ -2469,13 +2469,13 @@ Here is a list of the more important ones.
   wall clock time, so you can work out the speed of the code (without being
   affected by i/o time).
 \item[read_videofiles.csh] The script for running read_videofiles.x.
-\item[remote-top] Create a file \file{top.log} in the relevant 
+\item[remote-top] Create a file \file{top.log} in the relevant
   \file[proc$N$]{proc$N$/} directory containing the output of \code{top}
-  for the appropriate processor. Used in batch scripts for 
+  for the appropriate processor. Used in batch scripts for
   multi-processor runs.
 \item[run.csh] The script for producing restart files with the initial
   condition; see \S~\ref{start-run-getconf}
-\item[scpdatadir] Make a tarball of data directory, \file[data/]{data/} and 
+\item[scpdatadir] Make a tarball of data directory, \file[data/]{data/} and
   use \code{scp} to secure copy to copy it to the specified destination.
 \item[pc_setupsrc] Link \file{start.csh}, \file{run.csh} and
   \file{getconf.csh} from \file[bin/]{\$PENCIL_HOME/bin}.
@@ -2483,7 +2483,7 @@ Here is a list of the more important ones.
   \file[src/]{\$PENCIL_HOME/src} to that directory.
 \item[start.csh] The script for initializing the code; see
   \S~\ref{start-run-getconf}
-\item[summarize-history] Evaluate \file{params.log} and print a history 
+\item[summarize-history] Evaluate \file{params.log} and print a history
   of changes.
 \item[timestr] Generate a unique time string that can be appended to file
   names from shell scripts through the backtick mechanism.
@@ -2497,7 +2497,7 @@ Here is a list of the more important ones.
 \subsection{RELOAD and STOP files}
 \label{S-RELOAD}
 
-The code periodically (every \var{it} time steps) checks 
+The code periodically (every \var{it} time steps) checks
 for the existence of two files, \file{RELOAD}
 and \file{STOP}, which can be used to trigger certain behavior.
 
@@ -2590,7 +2590,7 @@ All input parameters in \file{start.in} and \file{run.in}are grouped in
 Fortran \name{namelists}.
 This allows arbitrary order of the parameters (\emph{within} the given
 namelist; the namelists need to appear in the correct order), as well as
-enhanced readability through 
+enhanced readability through
 inserted Fortran comments and whitespace.
 One namelist (\name{init_pars} / \name{run_pars}) contains general
 parameters for initialization/running and is always read in.
@@ -2737,8 +2737,8 @@ and temperatures are in
   \newcommand{\fracstrut}{\rule[-2.0ex]{0pt}{5.2ex}}%
   \begin{tabular}{ll@{\quad}ll}
   \toprule
-    $[\rho]$    
-        & $[v]$ 
+    $[\rho]$
+        & $[v]$
             & $[B]$
                 & $[T]$ \\
   \midrule
@@ -2763,25 +2763,25 @@ and temperatures are in
                 & $\fracstrut\left(\dfrac{\bar{\mu}_{\rm g}}{0.6}\right)
                    \times \unit[2\,890]{K}$ \\
   \bottomrule
-  \end{tabular}  
+  \end{tabular}
 \end{table}
 
 For some choices of density and velocity units, Table~\ref{Tab-units-B-T}
 shows the resulting units of magnetic field and temperature.
 
 On the other hand, as soon as material equations are used (e.\,g.~one of
-the popular parameterizations for radiative losses, Kramers opacity,
+the popular parametrizations for radiative losses, Kramers opacity,
 Spitzer conductivities or ionization, which implies well-defined
 ionization energies), the corresponding routines in the code need to know
 the units you are using.
 This information is specified in \file{start.in} or \file{run.in} through
 the parameters \var{unit_system},
-\var{unit_length},  \var{unit_velocity},  \var{unit_density} and 
+\var{unit_length},  \var{unit_velocity},  \var{unit_density} and
 \var{unit_temperature}\footnote{
   Note: the parameter \var{unit_temperature} is currently only used in
   connection with \name{ionization.f90}.
   If you are working with \name{noionization.f90}, the temperature unit is
-  completely determined by Eq.~(\ref{unit-T}) above. 
+  completely determined by Eq.~(\ref{unit-T}) above.
 } like e.\,g.
 \begin{Verbatim}
   unit_system='SI',
@@ -2914,7 +2914,7 @@ Note the spurious checkerboard modulation in places, for example
 near $x=-0.5$ and $-2.5<y<-1.5$.
 This is an example of a hyperviscous turbulence simulations with
 $512^3$ meshpoints and a third order hyperviscosity of
-$\nu_3=5\times10^{-12}$. Hyperviscosity is explained in the 
+$\nu_3=5\times10^{-12}$. Hyperviscosity is explained in the
 Appendix~\ref{high-freq-filters}.}\label{Ftimestepoverviscous}\end{figure}
 
 Timestepping is accomplished using the Runge-Kutta 2N scheme.
@@ -3027,7 +3027,7 @@ of variables (\name{noentropy} vs.~\name{entropy}, for example), you need
 to remember to adjust the {\it length} of the arrays \var{bcx} to \var{bcz}.
 The advantage of the present approach is that it is very easy to exchange
 all boundary conditions by a new set of conditions in a particular
-direction (for example, make everything periodic, or switch off shearing 
+direction (for example, make everything periodic, or switch off shearing
 sheet boundary conditions and have stress-free instead).
 
 % ---------------------------------------------------------------------- %
@@ -3185,7 +3185,7 @@ present in you run), start \name{IDL}\footnote{
   \ \ \ \ \prompt{csh> } \ alias idl 'rlwrap -a -c idl'
 \end{alltt}
 \begin{alltt}
-  \ \ \ \ \prompt{bash> } alias idl='rlwrap -a -c idl' 
+  \ \ \ \ \prompt{bash> } alias idl='rlwrap -a -c idl'
 \end{alltt}
 
   From now on, you can
@@ -3213,7 +3213,7 @@ The \name{IDL} script \file{ts.pro} reads the time series data from
 \file[time_series.dat]{data/time_series.dat} and sorts the column into
 the structure \var{ts}, with the slot names corresponding to the
 name of the variables (taken from the header line of
-\file[time_series.dat]{data/time_series.dat}). 
+\file[time_series.dat]{data/time_series.dat}).
 Thus, you can refer to time as \code{ts.t}, to the rms velocity as
 \code{ts.urms}, and in order to plot the mean density as a function of
 time, you would simply type
@@ -3317,7 +3317,7 @@ placed in the directory \cmd{\$PENCIL_HOME/idl/files}. Here is a list of files
       Read code constants into structure.
   \item \cmd{pc_read_pvar, obj=fp} \\
       Read particle data into structure.
-  \item \cmd{pc_read_param, obj=par} \\    
+  \item \cmd{pc_read_param, obj=par} \\
       Read startup parameters into structure.
   \item \cmd{pc_read_param, obj=par2, /param2} \\
       Read runtime parameters into structure.
@@ -3463,7 +3463,7 @@ There is efficient scaling only when
 \min\left({N_x\over P_x}, {N_y\over P_y}, {N_z\over P_z}\right)\gg Q.
 \end{equation}
 In the special case were $N_x=N_y=N_z\equiv N=N_w^{1/3}$,
-with $P_x=1$ and $P_y=P_z\equiv P=P_w^{1/2}$, we have 
+with $P_x=1$ and $P_y=P_z\equiv P=P_w^{1/2}$, we have
 \begin{equation}
 {N_w^{\rm(eff)}\over P_w}=
 \left(N+Q\right)\times
@@ -3552,9 +3552,9 @@ is given by
 \begin{eqnarray}
   \tilde{u}(k_x,k_y,k_z)
   \ =\ \mathcal{F}(u(x,y,z))
-  &=& \frac{1}{N_x N_y N_z} \sum_{p=0}^{N_x-1} \sum_{q=0}^{N_y-1} 
+  &=& \frac{1}{N_x N_y N_z} \sum_{p=0}^{N_x-1} \sum_{q=0}^{N_y-1}
        \sum_{r=0}^{N_z-1} u(x_p,y_q,z_r)  \nonumber \\
-  & & {} \times \exp(-i k_x  x_p) \exp(-i k_y y_q) 
+  & & {} \times \exp(-i k_x  x_p) \exp(-i k_y y_q)
          \exp(-i k_z z_r) ,
 \end{eqnarray}
 where
@@ -3577,29 +3577,29 @@ Note that we can only reasonably calculate $P(k)$ for $k < \pi N_x/L_x$.
 To get power spectra from the code, edit \file{run.in} and add for example
 the following lines
 \begin{alltt}
-  dspec=2.3, 
+  dspec=2.3,
   ou_spec=T,ab_spec=T,
   fft_switch='fftpack',
   oned=T \
 \end{alltt}
 under \code{run_pars}.
 The kinetic (\code{vel_spec}) and magnetic  (\code{mag_spec}) power spectra
-will now be calculated every 2.3 (\code{dspec}) time units. 
-The Fourier spectra is calculated using \name{fftpack} 
+will now be calculated every 2.3 (\code{dspec}) time units.
+The Fourier spectra is calculated using \name{fftpack}
 (\code{fft_switch}). In addition to calculating the three-dimensional
-power spectra also the one-dimensional power spectra will be calculated 
+power spectra also the one-dimensional power spectra will be calculated
 (\code{oned}).
 
-In addition one must edit 
+In addition one must edit
 \file[Makefile.local]{src/Makefile.local} and add the lines
 \begin{alltt}
    FOURIER=fourier_fftpack
    POWER=power_spectrum
 \end{alltt}
 
-Running the code will now create the files \file{powerb.dat} and 
-\file{poweru.dat} containing the three-dimensional 
-magnetic and kinetic power spectra respectively. In addition to these 
+Running the code will now create the files \file{powerb.dat} and
+\file{poweru.dat} containing the three-dimensional
+magnetic and kinetic power spectra respectively. In addition to these
 three-dimensional files we will also find the one-dimensional files
 \file{powerbx_x.dat},
 \file[powerbx_x.dat]{powerby_x.dat}, % one index entry is enough..
@@ -3610,12 +3610,12 @@ three-dimensional files we will also find the one-dimensional files
 In these files the data are stored such that the first line contain the
 time of the snapshot, the following $\var{nxgrid}/2$ numbers represent the
 power at each wavenumber, from the smallest to the largest.
-If several snapshots have been saved, they are being stored immediately 
+If several snapshots have been saved, they are being stored immediately
 following the preceding snapshot.
 
-A caveat of the implementation of Fourier transforms on the Pencil 
-code is that due to the parallelization, the permitted resolution 
-is limited to the case when one direction is an integer multiple of 
+A caveat of the implementation of Fourier transforms on the Pencil
+code is that due to the parallelization, the permitted resolution
+is limited to the case when one direction is an integer multiple of
 the other. So, it can be done for
 
 \code{Nx = n*Ny}
@@ -3624,11 +3624,11 @@ Unfortunately, for some applications one wants \code{Nx < Ny}. Wlad experimented
 with arbitrary resolution by interpolating $x$ to the same resolution of $y$
 prior to transposing, then transform the interpolated array and then
 interpolating it back (check \file{fourier_transform_y} in
-\file{fourier_fftpack.f90}). 
+\file{fourier_fftpack.f90}).
 
 To visualize with \name{IDL} just type
-\cmd{power} and you get the last snapshot of the three-dimensional 
-power spectrum. See head of \file[power.pro]{\$PENCIL_HOME/idl/power.pro} 
+\cmd{power} and you get the last snapshot of the three-dimensional
+power spectrum. See head of \file[power.pro]{\$PENCIL_HOME/idl/power.pro}
 for options to \cmd{power}.
 
 % ---------------------------------------------------------------------- %
@@ -3639,70 +3639,70 @@ We define the p-th order longitudinal structure function of $\vec{u}$ as
 \begin{equation}
 S^p_{\rm long}(l)=\left< | u_x(x{+}l,y,z)-u_x(x,y,z)|^p \right> \; ,
 \end{equation}
-while the transversal is 
+while the transversal is
 \begin{equation}
-S^p_{\rm trans}(l)= \left< | u_y(x{+}l,y,z)-u_y(x,y,z)|^p \right> 
+S^p_{\rm trans}(l)= \left< | u_y(x{+}l,y,z)-u_y(x,y,z)|^p \right>
                + \left< | u_z(x{+}l,y,z)-u_z(x,y,z)|^p \right> \; .
 \end{equation}
 
-Edit \file{run.in} and add for example the following lines 
+Edit \file{run.in} and add for example the following lines
   \begin{alltt}
   dspec=2.3,
   lsfu=T,lsfb=T,lsfz1=T,lsfz2=T
   \end{alltt}
 under \code{run_pars}.
-The velocity (\code{lsfu}), magnetic (\code{lsfb}) and Elsasser 
+The velocity (\code{lsfu}), magnetic (\code{lsfb}) and Elsasser
 (\code{lsfz1} and \code{lsfz2}) structure functions will
-now be calculated every 2.3 (\code{dspec}) time unit. 
+now be calculated every 2.3 (\code{dspec}) time unit.
 
-In addition one must edit 
+In addition one must edit
 \file[Makefile.local]{src/Makefile.local} and add the line
   \begin{alltt}
   STRUCT_FUNC  = struct_func
   \end{alltt}
 You should also make sure that \var{nxgrid}=\var{nygrid}=\var{nzgrid}.
 
-Running the code will now create the files: \\ 
+Running the code will now create the files: \\
 \file{sfu-1.dat},
 \file[sfu-1.dat]{sfu-2.dat},    % one index entry is enough
-\file[sfu-1.dat]{sfu-3.dat} (velocity), \\ 
+\file[sfu-1.dat]{sfu-3.dat} (velocity), \\
 \file{sfb-1.dat},
 \file[sfb-1.dat]{sfb-2.dat},
-\file[sfb-1.dat]{sfb-3.dat} (magnetic field), \\ 
+\file[sfb-1.dat]{sfb-3.dat} (magnetic field), \\
 \file{sfz1-1.dat},
 \file[sfz1-1.dat]{sfz1-2.dat},
-\file[sfz1-1.dat]{sfz1-3.dat} (first Elsasser variable), \\ 
+\file[sfz1-1.dat]{sfz1-3.dat} (first Elsasser variable), \\
 \file[sfz1-1.dat]{sfz2-1.dat},
 \file[sfz1-1.dat]{sfz2-2.dat},
-\file[sfz1-1.dat]{sfz2-3.dat} (second Elsasser variable), \\ 
-which contains the data of interest. 
-The first line in each file contains the time $t$ 
+\file[sfz1-1.dat]{sfz2-3.dat} (second Elsasser variable), \\
+which contains the data of interest.
+The first line in each file contains the time $t$
 and the number \var{qmax}, such that the largest moment
 calculated is $\var{qmax}-1$.
-The next \var{imax} numbers represent the first moment 
+The next \var{imax} numbers represent the first moment
 structure function for the first snapshot, here
 \begin{equation}
 \var{imax}=2\frac{\ln (\var{nxgrid})}{\ln 2}-2.
 \end{equation}
-The next \var{imax} numbers contain the second moment structure function, 
+The next \var{imax} numbers contain the second moment structure function,
 and so on until $\var{qmax}-1$.
-The following \var{imax} numbers then contain the data of the 
-{\it signed} third order structure function i.e.  
+The following \var{imax} numbers then contain the data of the
+{\it signed} third order structure function i.e.
 $S^3_{\rm long}(l)=\left< [u_x(x{+}l,y,z)-u_x(x,y,z)]^3 \right>$.
 
-The following $\var{imax} \times \var{qmax} \times 2$ numbers are zero if 
-$\var{nr_directions}=1$ 
-(default), otherwise they are the same data as above but for the 
+The following $\var{imax} \times \var{qmax} \times 2$ numbers are zero if
+$\var{nr_directions}=1$
+(default), otherwise they are the same data as above but for the
 structure functions calculated in the y and z directions.
 
 If the code has been run long enough as to calculate several snapshots, these
 snapshots will now follow, being stored in the same way as the first snapshot.
 
 To visualize with \name{IDL} just type
-\cmd{structure} and you get the time-average of the first order longitudinal 
+\cmd{structure} and you get the time-average of the first order longitudinal
 structure function (be sure that
 \file[forced/idl/]{pencil-runs/forced/idl/} is in \env{IDL_PATH}).
-See head of \file[structure.pro]{pencil-runs/forced/idl/structure.pro} 
+See head of \file[structure.pro]{pencil-runs/forced/idl/structure.pro}
 for options to \cmd{structure}.
 
 % ---------------------------------------------------------------------- %
@@ -3849,11 +3849,11 @@ Bug reports, corrections, and improvements on these are appreciated.
 The equations solved by the {\sc Pencil Code} are basically the standard
 compressible MHD equations. However, the modular structure allows
 some variations of the MHD equations, as well as switching off
-some of the equations or individual terms of the equation (nomagnetic, 
+some of the equations or individual terms of the equation (nomagnetic,
 noentropy, etc.).
 
 In this section the equations are presented in their most complete form.
-It may be expected that the code can evolve most subsets or 
+It may be expected that the code can evolve most subsets or
 simplifications of these equations.
 
 % ---------------------------------------------------------------------- %
@@ -3878,7 +3878,7 @@ derivative.
 
 In the equation of motion, using a perfect gas, the pressure term,
 can be expressed as
-$-\rho^{-1}\grad p = -\cs^2(\grad s/c_p+\grad\ln\rho)$, 
+$-\rho^{-1}\grad p = -\cs^2(\grad s/c_p+\grad\ln\rho)$,
 where the squared sound speed is given by
 \begin{equation}
   \cs^2 = \gamma \frac{p}{\rho}
@@ -3896,7 +3896,7 @@ The equation of motion is accordingly
       - \grad\Phi_{\rm grav}
       + \frac{\jv\times\Bv}{\rho}  \nonumber \\
     & &+ \nu \left( \Laplace\uv + \frac{1}{3}\grad\Div\uv
-      + 2\Strain\cdot\grad\ln\rho\right) + \zeta\left(\grad\Div\uv\right); 
+      + 2\Strain\cdot\grad\ln\rho\right) + \zeta\left(\grad\Div\uv\right);
 \label{DuDt}
 \end{eqnarray}
 Here $\Phi_{\rm grav}$ is the gravity potential,
@@ -3910,17 +3910,17 @@ the magnetic flux density, $\nu$ is kinematic viscosity,
 is the traceless rate-of-strain tensor and $\zeta$ describes some bulk
 viscosity.
 
-The interpretation of the two viscosity terms varies greatly depending upon 
+The interpretation of the two viscosity terms varies greatly depending upon
 the Viscosity module used, and indeed on the parameters given to the module.
 See \S\ref{Bulkviscosity}.
 %AB: Is this ref reasonably ok?
 
 %ajwm - move this elsewhere? See section...
 %ajwm - and add description of shock viscosity
-%If \code{ivisc='nu-const'}, it is assumed that 
+%If \code{ivisc='nu-const'}, it is assumed that
 %$\nu = \const$ everywhere.
 %
-%If \code{ivisc='rho_nu-const'}, it is assumed that 
+%If \code{ivisc='rho_nu-const'}, it is assumed that
 %$\mu \equiv \rho\nu = \const$ everywhere; in that
 %case the input parameter \var{nu} is used to give the value of
 %$\mu/\rho_0$ (\var{rho0} is another input parameter).
@@ -3987,7 +3987,7 @@ The equation solved is
 
 Here, $T$ is temperature, $c_p$ the specific heat at constant pressure,
 $\Heat$ and $\Cool$ are explicit heating and cooling terms,
-$K$ is the radiative (thermal) conductivity, 
+$K$ is the radiative (thermal) conductivity,
 $\Strain$ is the traceless rate-of-strain tensor and $\zeta$ describes
 some bulk viscosity.
 
@@ -4014,14 +4014,14 @@ where $\chi = K/(\rho c_p)$ is the thermal diffusivity.
 The latter equation shows that the diffusivity for $s$ is $\gamma\chi$,
 which is what we have used in Eq.~(\ref{Dmax}).
 
-In an alternative formulation for a constant $K$, the heat conduction 
+In an alternative formulation for a constant $K$, the heat conduction
 term on the right hand side can also be written in the form
 \begin{eqnarray}
 \frac{\Div(K\grad T)}
               {\rho T} =
-  \frac{K}{\rho}\Bigl[ \Laplace\ln T + (\grad \ln T)^2 \Bigr] 
+  \frac{K}{\rho}\Bigl[ \Laplace\ln T + (\grad \ln T)^2 \Bigr]
 \end{eqnarray}
-which is the form used when constant $K$ is chosen.  
+which is the form used when constant $K$ is chosen.
 \bigskip
 
 Note that by setting $\gamma=1$ and initially $s=0$, one obtains an
@@ -4077,14 +4077,14 @@ Another alternative is to use another module, i.e.\ set
 When \code{pretend_lnTT=T} is set, the entropy equation
 \begin{equation}
   \frac{\partial s}{\partial t} = -\uv\cdot\grad s
-  +\frac{1}{\rho T }\mathbf{RHS} 
+  +\frac{1}{\rho T }\mathbf{RHS}
 \end{equation}
 is replaced by
 \begin{equation}
 \frac{\partial\ln T}{\partial t} = -\uv\cdot\grad \ln T
   +\frac{1}{\rho c_v T}\mathbf{RHS} -\left(\gamma-1\right) \Div \uv,
 \end{equation}
-where $\mathbf{RHS}$ is the right hand side of equation (\ref{entropy-eq}). 
+where $\mathbf{RHS}$ is the right hand side of equation (\ref{entropy-eq}).
 
 % ---------------------------------------------------------------------- %
 
@@ -4295,34 +4295,34 @@ see Sect.~\ref{S-Ioni} in the appendix.
 
 \subsubsection{Ambipolar diffusion}
 
-Another way of dealing with ionization in the {\sc Pencil code} is 
-through use of the {\it neutrals} module. That module solves the 
-coupled equations of neutral and ionized gas, in a two-fluid model  
+Another way of dealing with ionization in the {\sc Pencil code} is
+through use of the {\it neutrals} module. That module solves the
+coupled equations of neutral and ionized gas, in a two-fluid model
 
 \begin{eqnarray}
   \pderiv{\rho_i}{t} &=& -\Div{(\rho_i \v{u}_i)} + {\mathcal G} \label{ionized-continuity}\\
   \pderiv{\rho_n}{t} &=& -\Div{(\rho_n \v{u}_n)} - {\mathcal G} \label{neutral-continuity}\\
-  \pderiv{(\rho_i \v{u}_i)}{t} &=& -\Div{(\rho_i \v{u}_i:\v{u}_i)} - 
+  \pderiv{(\rho_i \v{u}_i)}{t} &=& -\Div{(\rho_i \v{u}_i:\v{u}_i)} -
     \grad{\left(p_i + p_e + \frac{B^2}{2\mu_0}\right)} + {\mathcal F}  \label{ionized-ns}\\
-  \pderiv{(\rho_n \v{u}_n)}{t} &=& -\Div{(\rho_n \v{u}_n:\v{u}_n)} - 
+  \pderiv{(\rho_n \v{u}_n)}{t} &=& -\Div{(\rho_n \v{u}_n:\v{u}_n)} -
     \grad{p_n} - {\mathcal F}                                          \label{neutral-ns}\\
   \pderiv{\v{A}}{t} &=& \v{u}_i \times \v{B}
-\end{eqnarray}where the subscripts $n$ and $i$ are for neutral and ionized, 
-respectively. The terms ${\mathcal G}$ and ${\mathcal F}$, through which the two fluids exchange mass and 
-momentum, are given by 
+\end{eqnarray}where the subscripts $n$ and $i$ are for neutral and ionized,
+respectively. The terms ${\mathcal G}$ and ${\mathcal F}$, through which the two fluids exchange mass and
+momentum, are given by
 
 \begin{eqnarray}
   {\mathcal G} &=& \zeta\rho_n - \alpha \rho_i^2 \\
   {\mathcal F} &=& \zeta\rho_n\v{u}_n - \alpha \rho_i^2\v{u}_i + \gamma\rho_i\rho_n (\v{u}_n - \v{u}_i) \;.
-\end{eqnarray}In the above equations, $\zeta$ is the ionization coefficient, $\alpha$ is the 
-recombination coefficient, and $\gamma$ the collisional drag strength. By the time of writing 
-(spring 2009), these three quantities are supposed constant. The electron pressure $p_e$ is 
+\end{eqnarray}In the above equations, $\zeta$ is the ionization coefficient, $\alpha$ is the
+recombination coefficient, and $\gamma$ the collisional drag strength. By the time of writing
+(spring 2009), these three quantities are supposed constant. The electron pressure $p_e$ is
 also assumed equal to the ion pressure. Only isothermal neutrals are supported so far.
 
-In the code, \eq{ionized-continuity} and \eq{ionized-ns} are solved in \file{density.f90} 
-and \file{hydro.f90} respectively. Equation~\ref{neutral-continuity} is solved in 
-\file{neutraldensity.f90} and \eq{neutral-ns} in \file{neutralvelocity.f90}. The sample 
-\file{1d-test/ambipolar-diffusion} has the current setup for a two-fluid simulation with 
+In the code, \eq{ionized-continuity} and \eq{ionized-ns} are solved in \file{density.f90}
+and \file{hydro.f90} respectively. Equation~\ref{neutral-continuity} is solved in
+\file{neutraldensity.f90} and \eq{neutral-ns} in \file{neutralvelocity.f90}. The sample
+\file{1d-test/ambipolar-diffusion} has the current setup for a two-fluid simulation with
 ions and neutrals.
 
 % ---------------------------------------------------------------------- %
@@ -4393,7 +4393,7 @@ thesis of A. Johansen (can be downloaded from\\
 interact through a drag force. This force can most generally be written as an
 additional term to the equation of motion as
 \begin{equation}
-  \frac{\De \vec{u}_{\rm d}}{\De t} = \ldots - \frac{1}{\tau_{\rm s}} 
+  \frac{\De \vec{u}_{\rm d}}{\De t} = \ldots - \frac{1}{\tau_{\rm s}}
   \left( \vec{u}_{\rm d} - \vec{u} \right)  \, .
 \end{equation}
 Here $\tau_{\rm s}$ is the so-called stopping time of the considered dust
@@ -4425,7 +4425,7 @@ and $d$ is the physical dimension of the dust grain. The condensation time
 $\tau_{\rm cond}$ is calculated from
 \begin{equation}
   \frac{1}{\tau_{\rm cond}} = A_1 v_{\rm th} \alpha n_{\rm mon}
-  \left\{ 1-\frac{1}{S_{\rm mon}} \right\} \, , 
+  \left\{ 1-\frac{1}{S_{\rm mon}} \right\} \, ,
 \end{equation}
 where $A_1$ is the surface area of a monomer, $\alpha$ is the condensation
 efficiency, $n_{\rm mon}$ is the number density of monomers in the gas and
@@ -4439,7 +4439,7 @@ only water ice has been implemented in the code.
 All dust species fulfill the continuity equation
 \begin{equation}
   {\partial\rho_{\rm d}\over\partial t}+\nab\cdot(\rho_{\rm d}\uv_{\rm d})=0.
-\end{equation} 
+\end{equation}
 %\begin{equation}
 %\rho\left[{\partial\uv\over\partial t}+\uv\cdot\nab\uv-\fv(\uv)\right]
 %=-\nab p+\Fv-\beta(\uv-\uv_{\rm d}),
@@ -4454,7 +4454,7 @@ All dust species fulfill the continuity equation
 %\end{equation}
 %\begin{equation}
 %{\partial\rho_{\rm d}\over\partial t}+\nab\cdot(\rho_{\rm d}\uv_{\rm d})=0,
-%\end{equation} 
+%\end{equation}
 %where $\fv(\uv)$ denotes the \name{Coriolis force} and $\Fv$ and $\Fv_{\rm d}$
 %other forces.
 
@@ -4596,18 +4596,18 @@ accelerating itself (see Hockney \& Eastwood 1981).
 
 \subsection{$N$-body solver}
 
-The $N$-body code takes advantage of the existing Particles module, which was 
-coded with the initial intent of treating solid particles whose radius 
-$a_\bullet$ is comparable to the mean free path $\lambda$ of the gas, 
-for which a fluid description is not valid. A $N$-body implementation 
-based on that module only needed to include mass as extra state for the 
-particles, solve for the $N^2$ gravitational pair interactions and 
-distinguish between the $N$-body and the small bodies that are mapped 
+The $N$-body code takes advantage of the existing Particles module, which was
+coded with the initial intent of treating solid particles whose radius
+$a_\bullet$ is comparable to the mean free path $\lambda$ of the gas,
+for which a fluid description is not valid. A $N$-body implementation
+based on that module only needed to include mass as extra state for the
+particles, solve for the $N^2$ gravitational pair interactions and
+distinguish between the $N$-body and the small bodies that are mapped
 into the grid as a $\rho_p$ density field.
 
-The particles of the $N$-body ensemble evolve due to their mutual gravity 
-and by interacting with the gas and the swarm of small bodies. The equation 
-of motion for particle $i$ is 
+The particles of the $N$-body ensemble evolve due to their mutual gravity
+and by interacting with the gas and the swarm of small bodies. The equation
+of motion for particle $i$ is
 
 \begin{equation}
   \frac{d{\v{v}}_{p_i}}{dt} = {\v{F}}_{g_i} -\sum_{j\neq i}^{N}\frac{G M_j}{{\mathcal R}_{ij}^2} \hat{\v{{\mathcal R}}}_{ij}
@@ -4615,45 +4615,45 @@ of motion for particle $i$ is
 \end{equation}where ${\mathcal R}_{ij}=|\v{r}_{p_i}-{\v{r}}_{p_j}|$ is the
 distance between particles $i$ and $j$, and $\hat{\v{{\mathcal R}}}_{ij}$ is
 the unit vector pointing from particle $j$ to particle $i$. The first term of
-the R.H.S. is the combined gravity of the gas and of the dust particles onto the particle $i$, solved via 
+the R.H.S. is the combined gravity of the gas and of the dust particles onto the particle $i$, solved via
 
 \begin{equation}
-  {\v{F}}_{g_i} = -G\int_{V} \frac{[\rho_g(\v{r})+\rho_p(\v{r})]\v{{\mathcal R}}_i}{({\mathcal R}_i^2 + b_i^2)^{3/2}} \de V, 
+  {\v{F}}_{g_i} = -G\int_{V} \frac{[\rho_g(\v{r})+\rho_p(\v{r})]\v{{\mathcal R}}_i}{({\mathcal R}_i^2 + b_i^2)^{3/2}} \de V,
   \label{eq:disk-gravity}
 \end{equation}where the integration is carried out over the whole disk. The
-smoothing distance $b_i$ is taken to be as small as possible 
-(a few grid cells). For few particles ($<$10), calculating the integral 
-for every particle is practical. For larger ensembles one would prefer to 
-solve the Poisson equation to calculate their combined gravitational 
+smoothing distance $b_i$ is taken to be as small as possible
+(a few grid cells). For few particles ($<$10), calculating the integral
+for every particle is practical. For larger ensembles one would prefer to
+solve the Poisson equation to calculate their combined gravitational
 potential.
 
-The evolution of the particles is done with the same third-order Runge-Kutta 
-time-stepping routine used for the gas. The particles define the timestep also 
-by the Courant condition that they should not move more than one cell at a time. 
-For pure particle runs, where the grid is absent, one can adopt a 
-fixed time-step $t_p \ll 2\pi\varOmega_{\rm fp}^{-1}$ where 
-$\varOmega_{\rm fp}$ is the angular frequency of the fastest particle. 
+The evolution of the particles is done with the same third-order Runge-Kutta
+time-stepping routine used for the gas. The particles define the timestep also
+by the Courant condition that they should not move more than one cell at a time.
+For pure particle runs, where the grid is absent, one can adopt a
+fixed time-step $t_p \ll 2\pi\varOmega_{\rm fp}^{-1}$ where
+$\varOmega_{\rm fp}$ is the angular frequency of the fastest particle.
 
-By now (spring 2009), no inertial accelerations are included in the $N$-body module, so only the 
-inertial frame - with origin at the baricenter of the $N$-body ensemble - 
-is available. For a simulation of the circular restricted three-body problem 
-with mass ratio $q$=$\ttimes{-3}$, the Jacobi constant of a test particle 
-initially placed at position $(x,y)$=(2,0) was found to be conserved up 
-to one part in $\ttimes{5}$ within the timespan of 100 orbits.
+By now (spring 2009), no inertial accelerations are included in the $N$-body module, so only the
+inertial frame - with origin at the barycenter of the $N$-body ensemble -
+is available. For a simulation of the circular restricted three-body problem
+with mass ratio $q$=$\ttimes{-3}$, the Jacobi constant of a test particle
+initially placed at position $(x,y)$=(2,0) was found to be conserved up
+to one part in $\ttimes{5}$ within the time span of 100 orbits.
 
 
-We stress that the level of conservation is poor when compared to integrators designed to specifically 
-deal with long-term $N$-body problems. These integrators are usually symplectic, unlike the Runge-Kutta 
-scheme of the {\sc Pencil Code}. As such, {\sc Pencil} should not be used to deal with evolution over millions of 
-years. But for the time-span typical of astrophysical hydrodynamical 
-simulations, this degree of conservation of the Jacobi constant can be 
+We stress that the level of conservation is poor when compared to integrators designed to specifically
+deal with long-term $N$-body problems. These integrators are usually symplectic, unlike the Runge-Kutta
+scheme of the {\sc Pencil Code}. As such, {\sc Pencil} should not be used to deal with evolution over millions of
+years. But for the time-span typical of astrophysical hydrodynamical
+simulations, this degree of conservation of the Jacobi constant can be
 deemed acceptable.
 
-As an extension of the particle's module, the $N$-body is fully compatible 
-with the parallel optimization of {\sc Pencil}, which further speeds up the 
-calculations. Parallelization, however, is not yet possible for pure particle 
-runs, since it relies on splitting the grid between the processors. At the 
-time of writing (spring 2009), the $N$-body code does not allow the particles 
+As an extension of the particle's module, the $N$-body is fully compatible
+with the parallel optimization of {\sc Pencil}, which further speeds up the
+calculations. Parallelization, however, is not yet possible for pure particle
+runs, since it relies on splitting the grid between the processors. At the
+time of writing (spring 2009), the $N$-body code does not allow the particles
 to have a time-evolving mass.
 
 % ---------------------------------------------------------------------- %
@@ -4882,7 +4882,7 @@ What is the problem?
     One possibility is that you have upgraded
     from an older version of the code that did not have some of the modules
     the new version has.
-  
+
     Compare your \file[Makefile.local]{src/Makefile.local} to one of the
     examples that work.
 
@@ -4970,11 +4970,11 @@ The Dec Fortran optimizer has occasional problems with
   f90  -fast -O5 -tune ev6 -arch ev6  -c cparam.f90
   [...]
   f90  -fast -O5 -tune ev6 -arch ev6  -c nompicomm.f90
-  otal vm  2755568      otal vm  2765296        otal vm  2775024        
+  otal vm  2755568      otal vm  2765296        otal vm  2775024
   otal vm  2784752      otal...
   Assertion failure:  Compiler internal error - please submit problem r...
     GEM ASSERTION, Compiler internal error - please submit problem report
-  Fatal error in: /usr/lib/cmplrs/fort90_540/decfort90 Terminated 
+  Fatal error in: /usr/lib/cmplrs/fort90_540/decfort90 Terminated
   *** Exit 3
   Stop.
   *** Exit 1
@@ -4987,15 +4987,15 @@ The Dec Fortran optimizer has occasional problems with
   The occurrence of this problem depends upon the grid size;
   and the problem never seems to occur with \file{mpicomm.f90},
   except when \code{ncpus=1}.
-  The problem can be avoided by switching off the loop transformation 
+  The problem can be avoided by switching off the loop transformation
   optimization (part of the \option{-O5} optimization), via:
   \begin{Verbatim}
     #OPTFLAGS=-fast -O5 -notransform_loops
   \end{Verbatim}
-%   This has not been made standard in \file{Makefile}, 
+%   This has not been made standard in \file{Makefile},
 %   as it can cause some slowdown: e.g.
 %   an increase from 2.67 to 2.89 ${\mu\rm s}\,/\,{\rm pt}\,/\,{\rm step}$,
-%   for \file{runs/forced/hel128f} 
+%   for \file{runs/forced/hel128f}
 %   with \code{nxgrid=nygrid=nzgrid=128}, \code{ncpus=16}, \code{nt=100},
 %   on the Mhd machine.
   This is currently the default compiler setting in \file{Makefile},
@@ -5132,8 +5132,8 @@ with the science next.
 \subsubsection{Namelist problem under IRIX}
 Under IRIX, I get
 \begin{Verbatim}
-  lib-4001 : UNRECOVERABLE library error 
-  
+  lib-4001 : UNRECOVERABLE library error
+
   Encountered during a namelist READ from unit 1
   Fortran unit 1 is connected to a sequential formatted text file: "run.in"
   IOT Trap
@@ -5145,7 +5145,7 @@ Under IRIX, I get
 {\em
   This is a compiler bug that has been found at least with the MIPSpro F90
   compiler version 7.3.1.3m. The problem seems to have been fixed in  version
-  7.4.20m. 
+  7.4.20m.
 
 %  It has been reported to SGI in mid-2002; you should complain to SGI if a
 %  patch is still not available.
@@ -5267,7 +5267,7 @@ Under IRIX, I get
 %%%
 \subsubsection{\file{start.pro} doesn't work:}
 
-Isn't there some clever (or even trivial) way that one can avoid the 
+Isn't there some clever (or even trivial) way that one can avoid the
 annoying error messages that one gets, when running e.g. ".r rall" after
 a new variable has been introduced in "idl/varcontent.pro". Ever so
 often there's a new variable that can't be found in my param2.nml --
@@ -5384,7 +5384,7 @@ if the time format overflows?
 
 {\bf A}:
 I don't know whether it exists anywhere, but it's easy.
-In perl you'd say
+In Perl you'd say
 \begin{Verbatim}
   perl -pe 's/^(\s*[-0-9]+)\.([-0-9eEdD])/$1 $2/g'
 \end{Verbatim}
@@ -5473,7 +5473,7 @@ only avoids overflow.
 Macs work well for Linux stuff, except that the file structure is slightly
 different. Problems when following Linux installs can usually be traced to
 the PATH. For general reference, if you need to set an environment variable
-for an entire OSX login session, google environment.plist. That won't be
+for an entire OS-X login session, google environment.plist. That won't be
 needed here.
 
 For a Mac install, the following should work:
@@ -5701,11 +5701,11 @@ If you think you find an error, file a ticket with the
 \subsection{The {\sc Pencil Code} coding standard}
 As with any code longer than a few lines the appearance and layout
 of the source code is of the utmost importance.  Well laid out
-code is more easy to read and understand and as such is less prone 
+code is more easy to read and understand and as such is less prone
 to errors.
 
 A consistent coding style has evolved in the {\sc Pencil Code} and we
-ask that those contributing try to be consistent for everybody's 
+ask that those contributing try to be consistent for everybody's
 benefit.  In particular, it would be appreciated if those committing
 changes to the code via svn submit code
 
@@ -5714,7 +5714,7 @@ is usually the easiest way to proceed.  In short the most important rules are:
 \begin{itemize}
 \item tab characters do not occur anywhere in the code (in fact the use of
 tab character is an extension to the Fortran standard)
-\item code in any delimited block, e.g. if statements, do loops, subroutines 
+\item code in any delimited block, e.g. if statements, do loops, subroutines
 etc., is indented be precisely 2 spaces.
 E.g.
 \begin{Verbatim}
@@ -5730,8 +5730,8 @@ E.g.
       call stop_it("del2fjv not implemented")
   [...]
 \end{Verbatim}
-\item in general all comments are placed on their own lines with the '!' 
-appearing in the first column. 
+\item in general all comments are placed on their own lines with the '!'
+appearing in the first column.
 \item all subroutine/functions begin with a standard comment block describing
 what they do, when and by whom they were created and when and by whom any
 non-trivial modifications were made.
@@ -5740,7 +5740,7 @@ non-trivial modifications were made.
   be read easily when they are not wrapped.
 \end{itemize}
 
-These and other issues are discussed in more depth and with examples in 
+These and other issues are discussed in more depth and with examples in
 Appendix~\ref{coding-standard}.
 
 \subsection{Adding new output diagnostics}
@@ -5850,9 +5850,9 @@ The `f' array is the largest array in the {\sc Pencil Code} and its primary role
 is to store the current state of the timestepped PDE variables.  The f-array
 and its slightly smaller counter part (the df-array; see below)
 are the only full size 3D arrays in
-the code.  The f-array is of type real but PDEs for a complex variable may 
+the code.  The f-array is of type real but PDEs for a complex variable may
 be solved by using two slots in the f-array.  The actual size of the f-array
-is $\rm{mx}\times\rm{my}\times\rm{mz}\times\rm{mfarray}$. Here, 
+is $\rm{mx}\times\rm{my}\times\rm{mz}\times\rm{mfarray}$. Here,
 $\rm{mfarray}=\rm{mvar}+\rm{maux}+\rm{mglobal}+\rm{mscratch}$
 where $\rm{mvar}$ refers to the number of real PDE variables.
 
@@ -5892,7 +5892,7 @@ In order to output this part of the f-array, one must write
 \subsection{The df-array}
 \label{df-array}
 The `df' array is the second largest chunk of data in the {\sc Pencil Code}.
-By using a 2N storage scheme (see \ref{S-2N-scheme}) after 
+By using a 2N storage scheme (see \ref{S-2N-scheme}) after
 Williamson \cite{2Nstorage} the code only needs one more storage
 area for each timestepped variable on top of the current state stored in
 the f-array.  As such, and in contrast to the f-array, the df-array is of size
@@ -6021,8 +6021,8 @@ there is even a special directory for such additions.
 
 To create your own special module, copy \file{nospecial.f90} from the src/
 directory to a new name in the src/special/ directory.  It is currently only
-possible to have one special modules at a time and so several new bits of 
-physics are often put in to one special module. For this reasons a name 
+possible to have one special modules at a time and so several new bits of
+physics are often put in to one special module. For this reasons a name
 should be chosen that relates to the problem to be solved rather than
 the specific physics being implemented.
 
@@ -6057,7 +6057,7 @@ useful in many situations or simply more flexibility is required it may be
 necessary to add a new module \name{newphysics} together with the
 corresponding \name{nonewphysics} module.  The special modules follow
 the same structure as the rest of the switchable modules and so using
-a special module to prototype new ideas can make writing a new 
+a special module to prototype new ideas can make writing a new
 switchable module much easier.
 
 For an example of module involving a new
@@ -6135,7 +6135,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
   \var{lfirstpoint}
                & true only when the very first pencil for a given
                  time-substep is processed, i.\,e.~for the first set of
-                 $(\var{m},\var{n})$, which is probably $(3,3)$ . \\ 
+                 $(\var{m},\var{n})$, which is probably $(3,3)$ . \\
   \var{lout}
                & true when diagnostic output is about to be written. \\
 \bottomrule
@@ -6238,7 +6238,7 @@ where \code{nw=nx*ny*nz}.
    \mcc{proc}
      & \mcc{machine}
              & \mcc{$\displaystyle\frac{{\mu\rm s}}{\rm pt\;\;step}$}
-                    & \mcc{resol.} 
+                    & \mcc{resol.}
                               & \mcc{what}
                                              & \mcc{mem/proc}
                                                       & \mcc{when}&\mcc{who}\\
@@ -6250,14 +6250,14 @@ where \code{nw=nx*ny*nz}.
    1 & Nl6   & 6.8  &  $64^3$ & magn/noentro &        & 10-mar-03 & AB \\
    1 & Nl6   & 36.3 &  $64\!\times\!128\!\times\!64$
                               & nomag/entro/dust &    & 19-sep-03 & AB \\
-   1 & Nl6   & 42.7 & $16^2{\times}256$                                  
+   1 & Nl6   & 42.7 & $16^2{\times}256$
                      & nomag/entro/rad6/ion &        & 22-oct-03 & AB \\
-   1 & Nl6   & 37.6 & $16^2{\times}256$                                  
+   1 & Nl6   & 37.6 & $16^2{\times}256$
                      & nomag/entro/rad2/ion &        & 22-oct-03 & AB \\
-   1 & Nl6   & 19.6 & $16^2{\times}256$                                  
+   1 & Nl6   & 19.6 & $16^2{\times}256$
                       & nomag/entro/ion &      & 22-oct-03 & AB \\
    1 & Nl6   &  8.7 & $16^2{\times}256$ & nomag/entro &      & 22-oct-03 & AB \\
-   1 & Nl6n  &  9.8 & $32^3$                                  
+   1 & Nl6n  &  9.8 & $32^3$
                     & magn/noentro/pscalar   &        & 17-mar-06 & AB \\
    1 & Mhd   & 7.8  &  $64^3$ & magn/noentro &        & 20-may-02 & AB \\
    1 & Nq4   &14.4  & $128^3$ & magn/noentro &        &  8-oct-02 & AB \\
@@ -6288,9 +6288,9 @@ where \code{nw=nx*ny*nz}.
                               & nomag/entro/dust &    & 19-sep-03 & AB \\
    4 & fe1   & 2.09 & $128^3$ & magn/noentro &        &  9-oct-02 & AB \\
    4 & fe1   & 1.45 & $128^3$ & magn/noentro & giga   &  9-oct-02 & AB \\
-   4 & fe1   & 7.55 & $16^2{\times}512$                                  
+   4 & fe1   & 7.55 & $16^2{\times}512$
                      & nomag/entro/rad2/ion &  4x1   &  1-nov-03 & AB \\
-   4 & fe1   & 5.48 & $16^2{\times}512$                                  
+   4 & fe1   & 5.48 & $16^2{\times}512$
                      & nomag/entro/rad2/ion &  1x4   &  1-nov-03 & AB \\
    4 & Luci  & 1.77 &  $64^3$ & magn/noentro &        & 27-feb-07 & AB \\
    4 & Lenn  & 0.65 &  $64^3$ &nomag/noentro &        & 13-jan-07 & AB \\
@@ -6301,7 +6301,7 @@ where \code{nw=nx*ny*nz}.
    8 & fe1   & 3.15 &  $64^3$ & magn/noentro &  1x8   &  8-sep-02 & AB \\
    8 & fe1   & 2.36 &  $64^3$ & magn/noentro &  2x4   &  8-sep-02 & AB \\
    8 & Ukaff & 1.24 &  $64^3$ & magn/noentro &        & 20-may-02 & AB \\
-   8 & Kabul & 1.25 & $64^2{\times}128$                                  
+   8 & Kabul & 1.25 & $64^2{\times}128$
                               & nomag/entro &        & 11-jul-02 & WD \\
    8 & fe1   & 1.68 & $128^3$ & magn/noentro &  1x8   &  8-sep-02 & AB \\
    8 & fe1   & 1.50 & $128^3$ & magn/noentro &  2x4   &  8-sep-02 & AB \\
@@ -6333,7 +6333,7 @@ where \code{nw=nx*ny*nz}.
   16 & fe1   & 0.56 & $256^3$ & magn/noentro &  4x4   & 16-aug-02 & AB \\
   16 & fe1   & 6.30 & $128\!\times\!256\!\times\!128$
                               & nomag/entro/dust &    & 19-sep-03 & AB \\
-  16 & fe1   & 1.31 & $128^2{\times}512$                                  
+  16 & fe1   & 1.31 & $128^2{\times}512$
                      & nomag/entro/rad2/ion &  4x4   &  1-nov-03 & AB \\
   16 & Ukaff & 0.61 & $128^3$ & magn/noentro &        & 22-may-02 & AB \\
   16 & Ukaff & 0.64 & $256^3$ & magn/noentro &        & 20-may-02 & AB \\
@@ -6441,7 +6441,7 @@ with 10 Gb infiniband network, compiled with pgf90 -fastsse -tp k8-64e (Copenhag
 nodes has two 900 MHz Itanium 2 "McKinley" processors and 6 GB of main memory.
 The interconnect is myrinet.
 \item[Lenn:] (full name Lenngren) is a Dell Xeon cluster with 442 nodes.
-Each node has two 3.4GHz ``Nocona'' Xeon processors and 8GB of main memory. 
+Each node has two 3.4GHz ``Nocona'' Xeon processors and 8GB of main memory.
 A high performance Infiniband network from Mellanox is used for MPI traffic.
 \end{description}
 
@@ -6476,7 +6476,7 @@ in Fig~\ref{cvsstat}.
     \mcc{proc(s)}
        & \mcc{machine}
              & \mcc{$\displaystyle\frac{{\mu\rm s}}{\rm pt\;\;step}$}
-                    & \mcc{resol.} 
+                    & \mcc{resol.}
                                     & \mcc{mem./proc}
                                                     & \mcc{when}&\mcc{who}\\
     \midrule
@@ -6518,20 +6518,20 @@ readable and manageable code.
 
 As well as improving the readability of the code, by having some
 naming conventions for example aids greatly in understanding what
-the code does. 
+the code does.
 
 There is a standard for all aspect of the code be it Fortran source,
 shell scripts, Perl scripts, LaTeX source, Makefiles or otherwise.
-Where nothing has been explicitly stated it is recommended that 
+Where nothing has been explicitly stated it is recommended that
 similar existing examples found in the code are used as a template.
 
 \subsection{File naming conventions}
 All files with the exception of the \file{Makefile}s are given
-lowercase filenames. 
+lowercase filenames.
 
 Fortran source files all have the `.f90' extension.  Files that
-contain `non-executable code' i.e. declarations that are included into 
-other files are given the extension `.h' and those that are generated 
+contain `non-executable code' i.e. declarations that are included into
+other files are given the extension `.h' and those that are generated
 dynamically at compile time have a `.inc' extension.
 
 Fortran source code defining a module is placed in files whose names
@@ -6549,7 +6549,7 @@ Fortran is not case-sensitive but in almost all instances we prescribe
 some form of capitalization for readability.
 
 In general all Fortran code including keywords, variable names etc. are
-written in lowercase. 
+written in lowercase.
 
 \subsubsection{Indenting and whitespace}
 Whitespace should be removed from the end of lines.
@@ -6562,7 +6562,7 @@ not in fact allowed by the Fortran standard and compilers that accept
 them do so as an extension.
 
 All lines are kept to be not more than 78 characters long. Where
-lines are longer they must be explicitly wrapped using the 
+lines are longer they must be explicitly wrapped using the
 Fortran continuation character `\&'
 
 Code in syntactic blocks such as \code{if}--\code{endif}, \code{do}--\code{enddo},
@@ -6572,16 +6572,16 @@ contains executable code should be written with the \code{do}--\code{enddo}
 pairs at the same level of indentation.
 
 \begin{itemize}
-\item in general all comments are placed on their own lines with the '!' 
-appearing in the first column. 
+\item in general all comments are placed on their own lines with the '!'
+appearing in the first column.
 \item all subroutine/functions begin with a standard comment block describing
 what they do, when and by whom they were created and when and by whom any
 non-trivial modifications were made.
-\item lines longer that 78 characters must be explicitly wrapped. 
+\item lines longer that 78 characters must be explicitly wrapped.
 \end{itemize}
 
 \subsubsection{Comments}
-Descriptive comments are written on their own lines unless there is a 
+Descriptive comments are written on their own lines unless there is a
 strong reason to do otherwise.  Comments are not normally indented
 and the `!' should appear in the first column followed by two spaces
 and then the text of the comment.
@@ -6592,7 +6592,7 @@ be wrapped onto more lines as needed.
 Typically comments should appear with a blank commented line above and
 below the wrapped text of the comment.
 
-Comments should be written in sentences using the usual capitalization 
+Comments should be written in sentences using the usual capitalization
 and punctuation of English where comment text continues either side of
 actual code much as text is continued around equations in a mathematical
 document. Punctuation at the end of a \emph{short} comment may be omitted.
@@ -6611,7 +6611,7 @@ For example:
 !
 !  then just time for a final detail
 !
-      the final fortran code 
+      the final fortran code
       the final fortran code
       ...
 \end{verbatim}
@@ -6630,17 +6630,17 @@ is a standard, for example:
 !  For compatibility with other applications, we keep the possibility
 !  of giving diffrho units of dxmin*cs0, but cs0 is not well defined general
 !
-!  24-nov-02/tony: coded 
+!  24-nov-02/tony: coded
 !  31-aug-03/axel: normally, diffrho should be given in absolute units
 !
 \end{verbatim}
 where dates are written in dd-mmm-yy format as shown and names appearing
 after the `/' are either the users cvs login name or, where such exists
-amongst the {\sc Pencil Code} community, the accepted short form ($\approx 4$ 
+amongst the {\sc Pencil Code} community, the accepted short form ($\approx 4$
 characters) of the authors name.
 
 \subsubsection{Module names}
-The names of modules are written with initial letter capitalization 
+The names of modules are written with initial letter capitalization
 of each word and the multiple words written consecutively without
 any separator.
 
@@ -6653,8 +6653,8 @@ structure (see \ref{pencil-case}).
 
 Quantities commonly represented by a particular single character
 in mathematics are typically given names formed by repeating the
-character (usually in lowercase), e.g. the velocity $u$ becomes `uu', 
-specific entropy $s$ becomes `ss' etc. 
+character (usually in lowercase), e.g. the velocity $u$ becomes `uu',
+specific entropy $s$ becomes `ss' etc.
 
 Temperature in variable names is denoted with a capital T so as not to
 be confused with time as represented by a lowercase t.  Note however the
@@ -6662,7 +6662,7 @@ since Fortran is not case sensitive the variables for example `TT' and
 `tt' are the same so distinct names must be used. For this reason time is
 usually represented by a single t contrary to the above guideline.
 
-The natural log of a quantity is represented by using adding `ln' to its 
+The natural log of a quantity is represented by using adding `ln' to its
 name, for example log of temperature would be `lnTT'.
 
 There are some standard prefixes used to help identify the type and nature
@@ -6699,7 +6699,7 @@ Here are some settings from wd's \file[.emacs]{\~{}/.emacs} file:
   ;; This is actually already set for F90-mode.
   (setq-default indent-tabs-mode nil)
 
-  ;; Ensure Emacs uses F90-mode (and not Fortran-mode) for F90 files: 
+  ;; Ensure Emacs uses F90-mode (and not Fortran-mode) for F90 files:
   (setq auto-mode-alist
         (append
          '(
@@ -6719,16 +6719,16 @@ Here are some settings from wd's \file[.emacs]{\~{}/.emacs} file:
 \end{Verbatim}
 \subsection{Other best practices}
 When implementing IF or SELECT blocks always write
-code for all cases -- including the default or else case. 
-This should be done even when that code is only a call to 
+code for all cases -- including the default or else case.
+This should be done even when that code is only a call to
 raise an error that the case should not have been reached.
 If you see a missing case anywhere then do add it.  These
-failsafes are essential in a large multi-purpose multi-user 
+failsafes are essential in a large multi-purpose multi-user
 code like the {\sc Pencil Code}.
 
 If a case is supposed to do nothing and it may be unclear that the
-coder has recognized this fact then make it explicit by adding the 
-default case with a comment like  ! Do Nothing  .   
+coder has recognized this fact then make it explicit by adding the
+default case with a comment like  ! Do Nothing  .
 The compiler will clean away any such empty blocks.
 
 
@@ -6797,7 +6797,7 @@ One torus of radius $R$ lying in the plane $z=0$ can be described in
 cylindrical coordinates, $(r,\varphi,z)$, by the
 vector potential
 \begin{equation} \label{Av-flux-ring-cyl}
-  \Av = 
+  \Av =
   \Phi_{\rm m}
   \begin{pmatrix}
     0\\ 0\\ -\Heavi(r{-}R) \delta(z)
@@ -6805,7 +6805,7 @@ vector potential
 \end{equation}
 resulting in a magnetic field
 \begin{equation}
-  \Bv = 
+  \Bv =
   \Phi_{\rm m}
   \begin{pmatrix}
     0\\ \delta(r{-}R) \delta(z)\\ 0
@@ -7294,81 +7294,97 @@ $\epsilon$ & $\sigma$ & $\delta$ \\
 \section{Some specific boundary conditions}
 \label{s-boundary-conditions}
 
-With the addition of spherical and cylindrical coordinate systems more
-complicated boundary conditions has now been implemented in the code. 
-So specific examples are discussed below. 
+With the addition of spherical and cylindrical coordinate systems, more
+complicated boundary conditions has now been implemented in the code.
+Some specific examples are discussed below.
 
-\subsection{Prefect-conductor boundary condition}
+\subsection{Perfect-conductor boundary condition}
 
 This boundary condition is often needed to be implemented for the magnetic
-field. This implies that 
+field. This implies that
 \begin{equation}
   B_n = 0
 \end{equation}
-at a boundary, where the subscript $n$ denotes the normal component. 
-Implementing this in cartesian case is generally achieved by setting
-the two tangential components of $A$ to be zero. In the case of
-spherical coordinates, let us first consider a radial boundary. In that
-case we must have
+at a boundary, where the subscript $n$ denotes the normal component.
+In Cartesian geometry, this is generally achieved by setting
+the two tangential components of $A$ to be zero.
+In the case of spherical coordinates, we can do the same, as we will show
+now.
+
+Let us first consider a radial boundary.
+In that case we must have
 \begin{equation}
-B_r = \frac{1}{r}\partial_{ \theta}A_{\phi} - 
-      \frac{1}{r\sin(\theta)}\partial_{\phi}A_{\theta} 
-      + \frac{\cot(\theta)}{r} A_{\phi} = 0 \/.
+  B_r = \frac{1}{r} \partial_{ \theta} A_{\phi}
+        - \frac{1}{r\sin\theta} \partial_{\phi} A_{\theta}
+        + \frac{\cot\theta}{r} A_{\phi}
+      = 0 \; .
 \end{equation}
-This can be achieved by 
+This can be achieved by
 \begin{equation}
-A_{\phi}=A_{\theta}=0
+  A_{\phi} = A_{\theta} = 0
 \end{equation}
-Note that this does not set any condition on the radial component of the 
-vector potential.  Next, on a boundary with constant $\theta$ 
-we must have
+Note that this does not impose any condition on the radial component of
+the vector potential.
+Next, on a boundary with constant $\theta$ we must have
 \begin{equation}
-B_{\theta} = \frac{1}{r\sin(\theta)}\partial_{\phi}A_{r} - 
-            \partial_{r}A_{\phi} 
-      - \frac{1}{r} A_{\phi} = 0 \/.
+  B_{\theta} = \frac{1}{r\sin\theta}\partial_{\phi}A_{r}
+               - \partial_{r}A_{\phi}
+               - \frac{1}{r} A_{\phi} = 0 \; .
 \end{equation}
-Again this can be achieved by $A_{r}=A_{\phi}=0$. 
+Again this can be achieved by $A_{r}=A_{\phi}=0$.
 
 \subsection{Stress-free boundary condition}
-This needs to be often imposed on the velocity. This is generally accomponied
-by setting the normal component of the velocity at the boundary
-to be zero. At the radial boundary
-the relevent component of the strain tensor that is to be set to 
-zero are:
+The stress-free boundary condition for the velocity is generally
+implemented by setting the normal component of the velocity at the
+boundary to zero.
+At the radial boundary, the relevant components of the strain tensor
+(required to vanish at the boundary) are:
+\begin{eqnarray}
+  S_{r\theta} &=& \frac{1}{r} \partial_{\theta} u_r
+                  + \partial_r u_{\theta}
+                  - \frac{1}{r} u_{\theta} \; , \\
+  S_{r\phi}   &=& \frac{1}{r\sin\theta} \partial_{\phi} u_r
+                  + \partial_r u_{\phi}
+                  - \frac{1}{r} u_{\phi} \; .
+\end{eqnarray}
+With $u_r=0$ we need to set
+$\partial_r u_{\theta} - \frac{1}{r} u_{\theta} = 0$.
+This is best done by writing the above condition in the following way,
+$\partial_r(u_{\theta} / r) = 0$.
+We then set the symmetric condition on $u_{\theta} / r$.
+Actually a more general but related boundary condition can be set, which
+is
 \begin{equation}
-S_{r\theta}=\frac{1}{r}\partial_{\theta}U_r + \partial_r U_{\theta}
-           -\frac{1}{r}U_{\theta} = 0
-S_{r\phi}=\frac{1}{r\sin(\theta)}\partial_{\phi}U_r + \partial_r U_{\phi}
-           -\frac{1}{r}U_{\phi} = 0
+  \partial_r u_{\theta} -\frac{\alpha}{r} u_{\theta} = 0
 \end{equation}
-With $U_r=0$ we need to set 
-$\partial_r U_{\theta} -\frac{1}{r}U_{\theta} = 0$. This is best done
-by writing the above condition in the following way, 
-$\partial_r(\frac{U_{\theta}}{r}) = 0$. We then set the symmetric 
-condition on $ \frac{U_{\theta}}{r}$. Actually a more general but related
-boundary condition can be set, which is 
-\begin{equation}
-\partial_r U_{\theta} -\frac{\alpha}{r}U_{\theta} = 0
-\end{equation}
-where $\alpha$ is a constant. This can be set by setting the symmetric
-condition on 
-$\partial_r(\frac{U_{\theta}}{r^{\alpha}}) = 0$
+where $\alpha$ is a constant.
+This can be set by setting the symmetric condition on
+$\partial_r(u_{\theta} / r^{\alpha}) = 0$
 
-At the boundary with consant $\theta$ the stress-free boundary 
-condition will take the form, 
+At the boundary with constant $\theta$, the stress-free boundary
+condition will take the form
+\begin{eqnarray}
+  S_{r\theta} &=& \frac{1}{r}\partial_{\theta} u_r
+                  + \partial_r u_{\theta}
+                  - \frac{1}{r} u_{\theta}
+               = 0 \; , \\
+  S_{\theta\phi} &=& \frac{1}{r\sin\theta} \partial_{\phi} u_{\theta}
+                     + \frac{1}{r} \partial_{\theta} u_{\phi}
+                     - \frac{\cot\theta}{r} u_{\phi}
+               = 0
+\end{eqnarray}
+with $u_{\theta} = 0$.
+The first condition can be satisfied by $u_r=0$.
+The second condition can be satisfied by
 \begin{equation}
-S_{r\theta}=\frac{1}{r}\partial_{\theta}U_r + \partial_r U_{\theta}
-           -\frac{1}{r}U_{\theta} = 0
-S_{\theta\phi}=\frac{1}{r\sin(\theta)}\partial_{\phi}U_{\theta} + 
-                \frac{1}{r}\partial_{\theta}U_{\phi}
-              -\frac{\cot(\theta)}{r}U_{\phi}
+  \frac{1}{r}\partial_{\theta} u_{\phi}
+  - \dfrac{\cot\theta}{r} u_{\phi}
+  = \dfrac{\sin\theta}{r}
+    \partial_{\theta} \left(\dfrac{u_{\phi}}{\sin\theta}\right)
+  = 0 \; .
 \end{equation}
-with $U_{\theta} = 0$. The first case can be satisfied by,
-$U_r=0$. The second case can be satisfied by 
-$\frac{1}{r}\partial_{\theta}U_{\phi}-\frac{\cot(\theta)}{r}U_{\phi}$ 
-which we write as, $\partial_{\theta}\frac{U_{\phi}}{\sin(\theta)}=0$
-And thus is implemented as a symmetric boundary condition on
-$\frac{U_{\phi}}{\sin(\theta)}$
+This is implemented as a symmetric boundary condition on
+$u_{\phi} / \sin\theta$.
 
 \subsection{Normal-field-radial boundary condition}
 This boundary condition is mostly used to set a boundary condition on
@@ -7377,39 +7393,40 @@ magnetic field at the boundary is left unconstrained, and the two
 tangential components of the field is set to zero. At the radial boundary,
 in terms of the vector potential, this is implemented as:
 \begin{equation}
-B_{\theta} = \frac{1}{r\sin(\theta)}\partial_{\phi} A_r - \partial_r A_{\phi} 
-            - \frac{1}{r}A_{\phi} = 0 
+  B_{\theta} = \frac{1}{r\sin\theta} \partial_{\phi} A_r
+               - \partial_r A_{\phi}
+               - \frac{1}{r} A_{\phi} = 0
 \end{equation}
-and 
+and
 \begin{equation}
-B_{\phi} = \partial_{r}A_{\theta} - 
-            \frac{1}{r}\partial_{\theta}A_{r} 
-      + \frac{1}{r} A_{\theta} = 0 .
+  B_{\phi} = \partial_{r}A_{\theta} -
+              \frac{1}{r}\partial_{\theta}A_{r}
+        + \frac{1}{r} A_{\theta} = 0 .
 \end{equation}
-Which are set by setting $A_r=0$ and 
-$\partial_r A_{\phi} + \frac{1}{r}A_{\phi}=0 $ and 
-$\partial_r A_{\theta} + \frac{1}{r}A_{\theta}=0 $ which are set by 
+Which are set by setting $A_r=0$ and
+$\partial_r A_{\phi} + \frac{1}{r} A_{\phi}=0 $ and
+$\partial_r A_{\theta} + \frac{1}{r} A_{\theta}=0 $ which are set by
 setting anti-symmetric condition for $A_r$ and symmetric condition
-for $rA_{\theta}$ and $rA_{\phi}$. 
+for $r A_{\theta}$ and $r A_{\phi}$.
 
-On the boundary with constant $\theta$ is condition is set by 
+On the boundary with constant $\theta$ is condition is set by
 \begin{equation}
-B_{r} = \frac{1}{r}\partial_{\theta}A_{\phi}- 
-    \frac{1}{r\sin(\theta)}\partial_{\phi}A_{\theta} 
-      + \frac{\cot(\theta)}{r} A_{\phi} = 0 \/.
+  B_{r} = \frac{1}{r}\partial_{\theta}A_{\phi}
+          - \frac{1}{r\sin\theta} \partial_{\phi} A_{\theta}
+          + \frac{\cot\theta}{r} A_{\phi} = 0 \; .
 \end{equation}
-and 
+and
 \begin{equation}
-B_{\phi} = \partial_{r}A_{\theta} - 
-            \partial_{\theta}A_{r} 
+B_{\phi} = \partial_{r}A_{\theta} -
+            \partial_{\theta}A_{r}
       + \frac{1}{r} A_{\theta} = 0 .
 \end{equation}
 which can be achieved by setting $A_{\theta} = 0$ and
 $\partial_{\theta}A_{\phi}+\frac{\cot(\theta)} A_{\phi} = 0$
-and 
+and
 $\partial_{\theta}A_{r}=0$. These can be achieved by setting the
 antisymmetric condition for $A_{\theta}$, symmetric condition for
-$A_r$ and symmetric condition on $\sin(\theta)A_{\phi}$. 
+$A_r$ and symmetric condition on $\sin\theta A_{\phi}$.
 
 % ====================================================================== %
 
@@ -7419,21 +7436,21 @@ $A_r$ and symmetric condition on $\sin(\theta)A_{\phi}$.
 \index{Hyperviscosity}
 \index{hyperdiffusivity}
 
-Being high order, {\sc Pencil Code} has much reduced numerical dissipation. 
-In order to perform inviscid simulations, high-frequency filters can  
-be used to provide extra dissipation for modes approaching the 
-Nyquist frequency. Usual Laplacian viscosity $\nu\Laplace\uv$ is 
-equivalent to a multiplication by $k^2$ in Fourier space, where $k$ is 
-the wavenumber. Another tool is hyperviscosity, which replaces the $k^2$ 
-dependency by a higher power-law, $k^n$, $n$$>$2. The idea behind it is to 
-provide large dissipation only where it is needed, at the grid scale 
-(high $k$), while minimizing it at the largest scales of the box (small $k$). 
-In principle, one can use as high $n$ as desired, but in practice we are 
-limited by the order of the code. A multiplication by $k^n$ is equivalent 
-to an operator $\nabla^n$ in real space. As {\sc Pencil Code} is of sixth order, 
-three ghost cells are available in each direction, thus the sixth-order 
-derivative is the highest we can compute. The hyperdissipation we use is 
-therefore $\nabla^6$, or $k^6$ is Fourier space. Figure~\ref{hypervisc} 
+Being high order, {\sc Pencil Code} has much reduced numerical dissipation.
+In order to perform inviscid simulations, high-frequency filters can
+be used to provide extra dissipation for modes approaching the
+Nyquist frequency. Usual Laplacian viscosity $\nu\Laplace\uv$ is
+equivalent to a multiplication by $k^2$ in Fourier space, where $k$ is
+the wavenumber. Another tool is hyperviscosity, which replaces the $k^2$
+dependency by a higher power-law, $k^n$, $n$$>$2. The idea behind it is to
+provide large dissipation only where it is needed, at the grid scale
+(high $k$), while minimizing it at the largest scales of the box (small $k$).
+In principle, one can use as high $n$ as desired, but in practice we are
+limited by the order of the code. A multiplication by $k^n$ is equivalent
+to an operator $\nabla^n$ in real space. As {\sc Pencil Code} is of sixth order,
+three ghost cells are available in each direction, thus the sixth-order
+derivative is the highest we can compute. The hyperdissipation we use is
+therefore $\nabla^6$, or $k^6$ is Fourier space. Figure~\ref{hypervisc}
 illustrates how such tool maximizes the inertial range of a simulation.
 
 Simplified hyperdiffusivity has been implemented for many dynamical variables
@@ -7456,7 +7473,7 @@ amplitudes (Brandenburg \& Sarson 2002).
   \includegraphics%
     [width=.9\textwidth,keepaspectratio]%
     {diffcolor}
-  \caption{Dissipation acting on a scalar field $\psi$, for $n$=1 (Laplacian dissipation) and $n$=3 (third-order hyperdissipation). The field is initially seeded with noise (upper panel). For $n$=3 the large scale is not affected as much as in the $n$=1 case, which is seen by the larger wiggling of the latter in the middle panel. In Fourier space (lower panel) we see that near the grid scale 
+  \caption{Dissipation acting on a scalar field $\psi$, for $n$=1 (Laplacian dissipation) and $n$=3 (third-order hyperdissipation). The field is initially seeded with noise (upper panel). For $n$=3 the large scale is not affected as much as in the $n$=1 case, which is seen by the larger wiggling of the latter in the middle panel. In Fourier space (lower panel) we see that near the grid scale
 both formulations give strong dissipation. It also illustrates that at the large scales ($k$$\simeq$1), the effect of $n$=3 is indeed negligible.}
   \label{hypervisc}
 \end{figure}
@@ -7464,30 +7481,42 @@ both formulations give strong dissipation. It also illustrates that at the large
 
 \subsection{Conservative hyperdissipation}
 
-It is desirable to have this high-frequency filter obeying the conservation laws. So, for density we want a mass conserving term, for velocities we want a momentum conserving term, for magnetic fields we want a term conserving magnetic flux, and for entropy we want an energy conserving term. These enter as hyperdiffusion, hyperviscosity, hyper-resistivity, and hyper heat conductivity terms in the evolution equations. To ensure conservation under transport, they must take the form of the divergence of the flux {$\mathcal J$} of the quantity $\psi$, so that Gauss theorem applies and we have
-
+It is desirable to have this high-frequency filter obeying the
+conservation laws.
+So, for density we want a mass conserving term, for velocities we want a
+momentum conserving term, for magnetic fields we want a term conserving
+magnetic flux, and for entropy we want an energy conserving term.
+These enter as hyperdiffusion, hyperviscosity, hyper-resistivity, and
+hyper heat conductivity terms in the evolution equations.
+To ensure conservation under transport, they must take the form of the
+divergence of the flux {$\mathcal J$} of the quantity $\psi$, so that
+Gauss theorem applies and we have
 \begin{equation}
   \pderiv{\psi}{t} + \Div{\vec{\mathcal J}} = 0
 \end{equation}
 
-For density, the flow due to mass diffusion is usually taken as the phenomenological Fick's Law
-
+For density, the flow due to mass diffusion is usually taken as the
+phenomenological Fick's Law
 \begin{equation}
   \label{eq:fick}
   \vec{\mathcal J} = -D \grad \rho
-\end{equation}i.e., proportional to the density gradient, in the opposite direction. This leads to the usual Laplacian diffusion 
+\end{equation}
+i.e., proportional to the density gradient, in the opposite direction.
+This leads to the usual Laplacian diffusion
 
 \begin{equation}
   \label{eq:diff}
   \pderiv{\rho}{t} = D\Laplace{\rho}
-\end{equation}under the assumption that the diffusion coefficient $D$ is isotropic. Higher order hyperdiffusion of order $2n$ involves a generalization of Eq.~(\ref{eq:fick}), to 
-
-
+\end{equation}
+under the assumption that the diffusion coefficient $D$ is isotropic.
+Higher order hyperdiffusion of order $2n$ involves a generalization of
+Eq.~(\ref{eq:fick}), to
 \begin{equation}
   \label{eq:hyperfick}
-  \vec{\mathcal J}^{(n)} = (-1)^n D^{(n)} \grad^{2n-1} \rho,
-\end{equation}In our case, we are interested in the case $n=3$, so that the hyperdiffusion term is
-
+  \vec{\mathcal J}^{(n)} = (-1)^n D^{(n)} \grad^{2n-1} \rho \; .
+\end{equation}
+In our case, we are interested in the case $n=3$, so that the
+hyperdiffusion term is
 \begin{equation}
   \label{eq:hyperdiff}
   \pderiv{\rho}{t} = D^{(3)}\nabla^6{\rho}.
@@ -7496,175 +7525,229 @@ For density, the flow due to mass diffusion is usually taken as the phenomenolog
 The hyperdiffusion coefficient $D^{(3)}$ can be calculated
 from $D$ assuming that at the Nyquist frequency the two
 formulations (\ref{eq:diff}) and (\ref{eq:hyperdiff}) yield the same
-quenching. Considering a wave as a Fourier series in one dimension ($x$),
+quenching.
+Considering a wave as a Fourier series in one dimension ($x$),
 one element of the series is expressed as
-
 \begin{equation}
-  \psi_k = A {\mathrm e}^{i(k x +  \omega t)} 
+  \psi_k = A {\mathrm e}^{i(k x +  \omega t)}
 \end{equation}
 
 Plugging it into the second order diffusion equation (\ref{eq:diff})
-we have the dispersion condition $i\omega = -D k^2$. The sixth order
-version (\ref{eq:hyperdiff}) yields $i\omega = -D^{(3)} k^6$. Equating
-both we have  $D^{(3)} = D k^{-4}$. This condition should hold at the
-grid scale, where $k=\pi/\Delta x$, therefore
-
+we have the dispersion condition $i\omega = -D k^2$.
+The sixth order version (\ref{eq:hyperdiff}) yields $i\omega = -D^{(3)}
+k^6$.
+Equating both we have  $D^{(3)} = D k^{-4}$.
+This condition should hold at the grid scale, where $k=\pi/\Delta x$,
+therefore
 \begin{equation}
   \label{eq:diffrho-hyper}
-  D^{(3)} = D \left(\frac{{\Delta}x}{\pi}\right)^4 
+  D^{(3)} = D \left(\frac{{\Delta}x}{\pi}\right)^4
 \end{equation}
 
-% mass conserving hyperdiffusion is intrinsically related to the numerical resolution. 
+% mass conserving hyperdiffusion is intrinsically related to the numerical resolution.
 
-For the magnetic potential, resistivity has the same formulation as mass diffusion 
-
+For the magnetic potential, resistivity has the same formulation as mass
+diffusion
 \begin{equation}
-  \pderiv{\Av}{t} = -\eta\curl{\Bv} = \eta\Laplace{\Av},
-\end{equation}where we used the Coulomb gauge $\Div{\Av}=0$. The algebra is the same as above, also yielding $\eta^{(3)}=\eta({\Delta}x/\pi)^4$. For entropy, the heat conduction term is 
-
+  \pderiv{\Av}{t} = -\eta\curl{\Bv} = \eta\Laplace{\Av} ,
+\end{equation}
+where we used the Coulomb gauge $\Div{\Av}=0$.
+The algebra is the same as above, also yielding
+$\eta^{(3)}=\eta({\Delta}x/\pi)^4$.
+For entropy, the heat conduction term is
 \begin{equation}
   \pderiv{S}{t}=\frac{1}{\rho T}\Div\left(K\grad{T}\right),
-\end{equation}and requiring that $K$ be constant, we substitute it by 
-
+\end{equation}
+and requiring that $K$ be constant, we substitute it by
 \begin{equation}
   \pderiv{S}{t}=\frac{K^{(3)}}{\rho T}\nabla^6T.
-\end{equation}also with $K^{(3)}=K({\Delta}x/\pi)^4$.
+\end{equation}
+also with $K^{(3)}=K({\Delta}x/\pi)^4$.
+
 
 \subsection{Hyperviscosity}
 \index{Hyperviscosity}
 
-Viscosity has some caveats where subtleties apply. The difference is that the momentum flux due to viscosity is not proportional to the velocity gradient, but to the rate-of-strain tensor 
+Viscosity has some caveats where subtleties apply. The difference is that the momentum flux due to viscosity is not proportional to the velocity gradient, but to the rate-of-strain tensor
 
 \begin{equation}
   \label{eq:strain}
-S_{ij} = \frac{1}{2}\left( \pderiv{u_i}{x_j} + \pderiv{u_j}{x_i} - \frac{1}{3}\delta_{ij}\Div{\uv}\right)
-\end{equation}which only allows the viscous acceleration to be reduced to the simple formulation $\nu\Laplace{\uv}$ under the condition of incompressibility and constant dynamical viscosity $\mu=\nu\rho$. Due to this, the general expression for conservative hyperviscosity involves more terms. In some cases, it is no great overhead, but for others, simpler formulations can be applied.
+  S_{ij} = \frac{1}{2}
+           \left(
+             \pderiv{u_i}{x_j} + \pderiv{u_j}{x_i}
+             - \frac{1}{3}\delta_{ij} \Div{\uv}
+           \right) \; ,
+\end{equation}
+which only allows the viscous acceleration to be reduced to the simple
+formulation $\nu\Laplace{\uv}$ under the condition of incompressibility
+and constant dynamical viscosity $\mu=\nu\rho$.
+Due to this, the general expression for conservative hyperviscosity
+involves more terms.
+In some cases, it is no great overhead, but for others, simpler
+formulations can be applied.
+
 
 \subsubsection{Conservative case}
 
-In the general case, the viscous acceleration is 
-
+In the general case, the viscous acceleration is
 \begin{equation}
-f_{\rm visc} = \rho^{-1} \Div{\left(2\rho\nu\Strain\right)}
+  f_{\rm visc} = \rho^{-1} \Div{\left(2\rho\nu\Strain\right)}
 \end{equation}
 
-So, for the hyperviscous force, we must replace the rate-of-strain tensor by a high order version 
-
+So, for the hyperviscous force, we must replace the rate-of-strain tensor
+by a high order version
 \begin{equation}
   \label{eq:hypervisc}
   f_{\rm visc}^{({\rm hyper})} = \rho^{-1} \Div{\left(2\rho\nu_n\Strain^{(n)}\right)}
-\end{equation}where the $n^{\rm th}$-order rate of strain tensor is 
-
-
+\end{equation}
+where the $n^{\rm th}$-order rate of strain tensor is
 \begin{equation}
-\Strain^{(n)} = (-\nabla^2)^{n-1}\Strain.
+  \Strain^{(n)} = (-\nabla^2)^{n-1}\Strain.
 \end{equation}
 
 For the $n=3$ case it is
-
 \begin{equation}
-S^{(3)}_{ij} = \frac{1}{2} \left( \pderivn{u_j}{x_i}{5} + \pderivn{}{x_i}{4}\left(\pderiv{u_i}{x_j}\right) - \frac{1}{3}\pderivn{}{x_i}{4}\left(\Div{\uv}\right) \right)
+  S^{(3)}_{ij} = \frac{1}{2}
+                 \left(
+                   \pderivn{u_j}{x_i}{5}
+                   + \pderivn{}{x_i}{4}
+                     \left( \pderiv{u_i}{x_j} \right)
+                   - \frac{1}{3} \pderivn{}{x_i}{4}
+                     \left(\Div{\uv}\right)
+                 \right) \; .
 \end{equation}
 
 Plugging it into Eq.~(\ref{eq:hypervisc}), and assuming $\mu_3={\rm const}$
-
 \begin{equation}
   \label{eq:hyper-mu-const}
-f_{\rm visc}^{({\rm hyper})} = \nu_3 \left(\nabla^6\uv + \frac{1}{3}\nabla^4({\grad({\Div{\uv}})}) \right) 
+  f_{\rm visc}^{({\rm hyper})}
+    = \nu_3 \left(
+              \nabla^6\uv
+              + \frac{1}{3}\nabla^4({\grad({\Div{\uv}})})
+            \right) \; .
 \end{equation}
 
-
-For $\nu_3={\rm const}$, we have to derivate the density as well
-
+For $\nu_3={\rm const}$, we have to take derivatives of density as well
 \begin{equation}
   \label{eq:hyper-nu-const}
-f_{\rm visc}^{({\rm hyper})} = \nu_3 \left(\nabla^6\uv + \frac{1}{3}\nabla^4({\grad({\Div{\uv}})}) + 2\Strain^{(3)}\cdot\grad{\ln\rho} \right) 
+  f_{\rm visc}^{({\rm hyper})} = \nu_3 \left(
+    \nabla^6\uv + \frac{1}{3}\nabla^4({\grad({\Div{\uv}})}) +
+    2\Strain^{(3)}\cdot\grad{\ln\rho}
+ \right)
 \end{equation}
 
 
 \subsubsection{Non-conservative cases}
 
-Equations (\ref{eq:hyper-mu-const}) and (\ref{eq:hyper-nu-const}) explicitly conserve linear {\em and} angular momentum. Although desirable properties, such expressions are cumbersome and numerically expensive, due to the fourth order derivatives of $\grad({\Div{\uv}})$. 
+Equations (\ref{eq:hyper-mu-const}) and (\ref{eq:hyper-nu-const})
+explicitly conserve linear {\em and} angular momentum.
+Although desirable properties, such expressions are cumbersome and
+numerically expensive, due to the fourth order derivatives of
+$\grad({\Div{\uv}})$.
 
 
-This term, however, is only important when high compressibility is present (since it depends on the divergence of $\uv$). In practice we drop this term and use a simple hyperviscosity 
-
+This term, however, is only important when high compressibility is present
+(since it depends on the divergence of $\uv$).
+In practice we drop this term and use a simple hyperviscosity
 \begin{equation}
-  f_{\rm visc} = \left\{ 
-  \begin{array}{l r}
-    \nu_3 \nabla^6\uv   &\mbox{if $\mu={\rm const}$}                                                  \\
-    \nu_3 \left(\nabla^6\uv + 2\Strain^{(3)}\cdot\grad{\ln\rho} \right)   &\mbox{if $\nu={\rm const}$} 
-  \end{array}
-\right.  
+  f_{\rm visc}
+    = \left\{
+        \begin{array}{l r}
+          \nu_3 \nabla^6\uv   &\mbox{if $\mu={\rm const}$} \\
+          \nu_3 \left(\nabla^6\uv
+            + 2\Strain^{(3)}\cdot\grad{\ln\rho} \right)
+                              &\mbox{if $\nu={\rm const}$}
+        \end{array}
+      \right.
 \end{equation}
 
-Notice that this can indeed be expressed as the divergence of a simple rate-of-strain tensor 
-
+Notice that this can indeed be expressed as the divergence of a simple
+rate-of-strain tensor
 \begin{equation}
   \label{eq:weird-strain}
-  S_{ij}^{(3)} = \pderivn{u_i}{x_j}{5}
-\end{equation}so it does conserve linear momentum. It does {\it not}, however, conserve {\it angular} momentum, since the symmetry of the rate-of-strain tensor was dropped. Thus, vorticity sinks and sources may be spuriously generated at the grid scale.
+  S_{ij}^{(3)} = \pderivn{u_i}{x_j}{5} \; ,
+\end{equation}
+so it does conserve linear momentum.
+It does {\it not}, however, conserve {\it angular} momentum, since the
+symmetry of the rate-of-strain tensor was dropped.
+Thus, vorticity sinks and sources may be spuriously generated at the grid
+scale.
 
-A symmetric tensor can be computed, that conserves angular momentum and can be easily implemented 
-
+A symmetric tensor can be computed, that conserves angular momentum and
+can be easily implemented
 \begin{equation}
   \label{eq:symmetric-strain}
-S_{ij} = \frac{1}{2} \left(\pderivn{u_i}{x_j}{5} + \pderivn{u_j}{x_i}{5} \right)
+  S_{ij} = \frac{1}{2}
+           \left(
+             \pderivn{u_i}{x_j}{5} + \pderivn{u_j}{x_i}{5}
+           \right)
 \end{equation}
 
-%S5 = this plus that 
+%S5 = this plus that
 
 This tensor, however, is not traceless, and therefore accurate only
-for weak compressibility. It should work well if the turbulence is
-subsonic. Major differences are not expected, since the spectral range
-in which hyperviscosity operates is very limited: as a numerical tool,
-only its performance as a high-frequency filter is needed. This also
-supports the usage of the highest order terms only, since these are
-the ones that provide quenching at high $k$. Momentum conservation is
-a cheap bonus. Angular momentum conservation is perhaps playing it too
-safe, at great computational expense. \index{Hyperviscosity}
+for weak compressibility.
+It should work well if the turbulence is subsonic.
+Major differences are not expected, since the spectral range in which
+hyperviscosity operates is very limited: as a numerical tool, only its
+performance as a high-frequency filter is needed.
+This also supports the usage of the highest order terms only, since these
+are the ones that provide quenching at high $k$.
+Momentum conservation is a cheap bonus.
+Angular momentum conservation is perhaps playing it too safe, at great
+computational expense. \index{Hyperviscosity}
 
 \subsection{Anisotropic hyperdissipation}
 
-As we want quenching primarily at the Nyquist frequency, hyperdissipation 
+As we want quenching primarily at the Nyquist frequency, hyperdissipation
 depends intrinsically on the resolution, according to
-Eq.~(\ref{eq:diffrho-hyper}). Because of this, {\it isotropic}
-hyperdissipation only gives equal quenching in all spatial directions 
-if $\Delta x$=$\Delta y$=$\Delta z$, i.e., if the cells are cubic. For 
-non-cubic cells, anisotropic dissipation is required as different 
-directions may be better/worse sampled, thus needing less/more numerical 
-smoothing. Such generalization is straightforward. For that, we 
-replace Eq.~(\ref{eq:hyperfick}) by
-
+Eq.~(\ref{eq:diffrho-hyper}).
+Because of this, {\it isotropic} hyperdissipation only gives equal
+quenching in all spatial directions if $\Delta x$=$\Delta y$=$\Delta z$,
+i.e., if the cells are cubic.
+For non-cubic cells, anisotropic dissipation is required as different
+directions may be better/worse sampled, thus needing less/more numerical
+smoothing.
+Such generalization is straightforward. For that, we replace
+Eq.~(\ref{eq:hyperfick}) by
 \begin{equation}
   \label{eq:general-fick}
-  \vec{\mathcal J}=\left(D_x \pderivn{\rho}{x}{5}, D_y \pderivn{\rho}{y}{5}, D_z \pderivn{\rho}{z}{5}\right),
+  \vec{\mathcal J}
+    = \left(
+        D_x \pderivn{\rho}{x}{5},
+        D_y \pderivn{\rho}{y}{5},
+        D_z \pderivn{\rho}{z}{5}
+      \right),
 \end{equation}
-so that different diffusion operates in different directions. Since $D_x$,
-$D_y$ and $D_z$ are constants, the divergence of this vector is 
-
+so that different diffusion operates in different directions.
+Since $D_x$, $D_y$ and $D_z$ are constants, the divergence of this vector
+is
 \begin{equation}
   \label{eq:anisodiff}
-  \Div\vec{\mathcal J}=D_x \pderivn{\rho}{x}{6}+ 
+  \Div\vec{\mathcal J}=D_x \pderivn{\rho}{x}{6}+
   D_y \pderivn{\rho}{y}{6}+
   D_z \pderivn{\rho}{z}{6}.
 \end{equation}
-The formulation for resistivity and heat conductivity are strictly the same. For viscosity it also
-assumes the same form if we consider the simple non-conservative rate-of-strain tensor (\ref{eq:weird-strain}). 
+The formulation for resistivity and heat conductivity are strictly the
+same.
+For viscosity it also assumes the same form if we consider the simple
+non-conservative rate-of-strain tensor (\ref{eq:weird-strain}).
 
-Mathematically, these operations can be written compactly by noticing that the
-coefficients in Eq.~(\ref{eq:anisodiff}) transform like diagonal tensors $\chi_{ij}^{(3)}=\chi_k^{(3)} \delta_{ijk}$,
-where $\delta_{ijk}$ is the unit diagonal third order tensor, $\mathbf{\chi}^{(3)}$ is the
-vector containing the dissipative coefficients (diffusion, viscosity, 
-resistivity, or heat conductivity) in $x$, $y$, and $z$, and summation over repeated indices applies.
+Mathematically, these operations can be written compactly by noticing that
+the coefficients in Eq.~(\ref{eq:anisodiff}) transform like diagonal
+tensors $\chi_{ij}^{(3)}=\chi_k^{(3)} \delta_{ijk}$, where $\delta_{ijk}$
+is the unit diagonal third order tensor, $\mathbf{\chi}^{(3)}$ is the
+vector containing the dissipative coefficients (diffusion, viscosity,
+resistivity, or heat conductivity) in $x$, $y$, and $z$, and summation
+over repeated indices applies.
+
 Therefore, for a scalar quantity $\psi$ (density, any of the three components
 of the velocity or magnetic potential), we can write
-
 \begin{equation}
   \label{eq:component-6th}
-  \pderiv{\psi}{t} = 
-- \chi_{ij}^{(3)} {\partial{}}_i{\partial{}}_j^5\psi 
-= -\sum_{q}^{} {\chi_q^{(3)} \frac{\partial{}^6}{\partial{x_q^6}}\psi}.
+  \pderiv{\psi}{t}
+  = - \chi_{ij}^{(3)} {\partial{}}_i{\partial{}}_j^5\psi
+  = -\sum_{q}^{} {\chi_q^{(3)} \frac{\partial{}^6}{\partial{x_q^6}}\psi}.
 \end{equation}
 
 
@@ -7723,7 +7806,7 @@ continue from \file{VAR1} at $128^3$ (on
   \prompt{tmp_64> } vi remesh.in
   {\sl{}# Replace line by ../run\_128}
   \prompt{tmp_64> } remesh.csh
-  {\sl{}# Answer `yes'}  
+  {\sl{}# Answer `yes'}
   \end{alltt}
 \end{enumerate}
 
@@ -8277,7 +8360,7 @@ taking the $x$ and the $y$ derivative consecutively.
     (right) for mixed derivatives $\partial^2/\partial x \partial y$.
     The numbers shown need to be divided by $720\,\delta x\,\delta y$ for
     the bidiagonal and by $3600\,\delta x\,\delta y$ for the consecutive
-    scheme.    
+    scheme.
   }
   \label{Fig-bidiagonal-scheme}
 \end{figure}
@@ -8442,7 +8525,7 @@ The specific entropy of mixing is
 \begin{equation}
 \frac{s_{\rm mix}}{s_0}=-\sum_ix_i\ln\frac{x_i}{x_{\rm tot}}\ .
 \end{equation}
-Summing up everything, we get the total specific entropy 
+Summing up everything, we get the total specific entropy
 \begin{align}
 \frac{s}{s_0}&=\sum_i\frac{s_i}{s_0}+\frac{s_{\rm mix}}{s_0}
 =\sum_ix_i\left(\ln\left[\frac{1}{x_i}\frac{\rho_i}{\rho}
@@ -8739,7 +8822,7 @@ modules
     \midrule
     \file{visc_const.f90} & Constant fluid viscosity. \\
     \file{visc_shock.f90} & Constant fluid viscosity and variable shock
-                            viscosity (conserves energy) based upon 
+                            viscosity (conserves energy) based upon
                             local strength of a shock.
                             The shock profile is calculated from the
                             velocity field.
@@ -8862,7 +8945,7 @@ double precision, $\varepsilon\approx10^{-15}$.
                  overwritten by \file{remesh.csh}.\\
   \var{lwrite_aux} [\code{F}]
                & if set \code{T}, auxiliary variables (those calculated at
-                 each step, but not evolved mathematically) to 
+                 each step, but not evolved mathematically) to
                  \file{var.dat} after the evolved quantities. \\
   \var{lwrite_2d} [\code{F}]
                & if set \code{T}, only 2D-snapshots are written into VAR
@@ -8934,9 +9017,9 @@ double precision, $\varepsilon\approx10^{-15}$.
                & boundary conditions. See Sect.~\ref{boundconds} for a
                  discussion of where and how to set these. \\
   \var{pretend_lnTT} [\code{F}]
-                & \index{pretend_lnTT} 
+                & \index{pretend_lnTT}
 		selects $\ln T$ as fundamental thermodynamic variable
-		in the entropy module \\ 
+		in the entropy module \\
                  \\
 %
 \midrule
@@ -9285,7 +9368,7 @@ the latest set of parameters, you need to look at the code.
                & number of time steps to run. This number can be increased
                  or decreased during the run by \cmd{touch RELOAD}.\\
   \var{it1} [$10$]
-               & write diagnostic output every \var{it1} time steps 
+               & write diagnostic output every \var{it1} time steps
                  (see Sect.~\ref{diagnostic-IO}). \\
   \var{cdt} [$0.4$]
                & Courant coefficient for advective time step; see
@@ -9327,9 +9410,9 @@ the latest set of parameters, you need to look at the code.
                  scales as little as possible) every \var{iwig} time steps to
                  logarithmic density (sometimes necessary with convection
                  simulations). \\
-  \var{ix} [$-1$], 
-  \var{iy} [$-1$], 
-  \var{iz} [$-1$], 
+  \var{ix} [$-1$],
+  \var{iy} [$-1$],
+  \var{iz} [$-1$],
   \var{iz2} [$-1$]
                & position of slice planes for video files.
                  Any negative value of some of these variables will be
@@ -9361,7 +9444,7 @@ the latest set of parameters, you need to look at the code.
                  See \S~\ref{S-phi-averages} for details. \\
   \var{ialive} [$0$]
                & if $\ne 0$, each processor writes the current time step
-                 to \file{alive.info} every \var{ialive} time steps. 
+                 to \file{alive.info} every \var{ialive} time steps.
                  This provides the best test that the job is still alive.
                  (This can be used to find out which node has crashed
                  if there is a problem and the run is hanging.)\\
@@ -9374,8 +9457,8 @@ the latest set of parameters, you need to look at the code.
                & see start parameters, p.~\pageref{random-gen-init} \\
   \var{lwrite_aux} [start]
                & if set \code{T}, auxiliary variables (those calculated at
-                 each step, but not evolved mathematically) to 
-                 \file{var.dat} and \file{VAR} files after the evolved 
+                 each step, but not evolved mathematically) to
+                 \file{var.dat} and \file{VAR} files after the evolved
                  quantities. \\
 %
 \midrule
@@ -9427,33 +9510,33 @@ the latest set of parameters, you need to look at the code.
                  zero over the second half of the time interval \var{tdamp}.
                  Initial velocity damping is useful for situations where
                  initial conditions are far from equilibrium. \\
-  \var{dampuint} [$0.$], 
-               & weighting of damping external to spherical region 
+  \var{dampuint} [$0.$],
+               & weighting of damping external to spherical region
                  (see \var{wdamp}, $\var{damp}_u$ below). \\
-  \var{dampuext} [$0.$], 
-               & weighting of damping in internal spherical region 
+  \var{dampuext} [$0.$],
+               & weighting of damping in internal spherical region
                  (see \var{wdamp}, $\var{damp}_u$ below). \\
-  \var{rdampint} [$0.$], 
+  \var{rdampint} [$0.$],
                & radius of internal damping region  \\
-  \var{rdampext} [impossible], 
-               & radius of external damping region, used in place of 
+  \var{rdampext} [impossible],
+               & radius of external damping region, used in place of
                  former variable \var{rdamp} \\
   \var{wdamp} [$0.2$],
-               & permanently damp motions in $|\xv|<r_{\rm dampint}$ 
-                 with damping term 
+               & permanently damp motions in $|\xv|<r_{\rm dampint}$
+                 with damping term
                  $-\var{damp}_uint \,\uv\,\chi(r{-}r_{\rm dampint})$
-                 or $|\xv|>r_{\rm dampext}$ with damping term 
+                 or $|\xv|>r_{\rm dampext}$ with damping term
                  $-\var{damp}_uext \,\uv\,\chi(r{-}r_{\rm dampext})$,
                  where $\chi(\cdot)$ is a smooth profile of width
                  \var{wdamp}. \\
-  \var{ampl_forc} [$0.$], 
-               & amplitude of the ux-forcing or uy-forcing on the vertical 
-                 boundaries that is of the form 
+  \var{ampl_forc} [$0.$],
+               & amplitude of the ux-forcing or uy-forcing on the vertical
+                 boundaries that is of the form
                  $u\_x(t)=ampl\_forc*sin(k\_forc*x)*cos(w\_forc*t)$
-                 [must be used in connection with bcx='g' or bcz=`g' and 
-                 force_lower_bound=`vel_time' or 
+                 [must be used in connection with bcx='g' or bcz=`g' and
+                 force_lower_bound=`vel_time' or
                  force_upper_bound=`vel_time'] \\
-  \var{k_forc} [$0.$], 
+  \var{k_forc} [$0.$],
                & corresponding horizontal wavenumber \\
   \var{w_forc} [$0.$]
                & corresponding frequency \\
@@ -9490,7 +9573,7 @@ the latest set of parameters, you need to look at the code.
                  \var{hcond0} is the value $K_{\rm unst}$ in the
                  unstable layer, \var{hcond1} is the \emph{ratio}
                  $K_{\rm stab}/K_{\rm unst}$ for the stable
-                 layer, and \var{hcond2} is the \emph{ratio} 
+                 layer, and \var{hcond2} is the \emph{ratio}
                  $K_{\rm top}/K_{\rm unst}$ for the top layer.
                  The function $K(z)$ is not discontinuous, as the
                  transition between the different values is smoothed over
@@ -9586,11 +9669,11 @@ the latest set of parameters, you need to look at the code.
   \var{dheat_buffer1} [$0.$]
                & Inverse thickness of transition to buffered layer.\\
   \var{TTheat_buffer} [$0.$]
-               & target temperature in thermal buffer zone ($z$ direction only). \\ 
+               & target temperature in thermal buffer zone ($z$ direction only). \\
   \var{lhcond_global} [F]
                & flag for calculating the heat conductivity $K$ (and also
                  $\grad \log K$) globally using the global arrays facility.
-                 Only valid when \var{iheatcond}=\code{`K-profile'}.\\ 
+                 Only valid when \var{iheatcond}=\code{`K-profile'}.\\
 %
 \midrule
   \multicolumn{2}{c}{Namelist \name{magnetic_run_pars}} \\
@@ -9846,94 +9929,94 @@ that are documented.
 \subsection{Initial condition parameter dependence}
 \label{S-all-init-depend}
 
-The following tables list which parameters from each Namelist are required 
-(\req), optional (\opt) or irrelevant (blank). The distinction is 
-made between required and optional where by a parameter requires a setting 
-if the default value would give an invalid or degenerate case for the 
+The following tables list which parameters from each Namelist are required
+(\req), optional (\opt) or irrelevant (blank). The distinction is
+made between required and optional where by a parameter requires a setting
+if the default value would give an invalid or degenerate case for the
 initial condition.
 
 % - hydro_init_pars ---------------------------------------------------- %
 \begin{tabular}{@{}l|c|c|c|c|c|c|c|c|c|c|c|c}
 
 \toprule
-  inituu & 
-       \rotatebox{90}{ampluu}   & 
-       \rotatebox{90}{widthuu}  & 
-       \rotatebox{90}{urand}    & 
-       \rotatebox{90}{uu_left}  & 
-       \rotatebox{90}{uu_right} & 
-       \rotatebox{90}{uu_upper} & 
-       \rotatebox{90}{uu_lower} & 
-       \rotatebox{90}{uy_left}  & 
-       \rotatebox{90}{uy_right} & 
-       \rotatebox{90}{kx_uu}    & 
-       \rotatebox{90}{ky_uu}    & 
-       \rotatebox{90}{kz_uu}    \\ 
+  inituu &
+       \rotatebox{90}{ampluu}   &
+       \rotatebox{90}{widthuu}  &
+       \rotatebox{90}{urand}    &
+       \rotatebox{90}{uu_left}  &
+       \rotatebox{90}{uu_right} &
+       \rotatebox{90}{uu_upper} &
+       \rotatebox{90}{uu_lower} &
+       \rotatebox{90}{uy_left}  &
+       \rotatebox{90}{uy_right} &
+       \rotatebox{90}{kx_uu}    &
+       \rotatebox{90}{ky_uu}    &
+       \rotatebox{90}{kz_uu}    \\
 \midrule
-  zero              & {}   & {}   & {}   & {}   & {}   & {}   & {}   
+  zero              & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   \\
 \midrule
-   gaussian-noise   & \req & {}   & {}   & {}   & {}   & {}   & {}   
+   gaussian-noise   & \req & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   \\
 \midrule
-   gaussian-noise-x & \req & {}   & {}   & {}   & {}   & {}   & {}   
+   gaussian-noise-x & \req & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   \\
 \midrule
-   xjump            & {}   & \opt & {}   & \req & \req & {}   & {}   
+   xjump            & {}   & \opt & {}   & \req & \req & {}   & {}
                     & \req & \req & {}   & {}   & {}   \\
 \midrule
-   Beltrami-x       & \req & {}   & {}   & {}   & {}   & {}   & {}   
+   Beltrami-x       & \req & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   \\
 \midrule
-   Beltrami-y       & \req & {}   & {}   & {}   & {}   & {}   & {}   
+   Beltrami-y       & \req & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   \\
 \midrule
-   Beltrami-z       & \req & {}   & {}   & {}   & {}   & {}   & {}   
+   Beltrami-z       & \req & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   \\
 \midrule
-   trilinear-x      & \req & {}   & {}   & {}   & {}   & {}   & {}   
+   trilinear-x      & \req & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   \\
 \midrule
-   trilinear-y      & \req & {}   & {}   & {}   & {}   & {}   & {}   
+   trilinear-y      & \req & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   \\
 \midrule
-   trilinear-z      & \req & {}   & {}   & {}   & {}   & {}   & {}   
+   trilinear-z      & \req & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   \\
 \midrule
-   cos-cos-sin-uz   & \req & {}   & {}   & {}   & {}   & {}   & {}   
+   cos-cos-sin-uz   & \req & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   \\
 \midrule
-   tor_pert         & \req & {}   & {}   & {}   & {}   & {}   & {}   
+   tor_pert         & \req & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   \\
 \midrule
-   trilinear-x      & \req & {}   & {}   & {}   & {}   & {}   & {}   
+   trilinear-x      & \req & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   \\
 \midrule
-   sound-wave       & \req & {}   & {}   & {}   & {}   & {}   & {}   
+   sound-wave       & \req & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & \req & {}   & {}   \\
 \midrule
-   shock-tube       & {}   & \opt & {}   & \req & \req & {}   & {}   
+   shock-tube       & {}   & \opt & {}   & \req & \req & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   \\
 \midrule
-   bullets          & \req & \opt & {}   & {}   & {}   & {}   & {}   
+   bullets          & \req & \opt & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   \\
 \midrule
-   Alfven-circ-x    & \req & {}   & {}   & {}   & {}   & {}   & {}   
+   Alfven-circ-x    & \req & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & \opt & {}   & {}   \\
 \midrule
-   const-ux         & \req & {}   & {}   & {}   & {}   & {}   & {}   
+   const-ux         & \req & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   \\
 \midrule
-   const-uy         & \req & {}   & {}   & {}   & {}   & {}   & {}   
+   const-uy         & \req & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   \\
 \midrule
-   tang-discont-z   & \opt & \req & {}   & {}   & {}   & \req & \req 
+   tang-discont-z   & \opt & \req & {}   & {}   & {}   & \req & \req
                     & {}   & {}   & {}   & {}   & {}   \\
 \midrule
-   Fourier-trunc    & \req & \opt & {}   & {}   & {}   & {}   & {}   
+   Fourier-trunc    & \req & \opt & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & \req & \req & {}   \\
 \midrule
-   up-down          & \req & \opt & {}   & {}   & {}   & {}   & {}   
+   up-down          & \req & \opt & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   \\
 %
 \bottomrule
@@ -9943,102 +10026,102 @@ initial condition.
 \begin{longtable}{l|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c}
 
 \toprule
-  initss & 
-       \rotatebox{90}{ampl_ss}   & 
-       \rotatebox{90}{radius_ss}   & 
-       \rotatebox{90}{widthss}   & 
-       \rotatebox{90}{epsilon_ss}   & 
-       \rotatebox{90}{grads0}  & 
-       \rotatebox{90}{pertss}   & 
-       \rotatebox{90}{ss_left}  & 
-       \rotatebox{90}{ss_right} & 
-       \rotatebox{90}{ss_const} & 
-       \rotatebox{90}{mpoly0} & 
-       \rotatebox{90}{mpoly1}  & 
-       \rotatebox{90}{mpoly2} & 
-       \rotatebox{90}{isothtop}    & 
-       \rotatebox{90}{khor_ss}    & 
-       \rotatebox{90}{center1_x}    & 
-       \rotatebox{90}{center1_y}    & 
-       \rotatebox{90}{center1_z}    & 
-       \rotatebox{90}{center2_x}    & 
-       \rotatebox{90}{center2_y}    & 
+  initss &
+       \rotatebox{90}{ampl_ss}   &
+       \rotatebox{90}{radius_ss}   &
+       \rotatebox{90}{widthss}   &
+       \rotatebox{90}{epsilon_ss}   &
+       \rotatebox{90}{grads0}  &
+       \rotatebox{90}{pertss}   &
+       \rotatebox{90}{ss_left}  &
+       \rotatebox{90}{ss_right} &
+       \rotatebox{90}{ss_const} &
+       \rotatebox{90}{mpoly0} &
+       \rotatebox{90}{mpoly1}  &
+       \rotatebox{90}{mpoly2} &
+       \rotatebox{90}{isothtop}    &
+       \rotatebox{90}{khor_ss}    &
+       \rotatebox{90}{center1_x}    &
+       \rotatebox{90}{center1_y}    &
+       \rotatebox{90}{center1_z}    &
+       \rotatebox{90}{center2_x}    &
+       \rotatebox{90}{center2_y}    &
        \rotatebox{90}{center2_z}    &
        \rotatebox{90}{thermal_background}    &
        \rotatebox{90}{thermal_peak}    &
-       \rotatebox{90}{thermal_scaling}    \\ 
+       \rotatebox{90}{thermal_scaling}    \\
 \midrule
-  zero              & {}   & {}   & {}   & {}   & {}   & {}   & {}   
+  zero              & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   \\
 \midrule
-  const_ss          & {}   & {}   & {}   & {}   & {}   & {}   & {}   
+  const_ss          & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & \req & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   \\
 \midrule
-  blob              & \req & \req & {}   & {}   & {}   & {}   & {}   
+  blob              & \req & \req & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   \\
 \midrule
-  isothermal        & {}   & {}   & {}   & {}   & {}   & {}   & {}   
+  isothermal        & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   \\
 \midrule
-  Ferri{\`e}re      & {}   & {}   & {}   & {}   & {}   & {}   & {}   
+  Ferri{\`e}re      & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   \\
 \midrule
-  xjump             & {}   & {}   & \req & {}   & {}   & {}   & \req 
+  xjump             & {}   & {}   & \req & {}   & {}   & {}   & \req
                     & \req & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   \\
 \midrule
-  hor-fluxtube      & \req & \req & {}   & \req & {}   & {}   & {}   
+  hor-fluxtube      & \req & \req & {}   & \req & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   \\
 \midrule
-  hor-tube          & \req & \req & {}   & \req & {}   & {}   & {}   
+  hor-tube          & \req & \req & {}   & \req & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   \\
 \midrule
-  sedov             & {}   & \req & {}   & {}   & {}   & {}   & {}   
+  sedov             & {}   & \req & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & \req & \req & \req & {}   & {}   & {}   & \req
                     & \req & \req \\
 \midrule
-  sedov-dual        & {}   & \req & {}   & {}   & {}   & {}   & {}   
+  sedov-dual        & {}   & \req & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & \req & \req & \req & \req & \req & \req & \req
                     & \req & \req \\
 \midrule
-  isobaric          & {}   & {}   & {}   & {}   & {}   & {}   & {}   
+  isobaric          & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   \\
 \midrule
-  isentropic        & {}   & {}   & {}   & {}   & {}   & {}   & {}   
+  isentropic        & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   \\
 \midrule
-  linprof           & {}   & {}   & {}   & {}   & {}   & {}   & {}   
+  linprof           & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   \\
 \midrule
-  piecew-poly       & {}   & {}   & {}   & {}   & {}   & {}   & {}   
+  piecew-poly       & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   \\
 \midrule
-  polytropic        & {}   & {}   & {}   & {}   & {}   & {}   & {}   
+  polytropic        & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   \\
@@ -10046,7 +10129,7 @@ initial condition.
 \bottomrule
 \end{longtable}
 
- 
+
 % ====================================================================== %
 
 % r e f
@@ -10280,6 +10363,10 @@ $ $Id$ $}
 % LocalWords:  lspecial nospecial rllrlrrr mem BD Lenn cetus Neolith Sanss AMD
 % LocalWords:  Opteron fastsse tp Lucidor myrinet Lenngren Xeon Nocona Mellanox
 % LocalWords:  Makefiles mmm yy login TT tt idiag boolean emacs setq nd alist
-% LocalWords:  fF Xemacs fortran el failsafes daainit etatest FBCX yx
+% LocalWords:  fF Xemacs fortran el failsafes daainit etatest FBCX yx Zsom Wlad
 % LocalWords:  xB yB zB alfven Deutsch Verlag Gammie McGraw Moin Moser Krause
-% LocalWords:  Pergamon
+% LocalWords:  Pergamon Rheinhardt selfgravitating VirtualBox ambipolar tsnap
+% LocalWords:  USERNAME googlecode setupsrc Fehlberg ns fp frenesi openmpi dev
+% LocalWords:  libopenmpi norlx ToDo perl pe eEdD sed plist MacOS DevTools ci
+% LocalWords:  MacPorts MANPATH macports Ferlin testscalar rA hyperdissipation
+% LocalWords:  Fick's incompressibility ijk zig zag forc
