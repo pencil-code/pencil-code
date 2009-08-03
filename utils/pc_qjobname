@@ -33,7 +33,7 @@ if ($host =~ /fe[0-9]/ or $host =~/tpb[0-9]/ ){
     }
 
   }
-elsif ($host =~ /riologin/ || $host =~ /pia/){   # SGE
+elsif ($host =~ /riologin/ or $host =~ /pia/){   # SGE
   
   if ($#ARGV ne -1) { @jobs = @ARGV; }
   else {
@@ -50,7 +50,7 @@ elsif ($host =~ /riologin/ || $host =~ /pia/){   # SGE
     }
 
   }
-elsif ($host =~ /p6012/){   # LoadLeveler
+elsif ($host =~ /p6012/ or $host=~ /jugene/ or $host=~ /genius/){ # LoadLeveler
   
   if ($#ARGV ne -1) { @jobs = @ARGV; }
   else {
@@ -64,6 +64,7 @@ elsif ($host =~ /p6012/){   # LoadLeveler
     $a =~ /(\/.*)$/;
     $a = $1;
     $a =~ s/$ENV{'HOME'}/\~/g;
+    $a =~ s/\/gpfs\/automountdir//g;
     $a =~ s/\/gpfs\/h05\/$ENV{'USER'}/\~/g;
     print "$job : $a\n";
     }
