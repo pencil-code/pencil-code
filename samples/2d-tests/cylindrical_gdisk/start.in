@@ -10,7 +10,7 @@
 
   lperi = F  , T  , T,         ! periodic direction?
 
-  bcx = 's','a','s','a2'
+  bcx = 'a','s','s','a2'
 !reflective
 !  bcx = 's','a2','s','a2'
 !outflow
@@ -34,7 +34,7 @@
   initlnrho='local-isothermal'
   lnrho_const=0.  
   ldensity_nolog=T
-  plaw=0.5  !density power-law
+  plaw=0.0  !density power-law
 /
 &grav_init_pars
   ipotential='no-smooth'
