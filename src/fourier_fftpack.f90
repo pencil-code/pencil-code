@@ -1517,8 +1517,11 @@ module Fourier
 !  become necessary.
 !
           if (modulo(nz,nprocy)/=0) then
-            if (lroot) print*, 'fourier_shift_yz_y: nz must be a whole '// &
-                'multiple of nprocy!'
+            if (lroot) then
+              print*, 'fourier_shift_yz_y: nz must be a whole '// &
+                  'multiple of nprocy!'
+              print*, 'fourier_shift_yz_y: nz, nprocy=', nz, nprocy
+            endif
             call fatal_error('fourier_shift_yz_y','')
           endif
 !
