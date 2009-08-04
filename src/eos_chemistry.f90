@@ -69,6 +69,9 @@ module EquationOfState
   logical :: l_gamma=.false.
   logical :: l_cp=.false.
 !
+  character (len=labellen) :: ieos_profile='nothing'
+  real, dimension(mz) :: profz_eos=1.
+!
   namelist /eos_init_pars/  mu, cp, cs0, rho0, gamma, error_cp, ptlaw
 !
   namelist /eos_run_pars/   mu, cp, cs0, rho0, gamma, error_cp, ptlaw

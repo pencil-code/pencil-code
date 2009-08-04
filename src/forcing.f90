@@ -29,6 +29,7 @@ module Forcing
 !
   real :: force=0.,force2=0.
   real :: relhel=1.,height_ff=0.,r_ff=0.,fountain=1.,width_ff=.5
+  real :: crosshel=0.
   real :: dforce=0.,radius_ff=0.,k1_ff=1.,slope_ff=0.,work_ff=0.
   real :: omega_ff=1.
   real :: tforce_stop=impossible,tforce_stop2=impossible
@@ -39,9 +40,10 @@ module Forcing
   real, dimension(3) :: location_fixed=(/0.,0.,0./)
   real, dimension(nx) :: profx_ampl=1.,profx_hel=1.
   real, dimension(mz) :: profz_ampl=1.,profz_hel=0. !(initialize profz_hel=1)
-  integer :: kfountain=5,ifff,iffx,iffy,iffz
+  integer :: kfountain=5,ifff,iffx,iffy,iffz,i2fff,i2ffx,i2ffy,i2ffz
   logical :: lwork_ff=.false.,lmomentum_ff=.false.
-  logical :: lmagnetic_forcing=.false.,ltestfield_forcing=.false.
+  logical :: lhydro_forcing=.true.,lmagnetic_forcing=.false.
+  logical :: lcrosshel_forcing=.false.,ltestfield_forcing=.false.
   logical :: lhelical_test=.false.,lrandom_location=.true.
   logical :: lwrite_psi=.false.
   logical :: lscale_kvector_tobox=.false.,lwrite_gausspot_to_file=.true.
@@ -85,12 +87,12 @@ module Forcing
 
   namelist /forcing_run_pars/ &
        tforce_start,tforce_start2,&
-       iforce,force,relhel,height_ff,r_ff,width_ff, &
+       iforce,force,relhel,crosshel,height_ff,r_ff,width_ff, &
        iforce2,force2,kfountain,fountain,tforce_stop,tforce_stop2, &
        dforce,radius_ff,k1_ff,slope_ff,work_ff,lmomentum_ff, &
        omega_ff,location_fixed,lrandom_location,lwrite_gausspot_to_file, &
        wff_ampl,xff_ampl,zff_ampl,zff_hel, &
-       lmagnetic_forcing,ltestfield_forcing, &
+       lhydro_forcing,lmagnetic_forcing,lcrosshel_forcing,ltestfield_forcing, &
        max_force,dtforce,dtforce_duration,old_forcing_evector, &
        iforce_profile,lscale_kvector_tobox, &
        force_direction, force_strength, &
@@ -130,7 +132,8 @@ module Forcing
 !  read seed field parameters
 !  nothing done from start.f90 (lstarting=.true.)
 !
-      use Sub, only: inpui,step_scalar
+      use Mpicomm, only: stop_it
+      use Sub, only: inpui,step_scalar,erfunc
 !
       logical, save :: first=.true.
       logical :: lstarting
@@ -143,8 +146,13 @@ module Forcing
 !
         if (lmagnetic_forcing) then
           ifff=iaa; iffx=iax; iffy=iay; iffz=iaz
-        else
+        elseif (lhydro_forcing) then
           ifff=iuu; iffx=iux; iffy=iuy; iffz=iuz
+        elseif (lcrosshel_forcing) then
+          ifff=iaa; iffx=iax; iffy=iay; iffz=iaz
+          i2fff=iuu; i2ffx=iux; i2ffy=iuy; i2ffz=iuz
+        else
+          call stop_it("initialize_forcing: No forcing function set")
         endif
         if (ldebug) print*,'initialize_forcing: ifff=',ifff
 !
@@ -176,12 +184,23 @@ module Forcing
         do n=1,mz
           profz_hel(n)= -1.+2.*step_scalar(z(n),equator-ck_equator_gap,ck_gap_step)
         enddo
+!
+!  sign change of helicity about z=0
+!
       elseif (iforce_profile=='equator_hel=z') then
         profx_ampl=1.; profx_hel=1.
         profz_ampl=1.
         do n=1,mz
           profz_hel(n)=z(n)
         enddo
+!
+!  turn off forcing intensity above z=0
+!
+      elseif (iforce_profile=='surface_z') then
+        profx_ampl=1.; profx_hel=1.
+        profz_ampl=.5*(1.-erfunc(z/width_ff))
+        profz_hel=1.
+!
       elseif (iforce_profile=='intensity') then
         profx_ampl=1.; profx_hel=1.
         profz_hel=1.
@@ -433,18 +452,18 @@ module Forcing
       real, dimension (2) :: fran
       real, dimension (nx) :: radius,tmpx,rho1,ff,ruf,uf,of,rho
       real, dimension (mz) :: tmpz
-      real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all,uu,oo,bb,fxb
-      real, dimension (nx,3) :: fda
+      real, dimension (nx,3) :: variable_rhs,forcing_rhs,forcing_rhs2
+      real, dimension (nx,3) :: fda,force_all,uu,oo,bb,fxb
       real, dimension (mx,my,mz,mfarray) :: f
       complex, dimension (mx) :: fx
       complex, dimension (my) :: fy
       complex, dimension (mz) :: fz
-      real, dimension (3) :: coef1,coef2
+      real, dimension (3) :: coef1,coef2,coef3
       logical, dimension (3), save :: extent
       integer, parameter :: mk=3000
       integer, dimension(mk), save :: kkx,kky,kkz
       integer, save :: ifirst=0,nk
-      integer :: ik,j,jf,l
+      integer :: ik,j,jf,j2f,l
       real :: kx0,kx,ky,kz,k2,k,force_ampl=1.,pi_over_Lx=.5
       real :: ex,ey,ez,kde,sig=1.,fact,kex,key,kez,kkex,kkey,kkez
       real, dimension(3) :: e1,e2,ee,kk
@@ -635,9 +654,9 @@ module Forcing
 !  prefactor; treat real and imaginary parts separately (coef1 and coef2),
 !  so they can be multiplied by different profiles below.
 !
-      coef1(1)=k*kex; coef2(1)=relhel*kkex
-      coef1(2)=k*key; coef2(2)=relhel*kkey
-      coef1(3)=k*kez; coef2(3)=relhel*kkez
+      coef1(1)=k*kex; coef2(1)=relhel*kkex; coef3(1)=crosshel*k*kkex
+      coef1(2)=k*key; coef2(2)=relhel*kkey; coef3(2)=crosshel*k*kkey
+      coef1(3)=k*kez; coef2(3)=relhel*kkez; coef3(3)=crosshel*k*kkez
       if (ip.le.5) print*,'forcing_hel: coef=',coef1,coef2
 !
 ! An attempt to implement anisotropic forcing using direction
@@ -689,14 +708,25 @@ module Forcing
             do j=1,3
               if (extent(j)) then
                 jf=j+ifff-1
+                j2f=j+i2fff-1
                 forcing_rhs(:,j)=rho1*profx_ampl*profz_ampl(n)*force_ampl &
                   *real(cmplx(coef1(j),profx_hel*profz_hel(n)*coef2(j)) &
                   *fx(l1:l2)*fy(m)*fz(n))*fda(:,j)
-                  if (lhelical_test) then
-                    f(l1:l2,m,n,jf)=forcing_rhs(:,j)
-                  else
-                    f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
+                forcing_rhs2(:,j)=rho1*profx_ampl*profz_ampl(n)*force_ampl &
+                  *real(cmplx(0.,coef3(j)) &
+                  *fx(l1:l2)*fy(m)*fz(n))*fda(:,j)
+                if (lhelical_test) then
+                  f(l1:l2,m,n,jf)=forcing_rhs(:,j)
+                else
+                  f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
+!
+!  allow here for forcing both in u and in b=curla. In that case one sets
+!  lhydro_forcing=F, lmagnetic_forcing=F, lcrosshel_forcing=T
+!
+                  if (lcrosshel_forcing) then
+                    f(l1:l2,m,n,j2f)=f(l1:l2,m,n,j2f)+forcing_rhs2(:,j)
                   endif
+                endif
                 if (ltestfield_forcing) then
                   do jtest=1,12
                     iaxtest=iaatest+3*(jtest-1)

@@ -640,8 +640,10 @@ module Density
                 else
                   cs2cool   = cs2_ext
                 endif
+!
 !  Add temperature and entropy jump (such that pressure
 !  remains continuous) if cs2cool was specified in start.in:
+!
                 where (pot <= pot_ext) ! isentropic for r<r_ext
                   f(l1:l2,m,n,ilnrho) = lnrho0 &
                                     + log(1 - gamma1*(pot-pot0)/cs20) / gamma1
@@ -1493,10 +1495,20 @@ module Density
 !  Continuity equation.
 !
       if (lcontinuity_gas) then
-        if (ldensity_nolog) then
-          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%ugrho - p%rho*p%divu
+        if (ieos_profile=='nothing') then
+          if (ldensity_nolog) then
+            df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%ugrho - p%rho*p%divu
+          else
+            df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%uglnrho - p%divu
+          endif
         else
-          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%uglnrho - p%divu
+          if (ldensity_nolog) then
+            df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) &
+              - profz_eos(n)*(p%ugrho + p%rho*p%divu)
+          else
+            df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) &
+              - profz_eos(n)*(p%uglnrho + p%divu)
+          endif
         endif
       endif
 !

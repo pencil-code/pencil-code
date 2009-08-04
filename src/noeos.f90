@@ -52,6 +52,9 @@ module EquationOfState
   integer :: isothtop=1
   real, dimension (3) :: beta_glnrho_global=0.0,beta_glnrho_scaled=0.0
 !
+  character (len=labellen) :: ieos_profile='nothing'
+  real, dimension(mz) :: profz_eos=1.
+!
   contains
 !***********************************************************************
     subroutine register_eos()

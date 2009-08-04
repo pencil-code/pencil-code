@@ -75,6 +75,9 @@ module EquationOfState
 ! Allocatable 3D-array for cp
   real, dimension (:,:,:), allocatable :: cp_full
 !
+  character (len=labellen) :: ieos_profile='nothing'
+  real, dimension(mz) :: profz_eos=1.
+!
   contains
 !***********************************************************************
     subroutine register_eos()

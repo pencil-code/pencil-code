@@ -70,6 +70,7 @@ module EquationOfState
   real :: cs2bot=1., cs2top=1.
   real :: cs2cool=0.
   real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
+  real :: width_eos_prof=.2
   real, dimension(3) :: beta_glnrho_global=0., beta_glnrho_scaled=0.
   integer :: isothtop=0
 
@@ -79,13 +80,17 @@ module EquationOfState
   logical :: leos_isochoric=.false., leos_isobaric=.false.
   logical :: leos_localisothermal=.false.
 
+  character (len=labellen) :: ieos_profile='nothing'
+  real, dimension(mz) :: profz_eos=1.
+
   ! input parameters
   namelist /eos_init_pars/ xHe, mu, cp, cs0, rho0, gamma, error_cp, ptlaw, &
     cs2top_ini, dcs2top_ini
 
   ! run parameters
   namelist /eos_run_pars/  xHe, mu, cp, cs0, rho0, gamma, error_cp, ptlaw, &
-    cs2top_ini, dcs2top_ini
+    cs2top_ini, dcs2top_ini, &
+    ieos_profile, width_eos_prof
 
   contains
 
@@ -120,8 +125,10 @@ module EquationOfState
 !  before the rest of the units are being calculated.
 !
 !  22-jun-06/axel: adapted from initialize_eos
+!   4-aug-09/axel: added possibility of vertical profile function
 !
       use Mpicomm, only: stop_it
+      use Sub, only: erfunc
 !
       real :: Rgas_unit_sys=1., cp_reference
 !
@@ -205,6 +212,15 @@ module EquationOfState
       if (lroot) then
         print*,'initialize_eos: unit_temperature=',unit_temperature
         print*,'initialize_eos: cp,lnTT0,cs0=',cp,lnTT0,cs0
+      endif
+!
+!  calculate profile functions (used as prefactors to turn off pressure
+!  gradient term)
+!
+      if (ieos_profile=='nothing') then
+        profz_eos=1.
+      elseif (ieos_profile=='surface_z') then
+        profz_eos=.5*(1.-erfunc(z/width_eos_prof))
       endif
 !
     endsubroutine units_eos
