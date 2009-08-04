@@ -270,13 +270,14 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
     !
     ! mar-2009/kragset: coded
     !
-    
-    integer              :: icyl,iforcepoint, ipoint, inearest, icoordinates(8,3)
+
+    integer              :: icyl,iforcepoint, ipoint, inearest, icoord(8,3)
     integer              :: ixl, iyl, izl, ixu, iyu, izu, ju, jl, jm
     real                 :: rcyl, xcyl, ycyl, zcyl,fpx, fpy, fpz
     real                 :: dx1, dy1, dz1
     real                 :: dist_to_fp2(8), dist_to_cent2(8), twopi
-    
+    logical              :: interiorpoint
+
     dx1=1/dx
     dy1=1/dy
     dz1=1/dz
@@ -288,11 +289,15 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
       rcyl = cylinder(icyl,iradius)
       xcyl = cylinder(icyl,ixpos)
       ycyl = cylinder(icyl,iypos)
-      zcyl = z(n)
+      zcyl = z(n1) !! Needs to be corrected in order to provide variable n in 3D
       
       ! Loop over all forcepoints on each cylinder, icyl
       do iforcepoint=1,nforcepoints
         
+        !! Marking whether fp is within this processor's domain or not 
+        interiorpoint = .true.
+
+        !! Fp coordinates
         fpx = xcyl - rcyl * sin(twopi*(iforcepoint)/nforcepoints)
         fpy = ycyl - rcyl * cos(twopi*(iforcepoint)/nforcepoints)
         fpz = z(n)
@@ -321,11 +326,10 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
               ixu=ju
             endif
           else
-            ixl=xcyl
-            ixu=xcyl
+            interiorpoint=.false.
           endif
         else
-          print*,"Need nxgrid > 1."
+          print*,"WARNING: Solid cells need nxgrid > 1."
         endif
         !
         !  Find nearest grid point in y-direction
@@ -352,11 +356,10 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
               iyu=ju
             endif
           else
-            iyl=ycyl
-            iyu=ycyl
+            interiorpoint=.false.
           end if
         else
-          print*,"Need nygrid > 1."
+          print*,"WARNING: Solid cells need nygrid > 1."
         endif
         !
         !  Find nearest grid point in z-direction
@@ -383,8 +386,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
               izu=ju
             endif
           else
-            izl=zcyl
-            izu=zcyl
+            interiorpoint=.false.
           end if
         else
           ! z direction is irrelevant when in 2D
@@ -399,51 +401,62 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
         ! Decide which ones are outside the cylinder, and which one of these
         ! is the closest one to fp:
         !
-        dist_to_fp2(1) = (x(ixl)-fpx)**2+(y(iyl)-fpy)**2+(z(izl)-fpz)**2 
-        dist_to_fp2(2) = (x(ixu)-fpx)**2+(y(iyl)-fpy)**2+(z(izl)-fpz)**2 
-        dist_to_fp2(3) = (x(ixu)-fpx)**2+(y(iyu)-fpy)**2+(z(izl)-fpz)**2 
-        dist_to_fp2(4) = (x(ixl)-fpx)**2+(y(iyu)-fpy)**2+(z(izl)-fpz)**2 
-        dist_to_fp2(5) = (x(ixl)-fpx)**2+(y(iyl)-fpy)**2+(z(izu)-fpz)**2 
-        dist_to_fp2(6) = (x(ixu)-fpx)**2+(y(iyl)-fpy)**2+(z(izu)-fpz)**2 
-        dist_to_fp2(7) = (x(ixu)-fpx)**2+(y(iyu)-fpy)**2+(z(izu)-fpz)**2 
-        dist_to_fp2(8) = (x(ixl)-fpx)**2+(y(iyu)-fpy)**2+(z(izu)-fpz)**2 
-        dist_to_cent2(1) = (x(ixl)-xcyl)**2+(y(iyl)-ycyl)**2+(z(izl)-zcyl)**2 
-        dist_to_cent2(2) = (x(ixu)-xcyl)**2+(y(iyl)-ycyl)**2+(z(izl)-zcyl)**2 
-        dist_to_cent2(3) = (x(ixu)-xcyl)**2+(y(iyu)-ycyl)**2+(z(izl)-zcyl)**2 
-        dist_to_cent2(4) = (x(ixl)-xcyl)**2+(y(iyu)-ycyl)**2+(z(izl)-zcyl)**2 
-        dist_to_cent2(5) = (x(ixl)-xcyl)**2+(y(iyl)-ycyl)**2+(z(izu)-zcyl)**2 
-        dist_to_cent2(6) = (x(ixu)-xcyl)**2+(y(iyl)-ycyl)**2+(z(izu)-zcyl)**2 
-        dist_to_cent2(7) = (x(ixu)-xcyl)**2+(y(iyu)-ycyl)**2+(z(izu)-zcyl)**2 
-        dist_to_cent2(8) = (x(ixl)-xcyl)**2+(y(iyu)-ycyl)**2+(z(izu)-zcyl)**2
-        icoordinates(1,:) = (/ixl,iyl,izl/)
-        icoordinates(2,:) = (/ixu,iyl,izl/)
-        icoordinates(3,:) = (/ixu,iyu,izl/)
-        icoordinates(4,:) = (/ixl,iyu,izl/)
-        icoordinates(5,:) = (/ixl,iyl,izu/)
-        icoordinates(6,:) = (/ixu,iyl,izu/)
-        icoordinates(7,:) = (/ixu,iyu,izu/)
-        icoordinates(8,:) = (/ixl,iyu,izu/)
-        inearest=0
-        do ipoint=1,8 ! Actually, 4 is sufficient in 2D 
-          if (dist_to_cent2(ipoint) .ge. rcyl**2 .and. inearest .eq. 0) then
-            inearest=ipoint
-          else if (dist_to_cent2(ipoint) .ge. rcyl**2) then
-            if (dist_to_fp2(ipoint) .le. dist_to_fp2(inearest)) then
+        ! Check if fp is within this processor's local domain
+        if (interiorpoint) then
+          dist_to_fp2(1) = (x(ixl)-fpx)**2+(y(iyl)-fpy)**2+(z(izl)-fpz)**2 
+          dist_to_fp2(2) = (x(ixu)-fpx)**2+(y(iyl)-fpy)**2+(z(izl)-fpz)**2 
+          dist_to_fp2(3) = (x(ixu)-fpx)**2+(y(iyu)-fpy)**2+(z(izl)-fpz)**2 
+          dist_to_fp2(4) = (x(ixl)-fpx)**2+(y(iyu)-fpy)**2+(z(izl)-fpz)**2 
+          dist_to_fp2(5) = (x(ixl)-fpx)**2+(y(iyl)-fpy)**2+(z(izu)-fpz)**2 
+          dist_to_fp2(6) = (x(ixu)-fpx)**2+(y(iyl)-fpy)**2+(z(izu)-fpz)**2 
+          dist_to_fp2(7) = (x(ixu)-fpx)**2+(y(iyu)-fpy)**2+(z(izu)-fpz)**2 
+          dist_to_fp2(8) = (x(ixl)-fpx)**2+(y(iyu)-fpy)**2+(z(izu)-fpz)**2 
+          dist_to_cent2(1) = (x(ixl)-xcyl)**2+(y(iyl)-ycyl)**2+(z(izl)-zcyl)**2 
+          dist_to_cent2(2) = (x(ixu)-xcyl)**2+(y(iyl)-ycyl)**2+(z(izl)-zcyl)**2 
+          dist_to_cent2(3) = (x(ixu)-xcyl)**2+(y(iyu)-ycyl)**2+(z(izl)-zcyl)**2 
+          dist_to_cent2(4) = (x(ixl)-xcyl)**2+(y(iyu)-ycyl)**2+(z(izl)-zcyl)**2 
+          dist_to_cent2(5) = (x(ixl)-xcyl)**2+(y(iyl)-ycyl)**2+(z(izu)-zcyl)**2 
+          dist_to_cent2(6) = (x(ixu)-xcyl)**2+(y(iyl)-ycyl)**2+(z(izu)-zcyl)**2 
+          dist_to_cent2(7) = (x(ixu)-xcyl)**2+(y(iyu)-ycyl)**2+(z(izu)-zcyl)**2 
+          dist_to_cent2(8) = (x(ixl)-xcyl)**2+(y(iyu)-ycyl)**2+(z(izu)-zcyl)**2
+          icoord(1,:) = (/ixl,iyl,izl/)
+          icoord(2,:) = (/ixu,iyl,izl/)
+          icoord(3,:) = (/ixu,iyu,izl/)
+          icoord(4,:) = (/ixl,iyu,izl/)
+          icoord(5,:) = (/ixl,iyl,izu/)
+          icoord(6,:) = (/ixu,iyl,izu/)
+          icoord(7,:) = (/ixu,iyu,izu/)
+          icoord(8,:) = (/ixl,iyu,izu/)
+          inearest=0
+          do ipoint=1,8 ! Actually, 4 is sufficient in 2D / for cylinder
+            ! Test if we are in a fluid cell, i.e.
+            ! that mod(ba(ix,iy,iz,1),10) = 0 
+            if (mod(ba(icoord(ipoint,1),icoord(ipoint,2),icoord(ipoint,3),1),10) &
+                .eq. 0 .and. inearest .eq. 0) then
               inearest=ipoint
+            else if ( &
+                mod(ba(icoord(ipoint,1),icoord(ipoint,2),icoord(ipoint,3),1),10) &
+                .eq. 0 ) then
+              if (dist_to_fp2(ipoint) .le. dist_to_fp2(inearest)) then
+                inearest=ipoint
+              end if
             end if
+          end do
+          
+          ! Coordinates of nearest grid point. Zero if outside local domain.
+          if (inearest > 0) then
+            fpnearestgrid(icyl,iforcepoint,:) = icoord(inearest,:)
+          else
+            print*, "WARNING: Could not find fpnearestgrid!"
           end if
-        end do
 
-        ! Coordinates of nearest grid point. Zero if outside local domain.
-        if (inearest > 0) then
-          fpnearestgrid(icyl,iforcepoint,:) = icoordinates(inearest,:)
-        else
+        else ! fp is outside local domain and fpnearestgrid shouldn't exist
           fpnearestgrid(icyl,iforcepoint,:) = 0
         end if
-
+        
       end do
     end do
-    
+
   end subroutine fp_nearest_grid
   !***********************************************************************  
   subroutine dsolid_dt(f,df,p)
@@ -499,7 +512,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
         do icyl=1,ncylinders
           do ifp=1,nforcepoints
             iy0=fpnearestgrid(icyl,ifp,2)
-            iz0=fpnearestgrid(icyl,ifp,3)
+            iz0=n !!fpnearestgrid(icyl,ifp,3) doesn't yet provide correct iz0
 
             ! Test: Use this pencil for force calculation?
             if (iy0 .eq. m .and. iz0 .eq. n) then
@@ -1266,7 +1279,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !  First we look in x-direction
 !
         k=l1
-        do j=m1,m2
+        do j=m1-1,m2+1
 !
 !  Check if we are inside the cylinder for y(j) (i.e. if x2>0)
 !
@@ -1277,7 +1290,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !
             xval_p=cylinder(icyl,2)+sqrt(x2)
             xval_m=cylinder(icyl,2)-sqrt(x2)            
-            do i=l1,l2
+            do i=l1-1,l2+1
               if (x(i)<xval_p .and. x(i)>xval_m) then
                 !
                 if (x(i+1)>xval_p) then
@@ -1352,7 +1365,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !
 !  Then we look in y-direction
 !
-        do i=l1,l2
+        do i=l1-1,l2+1
 !
 !  Check if we are inside the cylinder for x(i) (i.e. if y2>0)
 !
@@ -1363,7 +1376,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !
             yval_p=cylinder(icyl,3)+sqrt(y2)
             yval_m=cylinder(icyl,3)-sqrt(y2)            
-            do j=m1,m2
+            do j=m1-1,m2+1
               if (y(j)<yval_p .and. y(j)>yval_m) then
                 if (y(j+1)>yval_p) then
                   if (.not. ba_defined(i,j)) then
@@ -1445,8 +1458,8 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !
 !  Loop over all points
 !
-          do i=l1,l2
-            do j=m1,m2
+          do i=l1-1,l2+1
+            do j=m1-1,m2+1
               r_point=sqrt(((x(i)-x_cyl)**2+(y(j)-y_cyl)**2))
               dr=r_point-r_cyl
               if ((dr > 0) .and. (dr<limit_close_linear)) then
