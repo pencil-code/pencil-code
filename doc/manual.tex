@@ -3577,16 +3577,14 @@ Note that we can only reasonably calculate $P(k)$ for $k < \pi N_x/L_x$.
 To get power spectra from the code, edit \file{run.in} and add for example
 the following lines
 \begin{alltt}
-  dspec=2.3,
-  ou_spec=T,ab_spec=T,
-  fft_switch='fftpack',
-  oned=T \
+  dspec=5., ou_spec=T, ab_spec=T !(for energy spectra)
+  oned=T
 \end{alltt}
 under \code{run_pars}.
 The kinetic (\code{vel_spec}) and magnetic  (\code{mag_spec}) power spectra
-will now be calculated every 2.3 (\code{dspec}) time units.
-The Fourier spectra is calculated using \name{fftpack}
-(\code{fft_switch}). In addition to calculating the three-dimensional
+will now be calculated every 5.0 (\code{dspec}) time units.
+The Fourier spectra is calculated using \name{fftpack}.
+In addition to calculating the three-dimensional
 power spectra also the one-dimensional power spectra will be calculated
 (\code{oned}).
 
@@ -3597,8 +3595,8 @@ In addition one must edit
    POWER=power_spectrum
 \end{alltt}
 
-Running the code will now create the files \file{powerb.dat} and
-\file{poweru.dat} containing the three-dimensional
+Running the code will now create the files \file{powerhel_mag.dat} and
+\file{power_kin.dat} containing the three-dimensional
 magnetic and kinetic power spectra respectively. In addition to these
 three-dimensional files we will also find the one-dimensional files
 \file{powerbx_x.dat},
@@ -3612,6 +3610,12 @@ time of the snapshot, the following $\var{nxgrid}/2$ numbers represent the
 power at each wavenumber, from the smallest to the largest.
 If several snapshots have been saved, they are being stored immediately
 following the preceding snapshot.
+
+You can read the results with the idl procure \file{power}, like this:
+\begin{alltt}
+  power,'_kin','_mag',k=k,spec1=spec1,spec2=spec2,i=n,tt=t,/noplot
+  power,'hel_kin','hel_mag',k=k,spec1=spec1h,spec2=spec2h,i=n,tt=t,/noplot
+\end{alltt}
 
 A caveat of the implementation of Fourier transforms on the Pencil
 code is that due to the parallelization, the permitted resolution
@@ -8071,6 +8075,20 @@ $\sigma\approx\left<\vec{\omega}\cdot\uv\right>/(k_{\rm f}
 \left<\uv^2\right>)$; see Sect.~4.5 of Ref.~\cite{BDS02}.
 In the code and the \name{forcing_run_pars} namelist,
 $\sigma$ is called \var{relhel}.
+
+In the code, the possible wavevectors are pre-calculated and stored in
+\file{k.dat}, which is being read in the beginning the code runs.
+To change the wavevectors (e.g.\ the typical value of $k_{\rm f}$,
+you need to change the file.
+In the directory \file{\${PENCIL_HOME}/samples/helical-MHDturb/K_VECTORS/}
+there are several such files prepared:
+\begin{verbatim}
+   k10.dat  k1.dat   k2.dat   k3.dat  k5.dat
+   k15.dat  k27.dat  k30.dat  k4.dat  k8.dat
+\end{verbatim}
+and more can be prepared in \cmd{IDL} with the procedure
+\file{\${PENCIL_HOME}/samples/helical-MHDturb/idl/generate_kvectors.pro}
+There is also more help in the \file{README} file in \file{helical-MHDturb}.
 
 % ---------------------------------------------------------------------- %
 
