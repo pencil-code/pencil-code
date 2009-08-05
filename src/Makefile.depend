@@ -246,9 +246,9 @@ test.o:      test.f90 $(test_deps)
 # Explict dependencies for the Fourier routines to allow them to pull in
 # different library routines.
 #
-fft.o : fft.f
+fft.o: fft.f
 #
-fftpack.o : fftpack.f
+fftpack.o: fftpack.f90
 #
 nofourier.o: nofourier.f90 fourier.h $(MESSAGES_OBJ) $(MPICOMM_FIX).o sub.o cparam.o cdata.o
 #
