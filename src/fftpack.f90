@@ -1,8 +1,3 @@
-!  $Id$
-!
-!  downloaded from:
-!  http://www.psc.edu/~burkardt/src/fftpack/fftpack.html
-!
 subroutine cfftb ( n, c, wsave )
 !
 !*******************************************************************************
@@ -23,7 +18,7 @@ subroutine cfftb ( n, c, wsave )
 !
 !    The transform is defined by:
 !
-!      C_out(J) = sum ( 1 <= K <= N )
+!      C_out(J) = sum ( 1 <= K <= N ) 
 !        C_in(K) * exp ( sqrt ( - 1 ) * ( J - 1 ) * ( K - 1 ) * 2 * PI / N )
 !
 !  Modified:
@@ -41,19 +36,21 @@ subroutine cfftb ( n, c, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber,
-!    Vectorizing the FFT's,
-!    in Parallel Computations (G. Rodrigue, editor),
+!    P N Swarztrauber, 
+!    Vectorizing the FFT's, 
+!    in Parallel Computations,
+!    G. Rodrigue, editor, 
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee,
-!    The SLATEC Common Math Library,
-!    in Sources and Development of Mathematical Software (W. Cowell, editor),
+!    B L Buzbee, 
+!    The SLATEC Common Math Library, 
+!    in Sources and Development of Mathematical Software,
+!    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the sequence to be transformed.
+!    Input, integer N, the length of the sequence to be transformed.  
 !    The method is more efficient when N is the product of small primes.
 !
 !    Input/output, complex C(N).
@@ -61,9 +58,11 @@ subroutine cfftb ( n, c, wsave )
 !    On output, C contains the sequence of data values that correspond
 !    to the input coefficients.
 !
-!    Input, real WSAVE(4*N+15).  The array must be initialized by calling
+!    Input, real WSAVE(4*N+15).  The array must be initialized by calling 
 !    CFFTI.  A different WSAVE array must be used for each different
-!    value of N.
+!    value of N.  
+!
+  implicit none
 !
   integer n
 !
@@ -96,7 +95,7 @@ subroutine cfftb1 ( n, c, ch, wa, ifac )
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the sequence to be transformed.
+!    Input, integer N, the length of the sequence to be transformed.  
 !
 !    Input/output, complex C(N).
 !    On input, C contains the sequence of Fourier coefficients.
@@ -111,6 +110,8 @@ subroutine cfftb1 ( n, c, ch, wa, ifac )
 !    IFAC(1) = N, the number that was factored.
 !    IFAC(2) = NF, the number of factors.
 !    IFAC(3:2+NF), the factors.
+!
+  implicit none
 !
   integer n
 !
@@ -170,7 +171,7 @@ subroutine cfftb1 ( n, c, ch, wa, ifac )
     else if ( ip == 3 ) then
 
       ix2 = iw + 2 * ido
-
+ 
       if ( na == 0 ) then
         call passb3 ( 2*ido, l1, c, ch, wa(iw), wa(ix2) )
       else
@@ -230,7 +231,7 @@ subroutine cfftb_2d ( ldf, n, f, wsave )
 !    The routine computes the backward two dimensional fast Fourier transform,
 !    of a complex N by N matrix of data.
 !
-!    The output is unscaled, that is, a call to CFFTB_2D followed by a call
+!    The output is unscaled, that is, a call to CFFTB_2D followed by a call 
 !    to CFFTF_2D will return the original data multiplied by N*N.
 !
 !    For some applications it is desirable to have the transform scaled so
@@ -263,6 +264,8 @@ subroutine cfftb_2d ( ldf, n, f, wsave )
 !
 !    Input, real WSAVE(4*N+15), a work array whose values depend on N,
 !    and which must be initialized by calling CFFTI.
+!
+  implicit none
 !
   integer ldf
   integer n
@@ -310,7 +313,7 @@ subroutine cfftf ( n, c, wsave )
 !
 !    The transform is defined by:
 !
-!      C_out(J) = sum ( 1 <= K <= N )
+!      C_out(J) = sum ( 1 <= K <= N ) 
 !        C_in(K) * exp ( - sqrt ( -1 ) * ( J - 1 ) * ( K - 1 ) * 2 * PI / N )
 !
 !  Modified:
@@ -328,28 +331,32 @@ subroutine cfftf ( n, c, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber,
-!    Vectorizing the FFT's,
-!    in Parallel Computations (G. Rodrigue, editor),
+!    P N Swarztrauber, 
+!    Vectorizing the FFT's, 
+!    in Parallel Computations,
+!    G. Rodrigue, editor, 
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee,
-!    The SLATEC Common Math Library,
-!    in Sources and Development of Mathematical Software (W. Cowell, editor),
+!    B L Buzbee, 
+!    The SLATEC Common Math Library, 
+!    in Sources and Development of Mathematical Software,
+!    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the sequence to be transformed.
+!    Input, integer N, the length of the sequence to be transformed.  
 !    The method is more efficient when N is the product of small primes.
 !
 !    Input/output, complex C(N).
 !    On input, the data sequence to be transformed.
 !    On output, the Fourier coefficients.
 !
-!    Input, real WSAVE(4*N+15).  The array must be initialized by calling
+!    Input, real WSAVE(4*N+15).  The array must be initialized by calling 
 !    CFFTI.  A different WSAVE array must be used for each different
-!    value of N.
+!    value of N. 
+!
+  implicit none
 !
   integer n
 !
@@ -382,7 +389,7 @@ subroutine cfftf1 ( n, c, ch, wa, ifac )
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the sequence to be transformed.
+!    Input, integer N, the length of the sequence to be transformed.  
 !
 !    Input/output, complex C(N).
 !    On input, the data sequence to be transformed.
@@ -396,6 +403,8 @@ subroutine cfftf1 ( n, c, ch, wa, ifac )
 !    IFAC(1) = N, the number that was factored.
 !    IFAC(2) = NF, the number of factors.
 !    IFAC(3:2+NF), the factors.
+!
+  implicit none
 !
   integer n
 !
@@ -433,7 +442,7 @@ subroutine cfftf1 ( n, c, ch, wa, ifac )
 
       ix2 = iw + 2 * ido
       ix3 = ix2 + 2 * ido
-
+ 
       if ( na == 0 ) then
         call passf4 ( 2*ido, l1, c, ch, wa(iw), wa(ix2), wa(ix3) )
       else
@@ -550,6 +559,8 @@ subroutine cfftf_2d ( ldf, n, f, wsave )
 !    Input, real WSAVE(4*N+15), a work array whose values depend on N,
 !    and which must be initialized by calling CFFTI.
 !
+  implicit none
+!
   integer ldf
   integer n
 !
@@ -579,12 +590,12 @@ subroutine cffti ( n, wsave )
 !
 !*******************************************************************************
 !
-!! CFFTI initializes WSAVE, used in CFFTF and CFFTB.
+!! CFFTI initializes WSAVE, used in CFFTF and CFFTB. 
 !
 !
 !  Discussion:
 !
-!    The prime factorization of N together with a tabulation of the
+!    The prime factorization of N together with a tabulation of the 
 !    trigonometric functions are computed and stored in WSAVE.
 !
 !  Modified:
@@ -602,14 +613,16 @@ subroutine cffti ( n, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber,
-!    Vectorizing the FFT's,
-!    in Parallel Computations (G. Rodrigue, editor),
+!    P N Swarztrauber, 
+!    Vectorizing the FFT's, 
+!    in Parallel Computations,
+!    G. Rodrigue, editor, 
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee,
-!    The SLATEC Common Math Library,
-!    in Sources and Development of Mathematical Software (W. Cowell, editor),
+!    B L Buzbee, 
+!    The SLATEC Common Math Library, 
+!    in Sources and Development of Mathematical Software,
+!    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
@@ -617,7 +630,9 @@ subroutine cffti ( n, wsave )
 !    Input, integer N, the length of the sequence to be transformed.
 !
 !    Output, real WSAVE(4*N+15), contains data, dependent on the value
-!    of N, which is necessary for the CFFTF or CFFTB routines.
+!    of N, which is necessary for the CFFTF or CFFTB routines.  
+!
+  implicit none
 !
   integer n
 !
@@ -658,6 +673,8 @@ subroutine cffti1 ( n, wa, ifac )
 !    IFAC(2) = NF, the number of factors.
 !    IFAC(3:2+NF), the factors.
 !
+  implicit none
+!
   integer n
 !
   real arg
@@ -677,14 +694,14 @@ subroutine cffti1 ( n, wa, ifac )
   integer l2
   integer ld
   integer nf
-  real pimach
+  real r_pi
   real wa(2*n)
 !
   call i_factor ( n, ifac )
 
   nf = ifac(2)
 
-  argh = 2.0E+00 * pimach() / real ( n )
+  argh = 2.0E+00 * r_pi ( ) / real ( n )
   i = 2
   l1 = 1
 
@@ -729,17 +746,17 @@ subroutine cosqb ( n, x, wsave )
 !
 !*******************************************************************************
 !
-!! COSQB computes the fast cosine transform of quarter wave data.
+!! COSQB computes the fast cosine transform of quarter wave data. 
 !
 !
 !  Discussion:
 !
-!    COSQB computes a sequence from its representation in terms of a cosine
+!    COSQB computes a sequence from its representation in terms of a cosine 
 !    series with odd wave numbers.
 !
 !    The transform is defined by:
 !
-!      X_out(I) = sum ( 1 <= K <= N )
+!      X_out(I) = sum ( 1 <= K <= N ) 
 !
 !        4 * X_in(K) * cos ( ( 2 * K - 1 ) * ( I - 1 ) * PI / ( 2 * N ) )
 !
@@ -763,14 +780,16 @@ subroutine cosqb ( n, x, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber,
-!    Vectorizing the FFT's,
-!    in Parallel Computations (G. Rodrigue, editor),
+!    P N Swarztrauber, 
+!    Vectorizing the FFT's, 
+!    in Parallel Computations,
+!    G. Rodrigue, editor, 
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee,
-!    The SLATEC Common Math Library,
-!    in Sources and Development of Mathematical Software (W. Cowell, editor),
+!    B L Buzbee, 
+!    The SLATEC Common Math Library, 
+!    in Sources and Development of Mathematical Software,
+!    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
@@ -782,10 +801,12 @@ subroutine cosqb ( n, x, wsave )
 !    On input, the cosine series coefficients.
 !    On output, the corresponding data vector.
 !
-!    Input, real WSAVE(3*N+15), contains data, depending on N, and
-!    required by the algorithm.  The WSAVE array must be initialized by
+!    Input, real WSAVE(3*N+15), contains data, depending on N, and 
+!    required by the algorithm.  The WSAVE array must be initialized by 
 !    calling COSQI.  A different WSAVE array must be used for each different
-!    value of N.
+!    value of N. 
+!
+  implicit none
 !
   integer n
 !
@@ -824,7 +845,7 @@ subroutine cosqb1 ( n, x, w, xh )
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the array.
+!    Input, integer N, the length of the array.  
 !
 !    Input/output, real X(N).
 !    On input, the cosine series coefficients.
@@ -833,6 +854,8 @@ subroutine cosqb1 ( n, x, w, xh )
 !    Input, real W(N).
 !
 !    Input, real XH(2*N+15).
+!
+  implicit none
 !
   integer n
 !
@@ -885,13 +908,13 @@ subroutine cosqf ( n, x, wsave )
 !
 !*******************************************************************************
 !
-!! COSQF computes the fast cosine transform of quarter wave data.
+!! COSQF computes the fast cosine transform of quarter wave data. 
 !
 !
 !  Discussion:
 !
-!    COSQF computes the coefficients in a cosine series representation
-!    with only odd wave numbers.
+!    COSQF computes the coefficients in a cosine series representation 
+!    with only odd wave numbers. 
 !
 !    COSQF is the unnormalized inverse of COSQB since a call of COSQF
 !    followed by a call of COSQB will multiply the input sequence X
@@ -920,14 +943,16 @@ subroutine cosqf ( n, x, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber,
-!    Vectorizing the FFT's,
-!    in Parallel Computations (G. Rodrigue, editor),
+!    P N Swarztrauber, 
+!    Vectorizing the FFT's, 
+!    in Parallel Computations,
+!    G. Rodrigue, editor, 
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee,
-!    The SLATEC Common Math Library,
-!    in Sources and Development of Mathematical Software (W. Cowell, editor),
+!    B L Buzbee, 
+!    The SLATEC Common Math Library, 
+!    in Sources and Development of Mathematical Software,
+!    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
@@ -939,10 +964,12 @@ subroutine cosqf ( n, x, wsave )
 !    On input, the data to be transformed.
 !    On output, the transformed data.
 !
-!    Input, real WSAVE(3*N+15), contains data, depending on N, and
-!    required by the algorithm.  The WSAVE array must be initialized by
+!    Input, real WSAVE(3*N+15), contains data, depending on N, and 
+!    required by the algorithm.  The WSAVE array must be initialized by 
 !    calling COSQI.  A different WSAVE array must be used for each different
-!    value of N.
+!    value of N. 
+!
+  implicit none
 !
   integer n
 !
@@ -981,7 +1008,7 @@ subroutine cosqf1 ( n, x, w, xh )
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the array to be transformed.
+!    Input, integer N, the length of the array to be transformed.  
 !
 !    Input/output, real X(N).
 !    On input, the data to be transformed.
@@ -990,6 +1017,8 @@ subroutine cosqf1 ( n, x, w, xh )
 !    Input, real W(N).
 !
 !    Input, real XH(2*N+15).
+!
+  implicit none
 !
   integer n
 !
@@ -1038,12 +1067,12 @@ subroutine cosqi ( n, wsave )
 !
 !*******************************************************************************
 !
-!! COSQI initializes WSAVE, used in COSQF and COSQB.
+!! COSQI initializes WSAVE, used in COSQF and COSQB. 
 !
 !
 !  Discussion:
 !
-!    The prime factorization of N together with a tabulation of the
+!    The prime factorization of N together with a tabulation of the 
 !    trigonometric functions are computed and stored in WSAVE.
 !
 !  Modified:
@@ -1061,32 +1090,36 @@ subroutine cosqi ( n, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber,
-!    Vectorizing the FFT's,
-!    in Parallel Computations (G. Rodrigue, editor),
+!    P N Swarztrauber, 
+!    Vectorizing the FFT's, 
+!    in Parallel Computations,
+!    G. Rodrigue, editor, 
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee,
-!    The SLATEC Common Math Library,
-!    in Sources and Development of Mathematical Software (W. Cowell, editor),
+!    B L Buzbee, 
+!    The SLATEC Common Math Library, 
+!    in Sources and Development of Mathematical Software,
+!    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the array to be transformed.  The method
+!    Input, integer N, the length of the array to be transformed.  The method 
 !    is more efficient when N is the product of small primes.
 !
-!    Output, real WSAVE(3*N+15), contains data, depending on N, and
-!    required by the COSQB and COSQF algorithms.
+!    Output, real WSAVE(3*N+15), contains data, depending on N, and 
+!    required by the COSQB and COSQF algorithms.  
+!
+  implicit none
 !
   integer n
 !
   real dt
   integer k
-  real pimach
+  real r_pi
   real wsave(3*n+15)
 !
-  dt = 0.5E+00 * pimach() / real ( n )
+  dt = 0.5E+00 * r_pi ( ) / real ( n )
 
   do k = 1, n
     wsave(k) = cos ( real ( k ) * dt )
@@ -1096,20 +1129,846 @@ subroutine cosqi ( n, wsave )
 
   return
 end
-subroutine cost ( n, x, wsave )
+subroutine cvec_print_some ( n, x, max_print, title )
 !
 !*******************************************************************************
 !
-!! COST computes the discrete Fourier cosine transform of an even sequence.
+!! CVEC_PRINT_SOME prints some of a complex vector.
 !
 !
 !  Discussion:
 !
-!    COST is the unnormalized inverse of itself since a call of COST
-!    followed by another call of COST will multiply the input sequence
-!    X by 2*(N-1).
+!    The user specifies MAX_PRINT, the maximum number of lines to print.
 !
-!    The array WSAVE must be initialized by calling COSTI.
+!    If N, the size of the vector, is no more than MAX_PRINT, then
+!    the entire vector is printed, one entry per line.
+!
+!    Otherwise, if possible, the first MAX_PRINT-2 entries are printed,
+!    followed by a line of periods suggesting an omission,
+!    and the last entry.
+!
+!  Modified:
+!
+!    17 December 2001
+!
+!  Author:
+!
+!    John Burkardt
+!
+!  Parameters:
+!
+!    Input, integer N, the number of entries of the vector.
+!
+!    Input, complex X(N), the vector to be printed.
+!
+!    Input, integer MAX_PRINT, the maximum number of lines to print.
+!
+!    Input, character ( len = * ) TITLE, an optional title.
+!
+  implicit none
+!
+  integer n
+!
+  integer i
+  integer max_print
+  character ( len = * ) title
+  complex x(n)
+!
+  if ( max_print <= 0 ) then
+    return
+  end if
+
+  if ( n <= 0 ) then
+    return
+  end if
+
+  if ( len_trim ( title ) > 0 ) then
+    write ( *, '(a)' ) ' '
+    write ( *, '(a)' ) trim ( title )
+    write ( *, '(a)' ) ' '
+  end if
+
+  if ( n <= max_print ) then
+
+    do i = 1, n
+      write ( *, '(i6,2x,2g14.6)' ) i, x(i)
+    end do
+
+  else if ( max_print >= 3 ) then
+
+    do i = 1, max_print-2
+      write ( *, '(i6,2x,2g14.6)' ) i, x(i)
+    end do
+    write ( *, '(a)' ) '......  ..............'
+    i = n
+    write ( *, '(i6,2x,2g14.6)' ) i, x(i)
+
+  else
+
+    do i = 1, max_print - 1
+      write ( *, '(i6,2x,2g14.6)' ) i, x(i)
+    end do
+    i = max_print
+    write ( *, '(i6,2x,2g14.6,2x,a)' ) i, x(i), '...more entries...'
+
+  end if
+
+  return
+end
+subroutine cvec_random ( alo, ahi, n, a )
+!
+!*******************************************************************************
+!
+!! CVEC_RANDOM returns a random complex vector in a given range.
+!
+!
+!  Modified:
+!
+!    08 March 2001
+!
+!  Author:
+!
+!    John Burkardt
+!
+!  Parameters:
+!
+!    Input, real ALO, AHI, the range allowed for the entries.
+!
+!    Input, integer N, the number of entries in the vector.
+!
+!    Output, complex A(N), the vector of randomly chosen values.
+!
+  implicit none
+!
+  integer n
+!
+  complex a(n)
+  real ahi
+  real ai
+  real alo
+  real ar
+  integer i
+!
+  do i = 1, n
+
+    call r_random ( alo, ahi, ar )
+    call r_random ( alo, ahi, ai )
+
+    a(i) = cmplx ( ar, ai )
+
+  end do
+
+  return
+end
+function d_pi ()
+!
+!*******************************************************************************
+!
+!! D_PI returns the value of pi.
+!
+!
+!  Modified:
+!
+!    07 January 2002
+!
+!  Author:
+!
+!    John Burkardt
+!
+!  Parameters:
+!
+!    Output, double precision D_PI, the value of PI.
+!
+  implicit none
+!
+  double precision d_pi
+!
+  d_pi = 3.14159265358979323846264338327950288419716939937510D+00
+
+  return
+end
+subroutine d_random ( dlo, dhi, d )
+!
+!*******************************************************************************
+!
+!! D_RANDOM returns a random double precision value in a given range.
+!
+!
+!  Modified:
+!
+!    19 December 2001
+!
+!  Author:
+!
+!    John Burkardt
+!
+!  Parameters:
+!
+!    Input, double precision DLO, DHI, the minimum and maximum values.
+!
+!    Output, double precision D, the randomly chosen value.
+!
+  implicit none
+!
+  double precision d
+  double precision dhi
+  double precision dlo
+  double precision t
+!
+!  Pick T, a random number in (0,1).
+!
+  call random_number ( harvest = t )
+!
+!  Set D in ( DLO, DHI ).
+!
+  d = ( 1.0D+00 - dble ( t ) ) * dlo + dble ( t ) * dhi
+
+  return
+end
+subroutine dadf2 ( ido, l1, cc, ch, wa1 )
+!
+!*******************************************************************************
+!
+!! DADF2 is a lower level routine used by DFFTF1.
+!
+!
+!  Modified:
+!
+!    07 January 2002
+!
+!  Author:
+!
+!    Paul Swarztrauber,
+!    National Center for Atmospheric Research
+!
+!  Parameters:
+!
+  implicit none
+!
+  integer ido
+  integer l1
+!
+  double precision cc(ido,l1,2)
+  double precision ch(ido,2,l1)
+  integer i
+  integer ic
+  integer k
+  double precision ti2
+  double precision tr2
+  double precision wa1(ido)
+!
+  ch(1,1,1:l1)   = cc(1,1:l1,1) + cc(1,1:l1,2)
+  ch(ido,2,1:l1) = cc(1,1:l1,1) - cc(1,1:l1,2)
+
+  if ( ido < 2 ) then
+    return
+  end if
+
+  if ( ido > 2 ) then
+
+    do k = 1, l1
+      do i = 3, ido, 2
+
+        ic = ido + 2 - i
+
+        tr2 = wa1(i-2) * cc(i-1,k,2) + wa1(i-1) * cc(i,k,2)
+        ti2 = wa1(i-2) * cc(i,k,2)   - wa1(i-1) * cc(i-1,k,2)
+
+        ch(i,1,k) = cc(i,k,1) + ti2
+        ch(ic,2,k) = ti2 - cc(i,k,1)
+        ch(i-1,1,k) = cc(i-1,k,1) + tr2
+        ch(ic-1,2,k) = cc(i-1,k,1) - tr2
+
+      end do
+    end do
+
+    if ( mod ( ido, 2 ) == 1 ) then
+      return
+    end if
+
+  end if
+
+  ch(1,2,1:l1) = -cc(ido,1:l1,2)
+  ch(ido,1,1:l1) = cc(ido,1:l1,1)
+
+  return
+end
+subroutine dadf3 ( ido, l1, cc, ch, wa1, wa2 )
+!
+!*******************************************************************************
+!
+!! DADF3 is a lower level routine used by DFFTF1.
+!
+!
+!  Modified:
+!
+!    07 January 2002
+!
+!  Author:
+!
+!    Paul Swarztrauber,
+!    National Center for Atmospheric Research
+!
+!  Parameters:
+!
+  implicit none
+!
+  integer ido
+  integer l1
+!
+  double precision cc(ido,l1,3)
+  double precision ch(ido,3,l1)
+  double precision ci2
+  double precision cr2
+  double precision di2
+  double precision di3
+  double precision dr2
+  double precision dr3
+  integer i
+  integer ic
+  integer k
+  double precision taui
+  double precision, parameter :: taur = -0.5D+00
+  double precision ti2
+  double precision ti3
+  double precision tr2
+  double precision tr3
+  double precision wa1(ido)
+  double precision wa2(ido)
+!
+  taui = sqrt ( 3.0D+00 ) / 2.0D+00
+
+  do k = 1, l1
+    cr2 = cc(1,k,2) + cc(1,k,3)
+    ch(1,1,k) = cc(1,k,1) + cr2
+    ch(1,3,k) = taui * ( cc(1,k,3) - cc(1,k,2) )
+    ch(ido,2,k) = cc(1,k,1) + taur * cr2
+  end do
+
+  if ( ido == 1 ) then
+    return
+  end if
+
+  do k = 1, l1
+    do i = 3, ido, 2
+
+      ic = ido + 2 - i
+
+      dr2 = wa1(i-2) * cc(i-1,k,2) + wa1(i-1) * cc(i,k,2)
+      di2 = wa1(i-2) * cc(i,k,2)   - wa1(i-1) * cc(i-1,k,2)
+      dr3 = wa2(i-2) * cc(i-1,k,3) + wa2(i-1) * cc(i,k,3)
+      di3 = wa2(i-2) * cc(i,k,3)   - wa2(i-1) * cc(i-1,k,3)
+
+      cr2 = dr2 + dr3
+      ci2 = di2 + di3
+
+      ch(i-1,1,k) = cc(i-1,k,1) + cr2
+      ch(i,1,k)   = cc(i,k,1) + ci2
+
+      tr2 = cc(i-1,k,1) + taur * cr2
+      ti2 = cc(i,k,1) + taur * ci2
+      tr3 = taui * ( di2 - di3 )
+      ti3 = taui * ( dr3 - dr2 )
+
+      ch(i-1,3,k) = tr2 + tr3
+      ch(ic-1,2,k) = tr2 - tr3
+      ch(i,3,k) = ti2 + ti3
+      ch(ic,2,k) = ti3 - ti2
+
+    end do
+  end do
+
+  return
+end
+subroutine dadf4 ( ido, l1, cc, ch, wa1, wa2, wa3 )
+!
+!*******************************************************************************
+!
+!! DADF4 is a lower level routine used by DFFTF1.
+!
+!
+!  Modified:
+!
+!    07 January 2002
+!
+!  Author:
+!
+!    Paul Swarztrauber,
+!    National Center for Atmospheric Research
+!
+!  Parameters:
+!
+  implicit none
+!
+  integer ido
+  integer l1
+!
+  double precision cc(ido,l1,4)
+  double precision ch(ido,4,l1)
+  double precision ci2
+  double precision ci3
+  double precision ci4
+  double precision cr2
+  double precision cr3
+  double precision cr4
+  double precision hsqt2
+  integer i
+  integer ic
+  integer k
+  double precision ti1
+  double precision ti2
+  double precision ti3
+  double precision ti4
+  double precision tr1
+  double precision tr2
+  double precision tr3
+  double precision tr4
+  double precision wa1(ido)
+  double precision wa2(ido)
+  double precision wa3(ido)
+!
+  hsqt2 = sqrt ( 2.0D+00 ) / 2.0D+00
+
+  do k = 1, l1
+    tr1 = cc(1,k,2) + cc(1,k,4)
+    tr2 = cc(1,k,1) + cc(1,k,3)
+    ch(1,1,k) = tr1 + tr2
+    ch(ido,4,k) = tr2 - tr1
+    ch(ido,2,k) = cc(1,k,1) - cc(1,k,3)
+    ch(1,3,k) = cc(1,k,4) - cc(1,k,2)
+  end do
+
+  if ( ido < 2 ) then
+    return
+  end if
+
+  if ( ido > 2 ) then
+
+    do k = 1, l1
+      do i = 3, ido, 2
+
+        ic = ido + 2 - i
+
+        cr2 = wa1(i-2) * cc(i-1,k,2) + wa1(i-1) * cc(i,k,2)
+        ci2 = wa1(i-2) * cc(i,k,2)   - wa1(i-1) * cc(i-1,k,2)
+        cr3 = wa2(i-2) * cc(i-1,k,3) + wa2(i-1) * cc(i,k,3)
+        ci3 = wa2(i-2) * cc(i,k,3)   - wa2(i-1) * cc(i-1,k,3)
+        cr4 = wa3(i-2) * cc(i-1,k,4) + wa3(i-1) * cc(i,k,4)
+        ci4 = wa3(i-2) * cc(i,k,4)   - wa3(i-1) * cc(i-1,k,4)
+
+        tr1 = cr2 + cr4
+        tr4 = cr4 - cr2
+        ti1 = ci2 + ci4
+        ti4 = ci2 - ci4
+        ti2 = cc(i,k,1) + ci3
+        ti3 = cc(i,k,1) - ci3
+        tr2 = cc(i-1,k,1) + cr3
+        tr3 = cc(i-1,k,1) - cr3
+
+        ch(i-1,1,k)  = tr1 + tr2
+        ch(ic-1,4,k) = tr2 - tr1
+        ch(i,1,k)    = ti1 + ti2
+        ch(ic,4,k)   = ti1 - ti2
+        ch(i-1,3,k)  = ti4 + tr3
+        ch(ic-1,2,k) = tr3 - ti4
+        ch(i,3,k)    = tr4 + ti3
+        ch(ic,2,k)   = tr4 - ti3
+
+      end do
+    end do
+
+    if ( mod ( ido, 2 ) == 1 ) then
+      return
+    end if
+
+  end if
+
+  do k = 1, l1
+
+    ti1 = -hsqt2 * ( cc(ido,k,2) + cc(ido,k,4) )
+    tr1 =  hsqt2 * ( cc(ido,k,2) - cc(ido,k,4) )
+
+    ch(ido,1,k) = tr1 + cc(ido,k,1)
+    ch(ido,3,k) = cc(ido,k,1) - tr1
+
+    ch(1,2,k) = ti1 - cc(ido,k,3)
+    ch(1,4,k) = ti1 + cc(ido,k,3)
+
+  end do
+
+  return
+end
+subroutine dadf5 ( ido, l1, cc, ch, wa1, wa2, wa3, wa4 )
+!
+!*******************************************************************************
+!
+!! DADF5 is a lower level routine used by DFFTF1.
+!
+!
+!  Modified:
+!
+!    07 January 2002
+!
+!  Author:
+!
+!    Paul Swarztrauber,
+!    National Center for Atmospheric Research
+!
+!  Parameters:
+!
+  implicit none
+!
+  integer ido
+  integer l1
+!
+  double precision cc(ido,l1,5)
+  double precision ch(ido,5,l1)
+  double precision ci2
+  double precision ci3
+  double precision ci4
+  double precision ci5
+  double precision cr2
+  double precision cr3
+  double precision cr4
+  double precision cr5
+  double precision di2
+  double precision di3
+  double precision di4
+  double precision di5
+  double precision dr2
+  double precision dr3
+  double precision dr4
+  double precision dr5
+  integer i
+  integer ic
+  integer k
+  double precision, parameter :: ti11 =  0.951056516295154D+00
+  double precision, parameter :: ti12 =  0.587785252292473D+00
+  double precision ti2
+  double precision ti3
+  double precision ti4
+  double precision ti5
+  double precision, parameter :: tr11 =  0.309016994374947D+00
+  double precision, parameter :: tr12 = -0.809016994374947D+00
+  double precision tr2
+  double precision tr3
+  double precision tr4
+  double precision tr5
+  double precision wa1(ido)
+  double precision wa2(ido)
+  double precision wa3(ido)
+  double precision wa4(ido)
+!
+  do k = 1, l1
+
+    cr2 = cc(1,k,5) + cc(1,k,2)
+    ci5 = cc(1,k,5) - cc(1,k,2)
+    cr3 = cc(1,k,4) + cc(1,k,3)
+    ci4 = cc(1,k,4) - cc(1,k,3)
+
+    ch(1,1,k)   = cc(1,k,1) + cr2 + cr3
+    ch(ido,2,k) = cc(1,k,1) + tr11 * cr2 + tr12 * cr3
+    ch(1,3,k)   = ti11 * ci5 + ti12 * ci4
+    ch(ido,4,k) = cc(1,k,1) + tr12 * cr2 + tr11 * cr3
+    ch(1,5,k)   = ti12 * ci5 - ti11 * ci4
+
+  end do
+
+  if ( ido == 1 ) then
+    return
+  end if
+
+  do k = 1, l1
+    do i = 3, ido, 2
+
+      ic = ido + 2 - i
+
+      dr2 = wa1(i-2) * cc(i-1,k,2) + wa1(i-1) * cc(i,k,2)
+      di2 = wa1(i-2) * cc(i,k,2)   - wa1(i-1) * cc(i-1,k,2)
+      dr3 = wa2(i-2) * cc(i-1,k,3) + wa2(i-1) * cc(i,k,3)
+      di3 = wa2(i-2) * cc(i,k,3)   - wa2(i-1) * cc(i-1,k,3)
+      dr4 = wa3(i-2) * cc(i-1,k,4) + wa3(i-1) * cc(i,k,4)
+      di4 = wa3(i-2) * cc(i,k,4)   - wa3(i-1) * cc(i-1,k,4)
+      dr5 = wa4(i-2) * cc(i-1,k,5) + wa4(i-1) * cc(i,k,5)
+      di5 = wa4(i-2) * cc(i,k,5)   - wa4(i-1) * cc(i-1,k,5)
+
+      cr2 = dr2 + dr5
+      ci5 = dr5 - dr2
+      cr5 = di2 - di5
+      ci2 = di2 + di5
+      cr3 = dr3 + dr4
+      ci4 = dr4 - dr3
+      cr4 = di3 - di4
+      ci3 = di3 + di4
+
+      ch(i-1,1,k) = cc(i-1,k,1) + cr2 + cr3
+      ch(i,1,k)   = cc(i,k,1)   + ci2 + ci3
+
+      tr2 = cc(i-1,k,1) + tr11 * cr2 + tr12 * cr3
+      ti2 = cc(i,k,1)   + tr11 * ci2 + tr12 * ci3
+      tr3 = cc(i-1,k,1) + tr12 * cr2 + tr11 * cr3
+      ti3 = cc(i,k,1)   + tr12 * ci2 + tr11 * ci3
+
+      tr5 = ti11 * cr5 + ti12 * cr4
+      ti5 = ti11 * ci5 + ti12 * ci4
+      tr4 = ti12 * cr5 - ti11 * cr4
+      ti4 = ti12 * ci5 - ti11 * ci4
+
+      ch(i-1,3,k)  = tr2 + tr5
+      ch(ic-1,2,k) = tr2 - tr5
+      ch(i,3,k)    = ti2 + ti5
+      ch(ic,2,k)   = ti5 - ti2
+      ch(i-1,5,k)  = tr3 + tr4
+      ch(ic-1,4,k) = tr3 - tr4
+      ch(i,5,k)    = ti3 + ti4
+      ch(ic,4,k)   = ti4 - ti3
+
+    end do
+  end do
+
+  return
+end
+subroutine dadfg ( ido, ip, l1, idl1, cc, c1, c2, ch, ch2, wa )
+!
+!*******************************************************************************
+!
+!! DADFG is a lower level routine used by DFFTF1.
+!
+!
+!  Modified:
+!
+!    07 January 2002
+!
+!  Author:
+!
+!    Paul Swarztrauber,
+!    National Center for Atmospheric Research
+!
+!  Parameters:
+!
+  implicit none
+!
+  integer idl1
+  integer ido
+  integer ip
+  integer l1
+!
+  double precision ai1
+  double precision ai2
+  double precision ar1
+  double precision ar1h
+  double precision ar2
+  double precision ar2h
+  double precision arg
+  double precision c1(ido,l1,ip)
+  double precision c2(idl1,ip)
+  double precision cc(ido,ip,l1)
+  double precision ch(ido,l1,ip)
+  double precision ch2(idl1,ip)
+  double precision d_pi
+  double precision dc2
+  double precision dcp
+  double precision ds2
+  double precision dsp
+  integer i
+  integer ic
+  integer idij
+  integer ik
+  integer ipph
+  integer is
+  integer j
+  integer j2
+  integer jc
+  integer k
+  integer l
+  integer lc
+  integer nbd
+  double precision wa(*)
+!
+  arg = 2.0D+00 * d_pi ( ) / dble ( ip )
+  dcp = cos ( arg )
+  dsp = sin ( arg )
+  ipph = ( ip + 1 ) / 2
+  nbd = ( ido - 1 ) / 2
+
+  if ( ido == 1 ) then
+
+    c2(1:idl1,1) = ch2(1:idl1,1)
+
+  else
+
+    ch2(1:idl1,1) = c2(1:idl1,1)
+    ch(1,1:l1,2:ip) = c1(1,1:l1,2:ip)
+
+    if ( nbd <= l1 ) then
+
+      is = -ido
+      do j = 2, ip
+        is = is + ido
+        idij = is
+        do i = 3, ido, 2
+          idij = idij + 2
+          do k = 1, l1
+            ch(i-1,k,j) = wa(idij-1) * c1(i-1,k,j) + wa(idij) * c1(i,k,j)
+            ch(i,k,j)   = wa(idij-1) * c1(i,k,j)   - wa(idij) * c1(i-1,k,j)
+          end do
+        end do
+      end do
+
+    else
+
+      is = -ido
+
+      do j = 2, ip
+        is = is + ido
+        do k = 1, l1
+          idij = is
+          do i = 3, ido, 2
+            idij = idij + 2
+            ch(i-1,k,j) = wa(idij-1) * c1(i-1,k,j) + wa(idij) * c1(i,k,j)
+            ch(i,k,j)   = wa(idij-1) * c1(i,k,j)   - wa(idij) * c1(i-1,k,j)
+          end do
+        end do
+      end do
+
+    end if
+
+    if ( nbd >= l1 ) then
+
+      do j = 2, ipph
+        jc = ip + 2 - j
+        do k = 1, l1
+          do i = 3, ido, 2
+            c1(i-1,k,j)  = ch(i-1,k,j)  + ch(i-1,k,jc)
+            c1(i-1,k,jc) = ch(i,k,j)    - ch(i,k,jc)
+            c1(i,k,j)    = ch(i,k,j)    + ch(i,k,jc)
+            c1(i,k,jc)   = ch(i-1,k,jc) - ch(i-1,k,j)
+          end do
+        end do
+      end do
+
+    else
+
+      do j = 2, ipph
+        jc = ip + 2 - j
+        do i = 3, ido, 2
+          c1(i-1,1:l1,j)  = ch(i-1,1:l1,j)  + ch(i-1,1:l1,jc)
+          c1(i-1,1:l1,jc) = ch(i,1:l1,j)    - ch(i,1:l1,jc)
+          c1(i,1:l1,j)    = ch(i,1:l1,j)    + ch(i,1:l1,jc)
+          c1(i,1:l1,jc)   = ch(i-1,1:l1,jc) - ch(i-1,1:l1,j)
+        end do
+      end do
+
+    end if
+
+  end if
+
+  do j = 2, ipph
+    jc = ip + 2 - j
+    c1(1,1:l1,j)  = ch(1,1:l1,j)  + ch(1,1:l1,jc)
+    c1(1,1:l1,jc) = ch(1,1:l1,jc) - ch(1,1:l1,j)
+  end do
+
+  ar1 = 1.0E+00
+  ai1 = 0.0E+00
+
+  do l = 2, ipph
+
+    lc = ip + 2 - l
+    ar1h = dcp * ar1 - dsp * ai1
+    ai1 =  dcp * ai1 + dsp * ar1
+    ar1 = ar1h
+
+    do ik = 1, idl1
+      ch2(ik,l) = c2(ik,1) + ar1 * c2(ik,2)
+      ch2(ik,lc) =           ai1 * c2(ik,ip)
+    end do
+
+    dc2 = ar1
+    ds2 = ai1
+    ar2 = ar1
+    ai2 = ai1
+
+    do j = 3, ipph
+
+      jc = ip + 2 - j
+      ar2h = dc2 * ar2 - ds2 * ai2
+      ai2 =  dc2 * ai2 + ds2 * ar2
+      ar2 = ar2h
+
+      do ik = 1, idl1
+        ch2(ik,l) =  ch2(ik,l)  + ar2 * c2(ik,j)
+        ch2(ik,lc) = ch2(ik,lc) + ai2 * c2(ik,jc)
+      end do
+
+    end do
+
+  end do
+
+  do j = 2, ipph
+    ch2(1:idl1,1) = ch2(1:idl1,1) + c2(1:idl1,j)
+  end do
+
+  cc(1:ido,1,1:l1) = ch(1:ido,1:l1,1)
+
+  do j = 2, ipph
+    jc = ip + 2 - j
+    j2 = j + j
+    cc(ido,j2-2,1:l1) = ch(1,1:l1,j)
+    cc(1,j2-1,1:l1)   = ch(1,1:l1,jc)
+  end do
+
+  if ( ido == 1 ) then
+    return
+  end if
+
+  if ( nbd >= l1 ) then
+
+    do j = 2, ipph
+      jc = ip + 2 - j
+      j2 = j + j
+      do k = 1, l1
+        do i = 3, ido, 2
+          ic = ido + 2 - i
+          cc(i-1,j2-1,k)  = ch(i-1,k,j) + ch(i-1,k,jc)
+          cc(ic-1,j2-2,k) = ch(i-1,k,j) - ch(i-1,k,jc)
+          cc(i,j2-1,k)    = ch(i,k,j)   + ch(i,k,jc)
+          cc(ic,j2-2,k)   = ch(i,k,jc)  - ch(i,k,j)
+        end do
+      end do
+    end do
+
+  else
+
+    do j = 2, ipph
+      jc = ip + 2 - j
+      j2 = j + j
+      do i = 3, ido, 2
+        ic = ido + 2 - i
+        cc(i-1,j2-1,1:l1)  = ch(i-1,1:l1,j) + ch(i-1,1:l1,jc)
+        cc(ic-1,j2-2,1:l1) = ch(i-1,1:l1,j) - ch(i-1,1:l1,jc)
+        cc(i,j2-1,1:l1)    = ch(i,1:l1,j)   + ch(i,1:l1,jc)
+        cc(ic,j2-2,1:l1)   = ch(i,1:l1,jc)  - ch(i,1:l1,j)
+      end do
+    end do
+
+  end if
+
+  return
+end
+subroutine dcost ( n, x, wsave )
+!
+!*******************************************************************************
+!
+!! DCOST computes the discrete Fourier cosine transform of an even sequence. 
+!
+!
+!  Discussion:
+!
+!    This routine is the unnormalized inverse of itself.  Two successive
+!    calls will multiply the input sequence X by 2*(N-1). 
+!
+!    The array WSAVE must be initialized by calling DCOSTI.
 !
 !    The transform is defined by:
 !
@@ -1119,7 +1978,7 @@ subroutine cost ( n, x, wsave )
 !
 !  Modified:
 !
-!    09 March 2001
+!    07 January 2002
 !
 !  Author:
 !
@@ -1132,45 +1991,49 @@ subroutine cost ( n, x, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber,
-!    Vectorizing the FFT's,
-!    in Parallel Computations (G. Rodrigue, editor),
+!    P N Swarztrauber, 
+!    Vectorizing the FFT's, 
+!    in Parallel Computations,
+!    G. Rodrigue, editor, 
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee,
-!    The SLATEC Common Math Library,
-!    in Sources and Development of Mathematical Software (W. Cowell, editor),
+!    B L Buzbee, 
+!    The SLATEC Common Math Library, 
+!    in Sources and Development of Mathematical Software,
+!    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the sequence to be transformed.  The
+!    Input, integer N, the length of the sequence to be transformed.  The 
 !    method is more efficient when N-1 is the product of small primes.
 !
-!    Input/output, real X(N).
+!    Input/output, double precision X(N).
 !    On input, the sequence to be transformed.
 !    On output, the transformed sequence.
 !
-!    Input, real WSAVE(3*N+15).
-!    The WSAVE array must be initialized by calling COSTI.  A different
-!    array must be used for each different value of N.
+!    Input, double precision WSAVE(3*N+15).
+!    The WSAVE array must be initialized by calling DCOSTI.  A different 
+!    array must be used for each different value of N. 
+!
+  implicit none
 !
   integer n
 !
-  real c1
+  double precision c1
   integer i
   integer k
   integer kc
   integer ns2
-  real t1
-  real t2
-  real tx2
-  real wsave(3*n+15)
-  real x(n)
-  real x1h
-  real x1p3
-  real xi
-  real xim2
+  double precision t1
+  double precision t2
+  double precision tx2
+  double precision wsave(3*n+15)
+  double precision x(n)
+  double precision x1h
+  double precision x1p3
+  double precision xi
+  double precision xim2
 !
   ns2 = n / 2
 
@@ -1211,7 +2074,7 @@ subroutine cost ( n, x, wsave )
     x(ns2+1) = x(ns2+1) + x(ns2+1)
   end if
 
-  call rfftf ( n-1, x, wsave(n+1) )
+  call dfftf ( n-1, x, wsave(n+1) )
 
   xim2 = x(2)
   x(2) = c1
@@ -1229,21 +2092,21 @@ subroutine cost ( n, x, wsave )
 
   return
 end
-subroutine costi ( n, wsave )
+subroutine dcosti ( n, wsave )
 !
 !*******************************************************************************
 !
-!! COSTI initializes WSAVE, used in COST.
+!! DCOSTI initializes WSAVE, used in DCOST.
 !
 !
 !  Discussion:
 !
-!    The prime factorization of N together with a tabulation of the
+!    The prime factorization of N together with a tabulation of the 
 !    trigonometric functions are computed and stored in WSAVE.
 !
 !  Modified:
 !
-!    09 March 2001
+!    07 January 2002
 !
 !  Author:
 !
@@ -1256,56 +2119,453 @@ subroutine costi ( n, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber,
-!    Vectorizing the FFT's,
-!    in Parallel Computations (G. Rodrigue, editor),
+!    P N Swarztrauber, 
+!    Vectorizing the FFT's, 
+!    in Parallel Computations,
+!    G. Rodrigue, editor, 
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee,
-!    The SLATEC Common Math Library,
-!    in Sources and Development of Mathematical Software (W. Cowell, editor),
+!    B L Buzbee, 
+!    The SLATEC Common Math Library, 
+!    in Sources and Development of Mathematical Software,
+!    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the sequence to be transformed.  The
+!    Input, integer N, the length of the sequence to be transformed.  The 
 !    method is more efficient when N-1 is the product of small primes.
 !
-!    Output, real WSAVE(3*N+15), contains data, depending on N, and
-!    required by the COST algorithm.
+!    Output, double precision WSAVE(3*N+15), contains data, depending on N, and 
+!    required by the DCOST algorithm.
+!
+  implicit none
 !
   integer n
 !
-  real dt
+  double precision d_pi
+  double precision dt
   integer k
-  real pimach
-  real wsave(3*n+15)
+  double precision wsave(3*n+15)
 !
   if ( n <= 3 ) then
     return
   end if
 
-  dt = pimach ( ) / real ( n - 1 )
+  dt = d_pi ( ) / dble ( n - 1 )
 
   do k = 2, ( n / 2 )
-    wsave(k)     = 2.0E+00 * sin ( real ( k - 1 ) * dt )
-    wsave(n+1-k) = 2.0E+00 * cos ( real ( k - 1 ) * dt )
+    wsave(k)     = 2.0D+00 * sin ( dble ( k - 1 ) * dt )
+    wsave(n+1-k) = 2.0D+00 * cos ( dble ( k - 1 ) * dt )
   end do
 
-  call rffti ( n-1, wsave(n+1) )
+  call dffti ( n-1, wsave(n+1) )
 
   return
 end
-subroutine cvec_random ( alo, ahi, n, a )
+subroutine dfftf ( n, r, wsave )
 !
 !*******************************************************************************
 !
-!! CVEC_RANDOM returns a random complex vector in a given range.
+!! DFFTF computes the Fourier coefficients of a real periodic sequence.
+!
+!
+!  Discussion:
+!
+!    This process is sometimes called Fourier analysis.
+! 
+!    The transform is unnormalized.  A call to DFFTF followed by a call 
+!    to DFFTB will multiply the input sequence by N.
+!
+!    The transform is defined by:
+!
+!      R_out(1) = sum ( 1 <= I <= N ) R_in(I)
+!
+!    Letting L = (N+1)/2, then for K = 2,...,L
+!
+!      R_out(2*K-2) = sum ( 1 <= I <= N )
+!
+!        R_in(I) * cos ( ( K - 1 ) * ( I - 1 ) * 2 * PI / N )
+!
+!      R_out(2*K-1) = sum ( 1 <= I <= N )
+!
+!        -R_in(I) * sin ( ( K - 1 ) * ( I - 1 ) * 2 * PI / N )
+!
+!    And, if N is even, then:
+!
+!      R_out(N) = sum ( 1 <= I <= N ) (-1)**(I-1) * R_in(I)
+!
+!  Modified:
+!
+!    07 January 2002
+!
+!  Author:
+!
+!    Paul Swarztrauber,
+!    National Center for Atmospheric Research
+!
+!  Reference:
+!
+!    David Kahaner, Clever Moler, Steven Nash,
+!    Numerical Methods and Software,
+!    Prentice Hall, 1988.
+!
+!    P N Swarztrauber, 
+!    Vectorizing the FFT's, 
+!    in Parallel Computations,
+!    G. Rodrigue, editor, 
+!    Academic Press, 1982, pages 51-83.
+!
+!    B L Buzbee, 
+!    The SLATEC Common Math Library, 
+!    in Sources and Development of Mathematical Software,
+!    W. Cowell, editor,
+!    Prentice Hall, 1984, pages 302-318.
+!
+!  Parameters:
+!
+!    Input, integer N, the length of the array to be transformed.  The 
+!    method is more efficient when N is the product of small primes.
+!
+!    Input/output, double precision R(N).
+!    On input, the sequence to be transformed.
+!    On output, the transformed sequence.
+!
+!    Input, double precision WSAVE(2*N+15), a work array.  The WSAVE array 
+!    must be initialized by calling DFFTI.  A different WSAVE array must be 
+!    used for each different value of N.  
+!
+  implicit none
+!
+  integer n
+!
+  double precision r(n)
+  double precision wsave(2*n+15)
+!
+  if ( n <= 1 ) then
+    return
+  end if
+
+  call dfftf1 ( n, r, wsave(1), wsave(n+1), wsave(2*n+1) )
+
+  return
+end
+subroutine dfftf1 ( n, c, ch, wa, ifac )
+!
+!*******************************************************************************
+!
+!! DFFTF1 is a lower level routine used by DFFTF and DSINT.
 !
 !
 !  Modified:
 !
-!    08 March 2001
+!    07 January 2002
+!
+!  Author:
+!
+!    Paul Swarztrauber,
+!    National Center for Atmospheric Research
+!
+!  Parameters:
+!
+!    Input, integer N, the length of the array to be transformed.  
+!
+!    Input/output, double precision C(N).
+!    On input, the sequence to be transformed.
+!    On output, the transformed sequence.
+!
+!    Input, double precision CH(N).
+!
+!    Input, double precision WA(N).
+!
+!    Input, integer IFAC(15).
+!    IFAC(1) = N, the number that was factored.
+!    IFAC(2) = NF, the number of factors.
+!    IFAC(3:2+NF), the factors.
+!
+  implicit none
+!
+  integer n
+!
+  double precision c(n)
+  double precision ch(n)
+  integer idl1
+  integer ido
+  integer ifac(15)
+  integer ip
+  integer iw
+  integer ix2
+  integer ix3
+  integer ix4
+  integer k1
+  integer kh
+  integer l1
+  integer l2
+  integer na
+  integer nf
+  double precision wa(n)
+!
+  nf = ifac(2)
+  na = 1
+  l2 = n
+  iw = n
+
+  do k1 = 1, nf
+
+    kh = nf - k1
+    ip = ifac(kh+3)
+    l1 = l2 / ip
+    ido = n / l2
+    idl1 = ido * l1
+    iw = iw - ( ip - 1 ) * ido
+    na = 1 - na
+
+    if ( ip == 4 ) then
+
+      ix2 = iw + ido
+      ix3 = ix2 + ido
+
+      if ( na == 0 ) then
+        call dadf4 ( ido, l1, c, ch, wa(iw), wa(ix2), wa(ix3) )
+      else
+        call dadf4 ( ido, l1, ch, c, wa(iw), wa(ix2), wa(ix3) )
+      end if
+
+    else if ( ip == 2 ) then
+
+      if ( na == 0 ) then
+        call dadf2 ( ido, l1, c, ch, wa(iw) )
+      else
+        call dadf2 ( ido, l1, ch, c, wa(iw) )
+      end if
+
+    else if ( ip == 3 ) then
+
+      ix2 = iw + ido
+
+      if ( na == 0 ) then
+        call dadf3 ( ido, l1, c, ch, wa(iw), wa(ix2) )
+      else
+        call dadf3 ( ido, l1, ch, c, wa(iw), wa(ix2) )
+      end if
+
+    else if ( ip == 5 ) then
+
+      ix2 = iw + ido
+      ix3 = ix2 + ido
+      ix4 = ix3 + ido
+
+      if ( na == 0 ) then
+        call dadf5 ( ido, l1, c, ch, wa(iw), wa(ix2), wa(ix3), wa(ix4) )
+      else
+        call dadf5 ( ido, l1, ch, c, wa(iw), wa(ix2), wa(ix3), wa(ix4) )
+      end if
+
+    else
+
+      if ( ido == 1 ) then
+        na = 1 - na
+      end if
+
+      if ( na == 0 ) then
+        call dadfg ( ido, ip, l1, idl1, c, c, c, ch, ch, wa(iw) )
+        na = 1
+      else
+        call dadfg ( ido, ip, l1, idl1, ch, ch, ch, c, c, wa(iw) )
+        na = 0
+      end if
+
+    end if
+
+    l2 = l1
+
+  end do
+
+  if ( na /= 1 ) then
+    c(1:n) = ch(1:n)
+  end if
+
+  return
+end
+subroutine dffti ( n, wsave )
+!
+!*******************************************************************************
+!
+!! DFFTI initializes WSAVE, used in DFFTF and DFFTB. 
+!
+!
+!  Discussion:
+!
+!    The prime factorization of N together with a tabulation of the 
+!    trigonometric functions are computed and stored in WSAVE.
+!
+!  Modified:
+!
+!    07 January 2002
+!
+!  Author:
+!
+!    Paul Swarztrauber,
+!    National Center for Atmospheric Research
+!
+!  Reference:
+!
+!    David Kahaner, Clever Moler, Steven Nash,
+!    Numerical Methods and Software,
+!    Prentice Hall, 1988.
+!
+!    P N Swarztrauber, 
+!    Vectorizing the FFT's, 
+!    in Parallel Computations,
+!    G. Rodrigue, editor, 
+!    Academic Press, 1982, pages 51-83.
+!
+!    B L Buzbee, 
+!    The SLATEC Common Math Library, 
+!    in Sources and Development of Mathematical Software,
+!    W. Cowell, editor,
+!    Prentice Hall, 1984, pages 302-318.
+!
+!  Parameters:
+!
+!    Input, integer N, the length of the sequence to be transformed. 
+!
+!    Output, double precision WSAVE(2*N+15), contains data, dependent 
+!    on the value of N, which is necessary for the DFFTF and DFFTB routines.  
+!
+  implicit none
+!
+  integer n
+!
+  double precision wsave(2*n+15)
+!
+  if ( n <= 1 ) then
+    return
+  end if
+
+  call dffti1 ( n, wsave(n+1), wsave(2*n+1) )
+
+  return
+end
+subroutine dffti1 ( n, wa, ifac )
+!
+!*******************************************************************************
+!
+!! DFFTI1 is a lower level routine used by DFFTI.
+!
+!
+!  Modified:
+!
+!    07 January 2002
+!
+!  Author:
+!
+!    Paul Swarztrauber,
+!    National Center for Atmospheric Research
+!
+!  Parameters:
+!
+!    Input, integer N, the length of the sequence to be transformed. 
+!
+!    Input, double precision WA(N).
+!
+!    Input, integer IFAC(15).
+!    IFAC(1) = N, the number that was factored.
+!    IFAC(2) = NF, the number of factors.
+!    IFAC(3:2+NF), the factors.
+!
+  implicit none
+!
+  integer n
+!
+  double precision arg
+  double precision argh
+  double precision argld
+  double precision d_pi
+  double precision fi
+  integer i
+  integer ib
+  integer ido
+  integer ifac(15)
+  integer ii
+  integer ip
+  integer is
+  integer j
+  integer k1
+  integer l1
+  integer l2
+  integer ld
+  integer nf
+  double precision wa(n)
+!
+  call i_factor ( n, ifac )
+
+  nf = ifac(2)
+
+  argh = 2.0D+00 * d_pi ( ) / dble ( n )
+  is = 0
+  l1 = 1
+
+  do k1 = 1, nf-1
+
+    ip = ifac(k1+2)
+    ld = 0
+    l2 = l1 * ip
+    ido = n / l2
+
+    do j = 1, ip-1
+
+      ld = ld + l1
+      i = is
+      argld = dble ( ld ) * argh
+      fi = 0.0D+00
+
+      do ii = 3, ido, 2
+        i = i + 2
+        fi = fi + 1.0D+00
+        arg = fi * argld
+        wa(i-1) = cos ( arg )
+        wa(i) = sin ( arg )
+      end do
+
+      is = is + ido
+
+    end do
+
+    l1 = l2
+
+  end do
+
+  return
+end
+subroutine dsct ( n, x, y )
+!
+!*******************************************************************************
+!
+!! DSCT computes a double precision "slow" cosine transform.
+!
+!
+!  Discussion:
+!
+!    This routine is provided for illustration and testing.  It is inefficient
+!    relative to optimized routines that use fast Fourier techniques.
+!
+!      Y(1) = Sum ( 1 <= J <= N ) X(J) 
+!
+!      For I from 2 to N-1:
+!
+!        Y(I) = 2 * Sum ( 1 <= J <= N ) X(J) 
+!          * cos ( PI * ( I - 1 ) * ( J - 1 ) / ( N - 1 ) )
+!
+!      Y(N) = Sum ( X(1:N:2) ) - Sum ( X(2:N:2) )
+!
+!    Applying the routine twice in succession should yield the original data,
+!    multiplied by 2 * ( N + 1 ).  This is a good check for correctness 
+!    and accuracy.
+!
+!  Modified:
+!
+!    07 January 2002
 !
 !  Author:
 !
@@ -1313,28 +2573,502 @@ subroutine cvec_random ( alo, ahi, n, a )
 !
 !  Parameters:
 !
-!    Input, real ALO, AHI, the range allowed for the entries.
+!    Input, integer N, the number of data values.
 !
-!    Input, integer N, the number of entries in the vector.
+!    Input, double precision X(N), the data sequence.
 !
-!    Output, complex A(N), the vector of randomly chosen values.
+!    Output, double precision Y(N), the transformed data.
+!
+  implicit none
 !
   integer n
 !
-  complex a(n)
-  real ahi
-  real ai
-  real alo
-  real ar
+  double precision d_pi
+  integer i
+  integer j
+  double precision theta
+  double precision x(n)
+  double precision y(n)
+!
+  y(1) = sum ( x(1:n) )
+
+  do i = 2, n-1
+    y(i) = 0.0D+00
+    do j = 1, n
+      theta = d_pi ( ) * &
+        dble ( mod ( ( j - 1 ) * ( i - 1 ), 2 * ( n - 1 ) ) ) / dble ( n - 1 )
+!     theta = dble ( j - 1 ) * dble ( i - 1 ) * d_pi() / dble ( n - 1 )
+      y(i) = y(i) + 2.0D+00 * x(j) * cos ( theta )
+    end do
+  end do
+
+  y(n) = sum ( x(1:n:2) ) - sum ( x(2:n:2) )
+
+  return
+end
+subroutine dsint ( n, x, wsave )
+!
+!*******************************************************************************
+!
+!! DSINT computes the discrete Fourier sine transform of an odd sequence. 
+!
+!
+!  Discussion:
+!
+!    This routine is the unnormalized inverse of itself since two successive
+!    calls will multiply the input sequence X by 2*(N+1).
+!
+!    The array WSAVE must be initialized by calling DSINTI.
+!
+!    The transform is defined by:
+!
+!      X_out(I) = sum ( 1 <= K <= N ) 
+!        2 * X_in(K) * sin ( K * I * PI / ( N + 1 ) )
+!
+!  Modified:
+!
+!    07 January 2002
+!
+!  Author:
+!
+!    Paul Swarztrauber,
+!    National Center for Atmospheric Research
+!
+!  Reference:
+!
+!    David Kahaner, Clever Moler, Steven Nash,
+!    Numerical Methods and Software,
+!    Prentice Hall, 1988.
+!
+!    P N Swarztrauber, 
+!    Vectorizing the FFT's, 
+!    in Parallel Computations,
+!    G. Rodrigue, editor, 
+!    Academic Press, 1982, pages 51-83.
+!
+!    B L Buzbee, 
+!    The SLATEC Common Math Library, 
+!    in Sources and Development of Mathematical Software,
+!    W. Cowell, editor,
+!    Prentice Hall, 1984, pages 302-318.
+!
+!  Parameters:
+!
+!    Input, integer N, the length of the sequence to be transformed. 
+!    The method is most efficient when N+1 is the product of small primes. 
+!
+!    Input/output, real X(N).
+!    On input, the sequence to be transformed.
+!    On output, the transformed sequence.
+!
+!    Input, double precision WSAVE((5*N+30)/2), a work array.  The WSAVE 
+!    array must be initialized by calling DSINTI.  A different WSAVE array 
+!    must be used for each different value of N. 
+!
+  implicit none
+!
+  integer n
+!
+  integer iw1
+  integer iw2
+  integer iw3
+  double precision wsave((5*n+30)/2)
+  double precision x(n)
+!
+  iw1 = n / 2 + 1
+  iw2 = iw1 + n + 1
+  iw3 = iw2 + n + 1
+
+  call dsint1 ( n, x, wsave(1), wsave(iw1), wsave(iw2), wsave(iw3) )
+
+  return
+end
+subroutine dsint1 ( n, war, was, xh, x, ifac )
+!
+!*******************************************************************************
+!
+!! DSINT1 is a lower level routine used by DSINT.
+!
+!
+!  Modified:
+!
+!    07 January 2002
+!
+!  Author:
+!
+!    Paul Swarztrauber,
+!    National Center for Atmospheric Research
+!
+!  Parameters:
+!
+!    Input, integer N, the length of the sequence to be transformed. 
+!
+!    Input/output, double precision WAR(N).
+!    On input, the sequence to be transformed.
+!    On output, the transformed sequence.
+!
+!    Input, double precision WAS(N/2).
+!
+!    Input, double precision XH(N).
+!
+!    Input, double precision X(N+1), ?.
+!
+!    Input, integer IFAC(15).
+!    IFAC(1) = N, the number that was factored.
+!    IFAC(2) = NF, the number of factors.
+!    IFAC(3:2+NF), the factors.
+!
+  implicit none
+!
+  integer n
+!
+  integer i
+  integer ifac(15)
+  integer k
+  integer kc
+  integer ns2
+  double precision sqrt3
+  double precision t1
+  double precision t2
+  double precision war(n)
+  double precision was(n/2)
+  double precision x(n+1)
+  double precision xh(n)
+  double precision xhold
+!
+  sqrt3 = sqrt ( 3.0D+00 )
+!
+  xh(1:n) = war(1:n)
+  war(1:n) = x(1:n)
+
+  if ( n <= 1 ) then
+    xh(1) = 2.0D+00 * xh(1)
+    return
+  end if
+
+  if ( n == 2 ) then
+    xhold = sqrt3 * ( xh(1) + xh(2) )
+    xh(2) = sqrt3 * ( xh(1) - xh(2) )
+    xh(1) = xhold
+    return
+  end if
+
+  ns2 = n / 2
+  x(1) = 0.0D+00
+
+  do k = 1, n/2
+    t1 = xh(k) - xh(n+1-k)
+    t2 = was(k) * ( xh(k) + xh(n+1-k) )
+    x(k+1) = t1 + t2
+!
+! ??? N+2-K puts us out of the array...DAMN IT, THIS IS AN ERROR.
+!
+    x(n+2-k) = t2 - t1
+  end do
+
+  if ( mod ( n, 2 ) /= 0 ) then
+    x(n/2+2) = 4.0D+00 * xh(n/2+1)
+  end if
+!
+!  This call says there are N+1 things in X.
+!
+  call dfftf1 ( n+1, x, xh, war, ifac )
+
+  xh(1) = 0.5D+00 * x(1)
+  do i = 3, n, 2
+    xh(i-1) = -x(i)
+    xh(i) = xh(i-2) + x(i-1)
+  end do
+
+  if ( mod ( n, 2 ) == 0 ) then
+    xh(n) = -x(n+1)
+  end if
+
+  x(1:n) = war(1:n)
+  war(1:n) = xh(1:n)
+
+  return
+end
+subroutine dsinti ( n, wsave )
+!
+!*******************************************************************************
+!
+!! DSINTI initializes WSAVE, used in DSINT.
+!
+!
+!  Discussion:
+!
+!    The prime factorization of N together with a tabulation of the 
+!    trigonometric functions are computed and stored in WSAVE.
+!
+!  Modified:
+!
+!    07 January 2002
+!
+!  Author:
+!
+!    Paul Swarztrauber,
+!    National Center for Atmospheric Research
+!
+!  Reference:
+!
+!    David Kahaner, Clever Moler, Steven Nash,
+!    Numerical Methods and Software,
+!    Prentice Hall, 1988.
+!
+!    P N Swarztrauber, 
+!    Vectorizing the FFT's, 
+!    in Parallel Computations,
+!    G. Rodrigue, editor, 
+!    Academic Press, 1982, pages 51-83.
+!
+!    B L Buzbee, 
+!    The SLATEC Common Math Library, 
+!    in Sources and Development of Mathematical Software,
+!    W. Cowell, editor,
+!    Prentice Hall, 1984, pages 302-318.
+!
+!  Parameters:
+!
+!    Input, integer N, the length of the sequence to be transformed.  
+!    The method is most efficient when N+1 is a product of small primes.
+!
+!    Output, double precision WSAVE((5*N+30)/2), contains data, dependent 
+!    on the value of N, which is necessary for the DSINT routine.  
+!
+  implicit none
+!
+  integer n
+!
+  double precision d_pi
+  double precision dt
+  integer k
+  double precision wsave((5*n+30)/2)
+!
+  if ( n <= 1 ) then
+    return
+  end if
+
+  dt = d_pi ( ) / dble ( n + 1 )
+
+  do k = 1, n/2
+    wsave(k) = 2.0D+00 * sin ( dble ( k ) * dt )
+  end do
+
+  call dffti ( n+1, wsave((n/2)+1) )
+
+  return
+end
+subroutine dsst ( n, x, y )
+!
+!*******************************************************************************
+!
+!! DSST computes a double precision "slow" sine transform.
+!
+!
+!  Discussion:
+!
+!    This routine is provided for illustration and testing.  It is inefficient
+!    relative to optimized routines that use fast Fourier techniques.  
+!
+!    For I from 1 to N,
+!
+!      Y(I) = Sum ( 1 <= J <= N ) X(J) * sin ( PI * I * J / ( N + 1 ) )
+!
+!    Applying the routine twice in succession should yield the original data,
+!    multiplied by N / 2.  This is a good check for correctness and accuracy.
+!
+!  Modified:
+!
+!    18 December 2001
+!
+!  Author:
+!
+!    John Burkardt
+!
+!  Parameters:
+!
+!    Input, integer N, the number of data values. 
+!
+!    Input, double precision X(N), the data sequence.
+!
+!    Output, double precision Y(N), the transformed data.
+!
+  implicit none
+!
+  integer n
+!
+  integer i
+  double precision d_pi
+  double precision theta(n)
+  double precision x(n)
+  double precision y(n)
+!
+  call dvec_identity ( n, theta )
+  theta(1:n) = theta(1:n) * d_pi() / dble ( n + 1 )
+
+  y(1:n) = 0.0D+00
+
+  do i = 1, n
+    y(1:n) = y(1:n) + 2.0D+00 * x(i) * sin ( dble ( i ) * theta(1:n) )
+  end do
+
+  return
+end
+subroutine dvec_identity ( n, a )
+!
+!*******************************************************************************
+!
+!! DVEC_IDENTITY sets a double precision vector to the identity vector A(I)=I.
+!
+!
+!  Modified:
+!
+!    19 December 2001
+!
+!  Author:
+!
+!    John Burkardt
+!
+!  Parameters:
+!
+!    Input, integer N, the number of elements of A.
+!
+!    Output, double precision A(N), the array to be initialized.
+!
+  implicit none
+!
+  integer n
+!
+  double precision a(n)
   integer i
 !
   do i = 1, n
+    a(i) = dble ( i )
+  end do
 
-    call r_random ( alo, ahi, ar )
-    call r_random ( alo, ahi, ai )
+  return
+end
+subroutine dvec_print_some ( n, a, max_print, title )
+!
+!*******************************************************************************
+!
+!! DVEC_PRINT_SOME prints "some" of a double precision vector.
+!
+!
+!  Discussion:
+!
+!    The user specifies MAX_PRINT, the maximum number of lines to print.
+!
+!    If N, the size of the vector, is no more than MAX_PRINT, then
+!    the entire vector is printed, one entry per line.
+!
+!    Otherwise, if possible, the first MAX_PRINT-2 entries are printed,
+!    followed by a line of periods suggesting an omission,
+!    and the last entry.
+!
+!  Modified:
+!
+!    19 December 2001
+!
+!  Author:
+!
+!    John Burkardt
+!
+!  Parameters:
+!
+!    Input, integer N, the number of entries of the vector.
+!
+!    Input, double precision A(N), the vector to be printed.
+!
+!    Input, integer MAX_PRINT, the maximum number of lines to print.
+!
+!    Input, character ( len = * ) TITLE, an optional title.
+!
+  implicit none
+!
+  integer n
+!
+  double precision a(n)
+  integer i
+  integer max_print
+  character ( len = * ) title
+!
+  if ( max_print <= 0 ) then
+    return
+  end if
 
-    a(i) = cmplx ( ar, ai )
+  if ( n <= 0 ) then
+    return
+  end if
 
+  if ( len_trim ( title ) > 0 ) then
+    write ( *, '(a)' ) ' '
+    write ( *, '(a)' ) trim ( title )
+    write ( *, '(a)' ) ' '
+  end if
+
+  if ( n <= max_print ) then
+
+    do i = 1, n
+      write ( *, '(i6,2x,g14.6)' ) i, a(i)
+    end do
+
+  else if ( max_print >= 3 ) then
+
+    do i = 1, max_print-2
+      write ( *, '(i6,2x,g14.6)' ) i, a(i)
+    end do
+    write ( *, '(a)' ) '......  ..............'
+    i = n
+    write ( *, '(i6,2x,g14.6)' ) i, a(i)
+
+  else
+
+    do i = 1, max_print - 1
+      write ( *, '(i6,2x,g14.6)' ) i, a(i)
+    end do
+    i = max_print
+    write ( *, '(i6,2x,g14.6,2x,a)' ) i, a(i), '...more entries...'
+
+  end if
+
+  return
+end
+subroutine dvec_random ( alo, ahi, n, a )
+!
+!*******************************************************************************
+!
+!! DVEC_RANDOM returns a random double precision vector in a given range.
+!
+!
+!  Modified:
+!
+!    19 December 2001
+!
+!  Author:
+!
+!    John Burkardt
+!
+!  Parameters:
+!
+!    Input, double precision ALO, AHI, the range allowed for the entries.
+!
+!    Input, integer N, the number of entries in the vector.
+!
+!    Output, double precision A(N), the vector of randomly chosen values.
+!
+  implicit none
+!
+  integer n
+!
+  double precision a(n)
+  double precision ahi
+  double precision alo
+  integer i
+!
+  do i = 1, n
+    call d_random ( alo, ahi, a(i) )
   end do
 
   return
@@ -1352,11 +3086,11 @@ subroutine ezfftb ( n, r, azero, a, b, wsave )
 !
 !    EZFFTB is a simplified but slower version of RFFTB.
 !
-!    The transform is defined by:
+!    The transform is defined by: 
 !
 !      R(I) = AZERO + sum ( 1 <= K <= N/2 )
 !
-!          A(K) * cos ( K * ( I - 1 ) * 2 * PI / N )
+!          A(K) * cos ( K * ( I - 1 ) * 2 * PI / N ) 
 !        + B(K) * sin ( K * ( I - 1 ) * 2 * PI / N )
 !
 !  Modified:
@@ -1374,19 +3108,21 @@ subroutine ezfftb ( n, r, azero, a, b, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber,
-!    Vectorizing the FFT's,
-!    in Parallel Computations (G. Rodrigue, editor),
+!    P N Swarztrauber, 
+!    Vectorizing the FFT's, 
+!    in Parallel Computations,
+!    G. Rodrigue, editor, 
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee,
-!    The SLATEC Common Math Library,
-!    in Sources and Development of Mathematical Software (W. Cowell, editor),
+!    B L Buzbee, 
+!    The SLATEC Common Math Library, 
+!    in Sources and Development of Mathematical Software,
+!    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the output array.  The
+!    Input, integer N, the length of the output array.  The 
 !    method is more efficient when N is the product of small primes.
 !
 !    Output, real R(N), the reconstructed data sequence.
@@ -1396,8 +3132,10 @@ subroutine ezfftb ( n, r, azero, a, b, wsave )
 !    Input, real A(N/2), B(N/2), the Fourier coefficients.
 !
 !    Input, real WSAVE(3*N+15), a work array.  The WSAVE array must be
-!    initialized by calling EZFFFTI.  A different WSAVE array must be used
-!    for each different value of N.
+!    initialized by calling EZFFFTI.  A different WSAVE array must be used 
+!    for each different value of N. 
+!
+  implicit none
 !
   integer n
 !
@@ -1423,7 +3161,7 @@ subroutine ezfftb ( n, r, azero, a, b, wsave )
     ns2 = ( n - 1 ) / 2
 
     do i = 1, ns2
-      r(2*i) = 0.5E+00 * a(i)
+      r(2*i) =    0.5E+00 * a(i)
       r(2*i+1) = -0.5E+00 * b(i)
     end do
 
@@ -1489,30 +3227,34 @@ subroutine ezfftf ( n, r, azero, a, b, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber,
-!    Vectorizing the FFT's,
-!    in Parallel Computations (G. Rodrigue, editor),
+!    P N Swarztrauber, 
+!    Vectorizing the FFT's, 
+!    in Parallel Computations,
+!    G. Rodrigue, editor, 
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee,
-!    The SLATEC Common Math Library,
-!    in Sources and Development of Mathematical Software (W. Cowell, editor),
+!    B L Buzbee, 
+!    The SLATEC Common Math Library, 
+!    in Sources and Development of Mathematical Software,
+!    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the array to be transformed.  The
+!    Input, integer N, the length of the array to be transformed.  The 
 !    method is more efficient when N is the product of small primes.
 !
 !    Input, real R(N), the sequence to be transformed.
 !
 !    Input, real WSAVE(3*N+15), a work array.  The WSAVE array must be
-!    initialized by calling EZFFTI.  A different WSAVE array must be used
-!    for each different value of N.
+!    initialized by calling EZFFTI.  A different WSAVE array must be used 
+!    for each different value of N. 
 !
 !    Output, real AZERO, the constant Fourier coefficient.
 !
 !    Output, real A(N/2), B(N/2), the Fourier coefficients.
+!
+  implicit none
 !
   integer n
 !
@@ -1562,12 +3304,12 @@ subroutine ezffti ( n, wsave )
 !
 !*******************************************************************************
 !
-!! EZFFTI initializes WSAVE, used in EZFFTF and EZFFTB.
+!! EZFFTI initializes WSAVE, used in EZFFTF and EZFFTB. 
 !
 !
 !  Discussion:
 !
-!    The prime factorization of N together with a tabulation of the
+!    The prime factorization of N together with a tabulation of the 
 !    trigonometric functions are computed and stored in WSAVE.
 !
 !  Modified:
@@ -1585,23 +3327,27 @@ subroutine ezffti ( n, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber,
-!    Vectorizing the FFT's,
-!    in Parallel Computations (G. Rodrigue, editor),
+!    P N Swarztrauber, 
+!    Vectorizing the FFT's, 
+!    in Parallel Computations,
+!    G. Rodrigue, editor, 
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee,
-!    The SLATEC Common Math Library,
-!    in Sources and Development of Mathematical Software (W. Cowell, editor),
+!    B L Buzbee, 
+!    The SLATEC Common Math Library, 
+!    in Sources and Development of Mathematical Software,
+!    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the array to be transformed.  The
+!    Input, integer N, the length of the array to be transformed.  The 
 !    method is more efficient when N is the product of small primes.
 !
 !    Output, real WSAVE(3*N+15), contains data, dependent on the value
-!    of N, which is necessary for the EZFFTF or EZFFTB routines.
+!    of N, which is necessary for the EZFFTF or EZFFTB routines.  
+!
+  implicit none
 !
   integer n
 !
@@ -1633,7 +3379,7 @@ subroutine ezffti1 ( n, wa, ifac )
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the array to be transformed.
+!    Input, integer N, the length of the array to be transformed. 
 !
 !    Output, real WA(N).
 !
@@ -1641,6 +3387,8 @@ subroutine ezffti1 ( n, wa, ifac )
 !    IFAC(1) = N, the number that was factored.
 !    IFAC(2) = NF, the number of factors.
 !    IFAC(3:2+NF), the factors.
+!
+  implicit none
 !
   integer n
 !
@@ -1662,7 +3410,7 @@ subroutine ezffti1 ( n, wa, ifac )
   integer l1
   integer l2
   integer nf
-  real pimach
+  real r_pi
   real sh1
   real wa(n)
 !
@@ -1670,7 +3418,7 @@ subroutine ezffti1 ( n, wa, ifac )
 
   nf = ifac(2)
 
-  argh = 2.0E+00 * pimach() / real ( n )
+  argh = 2.0E+00 * r_pi ( ) / real ( n )
   is = 0
   l1 = 1
 
@@ -1734,6 +3482,8 @@ subroutine i_factor ( n, ifac )
 !    IFAC(1) = N, the number that was factored.
 !    IFAC(2) = NF, the number of factors.
 !    IFAC(3:2+NF), the factors.
+!
+  implicit none
 !
   integer i
   integer ib
@@ -1845,6 +3595,8 @@ subroutine passb ( nac, ido, ip, l1, idl1, cc, c1, c2, ch, ch2, wa )
 !    National Center for Atmospheric Research
 !
 !  Parameters:
+!
+  implicit none
 !
   integer idl1
   integer ido
@@ -2016,6 +3768,8 @@ subroutine passb2 ( ido, l1, cc, ch, wa1 )
 !
 !  Parameters:
 !
+  implicit none
+!
   integer ido
   integer l1
 !
@@ -2072,6 +3826,8 @@ subroutine passb3 ( ido, l1, cc, ch, wa1, wa2 )
 !
 !  Parameters:
 !
+  implicit none
+!
   integer ido
   integer l1
 !
@@ -2087,13 +3843,15 @@ subroutine passb3 ( ido, l1, cc, ch, wa1, wa2 )
   real dr3
   integer i
   integer k
-  real, parameter :: taui = 0.866025403784439E+00
+  real taui
   real, parameter :: taur = -0.5E+00
   real ti2
   real tr2
   real wa1(ido)
   real wa2(ido)
 !
+  taui = sqrt ( 3.0E+00 ) / 2.0E+00
+
   if ( ido == 2 ) then
 
     do k = 1, l1
@@ -2166,6 +3924,8 @@ subroutine passb4 ( ido, l1, cc, ch, wa1, wa2, wa3 )
 !    National Center for Atmospheric Research
 !
 !  Parameters:
+!
+  implicit none
 !
   integer ido
   integer l1
@@ -2274,6 +4034,8 @@ subroutine passb5 ( ido, l1, cc, ch, wa1, wa2, wa3, wa4 )
 !    National Center for Atmospheric Research
 !
 !  Parameters:
+!
+  implicit none
 !
   integer ido
   integer l1
@@ -2422,6 +4184,8 @@ subroutine passf ( nac, ido, ip, l1, idl1, cc, c1, c2, ch, ch2, wa )
 !    National Center for Atmospheric Research
 !
 !  Parameters:
+!
+  implicit none
 !
   integer idl1
   integer ido
@@ -2591,6 +4355,8 @@ subroutine passf2 ( ido, l1, cc, ch, wa1 )
 !
 !  Parameters:
 !
+  implicit none
+!
   integer ido
   integer l1
 !
@@ -2648,6 +4414,8 @@ subroutine passf3 ( ido, l1, cc, ch, wa1, wa2 )
 !
 !  Parameters:
 !
+  implicit none
+!
   integer ido
   integer l1
 !
@@ -2663,13 +4431,15 @@ subroutine passf3 ( ido, l1, cc, ch, wa1, wa2 )
   real dr3
   integer i
   integer k
-  real, parameter :: taui = -0.866025403784439E+00
+  real taui
   real, parameter :: taur = -0.5E+00
   real ti2
   real tr2
   real wa1(ido)
   real wa2(ido)
 !
+  taui = - sqrt ( 3.0E+00 ) / 2.0E+00
+
   if ( ido == 2 ) then
 
     do k = 1, l1
@@ -2742,6 +4512,8 @@ subroutine passf4 ( ido, l1, cc, ch, wa1, wa2, wa3 )
 !    National Center for Atmospheric Research
 !
 !  Parameters:
+!
+  implicit none
 !
   integer ido
   integer l1
@@ -2850,6 +4622,8 @@ subroutine passf5 ( ido, l1, cc, ch, wa1, wa2, wa3, wa4 )
 !
 !  Parameters:
 !
+  implicit none
+!
   integer ido
   integer l1
 !
@@ -2883,7 +4657,13 @@ subroutine passf5 ( ido, l1, cc, ch, wa1, wa2, wa3, wa4 )
   real tr3
   real tr4
   real tr5
+!
+!  cos ( 72 ) = +0.3090
+!
   real, parameter :: tr11 =  0.309016994374947E+00
+!
+!  cos ( 36 ) = +0.809016
+!
   real, parameter :: tr12 = -0.809016994374947E+00
   real wa1(ido)
   real wa2(ido)
@@ -2980,29 +4760,70 @@ subroutine passf5 ( ido, l1, cc, ch, wa1, wa2, wa3, wa4 )
 
   return
 end
-function pimach ()
+function r_cas ( x )
 !
 !*******************************************************************************
 !
-!! PIMACH returns the value of pi.
+!! R_CAS returns the "casine" of a number.
+!
+!
+!  Definition:
+!
+!    The "casine", used in the discrete Hartley transform, is abbreviated
+!    CAS(X), and defined by:
+!
+!      CAS(X) = cos ( X ) + sin( X )
+!             = sqrt ( 2 ) * sin ( X + pi/4 )
+!             = sqrt ( 2 ) * cos ( X - pi/4 )
+!
+!  Modified:
+!
+!    06 January 2001
+!
+!  Author:
+!
+!    John Burkardt
+!
+!  Parameters:
+!
+!    Input, real X, the number whose casine is desired.
+!
+!    Output, real R_CAS, the casine of X, which will be between
+!    plus or minus the square root of 2.
+!
+  implicit none
+!
+  real r_cas
+  real x
+!
+  r_cas = cos ( x ) + sin ( x )
+
+  return
+end
+function r_pi ()
+!
+!*******************************************************************************
+!
+!! R_PI returns the value of pi.
 !
 !
 !  Modified:
 !
-!    09 March 2001
+!    08 May 2001
 !
 !  Author:
 !
-!    Paul Swarztrauber,
-!    National Center for Atmospheric Research
+!    John Burkardt
 !
 !  Parameters:
 !
-!    Output, real PIMACH, the value of PI.
+!    Output, real R_PI, the value of PI.
 !
-  real pimach
+  implicit none
 !
-  pimach = 4.0E+00 * atan ( 1.0E+00 )
+  real r_pi
+!
+  r_pi = 3.14159265358979323846264338327950288419716939937510E+00
 
   return
 end
@@ -3013,14 +4834,9 @@ subroutine r_random ( rlo, rhi, r )
 !! R_RANDOM returns a random real in a given range.
 !
 !
-!  Discussion:
-!
-!    Calls to the FORTRAN 90 random number generator should go through
-!    this routine, to guarantee that the random number seed has been set.
-!
 !  Modified:
 !
-!    05 February 2001
+!    06 April 2001
 !
 !  Author:
 !
@@ -3032,26 +4848,16 @@ subroutine r_random ( rlo, rhi, r )
 !
 !    Output, real R, the randomly chosen value.
 !
+  implicit none
+!
   real r
   real rhi
   real rlo
-  integer, save :: seed = 0
-  logical, save :: seeded = .false.
   real t
-  real uniform_01_sample
-!
-!  Make sure the random number generator has been seeded.
-!
-  if ( .not. seeded ) then
-    call random_initialize ( seed )
-    seeded = .true.
-  end if
 !
 !  Pick T, a random number in (0,1).
 !
-! call random_number ( harvest = t )
-!
-  t = uniform_01_sample ( seed )
+  call random_number ( harvest = t )
 !
 !  Set R in ( RLO, RHI ).
 !
@@ -3079,6 +4885,8 @@ subroutine r_swap ( x, y )
 !    Input/output, real X, Y.  On output, the values of X and
 !    Y have been interchanged.
 !
+  implicit none
+!
   real x
   real y
   real z
@@ -3104,6 +4912,10 @@ subroutine radb2 ( ido, l1, cc, ch, wa1 )
 !
 !    Paul Swarztrauber,
 !    National Center for Atmospheric Research
+!
+!  Parameters:
+!
+  implicit none
 !
   integer ido
   integer l1
@@ -3171,6 +4983,8 @@ subroutine radb3 ( ido, l1, cc, ch, wa1, wa2 )
 !
 !  Parameters:
 !
+  implicit none
+!
   integer ido
   integer l1
 !
@@ -3187,13 +5001,15 @@ subroutine radb3 ( ido, l1, cc, ch, wa1, wa2 )
   integer i
   integer ic
   integer k
-  real, parameter :: taui =  0.866025403784439E+00
+  real taui
   real, parameter :: taur = -0.5E+00
   real ti2
   real tr2
   real wa1(ido)
   real wa2(ido)
 !
+  taui = sqrt ( 3.0E+00 ) / 2.0E+00
+
   do k = 1, l1
 
     tr2 = cc(ido,2,k) + cc(ido,2,k)
@@ -3258,6 +5074,8 @@ subroutine radb4 ( ido, l1, cc, ch, wa1, wa2, wa3 )
 !    National Center for Atmospheric Research
 !
 !  Parameters:
+!
+  implicit none
 !
   integer ido
   integer l1
@@ -3380,6 +5198,8 @@ subroutine radb5 ( ido, l1, cc, ch, wa1, wa2, wa3, wa4 )
 !    National Center for Atmospheric Research
 !
 !  Parameters:
+!
+  implicit none
 !
   integer ido
   integer l1
@@ -3514,6 +5334,8 @@ subroutine radbg ( ido, ip, l1, idl1, cc, c1, c2, ch, ch2, wa )
 !
 !  Parameters:
 !
+  implicit none
+!
   integer idl1
   integer ido
   integer ip
@@ -3548,10 +5370,10 @@ subroutine radbg ( ido, ip, l1, idl1, cc, c1, c2, ch, ch2, wa )
   integer l
   integer lc
   integer nbd
-  real pimach
+  real r_pi
   real wa(*)
 !
-  arg = 2.0E+00 * pimach() / real ( ip )
+  arg = 2.0E+00 * r_pi ( ) / real ( ip )
   dcp = cos ( arg )
   dsp = sin ( arg )
   nbd = ( ido - 1 ) / 2
@@ -3735,6 +5557,8 @@ subroutine radf2 ( ido, l1, cc, ch, wa1 )
 !
 !  Parameters:
 !
+  implicit none
+!
   integer ido
   integer l1
 !
@@ -3801,6 +5625,8 @@ subroutine radf3 ( ido, l1, cc, ch, wa1, wa2 )
 !
 !  Parameters:
 !
+  implicit none
+!
   integer ido
   integer l1
 !
@@ -3815,7 +5641,7 @@ subroutine radf3 ( ido, l1, cc, ch, wa1, wa2 )
   integer i
   integer ic
   integer k
-  real, parameter :: taui = 0.866025403784439E+00
+  real taui
   real, parameter :: taur = -0.5E+00
   real ti2
   real ti3
@@ -3824,6 +5650,8 @@ subroutine radf3 ( ido, l1, cc, ch, wa1, wa2 )
   real wa1(ido)
   real wa2(ido)
 !
+  taui = sqrt ( 3.0E+00 ) / 2.0E+00
+
   do k = 1, l1
     cr2 = cc(1,k,2) + cc(1,k,3)
     ch(1,1,k) = cc(1,k,1) + cr2
@@ -3884,6 +5712,8 @@ subroutine radf4 ( ido, l1, cc, ch, wa1, wa2, wa3 )
 !
 !  Parameters:
 !
+  implicit none
+!
   integer ido
   integer l1
 !
@@ -3895,7 +5725,7 @@ subroutine radf4 ( ido, l1, cc, ch, wa1, wa2, wa3 )
   real cr2
   real cr3
   real cr4
-  real, parameter :: hsqt2 = 0.7071067811865475E+00
+  real hsqt2
   integer i
   integer ic
   integer k
@@ -3911,6 +5741,8 @@ subroutine radf4 ( ido, l1, cc, ch, wa1, wa2, wa3 )
   real wa2(ido)
   real wa3(ido)
 !
+  hsqt2 = sqrt ( 2.0E+00 ) / 2.0E+00
+
   do k = 1, l1
     tr1 = cc(1,k,2) + cc(1,k,4)
     tr2 = cc(1,k,1) + cc(1,k,3)
@@ -3938,10 +5770,10 @@ subroutine radf4 ( ido, l1, cc, ch, wa1, wa2, wa3 )
         cr4 = wa3(i-2) * cc(i-1,k,4) + wa3(i-1) * cc(i,k,4)
         ci4 = wa3(i-2) * cc(i,k,4)   - wa3(i-1) * cc(i-1,k,4)
 
-        tr1 = cr2+cr4
-        tr4 = cr4-cr2
-        ti1 = ci2+ci4
-        ti4 = ci2-ci4
+        tr1 = cr2 + cr4
+        tr4 = cr4 - cr2
+        ti1 = ci2 + ci4
+        ti4 = ci2 - ci4
         ti2 = cc(i,k,1) + ci3
         ti3 = cc(i,k,1) - ci3
         tr2 = cc(i-1,k,1) + cr3
@@ -3997,6 +5829,8 @@ subroutine radf5 ( ido, l1, cc, ch, wa1, wa2, wa3, wa4 )
 !    National Center for Atmospheric Research
 !
 !  Parameters:
+!
+  implicit none
 !
   integer ido
   integer l1
@@ -4126,6 +5960,28 @@ subroutine radfg ( ido, ip, l1, idl1, cc, c1, c2, ch, ch2, wa )
 !
 !  Parameters:
 !
+!    Input, integer IDO, ?
+!
+!    Input, integer IP, ?
+!
+!    Input, integer L1, ?
+!
+!    Input, integer IDL1, ?
+!
+!    ?, real CC(IDO,IP,L1), ?
+!
+!    ?, real C1(IDO,L1,IP), ?
+!
+!    ?, real C2(IDL1,IP), ?
+!
+!    ?, real CH(IDO,L1,IP), ?
+!
+!    ?, real CH2(IDL1,IP), ?
+!
+!    ?, real WA(*), ?
+!
+  implicit none
+!
   integer idl1
   integer ido
   integer ip
@@ -4160,10 +6016,10 @@ subroutine radfg ( ido, ip, l1, idl1, cc, c1, c2, ch, ch2, wa )
   integer l
   integer lc
   integer nbd
-  real pimach
+  real r_pi
   real wa(*)
 !
-  arg = 2.0E+00 * pimach() / real ( ip )
+  arg = 2.0E+00 * r_pi ( ) / real ( ip )
   dcp = cos ( arg )
   dsp = sin ( arg )
   ipph = ( ip + 1 ) / 2
@@ -4355,15 +6211,9 @@ subroutine random_initialize ( seed )
 !    number seed, making up values based on the current time, and setting
 !    the random number seed.
 !
-!    And this is the FORTRAN 90 people's idea of convenience?
-!
-!    And I still get poorly randomized values, somehow, having to do
-!    with a bad seed, or something.  I am about ready to go back to
-!    using my own damn routine!
-!
 !  Modified:
 !
-!    06 February 2001
+!    19 December 2001
 !
 !  Author:
 !
@@ -4371,15 +6221,24 @@ subroutine random_initialize ( seed )
 !
 !  Parameters:
 !
-!    Output, integer SEED, a seed value.
+!    Input/output, integer SEED.
+!    If SEED is zero on input, then you're asking this routine to come up
+!    with a seed value, which is returned as output.
+!    If SEED is nonzero on input, then you're asking this routine to
+!    use the input value of SEED to initialize the random number generator,
+!    and SEED is not changed on output.
 !
-  integer date_time(8)
+  implicit none
+!
+  integer count
+  integer count_max
+  integer count_rate
+  logical, parameter :: debug = .false.
   integer i
   integer seed
   integer, allocatable :: seed_vector(:)
   integer seed_size
   real t
-  integer value
 !
 !  Initialize the random number seed.
 !
@@ -4392,41 +6251,253 @@ subroutine random_initialize ( seed )
 !  Allocate a seed of the right size.
 !
   allocate ( seed_vector(seed_size) )
+
+  if ( seed /= 0 ) then
+
+    if ( debug ) then
+      write ( *, '(a)' ) ' '
+      write ( *, '(a)' ) 'RANDOM_INITIALIZE'
+      write ( *, '(a,i20)' ) '  Initialize RANDOM_NUMBER, user SEED = ', seed
+    end if
+
+  else
+
+    call system_clock ( count, count_rate, count_max )
+
+    seed = count
+
+    if ( debug ) then
+      write ( *, '(a)' ) ' '
+      write ( *, '(a)' ) 'RANDOM_INITIALIZE'
+      write ( *, '(a,i20)' ) '  Initialize RANDOM_NUMBER, arbitrary SEED = ', &
+        seed
+    end if
+
+  end if
 !
-!  Get the current date and time.
+!  Now set the seed.
 !
-  call date_and_time ( values = date_time )
-!
-!  Construct a slightly random value.
-!
-  seed = 0
-  do i = 1, 8
-    seed = ieor ( seed, date_time(i) )
-  end do
-!
-!  Make slightly random assignments to SEED_VECTOR.
-!
-  do i = 1, seed_size
-    seed_vector(i) = ieor ( seed, i )
-  end do
-!
-!  Set the random number seed value.
-!
+  seed_vector(1:seed_size) = seed
+
   call random_seed ( put = seed_vector(1:seed_size) )
 !
 !  Free up the seed space.
 !
   deallocate ( seed_vector )
 !
-!  Because EVEN THIS DOESN'T SEEM TO PROPERLY MIX UP THE RANDOM
-!  NUMBERS, call the random number routine a bunch of times.
+!  Call the random number routine a bunch of times.
 !
   do i = 1, 100
     call random_number ( harvest = t )
   end do
+
+  return
+end
+subroutine rcost ( n, x, wsave )
 !
-!  I STILL GET LOUSY RESULTS.  THE HELL WITH IT!
+!*******************************************************************************
 !
+!! RCOST computes the discrete Fourier cosine transform of an even sequence. 
+!
+!
+!  Discussion:
+!
+!    This routine is the unnormalized inverse of itself.  Two successive
+!    calls will multiply the input sequence X by 2*(N-1). 
+!
+!    The array WSAVE must be initialized by calling RCOSTI.
+!
+!    The transform is defined by:
+!
+!      X_out(I) = X_in(1) + (-1) **(I-1) * X_in(N) + sum ( 2 <= K <= N-1 )
+!
+!        2 * X_in(K) * cos ( ( K - 1 ) * ( I - 1 ) * PI / ( N - 1 ) )
+!
+!  Modified:
+!
+!    09 March 2001
+!
+!  Author:
+!
+!    Paul Swarztrauber,
+!    National Center for Atmospheric Research
+!
+!  Reference:
+!
+!    David Kahaner, Clever Moler, Steven Nash,
+!    Numerical Methods and Software,
+!    Prentice Hall, 1988.
+!
+!    P N Swarztrauber, 
+!    Vectorizing the FFT's, 
+!    in Parallel Computations,
+!    G. Rodrigue, editor, 
+!    Academic Press, 1982, pages 51-83.
+!
+!    B L Buzbee, 
+!    The SLATEC Common Math Library, 
+!    in Sources and Development of Mathematical Software,
+!    W. Cowell, editor,
+!    Prentice Hall, 1984, pages 302-318.
+!
+!  Parameters:
+!
+!    Input, integer N, the length of the sequence to be transformed.  The 
+!    method is more efficient when N-1 is the product of small primes.
+!
+!    Input/output, real X(N).
+!    On input, the sequence to be transformed.
+!    On output, the transformed sequence.
+!
+!    Input, real WSAVE(3*N+15).
+!    The WSAVE array must be initialized by calling RCOSTI.  A different 
+!    array must be used for each different value of N. 
+!
+  implicit none
+!
+  integer n
+!
+  real c1
+  integer i
+  integer k
+  integer kc
+  integer ns2
+  real t1
+  real t2
+  real tx2
+  real wsave(3*n+15)
+  real x(n)
+  real x1h
+  real x1p3
+  real xi
+  real xim2
+!
+  ns2 = n / 2
+
+  if ( n <= 1 ) then
+    return
+  end if
+
+  if ( n == 2 ) then
+    x1h = x(1) + x(2)
+    x(2) = x(1) - x(2)
+    x(1) = x1h
+    return
+  end if
+
+  if ( n == 3 ) then
+    x1p3 = x(1) + x(3)
+    tx2 = x(2) + x(2)
+    x(2) = x(1) - x(3)
+    x(1) = x1p3 + tx2
+    x(3) = x1p3 - tx2
+    return
+  end if
+
+  c1 = x(1) - x(n)
+  x(1) = x(1) + x(n)
+
+  do k = 2, ns2
+    kc = n + 1 - k
+    t1 = x(k) + x(kc)
+    t2 = x(k) - x(kc)
+    c1 = c1 + wsave(kc) * t2
+    t2 = wsave(k) * t2
+    x(k) = t1 - t2
+    x(kc) = t1 + t2
+  end do
+
+  if ( mod ( n, 2 ) /= 0 ) then
+    x(ns2+1) = x(ns2+1) + x(ns2+1)
+  end if
+
+  call rfftf ( n-1, x, wsave(n+1) )
+
+  xim2 = x(2)
+  x(2) = c1
+
+  do i = 4, n, 2
+    xi = x(i)
+    x(i) = x(i-2) - x(i-1)
+    x(i-1) = xim2
+    xim2 = xi
+  end do
+
+  if ( mod ( n, 2 ) /= 0 ) then
+    x(n) = xim2
+  end if
+
+  return
+end
+subroutine rcosti ( n, wsave )
+!
+!*******************************************************************************
+!
+!! RCOSTI initializes WSAVE, used in RCOST.
+!
+!
+!  Discussion:
+!
+!    The prime factorization of N together with a tabulation of the 
+!    trigonometric functions are computed and stored in WSAVE.
+!
+!  Modified:
+!
+!    09 March 2001
+!
+!  Author:
+!
+!    Paul Swarztrauber,
+!    National Center for Atmospheric Research
+!
+!  Reference:
+!
+!    David Kahaner, Clever Moler, Steven Nash,
+!    Numerical Methods and Software,
+!    Prentice Hall, 1988.
+!
+!    P N Swarztrauber, 
+!    Vectorizing the FFT's, 
+!    in Parallel Computations,
+!    G. Rodrigue, editor, 
+!    Academic Press, 1982, pages 51-83.
+!
+!    B L Buzbee, 
+!    The SLATEC Common Math Library, 
+!    in Sources and Development of Mathematical Software,
+!    W. Cowell, editor,
+!    Prentice Hall, 1984, pages 302-318.
+!
+!  Parameters:
+!
+!    Input, integer N, the length of the sequence to be transformed.  The 
+!    method is more efficient when N-1 is the product of small primes.
+!
+!    Output, real WSAVE(3*N+15), contains data, depending on N, and 
+!    required by the RCOST algorithm.
+!
+  implicit none
+!
+  integer n
+!
+  real dt
+  integer k
+  real r_pi
+  real wsave(3*n+15)
+!
+  if ( n <= 3 ) then
+    return
+  end if
+
+  dt = r_pi ( ) / real ( n - 1 )
+
+  do k = 2, ( n / 2 )
+    wsave(k)     = 2.0E+00 * sin ( real ( k - 1 ) * dt )
+    wsave(n+1-k) = 2.0E+00 * cos ( real ( k - 1 ) * dt )
+  end do
+
+  call rffti ( n-1, wsave(n+1) )
+
   return
 end
 subroutine rfftb ( n, r, wsave )
@@ -4474,19 +6545,21 @@ subroutine rfftb ( n, r, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber,
-!    Vectorizing the FFT's,
-!    in Parallel Computations (G. Rodrigue, editor),
+!    P N Swarztrauber, 
+!    Vectorizing the FFT's, 
+!    in Parallel Computations,
+!    G. Rodrigue, editor, 
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee,
-!    The SLATEC Common Math Library,
-!    in Sources and Development of Mathematical Software (W. Cowell, editor),
+!    B L Buzbee, 
+!    The SLATEC Common Math Library, 
+!    in Sources and Development of Mathematical Software,
+!    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the array to be transformed.  The
+!    Input, integer N, the length of the array to be transformed.  The 
 !    method is more efficient when N is the product of small primes.
 !
 !    Input/output, real R(N).
@@ -4494,8 +6567,10 @@ subroutine rfftb ( n, r, wsave )
 !    On output, the transformed sequence.
 !
 !    Input, real WSAVE(2*N+15), a work array.  The WSAVE array must be
-!    initialized by calling RFFTI.  A different WSAVE array must be used
+!    initialized by calling RFFTI.  A different WSAVE array must be used 
 !    for each different value of N.
+!
+  implicit none
 !
   integer n
 !
@@ -4528,7 +6603,7 @@ subroutine rfftb1 ( n, c, ch, wa, ifac )
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the array to be transformed.
+!    Input, integer N, the length of the array to be transformed.  
 !
 !    Input/output, real C(N).
 !    On input, the sequence to be transformed.
@@ -4542,6 +6617,8 @@ subroutine rfftb1 ( n, c, ch, wa, ifac )
 !    IFAC(1) = N, the number that was factored.
 !    IFAC(2) = NF, the number of factors.
 !    IFAC(3:2+NF), the factors.
+!
+  implicit none
 !
   integer n
 !
@@ -4658,8 +6735,8 @@ subroutine rfftf ( n, r, wsave )
 !  Discussion:
 !
 !    This process is sometimes called Fourier analysis.
-!
-!    The transform is unnormalized.  A call to RFFTF followed by a call
+! 
+!    The transform is unnormalized.  A call to RFFTF followed by a call 
 !    to RFFTB will multiply the input sequence by N.
 !
 !    The transform is defined by:
@@ -4695,19 +6772,21 @@ subroutine rfftf ( n, r, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber,
-!    Vectorizing the FFT's,
-!    in Parallel Computations (G. Rodrigue, editor),
+!    P N Swarztrauber, 
+!    Vectorizing the FFT's, 
+!    in Parallel Computations,
+!    G. Rodrigue, editor, 
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee,
-!    The SLATEC Common Math Library,
-!    in Sources and Development of Mathematical Software (W. Cowell, editor),
+!    B L Buzbee, 
+!    The SLATEC Common Math Library, 
+!    in Sources and Development of Mathematical Software,
+!    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the array to be transformed.  The
+!    Input, integer N, the length of the array to be transformed.  The 
 !    method is more efficient when N is the product of small primes.
 !
 !    Input/output, real R(N).
@@ -4715,8 +6794,10 @@ subroutine rfftf ( n, r, wsave )
 !    On output, the transformed sequence.
 !
 !    Input, real WSAVE(2*N+15), a work array.  The WSAVE array must be
-!    initialized by calling RFFTI.  A different WSAVE array must be used
-!    for each different value of N.
+!    initialized by calling RFFTI.  A different WSAVE array must be used 
+!    for each different value of N.  
+!
+  implicit none
 !
   integer n
 !
@@ -4735,7 +6816,7 @@ subroutine rfftf1 ( n, c, ch, wa, ifac )
 !
 !*******************************************************************************
 !
-!! RFFTF1 is a lower level routine used by RFFTF and SINT.
+!! RFFTF1 is a lower level routine used by RFFTF and RSINT.
 !
 !
 !  Modified:
@@ -4749,7 +6830,7 @@ subroutine rfftf1 ( n, c, ch, wa, ifac )
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the array to be transformed.
+!    Input, integer N, the length of the array to be transformed.  
 !
 !    Input/output, real C(N).
 !    On input, the sequence to be transformed.
@@ -4763,6 +6844,8 @@ subroutine rfftf1 ( n, c, ch, wa, ifac )
 !    IFAC(1) = N, the number that was factored.
 !    IFAC(2) = NF, the number of factors.
 !    IFAC(3:2+NF), the factors.
+!
+  implicit none
 !
   integer n
 !
@@ -4870,12 +6953,12 @@ subroutine rffti ( n, wsave )
 !
 !*******************************************************************************
 !
-!! RFFTI initializes WSAVE, used in RFFTF and RFFTB.
+!! RFFTI initializes WSAVE, used in RFFTF and RFFTB. 
 !
 !
 !  Discussion:
 !
-!    The prime factorization of N together with a tabulation of the
+!    The prime factorization of N together with a tabulation of the 
 !    trigonometric functions are computed and stored in WSAVE.
 !
 !  Modified:
@@ -4893,22 +6976,26 @@ subroutine rffti ( n, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber,
-!    Vectorizing the FFT's,
-!    in Parallel Computations (G. Rodrigue, editor),
+!    P N Swarztrauber, 
+!    Vectorizing the FFT's, 
+!    in Parallel Computations,
+!    G. Rodrigue, editor, 
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee,
-!    The SLATEC Common Math Library,
-!    in Sources and Development of Mathematical Software (W. Cowell, editor),
+!    B L Buzbee, 
+!    The SLATEC Common Math Library, 
+!    in Sources and Development of Mathematical Software,
+!    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the sequence to be transformed.
+!    Input, integer N, the length of the sequence to be transformed. 
 !
 !    Output, real WSAVE(2*N+15), contains data, dependent on the value
-!    of N, which is necessary for the RFFTF and RFFTB routines.
+!    of N, which is necessary for the RFFTF and RFFTB routines.  
+!
+  implicit none
 !
   integer n
 !
@@ -4940,7 +7027,7 @@ subroutine rffti1 ( n, wa, ifac )
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the sequence to be transformed.
+!    Input, integer N, the length of the sequence to be transformed. 
 !
 !    Input, real WA(N).
 !
@@ -4948,6 +7035,8 @@ subroutine rffti1 ( n, wa, ifac )
 !    IFAC(1) = N, the number that was factored.
 !    IFAC(2) = NF, the number of factors.
 !    IFAC(3:2+NF), the factors.
+!
+  implicit none
 !
   integer n
 !
@@ -4968,14 +7057,14 @@ subroutine rffti1 ( n, wa, ifac )
   integer l2
   integer ld
   integer nf
-  real pimach
+  real r_pi
   real wa(n)
 !
   call i_factor ( n, ifac )
 
   nf = ifac(2)
 
-  argh = 2.0E+00 * pimach() / real ( n )
+  argh = 2.0E+00 * r_pi ( ) / real ( n )
   is = 0
   l1 = 1
 
@@ -5011,6 +7100,73 @@ subroutine rffti1 ( n, wa, ifac )
 
   return
 end
+subroutine rsct ( n, x, y )
+!
+!*******************************************************************************
+!
+!! RSCT computes a real "slow" cosine transform.
+!
+!
+!  Discussion:
+!
+!    This routine is provided for illustration and testing.  It is inefficient
+!    relative to optimized routines that use fast Fourier techniques.
+!
+!      Y(1) = Sum ( 1 <= J <= N ) X(J) 
+!
+!      For I from 2 to N-1:
+!
+!        Y(I) = 2 * Sum ( 1 <= J <= N ) X(J) 
+!          * cos ( PI * ( I - 1 ) * ( J - 1 ) / ( N - 1 ) )
+!
+!      Y(N) = Sum ( X(1:N:2) ) - Sum ( X(2:N:2) )
+!
+!    Applying the routine twice in succession should yield the original data,
+!    multiplied by 2 * ( N + 1 ).  This is a good check for correctness 
+!    and accuracy.
+!
+!  Modified:
+!
+!    07 January 2002
+!
+!  Author:
+!
+!    John Burkardt
+!
+!  Parameters:
+!
+!    Input, integer N, the number of data values.
+!
+!    Input, real X(N), the data sequence.
+!
+!    Output, real Y(N), the transformed data.
+!
+  implicit none
+!
+  integer n
+!
+  integer i
+  integer j
+  real r_pi
+  real theta
+  real x(n)
+  real y(n)
+!
+  y(1) = sum ( x(1:n) )
+
+  do i = 2, n-1
+    y(i) = 0.0E+00
+    do j = 1, n
+      theta = r_pi ( ) * &
+        real ( mod ( ( j - 1 ) * ( i - 1 ), 2 * ( n - 1 ) ) ) / real ( n - 1 )
+      y(i) = y(i) + 2.0E+00 * x(j) * cos ( theta )
+    end do
+  end do
+
+  y(n) = sum ( x(1:n:2) ) - sum ( x(2:n:2) )
+
+  return
+end
 subroutine rsftb ( n, r, azero, a, b )
 !
 !*******************************************************************************
@@ -5028,13 +7184,15 @@ subroutine rsftb ( n, r, azero, a, b )
 !
 !  Parameters:
 !
-!    Input, integer N, the number of data values.
+!    Input, integer N, the number of data values. 
 !
 !    Output, real R(N), the reconstructed data sequence.
 !
 !    Input, real AZERO, the constant Fourier coefficient.
 !
 !    Input, real A(N/2), B(N/2), the Fourier coefficients.
+!
+  implicit none
 !
   integer n
 !
@@ -5043,14 +7201,14 @@ subroutine rsftb ( n, r, azero, a, b )
   real b(n/2)
   integer i
   integer k
-  real, parameter :: pi = 3.14159265358979323846264338327950288419716939937510E+00
   real r(n)
+  real r_pi
   real theta
 !
   r(1:n) = azero
   do i = 1, n
     do k = 1, n/2
-      theta = real ( k * ( i - 1 ) * 2 ) * pi / real ( n )
+      theta = real ( k * ( i - 1 ) * 2 ) * r_pi() / real ( n )
       r(i) = r(i) + a(k) * cos ( theta ) + b(k) * sin ( theta )
     end do
   end do
@@ -5078,6 +7236,8 @@ subroutine rsftf ( n, r, azero, a, b )
 !
 !    Output, real A(N/2), B(N/2), the Fourier coefficients.
 !
+  implicit none
+!
   integer n
 !
   real a(1:n/2)
@@ -5085,8 +7245,8 @@ subroutine rsftf ( n, r, azero, a, b )
   real b(1:n/2)
   integer i
   integer j
-  real, parameter :: pi = 3.14159265358979323846264338327950288419716939937510E+00
   real r(n)
+  real r_pi
   real theta
 !
   azero = sum ( r(1:n) ) / real ( n )
@@ -5097,7 +7257,7 @@ subroutine rsftf ( n, r, azero, a, b )
     b(i) = 0.0E+00
 
     do j = 1, n
-      theta = real ( 2 * i * ( j - 1 ) ) * pi / real ( n )
+      theta = real ( 2 * i * ( j - 1 ) ) * r_pi() / real ( n )
       a(i) = a(i) + r(j) * cos ( theta )
       b(i) = b(i) + r(j) * sin ( theta )
     end do
@@ -5111,6 +7271,502 @@ subroutine rsftf ( n, r, azero, a, b )
     end if
 
   end do
+
+  return
+end
+subroutine rsht ( n, a, b  )
+!
+!*******************************************************************************
+!
+!! RSHT computes a "slow" Hartley transform of real data.
+!
+!
+!  Discussion:
+!
+!    The discrete Hartley transform B of a set of data A is 
+!
+!      B(I) = 1/sqrt(N) * Sum ( 0 <= J <= N-1 ) A(J) * CAS(2*PI*I*J/N)
+!
+!    Here, the data and coefficients are indexed from 0 to N-1.
+!
+!    With the above normalization factor of 1/sqrt(N), the Hartley
+!    transform is its own inverse.
+!
+!    This routine is provided for illustration and testing.  It is inefficient
+!    relative to optimized routines.  
+!
+!  Modified:
+!
+!    06 January 2002
+!
+!  Author:
+!
+!    John Burkardt
+!
+!  Parameters:
+!
+!    Input, integer N, the number of data values.
+!
+!    Input, real A(0:N-1), the data to be transformed.
+!
+!    Output, real B(0:N-1), the transformed data.
+!
+  implicit none
+!
+  integer n
+!
+  real a(0:n-1)
+  real b(0:n-1)
+  integer i
+  integer j
+  real r_cas
+  real r_pi
+  real theta
+!
+  b(0:n-1) = 0.0E+00
+
+  do i = 0, n-1
+    do j = 0, n-1
+      theta = 2.0E+00 * r_pi() * real ( mod ( i * j, n ) ) / real ( n )
+      b(i) = b(i) + a(j) * r_cas ( theta )
+    end do
+  end do
+
+  b(0:n-1) = b(0:n-1) / sqrt ( real ( n ) )
+
+  return
+end
+subroutine rsst ( n, x, y )
+!
+!*******************************************************************************
+!
+!! RSST computes a real "slow" sine transform.
+!
+!
+!  Discussion:
+!
+!    This routine is provided for illustration and testing.  It is inefficient
+!    relative to optimized routines that use fast Fourier techniques.  
+!
+!    For I from 1 to N,
+!
+!      Y(I) = Sum ( 1 <= J <= N ) X(J) * sin ( PI * I * J / ( N + 1 ) )
+!
+!    Applying the routine twice in succession should yield the original data,
+!    multiplied by N / 2.  This is a good check for correctness and accuracy.
+!
+!  Modified:
+!
+!    18 December 2001
+!
+!  Author:
+!
+!    John Burkardt
+!
+!  Parameters:
+!
+!    Input, integer N, the number of data values. 
+!
+!    Input, real X(N), the data sequence.
+!
+!    Output, real Y(N), the transformed data.
+!
+  implicit none
+!
+  integer n
+!
+  integer i
+  real r_pi
+  real theta(n)
+  real x(n)
+  real y(n)
+!
+  call rvec_identity ( n, theta )
+  theta(1:n) = theta(1:n) * r_pi() / real ( n + 1 )
+
+  y(1:n) = 0.0E+00
+
+  do i = 1, n
+    y(1:n) = y(1:n) + 2.0E+00 * x(i) * sin ( real ( i ) * theta(1:n) )
+  end do
+
+  return
+end
+subroutine rsqctb ( n, x, y )
+!
+!*******************************************************************************
+!
+!! RSQCTB computes a real "slow" quarter cosine transform backward.
+!
+!
+!  Discussion:
+!
+!    This routine is provided for illustration and testing.  It is inefficient
+!    relative to optimized routines that use fast Fourier techniques.
+!
+!    For I from 0 to N-1,
+!
+!      Y(I) = X(0) + 2 Sum ( 1 <= J <= N-1 ) X(J) * cos ( PI * J * (I+1/2) / N )
+!
+!  Reference:
+!
+!    Briggs and Henson,
+!    The Discrete Fourier Transform, 
+!    SIAM,
+!    QA403.5 B75
+!
+!  Modified:
+!
+!    21 January 2002
+!
+!  Author:
+!
+!    John Burkardt
+!
+!  Parameters:
+!
+!    Input, integer N, the number of data values.
+!
+!    Input, real X(0:N-1), the data sequence.
+!
+!    Output, real Y(0:N-1), the transformed data.
+!
+  implicit none
+!
+  integer n
+!
+  integer i
+  integer j
+  real r_pi
+  real theta
+  real x(0:n-1)
+  real y(0:n-1)
+!
+  y(0:n-1) = x(0)
+
+  do i = 0, n-1
+    do j = 1, n-1
+
+      theta = 0.5E+00 * r_pi() * real ( j * ( 2 * i + 1 ) ) / real ( n )
+      y(i) = y(i) + 2.0E+00 * x(j) * cos ( theta  )
+
+    end do
+
+  end do
+
+  return
+end
+subroutine rsqctf ( n, x, y )
+!
+!*******************************************************************************
+!
+!! RSQCTF computes a real "slow" quarter cosine transform forward.
+!
+!
+!  Discussion:
+!
+!    This routine is provided for illustration and testing.  It is inefficient
+!    relative to optimized routines that use fast Fourier techniques.
+!
+!    For I from 0 to N-1,
+!
+!      Y(I) = (1/N) Sum ( 0 <= J <= N-1 ) X(J) * cos ( PI * I * (J+1/2) / N )
+!
+!  Modified:
+!
+!    07 January 2002
+!
+!  Author:
+!
+!    John Burkardt
+!
+!  Reference:
+!
+!    Briggs and Henson,
+!    The Discrete Fourier Transform, 
+!    SIAM,
+!    QA403.5 B75
+!
+!  Parameters:
+!
+!    Input, integer N, the number of data values.
+!
+!    Input, real X(0:N-1), the data sequence.
+!
+!    Output, real Y(0:N-1), the transformed data.
+!
+  implicit none
+!
+  integer n
+!
+  integer i
+  integer j
+  real r_pi
+  real theta
+  real x(0:n-1)
+  real y(0:n-1)
+!
+  y(0:n-1) = 0.0E+00
+
+  do i = 0, n-1
+    do j = 0, n-1
+      theta = 0.5E+00 * r_pi() * real ( i * ( 2 * j + 1 ) ) / real ( n )
+      y(i) = y(i) + x(j) * cos ( theta  )
+    end do
+  end do
+
+  y(0:n-1) = y(0:n-1) / real ( n )
+
+  return
+end
+subroutine rsqstb ( n, x, y )
+!
+!*******************************************************************************
+!
+!! RSQSTB computes a real "slow" quarter sine transform backward.
+!
+!
+!  Discussion:
+!    
+!    This routine is provided for illustration and testing.  It is inefficient
+!    relative to optimized routines that use fast Fourier techniques.  
+!
+!    For I from 0 to N-1,
+!
+!      Y(I) = -2 Sum ( 1 <= J <= N-1 ) X(J) * sin ( PI * J * (I+1/2) / N )
+!             - X(N) * cos ( pi * I )
+!
+!  Modified:
+!
+!    21 January 2002
+!
+!  Author:
+!
+!    John Burkardt
+!
+!  Reference:
+!
+!    Briggs and Henson,
+!    The Discrete Fourier Transform, 
+!    SIAM,
+!    QA403.5 B75
+!
+!  Parameters:
+!
+!    Input, integer N, the number of data values. 
+!
+!    Input, real X(N), the data sequence.
+!
+!    Output, real Y(0:N-1), the transformed data.
+!
+  implicit none
+!
+  integer n
+!
+  integer i
+  integer j
+  real r_pi
+  real theta
+  real x(1:n)
+  real y(0:n-1)
+!
+  y(0:n-1) = 0.0E+00
+
+  do i = 0, n-1
+    do j = 1, n-1
+
+      theta = 0.5E+00 * r_pi() * real ( j * ( 2 * i + 1 ) ) / real ( n )
+      y(i) = y(i) - 2.0E+00 * x(j) * sin ( theta  )
+
+    end do
+
+    theta = r_pi() * real ( i )
+    y(i) = y(i) - x(n) * cos ( theta )
+
+  end do
+
+  return
+end
+subroutine rsqstf ( n, x, y )
+!
+!*******************************************************************************
+!
+!! RSQSTF computes a real "slow" quarter sine transform forward.
+!
+!
+!  Discussion:
+!    
+!    This routine is provided for illustration and testing.  It is inefficient
+!    relative to optimized routines that use fast Fourier techniques.  
+!
+!    For I from 1 to N,
+!
+!      Y(I) = -(1/N) Sum ( 0 <= J <= N-1 ) X(J) * sin ( PI * I * (J+1/2) / N )
+!
+!  Modified:
+!
+!    06 January 2002
+!
+!  Author:
+!
+!    John Burkardt
+!
+!  Reference:
+!
+!    Briggs and Henson,
+!    The Discrete Fourier Transform, 
+!    SIAM,
+!    QA403.5 B75
+!
+!  Parameters:
+!
+!    Input, integer N, the number of data values. 
+!
+!    Input, real X(0:N-1), the data sequence.
+!
+!    Output, real Y(N), the transformed data.
+!
+  implicit none
+!
+  integer n
+!
+  integer i
+  integer j
+  real r_pi
+  real theta
+  real x(0:n-1)
+  real y(n)
+!
+  y(1:n) = 0.0E+00
+
+  do i = 1, n
+    do j = 0, n-1
+      theta = 0.5E+00 * r_pi() * real ( i * ( 2 * j + 1 ) ) / real ( n )
+      y(i) = y(i) + x(j) * sin ( theta  )
+    end do
+  end do
+
+  y(1:n) = - y(1:n) / real ( n )
+
+  return
+end
+subroutine rvec_identity ( n, a )
+!
+!*******************************************************************************
+!
+!! RVEC_IDENTITY sets a real vector to the identity vector A(I)=I.
+!
+!
+!  Modified:
+!
+!    09 February 2001
+!
+!  Author:
+!
+!    John Burkardt
+!
+!  Parameters:
+!
+!    Input, integer N, the number of elements of A.
+!
+!    Output, real A(N), the array to be initialized.
+!
+  implicit none
+!
+  integer n
+!
+  real a(n)
+  integer i
+!
+  do i = 1, n
+    a(i) = real ( i )
+  end do
+
+  return
+end
+subroutine rvec_print_some ( n, a, max_print, title )
+!
+!*******************************************************************************
+!
+!! RVEC_PRINT_SOME prints "some" of a real vector.
+!
+!
+!  Discussion:
+!
+!    The user specifies MAX_PRINT, the maximum number of lines to print.
+!
+!    If N, the size of the vector, is no more than MAX_PRINT, then
+!    the entire vector is printed, one entry per line.
+!
+!    Otherwise, if possible, the first MAX_PRINT-2 entries are printed,
+!    followed by a line of periods suggesting an omission,
+!    and the last entry.
+!
+!  Modified:
+!
+!    10 September 1999
+!
+!  Author:
+!
+!    John Burkardt
+!
+!  Parameters:
+!
+!    Input, integer N, the number of entries of the vector.
+!
+!    Input, real A(N), the vector to be printed.
+!
+!    Input, integer MAX_PRINT, the maximum number of lines to print.
+!
+!    Input, character ( len = * ) TITLE, an optional title.
+!
+  implicit none
+!
+  integer n
+!
+  real a(n)
+  integer i
+  integer max_print
+  character ( len = * ) title
+!
+  if ( max_print <= 0 ) then
+    return
+  end if
+
+  if ( n <= 0 ) then
+    return
+  end if
+
+  if ( len_trim ( title ) > 0 ) then
+    write ( *, '(a)' ) ' '
+    write ( *, '(a)' ) trim ( title )
+    write ( *, '(a)' ) ' '
+  end if
+
+  if ( n <= max_print ) then
+
+    do i = 1, n
+      write ( *, '(i6,2x,g14.6)' ) i, a(i)
+    end do
+
+  else if ( max_print >= 3 ) then
+
+    do i = 1, max_print-2
+      write ( *, '(i6,2x,g14.6)' ) i, a(i)
+    end do
+    write ( *, '(a)' ) '......  ..............'
+    i = n
+    write ( *, '(i6,2x,g14.6)' ) i, a(i)
+
+  else
+
+    do i = 1, max_print - 1
+      write ( *, '(i6,2x,g14.6)' ) i, a(i)
+    end do
+    i = max_print
+    write ( *, '(i6,2x,g14.6,2x,a)' ) i, a(i), '...more entries...'
+
+  end if
 
   return
 end
@@ -5136,6 +7792,8 @@ subroutine rvec_random ( alo, ahi, n, a )
 !    Input, integer N, the number of entries in the vector.
 !
 !    Output, real A(N), the vector of randomly chosen values.
+!
+  implicit none
 !
   integer n
 !
@@ -5181,6 +7839,8 @@ subroutine rvec_reverse ( n, a )
 !
 !    Input/output, real A(N), the array to be reversed.
 !
+  implicit none
+!
   integer n
 !
   real a(n)
@@ -5196,12 +7856,12 @@ subroutine sinqb ( n, x, wsave )
 !
 !*******************************************************************************
 !
-!! SINQB computes the fast sine transform of quarter wave data.
+!! SINQB computes the fast sine transform of quarter wave data. 
 !
 !
 !  Discussion:
 !
-!    SINQB computes a sequence from its representation in terms of a sine
+!    SINQB computes a sequence from its representation in terms of a sine 
 !    series with odd wave numbers.
 !
 !    SINQF is the unnormalized inverse of SINQB since a call of SINQB
@@ -5230,19 +7890,21 @@ subroutine sinqb ( n, x, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber,
-!    Vectorizing the FFT's,
-!    in Parallel Computations (G. Rodrigue, editor),
+!    P N Swarztrauber, 
+!    Vectorizing the FFT's, 
+!    in Parallel Computations,
+!    G. Rodrigue, editor, 
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee,
-!    The SLATEC Common Math Library,
-!    in Sources and Development of Mathematical Software (W. Cowell, editor),
+!    B L Buzbee, 
+!    The SLATEC Common Math Library, 
+!    in Sources and Development of Mathematical Software,
+!    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the array to be transformed.  The
+!    Input, integer N, the length of the array to be transformed.  The 
 !    method is more efficient when N is the product of small primes.
 !
 !    Input/output, real X(N).
@@ -5250,8 +7912,10 @@ subroutine sinqb ( n, x, wsave )
 !    On output, the transformed sequence.
 !
 !    Input, real WSAVE(3*N+15), a work array.  The WSAVE array must be
-!    initialized by calling SINQI.  A different WSAVE array must be used
-!    for each different value of N.
+!    initialized by calling SINQI.  A different WSAVE array must be used 
+!    for each different value of N. 
+!
+  implicit none
 !
   integer n
 !
@@ -5282,18 +7946,18 @@ subroutine sinqf ( n, x, wsave )
 !
 !*******************************************************************************
 !
-!! SINQF computes the fast sine transform of quarter wave data.
+!! SINQF computes the fast sine transform of quarter wave data. 
 !
 !
 !  Discussion:
 !
-!    SINQF computes the coefficients in a sine series representation with
-!    only odd wave numbers.
+!    SINQF computes the coefficients in a sine series representation with 
+!    only odd wave numbers. 
 !
 !    SINQB is the unnormalized inverse of SINQF since a call of SINQF
 !    followed by a call of SINQB will multiply the input sequence X by 4*N.
 !
-!    The array WSAVE, which is used by SINQF, must be initialized by
+!    The array WSAVE, which is used by SINQF, must be initialized by 
 !    calling SINQI.
 !
 !    The transform is defined by:
@@ -5316,19 +7980,21 @@ subroutine sinqf ( n, x, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber,
-!    Vectorizing the FFT's,
-!    in Parallel Computations (G. Rodrigue, editor),
+!    P N Swarztrauber, 
+!    Vectorizing the FFT's, 
+!    in Parallel Computations,
+!    G. Rodrigue, editor, 
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee,
-!    The SLATEC Common Math Library,
-!    in Sources and Development of Mathematical Software (W. Cowell, editor),
+!    B L Buzbee, 
+!    The SLATEC Common Math Library, 
+!    in Sources and Development of Mathematical Software,
+!    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the array to be transformed.  The
+!    Input, integer N, the length of the array to be transformed.  The 
 !    method is more efficient when N is the product of small primes.
 !
 !    Input/output, real X(N).
@@ -5336,8 +8002,10 @@ subroutine sinqf ( n, x, wsave )
 !    On output, the transformed sequence.
 !
 !    Input, real WSAVE(3*N+15), a work array.  The WSAVE array must be
-!    initialized by calling SINQI.  A different WSAVE array must be used
-!    for each different value of N.
+!    initialized by calling SINQI.  A different WSAVE array must be used 
+!    for each different value of N. 
+!
+  implicit none
 !
   integer n
 !
@@ -5363,12 +8031,12 @@ subroutine sinqi ( n, wsave )
 !
 !*******************************************************************************
 !
-!! SINQI initializes WSAVE, used in SINQF and SINQB.
+!! SINQI initializes WSAVE, used in SINQF and SINQB. 
 !
 !
 !  Discussion:
 !
-!    The prime factorization of N together with a tabulation of the
+!    The prime factorization of N together with a tabulation of the 
 !    trigonometric functions are computed and stored in WSAVE.
 !
 !  Modified:
@@ -5386,22 +8054,26 @@ subroutine sinqi ( n, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber,
-!    Vectorizing the FFT's,
-!    in Parallel Computations (G. Rodrigue, editor),
+!    P N Swarztrauber, 
+!    Vectorizing the FFT's, 
+!    in Parallel Computations,
+!    G. Rodrigue, editor, 
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee,
-!    The SLATEC Common Math Library,
-!    in Sources and Development of Mathematical Software (W. Cowell, editor),
+!    B L Buzbee, 
+!    The SLATEC Common Math Library, 
+!    in Sources and Development of Mathematical Software,
+!    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the array to be transformed.
+!    Input, integer N, the length of the array to be transformed.  
 !
 !    Output, real WSAVE(3*N+15), contains data, dependent on the value
-!    of N, which is necessary for the SINQF or SINQB routines.
+!    of N, which is necessary for the SINQF or SINQB routines.  
+!
+  implicit none
 !
   integer n
 !
@@ -5411,24 +8083,23 @@ subroutine sinqi ( n, wsave )
 
   return
 end
-subroutine sint ( n, x, wsave )
+subroutine rsint ( n, x, wsave )
 !
 !*******************************************************************************
 !
-!! SINT computes the discrete Fourier sine transform of an odd sequence.
+!! RSINT computes the discrete Fourier sine transform of an odd sequence. 
 !
 !
 !  Discussion:
 !
-!    SINT is the unnormalized inverse of itself since a call of SINT
-!    followed by another call of SINT will multiply the input sequence
-!    X by 2*(N+1).
+!    This routine is the unnormalized inverse of itself since two successive
+!    calls will multiply the input sequence X by 2*(N+1).
 !
-!    The array WSAVE must be initialized by calling SINTI.
+!    The array WSAVE must be initialized by calling RSINTI.
 !
 !    The transform is defined by:
 !
-!      X_out(I) = sum ( 1 <= K <= N )
+!      X_out(I) = sum ( 1 <= K <= N ) 
 !        2 * X_in(K) * sin ( K * I * PI / ( N + 1 ) )
 !
 !  Modified:
@@ -5446,28 +8117,32 @@ subroutine sint ( n, x, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber,
-!    Vectorizing the FFT's,
-!    in Parallel Computations (G. Rodrigue, editor),
+!    P N Swarztrauber, 
+!    Vectorizing the FFT's, 
+!    in Parallel Computations,
+!    G. Rodrigue, editor, 
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee,
-!    The SLATEC Common Math Library,
-!    in Sources and Development of Mathematical Software (W. Cowell, editor),
+!    B L Buzbee, 
+!    The SLATEC Common Math Library, 
+!    in Sources and Development of Mathematical Software,
+!    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the sequence to be transformed.
-!    The method is most efficient when N+1 is the product of small primes.
+!    Input, integer N, the length of the sequence to be transformed. 
+!    The method is most efficient when N+1 is the product of small primes. 
 !
 !    Input/output, real X(N).
 !    On input, the sequence to be transformed.
 !    On output, the transformed sequence.
 !
 !    Input, real WSAVE((5*N+30)/2), a work array.  The WSAVE array must be
-!    initialized by calling SINTI.  A different WSAVE array must be used
-!    for each different value of N.
+!    initialized by calling RSINTI.  A different WSAVE array must be used 
+!    for each different value of N. 
+!
+  implicit none
 !
   integer n
 !
@@ -5477,20 +8152,19 @@ subroutine sint ( n, x, wsave )
   real wsave((5*n+30)/2)
   real x(n)
 !
-  write ( *, * ) 'DEBUG: entered SINT'
   iw1 = n / 2 + 1
   iw2 = iw1 + n + 1
   iw3 = iw2 + n + 1
 
-  call sint1 ( n, x, wsave(1), wsave(iw1), wsave(iw2), wsave(iw3) )
-  write ( *, * ) 'DEBUG: leaving SINT'
+  call rsint1 ( n, x, wsave(1), wsave(iw1), wsave(iw2), wsave(iw3) )
+
   return
 end
-subroutine sint1 ( n, war, was, xh, x, ifac )
+subroutine rsint1 ( n, war, was, xh, x, ifac )
 !
 !*******************************************************************************
 !
-!! SINT1 is a lower level routine used by SINT.
+!! RSINT1 is a lower level routine used by RSINT.
 !
 !
 !  Modified:
@@ -5504,7 +8178,7 @@ subroutine sint1 ( n, war, was, xh, x, ifac )
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the sequence to be transformed.
+!    Input, integer N, the length of the sequence to be transformed. 
 !
 !    Input/output, real WAR(N).
 !    On input, the sequence to be transformed.
@@ -5514,12 +8188,14 @@ subroutine sint1 ( n, war, was, xh, x, ifac )
 !
 !    Input, real XH(N).
 !
-!    Input, real X(N).
+!    Input, real X(N+1), ?.
 !
 !    Input, integer IFAC(15).
 !    IFAC(1) = N, the number that was factored.
 !    IFAC(2) = NF, the number of factors.
 !    IFAC(3:2+NF), the factors.
+!
+  implicit none
 !
   integer n
 !
@@ -5533,11 +8209,10 @@ subroutine sint1 ( n, war, was, xh, x, ifac )
   real t2
   real war(n)
   real was(n/2)
-  real x(n)
+  real x(n+1)
   real xh(n)
   real xhold
 !
-  write ( *, * ) 'DEBUG: entered SINT1'
   xh(1:n) = war(1:n)
   war(1:n) = x(1:n)
 
@@ -5560,15 +8235,20 @@ subroutine sint1 ( n, war, was, xh, x, ifac )
     t1 = xh(k) - xh(n+1-k)
     t2 = was(k) * ( xh(k) + xh(n+1-k) )
     x(k+1) = t1 + t2
+!
+! ??? N+2-K puts us out of the array...DAMN IT, THIS IS AN ERROR.
+!
     x(n+2-k) = t2 - t1
   end do
 
   if ( mod ( n, 2 ) /= 0 ) then
     x(n/2+2) = 4.0E+00 * xh(n/2+1)
   end if
-  write ( *, * ) 'DEBUG: calling RFFTF1'
+!
+!  This call says there are N+1 things in X.
+!
   call rfftf1 ( n+1, x, xh, war, ifac )
-  write ( *, * ) 'DEBUG: back from RFFTF1'
+
   xh(1) = 0.5E+00 * x(1)
   do i = 3, n, 2
     xh(i-1) = -x(i)
@@ -5582,19 +8262,18 @@ subroutine sint1 ( n, war, was, xh, x, ifac )
   x(1:n) = war(1:n)
   war(1:n) = xh(1:n)
 
-  write ( *, * ) 'DEBUG: leaving SINT1'
   return
 end
-subroutine sinti ( n, wsave )
+subroutine rsinti ( n, wsave )
 !
 !*******************************************************************************
 !
-!! SINTI initializes WSAVE, used in SINT.
+!! RSINTI initializes WSAVE, used in RSINT.
 !
 !
 !  Discussion:
 !
-!    The prime factorization of N together with a tabulation of the
+!    The prime factorization of N together with a tabulation of the 
 !    trigonometric functions are computed and stored in WSAVE.
 !
 !  Modified:
@@ -5612,42 +8291,124 @@ subroutine sinti ( n, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber,
-!    Vectorizing the FFT's,
-!    in Parallel Computations (G. Rodrigue, editor),
+!    P N Swarztrauber, 
+!    Vectorizing the FFT's, 
+!    in Parallel Computations,
+!    G. Rodrigue, editor, 
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee,
-!    The SLATEC Common Math Library,
-!    in Sources and Development of Mathematical Software (W. Cowell, editor),
+!    B L Buzbee, 
+!    The SLATEC Common Math Library, 
+!    in Sources and Development of Mathematical Software,
+!    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the sequence to be transformed.
+!    Input, integer N, the length of the sequence to be transformed.  
 !    The method is most efficient when N+1 is a product of small primes.
 !
 !    Output, real WSAVE((5*N+30)/2), contains data, dependent on the value
-!    of N, which is necessary for the SINT routine.
+!    of N, which is necessary for the RSINT routine.  
+!
+  implicit none
 !
   integer n
 !
   real dt
   integer k
-  real pimach
+  real r_pi
   real wsave((5*n+30)/2)
 !
   if ( n <= 1 ) then
     return
   end if
 
-  dt = pimach() / real ( n + 1 )
+  dt = r_pi ( ) / real ( n + 1 )
 
   do k = 1, n/2
     wsave(k) = 2.0E+00 * sin ( real ( k ) * dt )
   end do
 
   call rffti ( n+1, wsave((n/2)+1) )
+
+  return
+end
+subroutine timestamp ( )
+!
+!*******************************************************************************
+!
+!! TIMESTAMP prints the current YMDHMS date as a time stamp.
+!
+!
+!  Example:
+!
+!    May 31 2001   9:45:54.872 AM
+!
+!  Modified:
+!
+!    31 May 2001
+!
+!  Author:
+!
+!    John Burkardt
+!
+!  Parameters:
+!
+!    None
+!
+  implicit none
+!
+  character ( len = 8 ) ampm
+  integer d
+  character ( len = 8 ) date
+  integer h
+  integer m
+  integer mm
+  character ( len = 9 ), parameter, dimension(12) :: month = (/ &
+    'January  ', 'February ', 'March    ', 'April    ', &
+    'May      ', 'June     ', 'July     ', 'August   ', &
+    'September', 'October  ', 'November ', 'December ' /)
+  integer n
+  integer s
+  character ( len = 10 )  time
+  integer values(8)
+  integer y
+  character ( len = 5 ) zone
+!
+  call date_and_time ( date, time, zone, values )
+
+  y = values(1)
+  m = values(2)
+  d = values(3)
+  h = values(5)
+  n = values(6)
+  s = values(7)
+  mm = values(8)
+
+  if ( h < 12 ) then
+    ampm = 'AM'
+  else if ( h == 12 ) then
+    if ( n == 0 .and. s == 0 ) then
+      ampm = 'Noon'
+    else
+      ampm = 'PM'
+    end if
+  else
+    h = h - 12
+    if ( h < 12 ) then
+      ampm = 'PM'
+    else if ( h == 12 ) then
+      if ( n == 0 .and. s == 0 ) then
+        ampm = 'Midnight'
+      else
+        ampm = 'AM'
+      end if
+    end if
+  end if
+
+  write ( *, '(a,1x,i2,1x,i4,2x,i2,a1,i2.2,a1,i2.2,a1,i3.3,1x,a)' ) &
+    trim ( month(m) ), d, y, h, ':', n, ':', s, '.', mm, trim ( ampm )
 
   return
 end
@@ -5675,18 +8436,19 @@ function uniform_01_sample ( iseed )
 !
 !    Output, real UNIFORM_01_SAMPLE, a random value between 0 and 1.
 !
-
+!  Local parameters:
 !
 !  IA = 7**5
 !  IB = 2**15
 !  IB16 = 2**16
 !  IP = 2**31-1
 !
+  implicit none
+!
   integer, parameter :: ia = 16807
   integer, parameter :: ib15 = 32768
   integer, parameter :: ib16 = 65536
   integer, parameter :: ip = 2147483647
-!
   integer iprhi
   integer iseed
   integer ixhi
