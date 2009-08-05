@@ -10,6 +10,7 @@ BORDER_PROFILES   = noborder_profiles
 DEBUG             = nodebug
 DERIV             =   deriv
 FOURIER           = nofourier
+FFTPACK           = nofftpack
 GHOSTFOLD         = noghostfold
 GRID              =   grid
 GSL               = nogsl
@@ -127,11 +128,13 @@ endif
 # for source libraries but will be needed for external libraries.
 #
 ifeq ($(FOURIER),fourier_fft)
+  FFT            = fft
   CFLAGS_FOURIER =
   FFLAGS_FOURIER =
   LD_FOURIER     = fft.o
 endif
 ifeq ($(FOURIER),fourier_fftpack)
+  FFT            = fftpack
   CFLAGS_FOURIER =
   FFLAGS_FOURIER =
   LD_FOURIER     = fftpack.o

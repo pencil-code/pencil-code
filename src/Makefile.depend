@@ -66,6 +66,9 @@ ENTROPY_SRC=$(ENTROPY).f90
 FOURIER_OBJ=$(FOURIER).o
 FOURIER_SRC=$(FOURIER).f90
 #
+FFT_OBJ=$(FFT).o
+FFT_SRC=$(FFT).f90
+#
 SHOCK_OBJ=$(SHOCK).o
 SHOCK_SRC=$(SHOCK).f90
 #
@@ -243,19 +246,6 @@ start.o:     start.f90 $(start_deps)
 run.o:       run.f90 $(run_deps)
 test.o:      test.f90 $(test_deps)
 #
-# Explict dependencies for the Fourier routines to allow them to pull in
-# different library routines.
-#
-fft.o: fft.f
-#
-fftpack.o: fftpack.f90
-#
-nofourier.o: nofourier.f90 fourier.h $(MESSAGES_OBJ) $(MPICOMM_FIX).o sub.o cparam.o cdata.o
-#
-fourier_fft.o: fourier_fft.f90 fft.o fourier.h $(MESSAGES_OBJ) $(MPICOMM_FIX).o cparam.o cdata.o
-#
-fourier_fftpack.o: fourier_fftpack.f90 fftpack.o fourier.h $(GENERAL_OBJ) $(MESSAGES_OBJ) $(MPICOMM_FIX).o cparam.o cdata.o
-#
 # Explicit dependencies for the different infrastructure modules.
 #
 COMMON_DEPS=$(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(DIAGNOSTICS_OBJ) $(MESSAGES_OBJ)
@@ -381,6 +371,8 @@ $(HYPERVISC_STRICT_OBJ): hypervisc_strict.h $(HYPERVISC_STRICT_SRC) $(CDATA_OBJ)
 $(HYPERRESI_STRICT_OBJ): hyperresi_strict.h $(HYPERRESI_STRICT_SRC) $(CDATA_OBJ) $(CPARAM_OBJ) $(FOURIER_OBJ)
 #
 $(EOS_OBJ): eos.h $(EOS_SRC) $(COMMON_DEPS) $(FARRAY_OBJ) $(GRAVITY_OBJ) $(FOURIER_OBJ)
+#
+$(FOURIER_OBJ): $(FOURIER_SRC) $(FFT_OBJ) fourier.h $(GENERAL_OBJ) $(MESSAGES_OBJ) $(MPICOMM_FIX).o cparam.o cdata.o
 #
 $(IO_OBJ): io.h $(IO_SRC) $(COMMON_DEPS) $(GENERAL_OBJ) $(SUB_OBJ)
 #
