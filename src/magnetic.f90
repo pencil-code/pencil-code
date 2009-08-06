@@ -649,7 +649,7 @@ module Magnetic
         case('hyper3_strict')
           if (lroot) print*, 'resistivity: strict hyper3 with positive definite heating rate'
           lresi_hyper3_strict=.true.
-	case('rdep')
+        case('rdep')
           if (lroot) print*, 'resistivity: r-dependent'
           lresi_rdep=.true.
           call eta_rdep(eta_r,geta_r,rdep_profile)

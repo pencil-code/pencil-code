@@ -2062,7 +2062,7 @@ module Radiation
             slices%xy2=>Jrad_xy2(:,:,slices%index)
             slices%xy3=>Jrad_xy3(:,:,slices%index)
             slices%xy4=>Jrad_xy4(:,:,slices%index)
-            if (slices%index<nnu) slices%ready=.true.
+            if (slices%index<=nnu) slices%ready=.true.
           endif
 !
 ! Source function

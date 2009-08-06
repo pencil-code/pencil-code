@@ -651,7 +651,10 @@ program run
                  enum=.false.,noghost=.true.)
       call particles_write_dsnapshot(trim(directory)//'/dpvar.dat')
     endif
-  else
+!
+!  Write crash files before exiting if we haven't written var.dat already
+!
+  else if (save_lastsnap) then
     call wsnap(trim(directory_snap)//'/crash.dat',f,mvar_io,ENUM=.false.)
     if (ip<=11) &
          call wsnap(trim(directory)//'/dcrash.dat',df,mvar,ENUM=.false.)
