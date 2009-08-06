@@ -693,7 +693,7 @@ module Testflow
             slices%xz =>uu11_xz(:,:,slices%index)
             slices%xy =>uu11_xy(:,:,slices%index)
             slices%xy2=>uu11_xy2(:,:,slices%index)
-            if (slices%index<3) slices%ready=.true.
+            if (slices%index<=3) slices%ready=.true.
           endif
       endselect
 !

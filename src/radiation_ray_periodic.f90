@@ -1371,7 +1371,7 @@ module Radiation
               slices%xy =>Isurf_xy(:,:,idir)
               slices%xy2=>Isurf_xy2(:,:,idir)
               slices%ready=.true.
-              if ((slices%index<ndir) slices%ready=.true.
+              if (slices%index<=ndir) slices%ready=.true.
             endif
 !
 !  Heating rate
@@ -1394,7 +1394,7 @@ module Radiation
             slices%xz=f(l1:l2    ,slices%iy,n1:n2     ,iFradx-1+slices%index)
             slices%xy=f(l1:l2    ,m1:m2    ,slices%iz ,iFradx-1+slices%index)
             slices%xy2=f(l1:l2   ,m1:m2    ,slices%iz2,iFradx-1+slices%index)
-            if (slices%index<3) slices%ready=.true.
+            if (slices%index<=3) slices%ready=.true.
           endif
 !
       endselect

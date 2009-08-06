@@ -2060,7 +2060,7 @@ module Radiation
               if (nrad>0) then
                 slices%xy2=>Isurf(idir)%xy2
                 slices%index=slices%index+1
-                if (slices%index<nIsurf) slices%ready=.true.
+                if (slices%index<=nIsurf) slices%ready=.true.
                 idir_last=idir
                 exit
               endif
@@ -2096,7 +2096,7 @@ module Radiation
             slices%xz =abs(f(l1:l2    ,slices%iy,n1:n2     ,iFradx-1+slices%index))
             slices%xy =abs(f(l1:l2    ,m1:m2    ,slices%iz ,iFradx-1+slices%index))
             slices%xy2=abs(f(l1:l2    ,m1:m2    ,slices%iz2,iFradx-1+slices%index))
-            if (slices%index<3) slices%ready = .true.
+            if (slices%index<=3) slices%ready = .true.
           endif
 !
       endselect
