@@ -20,5 +20,4 @@ PSCALAR   = nopscalar
 GRAVITY   =   gravity_simple
 FORCING   = noforcing
 SHEAR     = noshear
-FFTPACK   = nofftpack
 POWER_SPECTRUM = nopower_spectrum

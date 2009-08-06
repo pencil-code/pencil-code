@@ -20,7 +20,4 @@ GRAVITY      =   gravity_simple
 FORCING      = noforcing
 SHEAR        =   shear
 
-FFT          = nofft
-FFTPACK      = nofftpack
 POWER        = nopower_spectrum
-

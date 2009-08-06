@@ -7,8 +7,6 @@ LIBSIG=-L$(HOME)/f90/lib
 LDMPI=-lmpi
 MPICOMM   = nompicomm
 IO        =   io_dist
-FFT       = nofft
-FFTPACK   = nofftpack
 
 HYDRO     =   hydro
 DENSITY   =   density

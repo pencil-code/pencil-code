@@ -24,10 +24,4 @@ SHEAR        = noshear
 DUSTDENSITY  =   dustdensity
 DUSTVELOCITY =   dustvelocity
 
-FFTPACK      = nofftpack
-FFT          = nofft
-
-
-# Use double precision
 REAL_PRECISION = double
-

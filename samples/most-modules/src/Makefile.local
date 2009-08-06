@@ -3,7 +3,7 @@
 ### Included by `Makefile'
 ###
 
-MPICOMM               =   mpicomm
+MPICOMM               = nompicomm
 IO                    =   io_dist
 TIMEAVG               =   timeavg
 
@@ -43,8 +43,6 @@ BORDER_PROFILES       =   border_profiles
 
 POISSON               =   poisson
 FOURIER               =   fourier_fftpack
-FFT                   =   fft
-FFTPACK               =   fftpack
 POWER                 =   power_spectrum
 STRUCT_FUNC           =   struct_func
 

@@ -12,6 +12,5 @@ MAGNETIC=nomagnetic
 HYDRO=hydro
 DENSITY=density
 IO=io_dist
-FFTPACK=nofftpack
 POWER=nopower_spectrum
 EOS=eos_ionization
