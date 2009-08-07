@@ -43,7 +43,7 @@ module Testfield
 !
 !  cosine and sine function for setting test fields and analysis
 !
-  real, dimension(mz) :: cz,sz,c2z,csz,s2z
+  real, dimension(mz) :: cz,sz,c2z,csz,s2z,c2kz,s2kz
   real :: phase_testfield=.0
 !
   character (len=labellen), dimension(ninit) :: initaatest='nothing'
@@ -110,6 +110,7 @@ module Testfield
   integer :: idiag_eta21sc=0    ! DIAG_DOC: $\eta_{21}\sin kz\cos kz$
   integer :: idiag_eta12cs=0    ! DIAG_DOC: $\eta_{12}\cos kz\sin kz$
   integer :: idiag_eta22ss=0    ! DIAG_DOC: $\eta_{22}\sin^2 kz$
+  integer :: idiag_s2kzDFm=0    ! DIAG_DOC: $\left<\sin2kz\nabla\cdot F\right>$
   integer :: idiag_M11=0        ! DIAG_DOC: ${\cal M}_{11}$
   integer :: idiag_M22=0        ! DIAG_DOC: ${\cal M}_{22}$
   integer :: idiag_M33=0        ! DIAG_DOC: ${\cal M}_{33}$
@@ -275,6 +276,8 @@ module Testfield
       endif
       cz=cos(ztestfield)
       sz=sin(ztestfield)
+      c2kz=cos(2*ztestfield)
+      s2kz=sin(2*ztestfield)
 !
 !  calculate cosz*sinz, cos^2, and sinz^2, to take moments with
 !  of alpij and etaij. This is useful if there is a mean Beltrami field
@@ -544,14 +547,14 @@ module Testfield
       type (pencil_case) :: p
 
       real, dimension (nx,3) :: bb,aa,uxB,B0test=0,bbtest
-      real, dimension (nx,3) :: uxbtest,duxbtest,jxbtest,djxbrtest
+      real, dimension (nx,3) :: uxbtest,duxbtest,jxbtest,djxbrtest,eetest
       real, dimension (nx,3) :: J0test=0,jxB0rtest,J0xbrtest
       real, dimension (nx,3,3,njtest) :: Mijpq
       real, dimension (nx,3,njtest) :: Eipq,bpq,jpq
       real, dimension (nx,3) :: del2Atest,uufluct
       real, dimension (nx,3) :: del2Atest2,graddivatest,aatest,jjtest,jxbrtest
       real, dimension (nx,3,3) :: aijtest,bijtest,Mijtest
-      real, dimension (nx) :: jbpq,bpq2,Epq2
+      real, dimension (nx) :: jbpq,bpq2,Epq2,s2kzDF1,s2kzDF2
       integer :: jtest,jfnamez,j, i1=1, i2=2, i3=3, i4=4
       logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
 !
@@ -755,6 +758,7 @@ module Testfield
           (lsoca.or.ltest_uxb.or.idiag_b0rms/=0.or. &
            idiag_b11rms/=0.or.idiag_b21rms/=0.or. &
            idiag_b12rms/=0.or.idiag_b22rms/=0.or. &
+           idiag_s2kzDFm/=0.or. &
            idiag_M11cc/=0.or.idiag_M11ss/=0.or. &
            idiag_M22cc/=0.or.idiag_M22ss/=0.or. &
            idiag_M12cs/=0.or. &
@@ -852,6 +856,20 @@ module Testfield
         if (leta_rank2) then
           if (idiag_eta12cs/=0) call sum_mn_name(-csz(n)*(-sz(n)*Eipq(:,1,i1)+cz(n)*Eipq(:,1,i2))*ktestfield1,idiag_eta12cs)
           if (idiag_eta22ss/=0) call sum_mn_name(-s2z(n)*(-sz(n)*Eipq(:,2,i1)+cz(n)*Eipq(:,2,i2))*ktestfield1,idiag_eta22ss)
+        endif
+!
+!  Divergence of current helicity flux
+!
+        if (idiag_s2kzDFm/=0) then
+          eetest=etatest*jjtest-duxbtest
+          s2kzDF1=2*ktestfield*c2kz(n)*(&
+            bijtest(:,1,3)*eetest(:,1)+&
+            bijtest(:,2,3)*eetest(:,2)+&
+            bijtest(:,3,3)*eetest(:,3))
+          s2kzDF2=4*ktestfield**2*s2kz(n)*(&
+            bbtest(:,1)*eetest(:,1)+&
+            bbtest(:,2)*eetest(:,2))
+          call sum_mn_name(s2kzDF1-s2kzDF2,idiag_s2kzDFm)
         endif
 !
 !  Maxwell tensor and its weighted averages
@@ -1443,13 +1461,15 @@ module Testfield
         idiag_bx0mz=0; idiag_by0mz=0; idiag_bz0mz=0
         idiag_E111z=0; idiag_E211z=0; idiag_E311z=0
         idiag_E121z=0; idiag_E221z=0; idiag_E321z=0
-        idiag_E10z=0; idiag_E20z=0; idiag_E30z=0; idiag_EBpq=0; idiag_E0Um=0; idiag_E0Wm=0
+        idiag_E10z=0; idiag_E20z=0; idiag_E30z=0
+        idiag_EBpq=0; idiag_E0Um=0; idiag_E0Wm=0
         idiag_alp11=0; idiag_alp21=0; idiag_alp31=0
         idiag_alp12=0; idiag_alp22=0; idiag_alp32=0
         idiag_eta11=0; idiag_eta21=0; idiag_eta31=0
         idiag_eta12=0; idiag_eta22=0; idiag_eta32=0
         idiag_alp11cc=0; idiag_alp21sc=0; idiag_alp12cs=0; idiag_alp22ss=0
         idiag_eta11cc=0; idiag_eta21sc=0; idiag_eta12cs=0; idiag_eta22ss=0
+        idiag_s2kzDFm=0
         idiag_M11=0; idiag_M22=0; idiag_M33=0
         idiag_M11cc=0; idiag_M11ss=0; idiag_M22cc=0; idiag_M22ss=0
         idiag_M12cs=0
@@ -1486,6 +1506,7 @@ module Testfield
         call parse_name(iname,cname(iname),cform(iname),'eta21sc',idiag_eta21sc)
         call parse_name(iname,cname(iname),cform(iname),'eta12cs',idiag_eta12cs)
         call parse_name(iname,cname(iname),cform(iname),'eta22ss',idiag_eta22ss)
+        call parse_name(iname,cname(iname),cform(iname),'s2kzDFm',idiag_s2kzDFm)
         call parse_name(iname,cname(iname),cform(iname),'M11',idiag_M11)
         call parse_name(iname,cname(iname),cform(iname),'M22',idiag_M22)
         call parse_name(iname,cname(iname),cform(iname),'M33',idiag_M33)
@@ -1579,6 +1600,7 @@ module Testfield
         write(3,*) 'idiag_eta21sc=',idiag_eta21sc
         write(3,*) 'idiag_eta12cs=',idiag_eta12cs
         write(3,*) 'idiag_eta22ss=',idiag_eta22ss
+        write(3,*) 'idiag_s2kzDFm=',idiag_s2kzDFm
         write(3,*) 'idiag_M11=',idiag_M11
         write(3,*) 'idiag_M22=',idiag_M22
         write(3,*) 'idiag_M33=',idiag_M33
