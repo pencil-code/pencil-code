@@ -66,9 +66,6 @@ ENTROPY_SRC=$(ENTROPY).f90
 FOURIER_OBJ=$(FOURIER).o
 FOURIER_SRC=$(FOURIER).f90
 #
-FFTLIB_OBJ=$(FFTLIB).o
-FFTLIB_SRC=$(FFTLIB).f90
-#
 SHOCK_OBJ=$(SHOCK).o
 SHOCK_SRC=$(SHOCK).f90
 #
@@ -372,7 +369,11 @@ $(HYPERRESI_STRICT_OBJ): hyperresi_strict.h $(HYPERRESI_STRICT_SRC) $(CDATA_OBJ)
 #
 $(EOS_OBJ): eos.h $(EOS_SRC) $(COMMON_DEPS) $(FARRAY_OBJ) $(GRAVITY_OBJ) $(FOURIER_OBJ)
 #
-$(FOURIER_OBJ): $(FOURIER_SRC) $(FFTLIB_OBJ) fourier.h $(GENERAL_OBJ) $(SUB_OBJ) $(MESSAGES_OBJ) $(MPICOMM_FIX).o cparam.o cdata.o
+nofourier.o: $(FOURIER_SRC) fourier.h $(GENERAL_OBJ) $(SUB_OBJ) $(MESSAGES_OBJ) $(MPICOMM_FIX).o cparam.o cdata.o
+#
+fourier_fft.o: $(FOURIER_SRC) fft.o fourier.h $(GENERAL_OBJ) $(SUB_OBJ) $(MESSAGES_OBJ) $(MPICOMM_FIX).o cparam.o cdata.o
+#
+fourier_fftpack.o: $(FOURIER_SRC) fftpack.o fourier.h $(GENERAL_OBJ) $(SUB_OBJ) $(MESSAGES_OBJ) $(MPICOMM_FIX).o cparam.o cdata.o
 #
 $(IO_OBJ): io.h $(IO_SRC) $(COMMON_DEPS) $(GENERAL_OBJ) $(SUB_OBJ)
 #

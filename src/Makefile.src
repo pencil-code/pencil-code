@@ -10,7 +10,6 @@ BORDER_PROFILES   = noborder_profiles
 DEBUG             = nodebug
 DERIV             =   deriv
 FOURIER           = nofourier
-FFTLIB            = nofftpack
 GHOSTFOLD         = noghostfold
 GRID              =   grid
 GSL               = nogsl
@@ -128,13 +127,11 @@ endif
 # for source libraries but will be needed for external libraries.
 #
 ifeq ($(FOURIER),fourier_fft)
-  FFTLIB         = fft
   CFLAGS_FOURIER =
   FFLAGS_FOURIER =
   LD_FOURIER     = fft.o
 endif
 ifeq ($(FOURIER),fourier_fftpack)
-  FFTLIB         = fftpack
   CFLAGS_FOURIER =
   FFLAGS_FOURIER =
   LD_FOURIER     = fftpack.o
@@ -1538,10 +1535,10 @@ run:
 install:
 	cp *.x ../
 # 
-nofft.f90:
-	@ touch nofft.f90
-nofftpack.f90:
-	@ touch nofftpack.f90
+# nofft.f90:
+#     @ touch nofft.f90
+# nofftpack.f90:
+#     @ touch nofftpack.f90
 # 
 # TAGS file for Emacs.
 # $(TAG_SOURCE) requires nofftpack.f90 or fft.f90 to exist, so we
