@@ -15,7 +15,7 @@ module Solid_Cells
 
   integer, parameter            :: max_items=10
   integer                       :: ncylinders,nrectangles,dummy
-  integer                       :: nforcepoints=100
+  integer                       :: nforcepoints=300
   real, dimension(max_items,5)  :: cylinder
   real, dimension(max_items,7)  :: rectangle
   real, dimension(max_items)    :: cylinder_radius
@@ -31,7 +31,9 @@ module Solid_Cells
   real                          :: c_dragx, c_dragy
   real                          :: rhosum
   integer                       :: irhocount
-
+  real                          :: cx_cum=0, cy_cum=0
+  integer                       :: idragcount=0
+  
 !!ForDebug->!!! Debug:
 !!ForDebug->  real                          :: testcpx,testcpy,testctx,testcty
 !!ForDebug->  integer                       :: testcounter
@@ -606,9 +608,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
     real    :: rhosum_all, c_dragx_all, c_dragy_all, cpx,ctx,cpy,cty
     integer :: irhocount_all, testcounter_all
     real    :: norm, refrho0
-
-
-
+    
     if (ldiagnos) then
       if (idiag_c_dragx .ne. 0 .or. idiag_c_dragy .ne. 0) then 
 
@@ -631,6 +631,18 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
           
           c_dragx = c_dragx_all * norm
           c_dragy = c_dragy_all * norm
+
+          ! Calculate and write average drag coefficients
+          ! for increasing time intervals
+          cx_cum = cx_cum + c_dragx 
+          cy_cum = cy_cum + c_dragy
+          idragcount = idragcount + 1
+          open(unit=79, file='data/dragcoeffsavg.dat', position='APPEND')
+          write(79,80) it-1, t, cx_cum/idragcount, cy_cum/idragcount, idragcount
+          close(79)
+80        format(1I5,3F15.8,1I5)
+
+
 
 !!ForDebug->!!! Debug:
 !!ForDebug->          cpx=cpx*norm
@@ -1279,7 +1291,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !  First we look in x-direction
 !
         k=l1
-        do j=m1-1,m2+1
+        do j=1,my
 !
 !  Check if we are inside the cylinder for y(j) (i.e. if x2>0)
 !
@@ -1290,7 +1302,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !
             xval_p=cylinder(icyl,2)+sqrt(x2)
             xval_m=cylinder(icyl,2)-sqrt(x2)            
-            do i=l1-1,l2+1
+            do i=1,mx
               if (x(i)<xval_p .and. x(i)>xval_m) then
                 !
                 if (x(i+1)>xval_p) then
@@ -1365,7 +1377,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !
 !  Then we look in y-direction
 !
-        do i=l1-1,l2+1
+        do i=1,mx
 !
 !  Check if we are inside the cylinder for x(i) (i.e. if y2>0)
 !
@@ -1376,7 +1388,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !
             yval_p=cylinder(icyl,3)+sqrt(y2)
             yval_m=cylinder(icyl,3)-sqrt(y2)            
-            do j=m1-1,m2+1
+            do j=1,mx
               if (y(j)<yval_p .and. y(j)>yval_m) then
                 if (y(j+1)>yval_p) then
                   if (.not. ba_defined(i,j)) then
@@ -1458,11 +1470,11 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !
 !  Loop over all points
 !
-          do i=l1-1,l2+1
-            do j=m1-1,m2+1
+          do i=1,mx
+            do j=1,my
               r_point=sqrt(((x(i)-x_cyl)**2+(y(j)-y_cyl)**2))
               dr=r_point-r_cyl
-              if ((dr > 0) .and. (dr<limit_close_linear)) then
+              if ((dr .ge. 0) .and. (dr<limit_close_linear)) then
                 ba(i,j,:,1)=10
                 ba(i,j,:,4)=icyl
               endif
