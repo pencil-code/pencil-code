@@ -25,7 +25,8 @@ module Chiral
 !
   integer :: iXX_chiral=0,iYY_chiral=0
   character (len=labellen) :: initXX_chiral='zero',initYY_chiral='zero'
-  logical :: linitialize_aa_from_EP
+  logical :: linitialize_aa_from_EP=.false.
+  real :: tinitialize_aa_from_EP=0.
   real :: amplXX_chiral=.1, widthXX_chiral=.5
   real :: amplYY_chiral=.1, widthYY_chiral=.5
   real :: kx_XX_chiral=1.,ky_XX_chiral=1.,kz_XX_chiral=1.,radiusXX_chiral=0.
@@ -49,7 +50,7 @@ module Chiral
   namelist /chiral_run_pars/ &
        chiral_diff,chiral_crossinhibition,chiral_fidelity, &
        chiral_reaction,limposed_gradient,gradX0,gradY0, &
-       linitialize_aa_from_EP
+       linitialize_aa_from_EP,tinitialize_aa_from_EP
 !
   integer :: idiag_XX_chiralmax=0, idiag_XX_chiralm=0
   integer :: idiag_YY_chiralmax=0, idiag_YY_chiralm=0
@@ -400,11 +401,14 @@ module Chiral
 !
       intent(inout) :: f
 !
-!  gradient of passive scalar
+!  possibility to initialize magnetic vector potential in terms
+!  of Euler potentials X and Y.
 !
       if (linitialize_aa_from_EP) then
-        if (t==0.) then
+        if (t>=tinitialize_aa_from_EP) then
+          linitialize_aa_from_EP=.false.
           if (lmagnetic) then
+            if (lroot) print*,'initialize_aa_from_EP at t=',t
             do n=n1,n2
             do m=m1,m2
               call grad(f,iXX_chiral,gXX_chiral)
@@ -417,7 +421,6 @@ module Chiral
             enddo
             enddo
           endif
-          if (lroot) print*,'linitialize_aa_from_EP: done'
         endif
       endif
 !
