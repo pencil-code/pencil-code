@@ -175,6 +175,7 @@ module Magnetic
   real :: inertial_length=0.,linertial_2
   real :: forcing_continuous_aa_phasefact=1.
   real :: forcing_continuous_aa_amplfact=1.
+  real :: LLambda_aa=0.
   real, dimension(nx,my) :: eta_r
   real, dimension(nx,my,3) :: geta_r
   real, dimension(mz) :: coskz,sinkz,eta_z
@@ -187,6 +188,7 @@ module Magnetic
   logical :: lremove_mean_emf=.false.
   logical :: lkinematic=.false.
   logical :: luse_Bext_in_b2=.false.
+  logical :: lmean_friction=.false.
   character (len=labellen) :: zdep_profile='fs'
   character (len=labellen) :: rdep_profile='schnack89'
   character (len=labellen) :: iforcing_continuous_aa='fixed_swirl'
@@ -206,6 +208,7 @@ module Magnetic
        forcing_continuous_aa_amplfact, &
        k1_ff,ampl_ff,swirl,radius, &
        k1x_ff,k1y_ff,k1z_ff,lcheck_positive_va2, &
+       lmean_friction,LLambda_aa, &
        bthresh,bthresh_per_brms, &
        iresistivity,lweyl_gauge,lupw_aa, &
        alphaSSm, &
@@ -1798,7 +1801,7 @@ module Magnetic
       type (pencil_case) :: p
 !
       real, dimension (nx,3) :: geta,uxDxuxb,fres,uxb_upw,tmp2
-      real, dimension (nx,3) :: exa,exj,dexb,phib
+      real, dimension (nx,3) :: exa,exj,dexb,phib,aa_xyaver
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: uj,aj,phi
       real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,b3b21,b1b32,b2b13
@@ -1808,7 +1811,7 @@ module Magnetic
       real, dimension (nx) :: eta_mn,eta_smag,etadust,etatotal
       real, dimension (nx) :: fres2,etaSS,penc
       real :: tmp,eta_out1,OmegaSS=1.
-      integer :: i,j,k,ju
+      integer :: i,j,k,ju,nxy=nxgrid*nygrid
 !
       intent(inout)  :: f,p
       intent(inout)  :: df
@@ -1998,6 +2001,19 @@ module Magnetic
          endif
         endif
         if (lfirst.and.ldt) diffus_eta=diffus_eta+nu_ni1*p%va2
+      endif
+!
+!  Consider here the action of a mean friction term, -LLambda*Abar
+!
+      if (lmean_friction) then
+        if (nprocx*nprocy==1) then
+          do j=1,3
+            aa_xyaver(:,j)=sum(f(l1:l2,m1:m2,n,j+iax-1))/nxy
+          enddo
+          df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-LLambda_aa*aa_xyaver
+        else
+          call stop_it("magnetic: lmean_friction works only for nprocxy=1")
+        endif
       endif
 !
 !  Special contributions to this module are called here

@@ -516,7 +516,7 @@ module Testfield
       type (pencil_case) :: p
 !
       real, dimension (nx,3) :: btest,uxbtest
-      integer :: jtest,j,nxy=nx*ny
+      integer :: jtest,j,nxy=nxgrid*nygrid
       logical :: headtt_save
       real :: fac
 !
