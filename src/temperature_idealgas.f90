@@ -1438,7 +1438,7 @@ module Entropy
          bz(1)=1.  ; cz(1)=0. 
          rhsz(1)=cs2bot/gamma1
 ! Constant flux at the bottom
-        case('c3')
+        case('c1')
          bz(1)=1.   ; cz(1)=-1
          rhsz(1)=dz*Fbot/hcond0
       endselect
@@ -1446,8 +1446,6 @@ module Entropy
         call tridag(az,bz,cz,rhsz,workz)
         f(i,4,n1:n2,ilnTT)=workz(1:nz)
       enddo
-!
-      call boundary_ADI(f(:,4,:,ilnTT))
 !
     endsubroutine ADI_Kconst
 !***********************************************************************
