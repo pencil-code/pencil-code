@@ -1591,34 +1591,30 @@ module Boundcond
       character (len=3), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
+      integer :: k
 
       select case(topbot)
 
       case('bot')               ! bottom boundary
-
-        f(l1-1,:,:,j)= f(l1+1,:,:,j)*(x(l1+1)/x(l1-1))
-        f(l1-2,:,:,j)= f(l1+2,:,:,j)*(x(l1+1)/x(l1-2))
-        f(l1-3,:,:,j)= f(l1+3,:,:,j)*(x(l1+3)/x(l1-3))
+        do k=1,nghost
+          f(l1-k,:,:,j)= f(l1+k,:,:,j)*(x(l1+k)/x(l1-k))
+        enddo
 ! 
      case('top')               ! top boundary
-       f(l2+1,:,:,j)= f(l2-1,:,:,j)*(x(l2-1)/x(l2+1))
-       f(l2+2,:,:,j)= f(l2-2,:,:,j)*(x(l2-2)/x(l2+2))
-       f(l2+3,:,:,j)= f(l2-3,:,:,j)*(x(l2-3)/x(l2+3))
-
+       do k=1,nghost
+         f(l2+k,:,:,j)= f(l2-k,:,:,j)*(x(l2-k)/x(l2+k))
+       enddo
+!
       case default
         call warning('bc_set_nfr_x',topbot//" should be `top' or `bot'")
-
+!
       endselect
 !
     endsubroutine bc_set_nfr_x
 ! **********************************************************************
     subroutine bc_set_sfree_x(f,topbot,j)
 !
-! Stress-free boundary condition for spherical coordinate system. 
-! d_r(u_{\theta}) = u_{\theta}/r  with u_r = 0 sets S_{r \theta}
-! component of the strain matrix to be zero in spherical coordinate system. 
-! This subroutine sets only the first part of this boundary condition for 'j'-th
-! component of f. 
+! Details are given in an appendix in the manual. 
 ! Lambda effect : stresses due to Lambda effect are added to the stress-tensor. 
 ! For rotation along the z direction and also for not very strong rotation such
 ! that the breaking of rotational symmetry is only due to gravity, the only 
@@ -1636,7 +1632,7 @@ module Boundcond
       real, pointer :: Lambda_V0,Lambda_Omega
       logical, pointer :: llambda_effect
       integer, intent (in) :: j
-      integer :: ierr
+      integer :: ierr,k
 ! -------- Either case get the lambda variables first -----------
       call get_shared_variable('llambda_effect',llambda_effect,ierr)
       if (ierr/=0) call stop_it("bc_set_sfree_x: "//&
@@ -1648,38 +1644,32 @@ module Boundcond
           "there was a problem when getting Lambda_V0 or Lambda_Omega")      
       else
       endif
+!
       select case(topbot)
-!
 ! bottom boundary
-!
       case('bot')
 !
-! The coding assumes we are using 6-th order centered finite difference for our
-! derivatives. 
-!
         if ((llambda_effect).and.(j.eq.iuz)) then
-          f(l1-1,:,:,j)= f(l1+1,:,:,j)*(x(l1-1)/x(l1+1)**(1-Lambda_V0))
-          f(l1-2,:,:,j)= f(l1+2,:,:,j)*(x(l1-1)/x(l1+2)**(1-Lambda_V0))
-          f(l1-3,:,:,j)= f(l1+3,:,:,j)*(x(l1-3)/x(l1+3)**(1-Lambda_V0))
+          do k=1,nghost
+            f(l1-k,:,:,j)= f(l1+k,:,:,j)*((x(l1-k)/x(l1+k))**(1-Lambda_V0))
+          enddo
         else
-          f(l1-1,:,:,j)= f(l1+1,:,:,j)*(x(l1-1)/x(l1+1))
-          f(l1-2,:,:,j)= f(l1+2,:,:,j)*(x(l1-1)/x(l1+2))
-          f(l1-3,:,:,j)= f(l1+3,:,:,j)*(x(l1-3)/x(l1+3))
+          do k=1,nghost
+            f(l1-k,:,:,j)= f(l1+k,:,:,j)*(x(l1-k)/x(l1+k))
+          enddo
         endif
-!
 ! top boundary
-!
       case('top')
         if ((llambda_effect).and.(j.eq.iuz)) then
-          f(l2+1,:,:,j)= f(l2-1,:,:,j)*(x(l2+1)/x(l2-1)**(1-Lambda_V0))
-          f(l2+2,:,:,j)= f(l2-2,:,:,j)*(x(l2+2)/x(l2-2)**(1-Lambda_V0))
-          f(l2+3,:,:,j)= f(l2-3,:,:,j)*(x(l2+3)/x(l2-3)**(1-Lambda_V0))
+          do k=1,nghost
+            f(l2+k,:,:,j)= f(l2-k,:,:,j)*((x(l2+k)/x(l2-k))**(1-Lambda_V0))
+          enddo
         else
-          f(l2+1,:,:,j)= f(l2-1,:,:,j)*(x(l2+1)/x(l2-1))
-          f(l2+2,:,:,j)= f(l2-2,:,:,j)*(x(l2+2)/x(l2-2))
-          f(l2+3,:,:,j)= f(l2-3,:,:,j)*(x(l2+3)/x(l2-3))
+          do k=1,nghost
+            f(l2+k,:,:,j)= f(l2-k,:,:,j)*(x(l2+k)/x(l2-k))
+          enddo
         endif
-
+!
       case default
         call warning('bc_set_sfree_x',topbot//" should be `top' or `bot'")
 !
@@ -1762,20 +1752,18 @@ module Boundcond
       character (len=3), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
-      real :: cottheta
+      integer :: k
 !
       select case(topbot)
-
+!
       case('bot')               ! bottom boundary
-!
-        f(:,m1-1,:,j)= f(:,m1+1,:,j)*sinth(m1+1)/sinth(m1-1)
-        f(:,m1-2,:,j)= f(:,m1+2,:,j)*sinth(m1+2)/sinth(m1-2)
-        f(:,m1-3,:,j)= f(:,m1+3,:,j)*sinth(m1+3)/sinth(m1-3)
-      case('top')               ! top boundary
-        f(:,m2+1,:,j)= f(:,m2-1,:,j)*sinth(m2-1)/sinth(m2+1)
-        f(:,m2+2,:,j)= f(:,m2-2,:,j)*sinth(m2-2)/sinth(m2+2)
-        f(:,m2+3,:,j)= f(:,m2-3,:,j)*sinth(m2-3)/sinth(m2+3)
-!
+        do k=1,nghost
+          f(:,m1-k,:,j)= f(:,m1+k,:,j)*sinth(m1+k)*sin1th(m1-k)
+        enddo
+       case('top')               ! top boundary
+         do k=1,nghost
+           f(:,m2+k,:,j)= f(:,m2-k,:,j)*sinth(m2-k)*sin1th(m2+k)
+         enddo
 !
       case default
         call warning('bc_set_nfr_y',topbot//" should be `top' or `bot'")
@@ -1797,18 +1785,18 @@ module Boundcond
       character (len=3), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
-      real :: cottheta
+      integer :: k
 !
       select case(topbot)
 
       case('bot')               ! bottom boundary
-        f(:,m1-1,:,j)= f(:,m1+1,:,j)*sinth(m1-1)/sinth(m1+1)
-        f(:,m1-2,:,j)= f(:,m1+2,:,j)*sinth(m1-2)/sinth(m1+2)
-        f(:,m1-3,:,j)= f(:,m1+3,:,j)*sinth(m1-3)/sinth(m1+3)
+        do k=1,nghost
+          f(:,m1-k,:,j)= f(:,m1+k,:,j)*sinth(m1-k)*sin1th(m1+k)
+        enddo
       case('top')               ! top boundary
-        f(:,m2+1,:,j)= f(:,m2-1,:,j)*sinth(m2+1)/sinth(m2-1)
-        f(:,m2+2,:,j)= f(:,m2-2,:,j)*sinth(m2+2)/sinth(m2-2)
-        f(:,m2+3,:,j)= f(:,m2-3,:,j)*sinth(m2+3)/sinth(m2-3)
+        do k=1,nghost
+          f(:,m2+k,:,j)= f(:,m2-k,:,j)*sinth(m2+k)*sin1th(m2-k)
+        enddo
 !
      case default
         call warning('bc_set_sfree_y',topbot//" should be `top' or `bot'")

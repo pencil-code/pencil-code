@@ -149,11 +149,6 @@ program run
 !  Read parameters and output parameter list.
 !
   call read_runpars()
-!
-!  Allocate diagnostic arrays
-!
-    call allocate_diagnostic()
-!
   call rprint_list(LRESET=.false.)
 
 !  Position of equator (if any).

@@ -949,7 +949,7 @@ endif
 ##
 ## Dhruba's Desktop (starpc37) 
 ##
-#FC=mpif90   # (starpc37.maths.qmul.ac.uk)
+#FC=mpif90  # (starpc37.maths.qmul.ac.uk)
 #F77=$(FC) #(starpc37.maths.qmul.ac.uk)
 #FFLAGS=-O3 -fno-second-underscore  -I/home/network/dhruba/mpich2/include -L/home/network/dhruba/mpich2/lib -L/home/network/dhruba/Library/lib#(starpc37.maths.qmul.ac.uk)
 #CC=mpicc -I/home/network/dhruba/Library/include/  #(starpc37.maths.qmul.ac.uk)

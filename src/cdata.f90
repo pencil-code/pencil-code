@@ -514,22 +514,5 @@ module Cdata
 !  the full vorticity field (see equ.f90:pde)
 !
   logical :: lparticles_prepencil_calc
-  public :: allocate_diagnostic
-!
-!
-  contains
-!
-!***********************************************************************
-    subroutine allocate_diagnostic()
-!
-!
-
-      allocate(fnamexy(nx,ny,nprocy,mnamexy))
-      allocate(fnamexz(nx,nz,nprocz,mnamexz))
-      allocate(cnamexy(mnamexy),cformxy(mnamexy))
-      allocate(cnamexz(mnamexz),cformxz(mnamexz))
-
-!
-    endsubroutine allocate_diagnostic
 !***********************************************************************
 endmodule Cdata

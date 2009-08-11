@@ -874,7 +874,7 @@ module Register
       use Mpicomm
 !
       integer :: iname,inamev,inamez,inamey,inamex,inamer,inamexy,inamexz,inamerz
-      integer :: iname_tmp
+      integer :: iname_tmp,iread
       logical :: lreset,exist,print_in_double
       character (LEN=30)    :: cname_tmp
       character (LEN=fnlen) :: print_in_file
@@ -984,10 +984,25 @@ module Register
       endif
       if (lroot.and.ip<14) print*,'rprint_list: nnamer=',nnamer
 !
+! 2-d averages: Read the files and allocate the relevant arrays here. 
+!
+!
 !  read in the list of variables for y-averages
 !
       inquire(file='yaver.in',exist=exist)
       if (exist) then
+! count the number of lines in it first 
+        open(1,file='yaver.in')
+        mnamexz=0; iread=0
+        do while (iread == 0)
+          read(1,*,iostat=iread)
+          if(iread == 0) mnamexz=mnamexz+1
+        enddo
+        close(1)
+! allocate the relevant arrays here
+        allocate(fnamexz(nx,nz,nprocz,mnamexz))
+        allocate(cnamexz(mnamexz),cformxz(mnamexz)) 
+! then read into these arrays
         open(1,file='yaver.in')
         do inamexz=1,mnamexz
           read(1,*,end=94) cnamexz(inamexz)
@@ -1003,6 +1018,18 @@ module Register
 !
       inquire(file='zaver.in',exist=exist)
       if (exist) then
+! count the number of lines in it first 
+        open(1,file='zaver.in')
+        mnamexy=0; iread =0
+        do while (iread  == 0)
+          read(1,*,iostat=iread )
+          if(iread  == 0) mnamexy=mnamexy+1
+        enddo
+        close(1)
+! allocate the relevant arrays here 
+        allocate(fnamexy(nx,ny,nprocy,mnamexy))
+        allocate(cnamexy(mnamexy),cformxy(mnamexy))
+! then read the quantities to be z-averaged
         open(1,file='zaver.in')
         do inamexy=1,mnamexy
           read(1,*,end=96) cnamexy(inamexy)
@@ -1073,6 +1100,7 @@ module Register
       call rprint_shear           (lreset,LWRITE=lroot)
       call rprint_testperturb     (lreset,LWRITE=lroot)
       if (lroot) close(3)
+
 !
     endsubroutine rprint_list
 !***********************************************************************

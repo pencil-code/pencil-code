@@ -3400,8 +3400,8 @@ module Entropy
 !  check for those quantities for which we want y-averages
 !
       do inamexz=1,nnamexz
-        call parse_name(inamexz,cnamexy(inamexz),cformxy(inamexz),'TTmxz',idiag_TTmxz)
-        call parse_name(inamexz,cnamexy(inamexz),cformxy(inamexz),'ssmxz',idiag_ssmxz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'TTmxz',idiag_TTmxz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'ssmxz',idiag_ssmxz)
       enddo
 !
 !  check for those quantities for which we want phi-averages
