@@ -1441,6 +1441,8 @@ module Entropy
         case('c1')
          bz(1)=1.   ; cz(1)=-1
          rhsz(1)=dz*Fbot/hcond0
+        case default 
+         call fatal_error('ADI_Kconst','bcz on TT must be cT or c1')
       endselect
 !
         call tridag(az,bz,cz,rhsz,workz)
@@ -1562,6 +1564,8 @@ module Entropy
          case('c3')
           bz(1)=1. ; cz(1)=-1.
           rhsz(1)=0.
+         case default 
+          call fatal_error('ADI_Kprof','bcz on TT must be cT or c3')
        endselect
 !
        call tridag(az,bz,cz,rhsz,workz)
