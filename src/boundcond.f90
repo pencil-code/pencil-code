@@ -5537,8 +5537,7 @@ module Boundcond
 
       select case(topbot)
       case('bot')
-        call fatal_error('bc_inlet_outlet_cyl', 'this boundary condition is not&                   
-                          allowed for bottom boundary')
+        call fatal_error('bc_inlet_outlet_cyl', 'this boundary condition is not  allowed for bottom boundary')
       case('top')
         do m=m1,m2
           if (      (y(m).ge.xyz0(2) +   Lxyz(2)/4)&
