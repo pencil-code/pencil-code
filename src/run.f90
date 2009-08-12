@@ -683,5 +683,8 @@ program run
   call sharedvars_clean_up()
   call chemistry_clean_up()
   if (lADI) deallocate(finit)
+  If (lwrite_yaverages) call yaverages_clean_up() 
+  If (lwrite_zaverages) call zaverages_clean_up() 
+!
 !
 endprogram run

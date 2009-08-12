@@ -841,6 +841,7 @@ module Register
       use Cdata
       use Param_IO
       use Sub,             only: numeric_precision
+      use Diagnostics,  only: allocate_yaverages,allocate_zaverages
       use Hydro,           only: rprint_hydro
       use Density,         only: rprint_density
       use Forcing,         only: rprint_forcing
@@ -1000,8 +1001,7 @@ module Register
         enddo
         close(1)
 ! allocate the relevant arrays here
-        allocate(fnamexz(nx,nz,nprocz,mnamexz))
-        allocate(cnamexz(mnamexz),cformxz(mnamexz)) 
+        call allocate_yaverages()
 ! then read into these arrays
         open(1,file='yaver.in')
         do inamexz=1,mnamexz
@@ -1026,9 +1026,8 @@ module Register
           if(iread  == 0) mnamexy=mnamexy+1
         enddo
         close(1)
-! allocate the relevant arrays here 
-        allocate(fnamexy(nx,ny,nprocy,mnamexy))
-        allocate(cnamexy(mnamexy),cformxy(mnamexy))
+! allocate the relevant arrays here
+        call allocate_zaverages()
 ! then read the quantities to be z-averaged
         open(1,file='zaver.in')
         do inamexy=1,mnamexy

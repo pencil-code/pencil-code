@@ -32,6 +32,8 @@ module Diagnostics
   public :: phizsum_mn_name_r, ysum_mn_name_xz, zsum_mn_name_xy
   public :: phisum_mn_name_rz, calc_phiavg_profile
   public :: yzintegrate_mn_name_x,xzintegrate_mn_name_y,xyintegrate_mn_name_z
+  public :: allocate_yaverages,allocate_zaverages
+  public :: yaverages_clean_up,zaverages_clean_up
 !
   character (len=5) :: ch2davg
 !
@@ -1667,4 +1669,49 @@ module Diagnostics
 !
     endsubroutine phisum_mn_name_rz
 !***********************************************************************
+    subroutine allocate_yaverages
+!
+!  Allocate the variables needed for yaverages
+!
+!   12-aug-09/dhruba: coded
+!
+        allocate(fnamexz(nx,nz,nprocz,mnamexz))
+        allocate(cnamexz(mnamexz),cformxz(mnamexz)) 
+
+      endsubroutine allocate_yaverages
+!*******************************************************************
+    subroutine allocate_zaverages
+!
+!  Allocate the variables needed for zaverages
+!
+!   12-aug-09/dhruba: coded
+!
+        allocate(fnamexy(nx,ny,nprocy,mnamexy))
+        allocate(cnamexy(mnamexy),cformxy(mnamexy))
+
+       endsubroutine allocate_zaverages
+!***********************************************************************
+    subroutine yaverages_clean_up
+!
+!  Allocate the variables needed for yaverages
+!
+!   12-aug-09/dhruba: coded
+!
+        deallocate(fnamexz)
+        deallocate(cnamexz,cformxz) 
+
+      endsubroutine yaverages_clean_up
+!*******************************************************************
+    subroutine zaverages_clean_up
+!
+!  Allocate the variables needed for yaverages
+!
+!   12-aug-09/dhruba: coded
+!
+        deallocate(fnamexy)
+        deallocate(cnamexy,cformxy) 
+
+      endsubroutine zaverages_clean_up
+!*******************************************************************
+
 endmodule Diagnostics
