@@ -241,6 +241,10 @@ module Boundcond
                 case ('g')
                   ! BCX_DOC: set to given value(s) or function
                   call bc_force_x(f, -1, topbot, j)
+                case('ioc')
+                  !BCX_DOC: inlet/outlet on western/eastern hemisphere 
+                  !BCX_DOC: in cylindrical coordinates 
+                  call bc_inlet_outlet_cyl(f,topbot,j,fbcx12)
                 case ('')
                   ! BCX_DOC: do nothing; assume that everything is set
                 case default
@@ -5514,5 +5518,53 @@ module Boundcond
       endif
 !
     endsubroutine bc_force_ux_time
+!***********************************************************************                           
+    subroutine bc_inlet_outlet_cyl(f,topbot,j,val)
+!                                                                                                  
+! For pi/2 < y < 3pi/4,                                                                            
+! set r and theta velocity corresponding to a constant x-velocity                                  
+! and symmetric for lnrho/rho.                                                                     
+!                                                                                                  
+! Otherwise, set symmetric for velocities, and constant                                            
+! for lnrho/rho.                                                                                   
+!                                                                                                  
+! NB! Assumes y to have the range 0 < y < 2pi                                                      
+!                                                                                                  
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: j,i
+      real, dimension(mcom) :: val
+
+      select case(topbot)
+      case('bot')
+        call fatal_error('bc_inlet_outlet_cyl', 'this boundary condition is not&                   
+                          allowed for bottom boundary')
+      case('top')
+        do m=m1,m2
+          if (      (y(m).ge.xyz0(2) +   Lxyz(2)/4)&
+              .and. (y(m).le.xyz0(2) + 3*Lxyz(2)/4)) then
+            if (j.eq.iux) then
+              f(l2,m,:,j) = cos(y(m))*val(j)
+              do i=1,nghost; f(l2+i,m,:,j) = 2*f(l2,m,:,j) - f(l2-i,m,:,j); enddo
+            elseif (j.eq.iuy) then
+              f(l2,m,:,j) = -sin(y(m))*val(j)
+              do i=1,nghost; f(l2+i,m,:,j) = 2*f(l2,m,:,j) - f(l2-i,m,:,j); enddo
+            elseif ((j.eq.ilnrho) .or. (j.eq.irho)) then
+              do i=1,nghost; f(l2+i,m,:,j) = f(l2-i,m,:,j); enddo
+            endif
+!                                                                                                  
+          else
+            if (j.eq.iux) then
+              do i=1,nghost; f(l2+i,m,:,j) = f(l2-i,m,:,j); enddo
+            elseif (j.eq.iuy) then
+              do i=1,nghost; f(l2+i,m,:,j) = f(l2-i,m,:,j); enddo
+            elseif ((j.eq.ilnrho) .or. (j.eq.irho)) then
+              f(l2,m,:,j) = val(j)
+              do i=1,nghost; f(l2+i,m,:,j) = 2*f(l2,m,:,j) - f(l2-i,m,:,j); enddo
+            endif
+          endif
+        enddo
+      endselect
+    endsubroutine bc_inlet_outlet_cyl
 !***********************************************************************
 endmodule Boundcond

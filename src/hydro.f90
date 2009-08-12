@@ -87,6 +87,7 @@ module Hydro
   real :: ampl_Omega=0.0
   real :: omega_ini=0.0
   logical :: loutest,ldiffrot_test=.false.
+  real :: r_cyl = 1.0, skin_depth = 1e-1
 !
   namelist /hydro_init_pars/ &
        ampluu, ampl_ux, ampl_uy, ampl_uz, phase_ux, phase_uy, phase_uz, &
@@ -98,7 +99,8 @@ module Hydro
        ladvection_velocity, lprecession, omega_precession, alpha_precession, &
        luut_as_aux,loot_as_aux, &
        velocity_ceiling, mu_omega, nb_rings, om_rings, gap, &
-       lscale_tobox, ampl_Omega,omega_ini
+       lscale_tobox, ampl_Omega,omega_ini, &
+       r_cyl,skin_depth
 ! run parameters
   real :: tdamp=0.,dampu=0.,wdamp=0.
   real :: dampuint=0.0,dampuext=0.0,rdampint=impossible,rdampext=impossible
@@ -628,6 +630,7 @@ module Hydro
       real, dimension (mx) :: tmpmx
       real, dimension (nx) :: r,p,tmp,prof
       real :: kabs,crit,eta_sigma,tmp0
+      real :: a2, rr2, wall_smoothing
       integer :: j,i,l,ierr
 !
 !  inituu corresponds to different initializations of uu (called from start).
@@ -992,6 +995,36 @@ module Hydro
 !            call curl(f,iuu,utmp(l1:l2,m,n,:))
 !          enddo;enddo
 !          f(:,:,:,iux:iuz) = utmp
+
+        case('cylcoords-stream-x')
+! Constant velocity in x-direction in cylinder coordinates  
+          do l=l1,l2; do m=m1,m2
+            wall_smoothing=1-exp(-((x(l)-r_cyl)/skin_depth)**2)
+            f(l,m,:,iux)=cos(y(m))*ampluu(j)*wall_smoothing
+            f(l,m,:,iuy)=-sin(y(m))*ampluu(j)*wall_smoothing
+          enddo; enddo
+          f(:,:,:,iuz)=0.
+          f(1:l1,:,:,iux:iuz)=0.
+
+ case('cylinderstream_cyl')
+!   Stream functions for flow around a cylinder as initial condition.
+!   Cylindrical coordinates. Flow in x-direction. 
+          a2 = r_cyl**2
+          do l=l1,l2
+            if (x(l) < r_cyl) then
+              f(l,:,:,iux:iuz) = 0
+            else
+              rr2 = x(l)**2
+              wall_smoothing=1-exp(-((x(l)-r_cyl)/skin_depth)**2)
+              do m=m1,m2
+                f(l,m,:,iux) = ampluu(j)*cos(y(m))&
+                               *(1. - a2/rr2)*wall_smoothing
+                f(l,m,:,iuy) = -ampluu(j)*sin(y(m))&
+                               *(1. + a2/rr2)*wall_smoothing
+              end do
+            endif
+          end do
+
 
         case default
           !
