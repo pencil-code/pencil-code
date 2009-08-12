@@ -1,31 +1,34 @@
-pro rvid_plane,field,mpeg=mpeg,png=png,TRUEPNG=png_truecolor,tmin=tmin,$
-               tmax=tmax,max=amax,$
-               min=amin,extension=extension,nrepeat=nrepeat,wait=wait,$
-               stride=stride,datadir=datadir,OLDFILE=OLDFILE,debug=debug,$
-               proc=proc,ix=ix,iy=iy,ps=ps,iplane=iplane,imgdir=imgdir,$
-               global_scaling=global_scaling,shell=shell,r_int=r_int,$
-               r_ext=r_ext,zoom=zoom,colmpeg=colmpeg,exponential=exponential, $
-               contourplot=contourplot,color=color,sqroot=sqroot,tunit=tunit, $
-               nsmooth=nsmooth, textsize=textsize, $
-               _extra=_extra, $
-               polar=polar, anglecoord=anglecoord, $
-               style_polar=style_polar,nlevels=nlevels, $
-               doublebuffer=doublebuffer,wsx=wsx,wsy=wsy,log=log
 ;
 ; $Id$
 ;
-;  reads and displays data in a plane (currently with tvscl)
-;  and plots a curve as well (cross-section through iy)
+;  Reads and displays data in a plane (currently with tvscl) and plots a
+;  curve as well (cross-section through iy).
 ;
-;  if the keyword /mpeg is given, the file movie.mpg is written.
-;  tmin is the time after which data are written
+;  If the keyword /mpeg is given, the file movie.mpg is written.
+;
+;  tmin is the time after which data are written.
+;
 ;  nrepeat is the number of repeated images (to slow down movie)
-;    An alternative is to set the /png_truecolor flag and postprocess the
-;  PNG images with ${PENCIL_HOME}/utils/makemovie (requires imagemagick
-;  and mencoder to be installed)
 ;
-;  Typical calling sequence
+;  An alternative is to set the /png_truecolor flag and postprocess the
+;  PNG images with ${PENCIL_HOME}/utils/makemovie (requires imagemagick
+;  and mencoder to be installed).
+;
+;  Typical calling sequence:
+;
 ;  rvid_plane,'uz',amin=-1e-1,amax=1e-1,/proc
+;
+pro rvid_plane,field,mpeg=mpeg,png=png,truepng=png_truecolor,tmin=tmin, $
+    tmax=tmax,max=amax,swap_endian=swap_endian, $
+    min=amin,extension=extension,nrepeat=nrepeat,wait=wait, $
+    stride=stride,datadir=datadir,oldfile=oldfile,debug=debug, $
+    proc=proc,ix=ix,iy=iy,ps=ps,iplane=iplane,imgdir=imgdir, $
+    global_scaling=global_scaling,shell=shell,r_int=r_int, $
+    r_ext=r_ext,zoom=zoom,colmpeg=colmpeg,exponential=exponential, $
+    contourplot=contourplot,color=color,sqroot=sqroot,tunit=tunit, $
+    nsmooth=nsmooth, textsize=textsize, _extra=_extra, polar=polar, $
+    anglecoord=anglecoord, style_polar=style_polar,nlevels=nlevels, $
+    doublebuffer=doublebuffer,wsx=wsx,wsy=wsy,log=log
 ;
 COMMON pc_precision, zero, one
 ;
@@ -35,6 +38,7 @@ default,ps,0
 default,extension,'xz'
 default,amax,.05
 default,amin,-amax
+default,swap_endian,0
 default,field,'lnrho'
 if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 default,nrepeat,0
@@ -63,20 +67,23 @@ default,nlevels,30
 ;
 tini=1e-30 ; a small number
 ;
-;  Set up a window for double buffering
+;  Set up a window for double buffering.
 ;
 if(keyword_set(doublebuffer)) then begin
-  base=WIDGET_BASE()
-  draw=WIDGET_DRAW(base,XSIZE=wsx,YSIZE=wsy)
-  WIDGET_CONTROL,/REALIZE,base
-  WIDGET_CONTROL,draw,GET_VALUE=windex
+  base=widget_base()
+  draw=widget_draw(base,xsize=wsx,ysize=wsy)
+  widget_control,/realize,base
+  widget_control,draw,get_value=windex
 endif
 ;
 if (keyword_set(png_truecolor)) then png=1
-; Construct location of slice_var.plane files 
+;
+;  Construct location of slice_var.plane files .
 ;
 default, datatopdir, datadir
-;  by default, look in data/, assuming we have run read_videofiles.x before:
+;
+;  By default, look in data/, assuming we have run read_videofiles.x before.
+;
 ;datadir = 'data'
 if (n_elements(proc) le 0) then begin
   ;  change datadir when only data/proc0 exists
@@ -86,7 +93,7 @@ endif else begin
   datadir=datatopdir+'/'+proc
 endelse
 ;
-;  Read the dimensions and precision (single or double) from dim.dat
+;  Read the dimensions and precision (single or double) from dim.dat.
 ;
 mx=0L & my=0L & mz=0L & nvar=0L & prec=''
 nghostx=0L & nghosty=0L & nghostz=0L
@@ -101,9 +108,9 @@ nghostx=dim.nghostx & nghosty=dim.nghosty & nghostz=dim.nghostz
 nprocx=dim.nprocx & nprocy=dim.nprocy & nprocz=dim.nprocz
 ncpus=nprocx*nprocy*nprocz
 ;
-;  read grid data
+;  Read grid data.
 ;
-pc_read_grid, obj=grid;, datadir=datadir
+pc_read_grid, obj=grid, swap_endian=swap_endian
 x=grid.x(dim.l1:dim.l2) & y=grid.y(dim.m1:dim.m2) & z=grid.z(dim.n1:dim.n2)
 ;
 ;  Set reasonable extension for 2-D runs.
@@ -136,32 +143,32 @@ if (keyword_set(polar)) then begin
 endif
 ;
 if (keyword_set(shell)) then begin
-  ;
-  ; to mask outside shell, need full grid;  read from varfiles, as in rall.pro
-  ;
+;
+;  To mask outside shell, need full grid; read from varfiles.
+;
   datalocdir=datadir+'/proc0'
   mxloc=0L & myloc=0L & mzloc=0L
-  ;
+;
   close,1
   openr,1,datalocdir+'/'+dimfile
   readf,1,mxloc,myloc,mzloc
   close,1
-  ;
+;
   nxloc=mxloc-2*nghostx
   nyloc=myloc-2*nghosty
   nzloc=mzloc-2*nghostz
-  ;
+;
   x=fltarr(mx)*one & y=fltarr(my)*one & z=fltarr(mz)*one
   xloc=fltarr(mxloc)*one & yloc=fltarr(myloc)*one & zloc=fltarr(mzloc)*one
   readstring=''
-  ;
+;
   for i=0,ncpus-1 do begin        ; read data from individual files
     if n_elements(proc) ne 0 then begin
       datalocdir=datadir+'/proc'+str(proc)
     endif else begin
       datalocdir=datadir+'/proc'+strtrim(i,2)
     endelse
-    ; read processor position
+;  Read processor position.
     dummy=''
     ipx=0L &ipy=0L &ipz=0L
     close,1
@@ -171,16 +178,15 @@ if (keyword_set(shell)) then begin
     readf,1, dummy
     readf,1, ipx,ipy,ipz
     close,1
-    openr,1, datalocdir+'/'+varfile, /F77
+    openr,1, datalocdir+'/'+varfile, /F77, swap_endian=swap_endian
     if (execute('readu,1'+readstring) ne 1) then $
           message, 'Error reading: ' + 'readu,1'+readstring
     readu,1, t, xloc, yloc, zloc
     close,1
-    ;
-    ;  Don't overwrite ghost zones of processor to the left (and
-    ;  accordingly in y and z direction makes a difference on the
-    ;  diagonals)
-    ;
+;
+;  Don't overwrite ghost zones of processor to the left (and accordingly in
+;  y and z direction makes a difference on the diagonals).
+;
     if (ipx eq 0) then begin
       i0x=ipx*nxloc & i1x=i0x+mxloc-1
       i0xloc=0 & i1xloc=mxloc-1
@@ -188,7 +194,7 @@ if (keyword_set(shell)) then begin
       i0x=ipx*nxloc+nghostx & i1x=i0x+mxloc-1-nghostx
       i0xloc=nghostx & i1xloc=mxloc-1
     endelse
-    ;
+;
     if (ipy eq 0) then begin
       i0y=ipy*nyloc & i1y=i0y+myloc-1
       i0yloc=0 & i1yloc=myloc-1
@@ -196,7 +202,7 @@ if (keyword_set(shell)) then begin
       i0y=ipy*nyloc+nghosty & i1y=i0y+myloc-1-nghosty
       i0yloc=nghosty & i1yloc=myloc-1
     endelse
-    ;
+;
     if (ipz eq 0) then begin
       i0z=ipz*nzloc & i1z=i0z+mzloc-1
       i0zloc=0 & i1zloc=mzloc-1
@@ -204,29 +210,30 @@ if (keyword_set(shell)) then begin
       i0z=ipz*nzloc+nghostz & i1z=i0z+mzloc-1-nghostz
       i0zloc=nghostz & i1zloc=mzloc-1
     endelse
-    ;
+;
     x[i0x:i1x] = xloc[i0xloc:i1xloc]
     y[i0y:i1y] = yloc[i0yloc:i1yloc]
     z[i0z:i1z] = zloc[i0zloc:i1zloc]
-    ;
+;
   endfor
-  ; 
+; 
   xx = spread(x, [1,2], [my,mz])
   yy = spread(y, [0,2], [mx,mz])
   zz = spread(z, [0,1], [mx,my])
   rr = sqrt(xx^2+yy^2+zz^2)
-  
-  ; assume slices are all central for now -- perhaps generalize later
-  ; nb: need pass these into boxbotex_scl for use after scaling of image;
-  ;     otherwise pixelisation can be severe...
-  ; nb: at present using the same z-value for both horizontal slices;
-  ;     hardwired into boxbotex_scl, also.
+;  
+;  Assume slices are all central for now -- perhaps generalize later.
+;  nb: need pass these into boxbotex_scl for use after scaling of image;
+;      otherwise pixelisation can be severe...
+;  nb: at present using the same z-value for both horizontal slices;
+;      hardwired into boxbotex_scl, also.
+;
   ix=mx/2 & iy=my/2 & iz=mz/2 & iz2=iz
-  if extension eq 'xy' then rrxy =rr(nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iz)
-  if extension eq 'xy2' then rrxy2=rr(nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iz2)
-  if extension eq 'xz' then rrxz =rr(nghostx:mx-nghostx-1,iy,nghostz:mz-nghostz-1)
-  if extension eq 'yz' then rryz =rr(ix,nghosty:my-nghosty-1,nghostz:mz-nghostz-1)
-  ;
+  if (extension eq 'xy') then rrxy =rr(nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iz)
+  if (extension eq 'xy2') then rrxy2=rr(nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iz2)
+  if (extension eq 'xz') then rrxz =rr(nghostx:mx-nghostx-1,iy,nghostz:mz-nghostz-1)
+  if (extension eq 'yz') then rryz =rr(ix,nghosty:my-nghosty-1,nghostz:mz-nghostz-1)
+;
 endif
 ;
 t=zero & islice=0
@@ -243,7 +250,7 @@ slice_ypos=0.0*one
 slice_zpos=0.0*one
 slice_z2pos=0.0*one
 ;
-;  open MPEG file, if keyword is set
+;  Open MPEG file, if keyword is set.
 ;
 dev='x' ;(default)
 if (keyword_set(png)) then begin
@@ -252,7 +259,7 @@ if (keyword_set(png)) then begin
   print, 'z-buffer resolution in pixels '+ $
       '(set with zoom=', strtrim(zoom,2), ') =', strtrim(resolution,2)
   set_plot, 'z'                   ; switch to Z buffer
-  device, SET_RESOLUTION=resolution ; set window size
+  device, set_resolution=resolution ; set window size
   itpng=0 ;(image counter)
   dev='z'
 end else if (keyword_set(mpeg)) then begin
@@ -260,12 +267,12 @@ end else if (keyword_set(mpeg)) then begin
   resolution=[Nwx,Nwy] ; set window size
   print,'z-buffer resolution (in pixels)=',resolution
   set_plot, 'z'                   ; switch to Z buffer
-  device, SET_RESOLUTION=resolution ; set window size
+  device, set_resolution=resolution ; set window size
   dev='z'
   if (!d.name eq 'X') then window,2,xs=Nwx,ys=Nwy
   mpeg_name = 'movie.mpg'
   print,'write mpeg movie: ',mpeg_name
-  mpegID = mpeg_open([Nwx,Nwy],FILENAME=mpeg_name)
+  mpegID = mpeg_open([Nwx,Nwy],filename=mpeg_name)
   itmpeg=0 ;(image counter)
 end
 ;
@@ -277,7 +284,7 @@ if (keyword_set(global_scaling)) then begin
   first=1L
   close,1 & openr,1,file_slice,/f77
   while (not eof(1)) do begin
-    if (keyword_set(OLDFILE)) then begin ; For files without position
+    if (keyword_set(oldfile)) then begin ; For files without position
       readu,1,plane,t
     endif else begin
       readu,1,plane,t,slice_z2pos
@@ -333,18 +340,18 @@ if (keyword_set(global_scaling)) then begin
   print,'Scale using global min, max: ', amin, amax
 endif
 ;
-close,1 & openr,1,file_slice,/f77
+close,1 & openr,1,file_slice,/f77,swap_endian=swap_endian
 ifirst=1
 while (not eof(1)) do begin
-  if (keyword_set(OLDFILE)) then begin ; For files without position
+  if (keyword_set(oldfile)) then begin ; For files without position
     readu,1,plane,t
   end else begin
     readu,1,plane,t,slice_z2pos
   end
 ;
-; rescale data with optional parameter zoom
-; WARNING: the scaling can produce artifacts at shearing boundaries. Contour
-; plots give better results in that case (/contour).
+;  Rescale data with optional parameter zoom.
+;  WARNING: the scaling can produce artifacts at shearing boundaries. Contour
+;  plots give better results in that case (/contour).
 ;
   planesize=size(plane)
   nx_plane=planesize[1]
@@ -361,7 +368,7 @@ while (not eof(1)) do begin
     plane2=rebin(plane,zoom*[nx_plane,ny_plane])
   endelse
 ;
-; do masking, if shell set
+;  Do masking, if shell set.
 ;
   if (keyword_set(shell)) then begin
     white=255
@@ -393,14 +400,14 @@ while (not eof(1)) do begin
     if ( (t ge tmin) and (t le tmax) ) then begin
       if (istride eq stride) then begin
 ;
-;  show image scaled between amin and amax and filling whole screen
+;  Show image scaled between amin and amax and filling whole screen.
 ;
 
         if(keyword_set(doublebuffer)) then begin
 ;
-;  paint into buffer
+;  Paint into buffer.
 ;       
-          window,XSIZE=wsx,YSIZE=wsy,/Pixmap,/Free
+          window,xsize=wsx,ysize=wsy,/pixmap,/free
           pixID=!D.Window
         endif
         if (keyword_set(contourplot)) then begin
@@ -429,10 +436,10 @@ while (not eof(1)) do begin
           istr2 = strtrim(string(itpng,'(I20.4)'),2) ;(only up to 9999 frames)
           image = tvrd()
 ;
-;  make background white, and write png file
+;  Make background white, and write png file.
 ;
           ;bad=where(image eq 0) & image(bad)=255
-          tvlct, red, green, blue, /GET
+          tvlct, red, green, blue, /get
           imgname = imgdir+'/img_'+istr2+'.png'
           write_png, imgname, image, red, green, blue
           if (keyword_set(png_truecolor)) then $
@@ -441,31 +448,31 @@ while (not eof(1)) do begin
           ;
         end else if (keyword_set(mpeg)) then begin
 ;
-;  write directly mpeg file
-;  for idl_5.5 and later this requires the mpeg license
+;  Write directly mpeg file.
+;  For idl_5.5 and later this requires the mpeg license.
 ;
           image = tvrd(true=1)
           if (keyword_set(colmpeg)) then begin
-; ngrs seem to need to work explictly with 24-bit color to get 
-; color mpegs to come out on my local machines...
+;  ngrs seem to need to work explictly with 24-bit color to get 
+;  color mpegs to come out on my local machines...
             image24 = bytarr(3,Nwx,Nwy)
-            tvlct, red, green, blue, /GET
+            tvlct, red, green, blue, /get
           endif
           for irepeat=0,nrepeat do begin
             if (keyword_set(colmpeg)) then begin
               image24[0,*,*]=red(image[0,*,*])
               image24[1,*,*]=green(image[0,*,*])
               image24[2,*,*]=blue(image[0,*,*])
-              mpeg_put, mpegID, image=image24, FRAME=itmpeg, /ORDER
+              mpeg_put, mpegID, image=image24, frame=itmpeg, /order
             endif else begin
-              mpeg_put, mpegID, window=2, FRAME=itmpeg, /ORDER
+              mpeg_put, mpegID, window=2, frame=itmpeg, /order
             endelse
             itmpeg=itmpeg+1 ;(counter)
           end
           print,islice,itmpeg,t,min([plane2]),max([plane2])
         end else begin
 ;
-; default: output on the screen
+;  Default: output on the screen.
 ;
           if (ifirst) then $
               print, '----islice--------t----------min------------max--------'
@@ -474,7 +481,7 @@ while (not eof(1)) do begin
         istride=0
         wait,wait
 ;
-; check whether file has been written
+;  Check whether file has been written.
 ;
         if (keyword_set(png)) then spawn,'ls -l '+imgname
 ;
@@ -488,11 +495,11 @@ while (not eof(1)) do begin
 end
 close,1
 ;
-;  write & close mpeg file
+;  Write and close mpeg file.
 ;
 if (keyword_set(mpeg)) then begin
   print,'Writing MPEG file..'
-  mpeg_save, mpegID, FILENAME=mpeg_name
+  mpeg_save, mpegID, filename=mpeg_name
   mpeg_close, mpegID
 end
 ;
