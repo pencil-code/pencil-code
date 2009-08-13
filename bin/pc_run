@@ -147,6 +147,7 @@ my $data_dir = './data';
 my $runtime_dir = './runtime';
 my $lockfile = './LOCK';
 my $errorfile = './ERROR';
+my $noerasefile = './NOERASE';
 my $locked = 0;
 my $start_x = 'src/start.x';
 my $run_x   = 'src/run.x';
@@ -160,6 +161,7 @@ my %dispatch_table = (
 my %settings = local_settings();
 my $Ncpus = $settings{'ncpus'};
 my $mpi = $settings{'mpi'};
+my $local_binary = $settings{'local_binary'};
 
 my @subcmds = expand_cmd_sequence(@ARGV);
 print STDERR "Commands: <", join(">, <", @subcmds), ">\n" if ($debug);
@@ -199,6 +201,7 @@ sub start_cmd {
     setup_datadir();
     run_extra_setup_script();
     honour_nostart();
+    handle_local_binary($start_x);
 
     get_lock();
     mpi_run_cmd($start_x);
@@ -359,6 +362,7 @@ sub setup_datadir {
         exit -1;
     }
 
+    ## Create / clean necessary data directories
     for my $subdir (subdir_list()) {
         my $dir = "$data_dir/$subdir";
         if (-d $dir) {
@@ -366,20 +370,38 @@ sub setup_datadir {
               or die "Cannot read directory $dir\n";
             my @files = readdir($dh);
             # Remove everything except `.', `..', `var.dat':
-            my @files_to_remove
+            my @files_to_delete
               = grep { !m/^ ( var\.dat | \. \.? ) $/x } @files;
-            @files_to_remove = map { $_ = "$dir/" . $_; } @files_to_remove;
+            @files_to_delete = map { $_ = "$dir/" . $_; } @files_to_delete;
 
-            if (@files_to_remove) {
-                print "Removing @files_to_remove\n" if $debug;
-                unlink @files_to_remove
-                  or die "Cannot remove all of @files_to_remove\n";
+            if (@files_to_delete) {
+                print "Removing @files_to_delete\n" if $debug;
+                unlink_if_exist(@files_to_delete);
             }
 
             closedir $dh;
         } else {
             mkdir $dir or die "Cannot mkdir $dir: $!\n";
         }
+    }
+
+    ## Clean up previous runs
+    unless (-e 'NOERASE') {
+        my $tsfile = "$data_dir/time_series.dat";
+        if (-e $tsfile && -s $tsfile) {
+            my $archived_tsfile = "$data_dir/time_series" . timestr();
+            rename $tsfile, $archived_tsfile
+              or die "Cannot rename $tsfile to $archived_tsfile: $!\n";
+        }
+        my @files_to_delete = (
+            <$data_dir/*.dat>,
+            <$data_dir/*.nml>,
+            <$data_dir/param*.pro>,
+            <$data_dir/index*.pro>,
+            <$data_dir/averages/*>
+        );
+        unlink_if_exist(@files_to_delete);
+        unlink_if_exist("$data_dir/move-me.list", "$data_dir/moved-files.list");
     }
 }
 # ---------------------------------------------------------------------- #
@@ -413,6 +435,21 @@ sub honour_nostart {
         stash_time_series();
         exit 0;
     }
+}
+# ---------------------------------------------------------------------- #
+sub handle_local_binary {
+# Copy given binary to scratch dir and start remote-top in background
+    my ($binary) = @_;
+
+    return unless $local_binary;
+
+    print "Copying $start_x to $ENV{SCRATCH_DIR}\n" unless $quiet;
+    use File::Copy;
+    copy($start_x, $ENV{SCRATCH_DIR})
+      or die "Cannot copy $binary to $ENV{SCRATCH_DIR}\n";
+
+    system("remote-top > remote-top.log 2>&1 &") == 0
+      or die "Cannot start remote-top in background: $!";
 }
 # ---------------------------------------------------------------------- #
 sub match_line_ix {
@@ -507,6 +544,18 @@ sub touch {
     chomp $text;
     print $fh $text, "\n";
     close $fh or die "Cannot close file $filename\n";
+}
+# ---------------------------------------------------------------------- #
+sub unlink_if_exist {
+# Unlink the given files or die with useful error message, but silently
+# skip non-exisdting files
+    my @files = @_;
+
+    my @existing_files = grep { -e } @files;
+    if (@existing_files) {
+        unlink @existing_files
+          or die "Cannot remove all of @existing_files\n";
+    }
 }
 # ---------------------------------------------------------------------- #
 sub mention {
