@@ -1667,7 +1667,9 @@ module Entropy
 !***********************************************************************
     subroutine cyclic(a,b,c,alpha,beta,r,x,n)
 !
-! DOCUMENT ME!
+! 08-Sep-07/gastine+dintrans: coded
+! inversion of a tridiagonal matrix with periodic BC (alpha and beta
+! coefficients); used in the ADI scheme
 !
       use General, only: tridag
 !
