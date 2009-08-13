@@ -54,10 +54,14 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   pc_run stop               # stop pencil job running in current directory
 #   pc_run reload             # make running pencil job reload run.in
 #
-# To do / ideas:
-#   - Extract common code for finding and parsing config file from here
-#     and pc_run and put it into Pencil::ConfigFinder (or some 3rd module,
-#     or Pencil::Util)
+# To do:
+# - NEWDIR handling
+# Improvements:
+# - use a wrapper to die() that removes the LOCK file (except when die'ing
+#   because of an existing lock file)
+# - Extract common code for finding and parsing config file from here
+#   and pc_run and put it into Pencil::ConfigFinder (or some 3rd module,
+#   or Pencil::Util)
 
 # Copyright (C) 2009  Wolfgang Dobler
 #
@@ -142,7 +146,10 @@ my @runtime_keys = @{$parser->get_runtime_keys()};
 my $data_dir = './data';
 my $runtime_dir = './runtime';
 my $lockfile = './LOCK';
+my $errorfile = './ERROR';
 my $locked = 0;
+my $start_x = 'src/start.x';
+my $run_x   = 'src/run.x';
 my %dispatch_table = (
                       start  => \&start_cmd,
                       run    => \&run_cmd,
@@ -194,22 +201,43 @@ sub start_cmd {
     honour_nostart();
 
     get_lock();
-    run_system_cmd('src/start.x');
+    mpi_run_cmd($start_x);
     clear_lock();
 }
 # ---------------------------------------------------------------------- #
 sub run_cmd {
 # Run run.x
     get_lock();
-    run_system_cmd('src/run.x');
+    mpi_run_cmd($run_x);
     clear_lock();
+}
+# ---------------------------------------------------------------------- #
+sub mpi_run_cmd {
+#
+    my @cmd_line = @_;
+    if ($mpi) {
+        my $mpiexec = $runtime_params{'mpiexec'}
+          or die "No mpiexec setting. Please fix your configuration.\n";
+        run_system_cmd(split('\s+', $mpiexec), @cmd_line);
+    } else {
+        run_system_cmd(@cmd_line);
+    }
 }
 # ---------------------------------------------------------------------- #
 sub run_system_cmd {
 #
     my @cmd_line = @_;
-    system(@cmd_line) == 0
-      or die "@cmd_line failed: $!\n";
+    $! = 0;
+    clear_error();
+    my $status = system(@cmd_line);
+    ($status == 0) or warn "@cmd_line failed: $!\n";
+    if (-e $errorfile) {
+        print "Found ERROR file from start.x\n";
+        $status |= 16;
+        clear_error();
+    }
+
+    die "\n" if ($status);
 }
 # ---------------------------------------------------------------------- #
 sub local_settings {
@@ -419,6 +447,13 @@ sub clear_lock {
     $locked = 0;
 }
 # ---------------------------------------------------------------------- #
+sub clear_error {
+    if (-e $errorfile) {
+        unlink $errorfile
+          or warn "Cannot remove lock file $lockfile: $!\n";
+    }
+}
+# ---------------------------------------------------------------------- #
 sub timestr {
 # Return date and time in a compact way to attach to file names
     return POSIX::strftime("%y%m%d.%H%M", localtime);
@@ -492,6 +527,8 @@ sub version {
 
 END {
     clear_lock() if ($locked);
+    unlink 'resubmit.log';
+    unlink 'rs';
 }
 
 # End of file build
