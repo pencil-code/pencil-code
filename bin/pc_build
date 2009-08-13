@@ -55,7 +55,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #       will look for, and use the configuration file for host ID
 #       `workhorse'. If no config file is found, pc_build exits with an
 #       error message.
-#   pc_build -H workhorse will look for, and use the configuration file
+
 # To do / ideas:
 #   - Allow make-style assignement arguments:
 #       pc_build FC=myf90 FFLAGS+='-O0 -g'
