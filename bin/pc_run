@@ -368,6 +368,10 @@ sub stash_time_series {
 }
 # ---------------------------------------------------------------------- #
 sub get_lock {
+    if (-e 'NEVERLOCK') {
+        return;
+    }
+
     if (-e $lockfile) {
         print "\n";
         print "getconf.csh: found LOCK file\n";
