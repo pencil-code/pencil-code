@@ -218,19 +218,37 @@ sub run_cmd {
 sub mpi_run_cmd {
 #
     my @cmd_line = @_;
+
+    print "", (scalar localtime()), "\n";
+
     if ($mpi) {
         my $mpiexec = $runtime_params{'mpiexec'}
           or die "No mpiexec setting. Please fix your configuration.\n";
         my @mpiexec_cmd = split('\s+', $mpiexec);
         push @mpiexec_cmd, ('-np', $Ncpus);
-        run_system_cmd(@mpiexec_cmd, @cmd_line);
+        time_system_cmd(@mpiexec_cmd, @cmd_line);
     } else {
-        run_system_cmd(@cmd_line);
+        time_system_cmd(@cmd_line);
     }
+
+    print "\n", (scalar localtime()), "\n";
+}
+# ---------------------------------------------------------------------- #
+sub time_system_cmd {
+# Run a system command through `/usr/bin/time -p' or some such
+    my @cmd_line = @_;
+
+    my @time_cmd;
+    if (-X '/usr/bin/time') {
+        @time_cmd = ('/usr/bin/time', '-p');
+    } else {
+        @time_cmd = 'time';
+    }
+    run_system_cmd(@time_cmd, @cmd_line);
 }
 # ---------------------------------------------------------------------- #
 sub run_system_cmd {
-#
+# Run the given system command and die if it exits with error status
     my @cmd_line = @_;
     $! = 0;
     clear_error();
@@ -248,7 +266,7 @@ sub run_system_cmd {
         clear_error();
     }
 
-    die "\n" if ($status);
+    die "Aborting\n" if ($status);
 }
 # ---------------------------------------------------------------------- #
 sub local_settings {
