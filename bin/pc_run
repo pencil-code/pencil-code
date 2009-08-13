@@ -1,6 +1,9 @@
 #!/bin/sh
 #  -*-Perl-*-  (for Emacs)    vim:set filetype=perl:  (for vim)
 #======================================================================#
+# Work in submit directory (SGE):
+#$ -cwd -V
+#======================================================================#
 # Run the right perl version:
 if [ -x /usr/local/bin/perl ]; then
   perl=/usr/local/bin/perl
@@ -13,7 +16,7 @@ fi
 exec $perl -x -S $0 "$@"     # -x: start from the following line
 #======================================================================#
 #! /Good_Path/perl -w
-# line 17
+# line 20
 
 # Name:   pc_build
 # Author: wd (wdobler [at] gmail [dot] com)
@@ -136,7 +139,10 @@ my @runtime_keys = @{$parser->get_runtime_keys()};
 
 
 ## Global variables
+my $data_dir = './data';
 my $runtime_dir = './runtime';
+my $lockfile = './LOCK';
+my $locked = 0;
 my %dispatch_table = (
                       start  => \&start_cmd,
                       run    => \&run_cmd,
@@ -156,6 +162,15 @@ if ($suppress_check) {
     touch("$runtime_dir/NO-PENCIL-CHECK");
 }
 
+## Setup steps:
+
+# - lock
+# - read $data_dir value from file, if present
+# - catch C-c to perform ordered shutdown (in particular running our END
+#   block)
+
+cd_to_wordir();
+
 for my $subcmd (@subcmds) {
     my $action = $dispatch_table{$subcmd};
     if (defined($action)) {
@@ -170,12 +185,21 @@ for my $subcmd (@subcmds) {
 # ---------------------------------------------------------------------- #
 sub start_cmd {
 # Run start.x
+
+    setup_datadir();
+    run_extra_setup_script();
+    honour_nostart();
+
+    get_lock();
     run_system_cmd('src/start.x');
+    clear_lock();
 }
 # ---------------------------------------------------------------------- #
 sub run_cmd {
 # Run run.x
+    get_lock();
     run_system_cmd('src/run.x');
+    clear_lock();
 }
 # ---------------------------------------------------------------------- #
 sub run_system_cmd {
@@ -235,6 +259,75 @@ sub expand_cmd_sequence {
     return @sequence;
 }
 # ---------------------------------------------------------------------- #
+sub cd_to_wordir {
+# Cd to the work directory for various queuing systems
+    for my $dir (
+                 $ENV{PBS_O_WORKDIR},     # PBS
+                 $ENV{QSUB_WORKDIR},      # SUPER-UX's nqs
+                 $ENV{LOADL_STEP_INITDIR} # IBM Loadleveler
+                ) {
+        if (defined $dir) {
+            if (-d $dir) {
+                chdir $dir or die "Cannot chdir to $dir: $!\n";
+                return;
+            } else {
+                warn "No such directory: $dir\n";
+            }
+       }
+    }
+}
+# ---------------------------------------------------------------------- #
+sub setup_datadir {
+# Ensure we have a data/ directory with the correct subdirectory
+# structure.
+#
+#  If we don't have a data subdirectory: stop here (it is too easy to
+#  continue with an NFS directory until you fill everything up).
+#
+    unless (-d "$data_dir") {
+        print "\n";
+        print ">>  STOPPING: need $data_dir directory\n";
+        print ">>  Recommended: create $data_dir as link to directory on a\n";
+        print ">>  scratch disk\n";
+        print ">>  Not recommended: you can generate $data_dir with\n";
+        print ">>  'mkdir $data_dir', but that will most likely end up on\n";
+        print ">>  your NFS file system and be slow.\n";
+        print "\n";
+        exit -1;
+    }
+
+    for my $subdir (qw/ allprocs averages idl proc0 /) {
+        my $dir = "$data_dir/$subdir";
+        unless (-d $dir) {
+            mkdir $dir or die "Cannot mkdir $dir: $!\n";
+        }
+    }
+
+}
+# ---------------------------------------------------------------------- #
+sub run_extra_setup_script {
+#  Execute some script or command specified by the user.
+#  E.g. run src-to-data to save disk space in /home by moving src/ to
+#  data/ and linking
+    if (defined $ENV{PENCIL_START1_CMD}) {
+        print "Running $ENV{PENCIL_START1_CMD}\n" unless ($quiet);
+        run_system_cmd($ENV{PENCIL_START1_CMD});
+    }
+}
+# ---------------------------------------------------------------------- #
+sub honour_nostart {
+#  For testing backwards compatibility, do not excecute start.x, an do not
+#  delete existing var.dat (etc.) files, if a NOSTART file exists.
+#  Rename time_series.dat, so run.x can write a fresh one to compare
+#  against.
+#
+    if (-e 'NOSTART') {
+        print "Found NOSTART file. Won't run start.x\n";
+        stash_time_series();
+        exit 0;
+    }
+}
+# ---------------------------------------------------------------------- #
 sub extract_N_cpus {
 # Look at cparam.local to determine number of CPUs
     my ($n) = match_line_ix(
@@ -261,6 +354,47 @@ sub match_line_ix {
 
     close $fh or die "Cannot close $filename: $!\n";
     return undef;
+}
+# ---------------------------------------------------------------------- #
+sub stash_time_series {
+# Rename an existing data/timeseries.dat file to
+# data/time_series.<timestring>
+    my $tseries = "$data_dir/time_series.dat";
+    if (-e $tseries) {
+        my $stashed_series = "$data_dir/time_series." . timestr();
+        rename $tseries, $stashed_series
+          or die "Cannot rename $tseries to $stashed_series: $!\n";
+    }
+}
+# ---------------------------------------------------------------------- #
+sub get_lock {
+    if (-e $lockfile) {
+        print "\n";
+        print "getconf.csh: found LOCK file\n";
+        print "(if it is left over from a crash, remove it manually: rm LOCK)\n";
+        print "\n";
+        print "Will *not* start in this directory, as the code may already ";
+        print "be running.\n";
+        print "Checking for NEWDIR file to tell us to run somewhere else:\n";
+        print "[Not yet implemented]\n";
+        die "\n";           # die(), not exit() or lockfile gets removed
+    } else {
+        touch($lockfile);
+        $locked = 1;
+    }
+}
+# ---------------------------------------------------------------------- #
+sub clear_lock {
+    if (-e $lockfile) {
+        unlink $lockfile
+          or warn "Cannot remove lock file $lockfile: $!\n";
+    }
+    $locked = 0;
+}
+# ---------------------------------------------------------------------- #
+sub timestr {
+# Return date and time in a compact way to attach to file names
+    return POSIX::strftime("%y%m%d.%H%M", localtime);
 }
 # ---------------------------------------------------------------------- #
 sub touch {
@@ -328,5 +462,9 @@ sub version {
     return "$cmdname version $rev ($date)\n";
 }
 # ---------------------------------------------------------------------- #
+
+END {
+    clear_lock() if ($locked);
+}
 
 # End of file build
