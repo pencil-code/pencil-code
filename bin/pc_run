@@ -232,7 +232,11 @@ sub run_system_cmd {
     $! = 0;
     clear_error();
 
-    print "Running system cmd <", join("> <", @cmd_line), ">\n";
+    if ($debug) {
+        print "Running system cmd <", join("> <", @cmd_line), ">\n";
+    } else {
+        print "Running\n  @cmd_line\n";
+    }
     my $status = system(@cmd_line);
     ($status == 0) or warn "@cmd_line failed: $!\n";
     if (-e $errorfile) {
@@ -355,16 +359,21 @@ sub setup_datadir {
         exit -1;
     }
 
-    my @subdirs = qw/ allprocs averages idl /;
-    for my $i (1..$Ncpus) {
-        push @subdirs, 'proc' . ($i - 1);
-    }
-    for my $subdir (@subdirs) {
+    for my $subdir (subdir_list()) {
         my $dir = "$data_dir/$subdir";
         unless (-d $dir) {
             mkdir $dir or die "Cannot mkdir $dir: $!\n";
         }
     }
+}
+# ---------------------------------------------------------------------- #
+sub subdir_list {
+# Return list of directories below data/ that must exist
+    my @subdirs = qw/ allprocs averages idl /;
+    for my $i (1..$Ncpus) {
+        push @subdirs, 'proc' . ($i - 1);
+    }
+    return @subdirs;
 }
 # ---------------------------------------------------------------------- #
 sub run_extra_setup_script {
