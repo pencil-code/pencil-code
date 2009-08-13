@@ -361,7 +361,23 @@ sub setup_datadir {
 
     for my $subdir (subdir_list()) {
         my $dir = "$data_dir/$subdir";
-        unless (-d $dir) {
+        if (-d $dir) {
+            opendir my $dh, $dir
+              or die "Cannot read directory $dir\n";
+            my @files = readdir($dh);
+            # Remove everything except `.', `..', `var.dat':
+            my @files_to_remove
+              = grep { !m/^ ( var\.dat | \. \.? ) $/x } @files;
+            @files_to_remove = map { $_ = "$dir/" . $_; } @files_to_remove;
+
+            if (@files_to_remove) {
+                print "Removing @files_to_remove\n" if $debug;
+                unlink @files_to_remove
+                  or die "Cannot remove all of @files_to_remove\n";
+            }
+
+            closedir $dh;
+        } else {
             mkdir $dir or die "Cannot mkdir $dir: $!\n";
         }
     }
