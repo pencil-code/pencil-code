@@ -183,14 +183,16 @@ my %settings = local_settings();
 my $Ncpus         = get_setting(\%settings, 'ncpus'        );
 my $mpi           = get_setting(\%settings, 'mpi'          );
 my $lparticles    = get_setting(\%settings, 'lparticles'   );
+my $hostname      = get_setting(\%settings, 'hostname'     );
 
 ## Environment variables for other processes we start
+# Set up PATH for users who don't include $PENCIL_HOME/bin by default
+$ENV{PATH} = "$ENV{PATH}:$ENV{PENCIL_HOME}/bin" if defined $ENV{PENCIL_HOME};
+#
 $ENV{SCRATCH_DIR} = '/scratch';
 $ENV{SSH        } = 'ssh';
 $ENV{SCP        } = 'scp';
-# Set up PATH for users who don't include $PENCIL_HOME/bin by default
-$ENV{PATH} = "$ENV{PATH}:$ENV{PENCIL_HOME}/bin" if defined $ENV{PENCIL_HOME};
-
+$ENV{NODELIST   } = join{':', get_node_list()};
 
 my @subcmds = expand_cmd_sequence(@ARGV);
 print STDERR "Commands: <", join(">, <", @subcmds), ">\n" if ($debug);
@@ -257,7 +259,8 @@ sub mpi_run_cmd {
     print "", (scalar localtime()), "\n";
 
     if ($mpi) {
-        print "Running under MPI" unless ($quiet);
+        print "Running under MPI\n" unless ($quiet);
+
         my $mpiexec = $runtime_params{'mpiexec'}
           or die "No mpiexec setting. Please fix your configuration.\n";
         my @mpiexec_cmd = split('\s+', $mpiexec);
@@ -317,8 +320,14 @@ sub shutdown_mpi {
 }
 # ---------------------------------------------------------------------- #
 sub local_settings {
-# Return hash of local settings like number of cpus, datadir, etc.
+# Return hash of local settings like hostname. number of cpus, datadir,
+# etc.
     my %settings;
+
+    # Host name
+    my $hn = `hostname`;
+    chomp $hn;
+    $settings{'hostname'} = $hn;
 
     # Compiled with MPI?
     $settings{'mpi'}
@@ -331,15 +340,26 @@ sub local_settings {
         }
     }
 
-    # Number of CPUs (from cparam.local)
+    # Number of CPUs (from cparam.local), etc.
     ($settings{'ncpus'}) = match_line_ix(
         '^ \s* integer\b [^\!]* ncpus \s*=\s* ([0-9]*)', 'src/cparam.local'
     );
-    print "$settings{ncpus} CPUs\n" unless $quiet;
+    print count_with_plural_s($settings{'ncpus'}, 'CPU'), "\n" unless $quiet;
 
-    $settings{'lparticles'} = defined match_line_ix(
+    my @nodes = get_node_list();
+    my $N = @nodes + 0;
+    my $ppn = $settings{'ncpus'} / $N;
+    $settings{'n_nodes'} = $N;
+    $settings{'n_proc_per_node'} = $ppn;
+    if ($settings{'mpi'} && ! $quiet) {
+        print count_with_plural_s($N, 'node'), ", ",
+            count_with_plural_s($ppn, 'CPU'), " per node\n"
+    }
+
+    # Particles
+    $settings{'lparticles'} = defined(match_line_ix(
         'particles_nbody_init_pars', 'start.in'
-    );
+    )) + 0;
     print "lparticles = $settings{lparticles}\n" unless $quiet;
 
     return %settings;
@@ -497,6 +517,116 @@ sub subdir_list {
     return @subdirs;
 }
 # ---------------------------------------------------------------------- #
+sub get_node_list {
+# Extract the list of nodes from queuing-system specific environment
+# variable.
+# We use a map with entries
+#   VAR => 'name'
+# or
+#   VAR => \&function
+# In the first case, extract node list from the file pointed to by
+# $ENV{VAR}, or from the calue of $ENV{VAR}.
+# If a function ref is given, that function takes the environment variable
+# as argument and returns @nodelist.
+    my %qs_map = (
+        'PE_HOSTFILE'          => 'SGE',
+        'PBS_NODEFILE'         => 'PBS',
+        'LSB_HOSTS'            => 'LSF',
+        'LOADL_PROCESSOR_LIST' => 'LoadLeveler',
+        'SLURM_NODELIST'       => 'SLURM (Simple Linux Util. for Res. Mgmt.)',
+        'JOB_ID'               => \&job_id_handler,
+        'OAR_FILE_NODES'       => 'OARSUB',
+        'SP_HOSTFILE'          => 'EASY',
+    );
+
+    for my $var (qw/
+                     PE_HOSTFILE
+                     PBS_NODEFILE
+                     LSB_HOSTS
+                     LOADL_PROCESSOR_LIST
+                     SLURM_NODELIST
+                     JOB_ID
+                     OAR_FILE_NODES
+                     SP_HOSTFILE
+                   /) {
+        my $env_var = $ENV{$var};
+        next unless (defined $env_var);
+
+        my $handler = $qs_map{$var}
+          or die "Inconsistent qs_map: missing entry for $env_var\n";
+        if (ref($handler)) { # => \&function
+            return &$handler($env_var);
+        } else {            # => 'name'
+            return default_qs_handler($env_var);
+        }
+    }
+
+    return ($hostname);
+}
+# ---------------------------------------------------------------------- #
+sub default_qs_handler {
+# Given the content of a queuing-system related environment variable,
+# extract and return node list
+    my ($env_var) = @_;
+
+    my $content;
+    if (-e $env_var) {
+        $content = get_file_content($env_var);
+    } else {
+        $content = $env_var;
+    }
+
+    my @entries = split(/\s+/, slurm_expand($content));
+
+    @entries =
+        grep { ! /=/ }          # lam's `cpu=2' specifier
+        grep { ! /:/ }          # where from?
+        grep { ! /^[0-9]+$/ }   # mpich's `node12 1' group label
+        @entries;
+
+    return uniq(@entries);
+}
+# ---------------------------------------------------------------------- #
+sub job_id_handler {
+# Given the content of $ENV{JOB_ID}, identify the queuing system we
+# are under and extract and return node list
+    my ($job_id) = @_;
+
+    if (-e "$ENV{HOME}/.score/ndfile.$job_id") {
+        identify_job('Scout');
+        return default_qs_handler("$ENV{HOME}/.score/ndfile.$job_id");
+    } else {
+        # JOB_ID may be set eithout Scout, e.g. for wd running SGE on
+        # the Kabul cluster
+        print "Apparently not parallel environment job\n" unless $quiet;
+        return ();
+    }
+}
+# ---------------------------------------------------------------------- #
+sub slurm_expand {
+# Given the content of $ENV{SLURM_NODELIST}, expand a string like
+#   n[41,43-49,69-70,111-114]
+# into the space-separated explicit form
+#   n41 n43 n44 n45 n46 n47 n48 n49 n69 n70 n111 n112 n113 n114
+# and return that as a string
+    my ($text) = @_;
+
+    if ($text =~ /\s* ([^[]+) \[ ([^\]]*) \] /x) {
+        my ($prefix, $list) = ($1, $2);
+        $list =~ s/([0-9]+)-([0-9]+)/join(" ", $1..$2)/eg;
+        $list =~ s/([ ,]+)/ $prefix/g;
+        return "$prefix$list\n";
+    } else {
+        return $text;
+    }
+}
+# ---------------------------------------------------------------------- #
+sub identify_job {
+#
+    my ($qs) = @_;
+    print "$qs job\n" unless $quiet;
+}
+# ---------------------------------------------------------------------- #
 sub run_extra_setup_script {
 #  Execute some script or command specified by the user.
 #  E.g. run src-to-data to save disk space in /home by moving src/ to
@@ -581,6 +711,24 @@ sub match_line_ix {
 
     close $fh or die "Cannot close $filename: $!\n";
     return undef;
+}
+# ---------------------------------------------------------------------- #
+sub get_file_content {
+# Read all lines from file (queuing-sytem specific), stripping whitespace
+# comments and return result as space-separated string
+    my ($file) = @_;
+
+    my @content;
+    open my $fh, "<$file"
+      or die "Cannot open $file for reading: $!";
+    while (defined (my $line=<$fh>)) {
+        $line =~ s{#.*}{};             # strip comments
+        $line =~ s{^\s*(.*?)\s*$}{$1}; # strip whitespace
+        next unless $line =~ /\S/;     # ignore empty lines
+        last if $line =~ /^\s*\[/;     # stop at mpich's [CS] tag
+        push @content, $line;
+    }
+    return "@content";
 }
 # ---------------------------------------------------------------------- #
 sub stash_time_series {
@@ -681,6 +829,18 @@ sub unlink_if_exist {
     }
 }
 # ---------------------------------------------------------------------- #
+sub uniq {
+# Remove duplicate elements from list, leaving order untouched
+    my @list = @_;
+
+    my (@uniq, %seen);
+    for my $element (@list) {
+        push @uniq, $element unless $seen{$element}++;
+    }
+
+    return @uniq;
+}
+# ---------------------------------------------------------------------- #
 sub mention {
 # Reference a variable without doing anything.
 # Use this to suppress ``Name "Pencil::ConfigFinder::debug" used only
@@ -690,11 +850,20 @@ sub mention {
 # ---------------------------------------------------------------------- #
 sub printopts {
 # Print command line options
-    my $optsref = shift;
+    my ($optsref) = @_;
+
     my %options = %$optsref;
     foreach my $opt (keys(%options)) {
         print STDERR "\$options{$opt} = `$options{$opt}'\n";
     }
+}
+# ---------------------------------------------------------------------- #
+sub count_with_plural_s {
+# Return "$n $name" or "$n ${name}s", depending on $n.
+    my ($n, $name) = @_;
+
+    my $plural_s = ($n + 0 > 1) ? 's' : '';
+    return "$n $name" . $plural_s;
 }
 # ---------------------------------------------------------------------- #
 sub usage {
