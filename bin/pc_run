@@ -65,6 +65,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # - Extract common code for finding and parsing config file from here
 #   and pc_run and put it into Pencil::ConfigFinder (or some 3rd module,
 #   or Pencil::Util).
+# - Add a --notify option that starts zenity/xmessage if available and
+#   under X11, or beeps.
 
 # Copyright (C) 2009  Wolfgang Dobler
 #
@@ -86,6 +88,7 @@ use Pencil::Util;
 Pencil::Util::use_pencil_perl_module('Pencil::ConfigFinder') or die;
 Pencil::Util::use_pencil_perl_module('Pencil::ConfigParser') or die;
 
+use Cwd;
 use Getopt::Long;
 # Allow for `-Plp' as equivalent to `-P lp' etc:
 Getopt::Long::config("bundling");
@@ -151,12 +154,13 @@ my $runtime_dir = './runtime';
 my $lockfile = './LOCK';
 my $errorfile = './ERROR';
 my $noerasefile = './NOERASE';
+my $copysnapshots = 'copy-snapshots_exp';
 my $copy_snapshots_log = './copy-snapshots.log';
-my $copysnapshots = 'copy-snapshots';
 my $start_x = 'src/start.x';
 my $run_x   = 'src/run.x';
 
 my $locked = 0;
+my $booted_lam = 0;
 my $booted_mpd = 0;
 
 my %dispatch_table = (
@@ -166,18 +170,31 @@ my %dispatch_table = (
                       reload => \&reload_cmd,
                      );
 
+## Variables
+# ..extracted from config:
+my $local_disc          = $runtime_params{'local_disc'    } || 0;
+my $one_local_disc      = $runtime_params{'one_local_disc'} || 0;
+my $local_binary        = $runtime_params{'local_binary'  } || 0;
+my $remote_top          = $runtime_params{'remote_top'    } || 0;
+my $remove_scratch_root = $runtime_params{'remote_top'    } || 0;
+
+# ..extracted dynamically from executables and .in files:
 my %settings = local_settings();
-my $Ncpus = $settings{'ncpus'};
-my $mpi = $settings{'mpi'};
-my $local_disc = $settings{'local_disc'};
-my $local_binary = $settings{'local_binary'};
+my $Ncpus         = get_setting(\%settings, 'ncpus'        );
+my $mpi           = get_setting(\%settings, 'mpi'          );
+my $lparticles    = get_setting(\%settings, 'lparticles'   );
+
+## Environment variables for other processes we start
+$ENV{SCRATCH_DIR} = '/scratch';
+$ENV{SSH        } = 'ssh';
+$ENV{SCP        } = 'scp';
+# Set up PATH for users who don't include $PENCIL_HOME/bin by default
+$ENV{PATH} = "$ENV{PATH}:$ENV{PENCIL_HOME}/bin" if defined $ENV{PENCIL_HOME};
+
 
 my @subcmds = expand_cmd_sequence(@ARGV);
 print STDERR "Commands: <", join(">, <", @subcmds), ">\n" if ($debug);
 
-
-## Set up PATH for users who don't include $PENCIL_HOME/bin by default
-$ENV{PATH} = "$ENV{PATH}:$ENV{PENCIL_HOME}/bin" if defined $ENV{PENCIL_HOME};
 
 ## Start working
 update_runtime_dir();
@@ -193,7 +210,9 @@ if ($suppress_check) {
 # - catch C-c to perform ordered shutdown (in particular running our END
 #   block)
 
+# Save working directory for other scripts we call
 cd_to_wordir();
+$ENV{PENCIL_WORKDIR} = getcwd();
 
 for my $subcmd (@subcmds) {
     my $action = $dispatch_table{$subcmd};
@@ -238,6 +257,7 @@ sub mpi_run_cmd {
     print "", (scalar localtime()), "\n";
 
     if ($mpi) {
+        print "Running under MPI" unless ($quiet);
         my $mpiexec = $runtime_params{'mpiexec'}
           or die "No mpiexec setting. Please fix your configuration.\n";
         my @mpiexec_cmd = split('\s+', $mpiexec);
@@ -317,7 +337,24 @@ sub local_settings {
     );
     print "$settings{ncpus} CPUs\n" unless $quiet;
 
+    $settings{'lparticles'} = defined match_line_ix(
+        'particles_nbody_init_pars', 'start.in'
+    );
+    print "lparticles = $settings{lparticles}\n" unless $quiet;
+
     return %settings;
+}
+# ---------------------------------------------------------------------- #
+sub get_setting {
+# Return a given setting from hash, or die;
+    my ($settings_ref, $key) = @_;
+
+    my $setting = $settings_ref->{$key};
+    if (defined $setting) {
+        return $setting;
+    } else {
+        die "No such local setting: $key\n";
+    }
 }
 # ---------------------------------------------------------------------- #
 sub update_runtime_dir {
