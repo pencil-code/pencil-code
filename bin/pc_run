@@ -149,8 +149,11 @@ my %dispatch_table = (
                       stop   => \&stop_cmd,
                       reload => \&reload_cmd,
                      );
-my $Ncpus = extract_N_cpus();
-print STDERR "\$Ncpus = $Ncpus\n" if ($debug);
+
+my %settings = local_settings();
+my $Ncpus = $settings{'ncpus'};
+my $mpi = $settings{'mpi'};
+
 my @subcmds = expand_cmd_sequence(@ARGV);
 print STDERR "Commands: <", join(">, <", @subcmds), ">\n" if ($debug);
 
@@ -207,6 +210,30 @@ sub run_system_cmd {
     my @cmd_line = @_;
     system(@cmd_line) == 0
       or die "@cmd_line failed: $!\n";
+}
+# ---------------------------------------------------------------------- #
+sub local_settings {
+# Return hash of local settings like number of cpus, datadir, etc.
+    my %settings;
+
+    # Compiled with MPI?
+    $settings{'mpi'}
+      = `fgrep -c 'mpicomm_init: MPICOMM neighbors' src/start.x` + 0;
+    unless ($quiet) {
+        if ($settings{'mpi'} + 0) {
+            print "MPI run\n"
+        } else {
+            print "Non-MPI run\n";
+        }
+    }
+
+    # Number of CPUs (from cparam.local)
+    ($settings{'ncpus'}) = match_line_ix(
+        '^ \s* integer\b [^\!]* ncpus \s*=\s* ([0-9]*)', 'src/cparam.local'
+    );
+    print "$settings{ncpus} CPUs\n" unless $quiet;
+
+    return %settings;
 }
 # ---------------------------------------------------------------------- #
 sub update_runtime_dir {
@@ -296,13 +323,16 @@ sub setup_datadir {
         exit -1;
     }
 
-    for my $subdir (qw/ allprocs averages idl proc0 /) {
+    my @subdirs = qw/ allprocs averages idl /;
+    for my $i (1..$Ncpus) {
+        push @subdirs, 'proc' . ($i - 1);
+    }
+    for my $subdir (@subdirs) {
         my $dir = "$data_dir/$subdir";
         unless (-d $dir) {
             mkdir $dir or die "Cannot mkdir $dir: $!\n";
         }
     }
-
 }
 # ---------------------------------------------------------------------- #
 sub run_extra_setup_script {
@@ -326,13 +356,6 @@ sub honour_nostart {
         stash_time_series();
         exit 0;
     }
-}
-# ---------------------------------------------------------------------- #
-sub extract_N_cpus {
-# Look at cparam.local to determine number of CPUs
-    my ($n) = match_line_ix(
-        '^ \s* integer\b [^\!]* ncpus \s*=\s* ([0-9]*)', 'src/cparam.local');
-    return $n;
 }
 # ---------------------------------------------------------------------- #
 sub match_line_ix {
