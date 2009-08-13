@@ -53,15 +53,18 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #
 #   pc_run stop               # stop pencil job running in current directory
 #   pc_run reload             # make running pencil job reload run.in
-#
+
 # To do:
 # - NEWDIR handling
+# - $booted_mpd handling
+# - $remove_scratch_root
+# - Ensure $ENV{SCRATCH_DIR} is defined if $local_disc or $local_binary is set
 # Improvements:
-# - use a wrapper to die() that removes the LOCK file (except when die'ing
-#   because of an existing lock file)
+# - Use a wrapper to die() that removes the LOCK file (except when die'ing
+#   because of an existing lock file).
 # - Extract common code for finding and parsing config file from here
 #   and pc_run and put it into Pencil::ConfigFinder (or some 3rd module,
-#   or Pencil::Util)
+#   or Pencil::Util).
 
 # Copyright (C) 2009  Wolfgang Dobler
 #
@@ -148,9 +151,14 @@ my $runtime_dir = './runtime';
 my $lockfile = './LOCK';
 my $errorfile = './ERROR';
 my $noerasefile = './NOERASE';
-my $locked = 0;
+my $copy_snapshots_log = './copy-snapshots.log';
+my $copysnapshots = 'copy-snapshots';
 my $start_x = 'src/start.x';
 my $run_x   = 'src/run.x';
+
+my $locked = 0;
+my $booted_mpd = 0;
+
 my %dispatch_table = (
                       start  => \&start_cmd,
                       run    => \&run_cmd,
@@ -161,17 +169,21 @@ my %dispatch_table = (
 my %settings = local_settings();
 my $Ncpus = $settings{'ncpus'};
 my $mpi = $settings{'mpi'};
+my $local_disc = $settings{'local_disc'};
 my $local_binary = $settings{'local_binary'};
 
 my @subcmds = expand_cmd_sequence(@ARGV);
 print STDERR "Commands: <", join(">, <", @subcmds), ">\n" if ($debug);
 
 
+## Set up PATH for users who don't include $PENCIL_HOME/bin by default
+$ENV{PATH} = "$ENV{PATH}:$ENV{PENCIL_HOME}/bin" if defined $ENV{PENCIL_HOME};
+
 ## Start working
 update_runtime_dir();
 
 if ($suppress_check) {
-    touch("$runtime_dir/NO-PENCIL-CHECK");
+    touch_file("$runtime_dir/NO-PENCIL-CHECK");
 }
 
 ## Setup steps:
@@ -206,6 +218,8 @@ sub start_cmd {
     get_lock();
     mpi_run_cmd($start_x);
     clear_lock();
+
+    handle_copy_snapshots();
 }
 # ---------------------------------------------------------------------- #
 sub run_cmd {
@@ -213,6 +227,8 @@ sub run_cmd {
     get_lock();
     mpi_run_cmd($run_x);
     clear_lock();
+
+    handle_copy_snapshots();
 }
 # ---------------------------------------------------------------------- #
 sub mpi_run_cmd {
@@ -232,6 +248,8 @@ sub mpi_run_cmd {
     }
 
     print "\n", (scalar localtime()), "\n";
+
+    shutdown_mpi();
 }
 # ---------------------------------------------------------------------- #
 sub time_system_cmd {
@@ -267,6 +285,15 @@ sub run_system_cmd {
     }
 
     die "Aborting\n" if ($status);
+}
+# ---------------------------------------------------------------------- #
+sub shutdown_mpi {
+# Shut down any MPI daemon we have started
+    if ($booted_mpd) {
+        print "Shutting down mpd.. ";
+        run_system_cmd('mpdallexit');
+        print "..done\n";
+    }
 }
 # ---------------------------------------------------------------------- #
 sub local_settings {
@@ -309,11 +336,12 @@ sub update_runtime_dir {
 
     # Write files
     unless (-e "$runtime_dir/README") {
-        touch("$runtime_dir/README",
-              "runtime/\n"
-              . "--------\n"
-              . "This directory is created by $cmdname.\n"
-              . "It can be safely removed while the code is not running.\n");
+        touch_file("$runtime_dir/README",
+                   "runtime/\n"
+                   . "--------\n"
+                   . "This directory is created by $cmdname.\n"
+                   . "It can be safely removed while the code is not running.\n"
+        );
     }
 }
 # ---------------------------------------------------------------------- #
@@ -470,6 +498,33 @@ sub handle_local_binary {
       or die "Cannot start remote-top in background: $!";
 }
 # ---------------------------------------------------------------------- #
+sub handle_copy_snapshots {
+# If local disk is used, copy var.dat back to the data directory
+    if ($local_disc) {
+        print "Copying var.dat etc. back to data directory\n";
+        clear_file($copy_snapshots_log);
+        copy_snapshots('var.dat');
+        if (-e "$ENV{SCRATCH_DIR}/proc0/VAR0") {
+            copy_snapshots('VAR0');
+            copy_snapshots('global.dat');
+            copy_snapshots('timeavg.dat');
+            copy_snapshots('dxyz.dat');
+            copy_snapshots('pvar.dat') if $settings{'lparticles'};
+            copy_snapshots('spvar.dat') if $settings{'lparticles_nbody'};
+
+            if ($settings{'remove_scratch_root'}) {
+                run_system_cmd('rm', '-rf', $ENV{SCRATCH_DIR});
+            }
+        }
+    }
+}
+# ---------------------------------------------------------------------- #
+sub copy_snapshots {
+# Run $copysnapshots and append the output to a log file
+    my @args = @_;
+    run_system_cmd("$copysnapshots -v @args >> $copy_snapshots_log 2>&1");
+}
+# ---------------------------------------------------------------------- #
 sub match_line_ix {
 # Cycle through the lines of file $filename and try matching them
 # case-insensitively (modifier i) with the extended (modifier x) $regexp.
@@ -518,7 +573,7 @@ sub get_lock {
         print "[Not yet implemented]\n";
         die "\n";           # die(), not exit() or lockfile gets removed
     } else {
-        touch($lockfile);
+        touch_file($lockfile);
         $locked = 1;
     }
 }
@@ -543,7 +598,20 @@ sub timestr {
     return POSIX::strftime("%y%m%d.%H%M", localtime);
 }
 # ---------------------------------------------------------------------- #
-sub touch {
+sub clear_file {
+# Ensure file exists and is empty
+    my ($file) = @_;
+
+    if (-e $file) {
+        open my $fh, "> $file"
+          or die "Cannot open $file for writing: $!\n";
+        close $fh;
+    } else {
+        touch_file($file, '');
+    }
+}
+# ---------------------------------------------------------------------- #
+sub touch_file {
 # Create a file with current time stamp.
 # Write $text to file if defined, otherwise write short note identifying
 # this script.
