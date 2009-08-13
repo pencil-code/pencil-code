@@ -218,7 +218,9 @@ sub mpi_run_cmd {
     if ($mpi) {
         my $mpiexec = $runtime_params{'mpiexec'}
           or die "No mpiexec setting. Please fix your configuration.\n";
-        run_system_cmd(split('\s+', $mpiexec), @cmd_line);
+        my @mpiexec_cmd = split('\s+', $mpiexec);
+        push @mpiexec_cmd, ('-np', $Ncpus);
+        run_system_cmd(@mpiexec_cmd, @cmd_line);
     } else {
         run_system_cmd(@cmd_line);
     }
@@ -229,6 +231,8 @@ sub run_system_cmd {
     my @cmd_line = @_;
     $! = 0;
     clear_error();
+
+    print "Running system cmd <", join("> <", @cmd_line), ">\n";
     my $status = system(@cmd_line);
     ($status == 0) or warn "@cmd_line failed: $!\n";
     if (-e $errorfile) {
