@@ -2715,10 +2715,12 @@ module Sub
       integer :: nv
       real, dimension (mx,my,mz,nv) :: a
       character (len=*) :: file
+      real :: t_sp   ! t in single precision for backwards compatibility
 !
       open(1,file=file)
       read(1,10) a
-      read(1,10) t,x,y,z
+      read(1,10) t_sp,x,y,z
+      t = t_sp
       close(1)
 !10    format(1p8e10.3)
 10    format(8e10.3)
@@ -2760,10 +2762,12 @@ module Sub
       integer :: nv
       character (len=*) :: file
       real, dimension (mx,my,mz,nv) :: a
+      real :: t_sp   ! t in single precision for backwards compatibility
 !
+      t_sp = t
       open(1,file=file)
       write(1,10) a
-      write(1,10) t,x,y,z
+      write(1,10) t_sp,x,y,z
       close(1)
 !10    format(1p8e10.3)
 10    format(8e10.3)
@@ -2856,7 +2860,8 @@ module Sub
 !
       character (len=*) :: file
       integer :: lun,nout
-      real :: tout,dtout,t!,ttt,tt,t
+      double precision :: t
+      real :: tout,dtout
       integer, parameter :: nbcast_array=2
       real, dimension(nbcast_array) :: bcast_array
       logical exist
@@ -2903,22 +2908,6 @@ module Sub
       tout=bcast_array(1)
       nout=bcast_array(2)
 !
-! REMOVE_US
-!
-! wd: tt and ttt are never used again, so I guess we don't need this?
-!
-! !
-! !  special treatment when tt is negative
-! !  this has to do with different integer arithmetic for negative numbers
-! !  tout was the last good value for next output (e.g., after restarted)
-! !
-!       tt=tout
-!       if (tt.lt.0.) then
-!         ttt=tt-1.
-!       else
-!         ttt=tt
-!       endif
-!
     endsubroutine read_snaptime
 !***********************************************************************
     subroutine update_snaptime(file,tout,nout,dtout,t,lout,ch,enum)
@@ -2935,15 +2924,17 @@ module Sub
       character (len=*) :: file
       character (len=5) :: ch
       logical :: lout,enum
-      real :: t,tt,tout,dtout
+      double precision :: t
+      real :: t_sp   ! t in single precision for backwards compatibility
+      real :: tout,dtout
       integer :: lun,nout
 !
-!  use tt as a shorthand for either t or lg(t)
+!  use t_sp as a shorthand for either t or lg(t)
 !
       if (dtout.lt.0.) then
-        tt=log10(t)
+        t_sp = log10(t)
       else
-        tt=t
+        t_sp = t
       endif
 !
 !  if enum=.false. we don't want to generate a running file number
@@ -2957,7 +2948,7 @@ module Sub
 !  do while loop to make make sure tt is always larger than tout.
 !  (otherwise slices are written just to catch up with tt.)
 !
-      if (tt >= tout) then
+      if (t_sp >= tout) then
         tout=tout+abs(dtout)
         nout=nout+1
         lout=.true.
@@ -2992,6 +2983,9 @@ module Sub
       real, dimension(nx) :: v2
       real :: thresh,thresh2,dummy=0.
       integer :: l,lun,nvec
+      real :: t_sp   ! t in single precision for backwards compatibility
+!
+      t_sp = t
 !
 !  return if thresh=0 (default)
 !
@@ -3001,7 +2995,7 @@ module Sub
 !
       if (lfirstpoint) then
         open(lun,FILE=trim(file)//'.dat',form='unformatted',position='append')
-        write(lun) 0,0,0,t,dummy,dummy  !(marking first line)
+        write(lun) 0,0,0,t_sp,dummy,dummy  !(marking first line)
         nvec=0
       endif
 !
@@ -3021,7 +3015,7 @@ module Sub
       if (llastpoint) then
         close(lun)
         open(lun,FILE=trim(file)//'.num',position='append')
-        write(lun,*) t,nvec
+        write(lun,*) t_sp,nvec
         close(lun)
       endif
 !
@@ -3215,7 +3209,9 @@ module Sub
       integer, parameter :: nmax=10
       real, dimension (4,nmax) :: fmax
       real, dimension (mx,my,mz) :: f
+      real :: t_sp   ! t in single precision for backwards compatibility
 !
+      t_sp = t
       fmax=0
       do n=1,mz
       do m=1,my
@@ -3248,7 +3244,7 @@ module Sub
       enddo
       enddo
       enddo
-      write(lun,*) t,fmax
+      write(lun,*) t_sp,fmax
 !
     endsubroutine wmax
 !***********************************************************************

@@ -43,6 +43,7 @@ module Particles_sub
       character (len=*) :: filename
       integer, dimension (mpar_loc) :: ipar
       integer :: npar_loc
+!      real :: t_sp   ! t in single precision for backwards compatibility
 !
       intent (in) :: filename
       intent (out) :: fp,npar_loc,ipar
@@ -61,7 +62,8 @@ module Particles_sub
 !
 !  Read snapshot time.
 !
-!        read(1) t
+!        read(1) t_sp
+!        t = t_sp
 !
         if (ip<=8) print*, 'input_particles: read ', filename
 !
@@ -81,9 +83,11 @@ module Particles_sub
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension(mpar_loc) :: ipar
       integer :: npar_loc
+      real :: t_sp   ! t in single precision for backwards compatibility
 !
       intent (in) :: filename, npar_loc, ipar
 !
+      t_sp = t
       if (ip<=8.and.lroot) print*,'output_particles: writing snapshot file '// &
           filename
 !
@@ -101,7 +105,7 @@ module Particles_sub
 !
 !  Write time and grid parameters.
 !
-        write(lun_output) t, x, y, z, dx, dy, dz
+        write(lun_output) t_sp, x, y, z, dx, dy, dz
 !
       close(lun_output)
 !
@@ -1630,9 +1634,12 @@ module Particles_sub
       logical, save :: lfirstcall=.true.
       logical :: lspecial_boundx,lnbody
       integer :: jl,jm,ju
+      real :: t_sp   ! t in single precision for backwards compatibility
 !
       intent(in)  :: fp
       intent(out) :: ineargrid
+!
+      t_sp = t
 !
 !  Default values in case of missing directions.
 !
@@ -1765,7 +1772,7 @@ module Particles_sub
                       '&particles_run_pars.'
               print*, 'Information about what went wrong:'
               print*, '----------------------------------'
-              print*, 'it, itsub, t=', it, itsub, t
+              print*, 'it, itsub, t=', it, itsub, t_sp
               print*, 'ipar, k     =', ipar(k), k
               print*, 'xxp         =', fp(k,ixp:izp)
               print*, 'vvp         =', fp(k,ivpx:ivpz)
@@ -1795,6 +1802,7 @@ module Particles_sub
       integer, dimension (mpar_loc) :: ipar
       real, dimension (mpar_loc,mpvar), optional :: dfp
 !
+      real :: t_sp   ! t in single precision for backwards compatibility
       real, dimension (mpvar) :: fp_tmp, dfp_tmp
       integer, dimension (3) :: ineargrid_tmp
       integer, dimension (ny*nz) :: kk
@@ -1810,6 +1818,8 @@ module Particles_sub
       character (len=fnlen) :: filename
 !
       intent(inout)  :: fp, ineargrid, ipar, dfp
+!
+      t_sp = t
 !
 !  Determine beginning and ending index of particles in pencil (m,n).
 !
@@ -1933,7 +1943,7 @@ module Particles_sub
         call safe_character_assign(filename,trim(datadir)//'/sort_particles.dat')
         lun=1
         open(lun,file=trim(filename),action='write',position='append')
-        write(lun,'(A15,f7.3)') '------------ t=', t
+        write(lun,'(A15,f7.3)') '------------ t=', t_sp
         write(lun,'(A40,3i9,l9)')  'iproc, ncount, isorttype, lrunningsort=', &
             iproc, ncount, isorttype, lrunningsort
         close (lun)
@@ -2425,9 +2435,12 @@ module Particles_sub
       integer, optional :: ks
       integer :: npar_loc,k
       logical :: lnbody
+      real :: t_sp   ! t in single precision for backwards compatibility
 !   
       intent (inout) :: fp, npar_loc, dfp,ineargrid
       intent (in)    :: k
+!
+      t_sp = t
 !
 !  Check that we are not removing massive particles.
 !
@@ -2449,7 +2462,7 @@ module Particles_sub
 !  Write to the respective processor that the particle is removed.
 !
       open(20,file=trim(directory)//'/rmv_ipar.dat',position='append')
-      write(20,*) ipar(k), t
+      write(20,*) ipar(k), t_sp
       close(20)
 !
       open(20,file=trim(directory)//'/rmv_par.dat', &

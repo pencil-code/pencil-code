@@ -47,7 +47,7 @@ module Io
 !                                       nx,ny,nz,nghost,fnlen)
 !       use Cdata, only: mx
 !       real,dimension(mx,*) :: pencil
-!       real :: t
+!       double precision :: t
 !       integer :: ndim,i,iy,iz,nx,ny,nz,nghost,fnlen
 !       character (len=*) :: filename
 !     endsubroutine output_penciled_vect_c
@@ -59,7 +59,7 @@ module Io
 !                                       nx,ny,nz,nghost,fnlen)
 !       use Cdata, only: mx
 !       real,dimension(mx) :: pencil
-!       real :: t
+!       double precision :: t
 !       integer :: ndim,i,iy,iz,nx,ny,nz,nghost,fnlen
 !       character (len=*) :: filename
 !     endsubroutine output_penciled_scal_c
@@ -134,6 +134,7 @@ contains
       character (len=*) :: file
       integer :: nv,mode
       real, dimension (mx,my,mz,nv) :: a
+      real :: t_sp   ! t in single precision for backwards compatibility
 !
       if (lserial_io) call start_serialize()
       open(1,FILE=file,FORM='unformatted')
@@ -145,10 +146,11 @@ contains
 !  check whether we want to read deltay from snapshot
 !
         if (lshear) then
-          read(1) t,x,y,z,dx,dy,dz,deltay
+          read(1) t_sp,x,y,z,dx,dy,dz,deltay
         else
-          read(1) t,x,y,z,dx,dy,dz
+          read(1) t_sp,x,y,z,dx,dy,dz
         endif
+        t = t_sp
 !
         if (ip<=3) print*,'input: ip,x=',ip,x
         if (ip<=3) print*,'input: y=',y
@@ -174,16 +176,18 @@ contains
       integer :: nv
       real, dimension (mx,my,mz,nv) :: a
       character (len=*) :: file
+      real :: t_sp   ! t in single precision for backwards compatibility
 !
+      t_sp = t
       if (ip<=8.and.lroot) print*,'output_vect: nv =', nv
 !
       if (lserial_io) call start_serialize()
       open(lun_output,FILE=file,FORM='unformatted')
       write(lun_output) a
       if (lshear) then
-        write(lun_output) t,x,y,z,dx,dy,dz,deltay
+        write(lun_output) t_sp,x,y,z,dx,dy,dz,deltay
       else
-        write(lun_output) t,x,y,z,dx,dy,dz
+        write(lun_output) t_sp,x,y,z,dx,dy,dz
       endif
 !
       close(lun_output)
@@ -204,16 +208,18 @@ contains
       integer :: nv
       real, dimension (mx,my,mz) :: a
       character (len=*) :: file
+      real :: t_sp   ! t in single precision for backwards compatibility
 !
+      t_sp = t
       if ((ip<=8) .and. lroot) print*,'output_scal'
       if (nv /= 1) call stop_it("output_scal: called with scalar field, but nv/=1")
       if (lserial_io) call start_serialize()
       open(lun_output,FILE=file,FORM='unformatted')
       write(lun_output) a
       if (lshear) then
-        write(lun_output) t,x,y,z,dx,dy,dz,deltay
+        write(lun_output) t_sp,x,y,z,dx,dy,dz,deltay
       else
-        write(lun_output) t,x,y,z,dx,dy,dz
+        write(lun_output) t_sp,x,y,z,dx,dy,dz
       endif
 !
       close(lun_output)
@@ -233,7 +239,9 @@ contains
       integer :: ndim
       real, dimension (nx,ndim) :: a
       character (len=*) :: file
+      real :: t_sp   ! t in single precision for backwards compatibility
 !
+      t_sp = t
       if (ip<9.and.lroot.and.imn==1) &
            print*,'output_pencil_vect('//file//'): ndim=',ndim
 !
@@ -242,7 +250,7 @@ contains
            ' for debugging -- this may slow things down'
 !
        call output_penciled_vect_c(file, a, ndim, &
-                                   imn, mm(imn), nn(imn), t, &
+                                   imn, mm(imn), nn(imn), t_sp, &
                                    nx, ny, nz, nghost, len(file))
 !
     endsubroutine output_pencil_vect
@@ -260,7 +268,9 @@ contains
       integer :: ndim
       real, dimension (nx) :: a
       character (len=*) :: file
+      real :: t_sp   ! t in single precision for backwards compatibility
 !
+      t_sp = t
       if ((ip<=8) .and. lroot .and. imn==1) &
            print*,'output_pencil_scal('//file//')'
 !
@@ -272,7 +282,7 @@ contains
            ' for debugging -- this may slow things down'
 !
       call output_penciled_scal_c(file, a, ndim, &
-                                  imn, mm(imn), nn(imn), t, &
+                                  imn, mm(imn), nn(imn), t_sp, &
                                   nx, ny, nz, nghost, len(file))
 !
     endsubroutine output_pencil_scal
@@ -288,10 +298,12 @@ contains
       integer :: nv
       character (len=*) :: file
       real, dimension (mx,my,mz,nv) :: a
+      real :: t_sp   ! t in single precision for backwards compatibility
 !
+      t_sp = t
       open(1,FILE=file,FORM='unformatted')
       write(1) a(l1:l2,m1:m2,n1:n2,:)
-      write(1) t,x,y,z,dx,dy,dz,deltay
+      write(1) t_sp,x,y,z,dx,dy,dz,deltay
       close(1)
     endsubroutine outpus
 !***********************************************************************
@@ -336,10 +348,12 @@ contains
 !
       character (len=*) :: file
       logical :: ioerr
+      real :: t_sp   ! t in single precision for backwards compatibility
 !
+      t_sp = t
       ioerr = .true.            ! will be overridden unless we go 911
       open(1,FILE=file,FORM='unformatted',err=911)
-      write(1) t,x,y,z,dx,dy,dz
+      write(1) t_sp,x,y,z,dx,dy,dz
       write(1) dx,dy,dz
       write(1) Lx,Ly,Lz
       write(1) dx_1,dy_1,dz_1
@@ -367,14 +381,14 @@ contains
       use Cdata
       use Mpicomm, only: stop_it
 !
-      real :: tdummy
       integer :: iostat
       character (len=*) :: file
+      real :: t_sp   ! t in single precision for backwards compatibility
 !
 !  if xiprim etc is not written, just ignore it
 !
       open(1,FILE=file,FORM='unformatted')
-      read(1) tdummy,x,y,z,dx,dy,dz
+      read(1) t_sp,x,y,z,dx,dy,dz
       read(1) dx,dy,dz
       read(1,IOSTAT=iostat) Lx,Ly,Lz
       read(1,end=990) dx_1,dy_1,dz_1
@@ -416,7 +430,7 @@ contains
 !
       if (dxmin==0) call stop_it("rgrid: check Lx,Ly,Lz: is one of them 0?")
 !
-      call keep_compiler_quiet(tdummy)
+      call keep_compiler_quiet(t_sp)
 !
     endsubroutine rgrid
 !***********************************************************************
@@ -466,18 +480,20 @@ contains
 !***********************************************************************
     subroutine wtime(file,tau)
 !
-      real :: tau
+      double precision :: tau
       character (len=*) :: file
 !
-      if (.false.) print*,tau,file
+!     nothing needs to be done here
+!
     endsubroutine wtime
 !***********************************************************************
     subroutine rtime(file,tau)
 !
-      real :: tau
+      double precision :: tau
       character (len=*) :: file
 !
-      if (.false.) print*,tau,file
+!     nothing needs to be done here
+!
     endsubroutine rtime
 !***********************************************************************
 

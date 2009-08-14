@@ -77,7 +77,8 @@ module Cdata
   integer :: nt=10000000,it=1,itorder=3,itsub
   real :: tmax=1e33, tstart=0.
   real :: max_walltime=0.0  ! in seconds
-  real :: t,dt=0.0
+  double precision :: t
+  real :: dt=0.0
   real :: cdt=0.4,cdts=1.,cdtr=1.,cdtc=1.,cdtv=0.25,cdtv2=0.03,cdtv3=0.01
   real :: cdtvDim, eps_rkf=1e-8, eps_stiff=1e-6
   real :: ddt=0.

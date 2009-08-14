@@ -133,7 +133,7 @@ module Timestep
 !
 !  Increase time
 !
-        t=t+dt_beta_ts(itsub)*ds
+        t = t + dt_beta_ts(itsub)*ds
 !
       enddo
 !

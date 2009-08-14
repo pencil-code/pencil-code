@@ -312,7 +312,9 @@ module Snapshot
       integer :: nv
       real, dimension (mx,my,mz,nv) :: a
       character (len=*) :: file
+      real :: t_sp   ! t in single precision for backwards compatibility
 !
+      t_sp = t
       if (ip<=8.and.lroot) print*,'output_vect: nv =', nv
 !
       if (lserial_io) call start_serialize()
@@ -334,9 +336,9 @@ module Snapshot
 !  other modules and call a corresponding i/o parameter module.
 !
       if (lshear) then
-        write(lun_output) t,x,y,z,dx,dy,dz,deltay
+        write(lun_output) t_sp,x,y,z,dx,dy,dz,deltay
       else
-        write(lun_output) t,x,y,z,dx,dy,dz
+        write(lun_output) t_sp,x,y,z,dx,dy,dz
       endif
       call output_persistent(lun_output)
 !
@@ -357,6 +359,7 @@ module Snapshot
       character (len=*) :: file
       integer :: nv,mode
       real, dimension (mx,my,mz,nv) :: a
+      real :: t_sp   ! t in single precision for backwards compatibility
 !
       if (lserial_io) call start_serialize()
       open(1,FILE=file,FORM='unformatted')
@@ -378,10 +381,11 @@ module Snapshot
 !  Check whether we want to read deltay from snapshot.
 !
         if (lshear) then
-          read(1) t,x,y,z,dx,dy,dz,deltay
+          read(1) t_sp,x,y,z,dx,dy,dz,deltay
         else
-          read(1) t,x,y,z,dx,dy,dz
+          read(1) t_sp,x,y,z,dx,dy,dz
         endif
+        t = t_sp
 !
         if (ip<=3) print*,'input_snap: ip,x=',ip,x
         if (ip<=3) print*,'input_snap: y=',y

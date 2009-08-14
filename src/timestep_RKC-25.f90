@@ -48,7 +48,7 @@ contains
         real, dimension (mx,my,mz,mvar) :: df, dfn
         type (pencil_case) :: p
         real, dimension(1) :: dt1, dt1_local
-        real               :: t0
+        double precision :: t0
         integer :: iv
 
         ! Use pointers for cheaply flipping fn and fn1 after each substep
@@ -408,6 +408,7 @@ contains
         call swap(fn, fn1)
 
         ! Done: last fn is the updated f:
+        ! Increase time
         t = t0 + dt
         ! need explicit loop here, as f(:,:,:,1:mvar) = fn
         ! causes a `stack smashing' exception

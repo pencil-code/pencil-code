@@ -49,7 +49,7 @@ module Io
 !                                       nx,ny,nz,nghost,fnlen)
 !       use Cdata, only: mx
 !       real,dimension(mx,*) :: pencil
-!       real :: t
+!       double precision :: t
 !       integer :: ndim,i,iy,iz,nx,ny,nz,nghost,fnlen
 !       character (len=*) :: filename
 !     endsubroutine output_penciled_vect_c
@@ -61,7 +61,7 @@ module Io
 !                                       nx,ny,nz,nghost,fnlen)
 !       use Cdata, only: mx
 !       real,dimension(mx) :: pencil
-!       real :: t
+!       double precision :: t
 !       integer :: ndim,i,iy,iz,nx,ny,nz,nghost,fnlen
 !       character (len=*) :: filename
 !     endsubroutine output_penciled_scal_c
@@ -283,7 +283,7 @@ contains
       use Mpicomm, only: lroot,stop_it
 !
       character (len=*) :: file
-      integer :: nv,mode                  ,i
+      integer :: nv,mode,i
       real, dimension (mx,my,mz,nv) :: a
 !
       if (ip<=8) print*,'input: mx,my,mz,nv=',mx,my,mz,nv
@@ -398,7 +398,9 @@ contains
       integer :: ndim
       real, dimension (nx,ndim) :: a
       character (len=*) :: file
+      real :: t_sp   ! t in single precision for backwards compatibility
 !
+      t_sp = t
       if (ip<9.and.lroot.and.imn==1) &
            print*,'output_pencil_vect('//file//'): ndim=',ndim
 !
@@ -407,7 +409,7 @@ contains
            ' for debugging -- this may slow things down'
 !
        call output_penciled_vect_c(file, a, ndim, &
-                                   imn, mm(imn), nn(imn), t, &
+                                   imn, mm(imn), nn(imn), t_sp, &
                                    nx, ny, nz, nghost, len(file))
 !
     endsubroutine output_pencil_vect
@@ -426,7 +428,9 @@ contains
       integer :: ndim
       real, dimension (nx) :: a
       character (len=*) :: file
+      real :: t_sp   ! t in single precision for backwards compatibility
 !
+      t_sp = t
       if ((ip<=8) .and. lroot .and. imn==1) &
            print*,'output_pencil_scal('//file//')'
 !
@@ -438,7 +442,7 @@ contains
            ' for debugging -- this may slow things down'
 !
       call output_penciled_scal_c(file, a, ndim, &
-                                  imn, mm(imn), nn(imn), t, &
+                                  imn, mm(imn), nn(imn), t_sp, &
                                   nx, ny, nz, nghost, len(file))
 !
     endsubroutine output_pencil_scal
@@ -454,12 +458,14 @@ contains
       integer :: nv
       character (len=*) :: file
       real, dimension (mx,my,mz,nv) :: a
+      real :: t_sp   ! t in single precision for backwards compatibility
 !
+      t_sp = t
       call stop_it("outpus: doesn't work with io_mpio yet -- but wasn't used anyway")
 !
       open(1,FILE=file,FORM='unformatted')
       write(1) a(l1:l2,m1:m2,n1:n2,:)
-      write(1) t,x,y,z,dx,dy,dz,deltay
+      write(1) t_sp,x,y,z,dx,dy,dz,deltay
       close(1)
     endsubroutine outpus
 !***********************************************************************
@@ -476,7 +482,9 @@ contains
       integer :: nv,reclen
       integer(kind=MPI_OFFSET_KIND) :: fpos
       character (len=*) :: file
+      real :: t_sp   ! t in single precision for backwards compatibility
 !
+      t_sp = t
       call MPI_FILE_OPEN(MPI_COMM_WORLD, file, & ! MPI_FILE_OPEN is collective
                          ior(MPI_MODE_CREATE,MPI_MODE_WRONLY), &
                          MPI_INFO_NULL, fhandle, ierr)
@@ -496,7 +504,7 @@ contains
         reclen = 4
         call MPI_FILE_WRITE_AT(fhandle,fpos,reclen,1,MPI_INTEGER,status,ierr)
         fpos = fpos + 4
-        call MPI_FILE_WRITE_AT(fhandle,fpos,t,1,MPI_REAL,status,ierr)
+        call MPI_FILE_WRITE_AT(fhandle,fpos,t_sp,1,MPI_REAL,status,ierr)
         fpos = fpos + 4
         call MPI_FILE_WRITE_AT(fhandle,fpos,reclen,1,MPI_INTEGER,status,ierr)
       endif
@@ -713,10 +721,12 @@ contains
 !
       real :: tau
       character (len=*) :: file
+      real :: t_sp   ! t in single precision for backwards compatibility
 !
+      t_sp = tau
       if (lroot) then
         open(1,FILE=file)
-        write(1,*) tau
+        write(1,*) t_sp
         close(1)
       endif
 !
@@ -731,10 +741,12 @@ contains
 !
       real :: tau
       character (len=*) :: file
+      real:: t_sp   ! t in single precision for backwards compatibility
 !
       open(1,FILE=file)
-      read(1,*) tau
+      read(1,*) t_sp
       close(1)
+      tau = t_sp
 !
     endsubroutine rtime
 !***********************************************************************

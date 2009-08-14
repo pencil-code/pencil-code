@@ -157,7 +157,7 @@ module Timestep
       dt_did = dt
 
       if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc,dt  !(all have same dt?)
-      ! Update the time
+      ! Increase time
       t = t+dt
       ! Time step to try next time
       dt = dt_next
