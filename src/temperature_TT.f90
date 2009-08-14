@@ -1061,7 +1061,7 @@ module Entropy
       use Sub, only: write_zprof
       real, dimension(mx,my,mz,mfarray) :: f
       real , dimension(mx,mz) :: chiprof, dchi
-      double precision :: chi0
+!      double precision :: chi0
       real, dimension(mx,mz) :: arg
       real :: alp,sig,ecart,diffus
 !
