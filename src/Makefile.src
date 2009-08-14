@@ -1515,6 +1515,14 @@ $(MPICOMM_FIX).o: mpicomm.h $(MPICOMM_FIX).f90 cdata.o
 	    -o $(MPICOMM_FIX).o -c $(MPICOMM_FIX).f90; \
 	$(FC) $(FFLAGS_GENERAL) $$fflags $(FFLAGS_FOURIER) \
 	    -o $(MPICOMM_FIX).o -c $(MPICOMM_FIX).f90
+fftpack.o: fftpack.f90
+	@fflags="$(FFLAGS_SLOPPY)"; \
+	if [ -z "$$fflags" ]; then fflags="$(FFLAGS) $(F90FLAGS)"; fi; \
+	echo $(FC) $(FFLAGS_GENERAL) $$fflags $(FFLAGS_FOURIER) \
+	    -o fftpack.o -c fftpack.f90; \
+	$(FC) $(FFLAGS_GENERAL) $$fflags $(FFLAGS_FOURIER) \
+	    -o fftpack.o -c fftpack.f90
+
 #
 # Shortcut for debugging radiation
 #
