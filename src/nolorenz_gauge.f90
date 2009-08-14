@@ -1,4 +1,4 @@
-! $Id: nolorenz_gauge.f90 10954 2009-05-26 08:17:42Z AxelBrandenburg $
+! $Id$
 !
 !  Lorenz gauge, dphi/dt = -cphi2*divA
 !
@@ -64,7 +64,7 @@ module Lorenz_gauge
       use FArrayManager
 !
       if (lroot) call svn_id( &
-           "$Id: nolorenz_gauge.f90 10954 2009-05-26 08:17:42Z dhruba.mitra $")
+           "$Id$")
 !
     endsubroutine register_lorenz_gauge
 !***********************************************************************
