@@ -2859,12 +2859,15 @@ module Sub
 !   9-sep-01/axel: adapted for MPI
 !
       character (len=*) :: file
-      integer :: lun,nout
-      double precision :: t
+      integer :: nout
       real :: tout,dtout
+      double precision :: t
+      intent(in)  :: file, t
+      intent(out) :: tout, nout, dtout
+      integer :: lun
       integer, parameter :: nbcast_array=2
       real, dimension(nbcast_array) :: bcast_array
-      logical exist
+      logical :: exist
 !
 !  depending on whether or not file exists, we need to
 !  either read or write tout and nout from or to the file
@@ -2885,7 +2888,7 @@ module Sub
           else
             !  make sure the tout is a good time
             if (dtout /= 0.) then
-              tout = t - mod(t,abs(dtout)) + dtout
+              tout = t - mod(t, dble(abs(dtout))) + dtout
             else
               call warning("read_snaptime", &
                   "Am I writing snapshots every 0 time units? (check " // &

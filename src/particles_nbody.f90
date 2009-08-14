@@ -1422,7 +1422,7 @@ module Particles_nbody
         !just need to do that for the original masses
         do ks=1,mspar_orig
           if (ks/=istar) then 
-            pmass(ks)= max(tini,&
+            pmass(ks)= max(dble(tini),&
                  final_ramped_mass(ks)*(sin((.5*pi)*(t/ramping_period))**2))
             tmp=tmp+pmass(ks)
           endif
