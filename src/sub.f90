@@ -2862,8 +2862,8 @@ module Sub
       integer :: nout
       real :: tout,dtout
       double precision :: t
-      intent(in)  :: file, t
-      intent(out) :: tout, nout, dtout
+      intent(in)  :: file, dtout, t
+      intent(out) :: tout, nout
       integer :: lun
       integer, parameter :: nbcast_array=2
       real, dimension(nbcast_array) :: bcast_array
