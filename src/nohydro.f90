@@ -356,7 +356,7 @@ module Hydro
         if (headtt) print*,'Roberts flow with cosinusoidal helicity; kx_aa,ky_aa=',kkx_aa,kky_aa
         fac=ampl_kinflow
         kky_aa=1.
-        kkx_aa=kky_aa*(mod(.5-eps_kinflow*t,1.)-.5)
+        kkx_aa=kky_aa*(mod(.5-eps_kinflow*t,1.D0)-.5)
 if (ip.eq.11.and.m==4.and.n==4) write(21,*) t,kkx_aa
         eps1=cos(omega_kinflow*t)
         p%uu(:,1)=-fac*cos(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))*eps1
@@ -371,7 +371,7 @@ if (ip.eq.11.and.m==4.and.n==4) write(21,*) t,kkx_aa
         if (headtt) print*,'Roberts flow with cosinusoidal helicity; kx_aa,ky_aa=',kkx_aa,kky_aa
         fac=ampl_kinflow
         kky_aa=1.
-        kkx_aa=kky_aa*(mod(.5-eps_kinflow*t,1.)-.5)
+        kkx_aa=kky_aa*(mod(.5-eps_kinflow*t,1.D0)-.5)
 if (ip.eq.11.and.m==4.and.n==4) write(21,*) t,kkx_aa
         eps1=cos(omega_kinflow*t)
         p%uu(:,1)=-fac*cos(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))
