@@ -5099,6 +5099,32 @@ MPI tests, but this hasn't been done yet. So I guess you can start
 with the science next.
 }
 
+%%%
+\subsubsection{Error: Can't open included file 'mpif.h'}
+
+It always worked, but now, after some systems upgrade, I get
+\begin{Verbatim}
+   gfortran -O3 -o mpicomm.o -c mpicomm.f90
+   Error: Can't open included file 'mpif.h'
+\end{Verbatim}
+
+When I say \cmd{locate mpif.h} I only get things like
+\begin{Verbatim}
+   /scratch/ntest/1.2.7p1-intel/include/mpif.h
+\end{Verbatim}
+But since I use \cmd{FC=mpif90} I thought I don't need to worry.
+
+\medskip
+
+{\em
+Since you use \cmd{FC=mpif90} there must definitely be something
+wrong with their setup.
+Try \cmd{mpif90 -showme} or \cmd{mpif90 -show}; the `-I' option
+should say where it looks for 'mpif.h'.
+If those directories don't exist, it's no wonder that it doesn't work,
+and it is time to complain.
+}
+
 % ---------------------------------------------------------------------- %
 
 \subsection{Running}
