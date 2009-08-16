@@ -324,8 +324,10 @@ module Snapshot
           write(lun_output) a(4,:,:,:)
         elseif (ny==1) then
           write(lun_output) a(:,4,:,:)
-        else
+        elseif (nz==1) then
           write(lun_output) a(:,:,4,:)
+        else
+          call fatal_error('output_snap','lwrite_2d used for 3-D simulation!')
         endif
       else
         write(lun_output) a
@@ -367,10 +369,12 @@ module Snapshot
       if (lwrite_2d) then
         if (nx==1) then
           read(1) a(4,:,:,:)
-        else if (ny==1) then
+        elseif (ny==1) then
           read(1) a(:,4,:,:)
-        else
+        elseif (nz==1) then
           read(1) a(:,:,4,:)
+        else
+          call fatal_error('input_snap','lwrite_2d used for 3-D simulation!')
         endif
       else
         read(1) a
@@ -419,10 +423,12 @@ module Snapshot
       if (lwrite_2d) then
         if (nx==1) then
           write(lun_output) a(4,:,:,:)
-        else if (ny==1) then
+        elseif (ny==1) then
           write(lun_output) a(:,4,:,:)
-        else
+        elseif (nz==1) then
           write(lun_output) a(:,:,4,:)
+        else
+          call fatal_error('output_globals','lwrite_2d used for 3-D simulation!')
         endif
       else
         write(lun_output) a
@@ -452,19 +458,21 @@ module Snapshot
       if (lserial_io) call start_serialize()
 !
       open(1,FILE=filename,FORM='unformatted')
-        if (ip<=8) print*,'input_globals: open, mx,my,mz,nv=',mx,my,mz,nv
-        if (lwrite_2d) then
-          if (nx==1) then
-            read(1) a(4,:,:,:)
-          else if (ny==1) then
-            read(1) a(:,4,:,:)
-          else
-            read(1) a(:,:,4,:)
-          endif
-        else 
-          read(1) a
+      if (ip<=8) print*,'input_globals: open, mx,my,mz,nv=',mx,my,mz,nv
+      if (lwrite_2d) then
+        if (nx==1) then
+          read(1) a(4,:,:,:)
+        elseif (ny==1) then
+          read(1) a(:,4,:,:)
+        elseif (nz==1) then
+          read(1) a(:,:,4,:)
+        else
+          call fatal_error('input_globals','lwrite_2d used for 3-D simulation!')
         endif
-        if (ip<=8) print*,'input_globals: read ',filename
+      else 
+        read(1) a
+      endif
+      if (ip<=8) print*,'input_globals: read ',filename
       close(1)
 !
       if (lserial_io) call end_serialize()
