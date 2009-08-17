@@ -717,8 +717,8 @@ sub test_shell_cmd {
     my $quiet = (shift || 0);   # flag for suppressing the `ok'
     my $t_ref = shift;
 
-    print STDERR "\nRunning `$cmd`" if ($debug);
-    my $res = (`$cmd 2>&1` || "Very BAD: `$cmd` returned undef");
+    print STDERR "\nRunning `$nice $cmd`" if ($debug);
+    my $res = (`$nice $cmd 2>&1` || "Very BAD: `$cmd` returned undef");
     my $cmdstatus = $?;
     print STDERR " ..done \n" if ($debug);
     chomp($res);
@@ -775,7 +775,7 @@ sub test_compile {
             printf "$indi_fmt ", '';
         }
         print STDERR "\@makeopts = @makeopts\n" if ($debug);
-        test_shell_cmd("$nice make @makeopts", $dir, "compilation",
+        test_shell_cmd("make @makeopts", $dir, "compilation",
                        NOQUIET, $t_ref);
     }
 }
@@ -791,14 +791,14 @@ sub test_start {
 
         if ($time_limit) {
             test_timelimited_shell_cmd(
-                "$nice start.csh",
+                "start.csh",
                 $time_limit, 'start.x',
                 $dir, "starting",
                 NOQUIET, $t_ref
             );
         } else {
             test_shell_cmd(
-                "$nice start.csh",
+                "start.csh",
                 $dir, "starting",
                 NOQUIET, $t_ref
             );
@@ -830,14 +830,14 @@ sub test_run {
         # Run the Code
         if ($time_limit) {
             $res = test_timelimited_shell_cmd(
-                "$nice run.csh",
+                "run.csh",
                 $time_limit, 'run.x',
                 $dir, "running",
                 NOQUIET, $t_ref
             );
         } else {
             $res = test_shell_cmd(
-                "$nice run.csh",
+                "run.csh",
                 $dir, "running",
                 NOQUIET, $t_ref
             );
