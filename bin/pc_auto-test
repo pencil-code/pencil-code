@@ -356,7 +356,7 @@ if ($makejobs) { $makeopts = "-j $makejobs"; }
 my $host = `hostname`;
 chomp($host);
 
-my $nice="";
+my $nice = "";
 if ($niceval != 0) { $nice = "\\nice -n $niceval" };
 # Note: Csh's builtin `nice' cmd has a different calling syntax, so we
 # need to use ther real nice cmd here.
@@ -721,8 +721,8 @@ sub test_shell_cmd {
     my $quiet = (shift || 0);   # flag for suppressing the `ok'
     my $t_ref = shift;
 
-    print STDERR "\nRunning `$cmd`" if ($debug);
-    my $res = (`$cmd 2>&1` || "Very BAD: `$cmd` returned undef");
+    print STDERR "\nRunning `$nice $cmd`" if ($debug);
+    my $res = (`$nice $cmd 2>&1` || "Very BAD: `$cmd` returned undef");
     my $cmdstatus = $?;
     print STDERR " ..done \n" if ($debug);
     chomp($res);
@@ -779,7 +779,7 @@ sub test_compile {
             printf "$indi_fmt ", '';
         }
         print STDERR "\@makeopts = @makeopts\n" if ($debug);
-        test_shell_cmd("$nice pc_build @makeopts", $dir, "compilation",
+        test_shell_cmd("pc_build @makeopts", $dir, "compilation",
                        NOQUIET, $t_ref);
     }
 }
@@ -796,14 +796,14 @@ sub test_start {
         my $start_cmd = 'pc_run start';
         if ($time_limit) {
             test_timelimited_shell_cmd(
-                "$nice $start_cmd",
+                $start_cmd,
                 $time_limit, 'start.x',
                 $dir, "starting",
                 NOQUIET, $t_ref
             );
         } else {
             test_shell_cmd(
-                "$nice $start_cmd",
+                $start_cmd,
                 $dir, "starting",
                 NOQUIET, $t_ref
             );
@@ -837,14 +837,14 @@ sub test_run {
         $run_cmd .= " --no-pencil-check" if ($suppress_check);
         if ($time_limit) {
             $res = test_timelimited_shell_cmd(
-                "$nice $run_cmd",
+                $run_cmd,
                 $time_limit, 'run.x',
                 $dir, "running",
                 NOQUIET, $t_ref
             );
         } else {
             $res = test_shell_cmd(
-                "$nice $run_cmd",
+                $run_cmd,
                 $dir, "running",
                 NOQUIET, $t_ref
             );
