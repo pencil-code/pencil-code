@@ -1,0 +1,1 @@
+grep samples/$1 g95_debug-O1_timings.txt | grep running | awk '{print $4}'
