@@ -462,6 +462,8 @@ module Chemistry
       lpenc_requested(i_DYDt_diff)=.true.
 !
        if (lcheminp) then
+         lpenc_requested(i_rho)=.true.
+         lpenc_requested(i_lnrho)=.true.
          lpenc_requested(i_mu1)=.true.
          lpenc_requested(i_gmu1)=.true.
          lpenc_requested(i_pp)=.true.
