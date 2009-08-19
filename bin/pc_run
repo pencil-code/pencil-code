@@ -205,7 +205,7 @@ print STDERR "Commands: <", join(">, <", @subcmds), ">\n" if ($debug);
 update_runtime_dir();
 
 if ($suppress_check) {
-    touch_file("$runtime_dir/NO-PENCIL-CHECK");
+    write_to_file("$runtime_dir/NO-PENCIL-CHECK");
 }
 
 ## Setup steps:
@@ -467,11 +467,12 @@ sub update_runtime_dir {
 
     # Write files
     unless (-e "$runtime_dir/README") {
-        touch_file("$runtime_dir/README",
-                   "runtime/\n"
-                   . "--------\n"
-                   . "This directory is created by $cmdname.\n"
-                   . "It can be safely removed while the code is not running.\n"
+        write_to_file(
+            "$runtime_dir/README",
+            "runtime/\n"
+            . "--------\n"
+            . "This directory is created by $cmdname.\n"
+            . "It can be safely removed while the code is not running.\n"
         );
     }
 }
@@ -832,7 +833,7 @@ sub get_lock {
         print "[Not yet implemented]\n";
         die "\n";           # die(), not exit() or lockfile gets removed
     } else {
-        touch_file($lockfile);
+        write_to_file($lockfile);
         $locked = 1;
     }
 }
@@ -866,11 +867,11 @@ sub clear_file {
           or die "Cannot open $file for writing: $!\n";
         close $fh;
     } else {
-        touch_file($file, '');
+        write_to_file($file, '');
     }
 }
 # ---------------------------------------------------------------------- #
-sub touch_file {
+sub write_to_file {
 # Create a file with current time stamp.
 # Write $text to file if defined, otherwise write short note identifying
 # this script.
