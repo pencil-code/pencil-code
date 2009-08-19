@@ -172,18 +172,19 @@ my %dispatch_table = (
 
 ## Variables
 # ..extracted from config:
-my $local_disc          = $runtime_params{'local_disc'    } || 0;
-my $one_local_disc      = $runtime_params{'one_local_disc'} || 0;
-my $local_binary        = $runtime_params{'local_binary'  } || 0;
-my $remote_top          = $runtime_params{'remote_top'    } || 0;
-my $remove_scratch_root = $runtime_params{'remote_top'    } || 0;
+my $local_disc          = $runtime_params{'local_disc'         } || 0;
+my $one_local_disc      = $runtime_params{'one_local_disc'     } || 0;
+my $local_binary        = $runtime_params{'local_binary'       } || 0;
+my $remote_top          = $runtime_params{'remote_top'         } || 0;
+my $remove_scratch_root = $runtime_params{'remove_scratch_root'} || 0;
 
 # ..extracted dynamically from executables and .in files:
 my %settings = local_settings();
-my $Ncpus         = get_setting(\%settings, 'ncpus'        );
-my $mpi           = get_setting(\%settings, 'mpi'          );
-my $lparticles    = get_setting(\%settings, 'lparticles'   );
-my $hostname      = get_setting(\%settings, 'hostname'     );
+my $Ncpus            = get_setting(\%settings, 'ncpus'           );
+my $mpi              = get_setting(\%settings, 'mpi'             );
+my $lparticles       = get_setting(\%settings, 'lparticles'      );
+my $lparticles_nbody = get_setting(\%settings, 'lparticles_nbody');
+my $hostname         = get_setting(\%settings, 'hostname'        );
 
 ## Environment variables for other processes we start
 # Set up PATH for users who don't include $PENCIL_HOME/bin by default
@@ -192,7 +193,7 @@ $ENV{PATH} = "$ENV{PATH}:$ENV{PENCIL_HOME}/bin" if defined $ENV{PENCIL_HOME};
 $ENV{SCRATCH_DIR} = '/scratch';
 $ENV{SSH        } = 'ssh';
 $ENV{SCP        } = 'scp';
-$ENV{NODELIST   } = join{':', get_node_list()};
+$ENV{NODELIST   } = join ':', get_node_list();
 
 my @subcmds = expand_cmd_sequence(@ARGV);
 print STDERR "Commands: <", join(">, <", @subcmds), ">\n" if ($debug);
@@ -328,6 +329,7 @@ sub local_settings {
     my $hn = `hostname`;
     chomp $hn;
     $settings{'hostname'} = $hn;
+    identify_setting('hostname', %settings);
 
     # Compiled with MPI?
     $settings{'mpi'}
@@ -358,12 +360,21 @@ sub local_settings {
     print "nodes: <", join("> <", @nodes), ">\n" if ($debug);
 
     # Particles
-    $settings{'lparticles'} = defined(match_line_ix(
-        'particles_nbody_init_pars', 'start.in'
-    )) + 0;
-    print "lparticles = $settings{lparticles}\n" unless $quiet;
+    $settings{'lparticles'} = 0 + defined(match_line_ix(
+        'particles_init_pars', 'start.in'));
+    identify_setting('lparticles', %settings);
+    $settings{'lparticles_nbody'} = 0 + defined(match_line_ix(
+        'particles_nbody_init_pars', 'start.in'));
+    identify_setting('lparticles_nbody', %settings);
 
     return %settings;
+}
+# ---------------------------------------------------------------------- #
+sub identify_setting {
+# Print diagnostic line
+    my ($tag, %settings) = @_;
+
+    print "$tag = $settings{$tag}\n" unless $quiet;
 }
 # ---------------------------------------------------------------------- #
 sub get_setting {
@@ -623,7 +634,7 @@ sub slurm_expand {
 }
 # ---------------------------------------------------------------------- #
 sub identify_job {
-#
+# Print diagnostic line
     my ($qs) = @_;
     print "$qs job\n" unless $quiet;
 }
