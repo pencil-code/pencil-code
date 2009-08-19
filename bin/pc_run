@@ -234,9 +234,9 @@ for my $subcmd (@subcmds) {
 sub start_cmd {
 # Run start.x
 
+    honour_nostart();
     setup_datadir();
     run_extra_setup_script();
-    honour_nostart();
     handle_local_binary($start_x);
 
     get_lock();
