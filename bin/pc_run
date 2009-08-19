@@ -177,6 +177,7 @@ my $local_disc          = $runtime_params{'local_disc'         } || 0;
 my $one_local_disc      = $runtime_params{'one_local_disc'     } || 0;
 my $local_binary        = $runtime_params{'local_binary'       } || 0;
 my $remote_top          = $runtime_params{'remote_top'         } || 0;
+my $master_node         = $runtime_params{'master_node'        } || undef;
 my $remove_scratch_root = $runtime_params{'remove_scratch_root'} || 0;
 my $n_procs_per_node    = $runtime_params{'n_procs_per_node'   } || 1;
 
@@ -191,11 +192,18 @@ my $hostname         = get_setting(\%settings, 'hostname'        );
 ## Environment variables for other processes we start
 # Set up PATH for users who don't include $PENCIL_HOME/bin by default
 $ENV{PATH} = "$ENV{PATH}:$ENV{PENCIL_HOME}/bin" if defined $ENV{PENCIL_HOME};
-#
-$ENV{SCRATCH_DIR} = '/scratch';
+
+# Propagate current pid to copy-snapshots
+$ENV{PARENT_PID } = $$;
+
+# Make SCRATCH_DIR unique, so different
+# jobs running simultaneously will not interfere with each other.
+$ENV{SCRATCH_DIR} = '/scratch/pencil-'
+  . (defined $ENV{JOB_ID} ? $ENV{JOB_ID} : $ENV{PARENT_PID});
+
 $ENV{SSH        } = 'ssh';
 $ENV{SCP        } = 'scp';
-$ENV{NODELIST   } = join ':', get_node_list();
+$ENV{NODELIST   } = join ':', get_node_list(); # may be modfied by mpi_run_cmd
 
 my @subcmds = expand_cmd_sequence(@ARGV);
 print STDERR "Commands: <", join(">, <", @subcmds), ">\n" if ($debug);
@@ -256,36 +264,44 @@ sub run_cmd {
 }
 # ---------------------------------------------------------------------- #
 sub mpi_run_cmd {
-#
+# Run the given command through mpiexec (if this is an MPI run).
+# This method is only called for start.x and run.x
     my @cmd_line = @_;
 
-    my $extra_ops   = $runtime_params{'extra_ops'  } || '';
-    my @extra_ops = split('\s+', $extra_ops);
+    my $extra_opts   = $runtime_params{'extra_opts'  } || '';
+    my @extra_opts = split('\s+', $extra_opts);
 
     print "", (scalar localtime()), "\n";
+
+    setup_local_disc();
 
     if ($mpi) {
         print "Running under MPI\n" unless ($quiet);
 
         my $mpiexec = $runtime_params{'mpiexec'}
           or die "No mpiexec setting. Please fix your configuration.\n";
-        my $mpiexec_ops = $runtime_params{'mpiexec_ops'} || '';
+        my $mpiexec_opts = $runtime_params{'mpiexec_opts'} || '';
 
-        my ($np_ops_ref, $mpi_x_ops_ref, $n_procs_per_node)
-          = get_mpiexec_ops($mpiexec, $Ncpus, $n_procs_per_node);
-        push @extra_ops, @$mpi_x_ops_ref;
+        my ($np_opts_ref, $mpi_x_opts_ref, $n_procs_per_node)
+          = get_mpiexec_opts($mpiexec, $Ncpus, $n_procs_per_node);
+        push @extra_opts, @$mpi_x_opts_ref;
 
         my @mpiexec_cmd_line;
         push @mpiexec_cmd_line, split('\s+', $mpiexec);
-        push @mpiexec_cmd_line, split('\s+', $mpiexec_ops);
-        push @mpiexec_cmd_line, @$np_ops_ref;
+        push @mpiexec_cmd_line, split('\s+', $mpiexec_opts);
+        push @mpiexec_cmd_line, @$np_opts_ref;
         push @mpiexec_cmd_line, @cmd_line;
-        push @mpiexec_cmd_line, @extra_ops;
+        push @mpiexec_cmd_line, @extra_opts;
+        dump_parameters(
+            $mpiexec, $mpiexec_opts, $extra_opts,
+            $np_opts_ref, $mpi_x_opts_ref, $n_procs_per_node
+        ) if $debug;
         time_system_cmd(@mpiexec_cmd_line);
     } else {
         $Ncpus = 1;
         $n_procs_per_node = 1;
-        time_system_cmd(@cmd_line, @extra_ops);
+        dump_parameters(undef, undef, 1) if $debug;
+        time_system_cmd(@cmd_line, @extra_opts);
     }
 
     print "\n", (scalar localtime()), "\n";
@@ -293,7 +309,96 @@ sub mpi_run_cmd {
     shutdown_mpi();
 }
 # ---------------------------------------------------------------------- #
-sub get_mpiexec_ops {
+sub dump_parameters {
+# Print all(?) relevant parameters
+
+    my ($mpiexec, $mpiexec_opts, $extra_opts,
+        $np_opts_ref, $mpi_x_opts_ref, $n_procs_per_node) = @_;
+
+    my $fmt = "\%-17s = <\%s>\n";
+    printf $fmt, '$mpi',                $mpi;
+    printf $fmt, '$data_dir',           $data_dir;
+    printf $fmt, '$SCRATCH_DIR',        $ENV{SCRATCH_DIR};
+    printf $fmt, '$hostname',           $hostname;
+    printf $fmt, '$extra_opts',         $extra_opts;
+    printf $fmt, '$lparticles',         $lparticles;
+    printf $fmt, '$lparticles_nbody',   $lparticles_nbody;
+
+    if ($mpi) {
+        printf $fmt, '$Ncpus',             $Ncpus;
+        printf $fmt, '$npopts',             "@{$np_opts_ref}";
+        printf $fmt, '$local_disc',         $local_disc;
+        printf $fmt, '$one_local_disc',     $one_local_disc;
+        printf $fmt, '$remote_top',         $remote_top;
+        printf $fmt, '$local_binary',       $local_binary;
+        printf $fmt, '$mpiexec',            $mpiexec;
+        printf $fmt, '$mpiexec_opts',       $mpiexec_opts;
+        printf $fmt, '$extra_opts',         $extra_opts; # duplicate, but handy
+        printf $fmt, '$master_node',        $master_node || '';
+        printf $fmt, '$NODELIST',           $ENV{NODELIST};
+        printf $fmt, '$SSH',                $ENV{SSH};
+        printf $fmt, '$SCP',                $ENV{SCP};
+        printf $fmt, '$PARENT_PID',         $ENV{PARENT_PID};
+        printf $fmt, '$copy_snapshots',     $copysnapshots;
+    }
+}
+# ---------------------------------------------------------------------- #
+sub setup_local_disc {
+# Set up directories and binaries on local disc.
+
+    if (! $mpi && ($local_disc || $local_binary)) {
+        die "local_disc or local_binary make no sense without MPI\n";
+    }
+    if ($one_local_disc && ! $local_disc) {
+        die "one_local_disc requires local_disc\n";
+    }
+
+    # If local disc is used, write name into $data_dir/directory_snap.
+    # This will be read by the code, if the file exists.
+    # Remove file if not needed, to avoid confusion.
+    my $snapdir_file = "$data_dir/directory_snap";
+    unlink_if_exist($snapdir_file);
+    if ($local_disc) {
+        write_to_file($snapdir_file, $ENV{SCRATCH_DIR});
+    }
+
+    if ($local_binary) {
+        $start_x = "$ENV{SCRATCH_DIR}/start.x";
+        $run_x   = "$ENV{SCRATCH_DIR}/run.x;"
+    }
+
+    if ($one_local_disc) {
+        # Common scratch disc: Set nodelist to first node (or master node,
+        # if specified in the host configuration)
+        warn "Overwriting \$NODELIST\n" unless $quiet;
+        if (defined $master_node) {
+            $ENV{NODELIST} = $master_node;
+        } else {
+            $ENV{NODELIST} =~ s/:.*//;
+        }
+    }
+
+    # Create subdirectories on local scratch disc (start will also create
+    # them under $data_dir/)
+    if ($local_disc) {
+        if ($one_local_disc) {
+            print "Creating directory structure on common scratch disc\n"
+              unless $quiet;
+        } else {
+            print "Creating directory structure on local scratch disc(s)\n"
+              unless $quiet;
+        }
+        my @subdirs = subdir_list();
+        my $cmd = "if [ ! -e $ENV{SCRATCH_DIR} ]; then mkdir -p $ENV{SCRATCH_DIR}; fi;"
+          . " cd $ENV{SCRATCH_DIR}; mkdir -p @subdirs";
+        foreach my $host (split ':', $ENV{NODELIST}) {
+            system($ENV{SSH}, $host, 'sh', '-c', "'$cmd'") == 0
+              or warn "Couldn't run <$cmd> on $host via ssh\n";
+        }
+    }
+}
+# ---------------------------------------------------------------------- #
+sub get_mpiexec_opts {
 # From the name of the mpiexec command, determine N_cpu option and
 # possible extra options.
 #
@@ -305,37 +410,37 @@ sub get_mpiexec_ops {
 # was really weird.
     my ($mpiexec, $ncpus, $cpus_per_node) = @_;
 
-    my @np_ops;
-    my @extra_ops;
+    my @np_opts;
+    my @extra_opts;
     if ($mpiexec =~ /mpirun|orterun/) {
-        push @np_ops, '-np', $ncpus;
+        push @np_opts, '-np', $ncpus;
     } elsif ($mpiexec =~ /mpiexec/) {
-        push @np_ops, '-n', $ncpus;
+        push @np_opts, '-n', $ncpus;
     } elsif ($mpiexec =~ /mpprun/) {
         # No options needed
     } elsif ($mpiexec =~ /mpimon/) {
-        push @np_ops, '-stdin', 'all', '-inherit_limits';
-        push @extra_ops, '--';
+        push @np_opts, '-stdin', 'all', '-inherit_limits';
+        push @extra_opts, '--';
     } elsif ($mpiexec =~ /scout/) {
         my $nodes = $ENV{NSLOTS} - 1;
         $cpus_per_node = $ncpus / $nodes;
-        push @np_ops, "-nodes=${nodes}x${cpus_per_node}";
+        push @np_opts, "-nodes=${nodes}x${cpus_per_node}";
     } elsif ($mpiexec =~ /poe/) {
         $cpus_per_node = 1;
-        push @extra_ops, '-procs', $ncpus;
+        push @extra_opts, '-procs', $ncpus;
     } elsif ($mpiexec =~ /yod/) {
         # $mpiexec = 'yod';       # necessary??
-        push @np_ops, '-sz', $ncpus;
+        push @np_opts, '-sz', $ncpus;
     } elsif ($mpiexec =~ /nuripm/) {
         # $mpiexec = 'mpirun';    # pretty weird...
     } elsif ($mpiexec =~ /aprun/) {
         # $mpiexec = 'aprun';     # necessary??
-        push @np_ops, '-n', $ncpus;
+        push @np_opts, '-n', $ncpus;
     } else {
         warn "pc_run: No clue how to tell $mpiexec to use $ncpus nodes\n";
     }
 
-    return (\@np_ops, \@extra_ops, $cpus_per_node);
+    return (\@np_opts, \@extra_opts, $cpus_per_node);
 }
 # ---------------------------------------------------------------------- #
 sub time_system_cmd {
@@ -411,6 +516,7 @@ sub local_settings {
     print count_with_plural_s($settings{'ncpus'}, 'CPU'), "\n" unless $quiet;
 
     my @nodes = get_node_list();
+
     my $N = @nodes + 0;
     my $ppn = $settings{'ncpus'} / $N;
     $settings{'n_nodes'} = $N;
@@ -636,7 +742,10 @@ sub get_node_list {
         }
     }
 
-    return ($hostname);
+    # Fall back on host name
+    my $hn = `hostname`;
+    chomp $hn;
+    return ($hn);
 }
 # ---------------------------------------------------------------------- #
 sub default_qs_handler {
