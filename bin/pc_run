@@ -355,6 +355,7 @@ sub local_settings {
         print count_with_plural_s($N, 'node'), ", ",
             count_with_plural_s($ppn, 'CPU'), " per node\n"
     }
+    print "nodes: <", join("> <", @nodes), ">\n" if ($debug);
 
     # Particles
     $settings{'lparticles'} = defined(match_line_ix(
