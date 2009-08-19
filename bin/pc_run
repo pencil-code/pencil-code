@@ -59,6 +59,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # - $booted_mpd handling
 # - $remove_scratch_root
 # - Ensure $ENV{SCRATCH_DIR} is defined if $local_disc or $local_binary is set
+# - $resub, $resubop, $run_resub
 # Improvements:
 # - Use a wrapper to die() that removes the LOCK file (except when die'ing
 #   because of an existing lock file).
@@ -177,6 +178,7 @@ my $one_local_disc      = $runtime_params{'one_local_disc'     } || 0;
 my $local_binary        = $runtime_params{'local_binary'       } || 0;
 my $remote_top          = $runtime_params{'remote_top'         } || 0;
 my $remove_scratch_root = $runtime_params{'remove_scratch_root'} || 0;
+my $n_procs_per_node    = $runtime_params{'n_procs_per_node'   } || 1;
 
 # ..extracted dynamically from executables and .in files:
 my %settings = local_settings();
@@ -257,6 +259,9 @@ sub mpi_run_cmd {
 #
     my @cmd_line = @_;
 
+    my $extra_ops   = $runtime_params{'extra_ops'  } || '';
+    my @extra_ops = split('\s+', $extra_ops);
+
     print "", (scalar localtime()), "\n";
 
     if ($mpi) {
@@ -264,16 +269,73 @@ sub mpi_run_cmd {
 
         my $mpiexec = $runtime_params{'mpiexec'}
           or die "No mpiexec setting. Please fix your configuration.\n";
-        my @mpiexec_cmd = split('\s+', $mpiexec);
-        push @mpiexec_cmd, ('-np', $Ncpus);
-        time_system_cmd(@mpiexec_cmd, @cmd_line);
+        my $mpiexec_ops = $runtime_params{'mpiexec_ops'} || '';
+
+        my ($np_ops_ref, $mpi_x_ops_ref, $n_procs_per_node)
+          = get_mpiexec_ops($mpiexec, $Ncpus, $n_procs_per_node);
+        push @extra_ops, @$mpi_x_ops_ref;
+
+        my @mpiexec_cmd_line;
+        push @mpiexec_cmd_line, split('\s+', $mpiexec);
+        push @mpiexec_cmd_line, split('\s+', $mpiexec_ops);
+        push @mpiexec_cmd_line, @$np_ops_ref;
+        push @mpiexec_cmd_line, @cmd_line;
+        push @mpiexec_cmd_line, @extra_ops;
+        time_system_cmd(@mpiexec_cmd_line);
     } else {
-        time_system_cmd(@cmd_line);
+        $Ncpus = 1;
+        $n_procs_per_node = 1;
+        time_system_cmd(@cmd_line, @extra_ops);
     }
 
     print "\n", (scalar localtime()), "\n";
 
     shutdown_mpi();
+}
+# ---------------------------------------------------------------------- #
+sub get_mpiexec_ops {
+# From the name of the mpiexec command, determine N_cpu option and
+# possible extra options.
+#
+# Returns list of mpiexec options and number of CPUs per node (which we
+# apparently have to reset for some mpiexec variants):
+#   ( \@np_options, \@extra_options, $n_procs_per_node )
+#
+# Note: We don't currently support redefining $mpiexec for nuripm, as that
+# was really weird.
+    my ($mpiexec, $ncpus, $cpus_per_node) = @_;
+
+    my @np_ops;
+    my @extra_ops;
+    if ($mpiexec =~ /mpirun|orterun/) {
+        push @np_ops, '-np', $ncpus;
+    } elsif ($mpiexec =~ /mpiexec/) {
+        push @np_ops, '-n', $ncpus;
+    } elsif ($mpiexec =~ /mpprun/) {
+        # No options needed
+    } elsif ($mpiexec =~ /mpimon/) {
+        push @np_ops, '-stdin', 'all', '-inherit_limits';
+        push @extra_ops, '--';
+    } elsif ($mpiexec =~ /scout/) {
+        my $nodes = $ENV{NSLOTS} - 1;
+        $cpus_per_node = $ncpus / $nodes;
+        push @np_ops, "-nodes=${nodes}x${cpus_per_node}";
+    } elsif ($mpiexec =~ /poe/) {
+        $cpus_per_node = 1;
+        push @extra_ops, '-procs', $ncpus;
+    } elsif ($mpiexec =~ /yod/) {
+        # $mpiexec = 'yod';       # necessary??
+        push @np_ops, '-sz', $ncpus;
+    } elsif ($mpiexec =~ /nuripm/) {
+        # $mpiexec = 'mpirun';    # pretty weird...
+    } elsif ($mpiexec =~ /aprun/) {
+        # $mpiexec = 'aprun';     # necessary??
+        push @np_ops, '-n', $ncpus;
+    } else {
+        warn "pc_run: No clue how to tell $mpiexec to use $ncpus nodes\n";
+    }
+
+    return (\@np_ops, \@extra_ops, $cpus_per_node);
 }
 # ---------------------------------------------------------------------- #
 sub time_system_cmd {
