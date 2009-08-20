@@ -24,6 +24,7 @@ module Initcond
   public :: jump, bjump, bjumpz, stratification, stratification_x
   public :: modes, modev, modeb, crazy
   public :: trilinear, baroclinic
+  public :: triquad, isotdisk
   public :: diffrot, olddiffrot
   public :: const_omega
   public :: powern, power_randomphase
@@ -3194,6 +3195,91 @@ module Initcond
       enddo; enddo
 !
     endsubroutine trilinear
+!***********************************************************************
+    subroutine triquad(ampl,f,ivar,kx,ky,kz,kxx,kyy,kzz)
+!
+!  Produce a profile that is quadratic in any non-periodic direction, but
+!  constant in periodic ones, with optional coefficients.
+!
+!  20-jul-09/hubbard: coded
+!
+      real :: ampl
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: ivar
+!
+      real, dimension (nx) :: tmp
+!
+      real,optional :: kx,ky,kz,kxx,kyy,kzz
+!
+      if (lroot) print*, 'triquad: ivar = ', ivar
+!
+!  linear portion
+!
+!  x direction
+!
+      do n=n1,n2; do m=m1,m2
+        tmp = 0.
+        if (.not. lperi(1)) then
+          if (present(kx)) then
+            tmp = kx*x(l1:l2)
+          endif
+        endif
+!
+!  y direction
+!
+        if (.not. lperi(2)) then
+          if (present(ky)) then
+            tmp = tmp + ky*y(m)
+          endif
+        endif
+!
+!  z direction
+!
+        if (.not. lperi(3)) then
+          if (present(kz)) then
+            tmp = tmp + kz*z(n)
+          endif
+        endif
+!
+        f(l1:l2,m,n,ivar) = ampl*tmp
+!
+      enddo; enddo
+!
+!  quadratic portion
+!  negative ampl is because parabola is based on -x**2
+!
+  if (present(kxx)) call parabola(-ampl*abs(kxx)/kzz,f,icc,kx=kxx)
+  if (present(kyy)) call parabola(-ampl*abs(kyy)/kzz,f,icc,ky=kyy)
+  if (present(kzz)) call parabola(-ampl*abs(kzz)/kzz,f,icc,kz=kzz)
+!
+    endsubroutine triquad
+!***********************************************************************
+    subroutine isotdisk(powerlr,f,ivar,zoverh,hoverr,gamma)
+!
+!  eek
+!
+! 21-jul-09/hubbard: coded
+!
+      real :: powerlr
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: ivar
+!
+      real, dimension (nx) :: tmp
+      real :: zoverh, hoverr, gamma
+!
+      if (lroot) print*, 'isotdisk: ivar = ', ivar
+!
+!
+      do n=1,mz; do m=1,my
+        f(1:mx,m,n,ivar) = f(1:mx,m,n,ivar) + ((1.5*zoverh**2-powerlr)*x(1:mx) &
+            -zoverh/(hoverr)*z(n) &
+            +(powerlr/2-3*zoverh**2)*x(1:mx)**2 &
+            -0.5/(hoverr**2)*z(n)**2 &
+            +3.*zoverh/hoverr*z(n)*x(1:mx))*gamma
+!
+      enddo; enddo
+!
+    endsubroutine isotdisk
 !***********************************************************************
     subroutine cos_cos_sin(ampl,f,ivar)
 !

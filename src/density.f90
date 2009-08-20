@@ -33,6 +33,7 @@ module Density
   real, dimension (ninit) :: rho_left=1.0, rho_right=1.0
   real, dimension (ninit) :: amplrho=0.0, phase_lnrho=0.0, radius_lnrho=0.5
   real, dimension (ninit) :: kx_lnrho=1.0, ky_lnrho=1.0, kz_lnrho=1.0
+  real, dimension (ninit) :: kxx_lnrho=0.0, kyy_lnrho=0.0, kzz_lnrho=0.0
   real :: lnrho_const=0.0, rho_const=1.0
   real :: cdiffrho=0.0, diffrho=0.0, diffrho_hyper3=0.0, diffrho_shock=0.0
   real :: eps_planet=0.5, q_ell=5.0, hh0=0.0
@@ -47,6 +48,7 @@ module Density
   real, dimension(mz) :: dlnrhodz_init_z=0.0, glnrho2_init_z=0.0
   real, target :: plaw=0.0
   real :: lnrho_z_shift=0.0
+  real :: powerlr=3.0, zoverh=1.5, hoverr=0.05
   integer, parameter :: ndiff_max=4
   logical :: lmass_source=.false.,lcontinuity_gas=.true.
   logical :: lupw_lnrho=.false.,lupw_rho=.false.
@@ -76,10 +78,11 @@ module Density
       b_ell,q_ell,hh0,rbound,lwrite_stratification,                 &
       mpoly,strati_type,beta_glnrho_global,radial_percent_smooth,   &
       kx_lnrho,ky_lnrho,kz_lnrho,amplrho,phase_lnrho,coeflnrho,     &
+      kxx_lnrho, kyy_lnrho, kzz_lnrho,                              &
       co1_ss,co2_ss,Sigma1,idiff,ldensity_nolog,lexponential_smooth,&
       wdamp,plaw,lcontinuity_gas,density_floor,lanti_shockdiffusion,&
       rshift,lrho_as_aux,ldiffusion_nolog,lnrho_z_shift,            &
-      lshare_plaw
+      lshare_plaw, powerlr, zoverh, hoverr
 !
   namelist /density_run_pars/ &
       cdiffrho,diffrho,diffrho_hyper3,diffrho_shock,                &
@@ -471,6 +474,14 @@ module Density
           call coswave(ampllnrho(j),f,ilnrho,ky=ky_lnrho(j))
         case('coswave-z')
           call coswave(ampllnrho(j),f,ilnrho,kz=kz_lnrho(j))
+        case('triquad')
+          call triquad(ampllnrho(j),f,ilnrho,kx_lnrho(j), &
+              ky_lnrho(j),kz_lnrho(j), kxx_lnrho(j), kyy_lnrho(j), &
+              kzz_lnrho(j))
+        case('isotdisk')
+          call isotdisk(powerlr,f,ilnrho,zoverh, hoverr,gamma)
+          f(1:mx,1:my,1:mz,iss)=-(gamma-1)/gamma*f(1:mx,1:my,1:mz,ilnrho)
+!          call isotdisk(powerlr,f,iss,zoverh,hoverr, -(gamma-1)/gamma)
         case('sinx_siny_sinz')
           call sinx_siny_sinz(ampllnrho(j),f,ilnrho, &
               kx_lnrho(j),ky_lnrho(j),kz_lnrho(j))

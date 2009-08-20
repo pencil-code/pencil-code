@@ -38,27 +38,38 @@ module Pscalar
 ! input parameters
   real :: amplcc=0.1, widthcc=0.5, cc_min=0.0
   real :: amplcc2=0.0, kx_cc=1.0, ky_cc=1.0, kz_cc=1.0, radius_cc=0.0
+  real :: kxx_cc=0.0, kyy_cc=0.0, kzz_cc=0.0
   real :: epsilon_cc=0.0, cc_const=1.0
+!
+  real :: zoverh=1., hoverr=0.05, powerlr=3.0
+!
   real, dimension(3) :: gradC0=(/0.0,0.0,0.0/)
 !
   namelist /pscalar_init_pars/ &
        initcc,initcc2,amplcc,amplcc2,kx_cc,ky_cc,kz_cc, &
        radius_cc,epsilon_cc,widthcc,cc_min,cc_const, &
        initlncc,initlncc2,ampllncc,ampllncc2,kx_lncc,ky_lncc,kz_lncc, &
-       radius_lncc,epsilon_lncc,widthlncc
+       radius_lncc,epsilon_lncc,widthlncc, kxx_cc, kyy_cc,kzz_cc, &
+       hoverr, powerlr, zoverh
+!
+!
 ! run parameters
   real :: pscalar_diff=0.0, tensor_pscalar_diff=0.0, soret_diff=0.0
   real :: pscalar_diff_hyper3=0.0, rhoccm=0.0, cc2m=0.0, gcc2m=0.0
   real :: pscalar_sink=0.0, Rpscalar_sink=0.5
   real :: lam_gradC=0., om_gradC=0., lambda_cc=0.
+  real :: scalaracc=1.
   logical :: lpscalar_sink, lgradC_profile=.false., lreactions=.false.
+  logical :: lnotpassive=.false.
 !
   namelist /pscalar_run_pars/ &
        pscalar_diff,nopscalar,tensor_pscalar_diff,gradC0,soret_diff, &
        pscalar_diff_hyper3,reinitalize_lncc,reinitalize_cc, &
        lpscalar_sink,pscalar_sink,Rpscalar_sink, &
        lreactions, lambda_cc, &
-       lam_gradC, om_gradC, lgradC_profile
+       lam_gradC, om_gradC, lgradC_profile, &
+       scalaracc, &
+       lnotpassive
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rhoccm=0, idiag_ccmax=0, idiag_ccmin=0., idiag_ccm=0
   integer :: idiag_Qrhoccm=0, idiag_Qpsclm=0, idiag_mcct=0
@@ -74,7 +85,7 @@ module Pscalar
 !
   contains
 !***********************************************************************
-    subroutine register_pscalar()
+    subroutine register_pscalar() 
 !
 !  Initialise variables which should know that we solve for passive
 !  scalar: icc; increase nvar accordingly
@@ -165,6 +176,11 @@ module Pscalar
         case('propto-uy'); call wave_uu(amplcc,f,icc,ky=ky_cc)
         case('propto-uz'); call wave_uu(amplcc,f,icc,kz=kz_cc)
         case('cosx_cosy_cosz'); call cosx_cosy_cosz(amplcc,f,icc,kx_cc,ky_cc,kz_cc)
+        case('triquad'); call triquad(amplcc,f,icc,kx_cc,ky_cc,kz_cc, &
+            kxx_cc, kyy_cc,kzz_cc)
+        case('semiangmom'); f(:,:,:,icc)=(1-2*powerlr*hoverr**2-1.5*zoverh**2*hoverr**2) &
+            *spread(spread(x,2,my),3,mz) &
+            +3*zoverh*hoverr*spread(spread(z,1,mx),2,my)
         case default; call stop_it('init_lncc: bad initcc='//trim(initcc))
       endselect
 !
@@ -172,6 +188,7 @@ module Pscalar
 !
       select case(initcc2)
         case('wave-x'); call wave(amplcc2,f,icc,ky=5.)
+        case('constant'); f(:,:,:,icc)=f(:,:,:,icc)+amplcc2
       endselect
 !
 !  add floor value if cc_min is set
@@ -231,6 +248,11 @@ module Pscalar
         case('propto-uy'); call wave_uu(amplcc,f,icc,ky=ky_cc)
         case('propto-uz'); call wave_uu(amplcc,f,icc,kz=kz_cc)
         case('cosx_cosy_cosz'); call cosx_cosy_cosz(amplcc,f,icc,kx_cc,ky_cc,kz_cc)
+        case('triquad'); call triquad(amplcc,f,icc,kx_cc,ky_cc,kz_cc, &
+            kxx_cc,kyy_cc,kzz_cc)
+        case('semiangmom'); f(:,:,:,icc)=(1-2*powerlr*hoverr**2-1.5*zoverh**2*hoverr**2) &
+            *spread(spread(x,2,my),3,mz) &
+            +3*zoverh*hoverr*spread(spread(z,1,mx),2,my)
         case('sound-wave')
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,icc)=-amplcc*cos(kx_cc*x(l1:l2))
@@ -250,6 +272,7 @@ module Pscalar
 !
       select case(initcc2)
         case('wave-x'); call wave(amplcc2,f,icc,ky=5.)
+        case('constant'); f(:,:,:,icc)=f(:,:,:,icc)+amplcc2
       endselect
 !
 !  Interface for user's own initial condition
@@ -555,6 +578,18 @@ module Pscalar
         if (idiag_ccmx/=0)    call yzsum_mn_name_x(p%cc,idiag_ccmx)
       endif
 !
+! AH: notpassive, an angular momentum+gravity workaround
+        if (lnotpassive) then
+          if (lhydro) then
+            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+(p%cc &
+               +(-powerlr*hoverr**2+1.5*zoverh**2*hoverr**2)+ &
+               (-1+3*powerlr*hoverr**2-4.5*zoverh**2*hoverr**2)*x(l1:l2))*scalaracc
+            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+(-hoverr*zoverh &
+                -z(n)+3*hoverr*zoverh*x(l1:l2))*scalaracc
+          endif
+        endif
+
+
     endsubroutine dlncc_dt
 !***********************************************************************
     subroutine read_pscalar_init_pars(unit,iostat)
