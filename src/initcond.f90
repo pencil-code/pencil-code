@@ -35,7 +35,9 @@ module Initcond
   public :: sinxsinz, cosx_cosy_cosz, cosx_coscosy_cosz
   public :: x_siny_cosz, x1_siny_cosz, x1_cosy_cosz, lnx_cosy_cosz
   public :: sinx_siny_sinz, cosx_siny_cosz, sinx_siny_cosz
-  public :: sin2x_sin2y_cosz, cosy_sinz, x3_cosy_cosz, cos2x_cos2y_cos2z
+  public :: sin2x_sin2y_cosz, cos2x_cos2y_cos2z, x3_cosy_cosz
+  public :: cosx_cosz, cosy_cosz, cosy_sinz
+  public :: cosxz_cosz, cosyz_sinz
   public :: halfcos_x, magsupport, vfield
   public :: uniform_x, uniform_y, uniform_z, uniform_phi, phi_comp_over_r
   public :: vfluxlayer, hfluxlayer
@@ -355,6 +357,66 @@ module Initcond
 !
     endsubroutine sin2x_sin2y_cosz
 !***********************************************************************
+    subroutine cosxz_cosz(ampl,f,i,kx,kz)
+!
+!  sinusoidal wave, adapted from sinxsinz (that routine was already doing
+!  this, but under a different name)
+!
+!  13-aug-09/axel: coded
+!
+      integer :: i
+      real, dimension (mx,my,mz,mfarray) :: f
+      real,optional :: kx,kz
+      real :: ampl,kx1=pi/2.,kz1=pi/2.
+!
+!  wavenumber k, helicity H=ampl (can be either sign)
+!
+!  sinx(kx*x)*sin(kz*z)
+!
+      if (present(kx)) kx1=kx
+      if (present(kz)) kz1=kz
+      if (ampl==0) then
+        if (lroot) print*,'cosxz_cosz: ampl=0'
+      else
+        if (lroot) write(*,wave_fmt1) 'cos(x-cosz): ampl,kx,kz=', &
+                                      ampl,kx1,kz1
+        f(:,:,:,i)=f(:,:,:,i)+ampl*cos( &
+          spread(spread(kx1*x,2,my),3,mz)- &
+          spread(spread(cos(kz1*z),1,mx),2,my))
+      endif
+!
+    endsubroutine cosxz_cosz
+!***********************************************************************
+    subroutine cosyz_sinz(ampl,f,i,ky,kz)
+!
+!  sinusoidal wave, adapted from sinxsinz (that routine was already doing
+!  this, but under a different name)
+!
+!  13-aug-09/axel: coded
+!
+      integer :: i
+      real, dimension (mx,my,mz,mfarray) :: f
+      real,optional :: ky,kz
+      real :: ampl,ky1=pi/2.,kz1=pi/2.
+!
+!  wavenumber k, helicity H=ampl (can be either sign)
+!
+!  sinx(ky*y)*sin(kz*z)
+!
+      if (present(ky)) ky1=ky
+      if (present(kz)) kz1=kz
+      if (ampl==0) then
+        if (lroot) print*,'cosyz_sinz: ampl=0'
+      else
+        if (lroot) write(*,wave_fmt1) 'cos(y-sinz): ampl,ky,kz=', &
+                                      ampl,ky1,kz1
+        f(:,:,:,i)=f(:,:,:,i)+ampl*cos( &
+          spread(spread(ky1*y,1,mx),3,mz)- &
+          spread(spread(cos(kz1*z),1,mx),2,my))
+      endif
+!
+    endsubroutine cosyz_sinz
+!***********************************************************************
     subroutine cosx_cosy_cosz(ampl,f,i,kx,ky,kz)
 !
 !  sinusoidal wave, adapted from sinxsinz (that routine was already doing
@@ -385,6 +447,49 @@ module Initcond
       endif
 !
     endsubroutine cosx_cosy_cosz
+!***********************************************************************
+    subroutine cosx_cosz(ampl,f,i,kx,kz)
+!
+!  initial condition for potential field test
+!
+!  15-aug-09/axel: adapted from cosy_sinz
+!
+      integer :: i,j
+      real, dimension (mx,my,mz,mfarray) :: f
+      real,optional :: kx,kz
+      real :: ampl,kx1=1.,kz1=pi
+!
+!  wavenumber k
+!
+      if (present(kx)) kx1=kx
+      if (present(kz)) kz1=kz
+!
+      j=i; f(:,:,:,j)=f(:,:,:,j)+ampl*spread(spread(cos(kx1*x),2,my),3,mz)&
+                                     *spread(spread(cos(kz1*z),1,mx),2,my)
+!
+    endsubroutine cosx_cosz
+!***********************************************************************
+    subroutine cosy_cosz(ampl,f,i,ky,kz)
+!
+!  initial condition for potential field test
+!
+!   06-oct-06/axel: coded
+!   11-oct-06/wolf: modified to only set one component of aa
+!
+      integer :: i,j
+      real, dimension (mx,my,mz,mfarray) :: f
+      real,optional :: ky,kz
+      real :: ampl,ky1=1.,kz1=pi
+!
+!  wavenumber k
+!
+      if (present(ky)) ky1=ky
+      if (present(kz)) kz1=kz
+!
+      j=i; f(:,:,:,j)=f(:,:,:,j)+ampl*spread(spread(cos(ky1*y),1,mx),3,mz)&
+                                     *spread(spread(cos(kz1*z),1,mx),2,my)
+!
+    endsubroutine cosy_cosz
 !***********************************************************************
     subroutine cosy_sinz(ampl,f,i,ky,kz)
 !

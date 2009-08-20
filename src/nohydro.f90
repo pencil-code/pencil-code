@@ -217,7 +217,7 @@ module Hydro
       real, dimension(nx) :: kdotxwt, cos_kdotxwt, sin_kdotxwt
       real, dimension(nx) :: tmp_mn, cos1_mn, cos2_mn
       real :: kkx_aa, kky_aa, kkz_aa, fac, fac2
-      real :: fpara, dfpara, ecost, esint, epst
+      real :: fpara, dfpara, ecost, esint, epst, sin2t, cos2t
       integer :: modeN
       real :: sqrt2, sqrt21k1, eps1=1., WW=0.25, k21
 !
@@ -418,6 +418,20 @@ if (ip.eq.11.and.m==4.and.n==4) write(21,*) t,kkx_aa
         p%uu(:,3)=-fac2*(sin(kkx_aa*x(l1:l2)+ecost)*cos(kky_aa*y(m)+esint))
         if (lpencil(i_divu)) p%divu=0.
         if (lpencil(i_oo)) p%oo=-kkx_aa*p%uu
+!
+!  Otani flow, U=curl(psi*zz) + psi*zz, where
+!  psi = 2*cos^2t * cosx - 2*csin2t * cosy
+!
+      elseif (kinflow=='Otani') then
+        if (headtt) print*,'Otani flow; kx_aa,ky_aa=',kkx_aa,kky_aa
+        fac=2.*ampl_kinflow
+        sin2t=sin(omega_kinflow*t)**2
+        cos2t=cos(omega_kinflow*t)**2
+        p%uu(:,1)=fac*sin2t*sin(kky_aa*y(m))
+        p%uu(:,2)=fac*cos2t*sin(kkx_aa*x(l1:l2))
+        p%uu(:,3)=fac*(cos2t*cos(kkx_aa*x(l1:l2))-sin2t*cos(kky_aa*y(m)))
+        if (lpencil(i_divu)) p%divu=0.
+        if (lpencil(i_oo)) p%oo=p%uu
 !
 !  Tilgner flow, U=-z x grad(psi) - z k psi, where
 !  psi = U0/kH * (cosX+cosY), so U = U0 * (-sinY, sinX, -cosX-cosY).

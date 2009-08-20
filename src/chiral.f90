@@ -26,6 +26,8 @@ module Chiral
   integer :: iXX_chiral=0,iYY_chiral=0
   character (len=labellen) :: initXX_chiral='zero',initYY_chiral='zero'
   logical :: linitialize_aa_from_EP=.false.
+  logical :: linitialize_aa_from_EP_alpgrad=.false.
+  logical :: linitialize_aa_from_EP_betgrad=.false.
   real :: tinitialize_aa_from_EP=0.
   real :: amplXX_chiral=.1, widthXX_chiral=.5
   real :: amplYY_chiral=.1, widthYY_chiral=.5
@@ -50,7 +52,8 @@ module Chiral
   namelist /chiral_run_pars/ &
        chiral_diff,chiral_crossinhibition,chiral_fidelity, &
        chiral_reaction,limposed_gradient,gradX0,gradY0, &
-       linitialize_aa_from_EP,tinitialize_aa_from_EP
+       linitialize_aa_from_EP,tinitialize_aa_from_EP, &
+       linitialize_aa_from_EP_alpgrad,linitialize_aa_from_EP_betgrad
 !
   integer :: idiag_XX_chiralmax=0, idiag_XX_chiralm=0
   integer :: idiag_YY_chiralmax=0, idiag_YY_chiralm=0
@@ -128,7 +131,11 @@ module Chiral
         case('wave-x'); call wave(amplXX_chiral,f,iXX_chiral,kx=kx_XX_chiral)
         case('wave-y'); call wave(amplXX_chiral,f,iXX_chiral,ky=ky_XX_chiral)
         case('wave-z'); call wave(amplXX_chiral,f,iXX_chiral,kz=kz_XX_chiral)
+        case('cos(x-cosz)'); call cosxz_cosz(amplXX_chiral,f,iXX_chiral,kx_XX_chiral,kz_XX_chiral)
+        case('cosy_sinz'); call cosy_sinz(amplXX_chiral,f,iXX_chiral,ky_XX_chiral,kz_XX_chiral)
+        case('cosx_cosz'); call cosx_cosz(amplXX_chiral,f,iXX_chiral,kx_XX_chiral,kz_XX_chiral)
         case('cosx_cosy_cosz'); call cosx_cosy_cosz(amplXX_chiral,f,iXX_chiral,kx_XX_chiral,ky_XX_chiral,kz_XX_chiral)
+        case('cosx_siny_cosz'); call cosx_siny_cosz(amplXX_chiral,f,iXX_chiral,kx_XX_chiral,ky_XX_chiral,kz_XX_chiral)
         case default; call stop_it('init_chiral: bad init_chiral='//trim(initXX_chiral))
       endselect
 !
@@ -149,7 +156,11 @@ module Chiral
         case('wave-x'); call wave(amplYY_chiral,f,iYY_chiral,kx=kx_YY_chiral)
         case('wave-y'); call wave(amplYY_chiral,f,iYY_chiral,ky=ky_YY_chiral)
         case('wave-z'); call wave(amplYY_chiral,f,iYY_chiral,kz=kz_YY_chiral)
+        case('cos(y-sinz)'); call cosyz_sinz(amplYY_chiral,f,iYY_chiral,ky_YY_chiral,kz_YY_chiral)
+        case('cosy_sinz'); call cosy_sinz(amplYY_chiral,f,iYY_chiral,ky_YY_chiral,kz_YY_chiral)
+        case('cosy_cosz'); call cosy_cosz(amplYY_chiral,f,iYY_chiral,ky_YY_chiral,kz_YY_chiral)
         case('cosx_cosy_cosz'); call cosx_cosy_cosz(amplYY_chiral,f,iYY_chiral,kx_YY_chiral,ky_YY_chiral,kz_YY_chiral)
+        case('cosx_siny_cosz'); call cosx_siny_cosz(amplYY_chiral,f,iYY_chiral,kx_YY_chiral,ky_YY_chiral,kz_YY_chiral)
         case default; call stop_it('init_chiral: bad init_chiral='//trim(initYY_chiral))
       endselect
 !
@@ -163,7 +174,7 @@ module Chiral
 !
 !  All pencils that the Chiral module depends on are specified here.
 !
-!  21-11-04/anders: coded
+!  21-nov-04/anders: coded
 !
       lpenc_requested(i_uu)=.true.
 !
@@ -401,7 +412,7 @@ module Chiral
 !
       intent(inout) :: f
 !
-!  possibility to initialize magnetic vector potential in terms
+!  Possibility to initialize magnetic vector potential in terms
 !  of Euler potentials X and Y.
 !
       if (linitialize_aa_from_EP) then
@@ -413,10 +424,22 @@ module Chiral
             do m=m1,m2
               call grad(f,iXX_chiral,gXX_chiral)
               call grad(f,iYY_chiral,gYY_chiral)
+              if (limposed_gradient) then
+                do j=1,3
+                  gXX_chiral(:,j)=gXX_chiral(:,j)+gradX0(j)
+                  gYY_chiral(:,j)=gYY_chiral(:,j)+gradY0(j)
+                enddo
+              endif
               do j=1,3
-                f(l1:l2,m,n,j+iaa-1)=.5*( &
-                  f(l1:l2,m,n,iXX_chiral)*gYY_chiral(:,j) &
-                 -f(l1:l2,m,n,iYY_chiral)*gXX_chiral(:,j))
+                if (linitialize_aa_from_EP_alpgrad) then
+                  f(l1:l2,m,n,j+iaa-1)=f(l1:l2,m,n,iXX_chiral)*gYY_chiral(:,j)
+                elseif (linitialize_aa_from_EP_betgrad) then
+                  f(l1:l2,m,n,j+iaa-1)=-f(l1:l2,m,n,iYY_chiral)*gXX_chiral(:,j)
+                else
+                  f(l1:l2,m,n,j+iaa-1)=.5*( &
+                    f(l1:l2,m,n,iXX_chiral)*gYY_chiral(:,j) &
+                   -f(l1:l2,m,n,iYY_chiral)*gXX_chiral(:,j))
+                endif
               enddo
             enddo
             enddo
