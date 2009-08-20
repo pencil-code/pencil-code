@@ -1225,6 +1225,7 @@ else if ($hn =~ is*.uppmax.uu.se) then
   endif
   setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:/opt/openmpi/1.2.5gcc/lib:/sw/gcc/4.2.3/lib64:/opt/openmpi/1.2.5pgi/lib:/opt/sge_61u2/lib/lx24-amd64
   set mpirun = /opt/openmpi/1.2.5gcc/bin/mpirun
+
 #---------------------------------------------------
 else if (($hn =~ *pastel*) || ($hn =~ *violette*)) then
 # use the local /tmp by default on every node
@@ -1248,9 +1249,23 @@ else if (($hn =~ *pastel*) || ($hn =~ *violette*)) then
   endif
   set mpirun = 'orterun'
 
-#else if (($hn =~ shal.ast.obs-mip.fr) || ($hn =~ yang) || ($hn =~ n[25-28]* || ($hn =~ ulysse))) then
-#    set mpirun = 'orterun'
+#---------------------------------------------
+else if ($hn =~ borde*) then
+  echo "Bordeaux linux cluster"
+  if ($?LD_LIBRARY_PATH) then
+#   setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:${HOME}/opt/intel_fce_80/lib:${HOME}/opt/openmpi/lib
+    setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:${HOME}/opt/intel_fce_80/lib
+  else
+#   setenv LD_LIBRARY_PATH ${HOME}/opt/intel_fce_80/lib:${HOME}/opt/openmpi/lib
+    setenv LD_LIBRARY_PATH ${HOME}/opt/intel_fce_80/lib
+  endif
+  cat $OAR_NODEFILE > machinefile
+# set mpirun = ${HOME}/opt/openmpi/bin/orterun
+# set mpirunops = '-machinefile machinefile -prefix ${HOME}/opt/openmpi -x LD_LIBRARY_PATH'
+  set mpirun = ${LAMHOME}/bin/mpirun
+  set mpirunops = '-x LD_LIBRARY_PATH'
 
+#---------------------------------------------
 else if ($hn =~ node* && $masterhost == 'vsl176') then
   echo "SINTEF linux cluster"
 
