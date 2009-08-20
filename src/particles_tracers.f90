@@ -358,21 +358,22 @@ module Particles
 !
       real, dimension (3) :: uu
       integer :: k
+      logical :: lheader, lfirstcall=.true.
 !
       intent (in) :: f, fp, ineargrid
       intent (inout) :: df, dfp
 !
 !  Identify module and boundary conditions.
 !
-      if (headtt) print*,'dxxp_dt: Calculate dxxp_dt'
-      if (headtt) then
+      lheader=lfirstcall .and. lroot
+      if (lheader) then
+        print*, 'dxxp_dt: Calculate dxxp_dt'
         print*, 'dxxp_dt: Particles boundary condition bcpx=', bcpx
         print*, 'dxxp_dt: Particles boundary condition bcpy=', bcpy
         print*, 'dxxp_dt: Particles boundary condition bcpz=', bcpz
+        print*, 'dxxp_dt: Set rate of change of particle '// &
+           'position equal to gas velocity.'
       endif
-!
-      if (headtt) print*, 'dxxp_dt: Set rate of change of particle '// &
-          'position equal to gas velocity.'
 !
 !  Interpolate gas velocity to position of particles.
 !  Then set particle velocity equal to the local gas velocity.
@@ -400,21 +401,6 @@ module Particles
 !
           if (lshear.and.nygrid/=1)&
               dfp(k,iyp) = dfp(k,iyp) - qshear*Omega*fp(k,ixp)
-!
-!  Vertical gravity in the short friction time approximation.
-!
-          select case (gravz_profile)
-
-            case ('zero')
-              if (headtt) &
-                  print*, 'dxxp_dt_pencil: No gravity in z-direction.'
-
-            case ('linear')
-              if (headtt) &
-                  print*, 'dxxp_dt_pencil: Linear gravity field in z-direction.'
-              dfp(k,izp)=dfp(k,izp) - tausp*nu_epicycle2*fp(k,izp)
-
-          endselect
         enddo
       endif
 !
@@ -431,6 +417,8 @@ module Particles
         if (idiag_rhopmz/=0) call xysum_mn_name_z(p%rhop,idiag_rhopmz)
         if (idiag_epspmz/=0) call xysum_mn_name_z(p%epsp,idiag_epspmz)
       endif
+!
+      if (lfirstcall) lfirstcall=.false.
 !
       call keep_compiler_quiet(df)
 !
@@ -473,6 +461,26 @@ module Particles
       intent (in) :: f, fp, ineargrid
       intent (inout) :: dfp, df
 !
+      logical :: lheader, lfirstcall=.true.
+!
+      lheader=lfirstcall .and. lroot
+!
+!  Vertical gravity in the short friction time approximation.
+!
+      select case (gravz_profile)
+!
+        case ('zero')
+          if (lheader) &
+              print*, 'dxxp_dt_pencil: No gravity in z-direction.'
+!
+        case ('linear')
+          if (lheader) &
+              print*, 'dxxp_dt_pencil: Linear gravity field in z-direction.'
+          dfp(1:npar_loc,izp)=dfp(1:npar_loc,izp) - &
+              tausp*nu_epicycle2*fp(1:npar_loc,izp)
+!
+      endselect
+!
 !  Diagnostic output
 !
       if (ldiagnos) then
@@ -484,6 +492,8 @@ module Particles
         if (idiag_zp2m/=0) call sum_par_name(fp(1:npar_loc,izp)**2,idiag_zp2m)
         if (idiag_nparmax/=0) call max_name(npar_loc,idiag_nparmax)
       endif
+!
+      if (lfirstcall) lfirstcall=.false.
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
@@ -669,5 +679,4 @@ module Particles
 !
     endsubroutine rprint_particles
 !***********************************************************************
-
 endmodule Particles
