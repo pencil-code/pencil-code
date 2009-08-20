@@ -360,6 +360,8 @@ module Hydro
                                 ! DIAG_DOC: \cdot\uv\right>_{xy}$
   integer :: idiag_oumxy=0      ! DIAG_DOC: $\left<\boldsymbol{\omega}
                                 ! DIAG_DOC: \cdot\uv\right>_{z}$
+  integer :: idiag_oumxz=0      ! DIAG_DOC: $\left<\boldsymbol{\omega}
+                                ! DIAG_DOC: \cdot\uv\right>_{y}$
   integer :: idiag_uguxm=0      ! DIAG_DOC:
   integer :: idiag_uguym=0      ! DIAG_DOC:
   integer :: idiag_uguzm=0      ! DIAG_DOC:
@@ -1127,7 +1129,8 @@ module Hydro
 !  diagnostic pencils
 !
       lpenc_diagnos(i_uu)=.true.
-      if (idiag_oumphi/=0) lpenc_diagnos2d(i_ou)=.true.
+      if (idiag_oumphi/=0 .or. idiag_oumxy/=0 .or. &
+          idiag_oumxz/=0) lpenc_diagnos2d(i_ou)=.true.
       if (idiag_ozmphi/=0) lpenc_diagnos2d(i_oo)=.true.
       if (idiag_u2mphi/=0) lpenc_diagnos2d(i_u2)=.true.
       if (idiag_ox2m/=0 .or. idiag_oy2m/=0 .or. idiag_oz2m/=0 .or. &
@@ -1138,7 +1141,7 @@ module Hydro
       if (idiag_orms/=0 .or. idiag_omax/=0 .or. idiag_o2m/=0 .or. &
           idiag_ormsh/=0 )  lpenc_diagnos(i_o2)=.true.
       if (idiag_oum/=0 .or. idiag_oumx/=0.or.idiag_oumy/=0.or.idiag_oumz/=0 .or. &
-           idiag_oumh/=0 .or. idiag_oumxy/=0 ) lpenc_diagnos(i_ou)=.true.
+           idiag_oumh/=0) lpenc_diagnos(i_ou)=.true.
       if (idiag_Marms/=0 .or. idiag_Mamax/=0) lpenc_diagnos(i_Ma2)=.true.
       if (idiag_u3u21m/=0 .or. idiag_u3u21mz/=0) lpenc_diagnos(i_u3u21)=.true.
       if (idiag_u1u32m/=0 .or. idiag_u1u32mz/=0) lpenc_diagnos(i_u1u32)=.true.
@@ -1942,6 +1945,8 @@ module Hydro
             call ysum_mn_name_xz(p%uu(:,2)**2,idiag_uy2mxz)
         if (idiag_uz2mxz/=0) &
             call ysum_mn_name_xz(p%uu(:,3)**2,idiag_uz2mxz)
+        if (idiag_oumxz/=0) &
+            call ysum_mn_name_xz(p%ou,idiag_oumxz)
         if (idiag_uxmxy/=0) call zsum_mn_name_xy(p%uu(:,1),idiag_uxmxy)
         if (idiag_uymxy/=0) call zsum_mn_name_xy(p%uu(:,2),idiag_uymxy)
         if (idiag_uzmxy/=0) call zsum_mn_name_xy(p%uu(:,3),idiag_uzmxy)
@@ -2939,6 +2944,7 @@ module Hydro
         idiag_oumy=0
         idiag_oumz=0
         idiag_oumxy=0
+        idiag_oumxz=0
         idiag_oumphi=0
         idiag_ozmphi=0
         idiag_ormr=0
@@ -3235,6 +3241,7 @@ module Hydro
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'ux2mxz',idiag_ux2mxz)
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'uy2mxz',idiag_uy2mxz)
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'uz2mxz',idiag_uz2mxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'oumxz',idiag_oumxz)
       enddo
 !
 !  check for those quantities for which we want z-averages
@@ -3392,6 +3399,7 @@ module Hydro
         write(3,*) 'i_uymxy=',idiag_uymxy
         write(3,*) 'i_uzmxy=',idiag_uzmxy
         write(3,*) 'i_oumxy=',idiag_oumxy
+        write(3,*) 'i_oumxz=',idiag_oumxz
         write(3,*) 'i_ruxmxy=',idiag_ruxmxy
         write(3,*) 'i_ruymxy=',idiag_ruymxy
         write(3,*) 'i_ruzmxy=',idiag_ruzmxy

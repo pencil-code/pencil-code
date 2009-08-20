@@ -1928,10 +1928,11 @@ module Entropy
           lpenc_diagnos(i_TT)=.true.  !(to be replaced by enthalpy)
       endif
       if (idiag_TTm/=0 .or. idiag_TTmx/=0 .or. idiag_TTmy/=0 .or. &
-          idiag_TTmz/=0 .or. idiag_TTmxy/=0 .or. idiag_TTmxz/=0 .or. &
-          idiag_TTmr/=0 .or. idiag_TTmax/=0 .or. idiag_TTmin/=0 .or. &
-          idiag_uxTTmz/=0 .or.idiag_uyTTmz/=0 .or.idiag_uzTTmz/=0) &
+          idiag_TTmz/=0 .or. idiag_TTmr/=0 .or. idiag_TTmax/=0 .or. &
+          idiag_TTmin/=0 .or. idiag_uxTTmz/=0 .or.idiag_uyTTmz/=0 .or. &
+          idiag_uzTTmz/=0) &
           lpenc_diagnos(i_TT)=.true.
+      if (idiag_TTmxy/=0 .or. idiag_TTmxz/=0) lpenc_diagnos2d(i_TT)=.true.
       if (idiag_yHm/=0 .or. idiag_yHmax/=0) lpenc_diagnos(i_yH)=.true.
       if (idiag_dtc/=0) lpenc_diagnos(i_cs2)=.true.
       if (idiag_TTp/=0) then
