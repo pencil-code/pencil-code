@@ -2616,7 +2616,7 @@ If you want to run a particular problem, it is best to start by
 modifying an existing example that is close to your application.
 
 As an example, we give here the start parameters for
-\file{samples/helical-MHDturb}
+\file[helical-MHDturb]{samples/helical-MHDturb}
 \begin{alltt}
   &init_pars
     cvsid='\${}Id:\$',                 \textsl{! identify version of start.in}
@@ -2646,7 +2646,7 @@ The magnetic vector potential is initialized with uncorrelated, normally
 distributed random noise of amplitude $10^{-4}$.
 
 
-The run parameters for \file{samples/helical-MHDturb} are
+The run parameters for \file[helical-MHDturb]{samples/helical-MHDturb} are
 \begin{alltt}
   &run_pars
     cvsid='\${}Id:\$',                 \textsl{! identify version of start.in}
@@ -5577,17 +5577,15 @@ The {\sc Pencil Code} has expanded approximately linearly in the number of
 lines of code and the number of subroutines (Fig.~\ref{pfile-size}).
 The increase in the functionality of the code is documented by the
 rise in the number of sample problems (Fig.~\ref{pauto-tests}).
-In order to keep the development of the code going, it is important
-that the users are able to understand and modify (program!) the code.
-In this section we explain first how to orient yourself in the code
-and to understand what is in it, and then to modify it according to
-your needs.
+It is important to monitor the performance of the code as well.
+Figure~\ref{psample-timings} shows that for most of the runs the run time
+has not changed much.
 
 % ---------------------------------------------------------------------- %
 \begin{figure}[htb]
   \centering
   \includegraphics%
-    [width=.6\textwidth,keepaspectratio]%
+    [width=.65\textwidth,keepaspectratio]%
     {pfile-size}
   \caption{Number of lines of code and the number of subroutines
   since the end of 2001. The jump in the Summer of 2005 was the
@@ -5602,7 +5600,7 @@ your needs.
 \begin{figure}[htb]
   \centering
   \includegraphics%
-    [width=.6\textwidth,keepaspectratio]%
+    [width=.65\textwidth,keepaspectratio]%
     {pauto-tests}
   \caption{Number of tests in the sample directory that are
   used in the nightly auto tests. Note again the approximately
@@ -5610,6 +5608,36 @@ your needs.
   \label{pauto-tests}
 \end{figure}
 % ---------------------------------------------------------------------- %
+
+Before making changes the to the code, it is important that you
+verify that you can run the \cmd{auto-test} successfully.
+Don't do this when you have already modified the code, because
+then you cannot be sure that any problems are caused by your changes,
+or because it wouldn't have worked anyway.
+Also, keep in mind that the code is public, so your changes should
+make sense from a broader perspective and should not only be intended
+for yourself.
+Regarding more general aspects about coding standards see
+Section~\ref{CodingStandards}.
+
+% ---------------------------------------------------------------------- %
+\begin{figure}[htb]
+  \centering
+  \includegraphics%
+    [width=\textwidth,keepaspectratio]%
+    {psample-timings}
+  \caption{Run time of the daily auto-tests since August 17, 2008.
+  For most of the runs the run time has not changed much.
+  The occasional spikes are the results of additional load on the machine.}
+  \label{psample-timings}
+\end{figure}
+% ---------------------------------------------------------------------- %
+
+In order to keep the development of the code going, it is important
+that the users are able to understand and modify (program!) the code.
+In this section we explain first how to orient yourself in the code
+and to understand what is in it, and then to modify it according to
+your needs.
 
 \section{Understanding the code}
 
@@ -6576,6 +6604,9 @@ placed in files with the extension `.in'
 
 
 \subsection{Fortran Code}
+\label{CodingStandards}
+\index{Coding standards}
+
 Fortran is not case-sensitive but in almost all instances we prescribe
 some form of capitalization for readability.
 
@@ -8106,14 +8137,14 @@ In the code, the possible wavevectors are pre-calculated and stored in
 \file{k.dat}, which is being read in the beginning the code runs.
 To change the wavevectors (e.g.\ the typical value of $k_{\rm f}$,
 you need to change the file.
-In the directory \file{\${PENCIL_HOME}/samples/helical-MHDturb/K_VECTORS/}
+In the directory \file[K_VECTORS/]{\${PENCIL_HOME}/samples/helical-MHDturb/K_VECTORS/}
 there are several such files prepared:
 \begin{verbatim}
    k10.dat  k1.dat   k2.dat   k3.dat  k5.dat
    k15.dat  k27.dat  k30.dat  k4.dat  k8.dat
 \end{verbatim}
 and more can be prepared in \cmd{IDL} with the procedure
-\file{\${PENCIL_HOME}/samples/helical-MHDturb/idl/generate_kvectors.pro}
+\file[generate_kvectors.pro]{\${PENCIL_HOME}/samples/helical-MHDturb/idl/generate_kvectors.pro}
 There is also more help in the \file{README} file in \file{helical-MHDturb}.
 
 % ---------------------------------------------------------------------- %
