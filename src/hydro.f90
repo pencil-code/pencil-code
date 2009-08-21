@@ -4015,6 +4015,17 @@ module Hydro
       df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
         -tau_diffrot1*(f(l1:l2,m,n,iuy)-ampl1_diffrot*tanh((z(n)-zbot)/width_ff_uu))
 !
+!  set u_phi=0 below given radius, i.e. enforce a tachocline in 
+!  spherical convection setup
+!
+      case ('tachocline')
+      if (wdamp/=0.) then
+        prof_amp1=1.-step(x(l1:l2),rdampint,wdamp)
+      else
+        prof_amp1=1.
+      endif
+      df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*prof_amp1*(f(l1:l2,m,n,iuz))
+!
 !  write differential rotation in terms of Gegenbauer polynomials
 !  Omega = Omega0 + Omega2*P31(costh)/sinth + Omega4*P51(costh)/sinth + ...
 !  Note that P31(theta)/sin(theta) = (3/2) * [1 - 5*cos(theta)^2 ]
