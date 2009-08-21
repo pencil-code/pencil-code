@@ -145,6 +145,8 @@ else if ($hn =~ p6012 ) then # huygens.sara.nl
 else if ($hn =~ andromeda ) then # andromeda.qmul.ac.uk
   echo $hn
   set str='s/users/andromeda\/scratch/g'
+else if ($hn =~ starpc37.maths.qmul.ac.uk ) then # starpc37.qmul.ac.uk
+  set str='s/home\/network/scratch/g'
 else
 #
 #  Set the default to empty string (to make local data directory; see below).
