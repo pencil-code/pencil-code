@@ -233,6 +233,7 @@ module Magnetic
                                 ! DIAG_DOC:   dt'\right>$
   integer :: idiag_jbtm=0       ! DIAG_DOC: $\left<\jv(t)\cdot\int_0^t\bv(t')
                                 ! DIAG_DOC:   dt'\right>$
+  integer :: idiag_b2ruzm=0     ! DIAG_DOC: $\left<\Bv^2\rho u_z\right>$
   integer :: idiag_b2uzm=0      ! DIAG_DOC: $\left<\Bv^2u_z\right>$
   integer :: idiag_ubbzm=0      ! DIAG_DOC: $\left<(\uv\cdot\Bv)B_z\right>$
   integer :: idiag_b1m=0        ! DIAG_DOC: $\left<|\Bv|\right>$
@@ -1074,7 +1075,7 @@ module Magnetic
 !
 !   All pencils that the Magnetic module depends on are specified here.
 !
-!  19-11-04/anders: coded
+!  19-nov-04/anders: coded
 !
       use Mpicomm, only: stop_it
 !
@@ -1167,6 +1168,11 @@ module Magnetic
           idiag_jxbrxmz/=0 .or. idiag_jxbrymz/=0 .or. idiag_jxbrzmz/=0) &
           lpenc_diagnos(i_jxbr)=.true.
 !
+!  diagnostics involving density
+!
+      if (idiag_b2ruzm/=0) &
+          lpenc_diagnos(i_rho)=.true.
+!
       if (     idiag_brmphi/=0  .or. idiag_uxbrmphi/=0 .or. idiag_jxbrmphi/=0 &
           .or. idiag_armphi/=0  .or. idiag_brmr/=0     .or. idiag_armr/=0 ) then
         lpenc_diagnos(i_pomx)=.true.
@@ -1229,7 +1235,7 @@ module Magnetic
          ) lpenc_diagnos(i_jj)=.true.
       if (idiag_phibmx/=0 .or. idiag_phibmy/=0 .or. idiag_phibmz/=0 &
          ) lpenc_diagnos(i_diva)=.true.
-      if (idiag_b2uzm/=0 .or. &
+      if (idiag_b2uzm/=0 .or. idiag_b2ruzm/=0 .or. &
           idiag_b1m/=0 .or. idiag_b2m/=0 .or. idiag_bm2/=0 .or. &
           idiag_brmsh/=0 .or. idiag_brmsn/=0 .or. idiag_brmss/=0 .or. &
           idiag_brms/=0 .or. idiag_bmax/=0 .or. &
@@ -2197,7 +2203,6 @@ module Magnetic
 !  Calculate diagnostic quantities
 !
       if (ldiagnos) then
- 
         if (idiag_beta1m/=0) call sum_mn_name(p%beta,idiag_beta1m)
         if (idiag_beta1max/=0) call max_mn_name(p%beta,idiag_beta1max)
 !
@@ -2229,6 +2234,7 @@ module Magnetic
 !  separately, because the contribution b^2*uz may be a good indicator
 !  of magnetic buoyancy.
 !
+        if (idiag_b2ruzm/=0) call sum_mn_name(p%b2*p%rho*p%uu(:,3),idiag_b2ruzm)
         if (idiag_b2uzm/=0) call sum_mn_name(p%b2*p%uu(:,3),idiag_b2uzm)
         if (idiag_ubbzm/=0) call sum_mn_name(p%ub*p%bb(:,3),idiag_ubbzm)
 !
@@ -5651,7 +5657,7 @@ module Magnetic
         idiag_b2tm=0
         idiag_bjtm=0
         idiag_jbtm=0
-        idiag_b2uzm=0; idiag_ubbzm=0
+        idiag_b2uzm=0; idiag_b2ruzm=0; idiag_ubbzm=0
         idiag_b1m=0; idiag_b2m=0; idiag_bm2=0
         idiag_j2m=0; idiag_jm2=0; idiag_abm=0
         idiag_abmh=0; idiag_abmn=0; idiag_abms=0
@@ -5745,6 +5751,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'ujm',idiag_ujm)
         call parse_name(iname,cname(iname),cform(iname),'fbm',idiag_fbm)
         call parse_name(iname,cname(iname),cform(iname),'fxbxm',idiag_fxbxm)
+        call parse_name(iname,cname(iname),cform(iname),'b2ruzm',idiag_b2ruzm)
         call parse_name(iname,cname(iname),cform(iname),'b2uzm',idiag_b2uzm)
         call parse_name(iname,cname(iname),cform(iname),'ubbzm',idiag_ubbzm)
         call parse_name(iname,cname(iname),cform(iname),'b1m',idiag_b1m)
@@ -6087,6 +6094,7 @@ module Magnetic
         write(3,*) 'i_ujm=',idiag_ujm
         write(3,*) 'i_fbm=',idiag_fbm
         write(3,*) 'i_fxbxm=',idiag_fxbxm
+        write(3,*) 'i_b2ruzm=',idiag_b2ruzm
         write(3,*) 'i_b2uzm=',idiag_b2uzm
         write(3,*) 'i_ubbzm=',idiag_ubbzm
         write(3,*) 'i_b1m=',idiag_b1m

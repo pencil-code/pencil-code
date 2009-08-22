@@ -327,6 +327,7 @@ module Testfield
         case('B11-B21'); iE0=0
         case('B11-B22'); iE0=0
         case('B11'); iE0=1
+        case('B12'); iE0=1
         case('B=0'); iE0=1
       case default
         call fatal_error('initialize_testfield','undefined itestfield value')
@@ -620,6 +621,7 @@ module Testfield
           case('B11-B21'); call set_bbtest_B11_B21(B0test,jtest)
           case('B11-B22'); call set_bbtest_B11_B22(B0test,jtest)
           case('B11'); call set_bbtest_B11_B22(B0test,jtest)
+          case('B12'); call set_bbtest_B11_B22(B0test,3)
           case('B=0') !(dont do anything)
         case default
           call fatal_error('daatest_dt','undefined itestfield value')
@@ -681,6 +683,7 @@ module Testfield
 !
           select case(itestfield)
             case('B11'); call set_J0test_B11_B21(J0test,jtest)
+            case('B12'); call set_J0test_B11_B21(J0test,jtest)
             case('B=0') !(dont do anything)
           case default
             call fatal_error('daatest_dt','undefined itestfield value')
