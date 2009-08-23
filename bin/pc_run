@@ -1042,7 +1042,7 @@ sub clear_lock {
 sub clear_error {
     if (-e $errorfile) {
         unlink $errorfile
-          or warn "Cannot remove lock file $lockfile: $!\n";
+          or warn "Cannot remove lock file $errorfile: $!\n";
     }
 }
 # ---------------------------------------------------------------------- #
@@ -1087,7 +1087,7 @@ sub write_to_file {
 # ---------------------------------------------------------------------- #
 sub unlink_if_exist {
 # Unlink the given files or die with useful error message, but silently
-# skip non-exisdting files
+# skip non-existing files
     my @files = @_;
 
     my @existing_files = grep { -e } @files;
