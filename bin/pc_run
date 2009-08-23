@@ -179,6 +179,7 @@ my $local_binary        = $runtime_params{'local_binary'       } || 0;
 my $remote_top          = $runtime_params{'remote_top'         } || 0;
 my $master_node         = $runtime_params{'master_node'        } || undef;
 my $remove_scratch_root = $runtime_params{'remove_scratch_root'} || 0;
+my $nonserial_procN     = $runtime_params{'nonserial_procN'    } || 0;
 my $n_procs_per_node    = $runtime_params{'n_procs_per_node'   } || 1;
 
 # ..extracted dynamically from executables and .in files:
@@ -245,6 +246,7 @@ sub start_cmd {
     honour_nostart();
     setup_datadir();
     run_extra_setup_script();
+    setup_local_disc();
     handle_local_binary($start_x);
 
     get_lock();
@@ -256,6 +258,11 @@ sub start_cmd {
 # ---------------------------------------------------------------------- #
 sub run_cmd {
 # Run run.x
+
+    setup_local_disc();
+    handle_local_binary($start_x);
+    distribute_var_files();
+
     get_lock();
     mpi_run_cmd($run_x);
     clear_lock();
@@ -272,8 +279,6 @@ sub mpi_run_cmd {
     my @extra_opts = split('\s+', $extra_opts);
 
     print "", (scalar localtime()), "\n";
-
-    setup_local_disc();
 
     if ($mpi) {
         print "Running under MPI\n" unless ($quiet);
@@ -346,9 +351,16 @@ sub dump_parameters {
 sub setup_local_disc {
 # Set up directories and binaries on local disc.
 
-    if (! $mpi && ($local_disc || $local_binary)) {
-        die "local_disc or local_binary make no sense without MPI\n";
+    unless ($mpi) {
+        # sanity check
+        if ($local_disc || $local_binary) {
+            die "local_disc or local_binary make no sense without MPI\n";
+        } else {
+            # nothing to do
+            return;
+        }
     }
+
     if ($one_local_disc && ! $local_disc) {
         die "one_local_disc requires local_disc\n";
     }
@@ -441,6 +453,73 @@ sub get_mpiexec_opts {
     }
 
     return (\@np_opts, \@extra_opts, $cpus_per_node);
+}
+# ---------------------------------------------------------------------- #
+sub distribute_var_files {
+# Copy var.dat files over to each processor's local scratch area if needed
+
+    # Get list of relevant directories under data/
+    my @subdirs = (<$data_dir/proc*>, <$data_dir/allprocs>);
+    @subdirs = map { s{^$data_dir/*}{}; $_ } @subdirs;
+
+    if ($local_disc) {
+        if ($one_local_disc) {
+            foreach my $node (split ':', $ENV{NODELIST}) {
+                foreach my $dir (@subdirs) {
+                    scp_local_files($dir, $node);
+                }
+            }
+        } else {         # one local disc per MPI process (e.g. Horseshoe)
+            my $i_node = -1;
+            foreach my $node (split ':', $ENV{NODELIST}) {
+                $i_node++;
+                print "\$i_node = $i_node\n" unless $quiet;
+                foreach my $j (0 .. $settings{'n_proc_per_node'}-1) {
+                    my $k;
+                    if (defined $nonserial_procN) {
+                        $k = $i_node + $settings{'n_nodes'} * $j;
+                    } else {
+                        $k = $settings{'n_proc_per_node'} * $i_node + $j;
+                    }
+                    my $dir = "proc$k";
+                    scp_local_files($dir, $node);
+                }
+            }
+        }
+    }
+}
+# ---------------------------------------------------------------------- #
+sub scp_local_files {
+# Transfer the relevant files from the local host to the given node
+    my ($dir, $node) = @_;
+
+    # Copy file if its name maps to true:
+    my %to_copy
+      = ( 'var.dat'              => 1,
+          'global.dat'           => 1,
+          'timeavg.dat'          => 1,
+          '../allprocs/dxyz.dat' => 1,
+          'pvar.dat'             => $settings{'lparticles'},
+          'spvar.dat'            => $settings{'lparticles_nbody'},
+        );
+
+    foreach my $f (keys %to_copy) {
+        next unless ($to_copy{$f});
+
+        my $file = "$data_dir/$dir/$f";
+        if (-e $file) {
+            scp($file, $node, "$ENV{SCRATCH_DIR}/$dir/");
+        }
+    }
+}
+# ---------------------------------------------------------------------- #
+sub scp {
+# Transfer a file using `scp'
+    my ($source, $remhost, $target);
+
+    my @scp = split(/\s+/, $ENV{SCP}); # split cmd name and options
+    system(@scp, $source, "${remhost}:$target") == 0
+      or die "Couldn't scp $source to ${remhost}:$target\n";
 }
 # ---------------------------------------------------------------------- #
 sub time_system_cmd {
