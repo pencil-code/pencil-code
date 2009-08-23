@@ -56,6 +56,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 
 # To do:
 # - NEWDIR handling
+# - RERUN handling
 # - $booted_mpd handling
 # - $remove_scratch_root
 # - Ensure $ENV{SCRATCH_DIR} is defined if $local_disc or $local_binary is set
@@ -155,7 +156,7 @@ my $runtime_dir = './runtime';
 my $lockfile = './LOCK';
 my $errorfile = './ERROR';
 my $noerasefile = './NOERASE';
-my $copysnapshots = 'copy-snapshots_exp';
+my $copy_snapshots = 'copy-snapshots_exp';
 my $copy_snapshots_log = './copy-snapshots.log';
 my $start_x = 'src/start.x';
 my $run_x   = 'src/run.x';
@@ -263,9 +264,16 @@ sub run_cmd {
     handle_local_binary($start_x);
     distribute_var_files();
 
+    clean_up_before_run();
+    start_background_helpers();
+    write_job_id('STARTED');
+    log_rundirectory();
+
     get_lock();
     mpi_run_cmd($run_x);
     clear_lock();
+
+    write_job_id('FINISHED');
 
     handle_copy_snapshots();
 }
@@ -344,7 +352,7 @@ sub dump_parameters {
         printf $fmt, '$SSH',                $ENV{SSH};
         printf $fmt, '$SCP',                $ENV{SCP};
         printf $fmt, '$PARENT_PID',         $ENV{PARENT_PID};
-        printf $fmt, '$copy_snapshots',     $copysnapshots;
+        printf $fmt, '$copy_snapshots',     $copy_snapshots;
     }
 }
 # ---------------------------------------------------------------------- #
@@ -530,6 +538,8 @@ sub get_files_to_copy_to_local_disc {
 sub time_system_cmd {
 # Run a system command through `/usr/bin/time -p' or some such
     my @cmd_line = @_;
+
+    write_to_file('run_command.log', "@cmd_line");
 
     my @time_cmd;
     if (-X '/usr/bin/time') {
@@ -955,9 +965,9 @@ sub handle_copy_snapshots {
 }
 # ---------------------------------------------------------------------- #
 sub copy_snapshots {
-# Run $copysnapshots and append the output to a log file
+# Run $copy_snapshots and append the output to a log file
     my @args = @_;
-    run_system_cmd("$copysnapshots -v @args >> $copy_snapshots_log 2>&1");
+    run_system_cmd("$copy_snapshots -v @args >> $copy_snapshots_log 2>&1");
 }
 # ---------------------------------------------------------------------- #
 sub match_line_ix {
@@ -1010,6 +1020,73 @@ sub stash_time_series {
     }
 }
 # ---------------------------------------------------------------------- #
+sub start_background_helpers {
+
+    # On machines with local scratch directory, initialize automatic
+    # background copying of snapshots back to the data directory.
+    # Also, if necessary copy executable to $SCRATCH_DIR of master node
+    # and start top command on all procs.
+    if ($local_disc) {
+        print "Starting $copy_snapshots in background\n" if $debug;
+        run_system_cmd("$copy_snapshots -v > copy-snapshots.log 2>&1 &");
+    }
+
+    # Copy output from `top' on run host to a file we can read from the
+    # front end
+    if ($remote_top) {
+        run_system_cmd('remote-top > remote-top.log 2>&1 &');
+    }
+    if ($local_binary) {
+        if ($debug) {
+            print "ls $run_x $ENV{SCRATCH_DIR} before copying:\n";
+            system('ls', '-lt', $run_x, $ENV{SCRATCH_DIR});
+        }
+        copy($run_x, $ENV{SCRATCH_DIR});
+        if ($debug) {
+            print "ls $run_x \${SCRATCH_DIR} after copying:\n";
+            system('ls', '-lt', $run_x, $ENV{SCRATCH_DIR});
+        }
+    }
+}
+# ---------------------------------------------------------------------- #
+sub write_job_id {
+# Write $PBS_JOBID or $LOADL_STEP_ID to file (important when run is
+# migrated within the same job)
+    my ($phase) =@_;
+
+    my $jobid_file = "$data_dir/jobid.dat";
+    append_jobid_line(
+        $jobid_file, $phase, $ENV{PBS_JOBID},     $ENV{PBS_O_QUEUE});
+    append_jobid_line(
+        $jobid_file, $phase, $ENV{LOADL_STEP_ID}, $ENV{LOADL_STEP_CLASS});
+    append_jobid_line(
+        $jobid_file, $phase, $ENV{SLURM_JOBID},   undef);
+    append_jobid_line(
+        $jobid_file, $phase, $ENV{SP_JID},        undef);
+}
+# ---------------------------------------------------------------------- #
+sub append_jobid_line {
+    my ($filename, $phase, $job_id, $queue) = @_;
+
+    return unless defined $job_id;
+
+    append_to_file(
+        $filename,
+        "$job_id  RUN $phase on "
+        . (defined $queue ? "$queue " : '')
+        . timestr()
+    );
+}
+# ---------------------------------------------------------------------- #
+sub log_rundirectory {
+    append_to_file(
+        "$ENV{PENCIL_HOME}/.run_directories.log",
+        (scalar localtime()),
+        getcwd,
+        ""
+    );
+}
+# ---------------------------------------------------------------------- #
 sub get_lock {
     if (-e 'NEVERLOCK') {
         return;
@@ -1039,6 +1116,15 @@ sub clear_lock {
     $locked = 0;
 }
 # ---------------------------------------------------------------------- #
+sub clean_up_before_run {
+# Clean up control and data files
+# NB. Don't remove NEWDIR it may have been put there on purpose so as
+#     to catch a crash and run something else instead.
+    unlink_if_exist(qw/ STOP
+                        RELOAD
+                        RERUN /);
+}
+# ---------------------------------------------------------------------- #
 sub clear_error {
     if (-e $errorfile) {
         unlink $errorfile
@@ -1066,23 +1152,43 @@ sub clear_file {
 # ---------------------------------------------------------------------- #
 sub write_to_file {
 # Create a file with current time stamp.
-# Write $text to file if defined, otherwise write short note identifying
-# this script.
-    my ($filename, $text) = @_;
+# Write @text (line-wise) to file if defined, otherwise write short note
+# identifying this script.
+    my ($filename, @text) = @_;
 
     open(my $fh, "> $filename")
       or die "Cannot open $filename for writing: $!\n";
-    unless (defined($text)) {
+
+    unless (@text) {
         use POSIX qw(strftime);
-        $text = "File: $filename\n"
+        push @text,
+          "File: $filename\n"
           . "Generator: $cmdname\n"
           . "Time stamp: "
           . strftime("%a %Y-%m-%e %H:%M:%S", localtime())
           . "\n";
     }
-    chomp $text;
-    print $fh $text, "\n";
-    close $fh or die "Cannot close file $filename\n";
+    foreach my $line (@text) {
+        chomp $line;
+        print $fh $line, "\n";
+    }
+
+    close $fh or die "Cannot close file $filename: $!\n";
+}
+# ---------------------------------------------------------------------- #
+sub append_to_file {
+# Append @text (line-wise) to the given file
+    my ($filename, @text) = @_;
+
+    open my $fh, ">> $filename"
+      or die "Cannot open $filename for appending: $!\n";
+
+    foreach my $line (@text) {
+        chomp $line;
+        print $fh $line, "\n";
+    }
+
+    close $fh or die "Cannot close $filename: $!\n";
 }
 # ---------------------------------------------------------------------- #
 sub unlink_if_exist {
