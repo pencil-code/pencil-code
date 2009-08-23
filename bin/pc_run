@@ -493,16 +493,7 @@ sub scp_local_files {
 # Transfer the relevant files from the local host to the given node
     my ($dir, $node) = @_;
 
-    # Copy file if its name maps to true:
-    my %to_copy
-      = ( 'var.dat'              => 1,
-          'global.dat'           => 1,
-          'timeavg.dat'          => 1,
-          '../allprocs/dxyz.dat' => 1,
-          'pvar.dat'             => $settings{'lparticles'},
-          'spvar.dat'            => $settings{'lparticles_nbody'},
-        );
-
+    my %to_copy = get_files_to_copy_to_local_disc();
     foreach my $f (keys %to_copy) {
         next unless ($to_copy{$f});
 
@@ -520,6 +511,20 @@ sub scp {
     my @scp = split(/\s+/, $ENV{SCP}); # split cmd name and options
     system(@scp, $source, "${remhost}:$target") == 0
       or die "Couldn't scp $source to ${remhost}:$target\n";
+}
+# ---------------------------------------------------------------------- #
+sub get_files_to_copy_to_local_disc {
+# Return hash mapping file names to true or false (indicating: copy or
+# don't copy this file to local disc)
+    my %to_copy
+      = ( 'var.dat'              => 1,
+          'global.dat'           => 1,
+          'timeavg.dat'          => 1,
+          '../allprocs/dxyz.dat' => 1,
+          'pvar.dat'             => $settings{'lparticles'},
+          'spvar.dat'            => $settings{'lparticles_nbody'},
+        );
+    return %to_copy;
 }
 # ---------------------------------------------------------------------- #
 sub time_system_cmd {
@@ -936,12 +941,12 @@ sub handle_copy_snapshots {
         copy_snapshots('var.dat');
         if (-e "$ENV{SCRATCH_DIR}/proc0/VAR0") {
             copy_snapshots('VAR0');
-            copy_snapshots('global.dat');
-            copy_snapshots('timeavg.dat');
-            copy_snapshots('dxyz.dat');
-            copy_snapshots('pvar.dat') if $settings{'lparticles'};
-            copy_snapshots('spvar.dat') if $settings{'lparticles_nbody'};
-
+            my %to_copy = get_files_to_copy_to_local_disc;
+            foreach my $file (keys %to_copy) {
+                if ($to_copy{$file}) {
+                    copy_snapshots($file);
+                }
+            }
             if ($settings{'remove_scratch_root'}) {
                 run_system_cmd('rm', '-rf', $ENV{SCRATCH_DIR});
             }
