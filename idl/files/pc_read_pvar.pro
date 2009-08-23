@@ -345,7 +345,11 @@ if (keyword_set(solid_object)) then begin
   endfor
   tau_p=param.rhops*(2*param.ap0)^2/(18.0*param2.nu)
   Stokes=tau_p*param.init_uu/param.cylinder_radius[0]
-  eta=float(solid_colls)/npar
+; Check how large the box for the initial particle positions is
+; compared to the cylinder of the radius.
+  fractional_area=-param.xp0/param.cylinder_radius[0]
+; Find the capture efficiency
+  eta=float(solid_colls)*fractional_area/npar
   print,'Number of collisions with the solid geometry is:',solid_colls
   print,'Total number of particles:',npar
   print,'Capture efficiency=',eta
