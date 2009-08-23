@@ -7,7 +7,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! MPVAR CONTRIBUTION 3
-! MAUX CONTRIBUTION 1
+! MAUX CONTRIBUTION 2
 ! CPARAM logical, parameter :: lparticles=.true.
 !
 ! PENCILS PROVIDED np; rhop; epsp
@@ -30,24 +30,28 @@ module Particles
   logical :: ldragforce_equi_global_eps=.false.
   logical :: lquadratic_interpolation=.false.
   logical :: ltrace_dust=.false.
+  real :: pdlaw
   character (len=labellen), dimension (ninit) :: initxxp='nothing'
   character (len=labellen) :: gravz_profile='zero'
+  logical :: lglobalrandom=.false.
 !
   namelist /particles_init_pars/ &
       initxxp, xp0, yp0, zp0, bcpx, bcpy, bcpz, eps_dtog, tausp, &
       ldragforce_equi_global_eps, lquadratic_interpolation, &
       lparticlemesh_cic, lparticlemesh_tsc, ltrace_dust, &
-      gravz_profile, nu_epicycle
+      gravz_profile, nu_epicycle, pdlaw, lglobalrandom
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, lquadratic_interpolation, &
-      lparticlemesh_cic, lparticlemesh_tsc, ltrace_dust
+      lparticlemesh_cic, lparticlemesh_tsc, ltrace_dust, &
+      lcheck_exact_frontier
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
   integer :: idiag_nparmax=0, idiag_npmax=0, idiag_npmin=0
   integer :: idiag_npmx=0, idiag_rhopmx=0, idiag_epspmx=0
   integer :: idiag_npmz=0, idiag_rhopmz=0, idiag_epspmz=0
+  integer :: idiag_epsmin=0,idiag_epsmax=0
 !
   contains
 !***********************************************************************
@@ -75,6 +79,7 @@ module Particles
 !  Set indices for auxiliary variables.
 !
       call farray_register_auxiliary('np',inp)
+      call farray_register_auxiliary('rhop',irhop)
 !
 !  Check that the fp and dfp arrays are big enough.
 !
@@ -166,12 +171,29 @@ module Particles
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (nx) :: eps
+      real, dimension (3) :: Lxyz_par, xyz0_par, xyz1_par
       real :: r, p, cs
       integer :: j, k
       logical :: lnothing
 !
+      real :: rad,rad_scl,phi,tmp
+!
       intent (inout) :: f
       intent (out) :: fp
+!
+!  Use either a local random position or a global random position for certain
+!  initial conditions. The default is a local random position, but the equal
+!  number of particles per processors means that this is not completely random.
+!
+      if (lglobalrandom) then
+        Lxyz_par=Lxyz
+        xyz0_par=xyz0
+        xyz1_par=xyz1
+      else
+        Lxyz_par=Lxyz_loc
+        xyz0_par=xyz0_loc
+        xyz1_par=xyz1_loc
+      endif
 !
 !  Initial particle position.
 !
@@ -208,6 +230,42 @@ module Particles
               fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
           if (nzgrid/=1) &
               fp(1:npar_loc,izp)=xyz0_loc(3)+fp(1:npar_loc,izp)*Lxyz_loc(3)
+
+       case ('random-cylindrical','random-cyl')
+          if (lroot) print*, 'init_particles: Random particle '//&
+               'cylindrical positions with power-law pdlaw=',pdlaw
+!
+          do k=1,npar_loc
+!
+! Start the particles obeying a power law pdlaw
+!
+            tmp=2-pdlaw
+            call random_number_wrapper(rad_scl)
+            rad_scl = rp_int**tmp + rad_scl*(rp_ext**tmp-rp_int**tmp)
+            rad = rad_scl**(1./tmp)
+!
+! Random in azimuth
+!
+            call random_number_wrapper(phi)
+!
+             if (lcartesian_coords) then
+               phi = 2*pi*phi
+               if (nxgrid/=1) fp(k,ixp)=rad*cos(phi)
+               if (nygrid/=1) fp(k,iyp)=rad*sin(phi)
+             elseif (lcylindrical_coords) then
+               phi = xyz0_par(2)+phi*Lxyz_par(2)
+               if (nxgrid/=1) fp(k,ixp)=rad
+               if (nygrid/=1) fp(k,iyp)=phi
+             elseif (lspherical_coords) then
+               call stop_it("init_particles: random-cylindrical not implemented "//&
+                    "for spherical coordinates") 
+             endif
+!
+             if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
+             if (nzgrid/=1) &
+                 fp(k,izp)=xyz0_par(3)+fp(k,izp)*Lxyz_par(3)
+!
+          enddo
 
         case ('gaussian-z')
           if (lroot) print*, 'init_particles: Gaussian particle positions'
@@ -305,6 +363,9 @@ module Particles
 !
       lpenc_diagnos(i_np)=.true.
 !
+      if (idiag_epsmin/=0.or.idiag_epsmax/=0) & 
+           lpenc_diagnos(i_epsp)=.true.
+!
     endsubroutine pencil_criteria_particles
 !***********************************************************************
     subroutine pencil_interdep_particles(lpencil_in)
@@ -336,7 +397,13 @@ module Particles
 ! np
       if (lpencil(i_np)) p%np=f(l1:l2,m,n,inp)
 ! rhop
-      if (lpencil(i_rhop)) p%rhop=rhop_tilde*f(l1:l2,m,n,inp)
+      if (lpencil(i_rhop)) then 
+        if (irhop/=0) then 
+          p%rhop=f(l1:l2,m,n,irhop)
+        else
+          p%rhop=rhop_tilde*f(l1:l2,m,n,inp)
+        endif
+      endif
 ! epsp
       if (lpencil(i_epsp)) p%epsp=p%rhop/p%rho
 !
@@ -407,6 +474,8 @@ module Particles
       if (ldiagnos) then
         if (idiag_npmax/=0) call max_mn_name(p%np,idiag_npmax)
         if (idiag_npmin/=0) call max_mn_name(-p%np,idiag_npmin,lneg=.true.)
+        if (idiag_epsmax/=0) call max_mn_name(p%epsp,idiag_epsmax)
+        if (idiag_epsmin/=0) call max_mn_name(-p%epsp,idiag_epsmin,lneg=.true.)
       endif
 !
       if (l1ddiagnos) then
@@ -632,6 +701,7 @@ module Particles
         write(3,*) 'ivpy=', ivpy
         write(3,*) 'ivpz=', ivpz
         write(3,*) 'inp=', inp
+        write(3,*) 'irhop=', irhop
       endif
 !
 !  Reset everything in case of reset
@@ -642,6 +712,7 @@ module Particles
         idiag_nparmax=0; idiag_nmigmax=0; idiag_npmax=0; idiag_npmin=0
         idiag_npmx=0; idiag_rhopmx=0; idiag_epspmx=0
         idiag_npmz=0; idiag_rhopmz=0; idiag_epspmz=0
+        idiag_epsmin=0; idiag_epsmax=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
@@ -658,7 +729,9 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'nparmax',idiag_nparmax)
         call parse_name(iname,cname(iname),cform(iname),'npmax',idiag_npmax)
         call parse_name(iname,cname(iname),cform(iname),'npmin',idiag_npmin)
-        call parse_name(iname,cname(iname),cform(iname),'nmigmax',idiag_nmigmax)
+        call parse_name(iname,cname(iname),cform(iname),'nmigmax',idiag_nmigmax) 
+        call parse_name(iname,cname(iname),cform(iname),'epsmax',idiag_epsmax)
+        call parse_name(iname,cname(iname),cform(iname),'epsmin',idiag_epsmin)
       enddo
 !
 !  check for those quantities for which we want x-averages
