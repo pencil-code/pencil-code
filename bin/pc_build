@@ -27,6 +27,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   pc_build [<options>] [<MAKE_VAR1=val1> [<MAKE_VAR2>=val2 ...]]
 # Options:
 #   -h, --help      This help.
+#       --clean     Run `make clean'
+#       --cleanall  Run `make cleanall'
 #   -f <files>,
 #       --config-files=<files>
 #                   Use the given <files> (a comma-separated list) as

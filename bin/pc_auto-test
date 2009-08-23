@@ -221,7 +221,7 @@ my $usage =
 Options:
   -h,  --help              \tShow usage overview
   -v,  --version           \tPrint version number
-  -C,  --clean             \tClean up (pc_build cleanall) before compiling
+  -C,  --clean             \tClean up (pc_build --cleanall) before compiling
   -c,  --compile-only      \tTest compilation only
   -n,  --norun             \tTest compilation and starting only
   -f,  --results-from-file \tDon't run, read results from data/timeseries.dat

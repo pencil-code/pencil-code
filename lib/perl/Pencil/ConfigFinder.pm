@@ -4,8 +4,8 @@
 #
 # Description:
 
-#   Find a Pencil Code appropriate configuration file for the current machine
-#   and directory.
+#   Find an appropriate Pencil Code configuration file for the current
+#   machine and directory.
 #
 # $Id$
 #
