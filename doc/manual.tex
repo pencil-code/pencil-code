@@ -772,7 +772,7 @@ The domain can be tiled in the $y$ and $z$ directions.
 On multiprocessor computers, the code can use \name{MPI}
 (Message Passing Interface) calls to communicate between processors.
 An easy switching mechanism allows the user to run the code on a machine
-without MPI libraries (e.g.~a notebook computer).
+without MPI libraries (e.g.\ a notebook computer).
 Ghost zones are used to implement boundary conditions on physical and
 processor boundaries.
 
@@ -1818,6 +1818,10 @@ its parent directory, i.e.\
   \prompt{forced> } vi cparam.local
 \end{alltt}
 and edit the \file{cparam.local} for the new resolution.
+
+If you have ever wondered why we don't do dynamic allocation of the
+main variable (f) array, the main reason it that with static allocation
+the compiler can check whether we are out of bounds.
 
 % ---------------------------------------------------------------------- %
 \subsection{Using a non-equidistant grid}
