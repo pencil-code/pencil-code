@@ -357,10 +357,6 @@ module Mpicomm
 !
       call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipy, ipz, MPI_COMM_COLUMN, ierr)
 !
-      print*, 'MPI_COMM_WORLD', iproc, MPI_COMM_WORLD
-      print*, 'MPI_COMM_ROW', iproc, MPI_COMM_ROW
-      print*, 'MPI_COMM_COLUMN', iproc, MPI_COMM_COLUMN
-!
     endsubroutine mpicomm_init
 !***********************************************************************
     subroutine initiate_isendrcv_bdry(f,ivar1_opt,ivar2_opt)
