@@ -79,8 +79,8 @@ module Particles
   logical :: ldtgrav_par=.false.
   logical :: lsinkpoint=.false.
   logical :: lglobalrandom=.false.
-  logical, pointer:: lcoriolis_force
-  logical, pointer:: lcentrifugal_force
+  logical :: lcoriolis_force_par=.true.
+  logical :: lcentrifugal_force_par=.false.
 !
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -119,7 +119,8 @@ module Particles
       interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, &
       brownian_T0, lnostore_uu, ldtgrav_par, ldragforce_radialonly, &
       lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, &
-      Lx0, Ly0, Lz0, lglobalrandom
+      Lx0, Ly0, Lz0, lglobalrandom, &
+      lcoriolis_force_par, lcentrifugal_force_par
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -144,7 +145,8 @@ module Particles
       tstart_brownian_par, lbrownian_forces, lenforce_policy, &
       interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, &
       brownian_T0, lnostore_uu, ldtgrav_par, ldragforce_radialonly, &
-      lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint
+      lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, &
+      lcoriolis_force_par, lcentrifugal_force_par
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0, idiag_rp2m=0
@@ -487,18 +489,6 @@ module Particles
         call fatal_error('initialize_particles','No such such value for '// &
           'interp_pol_rho: '//trim(interp_pol_rho))
       endselect
-!
-!  Get lcoriolis_force and lcentrifugal_force from the Hydro module
-!
-      if (Omega/=0.0) then 
-        call get_shared_variable('lcoriolis_force',lcoriolis_force,ierr)     
-        if (ierr/=0) call fatal_error('register_particles',&
-            'there was a problem getting lcoriolis_force')
-!
-        call get_shared_variable('lcentrifugal_force',lcentrifugal_force,ierr)
-        if (ierr/=0) call fatal_error('register_particles',&
-            'there was a problem getting lcentrifugal_force')
-      endif
 !
 !  Write constants to disk.
 !
@@ -2268,7 +2258,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Add Coriolis force from rotating coordinate frame.
 !
       if (Omega/=0.) then
-        if (lcoriolis_force) then 
+        if (lcoriolis_force_par) then 
           if (lheader) print*,'dvvp_dt: Add Coriolis force; Omega=', Omega
           Omega2=2*Omega
           if (.not.lspherical_coords) then 
@@ -2283,7 +2273,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 ! Centrifugal force
 !
-        if (lcentrifugal_force) then 
+        if (lcentrifugal_force_par) then 
           if (lheader) print*,'dvvp_dt: Add Centrifugal force; Omega=', Omega
           if (lcartesian_coords) then 
 !
