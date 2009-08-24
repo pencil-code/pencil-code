@@ -990,20 +990,6 @@ else if ($hn =~ opto[1-4]) then
   setenv SSH rsh
   setenv SCP rcp
   setenv SCRATCH_DIR /var/tmp/$USER
-#-------------------------------------------
-else if ($hn =~ swift) then
-  echo "swift laptop (Anders)"
-  set mpirun = mpiexec
-  setenv SSH ssh
-  setenv SCP scp
-  setenv SCRATCH_DIR /var/tmp/$USER
-#-------------------------------------------
-else if ($hn =~ goose) then
-  echo "goose laptop (Anders)"
-  set mpirun = ~/local/openmpi/bin/mpirun
-  setenv SSH ssh
-  setenv SCP scp
-  setenv SCRATCH_DIR /var/tmp/$USER
 #------------------------------------------------
 else if ($hn =~ lfc*) then
   echo "opteron cluster at MPIK with SGE queue."
