@@ -1878,6 +1878,7 @@ module Entropy
         endif
       endif
       if (lheatc_tensordiffusion) then
+        lpenc_requested(i_bb)=.true.
         lpenc_requested(i_bij)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_hlnTT)=.true.
@@ -2038,8 +2039,7 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: rhs,Hmax=0.
-      real, dimension (nx) :: vKpara,vKperp
+      real, dimension (nx) :: Hmax=0.
       real :: ztop,xi,profile_cor,uT,fradz,TTtop
       integer :: j,ju
 !
@@ -2132,16 +2132,7 @@ module Entropy
         call newton_cool(df,p)
         call calc_heat_cool_RTV(df,p)
       endif
-      if (lheatc_tensordiffusion) then
-        vKpara(:) = Kgpara
-        vKperp(:) = Kgperp
-        call tensor_diffusion_coef(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,rhs,llog=.true.)
-        df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+rhs*p%rho1
-        if (lfirst.and.ldt) then
-          diffus_chi=diffus_chi+gamma*Kgpara*exp(-p%lnrho)/p%cp*dxyz_2
-          dt1_max=max(dt1_max,maxval(abs(rhs*p%rho1)*gamma)/(cdts))
-        endif
-      endif
+      if (lheatc_tensordiffusion) call calc_heatcond_tensor(df,p)
       if (lheatc_hyper3ss_polar) call calc_heatcond_hyper3_polar(f,df,p)
       if (lheatc_hyper3ss_aniso) call calc_heatcond_hyper3_aniso(f,df,p)
 !
@@ -2731,6 +2722,46 @@ module Entropy
       endif
 !
     endsubroutine calc_heatcond_spitzer
+!***********************************************************************
+    subroutine calc_heatcond_tensor(df,p)
+!
+!  Calculates heat conduction parallel and perpendicular (isotropic)
+!  to magnetic field lines
+!  
+!
+!  24-aug-09/bing: moved from dss_dt to here
+!
+      use Sub, only: tensor_diffusion_coef,dot,dot2
+
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx) :: cosbgT,gT2,b2,rhs
+      real, dimension (nx) :: vKpara,vKperp
+!
+      type (pencil_case) :: p
+!      
+      vKpara(:) = Kgpara
+      vKperp(:) = Kgperp
+!
+      call tensor_diffusion_coef(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,rhs,llog=.true.)
+!
+      df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+rhs*p%rho1
+!
+      call dot(p%bb,p%glnTT,cosbgT)
+      call dot2(p%glnTT,gT2)
+      call dot2(p%bb,b2)
+!
+      where ((gT2.le.tini).or.(b2.le.tini))
+         cosbgT=0.
+      elsewhere 
+         cosbgT=cosbgT/sqrt(gT2*b2)
+      endwhere
+!
+      if (lfirst.and.ldt) then
+         diffus_chi=diffus_chi+ cosbgT*gamma*Kgpara*exp(-p%lnrho)/p%cp*dxyz_2
+         dt1_max=max(dt1_max,maxval(abs(rhs*p%rho1)*gamma)/(cdts))
+      endif
+!
+    endsubroutine calc_heatcond_tensor
 !***********************************************************************
     subroutine calc_heatcond_hubeny(df,p)
 !
