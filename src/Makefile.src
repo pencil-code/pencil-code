@@ -301,18 +301,6 @@ endif
 #FC=ifort #(nw[0-9]+|hamlet|lynx|brahe|nq[0-9]*)
 #FC=g95-andy #(nw[0-9]+|hamlet|lynx|brahe|nq[0-9]*)
 ##
-## Andrej's Laptop
-##
-#FC=ifort #(helios-thinkpad)
-#FFLAGS=-O3 #(helios-thinkpad)
-##
-## Andrej on PIA cluster
-##
-#FC=/afs/ipp-garching.mpg.de/amd64_sles9/soft/mvapich/mvapich2-1.0.0-opteron-x/f95i.11.0/bin/mpif90 #(pia)
-##FFLAGS=-O3 -I/afs/ipp-garching.mpg.de/amd64_sles9/soft/mvapich/mvapich2-1.0.0-opteron-x/f95i.11.0/include #(pia)
-#FFLAGS=-O2 -I/afs/ipp-garching.mpg.de/amd64_sles9/soft/mvapich/mvapich2-1.0.0-opteron-x/f95i.11.0/include #(pia)
-#LD_MPI=-L/afs/ipp-garching.mpg.de/amd64_sles9/soft/mvapich/mvapich2-1.0.0-opteron-x/f95i.11.0/lib -lpthread #(pia)
-##
 #FC=f90 #(p6012)
 #F77=fort77 #(p6012)
 #FFLAGS=-O3 -I/opt/ibmhpc/ppe.poe/include/thread64 #(p6012)
@@ -332,7 +320,7 @@ endif
 #FFLAGS_SLOPPY=$(FFLAGS) -I/home/johansen/mpich/include/ #(opto[1-4])
 #LD_MPI=-Wl,-m elf_i386 -L/home/johansen/mpich/lib/ -lmpich #(opto[1-4])
 #FC=/afs/ipp/amd64_sles9/soft/mvapich/mvapich2-0.9.8-opteron-x/f95i.9.1/bin/mpif90 #(rio*|pia*)
-#FFLAGS= #(rio*|pia*)
+##FFLAGS=-convert big_endian #(rio*|pia*)
 #FC=mpixlf95_r -I/bgsys/drivers/ppcfloor/comm/include #(genius1|jugene4)
 #CC=mpixlc_r -I/bgsys/drivers/ppcfloor/comm/include #(genius1|jugene4)
 #F77=xlf_r #(genius1|jugene4)
