@@ -120,6 +120,9 @@ module Boundcond
               if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcx',k,'(',j,')=',bc12(j)
               if (ipx==ip_ok) then
                 select case(bc12(j))
+                case ('0')
+                  ! BCX_DOC: zero value in ghost zones, free value on boundary
+                  call bc_zero_x(f,topbot,j)
                 case ('p')
                   ! BCX_DOC: periodic
                   call bc_per_x(f,topbot,j)
@@ -142,6 +145,9 @@ module Boundcond
                 case ('v')
                   ! BCX_DOC: vanishing third derivative
                   call bc_van_x(f,topbot,j)
+                case ('cop')
+                  ! BCX_DOC: copy value of last physical point to all ghost cells
+                  call bc_copy_x(f,topbot,j)
                 case ('1s')
                   ! BCX_DOC: onesided
                   call bc_onesided_x(f,topbot,j)
@@ -241,6 +247,7 @@ module Boundcond
                 case ('g')
                   ! BCX_DOC: set to given value(s) or function
                   call bc_force_x(f, -1, topbot, j)
+                case ('nil')
                 case('ioc')
                   !BCX_DOC: inlet/outlet on western/eastern hemisphere 
                   !BCX_DOC: in cylindrical coordinates 
@@ -3681,6 +3688,37 @@ module Boundcond
 
     endsubroutine bc_del2zero
 !***********************************************************************
+    subroutine bc_zero_x(f,topbot,j)
+!
+!  Zero value in the ghost zones.
+!
+!  11-aug-2009/anders: implemented
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: j
+!
+      select case(topbot)
+!
+!  Bottom boundary.
+!
+      case('bot')
+        f(1:l1-1,:,:,j)=0.0
+!
+!  Top boundary.
+!
+      case('top')
+        f(n2+1:mx,:,:,j)=0.0
+!
+!  Default.
+!
+      case default
+        print*, "bc_zero_x: ", topbot, " should be `top' or `bot'"
+!
+      endselect
+!
+    endsubroutine bc_zero_x
+!***********************************************************************
     subroutine bc_zero_z(f,topbot,j)
 !
 !  Zero value in the ghost zones.
@@ -3761,6 +3799,39 @@ module Boundcond
       endselect
 !
     endsubroutine bc_outflow_z
+!***********************************************************************
+    subroutine bc_copy_x(f,topbot,j)
+!
+!  Copy value in last grid point to all ghost cells.
+!
+!  11-aug-2009/anders: implemented
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: j
+!
+      integer :: i
+!
+      select case(topbot)
+!
+!  Bottom boundary.
+!
+      case('bot')
+        do i=1,nghost; f(l1-i,:,:,j)=f(l1,:,:,j); enddo
+!
+!  Top boundary.
+!
+      case('top')
+        do i=1,nghost; f(l2+i,:,:,j)=f(l2,:,:,j); enddo
+!
+!  Default.
+!
+      case default
+        print*, "bc_copy_z: ", topbot, " should be `top' or `bot'"
+!
+      endselect
+!
+    endsubroutine bc_copy_x
 !***********************************************************************
     subroutine bc_copy_z(f,topbot,j)
 !
