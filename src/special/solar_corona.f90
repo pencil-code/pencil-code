@@ -554,6 +554,7 @@ module Special
 !
 !  newton cooling
 !
+      use Diagnostics
       use IO, only: output_pencil
       use EquationOfState, only: gamma11,lnrho0,gamma
       use Sub
@@ -762,6 +763,7 @@ module Special
 !***********************************************************************
     subroutine calc_heatcond_constchi(df,p)
  
+      use Diagnostics
       use Sub
       use EquationOfState, only: gamma,gamma11
       use IO, only: output_pencil
