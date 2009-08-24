@@ -824,8 +824,6 @@ module Diagnostics
 !
 !   1-apr-04/wolf: coded
 !
-      use Mpicomm, only: stop_it
-!
       character (len=*), dimension(:) :: ccname
       integer :: nname
       character (len=*) :: vlabel,xlabel,ylabel,zlabel
@@ -840,7 +838,7 @@ module Diagnostics
       do while (i <= nname)
         if (ccname(i) == vlabel) then
           if (nname+2 > mname) then ! sanity check
-            call stop_it("EXPAND_CNAME: Too many labels in list")
+            call fatal_error('expand_cname','Too many labels in list')
           endif
           ccname(i+3:nname+2) = ccname(i+1:nname)
           ccname(i:i+2) = (/xlabel,ylabel,zlabel/)
@@ -1514,8 +1512,6 @@ module Diagnostics
 !
 !  29-jan-07/wlad: adapted from yzsum_mn_name_x and phisum_mn_name
 !
-      use Mpicomm, only: stop_it
-!
       real, dimension (nx) :: a
       integer :: iname,ir,nnghost
 !
@@ -1532,8 +1528,8 @@ module Diagnostics
       nnghost=n-nghost
       if ((iname==nnamer).and.(nnghost==1)) then
 !check if an extra slot is available on fnamer
-         if (nnamer==mnamer) &
-              call stop_it("no slot for phi-normalization. decrease nnamer")
+         if (nnamer==mnamer) call fatal_error('phizsum_mn_name_r', &
+             'no slot for phi-normalization. decrease nnamer')
 !
          do ir=1,nrcyl
             fnamer(ir,iname+1) &
