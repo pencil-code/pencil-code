@@ -1,7 +1,7 @@
 ! $Id$
 !
-!  Dummy module for MPU communcation. This allows the code to run on a single
-!  CPU.
+!  Dummy module for MPI commuincation. This allows the code to run on a
+!  single CPU.
 !
 module Mpicomm
 !
@@ -74,21 +74,28 @@ module Mpicomm
     module procedure mpibcast_char_arr
   endinterface
 !
-  interface mpireduce_sum_double
-    module procedure mpireduce_sum_double_scl
-    module procedure mpireduce_sum_double_arr
-  endinterface
-!
-! Not possible because array version is used with
-! a multi dimensional array!
-!  interface mpireduce_sum
-!    module procedure mpireduce_sum_scl
-!    module procedure mpireduce_sum_arr
-!  endinterface
-!
   interface mpireduce_sum_int
     module procedure mpireduce_sum_int_scl
     module procedure mpireduce_sum_int_arr
+    module procedure mpireduce_sum_int_arr2
+    module procedure mpireduce_sum_int_arr3
+    module procedure mpireduce_sum_int_arr4
+  endinterface
+!
+  interface mpireduce_sum
+    module procedure mpireduce_sum_scl
+    module procedure mpireduce_sum_arr
+    module procedure mpireduce_sum_arr2
+    module procedure mpireduce_sum_arr3
+    module procedure mpireduce_sum_arr4
+  endinterface
+!
+  interface mpireduce_sum_double
+    module procedure mpireduce_sum_double_scl
+    module procedure mpireduce_sum_double_arr
+    module procedure mpireduce_sum_double_arr2
+    module procedure mpireduce_sum_double_arr3
+    module procedure mpireduce_sum_double_arr4
   endinterface
 !
   interface mpireduce_max
@@ -131,25 +138,13 @@ module Mpicomm
 !***********************************************************************
     subroutine mpicomm_init()
 !
-!  Before the communication has been completed, the nghost=3 layers next
-!  to the processor boundary (m1, m2, n1, or n2) cannot be used yet.
-!  In the mean time we can calculate the interior points sufficiently far
-!  away from the boundary points. Here we calculate the order in which
-!  m and n are executed. At one point, necessary(imn)=.true., which is
-!  the moment when all communication must be completed.
-!
-!   6-jun-02/axel: generalized to allow for ny=1
-!  23-nov-02/axel: corrected problem with ny=4 or less
-!
-!  sets iproc in order that we write in the correct directory
-!
-!  consistency check
+!  Make a quick consistency check.
 !
       if (ncpus > 1) then
-        call stop_it("Inconsistency: MPICOMM=nompicomm, but ncpus >= 2")
+        call stop_it('Inconsistency: MPICOMM=nompicomm, but ncpus >= 2')
       endif
 !
-!  for single cpu machine, set processor to zero
+!  For a single CPU run, set processor to zero.
 !
       lmpicomm = .false.
       iproc = 0
@@ -170,26 +165,26 @@ module Mpicomm
 !***********************************************************************
     subroutine initiate_isendrcv_bdry(f,ivar1_opt,ivar2_opt)
 !
-!  for one processor, use periodic boundary conditions
-!  but in this dummy routine this is done in finalize_isendrcv_bdry
+!  For one processor, use periodic boundary conditions.
+!  In this dummy routine this is done in finalize_isendrcv_bdry.
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
-      if (NO_WARN) print*, f, ivar1_opt, ivar2_opt !(keep compiler quiet)
+      if (NO_WARN) print*, f, ivar1_opt, ivar2_opt
 !
     endsubroutine initiate_isendrcv_bdry
 !***********************************************************************
     subroutine finalize_isendrcv_bdry(f,ivar1_opt,ivar2_opt)
 !
-!  apply boundary conditions
+!  Apply boundary conditions.
 !
       use Cparam
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
-      if (NO_WARN) print*, f, ivar1_opt, ivar2_opt !(keep compiler quiet)
+      if (NO_WARN) print*, f, ivar1_opt, ivar2_opt
 !
     endsubroutine finalize_isendrcv_bdry
 !***********************************************************************
@@ -198,14 +193,13 @@ module Mpicomm
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
-      if (NO_WARN) print*, f, ivar1_opt, ivar2_opt !(keep compiler quiet)
+      if (NO_WARN) print*, f, ivar1_opt, ivar2_opt
 !
     endsubroutine initiate_shearing
 !***********************************************************************
     subroutine finalize_shearing(f,ivar1_opt,ivar2_opt)
 !
-!  for one processor, use periodic boundary conditions
-!  but in this dummy routine this is done in finalize_isendrcv_bdry
+!  Shear-periodic boundary conditions in x (using just one CPU).
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
@@ -216,8 +210,6 @@ module Mpicomm
       ivar1=1; ivar2=mcom
       if (present(ivar1_opt)) ivar1=ivar1_opt
       if (present(ivar2_opt)) ivar2=ivar2_opt
-!
-!  Shear-periodic boundary conditions in x.
 !
       if (nygrid==1) then ! Periodic boundary conditions.
         f( 1:l1-1,:,:,ivar1:ivar2) = f(l2i:l2,:,:,ivar1:ivar2)
@@ -252,66 +244,46 @@ module Mpicomm
 !***********************************************************************
     subroutine radboundary_zx_recv(mrad,idir,Qrecv_zx)
 !
-!   2-jul-03/tony: dummy created
-!
       integer :: mrad,idir
       real, dimension(mx,mz) :: Qrecv_zx
 !
-      if (NO_WARN) then
-         print*,mrad,idir,Qrecv_zx(1,1)
-      endif
+      if (NO_WARN) print*,mrad,idir,Qrecv_zx(1,1)
 !
     endsubroutine radboundary_zx_recv
 !***********************************************************************
     subroutine radboundary_xy_recv(nrad,idir,Qrecv_xy)
 !
-!   2-jul-03/tony: dummy created
-!
       integer :: nrad,idir
       real, dimension(mx,my) :: Qrecv_xy
 !
-      if (NO_WARN) then
-         print*,nrad,idir,Qrecv_xy(1,1)
-      endif
+      if (NO_WARN) print*,nrad,idir,Qrecv_xy(1,1)
 !
     endsubroutine radboundary_xy_recv
 !***********************************************************************
     subroutine radboundary_zx_send(mrad,idir,Qsend_zx)
 !
-!   2-jul-03/tony: dummy created
-!
       integer :: mrad,idir
       real, dimension(mx,mz) :: Qsend_zx
 !
-      if (NO_WARN) then
-         print*,mrad,idir,Qsend_zx(1,1)
-      endif
+      if (NO_WARN) print*,mrad,idir,Qsend_zx(1,1)
 !
     endsubroutine radboundary_zx_send
 !***********************************************************************
     subroutine radboundary_xy_send(nrad,idir,Qsend_xy)
 !
-!   2-jul-03/tony: dummy created
-!
       integer :: nrad,idir
       real, dimension(mx,my) :: Qsend_xy
 !
-      if (NO_WARN) then
-         print*,nrad,idir,Qsend_xy(1,1)
-      endif
+      if (NO_WARN) print*,nrad,idir,Qsend_xy(1,1)
 !
     endsubroutine radboundary_xy_send
 !***********************************************************************
     subroutine radboundary_zx_sendrecv(mrad,idir,Qsend_zx,Qrecv_zx)
 !
-!   2-jul-03/tony: dummy created
-!
       integer :: mrad,idir
       real, dimension(mx,mz) :: Qsend_zx,Qrecv_zx
 !
-      if (NO_WARN) then
-         print*,mrad,idir,Qsend_zx(1,1),Qrecv_zx(1,1)
-      endif
+      if (NO_WARN) print*,mrad,idir,Qsend_zx(1,1),Qrecv_zx(1,1)
 !
     endsubroutine radboundary_zx_sendrecv
 !***********************************************************************
@@ -324,17 +296,13 @@ module Mpicomm
 !
       real, dimension(nx,nz), intent(in) :: Qrad_zx,tau_zx
       real, dimension(nx,nz,0:nprocy-1) :: Qrad_zx_all,tau_zx_all
-
+!
       Qrad_zx_all(:,:,ipy)=Qrad_zx
       tau_zx_all(:,:,ipy)=tau_zx
-
+!
     endsubroutine radboundary_zx_periodic_ray
 !***********************************************************************
     subroutine mpirecv_logical_scl(bcast_array,nbcast_array,proc_src,tag_id)
-!
-!  Receive logical scalar from other processor.
-!
-!  04-sep-06/wlyra: dummy
 !
       integer :: nbcast_array
       logical :: bcast_array
@@ -346,10 +314,6 @@ module Mpicomm
 !***********************************************************************
     subroutine mpirecv_logical_arr(bcast_array,nbcast_array,proc_src,tag_id)
 !
-!  Receive logical array from other processor.
-!
-!  04-sep-06/wlyra: dummy
-!
       integer :: nbcast_array
       logical, dimension(nbcast_array) :: bcast_array
       integer :: proc_src, tag_id
@@ -359,10 +323,6 @@ module Mpicomm
     endsubroutine mpirecv_logical_arr
 !***********************************************************************
     subroutine mpirecv_real_scl(bcast_array,nbcast_array,proc_src,tag_id)
-!
-!  Receive real scalar from other processor.
-!
-!  02-jul-05/anders: dummy
 !
       integer :: nbcast_array
       real :: bcast_array
@@ -374,10 +334,6 @@ module Mpicomm
 !***********************************************************************
     subroutine mpirecv_real_arr(bcast_array,nbcast_array,proc_src,tag_id)
 !
-!  Receive real array from other processor.
-!
-!  02-jul-05/anders: dummy
-!
       integer :: nbcast_array
       real, dimension(nbcast_array) :: bcast_array
       integer :: proc_src, tag_id
@@ -387,10 +343,6 @@ module Mpicomm
     endsubroutine mpirecv_real_arr
 !***********************************************************************
     subroutine mpirecv_real_arr2(bcast_array,nbcast_array,proc_src,tag_id)
-!
-!  Receive real array(:,:) from other processor.
-!
-!  02-jul-05/anders: dummy
 !
       integer, dimension(2) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
@@ -402,10 +354,6 @@ module Mpicomm
 !***********************************************************************
     subroutine mpirecv_real_arr3(bcast_array,nb,proc_src,tag_id)
 !
-!  Receive real array(:,:,:) from other processor.
-!
-!  27-apr-08/wlad: dummy
-!
       integer, dimension(3) :: nb
       real, dimension(nb(1),nb(2),nb(3)) :: bcast_array
       integer :: proc_src, tag_id
@@ -415,10 +363,6 @@ module Mpicomm
     endsubroutine mpirecv_real_arr3
 !***********************************************************************
     subroutine mpirecv_int_scl(bcast_array,nbcast_array,proc_src,tag_id)
-!
-!  Receive integer scalar from other processor.
-!
-!  02-jul-05/anders: dummy
 !
       integer :: nbcast_array
       integer :: bcast_array
@@ -430,10 +374,6 @@ module Mpicomm
 !***********************************************************************
     subroutine mpirecv_int_arr(bcast_array,nbcast_array,proc_src,tag_id)
 !
-!  Receive integer array from other processor.
-!
-!  02-jul-05/anders: dummy
-!
       integer :: nbcast_array
       integer, dimension(nbcast_array) :: bcast_array
       integer :: proc_src, tag_id
@@ -443,10 +383,6 @@ module Mpicomm
     endsubroutine mpirecv_int_arr
 !***********************************************************************
     subroutine mpisend_logical_scl(bcast_array,nbcast_array,proc_rec,tag_id)
-!
-!  Send logical scalar to other processor.
-!
-!  02-jul-05/anders: dummy
 !
       integer :: nbcast_array
       logical :: bcast_array
@@ -458,10 +394,6 @@ module Mpicomm
 !***********************************************************************
     subroutine mpisend_logical_arr(bcast_array,nbcast_array,proc_rec,tag_id)
 !
-!  Receive logical array from other processor.
-!
-!  02-jul-05/anders: dummy
-!
       integer :: nbcast_array
       logical, dimension(nbcast_array) :: bcast_array
       integer :: proc_rec, tag_id
@@ -471,10 +403,6 @@ module Mpicomm
     endsubroutine mpisend_logical_arr
 !***********************************************************************
     subroutine mpisend_real_scl(bcast_array,nbcast_array,proc_rec,tag_id)
-!
-!  Send real scalar to other processor.
-!
-!  02-jul-05/anders: dummy
 !
       integer :: nbcast_array
       real :: bcast_array
@@ -486,10 +414,6 @@ module Mpicomm
 !***********************************************************************
     subroutine mpisend_real_arr(bcast_array,nbcast_array,proc_rec,tag_id)
 !
-!  Receive real array from other processor.
-!
-!  02-jul-05/anders: dummy
-!
       integer :: nbcast_array
       real, dimension(nbcast_array) :: bcast_array
       integer :: proc_rec, tag_id
@@ -499,10 +423,6 @@ module Mpicomm
     endsubroutine mpisend_real_arr
 !***********************************************************************
     subroutine mpisend_real_arr2(bcast_array,nbcast_array,proc_rec,tag_id)
-!
-!  Receive real array(:,:) from other processor.
-!
-!  02-jul-05/anders: dummy
 !
       integer, dimension(2) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
@@ -514,10 +434,6 @@ module Mpicomm
 !***********************************************************************
     subroutine mpisend_real_arr3(bcast_array,nb,proc_rec,tag_id)
 !
-!  Receive real array(:,:) from other processor.
-!
-!  27-apr-08/wlad: dummy
-!
       integer, dimension(3) :: nb
       real, dimension(nb(1),nb(2),nb(3)) :: bcast_array
       integer :: proc_rec, tag_id
@@ -528,10 +444,6 @@ module Mpicomm
 !***********************************************************************
     subroutine mpisend_int_scl(bcast_array,nbcast_array,proc_rec,tag_id)
 !
-!  Send real scalar to other processor.
-!
-!  02-jul-05/anders: dummy
-!
       integer :: nbcast_array
       integer :: bcast_array
       integer :: proc_rec, tag_id
@@ -541,10 +453,6 @@ module Mpicomm
     endsubroutine mpisend_int_scl
 !***********************************************************************
     subroutine mpisend_int_arr(bcast_array,nbcast_array,proc_rec,tag_id)
-!
-!  Receive real array from other processor.
-!
-!  02-jul-05/anders: dummy
 !
       integer :: nbcast_array
       integer, dimension(nbcast_array) :: bcast_array
@@ -684,14 +592,13 @@ module Mpicomm
 !
     endsubroutine mpibcast_char_arr
 !***********************************************************************
-    subroutine mpiallreduce_sum_arr2(fsum_tmp,fsum,nreduce_array,lsumy,lsumz)
+    subroutine mpiallreduce_sum_scl(fsum_tmp,fsum)
 !
-      integer, dimension(2) :: nreduce_array
-      real, dimension(nreduce_array(1),nreduce_array(2)) :: fsum_tmp, fsum
-      logical, optional :: lsumy,lsumz
+      real :: fsum_tmp, fsum
 !
       fsum=fsum_tmp
-    endsubroutine mpiallreduce_sum_arr2
+!
+    endsubroutine mpiallreduce_sum_scl
 !***********************************************************************
     subroutine mpiallreduce_sum_arr(fsum_tmp,fsum,nreduce)
 !
@@ -699,14 +606,26 @@ module Mpicomm
       real, dimension(nreduce) :: fsum_tmp, fsum
 !
       fsum=fsum_tmp
+!
     endsubroutine mpiallreduce_sum_arr
 !***********************************************************************
-    subroutine mpiallreduce_sum_scl(fsum_tmp,fsum)
+    subroutine mpiallreduce_sum_arr2(fsum_tmp,fsum,nreduce_array,lsumy,lsumz)
 !
-      real :: fsum_tmp, fsum
+      integer, dimension(2) :: nreduce_array
+      real, dimension(nreduce_array(1),nreduce_array(2)) :: fsum_tmp, fsum
+      logical, optional :: lsumy,lsumz
 !
       fsum=fsum_tmp
-    endsubroutine mpiallreduce_sum_scl
+!
+    endsubroutine mpiallreduce_sum_arr2
+!***********************************************************************
+    subroutine mpiallreduce_sum_int_scl(fsum_tmp,fsum)
+!
+      integer :: fsum_tmp, fsum
+!
+      fsum=fsum_tmp
+!
+    endsubroutine mpiallreduce_sum_int_scl
 !***********************************************************************
     subroutine mpiallreduce_sum_int_arr(fsum_tmp,fsum,nreduce)
 !
@@ -714,14 +633,16 @@ module Mpicomm
       integer, dimension(nreduce) :: fsum_tmp, fsum
 !
       fsum=fsum_tmp
+!
     endsubroutine mpiallreduce_sum_int_arr
 !***********************************************************************
-    subroutine mpiallreduce_sum_int_scl(fsum_tmp,fsum)
+    subroutine mpiallreduce_max_scl(fmax_tmp,fmax)
 !
-      integer :: fsum_tmp, fsum
+      real :: fmax_tmp, fmax
 !
-      fsum=fsum_tmp
-    endsubroutine mpiallreduce_sum_int_scl
+      fmax=fmax_tmp
+!
+    endsubroutine mpiallreduce_max_scl
 !***********************************************************************
     subroutine mpiallreduce_max_arr(fmax_tmp,fmax,nreduce)
 !
@@ -729,14 +650,16 @@ module Mpicomm
       real, dimension(nreduce) :: fmax_tmp, fmax
 !
       fmax=fmax_tmp
+!
     endsubroutine mpiallreduce_max_arr
 !***********************************************************************
-    subroutine mpiallreduce_max_scl(fmax_tmp,fmax)
+    subroutine mpireduce_max_scl(fmax_tmp,fmax)
 !
       real :: fmax_tmp, fmax
 !
       fmax=fmax_tmp
-    endsubroutine mpiallreduce_max_scl
+!
+    endsubroutine mpireduce_max_scl
 !***********************************************************************
     subroutine mpireduce_max_arr(fmax_tmp,fmax,nreduce)
 !
@@ -744,14 +667,16 @@ module Mpicomm
       real, dimension(nreduce) :: fmax_tmp, fmax
 !
       fmax=fmax_tmp
+!
     endsubroutine mpireduce_max_arr
 !***********************************************************************
-    subroutine mpireduce_max_scl(fmax_tmp,fmax)
+    subroutine mpireduce_min_scl(fmin_tmp,fmin)
 !
-      real :: fmax_tmp, fmax
+      real :: fmin_tmp, fmin
 !
-      fmax=fmax_tmp
-    endsubroutine mpireduce_max_scl
+      fmin=fmin_tmp
+!
+    endsubroutine mpireduce_min_scl
 !***********************************************************************
     subroutine mpireduce_min_arr(fmin_tmp,fmin,nreduce)
 !
@@ -759,49 +684,18 @@ module Mpicomm
       real, dimension(nreduce) :: fmin_tmp, fmin
 !
       fmin=fmin_tmp
+!
     endsubroutine mpireduce_min_arr
 !***********************************************************************
-    subroutine mpireduce_min_scl(fmin_tmp,fmin)
+    subroutine mpireduce_sum_int_scl(fsum_tmp,fsum)
 !
-      real :: fmin_tmp, fmin
-!
-      fmin=fmin_tmp
-    endsubroutine mpireduce_min_scl
-!***********************************************************************
-    subroutine mpireduce_sum(fsum_tmp,fsum,nreduce)
-!
-      integer :: nreduce
-      real, dimension(nreduce) :: fsum_tmp,fsum
+      integer :: fsum_tmp,fsum
 !
       fsum=fsum_tmp
-    endsubroutine mpireduce_sum
-!!ajwm see interface block
-!***********************************************************************
-    subroutine mpireduce_sum_scl(fsum_tmp,fsum)
 !
-      real :: fsum_tmp,fsum
-!
-      fsum=fsum_tmp
-    endsubroutine mpireduce_sum_scl
-!***********************************************************************
-    subroutine mpireduce_sum_double_arr(dsum_tmp,dsum,nreduce)
-!
-      integer :: nreduce
-      double precision, dimension(nreduce) :: dsum_tmp,dsum
-!
-      dsum=dsum_tmp
-    endsubroutine mpireduce_sum_double_arr
-!***********************************************************************
-    subroutine mpireduce_sum_double_scl(dsum_tmp,dsum)
-!
-      double precision :: dsum_tmp,dsum
-!
-      dsum=dsum_tmp
-    endsubroutine mpireduce_sum_double_scl
+    endsubroutine mpireduce_sum_int_scl
 !***********************************************************************
     subroutine mpireduce_sum_int_arr(fsum_tmp,fsum,nreduce)
-!
-!  12-jan-05/anders: dummy coded
 !
       integer :: nreduce
       integer, dimension(nreduce) :: fsum_tmp,fsum
@@ -810,19 +704,130 @@ module Mpicomm
 !
     endsubroutine mpireduce_sum_int_arr
 !***********************************************************************
-    subroutine mpireduce_sum_int_scl(fsum_tmp,fsum)
+    subroutine mpireduce_sum_int_arr2(fsum_tmp,fsum,nreduce)
 !
-!  16-sep-05/anders: adapted from mpireduce_sum_int
-!
-      integer :: fsum_tmp,fsum
+      integer, dimension(2) :: nreduce
+      integer, dimension(nreduce(1),nreduce(2)) :: fsum_tmp,fsum
 !
       fsum=fsum_tmp
 !
-    endsubroutine mpireduce_sum_int_scl
+    endsubroutine mpireduce_sum_int_arr2
+!***********************************************************************
+    subroutine mpireduce_sum_int_arr3(fsum_tmp,fsum,nreduce)
+!
+      integer, dimension(3) :: nreduce
+      integer, dimension(nreduce(1),nreduce(2),nreduce(3)) :: fsum_tmp,fsum
+!
+      fsum=fsum_tmp
+!
+    endsubroutine mpireduce_sum_int_arr3
+!***********************************************************************
+    subroutine mpireduce_sum_int_arr4(fsum_tmp,fsum,nreduce)
+!
+      integer, dimension(4) :: nreduce
+      integer, dimension(nreduce(1),nreduce(2),nreduce(3),nreduce(4)) :: fsum_tmp,fsum
+!
+      fsum=fsum_tmp
+!
+    endsubroutine mpireduce_sum_int_arr4
+!***********************************************************************
+    subroutine mpireduce_sum_scl(fsum_tmp,fsum)
+!
+      real :: fsum_tmp,fsum
+!
+      fsum=fsum_tmp
+!
+    endsubroutine mpireduce_sum_scl
+!***********************************************************************
+    subroutine mpireduce_sum_arr(fsum_tmp,fsum,nreduce)
+!
+      integer :: nreduce
+      real, dimension(nreduce) :: fsum_tmp,fsum
+!
+      fsum=fsum_tmp
+!
+    endsubroutine mpireduce_sum_arr
+!***********************************************************************
+    subroutine mpireduce_sum_arr2(fsum_tmp,fsum,nreduce)
+!
+      integer, dimension(2) :: nreduce
+      real, dimension(nreduce(1),nreduce(2)) :: fsum_tmp,fsum
+!
+      fsum=fsum_tmp
+!
+    endsubroutine mpireduce_sum_arr2
+!***********************************************************************
+    subroutine mpireduce_sum_arr3(fsum_tmp,fsum,nreduce)
+!
+      integer, dimension(3) :: nreduce
+      real, dimension(nreduce(1),nreduce(2),nreduce(3)) :: fsum_tmp,fsum
+!
+      fsum=fsum_tmp
+!
+    endsubroutine mpireduce_sum_arr3
+!***********************************************************************
+    subroutine mpireduce_sum_arr4(fsum_tmp,fsum,nreduce)
+!
+      integer, dimension(4) :: nreduce
+      real, dimension(nreduce(1),nreduce(2),nreduce(3),nreduce(4)) :: fsum_tmp,fsum
+!
+      fsum=fsum_tmp
+!
+    endsubroutine mpireduce_sum_arr4
+!***********************************************************************
+    subroutine mpireduce_sum_double_scl(dsum_tmp,dsum)
+!
+      double precision :: dsum_tmp,dsum
+!
+      dsum=dsum_tmp
+!
+    endsubroutine mpireduce_sum_double_scl
+!***********************************************************************
+    subroutine mpireduce_sum_double_arr(dsum_tmp,dsum,nreduce)
+!
+      integer :: nreduce
+      double precision, dimension(nreduce) :: dsum_tmp,dsum
+!
+      dsum=dsum_tmp
+!
+    endsubroutine mpireduce_sum_double_arr
+!***********************************************************************
+    subroutine mpireduce_sum_double_arr2(dsum_tmp,dsum,nreduce)
+!
+      integer, dimension(2) :: nreduce
+      double precision, dimension(nreduce(1),nreduce(2)) :: dsum_tmp,dsum
+!
+      dsum=dsum_tmp
+!
+    endsubroutine mpireduce_sum_double_arr2
+!***********************************************************************
+    subroutine mpireduce_sum_double_arr3(dsum_tmp,dsum,nreduce)
+!
+      integer, dimension(3) :: nreduce
+      double precision, dimension(nreduce(1),nreduce(2),nreduce(3)) :: dsum_tmp,dsum
+!
+      dsum=dsum_tmp
+!
+    endsubroutine mpireduce_sum_double_arr3
+!***********************************************************************
+    subroutine mpireduce_sum_double_arr4(dsum_tmp,dsum,nreduce)
+!
+      integer, dimension(4) :: nreduce
+      double precision, dimension(nreduce(1),nreduce(2),nreduce(3),nreduce(4)) :: dsum_tmp,dsum
+!
+      dsum=dsum_tmp
+!
+    endsubroutine mpireduce_sum_double_arr4
+!***********************************************************************
+    subroutine mpireduce_or_scl(flor_tmp,flor)
+!
+      logical :: flor_tmp, flor
+!
+      flor=flor_tmp
+!
+    endsubroutine mpireduce_or_scl
 !***********************************************************************
     subroutine mpireduce_or_arr(flor_tmp,flor,nreduce)
-!
-!  17-sep-05/anders: coded
 !
       integer :: nreduce
       logical, dimension(nreduce) :: flor_tmp, flor
@@ -831,19 +836,15 @@ module Mpicomm
 !
     endsubroutine mpireduce_or_arr
 !***********************************************************************
-    subroutine mpireduce_or_scl(flor_tmp,flor)
+    subroutine mpireduce_and_scl(fland_tmp,fland)
 !
-!  17-sep-05/anders: coded
+      logical :: fland_tmp, fland
 !
-      logical :: flor_tmp, flor
+      fland=fland_tmp
 !
-      flor=flor_tmp
-!
-    endsubroutine mpireduce_or_scl
+    endsubroutine mpireduce_and_scl
 !***********************************************************************
     subroutine mpireduce_and_arr(fland_tmp,fland,nreduce)
-!
-!  11-mar-09/anders: coded
 !
       integer :: nreduce
       logical, dimension(nreduce) :: fland_tmp, fland
@@ -852,26 +853,20 @@ module Mpicomm
 !
     endsubroutine mpireduce_and_arr
 !***********************************************************************
-    subroutine mpireduce_and_scl(fland_tmp,fland)
-!
-!  11-mar-09/anders: coded
-!
-      logical :: fland_tmp, fland
-!
-      fland=fland_tmp
-!
-    endsubroutine mpireduce_and_scl
-!***********************************************************************
     subroutine start_serialize()
+!
     endsubroutine start_serialize
 !***********************************************************************
     subroutine end_serialize()
+!
     endsubroutine end_serialize
 !***********************************************************************
     subroutine mpibarrier()
+!
     endsubroutine mpibarrier
 !***********************************************************************
     subroutine mpifinalize()
+!
     endsubroutine mpifinalize
 !***********************************************************************
     function mpiwtime()
@@ -917,15 +912,18 @@ module Mpicomm
     subroutine die_gracefully()
 !
 !  Stop... perform any necessary shutdown stuff.
+!
 !  29-jun-05/tony: coded
 !
       call mpifinalize
       STOP 1                    ! Return nonzero exit status
+!
     endsubroutine die_gracefully
 !***********************************************************************
     subroutine stop_it(msg)
 !
-!  Print message and stop
+!  Print message and stop.
+!
 !  6-nov-01/wolf: coded
 !
       character (len=*) :: msg
@@ -933,11 +931,13 @@ module Mpicomm
       if (lroot) write(0,'(A,A)') 'STOPPED: ', msg
       call mpifinalize
       STOP 1                    ! Return nonzero exit status
+!
     endsubroutine stop_it
 !***********************************************************************
     subroutine stop_it_if_any(stop_flag,msg)
 !
 !  Conditionally print message and stop.
+!
 !  22-nov-04/wolf: coded
 !
       logical :: stop_flag
@@ -961,7 +961,7 @@ module Mpicomm
 !***********************************************************************
     subroutine transp(a,var)
 !
-!  Doing a transpose (dummy version for single processor)
+!  Doing a transpose (dummy version for single processor).
 !
 !   5-sep-02/axel: adapted from version in mpicomm.f90
 !
@@ -1171,14 +1171,14 @@ module Mpicomm
     endsubroutine transp_zx
 !***********************************************************************
     subroutine z2x(a,xi,yj,yproc_no,az)
-
-! Load the z dimension of an array in a 1-d array
-! 1-july-2008: dhruba
-! ---------------------------------------------
+!
+!  Load the z dimension of an array in a 1-d array.
+!
+!  1-july-2008: dhruba
+!
       real, dimension(nx,ny,nzgrid), intent(in) :: a
       real, dimension(nzgrid), intent(out) :: az
       integer, intent(in) :: xi,yj,yproc_no
-      
 !
       az(:)=a(xi,yj,:) 
 !
@@ -1193,9 +1193,9 @@ module Mpicomm
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
-
+!
       integer :: nn1,nn2
-
+!
       select case (topbot)
         case ('bot'); nn1=1;  nn2=n1
         case ('top'); nn1=n2; nn2=mz
@@ -1212,7 +1212,7 @@ module Mpicomm
 !
       f(   1:l1-1,:,nn1:nn2,iax:iaz) = f(l2i:l2 ,:,nn1:nn2,iax:iaz)
       f(l2+1:mx  ,:,nn1:nn2,iax:iaz) = f( l1:l1i,:,nn1:nn2,iax:iaz)
-
+!
     endsubroutine communicate_bc_aa_pot
 !***********************************************************************
 endmodule Mpicomm

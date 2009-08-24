@@ -377,7 +377,7 @@ module Diagnostics
 !  The result is only present on the root processor
 !
       if (nnamez>0) then
-        call mpireduce_sum(fnamez,fsumz,nz*nprocz*nnamez)
+        call mpireduce_sum(fnamez,fsumz,(/nz,nprocz,nnamez/))
         if (lroot) &
             fnamez(:,:,1:nnamez)=fsumz(:,:,1:nnamez)/(nx*ny*nprocx*nprocy)
       endif
@@ -396,7 +396,7 @@ module Diagnostics
 !  The result is only present on the root processor.
 !
       if (nnamey>0) then
-        call mpireduce_sum(fnamey,fsumy,ny*nprocy*nnamey)
+        call mpireduce_sum(fnamey,fsumy,(/ny,nprocy,nnamey/))
         if (lroot) &
             fnamey(:,:,1:nnamey)=fsumy(:,:,1:nnamey)/(nx*nz*nprocx*nprocz)
       endif
@@ -415,7 +415,7 @@ module Diagnostics
 !  The result is only present on the root processor.
 !
       if (nnamex>0) then
-        call mpireduce_sum(fnamex,fsumx,nx*nprocx*nnamex)
+        call mpireduce_sum(fnamex,fsumx,(/nx,nprocx,nnamex/))
         if (lroot) &
             fnamex(:,:,1:nnamex)=fsumx(:,:,1:nnamex)/(ny*nz*nprocy*nprocz)
       endif
@@ -437,7 +437,7 @@ module Diagnostics
 !
       if (nnamer>0) then
          !the extra slot is where the normalization is stored
-         call mpireduce_sum(fnamer,fsumr,nrcyl*(nnamer+1))
+         call mpireduce_sum(fnamer,fsumr,(/nrcyl,mnamer/))
          if (lroot) then
             norm=fsumr(:,nnamer+1)
             do in=1,nnamer
@@ -463,7 +463,7 @@ module Diagnostics
 !  The result is only present on the root processor.
 !
       if (nnamexz>0) then
-        call mpireduce_sum(fnamexz,fsumxz,nnamexz*nx*nz*nprocz)
+        call mpireduce_sum(fnamexz,fsumxz,(/nx,nz,nprocz,nnamexz/))
         if (lroot) &
             fnamexz(:,:,:,1:nnamexz)=fsumxz(:,:,:,1:nnamexz)/(ny*nprocy)
       endif
@@ -485,7 +485,7 @@ module Diagnostics
 !  the result is only present on the root processor.
 !
       if (nnamexy>0) then
-        call mpireduce_sum(fnamexy,fsumxy,nnamexy*nx*ny*nprocy)
+        call mpireduce_sum(fnamexy,fsumxy,(/nx,ny,nprocy,mnamexy/))
         if (lroot) &
             fnamexy(:,:,:,1:nnamexy)=fsumxy(:,:,:,1:nnamexy)/(nz*nprocz)
       endif
@@ -509,7 +509,7 @@ module Diagnostics
 !  normalize by sum of unity which is accumulated in fnamerz(:,0,:,1).
 !
       if (nnamerz>0) then
-        call mpireduce_sum(fnamerz,fsumrz,mnamerz*nrcyl*(nz+1)*nprocz)
+        call mpireduce_sum(fnamerz,fsumrz,(/nrcyl,nz+1,nprocz,mnamerz/))
         if (lroot) then
           do i=1,nnamerz
             fnamerz(:,1:nz,:,i)=fsumrz(:,1:nz,:,i)/spread(fsumrz(:,0,:,1),2,nz)

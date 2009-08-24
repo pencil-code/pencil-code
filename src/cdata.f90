@@ -266,8 +266,7 @@ module Cdata
   real, dimension (ny,nprocy,mnamey) :: fnamey=0.0
   real, dimension (nz,nprocz,mnamez) :: fnamez=0.0
   real, dimension (nrcyl,mnamer) :: fnamer=0.
-  real, allocatable, dimension(:,:,:,:) :: fnamexy
-  real, allocatable, dimension(:,:,:,:) :: fnamexz
+  real, allocatable, dimension(:,:,:,:) :: fnamexy, fnamexz
   real, dimension (nrcyl,0:nz,nprocz,mnamerz) :: fnamerz=0.0
   real, dimension (nrcyl,nx) :: phiavg_profile=0.0
   character (len=30) :: cname(mname),cform(mname)

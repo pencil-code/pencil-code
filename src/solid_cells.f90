@@ -613,16 +613,16 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
       if (idiag_c_dragx .ne. 0 .or. idiag_c_dragy .ne. 0) then 
 
         ! Collect and sum rhosum, irhocount, c_dragx and c_dragy
-        call mpireduce_sum_scl(rhosum,rhosum_all)
+        call mpireduce_sum(rhosum,rhosum_all)
         call mpireduce_sum_int(irhocount,irhocount_all)
-        call mpireduce_sum_scl(c_dragx,c_dragx_all)
-        call mpireduce_sum_scl(c_dragy,c_dragy_all)
+        call mpireduce_sum(c_dragx,c_dragx_all)
+        call mpireduce_sum(c_dragy,c_dragy_all)
 
 !!ForDebug->!!! Debug:
-!!ForDebug->        call mpireduce_sum_scl(testcpx,cpx)
-!!ForDebug->        call mpireduce_sum_scl(testcpy,cpy)
-!!ForDebug->        call mpireduce_sum_scl(testctx,ctx)
-!!ForDebug->        call mpireduce_sum_scl(testcty,cty)
+!!ForDebug->        call mpireduce_sum(testcpx,cpx)
+!!ForDebug->        call mpireduce_sum(testcpy,cpy)
+!!ForDebug->        call mpireduce_sum(testctx,ctx)
+!!ForDebug->        call mpireduce_sum(testcty,cty)
 !!ForDebug->        call mpireduce_sum_int(testcounter,testcounter_all)
         
         if (lroot) then          

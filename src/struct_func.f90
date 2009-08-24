@@ -261,7 +261,7 @@ module struct_func
       !  Collecting all data on root processor and normalizing pdf and sf
       !
       if (llpdf) then
-        call mpireduce_sum(p_du,p_du_sum,n_pdf*imax*3)  !Is this safe???
+        call mpireduce_sum(p_du,p_du_sum,(/n_pdf,imax,3/))  !Is this safe???
         do i=1,imax
           do direction=1,nr_directions
             normalization=1./(n_pdf*dx_du*sum(p_du_sum(:,i,direction)))
@@ -271,7 +271,7 @@ module struct_func
       endif
       !
       if (llsf) then
-        call mpireduce_sum(sf,sf_sum,imax*qmax*3)  !Is this safe???
+        call mpireduce_sum(sf,sf_sum,(/imax,qmax,3/))  !Is this safe???
         ndiv=nw*ncpus*2
         sf_sum=sf_sum/ndiv
       endif

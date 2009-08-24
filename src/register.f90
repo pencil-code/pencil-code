@@ -364,7 +364,7 @@ module Register
 !
       if (nprocz>1) then
         z_allprocs_tmp=z_allprocs
-        call mpireduce_sum(z_allprocs_tmp,z_allprocs,nz*nprocz)
+        call mpireduce_sum(z_allprocs_tmp,z_allprocs,(/nz,nprocz/))
       endif
 !
 !  For spherical coordinate system, calculate 1/r, cot(theta)/r, etc

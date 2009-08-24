@@ -798,7 +798,7 @@ module Testscalar
 !  Do this first for z-dependent mean fields
 !
       if (nprocy>1) then
-        call mpireduce_sum(ugtestm1,ugtestm1_tmp,nz*nprocz*njtest)
+        call mpireduce_sum(ugtestm1,ugtestm1_tmp,(/nz,nprocz,njtest/))
         call mpibcast_real_arr(ugtestm1_tmp,nz*nprocz*njtest)
         do jtest=1,njtest
           do n=n1,n2
@@ -810,7 +810,7 @@ module Testscalar
 !  Next, do this for x-dependent mean fields
 !
       if (ncpus>1) then
-        call mpireduce_sum(ugtestmx1,ugtestmx1_tmp,nx*nprocy*nprocz*njtest)
+        call mpireduce_sum(ugtestmx1,ugtestmx1_tmp,(/nx,nprocy,nprocz,njtest/))
         call mpibcast_real_arr(ugtestmx1_tmp,nx*nprocy*nprocz*njtest)
         do jtest=1,njtest
           ugtestmx(:,jtest)=0.
@@ -825,7 +825,7 @@ module Testscalar
 !  Finally, do this for y-dependent mean fields
 !
       if (nprocz>1) then
-        call mpireduce_sum(ugtestmy1,ugtestmy1_tmp,ny*nprocy*njtest)
+        call mpireduce_sum(ugtestmy1,ugtestmy1_tmp,(/ny,nprocy,njtest/))
         call mpibcast_real_arr(ugtestmy1_tmp,ny*nprocy*njtest)
         do jtest=1,njtest
           do m=m1,m2

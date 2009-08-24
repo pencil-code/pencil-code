@@ -1173,7 +1173,7 @@ module Particles_nbody
         else
           sum_loc(j) = fac*(sum(tmp(2:nx-1))+.5*(tmp(1)+tmp(nx)))
         endif
-        call mpireduce_sum_scl(sum_loc(j),accg(j))
+        call mpireduce_sum(sum_loc(j),accg(j))
       enddo
 !
 !  Broadcast particle acceleration

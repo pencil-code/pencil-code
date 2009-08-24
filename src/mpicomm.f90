@@ -119,56 +119,64 @@ module Mpicomm
   endinterface
 !
   interface mpiallreduce_sum
-    module procedure mpiallreduce_sum_arr2
-    module procedure mpiallreduce_sum_arr
     module procedure mpiallreduce_sum_scl
+    module procedure mpiallreduce_sum_arr
+    module procedure mpiallreduce_sum_arr2
+    module procedure mpiallreduce_sum_arr3
   endinterface
 !
   interface mpiallreduce_sum_int
-     module procedure mpiallreduce_sum_int_arr
      module procedure mpiallreduce_sum_int_scl
+     module procedure mpiallreduce_sum_int_arr
   endinterface
 !
   interface mpiallreduce_max
-    module procedure mpiallreduce_max_arr
     module procedure mpiallreduce_max_scl
+    module procedure mpiallreduce_max_arr
   endinterface
 !
   interface mpireduce_max
-    module procedure mpireduce_max_arr
     module procedure mpireduce_max_scl
+    module procedure mpireduce_max_arr
   endinterface
 !
   interface mpireduce_min
-    module procedure mpireduce_min_arr
     module procedure mpireduce_min_scl
+    module procedure mpireduce_min_arr
   endinterface
 !
   interface mpireduce_or
-    module procedure mpireduce_or_arr
     module procedure mpireduce_or_scl
+    module procedure mpireduce_or_arr
   endinterface
 !
   interface mpireduce_and
-    module procedure mpireduce_and_arr
     module procedure mpireduce_and_scl
-  endinterface
-!
-! NOT POSSIBLE BECAUSE OF n-Dimensional array usage
-! in equ.f90
-!  interface mpireduce_sum
-!    module procedure mpireduce_sum_arr
-!    module procedure mpireduce_sum_scl
-!  endinterface
-!
-  interface mpireduce_sum_double
-    module procedure mpireduce_sum_double_arr
-    module procedure mpireduce_sum_double_scl
+    module procedure mpireduce_and_arr
   endinterface
 !
   interface mpireduce_sum_int
-    module procedure mpireduce_sum_int_arr
     module procedure mpireduce_sum_int_scl
+    module procedure mpireduce_sum_int_arr
+    module procedure mpireduce_sum_int_arr2
+    module procedure mpireduce_sum_int_arr3
+    module procedure mpireduce_sum_int_arr4
+  endinterface
+!
+  interface mpireduce_sum
+    module procedure mpireduce_sum_scl
+    module procedure mpireduce_sum_arr
+    module procedure mpireduce_sum_arr2
+    module procedure mpireduce_sum_arr3
+    module procedure mpireduce_sum_arr4
+  endinterface
+!
+  interface mpireduce_sum_double
+    module procedure mpireduce_sum_double_scl
+    module procedure mpireduce_sum_double_arr
+    module procedure mpireduce_sum_double_arr2
+    module procedure mpireduce_sum_double_arr3
+    module procedure mpireduce_sum_double_arr4
   endinterface
 !
   include 'mpif.h'
@@ -348,6 +356,10 @@ module Mpicomm
 !  ipy. The rank within MPI_COMM_WORLD is given by ipz.
 !
       call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipy, ipz, MPI_COMM_COLUMN, ierr)
+!
+      print*, 'MPI_COMM_WORLD', iproc, MPI_COMM_WORLD
+      print*, 'MPI_COMM_ROW', iproc, MPI_COMM_ROW
+      print*, 'MPI_COMM_COLUMN', iproc, MPI_COMM_COLUMN
 !
     endsubroutine mpicomm_init
 !***********************************************************************
@@ -1290,7 +1302,7 @@ module Mpicomm
 !***********************************************************************
     subroutine mpibcast_logical_scl(lbcast_array,nbcast_array,proc)
 !
-!  Communicate logical scalar between processors
+!  Communicate logical scalar between processors.
 !
       integer :: nbcast_array
       logical :: lbcast_array
@@ -1310,7 +1322,7 @@ module Mpicomm
 !***********************************************************************
     subroutine mpibcast_logical_arr(lbcast_array,nbcast_array,proc)
 !
-!  Communicate logical array between processors
+!  Communicate logical array between processors.
 !
       integer :: nbcast_array
       logical, dimension (nbcast_array) :: lbcast_array
@@ -1353,7 +1365,7 @@ module Mpicomm
 !***********************************************************************
     subroutine mpibcast_int_scl(ibcast_array,nbcast_array,proc)
 !
-!  Communicate integer scalar between processors
+!  Communicate integer scalar between processors.
 !
       integer :: nbcast_array
       integer :: ibcast_array
@@ -1373,7 +1385,7 @@ module Mpicomm
 !***********************************************************************
     subroutine mpibcast_int_arr(ibcast_array,nbcast_array,proc)
 !
-!  Communicate integer array between processors
+!  Communicate integer array between processors.
 !
       integer :: nbcast_array
       integer, dimension(nbcast_array) :: ibcast_array
@@ -1393,7 +1405,7 @@ module Mpicomm
 !***********************************************************************
     subroutine mpibcast_real_scl(bcast_array,nbcast_array,proc)
 !
-!  Communicate real scalar between processors
+!  Communicate real scalar between processors.
 !
       integer :: nbcast_array
       real :: bcast_array
@@ -1413,7 +1425,7 @@ module Mpicomm
 !***********************************************************************
     subroutine mpibcast_real_arr(bcast_array,nbcast_array,proc)
 !
-!  Communicate real array between processors
+!  Communicate real array between processors.
 !
       integer :: nbcast_array
       real, dimension(nbcast_array) :: bcast_array
@@ -1479,7 +1491,7 @@ module Mpicomm
 !***********************************************************************
     subroutine mpibcast_double_scl(bcast_array,nbcast_array,proc)
 !
-!  Communicate real scalar between processors
+!  Communicate real scalar between processors.
 !
       integer :: nbcast_array
       double precision :: bcast_array
@@ -1499,7 +1511,7 @@ module Mpicomm
 !***********************************************************************
     subroutine mpibcast_double_arr(bcast_array,nbcast_array,proc)
 !
-!  Communicate real array between processors
+!  Communicate real array between processors.
 !
       integer :: nbcast_array
       double precision, dimension(nbcast_array) :: bcast_array
@@ -1519,7 +1531,7 @@ module Mpicomm
 !***********************************************************************
     subroutine mpibcast_char_scl(cbcast_array,nbcast_array,proc)
 !
-!  Communicate character scalar between processors
+!  Communicate character scalar between processors.
 !
       integer :: nbcast_array
       character :: cbcast_array
@@ -1539,7 +1551,7 @@ module Mpicomm
 !***********************************************************************
     subroutine mpibcast_char_arr(cbcast_array,nbcast_array,proc)
 !
-!  Communicate character array between processors
+!  Communicate character array between processors.
 !
       integer :: nbcast_array
       character, dimension(nbcast_array) :: cbcast_array
@@ -1557,12 +1569,32 @@ module Mpicomm
 !
     endsubroutine mpibcast_char_arr
 !***********************************************************************
+    subroutine mpiallreduce_sum_scl(fsum_tmp,fsum)
+!
+!  Calculate total sum for each array element and return to all processors.
+!
+      real :: fsum_tmp,fsum
+!
+      call MPI_ALLREDUCE(fsum_tmp, fsum, 1, MPI_REAL, MPI_SUM, &
+                      MPI_COMM_WORLD, ierr)
+!
+    endsubroutine mpiallreduce_sum_scl
+!***********************************************************************
+    subroutine mpiallreduce_sum_arr(fsum_tmp,fsum,nreduce)
+!
+!  Calculate total sum for each array element and return to all processors.
+!
+      integer :: nreduce
+      real, dimension(nreduce) :: fsum_tmp,fsum
+!
+      call MPI_ALLREDUCE(fsum_tmp, fsum, nreduce, MPI_REAL, MPI_SUM, &
+          MPI_COMM_WORLD, ierr)
+!
+    endsubroutine mpiallreduce_sum_arr
+!***********************************************************************
     subroutine mpiallreduce_sum_arr2(fsum_tmp,fsum,nreduce_array,lsumy,lsumz)
 !
-!  Calculate total sum for each array element and return to 
-!  all processors (MPI_COMM_WORLD).
-!  Or sum over z and return to the nprocy processors (MPI_COMM_COLUMN). 
-!  Or sum over y and return to the nprocz processors (MPI_COMM_ROW).
+!  Calculate total sum for each array element and return to all processors.
 !
 !  23-nov-08/wlad: included the lsumy,lsumz possibilities
 !
@@ -1573,6 +1605,10 @@ module Mpicomm
 !
       nreduce=nreduce_array(1)*nreduce_array(2)
 !
+!  Sum over all processors and return to root (MPI_COMM_WORLD).
+!  Sum over z beams and return to the ipz=0 processors (MPI_COMM_COLUMN). 
+!  Sum over y beams and return to the ipy=0 processors (MPI_COMM_ROW).
+!
       if (present(lsumy)) then
         mpiprocs=MPI_COMM_ROW
       elseif (present(lsumz)) then 
@@ -1582,220 +1618,137 @@ module Mpicomm
       endif
 !
       call MPI_ALLREDUCE(fsum_tmp, fsum, nreduce, MPI_REAL, MPI_SUM, &
-                      mpiprocs, ierr)
+          mpiprocs, ierr)
 !
     endsubroutine mpiallreduce_sum_arr2
 !***********************************************************************
-    subroutine mpiallreduce_sum_arr(fsum_tmp,fsum,nreduce)
+    subroutine mpiallreduce_sum_arr3(fsum_tmp,fsum,nreduce_array,lsumy,lsumz)
 !
-      integer :: nreduce
-      real, dimension(nreduce) :: fsum_tmp,fsum
+!  Calculate total sum for each array element and return to all processors.
 !
-!  calculate total sum for each array element
-!  and return to all processors
+!  23-nov-08/wlad: included the lsumy,lsumz possibilities
+!
+      integer, dimension(3) :: nreduce_array
+      real, dimension(nreduce_array(1),nreduce_array(2),nreduce_array(3)) :: fsum_tmp,fsum
+      integer :: nreduce,mpiprocs
+      logical, optional :: lsumy,lsumz
+!
+      nreduce=nreduce_array(1)*nreduce_array(2)*nreduce_array(3)
+!
+!  Sum over all processors and return to root (MPI_COMM_WORLD).
+!  Sum over z beams and return to the ipz=0 processors (MPI_COMM_COLUMN). 
+!  Sum over y beams and return to the ipy=0 processors (MPI_COMM_ROW).
+!
+      if (present(lsumy)) then
+        mpiprocs=MPI_COMM_ROW
+      elseif (present(lsumz)) then 
+        mpiprocs=MPI_COMM_COLUMN
+      else
+        mpiprocs=MPI_COMM_WORLD 
+      endif
 !
       call MPI_ALLREDUCE(fsum_tmp, fsum, nreduce, MPI_REAL, MPI_SUM, &
-                      MPI_COMM_WORLD, ierr)
+          mpiprocs, ierr)
 !
-    endsubroutine mpiallreduce_sum_arr
-!***********************************************************************
-    subroutine mpiallreduce_sum_scl(fsum_tmp,fsum)
-!
-      real :: fsum_tmp,fsum
-!
-!  calculate total sum for each array element
-!  and return to all processors
-!
-      call MPI_ALLREDUCE(fsum_tmp, fsum, 1, MPI_REAL, MPI_SUM, &
-                      MPI_COMM_WORLD, ierr)
-!
-    endsubroutine mpiallreduce_sum_scl
-!***********************************************************************
-    subroutine mpiallreduce_sum_int_arr(fsum_tmp,fsum,nreduce)
-!
-      integer :: nreduce
-      integer, dimension(nreduce) :: fsum_tmp,fsum
-!
-!  calculate total sum for each array element
-!  and return to all processors
-!
-      call MPI_ALLREDUCE(fsum_tmp, fsum, nreduce, MPI_INTEGER, MPI_SUM, &
-                      MPI_COMM_WORLD, ierr)
-!
-    endsubroutine mpiallreduce_sum_int_arr
+    endsubroutine mpiallreduce_sum_arr3
 !***********************************************************************
     subroutine mpiallreduce_sum_int_scl(fsum_tmp,fsum)
 !
-      integer :: fsum_tmp,fsum
+!  Calculate total sum for each array element and return to all processors.
 !
-!  calculate total sum for each array element
-!  and return to all processors
+      integer :: fsum_tmp,fsum
 !
       call MPI_ALLREDUCE(fsum_tmp, fsum, 1, MPI_INTEGER, MPI_SUM, &
                       MPI_COMM_WORLD, ierr)
 !
     endsubroutine mpiallreduce_sum_int_scl
 !***********************************************************************
-    subroutine mpiallreduce_max_arr(fmax_tmp,fmax,nreduce)
+    subroutine mpiallreduce_sum_int_arr(fsum_tmp,fsum,nreduce)
+!
+!  Calculate total sum for each array element and return to all processors.
 !
       integer :: nreduce
-      real, dimension(nreduce) :: fmax_tmp,fmax
+      integer, dimension(nreduce) :: fsum_tmp,fsum
 !
-!  calculate total maximum for each array element and return to root
-!
-      call MPI_ALLREDUCE(fmax_tmp, fmax, nreduce, MPI_REAL, MPI_MAX, &
+      call MPI_ALLREDUCE(fsum_tmp, fsum, nreduce, MPI_INTEGER, MPI_SUM, &
                       MPI_COMM_WORLD, ierr)
 !
-    endsubroutine mpiallreduce_max_arr
+    endsubroutine mpiallreduce_sum_int_arr
 !***********************************************************************
     subroutine mpiallreduce_max_scl(fmax_tmp,fmax)
 !
-      real :: fmax_tmp,fmax
+!  Calculate total maximum for each array element and return to root.
 !
-!  calculate total maximum for each array element and return to root
+      real :: fmax_tmp,fmax
 !
       call MPI_ALLREDUCE(fmax_tmp, fmax, 1, MPI_REAL, MPI_MAX, &
                       MPI_COMM_WORLD, ierr)
 !
     endsubroutine mpiallreduce_max_scl
 !***********************************************************************
-    subroutine mpireduce_max_arr(fmax_tmp,fmax,nreduce)
+    subroutine mpiallreduce_max_arr(fmax_tmp,fmax,nreduce)
+!
+!  Calculate total maximum for each array element and return to root.
 !
       integer :: nreduce
       real, dimension(nreduce) :: fmax_tmp,fmax
 !
-!  calculate total maximum for each array element and return to root
-!
-      call MPI_REDUCE(fmax_tmp, fmax, nreduce, MPI_REAL, MPI_MAX, root, &
+      call MPI_ALLREDUCE(fmax_tmp, fmax, nreduce, MPI_REAL, MPI_MAX, &
                       MPI_COMM_WORLD, ierr)
-    endsubroutine mpireduce_max_arr
+!
+    endsubroutine mpiallreduce_max_arr
 !***********************************************************************
     subroutine mpireduce_max_scl(fmax_tmp,fmax)
 !
-      real :: fmax_tmp,fmax
+!  Calculate total maximum for each array element and return to root.
 !
-!  calculate total maximum for each array element and return to root
+      real :: fmax_tmp,fmax
 !
       call MPI_REDUCE(fmax_tmp, fmax, 1, MPI_REAL, MPI_MAX, root, &
                       MPI_COMM_WORLD, ierr)
+!
     endsubroutine mpireduce_max_scl
 !***********************************************************************
+    subroutine mpireduce_max_arr(fmax_tmp,fmax,nreduce)
+!
+!  Calculate total maximum for each array element and return to root.
+!
+      integer :: nreduce
+      real, dimension(nreduce) :: fmax_tmp,fmax
+!
+      call MPI_REDUCE(fmax_tmp, fmax, nreduce, MPI_REAL, MPI_MAX, root, &
+                      MPI_COMM_WORLD, ierr)
+!
+    endsubroutine mpireduce_max_arr
+!***********************************************************************
+    subroutine mpireduce_min_scl(fmin_tmp,fmin)
+!
+!  Calculate total minimum for each array element and return to root.
+!
+      real :: fmin_tmp,fmin
+!
+      call MPI_REDUCE(fmin_tmp, fmin, 1, MPI_REAL, MPI_MIN, root, &
+                      MPI_COMM_WORLD, ierr)
+!
+    endsubroutine mpireduce_min_scl
+!***********************************************************************
     subroutine mpireduce_min_arr(fmin_tmp,fmin,nreduce)
+!
+!  Calculate total maximum for each array element and return to root.
 !
       integer :: nreduce
       real, dimension(nreduce) :: fmin_tmp,fmin
 !
-!  calculate total maximum for each array element and return to root
-!
       call MPI_REDUCE(fmin_tmp, fmin, nreduce, MPI_REAL, MPI_MIN, root, &
                       MPI_COMM_WORLD, ierr)
+!
     endsubroutine mpireduce_min_arr
-!***********************************************************************
-    subroutine mpireduce_min_scl(fmin_tmp,fmin)
-!
-      real :: fmin_tmp,fmin
-!
-!  calculate total minimum for each array element and return to root
-!
-      call MPI_REDUCE(fmin_tmp, fmin, 1, MPI_REAL, MPI_MIN, root, &
-                      MPI_COMM_WORLD, ierr)
-    endsubroutine mpireduce_min_scl
-!***********************************************************************
-    subroutine mpireduce_sum(fsum_tmp,fsum,nreduce)
-!
-      integer :: nreduce
-      real, dimension(nreduce) :: fsum_tmp,fsum
-!
-      intent(in)  :: fsum_tmp,nreduce
-      intent(out) :: fsum
-!
-!  calculate total sum for each array element and return to root
-!  Unlike for MPI_MAX, for MPI_SUM cannot handle nprocs=1 correctly!
-!
-      if (nprocs==1) then
-        fsum=fsum_tmp
-      else
-        call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_REAL, MPI_SUM, root, &
-                        MPI_COMM_WORLD, ierr)
-      endif
-!
-    endsubroutine mpireduce_sum
-!***********************************************************************
-    subroutine mpireduce_sum_scl(fsum_tmp,fsum)
-!
-      real :: fsum_tmp,fsum
-!
-!  calculate total sum for each array element and return to root
-!  Unlike for MPI_MAX, for MPI_SUM cannot handle nprocs=1 correctly!
-!
-      if (nprocs==1) then
-        fsum=fsum_tmp
-      else
-        call MPI_REDUCE(fsum_tmp, fsum, 1, MPI_REAL, MPI_SUM, root, &
-                        MPI_COMM_WORLD, ierr)
-      endif
-!
-    endsubroutine mpireduce_sum_scl
-!***********************************************************************
-    subroutine mpireduce_sum_double_arr(dsum_tmp,dsum,nreduce)
-!
-      integer :: nreduce
-      double precision, dimension(nreduce) :: dsum_tmp,dsum
-!
-!  calculate total sum for each array element and return to root
-!  Unlike for MPI_MAX, for MPI_SUM cannot handle nprocs=1 correctly!
-!
-      if (nprocs==1) then
-        dsum=dsum_tmp
-      else
-        call MPI_REDUCE(dsum_tmp, dsum, nreduce, MPI_DOUBLE_PRECISION, MPI_SUM, root, &
-                        MPI_COMM_WORLD, ierr)
-      endif
-!
-    endsubroutine mpireduce_sum_double_arr
-!***********************************************************************
-    subroutine mpireduce_sum_double_scl(dsum_tmp,dsum)
-!
-      double precision :: dsum_tmp,dsum
-!
-!  calculate total sum for each array element and return to root
-!  Unlike for MPI_MAX, for MPI_SUM cannot handle nprocs=1 correctly!
-!
-      if (nprocs==1) then
-        dsum=dsum_tmp
-      else
-        call MPI_REDUCE(dsum_tmp, dsum, 1, MPI_DOUBLE_PRECISION, MPI_SUM, root, &
-                        MPI_COMM_WORLD, ierr)
-      endif
-!
-    endsubroutine mpireduce_sum_double_scl
-!***********************************************************************
-    subroutine mpireduce_sum_int_arr(fsum_tmp,fsum,nreduce)
-!
-!  12-jan-05/anders: coded
-!
-      integer :: nreduce
-      integer, dimension(nreduce) :: fsum_tmp,fsum
-!
-!  calculate total sum for each array element and return to root
-!  Unlike for MPI_MAX, for MPI_SUM cannot handle nprocs=1 correctly!
-!
-      if (nprocs==1) then
-        fsum=fsum_tmp
-      else
-        call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_INTEGER, MPI_SUM, root, &
-                        MPI_COMM_WORLD, ierr)
-      endif
-!
-    endsubroutine mpireduce_sum_int_arr
 !***********************************************************************
     subroutine mpireduce_sum_int_scl(fsum_tmp,fsum)
 !
-!  16-sep-05/anders: adapted from mpireduce_sum_int
+!  Calculate sum and return to root.
 !
       integer :: fsum_tmp,fsum
-!
-!  Calculate sum and return to root.
 !
       if (nprocs==1) then
         fsum=fsum_tmp
@@ -1806,31 +1759,247 @@ module Mpicomm
 !
     endsubroutine mpireduce_sum_int_scl
 !***********************************************************************
-    subroutine mpireduce_or_arr(flor_tmp,flor,nreduce)
+    subroutine mpireduce_sum_int_arr(fsum_tmp,fsum,nreduce)
 !
-!  17-sep-05/anders: coded
+!  Calculate total sum for each array element and return to root.
 !
+      integer, dimension(nreduce) :: fsum_tmp,fsum
       integer :: nreduce
-      logical, dimension(nreduce) :: flor_tmp, flor
-!
-!  Calculate logical or over all procs and return to root.
 !
       if (nprocs==1) then
-        flor=flor_tmp
+        fsum=fsum_tmp
       else
-        call MPI_REDUCE(flor_tmp, flor, nreduce, MPI_LOGICAL, MPI_LOR, root, &
+        call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_INTEGER, MPI_SUM, root, &
                         MPI_COMM_WORLD, ierr)
       endif
 !
-    endsubroutine mpireduce_or_arr
+    endsubroutine mpireduce_sum_int_arr
+!***********************************************************************
+    subroutine mpireduce_sum_int_arr2(fsum_tmp,fsum,nreduce)
+!
+!  Calculate total sum for each array element and return to root.
+!
+      integer, dimension(2) :: nreduce
+      integer, dimension(nreduce(1),nreduce(2)) :: fsum_tmp,fsum
+!
+      if (nprocs==1) then
+        fsum=fsum_tmp
+      else
+        call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_INTEGER, MPI_SUM, root, &
+                        MPI_COMM_WORLD, ierr)
+      endif
+!
+    endsubroutine mpireduce_sum_int_arr2
+!***********************************************************************
+    subroutine mpireduce_sum_int_arr3(fsum_tmp,fsum,nreduce)
+!
+!  Calculate total sum for each array element and return to root.
+!
+      integer, dimension(3) :: nreduce
+      integer, dimension(nreduce(1),nreduce(2),nreduce(3)) :: fsum_tmp,fsum
+!
+      if (nprocs==1) then
+        fsum=fsum_tmp
+      else
+        call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_INTEGER, MPI_SUM, root, &
+                        MPI_COMM_WORLD, ierr)
+      endif
+!
+    endsubroutine mpireduce_sum_int_arr3
+!***********************************************************************
+    subroutine mpireduce_sum_int_arr4(fsum_tmp,fsum,nreduce)
+!
+!  Calculate total sum for each array element and return to root.
+!
+      integer, dimension(4) :: nreduce
+      integer, dimension(nreduce(1),nreduce(2),nreduce(3),nreduce(4)) :: fsum_tmp,fsum
+!
+      if (nprocs==1) then
+        fsum=fsum_tmp
+      else
+        call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_INTEGER, MPI_SUM, root, &
+                        MPI_COMM_WORLD, ierr)
+      endif
+!
+    endsubroutine mpireduce_sum_int_arr4
+!***********************************************************************
+    subroutine mpireduce_sum_scl(fsum_tmp,fsum)
+!
+!  Calculate total sum and return to root.
+!
+      real :: fsum_tmp,fsum
+!
+      if (nprocs==1) then
+        fsum=fsum_tmp
+      else
+        call MPI_REDUCE(fsum_tmp, fsum, 1, MPI_REAL, MPI_SUM, root, &
+                        MPI_COMM_WORLD, ierr)
+      endif
+!
+    endsubroutine mpireduce_sum_scl
+!***********************************************************************
+    subroutine mpireduce_sum_arr(fsum_tmp,fsum,nreduce)
+!
+!  Calculate total sum for each array element and return to root.
+!
+      real, dimension(nreduce) :: fsum_tmp,fsum
+      integer :: nreduce
+!
+      intent(in)  :: fsum_tmp,nreduce
+      intent(out) :: fsum
+!
+      if (nprocs==1) then
+        fsum=fsum_tmp
+      else
+        call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_REAL, MPI_SUM, root, &
+                        MPI_COMM_WORLD, ierr)
+      endif
+!
+    endsubroutine mpireduce_sum_arr
+!***********************************************************************
+    subroutine mpireduce_sum_arr2(fsum_tmp,fsum,nreduce)
+!
+!  Calculate total sum for each array element and return to root.
+!
+      integer, dimension(2) :: nreduce
+      real, dimension(nreduce(1),nreduce(2)) :: fsum_tmp,fsum
+!
+      intent(in)  :: fsum_tmp,nreduce
+      intent(out) :: fsum
+!
+      if (nprocs==1) then
+        fsum=fsum_tmp
+      else
+        call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_REAL, MPI_SUM, root, &
+                        MPI_COMM_WORLD, ierr)
+      endif
+!
+    endsubroutine mpireduce_sum_arr2
+!***********************************************************************
+    subroutine mpireduce_sum_arr3(fsum_tmp,fsum,nreduce)
+!
+!  Calculate total sum for each array element and return to root.
+!
+      integer, dimension(3) :: nreduce
+      real, dimension(nreduce(1),nreduce(2),nreduce(3)) :: fsum_tmp,fsum
+!
+      intent(in)  :: fsum_tmp,nreduce
+      intent(out) :: fsum
+!
+      if (nprocs==1) then
+        fsum=fsum_tmp
+      else
+        call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_REAL, MPI_SUM, root, &
+                        MPI_COMM_WORLD, ierr)
+      endif
+!
+    endsubroutine mpireduce_sum_arr3
+!***********************************************************************
+    subroutine mpireduce_sum_arr4(fsum_tmp,fsum,nreduce)
+!
+!  Calculate total sum for each array element and return to root.
+!
+      integer, dimension(4) :: nreduce
+      real, dimension(nreduce(1),nreduce(2),nreduce(3),nreduce(4)) :: fsum_tmp,fsum
+!
+      intent(in)  :: fsum_tmp,nreduce
+      intent(out) :: fsum
+!
+      if (nprocs==1) then
+        fsum=fsum_tmp
+      else
+        call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_REAL, MPI_SUM, root, &
+                        MPI_COMM_WORLD, ierr)
+      endif
+!
+    endsubroutine mpireduce_sum_arr4
+!***********************************************************************
+    subroutine mpireduce_sum_double_scl(dsum_tmp,dsum)
+!
+!  Calculate total sum and return to root.
+!
+      double precision :: dsum_tmp,dsum
+!
+      if (nprocs==1) then
+        dsum=dsum_tmp
+      else
+        call MPI_REDUCE(dsum_tmp, dsum, 1, MPI_DOUBLE_PRECISION, MPI_SUM, &
+                        root, MPI_COMM_WORLD, ierr)
+      endif
+!
+    endsubroutine mpireduce_sum_double_scl
+!***********************************************************************
+    subroutine mpireduce_sum_double_arr(dsum_tmp,dsum,nreduce)
+!
+!  Calculate total sum for each array element and return to root.
+!
+      integer :: nreduce
+      double precision, dimension(nreduce) :: dsum_tmp,dsum
+!
+      if (nprocs==1) then
+        dsum=dsum_tmp
+      else
+        call MPI_REDUCE(dsum_tmp, dsum, nreduce, MPI_DOUBLE_PRECISION, &
+                        MPI_SUM, root, MPI_COMM_WORLD, ierr)
+      endif
+!
+    endsubroutine mpireduce_sum_double_arr
+!***********************************************************************
+    subroutine mpireduce_sum_double_arr2(dsum_tmp,dsum,nreduce)
+!
+!  Calculate total sum for each array element and return to root.
+!
+      integer, dimension(2) :: nreduce
+      double precision, dimension(nreduce(1),nreduce(2)) :: dsum_tmp,dsum
+!
+      if (nprocs==1) then
+        dsum=dsum_tmp
+      else
+        call MPI_REDUCE(dsum_tmp, dsum, nreduce, MPI_DOUBLE_PRECISION, &
+                        MPI_SUM, root, MPI_COMM_WORLD, ierr)
+      endif
+!
+    endsubroutine mpireduce_sum_double_arr2
+!***********************************************************************
+    subroutine mpireduce_sum_double_arr3(dsum_tmp,dsum,nreduce)
+!
+!  Calculate total sum for each array element and return to root.
+!
+      integer, dimension(3) :: nreduce
+      double precision, dimension(nreduce(1),nreduce(2),nreduce(3)) :: dsum_tmp,dsum
+!
+      if (nprocs==1) then
+        dsum=dsum_tmp
+      else
+        call MPI_REDUCE(dsum_tmp, dsum, nreduce, MPI_DOUBLE_PRECISION, &
+                        MPI_SUM, root, MPI_COMM_WORLD, ierr)
+      endif
+!
+    endsubroutine mpireduce_sum_double_arr3
+!***********************************************************************
+    subroutine mpireduce_sum_double_arr4(dsum_tmp,dsum,nreduce)
+!
+!  Calculate total sum for each array element and return to root.
+!
+      integer, dimension(4) :: nreduce
+      double precision, dimension(nreduce(1),nreduce(2),nreduce(3),nreduce(4)) :: dsum_tmp,dsum
+!
+      if (nprocs==1) then
+        dsum=dsum_tmp
+      else
+        call MPI_REDUCE(dsum_tmp, dsum, nreduce, MPI_DOUBLE_PRECISION, &
+                        MPI_SUM, root, MPI_COMM_WORLD, ierr)
+      endif
+!
+    endsubroutine mpireduce_sum_double_arr4
 !***********************************************************************
     subroutine mpireduce_or_scl(flor_tmp,flor)
+!
+!  Calculate logical or over all procs and return to root.
 !
 !  17-sep-05/anders: coded
 !
       logical :: flor_tmp, flor
-!
-!  Calculate logical or over all procs and return to root.
 !
       if (nprocs==1) then
         flor=flor_tmp
@@ -1841,31 +2010,31 @@ module Mpicomm
 !
     endsubroutine mpireduce_or_scl
 !***********************************************************************
-    subroutine mpireduce_and_arr(fland_tmp,fland,nreduce)
+    subroutine mpireduce_or_arr(flor_tmp,flor,nreduce)
 !
-!  11-mar-09/anders: coded
+!  Calculate logical or over all procs and return to root.
+!
+!  17-sep-05/anders: coded
 !
       integer :: nreduce
-      logical, dimension(nreduce) :: fland_tmp, fland
-!
-!  Calculate logical and over all procs and return to root.
+      logical, dimension(nreduce) :: flor_tmp, flor
 !
       if (nprocs==1) then
-        fland=fland_tmp
+        flor=flor_tmp
       else
-        call MPI_REDUCE(fland_tmp, fland, nreduce, MPI_LOGICAL, MPI_LAND, root,&
+        call MPI_REDUCE(flor_tmp, flor, nreduce, MPI_LOGICAL, MPI_LOR, root, &
                         MPI_COMM_WORLD, ierr)
       endif
 !
-    endsubroutine mpireduce_and_arr
+    endsubroutine mpireduce_or_arr
 !***********************************************************************
     subroutine mpireduce_and_scl(fland_tmp,fland)
+!
+!  Calculate logical and over all procs and return to root.
 !
 !  17-sep-05/anders: coded
 !
       logical :: fland_tmp, fland
-!
-!  Calculate logical and over all procs and return to root.
 !
       if (nprocs==1) then
         fland=fland_tmp
@@ -1875,6 +2044,24 @@ module Mpicomm
       endif
 !
     endsubroutine mpireduce_and_scl
+!***********************************************************************
+    subroutine mpireduce_and_arr(fland_tmp,fland,nreduce)
+!
+!  Calculate logical and over all procs and return to root.
+!
+!  11-mar-09/anders: coded
+!
+      integer :: nreduce
+      logical, dimension(nreduce) :: fland_tmp, fland
+!
+      if (nprocs==1) then
+        fland=fland_tmp
+      else
+        call MPI_REDUCE(fland_tmp, fland, nreduce, MPI_LOGICAL, MPI_LAND, root,&
+                        MPI_COMM_WORLD, ierr)
+      endif
+!
+    endsubroutine mpireduce_and_arr
 !***********************************************************************
     subroutine start_serialize()
 !
@@ -1896,7 +2083,8 @@ module Mpicomm
 !***********************************************************************
     subroutine end_serialize()
 !
-!  do block between start_serialize and end_serialize serially in iproc order
+!  Do block between start_serialize and end_serialize serially in iproc order.
+!
 !  19-nov-02/wolf: coded
 !
       integer :: i,buf
@@ -1916,7 +2104,8 @@ module Mpicomm
 !***********************************************************************
     subroutine mpibarrier()
 !
-!  synchronize nodes
+!  Synchronize nodes.
+!
 !  23-jul-2002/wolf: coded
 !
       call MPI_BARRIER(MPI_COMM_WORLD, ierr)
@@ -1924,8 +2113,10 @@ module Mpicomm
     endsubroutine mpibarrier
 !***********************************************************************
     subroutine mpifinalize()
+!
       call MPI_BARRIER(MPI_COMM_WORLD, ierr)
       call MPI_FINALIZE(ierr)
+!
     endsubroutine mpifinalize
 !***********************************************************************
     function mpiwtime()
@@ -1934,6 +2125,7 @@ module Mpicomm
       double precision :: MPI_WTIME   ! definition needed for mpicomm_ to work
 !
       mpiwtime = MPI_WTIME()
+!
     endfunction mpiwtime
 !***********************************************************************
     function mpiwtick()
@@ -1942,6 +2134,7 @@ module Mpicomm
       double precision :: MPI_WTICK   ! definition needed for mpicomm_ to work
 !
       mpiwtick = MPI_WTICK()
+!
     endfunction mpiwtick
 !***********************************************************************
     subroutine touch_file(fname)
@@ -1965,14 +2158,14 @@ module Mpicomm
 !
 !  29-jun-05/tony: coded
 !
-      !
-      !  tell the world something went wrong -- mpirun may not propagate
-      !  an error status
-      !
+!  Tell the world something went wrong -- mpirun may not propagate
+!  an error status.
+!
       if (lroot) call touch_file('ERROR') 
-
+!
       call mpifinalize
       STOP 1                    ! Return nonzero exit status
+!
     endsubroutine die_gracefully
 !***********************************************************************
     subroutine stop_it(msg)
@@ -1981,12 +2174,13 @@ module Mpicomm
 !  With at least some MPI implementations, this only stops if all
 !  processors agree to call stop_it(). To stop (collectively) if only one
 !  or a few processors find some condition, use stop_it_if_any().
+!
 !  6-nov-01/wolf: coded
 !
       character (len=*) :: msg
 !
       if (lroot) write(0,'(A,A)') 'STOPPED: ', msg
-
+!
       call die_gracefully()
 !
     endsubroutine stop_it
@@ -1996,6 +2190,7 @@ module Mpicomm
 !  Conditionally print message and stop.
 !  This works unilaterally, i.e. if STOP_FLAG is true on _any_ processor,
 !  we will all stop.
+!
 !  22-nov-04/wolf: coded
 !
       logical :: stop_flag
@@ -2759,11 +2954,10 @@ module Mpicomm
 !
       f(   1:l1-1,:,nn1:nn2,iax:iaz) = f(l2i:l2 ,:,nn1:nn2,iax:iaz)
       f(l2+1:mx  ,:,nn1:nn2,iax:iaz) = f( l1:l1i,:,nn1:nn2,iax:iaz)
-
+!
     endsubroutine communicate_bc_aa_pot
 !***********************************************************************
     subroutine z2x(a,xi,yj,yproc_no,az)
-!
 !
       real, dimension(nx,ny,nz), intent(in) :: a
       real, dimension(nzgrid), intent(out) :: az
@@ -2787,5 +2981,4 @@ module Mpicomm
 !
     endsubroutine z2x
 !***********************************************************************
-
 endmodule Mpicomm

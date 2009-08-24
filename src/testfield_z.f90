@@ -1173,7 +1173,7 @@ module Testfield
 !  do communication for array of size nz*nprocz*3*njtest
 !
       if (nprocy>1) then
-        call mpireduce_sum(uxbtestm1,uxbtestm1_tmp,nz*nprocz*3*njtest)
+        call mpireduce_sum(uxbtestm1,uxbtestm1_tmp,(/nz,nprocz,3,njtest/))
         call mpibcast_real_arr(uxbtestm1_tmp,nz*nprocz*3*njtest)
         do jtest=1,njtest
           do n=n1,n2
@@ -1220,7 +1220,7 @@ module Testfield
 !  do communication for array of size nz*nprocz*3*njtest
 !
       if (nprocy>1) then
-        call mpireduce_sum(jxbtestm1,jxbtestm1_tmp,nz*nprocz*3*njtest)
+        call mpireduce_sum(jxbtestm1,jxbtestm1_tmp,(/nz,nprocz,3,njtest/))
         call mpibcast_real_arr(jxbtestm1_tmp,nz*nprocz*3*njtest)
         do jtest=1,njtest
           do n=n1,n2

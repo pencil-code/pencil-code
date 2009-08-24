@@ -888,7 +888,7 @@ module Testfield
 !
       if (nprocy>1) then
         uxbtestm2=reshape(uxbtestm1,shape=(/nz*nprocz*3*njtest/))
-        call mpireduce_sum(uxbtestm2,uxbtestm3,nz*nprocz*3*njtest)
+        call mpireduce_sum(uxbtestm2,uxbtestm3,(/nz,nprocz,3,njtest/))
         call mpibcast_real(uxbtestm3,nz*nprocz*3*njtest)
         uxbtestm1=reshape(uxbtestm3,shape=(/nz,nprocz,3,njtest/))
         do jtest=1,njtest
@@ -937,7 +937,7 @@ module Testfield
 !
       if (nprocy>1) then
         jxbtestm2=reshape(jxbtestm1,shape=(/nz*nprocz*3*njtest/))
-        call mpireduce_sum(jxbtestm2,jxbtestm3,nz*nprocz*3*njtest)
+        call mpireduce_sum(jxbtestm2,jxbtestm3,(/nz,nprocz,3,njtest/))
         call mpibcast_real(jxbtestm3,nz*nprocz*3*njtest)
         jxbtestm1=reshape(jxbtestm3,shape=(/nz,nprocz,3,njtest/))
         do jtest=1,njtest

@@ -2096,7 +2096,7 @@ module Hydro
 !
 !     if (nprocy>1) then
 !       uum2=reshape(uumz1,shape=(/nz*nprocz*3/))
-!       call mpireduce_sum(uumz2,uum3,nz*nprocz*3)
+!       call mpireduce_sum(uumz2,uum3,(/nz,nprocz,3/))
 !       call mpibcast_real(uumz3,nz*nprocz*3)
 !       uum1=reshape(uum3,shape=(/nz,nprocz,3/))
 !       do n=n1,n2

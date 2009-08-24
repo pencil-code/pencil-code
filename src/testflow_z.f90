@@ -875,10 +875,10 @@ module Testflow
 !
     if (nprocy>1) then
  
-      call mpireduce_sum(unltestm1,unltestm1_tmp,nz*nprocz*3*njtest)  !MR: allreduce?
+      call mpireduce_sum(unltestm1,unltestm1_tmp,(/nz,nprocz,3,njtest/))  !MR: allreduce?
 !!!   call mpibcast_real(unltestm1_tmp,nz*nprocz*3*njtest)
 
-      call mpireduce_sum(hnltestm1,hnltestm1_tmp,nz*nprocz*njtest)  !MR: allreduce?
+      call mpireduce_sum(hnltestm1,hnltestm1_tmp,(/nz,nprocz,njtest/))  !MR: allreduce?
 !!!   call mpibcast_real(hnltestm1_tmp,nz*nprocz*njtest)
 
       do jtest=0,njtest
