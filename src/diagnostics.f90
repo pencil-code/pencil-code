@@ -437,7 +437,7 @@ module Diagnostics
 !
       if (nnamer>0) then
          !the extra slot is where the normalization is stored
-         call mpireduce_sum(fnamer,fsumr,(/nrcyl,mnamer/))
+         call mpireduce_sum(fnamer,fsumr,(/nrcyl,nnamer/))
          if (lroot) then
             norm=fsumr(:,nnamer+1)
             do in=1,nnamer
@@ -485,7 +485,7 @@ module Diagnostics
 !  the result is only present on the root processor.
 !
       if (nnamexy>0) then
-        call mpireduce_sum(fnamexy,fsumxy,(/nx,ny,nprocy,mnamexy/))
+        call mpireduce_sum(fnamexy,fsumxy,(/nx,ny,nprocy,nnamexy/))
         if (lroot) &
             fnamexy(:,:,:,1:nnamexy)=fsumxy(:,:,:,1:nnamexy)/(nz*nprocz)
       endif
@@ -509,7 +509,7 @@ module Diagnostics
 !  normalize by sum of unity which is accumulated in fnamerz(:,0,:,1).
 !
       if (nnamerz>0) then
-        call mpireduce_sum(fnamerz,fsumrz,(/nrcyl,nz+1,nprocz,mnamerz/))
+        call mpireduce_sum(fnamerz,fsumrz,(/nrcyl,nz+1,nprocz,nnamerz/))
         if (lroot) then
           do i=1,nnamerz
             fnamerz(:,1:nz,:,i)=fsumrz(:,1:nz,:,i)/spread(fsumrz(:,0,:,1),2,nz)
