@@ -119,8 +119,8 @@ module Particles
       interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, &
       brownian_T0, lnostore_uu, ldtgrav_par, ldragforce_radialonly, &
       lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, &
-      Lx0, Ly0, Lz0, lglobalrandom, &
-      lcoriolis_force_par, lcentrifugal_force_par
+      lcoriolis_force_par, lcentrifugal_force_par, &
+      Lx0, Ly0, Lz0, lglobalrandom
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -176,7 +176,6 @@ module Particles
 !  29-dec-04/anders: coded
 !
       use FArrayManager
-      use Mpicomm, only: stop_it
 !
       if (lroot) call svn_id( &
            "$Id$")
@@ -206,7 +205,7 @@ module Particles
 !
       if (npvar > mpvar) then
         if (lroot) write(0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
-        call stop_it('register_particles: npvar > mpvar')
+        call fatal_error('register_particles','npvar > mpvar')
       endif
 !
     endsubroutine register_particles
@@ -383,7 +382,7 @@ module Particles
         print*,'both epstein and epstein-stokes transonic '//&
                'drag laws are switched on. You cannot have '//&
                'both. Stop and choose only one.'
-        call fatal_error("initialize_particles","")
+        call fatal_error('initialize_particles','')
       endif
 !
 !  Short friction time approximation. Need to keep track of pressure gradient
@@ -510,7 +509,7 @@ module Particles
 !
       use EquationOfState, only: gamma, beta_glnrho_global, cs20
       use General, only: random_number_wrapper
-      use Mpicomm, only: stop_it, mpireduce_sum_scl
+      use Mpicomm, only: mpireduce_sum
       use Sub
       use InitialCondition, only: initial_condition_xxp,&
                                   initial_condition_vvp
@@ -648,8 +647,8 @@ module Particles
                if (nxgrid/=1) fp(k,ixp)=rad
                if (nygrid/=1) fp(k,iyp)=phi
              elseif (lspherical_coords) then
-               call stop_it("init_particles: random-cylindrical not implemented "//&
-                    "for spherical coordinates") 
+               call fatal_error('init_particles','random-cylindrical '// &
+                   'not implemented for spherical coordinates') 
              endif
 !
              if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
@@ -902,7 +901,7 @@ k_loop:   do while (.not. (k>npar_loc))
           if (lroot) &
               print*, 'init_particles: No such such value for initxxp: ', &
               trim(initxxp(j))
-          call stop_it("")
+          call fatal_error('init_particles','')
 
         endselect
 
@@ -1012,11 +1011,11 @@ k_loop:   do while (.not. (k>npar_loc))
           fp(1:npar_loc,ivpz) = -delta_vp0 + fp(1:npar_loc,ivpz)*2*delta_vp0
 
         case ('average-to-zero')
-          call mpireduce_sum_scl(sum(fp(1:npar_loc,ivpx)),vpx_sum)
+          call mpireduce_sum(sum(fp(1:npar_loc,ivpx)),vpx_sum)
           fp(1:npar_loc,ivpx)=fp(1:npar_loc,ivpx)-vpx_sum/npar
-          call mpireduce_sum_scl(sum(fp(1:npar_loc,ivpy)),vpy_sum)
+          call mpireduce_sum(sum(fp(1:npar_loc,ivpy)),vpy_sum)
           fp(1:npar_loc,ivpy)=fp(1:npar_loc,ivpy)-vpy_sum/npar
-          call mpireduce_sum_scl(sum(fp(1:npar_loc,ivpz)),vpz_sum)
+          call mpireduce_sum(sum(fp(1:npar_loc,ivpz)),vpz_sum)
           fp(1:npar_loc,ivpz)=fp(1:npar_loc,ivpz)-vpz_sum/npar
 
         case ('follow-gas')
@@ -1120,8 +1119,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !
           if (lroot) then
             print*, 'init_particles: Keplerian velocity'
-            if (lspherical_coords) call stop_it('Keplerian particle '//&
-                 'initial condition: not implemented for spherical coordinates')
+            if (lspherical_coords) call fatal_error('init_particles', &
+                 'Keplerian particle initial condition: '// &
+                 'not implemented for spherical coordinates')
           endif
           do k=1,npar_loc
             if (lcartesian_coords) then
@@ -1154,7 +1154,7 @@ k_loop:   do while (.not. (k>npar_loc))
           if (lroot) &
               print*, 'init_particles: No such such value for initvvp: ', &
               trim(initvvp(j))
-          call stop_it("")
+          call fatal_error('','')
 !
         endselect
 !
@@ -1684,7 +1684,6 @@ k_loop:   do while (.not. (k>npar_loc))
       use Cparam, only: lparticles_spin
       use Diagnostics
       use EquationOfState, only: cs20, gamma
-      use Mpicomm, only: stop_it
       use Particles_number, only: get_nptilde
       use Particles_spin, only: calc_liftforce
 !
@@ -2234,7 +2233,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       use Diagnostics
       use EquationOfState, only: cs20, gamma
-      use Mpicomm, only: stop_it
       use Particles_number, only: get_nptilde
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2267,7 +2265,7 @@ k_loop:   do while (.not. (k>npar_loc))
           else 
             print*,'dvvp_dt: Coriolis force on the particles is '
             print*,'not yet implemented for spherical coordinates.'
-            call stop_it("")
+            call fatal_error('dvvp_dt','')
           endif
         endif
 !
@@ -2289,7 +2287,7 @@ k_loop:   do while (.not. (k>npar_loc))
           else
             print*,'dvvp_dt: Centrifugal force on the particles is '
             print*,'not implemented for spherical coordinates.'
-            call stop_it("")
+            call fatal_error('dvvp_dt','')
           endif
         endif
 !
@@ -2374,10 +2372,10 @@ k_loop:   do while (.not. (k>npar_loc))
         select case (gravr_profile)
 !
         case ('')
-           if (lheader) print*, 'dvvp_dt: No radial gravity'
+          if (lheader) print*, 'dvvp_dt: No radial gravity'
 !
         case ('zero')
-           if (lheader) print*, 'dvvp_dt: No radial gravity'
+          if (lheader) print*, 'dvvp_dt: No radial gravity'
 !
         case('newtonian-central','newtonian')
           if (lparticles_nbody) &
@@ -2385,45 +2383,45 @@ k_loop:   do while (.not. (k>npar_loc))
               'The N-body code should take care of the stellar-like '// &
               'gravity on the dust. Switch off the '// &
               'gravr_profile=''newtonian'' on particles_init')
-           if (lheader) &
+          if (lheader) &
                print*, 'dvvp_dt: Newtonian gravity from a fixed central object'
-           do k=1,npar_loc
-             if (lcartesian_coords) then
-               rsph=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2+gravsmooth2)
-               OO2=rsph**(-3)*gravr
-               ggp(1) = -fp(k,ixp)*OO2
-               ggp(2) = -fp(k,iyp)*OO2
-               ggp(3) = -fp(k,izp)*OO2
-               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
-             elseif (lcylindrical_coords) then
-               rsph=sqrt(fp(k,ixp)**2+fp(k,izp)**2+gravsmooth2)
-               OO2=rsph**(-3)*gravr
-               ggp(1) = -fp(k,ixp)*OO2
-               ggp(2) = 0.0
-               ggp(3) = -fp(k,izp)*OO2
-               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
-             elseif (lspherical_coords) then
-               rsph=sqrt(fp(k,ixp)**2+gravsmooth2)
-               OO2=rsph**(-3)*gravr
-               ggp(1) = -fp(k,ixp)*OO2
-               ggp(2) = 0.0; ggp(3) = 0.0
-               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
-             endif
+          do k=1,npar_loc
+            if (lcartesian_coords) then
+              rsph=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2+gravsmooth2)
+              OO2=rsph**(-3)*gravr
+              ggp(1) = -fp(k,ixp)*OO2
+              ggp(2) = -fp(k,iyp)*OO2
+              ggp(3) = -fp(k,izp)*OO2
+              dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
+            elseif (lcylindrical_coords) then
+              rsph=sqrt(fp(k,ixp)**2+fp(k,izp)**2+gravsmooth2)
+              OO2=rsph**(-3)*gravr
+              ggp(1) = -fp(k,ixp)*OO2
+              ggp(2) = 0.0
+              ggp(3) = -fp(k,izp)*OO2
+              dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
+            elseif (lspherical_coords) then
+              rsph=sqrt(fp(k,ixp)**2+gravsmooth2)
+              OO2=rsph**(-3)*gravr
+              ggp(1) = -fp(k,ixp)*OO2
+              ggp(2) = 0.0; ggp(3) = 0.0
+              dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
+            endif
 !  Limit time-step if particles close to gravity source.
-             if (ldtgrav_par.and.(lfirst.and.ldt)) then
-               if (lcartesian_coords) then
-                 vsph=sqrt(fp(k,ivpx)**2+fp(k,ivpy)**2+fp(k,ivpz)**2)
-               elseif (lcylindrical_coords) then
-                 vsph=sqrt(fp(k,ivpx)**2+fp(k,ivpz)**2)
-               elseif (lspherical_coords) then
-                 vsph=abs(fp(k,ivpx))
-               endif
-               dt1_max=max(dt1_max,10.0*vsph/rsph)
-             endif
-           enddo
+            if (ldtgrav_par.and.(lfirst.and.ldt)) then
+              if (lcartesian_coords) then
+                vsph=sqrt(fp(k,ivpx)**2+fp(k,ivpy)**2+fp(k,ivpz)**2)
+              elseif (lcylindrical_coords) then
+                vsph=sqrt(fp(k,ivpx)**2+fp(k,ivpz)**2)
+              elseif (lspherical_coords) then
+                vsph=abs(fp(k,ivpx))
+              endif
+              dt1_max=max(dt1_max,10.0*vsph/rsph)
+            endif
+          enddo
 !
         case default
-           call fatal_error('dvvp_dt','chosen gravr_profile is not valid!')
+          call fatal_error('dvvp_dt','chosen gravr_profile is not valid!')
 !
         endselect
 !
