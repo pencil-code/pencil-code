@@ -850,7 +850,7 @@ module General
 !***********************************************************************
     subroutine tridag(a,b,c,r,u,err)
 !
-!  solves tridiagonal system
+!  Solves tridiagonal system.
 !
 !  01-apr-03/tobi: from numerical recipes
 !
@@ -861,35 +861,37 @@ module General
       logical, intent(out), optional :: err
       integer :: n,j
       real :: bet
-
+!
       if (present(err)) err=.false.
       n=size(b)
       bet=b(1)
-      if (bet.eq.0.) then
-         print*,'tridag: Error at code stage 1'
-         if (present(err)) err=.true.
-         return
+      if (bet==0.0) then
+        print*,'tridag: Error at code stage 1'
+        if (present(err)) err=.true.
+        return
       endif
-
+!
       u(1)=r(1)/bet
       do j=2,n
-         gam(j)=c(j-1)/bet
-         bet=b(j)-a(j)*gam(j)
-         if (bet.eq.0.) then
-            print*,'tridag: Error at code stage 2'
-            if (present(err)) err=.true.
-            return
-         endif
-         u(j)=(r(j)-a(j)*u(j-1))/bet
-      end do
+        gam(j)=c(j-1)/bet
+        bet=b(j)-a(j)*gam(j)
+        if (bet==0.0) then
+          print*,'tridag: Error at code stage 2'
+          if (present(err)) err=.true.
+          return
+        endif
+        u(j)=(r(j)-a(j)*u(j-1))/bet
+      enddo
+!
       do j=n-1,1,-1
-         u(j)=u(j)-gam(j+1)*u(j+1)
-      end do
+        u(j)=u(j)-gam(j+1)*u(j+1)
+      enddo
+!
     endsubroutine tridag
 !***********************************************************************
     subroutine tridag_double(a,b,c,r,u,err)
 !
-!  solves tridiagonal system
+!  Solves tridiagonal system.
 !
 !  01-apr-03/tobi: from numerical recipes
 !  11-apr-03/axel: double precision version
@@ -901,30 +903,31 @@ module General
       logical, intent(out), optional :: err
       integer :: n,j
       double precision :: bet
-
+!
       if (present(err)) err=.false.
       n=size(b)
       bet=b(1)
-      if (bet.eq.0.) then
-         print*,'tridag_double: Error at code stage 1'
-         if (present(err)) err=.true.
-         return
+      if (bet==0.0) then
+        print*,'tridag_double: Error at code stage 1'
+        if (present(err)) err=.true.
+        return
       endif
-
+!
       u(1)=r(1)/bet
       do j=2,n
-         gam(j)=c(j-1)/bet
-         bet=b(j)-a(j)*gam(j)
-         if (bet.eq.0.) then
-            print*,'tridag_double: Error at code stage 2'
-            if (present(err)) err=.true.
-            return
-         endif
-         u(j)=(r(j)-a(j)*u(j-1))/bet
-      end do
+        gam(j)=c(j-1)/bet
+        bet=b(j)-a(j)*gam(j)
+        if (bet==0.0) then
+          print*,'tridag_double: Error at code stage 2'
+          if (present(err)) err=.true.
+          return
+        endif
+        u(j)=(r(j)-a(j)*u(j-1))/bet
+      enddo
       do j=n-1,1,-1
-         u(j)=u(j)-gam(j+1)*u(j+1)
-      end do
+        u(j)=u(j)-gam(j+1)*u(j+1)
+      enddo
+!
     endsubroutine tridag_double
 !***********************************************************************
     subroutine spline(arrx,arry,x2,S,psize1,psize2,err)
