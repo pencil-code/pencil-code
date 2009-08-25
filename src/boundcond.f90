@@ -3280,8 +3280,9 @@ module Boundcond
        use EquationOfState, only : gamma,gamma1,gamma11,cs20,lnrho0
 
        real, dimension (mx,my,mz,mfarray) :: f
-       real, dimension (nxgrid,nygrid),save :: uxl,uxr,uyl,uyr
-       real, dimension (nxgrid,nygrid) :: uxd,uyd
+       real, dimension (nx,ny),save :: uxl,uxr,uyl,uyr
+       real, dimension (nx,ny) :: uxd,uyd
+       real, dimension (nxgrid,nygrid) :: tmp
        real, dimension (nx,ny) :: quen,pp,betaq,fac
        real, dimension (nx,ny) :: bbx,bby,bbz,bb2
        integer :: lend,iostat=0,i=0,j
@@ -3318,11 +3319,15 @@ module Boundcond
 ! Read velocity field
 !
           open (10,file='driver/vel_k.dat',form='unformatted',status='unknown',recl=lend*nxgrid*nygrid,access='direct')
-          read (10,rec=(2*i-1)) uxl
-          read (10,rec=2*i)     uyl
+          read (10,rec=(2*i-1)) tmp
+          uxl = tmp(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+          read (10,rec=2*i)     tmp
+          uyl = tmp(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
 
-          read (10,rec=2*i+1)   uxr
-          read (10,rec=2*i+2)   uyr
+          read (10,rec=2*i+1)   tmp
+          uxr = tmp(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)          
+          read (10,rec=2*i+2)   tmp
+          uyr = tmp(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)                    
           close (10)
 
           uxl = uxl / 10. / unit_velocity
@@ -3423,8 +3428,8 @@ module Boundcond
 !
 !   Fill bottom layer with velocity field
 !
-       f(l1:l2,m1:m2,n1,iux)=uxd(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)*quen
-       f(l1:l2,m1:m2,n1,iuy)=uyd(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)*quen
+       f(l1:l2,m1:m2,n1,iux)=uxd*quen
+       f(l1:l2,m1:m2,n1,iuy)=uyd*quen
 !
      endsubroutine uu_driver
 !***********************************************************************
