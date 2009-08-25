@@ -1,6 +1,6 @@
 ! $Id$
 !
-!  Dummy module for MPI commuincation. This allows the code to run on a
+!  Dummy module for MPI communication. This allows the code to run on a
 !  single CPU.
 !
 module Mpicomm
