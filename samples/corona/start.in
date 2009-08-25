@@ -4,23 +4,23 @@
 &init_pars
   cvsid='$Id$'
   xyz0 = 0., 0., 0.
-  Lxyz = 5e4, 5e4 , 3e4
+  Lxyz = 5., 5. , 3.
   !
   unit_system  ='SI'
-  unit_length  =1e3
-  unit_velocity=1e3
-  unit_density =1e-4
+  unit_length  =1e7
+  unit_velocity=1e4
+  unit_density =1e-8
   !
   lperi = T,    T,   F,
   grid_func  =  ,  , 'sinh'
-  coeff_grid =  ,  , 0.08e-3  ! [] = 1/unit_length
-  xyz_star   =  ,  , 5.e3     ! [] = unit_length
+  coeff_grid =  ,  , 0.8
+  xyz_star   =  ,  , 0.6
   !
   bcz = 's','s','a','a2','cT','a2','a2','a2'
 /
 &eos_init_pars
-  cs0   = 0.0112e3  ! cs0 =  sqrt((gamma-1)T/c_p)
-  rho0  = 3.        ! rho0*unit_density = 3e-4 kg/m^3
+  cs0   = 1.12      ! cs0 =  sqrt((gamma-1)T/c_p) = 11.2 km/s
+  rho0  =  30000.0  ! rho0*unit_density = 3e-4 kg/m^3
   mu    = 0.667
 /
 &hydro_init_pars
@@ -33,7 +33,7 @@
 &grav_init_pars
   gravz_profile='const'
   zref = 0
-  gravz=-274e-3 ! gravz * unit_velocity^2 / unit_length = 274 m/s
+  gravz=-27.4 ! gravz * unit_velocity^2 / unit_length = 274 m/s
 /
 &entropy_init_pars
   initlnTT='nothing'
