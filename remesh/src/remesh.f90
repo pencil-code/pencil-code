@@ -117,9 +117,6 @@ program remesh
     mxout=remesh_parx*nx+2*nghost
     myout=remesh_pary*ny+2*nghost
     mzout=remesh_parz*nz+2*nghost
-
-print*,'mxout,myout,mzout=',mxout,myout,mzout
-
     !
     !  Write size of global array to destination/data/dim.dat
     !
@@ -159,12 +156,8 @@ print*,'mxout,myout,mzout=',mxout,myout,mzout
 !  go to the next possibility without deltay.
 !
       if (lshear) then
-!        read(1) t,x,y,z,dx,dy,dz,deltay
         read(1,err=991) t,x,y,z,dx,dy,dz,deltay
         print*,'read deltay=',deltay
-print*,'t=',t
-print*,'x=',x
-print*,'y=',y
       else
         read(1) t,x,y,z,dx,dy,dz
         print*,'WARNING: deltay is not read'
