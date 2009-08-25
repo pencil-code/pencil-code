@@ -34,3 +34,16 @@ Make sure it is in your path. Under tcsh you set
 3) either run remesh.csh interactively;
      (it asks for confirmation about new run directory name)
    or submit remesh.csh (won't ask you then)
+
+
+NILS: There are plenty of things to be done with the remeshing utility:
+1) There should be an auto test for remeshing.
+2) Currently the remeshing does not work for remeshing on multiple
+   processsors in the x-direction.
+3) Should get rid of the goto statements
+4) More commenting is required - it is rather hard to read the code
+   as it is right now.
+5) When you do make clean in the remeshing directory you must run setup-remesh
+   in order to obtain Makefile.inc. This should not be necessary.
+6) The remshing should be set up to use the config machinery of Wolfgang, and
+   by this avoiding the computer specific stuff in the Makefile.
