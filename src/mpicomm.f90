@@ -3028,6 +3028,8 @@ module Mpicomm
 !***********************************************************************
     subroutine z2x(a,xi,yj,yproc_no,az)
 !
+!  COMMENT ME! (AND POSSIBLY MOVE ME TO WHERE I AM USED).
+!
       real, dimension(nx,ny,nz), intent(in) :: a
       real, dimension(nzgrid), intent(out) :: az
       real, dimension(nzgrid) :: az_local
