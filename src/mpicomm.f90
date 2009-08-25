@@ -214,7 +214,7 @@ module Mpicomm
 !
 !  Communicators
 !
-  integer :: MPI_COMM_ROW,MPI_COMM_COLUMN
+  integer :: MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM
 !
   integer :: isend_rq_tolowx,isend_rq_touppx,irecv_rq_fromlowx,irecv_rq_fromuppx
   integer :: isend_rq_tolowy,isend_rq_touppy,irecv_rq_fromlowy,irecv_rq_fromuppy
@@ -346,16 +346,16 @@ module Mpicomm
         iproc,ipx,ipy,ipz, &
         ylneigh,llcorn,zlneigh,ulcorn,yuneigh,uucorn,zuneigh,lucorn
 !
-!  Define MPI communicator MPI_COMM_ROW that includes all processes
-!  sharing the same value of ipz. The rank within MPI_COMM_WORLD is
-!  given by ipy.
+!  Define MPI communicators that include all processes sharing the same value
+!  of ipx, ipy, or ipz. The rank within MPI_COMM_WORLD is given by a
+!  combination of the two other directional processor indices.
 !
-      call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipz, ipy, MPI_COMM_ROW, ierr)
-!
-!  Do the same for columns - all processes sharing the same value of 
-!  ipy. The rank within MPI_COMM_WORLD is given by ipz.
-!
-      call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipy, ipz, MPI_COMM_COLUMN, ierr)
+      call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipx, ipy+nprocy*ipz, &
+          MPI_COMM_XBEAM, ierr)
+      call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipy, ipx+nprocx*ipz, &
+          MPI_COMM_YBEAM, ierr)
+      call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipz, ipx+nprocx*ipy, &
+          MPI_COMM_ZBEAM, ierr)
 !
     endsubroutine mpicomm_init
 !***********************************************************************
@@ -948,11 +948,11 @@ module Mpicomm
 !  actual MPI calls
 !
       call MPI_ALLGATHER(tau_zx,nx*nz,MPI_REAL,tau_zx_all,nx*nz,MPI_REAL, &
-                         MPI_COMM_ROW,ierr)
+          MPI_COMM_YBEAM,ierr)
 
       call MPI_ALLGATHER(Qrad_zx,nx*nz,MPI_REAL,Qrad_zx_all,nx*nz,MPI_REAL, &
-                         MPI_COMM_ROW,ierr)
-
+          MPI_COMM_YBEAM,ierr)
+!
     endsubroutine radboundary_zx_periodic_ray
 !***********************************************************************
     subroutine mpirecv_logical_scl(bcast_array,nbcast_array,proc_src,tag_id)
@@ -1565,85 +1565,102 @@ module Mpicomm
 !
     endsubroutine mpibcast_char_arr
 !***********************************************************************
-    subroutine mpiallreduce_sum_scl(fsum_tmp,fsum)
+    subroutine mpiallreduce_sum_scl(fsum_tmp,fsum,idir)
 !
 !  Calculate total sum for each array element and return to all processors.
 !
       real :: fsum_tmp,fsum
+      integer, optional :: idir
+!
+      integer :: mpiprocs
+!
+!  Sum over all processors and return to root (MPI_COMM_WORLD).
+!  Sum over x beams and return to the ipx=0 processors (MPI_COMM_XBEAM).
+!  Sum over y beams and return to the ipy=0 processors (MPI_COMM_YBEAM). 
+!  Sum over z beams and return to the ipz=0 processors (MPI_COMM_ZBEAM). 
+!
+      if (present(idir)) then
+        if (idir==1) mpiprocs=MPI_COMM_XBEAM
+        if (idir==2) mpiprocs=MPI_COMM_YBEAM
+        if (idir==3) mpiprocs=MPI_COMM_ZBEAM
+      else
+        mpiprocs=MPI_COMM_WORLD 
+      endif
 !
       call MPI_ALLREDUCE(fsum_tmp, fsum, 1, MPI_REAL, MPI_SUM, &
                       MPI_COMM_WORLD, ierr)
 !
     endsubroutine mpiallreduce_sum_scl
 !***********************************************************************
-    subroutine mpiallreduce_sum_arr(fsum_tmp,fsum,nreduce)
+    subroutine mpiallreduce_sum_arr(fsum_tmp,fsum,nreduce,idir)
 !
 !  Calculate total sum for each array element and return to all processors.
 !
       integer :: nreduce
       real, dimension(nreduce) :: fsum_tmp,fsum
+      integer, optional :: idir
+!
+      integer :: mpiprocs
+!
+      if (present(idir)) then
+        if (idir==1) mpiprocs=MPI_COMM_XBEAM
+        if (idir==2) mpiprocs=MPI_COMM_YBEAM
+        if (idir==3) mpiprocs=MPI_COMM_ZBEAM
+      else
+        mpiprocs=MPI_COMM_WORLD 
+      endif
 !
       call MPI_ALLREDUCE(fsum_tmp, fsum, nreduce, MPI_REAL, MPI_SUM, &
           MPI_COMM_WORLD, ierr)
 !
     endsubroutine mpiallreduce_sum_arr
 !***********************************************************************
-    subroutine mpiallreduce_sum_arr2(fsum_tmp,fsum,nreduce_array,lsumy,lsumz)
+    subroutine mpiallreduce_sum_arr2(fsum_tmp,fsum,nreduce,idir)
 !
 !  Calculate total sum for each array element and return to all processors.
 !
-!  23-nov-08/wlad: included the lsumy,lsumz possibilities
+!  23-nov-08/wlad: included the idir possibility
 !
-      integer, dimension(2) :: nreduce_array
-      real, dimension(nreduce_array(1),nreduce_array(2)) :: fsum_tmp,fsum
-      integer :: nreduce,mpiprocs
-      logical, optional :: lsumy,lsumz
+      integer, dimension(2) :: nreduce
+      real, dimension(nreduce(1),nreduce(2)) :: fsum_tmp,fsum
+      integer, optional :: idir
 !
-      nreduce=nreduce_array(1)*nreduce_array(2)
+      integer :: mpiprocs
 !
-!  Sum over all processors and return to root (MPI_COMM_WORLD).
-!  Sum over z beams and return to the ipz=0 processors (MPI_COMM_COLUMN). 
-!  Sum over y beams and return to the ipy=0 processors (MPI_COMM_ROW).
-!
-      if (present(lsumy)) then
-        mpiprocs=MPI_COMM_ROW
-      elseif (present(lsumz)) then 
-        mpiprocs=MPI_COMM_COLUMN
+      if (present(idir)) then
+        if (idir==1) mpiprocs=MPI_COMM_XBEAM
+        if (idir==2) mpiprocs=MPI_COMM_YBEAM
+        if (idir==3) mpiprocs=MPI_COMM_ZBEAM
       else
         mpiprocs=MPI_COMM_WORLD 
       endif
 !
-      call MPI_ALLREDUCE(fsum_tmp, fsum, nreduce, MPI_REAL, MPI_SUM, &
+      call MPI_ALLREDUCE(fsum_tmp, fsum, product(nreduce), MPI_REAL, MPI_SUM, &
           mpiprocs, ierr)
 !
     endsubroutine mpiallreduce_sum_arr2
 !***********************************************************************
-    subroutine mpiallreduce_sum_arr3(fsum_tmp,fsum,nreduce_array,lsumy,lsumz)
+    subroutine mpiallreduce_sum_arr3(fsum_tmp,fsum,nreduce,idir)
 !
 !  Calculate total sum for each array element and return to all processors.
 !
-!  23-nov-08/wlad: included the lsumy,lsumz possibilities
+!  23-nov-08/wlad: included the idir possibility
 !
-      integer, dimension(3) :: nreduce_array
-      real, dimension(nreduce_array(1),nreduce_array(2),nreduce_array(3)) :: fsum_tmp,fsum
-      integer :: nreduce,mpiprocs
-      logical, optional :: lsumy,lsumz
+      integer, dimension(3) :: nreduce
+      real, dimension(nreduce(1),nreduce(2),nreduce(3)) :: fsum_tmp,fsum
+      integer, optional :: idir
 !
-      nreduce=nreduce_array(1)*nreduce_array(2)*nreduce_array(3)
+      integer :: mpiprocs
 !
-!  Sum over all processors and return to root (MPI_COMM_WORLD).
-!  Sum over z beams and return to the ipz=0 processors (MPI_COMM_COLUMN). 
-!  Sum over y beams and return to the ipy=0 processors (MPI_COMM_ROW).
-!
-      if (present(lsumy)) then
-        mpiprocs=MPI_COMM_ROW
-      elseif (present(lsumz)) then 
-        mpiprocs=MPI_COMM_COLUMN
+      if (present(idir)) then
+        if (idir==1) mpiprocs=MPI_COMM_XBEAM
+        if (idir==2) mpiprocs=MPI_COMM_YBEAM
+        if (idir==3) mpiprocs=MPI_COMM_ZBEAM
       else
         mpiprocs=MPI_COMM_WORLD 
       endif
 !
-      call MPI_ALLREDUCE(fsum_tmp, fsum, nreduce, MPI_REAL, MPI_SUM, &
+      call MPI_ALLREDUCE(fsum_tmp, fsum, product(nreduce), MPI_REAL, MPI_SUM, &
           mpiprocs, ierr)
 !
     endsubroutine mpiallreduce_sum_arr3
@@ -1655,7 +1672,7 @@ module Mpicomm
       integer :: fsum_tmp,fsum
 !
       call MPI_ALLREDUCE(fsum_tmp, fsum, 1, MPI_INTEGER, MPI_SUM, &
-                      MPI_COMM_WORLD, ierr)
+          MPI_COMM_WORLD, ierr)
 !
     endsubroutine mpiallreduce_sum_int_scl
 !***********************************************************************
@@ -1667,7 +1684,7 @@ module Mpicomm
       integer, dimension(nreduce) :: fsum_tmp,fsum
 !
       call MPI_ALLREDUCE(fsum_tmp, fsum, nreduce, MPI_INTEGER, MPI_SUM, &
-                      MPI_COMM_WORLD, ierr)
+          MPI_COMM_WORLD, ierr)
 !
     endsubroutine mpiallreduce_sum_int_arr
 !***********************************************************************
@@ -1678,7 +1695,7 @@ module Mpicomm
       real :: fmax_tmp,fmax
 !
       call MPI_ALLREDUCE(fmax_tmp, fmax, 1, MPI_REAL, MPI_MAX, &
-                      MPI_COMM_WORLD, ierr)
+          MPI_COMM_WORLD, ierr)
 !
     endsubroutine mpiallreduce_max_scl
 !***********************************************************************
@@ -1690,7 +1707,7 @@ module Mpicomm
       real, dimension(nreduce) :: fmax_tmp,fmax
 !
       call MPI_ALLREDUCE(fmax_tmp, fmax, nreduce, MPI_REAL, MPI_MAX, &
-                      MPI_COMM_WORLD, ierr)
+          MPI_COMM_WORLD, ierr)
 !
     endsubroutine mpiallreduce_max_arr
 !***********************************************************************
@@ -1701,7 +1718,7 @@ module Mpicomm
       real :: fmax_tmp,fmax
 !
       call MPI_REDUCE(fmax_tmp, fmax, 1, MPI_REAL, MPI_MAX, root, &
-                      MPI_COMM_WORLD, ierr)
+          MPI_COMM_WORLD, ierr)
 !
     endsubroutine mpireduce_max_scl
 !***********************************************************************
@@ -1713,7 +1730,7 @@ module Mpicomm
       real, dimension(nreduce) :: fmax_tmp,fmax
 !
       call MPI_REDUCE(fmax_tmp, fmax, nreduce, MPI_REAL, MPI_MAX, root, &
-                      MPI_COMM_WORLD, ierr)
+          MPI_COMM_WORLD, ierr)
 !
     endsubroutine mpireduce_max_arr
 !***********************************************************************
@@ -1724,7 +1741,7 @@ module Mpicomm
       real :: fmin_tmp,fmin
 !
       call MPI_REDUCE(fmin_tmp, fmin, 1, MPI_REAL, MPI_MIN, root, &
-                      MPI_COMM_WORLD, ierr)
+          MPI_COMM_WORLD, ierr)
 !
     endsubroutine mpireduce_min_scl
 !***********************************************************************
@@ -1736,7 +1753,7 @@ module Mpicomm
       real, dimension(nreduce) :: fmin_tmp,fmin
 !
       call MPI_REDUCE(fmin_tmp, fmin, nreduce, MPI_REAL, MPI_MIN, root, &
-                      MPI_COMM_WORLD, ierr)
+          MPI_COMM_WORLD, ierr)
 !
     endsubroutine mpireduce_min_arr
 !***********************************************************************
@@ -1750,7 +1767,7 @@ module Mpicomm
         fsum=fsum_tmp
       else
         call MPI_REDUCE(fsum_tmp, fsum, 1, MPI_INTEGER, MPI_SUM, root, &
-                        MPI_COMM_WORLD, ierr)
+            MPI_COMM_WORLD, ierr)
       endif
 !
     endsubroutine mpireduce_sum_int_scl
@@ -1766,7 +1783,7 @@ module Mpicomm
         fsum=fsum_tmp
       else
         call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_INTEGER, MPI_SUM, root, &
-                        MPI_COMM_WORLD, ierr)
+            MPI_COMM_WORLD, ierr)
       endif
 !
     endsubroutine mpireduce_sum_int_arr
@@ -1782,7 +1799,7 @@ module Mpicomm
         fsum=fsum_tmp
       else
         call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_INTEGER, MPI_SUM, root, &
-                        MPI_COMM_WORLD, ierr)
+            MPI_COMM_WORLD, ierr)
       endif
 !
     endsubroutine mpireduce_sum_int_arr2
@@ -1798,7 +1815,7 @@ module Mpicomm
         fsum=fsum_tmp
       else
         call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_INTEGER, MPI_SUM, root, &
-                        MPI_COMM_WORLD, ierr)
+            MPI_COMM_WORLD, ierr)
       endif
 !
     endsubroutine mpireduce_sum_int_arr3
@@ -1814,32 +1831,51 @@ module Mpicomm
         fsum=fsum_tmp
       else
         call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_INTEGER, MPI_SUM, root, &
-                        MPI_COMM_WORLD, ierr)
+            MPI_COMM_WORLD, ierr)
       endif
 !
     endsubroutine mpireduce_sum_int_arr4
 !***********************************************************************
-    subroutine mpireduce_sum_scl(fsum_tmp,fsum)
+    subroutine mpireduce_sum_scl(fsum_tmp,fsum,idir)
 !
 !  Calculate total sum and return to root.
 !
       real :: fsum_tmp,fsum
+      integer, optional :: idir
+!
+      integer :: mpiprocs
 !
       if (nprocs==1) then
         fsum=fsum_tmp
       else
+!
+!  Sum over all processors and return to root (MPI_COMM_WORLD).
+!  Sum over x beams and return to the ipx=0 processors (MPI_COMM_XBEAM).
+!  Sum over y beams and return to the ipy=0 processors (MPI_COMM_YBEAM). 
+!  Sum over z beams and return to the ipz=0 processors (MPI_COMM_ZBEAM). 
+!
+        if (present(idir)) then
+          if (idir==1) mpiprocs=MPI_COMM_XBEAM
+          if (idir==2) mpiprocs=MPI_COMM_YBEAM
+          if (idir==3) mpiprocs=MPI_COMM_ZBEAM
+        else
+          mpiprocs=MPI_COMM_WORLD 
+        endif
         call MPI_REDUCE(fsum_tmp, fsum, 1, MPI_REAL, MPI_SUM, root, &
-                        MPI_COMM_WORLD, ierr)
+            mpiprocs, ierr)
       endif
 !
     endsubroutine mpireduce_sum_scl
 !***********************************************************************
-    subroutine mpireduce_sum_arr(fsum_tmp,fsum,nreduce)
+    subroutine mpireduce_sum_arr(fsum_tmp,fsum,nreduce,idir)
 !
 !  Calculate total sum for each array element and return to root.
 !
       real, dimension(nreduce) :: fsum_tmp,fsum
       integer :: nreduce
+      integer, optional :: idir
+!
+      integer :: mpiprocs
 !
       intent(in)  :: fsum_tmp,nreduce
       intent(out) :: fsum
@@ -1847,18 +1883,28 @@ module Mpicomm
       if (nprocs==1) then
         fsum=fsum_tmp
       else
+        if (present(idir)) then
+          if (idir==1) mpiprocs=MPI_COMM_XBEAM
+          if (idir==2) mpiprocs=MPI_COMM_YBEAM
+          if (idir==3) mpiprocs=MPI_COMM_ZBEAM
+        else
+          mpiprocs=MPI_COMM_WORLD 
+        endif
         call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_REAL, MPI_SUM, root, &
-                        MPI_COMM_WORLD, ierr)
+            mpiprocs, ierr)
       endif
 !
     endsubroutine mpireduce_sum_arr
 !***********************************************************************
-    subroutine mpireduce_sum_arr2(fsum_tmp,fsum,nreduce)
+    subroutine mpireduce_sum_arr2(fsum_tmp,fsum,nreduce,idir)
 !
 !  Calculate total sum for each array element and return to root.
 !
       integer, dimension(2) :: nreduce
       real, dimension(nreduce(1),nreduce(2)) :: fsum_tmp,fsum
+      integer, optional :: idir
+!
+      integer :: mpiprocs
 !
       intent(in)  :: fsum_tmp,nreduce
       intent(out) :: fsum
@@ -1866,18 +1912,28 @@ module Mpicomm
       if (nprocs==1) then
         fsum=fsum_tmp
       else
-        call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_REAL, MPI_SUM, root, &
-                        MPI_COMM_WORLD, ierr)
+        if (present(idir)) then
+          if (idir==1) mpiprocs=MPI_COMM_XBEAM
+          if (idir==2) mpiprocs=MPI_COMM_YBEAM
+          if (idir==3) mpiprocs=MPI_COMM_ZBEAM
+        else
+          mpiprocs=MPI_COMM_WORLD 
+        endif
+        call MPI_REDUCE(fsum_tmp, fsum, product(nreduce), MPI_REAL, MPI_SUM, &
+            root, mpiprocs, ierr)
       endif
 !
     endsubroutine mpireduce_sum_arr2
 !***********************************************************************
-    subroutine mpireduce_sum_arr3(fsum_tmp,fsum,nreduce)
+    subroutine mpireduce_sum_arr3(fsum_tmp,fsum,nreduce,idir)
 !
 !  Calculate total sum for each array element and return to root.
 !
       integer, dimension(3) :: nreduce
       real, dimension(nreduce(1),nreduce(2),nreduce(3)) :: fsum_tmp,fsum
+      integer, optional :: idir
+!
+      integer :: mpiprocs
 !
       intent(in)  :: fsum_tmp,nreduce
       intent(out) :: fsum
@@ -1885,18 +1941,28 @@ module Mpicomm
       if (nprocs==1) then
         fsum=fsum_tmp
       else
-        call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_REAL, MPI_SUM, root, &
-                        MPI_COMM_WORLD, ierr)
+        if (present(idir)) then
+          if (idir==1) mpiprocs=MPI_COMM_XBEAM
+          if (idir==2) mpiprocs=MPI_COMM_YBEAM
+          if (idir==3) mpiprocs=MPI_COMM_ZBEAM
+        else
+          mpiprocs=MPI_COMM_WORLD 
+        endif
+        call MPI_REDUCE(fsum_tmp, fsum, product(nreduce), MPI_REAL, MPI_SUM, &
+            root, mpiprocs, ierr)
       endif
 !
     endsubroutine mpireduce_sum_arr3
 !***********************************************************************
-    subroutine mpireduce_sum_arr4(fsum_tmp,fsum,nreduce)
+    subroutine mpireduce_sum_arr4(fsum_tmp,fsum,nreduce,idir)
 !
 !  Calculate total sum for each array element and return to root.
 !
       integer, dimension(4) :: nreduce
       real, dimension(nreduce(1),nreduce(2),nreduce(3),nreduce(4)) :: fsum_tmp,fsum
+      integer, optional :: idir
+!
+      integer :: mpiprocs
 !
       intent(in)  :: fsum_tmp,nreduce
       intent(out) :: fsum
@@ -1904,8 +1970,15 @@ module Mpicomm
       if (nprocs==1) then
         fsum=fsum_tmp
       else
-        call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_REAL, MPI_SUM, root, &
-                        MPI_COMM_WORLD, ierr)
+        if (present(idir)) then
+          if (idir==1) mpiprocs=MPI_COMM_XBEAM
+          if (idir==2) mpiprocs=MPI_COMM_YBEAM
+          if (idir==3) mpiprocs=MPI_COMM_ZBEAM
+        else
+          mpiprocs=MPI_COMM_WORLD 
+        endif
+        call MPI_REDUCE(fsum_tmp, fsum, product(nreduce), MPI_REAL, MPI_SUM, &
+            root, mpiprocs, ierr)
       endif
 !
     endsubroutine mpireduce_sum_arr4
@@ -1920,7 +1993,7 @@ module Mpicomm
         dsum=dsum_tmp
       else
         call MPI_REDUCE(dsum_tmp, dsum, 1, MPI_DOUBLE_PRECISION, MPI_SUM, &
-                        root, MPI_COMM_WORLD, ierr)
+            root, MPI_COMM_WORLD, ierr)
       endif
 !
     endsubroutine mpireduce_sum_double_scl
@@ -1936,7 +2009,7 @@ module Mpicomm
         dsum=dsum_tmp
       else
         call MPI_REDUCE(dsum_tmp, dsum, nreduce, MPI_DOUBLE_PRECISION, &
-                        MPI_SUM, root, MPI_COMM_WORLD, ierr)
+            MPI_SUM, root, MPI_COMM_WORLD, ierr)
       endif
 !
     endsubroutine mpireduce_sum_double_arr
@@ -1951,8 +2024,8 @@ module Mpicomm
       if (nprocs==1) then
         dsum=dsum_tmp
       else
-        call MPI_REDUCE(dsum_tmp, dsum, nreduce, MPI_DOUBLE_PRECISION, &
-                        MPI_SUM, root, MPI_COMM_WORLD, ierr)
+        call MPI_REDUCE(dsum_tmp, dsum, product(nreduce), MPI_DOUBLE_PRECISION,&
+            MPI_SUM, root, MPI_COMM_WORLD, ierr)
       endif
 !
     endsubroutine mpireduce_sum_double_arr2
@@ -1967,8 +2040,8 @@ module Mpicomm
       if (nprocs==1) then
         dsum=dsum_tmp
       else
-        call MPI_REDUCE(dsum_tmp, dsum, nreduce, MPI_DOUBLE_PRECISION, &
-                        MPI_SUM, root, MPI_COMM_WORLD, ierr)
+        call MPI_REDUCE(dsum_tmp, dsum, product(nreduce), MPI_DOUBLE_PRECISION,&
+            MPI_SUM, root, MPI_COMM_WORLD, ierr)
       endif
 !
     endsubroutine mpireduce_sum_double_arr3
@@ -1983,8 +2056,8 @@ module Mpicomm
       if (nprocs==1) then
         dsum=dsum_tmp
       else
-        call MPI_REDUCE(dsum_tmp, dsum, nreduce, MPI_DOUBLE_PRECISION, &
-                        MPI_SUM, root, MPI_COMM_WORLD, ierr)
+        call MPI_REDUCE(dsum_tmp, dsum, product(nreduce), MPI_DOUBLE_PRECISION,&
+            MPI_SUM, root, MPI_COMM_WORLD, ierr)
       endif
 !
     endsubroutine mpireduce_sum_double_arr4

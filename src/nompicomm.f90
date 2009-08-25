@@ -609,11 +609,11 @@ module Mpicomm
 !
     endsubroutine mpiallreduce_sum_arr
 !***********************************************************************
-    subroutine mpiallreduce_sum_arr2(fsum_tmp,fsum,nreduce_array,lsumy,lsumz)
+    subroutine mpiallreduce_sum_arr2(fsum_tmp,fsum,nreduce_array,idir)
 !
       integer, dimension(2) :: nreduce_array
       real, dimension(nreduce_array(1),nreduce_array(2)) :: fsum_tmp, fsum
-      logical, optional :: lsumy,lsumz
+      integer, optional :: idir
 !
       fsum=fsum_tmp
 !

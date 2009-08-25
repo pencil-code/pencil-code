@@ -5424,7 +5424,7 @@ module Magnetic
 ! The sum has to be done processor-wise
 ! Sum over processors of same ipz, and different ipy
 !
-      call mpiallreduce_sum(fsum_tmp,uxb,(/nx,nz/),LSUMY=.true.)
+      call mpiallreduce_sum(fsum_tmp,uxb,(/nx,nz/),idir=2)
 !
       do m=m1,m2  
         df(l1:l2,m,n1:n2,iax)=df(l1:l2,m,n1:n2,iax)-uxb
@@ -5490,7 +5490,7 @@ module Magnetic
 ! Sum over processors of same ipy, and different ipz
 !      
       !call mpiallreduce_sum_column(fsum_tmp,uxb,(/nx,ny/))
-      call mpiallreduce_sum(fsum_tmp,uxb,(/nx,ny/),LSUMZ=.true.)
+      call mpiallreduce_sum(fsum_tmp,uxb,(/nx,ny/),idir=3)
 !
       do n=n1,n2
       do m=m1,m2  
