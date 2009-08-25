@@ -672,8 +672,7 @@ module Entropy
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension(nx) :: Hmax=0., hcond, thdiff
-      real, dimension (nx) :: vKpara,vKperp,rhs,tmp
+      real, dimension (nx) :: Hmax=0., hcond, thdiff,tmp
       real :: fradtop
       integer :: j,ju
 !
@@ -728,16 +727,7 @@ module Entropy
       if (lheatc_Kconst)   call calc_heatcond_constK(df,p)
       if (lheatc_Kprof)    call calc_heatcond(f,df,p)
       if (lheatc_Karctan)  call calc_heatcond_arctan(df,p)
-      if (lheatc_tensordiffusion) then
-        vKpara(:) = Kgpara
-        vKperp(:) = Kgperp
-        call tensor_diffusion_coef(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,rhs,llog=.true.)
-        df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+rhs*p%rho1*gamma*p%cp1
-        if (lfirst.and.ldt) then
-          diffus_chi=diffus_chi+gamma*Kgpara*p%rho1*p%cp1*dxyz_2
-          dt1_max=max(dt1_max,maxval(abs(rhs*p%rho1)*gamma)/(cdts))
-        endif
-      endif
+      if (lheatc_tensordiffusion) call calc_heatcond_tensor(df,p)
 !
 !  Hyper diffusion
 !
@@ -1170,6 +1160,46 @@ module Entropy
       endif
 
     endsubroutine calc_heatcond
+!***********************************************************************
+    subroutine calc_heatcond_tensor(df,p)
+!
+!  Calculates heat conduction parallel and perpendicular (isotropic)
+!  to magnetic field lines
+!  
+!  25-aug-09/bing: moved from dss_dt to here
+!
+      use Diagnostics
+      use EquationOfState, only: gamma
+      use Sub
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, dimension (nx) :: cosbgT,gT2,b2
+      real, dimension (nx) :: vKpara,vKperp,rhs,tmp
+!      
+      vKpara(:) = Kgpara
+      vKperp(:) = Kgperp
+!
+      call tensor_diffusion_coef(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,rhs,llog=.true.)
+!
+      df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+rhs*p%rho1*gamma*p%cp1
+!
+      call dot(p%bb,p%glnTT,cosbgT)
+      call dot2(p%glnTT,gT2)
+      call dot2(p%bb,b2)
+!
+      where ((gT2.le.tini).or.(b2.le.tini))
+         cosbgT=0.
+      elsewhere 
+         cosbgT=cosbgT/sqrt(gT2*b2)
+      endwhere
+!
+      if (lfirst.and.ldt) then
+         diffus_chi=diffus_chi+cosbgT*gamma*Kgpara*p%rho1*p%cp1*dxyz_2
+         dt1_max=max(dt1_max,maxval(abs(rhs*p%rho1)*gamma)/(cdts))
+      endif
+!
+    endsubroutine calc_heatcond_tensor
 !***********************************************************************
     subroutine read_entropy_init_pars(unit,iostat)
       integer, intent(in) :: unit
