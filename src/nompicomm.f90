@@ -1176,8 +1176,8 @@ module Mpicomm
 !
 !  1-july-2008: dhruba
 !
-      real, dimension(nx,ny,nzgrid), intent(in) :: a
-      real, dimension(nzgrid), intent(out) :: az
+      real, dimension(nx,ny,nz), intent(in) :: a
+      real, dimension(nz), intent(out) :: az
       integer, intent(in) :: xi,yj,yproc_no
 !
       az(:)=a(xi,yj,:) 
