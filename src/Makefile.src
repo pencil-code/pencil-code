@@ -976,15 +976,8 @@ endif
 #CFLAGS=-DFUNDERSC=1 -O3 #(louhi)
 #LD_MPI= #(louhi)
 ##
-## Wolfgang's laptop frenesi (g95 + Open MPI, August 2007)
-##
-#include $(PENCIL_HOME)/src/Makefile_g95.incl #(frenesi)
-#FFLAGS_SLOPPY=$(FFLAGS) -Wno=154,155 -I/usr/lib/openmpi/include #(frenesi)
-#CC=gcc #(frenesi)
-#CFLAGS=-O3 -DFUNDERSC=1 #(frenesi)
-#LD_MPI=-L/usr/lib/openmpi/lib -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl  #(frenesi)
-##
 ## Steve's test cluster
+##
 #FC=mpif90 #(asd|kool)
 #FFLAGS=-O3 -m64 -march=opteron -I/usr/local/include -L/lib64 -L/usr/lib64 -L/usr/local/lib64 -L/usr/lib -L/usr/local/lib -I/usr/include -fno-second-underscore #(asd|kool)
 #FFLAGS_DOUBLE=-fdefault-real-8 #(asd|kool)
