@@ -58,7 +58,6 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # - NEWDIR handling
 # - RERUN handling
 # - $booted_mpd handling
-# - $remove_scratch_root
 # - Ensure $ENV{SCRATCH_DIR} is defined if $local_disc or $local_binary is set
 # - $resub, $resubop, $run_resub
 # Improvements:
@@ -273,6 +272,7 @@ sub run_cmd {
     mpi_run_cmd($run_x);
     clear_lock();
 
+    run_system_cmd_recoverably('pc_deprecated_slice_links');
     write_job_id('FINISHED');
 
     handle_copy_snapshots();
@@ -526,11 +526,13 @@ sub get_files_to_copy_to_local_disc {
 # don't copy this file to local disc)
     my %to_copy
       = ( 'var.dat'              => 1,
+          'VAR0'                 => 1,
           'global.dat'           => 1,
           'timeavg.dat'          => 1,
           '../allprocs/dxyz.dat' => 1,
           'pvar.dat'             => $settings{'lparticles'},
           'spvar.dat'            => $settings{'lparticles_nbody'},
+          'crash.dat'            => 1,
         );
     return %to_copy;
 }
@@ -553,6 +555,7 @@ sub time_system_cmd {
 sub run_system_cmd {
 # Run the given system command and die if it exits with error status
     my @cmd_line = @_;
+
     $! = 0;
     clear_error();
 
@@ -570,6 +573,20 @@ sub run_system_cmd {
     }
 
     die "Aborting\n" if ($status);
+}
+# ---------------------------------------------------------------------- #
+sub run_system_cmd_recoverably {
+# Run the given system command like run_system_cmd(), but don't die
+    my @cmd_line = @_;
+
+    $! = 0;
+
+    if ($debug) {
+        print "Running system cmd <", join("> <", @cmd_line), ">\n";
+    } else {
+        print "Running\n  @cmd_line\n";
+    }
+    system(@cmd_line) == 0 or warn "@cmd_line failed: $!\n";
 }
 # ---------------------------------------------------------------------- #
 sub shutdown_mpi {
@@ -945,20 +962,18 @@ sub handle_local_binary {
 # ---------------------------------------------------------------------- #
 sub handle_copy_snapshots {
 # If local disk is used, copy var.dat back to the data directory
+    my ($logfile, @files) = @_;
+
     if ($local_disc) {
-        print "Copying var.dat etc. back to data directory\n";
-        clear_file($copy_snapshots_log);
-        copy_snapshots('var.dat');
-        if (-e "$ENV{SCRATCH_DIR}/proc0/VAR0") {
-            copy_snapshots('VAR0');
-            my %to_copy = get_files_to_copy_to_local_disc;
-            foreach my $file (keys %to_copy) {
-                if ($to_copy{$file}) {
-                    copy_snapshots($file);
-                }
-            }
-            if ($settings{'remove_scratch_root'}) {
-                run_system_cmd('rm', '-rf', $ENV{SCRATCH_DIR});
+        print "Copying ", join(",", @files), " back to data directory\n";
+
+        clear_file($logfile);
+        copy_snapshots($logfile, 'var.dat');
+        copy_snapshots($logfile, 'VAR0');
+        my %to_copy = get_files_to_copy_to_local_disc;
+        foreach my $file (keys %to_copy) {
+            if ($to_copy{$file}) {
+                copy_snapshots($logfile, $file);
             }
         }
 
@@ -986,16 +1001,16 @@ sub kill_remote_processes {
     @pids = grep /remote-top|$copy_snapshots/, @pids;
     @pids = map { s/^\s*([0-9]+).*/$1/; $_ } @pids; # extract just pid
 
-    echo "Shutting down processes @{pids}:"
+    print "Shutting down processes @{pids}:\n";
     foreach my $pid (@pids) {
         # need to do in a loop, and check for existence, since
         # some systems (Hitachi) abort this script when trying
         # to kill non-existent processes
-        print "  pid $p\n";
-        if ( `ps -p $p | fgrep -c $p` ) {
+        print "  pid $pid\n";
+        if ( `ps -p $pid | fgrep -c $pid` ) {
             $! = 0;
-            kill $SIG{'KILL'}, $p
-              or warn "Couldn't kill process $p: $!\n";
+            kill $SIG{'KILL'}, $pid
+              or warn "Couldn't kill process $pid: $!\n";
         }
     }
 }
