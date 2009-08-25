@@ -1196,7 +1196,9 @@ module Entropy
 !
       if (lfirst.and.ldt) then
          diffus_chi=diffus_chi+cosbgT*gamma*Kgpara*p%rho1*p%cp1*dxyz_2
-         dt1_max=max(dt1_max,maxval(abs(rhs*p%rho1)*gamma)/(cdts))
+         if (ldiagnos.and.idiag_dtchi/=0) then
+            call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+         endif
       endif
 !
     endsubroutine calc_heatcond_tensor

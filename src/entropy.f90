@@ -2732,6 +2732,7 @@ module Entropy
 !
 !  24-aug-09/bing: moved from dss_dt to here
 !
+      use Diagnostics
       use Sub, only: tensor_diffusion_coef,dot,dot2
 
       real, dimension (mx,my,mz,mvar) :: df
@@ -2759,7 +2760,9 @@ module Entropy
 !
       if (lfirst.and.ldt) then
          diffus_chi=diffus_chi+ cosbgT*gamma*Kgpara*exp(-p%lnrho)/p%cp*dxyz_2
-         dt1_max=max(dt1_max,maxval(abs(rhs*p%rho1)*gamma)/(cdts))
+         if (ldiagnos.and.idiag_dtchi/=0) then
+            call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+         endif
       endif
 !
     endsubroutine calc_heatcond_tensor
