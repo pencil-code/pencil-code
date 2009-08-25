@@ -961,13 +961,43 @@ sub handle_copy_snapshots {
                 run_system_cmd('rm', '-rf', $ENV{SCRATCH_DIR});
             }
         }
+
+        kill_remote_processes();
+
+        if ($settings{'remove_scratch_root'}) {
+            run_system_cmd('rm', '-rf', $ENV{SCRATCH_DIR});
+        }
+
+        print "Done\n";
     }
 }
 # ---------------------------------------------------------------------- #
 sub copy_snapshots {
 # Run $copy_snapshots and append the output to a log file
-    my @args = @_;
-    run_system_cmd("$copy_snapshots -v @args >> $copy_snapshots_log 2>&1");
+    my ($logfile, @args) = @_;
+    run_system_cmd("$copy_snapshots -v @args >> $logfile 2>&1");
+}
+# ---------------------------------------------------------------------- #
+sub kill_remote_processes {
+# Kill any remaining copy_snapshot or remote-top processes
+
+    my @pids = `ps -U $ENV{USER} -o pid,command`;
+    @pids = map { chomp; $_ } @pids;
+    @pids = grep /remote-top|$copy_snapshots/, @pids;
+    @pids = map { s/^\s*([0-9]+).*/$1/; $_ } @pids; # extract just pid
+
+    echo "Shutting down processes @{pids}:"
+    foreach my $pid (@pids) {
+        # need to do in a loop, and check for existence, since
+        # some systems (Hitachi) abort this script when trying
+        # to kill non-existent processes
+        print "  pid $p\n";
+        if ( `ps -p $p | fgrep -c $p` ) {
+            $! = 0;
+            kill $SIG{'KILL'}, $p
+              or warn "Couldn't kill process $p: $!\n";
+        }
+    }
 }
 # ---------------------------------------------------------------------- #
 sub match_line_ix {
