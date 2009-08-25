@@ -350,11 +350,11 @@ module Mpicomm
 !  of ipx, ipy, or ipz. The rank within MPI_COMM_WORLD is given by a
 !  combination of the two other directional processor indices.
 !
-      call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipx, ipy+nprocy*ipz, &
+      call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipy+nprocy*ipz, ipx, &
           MPI_COMM_XBEAM, ierr)
-      call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipy, ipx+nprocx*ipz, &
+      call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipx+nprocx*ipz, ipy, &
           MPI_COMM_YBEAM, ierr)
-      call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipz, ipx+nprocx*ipy, &
+      call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipx+nprocx*ipy, ipz, &
           MPI_COMM_ZBEAM, ierr)
 !
     endsubroutine mpicomm_init
