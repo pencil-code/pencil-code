@@ -1882,6 +1882,7 @@ module Entropy
         lpenc_requested(i_bij)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_hlnTT)=.true.
+        lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_cp)=.true.
       endif
       if (lheatc_shock) then
