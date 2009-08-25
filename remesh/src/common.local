@@ -1,0 +1,20 @@
+!
+!  Local settings concerning remeshing variables
+!  The file in included in common.f90
+!
+!  muly and mulz are the factors by which processor numbers
+!  are increased in the y and z directions (often keep muly=1).
+!  remesh_par is the remesh factor (e.g. 2 when doubling resolution).
+!
+  integer, parameter :: muly=1
+  integer, parameter :: mulz=2
+  integer, parameter :: mprocs=mulz*muly
+  integer, parameter :: remesh_par=2
+  integer, parameter :: remesh_parx=remesh_par
+  integer, parameter :: remesh_pary=remesh_par
+  integer, parameter :: remesh_parz=remesh_par
+!
+!  the following line is not currently used
+!  (it stems from our spheromak experiments)
+!
+! integer, parameter :: mvec=3

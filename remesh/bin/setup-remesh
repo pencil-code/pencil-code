@@ -1,0 +1,129 @@
+#!/bin/csh
+###                       setup-postproc
+###                      ---------------
+###  Link files into a local remesh directory
+###  CVS $Id: setup-remesh,v 1.8 2008-04-27 20:35:05 nilshau Exp $
+
+if (! $?PENCIL_HOME) then
+  echo "You need to set PENCIL_HOME; consider sourcing sourceme.{,c}sh"
+  exit 0
+endif
+
+#  ## Determine directories to link from
+#  set bindir="No-such-directory"
+#  set srcdir="No-such-directory"
+#  foreach dir ( ../../.. ../..)
+#    # Note: the _last_ matching directory will be used
+#    if (-d $dir/bin) set bindir=$dir/bin
+#    if (-d $dir/src) set srcdir=$dir/src
+#  end
+set bindir = $PENCIL_HOME/remesh/bin
+set idldir = $PENCIL_HOME/remesh/idl
+set srcdir = $PENCIL_HOME/src
+set redir  = $PENCIL_HOME/remesh
+
+## Link csh scripts
+foreach script (remesh.csh)
+  if (-e $bindir/$script) then
+    ln -s $bindir/$script .
+  else
+    echo "No such file: $bindir/$script"
+  endif
+end
+
+## Link idl routines
+#foreach script (read3d.pro) 
+#  if (-e $idldir/$script) then
+#    ln -s $idldir/$script .
+#  else
+#    echo "No such file: $idldir/$script"
+#  endif
+#end
+
+## Copy default files
+foreach file ($redir/remesh.in)
+  if (-e $file) then
+    if (! -e $file:t) then
+      cp $file .
+    else
+      # echo "$file:t already exists"
+      set existf=$file:t
+    endif
+  else
+    echo "No such file: $file"
+  endif
+end
+
+## remesh/ subdirectory
+if (-d ./remesh) then
+  echo "remesh already exists"
+else
+  mkdir ./remesh
+endif
+
+cd remesh
+
+## Copy default files
+foreach file ($redir/src/*.local)   
+if (-e $file) then
+     if (! -e $file:t) then
+       cp $file .
+     else
+       # echo "$file:t already exists"
+       set existf=$file:t
+     endif
+else
+   echo "No such file: $file"
+endif
+end
+
+
+#
+#  LINK all *.f90, and the Makefile from remesh to local remesh directory
+#  for convenience, README is also linked into remesh directory
+#
+set n=0
+foreach file ($redir/src/*.f90 $redir/src/Makefile $redir/README )
+  if (-e $file) then
+    if (! -e $file:t) then
+      ln -s $file .
+    else
+      # echo "$file:t already exists"
+      set n=`expr $n + 1`
+      set existf=$file:t
+    endif
+  else
+    echo "No such file: $file"
+  endif
+end
+
+
+#
+#  LINK the necessarry files from local remesh directory
+#
+foreach file ($srcdir/cdata.f90 $srcdir/cparam.f90 $srcdir/scripts)
+  if (-e $file) then
+    if (! -e $file:t) then
+      ln -s $file .
+    else
+      # echo "$file:t already exists"
+      set n=`expr $n + 1`
+      set existf=$file:t
+    endif
+  else
+    echo "No such file: $file"
+  endif
+end
+
+ln -s ../src/Makefile.local .
+ln -s ../src/Makefile.inc .
+ln -s ../src/cparam.local .
+ln -s ../src/cparam.inc .
+ln -s ../src/cparam_pencils.inc .
+
+#
+if ($n == 1) then
+  echo "$existf already exists in remesh"
+endif
+if ($n > 1) echo "$n files already exist in remesh"
+

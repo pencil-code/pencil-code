@@ -1,0 +1,36 @@
+$Id: README,v 1.8 2008-09-24 02:06:30 brandenb Exp $
+
+History:
+This code was written by Nils E. L. Haugen in 2002 and was
+used mainly for homogeneous turbulence runs. Over the years,
+the code has been kept functional by Axel Brandenburg, but
+many of the developments in the rest of the Pencil-Code
+are not implemented here.
+
+Setting up the remeshing code:
+Go into your pencil-code directory and say:
+   cvs co -d remesh pencil-remesh
+
+Make sure it is in your path. Under tcsh you set
+ set path=($PENCIL_HOME/remesh/bin $path)
+
+1) prepare new run directory, for example using "pc_newrun run_old run_new"
+   compile with new resolution
+   goto data and say, for example, "pc_mkproctree 128"
+     if the new run has 128 processors.
+
+2) go into old run directory, say setup-remesh
+   got remesh, check/edit entries in common.local and compile
+   go back, edit remesh.in, write name of new run directory (e.g. ../nolog512b)
+   NOTE: If you are not running a run with shear set lshear=.false. in 
+   remesh.f90
+   NOTE: on a Mac, say 'mv Makefile Makefile.src" and then:
+      $PENCIL_HOME/src/scripts/adapt-mkfile Makefile.src makefile
+
+2b) The default is to remesh from var.dat, but if you want to remesh from
+    another file, e.g. VAR7, then you edit a new file called varfile.in
+    whose content says VAR7, without quotes.
+
+3) either run remesh.csh interactively;
+     (it asks for confirmation about new run directory name)
+   or submit remesh.csh (won't ask you then)
