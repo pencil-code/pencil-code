@@ -247,8 +247,12 @@ sub add_host_id_from_scraping_system_info {
 
     my $hostname = strip_whitespace(first_line_from_cmd('uname -n'));
 
+    # Linux: `uname -o' prints GNU/Linux
+    # BSD, etc: no -o option, so fall back on `uname -s'
     my $os = strip_whitespace(first_line_from_cmd('uname -o'));
-    $os =~ s{/}{_}g;            # GNU/Linux -> GNU_Linux
+    $os = strip_whitespace(first_line_from_cmd('uname -s'))
+      unless (defined $os);
+    $os =~ s{/}{_}g if defined $os; # GNU/Linux -> GNU_Linux
 
     my $linux_type =
       ( strip_whitespace(first_word_from_file('/etc/issue'))
