@@ -9,16 +9,15 @@
 ! PENCILS PROVIDED rborder_mn
 !
 !***************************************************************
-
 module BorderProfiles
-
+!
   use Cparam
   use Cdata
-
+!
   implicit none
-
+!
   private
-
+!
   include 'border_profiles.h'
 !
 !  border_prof_[x-z] could be of size n[x-z], but having the same
@@ -28,8 +27,9 @@ module BorderProfiles
   real, dimension(my) :: border_prof_y=1.0
   real, dimension(mz) :: border_prof_z=1.0
 !
+  logical :: lborder_driving=.false.
+!
   contains
-
 !***********************************************************************
     subroutine initialize_border_profiles()
 !
@@ -135,6 +135,17 @@ module BorderProfiles
 !
     endsubroutine initialize_border_profiles
 !***********************************************************************
+    subroutine request_border_driving()
+!
+!  Tell the BorderProfiles subroutine that we need border driving.
+!  Used for requesting the right pencils.
+!
+!  25-aug-09/anders: coded
+!
+      lborder_driving=.true.
+!
+    endsubroutine request_border_driving
+!***********************************************************************
     subroutine pencil_criteria_borderprofiles()
 !
 !  All pencils that this module depends on are specified here.
@@ -143,20 +154,21 @@ module BorderProfiles
 !
       use Cdata
 !
-      if (lcylindrical_coords.or.lcylinder_in_a_box) then
-        lpenc_requested(i_rcyl_mn)=.true.
-        lpenc_requested(i_rcyl_mn1)=.true.
-        lpenc_requested(i_phix)=.true.
-        lpenc_requested(i_phiy)=.true.
-      elseif (lspherical_coords.or.lsphere_in_a_box) then
-        lpenc_requested(i_r_mn)=.true.
-        lpenc_requested(i_r_mn1)=.true.
+      if (lborder_driving) then
         lpenc_requested(i_rborder_mn)=.true.
-      else
-        lpenc_requested(i_x_mn)=.true.
+        if (lcylindrical_coords.or.lcylinder_in_a_box) then
+          lpenc_requested(i_rcyl_mn)=.true.
+          lpenc_requested(i_rcyl_mn1)=.true.
+          lpenc_requested(i_phix)=.true.
+          lpenc_requested(i_phiy)=.true.
+        elseif (lspherical_coords.or.lsphere_in_a_box) then
+          lpenc_requested(i_r_mn)=.true.
+          lpenc_requested(i_r_mn1)=.true.
+          lpenc_requested(i_rborder_mn)=.true.
+        else
+          lpenc_requested(i_x_mn)=.true.
+        endif
       endif
-!
-      lpenc_requested(i_rborder_mn)=.true.
 !
     endsubroutine pencil_criteria_borderprofiles
 !***********************************************************************

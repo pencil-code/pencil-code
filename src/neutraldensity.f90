@@ -121,9 +121,9 @@ module NeutralDensity
 !  28-feb-07/wlad: adapted
 !
 !
+      use BorderProfiles, only: request_border_driving
       use CData, only: lfreeze_varext,lfreeze_varint,lreloading,ilnrhon
       use FArrayManager
-!      use EquationOfState, only: select_eos_variable
 !
       integer :: i
       logical :: lnothing
@@ -210,6 +210,11 @@ module NeutralDensity
 !
       if (lfreeze_lnrhonint) lfreeze_varint(ilnrhon) = .true.
       if (lfreeze_lnrhonext) lfreeze_varext(ilnrhon) = .true.
+!
+!  Tell the BorderProfiles module if we intend to use border driving, so
+!  that the module can request the right pencils.
+!
+      if (borderlnrhon/='nothing') call request_border_driving()
 !
 ! Tell the equation of state that we're here and what f variable we use
 !

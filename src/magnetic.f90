@@ -556,8 +556,9 @@ module Magnetic
 !  24-nov-02/tony: dummy routine - nothing to do at present
 !  20-may-03/axel: reinitialize_aa added
 !
-      use Messages, only: fatal_error
+      use BorderProfiles, only: request_border_driving
       use FArrayManager
+      use Messages, only: fatal_error
       use SharedVariables
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -747,6 +748,11 @@ module Magnetic
         read(1) alpha_input
         close(1)
       endif
+!
+!  Tell the BorderProfiles module if we intend to use border driving, so
+!  that the module can request the right pencils.
+!
+      if (borderaa/='nothing') call request_border_driving()
 !
 !  Register an extra aux slot for bb if requested (so bb and jj are written
 !  to snapshots and can be easily analyzed later). For this to work you

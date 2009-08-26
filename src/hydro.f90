@@ -454,8 +454,9 @@ module Hydro
 !  24-nov-02/tony: coded
 !  13-oct-03/dave: check parameters and warn (if nec.) about velocity damping
 !
-      use Mpicomm, only: stop_it
+      use BorderProfiles, only: request_border_driving
       use FArrayManager
+      use Mpicomm, only: stop_it
       use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -537,6 +538,11 @@ module Hydro
         print*,'initialize_hydro: fargo used. turned off advection of velocity'
       endif
 !
+!  Tell the BorderProfiles module if we intend to use border driving, so
+!  that the module can request the right pencils.
+!
+      if (borderuu/='nothing') call request_border_driving()
+!
 !  Share lcoriolis_force and lcentrifugal_force so the Particles module 
 !  knows whether to apply them or not.
 !
@@ -598,7 +604,6 @@ module Hydro
         endif
       endif
 !
-
       if (force_lower_bound == 'vel_time' .or. force_upper_bound == 'vel_time') then
         call put_shared_variable('ampl_forc', ampl_forc, ierr)
         call put_shared_variable('k_forc', k_forc, ierr)

@@ -59,11 +59,11 @@ module BorderProfiles
 !
     endsubroutine initialize_border_profiles
 !***********************************************************************
+    subroutine request_border_driving()
+!
+    endsubroutine request_border_driving
+!***********************************************************************
     subroutine pencil_criteria_borderprofiles()
-!
-!  All pencils that this module depends on are specified here.
-!
-!  DUMMY ROUTINE
 !
     endsubroutine pencil_criteria_borderprofiles
 !***********************************************************************

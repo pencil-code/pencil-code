@@ -238,14 +238,15 @@ module Entropy
 !
 !  21-jul-02/wolf: coded
 !
-      use FArrayManager
-      use Gravity, only: gravz,g0
+      use BorderProfiles, only: request_border_driving
       use EquationOfState, only: cs0, get_soundspeed, get_cp1, &
                                  beta_glnrho_global, beta_glnrho_scaled, &
                                  mpoly, mpoly0, mpoly1, mpoly2, &
                                  select_eos_variable,gamma,gamma1
-      use SharedVariables, only: put_shared_variable
+      use FArrayManager
+      use Gravity, only: gravz,g0
       use Mpicomm, only: stop_it
+      use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
@@ -636,6 +637,11 @@ module Entropy
           enddo
         endif
       endif
+!
+!  Tell the BorderProfiles module if we intend to use border driving, so
+!  that the module can request the right pencils.
+!
+      if (borderss/='nothing') call request_border_driving()
 !
 ! Shared variables
 !

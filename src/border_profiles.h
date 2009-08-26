@@ -1,6 +1,7 @@
 !  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim) 
 
   public :: initialize_border_profiles
+  public :: request_border_driving
   public :: pencil_criteria_borderprofiles
   public :: calc_pencils_borderprofiles
   public :: border_quenching, border_driving

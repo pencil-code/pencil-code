@@ -135,7 +135,8 @@ module NeutralVelocity
 !
 !  28-feb-07/wlad: adapted
 !
-      use CData
+      use BorderProfiles, only: request_border_driving
+      use Cdata
       use Mpicomm,        only: stop_it
 !
 ! Check any module dependencies
@@ -152,6 +153,11 @@ module NeutralVelocity
 !  csn20
 !
       csn20=csn0**2
+!
+!  Tell the BorderProfiles module if we intend to use border driving, so
+!  that the modules can request the right pencils.
+!
+      if (borderuun/='nothing') call request_border_driving()
 !
 !  Turn off advection for 0-D runs.
 !

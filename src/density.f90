@@ -148,7 +148,7 @@ module Density
 !  24-nov-02/tony: coded
 !  31-aug-03/axel: normally, diffrho should be given in absolute units
 !
-
+      use BorderProfiles, only: request_border_driving
       use Deriv, only: der_pencil,der2_pencil
       use FArrayManager
       use Gravity, only: lnumerical_equilibrium
@@ -350,6 +350,11 @@ module Density
         endif
         call fatal_error('initialize_density','')
       endif
+!
+!  Tell the BorderProfiles module if we intend to use border driving, so
+!  that the module can request the right pencils.
+!
+      if (borderlnrho/='nothing') call request_border_driving()
 !
     endsubroutine initialize_density
 !***********************************************************************
@@ -1740,7 +1745,7 @@ module Density
         call fatal_error('set_border_lnrho',errormsg)
       endselect
 !
-      if (borderlnrho /= 'nothing') then
+      if (borderlnrho/='nothing') then
         call border_driving(f,df,p,f_target,ilnrho)
       endif
 !
