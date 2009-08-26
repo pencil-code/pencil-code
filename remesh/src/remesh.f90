@@ -152,7 +152,7 @@ print*,'mx,my,mz,mvar=',mx,my,mz,mvar
 !
 !  possibility to jump here from below
 !
-!992   continue
+992   continue
       read(1) a
 !
 !  try first to read with deltay, but if that fails then
