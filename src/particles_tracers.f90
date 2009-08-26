@@ -460,9 +460,22 @@ module Particles
               call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uu,ineargrid(k,:))
             endif
           endif
-          if (nxgrid/=1) dfp(k,ixp) = dfp(k,ixp) + uu(1)
-          if (nygrid/=1) dfp(k,iyp) = dfp(k,iyp) + uu(2)
-          if (nzgrid/=1) dfp(k,izp) = dfp(k,izp) + uu(3)
+!
+!  Advance of particle position
+!
+          if (lcartesian_coords) then
+            if (nxgrid/=1) dfp(k,ixp) = dfp(k,ixp) + uu(1)
+            if (nygrid/=1) dfp(k,iyp) = dfp(k,iyp) + uu(2)
+            if (nzgrid/=1) dfp(k,izp) = dfp(k,izp) + uu(3)
+          elseif (lcylindrical_coords) then
+            if (nxgrid/=1) dfp(k,ixp) = dfp(k,ixp) + uu(1)
+            if (nygrid/=1) dfp(k,iyp) = dfp(k,iyp) + uu(2)/max(fp(k,ixp),tini)
+            if (nzgrid/=1) dfp(k,izp) = dfp(k,izp) + uu(3)
+          elseif (lspherical_coords) then
+            if (nxgrid/=1) dfp(k,ixp) = dfp(k,ixp) + uu(1)
+            if (nygrid/=1) dfp(k,iyp) = dfp(k,iyp) + uu(2)/max(fp(k,ixp),tini)
+            if (nzgrid/=1) dfp(k,izp) = dfp(k,izp) + uu(3)/(max(fp(k,ixp),tini)*sin(fp(k,iyp)))
+          endif
 !
 !  With shear there is an extra term due to the background shear flow.
 !
