@@ -5,7 +5,8 @@
 ;
 pro pc_read_pvar, object=object, varfile=varfile_, datadir=datadir, ivar=ivar, $
     npar_max=npar_max, stats=stats, quiet=quiet, swap_endian=swap_endian, $
-    rmv=rmv, irmv=irmv, trmv=trmv, oldrmv=oldrmv, solid_object=solid_object
+    rmv=rmv, irmv=irmv, trmv=trmv, oldrmv=oldrmv, solid_object=solid_object, $
+    theta_arr=theta_arr
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;
@@ -331,30 +332,56 @@ if (keyword_set(solid_object)) then begin
   pc_read_param, object=param2,/param2
   dims=size(irmv)
   solid_colls=0
+  front_colls=0
+  back_colls=0
   maxy=param.xyz1[1]
+  theta_arr=fltarr(10000,2)
 ; This should eventually be a loop over all solid objects
   cyl_ypos=param.cylinder_ypos[0]
+  cyl_xpos=param.cylinder_xpos[0]
   for k=0,dims[1]-1 do begin        
-   if (dims[0]>0) then begin
-       if (array[irmv[k],1] lt maxy) then begin 
-           radius2=(array[irmv[k],0])^2+(array[irmv[k],1]-cyl_ypos)^2
-           print,'k,radius,x,y=',irmv[k],sqrt(radius2),array[irmv[k],0],array[irmv[k],1]
-           solid_colls=solid_colls+1
-       endif
-   endif
+      if (dims[0]>0) then begin
+          if (array[irmv[k],1] lt maxy) then begin
+              x0=array[irmv[k],0]-cyl_xpos
+              y0=array[irmv[k],1]-cyl_ypos
+              radius2=x0^2+y0^2
+              radius=sqrt(radius2)
+              theta_tmp=acos(y0/radius)
+              theta=3.1415-theta_tmp
+              print,'time,k,r,x,y,theta=',trmv[k],irmv[k],sqrt(radius2),x0,y0,theta
+              if (solid_colls lt 10000) then begin
+                  theta_arr[solid_colls,0]=theta
+                  theta_arr[solid_colls,1]=trmv[k]
+              endif
+              solid_colls=solid_colls+1
+              if (array[irmv[k],1] gt cyl_ypos) then begin
+                  back_colls=back_colls+1
+              endif else begin
+                  front_colls=front_colls+1
+              endelse
+          endif
+      endif
   endfor
-  tau_p=param.rhops*(2*param.ap0)^2/(18.0*param2.nu)
+  lambda=67e-9
+  diameter=2*param.ap0
+  Stokes_Cunningham=1+2*lambda/diameter*(1.257+0.4*exp(-1.1*diameter/(2*lambda)))
+  tau_p=param.rhops*diameter^2/(18.0*param2.nu)
   Stokes=tau_p*param.init_uu/param.cylinder_radius[0]
 ; Check how large the box for the initial particle positions is
 ; compared to the cylinder of the radius.
   fractional_area=-param.xp0/param.cylinder_radius[0]
 ; Find the capture efficiency
   eta=float(solid_colls)*fractional_area/npar
+  front_eta=float(front_colls)*fractional_area/npar
+  back_eta=float(back_colls)*fractional_area/npar
+  print,'Stokes_Cunningham=',Stokes_Cunningham
   print,'Number of collisions with the solid geometry is:',solid_colls
   print,'Total number of particles:',npar
+  print,'Capture efficiency on front side=',front_eta
+  print,'Capture efficiency on back side =',back_eta
   print,'Capture efficiency=',eta
   print,'Stokes number=',Stokes
-  save,Stokes,eta,filename='./data/captur_eff.sav'
+  save,Stokes,eta,Stokes_Cunningham,front_eta,back_eta,filename='./data/capture_eff.sav'
 endif
 ;
 ;  Trim x, y and z arrays.
