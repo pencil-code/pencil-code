@@ -196,7 +196,7 @@ module BorderProfiles
         print*,'The system has no obvious symmetry. It is    '
         print*,'better to stop and check how you want to save'
         print*,'the initial condition for border profiles    '
-        call fatal_error('set_border_hydro','')
+        call fatal_error('set_border_initcond','')
       endif
 !
     endsubroutine set_border_initcond
