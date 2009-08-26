@@ -58,11 +58,14 @@ program remesh
   real, dimension (mmz_grid) :: rz,rdz_1,rdz_tilde
   real, dimension (mmy,mprocs) :: rry
   real, dimension (mmz,mprocs) :: rrz
-  real :: tdummy
+  real :: tdummy, t_sp
   integer :: cpu_local
   integer :: couny, counz, ystart,ystop, zstart, zstop
   integer :: nprocyy, nproczz
   logical exist
+
+print*,'mx,my,mz,mvar=',mx,my,mz,mvar
+
   !
   !  Print out parameters of conversion
   !
@@ -145,23 +148,24 @@ program remesh
       call safe_character_assign(file,trim(datadir)//'/proc'//trim(ch)//'/'//trim(varfile))
       if (ip<8) print*,'Reading '//trim(file)
       open(1,file=file,form='unformatted')
-      lshear=.true.
+      lshear=.false.
 !
 !  possibility to jump here from below
 !
-992   continue
+!992   continue
       read(1) a
 !
 !  try first to read with deltay, but if that fails then
 !  go to the next possibility without deltay.
 !
       if (lshear) then
-        read(1,err=991) t,x,y,z,dx,dy,dz,deltay
+        read(1,err=991) t_sp,x,y,z,dx,dy,dz,deltay
         print*,'read deltay=',deltay
       else
-        read(1) t,x,y,z,dx,dy,dz
+        read(1) t_sp,x,y,z,dx,dy,dz
         print*,'WARNING: deltay is not read'
       endif
+      t=t_sp
       print*,'close file'
       close(1)
       !
@@ -346,10 +350,18 @@ program remesh
         open(91,file=file2,form='unformatted')
         write(91) ff(:,:,:,:,i)
         if (lshear) then
-          write(91) t,rx,rry(:,i),rrz(:,i),dx,dy,dz,deltay
+           if (prec == 'D') then
+              write(91) t,rx,rry(:,i),rrz(:,i),dx,dy,dz,deltay
+           else
+              write(91) t_sp,rx,rry(:,i),rrz(:,i),dx,dy,dz,deltay
+           endif
           print*,'wrote deltay=',deltay
         else
-          write(91) t,rx,rry(:,i),rrz(:,i),dx,dy,dz
+           if (prec == 'D') then
+              write(91) t,rx,rry(:,i),rrz(:,i),dx,dy,dz
+           else
+              write(91) t_sp,rx,rry(:,i),rrz(:,i),dx,dy,dz
+           endif
           print*,'WARNING: deltay is not written'
         endif
         close(91)
@@ -392,7 +404,11 @@ program remesh
              '/'//trim(datadir)//'/proc'//trim(ch)//'/grid.dat')
         if (ip<8) print*,'Writing ',gridfile
         open(1,FILE=gridfile,FORM='unformatted')
-        write(1) t,rx,rry(:,i),rrz(:,i),dx,dy,dz
+        if (prec == 'D') then
+           write(1) t,rx,rry(:,i),rrz(:,i),dx,dy,dz
+        else
+           write(1) t_sp,rx,rry(:,i),rrz(:,i),dx,dy,dz
+        endif
         write(1) dx,dy,dz
         write(1) Lx,Ly,Lz
         write(1) rdx_1,rdy_1,rdz_1
