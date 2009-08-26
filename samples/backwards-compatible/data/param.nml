@@ -82,9 +82,7 @@
  P_INFTY=  1.000000    ,
  LEQUATORY=F,
  LEQUATORZ=F,
- ZEQUATOR=  0.000000    ,
- MNAMEXY=          6,
- MNAMEXZ=          6,  /
+ ZEQUATOR=  0.000000    ,  /
 
 &EOS_INIT_PARS
  XHE=  0.000000    ,
