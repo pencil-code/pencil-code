@@ -107,6 +107,7 @@ module Mpicomm
     module procedure mpiallreduce_sum_scl
     module procedure mpiallreduce_sum_arr
     module procedure mpiallreduce_sum_arr2
+    module procedure mpiallreduce_sum_arr3
   endinterface
 !
   interface mpiallreduce_sum_int
@@ -592,32 +593,44 @@ module Mpicomm
 !
     endsubroutine mpibcast_char_arr
 !***********************************************************************
-    subroutine mpiallreduce_sum_scl(fsum_tmp,fsum)
+    subroutine mpiallreduce_sum_scl(fsum_tmp,fsum,idir)
 !
       real :: fsum_tmp, fsum
+      integer, optional :: idir
 !
       fsum=fsum_tmp
 !
     endsubroutine mpiallreduce_sum_scl
 !***********************************************************************
-    subroutine mpiallreduce_sum_arr(fsum_tmp,fsum,nreduce)
+    subroutine mpiallreduce_sum_arr(fsum_tmp,fsum,nreduce,idir)
 !
       integer :: nreduce
       real, dimension(nreduce) :: fsum_tmp, fsum
+      integer, optional :: idir
 !
       fsum=fsum_tmp
 !
     endsubroutine mpiallreduce_sum_arr
 !***********************************************************************
-    subroutine mpiallreduce_sum_arr2(fsum_tmp,fsum,nreduce_array,idir)
+    subroutine mpiallreduce_sum_arr2(fsum_tmp,fsum,nreduce,idir)
 !
-      integer, dimension(2) :: nreduce_array
-      real, dimension(nreduce_array(1),nreduce_array(2)) :: fsum_tmp, fsum
+      integer, dimension(2) :: nreduce
+      real, dimension(nreduce(1),nreduce(2)) :: fsum_tmp, fsum
       integer, optional :: idir
 !
       fsum=fsum_tmp
 !
     endsubroutine mpiallreduce_sum_arr2
+!***********************************************************************
+    subroutine mpiallreduce_sum_arr3(fsum_tmp,fsum,nreduce,idir)
+!
+      integer, dimension(3) :: nreduce
+      real, dimension(nreduce(1),nreduce(2),nreduce(3)) :: fsum_tmp, fsum
+      integer, optional :: idir
+!
+      fsum=fsum_tmp
+!
+    endsubroutine mpiallreduce_sum_arr3
 !***********************************************************************
     subroutine mpiallreduce_sum_int_scl(fsum_tmp,fsum)
 !
@@ -713,10 +726,11 @@ module Mpicomm
 !
     endsubroutine mpireduce_sum_int_arr2
 !***********************************************************************
-    subroutine mpireduce_sum_int_arr3(fsum_tmp,fsum,nreduce)
+    subroutine mpireduce_sum_int_arr3(fsum_tmp,fsum,nreduce,idir)
 !
       integer, dimension(3) :: nreduce
       integer, dimension(nreduce(1),nreduce(2),nreduce(3)) :: fsum_tmp,fsum
+      integer, optional :: idir
 !
       fsum=fsum_tmp
 !
@@ -731,45 +745,50 @@ module Mpicomm
 !
     endsubroutine mpireduce_sum_int_arr4
 !***********************************************************************
-    subroutine mpireduce_sum_scl(fsum_tmp,fsum)
+    subroutine mpireduce_sum_scl(fsum_tmp,fsum,idir)
 !
       real :: fsum_tmp,fsum
+      integer, optional :: idir
 !
       fsum=fsum_tmp
 !
     endsubroutine mpireduce_sum_scl
 !***********************************************************************
-    subroutine mpireduce_sum_arr(fsum_tmp,fsum,nreduce)
+    subroutine mpireduce_sum_arr(fsum_tmp,fsum,nreduce,idir)
 !
       integer :: nreduce
       real, dimension(nreduce) :: fsum_tmp,fsum
+      integer, optional :: idir
 !
       fsum=fsum_tmp
 !
     endsubroutine mpireduce_sum_arr
 !***********************************************************************
-    subroutine mpireduce_sum_arr2(fsum_tmp,fsum,nreduce)
+    subroutine mpireduce_sum_arr2(fsum_tmp,fsum,nreduce,idir)
 !
       integer, dimension(2) :: nreduce
       real, dimension(nreduce(1),nreduce(2)) :: fsum_tmp,fsum
+      integer, optional :: idir
 !
       fsum=fsum_tmp
 !
     endsubroutine mpireduce_sum_arr2
 !***********************************************************************
-    subroutine mpireduce_sum_arr3(fsum_tmp,fsum,nreduce)
+    subroutine mpireduce_sum_arr3(fsum_tmp,fsum,nreduce,idir)
 !
       integer, dimension(3) :: nreduce
       real, dimension(nreduce(1),nreduce(2),nreduce(3)) :: fsum_tmp,fsum
+      integer, optional :: idir
 !
       fsum=fsum_tmp
 !
     endsubroutine mpireduce_sum_arr3
 !***********************************************************************
-    subroutine mpireduce_sum_arr4(fsum_tmp,fsum,nreduce)
+    subroutine mpireduce_sum_arr4(fsum_tmp,fsum,nreduce,idir)
 !
       integer, dimension(4) :: nreduce
       real, dimension(nreduce(1),nreduce(2),nreduce(3),nreduce(4)) :: fsum_tmp,fsum
+      integer, optional :: idir
 !
       fsum=fsum_tmp
 !
