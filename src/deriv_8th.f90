@@ -1,10 +1,10 @@
-! $Id$
+! $Id: deriv.f90 11067 2009-06-17 19:53:43Z dhruba.mitra $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM integer, parameter :: nghost = 3
+! CPARAM integer, parameter :: nghost = 4
 !
 !***************************************************************
 module Deriv
@@ -22,7 +22,7 @@ module Deriv
   public :: der_onesided_4_slice
   public :: der_onesided_4_slice_other
 !
-  real :: der2_coef0, der2_coef1, der2_coef2, der2_coef3
+  real :: der2_coef0, der2_coef1, der2_coef2, der2_coef3, der2_coef4
 !
 !debug  integer, parameter :: icount_der   = 1         !DERCOUNT
 !debug  integer, parameter :: icount_der2  = 2         !DERCOUNT
@@ -68,8 +68,8 @@ module Deriv
       select case(der2_type)
 !
       case ('standard')
-        der2_coef0=-490./180.; der2_coef1=270./180.
-        der2_coef2=-27./180.; der2_coef3=2./180.
+        der2_coef0=-14350./5040.; der2_coef1=8064./5040.
+        der2_coef2=-1008./5040.; der2_coef3=128./5040.; der2_coef4=-9./5040.
 !
       case ('tuned1')
         der2_coef0=-0.75; der2_coef1=0.34375
@@ -87,14 +87,14 @@ module Deriv
     subroutine der_main(f,k,df,j)
 !
 !  calculate derivative df_k/dx_j
-!  accurate to 6th order, explicit, periodic
-!  replace cshifts by explicit construction -> x6.5 faster!
+!  accurate to 8th order, explicit, periodic
 !
 !   1-oct-97/axel: coded
 !  18-jul-98/axel: corrected mx -> my and mx -> mz in all y and z ders
 !   1-apr-01/axel+wolf: pencil formulation
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !  21-feb-07/axel: added 1/r and 1/pomega factors for non-coord basis
+!  25-aug-09/axel: adapted from deriv
 !
       use Cdata
 !
@@ -110,20 +110,22 @@ module Deriv
 !
       if (j==1) then
         if (nxgrid/=1) then
-          fac=(1./60)*dx_1(l1:l2)
-          df=fac*(+ 45.0*(f(l1+1:l2+1,m,n,k)-f(l1-1:l2-1,m,n,k)) &
-                  -  9.0*(f(l1+2:l2+2,m,n,k)-f(l1-2:l2-2,m,n,k)) &
-                  +      (f(l1+3:l2+3,m,n,k)-f(l1-3:l2-3,m,n,k)))
+          fac=(1./840.)*dx_1(l1:l2)
+          df=fac*(+672.*(f(l1+1:l2+1,m,n,k)-f(l1-1:l2-1,m,n,k)) &
+                  -168.*(f(l1+2:l2+2,m,n,k)-f(l1-2:l2-2,m,n,k)) &
+                  + 32.*(f(l1+3:l2+3,m,n,k)-f(l1-3:l2-3,m,n,k)) &
+                  -  3.*(f(l1+4:l2+4,m,n,k)-f(l1-4:l2-4,m,n,k)))
         else
           df=0.
           if (ip<=5) print*, 'der_main: Degenerate case in x-direction'
         endif
       elseif (j==2) then
         if (nygrid/=1) then
-          fac=(1./60)*dy_1(m)
-          df=fac*(+ 45.0*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
-               -  9.0*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
-                  +      (f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)))
+          fac=(1./840.)*dy_1(m)
+          df=fac*(+672.*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
+                  -168.*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
+                  + 32.*(f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)) &
+                  -  3.*(f(l1:l2,m+4,n,k)-f(l1:l2,m-4,n,k)))
           if (lspherical_coords)     df=df*r1_mn
           if (lcylindrical_coords)   df=df*rcyl_mn1
         else
@@ -132,10 +134,11 @@ module Deriv
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
-          fac=(1./60)*dz_1(n)
-          df=fac*(+ 45.0*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
-                  -  9.0*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
-                  +      (f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)))
+          fac=(1./840.)*dz_1(n)
+          df=fac*(+672.*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
+                  -168.*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
+                  + 32.*(f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)) &
+                  -  3.*(f(l1:l2,m,n+4,k)-f(l1:l2,m,n-4,k)))
           if (lspherical_coords) df=df*r1_mn*sin1th(m)
         else
           df=0.
@@ -149,13 +152,12 @@ module Deriv
 !
 !  Along one pencil in NON f variable
 !  calculate derivative of a scalar, get scalar
-!  accurate to 6th order, explicit, periodic
-!  replace cshifts by explicit construction -> x6.5 faster!
+!  accurate to 8th order, explicit, periodic
 !
-!  26-nov-02/tony: coded - duplicate der_main but without k subscript
-!                          then overload the der interface.
+!  26-nov-02/tony: coded, duplicate der_main but without k subscript, overload
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !  21-feb-07/axel: added 1/r and 1/pomega factors for non-coord basis
+!  25-aug-09/axel: adapted from deriv
 
       use Cdata
 !
@@ -171,20 +173,22 @@ module Deriv
 !
       if (j==1) then
         if (nxgrid/=1) then
-          fac=(1./60)*dx_1(l1:l2)
-          df=fac*(+ 45.0*(f(l1+1:l2+1,m,n)-f(l1-1:l2-1,m,n)) &
-                  -  9.0*(f(l1+2:l2+2,m,n)-f(l1-2:l2-2,m,n)) &
-                  +      (f(l1+3:l2+3,m,n)-f(l1-3:l2-3,m,n)))
+          fac=(1./840.)*dx_1(l1:l2)
+          df=fac*(+672.*(f(l1+1:l2+1,m,n)-f(l1-1:l2-1,m,n)) &
+                  -168.*(f(l1+2:l2+2,m,n)-f(l1-2:l2-2,m,n)) &
+                  + 32.*(f(l1+3:l2+3,m,n)-f(l1-3:l2-3,m,n)) &
+                  -  3.*(f(l1+4:l2+4,m,n)-f(l1-4:l2-4,m,n)))
         else
           df=0.
           if (ip<=5) print*, 'der_other: Degenerate case in x-direction'
         endif
       elseif (j==2) then
         if (nygrid/=1) then
-          fac=(1./60)*dy_1(m)
-          df=fac*(+ 45.0*(f(l1:l2,m+1,n)-f(l1:l2,m-1,n)) &
-                  -  9.0*(f(l1:l2,m+2,n)-f(l1:l2,m-2,n)) &
-                  +      (f(l1:l2,m+3,n)-f(l1:l2,m-3,n)))
+          fac=(1./840.)*dy_1(m)
+          df=fac*(+672.*(f(l1:l2,m+1,n)-f(l1:l2,m-1,n)) &
+                  -168.*(f(l1:l2,m+2,n)-f(l1:l2,m-2,n)) &
+                  + 32.*(f(l1:l2,m+3,n)-f(l1:l2,m-3,n)) &
+                  -  3.*(f(l1:l2,m+4,n)-f(l1:l2,m-4,n)))
           if (lspherical_coords)     df=df*r1_mn
           if (lcylindrical_coords)   df=df*rcyl_mn1
         else
@@ -193,10 +197,11 @@ module Deriv
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
-          fac=(1./60)*dz_1(n)
-          df=fac*(+ 45.0*(f(l1:l2,m,n+1)-f(l1:l2,m,n-1)) &
-                  -  9.0*(f(l1:l2,m,n+2)-f(l1:l2,m,n-2)) &
-                  +      (f(l1:l2,m,n+3)-f(l1:l2,m,n-3)))
+          fac=(1./840.)*dz_1(n)
+          df=fac*(+672.*(f(l1:l2,m,n+1)-f(l1:l2,m,n-1)) &
+                  -168.*(f(l1:l2,m,n+2)-f(l1:l2,m,n-2)) &
+                  + 32.*(f(l1:l2,m,n+3)-f(l1:l2,m,n-3)) &
+                  -  3.*(f(l1:l2,m,n+4)-f(l1:l2,m,n-4)))
           if (lspherical_coords) df=df*r1_mn*sin1th(m)
         else
           df=0.
@@ -211,6 +216,7 @@ module Deriv
 !  Calculate first derivative of any x, y or z pencil.
 !
 !  01-nov-07/anders: adapted from der
+!  25-aug-09/axel: adapted from deriv
 !
       use Cdata
 !
@@ -227,9 +233,9 @@ module Deriv
           if (lroot) print*, 'der_pencil: pencil must be of size mx for x derivative'
           call fatal_error('der_pencil','')
         endif
-        df(l1:l2)=(1./60)*dx_1(l1:l2)*( &
-            + 45.0*(pencil(l1+1:l2+1)-pencil(l1-1:l2-1)) &
-            -  9.0*(pencil(l1+2:l2+2)-pencil(l1-2:l2-2)) &
+        df(l1:l2)=(1./840)*dx_1(l1:l2)*( &
+            + 672.0*(pencil(l1+1:l2+1)-pencil(l1-1:l2-1)) &
+            - 168.0*(pencil(l1+2:l2+2)-pencil(l1-2:l2-2)) &
             +      (pencil(l1+3:l2+3)-pencil(l1-3:l2-3)))
       else if (j==2) then
 !
@@ -239,9 +245,9 @@ module Deriv
           if (lroot) print*, 'der_pencil: pencil must be of size my for y derivative'
           call fatal_error('der_pencil','')
         endif
-        df(m1:m2)=(1./60)*dy_1(m1:m2)*( &
-            + 45.0*(pencil(m1+1:m2+1)-pencil(m1-1:m2-1)) &
-            -  9.0*(pencil(m1+2:m2+2)-pencil(m1-2:m2-2)) &
+        df(m1:m2)=(1./840)*dy_1(m1:m2)*( &
+            + 672.0*(pencil(m1+1:m2+1)-pencil(m1-1:m2-1)) &
+            - 168.0*(pencil(m1+2:m2+2)-pencil(m1-2:m2-2)) &
             +      (pencil(m1+3:m2+3)-pencil(m1-3:m2-3)))
       else if (j==3) then
 !
@@ -251,9 +257,9 @@ module Deriv
           if (lroot) print*, 'der_pencil: pencil must be of size mz for z derivative'
           call fatal_error('der_pencil','')
         endif
-        df(n1:n2)=(1./60)*dz_1(n1:n2)*( &
-            + 45.0*(pencil(n1+1:n2+1)-pencil(n1-1:n2-1)) &
-            -  9.0*(pencil(n1+2:n2+2)-pencil(n1-2:n2-2)) &
+        df(n1:n2)=(1./840)*dz_1(n1:n2)*( &
+            + 672.0*(pencil(n1+1:n2+1)-pencil(n1-1:n2-1)) &
+            - 168.0*(pencil(n1+2:n2+2)-pencil(n1-2:n2-2)) &
             +      (pencil(n1+3:n2+3)-pencil(n1-3:n2-3)))
       else
         if (lroot) print*, 'der_pencil: no such direction j=', j
@@ -268,12 +274,12 @@ module Deriv
     subroutine der2_main(f,k,df2,j)
 !
 !  calculate 2nd derivative d^2f_k/dx_j^2
-!  accurate to 6th order, explicit, periodic
-!  replace cshifts by explicit construction -> x6.5 faster!
+!  accurate to 8th order, explicit, periodic
 !
 !   1-oct-97/axel: coded
 !   1-apr-01/axel+wolf: pencil formulation
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
+!  25-aug-09/axel: adapted from deriv
 !
       use Cdata
 !
@@ -294,7 +300,8 @@ module Deriv
           df2=fac*(der2_coef0*f (l1  :l2  ,m,n,k) &
                   +der2_coef1*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
                   +der2_coef2*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
-                  +der2_coef3*(f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)))
+                  +der2_coef3*(f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)) &
+                  +der2_coef4*(f(l1+4:l2+4,m,n,k)+f(l1-4:l2-4,m,n,k)))
           if (.not.lequidist(j)) then
             call der(f,k,df,j)
             df2=df2+dx_tilde(l1:l2)*df
@@ -308,7 +315,8 @@ module Deriv
           df2=fac*(der2_coef0*f(l1:l2,m  ,n,k) &
                   +der2_coef1*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
                   +der2_coef2*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
-                  +der2_coef3*(f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
+                  +der2_coef3*(f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)) &
+                  +der2_coef4*(f(l1:l2,m+4,n,k)+f(l1:l2,m-4,n,k)))
           if (lspherical_coords)     df2=df2*r2_mn
           if (lcylindrical_coords)   df2=df2*rcyl_mn2
           if (.not.lequidist(j)) then
@@ -324,7 +332,8 @@ module Deriv
           df2=fac*(der2_coef0*f(l1:l2,m,n  ,k) &
                    +der2_coef1*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
                    +der2_coef2*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
-                   +der2_coef3*(f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
+                   +der2_coef3*(f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)) &
+                   +der2_coef4*(f(l1:l2,m,n+4,k)+f(l1:l2,m,n-4,k)))
           if (lspherical_coords) df2=df2*r2_mn*sin2th(m)
           if (.not.lequidist(j)) then
             call der(f,k,df,j)
@@ -341,12 +350,12 @@ module Deriv
     subroutine der2_other(f,df2,j)
 !
 !  calculate 2nd derivative d^2f/dx_j^2 (of scalar f)
-!  accurate to 6th order, explicit, periodic
-!  replace cshifts by explicit construction -> x6.5 faster!
+!  accurate to 8th order, explicit, periodic
 !
 !   1-oct-97/axel: coded
 !   1-apr-01/axel+wolf: pencil formulation
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
+!  25-aug-09/axel: adapted from deriv
 !
       use Cdata
 !
@@ -416,6 +425,7 @@ module Deriv
 !  Calculate 2nd derivative of any x, y or z pencil.
 !
 !  01-nov-07/anders: adapted from der2
+!  25-aug-09/axel: adapted from deriv
 !
       use Cdata
 !
@@ -472,6 +482,7 @@ module Deriv
 !  Calculate 3rd derivative of a scalar, get scalar
 !
 !  10-feb-06/anders: adapted from der5
+!  25-aug-09/axel: copied from deriv, but not adapted yet
 !
       use Cdata
 !
@@ -555,6 +566,7 @@ module Deriv
 !   8-jul-02/wolf: coded
 !   9-dec-03/nils: adapted from der6
 !  10-feb-06/anders: corrected sign and factor
+!  25-aug-09/axel: copied from deriv, but not adapted yet
 !
       use Cdata
 !
@@ -647,6 +659,7 @@ module Deriv
 !  the ratios dx:dy:dz.
 !
 !  29-oct-04/anders: adapted from der6
+!  25-aug-09/axel: copied from deriv, but not adapted yet
 !
       use Cdata
 !
@@ -727,9 +740,10 @@ module Deriv
 !  you want to affect the Nyquist scale in each direction, independent of
 !  the ratios dx:dy:dz.
 !    The optional flag UPWIND is a variant thereof, which calculates
-!  D^(6)*dx^5/60, which is the upwind correction of centered derivatives.
+!  D^(6)*dx^5/840, which is the upwind correction of centered derivatives.
 !
 !   8-jul-02/wolf: coded
+!  25-aug-09/axel: copied from deriv, but not adapted yet
 !
       use Cdata
 !
@@ -769,7 +783,7 @@ module Deriv
           if (igndx) then
             fac=1.0
           else if (upwnd) then
-            fac=(1.0/60)*dx_1(l1:l2)
+            fac=(1.0/840)*dx_1(l1:l2)
           else
             fac=1/dx**6
           endif
@@ -785,7 +799,7 @@ module Deriv
           if (igndx) then
             fac=1.0
           else if (upwnd) then
-            fac=(1.0/60)*dy_1(m)
+            fac=(1.0/840)*dy_1(m)
           else
             fac=1/dy**6
           endif
@@ -801,7 +815,7 @@ module Deriv
           if (igndx) then
             fac=1.
           else if (upwnd) then
-            fac=(1.0/60)*dz_1(n)
+            fac=(1.0/840)*dz_1(n)
           else
             fac=1/dz**6
           endif
@@ -825,9 +839,10 @@ module Deriv
 !  you want to affect the Nyquist scale in each direction, independent of
 !  the ratios dx:dy:dz.
 !    The optional flag UPWIND is a variant thereof, which calculates
-!  D^(6)*dx^5/60, which is the upwind correction of centered derivatives.
+!  D^(6)*dx^5/840, which is the upwind correction of centered derivatives.
 !
 !   8-jul-02/wolf: coded
+!  25-aug-09/axel: copied from deriv, but not adapted yet
 !
       use Cdata
 !
@@ -865,7 +880,7 @@ module Deriv
           if (igndx) then
             fac=1.0
           else if (upwnd) then
-            fac=(1.0/60)*dx_1(l1:l2)
+            fac=(1.0/840)*dx_1(l1:l2)
           else
             fac=1/dx**6
           endif
@@ -881,7 +896,7 @@ module Deriv
           if (igndx) then
             fac=1.0
           else if (upwnd) then
-            fac=(1.0/60)*dy_1(m)
+            fac=(1.0/840)*dy_1(m)
           else
             fac=1/dy**6
           endif
@@ -897,7 +912,7 @@ module Deriv
           if (igndx) then
             fac=1.0
           else if (upwnd) then
-            fac=(1.0/60)*dz_1(n)
+            fac=(1.0/840)*dz_1(n)
           else
             fac=1/dz**6
           endif
@@ -921,6 +936,7 @@ module Deriv
 !   8-sep-01/axel: coded
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !  14-nov-06/wolf: implemented bidiagonal scheme
+!  25-aug-09/axel: adapted from deriv
 !
       use Cdata
 !
@@ -940,14 +956,16 @@ module Deriv
         !
         if ((i==1.and.j==2).or.(i==2.and.j==1)) then
           if (nxgrid/=1.and.nygrid/=1) then
-            fac=(1./720.)*dx_1(l1:l2)*dy_1(m)
+            fac=(1./20160.)*dx_1(l1:l2)*dy_1(m)
             df=fac*( &
-                        270.*( f(l1+1:l2+1,m+1,n,k)-f(l1-1:l2-1,m+1,n,k)  &
+                       8064.*( f(l1+1:l2+1,m+1,n,k)-f(l1-1:l2-1,m+1,n,k)  &
                               +f(l1-1:l2-1,m-1,n,k)-f(l1+1:l2+1,m-1,n,k)) &
-                       - 27.*( f(l1+2:l2+2,m+2,n,k)-f(l1-2:l2-2,m+2,n,k)  &
+                      -1008.*( f(l1+2:l2+2,m+2,n,k)-f(l1-2:l2-2,m+2,n,k)  &
                               +f(l1-2:l2-2,m-2,n,k)-f(l1+2:l2+2,m-2,n,k)) &
-                       +  2.*( f(l1+3:l2+3,m+3,n,k)-f(l1-3:l2-3,m+3,n,k)  &
+                      + 128.*( f(l1+3:l2+3,m+3,n,k)-f(l1-3:l2-3,m+3,n,k)  &
                               +f(l1-3:l2-3,m-3,n,k)-f(l1+3:l2+3,m-3,n,k)) &
+                      -   9.*( f(l1+4:l2+4,m+4,n,k)-f(l1-4:l2-4,m+4,n,k)  &
+                              +f(l1-4:l2-4,m-4,n,k)-f(l1+4:l2+4,m-4,n,k)) &
                    )
           else
             df=0.
@@ -955,14 +973,16 @@ module Deriv
           endif
         elseif ((i==2.and.j==3).or.(i==3.and.j==2)) then
           if (nygrid/=1.and.nzgrid/=1) then
-            fac=(1./720.)*dy_1(m)*dz_1(n)
+            fac=(1./20160.)*dy_1(m)*dz_1(n)
             df=fac*( &
-                        270.*( f(l1:l2,m+1,n+1,k)-f(l1:l2,m+1,n-1,k)  &
+                        8064.*( f(l1:l2,m+1,n+1,k)-f(l1:l2,m+1,n-1,k)  &
                               +f(l1:l2,m-1,n-1,k)-f(l1:l2,m-1,n+1,k)) &
-                       - 27.*( f(l1:l2,m+2,n+2,k)-f(l1:l2,m+2,n-2,k)  &
+                       -1008.*( f(l1:l2,m+2,n+2,k)-f(l1:l2,m+2,n-2,k)  &
                               +f(l1:l2,m-2,n-2,k)-f(l1:l2,m-2,n+2,k)) &
-                       +  2.*( f(l1:l2,m+3,n+3,k)-f(l1:l2,m+3,n-3,k)  &
+                       + 128.*( f(l1:l2,m+3,n+3,k)-f(l1:l2,m+3,n-3,k)  &
                               +f(l1:l2,m-3,n-3,k)-f(l1:l2,m-3,n+3,k)) &
+                       -   9.*( f(l1:l2,m+4,n+4,k)-f(l1:l2,m+4,n-4,k)  &
+                              +f(l1:l2,m-4,n-4,k)-f(l1:l2,m-4,n+4,k)) &
                    )
           else
             df=0.
@@ -970,14 +990,16 @@ module Deriv
           endif
         elseif ((i==3.and.j==1).or.(i==1.and.j==3)) then
           if (nzgrid/=1.and.nxgrid/=1) then
-            fac=(1./720.)*dz_1(n)*dx_1(l1:l2)
+            fac=(1./20160.)*dz_1(n)*dx_1(l1:l2)
             df=fac*( &
-                        270.*( f(l1+1:l2+1,m,n+1,k)-f(l1-1:l2-1,m,n+1,k)  &
+                        8064.*( f(l1+1:l2+1,m,n+1,k)-f(l1-1:l2-1,m,n+1,k)  &
                               +f(l1-1:l2-1,m,n-1,k)-f(l1+1:l2+1,m,n-1,k)) &
-                       - 27.*( f(l1+2:l2+2,m,n+2,k)-f(l1-2:l2-2,m,n+2,k)  &
+                       -1008.*( f(l1+2:l2+2,m,n+2,k)-f(l1-2:l2-2,m,n+2,k)  &
                               +f(l1-2:l2-2,m,n-2,k)-f(l1+2:l2+2,m,n-2,k)) &
-                       +  2.*( f(l1+3:l2+3,m,n+3,k)-f(l1-3:l2-3,m,n+3,k)  &
+                       + 128.*( f(l1+3:l2+3,m,n+3,k)-f(l1-3:l2-3,m,n+3,k)  &
                               +f(l1-3:l2-3,m,n-3,k)-f(l1+3:l2+3,m,n-3,k)) &
+                       -   9.*( f(l1+4:l2+4,m,n+4,k)-f(l1-4:l2-4,m,n+4,k)  &
+                              +f(l1-4:l2-4,m,n-4,k)-f(l1+4:l2+4,m,n-4,k)) &
                    )
           else
             df=0.
@@ -991,24 +1013,24 @@ module Deriv
         !
         if ((i==1.and.j==2).or.(i==2.and.j==1)) then
           if (nxgrid/=1.and.nygrid/=1) then
-            fac=(1./60.**2)*dx_1(l1:l2)*dy_1(m)
+            fac=(1./840.**2)*dx_1(l1:l2)*dy_1(m)
             df=fac*( &
-              45.*((45.*(f(l1+1:l2+1,m+1,n,k)-f(l1-1:l2-1,m+1,n,k))  &
+              672.*((672.*(f(l1+1:l2+1,m+1,n,k)-f(l1-1:l2-1,m+1,n,k))  &
                     -9.*(f(l1+2:l2+2,m+1,n,k)-f(l1-2:l2-2,m+1,n,k))  &
                        +(f(l1+3:l2+3,m+1,n,k)-f(l1-3:l2-3,m+1,n,k))) &
-                  -(45.*(f(l1+1:l2+1,m-1,n,k)-f(l1-1:l2-1,m-1,n,k))  &
+                  -(672.*(f(l1+1:l2+1,m-1,n,k)-f(l1-1:l2-1,m-1,n,k))  &
                     -9.*(f(l1+2:l2+2,m-1,n,k)-f(l1-2:l2-2,m-1,n,k))  &
                        +(f(l1+3:l2+3,m-1,n,k)-f(l1-3:l2-3,m-1,n,k))))&
-              -9.*((45.*(f(l1+1:l2+1,m+2,n,k)-f(l1-1:l2-1,m+2,n,k))  &
+              -9.*((672.*(f(l1+1:l2+1,m+2,n,k)-f(l1-1:l2-1,m+2,n,k))  &
                     -9.*(f(l1+2:l2+2,m+2,n,k)-f(l1-2:l2-2,m+2,n,k))  &
                        +(f(l1+3:l2+3,m+2,n,k)-f(l1-3:l2-3,m+2,n,k))) &
-                  -(45.*(f(l1+1:l2+1,m-2,n,k)-f(l1-1:l2-1,m-2,n,k))  &
+                  -(672.*(f(l1+1:l2+1,m-2,n,k)-f(l1-1:l2-1,m-2,n,k))  &
                     -9.*(f(l1+2:l2+2,m-2,n,k)-f(l1-2:l2-2,m-2,n,k))  &
                        +(f(l1+3:l2+3,m-2,n,k)-f(l1-3:l2-3,m-2,n,k))))&
-                 +((45.*(f(l1+1:l2+1,m+3,n,k)-f(l1-1:l2-1,m+3,n,k))  &
+                 +((672.*(f(l1+1:l2+1,m+3,n,k)-f(l1-1:l2-1,m+3,n,k))  &
                     -9.*(f(l1+2:l2+2,m+3,n,k)-f(l1-2:l2-2,m+3,n,k))  &
                        +(f(l1+3:l2+3,m+3,n,k)-f(l1-3:l2-3,m+3,n,k))) &
-                  -(45.*(f(l1+1:l2+1,m-3,n,k)-f(l1-1:l2-1,m-3,n,k))  &
+                  -(672.*(f(l1+1:l2+1,m-3,n,k)-f(l1-1:l2-1,m-3,n,k))  &
                     -9.*(f(l1+2:l2+2,m-3,n,k)-f(l1-2:l2-2,m-3,n,k))  &
                        +(f(l1+3:l2+3,m-3,n,k)-f(l1-3:l2-3,m-3,n,k))))&
                    )
@@ -1018,24 +1040,24 @@ module Deriv
           endif
         elseif ((i==2.and.j==3).or.(i==3.and.j==2)) then
           if (nygrid/=1.and.nzgrid/=1) then
-            fac=(1./60.**2)*dy_1(m)*dz_1(n)
+            fac=(1./840.**2)*dy_1(m)*dz_1(n)
             df=fac*( &
-              45.*((45.*(f(l1:l2,m+1,n+1,k)-f(l1:l2,m-1,n+1,k))  &
+              672.*((672.*(f(l1:l2,m+1,n+1,k)-f(l1:l2,m-1,n+1,k))  &
                     -9.*(f(l1:l2,m+2,n+1,k)-f(l1:l2,m-2,n+1,k))  &
                        +(f(l1:l2,m+3,n+1,k)-f(l1:l2,m-3,n+1,k))) &
-                  -(45.*(f(l1:l2,m+1,n-1,k)-f(l1:l2,m-1,n-1,k))  &
+                  -(672.*(f(l1:l2,m+1,n-1,k)-f(l1:l2,m-1,n-1,k))  &
                     -9.*(f(l1:l2,m+2,n-1,k)-f(l1:l2,m-2,n-1,k))  &
                        +(f(l1:l2,m+3,n-1,k)-f(l1:l2,m-3,n-1,k))))&
-              -9.*((45.*(f(l1:l2,m+1,n+2,k)-f(l1:l2,m-1,n+2,k))  &
+              -9.*((672.*(f(l1:l2,m+1,n+2,k)-f(l1:l2,m-1,n+2,k))  &
                     -9.*(f(l1:l2,m+2,n+2,k)-f(l1:l2,m-2,n+2,k))  &
                        +(f(l1:l2,m+3,n+2,k)-f(l1:l2,m-3,n+2,k))) &
-                  -(45.*(f(l1:l2,m+1,n-2,k)-f(l1:l2,m-1,n-2,k))  &
+                  -(672.*(f(l1:l2,m+1,n-2,k)-f(l1:l2,m-1,n-2,k))  &
                     -9.*(f(l1:l2,m+2,n-2,k)-f(l1:l2,m-2,n-2,k))  &
                        +(f(l1:l2,m+3,n-2,k)-f(l1:l2,m-3,n-2,k))))&
-                 +((45.*(f(l1:l2,m+1,n+3,k)-f(l1:l2,m-1,n+3,k))  &
+                 +((672.*(f(l1:l2,m+1,n+3,k)-f(l1:l2,m-1,n+3,k))  &
                     -9.*(f(l1:l2,m+2,n+3,k)-f(l1:l2,m-2,n+3,k))  &
                        +(f(l1:l2,m+3,n+3,k)-f(l1:l2,m-3,n+3,k))) &
-                  -(45.*(f(l1:l2,m+1,n-3,k)-f(l1:l2,m-1,n-3,k))  &
+                  -(672.*(f(l1:l2,m+1,n-3,k)-f(l1:l2,m-1,n-3,k))  &
                     -9.*(f(l1:l2,m+2,n-3,k)-f(l1:l2,m-2,n-3,k))  &
                        +(f(l1:l2,m+3,n-3,k)-f(l1:l2,m-3,n-3,k))))&
                    )
@@ -1045,24 +1067,24 @@ module Deriv
           endif
         elseif ((i==3.and.j==1).or.(i==1.and.j==3)) then
           if (nzgrid/=1.and.nxgrid/=1) then
-            fac=(1./60.**2)*dz_1(n)*dx_1(l1:l2)
+            fac=(1./840.**2)*dz_1(n)*dx_1(l1:l2)
             df=fac*( &
-              45.*((45.*(f(l1+1:l2+1,m,n+1,k)-f(l1-1:l2-1,m,n+1,k))  &
+              672.*((672.*(f(l1+1:l2+1,m,n+1,k)-f(l1-1:l2-1,m,n+1,k))  &
                     -9.*(f(l1+2:l2+2,m,n+1,k)-f(l1-2:l2-2,m,n+1,k))  &
                        +(f(l1+3:l2+3,m,n+1,k)-f(l1-3:l2-3,m,n+1,k))) &
-                  -(45.*(f(l1+1:l2+1,m,n-1,k)-f(l1-1:l2-1,m,n-1,k))  &
+                  -(672.*(f(l1+1:l2+1,m,n-1,k)-f(l1-1:l2-1,m,n-1,k))  &
                     -9.*(f(l1+2:l2+2,m,n-1,k)-f(l1-2:l2-2,m,n-1,k))  &
                        +(f(l1+3:l2+3,m,n-1,k)-f(l1-3:l2-3,m,n-1,k))))&
-              -9.*((45.*(f(l1+1:l2+1,m,n+2,k)-f(l1-1:l2-1,m,n+2,k))  &
+              -9.*((672.*(f(l1+1:l2+1,m,n+2,k)-f(l1-1:l2-1,m,n+2,k))  &
                     -9.*(f(l1+2:l2+2,m,n+2,k)-f(l1-2:l2-2,m,n+2,k))  &
                        +(f(l1+3:l2+3,m,n+2,k)-f(l1-3:l2-3,m,n+2,k))) &
-                  -(45.*(f(l1+1:l2+1,m,n-2,k)-f(l1-1:l2-1,m,n-2,k))  &
+                  -(672.*(f(l1+1:l2+1,m,n-2,k)-f(l1-1:l2-1,m,n-2,k))  &
                     -9.*(f(l1+2:l2+2,m,n-2,k)-f(l1-2:l2-2,m,n-2,k))  &
                        +(f(l1+3:l2+3,m,n-2,k)-f(l1-3:l2-3,m,n-2,k))))&
-                 +((45.*(f(l1+1:l2+1,m,n+3,k)-f(l1-1:l2-1,m,n+3,k))  &
+                 +((672.*(f(l1+1:l2+1,m,n+3,k)-f(l1-1:l2-1,m,n+3,k))  &
                     -9.*(f(l1+2:l2+2,m,n+3,k)-f(l1-2:l2-2,m,n+3,k))  &
                        +(f(l1+3:l2+3,m,n+3,k)-f(l1-3:l2-3,m,n+3,k))) &
-                  -(45.*(f(l1+1:l2+1,m,n-3,k)-f(l1-1:l2-1,m,n-3,k))  &
+                  -(672.*(f(l1+1:l2+1,m,n-3,k)-f(l1-1:l2-1,m,n-3,k))  &
                     -9.*(f(l1+2:l2+2,m,n-3,k)-f(l1-2:l2-2,m,n-3,k))  &
                        +(f(l1+3:l2+3,m,n-3,k)-f(l1-3:l2-3,m,n-3,k))))&
                    )
@@ -1101,10 +1123,12 @@ module Deriv
 !
 !  calculate 2nd derivative with respect to two different directions
 !  input: scalar, output: scalar
-!  accurate to 6th order, explicit, periodic
+!  accurate to 8th order, explicit, periodic
+!
 !   8-sep-01/axel: coded
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !  14-nov-06/wolf: implemented bidiagonal scheme
+!  25-aug-09/axel: adapted from deriv
 !
       use Cdata
 !
@@ -1175,24 +1199,24 @@ module Deriv
         !
         if ((i==1.and.j==2).or.(i==2.and.j==1)) then
           if (nxgrid/=1.and.nygrid/=1) then
-            fac=(1./60.**2)*dx_1(l1:l2)*dy_1(m)
+            fac=(1./840.**2)*dx_1(l1:l2)*dy_1(m)
             df=fac*( &
-              45.*((45.*(f(l1+1:l2+1,m+1,n)-f(l1-1:l2-1,m+1,n))  &
+              672.*((672.*(f(l1+1:l2+1,m+1,n)-f(l1-1:l2-1,m+1,n))  &
                     -9.*(f(l1+2:l2+2,m+1,n)-f(l1-2:l2-2,m+1,n))  &
                        +(f(l1+3:l2+3,m+1,n)-f(l1-3:l2-3,m+1,n))) &
-                  -(45.*(f(l1+1:l2+1,m-1,n)-f(l1-1:l2-1,m-1,n))  &
+                  -(672.*(f(l1+1:l2+1,m-1,n)-f(l1-1:l2-1,m-1,n))  &
                     -9.*(f(l1+2:l2+2,m-1,n)-f(l1-2:l2-2,m-1,n))  &
                        +(f(l1+3:l2+3,m-1,n)-f(l1-3:l2-3,m-1,n))))&
-              -9.*((45.*(f(l1+1:l2+1,m+2,n)-f(l1-1:l2-1,m+2,n))  &
+              -9.*((672.*(f(l1+1:l2+1,m+2,n)-f(l1-1:l2-1,m+2,n))  &
                     -9.*(f(l1+2:l2+2,m+2,n)-f(l1-2:l2-2,m+2,n))  &
                        +(f(l1+3:l2+3,m+2,n)-f(l1-3:l2-3,m+2,n))) &
-                  -(45.*(f(l1+1:l2+1,m-2,n)-f(l1-1:l2-1,m-2,n))  &
+                  -(672.*(f(l1+1:l2+1,m-2,n)-f(l1-1:l2-1,m-2,n))  &
                     -9.*(f(l1+2:l2+2,m-2,n)-f(l1-2:l2-2,m-2,n))  &
                        +(f(l1+3:l2+3,m-2,n)-f(l1-3:l2-3,m-2,n))))&
-                 +((45.*(f(l1+1:l2+1,m+3,n)-f(l1-1:l2-1,m+3,n))  &
+                 +((672.*(f(l1+1:l2+1,m+3,n)-f(l1-1:l2-1,m+3,n))  &
                     -9.*(f(l1+2:l2+2,m+3,n)-f(l1-2:l2-2,m+3,n))  &
                        +(f(l1+3:l2+3,m+3,n)-f(l1-3:l2-3,m+3,n))) &
-                  -(45.*(f(l1+1:l2+1,m-3,n)-f(l1-1:l2-1,m-3,n))  &
+                  -(672.*(f(l1+1:l2+1,m-3,n)-f(l1-1:l2-1,m-3,n))  &
                     -9.*(f(l1+2:l2+2,m-3,n)-f(l1-2:l2-2,m-3,n))  &
                        +(f(l1+3:l2+3,m-3,n)-f(l1-3:l2-3,m-3,n))))&
                    )
@@ -1202,24 +1226,24 @@ module Deriv
           endif
         elseif ((i==2.and.j==3).or.(i==3.and.j==2)) then
           if (nygrid/=1.and.nzgrid/=1) then
-            fac=(1./60.**2)*dy_1(m)*dz_1(n)
+            fac=(1./840.**2)*dy_1(m)*dz_1(n)
             df=fac*( &
-              45.*((45.*(f(l1:l2,m+1,n+1)-f(l1:l2,m-1,n+1))  &
+              672.*((672.*(f(l1:l2,m+1,n+1)-f(l1:l2,m-1,n+1))  &
                     -9.*(f(l1:l2,m+2,n+1)-f(l1:l2,m-2,n+1))  &
                        +(f(l1:l2,m+3,n+1)-f(l1:l2,m-3,n+1))) &
-                  -(45.*(f(l1:l2,m+1,n-1)-f(l1:l2,m-1,n-1))  &
+                  -(672.*(f(l1:l2,m+1,n-1)-f(l1:l2,m-1,n-1))  &
                     -9.*(f(l1:l2,m+2,n-1)-f(l1:l2,m-2,n-1))  &
                        +(f(l1:l2,m+3,n-1)-f(l1:l2,m-3,n-1))))&
-              -9.*((45.*(f(l1:l2,m+1,n+2)-f(l1:l2,m-1,n+2))  &
+              -9.*((672.*(f(l1:l2,m+1,n+2)-f(l1:l2,m-1,n+2))  &
                     -9.*(f(l1:l2,m+2,n+2)-f(l1:l2,m-2,n+2))  &
                        +(f(l1:l2,m+3,n+2)-f(l1:l2,m-3,n+2))) &
-                  -(45.*(f(l1:l2,m+1,n-2)-f(l1:l2,m-1,n-2))  &
+                  -(672.*(f(l1:l2,m+1,n-2)-f(l1:l2,m-1,n-2))  &
                     -9.*(f(l1:l2,m+2,n-2)-f(l1:l2,m-2,n-2))  &
                        +(f(l1:l2,m+3,n-2)-f(l1:l2,m-3,n-2))))&
-                 +((45.*(f(l1:l2,m+1,n+3)-f(l1:l2,m-1,n+3))  &
+                 +((672.*(f(l1:l2,m+1,n+3)-f(l1:l2,m-1,n+3))  &
                     -9.*(f(l1:l2,m+2,n+3)-f(l1:l2,m-2,n+3))  &
                        +(f(l1:l2,m+3,n+3)-f(l1:l2,m-3,n+3))) &
-                  -(45.*(f(l1:l2,m+1,n-3)-f(l1:l2,m-1,n-3))  &
+                  -(672.*(f(l1:l2,m+1,n-3)-f(l1:l2,m-1,n-3))  &
                     -9.*(f(l1:l2,m+2,n-3)-f(l1:l2,m-2,n-3))  &
                        +(f(l1:l2,m+3,n-3)-f(l1:l2,m-3,n-3))))&
                    )
@@ -1229,24 +1253,24 @@ module Deriv
           endif
         elseif ((i==3.and.j==1).or.(i==1.and.j==3)) then
           if (nzgrid/=1.and.nxgrid/=1) then
-            fac=(1./60.**2)*dz_1(n)*dx_1(l1:l2)
+            fac=(1./840.**2)*dz_1(n)*dx_1(l1:l2)
             df=fac*( &
-              45.*((45.*(f(l1+1:l2+1,m,n+1)-f(l1-1:l2-1,m,n+1))  &
+              672.*((672.*(f(l1+1:l2+1,m,n+1)-f(l1-1:l2-1,m,n+1))  &
                     -9.*(f(l1+2:l2+2,m,n+1)-f(l1-2:l2-2,m,n+1))  &
                        +(f(l1+3:l2+3,m,n+1)-f(l1-3:l2-3,m,n+1))) &
-                  -(45.*(f(l1+1:l2+1,m,n-1)-f(l1-1:l2-1,m,n-1))  &
+                  -(672.*(f(l1+1:l2+1,m,n-1)-f(l1-1:l2-1,m,n-1))  &
                     -9.*(f(l1+2:l2+2,m,n-1)-f(l1-2:l2-2,m,n-1))  &
                        +(f(l1+3:l2+3,m,n-1)-f(l1-3:l2-3,m,n-1))))&
-              -9.*((45.*(f(l1+1:l2+1,m,n+2)-f(l1-1:l2-1,m,n+2))  &
+              -9.*((672.*(f(l1+1:l2+1,m,n+2)-f(l1-1:l2-1,m,n+2))  &
                     -9.*(f(l1+2:l2+2,m,n+2)-f(l1-2:l2-2,m,n+2))  &
                        +(f(l1+3:l2+3,m,n+2)-f(l1-3:l2-3,m,n+2))) &
-                  -(45.*(f(l1+1:l2+1,m,n-2)-f(l1-1:l2-1,m,n-2))  &
+                  -(672.*(f(l1+1:l2+1,m,n-2)-f(l1-1:l2-1,m,n-2))  &
                     -9.*(f(l1+2:l2+2,m,n-2)-f(l1-2:l2-2,m,n-2))  &
                        +(f(l1+3:l2+3,m,n-2)-f(l1-3:l2-3,m,n-2))))&
-                 +((45.*(f(l1+1:l2+1,m,n+3)-f(l1-1:l2-1,m,n+3))  &
+                 +((672.*(f(l1+1:l2+1,m,n+3)-f(l1-1:l2-1,m,n+3))  &
                     -9.*(f(l1+2:l2+2,m,n+3)-f(l1-2:l2-2,m,n+3))  &
                        +(f(l1+3:l2+3,m,n+3)-f(l1-3:l2-3,m,n+3))) &
-                  -(45.*(f(l1+1:l2+1,m,n-3)-f(l1-1:l2-1,m,n-3))  &
+                  -(672.*(f(l1+1:l2+1,m,n-3)-f(l1-1:l2-1,m,n-3))  &
                     -9.*(f(l1+2:l2+2,m,n-3)-f(l1-2:l2-2,m,n-3))  &
                        +(f(l1+3:l2+3,m,n-3)-f(l1-3:l2-3,m,n-3))))&
                    )
@@ -1286,6 +1310,7 @@ module Deriv
 !  Calculate 6th derivative with respect to two different directions.
 !
 !  05-dec-06/anders: adapted from derij
+!  25-aug-09/axel: copied from deriv, but not adapted yet
 !
       use Cdata
 !
@@ -1320,24 +1345,24 @@ module Deriv
         endif
       elseif ((i==1.and.j==2)) then
         if (nxgrid/=1.and.nygrid/=1) then
-          fac=dx_1(l1:l2)**5*1/60.0*dy_1(m)
+          fac=dx_1(l1:l2)**5*1/840.0*dy_1(m)
           df=fac*( &
-            2.5*((45.*(f(l1+1:l2+1,m+1,n,k)-f(l1+1:l2+1,m-1,n,k))  &
+            2.5*((672.*(f(l1+1:l2+1,m+1,n,k)-f(l1+1:l2+1,m-1,n,k))  &
                   -9.*(f(l1+1:l2+1,m+2,n,k)-f(l1+1:l2+1,m-2,n,k))  &
                      +(f(l1+1:l2+1,m+3,n,k)-f(l1+1:l2+1,m-3,n,k))) &
-                -(45.*(f(l1-1:l2-1,m+1,n,k)-f(l1-1:l2-1,m-1,n,k))  &
+                -(672.*(f(l1-1:l2-1,m+1,n,k)-f(l1-1:l2-1,m-1,n,k))  &
                   -9.*(f(l1-1:l2-1,m+2,n,k)-f(l1-1:l2-1,m-2,n,k))  &
                      +(f(l1-1:l2-1,m+3,n,k)-f(l1-1:l2-1,m-3,n,k))))&
-           -2.0*((45.*(f(l1+2:l2+2,m+1,n,k)-f(l1+2:l2+2,m-1,n,k))  &
+           -2.0*((672.*(f(l1+2:l2+2,m+1,n,k)-f(l1+2:l2+2,m-1,n,k))  &
                   -9.*(f(l1+2:l2+2,m+2,n,k)-f(l1+2:l2+2,m-2,n,k))  &
                      +(f(l1+2:l2+2,m+3,n,k)-f(l1+2:l2+2,m-3,n,k))) &
-                -(45.*(f(l1-2:l2-2,m+1,n,k)-f(l1-2:l2-2,m-1,n,k))  &
+                -(672.*(f(l1-2:l2-2,m+1,n,k)-f(l1-2:l2-2,m-1,n,k))  &
                   -9.*(f(l1-2:l2-2,m+2,n,k)-f(l1-2:l2-2,m-2,n,k))  &
                      +(f(l1-2:l2-2,m+3,n,k)-f(l1-2:l2-2,m-3,n,k))))&
-           +0.5*((45.*(f(l1+3:l2+3,m+1,n,k)-f(l1+3:l2+3,m-1,n,k))  &
+           +0.5*((672.*(f(l1+3:l2+3,m+1,n,k)-f(l1+3:l2+3,m-1,n,k))  &
                   -9.*(f(l1+3:l2+3,m+2,n,k)-f(l1+3:l2+3,m-2,n,k))  &
                      +(f(l1+3:l2+3,m+3,n,k)-f(l1+3:l2+3,m-3,n,k))) &
-                -(45.*(f(l1-3:l2-3,m+1,n,k)-f(l1-3:l2-3,m-1,n,k))  &
+                -(672.*(f(l1-3:l2-3,m+1,n,k)-f(l1-3:l2-3,m-1,n,k))  &
                   -9.*(f(l1-3:l2-3,m+2,n,k)-f(l1-3:l2-3,m-2,n,k))  &
                      +(f(l1-3:l2-3,m+3,n,k)-f(l1-3:l2-3,m-3,n,k))))&
                  )
@@ -1347,24 +1372,24 @@ module Deriv
         endif
       elseif ((i==2.and.j==1)) then
         if (nygrid/=1.and.nxgrid/=1) then
-          fac=dy_1(m)**5*1/60.0*dx_1(l1:l2)
+          fac=dy_1(m)**5*1/840.0*dx_1(l1:l2)
           df=fac*( &
-            2.5*((45.*(f(l1+1:l2+1,m+1,n,k)-f(l1-1:l2-1,m+1,n,k))  &
+            2.5*((672.*(f(l1+1:l2+1,m+1,n,k)-f(l1-1:l2-1,m+1,n,k))  &
                   -9.*(f(l1+2:l2+2,m+1,n,k)-f(l1-2:l2-2,m+1,n,k))  &
                      +(f(l1+3:l2+3,m+1,n,k)-f(l1-3:l2-3,m+1,n,k))) &
-                -(45.*(f(l1+1:l2+1,m-1,n,k)-f(l1-1:l2-1,m-1,n,k))  &
+                -(672.*(f(l1+1:l2+1,m-1,n,k)-f(l1-1:l2-1,m-1,n,k))  &
                   -9.*(f(l1+2:l2+2,m-1,n,k)-f(l1-2:l2-2,m-1,n,k))  &
                      +(f(l1+3:l2+3,m-1,n,k)-f(l1-3:l2-3,m-1,n,k))))&
-           -2.0*((45.*(f(l1+1:l2+1,m+2,n,k)-f(l1-1:l2-1,m+2,n,k))  &
+           -2.0*((672.*(f(l1+1:l2+1,m+2,n,k)-f(l1-1:l2-1,m+2,n,k))  &
                   -9.*(f(l1+2:l2+2,m+2,n,k)-f(l1-2:l2-2,m+2,n,k))  &
                      +(f(l1+3:l2+3,m+2,n,k)-f(l1-3:l2-3,m+2,n,k))) &
-                -(45.*(f(l1+1:l2+1,m-2,n,k)-f(l1-1:l2-1,m-2,n,k))  &
+                -(672.*(f(l1+1:l2+1,m-2,n,k)-f(l1-1:l2-1,m-2,n,k))  &
                   -9.*(f(l1+2:l2+2,m-2,n,k)-f(l1-2:l2-2,m-2,n,k))  &
                      +(f(l1+3:l2+3,m-2,n,k)-f(l1-3:l2-3,m-2,n,k))))&
-           +0.5*((45.*(f(l1+1:l2+1,m+3,n,k)-f(l1-1:l2-1,m+3,n,k))  &
+           +0.5*((672.*(f(l1+1:l2+1,m+3,n,k)-f(l1-1:l2-1,m+3,n,k))  &
                   -9.*(f(l1+2:l2+2,m+3,n,k)-f(l1-2:l2-2,m+3,n,k))  &
                      +(f(l1+3:l2+3,m+3,n,k)-f(l1-3:l2-3,m+3,n,k))) &
-                -(45.*(f(l1+1:l2+1,m-3,n,k)-f(l1-1:l2-1,m-3,n,k))  &
+                -(672.*(f(l1+1:l2+1,m-3,n,k)-f(l1-1:l2-1,m-3,n,k))  &
                   -9.*(f(l1+2:l2+2,m-3,n,k)-f(l1-2:l2-2,m-3,n,k))  &
                      +(f(l1+3:l2+3,m-3,n,k)-f(l1-3:l2-3,m-3,n,k))))&
                  )
@@ -1374,24 +1399,24 @@ module Deriv
         endif
       elseif ((i==1.and.j==3)) then
         if (nxgrid/=1.and.nzgrid/=1) then
-          fac=dx_1(l1:l2)**5*1/60.0*dz_1(n)
+          fac=dx_1(l1:l2)**5*1/840.0*dz_1(n)
           df=fac*( &
-            2.5*((45.*(f(l1+1:l2+1,m,n+1,k)-f(l1+1:l2+1,m,n-1,k))  &
+            2.5*((672.*(f(l1+1:l2+1,m,n+1,k)-f(l1+1:l2+1,m,n-1,k))  &
                   -9.*(f(l1+1:l2+1,m,n+2,k)-f(l1+1:l2+1,m,n-2,k))  &
                      +(f(l1+1:l2+1,m,n+3,k)-f(l1+1:l2+1,m,n-3,k))) &
-                -(45.*(f(l1-1:l2-1,m,n+1,k)-f(l1-1:l2-1,m,n-1,k))  &
+                -(672.*(f(l1-1:l2-1,m,n+1,k)-f(l1-1:l2-1,m,n-1,k))  &
                   -9.*(f(l1-1:l2-1,m,n+2,k)-f(l1-1:l2-1,m,n-2,k))  &
                      +(f(l1-1:l2-1,m,n+3,k)-f(l1-1:l2-1,m,n-3,k))))&
-           -2.0*((45.*(f(l1+2:l2+2,m,n+1,k)-f(l1+2:l2+2,m,n-1,k))  &
+           -2.0*((672.*(f(l1+2:l2+2,m,n+1,k)-f(l1+2:l2+2,m,n-1,k))  &
                   -9.*(f(l1+2:l2+2,m,n+2,k)-f(l1+2:l2+2,m,n-2,k))  &
                      +(f(l1+2:l2+2,m,n+3,k)-f(l1+2:l2+2,m,n-3,k))) &
-                -(45.*(f(l1-2:l2-2,m,n+1,k)-f(l1-2:l2-2,m,n-1,k))  &
+                -(672.*(f(l1-2:l2-2,m,n+1,k)-f(l1-2:l2-2,m,n-1,k))  &
                   -9.*(f(l1-2:l2-2,m,n+2,k)-f(l1-2:l2-2,m,n-2,k))  &
                      +(f(l1-2:l2-2,m,n+3,k)-f(l1-2:l2-2,m,n-3,k))))&
-           +0.5*((45.*(f(l1+3:l2+3,m,n+1,k)-f(l1+3:l2+3,m,n-1,k))  &
+           +0.5*((672.*(f(l1+3:l2+3,m,n+1,k)-f(l1+3:l2+3,m,n-1,k))  &
                   -9.*(f(l1+3:l2+3,m,n+2,k)-f(l1+3:l2+3,m,n-2,k))  &
                      +(f(l1+3:l2+3,m,n+3,k)-f(l1+3:l2+3,m,n-3,k))) &
-                -(45.*(f(l1-3:l2-3,m,n+1,k)-f(l1-3:l2-3,m,n-1,k))  &
+                -(672.*(f(l1-3:l2-3,m,n+1,k)-f(l1-3:l2-3,m,n-1,k))  &
                   -9.*(f(l1-3:l2-3,m,n+2,k)-f(l1-3:l2-3,m,n-2,k))  &
                      +(f(l1-3:l2-3,m,n+3,k)-f(l1-3:l2-3,m,n-3,k))))&
                  )
@@ -1401,24 +1426,24 @@ module Deriv
         endif
       elseif ((i==3.and.j==1)) then
         if (nzgrid/=1.and.nygrid/=1) then
-          fac=dz_1(n)**5*1/60.0*dy_1(m)
+          fac=dz_1(n)**5*1/840.0*dy_1(m)
           df=fac*( &
-            2.5*((45.*(f(l1+1:l2+1,m,n+1,k)-f(l1-1:l2-1,m,n+1,k))  &
+            2.5*((672.*(f(l1+1:l2+1,m,n+1,k)-f(l1-1:l2-1,m,n+1,k))  &
                   -9.*(f(l1+2:l2+2,m,n+1,k)-f(l1-2:l2-2,m,n+1,k))  &
                      +(f(l1+3:l2+3,m,n+1,k)-f(l1-3:l2-3,m,n+1,k))) &
-                -(45.*(f(l1+1:l2+1,m,n-1,k)-f(l1-1:l2-1,m,n-1,k))  &
+                -(672.*(f(l1+1:l2+1,m,n-1,k)-f(l1-1:l2-1,m,n-1,k))  &
                   -9.*(f(l1+2:l2+2,m,n-1,k)-f(l1-2:l2-2,m,n-1,k))  &
                      +(f(l1+3:l2+3,m,n-1,k)-f(l1-3:l2-3,m,n-1,k))))&
-           -2.0*((45.*(f(l1+1:l2+1,m,n+2,k)-f(l1-1:l2-1,m,n+2,k))  &
+           -2.0*((672.*(f(l1+1:l2+1,m,n+2,k)-f(l1-1:l2-1,m,n+2,k))  &
                   -9.*(f(l1+2:l2+2,m,n+2,k)-f(l1-2:l2-2,m,n+2,k))  &
                      +(f(l1+3:l2+3,m,n+2,k)-f(l1-3:l2-3,m,n+2,k))) &
-                -(45.*(f(l1+1:l2+1,m,n-2,k)-f(l1-1:l2-1,m,n-2,k))  &
+                -(672.*(f(l1+1:l2+1,m,n-2,k)-f(l1-1:l2-1,m,n-2,k))  &
                   -9.*(f(l1+2:l2+2,m,n-2,k)-f(l1-2:l2-2,m,n-2,k))  &
                      +(f(l1+3:l2+3,m,n-2,k)-f(l1-3:l2-3,m,n-2,k))))&
-           +0.5*((45.*(f(l1+1:l2+1,m,n+3,k)-f(l1-1:l2-1,m,n+3,k))  &
+           +0.5*((672.*(f(l1+1:l2+1,m,n+3,k)-f(l1-1:l2-1,m,n+3,k))  &
                   -9.*(f(l1+2:l2+2,m,n+3,k)-f(l1-2:l2-2,m,n+3,k))  &
                      +(f(l1+3:l2+3,m,n+3,k)-f(l1-3:l2-3,m,n+3,k))) &
-                -(45.*(f(l1+1:l2+1,m,n-3,k)-f(l1-1:l2-1,m,n-3,k))  &
+                -(672.*(f(l1+1:l2+1,m,n-3,k)-f(l1-1:l2-1,m,n-3,k))  &
                   -9.*(f(l1+2:l2+2,m,n-3,k)-f(l1-2:l2-2,m,n-3,k))  &
                      +(f(l1+3:l2+3,m,n-3,k)-f(l1-3:l2-3,m,n-3,k))))&
                  )
@@ -1428,24 +1453,24 @@ module Deriv
         endif
       elseif ((i==2.and.j==3)) then
         if (nygrid/=1.and.nzgrid/=1) then
-          fac=dy_1(m)**5*1/60.0*dz_1(n)
+          fac=dy_1(m)**5*1/840.0*dz_1(n)
           df=fac*( &
-            2.5*((45.*(f(l1:l2,m+1,n+1,k)-f(l1:l2,m+1,n-1,k))  &
+            2.5*((672.*(f(l1:l2,m+1,n+1,k)-f(l1:l2,m+1,n-1,k))  &
                   -9.*(f(l1:l2,m+1,n+2,k)-f(l1:l2,m+1,n-2,k))  &
                      +(f(l1:l2,m+1,n+3,k)-f(l1:l2,m+1,n-3,k))) &
-                -(45.*(f(l1:l2,m-1,n+1,k)-f(l1:l2,m-1,n-1,k))  &
+                -(672.*(f(l1:l2,m-1,n+1,k)-f(l1:l2,m-1,n-1,k))  &
                   -9.*(f(l1:l2,m-1,n+2,k)-f(l1:l2,m-1,n-2,k))  &
                      +(f(l1:l2,m-1,n+3,k)-f(l1:l2,m-1,n-3,k))))&
-           -2.0*((45.*(f(l1:l2,m+2,n+1,k)-f(l1:l2,m+2,n-1,k))  &
+           -2.0*((672.*(f(l1:l2,m+2,n+1,k)-f(l1:l2,m+2,n-1,k))  &
                   -9.*(f(l1:l2,m+2,n+2,k)-f(l1:l2,m+2,n-2,k))  &
                      +(f(l1:l2,m+2,n+3,k)-f(l1:l2,m+2,n-3,k))) &
-                -(45.*(f(l1:l2,m-2,n+1,k)-f(l1:l2,m-2,n-1,k))  &
+                -(672.*(f(l1:l2,m-2,n+1,k)-f(l1:l2,m-2,n-1,k))  &
                   -9.*(f(l1:l2,m-2,n+2,k)-f(l1:l2,m-2,n-2,k))  &
                      +(f(l1:l2,m-2,n+3,k)-f(l1:l2,m-2,n-3,k))))&
-           +0.5*((45.*(f(l1:l2,m+3,n+1,k)-f(l1:l2,m+3,n-1,k))  &
+           +0.5*((672.*(f(l1:l2,m+3,n+1,k)-f(l1:l2,m+3,n-1,k))  &
                   -9.*(f(l1:l2,m+3,n+2,k)-f(l1:l2,m+3,n-2,k))  &
                      +(f(l1:l2,m+3,n+3,k)-f(l1:l2,m+3,n-3,k))) &
-                -(45.*(f(l1:l2,m-3,n+1,k)-f(l1:l2,m-3,n-1,k))  &
+                -(672.*(f(l1:l2,m-3,n+1,k)-f(l1:l2,m-3,n-1,k))  &
                   -9.*(f(l1:l2,m-3,n+2,k)-f(l1:l2,m-3,n-2,k))  &
                      +(f(l1:l2,m-3,n+3,k)-f(l1:l2,m-3,n-3,k))))&
                  )
@@ -1455,24 +1480,24 @@ module Deriv
         endif
       elseif ((i==3.and.j==2)) then
         if (nzgrid/=1.and.nygrid/=1) then
-          fac=dz_1(n)**5*1/60.0*dy_1(m)
+          fac=dz_1(n)**5*1/840.0*dy_1(m)
           df=fac*( &
-            2.5*((45.*(f(l1:l2,m+1,n+1,k)-f(l1:l2,m-1,n+1,k))  &
+            2.5*((672.*(f(l1:l2,m+1,n+1,k)-f(l1:l2,m-1,n+1,k))  &
                   -9.*(f(l1:l2,m+2,n+1,k)-f(l1:l2,m-2,n+1,k))  &
                      +(f(l1:l2,m+3,n+1,k)-f(l1:l2,m-3,n+1,k))) &
-                -(45.*(f(l1:l2,m+1,n-1,k)-f(l1:l2,m-1,n-1,k))  &
+                -(672.*(f(l1:l2,m+1,n-1,k)-f(l1:l2,m-1,n-1,k))  &
                   -9.*(f(l1:l2,m+2,n-1,k)-f(l1:l2,m-2,n-1,k))  &
                      +(f(l1:l2,m+3,n-1,k)-f(l1:l2,m-3,n-1,k))))&
-           -2.0*((45.*(f(l1:l2,m+1,n+2,k)-f(l1:l2,m-1,n+2,k))  &
+           -2.0*((672.*(f(l1:l2,m+1,n+2,k)-f(l1:l2,m-1,n+2,k))  &
                   -9.*(f(l1:l2,m+2,n+2,k)-f(l1:l2,m-2,n+2,k))  &
                      +(f(l1:l2,m+3,n+2,k)-f(l1:l2,m-3,n+2,k))) &
-                -(45.*(f(l1:l2,m+1,n-2,k)-f(l1:l2,m-1,n-2,k))  &
+                -(672.*(f(l1:l2,m+1,n-2,k)-f(l1:l2,m-1,n-2,k))  &
                   -9.*(f(l1:l2,m+2,n-2,k)-f(l1:l2,m-2,n-2,k))  &
                      +(f(l1:l2,m+3,n-2,k)-f(l1:l2,m-3,n-2,k))))&
-           +0.5*((45.*(f(l1:l2,m+1,n+3,k)-f(l1:l2,m-1,n+3,k))  &
+           +0.5*((672.*(f(l1:l2,m+1,n+3,k)-f(l1:l2,m-1,n+3,k))  &
                   -9.*(f(l1:l2,m+2,n+3,k)-f(l1:l2,m-2,n+3,k))  &
                      +(f(l1:l2,m+3,n+3,k)-f(l1:l2,m-3,n+3,k))) &
-                -(45.*(f(l1:l2,m+1,n-3,k)-f(l1:l2,m-1,n-3,k))  &
+                -(672.*(f(l1:l2,m+1,n-3,k)-f(l1:l2,m-1,n-3,k))  &
                   -9.*(f(l1:l2,m+2,n-3,k)-f(l1:l2,m-2,n-3,k))  &
                      +(f(l1:l2,m+3,n-3,k)-f(l1:l2,m-3,n-3,k))))&
                  )
@@ -1493,8 +1518,9 @@ module Deriv
     subroutine der_upwind1st(f,uu,k,df,j)
 !
 !  First order upwind derivative of variable
-!
 !  Useful for advecting non-logarithmic variables
+!
+!  25-aug-09/axel: copied from deriv, but not adapted yet
 !
       use Cdata
 !
@@ -1572,6 +1598,7 @@ module Deriv
 !   solving the characteristic equations.
 !
 !   7-jul-08/arne: coded.
+!  25-aug-09/axel: copied from deriv, but not adapted yet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (:,:) :: df
@@ -1634,6 +1661,7 @@ module Deriv
 !   solving the characteristic equations.
 !
 !   7-jul-08/arne: coded.
+!  25-aug-09/axel: copied from deriv, but not adapted yet
 !
       real, dimension (mx,my,mz) :: f
       real, dimension (:,:) :: df

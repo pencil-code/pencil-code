@@ -70,6 +70,7 @@ module Param_IO
        unit_magnetic, &
        c_light,G_Newton,hbar, &
        random_gen,nfilter,lserial_io, &
+       der2_type, &
        lread_oldsnap,lread_oldsnap_nomag,lread_oldsnap_nopscalar, &
        lread_oldsnap_notestfield, &
        lwrite_aux,pretend_lnTT, &
@@ -107,6 +108,7 @@ module Param_IO
        kx_kinflow,ky_kinflow,kz_kinflow, &
        dtphase_kinflow, &
        random_gen, &
+       der2_type, &
        lrmwig_rho,lrmwig_full,lrmwig_xyaverage, &
        ltime_integrals, &
        lnowrite, &

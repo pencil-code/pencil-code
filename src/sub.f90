@@ -1319,7 +1319,6 @@ module Sub
 !  31-aug-07/wlad: adapted for cylindrical and spherical coords
 !
       use Deriv, only: der
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: g, tmp
@@ -1350,7 +1349,6 @@ module Sub
     subroutine div_other(f,g)
 ! 
       use Deriv, only: der
-      use Mpicomm, only: stop_it
 
       real, dimension (mx,my,mz,3) :: f
       real, dimension (nx) :: g, tmp
@@ -1575,7 +1573,6 @@ module Sub
 !   7-mar-07/wlad: added cylindrical coordinates 
 !
       use Deriv, only: der,der2
-      use Mpicomm, only: stop_it
 !
       intent(in) :: f,k
       intent(out) :: del2f
@@ -1609,7 +1606,6 @@ module Sub
 !   8-may-09/nils: adapted from del2
 !
       use Deriv, only: der,der2
-      use Mpicomm, only: stop_it
 !
       intent(in) :: f
       intent(out) :: del2f
@@ -1644,7 +1640,6 @@ module Sub
 !  15-mar-07/wlad: added cylindrical coordinates 
 !
       use Deriv, only: der
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, optional, dimension(nx,3,3) :: fij

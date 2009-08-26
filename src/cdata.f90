@@ -64,6 +64,10 @@ module Cdata
   real, dimension(0:nprocy) :: procy_bounds
   real, dimension(0:nprocz) :: procz_bounds
 !
+!  Derivative parameters
+!
+  character (len=labellen) :: der2_type='standard'
+!
 !  Box dimensions.
 !  
   real, dimension(3) :: Lxyz,xyz0,xyz1=impossible,xyz_star=(/0.0,0.0,0.0/)

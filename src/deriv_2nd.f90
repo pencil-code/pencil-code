@@ -1,10 +1,10 @@
-! $Id$
+! $Id: deriv.f90 11067 2009-06-17 19:53:43Z dhruba.mitra $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM integer, parameter :: nghost = 3
+! CPARAM integer, parameter :: nghost = 1
 !
 !***************************************************************
 module Deriv
@@ -15,15 +15,12 @@ module Deriv
 
   private
 
-  public :: initialize_deriv
   public :: der, der2, der3, der4, der5, der6, derij, der5i1j
   public :: der6_other, der_pencil, der2_pencil
   public :: der_upwind1st
   public :: der_onesided_4_slice
   public :: der_onesided_4_slice_other
-!
-  real :: der2_coef0, der2_coef1, der2_coef2, der2_coef3
-!
+
 !debug  integer, parameter :: icount_der   = 1         !DERCOUNT
 !debug  integer, parameter :: icount_der2  = 2         !DERCOUNT
 !debug  integer, parameter :: icount_der4  = 3         !DERCOUNT
@@ -56,34 +53,6 @@ module Deriv
   contains
 
 !***********************************************************************
-    subroutine initialize_deriv()
-!
-!  Initialize stencil coefficients
-!
-      use Cdata
-      use Messages
-!
-      real :: border_width, lborder, uborder
-!
-      select case(der2_type)
-!
-      case ('standard')
-        der2_coef0=-490./180.; der2_coef1=270./180.
-        der2_coef2=-27./180.; der2_coef3=2./180.
-!
-      case ('tuned1')
-        der2_coef0=-0.75; der2_coef1=0.34375
-        der2_coef2=0.125; der2_coef3=-0.09375
-!
-      case default
-        write(unit=errormsg,fmt=*) &
-             "der2_type doesn't exist"
-        call fatal_error('initialize_deriv',errormsg)
-!
-      endselect
-!
-    endsubroutine initialize_deriv
-!***********************************************************************
     subroutine der_main(f,k,df,j)
 !
 !  calculate derivative df_k/dx_j
@@ -95,6 +64,7 @@ module Deriv
 !   1-apr-01/axel+wolf: pencil formulation
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !  21-feb-07/axel: added 1/r and 1/pomega factors for non-coord basis
+!  25-aug-09/axel: adapted from deriv
 !
       use Cdata
 !
@@ -110,20 +80,16 @@ module Deriv
 !
       if (j==1) then
         if (nxgrid/=1) then
-          fac=(1./60)*dx_1(l1:l2)
-          df=fac*(+ 45.0*(f(l1+1:l2+1,m,n,k)-f(l1-1:l2-1,m,n,k)) &
-                  -  9.0*(f(l1+2:l2+2,m,n,k)-f(l1-2:l2-2,m,n,k)) &
-                  +      (f(l1+3:l2+3,m,n,k)-f(l1-3:l2-3,m,n,k)))
+          fac=.5*dx_1(l1:l2)
+          df=fac*(f(l1+1:l2+1,m,n,k)-f(l1-1:l2-1,m,n,k))
         else
           df=0.
           if (ip<=5) print*, 'der_main: Degenerate case in x-direction'
         endif
       elseif (j==2) then
         if (nygrid/=1) then
-          fac=(1./60)*dy_1(m)
-          df=fac*(+ 45.0*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
-               -  9.0*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
-                  +      (f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)))
+          fac=.5*dy_1(m)
+          df=fac*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k))
           if (lspherical_coords)     df=df*r1_mn
           if (lcylindrical_coords)   df=df*rcyl_mn1
         else
@@ -132,10 +98,8 @@ module Deriv
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
-          fac=(1./60)*dz_1(n)
-          df=fac*(+ 45.0*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
-                  -  9.0*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
-                  +      (f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)))
+          fac=.5*dz_1(n)
+          df=fac*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k))
           if (lspherical_coords) df=df*r1_mn*sin1th(m)
         else
           df=0.
@@ -156,8 +120,10 @@ module Deriv
 !                          then overload the der interface.
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !  21-feb-07/axel: added 1/r and 1/pomega factors for non-coord basis
-
+!  25-aug-09/axel: not yet adapted from deriv
+!
       use Cdata
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz) :: f
       real, dimension (nx) :: df,fac
@@ -165,6 +131,8 @@ module Deriv
 !
       intent(in)  :: f,j
       intent(out) :: df
+!
+      call stop_it("deriv_2nd: der_other not implemented yet")
 !
 !debug      if (loptimise_ders) der_call_count(1,icount_der_other,j,1) = &
 !debug                          der_call_count(1,icount_der_other,j,1) + 1
@@ -211,14 +179,18 @@ module Deriv
 !  Calculate first derivative of any x, y or z pencil.
 !
 !  01-nov-07/anders: adapted from der
+!  25-aug-09/axel: added stop_it, because it is not adapted yet
 !
       use Cdata
+      use Mpicomm, only: stop_it
 !
       real, dimension (:) :: pencil,df
       integer :: j
 !
       intent(in)  :: j, pencil
       intent(out) :: df
+!
+      call stop_it("deriv_2nd: der_pencil not implemented yet")
 !
 !  x-derivative
 !
@@ -279,6 +251,7 @@ module Deriv
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df2,fac,df
+real :: der2_coef0=-2., der2_coef1=1.
       integer :: j,k
 !
       intent(in)  :: f,k,j
@@ -292,9 +265,7 @@ module Deriv
         if (nxgrid/=1) then
           fac=dx_1(l1:l2)**2
           df2=fac*(der2_coef0*f (l1  :l2  ,m,n,k) &
-                  +der2_coef1*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
-                  +der2_coef2*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
-                  +der2_coef3*(f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)))
+                  +der2_coef1*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)))
           if (.not.lequidist(j)) then
             call der(f,k,df,j)
             df2=df2+dx_tilde(l1:l2)*df
@@ -306,9 +277,7 @@ module Deriv
         if (nygrid/=1) then
           fac=dy_1(m)**2
           df2=fac*(der2_coef0*f(l1:l2,m  ,n,k) &
-                  +der2_coef1*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
-                  +der2_coef2*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
-                  +der2_coef3*(f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
+                  +der2_coef1*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)))
           if (lspherical_coords)     df2=df2*r2_mn
           if (lcylindrical_coords)   df2=df2*rcyl_mn2
           if (.not.lequidist(j)) then
@@ -322,9 +291,7 @@ module Deriv
         if (nzgrid/=1) then
           fac=dz_1(n)**2
           df2=fac*(der2_coef0*f(l1:l2,m,n  ,k) &
-                   +der2_coef1*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
-                   +der2_coef2*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
-                   +der2_coef3*(f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
+                  +der2_coef1*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)))
           if (lspherical_coords) df2=df2*r2_mn*sin2th(m)
           if (.not.lequidist(j)) then
             call der(f,k,df,j)
@@ -347,8 +314,10 @@ module Deriv
 !   1-oct-97/axel: coded
 !   1-apr-01/axel+wolf: pencil formulation
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
+!  25-aug-09/axel: added stop_it, because it is not adapted yet
 !
       use Cdata
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz) :: f
       real, dimension (nx) :: df2,fac,df
@@ -360,6 +329,7 @@ module Deriv
 !debug      if (loptimise_ders) der_call_count(k,icount_der2,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der2,j,1) + 1 !DERCOUNT
 !
+      call stop_it("deriv_2nd: der2_other not implemented yet")
 !
       if (j==1) then
         if (nxgrid/=1) then
@@ -416,14 +386,18 @@ module Deriv
 !  Calculate 2nd derivative of any x, y or z pencil.
 !
 !  01-nov-07/anders: adapted from der2
+!  25-aug-09/axel: added stop_it, because it is not adapted yet
 !
       use Cdata
+      use Mpicomm, only: stop_it
 !
       real, dimension (:) :: pencil,df2
       integer :: j
 !
       intent(in)  :: j, pencil
       intent(out) :: df2
+!
+      call stop_it("deriv_2nd: der2_pencil not implemented yet")
 !
 !  x-derivative
 !
@@ -472,8 +446,10 @@ module Deriv
 !  Calculate 3rd derivative of a scalar, get scalar
 !
 !  10-feb-06/anders: adapted from der5
+!  25-aug-09/axel: added stop_it, because it is not adapted yet
 !
       use Cdata
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
@@ -483,6 +459,8 @@ module Deriv
 !
       intent(in)  :: f,k,j,ignoredx
       intent(out) :: df
+!
+      call stop_it("deriv_2nd: der3 not implemented yet")
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_der5,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der5,j,1) + 1 !DERCOUNT
@@ -555,8 +533,10 @@ module Deriv
 !   8-jul-02/wolf: coded
 !   9-dec-03/nils: adapted from der6
 !  10-feb-06/anders: corrected sign and factor
+!  25-aug-09/axel: added stop_it, because it is not adapted yet
 !
       use Cdata
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df
@@ -567,6 +547,8 @@ module Deriv
 !
       intent(in)  :: f,k,j,ignoredx
       intent(out) :: df
+!
+      call stop_it("deriv_2nd: der4 not implemented yet")
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_der4,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der4,j,1) + 1 !DERCOUNT
@@ -647,8 +629,10 @@ module Deriv
 !  the ratios dx:dy:dz.
 !
 !  29-oct-04/anders: adapted from der6
+!  25-aug-09/axel: added stop_it, because it is not adapted yet
 !
       use Cdata
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
@@ -658,6 +642,8 @@ module Deriv
 !
       intent(in)  :: f,k,j,ignoredx
       intent(out) :: df
+!
+      call stop_it("deriv_2nd: der5 not implemented yet")
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_der5,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der5,j,1) + 1 !DERCOUNT
@@ -730,8 +716,10 @@ module Deriv
 !  D^(6)*dx^5/60, which is the upwind correction of centered derivatives.
 !
 !   8-jul-02/wolf: coded
+!  25-aug-09/axel: added stop_it, because it is not adapted yet
 !
       use Cdata
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
@@ -741,6 +729,8 @@ module Deriv
 !
       intent(in)  :: f,k,j,ignoredx
       intent(out) :: df
+!
+      call stop_it("deriv_2nd: der6 not implemented yet")
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_der6,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der6,j,1) + 1 !DERCOUNT
@@ -828,8 +818,10 @@ module Deriv
 !  D^(6)*dx^5/60, which is the upwind correction of centered derivatives.
 !
 !   8-jul-02/wolf: coded
+!  25-aug-09/axel: added stop_it, because it is not adapted yet
 !
       use Cdata
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz) :: f
       real, dimension (nx) :: df,fac
@@ -839,6 +831,8 @@ module Deriv
 !
       intent(in)  :: f,j,ignoredx
       intent(out) :: df
+!
+      call stop_it("deriv_2nd: der6_other not implemented yet")
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_der6,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der6,j,1) + 1 !DERCOUNT
@@ -921,8 +915,10 @@ module Deriv
 !   8-sep-01/axel: coded
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !  14-nov-06/wolf: implemented bidiagonal scheme
+!  25-aug-09/axel: added stop_it, because it is not adapted yet
 !
       use Cdata
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
@@ -940,14 +936,10 @@ module Deriv
         !
         if ((i==1.and.j==2).or.(i==2.and.j==1)) then
           if (nxgrid/=1.and.nygrid/=1) then
-            fac=(1./720.)*dx_1(l1:l2)*dy_1(m)
+            fac=.25*dx_1(l1:l2)*dy_1(m)
             df=fac*( &
-                        270.*( f(l1+1:l2+1,m+1,n,k)-f(l1-1:l2-1,m+1,n,k)  &
-                              +f(l1-1:l2-1,m-1,n,k)-f(l1+1:l2+1,m-1,n,k)) &
-                       - 27.*( f(l1+2:l2+2,m+2,n,k)-f(l1-2:l2-2,m+2,n,k)  &
-                              +f(l1-2:l2-2,m-2,n,k)-f(l1+2:l2+2,m-2,n,k)) &
-                       +  2.*( f(l1+3:l2+3,m+3,n,k)-f(l1-3:l2-3,m+3,n,k)  &
-                              +f(l1-3:l2-3,m-3,n,k)-f(l1+3:l2+3,m-3,n,k)) &
+                       ( f(l1+1:l2+1,m+1,n,k)-f(l1-1:l2-1,m+1,n,k)  &
+                        +f(l1-1:l2-1,m-1,n,k)-f(l1+1:l2+1,m-1,n,k)) &
                    )
           else
             df=0.
@@ -955,14 +947,10 @@ module Deriv
           endif
         elseif ((i==2.and.j==3).or.(i==3.and.j==2)) then
           if (nygrid/=1.and.nzgrid/=1) then
-            fac=(1./720.)*dy_1(m)*dz_1(n)
+            fac=.25*dy_1(m)*dz_1(n)
             df=fac*( &
-                        270.*( f(l1:l2,m+1,n+1,k)-f(l1:l2,m+1,n-1,k)  &
-                              +f(l1:l2,m-1,n-1,k)-f(l1:l2,m-1,n+1,k)) &
-                       - 27.*( f(l1:l2,m+2,n+2,k)-f(l1:l2,m+2,n-2,k)  &
-                              +f(l1:l2,m-2,n-2,k)-f(l1:l2,m-2,n+2,k)) &
-                       +  2.*( f(l1:l2,m+3,n+3,k)-f(l1:l2,m+3,n-3,k)  &
-                              +f(l1:l2,m-3,n-3,k)-f(l1:l2,m-3,n+3,k)) &
+                       ( f(l1:l2,m+1,n+1,k)-f(l1:l2,m+1,n-1,k)  &
+                        +f(l1:l2,m-1,n-1,k)-f(l1:l2,m-1,n+1,k)) &
                    )
           else
             df=0.
@@ -970,14 +958,10 @@ module Deriv
           endif
         elseif ((i==3.and.j==1).or.(i==1.and.j==3)) then
           if (nzgrid/=1.and.nxgrid/=1) then
-            fac=(1./720.)*dz_1(n)*dx_1(l1:l2)
+            fac=.25*dz_1(n)*dx_1(l1:l2)
             df=fac*( &
-                        270.*( f(l1+1:l2+1,m,n+1,k)-f(l1-1:l2-1,m,n+1,k)  &
-                              +f(l1-1:l2-1,m,n-1,k)-f(l1+1:l2+1,m,n-1,k)) &
-                       - 27.*( f(l1+2:l2+2,m,n+2,k)-f(l1-2:l2-2,m,n+2,k)  &
-                              +f(l1-2:l2-2,m,n-2,k)-f(l1+2:l2+2,m,n-2,k)) &
-                       +  2.*( f(l1+3:l2+3,m,n+3,k)-f(l1-3:l2-3,m,n+3,k)  &
-                              +f(l1-3:l2-3,m,n-3,k)-f(l1+3:l2+3,m,n-3,k)) &
+                       ( f(l1+1:l2+1,m,n+1,k)-f(l1-1:l2-1,m,n+1,k)  &
+                        +f(l1-1:l2-1,m,n-1,k)-f(l1+1:l2+1,m,n-1,k)) &
                    )
           else
             df=0.
@@ -986,6 +970,8 @@ module Deriv
         endif
 
       else                      ! not using bidiagonal mixed derivatives
+        !
+        call stop_it("deriv_2nd: derij_main not implemented yet")
         !
         ! This is the old, straight-forward scheme
         !
@@ -1102,15 +1088,20 @@ module Deriv
 !  calculate 2nd derivative with respect to two different directions
 !  input: scalar, output: scalar
 !  accurate to 6th order, explicit, periodic
+!
 !   8-sep-01/axel: coded
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !  14-nov-06/wolf: implemented bidiagonal scheme
+!  25-aug-09/axel: added stop_it, because it is not adapted yet
 !
       use Cdata
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz) :: f
       real, dimension (nx) :: df,fac
       integer :: i,j
+!
+      call stop_it("deriv_2nd: derij_other not implemented yet")
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_derij,i,j) = & !DERCOUNT
 !debug                          der_call_count(k,icount_derij,i,j) + 1 !DERCOUNT
@@ -1286,12 +1277,16 @@ module Deriv
 !  Calculate 6th derivative with respect to two different directions.
 !
 !  05-dec-06/anders: adapted from derij
+!  25-aug-09/axel: added stop_it, because it is not adapted yet
 !
       use Cdata
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
       integer :: i,j,k
+!
+      call stop_it("deriv_2nd: der5i1j not implemented yet")
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_derij,i,j) = & !DERCOUNT
 !debug                          der_call_count(k,icount_derij,i,j) + 1 !DERCOUNT
@@ -1493,10 +1488,12 @@ module Deriv
     subroutine der_upwind1st(f,uu,k,df,j)
 !
 !  First order upwind derivative of variable
-!
 !  Useful for advecting non-logarithmic variables
 !
+!  25-aug-09/axel: added stop_it, because it is not adapted yet
+!
       use Cdata
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: uu
@@ -1505,6 +1502,8 @@ module Deriv
 !
       intent(in)  :: f,uu,k,j
       intent(out) :: df
+!
+      call stop_it("deriv_2nd: der_upwind1st not implemented yet")
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_der_upwind1st,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der_upwind1st,j,1) + 1 !DERCOUNT
@@ -1559,7 +1558,9 @@ module Deriv
     endsubroutine der_upwind1st
 !***********************************************************************
     subroutine der_onesided_4_slice_main(f,sgn,k,df,pos,j)
+!
       use Cdata
+      use Mpicomm, only: stop_it
 !
 !   Calculate x/y/z-derivative on a yz/xz/xy-slice at gridpoint pos. 
 !   Uses a one-sided 4th order stencil.
@@ -1580,7 +1581,9 @@ module Deriv
 !
       intent(in)  :: f,k,pos,sgn,j
       intent(out) :: df
-
+!
+      call stop_it("deriv_2nd: der_onesided_4_slice_main not implemented yet")
+!
       if (j==1) then
         if (nxgrid/=1) then
           fac=1./12.*dx_1(pos)
@@ -1621,7 +1624,9 @@ module Deriv
     endsubroutine
 !***********************************************************************
    subroutine der_onesided_4_slice_other(f,sgn,df,pos,j)
+!
       use Cdata
+      use Mpicomm, only: stop_it
 !
 !   Calculate x/y/z-derivative on a yz/xz/xy-slice at gridpoint pos. 
 !   Uses a one-sided 4th order stencil.
@@ -1642,7 +1647,9 @@ module Deriv
 !
       intent(in)  :: f,pos,sgn,j
       intent(out) :: df
-
+!
+      call stop_it("deriv_2nd: der_onesided_4_slice_other not implemented yet")
+!
       if (j==1) then
         if (nxgrid/=1) then
           fac=1./12.*dx_1(pos)

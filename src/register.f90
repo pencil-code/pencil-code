@@ -197,6 +197,7 @@ module Register
       use CosmicrayFlux,   only: initialize_cosmicrayflux
       use Cosmicray,       only: initialize_cosmicray
       use Density,         only: initialize_density
+      use Deriv,           only: initialize_deriv
       use Diagnostics,     only: initialize_prints
       use Dustdensity,     only: initialize_dustdensity
       use Dustvelocity,    only: initialize_dustvelocity
@@ -303,6 +304,7 @@ module Register
 !
 !  Run rest of initialization of individual modules.
 !
+      call initialize_deriv()
       call initialize_prints()
       call initialize_timeavg(f)
       call initialize_eos()
