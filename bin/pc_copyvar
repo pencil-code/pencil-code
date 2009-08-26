@@ -49,8 +49,9 @@ end
 #  Need at least three fields of mandatory input.
 #
 if ( $narg < 3 ) then
-  echo "usage: pc_copyvar var1 var2 source dest"
-  echo "usage: pc_copyvar var1 var2 dest"
+  echo "Usage: pc_copyvar var1 var2 source dest"
+  echo "       pc_copyvar var1 var2 dest"
+  echo "       pc_copyvar var1 var2"
   exit
 endif
 #
@@ -61,8 +62,11 @@ set var2=$argv[2]
 if ( $narg > 3) then
   set source=$argv[3]
   set dest=$argv[4]
-else
+else if ( $narg == 3 ) then
   set dest=$argv[3]
+  set source='.'
+else
+  set dest='.'
   set source='.'
 endif
 #
