@@ -45,5 +45,5 @@ NILS: There are plenty of things to be done with the remeshing utility:
    as it is right now.
 5) When you do make clean in the remeshing directory you must run setup-remesh
    in order to obtain Makefile.inc. This should not be necessary.
-6) The remshing should be set up to use the config machinery of Wolfgang, and
+6) The remeshing should be set up to use the config machinery of Wolfgang, and
    by this avoiding the computer specific stuff in the Makefile.
