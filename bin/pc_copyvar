@@ -108,8 +108,8 @@ echo "  $cp $source/${data}proc*/$var1 $dest/${data}proc*/$var2"
 if ($execute) then
   foreach dir ( $source/${data}proc* )
     set procdir=`basename $dir`
-    echo "$cp $dir/$var1 $dest/${data}$procdir/$var2"
-    $cp $dir/$var1 $dest/${data}$procdir/$var2
+    echo "$cp $source/${data}$procdir/$var1 $dest/${data}$procdir/$var2"
+    $cp $source/${data}$procdir/$var1 $dest/${data}$procdir/$var2
   end
 else
   echo ""
