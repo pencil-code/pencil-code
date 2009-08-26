@@ -158,7 +158,6 @@ program start
   call read_startpars(FILE=.true.)
   call rprint_list(.false.)
   call particles_rprint_list(.false.)
-
 !
 !  Initialize start time.
 !
