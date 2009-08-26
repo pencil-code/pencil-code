@@ -350,19 +350,11 @@ print*,'mx,my,mz,mvar=',mx,my,mz,mvar
         open(91,file=file2,form='unformatted')
         write(91) ff(:,:,:,:,i)
         if (lshear) then
-           if (prec == 'D') then
-              write(91) t,rx,rry(:,i),rrz(:,i),dx,dy,dz,deltay
-           else
-              write(91) t_sp,rx,rry(:,i),rrz(:,i),dx,dy,dz,deltay
-           endif
+           write(91) t_sp,rx,rry(:,i),rrz(:,i),dx,dy,dz,deltay
           print*,'wrote deltay=',deltay
         else
-           if (prec == 'D') then
-              write(91) t,rx,rry(:,i),rrz(:,i),dx,dy,dz
-           else
-              write(91) t_sp,rx,rry(:,i),rrz(:,i),dx,dy,dz
-           endif
-          print*,'WARNING: deltay is not written'
+           write(91) t_sp,rx,rry(:,i),rrz(:,i),dx,dy,dz
+           print*,'WARNING: deltay is not written'
         endif
         close(91)
       enddo
@@ -404,11 +396,7 @@ print*,'mx,my,mz,mvar=',mx,my,mz,mvar
              '/'//trim(datadir)//'/proc'//trim(ch)//'/grid.dat')
         if (ip<8) print*,'Writing ',gridfile
         open(1,FILE=gridfile,FORM='unformatted')
-        if (prec == 'D') then
-           write(1) t,rx,rry(:,i),rrz(:,i),dx,dy,dz
-        else
-           write(1) t_sp,rx,rry(:,i),rrz(:,i),dx,dy,dz
-        endif
+        write(1) t_sp,rx,rry(:,i),rrz(:,i),dx,dy,dz
         write(1) dx,dy,dz
         write(1) Lx,Ly,Lz
         write(1) rdx_1,rdy_1,rdz_1
