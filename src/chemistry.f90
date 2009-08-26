@@ -696,7 +696,7 @@ module Chemistry
 !
     endsubroutine calc_pencils_chemistry
 !**************************************************************************
-subroutine flame_front(f)
+    subroutine flame_front(f)
 !
 ! 06.05.2009/Nils Erland L. Haugen: adapted from similar
 !                                   routine in special/chem_stream.f90
@@ -711,11 +711,10 @@ subroutine flame_front(f)
       integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
       real :: initial_mu1, final_massfrac_O2
       logical :: found_specie
- 
+! 
       lflame_front=.true.
-
+!
       call air_field(f)
-
 !
 ! Initialize some indexes
 !
@@ -740,73 +739,69 @@ subroutine flame_front(f)
 !
 !  Initialize temperature
 !
-
-       if(lT_tanh) then
-        del=init_x2-init_x1
-         f(k,:,:,ilnTT)=f(k,:,:,ilnTT)+log((init_TT2+init_TT1)*0.5  &
-             +((init_TT2-init_TT1)*0.5)  &
-             *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del)))
-       else
-         if (x(k)<init_x1) then
-           f(k,:,:,ilnTT)=f(k,:,:,ilnTT)+log(init_TT1)
-         endif
-         if (x(k)>init_x2) then
-           f(k,:,:,ilnTT)=f(k,:,:,ilnTT)+log(init_TT2)
-         endif
-         if (x(k)>init_x1 .and. x(k)<init_x2) then
-           f(k,:,:,ilnTT)=f(k,:,:,ilnTT)+log((x(k)-init_x1)/(init_x2-init_x1) &
-               *(init_TT2-init_TT1)+init_TT1)
-         endif
+        if(lT_tanh) then
+          del=init_x2-init_x1
+          f(k,:,:,ilnTT)=f(k,:,:,ilnTT)+log((init_TT2+init_TT1)*0.5  &
+              +((init_TT2-init_TT1)*0.5)  &
+              *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del)))
+        else
+          if (x(k)<init_x1) then
+            f(k,:,:,ilnTT)=f(k,:,:,ilnTT)+log(init_TT1)
+          endif
+          if (x(k)>init_x2) then
+            f(k,:,:,ilnTT)=f(k,:,:,ilnTT)+log(init_TT2)
+          endif
+          if (x(k)>init_x1 .and. x(k)<init_x2) then
+            f(k,:,:,ilnTT)=f(k,:,:,ilnTT)+&
+                log((x(k)-init_x1)/(init_x2-init_x1) &
+                *(init_TT2-init_TT1)+init_TT1)
+          endif
         endif
 !
 !  Initialize steam and hydrogen
 !
-
-       if (lT_tanh) then
-         del=(init_x2-init_x1)/3.
-         f(k,:,:,i_H2)=(0.+f(l1,:,:,i_H2))*0.5  &
-           +(0.-f(l1,:,:,i_H2))*0.5  &
-           *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
+        if (lT_tanh) then
+          del=(init_x2-init_x1)/3.
+          f(k,:,:,i_H2)=(0.+f(l1,:,:,i_H2))*0.5  &
+              +(0.-f(l1,:,:,i_H2))*0.5  &
+              *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
 !
-         f(k,:,:,i_H2O)=(f(l1,:,:,i_H2)/2.*18.+f(l1,:,:,i_H2O))*0.5  &
-             +((f(l1,:,:,i_H2)/2.*18.-f(l1,:,:,i_H2O))*0.5)  &
-             *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
+          f(k,:,:,i_H2O)=(f(l1,:,:,i_H2)/2.*18.+f(l1,:,:,i_H2O))*0.5  &
+              +((f(l1,:,:,i_H2)/2.*18.-f(l1,:,:,i_H2O))*0.5)  &
+              *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
 !
-       else
-        if (x(k)>init_x1) then
-          f(k,:,:,i_H2O)=initial_massfractions(ichem_H2)/mH2*mH2O &
-               *(exp(f(k,:,:,ilnTT))-init_TT1) &
-               /(init_TT2-init_TT1)
-          f(k,:,:,i_H2)=initial_massfractions(ichem_H2) &
-               *(exp(f(k,:,:,ilnTT))-init_TT2) &
-               /(init_TT1-init_TT2)
+        else
+          if (x(k)>init_x1) then
+            f(k,:,:,i_H2O)=initial_massfractions(ichem_H2)/mH2*mH2O &
+                *(exp(f(k,:,:,ilnTT))-init_TT1) &
+                /(init_TT2-init_TT1)
+            f(k,:,:,i_H2)=initial_massfractions(ichem_H2) &
+                *(exp(f(k,:,:,ilnTT))-init_TT2) &
+                /(init_TT1-init_TT2)
+          endif
         endif
-       endif
 !
 !  Initialize oxygen
 !
+        if (lT_tanh) then
+          del=(init_x2-init_x1)
+          f(k,:,:,i_O2)=(f(l2,:,:,i_O2)+f(l1,:,:,i_O2))*0.5  &
+              +((f(l2,:,:,i_O2)-f(l1,:,:,i_O2))*0.5)  &
+              *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
+        else
 
-       if (lT_tanh) then
-        del=(init_x2-init_x1)
-        f(k,:,:,i_O2)=(f(l2,:,:,i_O2)+f(l1,:,:,i_O2))*0.5  &
-             +((f(l2,:,:,i_O2)-f(l1,:,:,i_O2))*0.5)  &
-             *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
-       else
-
-        if (x(k)>init_x2) then
-          f(k,:,:,i_O2)=final_massfrac_O2
+          if (x(k)>init_x2) then
+            f(k,:,:,i_O2)=final_massfrac_O2
+          endif
+          if (x(k)>init_x1 .and. x(k)<init_x2) then
+            f(k,:,:,i_O2)=(x(k)-init_x2)/(init_x1-init_x2) &
+                *(initial_massfractions(ichem_O2)-final_massfrac_O2)&
+                +final_massfrac_O2
+          endif
         endif
-        if (x(k)>init_x1 .and. x(k)<init_x2) then
-          f(k,:,:,i_O2)=(x(k)-init_x2)/(init_x1-init_x2) &
-               *(initial_massfractions(ichem_O2)-final_massfrac_O2)&
-               +final_massfrac_O2
-        endif
-       endif
       enddo
-
+!
       call calc_for_chem_mixture(f)
-
-
 !
 !  Find logaritm of density at inlet
 !
@@ -815,32 +810,26 @@ subroutine flame_front(f)
           +initial_massfractions(ichem_O2)/(mO2)&
           +initial_massfractions(ichem_H2O)/(mH2O)&
           +initial_massfractions(ichem_N2)/(mN2)
-      log_inlet_density=log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
-
-
-
-       do j3=nn1,nn2
-       do j2=mm1,mm2
-       do j1=ll1,ll2
-
+      log_inlet_density=&
+          log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
+!
+      do j3=nn1,nn2
+        do j2=mm1,mm2
+          do j1=ll1,ll2
 !
 !  Initialize density
 !
-
-       f(j1,j2,j3,ilnrho)=log(init_pressure)-log(Rgas)  &
-           -f(j1,j2,j3,ilnTT)-log(mu1_full(j1,j2,j3))
-
+            f(j1,j2,j3,ilnrho)=log(init_pressure)-log(Rgas)  &
+                -f(j1,j2,j3,ilnTT)-log(mu1_full(j1,j2,j3))
 !
 !  Initialize velocity
 !
-      f(j1,j2,j3,iux)=f(j1,j2,j3,iux)  &
-            +init_ux*exp(log_inlet_density)/exp(f(j1,j2,j3,ilnrho))
-
-       enddo
-       enddo
-       enddo
-
-
+            f(j1,j2,j3,iux)=f(j1,j2,j3,iux)  &
+                +init_ux*exp(log_inlet_density)/exp(f(j1,j2,j3,ilnrho))
+!
+          enddo
+        enddo
+      enddo
 !
 !  Check if we want nolog of density
 !
@@ -848,7 +837,7 @@ subroutine flame_front(f)
 !
     endsubroutine flame_front
 !***********************************************************************
-subroutine flame_blob(f)
+    subroutine flame_blob(f)
 !
 ! 06.05.2009/Nils Erland L. Haugen: adapted from similar
 !                                   routine in special/chem_stream.f90
@@ -863,11 +852,10 @@ subroutine flame_blob(f)
       integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
       real :: initial_mu1, final_massfrac_O2
       logical :: found_specie
- 
+! 
       lflame_front=.true.
-
+!
       call air_field(f)
-
 !
 ! Initialize some indexes
 !
@@ -892,7 +880,6 @@ subroutine flame_blob(f)
 !___________________________________________
 
       call calc_for_chem_mixture(f)
-
 !
 !  Find logaritm of density at inlet
 !
@@ -901,31 +888,26 @@ subroutine flame_blob(f)
           +initial_massfractions(ichem_O2)/(mO2)&
           +initial_massfractions(ichem_H2O)/(mH2O)&
           +initial_massfractions(ichem_N2)/(mN2)
-  
- !   log_inlet_density=log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
-
-       do j3=nn1,nn2
-       do j2=mm1,mm2
-       do j1=ll1,ll2
-
+!  
+!   log_inlet_density=&
+!      log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
+      do j3=nn1,nn2
+        do j2=mm1,mm2
+          do j1=ll1,ll2
 !
 !  Initialize density
 !
-
-       f(j1,j2,j3,ilnrho)=log(init_pressure)-log(Rgas)  &
-           -f(j1,j2,j3,ilnTT)-log(mu1_full(j1,j2,j3))
-
+            f(j1,j2,j3,ilnrho)=log(init_pressure)-log(Rgas)  &
+                -f(j1,j2,j3,ilnTT)-log(mu1_full(j1,j2,j3))
 !
 !  Initialize velocity
 !
-      f(j1,j2,j3,iux)=f(j1,j2,j3,iux)  &
-            +init_ux!*exp(log_inlet_density)/exp(f(j1,j2,j3,ilnrho))
-
-       enddo
-       enddo
-       enddo
-
-
+            f(j1,j2,j3,iux)=f(j1,j2,j3,iux)  &
+                +init_ux!*exp(log_inlet_density)/exp(f(j1,j2,j3,ilnrho))
+!
+          enddo
+        enddo
+      enddo
 !
 !  Check if we want nolog of density
 !
@@ -959,7 +941,6 @@ subroutine flame_blob(f)
 !
       character (len=20) :: output_file="./data/mix_quant.out"
       integer :: file_id=123,lmid
-
 !
 ! Density and temperature
 !
