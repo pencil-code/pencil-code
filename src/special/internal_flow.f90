@@ -86,7 +86,7 @@ module Special
       use Initcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i
+      integer :: i,j
       real :: height,h2
 !
       intent(inout) :: f
@@ -103,9 +103,11 @@ module Special
         height=Lxyz(2)/2
         h2=height**2
         call gaunoise(ampluu_spec,f,iux,iuz)
-        do i=iux,iuz
-          f(l1:l2,m1:m2,n1:n2,i)=f(l1:l2,m1:m2,n1:n2,i)&
-               *(1-(yy(l1:l2,m1:m2,n1:n2)-xyz0(2)-height)**2/h2)
+        do j=m1,m2
+          do i=iux,iuz
+            f(l1:l2,j,n1:n2,i)=f(l1:l2,j,n1:n2,i)&
+               *(1-(y(j)-xyz0(2)-height)**2/h2)
+          enddo
         enddo
         call poiseulle_flowx_wally(f,central_vel)
       case('velocity_defect_xy')
@@ -203,7 +205,7 @@ module Special
       !
       ! Write video slices
       !
-      if (lvid.and.lfirst) then
+      if (lvideo.and.lfirst) then
         if (n==iz_loc)  then
           do j=1,3
             meanx_oo(j)=sum(p%oo(:,j))/(l2-l1+1)
@@ -389,7 +391,7 @@ module Special
 !
 !  calculate mean of velocity in xz planes
 !
-      if (lvid.and.lfirst .or. ldiagnos) then
+      if (lvideo.and.lfirst .or. ldiagnos) then
         mean_u_tmp=0
         faq=nxgrid*nzgrid
         do j=m1,m2
@@ -570,8 +572,10 @@ module Special
       height=Lxyz(2)/2
       h2=height**2
       !
-      f(l1:l2,m1:m2,n1:n2,iux)=f(l1:l2,m1:m2,n1:n2,iux)+central_vel*&
-           (1-(yy(l1:l2,m1:m2,n1:n2)-xyz0(2)-height)**2/h2)
+      do j=m1,m2
+        f(l1:l2,j,n1:n2,iux)=f(l1:l2,j,n1:n2,iux)+central_vel*&
+            (1-(y(j)-xyz0(2)-height)**2/h2)
+    enddo
       !
     endsubroutine poiseulle_flowx_wally
 !***********************************************************************
@@ -626,8 +630,8 @@ endif
       ! velocity profile.
       !
       do j=m1,m2
-        if (yy(l1,j,n1)<xyz0(2)+height) then
-          y_pluss=(yy(l1,j,n1)-xyz0(2))/lw
+        if (y(j)<xyz0(2)+height) then
+          y_pluss=(y(j)-xyz0(2))/lw
           defect=central_vel&
                +utau*log(y_pluss*lw/height)/kappa&
                -B1*utau
@@ -642,7 +646,7 @@ endif
                  +log_max*utau*(def_y-y_pluss)/(def_y-log_y))
           endif
         else
-          y_pluss=-(yy(l1,j,n1)-xyz0(2)-Lxyz(2))/lw
+          y_pluss=-(y(j)-xyz0(2)-Lxyz(2))/lw
           defect=central_vel&
                +utau*log(y_pluss*lw/height)/kappa&
                -B1*utau
@@ -704,14 +708,14 @@ endif
       ! velocity profile.
       !
       do j=m1,m2
-        if (yy(l1,j,n1)<xyz0(2)+height) then
-          y_pluss=(yy(l1,j,n1)-xyz0(2))/lw
+        if (y(j)<xyz0(2)+height) then
+          y_pluss=(y(j)-xyz0(2))/lw
           u_log=(kappa*log(y_pluss+tini)+B1)*utau
           u_lam=y_pluss*utau
           f(l1:l2,j,n1:n2,iux)=&
                (f(l1:l2,j,n1:n2,iux)/central_vel+1)*min(u_log,u_lam)
         else
-          y_pluss=-(yy(l1,j,n1)-xyz0(2)-Lxyz(2))/lw
+          y_pluss=-(y(j)-xyz0(2)-Lxyz(2))/lw
           u_log=(kappa*log(y_pluss+tini)+B1)*utau
           u_lam=y_pluss*utau
           f(l1:l2,j,n1:n2,iux)=&
@@ -720,11 +724,11 @@ endif
       enddo
       if (ipy==0) then
         f(l1:l2,m1,n1:n2,iux)  =0
-        f(l1:l2,m1+1,n1:n2,iux)=(yy(l1,m1+1,n1)-xyz0(2))/lw*utau
+        f(l1:l2,m1+1,n1:n2,iux)=(y(m1+1)-xyz0(2))/lw*utau
       endif
       if (ipy==nprocy-1) then
         f(l1:l2,m2,n1:n2,iux)=0
-        f(l1:l2,m2-1,n1:n2,iux)=-(yy(l1,m2-1,n1)-xyz0(2)-Lxyz(2))/lw*utau
+        f(l1:l2,m2-1,n1:n2,iux)=-(y(m2-1)-xyz0(2)-Lxyz(2))/lw*utau
       endif
       !
     endsubroutine log_law_flowx_wally
