@@ -3572,8 +3572,8 @@ module Magnetic
         bmx=0.
       else
         do l=1,nx
-          bymx(l)=sum(fnamexy(l,:,:,idiag_bymxy))/(ny*nprocy)
-          bzmx(l)=sum(fnamexy(l,:,:,idiag_bzmxy))/(ny*nprocy)
+!          bymx(l)=sum(fnamexy(l,:,:,idiag_bymxy))/(ny*nprocy)
+!          bzmx(l)=sum(fnamexy(l,:,:,idiag_bzmxy))/(ny*nprocy)
         enddo
         bmx=sqrt(sum(bymx**2+bzmx**2)/nx)
       endif
@@ -3615,8 +3615,8 @@ module Magnetic
       else
         do j=1,nprocy
           do m=1,ny
-            bxmy(m,j)=sum(fnamexy(:,m,j,idiag_bxmxy))/nx
-            bzmy(m,j)=sum(fnamexy(:,m,j,idiag_bzmxy))/nx
+!            bxmy(m,j)=sum(fnamexy(:,m,j,idiag_bxmxy))/nx
+!            bzmy(m,j)=sum(fnamexy(:,m,j,idiag_bzmxy))/nx
           enddo
         enddo
         bmy=sqrt(sum(bxmy**2+bzmy**2)/(ny*nprocy))
@@ -3695,8 +3695,8 @@ module Magnetic
         jmx=0.
       else
         do l=1,nx
-          jymx(l)=sum(fnamexy(l,:,:,idiag_jymxy))/(ny*nprocy)
-          jzmx(l)=sum(fnamexy(l,:,:,idiag_jzmxy))/(ny*nprocy)
+!          jymx(l)=sum(fnamexy(l,:,:,idiag_jymxy))/(ny*nprocy)
+!          jzmx(l)=sum(fnamexy(l,:,:,idiag_jzmxy))/(ny*nprocy)
         enddo
         jmx=sqrt(sum(jymx**2+jzmx**2)/nx)
       endif
@@ -3738,8 +3738,8 @@ module Magnetic
       else
         do j=1,nprocy
           do m=1,ny
-            jxmy(m,j)=sum(fnamexy(:,m,j,idiag_jxmxy))/nx
-            jzmy(m,j)=sum(fnamexy(:,m,j,idiag_jzmxy))/nx
+!            jxmy(m,j)=sum(fnamexy(:,m,j,idiag_jxmxy))/nx
+!            jzmy(m,j)=sum(fnamexy(:,m,j,idiag_jzmxy))/nx
           enddo
         enddo
         jmy=sqrt(sum(jxmy**2+jzmy**2)/(ny*nprocy))
@@ -4036,9 +4036,9 @@ module Magnetic
         do l=1,nx
           do m=1,ny
             do j=1,nprocy
-              bxmxy=fnamexy(l,m,j,idiag_bxmxy)
-              bymxy=fnamexy(l,m,j,idiag_bymxy)
-              bzmxy=fnamexy(l,m,j,idiag_bzmxy)
+!              bxmxy=fnamexy(l,m,j,idiag_bxmxy)
+!              bymxy=fnamexy(l,m,j,idiag_bymxy)
+!              bzmxy=fnamexy(l,m,j,idiag_bzmxy)
               btemp=bxmxy**2+bymxy**2+bzmxy**2
               if (lspherical_coords) then 
                 btemp=btemp*r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)

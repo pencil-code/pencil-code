@@ -3589,9 +3589,9 @@ module Hydro
           umx=0.
         else
           do l=1,nx
-            uxmx(l)=sum(fnamexy(l,:,:,idiag_uxmxy))/(ny*nprocy)
-            uymx(l)=sum(fnamexy(l,:,:,idiag_uymxy))/(ny*nprocy)
-            uzmx(l)=sum(fnamexy(l,:,:,idiag_uzmxy))/(ny*nprocy)
+!            uxmx(l)=sum(fnamexy(l,:,:,idiag_uxmxy))/(ny*nprocy)
+!            uymx(l)=sum(fnamexy(l,:,:,idiag_uymxy))/(ny*nprocy)
+!            uzmx(l)=sum(fnamexy(l,:,:,idiag_uzmxy))/(ny*nprocy)
           enddo
           umx=sqrt(sum(uxmx**2+uymx**2+uzmx**2)/nx)
         endif
@@ -3611,9 +3611,9 @@ module Hydro
         else
           do j=1,nprocy
           do m=1,ny
-            uxmy(m,j)=sum(fnamexy(:,m,j,idiag_uxmxy))/nx
-            uymy(m,j)=sum(fnamexy(:,m,j,idiag_uymxy))/nx
-            uzmy(m,j)=sum(fnamexy(:,m,j,idiag_uzmxy))/nx
+!            uxmy(m,j)=sum(fnamexy(:,m,j,idiag_uxmxy))/nx
+!            uymy(m,j)=sum(fnamexy(:,m,j,idiag_uymxy))/nx
+!            uzmy(m,j)=sum(fnamexy(:,m,j,idiag_uzmxy))/nx
           enddo
           enddo
           umy=sqrt(sum(uxmy**2+uymy**2+uzmy**2)/(ny*nprocy))

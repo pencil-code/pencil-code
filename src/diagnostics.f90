@@ -377,7 +377,7 @@ module Diagnostics
 !  The result is only present on the root processor
 !
       if (nnamez>0) then
-        call mpireduce_sum(fnamez,fsumz,(/nz,nprocz,nnamez/))
+        call mpireduce_sum(fnamez,fsumz,(/nz,nprocz,mnamez/))
         if (lroot) &
             fnamez(:,:,1:nnamez)=fsumz(:,:,1:nnamez)/(nx*ny*nprocx*nprocy)
       endif
@@ -396,7 +396,7 @@ module Diagnostics
 !  The result is only present on the root processor.
 !
       if (nnamey>0) then
-        call mpireduce_sum(fnamey,fsumy,(/ny,nprocy,nnamey/))
+        call mpireduce_sum(fnamey,fsumy,(/ny,nprocy,mnamey/))
         if (lroot) &
             fnamey(:,:,1:nnamey)=fsumy(:,:,1:nnamey)/(nx*nz*nprocx*nprocz)
       endif
@@ -415,7 +415,7 @@ module Diagnostics
 !  The result is only present on the root processor.
 !
       if (nnamex>0) then
-        call mpireduce_sum(fnamex,fsumx,(/nx,nprocx,nnamex/))
+        call mpireduce_sum(fnamex,fsumx,(/nx,nprocx,mnamex/))
         if (lroot) &
             fnamex(:,:,1:nnamex)=fsumx(:,:,1:nnamex)/(ny*nz*nprocy*nprocz)
       endif
@@ -424,7 +424,7 @@ module Diagnostics
 !***********************************************************************
     subroutine phizaverages_r()
 !
-!  Calculate phiz-averages (still depending on r)
+!  Calculate phiz-averages (still depending on r).
 !  
 !  29-jan-07/wlad: adapted from yzaverages_x and phiaverages_rz
 !
@@ -436,65 +436,57 @@ module Diagnostics
 !  The result is only present on the root processor.
 !
       if (nnamer>0) then
-         !the extra slot is where the normalization is stored
-         call mpireduce_sum(fnamer,fsumr,(/nrcyl,nnamer/))
-         if (lroot) then
-            norm=fsumr(:,nnamer+1)
-            do in=1,nnamer
-               fnamer(:,in)=fsumr(:,in)/norm
-            enddo
-         endif
+        !the extra slot is where the normalization is stored
+        call mpireduce_sum(fnamer,fsumr,(/nrcyl,mnamer/))
+        if (lroot) then
+           norm=fsumr(:,nnamer+1)
+           do in=1,nnamer
+             fnamer(:,in)=fsumr(:,in)/norm
+           enddo
+        endif
       endif
 !
     endsubroutine phizaverages_r
 !***********************************************************************
     subroutine yaverages_xz()
 !
-!  Calculate y-averages (still depending on x and z)
-!  NOTE: these averages depend on x and z, so after summation in y they
-!  are still distributed over nprocy CPUs; hence the dimensions of fsumxz
-!  (and fnamexz).
+!  Calculate y-averages (still depending on x and z).
 !
 !   7-jun-05/axel: adapted from zaverages_xy
 !
-      real, dimension (nx,nz,nprocz,mnamexz) :: fsumxz
+      real, dimension (nx,nz,nnamexz) :: fsumxz
 !
-!  Communicate over all processors.
-!  The result is only present on the root processor.
+!  Communicate over all processors along y beams.
+!  The result is only present on the y-root processors.
 !
       if (nnamexz>0) then
-        call mpireduce_sum(fnamexz,fsumxz,(/nx,nz,nprocz,nnamexz/))
-        if (lroot) &
-            fnamexz(:,:,:,1:nnamexz)=fsumxz(:,:,:,1:nnamexz)/(ny*nprocy)
+        call mpireduce_sum(fnamexz,fsumxz,(/nx,ny,nnamexz/),idir=2)
+        if (ipy==0) fnamexz(:,:,1:nnamexz)=fsumxz(:,:,1:nnamexz)/nygrid
       endif
 !
     endsubroutine yaverages_xz
 !***********************************************************************
     subroutine zaverages_xy()
 !
-!  Calculate z-averages (still depending on x and y)
-!  NOTE: these averages depend on x and y, so after summation in z they
-!  are still distributed over nprocy CPUs; hence the dimensions of fsumxy
-!  (and fnamexy).
+!  Calculate z-averages (still depending on x and y).
 !
 !  19-jun-02/axel: coded
 !
-      real, dimension (nx,ny,nprocy,mnamexy) :: fsumxy
+      real, dimension (nx,ny,nnamexy) :: fsumxy
 !
-!  Communicate over all processors.
-!  the result is only present on the root processor.
+!  Communicate over all processors along z beams.
+!  The result is only present on the z-root processors.
 !
       if (nnamexy>0) then
-        call mpireduce_sum(fnamexy,fsumxy,(/nx,ny,nprocy,nnamexy/))
-        if (lroot) &
-            fnamexy(:,:,:,1:nnamexy)=fsumxy(:,:,:,1:nnamexy)/(nz*nprocz)
+        call mpireduce_sum(fnamexy,fsumxy,(/nx,ny,nnamexy/),idir=3)
+        if (ipz==0) fnamexy(:,:,1:nnamexy)=fsumxy(:,:,1:nnamexy)/nzgrid
       endif
 !
     endsubroutine zaverages_xy
 !***********************************************************************
     subroutine phiaverages_rz()
 !
-!  calculate azimuthal averages (as functions of r_cyl,z)
+!  Calculate azimuthal averages (as functions of r_cyl,z).
 !  NOTE: these averages depend on (r and) z, so after summation they
 !  are still distributed over nprocz CPUs; hence the dimensions of fsumrz
 !  (and fnamerz).
@@ -509,7 +501,7 @@ module Diagnostics
 !  normalize by sum of unity which is accumulated in fnamerz(:,0,:,1).
 !
       if (nnamerz>0) then
-        call mpireduce_sum(fnamerz,fsumrz,(/nrcyl,nz+1,nprocz,nnamerz/))
+        call mpireduce_sum(fnamerz,fsumrz,(/nrcyl,nz+1,nprocz,mnamerz/))
         if (lroot) then
           do i=1,nnamerz
             fnamerz(:,1:nz,:,i)=fsumrz(:,1:nz,:,i)/spread(fsumrz(:,0,:,1),2,nz)
@@ -567,12 +559,11 @@ module Diagnostics
 !  are still 2d after averaging) if it is time.
 !  In analogy to 3d output to VARN, the time interval between two writes
 !  is determined by a parameter (t2davg) in run.in.
-!  Note: this routine should only be called by the root processor
 !
 !   7-aug-03/wolf: adapted from wsnap
 !
-      if (lwrite_yaverages)   call write_yaverages(ch2davg)
-      if (lwrite_zaverages)   call write_zaverages(ch2davg)
+      if (lwrite_yaverages)   call write_yaverages()
+      if (lwrite_zaverages)   call write_zaverages()
       if (lwrite_phiaverages) call write_phiaverages(ch2davg)
 !
       if (ip<=10) write(*,*) 'write_2daverages: wrote phi(etc.)avgs'//ch2davg
@@ -650,45 +641,35 @@ module Diagnostics
 !
     endsubroutine write_phizaverages
 !***********************************************************************
-    subroutine write_yaverages(ch)
+    subroutine write_yaverages()
 !
-!  Write y-averages (which are 2d data) that have been requested via
-!  `yaver.in'
+!  Write y-averages (which are 2d data) that have been requested via yaver.in.
 !
 !   7-jun-05/axel: adapted from write_zaverages
 !
-      character (len=4) :: ch
-!
-      if (lroot.and.nnamexz>0) then
+      if (ipy==0.and.nnamexz>0) then
         open(1, file=trim(datadir)//'/yaverages.dat', form='unformatted', &
             position='append')
         write(1) t2davgfirst
-        write(1) fnamexz(:,:,:,1:nnamexz)
+        write(1) fnamexz(:,:,1:nnamexz)
         close(1)
       endif
-!
-      call keep_compiler_quiet(ch)
 !
     endsubroutine write_yaverages
 !***********************************************************************
-    subroutine write_zaverages(ch)
+    subroutine write_zaverages()
 !
-!  Write z-averages (which are 2d data) that have been requested via
-!  `zaver.in'
+!  Write z-averages (which are 2d data) that have been requested via zaver.in.
 !
 !  19-jun-02/axel: adapted from write_xyaverages
 !
-      character (len=4) :: ch
-!
-      if (lroot.and.nnamexy>0) then
-        open(1, file=trim(datadir)//'/zaverages.dat', form='unformatted', &
-            position='append')
+      if (ipz==0.and.nnamexy>0) then
+        open(1, file=trim(directory_snap)//'/zaverages.dat', &
+            form='unformatted', position='append')
         write(1) t2davgfirst
-        write(1) fnamexy(:,:,:,1:nnamexy)
+        write(1) fnamexy(:,:,1:nnamexy)
         close(1)
       endif
-!
-      call keep_compiler_quiet(ch)
 !
     endsubroutine write_zaverages
 !***********************************************************************
@@ -824,6 +805,8 @@ module Diagnostics
 !
 !   1-apr-04/wolf: coded
 !
+      use Mpicomm, only: stop_it
+!
       character (len=*), dimension(:) :: ccname
       integer :: nname
       character (len=*) :: vlabel,xlabel,ylabel,zlabel
@@ -838,7 +821,7 @@ module Diagnostics
       do while (i <= nname)
         if (ccname(i) == vlabel) then
           if (nname+2 > mname) then ! sanity check
-            call fatal_error('expand_cname','Too many labels in list')
+            call stop_it("EXPAND_CNAME: Too many labels in list")
           endif
           ccname(i+3:nname+2) = ccname(i+1:nname)
           ccname(i:i+2) = (/xlabel,ylabel,zlabel/)
@@ -1512,6 +1495,8 @@ module Diagnostics
 !
 !  29-jan-07/wlad: adapted from yzsum_mn_name_x and phisum_mn_name
 !
+      use Mpicomm, only: stop_it
+!
       real, dimension (nx) :: a
       integer :: iname,ir,nnghost
 !
@@ -1528,8 +1513,8 @@ module Diagnostics
       nnghost=n-nghost
       if ((iname==nnamer).and.(nnghost==1)) then
 !check if an extra slot is available on fnamer
-         if (nnamer==mnamer) call fatal_error('phizsum_mn_name_r', &
-             'no slot for phi-normalization. decrease nnamer')
+         if (nnamer==mnamer) &
+              call stop_it("no slot for phi-normalization. decrease nnamer")
 !
          do ir=1,nrcyl
             fnamer(ir,iname+1) &
@@ -1553,16 +1538,16 @@ module Diagnostics
 !  Initialize to zero, including other parts of the xz-array
 !  which are later merged with an mpi reduce command.
 !
-      if (lfirstpoint) fnamexz(:,:,:,iname)=0.
+      if (lfirstpoint) fnamexz(:,:,iname)=0.
 !
 !  n starts with nghost+1=4, so the correct index is n-nghost
 !  keep full x-dependence
 !
       n_nghost=n-nghost
       if (lspherical_coords.or.lcylindrical_coords)then
-        fnamexz(:,n_nghost,ipz+1,iname) = fnamexz(:,n_nghost,ipz+1,iname)+a*x(l1:l2)
+        fnamexz(:,n_nghost,iname) = fnamexz(:,n_nghost,iname)+a*x(l1:l2)
       else
-        fnamexz(:,n_nghost,ipz+1,iname)=fnamexz(:,n_nghost,ipz+1,iname)+a
+        fnamexz(:,n_nghost,iname)=fnamexz(:,n_nghost,iname)+a
       endif
 !
     endsubroutine ysum_mn_name_xz
@@ -1581,13 +1566,13 @@ module Diagnostics
 !  Initialize to zero, including other parts of the xy-array
 !  which are later merged with an mpi reduce command.
 !
-      if (lfirstpoint) fnamexy(:,:,:,iname)=0.
+      if (lfirstpoint) fnamexy(:,:,iname)=0.
 !
 !  m starts with nghost+1=4, so the correct index is m-nghost
 !  keep full x-dependence
 !
       m_nghost=m-nghost
-      fnamexy(:,m_nghost,ipy+1,iname)=fnamexy(:,m_nghost,ipy+1,iname)+a
+      fnamexy(:,m_nghost,iname)=fnamexy(:,m_nghost,iname)+a
 !
     endsubroutine zsum_mn_name_xy
 !***********************************************************************
@@ -1667,47 +1652,46 @@ module Diagnostics
 !***********************************************************************
     subroutine allocate_yaverages
 !
-!  Allocate the variables needed for yaverages
+!  Allocate the variables needed for yaverages.
 !
 !   12-aug-09/dhruba: coded
 !
-        allocate(fnamexz(nx,nz,nprocz,mnamexz))
-        allocate(cnamexz(mnamexz),cformxz(mnamexz)) 
-
-      endsubroutine allocate_yaverages
+      allocate(fnamexz(nx,nz,nnamexz))
+      allocate(cnamexz(nnamexz),cformxz(nnamexz)) 
+!
+    endsubroutine allocate_yaverages
 !*******************************************************************
     subroutine allocate_zaverages
 !
-!  Allocate the variables needed for zaverages
+!  Allocate the variables needed for zaverages.
 !
 !   12-aug-09/dhruba: coded
 !
-        allocate(fnamexy(nx,ny,nprocy,mnamexy))
-        allocate(cnamexy(mnamexy),cformxy(mnamexy))
-
-       endsubroutine allocate_zaverages
+      allocate(fnamexy(nx,ny,nnamexy))
+      allocate(cnamexy(nnamexy),cformxy(nnamexy))
+!
+    endsubroutine allocate_zaverages
 !***********************************************************************
     subroutine yaverages_clean_up
 !
-!  Allocate the variables needed for yaverages
+!  Allocate the variables needed for yaverages.
 !
 !   12-aug-09/dhruba: coded
 !
-        deallocate(fnamexz)
-        deallocate(cnamexz,cformxz) 
-
-      endsubroutine yaverages_clean_up
+      deallocate(fnamexz)
+      deallocate(cnamexz,cformxz) 
+!
+    endsubroutine yaverages_clean_up
 !*******************************************************************
     subroutine zaverages_clean_up
 !
-!  Allocate the variables needed for yaverages
+!  Allocate the variables needed for yaverages.
 !
 !   12-aug-09/dhruba: coded
 !
-        deallocate(fnamexy)
-        deallocate(cnamexy,cformxy) 
-
-      endsubroutine zaverages_clean_up
+      deallocate(fnamexy)
+      deallocate(cnamexy,cformxy) 
+!
+    endsubroutine zaverages_clean_up
 !*******************************************************************
-
 endmodule Diagnostics

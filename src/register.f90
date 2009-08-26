@@ -996,21 +996,20 @@ module Register
       if (exist) then
 ! count the number of lines in it first 
         open(1,file='yaver.in')
-        mnamexz=0; iread=0
-        do while (iread == 0)
+        nnamexz=0; iread=0
+        do while (iread==0)
           read(1,*,iostat=iread)
-          if(iread == 0) mnamexz=mnamexz+1
+          if(iread == 0) nnamexz=nnamexz+1
         enddo
         close(1)
 ! allocate the relevant arrays here
         call allocate_yaverages()
 ! then read into these arrays
         open(1,file='yaver.in')
-        do inamexz=1,mnamexz
+        do inamexz=1,nnamexz
           read(1,*,end=94) cnamexz(inamexz)
         enddo
-94      nnamexz=inamexz-1
-        close(1)
+94      close(1)
       else
         lwrite_yaverages = .false. ! switch yaverages off
       endif
@@ -1022,21 +1021,20 @@ module Register
       if (exist) then
 ! count the number of lines in it first 
         open(1,file='zaver.in')
-        mnamexy=0; iread =0
-        do while (iread  == 0)
+        nnamexy=0; iread=0
+        do while (iread==0)
           read(1,*,iostat=iread )
-          if(iread  == 0) mnamexy=mnamexy+1
+          if (iread==0) nnamexy=nnamexy+1
         enddo
         close(1)
 ! allocate the relevant arrays here
         call allocate_zaverages()
 ! then read the quantities to be z-averaged
         open(1,file='zaver.in')
-        do inamexy=1,mnamexy
+        do inamexy=1,nnamexy
           read(1,*,end=96) cnamexy(inamexy)
         enddo
-96      nnamexy=inamexy-1
-        close(1)
+96      close(1)
       else
         lwrite_zaverages = .false. ! switch zaverages off
       endif
