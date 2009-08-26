@@ -202,7 +202,7 @@ module Boundcond
                   ! BCX_DOC:  ie $(d/dx-1/\mathrm{dist}) f = 0.$ 
                   call bc_overshoot_x(f,fbcx12,topbot,j)
                 case ('ant')
-                  ! BCX_DOC: set boundary value [really??]
+                  ! BCX_DOC: stops and prompts for putting documentation
                   call bc_antis_x(f,fbcx12,topbot,j)
                 case ('e1')
                   ! BCX_DOC: extrapolation [describe]
@@ -952,7 +952,9 @@ module Boundcond
 !***********************************************************************
     subroutine bc_symset_x(f,sgn,topbot,j,rel,val)
 !
-! FIXME: Get documentation right
+!  This routine works like bc_sym_x, but sets the function value to what
+!  it should be for vanishing one-sided derivative.
+!  At the moment the derivative is only 2nd order accurate.
 !
 !  Symmetry boundary conditions.
 !  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
@@ -1201,7 +1203,8 @@ module Boundcond
 !***********************************************************************
     subroutine bc_antis_x(f,slope,topbot,j,rel,val)
 !
-! FIXME: Get documentation right
+!  Print a warning to prompt potential users to document this.
+!  This routine seems an experimental one to me (Axel)
 !
 !  Symmetry boundary conditions.
 !  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
@@ -1218,6 +1221,10 @@ module Boundcond
       integer :: i,j
       logical, optional :: rel
       logical :: relative
+!
+!  Print a warning to prompt potential users to document this.
+!
+      call fatal_error('bc_antis_x','outdated/invalid? Document if needed')
 !
       if (present(rel)) then; relative=rel; else; relative=.false.; endif
 
@@ -1305,7 +1312,9 @@ module Boundcond
 !***********************************************************************
     subroutine bc_symset_y(f,sgn,topbot,j,rel,val)
 !
-! FIXME: Get documentation right
+!  This routine works like bc_sym_x, but sets the function value to what
+!  it should be for vanishing one-sided derivative.
+!  At the moment the derivative is only 2nd order accurate.
 !
 !  Symmetry boundary conditions.
 !  (f,-1,topbot,j)            --> antisymmetry             (f  =0)

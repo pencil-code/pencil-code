@@ -3557,14 +3557,15 @@ module Magnetic
 !  so they are present on the root processor.
 !
 !   6-apr-08/axel: moved from calc_mfield to here
+!  26-aug-09/anders: used mpireduce_sum to remove need for nyproc arrays
 !
       use Diagnostics
       use Mpicomm
 !
       logical,save :: first=.true.
-      real, dimension(nx) :: bymx,bzmx
+      real, dimension(nx) :: bymx,bzmx,bmx2
+      real, dimension(nx,ny) :: fsumxy
       real :: bmx
-      integer :: l
 !
 !  This only works if bymxy and bzmxy are in zaver,
 !  so print warning if this is not ok.
@@ -3577,11 +3578,16 @@ module Magnetic
         endif
         bmx=0.
       else
-        do l=1,nx
-!          bymx(l)=sum(fnamexy(l,:,:,idiag_bymxy))/(ny*nprocy)
-!          bzmx(l)=sum(fnamexy(l,:,:,idiag_bzmxy))/(ny*nprocy)
-        enddo
-        bmx=sqrt(sum(bymx**2+bzmx**2)/nx)
+        if (ipz==0) then
+          call mpireduce_sum(fnamexy(:,:,idiag_bymxy),fsumxy,(/nx,ny/),idir=2)
+          bymx=sum(fsumxy,dim=2)/nygrid
+          call mpireduce_sum(fnamexy(:,:,idiag_bzmxy),fsumxy,(/nx,ny/),idir=2)
+          bzmx=sum(fsumxy,dim=2)/nygrid
+        endif
+        if (ipx==0 .and. ipz==0) then
+          call mpireduce_sum(bymx**2+bzmx**2,bmx2,nx,idir=2)
+        endif
+        bmx=sqrt(sum(bmx2)/nxgrid)
       endif
 !
 !  save the name in the idiag_bmx slot
@@ -3599,14 +3605,15 @@ module Magnetic
 !  so they are present on the root processor.
 !
 !   6-apr-08/axel: moved from calc_mfield to here
+!  26-aug-09/axel: adapted change of Anders to used mpireduce_sum
 !
       use Diagnostics
       use Mpicomm
 !
       logical,save :: first=.true.
-      real, dimension(ny,nprocy) :: bxmy,bzmy
+      real, dimension(ny) :: bxmy,bzmy,bmy2
+      real, dimension(nx,ny) :: fsumxy
       real :: bmy
-      integer :: j
 !
 !  This only works if bxmxy and bzmxy are in zaver,
 !  so print warning if this is not ok.
@@ -3619,13 +3626,16 @@ module Magnetic
         endif
         bmy=0.
       else
-        do j=1,nprocy
-          do m=1,ny
-!            bxmy(m,j)=sum(fnamexy(:,m,j,idiag_bxmxy))/nx
-!            bzmy(m,j)=sum(fnamexy(:,m,j,idiag_bzmxy))/nx
-          enddo
-        enddo
-        bmy=sqrt(sum(bxmy**2+bzmy**2)/(ny*nprocy))
+        if (ipz==0) then
+          call mpireduce_sum(fnamexy(:,:,idiag_bxmxy),fsumxy,(/nx,ny/),idir=1)
+          bxmy=sum(fsumxy,dim=1)/nxgrid
+          call mpireduce_sum(fnamexy(:,:,idiag_bzmxy),fsumxy,(/nx,ny/),idir=1)
+          bzmy=sum(fsumxy,dim=1)/nxgrid
+        endif
+        if (ipy==0 .and. ipz==0) then
+          call mpireduce_sum(bxmy**2+bzmy**2,bmy2,ny,idir=2)
+        endif
+        bmy=sqrt(sum(bmy2)/nygrid)
       endif
 !
 !  save the name in the idiag_bmy slot
