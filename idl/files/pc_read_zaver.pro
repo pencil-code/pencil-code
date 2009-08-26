@@ -23,6 +23,8 @@ pro pc_read_zaver, object=object, varfile=varfile, datadir=datadir, $
     readpar=readpar, readgrid=readgrid, debug=debug, quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
+forward_function plot_plane
+forward_function shift_plane
 ;;
 ;;  Default values.
 ;;
@@ -111,6 +113,7 @@ nxgrid=dim.nx
 nygrid=dim.ny
 nprocx=dim.nprocx
 nprocy=dim.nprocy
+nprocz=dim.nprocz
 ;;
 ;;  Read variables from zaver.in
 ;;
