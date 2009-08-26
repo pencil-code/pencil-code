@@ -1148,7 +1148,7 @@ module Viscosity
          endif
       else if (ltemperature) then
         if (ltemperature_nolog) then
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*p%visc_heat
+          df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT)   + p%cv1*p%visc_heat
         else
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*p%TT1*p%visc_heat
         endif

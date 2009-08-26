@@ -1589,7 +1589,7 @@ module Particles_nbody
 !  define the "pencils"
 !
             if (ldensity_nolog) then 
-              prho=f(l1:l2,m,n,ilnrho)
+              prho=f(l1:l2,m,n,irho)
             else
               prho=exp(f(l1:l2,m,n,ilnrho))
             endif
@@ -1666,7 +1666,7 @@ module Particles_nbody
 !  and that amount was lost by the grid, so only rho_jeans remains
 !
                   if (ldensity_nolog) then 
-                    f(i+nghost,m,n,ilnrho) = rho_jeans(i)
+                    f(i+nghost,m,n,irho)   = rho_jeans(i)
                   else 
                     f(i+nghost,m,n,ilnrho) = log(rho_jeans(i))
                   endif

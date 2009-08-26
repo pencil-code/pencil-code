@@ -1047,7 +1047,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Calculate average dust-to-gas ratio in box.
           if (ldensity_nolog) then
             eps = sum(f(l1:l2,m1:m2,n1:n2,irhop))/ &
-                sum(f(l1:l2,m1:m2,n1:n2,ilnrho))
+                sum(f(l1:l2,m1:m2,n1:n2,irho))
           else
             eps = sum(f(l1:l2,m1:m2,n1:n2,irhop))/ &
                 sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
@@ -1059,7 +1059,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Take either global or local dust-to-gas ratio.
             if (.not. ldragforce_equi_global_eps) then
               if (ldensity_nolog) then
-                eps=f(l,m,n,irhop)/f(l,m,n,ilnrho)
+                eps=f(l,m,n,irhop)/f(l,m,n,irho)
               else
                 eps=f(l,m,n,irhop)/exp(f(l,m,n,ilnrho))
               endif
@@ -1079,7 +1079,7 @@ k_loop:   do while (.not. (k>npar_loc))
             if (.not. ldragforce_equi_global_eps) then
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
               if (ldensity_nolog) then
-                eps=f(ix0,iy0,iz0,irhop)/f(ix0,iy0,iz0,ilnrho)
+                eps=f(ix0,iy0,iz0,irhop)/f(ix0,iy0,iz0,irho)
               else
                 eps=f(ix0,iy0,iz0,irhop)/exp(f(ix0,iy0,iz0,ilnrho))
               endif
@@ -1530,7 +1530,7 @@ k_loop:   do while (.not. (k>npar_loc))
         rho=exp(lnrho)
 
         if (ldensity_nolog) then
-          f(l1:l2,m,n,ilnrho)=rho
+          f(l1:l2,m,n,irho)  =rho
         else
           f(l1:l2,m,n,ilnrho)=lnrho
         endif
@@ -2616,7 +2616,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
           if (ldraglaw_variable_density) then
             if (ldensity_nolog) then
-              tausp1_par=tmp*f(ix0,iy0,iz0,ilnrho)
+              tausp1_par=tmp*f(ix0,iy0,iz0,irho)
             else
               tausp1_par=tmp*exp(f(ix0,iy0,iz0,ilnrho))
             endif

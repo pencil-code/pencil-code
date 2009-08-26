@@ -127,8 +127,13 @@ module Density
 !
       use Sub
       use FArrayManager
-
-      call farray_register_pde('lnrho',ilnrho)
+!
+      if (ldensity_nolog) then
+        call farray_register_pde('rho',irho)
+        ilnrho=irho
+      else
+        call farray_register_pde('lnrho',ilnrho)
+      endif
 !
 !  Identify version number (generated automatically by CVS).
 !
@@ -257,7 +262,7 @@ module Density
 ! Tell the equation of state that we're here and what f variable we use
 !
       if (ldensity_nolog) then
-        call select_eos_variable('rho',ilnrho)
+        call select_eos_variable('rho',irho)
       else
         call select_eos_variable('lnrho',ilnrho)
       endif
@@ -331,8 +336,7 @@ module Density
               'lrho_as_aux=T if already evolving non log rho'
           call fatal_error('initialize_density','')
         else
-          if (irho==0) &
-              call farray_register_auxiliary('rho',irho,communicated=.true.)
+          call farray_register_auxiliary('rho',irho,communicated=.true.)
         endif
       endif
 !
@@ -960,7 +964,7 @@ module Density
 !  If unlogarithmic density considered, take exp of lnrho resulting from
 !  initlnrho
 !
-      if (ldensity_nolog) f(:,:,:,ilnrho)=exp(f(:,:,:,ilnrho))
+      if (ldensity_nolog) f(:,:,:,irho)=exp(f(:,:,:,ilnrho))
 !
 !  sanity check
 !
@@ -1315,7 +1319,7 @@ module Density
 !
       if (lpencil(i_lnrho)) then
         if (ldensity_nolog) then
-          p%lnrho=log(f(l1:l2,m,n,ilnrho))
+          p%lnrho=log(f(l1:l2,m,n,irho))
         else
           p%lnrho=f(l1:l2,m,n,ilnrho)
         endif
@@ -1325,7 +1329,7 @@ module Density
 !
       if (ldensity_nolog) then
         if (lpencil(i_rho)) then
-          p%rho=f(l1:l2,m,n,ilnrho)
+          p%rho=f(l1:l2,m,n,irho)
           if (lcheck_negative_density .and. any(p%rho <= 0.)) &
             call fatal_error_local('calc_pencils_density', 'negative density detected')
         endif
@@ -1348,7 +1352,7 @@ module Density
         else
           call grad(f,ilnrho,p%glnrho)
           if (lpencil(i_grho)) then
-            if (lrho_as_aux) then
+            if (irho/=0) then
               call grad(f,irho,p%grho)
             else
               do i=1,3
@@ -1406,7 +1410,7 @@ module Density
         if (ldensity_nolog) then
           call del2(f,ilnrho,p%del2rho)
         else
-          if (lrho_as_aux) then
+          if (irho/=0) then
             call del2(f,irho,p%del2rho)
           else
             if (headtt) &
@@ -1422,7 +1426,7 @@ module Density
         if (ldensity_nolog) then
           call del6(f,ilnrho,p%del6rho)
         else
-          if (lrho_as_aux) then
+          if (irho/=0) then
             call del6(f,irho,p%del6rho)
           else
             if (headtt) &
@@ -1476,7 +1480,8 @@ module Density
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      if (lrho_as_aux) f(l1:l2,m1:m2,n1:n2,irho)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+      if ( (.not.ldensity_nolog) .and. (irho/=0) ) &
+          f(l1:l2,m1:m2,n1:n2,irho)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
 !
     endsubroutine density_before_boundary
 !***********************************************************************
@@ -1513,13 +1518,13 @@ module Density
       if (lcontinuity_gas) then
         if (ieos_profile=='nothing') then
           if (ldensity_nolog) then
-            df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%ugrho - p%rho*p%divu
+            df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   - p%ugrho - p%rho*p%divu
           else
             df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%uglnrho - p%divu
           endif
         else
           if (ldensity_nolog) then
-            df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) &
+            df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   &
               - profz_eos(n)*(p%ugrho + p%rho*p%divu)
           else
             df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) &
@@ -1640,7 +1645,11 @@ module Density
 !
 !  Add diffusion term to continuity equation
 !
-      df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + fdiff
+      if (ldensity_nolog) then
+        df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   + fdiff
+      else
+        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + fdiff
+      endif
 !
 !  Multiply diffusion coefficient by Nyquist scale.
 !
@@ -2434,8 +2443,8 @@ module Density
 !
       if (mass_source_profile=='exponential') then
         if (ldensity_nolog) then
-          df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+ &
-              mass_source_Mdot*f(l1:l2,m,n,ilnrho)
+          df(l1:l2,m,n,irho)  =df(l1:l2,m,n,irho)+ &
+              mass_source_Mdot*f(l1:l2,m,n,irho)
         else
           df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+mass_source_Mdot
         endif
@@ -2479,8 +2488,7 @@ module Density
         endif
 !
         if (ldensity_nolog) then
-          where (f(:,:,:,ilnrho)<density_floor) &
-              f(:,:,:,ilnrho)=density_floor
+          where (f(:,:,:,irho)<density_floor) f(:,:,:,irho)=density_floor
         else
           where (f(:,:,:,ilnrho)<density_floor_log) &
               f(:,:,:,ilnrho)=density_floor_log
@@ -2674,12 +2682,12 @@ module Density
 !
         case ('rho')
           if (ldensity_nolog) then
-            slices%yz =f(ix_loc,m1:m2,n1:n2,ilnrho)
-            slices%xz =f(l1:l2,iy_loc,n1:n2,ilnrho)
-            slices%xy =f(l1:l2,m1:m2,iz_loc,ilnrho)
-            slices%xy2=f(l1:l2,m1:m2,iz2_loc,ilnrho)
-            if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,ilnrho)
-            if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,ilnrho)
+            slices%yz =f(ix_loc,m1:m2,n1:n2,irho)
+            slices%xz =f(l1:l2,iy_loc,n1:n2,irho)
+            slices%xy =f(l1:l2,m1:m2,iz_loc,irho)
+            slices%xy2=f(l1:l2,m1:m2,iz2_loc,irho)
+            if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,irho)
+            if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,irho)
             slices%ready=.true.
           else
             slices%yz =exp(f(ix_loc,m1:m2,n1:n2,ilnrho))
@@ -2695,12 +2703,12 @@ module Density
 !
         case ('lnrho')
           if (ldensity_nolog) then
-            slices%yz =alog(f(ix_loc,m1:m2,n1:n2,ilnrho))
-            slices%xz =alog(f(l1:l2,iy_loc,n1:n2,ilnrho))
-            slices%xy =alog(f(l1:l2,m1:m2,iz_loc,ilnrho))
-            slices%xy2=alog(f(l1:l2,m1:m2,iz2_loc,ilnrho))
-            if (lwrite_slice_xy3) slices%xy3=alog(f(l1:l2,m1:m2,iz3_loc,ilnrho))
-            if (lwrite_slice_xy4) slices%xy4=alog(f(l1:l2,m1:m2,iz4_loc,ilnrho))
+            slices%yz =alog(f(ix_loc,m1:m2,n1:n2,irho))
+            slices%xz =alog(f(l1:l2,iy_loc,n1:n2,irho))
+            slices%xy =alog(f(l1:l2,m1:m2,iz_loc,irho))
+            slices%xy2=alog(f(l1:l2,m1:m2,iz2_loc,irho))
+            if (lwrite_slice_xy3) slices%xy3=alog(f(l1:l2,m1:m2,iz3_loc,irho))
+            if (lwrite_slice_xy4) slices%xy4=alog(f(l1:l2,m1:m2,iz4_loc,irho))
             slices%ready=.true.
           else
             slices%yz =f(ix_loc,m1:m2,n1:n2,ilnrho)

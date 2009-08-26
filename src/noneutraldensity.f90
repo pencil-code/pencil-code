@@ -23,8 +23,6 @@ module Neutraldensity
 !
   include 'neutraldensity.h'
 !
-  logical :: lneutraldensity_nolog=.false.
-!
   integer :: idiag_rhonm=0
 !
   contains

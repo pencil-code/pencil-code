@@ -4508,7 +4508,7 @@ module Boundcond
 !  Find density
 !
       if (ldensity_nolog) then
-        rho0 = f(lll,m1:m2,n1:n2,ilnrho)
+        rho0 = f(lll,m1:m2,n1:n2,irho)
       else
         rho0 = exp(f(lll,m1:m2,n1:n2,ilnrho))
       endif
@@ -4705,7 +4705,7 @@ module Boundcond
 !  Check if we are solving for logrho or rho
 !
       if (.not. ldensity_nolog) then
-        df(lll,m1:m2,n1:n2,ilnrho)=df(lll,m1:m2,n1:n2,ilnrho)/rho0
+        df(lll,m1:m2,n1:n2,irho)=df(lll,m1:m2,n1:n2,irho)/rho0
       endif
 !
 ! Impose required variables at the boundary
@@ -4777,7 +4777,7 @@ module Boundcond
 !  Find density
 !
       if (ldensity_nolog) then
-        rho0 = f(l1:l2,lll,n1:n2,ilnrho)
+        rho0 = f(l1:l2,lll,n1:n2,irho)
       else
         rho0 = exp(f(l1:l2,lll,n1:n2,ilnrho))
       endif
@@ -4968,7 +4968,7 @@ module Boundcond
 !  Check if we are solving for logrho or rho
 !
       if (.not. ldensity_nolog) then
-        df(l1:l2,lll,n1:n2,ilnrho)=df(l1:l2,lll,n1:n2,ilnrho)/rho0
+        df(l1:l2,lll,n1:n2,irho)=df(l1:l2,lll,n1:n2,irho)/rho0
       endif
 !
 ! Impose required variables at the boundary
@@ -5025,7 +5025,7 @@ module Boundcond
 !      endselect
 !      if (leos_idealgas) then
 !        if (ldensity_nolog) then
-!          rho0 = f(l1:l2,m1:m2,lll,ilnrho)
+!          rho0 = f(l1:l2,m1:m2,lll,irho)
           ! ``dp = cs20*drho''
 !          dp_prefac = cs20
 !        else
@@ -5166,7 +5166,7 @@ module Boundcond
 !        L_2 = 0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1) &
 !            +rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2)*df(lll,m1:m2,n1:n2,ilnTT)
 !        if (ldensity_nolog) then
-!          df(lll,m1:m2,n1:n2,ilnrho) = -1./cs20_ar(m1:m2,n1:n2)*&
+!          df(lll,m1:m2,n1:n2,irho) = -1./cs20_ar(m1:m2,n1:n2)*&
 !              (L_2+0.5*(L_5 + L_1)) ! -dmom2_dy(m1:m2,n1:n2)
 !        else
 !          df(lll,m1:m2,n1:n2,ilnrho) = &
@@ -5257,8 +5257,8 @@ module Boundcond
 !         gamma0=gamma_full(lll,:,:)
 !
 !        if (ldensity_nolog) then
-!          rho_full = f(:,:,:,ilnrho)
-!          rho0(:,:) = f(lll,:,:,ilnrho)
+!          rho_full = f(:,:,:,irho)
+!          rho0(:,:) = f(lll,:,:,irho)
 !          drho_prefac=-1./cs20_ar(m1:m2,n1:n2)
 !        else
 !          rho_full = exp(f(:,:,:,ilnrho))
@@ -5332,7 +5332,7 @@ module Boundcond
 !      L_2 = f(lll,m1:m2,n1:n2,iux)*(cs20_ar(m1:m2,n1:n2)*drho_dx-dpp_dx)
 !
 !      if (ldensity_nolog) then
-!        df(lll,m1:m2,n1:n2,ilnrho) = &
+!        df(lll,m1:m2,n1:n2,irho) = &
 !            drho_prefac*(L_2+0.5*(L_5 + L_1))!-dmom2_dy(m1:m2,n1:n2)
 !      else
 !        df(lll,m1:m2,n1:n2,ilnrho) = &
@@ -5450,7 +5450,7 @@ module Boundcond
 !        cs0_ar=cs2_full(:,mmm,:)**0.5
 !        gamma0=gamma_full(:,mmm,:)
 !        if (ldensity_nolog) then
-!          rho0(:,:) = f(:,mmm,:,ilnrho)
+!          rho0(:,:) = f(:,mmm,:,irho)
 !          dp_prefac = cs20_ar(l1:l2,n1:n2)/gamma0(l1:l2,n1:n2)
 !          drho_prefac=-1./cs20_ar(l1:l2,n1:n2)
 !        else
@@ -5504,7 +5504,7 @@ module Boundcond
 !      L_2 = f(l1:l2,mmm,n1:n2,iuy)*(cs20_ar(l1:l2,n1:n2)*dlnrho_dy-dpp_dy)
 !
 !      if (ldensity_nolog) then
-!        df(l1:l2,mmm,n1:n2,ilnrho) = &
+!        df(l1:l2,mmm,n1:n2,irho) = &
 !            drho_prefac*(L_2+0.5*(L_5 + L_1))-dmom2_dx(l1:l2,n1:n2)
 !      else
 !        df(l1:l2,mmm,n1:n2,ilnrho) = drho_prefac*(L_2+0.5*(L_5 + L_1)) &

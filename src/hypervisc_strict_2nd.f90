@@ -124,7 +124,7 @@ module Hypervisc_strict
       if (lvisc_hyper3_nu_const_strict) then
         call grad_2nd(f,ilnrho,tmp)
         if (ldensity_nolog) then
-          tmp3=exp(f(:,:,:,ilnrho))
+          tmp3=exp(f(:,:,:,irho))
           do i=1,3; tmp(:,:,:,i)=tmp(:,:,:,i)/tmp3; enddo
         endif
 !

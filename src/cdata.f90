@@ -169,7 +169,7 @@ module Cdata
   logical :: lchiral=.false.
   logical :: lradiation=.false.,lradiation_ray=.false.,lradiation_fld=.false.
   logical :: ldustdensity_log=.false.
-  logical :: lneutraldensity=.false.,lneutraldensity_log=.false.
+  logical :: lneutraldensity=.false.,lneutraldensity_nolog=.false.
   logical :: lneutralvelocity=.false.
   logical :: lglobal=.false., lglobal_nolog_density=.false.
   logical :: lvisc_hyper=.false.,lvisc_LES=.false.
@@ -185,7 +185,7 @@ module Cdata
 !  Variable indices (default zero, set later by relevant physics modules).
 !
   integer :: nvar,naux,naux_com
-  integer, target :: ilnrho=0
+  integer :: ilnrho=0, irho=0
   integer :: iuu=0,iux=0,iuy=0,iuz=0,iss=0
   integer :: iox=0,ioy=0,ioz=0
   integer :: iuut=0,iuxt=0,iuyt=0,iuzt=0,ioot=0,ioxt=0,ioyt=0,iozt=0
@@ -201,19 +201,20 @@ module Cdata
   integer :: iam=0,iamx=0,iamy=0,iamz=0
   integer :: ie=0,iff=0,ifx=0,ify=0,ifz=0,idd=0
   integer :: ivisc_heat=0,ibb=0,ibx=0,iby=0,ibz=0,ijj=0,ijx=0,ijy=0,ijz=0
-  integer :: iuxb=0,ijxb=0,iugu=0,irho=0
+  integer :: iuxb=0,ijxb=0,iugu=0
   integer :: ishock=0,ishock_perp=0
   integer :: iyH=0,ihypvis=0,ihypres=0
   integer :: iecr=0,ismagorinsky
-  integer :: iQrad=0,iSrad=0,ikappa=0,ilnTT=0,ikapparho=0
+  integer :: iQrad=0,iSrad=0,ikappa=0,ilnTT=0,iTT=0,ikapparho=0
   integer :: iQrad2=0,ikapparho2=0
   integer :: iFrad=0,iFradx=0,iFrady=0,iFradz=0
   integer :: iFrad2=0,iFradx2=0,iFrady2=0,iFradz2=0
   integer :: igpotselfx=0, igpotselfy=0, igpotselfz=0, irhop=0
   integer :: icc=0,ilncc=0,ialpm=0
-  integer, dimension(ndustspec) :: iuud=0,iudx=0,iudy=0,iudz=0,ind=0,imd=0,imi=0
+  integer, dimension(ndustspec) :: iuud=0,iudx=0,iudy=0,iudz=0
+  integer, dimension(ndustspec) :: ilnnd=0, ind=0,imd=0,imi=0
   integer, dimension(nchemspec) :: ichemspec=0
-  integer :: ilnrhon=0,iuun=0,iunx=0,iuny=0,iunz=0
+  integer :: ilnrhon=0,irhon=0,iuun=0,iunx=0,iuny=0,iunz=0
   integer :: iglobal_bx_ext=0, iglobal_by_ext=0, iglobal_bz_ext=0
   integer :: iglobal_jx_ext=0, iglobal_jy_ext=0, iglobal_jz_ext=0
   integer :: iglobal_ex_ext=0, iglobal_ey_ext=0, iglobal_ez_ext=0

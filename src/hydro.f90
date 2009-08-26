@@ -3800,7 +3800,7 @@ module Hydro
         do n = n1,n2
         do m = m1,m2
           if (ldensity_nolog) then
-            rho = f(l1:l2,m,n,ilnrho)
+            rho = f(l1:l2,m,n,irho)
           else
             rho = exp(f(l1:l2,m,n,ilnrho))
           endif
@@ -3820,7 +3820,7 @@ module Hydro
         do n = n1,n2
         do m = m1,m2
           if (ldensity_nolog) then
-            rho1 = 1.0/f(l1:l2,m,n,ilnrho)
+            rho1 = 1.0/f(l1:l2,m,n,irho)
           else
             rho1 = exp(-f(l1:l2,m,n,ilnrho))
           endif

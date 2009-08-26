@@ -89,14 +89,22 @@ module Dustdensity
 !
       use FArrayManager
 !
-      integer :: k, ind_tmp, imd_tmp, imi_tmp
+      integer :: k, ind_tmp, ilnnd_tmp, imd_tmp, imi_tmp
 !
 !  Set ind to consecutive numbers nvar+1, nvar+2, ..., nvar+ndustspec
 !
-      call farray_register_pde('nd',ind_tmp,vector=ndustspec)
-      do k=1,ndustspec
-        ind(k)=ind_tmp+k-1
-      enddo
+      if (ldustdensity_log) then
+        call farray_register_pde('lnnd',ilnnd_tmp,vector=ndustspec)
+        do k=1,ndustspec
+          ilnnd(k)=ilnnd_tmp+k-1
+        enddo
+        ind=ilnnd
+      else
+        call farray_register_pde('nd',ind_tmp,vector=ndustspec)
+        do k=1,ndustspec
+          ind(k)=ind_tmp+k-1
+        enddo
+      endif
 !
 !  Register dust mass.
 !
@@ -311,7 +319,7 @@ module Dustdensity
                 (rho00-rhod00*Hnd**2/(Hrho**2-Hnd**2))* &
                 exp(-z(n)**2/(2*Hrho**2)) )
             if (ldensity_nolog) then
-              f(:,:,n,ilnrho) = exp(lnrho_z)
+              f(:,:,n,irho)   = exp(lnrho_z)
             else
               f(:,:,n,ilnrho) = lnrho_z
             endif
@@ -354,7 +362,7 @@ module Dustdensity
         case('const_epsd')
           do k=1,ndustspec
             if (ldensity_nolog) then
-              f(:,:,:,ind(k)) = eps_dtog*f(:,:,:,ilnrho)/(md(k)*unit_md)
+              f(:,:,:,ind(k)) = eps_dtog*f(:,:,:,irho)/(md(k)*unit_md)
             else
               f(:,:,:,ind(k)) = eps_dtog*exp(f(:,:,:,ilnrho))/(md(k)*unit_md)
             endif
@@ -372,7 +380,7 @@ module Dustdensity
         case('gaussian_epsd')
           do n=n1,n2; do k=1,ndustspec
             if (ldensity_nolog) then
-              f(:,:,n,ind(k)) = f(:,:,n,ind(k)) + f(:,:,n,ilnrho)* &
+              f(:,:,n,ind(k)) = f(:,:,n,ind(k)) + f(:,:,n,irho)* &
                   eps_dtog*sqrt( (1/Hepsd)**2 + 1 )*exp(-z(n)**2/(2*Hepsd**2))
             else
               f(:,:,n,ind(k)) = f(:,:,n,ind(k)) + exp(f(:,:,n,ilnrho))* &
@@ -386,13 +394,13 @@ module Dustdensity
           do m=m1,m2; do n=n1,n2
             if (ldensity_nolog) then
 !              if (ldustdensity_log) then
-!                eps=exp(f(l1:l2,m,n,ind(1)))/f(l1:l2,m,n,ilnrho)
+!                eps=exp(f(l1:l2,m,n,ilnnd(1)))/f(l1:l2,m,n,irho)
 !              else
-                eps=f(l1:l2,m,n,ind(1))/f(l1:l2,m,n,ilnrho)
+                eps=f(l1:l2,m,n,ind(1))/f(l1:l2,m,n,irho)
 !              endif
             else
 !              if (ldustdensity_log) then
-!                eps=exp(f(l1:l2,m,n,ind(1)))/exp(f(l1:l2,m,n,ilnrho))
+!                eps=exp(f(l1:l2,m,n,ilnnd(1)))/exp(f(l1:l2,m,n,ilnrho))
 !              else
                 eps=f(l1:l2,m,n,ind(1))/exp(f(l1:l2,m,n,ilnrho))
 !              endif
@@ -478,7 +486,7 @@ module Dustdensity
 !
 !  Take logarithm if necessary (remember that nd then really means ln nd)
 !
-      if (ldustdensity_log) f(l1:l2,m1:m2,n1:n2,ind(:)) = &
+      if (ldustdensity_log) f(l1:l2,m1:m2,n1:n2,ilnnd(:)) = &
           log(f(l1:l2,m1:m2,n1:n2,ind(:)))
 !
 !  sanity check
@@ -571,7 +579,7 @@ module Dustdensity
         rho(n)=exp(lnrho)
 
         if (ldensity_nolog) then
-          f(l1:l2,m,n,ilnrho)=rho(n)
+          f(l1:l2,m,n,irho)=rho(n)
         else
           f(l1:l2,m,n,ilnrho)=lnrho
         endif
@@ -776,7 +784,7 @@ module Dustdensity
       do k=1,ndustspec
         if (lpencil(i_nd)) then
           if (ldustdensity_log) then
-            p%nd(:,k)=exp(f(l1:l2,m,n,ind(k)))
+            p%nd(:,k)=exp(f(l1:l2,m,n,ilnnd(k)))
           else
             p%nd(:,k)=f(l1:l2,m,n,ind(k))
           endif
@@ -784,7 +792,7 @@ module Dustdensity
 ! gnd
         if (lpencil(i_gnd)) then
           if (ldustdensity_log) then
-            call grad(f,ind(k),tmp_pencil_3)
+            call grad(f,ilnnd(k),tmp_pencil_3)
             do i=1,3
               p%gnd(:,i,k)=p%nd(:,k)*tmp_pencil_3(:,i)
             enddo
@@ -801,7 +809,7 @@ module Dustdensity
 ! glnnd
         if (lpencil(i_glnnd)) then
           if (ldustdensity_log) then
-            call grad(f,ind(k),p%glnnd(:,:,k))
+            call grad(f,ilnnd(k),p%glnnd(:,:,k))
           else
             call grad(f,ind(k),tmp_pencil_3)
             do i=1,3
@@ -901,7 +909,7 @@ module Dustdensity
           if (ldustdensity_log) then
             if (lfirstpoint.and.iglobal_nd/=0) then
               do mm=1,my; do nn=1,mz
-                f(:,mm,nn,iglobal_nd)=exp(f(:,mm,nn,ind(k)))
+                f(:,mm,nn,iglobal_nd)=exp(f(:,mm,nn,ilnnd(k)))
               enddo; enddo
             endif
             if (iglobal_nd/=0) call del6(f,iglobal_nd,p%del6nd(:,k))
@@ -981,7 +989,7 @@ module Dustdensity
       if (ldustcontinuity) then
         do k=1,ndustspec
           if (ldustdensity_log) then
-            df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - &
+            df(l1:l2,m,n,ilnnd(k)) = df(l1:l2,m,n,ilnnd(k)) - &
                 p%udglnnd(:,k) - p%divud(:,k)
           else
             df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - &
@@ -1059,7 +1067,11 @@ module Dustdensity
 !
 !  Add diffusion term.
 !
-        df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + fdiffd
+        if (ldustdensity_log) then
+          df(l1:l2,m,n,ilnnd(k)) = df(l1:l2,m,n,ilnnd(k)) + fdiffd
+        else
+          df(l1:l2,m,n,ind(k))   = df(l1:l2,m,n,ind(k))   + fdiffd
+        endif
 !
         if (lmdvar) df(l1:l2,m,n,imd(k)) = &
             df(l1:l2,m,n,imd(k)) + diffmd*p%del2md(:,k)

@@ -2061,7 +2061,7 @@ module Magnetic
           endif
         else if (ltemperature) then
           if (ltemperature_nolog) then
-            df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + &
+            df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT) + &
                  p%cv1*etatotal*mu0*p%j2*p%rho1
           else
             df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + &

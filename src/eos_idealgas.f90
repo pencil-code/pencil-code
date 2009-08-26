@@ -885,7 +885,7 @@ module EquationOfState
       real, dimension(nx) :: lnrho,ss
 !
       if (ldensity_nolog) then
-        lnrho=log(f(l1:l2,m,n,ilnrho))
+        lnrho=log(f(l1:l2,m,n,irho))
       else
         lnrho=f(l1:l2,m,n,ilnrho)
       endif
@@ -2432,7 +2432,7 @@ module EquationOfState
             do i=1,nghost; f(:,:,n1-i,iss)=2*f(:,:,n1,iss)-f(:,:,n1+i,iss); enddo
         elseif (ltemperature) then
             if (ltemperature_nolog) then 
-              f(:,:,n1,ilnTT) = cs2bot/gamma1
+              f(:,:,n1,iTT)   = cs2bot/gamma1
             else
               f(:,:,n1,ilnTT) = log(cs2bot/gamma1)
             endif
@@ -2458,7 +2458,7 @@ module EquationOfState
             do i=1,nghost; f(:,:,n2+i,iss)=2*f(:,:,n2,iss)-f(:,:,n2-i,iss); enddo
         elseif (ltemperature) then
             if (ltemperature_nolog) then 
-              f(:,:,n2,ilnTT) = cs2top/gamma1
+              f(:,:,n2,iTT)   = cs2top/gamma1
             else
               f(:,:,n2,ilnTT) = log(cs2top/gamma1)
             endif
@@ -2969,7 +2969,7 @@ module EquationOfState
 
           centterm= uphi**2 * step/(rad*cs2)
           if (ldensity_nolog) then
-            f(l1-i,:,:,ilnrho)=f(l1+i,:,:,ilnrho)*exp(gravterm + centterm)
+            f(l1-i,:,:,ilnrho)=f(l1+i,:,:,irho)*exp(gravterm + centterm)
           else  
             f(l1-i,:,:,ilnrho)=f(l1+i,:,:,ilnrho) + gravterm + centterm
           endif
@@ -2998,7 +2998,7 @@ module EquationOfState
 
           centterm= uphi**2 * step/(rad*cs2)          
           if (ldensity_nolog) then
-            f(l2+i,:,:,ilnrho) = f(l2-i,:,:,ilnrho)*exp(gravterm + centterm)
+            f(l2+i,:,:,irho)   = f(l2-i,:,:,irho)*exp(gravterm + centterm)
           else
             f(l2+i,:,:,ilnrho) = f(l2-i,:,:,ilnrho) + gravterm + centterm
           endif
@@ -3091,7 +3091,7 @@ module EquationOfState
             endif
 !
             if (ldensity_nolog) then
-              f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho)*exp(-(potm-potp)/cs2)
+              f(:,:,n1-i,irho)   = f(:,:,n1+i,irho)*exp(-(potm-potp)/cs2)
             else
               f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) - (potm-potp)/cs2
             endif
@@ -3143,7 +3143,7 @@ module EquationOfState
             else
             endif
             if (ldensity_nolog) then
-              f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho)*exp(-(potp-potm)/cs2)
+              f(:,:,n2+i,irho)   = f(:,:,n2-i,irho)*exp(-(potp-potm)/cs2)
             else
               f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho) - (potp-potm)/cs2
             endif
@@ -3215,7 +3215,7 @@ module EquationOfState
           !  Fourier transforms of x- and y-components on the boundary
           call potential(z=z(n1+i),pot=pot)
           if (ldensity_nolog) then
-            tmp_re = f(l1:l2,m1:m2,n1+i,ilnrho)*exp(+pot/cs2bot)
+            tmp_re = f(l1:l2,m1:m2,n1+i,irho)*exp(+pot/cs2bot)
           else
             tmp_re = f(l1:l2,m1:m2,n1+i,ilnrho) + pot/cs2bot
           endif
@@ -3235,7 +3235,7 @@ module EquationOfState
           endif
           call potential(z=z(n1-i),pot=pot)
           if (ldensity_nolog) then
-            f(l1:l2,m1:m2,n1-i,ilnrho) = tmp_re*exp(-pot/cs2bot)
+            f(l1:l2,m1:m2,n1-i,irho)   = tmp_re*exp(-pot/cs2bot)
           else
             f(l1:l2,m1:m2,n1-i,ilnrho) = tmp_re - pot/cs2bot
           endif
@@ -3258,7 +3258,7 @@ module EquationOfState
           !  Fourier transforms of x- and y-components on the boundary
           call potential(z=z(n2-i),pot=pot)
           if (ldensity_nolog) then
-            tmp_re = f(l1:l2,m1:m2,n2-i,ilnrho)*exp(+pot/cs2top)
+            tmp_re = f(l1:l2,m1:m2,n2-i,irho)*exp(+pot/cs2top)
           else
             tmp_re = f(l1:l2,m1:m2,n2-i,ilnrho) + pot/cs2top
           endif
@@ -3278,7 +3278,7 @@ module EquationOfState
           endif
           call potential(z=z(n2+i),pot=pot)
           if (ldensity_nolog) then
-            f(l1:l2,m1:m2,n2+i,ilnrho) = tmp_re*exp(-pot/cs2top)
+            f(l1:l2,m1:m2,n2+i,irho)   = tmp_re*exp(-pot/cs2top)
           else
             f(l1:l2,m1:m2,n2+i,ilnrho) = tmp_re - pot/cs2top
           endif
@@ -3357,7 +3357,7 @@ module EquationOfState
           !call potential(z=z(n1+i),pot=pot)
             
             if (ldensity_nolog) then
-              tmp_re(:,mm_noghost) = f(l1:l2,m,n1+i,ilnrho)*exp(+pot/cs2)
+              tmp_re(:,mm_noghost) = f(l1:l2,m,n1+i,irho)*exp(+pot/cs2)
             else
               tmp_re(:,mm_noghost) = f(l1:l2,m,n1+i,ilnrho) + pot/cs2
             endif
@@ -3389,7 +3389,7 @@ module EquationOfState
             cs2=cs20*rr_cyl**(-ptlaw)
 
             if (ldensity_nolog) then
-              f(l1:l2,m,n1-i,ilnrho) = tmp_re(:,mm_noghost)*exp(-pot/cs2)
+              f(l1:l2,m,n1-i,irho)   = tmp_re(:,mm_noghost)*exp(-pot/cs2)
             else
               f(l1:l2,m,n1-i,ilnrho) = tmp_re(:,mm_noghost) - pot/cs2
             endif
@@ -3422,7 +3422,7 @@ module EquationOfState
             cs2=cs20*rr_cyl**(-ptlaw)
 
             if (ldensity_nolog) then
-              tmp_re(:,mm_noghost) = f(l1:l2,m,n2-i,ilnrho)*exp(+pot/cs2)
+              tmp_re(:,mm_noghost) = f(l1:l2,m,n2-i,irho)*exp(+pot/cs2)
             else
               tmp_re(:,mm_noghost) = f(l1:l2,m,n2-i,ilnrho) + pot/cs2
             endif
@@ -3453,7 +3453,7 @@ module EquationOfState
 
 !          call potential(z=z(n2+i),pot=pot)
             if (ldensity_nolog) then
-              f(l1:l2,m,n2+i,ilnrho) = tmp_re(:,mm_noghost)*exp(-pot/cs2)
+              f(l1:l2,m,n2+i,irho)   = tmp_re(:,mm_noghost)*exp(-pot/cs2)
             else
               f(l1:l2,m,n2+i,ilnrho) = tmp_re(:,mm_noghost) - pot/cs2
             endif
@@ -3518,7 +3518,7 @@ module EquationOfState
 !
             cs2=cs20*rr_cyl**(-ptlaw)
             if (ldensity_nolog) then
-              f(l1:l2,m,n1-i,ilnrho) = f(l1:l2,m,n1+i,ilnrho)*exp((potm-potp)/cs2)
+              f(l1:l2,m,n1-i,irho)   = f(l1:l2,m,n1+i,irho)*exp((potm-potp)/cs2)
             else
               f(l1:l2,m,n1-i,ilnrho) = f(l1:l2,m,n1+i,ilnrho) + (potm-potp)/cs2
             endif
@@ -3546,7 +3546,7 @@ module EquationOfState
 !
             cs2=cs20*rr_cyl**(-ptlaw)
             if (ldensity_nolog) then
-              f(l1:l2,m,n2+i,ilnrho) = f(l1:l2,m,n2-i,ilnrho)*exp(-(potp-potm)/cs2)
+              f(l1:l2,m,n2+i,irho)   = f(l1:l2,m,n2-i,irho)*exp(-(potp-potm)/cs2)
             else
               f(l1:l2,m,n2+i,ilnrho) = f(l1:l2,m,n2-i,ilnrho) - (potp-potm)/cs2
             endif

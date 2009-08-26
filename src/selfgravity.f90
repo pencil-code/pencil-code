@@ -280,7 +280,7 @@ module Selfgravity
 !
         if (lhydro.and.ldensity.and.lselfgravity_gas) then
           if (ldensity_nolog) then
-            rhs_poisson=rhs_poisson_const*f(l1:l2,m1:m2,n1:n2,ilnrho)
+            rhs_poisson=rhs_poisson_const*f(l1:l2,m1:m2,n1:n2,irho)
           else
             rhs_poisson=rhs_poisson_const*exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
           endif
@@ -305,17 +305,17 @@ module Selfgravity
         endif
 !  Neutrals.
         if (lneutraldensity.and.lneutralvelocity.and.lselfgravity_neutrals) then
-          if (lneutraldensity_log) then
+          if (lneutraldensity_nolog) then
             if (lselfgravity_gas.or.lselfgravity_dust) then  ! No need to zero rhs.
               rhs_poisson = rhs_poisson + &
-                  rhs_poisson_const*exp(f(l1:l2,m1:m2,n1:n2,ilnrhon))
+                  rhs_poisson_const*f(l1:l2,m1:m2,n1:n2,irhon)
             else                        ! Must zero rhs.
               rhs_poisson = rhs_poisson_const*exp(f(l1:l2,m1:m2,n1:n2,ilnrhon))
             endif
           else
             if (lselfgravity_gas.or.lselfgravity_dust) then  ! No need to zero rhs.
               rhs_poisson = rhs_poisson + &
-                  rhs_poisson_const*f(l1:l2,m1:m2,n1:n2,ilnrhon)
+                  rhs_poisson_const*exp(f(l1:l2,m1:m2,n1:n2,ilnrhon))
             else                        ! Must zero rhs.
               rhs_poisson = rhs_poisson_const*f(l1:l2,m1:m2,n1:n2,ilnrhon)
             endif

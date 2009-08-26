@@ -450,14 +450,14 @@ module Dustvelocity
             do m=m1,m2
               do n=n1,n2
                 if (ldensity_nolog) then
-                  rho = f(l1:l2,m,n,ilnrho)
+                  rho = f(l1:l2,m,n,irho)
                   lnrho = log(rho)
                 else
                   lnrho = f(l1:l2,m,n,ilnrho)
                   rho = exp(lnrho)
                 endif
                 if (ldustdensity_log) then
-                  rhod = exp(f(l1:l2,m,n,ind(k)))*md(k)
+                  rhod = exp(f(l1:l2,m,n,ilnnd(k)))*md(k)
                 else
                   rhod = f(l1:l2,m,n,ind(k))*md(k)
                 endif
@@ -485,13 +485,13 @@ module Dustvelocity
 
           if (ldensity_nolog) then
             if (ldustdensity_log) then
-              eps=sum(exp(f(l1:l2,m1:m2,n1:n2,ind(1))))/sum(f(l1:l2,m1:m2,n1:n2,ilnrho))
+              eps=sum(exp(f(l1:l2,m1:m2,n1:n2,ilnnd(1))))/sum(f(l1:l2,m1:m2,n1:n2,irho))
             else
               eps=sum(f(l1:l2,m1:m2,n1:n2,ind(1)))/sum(f(l1:l2,m1:m2,n1:n2,ilnrho))
             endif
           else
             if (ldustdensity_log) then
-              eps=sum(exp(f(l1:l2,m1:m2,n1:n2,ind(1))))/sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
+              eps=sum(exp(f(l1:l2,m1:m2,n1:n2,ilnnd(1))))/sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
             else
               eps=sum(f(l1:l2,m1:m2,n1:n2,ind(1)))/sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
             endif
@@ -505,13 +505,13 @@ module Dustvelocity
             if (.not. lvshear_dust_global_eps) then
               if (ldensity_nolog) then
                 if (ldustdensity_log) then
-                  eps=exp(f(l,m,n,ind(1)))/f(l,m,n,ilnrho)
+                  eps=exp(f(l,m,n,ilnnd(1)))/f(l,m,n,ilnrho)
                 else
                   eps=f(l,m,n,ind(1))/f(l,m,n,ilnrho)
                 endif
               else
                 if (ldustdensity_log) then
-                  eps=exp(f(l,m,n,ind(1)))/exp(f(l,m,n,ilnrho))
+                  eps=exp(f(l,m,n,ilnnd(1)))/exp(f(l,m,n,ilnrho))
                 else
                   eps=f(l,m,n,ind(1))/exp(f(l,m,n,ilnrho))
                 endif
@@ -560,13 +560,13 @@ module Dustvelocity
           do l=l1,l2; do m=m1,m2; do n=n1,n2
             if (ldensity_nolog) then
               if (ldustdensity_log) then
-                eps=exp(f(l,m,n,ind(1)))/f(l,m,n,ilnrho)
+                eps=exp(f(l,m,n,ilnnd(1)))/f(l,m,n,ilnrho)
               else
                 eps=f(l,m,n,ind(1))/f(l,m,n,ilnrho)
               endif
             else
               if (ldustdensity_log) then
-                eps=exp(f(l,m,n,ind(1)))/exp(f(l,m,n,ilnrho))
+                eps=exp(f(l,m,n,ilnnd(1)))/exp(f(l,m,n,ilnrho))
               else
                 eps=f(l,m,n,ind(1))/exp(f(l,m,n,ilnrho))
               endif
@@ -589,15 +589,15 @@ module Dustvelocity
 !
           if (ldensity_nolog) then
             if (ldustdensity_log) then
-              eps=sum(exp(f(l1:l2,m1:m2,n1:n2,ind(1))))/ &
-                  sum(f(l1:l2,m1:m2,n1:n2,ilnrho))
+              eps=sum(exp(f(l1:l2,m1:m2,n1:n2,ilnnd(1))))/ &
+                  sum(f(l1:l2,m1:m2,n1:n2,irho))
             else
               eps=sum(f(l1:l2,m1:m2,n1:n2,ind(1)))/ &
                   sum(f(l1:l2,m1:m2,n1:n2,ilnrho))
             endif
           else
             if (ldustdensity_log) then
-              eps=sum(exp(f(l1:l2,m1:m2,n1:n2,ind(1))))/ &
+              eps=sum(exp(f(l1:l2,m1:m2,n1:n2,ilnnd(1))))/ &
                   sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
             else
               eps=sum(f(l1:l2,m1:m2,n1:n2,ind(1)))/ &

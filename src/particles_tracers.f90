@@ -298,7 +298,7 @@ module Particles
 !  Calculate average dust-to-gas ratio in box.
           if (ldensity_nolog) then
             eps = rhop_tilde*sum(f(l1:l2,m1:m2,n1:n2,inp))/ &
-                sum(f(l1:l2,m1:m2,n1:n2,ilnrho))
+                sum(f(l1:l2,m1:m2,n1:n2,irho))
           else
             eps = rhop_tilde*sum(f(l1:l2,m1:m2,n1:n2,inp))/ &
                 sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
@@ -312,7 +312,7 @@ module Particles
 !  Take either global or local dust-to-gas ratio.
             if (.not. ldragforce_equi_global_eps) then
               if (ldensity_nolog) then
-                eps = rhop_tilde*f(l1:l2,m,n,inp)/f(l1:l2,m,n,ilnrho)
+                eps = rhop_tilde*f(l1:l2,m,n,inp)/f(l1:l2,m,n,irho)
               else
                 eps = rhop_tilde*f(l1:l2,m,n,inp)/exp(f(l1:l2,m,n,ilnrho))
               endif

@@ -42,7 +42,7 @@ module NeutralDensity
   logical :: ldiffn_normal=.false.,ldiffn_hyper3=.false.,ldiffn_shock=.false.
   logical :: ldiffn_hyper3lnrhon=.false.,ldiffn_hyper3_aniso=.false.
   logical :: lfreeze_lnrhonint=.false.,lfreeze_lnrhonext=.false.
-  logical :: lneutraldensity_nolog=.false.,ldiffn_hyper3_polar=.false.
+  logical :: ldiffn_hyper3_polar=.false.
   logical :: lpretend_star,lramp_up
   real :: star_form_threshold=1.,star_form_exponent=1.5
 
@@ -99,7 +99,12 @@ module NeutralDensity
       if (.not.lcartesian_coords) call fatal_error('register_neutraldensity','non cartesian '//&
            'not yet implemented in the neutrals module')
 !
-      call farray_register_pde('lnrhon',ilnrhon)
+      if (lneutraldensity_nolog) then
+        call farray_register_pde('rhon',irhon)
+        ilnrhon=irhon
+      else
+        call farray_register_pde('lnrhon',ilnrhon)
+      endif
 !      
       lneutraldensity=.true.
 !
@@ -367,7 +372,7 @@ module NeutralDensity
 !  If unlogarithmic density considered, take exp of lnrhon resulting from
 !  initlnrhon
 !
-      if (lneutraldensity_nolog) f(:,:,:,ilnrhon)=exp(f(:,:,:,ilnrhon))
+      if (lneutraldensity_nolog) f(:,:,:,irhon)=exp(f(:,:,:,ilnrhon))
 !
 !  sanity check
 !
@@ -513,14 +518,14 @@ module NeutralDensity
 ! lnrhon
       if (lpencil(i_lnrhon)) then
         if (lneutraldensity_nolog) then
-          p%lnrhon=log(f(l1:l2,m,n,ilnrhon))
+          p%lnrhon=log(f(l1:l2,m,n,irhon))
         else
           p%lnrhon=f(l1:l2,m,n,ilnrhon)
         endif
       endif
 ! rhon1 and rhon
       if (lneutraldensity_nolog) then
-        if (lpencil(i_rhon)) p%rhon=f(l1:l2,m,n,ilnrhon)
+        if (lpencil(i_rhon)) p%rhon=f(l1:l2,m,n,irhon)
         if (lpencil(i_rhon1)) p%rhon1=1.0/p%rhon
       else
         if (lpencil(i_rhon1)) p%rhon1=exp(-f(l1:l2,m,n,ilnrhon))
@@ -690,7 +695,7 @@ module NeutralDensity
 !
       if (lcontinuity_neutral) then
         if (lneutraldensity_nolog) then
-          df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) - p%ungrhon   - p%rhon*p%divun
+          df(l1:l2,m,n,irhon)   = df(l1:l2,m,n,irhon)   - p%ungrhon   - p%rhon*p%divun
         else
           df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) - p%unglnrhon - p%divun
         endif
@@ -699,7 +704,7 @@ module NeutralDensity
 !  Ionization and recombination
 !
       if (lneutraldensity_nolog) then
-         df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) - p%zeta*p%rhon        + p%alpha*p%rho**2
+         df(l1:l2,m,n,irhon)   = df(l1:l2,m,n,irhon)   - p%zeta*p%rhon        + p%alpha*p%rho**2
          df(l1:l2,m,n,ilnrho ) = df(l1:l2,m,n,ilnrho ) + p%zeta*p%rhon        - p%alpha*p%rho**2
       else
          df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) - p%zeta               + p%alpha*p%rho**2*p%rhon1
@@ -787,7 +792,12 @@ module NeutralDensity
 !
 !  Add diffusion term to continuity equation
 !
-      df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) + fdiff
+      if (lneutraldensity_nolog) then
+        df(l1:l2,m,n,irhon)   = df(l1:l2,m,n,irhon)   + fdiff
+      else
+        df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) + fdiff
+      endif
+!
       if (headtt.or.ldebug) &
           print*,'dlnrhon_dt: max(diffus_diffrhon) =', maxval(diffus_diffrhon)
 !

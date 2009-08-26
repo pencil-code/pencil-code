@@ -833,7 +833,7 @@ module Chemistry
 !
 !  Check if we want nolog of density
 !
-      if (ldensity_nolog) f(:,:,:,ilnrho)=exp(f(:,:,:,ilnrho))
+      if (ldensity_nolog) f(:,:,:,irho)=exp(f(:,:,:,ilnrho))
 !
     endsubroutine flame_front
 !***********************************************************************
@@ -911,7 +911,7 @@ module Chemistry
 !
 !  Check if we want nolog of density
 !
-      if (ldensity_nolog) f(:,:,:,ilnrho)=exp(f(:,:,:,ilnrho))
+      if (ldensity_nolog) f(:,:,:,irho)=exp(f(:,:,:,ilnrho))
 !
     endsubroutine flame_blob
 !***********************************************************************
@@ -4013,7 +4013,7 @@ module Chemistry
         L_2 = 0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1) &
             +rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2)*df(lll,m1:m2,n1:n2,ilnTT)
         if (ldensity_nolog) then
-          df(lll,m1:m2,n1:n2,ilnrho) = -1./cs20_ar(m1:m2,n1:n2)*&
+          df(lll,m1:m2,n1:n2,irho) = -1./cs20_ar(m1:m2,n1:n2)*&
               (L_2+0.5*(L_5 + L_1)) ! -dmom2_dy(m1:m2,n1:n2)
         else
           df(lll,m1:m2,n1:n2,ilnrho) = &
@@ -4109,8 +4109,8 @@ module Chemistry
          gamma0=gamma_full(lll,:,:)
 
         if (ldensity_nolog) then
-          rho_full = f(:,:,:,ilnrho)
-          rho0(:,:) = f(lll,:,:,ilnrho)
+          rho_full = f(:,:,:,irho)
+          rho0(:,:) = f(lll,:,:,irho)
           drho_prefac=-1./cs20_ar(m1:m2,n1:n2)
         else
           rho_full = exp(f(:,:,:,ilnrho))
@@ -4191,7 +4191,7 @@ module Chemistry
       L_4 = f(lll,m1:m2,n1:n2,iux)*duz_dx(:,:)
 !
       if (ldensity_nolog) then
-        df(lll,m1:m2,n1:n2,ilnrho) = &
+        df(lll,m1:m2,n1:n2,irho) = &
             drho_prefac*(L_2+0.5*(L_5 + L_1))!-dmom2_dy(m1:m2,n1:n2)
       else
         df(lll,m1:m2,n1:n2,ilnrho) = &
@@ -4408,8 +4408,8 @@ module Chemistry
          gamma0=gamma_full(:,mmm,:)
 
         if (ldensity_nolog) then
-          rho_full = f(:,:,:,ilnrho)
-          rho0(:,:) = f(:,mmm,:,ilnrho)
+          rho_full = f(:,:,:,irho)
+          rho0(:,:) = f(:,mmm,:,irho)
           drho_prefac=-1./cs20_ar(l1:l2,n1:n2)
         else
           rho_full = exp(f(:,:,:,ilnrho))
@@ -4489,7 +4489,7 @@ module Chemistry
       L_4 = f(l1:l2,mmm,n1:n2,iuy)*duz_dy(:,:)
 !
       if (ldensity_nolog) then
-        df(l1:l2,mmm,n1:n2,ilnrho) = &
+        df(l1:l2,mmm,n1:n2,irho) = &
             drho_prefac*(L_2+0.5*(L_5 + L_1))!-dmom2_dy(m1:m2,n1:n2)
       else
         df(l1:l2,mmm,n1:n2,ilnrho) = &
@@ -4607,8 +4607,8 @@ module Chemistry
          gamma0=gamma_full(:,:,nnn)
 
         if (ldensity_nolog) then
-          rho_full = f(:,:,:,ilnrho)
-          rho0(:,:) = f(:,:,nnn,ilnrho)
+          rho_full = f(:,:,:,irho)
+          rho0(:,:) = f(:,:,nnn,irho)
           drho_prefac=-1./cs20_ar(l1:l2,m1:m2)
         else
           rho_full = exp(f(:,:,:,ilnrho))
@@ -4688,7 +4688,7 @@ module Chemistry
       L_4 = f(l1:l2,m1:m2,nnn,iuz)*duy_dz(:,:)
 !
       if (ldensity_nolog) then
-        df(l1:l2,m1:m2,nnn,ilnrho) = &
+        df(l1:l2,m1:m2,nnn,irho) = &
             drho_prefac*(L_2+0.5*(L_5 + L_1))!-dmom2_dy(m1:m2,n1:n2)
       else
         df(l1:l2,m1:m2,nnn,ilnrho) = &

@@ -128,7 +128,12 @@ module Entropy
 !
       use FArrayManager
 !
-      call farray_register_pde('lnTT',ilnTT)
+      if (ltemperature_log) then
+        call farray_register_pde('TT',iTT)
+        ilnTT=iTT
+      else
+        call farray_register_pde('lnTT',ilnTT)
+      endif
 !
 !  Identify version number.
 !
@@ -175,7 +180,7 @@ module Entropy
       endif
 !
       if (ltemperature_nolog) then
-        call select_eos_variable('TT',ilnTT)
+        call select_eos_variable('TT',iTT)
       else
         call select_eos_variable('lnTT',ilnTT)
       endif
@@ -416,7 +421,7 @@ module Entropy
           case('isothermal')
             if (lroot) print*, 'init_lnTT: isothermal atmosphere'
             if (ltemperature_nolog) then
-              f(:,:,:,ilnTT)=cs20/gamma1
+              f(:,:,:,iTT)  =cs20/gamma1
             else
               f(:,:,:,ilnTT)=log(cs20/gamma1)
             endif
@@ -437,7 +442,7 @@ module Entropy
             expo=-gravz/beta/Rgas
             do n=n1,n2
               if (ltemperature_nolog) then
-                f(:,:,n,ilnTT)=beta*z(n)+alpha
+                f(:,:,n,iTT)  =beta*z(n)+alpha
               else
                 f(:,:,n,ilnTT)=log(beta*z(n)+alpha)
               endif
@@ -466,8 +471,7 @@ module Entropy
 !
       if (lnothing.and.lroot) print*,'init_ss: nothing'
 !
-      if (ltemperature_nolog.and.linitial_log) &
-           f(:,:,:,ilnTT)=exp(f(:,:,:,ilnTT))
+      if (ltemperature_nolog.and.linitial_log) f(:,:,:,iTT)=exp(f(:,:,:,ilnTT))
 !
     endsubroutine init_ss
 !***********************************************************************
@@ -707,7 +711,7 @@ module Entropy
 !
       if (ladvection_temperature) then
         if (ltemperature_nolog) then 
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%ugTT
+          df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT)   - p%ugTT
         else
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%uglnTT
         endif
@@ -763,7 +767,11 @@ module Entropy
 !
 !  Add thermal diffusion to temperature equation
 !
-      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + thdiff
+      if (ltemperature_nolog) then
+        df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT)   + thdiff
+      else
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + thdiff
+      endif
 !
 !  Information on the timescales
 !
@@ -777,7 +785,7 @@ module Entropy
 !
       if (ldensity) then
         if (ltemperature_nolog) then
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - gamma1*p%TT*p%divu
+          df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT)   - gamma1*p%TT*p%divu
         else
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - gamma1*p%divu
         endif
@@ -1051,7 +1059,7 @@ module Entropy
       endif
 !
       if (ltemperature_nolog) then
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chix*p%del2TT
+        df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT)   + gamma*chix*p%del2TT
       else
         call dot(p%glnTT,p%glnTT,g2)
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chix*(g2 + p%del2lnTT)
@@ -1351,7 +1359,7 @@ module Entropy
         m=mm(imn)
         temp=T0+beta*(ztop-z(n))
         if (ltemperature_nolog) then
-          f(:,m,n,ilnTT)=temp
+          f(:,m,n,iTT)  =temp
         else
           f(:,m,n,ilnTT)=log(temp)
         endif
