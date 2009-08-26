@@ -76,6 +76,8 @@ module Equ
       real, dimension (nx) :: pfreeze,pfreeze_int,pfreeze_ext
       integer :: i,iv
       integer :: ivar1,ivar2
+      intent(inout)  :: f
+      intent(out)    :: df, p
 !
 !  print statements when they are first executed
 !
