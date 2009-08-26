@@ -2416,12 +2416,15 @@ Here is a list of the more important ones.
   the global directory.
   To be started in the background before \file{run.x} is invoked.
   Used by \file{start.csh} and \file{run.csh} on network connected processors.
-\item[copy-var-to-var] Copies all \file{var.dat} files from current directory
-  to file{var.dat} in another run directory.
-  Used for restarting in a different directory.
-\item[copy-VARN-to-var] Used to restart a run from a particular snapshot
+\item[pc_copyvar var1 var2 source dest] Copies snapshot files from one
+  directory (source) to another (dest). See documentation in file.
+\item[pc_copyvar v v dir] Copies all \file{var.dat} files from current
+  directory to \file{var.dat} in 'dir' run directory. Used for restarting in a
+  different directory.
+\item[pc_copyvar N v] Used to restart a run from a particular snapshot
   \file{VAR$N$}. Copies a specified snapshot \file{VAR$N$} to \file{var.dat}
-  where $N$ and the target run directory are given on the command line.
+  where $N$ and (optionally) the target run directory are given on the command
+  line.
 \item[cvs-add-rundir] Add the current run directory to the \name{svn} repository.
 \item[cvsci_run] Similar to \cmd{cvs-add-rundir}, but it also checks in
   the \file{*.in} and \file{src/*.local} files. It also checks in the files
