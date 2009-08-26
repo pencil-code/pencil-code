@@ -146,20 +146,17 @@ module BorderProfiles
       if (lcylindrical_coords.or.lcylinder_in_a_box) then
         lpenc_requested(i_rcyl_mn)=.true.
         lpenc_requested(i_rcyl_mn1)=.true.
+        lpenc_requested(i_phix)=.true.
+        lpenc_requested(i_phiy)=.true.
       elseif (lspherical_coords.or.lsphere_in_a_box) then
         lpenc_requested(i_r_mn)=.true.
         lpenc_requested(i_r_mn1)=.true.
+        lpenc_requested(i_rborder_mn)=.true.
       else
         lpenc_requested(i_x_mn)=.true.
       endif
 !
-      if (.not.lspherical_coords) then
-        lpenc_requested(i_phix)=.true.
-        lpenc_requested(i_phiy)=.true.
-      endif
-!
       lpenc_requested(i_rborder_mn)=.true.
-      
 !
     endsubroutine pencil_criteria_borderprofiles
 !***********************************************************************
@@ -353,7 +350,7 @@ module BorderProfiles
 !  calculate orbital time
 !
       if (tborder==0.) then
-        if (lcartesian_coords.or.lcylindrical_coords) then
+        if (lcylinder_in_a_box.or.lcylindrical_coords) then
           uphi=p%uu(i,1)*p%phix(i)+p%uu(i,2)*p%phiy(i)
         elseif (lspherical_coords) then
           uphi=p%uu(i,3)
