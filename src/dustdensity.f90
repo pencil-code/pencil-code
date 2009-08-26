@@ -89,22 +89,14 @@ module Dustdensity
 !
       use FArrayManager
 !
-      integer :: k, ind_tmp, ilnnd_tmp, imd_tmp, imi_tmp
+      integer :: k, ind_tmp, imd_tmp, imi_tmp
 !
 !  Set ind to consecutive numbers nvar+1, nvar+2, ..., nvar+ndustspec
 !
-      if (ldustdensity_log) then
-        call farray_register_pde('lnnd',ilnnd_tmp,vector=ndustspec)
-        do k=1,ndustspec
-          ilnnd(k)=ilnnd_tmp+k-1
-        enddo
-        ind=ilnnd
-      else
-        call farray_register_pde('nd',ind_tmp,vector=ndustspec)
-        do k=1,ndustspec
-          ind(k)=ind_tmp+k-1
-        enddo
-      endif
+      call farray_register_pde('nd',ind_tmp,vector=ndustspec)
+      do k=1,ndustspec
+        ind(k)=ind_tmp+k-1
+      enddo
 !
 !  Register dust mass.
 !
@@ -151,6 +143,10 @@ module Dustdensity
 !
       integer :: i,j,k
       logical :: lnothing
+!
+!  Set ind requal to ilnnd if we are considering non-logarithmic density.
+!
+      if (ldustdensity_log) ilnnd=ind
 !
       if (lroot) print*, 'initialize_dustdensity: '// &
           'ldustcoagulation,ldustcondensation =', &

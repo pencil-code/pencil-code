@@ -128,12 +128,7 @@ module Entropy
 !
       use FArrayManager
 !
-      if (ltemperature_log) then
-        call farray_register_pde('TT',iTT)
-        ilnTT=iTT
-      else
-        call farray_register_pde('lnTT',ilnTT)
-      endif
+      call farray_register_pde('lnTT',ilnTT)
 !
 !  Identify version number.
 !
@@ -174,6 +169,10 @@ module Entropy
       logical :: lstarting, lnothing
       type (pencil_case) :: p
       integer :: i, ierr
+!
+!  Set iTT requal to ilnTT if we are considering non-logarithmic temperature.
+!
+      if (ltemperature_nolog) iTT=ilnTT
 !
       if (.not. leos) then
          call fatal_error('initialize_entropy','EOS=noeos but temperature_idealgas requires an EQUATION OF STATE for the fluid')

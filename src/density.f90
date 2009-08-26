@@ -128,12 +128,7 @@ module Density
       use Sub
       use FArrayManager
 !
-      if (ldensity_nolog) then
-        call farray_register_pde('rho',irho)
-        ilnrho=irho
-      else
-        call farray_register_pde('lnrho',ilnrho)
-      endif
+      call farray_register_pde('lnrho',ilnrho)
 !
 !  Identify version number (generated automatically by CVS).
 !
@@ -165,6 +160,10 @@ module Density
 !
       integer :: i,ierr
       logical :: lnothing
+!
+!  Set irho equal to ilnrho if we are considering non-logarithmic density.
+!
+      if (ldensity_nolog) irho=ilnrho
 !
 !  initialize cs2cool to cs20
 !  (currently disabled, because it causes problems with mdarf auto-test)
