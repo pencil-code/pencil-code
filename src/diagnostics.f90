@@ -648,8 +648,8 @@ module Diagnostics
 !   7-jun-05/axel: adapted from write_zaverages
 !
       if (ipy==0.and.nnamexz>0) then
-        open(1, file=trim(datadir)//'/yaverages.dat', form='unformatted', &
-            position='append')
+        open(1, file=trim(directory_snap)//'/yaverages.dat', &
+            form='unformatted', position='append')
         write(1) t2davgfirst
         write(1) fnamexz(:,:,1:nnamexz)
         close(1)
