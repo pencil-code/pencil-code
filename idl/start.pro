@@ -145,9 +145,9 @@ nx=mx-2*nghostx
 ny=my-2*nghosty
 nz=mz-2*nghostz
 ;
-l1=3 & l2=mx-4 & l12=l1+indgen(nx)
-m1=3 & m2=my-4 & m12=m1+indgen(ny)
-n1=3 & n2=mz-4 & n12=n1+indgen(nz)
+l1=nghostx & l2=mx-nghostx-1 & l12=l1+indgen(nx)
+m1=nghosty & m2=my-nghosty-1 & m12=m1+indgen(ny)
+n1=nghostz & n2=mz-nghostz-1 & n12=n1+indgen(nz)
 ;
 ;  Read startup parameters
 ;
