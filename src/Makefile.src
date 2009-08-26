@@ -1216,7 +1216,7 @@ physics=$(VISCOSITY).o $(SHOCK).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY
 #
 #  Add switchable non-physics modules.
 #
-switchable=$(physics) $(BORDER_PROFILES).o $(INITIAL_CONDITION).o $(DERIV).o
+switchable=$(physics) $(BORDER_PROFILES).o $(INITIAL_CONDITION).o
 #
 comm_deps=$(technical) sub.o $(IO).o snapshot.o param_io.o  $(MPICOMM_FIX).o $(GHOSTFOLD).o $(switchable) $(POWER).o $(STRUCT_FUNC).o $(PARTICLES_MAIN).o $(PARTICLES_SUB).o
 #
@@ -1377,7 +1377,7 @@ diagrams_svg: run.svg run_nocdata.svg start.svg start_nocdata.svg switchable.svg
 #  Compilation rules.
 #
 cparam.inc: Makefile.src Makefile.local cparam.local scripts/mkcparam
-	scripts/mkcparam $(switchable:.o=.f90) grid.f90 cparam.local -o cparam.inc
+	scripts/mkcparam $(switchable:.o=.f90) grid.f90 $(DERIV).f90 cparam.local -o cparam.inc
 # 
 cparam.o:  cparam.f90 cparam.local cparam.inc
 	if [ "" ]; then \
