@@ -8,7 +8,7 @@
 ;;    IDL> pc_read_const, obj=const
 ;;    IDL> print, const.tt_ion
 ;;
-pro pc_read_const, object=object, varfile=varfile, datadir=datadir, quiet=quiet
+pro pc_read_const, object=object, varfile=varfile, datadir=datadir, quiet=quiet, specname=specname,specmass=specmass
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;
@@ -50,7 +50,8 @@ ncom=0
 for i=0, nlines-1 do begin
 ;  Skip comment lines.
   com = strpos(array[i], ';')
-  if (com ne 1) then begin
+  spec = strpos(array[i],'spec')
+  if ((com ne 1) and (spec ne 1)) then begin
     pos = strpos(array[i], '=')
     varnames[i] = strmid(array[i], 0, pos)
 ;  Remove blanks from variable name.
@@ -62,8 +63,13 @@ for i=0, nlines-1 do begin
 ;  
     values[i] = strmid(array[i], pos+1, strlen(array[i]))
   endif else begin
-    ncom=ncom+1
-  endelse
+    if (spec eq 1) then begin
+        test=execute(array[i])    
+        ncom=ncom+1
+    endif else begin
+        ncom=ncom+1
+    endelse
+endelse
 endfor
 ;
 ;  Put data in structure.
