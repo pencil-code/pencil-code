@@ -1,0 +1,14 @@
+Directory:
+    ${PENCIL_HOME}/samples/2d-tests/cylinder_deposition
+SVN Id:
+    $Id: README 10936 2009-05-25 04:47:00Z ajohan@strw.leidenuniv.nl $
+Maintainer:
+    Haugen Nils E <Nils.E.Haugen/sintef[dot]no>
+Added:
+    15-Jun-2009
+Status:
+    works
+Recommended resolution:
+    128x256 with nu=8e-3
+Comments:
+    Hi-res movie available
