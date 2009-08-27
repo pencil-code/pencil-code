@@ -150,6 +150,7 @@ if (defined $config_files) {
     print STDERR "Found config file <$config_files[0]>\n" unless ($quiet);
 }
 
+die "No configuration file found\n" unless @config_files;
 my $parser = new Pencil::ConfigParser(@config_files);
 $parser->debug(1) if ($debug);
 

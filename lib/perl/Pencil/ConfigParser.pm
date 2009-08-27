@@ -143,7 +143,7 @@ sub get_runtime_params {
 
 sub get_runtime_keys {
 #
-# Return arra ref of Makefile keys
+# Return array ref of Makefile keys
 #
     my $self = shift();
 
