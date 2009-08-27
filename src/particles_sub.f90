@@ -510,6 +510,8 @@ module Particles_sub
 !
 !  01-jan-05/anders: coded
 !
+!  TODO: For ncpus>>1000 this subroutine possibly uses too much memory.
+!
       use Mpicomm
       use Diagnostics, only: max_name
 !
@@ -524,12 +526,40 @@ module Particles_sub
       integer, dimension (0:ncpus-1) :: nmig_leave, nmig_enter
       integer, dimension (0:ncpus-1) :: ileave_low, ileave_high
       integer, dimension (0:ncpus-1) :: iproc_rec_count
+      integer, dimension (26), save :: iproc_comm=-1
+      integer, save :: nproc_comm=0
+      integer :: dipx, dipy, dipz
       integer :: i, j, k, iproc_rec, ipx_rec, ipy_rec, ipz_rec
       integer :: nmig_leave_total, ileave_high_max
       logical :: lredo, lredo_all
       integer :: itag_nmig=500, itag_ipar=510, itag_fp=520, itag_dfp=530
 !
       intent (inout) :: fp, npar_loc, ipar, dfp
+!
+!  Create list of processors that we allow migration to and from.
+!
+      if (lshear .or. (it==1 .and. itsub==1)) then
+        do dipx=-1,1; do dipy=-1,1; do dipz=-1,1
+          ipx_rec=ipx+dipx
+          ipy_rec=ipy+dipy
+          if (lshear) then
+            if (ipx_rec<0)        ipy_rec=ipy_rec-ceiling(deltay/Lxyz_loc(2))
+            if (ipx_rec>nprocx-1) ipy_rec=ipy_rec+ceiling(deltay/Lxyz_loc(2))
+          endif
+          ipz_rec=ipz+dipz
+          do while (ipx_rec<0);        ipx_rec=ipx_rec+nprocx; enddo
+          do while (ipx_rec>nprocx-1); ipx_rec=ipx_rec-nprocx; enddo
+          do while (ipy_rec<0);        ipy_rec=ipy_rec+nprocy; enddo
+          do while (ipy_rec>nprocy-1); ipy_rec=ipy_rec-nprocy; enddo
+          do while (ipz_rec<0);        ipz_rec=ipz_rec+nprocz; enddo
+          do while (ipz_rec>nprocz-1); ipz_rec=ipz_rec-nprocz; enddo
+          iproc_rec=ipx_rec+ipy_rec*nprocx+ipz_rec*nprocx*nprocy
+          if ( (.not.any(iproc_rec==iproc_comm)) .and. (iproc_rec/=iproc) ) then
+            nproc_comm=nproc_comm+1
+            iproc_comm(nproc_comm)=iproc_rec
+          endif
+        enddo; enddo; enddo
+      endif
 !
 !  Possible to iterate until all particles have migrated.
 !
@@ -606,13 +636,11 @@ module Particles_sub
           if (lcheck_exact_frontier) then
             if (nprocx/=1) then 
 !
-!  check if the particle is really closer to a grid cell than to a  
+!  Check if the particle is really closer to a grid cell than to a  
 !  ghost one. otherwise, this is a more serious particle position 
 !  problem, that should be allowed to lead to a crash.
 !
               if (ipx_rec==-1) then
-!  this hopefully doesn't happen often, so the division is not as bad as it
-!  seems and makes it more legible.
                 if (xyz0(1)-fp(k,ixp)<=(x(l1)-x(l1-1))/2) ipx_rec=0
               endif
               if (ipx_rec==nprocx) then 
@@ -721,17 +749,29 @@ module Particles_sub
         if (ldiagnos.and.(idiag_nmigmax/=0)) &
             call max_name(sum(nmig_leave),idiag_nmigmax)
 !
-!  Share information about number of migrating particles.
+!  Share information about number of migrating particles. For the initial
+!  condition we allow all processors to communicate particles. However, this
+!  is extremely slow when the processor number is high (>>100). Thus we only
+!  allow communication with surrounding processors during the run.
 !
-        do i=0,ncpus-1
-          if (iproc/=i) then
-            call mpirecv_int(nmig_enter(i),1,i,itag_nmig)
-          else
-            do j=0,ncpus-1
-              if (iproc/=j) call mpisend_int(nmig_leave(j),1,j,itag_nmig)
-            enddo
-          endif
-        enddo
+        if (lstart) then
+          do i=0,ncpus-1
+            if (iproc/=i) then
+              call mpirecv_int(nmig_enter(i),1,i,itag_nmig)
+            else
+              do j=0,ncpus-1
+                if (iproc/=j) call mpisend_int(nmig_leave(j),1,j,itag_nmig)
+              enddo
+            endif
+          enddo
+        else
+          do i=1,nproc_comm
+            call mpisend_int(nmig_leave(iproc_comm(i)),1,iproc_comm(i),itag_nmig+iproc)
+          enddo
+          do i=1,nproc_comm
+            call mpirecv_int(nmig_enter(iproc_comm(i)),1,iproc_comm(i),itag_nmig+iproc_comm(i))
+          enddo
+        endif
 !
 !  Check that there is room for the new particles at each processor.
 !
@@ -767,9 +807,8 @@ module Particles_sub
               ipar_mig(isort_array(1:nmig_leave_total))
           fp_mig(1:nmig_leave_total,:)= &
               fp_mig(isort_array(1:nmig_leave_total),:)
-          if (present(dfp)) &
-              dfp_mig(1:nmig_leave_total,:)= &
-                  dfp_mig(isort_array(1:nmig_leave_total),:)
+          if (present(dfp)) dfp_mig(1:nmig_leave_total,:)= &
+              dfp_mig(isort_array(1:nmig_leave_total),:)
         endif
 !
 !  Set to receive.
