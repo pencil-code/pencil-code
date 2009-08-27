@@ -895,8 +895,7 @@ module Magnetic
       real, dimension (nx,3) :: bb
       real, dimension (nx) :: b2,fact
       real :: beq2
-      real, pointer :: nu_epicycle
-      integer :: j, ierr
+      integer :: j
 !
       do j=1,ninit
 !        
@@ -1454,10 +1453,11 @@ module Magnetic
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      real, dimension (nx,3) :: bb_ext,bb_ext_pot,ee_ext,jj_ext,jcrossb
+      real, dimension (nx,3) :: bb_ext,bb_ext_pot
       real, dimension (nx) :: rho1_jxb,alpha_total
       real, dimension (nx) :: alpha_tmp
-      real, dimension (nx) :: sinjb,jcrossb2 
+      real, dimension (nx) :: jcrossb2 
+!      real, dimension (nx) :: sinjb  
       real :: B2_ext,c,s,kx
       integer :: i,j,ix
 !
@@ -3019,7 +3019,6 @@ module Magnetic
       character (len=5) :: ch
       logical :: lmagnetic_out
       integer,save :: ifirst=0
-      integer :: j
 !
       intent(inout) :: f
 !
@@ -4000,7 +3999,6 @@ module Magnetic
 !
       logical,save :: first=.true.
       real :: jmbmz
-      integer :: j
 !
 !  This only works if bxmz and bzmz are in xyaver, so print warning if this is
 !  not ok.
