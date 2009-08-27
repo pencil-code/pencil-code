@@ -838,11 +838,7 @@ module Chemistry
     endsubroutine flame_front
 !***********************************************************************
     subroutine flame_blob(f)
-!
-! 06.05.2009/Nils Erland L. Haugen: adapted from similar
-!                                   routine in special/chem_stream.f90
-! This routine set up the initial profiles used in 1D flame speed measurments
-!
+
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: mu1
       integer :: k,j,i,j1,j2,j3
@@ -852,8 +848,10 @@ module Chemistry
       integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
       real :: initial_mu1, final_massfrac_O2
       logical :: found_specie
-! 
-      lflame_front=.true.
+
+      real :: Rad
+ 
+     lflame_front=.true.
 !
       call air_field(f)
 !
@@ -888,17 +886,53 @@ module Chemistry
           +initial_massfractions(ichem_O2)/(mO2)&
           +initial_massfractions(ichem_H2O)/(mH2O)&
           +initial_massfractions(ichem_N2)/(mN2)
+
+ 
 !  
 !   log_inlet_density=&
 !      log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
       do j3=nn1,nn2
         do j2=mm1,mm2
           do j1=ll1,ll2
-!
-!  Initialize density
-!
-            f(j1,j2,j3,ilnrho)=log(init_pressure)-log(Rgas)  &
-                -f(j1,j2,j3,ilnTT)-log(mu1_full(j1,j2,j3))
+
+      
+
+    !   do j3=1,mz
+    !   do j2=1,my
+    !  do j1=1,mx
+
+        Rad=0.
+       if (nxgrid >1) then
+        Rad=x(j1)**2
+       elseif (nygrid>1) then
+        Rad=Rad+y(j2)**2
+       elseif (nzgrid>1) then
+        Rad=Rad+z(j3)**2
+       endif
+       
+       Rad=sqrt(Rad)
+
+  !      Rad=abs(x(j1))
+     
+         if (Rad<0.2) then
+          f(j1,j2,j3,ilnTT)=log(init_TT1)+log(2.)*((0.2-Rad)/0.2)**2
+         else
+          f(j1,j2,j3,ilnTT)=log(init_TT1)
+         endif
+          mu1(j1,j2,j3)=f(j1,j2,j3,i_H2)/(2.*mH2)+f(j1,j2,j3,i_O2)/(2.*mO2) &
+              +f(j1,j2,j3,i_H2O)/(2.*mH2+mO2)+f(j1,j2,j3,i_N2)/(2.*mN2)
+  
+
+
+
+         f(j1,j2,j3,ilnrho)=log(init_pressure)-log(Rgas)-f(j1,j2,j3,ilnTT)  &
+              -log(mu1_full(j1,j2,j3))
+            
+
+
+ !      f(j1,j2,j3,ilnrho)=log(init_pressure)-log(Rgas)  &
+ !          -f(j1,j2,j3,ilnTT)-log(mu1_full(j1,j2,j3))
+
 !
 !  Initialize velocity
 !
