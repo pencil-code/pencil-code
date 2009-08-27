@@ -235,8 +235,11 @@ module Timestep
       call pde(f,k(:,:,:,:,1),p)
 
       do j=1,mvar; do n=n1,n2; do m=m1,m2
+!      XppAut stiff scaling
+!        fscal(l1:l2,m,n,j) = max(1.0,abs(f(l1:l2,m,n,j)))
+!      Numerical Recipe scaling
         fscal(l1:l2,m,n,j) = abs(f(l1:l2,m,n,j))+abs(df(l1:l2,m,n,j)*dt)+1e-8!tiny(0.)
-      enddo; enddo; enddo        
+      enddo; enddo; enddo
         
 !      print*,"before:"
       do j=1,nchemspec; do n=n1,n2; do m=m1,m2

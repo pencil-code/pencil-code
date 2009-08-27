@@ -175,7 +175,8 @@ def animate_slices(field='uu1',datadir='data/',proc=-1,extension='xz',format='na
 
 
 def animate_multislices(field=['uu1'],datadir='data/',proc=-1,extension='xz',format='native',
-                tmin=0.,tmax=1.e38,amin=0.,amax=1.,transform='plane[0]',oldfile=False):
+                tmin=0.,tmax=1.e38,amin=0.,amax=1.,transform='plane[0]',
+                oldfile=False,outfile=""):
     """
     read a list of 2D slice files, combine them, and assemble an animation.
 
@@ -191,9 +192,12 @@ def animate_multislices(field=['uu1'],datadir='data/',proc=-1,extension='xz',for
      amin --- minimum value for image scaling
      amax --- maximum value for image scaling
      transform --- insert arbitrary numerical code to combine the slices
+     outfile --- if set, write the slice values in the text file
     """
     
     datadir = os.path.expanduser(datadir)
+    if outfile != "":
+        outslice=file(outfile,"w")
     filename=[]
     if proc < 0:
         for i in field:
@@ -273,12 +277,17 @@ def animate_multislices(field=['uu1'],datadir='data/',proc=-1,extension='xz',for
             if ifirst:
                 print "----islice----------t---------min-------max-------delta"
             print "%10i %10.3e %10.3e %10.3e %10.3e" % (islice,t,plotplane.min(),plotplane.max(),plotplane.max()-plotplane.min())
-                
+            if outfile != "":
+                outslice.write("%10i %10.3e %10.3e %10.3e %10.3e" % (islice,t,plotplane.min(),plotplane.max(),plotplane.max()-plotplane.min()))
+                outslice.write("\n")
+               
             ifirst = False
             islice += 1
 
     for i in infile:
         i.close()
+    if outfile != "":
+        outslice.close()
 
 
 

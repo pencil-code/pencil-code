@@ -4827,7 +4827,7 @@ module Chemistry
                   enddo
 !                  print*,")"
                   ! Add the contribution of reaction k to dv_i/dc_j
-                  jacob(l,m,n,i,j)=jacob(l,m,n,i,j)+tmp_p-tmp_m
+                  jacob(l,m,n,i,j)=jacob(l,m,n,i,j)+tmp_p+tmp_m
 !                  print*,"(=",tmp_p," (-) ",tmp_m,")"
                 endif
               enddo
