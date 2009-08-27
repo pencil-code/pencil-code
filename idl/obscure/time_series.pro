@@ -3,6 +3,9 @@
 ;  here we read the rprint files
 ;  to generate an index catalogue of what is written
 ;
+;  27-aug-2009: moved to idl/obscure/ because this most likely replicates
+;  ts.pro (which might be considered somewhat obscure on its own)
+;
 @data/index
 print,'nname=',nname
 ;
