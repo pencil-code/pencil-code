@@ -78,21 +78,6 @@ endif
 ;
 if (keyword_set(png_truecolor)) then png=1
 ;
-;  Construct location of slice_var.plane files .
-;
-default, datatopdir, datadir
-;
-;  By default, look in data/, assuming we have run read_videofiles.x before.
-;
-;datadir = 'data'
-if (n_elements(proc) le 0) then begin
-  ;  change datadir when only data/proc0 exists
-  spawn, '\ls -d data/proc*', lsproc
-  if (n_elements(lsproc) eq 1) then datadir=datatopdir+'/proc0'
-endif else begin
-  datadir=datatopdir+'/'+proc
-endelse
-;
 ;  Read the dimensions and precision (single or double) from dim.dat.
 ;
 mx=0L & my=0L & mz=0L & nvar=0L & prec=''
