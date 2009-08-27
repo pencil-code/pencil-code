@@ -76,7 +76,7 @@ module Equ
       real, dimension (nx) :: pfreeze,pfreeze_int,pfreeze_ext
       integer :: i,iv
       integer :: ivar1,ivar2
-      intent(inout)  :: f
+!      intent(inout)  :: f ! conflicts with timestep_rkf.f90
       intent(out)    :: df, p
 !
 !  print statements when they are first executed
