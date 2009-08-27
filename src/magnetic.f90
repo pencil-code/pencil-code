@@ -3515,23 +3515,20 @@ module Magnetic
       endif
 !
 !  The following calculation involving spatial averages
-!  This is only done on the root processor.
 !
-      if (lroot) then
-        if (idiag_bmx/=0) call calc_bmx
-        if (idiag_bmy/=0) call calc_bmy
-        if (idiag_bmz/=0) call calc_bmz
-        if (idiag_jmx/=0) call calc_jmx
-        if (idiag_jmy/=0) call calc_jmy
-        if (idiag_jmz/=0) call calc_jmz
-        if (idiag_emxamz3/=0) call calc_emxamz3
-        if (idiag_embmz/=0) call calc_embmz
-        if (idiag_ambmz/=0) call calc_ambmz
-        if (idiag_ambmzh/=0) call calc_ambmzh
-        if (idiag_jmbmz/=0.or.idiag_kmz/=0) call calc_jmbmz
-        if (idiag_bmxy_rms/=0) call calc_bmxy_rms
-        if (idiag_bmzph/=0) call calc_bmz_beltrami_phase
-      endif
+      if (idiag_bmx/=0) call calc_bmx
+      if (idiag_bmy/=0) call calc_bmy
+      if (idiag_bmz/=0) call calc_bmz
+      if (idiag_jmx/=0) call calc_jmx
+      if (idiag_jmy/=0) call calc_jmy
+      if (idiag_jmz/=0) call calc_jmz
+      if (idiag_emxamz3/=0) call calc_emxamz3
+      if (idiag_embmz/=0) call calc_embmz
+      if (idiag_ambmz/=0) call calc_ambmz
+      if (idiag_ambmzh/=0) call calc_ambmzh
+      if (idiag_jmbmz/=0.or.idiag_kmz/=0) call calc_jmbmz
+      if (idiag_bmxy_rms/=0) call calc_bmxy_rms
+      if (idiag_bmzph/=0) call calc_bmz_beltrami_phase
 !
 !  Set the phase of the Beltrami forcing equal to the actual phase
 !  of the magnetic field (times forcing_continuous_aa_phasefact).
@@ -3567,8 +3564,8 @@ module Magnetic
       real, dimension(nx,ny) :: fsumxy
       real :: bmx
 !
-!  This only works if bymxy and bzmxy are in zaver,
-!  so print warning if this is not ok.
+!  This only works if bymxy and bzmxy are in zaver, so print warning if this is
+!  not ok.
 !
       if (idiag_bymxy==0.or.idiag_bzmxy==0) then
         if (first) then
@@ -3590,8 +3587,7 @@ module Magnetic
         bmx=sqrt(sum(bmx2)/nxgrid)
       endif
 !
-!  save the name in the idiag_bmx slot
-!  and set first to false
+!  Save the name in the idiag_bmx slot and set first to false.
 !
       call save_name(bmx,idiag_bmx)
       first=.false.
@@ -3615,8 +3611,8 @@ module Magnetic
       real, dimension(nx,ny) :: fsumxy
       real :: bmy
 !
-!  This only works if bxmxy and bzmxy are in zaver,
-!  so print warning if this is not ok.
+!  This only works if bxmxy and bzmxy are in zaver, so print warning if this is
+!  not ok.
 !
       if (idiag_bxmxy==0.or.idiag_bzmxy==0) then
         if (first) then
@@ -3632,14 +3628,13 @@ module Magnetic
           call mpireduce_sum(fnamexy(:,:,idiag_bzmxy),fsumxy,(/nx,ny/),idir=1)
           bzmy=sum(fsumxy,dim=1)/nxgrid
         endif
-        if (ipy==0 .and. ipz==0) then
+        if (ipx==0 .and. ipz==0) then
           call mpireduce_sum(bxmy**2+bzmy**2,bmy2,ny,idir=2)
         endif
         bmy=sqrt(sum(bmy2)/nygrid)
       endif
 !
-!  save the name in the idiag_bmy slot
-!  and set first to false
+!  Save the name in the idiag_bmy slot and set first to false.
 !
       call save_name(bmy,idiag_bmy)
       first=.false.
@@ -3763,7 +3758,7 @@ module Magnetic
           call mpireduce_sum(fnamexy(:,:,idiag_jzmxy),fsumxy,(/nx,ny/),idir=1)
           jzmy=sum(fsumxy,dim=1)/nxgrid
         endif
-        if (ipy==0 .and. ipz==0) then
+        if (ipx==0 .and. ipz==0) then
           call mpireduce_sum(jxmy**2+jzmy**2,jmy2,ny,idir=2)
         endif
         jmy=sqrt(sum(jmy2)/nygrid)
