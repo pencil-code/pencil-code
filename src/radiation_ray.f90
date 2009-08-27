@@ -1256,7 +1256,7 @@ module Radiation
 !
       if (bc_ray_z=='c') then
         if (nrad<0) Irad_xy=arad*TT_top**4*(1-exp(tau_top/mu(idir)))
-        if (nrad>0) Irad_xy=arad*TT_bot**4*(1-exp(tau_top/mu(idir)))
+        if (nrad>0) Irad_xy=arad*TT_bot**4*(1-exp(tau_bot/mu(idir)))
         Qrad0_xy=Irad_xy-Srad(:,:,nnstart-nrad)
       endif
 !
