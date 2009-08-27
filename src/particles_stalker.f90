@@ -134,6 +134,7 @@ module Particles_stalker
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
+      real :: t_sp
 !
       real, dimension (npar_stalk) :: xp, yp, zp, vpx, vpy, vpz, ux, uy, uz
       real, dimension (npar_stalk) :: rho, drhodx, drhody, drhodz
@@ -151,6 +152,7 @@ module Particles_stalker
       if (t<tstalk) then
 !  Do nothing.
       else
+        t_sp=t
 !
 !  Find out how many stalked particles are at the local processor.
 !
@@ -232,7 +234,7 @@ module Particles_stalker
 !
 !  Write the time and the number of stalked particles at this processor.
 !
-          write(1) t, npar_stalk_loc
+          write(1) t_sp, npar_stalk_loc
 !
 !  Collect environment information in single array and write array to file.
 !
