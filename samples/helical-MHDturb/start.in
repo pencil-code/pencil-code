@@ -22,3 +22,10 @@
 &pscalar_init_pars
   initlncc='wave-z', ampllncc=1e-0
 /
+&particles_init_pars
+  initxxp='random'
+  lparticlemesh_cic=T
+/
+&particles_stalker_init_pars
+  dstalk=0.01
+/

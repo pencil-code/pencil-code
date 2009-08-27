@@ -34,3 +34,7 @@
 &viscosity_run_pars
   nu=5e-3
 /
+&particles_run_pars
+/
+&particles_stalker_run_pars
+/

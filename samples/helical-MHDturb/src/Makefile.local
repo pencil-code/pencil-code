@@ -3,16 +3,18 @@
 ### Included by `Makefile'
 ###
 
-LDMPI=
-MPICOMM=nompicomm
-GRAVITY=nogravity
-FORCING=forcing
-ENTROPY=noentropy
-MAGNETIC=magnetic
-HYDRO=hydro
-EOS=eos_idealgas
-DENSITY=density
-PSCALAR=pscalar_nolog
-IO=io_dist
-FOURIER=fourier_fftpack
-POWER=power_spectrum
+MPICOMM  = nompicomm
+EOS      =   eos_idealgas
+HYDRO    =   hydro
+DENSITY  =   density
+ENTROPY  = noentropy
+MAGNETIC =   magnetic
+GRAVITY  = nogravity
+FORCING  =   forcing
+PSCALAR  =   pscalar_nolog
+
+FOURIER  =   fourier_fftpack
+POWER    =   power_spectrum
+
+PARTICLES         =   particles_tracers
+PARTICLES_STALKER =   particles_stalker
