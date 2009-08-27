@@ -3561,8 +3561,9 @@ module Hydro
       use Mpicomm
 !
       logical,save :: first=.true.
+      real, dimension(nx,ny) :: fsumxy
       real, dimension(nx) :: uxmx,uymx,uzmx
-      real, dimension(ny,nprocy) :: uxmy,uymy,uzmy
+      real, dimension(ny) :: uxmy,uymy,uzmy,umx2,umy2
       real :: umx,umy,umz
       integer :: l,j
 !
@@ -3580,9 +3581,8 @@ module Hydro
 
       if (.not.lroot) return
 !
-!  Magnetic energy in vertically averaged field
-!  The uymxy and uzmxy must have been calculated,
-!  so they are present on the root processor.
+!  Magnetic energy in vertically averaged field. The uymxy and uzmxy must
+!  have been calculated, so they are present on the z-root processors.
 !
       if (idiag_umx/=0) then
         if (idiag_uymxy==0.or.idiag_uzmxy==0) then
@@ -3593,17 +3593,23 @@ module Hydro
                   "calc_mflow:      We proceed, but you'll get umx=0"
           umx=0.
         else
-          do l=1,nx
-!            uxmx(l)=sum(fnamexy(l,:,:,idiag_uxmxy))/(ny*nprocy)
-!            uymx(l)=sum(fnamexy(l,:,:,idiag_uymxy))/(ny*nprocy)
-!            uzmx(l)=sum(fnamexy(l,:,:,idiag_uzmxy))/(ny*nprocy)
-          enddo
-          umx=sqrt(sum(uxmx**2+uymx**2+uzmx**2)/nx)
+          if (ipz==0) then
+            call mpireduce_sum(fnamexy(:,:,idiag_uxmxy),fsumxy,(/nx,ny/),idir=2)
+            uxmx=sum(fsumxy,dim=2)/nygrid
+            call mpireduce_sum(fnamexy(:,:,idiag_uymxy),fsumxy,(/nx,ny/),idir=2)
+            uymx=sum(fsumxy,dim=2)/nygrid
+            call mpireduce_sum(fnamexy(:,:,idiag_uzmxy),fsumxy,(/nx,ny/),idir=2)
+            uzmx=sum(fsumxy,dim=2)/nygrid
+          endif
+          if (ipx==0 .and. ipz==0) then
+            call mpireduce_sum(uxmx**2+uymx**2+uzmx**2,umx2,nx,idir=2)
+          endif
+          umx=sqrt(sum(umx2)/nxgrid)
         endif
         call save_name(umx,idiag_umx)
       endif
 !
-!  similarly for umy
+!  Similarly for umy.
 !
       if (idiag_umy/=0) then
         if (idiag_uxmxy==0.or.idiag_uzmxy==0) then
@@ -3614,21 +3620,24 @@ module Hydro
                   "calc_mflow:       We proceed, but you'll get umy=0"
           umy=0.
         else
-          do j=1,nprocy
-          do m=1,ny
-!            uxmy(m,j)=sum(fnamexy(:,m,j,idiag_uxmxy))/nx
-!            uymy(m,j)=sum(fnamexy(:,m,j,idiag_uymxy))/nx
-!            uzmy(m,j)=sum(fnamexy(:,m,j,idiag_uzmxy))/nx
-          enddo
-          enddo
-          umy=sqrt(sum(uxmy**2+uymy**2+uzmy**2)/(ny*nprocy))
+          if (ipz==0) then
+            call mpireduce_sum(fnamexy(:,:,idiag_uxmxy),fsumxy,(/nx,ny/),idir=1)
+            uxmy=sum(fsumxy,dim=2)/nygrid
+            call mpireduce_sum(fnamexy(:,:,idiag_uymxy),fsumxy,(/nx,ny/),idir=1)
+            uymy=sum(fsumxy,dim=2)/nygrid
+            call mpireduce_sum(fnamexy(:,:,idiag_uzmxy),fsumxy,(/nx,ny/),idir=1)
+            uzmy=sum(fsumxy,dim=2)/nygrid
+          endif
+          if (ipx==0 .and. ipz==0) then
+            call mpireduce_sum(uxmy**2+uymy**2+uzmy**2,umy2,nx,idir=2)
+          endif
+          umy=sqrt(sum(umy2)/nxgrid)
         endif
         call save_name(umy,idiag_umy)
       endif
 !
-!  Kinetic energy in horizontally averaged flow
-!  The uxmz and uymz must have been calculated,
-!  so they are present on the root processor.
+!  Kinetic energy in horizontally averaged flow. The uxmz and uymz must
+!  have been calculated, so they are present on the root processor.
 !
       if (idiag_umz/=0) then
         if (idiag_uxmz==0.or.idiag_uymz==0.or.idiag_uzmz==0) then
