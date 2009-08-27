@@ -247,6 +247,9 @@ module Magnetic
   integer :: idiag_abms=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$ (south)
   integer :: idiag_ajm=0        ! DIAG_DOC: $\left<\jv\cdot\Av\right>$
   integer :: idiag_jbm=0        ! DIAG_DOC: $\left<\jv\cdot\Bv\right>$
+  integer :: idiag_jbmh=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$ (temp)
+  integer :: idiag_jbmn=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$ (north)
+  integer :: idiag_jbms=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$ (south)
   integer :: idiag_ubm=0        ! DIAG_DOC: $\left<\uv\cdot\Bv\right>$
   integer :: idiag_cosubm=0     ! DIAG_DOC: $\left<\Uv\cdot\Bv/(|\Uv|\,|\Bv|)\right>$
   integer :: idiag_ujm=0        ! DIAG_DOC: $\left<\uv\cdot\Jv\right>$
@@ -1268,7 +1271,8 @@ module Magnetic
 !
       if (lisotropic_advection) lpenc_requested(i_va2)=.true.
 ! check whether right variables are set for half-box calculations. 
-      if (idiag_brmsn/=0 .or. idiag_abmn/=0 .or. idiag_ambmzn/=0 ) then
+      if (idiag_brmsn/=0 .or. idiag_abmn/=0 .or. idiag_ambmzn/=0 & 
+          .or. idiag_jbmn/= 0 ) then
         if ((.not.lequatory).and.(.not.lequatorz)) then
           call stop_it("You have to set either of lequatory or lequatorz to true to calculate averages over half the box")
         else  
@@ -2281,6 +2285,18 @@ module Magnetic
           fname(idiag_abms)=fname_half(idiag_abmh,2)
           itype_name(idiag_abmn)=ilabel_sum
           itype_name(idiag_abms)=ilabel_sum
+        endif
+!
+!  hemispheric current helicity of total field
+!  North means 1 and south means 2.
+!
+        if (idiag_jbmh/=0) then
+          if (lequatory) call sum_mn_name_halfy(p%jb,idiag_jbmh)
+          if (lequatorz) call sum_mn_name_halfz(p%jb,idiag_jbmh)
+          fname(idiag_jbmn)=fname_half(idiag_jbmh,1)
+          fname(idiag_jbms)=fname_half(idiag_jbmh,2)
+          itype_name(idiag_jbmn)=ilabel_sum
+          itype_name(idiag_jbms)=ilabel_sum
         endif
 !
 !  mean dot product of forcing and magnetic field, <f.b>
@@ -5663,6 +5679,7 @@ module Magnetic
         idiag_b1m=0; idiag_b2m=0; idiag_bm2=0
         idiag_j2m=0; idiag_jm2=0; idiag_abm=0
         idiag_abmh=0; idiag_abmn=0; idiag_abms=0
+        idiag_jbmh=0; idiag_jbmn=0; idiag_jbms=0
         idiag_ajm=0
         idiag_cosubm=0
         idiag_jbm=0; idiag_ubm=0; idiag_ujm=0; idiag_fbm=0; idiag_fxbxm=0
@@ -5748,6 +5765,8 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'abms',idiag_abms)
         call parse_name(iname,cname(iname),cform(iname),'ajm',idiag_ajm)
         call parse_name(iname,cname(iname),cform(iname),'jbm',idiag_jbm)
+        call parse_name(iname,cname(iname),cform(iname),'jbmn',idiag_jbmn)
+        call parse_name(iname,cname(iname),cform(iname),'jbms',idiag_jbms)
         call parse_name(iname,cname(iname),cform(iname),'ubm',idiag_ubm)
         call parse_name(iname,cname(iname),cform(iname),'cosubm',idiag_ubm)
         call parse_name(iname,cname(iname),cform(iname),'ujm',idiag_ujm)
@@ -5886,6 +5905,13 @@ module Magnetic
       if ((idiag_abmn/=0).or.(idiag_abms/=0)) then
         iname_half=iname_half+1
         idiag_abmh=iname_half
+      endif
+!
+!  current helicity (north and south) of total field
+!
+      if ((idiag_jbmn/=0).or.(idiag_jbms/=0)) then
+        iname_half=iname_half+1
+        idiag_jbmh=iname_half
       endif
 !
 !  magnetic energy (north and south) of total field
@@ -6091,6 +6117,9 @@ module Magnetic
         write(3,*) 'i_brmss=',idiag_brmss
         write(3,*) 'i_brmsh=',idiag_brmsh
         write(3,*) 'i_jbm=',idiag_jbm
+        write(3,*) 'i_jbmh=',idiag_abmh
+        write(3,*) 'i_jbmn=',idiag_abmn
+        write(3,*) 'i_jbms=',idiag_abms
         write(3,*) 'i_ubm=',idiag_ubm
         write(3,*) 'i_cosubm=',idiag_cosubm
         write(3,*) 'i_ujm=',idiag_ujm
