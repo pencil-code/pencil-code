@@ -1,14 +1,15 @@
 ! $Id$
-!  This module takes care of everything related to tracer particles
+!  This module takes care of everything related to tracer particles.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 !
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! MPVAR CONTRIBUTION 3
-! MAUX CONTRIBUTION 2
 ! CPARAM logical, parameter :: lparticles=.true.
+!
+! MAUX CONTRIBUTION 2
+! MPVAR CONTRIBUTION 3
 !
 ! PENCILS PROVIDED np; rhop; epsp
 !
