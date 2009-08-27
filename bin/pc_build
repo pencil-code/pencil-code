@@ -154,6 +154,11 @@ die "No configuration file found\n" unless @config_files;
 my $parser = new Pencil::ConfigParser(@config_files);
 $parser->debug(1) if ($debug);
 
+unless (-d './src/scripts') {
+    print STDERR "Running pc_setupsrc\n";
+    system('pc_setupsrc');
+}
+
 my @make_args = @{$parser->get_makefile_args()};
 push @make_args, @extra_make_args;
 
