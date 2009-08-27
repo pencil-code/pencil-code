@@ -3622,11 +3622,11 @@ module Hydro
         else
           if (ipz==0) then
             call mpireduce_sum(fnamexy(:,:,idiag_uxmxy),fsumxy,(/nx,ny/),idir=1)
-            uxmy=sum(fsumxy,dim=2)/nygrid
+            uxmy=sum(fsumxy,dim=1)/nxgrid
             call mpireduce_sum(fnamexy(:,:,idiag_uymxy),fsumxy,(/nx,ny/),idir=1)
-            uymy=sum(fsumxy,dim=2)/nygrid
+            uymy=sum(fsumxy,dim=1)/nxgrid
             call mpireduce_sum(fnamexy(:,:,idiag_uzmxy),fsumxy,(/nx,ny/),idir=1)
-            uzmy=sum(fsumxy,dim=2)/nygrid
+            uzmy=sum(fsumxy,dim=1)/nxgrid
           endif
           if (ipx==0 .and. ipz==0) then
             call mpireduce_sum(uxmy**2+uymy**2+uzmy**2,umy2,nx,idir=2)
