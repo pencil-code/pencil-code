@@ -1,1 +1,1 @@
-../conv-slab/idl/pc_fluxz.pro
+../../conv-slab/idl/pc_fluxz.pro
