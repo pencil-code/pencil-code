@@ -1018,38 +1018,16 @@ else if ($hn =~ lfc*) then
 #  setenv JOB_SCRIPT `pwd`/start.csh
 #------------------------------------------------
 else if ($hn =~ rio* || $hn =~ pia*) then
-  echo "opteron cluster at RZG with SGE queue."
-  touch ~/.mpdpasswd
-  chmod 600 ~/.mpdpasswd
-  echo secretword=mofassa >! ~/.mpdpasswd
-  \cp -p ~/.mpdpasswd ~/.mpd.conf
-  if ($ncpus == 1) then
-    echo "Apparently an interactive run."
-    set nodelist = `repeat $ncpus echo $nodelist`
-    set mpirun = ' '
-    set npops  = ' '
-  else
-    set nprocpernode = 1
-#    if ($mpi) then
-#      set local_disc = 1
-#      set one_local_disc = 0
-#    else
-      set local_disc = 0
-      set one_local_disc = 1
-#    endif
-    set mpirun = /afs/ipp/amd64_sles9/soft/mvapich/mvapich2-0.9.8-opteron-x/f95i.9.1/bin/mpirun
-    set nodelist=`cat $TMPDIR/machines`
-    echo $nodelist
-    setenv SSH 'ssh -x'
-    setenv SCP scp
-    setenv SCRATCH_DIR /var/tmp/$USER
-    foreach node ($nodelist)
-      echo $SSH $node 'killall start.x run.x'
-      $SSH $node 'killall start.x run.x'
-      echo $SSH $node '\rm -rf /var/tmp/'$USER'/*'
-      $SSH $node '\rm -rf /var/tmp/$USER/*'
-    end
-  endif
+  echo "Opteron cluster at RZG with SGE queue."
+  set nprocpernode = 1
+  set local_disc = 0
+  set one_local_disc = 1
+  set mpirun = /afs/ipp/amd64_sles9/soft/mvapich/mvapich2-0.9.8-opteron-x/f95i.9.1/bin/mpirun
+  set nodelist=`cat $TMPDIR/machines`
+  echo $nodelist
+  setenv SSH 'ssh -x'
+  setenv SCP scp
+  setenv SCRATCH_DIR /var/tmp/$USER
 #---------------------------------------------------
 else if ($hostname =~ *huygens.sara.nl*) then
   echo "huygens cluster in Amsterdam"
