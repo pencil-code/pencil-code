@@ -3549,9 +3549,8 @@ module Magnetic
 !***********************************************************************
     subroutine calc_bmx
 !
-!  Magnetic energy in the yz-averaged field.
-!  The bymxy and bzmxy must have been calculated,
-!  so they are present on the root processor.
+!  Magnetic energy in the yz-averaged field. The bymxy and bzmxy must have
+!  been calculated, so they are present on the z-root processors.
 !
 !   6-apr-08/axel: moved from calc_mfield to here
 !  26-aug-09/anders: used mpireduce_sum to remove need for nyproc arrays
@@ -3596,9 +3595,8 @@ module Magnetic
 !***********************************************************************
     subroutine calc_bmy
 !
-!  Magnetic energy in the xz-averaged field.
-!  The bxmxy and bzmxy must have been calculated,
-!  so they are present on the root processor.
+!  Magnetic energy in the xz-averaged field. The bxmxy and bzmxy must have
+!  been calculated, so they are present on the z-root processors.
 !
 !   6-apr-08/axel: moved from calc_mfield to here
 !  26-aug-09/axel: adapted change of Anders to used mpireduce_sum
@@ -3643,9 +3641,8 @@ module Magnetic
 !***********************************************************************
     subroutine calc_bmz
 !
-!  Magnetic energy in horizontally averaged field
-!  The bxmz and bymz must have been calculated,
-!  so they are present on the root processor.
+!  Magnetic energy in horizontally averaged field. The bxmz and bymz must have
+!  been calculated, so they are present on the root processor.
 !
 !   6-apr-08/axel: moved from calc_mfield to here
 !
@@ -3655,8 +3652,8 @@ module Magnetic
       logical,save :: first=.true.
       real :: bmz
 !
-!  This only works if bxmz and bzmz are in xyaver,
-!  so print warning if this is not ok.
+!  This only works if bxmz and bzmz are in xyaver, so print warning if this is
+!  not ok.
 !
       if (idiag_bxmz==0.or.idiag_bymz==0) then
         if (first) then
@@ -3670,8 +3667,7 @@ module Magnetic
                     +fnamez(:,:,idiag_bymz)**2)/(nz*nprocz))
       endif
 !
-!  save the name in the idiag_bmz slot
-!  and set first to false
+!  Save the name in the idiag_bmz slot and set first to false.
 !
       call save_name(bmz,idiag_bmz)
       first=.false.
@@ -3680,9 +3676,8 @@ module Magnetic
 !***********************************************************************
     subroutine calc_jmx
 !
-!  Magnetic energy in the yz-averaged field.
-!  The jymxy and jzmxy must have been calculated,
-!  so they are present on the root processor.
+!  Magnetic energy in the yz-averaged field. The jymxy and jzmxy must have
+!  been calculated, so they are present on the z-root processors.
 !
 !   6-apr-08/axel: moved from calc_mfield to here
 !
@@ -3694,8 +3689,8 @@ module Magnetic
       real, dimension(nx,ny) :: fsumxy
       real :: jmx
 !
-!  This only works if jymxy and jzmxy are in zaver,
-!  so print warning if this is not ok.
+!  This only works if jymxy and jzmxy are in zaver, so print warning if this is
+!  not ok.
 !
       if (idiag_jymxy==0.or.idiag_jzmxy==0) then
         if (first) then
@@ -3717,8 +3712,7 @@ module Magnetic
         jmx=sqrt(sum(jmx2)/nxgrid)
       endif
 !
-!  save the name in the idiag_jmx slot
-!  and set first to false
+!  Save the name in the idiag_jmx slot and set first to false.
 !
       call save_name(jmx,idiag_jmx)
       first=.false.
@@ -3727,9 +3721,8 @@ module Magnetic
 !***********************************************************************
     subroutine calc_jmy
 !
-!  Magnetic energy in the xz-averaged field.
-!  The jxmxy and jzmxy must have been calculated,
-!  so they are present on the root processor.
+!  Magnetic energy in the xz-averaged field. The jxmxy and jzmxy must have
+!  been calculated, so they are present on the z-root processors.
 !
 !   6-apr-08/axel: moved from calc_mfield to here
 !
@@ -3741,8 +3734,8 @@ module Magnetic
       real, dimension(nx,ny) :: fsumxy
       real :: jmy
 !
-!  This only works if jxmxy and jzmxy are in zaver,
-!  so print warning if this is not ok.
+!  This only works if jxmxy and jzmxy are in zaver, so print warning if this is
+!  not ok.
 !
       if (idiag_jxmxy==0.or.idiag_jzmxy==0) then
         if (first) then
@@ -3764,8 +3757,7 @@ module Magnetic
         jmy=sqrt(sum(jmy2)/nygrid)
       endif
 !
-!  save the name in the idiag_jmy slot
-!  and set first to false
+!  Save the name in the idiag_jmy slot and set first to false.
 !
       call save_name(jmy,idiag_jmy)
       first=.false.
@@ -3774,9 +3766,8 @@ module Magnetic
 !***********************************************************************
     subroutine calc_jmz
 !
-!  Magnetic energy in horizontally averaged field
-!  The jxmz and jymz must have been calculated,
-!  so they are present on the root processor.
+!  Magnetic energy in horizontally averaged field. The jxmz and jymz must have
+!  been calculated, so they are present on the root processor.
 !
 !   6-apr-08/axel: moved from calc_mfield to here
 !
@@ -3786,8 +3777,8 @@ module Magnetic
       logical,save :: first=.true.
       real :: jmz
 !
-!  This only works if jxmz and jzmz are in xyaver,
-!  so print warning if this is not ok.
+!  This only works if jxmz and jzmz are in xyaver, so print warning if this is
+!  not ok.
 !
       if (idiag_jxmz==0.or.idiag_jymz==0) then
         if (first) then
@@ -3801,8 +3792,7 @@ module Magnetic
                     +fnamez(:,:,idiag_jymz)**2)/(nz*nprocz))
       endif
 !
-!  save the name in the idiag_jmz slot
-!  and set first to false
+!  Save the name in the idiag_jmz slot and set first to false.
 !
       call save_name(jmz,idiag_jmz)
       first=.false.
@@ -3811,9 +3801,9 @@ module Magnetic
 !***********************************************************************
     subroutine calc_embmz
 !
-!  Magnetic helicity production of mean field
-!  The bxmz and bymz as well as Exmz and Eymz must have been calculated,
-!  so they are present on the root processor.
+!  Magnetic helicity production of mean field. The bxmz and bymz as well as Exmz
+!  and Eymz must have been calculated, so they are present on the root
+!  processor.
 !
 !   6-apr-08/axel: moved from calc_mfield to here
 !
@@ -3824,8 +3814,8 @@ module Magnetic
       real :: embmz
       integer :: j
 !
-!  This only works if bxmz and bzmz are in xyaver,
-!  so print warning if this is not ok.
+!  This only works if bxmz and bzmz are in xyaver, so print warning if this is
+!  not ok.
 !
       if (idiag_Exmz==0.or.idiag_Eymz==0) then
         if (first) then
@@ -3839,8 +3829,7 @@ module Magnetic
                  +fnamez(:,:,idiag_bymz)*fnamez(:,:,idiag_Eymz))/(nz*nprocz)
       endif
 !
-!  save the name in the idiag_embmz slot
-!  and set first to false
+!  Save the name in the idiag_embmz slot and set first to false.
 !
       call save_name(embmz,idiag_embmz)
       first=.false.
@@ -3849,9 +3838,9 @@ module Magnetic
 !***********************************************************************
     subroutine calc_emxamz3
 !
-!  Volume average of magnetic helicity flux of the mean field.
-!  The axmz and aymz as well as Exmz and Eymz must have been calculated,
-!  so they are present on the root processor.
+!  Volume average of magnetic helicity flux of the mean field. The axmz and
+!  aymz as well as Exmz and Eymz must have been calculated, so they are present
+!  on the root processor.
 !
 !   6-apr-08/axel: moved from calc_mfield to here
 !
@@ -3862,8 +3851,8 @@ module Magnetic
       real :: emxamz3
       integer :: j
 !
-!  This only works if bxmz and bzmz are in xyaver,
-!  so print warning if this is not ok.
+!  This only works if bxmz and bzmz are in xyaver, so print warning if this is
+!  not ok.
 !
       if (idiag_Exmz==0.or.idiag_Eymz==0) then
         if (first) then
@@ -3877,8 +3866,7 @@ module Magnetic
                    -fnamez(:,:,idiag_Eymz)*fnamez(:,:,idiag_axmz))/(nz*nprocz)
       endif
 !
-!  save the name in the idiag_emxamz3 slot
-!  and set first to false
+!  Save the name in the idiag_emxamz3 slot and set first to false.
 !
       call save_name(emxamz3,idiag_emxamz3)
       first=.false.
@@ -3887,9 +3875,9 @@ module Magnetic
 !***********************************************************************
     subroutine calc_ambmz
 !
-!  Magnetic helicity of the xy-averaged mean field
-!  The bxmz and bymz as well as axmz and aymz must have been calculated,
-!  so they are present on the root processor.
+!  Magnetic helicity of the xy-averaged mean field. The bxmz and bymz as well as
+!  axmz and aymz must have been calculated, so they are present on the root
+!  processor.
 !
 !  16-may-09/axel: adapted from calc_jmbmz
 !
@@ -3900,8 +3888,8 @@ module Magnetic
       real :: ambmz
       integer :: j
 !
-!  This only works if bxmz and bzmz are in xyaver,
-!  so print warning if this is not ok.
+!  This only works if bxmz and bzmz are in xyaver, so print warning if this is
+!  not ok.
 !
       if (idiag_axmz==0.or.idiag_aymz==0) then
         if (first) then
@@ -3915,8 +3903,7 @@ module Magnetic
                  +fnamez(:,:,idiag_bymz)*fnamez(:,:,idiag_aymz))/(nz*nprocz)
       endif
 !
-!  save the name in the idiag_ambmz slot
-!  and set first to false
+!  Save the name in the idiag_ambmz slot and set first to false.
 !
       if (idiag_ambmz/=0) call save_name(ambmz,idiag_ambmz)
       first=.false.
@@ -3925,9 +3912,9 @@ module Magnetic
 !***********************************************************************
     subroutine calc_ambmzh
 !
-!  Hemispheric magnetic helicity of the xy-averaged mean field
-!  The bxmz and bymz as well as axmz and aymz must have been calculated,
-!  so they are present on the root processor.
+!  Hemispheric magnetic helicity of the xy-averaged mean field. The bxmz and
+!  bymz as well as axmz and aymz must have been calculated, so they are present
+!  on the root processor.
 !
 !  16-may-09/axel: adapted from calc_ambmz
 !
@@ -3999,8 +3986,8 @@ module Magnetic
       real :: jmbmz
       integer :: j
 !
-!  This only works if bxmz and bzmz are in xyaver,
-!  so print warning if this is not ok.
+!  This only works if bxmz and bzmz are in xyaver, so print warning if this is
+!  not ok.
 !
       if (idiag_jxmz==0.or.idiag_jymz==0) then
         if (first) then
@@ -4014,8 +4001,7 @@ module Magnetic
                  +fnamez(:,:,idiag_bymz)*fnamez(:,:,idiag_jymz))/(nz*nprocz)
       endif
 !
-!  save the name in the idiag_jmbmz slot
-!  and set first to false
+!  Save the name in the idiag_jmbmz slot and set first to false.
 !
       if (idiag_jmbmz/=0) call save_name(jmbmz,idiag_jmbmz)
       if (idiag_kmz/=0) call save_name(jmbmz/bmz**2,idiag_kmz)
@@ -4025,9 +4011,8 @@ module Magnetic
 !***********************************************************************
     subroutine calc_bmxy_rms
 !
-!  Magnetic energy in z averaged field 
-!  The bxmxy, bymxy and bzmxy must have been calculated,
-!  so they are present on the root processor.
+!  Magnetic energy in z averaged field. The bxmxy, bymxy and bzmxy must have
+!  been calculated, so they are present on the root processor.
 !
 !   6-apr-08/axel: moved from calc_mfield to here
 !
@@ -4038,8 +4023,8 @@ module Magnetic
       real :: bxmxy,bymxy,bzmxy,bmxy_rms,nVol2d,btemp,area
       integer :: l,j
 !
-!  This only works if bxmz and bzmz are in xyaver,
-!  so print warning if this is not ok.
+!  This only works if bxmz and bzmz are in xyaver, so print warning if this is
+!  not ok.
 !
       bmxy_rms=0.
       if (idiag_bxmxy==0.or.idiag_bymxy==0.or.idiag_bzmxy==0) then
@@ -4074,8 +4059,7 @@ module Magnetic
         bmxy_rms = sqrt(bmxy_rms)
       endif
 !
-!  save the name in the idiag_bmxy_rms slot
-!  and set first to false
+!  Save the name in the idiag_bmxy_rms slot and set first to false.
 !
       call save_name(bmxy_rms,idiag_bmxy_rms)
       first=.false.
