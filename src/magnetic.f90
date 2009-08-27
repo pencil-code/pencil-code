@@ -3658,7 +3658,7 @@ module Magnetic
       use Mpicomm
 !
       logical,save :: first=.true.
-      integer :: j
+      real :: bmz
 !
 !  This only works if bxmz and bzmz are in xyaver,
 !  so print warning if this is not ok.
@@ -3695,9 +3695,9 @@ module Magnetic
       use Mpicomm
 !
       logical,save :: first=.true.
-      real, dimension(nx) :: jymx,jzmx
+      real, dimension(nx) :: jymx,jzmx,jmx2
+      real, dimension(nx,ny) :: fsumxy
       real :: jmx
-      integer :: l
 !
 !  This only works if jymxy and jzmxy are in zaver,
 !  so print warning if this is not ok.
@@ -3710,11 +3710,16 @@ module Magnetic
         endif
         jmx=0.
       else
-        do l=1,nx
-!          jymx(l)=sum(fnamexy(l,:,:,idiag_jymxy))/(ny*nprocy)
-!          jzmx(l)=sum(fnamexy(l,:,:,idiag_jzmxy))/(ny*nprocy)
-        enddo
-        jmx=sqrt(sum(jymx**2+jzmx**2)/nx)
+        if (ipz==0) then
+          call mpireduce_sum(fnamexy(:,:,idiag_jymxy),fsumxy,(/nx,ny/),idir=2)
+          jymx=sum(fsumxy,dim=2)/nygrid
+          call mpireduce_sum(fnamexy(:,:,idiag_jzmxy),fsumxy,(/nx,ny/),idir=2)
+          jzmx=sum(fsumxy,dim=2)/nygrid
+        endif
+        if (ipx==0 .and. ipz==0) then
+          call mpireduce_sum(jymx**2+jzmx**2,jmx2,nx,idir=2)
+        endif
+        jmx=sqrt(sum(jmx2)/nxgrid)
       endif
 !
 !  save the name in the idiag_jmx slot
@@ -3737,9 +3742,9 @@ module Magnetic
       use Mpicomm
 !
       logical,save :: first=.true.
-      real, dimension(ny,nprocy) :: jxmy,jzmy
+      real, dimension(ny) :: jxmy,jzmy,jmy2
+      real, dimension(nx,ny) :: fsumxy
       real :: jmy
-      integer :: j
 !
 !  This only works if jxmxy and jzmxy are in zaver,
 !  so print warning if this is not ok.
@@ -3752,13 +3757,16 @@ module Magnetic
         endif
         jmy=0.
       else
-        do j=1,nprocy
-          do m=1,ny
-!            jxmy(m,j)=sum(fnamexy(:,m,j,idiag_jxmxy))/nx
-!            jzmy(m,j)=sum(fnamexy(:,m,j,idiag_jzmxy))/nx
-          enddo
-        enddo
-        jmy=sqrt(sum(jxmy**2+jzmy**2)/(ny*nprocy))
+        if (ipz==0) then
+          call mpireduce_sum(fnamexy(:,:,idiag_jxmxy),fsumxy,(/nx,ny/),idir=1)
+          jxmy=sum(fsumxy,dim=1)/nxgrid
+          call mpireduce_sum(fnamexy(:,:,idiag_jzmxy),fsumxy,(/nx,ny/),idir=1)
+          jzmy=sum(fsumxy,dim=1)/nxgrid
+        endif
+        if (ipy==0 .and. ipz==0) then
+          call mpireduce_sum(jxmy**2+jzmy**2,jmy2,ny,idir=2)
+        endif
+        jmy=sqrt(sum(jmy2)/nygrid)
       endif
 !
 !  save the name in the idiag_jmy slot
@@ -3782,7 +3790,6 @@ module Magnetic
 !
       logical,save :: first=.true.
       real :: jmz
-      integer :: j
 !
 !  This only works if jxmz and jzmz are in xyaver,
 !  so print warning if this is not ok.
