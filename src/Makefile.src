@@ -1562,9 +1562,6 @@ read_videofiles.x: $(read_videofiles)
 read_vectorfiles.x: $(read_vectorfiles)
 	$(LD) $(LDFLAGS) $(read_vectorfiles) $(LD_MPI) -o read_vectorfiles.x
 # 
-var2ascii.x: $(var2ascii)
-	$(LD) $(LDFLAGS) $(var2ascii) $(LD_MPI) -o var2ascii.x
-# 
 write_dnlists_deps=write_dummy_namelists.o $(comm_deps) $(DEBUG).o
 write_dummy_namelists.x: $(write_dnlists_deps)
 	$(LD) $(LDFLAGS) $(write_dnlists_deps) $(LD_MPI) -o write_dummy_namelists.x
