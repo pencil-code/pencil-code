@@ -341,6 +341,8 @@ while (not eof(1)) do begin
   planesize=size(plane)
   nx_plane=planesize[1]
   ny_plane=planesize[2]
+  x2=rebin(x,zoom*nx_plane)
+  y2=rebin(y,zoom*ny_plane)
   if (keyword_set(exponential)) then begin
     plane2=rebin(exp(plane),zoom*[nx_plane,ny_plane])
   endif else if (keyword_set(nsmooth)) then begin
@@ -396,14 +398,14 @@ while (not eof(1)) do begin
           pixID=!D.Window
         endif
         if (keyword_set(contourplot)) then begin
-           contourfill, plane, x, y, levels=grange(amin,amax,60), $
+           contourfill, plane2, x2, y2, levels=grange(amin,amax,60), $
                tit='!8t!6 ='+string(t/tunit,fo="(f6.1)"), _extra=_extra
         end else if (keyword_set(polar)) then begin
           if (style_polar eq 'fill') then begin
-            contourfill, plane, xx, yy, levels=grange(amin,amax,60), $
+            contourfill, plane2, x2, y2, levels=grange(amin,amax,60), $
                 tit='!8t!6 ='+string(t/tunit,fo="(f6.1)"), _extra=_extra
           end else if (style_polar eq 'lines') then begin
-            contour, plane, xx, yy, nlevels=nlevels, $
+            contour, plane2, x2, y2, nlevels=nlevels, $
                 tit='!8t!6 ='+string(t/tunit,fo="(f6.1)"), _extra=_extra
           endif
         endif else begin
