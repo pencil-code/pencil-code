@@ -69,7 +69,7 @@ Mtot = total(exp(lnrho)*dVol)
 Momtot = fltarr(3)
 for i=0,2 do Momtot[i] = total(exp(lnrho)*dVol*uu[*,*,*,i])
 Ekin = 0.5*total(exp(lnrho)*dot2(uu)*dVol)
-Etherm = 1./gamma_inv*total(exp(gamma*(ss+lnrho)))
+Etherm = 1./gamma_m1*total(exp(gamma*(ss+lnrho)))
 ;
 if (n_elements(pot) ne 0) then begin
   Epot = total(exp(lnrho)*pot*dVol)

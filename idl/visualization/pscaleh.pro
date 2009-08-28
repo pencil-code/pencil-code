@@ -21,7 +21,7 @@ save_state
 !y.title = '!8z!X'
 
 pp = exp(gamma*(ent+lam))
-cs2 = gamma * exp(gamma*ent+gamma_inv*lam)
+cs2 = gamma * exp(gamma*ent+gamma_m1*lam)
 
 plot_binned, alog(pp), zz, $
     PSYM=1,  TITLE='!6Pressure!X', XTITLE='!6ln !8p!X'

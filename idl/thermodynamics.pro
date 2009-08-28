@@ -4,13 +4,13 @@ if (not lionization and not lionization_fixed) then begin
   print,'Using simple equation of state...'
 
   if (par.lcalc_cp) then cp=k_B/(mu*m_H) else cp=1.  
-  TT0=cs20/(cp * gamma_inv)
+  TT0=cs20/(cp * gamma_m1)
                                                     
-  cs2=cs20*exp(gamma_inv*(llnrho-lnrho0)+gamma*sss)
+  cs2=cs20*exp(gamma_m1*(llnrho-lnrho0)+gamma*sss)
   ppp=rho*cs2/gamma
   cp1tilde=1.
-  eee=cs2/(gamma*gamma_inv)
-  TTT=TT0*exp(gamma*sss+gamma_inv*(llnrho-lnrho0))
+  eee=cs2/(gamma*gamma_m1)
+  TTT=TT0*exp(gamma*sss+gamma_m1*(llnrho-lnrho0))
 endif else begin
   xHe=par.xHe
   if (lionization_fixed) then begin 

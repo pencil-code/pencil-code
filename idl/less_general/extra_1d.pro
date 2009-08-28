@@ -12,8 +12,8 @@ uuu=uu(l1:l2,m1:m2,n1:n2,*)
 sss=ss(l1:l2,m1:m2,n1:n2)
 llnrho=lnrho(l1:l2,m1:m2,n1:n2)
 ;
-cs2=exp(gamma_inv*llnrho+gamma*ss)
-eee=cs2/(gamma_inv*gamma)
+cs2=exp(gamma_m1*llnrho+gamma*ss)
+eee=cs2/(gamma_m1*gamma)
 rho=exp(llnrho)
 ;
 END

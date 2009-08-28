@@ -69,10 +69,10 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,lntt=lntt,cs2=cs2, $
        cs20=param.cs0^2
        lnrho0=alog(param.rho0)
        gamma=param.gamma
-       gamma_inv=gamma-1.     
+       gamma_m1=gamma-1.     
        cp=param.cp
-       lnTT0=alog(cs20/(cp * gamma_inv))
-       result=(lnTT-lnTT0)/gamma-gamma_inv/gamma*(lnrho-lnrho0)
+       lnTT0=alog(cs20/(cp * gamma_m1))
+       result=(lnTT-lnTT0)/gamma-gamma_m1/gamma*(lnrho-lnrho0)
       endif
 
     endif else if (keyword_set(lnrho_ee)) then begin
@@ -110,13 +110,13 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,lntt=lntt,cs2=cs2, $
       cs20=param.cs0^2
       lnrho0=alog(param.rho0)
       gamma=param.gamma
-      gamma_inv=gamma-1.     
+      gamma_m1=gamma-1.     
 ;      R_cgs=8.3144D7
 
       cp=param.cp
 ;      if (param.lcalc_cp) then begin
 ;        ;cp=k_B/(param.mu*m_H)
-;        cp=float(R_cgs*gamma/(gamma_inv*mu_tmp)/units.velocity^2)
+;        cp=float(R_cgs*gamma/(gamma_m1*mu_tmp)/units.velocity^2)
 ;        pc_check_math,location='pc_eoscalc - cp given lcalc_cp '
 ;      endif
       cp1=1./cp
@@ -128,12 +128,12 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,lntt=lntt,cs2=cs2, $
 
       pc_check_math,location='pc_eoscalc - ideal gas coefficients'
 
-      lnTT_=lnTT0+gamma*cp1*ss+gamma_inv*(lnrho-lnrho0)
+      lnTT_=lnTT0+gamma*cp1*ss+gamma_m1*(lnrho-lnrho0)
      ; cs2=cs20*exp((gamma-1.)*(lnrho-lnrho0)+gamma*ss)
 
       if keyword_set(pp) then begin
        ; result=exp(lnrho)*cs2/gamma
-        result=gamma_inv*cp/gamma*exp(lnTT_+lnrho)
+        result=gamma_m1*cp/gamma*exp(lnTT_+lnrho)
         pc_check_math,location='pc_eoscalc - pp from lnrho and ss'
       endif else if keyword_set(ee) then begin
         ;result=cs2/(gamma*(gamma-1.))

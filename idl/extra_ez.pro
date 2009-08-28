@@ -4,7 +4,7 @@
 ;  it calculates a number of extra variables
 ;
 gamma=5./3.
-gamma_inv=gamma-1.
+gamma_m1=gamma-1.
 ;
 print,'calculate xx,yy,zz (comment out if there isnt enough memory!)'
 xx = spread(x, [1,2], [my,mz])
@@ -29,7 +29,7 @@ if (iaa ne 0) then aaa=f(l1:l2,m1:m2,n1:n2,iax-1:iaz-1)
 if (iaa ne 0) then bbb=bb(l1:l2,m1:m2,n1:n2,*)
 if (iaa ne 0) then jjj=jj(l1:l2,m1:m2,n1:n2,*)
 if (ilnrho ne 0) then rho=exp(llnrho)
-if (iss ne 0) then cs2=exp(gamma_inv*llnrho+gamma*sss)
+if (iss ne 0) then cs2=exp(gamma_m1*llnrho+gamma*sss)
 if (iss ne 0) then ppp=rho*cs2/gamma
 ;
 ;  calculate magnetic energy of mean field in the 3 directions
