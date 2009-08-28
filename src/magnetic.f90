@@ -956,7 +956,6 @@ module Magnetic
         case('fluxrings_WB'); call fluxrings(amplaa(j),f,iuu,iaa,fring_profile)
         case('fluxrings_BW'); call fluxrings(amplaa(j),f,iaa,iuu,fring_profile)
         case('fluxrings_WW'); call fluxrings(amplaa(j),f,iuu,iuu,fring_profile)
-        case('trefoil_knot_fluxtube'); call trefoil_knot_fluxtube(amplaa(j),f,widthaa,fring_profile)
         case('sinxsinz'); call sinxsinz(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
         case('sinxsinz_Hz'); call sinxsinz(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j),KKz=kz_aa(j))
         case('sin2xsin2y'); call sin2x_sin2y_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
@@ -4460,7 +4459,7 @@ module Magnetic
 !
     endsubroutine alfvenz_rot
 !***********************************************************************
-    subroutine alfvenz_rot_shear(ampl,f,iuu,iaa,kz,O)
+    subroutine alfvenz_rot_shear(ampl,f,iuu,iaa,kz,OO)
 !
 !  Alfven wave propagating in the z-direction (with Coriolis force and shear)
 !
@@ -4475,22 +4474,22 @@ module Magnetic
 !  28-june-04/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: ampl,kz,O
+      real :: ampl,kz,OO
       complex :: fac
       integer :: iuu,iaa
 !
 !  ux, uy, Ax and Ay
 !
       if (lroot) print*,'alfvenz_rot_shear: '// &
-          'Alfven wave with rotation and shear; O,kz=',O,kz
-      fac=cmplx(O-sqrt(16*kz**2+O**2),0.)
+          'Alfven wave with rotation and shear; OO,kz=',OO,kz
+      fac=cmplx(OO-sqrt(16*kz**2+OO**2),0.)
       do n=n1,n2; do m=m1,m2
         f(l1:l2,m,n,iuu+0)=f(l1:l2,m,n,iuu+0)+ampl*fac/(4*kz)*sin(kz*z(n))
         f(l1:l2,m,n,iuu+1)=f(l1:l2,m,n,iuu+1)+ampl*real(exp(cmplx(0,z(n)*kz))* &
-            fac*sqrt(2*kz**2+O*fac)/(sqrt(2.)*kz*(-6*O-fac)))
+            fac*sqrt(2*kz**2+OO*fac)/(sqrt(2.)*kz*(-6*OO-fac)))
         f(l1:l2,m,n,iaa+0)=ampl*sin(kz*z(n))/kz
         f(l1:l2,m,n,iaa+1)=-ampl*2*sqrt(2.)*aimag(exp(cmplx(0,z(n)*kz))* &
-            sqrt(2*kz**2+O*fac)/(-6*O-fac)/(cmplx(0,kz)))
+            sqrt(2*kz**2+OO*fac)/(-6*OO-fac)/(cmplx(0,kz)))
       enddo; enddo
 !
     endsubroutine alfvenz_rot_shear
@@ -4588,182 +4587,6 @@ module Magnetic
       if (lroot) print*, 'fluxrings: Magnetic flux rings initialized'
 !
     endsubroutine fluxrings
-!***********************************************************************
-    subroutine trefoil_knot_fluxtube(ampl,f,widthRing,profile)
-!
-!  Magnetic flux ring which has the form of a trefoil knot. This knot has
-!  a linking number 3.
-!
-!  Created 2009-06-05 by Simon Candelaresi (Iomsn)
-!  Last modified
-
-!  WARNING: DO NOT USE THIS SUBROUTINE, THIS IS STILL WORK IN PROGRESS
-
-      use Mpicomm, only: stop_it
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!     real, dimension (mx,my,mz,3) :: magneticField
-      real :: knotParam, circleParam, circleR
-      real :: deltaKnotParam, deltaCircleParam, deltaCircleR
-      real, dimension(3) :: knotPos, circlePos, tangent, normal
-      real :: widthRing
-      integer :: domainWidth, domainDepth, domainHeight
-      integer :: l ! increment variable for the x component
-!       real, dimension (nx,3) :: tmpv
-!       real, dimension (nx) :: xx1,yy1,zz1
-!       real, dimension(3) :: axis,disp
-      real :: ampl!,phi,theta,ct,st,cp,sp
-!       real :: fring,Iring,R0,width
-!       integer :: i,ivar,ivar1,ivar2,ivar3
-      character (len=*), optional :: profile
-      character (len=labellen) :: prof
-!
-      if (present(profile)) then
-        prof = profile
-      else
-        prof = 'constant'
-      endif
-
-!
-!  initialize the magnetic flux tube
-!
-      domainWidth = l2-l1; domainDepth = m2-m1; domainHeight = n2-n1
-!  Calculate the minimum step size of the curve parameters to avoid discretation
-!  issues, like mesh points without magnetic field
-!     deltaKnotParam = (2.*PI)/max(domainWidth,domainDepth,domainHeight)
-      deltaKnotParam = 1./max(domainWidth,domainDepth,domainHeight)
-      deltaCircleParam = deltaKnotParam/(widthRing/2.)
-      deltaCircleR = deltaCircleParam
-
-      knotParam = 0.
-!  loop which moves along the trefoil knot
-      do
-        if (knotParam .gt. 3.*PI*3./2.+3.) exit
-!  At which stage of the knot are we?
-        if (knotParam .le. 1.*PI*3./2. + 0.) then
-          knotPos(1) = -sin(knotParam/3.)**2
-          knotPos(2) = -cos(knotParam)
-          knotPos(3) = sin(knotParam)+1.
-          tangent(1) = -2./3.*sin(knotParam/3.)*cos(knotParam/3.)
-          tangent(2) = sin(knotParam)
-          tangent(3) = cos(knotParam)
-        elseif (knotParam .le. 1.*PI*3./2. + 1.) then
-!           print*, "line1"
-          knotPos(1) = -1.
-          knotPos(2) = -(knotParam-PI*3./2.)
-          knotPos(3) = 0.
-          tangent(1) = 0.
-          tangent(2) = -1.
-          tangent(3) = 0.
-        elseif (knotParam .le. 2.*PI*3./2. + 1.) then
-          knotPos(1) = -cos(knotParam-(1.*PI*3./2.+1.))
-          knotPos(2) = -sin(knotParam-(1.*PI*3./2.+1.))-1.
-          knotPos(3) = sin((knotParam-(1.*PI*3./2.+1.))/3.)**2
-          tangent(1) = sin(knotParam-(1.*PI*3./2.+1.))
-          tangent(2) = -cos(knotParam-(1.*PI*3./2.+1.))
-          tangent(3) = 2./3.*sin((knotParam-(1.*PI*3./2.+1.))/3.)*cos((knotParam-(1.*PI*3./2.+1.))/3.)
-        elseif (knotParam .le. 2.*PI*3./2. + 2.) then
-!           print*, "line2"
-          knotPos(1) = -(knotParam-(2.*PI*3./2.+1.))
-          knotPos(2) = 0.
-          knotPos(3) = 1.
-          tangent(1) = -1.
-          tangent(2) = 0.
-          tangent(3) = 0.
-        elseif (knotParam .le. 3.*PI*3./2. + 2.) then
-          knotPos(1) = -sin(knotParam-(2.*pi*3./2.+2.))-1.
-          knotPos(2) = -sin((knotParam-(2.*pi*3./2.+2.))/3.)**2
-          knotPos(3) = cos(knotParam-(2.*pi*3./2.+2.))
-          tangent(1) = -cos(knotParam-(2.*pi*3./2.+2.))
-          tangent(2) = -2./3.*sin((knotParam-(2.*pi*3./2.+2.))/3.)*cos((knotParam-(2.*pi*3./2.+2.))/3.)
-          tangent(3) = -sin(knotParam-(2.*pi*3./2.+2.))
-        else
-!           print*, "line3"
-          knotPos(1) = 0.
-          knotPos(2) = -1.
-          knotPos(3) = knotParam-(3.*PI*3./2.+2.)
-          tangent(1) = 0.
-          tangent(2) = 0.
-          tangent(3) = 1.
-        endif
-        tangent = tangent / sqrt(tangent(1)**2+tangent(2)**2+tangent(3)**2)
-
-!  Find vector which is orthogonal (normal) to tangent vector.
-        if (abs(tangent(1)) .le. 0.5) then
-          normal(1) = tangent(1)**2 - 1.0
-          normal(2) = tangent(2)*tangent(1)
-          normal(3) = tangent(3)*tangent(1)
-        elseif (abs(tangent(2)) .le. 0.5) then
-          normal(1) = tangent(1)*tangent(2)
-          normal(2) = tangent(2)**2 - 1.0
-          normal(3) = tangent(3)*tangent(2)
-        else
-          normal(1) = tangent(1)*tangent(3)
-          normal(2) = tangent(2)*tangent(3)
-          normal(3) = tangent(3)**2 - 1.0
-        endif
-!  normalize the normal vector
-        normal = normal / sqrt(normal(1)**2+normal(2)**2+normal(3)**2)
-
-        circleR = 0.
-!  loop which changes the circles radius
-        do
-          if (circleR .gt. widthRing/2.) exit
-          circleParam = 0.
-!  loop which goes around the circle
-          do
-            if (circleParam .gt. 2.*PI) exit
-            circlePos(1) = knotPos(1) + circleR * &
-            ((tangent(1)*tangent(1)*(1-cos(circleParam))+cos(circleParam))*normal(1) + &
-            (tangent(1)*tangent(2)*(1-cos(circleParam))-tangent(3)*sin(circleParam))*normal(2) + &
-            (tangent(1)*tangent(3)*(1-cos(circleParam))+tangent(2)*sin(circleParam))*normal(3))
-            circlePos(2) = knotPos(2) + circleR * &
-            ((tangent(1)*tangent(2)*(1-cos(circleParam))+tangent(3)*sin(circleParam))*normal(1) + &
-            (tangent(2)*tangent(2)*(1-cos(circleParam))+cos(circleParam))*normal(2) + &
-            (tangent(2)*tangent(3)*(1-cos(circleParam))-tangent(1)*sin(circleParam))*normal(3))
-            circlePos(3) = knotPos(3) + circleR * &
-            ((tangent(1)*tangent(3)*(1-cos(circleParam))-tangent(2)*sin(circleParam))*normal(1) + &
-            (tangent(2)*tangent(3)*(1-cos(circleParam))+tangent(1)*sin(circleParam))*normal(2) + &
-            (tangent(3)*tangent(3)*(1-cos(circleParam))+cos(circleParam))*normal(3))
-
-! debuging
-!             if(((circlePos(1)-knotPos(1))**2 + (circlePos(2)-knotPos(2))**2 + &
-!             (circlePos(3)-knotPos(3))**2) .gt. ((widthRing/2.)**2+0.1)) then
-! !               print*, "flux tube radius =" 
-!               circlePos = knotPos
-!             endif
-
-!  Find the corresponding mesh point to this position.
-            l = nint((circlePos(1)+PI)/(2.*PI)*domainWidth)+1
-            m = nint((circlePos(2)+PI)/(2.*PI)*domainDepth)+1
-            n = nint((circlePos(3)+PI)/(2.*PI)*domainHeight)+1
-
-!  Write the magnetic field b.
-!           magneticField(l,m,n,1:3) = tangent*ampl
-            f(l,m,n,iax:iaz) = tangent*ampl
-!             f(l,m,n,iax:iaz) = normal*ampl
-!             f(l,m,n,iax:iaz) = tangent(1)*normal(1)+tangent(2)*normal(2)+tangent(3)*normal(3)
-!             f(l,m,n,iax:iaz) = (circlePos(1) - knotPos(1))**2 + (circlePos(2) - knotPos(2))**2 + (circlePos(3) - knotPos(3))**2
-
-            circleParam = circleParam + deltaCircleParam
-          enddo
-          circleR = circleR + deltaCircleR
-        enddo
-        knotParam = knotParam + deltaKnotParam
-      enddo
-
-!
-!  calculate the vector potential from the magnetic field
-!
-      
-
-!
-!  Put all into f
-!
-
-
-
-    endsubroutine trefoil_knot_fluxtube
 !***********************************************************************
     subroutine norm_ring(xx1,yy1,zz1,fring,Iring,R0,width,vv,profile)
 !
