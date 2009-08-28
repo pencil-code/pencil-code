@@ -165,17 +165,16 @@ module Magnetic
 !
     endsubroutine time_integrals_magnetic
 !***********************************************************************
-    subroutine df_diagnos_magnetic(f,df,p)
+    subroutine df_diagnos_magnetic(df,p)
 !
 !  Dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      intent(in)  :: f, df, p
+      intent(in)  ::  df, p
 !
-      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
 !
     endsubroutine df_diagnos_magnetic
@@ -351,6 +350,8 @@ module Magnetic
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mx,my,mz,mvar), intent (inout) :: df
 !
+      call keep_compiler_quiet(f,df)
+!      
     endsubroutine remove_mean_emf
 !***********************************************************************
 endmodule Magnetic

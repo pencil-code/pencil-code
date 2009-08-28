@@ -517,7 +517,7 @@ module Equ
 !  This must be done at the end of all calls that might modify df.
 !
         if (ldiagnos) then
-          if (lmagnetic) call df_diagnos_magnetic(f,df,p)
+          if (lmagnetic) call df_diagnos_magnetic(df,p)
         endif
 !
 !  General phiaverage quantities -- useful for debugging.
