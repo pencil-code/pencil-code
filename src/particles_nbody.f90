@@ -270,14 +270,21 @@ module Particles_nbody
 !
 !  22-sep-06/wlad: adapted
 !
-      lpenc_requested(i_rho)=.true.
-      if (ldust) lpenc_requested(i_rhop)=.true.
-      lpenc_requested(i_r_mn)=.true.
-      lpenc_requested(i_rcyl_mn)=.true.
+      if (ldensity) lpenc_requested(i_rho)=.true.
+      if (ldust.and.lbackreaction) &
+          lpenc_requested(i_rhop)=.true.
+!
+      if (lexclude_frozen) then
+        if (lcylinder_in_a_box) then 
+          lpenc_requested(i_rcyl_mn)=.true.
+        else
+          lpenc_requested(i_r_mn)=.true.
+        endif
+      endif
 !           
       if (idiag_totenergy/=0) then
         lpenc_diagnos(i_u2)=.true.
-        lpenc_diagnos(i_rcyl_mn)=.true.
+        lpenc_diagnos(i_rho)=.true.
       endif
 !
       if (any(idiag_torqext/=0) .or. any(idiag_torqint/=0)) then
