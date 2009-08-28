@@ -157,17 +157,18 @@ module Timestep
       !   lshift_datacube_x, density floor, or velocity ceiling.
       !   None of those will do exctly what is intended, because they are
       !   only really modifying f during the first substep.
-      real, dimension (mx,my,mz,mvar), intent(inout) :: f
-      real, dimension (mx,my,mz,mvar), intent(out)   :: df
-      type (pencil_case), intent(inout) :: p
+      intent(inout) :: f
+      intent(out)   :: df, p, errmax
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
       real, dimension(mx,my,mz,mvar,5) :: k
       ! Note: The tmp array will not use more memory than the temporary
       !   array that would be implicitly created with calls like
       !     call pde(f + b21*k(:,:,:,:,1), k(:,:,:,:,2), p)
       real, dimension (mx,my,mz,mvar) :: tmp
       real, dimension(nx) :: scal, err
-      real, intent(inout) :: errmax
-      real :: errmaxs
+      real :: errmax, errmaxs
       integer :: j,lll
 
       df=0.
