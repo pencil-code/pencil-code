@@ -1413,12 +1413,14 @@ module Entropy
       use Cparam
       use EquationOfState, only: gamma, gamma1, cs2bot, cs2top, get_cp1
       use General, only: tridag
+      use Mpicomm, only: transp_xz, transp_zx
 
       implicit none
 
       integer :: i,j
       real, dimension(mx,my,mz,mfarray) :: finit,f
       real, dimension(nx,nz) :: finter, source, rho, TT
+      real, dimension(nz,nx) :: rhst, rhot, sourcet, wtmp
       real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
       real    :: alpha, aalpha, bbeta, cp1, dx_2, dz_2
@@ -1464,31 +1466,35 @@ module Entropy
         call cyclic(ax,bx,cx,aalpha,bbeta,rhsx,workx,nx)
         finter(:,j)=workx
       enddo
+
+      call transp_xz(finter, rhst)
+      call transp_xz(rho, rhot)
+      call transp_xz(source, sourcet)
 !
 !  columns dealt implicitly
 !
       do i=1,nx
-        wz=dt*gamma*hcond0*cp1/rho(i,:)
+        wz=dt*gamma*hcond0*cp1/rhot(:,i)
         az=-wz*dz_2/2.
         bz=1.+wz*dz_2
         cz=az
 !
         if (i==1) then
           !finter(1:l1-1,:)=finter(l2i:l2,:)
-          rhsz=finter(i,:)+wz*dx_2/2.*                       &
-             (finter(i+1,:)-2.*finter(i,:)                   &
-             +finter(nx,:))                                  &
-             +dt/2.*source(i,:)
+          rhsz=rhst(:,i)+wz*dx_2/2.*                   &
+             (rhst(:,i+1)-2.*rhst(:,i)                 &
+             +rhst(:,nx))                              &
+             +dt/2.*sourcet(:,i)
         elseif (i==nx) then
           !finter(l2+1:mx,:)=finter(l1:l1i,:)
-          rhsz=finter(i,:)+wz*dx_2/2.*                       &
-             (finter(1,:)                                    &
-             -2.*finter(i,:)+finter(i-1,:))                  &
-             +dt/2.*source(i,:)
+          rhsz=rhst(:,i)+wz*dx_2/2.*                   &
+             (rhst(:,1)                                &
+             -2.*rhst(:,i)+rhst(:,i-1))                &
+             +dt/2.*sourcet(:,i)
         else
-          rhsz=finter(i,:)+wz*dx_2/2.*                       &
-             (finter(i+1,:)-2.*finter(i,:)+finter(i-1,:))    &
-             +dt/2.*source(i,:)
+          rhsz=rhst(:,i)+wz*dx_2/2.*                   &
+             (rhst(:,i+1)-2.*rhst(:,i)+rhst(:,i-1))    &
+             +dt/2.*sourcet(:,i)
         endif
 !
 ! z boundary conditions
@@ -1510,8 +1516,9 @@ module Entropy
       endselect
 !
         call tridag(az,bz,cz,rhsz,workz)
-        f(i+nghost,4,n1:n2,ilnTT)=workz
+        wtmp(:,i)=workz
       enddo
+      call transp_zx(wtmp, f(l1:l2,4,n1:n2,ilnTT))
 !
     endsubroutine ADI_Kconst
 !***********************************************************************
