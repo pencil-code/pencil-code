@@ -153,11 +153,18 @@ module Timestep
       real, parameter :: dc5 = c5 - 277.0 / 14336.0
       real, parameter :: dc6 = c6 - 0.25
 
-      real, dimension (mx,my,mz,mvar), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(out) :: df
+      ! Note: f is intent(inout), as pde may change it due to
+      !   lshift_datacube_x, density floor, or velocity ceiling.
+      !   None of those will do exctly what is intended, because they are
+      !   only really modifying f during the first substep.
+      real, dimension (mx,my,mz,mvar), intent(inout) :: f
+      real, dimension (mx,my,mz,mvar), intent(out)   :: df
       type (pencil_case), intent(inout) :: p
       real, dimension(mx,my,mz,mvar,5) :: k
-      real, dimension (mx,my,mz,mvar) :: tmp1
+      ! Note: The tmp array will not use more memory than the temporary
+      !   array that would be implicitly created with calls like
+      !     call pde(f + b21*k(:,:,:,:,1), k(:,:,:,:,2), p)
+      real, dimension (mx,my,mz,mvar) :: tmp
       real, dimension(nx) :: scal, err
       real, intent(inout) :: errmax
       real :: errmaxs
@@ -167,7 +174,7 @@ module Timestep
       errmax=0.
       k=0.
 
-      call pde(f,k(:,:,:,:,1),p)
+      call pde(f, k(:,:,:,:,1), p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
           k(l1:l2,m,n,j,1) = dt*k(l1:l2,m,n,j,1)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
@@ -175,31 +182,34 @@ module Timestep
       enddo; enddo; enddo
 
       lfirst=.false.
-
-      call pde(f+b21*k(:,:,:,:,1), k(:,:,:,:,2),p)
+      tmp = f + b21*k(:,:,:,:,1)
+      call pde(tmp, k(:,:,:,:,2), p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
           k(l1:l2,m,n,j,2) = dt*k(l1:l2,m,n,j,2)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
       enddo; enddo; enddo
 
-      call pde(f+b31*k(:,:,:,:,1)+b32*k(:,:,:,:,2), k(:,:,:,:,3),p)
+      tmp = f + b31*k(:,:,:,:,1) + b32*k(:,:,:,:,2)
+      call pde(tmp, k(:,:,:,:,3), p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
           k(l1:l2,m,n,j,3) = dt*k(l1:l2,m,n,j,3)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
       enddo; enddo; enddo
 
-      call pde(f+b41*k(:,:,:,:,1)+&
-              b42*k(:,:,:,:,2)+&
-              b43*k(:,:,:,:,3), k(:,:,:,:,4),p)
+      tmp = f + b41*k(:,:,:,:,1) &
+              + b42*k(:,:,:,:,2) &
+              + b43*k(:,:,:,:,3)
+      call pde(tmp, k(:,:,:,:,4), p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
           k(l1:l2,m,n,j,4) = dt*k(l1:l2,m,n,j,4)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
       enddo; enddo; enddo
 
-      call pde(f+b51*k(:,:,:,:,1)+&
-              b52*k(:,:,:,:,2)+&
-              b53*k(:,:,:,:,3)+&
-              b54*k(:,:,:,:,4), k(:,:,:,:,5),p)
+      tmp = f + b51*k(:,:,:,:,1) &
+              + b52*k(:,:,:,:,2) &
+              + b53*k(:,:,:,:,3) &
+              + b54*k(:,:,:,:,4)
+      call pde(tmp, k(:,:,:,:,5), p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
           k(l1:l2,m,n,j,5) = dt*k(l1:l2,m,n,j,5)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
@@ -207,11 +217,12 @@ module Timestep
 
       errmaxs=0.
 
-      call pde(f+b61*k(:,:,:,:,1)+&
-              b62*k(:,:,:,:,2)+&
-              b63*k(:,:,:,:,3)+&
-              b64*k(:,:,:,:,4)+&
-              b65*k(:,:,:,:,5), df,p)
+      tmp = f + b61*k(:,:,:,:,1) &
+              + b62*k(:,:,:,:,2) &
+              + b63*k(:,:,:,:,3) &
+              + b64*k(:,:,:,:,4) &
+              + b65*k(:,:,:,:,5)
+      call pde(tmp, df, p)
 
       do j=1,mvar; do n=n1,n2; do m=m1,m2
           df(l1:l2,m,n,j) = dt*df(l1:l2,m,n,j)
