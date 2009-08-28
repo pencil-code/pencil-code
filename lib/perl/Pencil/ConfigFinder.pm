@@ -158,7 +158,9 @@ sub locate_config_file {
 
     # Recursive
     if ($recurse) {
-        my @dirs = split("\0", `find $root -type d -print0`);
+        # Todo: recode this using File::Find
+        my @dirs = split("\0",
+                         `find $root -name .svn -prune -o -name CVS -prune -o -name _darcs -o -name .git -prune -o -name .hg -prune -o -type d -print0`);
         for my $dir (@dirs) {
             my $file = locate_config_file($dir, $id, 0);
             return $file if (defined $file);
