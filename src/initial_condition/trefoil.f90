@@ -23,11 +23,11 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-  real :: ampl,widthRing
+  real :: ampl,width_ring
   character (len=labellen) :: prof='constant'
 !
   namelist /initial_condition_pars/ &
-      ampl,widthRing,prof
+      ampl,width_ring,prof
 !
   contains
 !***********************************************************************
@@ -88,8 +88,8 @@ module InitialCondition
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: knot_param, circle_param, circleR
-      real :: delta_knot_param, delta_circle_param, delta_circleR
+      real :: knot_param, circle_param, circle_radius
+      real :: delta_knot_param, delta_circle_param, delta_circle_radius
       real, dimension(3) :: knot_pos, circle_pos, tangent, normal
       integer :: domain_width, domain_depth, domain_height
       integer :: l 
@@ -103,8 +103,8 @@ module InitialCondition
 !     delta_knot_param = (2.*pi)/max(domain_width,domain_depth,domain_height)
 !
       delta_knot_param = 1./max(domain_width,domain_depth,domain_height)
-      delta_circle_param = delta_knot_param/(widthRing/2.)
-      delta_circleR = delta_circle_param
+      delta_circle_param = delta_knot_param/(width_ring/2.)
+      delta_circle_radius = delta_circle_param
 !
       knot_param = 0.
 !
@@ -181,28 +181,28 @@ module InitialCondition
 !  normalize the normal vector
 !
         normal = normal / sqrt(normal(1)**2+normal(2)**2+normal(3)**2)
-
-        circleR = 0.
+!
+        circle_radius = 0.
 !
 !  loop which changes the circles radius
 !
         do
-          if (circleR .gt. widthRing/2.) exit
+          if (circle_radius .gt. width_ring/2.) exit
           circle_param = 0.
 !
 !  loop which goes around the circle
 !
           do
             if (circle_param .gt. 2.*pi) exit
-            circle_pos(1) = knot_pos(1) + circleR * &
+            circle_pos(1) = knot_pos(1) + circle_radius * &
             ((tangent(1)*tangent(1)*(1-cos(circle_param))+cos(circle_param))*normal(1) + &
             (tangent(1)*tangent(2)*(1-cos(circle_param))-tangent(3)*sin(circle_param))*normal(2) + &
             (tangent(1)*tangent(3)*(1-cos(circle_param))+tangent(2)*sin(circle_param))*normal(3))
-            circle_pos(2) = knot_pos(2) + circleR * &
+            circle_pos(2) = knot_pos(2) + circle_radius * &
             ((tangent(1)*tangent(2)*(1-cos(circle_param))+tangent(3)*sin(circle_param))*normal(1) + &
             (tangent(2)*tangent(2)*(1-cos(circle_param))+cos(circle_param))*normal(2) + &
             (tangent(2)*tangent(3)*(1-cos(circle_param))-tangent(1)*sin(circle_param))*normal(3))
-            circle_pos(3) = knot_pos(3) + circleR * &
+            circle_pos(3) = knot_pos(3) + circle_radius * &
             ((tangent(1)*tangent(3)*(1-cos(circle_param))-tangent(2)*sin(circle_param))*normal(1) + &
             (tangent(2)*tangent(3)*(1-cos(circle_param))+tangent(1)*sin(circle_param))*normal(2) + &
             (tangent(3)*tangent(3)*(1-cos(circle_param))+cos(circle_param))*normal(3))
@@ -218,7 +218,7 @@ module InitialCondition
             f(l,m,n,iax:iaz) = tangent*ampl
             circle_param = circle_param + delta_circle_param
           enddo
-          circleR = circleR + delta_circleR
+          circle_radius = circle_radius + delta_circle_radius
         enddo
         knot_param = knot_param + delta_knot_param
       enddo
