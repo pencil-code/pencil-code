@@ -12,9 +12,9 @@ module Timestep
   public :: rk_2n, border_profiles, timestep_autopsy
 
   ! Parameters for adaptive time stepping
-  real, parameter :: safety           = 0.9
-  real, parameter :: dt_decrease      = -0.25
-  real, parameter :: dt_increase      = -0.20
+  real, parameter :: safety      =  0.9
+  real, parameter :: dt_decrease = -0.25
+  real, parameter :: dt_increase = -0.20
   real            :: errcon
 !
 !  border_prof_[x-z] could be of size n[x-z], but having the same
@@ -29,17 +29,14 @@ module Timestep
 !***********************************************************************
     subroutine rk_2n(f,df,p)
 !
-!  Runge-Kutta-Fehlberg accurate to 5th order
-!  At the moment, itorder can be 1, 2, or 3.
+!  Cash-Karp variant of Runge-Kutta-Fehlberg accurate to 5th order
+!  To use this, set itorder to 5.
 !
 !  22-jun-06/tony: coded
 !
       use Mpicomm
       use Cdata
       use Messages
-!!      use Particles_main
-!!      use Interstellar, only: calc_snr_damp_int
-!!      use Shear, only: advance_shear
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -65,10 +62,14 @@ module Timestep
 !      if (.not. ldt) dt_beta_ts=dt*beta_ts
 !
 
-      if (linterstellar.or.lshear.or.lparticles) &
+      if (linterstellar .or. lshear .or. lparticles) &
             call fatal_error("rk_2n", &
                    "Shear, interstellar and particles are not" // &
                    " yet supported by the adaptive rkf scheme")
+
+      if (lborder_profiles) &
+            call fatal_error("rk_2n", &
+                   "Border profiles are explicitly commented out")
 
       lfirst=.true.
       do i=1,10
@@ -117,38 +118,40 @@ module Timestep
     endsubroutine rk_2n
 !***********************************************************************
     subroutine rkck(f, df, p, errmax)
-    ! Explicit fifth order Runge--Kutta--Fehlberg time stepping
+!
+! Explicit fifth order Runge--Kutta--Fehlberg time stepping
+!
       use Cdata
       use Mpicomm, only: mpiallreduce_max
       use Equ
     ! RK parameters by Cash and Karp
-      real, parameter :: b21      = 0.2
-      real, parameter :: b31      = 0.075
-      real, parameter :: b32      = 0.225
-      real, parameter :: b41      = 0.3
-      real, parameter :: b42      = -0.9
-      real, parameter :: b43      = 1.2
-      real, parameter :: b51      = -11.0 / 54.0
-      real, parameter :: b52      = 2.5
-      real, parameter :: b53      = -70.0 / 27.0
-      real, parameter :: b54      = 35.0 / 27.0
-      real, parameter :: b61      = 1631.0 / 55296.0
-      real, parameter :: b62      = 175.0 / 512.0
-      real, parameter :: b63      = 575.0 / 13824.0
-      real, parameter :: b64      = 44275.0 / 110592.0
-      real, parameter :: b65      = 253.0 / 4096.0
-      real, parameter :: c1       = 37.0 / 378.0
-      real, parameter :: c2       = 0.0
-      real, parameter :: c3       = 250.0 / 621.0
-      real, parameter :: c4       = 125.0 / 594.0
-      real, parameter :: c5       = 0.0
-      real, parameter :: c6       = 512.0 / 1771.0
-      real, parameter :: dc1      = c1 - 2825.0 / 27648.0
-      real, parameter :: dc2      = c2 - 0.0
-      real, parameter :: dc3      = c3 - 18575.0 / 48384.0
-      real, parameter :: dc4      = c4 - 13525.0 / 55296.0
-      real, parameter :: dc5      = c5 - 277.0 / 14336.0
-      real, parameter :: dc6      = c6 - 0.25
+      real, parameter :: b21 = 0.2
+      real, parameter :: b31 = 0.075
+      real, parameter :: b32 = 0.225
+      real, parameter :: b41 = 0.3
+      real, parameter :: b42 = -0.9
+      real, parameter :: b43 = 1.2
+      real, parameter :: b51 = -11.0 / 54.0
+      real, parameter :: b52 = 2.5
+      real, parameter :: b53 = -70.0 / 27.0
+      real, parameter :: b54 = 35.0 / 27.0
+      real, parameter :: b61 = 1631.0 / 55296.0
+      real, parameter :: b62 = 175.0 / 512.0
+      real, parameter :: b63 = 575.0 / 13824.0
+      real, parameter :: b64 = 44275.0 / 110592.0
+      real, parameter :: b65 = 253.0 / 4096.0
+      real, parameter :: c1  = 37.0 / 378.0
+      real, parameter :: c2  = 0.0
+      real, parameter :: c3  = 250.0 / 621.0
+      real, parameter :: c4  = 125.0 / 594.0
+      real, parameter :: c5  = 0.0
+      real, parameter :: c6  = 512.0 / 1771.0
+      real, parameter :: dc1 = c1 - 2825.0 / 27648.0
+      real, parameter :: dc2 = c2 - 0.0
+      real, parameter :: dc3 = c3 - 18575.0 / 48384.0
+      real, parameter :: dc4 = c4 - 13525.0 / 55296.0
+      real, parameter :: dc5 = c5 - 277.0 / 14336.0
+      real, parameter :: dc6 = c6 - 0.25
 
       real, dimension (mx,my,mz,mvar), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(out) :: df
@@ -173,22 +176,17 @@ module Timestep
 
       lfirst=.false.
 
-
       call pde(f+b21*k(:,:,:,:,1), k(:,:,:,:,2),p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
           k(l1:l2,m,n,j,2) = dt*k(l1:l2,m,n,j,2)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
       enddo; enddo; enddo
 
-
-
       call pde(f+b31*k(:,:,:,:,1)+b32*k(:,:,:,:,2), k(:,:,:,:,3),p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
           k(l1:l2,m,n,j,3) = dt*k(l1:l2,m,n,j,3)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
       enddo; enddo; enddo
-
-
 
       call pde(f+b41*k(:,:,:,:,1)+&
               b42*k(:,:,:,:,2)+&
@@ -198,7 +196,6 @@ module Timestep
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
       enddo; enddo; enddo
 
-
       call pde(f+b51*k(:,:,:,:,1)+&
               b52*k(:,:,:,:,2)+&
               b53*k(:,:,:,:,3)+&
@@ -207,7 +204,6 @@ module Timestep
           k(l1:l2,m,n,j,5) = dt*k(l1:l2,m,n,j,5)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
       enddo; enddo; enddo
-
 
       errmaxs=0.
 
@@ -233,9 +229,7 @@ module Timestep
           !
           select case(timestep_scaling(j))
           case('per_var_err')
-            !
             ! Per variable error
-            !
             scal=  ( &
                  sqrt(f(l1:l2,m,n,1)**2+f(l1:l2,m,n,2)**2)  + &
                  sqrt(k(l1:l2,m,n,1,1)**2 + k(l1:l2,m,n,2,1)**2) + &
@@ -245,21 +239,15 @@ module Timestep
             !     abs(f(l1:l2,m,n,j))  + abs(k(l1:l2,m,n,j,1)) + 1e-30)
             !errmaxs = max(maxval(abs(err/scal)),errmaxs)
           case('cons_frac_err')
-            !
             ! Constant fractional error
-            !
             errmaxs = max(maxval(abs(err/f(l1:l2,m,n,j))),errmaxs)
           case('cons_err')
-            !
             ! Constant error
-            !
             scal = max(abs(f(l1:l2,m,n,j)), 1e-8)
             errmaxs = max(maxval(abs(err/scal)),errmaxs)
             !
           case('none')
-            !
             ! No error check
-            !
             errmaxs = 0
             !
           endselect
@@ -295,17 +283,6 @@ module Timestep
         print*,"  t=",t
         print*,"  Detailed breakdown not available for Adaptive Runge--Kutta--Fehlberg scheme"
       endif
-
-! Procs testify in serial
-!     call start_serialize
-!!        if ( dt >= dt_local ) then
-!          print*,"------------------ START OF CONFESSION (", iproc, ") ----------------------"
-!            print*,"     "
-!            print*,"------------------- END OF CONFESSION -----------------------"
-!
-!!          endif
-!!        endif
-!     call end_serialize
 
     endsubroutine timestep_autopsy
 !***********************************************************************
