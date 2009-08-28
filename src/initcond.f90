@@ -18,6 +18,7 @@ module Initcond
   public :: arcade_x, vecpatternxy, bipolar, bipolar_restzero
   public :: soundwave,sinwave,sinwave_phase,coswave,coswave_phase,cos_cos_sin
   public :: hatwave
+  public :: sph_constb 
   public :: gaunoise, posnoise
   public :: gaunoise_rprof
   public :: gaussian, gaussian3d, beltrami, rolls, tor_pert
@@ -1540,6 +1541,32 @@ module Initcond
       endif
 !
     endsubroutine coswave
+!***********************************************************************
+    subroutine sph_constb(ampl,f,izero)
+!
+!  Antisymmetric (about equator) toroidal B field and zero poloidal 
+!  B field in spherical polar coordinate.
+!
+!  27-aug-09/dhruba: adapted from sinwave
+!
+      integer :: izero,l,m
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: ampl
+! 
+! set minimum and maximum values for r and theta
+! 
+! set A_{phi} = 0 (izero should be iaa)
+! 
+      f(:,:,:,izero+2)=0.
+! set A_r and A_{\theta}
+      do l=1,mx
+        do m=1,my
+          f(l,m,:,izero)=ampl*x(l)*y(m)
+          f(l,m,:,izero+1)=ampl*x(l)
+        enddo
+      enddo
+!
+    endsubroutine sph_constb 
 !***********************************************************************
     subroutine hatwave(ampl,f,i,width,kx,ky,kz)
 !

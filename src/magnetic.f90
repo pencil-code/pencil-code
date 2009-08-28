@@ -905,6 +905,7 @@ module Magnetic
         case('rescale'); f(:,:,:,iax:iaz)=amplaa(j)*f(:,:,:,iax:iaz)
         case('mode'); call modev(amplaa(j),coefaa,f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
         case('modeb'); call modeb(amplaa(j),coefbb,f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
+        case('sph_constb'); call sph_constb(amplaa(j),f,iaa)
         case('const_lou'); call const_lou(amplaa(j),f,iaa)
         case('power_randomphase')
           call power_randomphase(amplaa(j),initpower_aa,cutoff_aa,f,iax,iaz)
