@@ -460,7 +460,7 @@ endif
 ##
 ## Toulouse's machines: shal, efigi, galileo, mithra, yang & star3
 ##
-#include $(PENCIL_HOME)/src/Makefile_ifort.incl #(shal|efigi|mithra|star3|galileo|yang)
+#include $(PENCIL_HOME)/src/Makefile_ifort.incl #(shal|efigi|mithra|star3|galileo|yang|ulysse)
 #FFLAGS=-O3 -stand f90 -I/usr/include/lam #(mithra|galileo)
 #FFLAGS=-O3 -I/usr/include/openmpi -I/usr/include/openmpi/32 #(shal)
 #FFLAGS=-O3 -I/usr/lib64/openmpi/1.2.7-gcc/include -vec-report0 #(star3)

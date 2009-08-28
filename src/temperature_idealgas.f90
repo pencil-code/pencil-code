@@ -1418,53 +1418,78 @@ module Entropy
 
       integer :: i,j
       real, dimension(mx,my,mz,mfarray) :: finit,f
-      real, dimension(mx,mz) :: finter, source, rho
+      real, dimension(nx,nz) :: finter, source, rho, TT
       real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
       real    :: alpha, aalpha, bbeta, cp1, dx_2, dz_2
 !
-      source=(f(:,4,:,ilnTT)-finit(:,4,:,ilnTT))/dt
-      call get_cp1(cp1)
-      dx_2=1./dx**2
-      dz_2=1./dz**2
+      TT=finit(l1:l2,4,n1:n2,ilnTT)
+      source=(f(l1:l2,4,n1:n2,ilnTT)-TT)/dt
       if (ldensity) then
-        rho=exp(f(:,4,:,ilnrho))
+        rho=exp(f(l1:l2,4,n1:n2,ilnrho))
       else
         rho=1.
       endif
+      call get_cp1(cp1)
+      dx_2=1./dx**2
+      dz_2=1./dz**2
 !
 !  row dealt implicitly
 !
-      do j=n1,n2
-        wx=dt*gamma*hcond0*cp1/rho(l1:l2,j)
+      do j=1,nz
+        wx=dt*gamma*hcond0*cp1/rho(:,j)
         ax=-wx*dx_2/2.
         bx=1.+wx*dx_2
         cx=ax
 !
-        rhsx=finit(l1:l2,4,j,ilnTT)+wx*dz_2/2.*                   &
-            (finit(l1:l2,4,j+1,ilnTT)-2.*finit(l1:l2,4,j,ilnTT)+  &
-            finit(l1:l2,4,j-1,ilnTT))+dt/2.*source(l1:l2,j)
+        if (j==1) then
+          !f_2d(:,n1-1)=2.*f_2d(:,n1)-f_2d(:,n1+1)
+          rhsx=TT(:,j)+wx*dz_2/2.*                         &
+              (TT(:,j+1)-2.*TT(:,j)+2.*TT(:,j)-TT(:,j+1))  &
+               +dt/2.*source(:,j)
+        elseif (j==nz) then
+          !f_2d(:,n2+1)=2.*f_2d(:,n2)-f_2d(:,n2-1)
+          rhsx=TT(:,j)+wx*dz_2/2.*                         &
+              (2*TT(:,j)-TT(:,j-1)-2.*TT(:,j)+TT(:,j-1))   &
+               +dt/2.*source(:,j)
+        else
+          rhsx=TT(:,j)+wx*dz_2/2.*                         &
+              (TT(:,j+1)-2.*TT(:,j)+TT(:,j-1))             &
+               +dt/2.*source(:,j)
+        endif
 !
 ! x boundary conditions: periodic
         aalpha=cx(nx) ; bbeta=ax(1)
 !
         call cyclic(ax,bx,cx,aalpha,bbeta,rhsx,workx,nx)
-        finter(l1:l2,j)=workx(1:nx)
+        finter(:,j)=workx
       enddo
-!
-      call boundary_ADI(finter)
 !
 !  columns dealt implicitly
 !
-      do i=l1,l2
-        wz=dt*gamma*hcond0*cp1/rho(i,n1:n2)
+      do i=1,nx
+        wz=dt*gamma*hcond0*cp1/rho(i,:)
         az=-wz*dz_2/2.
         bz=1.+wz*dz_2
         cz=az
 !
-        rhsz=finter(i,n1:n2)+wz*dx_2/2.*                             &
-           (finter(i+1,n1:n2)-2.*finter(i,n1:n2)+finter(i-1,n1:n2))  &
-           +dt/2.*source(i,n1:n2)
+        if (i==1) then
+          !finter(1:l1-1,:)=finter(l2i:l2,:)
+          rhsz=finter(i,:)+wz*dx_2/2.*                       &
+             (finter(i+1,:)-2.*finter(i,:)                   &
+             +finter(nx,:))                                  &
+             +dt/2.*source(i,:)
+        elseif (i==nx) then
+          !finter(l2+1:mx,:)=finter(l1:l1i,:)
+          rhsz=finter(i,:)+wz*dx_2/2.*                       &
+             (finter(1,:)                                    &
+             -2.*finter(i,:)+finter(i-1,:))                  &
+             +dt/2.*source(i,:)
+        else
+          rhsz=finter(i,:)+wz*dx_2/2.*                       &
+             (finter(i+1,:)-2.*finter(i,:)+finter(i-1,:))    &
+             +dt/2.*source(i,:)
+        endif
 !
 ! z boundary conditions
 ! Constant temperature at the top
@@ -1485,7 +1510,7 @@ module Entropy
       endselect
 !
         call tridag(az,bz,cz,rhsz,workz)
-        f(i,4,n1:n2,ilnTT)=workz(1:nz)
+        f(i+nghost,4,n1:n2,ilnTT)=workz
       enddo
 !
     endsubroutine ADI_Kconst
