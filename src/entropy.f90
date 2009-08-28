@@ -3069,7 +3069,7 @@ module Entropy
 !
 !  Spherical gravity case: heat at centre, cool outer layers.
 !
-      if (lgravr) then
+      if (lgravr.and.(wheat/=0)) then
 !  normalised central heating profile so volume integral = 1
         if (nzgrid == 1) then
           prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.)  ! 2-D heating profile
