@@ -1460,11 +1460,6 @@ linkonly:
 	$(LD) $(LDFLAGS) $(start) $(LD_MPI) $(LD_FOURIER) -o start.x
 	$(LD) $(LDFLAGS) $(run) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) -o run.x
 # 
-#  shorthand for this
-#
-l:
-	$(MAKE) $(MAKEOPTS) linkonly
-# 
 # Needed for the underscore trick:
 #
 mpicomm_.f90:      mpicomm.f90
@@ -1558,8 +1553,6 @@ distclean: cleanall
 #
 #  Code targets
 #
-nograv.o:
-# 
 combine_videofiles.x: $(combine_videofiles)
 	$(LD) $(LDFLAGS) $(combine_videofiles) $(LD_MPI) -o combine_videofiles.x
 # 
