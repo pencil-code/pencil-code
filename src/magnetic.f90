@@ -4028,13 +4028,19 @@ module Magnetic
       use Mpicomm
 !
       logical,save :: first=.true.
-      real :: bxmxy,bymxy,bzmxy,bmxy_rms,nVol2d,btemp
+      real,dimension(2) :: b2mxy_local,b2mxy
+      real :: bmxy_rms,nVol2d_local,btemp
       integer :: l,j
 !
 !  This only works if bxmz and bzmz are in xyaver, so print warning if this is
 !  not ok.
 !
-      bmxy_rms=0.
+! stop if this routine is called in cylindrical 
+      if (lcylindrical_coords) & 
+             call stop_it("bmxy_rms not yet implemented for cylindrical")
+! The following calculation is done only for ipz=0
+      bmxy_rms=0
+      if(ipz .ne. 0) return 
       if (idiag_bxmxy==0.or.idiag_bymxy==0.or.idiag_bzmxy==0) then
         if (first) then
           print*,"calc_mfield: WARNING"
@@ -4043,31 +4049,28 @@ module Magnetic
         endif
         bmxy_rms=0.
       else
-        nVol2d=0.
-        do l=1,nx
-          do m=1,ny
-            do j=1,nprocy
-              bxmxy=0.0
-              bymxy=0.0
-              bzmxy=0.0
-!              bxmxy=fnamexy(l,m,j,idiag_bxmxy)
-!              bymxy=fnamexy(l,m,j,idiag_bymxy)
-!              bzmxy=fnamexy(l,m,j,idiag_bzmxy)
-              btemp=bxmxy**2+bymxy**2+bzmxy**2
+!DM: we dont really need the following if, I am going to test  
+!        if(ipz==0) then
+          b2mxy_local=0
+          do l=1,nx
+            do m=1,ny
+              btemp=fnamexy(l,m,idiag_bxmxy)**2 +&
+                    fnamexy(l,m,idiag_bymxy)**2 +&
+                    fnamexy(l,m,idiag_bzmxy)**2  
               if (lspherical_coords) then 
-                btemp=btemp*r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
-                nVol2d=nVol2d+r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
-              else
+                 btemp=btemp*r2_weight(l)*sinth_weight(m)
+                 nvol2d_local=r2_weight(l)*sinth_weight(m)
               endif
-              if (lcylindrical_coords) & 
-                  call stop_it("bmxy_rms not yet implemented for cylindrical")
-              bmxy_rms=bmxy_rms+btemp
+              b2mxy_local(1)=b2mxy_local(1)+btemp
+              b2mxy_local(2)=b2mxy_local(2)+nVol2d_local
             enddo
           enddo
-        enddo
-        if (lcartesian_coords) bmxy_rms=bmxy_rms/(nx*ny*nprocy)
-        if (lspherical_coords) bmxy_rms=bmxy_rms/nVol2d
-        bmxy_rms = sqrt(bmxy_rms)
+          call mpireduce_sum(b2mxy_local(:),b2mxy,2,idir=2)
+!        endif
+        if (ipx==0) then
+          if (lcartesian_coords) bmxy_rms=sqrt(b2mxy(1)/(nxgrid*nygrid))
+          if (lspherical_coords) bmxy_rms=sqrt(b2mxy(1)/b2mxy(2))
+        endif
       endif
 !
 !  Save the name in the idiag_bmxy_rms slot and set first to false.
