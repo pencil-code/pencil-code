@@ -760,6 +760,8 @@ endif
 #FFLAGS=-O3 -I$(MPI_HOME)/include #(triton|titan)
 #LD_MPI=-L$(MPI_HOME)/lib -pthread $(MPI_LDLIBS) #(triton|titan)
 #MPI_LDLIBS= -llammpi++ -llammpio -llamf77mpi -lmpi -llam #(triton|titan)
+#FFLAGS_DOUBLE = -r8 #(triton|titan)
+#CFLAGS_DOUBLE = -DDOUBLE_PRECISION #(triton|titan)
 ##
 ##  Aida workstations at MPIA-Heidelberg
 ##
