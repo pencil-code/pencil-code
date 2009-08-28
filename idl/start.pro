@@ -239,7 +239,7 @@ if (cpar gt 0) then begin
   if (ldensity) then begin
     if (not (leos_ionization or leos_temperature_ionization)) then begin
       cs0=par.cs0 & rho0=par.rho0
-      gamma=par.gamma & gamma1=gamma-1.
+      gamma=par.gamma & gamma_inv=gamma-1.
       cs20 = cs0^2 & lnrho0 = alog(rho0)
     endif
   endif

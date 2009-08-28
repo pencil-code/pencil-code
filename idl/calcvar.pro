@@ -23,9 +23,9 @@ case var_ of
     'rr'  : rr   = sqrt(xx^2+yy^2+zz^2)
     'bb'  : bb   = curl(aa)
     'jj'  : jj   = curl2(aa)
-    'cs2' : cs2  = cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))
+    'cs2' : cs2  = cs20*exp(gamma*ss+gamma_inv*(lnrho-lnrho0))
     'pp'  : pp   = cs20*rho0/gamma*exp(gamma*(ss+lnrho-lnrho0))
-    'Temp': Temp = cs20/gamma1*exp(gamma*ss+gamma1*(lnrho-lnrho0))
+    'Temp': Temp = cs20/gamma_inv*exp(gamma*ss+gamma_inv*(lnrho-lnrho0))
 
 endcase
 

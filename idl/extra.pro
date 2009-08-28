@@ -27,7 +27,7 @@ if (ilnrho ne 0) then begin
   llnrho=reform(lnrho(l1:l2,m1:m2,n1:n2))
   rho=exp(llnrho)
   if (iss eq 0) then begin
-    cs2=cs20*exp(gamma1*llnrho) 
+    cs2=cs20*exp(gamma_inv*llnrho) 
   end else begin
     sss=reform(ss(l1:l2,m1:m2,n1:n2))
     ; the following gives cs2,cp1tilde,eee,ppp
@@ -36,7 +36,7 @@ if (ilnrho ne 0) then begin
 ;ajwm NOT SO SURE THE ENTHALPY IS CORRECT EITHER
 ;tobi: I think it is only correct for noionization, therefore should be moved
 ;      to thermodynamics.pro
-  hhh=cs2/gamma1  ;(enthalpy)
+  hhh=cs2/gamma_inv  ;(enthalpy)
 ;
 end
 ;
