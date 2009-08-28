@@ -935,7 +935,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
       integer :: ix0,iy0,iz0
       real, intent(inout) :: gpp
       real :: x0,y0,z0,rs,verylarge=1e9,varval,rint1,rint2,fint,rps,rintp
-      integer :: index,ix1,iy1,iz1,min
+      integer :: ix1,iy1,iz1,min
       real, dimension(3), intent(in) :: xxp
       real, dimension(2,2) :: rij
       real, dimension(3,2) :: bordervalue
@@ -1099,7 +1099,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
             print*,'rij,rs=',rij,rs
             print*,'x(ix0),xp,x(ix1)=',x(ix0),xp,x(ix1)
             print*,'y(iy0),yp,y(iy1)=',y(iy0),yp,y(iy1)
-            print*,'dirvar,dirconst,topbot,iz0,index=',dirvar,dirconst,topbot,iz0,index
+            print*,'dirvar,dirconst,topbot,iz0=',dirvar,dirconst,topbot,iz0
              call fatal_error('close_interpolation',&
                 'A valid radius is not found!')            
           endif
