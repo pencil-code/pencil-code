@@ -4879,7 +4879,7 @@ module Boundcond
         enddo
       endif
 !
-!  Find the L_i's (which really is the Lodi equations)
+!  Find the L_i's (which really are the Lodi equations)
 !
       if (llinlet) then
         L_1 = (f(l1:l2,lll,n1:n2,iuy) - sgn*cs0_ar(l1:l2,n1:n2))*&
