@@ -40,27 +40,27 @@ module Timestep
   real, parameter :: e3       = 0.0
   real, parameter :: e4       = 125.0 / 108.0
 !
-! Kaps-Rentrop parameters (possible alternative for above. 
+! Kaps-Rentrop parameters (possible alternative for above.
 ! On some tests, slightly more accurate, but slower)
 !
-!  real, parameter :: gam              = 0.231
-!  real, parameter :: a21      = 2.0                 
-!  real, parameter :: a31      = 4.52470820736       
-!  real, parameter :: a32      = 4.16352878860       
-!  real, parameter :: c21      = -5.07167533877      
-!  real, parameter :: c31      = 6.02015272865       
-!  real, parameter :: c32      = 0.159750684673      
-!  real, parameter :: c41      = -1.856343618677     
-!  real, parameter :: c42      = -8.50538085819      
-!  real, parameter :: c43      = -2.08407513602      
-!  real, parameter :: b1       =3.95750374663        
-!  real, parameter :: b2       =4.62489238836        
-!  real, parameter :: b3       =0.617477263873       
-!  real, parameter :: b4       =1.282612945268       
-!  real, parameter :: e1       =-2.30215540292       
-!  real, parameter :: e2       =-3.07363448539       
-!  real, parameter :: e3       =0.873280801802       
-!  real, parameter :: e4       =1.282612945268       
+!  real, parameter :: gam      = 0.231
+!  real, parameter :: a21      = 2.0
+!  real, parameter :: a31      = 4.52470820736
+!  real, parameter :: a32      = 4.16352878860
+!  real, parameter :: c21      = -5.07167533877
+!  real, parameter :: c31      = 6.02015272865
+!  real, parameter :: c32      = 0.159750684673
+!  real, parameter :: c41      = -1.856343618677
+!  real, parameter :: c42      = -8.50538085819
+!  real, parameter :: c43      = -2.08407513602
+!  real, parameter :: b1       =3.95750374663
+!  real, parameter :: b2       =4.62489238836
+!  real, parameter :: b3       =0.617477263873
+!  real, parameter :: b4       =1.282612945268
+!  real, parameter :: e1       =-2.30215540292
+!  real, parameter :: e2       =-3.07363448539
+!  real, parameter :: e3       =0.873280801802
+!  real, parameter :: e4       =1.282612945268
 
 !
 !  border_prof_[x-z] could be of size n[x-z], but having the same
@@ -76,16 +76,12 @@ module Timestep
     subroutine rk_2n(f,df,p)
 !
 !  Runge-Kutta-Fehlberg accurate to 5th order
-!  At the moment, itorder can be 1, 2, or 3.
 !
-!  22-jun-06/tony: coded
+!  28-aug-09/rplasson: coded
 !
       use Mpicomm
       use Cdata
       use Messages
-!!      use Particles_main
-!!      use Interstellar, only: calc_snr_damp_int
-!!      use Shear, only: advance_shear
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -117,7 +113,7 @@ module Timestep
                    "Shear, interstellar and particles are not" // &
                    " yet supported by the adaptive rkf scheme")
 
-      lfirst=.true.      
+      lfirst=.true.
       do i=1,maxtry
 !        print*,"i=",i,"   trying dt=",dt
         ! Do a Stiff step
@@ -240,12 +236,12 @@ module Timestep
 !      Numerical Recipe scaling
         fscal(l1:l2,m,n,j) = abs(f(l1:l2,m,n,j))+abs(df(l1:l2,m,n,j)*dt)+1e-8!tiny(0.)
       enddo; enddo; enddo
-        
+
 !      print*,"before:"
       do j=1,nchemspec; do n=n1,n2; do m=m1,m2
         ktemp(l1:l2,m,n,j)=k(l1:l2,m,n,ichemspec(j),1)
 !        print*,ktemp(l1:l2,m,n,j)
-      enddo; enddo; enddo        
+      enddo; enddo; enddo
       do n=n1,n2; do m=m1,m2; do l=l1,l2
         call lubksb(jacob(l,m,n,:,:),indx(l,m,n,:),ktemp(l,m,n,:))
       enddo; enddo; enddo
@@ -253,7 +249,7 @@ module Timestep
       do j=1,nchemspec; do n=n1,n2; do m=m1,m2
         k(l1:l2,m,n,ichemspec(j),1)=ktemp(l1:l2,m,n,j)
 !        print*,ktemp(l1:l2,m,n,j)
-      enddo; enddo; enddo        
+      enddo; enddo; enddo
 
       lfirst=.false.
 
@@ -263,7 +259,7 @@ module Timestep
         ktemp(l1:l2,m,n,j)=k(l1:l2,m,n,ichemspec(j),2)+ &
             c21*k(l1:l2,m,n,ichemspec(j),1)/dt
 !        print*,ktemp(l1:l2,m,n,j)
-      enddo; enddo; enddo        
+      enddo; enddo; enddo
       do n=n1,n2; do m=m1,m2; do l=l1,l2
         call lubksb(jacob(l,m,n,:,:),indx(l,m,n,:),ktemp(l,m,n,:))
       enddo; enddo; enddo
@@ -271,7 +267,7 @@ module Timestep
       do j=1,nchemspec; do n=n1,n2; do m=m1,m2
         k(l1:l2,m,n,ichemspec(j),2)=ktemp(l1:l2,m,n,j)
 !        print*,ktemp(l1:l2,m,n,j)
-      enddo; enddo; enddo        
+      enddo; enddo; enddo
 
       call pde(f+a31*k(:,:,:,:,1)+a32*k(:,:,:,:,2),k(:,:,:,:,3),p)
       k(:,:,:,:,4)=k(:,:,:,:,3)
@@ -281,7 +277,7 @@ module Timestep
             (c31*k(l1:l2,m,n,ichemspec(j),1)+ &
              c32*k(l1:l2,m,n,ichemspec(j),2))/dt
 !        print*,ktemp(l1:l2,m,n,j)
-      enddo; enddo; enddo        
+      enddo; enddo; enddo
       do n=n1,n2; do m=m1,m2; do l=l1,l2
         call lubksb(jacob(l,m,n,:,:),indx(l,m,n,:),ktemp(l,m,n,:))
       enddo; enddo; enddo
@@ -289,7 +285,7 @@ module Timestep
       do j=1,nchemspec; do n=n1,n2; do m=m1,m2
         k(l1:l2,m,n,ichemspec(j),3)=ktemp(l1:l2,m,n,j)
 !        print*,ktemp(l1:l2,m,n,j)
-      enddo; enddo; enddo        
+      enddo; enddo; enddo
 
 !      print*,"before:"
       do j=1,nchemspec; do n=n1,n2; do m=m1,m2
@@ -298,7 +294,7 @@ module Timestep
              c42*k(l1:l2,m,n,ichemspec(j),2)+ &
              c43*k(l1:l2,m,n,ichemspec(j),3))/dt
 !        print*,ktemp(l1:l2,m,n,j)
-      enddo; enddo; enddo        
+      enddo; enddo; enddo
       do n=n1,n2; do m=m1,m2; do l=l1,l2
         call lubksb(jacob(l,m,n,:,:),indx(l,m,n,:),ktemp(l,m,n,:))
       enddo; enddo; enddo
@@ -306,20 +302,20 @@ module Timestep
       do j=1,nchemspec; do n=n1,n2; do m=m1,m2
         k(l1:l2,m,n,ichemspec(j),4)=ktemp(l1:l2,m,n,j)
 !        print*,ktemp(l1:l2,m,n,j)
-      enddo; enddo; enddo        
+      enddo; enddo; enddo
 
       errmaxs=0.
- 
-      do j=1,mvar 
+
+      do j=1,mvar
 !        print*,"j=",j
         do n=n1,n2; do m=m1,m2
-        
+
           err = e1*k(l1:l2,m,n,j,1) + e2*k(l1:l2,m,n,j,2) + &
               e3*k(l1:l2,m,n,j,3) + e4*k(l1:l2,m,n,j,4)
-          
+
           df(l1:l2,m,n,j) = b1*k(l1:l2,m,n,j,1) + b2*k(l1:l2,m,n,j,2) + &
-              b3*k(l1:l2,m,n,j,3) + b4*k(l1:l2,m,n,j,4) 
-          
+              b3*k(l1:l2,m,n,j,3) + b4*k(l1:l2,m,n,j,4)
+
 !          print*,df(l1:l2,m,n,j)," (",err,")"
           ! Get the maximum error over the whole field
           !
@@ -327,7 +323,7 @@ module Timestep
           case('per_var_err')
             !
             ! Per variable error
-            !    
+            !
             scal=  ( &
                 sqrt(f(l1:l2,m,n,1)**2+f(l1:l2,m,n,2)**2)  + &
                 sqrt(k(l1:l2,m,n,1,1)**2 + k(l1:l2,m,n,2,1)**2) + &
@@ -350,7 +346,7 @@ module Timestep
             !
           case('none')
             !
-            ! No error check 
+            ! No error check
             !
             errmaxs = 0
             !
@@ -365,7 +361,7 @@ module Timestep
       errmaxs=errmaxs/eps_stiff
       !
       call mpiallreduce_max(errmaxs,errmax)
-      
+
     endsubroutine stiff
 !***********************************************************************
     subroutine timestep_autopsy
@@ -387,19 +383,8 @@ module Timestep
         print*,"-------- General Description of Time Step Failure -----------"
         print*,"  it=",it
         print*,"  t=",t
-        print*,"  Detailed breakdown not available for Adaptive Runge--Kutta--Fehlberg scheme"
+        print*,"  Detailed breakdown not available for stiff time stepping scheme"
       endif
-
-! Procs testify in serial
-!     call start_serialize
-!!        if ( dt >= dt_local ) then
-!          print*,"------------------ START OF CONFESSION (", iproc, ") ----------------------"
-!            print*,"     "
-!            print*,"------------------- END OF CONFESSION -----------------------"
-!
-!!          endif
-!!        endif
-!     call end_serialize
 
     endsubroutine timestep_autopsy
 !***********************************************************************
