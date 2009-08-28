@@ -1562,15 +1562,10 @@ read_videofiles.x: $(read_videofiles)
 read_vectorfiles.x: $(read_vectorfiles)
 	$(LD) $(LDFLAGS) $(read_vectorfiles) $(LD_MPI) -o read_vectorfiles.x
 # 
-write_dnlists_deps=write_dummy_namelists.o $(comm_deps) $(DEBUG).o
-write_dummy_namelists.x: $(write_dnlists_deps)
-	$(LD) $(LDFLAGS) $(write_dnlists_deps) $(LD_MPI) -o write_dummy_namelists.x
-# 
 #  Non-F90 / undetectable dependencies
 #
 fft.o:	     fft.f Makefile.src
 nodebug.o:            nodebug.f90 cdata.o $(MPICOMM_FIX).o
-write_dummy_namelists.o: write_dummy_namelists.f90 $(comm_deps)
 #
 # Dependencies
 #
