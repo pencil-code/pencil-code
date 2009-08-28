@@ -75,7 +75,7 @@ module Timestep
 !***********************************************************************
     subroutine rk_2n(f,df,p)
 !
-!  Runge-Kutta-Fehlberg accurate to 5th order
+!  Stiff solver, accurate to 2nd(?) order
 !
 !  28-aug-09/rplasson: coded
 !
@@ -99,8 +99,8 @@ module Timestep
       ldt=.false.
       dtnotok=.true.
 
-      if (itorder/=5) &
-        call fatal_error('rk_2n','itorder must be 5 for Runge-Kutta-Fehlberg')
+      if (itorder/=2) &
+        call fatal_error('rk_2n','itorder must be 2 for stiff solver')
 
 !
 !  dt_beta_ts may be needed in other modules (like Dustdensity) for fixed dt
