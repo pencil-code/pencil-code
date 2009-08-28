@@ -175,17 +175,22 @@ module Timestep
       use Sub, only: ludcmp, lubksb
       use Chemistry, only: jacobn
 
-      real, dimension (mx,my,mz,mvar), intent(in) :: f
+      intent(inout) :: f
+      intent(out)   :: df, p, errmax
+      real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz,mvar) :: fscal
+      ! Note: The tmp array will not use more memory than the temporary
+      !   array that would be implicitly created with calls like
+      !     call pde(f + a21*k(:,:,:,:,1), k(:,:,:,:,2),p))
+      real, dimension (mx,my,mz,mvar) :: tmp
       real, dimension (mx,my,mz,nchemspec,nchemspec) :: jacob
-      real, dimension (mx,my,mz,mvar), intent(out) :: df
-      type (pencil_case), intent(inout) :: p
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
       integer, dimension (mx,my,mz,nchemspec) :: indx
       real, dimension(mx,my,mz,mvar,4) :: k
       real, dimension(mx,my,mz,nchemspec) :: ktemp
       real, dimension(nx) :: scal, err
-      real, intent(inout) :: errmax
-      real :: errmaxs
+      real :: errmax, errmaxs
       integer :: i,j,l,lll
       integer :: i1
 
@@ -228,7 +233,7 @@ module Timestep
 !        enddo
 !      enddo; enddo; enddo
 
-      call pde(f,k(:,:,:,:,1),p)
+      call pde(f, k(:,:,:,:,1), p)
 
       do j=1,mvar; do n=n1,n2; do m=m1,m2
 !      XppAut stiff scaling
@@ -253,7 +258,8 @@ module Timestep
 
       lfirst=.false.
 
-      call pde(f+a21*k(:,:,:,:,1),k(:,:,:,:,2),p)
+      tmp = f + a21*k(:,:,:,:,1)
+      call pde(tmp, k(:,:,:,:,2), p)
 !      print*,"before:"
       do j=1,nchemspec; do n=n1,n2; do m=m1,m2
         ktemp(l1:l2,m,n,j)=k(l1:l2,m,n,ichemspec(j),2)+ &
@@ -269,7 +275,8 @@ module Timestep
 !        print*,ktemp(l1:l2,m,n,j)
       enddo; enddo; enddo
 
-      call pde(f+a31*k(:,:,:,:,1)+a32*k(:,:,:,:,2),k(:,:,:,:,3),p)
+      tmp = f + a31*k(:,:,:,:,1) + a32*k(:,:,:,:,2)
+      call pde(tmp, k(:,:,:,:,3), p)
       k(:,:,:,:,4)=k(:,:,:,:,3)
 !      print*,"before:"
       do j=1,nchemspec; do n=n1,n2; do m=m1,m2
