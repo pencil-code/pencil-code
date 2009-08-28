@@ -998,7 +998,7 @@ module Magnetic
         case('Alfven-rz'); call alfven_rz(amplaa(j),f,rmode)
         case('Alfvenz-rot'); call alfvenz_rot(amplaa(j),f,iuu,iaa,kz_aa(j),Omega)
         case('Alfvenz-rot-shear'); call alfvenz_rot_shear(amplaa(j),f,iuu,iaa,kz_aa(j),Omega)
-        case('sine-bc'); call sine_avoid_boundary(amplaa(j),f,iaa,kx_aa(j),rm_int,rm_ext)
+        case('sine-bc'); call sine_avoid_boundary(amplaa(j),f,kx_aa(j),rm_int,rm_ext)
         case('piecewise-dipole'); call piecew_dipole_aa (amplaa(j),inclaa,f,iaa)
         case('tony-nohel')
           do n=n1,n2; do m=m1,m2
@@ -1032,7 +1032,7 @@ module Magnetic
           enddo;enddo
         case('geo-benchmark-case1','geo-benchmark-case2'); call geo_benchmark_B(f)
 !
-        case('torus-test'); call torus_test(amplaa(j),f,iaa)
+        case('torus-test'); call torus_test(amplaa(j),f)
 !
         case default
 !
@@ -1820,11 +1820,11 @@ module Magnetic
       real, dimension (nx,3) :: exa,exj,dexb,phib,aa_xyaver
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: uj,aj,phi
-      real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,b3b21,b1b32,b2b13
+      real, dimension (nx) :: uxj_dotB0,b3b21,b1b32,b2b13
       real, dimension (nx) :: sign_jo,rho1_jxb
       real, dimension (nx) :: B1dot_glnrhoxb,tmp1,fb,fxbx
       real, dimension (nx) :: b2t,bjt,jbt
-      real, dimension (nx) :: eta_mn,eta_smag,etadust,etatotal
+      real, dimension (nx) :: eta_mn,eta_smag,etatotal
       real, dimension (nx) :: fres2,etaSS,penc
       real :: tmp,eta_out1,OmegaSS=1.
       integer :: i,j,k,ju,nxy=nxgrid*nygrid
@@ -2822,7 +2822,7 @@ module Magnetic
 !
     endsubroutine time_integrals_magnetic
 !***********************************************************************
-    subroutine df_diagnos_magnetic(f,df,p)
+    subroutine df_diagnos_magnetic(df,p)
 !
 !  calculate diagnostics that involves df
 !  Here we calculate <du/dt x b> and <u x db/dt>.
@@ -2834,14 +2834,13 @@ module Magnetic
       use Diagnostics
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
       real, dimension (nx,3) :: uudot,aadot,udotxb,B1_gradu
       real, dimension (nx) :: B1dot_udotxb,B1dot_uxbdot,B1dot_aadot,uxbdot2
 !
-      intent(in)  :: f, df, p
+      intent(in)  :: df, p
 !
 !  this routine is only called when ldiagnos=T
 !  start with <du/dt x b>
@@ -3118,7 +3117,7 @@ module Magnetic
 !
     endsubroutine Omega_effect
 !***********************************************************************
-    subroutine sine_avoid_boundary(ampl,f,iaa,kr,r0,rn)
+    subroutine sine_avoid_boundary(ampl,f,kr,r0,rn)
 !
 ! Sine field in cylindrical coordinates, used in Armitage 1998
 !  
@@ -3139,7 +3138,7 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl,kr,r0,rn
-      integer :: iaa,i
+      integer :: i
       real, dimension (mx) :: a_tri,b_tri,c_tri,rhs,aphi,bz
 !
       if (.not.lcylindrical_coords) &
@@ -3243,7 +3242,6 @@ module Magnetic
       real, dimension (nx,3), intent(in) :: uxb,jj
       real, dimension (nx,3) :: ee
       real, dimension (nx) :: FCz
-      real :: FC
 !
       ee=eta*jj-uxb
 !
@@ -3827,7 +3825,6 @@ module Magnetic
 !
       logical,save :: first=.true.
       real :: embmz
-      integer :: j
 !
 !  This only works if bxmz and bzmz are in xyaver, so print warning if this is
 !  not ok.
@@ -3864,7 +3861,6 @@ module Magnetic
 !
       logical,save :: first=.true.
       real :: emxamz3
-      integer :: j
 !
 !  This only works if bxmz and bzmz are in xyaver, so print warning if this is
 !  not ok.
@@ -3901,7 +3897,6 @@ module Magnetic
 !
       logical,save :: first=.true.
       real :: ambmz
-      integer :: j
 !
 !  This only works if bxmz and bzmz are in xyaver, so print warning if this is
 !  not ok.
@@ -3939,7 +3934,7 @@ module Magnetic
       logical,save :: first=.true.
       real, dimension(2) :: ambmzh
       real :: ambmz_tmp,fact
-      integer :: j,iprocz
+      integer :: iprocz
 !
 !  initialize ambmzh to zero each time, because its two elements
 !  are integration counters. If idiag_axmz etc are not set, the
@@ -4034,7 +4029,7 @@ module Magnetic
       use Mpicomm
 !
       logical,save :: first=.true.
-      real :: bxmxy,bymxy,bzmxy,bmxy_rms,nVol2d,btemp,area
+      real :: bxmxy,bymxy,bzmxy,bmxy_rms,nVol2d,btemp
       integer :: l,j
 !
 !  This only works if bxmz and bzmz are in xyaver, so print warning if this is
@@ -4833,7 +4828,7 @@ module Magnetic
 !
     endsubroutine norm_ring
 !***********************************************************************
-    subroutine torus_test(ampl,f,iaa)
+    subroutine torus_test(ampl,f)
 !
 !  Initial field concentrated along torus well inside the computational
 !  domain.
@@ -4849,13 +4844,12 @@ module Magnetic
 !
       real :: ampl
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: iaa
 !
       real, dimension (nx) :: xxi2,ee
       real, dimension (nx) :: costh,sinth,cosphi,sinphi,ss,rr,aar,aap
       real :: radius,width,r_cent
 !
-      intent(in)    :: ampl,iaa
+      intent(in)    :: ampl
       intent(inout) :: f
 !
       radius = xyz1(1)
@@ -5182,39 +5176,40 @@ module Magnetic
 !  Note the usage of mixed array lengths (nx and my)
 !
       select case (rdep_profile)
-        case('schnack89')
-	  do i=1,nx
-	  do j=1,my
-            r2(i,j)=x(i+l1-1)**2+y(j)**2
-            rmax2=1. !value should come from start.in?
-	  enddo
-	  enddo
+      case('schnack89')
+        do i=1,nx
+        do j=1,my
+          r2(i,j)=x(i+l1-1)**2+y(j)**2
+          rmax2=1. !value should come from start.in?
+        enddo
+        enddo
 !
-!  define eta_r: resistivity profile from Y.L. Ho, S.C. Prager & D.D. Schnack, Phys rev letters vol 62 nr 13 1989
+!  define eta_r: resistivity profile from Y.L. Ho, S.C. Prager & 
+!              D.D. Schnack, Phys rev letters vol 62 nr 13 1989
 !  and define gradr_eta_r: 1/r *d_r(eta_r))
 !
-	  eta_r = eta*(1+9*(r2/rmax2)**15)**2
-	  gradr_eta_r= 540*eta*(1+9*(r2/rmax2)**15)*(r2/rmax2)**14/rmax2**0.5
+        eta_r = eta*(1+9*(r2/rmax2)**15)**2
+        gradr_eta_r= 540*eta*(1+9*(r2/rmax2)**15)*(r2/rmax2)**14/rmax2**0.5
 !
 !  gradient
 !
-          do i=1,nx 
-            geta_r(i,:,1) = x(i+l1-1)*gradr_eta_r(i,:)
-          enddo
-	  do i=1,my 
-            geta_r(:,i,2) = y(i)*gradr_eta_r(:,i)
-          enddo
-	  geta_r(:,:,3) = 0.
+        do i=1,nx 
+          geta_r(i,:,1) = x(i+l1-1)*gradr_eta_r(i,:)
+        enddo
+        do i=1,my 
+          geta_r(:,i,2) = y(i)*gradr_eta_r(:,i)
+        enddo
+        geta_r(:,:,3) = 0.
 !
 !  possibility of constant eta_r (as a test)
 !
-	case('constant')
-	  eta_r=eta
+      case('constant')
+        eta_r=eta
      
 ! 	 gradient
-          geta_r(:,:,1) = 0.
-          geta_r(:,:,2) = 0.
-          geta_r(:,:,3) = 0.
+        geta_r(:,:,1) = 0.
+        geta_r(:,:,2) = 0.
+        geta_r(:,:,3) = 0.
       endselect
 !
     endsubroutine eta_rdep
