@@ -28,6 +28,7 @@ module BorderProfiles
   real, dimension(mz) :: border_prof_z=1.0
 !
   logical :: lborder_driving=.false.
+  logical :: lborder_quenching=.false.
 !
   contains
 !***********************************************************************
@@ -132,6 +133,13 @@ module BorderProfiles
           write(1,'(2f15.6)') z(n), border_prof_z(n)
         enddo
       close(1)
+!
+!  Switch border quenching on if any border frac is non-zero
+!
+      if (any(border_frac_x/=0).or.&
+          any(border_frac_y/=0).or.&
+          any(border_frac_z/=0)) &
+        lborder_quenching=.true.
 !
     endsubroutine initialize_border_profiles
 !***********************************************************************
@@ -290,16 +298,6 @@ module BorderProfiles
              (p%rborder_mn(i).le.r_int+2*wborder_int).or.&
             !outer stripe
              (p%rborder_mn(i).ge.r_ext-2*wborder_ext)) then
-!
-!AB: Wlad, please check and make this a special option
-!AB: if you really want to keep the configuration below.
-!
-!           !inner stripe
-!            ((p%rborder_mn(i).ge.r_int).and.&
-!             (p%rborder_mn(i).le.r_int+2*wborder_int)).or.&
-!           !outer stripe
-!            ((p%rborder_mn(i).ge.r_ext-2*wborder_ext).and.&
-!             (p%rborder_mn(i).le.r_ext))) then
 !        
           call get_drive_time(p,inverse_drive_time,i)
           call get_border(p,pborder,i)
@@ -387,7 +385,8 @@ module BorderProfiles
 !  border_frac_[xyz] is a 2-D array, separately for all three directions.
 !  border_frac_[xyz]=1 would affect everything between center and border.
 !
-       df(l1:l2,m,n,j) = df(l1:l2,m,n,j) &
+      if (lborder_quenching) &
+          df(l1:l2,m,n,j) = df(l1:l2,m,n,j) &
           *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
 !
     endsubroutine border_quenching
