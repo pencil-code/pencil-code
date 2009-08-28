@@ -343,7 +343,7 @@ sub first_line_from_cmd {
         return undef;
     }
     my $line = <$fh>;
-    chomp($line);
+    chomp($line) if defined $line;
     return $line;
 }
 
