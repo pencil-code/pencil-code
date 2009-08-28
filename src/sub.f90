@@ -469,17 +469,6 @@ module Sub
 !
     endsubroutine sum_mn
 !***********************************************************************
-    subroutine exps(a,b)
-!
-!  dot product with itself, to calculate max and rms values of a vector
-!  29-sep-97/axel: coded,
-!
-      real, dimension (mx,my,mz) :: a,b
-!
-      b=exp(a)
-!
-    endsubroutine exps
-!***********************************************************************
     subroutine dot_global(a,b,c)
 !
 !  dot product, c=a.b, on global arrays
