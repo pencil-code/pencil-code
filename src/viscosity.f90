@@ -102,7 +102,7 @@ module Viscosity
 !
 !  Default viscosity.
 !
-      ivisc(1)='nu-const'
+      if (nu/=0) ivisc(1)='nu-const'
 !
     endsubroutine register_viscosity
 !***********************************************************************
