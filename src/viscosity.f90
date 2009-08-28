@@ -148,7 +148,7 @@ module Viscosity
         case ('simplified', '0')
           if (lroot) print*,'viscous force: nu*del2v'
           lvisc_simplified=.true.
-        case('rho_nu-const', '1')
+        case('rho-nu-const','rho_nu-const', '1')
           if (lroot) print*,'viscous force: mu/rho*(del2u+graddivu/3)'
           lvisc_rho_nu_const=.true.
         case('nu-const')
@@ -177,61 +177,61 @@ module Viscosity
           if (.not. lshock) &
            call stop_it('initialize_viscosity: shock viscosity'// &
                            ' but module setting SHOCK=noshock')
-        case ('hyper2_simplified', 'hyper4')
+        case ('hyper2-simplified','hyper2_simplified', 'hyper4')
           if (lroot) print*,'viscous force: nu_hyper*del4v'
           lvisc_hyper2_simplified=.true.
-        case ('hyper3_simplified', 'hyper6')
+        case ('hyper3-simplified','hyper3_simplified', 'hyper6')
           if (lroot) print*,'viscous force: nu_hyper*del6v'
           lvisc_hyper3_simplified=.true.
         case ('hyper3-cyl','hyper3_cyl','hyper3-sph','hyper3_sph')  
           if (lroot) print*,'viscous force: nu_hyper/pi^4 *(Deltav)^6/Deltaq^2'
           lvisc_hyper3_polar=.true.
-        case ('hyper3_rho_nu-const')
+        case ('hyper3-rho-nu-const','hyper3_rho_nu-const')
           if (lroot) print*,'viscous force: nu_hyper/rho*del6v'
           lvisc_hyper3_rho_nu_const=.true.
-       case ('hyper3_rho_nu-const_symm')
+       case ('hyper3-rho-nu-const-symm','hyper3_rho_nu-const_symm')
           if (lroot) print*,'viscous force(i): nu_hyper/rho*(del6ui+der5(divu,i))'
           lvisc_hyper3_rho_nu_const_symm=.true.
-       case ('hyper3_mu-const_strict')
+       case ('hyper3-mu-const-strict','hyper3_mu-const_strict')
           if (lroot) print*, 'viscous force(i): '// &
               'nu_hyper/rho*(del2(del2(del2(u)))+del2(del2(grad(divu))))'
           if (.not.lhyperviscosity_strict) &
                call stop_it('initialize_viscosity: This viscosity type'//&
                ' cannot be used with HYPERVISC_STRICT=nohypervisc_strict')
           lvisc_hyper3_mu_const_strict=.true.
-       case ('hyper3_nu-const_strict')
+       case ('hyper3-nu-const-strict','hyper3_nu-const_strict')
           if (lroot) print*, 'viscous force(i): 1/rho*div[2*rho*nu_3*S^(3)]'
           if (.not.lhyperviscosity_strict) &
                call stop_it('initialize_viscosity: This viscosity type'//&
                ' cannot be used with HYPERVISC_STRICT=nohypervisc_strict')
           lvisc_hyper3_nu_const_strict=.true.
-       case ('hyper3_rho_nu-const_aniso')
+       case ('hyper3-rho-nu-const-aniso','hyper3_rho_nu-const_aniso')
           if (lroot) print*,&
                'viscous force(i): 1/rho*(nu.del6)ui'
           lvisc_hyper3_rho_nu_const_aniso=.true.
-       case ('hyper3_nu-const_aniso')
+       case ('hyper3-nu-const-aniso','hyper3_nu-const_aniso')
           if (lroot) print*,&
                'viscous force(i): (nu.del6)ui  + ((nu.uij5).glnrho)'
           lpenc_requested(i_uij5)=.true.
           lpenc_requested(i_glnrho)=.true.
           lvisc_hyper3_nu_const_aniso=.true.
-        case ('hyper3_rho_nu-const_bulk')
+        case ('hyper3-rho-nu-const-bulk','hyper3_rho_nu-const_bulk')
           if (lroot) print*,'viscous force: duj/dt = nu_hyper/rho*d6uj/dxj6'
           lvisc_hyper3_rho_nu_const_bulk=.true.
-        case ('hyper3_nu-const')
+        case ('hyper3-nu-const','hyper3_nu-const','hyper3-nu_const')
           if (lroot) print*,'viscous force: nu*(del6u+S.glnrho)'
           lpenc_requested(i_uij5)=.true.
           lvisc_hyper3_nu_const=.true.
-        case ('smagorinsky_simplified')
+        case ('smagorinsky-simplified','smagorinsky_simplified')
           if (lroot) print*,'viscous force: Smagorinsky_simplified'
           if (lroot) lvisc_LES=.true.
           lpenc_requested(i_sij)=.true.
           lvisc_smag_simplified=.true.
-        case ('smagorinsky_cross_simplif')
+        case ('smagorinsky-cross-simplif','smagorinsky_cross_simplif')
           if (lroot) print*,'viscous force: Smagorinsky_simplified'
           if (lroot) lvisc_LES=.true.
           lvisc_smag_cross_simplified=.true.
-        case ('snr_damp')
+        case ('snr-damp','snr_damp')
           if (lroot) print*,'viscous force: SNR damping'
           lvisc_snr_damp=.true.
         case ('nu-mixture')
