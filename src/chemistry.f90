@@ -183,6 +183,18 @@ module Chemistry
   integer :: idiag_cp8m=0
   integer :: idiag_cp9m=0
   integer :: idiag_e_intm=0
+
+  integer :: idiag_lambdam=0
+  integer :: idiag_num=0
+  integer :: idiag_diff1m=0
+  integer :: idiag_diff2m=0
+  integer :: idiag_diff3m=0
+  integer :: idiag_diff4m=0
+  integer :: idiag_diff5m=0
+  integer :: idiag_diff6m=0
+  integer :: idiag_diff7m=0
+  integer :: idiag_diff8m=0  
+  integer :: idiag_diff9m=0
 !
   contains
 
@@ -1187,16 +1199,25 @@ module Chemistry
                                     /rho_full(j1,j2,j3)/Sc_number
               enddo
              else
+!
+! The mixture diffusion coefficient as described in eq. 5-45 of the Chemkin
+! manual. Previously eq. 5-44 was used, but due to problems in the limit
+! when the mixture becomes a pure specie we changed to the more robust eq. 5-45.
+!
               do k=1,nchemspec
                 tmp_sum(j1,j2,j3)=0.
+                tmp_sum2(j1,j2,j3)=0.
                 do j=1,nchemspec
-                 if (j== k) then
-                 else
+                 if (j .ne. k) then
                    tmp_sum(j1,j2,j3)=tmp_sum(j1,j2,j3) &
                         +XX_full(j1,j2,j3,j)/Bin_Diff_coef(j1,j2,j3,j,k)
+                   tmp_sum2(j1,j2,j3)=tmp_sum2(j1,j2,j3) &
+                       +XX_full(j1,j2,j3,j)*species_constants(j,imass)
+
                  endif
                 enddo
-                 Diff_full(j1,j2,j3,k)=(1.-f(j1,j2,j3,ichemspec(k)))/tmp_sum(j1,j2,j3)
+                 Diff_full(j1,j2,j3,k)=mu1_full(j1,j2,j3)*tmp_sum2(j1,j2,j3)&
+                     /tmp_sum(j1,j2,j3)
               enddo
              endif
             endif
@@ -1209,16 +1230,12 @@ module Chemistry
          enddo
          enddo
 !
-!do k=1,nchemspec
-!print*, Diff_full_add(l1,m1,n1,k),Diff_full_add(l2,m1,n1,k),k
-!enddo
-!
-!
-!
 !  Thermal diffusivity
 !
 !
 ! NB: one should check the coefficient 15/4
+! NILS: The current implementation is *not* in accordance with chapter 5.2 in
+! NILS: the chemkin manual - this should be fixed!
 !
          do j3=nn1,nn2
          do j2=mm1,mm2
@@ -1978,6 +1995,29 @@ module Chemistry
                              Rgas/species_constants(i9,imass),idiag_cp9m)
         if (idiag_e_intm/=0) call sum_mn_name(e_int_full(l1:l2,m,n),&
                              idiag_e_intm)
+
+        if (idiag_lambdam/=0) call sum_mn_name(lambda_full(l1:l2,m,n),&
+                             idiag_lambdam)
+        if (idiag_num/=0) call sum_mn_name(nu_full(l1:l2,m,n),&
+                             idiag_num)
+        if (idiag_diff1m/=0) call sum_mn_name(diff_full(l1:l2,m,n,1),&
+                             idiag_diff1m)
+        if (idiag_diff2m/=0) call sum_mn_name(diff_full(l1:l2,m,n,2),&
+                             idiag_diff2m)
+        if (idiag_diff3m/=0) call sum_mn_name(diff_full(l1:l2,m,n,3),&
+                             idiag_diff3m)
+        if (idiag_diff4m/=0) call sum_mn_name(diff_full(l1:l2,m,n,4),&
+                             idiag_diff4m)
+        if (idiag_diff5m/=0) call sum_mn_name(diff_full(l1:l2,m,n,5),&
+                             idiag_diff5m)
+        if (idiag_diff6m/=0) call sum_mn_name(diff_full(l1:l2,m,n,6),&
+                             idiag_diff6m)
+        if (idiag_diff7m/=0) call sum_mn_name(diff_full(l1:l2,m,n,7),&
+                             idiag_diff7m)
+        if (idiag_diff8m/=0) call sum_mn_name(diff_full(l1:l2,m,n,8),&
+                             idiag_diff8m)
+        if (idiag_diff9m/=0) call sum_mn_name(diff_full(l1:l2,m,n,9),&
+                             idiag_diff9m)
 !
       endif
 !
@@ -2084,6 +2124,11 @@ module Chemistry
         idiag_Y1mz=0; idiag_Y2mz=0; idiag_Y3mz=0; idiag_Y4mz=0
         idiag_Y5mz=0; idiag_Y6mz=0; idiag_Y7mz=0; idiag_Y8mz=0
         idiag_Y9mz=0
+
+        idiag_diff1m=0; idiag_diff2m=0; idiag_diff3m=0; idiag_diff4m=0;
+        idiag_diff5m=0; idiag_diff6m=0; idiag_diff7m=0; idiag_diff8m=0; 
+        idiag_diff9m=0; idiag_lambdam=0; idiag_num=0
+
       endif
 !
       call chn(nchemspec,schemspec)
@@ -2130,6 +2175,18 @@ module Chemistry
         call parse_name(iname,cname(iname),cform(iname),'cp8m',idiag_cp8m)
         call parse_name(iname,cname(iname),cform(iname),'cp9m',idiag_cp9m)
         call parse_name(iname,cname(iname),cform(iname),'e_intm',idiag_e_intm)
+        call parse_name(iname,cname(iname),cform(iname),'lambdam',idiag_lambdam)
+        call parse_name(iname,cname(iname),cform(iname),'num',idiag_num)
+        call parse_name(iname,cname(iname),cform(iname),'diff1m',idiag_diff1m)
+        call parse_name(iname,cname(iname),cform(iname),'diff2m',idiag_diff2m)
+        call parse_name(iname,cname(iname),cform(iname),'diff3m',idiag_diff3m)
+        call parse_name(iname,cname(iname),cform(iname),'diff4m',idiag_diff4m)
+        call parse_name(iname,cname(iname),cform(iname),'diff5m',idiag_diff5m)
+        call parse_name(iname,cname(iname),cform(iname),'diff6m',idiag_diff6m)
+        call parse_name(iname,cname(iname),cform(iname),'diff7m',idiag_diff7m)
+        call parse_name(iname,cname(iname),cform(iname),'diff8m',idiag_diff8m)
+        call parse_name(iname,cname(iname),cform(iname),'diff9m',idiag_diff9m)
+
       enddo
 !
 !  xy-averages
@@ -2199,6 +2256,17 @@ module Chemistry
         write(3,*) 'i_Y8mz=',idiag_Y8mz
         write(3,*) 'i_Y9mz=',idiag_Y9mz
         write(3,*) 'ichemspec=indgen('//trim(schemspec)//') + '//trim(snd1)
+        write(3,*) 'i_lambdam=',idiag_lambdam
+        write(3,*) 'i_num=',idiag_num
+        write(3,*) 'i_diff1m=',idiag_diff1m
+        write(3,*) 'i_diff2m=',idiag_diff2m
+        write(3,*) 'i_diff3m=',idiag_diff3m
+        write(3,*) 'i_diff4m=',idiag_diff4m
+        write(3,*) 'i_diff5m=',idiag_diff5m
+        write(3,*) 'i_diff6m=',idiag_diff6m
+        write(3,*) 'i_diff7m=',idiag_diff7m
+        write(3,*) 'i_diff8m=',idiag_diff8m
+        write(3,*) 'i_diff9m=',idiag_diff9m
       endif
 !
     endsubroutine rprint_chemistry
@@ -3489,7 +3557,8 @@ module Chemistry
 !  This routind is called from calc_for_chem_mixture,
 !  which is why we work on full chunks of arrays here.
 !
-!  WHO, WHEN?
+!  28.08.2009: Nils Erland L. Haugen (Corrected the calculation of the 
+!              prefactor.) 
 !
       real, dimension (mx,my,mz,mfarray) :: f
       intent(in) :: f
@@ -3498,15 +3567,15 @@ module Chemistry
       integer :: k,j,j1,j2,j3
       real :: eps_jk, sigma_jk, m_jk, delta_jk, delta_st
       character (len=7) :: omega
-      real :: Na=6.022E23,tmp_local,tmp_local2, lnTk
+      real :: Na=6.022E23,tmp_local,tmp_local2, lnTk, delta_jk_star
 
       tmp_local=3./16.*(2.*k_B_cgs**3/pi)**0.5
 
       do j3=nn1,nn2
       do j2=mm1,mm2
       do j1=ll1,ll2
-       prefactor(j1,j2,j3)=tmp_local*(TT_full(j1,j2,j3))**0.5*unit_length**3&
-          /(Rgas_unit_sys*rho_full(j1,j2,j3)*mu1_full(j1,j2,j3))
+        prefactor(j1,j2,j3)=tmp_local*(TT_full(j1,j2,j3)**3)**0.5*unit_length**3&
+            /(pp_full(j1,j2,j3))
       enddo
       enddo
       enddo
@@ -3598,11 +3667,18 @@ module Chemistry
                   +6.16106168E-4*lnTjk(j1,j2,j3)**5 &
                   -3.27101257E-4*lnTjk(j1,j2,j3)**6 &
                   +2.51567029E-5*lnTjk(j1,j2,j3)**7)
-
-
-             Bin_Diff_coef(j1,j2,j3,k,j)=prefactor(j1,j2,j3)/sqrt(m_jk)/sigma_jk**2 &
-                /(Omega_kl(j1,j2,j3)+0.19*delta_jk/(TT_full(j1,j2,j3)/eps_jk)) &
-                /(unit_length**2/unit_time)
+!
+! NILS: Re-wrote and corrected the equation for the binary diffusion coefficient.
+!
+!             Bin_Diff_coef(j1,j2,j3,k,j)=prefactor(j1,j2,j3)/sqrt(m_jk)/sigma_jk**2 &
+!                /(Omega_kl(j1,j2,j3)+0.19*delta_jk/(TT_full(j1,j2,j3)/eps_jk)) &
+!                /(unit_length**2/unit_time)
+!
+            delta_jk_star=delta_jk/(eps_jk*k_B_cgs*sigma_jk**3)
+            Omega_kl(j1,j2,j3)=Omega_kl(j1,j2,j3)&
+                +0.19*delta_jk_star/(TT_full(j1,j2,j3)/eps_jk)
+            Bin_Diff_coef(j1,j2,j3,k,j)=prefactor(j1,j2,j3)&
+                /(sqrt(m_jk)*sigma_jk**2*Omega_kl(j1,j2,j3))
             enddo
             enddo
             enddo
