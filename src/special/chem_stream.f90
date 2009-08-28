@@ -191,8 +191,8 @@ module Special
 !
       if (gamma == impossible) then
         gamma  = 1
-        gamma1 = 0.
-        gamma11 = 1.
+        gamma_m1 = 0.
+        gamma_inv = 1.
       endif
 !
       call keep_compiler_quiet(f)

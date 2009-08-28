@@ -20,7 +20,7 @@ module Entropy
 !
   use Cdata
   use Cparam
-  use EquationOfState, only: gamma, gamma1, gamma11, cs20, cs2top, cs2bot, &
+  use EquationOfState, only: gamma, gamma_m1, gamma_inv, cs20, cs2top, cs2bot, &
                          isothtop, mpoly0, mpoly1, mpoly2, cs2cool, &
                          beta_glnrho_global, cs2top_ini, dcs2top_ini
   use Interstellar
@@ -242,7 +242,7 @@ module Entropy
       use EquationOfState, only: cs0, get_soundspeed, get_cp1, &
                                  beta_glnrho_global, beta_glnrho_scaled, &
                                  mpoly, mpoly0, mpoly1, mpoly2, &
-                                 select_eos_variable,gamma,gamma1
+                                 select_eos_variable,gamma,gamma_m1
       use FArrayManager
       use Gravity, only: gravz,g0
       use Mpicomm, only: stop_it
@@ -386,8 +386,8 @@ module Entropy
               if (lroot) print*, &
                    'initialize_entropy: Calculated Fbot = ', Fbot
 
-              Kbot=gamma1/gamma*(mpoly+1.)*Fbot
-              FbotKbot=gamma/gamma1/(mpoly+1.)
+              Kbot=gamma_m1/gamma*(mpoly+1.)*Fbot
+              FbotKbot=gamma/gamma_m1/(mpoly+1.)
               if (lroot) print*,'initialize_entropy: Calculated Fbot,Kbot=', &
                    Fbot,Kbot
             ! else
@@ -405,8 +405,8 @@ module Entropy
               Ftop=-gamma/(gamma-1)*hcond0*gravz/(mpoly+1)
               if (lroot) print*, &
                       'initialize_entropy: Calculated Ftop = ', Ftop
-              Ktop=gamma1/gamma*(mpoly+1.)*Ftop
-              FtopKtop=gamma/gamma1/(mpoly+1.)
+              Ktop=gamma_m1/gamma*(mpoly+1.)*Ftop
+              FtopKtop=gamma/gamma_m1/(mpoly+1.)
               if (lroot) print*,'initialize_entropy: Ftop,Ktop=',Ftop,Ktop
             ! else
             !! Don't need Ftop in this case (?)
@@ -428,7 +428,7 @@ module Entropy
 !  calulate temperature gradient from polytropic index
 !
           call get_cp1(cp1)
-          beta1=cp1*g0/(mpoly+1)*gamma/gamma1
+          beta1=cp1*g0/(mpoly+1)*gamma/gamma_m1
 !
 !  temperatures at shell boundaries
 !
@@ -436,14 +436,14 @@ module Entropy
 !           lmultilayer=.true.   ! this is the default...
             if (hcond1==impossible) hcond1=(mpoly1+1.)/(mpoly0+1.)
             call get_cp1(cp1)
-            beta0=-cp1*g0/(mpoly0+1)*gamma/gamma1
-            beta1=-cp1*g0/(mpoly1+1)*gamma/gamma1
-            T0=cs20/gamma1       ! T0 defined from cs20
+            beta0=-cp1*g0/(mpoly0+1)*gamma/gamma_m1
+            beta1=-cp1*g0/(mpoly1+1)*gamma/gamma_m1
+            T0=cs20/gamma_m1       ! T0 defined from cs20
             TT_ext=T0
             TT_crit=TT_ext+beta0*(r_bcz-r_ext)
             TT_int=TT_crit+beta1*(r_int-r_bcz)
             cs2top=cs20
-            cs2bot=gamma1*TT_int
+            cs2bot=gamma_m1*TT_int
           else
             lmultilayer=.false.  ! to ensure that hcond=cte
             TT_ext=T0            ! T0 defined in start.in for geodynamo
@@ -476,8 +476,8 @@ module Entropy
 
         case('cylind_layers')
           if (bcx1(iss)=='c1') then
-            Fbot=gamma/gamma1*hcond0*g0/(mpoly0+1)
-            FbotKbot=gamma/gamma1*g0/(mpoly0+1)
+            Fbot=gamma/gamma_m1*hcond0*g0/(mpoly0+1)
+            FbotKbot=gamma/gamma_m1*g0/(mpoly0+1)
           endif
           cs2cool=cs2top
 
@@ -876,7 +876,7 @@ module Entropy
 !      only work if grav_r<=0 everywhere -- but that seems
 !      reasonable.
                   call potential(R=r_ext,POT=pot_ext) ! get pot_ext=pot(r_ext)
-                  cs2_ext   = cs20*(1 - gamma1*(pot_ext-pot0)/cs20)
+                  cs2_ext   = cs20*(1 - gamma_m1*(pot_ext-pot0)/cs20)
 !
 ! Make sure init_lnrho (or start.in) has already set cs2cool:
 !
@@ -886,11 +886,11 @@ module Entropy
                   where (pot <= pot_ext) ! isentropic for r<r_ext
                     f(l1:l2,m,n,iss) = 0.
                   elsewhere           ! isothermal for r>r_ext
-                    f(l1:l2,m,n,iss) = ss_ext + gamma1*(pot-pot_ext)/cs2cool
+                    f(l1:l2,m,n,iss) = ss_ext + gamma_m1*(pot-pot_ext)/cs2cool
                   endwhere
                 else                  ! gamma=1 --> simply isothermal (I guess [wd])
                   ! [NB: Never tested this..]
-                  f(l1:l2,m,n,iss) = -gamma1/gamma*(f(l1:l2,m,n,ilnrho)-lnrho0)
+                  f(l1:l2,m,n,iss) = -gamma_m1/gamma*(f(l1:l2,m,n,ilnrho)-lnrho0)
                 endif
               enddo; enddo
             endif
@@ -1139,7 +1139,7 @@ module Entropy
       do n=n1,n2; do m=m1,m2
         if (isoth/=0.0) then ! isothermal layer
           beta1 = 0.0
-          tmp = ssint - gamma1*gravz*(z(n)-zint)/cs2int
+          tmp = ssint - gamma_m1*gravz*(z(n)-zint)/cs2int
         else
           beta1 = gamma*gravz/(mpoly+1)
           tmp = 1.0 + beta1*(z(n)-zint)/cs2int
@@ -1149,7 +1149,7 @@ module Entropy
                 'Imaginary entropy values -- your z_inf is too low.')
           endif
           tmp = max(tmp,epsi)  ! ensure arg to log is positive
-          tmp = ssint + (1-mpoly*gamma1)/gamma*log(tmp)
+          tmp = ssint + (1-mpoly*gamma_m1)/gamma*log(tmp)
         endif
 !
 ! smoothly blend the old value (above zblend) and the new one (below
@@ -1160,9 +1160,9 @@ module Entropy
       enddo; enddo
 !
       if (isoth/=0.0) then
-        ssint = -gamma1*gravz*(zbot-zint)/cs2int
+        ssint = -gamma_m1*gravz*(zbot-zint)/cs2int
       else
-        ssint = ssint + (1-mpoly*gamma1)/gamma &
+        ssint = ssint + (1-mpoly*gamma_m1)/gamma &
                       * log(1 + beta1*(zbot-zint)/cs2int)
       endif
       cs2int = cs2int + beta1*(zbot-zint) ! cs2 at layer interface (bottom)
@@ -1202,7 +1202,7 @@ module Entropy
       do n=n1,n2; do m=m1,m2
         if (isoth /= 0) then ! isothermal layer
           beta1 = 0.
-          tmp = ssint - gamma1*gravz*nu_epicycle2*(z(n)**2-zint**2)/cs2int/2.
+          tmp = ssint - gamma_m1*gravz*nu_epicycle2*(z(n)**2-zint**2)/cs2int/2.
         else
           beta1 = gamma*gravz*nu_epicycle2/(mpoly+1)
           tmp = 1 + beta1*(z(n)**2-zint**2)/cs2int/2.
@@ -1212,7 +1212,7 @@ module Entropy
                 'Imaginary entropy values -- your z_inf is too low.')
           endif
           tmp = max(tmp,epsi)  ! ensure arg to log is positive
-          tmp = ssint + (1-mpoly*gamma1)/gamma*log(tmp)
+          tmp = ssint + (1-mpoly*gamma_m1)/gamma*log(tmp)
         endif
 !
 ! smoothly blend the old value (above zblend) and the new one (below
@@ -1222,9 +1222,9 @@ module Entropy
       enddo; enddo
 !
       if (isoth/=0.0) then
-        ssint = -gamma1*gravz*nu_epicycle2*(zbot**2-zint**2)/cs2int/2.
+        ssint = -gamma_m1*gravz*nu_epicycle2*(zbot**2-zint**2)/cs2int/2.
       else
-        ssint = ssint + (1-mpoly*gamma1)/gamma &
+        ssint = ssint + (1-mpoly*gamma_m1)/gamma &
                       * log(1 + beta1*(zbot**2-zint**2)/cs2int/2.)
       endif
 !
@@ -1308,7 +1308,7 @@ module Entropy
 !
       use Gravity, only: gravz, z1
       use General, only: safe_character_assign
-      use EquationOfState, only: gamma, gamma1, rho0, lnrho0, cs0, &
+      use EquationOfState, only: gamma, gamma_m1, rho0, lnrho0, cs0, &
                                  cs20, cs2top, eoscalc, ilnrho_lnTT
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -1391,7 +1391,7 @@ module Entropy
         f(:,:,n+nghost,ilnrho)=lnrho
         f(:,:,n+nghost,iss)=ss
         write(11+ipz,'(4(2x,1pe12.5))') zm,exp(lnrho),ss, &
-              gamma1*tempm(nzgrid-iz+1)
+              gamma_m1*tempm(nzgrid-iz+1)
       enddo
       close(11+ipz)
       return
@@ -1418,7 +1418,7 @@ module Entropy
 !  1/beta = (g/cp) 1./[(1-1/gamma)*(m+1)]
 !
       call get_cp1(cp1)
-      beta1=cp1*g0/(mpoly+1)*gamma/gamma1
+      beta1=cp1*g0/(mpoly+1)*gamma/gamma_m1
 !
 !  set intial condition
 !
@@ -1520,8 +1520,8 @@ module Entropy
 !  NOTE: cs2top_ini=cs20 would be wrong if zinfty is not correct in gravity
 !
       call get_cp1(cp1)
-      beta1=cp1*gamma/gamma1*gravz/(mpoly+1)
-      dcs2top_ini=gamma1*gravz
+      beta1=cp1*gamma/gamma_m1*gravz/(mpoly+1)
+      dcs2top_ini=gamma_m1*gravz
       cs2top_ini=cs20
 !
 !  set initial condition (first in terms of TT, and then in terms of ss)
@@ -2014,11 +2014,11 @@ module Entropy
       if (lpencil(i_fpres)) then
         if (leos_idealgas) then
           do j=1,3
-            p%fpres(:,j)=-p%cs2*(p%glnrho(:,j) + p%glnTT(:,j))*gamma11
+            p%fpres(:,j)=-p%cs2*(p%glnrho(:,j) + p%glnTT(:,j))*gamma_inv
           enddo
 !  TH: The following would work if one uncomments the intrinsic operator
 !  extensions in sub.f90. Please Test.
-!          p%fpres      =-p%cs2*(p%glnrho + p%glnTT)*gamma11
+!          p%fpres      =-p%cs2*(p%glnrho + p%glnTT)*gamma_inv
         else
           do j=1,3
             p%fpres(:,j)=-p%cs2*(p%glnrho(:,j) + p%cp1tilde*p%gss(:,j))
@@ -2038,7 +2038,7 @@ module Entropy
 !   2-feb-03/axel: added possibility of ionization
 !
       use Diagnostics
-      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, gamma11, cs0
+      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, gamma_inv, cs0
       use Special, only: special_calc_entropy
       use Sub
 !
@@ -2108,9 +2108,9 @@ module Entropy
 !
       if (ladvection_entropy) then
          if (pretend_lnTT) then
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%divu*gamma1-p%uglnTT
-            !df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - (p%divu*gamma1 + p%uglnTT)*gamma11*p%cp
-            !df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%divu*gamma1 - p%uglnTT
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%divu*gamma_m1-p%uglnTT
+            !df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - (p%divu*gamma_m1 + p%uglnTT)*gamma_inv*p%cp
+            !df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%divu*gamma_m1 - p%uglnTT
          else
             df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%ugss
          endif
@@ -2235,7 +2235,7 @@ module Entropy
 !
 !  calculate integrated temperature in in limited radial range
 !
-        if (idiag_TTp/=0) call sum_lim_mn_name(p%rho*p%cs2*gamma11,idiag_TTp,p)
+        if (idiag_TTp/=0) call sum_lim_mn_name(p%rho*p%cs2*gamma_inv,idiag_TTp,p)
       endif
 !
 !  1-D averages.
@@ -2298,8 +2298,8 @@ module Entropy
         call get_ptlaw(ptlaw) 
         call get_cp1(cp1)
         call power_law(cs20,p%rcyl_mn,ptlaw,cs2,r_ref)
-        f_target=1./(gamma*cp1)*(log(cs2/cs20)-gamma1*lnrho0)
-         !f_target= gamma11*log(cs2_0) !- gamma1*gamma11*lnrho
+        f_target=1./(gamma*cp1)*(log(cs2/cs20)-gamma_m1*lnrho0)
+         !f_target= gamma_inv*log(cs2_0) !- gamma_m1*gamma_inv*lnrho
       case('nothing')
          if (lroot.and.ip<=5) &
               print*,"set_border_entropy: borderss='nothing'"
@@ -2610,10 +2610,10 @@ module Entropy
       !     using del2lnTT & glnTT, is simpler
       !
       !chix = p%rho1*hcond*p%cp1                    ! chix = K/(cp rho)
-      !glnT = gamma*p%gss*spread(p%cp1,2,3) + gamma1*p%glnrho ! grad ln(T)
+      !glnT = gamma*p%gss*spread(p%cp1,2,3) + gamma_m1*p%glnrho ! grad ln(T)
       !glnThcond = glnT !... + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
       !call dot(glnT,glnThcond,g2)
-      !thdiff =  p%rho1*hcond * (gamma*p%del2ss*p%cp1 + gamma1*p%del2lnrho + g2)
+      !thdiff =  p%rho1*hcond * (gamma*p%del2ss*p%cp1 + gamma_m1*p%del2lnrho + g2)
 
       !  diffusion of the form:
       !  rho*T*Ds/Dt = ... + nab.(K*gradT)
@@ -2663,7 +2663,7 @@ module Entropy
 !
 !  10-feb-04/bing: coded
 !
-      use EquationOfState, only: gamma,gamma1
+      use EquationOfState, only: gamma,gamma_m1
       use Sub
       use IO, only: output_pencil
 !
@@ -2781,7 +2781,7 @@ module Entropy
 !
 !  07-feb-07/wlad+heidar : coded
 !
-      use EquationOfState, only: gamma,gamma1
+      use EquationOfState, only: gamma,gamma_m1
       use Sub
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -3193,7 +3193,7 @@ module Entropy
 !  Add cooling with constant time-scale to TTref_cool.
 !
       if (tau_cool/=0.0) &
-          heat=heat-p%rho*p%cp*gamma11*(p%TT-TTref_cool)/tau_cool
+          heat=heat-p%rho*p%cp*gamma_inv*(p%TT-TTref_cool)/tau_cool
 !
 !  Add "coronal" heating (to simulate a hot corona).
 !  Assume a linearly increasing reference profile.
@@ -3809,7 +3809,7 @@ module Entropy
 ! see Eqs. (20-21-22) in Brandenburg et al., AN, 326 (2005)
 !
       use Gravity, only: z1,z2,gravz
-      use EquationOfState, only: gamma, gamma1
+      use EquationOfState, only: gamma, gamma_m1
 !
       real, dimension (nzgrid) :: zz, lnrhom, tempm
       real :: rhotop, zm, ztop, dlnrho, dtemp, &
@@ -3820,11 +3820,11 @@ module Entropy
 !  inital values at the top
 !
       lnrhom(1)=alog(rhotop)
-      tempm(1)=cs2top/gamma1
+      tempm(1)=cs2top/gamma_m1
       ztop=xyz0(3)+Lxyz(3)
       zz(1)=ztop
 !
-      polyad=1./gamma1
+      polyad=1./gamma_m1
       delad=1.-1./gamma
       fr_frac=delad*(mpoly0+1.)
       fc_frac=1.-fr_frac
@@ -3841,7 +3841,7 @@ module Entropy
           if (zm<=z2) then
 ! convective zone=mixing-length stratification
             del=delad+1.5*(fc/ &
-                (exp(lnrhom(iz-1))*(gamma1*tempm(iz-1))**1.5))**.6666667
+                (exp(lnrhom(iz-1))*(gamma_m1*tempm(iz-1))**1.5))**.6666667
           else
 ! upper zone=isothermal stratification
             del=0.
@@ -3892,8 +3892,8 @@ module Entropy
 !  1/beta = -(g/cp) /[(1-1/gamma)*(m+1)]
 !
       call get_cp1(cp1)
-      beta0=-cp1*g0/(mpoly0+1)*gamma/gamma1
-      beta1=-cp1*g0/(mpoly1+1)*gamma/gamma1
+      beta0=-cp1*g0/(mpoly0+1)*gamma/gamma_m1
+      beta1=-cp1*g0/(mpoly1+1)*gamma/gamma_m1
       TT_crit=TT_ext+beta0*(r_bcz-r_ext)
       lnrho_ext=lnrho0
       lnrho_crit=lnrho0+ &
@@ -3947,7 +3947,7 @@ module Entropy
 !  20-dec-06/dintrans: coded
 !  28-nov-07/dintrans: merged with strat_heat_grav
 !
-    use EquationOfState, only: gamma, gamma1, rho0, lnrho0, cs20, get_soundspeed,eoscalc, ilnrho_TT
+    use EquationOfState, only: gamma, gamma_m1, rho0, lnrho0, cs20, get_soundspeed,eoscalc, ilnrho_TT
     use FArrayManager
     use Sub, only: step, interp1, erfunc
 
@@ -3977,11 +3977,11 @@ module Entropy
         u_mn=rr_mn/sqrt(2.)/wheat
         if (nzgrid == 1) then
           lumi_mn=luminosity*(1.-exp(-u_mn**2))
-          g_r=-lumi_mn/(2.*pi*rr_mn)*(mpoly0+1.)/hcond0*gamma1/gamma
+          g_r=-lumi_mn/(2.*pi*rr_mn)*(mpoly0+1.)/hcond0*gamma_m1/gamma
           f(l1:l2,m,n,iglobal_gg+2) = 0.                 ! g_z=0
         else
           lumi_mn=luminosity*(erfunc(u_mn)-2.*u_mn/sqrt(pi)*exp(-u_mn**2))
-          g_r=-lumi_mn/(4.*pi*rr_mn**2)*(mpoly0+1.)/hcond0*gamma1/gamma
+          g_r=-lumi_mn/(4.*pi*rr_mn**2)*(mpoly0+1.)/hcond0*gamma_m1/gamma
           f(l1:l2,m,n,iglobal_gg+2) = z(n)/rr_mn*g_r     ! g_z
         endif
         f(l1:l2,m,n,iglobal_gg)   = x(l1:l2)/rr_mn*g_r   ! g_x
@@ -4031,7 +4031,7 @@ module Entropy
 !  redefine rho0 and lnrho0 (important for eoscalc!)
     rho0=rhotop
     lnrho0=log(rhotop)
-    T0=cs20/gamma1
+    T0=cs20/gamma_m1
     print*,'final rho0, lnrho0, T0=',rho0, lnrho0, T0
     
 ! define the radial grid r=[0,r_max]
@@ -4078,9 +4078,9 @@ module Entropy
         endif
         if (r(i) .ne. 0.) then 
           if (nzgrid == 1) then
-            g=-lumi/(2.*pi*r(i))*(mpoly0+1.)/hcond0*gamma1/gamma
+            g=-lumi/(2.*pi*r(i))*(mpoly0+1.)/hcond0*gamma_m1/gamma
           else
-            g=-lumi/(4.*pi*r(i)**2)*(mpoly0+1.)/hcond0*gamma1/gamma
+            g=-lumi/(4.*pi*r(i)**2)*(mpoly0+1.)/hcond0*gamma_m1/gamma
           endif
         else
           g=0.
@@ -4101,7 +4101,7 @@ module Entropy
 !
 !  17-jan-07/dintrans: coded
 !
-    use EquationOfState, only: gamma, gamma1, mpoly0, mpoly1, lnrho0, cs20
+    use EquationOfState, only: gamma, gamma_m1, mpoly0, mpoly1, lnrho0, cs20
     use Sub, only: step, erfunc, interp1
 
     integer, parameter   :: nr=100
@@ -4125,10 +4125,10 @@ module Entropy
       u=r(i)/sqrt(2.)/wheat
       if (nzgrid == 1) then
         lumi(i)=luminosity*(1.-exp(-u**2))
-        g(i)=-lumi(i)/(2.*pi*r(i))*(mpoly0+1.)/hcond0*gamma1/gamma
+        g(i)=-lumi(i)/(2.*pi*r(i))*(mpoly0+1.)/hcond0*gamma_m1/gamma
       else
         lumi(i)=luminosity*(erfunc(u)-2.*u/sqrt(pi)*exp(-u**2))
-        g(i)=-lumi(i)/(4.*pi*r(i)**2)*(mpoly0+1.)/hcond0*gamma1/gamma
+        g(i)=-lumi(i)/(4.*pi*r(i)**2)*(mpoly0+1.)/hcond0*gamma_m1/gamma
       endif
     enddo
 
@@ -4140,7 +4140,7 @@ module Entropy
     hcond=hcond0*hcond
 
 ! start from surface values for rho and temp
-    temp(nr)=cs20/gamma1 ; lnrho(nr)=alog(rhotop)
+    temp(nr)=cs20/gamma_m1 ; lnrho(nr)=alog(rhotop)
     dr=r(2)
     do i=nr-1,1,-1
       if (r(i+1) > r_ext) then
@@ -4187,7 +4187,7 @@ module Entropy
 !  Initialise ss in a cylindrical ring using 2 superposed polytropic layers
 !  
       use Gravity, only: gravz, g0
-      use EquationOfState, only: lnrho0,cs20,gamma,gamma1,cs2top,cs2bot, &
+      use EquationOfState, only: lnrho0,cs20,gamma,gamma_m1,cs2top,cs2bot, &
                                  get_cp1,eoscalc,ilnrho_TT
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -4201,13 +4201,13 @@ module Entropy
 !  beta = (g/cp) 1./[(1-1/gamma)*(m+1)]
 !
       call get_cp1(cp1)
-      beta0=-cp1*g0/(mpoly0+1)*gamma/gamma1
-      beta1=-cp1*g0/(mpoly1+1)*gamma/gamma1
-      TT_ext=cs20/gamma1
+      beta0=-cp1*g0/(mpoly0+1)*gamma/gamma_m1
+      beta1=-cp1*g0/(mpoly1+1)*gamma/gamma_m1
+      TT_ext=cs20/gamma_m1
       TT_bcz=TT_ext+beta0*(r_bcz-r_ext)
       TT_int=TT_bcz+beta1*(r_int-r_bcz)
       cs2top=cs20
-      cs2bot=gamma1*TT_int
+      cs2bot=gamma_m1*TT_int
       lnrho_bcz=lnrho0+mpoly0*log(TT_bcz/TT_ext)
 !
       do m=m1,m2
@@ -4242,7 +4242,7 @@ module Entropy
 !
       use Gravity, only: gravz, g0
       use EquationOfState, only: eoscalc, ilnrho_TT, get_cp1, &
-                                 gamma1, lnrho0
+                                 gamma_m1, lnrho0
       use SharedVariables, only: get_shared_variable
       use Mpicomm, only: stop_it
 !
@@ -4260,13 +4260,13 @@ module Entropy
         call get_shared_variable('gravx', gravx, ierr)
         if (ierr/=0) call stop_it("single_polytrope: "//&
            "there was a problem when getting gravx")
-        beta=cp1*gamma/gamma1*gravx/(mpoly0+1)
+        beta=cp1*gamma/gamma_m1*gravx/(mpoly0+1)
       else
-        beta=cp1*gamma/gamma1*gravz/(mpoly0+1)
+        beta=cp1*gamma/gamma_m1*gravz/(mpoly0+1)
         ztop=xyz0(3)+Lxyz(3)
         zbot=xyz0(3)
       endif
-      TT0=cs20/gamma1
+      TT0=cs20/gamma_m1
 !
 !  set initial condition (first in terms of TT, and then in terms of ss)
 !
@@ -4286,9 +4286,9 @@ module Entropy
       enddo
       cs2top=cs20
       if (lcylindrical_coords) then
-        cs2bot=gamma1*(TT0+beta*(r_int-r_ext))
+        cs2bot=gamma_m1*(TT0+beta*(r_int-r_ext))
       else
-        cs2bot=gamma1*(TT0+beta*(zbot-ztop))
+        cs2bot=gamma_m1*(TT0+beta*(zbot-ztop))
       endif
 !
     endsubroutine single_polytrope

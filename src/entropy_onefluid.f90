@@ -23,7 +23,7 @@ module Entropy
 !
   use Cdata
   use Cparam
-  use EquationOfState, only: gamma, gamma1, cs20, beta_glnrho_global
+  use EquationOfState, only: gamma, gamma_m1, cs20, beta_glnrho_global
   use Interstellar
   use Messages
   use Sub, only: keep_compiler_quiet
@@ -623,10 +623,10 @@ module Entropy
 !  Note: these routines require revision when ionization turned on
 !  The variable g2 is reused to calculate glnP.gss a few lines below.
 !
-      glnT = gamma*p%gss + gamma1*p%glnrho
+      glnT = gamma*p%gss + gamma_m1*p%glnrho
       glnP = gamma*p%gss + gamma*p%glnrho
       call dot(glnP,glnT,g2)
-      thdiff = chi * (gamma*p%del2ss+gamma1*p%del2lnrho + g2)
+      thdiff = chi * (gamma*p%del2ss+gamma_m1*p%del2lnrho + g2)
       if (chi_t/=0.) then
         call dot(glnP,p%gss,g2)
         thdiff = thdiff + chi_t*(p%del2ss+g2)
@@ -774,10 +774,10 @@ module Entropy
 !  Note: these routines require revision when ionization turned on
 !
       chix = p%rho1*hcond
-      glnT = gamma*p%gss + gamma1*p%glnrho ! grad ln(T)
+      glnT = gamma*p%gss + gamma_m1*p%glnrho ! grad ln(T)
       glnThcond = glnT !... + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
       call dot(glnT,glnThcond,g2)
-      thdiff = chix * (gamma*p%del2ss+gamma1*p%del2lnrho + g2)
+      thdiff = chix * (gamma*p%del2ss+gamma_m1*p%del2lnrho + g2)
 !
 !  add heat conduction to entropy equation
 !
@@ -845,10 +845,10 @@ module Entropy
 !          call gradlogchit_profile(glchit_prof)
 !        endif
         chix = p%rho1*hcond
-        glnT = gamma*p%gss + gamma1*p%glnrho             ! grad ln(T)
+        glnT = gamma*p%gss + gamma_m1*p%glnrho             ! grad ln(T)
         glnThcond = glnT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
         call dot(glnT,glnThcond,g2)
-        thdiff = chix * (gamma*p%del2ss+gamma1*p%del2lnrho + g2)
+        thdiff = chix * (gamma*p%del2ss+gamma_m1*p%del2lnrho + g2)
       else
         chix   = 0.0
         thdiff = 0.0

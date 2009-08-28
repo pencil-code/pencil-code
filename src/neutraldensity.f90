@@ -23,7 +23,7 @@ module NeutralDensity
   use Cdata
   use Messages
 !  use EquationOfState, only: cs0,cs20,lnrho0,rho0, &
-!                             gamma,gamma1,cs2top,cs2bot, &
+!                             gamma,gamma_m1,cs2top,cs2bot, &
 !                             mpoly,beta_glnrho_global
 
   implicit none

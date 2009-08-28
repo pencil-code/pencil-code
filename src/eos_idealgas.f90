@@ -63,8 +63,8 @@ module EquationOfState
   real :: ptlaw=3./4.
   real :: gamma=5./3.
   real :: Rgas_cgs=0., Rgas, error_cp=1e-6
-  real :: gamma1    !(=gamma-1)
-  real :: gamma11   !(=1/gamma)
+  real :: gamma_m1    !(=gamma-1)
+  real :: gamma_inv   !(=1/gamma)
   real :: cp=impossible, cp1=impossible, cv=impossible, cv1=impossible
   real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=1., cs2top=1.
@@ -132,11 +132,11 @@ module EquationOfState
 !
       real :: Rgas_unit_sys=1., cp_reference
 !
-!  set gamma1, cs20, and lnrho0
+!  set gamma_m1, cs20, and lnrho0
 !  (used currently for non-dimensional equation of state)
 !
-      gamma1=gamma-1.
-      gamma11=1./gamma
+      gamma_m1=gamma-1.
+      gamma_inv=1./gamma
 !
 !  avoid floating overflow if cs0 was not set:
 !
@@ -153,7 +153,7 @@ module EquationOfState
 !  Conversely, if cp is set, then unit_temperature must follow from this.
 !  If unit_temperature and cp are set, the problem is overdetermined,
 !    but it may still be correct, so this will be checked here.
-!  When gamma=1. (gamma1=0.), write Rgas=mu*cp or cp=Rgas/mu.
+!  When gamma=1. (gamma_m1=0.), write Rgas=mu*cp or cp=Rgas/mu.
 !
       if (unit_system == 'cgs') then
          Rgas_unit_sys = k_B_cgs/m_u_cgs
@@ -163,29 +163,29 @@ module EquationOfState
 !
       if (unit_temperature == impossible) then
         if (cp == impossible) cp=1.
-        if (gamma1 == 0.) then
+        if (gamma_m1 == 0.) then
           Rgas=mu*cp
         else
-          Rgas=mu*gamma1*gamma11*cp
+          Rgas=mu*gamma_m1*gamma_inv*cp
         endif
         unit_temperature=unit_velocity**2*Rgas/Rgas_unit_sys
       else
         Rgas=Rgas_unit_sys*unit_temperature/unit_velocity**2
         if (cp == impossible) then
-          if (gamma1 == 0.) then
+          if (gamma_m1 == 0.) then
             cp=Rgas/mu
           else
-            cp=Rgas/(mu*gamma1*gamma11)
+            cp=Rgas/(mu*gamma_m1*gamma_inv)
           endif
         else
 !
 !  checking whether the units are overdetermined.
 !  This is assumed to be the case when the to differ by error_cp
 !
-          if (gamma1 == 0.) then
+          if (gamma_m1 == 0.) then
             cp_reference=Rgas/mu
           else
-            cp_reference=Rgas/(mu*gamma1*gamma11)
+            cp_reference=Rgas/(mu*gamma_m1*gamma_inv)
           endif
           if (abs(cp-cp_reference)/cp > error_cp) then
             if (lroot) print*,'initialize_eos: consistency: cp=',cp, &
@@ -195,14 +195,14 @@ module EquationOfState
         endif
       endif
       cp1=1./cp
-      cv=gamma11*cp
+      cv=gamma_inv*cp
       cv1=gamma*cp1
 !
 !  Need to calculate the equivalent of cs0
 !  Distinguish between gamma=1 case and not.
 !
-      if (gamma1 /= 0.) then
-        lnTT0=log(cs20/(cp*gamma1))  !(general case)
+      if (gamma_m1 /= 0.) then
+        lnTT0=log(cs20/(cp*gamma_m1))  !(general case)
       else
         lnTT0=log(cs20/cp)  !(isothermal/polytropic cases: check!)
       endif
@@ -637,7 +637,7 @@ module EquationOfState
           if (lpencil(i_hss)) p%hss=0
           if (lpencil(i_del2ss)) p%del2ss=0
           if (lpencil(i_del6ss)) p%del6ss=0
-          if (lpencil(i_cs2)) p%cs2=cs20*exp(gamma1*(p%lnrho-lnrho0))
+          if (lpencil(i_cs2)) p%cs2=cs20*exp(gamma_m1*(p%lnrho-lnrho0))
         elseif (leos_isothermal) then
           if (lpencil(i_ss)) p%ss=-(cp-cv)*(p%lnrho-lnrho0)
           if (lpencil(i_gss)) p%gss=-(cp-cv)*p%glnrho
@@ -659,39 +659,39 @@ module EquationOfState
           if (lpencil(i_hss)) call g2ij(f,ieosvar2,p%hss)
           if (lpencil(i_del2ss)) call del2(f,ieosvar2,p%del2ss)
           if (lpencil(i_del6ss)) call del6(f,ieosvar2,p%del6ss)
-          if (lpencil(i_cs2)) p%cs2=cs20*exp(cv1*p%ss+gamma1*(p%lnrho-lnrho0))
+          if (lpencil(i_cs2)) p%cs2=cs20*exp(cv1*p%ss+gamma_m1*(p%lnrho-lnrho0))
         endif
-        if (lpencil(i_lnTT)) p%lnTT=lnTT0+cv1*p%ss+gamma1*(p%lnrho-lnrho0)
+        if (lpencil(i_lnTT)) p%lnTT=lnTT0+cv1*p%ss+gamma_m1*(p%lnrho-lnrho0)
         if (lpencil(i_pp)) p%pp=(cp-cv)*exp(p%lnTT+p%lnrho)
         if (lpencil(i_ee)) p%ee=cv*exp(p%lnTT)
         if (lpencil(i_yH)) p%yH=impossible
         if (lpencil(i_TT)) p%TT=exp(p%lnTT)
         if (lpencil(i_TT1)) p%TT1=exp(-p%lnTT)
-        if (lpencil(i_glnTT)) p%glnTT=gamma1*p%glnrho+cv1*p%gss
+        if (lpencil(i_glnTT)) p%glnTT=gamma_m1*p%glnrho+cv1*p%gss
         if (lpencil(i_del2lnTT)) then
           if (ldensity_nolog) then
-            p%del2lnTT=gamma1*d2rho+cv1*p%del2ss
+            p%del2lnTT=gamma_m1*d2rho+cv1*p%del2ss
           else
-            p%del2lnTT=gamma1*p%del2lnrho+cv1*p%del2ss
+            p%del2lnTT=gamma_m1*p%del2lnrho+cv1*p%del2ss
           endif
         endif
-        if (lpencil(i_hlnTT)) p%hlnTT=gamma1*p%hlnrho+cv1*p%hss
+        if (lpencil(i_hlnTT)) p%hlnTT=gamma_m1*p%hlnrho+cv1*p%hss
 !
 !  work out thermodynamic quantities for given lnrho or rho and lnTT
 !
       case (ilnrho_lnTT,irho_lnTT)
         if (leos_isentropic) then
-          if (lpencil(i_lnTT)) p%lnTT=gamma1*(p%lnrho-lnrho0)+lnTT0
-          if (lpencil(i_glnTT)) p%glnTT=gamma1*p%glnrho
-          if (lpencil(i_hlnTT)) p%hlnTT=gamma1*p%hlnrho
+          if (lpencil(i_lnTT)) p%lnTT=gamma_m1*(p%lnrho-lnrho0)+lnTT0
+          if (lpencil(i_glnTT)) p%glnTT=gamma_m1*p%glnrho
+          if (lpencil(i_hlnTT)) p%hlnTT=gamma_m1*p%hlnrho
           if (lpencil(i_del2lnTT)) then
             if (ldensity_nolog) then
-              p%del2lnTT=gamma1*d2rho
+              p%del2lnTT=gamma_m1*d2rho
             else
-              p%del2lnTT=gamma1*p%del2lnrho
+              p%del2lnTT=gamma_m1*p%del2lnrho
             endif
           endif
-          if (lpencil(i_cs2)) p%cs2=cs20*exp(gamma1*(p%lnrho-lnrho0))
+          if (lpencil(i_cs2)) p%cs2=cs20*exp(gamma_m1*(p%lnrho-lnrho0))
         elseif (leos_isothermal) then
           if (lpencil(i_lnTT)) p%lnTT=lnTT0
           if (lpencil(i_glnTT)) p%glnTT=0
@@ -706,23 +706,23 @@ module EquationOfState
           if (lpencil(i_hlnTT)) call g2ij(f,ieosvar2,p%hlnTT)
           if (lpencil(i_del2lnTT)) call del2(f,ieosvar2,p%del2lnTT)
           if (lpencil(i_del6lnTT)) call del6(f,ieosvar2,p%del6lnTT)
-          if (lpencil(i_cs2)) p%cs2=cp*exp(p%lnTT)*gamma1
+          if (lpencil(i_cs2)) p%cs2=cp*exp(p%lnTT)*gamma_m1
         endif
-        if (lpencil(i_ss)) p%ss=cv*(p%lnTT-lnTT0-gamma1*(p%lnrho-lnrho0))
+        if (lpencil(i_ss)) p%ss=cv*(p%lnTT-lnTT0-gamma_m1*(p%lnrho-lnrho0))
         if (lpencil(i_pp)) p%pp=(cp-cv)*exp(p%lnTT+p%lnrho)
         if (lpencil(i_ee)) p%ee=cv*exp(p%lnTT)
         if (lpencil(i_yH)) p%yH=impossible
         if (lpencil(i_TT)) p%TT=exp(p%lnTT)
         if (lpencil(i_TT1)) p%TT1=exp(-p%lnTT)
-        if (lpencil(i_gss)) p%gss=cv*(p%glnTT-gamma1*p%glnrho)
+        if (lpencil(i_gss)) p%gss=cv*(p%glnTT-gamma_m1*p%glnrho)
         if (lpencil(i_del2ss)) then
           if (ldensity_nolog) then
-            p%del2ss=cv*(p%del2lnTT-gamma1*d2rho)
+            p%del2ss=cv*(p%del2lnTT-gamma_m1*d2rho)
           else
-            p%del2ss=cv*(p%del2lnTT-gamma1*p%del2lnrho)
+            p%del2ss=cv*(p%del2lnTT-gamma_m1*p%del2lnrho)
           endif
         endif
-        if (lpencil(i_hss)) p%hss=cv*(p%hlnTT-gamma1*p%hlnrho)
+        if (lpencil(i_hss)) p%hss=cv*(p%hlnTT-gamma_m1*p%hlnrho)
         if (lpencil(i_del6ss)) call fatal_error("calc_pencils_eos","del6ss not available for ilnrho_lnTT")
 !
 !  work out thermodynamic quantities for given lnrho or rho and TT
@@ -731,7 +731,7 @@ module EquationOfState
         if (lpencil(i_TT))   p%TT=f(l1:l2,m,n,ieosvar2)
         if (lpencil(i_TT1))  p%TT1=1./f(l1:l2,m,n,ieosvar2)
         if (lpencil(i_lnTT)) p%lnTT=log(f(l1:l2,m,n,ieosvar2))
-        if (lpencil(i_cs2))  p%cs2=cp*gamma1*f(l1:l2,m,n,ieosvar2)
+        if (lpencil(i_cs2))  p%cs2=cp*gamma_m1*f(l1:l2,m,n,ieosvar2)
         if (lpencil(i_gTT))  call grad(f,ieosvar2,p%gTT)
         if (lpencil(i_glnTT)) then
           do i=1,3;p%glnTT(:,i)=p%gTT(:,i)*p%TT1;enddo
@@ -745,8 +745,8 @@ module EquationOfState
           p%del2lnTT=p%del2TT*p%TT1 - tmp
         endif
         if (lpencil(i_del6TT)) call del6(f,ieosvar2,p%del6TT)
-        if (lpencil(i_ss)) p%ss=cv*(p%lnTT-lnTT0-gamma1*(p%lnrho-lnrho0))
-        if (lpencil(i_pp)) p%pp=cv*gamma1*p%rho*p%TT
+        if (lpencil(i_ss)) p%ss=cv*(p%lnTT-lnTT0-gamma_m1*(p%lnrho-lnrho0))
+        if (lpencil(i_pp)) p%pp=cv*gamma_m1*p%rho*p%TT
 !
 !  work out thermodynamic quantities for given lnrho or rho and cs2
 !
@@ -769,7 +769,7 @@ module EquationOfState
           endif
           if (lpencil(i_gss)) p%gss=-(cp-cv)*p%glnrho
           if (lpencil(i_hss)) p%hss=-(cp-cv)*p%hlnrho
-          if (lpencil(i_pp)) p%pp=gamma11*p%rho*cs20
+          if (lpencil(i_pp)) p%pp=gamma_inv*p%rho*cs20
         elseif (leos_localisothermal) then
           if (lpencil(i_cs2)) p%cs2=f(l1:l2,m,n,iglobal_cs2)
           if (lpencil(i_lnTT)) call fatal_error("calc_pencils_eos","temperature not needed for localisothermal")
@@ -789,8 +789,8 @@ module EquationOfState
 !  For gamma=1, we use R/mu = c_p = c_v, thus ee = c_vT = R/mu T = p/rho = cs^2.
 !
         if (lpencil(i_ee)) then
-          if (gamma1 /= 0.) then
-            p%ee=(gamma11/gamma1)*p%cs2
+          if (gamma_m1 /= 0.) then
+            p%ee=(gamma_inv/gamma_m1)*p%cs2
           else
             p%ee=p%cs2            
           endif
@@ -894,9 +894,9 @@ module EquationOfState
 !  pretend_lnTT
 !
       if (pretend_lnTT) then
-        cs2=gamma1*exp(cv1*ss)
+        cs2=gamma_m1*exp(cv1*ss)
       else
-        cs2=cs20*exp(cv1*ss+gamma1*(lnrho-lnrho0))
+        cs2=cs20*exp(cv1*ss+gamma_m1*(lnrho-lnrho0))
       endif
 !! Actual pressure gradient calculation:
 !!          do j=1,3
@@ -932,9 +932,9 @@ module EquationOfState
 !  pretend_lnTT
 !
       if (pretend_lnTT) then
-        cs2=gamma1*exp(gamma*cp1*ss)
+        cs2=gamma_m1*exp(gamma*cp1*ss)
       else
-        cs2=cs20*exp(cv1*ss+gamma1*(lnrho-lnrho0))
+        cs2=cs20*exp(cv1*ss+gamma_m1*(lnrho-lnrho0))
       endif
       cp1tilde=cp1
 !
@@ -954,7 +954,7 @@ module EquationOfState
       real, dimension(nx,3), intent(in) :: glnrho,gss
       real, dimension(nx,3), intent(out) :: glnTT
 !
-      if (gamma1==0.) call fatal_error('temperature_gradient', &
+      if (gamma_m1==0.) call fatal_error('temperature_gradient', &
         'gamma=1 not allowed with entropy turned on!')
 !
 !  pretend_lnTT
@@ -962,7 +962,7 @@ module EquationOfState
       if (pretend_lnTT) then
         glnTT=gss
       else
-        glnTT=gamma1*glnrho+cv1*gss
+        glnTT=gamma_m1*glnrho+cv1*gss
       endif
 !
       call keep_compiler_quiet(f)
@@ -984,7 +984,7 @@ module EquationOfState
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx) :: tmp
 !
-      if (gamma1==0.) &
+      if (gamma_m1==0.) &
            call fatal_error('temperature_laplacian', &
                'gamma=1 not allowed w/entropy')
 !
@@ -995,9 +995,9 @@ module EquationOfState
       else
         if (ldensity_nolog) then
           call dot2(p%grho,tmp)
-          p%del2lnTT=gamma1*p%rho1*(p%del2rho+p%rho1*tmp)
+          p%del2lnTT=gamma_m1*p%rho1*(p%del2rho+p%rho1*tmp)
         else
-          p%del2lnTT=gamma1*p%del2lnrho+p%cv1*p%del2ss
+          p%del2lnTT=gamma_m1*p%del2lnrho+p%cv1*p%del2ss
         endif
       endif
 !
@@ -1019,14 +1019,14 @@ module EquationOfState
       real, dimension(nx,3,3), intent(in) :: hlnrho,hss
       real, dimension(nx,3,3), intent(out) :: hlnTT
 !
-      if (gamma1==0.) call fatal_error('temperature_hessian','gamma=1 not allowed w/entropy')
+      if (gamma_m1==0.) call fatal_error('temperature_hessian','gamma=1 not allowed w/entropy')
 !
 !  pretend_lnTT
 !
       if (pretend_lnTT) then
         hlnTT=hss
       else
-        hlnTT=gamma1*hlnrho+cv1*hss
+        hlnTT=gamma_m1*hlnrho+cv1*hss
       endif
 !
       call keep_compiler_quiet(f)
@@ -1049,17 +1049,17 @@ module EquationOfState
           if (pretend_lnTT) then
             f(l1:l2,m,n,iss)=log(cv1*ee)
           else
-            f(l1:l2,m,n,iss)=cv*(log(cv1*ee)-lnTT0-gamma1*(lnrho_-lnrho0))
+            f(l1:l2,m,n,iss)=cv*(log(cv1*ee)-lnTT0-gamma_m1*(lnrho_-lnrho0))
           endif
         elseif (present(pp)) then
           if (pretend_lnTT) then
-            f(l1:l2,m,n,iss)=log(gamma*pp/(gamma1*lnrho_))
+            f(l1:l2,m,n,iss)=log(gamma*pp/(gamma_m1*lnrho_))
           else
-            f(l1:l2,m,n,iss)=cv*(log(gamma*pp/gamma1)-gamma*lnrho_-gamma1*lnrho0-lnTT0)
+            f(l1:l2,m,n,iss)=cv*(log(gamma*pp/gamma_m1)-gamma*lnrho_-gamma_m1*lnrho0-lnTT0)
           endif
         elseif (present(ss)) then
           if (pretend_lnTT) then
-            f(l1:l2,m,n,iss)=lnTT0+cv1*ss+gamma1*(lnrho_-lnrho0)
+            f(l1:l2,m,n,iss)=lnTT0+cv1*ss+gamma_m1*(lnrho_-lnrho0)
           else
             f(l1:l2,m,n,iss)=ss
           endif
@@ -1071,17 +1071,17 @@ module EquationOfState
           if (pretend_lnTT) then
             f(:,m,n,iss)=log(cv1*ee)
           else
-            f(:,m,n,iss)=cv*(log(cv1*ee)-lnTT0-gamma1*(lnrho_-lnrho0))
+            f(:,m,n,iss)=cv*(log(cv1*ee)-lnTT0-gamma_m1*(lnrho_-lnrho0))
           endif
         elseif (present(pp)) then
           if (pretend_lnTT) then
-            f(:,m,n,iss)=log(gamma*pp/(gamma1*lnrho_))
+            f(:,m,n,iss)=log(gamma*pp/(gamma_m1*lnrho_))
           else
-            f(:,m,n,iss)=cv*(log(gamma*pp/gamma1)-gamma*lnrho_-gamma1*lnrho0-lnTT0)
+            f(:,m,n,iss)=cv*(log(gamma*pp/gamma_m1)-gamma*lnrho_-gamma_m1*lnrho0-lnTT0)
           endif
         elseif (present(ss)) then
           if (pretend_lnTT) then
-            f(:,m,n,iss)=lnTT0+cv1*ss+gamma1*(lnrho_-lnrho0)
+            f(:,m,n,iss)=lnTT0+cv1*ss+gamma_m1*(lnrho_-lnrho0)
           else
             f(:,m,n,iss)=ss
           endif
@@ -1114,7 +1114,7 @@ module EquationOfState
       real, dimension(psize) :: lnrho_,ss_
 !
 !ajwm this test should be done at initialization
-!      if (gamma1==0.) call fatal_error('eoscalc_farray','gamma=1 not allowed w/entropy')
+!      if (gamma_m1==0.) call fatal_error('eoscalc_farray','gamma=1 not allowed w/entropy')
 !
       select case (ieosvars)
 !
@@ -1131,7 +1131,7 @@ module EquationOfState
           if (leos_isentropic) then
             ss_=0
           elseif (leos_isothermal) then
-            ss_=-cv*gamma1*(lnrho_-lnrho0)
+            ss_=-cv*gamma_m1*(lnrho_-lnrho0)
           else
             ss_=f(l1:l2,m,n,ieosvar2)
           endif
@@ -1140,7 +1140,7 @@ module EquationOfState
           if (leos_isentropic) then
             ss_=0
           elseif (leos_isothermal) then
-            ss_=-cv*gamma1*(lnrho_-lnrho0)
+            ss_=-cv*gamma_m1*(lnrho_-lnrho0)
           else
             ss_=f(:,m,n,ieosvar2)
           endif
@@ -1148,8 +1148,8 @@ module EquationOfState
           call fatal_error('eoscalc_farray','no such pencil size')
         end select
 
-        lnTT_=lnTT0+cv1*ss_+gamma1*(lnrho_-lnrho0)
-        if (gamma1==0.) &
+        lnTT_=lnTT0+cv1*ss_+gamma_m1*(lnrho_-lnrho0)
+        if (gamma_m1==0.) &
             call fatal_error('eoscalc_farray','gamma=1 not allowed w/entropy')
         if (present(lnrho)) lnrho=lnrho_
         if (present(lnTT)) lnTT=lnTT_
@@ -1207,7 +1207,7 @@ module EquationOfState
             lnrho_=alog(f(l1:l2,m,n,ieosvar1))
           endif
           if (leos_isentropic) then
-            cs2_=exp(gamma1*(lnrho_-lnrho0)+log(cs20))
+            cs2_=exp(gamma_m1*(lnrho_-lnrho0)+log(cs20))
           elseif (leos_isothermal) then
             cs2_=cs20
           elseif (leos_localisothermal) then
@@ -1218,7 +1218,7 @@ module EquationOfState
         case (mx)
           lnrho_=f(:,m,n,ieosvar1)
           if (leos_isentropic) then
-            cs2_=exp(gamma1*(lnrho_-lnrho0)+log(cs20))
+            cs2_=exp(gamma_m1*(lnrho_-lnrho0)+log(cs20))
           elseif (leos_isothermal) then
             cs2_=cs20
           elseif (leos_localisothermal) then
@@ -1232,8 +1232,8 @@ module EquationOfState
 !
         if (present(lnrho)) lnrho=lnrho_
         if (present(lnTT)) lnTT=lnTT0+log(cs2_)
-        if (present(ee)) ee=gamma11*cs2_/gamma1
-        if (present(pp)) pp=gamma11*cs2_*exp(lnrho_)
+        if (present(ee)) ee=gamma_inv*cs2_/gamma_m1
+        if (present(pp)) pp=gamma_inv*cs2_*exp(lnrho_)
 !
       case default
         call fatal_error("eoscalc_farray",'Thermodynamic variable combination not implemented!')
@@ -1257,7 +1257,7 @@ module EquationOfState
 !                   now needs to be given as an argument as input
 !   17-nov-03/tobi: moved calculation of cs2 and cp1 to
 !                   subroutine pressure_gradient
-!   27-mar-06/tony: Introduces cv, cv1, gamma11 to make faster
+!   27-mar-06/tony: Introduces cv, cv1, gamma_inv to make faster
 !                   + more explicit
 !   31-mar-06/tony: I removed messy lcalc_cp stuff completely. cp=1.
 !                   is just fine.
@@ -1272,57 +1272,57 @@ module EquationOfState
       real, intent(out), optional :: ee,pp,cs2
       real :: lnrho_,ss_,lnTT_,ee_,pp_,cs2_,TT_
 !
-      if (gamma1==0.) call fatal_error('eoscalc_point','gamma=1 not allowed w/entropy')
+      if (gamma_m1==0.) call fatal_error('eoscalc_point','gamma=1 not allowed w/entropy')
 !
       select case (ivars)
 
       case (ilnrho_ss)
         lnrho_=var1
         ss_=var2
-        lnTT_=lnTT0+cv1*ss_+gamma1*(lnrho_-lnrho0)
+        lnTT_=lnTT0+cv1*ss_+gamma_m1*(lnrho_-lnrho0)
         ee_=cv*exp(lnTT_)
         pp_=(cp-cv)*exp(lnTT_+lnrho_)
-        cs2_=gamma*gamma1*ee_
+        cs2_=gamma*gamma_m1*ee_
 
       case (ilnrho_ee)
         lnrho_=var1
         ee_=var2
         lnTT_=log(cv1*ee_)
-        ss_=cv*(lnTT_-lnTT0-gamma1*(lnrho_-lnrho0))
-        pp_=gamma1*ee_*exp(lnrho_)
-        cs2_=gamma*gamma1*ee_
+        ss_=cv*(lnTT_-lnTT0-gamma_m1*(lnrho_-lnrho0))
+        pp_=gamma_m1*ee_*exp(lnrho_)
+        cs2_=gamma*gamma_m1*ee_
 
       case (ilnrho_pp)
         lnrho_=var1
         pp_=var2
-        ss_=cv*(log(pp_*exp(-lnrho_)*gamma/cs20)-gamma1*(lnrho_-lnrho0))
-        ee_=pp_*exp(-lnrho_)/gamma1
+        ss_=cv*(log(pp_*exp(-lnrho_)*gamma/cs20)-gamma_m1*(lnrho_-lnrho0))
+        ee_=pp_*exp(-lnrho_)/gamma_m1
         lnTT_=log(cv1*ee_)
-        cs2_=gamma*gamma1*ee_
+        cs2_=gamma*gamma_m1*ee_
 
       case (ilnrho_lnTT)
         lnrho_=var1
         lnTT_=var2
-        ss_=cv*(lnTT_-lnTT0-gamma1*(lnrho_-lnrho0))
+        ss_=cv*(lnTT_-lnTT0-gamma_m1*(lnrho_-lnrho0))
         ee_=cv*exp(lnTT_)
-        pp_=ee_*exp(lnrho_)*gamma1
-        cs2_=gamma*gamma1*ee_
+        pp_=ee_*exp(lnrho_)*gamma_m1
+        cs2_=gamma*gamma_m1*ee_
 
       case (ilnrho_TT)
         lnrho_=var1
         TT_=var2
-        ss_=cv*(log(TT_)-lnTT0-gamma1*(lnrho_-lnrho0))
+        ss_=cv*(log(TT_)-lnTT0-gamma_m1*(lnrho_-lnrho0))
         ee_=cv*TT_
-        pp_=ee_*exp(lnrho_)*gamma1
-        cs2_=cp*gamma1*TT_
+        pp_=ee_*exp(lnrho_)*gamma_m1
+        cs2_=cp*gamma_m1*TT_
 
       case (irho_TT)
         lnrho_=log(var1)
         TT_=var2
-        ss_=cv*(log(TT_)-lnTT0-gamma1*(lnrho_-lnrho0))
+        ss_=cv*(log(TT_)-lnTT0-gamma_m1*(lnrho_-lnrho0))
         ee_=cv*TT_
-        pp_=ee_*var1*gamma1
-        cs2_=cp*gamma1*TT_
+        pp_=ee_*var1*gamma_m1
+        cs2_=cp*gamma_m1*TT_
 
       case default
         call not_implemented('eoscalc_point')
@@ -1347,7 +1347,7 @@ module EquationOfState
 !                   now needs to be given as an argument as input
 !   17-nov-03/tobi: moved calculation of cs2 and cp1 to
 !                   subroutine pressure_gradient
-!   27-mar-06/tony: Introduces cv, cv1, gamma11 to make faster
+!   27-mar-06/tony: Introduces cv, cv1, gamma_inv to make faster
 !                   + more explicit
 !   31-mar-06/tony: I removed messy lcalc_cp stuff completely. cp=1.
 !                   is just fine.
@@ -1362,58 +1362,58 @@ module EquationOfState
       real, dimension(nx), intent(out), optional :: ee,pp,cs2
       real, dimension(nx) :: lnrho_,ss_,lnTT_,ee_,pp_,cs2_,TT_
 !
-      if (gamma1==0.) call fatal_error('eoscalc_pencil','gamma=1 not allowed w/entropy')
+      if (gamma_m1==0.) call fatal_error('eoscalc_pencil','gamma=1 not allowed w/entropy')
 !
       select case (ivars)
 
       case (ilnrho_ss)
         lnrho_=var1
         ss_=var2
-        lnTT_=lnTT0+cv1*ss_+gamma1*(lnrho_-lnrho0)
+        lnTT_=lnTT0+cv1*ss_+gamma_m1*(lnrho_-lnrho0)
         ee_=cv*exp(lnTT_)
         pp_=(cp-cv)*exp(lnTT_+lnrho_)
-        cs2_=gamma*gamma1*ee_
+        cs2_=gamma*gamma_m1*ee_
         cs2_=cs20*cv1*ee_
 
       case (ilnrho_ee)
         lnrho_=var1
         ee_=var2
         lnTT_=log(cv1*ee_)
-        ss_=cv*(lnTT_-lnTT0-gamma1*(lnrho_-lnrho0))
-        pp_=gamma1*ee_*exp(lnrho_)
-        cs2_=gamma*gamma1*ee_
+        ss_=cv*(lnTT_-lnTT0-gamma_m1*(lnrho_-lnrho0))
+        pp_=gamma_m1*ee_*exp(lnrho_)
+        cs2_=gamma*gamma_m1*ee_
 
       case (ilnrho_pp)
         lnrho_=var1
         pp_=var2
-        ss_=cv*(log(pp_*exp(-lnrho_)*gamma/cs20)-gamma1*(lnrho_-lnrho0))
-        ee_=pp_*exp(-lnrho_)/gamma1
+        ss_=cv*(log(pp_*exp(-lnrho_)*gamma/cs20)-gamma_m1*(lnrho_-lnrho0))
+        ee_=pp_*exp(-lnrho_)/gamma_m1
         lnTT_=log(cv1*ee_)
-        cs2_=gamma*gamma1*ee_
+        cs2_=gamma*gamma_m1*ee_
 
       case (ilnrho_lnTT)
         lnrho_=var1
         lnTT_=var2
-        ss_=cv*(lnTT_-lnTT0-gamma1*(lnrho_-lnrho0))
+        ss_=cv*(lnTT_-lnTT0-gamma_m1*(lnrho_-lnrho0))
         ee_=cv*exp(lnTT_)
-        pp_=ee_*exp(lnrho_)*gamma1
-        cs2_=gamma*gamma1*ee_
+        pp_=ee_*exp(lnrho_)*gamma_m1
+        cs2_=gamma*gamma_m1*ee_
 
       case (ilnrho_TT)
         lnrho_=var1
         TT_=var2
-        ss_=cv*(log(TT_)-lnTT0-gamma1*(lnrho_-lnrho0))
+        ss_=cv*(log(TT_)-lnTT0-gamma_m1*(lnrho_-lnrho0))
         ee_=cv*TT_
-        pp_=ee_*exp(lnrho_)*gamma1
-        cs2_=cp*gamma1*TT_
+        pp_=ee_*exp(lnrho_)*gamma_m1
+        cs2_=cp*gamma_m1*TT_
 
       case (irho_TT)
         lnrho_=log(var1)
         TT_=var2
-        ss_=cv*(log(TT_)-lnTT0-gamma1*(lnrho_-lnrho0))
+        ss_=cv*(log(TT_)-lnTT0-gamma_m1*(lnrho_-lnrho0))
         ee_=cv*TT_
-        pp_=ee_*var1*gamma1
-        cs2_=cp*gamma1*TT_
+        pp_=ee_*var1*gamma_m1
+        cs2_=cp*gamma_m1*TT_
 
       case default
         call not_implemented('eoscalc_point')
@@ -1438,7 +1438,7 @@ module EquationOfState
       real, intent(in)  :: lnTT
       real, intent(out) :: cs2
 !
-      cs2=gamma1*cp*exp(lnTT)
+      cs2=gamma_m1*cp*exp(lnTT)
 !
     endsubroutine get_soundspeed
 !***********************************************************************
@@ -1631,7 +1631,7 @@ module EquationOfState
 !  calculate Fbot/(K*cs2)
 !
         rho_xy=exp(f(:,:,n1,ilnrho))
-        cs2_xy=cs20*exp(gamma1*(f(:,:,n1,ilnrho)-lnrho0)+cv1*f(:,:,n1,iss))
+        cs2_xy=cs20*exp(gamma_m1*(f(:,:,n1,ilnrho)-lnrho0)+cv1*f(:,:,n1,iss))
 !
 !  check whether we have chi=constant at bottom, in which case
 !  we have the nonconstant rho_xy*chi in tmp_xy.
@@ -1643,7 +1643,7 @@ module EquationOfState
           tmp_xy=FbotKbot/cs2_xy
         endif
 !
-!  enforce ds/dz + gamma1/gamma*dlnrho/dz = - gamma1/gamma*Fbot/(K*cs2)
+!  enforce ds/dz + gamma_m1/gamma*dlnrho/dz = - gamma_m1/gamma*Fbot/(K*cs2)
 !
         do i=1,nghost
           f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+(cp-cv)* &
@@ -1663,7 +1663,7 @@ module EquationOfState
 !  calculate Ftop/(K*cs2)
 !
         rho_xy=exp(f(:,:,n2,ilnrho))
-        cs2_xy=cs20*exp(gamma1*(f(:,:,n2,ilnrho)-lnrho0)+cv1*f(:,:,n2,iss))
+        cs2_xy=cs20*exp(gamma_m1*(f(:,:,n2,ilnrho)-lnrho0)+cv1*f(:,:,n2,iss))
 !
 !  check whether we have chi=constant at bottom, in which case
 !  we have the nonconstant rho_xy*chi in tmp_xy.
@@ -1674,7 +1674,7 @@ module EquationOfState
           tmp_xy=FtopKtop/cs2_xy
         endif
 !
-!  enforce ds/dz + gamma1/gamma*dlnrho/dz = - gamma1/gamma*Fbot/(K*cs2)
+!  enforce ds/dz + gamma_m1/gamma*dlnrho/dz = - gamma_m1/gamma*Fbot/(K*cs2)
 !
         do i=1,nghost
           f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+(cp-cv)* &
@@ -1760,7 +1760,7 @@ module EquationOfState
 !  calculate Fbot/(K*cs2)
 !
         rho_xy=exp(f(:,:,n1,ilnrho))
-        cs2_xy=cs20*exp(gamma1*(f(:,:,n1,ilnrho)-lnrho0)+cv1*f(:,:,n1,iss))
+        cs2_xy=cs20*exp(gamma_m1*(f(:,:,n1,ilnrho)-lnrho0)+cv1*f(:,:,n1,iss))
 !
 !  check whether we have chi=constant at bottom, in which case
 !  we have the nonconstant rho_xy*chi in tmp_xy.
@@ -1772,7 +1772,7 @@ module EquationOfState
           tmp_xy=FbotKbot/cs2_xy
         endif
 !
-!  enforce ds/dz + gamma1/gamma*dlnrho/dz = - gamma1/gamma*Fbot/(K*cs2)
+!  enforce ds/dz + gamma_m1/gamma*dlnrho/dz = - gamma_m1/gamma*Fbot/(K*cs2)
 !
         do i=1,nghost
           f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+(cp-cv)* &
@@ -1792,12 +1792,12 @@ module EquationOfState
 !  Compute Temperature at the first 3 levels inward
 !
         lnrho_xy=f(:,:,n2,ilnrho)
-        cs2_xy =cs20*exp(gamma1*(f(:,:,n2  ,ilnrho)-lnrho0)+cv1*f(:,:,n2  ,iss))
-        cs2_xy1=cs20*exp(gamma1*(f(:,:,n2-1,ilnrho)-lnrho0)+cv1*f(:,:,n2-1,iss))
-        cs2_xy2=cs20*exp(gamma1*(f(:,:,n2-2,ilnrho)-lnrho0)+cv1*f(:,:,n2-2,iss))
-        T_xy=cs2_xy/(cp*gamma1)
-        T_xy1=cs2_xy1/(cp*gamma1)
-        T_xy2=cs2_xy2/(cp*gamma1)
+        cs2_xy =cs20*exp(gamma_m1*(f(:,:,n2  ,ilnrho)-lnrho0)+cv1*f(:,:,n2  ,iss))
+        cs2_xy1=cs20*exp(gamma_m1*(f(:,:,n2-1,ilnrho)-lnrho0)+cv1*f(:,:,n2-1,iss))
+        cs2_xy2=cs20*exp(gamma_m1*(f(:,:,n2-2,ilnrho)-lnrho0)+cv1*f(:,:,n2-2,iss))
+        T_xy=cs2_xy/(cp*gamma_m1)
+        T_xy1=cs2_xy1/(cp*gamma_m1)
+        T_xy2=cs2_xy2/(cp*gamma_m1)
 !
 !  calculate Ftop/(K*cs2)
 !  check whether we have chi=constant at bottom, in which case
@@ -1933,7 +1933,7 @@ module EquationOfState
 !  calculate Fbot/(K*cs2)
 !
         rho_xy=exp(f(:,:,n1,ilnrho))
-        cs2_xy=cs20*exp(gamma1*(f(:,:,n1,ilnrho)-lnrho0)+cv1*f(:,:,n1,iss))
+        cs2_xy=cs20*exp(gamma_m1*(f(:,:,n1,ilnrho)-lnrho0)+cv1*f(:,:,n1,iss))
 !
 !  check whether we have chi=constant at bottom, in which case
 !  we have the nonconstant rho_xy*chi in tmp_xy.
@@ -1945,7 +1945,7 @@ module EquationOfState
           tmp_xy=FbotKbot/cs2_xy
         endif
 !
-!  enforce ds/dz + gamma1/gamma*dlnrho/dz = - gamma1/gamma*Fbot/(K*cs2)
+!  enforce ds/dz + gamma_m1/gamma*dlnrho/dz = - gamma_m1/gamma*Fbot/(K*cs2)
 !
         do i=1,nghost
           f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+(cp-cv)* &
@@ -1962,10 +1962,10 @@ module EquationOfState
 !  So, ds/dz = - (cp-cv)*dlnrho/dz + cv*(dcs2/dz)/cs20
 !  calculate tmp_xy
 !
-        cs2_xy=cs20*exp(gamma1*(f(:,:,n2,ilnrho)-lnrho0)+cv1*f(:,:,n2,iss))
+        cs2_xy=cs20*exp(gamma_m1*(f(:,:,n2,ilnrho)-lnrho0)+cv1*f(:,:,n2,iss))
         tmp_xy=cv*dcs2top_ini/cs20*(cs2_xy/cs2top_ini)**4
 !
-!  enforce ds/dz + gamma1/gamma*dlnrho/dz = - gamma1/gamma*Fbot/(K*cs2)
+!  enforce ds/dz + gamma_m1/gamma*dlnrho/dz = - gamma_m1/gamma*Fbot/(K*cs2)
 !
         do i=1,nghost
           f(:,:,n2+i,iss)=f(:,:,n2-i,iss) &
@@ -2052,7 +2052,7 @@ module EquationOfState
 !  calculate Fbot/(K*cs2)
 !
         rho_xy=exp(f(:,:,n1,ilnrho))
-        cs2_xy=cs20*exp(gamma1*(f(:,:,n1,ilnrho)-lnrho0)+cv1*f(:,:,n1,iss))
+        cs2_xy=cs20*exp(gamma_m1*(f(:,:,n1,ilnrho)-lnrho0)+cv1*f(:,:,n1,iss))
 !
 !  check whether we have chi=constant at bottom, in which case
 !  we have the nonconstant rho_xy*chi in tmp_xy.
@@ -2063,7 +2063,7 @@ module EquationOfState
           tmp_xy=FbotKbot/cs2_xy
         endif
 !
-!  enforce ds/dz + gamma1/gamma*dlnrho/dz = - gamma1/gamma*Fbot/(K*cs2)
+!  enforce ds/dz + gamma_m1/gamma*dlnrho/dz = - gamma_m1/gamma*Fbot/(K*cs2)
 !
         do i=1,nghost
           f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+(cp-cv)* &
@@ -2079,7 +2079,7 @@ module EquationOfState
 !  we have the nonconstant rho_xy*chi in tmp_xy.
 !
         rho_xy=exp(f(:,:,n2,ilnrho))
-        cs2_xy=cs20*exp(gamma1*(f(:,:,n2,ilnrho)-lnrho0)+cv1*f(:,:,n2,iss))
+        cs2_xy=cs20*exp(gamma_m1*(f(:,:,n2,ilnrho)-lnrho0)+cv1*f(:,:,n2,iss))
 !
 !  check whether we have chi=constant at top, in which case
 !  we have the nonconstant rho_xy*chi in tmp_xy.
@@ -2090,7 +2090,7 @@ module EquationOfState
           tmp_xy=FbotKbot/cs2_xy
         endif
 !
-!  enforce ds/dz + gamma1/gamma*dlnrho/dz = - gamma1/gamma*Fbot/(K*cs2)
+!  enforce ds/dz + gamma_m1/gamma*dlnrho/dz = - gamma_m1/gamma*Fbot/(K*cs2)
 !
         do i=1,nghost
           f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+(cp-cv)* &
@@ -2143,9 +2143,9 @@ module EquationOfState
 !  set ghost zones such that dsdz_xy obeys
 !  - chi_t rho T dsdz_xy = sigmaSB*TT^4
 !
-        cs2_xy=cs20*exp(gamma1*(f(:,:,n1,ilnrho)-lnrho0)+cv1*f(:,:,n1,iss))
+        cs2_xy=cs20*exp(gamma_m1*(f(:,:,n1,ilnrho)-lnrho0)+cv1*f(:,:,n1,iss))
         rho_xy=exp(f(:,:,n1,ilnrho))
-        TT_xy=cs2_xy/(gamma1*cp)
+        TT_xy=cs2_xy/(gamma_m1*cp)
         dsdz_xy=-sigmaSB*TT_xy**3/(chi_t*rho_xy)
 !
 !  enforce ds/dz = - sigmaSB*T^3/(chi_t*rho)
@@ -2162,9 +2162,9 @@ module EquationOfState
 !  set ghost zones such that dsdz_xy obeys
 !  - chi_t rho T dsdz_xy = sigmaSB*TT^4
 !
-        cs2_xy=cs20*exp(gamma1*(f(:,:,n2,ilnrho)-lnrho0)+cv1*f(:,:,n2,iss))
+        cs2_xy=cs20*exp(gamma_m1*(f(:,:,n2,ilnrho)-lnrho0)+cv1*f(:,:,n2,iss))
         rho_xy=exp(f(:,:,n2,ilnrho))
-        TT_xy=cs2_xy/(gamma1*cp)
+        TT_xy=cs2_xy/(gamma_m1*cp)
         dsdz_xy=-sigmaSB*TT_xy**3/(chi_t*rho_xy)
 !
 !  enforce ds/dz = - sigmaSB*T^3/(chi_t*rho)
@@ -2220,7 +2220,7 @@ module EquationOfState
                 'bc_ss_temp_old: set bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0.) &
               print*,'bc_ss_temp_old: cannot have cs2bot = ', cs2bot, ' <= 0'
-        tmp_xy = (-gamma1*(f(:,:,n1,ilnrho)-lnrho0) &
+        tmp_xy = (-gamma_m1*(f(:,:,n1,ilnrho)-lnrho0) &
              + log(cs2bot/cs20)) / gamma
         f(:,:,n1,iss) = tmp_xy
         do i=1,nghost
@@ -2239,7 +2239,7 @@ module EquationOfState
                    'bc_ss_temp_old: cannot have cs2top = ',cs2top, ' <= 0'
   !     if (bcz1(ilnrho) /= 'a2') &
   !          call fatal_error('bc_ss_temp_old','Inconsistent boundary conditions 4.')
-        tmp_xy = (-gamma1*(f(:,:,n2,ilnrho)-lnrho0) &
+        tmp_xy = (-gamma_m1*(f(:,:,n2,ilnrho)-lnrho0) &
                  + log(cs2top/cs20)) / gamma
         f(:,:,n2,iss) = tmp_xy
         do i=1,nghost
@@ -2292,10 +2292,10 @@ module EquationOfState
                - (cp-cv)*(f(l1+i,:,:,ilnrho)+f(l1-i,:,:,ilnrho)-2*lnrho0)
            enddo
         elseif (lentropy .and. pretend_lnTT) then
-           f(l1,:,:,iss) = log(cs2bot/gamma1)
+           f(l1,:,:,iss) = log(cs2bot/gamma_m1)
            do i=1,nghost; f(l1-i,:,:,iss)=2*f(l1,:,:,iss)-f(l1+i,:,:,iss); enddo              
         elseif (ltemperature) then
-           f(l1,:,:,ilnTT) = log(cs2bot/gamma1)
+           f(l1,:,:,ilnTT) = log(cs2bot/gamma_m1)
            do i=1,nghost; f(l1-i,:,:,ilnTT)=2*f(l1,:,:,ilnTT)-f(l1+i,:,:,ilnTT); enddo              
         endif
 !
@@ -2314,10 +2314,10 @@ module EquationOfState
                     - (cp-cv)*(f(l2-i,:,:,ilnrho)+f(l2+i,:,:,ilnrho)-2*lnrho0)
             enddo
         elseif (lentropy .and. pretend_lnTT) then
-           f(l2,:,:,iss) = log(cs2top/gamma1)
+           f(l2,:,:,iss) = log(cs2top/gamma_m1)
            do i=1,nghost; f(l2+i,:,:,iss)=2*f(l2,:,:,iss)-f(l2-i,:,:,iss); enddo
         elseif (ltemperature) then
-           f(l2,:,:,ilnTT) = log(cs2top/gamma1)
+           f(l2,:,:,ilnTT) = log(cs2top/gamma_m1)
            do i=1,nghost; f(l2+i,:,:,ilnTT)=2*f(l2,:,:,ilnTT)-f(l2-i,:,:,ilnTT); enddo           
         endif
 
@@ -2428,13 +2428,13 @@ module EquationOfState
                    - (cp-cv)*(f(:,:,n1+i,ilnrho)+f(:,:,n1-i,ilnrho)-2*lnrho0)
            enddo
         elseif (lentropy .and. pretend_lnTT) then
-            f(:,:,n1,iss) = log(cs2bot/gamma1)
+            f(:,:,n1,iss) = log(cs2bot/gamma_m1)
             do i=1,nghost; f(:,:,n1-i,iss)=2*f(:,:,n1,iss)-f(:,:,n1+i,iss); enddo
         elseif (ltemperature) then
             if (ltemperature_nolog) then 
-              f(:,:,n1,iTT)   = cs2bot/gamma1
+              f(:,:,n1,iTT)   = cs2bot/gamma_m1
             else
-              f(:,:,n1,ilnTT) = log(cs2bot/gamma1)
+              f(:,:,n1,ilnTT) = log(cs2bot/gamma_m1)
             endif
             do i=1,nghost; f(:,:,n1-i,ilnTT)=2*f(:,:,n1,ilnTT)-f(:,:,n1+i,ilnTT); enddo
         endif
@@ -2454,13 +2454,13 @@ module EquationOfState
                    - (cp-cv)*(f(:,:,n2-i,ilnrho)+f(:,:,n2+i,ilnrho)-2*lnrho0)
            enddo
         elseif (lentropy .and. pretend_lnTT) then
-            f(:,:,n2,iss) = log(cs2top/gamma1)
+            f(:,:,n2,iss) = log(cs2top/gamma_m1)
             do i=1,nghost; f(:,:,n2+i,iss)=2*f(:,:,n2,iss)-f(:,:,n2-i,iss); enddo
         elseif (ltemperature) then
             if (ltemperature_nolog) then 
-              f(:,:,n2,iTT)   = cs2top/gamma1
+              f(:,:,n2,iTT)   = cs2top/gamma_m1
             else
-              f(:,:,n2,ilnTT) = log(cs2top/gamma1)
+              f(:,:,n2,ilnTT) = log(cs2top/gamma_m1)
             endif
             do i=1,nghost; f(:,:,n2+i,ilnTT)=2*f(:,:,n2,ilnTT)-f(:,:,n2-i,ilnTT); enddo
         endif
@@ -2886,9 +2886,9 @@ module EquationOfState
       !  Set cs2 (temperature) in the ghost points to the value on
       !  the boundary
       !
-      cs2_2d=cs20*exp(gamma1*f(:,:,n1,ilnrho)+cv1*f(:,:,n1,iss))
+      cs2_2d=cs20*exp(gamma_m1*f(:,:,n1,ilnrho)+cv1*f(:,:,n1,iss))
       do i=1,nghost
-         f(:,:,n1-i,iss)=cv*(-gamma1*f(:,:,n1-i,ilnrho)-log(cs20)&
+         f(:,:,n1-i,iss)=cv*(-gamma_m1*f(:,:,n1-i,ilnrho)-log(cs20)&
               +log(cs2_2d))
       enddo
 !
@@ -2898,9 +2898,9 @@ module EquationOfState
       !  Set cs2 (temperature) in the ghost points to the value on
       !  the boundary
       !
-      cs2_2d=cs20*exp(gamma1*f(:,:,n2,ilnrho)+cv1*f(:,:,n2,iss))
+      cs2_2d=cs20*exp(gamma_m1*f(:,:,n2,ilnrho)+cv1*f(:,:,n2,iss))
       do i=1,nghost
-         f(:,:,n2+i,iss)=cv*(-gamma1*f(:,:,n2+i,ilnrho)-log(cs20)&
+         f(:,:,n2+i,iss)=cv*(-gamma_m1*f(:,:,n2+i,ilnrho)-log(cs20)&
               +log(cs2_2d))
       enddo
     case default
@@ -3063,7 +3063,7 @@ module EquationOfState
               cs2=cs2_point)
 !
           dlnrhodz =  gamma *gravz/cs2_point
-          dssdz    = -gamma1*gravz/cs2_point
+          dssdz    = -gamma_m1*gravz/cs2_point
 !
           do i=1,nghost
             f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) - 2*i*dz*dlnrhodz
@@ -3116,7 +3116,7 @@ module EquationOfState
               cs2=cs2_point)
 !
           dlnrhodz =  gamma *gravz/cs2_point
-          dssdz    = -gamma1*gravz/cs2_point
+          dssdz    = -gamma_m1*gravz/cs2_point
 !
           do i=1,nghost
             f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho) + 2*i*dz*dlnrhodz

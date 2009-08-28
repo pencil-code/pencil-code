@@ -10,7 +10,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED gTT(3); mu1; gamma; gamma1; gamma11; gradcp(3)
+! PENCILS PROVIDED gTT(3); mu1; gamma; gamma_m1; gamma_inv; gradcp(3)
 ! PENCILS PROVIDED cv; cv1; cp; cp1; YY(nchemspec)
 ! PENCILS PROVIDED cs2; rho1gpp(3); gmu1(3); nu; gradnu(3); nu_art
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
@@ -485,8 +485,8 @@ module Chemistry
          lpenc_requested(i_cv)=.true.
          lpenc_requested(i_cv1)=.true.
          lpenc_requested(i_gamma)=.true.
-         lpenc_requested(i_gamma1)=.true.
-         lpenc_requested(i_gamma11)=.true.
+         lpenc_requested(i_gamma_m1)=.true.
+         lpenc_requested(i_gamma_inv)=.true.
          lpenc_requested(i_ghYrho)=.true.
          lpenc_requested(i_ghYrho_uu)=.true.
 !
@@ -618,12 +618,12 @@ module Chemistry
 !  Polytropic index
 !
         if (lpencil(i_gamma)) p%gamma = p%cp*p%cv1
-        if (lpencil(i_gamma11)) p%gamma11 = p%cv*p%cp1
-        if (lpencil(i_gamma1)) p%gamma1 = p%gamma - 1
+        if (lpencil(i_gamma_inv)) p%gamma_inv = p%cv*p%cp1
+        if (lpencil(i_gamma_m1)) p%gamma_m1 = p%gamma - 1
 !
 !  Sound speed
 !
-        !if (lpencil(i_cs2)) p%cs2=p%cp*p%TT*p%gamma1*p%mu1
+        !if (lpencil(i_cs2)) p%cs2=p%cp*p%TT*p%gamma_m1*p%mu1
 !
 !------------------------------------------
 !  NB:this is wrong for the chemistry case
@@ -645,7 +645,7 @@ module Chemistry
           enddo
 !
           !do i=1,3
-          !  p%rho1gpp(:,i) = p%gamma11*p%cs2*&
+          !  p%rho1gpp(:,i) = p%gamma_inv*p%cs2*&
           !      (p%glnrho(:,i)+p%glnTT(:,i)+p%gmu1(:,i)/p%mu1(:))
           !enddo
         endif

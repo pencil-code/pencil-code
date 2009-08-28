@@ -178,8 +178,8 @@ module Special
 !
       if (gamma == impossible) then
         gamma  = 1
-        gamma1 = 0.
-        gamma11 = 1.
+        gamma_m1 = 0.
+        gamma_inv = 1.
       endif
 !
       call keep_compiler_quiet(f)
@@ -770,7 +770,7 @@ module Special
 
 
       if (T_disk.EQ.0) then
-         T_disk=cs0**2/gamma1
+         T_disk=cs0**2/gamma_m1
       endif
 
 
@@ -788,7 +788,7 @@ module Special
           if (lnstar_T_const) then
            df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
             -1./(2.*dt)*(f(l1:l2,m,n,iss) &
-            *gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T_disk
+            *gamma+gamma_m1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T_disk
 
           else
         if (hot_star) then
@@ -1094,17 +1094,17 @@ module Special
         print*,'T_star=',T_star
 
       if (T_disk.EQ.0) then
-         T_disk=cs0**2/gamma1
+         T_disk=cs0**2/gamma_m1
       endif
 
-         !cs2_star=sqrt(T_star*gamma1)
+         !cs2_star=sqrt(T_star*gamma_m1)
          call eoscalc(ilnrho_lnTT,log(rho_disk),log(T_disk), cs2=cs2_star)
 
       do ni=n1,n2;
         do mi=m1,m2;
 
           if (lnstar_T_const) then
-            f(l1:l2,mi,ni,iss)=-f(l1:l2,mi,ni,ilnrho)*gamma1/gamma
+            f(l1:l2,mi,ni,iss)=-f(l1:l2,mi,ni,ilnrho)*gamma_m1/gamma
           else
 
             if (nxgrid <= 1) then
@@ -1142,7 +1142,7 @@ module Special
 
               f(l1:l2,mi,ni,iss)=ss
 
-             !  f(l1,mi,ni,iss)=-f(l1,mi,ni,ilnrho)*gamma1/gamma
+             !  f(l1,mi,ni,iss)=-f(l1,mi,ni,ilnrho)*gamma_m1/gamma
 
             endif
           endif
@@ -1313,7 +1313,7 @@ module Special
           if (j==5) then
             lnrho=f(l1:l2,m1,n1,ilnrho)
             if (lnstar_T_const) then
-              lnTT=log(cs0**2/(gamma1))
+              lnTT=log(cs0**2/(gamma_m1))
             else
               lnTT=log(T_star)
             endif
@@ -1351,7 +1351,7 @@ module Special
             if (j==5) then
               lnrho=f(l1:l2,m2,n2,ilnrho)
               if (T_disk.EQ.0) then
-              lnTT=log(cs0**2/(gamma1))
+              lnTT=log(cs0**2/(gamma_m1))
               else
 
                if (hot_star) then

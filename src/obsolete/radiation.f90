@@ -306,7 +306,7 @@ module Radiation
       real, dimension (nx) :: E_rad,source,Edivu,ugradE,divF
       real, dimension (nx) :: graduP,cooling,c_entr
       real, dimension (nx) :: kappa_abs,kappa,E_gas,f2,divF2
-      real :: gamma1,gamma,taux
+      real :: gamma_m1,gamma,taux
       integer :: i
 !
       intent(in) :: f,p
@@ -325,7 +325,7 @@ module Radiation
 !  some abbreviations and physical quantities
 !
 !      if (.NOT. ldensity) rho1=1  ! now set in equ.f90
-      gamma1=gamma-1
+      gamma_m1=gamma-1
       E_rad=f(l1:l2,m,n,iE)
       if (lentropy) then
          E_gas=1.5*k_B_radiation/(p%rho1*mbar*p%TT1)
@@ -406,7 +406,7 @@ module Radiation
          !  radiative entropy equation
          !
          if (lentropy) then
-            c_entr=2*gamma1**4*p%rho1**(4*gamma1)/(p%TT1*c_gam*kappa_abs*a_SB*4*gamma)
+            c_entr=2*gamma_m1**4*p%rho1**(4*gamma_m1)/(p%TT1*c_gam*kappa_abs*a_SB*4*gamma)
             c_entr=dxmin/c_entr
             UUmax=max(UUmax,maxval(c_entr))
          endif
@@ -634,15 +634,15 @@ module Radiation
       use Density, only:cs20, lnrho0,gamma
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx) :: cs2,lnrho,gamma1,TT1,source
+      real, dimension (mx) :: cs2,lnrho,gamma_m1,TT1,source
       integer :: i,j
 !
-      gamma1=gamma-1
+      gamma_m1=gamma-1
       do i=1,my
          do j=1,mz
             lnrho=f(:,i,j,ilnrho)
-            cs2=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*f(:,i,j,iss))
-            TT1=gamma1/cs2
+            cs2=cs20*exp(gamma_m1*(lnrho-lnrho0)+gamma*f(:,i,j,iss))
+            TT1=gamma_m1/cs2
             source=a_SB*TT1**(-4)
             f(:,i,j,ie) = source
          enddo

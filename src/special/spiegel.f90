@@ -602,13 +602,13 @@ endsubroutine read_special_run_pars
 !  Heat conduction
 !
       chix = p%rho1*p%rho1*p%TT**3*16./3.*sigmaSB/kappa_es!hcond
-      glnT = gamma*p%gss + gamma1*p%glnrho ! grad ln(T)
+      glnT = gamma*p%gss + gamma_m1*p%glnrho ! grad ln(T)
       glnThcond = glnT !... + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
       call dot(glnT,glnThcond,g2)
 !
 !AB:  derivs of chix missing??
 !
-      thdiff = chix * (gamma*p%del2ss+gamma1*p%del2lnrho + g2)
+      thdiff = chix * (gamma*p%del2ss+gamma_m1*p%del2lnrho + g2)
 !print*,' p%del2ss(10)'   ,p%del2ss(10)
 
    !  add heat conduction to entropy equation
@@ -683,7 +683,7 @@ endsubroutine read_special_run_pars
 
  !     lnTT=log(T_bot)!  log(T0)
 ! if (T_disk.EQ.0) then
- !    T_disk=cs0**2/gamma1
+ !    T_disk=cs0**2/gamma_m1
  !  endif 
     
 
@@ -699,7 +699,7 @@ endsubroutine read_special_run_pars
       ! f(l1:l2,mi,ni,iss)=ss  
 
     
-        f(l1:l2,mi,ni,iss)=-f(l1:l2,mi,ni,ilnrho)*gamma1/gamma
+        f(l1:l2,mi,ni,iss)=-f(l1:l2,mi,ni,ilnrho)*gamma_m1/gamma
     
 
        end do 

@@ -311,7 +311,7 @@ print OUT @cparam_lines;
 print OUT_PENCIL <<"EOF";
 real, parameter :: penc0=23.45678 ! `impossible' value -- must not be
                                   ! too large, so expressions like
-                                  ! exp(gamma1*p%lnrho) don't cause overflow
+                                  ! exp(gamma_m1*p%lnrho) don't cause overflow
 integer, parameter :: npencils=$npencils
 type pencil_case
 EOF

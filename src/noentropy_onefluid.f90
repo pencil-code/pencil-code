@@ -65,7 +65,7 @@ module Entropy
       if (llocal_iso) then
         call select_eos_variable('cs2',-2) !special local isothermal
       else
-        if (gamma1 == 0.) then
+        if (gamma_m1 == 0.) then
           call select_eos_variable('cs2',-1) !isothermal => polytropic
         else
           call select_eos_variable('ss',-1) !isentropic => polytropic
@@ -125,7 +125,7 @@ module Entropy
 !
 !  20-11-04/anders: coded
 !
-      use EquationOfState, only: gamma1
+      use EquationOfState, only: gamma_m1
 !
       logical, dimension(npencils) :: lpencil_in
 !
@@ -133,8 +133,8 @@ module Entropy
         lpencil_in(i_u2)=.true.
         lpencil_in(i_cs2)=.true.
       endif
-      if (lpencil_in(i_TT1) .and. gamma1/=0.) lpencil_in(i_cs2)=.true.
-      if (lpencil_in(i_cs2) .and. gamma1/=0.) lpencil_in(i_lnrho)=.true.
+      if (lpencil_in(i_TT1) .and. gamma_m1/=0.) lpencil_in(i_cs2)=.true.
+      if (lpencil_in(i_cs2) .and. gamma_m1/=0.) lpencil_in(i_lnrho)=.true.
 !
     endsubroutine pencil_interdep_entropy
 !***********************************************************************
@@ -145,7 +145,7 @@ module Entropy
 !
 !  20-11-04/anders: coded
 !
-      use EquationOfState, only: gamma,gamma1,cs20,lnrho0
+      use EquationOfState, only: gamma,gamma_m1,cs20,lnrho0
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -164,7 +164,7 @@ module Entropy
         if (gamma==1.) then
            p%cs2=cs20
         else
-           p%cs2=cs20*exp(gamma1*(p%lnrho-lnrho0))
+           p%cs2=cs20*exp(gamma_m1*(p%lnrho-lnrho0))
         endif
      endif
 ! Ma2
@@ -176,7 +176,7 @@ module Entropy
         if (gamma==1. .or. cs20==0) then
           p%TT1=0.
         else
-          p%TT1=gamma1/p%cs2
+          p%TT1=gamma_m1/p%cs2
         endif
       endif
 ! uud (for dust continuity equation in one fluid approximation)

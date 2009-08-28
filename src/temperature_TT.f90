@@ -395,7 +395,7 @@ module Entropy
 !
       if (lpencil(i_fpres)) then
         do j=1,3
-          p%fpres(:,j)=-gamma1*gamma11*(p%TT*p%glnrho(:,j) + p%glnTT(:,j))
+          p%fpres(:,j)=-gamma_m1*gamma_inv*(p%TT*p%glnrho(:,j) + p%glnTT(:,j))
         enddo
       endif
 !
@@ -406,7 +406,7 @@ module Entropy
 !  calculate right hand side of entropy equation
 !  heat condution is currently disabled until old stuff,
 !  which in now in calc_heatcond, has been reinstalled.
-!  DTT/Dt = -gamma1*TT*divu + gamma*cp1*rho1*RHS
+!  DTT/Dt = -gamma_m1*TT*divu + gamma*cp1*rho1*RHS
 !
 !  13-dec-02/axel+tobi: adapted from entropy
 !
@@ -415,7 +415,7 @@ module Entropy
       use Mpicomm
       use Sub
       use Viscosity, only: calc_viscous_heat
-      use EquationOfState, only: gamma1
+      use EquationOfState, only: gamma_m1
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -465,7 +465,7 @@ module Entropy
 !  Need to add left-hand-side of the continuity equation (see manual)
 !  Check this
       if (ldensity) &
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - gamma1*p%TT*p%divu
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - gamma_m1*p%TT*p%divu
 !
 !  Calculate entropy related diagnostics
 !
@@ -490,7 +490,7 @@ module Entropy
 !
       use Cdata
       use Gravity, only: gravz
-      use EquationOfState, only: cs20, lnrho0, gamma, gamma1, get_cp1, &
+      use EquationOfState, only: cs20, lnrho0, gamma, gamma_m1, get_cp1, &
                                  cs2bot, cs2top
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -500,10 +500,10 @@ module Entropy
 !  beta = -(g/cp) /[(1-1/gamma)*(m+1)]
 !
       call get_cp1(cp1)
-      beta=-cp1*gravz/(mpoly0+1.)*gamma/gamma1
+      beta=-cp1*gravz/(mpoly0+1.)*gamma/gamma_m1
       ztop=xyz0(3)+Lxyz(3)
       zbot=xyz0(3)
-      T0=cs20/gamma1
+      T0=cs20/gamma_m1
       print*, 'polytrope: mpoly0, beta, T0=', mpoly0, beta, T0
 !
       do imn=1,ny*nz
@@ -513,7 +513,7 @@ module Entropy
         f(:,m,n,ilnTT)=temp
         f(:,m,n,ilnrho)=lnrho0+mpoly0*log(temp)-mpoly0*log(T0)
       enddo
-      cs2bot=gamma1*(T0+beta*(ztop-zbot))
+      cs2bot=gamma_m1*(T0+beta*(ztop-zbot))
       cs2top=cs20
 !
     endsubroutine single_polytrope
@@ -525,7 +525,7 @@ module Entropy
 !
       use Cdata
       use Gravity, only: gravz
-      use EquationOfState, only:cs20,lnrho0,cs2top,cs2bot,gamma,gamma1
+      use EquationOfState, only:cs20,lnrho0,cs2top,cs2bot,gamma,gamma_m1
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mz) :: temp,lnrho
@@ -542,23 +542,23 @@ module Entropy
 !
 ! integrate from the top to the bottom
 !
-      temp(n2)=cs20/gamma1
+      temp(n2)=cs20/gamma_m1
       lnrho(n2)=lnrho0
-      f(:,:,n2,ilnTT)=cs20/gamma1
+      f(:,:,n2,ilnTT)=cs20/gamma_m1
       f(:,:,n2,ilnrho)=lnrho0
       do i=n2-1,n1,-1
         arg=sig*(temp(i+1)-Tbump-ecart)*(temp(i+1)-Tbump+ecart)
         hcond=Kmax+alp*(-pi/2.+atan(arg))
         dtemp=Fbot/hcond
         temp(i)=temp(i+1)+dz*dtemp
-        dlnrho=2d0*(-gamma/gamma1*gravz-dtemp)/(7.d0/6.d0*temp(i)+5.d0/6.d0*temp(i+1))
+        dlnrho=2d0*(-gamma/gamma_m1*gravz-dtemp)/(7.d0/6.d0*temp(i)+5.d0/6.d0*temp(i+1))
         lnrho(i)=lnrho(i+1)+dz*dlnrho
         f(:,:,i,ilnTT)=temp(i)
         f(:,:,i,ilnrho)=lnrho(i)
       enddo
 ! initialize cs2bot by taking into account the new bottom value of temperature
 ! note: cs2top is already defined in eos_init by assuming cs2top=cs20
-!      cs2bot=gamma1*temp(n1)
+!      cs2bot=gamma_m1*temp(n1)
       print*,'cs2top, cs2bot=', cs2top, cs2bot
 !
       if (lroot) then
@@ -860,7 +860,7 @@ module Entropy
        
       use Cdata
       use Cparam
-      use EquationOfState, only: gamma, gamma1, cs2bot, cs2top
+      use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top
 
       implicit none
 
@@ -917,8 +917,8 @@ module Entropy
         b(nz)=1.
         c(1)=0.
         a(nz)=0.
-        rhs(1)=cs2bot/gamma1
-        rhs(nx)=cs2top/gamma1
+        rhs(1)=cs2bot/gamma_m1
+        rhs(nx)=cs2top/gamma_m1
         call tridag(a,b,c,rhs,work,nz)
         f(i,4,n1:n2,ilnTT)=work(1:nz)
       enddo

@@ -2006,7 +2006,7 @@ module Initcond
       real, dimension (nx) :: hh, xi
       real, dimension (mz) :: hz
       real :: delS,ampl,sigma2,sigma,delta2,delta,eps,radius,a_ell,b_ell,c_ell
-      real :: gamma,cs20,gamma1,eps2,radius2,width
+      real :: gamma,cs20,gamma_m1,eps2,radius2,width
       real :: lnrhosum_thisbox,rho0
       real, dimension(1) :: lnrhosum_thisbox_tmp,lnrhosum_wholebox
       integer :: l
@@ -2034,9 +2034,9 @@ module Initcond
         delta=sqrt(delta2)
       endif
 !
-!  calculate gamma1
+!  calculate gamma_m1
 !
-      gamma1=gamma-1.
+      gamma_m1=gamma-1.
       if (lroot) print*,'planet_hc: gamma=',gamma
 !
 !  ellipse parameters
@@ -2077,7 +2077,7 @@ module Initcond
 !
         if (lentropy) then
           f(l,m,n1:n2,ilnrho)= &
-               (log(gamma1*hz(n1:n2)/cs20)-gamma*f(l,m,n1:n2,iss))/gamma1
+               (log(gamma_m1*hz(n1:n2)/cs20)-gamma*f(l,m,n1:n2,iss))/gamma_m1
           if (lroot) &
             print*,'planet_hc: planet solution with entropy for gamma=',gamma
         else
@@ -2085,14 +2085,14 @@ module Initcond
             f(l,m,n1:n2,ilnrho)=hz(n1:n2)/cs20
             if (lroot) print*,'planet_hc: planet solution for gamma=1'
           else
-            f(l,m,n1:n2,ilnrho)=log(gamma1*hz(n1:n2)/cs20)/gamma1
+            f(l,m,n1:n2,ilnrho)=log(gamma_m1*hz(n1:n2)/cs20)/gamma_m1
             if (lroot) print*,'planet_hc: planet solution for gamma=',gamma
           endif
         endif
 !
       enddo; enddo
 !
-      if (gamma1<0. .and. lroot) &
+      if (gamma_m1<0. .and. lroot) &
           print*,'planet_hc: must have gamma>1 for planet solution'
 !
 !  Use average density of box as unit density
@@ -2135,7 +2135,7 @@ module Initcond
       real, dimension (nx) :: hh, xi, r_ell
       real :: rbound,sigma2,sigma,delta2,delta,eps,radius
       real :: gamma,eps2,radius2,width,a_ell,b_ell,c_ell
-      real :: gamma1,ztop,cs20,hh0
+      real :: gamma_m1,ztop,cs20,hh0
       real :: lnrhosum_thisbox,rho0
       real, dimension(1) :: lnrhosum_thisbox_tmp,lnrhosum_wholebox
 !
@@ -2152,7 +2152,7 @@ module Initcond
         sigma=sqrt(sigma2)
       endif
 !
-      gamma1=gamma-1.
+      gamma_m1=gamma-1.
 !
 !  calculate delta
 !
@@ -2200,12 +2200,12 @@ module Initcond
 !  calculate density, depending on what gamma is
 !
         if (lentropy) then
-          f(l1:l2,m,n,ilnrho)=(log(gamma1*hh/cs20)-gamma*f(l1:l2,m,n,iss))/gamma1
+          f(l1:l2,m,n,ilnrho)=(log(gamma_m1*hh/cs20)-gamma*f(l1:l2,m,n,iss))/gamma_m1
         else
           if (gamma==1.) then
             f(l1:l2,m,n,ilnrho) = hh/cs20
           else
-            f(l1:l2,m,n,ilnrho) = log(gamma1*hh/cs20)/gamma1
+            f(l1:l2,m,n,ilnrho) = log(gamma_m1*hh/cs20)/gamma_m1
           endif
         endif
       enddo; enddo
@@ -3717,7 +3717,7 @@ module Initcond
 !
       use FArrayManager
       use Mpicomm
-      use EquationOfState, only: gamma,gamma1,get_cp1,&
+      use EquationOfState, only: gamma,gamma_m1,get_cp1,&
                                  cs20,cs2bot,cs2top,lnrho0
       use Sub,             only: power_law,get_radial_distance
       use Messages       , only: warning
@@ -3803,11 +3803,11 @@ module Initcond
             endif
           elseif (ltemperature) then
 !  else do it as temperature ...
-            f(l1:l2,m,n,ilnTT)=log(cs2*cp1/gamma1)
+            f(l1:l2,m,n,ilnTT)=log(cs2*cp1/gamma_m1)
           elseif (lentropy) then
 !  ... or entropy
             lnrho=f(l1:l2,m,n,ilnrho) ! initial condition, always log
-            f(l1:l2,m,n,iss)=1./(gamma*cp1)*(log(cs2/cs20)-gamma1*(lnrho-lnrho0))
+            f(l1:l2,m,n,iss)=1./(gamma*cp1)*(log(cs2/cs20)-gamma_m1*(lnrho-lnrho0))
           else
 !
             call stop_it("No thermodynamical variable. Choose if you want "//&
@@ -3854,7 +3854,7 @@ module Initcond
 !  07-dec-05/bing : coded.
 !
       use Cdata
-      use EquationOfState, only: lnrho0,gamma,gamma1,cs20,cs2top,cs2bot
+      use EquationOfState, only: lnrho0,gamma,gamma_m1,cs20,cs2top,cs2bot
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real :: tmp,ztop,zbot
@@ -3894,8 +3894,8 @@ module Initcond
                if (ltemperature) then
                   f(:,:,j,ilnTT) = tmp
                elseif (lentropy) then
-                  f(:,:,j,iss) = (alog(gamma1/cs20)+tmp- &
-                       gamma1*(f(l1,m1,j,ilnrho)-lnrho0))/gamma
+                  f(:,:,j,iss) = (alog(gamma_m1/cs20)+tmp- &
+                       gamma_m1*(f(l1,m1,j,ilnrho)-lnrho0))/gamma
                endif
                exit
             endif
@@ -3908,8 +3908,8 @@ module Initcond
             if (ltemperature) then
                f(:,:,j,ilnTT) = tmp
             elseif (lentropy) then
-               f(:,:,j,iss) = (alog(gamma1/cs20)+tmp- &
-                    gamma1*(f(l1,m1,j,ilnrho)-lnrho0))/gamma
+               f(:,:,j,iss) = (alog(gamma_m1/cs20)+tmp- &
+                    gamma_m1*(f(l1,m1,j,ilnrho)-lnrho0))/gamma
             endif
          endif
       enddo
@@ -3922,16 +3922,16 @@ module Initcond
 !
             tmp =  (b_lnT(i)*(b_z(i+1) - ztop) +   &
                  b_lnT(i+1)*(ztop-b_z(i)) ) / (b_z(i+1)-b_z(i))
-            cs2top = gamma1*exp(tmp)
+            cs2top = gamma_m1*exp(tmp)
 !
          elseif (ztop .ge. b_z(150)) then
-            cs2top = gamma1*exp(b_lnT(150))
+            cs2top = gamma_m1*exp(b_lnT(150))
          endif
          if (zbot .ge. b_z(i) .and. zbot .lt. b_z(i+1) ) then
 !
             tmp =  (b_lnT(i)*(b_z(i+1) - zbot) +   &
                  b_lnT(i+1)*(zbot-b_z(i)) ) / (b_z(i+1)-b_z(i))
-            cs2bot = gamma1*exp(tmp)
+            cs2bot = gamma_m1*exp(tmp)
 !
          endif
       enddo

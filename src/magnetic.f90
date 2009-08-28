@@ -1070,7 +1070,7 @@ module Magnetic
             if (lentropy.and.lpress_equil_via_ss) then
               f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+fact/gamma
             else
-              f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)+fact/gamma1
+              f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)+fact/gamma_m1
             endif
           endif
         enddo
@@ -1806,7 +1806,7 @@ module Magnetic
 !
       use Deriv, only: der6
       use Diagnostics
-      use EquationOfState, only: eoscalc,gamma1
+      use EquationOfState, only: eoscalc,gamma_m1
       use Io, only: output_pencil
       use Mpicomm, only: stop_it
       use Special, only: special_calc_magnetic

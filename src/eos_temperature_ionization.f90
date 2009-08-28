@@ -10,7 +10,7 @@
 ! MAUX CONTRIBUTION 1
 !
 ! PENCILS PROVIDED ss; ee; pp; lnTT; cs2; nabla_ad; glnTT(3); TT; TT1
-! PENCILS PROVIDED yH; del2lnTT; cv; cv1; cp; cp1; gamma; gamma1; gamma11; mu1
+! PENCILS PROVIDED yH; del2lnTT; cv; cv1; cp; cp1; gamma; gamma_m1; gamma_inv; mu1
 ! PENCILS PROVIDED hlnTT(3,3); rho1gpp(3); delta; gradcp(3); del6lnTT
 !
 !***************************************************************
@@ -63,7 +63,7 @@ module EquationOfState
   real :: cs0=impossible, rho0=impossible, cp=impossible
   real :: cs20=impossible, lnrho0=impossible
   logical :: lcalc_cp=.false.,lcalc_cp_full=.false.
-  real :: gamma=5./3., gamma1=impossible, gamma11=impossible
+  real :: gamma=5./3., gamma_m1=impossible, gamma_inv=impossible
   real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=impossible, cs2top=impossible
   real :: cs2cool=impossible, ptlaw=impossible
@@ -186,7 +186,7 @@ module EquationOfState
       endif
 
       if (lpencil_in(i_rho1gpp)) then
-        lpencil_in(i_gamma11)=.true.
+        lpencil_in(i_gamma_inv)=.true.
         lpencil_in(i_cs2)=.true.
         lpencil_in(i_glnrho)=.true.
         lpencil_in(i_delta)=.true.
@@ -199,14 +199,14 @@ module EquationOfState
         lpencil_in(i_cp1)=.true.
       endif
 
-      if (lpencil_in(i_gamma1)) lpencil_in(i_gamma)=.true.
+      if (lpencil_in(i_gamma_m1)) lpencil_in(i_gamma)=.true.
 
       if (lpencil_in(i_gamma)) then
         lpencil_in(i_cp)=.true.
         lpencil_in(i_cv1)=.true.
       endif
 
-      if (lpencil_in(i_gamma11)) then
+      if (lpencil_in(i_gamma_inv)) then
         lpencil_in(i_cv)=.true.
         lpencil_in(i_cp1)=.true.
       endif
@@ -341,8 +341,8 @@ module EquationOfState
 !  Polytropic index
 !
       if (lpencil(i_gamma)) p%gamma = p%cp*p%cv1
-      if (lpencil(i_gamma11)) p%gamma11 = p%cv*p%cp1
-      if (lpencil(i_gamma1)) p%gamma1 = p%gamma - 1
+      if (lpencil(i_gamma_inv)) p%gamma_inv = p%cv*p%cp1
+      if (lpencil(i_gamma_m1)) p%gamma_m1 = p%gamma - 1
 
 !
 !  For the definition of delta, see Kippenhahn & Weigert
@@ -367,7 +367,7 @@ module EquationOfState
 !
       if (lpencil(i_rho1gpp)) then
         do i=1,3
-          p%rho1gpp(:,i) = p%gamma11*p%cs2*(p%glnrho(:,i)+p%delta*p%glnTT(:,i))
+          p%rho1gpp(:,i) = p%gamma_inv*p%cs2*(p%glnrho(:,i)+p%delta*p%glnTT(:,i))
         enddo
       endif
 
@@ -868,7 +868,7 @@ module EquationOfState
       do n=n1,n2
       do m=m1,m2
         lnrho=f(l1:l2,m,n,ilnrho)
-        ss=-gamma1*(lnrho-lnrho0)/gamma
+        ss=-gamma_m1*(lnrho-lnrho0)/gamma
           !+ other terms for sound speed not equal to cs_0
         f(l1:l2,m,n,iss)=ss+ss_offset
       enddo
@@ -938,7 +938,7 @@ module EquationOfState
 !  calculate Fbot/(K*cs2)
 !
         rho_xy=exp(f(:,:,n1,ilnrho))
-        cs2_xy=cs20*exp(gamma1*(f(:,:,n1,ilnrho)-lnrho0)+gamma*f(:,:,n1,iss))
+        cs2_xy=cs20*exp(gamma_m1*(f(:,:,n1,ilnrho)-lnrho0)+gamma*f(:,:,n1,iss))
 !
 !  check whether we have chi=constant at bottom, in which case
 !  we have the nonconstant rho_xy*chi in tmp_xy.
@@ -949,10 +949,10 @@ module EquationOfState
           tmp_xy=FbotKbot/cs2_xy
         endif
 !
-!  enforce ds/dz + gamma1/gamma*dlnrho/dz = - gamma1/gamma*Fbot/(K*cs2)
+!  enforce ds/dz + gamma_m1/gamma*dlnrho/dz = - gamma_m1/gamma*Fbot/(K*cs2)
 !
         do i=1,nghost
-          f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+gamma1/gamma* &
+          f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+gamma_m1/gamma* &
               (f(:,:,n1+i,ilnrho)-f(:,:,n1-i,ilnrho)+2*i*dz*tmp_xy)
         enddo
 !
@@ -969,7 +969,7 @@ module EquationOfState
 !  calculate Ftop/(K*cs2)
 !
         rho_xy=exp(f(:,:,n2,ilnrho))
-        cs2_xy=cs20*exp(gamma1*(f(:,:,n2,ilnrho)-lnrho0)+gamma*f(:,:,n2,iss))
+        cs2_xy=cs20*exp(gamma_m1*(f(:,:,n2,ilnrho)-lnrho0)+gamma*f(:,:,n2,iss))
 !
 !  check whether we have chi=constant at bottom, in which case
 !  we have the nonconstant rho_xy*chi in tmp_xy.
@@ -980,10 +980,10 @@ module EquationOfState
           tmp_xy=FtopKtop/cs2_xy
         endif
 !
-!  enforce ds/dz + gamma1/gamma*dlnrho/dz = - gamma1/gamma*Fbot/(K*cs2)
+!  enforce ds/dz + gamma_m1/gamma*dlnrho/dz = - gamma_m1/gamma*Fbot/(K*cs2)
 !
         do i=1,nghost
-          f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+gamma1/gamma* &
+          f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+gamma_m1/gamma* &
               (f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho)-2*i*dz*tmp_xy)
         enddo
       case default
@@ -1044,7 +1044,7 @@ module EquationOfState
                 'bc_ss_temp_old: set bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0.) &
               print*,'bc_ss_temp_old: cannot have cs2bot<=0'
-        tmp_xy = (-gamma1*(f(:,:,n1,ilnrho)-lnrho0) &
+        tmp_xy = (-gamma_m1*(f(:,:,n1,ilnrho)-lnrho0) &
              + alog(cs2bot/cs20)) / gamma
         f(:,:,n1,iss) = tmp_xy
         do i=1,nghost
@@ -1063,7 +1063,7 @@ module EquationOfState
                    'bc_ss_temp_old: cannot have cs2top<=0'
   !     if (bcz1(ilnrho) /= 'a2') &
   !          call fatal_error(bc_ss_temp_old','Inconsistent boundary conditions 4.')
-        tmp_xy = (-gamma1*(f(:,:,n2,ilnrho)-lnrho0) &
+        tmp_xy = (-gamma_m1*(f(:,:,n2,ilnrho)-lnrho0) &
                  + alog(cs2top/cs20)) / gamma
         f(:,:,n2,iss) = tmp_xy
         do i=1,nghost
@@ -1108,10 +1108,10 @@ module EquationOfState
         if (cs2bot<=0.) print*, &
                    'bc_ss_temp_x: cannot have cs2bot<=0'
         tmp = 2/gamma*alog(cs2bot/cs20)
-        f(l1,:,:,iss) = 0.5*tmp - gamma1/gamma*(f(l1,:,:,ilnrho)-lnrho0)
+        f(l1,:,:,iss) = 0.5*tmp - gamma_m1/gamma*(f(l1,:,:,ilnrho)-lnrho0)
         do i=1,nghost
           f(l1-i,:,:,iss) = -f(l1+i,:,:,iss) + tmp &
-               - gamma1/gamma*(f(l1+i,:,:,ilnrho)+f(l1-i,:,:,ilnrho)-2*lnrho0)
+               - gamma_m1/gamma*(f(l1+i,:,:,ilnrho)+f(l1-i,:,:,ilnrho)-2*lnrho0)
         enddo
 !
 !  top boundary
@@ -1122,10 +1122,10 @@ module EquationOfState
         if (cs2top<=0.) print*, &
                        'bc_ss_temp_x: cannot have cs2top<=0'
         tmp = 2/gamma*alog(cs2top/cs20)
-        f(l2,:,:,iss) = 0.5*tmp - gamma1/gamma*(f(l2,:,:,ilnrho)-lnrho0)
+        f(l2,:,:,iss) = 0.5*tmp - gamma_m1/gamma*(f(l2,:,:,ilnrho)-lnrho0)
         do i=1,nghost
           f(l2+i,:,:,iss) = -f(l2-i,:,:,iss) + tmp &
-               - gamma1/gamma*(f(l2-i,:,:,ilnrho)+f(l2+i,:,:,ilnrho)-2*lnrho0)
+               - gamma_m1/gamma*(f(l2-i,:,:,ilnrho)+f(l2+i,:,:,ilnrho)-2*lnrho0)
         enddo
 
       case default
@@ -1169,10 +1169,10 @@ module EquationOfState
         if (cs2bot<=0.) print*, &
                    'bc_ss_temp_y: cannot have cs2bot<=0'
         tmp = 2/gamma*alog(cs2bot/cs20)
-        f(:,m1,:,iss) = 0.5*tmp - gamma1/gamma*(f(:,m1,:,ilnrho)-lnrho0)
+        f(:,m1,:,iss) = 0.5*tmp - gamma_m1/gamma*(f(:,m1,:,ilnrho)-lnrho0)
         do i=1,nghost
           f(:,m1-i,:,iss) = -f(:,m1+i,:,iss) + tmp &
-               - gamma1/gamma*(f(:,m1+i,:,ilnrho)+f(:,m1-i,:,ilnrho)-2*lnrho0)
+               - gamma_m1/gamma*(f(:,m1+i,:,ilnrho)+f(:,m1-i,:,ilnrho)-2*lnrho0)
         enddo
 !
 !  top boundary
@@ -1183,10 +1183,10 @@ module EquationOfState
         if (cs2top<=0.) print*, &
                      'bc_ss_temp_y: cannot have cs2top<=0'
         tmp = 2/gamma*alog(cs2top/cs20)
-        f(:,m2,:,iss) = 0.5*tmp - gamma1/gamma*(f(:,m2,:,ilnrho)-lnrho0)
+        f(:,m2,:,iss) = 0.5*tmp - gamma_m1/gamma*(f(:,m2,:,ilnrho)-lnrho0)
         do i=1,nghost
           f(:,m2+i,:,iss) = -f(:,m2-i,:,iss) + tmp &
-               - gamma1/gamma*(f(:,m2-i,:,ilnrho)+f(:,m2+i,:,ilnrho)-2*lnrho0)
+               - gamma_m1/gamma*(f(:,m2-i,:,ilnrho)+f(:,m2+i,:,ilnrho)-2*lnrho0)
         enddo
 
       case default
@@ -1228,10 +1228,10 @@ module EquationOfState
         if (cs2bot<=0.) print*, &
                    'bc_ss_temp_z: cannot have cs2bot<=0'
         tmp = 2/gamma*alog(cs2bot/cs20)
-        f(:,:,n1,iss) = 0.5*tmp - gamma1/gamma*(f(:,:,n1,ilnrho)-lnrho0)
+        f(:,:,n1,iss) = 0.5*tmp - gamma_m1/gamma*(f(:,:,n1,ilnrho)-lnrho0)
         do i=1,nghost
           f(:,:,n1-i,iss) = -f(:,:,n1+i,iss) + tmp &
-               - gamma1/gamma*(f(:,:,n1+i,ilnrho)+f(:,:,n1-i,ilnrho)-2*lnrho0)
+               - gamma_m1/gamma*(f(:,:,n1+i,ilnrho)+f(:,:,n1-i,ilnrho)-2*lnrho0)
         enddo
 !
 !  top boundary
@@ -1241,10 +1241,10 @@ module EquationOfState
                      'bc_ss_temp_z: set z top temperature: cs2top=',cs2top
         if (cs2top<=0.) print*,'bc_ss_temp_z: cannot have cs2top<=0'
         tmp = 2/gamma*alog(cs2top/cs20)
-        f(:,:,n2,iss) = 0.5*tmp - gamma1/gamma*(f(:,:,n2,ilnrho)-lnrho0)
+        f(:,:,n2,iss) = 0.5*tmp - gamma_m1/gamma*(f(:,:,n2,ilnrho)-lnrho0)
         do i=1,nghost
           f(:,:,n2+i,iss) = -f(:,:,n2-i,iss) + tmp &
-               - gamma1/gamma*(f(:,:,n2-i,ilnrho)+f(:,:,n2+i,ilnrho)-2*lnrho0)
+               - gamma_m1/gamma*(f(:,:,n2-i,ilnrho)+f(:,:,n2+i,ilnrho)-2*lnrho0)
         enddo
       case default
         call fatal_error('bc_ss_temp_z','invalid argument')
@@ -1288,7 +1288,7 @@ module EquationOfState
 !
 !  set boundary value for entropy, then extrapolate ghost pts by antisymmetry
 !
-        f(:,:,n1,iss) = 0.5*tmp - gamma1/gamma*(f(:,:,n1,ilnrho)-lnrho0)
+        f(:,:,n1,iss) = 0.5*tmp - gamma_m1/gamma*(f(:,:,n1,ilnrho)-lnrho0)
         do i=1,nghost; f(:,:,n1-i,iss) = 2*f(:,:,n1,iss)-f(:,:,n1+i,iss); enddo
 !
 !  set density in the ghost zones so that dlnrho/dz + ds/dz = gz/cs2bot
@@ -1311,7 +1311,7 @@ module EquationOfState
 !
 !  set boundary value for entropy, then extrapolate ghost pts by antisymmetry
 !
-        f(:,:,n2,iss) = 0.5*tmp - gamma1/gamma*(f(:,:,n2,ilnrho)-lnrho0)
+        f(:,:,n2,iss) = 0.5*tmp - gamma_m1/gamma*(f(:,:,n2,ilnrho)-lnrho0)
         do i=1,nghost; f(:,:,n2+i,iss) = 2*f(:,:,n2,iss)-f(:,:,n2-i,iss); enddo
 !
 !  set density in the ghost zones so that dlnrho/dz + ds/dz = gz/cs2top
@@ -1466,7 +1466,7 @@ module EquationOfState
         tmp = 1/gamma*alog(cs2bot/cs20)
         do i=0,nghost
           f(:,:,n1-i,iss) = tmp &
-               - gamma1/gamma*(f(:,:,n1-i,ilnrho)-lnrho0)
+               - gamma_m1/gamma*(f(:,:,n1-i,ilnrho)-lnrho0)
         enddo
 !
 !  top boundary
@@ -1478,7 +1478,7 @@ module EquationOfState
         tmp = 1/gamma*alog(cs2top/cs20)
         do i=0,nghost
           f(:,:,n2+i,iss) = tmp &
-               - gamma1/gamma*(f(:,:,n2+i,ilnrho)-lnrho0)
+               - gamma_m1/gamma*(f(:,:,n2+i,ilnrho)-lnrho0)
         enddo
       case default
         call fatal_error('bc_ss_temp2_z','invalid argument')
@@ -1516,7 +1516,7 @@ module EquationOfState
                         'bc_ss_stemp_x: cannot have cs2bot<=0'
         do i=1,nghost
           f(l1-i,:,:,iss) = f(l1+i,:,:,iss) &
-               + gamma1/gamma*(f(l1+i,:,:,ilnrho)-f(l1-i,:,:,ilnrho))
+               + gamma_m1/gamma*(f(l1+i,:,:,ilnrho)-f(l1-i,:,:,ilnrho))
         enddo
 !
 !  top boundary
@@ -1526,7 +1526,7 @@ module EquationOfState
                         'bc_ss_stemp_x: cannot have cs2top<=0'
         do i=1,nghost
           f(l2+i,:,:,iss) = f(l2-i,:,:,iss) &
-               + gamma1/gamma*(f(l2-i,:,:,ilnrho)-f(l2+i,:,:,ilnrho))
+               + gamma_m1/gamma*(f(l2-i,:,:,ilnrho)-f(l2+i,:,:,ilnrho))
         enddo
 
       case default
@@ -1565,7 +1565,7 @@ module EquationOfState
                        'bc_ss_stemp_y: cannot have cs2bot<=0'
         do i=1,nghost
           f(:,m1-i,:,iss) = f(:,m1+i,:,iss) &
-               + gamma1/gamma*(f(:,m1+i,:,ilnrho)-f(:,m1-i,:,ilnrho))
+               + gamma_m1/gamma*(f(:,m1+i,:,ilnrho)-f(:,m1-i,:,ilnrho))
         enddo
 !
 !  top boundary
@@ -1575,7 +1575,7 @@ module EquationOfState
                        'bc_ss_stemp_y: cannot have cs2top<=0'
         do i=1,nghost
           f(:,m2+i,:,iss) = f(:,m2-i,:,iss) &
-               + gamma1/gamma*(f(:,m2-i,:,ilnrho)-f(:,m2+i,:,ilnrho))
+               + gamma_m1/gamma*(f(:,m2-i,:,ilnrho)-f(:,m2+i,:,ilnrho))
         enddo
 
       case default
@@ -1615,7 +1615,7 @@ module EquationOfState
                                   'bc_ss_stemp_z: cannot have cs2bot<=0'
           do i=1,nghost
              f(:,:,n1-i,iss) = f(:,:,n1+i,iss) &
-                  + gamma1/gamma*(f(:,:,n1+i,ilnrho)-f(:,:,n1-i,ilnrho))
+                  + gamma_m1/gamma*(f(:,:,n1+i,ilnrho)-f(:,:,n1-i,ilnrho))
           enddo
 !
 !  top boundary
@@ -1625,7 +1625,7 @@ module EquationOfState
                  'bc_ss_stemp_z: cannot have cs2top<=0'
          do i=1,nghost
            f(:,:,n2+i,iss) = f(:,:,n2-i,iss) &
-                + gamma1/gamma*(f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho))
+                + gamma_m1/gamma*(f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho))
          enddo
       case default
         call fatal_error('bc_ss_stemp_z','invalid argument')
@@ -1659,9 +1659,9 @@ module EquationOfState
       !  Set cs2 (temperature) in the ghost points to the value on
       !  the boundary
       !
-      cs2_2d=cs20*exp(gamma1*f(:,:,n1,ilnrho)+gamma*f(:,:,n1,iss))
+      cs2_2d=cs20*exp(gamma_m1*f(:,:,n1,ilnrho)+gamma*f(:,:,n1,iss))
       do i=1,nghost
-         f(:,:,n1-i,iss)=1./gamma*(-gamma1*f(:,:,n1-i,ilnrho)-log(cs20)&
+         f(:,:,n1-i,iss)=1./gamma*(-gamma_m1*f(:,:,n1-i,ilnrho)-log(cs20)&
               +log(cs2_2d))
       enddo
 
@@ -1672,9 +1672,9 @@ module EquationOfState
       !  Set cs2 (temperature) in the ghost points to the value on
       !  the boundary
       !
-      cs2_2d=cs20*exp(gamma1*f(:,:,n2,ilnrho)+gamma*f(:,:,n2,iss))
+      cs2_2d=cs20*exp(gamma_m1*f(:,:,n2,ilnrho)+gamma*f(:,:,n2,iss))
       do i=1,nghost
-         f(:,:,n2+i,iss)=1./gamma*(-gamma1*f(:,:,n2+i,ilnrho)-log(cs20)&
+         f(:,:,n2+i,iss)=1./gamma*(-gamma_m1*f(:,:,n2+i,ilnrho)-log(cs20)&
               +log(cs2_2d))
       enddo
     case default

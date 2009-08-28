@@ -2949,7 +2949,7 @@ module Boundcond
 !
 !  26-apr-2004/wolf: coded
 !
-      use EquationOfState, only: gamma1, cs2top, cs2bot
+      use EquationOfState, only: gamma_m1, cs2top, cs2bot
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2970,7 +2970,7 @@ module Boundcond
          !case ('kepler')
          !   call bc_force_kepler(f,n1,j)
          case ('cT')
-            f(:,:,n1,j) = log(cs2bot/gamma1)
+            f(:,:,n1,j) = log(cs2bot/gamma_m1)
          case ('vel_time')
             call bc_force_ux_time(f,n1,j)
          case default
@@ -2996,7 +2996,7 @@ module Boundcond
          !case ('kepler')
          !   call bc_force_kepler(f,n2,j)
          case ('cT')
-            f(:,:,n2,j) = log(cs2top/gamma1)
+            f(:,:,n2,j) = log(cs2top/gamma_m1)
          case ('vel_time')
             call bc_force_ux_time(f,n2,j)
          case default
@@ -3286,7 +3286,7 @@ module Boundcond
 !  11-aug-06/axel: make it compile with nprocx>0, renamed quenching -> quen
 !  18-jun-08/bing: quenching depends on B^2, not only Bz^2
 !
-       use EquationOfState, only : gamma,gamma1,gamma11,cs20,lnrho0
+       use EquationOfState, only : gamma,gamma_m1,gamma_inv,cs20,lnrho0
 
        real, dimension (mx,my,mz,mfarray) :: f
        real, dimension (nx,ny),save :: uxl,uxr,uyl,uyr
@@ -3417,16 +3417,16 @@ module Boundcond
        bb2 = bb2/(2.*mu0)
 !
        if (ltemperature) then
-          pp = gamma1*gamma11*exp(f(l1:l2,m1:m2,n1,ilnrho)+f(l1:l2,m1:m2,n1,ilnTT))
+          pp = gamma_m1*gamma_inv*exp(f(l1:l2,m1:m2,n1,ilnrho)+f(l1:l2,m1:m2,n1,ilnTT))
        else if (lentropy) then          
           if (pretend_lnTT) then
-             pp = gamma1*gamma11*exp(f(l1:l2,m1:m2,n1,ilnrho)+f(l1:l2,m1:m2,n1,iss))
+             pp = gamma_m1*gamma_inv*exp(f(l1:l2,m1:m2,n1,ilnrho)+f(l1:l2,m1:m2,n1,iss))
           else
-             pp = gamma* (f(l1:l2,m1:m2,n1,iss)+f(l1:l2,m1:m2,n1,ilnrho))-gamma1*lnrho0
-             pp = exp(pp) * cs20*gamma11
+             pp = gamma* (f(l1:l2,m1:m2,n1,iss)+f(l1:l2,m1:m2,n1,ilnrho))-gamma_m1*lnrho0
+             pp = exp(pp) * cs20*gamma_inv
           endif
        else
-          pp=gamma11*cs20*exp(lnrho0)
+          pp=gamma_inv*cs20*exp(lnrho0)
        endif
 !
 !   limit plasma beta
@@ -3541,7 +3541,7 @@ module Boundcond
 !  constant flux boundary condition for entropy (called when bcx='c1')
 !  17-mar-07/dintrans: coded
 !
-      use EquationOfState, only: gamma, gamma1, lnrho0, cs20
+      use EquationOfState, only: gamma, gamma_m1, lnrho0, cs20
       use SharedVariables, only: get_shared_variable
 !
       real, pointer :: FbotKbot, FtopKtop
@@ -3567,15 +3567,15 @@ module Boundcond
 !
 !  calculate Fbot/(K*cs2)
 !
-!       cs2_yz=cs20*exp(gamma1*(f(l1,:,:,ilnrho)-lnrho0)+cv1*f(l1,:,:,iss))
-        cs2_yz=cs20*exp(gamma1*(f(l1,:,:,ilnrho)-lnrho0)+gamma*f(l1,:,:,iss))
+!       cs2_yz=cs20*exp(gamma_m1*(f(l1,:,:,ilnrho)-lnrho0)+cv1*f(l1,:,:,iss))
+        cs2_yz=cs20*exp(gamma_m1*(f(l1,:,:,ilnrho)-lnrho0)+gamma*f(l1,:,:,iss))
         tmp_yz=FbotKbot/cs2_yz
 !
-!  enforce ds/dx + gamma1/gamma*dlnrho/dx = - gamma1/gamma*Fbot/(K*cs2)
+!  enforce ds/dx + gamma_m1/gamma*dlnrho/dx = - gamma_m1/gamma*Fbot/(K*cs2)
 !
         do i=1,nghost
 !         f(l1-i,:,:,iss)=f(l1+i,:,:,iss)+(cp-cv)* &
-          f(l1-i,:,:,iss)=f(l1+i,:,:,iss)+gamma1/gamma* &
+          f(l1-i,:,:,iss)=f(l1+i,:,:,iss)+gamma_m1/gamma* &
               (f(l1+i,:,:,ilnrho)-f(l1-i,:,:,ilnrho)+2*i*dx*tmp_yz)
         enddo
 !
@@ -3592,15 +3592,15 @@ module Boundcond
 !
 !  calculate Ftop/(K*cs2)
 !
-        cs2_yz=cs20*exp(gamma1*(f(l2,:,:,ilnrho)-lnrho0)+gamma*f(l2,:,:,iss))
+        cs2_yz=cs20*exp(gamma_m1*(f(l2,:,:,ilnrho)-lnrho0)+gamma*f(l2,:,:,iss))
         tmp_yz=FtopKtop/cs2_yz
 !
-!  enforce ds/dx + gamma1/gamma*dlnrho/dx = - gamma1/gamma*Ftop/(K*cs2)
+!  enforce ds/dx + gamma_m1/gamma*dlnrho/dx = - gamma_m1/gamma*Ftop/(K*cs2)
 !
         do i=1,nghost
-          f(l2+i,:,:,iss)=f(l2-i,:,:,iss)+gamma1/gamma* &
+          f(l2+i,:,:,iss)=f(l2-i,:,:,iss)+gamma_m1/gamma* &
               (f(l2-i,:,:,ilnrho)-f(l2+i,:,:,ilnrho)-2*i*dx*tmp_yz)
-!          f(l1-i,:,:,iss)=f(l1+i,:,:,iss)+gamma1/gamma* &
+!          f(l1-i,:,:,iss)=f(l1+i,:,:,iss)+gamma_m1/gamma* &
 !              (f(l1+i,:,:,ilnrho)-f(l1-i,:,:,ilnrho)+2*i*dx*tmp_yz)
         enddo
 !

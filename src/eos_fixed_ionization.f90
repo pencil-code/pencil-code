@@ -62,7 +62,7 @@ module EquationOfState
   real :: cs0=1., rho0=1., cp=1.
   real :: cs20=1., lnrho0=0.
   logical :: lcalc_cp = .false.
-  real :: gamma=5./3., gamma1,gamma11, nabla_ad
+  real :: gamma=5./3., gamma_m1,gamma_inv, nabla_ad
   !real :: cp=impossible, cp1=impossible
   real :: cp1=impossible, ptlaw=impossible
 !ajwm  can't use impossible else it breaks reading param.nml
@@ -158,9 +158,9 @@ module EquationOfState
       lnrho_e_=1.5*log((m_e/hbar)*(chiH_/hbar)/2./pi)+log(m_H)+log(mu1yHxHe)
       ss_ion=k_B/m_H/mu1yHxHe
       ee_ion=ss_ion*TT_ion
-      gamma1=gamma-1.
-      gamma11=1./gamma
-      nabla_ad=gamma1/gamma
+      gamma_m1=gamma-1.
+      gamma_inv=1./gamma
+      nabla_ad=gamma_m1/gamma
       kappa0=sigmaH_/m_H/mu1yHxHe/4.0
       Srad0=sigmaSB*TT_ion**4/pi
 !

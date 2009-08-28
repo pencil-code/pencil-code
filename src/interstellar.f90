@@ -915,7 +915,7 @@ module Interstellar
 !  01-aug-06/tony: coded
 !
       use Diagnostics, only: max_mn_name, sum_mn_name
-      use EquationOfState, only: gamma, gamma11, eoscalc
+      use EquationOfState, only: gamma, gamma_inv, eoscalc
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 
@@ -987,7 +987,7 @@ module Interstellar
 !   3-apr-06/axel: add ltemperature switch
 !
       use Diagnostics, only: max_mn_name, sum_mn_name
-      use EquationOfState, only: gamma, gamma11
+      use EquationOfState, only: gamma, gamma_inv
       use Sub, only: smooth_kernel, despike
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f

@@ -199,7 +199,7 @@ module Cosmicray
 !
 !  20-11-04/anders: coded
 !
-      use EquationOfState, only: gamma1
+      use EquationOfState, only: gamma_m1
 !
       logical, dimension(npencils) :: lpencil_in
 !
@@ -224,7 +224,7 @@ module Cosmicray
 !
 !  20-11-04/anders: coded
 !
-      use EquationOfState, only: gamma,gamma1,cs20,lnrho0
+      use EquationOfState, only: gamma,gamma_m1,cs20,lnrho0
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f

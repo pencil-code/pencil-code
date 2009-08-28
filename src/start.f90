@@ -177,7 +177,7 @@ program start
 !
 !  Postprocess input parameters.
 !
-  gamma1 = gamma-1.
+  gamma_m1 = gamma-1.
 !
 !  Set up directory names and check whether the directories exist.
 !

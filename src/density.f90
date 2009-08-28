@@ -549,7 +549,7 @@ module Density
             if (lroot) print*,'init_lnrho: vertical density stratification'
             do n=n1,n2; do m=m1,m2
               f(l1:l2,m,n,ilnrho) = -grads0*z(n) &
-                                + 1./gamma1*log( 1 + gamma1*gravz/grads0/cs20 &
+                                + 1./gamma_m1*log( 1 + gamma_m1*gravz/grads0/cs20 &
                                               *(1-exp(-grads0*z(n))) )
             enddo; enddo
           endif
@@ -573,7 +573,7 @@ module Density
 !
               if (gamma/=1.0) then  ! isentropic
                 f(l1:l2,m,n,ilnrho) = lnrho0 &
-                                  + log(1 - gamma1*(pot-pot0)/cs20) / gamma1
+                                  + log(1 - gamma_m1*(pot-pot0)/cs20) / gamma_m1
               else                  ! isothermal
                 f(l1:l2,m,n,ilnrho) = lnrho0 - (pot-pot0)/cs20
               endif
@@ -588,7 +588,7 @@ module Density
           if (lgravr) then
             if (lroot) print*, 'init_lnrho: isothermal sphere'
             haut=cs20/gamma
-            TT=spread(cs20/gamma1,1,nx)
+            TT=spread(cs20/gamma_m1,1,nx)
             do n=n1,n2
             do m=m1,m2
               r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
@@ -605,7 +605,7 @@ module Density
              "there was a problem when getting gravx")
           if (lroot) print*, 'init_lnrho: isothermal cylindrical ring with gravx=', gravx
           haut=-cs20/gamma/gravx
-          TT=spread(cs20/gamma1,1,nx)
+          TT=spread(cs20/gamma_m1,1,nx)
           do n=n1,n2
           do m=m1,m2
             lnrho=lnrho0-(x(l1:l2)-r_ext)/haut
@@ -643,7 +643,7 @@ module Density
                 call potential(R=r_ext,POT=pot_ext) ! get pot_ext=pot(r_ext)
 !  Do consistency check before taking the log() of a potentially
 !  negative number
-                tmp1 = 1 - gamma1*(pot_ext-pot0)/cs20
+                tmp1 = 1 - gamma_m1*(pot_ext-pot0)/cs20
                 if (tmp1 <= 0.) then
                   if (lroot) then
                     print*, 'BAD IDEA: Trying to calculate log(', tmp1, ')'
@@ -651,7 +651,7 @@ module Density
                   endif
                   call error('init_lnrho', 'Imaginary density values')
                 endif
-                lnrho_ext = lnrho0 + log(tmp1) / gamma1
+                lnrho_ext = lnrho0 + log(tmp1) / gamma_m1
                 cs2_ext   = cs20*tmp1
 !  Adjust for given cs2cool (if given) or set cs2cool (otherwise)
                 if (cs2cool/=0) then
@@ -665,7 +665,7 @@ module Density
 !
                 where (pot <= pot_ext) ! isentropic for r<r_ext
                   f(l1:l2,m,n,ilnrho) = lnrho0 &
-                                    + log(1 - gamma1*(pot-pot0)/cs20) / gamma1
+                                    + log(1 - gamma_m1*(pot-pot0)/cs20) / gamma_m1
                 elsewhere           ! isothermal for r>r_ext
                   f(l1:l2,m,n,ilnrho) = lnrho_ext - gamma*(pot-pot_ext)/cs2cool
                 endwhere
@@ -694,11 +694,11 @@ module Density
 !
 !  Calculate cs2bot and cs2top for run.x (boundary conditions).
 !
-          cs2bot = cs2int + gamma/gamma1*gravz/(mpoly2+1)*(zbot-z0  )
+          cs2bot = cs2int + gamma/gamma_m1*gravz/(mpoly2+1)*(zbot-z0  )
           if (isothtop /= 0) then
             cs2top = cs20
           else
-            cs2top = cs20 + gamma/gamma1*gravz/(mpoly0+1)*(ztop-zref)
+            cs2top = cs20 + gamma/gamma_m1*gravz/(mpoly0+1)*(ztop-zref)
           endif
         case ('piecew-disc', '41')
 !
@@ -720,13 +720,13 @@ module Density
 !
 !  Calculate cs2bot and cs2top for run.x (boundary conditions).
 !
-!  cs2bot = cs2int + gamma/gamma1*gravz*nu_epicycle**2/(mpoly2+1)* &
+!  cs2bot = cs2int + gamma/gamma_m1*gravz*nu_epicycle**2/(mpoly2+1)* &
 !         (zbot**2-z0**2)/2.
           cs2bot = cs20
           if (isothtop /= 0) then
             cs2top = cs20
           else
-            cs2top = cs20 + gamma/gamma1*gravz*nu_epicycle**2/(mpoly0+1)* &
+            cs2top = cs20 + gamma/gamma_m1*gravz*nu_epicycle**2/(mpoly0+1)* &
                     (ztop**2-zref**2)/2.
           endif
         case ('polytropic', '5')
@@ -1115,7 +1115,7 @@ module Density
       real, dimension (nx) :: pot, r_mn
       real :: beta1,lnrho_int,lnrho_ext,pot_int,pot_ext
 !
-      beta1=g0/(mpoly+1)*gamma/gamma1  ! gamma1/gamma=R_{*} (for cp=1)
+      beta1=g0/(mpoly+1)*gamma/gamma_m1  ! gamma_m1/gamma=R_{*} (for cp=1)
 !
       if (lspherical_coords) then
 !     densities at shell boundaries
@@ -1153,9 +1153,9 @@ module Density
               call potential(R=r_int,POT=pot_int)
               call potential(R=r_ext,POT=pot_ext)
               call potential(RMN=r_mn,POT=pot)
-! gamma/gamma1=1/R_{*} (for cp=1)
-              where (r_mn >= r_ext) f(l1:l2,m,n,ilnrho)=lnrho_ext+(pot_ext-pot)*exp(-lnrho_ext/mpoly)*gamma/gamma1
-              where (r_mn <= r_int) f(l1:l2,m,n,ilnrho)=lnrho_int+(pot_int-pot)*exp(-lnrho_int/mpoly)*gamma/gamma1
+! gamma/gamma_m1=1/R_{*} (for cp=1)
+              where (r_mn >= r_ext) f(l1:l2,m,n,ilnrho)=lnrho_ext+(pot_ext-pot)*exp(-lnrho_ext/mpoly)*gamma/gamma_m1
+              where (r_mn <= r_int) f(l1:l2,m,n,ilnrho)=lnrho_int+(pot_int-pot)*exp(-lnrho_int/mpoly)*gamma/gamma_m1
             endif
         enddo
       endif
@@ -1182,7 +1182,7 @@ module Density
       do n=n1,n2
 
         lnrho=f(l1:l2,m,n,ilnrho)
-        cs2=cs20*exp(gamma1*(lnrho-lnrho0))
+        cs2=cs20*exp(gamma_m1*(lnrho-lnrho0))
         call grad(f,ilnrho,glnrho)
         do j=1,3
           gg_mn(:,j)=cs2*glnrho(:,j)
@@ -1829,8 +1829,8 @@ module Density
           tmp=-gamma*pot/cs20
           f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) + lnrho0 + tmp
           if (lentropy) f(l1:l2,m,n,iss) = f(l1:l2,m,n,iss) &
-               -gamma1*(f(l1:l2,m,n,ilnrho)-lnrho0)/gamma
-          if (ltemperature) f(l1:l2,m,n,ilnTT)=log(cs20*cp1/gamma1)
+               -gamma_m1*(f(l1:l2,m,n,ilnrho)-lnrho0)/gamma
+          if (ltemperature) f(l1:l2,m,n,ilnTT)=log(cs20*cp1/gamma_m1)
         enddo
       enddo
 !
@@ -2432,8 +2432,8 @@ module Density
           dlncs2=log(-gamma*pot/((mpoly+1.)*cs20))
           f(l1:l2,m,n,ilnrho)=lnrho0+mpoly*dlncs2
           if (lentropy) f(l1:l2,m,n,iss)=mpoly*(ggamma/gamma-1.)*dlncs2
-!         if (ltemperature) f(l1:l2,m,n,ilnTT)=dlncs2-log(gamma1)
-          if (ltemperature) f(l1:l2,m,n,ilnTT)=log(-gamma*pot/(mpoly+1.)/gamma1)
+!         if (ltemperature) f(l1:l2,m,n,ilnTT)=dlncs2-log(gamma_m1)
+          if (ltemperature) f(l1:l2,m,n,ilnTT)=log(-gamma*pot/(mpoly+1.)/gamma_m1)
         enddo; enddo
 !
 !  cs2 values at top and bottom may be needed to boundary conditions.

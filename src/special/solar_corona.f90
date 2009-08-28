@@ -556,7 +556,7 @@ module Special
 !
       use Diagnostics
       use IO, only: output_pencil
-      use EquationOfState, only: gamma11,lnrho0,gamma
+      use EquationOfState, only: gamma_inv,lnrho0,gamma
       use Sub
       
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -569,7 +569,7 @@ module Special
       real :: dummy
       integer :: i,lend,j
 !
-      if (headtt) print*,'special_calc_entropy: newton cooling',tdown,gamma11,lnrho0
+      if (headtt) print*,'special_calc_entropy: newton cooling',tdown,gamma_inv,lnrho0
 !
 !  Initial temperature profile is given in ln(T) [K] over z [Mm]
 !  It will be read at the beginning and then kept in memory
@@ -646,7 +646,7 @@ module Special
 
        use Diagnostics 
        use Sub
-       use EquationOfState, only: gamma,gamma11
+       use EquationOfState, only: gamma,gamma_inv
        use IO, only: output_pencil
 
        real, dimension (mx,my,mz,mfarray), intent(in) :: f
@@ -765,7 +765,7 @@ module Special
  
       use Diagnostics
       use Sub
-      use EquationOfState, only: gamma,gamma11
+      use EquationOfState, only: gamma,gamma_inv
       use IO, only: output_pencil
 !
       real, dimension (mx,my,mz,mvar) :: df

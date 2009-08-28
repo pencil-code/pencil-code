@@ -61,7 +61,7 @@ module EquationOfState
   real :: cs0=impossible, rho0=impossible, cp=impossible
   real :: cs20=impossible, lnrho0=impossible, ptlaw=impossible
   logical :: lcalc_cp = .false.
-  real :: gamma=impossible, gamma1=impossible,gamma11=impossible
+  real :: gamma=impossible, gamma_m1=impossible,gamma_inv=impossible
   real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=impossible, cs2top=impossible
 !ajwm  Not sure this should exist either...
@@ -1380,7 +1380,7 @@ module EquationOfState
 !
         yH_xy=f(:,:,n1,iyH)
 !
-!  enforce ds/dz + gamma1/gamma*dlnrho/dz = - gamma1/gamma*Fbot/(K*cs2)
+!  enforce ds/dz + gamma_m1/gamma*dlnrho/dz = - gamma_m1/gamma*Fbot/(K*cs2)
 !
         do i=1,nghost
           f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+ss_ion*(1+yH_xy+xHe)* &
@@ -1415,7 +1415,7 @@ module EquationOfState
 !
         yH_xy=f(:,:,n2,iyH)
 !
-!  enforce ds/dz + gamma1/gamma*dlnrho/dz = - gamma1/gamma*Fbot/(K*cs2)
+!  enforce ds/dz + gamma_m1/gamma*dlnrho/dz = - gamma_m1/gamma*Fbot/(K*cs2)
 !
         do i=1,nghost
           f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+ss_ion*(1+yH_xy+xHe)* &

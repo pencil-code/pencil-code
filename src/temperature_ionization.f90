@@ -257,7 +257,7 @@ module Entropy
       if (ldt) lpenc_requested(i_cs2)=.true.
 
       if (ldensity) then
-        lpenc_requested(i_gamma1)=.true.
+        lpenc_requested(i_gamma_m1)=.true.
         lpenc_requested(i_delta)=.true.
         lpenc_requested(i_divu)=.true.
       endif
@@ -480,9 +480,9 @@ module Entropy
 
       if (ldensity) then
        if (.not. lchemistry) then
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%gamma1*p%divu/p%delta
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%gamma_m1*p%divu/p%delta
        else 
-    !    df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%gamma1*p%divu
+    !    df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%gamma_m1*p%divu
     !      sum_DYDt=0.
     !       do k=1,nchemspec
     !         sum_DYDt=sum_DYDt+p%cvspec(:,k)*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))

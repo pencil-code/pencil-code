@@ -76,7 +76,7 @@ module Entropy
 !  24-nov-02/tony: coded
 !
       use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, &
-                                 cs0, select_eos_variable,gamma1
+                                 cs0, select_eos_variable,gamma_m1
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
@@ -86,7 +86,7 @@ module Entropy
       if (llocal_iso) then
         call select_eos_variable('cs2',-2) !special local isothermal
       else
-        if (gamma1 == 0.) then
+        if (gamma_m1 == 0.) then
           call select_eos_variable('cs2',-1) !isothermal => polytropic
         else
           call select_eos_variable('ss',-1) !isentropic => polytropic
@@ -153,7 +153,7 @@ module Entropy
 !
 !  20-11-04/anders: coded
 !
-      use EquationOfState, only: gamma1
+      use EquationOfState, only: gamma_m1
 !
       logical, dimension(npencils) :: lpencil_in
 !
@@ -166,8 +166,8 @@ module Entropy
         lpencil_in(i_glnrho)=.true.
         if (llocal_iso)  lpencil_in(i_glnTT)=.true.
       endif
-      if (lpencil_in(i_TT1) .and. gamma1/=0.) lpencil_in(i_cs2)=.true.
-      if (lpencil_in(i_cs2) .and. gamma1/=0.) lpencil_in(i_lnrho)=.true.
+      if (lpencil_in(i_TT1) .and. gamma_m1/=0.) lpencil_in(i_cs2)=.true.
+      if (lpencil_in(i_cs2) .and. gamma_m1/=0.) lpencil_in(i_lnrho)=.true.
 !
     endsubroutine pencil_interdep_entropy
 !***********************************************************************
@@ -179,7 +179,7 @@ module Entropy
 !  20-nov-04/anders: coded
 !   4-aug-09/axel: added possibility to multiply with profile function
 !
-      use EquationOfState, only: gamma,gamma1,cs20,lnrho0,ieos_profile,profz_eos
+      use EquationOfState, only: gamma,gamma_m1,cs20,lnrho0,ieos_profile,profz_eos
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p

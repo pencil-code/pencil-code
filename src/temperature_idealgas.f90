@@ -158,7 +158,7 @@ module Entropy
       use Cdata
       use FArrayManager
       use Gravity, only: g0, gravz
-      use EquationOfState, only : cs2bot, cs2top, gamma, gamma1, &
+      use EquationOfState, only : cs2bot, cs2top, gamma, gamma_m1, &
                                   select_eos_variable
       use Sub, only: step,der_step
       use Mpicomm, only: stop_it
@@ -281,8 +281,8 @@ module Entropy
 ! needed when one only works with temperature_idealgas to check the
 ! radiative diffusion term, i.e. one solves d(TT)/dt=gamma*chi*del2(TT)
 ! with bcz='cT' (all other modules are down)
-        cs2bot=gamma1*f(l1,4,n1,ilnTT)
-        cs2top=gamma1*f(l1,4,n2,ilnTT)
+        cs2bot=gamma_m1*f(l1,4,n1,ilnTT)
+        cs2top=gamma_m1*f(l1,4,n2,ilnTT)
       endif
 !
 ! some tricks regarding Fbot and hcond0 when bcz1='c1' (constant flux)
@@ -290,12 +290,12 @@ module Entropy
       if (hole_slope.eq.0.) then
        if (bcz1(ilnTT)=='c1' .and. lrun) then
         if (Fbot==impossible .and. hcond0 /= impossible) then
-          Fbot=-gamma/gamma1*hcond0*gravz/(mpoly0+1.)
+          Fbot=-gamma/gamma_m1*hcond0*gravz/(mpoly0+1.)
           if (lroot) print*, &
                      'initialize_entropy: Calculated Fbot = ', Fbot
         endif
         if (hcond0==impossible .and. Fbot /= impossible) then
-          hcond0=-Fbot*gamma1/gamma*(mpoly0+1.)/gravz
+          hcond0=-Fbot*gamma_m1/gamma*(mpoly0+1.)/gravz
           if (lroot) print*, &
                      'initialize_entropy: Calculated hcond0 = ', hcond0
         endif
@@ -370,7 +370,7 @@ module Entropy
       use Sub,      only: blob
       use Initcond, only: jump
       use InitialCondition, only: initial_condition_ss
-      use EquationOfState, only: gamma, gamma1, cs2bot, cs2top, cs20, &
+      use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, cs20, &
                                  lnrho0, get_cp1
       use Gravity, only: gravz
       use Mpicomm, only: stop_it
@@ -405,8 +405,8 @@ module Entropy
               f(l1:l2,4,n,ilnTT)=exp(-(x(l1:l2)/radius_lnTT)**2)* &
                   exp(-((z(n)-0.5)/radius_lnTT)**2)
             enddo
-            cs2bot=gamma1*f(l1,4,n1,ilnTT)
-            cs2top=gamma1*f(l1,4,n2,ilnTT)
+            cs2bot=gamma_m1*f(l1,4,n1,ilnTT)
+            cs2top=gamma_m1*f(l1,4,n2,ilnTT)
 !
           case('rad_equil')
             call rad_equil(f)
@@ -420,9 +420,9 @@ module Entropy
           case('isothermal')
             if (lroot) print*, 'init_lnTT: isothermal atmosphere'
             if (ltemperature_nolog) then
-              f(:,:,:,iTT)  =cs20/gamma1
+              f(:,:,:,iTT)  =cs20/gamma_m1
             else
-              f(:,:,:,ilnTT)=log(cs20/gamma1)
+              f(:,:,:,ilnTT)=log(cs20/gamma_m1)
             endif
             haut=-cs20/gamma/gravz
             do n=n1,n2
@@ -435,7 +435,7 @@ module Entropy
                 call stop_it("initialize_lnTT: Fbot or hcond0 not initialized")
             call get_cp1(cp1)
             Rgas=(1.-1./gamma)/cp1
-            Ttop=cs20/gamma1
+            Ttop=cs20/gamma_m1
             beta=-Fbot/hcond0
             alpha=Ttop-beta
             expo=-gravz/beta/Rgas
@@ -647,7 +647,7 @@ module Entropy
 !
       if (lpencil(i_fpres)) then
         do j=1,3
-          p%fpres(:,j)=-p%cs2*(p%glnrho(:,j) + p%glnTT(:,j))*gamma11
+          p%fpres(:,j)=-p%cs2*(p%glnrho(:,j) + p%glnTT(:,j))*gamma_inv
         enddo
       endif
 !
@@ -658,15 +658,15 @@ module Entropy
 !  Calculate right hand side of temperature equation
 !  heat condution is currently disabled until old stuff,
 !  which in now in calc_heatcond, has been reinstalled.
-!  lnTT version: DlnTT/Dt = -gamma1*divu + gamma*cp1*rho1*TT1*RHS
-!    TT version:   DTT/Dt = -gamma1*TT*divu + gamma*cp1*rho1*RHS
+!  lnTT version: DlnTT/Dt = -gamma_m1*divu + gamma*cp1*rho1*TT1*RHS
+!    TT version:   DTT/Dt = -gamma_m1*TT*divu + gamma*cp1*rho1*RHS
 !
 !  13-dec-02/axel+tobi: adapted from entropy
 !
       use Cdata
       use Deriv, only: der6
       use Diagnostics
-      use EquationOfState, only: gamma1,gamma
+      use EquationOfState, only: gamma_m1,gamma
       use Mpicomm
       use Special, only: special_calc_entropy
       use Sub
@@ -784,9 +784,9 @@ module Entropy
 !
       if (ldensity) then
         if (ltemperature_nolog) then
-          df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT)   - gamma1*p%TT*p%divu
+          df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT)   - gamma_m1*p%TT*p%divu
         else
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - gamma1*p%divu
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - gamma_m1*p%divu
         endif
       endif
 !
@@ -880,7 +880,7 @@ module Entropy
       use Cdata
       use Gravity, only: gravz
       use EquationOfState, only: lnrho0,cs20,cs2top,cs2bot,gamma, &
-                                 gamma1,eoscalc,ilnrho_TT
+                                 gamma_m1,eoscalc,ilnrho_TT
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mz) :: temp,lnrho
@@ -894,9 +894,9 @@ module Entropy
 !
 ! Integrate from top to bottom: z(n2) --> z(n1)
 !
-      temp(n2)=cs20/gamma1
+      temp(n2)=cs20/gamma_m1
       lnrho(n2)=lnrho0
-      f(:,:,n2,ilnTT)=cs20/gamma1
+      f(:,:,n2,ilnTT)=cs20/gamma_m1
       f(:,:,n2,ilnrho)=lnrho0
 !
 ! Calculate the n2-1 gridpoint thanks to a 1st order forward Euler scheme
@@ -904,7 +904,7 @@ module Entropy
       call heatcond_TT_0d(temp(n2), hcond)
       dtemp=Fbot/hcond
       temp(n2-1)=temp(n2)+dz*dtemp
-      dlnrho=(-gamma/gamma1*gravz-dtemp)/temp(n2)
+      dlnrho=(-gamma/gamma_m1*gravz-dtemp)/temp(n2)
       lnrho(n2-1)=lnrho(n2)+dz*dlnrho
       f(:,:,n2-1,ilnTT)=temp(n2-1)
       f(:,:,n2-1,ilnrho)=lnrho(n2-1)
@@ -915,7 +915,7 @@ module Entropy
         call heatcond_TT(temp(i), hcond)
         dtemp=Fbot/hcond
         temp(i-1)=temp(i+1)+2.*dz*dtemp
-        dlnrho=(-gamma/gamma1*gravz-dtemp)/temp(i)
+        dlnrho=(-gamma/gamma_m1*gravz-dtemp)/temp(i)
         lnrho(i-1)=lnrho(i+1)+2.*dz*dlnrho
         f(:,:,i-1,ilnTT)=temp(i-1)
         f(:,:,i-1,ilnrho)=lnrho(i-1)
@@ -923,7 +923,7 @@ module Entropy
 !
 ! Initialize cs2bot by taking into account the new bottom value of temperature
 ! Note: cs2top=cs20 already defined in eos_idealgas
-      cs2bot=gamma1*temp(n1)
+      cs2bot=gamma_m1*temp(n1)
       print*,'cs2top, cs2bot=', cs2top, cs2bot
 !
       if (lroot) then
@@ -943,7 +943,7 @@ module Entropy
     subroutine calc_heat_cool(f,df,p)
 !
       use Diagnostics
-      use EquationOfState, only: gamma,gamma1
+      use EquationOfState, only: gamma,gamma_m1
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1335,7 +1335,7 @@ module Entropy
 !
       use Cdata
       use Gravity, only: gravz
-      use EquationOfState, only: cs20, lnrho0, gamma, gamma1, get_cp1, &
+      use EquationOfState, only: cs20, lnrho0, gamma, gamma_m1, get_cp1, &
                                  cs2bot, cs2top
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -1343,14 +1343,14 @@ module Entropy
 !
 !  beta is the (negative) temperature gradient
 !  beta = -(g/cp) /[(1-1/gamma)*(m+1)]
-!  gamma*(Rgas/mu)T0 = cs2(ad) = cp*T0*gamma1,
-!  so T0 = cs20*cp1/gamma1
+!  gamma*(Rgas/mu)T0 = cs2(ad) = cp*T0*gamma_m1,
+!  so T0 = cs20*cp1/gamma_m1
 !
       call get_cp1(cp1)
-      beta=-cp1*gravz/(mpoly0+1.)*gamma/gamma1
+      beta=-cp1*gravz/(mpoly0+1.)*gamma/gamma_m1
       ztop=xyz0(3)+Lxyz(3)
       zbot=xyz0(3)
-      T0=cs20*cp1/gamma1
+      T0=cs20*cp1/gamma_m1
       print*, 'polytrope: mpoly0, beta, T0=', mpoly0, beta, T0
 !
       do imn=1,ny*nz
@@ -1364,7 +1364,7 @@ module Entropy
         endif
         f(:,m,n,ilnrho)=lnrho0+mpoly0*log(temp/T0)
       enddo
-      cs2bot=gamma1*(T0+beta*(ztop-zbot))
+      cs2bot=gamma_m1*(T0+beta*(ztop-zbot))
       cs2top=cs20
 !
     endsubroutine single_polytrope
@@ -1411,7 +1411,7 @@ module Entropy
 !
       use Cdata
       use Cparam
-      use EquationOfState, only: gamma, gamma1, cs2bot, cs2top, get_cp1
+      use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, get_cp1
       use General, only: tridag
       use Mpicomm, only: transp_xz, transp_zx
 
@@ -1500,13 +1500,13 @@ module Entropy
 ! z boundary conditions
 ! Constant temperature at the top
         bz(nz)=1. ; az(nz)=0.
-        rhsz(nz)=cs2top/gamma1
+        rhsz(nz)=cs2top/gamma_m1
 ! bottom
       select case (bcz1(ilnTT))
 ! Constant temperature at the bottom
         case('cT')
          bz(1)=1.  ; cz(1)=0. 
-         rhsz(1)=cs2bot/gamma1
+         rhsz(1)=cs2bot/gamma_m1
 ! Constant flux at the bottom
         case('c1')
          bz(1)=1.   ; cz(1)=-1
@@ -1537,7 +1537,7 @@ module Entropy
 !
       use Cdata
       use Cparam
-      use EquationOfState, only: gamma, gamma1, cs2bot, cs2top, get_cp1
+      use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, get_cp1
       use General, only: tridag
 
       implicit none
@@ -1783,7 +1783,7 @@ module Entropy
 !
       use Cdata
       use Cparam
-      use EquationOfState, only: gamma, gamma1, cs2bot, cs2top, get_cp1
+      use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, get_cp1
       use General, only: tridag
 
       implicit none
@@ -1811,11 +1811,11 @@ module Entropy
 !
 ! Always constant temperature at the top
         b(nz)=1. ; a(nz)=0.
-        rhs(nz)=cs2top/gamma1
+        rhs(nz)=cs2top/gamma_m1
         if (bcz1(ilnTT)=='cT') then
 ! Constant temperature at the bottom
           b(1)=1. ; c(1)=0. 
-          rhs(1)=cs2bot/gamma1
+          rhs(1)=cs2bot/gamma_m1
         else
 ! Constant flux at the bottom
           b(1)=1.  ; c(1)=-1.
@@ -1849,7 +1849,7 @@ module Entropy
 !
       use Cdata
       use Cparam
-      use EquationOfState, only: gamma, gamma1, cs2bot, cs2top, get_cp1
+      use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, get_cp1
       use General, only: tridag
 
       implicit none
