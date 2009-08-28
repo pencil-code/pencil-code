@@ -302,7 +302,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
         !! Fp coordinates
         fpx = xcyl - rcyl * sin(twopi*(iforcepoint)/nforcepoints)
         fpy = ycyl - rcyl * cos(twopi*(iforcepoint)/nforcepoints)
-        fpz = z(n)
+        fpz = z(n1)
         !
         !  Find nearest grid point in x-direction
         !          
