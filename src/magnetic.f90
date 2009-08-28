@@ -4053,6 +4053,9 @@ module Magnetic
         do l=1,nx
           do m=1,ny
             do j=1,nprocy
+              bxmxy=0.0
+              bymxy=0.0
+              bzmxy=0.0
 !              bxmxy=fnamexy(l,m,j,idiag_bxmxy)
 !              bymxy=fnamexy(l,m,j,idiag_bymxy)
 !              bzmxy=fnamexy(l,m,j,idiag_bzmxy)
