@@ -3586,8 +3586,6 @@ module Hydro
         if (iproc==0) orms=fname(idiag_orms)
         call mpibcast_real(orms,1)
       endif
-
-      if (.not.lroot) return
 !
 !  Magnetic energy in vertically averaged field. The uymxy and uzmxy must
 !  have been calculated, so they are present on the z-root processors.
@@ -3673,6 +3671,7 @@ module Hydro
       endif
 !
       first = .false.
+!
     endsubroutine calc_mflow
 !***********************************************************************
     subroutine calc_omumz
