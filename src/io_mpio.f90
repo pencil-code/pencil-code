@@ -513,7 +513,7 @@ contains
         call MPI_FILE_WRITE_AT(fhandle,fpos,reclen,1,MPI_INTEGER,status,ierr)
         fpos = fpos + byte_per_int
         call MPI_FILE_WRITE_AT(fhandle,fpos,t_sp,1,MPI_REAL,status,ierr)
-        fpos = fpos + byte_per_float
+        fpos = fpos + reclen
         call MPI_FILE_WRITE_AT(fhandle,fpos,reclen,1,MPI_INTEGER,status,ierr)
         fpos = fpos + byte_per_int
       endif
