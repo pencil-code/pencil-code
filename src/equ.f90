@@ -210,7 +210,7 @@ module Equ
 ! update solid cell "ghost points". This must be done in order to get the
 ! correct boundary layer close to the solid geometry, i.e. no-slip conditions.
 !
-        call update_solid_cells(f)
+      call update_solid_cells(f)
 !
 !  Give the particle modules a chance to do something special with a fully
 !  communicated f array, for instance: the particles_spin module needs to
