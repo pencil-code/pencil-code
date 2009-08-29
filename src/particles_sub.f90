@@ -949,7 +949,7 @@ module Particles_sub
 !  it will do for now. The best thing would be to allocate all nbody particles
 !  at the root and the rest (if any) distributed evenly 
 !
-      if ( lparticles_nbody.and.(npar==nspar) ) then
+      if (lparticles_nbody.and.(npar==nspar)) then
         if (lroot) then
           npar_loc=npar
           !also needs to initialize ipar(k)
