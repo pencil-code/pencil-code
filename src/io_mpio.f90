@@ -483,8 +483,14 @@ contains
       integer(kind=MPI_OFFSET_KIND) :: fpos
       character (len=*) :: file
       real :: t_sp   ! t in single precision for backwards compatibility
+      integer, parameter :: test_int = 0
+      real, parameter :: test_float = 0
+      integer :: byte_per_int, byte_per_float
 !
       t_sp = t
+      inquire (IOLENGTH=byte_per_int) test_int
+      inquire (IOLENGTH=byte_per_float) test_float
+!
       call MPI_FILE_OPEN(MPI_COMM_WORLD, file, & ! MPI_FILE_OPEN is collective
                          ior(MPI_MODE_CREATE,MPI_MODE_WRONLY), &
                          MPI_INFO_NULL, fhandle, ierr)
@@ -493,20 +499,23 @@ contains
         ! record markers for (already written) data block
         !
         fpos = 0                ! open-record marker
-        reclen = nxgrid*nygrid*nzgrid*nv*4
+        reclen = nxgrid*nygrid*nzgrid*nv*byte_per_float
         call MPI_FILE_WRITE_AT(fhandle,fpos,reclen,1,MPI_INTEGER,status,ierr)
-        fpos = fpos + reclen+4  ! close-record marker
+        fpos = fpos + byte_per_int
+                                ! the data itself has already been written by ouput_vect
+        fpos = fpos + reclen    ! close-record marker
         call MPI_FILE_WRITE_AT(fhandle,fpos,reclen,1,MPI_INTEGER,status,ierr)
+        fpos = fpos + byte_per_int
         !
         ! time in a new record
         !
-        fpos = fpos + 4
-        reclen = 4
+        reclen = byte_per_float
         call MPI_FILE_WRITE_AT(fhandle,fpos,reclen,1,MPI_INTEGER,status,ierr)
-        fpos = fpos + 4
+        fpos = fpos + byte_per_int
         call MPI_FILE_WRITE_AT(fhandle,fpos,t_sp,1,MPI_REAL,status,ierr)
-        fpos = fpos + 4
+        fpos = fpos + byte_per_float
         call MPI_FILE_WRITE_AT(fhandle,fpos,reclen,1,MPI_INTEGER,status,ierr)
+        fpos = fpos + byte_per_int
       endif
       !
       call MPI_FILE_CLOSE(fhandle,ierr)
