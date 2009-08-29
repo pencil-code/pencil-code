@@ -1,8 +1,8 @@
 ;$Id$
 pro pc_error_range,tt,a,mean=am,error=err,oplot=oplot,accum=accum,col=col,li=li
 ;
-;  calculate averages for each third of time series and use
-;  maximum departure from full average as error estimate
+;  Calculate averages for each third of time series and use
+;  maximum departure from full average as error estimate.
 ;
 ;  Location:
 ;    pencil-code/idl/statistics/pc_error_range.pro
@@ -26,17 +26,19 @@ am2=total(a(it2:it3))/(it3-it2+1)
 am3=total(a(it3:it4))/(it4-it3+1)
 aml=am<am1<am2<am3
 amu=am>am1>am2>am3
-;err=(amu-am) > (am-aml)
+err=(amu-am) > (am-aml)
+print,'am,am1,am2,am3,err=',am,am1,am2,am3,err
 ;
-;  assume that t is already normalized in correlation times, i.e. by urms*kf
+;  Assume that t is already normalized in correlation times, i.e. by urms*kf.
+;  The following method is commented out, because it wasn't too useful.
 ;
-t_interval=tt(it4)-tt(it1)
-err=sqrt(total(a(it1:it4)^2)/((it4-it1+1)*t_interval))
+;t_interval=tt(it4)-tt(it1)
+;err=sqrt(total(a(it1:it4)^2)/((it4-it1+1)*t_interval))
 ;
 ;  possibility of overplotting error range
 ;
 if keyword_set(oplot) then begin
-  print,'DEVICE=',!d.name
+  ;print,'DEVICE=',!d.name
   if !d.name eq 'X' then begin
     oplot,tt,(tt-tt+1.)*am,col=col,li=li
     if li eq -1 then begin
