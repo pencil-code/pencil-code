@@ -1213,11 +1213,14 @@ module Hydro
 !
       if (lpencil_in(i_u2)) lpencil_in(i_uu)=.true.
       if (lpencil_in(i_divu)) lpencil_in(i_uij)=.true.
-      if (lalways_use_gij_etc.and..not.lcartesian_coords) &
-        lpencil_in(i_oo)=.true.
+      if (lalways_use_gij_etc) lpencil_in(i_oo)=.true.
       if (lpencil_in(i_sij)) then
         lpencil_in(i_uij)=.true.
         lpencil_in(i_divu)=.true.
+      endif      
+      if (.not.lcartesian_coords.or.lalways_use_gij_etc) then
+        if (lpencil_in(i_del2u))    lpencil_in(i_graddivu)=.true.
+        if (lpencil_in(i_graddivu)) lpencil_in(i_oo)=.true.
       endif
       if (lpencil_in(i_oo)) lpencil_in(i_uij)=.true.
       if (lpencil_in(i_o2)) lpencil_in(i_oo)=.true.
@@ -1371,16 +1374,21 @@ module Hydro
 ! del2u
 ! graddivu
 !
-      if (lspherical_coords.or.lalways_use_gij_etc) then
-        if (headtt.or.ldebug) print*,'calc_pencils_hydro: call gij_etc'
-        call gij_etc(f,iuu,p%uu,p%uij,p%oij,GRADDIV=p%graddivu)
-        call curl_mn(p%oij,p%qq,p%oo)
-        if (lpencil(i_del2u)) p%del2u=p%graddivu-p%qq
+      if (.not.lcartesian_coords.or.lalways_use_gij_etc) then
+        if (lpencil(i_graddivu)) then 
+          if (headtt.or.ldebug) print*,'calc_pencils_hydro: call gij_etc'
+          call gij_etc(f,iuu,p%uu,p%uij,p%oij,GRADDIV=p%graddivu)
+        endif
+        if (lpencil(i_del2u)) then 
+          call curl_mn(p%oij,p%qq,p%oo)
+          p%del2u=p%graddivu-p%qq
+       endif
 !
 !   Avoid warnings from pencil consistency check...
+!   WL: WHY SHOULD WE WANT TO AVOID WARNINGS FROM THE PENCIL CHECK??
 !
-        if (.not. lpencil(i_uij)) p%uij=0.0
-        if (.not. lpencil(i_graddivu)) p%graddivu=0.0
+        !if (.not. lpencil(i_uij)) p%uij=0.0
+        !if (.not. lpencil(i_graddivu)) p%graddivu=0.0
       else
         if (lpencil(i_del2u)) then
           if (lpencil(i_graddivu)) then
@@ -1389,8 +1397,8 @@ module Hydro
              call del2v(f,iuu,p%del2u)
           endif
         else
+          if (lpencil(i_graddivu)) call del2v_etc(f,iuu,GRADDIV=p%graddivu)
         endif
-         if (lpencil(i_graddivu)) call del2v_etc(f,iuu,GRADDIV=p%graddivu)
       endif
 !
 ! grad5divu
