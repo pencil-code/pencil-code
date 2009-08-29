@@ -100,10 +100,6 @@ module Viscosity
       if (lroot) call svn_id( &
           "$Id$")
 !
-!  Default viscosity.
-!
-      if (nu/=0) ivisc(1)='nu-const'
-!
     endsubroutine register_viscosity
 !***********************************************************************
     subroutine initialize_viscosity(lstarting)
@@ -117,6 +113,10 @@ module Viscosity
       logical, intent(in) :: lstarting
 !
       integer :: i, ierr
+!
+!  Default viscosity.
+!
+      if (nu/=0.and.ivisc(1)=='') ivisc(1)='nu-const'
 !
 !  Some viscosity types need the rate-of-strain tensor and grad(lnrho)
 !
