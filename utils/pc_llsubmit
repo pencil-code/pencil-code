@@ -1,4 +1,4 @@
-#!/usr/bin/csh
+#!/bin/csh
 #
 # Name: pc_llsubmit
 # Author: Anders Johansen
@@ -70,8 +70,8 @@ if (! $?notify_user) set notify_user =
 echo "#\!/bin/sh" > pc_llsubmit.tmp
 echo "# @ job_name = $job_name" >> pc_llsubmit.tmp
 echo "# @ job_type = $job_type" >> pc_llsubmit.tmp
-if ($node!='') echo "# @ node = $node" >> pc_llsubmit.tmp
-if ($tasks_per_node!='') then
+if ($node != '') echo "# @ node = $node" >> pc_llsubmit.tmp
+if ($tasks_per_node != '') then
   if ($?tasks_per_node) then
     echo "# @ tasks_per_node = $tasks_per_node" >> pc_llsubmit.tmp
   else
@@ -79,7 +79,7 @@ if ($tasks_per_node!='') then
   endif
 endif
 echo "# @ wall_clock_limit = $wall_clock_limit" >> pc_llsubmit.tmp
-if ($networkMPI!='') echo "# @ network.MPI = $networkMPI" >> pc_llsubmit.tmp
+if ($networkMPI != '') echo "# @ network.MPI = $networkMPI" >> pc_llsubmit.tmp
 echo "# @ class = $class" >> pc_llsubmit.tmp
 echo "# @ environment = $environment" >> pc_llsubmit.tmp
 echo "# @ executable = $filename" >> pc_llsubmit.tmp
@@ -89,8 +89,8 @@ echo "# @ error =  $error" >> pc_llsubmit.tmp
 echo "# @ notification = $notification" >> pc_llsubmit.tmp
 echo "# @ notify_user = $notify_user" >> pc_llsubmit.tmp
 echo "# @ resources = $resources" >> pc_llsubmit.tmp
-echo "# @ bg_size = $bg_size" >> pc_llsubmit.tmp
-echo "# @ bg_connection = $bg_connection" >> pc_llsubmit.tmp
+if ($bg_size != '') echo "# @ bg_size = $bg_size" >> pc_llsubmit.tmp
+if ($bg_connection != '') echo "# @ bg_connection = $bg_connection" >> pc_llsubmit.tmp
 echo "# @ queue" >> pc_llsubmit.tmp
 echo "cd `pwd`" >> pc_llsubmit.tmp
 echo "./$filename" >> pc_llsubmit.tmp
