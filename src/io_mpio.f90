@@ -719,7 +719,7 @@ contains
 !
       use Mpicomm, only: lroot
 !
-      real :: tau
+      double precision :: tau
       character (len=*) :: file
       real :: t_sp   ! t in single precision for backwards compatibility
 !
@@ -739,7 +739,7 @@ contains
 !
       use Mpicomm, only: lroot
 !
-      real :: tau
+      double precision :: tau
       character (len=*) :: file
       real:: t_sp   ! t in single precision for backwards compatibility
 !
