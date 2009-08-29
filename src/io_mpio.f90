@@ -288,7 +288,7 @@ contains
 !
       if (ip<=8) print*,'input: mx,my,mz,nv=',mx,my,mz,nv
       if (.not. io_initialized) &
-           call stop_it("input: Need to call init_io first")
+           call stop_it("input: Need to call register_io first")
 !
       call commit_io_type_vect(nv)
 !
@@ -324,7 +324,7 @@ contains
 !
       if ((ip<=8) .and. lroot) print*,'output_vect: nv =', nv
       if (.not. io_initialized) &
-           call stop_it("output_vect: Need to call init_io first")
+           call stop_it("output_vect: Need to call register_io first")
 !
       call commit_io_type_vect(nv) ! will free old type if new one is needed
       !
@@ -363,7 +363,7 @@ contains
 
       if ((ip<=8) .and. lroot) print*,'output_scal: ENTER'
       if (.not. io_initialized) &
-           call stop_it("output_scal: Need to call init_io first")
+           call stop_it("output_scal: Need to call register_io first")
       if (nv /= 1) call stop_it("output_scal: called with scalar field, but nv/=1")
       !
       !  open file and set view (specify which file positions we can access)
