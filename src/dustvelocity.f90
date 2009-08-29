@@ -672,14 +672,16 @@ module Dustvelocity
 !  20-11-04/anders: coded
 !
       lpenc_requested(i_uud)=.true.
-      if (ladvection_dust) lpenc_requested(i_udgud)=.true.
+      if (ladvection_dust.and..not.ldustvelocity_shorttausd) &
+          lpenc_requested(i_udgud)=.true.
       if (ldustvelocity_shorttausd) then
         if (lgrav) lpenc_requested(i_gg)=.true.
         lpenc_requested(i_cs2)=.true.
         lpenc_requested(i_jxbr)=.true.
         lpenc_requested(i_glnrho)=.true.
       endif
-      if (ldragforce_dust) lpenc_requested(i_rhod)=.true.
+      if (ldragforce_dust.and..not.ldustvelocity_shorttausd) &
+          lpenc_requested(i_rhod)=.true.
       if (ldragforce_gas) lpenc_requested(i_rho1)=.true.
       if (ldragforce_dust) then
         lpenc_requested(i_uu)=.true.
