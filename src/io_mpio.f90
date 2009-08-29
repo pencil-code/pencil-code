@@ -721,6 +721,50 @@ contains
 !
     endsubroutine rgrid
 !***********************************************************************
+    subroutine wproc_bounds(file)
+!
+!   Export processor boundaries to file.
+!
+!   20-aug-09/bourdin: adapted
+!
+      use Cdata, only: procy_bounds,procz_bounds
+      use Mpicomm, only: stop_it_if_any
+!
+      character (len=*) :: file
+      logical :: ioerr=.true.
+!
+      if (lroot) then
+        open(20,FILE=file,FORM='unformatted',err=930)
+        write(20) procy_bounds
+        write(20) procz_bounds
+        close(20)
+      endif
+      ioerr=.false.
+
+930   call stop_it_if_any(ioerr, &
+          "Cannot open " // trim(file) // " (or similar) for writing" // &
+          " -- is data/ visible from all nodes?")
+
+    endsubroutine wproc_bounds 
+!***********************************************************************
+    subroutine rproc_bounds(file)
+!
+!   Import processor boundaries from file.
+!
+!   20-aug-09/bourdin: adapted
+!
+      use Cdata, only: procy_bounds,procz_bounds
+      use Mpicomm, only: stop_it_if_any
+!
+      character (len=*) :: file
+!
+      open(1,FILE=file,FORM='unformatted')
+      read(1) procy_bounds
+      read(1) procz_bounds
+      close(1)
+!
+    endsubroutine rproc_bounds
+!***********************************************************************
     subroutine wtime(file,tau)
 !
 !  Write t to file
