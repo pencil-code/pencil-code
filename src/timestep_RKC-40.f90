@@ -28,7 +28,7 @@ module Timestep
 
     private
 
-    public :: rk_2n, timestep_autopsy
+    public :: rk_2n
 
 contains
 
@@ -636,14 +636,6 @@ contains
 
 
     endsubroutine swap
-!***********************************************************************
-    subroutine timestep_autopsy()
-
-        use Messages
-
-        call not_implemented("timestep_autopsy", "just a dummy routine")
-
-    endsubroutine timestep_autopsy
 !***********************************************************************
 
 endmodule Timestep

@@ -634,7 +634,6 @@ program run
     if ((it < nt) .and. (dt < dtmin)) then
       if (lroot) &
           write(0,*) 'run: Time step has become too short: dt = ', dt
-      call timestep_autopsy()
       save_lastsnap=.false.
       exit Time_loop
     endif

@@ -9,7 +9,7 @@ module Timestep
 
   private
 
-  public :: rk_2n, border_profiles, timestep_autopsy
+  public :: rk_2n, border_profiles
 
   ! Parameters for adaptive time stepping
   real, parameter :: safety      =  0.9
@@ -273,30 +273,6 @@ module Timestep
       call mpiallreduce_max(errmaxs,errmax)
 
     endsubroutine rkck
-!***********************************************************************
-    subroutine timestep_autopsy
-!
-!  After the event, determine where the timestep too short occured
-!  Kinda like playing Cluedo... Just without the dice.
-!
-!  25-aug-04/tony: coded
-!
-      use Cdata
-      use Cparam
-      use Mpicomm, only: start_serialize, end_serialize
-
-      real :: dt_local, dt1_max_local, dt1_max_global
-      integer :: l
-      integer, dimension(1) :: turn
-
-      if (lroot) then
-        print*,"-------- General Description of Time Step Failure -----------"
-        print*,"  it=",it
-        print*,"  t=",t
-        print*,"  Detailed breakdown not available for Adaptive Runge--Kutta--Fehlberg scheme"
-      endif
-
-    endsubroutine timestep_autopsy
 !***********************************************************************
     subroutine border_profiles()
 !
