@@ -440,7 +440,7 @@ contains
 !
 !   10-jul-08/kapelrud: coded
 !
-      use Cdata
+      use Cdata, only: procx_bounds,procy_bounds,procz_bounds
       use Mpicomm, only: stop_it_if_any
 !
       character (len=*) :: file
@@ -465,7 +465,7 @@ contains
 !
 !   10-jul-08/kapelrud: coded
 !
-      use Cdata
+      use Cdata, only: procx_bounds,procy_bounds,procz_bounds
       use Mpicomm, only: stop_it_if_any
 !
       character (len=*) :: file
