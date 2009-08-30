@@ -93,7 +93,7 @@ module Density
       lnrho_const,plaw,lcontinuity_gas,borderlnrho,                 &
       diffrho_hyper3_aniso,lfreeze_lnrhosqu,density_floor,          &
       lanti_shockdiffusion,lrho_as_aux,ldiffusion_nolog,            &
-      lcheck_negative_density
+      lcheck_negative_density,lmassdiff_fix
 ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_rhom=0       ! DIAG_DOC: $\left<\varrho\right>$
                                 ! DIAG_DOC:   \quad(mean density)
