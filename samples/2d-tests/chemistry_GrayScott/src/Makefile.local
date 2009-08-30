@@ -10,4 +10,4 @@ EOS       = noeos
 ENTROPY   = noentropy
 VISCOSITY = noviscosity
 CHEMISTRY =   chemistry
-
+REAL_PRECISION=double
