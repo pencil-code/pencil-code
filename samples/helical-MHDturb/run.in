@@ -13,7 +13,7 @@
   random_gen='min_std'
   random_gen='nr_f90'  !(Use machine-indep numerical receipes random numbers)
   lpencil_check=T      !(checks for redundany of pencils)
-  comment_char='%'     !(useful when using matlab for visualization)
+ !comment_char='%'     !(useful when using matlab for visualization)
   lequatorz=T          !(to indicate that north/south diagnostics in in z)
 /
 &eos_run_pars
