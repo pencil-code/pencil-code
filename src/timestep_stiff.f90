@@ -99,8 +99,8 @@ module Timestep
       ldt=.false.
       dtnotok=.true.
 
-      if (itorder/=2) &
-        call fatal_error('rk_2n','itorder must be 2 for stiff solver')
+      if (itorder/=4) &
+        call fatal_error('rk_2n','itorder must be 4 for stiff solver')
 
 !
 !  dt_beta_ts may be needed in other modules (like Dustdensity) for fixed dt
