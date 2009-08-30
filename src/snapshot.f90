@@ -229,6 +229,7 @@ module Snapshot
         if (ou_spec)  call powerhel(a,'kin')
         if (ab_spec)  call powerhel(a,'mag')
         if (ub_spec)  call powerhel(a,'u.b')
+        if (EP_spec)  call powerhel(a,'bEP')
         if (ro_spec)  call powerscl(a,'ro')
         if (lr_spec)  call powerscl(a,'lr')
         if (TT_spec)  call powerscl(a,'TT')

@@ -1,6 +1,9 @@
 ! $Id$
 !
-!  Lorenz gauge, dphi/dt = -cphi2*divA
+!  Lorenz gauge, dphi/dt = -cphi2*divA, with possibility to add diffusion
+!  and advection terms. The difficulty is that first derivatives are
+!  applied twice during one loop in the calculation of gauge waves.
+!  This leads to wiggles that are difficult to damp.
 !
 !  25-feb-07/axel: adapted from nolorenz_gauge.f90
 !
@@ -184,7 +187,7 @@ module Lorenz_gauge
       type (pencil_case) :: p
 !
       real, dimension (nx,3) :: gphi
-      real, dimension (nx) :: phi,del2phi
+      real, dimension (nx) :: phi,del2phi,ugphi
 !
       intent(in) :: f,p
       intent(inout) :: df
@@ -192,19 +195,26 @@ module Lorenz_gauge
 !  identify module and boundary conditions
 !
       if (headtt.or.ldebug) print*,'dlorenz_gauge_dt: SOLVE dLORENZ_GAUGE_dt'
-!!      if (headtt) call identify_bcs('ss',iss)
 !
 !  solve gauge condition
 !
       if (lmagnetic) then
         call grad(f,iphi,gphi)
+        df(l1:l2,m,n,iphi)=df(l1:l2,m,n,iphi)-cphi2*p%diva
+!
+!  possibility of diffusion term
+!
         if (etaphi/=0.) then
           call del2(f,iphi,del2phi)
-          df(l1:l2,m,n,iphi)=df(l1:l2,m,n,iphi)-cphi2*p%diva+etaphi*del2phi
-        else
-          df(l1:l2,m,n,iphi)=df(l1:l2,m,n,iphi)-cphi2*p%diva
+          df(l1:l2,m,n,iphi)=df(l1:l2,m,n,iphi)+etaphi*del2phi
         endif
-        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-gphi
+!
+!  possibility of adding advection term
+!
+        if (ladvect_phi) then
+          call dot(p%uu,gphi,ugphi)
+          df(l1:l2,m,n,iphi)=df(l1:l2,m,n,iphi)-ugphi
+        endif
       endif
 !
 !  diagnostics

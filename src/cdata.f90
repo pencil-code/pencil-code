@@ -378,6 +378,7 @@ module Cdata
 !
   logical :: vel_spec=.false.,mag_spec=.false.,uxj_spec=.false.,vec_spec=.false.
   logical :: vel_phispec=.false.,mag_phispec=.false.,uxj_phispec=.false.,vec_phispec=.false.
+  logical :: EP_spec=.false.
   logical :: ro_spec=.false.,TT_spec=.false.,ss_spec=.false.,cc_spec=.false.,cr_spec=.false.
   logical :: lr_spec=.false.,r2u_spec=.false.,r3u_spec=.false.
   logical :: ou_spec=.false.,ab_spec=.false.,ub_spec=.false.

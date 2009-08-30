@@ -100,6 +100,7 @@ module Param_IO
        dtmax, &
        vel_spec,mag_spec,uxj_spec,vec_spec,ou_spec,ab_spec,ub_spec, &
        vel_phispec,mag_phispec,uxj_phispec,vec_phispec,ou_phispec,ab_phispec, &
+       EP_spec, &
        ro_spec,TT_spec,ss_spec,cc_spec,cr_spec,isaveglobal, &
        lr_spec,r2u_spec,r3u_spec, &
        rhocc_pdf,cc_pdf,lncc_pdf,gcc_pdf,lngcc_pdf, &

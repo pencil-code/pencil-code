@@ -238,15 +238,22 @@ module  power_spectrum
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
   real, dimension(nx) :: bbi,jji
+  real, dimension(nx,3) :: bbEP
   real, dimension(nk) :: spectrum=0.,spectrum_sum=0
   real, dimension(nk) :: spectrumhel=0.,spectrumhel_sum=0
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
   character (len=3) :: sp
-  !
-  !  identify version
-  !
+!
+!  passive scalar contributions (hardwired for now)
+!
+  integer :: itmp1=8,itmp2=9
+  real, dimension(nx) :: tmp1,tmp2
+  real, dimension(nx,3) :: gtmp1,gtmp2
+!
+!  identify version
+!
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
   !
@@ -302,6 +309,22 @@ module  power_spectrum
           im=m-nghost
           in=n-nghost
           b_re(:,im,in)=bbi  !(this corresponds to magnetic field)
+        enddo
+      enddo
+      a_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)  !(this corresponds to velocity)
+      a_im=0.
+      b_im=0.
+    elseif (sp=='bEP') then
+      do n=n1,n2
+        do m=m1,m2
+          call grad(f,itmp1,gtmp1)
+          call grad(f,itmp2,gtmp2)
+          gtmp1(:,2)=gtmp1(:,2)+1.
+          gtmp2(:,3)=gtmp2(:,3)+1.
+          call cross(gtmp1,gtmp2,bbEP)
+          im=m-nghost
+          in=n-nghost
+          b_re(:,im,in)=bbEP(:,ivec)  !(this corresponds to magnetic field)
         enddo
       enddo
       a_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)  !(this corresponds to velocity)

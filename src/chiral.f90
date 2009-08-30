@@ -385,8 +385,11 @@ module Chiral
               call sum_mn_name(jjEP2,idiag_jrmsEP,lsqrt=.true.)
           if (idiag_jmaxEP/=0) &
               call max_mn_name(jjEP2,idiag_jmaxEP,lsqrt=.true.)
+!
+!  For J.B, we need B, but only if not already calculated.
+!
           if (idiag_jbmEP/=0) then
-            if (idiag_brmsEP==0.and.idiag_bmaxEP==0) then
+            if (idiag_brmsEP/=0.or.idiag_bmaxEP/=0) then
               call cross(gXX_chiral,gYY_chiral,bbEP)
             endif
             call dot(jjEP,bbEP,jbEP)
