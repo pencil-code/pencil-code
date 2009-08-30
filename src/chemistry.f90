@@ -2987,8 +2987,8 @@ module Chemistry
       close(file_id)
 !
       if (lroot) then
-        print*,'Write pc_constants.pro in chemistiry.f90'
-        open (143,file=trim(datadir)//'/pc_constants.pro',position="append")
+        print*,'Write pc_constants.pro in chemistry.f90'
+        open (143,FILE=trim(datadir)//'/pc_constants.pro',POSITION="append")
         write (143,*) 'specname=strarr(',nchemspec,')'
         write (143,*) 'specmass=fltarr(',nchemspec,')'
         do k=1,nchemspec
