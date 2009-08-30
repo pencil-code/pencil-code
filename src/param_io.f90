@@ -1122,14 +1122,12 @@ module Param_IO
 !  21-jan-02/wolf: coded
 !
       open(1,FILE=trim(datadir)//'/param.nml')
-      read(1,NML=init_pars             )
-      open(1,FILE=trim(datadir)//'/param.nml')
+      read(1,NML=init_pars)
       call read_eos_init_pars(1)
       call read_hydro_init_pars(1)
       call read_density_init_pars(1)
       call read_forcing_init_pars(1)
       call read_gravity_init_pars(1)
-      open(1,FILE=trim(datadir)//'/param.nml')
       call read_selfgravity_init_pars(1)
       call read_poisson_init_pars(1)
       call read_entropy_init_pars(1)
@@ -1172,7 +1170,7 @@ module Param_IO
 !
       if (lroot) then
         open(1,FILE=trim(datadir)//'/param2.nml',DELIM='apostrophe')
-                           write(1,NML=run_pars             )
+        write(1,NML=run_pars)
         call write_eos_run_pars(1)
         call write_hydro_run_pars(1)
         call write_density_run_pars(1)
