@@ -2000,23 +2000,23 @@ module Chemistry
                              idiag_lambdam)
         if (idiag_num/=0) call sum_mn_name(nu_full(l1:l2,m,n),&
                              idiag_num)
-        if (idiag_diff1m/=0) call sum_mn_name(diff_full(l1:l2,m,n,1),&
+        if (idiag_diff1m/=0) call sum_mn_name(diff_full(l1:l2,m,n,i1),&
                              idiag_diff1m)
-        if (idiag_diff2m/=0) call sum_mn_name(diff_full(l1:l2,m,n,2),&
+        if (idiag_diff2m/=0) call sum_mn_name(diff_full(l1:l2,m,n,i2),&
                              idiag_diff2m)
-        if (idiag_diff3m/=0) call sum_mn_name(diff_full(l1:l2,m,n,3),&
+        if (idiag_diff3m/=0) call sum_mn_name(diff_full(l1:l2,m,n,i3),&
                              idiag_diff3m)
-        if (idiag_diff4m/=0) call sum_mn_name(diff_full(l1:l2,m,n,4),&
+        if (idiag_diff4m/=0) call sum_mn_name(diff_full(l1:l2,m,n,i4),&
                              idiag_diff4m)
-        if (idiag_diff5m/=0) call sum_mn_name(diff_full(l1:l2,m,n,5),&
+        if (idiag_diff5m/=0) call sum_mn_name(diff_full(l1:l2,m,n,i5),&
                              idiag_diff5m)
-        if (idiag_diff6m/=0) call sum_mn_name(diff_full(l1:l2,m,n,6),&
+        if (idiag_diff6m/=0) call sum_mn_name(diff_full(l1:l2,m,n,i6),&
                              idiag_diff6m)
-        if (idiag_diff7m/=0) call sum_mn_name(diff_full(l1:l2,m,n,7),&
+        if (idiag_diff7m/=0) call sum_mn_name(diff_full(l1:l2,m,n,i7),&
                              idiag_diff7m)
-        if (idiag_diff8m/=0) call sum_mn_name(diff_full(l1:l2,m,n,8),&
+        if (idiag_diff8m/=0) call sum_mn_name(diff_full(l1:l2,m,n,i8),&
                              idiag_diff8m)
-        if (idiag_diff9m/=0) call sum_mn_name(diff_full(l1:l2,m,n,9),&
+        if (idiag_diff9m/=0) call sum_mn_name(diff_full(l1:l2,m,n,i9),&
                              idiag_diff9m)
 !
       endif
