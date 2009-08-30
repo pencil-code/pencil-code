@@ -251,6 +251,7 @@ module  power_spectrum
   integer :: itmp1=8,itmp2=9
   real, dimension(nx) :: tmp1,tmp2
   real, dimension(nx,3) :: gtmp1,gtmp2
+  real :: BextEP=.1 !(hard-wired for now/Axel)
 !
 !  identify version
 !
@@ -319,7 +320,7 @@ module  power_spectrum
         do m=m1,m2
           call grad(f,itmp1,gtmp1)
           call grad(f,itmp2,gtmp2)
-          gtmp1(:,2)=gtmp1(:,2)+1.
+          gtmp1(:,2)=gtmp1(:,2)+BextEP
           gtmp2(:,3)=gtmp2(:,3)+1.
           call cross(gtmp1,gtmp2,bbEP)
           im=m-nghost

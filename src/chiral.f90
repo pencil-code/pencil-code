@@ -25,6 +25,7 @@ module Chiral
 !
   integer :: iXX_chiral=0,iYY_chiral=0
   character (len=labellen) :: initXX_chiral='zero',initYY_chiral='zero'
+  logical :: llorentzforceEP=.false.
   logical :: linitialize_aa_from_EP=.false.
   logical :: linitialize_aa_from_EP_alpgrad=.false.
   logical :: linitialize_aa_from_EP_betgrad=.false.
@@ -52,6 +53,7 @@ module Chiral
   namelist /chiral_run_pars/ &
        chiral_diff,chiral_crossinhibition,chiral_fidelity, &
        chiral_reaction,limposed_gradient,gradX0,gradY0, &
+       llorentzforceEP, &
        linitialize_aa_from_EP,tinitialize_aa_from_EP, &
        linitialize_aa_from_EP_alpgrad,linitialize_aa_from_EP_betgrad
 !
@@ -177,6 +179,7 @@ module Chiral
 !  21-nov-04/anders: coded
 !
       lpenc_requested(i_uu)=.true.
+      if (llorentzforceEP) lpenc_requested(i_rho1)=.true.
 !
     endsubroutine pencil_criteria_chiral
 !***********************************************************************
@@ -227,7 +230,7 @@ module Chiral
       type (pencil_case) :: p
 
       real, dimension (nx,3,3) :: gXXij_chiral,gYYij_chiral
-      real, dimension (nx,3) :: gXX_chiral,gYY_chiral,bbEP,jjEP
+      real, dimension (nx,3) :: gXX_chiral,gYY_chiral,bbEP,jjEP,jxbEP
       real, dimension (nx) :: bbEP2,jjEP2,jbEP
       real, dimension (nx) :: XX_chiral,ugXX_chiral,del2XX_chiral,dXX_chiral
       real, dimension (nx) :: YY_chiral,ugYY_chiral,del2YY_chiral,dYY_chiral
@@ -276,6 +279,19 @@ module Chiral
       call del2(f,iYY_chiral,del2YY_chiral)
       df(l1:l2,m,n,iXX_chiral)=df(l1:l2,m,n,iXX_chiral)+chiral_diff*del2XX_chiral
       df(l1:l2,m,n,iYY_chiral)=df(l1:l2,m,n,iYY_chiral)+chiral_diff*del2YY_chiral
+!
+!  For Euler Potentials, possibility to add Lorentz force 
+!
+      if (llorentzforceEP) then
+        if (lhydro) then
+          call cross(gXX_chiral,gYY_chiral,bbEP)
+          jjEP(:,j)=gXX_chiral(:,j)*del2YY_chiral &
+                   -gYY_chiral(:,j)*del2XX_chiral
+          call cross(jjEP,bbEP,jxbEP)
+          if (ldensity) call multsv_mn(p%rho1,jxbEP,jxbEP)
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+jxbEP
+        endif
+      endif
 !
 !  selection of different reaction terms
 !
