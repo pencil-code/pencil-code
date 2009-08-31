@@ -86,7 +86,7 @@ nprocx=0L & nprocy=0L & nprocz=0L
 ;
 pc_set_precision, datadir=datadir
 ;
-pc_read_dim, obj=dim, datadir=datadir
+pc_read_dim, obj=dim, datadir=datadir, proc=proc, /quiet
 nx=dim.nx & ny=dim.ny & nz=dim.nz
 mx=dim.mx & my=dim.my & mz=dim.mz
 nghostx=dim.nghostx & nghosty=dim.nghosty & nghostz=dim.nghostz
@@ -95,7 +95,7 @@ ncpus=nprocx*nprocy*nprocz
 ;
 ;  Read grid data.
 ;
-pc_read_grid, obj=grid, swap_endian=swap_endian
+pc_read_grid, obj=grid, proc=proc, swap_endian=swap_endian, /quiet
 x=grid.x(dim.l1:dim.l2) & y=grid.y(dim.m1:dim.m2) & z=grid.z(dim.n1:dim.n2)
 ;
 ;  Set reasonable extension for 2-D runs.
