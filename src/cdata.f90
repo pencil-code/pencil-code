@@ -495,6 +495,7 @@ module Cdata
   character (len=40) :: kinflow=''
   logical :: lkinflow_as_aux
   real :: eps_kinflow=0., omega_kinflow=0., ampl_kinflow=1.
+  real :: ampl_kinflow_x=0., ampl_kinflow_y=0., ampl_kinflow_z=0.
   real :: kx_kinflow=1., ky_kinflow=1., kz_kinflow=1.
   real :: dtphase_kinflow=0.
 !

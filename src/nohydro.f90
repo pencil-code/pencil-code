@@ -241,6 +241,16 @@ module Hydro
           p%uu(:,3)=0.
         endif
         if (lpencil(i_divu)) p%divu=0.
+!  Begin with a constant flow in the (ampl_kinflow_x,ampl_kinflow_y,ampl_kinflow_z) direction.
+!
+      elseif (kinflow=='const-xyz') then
+        if (lpencil(i_uu)) then
+          if (headtt) print*,'const-xyz'
+          p%uu(:,1)=ampl_kinflow_x*cos(omega_kinflow*t)*exp(eps_kinflow*t)
+          p%uu(:,2)=ampl_kinflow_y*cos(omega_kinflow*t)*exp(eps_kinflow*t)
+          p%uu(:,3)=ampl_kinflow_z*cos(omega_kinflow*t)*exp(eps_kinflow*t)
+        endif
+        if (lpencil(i_divu)) p%divu=0.
 !
 !  choose from a list of different flow profiles
 !  ABC-flow
