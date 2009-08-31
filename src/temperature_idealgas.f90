@@ -1420,9 +1420,9 @@ module Entropy
       integer :: i,j
       real, dimension(mx,my,mz,mfarray) :: finit,f
       real, dimension(nx,nz) :: finter, source, rho, TT
-      real, dimension(nz,nx) :: rhst, rhot, sourcet, wtmp
-      real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
-      real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
+      real, dimension(nzgrid,nx/nprocz) :: rhst, rhot, sourcet, wtmp
+      real, dimension(nx)     :: ax, bx, cx, wx, rhsx, workx
+      real, dimension(nzgrid) :: az, bz, cz, wz, rhsz, workz
       real    :: alpha, aalpha, bbeta, cp1, dx_2, dz_2
 !
       TT=finit(l1:l2,4,n1:n2,ilnTT)
@@ -1473,26 +1473,26 @@ module Entropy
 !
 !  columns dealt implicitly
 !
-      do i=1,nx
+      do i=1,nx/nprocz
         wz=dt*gamma*hcond0*cp1/rhot(:,i)
         az=-wz*dz_2/2.
         bz=1.+wz*dz_2
         cz=az
 !
         if (i==1) then
-          !finter(1:l1-1,:)=finter(l2i:l2,:)
+          !f(:,i-1)=f(:,nx)
+          rhsz=rhst(:,i)+wz*dx_2/2.*                        &
+              (rhst(:,i+1)-2.*rhst(:,i)+rhst(:,nx/nprocz))  &
+              +dt/2.*sourcet(:,i)
+        elseif (i==nx/nprocz) then
+          !f(:,i+1)=f(:,1)
           rhsz=rhst(:,i)+wz*dx_2/2.*                   &
-             (rhst(:,i+1)-2.*rhst(:,i)+rhst(:,nx))     &
-             +dt/2.*sourcet(:,i)
-        elseif (i==nx) then
-          !finter(l2+1:mx,:)=finter(l1:l1i,:)
-          rhsz=rhst(:,i)+wz*dx_2/2.*                   &
-             (rhst(:,1)-2.*rhst(:,i)+rhst(:,i-1))      &
-             +dt/2.*sourcet(:,i)
+              (rhst(:,1)-2.*rhst(:,i)+rhst(:,i-1))     &
+              +dt/2.*sourcet(:,i)
         else
           rhsz=rhst(:,i)+wz*dx_2/2.*                   &
-             (rhst(:,i+1)-2.*rhst(:,i)+rhst(:,i-1))    &
-             +dt/2.*sourcet(:,i)
+              (rhst(:,i+1)-2.*rhst(:,i)+rhst(:,i-1))   &
+              +dt/2.*sourcet(:,i)
         endif
 !
 ! z boundary conditions
@@ -1513,7 +1513,7 @@ module Entropy
          call fatal_error('ADI_Kconst','bcz on TT must be cT or c1')
       endselect
 !
-        call tridag(az,bz,cz,rhsz,workz)
+        call tridag(az, bz, cz, rhsz, workz)
         wtmp(:,i)=workz
       enddo
       call transp_zx(wtmp, f(l1:l2,4,n1:n2,ilnTT))
