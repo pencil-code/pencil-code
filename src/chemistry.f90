@@ -3574,8 +3574,8 @@ module Chemistry
       do j3=nn1,nn2
       do j2=mm1,mm2
       do j1=ll1,ll2
-        prefactor(j1,j2,j3)=tmp_local*(TT_full(j1,j2,j3)**3)**0.5*unit_length**3&
-            /(pp_full(j1,j2,j3))
+        prefactor(j1,j2,j3)=tmp_local*(TT_full(j1,j2,j3))**0.5*unit_length**3&
+            /(Rgas_unit_sys*rho_full(j1,j2,j3)*mu1_full(j1,j2,j3))
       enddo
       enddo
       enddo
