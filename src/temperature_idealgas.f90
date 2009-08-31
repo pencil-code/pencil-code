@@ -1482,14 +1482,12 @@ module Entropy
         if (i==1) then
           !finter(1:l1-1,:)=finter(l2i:l2,:)
           rhsz=rhst(:,i)+wz*dx_2/2.*                   &
-             (rhst(:,i+1)-2.*rhst(:,i)                 &
-             +rhst(:,nx))                              &
+             (rhst(:,i+1)-2.*rhst(:,i)+rhst(:,nx))     &
              +dt/2.*sourcet(:,i)
         elseif (i==nx) then
           !finter(l2+1:mx,:)=finter(l1:l1i,:)
           rhsz=rhst(:,i)+wz*dx_2/2.*                   &
-             (rhst(:,1)                                &
-             -2.*rhst(:,i)+rhst(:,i-1))                &
+             (rhst(:,1)-2.*rhst(:,i)+rhst(:,i-1))      &
              +dt/2.*sourcet(:,i)
         else
           rhsz=rhst(:,i)+wz*dx_2/2.*                   &
