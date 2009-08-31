@@ -1445,12 +1445,10 @@ module Entropy
 !
         if (j==1) then
           if (bcz1(ilnTT)=='cT') then
-            !constant temperature: f(j-1)=2*f(j)-f(j+1)
-            rhsx=TT(:,j)+wx*dz_2/2.*                           &
-                (TT(:,j+1)-2.*TT(:,j)+2.*TT(:,j)-TT(:,j+1))    &
-                +dt/2.*source(:,j)
+            !constant temperature: T(j-1)=2*T(j)-T(j+1)
+            rhsx=TT(:,j)+dt/2.*source(:,j)
           else
-            !imposed flux: f(j-1)=f(j+1)-2*dz*tmp_flux with tmp_flux=-Fbot/hcond0
+            !imposed flux: T(j-1)=T(j+1)-2*dz*tmp_flux with tmp_flux=-Fbot/hcond0
             Fbot=-gamma/(gamma-1.)*hcond0*gravz/(mpoly0+1.)
             tmp_flux=-Fbot/hcond0
             rhsx=TT(:,j)+wx*dz_2/2.*                            &
@@ -1458,10 +1456,8 @@ module Entropy
                 +dt/2.*source(:,j)
           endif
         elseif (j==nz) then
-          !constant temperature: f(j+1)=2*f(j)-f(j-1)
-          rhsx=TT(:,j)+wx*dz_2/2.*                         &
-              (2*TT(:,j)-TT(:,j-1)-2.*TT(:,j)+TT(:,j-1))   &
-               +dt/2.*source(:,j)
+          !constant temperature: T(j+1)=2*T(j)-T(j-1)
+          rhsx=TT(:,j)+dt/2.*source(:,j)
         else
           rhsx=TT(:,j)+wx*dz_2/2.*                         &
               (TT(:,j+1)-2.*TT(:,j)+TT(:,j-1))             &
@@ -1471,7 +1467,7 @@ module Entropy
 ! x boundary conditions: periodic
 !
         aalpha=cx(nx) ; bbeta=ax(1)
-        call cyclic(ax,bx,cx,aalpha,bbeta,rhsx,workx,nx)
+        call cyclic(ax, bx, cx, aalpha, bbeta, rhsx, workx, nx)
         finter(:,j)=workx
       enddo
 !
