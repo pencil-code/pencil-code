@@ -1413,17 +1413,16 @@ module Entropy
       use Cparam
       use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, get_cp1
       use General, only: tridag
-      use Mpicomm, only: transp_xz, transp_zx
+      use Gravity, only: gravz
 
       implicit none
 
       integer :: i,j
       real, dimension(mx,my,mz,mfarray) :: finit,f
       real, dimension(nx,nz) :: finter, source, rho, TT
-      real, dimension(nzgrid,nx/nprocz) :: rhst, rhot, sourcet, wtmp
-      real, dimension(nx)     :: ax, bx, cx, wx, rhsx, workx
-      real, dimension(nzgrid) :: az, bz, cz, wz, rhsz, workz
-      real    :: alpha, aalpha, bbeta, cp1, dx_2, dz_2
+      real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
+      real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
+      real    :: alpha, aalpha, bbeta, cp1, dx_2, dz_2, Fbot, tmp_flux
 !
       TT=finit(l1:l2,4,n1:n2,ilnTT)
       source=(f(l1:l2,4,n1:n2,ilnTT)-TT)/dt
@@ -1445,12 +1444,21 @@ module Entropy
         cx=ax
 !
         if (j==1) then
-          !f_2d(:,n1-1)=2.*f_2d(:,n1)-f_2d(:,n1+1)
-          rhsx=TT(:,j)+wx*dz_2/2.*                         &
-              (TT(:,j+1)-2.*TT(:,j)+2.*TT(:,j)-TT(:,j+1))  &
-               +dt/2.*source(:,j)
+          if (bcz1(ilnTT)=='cT') then
+            !constant temperature: f(j-1)=2*f(j)-f(j+1)
+            rhsx=TT(:,j)+wx*dz_2/2.*                           &
+                (TT(:,j+1)-2.*TT(:,j)+2.*TT(:,j)-TT(:,j+1))    &
+                +dt/2.*source(:,j)
+          else
+            !imposed flux: f(j-1)=f(j+1)-2*dz*tmp_flux with tmp_flux=-Fbot/hcond0
+            Fbot=-gamma/(gamma-1.)*hcond0*gravz/(mpoly0+1.)
+            tmp_flux=-Fbot/hcond0
+            rhsx=TT(:,j)+wx*dz_2/2.*                            &
+                (TT(:,j+1)-2.*TT(:,j)+TT(:,j+1)-2.*dz*tmp_flux) &
+                +dt/2.*source(:,j)
+          endif
         elseif (j==nz) then
-          !f_2d(:,n2+1)=2.*f_2d(:,n2)-f_2d(:,n2-1)
+          !constant temperature: f(j+1)=2*f(j)-f(j-1)
           rhsx=TT(:,j)+wx*dz_2/2.*                         &
               (2*TT(:,j)-TT(:,j-1)-2.*TT(:,j)+TT(:,j-1))   &
                +dt/2.*source(:,j)
@@ -1461,62 +1469,61 @@ module Entropy
         endif
 !
 ! x boundary conditions: periodic
-        aalpha=cx(nx) ; bbeta=ax(1)
 !
+        aalpha=cx(nx) ; bbeta=ax(1)
         call cyclic(ax,bx,cx,aalpha,bbeta,rhsx,workx,nx)
         finter(:,j)=workx
       enddo
-
-      call transp_xz(finter, rhst)
-      call transp_xz(rho, rhot)
-      call transp_xz(source, sourcet)
 !
 !  columns dealt implicitly
 !
-      do i=1,nx/nprocz
-        wz=dt*gamma*hcond0*cp1/rhot(:,i)
+      do i=1,nx
+        wz=dt*gamma*hcond0*cp1/rho(i,:)
         az=-wz*dz_2/2.
         bz=1.+wz*dz_2
         cz=az
 !
         if (i==1) then
-          !f(:,i-1)=f(:,nx)
-          rhsz=rhst(:,i)+wz*dx_2/2.*                        &
-              (rhst(:,i+1)-2.*rhst(:,i)+rhst(:,nx/nprocz))  &
-              +dt/2.*sourcet(:,i)
-        elseif (i==nx/nprocz) then
-          !f(:,i+1)=f(:,1)
-          rhsz=rhst(:,i)+wz*dx_2/2.*                   &
-              (rhst(:,1)-2.*rhst(:,i)+rhst(:,i-1))     &
-              +dt/2.*sourcet(:,i)
+          rhsz=finter(i,:)+wz*dx_2/2.*                       &
+              (finter(i+1,:)-2.*finter(i,:)+finter(nx,:))    &
+              +dt/2.*source(i,:)
+        elseif (i==nx) then
+          rhsz=finter(i,:)+wz*dx_2/2.*                       &
+              (finter(1,:)-2.*finter(i,:)+finter(i-1,:))     &
+              +dt/2.*source(i,:)
         else
-          rhsz=rhst(:,i)+wz*dx_2/2.*                   &
-              (rhst(:,i+1)-2.*rhst(:,i)+rhst(:,i-1))   &
-              +dt/2.*sourcet(:,i)
+          rhsz=finter(i,:)+wz*dx_2/2.*                       &
+              (finter(i+1,:)-2.*finter(i,:)+finter(i-1,:))   &
+              +dt/2.*source(i,:)
         endif
-!
-! z boundary conditions
-! Constant temperature at the top
+        !
+        ! z boundary conditions
+        ! Always constant temperature at the top
+        !
         bz(nz)=1. ; az(nz)=0.
         rhsz(nz)=cs2top/gamma_m1
-! bottom
-      select case (bcz1(ilnTT))
-! Constant temperature at the bottom
-        case('cT')
-         bz(1)=1.  ; cz(1)=0. 
-         rhsz(1)=cs2bot/gamma_m1
-! Constant flux at the bottom
-        case('c1')
-         bz(1)=1.   ; cz(1)=-1
-         rhsz(1)=dz*Fbot/hcond0
-        case default 
-         call fatal_error('ADI_Kconst','bcz on TT must be cT or c1')
-      endselect
+        select case (bcz1(ilnTT))
+          ! Constant temperature at the bottom
+          case('cT')
+            bz(1)=1.  ; cz(1)=0. 
+            rhsz(1)=cs2bot/gamma_m1
+          ! Constant flux at the bottom
+          case('c1')
+!           bz(1)=1.   ; cz(1)=-1
+!           rhsz(1)=dz*Fbot/hcond0
+! we can use here the second-order relation for the first derivative: 
+! (T_{j+1}-T_{j_1})/2dz = dT/dz --> T_{j-1} = T_{j+1} - 2*dz*dT/dz 
+! and insert this expression in the difference relation to eliminate T_{j-1}:
+! a_{j-1}*T_{j-1} + b_j T_j + c_{j+1}*T_{j+1} = RHS
+            cz(1)=cz(1)+az(1)
+            rhsz(1)=rhsz(1)-2.*az(1)*dz*Fbot/hcond0
+          case default 
+           call fatal_error('ADI_Kconst','bcz on TT must be cT or c1')
+        endselect
 !
         call tridag(az, bz, cz, rhsz, workz)
-        wtmp(:,i)=workz
+        f(i+nghost,4,n1:n2,ilnTT)=workz
       enddo
-      call transp_zx(wtmp, f(l1:l2,4,n1:n2,ilnTT))
 !
     endsubroutine ADI_Kconst
 !***********************************************************************
