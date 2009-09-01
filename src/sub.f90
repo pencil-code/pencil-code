@@ -2899,14 +2899,13 @@ module Sub
 !***********************************************************************
     subroutine update_snaptime(file,tout,nout,dtout,t,lout,ch,enum)
 !
-      use General, only: chn
-!
 !  Check whether we need to write snapshot; if so, update the snapshot
-!  file (e.g. tsnap.dat).
-!  Done by all processors
+!  file (e.g. tsnap.dat). Done by all processors.
 !
 !  30-sep-97/axel: coded
 !  24-aug-99/axel: allow for logarithmic spacing
+!
+      use General, only: chn
 !
       character (len=*) :: file
       character (len=5) :: ch
@@ -2916,23 +2915,22 @@ module Sub
       real :: tout,dtout
       integer :: lun,nout
 !
-!  use t_sp as a shorthand for either t or lg(t)
+!  Use t_sp as a shorthand for either t or lg(t).
 !
-      if (dtout.lt.0.) then
-        t_sp = log10(t)
+      if (dtout<0.0) then
+        t_sp=log10(t)
       else
-        t_sp = t
+        t_sp=t
       endif
 !
-!  if enum=.false. we don't want to generate a running file number
-!  (eg in wvid)
-!  if enum=.true. we do want to generate character from nout for file name
-!  do this before nout has been updated to new value
+!  If enum=.false. we don't want to generate a running file number (eg in wvid).
+!  If enum=.true. we do want to generate character from nout for file name do
+!  this before nout has been updated to new value.
 !
       if (enum) call chn(nout,ch,'update_snaptime: '//trim(file))
 !
-!  Mark lout=.true. when time has exceeded the value of tout
-!  do while loop to make make sure tt is always larger than tout.
+!  Mark lout=.true. when time has exceeded the value of tout do while loop to
+!  make make sure tt is always larger than tout.
 !  (otherwise slices are written just to catch up with tt.)
 !
       if (t_sp >= tout) then
@@ -2940,19 +2938,21 @@ module Sub
         nout=nout+1
         lout=.true.
 !
-!  write corresponding value of tout to file
-!  to make sure we have it, in case the code craches
-!  if the disk is full, however, we need to reset the values manually
+!  Write corresponding value of tout to file to make sure we have it, in case
+!  the code craches. If the disk is full, however, we need to reset the values
+!  manually.
 !
-        lun=1
-        open(lun,FILE=trim(file))
-        write(lun,*) tout,nout
-        write(lun,*) 'This file is written automatically (routine'
-        write(lun,*) 'check_snaptime in sub.f90). The values above give'
-        write(lun,*) 'time and number of the *next* snapshot. These values'
-        write(lun,*) 'are only read once in the beginning. You may adapt'
-        write(lun,*) 'them by hand (eg after a crash).'
-        close(lun)
+        if (lroot) then
+          lun=1
+          open(lun,FILE=trim(file))
+          write(lun,*) tout,nout
+          write(lun,*) 'This file is written automatically (routine'
+          write(lun,*) 'check_snaptime in sub.f90). The values above give'
+          write(lun,*) 'time and number of the *next* snapshot. These values'
+          write(lun,*) 'are only read once in the beginning. You may adapt'
+          write(lun,*) 'them by hand (eg after a crash).'
+          close(lun)
+        endif
       else
         lout=.false.
       endif
