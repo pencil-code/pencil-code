@@ -60,7 +60,7 @@ module EquationOfState
 
   real :: cs0=1., rho0=1.
   real :: cs20=1., lnrho0=0.
-  real :: ptlaw=3./4.
+  real :: ptlaw=0.
   real :: gamma=5./3.
   real :: Rgas_cgs=0., Rgas, error_cp=1e-6
   real :: gamma_m1    !(=gamma-1)
