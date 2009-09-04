@@ -132,15 +132,12 @@ module Entropy
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx)   :: hcond,dhcond
       logical :: lstarting, lnothing
-      type (pencil_case) :: p
-      integer :: i
 !
       if (.not. leos) then
          call fatal_error('initialize_entropy','EOS=noeos but temperature_TT requires an EQUATION OF STATE for the fluid')
       endif
 !
       call select_eos_variable('TT',ilnTT)
-      pretend_TT=.true.
 !
 !  Check whether we want heat conduction
 !
@@ -213,7 +210,9 @@ module Entropy
         if (hcond0 /= impossible) call warning('initialize_entropy', 'No heat conduction, but hcond0 /= 0')
         if (chi /= impossible) call warning('initialize_entropy', 'No heat conduction, but chi /= 0')
       endif
-
+!
+      call keep_compiler_quiet(lstarting)
+!
     endsubroutine initialize_entropy
 !***********************************************************************
     subroutine init_ss(f)
@@ -233,6 +232,7 @@ module Entropy
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       logical :: lnothing=.true.
+      integer :: j
 !
       do j=1,ninit
 !
@@ -421,7 +421,6 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension(nx) :: Hmax=0.
-      integer :: j,ju
 !
       intent(inout) :: f,p
       intent(out) :: df
@@ -529,7 +528,6 @@ module Entropy
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mz) :: temp,lnrho
-      type (pencil_case) :: p
       real :: arg,hcond,dtemp,dlnrho
       real :: alp,sig,ecart
       integer :: i
@@ -651,7 +649,7 @@ module Entropy
 
       real, dimension(mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension(nx) :: arg,hcond,chiT,g1,g2,chix
+      real, dimension(nx) :: arg,hcond,chiT,g2,chix
       real, dimension (nx,3) :: glnhcond=0.
       real :: alp,sig,ecart
 !
@@ -869,7 +867,7 @@ module Entropy
       real, dimension(mx,mz) :: finter,source,rho
       real, dimension(nx)    :: a,b,c
       real, dimension(nz)    :: rhs,work
-      real    :: alpha, aalpha, bbeta
+      real    :: aalpha, bbeta
 !
       source=(f(:,4,:,ilnTT)-finit(:,4,:,ilnTT))/dt
       rho=exp(f(:,4,:,ilnrho))
@@ -936,7 +934,7 @@ module Entropy
       implicit none
 
       integer :: i,j
-      real    :: alpha, aalpha, bbeta
+      real    :: aalpha, bbeta
       real, dimension(mx,my,mz,mfarray) :: finit,f
       real, dimension(mx,mz) :: source,rho,chiprof,dchi,valinter,val
       real, dimension(nx)    :: a,b,c
@@ -1063,7 +1061,7 @@ module Entropy
       real , dimension(mx,mz) :: chiprof, dchi
 !      double precision :: chi0
       real, dimension(mx,mz) :: arg
-      real :: alp,sig,ecart,diffus
+      real :: alp,sig,ecart
 !
 !      chi0=1d-3
 !      chiprof=chi0
@@ -1137,4 +1135,15 @@ module Entropy
       return
       endsubroutine cyclic
 !***************************************************************
+    subroutine calc_heatcond_ADI(finit,f)
+!
+      implicit none
+!
+      real, dimension(mx,my,mz,mfarray) :: finit,f
+!
+      call keep_compiler_quiet(finit)
+      call keep_compiler_quiet(f)
+!
+    endsubroutine calc_heatcond_ADI
+!***********************************************************************
 endmodule Entropy
