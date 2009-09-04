@@ -67,6 +67,9 @@ use Getopt::Long;
 Getopt::Long::config("bundling");
 
 use POSIX ":sys_wait_h";
+use Socket;
+use IO::Socket;
+use IO::Select;
 
 my (%opts);                     # Options hash for GetOptions
 my $doll='\$';                  # Need this to trick CVS
@@ -92,7 +95,7 @@ if ($opts{'v'} || $opts{'version'}) { die version(); }
 
 my $update_interval = 0.5;        # check for processes after this interval
 
-my ($child_pid, @old_procs);
+my ($select, $child_pid, @old_procs);
 my $our_procs_started = 0;
 
 my $quiet = ( $opts{'q'} || $opts{'quiet'} || 0 );
@@ -130,7 +133,17 @@ sub timed_system_call {
     # Don't kill processes that are already running
     @old_procs = get_proc_list($proc_name);
 
+    # Set up a socket pair for sending child exit status to parent
+    socketpair(CHILD, PARENT, AF_UNIX, SOCK_STREAM, PF_UNSPEC)
+      or die "socketpair: $!";
+    CHILD->autoflush(1);
+    PARENT->autoflush(1);
+    $select = IO::Select->new();
+    $select->add(\*CHILD);
+
+    # Fork off child process
     if ($child_pid=fork) {      # parent
+        close PARENT;
         my $t0 = time();
         $prefix = 'Parent: ';
         logger("pid=$$, childid=$child_pid");
@@ -152,9 +165,14 @@ sub timed_system_call {
         watch_procs($proc_name, $sleep, $child_pid);
         # kill_processes();  # Now handled by END{} block
     } else {                    # child
+        die "Cannot fork: $!" unless defined $child_pid;
+        close(CHILD);
         $prefix = 'Child: ';
         logger("pid=$$");
-        exec(@cmd);
+        my $status = system(@cmd);
+        print PARENT "$status\n";
+        close PARENT;
+        exit $status;
     }
 
     print "\n";
@@ -170,17 +188,16 @@ sub watch_procs {
 
     my $t0 = time();
     do {
-        if (waitpid($child_pid, WNOHANG) != 0){
-            logger("Child finished -- exiting");
-            exit 0;
-        }
+        check_child();
 
         if (get_proc_list($name)) { # found running procs
             logger("watch_procs: Found running procs");
             $our_procs_started = 1;
         } else {
-            logger("Our procs have run and quit -- exiting");
-            exit 0 if ($our_procs_started)
+            if ($our_procs_started) {
+                logger("Our procs have run and quit -- exiting");
+                exit 0;
+            }
         }
         # sleep until the next check
         my $time_left = $sleep - (time() - $t0);
@@ -189,7 +206,8 @@ sub watch_procs {
 }
 # ---------------------------------------------------------------------- #
 sub kill_processes {
-# Kill all processes we are supposed to reap
+# Kill all processes we are supposed to reap.
+# Sets $? to the number of killed processes and exits (via END)
         my @procs = get_proc_list($proc_name, \@old_procs);
         logger("kill -KILL @procs\n");
         my $num_killed = kill 'KILL', @procs;
@@ -207,11 +225,39 @@ sub kill_processes {
         return $num_killed;
     }
 # ---------------------------------------------------------------------- #
+sub check_child {
+# Exit if child process sent us status or has died
+    my $line;
+    my $status = 0;
+
+    if ($select->can_read(0)) {
+        foreach my $handle ($select->can_read(0)) {
+            # recv($handle, $line, 1024, 0);
+            $line = <$handle>;
+            chomp($line);
+            $status ||= $line;
+        }
+        if ($status) {
+            logger("Got child status $status");
+            exit $status;
+        }
+    }
+
+    if (waitpid($child_pid, WNOHANG) != 0){
+        logger("Child finished -- exiting");
+        exit 0;
+    }
+}
+# ---------------------------------------------------------------------- #
 END {
 # Clean up, in particular kill child process if parent exits prematurely
-    if ($child_pid) {
-        $? = $? || kill_processes();
-    }
+
+    exit unless ($child_pid);   # only parent continue
+
+    my $status = $?;
+    my $num_killed = kill_processes();
+
+    $? =  $status || $num_killed; # set exit status
 }
 # ---------------------------------------------------------------------- #
 sub parse_time_spec {
@@ -344,13 +390,14 @@ sub get_proc_list {
     my ($name, $blacklist) = @_;
     $blacklist = [] unless (defined($blacklist));
 
-    my @list;
+    my (@orig_list, @list);
     foreach my $p (pgrep($name)) {
+        push @orig_list, $p;
         push @list, $p unless (grep /^$p$/, @$blacklist);
     }
 
     logger(
-           'original_list ~ (' . join(', ', pgrep($name)) . ")\n"
+           'original_list = (' . join(', ', @orig_list) . ")\n"
            . '    @$blacklist = (' . join(', ', @$blacklist) . ")\n"
            . '    @list = (' . join(', ', @list) . ")."
           );
@@ -379,7 +426,7 @@ sub pgrep {
         push @ps, $1;
     }
     if ($debug) {
-        print STDERR "pgrep(): found ", (@ps+0), " processes:\n";
+        logger("pgrep(): found " . (@ps+0) . " processes:");
         if (@ps) {
             system('ps', '-o', 'pid,user,time,pcpu,pmem,cmd', '-p', join(",", @ps));
         }
