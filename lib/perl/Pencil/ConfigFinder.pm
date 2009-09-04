@@ -31,7 +31,8 @@ our $debug = 0;
 
 
 my @config_path = (
-            "$ENV{HOME}/.pencil/config",
+            "$ENV{PENCIL_HOME}/config-local",
+            "$ENV{HOME}/.pencil/config-local",
             "$ENV{PENCIL_HOME}/config"
            );
 
@@ -438,12 +439,13 @@ files in the path given below.
 
 E.g.,
 
-  locate_config_files('os/GNU_Linux', 'mpi/open-mpi')
+  locate_config_files('mpi/open-mpi', 'os/GNU_Linux', 'compilers/g95')
 
 might return the list
 
-  ( '/home/USER/pencil-code/config/os/GNU_Linux.conf',
-    '/home/USER/.pencil/config/mpi/open-mpi.conf' )
+  ( '/home/USER/.pencil/config/mpi/open-mpi.conf',
+    '/home/USER/pencil-code/config-local/os/GNU_Linux.conf',
+    '/home/USER/.pencil/config/compilers/g95.conf' )
 
 , while
 
