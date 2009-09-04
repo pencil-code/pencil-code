@@ -675,7 +675,7 @@ module Entropy
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx) :: Hmax=0., hcond, thdiff,tmp
+      real, dimension (nx) :: Hmax=0., hcond, thdiff=0.,tmp
       real :: fradtop
       integer :: j,ju
 !
