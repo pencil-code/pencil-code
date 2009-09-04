@@ -167,7 +167,6 @@ module Entropy
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: hcond, dhcond
       logical :: lstarting, lnothing
-      type (pencil_case) :: p
       integer :: i, ierr
 !
 !  Set iTT requal to ilnTT if we are considering non-logarithmic temperature.
@@ -353,6 +352,8 @@ module Entropy
       call put_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
       if (ierr/=0) call stop_it("initialize_entropy in temperature_idealgas: "//&
            "there was a problem when putting lviscosity_heat")
+
+      call keep_compiler_quiet(lstarting)
 
     endsubroutine initialize_entropy
 !***********************************************************************
@@ -627,7 +628,7 @@ module Entropy
 
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       type (pencil_case), intent (inout) :: p
-      integer :: j,i
+      integer :: j
 !
 !  Mach Speed
 !
@@ -677,7 +678,7 @@ module Entropy
       type (pencil_case) :: p
       real, dimension (nx) :: Hmax=0., hcond, thdiff=0.,tmp
       real :: fradtop
-      integer :: j,ju
+      integer :: j
 !
       intent(inout) :: f,p
       intent(out) :: df
@@ -722,7 +723,7 @@ module Entropy
 !
 !  Various heating conduction contributions
 !
-      if (lcalc_heat_cool)  call calc_heat_cool(f,df,p)
+      if (lcalc_heat_cool)  call calc_heat_cool(df,p)
 !
 !  Thermal conduction: only chi=cte for the moment
 !
@@ -940,16 +941,15 @@ module Entropy
 !
     endsubroutine rad_equil
 !***********************************************************************
-    subroutine calc_heat_cool(f,df,p)
+    subroutine calc_heat_cool(df,p)
 !
       use Diagnostics
       use EquationOfState, only: gamma,gamma_m1
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx) :: tau,cooling,kappa,a1,a3,pTT
+      real, dimension (nx) :: tau,cooling,kappa,a1,a3
       real :: a2,kappa0,kappa0_cgs
 !
 !  Initialize
@@ -1182,7 +1182,7 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: cosbgT,gT2,b2
-      real, dimension (nx) :: vKpara,vKperp,rhs,tmp
+      real, dimension (nx) :: vKpara,vKperp,rhs
 !      
       vKpara(:) = Kgpara
       vKperp(:) = Kgperp
@@ -1422,7 +1422,7 @@ module Entropy
       real, dimension(nx,nz) :: finter, source, rho, TT
       real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
-      real    :: alpha, aalpha, bbeta, cp1, dx_2, dz_2, Fbot, tmp_flux
+      real    :: aalpha, bbeta, cp1, dx_2, dz_2, Fbot, tmp_flux
 !
       TT=finit(l1:l2,4,n1:n2,ilnTT)
       source=(f(l1:l2,4,n1:n2,ilnTT)-TT)/dt
@@ -1543,12 +1543,12 @@ module Entropy
 
       implicit none
 
-      integer :: i,j,ierr
+      integer :: i,j
       real, dimension(mx,my,mz,mfarray) :: finit, f
       real, dimension(mx,mz) :: source, hcond, dhcond, finter, val, TT, rho
       real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
-      real    :: alpha, aalpha, bbeta
+      real    :: aalpha, bbeta
       real    :: dx_2, dz_2, cp1
 
       source=(f(:,4,:,ilnTT)-finit(:,4,:,ilnTT))/dt
@@ -1855,9 +1855,9 @@ module Entropy
 
       implicit none
 
-      integer :: i, j, jj, ierr
+      integer :: j, jj
       real, dimension(mx,my,mz,mfarray) :: finit,f
-      real, dimension(mz) :: source, rho, TT, hcond, dhcond, arg, hcond1
+      real, dimension(mz) :: source, rho, TT, hcond, dhcond
       real, dimension(nz) :: a, b, c, rhs, work
       real  :: cp1, dz_2, wz, hcondp, hcondm
 !
