@@ -1795,11 +1795,12 @@ module Entropy
       real, dimension(nz) :: a, b, c, rhs, work
       real  :: cp1, dz_2, wz
 !
-      source=(f(4,4,:,ilnTT)-finit(4,4,:,ilnTT))/dt
+!     source=(f(4,4,:,ilnTT)-finit(4,4,:,ilnTT))/dt
+!     TT=finit(4,4,:,ilnTT)
+      TT=f(4,4,:,ilnTT)
+      rho=exp(f(4,4,:,ilnrho))
       call get_cp1(cp1)
       dz_2=1./dz**2
-      rho=exp(f(4,4,:,ilnrho))
-      TT=finit(4,4,:,ilnTT)
 !
       do j=n1,n2
         wz=dt*gamma*hcond0*cp1/rho(j)
@@ -1808,37 +1809,24 @@ module Entropy
         b(jj)=1.+wz*dz_2
         c(jj)=a(jj)
 !
-        rhs(jj)=TT(j)+wz*dz_2/2.*(TT(j+1)-2.*TT(j)+TT(j-1))+dt*source(j)
-!
-! Always constant temperature at the top
-        b(nz)=1. ; a(nz)=0.
-        rhs(nz)=cs2top/gamma_m1
-        if (bcz1(ilnTT)=='cT') then
-! Constant temperature at the bottom
-          b(1)=1. ; c(1)=0. 
-          rhs(1)=cs2bot/gamma_m1
-        else
-! Constant flux at the bottom
-          b(1)=1.  ; c(1)=-1.
-          rhs(1)=dz*Fbot/hcond0
-        endif
+!       rhs(jj)=TT(j)+wz*dz_2/2.*(TT(j+1)-2.*TT(j)+TT(j-1))+dt*source(j)
+        rhs(jj)=TT(j)+wz*dz_2/2.*(TT(j+1)-2.*TT(j)+TT(j-1))
       enddo
-      call tridag(a,b,c,rhs,work)
-      f(4,4,n1:n2,ilnTT)=work
-!
-! Update ghost zones: always constant temperature at the top while
-! T=cte or Flux=cte at the bottom
-!
-      f(:,:,n2+1,ilnTT)=2.*f(:,:,n2,ilnTT)-f(:,:,n2-1,ilnTT)
+! apply the boundary conditions *outside* the j-loop
+! Always constant temperature at the top
+      b(nz)=1. ; a(nz)=0.
+      rhs(nz)=cs2top/gamma_m1
       if (bcz1(ilnTT)=='cT') then
 ! Constant temperature at the bottom
-        f(:,:,n1-1,ilnTT)=2.*f(:,:,n1,ilnTT)-f(:,:,n1+1,ilnTT)
+        b(1)=1. ; c(1)=0. 
+        rhs(1)=cs2bot/gamma_m1
       else
 ! Constant flux at the bottom
-        do i=1,nghost
-          f(:,:,n1-i,ilnTT)=f(:,:,n1+i,ilnTT)+2.*i*dz*Fbot/hcond0
-        enddo
+        b(1)=1.  ; c(1)=-1.
+        rhs(1)=dz*Fbot/hcond0
       endif
+      call tridag(a, b, c, rhs, work)
+      f(4,4,n1:n2,ilnTT)=work
 !
     endsubroutine ADI_Kconst_1d
 !***********************************************************************
