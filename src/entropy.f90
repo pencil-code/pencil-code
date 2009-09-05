@@ -252,12 +252,9 @@ module Entropy
       logical :: lstarting
 !
       real, dimension (nx,3) :: glhc
-      real, dimension (nx) :: aa=0., hcond=0.
-      real, dimension (3) :: gg_mn=0.
-      real :: beta1, cp1, lnrho_dummy=0., beta0, TT_crit
-      real :: r_mn, flumi, g_r, u
+      real, dimension (nx) :: hcond=0.
+      real :: beta1, cp1, beta0, TT_crit
       integer :: i, ierr, q
-      integer, pointer :: iglobal_gg
       logical :: lnothing,lcompute_grav
       type (pencil_case) :: p
 !
@@ -1313,7 +1310,7 @@ module Entropy
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nzgrid) :: tempm,lnrhom
-      real :: zm,ztop,mixinglength_flux,lnrho,cs2,ss,lnTT
+      real :: zm,ztop,mixinglength_flux,lnrho,ss,lnTT
       real :: zbot,rbot,rt_old,rt_new,rb_old,rb_new,crit, &
               rhotop,rhobot
       integer :: iter
@@ -1412,7 +1409,7 @@ module Entropy
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho,lnTT,TT,ss,pert_TT,r_mn
-      real :: beta1,cp1,lnrho_dummy=0.
+      real :: beta1,cp1
 !
 !  beta1 is the temperature gradient
 !  1/beta = (g/cp) 1./[(1-1/gamma)*(m+1)]
@@ -1512,7 +1509,7 @@ module Entropy
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 
       real, dimension (nx) :: lnrho,lnTT,TT,ss,z_mn
-      real :: beta1,cp1,lnrho_dummy=0.
+      real :: beta1,cp1
 !
 !  beta1 is the temperature gradient
 !  1/beta = (g/cp) 1./[(1-1/gamma)*(m+1)]
@@ -2140,8 +2137,8 @@ module Entropy
         call calc_heat_cool_RTV(df,p)
       endif
       if (lheatc_tensordiffusion) call calc_heatcond_tensor(df,p)
-      if (lheatc_hyper3ss_polar) call calc_heatcond_hyper3_polar(f,df,p)
-      if (lheatc_hyper3ss_aniso) call calc_heatcond_hyper3_aniso(f,df,p)
+      if (lheatc_hyper3ss_polar) call calc_heatcond_hyper3_polar(f,df)
+      if (lheatc_hyper3ss_aniso) call calc_heatcond_hyper3_aniso(f,df)
 !
 !  Explicit heating/cooling terms.
 !
@@ -2286,7 +2283,7 @@ module Entropy
       type (pencil_case) :: p
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx) :: f_target,cs2
-      real :: g0=1.,r0_pot=0.1,ptlaw,cp1
+      real :: ptlaw,cp1
 !
       select case(borderss)
 !
@@ -2433,7 +2430,7 @@ module Entropy
 !
     endsubroutine calc_heatcond_hyper3
 !***********************************************************************
-    subroutine calc_heatcond_hyper3_aniso(f,df,p)
+    subroutine calc_heatcond_hyper3_aniso(f,df)
 !
 !  Naive anisotropic hyperdiffusivity of entropy.
 !
@@ -2443,7 +2440,6 @@ module Entropy
 !
       real, dimension (mx,my,mz,mfarray),intent(in) :: f
       real, dimension (mx,my,mz,mvar),intent(out) :: df
-      type (pencil_case) :: p
 !
       real, dimension (nx) :: thdiff,tmp
 !
@@ -2466,7 +2462,7 @@ module Entropy
 !
     endsubroutine calc_heatcond_hyper3_aniso
 !***********************************************************************
-    subroutine calc_heatcond_hyper3_polar(f,df,p)
+    subroutine calc_heatcond_hyper3_polar(f,df)
 !
 !  Naive hyperdiffusivity of entropy in polar coordinates
 !
@@ -2478,7 +2474,6 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: tmp
       integer :: j
-      type (pencil_case) :: p
 !
       real, dimension (nx) :: thdiff
 !
@@ -2668,7 +2663,7 @@ module Entropy
       use IO, only: output_pencil
 !
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: gvKpara,gvKperp,tmpv
+      real, dimension (nx,3) :: gvKpara,gvKperp,tmpv,tmpv2
       real, dimension (nx) :: bb2,thdiff,b1
       real, dimension (nx) :: tmps,quenchfactor,vKpara,vKperp
 !
@@ -2704,8 +2699,8 @@ module Entropy
             tmpv(:,i)=tmpv(:,i) + p%bb(:,j)*p%bij(:,j,i)
          end do
       end do
-      call multsv_mn(2*b1*b1,tmpv,tmpv)
-      tmpv=2.*p%glnrho+0.5*p%glnTT-tmpv
+      call multsv_mn(2*b1*b1,tmpv,tmpv2)
+      tmpv=2.*p%glnrho+0.5*p%glnTT-tmpv2
       call multsv_mn(vKperp,tmpv,gvKperp)
       gvKperp=gvKperp*spread(quenchfactor,2,3)
 !
@@ -3955,8 +3950,8 @@ module Entropy
     integer, parameter   :: nr=100
     integer              :: i,l,iter
     real, dimension (nr) :: r,lnrho,temp,hcond
-    real                 :: u,r_mn,lnrho_r,temp_r,cs2,lnTT,ss,lumi,g, &
-        rhotop,cs2top,rbot,rt_old,rt_new,rhobot,rb_old,rb_new,crit,r_max
+    real                 :: u,r_mn,lnrho_r,temp_r,cs2,ss,lumi,g 
+    real                 :: rhotop, rbot,rt_old,rt_new,rhobot,rb_old,rb_new,crit,r_max
 ! variables for the gravity profile
     logical, optional    :: lcompute_grav
     integer, pointer     :: iglobal_gg
@@ -4193,7 +4188,7 @@ module Entropy
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho, TT, ss
       real :: beta0, beta1, TT_bcz, TT_ext, TT_int
-      real :: cp1, lnrho_int, lnrho_bcz
+      real :: cp1, lnrho_bcz
 !
       if (headtt) print*,'r_bcz in cylind_layers=', r_bcz
 !
@@ -4248,7 +4243,7 @@ module Entropy
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho, TT, ss, z_mn
-      real :: beta, cp1, lnrho_dummy=0., zbot, ztop, TT0
+      real :: beta, cp1, zbot, ztop, TT0
       real, pointer :: gravx
       integer :: ierr
 !
@@ -4298,6 +4293,9 @@ module Entropy
       implicit none
 !
       real, dimension(mx,my,mz,mfarray) :: finit,f
+!
+      call keep_compiler_quiet(finit)
+      call keep_compiler_quiet(f)
 !
     endsubroutine calc_heatcond_ADI
 !***********************************************************************
