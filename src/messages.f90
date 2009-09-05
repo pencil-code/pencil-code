@@ -343,6 +343,8 @@ module Messages
 !
 !  Extract a substring after sanity check
 !
+      intent(in) :: string, idx0, idx1
+      intent(out) :: substring
       character(len=*) :: string
       integer :: idx0, idx1
       character(len=*) substring
