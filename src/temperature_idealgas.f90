@@ -1972,19 +1972,23 @@ module Entropy
 
 ! communicate gridpoints in the x-direction for periodic BC
       if (iproc==0) then
-        call mpisend_real(fintert(:,1), nzgrid, 1, 111)
-        call mpisend_real(fintert(:,nx/nprocz), nzgrid, 1, 111)
-      else
+        call mpisend_real(fintert(:,1), nzgrid, nprocz-1, 111)
+        call mpisend_real(fintert(:,nx/nprocz), nzgrid, nprocz-1, 112)
+        call mpirecv_real(tmp1, nzgrid, nprocz-1, 113)
+        call mpirecv_real(tmp2, nzgrid, nprocz-1, 114)
+      elseif (iproc==nprocz-1) then
         call mpirecv_real(tmp1, nzgrid, 0, 111)
-        call mpirecv_real(tmp2, nzgrid, 0, 111)
+        call mpirecv_real(tmp2, nzgrid, 0, 112)
+        call mpisend_real(fintert(:,1), nzgrid, 0, 113)
+        call mpisend_real(fintert(:,nx/nprocz), nzgrid, 0, 114)
       endif
-      if (iproc==1) then
-        call mpisend_real(fintert(:,1), nzgrid, 0, 111)
-        call mpisend_real(fintert(:,nx/nprocz), nzgrid, 0, 111)
-      else
-        call mpirecv_real(tmp1, nzgrid, 1, 111)
-        call mpirecv_real(tmp2, nzgrid, 1, 111)
-      endif
+!     if (iproc==nprocz-1) then
+!       call mpisend_real(fintert(:,1), nzgrid, 0, 113)
+!       call mpisend_real(fintert(:,nx/nprocz), nzgrid, 0, 114)
+!     else
+!       call mpirecv_real(tmp1, nzgrid, nprocz-1, 113)
+!       call mpirecv_real(tmp2, nzgrid, nprocz-1, 114)
+!     endif
 !
 !  columns dealt implicitly
 !
