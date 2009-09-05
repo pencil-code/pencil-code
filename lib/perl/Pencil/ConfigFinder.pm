@@ -29,6 +29,7 @@ our $debug = 0;
 
 #$quiet = 0 if ($debug);
 
+my $os_name = get_os_name();
 
 my @config_path = (
             "$ENV{PENCIL_HOME}/config-local",
@@ -52,13 +53,12 @@ sub find_config_file {
     }
 
     # Fall back on OS name
-    my $os = strip_whitespace(first_line_from_cmd('uname -o'));
-    $config_file = find_config_file_for_os($os);
-    return $config_file if defined($config_file);
+    $config_file = find_config_file_for_os($os_name);
+    return $config_file if defined $config_file;
 
     # Fall back on `default'
     $config_file = find_config_file_for('default', '.');
-    return $config_file if defined($config_file);
+    return $config_file if defined $config_file;
 
     # Fail
     return undef
@@ -114,11 +114,11 @@ sub find_config_file_for_host {
 
 sub find_config_file_for_os {
 #
-# Return config file for the given host ID, or undef.
+# Return config file for the given os name, or undef.
 #
-    my ($host_id) = @_;
+    my ($os) = @_;
 
-    find_config_file_for($host_id, 'os');
+    find_config_file_for($os, 'os');
 }
 
 # ---------------------------------------------------------------------- #
@@ -132,7 +132,7 @@ sub find_config_file_for {
 #
     my ($id, $subdir, $recurse) = @_;
 
-    return undef unless (defined $id);
+    return undef unless (defined $id && $id);
 
     # Replace whitespace and '/' by _ to avoid problems in file names
     $id =~ s{(\s|/)+}{_}g;
@@ -140,7 +140,7 @@ sub find_config_file_for {
     for my $dir (@config_path) {
         my $subdir_path = "${dir}/${subdir}";
         my $file = locate_config_file($subdir_path, $id, $recurse);
-        return $file if (defined $file);
+        return $file if defined $file;
     }
 
     return undef;               # no file found
@@ -218,7 +218,7 @@ sub add_host_id_from_file {
 
     debug("Reading host id from file <$file>");
     my $line = first_line_from_file($file);
-    push @$ids_ref, strip_whitespace($line) if defined($line);
+    push @$ids_ref, $line if $line;
 }
 
 # ---------------------------------------------------------------------- #
@@ -229,12 +229,14 @@ sub add_host_id_from_fqdn {
 #
     my ($ids_ref) = @_;
 
-    my $fqdname = `hostname --fqdn`;
-    chomp($fqdname);
+    my $fqdname = first_line_from_cmd('hostname --fqdn');
+    $fqdname = first_line_from_cmd('hostname')
+	unless $fqdname;
+    return unless $fqdname;
 
     if ($fqdname =~ /^ [^.]+ \. .* \. [^.]+$/x) {
         debug("Fully-qualified domain name: <$fqdname>");
-        push @$ids_ref, strip_whitespace($fqdname);
+        push @$ids_ref, $fqdname;
     } else {
         debug("Not a fully-qualified domain name: <$fqdname>");
     }
@@ -248,24 +250,17 @@ sub add_host_id_from_scraping_system_info {
 #
     my ($ids_ref) = @_;
 
-    my $hostname = strip_whitespace(first_line_from_cmd('uname -n'));
-
-    # Linux: `uname -o' prints GNU/Linux
-    # BSD, etc: no -o option, so fall back on `uname -s'
-    my $os = strip_whitespace(first_line_from_cmd('uname -o'));
-    $os = strip_whitespace(first_line_from_cmd('uname -s'))
-      unless (defined $os);
-    $os =~ s{/}{_}g if defined $os; # GNU/Linux -> GNU_Linux
+    my $hostname = first_line_from_cmd('uname -n');
 
     my $linux_type =
-      ( strip_whitespace(first_word_from_file('/etc/issue'))
-        || strip_whitespace(first_word_from_file('/etc/version'))
+      ( first_word_from_file('/etc/issue')
+        || first_word_from_file('/etc/version')
       );
 
     my $id = 'host';
-    $id .= "-$hostname"   if (defined $hostname  );
-    $id .= "-$os"         if (defined $os        );
-    $id .= "-$linux_type" if (defined $linux_type);
+    $id .= "-$hostname"   if $hostname;
+    $id .= "-$os_name"    if $os_name;
+    $id .= "-$linux_type" if $linux_type;
 
     if ($id ne 'host') {
         push @$ids_ref, $id;
@@ -276,11 +271,12 @@ sub add_host_id_from_scraping_system_info {
 
 sub strip_whitespace {
 #
-# Remove leading and trailing whitespace from a host ID
+# Remove leading and trailing whitespace (including trailing newline) from
+# a string
 #
     my ($text) = @_;
 
-    return $text unless defined($text);
+    return undef unless defined $text;
 
     chomp($text);
     $text =~ m{^\s*(.*?)\s*$};
@@ -308,12 +304,27 @@ sub first_line_from_file {
             return undef;
         }
         my $line = <$fh>;
-        chomp($line);
-        return $line;
+        return strip_whitespace($line);
     } else {
         log_msg("Not readable: <$file>");
         return undef;
     }
+}
+
+# ---------------------------------------------------------------------- #
+
+sub get_os_name {
+#
+# Return operation system name.
+# Linux: `uname -o' prints GNU/Linux
+# BSD, etc: no -o option, so fall back on `uname -s'
+#
+    my $os = strip_whitespace(first_line_from_cmd('uname -o'));
+    $os = strip_whitespace(first_line_from_cmd('uname -s'))
+      unless ($os);
+    $os =~ s{/}{_}g if defined $os; # GNU/Linux -> GNU_Linux
+
+    return $os;
 }
 
 # ---------------------------------------------------------------------- #
@@ -330,6 +341,8 @@ sub first_word_from_file {
     } else {
         return undef;
     }
+
+    return strip_whitespace($line);
 }
 
 # ---------------------------------------------------------------------- #
@@ -341,13 +354,16 @@ sub first_line_from_cmd {
     my ($cmd) = @_;
 
     my $fh;
-    unless (open($fh, "$cmd |")) {
+    my $sh_cmd = "$cmd" . ($debug ? "" : " 2>/dev/null") . " |";
+    print "\$sh_cmd = <$sh_cmd>\n" if $debug;
+
+    unless (open($fh, $sh_cmd)) {
         warn "Cannot start <$cmd>\n";
         return undef;
     }
     my $line = <$fh>;
-    chomp($line) if defined $line;
-    return $line;
+
+    return strip_whitespace($line);
 }
 
 # ---------------------------------------------------------------------- #
@@ -532,8 +548,8 @@ If no file was found, two fallbacks are tried:
 
 =item 1.
 
-The output from `C<uname -o>' (the operationg system) is tried as
-host ID in the directories
+The output from `C<uname -o>' (the operationg system) or `C<uname -s>'
+is tried as host ID in the directories
 
 =over 8
 
