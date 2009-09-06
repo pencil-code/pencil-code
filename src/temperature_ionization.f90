@@ -400,9 +400,8 @@ module Entropy
       type (pencil_case) :: p
 !
       real, dimension (nx,3) :: damp
-      real, dimension (nx) :: Hmax, sum_DYDt
-      real :: prof,react_rate
-      integer :: j,k
+      real, dimension (nx) :: Hmax
+      real :: prof
 !
 !  Initialize maximum heating to zero
 !
@@ -455,7 +454,7 @@ module Entropy
 !
 !  Various heating/cooling mechanisms
 !
-      if (lcalc_heat_cool) call calc_heat_cool(f,df,p)
+      if (lcalc_heat_cool) call calc_heat_cool(df,p)
 
 !
 !  Thermal conduction
@@ -587,11 +586,10 @@ module Entropy
 
     endsubroutine calc_heatcond_hyper3
 !***********************************************************************
-    subroutine calc_heat_cool(f,df,p)
+    subroutine calc_heat_cool(df,p)
 
       use Sub, only: cubic_step
 
-      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 
@@ -714,6 +712,9 @@ module Entropy
       implicit none
 !
       real, dimension(mx,my,mz,mfarray) :: finit,f
+!
+      call keep_compiler_quiet(finit)
+      call keep_compiler_quiet(f)
 !
     endsubroutine calc_heatcond_ADI
 !**************************************************************
