@@ -62,8 +62,8 @@ module Testfield
   logical :: lignore_uxbtestm=.false., lphase_adjust=.false.
   character (len=labellen) :: itestfield='B11-B21'
   real :: ktestfield=1., ktestfield1=1.
-  real :: lam_testfield=0.,om_testfield=0.,delta_testfield=0.
-  real :: delta_testfield_next=0.
+  real :: lin_testfield=0.,lam_testfield=0.,om_testfield=0.,delta_testfield=0.
+  real :: delta_testfield_next=0., delta_testfield_time=0.
   integer, parameter :: mtestfield=3*njtest
   integer :: naainit
   real :: bamp=1.,bamp1=1.,bamp12=1.
@@ -82,7 +82,7 @@ module Testfield
   namelist /testfield_run_pars/ &
        B_ext,reinitialize_aatest,zextent,lsoca,lsoca_jxb, &
        lset_bbtest2,etatest,etatest1,itestfield,ktestfield, &
-       lam_testfield,om_testfield,delta_testfield, &
+       lin_testfield,lam_testfield,om_testfield,delta_testfield, &
        ltestfield_newz,leta_rank2,lphase_adjust,phase_testfield, &
        ltestfield_taver,llorentzforce_testfield, &
        luxb_as_aux,ljxb_as_aux,lignore_uxbtestm, &
@@ -150,6 +150,7 @@ module Testfield
   integer :: idiag_Ey12pt=0     ! DIAG_DOC: ${\cal E}_y^{12}$
   integer :: idiag_Ey22pt=0     ! DIAG_DOC: ${\cal E}_y^{22}$
   integer :: idiag_Ey0pt=0      ! DIAG_DOC: ${\cal E}_y^{0}$
+  integer :: idiag_bamp=0       ! DIAG_DOC: bamp
   integer :: idiag_E111z=0      ! DIAG_DOC: ${\cal E}_1^{11}$
   integer :: idiag_E211z=0      ! DIAG_DOC: ${\cal E}_2^{11}$
   integer :: idiag_E311z=0      ! DIAG_DOC: ${\cal E}_3^{11}$
@@ -396,6 +397,7 @@ module Testfield
         write(1,'(a,i1)') 'lsoca_jxb='  ,merge(1,0,lsoca_jxb)
         write(1,'(3a)') "itestfield='",trim(itestfield)//"'"
         write(1,'(a,f5.2)') 'ktestfield=',ktestfield
+        write(1,'(a,f7.4)') 'lin_testfield=',lin_testfield
         write(1,'(a,f7.4)') 'lam_testfield=',lam_testfield
         write(1,'(a,f7.4)') 'om_testfield=', om_testfield
         write(1,'(a,f7.4)') 'delta_testfield=',delta_testfield
@@ -555,7 +557,7 @@ module Testfield
       real, dimension (nx,3) :: del2Atest,uufluct
       real, dimension (nx,3) :: del2Atest2,graddivatest,aatest,jjtest,jxbrtest
       real, dimension (nx,3,3) :: aijtest,bijtest,Mijtest
-      real, dimension (nx) :: jbpq,bpq2,Epq2,s2kzDF1,s2kzDF2
+      real, dimension (nx) :: jbpq,bpq2,Epq2,s2kzDF1,s2kzDF2,unity=1.
       integer :: jtest,jfnamez,j, i1=1, i2=2, i3=3, i4=4
       logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
 !
@@ -581,13 +583,20 @@ module Testfield
         uufluct=p%uu
       endif
 !
-!  multiply by exponential factor if lam_testfield is different from zero
+!  Multiply by exponential factor if lam_testfield is different from zero.
+!  Allow also for linearly increasing testfields
 !  Keep bamp1=1 for oscillatory fields.
 !
-      if (lam_testfield/=0..or.om_testfield/=0..or.delta_testfield/=0.) then
+      if (lam_testfield/=0..or.lin_testfield/=0. .or. &
+          om_testfield/=0..or.delta_testfield/=0.) then
         if (lam_testfield/=0.) then
           taainit_previous=taainit-daainit
           bamp=exp(lam_testfield*(t-taainit_previous))
+          bamp1=1./bamp
+        endif
+        if (lin_testfield/=0.) then
+          taainit_previous=taainit-daainit
+          bamp=lin_testfield*(t-taainit_previous-daainit/2.)
           bamp1=1./bamp
         endif
         if (om_testfield/=0.) then
@@ -595,9 +604,12 @@ module Testfield
           bamp1=1.
         endif
         if (delta_testfield/=0.) then
-          if (t.ge.delta_testfield_next.and.t.lt.(delta_testfield_next+dt)) then
-            bamp=1./(dt*delta_testfield)
+          if (t.ge.delta_testfield_next.and.t.le.(delta_testfield_next+dt)) then
+            delta_testfield_time=t
             delta_testfield_next=t+delta_testfield
+          endif
+          if (t>=delta_testfield_time-.1*dt.and.t<=delta_testfield_time+.1*dt) then
+            bamp=1.
           else
             bamp=0.
           endif
@@ -946,6 +958,12 @@ module Testfield
                                              +uxbtestm(n,3,iE0)*p%oo(:,3),idiag_E0Wm)
         endif
 !
+!  diagnostics for delta function driving, but doesn't seem to work
+!
+        if (idiag_bamp/=0) call sum_mn_name(bamp*unity,idiag_bamp)
+!
+!  diagnostics for single points
+!
         if (lroot.and.m==mpoint.and.n==npoint) then
           if (idiag_bx0pt/=0)  call save_name(bpq(lpoint-nghost,1,iE0),idiag_bx0pt)
           if (idiag_bx11pt/=0) call save_name(bpq(lpoint-nghost,1,i1),idiag_bx11pt)
@@ -963,6 +981,7 @@ module Testfield
           if (idiag_Ex12pt/=0) call save_name(Eipq(lpoint-nghost,1,i3),idiag_Ex12pt)
           if (idiag_Ex22pt/=0) call save_name(Eipq(lpoint-nghost,1,i4),idiag_Ex22pt)
           if (idiag_Ey0pt/=0)  call save_name(Eipq(lpoint-nghost,2,iE0),idiag_Ey0pt)
+!         if (idiag_bamp/=0)   call save_name(bamp,idiag_bamp)
           if (idiag_Ey11pt/=0) call save_name(Eipq(lpoint-nghost,2,i1),idiag_Ey11pt)
           if (idiag_Ey21pt/=0) call save_name(Eipq(lpoint-nghost,2,i2),idiag_Ey21pt)
           if (idiag_Ey12pt/=0) call save_name(Eipq(lpoint-nghost,2,i3),idiag_Ey12pt)
@@ -1476,7 +1495,7 @@ module Testfield
         idiag_M11=0; idiag_M22=0; idiag_M33=0
         idiag_M11cc=0; idiag_M11ss=0; idiag_M22cc=0; idiag_M22ss=0
         idiag_M12cs=0
-        idiag_M11z=0; idiag_M22z=0; idiag_M33z=0
+        idiag_M11z=0; idiag_M22z=0; idiag_M33z=0; idiag_bamp=0
         idiag_jb0m=0; idiag_b0rms=0; idiag_E0rms=0
         idiag_b11rms=0; idiag_b21rms=0; idiag_b12rms=0; idiag_b22rms=0
         idiag_E11rms=0; idiag_E21rms=0; idiag_E12rms=0; idiag_E22rms=0
@@ -1543,6 +1562,7 @@ module Testfield
         call parse_name(iname,cname(iname),cform(iname),'b12rms',idiag_b12rms)
         call parse_name(iname,cname(iname),cform(iname),'b22rms',idiag_b22rms)
         call parse_name(iname,cname(iname),cform(iname),'jb0m',idiag_jb0m)
+        call parse_name(iname,cname(iname),cform(iname),'bamp',idiag_bamp)
         call parse_name(iname,cname(iname),cform(iname),'b0rms',idiag_b0rms)
         call parse_name(iname,cname(iname),cform(iname),'E11rms',idiag_E11rms)
         call parse_name(iname,cname(iname),cform(iname),'E21rms',idiag_E21rms)
@@ -1646,6 +1666,7 @@ module Testfield
         write(3,*) 'idiag_bx0mz=',idiag_bx0mz
         write(3,*) 'idiag_by0mz=',idiag_by0mz
         write(3,*) 'idiag_bz0mz=',idiag_bz0mz
+        write(3,*) 'idiag_bamp=',idiag_bamp
         write(3,*) 'idiag_E111z=',idiag_E111z
         write(3,*) 'idiag_E211z=',idiag_E211z
         write(3,*) 'idiag_E311z=',idiag_E311z
