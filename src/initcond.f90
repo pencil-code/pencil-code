@@ -3953,8 +3953,7 @@ module Initcond
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(nxgrid,nygrid) :: kx,ky,k2
 !
-      real, dimension(nxgrid,nygrid) :: Bz0,Bz0_i,Bz0_r
-      real, dimension(nxgrid,nygrid) :: Ax_r,Ax_i,Ay_r,Ay_i
+      real, dimension(nxgrid,nygrid) :: Bz0_i,Bz0_r,A_r,A_i
 !
       real, dimension(nxgrid) :: kxp
       real, dimension(nygrid) :: kyp
@@ -3984,11 +3983,11 @@ module Initcond
       k2 = kx*kx + ky*ky
 !
       open (11,file='driver/magnetogram_k.dat',form='unformatted')
-      read (11) Bz0
+      read (11) Bz0_r
       close (11)
 !
       Bz0_i = 0.
-      Bz0_r = Bz0 * 1e-4 / u_b ! Gauss to Tesla  and SI to PENCIL units
+      Bz0_r = Bz0_r * 1e-4 / u_b ! Gauss to Tesla  and SI to PENCIL units
 !
 !  Fourier Transform of Bz0:
 !
@@ -3999,25 +3998,29 @@ module Initcond
 !  Calculate transformed vector potential at "each height"
 !
          where (k2 .ne. 0 )
-            Ax_r = -Bz0_i*ky/k2*exp(-sqrt(k2)*z(i) )
-            Ax_i =  Bz0_r*ky/k2*exp(-sqrt(k2)*z(i) )
-!
-            Ay_r =  Bz0_i*kx/k2*exp(-sqrt(k2)*z(i) )
-            Ay_i = -Bz0_r*kx/k2*exp(-sqrt(k2)*z(i) )
+            A_r = -Bz0_i*ky/k2*exp(-sqrt(k2)*z(i) )
+            A_i =  Bz0_r*ky/k2*exp(-sqrt(k2)*z(i) )
          elsewhere
-            Ax_r = -Bz0_i*ky/ky(1,idy2)*exp(-sqrt(k2)*z(i) )
-            Ax_i =  Bz0_r*ky/ky(1,idy2)*exp(-sqrt(k2)*z(i) )
-!
-            Ay_r =  Bz0_i*kx/kx(idx2,1)*exp(-sqrt(k2)*z(i) )
-            Ay_i = -Bz0_r*kx/kx(idx2,1)*exp(-sqrt(k2)*z(i) )
+            A_r = -Bz0_i*ky/ky(1,idy2)*exp(-sqrt(k2)*z(i) )
+            A_i =  Bz0_r*ky/ky(1,idy2)*exp(-sqrt(k2)*z(i) )
          endwhere
 !
-         call fourier_transform_other(Ax_r,Ax_i,linv=.true.)
+         call fourier_transform_other(A_r,A_i,linv=.true.)
 !
-         call fourier_transform_other(Ay_r,Ay_i,linv=.true.)
+         f(l1:l2,m1:m2,i,iax)=A_r(ipx*nx+1:(ipx+1)*nx+1,ipy*ny+1:(ipy+1)*ny+1)
 !
-         f(l1:l2,m1:m2,i,iax)=Ax_r(ipx*nx+1:(ipx+1)*nx+1,ipy*ny+1:(ipy+1)*ny+1)
-         f(l1:l2,m1:m2,i,iay)=Ay_r(ipx*nx+1:(ipx+1)*nx+1,ipy*ny+1:(ipy+1)*ny+1)
+         where (k2 .ne. 0 )
+            A_r =  Bz0_i*kx/k2*exp(-sqrt(k2)*z(i) )
+            A_i = -Bz0_r*kx/k2*exp(-sqrt(k2)*z(i) )
+         elsewhere
+            A_r =  Bz0_i*kx/kx(idx2,1)*exp(-sqrt(k2)*z(i) )
+            A_i = -Bz0_r*kx/kx(idx2,1)*exp(-sqrt(k2)*z(i) )
+         endwhere
+!
+         call fourier_transform_other(A_r,A_i,linv=.true.)
+!
+         f(l1:l2,m1:m2,i,iay)=A_r(ipx*nx+1:(ipx+1)*nx+1,ipy*ny+1:(ipy+1)*ny+1)
+!
          f(l1:l2,m1:m2,i,iaz)=0.
       enddo
 !
