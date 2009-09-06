@@ -135,7 +135,6 @@ module Forcing
       use Mpicomm, only: stop_it
       use Sub, only: inpui,step_scalar,erfunc
 !
-      logical, save :: first=.true.
       logical :: lstarting
 !
       if (lstarting) then
@@ -448,12 +447,11 @@ module Forcing
 !
       real :: phase,ffnorm,irufm
       real, save :: kav
-      real, dimension (1) :: fsum_tmp,fsum
       real, dimension (2) :: fran
-      real, dimension (nx) :: radius,tmpx,rho1,ff,ruf,uf,of,rho
+      real, dimension (nx) :: radius,tmpx,rho1,ff,uf,of,rho
       real, dimension (mz) :: tmpz
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,forcing_rhs2
-      real, dimension (nx,3) :: fda,force_all,uu,oo,bb,fxb
+      real, dimension (nx,3) :: fda,uu,oo,bb,fxb
       real, dimension (mx,my,mz,mfarray) :: f
       complex, dimension (mx) :: fx
       complex, dimension (my) :: fy
@@ -463,12 +461,12 @@ module Forcing
       integer, parameter :: mk=3000
       integer, dimension(mk), save :: kkx,kky,kkz
       integer, save :: ifirst=0,nk
-      integer :: ik,j,jf,j2f,l
+      integer :: ik,j,jf,j2f
       real :: kx0,kx,ky,kz,k2,k,force_ampl=1.,pi_over_Lx=.5
       real :: ex,ey,ez,kde,sig=1.,fact,kex,key,kez,kkex,kkey,kkez
       real, dimension(3) :: e1,e2,ee,kk
       real :: norm,phi
-      real :: fd,fd2,kkfd
+      real :: fd,fd2
 !
 !  additional stuff for test fields
 !
@@ -819,14 +817,11 @@ module Forcing
       use Sub
       use EquationOfState, only: cs0
 !
-      real :: phase,ffnorm,irufm
+      real :: phase,ffnorm
       real, save :: kav
-      real, dimension (1) :: fsum_tmp,fsum
       real, dimension (2) :: fran
-      real, dimension (nx) :: radius,tmpx,rho1,ff,ruf,uf,of,rho
-      real, dimension (mz) :: tmpz
-      real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all,uu,oo,bb,fxb
-      real, dimension (nx,3) :: fda
+      real, dimension (nx) :: rho1
+      real, dimension (nx,3) :: variable_rhs,forcing_rhs
       real, dimension (mx,my,mz,mfarray) :: f
       complex, dimension (mx) :: fx
       complex, dimension (my) :: fy
@@ -836,12 +831,11 @@ module Forcing
       integer, parameter :: mk=3000
       integer, dimension(mk), save :: kkx,kky,kkz
       integer, save :: ifirst=0,nk
-      integer :: ik,j,jf,l
-      real :: kx0,kx,ky,kz,k2,k,force_ampl=1.
-      real :: ex,ey,ez,kde,sig=1.,fact,kex,key,kez,kkex,kkey,kkez
+      integer :: ik,j,jf
+      real :: kx0,kx,ky,kz,k2,k
+      real :: ex,ey,ez,kde,fact,kex,key,kez,kkex,kkey,kkez
       real, dimension(3) :: e1,e2,ee,kk
       real :: norm,phi,pi_over_Lx=0.5
-      real :: fd,fd2,kkfd
 !
 !  additional stuff for test fields
 !
@@ -1053,21 +1047,18 @@ module Forcing
       use EquationOfState, only: cs0
 !      use SpecialFunctions
 !
-      real :: phase,ffnorm,irufm
       integer, save :: ifirst
       real, dimension(3) :: ee
       real, dimension(nx,3) :: capitalT,capitalS,capitalH,psi
       real, dimension(nx,3,3) :: psi_ij,Tij
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: emm,iread,l,j,jf,ell,jalpha,Legendrel,lmindex,ilread,ilm,&
+      integer :: emm,l,j,jf,Legendrel,lmindex,ilread,ilm,&
                  aindex,ckno,ilist,inx
-      complex :: psi_ell_m
       real :: a_ell,anum,adenom,jlm,ylm,rphase1,fnorm,alphar,Balpha,& 
-              Pell,psilm,RYlm,IYlm
-      real :: rz,rindex,ralpha,Plmreal, Plmimag,& 
-              ran_min,ran_max,rmin,rmax,rphase2
+              psilm,RYlm,IYlm
+      real :: rz,rindex,ralpha,& 
+              rmin,rmax,rphase2
       real, dimension(mx) :: Z_psi
-      real,dimension(my) :: Pl
 
 !========================================================
       if (.not. lspherical_coords) call warning('chandra-kendall forcing:','This forcing works only in spherical coordinates!')
@@ -1246,21 +1237,18 @@ module Forcing
       use EquationOfState, only: cs0
 !      use SpecialFunctions
 !
-      real :: phase,ffnorm,irufm
       integer, save :: ifirst
       real, dimension(3) :: ee
       real, dimension(nx,3) :: capitalT,capitalS,capitalH,psi
       real, dimension(nx,3,3) :: psi_ij,Tij
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: emm,iread,l,j,jf,ell,jalpha,Legendrel,lmindex,ilread,ilm,&
+      integer :: emm,l,j,jf,Legendrel,lmindex,ilread,ilm,&
                  aindex,ckno,ilist
-      complex :: psi_ell_m
       real :: a_ell,anum,adenom,jlm,ylm,rphase1,fnorm,alphar,Balpha,& 
-              Pell,psilm,RYlm,IYlm
-      real :: rz,rindex,ralpha,Plmreal, Plmimag,& 
-              ran_min,ran_max,rmin,rmax,rphase2
+              psilm,RYlm,IYlm
+      real :: rz,ralpha,& 
+              rmin,rmax,rphase2
       real, dimension(mx) :: Z_psi
-      real,dimension(my) :: Pl
 
 !========================================================
       if (.not. lspherical_coords) call warning('chandra-kendall forcing:','This forcing works only in spherical coordinates!')
@@ -1415,20 +1403,15 @@ module Forcing
       use General
       use Sub
 !
-      real :: phase,ffnorm,irufm
-      real, save :: kav
+      real :: irufm
       real, dimension (1) :: fsum_tmp,fsum
-      real, dimension (2) :: fran
-      real, dimension (nx) :: radius,tmpx,ruf,rho
-      real, dimension (mz) :: tmpz
+      real, dimension (nx) :: ruf,rho
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) :: cosx,sinx
       real :: cost,sint,cosym,sinym
-      logical, dimension (3), save :: extent
-      integer, save :: ifirst
-      integer :: ik,j,jf
-      real :: force_ampl=1.,fact
+      integer :: j,jf
+      real :: fact
 !
       if (ip<=6) print*,'forcing_GP: t=',t
       cost=cos(omega_ff*t)
@@ -1506,12 +1489,9 @@ module Forcing
       use General
       use Sub
 !
-      real :: phase,ffnorm,irufm
-      real, save :: kav
+      real :: irufm
       real, dimension (1) :: fsum_tmp,fsum
-      real, dimension (2) :: fran
-      real, dimension (nx) :: radius,tmpx,ruf,rho
-      real, dimension (mz) :: tmpz
+      real, dimension (nx) :: ruf,rho
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx), save :: sinx,cosx
@@ -1519,8 +1499,8 @@ module Forcing
       real, dimension (mz), save :: cosz
       logical, dimension (3), save :: extent
       integer, save :: ifirst
-      integer :: ik,j,jf
-      real :: force_ampl=1.,fact
+      integer :: j,jf
+      real :: fact
 !
       if (ifirst==0) then
         if (lroot) print*,'forcing_TG: calculate sinx,cosx,siny,cosy,cosz'
@@ -1610,19 +1590,16 @@ module Forcing
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      real :: phase,ffnorm,irufm
-      real, save :: kav
+      real :: irufm
       real, dimension (1) :: fsum_tmp,fsum
-      real, dimension (2) :: fran
-      real, dimension (nx) :: radius,tmpx,ruf,rho
-      real, dimension (mz) :: tmpz
+      real, dimension (nx) :: ruf,rho
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all,bb,fxb
       real, dimension (mx), save :: sinx,cosx
       real, dimension (my), save :: siny,cosy
       real, dimension (mz), save :: sinz,cosz
       integer, save :: ifirst
-      integer :: ik,j,jf
-      real :: force_ampl=1.,fact
+      integer :: j,jf
+      real :: fact
 !
 !  at the first step, the sin and cos functions are calculated for all
 !  x,y,z points and are then saved and used for all subsequent steps
@@ -1715,12 +1692,9 @@ module Forcing
       use General
       use Sub
 !
-      real :: phase,ffnorm,irufm
-      real, save :: kav
+      real :: irufm
       real, dimension (1) :: fsum_tmp,fsum
-      real, dimension (2) :: fran
-      real, dimension (nx) :: radius,tmpx,ruf,rho
-      real, dimension (mz) :: tmpz
+      real, dimension (nx) :: ruf,rho
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx), save :: sinx
@@ -1728,8 +1702,8 @@ module Forcing
       real, dimension (mz), save :: sinz
       logical, dimension (3), save :: extent
       integer, save :: ifirst
-      integer :: ik,j,jf
-      real :: force_ampl=1.,fact
+      integer :: j,jf
+      real :: fact
 !
       if (ifirst==0) then
         if (lroot) print*,'forcing_nocos: calculate sinx,siny,sinz'
@@ -1823,7 +1797,7 @@ module Forcing
       real, dimension (nx) :: radius2,gaussian,ruf,rho
       real, dimension (nx,3) :: variable_rhs,force_all,delta
       logical, dimension (3), save :: extent
-      integer :: ik,j,jf
+      integer :: j,jf
       real :: irufm,fact,width_ff21
 !
 !  check length of time step
@@ -2868,6 +2842,8 @@ module Forcing
         phi2_ff=cos(kf_fcont*x-omega_fcont*t)
       endif
 !
+      call keep_compiler_quiet(f)
+!
     endsubroutine calc_lforcing_cont_pars
 !***********************************************************************
     subroutine pencil_criteria_forcing()
@@ -2887,6 +2863,8 @@ module Forcing
 !  24-mar-08/axel: adapted from density.f90
 !
       logical, dimension(npencils) :: lpencil_in
+!
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_forcing
 !***********************************************************************
@@ -2981,9 +2959,11 @@ module Forcing
         endif
       endif
 !
+      call keep_compiler_quiet(f)
+!
     endsubroutine calc_pencils_forcing
 !***********************************************************************
-    subroutine forcing_continuous(df,p)
+    subroutine forcing_continuous(p)
 !
 !  add a continuous forcing term (used to be in hydro.f90)
 !
@@ -2992,13 +2972,9 @@ module Forcing
       use Diagnostics
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: forcing_rhs,fxb
+      real, dimension (nx,3) :: fxb
       real, dimension (nx) :: uf
       type (pencil_case) :: p
-      integer, save :: ifirst
-      integer :: j,jf,ifff,jtest
-      real :: fact
 !
 !  diagnostics
 !
