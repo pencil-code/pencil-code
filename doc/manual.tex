@@ -2222,12 +2222,6 @@ for a $y$-$z$ slice):
 
 In the file \file{xyaver.in}, $z$-dependent (horizontal) averages are listed.
 They are written to the file \file[xyaverages.dat]{data/xyaverages.dat}.
-%Currently, only the horizontally $xy$-averaged $x$ and $y$ components
-%of the magnetic and velocity fields can be written.
-%AB: there are many more
-%A new line of averages is written every time \file{var.dat} is updated
-%(i.e.\ every \var{it1}th time steps).
-%AB: it1 and isave are in general not the same.
 A new line of averages is written every \var{it1}th time steps.
 See Sec.~\ref{S-new-output-diagnostics} on how to add new averages.
 
@@ -2241,14 +2235,9 @@ In \code{idl} such $xy$-averages can be read using the procedure
 \file{pc_read_xyaver}.
 
 
-%\subsubsection{Vertical averages}
-%AB: a vertical average would be zaver.in, which also exists.
-%AB: So I changed it to "planar averages". OK?
 \subsubsection{Other planar averages}
 \label{S-ver-averages}
 
-%There is the possibility to output also vertical $xz$- and $yz$- averages.
-%AB: planar.
 There is the possibility to output also $xz$- and $yz$- averages.
 This is done by averaging first in the $z$-direction only, so
 the result (which is available on the root processor) depends on $x$
@@ -3923,32 +3912,6 @@ viscosity.
 The interpretation of the two viscosity terms varies greatly depending upon
 the Viscosity module used, and indeed on the parameters given to the module.
 See \S\ref{Bulkviscosity}.
-%AB: Is this ref reasonably ok?
-
-%ajwm - move this elsewhere? See section...
-%ajwm - and add description of shock viscosity
-%If \code{ivisc='nu-const'}, it is assumed that
-%$\nu = \const$ everywhere.
-%
-%If \code{ivisc='rho_nu-const'}, it is assumed that
-%$\mu \equiv \rho\nu = \const$ everywhere; in that
-%case the input parameter \var{nu} is used to give the value of
-%$\mu/\rho_0$ (\var{rho0} is another input parameter).
-%The term involving the
-%rate-of-strain tensor does not appear in the equation,
-%and $\nu$ is then replaced by $\mu/\rho$, which is no longer constant.
-%
-%If \code{ivisc='simplified'}, a simplified version, $\nu\Laplace\uv$, of the
-%viscous term is used.
-%This viscous operator is not physically consistent (linear and angular
-%momentum conservation is violated for compressible media), but for weakly
-%compressible flows (Mach numbers less than 10\%), there is little
-%difference to the full one.
-%In practice, one may decide to use the simplified viscous operator
-%during the initial relaxation phase of a long run, provided this
-%is not already part of a production run.
-
-
 
 For isothermal hydrodynamics, see \S\ref{entropy} below.
 
@@ -4199,7 +4162,6 @@ n_{\rm H}+n_{\rm H_2}+n_{\rm He}}
 is the mean molecular weight (which is here dimensionless; see
 Kippenhahn \& Weigert 1990, p.\ 102).
 The factor 4 is really to be substituted for 3.97153.
-%AB: need to check more carefully:
 Some of the familiar relations take still the usual form, in particular
 $e=c_vT$ and $h=c_pT$ with $c_v={3\over2}{\cal R}/\mu$ and
 $c_p={5\over2}{\cal R}/\mu$.
@@ -6029,6 +5991,7 @@ proper way for the Magnetic module to get to know the density is to request the
 pencil \code{rho} in \code{pencil_criteria_magnetic}.
 
 \subsubsection{Pencil check}
+\index{Pencil check}
 
 To check that the correct pencils have been requested for a given run, one can
 run a \name{pencil consistency check} in the beginning of a run by setting the
