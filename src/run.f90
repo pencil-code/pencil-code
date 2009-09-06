@@ -93,7 +93,7 @@ program run
   integer :: count, ierr
   logical :: stop=.false.,timeover=.false.,resubmit=.false.
   logical :: suppress_pencil_check=.false.
-  logical :: lreinit_file=.false., exist=.false.
+  logical :: lreinit_file=.false.
   logical :: lreload_file=.false., lreload_always_file=.false.
   real :: wall_clock_time=0., time_per_step=0.
   double precision :: time_last_diagnostic, time_this_diagnostic

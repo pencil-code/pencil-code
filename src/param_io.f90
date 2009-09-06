@@ -1113,6 +1113,8 @@ module Param_IO
       call keep_compiler_quiet(ltestscalar,ltestfield,ltestflow)
       call keep_compiler_quiet(lpscalar,lradiation,lcosmicray,lcosmicrayflux)
       call keep_compiler_quiet(linterstellar,lshock)
+      call keep_compiler_quiet(ldustdensity,ldustvelocity)
+      call keep_compiler_quiet(llorenz_gauge)
 !
     endsubroutine wparam
 !***********************************************************************
