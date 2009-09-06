@@ -19,14 +19,11 @@
 !
       integer :: it,nt=999999
       integer :: lun0,lun1,lun2
-      integer :: itdebug=2
       logical :: eof=.false.
       real :: t,fac1,fac2,maxval1,maxval2
 !
       character (len=120) :: dir='',wfile='',rfile1='',rfile2=''
       character (len=20) :: field='Jrad'
-!
-      logical :: exists, lwritten_something=.false.
 !
 !  read name of the field (must coincide with file extension)
 !
