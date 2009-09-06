@@ -332,7 +332,6 @@ while ( (not eof(1)) and (t le tmax) ) do begin
 ;  Plot normal box.
 ;
       if (not keyword_set(shell)) then begin
-        print, dev
         boxbotex_scl,xy2s,xys,xzs,yzs,xmax,ymax,zof=zof,zpos=zpos,ip=3,$
             amin=amin/oversaturate,amax=amax/oversaturate,dev=dev,$
             xpos=xpos,magnify=magnify,nobottom=nobottom,norm=norm,$
