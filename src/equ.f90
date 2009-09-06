@@ -489,7 +489,7 @@ module Equ
 !
 !  Continuous forcing function (currently only for extra diagonstics)
 !
-        if (lforcing_cont) call forcing_continuous(p)
+        if (lforcing_cont) call forcing_continuous(df,p)
 !
 !  Add and extra 'special' physics
 !

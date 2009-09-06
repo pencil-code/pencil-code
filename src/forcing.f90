@@ -2963,7 +2963,7 @@ module Forcing
 !
     endsubroutine calc_pencils_forcing
 !***********************************************************************
-    subroutine forcing_continuous(p)
+    subroutine forcing_continuous(df,p)
 !
 !  add a continuous forcing term (used to be in hydro.f90)
 !
@@ -2972,6 +2972,7 @@ module Forcing
       use Diagnostics
       use Sub
 !
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: fxb
       real, dimension (nx) :: uf
       type (pencil_case) :: p
@@ -2992,6 +2993,8 @@ module Forcing
           endif
         endif
       endif
+!
+      call keep_compiler_quiet(df)
 !
     endsubroutine forcing_continuous
 !***********************************************************************
