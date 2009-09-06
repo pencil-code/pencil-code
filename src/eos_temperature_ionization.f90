@@ -839,6 +839,18 @@ module EquationOfState
 
     endsubroutine write_eos_run_pars
 !***********************************************************************
+    subroutine get_slices_eos(f,slices)
+!
+      use Sub, only: keep_compiler_quiet
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices%ready)
+!
+    endsubroutine get_slices_eos
+!***********************************************************************
     subroutine isothermal_entropy(f,T0)
 !
 !  Isothermal stratification (for lnrho and ss)
@@ -1701,7 +1713,7 @@ module EquationOfState
 !  11-May-2006/tobi: coded
 !  16-May-2006/tobi: isentropic lower boundary
 !
-      use Gravity, only: gravz,grav_profile,reduced_top
+      use Gravity, only: gravz,gravz_profile,reduced_top
 
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
@@ -1830,7 +1842,7 @@ module EquationOfState
 !
 !  `Effective' gravitational acceleration (geff = gravz - rho1*dz1ppm)
 !
-        if (grav_profile=='reduced_top') then
+        if (gravz_profile=='reduced_top') then
           fac = reduced_top
         else
           fac = 1.0
