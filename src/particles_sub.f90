@@ -539,6 +539,7 @@ module Particles_sub
 !  Create list of processors that we allow migration to and from.
 !
       if (lshear .or. (it==1 .and. itsub==1)) then
+        iproc_comm=-1; nproc_comm=0
         do dipx=-1,1; do dipy=-1,1; do dipz=-1,1
           ipx_rec=ipx+dipx
           ipy_rec=ipy+dipy
@@ -554,7 +555,11 @@ module Particles_sub
           do while (ipz_rec<0);        ipz_rec=ipz_rec+nprocz; enddo
           do while (ipz_rec>nprocz-1); ipz_rec=ipz_rec-nprocz; enddo
           iproc_rec=ipx_rec+ipy_rec*nprocx+ipz_rec*nprocx*nprocy
-          if ( (.not.any(iproc_rec==iproc_comm)) .and. (iproc_rec/=iproc) ) then
+          if (nproc_comm==0) then
+            nproc_comm=nproc_comm+1
+            iproc_comm(nproc_comm)=iproc_rec
+          elseif ( (.not.any(iproc_rec==iproc_comm(1:nproc_comm))) .and. &
+               (iproc_rec/=iproc) ) then
             nproc_comm=nproc_comm+1
             iproc_comm(nproc_comm)=iproc_rec
           endif
