@@ -4692,19 +4692,27 @@ module Boundcond
 !
 !  Find the evolution equations at the boundary
 !
-!      select case(topbot)
+      select case(topbot)
      ! NB: For 'top' L_1 plays the role of L5 and L_5 the role of L1
-!      case('bot')
-!        df(lll,m1:m2,n1:n2,ilnrho) = prefac1*(L_5 + L_1)-parallell_term_rho
-!        df(lll,m1:m2,n1:n2,iux) = prefac2*(L_1 - L_5)-parallell_term_ux
-!        df(lll,m1:m2,n1:n2,iuy) = -L_3-parallell_term_uy
-!        df(lll,m1:m2,n1:n2,iuz) = -L_4-parallell_term_uz
-!      case('top')
+      case('bot')
         df(lll,m1:m2,n1:n2,ilnrho) = prefac1*(L_1 + L_5)-parallell_term_rho
-        df(lll,m1:m2,n1:n2,iux) = prefac2*(L_5 - L_1)-parallell_term_ux
+        if (llinlet) then
+          df(lll,m1:m2,n1:n2,iux) = prefac2*( L_5 - L_1)-parallell_term_ux
+        else
+          df(lll,m1:m2,n1:n2,iux) = prefac2*( L_1 - L_5)-parallell_term_ux
+        endif
         df(lll,m1:m2,n1:n2,iuy) = -L_3-parallell_term_uy
         df(lll,m1:m2,n1:n2,iuz) = -L_4-parallell_term_uz
-!      endselect
+      case('top')
+        df(lll,m1:m2,n1:n2,ilnrho) = prefac1*(L_1 + L_5)-parallell_term_rho
+        if (llinlet) then
+          df(lll,m1:m2,n1:n2,iux) = prefac2*( L_1 - L_5)-parallell_term_ux
+        else
+          df(lll,m1:m2,n1:n2,iux) = prefac2*(-L_1 + L_5)-parallell_term_ux
+        endif
+        df(lll,m1:m2,n1:n2,iuy) = -L_3-parallell_term_uy
+        df(lll,m1:m2,n1:n2,iuz) = -L_4-parallell_term_uz
+      endselect
 !
 !  Check if we are solving for logrho or rho
 !
@@ -4964,19 +4972,27 @@ module Boundcond
 !
 !  Find the evolution equations at the boundary
 !
-!      select case(topbot)
+      select case(topbot)
       ! NB: For 'top' L_1 plays the role of L5 and L_5 the role of L1
-!      case('bot')
-!        df(l1:l2,lll,n1:n2,ilnrho) = prefac1*(L_5 + L_1)-parallell_term_rho
-!        df(l1:l2,lll,n1:n2,iuy) = prefac2*(L_5 - L_1)-parallell_term_uy
-!        df(l1:l2,lll,n1:n2,iux) = -L_3-parallell_term_ux
-!        df(l1:l2,lll,n1:n2,iuz) = -L_4-parallell_term_uz
-!      case('top')
-        df(l1:l2,lll,n1:n2,ilnrho) = prefac1*(L_1 + L_5)-parallell_term_rho
-        df(l1:l2,lll,n1:n2,iuy) = prefac2*(L_5 - L_1)-parallell_term_uy
+      case('bot')
+        df(l1:l2,lll,n1:n2,ilnrho) = prefac1*(L_5 + L_1)-parallell_term_rho
+        if (llinlet) then
+          df(l1:l2,lll,n1:n2,iuy) = prefac2*( L_5 - L_1)-parallell_term_uy
+        else
+          df(l1:l2,lll,n1:n2,iuy) = prefac2*(-L_5 - L_1)-parallell_term_uy
+        endif
         df(l1:l2,lll,n1:n2,iux) = -L_3-parallell_term_ux
         df(l1:l2,lll,n1:n2,iuz) = -L_4-parallell_term_uz
-!      endselect
+      case('top')
+        df(l1:l2,lll,n1:n2,ilnrho) = prefac1*(L_1 + L_5)-parallell_term_rho
+        if (llinlet) then
+          df(l1:l2,lll,n1:n2,iuy) = prefac2*(-L_5 + L_1)-parallell_term_uy
+        else
+          df(l1:l2,lll,n1:n2,iuy) = prefac2*( L_5 - L_1)-parallell_term_uy
+        endif
+        df(l1:l2,lll,n1:n2,iux) = -L_3-parallell_term_ux
+        df(l1:l2,lll,n1:n2,iuz) = -L_4-parallell_term_uz
+      endselect
 !
 !  Check if we are solving for logrho or rho
 !
