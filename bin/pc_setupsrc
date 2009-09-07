@@ -126,6 +126,49 @@ link_special_files()
   cd $old_dir
 }
 #
+make_experimental_dir()
+{
+## src subdirectory
+  [ -h $src/experimental ] && rm $src/experimental
+  if [ ! -d $src/experimental ]; then
+    echo "No experimental directory found: creating new one (`pwd`/src/experimental)."
+    mkdir $src/experimental
+  fi
+}
+#
+link_experimental_files()
+{
+#
+#  LINK all *.f90, *.f, and the Makefile to local src directory
+#
+  echo "Linking files in '$src/experimental'."
+  old_dir="`pwd`"
+  cd $src/experimental
+  n=0
+  to_link=
+  for file in $srcdir/experimental/*.f90
+  do
+    if [ -f $file ] || [ -d $file ]; then
+      if [ -h "`basename $file`" ]; then
+        rm -f "`basename $file`"
+        to_link="$to_link $file"
+        #ln -s $file .
+      elif [ -f "`basename $file`" ] \
+        || [ -d "`basename $file`" ]; then
+        n="`expr $n + 1`"
+        existf="$existf`basename $file` "
+      else
+        to_link="$to_link $file"
+        #ln -s $file .
+      fi
+    else
+      echo "No such file: $file"
+    fi
+  done
+  [ "$to_link" ] && ln -s $to_link .
+  cd $old_dir
+}
+#
 make_initial_condition_dir()
 {
 ## src subdirectory
@@ -308,6 +351,8 @@ make_src_dir
 link_src_files
 make_special_dir
 link_special_files
+make_experimental_dir
+link_experimental_files
 make_initial_condition_dir
 link_initial_condition_files
 create_Makefile_inc
