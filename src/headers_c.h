@@ -13,12 +13,12 @@
 #  define REAL double
 #  define FINT int		/* should this be long int? */
 #  define NBYTES 8
-#  define GSL_PREC GSL_PREC_SINGLE
+#  define GSL_PREC GSL_PREC_DOUBLE
 #else
 #  define REAL float
 #  define FINT int
 #  define NBYTES 4
-#  define GSL_PREC GSL_PREC_DOUBLE
+#  define GSL_PREC  GSL_PREC_SINGLE
 #endif
 
 /* Pick correct number of underscores here (2 for g95 without
