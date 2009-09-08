@@ -12,7 +12,7 @@
   public :: pencil_criteria_hydro, pencil_interdep_hydro
   public :: calc_mflow, remove_mean_momenta, impose_velocity_ceiling
   public :: uumz,lcalc_uumean
-
+  public :: hydro_clean_up
 !ajwm SHOULDN'T BE EXPORTED
 !
 ! Keplerian velocity boundary condition parameters

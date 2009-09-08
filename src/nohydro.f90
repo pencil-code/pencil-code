@@ -32,6 +32,9 @@ module Hydro
   real, allocatable, dimension (:,:) :: KS_k,KS_A,KS_B !or through whole field for each wavenumber?
   real, allocatable, dimension (:) :: KS_omega !or through whole field for each wavenumber?
   integer :: KS_modes = 3
+  real, allocatable, dimension (:) :: Zl,dZldr,Pl,dPldtheta
+  real :: Balpha
+  integer :: ell
 !
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
@@ -94,6 +97,8 @@ module Hydro
 !  specific modes.
 !
         call random_isotropic_KS_setup_test
+        elseif (kinflow=='ck') then
+          call init_ck
       endif
 !
 !  Register an extra aux slot for uu if requested (so uu is written
@@ -218,7 +223,7 @@ module Hydro
       real, dimension(nx) :: tmp_mn, cos1_mn, cos2_mn
       real :: kkx_aa, kky_aa, kkz_aa, fac, fac2
       real :: fpara, dfpara, ecost, esint, epst, sin2t, cos2t
-      integer :: modeN
+      integer :: modeN,l
       real :: sqrt2, sqrt21k1, eps1=1., WW=0.25, k21
 !
       intent(in) :: f
@@ -292,6 +297,20 @@ module Hydro
         endif
 ! divu
         if (lpencil(i_divu)) p%divu= (kkx_aa-kky_aa)*cos(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))
+!
+! Chandrasekhar-Kendall Flow
+!
+      elseif (kinflow=='ck') then
+! uu
+        if (lpencil(i_uu)) then
+          if (headtt) print*,'Chandrasekhar-Kendall flow'
+          p%uu(:,1)=ampl_kinflow*(ell*(ell+1)/Balpha*x(l1:l2))*Zl(l1:l2)*Pl(m)
+          p%uu(:,2)=ampl_kinflow*(1./Balpha*x(l1:l2))*(2*x(l1:l2)*Zl(l1:l2)+& 
+                         dZldr(l1:l2)*Balpha*x(l1:l2)**2)*dPldtheta(m)
+          p%uu(:,3)=-ampl_kinflow*Zl(l1:l2)*dPldtheta(m)
+        endif
+! divu
+        if (lpencil(i_divu)) p%divu= 0.
 !
 !  Glen-Roberts flow (positive helicity)
 !
@@ -1458,4 +1477,56 @@ kky_aa=2.*pi
 !
     endsubroutine impose_velocity_ceiling
 !***********************************************************************
+    subroutine init_ck
+!
+!  8-sep-2009/dhruba: coded
+!     
+      integer :: l,m
+      real :: jl,jlp1,jlm1,LPl,LPlm1
+!
+      print*, 'Initializing variables from Chandrasekhar-Kendall flow'
+      print*, 'Allocating..'
+      allocate(Zl(mx),dZldr(mx))
+      allocate(Pl(my),dPldtheta(my))
+      print*, 'Allocation done'
+      ell=4
+      Balpha=2.
+      print*, 'ell=,alpha=',ell,Balpha
+!
+      do l=1,mx
+        call sp_besselj_l(jl,ell,Balpha*x(l))
+        call sp_besselj_l(jlp1,ell+1,Balpha*x(l))
+        call sp_besselj_l(jlm1,ell-1,Balpha*x(l))
+        Zl(l) = jl
+        dZldr(l) = ell*jlm1-(ell+1)*jlp1
+      enddo
+      do m=1,my
+        call legendre_pl(LPl,ell,y(m))
+        call legendre_pl(LPlm1,ell-1,y(m))
+        Pl(m) = Lpl
+        dPldtheta(m) = -(1/sin(y(m)))*ell*(LPlm1-LPl)
+      enddo
+!
+    endsubroutine init_ck
+!***********************************************************************
+    subroutine hydro_clean_up
+!
+!  Deallocate the variables allocated in nohydro
+!
+!  8-sep-2009/dhruba: coded
+!
+      print*, 'Deallocating some nohydro variables ...'
+      if (kinflow=='ck') then
+        deallocate(Zl,dZldr)
+        deallocate(Pl,dPldtheta)
+      elseif (kinflow=='KS') then
+         deallocate(KS_k)
+         deallocate(KS_A)
+         deallocate(KS_B)
+         deallocate(KS_omega)
+       endif
+      print*, 'Done.'
+!
+    endsubroutine hydro_clean_up
+!*******************************************************************
 endmodule Hydro

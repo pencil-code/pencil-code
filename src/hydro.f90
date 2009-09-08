@@ -4120,4 +4120,14 @@ module Hydro
 !
     endsubroutine impose_velocity_ceiling
 !***********************************************************************
+    subroutine hydro_clean_up
+!
+!  dummy routine
+!
+!  8-sep-2009/dhruba: coded
+!
+      print*, 'I should not be called. '
+!
+    endsubroutine hydro_clean_up
+!*******************************************************************
 endmodule Hydro
