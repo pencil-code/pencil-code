@@ -1105,7 +1105,7 @@ module Forcing
             do aindex=1,3
               Balpha = cklist(ilist,2+aindex)
               call sp_bessely_l(anum,Legendrel,Balpha*x(l1))
-              call sp_besselj_l(adenom,Legendrel,Balpha*x(l1))
+             call sp_besselj_l(adenom,Legendrel,Balpha*x(l1))
               a_ell = -anum/adenom
               do l=l1-nghost,l2+nghost
                 alphar=Balpha*x(l)
@@ -3132,4 +3132,19 @@ module Forcing
 !
     endsubroutine rprint_forcing
 !***********************************************************************
+    subroutine forcing_clean_up
+!
+!  deallocate the variables needed for forcing
+!
+!   12-aug-09/dhruba: coded
+!
+      if(iforce=='chandra-kendall') then
+        print*,'Deallocating arrays relevent to Chanrasekhar-Kendall forcing ..'
+        deallocate(psif,cklist)
+        if(lfastCK)  deallocate(Zpsi_list,RYlm_list)
+        print*,'Done.'
+      endif
+!
+    endsubroutine forcing_clean_up
+!*******************************************************************
 endmodule Forcing

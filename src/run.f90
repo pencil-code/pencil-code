@@ -418,6 +418,7 @@ program run
 ! xzaverages and yzaverages.
         If (lwrite_yaverages) call yaverages_clean_up() 
         If (lwrite_zaverages) call zaverages_clean_up() 
+        If(lforcing) call forcing_clean_up()
         If(.not.lhydro) call hydro_clean_up()
        call rprint_list(LRESET=.true.) !(Re-read output list)
         call initialize_modules(f,LSTARTING=.false.)

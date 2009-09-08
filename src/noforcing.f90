@@ -215,4 +215,11 @@ module Forcing
 !
     endsubroutine rprint_forcing
 !***********************************************************************
+    subroutine forcing_clean_up
+!
+!   12-aug-09/dhruba: coded
+!   dummy routine. 
+!
+    endsubroutine forcing_clean_up
+!*******************************************************************
 endmodule Forcing
