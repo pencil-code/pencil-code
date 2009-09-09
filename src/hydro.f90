@@ -631,6 +631,7 @@ module Hydro
       use InitialCondition, only: initial_condition_uu
       use Mpicomm, only: stop_it
       use Sub
+      use Boundcond,only:update_ghosts
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -992,13 +993,8 @@ module Hydro
 ! Get the streamfunction, save it in the iuz slot
           call sinwave_phase(f,iuz,ampl_ux(j)/ky_uu,&
               kx_uu,ky_uu,kz_uu,phase_ux(j))
-! Set the (periodic) boundaries before taking the curl
-          f( 1:l1-1,:,:,iuz) = f( l2i:l2,:,:,iuz)
-          f(l2+1:mx,:,:,iuz) = f(l1:l1+2,:,:,iuz)
-          f(:, 1:m1-1,:,iuz) = f(:, m2i:m2,:,iuz)
-          f(:,m2+1:my,:,iuz) = f(:,m1:m1+2,:,iuz)
-          f(:,:, 1:n1-1,iuz) = f(:,:, n2i:n2,iuz)
-          f(:,:,n2+1:mz,iuz) = f(:,:,n1:n1+2,iuz)  
+! Set the boundaries before taking the curl
+          call update_ghosts(f)
 ! 2D curl
           do n=n1,n2;do m=m1,m2
             call grad(f,iuz,tmp_nx3)
