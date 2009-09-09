@@ -18,6 +18,7 @@ module Deriv
   public :: initialize_deriv
   public :: der, der2, der3, der4, der5, der6, derij, der5i1j
   public :: der6_other, der_pencil, der2_pencil
+  public :: der_z
   public :: der_upwind1st
   public :: der_onesided_4_slice
   public :: der_onesided_4_slice_other
@@ -144,6 +145,32 @@ module Deriv
       endif
 !
     endsubroutine der_main
+!***********************************************************************
+    subroutine der_z(f,df)
+!
+!  z derivative operating on a z-dependent 1-D array
+!
+!   9-feb-07/axel: adapted from der_main; note that f is not the f array!
+
+      use Cdata
+!
+      real, dimension (mz) :: f,df
+      real, dimension (nz) :: fac
+!
+      intent(in)  :: f
+      intent(out) :: df
+!
+      if (nzgrid/=1) then
+        fac=(1./60)*dz_1(n1:n2)
+        df(n1:n2)=fac*(+ 45.0*(f(n1+1:n2+1)-f(n1-1:n2-1)) &
+                       -  9.0*(f(n1+2:n2+2)-f(n1-2:n2-2)) &
+                       +      (f(n1+3:n2+3)-f(n1-3:n2-3)))
+      else
+        df=0.
+        if (ip<=5) print*, 'der_other: Degenerate case in z-direction'
+      endif
+!
+    endsubroutine der_z
 !***********************************************************************
     subroutine der_other(f,df,j)
 !
