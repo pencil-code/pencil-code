@@ -13,7 +13,6 @@ module Sub
   public :: step,step_scalar,stepdown
 !
   public :: identify_bcs, parse_bc, parse_bc_rad, parse_bc_radg
-  public :: parse_nscbc
 !
   public :: poly, notanumber
   public :: keep_compiler_quiet
@@ -4390,46 +4389,6 @@ module Sub
         endif
 !
       endsubroutine parse_bc_radg
-!***********************************************************************
-      subroutine parse_nscbc(bc,bc1,bc2)
-!
-!  Parse boundary conditions, which may be in the form `a' (applies to
-!  both `lower' and `upper' boundary) or `a:s' (use `a' for lower,
-!  `s' for upper boundary.
-!
-!  Be aware of the difference in format when giving NSCBC boundary
-!  conditions and usual boundary conditions through the bcx, bcy, bcz
-!  variables:
-!
-!  bc = 'top_x:bottom_x','top_y:bottom_y','top_z:bottom_z'
-!  for top and bottom boundary treatment at x, y and z-boundaries.
-!
-!  bc1(1) then refers to boundary treatment at bottom x-boundary, bc2(1)
-!  at top x-boundary etc.
-!  Ie. this routine sets the boundary condition variables, bc1 and bc2,
-!  for x, y and z-boundaries all at once.
-!
-!   7-jul-08/arne: adapted from parse_bc
-!
-        character (len=2*nscbc_len+1), dimension(3) :: bc
-        character (len=nscbc_len), dimension(3) :: bc1,bc2
-        integer :: j,isep
-!
-        intent(in) :: bc
-        intent(out) :: bc1,bc2
-!
-        do j=1,3
-          isep = index(bc(j),':')
-          if (isep > 0) then
-            bc1(j) = bc(j)(1:isep-1)
-            bc2(j) = bc(j)(isep+1:)
-          else
-            bc1(j) = bc(j)(1:nscbc_len)
-            bc2(j) = bc(j)(1:nscbc_len)
-          endif
-        enddo
-!
-      endsubroutine
 !***********************************************************************
       subroutine parse_shell(strin,strout)
 !

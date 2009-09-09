@@ -16,6 +16,7 @@ GSL               = nogsl
 INITIAL_CONDITION = noinitial_condition
 IO                =   io_dist
 MPICOMM           =   mpicomm
+NSCBC             = noNSCBC
 POWER             = nopower_spectrum
 SOLID_CELLS       = nosolid_cells
 STRUCT_FUNC       = nostruct_func
@@ -374,7 +375,7 @@ endif
 #FC=gfortran -I. #(copernicus)
 #FFLAGS= -O3 -I/usr/local/include #(copernicus)
 #FFLAGS_DOUBLE=-fdefault-real-8 #(copernicus)
-#LD_MPI=-L/usr/local/lib -lfmpich -lmpich -pthread #(copernicus)
+##LD_MPI=-L/usr/local/lib -lfmpich -lmpich -pthread #(copernicus)
 #FC=ifort  #(co-login)
 #LD_MPI=-lmpi  #(co-login)
 ##FC=pgf90 #(erland|bohm|igor|onsager)
@@ -1214,7 +1215,7 @@ MPICOMM_FIX=$(MPICOMM)$(LIBMPISUFFIX)
 #
 #  Technical modules (can not add to cparam.inc).
 #
-technical=cparam.o cdata.o particles_cdata.o messages.o general.o farray.o shared_variables.o $(FOURIER).o slices.o $(DERIV).o boundcond.o filter.o initcond.o register.o diagnostics.o $(TIMEAVG).o persist.o $(GRID).o $(SOLID_CELLS).o
+technical=cparam.o cdata.o particles_cdata.o messages.o general.o farray.o shared_variables.o $(FOURIER).o slices.o $(DERIV).o boundcond.o filter.o initcond.o register.o diagnostics.o $(TIMEAVG).o persist.o $(GRID).o $(SOLID_CELLS).o $(NSCBC).o
 #
 #  Switchable physics modules.
 #

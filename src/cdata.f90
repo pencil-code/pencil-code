@@ -404,26 +404,8 @@ module Cdata
   character (len=10), dimension(mfarray) :: varname
   character (len=labellen) :: force_lower_bound='',force_upper_bound=''
   logical :: lsolid_cells
-!
-! NSCBC stuff. An alternative way of imposing (time-dependent) boundary 
-! conditions through solving differential equations on the boundaries.
-!
-! Format: nscbc = 'bottom_x:top_x','bottom_y:top_y','bottom_z:top_z'
-! for top and bottom boundary treatment at x, y and z-boundaries.
-!
-! nscbc1(1) refers to boundary treatment at bottom x-boundary, nscbc2(1)
-! at top x-boundary etc.
-! fbcx1, fbcx2 etc. are still used to impose values of variables at the
-! boundaries.
-!
-! nscbc_sigma is a parameter describing how fast the velocity will reach
-! an imposed velocity at an inlet in the absence of outgoing waves. How
-! to set it is case dependent.
-!
   logical :: lnscbc = .false.
-  character(len=2*nscbc_len+1), dimension(5) :: nscbc=''
-  character(len=nscbc_len), dimension(5) :: nscbc1,nscbc2
-  real :: nscbc_sigma_out = 1.,nscbc_sigma_in = 1., p_infty=1.
+
 !
 !  Parameters for freezing boundary zones.
 !

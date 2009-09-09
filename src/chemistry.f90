@@ -4153,7 +4153,7 @@ module Chemistry
     endsubroutine bc_nscbc_subin_x
 !***********************************************************
 !***********************************************************
-    subroutine bc_nscbc_nref_subout_x(f,df,topbot)
+    subroutine bc_nscbc_nref_subout_x(f,df,topbot,nscbc_sigma_out)
 
 !
 !   nscbc case
@@ -4186,10 +4186,11 @@ module Chemistry
 !      real, dimension(ny,nz,3,3) :: dui_dxj
 !
       integer :: lll, sgn,i,j,k
-      real :: Mach_num
+      real :: Mach_num, nscbc_sigma_out
 !
       intent(inout) :: f
       intent(out) :: df
+      intent(in) :: nscbc_sigma_out
 !
       if (leos_chemistry) then
         call get_cs2_full(cs2_full)
@@ -4457,7 +4458,7 @@ module Chemistry
     endsubroutine bc_nscbc_nref_subout_x
 !***********************************************************************
 !***********************************************************
-    subroutine bc_nscbc_nref_subout_y(f,df,topbot)
+    subroutine bc_nscbc_nref_subout_y(f,df,topbot,nscbc_sigma_out)
 !
 !   nscbc case
 !   subsonic non-reflecting outflow boundary conditions
@@ -4485,10 +4486,11 @@ module Chemistry
 !      real, dimension(ny,nz,3,3) :: dui_dxj
 !
       integer :: mmm, sgn,i,j,k
-      real :: Mach_num
+      real :: Mach_num,nscbc_sigma_out
 !
       intent(inout) :: f
       intent(out) :: df
+      intent(in) :: nscbc_sigma_out
 !
       if (leos_chemistry) then
         call get_cs2_full(cs2_full)
@@ -4656,7 +4658,7 @@ module Chemistry
     endsubroutine bc_nscbc_nref_subout_y
 !***********************************************************************
 !***********************************************************
-    subroutine bc_nscbc_nref_subout_z(f,df,topbot)
+    subroutine bc_nscbc_nref_subout_z(f,df,topbot,nscbc_sigma_out)
 !
 !   nscbc case
 !   subsonic non-reflecting outflow boundary conditions
@@ -4684,10 +4686,11 @@ module Chemistry
 !      real, dimension(ny,nz,3,3) :: dui_dxj
 !
       integer :: nnn, sgn,i,j,k
-      real :: Mach_num
+      real :: Mach_num,nscbc_sigma_out
 !
       intent(inout) :: f
       intent(out) :: df
+      intent(in) :: nscbc_sigma_out
 !
       if (leos_chemistry) then
         call get_cs2_full(cs2_full)

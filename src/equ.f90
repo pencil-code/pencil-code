@@ -50,6 +50,7 @@ module Equ
       use Mpicomm
       use NeutralDensity
       use NeutralVelocity
+      use NSCBC
       use Particles_main
       use Poisson
       use Pscalar

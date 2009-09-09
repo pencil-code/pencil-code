@@ -29,6 +29,7 @@ module Param_IO
   use Messages
   use NeutralDensity
   use NeutralVelocity
+  use NSCBC
   use Particles_main
   use Poisson
   use Pscalar
@@ -76,7 +77,6 @@ module Param_IO
        lwrite_aux,pretend_lnTT, &
        lprocz_slowest, lcopysnapshots_exp, &
        bcx,bcy,bcz,r_int,r_ext,r_ref,rsmooth, &
-       nscbc, &
        mu0,force_lower_bound,force_upper_bound, &
        tstart, &
        fbcx1,fbcx2,fbcy1,fbcy2,fbcz1,fbcz2,fbcz1_1,fbcz1_2,fbcz2_1,fbcz2_2, &
@@ -89,7 +89,7 @@ module Param_IO
        lcylindrical_gravity,border_frac_x,border_frac_y, &
        border_frac_z,luse_latitude, &
        lshift_datacube_x,lfargo_advection,&
-       yequator, nscbc_sigma_in, nscbc_sigma_out, p_infty,&
+       yequator,&
        lequatory, lequatorz, zequator
 
 !
@@ -120,7 +120,6 @@ module Param_IO
        comment_char, &
        ix,iy,iz,iz2,iz3,iz4,slice_position,zbot_slice,ztop_slice, &
        bcx,bcy,bcz,r_int,r_ext, &
-       nscbc, &
        lfreeze_varsquare,lfreeze_varint,lfreeze_varext, &
        xfreeze_square,yfreeze_square,rfreeze_int,rfreeze_ext, &
        wfreeze,wfreeze_int,wfreeze_ext, &
@@ -144,8 +143,7 @@ module Param_IO
        lpencil_check,lpencil_check_diagnos_opti,lpencil_init,lwrite_2d, &
        lbidiagonal_derij,lisotropic_advection, &
        crash_file_dtmin_factor,niter_poisson, &
-       lADI,ltestperturb,eps_rkf,eps_stiff,timestep_scaling, nscbc_sigma_in,&
-       nscbc_sigma_out, p_infty, &
+       lADI,ltestperturb,eps_rkf,eps_stiff,timestep_scaling, &
        lequatory, lequatorz, zequator,&
        lini_t_eq_zero
   contains
@@ -220,8 +218,6 @@ module Param_IO
 !
 !   6-jul-02/axel: in case of error, print sample namelist
 !  21-oct-03/tony: moved sample namelist stuff to a separate procedure
-!   7-jul-08/arne: added setting of logical lnscbc, and call
-!                  to parse_nscbc
 !
       integer :: ierr,i
       logical, optional :: print,file
@@ -370,6 +366,10 @@ module Param_IO
       if (ierr/=0) call sample_startpars('solid_cells_init_pars',ierr)
 !
       call sgi_fix(lsgifix,1,'start.in')
+      call read_NSCBC_init_pars(1,IOSTAT=ierr)
+      if (ierr/=0) call sample_startpars('NSCBC_init_pars',ierr)
+!
+      call sgi_fix(lsgifix,1,'start.in')
       call particles_read_startpars(1,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('particles_init_pars_wrap',ierr)
 !
@@ -414,12 +414,6 @@ module Param_IO
       endif
 !
       call check_consistency_of_lperi('read_startpars')
-!
-      do i=1,3
-        if (nscbc(i) /= '') lnscbc = .true.
-      enddo
-!
-      if (lnscbc) call parse_nscbc(nscbc,nscbc1,nscbc2)
 !
 !  Produce a warning when somebody still sets lcylindrical.
 !
@@ -482,6 +476,7 @@ module Param_IO
         if (ltestperturb      ) print*,'&testperturb_init_pars     /'
         if (lspecial          ) print*,'&special_init_pars         /'
         if (lsolid_cells      ) print*,'&solid_cells_init_pars     /'
+        if (lnscbc            ) print*,'&NSCBC_init_pars           /'
         if (lparticles        ) print*,'&particles_init_pars_wrap  /'
         print*,'------END sample namelist -------'
         print*
@@ -550,6 +545,7 @@ module Param_IO
         call write_special_init_pars(unit)
         call write_shock_init_pars(unit)
         call write_solid_cells_init_pars(unit)
+        call write_NSCBC_init_pars(unit)
         call particles_wparam(unit)
 !
         if (present(file)) then
@@ -567,8 +563,6 @@ module Param_IO
 !  31-may-02/wolf: renamed from cread to read_runpars
 !   6-jul-02/axel: in case of error, print sample namelist
 !  21-oct-03/tony: moved sample namelist stuff to a separate procedure
-!   7-jul-08/arne: added setting of logical lnscbc, and call
-!                  to parse_nscbc
 !
       use Sub, only: parse_bc
       use Dustvelocity, only: copy_bcs_dust
@@ -722,6 +716,10 @@ module Param_IO
       if (ierr/=0) call sample_runpars('solid_cells_run_pars',ierr)
 !
       call sgi_fix(lsgifix,1,'run.in')
+      call read_NSCBC_run_pars(1,IOSTAT=ierr)
+      if (ierr/=0) call sample_runpars('NSCBC_run_pars',ierr)
+!
+      call sgi_fix(lsgifix,1,'run.in')
       call particles_read_runpars(1,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('particles_run_pars_wrap',ierr)
 !
@@ -781,12 +779,6 @@ module Param_IO
 !
       call check_consistency_of_lperi('read_runpars')
 !
-      do i=1,3
-        if (nscbc(i) /= '') lnscbc = .true.
-      enddo
-!
-      if (lnscbc) call parse_nscbc(nscbc,nscbc1,nscbc2)
-!
 !  In case of i/o error: print sample input list.
 !
       return
@@ -835,6 +827,7 @@ module Param_IO
         if (lspecial        ) print*,'&special_run_pars         /'
         if (lshock          ) print*,'&shock_run_pars           /'
         if (lsolid_cells    ) print*,'&solid_cells_run_pars     /'
+        if (lnscbc          ) print*,'&NSCBC_run_pars           /'
         if (lparticles      ) print*,'&particles_run_pars_wrap  /'
         print*,'------END sample namelist -------'
         print*
@@ -924,6 +917,7 @@ module Param_IO
         call write_special_run_pars(unit)
         call write_shock_run_pars(unit)
         call write_solid_cells_run_pars(unit)
+        call write_NSCBC_run_pars(unit)
         call particles_wparam2(unit)
 !
         if (present(file)) then
@@ -1099,6 +1093,7 @@ module Param_IO
         call write_special_init_pars(1)
         call write_shock_init_pars(1)
         call write_solid_cells_init_pars(1)
+        call write_NSCBC_init_pars(1)
         call write_initial_condition_pars(1)
         call particles_wparam(1)
         ! The following parameters need to be communicated to IDL
@@ -1155,6 +1150,7 @@ module Param_IO
       call read_special_init_pars(1)
       call read_shock_init_pars(1)
       call read_solid_cells_init_pars(1)
+      call read_NSCBC_init_pars(1)
       call read_initial_condition_pars(1)
       call particles_rparam(1)
       close(1)
@@ -1203,6 +1199,7 @@ module Param_IO
         call write_special_run_pars(1)
         call write_shock_run_pars(1)
         call write_solid_cells_run_pars(1)
+        call write_NSCBC_run_pars(1)
         call particles_wparam2(1)
         close(1)
       endif
