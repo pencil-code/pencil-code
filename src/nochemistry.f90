@@ -152,39 +152,45 @@ module Chemistry
 !
     endsubroutine bc_nscbc_subin_x
 !********************************************************************
-    subroutine bc_nscbc_nref_subout_x(f,df,topbot)
+    subroutine bc_nscbc_nref_subout_x(f,df,topbot,nscbc_sigma_out)
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       character (len=3) :: topbot
+      real :: nscbc_sigma_out
 !     
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(topbot)
+      call keep_compiler_quiet(nscbc_sigma_out)
 !
     endsubroutine bc_nscbc_nref_subout_x
 !***********************************************************************
-    subroutine bc_nscbc_nref_subout_y(f,df,topbot)
+    subroutine bc_nscbc_nref_subout_y(f,df,topbot,nscbc_sigma_out)
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       character (len=3) :: topbot
+      real :: nscbc_sigma_out
 !     
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(topbot)
+      call keep_compiler_quiet(nscbc_sigma_out)
 !
     endsubroutine bc_nscbc_nref_subout_y
 !***********************************************************************
-    subroutine bc_nscbc_nref_subout_z(f,df,topbot)
+    subroutine bc_nscbc_nref_subout_z(f,df,topbot,nscbc_sigma_out)
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       character (len=3) :: topbot
+      real :: nscbc_sigma_out
 !     
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(topbot)
+      call keep_compiler_quiet(nscbc_sigma_out)
 !
     endsubroutine bc_nscbc_nref_subout_z
 !***********************************************************************
