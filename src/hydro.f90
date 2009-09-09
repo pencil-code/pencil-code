@@ -634,6 +634,7 @@ module Hydro
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
+      real, dimension (nx,3) :: tmp_nx3
       real, dimension (mx) :: tmpmx
       real, dimension (nx) :: r,p,tmp,prof
       real :: kabs,crit,eta_sigma,tmp0
@@ -985,24 +986,27 @@ module Hydro
           enddo; enddo
 
         case('incompressive-shwave')
-          ampl_ux = ampl_ux/ky_uu
-          print*, "incomp-shwave: ampl_ux(j) = ", ampl_ux(j)
-          call sinwave_phase(f,iuz,ampl_ux(j),kx_uu,ky_uu,kz_uu,phase_ux(i))
-          f(1:l1-1,:,:,iuz) = f(l2i:l2,:,:,iuz)
+! WL: document this initial condition? Looks like the incompressible 
+!     shear wave of Shen et al. (2006). Jeff?
+          print*, "incomp-shwave: ampl_ux/ky_uu = ", ampl_ux(j)/ky_uu
+! Get the streamfunction, save it in the iuz slot
+          call sinwave_phase(f,iuz,ampl_ux(j)/ky_uu,&
+              kx_uu,ky_uu,kz_uu,phase_ux(j))
+! Set the (periodic) boundaries before taking the curl
+          f( 1:l1-1,:,:,iuz) = f( l2i:l2,:,:,iuz)
           f(l2+1:mx,:,:,iuz) = f(l1:l1+2,:,:,iuz)
-          f(:,1:m1-1,:,iuz) = f(:,m2i:m2,:,iuz)
+          f(:, 1:m1-1,:,iuz) = f(:, m2i:m2,:,iuz)
           f(:,m2+1:my,:,iuz) = f(:,m1:m1+2,:,iuz)
-          f(:,:,1:n1-1,iuz) = f(:,:,n2i:n2,iuz)
-          f(:,:,n2+1:mz,iuz) = f(:,:,n1:n1+2,iuz)
-          
-          f(:,:,:,iux) = 0.
-          f(:,:,:,iuy) = 0.
-! MEMOPT/AJ : requires too much memory, so commented out
-!          do n=n1,n2; do m=m1,m2
-!            call curl(f,iuu,utmp(l1:l2,m,n,:))
-!          enddo;enddo
-!          f(:,:,:,iux:iuz) = utmp
-
+          f(:,:, 1:n1-1,iuz) = f(:,:, n2i:n2,iuz)
+          f(:,:,n2+1:mz,iuz) = f(:,:,n1:n1+2,iuz)  
+! 2D curl
+          do n=n1,n2;do m=m1,m2
+            call grad(f,iuz,tmp_nx3)
+            f(l1:l2,m,n,iux) = -tmp_nx3(:,2)
+            f(l1:l2,m,n,iuy) =  tmp_nx3(:,1)
+          enddo;enddo
+          f(:,:,:,iuz)=0.
+!
         case('cylcoords-stream-x')
 ! Constant velocity in x-direction in cylinder coordinates  
           do l=l1,l2; do m=m1,m2
@@ -1013,7 +1017,7 @@ module Hydro
           f(:,:,:,iuz)=0.
           f(1:l1,:,:,iux:iuz)=0.
 
- case('cylinderstream_cyl')
+        case('cylinderstream_cyl')
 !   Stream functions for flow around a cylinder as initial condition.
 !   Cylindrical coordinates. Flow in x-direction. 
           a2 = r_cyl**2
@@ -4129,5 +4133,5 @@ module Hydro
       print*, 'I should not be called. '
 !
     endsubroutine hydro_clean_up
-!*******************************************************************
+!*******************************************************************      
 endmodule Hydro
