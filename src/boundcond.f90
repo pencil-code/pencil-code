@@ -4664,23 +4664,41 @@ module Boundcond
 !  Add terms due to derivatives parallell to the boundary
 !  NILS: Viscous terms in the x direction are missing!
 !
-      parallell_term_rho &
-           =rho0*dui_dxj(:,:,2,2)+f(lll,m1:m2,n1:n2,iuy)*grad_rho(:,:,2)&
-           +rho0*dui_dxj(:,:,3,3)+f(lll,m1:m2,n1:n2,iuz)*grad_rho(:,:,3)
-      parallell_term_ux &
-           =f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,1,2)&
-           +f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,1,3)&
-           +nu*(d2u1_dy2+d2u1_dz2)
-      parallell_term_uy &
-           =f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,2,2)&
-           +f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,2,3)&
-           +cs20_ar(m1:m2,n1:n2)*grad_rho(:,:,2)/rho0&
-           +nu*(d2u2_dy2+d2u2_dz2)
-      parallell_term_uz &
-           =f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,3,2)&
-           +f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,3,3)&
-           +cs20_ar(m1:m2,n1:n2)*grad_rho(:,:,3)/rho0&
-           +nu*(d2u3_dy2+d2u3_dz2)
+!!$      parallell_term_rho &
+!!$           =rho0*dui_dxj(:,:,2,2)+f(lll,m1:m2,n1:n2,iuy)*grad_rho(:,:,2)&
+!!$           +rho0*dui_dxj(:,:,3,3)+f(lll,m1:m2,n1:n2,iuz)*grad_rho(:,:,3)
+!!$      parallell_term_ux &
+!!$           =f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,1,2)&
+!!$           +f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,1,3)&
+!!$           +nu*(d2u1_dy2+d2u1_dz2)
+!!$      parallell_term_uy &
+!!$           =f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,2,2)&
+!!$           +f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,2,3)&
+!!$           +cs20_ar(m1:m2,n1:n2)*grad_rho(:,:,2)/rho0&
+!!$           +nu*(d2u2_dy2+d2u2_dz2)
+!!$      parallell_term_uz &
+!!$           =f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,3,2)&
+!!$           +f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,3,3)&
+!!$           +cs20_ar(m1:m2,n1:n2)*grad_rho(:,:,3)/rho0&
+!!$           +nu*(d2u3_dy2+d2u3_dz2)
+
+
+print*,'x----------------------------------------------------'
+!!$print*,'uy=',f(lll,m1:m2,n1:n2,iuy)
+!!$print*,'uz=',f(lll,m1:m2,n1:n2,iuz)
+!!$print*,'dui_dxj(:,:,1,2)=',dui_dxj(:,:,1,2)
+!!$print*,'dui_dxj(:,:,1,3)=',dui_dxj(:,:,1,3)
+!!$print*,'parallell_term_ux=',parallell_term_ux
+!!$print*,maxval(f(lll,m1:m2,n1:n2,iuy)),maxval(dui_dxj(:,:,1,2))
+!!$print*,maxval(f(lll,m1:m2,n1:n2,iuz)),maxval(dui_dxj(:,:,1,3))
+!!$print*,minval(f(lll,m1:m2,n1:n2,iuy)),minval(dui_dxj(:,:,1,2))
+!!$print*,minval(f(lll,m1:m2,n1:n2,iuz)),minval(dui_dxj(:,:,1,3))
+!!$print*,minval(parallell_term_rho),maxval(parallell_term_rho)
+!!$print*,minval(parallell_term_ux),maxval(parallell_term_ux)
+!!$print*,minval(parallell_term_uy),maxval(parallell_term_uy)
+!!$print*,minval(parallell_term_uz),maxval(parallell_term_uz)
+
+
 !
 !  NILS: Currently the implementation with the parallell terms does not 
 !  NILS: seem to work. Set at parallell terms to zero for now.
@@ -4963,8 +4981,24 @@ module Boundcond
 !!$           +cs20_ar(l1:l2,n1:n2)*grad_rho(:,:,3)/rho0&
 !!$           +nu*(d2u3_dx2+d2u3_dz2)
 
+print*,'y----------------------------------------------------'
+!!$print*,'ux=',f(l1:l2,lll,n1:n2,iux)
+!!$print*,'uz=',f(l1:l2,lll,n1:n2,iuz)
+!!$print*,'dui_dxj(:,:,2,1)=',dui_dxj(:,:,2,1)
+!!$print*,'dui_dxj(:,:,2,3)=',dui_dxj(:,:,2,3)
+!!$print*,'parallell_term_uy=',parallell_term_uy
+!!$print*,maxval(f(l1:l2,lll,n1:n2,iux)),maxval(dui_dxj(:,:,2,1))
+!!$print*,maxval(f(l1:l2,lll,n1:n2,iuz)),maxval(dui_dxj(:,:,2,3))
+!!$print*,minval(f(l1:l2,lll,n1:n2,iux)),minval(dui_dxj(:,:,2,1))
+!!$print*,minval(f(l1:l2,lll,n1:n2,iuz)),minval(dui_dxj(:,:,2,3))
+!!$print*,minval(parallell_term_rho),maxval(parallell_term_rho)
+!!$print*,minval(parallell_term_ux),maxval(parallell_term_ux)
+!!$print*,minval(parallell_term_uy),maxval(parallell_term_uy)
+!!$print*,minval(parallell_term_uz),maxval(parallell_term_uz)
 
-
+!!$
+!!$
+!!$
       parallell_term_rho=0
       parallell_term_ux=0
       parallell_term_uy=0
@@ -4979,7 +5013,7 @@ module Boundcond
         if (llinlet) then
           df(l1:l2,lll,n1:n2,iuy) = prefac2*( L_5 - L_1)-parallell_term_uy
         else
-          df(l1:l2,lll,n1:n2,iuy) = prefac2*(-L_5 - L_1)-parallell_term_uy
+          df(l1:l2,lll,n1:n2,iuy) = prefac2*(-L_5 + L_1)-parallell_term_uy
         endif
         df(l1:l2,lll,n1:n2,iux) = -L_3-parallell_term_ux
         df(l1:l2,lll,n1:n2,iuz) = -L_4-parallell_term_uz
