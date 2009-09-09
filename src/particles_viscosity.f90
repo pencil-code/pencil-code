@@ -1,6 +1,7 @@
 ! $Id$
 !
 !  This modules takes care of viscosity of inertial particles.
+!  EXPERIMENTAL - USE AT OWN RISK
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
