@@ -42,7 +42,6 @@
  R_EXT= 3.9084999E+37,
  R_REF=  1.000000    ,
  RSMOOTH=  0.000000    ,
- NSCBC= 5*'                                                 ',
  MU0= 0.9999999    ,
  FORCE_LOWER_BOUND='                         ',
  FORCE_UPPER_BOUND='                         ',
@@ -77,9 +76,6 @@
  LSHIFT_DATACUBE_X=F,
  LFARGO_ADVECTION=F,
  YEQUATOR=  0.000000    ,
- NSCBC_SIGMA_IN=  1.000000    ,
- NSCBC_SIGMA_OUT=  1.000000    ,
- P_INFTY=  1.000000    ,
  LEQUATORY=F,
  LEQUATORZ=F,
  ZEQUATOR=  0.000000    ,  /
