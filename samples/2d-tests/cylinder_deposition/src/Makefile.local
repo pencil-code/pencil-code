@@ -10,6 +10,7 @@ GRAVITY   = nogravity
 
 ENTROPY   = noentropy
 SOLID_CELLS = solid_cells
+NSCBC = NSCBC
 
 PARTICLES_MAIN  =   particles_main
 PARTICLES_SUB   =   particles_sub

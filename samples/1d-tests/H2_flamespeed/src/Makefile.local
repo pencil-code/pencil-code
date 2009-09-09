@@ -11,3 +11,4 @@ CHEMISTRY =   chemistry
 EOS       =   eos_chemistry
 TIMESTEP  =   timestep_rkf
 REAL_PRECISION=double
+NSCBC = NSCBC

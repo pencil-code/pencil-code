@@ -7,13 +7,9 @@
   xyz0 = -0.1, 0.0, -1.,
   xyz1 = 0.1, 0.4, 1.,
   lperi=T,F,T
-  nscbc_sigma_in=0.0
-  nscbc_sigma_out=0.2
   fbcy1 = 0.0,5.0,0.,1.0
   lperi=T,F,T
   bcy = 'e2','e2','e2','e2'
-  nscbc = '','ref_inlet:part_ref_outlet',''
-  p_infty=400
 /
 &eos_init_pars
   cs0=20
@@ -38,6 +34,12 @@
   ampl_noise=0.1
   interpolation_method='mirror'
   nforcepoints=100
+/
+&NSCBC_init_pars
+  nscbc_bc = '','ref_inlet:part_ref_outlet',''
+  p_infty=400
+  nscbc_sigma_in=0.0
+  nscbc_sigma_out=0.2
 /
 &particles_init_pars
   initxxp='random-box'

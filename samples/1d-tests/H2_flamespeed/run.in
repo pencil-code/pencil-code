@@ -22,3 +22,5 @@
 &viscosity_run_pars
  ivisc='nu-mixture'
 /
+&NSCBC_run_pars
+/

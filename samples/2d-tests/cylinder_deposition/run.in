@@ -26,6 +26,8 @@
   lclose_interpolation=T
   lclose_linear=T
 /
+&NSCBC_run_pars
+/
 &particles_run_pars
   ldragforce_dust_par=T
   ldraglaw_steadystate=T
