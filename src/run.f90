@@ -67,6 +67,7 @@ program run
   use Mpicomm
   use NeutralDensity,  only: init_lnrhon
   use NeutralVelocity, only: init_uun
+  use NSCBC,           only: NSCBC_clean_up
   use Param_IO
   use Particles_main
   use Particles_nbody, only: particles_nbody_read_snapshot, &
@@ -713,6 +714,7 @@ program run
   call farray_clean_up()
   call sharedvars_clean_up()
   call chemistry_clean_up()
+  call NSCBC_clean_up()
   if (lADI) deallocate(finit)
   if (lwrite_yaverages) call yaverages_clean_up() 
   if (lwrite_zaverages) call zaverages_clean_up() 
