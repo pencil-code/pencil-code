@@ -27,12 +27,12 @@ module Viscosity
 !
   include 'viscosity.h'
 !
-  integer, parameter :: nvisc_max = 4
+  integer, parameter :: nvisc_max=4
   character (len=labellen), dimension(nvisc_max) :: ivisc=''
-  real :: nu=0., nu_mol=0., nu_hyper2=0., nu_hyper3=0., nu_shock=0.
-  real :: nu_jump=1., znu=0., xnu=0., xnu2=0.,widthnu=0.1, C_smag=0.0
-  real :: pnlaw=0., Lambda_V0=0.,Lambda_Omega=0.
-  real, dimension(3) :: nu_aniso_hyper3=0.
+  real :: nu=0.0, nu_mol=0.0, nu_hyper2=0.0, nu_hyper3=0.0, nu_shock=0.0
+  real :: nu_jump=1.0, xnu=1.0, xnu2=1.0, znu=1.0, widthnu=0.1, C_smag=0.0
+  real :: pnlaw=0.0, Lambda_V0=0.0, Lambda_Omega=0.0
+  real, dimension(3) :: nu_aniso_hyper3=0.0
 !
   logical :: lvisc_first=.false.
   logical :: lvisc_simplified=.false.
@@ -707,11 +707,12 @@ module Viscosity
       if (lvisc_nu_profr_powerlaw) then
 !
 !  viscous force: nu(x)*(del2u+graddivu/3+2S.glnrho)+2S.gnu
-!  -- here the nu viscosity depends on r; nu=nu_0/r^n
-        pnu = nu*p%rcyl_mn**(-pnlaw)
+!  -- here the nu viscosity depends on r; nu=nu_0*(r/r0)^(-pnlaw)
+!
+        pnu = nu*(p%rcyl_mn/xnu)**(-pnlaw)
 !  viscosity gradient
         if (lcylindrical_coords) then 
-          gradnu(:,1) = -pnlaw*nu*p%rcyl_mn**(-pnlaw-1)
+          gradnu(:,1) = -pnlaw*nu*(p%rcyl_mn/xnu)**(-pnlaw-1)*1/xnu
           gradnu(:,2) = 0.
           gradnu(:,3) = 0.
         elseif (lspherical_coords) then
