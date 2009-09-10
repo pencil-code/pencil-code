@@ -4312,7 +4312,6 @@ module Boundcond
 !
      endsubroutine bc_wind_z
 !***********************************************************************
-!***********************************************************************
     subroutine bc_ADI_flux_z(f,topbot)
 !
 !  Constant flux boundary condition for temperature (called when bcz='c3')
@@ -4393,18 +4392,18 @@ module Boundcond
       endif
 !
     endsubroutine bc_force_ux_time
-!***********************************************************************                           
+!***********************************************************************
     subroutine bc_inlet_outlet_cyl(f,topbot,j,val)
-!                                                                                                  
-! For pi/2 < y < 3pi/4,                                                                            
-! set r and theta velocity corresponding to a constant x-velocity                                  
-! and symmetric for lnrho/rho.                                                                     
-!                                                                                                  
-! Otherwise, set symmetric for velocities, and constant                                            
-! for lnrho/rho.                                                                                   
-!                                                                                                  
-! NB! Assumes y to have the range 0 < y < 2pi                                                      
-!                                                                                                  
+!
+! For pi/2 < y < 3pi/4,
+! set r and theta velocity corresponding to a constant x-velocity
+! and symmetric for lnrho/rho.
+!
+! Otherwise, set symmetric for velocities, and constant 
+! for lnrho/rho.
+!
+! NB! Assumes y to have the range 0 < y < 2pi
+!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j,i
@@ -4427,7 +4426,7 @@ module Boundcond
             elseif ((j.eq.ilnrho) .or. (j.eq.irho)) then
               do i=1,nghost; f(l2+i,m,:,j) = f(l2-i,m,:,j); enddo
             endif
-!                                                                                                  
+!
           else
             if (j.eq.iux) then
               do i=1,nghost; f(l2+i,m,:,j) = f(l2-i,m,:,j); enddo
@@ -4440,6 +4439,7 @@ module Boundcond
           endif
         enddo
       endselect
+!
     endsubroutine bc_inlet_outlet_cyl
 !***********************************************************************
 endmodule Boundcond
