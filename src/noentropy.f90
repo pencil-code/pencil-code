@@ -177,40 +177,27 @@ module Entropy
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  20-nov-04/anders: coded
-!   4-aug-09/axel: added possibility to multiply with profile function
 !
-      use EquationOfState, only: gamma,gamma_m1,cs20,lnrho0,ieos_profile,profz_eos
+      use EquationOfState, only: gamma,gamma_m1,cs20,lnrho0,profz_eos
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: prefactor
       integer :: j
 !
       intent(in) :: f
       intent(inout) :: p
-!
 ! Ma2
-!
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
-!
 ! fpres (=pressure gradient force)
-!
       if (lpencil(i_fpres)) then
-        if (ieos_profile=='nothing') then
-          prefactor=p%cs2
-        else
-          prefactor=profz_eos(n)*p%cs2
-        endif
-!
-!  apply to all three directions
-!
         do j=1,3
           if (llocal_iso) then
-            p%fpres(:,j)=-profz_eos(n)*p%cs2*(p%glnrho(:,j)+p%glnTT(:,j))
+            p%fpres(:,j)=-p%cs2*(p%glnrho(:,j)+p%glnTT(:,j))
           else
-            p%fpres(:,j)=-profz_eos(n)*p%cs2*p%glnrho(:,j)
+            p%fpres(:,j)=-p%cs2*p%glnrho(:,j)
           endif
+          if (profz_eos(n)/=1.0) p%fpres(:,j)=profz_eos(n)*p%fpres(:,j)
         enddo
       endif
 !
