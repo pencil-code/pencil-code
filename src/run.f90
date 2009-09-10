@@ -416,10 +416,10 @@ program run
         call read_runpars(PRINT=.true.,FILE=.true.,ANNOTATION='Reloading')
 ! Before reading the rprint_list deallocate the arrays allocated for
 ! xzaverages and yzaverages.
-        If (lwrite_yaverages) call yaverages_clean_up() 
-        If (lwrite_zaverages) call zaverages_clean_up() 
-        If(lforcing) call forcing_clean_up()
-        If(.not.lhydro) call hydro_clean_up()
+        if (lwrite_yaverages) call yaverages_clean_up() 
+        if (lwrite_zaverages) call zaverages_clean_up() 
+        if (lforcing) call forcing_clean_up()
+        if (.not.lhydro) call hydro_clean_up()
        call rprint_list(LRESET=.true.) !(Re-read output list)
         call initialize_modules(f,LSTARTING=.false.)
         if (lparticles) then
@@ -703,6 +703,9 @@ program run
          wall_clock_time/count/nw/ncpus/1e-6
     print*
   endif
+!
+!  Stop MPI.
+!
   call mpifinalize
 !
 !  Free any allocated memory.
@@ -711,8 +714,7 @@ program run
   call sharedvars_clean_up()
   call chemistry_clean_up()
   if (lADI) deallocate(finit)
-  If (lwrite_yaverages) call yaverages_clean_up() 
-  If (lwrite_zaverages) call zaverages_clean_up() 
-!
+  if (lwrite_yaverages) call yaverages_clean_up() 
+  if (lwrite_zaverages) call zaverages_clean_up() 
 !
 endprogram run
