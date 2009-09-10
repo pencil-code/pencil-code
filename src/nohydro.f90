@@ -33,8 +33,6 @@ module Hydro
   real, allocatable, dimension (:) :: KS_omega !or through whole field for each wavenumber?
   integer :: KS_modes = 3
   real, allocatable, dimension (:) :: Zl,dZldr,Pl,dPldtheta
-  real :: Balpha
-  integer :: ell
 !
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
@@ -225,6 +223,8 @@ module Hydro
       real :: fpara, dfpara, ecost, esint, epst, sin2t, cos2t
       integer :: modeN,l
       real :: sqrt2, sqrt21k1, eps1=1., WW=0.25, k21
+      integer :: ell
+      real :: Balpha
 !
       intent(in) :: f
       intent(inout) :: p
@@ -302,6 +302,8 @@ module Hydro
 !
       elseif (kinflow=='ck') then
 ! uu
+        ell=kinflow_ck_ell
+        Balpha=kinflow_ck_Balpha
         if (lpencil(i_uu)) then
           if (headtt) print*,'Chandrasekhar-Kendall flow'
           p%uu(:,1)=ampl_kinflow*(ell*(ell+1)/Balpha*x(l1:l2))*Zl(l1:l2)*Pl(m)
@@ -1482,15 +1484,16 @@ kky_aa=2.*pi
 !  8-sep-2009/dhruba: coded
 !     
       integer :: l,m
-      real :: jl,jlp1,jlm1,LPl,LPlm1
+      real :: Balpha,jl,jlp1,jlm1,LPl,LPlm1
+      integer :: ell
 !
       print*, 'Initializing variables from Chandrasekhar-Kendall flow'
       print*, 'Allocating..'
       allocate(Zl(mx),dZldr(mx))
       allocate(Pl(my),dPldtheta(my))
       print*, 'Allocation done'
-      ell=4
-      Balpha=2.
+      ell=kinflow_ck_ell
+      Balpha=kinflow_ck_Balpha
       print*, 'ell=,alpha=',ell,Balpha
 !
       do l=1,mx

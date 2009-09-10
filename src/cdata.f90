@@ -480,6 +480,8 @@ module Cdata
   real :: ampl_kinflow_x=0., ampl_kinflow_y=0., ampl_kinflow_z=0.
   real :: kx_kinflow=1., ky_kinflow=1., kz_kinflow=1.
   real :: dtphase_kinflow=0.
+  real :: kinflow_ck_Balpha=0.
+  integer :: kinflow_ck_ell=0.
 !
 !  Scrap yard. Please categorise these variables if you know what they do.
 !  Even better: move them to their relevant modules.
