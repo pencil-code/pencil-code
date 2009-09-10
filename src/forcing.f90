@@ -3138,10 +3138,10 @@ module Forcing
 !
 !   12-aug-09/dhruba: coded
 !
-      if(iforce=='chandra-kendall') then
+      if (iforce=='chandra-kendall') then
         print*,'Deallocating arrays relevent to Chanrasekhar-Kendall forcing ..'
         deallocate(psif,cklist)
-        if(lfastCK)  deallocate(Zpsi_list,RYlm_list)
+        if (lfastCK)  deallocate(Zpsi_list,RYlm_list)
         print*,'Done.'
       endif
 !

@@ -1291,7 +1291,7 @@ module Magnetic
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if(lpencil_in(i_jparallel).or.lpencil_in(i_jperp)) then
+      if (lpencil_in(i_jparallel).or.lpencil_in(i_jperp)) then
         lpencil_in(i_cosjb)=.true.
         lpencil_in(i_jxb)=.true.
       endif
@@ -1621,7 +1621,7 @@ module Magnetic
 ! cosjb
       if (lpencil(i_cosjb)) then
         do ix=1,nx
-          if((abs(p%j2(ix)).le.tini).or.(abs(p%b2(ix)).le.tini))then 
+          if ((abs(p%j2(ix)).le.tini).or.(abs(p%b2(ix)).le.tini))then 
             p%cosjb(ix)=0.
           else
             p%cosjb(ix)=p%jb(ix)/sqrt(p%j2(ix)*p%b2(ix))
@@ -1637,7 +1637,7 @@ module Magnetic
         p%jparallel=sqrt(p%j2)*p%cosjb
         call dot2_mn(p%jxb,jcrossb2)
         do ix=1,nx
-          if((abs(p%j2(ix)).le.tini).or.(abs(p%b2(ix)).le.tini))then 
+          if ((abs(p%j2(ix)).le.tini).or.(abs(p%b2(ix)).le.tini))then 
             p%jperp=0
           else
             p%jperp=sqrt(jcrossb2(ix))/sqrt(p%b2(ix))
@@ -4041,7 +4041,7 @@ module Magnetic
              call stop_it("bmxy_rms not yet implemented for cylindrical")
 ! The following calculation is done only for ipz=0
       bmxy_rms=0
-      if(ipz .ne. 0) return 
+      if (ipz/=0) return 
       if (idiag_bxmxy==0.or.idiag_bymxy==0.or.idiag_bzmxy==0) then
         if (first) then
           print*,"calc_mfield: WARNING"
@@ -4051,7 +4051,7 @@ module Magnetic
         bmxy_rms=0.
       else
 !DM: we dont really need the following if, I am going to test  
-!        if(ipz==0) then
+!        if (ipz==0) then
           b2mxy_local=0
           do l=1,nx
             do m=1,ny

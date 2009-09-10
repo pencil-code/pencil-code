@@ -999,7 +999,7 @@ module Register
         nnamexz=0; iread=0
         do while (iread==0)
           read(1,*,iostat=iread)
-          if(iread == 0) nnamexz=nnamexz+1
+          if (iread==0) nnamexz=nnamexz+1
         enddo
         close(1)
 ! allocate the relevant arrays here
