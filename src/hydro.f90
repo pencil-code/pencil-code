@@ -114,6 +114,7 @@ module Hydro
   real :: width_ff_uu=1.,x1_ff_uu=0.,x2_ff_uu=0.
   real :: eckmann_friction=0.0
   real :: ampl_forc=0., k_forc=impossible, w_forc=0., x_forc=0., dx_forc=0.1
+  real :: ampl_fcont_uu=1.
   integer :: novec,novecmax=nx*ny*nz/4
   logical :: ldamp_fade=.false.,lOmega_int=.false.,lupw_uu=.false.
   logical :: lfreeze_uint=.false.,lfreeze_uext=.false.
@@ -152,7 +153,7 @@ module Hydro
        interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
        velocity_ceiling,&
        eckmann_friction, ampl_Omega, lcoriolis_xdep,&
-       ampl_forc, k_forc, w_forc, x_forc, dx_forc
+       ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu
 ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_u2tm=0       ! DIAG_DOC: $\left<\uv(t)\cdot\int_0^t\uv(t')
                                 ! DIAG_DOC:   dt'\right>$
@@ -1562,7 +1563,8 @@ module Hydro
 !  Add possibility of forcing that is not delta-correlated in time.
 !
       if (lforcing_cont_uu) &
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%fcont
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+ &
+            ampl_fcont_uu*p%fcont
 !
 !  Damp motions in some regions for some time spans if desired.
 !  For geodynamo: addition of dampuint evaluation.

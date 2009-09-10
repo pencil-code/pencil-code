@@ -174,7 +174,7 @@ module Magnetic
   real :: k1x_ff=1.,k1y_ff=1.,k1z_ff=1.
   real :: inertial_length=0.,linertial_2
   real :: forcing_continuous_aa_phasefact=1.
-  real :: forcing_continuous_aa_amplfact=1.
+  real :: forcing_continuous_aa_amplfact=1., ampl_fcont_aa=1.
   real :: LLambda_aa=0.
   real, dimension(nx,my) :: eta_r
   real, dimension(nx,my,3) :: geta_r
@@ -224,7 +224,7 @@ module Magnetic
        lbb_as_aux,ljj_as_aux,lremove_mean_emf,lkinematic, &
        lbbt_as_aux,ljjt_as_aux, &
        lneutralion_heat, lreset_aa, daareset, &
-       luse_Bext_in_b2
+       luse_Bext_in_b2, ampl_fcont_aa
 
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_b2tm=0       ! DIAG_DOC: $\left<\bv(t)\cdot\int_0^t\bv(t')
@@ -2160,7 +2160,8 @@ module Magnetic
 !  add possibility of forcing that is not delta-correlated in time
 !
       if (lforcing_cont_aa) &
-        df(l1:l2,m,n,iaa:iaa)=df(l1:l2,m,n,iaa:iaa)+p%fcont
+        df(l1:l2,m,n,iaa:iaa)=df(l1:l2,m,n,iaa:iaa)+ &
+            ampl_fcont_aa*p%fcont
 !
 !  Possibility of relaxation of A in exterior region.
 !
