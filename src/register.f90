@@ -191,41 +191,42 @@ module Register
       use Mpicomm, only: mpireduce_sum
       use Param_IO
       use Sub, only: remove_zprof
-      use BorderProfiles,  only: initialize_border_profiles
-      use Chemistry,       only: initialize_chemistry
-      use Chiral,          only: initialize_chiral
-      use CosmicrayFlux,   only: initialize_cosmicrayflux
-      use Cosmicray,       only: initialize_cosmicray
-      use Density,         only: initialize_density
-      use Deriv,           only: initialize_deriv
-      use Diagnostics,     only: initialize_prints
-      use Dustdensity,     only: initialize_dustdensity
-      use Dustvelocity,    only: initialize_dustvelocity
-      use Entropy,         only: initialize_entropy
-      use EquationOfState, only: initialize_eos, units_eos
-      use Forcing,         only: initialize_forcing
-      use Gravity,         only: initialize_gravity
-      use Hydro,           only: initialize_hydro
-      use Interstellar,    only: initialize_interstellar
-      use Magnetic,        only: initialize_magnetic
-      use Lorenz_gauge,    only: initialize_lorenz_gauge
-      use Polymer,         only: initialize_polymer
-      use NeutralDensity,  only: initialize_neutraldensity
-      use NeutralVelocity, only: initialize_neutralvelocity
-      use Poisson,         only: initialize_poisson
-      use Pscalar,         only: initialize_pscalar
-      use Radiation,       only: initialize_radiation
-      use Selfgravity,     only: initialize_selfgravity
-      use Shear,           only: initialize_shear
-      use Shock,           only: initialize_shock
-      use Solid_Cells,     only: initialize_solid_cells
-      use Special,         only: initialize_special
-      use Testfield,       only: initialize_testfield
-      use Testflow,        only: initialize_testflow
-      use TestPerturb,     only: initialize_testperturb
-      use Testscalar,      only: initialize_testscalar
-      use Timeavg,         only: initialize_timeavg
-      use Viscosity,       only: initialize_viscosity
+      use BorderProfiles,   only: initialize_border_profiles
+      use Chemistry,        only: initialize_chemistry
+      use Chiral,           only: initialize_chiral
+      use CosmicrayFlux,    only: initialize_cosmicrayflux
+      use Cosmicray,        only: initialize_cosmicray
+      use Density,          only: initialize_density
+      use Deriv,            only: initialize_deriv
+      use Diagnostics,      only: initialize_prints
+      use Dustdensity,      only: initialize_dustdensity
+      use Dustvelocity,     only: initialize_dustvelocity
+      use Entropy,          only: initialize_entropy
+      use EquationOfState,  only: initialize_eos, units_eos
+      use Forcing,          only: initialize_forcing
+      use Gravity,          only: initialize_gravity
+      use Hydro,            only: initialize_hydro
+      use InitialCondition, only: initialize_initial_condition
+      use Interstellar,     only: initialize_interstellar
+      use Magnetic,         only: initialize_magnetic
+      use Lorenz_gauge,     only: initialize_lorenz_gauge
+      use Polymer,          only: initialize_polymer
+      use NeutralDensity,   only: initialize_neutraldensity
+      use NeutralVelocity,  only: initialize_neutralvelocity
+      use Poisson,          only: initialize_poisson
+      use Pscalar,          only: initialize_pscalar
+      use Radiation,        only: initialize_radiation
+      use Selfgravity,      only: initialize_selfgravity
+      use Shear,            only: initialize_shear
+      use Shock,            only: initialize_shock
+      use Solid_Cells,      only: initialize_solid_cells
+      use Special,          only: initialize_special
+      use Testfield,        only: initialize_testfield
+      use Testflow,         only: initialize_testflow
+      use TestPerturb,      only: initialize_testperturb
+      use Testscalar,       only: initialize_testscalar
+      use Timeavg,          only: initialize_timeavg
+      use Viscosity,        only: initialize_viscosity
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(my) :: lat
@@ -307,6 +308,7 @@ module Register
       call initialize_deriv()
       call initialize_prints()
       call initialize_timeavg(f)
+      call initialize_initial_condition(f)
       call initialize_eos()
       call initialize_gravity(f,lstarting)
       call initialize_selfgravity(f)
