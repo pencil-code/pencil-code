@@ -68,4 +68,8 @@ module NSCBC
 !
     endsubroutine write_NSCBC_run_pars
 !***********************************************************************
+      subroutine NSCBC_clean_up
+!
+      end subroutine NSCBC_clean_up
+!***********************************************************************
   end module NSCBC

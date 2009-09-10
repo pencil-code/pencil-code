@@ -33,14 +33,32 @@ include 'NSCBC.h'
   character(len=2*nscbc_len+1), dimension(3) :: nscbc_bc=''
   character(len=nscbc_len), dimension(3) :: nscbc_bc1,nscbc_bc2
   real :: nscbc_sigma_out = 1.,nscbc_sigma_in = 1., p_infty=1.
-
-
+  logical :: inlet_from_file=.false.
+  logical :: first_NSCBC=.true.
+!
+!  Variables to be used when getting timevarying inlet from file
+!
+  real, allocatable, dimension(:,:,:,:) :: f_in
+  real, allocatable, dimension(:) :: x_in
+  real, allocatable, dimension(:) :: y_in
+  real, allocatable, dimension(:) :: z_in
+  real :: t_in,dx_in,dy_in,dz_in
+  integer :: mx_in,my_in,mz_in,nv_in
+  integer :: l1_in, nx_in, ny_in, nz_in
+  integer :: m1_in  
+  integer :: n1_in
+  integer :: l2_in
+  integer :: m2_in
+  integer :: n2_in
+  real :: Lx_in
+  real :: Ly_in
+  real :: Lz_in
+!
 namelist /NSCBC_init_pars/  &
-    nscbc_bc, nscbc_sigma_in, nscbc_sigma_out, p_infty
+    nscbc_bc, nscbc_sigma_in, nscbc_sigma_out, p_infty, inlet_from_file
 
 namelist /NSCBC_run_pars/  &
-    nscbc_bc, nscbc_sigma_in, nscbc_sigma_out, p_infty
-
+    nscbc_bc, nscbc_sigma_in, nscbc_sigma_out, p_infty, inlet_from_file
 !
   contains
 !***********************************************************************
@@ -86,6 +104,7 @@ namelist /NSCBC_run_pars/  &
 !   7-jul-08/arne: coded.
 
 !
+      use General, only: safe_character_assign
       use Chemistry, only: bc_nscbc_subin_x,bc_nscbc_nref_subout_x,&
           bc_nscbc_nref_subout_y
 
@@ -93,12 +112,66 @@ namelist /NSCBC_run_pars/  &
       real, dimension (mx,my,mz,mvar) :: df
       character (len=nscbc_len), dimension(3) :: bc12
       character (len=3) :: topbot
+      character (len=30) :: turbfile
       integer j,k,direction,ip_ok,ip_test
       real, dimension(mcom) :: valx,valy,valz
 
       intent(inout) :: f
       intent(inout) :: df
       intent(in)    :: j
+
+
+
+integer :: ip_tmp
+
+
+!
+! Read data to be used at the inlet from file
+!
+
+
+ip_tmp=ip
+ip=1
+
+
+      if (inlet_from_file) then
+        if (first_NSCBC) then
+          print*,'datadir=',datadir
+          print*,'directory=',directory
+
+          call safe_character_assign(turbfile, trim(directory)//'/var_inlet.dat')
+          print*,'turbfile=',turbfile
+          open(1,FILE=turbfile,FORM='unformatted')
+          if (ip<=8) print*,'input: open, mx_in,my_in,mz_in,nv_in=',&
+              mx_in,my_in,mz_in,nv_in
+          read(1) f_in
+          read(1) t_in,x_in,y_in,z_in,dx_in,dy_in,dz_in
+          first_NSCBC=.false.
+          
+          nx_in=mx_in-2*nghost
+          ny_in=my_in-2*nghost
+          nz_in=mz_in-2*nghost
+          l1_in=nghost
+          m1_in=nghost
+          n1_in=nghost
+          l2_in=mx_in-nghost
+          m2_in=my_in-nghost
+          n2_in=mz_in-nghost
+          Lx_in=x_in(l2_in)-x_in(l1_in)
+          Ly_in=y_in(m2_in)-y_in(m1_in)
+          Lz_in=z_in(n2_in)-z_in(n1_in)
+!xxxx
+
+        endif
+      endif
+
+
+
+
+
+ip=ip_tmp
+
+
 !
       do k=1,2                ! loop over 'bot','top'
         if (k==1) then
@@ -179,6 +252,7 @@ namelist /NSCBC_run_pars/  &
         endif
       end do
     endsubroutine
+!***********************************************************************
     subroutine bc_nscbc_prf_x(f,df,topbot,non_reflecting_inlet,linlet,u_t)
 !
 !   Calculate du and dlnrho at a partially reflecting outlet/inlet normal to 
@@ -205,7 +279,7 @@ namelist /NSCBC_run_pars/  &
       real, dimension(ny,nz) :: parallell_term_ux,d2u1_dy2,d2u1_dz2
       real, dimension(ny,nz) :: d2u2_dy2,d2u2_dz2,d2u3_dy2,d2u3_dz2
       real, dimension(ny,nz) :: prefac1, prefac2,parallell_term_uy
-      real, dimension(ny,nz,3) :: grad_rho
+      real, dimension(ny,nz,3) :: grad_rho, u_in
       real, dimension(ny,nz,3,3) :: dui_dxj
       real, dimension (my,mz) :: cs0_ar,cs20_ar
       real, dimension (my,mz) :: tmp22,tmp12,tmp2_lnrho,tmp33,tmp13,tmp3_lnrho
@@ -356,6 +430,16 @@ namelist /NSCBC_run_pars/  &
         L_1 = (f(lll,m1:m2,n1:n2,iux) - sgn*cs0_ar(m1:m2,n1:n2))&
             *(cs20_ar(m1:m2,n1:n2)*grad_rho(:,:,1) &
             - sgn*rho0*cs0_ar(m1:m2,n1:n2)*dui_dxj(:,:,1,1))
+!
+!  Find velocity at inlet
+!
+        if (inlet_from_file) then
+
+        else
+          u_in(:,:,1)=u_t
+          u_in(:,:,2)=0.
+          u_in(:,:,3)=0.
+        endif
         if (non_reflecting_inlet) then
 !
 !  The inlet in non-reflecting only when nscbc_sigma_in is set to 0, this 
@@ -363,12 +447,12 @@ namelist /NSCBC_run_pars/  &
 !  away from the target velocity u_t. This problem should be overcome by 
 !  setting a small but non-zero nscbc_sigma_in.
 !
-          L_3=nscbc_sigma_in*(f(lll,m1:m2,n1:n2,iuy)-0.0)&
+          L_3=nscbc_sigma_in*(f(lll,m1:m2,n1:n2,iuy)-u_in(:,:,2))&
               *cs0_ar(m1:m2,n1:n2)/Lxyz(1)
-          L_4=nscbc_sigma_in*(f(lll,m1:m2,n1:n2,iuz)-0.0)&
+          L_4=nscbc_sigma_in*(f(lll,m1:m2,n1:n2,iuz)-u_in(:,:,3))&
               *cs0_ar(m1:m2,n1:n2)/Lxyz(1)
           L_5 = nscbc_sigma_in*cs20_ar(m1:m2,n1:n2)*rho0&
-              *sgn*(f(lll,m1:m2,n1:n2,iux)-u_t)*(1-Mach**2)/Lxyz(1)
+              *sgn*(f(lll,m1:m2,n1:n2,iux)-u_in(:,:,1))*(1-Mach**2)/Lxyz(1)
         else
           L_3=0
           L_4=0
@@ -471,9 +555,9 @@ namelist /NSCBC_run_pars/  &
 !
       if (llinlet) then
         if (.not. non_reflecting_inlet) then
-          f(lll,m1:m2,n1:n2,iux) = u_t
-          f(lll,m1:m2,n1:n2,iuy) = 0
-          f(lll,m1:m2,n1:n2,iuz) = 0
+          f(lll,m1:m2,n1:n2,iux) = u_in(:,:,1)
+          f(lll,m1:m2,n1:n2,iuy) = u_in(:,:,2)
+          f(lll,m1:m2,n1:n2,iuz) = u_in(:,:,3)
         endif
       endif
 
@@ -505,7 +589,7 @@ namelist /NSCBC_run_pars/  &
       real, dimension(nx,nz) :: parallell_term_ux,d2u1_dx2,d2u1_dz2
       real, dimension(nx,nz) :: d2u2_dx2,d2u2_dz2,d2u3_dx2,d2u3_dz2
       real, dimension(nx,nz) :: prefac1, prefac2,parallell_term_uy
-      real, dimension(nx,nz,3) :: grad_rho
+      real, dimension(nx,nz,3) :: grad_rho, u_in
       real, dimension(nx,nz,3,3) :: dui_dxj
       real, dimension (mx,mz) :: cs0_ar,cs20_ar
       real, dimension (mx,mz) :: tmp22,tmp12,tmp2_lnrho,tmp33,tmp13,tmp3_lnrho
@@ -515,6 +599,17 @@ namelist /NSCBC_run_pars/  &
       real :: Mach,KK,nu
       integer lll,i
       integer sgn
+      real :: shift, grid_shift, weight
+      integer :: round,lowergrid,uppergrid
+
+
+
+
+
+integer :: iii,kki,nvarri
+
+
+
 
       intent(inout) :: f
       intent(inout) :: df
@@ -656,6 +751,33 @@ namelist /NSCBC_run_pars/  &
         L_1 = (f(l1:l2,lll,n1:n2,iuy) - sgn*cs0_ar(l1:l2,n1:n2))*&
             (cs20_ar(l1:l2,n1:n2)*grad_rho(:,:,2) &
             - sgn*rho0*cs0_ar(l1:l2,n1:n2)*dui_dxj(:,:,2,2))
+!
+!  Find velocity at inlet
+!
+        if (inlet_from_file) then
+!yyyy
+          round=int(t*u_t/Ly_in)
+          shift=t*u_t/Ly_in-round
+          grid_shift=shift*ny_in
+          lowergrid=m1_in+int(grid_shift)
+          uppergrid=lowergrid+1
+!print*,'lowergrid=',lowergrid
+!!$          print*,'t=',t
+!!$          print*,'u_t=',u_t
+!!$          print*,'Ly_in=',Ly_in
+!!$          print*,'round=',round
+!!$          print*,'shift=',shift
+!!$          print*,'grid_shift=',grid_shift
+          weight=grid_shift-int(grid_shift)
+          u_in(:,:,:)&
+              =f_in(l1_in:l2_in,lowergrid,n1_in:n2_in,iux:iuz)*(1-weight)&
+              +f_in(l1_in:l2_in,uppergrid,n1_in:n2_in,iux:iuz)*weight
+          u_in(:,:,2)=u_in(:,:,2)+u_t
+        else
+          u_in(:,:,1)=0.
+          u_in(:,:,2)=u_t
+          u_in(:,:,3)=0.
+        endif
         if (non_reflecting_inlet) then
 !
 !  The inlet is non-reflecting only when nscbc_sigma_in is set to 0, this 
@@ -663,12 +785,12 @@ namelist /NSCBC_run_pars/  &
 !  away from the target velocity u_t. This problem should be overcome by 
 !  setting a small but non-zero nscbc_sigma_in.
 !
-          L_3=nscbc_sigma_in*(f(l1:l2,lll,n1:n2,iux)-0.0)&
+          L_3=nscbc_sigma_in*(f(l1:l2,lll,n1:n2,iux)-u_in(:,:,1))&
               *cs0_ar(l1:l2,n1:n2)/Lxyz(2)
-          L_4=nscbc_sigma_in*(f(l1:l2,lll,n1:n2,iuz)-0.0)&
+          L_4=nscbc_sigma_in*(f(l1:l2,lll,n1:n2,iuz)-u_in(:,:,3))&
               *cs0_ar(l1:l2,n1:n2)/Lxyz(2)
           L_5 = nscbc_sigma_in*cs20_ar(l1:l2,n1:n2)*rho0&
-              *sgn*(f(l1:l2,lll,n1:n2,iuy)-u_t)*(1-Mach**2)/Lxyz(2)
+              *sgn*(f(l1:l2,lll,n1:n2,iuy)-u_in(:,:,2))*(1-Mach**2)/Lxyz(2)
         else
           L_3=0
           L_4=0
@@ -767,9 +889,9 @@ namelist /NSCBC_run_pars/  &
 !
       if (llinlet) then
         if (.not. non_reflecting_inlet) then
-          f(l1:l2,lll,n1:n2,iux) = 0
-          f(l1:l2,lll,n1:n2,iuy) = u_t
-          f(l1:l2,lll,n1:n2,iuz) = 0
+          f(l1:l2,lll,n1:n2,iux) = u_in(:,:,1)
+          f(l1:l2,lll,n1:n2,iuy) = u_in(:,:,2)
+          f(l1:l2,lll,n1:n2,iuz) = u_in(:,:,3)
         endif
       endif
 !
@@ -791,14 +913,14 @@ namelist /NSCBC_run_pars/  &
       enddo
 !
       if (lnscbc) call parse_nscbc(nscbc_bc,nscbc_bc1,nscbc_bc2)
-
+!
 99    return
     endsubroutine read_NSCBC_init_pars
 !***********************************************************************
     subroutine read_NSCBC_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-      integer :: i 
+      integer :: i,stat 
 
       if (present(iostat)) then
         read(unit,NML=NSCBC_run_pars,ERR=99, IOSTAT=iostat)
@@ -811,7 +933,34 @@ namelist /NSCBC_run_pars/  &
       enddo
 !
       if (lnscbc) call parse_nscbc(nscbc_bc,nscbc_bc1,nscbc_bc2)
-
+!
+! Check if we will read turbulent inlet data from data file
+!
+      if (inlet_from_file) then
+        print*,'Read inlet data from file!'
+!
+! Define the size of the data to be found on the file.
+! This should not be hard coded, but leave it like this for now.
+!
+        mx_in=16+nghost*2
+        my_in=16+nghost*2
+        mz_in=16+nghost*2
+        nv_in=4
+!
+! Allocate array for data to be used at the inlet.
+! For now every processor reads all the data - this is clearly an overkill,
+! but we leav it like this during the development of this feature.
+!
+        allocate( f_in(mx_in,my_in,mz_in,nv_in),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for f_in ")
+        allocate( x_in(mx_in),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for x_in ")
+        allocate( y_in(my_in),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for y_in ")
+        allocate( z_in(mz_in),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for z_in ")
+      endif
+!
 99    return
     endsubroutine read_NSCBC_run_pars
 !***********************************************************************
@@ -868,5 +1017,16 @@ namelist /NSCBC_run_pars/  &
         enddo
 !
       endsubroutine
+!***********************************************************************
+      subroutine NSCBC_clean_up
+!
+!  Deallocate all allocatable arrays
+!
+        if (allocated(f_in)) deallocate(f_in)
+        if (allocated(x_in)) deallocate(x_in)
+        if (allocated(y_in)) deallocate(y_in)
+        if (allocated(z_in)) deallocate(z_in)
+!
+      end subroutine NSCBC_clean_up
 !***********************************************************************
   end module NSCBC
