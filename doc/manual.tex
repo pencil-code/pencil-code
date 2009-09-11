@@ -1579,7 +1579,8 @@ To see whether the results of your run are OK, compare \file{time_series.dat} to
   \prompt{unix> } diff data/time_series.dat reference.out
 \end{alltt}
 
-\subsubsection{\file{start.csh}, \file{run.csh}, \file{getconf.csh}}
+\subsubsection{\file{start.csh}, \file{run.csh}, \file{getconf.csh}
+  [obsolete; see Sect.~\ref{S-configuration}]}
 \label{start-run-getconf}
 These are links to \file[bin/]{\$PENCIL_HOME/bin}.
 You will be constantly using the scripts \file{start.csh} and
@@ -1695,7 +1696,161 @@ Each of the directories can contain the following files:
 \section{Using the code}
 \label{Input-params}
 
-\subsection{Adapting \file{Makefile.src}}
+\subsection{Configuring the code to compile and run on your computer}
+\label{S-configuration}
+
+\paragraph{Note:} The procedure described here is currently (September
+2009) relatively new.
+For some time, you may alternatively configure the code as described in
+Sects.~\ref{adapt-mkfile} and \ref{start-run-getconf}.
+You are however advised to use the new procedure, as the old approach will
+eventually not be supported (and some of the scripts it uses will be
+removed).
+
+\paragraph{Quick instructions:}
+\begin{enumerate}
+\item
+  \label{Item-pick-config-file}%
+  Run \code{pc_build --debug} to find out which configuration files
+  are tried and pick one.
+\item Choose one of the existing files from \file{\$PENCIL_HOME/hosts/} as
+  blueprint, copy it to the file name from item
+  \ref{Item-pick-config-file}. and adapt it to your system.
+\end{enumerate}
+
+If you don't know what this was all about, read on.
+
+\bigskip
+
+In essence, configuration, compiling and running the code work like this:
+\begin{enumerate}
+\item Create a configuration file for your computer's \emph{host ID}.
+\item Compile the code using \cmd{pc_build}.
+\item Run the code using \cmd{pc_run}
+\end{enumerate}
+
+In the following, we will discuss the essentials of this scheme.
+Exhaustive documentation is available with the commands
+\cmd{perldoc Pencil::ConfigFinder} and \cmd{perldoc PENCIL::ConfigParser}.
+
+\subsubsection{Locating the configuration file}
+Commands like \cmd{pc_build} and \cmd{pc_run} use the Perl module
+\file{Pencil::ConfigFinder} to locate an appropriate configuration file
+and \file{Pencil::ConfigParser} to read and interpret it.
+When you use \file{ConfigFinder} on a given computer, it constructs a
+\emph{host ID} for the system it is running on, and looks for a file
+\file{host_ID.conf} in any subdirectory of \file{\$PENCIL_HOME/config/hosts}.
+
+E.g., if the host ID is ``workhorse.pencil.org'', \file{ConfigFinder} would
+consider the file
+\file{\$PENCIL_HOME/config/hosts/pencil.org/workhorse.pencil.org.conf}.
+
+\subparagraph{Note 1:}
+The location in the tree under \file{hosts/} is irrelevant, which allows
+you to group related hosts by institution, owner, hardware, etc.
+
+\subparagraph{Note2: }
+\file{ConfigFinder} actually uses the following search path:
+\begin{enumerate}
+\item \file{\$PENCIL_HOME/config-local}
+\item \file{\$HOME/.pencil/config-local}
+\item \file{\$PENCIL_HOME/config}
+\end{enumerate}
+This allows you to override part of the \file{config/} tree globally on
+the given file system, or locally for the given copy of the
+\textsc{Pencil Code}.
+This search path is used both, for locating the configuration file for
+your host ID, and for locating included files (see below).
+
+\bigskip
+
+The host ID is constructed based on information that is easily available
+for your system.
+The algorithm is as follows:
+\begin{enumerate}
+\item Most commands using \file{ConfigFinder} have a \option{--host-id}
+  (sometimes abbreviated as \option{-H}) option to explicitly set the host
+  ID.
+\item If the environment variable \var{PENCIL_HOST_ID} is set, its value
+  is used.
+\item If any of the files
+  \file{./host-ID},
+  \file{\$PENCIL_HOME/host-ID},
+  \file{\$HOME/.pencil/host-ID},
+  exists, its first line is used.
+\item If \file{ConfigFinder} can get hold of a \name{fully qualified host
+    name}, that is used as host ID.
+\item Else, a combination of host name, operating system name and possibly
+  some other information characterizing the system is used.
+\item If no config file for the host ID is found, the current operating
+  system name is tried as fallback host ID.
+\end{enumerate}
+
+To see which host IDs are tried (up to the first one for which a
+configuration file is found), run
+\begin{alltt}
+  \prompt{unix> } pc_build --debug
+\end{alltt}
+
+
+\subsubsection{Structure of configuration files}
+
+Configuration files look like this simple example:
+\begin{verbatim}
+  #
+  # Simple config file. Most files don't need more.
+  #
+
+  %include os/GNU_Linux
+
+  %include compilers/g95
+  %include compilers/gcc
+
+  %include mpi/open-mpi-noib
+\end{verbatim}
+or this more complex one:
+\begin{verbatim}
+  #
+  # More complex config file.
+  #
+
+  %include os/GNU_Linux
+
+  %section Makefile
+    %include compilers/g95     # identify mpif90 backend
+    %include compilers/mpif90
+    %include compilers/gcc
+    CFLAGS += -Wall
+  %endsection Makefile
+
+  %section runtime
+    mpiexec=/home/user/local/openmpi/bin/mpirun
+  %endsection runtime
+
+  %section environment
+    SCRATCH_DIR=/var/tmp/$USER
+  %endsection environment
+\end{verbatim}
+
+They consist of the following elements:
+\begin{description}
+\item[Comments:] A \code{\#} sign and any text following it on the same
+  line are ignored.
+\item[Sections:] There are three sections:
+  \begin{description}
+  \item[environment]for setting environment variables for both,
+    compilation and running,
+  \item[Makefile] for setting \cmd{make} parameters, and
+  \item[runtime] for setting parameters for \cmd{pc_run}.
+  \end{description}
+\end{description}
+
+
+
+%----------------------------------------%
+% wd: remove this eventually
+\subsection{Adapting \file{Makefile.src}
+  [obsolete; see Sect.~\ref{S-configuration}]}
 \label{adapt-mkfile}
 
 By default, one \file{Makefile} will only work on a given class of
@@ -6102,7 +6257,7 @@ gives you a good overview of which files you need to edit or add.
 \section{Testing the code}
 \label{S-Testing}
 
-To maintain reproducability despite sometimes quite rapid developtment,
+To maintain reproducibility despite sometimes quite rapid development,
 the \textsc{Pencil Code} is tested nightly on various architectures.
 The front end for testing are the scripts \cmd{pc_auto-test} and
 (possibly) \cmd{pencil-test}.
@@ -6224,7 +6379,7 @@ following steps.
   will run all tests up to (and including) level 3.
   The default corresponds to \option{-Wa,--max-level=2}.
 
-  For a complet listing of \cmd{pencil-test} options, run
+  For a complete listing of \cmd{pencil-test} options, run
 \begin{alltt}
   \prompt{unix> } pencil-test --help
 \end{alltt}
