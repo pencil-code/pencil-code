@@ -493,12 +493,16 @@ module Sub
       real, dimension (nx) :: c
 !
       logical, optional :: ladd
-      logical :: ladd1=.false.
+      logical :: ladd1
 
       intent(in) :: a,b,ladd
       intent(out) :: c
 
-      if (present(ladd)) ladd1=ladd
+      if (present(ladd)) then
+        ladd1=ladd
+      else
+        ladd1=.false.
+      endif
 !
       if (ladd1) then
         c=c+a(:,1)*b(:,1)+a(:,2)*b(:,2)+a(:,3)*b(:,3)
@@ -520,12 +524,16 @@ module Sub
       integer :: i,j
 !
       logical, optional :: ladd
-      logical :: ladd1=.false.
+      logical :: ladd1
 
       intent(in) :: a,b,ladd
       intent(out) :: c
 
-      if (present(ladd)) ladd1=ladd
+      if (present(ladd)) then
+        ladd1=ladd
+      else
+        ladd1=.false.
+      endif
 !
       do i=1,3
         do j=1,3
@@ -640,16 +648,23 @@ module Sub
       real, dimension (nx,3) :: a
       real, dimension (nx) :: b,a_max
       logical, optional :: fast_sqrt,precise_sqrt
-      logical :: fast_sqrt1=.false.,precise_sqrt1=.false.
+      logical :: fast_sqrt1,precise_sqrt1
 !
       intent(in) :: a,fast_sqrt,precise_sqrt
       intent(out) :: b
 !
 !     ifc treats these variables as SAVE so we need to reset
-      fast_sqrt1=.false.
-      precise_sqrt1=.false.
-      if (present(fast_sqrt)) fast_sqrt1=fast_sqrt
-      if (present(precise_sqrt)) precise_sqrt1=precise_sqrt
+      if (present(fast_sqrt)) then
+        fast_sqrt1=fast_sqrt
+      else
+        fast_sqrt1=.false.
+      endif
+
+      if (present(precise_sqrt)) then
+        precise_sqrt1=precise_sqrt
+      else
+        precise_sqrt1=.false.
+      endif
 !
 !  rescale by factor a_max before taking sqrt.
 !  In single precision this increases the dynamic range from 1e18 to 1e36.
@@ -848,12 +863,16 @@ module Sub
       real, dimension (nx) :: tmp
       integer :: i,j
       logical, optional :: ladd
-      logical :: ladd1=.false.
+      logical :: ladd1
 !
       intent(in) :: a,b,ladd
       intent(out) :: c
 !
-      if (present(ladd)) ladd1=ladd
+      if (present(ladd)) then
+        ladd1=ladd
+      else
+        ladd1=.false.
+      endif
 
       do i=1,3
 
@@ -887,12 +906,16 @@ module Sub
       real, dimension (nx) :: tmp
       integer :: i,j
       logical, optional :: ladd
-      logical :: ladd1=.false.
+      logical :: ladd1
 !
       intent(in) :: a,b,ladd
       intent(inout) :: c
 !
-      if (present(ladd)) ladd1=ladd
+      if (present(ladd)) then
+        ladd1=ladd
+      else
+        ladd1=.false.
+      endif
 
       do i=1,3
         j=1
@@ -990,9 +1013,13 @@ module Sub
       real, dimension (nx) :: a
       integer :: i
       logical, optional :: ladd
-      logical :: ladd1=.false.
+      logical :: ladd1
 !
-      if (present(ladd)) ladd1=ladd
+      if (present(ladd)) then
+        ladd1=ladd
+      else
+        ladd1=ladd
+      endif
 !
       do i=1,3
         if (ladd1) then
@@ -2456,11 +2483,15 @@ module Sub
       real, dimension (nx) :: tmp
       integer :: j,k
       logical, optional :: upwind,ladd
-      logical :: ladd1=.false.
+      logical :: ladd1
 !
 !  upwind
 !
-      if (present(ladd)) ladd1=ladd
+      if (present(ladd)) then
+        ladd1=ladd
+      else
+        ladd1=.false.
+      endif
 
       if (present(upwind)) then
         do j=1,3
@@ -3507,7 +3538,7 @@ module Sub
         real :: cubic_step_pt,xi
         real :: x0,width
         real, optional :: shift
-        real :: relshift=0.
+        real :: relshift
 !
         if (present(shift)) then; relshift=shift; else; relshift=0.; endif
         xi = (x-x0)/(width+tini) - relshift
@@ -3528,7 +3559,7 @@ module Sub
         real, dimension(size(x,1)) :: cubic_step_mn,xi
         real :: x0,width
         real, optional :: shift
-        real :: relshift=0.
+        real :: relshift
 !
         if (present(shift)) then; relshift=shift; else; relshift=0.; endif
         xi = (x-x0)/(width+tini) - relshift
@@ -3548,7 +3579,7 @@ module Sub
         real, dimension(mx,my,mz) :: x,cubic_step_global,xi
         real :: x0,width
         real, optional :: shift
-        real :: relshift=0.
+        real :: relshift
 !
         if (present(shift)) then; relshift=shift; else; relshift=0.; endif
         xi = (x-x0)/(width+tini) - relshift
@@ -3569,7 +3600,7 @@ module Sub
         real :: cubic_der_step_pt,xi
         real :: x0,width
         real, optional :: shift
-        real :: relshift=0.,width1
+        real :: relshift,width1
 !
         if (present(shift)) then; relshift=shift; else; relshift=0.; endif
         width1 = 1./(width+tini)
@@ -3591,7 +3622,7 @@ module Sub
         real, dimension(size(x,1)) :: cubic_der_step_mn,xi
         real :: x0,width
         real, optional :: shift
-        real :: relshift=0.,width1
+        real :: relshift,width1
 !
         if (present(shift)) then; relshift=shift; else; relshift=0.; endif
         width1 = 1./(width+tini)
@@ -3612,7 +3643,7 @@ module Sub
         real, dimension(mx,my,mz) :: x,cubic_der_step_global,xi
         real :: x0,width
         real, optional :: shift
-        real :: relshift=0.,width1
+        real :: relshift,width1
 !
         if (present(shift)) then; relshift=shift; else; relshift=0.; endif
         width1 = 1./(width+tini)
@@ -3639,7 +3670,7 @@ module Sub
         real :: quintic_step_pt,xi
         real :: x0,width
         real, optional :: shift
-        real :: relshift=0.
+        real :: relshift
 !
         if (present(shift)) then; relshift=shift; else; relshift=0.; endif
         xi = (x-x0)/(width+tini) - relshift
@@ -3661,7 +3692,7 @@ module Sub
         real, dimension(size(x,1)) :: quintic_step_mn,xi
         real :: x0,width
         real, optional :: shift
-        real :: relshift=0.
+        real :: relshift
 !
         if (present(shift)) then; relshift=shift; else; relshift=0.; endif
         xi = (x-x0)/(width+tini) - relshift
@@ -3682,7 +3713,7 @@ module Sub
         real, dimension(mx,my,mz) :: x,quintic_step_global,xi
         real :: x0,width
         real, optional :: shift
-        real :: relshift=0.
+        real :: relshift
 !
         if (present(shift)) then; relshift=shift; else; relshift=0.; endif
         xi = (x-x0)/(width+tini) - relshift
@@ -3704,7 +3735,7 @@ module Sub
         real :: quintic_der_step_pt,xi
         real :: x0,width
         real, optional :: shift
-        real :: relshift=0.,width1
+        real :: relshift,width1
 !
         if (present(shift)) then; relshift=shift; else; relshift=0.; endif
         width1 = 1./(width+tini)
@@ -3728,7 +3759,7 @@ module Sub
         real, dimension(size(x,1)) :: quintic_der_step_mn,xi
         real :: x0,width
         real, optional :: shift
-        real :: relshift=0.,width1
+        real :: relshift,width1
 !
         if (present(shift)) then; relshift=shift; else; relshift=0.; endif
         width1 = 1./(width+tini)
@@ -3751,7 +3782,7 @@ module Sub
         real, dimension(mx,my,mz) :: x,quintic_der_step_global,xi
         real :: x0,width
         real, optional :: shift
-        real :: relshift=0.,width1
+        real :: relshift,width1
 !
         if (present(shift)) then; relshift=shift; else; relshift=0.; endif
         width1 = 1./(width+tini)
@@ -3779,7 +3810,7 @@ module Sub
         real :: sine_step_pt,xi
         real :: x0,width
         real, optional :: shift
-        real :: relshift=0.
+        real :: relshift
 !
         if (present(shift)) then; relshift=shift; else; relshift=0.; endif
         xi = (x-x0)/(width+tini) - relshift
@@ -3801,7 +3832,7 @@ module Sub
         real, dimension(size(x,1)) :: sine_step_mn,xi
         real :: x0,width
         real, optional :: shift
-        real :: relshift=0.
+        real :: relshift
 !
         if (present(shift)) then; relshift=shift; else; relshift=0.; endif
         xi = (x-x0)/(width+tini) - relshift
@@ -3822,7 +3853,7 @@ module Sub
         real, dimension(mx,my,mz) :: x,sine_step_global,xi
         real :: x0,width
         real, optional :: shift
-        real :: relshift=0.
+        real :: relshift
 !
         if (present(shift)) then; relshift=shift; else; relshift=0.; endif
         xi = (x-x0)/(width+tini) - relshift
