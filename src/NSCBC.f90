@@ -104,7 +104,7 @@ namelist /NSCBC_run_pars/  &
 !   7-jul-08/arne: coded.
 
 !
-      use General, only: safe_character_assign
+      use General, only: safe_character_assign, chn
       use Chemistry, only: bc_nscbc_subin_x,bc_nscbc_nref_subout_x,&
           bc_nscbc_nref_subout_y
 
@@ -115,61 +115,17 @@ namelist /NSCBC_run_pars/  &
       character (len=30) :: turbfile
       integer j,k,direction,ip_ok,ip_test
       real, dimension(mcom) :: valx,valy,valz
+      logical :: proc_at_inlet
+      integer :: ipx_in, ipy_in, ipz_in, iproc_in, nprocx_in, nprocy_in, nprocz_in
+      character (len=120) :: directory_in=''
+      character (len=5) :: chproc_in=''
 
       intent(inout) :: f
       intent(inout) :: df
       intent(in)    :: j
-
-
-
-integer :: ip_tmp
-
-
 !
-! Read data to be used at the inlet from file
-!
+      proc_at_inlet=.false.
 
-
-ip_tmp=ip
-ip=1
-
-
-      if (inlet_from_file) then
-        if (first_NSCBC) then
-          print*,'datadir=',datadir
-          print*,'directory=',directory
-
-          call safe_character_assign(turbfile, trim(directory)//'/var_inlet.dat')
-          print*,'turbfile=',turbfile
-          open(1,FILE=turbfile,FORM='unformatted')
-          if (ip<=8) print*,'input: open, mx_in,my_in,mz_in,nv_in=',&
-              mx_in,my_in,mz_in,nv_in
-          read(1) f_in
-          read(1) t_in,x_in,y_in,z_in,dx_in,dy_in,dz_in
-          first_NSCBC=.false.
-          
-          nx_in=mx_in-2*nghost
-          ny_in=my_in-2*nghost
-          nz_in=mz_in-2*nghost
-          l1_in=nghost
-          m1_in=nghost
-          n1_in=nghost
-          l2_in=mx_in-nghost
-          m2_in=my_in-nghost
-          n2_in=mz_in-nghost
-          Lx_in=x_in(l2_in)-x_in(l1_in)
-          Ly_in=y_in(m2_in)-y_in(m1_in)
-          Lz_in=z_in(n2_in)-z_in(n1_in)
-!xxxx
-
-        endif
-      endif
-
-
-
-
-
-ip=ip_tmp
 
 
 !
@@ -187,6 +143,96 @@ ip=ip_tmp
         if (j==1) ip_test=ipx
         if (j==2) ip_test=ipy
         if (j==3) ip_test=ipz
+!
+! Read data to be used at the inlet from file
+!
+        if (inlet_from_file) then
+!
+! Read data from file only initially
+! At later times this is stored in processor memory.
+! NILS: Is it really a good idea to store all this in memory?
+!
+          if (first_NSCBC) then
+!
+! Check which processor we want to read from.
+! In the current implementation it is required that:
+!   1) The number of mesh points and processors at the interface between 
+!      the two computational domains are equal. The two comp. domains I 
+!      am refering to here is the domain of the current simulation and the
+!      domain of the pre-run isotropic turbulence simulation defining the
+!      turbulence at the inlet.
+!   2) The pre-run simulaion can not have multiple processors in the flow
+!      direction of the current simulation.   
+!          
+            if (lprocz_slowest) then
+              ipx_in=ipx
+              ipy_in=ipy
+              ipz_in=ipz
+              nprocx_in=nprocx
+              nprocy_in=nprocy
+              nprocz_in=nprocz
+              if (j==1) then
+                if ((topbot=='bot'.and.ipx==0).or.&
+                    (topbot=='top'.and.ipx==nprocx-1)) then
+                  proc_at_inlet=.true.
+                  ipx_in=0
+                  nprocx_in=1
+                endif
+              elseif (j==2) then
+                if ((topbot=='bot'.and.ipy==0).or.&
+                    (topbot=='top'.and.ipy==nprocy-1)) then
+                  proc_at_inlet=.true.
+                  ipy_in=0
+                  nprocy_in=1
+                endif
+              elseif (j==3) then
+                if ((topbot=='bot'.and.ipz==0).or.&
+                    (topbot=='top'.and.ipz==nprocz-1)) then
+                  proc_at_inlet=.true.
+                  ipz_in=0
+                  nprocz_in=1
+                endif
+              else
+                call fatal_error("nscbc_boundtreat_xyz",'No such direction!')
+              endif
+              iproc_in=ipz_in*nprocy_in*nprocx_in+ipy_in*nprocx_in+ipx_in
+            else
+              call fatal_error("nscbc_boundtreat_xyz",&
+                  'lprocz_slowest=F not implemeted for inlet from file!')
+            endif
+!
+!  Read data only if required, i.e. if we are at a processor handling inlets
+!
+            if (proc_at_inlet) then
+              print*,'datadir=',datadir
+              call chn(iproc_in,chproc_in)
+              call safe_character_assign(directory_in,&
+                  trim(datadir)//'/proc'//chproc_in)
+              print*,'directory_in=',directory_in
+              call safe_character_assign(turbfile,&
+                  trim(directory_in)//'/var_inlet.dat')
+              print*,'turbfile=',turbfile
+              open(1,FILE=turbfile,FORM='unformatted')
+              if (ip<=8) print*,'input: open, mx_in,my_in,mz_in,nv_in=',&
+                  mx_in,my_in,mz_in,nv_in
+              read(1) f_in
+              read(1) t_in,x_in,y_in,z_in,dx_in,dy_in,dz_in
+              nx_in=mx_in-2*nghost
+              ny_in=my_in-2*nghost
+              nz_in=mz_in-2*nghost
+              l1_in=nghost
+              m1_in=nghost
+              n1_in=nghost
+              l2_in=mx_in-nghost
+              m2_in=my_in-nghost
+              n2_in=mz_in-nghost
+              Lx_in=x_in(l2_in)-x_in(l1_in)
+              Ly_in=y_in(m2_in)-y_in(m1_in)
+              Lz_in=z_in(n2_in)-z_in(n1_in)
+              first_NSCBC=.false.            
+            endif            
+          endif
+        endif
 !
 !  Check if this is a physical boundary
 !
@@ -251,6 +297,7 @@ ip=ip_tmp
           endselect
         endif
       end do
+!
     endsubroutine
 !***********************************************************************
     subroutine bc_nscbc_prf_x(f,df,topbot,non_reflecting_inlet,linlet,u_t)
@@ -289,6 +336,8 @@ ip=ip_tmp
       real :: Mach,KK,nu
       integer lll,i
       integer sgn
+      real :: shift, grid_shift, weight
+      integer :: round,lowergrid,uppergrid
 
       intent(inout) :: f
       intent(inout) :: df
@@ -434,6 +483,23 @@ ip=ip_tmp
 !  Find velocity at inlet
 !
         if (inlet_from_file) then
+          round=int(t*u_t/Lx_in)
+          shift=t*u_t/Lx_in-round
+          grid_shift=shift*nx_in
+          lowergrid=l1_in+int(grid_shift)
+          uppergrid=lowergrid+1
+!print*,'lowergrid=',lowergrid
+!!$          print*,'t=',t
+!!$          print*,'u_t=',u_t
+!!$          print*,'Ly_in=',Ly_in
+!!$          print*,'round=',round
+!!$          print*,'shift=',shift
+!!$          print*,'grid_shift=',grid_shift
+          weight=grid_shift-int(grid_shift)
+          u_in(:,:,:)&
+              =f_in(lowergrid,m1_in:m2_in,n1_in:n2_in,iux:iuz)*(1-weight)&
+              +f_in(uppergrid,m1_in:m2_in,n1_in:n2_in,iux:iuz)*weight
+          u_in(:,:,1)=u_in(:,:,1)+u_t
 
         else
           u_in(:,:,1)=u_t
@@ -602,15 +668,6 @@ ip=ip_tmp
       real :: shift, grid_shift, weight
       integer :: round,lowergrid,uppergrid
 
-
-
-
-
-integer :: iii,kki,nvarri
-
-
-
-
       intent(inout) :: f
       intent(inout) :: df
 
@@ -761,7 +818,7 @@ integer :: iii,kki,nvarri
           grid_shift=shift*ny_in
           lowergrid=m1_in+int(grid_shift)
           uppergrid=lowergrid+1
-!print*,'lowergrid=',lowergrid
+!!$          print*,'lowergrid=',lowergrid
 !!$          print*,'t=',t
 !!$          print*,'u_t=',u_t
 !!$          print*,'Ly_in=',Ly_in
