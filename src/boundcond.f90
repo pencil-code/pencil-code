@@ -201,7 +201,7 @@ module Boundcond
                   ! BCX_DOC:  ie $(d/dx-1/\mathrm{dist}) f = 0.$ 
                   call bc_overshoot_x(f,fbcx12,topbot,j)
                 case ('ant')
-                  ! BCX_DOC: stops and prompts for putting documentation
+                  ! BCX_DOC: stops and prompts for adding documentation
                   call bc_antis_x(f,fbcx12,topbot,j)
                 case ('e1')
                   ! BCX_DOC: extrapolation [describe]
