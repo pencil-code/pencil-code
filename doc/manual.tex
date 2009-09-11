@@ -954,6 +954,7 @@ versions, a set of test problems (listed in
 are routinely tested.
 This includes all problems in
 \file[samples/]{\$PENCIL_HOME/samples}.
+See Sect.~\ref{S-Testing} for details.
 
 % ---------------------------------------------------------------------- %
 
@@ -6072,7 +6073,7 @@ equations, modify the existing equation, add diagnostics, add slices,
 and many more things.  If you feel there is something missing extra hooks
 can easily be added - please contact the {\sc Pencil Code} team for assistance.
 
-You are encouraged to submit/commit your special modules to the Pencil-Code
+You are encouraged to submit/commit your special modules to the Pencil Code
 source.
 \index{Manual}
 When you have added new stuff to the code, don't forget to mention this
@@ -6095,6 +6096,142 @@ The grep command
   \prompt{unix> } grep -i pscalar src/*
 \end{alltt}
 gives you a good overview of which files you need to edit or add.
+
+% ====================================================================== %
+
+\section{Testing the code}
+\label{S-Testing}
+
+To maintain reproducability despite sometimes quite rapid developtment,
+the \textsc{Pencil Code} is tested nightly on various architectures.
+The front end for testing are the scripts \cmd{pc_auto-test} and
+(possibly) \cmd{pencil-test}.
+
+To see which samples would be tested, run
+\begin{alltt}
+  \prompt{unix> } pc_auto-test -l
+\end{alltt}
+, to actually run the tests, use
+\begin{alltt}
+  \prompt{unix> } pc_auto-test
+\end{alltt}
+or
+\begin{alltt}
+  \prompt{unix> } pc_auto-test --clean
+\end{alltt}
+. The latter compiles every test sample from scratch and currently
+(September 2009) takes about 2 hours on a mid-end Linux PC.
+
+The \cmd{pencil-test} script is useful for cron jobs and allows the actual
+test to run on a remote computer. See Sec.~\ref{S-nightly-tests} below.
+
+For a complete list of options, run \cmd{pc_auto-test --help} and/or
+\cmd{pencil-test --help}.
+
+
+%%%
+\subsection{How to set up periodic tests}
+\label{S-nightly-tests}
+
+To set up a nightly test of the \textsc{Pencil Code}, carry out the
+following steps.
+\begin{enumerate}
+
+\item Identify a host for running the actual tests (the \emph{work host})
+  and one to initiate the tests and collect the results (the
+  \emph{scheduling host}).
+  On the scheduling host, you should be able to
+  \begin{enumerate}
+  \item run cron jobs,
+  \item ssh to the work host without password,
+  \item publish HTML files (optional, but recommended),
+  \item send e-mail (optional, but recommended).
+  \end{enumerate}
+
+  Work host and scheduling host can be the same (in this case, use
+  \cmd{pencil-test}'s \option{-l} option, see below), but often they will
+  be two different computers.
+
+\item \mbox{[Recommended, but optional:]} On the work host, check out a
+  separate copy of the \textsc{Pencil Code} to reduce the risk that you
+  start coding in the auto-test tree.
+  In the following, we will assume that you checked out the code as
+  \file{\~{}/pencil-auto-test}.
+
+\item On the work host, make sure that the code finds the correct
+  configuration file for the tests you want to carry out.
+  [Elaborate on that: \path{PENCIL_HOME/local_config} and \option{-f} option;
+  give explicit example]
+
+  Remember that you can set up a custom host ID file for your auto-test
+  tree under \file{\$\{PENCIL_HOME\}/config-local/hosts/}.
+
+\item On the scheduling host, use \cmd{crontab -e} to set up a \name
+  {cron} job similar to the following:
+\begin{alltt}
+  30 02 * * *  $HOME/pencil-auto-test/bin/pencil-test \bs
+      -D $HOME/pencil-auto-test \bs
+      --use-pc_auto-test \bs
+      -N15 -Uc -rs \bs
+      -T $HOME/public_html/pencil-code/tests/timings.txt \bs
+      -t 15m
+      -m \emph{<email1@inter.net,email2@inter.net,...>} \bs
+      \emph{<work-host.inter.net>} \bs
+      -H > $HOME/public_html/pencil-code/tests/nightly-tests.html
+\end{alltt}
+
+  \subparagraph{Note 1:}
+  This has to be one long line.
+  The backslash characters are written only for formatting purposes for
+  this manual \emph{you cannot use them in a crontab file}.
+
+  \subparagraph{Note 2:}
+  You will have to adapt some parameters listed here and may want to
+  modify a few more:
+  \begin{description}
+  \item[\option{-D \textsl{<dir>}}:]
+    Sets the directory (on the work host) to run in.
+  \item[\option{-T \textsl{<file>}}:]
+    If this option is given, append a timing statistics line for each test
+    to the given \emph{file}.
+  \item[\option{--use-pc}:]
+    You want this option (and at some point, it will be the default).
+  \item[\option{-t 15m}:]
+    Limit the time for \file{start.x} and \file{run.x} to 15 minutes.
+  \item[\option{-N 15}:]
+    Run the tests at nice level 15 (may not have an effect for MPI tests).
+  \item[\option{-Uc}:]
+    Do \cmd{svn update} and \cmd{pc_build --cleanall} before compiling.
+  \item[\option{-m \textsl{<email-list>}}:]
+    If this option is given, send e-mails to everybody in the
+    (comma-separated) list of e-mail addresses if any test fails.
+    As soon as this option is set, the maintainers (as specified in the
+    \file{README} file) of failed tests will also receive an e-mail.
+  \item[\option{work-host.inter.net|-l}:]
+    Replace this with the remote host that is to run the tests.
+    If you want to run locally, write \code{-l} instead.
+  \item[\option{-H}:]
+    Output HTML.
+  \item[\option{> \$HOME/public_html/pencil-code/tests/nightly-tests.html}:]
+    Write output to the given file.
+  \end{description}
+
+  If you want to run fewer or more tests, you can use the
+  \option{-Wa,--max-level} option:
+\begin{alltt}
+      -Wa,--max-level=3
+\end{alltt}
+  will run all tests up to (and including) level 3.
+  The default corresponds to \option{-Wa,--max-level=2}.
+
+  For a complet listing of \cmd{pencil-test} options, run
+\begin{alltt}
+  \prompt{unix> } pencil-test --help
+\end{alltt}
+
+
+\end{enumerate}
+
 
 % ====================================================================== %
 
