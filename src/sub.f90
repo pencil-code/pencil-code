@@ -41,7 +41,7 @@ module Sub
   public :: dyadic2
   public :: cross, cross_mn
   public :: sum_mn, max_mn
-  public :: multsv, multsv_add, multsv_mn
+  public :: multsv, multsv_add, multsv_mn, multsv_mn_add
   public :: multvs, multvv_mat
   public :: multmm_sc
   public :: multm2, multm2_mn
@@ -890,7 +890,7 @@ module Sub
       logical :: ladd1=.false.
 !
       intent(in) :: a,b,ladd
-      intent(out) :: c
+      intent(inout) :: c
 !
       if (present(ladd)) ladd1=ladd
 
@@ -1003,6 +1003,27 @@ module Sub
       enddo
 !
     endsubroutine multsv_mn
+!***********************************************************************
+    subroutine multsv_mn_add(a,b,c)
+!
+!  vector multiplied with scalar, gives vector
+!
+!  22-nov-01/nils erland: coded
+!  10-oct-03/axel: a is now the scalar (now consistent with old routines)
+!  24-jun-08/MR: ladd added for incremental work
+
+      intent(in) :: a,b
+      intent(out) :: c
+!
+      real, dimension (nx,3) :: b,c
+      real, dimension (nx) :: a
+      integer :: i
+!
+      do i=1,3
+        c(:,i)=c(:,i)+a*b(:,i)
+      enddo
+!
+    endsubroutine multsv_mn_add
 !***********************************************************************
     subroutine multsv_add_global(a,b,c,d)
 !
