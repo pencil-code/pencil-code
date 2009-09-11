@@ -208,7 +208,7 @@
 %% Examples: \name{Greeks} \name[Trojans]{Greeks}
 \newcommand{\code}[1]{\texttt{#1}}
 \newcommand{\cmd}{\command}
-\newcommand{\kbd}[1]{\texttt{\textsl{#1}\/}}
+\newcommand{\kbd}[1]{\texttt{\textsl{#1\/}}}
 \newcommand{\key}[1]{{\setlength{\fboxsep}{1pt}\ovalbox{\sf #1}}}
 \newcommand{\samp}[1]{`\code{#1}'}
 %\newcommand{\dfn}[1]{\textsl{#1}\index{#1}\/}
@@ -286,7 +286,6 @@
 \newcommand{\artanh}  {\mathop{\rm artanh}\nolimits}
 \renewcommand{\vec}[1]{\mbox{\boldmath{$#1$}}}
 \newcommand{\vcs}[1]  {\mbox{\boldmath{$\scriptstyle{#1}$}}}
-\renewcommand{\v}{\vec}
 \newcommand{\const}   {\mbox{\rm const}}
 \newcommand{\grad}    {\vec{\nabla}}
 \newcommand{\Div}     {\vec{\nabla}\cdot}
@@ -4428,20 +4427,20 @@ through use of the {\it neutrals} module. That module solves the
 coupled equations of neutral and ionized gas, in a two-fluid model
 
 \begin{eqnarray}
-  \pderiv{\rho_i}{t} &=& -\Div{(\rho_i \v{u}_i)} + {\mathcal G} \label{ionized-continuity}\\
-  \pderiv{\rho_n}{t} &=& -\Div{(\rho_n \v{u}_n)} - {\mathcal G} \label{neutral-continuity}\\
-  \pderiv{(\rho_i \v{u}_i)}{t} &=& -\Div{(\rho_i \v{u}_i:\v{u}_i)} -
+  \pderiv{\rho_i}{t} &=& -\Div{(\rho_i \vec{u}_i)} + {\mathcal G} \label{ionized-continuity}\\
+  \pderiv{\rho_n}{t} &=& -\Div{(\rho_n \vec{u}_n)} - {\mathcal G} \label{neutral-continuity}\\
+  \pderiv{(\rho_i \vec{u}_i)}{t} &=& -\Div{(\rho_i \vec{u}_i:\vec{u}_i)} -
     \grad{\left(p_i + p_e + \frac{B^2}{2\mu_0}\right)} + {\mathcal F}  \label{ionized-ns}\\
-  \pderiv{(\rho_n \v{u}_n)}{t} &=& -\Div{(\rho_n \v{u}_n:\v{u}_n)} -
+  \pderiv{(\rho_n \vec{u}_n)}{t} &=& -\Div{(\rho_n \vec{u}_n:\vec{u}_n)} -
     \grad{p_n} - {\mathcal F}                                          \label{neutral-ns}\\
-  \pderiv{\v{A}}{t} &=& \v{u}_i \times \v{B}
+  \pderiv{\vec{A}}{t} &=& \vec{u}_i \times \vec{B}
 \end{eqnarray}where the subscripts $n$ and $i$ are for neutral and ionized,
 respectively. The terms ${\mathcal G}$ and ${\mathcal F}$, through which the two fluids exchange mass and
 momentum, are given by
 
 \begin{eqnarray}
   {\mathcal G} &=& \zeta\rho_n - \alpha \rho_i^2 \\
-  {\mathcal F} &=& \zeta\rho_n\v{u}_n - \alpha \rho_i^2\v{u}_i + \gamma\rho_i\rho_n (\v{u}_n - \v{u}_i) \;.
+  {\mathcal F} &=& \zeta\rho_n\vec{u}_n - \alpha \rho_i^2\vec{u}_i + \gamma\rho_i\rho_n (\vec{u}_n - \vec{u}_i) \;.
 \end{eqnarray}In the above equations, $\zeta$ is the ionization coefficient, $\alpha$ is the
 recombination coefficient, and $\gamma$ the collisional drag strength. By the time of writing
 (spring 2009), these three quantities are supposed constant. The electron pressure $p_e$ is
@@ -4738,15 +4737,15 @@ and by interacting with the gas and the swarm of small bodies. The equation
 of motion for particle $i$ is
 
 \begin{equation}
-  \frac{d{\v{v}}_{p_i}}{dt} = {\v{F}}_{g_i} -\sum_{j\neq i}^{N}\frac{G M_j}{{\mathcal R}_{ij}^2} \hat{\v{{\mathcal R}}}_{ij}
+  \frac{d{\vec{v}}_{p_i}}{dt} = {\vec{F}}_{g_i} -\sum_{j\neq i}^{N}\frac{G M_j}{{\mathcal R}_{ij}^2} \hat{\vec{{\mathcal R}}}_{ij}
   \label{eq:dust-dynamics}
-\end{equation}where ${\mathcal R}_{ij}=|\v{r}_{p_i}-{\v{r}}_{p_j}|$ is the
-distance between particles $i$ and $j$, and $\hat{\v{{\mathcal R}}}_{ij}$ is
+\end{equation}where ${\mathcal R}_{ij}=|\vec{r}_{p_i}-{\vec{r}}_{p_j}|$ is the
+distance between particles $i$ and $j$, and $\hat{\vec{{\mathcal R}}}_{ij}$ is
 the unit vector pointing from particle $j$ to particle $i$. The first term of
 the R.H.S. is the combined gravity of the gas and of the dust particles onto the particle $i$, solved via
 
 \begin{equation}
-  {\v{F}}_{g_i} = -G\int_{V} \frac{[\rho_g(\v{r})+\rho_p(\v{r})]\v{{\mathcal R}}_i}{({\mathcal R}_i^2 + b_i^2)^{3/2}} \de V,
+  {\vec{F}}_{g_i} = -G\int_{V} \frac{[\rho_g(\vec{r})+\rho_p(\vec{r})]\vec{{\mathcal R}}_i}{({\mathcal R}_i^2 + b_i^2)^{3/2}} \de V,
   \label{eq:disk-gravity}
 \end{equation}where the integration is carried out over the whole disk. The
 smoothing distance $b_i$ is taken to be as small as possible
