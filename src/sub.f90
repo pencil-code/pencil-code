@@ -1018,7 +1018,7 @@ module Sub
       if (present(ladd)) then
         ladd1=ladd
       else
-        ladd1=ladd
+        ladd1=.false.
       endif
 !
       do i=1,3
