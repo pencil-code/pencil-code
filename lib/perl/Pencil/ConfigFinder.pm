@@ -337,7 +337,7 @@ sub first_word_from_file {
 
     my $line = first_line_from_file($file);
     if (defined $line) {
-        $line =~ m{^ \s* (\S+) .*? $}x;
+        $line =~ s{^ \s* (\S+) .*? $}{$1}x;
     } else {
         return undef;
     }
