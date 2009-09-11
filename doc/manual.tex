@@ -1713,8 +1713,8 @@ removed).
   Run \code{pc_build --debug} to find out which configuration files
   are tried and pick one.
 \item Choose one of the existing files from \file{\$PENCIL_HOME/hosts/} as
-  blueprint, copy it to the file name from item
-  \ref{Item-pick-config-file}. and adapt it to your system.
+  blueprint, copy it to the file name from
+  item~\ref{Item-pick-config-file} and adapt it to your system.
 \end{enumerate}
 
 If you don't know what this was all about, read on.
@@ -1833,16 +1833,119 @@ or this more complex one:
 
 They consist of the following elements:
 \begin{description}
-\item[Comments:] A \code{\#} sign and any text following it on the same
-  line are ignored.
-\item[Sections:] There are three sections:
+
+\item[Comments:]
+  A \code{\#} sign and any text following it on the same line are ignored.
+
+\item[Sections:]
+  There are three sections:
   \begin{description}
   \item[environment]for setting environment variables for both,
     compilation and running,
   \item[Makefile] for setting \cmd{make} parameters, and
   \item[runtime] for setting parameters for \cmd{pc_run}.
   \end{description}
+
+\item[Include statements:]
+  An \code{\%include \ldots} statement is recursively replaced by the
+  contents of the files it points to.%
+  \footnote{However, if the include statement is inside
+    a section, only the file's contents inside that section are inserted.
+  }
+
+  The included path gets a \code{.conf} suffix appended.
+  Included paths are typically ``absolute'', e.g.
+\begin{verbatim}
+  %include os/Unix
+\end{verbatim}
+   will include the file \file{os/Unix.conf} in the search path listed
+   above (typically from \file{\$PENCIL_HOME/config}).
+   However, if the included path starts with a dot, it is a relative path,
+   so
+\begin{verbatim}
+  %include ./Unix
+\end{verbatim}
+   will only search in the directory where the including file is located.
+
+
+\item[Assignments:]
+  Statements like \code{FFLAGS = -O3} or \code{mpiexec=mpirun} are
+  assignments and will set parameters that are used by
+  \cmd{pc_build}/\cmd{make} or \cmd{pc_run}.
+
+  Lines ending with a backslash `\bs' are continuation lines.
+
+  For convenience, one can also use \emph{incremental assignment},
+  indicated by using a \code{+=} sign instead of \code{=}.
+
+  Thus,
+\begin{verbatim}
+  CFLAGS = -O3 \
+         -ffast-math \
+         -fprefetch-loop-arrays \
+  CFLAGS += -I../include -Wall
+\end{verbatim}
+  is the same as
+\begin{verbatim}
+  CFLAGS = -O3 -ffast-math -fprefetch-loop-arrays -I../include -Wall
+\end{verbatim}
+
 \end{description}
+
+
+\subsubsection{Compiling the code}
+
+Use the \cmd{pc_build} command to compile the code:
+\begin{alltt}
+  \prompt{unix> } pc_build
+  \prompt{unix> } pc_build -f os/GNU_Linux,mpi/open-mpi  # explicitly specify config files
+  \prompt{unix> } pc_build REAL_PRECISION=double         # compile for double precision
+  \prompt{unix> } pc_build --cleanall                    # remove generated files
+\end{alltt}
+The second example circumvents the whole host ID mechanism by explicitly
+instructing \cmd{pc_build} which configuration files to use.
+The third example shows how to hand extra arguments
+(\code{REAL_PRECISION=double}) down to \cmd{make}.
+
+See \cmd{pc_build --help} for a complete list of options.
+
+
+\subsubsection{Running the code}
+
+Use the \cmd{pc_run} command to run the code:
+\begin{alltt}
+  \prompt{unix> } pc_run                    # start if necessary, then run
+  \prompt{unix> } pc_run start
+  \prompt{unix> } pc_run run
+
+  \prompt{unix> } pc_run start run^3        # start, then run 3 times
+  \prompt{unix> } pc_run start run run run  # start, then run 3 times
+  \prompt{unix> } pc_run ^3                 # start if necessary, then run 3 times
+\end{alltt}
+See \cmd{pc_run --help} for a complete list of options.
+
+
+\subsubsection{Testing the code}
+The \cmd{pc_auto-test} command uses \cmd{pc_build} for compiling and
+\cmd{pc_run} for running the tests.
+Here are a few useful options:
+\begin{alltt}
+  \prompt{unix> } pc_auto-test
+  \prompt{unix> } pc_auto-test --no-pencil-check   # suppress pencil consistency check
+  \prompt{unix> } pc_auto-test --max-level=1       # run only tests in level 0 and 1
+  \prompt{unix> } pc_auto-test --time-limit=2m     # kill each test after 2 minutes
+\end{alltt}
+See \cmd{pc_auto-test --help} for a complete list of options.
+
+The \cmd{pencil-test} script will use \cmd{pc_auto-test} if given the
+\option{--use-pc_auto-test} or \option{-b} option:
+\begin{alltt}
+  \prompt{unix> } pencil-test --use-pc_auto-test
+  \prompt{unix> } pencil-test -b                   # ditto
+  \prompt{unix> } pencil-test -b \
+             -Wa,--max-level=1,--no-pencil-check  # quick pencil test
+\end{alltt}
+See \cmd{pencil-test --help} for a complete list of options.
 
 
 
