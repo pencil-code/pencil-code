@@ -322,11 +322,11 @@ module Snapshot
       open(lun_output,FILE=file,FORM='unformatted')
       if (lwrite_2d) then
         if (nx==1) then
-          write(lun_output) a(4,:,:,:)
+          write(lun_output) a(l1,:,:,:)
         elseif (ny==1) then
-          write(lun_output) a(:,4,:,:)
+          write(lun_output) a(:,m1,:,:)
         elseif (nz==1) then
-          write(lun_output) a(:,:,4,:)
+          write(lun_output) a(:,:,n1,:)
         else
           call fatal_error('output_snap','lwrite_2d used for 3-D simulation!')
         endif
