@@ -32,6 +32,7 @@ module Viscosity
   real :: nu=0.0, nu_mol=0.0, nu_hyper2=0.0, nu_hyper3=0.0, nu_shock=0.0
   real :: nu_jump=1.0, xnu=1.0, xnu2=1.0, znu=1.0, widthnu=0.1, C_smag=0.0
   real :: pnlaw=0.0, Lambda_V0=0.0, Lambda_Omega=0.0
+  real :: meanfield_nuB=0.0
   real, dimension(3) :: nu_aniso_hyper3=0.0
 !
   logical :: lvisc_first=.false.
@@ -59,13 +60,16 @@ module Viscosity
   logical :: lvisc_snr_damp=.false.
   logical :: lvisc_heat_as_aux=.false.
   logical :: lvisc_mixture=.false.
+  logical :: lmeanfield_nu=.false.
   logical :: llambda_effect=.false.
   logical, pointer:: lviscosity_heat
 !
   namelist /viscosity_run_pars/ &
       nu, nu_hyper2, nu_hyper3, ivisc, nu_mol, C_smag, nu_shock, &
       nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,xnu,xnu2,widthnu, &
-      pnlaw,llambda_effect,Lambda_V0,Lambda_Omega
+      pnlaw,llambda_effect,Lambda_V0,Lambda_Omega, &
+      lmeanfield_nu,meanfield_nuB
+!
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_fviscm=0     ! DIAG_DOC: Mean value of viscous acceleration
   integer :: idiag_fviscmin=0   ! DIAG_DOC: Min value of viscous acceleration
@@ -629,38 +633,44 @@ module Viscosity
             p%fvisc(:,2) = p%fvisc(:,2) + Sshear*nu*p%glnrho(:,1)
           endif
         else
-          p%fvisc=p%fvisc+nu*(p%del2u+1./3.*p%graddivu)
+          if (lmeanfield_nu) then
+            if (meanfield_nuB/=0.) then
+              call multsv_mn_add(1./sqrt(1.+p%b2/meanfield_nuB**2),p%fvisc+nu*(p%del2u+1./3.*p%graddivu),p%fvisc)
+            endif
+          else
+            p%fvisc=p%fvisc+nu*(p%del2u+1./3.*p%graddivu)
+          endif
         endif
 
         if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat + 2*nu*p%sij2
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu
-     endif
+      endif
 
-     if (lvisc_mixture) then
+      if (lvisc_mixture) then
 !
 !  viscous force: nu*(del2u+graddivu/3+2S.glnrho)+2S.gradnu
 !
+!  sglnrho
 !
-! sglnrho
-      if (lpencil(i_sgnu)) call multmv(p%sij,p%gradnu,p%sgnu)
+        if (lpencil(i_sgnu)) call multmv(p%sij,p%gradnu,p%sgnu)
 
         if (ldensity) then
-         do i=1,3
-          p%fvisc(:,i)=2*(p%nu+p%nu_art)*p%sglnrho(:,i) &
-          +(p%nu+p%nu_art)*(p%del2u(:,i)+1./3.*p%graddivu(:,i)) &
-          +2*p%sgnu(:,i)
+          do i=1,3
+            p%fvisc(:,i)=2*(p%nu+p%nu_art)*p%sglnrho(:,i) &
+            +(p%nu+p%nu_art)*(p%del2u(:,i)+1./3.*p%graddivu(:,i)) &
+            +2*p%sgnu(:,i)
        !  if (maxval(p%nu)<0) then
        !    call stop_it("Negative viscosity!")
        !  endif 
 
-         enddo
+          enddo
         endif
-
-      if (lpencil(i_visc_heat)) p%visc_heat=2*(p%nu+p%nu_art)*p%sij2
-
-      if (lfirst.and.ldt) p%diffus_total=p%diffus_total+p%nu
-
-     endif
+!
+!  viscous heating and time step
+!
+        if (lpencil(i_visc_heat)) p%visc_heat=2*(p%nu+p%nu_art)*p%sij2
+        if (lfirst.and.ldt) p%diffus_total=p%diffus_total+p%nu
+      endif
 !
       if (lvisc_nu_profx.or.lvisc_nu_profr) then
 !
@@ -702,7 +712,7 @@ module Viscosity
         p%fvisc=p%fvisc+tmp+2*sgradnu
         if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat + 2*pnu*p%sij2
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+pnu
-     endif
+      endif
 !
       if (lvisc_nu_profr_powerlaw) then
 !
@@ -751,8 +761,7 @@ module Viscosity
         p%fvisc=p%fvisc+tmp+2*sgradnu
         if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat + 2*pnu*p%sij2
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+pnu
-     endif
-
+      endif
 !
 !  viscous force: nu_shock
 !

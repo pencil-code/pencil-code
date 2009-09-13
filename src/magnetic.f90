@@ -105,6 +105,7 @@ module Magnetic
   real :: alpha_cutoff_up=0.,alpha_cutoff_down=0.
   real :: meanfield_Qs=1.,meanfield_Qp=1.
   real :: meanfield_Bs=1.,meanfield_Bp=1.
+  real :: meanfield_kf=1.,meanfield_etaB=0.
   real :: displacement_gun=0.
   real :: pertamplaa=0.
   real :: initpower_aa=0.,cutoff_aa=0.,brms_target=1.,rescaling_fraction=1.
@@ -137,7 +138,8 @@ module Magnetic
   logical :: lB_ext_pot=.false.
   logical :: lforce_free_test=.false.
   logical :: lmeanfield_theory=.false.,lOmega_effect=.false.
-  logical :: lmeanfield_noalpm=.false.,lmeanfield_jxb=.false.
+  logical :: lmeanfield_noalpm=.false.
+  logical :: lmeanfield_jxb=.false.,lmeanfield_jxb_with_vA2=.false.
   logical :: lgauss=.false.
   logical :: lbb_as_aux=.false.,ljj_as_aux=.false.
   logical :: lbbt_as_aux=.false.,ljjt_as_aux=.false.
@@ -199,9 +201,11 @@ module Magnetic
        lmeanfield_theory,alpha_effect,alpha_quenching,delta_effect, &
        alpha_eps, &
        lmeanfield_noalpm,alpha_profile, &
-       meanfield_etat, lohmic_heat, lmeanfield_jxb, &
+       meanfield_etat, lohmic_heat, &
+       lmeanfield_jxb,lmeanfield_jxb_with_vA2, &
        meanfield_Qs, meanfield_Qp, &
        meanfield_Bs, meanfield_Bp, &
+       meanfield_kf,meanfield_etaB, &
        alpha_equator,alpha_equator_gap,alpha_gap_step,&
        alpha_cutoff_up,alpha_cutoff_down,&
        height_eta,eta_out,tau_aa_exterior, &
@@ -1147,6 +1151,16 @@ module Magnetic
       if (lentropy .or. ltemperature .or. ldt) lpenc_requested(i_rho1)=.true.
       if (lentropy .or. ltemperature) lpenc_requested(i_TT1)=.true.
       if (ltemperature) lpenc_requested(i_cv1)=.true.
+!
+!  for mean-field modelling
+!
+      if (lmeanfield_jxb) then
+        lpenc_requested(i_va2)=.true.
+        lpenc_requested(i_rho1)=.true.
+      endif
+!
+!  ambipolar diffusion
+!
       if (nu_ni/=0.) then
         lpenc_requested(i_va2)=.true.
         lpenc_requested(i_jxbrxb)=.true.
@@ -1462,7 +1476,9 @@ module Magnetic
       real, dimension (nx) :: jcrossb2 
       real, dimension (nx) :: meanfield_Qs_func, meanfield_Qp_func
       real, dimension (nx) :: meanfield_Qs_der, meanfield_Qp_der, BiBk_Bki
+      real, dimension (nx) :: meanfield_Bs21, meanfield_Bp21
       real, dimension (nx) :: meanfield_Bs2, meanfield_Bp2
+      real, dimension (nx) :: meanfield_urms21,meanfield_etaB2
       real, dimension (nx,3) :: Bk_Bki
       real :: B2_ext,c,s,kx
       integer :: i,j,ix
@@ -1671,19 +1687,33 @@ module Magnetic
                    * (1+(p%va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
         endif
         if (lmeanfield_jxb) then
-          meanfield_Bs2=meanfield_Bs**2
-          meanfield_Bp2=meanfield_Bp**2
-          meanfield_Qs_func=1.+(meanfield_Qs-1.)*(1.-2*pi_1*atan(p%b2/meanfield_Bs2))
-          meanfield_Qp_func=1.+(meanfield_Qp-1.)*(1.-2*pi_1*atan(p%b2/meanfield_Bp2))
-          meanfield_Qs_der=-2*pi_1*(meanfield_Qs-1.)/(meanfield_Bs2*(1.+(p%b2/meanfield_Bs2)**2))
-          meanfield_Qp_der=-2*pi_1*(meanfield_Qp-1.)/(meanfield_Bp2*(1.+(p%b2/meanfield_Bp2)**2))
-          call multsv_mn(meanfield_Qs_func,p%jxb,p%jxb)
-          call multmv_transp(p%bij,p%bb,Bk_Bki)
-          !call multsv_mn(meanfield_Qs_func-meanfield_Qp_func-p%b2*meanfield_Qp_der,Bk_Bki,p%jxb,ladd=.true.)
-          !call multsv_mn(meanfield_Qs_func-meanfield_Qp_func,Bk_Bki,p%jxb,ladd=.true.)
-          call multsv_mn_add(meanfield_Qs_func-meanfield_Qp_func-p%b2*meanfield_Qp_der,Bk_Bki,p%jxb)
-          call dot(Bk_Bki,p%bb,BiBk_Bki)
-          call multsv_mn_add(2*meanfield_Qp_der*BiBk_Bki,p%bb,p%jxb)
+          if (lmeanfield_jxb_with_vA2) then
+            meanfield_urms21=1./(3.*meanfield_kf*meanfield_etat)**2
+            meanfield_Qs_func=1.+(meanfield_Qs-1.)*(1.-2*pi_1*atan(p%vA2*meanfield_urms21))
+            meanfield_Qp_func=1.+(meanfield_Qp-1.)*(1.-2*pi_1*atan(p%vA2*meanfield_urms21))
+            meanfield_Qs_der=-2*pi_1*(meanfield_Qs-1.)/(1.+(p%vA2*meanfield_urms21)**2)
+            meanfield_Qp_der=-2*pi_1*(meanfield_Qp-1.)/(1.+(p%vA2*meanfield_urms21)**2)
+            call multsv_mn(meanfield_Qs_func,p%jxb,p%jxb)
+!           call multmv_transp(p%bij,p%bb,Bk_Bki)
+            !call multsv_mn(meanfield_Qs_func-meanfield_Qp_func-p%b2*meanfield_Qp_der,Bk_Bki,p%jxb,ladd=.true.)
+            !call multsv_mn_add(meanfield_Qs_func-meanfield_Qp_func-p%vA2*meanfield_urms21/meanfield_Bp2*meanfield_Qp_der,Bk_Bki,p%jxb)
+!           call multsv_mn_add(meanfield_Qs_func-meanfield_Qp_func,Bk_Bki,p%jxb)
+            !call dot(Bk_Bki,p%bb,BiBk_Bki)
+!           call multsv_mn_add(2*meanfield_Qp_der*BiBk_Bki*p%rho1*meanfield_urms21,p%bb,p%jxb)
+          else
+            meanfield_Bs21=1./meanfield_Bs**2
+            meanfield_Bp21=1./meanfield_Bp**2
+            meanfield_Qs_func=1.+(meanfield_Qs-1.)*(1.-2*pi_1*atan(p%b2*meanfield_Bs21))
+            meanfield_Qp_func=1.+(meanfield_Qp-1.)*(1.-2*pi_1*atan(p%b2*meanfield_Bp21))
+            meanfield_Qs_der=-2*pi_1*(meanfield_Qs-1.)*meanfield_Bs21/(1.+(p%b2*meanfield_Bs21)**2)
+            meanfield_Qp_der=-2*pi_1*(meanfield_Qp-1.)*meanfield_Bp21/(1.+(p%b2*meanfield_Bp21)**2)
+            call multsv_mn(meanfield_Qs_func,p%jxb,p%jxb)
+            call multmv_transp(p%bij,p%bb,Bk_Bki)
+            !call multsv_mn(meanfield_Qs_func-meanfield_Qp_func-p%b2*meanfield_Qp_der,Bk_Bki,p%jxb,ladd=.true.)
+            call multsv_mn_add(meanfield_Qs_func-meanfield_Qp_func-p%b2*meanfield_Qp_der,Bk_Bki,p%jxb)
+            call dot(Bk_Bki,p%bb,BiBk_Bki)
+            call multsv_mn_add(2*meanfield_Qp_der*BiBk_Bki,p%bb,p%jxb)
+          endif
         endif
         call multsv_mn(rho1_jxb,p%jxb,p%jxbr)
       endif
@@ -1790,7 +1820,12 @@ module Magnetic
         if (delta_effect/=0.) p%mf_EMF=p%mf_EMF+delta_effect*p%oxJ
         if (meanfield_etat/=0.) then
           if (lweyl_gauge) then
-            p%mf_EMF=p%mf_EMF-meanfield_etat*p%jj
+            if (meanfield_etaB/=0.) then
+              meanfield_etaB2=meanfield_etaB**2
+              call multsv_mn_add(meanfield_etat/sqrt(1.+p%b2/meanfield_etaB2),p%jj,p%mf_EMF)
+            else
+              p%mf_EMF=p%mf_EMF-meanfield_etat*p%jj
+            endif
           else
             p%mf_EMF=p%mf_EMF+meanfield_etat*p%del2a
           endif
