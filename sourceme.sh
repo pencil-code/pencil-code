@@ -24,7 +24,7 @@ if [ -z $PENCIL_HOME ]; then
 	 [ -d $_dir/src ]          && \
 	 [ -d $_dir/samples ]         \
        ); then
-      unset cd   # some people are crazy enough to overload `cd'
+      unset cd   # some people are crazy enough to overload cd
       PENCIL_HOME=`cd $_dir; echo $PWD`
       export PENCIL_HOME
       break
