@@ -130,10 +130,13 @@ module Particles_collisions
                     if (ip<=6) then
                       print*, 'calc_particles_collisions: collision between'// &
                           ' superparticles ', ipar(k), ' and ', ipar(j)
+                      print*, 'calc_particles_collisions: xj, xk='
+                      print*, '  ', fp(j,ixp:izp), sqrt(sum(fp(j,ixp:izp)**2))
+                      print*, '  ', fp(k,ixp:izp), sqrt(sum(fp(k,ixp:izp)**2))
                       print*, 'calc_particles_collisions: **before**'
                       print*, 'calc_particles_collisions: vj, vk, vj+vk='
-                      print*, '  ', fp(j,ivpx:ivpz)
-                      print*, '  ', fp(k,ivpx:ivpz)
+                      print*, '  ', fp(j,ivpx:ivpz), sqrt(sum(fp(j,ivpx:ivpz)**2))
+                      print*, '  ', fp(k,ivpx:ivpz), sqrt(sum(fp(k,ivpx:ivpz)**2))
                       print*, '  ', fp(j,ivpx:ivpz)+fp(k,ivpx:ivpz)
                       print*, 'calc_particles_collisions: ej, ek, ej+ek='
                       print*, '  ', 0.5*(sum(fp(j,ivpx:ivpz)**2)), &
@@ -194,6 +197,13 @@ module Particles_collisions
                       vvkcm=fp(k,ivpx:ivpz)-vvcm
                       vvkcm_normal=nvec*(sum(vvkcm*nvec))
                       vvkcm_parall=vvkcm-vvkcm_normal
+                      if (ip<=6) then
+                        print*, 'calc_particles_collisions: nvec, vvkcm, vvkcm_normal, vvkcm_parall='
+                        print*, '  ', nvec
+                        print*, '  ', vvkcm
+                        print*, '  ', vvkcm_normal
+                        print*, '  ', vvkcm_parall
+                      endif
                       if (coeff_restitution/=1.0) &
                           vvkcm_normal=vvkcm_normal*coeff_restitution
                       fp(k,ivpx:ivpz)=vvcm+vvkcm_parall-vvkcm_normal
@@ -203,8 +213,8 @@ module Particles_collisions
                     if (ip<=6) then
                       print*, 'calc_particles_collisions: **after**'
                       print*, 'calc_particles_collisions: vj, vk, vj+vk='
-                      print*, '  ', fp(j,ivpx:ivpz)
-                      print*, '  ', fp(k,ivpx:ivpz)
+                      print*, '  ', fp(j,ivpx:ivpz), sqrt(sum(fp(j,ivpx:ivpz)**2))
+                      print*, '  ', fp(k,ivpx:ivpz), sqrt(sum(fp(k,ivpx:ivpz)**2))
                       print*, '  ', fp(j,ivpx:ivpz)+fp(k,ivpx:ivpz)
                       print*, 'calc_particles_collisions: ej, ek, ej+ek='
                       print*, '  ', 0.5*(sum(fp(j,ivpx:ivpz)**2)), &
