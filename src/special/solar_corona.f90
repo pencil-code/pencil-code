@@ -20,7 +20,7 @@ module Special
 
   implicit none
 
-  include '../special.h'
+  include 'special.h'
 
   real :: tdown=0.,allp=0.,Kgpara=0.,cool_RTV=0.,Kgpara2=0.,tdownr=0.,allpr=0.
   real :: lntt0=0.,wlntt=0.,bmdi=0.,hcond1=0.,heatmax=0.
@@ -77,52 +77,6 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
-    subroutine initialize_special(f)
-!
-!  called by run.f90 after reading parameters, but before the time loop
-!
-!  06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!!
-!!  Initialize any module variables which are parameter dependent
-!!
-!
-! DO NOTHING
-      call keep_compiler_quiet(f)
-!
-    endsubroutine initialize_special
-!***********************************************************************
-    subroutine init_special(f)
-!
-!  initialise special condition; called from start.f90
-!  06-oct-2003/tony: coded
-!
-      use Mpicomm
-      use Sub
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      intent(inout) :: f
-
-!!
-!!  SAMPLE IMPLEMENTATION
-!!
-!!      select case(initspecial)
-!!        case('nothing'); if (lroot) print*,'init_special: nothing'
-!!        case('zero', '0'); f(:,:,:,iSPECIAL_VARIABLE_INDEX) = 0.
-!!        case default
-!!          !
-!!          !  Catch unknown values
-!!          !
-!!          if (lroot) print*,'init_special: No such value for initspecial: ', trim(initspecial)
-!!          call stop_it("")
-!!      endselect
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine init_special
-!***********************************************************************
     subroutine pencil_criteria_special()
 !
 !  All pencils that this special module depends on are specified here.
@@ -178,36 +132,6 @@ module Special
 
     endsubroutine pencil_criteria_special
 !***********************************************************************
-    subroutine pencil_interdep_special(lpencil_in)
-!
-!  Interdependency among pencils provided by this module are specified here.
-!
-!  18-07-06/tony: coded
-!
-      logical, dimension(npencils) :: lpencil_in
-!
-      call keep_compiler_quiet(lpencil_in)
-!
-    endsubroutine pencil_interdep_special
-!***********************************************************************
-    subroutine calc_pencils_special(f,p)
-!
-!  Calculate Hydro pencils.
-!  Most basic pencils should come first, as others may depend on them.
-!
-!   24-nov-04/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
-!
-      intent(in) :: f
-      intent(inout) :: p
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine calc_pencils_special
-!***********************************************************************
     subroutine dspecial_dt(f,df,p)
 !
       use Mpicomm
@@ -228,26 +152,8 @@ module Special
 ! Keep compiler quiet by ensuring every parameter is used
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
-
+      
     endsubroutine dspecial_dt
-!***********************************************************************
-    subroutine read_special_init_pars(unit,iostat)
-!
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
-
-      if (present(iostat)) call keep_compiler_quiet(iostat)
-      call keep_compiler_quiet(unit)
-
-    endsubroutine read_special_init_pars
-!***********************************************************************
-    subroutine write_special_init_pars(unit)
-!
-      integer, intent(in) :: unit
-
-      call keep_compiler_quiet(unit)
-
-    endsubroutine write_special_init_pars
 !***********************************************************************
     subroutine read_special_run_pars(unit,iostat)
 !
@@ -324,103 +230,6 @@ module Special
 !
     endsubroutine get_slices_special
 !***********************************************************************
-    subroutine calc_lspecial_pars(f)
-!
-!  dummy routine
-!
-!  15-jan-08/axel: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine calc_lspecial_pars
-!***********************************************************************
-    subroutine special_calc_density(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   continuity equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!
-!!
-!!  df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + SOME NEW TERM
-!!
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_density
-!***********************************************************************
-    subroutine special_calc_hydro(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   momentum equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!
-!!
-!!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
-!!
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_hydro
-!***********************************************************************
-    subroutine special_calc_magnetic(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   induction equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!
-!!
-!!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_magnetic
-!!***********************************************************************
     subroutine special_calc_entropy(f,df,p)
 !
 !   calculate a additional 'special' term on the right hand side of the
@@ -432,28 +241,15 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !           
-      if (Kgpara/=0) call calc_heatcond_tensor(f,df,p)
+      if (Kgpara/=0) call calc_heatcond_tensor(df,p)
       if (hcond1/=0) call calc_heatcond_constchi(df,p)
       if (cool_RTV/=0) call calc_heat_cool_RTV(df,p)
       if (tdown/=0) call calc_heat_cool_newton(df,p)
       if (Kgpara2/=0) call calc_heatcond_grad(df,p)
 !
-    endsubroutine special_calc_entropy
-!***********************************************************************
-    subroutine special_boundconds(f,bc)
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      type (boundary_condition) :: bc
-!
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(bc)
 !
-    endsubroutine special_boundconds
+    endsubroutine special_calc_entropy
 !***********************************************************************
     subroutine special_before_boundary(f)
 !
@@ -555,8 +351,7 @@ module Special
 !  newton cooling
 !
       use Diagnostics
-      use IO, only: output_pencil
-      use EquationOfState, only: gamma_inv,lnrho0,gamma
+      use EquationOfState, only:lnrho0 
       use Sub
       
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -565,11 +360,10 @@ module Special
       real, dimension (nx) :: newton=0.,newtonr=0.
       real, dimension (150) :: b_lnT,b_z,b_lnrho
       real, dimension (mz), save :: blnTT,blnrho
-      real, dimension (nx) :: rhs
       real :: dummy
       integer :: i,lend,j
 !
-      if (headtt) print*,'special_calc_entropy: newton cooling',tdown,gamma_inv,lnrho0
+      if (headtt) print*,'special_calc_entropy: newton cooling',tdown,lnrho0
 !
 !  Initial temperature profile is given in ln(T) [K] over z [Mm]
 !  It will be read at the beginning and then kept in memory
@@ -619,19 +413,11 @@ module Special
       !
       !
       newton  = exp(blnTT(n)-p%lnTT)-1.
-      newtonr = exp(blnrho(n)-p%lnrho)-1.
-      !
       newton  = newton  * tdown* (exp(-allp*(z(n)*unit_length*1e-6)) )
-      !
-      newtonr = newtonr * tdownr* (exp(-allpr*(z(n)*unit_length*1e-6)) )
       !
       !  Add newton cooling term to entropy
       !      
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton
-      !
-      df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + newtonr
-      !
-      if (itsub .eq. 3 .and. ip .eq. 118) call output_pencil(trim(directory)//'/newton.dat',newton,1)      
       !
       if (lfirst.and.ldt) then
          !
@@ -642,40 +428,26 @@ module Special
       !
     endsubroutine calc_heat_cool_newton
 !***********************************************************************
-     subroutine calc_heatcond_tensor(f,df,p)
-
+     subroutine calc_heatcond_tensor(df,p)
+!
+!    heat conduction with T^5/2
+!
        use Diagnostics 
        use Sub
-       use EquationOfState, only: gamma,gamma_inv
-       use IO, only: output_pencil
-
-       real, dimension (mx,my,mz,mfarray), intent(in) :: f
+       use EquationOfState, only: gamma
+!
        real, dimension (mx,my,mz,mvar) :: df
-       real, dimension (mx,7,7) :: ts
-       real, dimension (nx,3) :: gts
-       real, dimension (nx,3,3) :: hts
        real, dimension (nx,3) :: hhh,bunit,tmpv
-       real, dimension (nx) :: tmpj,tmpi,hhh2,quenchfactor,b1
-       real, dimension (nx) :: rhs,chix
+       real, dimension (nx) :: tmpj,hhh2,quenchfactor,b1
+       real, dimension (nx) :: rhs,chix,cosbgT,gT2,b2
        integer :: i,j,k
        type (pencil_case) :: p
-
-       ts = exp(2.5*f(:,m-3:m+3,n-3:n+3,ilnTT))
-
-       do i=1,3
-          call der_special(ts,gts(:,i),i)          
-          call der2_special(ts,hts(:,i,i),i)
-          do j=i+1,3
-             call derij_special(ts,hts(:,i,j),i,j)
-             hts(:,j,i)=hts(:,i,j)
-          enddo
-       enddo
 !
 !  calculate unit vector of bb
 !
        call dot2_mn(p%bb,tmpj,PRECISE_SQRT=.true.)
        b1=1./max(tini,tmpj)
-       call multsv_mn(b1,p%bb,bunit)     
+       call multsv_mn(b1,p%bb,bunit)
 !
 !  calculate first H_i
 !
@@ -689,56 +461,64 @@ module Special
              hhh(:,i)=hhh(:,i)+bunit(:,j)*(p%bij(:,i,j)+bunit(:,i)*tmpj(:))
           enddo
        enddo
-       call multsv_mn(b1,hhh,hhh)
+       call multsv_mn(b1,hhh,tmpv)
 !
 !  calculate abs(h) limiting
 !
-       call dot2_mn(hhh,hhh2,PRECISE_SQRT=.true.)
+       call dot2_mn(tmpv,hhh2,PRECISE_SQRT=.true.)
 !
 !  limit the length of h
 !
-!      quenchfactor=1./max(1.,3.*hhh2*dxmax)
-      call multsv_mn(quenchfactor,hhh,tmpv)
-!     
-      call dot(tmpv,gts,rhs)
+      quenchfactor=1./max(1.,3.*hhh2*dxmax)
+      call multsv_mn(quenchfactor,tmpv,hhh)
+!
+      call dot(hhh,p%glnTT,rhs)
 !
       call dot(bunit,p%glnTT,tmpj)
-      call dot(bunit,gts,tmpi)
-      rhs = rhs + tmpj*tmpi
+      rhs = rhs + tmpj*tmpj
 !
-      call multmv_mn(hts,bunit,tmpv)
+      call multmv_mn(p%hlnTT,bunit,tmpv)
       call dot_mn(tmpv,bunit,tmpj)
       rhs = rhs + tmpj
- 
+!
       rhs = rhs *2./5.* Kgpara*exp(-p%lnrho)
-     
-      if (itsub .eq. 3 .and. ip .eq. 118) call output_pencil(trim(directory)//'/tensor1.dat',rhs,1)
+!
       df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+ rhs
 !
+!     for timestep extension multiply with the 
+!     cosine between grad T and bunit
+!
+      call dot(p%bb,p%glnTT,cosbgT)
+      call dot2(p%glnTT,gT2)
+      call dot2(p%bb,b2)
+!
+      where ((gT2.le.tini).or.(b2.le.tini))
+         cosbgT=0.
+      elsewhere
+         cosbgT=cosbgT/sqrt(gT2*b2)
+      endwhere
+!
       if (lfirst.and.ldt) then
-         chix=Kgpara*exp(2.5*p%lnTT-p%lnrho)
-         !
-         diffus_chi=max(diffus_chi,gamma*chix*dxyz_2)          
-         dt1_max=max(dt1_max,(rhs*gamma)/(cdts))          
-         if (ldiagnos.and.idiag_dtchi2/=0) then
-            call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
-         endif
-       endif
-       
-     endsubroutine calc_heatcond_tensor
+        chix=cosbgT*Kgpara*exp(2.5*p%lnTT-p%lnrho)
+        diffus_chi=diffus_chi + gamma*chix*dxyz_2
+        if (ldiagnos.and.idiag_dtchi2/=0) then
+          call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
+        endif
+      endif
+!
+    endsubroutine calc_heatcond_tensor
 !***********************************************************************
     subroutine calc_heatcond_grad(df,p)
-      
+!      
       use Sub, only: dot_mn,dot2_mn
-      use IO, only: output_pencil
-     
+!
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: tmpv
       real, dimension (nx) :: tmpj,tmpi
       real, dimension (nx) :: rhs,g2
-      integer :: i,j,k
+      integer :: i,j
       type (pencil_case) :: p
-      
+!
       call dot2_mn(p%glnTT,tmpi)
 !
       tmpv(:,:)=0.
@@ -749,12 +529,12 @@ module Special
       enddo
       call dot_mn(tmpv,p%glnTT,tmpj)
       call dot_mn(p%glnrho,p%glnTT,g2)
-
+!
       rhs = exp(2.*p%lnTT+alog(Kgpara2))*( &
            tmpi *(p%del2lnTT + tmpi + g2) + &
            2. * tmpj)
 !
-      if (itsub .eq. 3 .and. ip .eq. 118) call output_pencil(trim(directory)//'/tensor3.dat',rhs,1)
+!      if (itsub .eq. 3 .and. ip .eq. 118) call output_pencil(trim(directory)//'/tensor3.dat',rhs,1)
 !
       df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+ rhs
 !
@@ -765,15 +545,14 @@ module Special
  
       use Diagnostics
       use Sub
-      use EquationOfState, only: gamma,gamma_inv
-      use IO, only: output_pencil
+      use EquationOfState, only: gamma
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx,3) :: bunit,hhh,gvKperp,gvKpara,tmpv,tmpv2
+      real, dimension (nx,3) :: bunit,hhh,tmpv
       real, dimension (nx) :: hhh2,quenchfactor
-      real, dimension (nx) :: abs_b,b1,vKperp,vKpara
-      real, dimension (nx) :: rhs,tmp,tmpi,tmpj,tmpk,chix
+      real, dimension (nx) :: abs_b,b1
+      real, dimension (nx) :: rhs,tmp,tmpi,tmpj,chix
       integer :: i,j,k
 !
       intent(in) :: p
@@ -801,20 +580,20 @@ module Special
           hhh(:,i)=hhh(:,i)+bunit(:,j)*(p%bij(:,i,j)+bunit(:,i)*tmpj(:))
         enddo
       enddo
-      call multsv_mn(b1,hhh,hhh)
+      call multsv_mn(b1,hhh,tmpv)
 !
 !  calculate abs(h) for limiting H vector
 !
-      call dot2_mn(hhh,hhh2,PRECISE_SQRT=.true.)
+      call dot2_mn(tmpv,hhh2,PRECISE_SQRT=.true.)
 !
 !  limit the length of H
 !
       quenchfactor=1./max(1.,3.*hhh2*dxmax)
-      call multsv_mn(quenchfactor,hhh,tmpv)
+      call multsv_mn(quenchfactor,tmpv,hhh)
 !
 !  dot H with Grad lnTT
 !
-      call dot_mn(tmpv,p%glnTT,tmp)
+      call dot_mn(hhh,p%glnTT,tmp)
 !
 !  dot Hessian matrix of lnTT with bi*bj, and add into tmp
 !
@@ -837,7 +616,7 @@ module Special
 !
       if (.not.(ipz.eq.nprocz-1.and.n.ge.n2-3)) df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+rhs
 !
-      if (itsub .eq. 3 .and. ip .eq. 118) call output_pencil(trim(directory)//'/tensor2.dat',rhs,1)
+!      if (itsub .eq. 3 .and. ip .eq. 118) call output_pencil(trim(directory)//'/tensor2.dat',rhs,1)
 !
       if (lfirst.and.ldt) then
         diffus_chi=diffus_chi+gamma*chix*dxyz_2
@@ -856,12 +635,11 @@ module Special
       use EquationOfState, only: gamma
       use Sub, only: cubic_step,notanumber
       use Mpicomm, only: stop_it
-      use IO, only: output_pencil
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: lnQ,rtv_cool=0.,lnTT_SI,lnneni
-      real, dimension (nx) :: slope,ordinate,lnL
-      real, dimension (nx) :: lnQ1,lnQ2,lnL1,lnL2
+      real, dimension (nx) :: slope,ordinate
+      real, dimension (nx) :: lnQ1,lnQ2
       integer :: i
       real :: unit_lnQ
       type (pencil_case) :: p
@@ -912,7 +690,7 @@ module Special
 !
       if (ltemperature) then
          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)-rtv_cool
-         if (itsub .eq. 3 .and. ip .eq. 118) call output_pencil(trim(directory)//'/rtv.dat',rtv_cool,1)
+!         if (itsub .eq. 3 .and. ip .eq. 118) call output_pencil(trim(directory)//'/rtv.dat',rtv_cool,1)
       else
          if (lentropy) call stop_it('solar_corona:calc_heat_cool: lentropy=T not implented')
       endif
@@ -923,114 +701,6 @@ module Special
       endif
 !           
     endsubroutine calc_heat_cool_RTV
-!***********************************************************************
-    subroutine der_special(f,df,j)
-      
-      real, dimension (mx,7,7) :: f
-      real, dimension (nx) :: df
-      integer :: j
-      
-      select case(j)
-      case(1)
-         df = (1./60)*dx_1(l1:l2)* ( &
-              +45.*(f(l1+1:l2+1,4,4)-f(l1-1:l2-1,4,4)) &
-              - 9.*(f(l1+2:l2+2,4,4)-f(l1-2:l2-2,4,4)) &
-              + 1.*(f(l1+3:l2+3,4,4)-f(l1-3:l2-3,4,4)))
-      case(2)
-         df = (1./60)*dy_1(m)* ( &
-              +45.*(f(l1:l2,5,4)-f(l1:l2,3,4)) &
-              - 9.*(f(l1:l2,6,4)-f(l1:l2,2,4)) &
-              + 1.*(f(l1:l2,7,4)-f(l1:l2,1,4)))             
-      case(3)
-         df = (1./60)*dz_1(n)* ( &
-               +45.*(f(l1:l2,4,5)-f(l1:l2,4,3)) &
-               - 9.*(f(l1:l2,4,6)-f(l1:l2,4,2)) &
-               + 1.*(f(l1:l2,4,7)-f(l1:l2,4,1)))
-      endselect
-      
-    endsubroutine der_special
-!***********************************************************************
-    subroutine der2_special(f,df,j)
-      
-      real, dimension (mx,7,7) :: f
-      real, dimension (nx) :: df
-      integer :: j
-      
-      select case(j)
-      case(1)
-         df = (1./180)*dx_1(l1:l2)**2 * ( &
-              -490.*f(l1:l2,4,4)                 &
-              +270.*(f(l1+1:l2+1,4,4)+f(l1-1:l2-1,4,4)) &
-              - 27.*(f(l1+2:l2+2,4,4)+f(l1-2:l2-2,4,4)) &
-              +  2.*(f(l1+3:l2+3,4,4)+f(l1-3:l2-3,4,4)))
-      case(2) 
-         df = (1./180)*dy_1(m)**2 * ( &
-              -490.*f(l1:l2,4,4)                 &
-              +270.*(f(l1:l2,5,4)+f(l1:l2,3,4)) &
-              - 27.*(f(l1:l2,6,4)+f(l1:l2,2,4)) &
-              +  2.*(f(l1:l2,7,4)+f(l1:l2,1,4)))
-      case(3)
-         df = (1./180)*dz_1(n)**2 * ( &
-              -490.*f(l1:l2,4,4)                 &
-              +270.*(f(l1:l2,4,5)+f(l1:l2,4,3)) &
-              - 27.*(f(l1:l2,4,6)+f(l1:l2,4,2)) &
-              +  2.*(f(l1:l2,4,7)+f(l1:l2,4,1)))
-      endselect
-      
-    endsubroutine der2_special
-!***********************************************************************
-    subroutine derij_special(f,df,i,j)
-      
-      real, dimension (mx,7,7) :: f
-      real, dimension (nx) :: df
-      integer :: i,j
-      
-      select case(i+j)
-      case(3) ! i=1 j=2
-         df = (1./720.)*dx_1(l1:l2)*dy_1(m)*( &
-              270.*( f(l1+1:l2+1,5,4)-f(l1-1:l2-1,5,4)  &
-                    +f(l1-1:l2-1,3,4)-f(l1+1:l2+1,3,4)) &            
-              - 27.*( f(l1+2:l2+2,6,4)-f(l1-2:l2-2,6,4)  &
-                     +f(l1-2:l2-2,2,4)-f(l1+2:l2+2,2,4)) &
-              +  2.*( f(l1+3:l2+3,7,4)-f(l1-3:l2-3,7,4)  &
-                     +f(l1-3:l2-3,1,4)-f(l1+3:l2+3,1,4)))
-      case(4) ! i=1 j=3
-         df = (1./720.)*dx_1(l1:l2)*dz_1(n)*( &
-              270.*( f(l1+1:l2+1,4,5)-f(l1-1:l2-1,4,5)  &
-                    +f(l1-1:l2-1,4,3)-f(l1+1:l2+1,4,3)) &            
-              - 27.*( f(l1+2:l2+2,4,6)-f(l1-2:l2-2,4,6)  &
-                     +f(l1-2:l2-2,4,2)-f(l1+2:l2+2,4,2)) &
-              +  2.*( f(l1+3:l2+3,4,7)-f(l1-3:l2-3,4,7)  &
-                     +f(l1-3:l2-3,4,1)-f(l1+3:l2+3,4,1)))
-      case(5) ! i=2 j=3
-         df = (1./720.)*dy_1(m)*dz_1(n)*( &
-              270.*( f(l1:l2,5,5)-f(l1:l2,3,5)  &
-                    +f(l1:l2,3,3)-f(l1:l2,5,3)) &            
-              - 27.*( f(l1:l2,6,6)-f(l1:l2,2,6)  &
-                     +f(l1:l2,2,2)-f(l1:l2,6,2)) &
-              +  2.*( f(l1:l2,7,7)-f(l1:l2,1,7)  &
-                     +f(l1:l2,1,1)-f(l1:l2,7,1)))  
-      endselect
-       
-    endsubroutine derij_special
-!***********************************************************************
-    subroutine special_calc_particles()
-    endsubroutine special_calc_particles
-!***********************************************************************
-    subroutine special_calc_particles_nbody()
-    endsubroutine special_calc_particles_nbody
-!***********************************************************************
-    subroutine special_after_timestep(f,df,dt)
-
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real :: dt
-
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(dt)
-
-    endsubroutine special_after_timestep
 !***********************************************************************
     
 !********************************************************************
