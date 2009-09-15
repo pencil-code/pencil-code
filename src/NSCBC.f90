@@ -32,6 +32,7 @@ include 'NSCBC.h'
 !
   character(len=2*nscbc_len+1), dimension(3) :: nscbc_bc=''
   character(len=nscbc_len), dimension(3) :: nscbc_bc1,nscbc_bc2
+  character(len=40) :: turb_inlet_dir=''
   real :: nscbc_sigma_out = 1.,nscbc_sigma_in = 1., p_infty=1.
   logical :: inlet_from_file=.false.
   logical :: first_NSCBC=.true.
@@ -42,9 +43,12 @@ include 'NSCBC.h'
   real, allocatable, dimension(:) :: x_in
   real, allocatable, dimension(:) :: y_in
   real, allocatable, dimension(:) :: z_in
+  character :: prec_in
   real :: t_in,dx_in,dy_in,dz_in
   integer :: mx_in,my_in,mz_in,nv_in
   integer :: l1_in, nx_in, ny_in, nz_in
+  integer :: mvar_in,maux_in,mglobal_in
+  integer :: nghost_in,ipx_in, ipy_in, ipz_in
   integer :: m1_in  
   integer :: n1_in
   integer :: l2_in
@@ -55,10 +59,12 @@ include 'NSCBC.h'
   real :: Lz_in
 !
 namelist /NSCBC_init_pars/  &
-    nscbc_bc, nscbc_sigma_in, nscbc_sigma_out, p_infty, inlet_from_file
+    nscbc_bc, nscbc_sigma_in, nscbc_sigma_out, p_infty, inlet_from_file,&
+    turb_inlet_dir
 
 namelist /NSCBC_run_pars/  &
-    nscbc_bc, nscbc_sigma_in, nscbc_sigma_out, p_infty, inlet_from_file
+    nscbc_bc, nscbc_sigma_in, nscbc_sigma_out, p_infty, inlet_from_file,&
+    turb_inlet_dir
 !
   contains
 !***********************************************************************
@@ -112,7 +118,7 @@ namelist /NSCBC_run_pars/  &
       real, dimension (mx,my,mz,mvar) :: df
       character (len=nscbc_len), dimension(3) :: bc12
       character (len=3) :: topbot
-      character (len=30) :: turbfile
+      character (len=60) :: turbfile
       integer j,k,direction,ip_ok,ip_test
       real, dimension(mcom) :: valx,valy,valz
       logical :: proc_at_inlet
@@ -204,14 +210,14 @@ namelist /NSCBC_run_pars/  &
 !  Read data only if required, i.e. if we are at a processor handling inlets
 !
             if (proc_at_inlet) then
-              print*,'datadir=',datadir
+!             print*,'datadir=',datadir
               call chn(iproc_in,chproc_in)
               call safe_character_assign(directory_in,&
-                  trim(datadir)//'/proc'//chproc_in)
-              print*,'directory_in=',directory_in
+                  trim(turb_inlet_dir)//'/data/proc'//chproc_in)
+!              print*,'directory_in=',directory_in
               call safe_character_assign(turbfile,&
-                  trim(directory_in)//'/var_inlet.dat')
-              print*,'turbfile=',turbfile
+                  trim(directory_in)//'/var.dat')
+!              print*,'turbfile=',turbfile
               open(1,FILE=turbfile,FORM='unformatted')
               if (ip<=8) print*,'input: open, mx_in,my_in,mz_in,nv_in=',&
                   mx_in,my_in,mz_in,nv_in
@@ -220,16 +226,38 @@ namelist /NSCBC_run_pars/  &
               nx_in=mx_in-2*nghost
               ny_in=my_in-2*nghost
               nz_in=mz_in-2*nghost
-              l1_in=nghost
-              m1_in=nghost
-              n1_in=nghost
+              l1_in=nghost+1
+              m1_in=nghost+1
+              n1_in=nghost+1
               l2_in=mx_in-nghost
               m2_in=my_in-nghost
               n2_in=mz_in-nghost
               Lx_in=x_in(l2_in)-x_in(l1_in)
               Ly_in=y_in(m2_in)-y_in(m1_in)
               Lz_in=z_in(n2_in)-z_in(n1_in)
-              first_NSCBC=.false.            
+              first_NSCBC=.false.
+!print*,'Lx_in,Ly_in,Lz_in=',Lx_in,Ly_in,Lz_in
+!print*,'l1_in,m1_in,n1_in=',l1_in,m1_in,n1_in
+!print*,'l2_in,m2_in,n2_in=',l2_in,m2_in,n2_in
+!
+!  Check size of arrays
+!            
+              if (j==1) then
+                if ((my_in .ne. my) .or. (mz_in .ne. mz)) then
+                  print*,'my_in,my,mz_in,mz=',my_in,my,mz_in,mz
+                  call stop_it ('The turbulent inlet grid does not conform!')
+                endif
+              elseif (j==2) then
+                if ((mx_in .ne. mx) .or. (mz_in .ne. mz)) then
+                  print*,'mx_in,mx,mz_in,mz=',mx_in,mx,mz_in,mz
+                  call stop_it ('The turbulent inlet grid does not conform !')
+                endif
+              elseif (j==3) then
+                if ((my_in .ne. my) .or. (mx_in .ne. mx)) then
+                  print*,'my_in,my,mx_in,mx=',my_in,my,mx_in,mx
+                  call stop_it ('The turbulent inlet grid does not conform!')
+                endif
+              endif
             endif            
           endif
         endif
@@ -336,8 +364,8 @@ namelist /NSCBC_run_pars/  &
       real :: Mach,KK,nu
       integer lll,i
       integer sgn
-      real :: shift, grid_shift, weight
-      integer :: round,lowergrid,uppergrid
+      real :: shift, grid_shift, weight, round
+      integer :: iround,lowergrid,uppergrid
 
       intent(inout) :: f
       intent(inout) :: df
@@ -483,18 +511,12 @@ namelist /NSCBC_run_pars/  &
 !  Find velocity at inlet
 !
         if (inlet_from_file) then
-          round=int(t*u_t/Lx_in)
-          shift=t*u_t/Lx_in-round
+          round=t*u_t/Lx_in
+          iround=int(round)
+          shift=round-iround
           grid_shift=shift*nx_in
           lowergrid=l1_in+int(grid_shift)
           uppergrid=lowergrid+1
-!print*,'lowergrid=',lowergrid
-!!$          print*,'t=',t
-!!$          print*,'u_t=',u_t
-!!$          print*,'Ly_in=',Ly_in
-!!$          print*,'round=',round
-!!$          print*,'shift=',shift
-!!$          print*,'grid_shift=',grid_shift
           weight=grid_shift-int(grid_shift)
           u_in(:,:,:)&
               =f_in(lowergrid,m1_in:m2_in,n1_in:n2_in,iux:iuz)*(1-weight)&
@@ -665,8 +687,8 @@ namelist /NSCBC_run_pars/  &
       real :: Mach,KK,nu
       integer lll,i
       integer sgn
-      real :: shift, grid_shift, weight
-      integer :: round,lowergrid,uppergrid
+      real :: shift, grid_shift, weight, round
+      integer :: iround,lowergrid,uppergrid
 
       intent(inout) :: f
       intent(inout) :: df
@@ -813,8 +835,9 @@ namelist /NSCBC_run_pars/  &
 !
         if (inlet_from_file) then
 !yyyy
-          round=int(t*u_t/Ly_in)
-          shift=t*u_t/Ly_in-round
+          round=t*u_t/Ly_in
+          iround=int(round)
+          shift=round-iround
           grid_shift=shift*ny_in
           lowergrid=m1_in+int(grid_shift)
           uppergrid=lowergrid+1
@@ -826,6 +849,17 @@ namelist /NSCBC_run_pars/  &
 !!$          print*,'shift=',shift
 !!$          print*,'grid_shift=',grid_shift
           weight=grid_shift-int(grid_shift)
+!!$if (lroot) then
+!!$print*,'lowergrid=',lowergrid
+!!$print*,'t=',t
+!!$print*,'u_t=',u_t
+!!$print*,'Ly_in=',Ly_in
+!!$print*,'round=',round
+!!$print*,'iround=',iround
+!!$print*,'shift=',shift
+!!$print*,'grid_shift=',grid_shift
+!!$endif
+
           u_in(:,:,:)&
               =f_in(l1_in:l2_in,lowergrid,n1_in:n2_in,iux:iuz)*(1-weight)&
               +f_in(l1_in:l2_in,uppergrid,n1_in:n2_in,iux:iuz)*weight
@@ -975,9 +1009,14 @@ namelist /NSCBC_run_pars/  &
     endsubroutine read_NSCBC_init_pars
 !***********************************************************************
     subroutine read_NSCBC_run_pars(unit,iostat)
+
+      use Sub, only : rdim
+
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
       integer :: i,stat 
+      logical :: exist
+      character (len=130) :: file
 
       if (present(iostat)) then
         read(unit,NML=NSCBC_run_pars,ERR=99, IOSTAT=iostat)
@@ -996,13 +1035,20 @@ namelist /NSCBC_run_pars/  &
       if (inlet_from_file) then
         print*,'Read inlet data from file!'
 !
-! Define the size of the data to be found on the file.
-! This should not be hard coded, but leave it like this for now.
+! Read the size of the data to be found on the file.
 !
-        mx_in=16+nghost*2
-        my_in=16+nghost*2
-        mz_in=16+nghost*2
-        nv_in=4
+print*,'turb_inlet_dir=',turb_inlet_dir
+        file=trim(turb_inlet_dir)//'/data/proc0/dim.dat'
+        inquire(FILE=trim(file),EXIST=exist)
+        if (exist) then
+          call rdim(file,&
+              mx_in,my_in,mz_in,mvar_in,maux_in,mglobal_in,prec_in,&
+              nghost_in,ipx_in, ipy_in, ipz_in)
+          nv_in=mvar_in+maux_in+mglobal_in
+        else
+          print*,'file=',file
+          call stop_it('read_NSCBC_run_pars: Could not find file!')
+        endif
 !
 ! Allocate array for data to be used at the inlet.
 ! For now every processor reads all the data - this is clearly an overkill,
