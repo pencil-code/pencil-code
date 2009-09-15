@@ -21,10 +21,6 @@
 &grav_run_pars
 /
 &entropy_run_pars
-  iheatcond='tensor-diffusion'
-  !
-  Kgpara=1e-3
-  Kgperp=1e-8
 /
 &magnetic_run_pars
   iresistivity='shock','eta-const'
@@ -35,6 +31,12 @@
   ivisc='nu-shock','nu-const' 
   nu_shock=1.
   nu=1e-3
+/
+&special_run_pars 
+  Kgpara=4e-10
+  tdown=1.
+  allp=3.5
+  cool_rtv=1.
 /
 &shock_run_pars
   lforce_periodic_shockviscosity=T

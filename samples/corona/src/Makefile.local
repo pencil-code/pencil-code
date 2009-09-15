@@ -15,4 +15,6 @@ FORCING   = noforcing
 SHEAR     = noshear
 SHOCK	  =   shock
 
+SPECIAL   =   special/solar_corona
+
 FOURIER   =   fourier_fftpack
