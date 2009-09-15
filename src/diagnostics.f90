@@ -460,7 +460,7 @@ module Diagnostics
 !  The result is only present on the y-root processors.
 !
       if (nnamexz>0) then
-        call mpireduce_sum(fnamexz,fsumxz,(/nx,ny,nnamexz/),idir=2)
+        call mpireduce_sum(fnamexz,fsumxz,(/nx,nz,nnamexz/),idir=2)
         if (ipy==0) fnamexz(:,:,1:nnamexz)=fsumxz(:,:,1:nnamexz)/nygrid
       endif
 !
