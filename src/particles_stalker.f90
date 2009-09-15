@@ -240,6 +240,7 @@ module Particles_stalker
 !
           if (npar_stalk_loc>=1) then
             write(1) ipar(k_stalk(1:npar_stalk_loc))
+            if (allocated(values)) deallocate(values)
             allocate(values(nvar_stalk,npar_stalk_loc))
             ivalue=0
             if (lstalk_xx) then
