@@ -59,7 +59,7 @@ module Sub
 !
   public :: max_for_dt
 !
-  public :: write_dx_general, numeric_precision, wdim
+  public :: write_dx_general, numeric_precision, wdim, rdim
   public :: write_zprof, remove_zprof
 !
   public :: tensor_diffusion_coef
@@ -2882,6 +2882,32 @@ module Sub
       endif
 !
       endsubroutine wdim
+!***********************************************************************
+      subroutine rdim(file,mx_in,my_in,mz_in,mvar_in,maux_in,mglobal_in,&
+          prec_in,nghost_in,&
+          ipx_in, ipy_in, ipz_in)
+!
+!  write dimension to file
+!
+!   15-sep-09/nils: adapted from rdim
+!
+      character (len=*) :: file
+      character         :: prec_in
+      integer           :: mx_in,my_in,mz_in,iprocz_slowest=0
+      integer           :: mvar_in,maux_in,mglobal_in,nghost_in
+      integer           :: ipx_in, ipy_in, ipz_in
+      !
+      !  Every processor writes to their procN/dim.dat (with io_dist.f90)
+      !
+      open(124,file=file,FORM='formatted')
+      read(124,*) mx_in,my_in,mz_in,mvar_in,maux_in,mglobal_in
+      read(124,*) prec_in
+      read(124,*) nghost_in, nghost_in, nghost_in
+      read(124,*) ipx_in, ipy_in, ipz_in
+      !
+      close(124)
+!
+      endsubroutine rdim
 !***********************************************************************
     subroutine read_snaptime(file,tout,nout,dtout,t)
 !
