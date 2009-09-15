@@ -1459,7 +1459,7 @@ module Hydro
 !  Advection term.
 !
       if (ladvection_velocity) &
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
 !
 !  Coriolis force, -2*Omega x u (unless lprecession=T)
 !  Omega=(-sin_theta, 0, cos_theta), where theta corresponds to
@@ -2249,7 +2249,7 @@ module Hydro
          call fatal_error('set_border_hydro',errormsg)
       endselect
 !
-      if (borderuu /= 'nothing') then
+      if (borderuu/='nothing') then
         do j=1,3
           ju=j+iuu-1
           call border_driving(f,df,p,f_target(:,j),ju)
