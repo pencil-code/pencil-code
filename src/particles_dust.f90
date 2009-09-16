@@ -982,9 +982,12 @@ k_loop:   do while (.not. (k>npar_loc))
             call random_number_wrapper(fp(k,ivpy))
             call random_number_wrapper(fp(k,ivpz))
           enddo
-          fp(1:npar_loc,ivpx) = -delta_vp0 + fp(1:npar_loc,ivpx)*2*delta_vp0
-          fp(1:npar_loc,ivpy) = -delta_vp0 + fp(1:npar_loc,ivpy)*2*delta_vp0
-          fp(1:npar_loc,ivpz) = -delta_vp0 + fp(1:npar_loc,ivpz)*2*delta_vp0
+          fp(1:npar_loc,ivpx) = fp(1:npar_loc,ivpx) - &
+              delta_vp0 + fp(1:npar_loc,ivpx)*2*delta_vp0
+          fp(1:npar_loc,ivpy) = fp(1:npar_loc,ivpy) - &
+              delta_vp0 + fp(1:npar_loc,ivpy)*2*delta_vp0
+          fp(1:npar_loc,ivpz) = fp(1:npar_loc,ivpz) - &
+              delta_vp0 + fp(1:npar_loc,ivpz)*2*delta_vp0
 
         case ('random-x')
           if (lroot) print*, 'init_particles: Random particle x-velocity; '// &
@@ -992,7 +995,8 @@ k_loop:   do while (.not. (k>npar_loc))
           do k=1,npar_loc
             call random_number_wrapper(fp(k,ivpx))
           enddo
-          fp(1:npar_loc,ivpx) = -delta_vp0 + fp(1:npar_loc,ivpx)*2*delta_vp0
+          fp(1:npar_loc,ivpx) = fp(1:npar_loc,ivpx) - &
+              delta_vp0 + fp(1:npar_loc,ivpx)*2*delta_vp0
 
         case ('random-y')
           if (lroot) print*, 'init_particles: Random particle y-velocity; '// &
@@ -1000,7 +1004,8 @@ k_loop:   do while (.not. (k>npar_loc))
           do k=1,npar_loc
             call random_number_wrapper(fp(k,ivpy))
           enddo
-          fp(1:npar_loc,ivpy) = -delta_vp0 + fp(1:npar_loc,ivpy)*2*delta_vp0
+          fp(1:npar_loc,ivpy) = fp(1:npar_loc,ivpy) - &
+              delta_vp0 + fp(1:npar_loc,ivpy)*2*delta_vp0
 
         case ('random-z')
           if (lroot) print*, 'init_particles: Random particle z-velocity; '// &
@@ -1008,7 +1013,8 @@ k_loop:   do while (.not. (k>npar_loc))
           do k=1,npar_loc
             call random_number_wrapper(fp(k,ivpz))
           enddo
-          fp(1:npar_loc,ivpz) = -delta_vp0 + fp(1:npar_loc,ivpz)*2*delta_vp0
+          fp(1:npar_loc,ivpz) = fp(1:npar_loc,ivpz) - &
+              delta_vp0 + fp(1:npar_loc,ivpz)*2*delta_vp0
 
         case ('average-to-zero')
           call mpireduce_sum(sum(fp(1:npar_loc,ivpx)),vpx_sum)
