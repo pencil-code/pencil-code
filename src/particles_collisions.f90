@@ -28,12 +28,13 @@ module Particles_collisions
 !
   real :: lambda_mfp_single=1.0, coeff_restitution=1.0
   logical :: lcollision_random_angle=.false., lcollision_big_ball=.false.
+  logical :: lshear_in_vp=.true.
   character (len=labellen) :: icoll='random-angle'
 !
   integer :: idiag_ncoll
 !
   namelist /particles_coll_run_pars/ &
-      lambda_mfp_single, coeff_restitution, icoll
+      lambda_mfp_single, coeff_restitution, icoll, lshear_in_vp
 !
   contains
 !***********************************************************************
@@ -77,7 +78,7 @@ module Particles_collisions
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real, dimension (3) :: vvcm, vvkcm, vvkcmnew
+      real, dimension (3) :: xpj, xpk, vpj, vpk, vvcm, vvkcm, vvkcmnew
       real, dimension (3) :: nvec, vvkcm_normal, vvkcm_parall
       real, dimension (3) :: tmp1, tmp2
       real :: deltavjk, tau_coll1, prob, r, theta_rot, phi_rot, ncoll
@@ -99,16 +100,19 @@ module Particles_collisions
           k=kshepherd(l-nghost)
           if (k>0) then
             do while (k/=0)
+              xpk=fp(k,ixp:izp)
+              vpk=fp(k,ivpx:ivpz)
+              if (lshear .and. lshear_in_vp) vpk(2)=vpk(2)-qshear*Omega*xpk(1)
               j=k
               do while (kneighbour(j)/=0)
                 j=kneighbour(j)
+                xpj=fp(j,ixp:izp)
+                vpj=fp(j,ivpx:ivpz)
+                if (lshear .and. lshear_in_vp) vpj(2)=vpj(2)-qshear*Omega*xpj(1)
 !
 !  Calculate the relative speed of particles j and k.
 !
-                deltavjk=sqrt( &
-                    (fp(k,ivpx)-fp(j,ivpx))**2 + &
-                    (fp(k,ivpy)-fp(j,ivpy))**2 + &
-                    (fp(k,ivpz)-fp(j,ivpz))**2 )
+                deltavjk=sqrt(sum((vpk-vpj)**2))
 !
 !  The time-scale for collisions between a representative particle from
 !  superparticle k and the particle cluster in superparticle j is
@@ -131,22 +135,20 @@ module Particles_collisions
                       print*, 'calc_particles_collisions: collision between'// &
                           ' superparticles ', ipar(k), ' and ', ipar(j)
                       print*, 'calc_particles_collisions: xj, xk='
-                      print*, '  ', fp(j,ixp:izp), sqrt(sum(fp(j,ixp:izp)**2))
-                      print*, '  ', fp(k,ixp:izp), sqrt(sum(fp(k,ixp:izp)**2))
+                      print*, '  ', xpj, sqrt(sum(xpj**2))
+                      print*, '  ', xpk, sqrt(sum(xpk**2))
                       print*, 'calc_particles_collisions: **before**'
                       print*, 'calc_particles_collisions: vj, vk, vj+vk='
-                      print*, '  ', fp(j,ivpx:ivpz), sqrt(sum(fp(j,ivpx:ivpz)**2))
-                      print*, '  ', fp(k,ivpx:ivpz), sqrt(sum(fp(k,ivpx:ivpz)**2))
-                      print*, '  ', fp(j,ivpx:ivpz)+fp(k,ivpx:ivpz)
+                      print*, '  ', vpj, sqrt(sum(vpj**2))
+                      print*, '  ', vpk, sqrt(sum(vpk**2))
+                      print*, '  ', vpj+vpk
                       print*, 'calc_particles_collisions: ej, ek, ej+ek='
-                      print*, '  ', 0.5*(sum(fp(j,ivpx:ivpz)**2)), &
-                          0.5*(sum(fp(k,ivpx:ivpz)**2)), &
-                          0.5*(sum(fp(j,ivpx:ivpz)**2))+ &
-                          0.5*(sum(fp(k,ivpx:ivpz)**2))
+                      print*, '  ', 0.5*(sum(vpj**2)), 0.5*(sum(vpk**2)), &
+                          0.5*(sum(vpj**2))+0.5*(sum(vpk**2))
                       print*, 'calc_particles_collisions: lj, lk, lj+lk='
-                      call cross(fp(j,ixp:izp),fp(j,ivpx:ivpz),tmp1)
+                      call cross(xpj,vpj,tmp1)
                       print*, '  ', tmp1
-                      call cross(fp(k,ixp:izp),fp(k,ivpx:ivpz),tmp2)
+                      call cross(xpk,vpk,tmp2)
                       print*, '  ', tmp2
                       print*, '  ', tmp1+tmp2
                     endif
@@ -161,9 +163,9 @@ module Particles_collisions
                       call random_number_wrapper(theta_rot)
                       theta_rot=acos(2*theta_rot-1)
                       call random_number_wrapper(phi_rot)
-                      phi_rot  =phi_rot  *2*pi
-                      vvcm=0.5*(fp(j,ivpx:ivpz)+fp(k,ivpx:ivpz))
-                      vvkcm=fp(k,ivpx:ivpz)-vvcm
+                      phi_rot  =phi_rot*2*pi
+                      vvcm=0.5*(vpj+vpk)
+                      vvkcm=vpk-vvcm
                       vvkcmnew(1)=+sin(theta_rot)*cos(phi_rot)
                       vvkcmnew(2)=+sin(theta_rot)*sin(phi_rot)
                       vvkcmnew(3)=+cos(theta_rot)
@@ -180,8 +182,8 @@ module Particles_collisions
 !
 !  Change velocity vectors in normal frame.
 !
-                      fp(k,ivpx:ivpz)=+vvkcmnew+vvcm
-                      fp(j,ivpx:ivpz)=-vvkcmnew+vvcm
+                      vpk=+vvkcmnew+vvcm
+                      vpj=-vvkcmnew+vvcm
 !
                     endif
 !
@@ -191,10 +193,10 @@ module Particles_collisions
 !  and angular momentum.
 !
                     if (lcollision_big_ball) then
-                      nvec=fp(j,ixp:izp)-fp(k,ixp:izp)
+                      nvec=xpj-xpk
                       nvec=nvec/sqrt(sum(nvec**2))
-                      vvcm=0.5*(fp(j,ivpx:ivpz)+fp(k,ivpx:ivpz))
-                      vvkcm=fp(k,ivpx:ivpz)-vvcm
+                      vvcm=0.5*(vpj+vpk)
+                      vvkcm=vpk-vvcm
                       vvkcm_normal=nvec*(sum(vvkcm*nvec))
                       vvkcm_parall=vvkcm-vvkcm_normal
                       if (ip<=6) then
@@ -206,29 +208,33 @@ module Particles_collisions
                       endif
                       if (coeff_restitution/=1.0) &
                           vvkcm_normal=vvkcm_normal*coeff_restitution
-                      fp(k,ivpx:ivpz)=vvcm+vvkcm_parall-vvkcm_normal
-                      fp(j,ivpx:ivpz)=vvcm-vvkcm_parall+vvkcm_normal
+                      vpk=vvcm+vvkcm_parall-vvkcm_normal
+                      vpj=vvcm-vvkcm_parall+vvkcm_normal
                     endif
-!
                     if (ip<=6) then
                       print*, 'calc_particles_collisions: **after**'
                       print*, 'calc_particles_collisions: vj, vk, vj+vk='
-                      print*, '  ', fp(j,ivpx:ivpz), sqrt(sum(fp(j,ivpx:ivpz)**2))
-                      print*, '  ', fp(k,ivpx:ivpz), sqrt(sum(fp(k,ivpx:ivpz)**2))
-                      print*, '  ', fp(j,ivpx:ivpz)+fp(k,ivpx:ivpz)
+                      print*, '  ', vpj, sqrt(sum(vpj**2))
+                      print*, '  ', vpk, sqrt(sum(vpk**2))
+                      print*, '  ', vpj+vpk
                       print*, 'calc_particles_collisions: ej, ek, ej+ek='
-                      print*, '  ', 0.5*(sum(fp(j,ivpx:ivpz)**2)), &
-                          0.5*(sum(fp(k,ivpx:ivpz)**2)), &
-                          0.5*(sum(fp(j,ivpx:ivpz)**2))+ &
-                          0.5*(sum(fp(k,ivpx:ivpz)**2))
+                      print*, '  ', 0.5*(sum(vpj**2)), 0.5*(sum(vpk**2)), &
+                          0.5*(sum(vpj**2))+0.5*(sum(vpk**2))
                       print*, 'calc_particles_collisions: lj, lk, lj+lk='
-                      call cross(fp(j,ixp:izp),fp(j,ivpx:ivpz),tmp1)
+                      call cross(xpj,vpj,tmp1)
                       print*, '  ', tmp1
-                      call cross(fp(k,ixp:izp),fp(k,ivpx:ivpz),tmp2)
+                      call cross(xpk,vpk,tmp2)
                       print*, '  ', tmp2
                       print*, '  ', tmp1+tmp2
                     endif
+                    if (lshear .and. lshear_in_vp) then
+                      vpk(2)=vpk(2)+qshear*Omega*xpk(1)
+                      vpj(2)=vpj(2)+qshear*Omega*xpj(1)
+                    endif
+                    fp(k,ivpx:ivpz)=vpk
+                    fp(j,ivpx:ivpz)=vpj
                     ncoll=ncoll+1.0
+!
                   endif
                 endif
               enddo
