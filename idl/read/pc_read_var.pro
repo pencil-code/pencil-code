@@ -73,7 +73,8 @@
 ;-
 pro pc_read_var, t=t,                                             $
     object=object, varfile=varfile_, associate=associate,         $
-    variables=variables, tags=tags, magic=magic, bbtoo=bbtoo,     $
+    variables=variables, tags=tags, magic=magic,                  $ 
+    bbtoo=bbtoo, ootoo=ootoo,                                     $
     trimxyz=trimxyz, trimall=trimall, unshear=unshear,            $
     nameobject=nameobject, validate_variables=validate_variables, $
     dim=dim, param=param, par2=par2, ivar=ivar,                   $
@@ -244,6 +245,14 @@ COMPILE_OPT IDL2,HIDDEN
   default, bbtoo, 0
   if (bbtoo) then begin
     variables=[variables,'bb']
+    magic=1
+  endif
+;
+; Shortcut for getting vorticity oo.
+;
+  default, ootoo, 0
+  if (ootoo) then begin
+    variables=[variables,'oo']
     magic=1
   endif
 ;
