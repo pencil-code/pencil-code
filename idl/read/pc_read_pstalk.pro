@@ -101,9 +101,9 @@ for iproc=0,dim.nprocx*dim.nprocy*dim.nprocz-1 do begin
         array_loc=fltarr(nfields,npar_stalk_loc)*zero
         readu, 1, array_loc
         array[*,ipar_loc-1,it-it0]=array_loc
-;
-        ntread=ntread+1
       endif
+;
+      ntread=ntread+1
 ;
       t[it-it0]=t_loc
     endif else begin
