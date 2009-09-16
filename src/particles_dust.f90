@@ -979,11 +979,11 @@ k_loop:   do while (.not. (k>npar_loc))
               'delta_vp0=', delta_vp0
           do k=1,npar_loc
             call random_number_wrapper(r)
-            fp(1:npar_loc,ivpx) = fp(1:npar_loc,ivpx) + delta_vp0*(2*r-1)
+            fp(k,ivpx) = fp(k,ivpx) + delta_vp0*(2*r-1)
             call random_number_wrapper(r)
-            fp(1:npar_loc,ivpy) = fp(1:npar_loc,ivpy) + delta_vp0*(2*r-1)
+            fp(k,ivpy) = fp(k,ivpy) + delta_vp0*(2*r-1)
             call random_number_wrapper(r)
-            fp(1:npar_loc,ivpz) = fp(1:npar_loc,ivpz) + delta_vp0*(2*r-1)
+            fp(k,ivpz) = fp(k,ivpz) + delta_vp0*(2*r-1)
           enddo
 
         case ('random-x')
