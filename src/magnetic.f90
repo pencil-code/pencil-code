@@ -2215,7 +2215,7 @@ module Magnetic
 !  add possibility of forcing that is not delta-correlated in time
 !
       if (lforcing_cont_aa) &
-        df(l1:l2,m,n,iaa:iaa)=df(l1:l2,m,n,iaa:iaa)+ &
+        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+ &
             ampl_fcont_aa*p%fcont
 !
 !  Possibility of relaxation of A in exterior region.
