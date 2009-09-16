@@ -64,6 +64,7 @@ module Entropy
   real :: deltaT_poleq=0.,beta_hand=1.,r_bcz=0.
   real :: tau_cool=0.0, TTref_cool=0.0
   real :: cs0hs=0.0,H0hs=0.0,rho0hs=0.0
+  real :: chit_aniso=0.0,xbot=0.0
   integer, parameter :: nheatc_max=4
   logical :: lturbulent_heat=.false.
   logical :: lheatc_Kprof=.false.,lheatc_Kconst=.false.
@@ -142,7 +143,8 @@ module Entropy
       lturbulent_heat,deltaT_poleq, &
       tdown, allp,beta_glnrho_global,ladvection_entropy, &
       lviscosity_heat,r_bcz,lfreeze_sint,lfreeze_sext,lhcond_global, &
-      tau_cool,TTref_cool,mixinglength_flux,chiB,chi_hyper3_aniso, Ftop
+      tau_cool,TTref_cool,mixinglength_flux,chiB,chi_hyper3_aniso, Ftop, &
+      chit_aniso,xbot
 
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
@@ -3685,8 +3687,10 @@ module Entropy
         else
           chit_prof=1.
         endif
-      else
-        chit_prof=1.
+      endif
+!
+      if (lspherical_coords) then
+        chit_prof = 1 + (chit_prof1-1)*step(x(l1:l2),xbot,-widthss)
       endif
 !
     endsubroutine chit_profile
@@ -3713,8 +3717,11 @@ module Entropy
         else
           glchit_prof = 0.
         endif
-      else
-        glchit_prof = 0.
+      endif
+!
+      if (lspherical_coords) then
+        glchit_prof(:,1) = (chit_prof1-1)*der_step(x(l1:l2),xbot,-widthss)
+        glchit_prof(:,2:3) = 0.
       endif
 !
     endsubroutine gradlogchit_profile
