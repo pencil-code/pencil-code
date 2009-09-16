@@ -555,13 +555,15 @@ module Particles_sub
           do while (ipz_rec<0);        ipz_rec=ipz_rec+nprocz; enddo
           do while (ipz_rec>nprocz-1); ipz_rec=ipz_rec-nprocz; enddo
           iproc_rec=ipx_rec+ipy_rec*nprocx+ipz_rec*nprocx*nprocy
-          if (nproc_comm==0) then
-            nproc_comm=nproc_comm+1
-            iproc_comm(nproc_comm)=iproc_rec
-          elseif ( (.not.any(iproc_rec==iproc_comm(1:nproc_comm))) .and. &
-               (iproc_rec/=iproc) ) then
-            nproc_comm=nproc_comm+1
-            iproc_comm(nproc_comm)=iproc_rec
+          if (iproc_rec/=iproc) then
+            if (nproc_comm==0) then
+              nproc_comm=nproc_comm+1
+              iproc_comm(nproc_comm)=iproc_rec
+            elseif ( (.not.any(iproc_rec==iproc_comm(1:nproc_comm))) .and. &
+                 (iproc_rec/=iproc) ) then
+              nproc_comm=nproc_comm+1
+              iproc_comm(nproc_comm)=iproc_rec
+            endif
           endif
         enddo; enddo; enddo
       endif
