@@ -232,9 +232,9 @@ namelist /NSCBC_run_pars/  &
               l2_in=mx_in-nghost
               m2_in=my_in-nghost
               n2_in=mz_in-nghost
-              Lx_in=x_in(l2_in)-x_in(l1_in)
-              Ly_in=y_in(m2_in)-y_in(m1_in)
-              Lz_in=z_in(n2_in)-z_in(n1_in)
+              Lx_in=x_in(l2_in+1)-x_in(l1_in)
+              Ly_in=y_in(m2_in+1)-y_in(m1_in)
+              Lz_in=z_in(n2_in+1)-z_in(n1_in)
               first_NSCBC=.false.
 !print*,'Lx_in,Ly_in,Lz_in=',Lx_in,Ly_in,Lz_in
 !print*,'l1_in,m1_in,n1_in=',l1_in,m1_in,n1_in
@@ -242,22 +242,34 @@ namelist /NSCBC_run_pars/  &
 !
 !  Check size of arrays
 !            
-              if (j==1) then
-                if ((my_in .ne. my) .or. (mz_in .ne. mz)) then
-                  print*,'my_in,my,mz_in,mz=',my_in,my,mz_in,mz
-                  call stop_it ('The turbulent inlet grid does not conform!')
-                endif
-              elseif (j==2) then
-                if ((mx_in .ne. mx) .or. (mz_in .ne. mz)) then
-                  print*,'mx_in,mx,mz_in,mz=',mx_in,mx,mz_in,mz
-                  call stop_it ('The turbulent inlet grid does not conform !')
-                endif
-              elseif (j==3) then
-                if ((my_in .ne. my) .or. (mx_in .ne. mx)) then
-                  print*,'my_in,my,mx_in,mx=',my_in,my,mx_in,mx
-                  call stop_it ('The turbulent inlet grid does not conform!')
-                endif
-              endif
+!!$              if (j==1) then
+!!$                if ((my_in .ne. my) .or. (mz_in .ne. mz)) then
+!!$                  print*,'my_in,my,mz_in,mz=',my_in,my,mz_in,mz
+!!$                  call stop_it ('The turbulent inlet grid does not conform!')
+!!$                endif
+!!$                if ((Ly_in .ne. Lxyz(2)/nprocy) .or. (Lz_in .ne. Lxyz(3)/nprocz)) then
+!!$                  print*,'Lx_in,Ly_in,Lz_in,Lxyz=',Lx_in,Ly_in,Lz_in,Lxyz
+!!$                  call stop_it ('The turbulent inlet grid does not conform!')
+!!$                endif                
+!!$              elseif (j==2) then
+!!$                if ((mx_in .ne. mx) .or. (mz_in .ne. mz)) then
+!!$                  print*,'mx_in,mx,mz_in,mz=',mx_in,mx,mz_in,mz
+!!$                  call stop_it ('The turbulent inlet grid does not conform !')
+!!$                endif
+!!$                if ((Lx_in .ne. Lxyz(1)/nprocx) .or. (Lz_in .ne. Lxyz(3)/nprocz)) then
+!!$                  print*,'Lx_in,Ly_in,Lz_in,Lxyz=',Lx_in,Ly_in,Lz_in,Lxyz
+!!$                  call stop_it ('The turbulent inlet grid does not conform!')
+!!$                endif                
+!!$              elseif (j==3) then
+!!$                if ((my_in .ne. my) .or. (mx_in .ne. mx)) then
+!!$                  print*,'my_in,my,mx_in,mx=',my_in,my,mx_in,mx
+!!$                  call stop_it ('The turbulent inlet grid does not conform!')
+!!$                endif
+!!$                if ((Lx_in .ne. Lxyz(1)/nprocx) .or. (Ly_in .ne. Lxyz(2)/nprocz)) then
+!!$                  print*,'Lx_in,Ly_in,Lz_in,Lxyz=',Lx_in,Ly_in,Lz_in,Lxyz
+!!$                  call stop_it ('The turbulent inlet grid does not conform!')
+!!$                endif                
+!!$              endif
             endif            
           endif
         endif
@@ -1037,7 +1049,7 @@ namelist /NSCBC_run_pars/  &
 !
 ! Read the size of the data to be found on the file.
 !
-print*,'turb_inlet_dir=',turb_inlet_dir
+!print*,'turb_inlet_dir=',turb_inlet_dir
         file=trim(turb_inlet_dir)//'/data/proc0/dim.dat'
         inquire(FILE=trim(file),EXIST=exist)
         if (exist) then
