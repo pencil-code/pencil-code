@@ -1,3 +1,6 @@
+;
+; DOCUMENT ME!!! What do these lines of code do, and why?
+;
 function rebinbox,a,zoom,zdir=zdir
 
 sa=size(a)
