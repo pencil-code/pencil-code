@@ -1052,6 +1052,25 @@ endif
 #FFLAGS_DOUBLE=-fdefault-real-8 #(node[0-9]*)
 #CC=mpicc     #(node[0-9]*)
 #CFLAGS=-O3 -DFUNDERSC=1   #(node[0-9]*)
+##
+## (Fred's desktop machine)
+##
+##FC=sunf95 #(dunhuang|couette)
+##FFLAGS=-m32 -xO3 -xarch=ssse3 -xcache=32/64/8:4096/64/16 -xchip=core2 -xdepend=yes -dalign -fns=yes -ftrap=common -xlibmil -nofstore -xregs=frameptr -fsimple=0 -I/usr/lib/openmpi/include #(couette)
+##FFLAGS=-xO3 -xarch=ssse3 -xcache=16/64/8:1024/64/8 -xchip=pentium4 -xdepend=yes -dalign -fns=yes -ftrap=common -xlibmil -nofstore -xregs=frameptr -fsimple=0 -I/usr/lib/openmpi/include #(dunhuang)
+##FFLAGS_DOUBLE= -fprecision=double #(dunhuang|couette)
+##LD_MPI=-L/usr/lib/openmpi/lib -lmpi -lmpi_f77 -lmpi_f90 -lopen-rte -lopen-pal -ldl -lnsl -lutil -lm #(dunhuang|couette)
+#
+#FC=gfortran #(mallock|couette|maurice|dunhuang)
+#FFLAGS=-O3 -I/usr/lib/openmpi/include -pthread #(mallock|couette|maurice|dunhuang)
+#FFLAGS_DOUBLE=-fdefault-real-8 #(mallock|couette|maurice|dunhuang)
+#LD_MPI=-pthread -I/usr/lib/openmpi/lib -L/usr/lib/openmpi/lib -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl #(mallock|couette|maurice|dunhuang)
+#FC=sunf95 #(dunhuang|couette|maurice)
+#FFLAGS=-m32 -xO3 -xarch=ssse3 -xcache=32/64/8:4096/64/16 -xchip=core2 -xdepend=yes -dalign -fns=yes -ftrap=common -xlibmil -nofstore -xregs=frameptr -fsimple=0 -I/usr/lib/openmpi/include #(couette|maurice)
+#FFLAGS=-xO3 -xarch=ssse3 -xcache=16/64/8:1024/64/8 -xchip=pentium4 -xdepend=yes -dalign -fns=yes -ftrap=common -xlibmil -nofstore -xregs=frameptr -fsimple=0 -I/usr/lib/openmpi/include #(dunhuang)
+#FFLAGS_DOUBLE= -fprecision=double #(dunhuang|couette|maurice)
+#LD_MPI=-L/usr/lib/openmpi/lib -lmpi -lmpi_f77 -lmpi_f90 -lopen-rte -lopen-pal -ldl -lnsl -lutil -lm #(dunhuang|couette|maurice)
+#
 
 
 ## Darwin:
