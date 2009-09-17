@@ -145,9 +145,8 @@ die "No configuration file found\n" unless @config_files;
 my $parser = new Pencil::ConfigParser(@config_files);
 $parser->debug(1) if ($debug);
 
-
 my %runtime_params = %{$parser->get_runtime_params()};
-my @runtime_keys = @{$parser->get_runtime_keys()};
+my @environment_args = @{$parser->get_environment_args()};
 
 
 ## Global variables
@@ -559,6 +558,10 @@ sub run_system_cmd {
 
     $! = 0;
     clear_error();
+
+    if (@environment_args) {
+        @cmd_line = ('env', @environment_args, @cmd_line);
+    }
 
     if ($debug) {
         print "Running system cmd <", join("> <", @cmd_line), ">\n";
