@@ -33,6 +33,7 @@ module Solid_Cells
   integer                       :: irhocount
   real                          :: cx_cum=0, cy_cum=0
   integer                       :: idragcount=0
+  real                          :: theta_shift
   
 !!ForDebug->!!! Debug:
 !!ForDebug->  real                          :: testcpx,testcpy,testctx,testcty
@@ -300,8 +301,10 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
         interiorpoint = .true.
 
         !! Fp coordinates
-        fpx = xcyl - rcyl * sin(twopi*(iforcepoint)/nforcepoints)
-        fpy = ycyl - rcyl * cos(twopi*(iforcepoint)/nforcepoints)
+        ! Shifting the location of the forcpoints in the thetal direction
+        ! in order to avoid problems with autotesting
+        fpx = xcyl - rcyl * sin(twopi*(iforcepoint-theta_shift)/nforcepoints)
+        fpy = ycyl - rcyl * cos(twopi*(iforcepoint-theta_shift)/nforcepoints)
         fpz = z(n1)
         !
         !  Find nearest grid point in x-direction
@@ -455,7 +458,6 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
         else ! fp is outside local domain and fpnearestgrid shouldn't exist
           fpnearestgrid(icyl,iforcepoint,:) = 0
         end if
-        
       end do
     end do
 
@@ -494,12 +496,13 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 
       if (idiag_c_dragx .ne. 0 .or. idiag_c_dragy .ne. 0) then 
         call getnu(nu)
-        twopi=2.*3.14159265
+        twopi=2.*pi
         twonu=2.*nu
 
         do icyl=1,ncylinders
           do ifp=1,nforcepoints
             iy0=fpnearestgrid(icyl,ifp,2)
+
             iz0=n !!fpnearestgrid(icyl,ifp,3) doesn't yet provide correct iz0
 !
 ! Test: Use this pencil for force calculation?
@@ -510,12 +513,14 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
               if (ix0 .ge. l1 .and. ix0 .le. l2) then
 !
 ! Acquire pressure and stress from grid point (ix0,iy0,iz0).
+! Shifting the location of the forcpoints in the thetal direction
+! in order to avoid problems with autotesting
 !
                 fp_pressure=p%pp(ix0-nghost)
                 fp_stress(:,:)=twonu*p%rho(ix0-nghost)*p%sij(ix0-nghost,:,:)
                 
-                nvec(1) = -sin(twopi*ifp/nforcepoints)
-                nvec(2) = -cos(twopi*ifp/nforcepoints)
+                nvec(1) = -sin(twopi*(ifp-theta_shift)/nforcepoints)
+                nvec(2) = -cos(twopi*(ifp-theta_shift)/nforcepoints)
                 nvec(3) = 0
 !
 ! Force in x direction
