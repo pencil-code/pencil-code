@@ -1881,8 +1881,10 @@ module Magnetic
       real, dimension (nx) :: b2t,bjt,jbt
       real, dimension (nx) :: eta_mn,eta_smag,etatotal
       real, dimension (nx) :: fres2,etaSS,penc
-      real :: tmp,eta_out1,OmegaSS=1.
-      integer :: i,j,k,ju,nxy=nxgrid*nygrid
+      real :: tmp,eta_out1
+      real, parameter :: OmegaSS=1.
+      integer :: i,j,k,ju
+      integer, parameter :: nxy=nxgrid*nygrid
 !
       intent(inout)  :: f,p
       intent(inout)  :: df
@@ -2980,12 +2982,20 @@ module Magnetic
       real, dimension (nx) :: eta_mn
       real, dimension (nx) :: prof,eta_r
       real, dimension (nx,3) :: geta
-      real :: d_int=0.,d_ext=0.
+      real :: d_int,d_ext
 !
       eta_r=0.
 !
-      if (eta_int > 0.) d_int=eta_int-eta
-      if (eta_ext > 0.) d_ext=eta_ext-eta
+      if (eta_int > 0.) then
+        d_int = eta_int - eta
+      else
+        d_int = 0.
+      endif
+      if (eta_ext > 0.) then
+        d_ext = eta_ext - eta
+      else
+        d_ext = 0.
+      endif
 !
 !  calculate steps in resistivity
 !  make this dependent on the geometry used
@@ -4155,7 +4165,7 @@ module Magnetic
       logical,save :: first=.true.
       real :: bmz_belphase1,bmz_belphase2
       real, dimension (nz,nprocz), save :: sinz,cosz
-      real ::  c=0., s=0.
+      real ::  c, s
       integer :: jprocz
 !
       if (first) then
@@ -4318,7 +4328,8 @@ module Magnetic
 !  16-jun-07/axel: adapted from alfven_y
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: ampl,kx,ky,mu0=1.,om
+      real :: ampl,kx,ky,om
+      real, parameter :: mu0=1.
       integer :: iuu,iaa
 !
 !  set ux, Ax, and Ay
@@ -4342,7 +4353,8 @@ module Magnetic
 !  16-jun-07/axel: adapted from alfven_xy
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: ampl,kx,kz,mu0=1.,om
+      real :: ampl,kx,kz,om
+      real, parameter :: mu0=1.
       integer :: iuu,iaa
 !
 !  set ux, Ax, and Az

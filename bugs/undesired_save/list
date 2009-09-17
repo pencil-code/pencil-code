@@ -167,13 +167,6 @@ io_mpio.f90:      integer, dimension(3) :: globalsize=(/nxgrid,nygrid,nzgrid/)
 io_mpio.f90:      integer, dimension(3) :: localsize =(/nx    ,ny    ,nz    /)
 io_mpio.f90:      integer, dimension(3) :: memsize   =(/mx    ,my    ,mz    /)
 io_mpio.f90:      logical :: ioerr=.true.
-magnetic.f90:  contains
-magnetic.f90:      real :: tmp,eta_out1,OmegaSS=1.
-magnetic.f90:      integer :: i,j,k,ju,nxy=nxgrid*nygrid
-magnetic.f90:      real :: d_int=0.,d_ext=0.
-magnetic.f90:      real ::  c=0., s=0.
-magnetic.f90:      real :: ampl,kx,ky,mu0=1.,om
-magnetic.f90:      real :: ampl,kx,kz,mu0=1.,om
 magnetic_ffreeMHDrel.f90:  contains
 magnetic_ffreeMHDrel.f90:      real, dimension (nx,3) :: aa,jj=0,uxB,JxB,JxBr,oxuxb,jxbxb
 magnetic_ffreeMHDrel.f90:      real :: c2=1
