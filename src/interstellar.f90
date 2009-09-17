@@ -65,7 +65,10 @@ module Interstellar
   integer, parameter :: iEXPLOSION_TOO_UNEVEN   = 3
 !
 !
-  real :: xsi_sedov=1.17   ! Estimated value for the similarity variable at shock
+!  04-sep-09/fred: amended xsi_sedov
+!  ref Dyson & Williams Ch7 value for xsi_sedov=(25/3/pi)**(1/5)=1.215440704 for gamma=5/3
+! 
+  real :: xsi_sedov=1.215440704! Est'd value for similarity variable at shock 
 !
 ! 'Current' SN Explosion site parameters
 !
@@ -1954,8 +1957,17 @@ find_SN: do n=n1,n2
 ! Velocity insertion normalization
 !
       if (lSN_velocity) then
-        cvelocity_SN=uu_sedov  !/(cnorm_SN(dimensionality)*(width_SN*velocity_width_ratio)**dimensionality)
-        !cvelocity_SN=velocity_SN !/(cnorm_SN(dimensionality)*(width_SN*velocity_width_ratio)**dimensionality)
+        cvelocity_SN=uu_sedov*((width_SN-3*dxmax)*unit_length)**3&
+                   /xsi_sedov**5*SNR%rhom*unit_density*(3*dxmax*unit_length)**2&
+                      /((SNR%t_sedov*unit_time)**2*ampl_SN*unit_energy)
+!included cvelocity damping to compensate for initialization acceleration
+! 04-sep-09/fred
+! testing with grid separation of between 1.9 and 5.8 parsecs
+! produces good agreement with Sedov-Taylor without lSN_velocity
+! if width_SN=3*dxmax. **lSN_velocity may be redundant**
+! resolution greater than 1.9 requires width_SN > 3*dxmax
+! less than 5.8 resolution is inaccurate 
+!
         if (lroot) print*,'explode_SN: cvelocity_SN =',cvelocity_SN
       else
         cvelocity_SN=0.
@@ -2575,9 +2587,14 @@ find_SN: do n=n1,n2
 !
          if (lSN_velocity) then
            dr_SN=dsqrt(dr2_SN)
+           dr_SN=max(dr_SN(1:nx),1.0e-30)
+!  04-sep-09/fred: amended dr_SN above to avoid div by zero below
            outward_normal_SN(:,1)=dx_SN/dr_SN
+           where (dr2_SN(1:nx) == 0.) outward_normal_SN(:,1)=1.D0
            outward_normal_SN(:,2)=dy_SN/dr_SN
+           where (dr2_SN(1:nx) == 0.) outward_normal_SN(:,2)=1.D0
            outward_normal_SN(:,3)=dz_SN/dr_SN
+           where (dr2_SN(1:nx) == 0.) outward_normal_SN(:,3)=1.D0
          endif
 !
     endsubroutine proximity_SN
