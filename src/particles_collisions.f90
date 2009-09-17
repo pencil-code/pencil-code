@@ -100,12 +100,12 @@ module Particles_collisions
           k=kshepherd(l-nghost)
           if (k>0) then
             do while (k/=0)
-              xpk=fp(k,ixp:izp)
-              vpk=fp(k,ivpx:ivpz)
-              if (lshear .and. lshear_in_vp) vpk(2)=vpk(2)-qshear*Omega*xpk(1)
               j=k
               do while (kneighbour(j)/=0)
                 j=kneighbour(j)
+                xpk=fp(k,ixp:izp)
+                vpk=fp(k,ivpx:ivpz)
+                if (lshear .and. lshear_in_vp) vpk(2)=vpk(2)-qshear*Omega*xpk(1)
                 xpj=fp(j,ixp:izp)
                 vpj=fp(j,ivpx:ivpz)
                 if (lshear .and. lshear_in_vp) vpj(2)=vpj(2)-qshear*Omega*xpj(1)
