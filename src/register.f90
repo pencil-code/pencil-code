@@ -253,7 +253,9 @@ module Register
       unit_energy=unit_mass*unit_velocity**2
       unit_time=unit_length/unit_velocity
       unit_flux=unit_energy/(unit_length**2*unit_time)
-      unit_magnetic=3.5449077018110318*sqrt(unit_density)*unit_velocity
+!
+!AB: commented out, because unit_magnetic is not a derived quantity.
+!     unit_magnetic=3.5449077018110318*sqrt(unit_density)*unit_velocity
 !(=sqrt(4*pi))
 ! 04-sep-09/fred added unit rho and unit uu to make mu0 dimensionless
 ! unit_magnetic declared in cdata.f90 now derived re Antony Mee thesis page 158
