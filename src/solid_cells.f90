@@ -482,29 +482,15 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
     real    :: twopi, nvec(3)
 
     if (ldiagnos) then
-      
-      ! Reset cumulating quantities before calculations in first pencil
+!      
+! Reset cumulating quantities before calculations in first pencil
+!
       if (imn .eq. 1) then
         c_dragx=0.
         c_dragy=0.
         rhosum=0
         irhocount=0
-        
-!!ForDebug->!!! Debug:
-!!ForDebug->        testcpx=0
-!!ForDebug->        testctx=0
-!!ForDebug->        testcpy=0
-!!ForDebug->        testcty=0
-!!ForDebug->        testcounter = 0
-
-!!        open(unit=81, file='nvec.dat', position = 'APPEND')
-!!        if (t > 0) then
-!!          close(81)
-!!          STOP
-!!        end if
-
       end if
-
 
       if (idiag_c_dragx .ne. 0 .or. idiag_c_dragy .ne. 0) then 
         call getnu(nu)
@@ -515,73 +501,58 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
           do ifp=1,nforcepoints
             iy0=fpnearestgrid(icyl,ifp,2)
             iz0=n !!fpnearestgrid(icyl,ifp,3) doesn't yet provide correct iz0
-
-            ! Test: Use this pencil for force calculation?
+!
+! Test: Use this pencil for force calculation?
+!
             if (iy0 .eq. m .and. iz0 .eq. n) then
               ix0=fpnearestgrid(icyl,ifp,1)
               ! Test: ix0 in local domain?
               if (ix0 .ge. l1 .and. ix0 .le. l2) then
-                !
-                ! Acquire pressure and stress from grid point (ix0,iy0,iz0).
-                !
+!
+! Acquire pressure and stress from grid point (ix0,iy0,iz0).
+!
                 fp_pressure=p%pp(ix0-nghost)
                 fp_stress(:,:)=twonu*p%rho(ix0-nghost)*p%sij(ix0-nghost,:,:)
                 
                 nvec(1) = -sin(twopi*ifp/nforcepoints)
                 nvec(2) = -cos(twopi*ifp/nforcepoints)
                 nvec(3) = 0
-
-!!                write(81,82) t, nvec(1),nvec(2),ifp
-!!82              format(1F15.8, 2F12.8,1I5)
-  
-                ! Force in x direction
+!
+! Force in x direction
+!
                 force_x = -fp_pressure*nvec(1) &
                     + fp_stress(1,1)*nvec(1) &
                     + fp_stress(1,2)*nvec(2) & 
                     + fp_stress(1,3)*nvec(3) 
-                
-                ! Force in y direction
+!                
+! Force in y direction
+!
                 force_y = -fp_pressure*nvec(2) &
                     + fp_stress(2,1)*nvec(1) &
                     + fp_stress(2,2)*nvec(2) & 
-                    + fp_stress(2,3)*nvec(3) 
-                
+                    + fp_stress(2,3)*nvec(3)                 
                 c_dragx = c_dragx + force_x
                 c_dragy = c_dragy + force_y
-
-!!ForDebug->!!! Debug:
-!!ForDebug->                testcpx=testcpx - fp_pressure*nvec(1)
-!!ForDebug->                testcpy=testcpy - fp_pressure*nvec(2)
-!!ForDebug->                testctx=testctx &
-!!ForDebug->                    + fp_stress(1,1)*nvec(1) &
-!!ForDebug->                    + fp_stress(1,2)*nvec(2) & 
-!!ForDebug->                    + fp_stress(1,3)*nvec(3) 
-!!ForDebug->                testcty=testcty &
-!!ForDebug->                    + fp_stress(2,1)*nvec(1) &
-!!ForDebug->                    + fp_stress(2,2)*nvec(2) & 
-!!ForDebug->                    + fp_stress(2,3)*nvec(3) 
-!!ForDebug->                testcounter = testcounter+1
-
               end if
             end if
           end do
         end do
-
-        !
-        ! Calculate average density of the domain, excluded
-        ! solid cell regions:
-        !
+!
+! Calculate average density of the domain, excluded
+! solid cell regions:
+!
         do i=l1,l2
           do icyl=1,ncylinders
             a2 = cylinder(icyl,1)**2
             xr=x(i)-cylinder(icyl,2)
             yr=y(m)-cylinder(icyl,3)
-            rr2 = xr**2 + yr**2
-            
+            rr2 = xr**2 + yr**2            
             if (ncylinders > 1) then 
-              ! If-test below will not detect if grid point is inside cylinder 
-              ! if more than one cylinder are present. Yet to be implemented.
-              write(*,*) "WARNING: Rho-averaging not implemented for ncylinders > 1"
+!
+! If-test below will not detect if grid point is inside cylinder 
+! if more than one cylinder are present. Yet to be implemented.
+!
+              write(*,*) "WARNING: Rho-aver. not implemented for ncylinders > 1"
             end if
             if (rr2 .gt. a2) then
               rhosum = rhosum + p%rho(i-nghost)
@@ -589,7 +560,6 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
             end if
           end do
         end do
-
       end if
     end if
 
