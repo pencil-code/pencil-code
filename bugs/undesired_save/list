@@ -1,0 +1,339 @@
+NSCBC.f90:  contains
+NSCBC.f90:      character (len=120) :: directory_in=''
+NSCBC.f90:      character (len=5) :: chproc_in=''
+boundcond.f90:  contains
+boundcond.f90:      integer :: l1_4=l1+4, l1_5=l1+5, l1_6=l1+6
+boundcond.f90:      integer :: l2_4=l2-4, l2_5=l2-5, l2_6=l2-6
+boundcond.f90:      real :: width_hat=0.01
+boundcond.f90:      real, dimension (mx,my) :: Nyquist=impossible
+boundcond.f90:       integer :: lend,iostat=0,i=0,j
+chemistry.f90:  contains
+chemistry.f90:      character (len=20) :: input_file='chem.inp'
+chemistry.f90:      logical :: data_file_exit=.false.
+chemistry.f90:      character (len=15) :: file1='chemistry_m.dat',file2='chemistry_p.dat'
+chemistry.f90:      logical :: lcheminp_tmp=.false.
+chemistry.f90:      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
+chemistry.f90:      logical :: tran_exist=.false.
+chemistry.f90:      character (len=20) :: output_file="./data/mix_quant.out"
+chemistry.f90:      integer :: file_id=123,lmid
+chemistry.f90:      character (len=80) :: chemicals='' 
+chemistry.f90:      character (len=15) :: file1='chemistry_m.dat',file2='chemistry_p.dat'
+chemistry.f90:      character (len=20) :: input_file='chem.inp'
+chemistry.f90:      character (len=20) :: input_file='chem.inp'
+chemistry.f90:      real, dimension (nx) :: ugchemspec, sum_DYDT, ghYrho_uu=0.
+chemistry.f90:      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
+chemistry.f90:      real,dimension(nchemspec) :: reac_rate=0.
+chemistry.f90:      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
+chemistry.f90:      logical :: IsSpecie=.false., emptyfile
+chemistry.f90:      integer :: k,file_id=123, StartInd, StopInd
+chemistry.f90:      integer :: file_id=123, ind_glob, ind_chem
+chemistry.f90:      logical :: IsThermo=.false., found_specie
+chemistry.f90:      logical :: IsReaction=.false.,LastSpecie,found_new_reaction=.false.
+chemistry.f90:      integer :: i,k,file_id=123, StartInd, StopInd, StartInd_add
+chemistry.f90:      character (len=20) :: input_file="./data/chem.out"
+chemistry.f90:      integer :: file_id=123,k
+chemistry.f90:      character (len=20) :: input_file="./data/chem.out"
+chemistry.f90:      integer :: file_id=123
+chemistry.f90:      real, dimension (nx) :: dSR=0.,dHRT=0.,Kp,Kc,prod1,prod2
+chemistry.f90:      real, dimension (nx) :: kf=0., kr=0.
+chemistry.f90:      real  :: sum_tmp=0., T_low, T_mid, T_up, tmp
+chemistry.f90:      character (len=20) :: input_file="./data/react.out"
+chemistry.f90:      integer :: file_id=123
+chemistry.f90:      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
+chemistry.f90:      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
+chemistry.f90:      logical :: IsSpecie=.false., emptyfile
+chemistry.f90:      integer :: file_id=123, ind_glob, ind_chem
+chemistry.f90:      real :: Na=6.022E23,tmp_local,tmp_local2, lnTk, delta_jk_star
+chemistry.f90:      real, dimension(nx) :: g2TT, g2TTlnlambda=0., tmp1
+chemistry.f90:      logical :: IsSpecie=.false., emptyfile=.true.
+chemistry.f90:      integer :: file_id=123, ind_glob, ind_chem
+chemistry.f90:      integer :: VarNumber,i,j,k=1
+chemistry.f90:      real :: YY_k, air_mass, TT=300., PP=10.13e4
+chiral.f90:  contains
+combine_videofiles.f90:      integer :: it,nt=999999
+combine_videofiles.f90:      logical :: eof=.false.
+combine_videofiles.f90:      character (len=120) :: dir='',wfile='',rfile1='',rfile2=''
+combine_videofiles.f90:      character (len=20) :: field='Jrad'
+combine_videofiles.f90:      real :: t, pos=0.
+cosmicrayflux.f90:  contains
+density.f90:  contains
+density.f90:      integer :: j,nxy=nxgrid*nygrid,nl,ml
+deriv_2nd.f90:  contains
+deriv_2nd.f90:real :: der2_coef0=-2., der2_coef1=1.
+diagnostics.f90:  contains
+diagnostics.f90:      character (len=1) :: comma=','
+diagnostics.f90:      real :: ppart=1.,qpart=0.
+dustdensity.f90:  contains
+dustdensity.f90:      real :: lnrho_z,Hrho,rho00,rhod00,mdpeak,rhodmt=0.
+dustvelocity.f90:  contains
+dustvelocity.f90:      real :: gsurften=0.,Eyoung=1.,nu_Poisson=0.,Eyoungred=1.
+entropy.f90:  contains
+entropy.f90:      real, dimension (nx) :: hcond=0.
+entropy.f90:      real :: ampl,radius,x01=0.,y01=0.,z01=0.
+entropy.f90:      real :: ampl0=.885065
+entropy.f90:      real, dimension (nx) :: Hmax=0.
+entropy.f90:      real :: z_prev=-1.23e20
+entropy_onefluid.f90:  contains
+entropy_onefluid.f90:      logical :: lnothing=.true.
+entropy_onefluid.f90:      real, dimension (nx) :: Hmax=0.0
+entropy_onefluid.f90:      real :: z_prev=-1.23e20
+eos_chemistry.f90:  contains
+eos_chemistry.f90:      integer :: this_var=0
+eos_idealgas.f90:  contains
+eos_idealgas.f90:      real :: Rgas_unit_sys=1., cp_reference
+eos_idealgas.f90:      integer :: this_var=0
+eos_idealgas.f90:      integer :: i,ierr,iter,niter=4,j,k
+eos_idealgas.f90:      integer :: i,ierr,iter,niter=4,j,k
+eos_idealgas.f90:      integer :: i,ierr,iter,niter=4,j,k
+eos_temperature_ionization.f90:  contains
+eos_temperature_ionization.f90:      real :: ss_offset=0.
+forcing.f90:  contains
+forcing.f90:      real :: kx0,kx,ky,kz,k2,k,force_ampl=1.,pi_over_Lx=.5
+forcing.f90:      real :: ex,ey,ez,kde,sig=1.,fact,kex,key,kez,kkex,kkey,kkez
+forcing.f90:      real :: norm,phi,pi_over_Lx=0.5
+forcing.f90:      real :: k2,k,ex,ey,ez,kde,sig=1.,fact
+forcing.f90:      real, dimension (mz) :: sz,cz,tmpz,gz,gg,ss=1.,gz1
+forcing.f90:      real, dimension (mz) :: sz,cz,tmpz,gz,gg,ss=1.,gz1
+forcing.f90:      real :: mulforce_vec=1.,irufm
+forcing.f90:      real :: kx0,kx,ky,kz,k2,k,force_ampl=1.
+forcing.f90:      real :: ex,ey,ez,kde,sig=1.,fact,kex,key,kez,kkex,kkey,kkez
+fourier_fftpack.f90:  contains
+fourier_fftpack.f90:      logical :: lforward,lnormalize,err,lfirstcall=.true.
+fourier_fftpack.f90:      integer :: ipy_send, itag1=100, itag2=200
+fourier_fftpack.f90:      integer :: itag=666
+general.f90:  contains
+general.f90:      integer :: k,init1=1812   ! default value
+general.f90:      real :: fac=0.1666666
+ghostfold_mpicomm.f90:  contains
+ghostfold_mpicomm.f90:      integer :: itag1=10, itag2=11, itag3=12, itag4=13, itag5=14, itag6=15
+ghostfold_mpicomm.f90:      integer :: itag1=10, itag2=11, itag3=12, itag4=13, itag5=14, itag6=15
+gravity_r.f90:  contains
+gravity_r.f90:      real, dimension (nx,3) :: gg_mn=0.0
+gravity_r.f90:      logical :: lpade=.true. ! set to false for 1/r potential
+gravity_r.f90:      real, optional :: pot0           ! potential at r=0
+grid.f90:  contains
+grid.f90:      real :: a,b,dummy1=0.,dummy2=0.
+hydro.f90:  contains
+hydro.f90:      real, dimension (3,3) :: mat_cori1=0.,mat_cori2=0.
+hydro.f90:      real, dimension (3,3) :: mat_cent1=0.,mat_cent2=0.,mat_cent3=0.
+hydro.f90:      integer :: nxy=nxgrid*nygrid
+hydro_ffreeMHDrel.f90:  contains
+hydro_ffreeMHDrel.f90:      real :: c2=1,B2min=1e-12
+initcond.f90:  contains
+initcond.f90:      real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2.,KKx1=0.,KKy1=0.,KKz1=0.
+initcond.f90:      real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2.
+initcond.f90:      real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2.
+initcond.f90:      real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2.
+initcond.f90:      real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2., phasey1=0.
+initcond.f90:      real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2.
+initcond.f90:      real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2.
+initcond.f90:      real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2.
+initcond.f90:      real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2.
+initcond.f90:      real :: ampl,kx1=pi/2.,kz1=pi/2.
+initcond.f90:      real :: ampl,ky1=pi/2.,kz1=pi/2.
+initcond.f90:      real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2.
+initcond.f90:      real :: ampl,kx1=1.,kz1=pi
+initcond.f90:      real :: ampl,ky1=1.,kz1=pi
+initcond.f90:      real :: ampl,ky1=1.,kz1=pi
+initcond.f90:      real :: ampl,ky1=1.,kz1=pi
+initcond.f90:      real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2.
+initcond.f90:      real :: ampl,kx1=1.,ky1=1.,kz1=1.
+initcond.f90:      real :: ampl,width,k=1.,width2,k2
+initcond.f90:      real :: ampl,k=1.
+initcond.f90:      real :: ampl,k=1.
+initcond.f90:      real :: ampl,k=1.
+initcond.f90:      real :: ampl,k=1.
+initcond.f90:      complex :: ii=(0.,1.)
+initcond.f90:      complex :: ii=(0.,1.)
+initcond.f90:      complex :: ii=(0.,1.)
+initcond.f90:      real :: ampl,k=1.,fac,ph
+initcond.f90:      real :: ampl,k=1.,kf,fac1,fac2
+initcond.f90:      real :: ampl,k=1.,fac
+initcond.f90:      real :: ampl,k=1.,fac
+initcond.f90:      real :: ampl,k=1.,fac,width
+initcond.f90:      real :: ampl,k=1.,fac
+interstellar.f90:  contains
+interstellar.f90:      logical :: lnothing=.true.
+interstellar.f90:    logical :: l_SNI=.false.   !only allow SNII if no SNI this step
+interstellar.f90:    integer :: i, nzskip=10   !prevent SN from being too close to boundaries
+interstellar.f90:    integer :: nfound=0, chosen_site
+interstellar.f90:      logical :: lmove_mass=.false.
+interstellar.f90:      integer :: l=0, i, iSNR
+io_dist.f90:contains
+io_dist.f90:      character (len=5) :: chproc=''
+io_dist.f90:      logical :: ioerr=.true.
+io_mpio.f90:contains
+io_mpio.f90:      integer, dimension(3) :: globalsize=(/nxgrid,nygrid,nzgrid/)
+io_mpio.f90:      integer, dimension(3) :: localsize =(/nx    ,ny    ,nz    /)
+io_mpio.f90:      integer, dimension(3) :: memsize   =(/mx    ,my    ,mz    /)
+io_mpio.f90:      logical :: ioerr=.true.
+magnetic.f90:  contains
+magnetic.f90:      real :: tmp,eta_out1,OmegaSS=1.
+magnetic.f90:      integer :: i,j,k,ju,nxy=nxgrid*nygrid
+magnetic.f90:      real :: d_int=0.,d_ext=0.
+magnetic.f90:      real ::  c=0., s=0.
+magnetic.f90:      real :: ampl,kx,ky,mu0=1.,om
+magnetic.f90:      real :: ampl,kx,kz,mu0=1.,om
+magnetic_ffreeMHDrel.f90:  contains
+magnetic_ffreeMHDrel.f90:      real, dimension (nx,3) :: aa,jj=0,uxB,JxB,JxBr,oxuxb,jxbxb
+magnetic_ffreeMHDrel.f90:      real :: c2=1
+messages.f90:  contains
+messages.f90:      integer :: level_ = iinformation_ip
+messages.f90:      integer :: wf=18, wv=7, wa=15, wd=19 ! width of individual fields
+messages.f90:      integer :: wd1=0
+mpicomm.f90:  contains
+mpicomm.f90:      integer :: tolastya=11, tolastyb=12, tonextya=13, tonextyb=14
+mpicomm.f90:      integer :: ytag=101,ztag=102,partner,ierr
+mpicomm.f90:      integer :: ytag=101,partner,ierr
+mpicomm.f90:      integer :: ytag=101,partner,ierr
+mpicomm.f90:      integer :: ytag=101,ztag=202,partner,ierr
+mpicomm.f90:      integer :: ztag=101,partner,ierr
+mpicomm.f90:      integer :: ztag=101,partner,ierr
+neutraldensity.f90:  contains
+neutraldensity.f90:      real :: r0_pot=0.1
+neutralvelocity.f90:  contains
+neutralvelocity.f90:      real :: g0=1.,plaw=0.0,ptlaw=1.
+noeos.f90:  contains
+noeos.f90:      real :: ss_offset=0.
+noforcing.f90:  integer :: idiag_rufm=0
+nohydro.f90:  contains
+nohydro.f90:      real :: sqrt2, sqrt21k1, eps1=1., WW=0.25, k21
+noparticles_main.f90:  contains
+noparticles_main.f90:      real :: dummy_=0.
+noparticles_nbody.f90:  contains
+noparticles_nbody.f90:      real :: dummy_=0.
+param_io.f90:  contains
+param_io.f90:      character (len=30) :: label='[none]'
+param_io.f90:      integer :: unit=6         ! default unit is 6=stdout
+param_io.f90:      character (len=30) :: label='[none]'
+param_io.f90:      integer :: unit=6         ! default unit is 6=stdout
+param_io.f90:      logical :: lwarning=.true.
+param_io.f90:      logical :: lhydro         = lhydro_var
+param_io.f90:      logical :: ldensity       = ldensity_var
+param_io.f90:      logical :: lentropy       = lentropy_var
+param_io.f90:      logical :: lshock         = lshock_var
+param_io.f90:      logical :: lmagnetic      = lmagnetic_var
+param_io.f90:      logical :: llorenz_gauge  = llorenz_gauge_var
+param_io.f90:      logical :: ldustvelocity  = ldustvelocity_var
+param_io.f90:      logical :: ldustdensity   = ldustdensity_var
+param_io.f90:      logical :: ltestscalar    = ltestscalar_var
+param_io.f90:      logical :: ltestfield     = ltestfield_var
+param_io.f90:      logical :: ltestflow      = ltestflow_var
+param_io.f90:      logical :: linterstellar  = linterstellar_var
+param_io.f90:      logical :: lcosmicray     = lcosmicray_var
+param_io.f90:      logical :: lcosmicrayflux = lcosmicrayflux_var
+particles_dust.f90:  contains
+particles_dust.f90:      logical :: lequidistant=.false.
+particles_dust.f90:      integer :: nz_dense=nz_inc*nz, npar_bin
+particles_dust.f90:      logical :: lheader, lfirstcall=.true.
+particles_dust.f90:      logical :: lheader, lfirstcall=.true.
+particles_dust.f90:      logical :: nochange=.false.
+particles_nbody.f90:  contains
+particles_nbody.f90:      logical :: lheader, lfirstcall=.true.
+particles_nbody.f90:      logical :: lfirstcall=.true.
+particles_radius.f90:  contains
+particles_radius.f90:      logical :: lheader, lfirstcall=.true.
+particles_selfgravity.f90:  contains
+particles_selfgravity.f90:      logical :: lheader, lnbody, lfirstcall=.true.
+particles_spin.f90:  contains
+particles_spin.f90:      logical :: lheader, lfirstcall=.true.
+particles_sub.f90:  contains
+particles_sub.f90:      logical :: lsnap_minor=.false., lsnap_par=.false.
+particles_sub.f90:      integer :: itag_nmig=500, itag_ipar=510, itag_fp=520, itag_dfp=530
+particles_sub.f90:      integer :: ivar1, ivar2, ivar, icyl=1
+particles_sub.f90:      logical :: lfirstcall=.true.
+particles_tracers.f90:  contains
+particles_tracers.f90:      logical :: lheader, lfirstcall=.true.
+particles_tracers.f90:      logical :: lheader, lfirstcall=.true.
+pencil_check.f90:  contains
+pencil_check.f90:      logical :: lconsistent=.true., lconsistent_allproc=.false., ldie=.false.
+persist.f90:contains
+persist.f90:      logical :: done =.false.
+poisson.f90:  contains
+poisson.f90:      logical :: lfirstcall=.true.
+power_spectrum.f90:  contains
+power_spectrum.f90:  real, dimension(nk) :: spectrum=0.,spectrum_sum=0
+power_spectrum.f90:  real, dimension(nk) :: spectrum=0.,spectrum_sum=0
+power_spectrum.f90:  real, dimension(nk) :: spectrum=0.,spectrum_sum=0
+power_spectrum.f90:  real, dimension(nk) :: spectrumhel=0.,spectrumhel_sum=0
+power_spectrum.f90:  integer :: itmp1=8,itmp2=9
+power_spectrum.f90:  real :: BextEP=.1 !(hard-wired for now/Axel)
+power_spectrum.f90:  real, dimension(nk) :: spectrum=0.,spectrum_sum=0
+power_spectrum.f90:    real, dimension(nk) :: spectrumx=0.,spectrumx_sum=0
+power_spectrum.f90:    real, dimension(nk) :: spectrumy=0.,spectrumy_sum=0
+power_spectrum.f90:    real, dimension(nk) :: spectrumz=0.,spectrumz_sum=0
+power_spectrum.f90:  character (len=120) :: pdf_file=''
+power_spectrum.f90:  logical :: logscale=.false.
+power_spectrum.f90:  real, dimension(nzgrid/2) :: spectrum=0.,spectrum_sum=0
+power_spectrum.f90:  real, dimension(nzgrid/2) :: spectrum=0.,spectrum_sum=0
+power_spectrum.f90:  real, dimension(nzgrid/2) :: spectrumhel=0.,spectrumhel_sum=0
+pscalar_nolog.f90:  contains
+pscalar_nolog.f90:      real :: lam_gradC_fact=1., om_gradC_fact=1., gradC_fact=1.
+radiation_nongrey.f90:  contains
+radiation_nongrey.f90:      real :: kappa0, kappa0_cgs,k1,k2,rhoref=1e-9
+radiation_nongrey.f90:      real :: fact, rho_max=0. !, dl_max=0.
+radiation_ray.f90:  contains
+radiation_ray.f90:      real :: fact, rho_max=0. !, dl_max=0.
+register.f90:  contains
+register.f90:      real :: sinth_min=1e-5 !(to avoid axis)
+selfgravity.f90:  contains
+selfgravity.f90:      integer :: ierr=0
+shear.f90:  contains
+shear.f90:      integer :: ierr=0
+slices.f90:  contains
+slices.f90:      logical :: lnewfile=.true.
+slices.f90:      logical :: lslices_legacy=.true.
+snapshot.f90:  contains
+snapshot.f90:      logical :: lspec,llwrite_only=.false.,ldo_all
+solid_cells.f90:  contains
+solid_cells.f90:      real :: x0,y0,z0,rs,verylarge=1e9,varval,rint1,rint2,fint,rps,rintp
+solid_cells.f90:      logical :: lba1=.true.,lba2=.true.
+struct_func.f90:  contains
+struct_func.f90:      logical :: llsf=.false., llpdf=.false.
+sub.f90:  contains
+sub.f90:      integer           :: mxout1,myout1,mzout1,iprocz_slowest=0
+sub.f90:      real :: thresh,thresh2,dummy=0.
+sub.f90:        integer :: a,b,c,d,a1=1,a2=mx,b1=1,b2=my,c1=1,c2=mz,d1=1,d2=1
+sub.f90:      character (len=linelen) :: field='',struct='',type='',dep=''
+sub.f90:      character (len=3), dimension(12) :: month = &
+sub.f90:      real :: ampl,radius,x01=0.,y01=0.,z01=0.
+sub.f90:      real :: limiter_tensordiff=3.
+temperature_idealgas.f90:  contains
+temperature_idealgas.f90:      logical :: lnothing=.true.
+temperature_idealgas.f90:      real, dimension (nx) :: Hmax=0., hcond, thdiff=0.,tmp
+temperature_idealgas.f90:      real, dimension (nx,3) :: gLnhcond=0.
+temperature_idealgas.f90:      real, dimension (nx,3) :: glhc=0.,glnThcond
+temperature_idealgas.f90:      logical :: lwrite_hcond=.true.
+temperature_ionization.f90:  contains
+temperature_ionization.f90:      logical :: lnothing=.true.
+testfield.f90:  contains
+testfield.f90:      character (len=5) :: ch='\_/^\'
+testfield.f90:      integer :: jtest,j,nxy=nxgrid*nygrid
+testfield.f90:      character (len=5) :: ch='\_/^\'
+testfield_x.f90:  contains
+testfield_x.f90:      real, dimension (nx,3) :: bb,aa,uxB,B0test=0,bbtest
+testfield_x.f90:      integer :: jtest,jfnamez,j, i1=1, i2=2, i3=3, i4=4
+testfield_x.f90:      integer :: jtest,j,nxy=nxgrid*nygrid,juxb,jjxb
+testfield_x.f90:      character (len=5) :: ch='\_/^\'
+testfield_xz.f90:  contains
+testfield_xz.f90:      integer :: jtest,j,nxy=nxgrid*nygrid
+testfield_xz.f90:      character (len=5) :: ch='\_/^\'
+testfield_z.f90:  contains
+testfield_z.f90:      real, dimension (nx,3) :: bb,aa,uxB,B0test=0,bbtest
+testfield_z.f90:      real, dimension (nx,3) :: J0test=0,jxB0rtest,J0xbrtest
+testfield_z.f90:      real, dimension (nx) :: jbpq,bpq2,Epq2,s2kzDF1,s2kzDF2,unity=1.
+testfield_z.f90:      integer :: jtest,jfnamez,j, i1=1, i2=2, i3=3, i4=4
+testfield_z.f90:      real, dimension (nz,nprocz,3,njtest) :: uxbtestm1=0.,uxbtestm1_tmp=0.
+testfield_z.f90:      real, dimension (nz,nprocz,3,njtest) :: jxbtestm1=0.,jxbtestm1_tmp=0.
+testfield_z.f90:      integer :: jtest,j,nxy=nxgrid*nygrid,juxb,jjxb
+testfield_z.f90:      real :: fac, bcosphz, bsinphz, fac1=0., fac2=1.
+testfield_z.f90:      character (len=5) :: ch='\_/^\'
+testscalar.f90:  contains
+testscalar.f90:      real, dimension (nx,3) :: ggtest, G0test=0.,uctest
+testscalar.f90:      integer :: jcctest,jtest,jfnamez,j,i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
+testscalar.f90:      real, dimension (nx,nprocy,nprocz,njtest) :: ugtestmx1=0.,ugtestmx1_tmp=0.
+testscalar.f90:      real, dimension (ny,nprocy,njtest) :: ugtestmy1=0.,ugtestmy1_tmp=0.
+testscalar.f90:      real, dimension (nz,nprocz,njtest) :: ugtestm1=0.,ugtestm1_tmp=0.
+testscalar.f90:      integer :: nxy=nxgrid*nygrid,nyz=nygrid*nzgrid,nxz=nxgrid*nzgrid
+timeavg.f90:  contains
+timeavg.f90:      logical :: init1=.false.
