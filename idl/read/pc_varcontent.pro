@@ -307,6 +307,20 @@ varcontent[ipsi_imag].idlinit    = INIT_SCALAR
 varcontent[ipsi_imag].idlvarloc  = 'psi_imag_loc'
 varcontent[ipsi_imag].idlinitloc = INIT_SCALAR_LOC
 ;
+default, ialpm, 0
+varcontent[ialpm].variable   = 'alpm'
+varcontent[ialpm].idlvar     = 'alpm'
+varcontent[ialpm].idlinit    = INIT_SCALAR
+varcontent[ialpm].idlvarloc  = 'alpm_loc'
+varcontent[ialpm].idlinitloc = INIT_SCALAR_LOC
+;
+default, ietat, 0
+varcontent[ietat].variable   = 'etat'
+varcontent[ietat].idlvar     = 'etat'
+varcontent[ietat].idlinit    = INIT_SCALAR
+varcontent[ietat].idlvarloc  = 'etat_loc'
+varcontent[ietat].idlinitloc = INIT_SCALAR_LOC
+;
 default, ichemspec, 0
 chemcount=n_elements(ichemspec)
 if (chemcount gt 0L) then begin
