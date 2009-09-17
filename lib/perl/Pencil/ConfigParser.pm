@@ -154,6 +154,55 @@ sub get_runtime_keys {
 
 # ---------------------------------------------------------------------- #
 
+sub get_environment_params {
+#
+# Return hash ref of runtime parameters
+#
+    my $self = shift();
+
+    $self->parse() unless ($self->{PARSED});
+
+    return $self->{ENVIRONMENT_PARAMS};
+}
+
+# ---------------------------------------------------------------------- #
+
+sub get_environment_keys {
+#
+# Return array ref of Makefile keys
+#
+    my $self = shift();
+
+    $self->parse() unless ($self->{PARSED});
+
+    return $self->{ENVIRONMENT_KEYS};
+}
+
+# ---------------------------------------------------------------------- #
+
+sub get_environment_args {
+#
+# Return array ref of environment variable settings
+#   [ 'VAR1=val1', 'VAR2='val2', ... ]
+# that can be interpolated into an `env' or `export' command line.
+#
+# Note that whitespace in a value is currently _not_ escaped, so
+# the array is best used in a system() call with list argument.
+#
+    my $self = shift();
+
+    $self->parse() unless ($self->{PARSED});
+
+    my @args;
+    for my $key (@{$self->{ENVIRONMENT_KEYS}}) {
+        push @args, "$key=$self->{ENVIRONMENT_PARAMS}->{$key}";
+    }
+
+    return \@args;
+}
+
+# ---------------------------------------------------------------------- #
+
 sub get_section_hash {
 #
 # For debugging only -- to be removed
@@ -221,6 +270,9 @@ sub parse {
         } elsif ($section eq 'runtime') {
             $self->{RUNTIME_PARAMS} = $map_ref;
             $self->{RUNTIME_KEYS} = $keys_ref;
+        } elsif ($section eq 'environment') {
+            $self->{ENVIRONMENT_PARAMS} = $map_ref;
+            $self->{ENVIRONMENT_KEYS} = $keys_ref;
         } else {
             carp "Warning: Unknown section <$section>\n";
         }
@@ -475,6 +527,11 @@ Return a hashref of the parmeters defined in the `Makefile' section:
 
   { KEY1 => value1, KEY2 => value2, ...}
 
+=item B<get_makefile_keys>()
+
+Return arrayref of all keys in the `Makefile' section, in the order in
+which they occured int the config files.
+
 =item B<get_makefile_args>()
 
 Return array ref of Makefile arguments
@@ -492,15 +549,34 @@ Return a hashref of the parmeters defined in the `runtime' section:
 
   { key1 => value1, key1 => value2, ...}
 
-=item B<get_makefile_keys>()
-
-Return arrayref of all keys in the `Makefile' section, in the order in
-which they occured int the config files.
-
 =item B<get_runtime_keys>()
 
 Return arrayref of all keys in the `runtime' section, in the order in
 which they occured int the config files.
+
+=item B<get_environment_params>()
+
+Return a hashref of the parmeters defined in the `environment' section:
+
+  { KEY1 => value1, KEY1 => value2, ...}
+
+=item B<get_environment_keys>()
+
+Return arrayref of all keys in the `environment' section, in the order in
+which they occured int the config files.
+
+=item B<get_environment_args>()
+
+Return array ref of environment variable settings
+
+  [ 'VAR1=val1', 'VAR2='val2', ... ]
+
+that can be interpolated into an `env' or `export' command line.
+
+Note that whitespace in a value is currently _not_ escaped, so
+the array is best used in a system() call with list argument.
+
+=back
 
 
 =head1 BUGS AND LIMITATIONS
