@@ -33,7 +33,7 @@ module Solid_Cells
   integer                       :: irhocount
   real                          :: cx_cum=0, cy_cum=0
   integer                       :: idragcount=0
-  real                          :: theta_shift
+  real                          :: theta_shift=1e-2
   
 !!ForDebug->!!! Debug:
 !!ForDebug->  real                          :: testcpx,testcpy,testctx,testcty
