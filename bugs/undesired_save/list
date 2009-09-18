@@ -55,7 +55,6 @@ combine_videofiles.f90:      logical :: eof=.false.
 combine_videofiles.f90:      character (len=120) :: dir='',wfile='',rfile1='',rfile2=''
 combine_videofiles.f90:      character (len=20) :: field='Jrad'
 combine_videofiles.f90:      real :: t, pos=0.
-cosmicrayflux.f90:  contains
 density.f90:  contains
 density.f90:      integer :: j,nxy=nxgrid*nygrid,nl,ml
 deriv_2nd.f90:  contains
