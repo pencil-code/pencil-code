@@ -827,4 +827,19 @@ module Particles_main
 !
     endsubroutine get_slices_particles
 !***********************************************************************
+    subroutine particles_insert_continuously(f)
+!
+!  Insert particles continuously, i.e. add particles in
+!  the beginning of a time step.
+!
+!  sep-09/kragset: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      if (linsert_particles_continuously) then
+        call insert_particles(f,fp,ineargrid)
+      end if
+!
+    end subroutine particles_insert_continuously
+!***********************************************************************
 endmodule Particles_main

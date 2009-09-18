@@ -250,6 +250,30 @@ module Particles
 !
     endsubroutine powersnap_particles
 !***********************************************************************
+    subroutine insert_particles(f,fp,ineargrid)
+      !
+      ! Insert particles continuously (when linsert_particles_continuously == T),
+      ! i.e. in each timestep. If number of particles to be inserted are less 
+      ! than unity, accumulate number over several timesteps until the integer value
+      ! is larger than one. Keep the remainder and accumulate this to the next insert.
+      !
+      ! Works only for particles_dust - add neccessary variable
+      ! declarations in particles_tracers to make it work here.
+      ! 
+      !
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mpvar)   :: fp
+      integer, dimension (mpar_loc,3)    :: ineargrid
+      !
+      intent (inout) :: fp,ineargrid
+      !
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ineargrid)
+      !
+      !      
+    endsubroutine insert_particles
+!***********************************************************************
     subroutine rprint_particles(lreset,lwrite)
 !
 !  Read and register print parameters relevant for particles

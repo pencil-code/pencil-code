@@ -966,6 +966,9 @@ module Particles_sub
           enddo
         endif
         call mpibcast_int(ipar_nbody,nspar)
+      else if (linsert_particles_continuously) then
+        npar_loc=0
+        ipar=0
       else
 !
 !  Place particles evenly on all processors. Some processors may get an extra

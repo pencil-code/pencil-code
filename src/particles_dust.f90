@@ -51,6 +51,9 @@ module Particles
   real :: pdlaw=0.0, tausp_short_friction=0.0, tausp1_short_friction=0.0
   real :: taucool=0.0, taucool1=0.0, brownian_T0=0.0
   real :: xsinkpoint=0.0, ysinkpoint=0.0, zsinkpoint=0.0, rsinkpoint=0.0
+  real :: particles_insert_rate
+  real :: avg_n_insert, remaining_particles=0.0
+  real :: max_particle_insert_time=huge1
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iscratch_short_friction=0
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
@@ -120,7 +123,7 @@ module Particles
       brownian_T0, lnostore_uu, ldtgrav_par, ldragforce_radialonly, &
       lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, &
       lcoriolis_force_par, lcentrifugal_force_par, &
-      Lx0, Ly0, Lz0, lglobalrandom
+      Lx0, Ly0, Lz0, lglobalrandom, linsert_particles_continuously
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -146,7 +149,10 @@ module Particles
       interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, &
       brownian_T0, lnostore_uu, ldtgrav_par, ldragforce_radialonly, &
       lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, &
-      lcoriolis_force_par, lcentrifugal_force_par
+      lcoriolis_force_par, lcentrifugal_force_par, &
+      linsert_particles_continuously, particles_insert_rate, &
+      max_particle_insert_time
+
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0, idiag_rp2m=0
@@ -527,6 +533,12 @@ module Particles
       logical :: lequidistant=.false.
 !
       intent (out) :: f, fp, ineargrid
+!
+! Calculate average number of particles to be inserted per timestep:
+!
+      if(linsert_particles_continuously) then
+        avg_n_insert=particles_insert_rate*dt
+      end if
 !
 !  Use either a local random position or a global random position for certain
 !  initial conditions. The default is a local random position, but the equal
@@ -1175,6 +1187,130 @@ k_loop:   do while (.not. (k>npar_loc))
       call sort_particles_imn(fp,ineargrid,ipar)
 !
     endsubroutine init_particles
+!***********************************************************************
+    subroutine insert_particles(f,fp,ineargrid)
+      !
+      ! Insert particles continuously (when linsert_particles_continuously == T),
+      ! i.e. in each timestep. If number of particles to be inserted are less 
+      ! than unity, accumulate number over several timesteps until the integer value
+      ! is larger than one. Keep the remainder and accumulate this to the next insert.
+      !
+      ! Works only for particles_dust - add neccessary variable
+      ! declarations in particles_tracers to make it work here.
+      ! 
+      use General, only: random_number_wrapper
+      use Mpicomm, only: mpibcast_logical
+      !
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mpvar)   :: fp
+      integer, dimension (mpar_loc,3)    :: ineargrid
+      logical                            :: linsertmore
+      !
+      integer :: j, k, n_insert, npar_loc_old
+      !
+      intent (inout) :: fp,ineargrid
+
+      !
+      ! Stop call to this routine when maximum number of particles is reached!
+      ! Since root inserts all new particles, make sure npar_loc + n_insert > mpar
+      ! som that root doesn't exceed its maximum number of particles.
+
+      
+
+      if (lroot) then
+        if (npar_loc + int(avg_n_insert + remaining_particles) &
+            .le. mpar_loc) then      
+          linsertmore=.true.
+        end if
+        if (t .gt. max_particle_insert_time) linsertmore=.false.
+
+        if (linsertmore) then
+          ! Actual (integer) number of particles to be inserted at this timestep:
+          n_insert=int(avg_n_insert + remaining_particles)
+          ! Remaining particles saved for subsequent timestep: 
+          remaining_particles=avg_n_insert + remaining_particles - n_insert
+          npar_loc_old=npar_loc
+          npar_loc=npar_loc + n_insert
+        !
+        ! Insert particles in chosen position (as in init_particles)
+        !
+        do j=1,ninit
+          select case(initxxp(j))
+          case ('random-box')
+            !print*, 'init_particles: Random particle positions '// &
+            !    'within a box'
+            do k=npar_loc_old+1,npar_loc
+              if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
+              if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
+              if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
+              if (nxgrid/=1) fp(k,ixp)=xp0+fp(k,ixp)*Lx0
+              if (nygrid/=1) fp(k,iyp)=yp0+fp(k,iyp)*Ly0
+              if (nzgrid/=1) fp(k,izp)=zp0+fp(k,izp)*Lz0
+            enddo
+          
+          case ('nothing')
+            if (lroot .and. j==1) print*, 'init_particles: nothing'
+
+          case default
+            print*, 'insert_particles: No such such value for initxxp: ', &
+                trim(initxxp(j))
+            call fatal_error('init_particles','')
+            
+          endselect
+          
+          !
+          !  Initial particle velocity.
+          !
+          select case(initvvp(j))
+            
+          case ('nothing')
+            if (j==1) print*, 'init_particles: No particle velocity set'
+            
+          case ('constant')
+            !print*, 'init_particles: Constant particle velocity'
+            !print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
+            fp(npar_loc_old+1:npar_loc,ivpx)=vpx0
+            fp(npar_loc_old+1:npar_loc,ivpy)=vpy0
+            fp(npar_loc_old+1:npar_loc,ivpz)=vpz0
+            
+          case default
+            print*, 'insert_particles: No such such value for initvvp: ', &
+                trim(initvvp(j))
+            call fatal_error('','')
+            !
+          endselect
+          !
+        enddo ! do j=1,ninit
+        !
+        !  Particles are not allowed to be present in non-existing dimensions.
+        !  This would give huge problems with interpolation later.
+        !
+        if (nxgrid==1) fp(npar_loc_old+1:npar_loc,ixp)=x(nghost+1)
+        if (nygrid==1) fp(npar_loc_old+1:npar_loc,iyp)=y(nghost+1)
+        if (nzgrid==1) fp(npar_loc_old+1:npar_loc,izp)=z(nghost+1)
+      end if
+      end if ! if (lroot) then      
+      !
+      !  Redistribute particles among processors.
+      !
+      call boundconds_particles(fp,npar_loc,ipar)
+      !
+      !  Map particle position on the grid.
+      !
+      call map_nearest_grid(fp,ineargrid)
+      call map_xxp_grid(f,fp,ineargrid)
+      !
+      !  Map particle velocity on the grid.
+      !
+      call map_vvp_grid(f,fp,ineargrid)
+      !
+      !  Sort particles (must happen at the end of the subroutine so that random
+      !  positions and velocities are not displaced relative to when there is no
+      !  sorting).
+      !
+      call sort_particles_imn(fp,ineargrid,ipar)
+      !
+    endsubroutine insert_particles
 !***********************************************************************
     subroutine streaming_coldstart(fp,f)
 !

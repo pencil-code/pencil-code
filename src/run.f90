@@ -291,7 +291,7 @@ program run
 !
   if (lparticles) then
     call particles_rprint_list(.false.)
-    call particles_initialize_modules(f,lstarting=.false.)
+    call particles_initialize_modules(f, lstarting=.false.)
   endif
 !
 !  Allocate the finit array if lADI=.true.
@@ -485,6 +485,10 @@ program run
         reinit_vars=''
       endif
     endif
+!
+! Insert particles (if linsert_particles_continuously==T)
+!
+      call particles_insert_continuously(f)
 !
 !  Remove wiggles in lnrho in sporadic time intervals.
 !  Necessary on moderate-sized grids. When this happens,

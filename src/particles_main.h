@@ -13,4 +13,4 @@
   public :: particles_read_startpars, particles_rparam, particles_wparam
   public :: particles_read_runpars, particles_wparam2
   public :: particles_powersnap, get_slices_particles
-  public :: particles_doprepencil_calc
+  public :: particles_doprepencil_calc, particles_insert_continuously

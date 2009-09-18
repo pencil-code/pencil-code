@@ -36,6 +36,7 @@ module Particles_cdata
   character (len=2*bclen+1) :: bcspx='p',bcspy='p',bcspz='p'
 !
   logical :: lshepherd_neighbour=.false.
+  logical :: linsert_particles_continuously=.false.
   integer, dimension (nx) :: kshepherd
   integer, allocatable, dimension (:) :: kneighbour
 !

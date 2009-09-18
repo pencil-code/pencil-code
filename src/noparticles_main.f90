@@ -333,5 +333,18 @@ module Particles_main
 !
     endsubroutine particles_doprepencil_calc
 !***********************************************************************
+    subroutine particles_insert_continuously(f)
+!
+!  Insert particles continuously, i.e. add particles in
+!  the beginning of a time step.
+!
+!  sep-09/kragset: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    end subroutine particles_insert_continuously
+!***********************************************************************
 
 endmodule Particles_main
