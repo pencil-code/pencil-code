@@ -100,6 +100,7 @@ GetOptions(\%opts,
                     --cleanall
                -f=s --config-files=s
                -H=s --host-id=s
+                    --notify
                -q   --quiet
                -v   --version )
           ) or die "Aborting.\n";
@@ -117,6 +118,7 @@ my $clean        = (              $opts{'clean'}        || '');
 my $cleanall     = (              $opts{'cleanall'}     || '');
 my $config_files = ($opts{'f'} || $opts{'config-files'} || undef);
 my $host_id      = ($opts{'H'} || $opts{'host-id'}      || undef);
+my $notify       = (              $opts{'notify'}       || '');
 my $quiet        = ($opts{'q'} || $opts{'quiet'}        || '');
 
 my @extra_make_args = @ARGV;
@@ -169,6 +171,8 @@ print STDERR "Running make '", join("' '", @make_args), "'\n"
 system('make', @make_args) == 0
   or die "Make failed: <$!>\n";
 
+notify('building') if $notify;
+
 # ---------------------------------------------------------------------- #
 sub mention {
 # Reference a variable without doing anything.
@@ -177,9 +181,67 @@ sub mention {
     my @args = @_;
 }
 # ---------------------------------------------------------------------- #
+sub notify {
+# Inform the user that we are done.
+    my ($phase) = @_;
+
+    notify_audibly($phase);
+    notify_visually($phase);
+}
+# ---------------------------------------------------------------------- #
+sub notify_audibly {
+# Tell the user that we are done.
+    my ($phase) = @_;
+
+    my $player = '';
+    foreach my $pl (qw/play aplay mplayer/) {
+        if (in_PATH($pl)) {
+            $player = $pl;
+            last;
+        }
+    }
+    return unless $player;
+
+    my @sounds = (
+      "/usr/share/sounds/alsa/Front_Center.wav",
+      "/usr/share/games/rocksndiamonds/levels/BD Dream/sounds/exit_opening.wav",
+      "/usr/share/sounds/question.wav",
+      "/usr/share/gnome-games/sounds/laughter.ogg"
+    );
+    foreach my $sound (@sounds) {
+        if (-e $sound) {
+            system($player, $sound);
+            return;
+        }
+    }
+}
+# ---------------------------------------------------------------------- #
+sub notify_visually {
+# Show the user that we are done.
+    my ($phase) = @_;
+
+    use Cwd;
+    my $cwd = getcwd();
+    if (in_PATH('zenity')) {
+        system('zenity', '--info', '--text', "Done $phase in $cwd");
+    } elsif (in_PATH('xmessage')) {
+        system('xmessage', "Done $phase in $cwd");
+    }
+}
+# ---------------------------------------------------------------------- #
+sub in_PATH {
+# Check whether an executable is available in the execution PATH
+    my ($file) = @_;
+
+    foreach my $path (split(/:/,$ENV{PATH})) {
+        if (-x "$path/$file") { return 1; }
+    }
+    return 0;
+}
+# ---------------------------------------------------------------------- #
 sub printopts {
 # Print command line options
-    my $optsref = shift;
+    my ($optsref) = @_;
     my %opts = %$optsref;
     foreach my $opt (keys(%opts)) {
         print STDERR "\$opts{$opt} = `$opts{$opt}'\n";
