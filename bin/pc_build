@@ -203,17 +203,20 @@ sub notify_audibly {
     return unless $player;
 
     my @sounds = (
-      "/usr/share/sounds/alsa/Front_Center.wav",
       "/usr/share/games/rocksndiamonds/levels/BD Dream/sounds/exit_opening.wav",
       "/usr/share/sounds/question.wav",
       "/usr/share/gnome-games/sounds/laughter.ogg"
     );
     foreach my $sound (@sounds) {
         if (-e $sound) {
-            system($player, $sound);
+            run_silently_in_bg($player, $sound);
             return;
         }
     }
+
+    print "\a";
+    sleep 1;
+    print "\a";
 }
 # ---------------------------------------------------------------------- #
 sub notify_visually {
@@ -223,10 +226,19 @@ sub notify_visually {
     use Cwd;
     my $cwd = getcwd();
     if (in_PATH('zenity')) {
-        system('zenity', '--info', '--text', "Done $phase in $cwd");
+        run_silently_in_bg(
+            'zenity', '--info', '--text', "Done $phase in $cwd"
+        );
     } elsif (in_PATH('xmessage')) {
-        system('xmessage', "Done $phase in $cwd");
+        run_silently_in_bg('xmessage', "Done $phase in $cwd");
     }
+}
+# ---------------------------------------------------------------------- #
+sub run_silently_in_bg {
+# Run the given command in the background and suppress its output
+    my @cmd = @_;
+
+    system("@cmd > /dev/null 2>&1 &");
 }
 # ---------------------------------------------------------------------- #
 sub in_PATH {
