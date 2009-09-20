@@ -2567,27 +2567,27 @@ find_SN: do n=n1,n2
 !
          dx_SN=x(l1:l2)-SNR%x
          if (lperi(1)) then
-           where (dx_SN .gt. Lx/2.) dx_SN=dx_SN-Lx
-           where (dx_SN .lt. -Lx/2.) dx_SN=dx_SN+Lx
+           where (dx_SN > Lx/2.) dx_SN=dx_SN-Lx
+           where (dx_SN < -Lx/2.) dx_SN=dx_SN+Lx
          endif
 !
          dy_SN=y(m)-SNR%y
          if (lperi(2)) then
-           if (dy_SN .gt. Ly/2.) dy_SN=dy_SN-Ly
-           if (dy_SN .lt. -Ly/2.) dy_SN=dy_SN+Ly
+           if (dy_SN > Ly/2.) dy_SN=dy_SN-Ly
+           if (dy_SN < -Ly/2.) dy_SN=dy_SN+Ly
          endif
 !
          dz_SN=z(n)-SNR%z
          if (lperi(3)) then
-           if (dz_SN .gt. Lz/2.) dz_SN=dz_SN-Lz
-           if (dz_SN .lt. -Lz/2.) dz_SN=dz_SN+Lz
+           if (dz_SN < Lz/2.) dz_SN=dz_SN-Lz
+           if (dz_SN > -Lz/2.) dz_SN=dz_SN+Lz
          endif
 !
          dr2_SN=dx_SN**2 + dy_SN**2 + dz_SN**2
 !
          if (lSN_velocity) then
-           dr_SN=dsqrt(dr2_SN)
-           dr_SN=max(dr_SN(1:nx),1.0e-30)
+           dr_SN=sqrt(dr2_SN)
+           dr_SN=max(dr_SN(1:nx),1.0D-30)
 !  04-sep-09/fred: amended dr_SN above to avoid div by zero below
            outward_normal_SN(:,1)=dx_SN/dr_SN
            where (dr2_SN(1:nx) == 0.) outward_normal_SN(:,1)=1.D0
