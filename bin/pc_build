@@ -171,7 +171,7 @@ print STDERR "Running make '", join("' '", @make_args), "'\n"
 system('make', @make_args) == 0
   or die "Make failed: <$!>\n";
 
-notify('building') if $notify;
+Pencil::Util::notify('building') if $notify;
 
 # ---------------------------------------------------------------------- #
 sub mention {
@@ -179,76 +179,6 @@ sub mention {
 # Use this to suppress ``Name "Pencil::ConfigFinder::debug" used only
 # once'' warning
     my @args = @_;
-}
-# ---------------------------------------------------------------------- #
-sub notify {
-# Inform the user that we are done.
-    my ($phase) = @_;
-
-    notify_audibly($phase);
-    notify_visually($phase);
-}
-# ---------------------------------------------------------------------- #
-sub notify_audibly {
-# Tell the user that we are done.
-    my ($phase) = @_;
-
-    my $player = '';
-    foreach my $pl (qw/play aplay mplayer/) {
-        if (in_PATH($pl)) {
-            $player = $pl;
-            last;
-        }
-    }
-    return unless $player;
-
-    my @sounds = (
-      "/usr/share/games/rocksndiamonds/levels/BD Dream/sounds/exit_opening.wav",
-      "/usr/share/sounds/question.wav",
-      "/usr/share/gnome-games/sounds/laughter.ogg"
-    );
-    foreach my $sound (@sounds) {
-        if (-e $sound) {
-            run_silently_in_bg($player, $sound);
-            return;
-        }
-    }
-
-    print "\a";
-    sleep 1;
-    print "\a";
-}
-# ---------------------------------------------------------------------- #
-sub notify_visually {
-# Show the user that we are done.
-    my ($phase) = @_;
-
-    use Cwd;
-    my $cwd = getcwd();
-    if (in_PATH('zenity')) {
-        run_silently_in_bg(
-            'zenity', '--info', '--text', "Done $phase in $cwd"
-        );
-    } elsif (in_PATH('xmessage')) {
-        run_silently_in_bg('xmessage', "Done $phase in $cwd");
-    }
-}
-# ---------------------------------------------------------------------- #
-sub run_silently_in_bg {
-# Run the given command in the background and suppress its output
-    my @cmd = @_;
-
-    system("@cmd > /dev/null 2>&1 &");
-}
-# ---------------------------------------------------------------------- #
-sub in_PATH {
-# Check whether an executable is available in the execution PATH
-    my ($file) = @_;
-
-    foreach my $path (split(/:/,$ENV{PATH})) {
-        if (-x "$path/$file") { return 1; }
-    }
-    return 0;
 }
 # ---------------------------------------------------------------------- #
 sub printopts {
