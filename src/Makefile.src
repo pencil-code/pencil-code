@@ -530,6 +530,7 @@ endif
 ##
 #FC=ifort #(neolith)
 #FFLAGS=-O3 -Nmpi -L/home/x_axebr/library/lib #(neolith)
+#FFLAGS_DOUBLE = -r8 #(neolith)
 #CC=icc #(neolith)
 #CFLAGS=-O3 -DFUNDERSC=1 -I/home/x_axebr/library/include -L/home/x_axebr/library/lib #(neolith)
 #LD_MPI=-Nscampi #(neolith)
