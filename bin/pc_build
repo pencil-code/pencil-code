@@ -37,8 +37,9 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   -H <id>
 #       --host-id=<id>
 #                   Use the given <id> as host ID.
-#   -v, --version   Print version number.
+#       --notify    Tell us (audibly and visually) when compilation is done.
 #   -q, --quiet     Be quiet.
+#   -v, --version   Print version number.
 # Examples:
 #   pc_build
 #       use host ID mechanism to identify the appropriate config file.

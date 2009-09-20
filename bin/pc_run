@@ -38,11 +38,12 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   -H <id>
 #       --host-id=<id>
 #                   Use the given <id> as host ID.
+#       --notify    Tell us (audibly and visually) when compilation is done.
 #   -N, --no-pencil-check
 #                   Suppress pencil consistency check, irrespective of
 #                   &run_pars.lpencil_check .
-#   -v, --version   Print version number.
 #   -q, --quiet     Be quiet.
+#   -v, --version   Print version number.
 # Examples:
 #   pc_run start              # just start
 #   pc_run run                # just run
@@ -103,6 +104,7 @@ GetOptions(\%opts,
                -f=s --config-files=s
                -H=s --host-id=s
                -N   --no-pencil-check
+                    --notify
                -q   --quiet
                -v   --version )
           ) or die "Aborting.\n";
@@ -121,6 +123,7 @@ if ($opts{'v'} || $opts{'version'}) { die version(); }
 my $config_files   = ($opts{'f'} || $opts{'config-files'}    || undef);
 my $host_id        = ($opts{'H'} || $opts{'host-id'}         || undef);
 my $suppress_check = ($opts{'N'} || $opts{'no-pencil-check'} || '');
+my $notify       = (              $opts{'notify'}       || '');
 my $quiet          = ($opts{'q'} || $opts{'quiet'}           || '');
 
 my @config_files;
@@ -238,6 +241,8 @@ for my $subcmd (@subcmds) {
         die usage();
     }
 }
+
+Pencil::Util::notify('building') if $notify;
 
 # ---------------------------------------------------------------------- #
 sub start_cmd {
