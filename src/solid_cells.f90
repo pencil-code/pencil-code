@@ -886,7 +886,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !
 ! If fluid_point=.true. this routine check if any of the corners in 
 ! the interpolation cell are inside a solid geometry. 
-! If they are some special treatment is required.
+! If they are: some special treatment is required.
 !
 ! If fluid_point=.false. the routine use the value at the surface
 ! of the solid geometry together with the interpolated value at the nearest
@@ -900,7 +900,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 ! The point s on the cylinder surface, with coordinates [xs,ys], is 
 ! placed such that the line from s to p is a normal to the cylinder surface.
 !
-! If a one of the corner points of the grid cell is within a solid geometry
+! If one of the corner points of the grid cell is within a solid geometry
 ! the normal passing through both s and p are continued outward until a
 ! grid line is reached. If this line has constant, say y, then the variables
 ! constdir and vardir are given the values 2 and 1, respectively.  
@@ -965,24 +965,30 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
         iy1=iy0+1
         iz1=iz0+1
 !
-!  Put help variables into arrays
+! Find distance from corner points to the cylinder center
 !
-        bordervalue(1,1)=x(ix0)
-        bordervalue(2,1)=y(iy0)
-        bordervalue(1,2)=x(ix1)
-        bordervalue(2,2)=y(iy1)
-        borderindex(1,1)=ix0
-        borderindex(2,1)=iy0
-        borderindex(1,2)=ix1
-        borderindex(2,2)=iy1
-        constdir_arr=(/2,2,1,1/)
-        vardir_arr=(/1,1,2,2/)
-        topbot_arr=(/2,1,2,1/)
         rij(1,1)=sqrt((x(ix0)-x0)**2+(y(iy0)-y0)**2)
         rij(1,2)=sqrt((x(ix0)-x0)**2+(y(iy1)-y0)**2)
         rij(2,1)=sqrt((x(ix1)-x0)**2+(y(iy0)-y0)**2)
         rij(2,2)=sqrt((x(ix1)-x0)**2+(y(iy1)-y0)**2) 
+!
+! Check if we want special treatment
+!
         if ((minval(rij) < rs) .or. fluid_point) then
+!
+!  Put help variables into arrays
+!
+          bordervalue(1,1)=x(ix0)
+          bordervalue(2,1)=y(iy0)
+          bordervalue(1,2)=x(ix1)
+          bordervalue(2,2)=y(iy1)
+          borderindex(1,1)=ix0
+          borderindex(2,1)=iy0
+          borderindex(1,2)=ix1
+          borderindex(2,2)=iy1
+          constdir_arr=(/2,2,1,1/)
+          vardir_arr=(/1,1,2,2/)
+          topbot_arr=(/2,1,2,1/)
           R1=verylarge
           Rsmall=verylarge/2.0
 !
@@ -1068,6 +1074,13 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 ! Check that we have found a valid distance
 !
           if (Rsmall==verylarge/2.0) then
+            print*,'fluid_point=',fluid_point
+            print*,'lclose_interpolation=',lclose_interpolation
+            print*,'lclose_linear=',lclose_linear
+            print*,'x0,y0,z0=',x0,y0,z0
+            print*,'ix0,iy0,iz0=',ix0,iy0,iz0
+            print*,'ix1,iy1,iz1=',ix1,iy1,iz1
+            print*,'xp,yp=',xp,yp
             print*,'xtemp=',xtemp
             print*,'r,rs,rp=',r,rs,rp
             print*,'R1,Rsmall=',R1,Rsmall
@@ -1142,7 +1155,10 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
         cyl_rad=cylinder(icyl,1)
         cyl_pos=cylinder(icyl,2:4)
         distance2=0
-        do i=1,3
+!
+! Loop only over x and y direction since this is a cylindrical geometry
+!
+        do i=1,2
           distance2=distance2+(cyl_pos(i)-part_pos(i))**2
         enddo
 !
