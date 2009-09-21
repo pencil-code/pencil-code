@@ -1722,6 +1722,17 @@ module Mpicomm
 !
     endsubroutine mpireduce_max_scl
 !***********************************************************************
+    subroutine mpireduce_max_scl_int(fmax_tmp,fmax)
+!
+!  Calculate total maximum for each array element and return to root.
+!
+      integer :: fmax_tmp,fmax
+!
+      call MPI_REDUCE(fmax_tmp, fmax, 1, MPI_INTEGER, MPI_MAX, root, &
+          MPI_COMM_WORLD, ierr)
+!
+    endsubroutine mpireduce_max_scl_int
+!***********************************************************************
     subroutine mpireduce_max_arr(fmax_tmp,fmax,nreduce)
 !
 !  Calculate total maximum for each array element and return to root.

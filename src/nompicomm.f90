@@ -666,6 +666,14 @@ module Mpicomm
 !
     endsubroutine mpiallreduce_max_arr
 !***********************************************************************
+    subroutine mpireduce_max_scl_int(fmax_tmp,fmax)
+!
+      integer :: fmax_tmp, fmax
+!
+      fmax=fmax_tmp
+!
+    endsubroutine mpireduce_max_scl_int
+!***********************************************************************
     subroutine mpireduce_max_scl(fmax_tmp,fmax)
 !
       real :: fmax_tmp, fmax

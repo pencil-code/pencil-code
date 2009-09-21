@@ -18,7 +18,7 @@
   public :: mpibcast_real,mpibcast_logical
   public :: mpibcast_real_arr
   public :: mpibcast_double
-  public :: mpibcast_int, mpibcast_char
+  public :: mpibcast_int, mpibcast_char, mpireduce_max_scl_int
 
   public :: mpiwtime, mpiwtick
 
