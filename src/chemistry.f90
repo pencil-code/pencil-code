@@ -916,13 +916,20 @@ module Chemistry
         Rad=0.
        if (nxgrid >1) then
         Rad=x(j1)**2
-       elseif (nygrid>1) then
+       endif
+       if (nygrid>1) then
         Rad=Rad+y(j2)**2
-       elseif (nzgrid>1) then
+       endif
+       if (nzgrid>1) then
         Rad=Rad+z(j3)**2
        endif
        
-       Rad=sqrt(Rad)
+
+   
+
+       Rad=(Rad)**0.5
+
+   !  if (j3==4)    print*,Rad,Rad**0.5,x(j1),y(j2),'  ',j1,j2   
 
   !      Rad=abs(x(j1))
      
@@ -939,6 +946,9 @@ module Chemistry
 
          f(j1,j2,j3,ilnrho)=log(init_pressure)-log(Rgas)-f(j1,j2,j3,ilnTT)  &
               -log(mu1_full(j1,j2,j3))
+
+      !   f(j1,j2,j3,ilnrho)=log(init_pressure)-log(Rgas)-f(l1,m1,n1,ilnTT)  &
+      !        -log(mu1_full(l1,m1,n1))
             
 
 
