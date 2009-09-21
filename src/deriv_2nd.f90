@@ -15,6 +15,7 @@ module Deriv
 
   private
 
+  public :: initialize_deriv
   public :: der, der2, der3, der4, der5, der6, derij, der5i1j
   public :: der6_other, der_pencil, der2_pencil
   public :: der_upwind1st
@@ -52,6 +53,12 @@ module Deriv
 
   contains
 
+!***********************************************************************
+    subroutine initialize_deriv()
+!
+!  Initialize stencil coefficients (dummy routine)
+!
+    endsubroutine initialize_deriv
 !***********************************************************************
     subroutine der_main(f,k,df,j)
 !
