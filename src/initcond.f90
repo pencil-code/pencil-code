@@ -33,7 +33,7 @@ module Initcond
   public :: random_isotropic_KS
   public :: htube, htube2, htube_x, hat, hat3d
   public :: htube_erf
-  public :: wave_uu, wave, parabola
+  public :: wave_uu, wave, parabola, linprof
   public :: sinxsinz, cosx_cosy_cosz, cosx_coscosy_cosz
   public :: x_siny_cosz, x1_siny_cosz, x1_cosy_cosz, lnx_cosy_cosz
   public :: sinx_siny_sinz, cosx_siny_cosz, sinx_siny_cosz
@@ -1036,6 +1036,57 @@ module Initcond
       endif
 !
     endsubroutine wave
+!***********************************************************************
+    subroutine linprof(ampl,f,i,kx,ky,kz)
+!
+!  periodic linear profile
+!
+!  21-sep-09/axel: coded
+!
+      integer :: i
+      real, dimension (mx,my,mz,mfarray) :: f
+      real,optional :: kx,ky,kz
+      real :: ampl,k=1.
+!
+!  wavenumber k
+!
+!  set x-linprof
+!
+      if (present(kx)) then
+        k=kx
+        if (ampl==0) then
+          if (lroot) print*,'linprof: ampl=0; kx=',k
+        else
+          if (lroot) print*,'linprof: kx,i=',k,i
+          f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread(asin(sin(k*x)),2,my),3,mz)
+        endif
+      endif
+!
+!  set y-linprof
+!
+      if (present(ky)) then
+        k=ky
+        if (ampl==0) then
+          if (lroot) print*,'linprof: ampl=0; ky=',k
+        else
+          if (lroot) print*,'linprof: ky,i=',k,i
+          f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread(asin(sin(k*y)),1,mx),3,mz)
+        endif
+      endif
+!
+!  set z-linprof
+!
+      if (present(kz)) then
+        k=kz
+        if (ampl==0) then
+          if (lroot) print*,'linprof: ampl=0; kz=',k
+        else
+          if (lroot) print*,'linprof: kz,i=',k,i
+          f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread(asin(sin(k*z)),1,mx),2,my)
+        endif
+      endif
+!
+    endsubroutine linprof
 !***********************************************************************
     subroutine wave_uu(ampl,f,i,kx,ky,kz)
 !
