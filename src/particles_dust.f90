@@ -20,6 +20,7 @@ module Particles
   use Messages
   use Particles_cdata
   use Particles_sub
+  use Particles_radius
   use Sub, only: keep_compiler_quiet
 !
   implicit none
@@ -55,7 +56,7 @@ module Particles
   real :: avg_n_insert, remaining_particles=0.0
   real :: max_particle_insert_time=huge1
   integer :: l_hole=0, m_hole=0, n_hole=0
-  integer :: iscratch_short_friction=0
+  integer :: iscratch_short_friction=0, npar_total
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
   logical :: ldragforce_radialonly=.false.
   logical :: ldragforce_heat=.false., lcollisional_heat=.false.
@@ -533,12 +534,6 @@ module Particles
       logical :: lequidistant=.false.
 !
       intent (out) :: f, fp, ineargrid
-!
-! Calculate average number of particles to be inserted per timestep:
-!
-      if(linsert_particles_continuously) then
-        avg_n_insert=particles_insert_rate*dt
-      end if
 !
 !  Use either a local random position or a global random position for certain
 !  initial conditions. The default is a local random position, but the equal
@@ -1206,27 +1201,30 @@ k_loop:   do while (.not. (k>npar_loc))
       integer, dimension (mpar_loc,3)    :: ineargrid
       logical                            :: linsertmore
       !
-      integer :: j, k, n_insert, npar_loc_old
+      integer :: j, k, n_insert, npar_loc_old, iii
       !
       intent (inout) :: fp,ineargrid
-
       !
       ! Stop call to this routine when maximum number of particles is reached!
       ! Since root inserts all new particles, make sure npar_loc + n_insert > mpar
       ! som that root doesn't exceed its maximum number of particles.
-
-      
-
+      !
       if (lroot) then
+        avg_n_insert=particles_insert_rate*dt
         if (npar_loc + int(avg_n_insert + remaining_particles) &
             .le. mpar_loc) then      
           linsertmore=.true.
         end if
         if (t .gt. max_particle_insert_time) linsertmore=.false.
 
+
         if (linsertmore) then
           ! Actual (integer) number of particles to be inserted at this timestep:
           n_insert=int(avg_n_insert + remaining_particles)
+          do iii=npar_total+1,npar_total+n_insert
+            ipar(iii)=iii
+          enddo
+          npar_total=npar_total+n_insert
           ! Remaining particles saved for subsequent timestep: 
           remaining_particles=avg_n_insert + remaining_particles - n_insert
           npar_loc_old=npar_loc
@@ -1281,6 +1279,10 @@ k_loop:   do while (.not. (k>npar_loc))
           endselect
           !
         enddo ! do j=1,ninit
+!
+!  Initialize particle radius
+!
+        call set_particle_radius(f,fp,npar_loc_old+1,npar_loc)
         !
         !  Particles are not allowed to be present in non-existing dimensions.
         !  This would give huge problems with interpolation later.
@@ -2670,7 +2672,6 @@ k_loop:   do while (.not. (k>npar_loc))
         k=1
         do while (k<=npar_loc)
           if (in_solid_cell(fp(k,ixp:izp),fp(k,iap))) then
-            print*,k,fp(k,ixp:izp)
             call remove_particle(fp,npar_loc,ipar,k,dfp,ineargrid)
           else
             k=k+1

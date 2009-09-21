@@ -45,19 +45,25 @@ module Particles_radius
 !
     endsubroutine initialize_particles_radius
 !***********************************************************************
-    subroutine init_particles_radius(f,fp)
+    subroutine set_particle_radius(f,fp,npar_low,npar_high,init)
 !
-!  Initial radius of particles.
+!  Set radius of new particles.
 !
-!  22-aug-05/anders: dummy
+!  18-sep-09/nils: adapted from init_particles_radius
+!
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
+      integer :: npar_low,npar_high
+      logical, optional :: init
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(npar_low)
+      call keep_compiler_quiet(npar_high)
+      call keep_compiler_quiet(init)
 !
-    endsubroutine init_particles_radius
+    end subroutine set_particle_radius
 !***********************************************************************
     subroutine pencil_criteria_par_radius()
 !

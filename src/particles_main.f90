@@ -120,7 +120,7 @@ module Particles_main
       intent (out) :: f
 !
       call init_particles(f,fp,ineargrid)
-      if (lparticles_radius) call init_particles_radius(f,fp)
+      if (lparticles_radius) call set_particle_radius(f,fp,1,npar_loc,init=.true.)
       if (lparticles_spin)   call init_particles_spin(f,fp)
       if (lparticles_number) call init_particles_number(f,fp)
       if (lparticles_nbody)  call init_particles_nbody(f,fp)

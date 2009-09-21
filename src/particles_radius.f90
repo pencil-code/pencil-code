@@ -87,34 +87,42 @@ module Particles_radius
 !
     endsubroutine initialize_particles_radius
 !***********************************************************************
-    subroutine init_particles_radius(f,fp)
+    subroutine set_particle_radius(f,fp,npar_low,npar_high,init)
 !
-!  Initial radius of particles.
+!  Set radius of new particles.
 !
-!  22-aug-05/anders: coded
+!  18-sep-09/nils: adapted from init_particles_radius
 !
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
+      integer :: npar_low,npar_high
+      logical, optional :: init
+      logical :: initial
 !
       integer :: j
+!
+      initial=.false.
+      if (present(init)) then
+        if (init) initial=.true.
+      endif
 !
       do j=1,ninit
 
         select case(initap(j))
 
         case('nothing')
-          if (lroot.and.j==1) print*, 'init_particles_radius: nothing'
+          if (initial.and.lroot.and.j==1) print*, 'set_particles_radius: nothing'
 
         case('constant')
-          if (lroot) print*, 'init_particles_radius: constant radius'
-          fp(1:npar_loc,iap)=ap0
+          if (initial.and.lroot) print*, 'set_particles_radius: constant radius'
+          fp(npar_low:npar_high,iap)=ap0
 
         endselect
 
       enddo
 !
-    endsubroutine init_particles_radius
+    endsubroutine set_particle_radius
 !***********************************************************************
     subroutine pencil_criteria_par_radius()
 !
