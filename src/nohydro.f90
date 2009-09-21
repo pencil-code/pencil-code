@@ -325,6 +325,17 @@ module Hydro
         p%uu(:,3)=+fac*cos(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))*sqrt(2.)
         if (lpencil(i_divu)) p%divu=0.
 !
+!  1-D Glen-Roberts flow (positive helicity, no y-dependence)
+!
+      elseif (kinflow=='poshel-roberts-1d') then
+        if (headtt) print*,'Pos Helicity Roberts flow; kx_aa=',kkx_aa
+        fac=ampl_kinflow
+        eps1=1.-eps_kinflow
+        p%uu(:,1)=0.
+        p%uu(:,2)=+fac*sin(kkx_aa*x(l1:l2))*eps1
+        p%uu(:,3)=+fac*cos(kkx_aa*x(l1:l2))*sqrt(2.)
+        if (lpencil(i_divu)) p%divu=0.
+!
 !  Glen-Roberts flow (x-direction, positive helicity)
 !  x -> y
 !  y -> z
