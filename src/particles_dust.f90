@@ -56,7 +56,7 @@ module Particles
   real :: avg_n_insert, remaining_particles=0.0
   real :: max_particle_insert_time=huge1
   integer :: l_hole=0, m_hole=0, n_hole=0
-  integer :: iscratch_short_friction=0, npar_total
+  integer :: iscratch_short_friction=0
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
   logical :: ldragforce_radialonly=.false.
   logical :: ldragforce_heat=.false., lcollisional_heat=.false.
