@@ -412,6 +412,11 @@ module Chemistry
           do k=1,nchemspec
             call gaussian(amplchem,f,ichemspec(k),kx=kx_chem)
           enddo
+        case('gaussian-pos')
+          do k=1,nchemspec
+            call gaussianpos(amplchemk(k),f,ichemspec(k),widthchem,kx_chem,ky_chem,kz_chem)
+            print*,"c(",x(l1),",",y(m1),",",z(n1),")=", f(l1,m1,n1,ichemspec(k))                     
+          enddo
         case('hatwave-x')
           do k=1,nchemspec
             call hatwave(amplchem,f,ichemspec(k),widthchem,kx=kx_chem)
@@ -451,10 +456,13 @@ module Chemistry
 !
 !AB:  if (linitial_condition) call initial_condition_chemistry(f)
 !
-      if (lone_spec) then
-        f(:,:,:,ichemspec(1))=1.
-        if (lroot) print*, 'initchem: this is one specie case'
-      endif
+!RP:  I comment the following ... why should one specie case uniformly 
+!     initialized to 1 and override the manually entered conditions ????  
+!
+!      if (lone_spec) then
+!        f(:,:,:,ichemspec(1))=1.
+!        if (lroot) print*, 'initchem: this is one specie case'
+!      endif
 !
       call keep_compiler_quiet(f)
 !

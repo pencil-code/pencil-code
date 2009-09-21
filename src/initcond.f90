@@ -21,7 +21,7 @@ module Initcond
   public :: sph_constb 
   public :: gaunoise, posnoise
   public :: gaunoise_rprof
-  public :: gaussian, gaussian3d, beltrami, rolls, tor_pert
+  public :: gaussian, gaussian3d, gaussianpos, beltrami, rolls, tor_pert
   public :: jump, bjump, bjumpz, stratification, stratification_x
   public :: modes, modev, modeb, crazy
   public :: trilinear, baroclinic
@@ -913,6 +913,27 @@ module Initcond
       enddo; enddo
 !
     endsubroutine gaussian3d
+!***********************************************************************
+    subroutine gaussianpos(ampl,f,i,radius,posx,posy,posz)
+!
+!  gaussian 3-D bump centered in specific position
+!
+!  21-sep-09/rplasson: coded from gaussian3d
+!  Maybe could have been done by extending gaussian3d, but didn't want to interfere
+!
+      integer :: i
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: ampl,radius,posx, posy, posz, radius21
+!
+      radius21=1./radius**2
+      do n=n1,n2; do m=m1,m2
+        f(l1:l2,m,n,i)=f(l1:l2,m,n,i)+ampl*exp(-((x(l1:l2)-posx)**2+(y(m)-posy)**2+(z(n)-posz)**2)*radius21)
+!        do l=l1,l2
+!          print*,"c(",x(l),",",y(m),",",z(n),")=", f(l,m,n,i)
+!        enddo
+      enddo; enddo
+!
+    endsubroutine gaussianpos
 !***********************************************************************
     subroutine parabola(ampl,f,i,kx,ky,kz)
 !
