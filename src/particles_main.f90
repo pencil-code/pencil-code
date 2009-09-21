@@ -133,9 +133,20 @@ module Particles_main
 !
 !  07-jan-05/anders: coded
 !
-      character (len=*) :: filename
+      use Mpicomm, only: mpireduce_max_scl_int
 !
-      call input_particles(filename,fp,npar_loc,ipar)
+      character (len=*) :: filename
+      integer :: npar_total_loc
+!
+      call input_particles(filename,fp,npar_loc,ipar)  
+!
+! If we are inserting particles contiuously during the run root must
+! know what the largest particle index is
+!    
+      if (linsert_particles_continuously) then
+        npar_total_loc=maxval(ipar)
+        call mpireduce_max_scl_int(npar_total_loc,npar_total)
+      endif
 !
     endsubroutine particles_read_snapshot
 !***********************************************************************
