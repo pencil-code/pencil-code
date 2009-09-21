@@ -384,6 +384,7 @@ module Magnetic
   integer :: idiag_jmbmz=0      ! DIAG_DOC: $\left<\left<\Jv\right>_{xy}\cdot\left<\Bv\right>_{xy}
                                 ! DIAG_DOC:   \right>$ \quad(current helicity
                                 ! DIAG_DOC:   of $xy$-averaged mean field)
+  integer :: idiag_kx_aa=0      ! DIAG_DOC: $k_x$
   integer :: idiag_kmz=0        ! DIAG_DOC: $\left<\left<\Jv\cdot\Bv\right>_{xy}\right>/
                                 ! DIAG_DOC:  \left<\left<\Jv\cdot\Bv\right>_{xy}\right>$
   integer :: idiag_bx2my=0      ! DIAG_DOC: $\left< B_x^2 \right>_{xz}$
@@ -2435,6 +2436,10 @@ module Magnetic
           call dot (p%aa,p%jj,aj)
           call sum_mn_name(aj,idiag_ajm)
         endif
+!
+!  output kx_aa for calculating k_effective
+!
+        if (idiag_kx_aa/=0) call save_name(kx_aa(1),idiag_kx_aa)
 !
 ! <J.B>
 !
@@ -5596,6 +5601,7 @@ module Magnetic
         idiag_bmx=0; idiag_bmy=0; idiag_bmz=0; idiag_embmz=0; idiag_emxamz3=0
         idiag_jmx=0; idiag_jmy=0; idiag_jmz=0
         idiag_ambmz=0; idiag_jmbmz=0; idiag_kmz=0
+        idiag_kx_aa=0
         idiag_ambmzh=0;idiag_ambmzn=0;idiag_ambmzs=0
         idiag_bmzph=0; idiag_bmzphe=0
         idiag_bcosphz=0; idiag_bsinphz=0
@@ -5767,6 +5773,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'ambmzs',idiag_ambmzs)
         call parse_name(iname,cname(iname),cform(iname),'jmbmz',idiag_jmbmz)
         call parse_name(iname,cname(iname),cform(iname),'kmz',idiag_kmz)
+        call parse_name(iname,cname(iname),cform(iname),'kx_aa',idiag_kx_aa)
         call parse_name(iname,cname(iname),cform(iname),'bxpt',idiag_bxpt)
         call parse_name(iname,cname(iname),cform(iname),'bypt',idiag_bypt)
         call parse_name(iname,cname(iname),cform(iname),'bzpt',idiag_bzpt)
@@ -6116,6 +6123,7 @@ module Magnetic
         write(3,*) 'i_ambmzs=',idiag_ambmzs
         write(3,*) 'i_jmbmz=',idiag_jmbmz
         write(3,*) 'i_kmz=',idiag_kmz
+        write(3,*) 'i_kx_aa=',idiag_kx_aa
         write(3,*) 'i_bxpt=',idiag_bxpt
         write(3,*) 'i_bypt=',idiag_bypt
         write(3,*) 'i_bzpt=',idiag_bzpt
