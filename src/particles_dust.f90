@@ -1211,17 +1211,18 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if (lroot) then
         avg_n_insert=particles_insert_rate*dt
-        if (npar_loc + int(avg_n_insert + remaining_particles) &
-            .le. mpar_loc) then      
+        n_insert=int(avg_n_insert + remaining_particles)
+        if ((n_insert+npar_loc .le. mpar_loc) &
+            .and. (t.lt.max_particle_insert_time)) then
           linsertmore=.true.
-        end if
-        if (t .gt. max_particle_insert_time) linsertmore=.false.
+        else
+          linsertmore=.false.
+        endif
 !
         if (linsertmore) then
 ! Actual (integer) number of particles to be inserted at this timestep:
-          n_insert=int(avg_n_insert + remaining_particles)
           do iii=npar_total+1,npar_total+n_insert
-            ipar(iii)=iii
+            ipar(iii)=npar_loc+iii-npar_total
           enddo
           npar_total=npar_total+n_insert
 ! Remaining particles saved for subsequent timestep: 
@@ -1231,64 +1232,61 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 ! Insert particles in chosen position (as in init_particles).
 !
-        do j=1,ninit
-          select case(initxxp(j))
-          case ('random-box')
-            !print*, 'init_particles: Random particle positions '// &
-            !    'within a box'
-            do k=npar_loc_old+1,npar_loc
-              if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
-              if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
-              if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
-              if (nxgrid/=1) fp(k,ixp)=xp0+fp(k,ixp)*Lx0
-              if (nygrid/=1) fp(k,iyp)=yp0+fp(k,iyp)*Ly0
-              if (nzgrid/=1) fp(k,izp)=zp0+fp(k,izp)*Lz0
-            enddo
-          
-          case ('nothing')
-            if (lroot .and. j==1) print*, 'init_particles: nothing'
+          do j=1,ninit
+            select case(initxxp(j))
+            case ('random-box')
 
-          case default
-            print*, 'insert_particles: No such such value for initxxp: ', &
-                trim(initxxp(j))
-            call fatal_error('init_particles','')
+              do k=npar_loc_old+1,npar_loc
+                if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
+                if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
+                if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
+                if (nxgrid/=1) fp(k,ixp)=xp0+fp(k,ixp)*Lx0
+                if (nygrid/=1) fp(k,iyp)=yp0+fp(k,iyp)*Ly0
+                if (nzgrid/=1) fp(k,izp)=zp0+fp(k,izp)*Lz0
+              enddo
+          
+            case ('nothing')
+              if (lroot .and. j==1) print*, 'init_particles: nothing'
+
+            case default
+              print*, 'insert_particles: No such such value for initxxp: ', &
+                  trim(initxxp(j))
+              call fatal_error('init_particles','')
             
-          endselect
+            endselect
 !
 !  Initial particle velocity.
 !
-          select case(initvvp(j))
-          case ('nothing')
-            if (j==1) print*, 'init_particles: No particle velocity set'
+            select case(initvvp(j))
+            case ('nothing')
+              if (j==1) print*, 'init_particles: No particle velocity set'
             
-          case ('constant')
-            !print*, 'init_particles: Constant particle velocity'
-            !print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
-            fp(npar_loc_old+1:npar_loc,ivpx)=vpx0
-            fp(npar_loc_old+1:npar_loc,ivpy)=vpy0
-            fp(npar_loc_old+1:npar_loc,ivpz)=vpz0
-
-          case default
-            print*, 'insert_particles: No such such value for initvvp: ', &
-                trim(initvvp(j))
-            call fatal_error('','')
+            case ('constant')
+              fp(npar_loc_old+1:npar_loc,ivpx)=vpx0
+              fp(npar_loc_old+1:npar_loc,ivpy)=vpy0
+              fp(npar_loc_old+1:npar_loc,ivpz)=vpz0
+              
+            case default
+              print*, 'insert_particles: No such such value for initvvp: ', &
+                  trim(initvvp(j))
+              call fatal_error('','')
 !
-          endselect
+            endselect
 !
-        enddo ! do j=1,ninit
+          enddo ! do j=1,ninit
 !
 !  Initialize particle radius
 !
-        call set_particle_radius(f,fp,npar_loc_old+1,npar_loc)
+          call set_particle_radius(f,fp,npar_loc_old+1,npar_loc)
 !
 !  Particles are not allowed to be present in non-existing dimensions.
 !  This would give huge problems with interpolation later.
 !
-        if (nxgrid==1) fp(npar_loc_old+1:npar_loc,ixp)=x(nghost+1)
-        if (nygrid==1) fp(npar_loc_old+1:npar_loc,iyp)=y(nghost+1)
-        if (nzgrid==1) fp(npar_loc_old+1:npar_loc,izp)=z(nghost+1)
-      end if
-      end if ! if (lroot) then      
+          if (nxgrid==1) fp(npar_loc_old+1:npar_loc,ixp)=x(nghost+1)
+          if (nygrid==1) fp(npar_loc_old+1:npar_loc,iyp)=y(nghost+1)
+          if (nzgrid==1) fp(npar_loc_old+1:npar_loc,izp)=z(nghost+1)
+        end if
+      end if ! if (lroot) then
 !
 !  Redistribute particles among processors.
 !
