@@ -22,7 +22,7 @@ module Deriv
   public :: der_onesided_4_slice
   public :: der_onesided_4_slice_other
 !
-  real :: der2_coef0, der2_coef1, der2_coef2, der2_coef3, der2_coef4
+  real :: der2_coef0, der2_coef1, der2_coef2, der2_coef3, der2_coef4, der2_coef5
 !
 !debug  integer, parameter :: icount_der   = 1         !DERCOUNT
 !debug  integer, parameter :: icount_der2  = 2         !DERCOUNT
@@ -68,8 +68,9 @@ module Deriv
       select case(der2_type)
 !
       case ('standard')
-        der2_coef0=-14350./5040.; der2_coef1=8064./5040.
-        der2_coef2=-1008./5040.; der2_coef3=128./5040.; der2_coef4=-9./5040.
+        der2_coef0=-73766./25200.; der2_coef1=42000./25200.
+        der2_coef2=-6000./25200.; der2_coef3=1000./25200.
+        der2_coef4=-125./25200.; der2_coef5=8./25200.; 
 !
       case ('tuned1')
         der2_coef0=-0.75; der2_coef1=0.34375
@@ -302,7 +303,8 @@ module Deriv
                   +der2_coef1*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
                   +der2_coef2*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
                   +der2_coef3*(f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)) &
-                  +der2_coef4*(f(l1+4:l2+4,m,n,k)+f(l1-4:l2-4,m,n,k)))
+                  +der2_coef4*(f(l1+4:l2+4,m,n,k)+f(l1-4:l2-4,m,n,k)) &
+                  +der2_coef5*(f(l1+5:l2+5,m,n,k)+f(l1-5:l2-5,m,n,k)))
           if (.not.lequidist(j)) then
             call der(f,k,df,j)
             df2=df2+dx_tilde(l1:l2)*df
