@@ -1212,7 +1212,7 @@ k_loop:   do while (.not. (k>npar_loc))
       if (lroot) then
         avg_n_insert=particles_insert_rate*dt
         n_insert=int(avg_n_insert + remaining_particles)
-        if ((n_insert+npar_loc .le. mpar_loc) &
+        if ((n_insert+npar_total .le. mpar_loc) &
             .and. (t.lt.max_particle_insert_time)) then
           linsertmore=.true.
         else
