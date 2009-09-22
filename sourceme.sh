@@ -59,9 +59,9 @@ if [ -z $_sourceme ]; then	# called for the first time?
 #    PERL5LIB="${PENCIL_HOME}/perl${PERL5LIB:+:$PERL5LIB}"
     #   Set PYTHONPATH
     if [ -z $PYTHONPATH ]; then
-       PYTHONPATH="$PENCIL_HOME/python"
+       PYTHONPATH="$PENCIL_HOME/python:$PWD/python"
     else 
-       PYTHONPATH="$PYTHONPATH:$PENCIL_HOME/python"
+       PYTHONPATH="$PYTHONPATH:$PENCIL_HOME/python:$PWD/python"
     fi
     # Remember that sourceme has been successfully run
     _sourceme="set"
