@@ -1,0 +1,10 @@
+#!/bin/sh
+I=$2
+
+#
+#  Syntax:  doN script.csh 5 10
+#    executes the script.csh starting with argument 5
+#
+
+for i in `seq $2 $3`; do $1 $i; done
+exit
