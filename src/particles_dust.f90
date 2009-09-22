@@ -1184,31 +1184,31 @@ k_loop:   do while (.not. (k>npar_loc))
     endsubroutine init_particles
 !***********************************************************************
     subroutine insert_particles(f,fp,ineargrid)
-      !
-      ! Insert particles continuously (when linsert_particles_continuously == T),
-      ! i.e. in each timestep. If number of particles to be inserted are less 
-      ! than unity, accumulate number over several timesteps until the integer value
-      ! is larger than one. Keep the remainder and accumulate this to the next insert.
-      !
-      ! Works only for particles_dust - add neccessary variable
-      ! declarations in particles_tracers to make it work here.
-      ! 
+!
+! Insert particles continuously (when linsert_particles_continuously == T),
+! i.e. in each timestep. If number of particles to be inserted are less 
+! than unity, accumulate number over several timesteps until the integer value
+! is larger than one. Keep the remainder and accumulate this to the next insert.
+!
+! Works only for particles_dust - add neccessary variable
+! declarations in particles_tracers to make it work here.
+! 
       use General, only: random_number_wrapper
-      use Mpicomm, only: mpibcast_logical
-      !
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar)   :: fp
       integer, dimension (mpar_loc,3)    :: ineargrid
-      logical                            :: linsertmore
-      !
+      logical                            :: linsertmore=.false.
+!
       integer :: j, k, n_insert, npar_loc_old, iii
-      !
+!
       intent (inout) :: fp,ineargrid
-      !
-      ! Stop call to this routine when maximum number of particles is reached!
-      ! Since root inserts all new particles, make sure npar_loc + n_insert > mpar
-      ! som that root doesn't exceed its maximum number of particles.
-      !
+!
+! Stop call to this routine when maximum number of particles is reached!
+! Since root inserts all new particles, make sure 
+! npar_loc + n_insert < mpar
+! so that root doesn't exceed its maximum number of particles.
+!
       if (lroot) then
         avg_n_insert=particles_insert_rate*dt
         if (npar_loc + int(avg_n_insert + remaining_particles) &
@@ -1216,22 +1216,21 @@ k_loop:   do while (.not. (k>npar_loc))
           linsertmore=.true.
         end if
         if (t .gt. max_particle_insert_time) linsertmore=.false.
-
-
+!
         if (linsertmore) then
-          ! Actual (integer) number of particles to be inserted at this timestep:
+! Actual (integer) number of particles to be inserted at this timestep:
           n_insert=int(avg_n_insert + remaining_particles)
           do iii=npar_total+1,npar_total+n_insert
             ipar(iii)=iii
           enddo
           npar_total=npar_total+n_insert
-          ! Remaining particles saved for subsequent timestep: 
+! Remaining particles saved for subsequent timestep: 
           remaining_particles=avg_n_insert + remaining_particles - n_insert
           npar_loc_old=npar_loc
           npar_loc=npar_loc + n_insert
-        !
-        ! Insert particles in chosen position (as in init_particles)
-        !
+!
+! Insert particles in chosen position (as in init_particles).
+!
         do j=1,ninit
           select case(initxxp(j))
           case ('random-box')
@@ -1255,12 +1254,10 @@ k_loop:   do while (.not. (k>npar_loc))
             call fatal_error('init_particles','')
             
           endselect
-          
-          !
-          !  Initial particle velocity.
-          !
+!
+!  Initial particle velocity.
+!
           select case(initvvp(j))
-            
           case ('nothing')
             if (j==1) print*, 'init_particles: No particle velocity set'
             
@@ -1270,48 +1267,48 @@ k_loop:   do while (.not. (k>npar_loc))
             fp(npar_loc_old+1:npar_loc,ivpx)=vpx0
             fp(npar_loc_old+1:npar_loc,ivpy)=vpy0
             fp(npar_loc_old+1:npar_loc,ivpz)=vpz0
-            
+
           case default
             print*, 'insert_particles: No such such value for initvvp: ', &
                 trim(initvvp(j))
             call fatal_error('','')
-            !
+!
           endselect
-          !
+!
         enddo ! do j=1,ninit
 !
 !  Initialize particle radius
 !
         call set_particle_radius(f,fp,npar_loc_old+1,npar_loc)
-        !
-        !  Particles are not allowed to be present in non-existing dimensions.
-        !  This would give huge problems with interpolation later.
-        !
+!
+!  Particles are not allowed to be present in non-existing dimensions.
+!  This would give huge problems with interpolation later.
+!
         if (nxgrid==1) fp(npar_loc_old+1:npar_loc,ixp)=x(nghost+1)
         if (nygrid==1) fp(npar_loc_old+1:npar_loc,iyp)=y(nghost+1)
         if (nzgrid==1) fp(npar_loc_old+1:npar_loc,izp)=z(nghost+1)
       end if
       end if ! if (lroot) then      
-      !
-      !  Redistribute particles among processors.
-      !
+!
+!  Redistribute particles among processors.
+!
       call boundconds_particles(fp,npar_loc,ipar)
-      !
-      !  Map particle position on the grid.
-      !
+!
+!  Map particle position on the grid.
+!
       call map_nearest_grid(fp,ineargrid)
       call map_xxp_grid(f,fp,ineargrid)
-      !
-      !  Map particle velocity on the grid.
-      !
+!
+!  Map particle velocity on the grid.
+!
       call map_vvp_grid(f,fp,ineargrid)
-      !
-      !  Sort particles (must happen at the end of the subroutine so that random
-      !  positions and velocities are not displaced relative to when there is no
-      !  sorting).
-      !
+!
+!  Sort particles (must happen at the end of the subroutine so that random
+!  positions and velocities are not displaced relative to when there is no
+!  sorting).
+!
       call sort_particles_imn(fp,ineargrid,ipar)
-      !
+!
     endsubroutine insert_particles
 !***********************************************************************
     subroutine streaming_coldstart(fp,f)
