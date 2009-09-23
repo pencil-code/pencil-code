@@ -6,7 +6,7 @@
 pro pc_read_pvar, object=object, varfile=varfile_, datadir=datadir, ivar=ivar, $
     npar_max=npar_max, stats=stats, quiet=quiet, swap_endian=swap_endian, $
     rmv=rmv, irmv=irmv, trmv=trmv, oldrmv=oldrmv, solid_object=solid_object, $
-    theta_arr=theta_arr
+    theta_arr=theta_arr, savefile=savefile
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;
@@ -17,6 +17,7 @@ default, stats, 1
 default, quiet, 0
 default, rmv, 0
 default, oldrmv, 0
+default, savefile, 1
 ;
 if n_elements(ivar) eq 1 then begin
     default,varfile_,'PVAR'
@@ -381,7 +382,9 @@ if (keyword_set(solid_object)) then begin
   print,'Capture efficiency on back side =',back_eta
   print,'Capture efficiency=',eta
   print,'Stokes number=',Stokes
-  save,Stokes,eta,Stokes_Cunningham,front_eta,back_eta,filename='./data/capture_eff.sav'
+  if (savefile) then begin
+      save,Stokes,eta,Stokes_Cunningham,front_eta,back_eta,filename='./data/capture_eff.sav'
+  endif
 endif
 ;
 ;  Trim x, y and z arrays.
