@@ -988,8 +988,7 @@ module Hydro
           enddo; enddo
 
         case('incompressive-shwave')
-! WL: document this initial condition? Looks like the incompressible 
-!     shear wave of Shen et al. (2006). Jeff?
+! incompressible shear wave of Johnson & Gammine (2005a)
           print*, "incomp-shwave: ampl_ux/ky_uu = ", ampl_ux(j)/ky_uu
 ! Get the streamfunction, save it in the iuz slot
           call sinwave_phase(f,iuz,ampl_ux(j)/ky_uu,&
