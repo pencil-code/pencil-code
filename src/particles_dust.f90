@@ -1194,6 +1194,7 @@ k_loop:   do while (.not. (k>npar_loc))
 ! declarations in particles_tracers to make it work here.
 ! 
       use General, only: random_number_wrapper
+ !     use Mpicomm, only: mpibarrier
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar)   :: fp
@@ -1212,7 +1213,9 @@ k_loop:   do while (.not. (k>npar_loc))
       if (lroot) then
         avg_n_insert=particles_insert_rate*dt
         n_insert=int(avg_n_insert + remaining_particles)
-        if ((n_insert+npar_total .le. mpar_loc) &
+! Remaining particles saved for subsequent timestep: 
+        remaining_particles=avg_n_insert + remaining_particles - n_insert
+        if ((n_insert+npar_loc .le. mpar_loc) &
             .and. (t.lt.max_particle_insert_time)) then
           linsertmore=.true.
         else
@@ -1221,12 +1224,10 @@ k_loop:   do while (.not. (k>npar_loc))
 !
         if (linsertmore) then
 ! Actual (integer) number of particles to be inserted at this timestep:
-          do iii=npar_total+1,npar_total+n_insert
-            ipar(iii)=npar_loc+iii-npar_total
+          do iii=npar_loc+1,npar_loc+n_insert
+            ipar(iii)=npar_total+iii-npar_loc
           enddo
           npar_total=npar_total+n_insert
-! Remaining particles saved for subsequent timestep: 
-          remaining_particles=avg_n_insert + remaining_particles - n_insert
           npar_loc_old=npar_loc
           npar_loc=npar_loc + n_insert
 !
@@ -1235,7 +1236,7 @@ k_loop:   do while (.not. (k>npar_loc))
           do j=1,ninit
             select case(initxxp(j))
             case ('random-box')
-
+!             
               do k=npar_loc_old+1,npar_loc
                 if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
                 if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
@@ -1244,15 +1245,15 @@ k_loop:   do while (.not. (k>npar_loc))
                 if (nygrid/=1) fp(k,iyp)=yp0+fp(k,iyp)*Ly0
                 if (nzgrid/=1) fp(k,izp)=zp0+fp(k,izp)*Lz0
               enddo
-          
+!              
             case ('nothing')
               if (lroot .and. j==1) print*, 'init_particles: nothing'
-
+!              
             case default
               print*, 'insert_particles: No such such value for initxxp: ', &
                   trim(initxxp(j))
               call fatal_error('init_particles','')
-            
+!              
             endselect
 !
 !  Initial particle velocity.
@@ -1260,17 +1261,17 @@ k_loop:   do while (.not. (k>npar_loc))
             select case(initvvp(j))
             case ('nothing')
               if (j==1) print*, 'init_particles: No particle velocity set'
-            
+!              
             case ('constant')
               fp(npar_loc_old+1:npar_loc,ivpx)=vpx0
               fp(npar_loc_old+1:npar_loc,ivpy)=vpy0
               fp(npar_loc_old+1:npar_loc,ivpz)=vpz0
-              
+!              
             case default
               print*, 'insert_particles: No such such value for initvvp: ', &
                   trim(initvvp(j))
               call fatal_error('','')
-!
+              !
             endselect
 !
           enddo ! do j=1,ninit
@@ -1286,7 +1287,7 @@ k_loop:   do while (.not. (k>npar_loc))
           if (nygrid==1) fp(npar_loc_old+1:npar_loc,iyp)=y(nghost+1)
           if (nzgrid==1) fp(npar_loc_old+1:npar_loc,izp)=z(nghost+1)
         end if
-      end if ! if (lroot) then
+      end if ! if (lroot) then    
 !
 !  Redistribute particles among processors.
 !
