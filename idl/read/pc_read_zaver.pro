@@ -256,7 +256,7 @@ if (iplot eq -1) then begin
         if (it eq 0 ) then $
           print, '  ------ it -------- t ---------- var ----- min(var) ------- max(var) ------'
         for ivar=0,nvar-1 do begin
-            print, it, t, variables[ivar], $
+            print, it, tt[it/njump], variables[ivar], $
                 min(array_global[*,*,it/njump,ivarpos[ivar]]), $
                 max(array_global[*,*,it/njump,ivarpos[ivar]]), $
                 format='(i11,e17.7,A12,2e17.7)'
