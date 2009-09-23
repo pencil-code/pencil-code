@@ -132,8 +132,9 @@ module Particles_main
 !  Read particle snapshot from file.
 !
 !  07-jan-05/anders: coded
+!  23-sep-09/nils: adapted to work with particles beeing continuously inserted
 !
-      use Mpicomm, only: mpireduce_max_scl_int
+      use Mpicomm, only: mpireduce_sum_int
 !
       character (len=*) :: filename
       integer :: npar_total_loc
@@ -141,11 +142,10 @@ module Particles_main
       call input_particles(filename,fp,npar_loc,ipar)  
 !
 ! If we are inserting particles contiuously during the run root must
-! know what the largest particle index is
+! know the total number of particles in the simulation
 !    
       if (linsert_particles_continuously) then
-        npar_total_loc=maxval(ipar)
-        call mpireduce_max_scl_int(npar_total_loc,npar_total)
+        call mpireduce_sum_int(npar_loc,npar_total)
       endif
 !
     endsubroutine particles_read_snapshot
