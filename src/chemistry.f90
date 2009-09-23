@@ -4153,7 +4153,7 @@ module Chemistry
         endif
 
 !
-! falia: this subroutine is still under construction
+! natalia: this subroutine is still under construction
 ! Please, do not remove this commented part !!!!!
 !
 
@@ -4520,17 +4520,23 @@ module Chemistry
       real, dimension (mx,my,mz,mvar) :: df
       character (len=3) :: topbot
       real, dimension (mx,mz) :: rho0,gamma0
-      real, dimension (mx,my,mz) :: mom2, rho_ux2, rho_uy2
+      real, dimension (mx,my,mz) :: mom1, rho_ux2, rho_uy2
       real, dimension (mx,my,mz) :: rho_gamma, rhoE_p, pp
-      real, dimension (nx,nz) :: dux_dy,duy_dy,duz_dy, drho_dy, dpp_dy,dYk_dx,dYk_dy,dYk_dz
-      real, dimension (nx,nz) :: drho_prefac, KK, L_1, L_2, L_3,L_4, L_5
-      real, dimension (mx,mz) :: cs2y,cs0_ar,cs20_ar,dmom2_dx
-      real, dimension (mx,mz) :: drhoE_p_dx, duy_dx!,dYk_dy
+      real, dimension (nx,nz) ::  dYk_dx,dYk_dy,dYk_dz
+      real, dimension (nx,nz) :: drho_prefac, KK, M_1, M_2, M_3,M_4, M_5
+      real, dimension (mx,mz) :: cs2y,cs0_ar,cs20_ar,dmom1_dx
+      real, dimension (mx,mz) :: drhoE_p_dx !dYk_dy
   !    real, dimension (nx,nz,nchemspec) :: bound_rhs_Y
     !  real, dimension (nx,nz) :: bound_rhs_T
       real, dimension (mx,my,mz) :: cs2_full, gamma_full, rho_full
       real, dimension (nx,ny,nz) :: p_inf
-!      real, dimension(ny,nz,3,3) :: dui_dxj
+
+      
+      real, dimension (nx,nz,3,3) :: dui_dxj
+      real, dimension (mx,mz)     :: tmp11,tmp21,tmp31,tmp13,tmp23,tmp33
+      real, dimension (mx,mz)     :: tmp1_lnrho,tmp3_lnrho,tmp1_pp,tmp3_pp
+      real, dimension (nx,nz,3)   :: grad_rho, grad_pp
+
 !
       integer :: mmm, sgn,i,j,k
       real :: Mach_num,nscbc_sigma_out
@@ -4586,7 +4592,7 @@ module Chemistry
          enddo
          enddo
 
-         mom2(:,mmm,:)=rho0(:,:)*f(:,mmm,:,iuy)
+         mom1(:,mmm,:)=rho0(:,:)*f(:,mmm,:,iux)
          rho_ux2(:,mmm,:)=rho0(:,:)*f(:,mmm,:,iux)*f(:,mmm,:,iux)
          rho_uy2(:,mmm,:)=rho0(:,:)*f(:,mmm,:,iuy)*f(:,mmm,:,iuy)
          do i=1,mx
@@ -4609,22 +4615,62 @@ module Chemistry
         return
       endif
 
-      call der_onesided_4_slice(rho_full,sgn,drho_dy,mmm,2)
-      call der_onesided_4_slice(pp,sgn,dpp_dy,mmm,2)
-      call der_onesided_4_slice(f,sgn,iux,dux_dy,mmm,2)
-      call der_onesided_4_slice(f,sgn,iuy,duy_dy,mmm,2)
-      call der_onesided_4_slice(f,sgn,iuz,duz_dy,mmm,2)
+  !    call der_onesided_4_slice(rho_full,sgn,drho_dy,mmm,2)
+  !    call der_onesided_4_slice(pp,sgn,dpp_dy,mmm,2)
+  !    call der_onesided_4_slice(f,sgn,iux,dux_dy,mmm,2)
+  !    call der_onesided_4_slice(f,sgn,iuy,duy_dy,mmm,2)
+  !    call der_onesided_4_slice(f,sgn,iuz,duz_dy,mmm,2)
 
-  !    call der_onesided_4_slice(f,sgn,ilnrho,div_rho(:,:,1),lll,1)
-  !    call der_onesided_4_slice(f,sgn,iux,dui_dxj(:,:,1,1),lll,1)
-  !    call der_onesided_4_slice(f,sgn,iuy,dui_dxj(:,:,2,1),lll,1)
-  !    call der_onesided_4_slice(f,sgn,iuz,dui_dxj(:,:,3,1),lll,1)
 
-      do i=1,mz
-        call der_pencil(1,mom2(:,mmm,i),dmom2_dx(:,i))
-        call der_pencil(1,f(:,mmm,i,iux),duy_dx(:,i))
-        call der_pencil(1,rhoE_p(:,mmm,i),drhoE_p_dx(:,i))
-      enddo
+      call der_onesided_4_slice(rho_full,sgn,grad_rho(:,:,2),mmm,2)
+      call der_onesided_4_slice(pp,sgn,grad_pp(:,:,2),mmm,2)
+   !    call der_onesided_4_slice(f,sgn,ilnrho,div_rho(:,:,1),lll,1)
+      call der_onesided_4_slice(f,sgn,iux,dui_dxj(:,:,1,2),mmm,2)
+      call der_onesided_4_slice(f,sgn,iuy,dui_dxj(:,:,2,2),mmm,2)
+      call der_onesided_4_slice(f,sgn,iuz,dui_dxj(:,:,3,2),mmm,2)
+
+  !    do i=1,mz
+  !      call der_pencil(1,mom1(:,mmm,i),dmom1_dx(:,i))
+  !      call der_pencil(1,f(:,mmm,i,iux),duy_dx(:,i))
+  !     call der_pencil(1,rhoE_p(:,mmm,i),drhoE_p_dx(:,i))
+  !    enddo
+
+
+      if (nxgrid /= 1) then
+        do i=n1,n2
+          call der_pencil(1,f(:,mmm,i,iux),tmp11(:,i))
+          call der_pencil(1,f(:,mmm,i,iuy),tmp21(:,i))
+          call der_pencil(1,f(:,mmm,i,iuz),tmp31(:,i))
+          call der_pencil(1,f(:,mmm,i,ilnrho),tmp1_lnrho(:,i))
+          call der_pencil(1,f(:,mmm,i,ilnrho),tmp1_lnrho(:,i))
+          call der_pencil(1,pp(:,mmm,i),tmp1_pp(:,i))
+          call der_pencil(1,mom1(:,mmm,i),dmom1_dx(:,i))
+ !         call der2_pencil(2,f(lll,:,i,iux),tmpy)
+ !         d2u1_dy2(:,i-n1+1)=tmpy(:)
+ !         call der2_pencil(2,f(lll,:,i,iuy),tmpy)
+ !         d2u2_dy2(:,i-n1+1)=tmpy(:)
+ !         call der2_pencil(2,f(lll,:,i,iuz),tmpy)
+ !         d2u3_dy2(:,i-n1+1)=tmpy(:)
+        enddo
+      else
+        tmp31=0
+        tmp21=0
+        tmp11=0
+        tmp1_lnrho=0
+        tmp1_pp=0
+        dmom1_dx=0
+  !      d2u1_dy2=0
+  !      d2u2_dy2=0
+  !      d2u3_dy2=0
+      endif
+        dui_dxj(:,:,1,1)=tmp11(l1:l2,n1:n2)
+        dui_dxj(:,:,2,1)=tmp21(l1:l2,n1:n2)
+        dui_dxj(:,:,3,1)=tmp31(l1:l2,n1:n2)
+        grad_rho(:,:,1)=tmp1_lnrho(l1:l2,n1:n2)
+        grad_pp(:,:,1)=tmp1_pp(l1:l2,n1:n2)
+
+
+
 !
       Mach_num=maxval(f(l1:l2,mmm,n1:n2,iuy)/cs0_ar(l1:l2,n1:n2))
       KK=nscbc_sigma_out*(1.-Mach_num*Mach_num)*cs0_ar(l1:l2,n1:n2)/Lxyz(2)
@@ -4632,37 +4678,37 @@ module Chemistry
 !
       select case(topbot)
       case('bot')
-        L_5=KK*(cs20_ar(l1:l2,n1:n2)/gamma0(l1:l2,n1:n2)*&
+        M_5=KK*(cs20_ar(l1:l2,n1:n2)/gamma0(l1:l2,n1:n2)*&
             rho0(l1:l2,n1:n2)-p_inf(1:nx,1,1:nz))
-        L_1 = (f(l1:l2,mmm,n1:n2,iuy) - cs0_ar(l1:l2,n1:n2))*&
-            (dpp_dy- rho0(l1:l2,n1:n2)*cs0_ar(l1:l2,n1:n2)*duy_dy)
+        M_1 = (f(l1:l2,mmm,n1:n2,iuy) - cs0_ar(l1:l2,n1:n2))*&
+            (grad_pp(:,:,2)- rho0(l1:l2,n1:n2)*cs0_ar(l1:l2,n1:n2)*dui_dxj(:,:,2,2))
      case('top')
-        L_1=KK*(cs20_ar(l1:l2,n1:n2)/gamma0(l1:l2,n1:n2)*&
+        M_1=KK*(cs20_ar(l1:l2,n1:n2)/gamma0(l1:l2,n1:n2)*&
             rho0(l1:l2,n1:n2)-p_inf(1:nx,ny,1:nz))
-        L_5 = (f(l1:l2,mmm,n1:n2,iuy) + cs0_ar(l1:l2,n1:n2))*&
-            ( dpp_dy+ rho0(l1:l2,n1:n2)*cs0_ar(l1:l2,n1:n2)*duy_dy)
+        M_5 = (f(l1:l2,mmm,n1:n2,iuy) + cs0_ar(l1:l2,n1:n2))*&
+            (grad_pp(:,:,2)+ rho0(l1:l2,n1:n2)*cs0_ar(l1:l2,n1:n2)*dui_dxj(:,:,2,2))
       endselect
 !
-      L_2 = f(l1:l2,mmm,n1:n2,iuy)*(cs20_ar(l1:l2,n1:n2)*drho_dy-dpp_dy)
-      L_3 = f(l1:l2,mmm,n1:n2,iuy)*dux_dy(:,:)
-      L_4 = f(l1:l2,mmm,n1:n2,iuy)*duz_dy(:,:)
+      M_2 = f(l1:l2,mmm,n1:n2,iuy)*(cs20_ar(l1:l2,n1:n2)*grad_rho(:,:,2)-grad_pp(:,:,2))
+      M_3 = f(l1:l2,mmm,n1:n2,iuy)*dui_dxj(:,:,1,2)
+      M_4 = f(l1:l2,mmm,n1:n2,iuy)*dui_dxj(:,:,3,2)
 !
       if (ldensity_nolog) then
         df(l1:l2,mmm,n1:n2,irho) = &
-            drho_prefac*(L_2+0.5*(L_5 + L_1))!-dmom2_dy(m1:m2,n1:n2)
+            drho_prefac*(M_2+0.5*(M_5 + M_1))!-dmom2_dy(m1:m2,n1:n2)
       else
         df(l1:l2,mmm,n1:n2,ilnrho) = &
-            drho_prefac*(L_2+0.5*(L_5 + L_1)) !&
+            drho_prefac*(M_2+0.5*(M_5 + M_1)) !&
      !   -1./rho0(m1:m2,n1:n2)*dmom2_dy(m1:m2,n1:n2)
       endif
       df(l1:l2,mmm,n1:n2,iuy) = -1./&
-          (2.*rho0(l1:l2,n1:n2)*cs0_ar(l1:l2,n1:n2))*(L_5 - L_1) !&
+          (2.*rho0(l1:l2,n1:n2)*cs0_ar(l1:l2,n1:n2))*(M_5 - M_1) !&
      !      -f(lll,m1:m2,n1:n2,iux)*dux_dy(m1:m2,n1:n2)
-      df(l1:l2,mmm,n1:n2,iux) = -L_3
-      df(l1:l2,mmm,n1:n2,iuz) = -L_4
+      df(l1:l2,mmm,n1:n2,iux) = -M_3
+      df(l1:l2,mmm,n1:n2,iuz) = -M_4
       df(l1:l2,mmm,n1:n2,ilnTT) = -1./&
-          (rho0(l1:l2,n1:n2)*cs20_ar(l1:l2,n1:n2))*(-L_2 &
-          +0.5*(gamma0(l1:l2,n1:n2)-1.)*(L_5+L_1))
+          (rho0(l1:l2,n1:n2)*cs20_ar(l1:l2,n1:n2))*(-M_2 &
+          +0.5*(gamma0(l1:l2,n1:n2)-1.)*(M_5+M_1))
  !       -1./(rho0(l1:l2,n1:n2)*cs20_ar(l1:l2,n1:n2))* &
  !       (gamma0(l1:l2,n1:n2)-1.) &
  !      *gamma0(l1:l2,n1:n2)*drhoE_p_dy(l1:l2,n1:n2) !&
@@ -4721,10 +4767,11 @@ module Chemistry
       character (len=3) :: topbot
       real, dimension (mx,my) :: rho0,gamma0
    !   real, dimension (mx,my,mz) :: mom2, rho_ux2, rho_uy2
+       real, dimension (mx,my,mz) :: mom1,mom3
     !  real, dimension (mx,my,mz) :: rho_gamma, rhoE_p
       real, dimension (nx,ny) :: dux_dz,duy_dz,duz_dz, drho_dz, dpp_dz,dYk_dx,dYk_dy,dYk_dz
       real, dimension (nx,ny) :: drho_prefac, KK, L_1, L_2, L_3,L_4, L_5
-      real, dimension (mx,my) :: cs2z,cs0_ar,cs20_ar!,dmom2_dx
+      real, dimension (mx,my) :: cs2z,cs0_ar,cs20_ar,dmom1_dx
     !  real, dimension (mx,mz) :: drhoE_p_dx, duy_dx!,dYk_dy
       real, dimension (nx,ny,nchemspec) :: bound_rhs_Y
     !  real, dimension (nx,nz) :: bound_rhs_T
