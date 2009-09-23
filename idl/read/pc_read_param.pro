@@ -78,16 +78,7 @@ COMPILE_OPT IDL2,HIDDEN
   dummy = findfile(filename, count=found)
   if (found gt 0) then begin
     if (not keyword_set(quiet)) then print, 'Reading ' + filename + '...'
-    tmpfile = datadir
-;
-; Remove slashes and data directory, to allow the user to not have write access
-; to the data directory.
-;
-    while (strmid(tmpfile,strlen(tmpfile)-1,strlen(tmpfile)-1) eq '/') do begin
-      tmpfile=strmid(tmpfile,0,strlen(tmpfile)-2) 
-    endwhile
-    tmpfile = strmid(tmpfile,0,strpos(tmpfile,'/',/reverse_search))
-    tmpfile = tmpfile+'/param.pro'
+    tmpfile = './param.pro'
 ;
 ; Write content of param.nml to temporary file.
 ;
