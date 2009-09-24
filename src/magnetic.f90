@@ -760,6 +760,14 @@ module Magnetic
         close(1)
       endif
 !
+!  if meanfield theory is invoked, we want to send meanfield_etat to
+!  other subroutines
+!
+      if (lmeanfield_theory) then
+        call put_shared_variable('meanfield_etat',meanfield_etat,ierr)
+        call put_shared_variable('eta',eta,ierr)
+      endif
+!
 !  Tell the BorderProfiles module if we intend to use border driving, so
 !  that the module can request the right pencils.
 !
@@ -1177,13 +1185,6 @@ module Magnetic
         if (meanfield_etat/=0. .or. alpha_effect/=0. .or. delta_effect/=0.) &
             lpenc_requested(i_mf_EMF)=.true.
         if (delta_effect/=0.) lpenc_requested(i_oxj)=.true.
-!
-!  Determine Rm_alpm as the ratio of etat and eta, and
-!  set etat_alpm to meanfield_etat to make sure the two are the same
-!
-        Rm_alpm=meanfield_etat/eta
-        etat_alpm=meanfield_etat
-!        write(*,*)'Rm_alpm,etat_alpm',Rm_alpm,etat_alpm
       endif
 !
       if (idiag_jxbrxm/=0 .or. idiag_jxbrym/=0 .or. idiag_jxbrzm/=0) &
@@ -1830,6 +1831,12 @@ module Magnetic
           else
             p%mf_EMF=p%mf_EMF+meanfield_etat*p%del2a
           endif
+!
+!  allow for possibility of variable etat
+!
+          if (ietat/=0) then
+            call multsv_mn_add(-f(l1:l2,m,n,ietat),p%jj,p%mf_EMF)
+          endif
         endif
       endif
       if (lpencil(i_mf_EMFdotB)) call dot_mn(p%mf_EMF,p%bb,p%mf_EMFdotB)
@@ -2097,11 +2104,13 @@ module Magnetic
 !  Multiply resistivity by Nyquist scale, for resistive time-step.
 !  We include possible contribution from meanfield_etat, which is however
 !  only invoked in mean field models.
+!  Allow for variable etat (mean field theory)
 !
       if (lfirst.and.ldt) then
         diffus_eta =(diffus_eta+meanfield_etat)*dxyz_2
         diffus_eta2=diffus_eta2*dxyz_4
         diffus_eta3=diffus_eta3*dxyz_6
+        if (ietat/=0) diffus_eta=diffus_eta+maxval(f(l1:l2,m,n,ietat))*dxyz_2
 !
         if (headtt.or.ldebug) then
           print*, 'daa_dt: max(diffus_eta)  =', maxval(diffus_eta)

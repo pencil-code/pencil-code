@@ -1,4 +1,4 @@
-! $Id$
+! $Id: meanfield_alpm.f90 10874 2009-05-17 16:34:17Z wdobler $
 !
 !  This module serves as a sample for a special_XXX module that
 !  introduces additional primitive variables. Use this as a basis for your
@@ -16,7 +16,7 @@
 !
 ! CPARAM logical, parameter :: lspecial = .true.
 !
-! MVAR CONTRIBUTION 1
+! MVAR CONTRIBUTION 2
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
@@ -43,20 +43,18 @@ module Special
        initalpm,amplalpm,kx_alpm,ky_alpm,kz_alpm
 
   ! run parameters
-! Note that etat_alpm and Rm_alpm are defined in cdata
-!  real :: etat_alpm=1., Rm_alpm=1., kf_alpm=1., alpmdiff=0.
   real :: kf_alpm=1., alpmdiff=0.
   logical :: ladvect_alpm=.false.
 
   namelist /special_run_pars/ &
-!       etat_alpm,Rm_alpm,kf_alpm,ladvect_alpm,alpmdiff, &
        kf_alpm,ladvect_alpm,alpmdiff, &
        Omega_profile,Omega_ampl
-
+!
+! Declare any index variables necessary
+!
   ! other variables (needs to be consistent with reset list below)
+  integer :: idiag_etatm=0
   integer :: idiag_alpmm=0,idiag_ammax=0,idiag_amrms=0,idiag_alpmmz=0
-
-  real, pointer :: meanfield_etat,eta
 
   contains
 
@@ -73,12 +71,14 @@ module Special
 !  register ialpm in the f-array and set lalpm=.false.
 !
       call farray_register_pde('alpm',ialpm)
+      call farray_register_pde('etat',ietat)
       lalpm=.true.
+!--   letat=.true.
 !
 !  Identify version number.
 !
       if (lroot) call svn_id( &
-          "$Id$")
+          "$Id: meanfield_alpm.f90 10874 2009-05-17 16:34:17Z wdobler $")
 !
 !  Writing files for use with IDL
 !
@@ -89,7 +89,7 @@ module Special
         else
           write(4,*) ',alpm $'
         endif
-        write(15,*) 'alpm = fltarr(mx,my,mz)*one'
+        write(15,*) 'alpm = fltarr(mx,my,mz,2)*one'
       endif
 !
     endsubroutine register_special
@@ -109,7 +109,6 @@ module Special
 ! set the magnetic Reynold number :
 !      Rm_alpm=etat_alpm/eta
 !      write(*,*) 'Dhruba', Rm_alpm,etat_alpm
-!
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_special
@@ -128,8 +127,8 @@ module Special
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
       select case(initalpm)
-        case('zero'); f(:,:,:,ialpm)=0.
-        case('constant'); f(:,:,:,ialpm)=amplalpm
+        case('zero'); f(:,:,:,ialpm)=0.; f(:,:,:,ietat)=0.
+        case('constant'); f(:,:,:,ialpm)=amplalpm; f(:,:,:,ietat)=0.
         case default; call stop_it('init_alpm: bad initalpm='//trim(initalpm))
       endselect
 !
@@ -157,20 +156,21 @@ module Special
 !
 !  dynamical alpha quenching equation
 !  dalpm/dt=-2*etat*kf2*(EMF*BB/Beq2+alpm/Rm)
+!  detat/dt=-(1/3)*(EMF*JJ-kf*EMF*BB)/(eta*kf2+kf*sqrt(EMF*JJ-kf*EMF*BB))
 !
 !  18-nov-04/axel: coded
+!  17-sep-09/axel+koen: added etat evolution
 !
       use Diagnostics
-      use SharedVariables, only : get_shared_variable
-!
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: galpm
-      real, dimension (nx) :: alpm,ugalpm,EMFdotB,divflux,del2alpm
+      real, dimension (nx) :: alpm,etat,ugalpm,EMFdotB,EMFdotJ
+      real, dimension (nx) :: divflux,del2alpm,EJ_kfEB
+      real :: eta=.1
       type (pencil_case) :: p
-      integer :: ierr
 !
       intent(in)  :: f
       intent(out) :: df
@@ -182,11 +182,7 @@ module Special
 !  Abbreviations
 !        
       alpm=f(l1:l2,m,n,ialpm)
-!
-!  get meanfield_etat and eta
-!
-      call get_shared_variable('meanfield_etat',meanfield_etat,ierr)
-      call get_shared_variable('eta',eta,ierr)
+      etat=f(l1:l2,m,n,ietat)
 !
 !  dynamical quenching equation
 !  with advection flux proportional to uu
@@ -195,8 +191,7 @@ module Special
         call dot_mn(p%mf_EMF,p%bb,EMFdotB)
         call divflux_from_Omega_effect(p,divflux)
         df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)&
-           -2*meanfield_etat*kf_alpm**2*EMFdotB &
-           -2*eta*alpm-meanfield_etat*divflux
+           -2*kf_alpm**2*(etat*EMFdotB+eta*alpm)-etat*divflux
         if (ladvect_alpm) then
           call grad(f,ialpm,galpm)
           call dot_mn(p%uu,galpm,ugalpm)
@@ -206,11 +201,19 @@ module Special
           call del2(f,ialpm,del2alpm)
           df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)+alpmdiff*del2alpm
         endif
+!
+!  etat evolution
+!
+        call dot_mn(p%mf_EMF,p%jj,EMFdotJ)
+        EJ_kfEB=EMFdotJ-kf_alpm*EMFdotB
+        df(l1:l2,m,n,ietat)=df(l1:l2,m,n,ietat)&
+           -(1./3.)*EJ_kfEB/(eta*kf_alpm**2+sqrt(EJ_kfEB)*kf_alpm)
       endif
 !
 !  diagnostics
 !
       if (ldiagnos) then
+        if (idiag_etatm/=0) call sum_mn_name(etat,idiag_etatm)
         if (idiag_alpmm/=0) call sum_mn_name(alpm,idiag_alpmm)
         if (idiag_ammax/=0) call max_mn_name(alpm,idiag_ammax)
         if (idiag_amrms/=0) call sum_mn_name(alpm**2,idiag_amrms,lsqrt=.true.)
@@ -283,12 +286,14 @@ module Special
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
+        idiag_etatm=0
         idiag_alpmm=0; idiag_ammax=0; idiag_amrms=0; idiag_alpmmz=0
       endif
 !
 !  check for those quantities that we want to evaluate online
 !
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'etatm',idiag_etatm)
         call parse_name(iname,cname(iname),cform(iname),'alpmm',idiag_alpmm)
         call parse_name(iname,cname(iname),cform(iname),'ammax',idiag_ammax)
         call parse_name(iname,cname(iname),cform(iname),'amrms',idiag_amrms)
@@ -304,6 +309,7 @@ module Special
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
+        write(3,*) 'i_etatm=',idiag_etatm
         write(3,*) 'i_alpmm=',idiag_alpmm
         write(3,*) 'i_ammax=',idiag_ammax
         write(3,*) 'i_amrms=',idiag_amrms

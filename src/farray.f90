@@ -146,6 +146,8 @@ module FArrayManager
         call farray_register_variable(varname,ivar,vartype)
       endif
 !
+!  write varname into index.pro file (for idl)
+!
       if (lroot) then 
         open(3,file=trim(datadir)//'/index.pro', POSITION='append')
         write(3,*) 'i'//varname, '=', ivar
@@ -336,6 +338,14 @@ module FArrayManager
       endselect
 !
       call save_analysis_info(new)
+!
+!  write varname into index.pro file (for idl)
+!
+      if (lroot) then 
+        open(3,file=trim(datadir)//'/index.pro', POSITION='append')
+        write(3,*) 'i'//varname, '=', ivar
+        close(3)
+      endif
 !
     endsubroutine farray_register_variable
 !***********************************************************************
