@@ -1194,28 +1194,35 @@ k_loop:   do while (.not. (k>npar_loc))
 ! declarations in particles_tracers to make it work here.
 ! 
       use General, only: random_number_wrapper
- !     use Mpicomm, only: mpibarrier
+      use Mpicomm, only: mpireduce_sum_int
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar)   :: fp
       integer, dimension (mpar_loc,3)    :: ineargrid
       logical                            :: linsertmore=.false.
 !
-      integer :: j, k, n_insert, npar_loc_old, iii
+      integer :: j, k, n_insert, npar_loc_old, iii, npar_total
 !
       intent (inout) :: fp,ineargrid
 !
+! If we are inserting particles contiuously during the run root must
+! know the total number of particles in the simulation
+!    
+      if (linsert_particles_continuously) then
+        call mpireduce_sum_int(npar_loc,npar_total)
+      endif
+!
 ! Stop call to this routine when maximum number of particles is reached!
 ! Since root inserts all new particles, make sure 
-! npar_loc + n_insert < mpar
-! so that root doesn't exceed its maximum number of particles.
+! npar_total + n_insert < mpar
+! so that a processor can not exceed its maximum number of particles.
 !
       if (lroot) then
         avg_n_insert=particles_insert_rate*dt
         n_insert=int(avg_n_insert + remaining_particles)
 ! Remaining particles saved for subsequent timestep: 
         remaining_particles=avg_n_insert + remaining_particles - n_insert
-        if ((n_insert+npar_loc .le. mpar_loc) &
+        if ((n_insert+npar_total .le. mpar_loc) &
             .and. (t.lt.max_particle_insert_time)) then
           linsertmore=.true.
         else
