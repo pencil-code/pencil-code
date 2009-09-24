@@ -558,6 +558,8 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 ! if more than one cylinder are present. Yet to be implemented.
 !
               write(*,*) "WARNING: Rho-aver. not implemented for ncylinders > 1"
+              call fatal_error('solid_cells_dsolid_dt','')
+              
             end if
             if (rr2 .gt. a2) then
               rhosum = rhosum + p%rho(i-nghost)
