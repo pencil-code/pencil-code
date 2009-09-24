@@ -1,0 +1,26 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM   =   mpicomm
+GLOBAL    = noglobal
+
+HYDRO     =   hydro
+DENSITY   =   density
+ENTROPY   =   entropy
+MAGNETIC  = nomagnetic
+RADIATION = noradiation
+PSCALAR   = nopscalar
+
+GRAVITY   = nogravity
+FORCING   = noforcing
+SHEAR     =   shear
+SHOCK     =   shock_highorder
+
+INITIAL_CONDITION = initial_condition/baroclinic_init
+SPECIAL   =         special/baroclinic_run
+
+REAL_PRECISION = double
+
+FOURIER = fourier_fftpack
