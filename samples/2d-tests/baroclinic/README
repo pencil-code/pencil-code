@@ -1,0 +1,11 @@
+Maintainer:
+    Wladimir Lyra <wlyra/astro[dot]uu[dot]se>
+Added:
+    2009-sep-24
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Recommended resolution:
+    256x256x1 (same hyperviscosity as sample)
+Comments:
+    Unpublished run. 
+
