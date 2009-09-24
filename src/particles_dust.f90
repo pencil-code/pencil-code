@@ -1199,7 +1199,7 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar)   :: fp
       integer, dimension (mpar_loc,3)    :: ineargrid
-      logical                            :: linsertmore=.false.
+      logical                            :: linsertmore=.false., linsert=.true.
 !
       integer :: j, k, n_insert, npar_loc_old, iii, npar_total
 !
@@ -1208,9 +1208,7 @@ k_loop:   do while (.not. (k>npar_loc))
 ! If we are inserting particles contiuously during the run root must
 ! know the total number of particles in the simulation
 !    
-      if (linsert_particles_continuously) then
-        call mpireduce_sum_int(npar_loc,npar_total)
-      endif
+      call mpireduce_sum_int(npar_loc,npar_total)
 !
 ! Stop call to this routine when maximum number of particles is reached!
 ! Since root inserts all new particles, make sure 
@@ -1296,24 +1294,30 @@ k_loop:   do while (.not. (k>npar_loc))
         end if
       end if ! if (lroot) then    
 !
+!  Redistribute particles only when t < max_particle_insert_time.
+!  Could have included some other tests here aswell......
+!
+      if (t.lt.max_particle_insert_time) then
+!
 !  Redistribute particles among processors.
 !
-      call boundconds_particles(fp,npar_loc,ipar)
+        call boundconds_particles(fp,npar_loc,ipar,linsert=.true.)
 !
 !  Map particle position on the grid.
 !
-      call map_nearest_grid(fp,ineargrid)
-      call map_xxp_grid(f,fp,ineargrid)
+        call map_nearest_grid(fp,ineargrid)
+        call map_xxp_grid(f,fp,ineargrid)
 !
 !  Map particle velocity on the grid.
 !
-      call map_vvp_grid(f,fp,ineargrid)
+        call map_vvp_grid(f,fp,ineargrid)
 !
 !  Sort particles (must happen at the end of the subroutine so that random
 !  positions and velocities are not displaced relative to when there is no
 !  sorting).
 !
-      call sort_particles_imn(fp,ineargrid,ipar)
+        call sort_particles_imn(fp,ineargrid,ipar)
+      endif
 !
     endsubroutine insert_particles
 !***********************************************************************

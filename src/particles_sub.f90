@@ -223,7 +223,7 @@ module Particles_sub
 !
     endsubroutine wsnap_particles
 !***********************************************************************
-    subroutine boundconds_particles(fp,npar_loc,ipar,dfp)
+    subroutine boundconds_particles(fp,npar_loc,ipar,dfp,linsert)
 !
 !  Global boundary conditions for particles.
 !
@@ -234,6 +234,7 @@ module Particles_sub
 !
       real, dimension (mpar_loc,mpvar) :: fp
       real, dimension (mpar_loc,mpvar), optional :: dfp
+      logical, optional :: linsert
       integer, dimension (mpar_loc) :: ipar
       real :: xold,yold,rad,r1old,OO
       integer :: npar_loc,k,ik,k1,k2
@@ -495,15 +496,23 @@ module Particles_sub
 !
       if (lmpicomm) then
         if (present(dfp)) then
-          call redist_particles_procs(fp,npar_loc,ipar,dfp)
+          if (present(linsert)) then
+            call redist_particles_procs(fp,npar_loc,ipar,dfp,linsert=.true.)
+          else
+            call redist_particles_procs(fp,npar_loc,ipar,dfp)
+          endif
         else
-          call redist_particles_procs(fp,npar_loc,ipar)
+          if (present(linsert)) then
+            call redist_particles_procs(fp,npar_loc,ipar,linsert=.true.)
+          else
+            call redist_particles_procs(fp,npar_loc,ipar)
+          endif
         endif
       endif
 !
     endsubroutine boundconds_particles
 !***********************************************************************
-    subroutine redist_particles_procs(fp,npar_loc,ipar,dfp)
+    subroutine redist_particles_procs(fp,npar_loc,ipar,dfp,linsert)
 !
 !  Redistribute particles among processors based on the local yz-interval
 !  of each processor.
@@ -517,6 +526,7 @@ module Particles_sub
 !
       real, dimension (mpar_loc,mpvar) :: fp
       real, dimension (mpar_loc,mpvar), optional :: dfp
+      logical, optional :: linsert
       integer, dimension (mpar_loc) :: ipar
       integer :: npar_loc
 !
@@ -761,7 +771,7 @@ module Particles_sub
 !  is extremely slow when the processor number is high (>>100). Thus we only
 !  allow communication with surrounding processors during the run.
 !
-        if (lstart) then
+        if (lstart .or. present(linsert)) then
           do i=0,ncpus-1
             if (iproc/=i) then
               call mpirecv_int(nmig_enter(i),1,i,itag_nmig)
@@ -2519,6 +2529,9 @@ module Particles_sub
       write(20) fp(k,:)
       close(20)
 !
+
+print*,'removed particle:',fp(k,:)
+
       if (lroot.and.(ip<=8)) print*,'removed particle ',ipar(k)
 !
 !  Switch the removed particle with the last particle present in the processor
