@@ -4478,18 +4478,18 @@ module Chemistry
           nn=n2
           nnn=nz
          endif
-       !  df(lll,m1:m2,nn,irho_tmp) =  &
-       !     drho_prefac(:,nnn)*(L_2(:,nnn)+0.5*(L_5(:,nnn) + L_1(:,nnn))) &
-       !   + drho_prefac(:,nnn)*(M_3(:,i)+0.5*(M_5(:,i) + M_1(:,i)))
-       !  df(lll,m1:m2,nn,iux) = -1./&
-       !   (2.*rho0(m1:m2,nn)*cs0_ar(m1:m2,nn))*(L_5(:,nnn) - L_1(:,nnn)) -M_2(:,i)
-       !  df(lll,m1:m2,nn,iuy) = -L_3(:,nnn)-1./&
-       !   (2.*rho0(m1:m2,nn)*cs0_ar(m1:m2,nn))*(M_5(:,i) - M_1(:,i))
-       !  df(lll,m1:m2,nn,iuz) =  -L_4(:,nnn) - M_4(:,i)
-       !  df(lll,m1:m2,nn,ilnTT) = drho_prefac(:,nnn)*(-L_2(:,nnn) &
-       !   + 0.5*(gamma0(m1:m2,nn)-1.)*(L_5(:,nnn)+L_1(:,nnn))) &
-       !   + drho_prefac(:,nnn)*(-M_3(:,i) &
-       !  + 0.5*(gamma0(m1:m2,nn)-1.)*(M_5(:,i)+M_1(:,i))) 
+         df(lll,m1:m2,nn,irho_tmp) =  &
+            drho_prefac(:,nnn)*(L_2(:,nnn)+0.5*(L_5(:,nnn) + L_1(:,nnn))) &
+          + drho_prefac(:,nnn)*(M_3(:,i)+0.5*(M_5(:,i) + M_1(:,i)))
+         df(lll,m1:m2,nn,iux) = -1./&
+          (2.*rho0(m1:m2,nn)*cs0_ar(m1:m2,nn))*(L_5(:,nnn) - L_1(:,nnn)) -M_2(:,i)
+         df(lll,m1:m2,nn,iuy) = -L_3(:,nnn)-1./&
+          (2.*rho0(m1:m2,nn)*cs0_ar(m1:m2,nn))*(M_5(:,i) - M_1(:,i))
+         df(lll,m1:m2,nn,iuz) =  -L_4(:,nnn) - M_4(:,i)
+        df(lll,m1:m2,nn,ilnTT) = drho_prefac(:,nnn)*(-L_2(:,nnn) &
+         + 0.5*(gamma0(m1:m2,nn)-1.)*(L_5(:,nnn)+L_1(:,nnn))) &
+         + drho_prefac(:,nnn)*(-M_3(:,i) &
+         + 0.5*(gamma0(m1:m2,nn)-1.)*(M_5(:,i)+M_1(:,i))) 
        enddo
     
     endif
@@ -4839,16 +4839,16 @@ endif
       
          df(l1:l2,mmm,nn,irho_tmp) = &
            drho_prefac(:,nnn)*(L_2(:,i)+0.5*(L_5(:,i) + L_1(:,i))) &
-         + drho_prefac(:,nnn)*(M_3(:,nnn)+0.5*(M_5(:,nnn) + M_1(:,nnn)))
+         + drho_prefac(:,nnn)*(M_2(:,nnn)+0.5*(M_5(:,nnn) + M_1(:,nnn)))
          df(l1:l2,mmm,nn,iux) =  -1./&
-         (2.*rho0(l1:l2,nn)*cs0_ar(l1:l2,nn))*(L_5(:,i) - L_1(:,i))-M_2(:,nnn)
-        df(l1:l2,mmm,nn,iuy) =  - L_3(:,i) - 1./&
+        (2.*rho0(l1:l2,nn)*cs0_ar(l1:l2,nn))*(L_5(:,i) - L_1(:,i))-M_3(:,nnn)
+       df(l1:l2,mmm,nn,iuy) =  - L_3(:,i) - 1./&
           (2.*rho0(l1:l2,nn)*cs0_ar(l1:l2,nn))*(M_5(:,nnn) - M_1(:,nnn))
-         df(l1:l2,mmm,nn,iuz) =  - L_4(:,i) - M_4(:,nnn)
-        df(l1:l2,mmm,nn,ilnTT) = &
-          drho_prefac(:,nnn)*(-L_2(:,i) &
+        df(l1:l2,mmm,nn,iuz) =  - L_4(:,i) - M_4(:,nnn)
+       df(l1:l2,mmm,nn,ilnTT) = &
+         drho_prefac(:,nnn)*(-L_2(:,i) &
            +0.5*(gamma0(l1:l2,nn)-1.)*(L_5(:,i)+L_1(:,i)))  &
-           +drho_prefac(:,nnn)*(-M_3(:,nnn) &
+          +drho_prefac(:,nnn)*(-M_2(:,nnn) &
            +0.5*(gamma0(l1:l2,nn)-1.)*(M_5(:,nnn)+M_1(:,nnn))) 
       enddo
 
