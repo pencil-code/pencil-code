@@ -1,5 +1,3 @@
-NSCBC.f90:      character (len=120) :: directory_in=''
-NSCBC.f90:      character (len=5) :: chproc_in=''
 boundcond.f90:      integer :: l1_4=l1+4, l1_5=l1+5, l1_6=l1+6
 boundcond.f90:      integer :: l2_4=l2-4, l2_5=l2-5, l2_6=l2-6
 boundcond.f90:      real :: width_hat=0.01

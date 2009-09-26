@@ -123,17 +123,14 @@ namelist /NSCBC_run_pars/  &
       real, dimension(mcom) :: valx,valy,valz
       logical :: proc_at_inlet
       integer :: ipx_in, ipy_in, ipz_in, iproc_in, nprocx_in, nprocy_in, nprocz_in
-      character (len=120) :: directory_in=''
-      character (len=5) :: chproc_in=''
+      character (len=120) :: directory_in
+      character (len=5) :: chproc_in
 
       intent(inout) :: f
       intent(inout) :: df
       intent(in)    :: j
 !
       proc_at_inlet=.false.
-
-
-
 !
       do k=1,2                ! loop over 'bot','top'
         if (k==1) then
