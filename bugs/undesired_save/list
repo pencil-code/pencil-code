@@ -1,8 +1,4 @@
-boundcond.f90:      integer :: l1_4=l1+4, l1_5=l1+5, l1_6=l1+6
-boundcond.f90:      integer :: l2_4=l2-4, l2_5=l2-5, l2_6=l2-6
-boundcond.f90:      real :: width_hat=0.01
-boundcond.f90:      real, dimension (mx,my) :: Nyquist=impossible
-boundcond.f90:       integer :: lend,iostat=0,i=0,j
+boundcond.f90:      integer :: lend,iostat=0,i,j
 chemistry.f90:      character (len=20) :: input_file='chem.inp'
 chemistry.f90:      logical :: data_file_exit=.false.
 chemistry.f90:      character (len=15) :: file1='chemistry_m.dat',file2='chemistry_p.dat'
