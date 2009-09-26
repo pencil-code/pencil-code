@@ -19,11 +19,11 @@
 !
       integer :: it
       integer :: lun0,lun1,lun2
-      logical :: eof=.false.
+      logical :: eof
       real :: t,fac1,fac2,maxval1,maxval2
 !
-      character (len=120) :: dir='',wfile='',rfile1='',rfile2=''
-      character (len=20) :: field='Jrad'
+      character (len=120) :: dir,wfile,rfile1,rfile2
+      character (len=20), parameter :: field='Jrad'
 !
 !  read name of the field (must coincide with file extension)
 !
@@ -132,7 +132,8 @@ print*,'maxval2=',maxval2
       character (len=*) :: file
       real, dimension (ndim1,ndim2) :: a
       integer :: it,lun
-      real :: t, pos=0.
+      real :: t
+      real, parameter :: pos=0.
 !
       if (it==1) open(lun,file=file,form='unformatted')
       write(lun) a,t,pos
