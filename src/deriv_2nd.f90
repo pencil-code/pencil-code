@@ -258,7 +258,7 @@ module Deriv
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df2,fac,df
-real :: der2_coef0=-2., der2_coef1=1.
+      real, parameter :: der2_coef0=-2., der2_coef1=1.
       integer :: j,k
 !
       intent(in)  :: f,k,j
