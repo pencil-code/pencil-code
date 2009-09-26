@@ -515,9 +515,6 @@ module Boundcond
               case ('a2')
                 ! BCZ_DOC: antisymmetry relative to boundary value
                 call bc_sym_z(f,-1,topbot,j,REL=.true.)
-              case ('a3')
-                ! BCZ_DOC: a2 - wiggles
-                call bc_asym3(f,topbot,j)
               case ('v')
                 ! BCZ_DOC: vanishing third derivative
                 call bc_van_z(f,topbot,j)
@@ -1907,50 +1904,6 @@ module Boundcond
     endselect
 
     endsubroutine bc_van3rd_z
-!***********************************************************************
-    subroutine bc_asym3(f,topbot,j)
-!
-!  Generalized antisymmetric bc (a al `a2') with removal of Nyquist wiggles
-!  Does not seem to help against wiggles -- use upwinding instead
-!
-!  TEMPORARY HACK: Commented out calculation of Nyquist, as this creates
-!  problems for some 2D runs and this boundary condition was not really
-!  helpful so far. Will either have to find a better solution or remove
-!  this altogether. wd, 21-jun-2003
-!
-!  17-jun-03/wolf: coded
-!
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my) :: Nyquist=impossible
-      integer :: j
-!
-      select case(topbot)
-
-      case('bot')               ! bottom boundary
-        ! Nyquist = 0.25*(f(:,:,n1,j)-2*f(:,:,n1+1,j)+f(:,:,n1+2,j))
-        ! Nyquist = 0.0625*(     f(:,:,n1  ,j)+f(:,:,n1+4,j) &
-        !                   - 4*(f(:,:,n1+1,j)+f(:,:,n1+3,j)) &
-        !                   + 6* f(:,:,n1+2,j) )
-        f(:,:,n1-1,j) = 2*f(:,:,n1,j) - f(:,:,n1+1,j) -4*Nyquist
-        f(:,:,n1-2,j) = 2*f(:,:,n1,j) - f(:,:,n1+2,j)
-        f(:,:,n1-3,j) = 2*f(:,:,n1,j) - f(:,:,n1+3,j) -4*Nyquist
-
-      case('top')               ! top boundary
-        ! Nyquist = 0.25*(f(:,:,n2,j)-2*f(:,:,n2-1,j)+f(:,:,n2-2,j))
-        ! Nyquist = 0.0625*(     f(:,:,n2  ,j)+f(:,:,n2-4,j) &
-        !                   - 4*(f(:,:,n2-1,j)+f(:,:,n2-3,j)) &
-        !                   + 6* f(:,:,n2-2,j) )
-        f(:,:,n2+1,j) = 2*f(:,:,n2,j) - f(:,:,n2-1,j) -4*Nyquist
-        f(:,:,n2+2,j) = 2*f(:,:,n2,j) - f(:,:,n2-2,j)
-        f(:,:,n2+3,j) = 2*f(:,:,n2,j) - f(:,:,n2-3,j) -4*Nyquist
-
-      case default
-        print*, "bc_asym3: ", topbot, " should be `top' or `bot'"
-
-      endselect
-!
-    endsubroutine bc_asym3
 !***********************************************************************
     subroutine bc_onesided_x(f,topbot,j)
 !
