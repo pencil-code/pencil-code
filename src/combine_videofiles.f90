@@ -17,7 +17,7 @@
       real, dimension (nxgrid,nzgrid) :: xz,xz1,xz2
       real, dimension (nygrid,nzgrid) :: yz,yz1,yz2
 !
-      integer :: it,nt=999999
+      integer :: it
       integer :: lun0,lun1,lun2
       logical :: eof=.false.
       real :: t,fac1,fac2,maxval1,maxval2
@@ -33,11 +33,14 @@
 !
       dir='data/slice_'
       dir='data/proc0/slice_'
+      eof=.false.
 !
 !  loop through all times and convert xy, xz, and yz files
 !  reset the lun to 10 every time. This guarantees unique luns every time round
 !
-      do it=1,nt
+      it=0
+      do while (.true.)
+        it=it + 1
         lun0=0
         lun1=10
         lun2=20
