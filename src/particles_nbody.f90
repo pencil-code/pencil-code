@@ -344,13 +344,14 @@ module Particles_nbody
 !
 !  Initialize particles' positions and velocities
 !
-!  FIXME: in samples/most-modules, for some reason we have mspar=0, but
-!  nspar=2, so the following assignments need to be wrapped into an if
-!  block:
-!
       if (mspar < nspar) then
         call warning("init_particles_nbody", 'mspar < nspar:')
         print*, 'mspar = ', mspar, ', nspar = ', nspar
+        print*, 'nspar is the number of allocated n-body particles'
+        print*, 'mspar is the number of those particles with' 
+        print*, ' non-zero mass in this processor.'
+        print*, ''
+        print*, 'you should set pmass to non-zero values in start.in'
       endif
       if (mspar > 0) then
         position(1:nspar,1) = xsp0 ;
