@@ -344,8 +344,22 @@ module Particles_nbody
 !
 !  Initialize particles' positions and velocities
 !
-      position(:,1) = xsp0 ; position(:,2) = ysp0 ; position(:,3) = zsp0
-      velocity(:,1) = vspx0; velocity(:,2) = vspy0; velocity(:,3) = vspz0
+!  FIXME: in samples/most-modules, for some reason we have mspar=0, but
+!  nspar=2, so the following assignments need to be wrapped into an if
+!  block:
+!
+      if (mspar < nspar) then
+        call warning("init_particles_nbody", 'mspar < nspar:')
+        print*, 'mspar = ', mspar, ', nspar = ', nspar
+      endif
+      if (mspar > 0) then
+        position(1:nspar,1) = xsp0 ;
+        position(:,2) = ysp0 ;
+        position(:,3) = zsp0
+        velocity(:,1) = vspx0;
+        velocity(:,2) = vspy0;
+        velocity(:,3) = vspz0
+      endif
 !
       select case(initxxsp)
 
