@@ -1518,9 +1518,11 @@ module Boundcond
           "there was a problem when getting llambda_effect")      
       if (llambda_effect) then 
       call get_shared_variable('Lambda_V0',Lambda_V0,ierr)
+      if (ierr/=0) call stop_it("bc_set_sfree_x: " &
+          // "problem getting shared var Lambda_V0")      
       call get_shared_variable('Lambda_Omega',Lambda_Omega,ierr)
-      if (ierr/=0) call stop_it("bc_set_sfree_x: "//&
-          "there was a problem when getting Lambda_V0 or Lambda_Omega")      
+      if (ierr/=0) call stop_it("bc_set_sfree_x: " &
+          // "problem getting shared var Lambda_Omega")      
       else
       endif
 !

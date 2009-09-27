@@ -311,6 +311,9 @@ module Viscosity
       call put_shared_variable('Lambda_V0',Lambda_V0,ierr)
       call put_shared_variable('Lambda_Omega',Lambda_Omega,ierr)
       call get_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
+      if (ierr/=0) call stop_it("initialize_viscosity: " &
+          // "problem getting shared var lviscosity_heat")
+
 !
       call keep_compiler_quiet(lstarting)
 !

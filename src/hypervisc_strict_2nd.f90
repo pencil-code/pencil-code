@@ -111,7 +111,10 @@ module Hypervisc_strict
 !  For constant nu we also need the term [2*nu*S^3].grad(lnrho).
 !
       if (lfirstcall) then
-        call get_shared_variable('lvisc_hyper3_nu_const_strict',lvisc_hyper3_nu_const_strict,ierr)
+        call get_shared_variable('lvisc_hyper3_nu_const_strict', &
+            lvisc_hyper3_nu_const_strict,ierr)
+        if (ierr/=0) call stop_it("hyperviscosity_strict: "//&
+            "problem getting shared varable lvisc_hyper3_nu_const_strict")
         if (ip<10) &
             print*, 'hyperviscosity_strict: lvisc_hyper3_nu_const_strict=', &
             lvisc_hyper3_nu_const_strict
