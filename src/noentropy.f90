@@ -31,6 +31,7 @@ module Entropy
   logical :: lmultilayer=.true.
   logical :: lheatc_chiconst=.false.
   logical, pointer :: lpressuregradient_gas ! Shared with Hydro module.
+  logical :: lviscosity_heat=.false.
 
   integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
                                 ! DIAG_DOC:   /\max c_{\rm s}]$
@@ -77,9 +78,12 @@ module Entropy
 !
       use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, &
                                  cs0, select_eos_variable,gamma_m1
+      use Mpicomm, only: stop_it
+      use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
+      integer :: ierr
 !
 !  Tell the equation of state that we're here and what f variable we use
 !
@@ -101,6 +105,10 @@ module Entropy
         if (lroot) print*, 'initialize_entropy: Global density gradient '// &
             'with beta_glnrho_global=', beta_glnrho_global
       endif
+!
+      call put_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
+      if (ierr/=0) call stop_it("initialize_entropy: "//&
+           "there was a problem when putting lviscosity_heat")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
