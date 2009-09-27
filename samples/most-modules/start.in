@@ -34,4 +34,6 @@
 &particles_radius_init_pars    /
 &particles_number_init_pars    /
 &particles_selfgrav_init_pars  /
-&particles_nbody_init_pars     /
+&particles_nbody_init_pars     
+pmass=1.,1.
+/
