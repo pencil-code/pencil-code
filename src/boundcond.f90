@@ -934,10 +934,13 @@ module Boundcond
       real, dimension (mcom) :: slope
       integer :: i,j
       ! Abbreviations to keep compiler from complaining in 1-d or 2-d:
-      integer, parameter :: l1_4=l1+4, l1_5=l1+5, l1_6=l1+6
-      integer, parameter :: l2_4=l2-4, l2_5=l2-5, l2_6=l2-6
+      integer :: l1_4, l1_5, l1_6
+      integer :: l2_4, l2_5, l2_6
       logical, optional :: rel
       logical :: relative
+!
+      l1_4=l1+4; l1_5=l1+5; l1_6=l1+6
+      l2_4=l2-4; l2_5=l2-5; l2_6=l2-6
 !
       if (present(rel)) then; relative=rel; else; relative=.false.; endif
 
