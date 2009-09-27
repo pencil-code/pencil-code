@@ -763,6 +763,7 @@ module Magnetic
 !  if meanfield theory is invoked, we want to send meanfield_etat to
 !  other subroutines
 !
+      call put_shared_variable('lmeanfield_theory',lmeanfield_theory,ierr)
       if (lmeanfield_theory) then
         call put_shared_variable('meanfield_etat',meanfield_etat,ierr)
         call put_shared_variable('eta',eta,ierr)
