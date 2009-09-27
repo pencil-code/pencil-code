@@ -1597,7 +1597,7 @@ module EquationOfState
       call get_shared_variable('Fbot',Fbot,ierr)
       if (ierr/=0) call stop_it("bc_ss_flux: "//&
            "there was a problem when getting Fbot")
-           call get_shared_variable('Ftop',Ftop,ierr)
+      call get_shared_variable('Ftop',Ftop,ierr)
       if (ierr/=0) call stop_it("bc_ss_flux: "//&
            "there was a problem when getting Ftop")
       call get_shared_variable('FbotKbot',FbotKbot,ierr)
@@ -1726,7 +1726,7 @@ module EquationOfState
       call get_shared_variable('Fbot',Fbot,ierr)
       if (ierr/=0) call stop_it("bc_ss_flux: "//&
            "there was a problem when getting Fbot")
-           call get_shared_variable('Ftop',Ftop,ierr)
+      call get_shared_variable('Ftop',Ftop,ierr)
       if (ierr/=0) call stop_it("bc_ss_flux: "//&
            "there was a problem when getting Ftop")
       call get_shared_variable('FbotKbot',FbotKbot,ierr)
@@ -1899,7 +1899,7 @@ module EquationOfState
       call get_shared_variable('Fbot',Fbot,ierr)
       if (ierr/=0) call stop_it("bc_ss_flux: "//&
            "there was a problem when getting Fbot")
-           call get_shared_variable('Ftop',Ftop,ierr)
+      call get_shared_variable('Ftop',Ftop,ierr)
       if (ierr/=0) call stop_it("bc_ss_flux: "//&
            "there was a problem when getting Ftop")
       call get_shared_variable('FbotKbot',FbotKbot,ierr)
@@ -2018,7 +2018,7 @@ module EquationOfState
       call get_shared_variable('Fbot',Fbot,ierr)
       if (ierr/=0) call stop_it("bc_ss_flux: "//&
            "there was a problem when getting Fbot")
-           call get_shared_variable('Ftop',Ftop,ierr)
+      call get_shared_variable('Ftop',Ftop,ierr)
       if (ierr/=0) call stop_it("bc_ss_flux: "//&
            "there was a problem when getting Ftop")
       call get_shared_variable('FbotKbot',FbotKbot,ierr)

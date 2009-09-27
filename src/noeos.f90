@@ -562,8 +562,8 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       use Gravity
-      use SharedVariables,only:get_shared_variable
-      use Mpicomm,        only:stop_it
+      use SharedVariables,only: get_shared_variable
+      use Mpicomm,        only: stop_it
 !
       real, pointer :: Fbot,Ftop,FtopKtop,FbotKbot,hcond0,hcond1,chi
       logical, pointer :: lmultilayer, lheatc_chiconst
@@ -591,7 +591,7 @@ module EquationOfState
       call get_shared_variable('Fbot',Fbot,ierr)
       if (ierr/=0) call stop_it("bc_ss_flux: "//&
            "there was a problem when getting Fbot")
-           call get_shared_variable('Ftop',Ftop,ierr)
+      call get_shared_variable('Ftop',Ftop,ierr)
       if (ierr/=0) call stop_it("bc_ss_flux: "//&
            "there was a problem when getting Ftop")
       call get_shared_variable('FbotKbot',FbotKbot,ierr)
