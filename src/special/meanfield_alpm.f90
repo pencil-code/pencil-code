@@ -186,7 +186,12 @@ module Special
 !  get meanfield_etat and eta
 !
       call get_shared_variable('meanfield_etat',meanfield_etat,ierr)
+      if (ierr/=0) &
+          call fatal_error("dspecial_dt: ", &
+              "cannot get shared var meanfield_etat")
       call get_shared_variable('eta',eta,ierr)
+      if (ierr/=0) &
+          call fatal_error("dspecial_dt: ", "cannot get shared var eta")
 !
 !  dynamical quenching equation
 !  with advection flux proportional to uu
