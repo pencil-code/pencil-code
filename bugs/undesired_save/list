@@ -43,9 +43,6 @@ chemistry.f90:      real :: YY_k, air_mass, TT=300., PP=10.13e4
 density.f90:      integer :: j,nxy=nxgrid*nygrid,nl,ml
 eos_chemistry.f90:      integer :: this_var=0
 eos_temperature_ionization.f90:      real :: ss_offset=0.
-fourier_fftpack.f90:      logical :: lforward,lnormalize,err,lfirstcall=.true.
-fourier_fftpack.f90:      integer :: ipy_send, itag1=100, itag2=200
-fourier_fftpack.f90:      integer :: itag=666
 general.f90:      integer :: k,init1=1812   ! default value
 general.f90:      real :: fac=0.1666666
 ghostfold_mpicomm.f90:      integer :: itag1=10, itag2=11, itag3=12, itag4=13, itag5=14, itag6=15

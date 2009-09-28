@@ -459,7 +459,8 @@ module Fourier
       complex,dimension(nygrid)    :: ay
       real    :: dnx
       integer :: l,n,iarr,ix,ido,iup,i
-      logical :: lforward,lnormalize,err,lfirstcall=.true.
+      logical :: lforward,lnormalize,err
+      logical, save :: lfirstcall=.true.
       logical, optional :: linv
       logical, optional :: lnorm
 !
@@ -1332,7 +1333,8 @@ module Fourier
       real, dimension(nygrid) :: a_re_full, a_im_full
       complex, dimension(nygrid) :: ay
       real, dimension(4*nygrid+15) :: wsavey
-      integer :: ipy_send, itag1=100, itag2=200
+      integer :: ipy_send
+      integer, parameter :: itag1=100, itag2=200
       logical :: lforward
 !
       lforward=.true.
@@ -1456,7 +1458,7 @@ module Fourier
       complex, dimension(nygrid) :: a_cmplx, cmplx_shift
       real, dimension(nygrid,max(nz/nprocy,1)) :: a_re_new, a_im_new
       integer :: n, nz_new, ipy_from, ipy_to, iproc_from, iproc_to
-      integer :: itag=666
+      integer, parameter :: itag=666
 !
 !  Fourier transform of the subdivided y-interval is done by collecting
 !  pencils of length nygrid at each processor. Consider the processor space
