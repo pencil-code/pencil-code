@@ -42,11 +42,6 @@ chemistry.f90:      integer :: VarNumber,i,j,k=1
 chemistry.f90:      real :: YY_k, air_mass, TT=300., PP=10.13e4
 density.f90:      integer :: j,nxy=nxgrid*nygrid,nl,ml
 eos_chemistry.f90:      integer :: this_var=0
-eos_idealgas.f90:      real :: Rgas_unit_sys=1., cp_reference
-eos_idealgas.f90:      integer :: this_var=0
-eos_idealgas.f90:      integer :: i,ierr,iter,niter=4,j,k
-eos_idealgas.f90:      integer :: i,ierr,iter,niter=4,j,k
-eos_idealgas.f90:      integer :: i,ierr,iter,niter=4,j,k
 eos_temperature_ionization.f90:      real :: ss_offset=0.
 forcing.f90:      real :: kx0,kx,ky,kz,k2,k,force_ampl=1.,pi_over_Lx=.5
 forcing.f90:      real :: ex,ey,ez,kde,sig=1.,fact,kex,key,kez,kkex,kkey,kkez

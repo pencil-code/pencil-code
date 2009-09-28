@@ -130,7 +130,7 @@ module EquationOfState
       use Mpicomm, only: stop_it
       use Sub, only: erfunc
 !
-      real :: Rgas_unit_sys=1., cp_reference
+      real :: Rgas_unit_sys, cp_reference
 !
 !  set gamma_m1, cs20, and lnrho0
 !  (used currently for non-dimensional equation of state)
@@ -267,7 +267,7 @@ module EquationOfState
 
       character (len=*), intent(in) :: variable
       integer, intent(in) :: findex
-      integer :: this_var=0
+      integer :: this_var
       integer, save :: ieosvar_selected=0
       integer, parameter :: ieosvar_lnrho = 2**0
       integer, parameter :: ieosvar_rho   = 2**1
@@ -1708,7 +1708,8 @@ module EquationOfState
       real, dimension (mx,my) :: tmp_xy,cs2_xy,rho_xy,lnrho_xy,ss_xy
       real, dimension (mx,my) :: cs2_xy1,cs2_xy2,T_xy,T_xy1,T_xy2,Told4
       real :: eps
-      integer :: i,ierr,iter,niter=4,j,k
+      integer :: i,ierr,iter,j,k
+      integer,parameter :: niter=4
 !
       if (ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
 !
@@ -1881,7 +1882,7 @@ module EquationOfState
       real, dimension (mx,my) :: tmp_xy,cs2_xy,rho_xy,lnrho_xy,ss_xy
       real, dimension (mx,my) :: cs2_xy1,cs2_xy2,T_xy,T_xy1,T_xy2,Told4
       real :: eps
-      integer :: i,ierr,iter,niter=4,j,k
+      integer :: i,ierr,iter,j,k
 !
       if (ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
 !
@@ -2000,7 +2001,7 @@ module EquationOfState
       real, dimension (mx,my) :: tmp_xy,cs2_xy,rho_xy,lnrho_xy,ss_xy
       real, dimension (mx,my) :: cs2_xy1,cs2_xy2,T_xy,T_xy1,T_xy2,Told4
       real :: eps
-      integer :: i,ierr,iter,niter=4,j,k
+      integer :: i,ierr,iter,j,k
 !
       if (ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
 !
