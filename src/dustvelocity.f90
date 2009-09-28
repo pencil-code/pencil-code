@@ -147,7 +147,7 @@ module Dustvelocity
       use EquationOfState, only: cs0
 !
       integer :: k
-      real :: gsurften=0.,Eyoung=1.,nu_Poisson=0.,Eyoungred=1.
+      real :: gsurften,Eyoung,nu_Poisson,Eyoungred
 !
 !  Output grain mass discretization type
 !
@@ -188,6 +188,10 @@ module Dustvelocity
         select case (dust_chemistry)
 
         case ('nothing')
+          gsurften   = 0.
+          Eyoung     = 1.
+          nu_Poisson = 0.
+          Eyoungred  = 1.
           unit_md = 1.
           mumon   = 1.
           mmon    = 1.

@@ -257,12 +257,13 @@ module Dustdensity
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real, dimension (nx) :: eps
-      real :: lnrho_z,Hrho,rho00,rhod00,mdpeak,rhodmt=0.
+      real :: lnrho_z,Hrho,rho00,rhod00,mdpeak,rhodmt
       integer :: j,k,l
       logical :: lnothing
 !
 !  different initializations of nd (called from start).
 !
+      rhodmt=0.
       lnothing=.false.
       do j=1,ninit
         select case(initnd(j))
