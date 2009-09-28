@@ -254,7 +254,7 @@ module Entropy
       logical :: lstarting
 !
       real, dimension (nx,3) :: glhc
-      real, dimension (nx) :: hcond=0.
+      real, dimension (nx) :: hcond
       real :: beta1, cp1, beta0, TT_crit
       integer :: i, ierr, q
       logical :: lnothing,lcompute_grav
@@ -263,7 +263,8 @@ module Entropy
 ! Check any module dependencies
 !
       if (.not. leos) then
-        call fatal_error('initialize_entropy','EOS=noeos but entropy requires an EQUATION OF STATE for the fluid')
+        call fatal_error('initialize_entropy', &
+            'EOS=noeos but entropy requires an EQUATION OF STATE for the fluid')
       endif
 !
 ! Tell the equation of state that we're here and what f variable we use
@@ -278,6 +279,7 @@ module Entropy
 !
 !  radiative diffusion: initialize flux etc
 !
+        hcond = 0.
       !
       !  Kbot and hcond0 are used interchangibly, so if one is
       !  =impossible, set it to the other's value
@@ -293,7 +295,8 @@ module Entropy
         if (Kbot == impossible) then
           Kbot = hcond0
         else
-          call warning('initialize_entropy','You should not set Kbot and hcond0 at the same time')
+          call warning('initialize_entropy', &
+              'You should not set Kbot and hcond0 at the same time')
         endif
       endif
 !
@@ -304,7 +307,9 @@ module Entropy
         hcond0=-mixinglength_flux/(gamma/(gamma-1.)*gravz/(mpoly0+1.))
         Kbot=hcond0
         lmultilayer=.true.  ! just to be sure...
-        if (lroot) print*,'initialize_entropy: hcond0 given by mixinglength_flux=',hcond0
+        if (lroot) print*, &
+            'initialize_entropy: hcond0 given by mixinglength_flux=', &
+            hcond0
       endif
 !
 !  freeze entroopy
@@ -580,7 +585,8 @@ module Entropy
         call warning('initialize_entropy','chi and chi_t are zero!')
       endif
       if (all(iheatcond=='nothing') .and. hcond0/=0.0) then
-        call warning('initialize_entropy', 'No heat conduction, but hcond0 /= 0')
+        call warning('initialize_entropy', &
+            'No heat conduction, but hcond0 /= 0')
       endif
       if (lheatc_Kconst .and. Kbot==0.0) then
         call warning('initialize_entropy','Kbot is zero!')
@@ -1086,14 +1092,26 @@ module Entropy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, optional :: xblob,yblob,zblob
-      real :: ampl,radius,x01=0.,y01=0.,z01=0.
+      real :: ampl,radius,x01,y01,z01
       integer :: i
 !
 !  single  blob
 !
-      if (present(xblob)) x01=xblob
-      if (present(yblob)) y01=yblob
-      if (present(zblob)) z01=zblob
+      if (present(xblob)) then
+        x01 = xblob
+      else
+        x01 = 0.0
+      endif
+      if (present(yblob)) then
+        y01 = yblob
+      else
+        y01 = 0.0
+      endif
+      if (present(zblob)) then
+        z01 = zblob
+      else
+        z01 = 0.0
+      endif
       if (ampl==0) then
         if (lroot) print*,'ampl=0 in blob_radeq'
       else
@@ -1472,7 +1490,7 @@ module Entropy
 !
       real, dimension (nx), intent(out) :: pert_TT
       real, dimension (nx) :: xr,cos_4phi,sin_theta4,r_mn,rcyl_mn,phi_mn
-      real :: ampl0=.885065
+      real, parameter :: ampl0=.885065
 !
       select case(initss(1))
 !
@@ -2045,12 +2063,14 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: Hmax=0.
+      real, dimension (nx) :: Hmax
       real :: ztop,xi,profile_cor,uT,fradz,TTtop
       integer :: j,ju
 !
       intent(inout)  :: f,p
       intent(out) :: df
+!
+      Hmax = 0.
 !
 !  Identify module and boundary conditions.
 !
@@ -2840,9 +2860,9 @@ module Entropy
       real, dimension (nx) :: chix
       real, dimension (nx) :: thdiff,g2
       real, dimension (nx) :: hcond,chit_prof
-      real :: z_prev=-1.23e20
+      real, save :: z_prev=-1.23e20
 !
-      save :: z_prev, hcond, glhc, chit_prof, glchit_prof
+      save :: hcond, glhc, chit_prof, glchit_prof
 !
       intent(in) :: p
       intent(out) :: df
