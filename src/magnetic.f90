@@ -1715,7 +1715,7 @@ module Magnetic
             !call multsv_mn(meanfield_Qs_func-meanfield_Qp_func-p%b2*meanfield_Qp_der,Bk_Bki,p%jxb,ladd=.true.)
             call multsv_mn_add(meanfield_Qs_func-meanfield_Qp_func-p%b2*meanfield_Qp_der,Bk_Bki,p%jxb)
             call dot(Bk_Bki,p%bb,BiBk_Bki)
-            call multsv_mn_add(2*meanfield_Qp_der*BiBk_Bki,p%bb,p%jxb)
+            call multsv_mn_add(2*meanfield_Qs_der*BiBk_Bki,p%bb,p%jxb)
           endif
         endif
         call multsv_mn(rho1_jxb,p%jxb,p%jxbr)
