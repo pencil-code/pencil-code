@@ -41,9 +41,6 @@ chemistry.f90:      integer :: file_id=123, ind_glob, ind_chem
 chemistry.f90:      integer :: VarNumber,i,j,k=1
 chemistry.f90:      real :: YY_k, air_mass, TT=300., PP=10.13e4
 density.f90:      integer :: j,nxy=nxgrid*nygrid,nl,ml
-entropy_onefluid.f90:      logical :: lnothing=.true.
-entropy_onefluid.f90:      real, dimension (nx) :: Hmax=0.0
-entropy_onefluid.f90:      real :: z_prev=-1.23e20
 eos_chemistry.f90:      integer :: this_var=0
 eos_idealgas.f90:      real :: Rgas_unit_sys=1., cp_reference
 eos_idealgas.f90:      integer :: this_var=0

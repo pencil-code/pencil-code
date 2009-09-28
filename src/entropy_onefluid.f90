@@ -250,10 +250,11 @@ module Entropy
       real, dimension (mx,my,mz,mfarray) :: f
 !
       integer :: j
-      logical :: lnothing=.true.
+      logical :: lnothing
 !
       intent(inout) :: f
 !
+      lnothing=.true.
       do j=1,ninit
 !
         if (initss(j)/='nothing') then
@@ -503,11 +504,13 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: Hmax=0.0
+      real, dimension (nx) :: Hmax
       integer :: j,ju
 !
       intent(inout)  :: f,p
       intent(out) :: df
+!
+      Hmax = 0.0
 !
 !  Identify module and boundary conditions.
 !
@@ -816,9 +819,9 @@ module Entropy
       real, dimension (nx) :: chix
       real, dimension (nx) :: thdiff,g2
       real, dimension (nx) :: hcond,chit_prof
-      real :: z_prev=-1.23e20
+      real, save :: z_prev=-1.23e20
 !
-      save :: z_prev,hcond,glhc
+      save :: hcond,glhc
 !
       intent(in) :: f,p
       intent(out) :: df
