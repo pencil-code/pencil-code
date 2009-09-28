@@ -41,8 +41,6 @@ chemistry.f90:      integer :: file_id=123, ind_glob, ind_chem
 chemistry.f90:      integer :: VarNumber,i,j,k=1
 chemistry.f90:      real :: YY_k, air_mass, TT=300., PP=10.13e4
 density.f90:      integer :: j,nxy=nxgrid*nygrid,nl,ml
-diagnostics.f90:      character (len=1) :: comma=','
-diagnostics.f90:      real :: ppart=1.,qpart=0.
 dustdensity.f90:      real :: lnrho_z,Hrho,rho00,rhod00,mdpeak,rhodmt=0.
 dustvelocity.f90:      real :: gsurften=0.,Eyoung=1.,nu_Poisson=0.,Eyoungred=1.
 entropy.f90:      real, dimension (nx) :: hcond=0.

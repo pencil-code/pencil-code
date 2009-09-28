@@ -95,7 +95,7 @@ module Diagnostics
 !
       logical,save :: first=.true.
       character (len=640) :: fform,legend,line
-      character (len=1) :: comma=','
+      character (len=1), parameter :: comma=','
       integer :: iname,index_d,index_a
 !
 !  Add general (not module-specific) quantities for diagnostic output. If the
@@ -958,7 +958,7 @@ module Diagnostics
 !    Done here, but not yet in all other routines
 !
       real, dimension (nx) :: a
-      real :: ppart=1.,qpart=0.
+      real :: ppart,qpart
       integer :: iname,isum
       integer, optional :: ipart
       logical, optional :: lsqrt, lint
