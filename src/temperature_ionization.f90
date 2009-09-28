@@ -35,6 +35,7 @@ module Entropy
   real :: zbot=0.0,ztop=0.0
   real :: tau_heat_cor=-1.0,tau_damp_cor=-1.0,zcor=0.0,TT_cor=0.0
   logical :: lpressuregradient_gas=.true.,ladvection_temperature=.true.
+  logical :: lviscosity_heat=.false.
   logical :: lupw_lnTT=.false.,lcalc_heat_cool=.false.
   logical :: lheatc_chiconst=.false.,lheatc_chiconst_accurate=.false.
   logical :: lheatc_hyper3=.false.
@@ -102,8 +103,12 @@ module Entropy
 !
 !  21-jul-2002/wolf: coded
 !
+      use Mpicomm, only: stop_it
+      use SharedVariables, only: put_shared_variable
+!
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
+      integer :: ierr
 !
 !  Check any module dependencies
 !
@@ -129,7 +134,13 @@ module Entropy
 !
       lheatc_chiconst = (chi > tiny(chi))
       lheatc_hyper3 = (chi_hyper3 > tiny(chi_hyper3))
-
+!
+!  put lviscosity_heat as shared variable for viscosity module
+!
+      call put_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
+      if (ierr/=0) call stop_it("initialize_entropy: "//&
+           "there was a problem when putting lviscosity_heat")
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
