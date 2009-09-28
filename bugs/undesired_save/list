@@ -43,15 +43,6 @@ chemistry.f90:      real :: YY_k, air_mass, TT=300., PP=10.13e4
 density.f90:      integer :: j,nxy=nxgrid*nygrid,nl,ml
 eos_chemistry.f90:      integer :: this_var=0
 eos_temperature_ionization.f90:      real :: ss_offset=0.
-forcing.f90:      real :: kx0,kx,ky,kz,k2,k,force_ampl=1.,pi_over_Lx=.5
-forcing.f90:      real :: ex,ey,ez,kde,sig=1.,fact,kex,key,kez,kkex,kkey,kkez
-forcing.f90:      real :: norm,phi,pi_over_Lx=0.5
-forcing.f90:      real :: k2,k,ex,ey,ez,kde,sig=1.,fact
-forcing.f90:      real, dimension (mz) :: sz,cz,tmpz,gz,gg,ss=1.,gz1
-forcing.f90:      real, dimension (mz) :: sz,cz,tmpz,gz,gg,ss=1.,gz1
-forcing.f90:      real :: mulforce_vec=1.,irufm
-forcing.f90:      real :: kx0,kx,ky,kz,k2,k,force_ampl=1.
-forcing.f90:      real :: ex,ey,ez,kde,sig=1.,fact,kex,key,kez,kkex,kkey,kkez
 fourier_fftpack.f90:      logical :: lforward,lnormalize,err,lfirstcall=.true.
 fourier_fftpack.f90:      integer :: ipy_send, itag1=100, itag2=200
 fourier_fftpack.f90:      integer :: itag=666

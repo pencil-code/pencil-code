@@ -462,8 +462,8 @@ module Forcing
       integer, dimension(mk), save :: kkx,kky,kkz
       integer, save :: ifirst=0,nk
       integer :: ik,j,jf,j2f
-      real :: kx0,kx,ky,kz,k2,k,force_ampl=1.,pi_over_Lx=.5
-      real :: ex,ey,ez,kde,sig=1.,fact,kex,key,kez,kkex,kkey,kkez
+      real :: kx0,kx,ky,kz,k2,k,force_ampl,pi_over_Lx
+      real :: ex,ey,ez,kde,sig,fact,kex,key,kez,kkex,kkey,kkez
       real, dimension(3) :: e1,e2,ee,kk
       real :: norm,phi
       real :: fd,fd2
@@ -511,6 +511,7 @@ module Forcing
         kx0=kkx(ik)*scale_kvectorx
         ky=kky(ik)*scale_kvectory
         kz=kkz(ik)*scale_kvectorz
+        pi_over_Lx=0.5
       elseif (lscale_kvector_tobox) then
         kx0=kkx(ik)*(2.*pi/Lxyz(1))
         ky=kky(ik)*(2.*pi/Lxyz(2))
@@ -520,7 +521,7 @@ module Forcing
         kx0=kkx(ik)
         ky=kky(ik)
         kz=kkz(ik)
-        pi_over_Lx=.5
+        pi_over_Lx=0.5
       endif
 !
 !  in the shearing sheet approximation, kx = kx0 - St*k_y.
@@ -697,6 +698,7 @@ module Forcing
 !  each loop cycle which could inhibit (pseudo-)vectorisation
 !  calculate energy input from forcing; must use lout (not ldiagnos)
 !
+      force_ampl=1.0
       irufm=0
       if (r_ff == 0) then       ! no radial profile
         if (lwork_ff) call calc_force_ampl(f,fx,fy,fz,profz_ampl(n)*cmplx(coef1,profz_hel(n)*coef2),force_ampl)
@@ -835,7 +837,7 @@ module Forcing
       real :: kx0,kx,ky,kz,k2,k
       real :: ex,ey,ez,kde,fact,kex,key,kez,kkex,kkey,kkez
       real, dimension(3) :: e1,e2,ee,kk
-      real :: norm,phi,pi_over_Lx=0.5
+      real :: norm,phi,pi_over_Lx
 !
 !  additional stuff for test fields
 !
@@ -881,6 +883,7 @@ module Forcing
         kx0=kkx(ik)*scale_kvectorx
         ky=kky(ik)*scale_kvectory
         kz=kkz(ik)*scale_kvectorz
+        pi_over_Lx=0.5
       elseif (lscale_kvector_tobox) then
         kx0=kkx(ik)*(2.*pi/Lxyz(1))
         ky=kky(ik)*(2.*pi/Lxyz(2))
@@ -890,7 +893,7 @@ module Forcing
         kx0=kkx(ik)
         ky=kky(ik)
         kz=kkz(ik)
-        pi_over_Lx=.5
+        pi_over_Lx=0.5
       endif
 !
 !  in the shearing sheet approximation, kx = kx0 - St*k_y.
@@ -1998,7 +2001,7 @@ module Forcing
       integer, dimension(mk), save :: kkx,kky,kkz
       integer, save :: ifirst,nk
       integer :: ik,j,jf,kx,ky,kz,kex,key,kez,kkex,kkey,kkez
-      real :: k2,k,ex,ey,ez,kde,sig=1.,fact
+      real :: k2,k,ex,ey,ez,kde,sig,fact
       real, dimension(3) :: e1,e2,ee,kk
       real :: norm,phi
 !
@@ -2190,7 +2193,7 @@ module Forcing
       real, dimension (nx) :: sxx,cxx
       real, dimension (mx) :: sx,cx
       real, dimension (my) :: sy,cy
-      real, dimension (mz) :: sz,cz,tmpz,gz,gg,ss=1.,gz1
+      real, dimension (mz) :: sz,cz,tmpz,gz,gg,ss,gz1
       real :: kx,ky,kz,ffnorm,fac
 !
 !  identify ourselves
@@ -2230,7 +2233,11 @@ module Forcing
 !
 !  make sign antisymmetric
 !
-      where(z<0) ss=-1.
+      where(z<0)
+        ss=-1.
+      elsewhere
+        ss=1.
+      endwhere
       gz1=-ss*gz !!(negative for z>0)
 !
 !AB: removed nu dependence here. This whole routine is probably not
@@ -2265,7 +2272,7 @@ module Forcing
       real, dimension (nx) :: sxx,cxx
       real, dimension (mx) :: sx,cx
       real, dimension (my) :: sy,cy
-      real, dimension (mz) :: sz,cz,tmpz,gz,gg,ss=1.,gz1
+      real, dimension (mz) :: sz,cz,tmpz,gz,gg,ss,gz1
       real :: kx,ky,kz,ffnorm,fac
 !
 !  identify ourselves
@@ -2305,7 +2312,11 @@ module Forcing
 !
 !  make sign antisymmetric
 !
-      where(z<0) ss=-1.
+      where(z<0)
+        ss=-1.
+      elsewhere
+        ss=1.
+      endwhere
       gz1=-ss*gz !!(negative for z>0)
 !
 !AB: removed nu dependence here. This whole routine is probably not
@@ -2510,7 +2521,7 @@ module Forcing
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
       real :: phase1,phase2,p_weight
       real :: kx01,ky1,kz1,kx02,ky2,kz2
-      real :: mulforce_vec=1.,irufm
+      real :: mulforce_vec,irufm
       real, dimension (1) :: fsum_tmp,fsum
       integer, parameter :: mk=3000
       integer, dimension(mk), save :: kkx,kky,kkz
@@ -2609,7 +2620,10 @@ module Forcing
 !
         mulforce_vec=work_ff/irufm
         if (mulforce_vec .gt. max_force)  mulforce_vec=max_force
+      else
+        mulforce_vec = 1.0
       endif
+
 !
 !  Add forcing
 !
@@ -2659,8 +2673,8 @@ module Forcing
       complex, dimension (3) :: coef
       integer :: j,jf
       integer :: ifirst
-      real :: kx0,kx,ky,kz,k2,k,force_ampl=1.
-      real :: ex,ey,ez,kde,sig=1.,fact,kex,key,kez,kkex,kkey,kkez
+      real :: kx0,kx,ky,kz,k2,k,force_ampl
+      real :: ex,ey,ez,kde,sig,fact,kex,key,kez,kkex,kkey,kkez
       real, dimension(3) :: e1,e2,ee,kk
       real :: norm,phi
 !
