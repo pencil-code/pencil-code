@@ -930,6 +930,12 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
       if ((.not. fluid_point .and. lclose_interpolation) &
           .or. ( fluid_point .and. lclose_linear)) then
 !
+! This subrutine is not working (and should never be used) with other
+! variables than the velocity.
+!
+        if (ivar1 > iuz) call fatal_error('close_interpolation',&
+            'This subroutine should never be called for anything but velocity!')
+!
 ! Define some help variables
 !
         x0=cylinder(icyl,ixpos)
