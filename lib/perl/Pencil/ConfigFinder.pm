@@ -70,7 +70,7 @@ sub locate_config_files {
 #
 # Return the full path to each of the config files given, searching in
 # the @config_path.
-# If no config file is found, return empty list.
+# If any of the config files is not found, croak.
 #
     my (@files) = @_;
 
@@ -81,7 +81,7 @@ sub locate_config_files {
             if (-e $file) {
                 push @config_files, $file;
             } else {
-                warn("No such file: $file\n") unless ($quiet);
+                croak("No such file: $file\n") unless ($quiet);
             }
         } else {
             dir: for my $dir (@config_path) {
@@ -91,6 +91,8 @@ sub locate_config_files {
                     next file;
                 }
             }
+            warn("Found no config file $file\n");
+            return ();
         }
     }
 
@@ -449,6 +451,8 @@ Return list of full path names representing the files listed in C<@files>.
 Each of the file names in C<@files> gets a C<.conf> suffix appended if
 needed.
 
+If no candidate is found for one of the files, throw an error.
+
 If the file name starts with `/', it is treated as an abolute path name.
 If it does not start with a slash, B<locate_config_files()> looks for the
 files in the path given below.
@@ -471,7 +475,7 @@ will return
 
   ( '/home/USER/myconfig.conf' )
 
-if that file exists, or an empty list otherwise.
+if that file exists.
 
 =back
 
