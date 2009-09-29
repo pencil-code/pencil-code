@@ -172,8 +172,6 @@ print STDERR "Running make '", join("' '", @make_args), "'\n"
 system('make', @make_args) == 0
   or die "Make failed: <$!>\n";
 
-Pencil::Util::notify('building') if $notify;
-
 # ---------------------------------------------------------------------- #
 sub mention {
 # Reference a variable without doing anything.
@@ -218,6 +216,10 @@ sub version {
     $date =~ s/${doll}Date:\s*(\S+).*/$1/;
 
     return "$cmdname version $rev ($date)\n";
+}
+# ---------------------------------------------------------------------- #
+END {
+    Pencil::Util::notify('building') if $notify;
 }
 # ---------------------------------------------------------------------- #
 

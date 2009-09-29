@@ -242,8 +242,6 @@ for my $subcmd (@subcmds) {
     }
 }
 
-Pencil::Util::notify('building') if $notify;
-
 # ---------------------------------------------------------------------- #
 sub start_cmd {
 # Run start.x
@@ -1327,6 +1325,9 @@ END {
     clear_lock() if ($locked);
     unlink 'resubmit.log';
     unlink 'rs';
+
+    Pencil::Util::notify('building') if $notify;
+
 }
 
 # End of file build
