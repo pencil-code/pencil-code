@@ -734,6 +734,8 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !
 !  Find i and j indeces for points to be used during interpolation 
 !
+            lower_i=0
+            upper_i=0
             do ii=1,mx
               if (x(ii)>xmirror) then
                 lower_i=ii-1
@@ -742,6 +744,8 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
               endif
             enddo
 !
+            lower_j=0
+            upper_j=0
             do jj=1,my
               if (y(jj)>ymirror) then
                 lower_j=jj-1
@@ -749,6 +753,17 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
                 exit
               endif
             enddo
+!
+!  Issue with domain borders: A mirror point can be outside a
+!  processor's local domain (including ghost points). Some sort
+!  communication has to be implemented!
+!
+            if (lower_i .eq. 0 .or. upper_i .eq. 0) then
+              call fatal_error('update_solid_cells:','lower_i==0 or upper_i==0')
+            end if
+            if (lower_j .eq. 0 .or. upper_j .eq. 0) then
+              call fatal_error('update_solid_cells:','lower_j==0 or upper_j==0')
+            end if            
 !
 !  First we use interpolations to find the value of the mirror point.
 !  Then we use the interpolated value to find the value of the ghost point
@@ -1098,7 +1113,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
             print*,'dirvar,dirconst,topbot,iz0=',dirvar,dirconst,topbot,iz0
              call fatal_error('close_interpolation',&
                 'A valid radius is not found!')            
-          endif
+           endif
 !
 ! Check if the endpoints in the variable direction are
 ! outside the cylinder. If they are not then define the endpoints
