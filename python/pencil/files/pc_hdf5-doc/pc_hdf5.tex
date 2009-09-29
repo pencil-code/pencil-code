@@ -392,4 +392,16 @@ manual tuning, or fastest (null=no compression, data in order), fast
 (shuffle+gzip=best compression available). See benchmark on
 \url{http://h5py.alfven.org/lzf/}. 
 
+
+\subsection{Discussion}
+\label{sec:discussion}
+
+We should have some identifier for the version of the code that created
+the data.
+`\texttt{svnversion}' can provide this, but it would have to be called
+from \emph{pc\_run}, not from the \emph{h2py} script.
+Unfortunately, \texttt{svnversion} can sometimes take 5 or 10
+seconds\ldots
+\emph{\quad-- wdobler}
+
 \end{document}
