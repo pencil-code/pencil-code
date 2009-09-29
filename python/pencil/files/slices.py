@@ -468,7 +468,7 @@ def make_movie(field='uu1',datadir='data/',proc=-1,extension='xz',format='native
     infile = npfile(filename,endian=format)
 
     files = []
-    fig = plt.figure(figsize=(5,5))
+    fig = plt.figure(figsize=(5,10))
     ax = fig.add_subplot(111)
 
     ifirst = True
