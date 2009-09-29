@@ -2510,6 +2510,11 @@ find_SN: do n=n1,n2
       call mpireduce_sum_double(tmp,tmp2,3)
       call mpibcast_double(tmp2,3)
       ekintot=tmp2(3)*dv
+      if (abs(tmp2(2)) < 1e-30) then
+        write(0,*) 'tmp = ', tmp
+        call fatal_error("interstellar.get_properties", &
+            "Dividing by zero?")
+      endif
       rhom=tmp2(1)/tmp2(2)
 !
     endsubroutine get_properties
