@@ -1370,10 +1370,13 @@ module Particles_sub
 !  If we have solid geometry we might want some special treatment very close
 !  to the surface of the solid geometry
 !
+
       if (lsolid_cells) then
         do ivar=ivar1,ivar2
-          call close_interpolation(f,ix0,iy0,iz0,icyl,ivar,xxp,&
-              gp(ivar-ivar1+1),.false.)
+          if (ivar < 4) then
+            call close_interpolation(f,ix0,iy0,iz0,icyl,ivar,xxp,&
+                gp(ivar-ivar1+1),.false.)
+          endif
         enddo
       endif
 !
