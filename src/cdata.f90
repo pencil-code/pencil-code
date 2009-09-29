@@ -143,7 +143,7 @@ module Cdata
 !  Random numbers.
 !
   integer, dimension(mseed) :: seed=0
-  integer :: nseed=0
+  integer :: nseed=0, seed0=1812
   real, dimension (2) :: fran1,fran2
 !
 !  Module flags.

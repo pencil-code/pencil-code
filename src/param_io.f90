@@ -70,7 +70,7 @@ module Param_IO
        unit_system,unit_length,unit_velocity,unit_density,unit_temperature, &
        unit_magnetic, &
        c_light,G_Newton,hbar, &
-       random_gen,nfilter,lserial_io, &
+       random_gen,seed0,nfilter,lserial_io, &
        der2_type, &
        lread_oldsnap,lread_oldsnap_nomag,lread_oldsnap_nopscalar, &
        lread_oldsnap_notestfield, &

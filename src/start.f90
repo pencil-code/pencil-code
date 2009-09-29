@@ -403,7 +403,7 @@ program start
 !
 !  Set random seed independent of processor.
 !
-  seed(1) = 1812
+  seed(1)=seed0
   call random_seed_wrapper(PUT=seed)
 !
 !  Write to disk.
