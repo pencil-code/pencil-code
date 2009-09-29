@@ -35,6 +35,7 @@
 %\renewcommand{\ttdefault}{txtt}
 %\usepackage{frmath}
 %\usepackage{marvosym}
+\usepackage{pxfonts} % way better for reading PDF on screen
 
 
 %%%%%%%%%%%  float/tables packages %%%%%%%%%%%%%
@@ -153,9 +154,15 @@ correctly describing the current implementation.
     pencil-code HDF5 file. The format described in this file
     corresponds to the version \texttt{v0.1}. 
   \item[dateC] String Attribute. Date of creation of the
-    file. All dates are formatted as a string typeset as
-      'DD/MM/YY'. \note{Maybe there are specific type format to stock dates,
-      but I couldn't find it.}  
+    file. All dates are formatted as a string typeset as ISO 8601 dates in
+    the format 'YYYY-MM-DD HH:mm:ss.SSS Z'.
+    \note{Maybe there are specific type format to stock dates,
+      but I couldn't find it.}%
+    \note{`SSS' are miliseconds (won't hurt, even if they may not help,
+      either).
+      `Z' is the time zone.
+      We deviate from ISO by separating first and second part with a space.
+    }
   \item[dateM] String Attribute. Date of last modification of the
     file.
   \item[/param/] Subgroup intended to stock all the parameters data
