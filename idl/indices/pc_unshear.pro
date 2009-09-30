@@ -108,7 +108,7 @@ if (interpolation_type eq 'linear') then begin
 ;
 ;  Fractional displacement by linear interpolation.
 ;
-    pencil_y_ghost=dblarr(nx+2)
+    pencil_y_ghost=dblarr(ny+2)
     m1=1 & m2=m1+ny-1
     pencil_y_ghost[m1:m2]=pencil_y
     pencil_y_ghost[0]=pencil_y_ghost[m2]
@@ -128,7 +128,7 @@ endif else if (interpolation_type eq 'sixth') then begin
 ;
   dy=Ly/ny
   for ix=0,nx-1 do begin
-    deltay_x=deltay*(xax[ix]-x0)/Lx
+    deltay_x=(deltay mod Ly)*(xax[ix]-x0)/Lx
     deltay_x_int=fix(deltay_x/dy)
     deltay_x_fra=deltay_x/dy-deltay_x_int
 
@@ -140,7 +140,7 @@ endif else if (interpolation_type eq 'sixth') then begin
 ;
 ;  Fractional displacement by interpolation.
 ;    
-    pencil_y_ghost=dblarr(nx+6)
+    pencil_y_ghost=dblarr(ny+6)
     m1=3 & m2=m1+ny-1
     pencil_y_ghost[m1:m2]=pencil_y
     pencil_y_ghost[0:2]=pencil_y_ghost[m2-2:m2]
@@ -190,7 +190,7 @@ endif else if (interpolation_type eq 'fourier') then begin
 ;
 ;  Shift plane by the amount deltay_x in Fourier space.
 ;
-    plane_yz_ky=plane_yz_ky*spread(exp(complex(0.0d,ky_fft*deltay_x)),[1,2,3],[nz,nv,nm])
+    plane_yz_ky=plane_yz_ky*spread(exp(complex(0.0d,-ky_fft*deltay_x)),[1,2,3],[nz,nv,nm])
 ;
 ;  Transform back to real space.
 ;
