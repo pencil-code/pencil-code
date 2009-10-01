@@ -170,12 +170,20 @@ sub timed_system_call {
         $prefix = 'Child: ';
         logger("pid=$$");
         my $status = system(@cmd);
+        if ($status == -1) {
+            print "Child: failed to execute: $!\n";
+        } elsif ($status & 127) {
+            printf "Child: died with signal %d, %s coredump\n",
+                ($? & 127),
+                ($? & 128) ? 'with' : 'without';
+        }
+        else {
+            $status = $status >> 8;
+        }
         print PARENT "$status\n";
         close PARENT;
         exit $status;
     }
-
-    print "\n";
 }
 # ---------------------------------------------------------------------- #
 sub watch_procs {
@@ -252,12 +260,18 @@ sub check_child {
 END {
 # Clean up, in particular kill child process if parent exits prematurely
 
+    my $status = $?;
     exit unless ($child_pid);   # only parent continue
 
-    my $status = $?;
     my $num_killed = kill_processes();
 
-    $? =  $status || $num_killed; # set exit status
+    $status ||= $num_killed;
+
+    # Set exit status.
+    # Better to compare to 0, since system() returns multiples of 256 (if
+    # we forget to do `>> 8') and this would get truncated to 0 as return
+    # value from this script.
+    $? = ($status != 0);
 }
 # ---------------------------------------------------------------------- #
 sub parse_time_spec {
