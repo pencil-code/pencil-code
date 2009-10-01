@@ -51,6 +51,7 @@
 
 %%%%%%%%%% Additional Packages %%%%%%%%%%
 \usepackage{hyperref}
+\usepackage{breakurl}
 
 %\newcommand{\upd}{\genfrac{}{}{0pt}{0}{\nearrow}{\searrow}}
 %\newcommand{\ffrac}[2]{\genfrac{}{}{0pt}{0}{#1}{#2}}
@@ -141,8 +142,9 @@ correctly describing the current implementation.
 
 \begin{figure}[p] \centering
   % \fbox{
-  \parbox{18cm}{\scriptsize %Yes, it's small, the purpose is to try to
-                            %have the whole structure on one single page...
+  \parbox{18cm}{\tiny %Yes, it's small, the purpose is to try to
+                            %have the whole structure on one single
+                            %page... Well anyone can zoom on pdf files :)
     \begin{description}
     \item[/]  Root of the file
       \begin{description}
@@ -173,12 +175,26 @@ correctly describing the current implementation.
       so that all parameters changes made after each run can be
       found.}
     \begin{description}
+    \item[/param/dim/] Subgroup containing the parameters available in
+      \texttt{dim.dat} files. The first index of the data corresponds
+      to the different files (0: global file, 1:pirst proc, 2:second
+      proc, etc.)
+      \begin{description}
+      \item[/param/dim/nbproc] Integer dataset of dimension
+        (1,). Number of proc.
+      \item[/param/dim/mx] Integer dataset of dimension (nbproc,1) of
+        the mx parameters in \texttt{data/dim.dat},
+        \texttt{data/proc0/dim.dat}, etc... 
+      \item[/param/dim/...] etc.
+      \end{description}
     \item[/param/init/] Subgroup containing the parameters
       passed during the \texttt{init} phase.
       \begin{description}
       \item[/param/init/init\_pars/]
         Subgroup of the parameters of
-        \texttt{init\_pars}
+        \texttt{init\_pars}. \note{Please note that all the subgroups
+          and parameters name are written in lowercase to avoid any
+          potential confusion.}
         \begin{description}
           \item[/param/init/init\_pars/cvsid] String dataset of
             dimension (1,), non-resizable
@@ -235,10 +251,17 @@ correctly describing the current implementation.
       \item[/param/run/...\_run\_pars/] etc.
         \end{description}
       \end{description}
+      \item[/param/index/] Subgroup containing the parameters from
+        \texttt{index.pro}. \note{This is a fast implementation, as it seem that
+        some of these parameters are needed for plotting \texttt{VAR}
+        files, but I must look into it more thoroughly (there are,
+        e.g. several parameters present several time in this file...)}
     \end{description}
   \item[/data/] Subgroup intended to stock all the data resulting from
     the runs.
     \begin{description}
+    \item[/data/time\_series\_names] String dataset of the name of the
+      time series column.
     \item[/data/time\_series] Float dataset of the time series, of
       dimension (timeslices, nbvar),  \texttt{timeslices} corresponds
       to an output every \texttt{/param/run/run\_pars/it1} time
@@ -264,7 +287,7 @@ correctly describing the current implementation.
       Length), and the dataset is a resizable array of VL strings, of
       dimension one, initially created with one (empty) string
       element.
-    \item[...] This subgroup should be left open to any personal
+    \item[/notes/...] This subgroup should be left open to any personal
       modifications, so that any additional datasets or subgroups can
       be entered there as wanted.
     \end{description}
@@ -402,6 +425,13 @@ the data.
 from \emph{pc\_run}, not from the \emph{h2py} script.
 Unfortunately, \texttt{svnversion} can sometimes take 5 or 10
 seconds\ldots
-\emph{\quad-- wdobler}
+\emph{\quad--~wdobler}
+
+Is it really a good idea ? I would think that we should converge as
+fast as possible to a \emph{stable} format for this file, and thus
+avoid the multiplication of a huge number of different
+versions. Enforcing fixed version number should be a good way to limit
+a proliferation of file versions\ldots
+\emph{\quad--~rplasson}
 
 \end{document}

@@ -1,0 +1,121 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module hdf5</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong>hdf5</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/home/alf/pencil-code/python/pencil/files/hdf5.py">/home/alf/pencil-code/python/pencil/files/hdf5.py</a></font></td></tr></table>
+    <p></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#fffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="numpy.html">numpy</a><br>
+</td><td width="25%" valign=top><a href="h5py.html">h5py</a><br>
+</td><td width="25%" valign=top><a href="os.html">os</a><br>
+</td><td width="25%" valign=top><a href="time.html">time</a><br>
+</td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ee77aa">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="hdf5.html#h5file">h5file</a>
+</font></dt><dt><font face="helvetica, arial"><a href="hdf5.html#param_file">param_file</a>
+</font></dt></dl>
+ <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="h5file">class <strong>h5file</strong></a></font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>High&nbsp;level&nbsp;access&nbsp;to&nbsp;a&nbsp;pencil&nbsp;code&nbsp;HDF5&nbsp;file<br>
+self.<strong>f</strong>:&nbsp;HDF5&nbsp;file,&nbsp;accessed&nbsp;through&nbsp;h5py&nbsp;module<br>
+self.<strong>param</strong>:&nbsp;parameter&nbsp;subgroup<br>
+self.<strong>data</strong>:&nbsp;data&nbsp;subgroup<br>
+self.<strong>notes</strong>:&nbsp;notes&nbsp;subgroup<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="h5file-__del__"><strong>__del__</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="h5file-__init__"><strong>__init__</strong></a>(self, datadir<font color="#909090">='data/'</font>, datafile<font color="#909090">='datafile.hdf5'</font>, force_create<font color="#909090">=False</font>)</dt><dd><tt>Create&nbsp;a&nbsp;hdf5&nbsp;file&nbsp;from&nbsp;pencil&nbsp;code&nbsp;data.<br>
+Warning!!!&nbsp;This&nbsp;first&nbsp;implementation&nbsp;either&nbsp;reads&nbsp;an&nbsp;existing&nbsp;file<br>
+or&nbsp;write&nbsp;a&nbsp;new&nbsp;file.&nbsp;Set&nbsp;force_create&nbsp;to&nbsp;True&nbsp;if&nbsp;you&nbsp;want&nbsp;to&nbsp;force<br>
+the&nbsp;re-creation&nbsp;of&nbsp;the&nbsp;data&nbsp;with&nbsp;new&nbsp;data.<br>
+No&nbsp;possibility&nbsp;(yet...)&nbsp;to&nbsp;update&nbsp;the&nbsp;file&nbsp;with&nbsp;new&nbsp;data.<br>
+&nbsp;<br>
+datadir:&nbsp;directory&nbsp;where&nbsp;the&nbsp;data&nbsp;are&nbsp;found<br>
+datafile:&nbsp;name&nbsp;of&nbsp;the&nbsp;hdf5&nbsp;file</tt></dd></dl>
+
+<dl><dt><a name="h5file-add_note"><strong>add_note</strong></a>(self, text<font color="#909090">=''</font>)</dt><dd><tt>Add&nbsp;a&nbsp;new&nbsp;note</tt></dd></dl>
+
+<dl><dt><a name="h5file-flush"><strong>flush</strong></a>(self)</dt><dd><tt>Force&nbsp;synchronisation&nbsp;of&nbsp;the&nbsp;data&nbsp;on&nbsp;disk</tt></dd></dl>
+
+<dl><dt><a name="h5file-read_note"><strong>read_note</strong></a>(self, num<font color="#909090">=0</font>)</dt><dd><tt>Read&nbsp;the&nbsp;note&nbsp;num&nbsp;(None&nbsp;returned&nbsp;if&nbsp;non&nbsp;existent)</tt></dd></dl>
+
+<dl><dt><a name="h5file-write_note"><strong>write_note</strong></a>(self, num<font color="#909090">=0</font>, text<font color="#909090">=''</font>)</dt><dd><tt>Overwrite&nbsp;note&nbsp;num</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="param_file">class <strong>param_file</strong></a></font></td></tr>
+    
+<tr><td bgcolor="#ffc8d8"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="param_file-__del__"><strong>__del__</strong></a>(self)</dt><dd><tt>Close&nbsp;the&nbsp;file</tt></dd></dl>
+
+<dl><dt><a name="param_file-__init__"><strong>__init__</strong></a>(self, datafile<font color="#909090">='data/params.log'</font>, trailing<font color="#909090">=True</font>)</dt><dd><tt>open&nbsp;the&nbsp;file&nbsp;datafile&nbsp;(defaults&nbsp;to&nbsp;params.log&nbsp;in&nbsp;data&nbsp;dir)<br>
+if&nbsp;trailing&nbsp;is&nbsp;set&nbsp;to&nbsp;True,&nbsp;then&nbsp;is&nbsp;aware&nbsp;of&nbsp;trailing&nbsp;commas&nbsp;(params&nbsp;files)<br>
+if&nbsp;set&nbsp;to&nbsp;False,&nbsp;expect&nbsp;no&nbsp;trailing&nbsp;commas&nbsp;(e.g.&nbsp;for&nbsp;index.pro)</tt></dd></dl>
+
+<dl><dt><a name="param_file-readline"><strong>readline</strong></a>(self)</dt><dd><tt>Read&nbsp;the&nbsp;current&nbsp;line&nbsp;of&nbsp;the&nbsp;parameter&nbsp;file<br>
+and&nbsp;returns&nbsp;it&nbsp;formatted&nbsp;as&nbsp;a&nbsp;tuple&nbsp;(descr,res)<br>
+descr&nbsp;is&nbsp;the&nbsp;description&nbsp;of&nbsp;the&nbsp;line,&nbsp;that&nbsp;can&nbsp;be:<br>
+'c':&nbsp;comment&nbsp;line<br>
+'i':&nbsp;enters&nbsp;a&nbsp;new&nbsp;Initializing&nbsp;zone<br>
+'r':&nbsp;enters&nbsp;a&nbsp;new&nbsp;Running&nbsp;zone<br>
+'d':&nbsp;gives&nbsp;the&nbsp;date&nbsp;of&nbsp;the&nbsp;recording<br>
+'t':&nbsp;gives&nbsp;the&nbsp;initial&nbsp;simulation&nbsp;time&nbsp;of&nbsp;the&nbsp;run<br>
+'&amp;':&nbsp;enters&nbsp;a&nbsp;new&nbsp;Namelist&nbsp;zone<br>
+'p':&nbsp;gives&nbsp;a&nbsp;parameter<br>
+'e':&nbsp;end&nbsp;of&nbsp;file&nbsp;reached<br>
+res&nbsp;is&nbsp;the&nbsp;information&nbsp;of&nbsp;the&nbsp;line:<br>
+'c','i','r','e':&nbsp;always&nbsp;None<br>
+'d':&nbsp;a&nbsp;string&nbsp;containing&nbsp;the&nbsp;date&nbsp;and&nbsp;time<br>
+'t':&nbsp;a&nbsp;float&nbsp;containing&nbsp;the&nbsp;simulation&nbsp;time<br>
+'&amp;':&nbsp;a&nbsp;string&nbsp;containing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;Namelist<br>
+'p':&nbsp;a&nbsp;tuple&nbsp;(name,val)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;name&nbsp;is&nbsp;a&nbsp;string&nbsp;containing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;parameter<br>
+&nbsp;&nbsp;&nbsp;&nbsp;val&nbsp;is&nbsp;a&nbsp;list&nbsp;(possibly&nbsp;of&nbsp;one&nbsp;single&nbsp;element)&nbsp;of&nbsp;the<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;parameter&nbsp;values&nbsp;(can&nbsp;be&nbsp;of&nbsp;various&nbsp;types)</tt></dd></dl>
+
+</td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#eeaa77">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt><a name="-append"><strong>append</strong></a>(dataset, new)</dt><dd><tt>Increment&nbsp;the&nbsp;first&nbsp;dimension&nbsp;of&nbsp;the&nbsp;dataset&nbsp;and&nbsp;add&nbsp;the&nbsp;new&nbsp;element&nbsp;in&nbsp;the&nbsp;new&nbsp;position</tt></dd></dl>
+ <dl><dt><a name="-datestring"><strong>datestring</strong></a>()</dt><dd><tt>Return&nbsp;a&nbsp;formatted&nbsp;string&nbsp;giving&nbsp;local&nbsp;date&nbsp;and&nbsp;time<br>
+The&nbsp;format&nbsp;is&nbsp;the&nbsp;same&nbsp;as&nbsp;the&nbsp;one&nbsp;used&nbsp;in&nbsp;param&nbsp;files</tt></dd></dl>
+</td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#55aa55">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Data</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><strong>VERSION</strong> = 'v0.1'</td></tr></table>
+</body></html>
