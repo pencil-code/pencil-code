@@ -116,6 +116,7 @@ my %tests = (
                           interstellar
                           interlocked-fluxrings
                           conv-slab-flat
+                          corona
                           testfield
                      )],
              # Level 4 for now contains overlong tests (e.g. test that
@@ -138,7 +139,6 @@ my %tests = (
              # Level 5 for now contains all non-canonical tests that run,
              # but produce wrong results
              5 =>  [qw(
-                          corona
                           hexagon
                           MHD-ABCforcing
                           taylor-couette
@@ -353,7 +353,7 @@ if ($makejobs) { $makeopts = "-j $makejobs"; }
 my $host = `hostname`;
 chomp($host);
 
-my $nice="";
+my $nice = "";
 if ($niceval != 0) { $nice = "\\nice -n $niceval" };
 # Note: Csh's builtin `nice' cmd has a different calling syntax, so we
 # need to use ther real nice cmd here.
