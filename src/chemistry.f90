@@ -4195,6 +4195,7 @@ module Chemistry
       real, dimension (my,mz) :: rho0,gamma0
       real, dimension (mx,my,mz) :: mom2,mom3, rho_ux2, rho_uy2
       real, dimension (mx,my,mz) :: rho_gamma, rhoE_p, pp
+      real, dimension (mx,my,mz,2) ::  rhoE_pU
       real, dimension (ny,nz) ::  dYk_dx,dYk_dy,dYk_dz
       real, dimension (ny,nz) :: drho_prefac, KK
       real, dimension (ny,nz) :: L_1, L_2, L_3, L_4, L_5
@@ -4202,7 +4203,7 @@ module Chemistry
       real, dimension (nz,2) :: N_1, N_2, N_3, N_4, N_5
       real, dimension (ny,nz) :: T_1, T_2, T_3, T_4, T_5
       real, dimension (my,mz) :: cs2x,cs0_ar,cs20_ar,dmom2_dy,dmom3_dz
-      real, dimension (my,mz) :: drhoE_p_dy, dux_dy!,dYk_dy
+      real, dimension (ny,nz,2) :: drhoE_pU!,dYk_dy
    !   real, dimension (mx,my,mz,nchemspec) :: bound_rhs_Y
     !  real, dimension (ny,nz) :: bound_rhs_T
       real, dimension (mx,my,mz) :: cs2_full, gamma_full, rho_full
@@ -4273,6 +4274,11 @@ module Chemistry
 
          mom2(lll,:,:)=rho0(:,:)*f(lll,:,:,iuy)
          mom3(lll,:,:)=rho0(:,:)*f(lll,:,:,iuz)
+         rhoE_p(lll,:,:)=0.5*rho_full(lll,:,:) &
+            *(f(lll,:,:,iux)**2+f(lll,:,:,iuy)**2+f(lll,:,:,iuz)**2) &
+             +gamma_full(lll,:,:)/(gamma_full(lll,:,:)-1)*pp_full(lll,:,:)
+         rhoE_pU(lll,:,:,1)=rhoE_p(lll,:,:)*f(lll,:,:,iuy) 
+         rhoE_pU(lll,:,:,2)=rhoE_p(lll,:,:)*f(lll,:,:,iuz)
 
          
          Mach_num=maxval(f(lll,m1:m2,n1:n2,iux)/cs0_ar(m1:m2,n1:n2))
@@ -4302,6 +4308,7 @@ module Chemistry
           call der_pencil(2,rho_full(lll,:,i),tmp2_rho(:,i))
           call der_pencil(2,pp(lll,:,i),tmp2_pp(:,i))
           call der_pencil(2,mom2(lll,:,i),dmom2_dy(:,i))
+          call der_pencil(2,rhoE_pU(lll,:,i,1),drhoE_pU(:,i,1))
         enddo
       else
         tmp32=0
@@ -4310,6 +4317,7 @@ module Chemistry
         tmp2_rho=0
         tmp2_pp=0
         dmom2_dy=0
+        drhoE_pU(:,:,1)=0
       endif
         dui_dxj(:,:,1,2)=tmp12(m1:m2,n1:n2)
         dui_dxj(:,:,2,2)=tmp22(m1:m2,n1:n2)
@@ -4325,6 +4333,7 @@ module Chemistry
           call der_pencil(3,rho_full(lll,i,:),tmp3_rho(i,:))
           call der_pencil(3,pp(lll,i,:),tmp3_pp(i,:))
           call der_pencil(3,mom3(lll,i,:),dmom3_dz(i,:))
+          call der_pencil(3,rhoE_pU(lll,:,i,2),drhoE_pU(:,i,2))
 
         enddo
       else
@@ -4334,6 +4343,7 @@ module Chemistry
         tmp3_rho=0
         tmp3_pp=0
         dmom3_dz=0
+        drhoE_pU(:,:,2)=0
       endif
         dui_dxj(:,:,1,3)=tmp13(m1:m2,n1:n2)
         dui_dxj(:,:,2,3)=tmp23(m1:m2,n1:n2)
@@ -4459,7 +4469,8 @@ module Chemistry
          df(lll,m1:m2,nn,iuz) =  -L_4(:,nnn)  + T_4(:,nnn)
          df(lll,m1:m2,nn,ilnTT) = drho_prefac(:,nnn)*(-L_2(:,nnn) &
           + 0.5*(gamma0(m1:m2,nn)-1.)*(L_5(:,nnn)+L_1(:,nnn))) &
-          - gamma0(m1:m2,nn)*drho_prefac(:,nnn)*T_5(:,nnn)-T_1(:,nnn)/rho0(m1:m2,nn)
+          - gamma0(m1:m2,nn)*drho_prefac(:,nnn)*T_5(:,nnn)-T_1(:,nnn)/rho0(m1:m2,nn) &
+          +drho_prefac(:,nnn)*(gamma0(m1:m2,nn)-1.)*gamma0(m1:m2,nn)*drhoE_pU(:,nnn,1)
        enddo
 
       elseif (nzgrid /= 1) then
