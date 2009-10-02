@@ -171,9 +171,9 @@ sub timed_system_call {
         logger("pid=$$");
         my $status = system(@cmd);
         if ($status == -1) {
-            print "Child: failed to execute: $!\n";
+            print "Grandchild: failed to execute: $!\n";
         } elsif ($status & 127) {
-            printf "Child: died with signal %d, %s coredump\n",
+            printf "Grandchild: died with signal %d, %s coredump\n",
                 ($? & 127),
                 ($? & 128) ? 'with' : 'without';
         }
@@ -204,12 +204,12 @@ sub watch_procs {
         } else {
             if ($our_procs_started) {
                 logger("Our procs have run and quit -- exiting");
-                my $status = get_child_status();
-                if (defined $status) {
-                    exit $status;
-                } else {
-                    die "Unexpected: child has quit, but not sent status\n";
-                }
+
+                exit_on_child_status();
+                sleep 1; # give child time to wind up
+                exit_on_child_status(1);
+
+                die "Unexpected: child has quit, but not sent status\n";
             }
         }
         # sleep until the next check
@@ -240,20 +240,16 @@ sub kill_processes {
 # ---------------------------------------------------------------------- #
 sub check_child {
 # Exit if child process sent us status or has died
-    my $status = get_child_status();
-    if (defined($status)) {
-        logger("Got child status $status");
-        exit $status;
-    }
+    exit_on_child_status();
 
-    if (waitpid($child_pid, WNOHANG) != 0){
+    if (waitpid($child_pid, WNOHANG) != 0){ # has child quit?
         logger("Child finished -- exiting");
         die "Unexpected: child finished, but did not send status.\n";
         exit 0;
     }
 }
 # ---------------------------------------------------------------------- #
-sub get_child_status {
+sub exit_on_child_status {
 # Return child's status if available (i.e. if child has finished), or
 # undef otherwise.
     my $line;
@@ -264,9 +260,8 @@ sub get_child_status {
             chomp($line);
             $status ||= $line;
         }
-        return $status;
-    } else {
-        return undef;
+        logger("Got child status $status");
+        exit $status;
     }
 }
 # ---------------------------------------------------------------------- #
@@ -278,7 +273,6 @@ END {
     exit unless ($child_pid);   # only parent continue
 
     my $num_killed = kill_processes();
-
     $status ||= $num_killed;
 
     # Set exit status.
