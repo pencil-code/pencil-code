@@ -2454,47 +2454,55 @@ module Density
 !***********************************************************************
     subroutine mass_source(f,df,p)
 !
-!  Add mass sources and sinks.
+!  Add (isothermal) mass sources and sinks.
 !
 !  28-apr-2005/axel: coded
 !
-      use Sub, only: step
+      use EquationOfState, only: gamma
       use Gravity, only: lnrho_bot,lnrho_top,ss_bot,ss_top
+      use Sub, only: step
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension(nx) :: fint,fext,pdamp,fprofile,fnorm
+!
+      real, dimension(nx) :: dlnrhodt,fint,fext,pdamp,fprofile,fnorm
 !
       if (ldebug) print*,'mass_source: cs20,cs0=',cs20,cs0
 !
 !  Choose between different possibilities.
 !
       if (mass_source_profile=='exponential') then
-        if (ldensity_nolog) then
-          df(l1:l2,m,n,irho)  =df(l1:l2,m,n,irho)+ &
-              mass_source_Mdot*f(l1:l2,m,n,irho)
-        else
-          df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+mass_source_Mdot
-        endif
+        dlnrhodt=mass_source_Mdot
       elseif (mass_source_profile=='bump') then
         fnorm=(2.*pi*mass_source_sigma**2)**1.5
         fprofile=exp(-.5*(p%r_mn/mass_source_sigma)**2)/fnorm
-        df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+mass_source_Mdot*fprofile
+        dlnrhodt=mass_source_Mdot*fprofile
       elseif (mass_source_profile=='cylindric') then
 !
 !  Cylindrical profile for inner cylinder.
 !
         pdamp=1-step(p%rcyl_mn,r_int,wdamp) ! inner damping profile
         fint=-damplnrho_int*pdamp*(f(l1:l2,m,n,ilnrho)-lnrho_int)
-        df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+fint
 !
 !  Cylindrical profile for outer cylinder.
 !
         pdamp=step(p%rcyl_mn,r_ext,wdamp) ! outer damping profile
         fext=-damplnrho_ext*pdamp*(f(l1:l2,m,n,ilnrho)-lnrho_ext)
-        df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+fext
+        dlnrhodt=fint+fext
       endif
+!
+!  Add mass source.
+!
+      if (ldensity_nolog) then
+        df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho)+p%rho*dlnrhodt
+      else
+        df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho)+dlnrhodt
+      endif
+!
+!  Change entropy to keep temperature constant.
+!
+      if (lentropy) df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+(gamma_inv-1.0)*dlnrhodt
 !
     endsubroutine mass_source
 !***********************************************************************
