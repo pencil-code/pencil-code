@@ -191,7 +191,7 @@ sub watch_procs {
 # processes of ours called $name. If new ones appear, add them to the
 # @our_procs list. If there have been processes in @our_procs, but now
 # there are none, exit.
-# Also, if the cild process $childid has finished, exit.
+# Also, if the child process $childid has finished, exit.
     my ($name, $sleep, $child_pid) = @_;
 
     my $t0 = time();
@@ -204,7 +204,12 @@ sub watch_procs {
         } else {
             if ($our_procs_started) {
                 logger("Our procs have run and quit -- exiting");
-                exit 0;
+                my $status = get_child_status();
+                if (defined $status) {
+                    exit $status;
+                } else {
+                    die "Unexpected: child has quit, but not sent status\n";
+                }
             }
         }
         # sleep until the next check
@@ -235,25 +240,33 @@ sub kill_processes {
 # ---------------------------------------------------------------------- #
 sub check_child {
 # Exit if child process sent us status or has died
-    my $line;
-    my $status = 0;
-
-    if ($select->can_read(0)) {
-        foreach my $handle ($select->can_read(0)) {
-            # recv($handle, $line, 1024, 0);
-            $line = <$handle>;
-            chomp($line);
-            $status ||= $line;
-        }
-        if ($status) {
-            logger("Got child status $status");
-            exit $status;
-        }
+    my $status = get_child_status();
+    if (defined($status)) {
+        logger("Got child status $status");
+        exit $status;
     }
 
     if (waitpid($child_pid, WNOHANG) != 0){
         logger("Child finished -- exiting");
+        die "Unexpected: child finished, but did not send status.\n";
         exit 0;
+    }
+}
+# ---------------------------------------------------------------------- #
+sub get_child_status {
+# Return child's status if available (i.e. if child has finished), or
+# undef otherwise.
+    my $line;
+    my $status = 0;
+    if ($select->can_read(0)) {
+        foreach my $handle ($select->can_read(0)) {
+            $line = <$handle>;
+            chomp($line);
+            $status ||= $line;
+        }
+        return $status;
+    } else {
+        return undef;
     }
 }
 # ---------------------------------------------------------------------- #
@@ -261,6 +274,7 @@ END {
 # Clean up, in particular kill child process if parent exits prematurely
 
     my $status = $?;
+
     exit unless ($child_pid);   # only parent continue
 
     my $num_killed = kill_processes();
