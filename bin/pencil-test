@@ -129,7 +129,7 @@ my $postproc    = ($opts{'p'} || $opts{'postproc'}    || '');
 my $time_limit  = ($opts{'t'} || $opts{'time-limit'}  || '');
 my $timingsfile = ($opts{'T'} || $opts{'timings-file'}|| '');
 my $with_xml    = ($opts{'x'} || $opts{'xml'}         || '');
-my $use_build   = ($opts{'b'} || $opts{'--use-pc_auto-test'} || '');
+my $use_build   = ($opts{'b'} || $opts{'use-pc_auto-test'} || '');
 
 my @auto_test_options = ();
 if (defined $opts{'W'}) {
