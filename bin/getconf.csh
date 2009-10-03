@@ -590,7 +590,7 @@ else if (($hn =~ c[0-9]*) && ($USER =~ pkapyla || $USER =~ abranden || $USER =~ 
   set one_local_disc = 0
   set local_binary = 0
 #-------------------------------------------------------------
-else if (($hn =~ n[0-9]*) && ($USER =~ csur || $USER =~ ckandu)) then
+else if (($hn =~ c[0-9]*) && ($USER =~ csur || $USER =~ ckandu)) then
   echo "Cetus, Iucaa, India"
   set mpirunops = '-srun'
   set mpirun = 'nuripm'
