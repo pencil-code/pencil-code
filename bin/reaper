@@ -203,12 +203,12 @@ sub watch_procs {
             $our_procs_started = 1;
         } else {
             if ($our_procs_started) {
-                logger("Our procs have run and quit -- exiting");
+                logger("Our procs have run and quit");
+
+                waitpid($child_pid, 0);
+                logger("Child finished -- exiting");
 
                 exit_on_child_status();
-                sleep 1; # give child time to wind up
-                exit_on_child_status(1);
-
                 die "Unexpected: child has quit, but not sent status\n";
             }
         }
