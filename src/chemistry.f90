@@ -983,6 +983,7 @@ module Chemistry
 !
             f(j1,j2,j3,iux)=f(j1,j2,j3,iux)  &
                 +init_ux!*exp(log_inlet_density)/exp(f(j1,j2,j3,ilnrho))
+         !   f(j1,j2,j3,iuz)=0.
 !
           enddo
         enddo
@@ -4332,13 +4333,6 @@ module Chemistry
 
    
         do i=n1,n2
-          !call der_pencil(2,f(lll,:,i,iux),tmp12(:,i))
-          !call der_pencil(2,f(lll,:,i,iuy),tmp22(:,i))
-          !call der_pencil(2,f(lll,:,i,iuz),tmp32(:,i))
-          !call der_pencil(2,rho_full(lll,:,i),tmp2_rho(:,i))
-          !call der_pencil(2,pp(lll,:,i),tmp2_pp(:,i))
-          !call der_pencil(2,mom2(lll,:,i),dmom2_dy(:,i))
-          !call der_pencil(2,rhoE_pU(lll,:,i,1),drhoE_pU(:,i,1))
          ! call der2_pencil(2,f(lll,:,i,iux),tmpy)
          ! d2u1_dy2(:,i-n1+1)=tmpy(:)
          ! call der2_pencil(2,f(lll,:,i,iuy),tmpy)
@@ -4367,16 +4361,16 @@ module Chemistry
         grad_pp(:,:,2)=tmp2_pp(m1:m2,n1:n2)
 
       if (nzgrid /= 1) then
-        do i=m1,m2
-          call der_pencil(3,f(lll,i,:,iux),tmp13(i,:))
-          call der_pencil(3,f(lll,i,:,iuy),tmp23(i,:))
-          call der_pencil(3,f(lll,i,:,iuz),tmp33(i,:))
-          call der_pencil(3,rho_full(lll,i,:),tmp3_rho(i,:))
-          call der_pencil(3,pp(lll,i,:),tmp3_pp(i,:))
-          call der_pencil(3,mom3(lll,i,:),dmom3_dz(i,:))
-          call der_pencil(3,rhoE_pU(lll,:,i,2),drhoE_pU(:,i,2))
+       
+          call der_onesided_4_slice(f,sgn,iux,tmp13(:,:),lll,3)
+          call der_onesided_4_slice(f,sgn,iuy,tmp23(:,:),lll,3)
+          call der_onesided_4_slice(f,sgn,iuz,tmp33(:,:),lll,3)
+          call der_onesided_4_slice(rho_full,sgn,tmp3_rho(:,:),lll,3)
+          call der_onesided_4_slice(pp,sgn,tmp3_pp(:,:),lll,2)
+          call der_onesided_4_slice(mom3,sgn,dmom3_dz(:,:),lll,3)
+          call der_onesided_4_slice(rhoE_pU(:,:,:,2),sgn,drhoE_pU(:,:,2),lll,3)
+          
 
-        enddo
       else
         tmp33=0
         tmp23=0
@@ -4392,9 +4386,10 @@ module Chemistry
         grad_rho(:,:,3)=tmp3_rho(m1:m2,n1:n2)
         grad_pp(:,:,3)=tmp3_pp(m1:m2,n1:n2)
 
-       if ((nygrid /= 1) .and. (nzgrid == 1)) then
+       if ((nygrid /= 1) .or. (nzgrid /= 1)) then
 
-          T_1(:,:)=-dmom2_dy(m1:m2,n1:n2)-dmom3_dz(m1:m2,n1:n2)
+          T_1(:,:)=(-dmom2_dy(m1:m2,n1:n2)-dmom3_dz(m1:m2,n1:n2)) &
+                   /rho0(m1:m2,n1:n2)
           T_2(:,:)=-f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,1,2) &
                    -f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,1,3) !&
          !          -nu_full(lll,m1:m2,n1:n2)*(d2u1_dy2+d2u1_dz2)
@@ -4405,11 +4400,13 @@ module Chemistry
           T_4(:,:)=-f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,3,2) &
                    -f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,3,3) &
                    -grad_pp(:,:,3)/rho0(m1:m2,n1:n2)
-          T_5(:,:)=-f(lll,m1:m2,n1:n2,iuy)*grad_pp(:,:,2) &
-                   -f(lll,m1:m2,n1:n2,iuz)*grad_pp(:,:,3) &  
-                   -gamma0(m1:m2,n1:n2)*pp(lll,m1:m2,n1:n2) &
-                   *(dui_dxj(:,:,2,2)+dui_dxj(:,:,3,3))
-   !    else
+          T_5(:,:)= drho_prefac(:,:)*(gamma0(m1:m2,n1:n2)-1.)*gamma0(m1:m2,n1:n2) &
+                    *(drhoE_pU(m1:m2,n1:n2,1)+drhoE_pU(m1:m2,n1:n2,2))
+       endif
+
+
+
+       if (nygrid /= 1) then
         do i=1,2 
          if (i==1) then
           nn=n1
@@ -4420,16 +4417,27 @@ module Chemistry
          endif
           M_1(1,i)=(f(lll,m1,nn,iuy) - cs0_ar(m1,nn))&
             *(grad_pp(1,nnn,2)-rho0(m1,nn)*cs0_ar(m1,nn)*dui_dxj(1,nnn,2,2))
-          M_1(ny,i)=KK(ny,nnn)*(cs20_ar(lll,nn)/gamma0(lll,nn)*&
-            rho0(lll,nn)-p_inf(lll-3,ny,nnn))
-          M_2(:,i)=f(lll,m1:m2,nn,iuy)*dui_dxj(:,nnn,1,2)
-          M_3(:,i)=f(lll,m1:m2,nn,iuy)*(cs20_ar(m1:m2,nn)*grad_rho(:,nnn,2)-grad_pp(:,nnn,2))
-          M_4(:,i)=f(lll,m1:m2,nn,iuy)*dui_dxj(:,nnn,3,2)
-          M_5(1,i)=KK(1,nnn)*(cs20_ar(lll,nn)/gamma0(lll,nn)*&
-            rho0(lll,nn)-p_inf(lll-3,1,nnn))
+          M_1(ny,i)=KK(ny,nnn)*(cs20_ar(m2,nn)/gamma0(m2,nn)*&
+            rho0(m2,nn)-p_inf(lll-3,ny,nnn))
+          M_2(1,i)=f(lll,m1,nn,iuy)*dui_dxj(1,nnn,1,2)
+          M_2(ny,i)=f(lll,m2,nn,iuy)*dui_dxj(ny,nnn,1,2)
+          M_3(1,i)=f(lll,m1,nn,iuy) &
+           *(cs20_ar(m1,nn)*grad_rho(1,nnn,2)-grad_pp(1,nnn,2))
+          M_3(ny,i)=f(lll,m2,nn,iuy) &
+           *(cs20_ar(m2,nn)*grad_rho(ny,nnn,2)-grad_pp(ny,nnn,2))
+          M_4(1,i)=f(lll,m1,nn,iuy)*dui_dxj(1,nnn,3,2)
+          M_4(ny,i)=f(lll,m2,nn,iuy)*dui_dxj(ny,nnn,3,2)
+          M_5(1,i)=KK(1,nnn)*(cs20_ar(m1,nn)/gamma0(m1,nn)*&
+            rho0(m1,nn)-p_inf(lll-3,1,nnn))
           M_5(ny,i)=(f(lll,m2,nn,iuy) + cs0_ar(m2,nn))&
             *(grad_pp(ny,nnn,2)+ rho0(m2,nn)*cs0_ar(m2,nn)*dui_dxj(ny,nnn,2,2))
         enddo
+       else
+        M_1=0
+        M_2=0
+        M_3=0
+        M_4=0
+        M_5=0
        endif
 
 
@@ -4442,16 +4450,32 @@ module Chemistry
           mm=m2
           mmm=ny
          endif
-          N_1(:,i)=(f(lll,mm,n1:n2,iuz) - cs0_ar(mmm,n1:n2))&
-            *(grad_pp(mmm,:,3)-rho0(mm,n1:n2)*cs0_ar(mm,n1:n2)*dui_dxj(mmm,:,3,3))
-          N_2(:,i)=f(lll,mm,n1:n2,iuz)*dui_dxj(mmm,:,1,3)
-          N_3(:,i)=f(lll,mm,n1:n2,iuz)*dui_dxj(mmm,:,2,3)
-          N_4(:,i)=f(lll,mm,n1:n2,iuz)*(cs20_ar(mm,n1:n2)*grad_rho(mmm,:,3)-grad_pp(mmm,:,3))
-          N_5(:,i)=(f(lll,mm,n1:n2,iuz) + cs0_ar(mm,n1:n2))&
-            *(grad_pp(mmm,:,3)+ rho0(mm,n1:n2)*cs0_ar(mm,n1:n2)*dui_dxj(mmm,:,3,3))
 
+         N_1(1,i)=(f(lll,mm,n1,iuz) - cs0_ar(mmm,n1))&
+          *(grad_pp(mmm,1,3)-rho0(mm,n1)*cs0_ar(mm,n1)*dui_dxj(mmm,1,3,3))
+         N_1(nz,i)=KK(mmm,nz)*(cs20_ar(mm,nz)/gamma0(mm,nz)*&
+            rho0(mmm,n2)-p_inf(lll-3,ny,nz))
 
+         N_2(1,i)=f(lll,mm,n1,iuz)*dui_dxj(mmm,1,1,3)
+         N_2(nz,i)=f(lll,mm,n2,iuz)*dui_dxj(mmm,nz,1,3)
+         N_3(1,i)=f(lll,mm,n1,iuz)*dui_dxj(mmm,1,2,3)
+         N_3(nz,i)=f(lll,mm,n2,iuz)*dui_dxj(mmm,nz,2,3)
+         N_4(1,i)=f(lll,mm,n1,iuz) &
+            *(cs20_ar(mm,n1)*grad_rho(mmm,1,3)-grad_pp(mmm,1,3))
+         N_4(nz,i)=f(lll,mm,n2,iuz) &
+            *(cs20_ar(mm,n2)*grad_rho(mmm,nz,3)-grad_pp(mmm,nz,3))
+
+         N_5(1,i)=KK(mmm,1)*(cs20_ar(mm,n1)/gamma0(mm,n1)*&
+            rho0(mmm,1)-p_inf(lll-3,mmm,1))
+         N_5(nz,i)=(f(lll,mmm,n2,iuz) + cs0_ar(mmm,n2))&
+            *(grad_pp(mmm,nz,3)+ rho0(mm,n2)*cs0_ar(mm,n2)*dui_dxj(mmm,nz,3,3))
         enddo
+       else
+        N_1=0
+        N_2=0
+        N_3=0
+        N_4=0
+        N_5=0
        endif
 !
       select case(topbot)
@@ -4471,71 +4495,25 @@ module Chemistry
        L_3 = f(lll,m1:m2,n1:n2,iux)*dui_dxj(:,:,2,1)
        L_4 = f(lll,m1:m2,n1:n2,iux)*dui_dxj(:,:,3,1)
 !
-       df(lll,m1:m2,n1:n2,irho_tmp) = drho_prefac*(L_2+0.5*(L_5 + L_1)) 
-       df(lll,m1:m2,n1:n2,iux) = -1./(2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2))*(L_5 - L_1)
+       df(lll,m1:m2,n1:n2,irho_tmp) = &
+         drho_prefac*(L_2+0.5*(L_5 + L_1)) 
+       df(lll,m1:m2,n1:n2,iux) =  &
+         -1./(2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2))*(L_5 - L_1)
        df(lll,m1:m2,n1:n2,iuy) = -L_3
        df(lll,m1:m2,n1:n2,iuz) = -L_4
-       df(lll,m1:m2,n1:n2,ilnTT) = -1./(rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*(-L_2 &
+       df(lll,m1:m2,n1:n2,ilnTT) = &
+          -1./(rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*(-L_2 &
           +0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1)) !&
       ! + RHS_T_full(lll,m1:m2,n1:n2)
 
-      if ((nygrid /= 1) .and.  (nzgrid == 1)) then
-        do i=1,2 
-         if (i==1) then
-          nn=n1
-          nnn=1
-         elseif (i==2) then
-          nn=n2
-          nnn=nz
-         endif
-         df(lll,m1:m2,nn,irho_tmp) =  &
-            drho_prefac(:,nnn)*(L_2(:,nnn)+0.5*(L_5(:,nnn) + L_1(:,nnn))) & 
-             +  T_1(:,nnn)/rho0(m1:m2,nn)
-         df(lll,m1:m2,nn,iux) = -1./&
-           (2.*rho0(m1:m2,nn)*cs0_ar(m1:m2,nn))*(L_5(:,nnn) - L_1(:,nnn)) &  
-           + T_2(:,nnn)
-         df(lll,m1:m2,nn,iuy) =  -L_3(:,nnn)  + T_3(:,nnn)
-         df(lll,m1:m2,nn,iuz) =  -L_4(:,nnn)  + T_4(:,nnn)
-         df(lll,m1:m2,nn,ilnTT) = drho_prefac(:,nnn)*(-L_2(:,nnn) + &
-           0.5*(gamma0(m1:m2,nn)-1.)*(L_5(:,nnn)+L_1(:,nnn))) &
-           !- gamma0(m1:m2,nn)*drho_prefac(:,nnn)*T_5(:,nnn)-T_1(:,nnn)/rho0(m1:m2,nn) &
-           +drho_prefac(:,nnn)*(gamma0(m1:m2,nn)-1.)*gamma0(m1:m2,nn)*drhoE_pU(m1:m2,nn,1)
-       enddo
-
-      elseif (nzgrid /= 1) then
-
+      if ((nygrid /= 1) .or.(nzgrid /= 1))  then
+         df(lll,m1:m2,n1:n2,irho_tmp) = df(lll,m1:m2,n1:n2,irho_tmp) + T_1(:,:)
+         df(lll,m1:m2,n1:n2,iux)      = df(lll,m1:m2,n1:n2,iux)      + T_2(:,:)
+         df(lll,m1:m2,n1:n2,iuy)      = df(lll,m1:m2,n1:n2,iuy)      + T_3(:,:)
+         df(lll,m1:m2,n1:n2,iuz)      = df(lll,m1:m2,n1:n2,iuz)      + T_4(:,:)
+         df(lll,m1:m2,n1:n2,ilnTT)    = df(lll,m1:m2,n1:n2,ilnTT)    + T_5(:,:)
+  
        do i=1,2 
-         if (i==1) then
-          nn=n1
-          nnn=1
-         elseif (i==2) then
-          nn=n2
-          nnn=nz
-         endif
-       !  df(lll,m1:m2,nn,irho_tmp) =  &
-       !     drho_prefac(:,nnn)*(L_2(:,nnn)+0.5*(L_5(:,nnn) + L_1(:,nnn))) &
-       !   + drho_prefac(:,nnn)*(M_3(:,i)+0.5*(M_5(:,i) + M_1(:,i))) + T_1_y(:,i)/rho0(m1:m2,nn)
-       !  df(lll,m1:m2,nn,iux) = -1./&
-       !    (2.*rho0(m1:m2,nn)*cs0_ar(m1:m2,nn))*(L_5(:,nnn) - L_1(:,nnn)) - M_2(:,i)  + T_2_y(:,i)
-       !  df(lll,m1:m2,nn,iuy) = -L_3(:,nnn)-1./&
-       !    (2.*rho0(m1:m2,nn)*cs0_ar(m1:m2,nn))*(M_5(:,i) - M_1(:,i))   + T_3_y(:,i)
-       !  df(lll,m1:m2,nn,iuz) =  -L_4(:,nnn) - M_4(:,i)  + T_4_y(:,i)
-       !  df(lll,m1:m2,nn,ilnTT) = drho_prefac(:,nnn)*(-L_2(:,nnn) &
-       !   + 0.5*(gamma0(m1:m2,nn)-1.)*(L_5(:,nnn)+L_1(:,nnn))) &
-       !  + drho_prefac(:,nnn)*(-M_3(:,i) &
-       !   + 0.5*(gamma0(m1:m2,nn)-1.)*(M_5(:,i)+M_1(:,i))) &
-       !  - gamma0(m1:m2,nn)*drho_prefac(:,nnn)/2.*T_5_y(:,i)
-       enddo
-
-    endif
-
-!print*,'Nat1', f(l1,m1+1,n1,iux), df(l1,m1+1,n1,iux), l1,m1+1,n1
-!print*,'Nat1', M_5(2,1), M_1(2,1)!, cs20_ar(m1+1,n1),gamma0(m1+1,n1), &
-!
-
-   
-       if (nygrid /= 1) then
-         do i=1,2 
           if (i==1) then
            nn=n1
            nnn=1
@@ -4555,20 +4533,21 @@ module Chemistry
 
          df(lll,mm,nn,irho_tmp) =  &
             drho_prefac(mmm,nnn)*(L_2(mmm,nnn)+0.5*(L_5(mmm,nnn) + L_1(mmm,nnn))) &
-         + drho_prefac(mmm,nnn)*(M_3(mmm,i)+0.5*(M_5(mmm,i) + M_1(mmm,i)))! &
-          !+ drho_prefac(1,nnn)*(N_4(nnn,i)+0.5*(N_5(nnn,i) + N_1(nnn,i)))
+          + drho_prefac(mmm,nnn)*(M_3(mmm,i)+0.5*(M_5(mmm,i) + M_1(mmm,i))) &
+          + drho_prefac(mmm,nnn)*(N_4(nnn,i)+0.5*(N_5(nnn,i) + N_1(nnn,i)))
          df(lll,mm,nn,iux) = -1./&
-          (2.*rho0(mm,nn)*cs0_ar(mm,nn))*(L_5(mmm,nnn) - L_1(mmm,nnn)) -M_2(mmm,i) !-N_2(nnn,i)
+          (2.*rho0(mm,nn)*cs0_ar(mm,nn))*(L_5(mmm,nnn) - L_1(mmm,nnn)) &
+          -M_2(mmm,i) -N_2(nnn,i)
          df(lll,mm,nn,iuy) = -L_3(mmm,nnn)-1./&
-          (2.*rho0(mm,nn)*cs0_ar(mm,nn))*(M_5(mmm,i) - M_1(mmm,i))  ! - N_3(nnn,i)
-          df(lll,mm,nn,iuz) =  -L_4(mmm,nnn) - M_4(mmm,i)! -1./&
-          !(2.*rho0(m1,nn)*cs0_ar(m1,nn))*(N_5(nnn,i) - N_1(nnn,i))
-           df(lll,mm,nn,ilnTT) = drho_prefac(mmm,nnn)*(-L_2(mmm,nnn) &
+          (2.*rho0(mm,nn)*cs0_ar(mm,nn))*(M_5(mmm,i) - M_1(mmm,i))  - N_3(nnn,i)
+         df(lll,mm,nn,iuz) =  -L_4(mmm,nnn) - M_4(mmm,i) -1./&
+          (2.*rho0(mm,nn)*cs0_ar(mm,nn))*(N_5(nnn,i) - N_1(nnn,i))
+         df(lll,mm,nn,ilnTT) = drho_prefac(mmm,nnn)*(-L_2(mmm,nnn) &
           + 0.5*(gamma0(mm,nn)-1.)*(L_5(mmm,nnn)+L_1(mmm,nnn))) &
           + drho_prefac(mmm,nnn)*(-M_3(mmm,i) &
-          + 0.5*(gamma0(mm,nn)-1.)*(M_5(mmm,i)+M_1(mmm,i))) !&
-           !+ drho_prefac(1,nnn)*(-N_3(1,i) &
-         ! +0.5*(gamma0(m1,nn)-1.)*(N_5(1,i)+N_1(1,i))) 
+          + 0.5*(gamma0(mm,nn)-1.)*(M_5(mmm,i)+M_1(mmm,i))) &
+          + drho_prefac(1,nnn)*(-N_3(1,i) &
+          + 0.5*(gamma0(mm,nn)-1.)*(N_5(1,i)+N_1(1,i))) 
 
          enddo
          enddo
@@ -4577,7 +4556,6 @@ module Chemistry
 
 
 !print*,'Nat11',df(l1,m1+1,n1,iux),df(l1,m1+1,n1,iuy),df(l1,m1+1,n1,iuz)!,M_5(1,1),M_1(1,1)
-
 !print*,'Nat11',df(l1,m1+1,n1,irho_tmp),df(l1,m1+1,n1,ilnTT)!,L_5(nx,1),L_1(nx,1)
 
       if (nchemspec>1) then
@@ -4613,6 +4591,7 @@ module Chemistry
   
     endsubroutine bc_nscbc_nref_subout_x
 !***********************************************************************
+!
 !***********************************************************
     subroutine bc_nscbc_nref_subout_y(f,df,topbot,nscbc_sigma_out)
 !
@@ -4635,7 +4614,8 @@ module Chemistry
       real, dimension (nx,nz) :: drho_prefac, KK
       real, dimension (nx,nz) :: M_1, M_2, M_3, M_4, M_5
       real, dimension (nx,2)  :: L_1, L_2, L_3, L_4, L_5
-      real, dimension (nx,nz) ::      T_1, T_2, T_3, T_4, T_5
+      real, dimension (nz,2)  :: N_1, N_2, N_3, N_4, N_5
+      real, dimension (nx,nz) :: T_1, T_2, T_3, T_4, T_5
       real, dimension (mx,mz) :: cs2y,cs0_ar,cs20_ar,dmom1_dx,dmom3_dz
       real, dimension (mx,my,mz) :: rhoE_p
       real, dimension (mx,my,mz,2) ::   rhoE_pU
@@ -4704,18 +4684,13 @@ module Chemistry
 
          do i=1,mx
          do k=1,mz
-  !    do i=1,mz
-   !     call der_pencil(1,rhoE_p(:,mmm,i),drhoE_p_dx(:,i))
-  !    enddo
-
-         if (minval(gamma_full(i,:,k))<=0.) then
+          if (minval(gamma_full(i,:,k))<=0.) then
            pp(i,:,k)=0.
           else
            pp(i,:,k)=cs2_full(i,:,k)*rho_full(i,:,k)/gamma_full(i,:,k)
           endif
          enddo
          enddo
-
 
          rhoE_p(:,mmm,:)=0.5*rho_full(:,mmm,:) &
             *(f(:,mmm,:,iux)**2+f(:,mmm,:,iuy)**2+f(:,mmm,:,iuz)**2) &
@@ -4753,16 +4728,6 @@ module Chemistry
           call der_onesided_4_slice(mom1,sgn,dmom1_dx(:,:),mmm,1)
           call der_onesided_4_slice(rhoE_pU(:,:,:,1),sgn,drhoE_pU(:,:,1),mmm,1)
 
-        do i=n1,n2
-     !     call der_pencil(1,f(:,mmm,i,iux),tmp11(:,i))
-     !     call der_pencil(1,f(:,mmm,i,iuy),tmp21(:,i))
-     !    call der_pencil(1,f(:,mmm,i,iuz),tmp31(:,i))
-     !     call der_pencil(1,rho_full(:,mmm,i),tmp1_rho(:,i))
-     !     call der_pencil(1,pp(:,mmm,i),tmp1_pp(:,i))
-     !     call der_pencil(1,mom1(:,mmm,i),dmom1_dx(:,i))
-     !     call der_pencil(1,rhoE_pU(:,mmm,i,1),drhoE_pU(:,i,1))
-
-        enddo
       else
         tmp31=0
         tmp21=0
@@ -4778,18 +4743,15 @@ module Chemistry
         grad_rho(:,:,1)=tmp1_rho(l1:l2,n1:n2)
         grad_pp(:,:,1)=tmp1_pp(l1:l2,n1:n2)
 
+      if (nzgrid /= 1) then
+     
+          call der_onesided_4_slice(f,sgn,iux,tmp13(:,:),mmm,3)
+          call der_onesided_4_slice(f,sgn,iuy,tmp23(:,:),mmm,3)
+          call der_onesided_4_slice(f,sgn,iuz,tmp33(:,:),mmm,3)
+          call der_onesided_4_slice(rho_full,sgn,tmp3_rho(:,:),mmm,3)
+          call der_onesided_4_slice(pp,sgn,tmp3_pp(:,:),mmm,2)
+          call der_onesided_4_slice(mom3,sgn,dmom3_dz(:,:),mmm,3)
 
-
-        if (nzgrid /= 1) then
-        do i=l1,l2
-          call der_pencil(3,f(i,mmm,:,iux),tmp13(i,:))
-          call der_pencil(3,f(i,mmm,:,iuy),tmp23(i,:))
-          call der_pencil(3,f(i,mmm,:,iuz),tmp33(i,:))
-          call der_pencil(3,rho_full(i,mmm,:),tmp3_rho(i,:))
-          call der_pencil(3,pp(i,mmm,:),tmp3_pp(i,:))
-          call der_pencil(3,mom3(i,mmm,:),dmom3_dz(i,:))
-
-        enddo
       else
         tmp33=0
         tmp23=0
@@ -4804,10 +4766,9 @@ module Chemistry
         grad_rho(:,:,3)=tmp3_rho(l1:l2,n1:n2)
         grad_pp(:,:,3)=tmp3_pp(l1:l2,n1:n2)
 
-
-
-      if ((nxgrid /= 1)  .and. (nzgrid == 1))  then
-          T_1(:,:)=-dmom1_dx(l1:l2,n1:n2)-dmom3_dz(l1:l2,n1:n2)
+        if ((nxgrid /= 1)  .or. (nzgrid /= 1))  then
+          T_1(:,:)=(-dmom1_dx(l1:l2,n1:n2)-dmom3_dz(l1:l2,n1:n2)) &
+                   /rho0(l1:l2,n1:n2)
           T_3(:,:)=-f(l1:l2,mmm,n1:n2,iux)*dui_dxj(:,:,2,1) &
                    -f(l1:l2,mmm,n1:n2,iuz)*dui_dxj(:,:,2,3)
           T_2(:,:)=-f(l1:l2,mmm,n1:n2,iux)*dui_dxj(:,:,1,1) &
@@ -4816,12 +4777,12 @@ module Chemistry
           T_4(:,:)=-f(l1:l2,mmm,n1:n2,iux)*dui_dxj(:,:,3,1) &
                    -f(l1:l2,mmm,n1:n2,iuz)*dui_dxj(:,:,3,3) &
                    -grad_pp(:,:,3)/rho0(l1:l2,n1:n2)
-          T_5(:,:)=-f(l1:l2,mmm,n1:n2,iux)*grad_pp(:,:,1) &
-                   -f(l1:l2,mmm,n1:n2,iuz)*grad_pp(:,:,3) &  
-                   -gamma0(l1:l2,n1:n2)*pp(l1:l2,mmm,n1:n2) &
-                   *(dui_dxj(:,:,1,1)+dui_dxj(:,:,3,3))
+          T_5(:,:)=+drho_prefac(:,:)*(gamma0(l1:l2,n1:n2)-1.)*gamma0(l1:l2,n1:n2) &
+                   *(drhoE_pU(l1:l2,n1:n2,1)+drhoE_pU(l1:l2,n1:n2,2))
 
-    !  elseif (nzgrid /= 1)  then
+        endif
+
+       if ((nxgrid /= 1)) then 
         do i=1,2 
          if (i==1) then
           nn=n1
@@ -4832,18 +4793,66 @@ module Chemistry
          endif
           L_1(1,i)=(f(l1,mmm,nn,iux) - cs0_ar(l1,nn))&
             *(grad_pp(1,nnn,1)-rho0(l1,nn)*cs0_ar(l1,nn)*dui_dxj(1,nnn,1,1))
-          L_1(nx,i)=KK(nx,nnn)*(cs20_ar(mmm,nn)/gamma0(mmm,nn)*&
-           rho0(mmm,nn)-p_inf(nx,mmm-3,nnn))
-          L_2(:,i)=f(l1:l2,mmm,nn,iux)*(cs20_ar(l1:l2,nn)*grad_rho(:,nnn,1)-grad_pp(:,nnn,1))
-          L_3(:,i)=f(l1:l2,mmm,nn,iux)*dui_dxj(:,nnn,2,1)
-          L_4(:,i)=f(l1:l2,mmm,nn,iux)*dui_dxj(:,nnn,3,1)
-          L_5(1,i)=KK(1,nnn)*(cs20_ar(mmm,nn)/gamma0(mmm,nn)*&
-            rho0(mmm,nn)-p_inf(1,mmm-3,nnn))
+          L_1(nx,i)=KK(nx,nnn)*(cs20_ar(l1,nn)/gamma0(l2,nn)*&
+           rho0(l2,nn)-p_inf(nx,mmm-3,nnn))
+          L_2(1,i)=f(l1,mmm,nn,iux)*(cs20_ar(l1,nn) &
+                  *grad_rho(1,nnn,1)-grad_pp(1,nnn,1))
+          L_2(nx,i)=f(l2,mmm,nn,iux)*(cs20_ar(l2,nn) &
+                  *grad_rho(nx,nnn,1)-grad_pp(nx,nnn,1))
+          L_3(1,i)=f(l1,mmm,nn,iux)*dui_dxj(1,nnn,2,1)
+          L_3(nx,i)=f(l2,mmm,nn,iux)*dui_dxj(nx,nnn,2,1)
+          L_4(1,i)=f(l1,mmm,nn,iux)*dui_dxj(1,nnn,3,1)
+          L_4(nx,i)=f(l2,mmm,nn,iux)*dui_dxj(nx,nnn,3,1)
+          L_5(1,i)=KK(1,nnn)*(cs20_ar(l1,nn)/gamma0(l1,nn)*&
+            rho0(l1,nn)-p_inf(1,mmm-3,nnn))
           L_5(nx,i)=(f(l2,mmm,nn,iux) + cs0_ar(l2,nn))&
             *(grad_pp(nx,nnn,1)+ rho0(l2,nn)*cs0_ar(l2,nn)*dui_dxj(nx,nnn,1,1))
        enddo
+       else
+        L_1=0
+        L_2=0 
+        L_3=0 
+        L_4=0 
+        L_5=0 
        endif
 !
+
+       if (nzgrid /= 1) then
+        do i=1,2 
+         if (i==1) then
+          ll=l1
+          lll=1
+         elseif (i==2) then
+          ll=l2
+          lll=nx
+         endif
+
+         N_1(1,i)=(f(ll,mmm,n1,iuz) - cs0_ar(lll,n1))&
+          *(grad_pp(lll,1,3)-rho0(ll,n1)*cs0_ar(ll,n1)*dui_dxj(lll,1,3,3))
+         N_1(nz,i)=KK(lll,nz)*(cs20_ar(ll,nz)/gamma0(ll,nz)*&
+            rho0(lll,n2)-p_inf(lll,mmm-3,nz))
+
+         N_2(1,i)=f(ll,mmm,n1,iuz)*dui_dxj(lll,1,1,3)
+         N_2(nz,i)=f(ll,mmm,n2,iuz)*dui_dxj(lll,nz,1,3)
+         N_3(1,i)=f(ll,mmm,n1,iuz)*dui_dxj(lll,1,2,3)
+         N_3(nz,i)=f(ll,mmm,n2,iuz)*dui_dxj(lll,nz,2,3)
+         N_4(1,i)=f(ll,mmm,n1,iuz) &
+            *(cs20_ar(ll,n1)*grad_rho(lll,1,3)-grad_pp(lll,1,3))
+         N_4(nz,i)=f(ll,mmm,n2,iuz) &
+            *(cs20_ar(ll,n2)*grad_rho(lll,nz,3)-grad_pp(lll,nz,3))
+
+         N_5(1,i)=KK(lll,1)*(cs20_ar(ll,n1)/gamma0(ll,n1)*&
+            rho0(lll,1)-p_inf(lll,mmm-3,1))
+         N_5(nz,i)=(f(ll,mmm,n2,iuz) + cs0_ar(lll,n2))&
+            *(grad_pp(lll,nz,3)+ rho0(ll,n2)*cs0_ar(ll,n2)*dui_dxj(lll,nz,3,3))
+        enddo
+       else
+        N_1=0
+        N_2=0
+        N_3=0
+        N_4=0
+        N_5=0
+       endif
    
 !
       select case(topbot)
@@ -4865,81 +4874,20 @@ module Chemistry
 !
 
       df(l1:l2,mmm,n1:n2,irho_tmp) = drho_prefac*(M_2+0.5*(M_5 + M_1)) 
-      df(l1:l2,mmm,n1:n2,iux) = -M_3
+      df(l1:l2,mmm,n1:n2,iux) = -M_3 
       df(l1:l2,mmm,n1:n2,iuy) = -1./&
           (2.*rho0(l1:l2,n1:n2)*cs0_ar(l1:l2,n1:n2))*(M_5 - M_1) !&
       df(l1:l2,mmm,n1:n2,iuz) = -M_4
-      df(l1:l2,mmm,n1:n2,ilnTT) = -1./&
-          (rho0(l1:l2,n1:n2)*cs20_ar(l1:l2,n1:n2))*(-M_2 &
-          +0.5*(gamma0(l1:l2,n1:n2)-1.)*(M_5+M_1)) &
-          +drho_prefac*(gamma0(l1:l2,n1:n2)-1.) 
- !       -1./(rho0(l1:l2,n1:n2)*cs20_ar(l1:l2,n1:n2))* &
- !       (gamma0(l1:l2,n1:n2)-1.) &
- !      *gamma0(l1:l2,n1:n2)*drhoE_p_dy(l1:l2,n1:n2) !&
-    !    
-    !       RHS_T_full(l1:l2,mmm,n1:n2)
-
-
-
-      if ((nxgrid /= 1) .and. (nzgrid == 1)) then
-
-       do i=1,2 
-         if (i==1) then
-          nn=n1
-          nnn=1
-         elseif (i==2) then
-          nn=n2
-          nnn=nz
-         endif
-
-
-       df(l1:l2,mmm,nn,irho_tmp) = &
-       + drho_prefac(:,nnn)*(M_2(:,nnn)+0.5*(M_5(:,nnn) &
-       + M_1(:,nnn))) + T_1(:,nnn)/rho0(l1:l2,nn)
-        df(l1:l2,mmm,nn,iux) =  -M_3(:,nnn)+T_2(:,nnn)
-      df(l1:l2,mmm,nn,iuy) =   - 1./&
-        (2.*rho0(l1:l2,nn)*cs0_ar(l1:l2,nn))*(M_5(:,nnn) & 
-        - M_1(:,nnn)) + T_3(:,nnn)
-      df(l1:l2,mmm,nn,iuz) =  - M_4(:,nnn) + T_4(:,nnn)
-      df(l1:l2,mmm,nn,ilnTT) =  +drho_prefac(:,nnn)*(-M_2(:,nnn) &
-         +0.5*(gamma0(l1:l2,nn)-1.)*(M_5(:,nnn)+M_1(:,nnn))) &
-    !     - gamma0(l1:l2,nn)*drho_prefac(:,nnn)*T_5(:,nnn)-T_1(:,nnn)/rho0(l1:l2,nn) !&
-         +drho_prefac(:,nnn)*(gamma0(l1:l2,nn)-1.)*gamma0(l1:l2,nn)*drhoE_pU(l1:l2,nn,1)
-          !+RHS_T_full(l1:l2,mmm,nn)
-      enddo
-
-
-      elseif (nzgrid /= 1) then 
-
-       do i=1,2 
-         if (i==1) then
-          nn=n1
-          nnn=1
-         elseif (i==2) then
-          nn=n2
-          nnn=nz
-         endif
-
- !        df(l1:l2,mmm,nn,irho_tmp) = &
- !         drho_prefac(:,nnn)*(L_2(:,i)+0.5*(L_5(:,i) + L_1(:,i))) &
- !       + drho_prefac(:,nnn)*(M_2(:,nnn)+0.5*(M_5(:,nnn) + M_1(:,nnn))) + T_1_x(:,i)/rho0(l1:l2,nn)
- !        df(l1:l2,mmm,nn,iux) =  -1./&
- !       (2.*rho0(l1:l2,nn)*cs0_ar(l1:l2,nn))*(L_5(:,i) - L_1(:,i))-M_3(:,nnn)+T_2_x(:,i)
- !      df(l1:l2,mmm,nn,iuy) =  - L_3(:,i) - 1./&
- !         (2.*rho0(l1:l2,nn)*cs0_ar(l1:l2,nn))*(M_5(:,nnn) - M_1(:,nnn)) + T_3_x(:,i)
- !       df(l1:l2,mmm,nn,iuz) =  - L_4(:,i) - M_4(:,nnn) + T_4_x(:,i)
- !       df(l1:l2,mmm,nn,ilnTT) = &
- !        drho_prefac(:,nnn)*(-L_2(:,i) &
- !          +0.5*(gamma0(l1:l2,nn)-1.)*(L_5(:,i)+L_1(:,i)))  &
- !         +drho_prefac(:,nnn)*(-M_2(:,nnn) &
- !          +0.5*(gamma0(l1:l2,nn)-1.)*(M_5(:,nnn)+M_1(:,nnn))) &
- !          - gamma0(l1:l2,nn)*drho_prefac(:,nnn)/2.*T_5_x(:,i)
-      enddo
-
-      endif
-
-   ! if (nzgrid /= 1) then
-
+      df(l1:l2,mmm,n1:n2,ilnTT) = drho_prefac(:,:)*(-M_2 &
+          +0.5*(gamma0(l1:l2,n1:n2)-1.)*(M_5+M_1))
+    
+       if ((nxgrid /= 1) .or. (nzgrid /= 1)) then
+         df(l1:l2,mmm,n1:n2,irho_tmp) = df(l1:l2,mmm,n1:n2,irho_tmp) + T_1(:,:)
+         df(l1:l2,mmm,n1:n2,iux) =      df(l1:l2,mmm,n1:n2,iux)      + T_2(:,:)
+         df(l1:l2,mmm,n1:n2,iuy) =      df(l1:l2,mmm,n1:n2,iuy)      + T_3(:,:)
+         df(l1:l2,mmm,n1:n2,iuz) =      df(l1:l2,mmm,n1:n2,iuz)      + T_4(:,:)
+         df(l1:l2,mmm,n1:n2,ilnTT) =    df(l1:l2,mmm,n1:n2,ilnTT)    + T_1(:,:)
+  
         do i=1,2 
          if (i==1) then
           nn=n1
@@ -4961,19 +4909,24 @@ module Chemistry
 
         df(ll,mmm,nn,irho_tmp) = &
           drho_prefac(lll,nnn)*(L_2(lll,i)+0.5*(L_5(lll,i) + L_1(lll,i))) &
-        + drho_prefac(lll,nnn)*(M_2(lll,nnn)+0.5*(M_5(lll,nnn) + M_1(lll,nnn)))
+        + drho_prefac(lll,nnn)*(M_2(lll,nnn)+0.5*(M_5(lll,nnn) + M_1(lll,nnn))) &
+        + drho_prefac(lll,nnn)*(N_2(lll,nnn)+0.5*(N_5(lll,nnn) + N_1(lll,nnn)))
          df(ll,mmm,nn,iux) =  -1./&
-        (2.*rho0(ll,nn)*cs0_ar(ll,nn))*(L_5(lll,i) - L_1(lll,i))-M_3(lll,nnn)
+           (2.*rho0(ll,nn)*cs0_ar(ll,nn))*(L_5(lll,i) - L_1(lll,i)) &
+           -M_3(lll,nnn)-N_2(lll,nnn)
         df(ll,mmm,nn,iuy) =  - L_3(lll,i) - 1./&
-          (2.*rho0(ll,nn)*cs0_ar(ll,nn))*(M_5(lll,nnn) - M_1(lll,nnn))
-        df(ll,mmm,nn,iuz) =  - L_4(lll,i) - M_4(lll,nnn) 
+          (2.*rho0(ll,nn)*cs0_ar(ll,nn))*(M_5(lll,nnn) - M_1(lll,nnn))-N_3(lll,nnn)
+        df(ll,mmm,nn,iuz) =  - L_4(lll,i) - M_4(lll,nnn)  - N_4(lll,nnn) 
         df(ll,mmm,nn,ilnTT) = drho_prefac(lll,nnn)*(-L_2(lll,i) &
            +0.5*(gamma0(ll,nn)-1.)*(L_5(lll,i)+L_1(lll,i)))  &
-          +drho_prefac(lll,nnn)*(-M_2(lll,nnn)+0.5*(gamma0(ll,nn)-1.)*(M_5(lll,nnn)+M_1(lll,nnn)))
+          +drho_prefac(lll,nnn)*(-M_2(lll,nnn) &
+          +0.5*(gamma0(ll,nn)-1.)*(M_5(lll,nnn)+M_1(lll,nnn))) &
+           +drho_prefac(lll,nnn)*(-N_2(lll,nnn) &
+          +0.5*(gamma0(ll,nn)-1.)*(N_5(lll,nnn)+N_1(lll,nnn)))
       enddo
       enddo
 
-
+    endif
 
 !print*,'Nat111',df(l1+1,m1,n1,iux),df(l1+1,m1,n1,iuy),df(l1+1,m1,n1,iuz)!,M_5(1,1),M_1(1,1)
 ! print*,'Nat111',df(l1+1,m1,n1,irho_tmp),df(l1+1,m1,n1,ilnTT)!,L_5(nx,1),L_1(nx,1)
@@ -5011,9 +4964,8 @@ module Chemistry
       endif
 !
     endsubroutine bc_nscbc_nref_subout_y
-!***********************************************************************
-!***********************************************************
-    subroutine bc_nscbc_nref_subout_z(f,df,topbot,nscbc_sigma_out)
+!***********************************************************************************
+   subroutine bc_nscbc_nref_subout_z(f,df,topbot,nscbc_sigma_out)
 !
 !   nscbc case
 !   subsonic non-reflecting outflow boundary conditions
@@ -5029,19 +4981,28 @@ module Chemistry
       character (len=3) :: topbot
       real, dimension (mx,my) :: rho0,gamma0
    !   real, dimension (mx,my,mz) :: mom2, rho_ux2, rho_uy2
-       real, dimension (mx,my,mz) :: mom1,mom3
+       real, dimension (mx,my,mz) :: mom1,mom2
     !  real, dimension (mx,my,mz) :: rho_gamma, rhoE_p
-      real, dimension (nx,ny) :: dux_dz,duy_dz,duz_dz, drho_dz, dpp_dz,dYk_dx,dYk_dy,dYk_dz
-      real, dimension (nx,ny) :: drho_prefac, KK, L_1, L_2, L_3,L_4, L_5
-      real, dimension (mx,my) :: cs2z,cs0_ar,cs20_ar,dmom1_dx
+         real, dimension (mx,my,mz) :: rhoE_p
+      real, dimension (mx,my,mz,2) ::   rhoE_pU
+      real, dimension (mx,my,2) :: drhoE_pU
+      real, dimension (nx,ny) ::  drho_dz, dpp_dz,dYk_dx,dYk_dy,dYk_dz
+      real, dimension (nx,ny) :: drho_prefac, KK, N_1, N_2, N_3,N_4, N_5
+      real, dimension (ny,2)  :: M_1, M_2, M_3, M_4, M_5
+      real, dimension (nx,2)  :: L_1, L_2, L_3, L_4, L_5
+      real, dimension (nx,ny) :: T_1, T_2, T_3, T_4, T_5
+      real, dimension (mx,my) :: cs2z,cs0_ar,cs20_ar,dmom1_dx,dmom2_dy
     !  real, dimension (mx,mz) :: drhoE_p_dx, duy_dx!,dYk_dy
       real, dimension (nx,ny,nchemspec) :: bound_rhs_Y
     !  real, dimension (nx,nz) :: bound_rhs_T
       real, dimension (mx,my,mz) :: cs2_full, gamma_full, rho_full, pp
       real, dimension (nx,ny,nz) :: p_inf
-!      real, dimension(ny,nz,3,3) :: dui_dxj
+      real, dimension(nx,ny,3,3) :: dui_dxj
+       real, dimension (mx,my)     :: tmp11,tmp21,tmp31,tmp12,tmp22,tmp32
+      real, dimension (mx,my)     :: tmp1_rho,tmp2_rho,tmp1_pp,tmp2_pp
+      real, dimension (nx,ny,3)   :: grad_rho, grad_pp
 !
-      integer :: nnn, sgn,i,j,k
+      integer :: nnn, sgn,i,j,k, mmm,mm,lll,ll, irho_tmp
       real :: Mach_num,nscbc_sigma_out
 !
       intent(inout) :: f
@@ -5074,11 +5035,13 @@ module Chemistry
          cs20_ar=cs2_full(:,:,nnn)
          cs0_ar=cs2_full(:,:,nnn)**0.5
          gamma0=gamma_full(:,:,nnn)
+         irho_tmp=irho
 
         if (ldensity_nolog) then
           rho_full = f(:,:,:,irho)
           rho0(:,:) = f(:,:,nnn,irho)
           drho_prefac=-1./cs20_ar(l1:l2,m1:m2)
+          irho_tmp=ilnrho
         else
           rho_full = exp(f(:,:,:,ilnrho))
           rho0(:,:) = rho_full(:,:,nnn)
@@ -5095,21 +5058,17 @@ module Chemistry
          enddo
          enddo
 
-     !    mom2(:,:,nnn)=rho0(:,:)*f(:,:,nnn,iuy)
-     !    rho_ux2(:,:,nnn)=rho0(:,:)*f(:,:,nnn,iux)*f(:,:,nnn,iux)
-     !    rho_uy2(:,:,nnn)=rho0(:,:)*f(:,:,nnn,iuy)*f(:,:,nnn,iuy)
-     !    do i=1,mx
-     !    do k=1,my
-     !     if (gamma0(i,k)<=0.) then
-     !      rho_gamma(i,k,nnn)=0.
-     !      rhoE_p(i,k,nnn)=0.
-     !     else
-     !      rho_gamma(i,k,nnn)=rho0(i,k)/gamma0(i,k)
-     !      rhoE_p(i,k,nnn)=0.5*rho_ux2(i,mmm,k)+0.5*rho_uy2(i,mmm,k) &
-     !                    +cs20_ar(i,k)/(gamma0(i,k)-1.)*rho0(i,k)
-     !     endif
-     !    enddo
-     !    enddo
+         mom1(:,:,nnn)=rho0(:,:)*f(:,:,nnn,iux)
+         mom2(:,:,nnn)=rho0(:,:)*f(:,:,nnn,iuy)
+         rhoE_p(:,:,nnn)=0.5*rho_full(:,:,nnn) &
+            *(f(:,:,nnn,iux)**2+f(:,:,nnn,iuy)**2+f(:,:,nnn,iuz)**2) &
+             +gamma_full(:,:,nnn)/(gamma_full(:,:,nnn)-1)*pp_full(:,:,nnn)
+         rhoE_pU(:,:,nnn,1)=rhoE_p(:,:,nnn)*f(:,:,nnn,iux) 
+         rhoE_pU(:,:,nnn,2)=rhoE_p(:,:,nnn)*f(:,:,nnn,iuy)
+        
+        Mach_num=maxval(f(l1:l2,m1:m2,nnn,iuy)/cs0_ar(l1:l2,m1:m2))
+        KK=nscbc_sigma_out*(1.-Mach_num*Mach_num)*cs0_ar(l1:l2,m1:m2)/Lxyz(3)
+    
       else
         print*,"bc_nscbc_subin_y: leos_idealgas=",leos_idealgas,"."
        print*,"NSCBC subsonic inflos is only implemented "//&
@@ -5120,65 +5079,234 @@ module Chemistry
 
       call der_onesided_4_slice(rho_full,sgn,drho_dz,nnn,3)
       call der_onesided_4_slice(pp,sgn,dpp_dz,nnn,3)
-      call der_onesided_4_slice(f,sgn,iux,dux_dz,nnn,3)
-      call der_onesided_4_slice(f,sgn,iuy,duy_dz,nnn,3)
-      call der_onesided_4_slice(f,sgn,iuz,duz_dz,nnn,3)
+      call der_onesided_4_slice(f,sgn,iux,dui_dxj(:,:,1,3),nnn,3)
+      call der_onesided_4_slice(f,sgn,iuy,dui_dxj(:,:,2,3),nnn,3)
+      call der_onesided_4_slice(f,sgn,iuz,dui_dxj(:,:,3,3),nnn,3)
 
-  !    call der_onesided_4_slice(f,sgn,ilnrho,div_rho(:,:,1),lll,1)
-  !    call der_onesided_4_slice(f,sgn,iux,dui_dxj(:,:,1,1),lll,1)
-  !    call der_onesided_4_slice(f,sgn,iuy,dui_dxj(:,:,2,1),lll,1)
-  !    call der_onesided_4_slice(f,sgn,iuz,dui_dxj(:,:,3,1),lll,1)
+  
+      
+      if (nxgrid /= 1) then
 
-    !  do i=1,mz
-    !    call der_pencil(1,mom2(:,mmm,i),dmom2_dx(:,i))
-    !   call der_pencil(1,f(:,mmm,i,iux),duy_dx(:,i))
-    !    call der_pencil(1,rhoE_p(:,mmm,i),drhoE_p_dx(:,i))
-    !  enddo
-!
-      Mach_num=maxval(f(l1:l2,m1:m2,nnn,iuy)/cs0_ar(l1:l2,m1:m2))
-      KK=nscbc_sigma_out*(1.-Mach_num*Mach_num)*cs0_ar(l1:l2,m1:m2)/Lxyz(3)
+          call der_onesided_4_slice(f,sgn,iux,tmp11(:,:),nnn,1)
+          call der_onesided_4_slice(f,sgn,iuy,tmp21(:,:),nnn,1)
+          call der_onesided_4_slice(f,sgn,iuz,tmp31(:,:),nnn,1)
+          call der_onesided_4_slice(rho_full,sgn,tmp1_rho(:,:),nnn,1)
+          call der_onesided_4_slice(pp,sgn,tmp1_pp(:,:),nnn,1)
+          call der_onesided_4_slice(mom1,sgn,dmom1_dx(:,:),nnn,1)
+          call der_onesided_4_slice(rhoE_pU(:,:,:,1),sgn,drhoE_pU(:,:,1),nnn,1)
 
+      else
+        tmp31=0
+        tmp21=0
+        tmp11=0
+        tmp1_rho=0
+        tmp1_pp=0
+        dmom1_dx=0
+        drhoE_pU(:,:,1)=0
+      endif
+        dui_dxj(:,:,1,1)=tmp11(l1:l2,m1:m2)
+        dui_dxj(:,:,2,1)=tmp21(l1:l2,m1:m2)
+        dui_dxj(:,:,3,1)=tmp31(l1:l2,m1:m2)
+        grad_rho(:,:,1)=tmp1_rho(l1:l2,m1:m2)
+        grad_pp(:,:,1)=tmp1_pp(l1:l2,m1:m2)
+
+       if (nygrid /= 1) then
+
+        call der_onesided_4_slice(f,sgn,iux,tmp12(:,:),nnn,2)
+        call der_onesided_4_slice(f,sgn,iuy,tmp22(:,:),nnn,2)
+        call der_onesided_4_slice(f,sgn,iuz,tmp32(:,:),nnn,2)
+        call der_onesided_4_slice(rho_full,sgn,tmp2_rho(:,:),nnn,2)
+        call der_onesided_4_slice(pp,sgn,tmp2_pp(:,:),nnn,2)
+        call der_onesided_4_slice(mom2,sgn,dmom2_dy(:,:),nnn,2)
+        call der_onesided_4_slice(rhoE_pU(:,:,:,2),sgn,drhoE_pU(:,:,2),nnn,2)
+      else
+        tmp32=0
+        tmp22=0
+        tmp12=0
+        tmp2_rho=0
+        tmp2_pp=0
+        dmom2_dy=0
+        drhoE_pU(:,:,1)=0
+     !   d2u1_dy2=0
+     !   d2u2_dy2=0
+     !  d2u3_dy2=0
+       ! dlnT_dxj(:,:,2)=0.
+      endif
+        dui_dxj(:,:,1,2)=tmp12(l1:l2,m1:m2)
+        dui_dxj(:,:,2,2)=tmp22(l1:l2,m1:m2)
+        dui_dxj(:,:,3,2)=tmp32(l1:l2,m1:m2)
+        grad_rho(:,:,2)=tmp2_rho(l1:l2,m1:m2)
+        grad_pp(:,:,2)=tmp2_pp(l1:l2,m1:m2)
+
+
+      
+        if ((nxgrid /= 1)  .or. (nygrid /= 1))  then
+         T_1(:,:)=(-dmom1_dx(l1:l2,m1:m2)-dmom2_dy(l1:l2,m1:m2)) &
+                   /rho0(l1:l2,m1:m2)
+         T_2(:,:)=-f(l1:l2,m1:m2,nnn,iux)*dui_dxj(:,:,1,1) &
+                  -f(l1:l2,m1:m2,nnn,iuy)*dui_dxj(:,:,1,2) &
+                  -grad_pp(:,:,1)/rho0(l1:l2,m1:m2)
+         T_3(:,:)=-f(l1:l2,m1:m2,nnn,iux)*dui_dxj(:,:,2,1) &
+                   -f(l1:l2,m1:m2,nnn,iuy)*dui_dxj(:,:,2,2)  &
+                   -grad_pp(:,:,2)/rho0(l1:l2,m1:m2)
+                  
+         T_4(:,:)=-f(l1:l2,m1:m2,nnn,iux)*dui_dxj(:,:,3,1) &
+                   -f(l1:l2,m1:m2,nnn,iuy)*dui_dxj(:,:,3,2)
+         T_5(:,:)=+drho_prefac(:,:)*(gamma0(l1:l2,m1:m2)-1.)*gamma0(l1:l2,m1:m2) &
+                   *(drhoE_pU(l1:l2,m1:m2,1)+drhoE_pU(l1:l2,m1:m2,2))
+        endif
+
+
+      if ((nxgrid /= 1)) then 
+        do i=1,2 
+         if (i==1) then
+          mm=m1
+          mmm=1
+         elseif (i==2) then
+          mm=m2
+          mmm=ny
+         endif
+          L_1(1,i)=(f(l1,mm,nnn,iux) - cs0_ar(l1,mm))&
+            *(grad_pp(1,mmm,1)-rho0(l1,mm)*cs0_ar(l1,mm)*dui_dxj(1,mmm,1,1))
+          L_1(nx,i)=KK(nx,mmm)*(cs20_ar(l1,mm)/gamma0(l2,mm)*&
+           rho0(l2,mm)-p_inf(nx,mmm,nnn-3))
+          L_2(1,i)=f(l1,mm,nnn,iux)*(cs20_ar(l1,mm) &
+                  *grad_rho(1,mmm,1)-grad_pp(1,mmm,1))
+          L_2(nx,i)=f(l2,mm,nnn,iux)*(cs20_ar(l2,mm) &
+                  *grad_rho(nx,mmm,1)-grad_pp(nx,mmm,1))
+          L_3(1,i)=f(l1,mm,nnn,iux)*dui_dxj(1,mmm,2,1)
+          L_3(nx,i)=f(l2,mm,nnn,iux)*dui_dxj(nx,mmm,2,1)
+          L_4(1,i)=f(l1,mm,nnn,iux)*dui_dxj(1,mmm,3,1)
+          L_4(nx,i)=f(l2,mm,nnn,iux)*dui_dxj(nx,mmm,3,1)
+          L_5(1,i)=KK(1,mmm)*(cs20_ar(l1,mm)/gamma0(l1,mm)*&
+            rho0(l1,mm)-p_inf(1,mmm,nnn-3))
+          L_5(nx,i)=(f(l2,mm,nnn,iux) + cs0_ar(l2,mm))&
+            *(grad_pp(nx,mmm,1)+ rho0(l2,mm)*cs0_ar(l2,mm)*dui_dxj(nx,mmm,1,1))
+       enddo
+       else
+        L_1=0
+        L_2=0 
+        L_3=0 
+        L_4=0 
+        L_5=0 
+       endif
+        
+
+       if (nygrid /= 1) then
+        do i=1,2 
+         if (i==1) then
+          ll=l1
+          lll=1
+         elseif (i==2) then
+          ll=l2
+          lll=nx
+         endif
+          M_1(1,i)=(f(ll,m1,nnn,iuy) - cs0_ar(ll,m1))&
+            *(grad_pp(lll,1,2)-rho0(ll,m1)*cs0_ar(ll,m1)*dui_dxj(lll,1,2,2))
+          M_1(ny,i)=KK(lll,ny)*(cs20_ar(ll,m2)/gamma0(ll,m2)*&
+            rho0(ll,m2)-p_inf(lll,ny,nnn-3))
+          M_2(1,i)=f(ll,m1,nnn,iuy)*dui_dxj(lll,1,1,2)
+          M_2(ny,i)=f(ll,m2,nnn,iuy)*dui_dxj(lll,ny,1,2)
+          M_3(1,i)=f(ll,m1,nnn,iuy) &
+           *(cs20_ar(ll,m1)*grad_rho(lll,1,2)-grad_pp(lll,1,2))
+          M_3(ny,i)=f(ll,m2,nnn,iuy) &
+           *(cs20_ar(ll,m2)*grad_rho(lll,ny,2)-grad_pp(lll,ny,2))
+          M_4(1,i)=f(ll,m1,nnn,iuy)*dui_dxj(lll,1,3,2)
+          M_4(ny,i)=f(ll,m2,nnn,iuy)*dui_dxj(lll,ny,3,2)
+          M_5(1,i)=KK(lll,1)*(cs20_ar(ll,m1)/gamma0(ll,m1)*&
+            rho0(ll,m1)-p_inf(lll,1,nnn-3))
+          M_5(ny,i)=(f(ll,m2,nnn,iuy) + cs0_ar(ll,m2))&
+            *(grad_pp(lll,ny,2)+ rho0(ll,m2)*cs0_ar(ll,m2)*dui_dxj(lll,ny,2,2))
+        enddo
+       else
+        M_1=0
+        M_2=0
+        M_3=0
+        M_4=0
+        M_5=0
+       endif
 !
       select case(topbot)
       case('bot')
-        L_5=KK*(cs20_ar(l1:l2,m1:m2)/gamma0(l1:l2,m1:m2)*&
+        N_5=KK*(cs20_ar(l1:l2,m1:m2)/gamma0(l1:l2,m1:m2)*&
             rho0(l1:l2,m1:m2)-p_inf(1:nx,1:ny,1))
-        L_1 = (f(l1:l2,m1:m2,nnn,iuz) - cs0_ar(l1:l2,m1:m2))*&
-            (dpp_dz- rho0(l1:l2,m1:m2)*cs0_ar(l1:l2,m1:m2)*duz_dz)
+        N_1 = (f(l1:l2,m1:m2,nnn,iuz) - cs0_ar(l1:l2,m1:m2))*&
+            (dpp_dz- rho0(l1:l2,m1:m2)*cs0_ar(l1:l2,m1:m2)*dui_dxj(:,:,3,3))
      case('top')
-        L_1=KK*(cs20_ar(l1:l2,m1:m2)/gamma0(l1:l2,m1:m2)*&
+        N_1=KK*(cs20_ar(l1:l2,m1:m2)/gamma0(l1:l2,m1:m2)*&
             rho0(l1:l2,m1:m2)-p_inf(1:nx,1:ny,nz))
-        L_5 = (f(l1:l2,m1:m2,nnn,iuz) + cs0_ar(l1:l2,m1:m2))*&
-            ( dpp_dz+ rho0(l1:l2,m1:m2)*cs0_ar(l1:l2,m1:m2)*duz_dz)
+        N_5 = (f(l1:l2,m1:m2,nnn,iuz) + cs0_ar(l1:l2,m1:m2))*&
+            ( dpp_dz+ rho0(l1:l2,m1:m2)*cs0_ar(l1:l2,m1:m2)*dui_dxj(:,:,3,3))
       endselect
 !
-      L_2 = f(l1:l2,m1:m2,nnn,iuz)*(cs20_ar(l1:l2,m1:m2)*drho_dz-dpp_dz)
-      L_3 = f(l1:l2,m1:m2,nnn,iuz)*dux_dz(:,:)
-      L_4 = f(l1:l2,m1:m2,nnn,iuz)*duy_dz(:,:)
+      N_2 = f(l1:l2,m1:m2,nnn,iuz)*(cs20_ar(l1:l2,m1:m2)*drho_dz-dpp_dz)
+      N_3 = f(l1:l2,m1:m2,nnn,iuz)*dui_dxj(:,:,1,3)
+      N_4 = f(l1:l2,m1:m2,nnn,iuz)*dui_dxj(:,:,2,3)
 !
       if (ldensity_nolog) then
         df(l1:l2,m1:m2,nnn,irho) = &
-            drho_prefac*(L_2+0.5*(L_5 + L_1))!-dmom2_dy(m1:m2,n1:n2)
+            drho_prefac*(N_2+0.5*(N_5 + N_1))
       else
         df(l1:l2,m1:m2,nnn,ilnrho) = &
-            drho_prefac*(L_2+0.5*(L_5 + L_1)) !&
-     !   -1./rho0(m1:m2,n1:n2)*dmom2_dy(m1:m2,n1:n2)
+            drho_prefac*(N_2+0.5*(N_5 + N_1)) 
       endif
       df(l1:l2,m1:m2,nnn,iuz) = -1./&
-          (2.*rho0(l1:l2,m1:m2)*cs0_ar(l1:l2,m1:m2))*(L_5 - L_1) !&
-     !      -f(lll,m1:m2,n1:n2,iux)*dux_dy(m1:m2,n1:n2)
-      df(l1:l2,m1:m2,nnn,iux) = -L_3
-      df(l1:l2,m1:m2,nnn,iuy) = -L_4
+          (2.*rho0(l1:l2,m1:m2)*cs0_ar(l1:l2,m1:m2))*(N_5 - N_1) 
+      df(l1:l2,m1:m2,nnn,iux) = -N_3
+      df(l1:l2,m1:m2,nnn,iuy) = -N_4
       df(l1:l2,m1:m2,nnn,ilnTT) = -1./&
-          (rho0(l1:l2,m1:m2)*cs20_ar(l1:l2,m1:m2))*(-L_2 &
-          +0.5*(gamma0(l1:l2,m1:m2)-1.)*(L_5+L_1))
- !       -1./(rho0(l1:l2,n1:n2)*cs20_ar(l1:l2,n1:n2))* &
- !       (gamma0(l1:l2,n1:n2)-1.) &
- !      *gamma0(l1:l2,n1:n2)*drhoE_p_dy(l1:l2,n1:n2) !&
-    !    
-    !       RHS_T_full(l1:l2,mmm,n1:n2)
+          (rho0(l1:l2,m1:m2)*cs20_ar(l1:l2,m1:m2))*(-N_2 &
+          +0.5*(gamma0(l1:l2,m1:m2)-1.)*(N_5+N_1))
+ 
+     if ((nxgrid /= 1) .and. (nygrid /= 1)) then
+     
+         df(l1:l2,m1:m2,nnn,irho_tmp) = df(l1:l2,m1:m2,nnn,irho_tmp) + T_1(:,:)
+         df(l1:l2,m1:m2,nnn,iux) =      df(l1:l2,m1:m2,nnn,iux)      + T_2(:,:)
+         df(l1:l2,m1:m2,nnn,iuy) =      df(l1:l2,m1:m2,nnn,iuy)      + T_3(:,:)
+         df(l1:l2,m1:m2,nnn,iuz) =      df(l1:l2,m1:m2,nnn,iuz)      + T_4(:,:)
+         df(l1:l2,m1:m2,nnn,ilnTT) =    df(l1:l2,m1:m2,nnn,ilnTT)    + T_1(:,:)
+    
+        do i=1,2 
+         if (i==1) then
+          mm=m1
+          mmm=1
+         elseif (i==2) then
+          mm=m2
+          mmm=ny
+         endif
+
+        do j=1,2
+         if (j==1) then
+            ll=l1
+            lll=1
+         elseif (j==2) then
+            ll=l2
+            lll=nx
+         endif
 
 
+        df(ll,mm,nnn,irho_tmp) = &
+          drho_prefac(lll,mmm)*(L_2(lll,i)+0.5*(L_5(lll,i) + L_1(lll,i))) &
+        + drho_prefac(lll,mmm)*(M_2(mmm,i)+0.5*(M_5(mmm,i) + M_1(mmm,i))) &
+        + drho_prefac(lll,mmm)*(N_2(lll,mmm)+0.5*(N_5(lll,mmm) + N_1(lll,mmm)))
+
+         df(ll,mm,nnn,iux) =  -1./&
+           (2.*rho0(ll,mm)*cs0_ar(ll,mm))*(L_5(lll,i) - L_1(lll,i)) &
+           -M_3(lll,i)-N_3(lll,mmm)
+        df(ll,mm,nnn,iuy) =  - L_3(lll,i) - 1./&
+          (2.*rho0(ll,mm)*cs0_ar(ll,mm))*(M_5(mmm,i) - M_1(mmm,i))-N_2(lll,nnn)
+        df(ll,mmm,nn,iuz) =  - L_4(lll,i) - M_4(lll,nnn)  - 1./&
+          (2.*rho0(ll,mm)*cs0_ar(ll,mm))*(N_5(lll,mmm) - N_1(lll,mmm))
+        df(ll,mm,nnn,ilnTT) = drho_prefac(lll,mmm)*(-L_2(lll,i) &
+           +0.5*(gamma0(ll,mm)-1.)*(L_5(lll,i)+L_1(lll,i)))  &
+          +drho_prefac(lll,mmm)*(-M_2(mmm,i) &
+          +0.5*(gamma0(ll,mm)-1.)*(M_5(mmm,i)+M_1(mmm,i))) &
+           +drho_prefac(lll,nnn)*(-N_2(lll,mmm) &
+          +0.5*(gamma0(ll,mm)-1.)*(N_5(lll,mmm)+N_1(lll,mmm)))
+      enddo
+      enddo
+
+    endif
 
       if (nchemspec>1) then
        do k=1,nchemspec
