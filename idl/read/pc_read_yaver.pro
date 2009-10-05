@@ -1,7 +1,7 @@
 ;;
 ;; $Id$
 ;;
-;;   Read z-averages from file.
+;;   Read y-averages from file.
 ;;
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.
 ;;   The user can get the data returned in an object by specifying nit, the
@@ -100,10 +100,10 @@ nprocx=dim.nprocx
 nprocy=dim.nprocy
 nprocz=dim.nprocz
 ;;
-;;  Read variables from zaver.in
+;;  Read variables from yaver.in
 ;;
 spawn, "echo "+datadir+" | sed -e 's/data\/*$//g'", datatopdir
-spawn, 'cat '+datatopdir+'/zaver.in', allvariables
+spawn, 'cat '+datatopdir+'/yaver.in', allvariables
 if (variables[0] eq '') then variables=allvariables
 nvarall=n_elements(allvariables)
 nvar=n_elements(variables)
@@ -193,7 +193,7 @@ endelse
 ;;
 ;;  Prepare for read.
 ;;
-if (not quiet) then print, 'Preparing to read z-averages ', $
+if (not quiet) then print, 'Preparing to read y-averages ', $
     arraytostring(variables,quote="'",/noleader)
 ;;
 for ip=0,n_elements(filename)-1 do begin
@@ -290,7 +290,7 @@ endif else begin
   array_local=fltarr(nx,nz,nvarall)*one
   tt_local=fltarr(n_elements(filename))*one
 ;;
-;;  Read z-averages and put in arrays if requested.
+;;  Read y-averages and put in arrays if requested.
 ;;
   it=0
   itimg=0
