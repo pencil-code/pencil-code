@@ -39,6 +39,8 @@ module Particles_sub
 !
 !  29-dec-04/anders: adapted from input
 !
+      use Mpicomm, only: mpireduce_max_scl_int
+!
       real, dimension (mpar_loc,mpvar) :: fp
       character (len=*) :: filename
       integer, dimension (mpar_loc) :: ipar
@@ -68,6 +70,15 @@ module Particles_sub
         if (ip<=8) print*, 'input_particles: read ', filename
 !
       close(1)
+!
+! If we are inserting particles contiuously during the run root must
+! know the total number of particles in the simulation
+!    
+      if (npar_loc /= 0) then
+        call mpireduce_max_scl_int(maxval(ipar(1:npar_loc)),npar_total)
+      else
+        call mpireduce_max_scl_int(npar_loc,npar_total)
+      endif
 !
     endsubroutine input_particles
 !***********************************************************************

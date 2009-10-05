@@ -1194,21 +1194,15 @@ k_loop:   do while (.not. (k>npar_loc))
 ! declarations in particles_tracers to make it work here.
 ! 
       use General, only: random_number_wrapper
-      use Mpicomm, only: mpireduce_sum_int
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar)   :: fp
       integer, dimension (mpar_loc,3)    :: ineargrid
       logical                            :: linsertmore=.false., linsert=.true.
 !
-      integer :: j, k, n_insert, npar_loc_old, iii, npar_total
+      integer :: j, k, n_insert, npar_loc_old, iii
 !
       intent (inout) :: fp,ineargrid
-!
-! If we are inserting particles contiuously during the run root must
-! know the total number of particles in the simulation
-!    
-      call mpireduce_sum_int(npar_loc,npar_total)
 !
 ! Stop call to this routine when maximum number of particles is reached!
 ! Since root inserts all new particles, make sure 

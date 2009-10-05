@@ -18,7 +18,7 @@ module Particles_cdata
   integer, dimension (nspar)    :: ipar_nbody
   integer, dimension (npar_species) :: ipar_fence_species=0
 !
-  integer :: npvar=0, npar_loc=0, mspar=0
+  integer :: npvar=0, npar_loc=0, mspar=0, npar_total=0
   integer :: ixp=0, iyp=0, izp=0, ivpx=0, ivpy=0, ivpz=0, iap=0, inptilde=0
   integer :: ipsx=0, ipsy=0, ipsz=0
   integer :: iupx=0, iupy=0, iupz=0
