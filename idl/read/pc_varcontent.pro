@@ -139,6 +139,21 @@ varcontent[iaa].idlvarloc  = 'aa_loc'
 varcontent[iaa].idlinitloc = INIT_3VECTOR_LOC
 varcontent[iaa].skip       = 2
 ;
+help,iaphi,ibphi
+default, iaphi, 0
+varcontent[iaphi].variable   = 'A_phi (aphi)'
+varcontent[iaphi].idlvar     = 'aphi'
+varcontent[iaphi].idlinit    = INIT_SCALAR
+varcontent[iaphi].idlvarloc  = 'aphi'
+varcontent[iaphi].idlinitloc = INIT_SCALAR_LOC
+;
+default, ibphi, 0
+varcontent[ibphi].variable   = 'B_phi (bphi)'
+varcontent[ibphi].idlvar     = 'bphi'
+varcontent[ibphi].idlinit    = INIT_SCALAR
+varcontent[ibphi].idlvarloc  = 'bphi'
+varcontent[ibphi].idlinitloc = INIT_SCALAR_LOC
+;
 default, ibb, 0
 varcontent[ibb].variable   = 'Magnetic field (bb)'
 varcontent[ibb].idlvar     = 'bb'
