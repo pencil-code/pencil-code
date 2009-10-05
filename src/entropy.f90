@@ -304,12 +304,15 @@ module Entropy
 !  hcond1 and hcond2 follow below in the block 'if (lmultilayer) etc...'
 !
       if (mixinglength_flux /= 0.) then
+        Fbot=mixinglength_flux
         hcond0=-mixinglength_flux/(gamma/(gamma-1.)*gravz/(mpoly0+1.))
+        hcond1 = (mpoly1+1.)/(mpoly0+1.)
+        hcond2 = (mpoly2+1.)/(mpoly0+1.)
         Kbot=hcond0
         lmultilayer=.true.  ! just to be sure...
         if (lroot) print*, &
             'initialize_entropy: hcond0 given by mixinglength_flux=', &
-            hcond0
+            hcond0, Fbot
       endif
 !
 !  freeze entroopy
@@ -420,7 +423,7 @@ module Entropy
 !
         endif
       endif
-!
+
 !   make sure all relevant parameters are set for spherical shell problems
 !
       select case(initss(1))
@@ -805,7 +808,7 @@ module Entropy
              if (ampl_ss/=0.0) &
                  call blob(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
              hcond0=-gamma/(gamma-1)*gravz/(mpoly0+1)/mixinglength_flux
-             print*,'init_ss: hcond0=',hcond0
+             print*,'init_ss: Fbot, hcond0=', Fbot, hcond0
           case('sedov')
             if (lroot) print*,'init_ss: sedov - thermal background with gaussian energy burst'
           call blob(thermal_peak,f,iss,radius_ss,center1_x,center1_y,center1_z)
