@@ -27,8 +27,9 @@ else if ($hn =~ fend*.dcsc.ku.dk) then
 else if (($hn =~ a07c01n03*) && ($USER =~ brandenb)) then
   echo "special entry for Axel"
   #set str='s/afs\/pdc.kth.se\/home\/b/scratch/g'
-  set str='s/home\/b\/brandenb/misc\/tmp\/projects\/prj.2007-08.brandenb.1/g'
-else if (($hn =~ a07c01n03*) && ($USER =~ violaine)) then
+  #set str='s/home\/b\/brandenb/misc\/tmp\/projects\/prj.2007-08.brandenb.4/g'
+  set str='s/home\/b\/brandenb/misc\/pdc\/volumes\/pdc\/prj.pdc.brandenb.10/g'
+else if (($hn =~ a07c01n08*) && ($USER =~ violaine)) then
   echo "special entry for Violaine"
   set str='s/home\/v\/violaine/misc\/tmp\/projects\/prj.2007-08.brandenb.9\/violaine/g'
 else if (($hn =~ *norlx01*) && ($USER =~ brandenb)) then
