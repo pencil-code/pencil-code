@@ -13,7 +13,7 @@ y = ycenter + radius * SIN(points )
 RETURN, TRANSPOSE([[x],[y]])
 END
 ;
-pro pc_visualize_particles,png=png,removed=removed
+pro pc_visualize_particles,png=png,removed=removed, savefile=savefile
 ;
 device,decompose=0
 loadct,5
@@ -22,12 +22,13 @@ loadct,5
 ;
 default,writepng,0
 default,removed,0
+default,savefile,1
 ;
 ; Read dimensions and namelists
 ;
 pc_read_dim,obj=procdim
 pc_read_param, object=param
-pc_read_pvar,obj=objpvar,/solid_object,irmv=irmv,theta_arr=theta_arr
+pc_read_pvar,obj=objpvar,/solid_object,irmv=irmv,theta_arr=theta_arr,savefile=savefile
 pc_read_pstalk,obj=obj
 ;
 ; Set some auxillary variables
@@ -37,9 +38,28 @@ ny=procdim.ny
 dims=size(obj.xp)
 n_parts=dims(1)
 n_steps=dims(2)
-radius=param.cylinder_radius[0]
-xpos=param.cylinder_xpos[0]
-ypos=param.cylinder_ypos[0]
+print,'param.coord_system=',param.coord_system
+if (param.coord_system eq 'cylindric') then begin
+    radius=param.xyz0[0]
+    xpos=0.0
+    ypos=0.0
+    xmax=param.xyz1[0]
+    xmin=-xmax
+    ymax= xmax
+    ymin=-xmax
+endif else begin
+    radius=param.cylinder_radius[0]
+    xpos=param.cylinder_xpos[0]
+    ypos=param.cylinder_ypos[0]
+    xmax=param.xyz1[0]
+    xmin=param.xyz0[0]
+    ymax=param.xyz1[1]
+    ymin=param.xyz0[1]
+endelse
+print,'xmin=',xmin
+print,'xmax=',xmax
+print,'ymin=',ymin
+print,'ymax=',ymax
 ;
 ; Find positions of removed particles (to be used later for plotting them).
 ;
@@ -78,16 +98,22 @@ print,'The final time of the simulation is  t =',objpvar.t
 ;
 ; Set window size
 ;
-xr=param.xyz1[0]-param.xyz0[0]
-yr=param.xyz1[1]-param.xyz0[1]
+xr=xmax-xmin
+yr=ymax-ymin
 WINDOW,3,XSIZE=1024*xr/yr*1.6,YSIZE=1024
-!x.range=[param.xyz0[0],param.xyz1[0]]
-!y.range=[param.xyz0[1],param.xyz1[1]]
+!x.range=[xmin,xmax]
+!y.range=[ymin,ymax]
 ;
 ; Show results
 ;
 for i=0,n_steps-1 do begin
-    plot,obj.xp(*,i),obj.yp(*,i),psym=sym(1),symsize=1,/iso
+    if (param.coord_system eq 'cylindric') then begin
+        xp=obj.xp(*,i)*cos(obj.yp(*,i))
+        yp=obj.xp(*,i)*sin(obj.yp(*,i))
+        plot,xp,yp,psym=sym(1),symsize=1,/iso
+    endif else begin
+        plot,obj.xp(*,i),obj.yp(*,i),psym=sym(1),symsize=1,/iso
+    endelse
     POLYFILL, CIRCLE_(xpos, ypos, radius),color=122
     ;
     ; Do we want to write png files or to show results on screen
