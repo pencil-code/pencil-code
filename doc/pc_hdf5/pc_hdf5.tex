@@ -267,19 +267,27 @@ correctly describing the current implementation.
       to an output every \texttt{/param/run/run\_pars/it1} time
       steps, and \texttt{nbvar} corresponds to the number of
       diagnostic variables entered in the file \texttt{print.in}
-    \item[/data/slices] Float dataset of the slices, of dimension
-      (timeslices2,x,y), \texttt{timeslices2} corresponds to an output
-      every \texttt{/param/run/run\_pars/dvid} unit of time, and
-      \texttt{x,y} are the grid dimension in the chosen slice.
+      \item[/data/slices\_names] String dataset of the variables that
+        were plotted in slices, as described in \texttt{video.in}, of
+        dimension (nbslices,)
+      \item[/data/slices\_time] Float dataset of the snapshot time of each
+        slice snapshot, of dimension (islice,)  corresponding to an output
+        every \texttt{/param/run/run\_pars/dvid} unit of time
+      \item[/data/slices\_xy] Float dataset of the slices, of dimension
+        (islice,nbslices,x,y),  \texttt{x,y} are the grid dimension in the chosen slice
+        available in \texttt{/param/dim/nx} and \texttt{/param/dim/ny}.
+      \item[/data/slices\_xy2] 
+      \item[/data/slices\_xz]
+      \item[/data/slices\_yz] id. for corresponding slice
     \item[/data/var] Float dataset of the snapshots, of dimension
       (timeslices3,x,y,z), \texttt{timeslices3} corresponds to an
       output every  \texttt{/param/run/run\_pars/dsnap} unit of time,
       and \texttt{x,y,z} is the dimension of the whole grid
     \end{description}
-  \item[/notes/] Subgroup intended to stock some additional
+  \item[/etc/] Subgroup intended to stock some additional
     informations about the runs.
     \begin{description}
-    \item[/notes/note] Dataset of Variable Length Strings. Dimension:
+    \item[/etc/notes] Dataset of Variable Length Strings. Dimension:
       resizable (1,). This dataset is intended to stock written notes
       about the run. Each note can be of arbitrarily long size, and a
       arbitrary number of notes can be added. More precisely, each
@@ -287,7 +295,9 @@ correctly describing the current implementation.
       Length), and the dataset is a resizable array of VL strings, of
       dimension one, initially created with one (empty) string
       element.
-    \item[/notes/...] This subgroup should be left open to any personal
+    \item[/etc/ext/] Subgroup intended to stock some external datasets,
+      e.g. from experimental data.
+    \item[/etc/...] This subgroup should be left open to any personal
       modifications, so that any additional datasets or subgroups can
       be entered there as wanted.
     \end{description}
@@ -321,7 +331,13 @@ command line, after having imported the HDF5 module by:
 The ``\texttt{>>>}'' corresponds to the python prompt, and thus indicate
 the commands typed by the user. The lines without the prompt are the
 answers returned by python.
-
+In the following examples, we will assume that pylab and numpy were
+also imported as:
+\begin{verbatim}
+>>> import pylab as P
+>>> import numpy as N
+>>>
+\end{verbatim}
 
 \subsection{Accessing a file}
 \label{sec:opening-file}
@@ -368,6 +384,40 @@ and when it was created and last modified:
 Note that one can easily modify these attributes, or to create to
 one. It is advisable to not do so !
 
+\subsection{Slices}
+\label{sec:slices}
+
+One may easily have access to any slice:
+\begin{verbatim}
+>>> f['data/slices_names'][...]
+array(['lnrho', 'b2', 'rhop'], 
+      dtype='|S5')
+>>>
+\end{verbatim}
+These are the three varaibales that were snapshot in slices.
+\begin{verbatim}
+>>> rhop=f['data/slices_yz'][:,2,:,:]
+array(['lnrho', 'b2', 'rhop'], 
+      dtype='|S5')
+>>> rhop.shape
+(9, 16, 64)
+>>>
+\end{verbatim}
+We can copy the slice corresponding to \texttt{rhop} (i.e. variable of
+index 2) and one can get rhop as an array, here of 9 slices of
+dimension 16x64.
+
+A slice can be directly plotted by:
+\begin{verbatim}
+>>> P.imshow(f['data/slices_yz'][5,2,:,:])
+>>> P.imshow(f['data/slices_xy'][:,1,:,16])
+>>>
+\end{verbatim}
+The first one plots the fifth yz-slice of variable 2. The second one
+plots the segment y=16 of the xy-slices of variable 1 as a function of
+time. 
+
+
 \subsection{notes}
 \label{sec:notes}
 
@@ -406,18 +456,13 @@ Object can be used to directly access to the notes:
 >>> 
 \end{verbatim}
 
-\section{Filters}
-\label{sec:filters}
-
-Discussing the possible filters. Should be either possibility of
-manual tuning, or fastest (null=no compression, data in order), fast
-(shuffle+lzf=compression with optimization of access time) or small
-(shuffle+gzip=best compression available). See benchmark on
-\url{http://h5py.alfven.org/lzf/}. 
-
-
-\subsection{Discussion}
+\section{Discussion}
 \label{sec:discussion}
+
+\subsection{SVN version}
+\label{sec:svn-version}
+
+
 
 We should have some identifier for the version of the code that created
 the data.
@@ -427,11 +472,25 @@ Unfortunately, \texttt{svnversion} can sometimes take 5 or 10
 seconds\ldots
 \emph{\quad--~wdobler}
 
-Is it really a good idea ? I would think that we should converge as
-fast as possible to a \emph{stable} format for this file, and thus
-avoid the multiplication of a huge number of different
-versions. Enforcing fixed version number should be a good way to limit
-a proliferation of file versions\ldots
+What can be easily done may be to parse the file
+\texttt{data/svn.id}, and write all the info in, for example a
+\texttt{SVN} subgroup (in an array containing all the files with their
+svn version number), or even more simply to read all the svn version
+numbers of this file, take the larger one, and write it in an attribute
+of the root. What do you think ? Is this file updated after every
+build ?
 \emph{\quad--~rplasson}
+
+
+\subsection{Filters}
+\label{sec:filters}
+
+We may add options about the possible filters. There should be either
+the possibility of manual tuning, or fastest (null=no compression,
+data in order), fast (shuffle+lzf=compression with optimization of
+access time) or small (shuffle+gzip=best compression available). See
+benchmark on \url{http://h5py.alfven.org/lzf/}.
+\emph{\quad--~rplasson}
+
 
 \end{document}
