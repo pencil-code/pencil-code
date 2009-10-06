@@ -40,22 +40,28 @@
     
 <tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
 <td colspan=2><tt>High&nbsp;level&nbsp;access&nbsp;to&nbsp;a&nbsp;pencil&nbsp;code&nbsp;HDF5&nbsp;file<br>
+self.<strong>datadir</strong>:&nbsp;data&nbsp;directory&nbsp;(surprising,&nbsp;isn't&nbsp;it!)<br>
 self.<strong>f</strong>:&nbsp;HDF5&nbsp;file,&nbsp;accessed&nbsp;through&nbsp;h5py&nbsp;module<br>
 self.<strong>param</strong>:&nbsp;parameter&nbsp;subgroup<br>
 self.<strong>data</strong>:&nbsp;data&nbsp;subgroup<br>
-self.<strong>notes</strong>:&nbsp;notes&nbsp;subgroup<br>&nbsp;</tt></td></tr>
+self.<strong>etc</strong>:&nbsp;etc&nbsp;subgroup<br>
+self.<strong>notes</strong>:&nbsp;Notes&nbsp;dataset<br>
+self.<strong>precision</strong>:&nbsp;precision&nbsp;of&nbsp;the&nbsp;float&nbsp;data&nbsp;('d'&nbsp;for&nbsp;double,&nbsp;'f'&nbsp;for&nbsp;single)<br>
+self.<strong>nbslices</strong>:&nbsp;number&nbsp;of&nbsp;variables&nbsp;recorded&nbsp;in&nbsp;slices<br>&nbsp;</tt></td></tr>
 <tr><td>&nbsp;</td>
 <td width="100%">Methods defined here:<br>
 <dl><dt><a name="h5file-__del__"><strong>__del__</strong></a>(self)</dt></dl>
 
-<dl><dt><a name="h5file-__init__"><strong>__init__</strong></a>(self, datadir<font color="#909090">='data/'</font>, datafile<font color="#909090">='datafile.hdf5'</font>, force_create<font color="#909090">=False</font>)</dt><dd><tt>Create&nbsp;a&nbsp;hdf5&nbsp;file&nbsp;from&nbsp;pencil&nbsp;code&nbsp;data.<br>
+<dl><dt><a name="h5file-__init__"><strong>__init__</strong></a>(self, workdir<font color="#909090">=''</font>, datafile<font color="#909090">='datafile.hdf5'</font>, force_create<font color="#909090">=False</font>, force_single<font color="#909090">=False</font>)</dt><dd><tt>Create&nbsp;a&nbsp;hdf5&nbsp;file&nbsp;from&nbsp;pencil&nbsp;code&nbsp;data.<br>
 Warning!!!&nbsp;This&nbsp;first&nbsp;implementation&nbsp;either&nbsp;reads&nbsp;an&nbsp;existing&nbsp;file<br>
 or&nbsp;write&nbsp;a&nbsp;new&nbsp;file.&nbsp;Set&nbsp;force_create&nbsp;to&nbsp;True&nbsp;if&nbsp;you&nbsp;want&nbsp;to&nbsp;force<br>
 the&nbsp;re-creation&nbsp;of&nbsp;the&nbsp;data&nbsp;with&nbsp;new&nbsp;data.<br>
 No&nbsp;possibility&nbsp;(yet...)&nbsp;to&nbsp;update&nbsp;the&nbsp;file&nbsp;with&nbsp;new&nbsp;data.<br>
 &nbsp;<br>
-datadir:&nbsp;directory&nbsp;where&nbsp;the&nbsp;data&nbsp;are&nbsp;found<br>
-datafile:&nbsp;name&nbsp;of&nbsp;the&nbsp;hdf5&nbsp;file</tt></dd></dl>
+workdir:&nbsp;working&nbsp;directory<br>
+datafile:&nbsp;name&nbsp;of&nbsp;the&nbsp;hdf5&nbsp;file<br>
+set&nbsp;force_single&nbsp;to&nbsp;true&nbsp;to&nbsp;force&nbsp;to&nbsp;stock&nbsp;the&nbsp;floats&nbsp;in&nbsp;single&nbsp;precision<br>
+(useful&nbsp;to&nbsp;decrease&nbsp;the&nbsp;file&nbsp;size,&nbsp;if&nbsp;single&nbsp;precision&nbsp;is&nbsp;sufficient&nbsp;for&nbsp;plotting&nbsp;purpose)</tt></dd></dl>
 
 <dl><dt><a name="h5file-add_note"><strong>add_note</strong></a>(self, text<font color="#909090">=''</font>)</dt><dd><tt>Add&nbsp;a&nbsp;new&nbsp;note</tt></dd></dl>
 
@@ -75,9 +81,11 @@ datafile:&nbsp;name&nbsp;of&nbsp;the&nbsp;hdf5&nbsp;file</tt></dd></dl>
 <td width="100%">Methods defined here:<br>
 <dl><dt><a name="param_file-__del__"><strong>__del__</strong></a>(self)</dt><dd><tt>Close&nbsp;the&nbsp;file</tt></dd></dl>
 
-<dl><dt><a name="param_file-__init__"><strong>__init__</strong></a>(self, datafile<font color="#909090">='data/params.log'</font>, trailing<font color="#909090">=True</font>)</dt><dd><tt>open&nbsp;the&nbsp;file&nbsp;datafile&nbsp;(defaults&nbsp;to&nbsp;params.log&nbsp;in&nbsp;data&nbsp;dir)<br>
+<dl><dt><a name="param_file-__init__"><strong>__init__</strong></a>(self, datafile<font color="#909090">='data/params.log'</font>, trailing<font color="#909090">=True</font>, precision<font color="#909090">='d'</font>)</dt><dd><tt>open&nbsp;the&nbsp;file&nbsp;datafile&nbsp;(defaults&nbsp;to&nbsp;params.log&nbsp;in&nbsp;data&nbsp;dir)<br>
 if&nbsp;trailing&nbsp;is&nbsp;set&nbsp;to&nbsp;True,&nbsp;then&nbsp;is&nbsp;aware&nbsp;of&nbsp;trailing&nbsp;commas&nbsp;(params&nbsp;files)<br>
-if&nbsp;set&nbsp;to&nbsp;False,&nbsp;expect&nbsp;no&nbsp;trailing&nbsp;commas&nbsp;(e.g.&nbsp;for&nbsp;index.pro)</tt></dd></dl>
+if&nbsp;set&nbsp;to&nbsp;False,&nbsp;expect&nbsp;no&nbsp;trailing&nbsp;commas&nbsp;(e.g.&nbsp;for&nbsp;index.pro)<br>
+precision&nbsp;is&nbsp;'d'&nbsp;by&nbsp;default&nbsp;(double,&nbsp;i.e.&nbsp;N.float64=8bit&nbsp;float);&nbsp;<br>
+if&nbsp;set&nbsp;to&nbsp;something&nbsp;else,&nbsp;floats&nbsp;will&nbsp;be&nbsp;single&nbsp;(N.float32=4bit&nbsp;float)</tt></dd></dl>
 
 <dl><dt><a name="param_file-readline"><strong>readline</strong></a>(self)</dt><dd><tt>Read&nbsp;the&nbsp;current&nbsp;line&nbsp;of&nbsp;the&nbsp;parameter&nbsp;file<br>
 and&nbsp;returns&nbsp;it&nbsp;formatted&nbsp;as&nbsp;a&nbsp;tuple&nbsp;(descr,res)<br>
