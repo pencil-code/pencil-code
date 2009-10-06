@@ -53,15 +53,16 @@ program remesh
   real, dimension (mx,my,mz,mvar) :: a
   real, dimension (mmy_grid,mmz_grid,mvar) :: f
   real, dimension (mmx,mmy,mmz,mvar,mprocs) :: ff
-  real, dimension (mmx) :: rx,rdx_1,rdx_tilde
+  real, dimension (mmx_grid) :: rx,rdx_1,rdx_tilde
   real, dimension (mmy_grid) :: ry,rdy_1,rdy_tilde
   real, dimension (mmz_grid) :: rz,rdz_1,rdz_tilde
+  real, dimension (mmx,mprocs) :: rrx
   real, dimension (mmy,mprocs) :: rry
   real, dimension (mmz,mprocs) :: rrz
   real :: tdummy, t_sp
   integer :: cpu_local
-  integer :: couny, counz, ystart,ystop, zstart, zstop
-  integer :: nprocyy, nproczz
+  integer :: counx, couny, counz, xstart,xstop, ystart,ystop, zstart, zstop
+  integer :: nprocxx, nprocyy, nproczz
   logical exist
 
 print*,'mx,my,mz,mvar=',mx,my,mz,mvar
@@ -79,7 +80,7 @@ print*,'mx,my,mz,mvar=',mx,my,mz,mvar
   close(1)
   print*,'destination='//destination
   !
-  !  Read input parameters from remesh.in
+  !  Read input parameters from varfile.in
   !
   inquire(FILE='varfile.in',EXIST=exist)
   if (exist) then
@@ -100,10 +101,13 @@ print*,'mx,my,mz,mvar=',mx,my,mz,mvar
   read(*,*,end=999) overwrite
 999 continue
   if ( overwrite .eq. 'yes') then
+    !
+    ! Read global dim.dat in order to find precision
+    !
     call safe_character_assign(dimfile,trim(datadir)//'/dim.dat')
     if (ip<8) print*,'Reading '//trim(dimfile)
     open(1,FILE=dimfile,FORM='formatted')
-    read(1,*) dummy,dummy,dummy,dummy
+    read(1,*) dummy,dummy,dummy,dummy,dummy
     read(1,*) prec
     read(1,*) dummy,dummy,dummy
     read(1,*) dummy,dummy,dummy
@@ -123,35 +127,39 @@ print*,'mx,my,mz,mvar=',mx,my,mz,mvar
     !
     !  Write size of global array to destination/data/dim.dat
     !
+    nprocxx=nprocx*mulx
     nprocyy=nprocy*muly
     nproczz=nprocz*mulz
-    call safe_character_assign(dimfile2,trim(destination)//'/'//trim(datadir)//'/dim.dat')
+    call safe_character_assign(dimfile2,&
+        trim(destination)//'/'//trim(datadir)//'/dim.dat')
     if (ip<8) print*,'Writing '//trim(dimfile2)
     open(1,file=dimfile2)
-    write(1,'(5i7)') mxout_grid,myout_grid,mzout_grid,mvar,maux
+    write(1,'(6i7)') mxout_grid,myout_grid,mzout_grid,mvar,maux,mglobal
     write(1,'(a)') prec
     write(1,'(3i3)') nghost, nghost, nghost
-    write(1,'(3i3)') nprocx, nprocyy, nproczz
+    write(1,'(3i3)') nprocxx, nprocyy, nproczz
     close(1)
     !
     !  Loop over number of CPU's in original run
     !
     do cpu=0,ncpus-1
       print*,'Remeshing processor',cpu+1,'of',ncpus,'processors'
-      ipy = modulo(cpu, nprocy)
-      ipz = cpu/(nprocy)
+      ipx = modulo(cpu, nprocx)
+      ipy = modulo(cpu/nprocx, nprocy)
+      ipz = cpu/(nprocx*nprocy)
       !
-      !  Read var.dat 
+      !  Read varfile (this is typically var.dat) 
       !
       ip=10
       call chn(cpu,ch)
-      call safe_character_assign(file,trim(datadir)//'/proc'//trim(ch)//'/'//trim(varfile))
+      call safe_character_assign(file,&
+          trim(datadir)//'/proc'//trim(ch)//'/'//trim(varfile))
       if (ip<8) print*,'Reading '//trim(file)
       open(1,file=file,form='unformatted')
       lshear=.false.
-!
-!  possibility to jump here from below
-!
+      !
+      ! Possibility to jump here from below
+      !
 992   continue
       read(1) a
 !
@@ -163,18 +171,17 @@ print*,'mx,my,mz,mvar=',mx,my,mz,mvar
         print*,'read deltay=',deltay
       else
         read(1) t_sp,x,y,z,dx,dy,dz
-        print*,'WARNING: deltay is not read'
       endif
       t=t_sp
-      print*,'close file'
       close(1)
       !
       !  Read grid.dat 
       !
-      call safe_character_assign(file,trim(datadir)//'/proc'//trim(ch)//'/grid.dat')
+      call safe_character_assign(file,&
+          trim(datadir)//'/proc'//trim(ch)//'/grid.dat')
       if (ip<8) print*,'Reading '//trim(file)
       open(1,file=file,form='unformatted')
-      read(1) tdummy,x,y,z
+      read(1) tdummy,x,y,z,dx,dy,dz
       read(1) dx,dy,dz
       read(1) Lx,Ly,Lz
       read(1) dx_1,dy_1,dz_1
@@ -185,10 +192,16 @@ print*,'mx,my,mz,mvar=',mx,my,mz,mvar
       cpu_count=1
       do counz=0,mulz-1
         do couny=0,muly-1
-          iproc_new=ipz*(nprocy*mulz*muly)+ipy*muly &
-               +couny+nprocy*muly*counz
-          cpu_global(cpu_count)=iproc_new
-          cpu_count=cpu_count+1
+          do counx=0,mulx-1
+            iproc_new&
+                =ipz*nprocy*nprocx*mulz*muly*mulx+counz*muly*mulx*nprocx*nprocy&
+                +ipy*nprocx*muly*mulx+couny*mulx*nprocx&
+                +ipx*mulx+counx
+!!$            iproc_new=ipz*(nprocy*mulz*muly)+ipy*muly &
+!!$                +couny+nprocy*muly*counz
+            cpu_global(cpu_count)=iproc_new
+            cpu_count=cpu_count+1
+          enddo
         enddo
       enddo
       !
@@ -242,7 +255,7 @@ print*,'mx,my,mz,mvar=',mx,my,mz,mvar
         rz(nn2+i)=rz(nn2)+i*dz
       enddo
       !
-      !  Doubling the number of mesh points
+      !  Increasing the number of mesh points
       !
       itx=remesh_parx
       do i=0,mxout-(2-remesh_parx),remesh_parx
@@ -312,18 +325,24 @@ print*,'mx,my,mz,mvar=',mx,my,mz,mvar
           !
           ! Spreading result to different processors
           !
-          do couny=1,muly
-            do counz=1,mulz
-              cpu_local=couny-1+muly*(counz-1)+1
-              ystart=1+(couny-1)*nny
-              ystop=couny*nny+2*nghost
-              zstart=1+(counz-1)*nnz
-              zstop=counz*nnz+2*nghost
-              ff(i+addx,:,:,:,cpu_local)=f(ystart:ystop,zstart:zstop,:)
-              if (itx .eq. 2) then
-                rry(:,cpu_local)=ry(ystart:ystop)
-                rrz(:,cpu_local)=rz(zstart:zstop)
-              endif
+          do counx=1,mulx
+            do couny=1,muly
+              do counz=1,mulz
+!                cpu_local=(couny-1)+muly*(counz-1)+1
+                cpu_local=(counx-1)+mulx*(couny-1)+mulx*muly*(counz-1)+1
+                xstart=1+(counx-1)*nnx
+                xstop=counx*nnx+2*nghost
+                ystart=1+(couny-1)*nny
+                ystop=couny*nny+2*nghost
+                zstart=1+(counz-1)*nnz
+                zstop=counz*nnz+2*nghost
+!NILS: This is not OK if mulx>1....should be fixed
+                ff(i+addx,:,:,:,cpu_local)=f(ystart:ystop,zstart:zstop,:)
+                if (itx .eq. 2) then
+                  rry(:,cpu_local)=ry(ystart:ystop)
+                  rrz(:,cpu_local)=rz(zstart:zstop)
+                endif
+              enddo
             enddo
           enddo
         enddo
@@ -354,7 +373,6 @@ print*,'mx,my,mz,mvar=',mx,my,mz,mvar
           print*,'wrote deltay=',deltay
         else
            write(91) t_sp,rx,rry(:,i),rrz(:,i),dx,dy,dz
-           print*,'WARNING: deltay is not written'
         endif
         close(91)
       enddo
@@ -365,7 +383,7 @@ print*,'mx,my,mz,mvar=',mx,my,mz,mvar
       call safe_character_assign(dimfile_loc,trim(datadir)//'/proc'//trim(ch)//'/dim.dat')
       if (ip<8) print*,'Reading ',dimfile_loc
       open(1,FILE=dimfile_loc,FORM='formatted')
-      read(1,*) dummy,dummy,dummy,dummy
+      read(1,*) dummy,dummy,dummy,dummy,dummy
       read(1,*) prec
       read(1,*) dummy,dummy,dummy
       read(1,*) ipxx,ipyy,ipzz
@@ -374,14 +392,16 @@ print*,'mx,my,mz,mvar=',mx,my,mz,mvar
       !  Write dim.dat for new local processor(s)
       !
       do i=1,mprocs
-        ipyy = modulo(cpu_global(i), nprocyy)
-        ipzz = cpu_global(i)/(nprocyy)
+
+        ipxx = modulo(cpu_global(i), nprocx)
+        ipyy = modulo(cpu_global(i)/nprocx, nprocyy)
+        ipzz = cpu_global(i)/(nprocx*nprocyy)
         call chn(cpu_global(i),ch)
         call safe_character_assign(dimfile_loc,trim(datadir)//'/proc'//trim(ch)//'/dim.dat')
         call safe_character_assign(dimfile2_loc,trim(destination)//'/'//trim(dimfile_loc))
         if (ip<8) print*,'Writing ',dimfile2_loc
         open(1,file=dimfile2_loc)
-        write(1,'(5i7)') mmx,mmy,mmz,mvar,maux
+        write(1,'(6i7)') mmx,mmy,mmz,mvar,maux,mglobal
         write(1,'(a)') prec
         write(1,'(3i3)') nghost, nghost, nghost
         write(1,'(3i3)') ipxx, ipyy, ipzz

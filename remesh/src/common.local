@@ -6,9 +6,10 @@
 !  are increased in the y and z directions (often keep muly=1).
 !  remesh_par is the remesh factor (e.g. 2 when doubling resolution).
 !
+  integer, parameter :: mulx=1
   integer, parameter :: muly=1
   integer, parameter :: mulz=2
-  integer, parameter :: mprocs=mulz*muly
+  integer, parameter :: mprocs=mulz*muly*mulx
   integer, parameter :: remesh_par=2
   integer, parameter :: remesh_parx=remesh_par
   integer, parameter :: remesh_pary=remesh_par
