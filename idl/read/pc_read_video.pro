@@ -77,7 +77,6 @@ endif
 if (xyread) then begin
   close, 2 & openr, 2, file_slice2, /f77, swap_endian=swap_endian
 endif
-print, xzread
 if (xzread) then begin
   close, 3 & openr, 3, file_slice3, /f77, swap_endian=swap_endian
 endif
