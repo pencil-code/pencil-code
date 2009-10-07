@@ -12,7 +12,6 @@ from npfile import npfile
 from param import read_param 
 from dim import read_dim 
 
-import matplotlib.pyplot as plt
 import sys
 
 # slice file format is either
@@ -468,7 +467,7 @@ def make_movie(field='uu1',datadir='data/',proc=-1,extension='xz',format='native
     infile = npfile(filename,endian=format)
 
     files = []
-    fig = plt.figure(figsize=(5,10))
+    fig = P.figure(figsize=(5,10))
     ax = fig.add_subplot(111)
 
     ifirst = True
