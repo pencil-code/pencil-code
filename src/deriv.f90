@@ -1638,9 +1638,9 @@ module Deriv
           fac=1./12.*dz_1(pos)
           df = fac*(-sgn*25*f(l1:l2,m1:m2,pos,k)&
                   +sgn*48*f(l1:l2,m1:m2,pos+sgn*1,k)&
-                  -sgn*36*f(l1:l2,m1:m2,pos+sgn*1,k)&
-                  +sgn*16*f(l1:l2,m1:m2,pos+sgn*1,k)&
-                  -sgn*3 *f(l1:l2,m1:m2,pos+sgn*1,k))
+                  -sgn*36*f(l1:l2,m1:m2,pos+sgn*2,k)&
+                  +sgn*16*f(l1:l2,m1:m2,pos+sgn*3,k)&
+                  -sgn*3 *f(l1:l2,m1:m2,pos+sgn*4,k))
         else
           df=0.
           if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in z-direction'
@@ -1700,9 +1700,12 @@ module Deriv
           fac=1./12.*dz_1(pos)
           df = fac*(-sgn*25*f(l1:l2,m1:m2,pos)&
                   +sgn*48*f(l1:l2,m1:m2,pos+sgn*1)&
-                  -sgn*36*f(l1:l2,m1:m2,pos+sgn*1)&
-                  +sgn*16*f(l1:l2,m1:m2,pos+sgn*1)&
-                  -sgn*3 *f(l1:l2,m1:m2,pos+sgn*1))
+                  -sgn*36*f(l1:l2,m1:m2,pos+sgn*2)&
+                  +sgn*16*f(l1:l2,m1:m2,pos+sgn*3)&
+                  -sgn*3 *f(l1:l2,m1:m2,pos+sgn*4))
+
+
+
         else
           df=0.
           if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in z-direction'
