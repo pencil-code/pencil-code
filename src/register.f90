@@ -231,7 +231,7 @@ module Register
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(my) :: lat
       real, dimension (nz,nprocz) :: z_allprocs_tmp
-      real :: sinth_min=1e-5 !(to avoid axis)
+      real :: sinth_min=1e-5,costh_min=1e-5 !(to avoid axis)
       logical :: lstarting
       integer :: xj,yj,zj
       integer :: itheta
@@ -421,6 +421,8 @@ module Register
         endif
         r2_mn=r1_mn**2
 !
+!  inner and outer radius per processor
+!
         r_int=x(l1)
         r_ext=x(l2)
 !
@@ -453,6 +455,21 @@ module Register
 !  calculate cot(theta)
 !
         cotth=costh*sin1th
+!
+!  calculate 1/cos(theta). To avoid the axis we check that costh
+!  is always larger than a minmal value, costh_min. The problem occurs
+!  on theta=pi, because the theta range is normally only specified
+!  with no more than 6 digits, e.g. theta = 0., 3.14159.
+!
+        where(abs(costh)>costh_min)
+          cos1th=1./costh
+        elsewhere
+          cos1th=0.
+        endwhere
+!
+!  calculate tan(theta)
+!
+        tanth=sinth*cos1th
 !
 ! Box volume and volume element - it is wrong for spherical, since
 ! sinth also changes with y-position 

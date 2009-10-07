@@ -1,4 +1,4 @@
-! $Id: magnetic.f90 11798 2009-09-28 11:55:37Z AxelBrandenburg $ 
+! $Id$ 
 !
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -269,7 +269,7 @@ module Magnetic
 !  Identify version number.
 !
       if (lroot) call svn_id( &
-          "$Id: magnetic.f90 11798 2009-09-28 11:55:37Z AxelBrandenburg $")
+          "$Id$")
 !
 !  Writing files for use with IDL
 !
@@ -1333,13 +1333,7 @@ module Magnetic
 !  add jxb/rho to momentum equation
 !  add eta mu_0 j2/rho to entropy equation
 !
-!  22-nov-01/nils: coded
-!   1-may-02/wolf: adapted for pencil_modular
-!  17-jun-03/ulf:  added bx^2, by^2 and bz^2 as separate diagnostics
-!   8-aug-03/axel: introduced B_ext21=1./B_ext**2, and set =1 to avoid div. by 0
-!  12-aug-03/christer: added alpha effect (alpha in the equation above)
-!  26-may-04/axel: ambipolar diffusion added
-!  18-jun-04/axel: Hall term added
+!   7-oct-09/axel: adapted from magnetic
 !
       use Deriv, only: der6
       use Diagnostics
@@ -1353,7 +1347,8 @@ module Magnetic
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: aphi,bphi
+      real, dimension (nx) :: aphi,bphi,d2aphi,d2bphi
+      real :: alpha_tmp
       integer :: i
       integer, parameter :: nxy=nxgrid*nygrid
 !
@@ -1371,6 +1366,37 @@ module Magnetic
       aphi=f(l1:l2,m,n,iaphi)
       bphi=f(l1:l2,m,n,ibphi)
 !
+!  Diffusion operator
+!
+      call del2(f,iaphi,d2aphi)
+      call del2(f,ibphi,d2bphi)
+!
+!  calculate D2a = del2a - 1/pomega^2 and same for b
+!
+      d2aphi=d2aphi-aphi*r2_mn*sin2th(m)
+      d2bphi=d2bphi-bphi*r2_mn*sin2th(m)
+!
+!  add diffusion term to the right-hand side
+!
+      df(l1:l2,m,n,iaphi)=df(l1:l2,m,n,iaphi)+eta*d2aphi
+      df(l1:l2,m,n,ibphi)=df(l1:l2,m,n,ibphi)+eta*d2bphi
+!
+!  add alpha effect, note that j=-D2a
+!
+        select case(alpha_profile)
+        case('const'); alpha_tmp=1.
+        case('cosy'); alpha_tmp=cos(y(m))
+        case('nothing');
+          call inevitably_fatal_error('calc_pencils_magnetic', &
+            'alpha_profile="nothing" has been renamed to "const"')
+        endselect
+        alpha_tmp=alpha_tmp*alpha_effect
+!
+      df(l1:l2,m,n,iaphi)=df(l1:l2,m,n,iaphi)+alpha_tmp*bphi
+      df(l1:l2,m,n,ibphi)=df(l1:l2,m,n,ibphi)-alpha_tmp*d2aphi
+!
+!  allow for special routines
+!
       if (lspecial) call special_calc_magnetic(f,df,p)
 !
 !  Multiply resistivity by Nyquist scale, for resistive time-step.
@@ -1379,16 +1405,12 @@ module Magnetic
 !  Allow for variable etat (mean field theory)
 !
       if (lfirst.and.ldt) then
-        diffus_eta =(diffus_eta+meanfield_etat)*dxyz_2
-        diffus_eta2=diffus_eta2*dxyz_4
-        diffus_eta3=diffus_eta3*dxyz_6
-        if (ietat/=0) diffus_eta=diffus_eta+maxval(f(l1:l2,m,n,ietat))*dxyz_2
+        diffus_eta=diffus_eta+eta
+        diffus_eta=diffus_eta*dxyz_2
+      endif
 !
-        if (headtt.or.ldebug) then
-          print*, 'daa_dt: max(diffus_eta)  =', maxval(diffus_eta)
-          print*, 'daa_dt: max(diffus_eta2) =', maxval(diffus_eta2)
-          print*, 'daa_dt: max(diffus_eta3) =', maxval(diffus_eta3)
-        endif
+      if (headtt.or.ldebug) then
+        print*, 'daa_dt: max(diffus_eta)  =', maxval(diffus_eta)
       endif
 !
 !     if (linduction) & 

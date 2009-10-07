@@ -1,4 +1,9 @@
-! $Id: timestep.f90 11566 2009-08-29 07:31:49Z ajohan@strw.leidenuniv.nl $
+! $Id$
+!
+!  DuFort-Frankel time stepping routine. As is well known, this proceedure
+!  has disadvantages, but it is well suited to deal with the time step constrain
+!  near the center in spherical polar coordinates.
+!
 module Timestep
 !
   use Cparam
@@ -40,45 +45,56 @@ module Timestep
 !
 !  Set up df and ds for each time sub.
 !
-    lfirst=.true.
-    df=0.
-    ds=1.
+      lfirst=.true.
+      df=0.
+      ds=1.
 !
 !  make sure fold exists at start-up
 !
-    if (it==1) fold=f
+      if (it==1) fold=f
 !
 !  Change df according to the chosen physics modules.
 !
-        call pde(f,df,p)
+      call pde(f,df,p)
 !
 !  If we are in the first time substep we need to calculate timestep dt.
 !  Only do it on the root processor, then broadcast dt to all others.
 !
-        if (ldt) then
-          dt1_local=maxval(dt1_max(1:nx))
-          !Timestep growth limiter
-          if (real(ddt) .gt. 0.) dt1_local=max(dt1_local(1),dt1_last)
-          call mpireduce_max(dt1_local,dt1,1)
-          if (lroot) dt=1.0/dt1(1)
-          !Timestep growth limiter
-          if (ddt/=0.) dt1_last=dt1_local(1)/ddt
-          call mpibcast_real(dt,1)
-        endif
-        if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc,dt  !(all have same dt?)
+      if (ldt) then
+        dt1_local=maxval(dt1_max(1:nx))
+        !Timestep growth limiter
+        if (real(ddt) .gt. 0.) dt1_local=max(dt1_local(1),dt1_last)
+        call mpireduce_max(dt1_local,dt1,1)
+        if (lroot) dt=1.0/dt1(1)
+        !Timestep growth limiter
+        if (ddt/=0.) dt1_last=dt1_local(1)/ddt
+        call mpibcast_real(dt,1)
+      endif
+      if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc,dt  !(all have same dt?)
 !
 !  Time evolution of grid variables.
-!  (do this loop in pencils, for cache efficiency)
 !
 diffarr=1.
-d2o=-2.*(1./dx**2+1./dy**2)
-d2n=1./dx**2
-d2s=1./dx**2
-d2e=1./dy**2
-d2w=1./dy**2
 !
-        do j=1,mvar; do n=n1,n2; do m=m1,m2
-!--       if (lborder_profiles) call border_quenching(df,j)
+      do m=m1,m2
+        if (coord_system=='cartesian') then
+          d2o=-2.*(dx_1(l1:l2)**2+dy_1(m)**2)
+          d2n=dx_1(l1:l2)**2
+          d2s=dx_1(l1:l2)**2
+          d2e=dy_1(m)**2
+          d2w=dy_1(m)**2
+        elseif (coord_system=='spherical') then
+          d2o=-2.*dx_1(l1:l2)**2-2.*r2_mn*dy_1(m)**2-r2_mn*sin2th(m)
+          d2n=dx_1(l1:l2)**2+r1_mn*dx_1(l1:l2)
+          d2s=dx_1(l1:l2)**2-r1_mn*dx_1(l1:l2)
+          d2e=dy_1(m)**2+.5*tanth(m)*dy_1(m)*r2_mn
+          d2w=dy_1(m)**2-.5*tanth(m)*dy_1(m)*r2_mn
+        endif
+!
+!  copy current f to fold_tmp, and set it to fold after it has been used
+!
+        do j=1,mvar; do n=n1,n2; 
+          if (lborder_profiles) call border_quenching(df,j)
           cdt1=.5*(1./dt+diffarr*d2o)
           cdt2=2./(1./dt-diffarr*d2o)
           fold_tmp=f(l1:l2,m,n,j)
@@ -87,14 +103,15 @@ d2w=1./dy**2
             +d2e*f(l1:l2,m+1,n,j)+d2w*f(l1:l2,m-1,n,j) &
             )+cdt1*fold(l1:l2,m,n,j))*cdt2
           fold(l1:l2,m,n,j)=fold_tmp
-        enddo; enddo; enddo
+        enddo; enddo
+      enddo
 !
-        if (lspecial) &
-            call special_after_timestep(f,df,dt_beta_ts(itsub)*ds)
+      if (lspecial) &
+          call special_after_timestep(f,df,dt_beta_ts(itsub)*ds)
 !
 !  Increase time.
 !
-        t = t + dt*ds
+      t=t+dt*ds
 !
     endsubroutine rk_2n
 !***********************************************************************

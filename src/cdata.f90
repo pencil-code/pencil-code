@@ -46,6 +46,7 @@ module Cdata
   real :: drcyl,dsurfxy,dsurfyz,dsurfzx,dvol
   real, dimension (nx) :: r1_mn,r2_mn,r2_weight,dvolume,dvolume_1
   real, dimension (my) :: sinth,sin1th,sin2th,costh,cotth,sinth_weight
+  real, dimension (my) :: cos1th,tanth
   real, dimension (nygrid) :: sinth_weight_across_proc
   real, dimension (nx) :: rcyl_mn,rcyl_mn1,rcyl_mn2,rcyl_weight
   real, dimension (nx,3) :: dline_1
