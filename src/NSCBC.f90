@@ -112,7 +112,7 @@ namelist /NSCBC_run_pars/  &
 !
       use General, only: safe_character_assign, chn
       use Chemistry, only: bc_nscbc_subin_x,bc_nscbc_nref_subout_x,&
-          bc_nscbc_nref_subout_y
+          bc_nscbc_nref_subout_y,bc_nscbc_nref_subout_z
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -323,6 +323,8 @@ namelist /NSCBC_run_pars/  &
               call bc_nscbc_nref_subout_x(f,df,topbot,nscbc_sigma_out)
             elseif (j==2) then
               call bc_nscbc_nref_subout_y(f,df,topbot,nscbc_sigma_out)
+            elseif (j==3) then
+              call bc_nscbc_nref_subout_z(f,df,topbot,nscbc_sigma_out)
             endif
           case('')
 !   Do nothing.
