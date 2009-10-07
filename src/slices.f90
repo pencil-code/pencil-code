@@ -139,6 +139,7 @@ module Slices
         if (ldustdensity)  call get_slices_dustdensity (f,slices)
         if (ldustvelocity) call get_slices_dustvelocity(f,slices)
         if (lentropy)      call get_slices_entropy     (f,slices)
+        if (ltemperature)  call get_slices_entropy     (f,slices)
         if (leos)          call get_slices_eos         (f,slices)
         if (lhydro)        call get_slices_hydro       (f,slices)
         if (linterstellar) call get_slices_interstellar(f,slices)
