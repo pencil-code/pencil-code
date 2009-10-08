@@ -289,7 +289,9 @@ module Particles_stalker
 !
 !  Next stalking time is dstalk later.
 !
-        tstalk=t_sp+dstalk
+        do while (tstalk<t_sp)
+          tstalk=tstalk+dstalk
+        enddo
         nout=nout+1
         if (lroot) then
           open(1,file=trim(datadir)//'/tstalk.dat',form='formatted')
