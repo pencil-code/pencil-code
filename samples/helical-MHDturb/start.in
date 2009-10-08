@@ -27,5 +27,5 @@
   lparticlemesh_cic=T
 /
 &particles_stalker_init_pars
-  dstalk=0.01
+  dstalk=0.1
 /
