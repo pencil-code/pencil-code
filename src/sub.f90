@@ -25,6 +25,7 @@ module Sub
   public :: get_nseed
 !
   public :: grad, grad5, div, div_mn, curl, curli, curl_mn, curl_other
+  public :: curl_horizontal
   public :: div_other
   public :: gij, g2ij, gij_etc
   public :: gijk_symmetric
@@ -1465,6 +1466,45 @@ module Sub
       endif
 !
     endsubroutine curl_mn
+!***********************************************************************
+    subroutine curl_horizontal(f,k,g)
+!
+!  calculate curl of a vector, whose z component is given
+!
+!   8-oct-09/axel: adapted from
+!
+      use Deriv, only: der
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,3) :: g
+      real, dimension (nx) :: tmp1,tmp2
+      integer :: k
+!
+      intent(in) :: f,k
+      intent(out) :: g
+!
+      call der(f,k,tmp1,2)
+      g(:,1)=tmp1
+!
+      call der(f,k,tmp2,1)
+      g(:,2)=-tmp2
+!
+!g(:,1)=0.
+!g(:,2)=0.
+      g(:,3)=0.
+!
+!  adjustments for spherical corrdinate system
+!
+      if (lspherical_coords) then
+        g(:,1)=g(:,1)+f(l1:l2,m,n,k)*r1_mn*cotth(m)
+        g(:,2)=g(:,2)-f(l1:l2,m,n,k)*r1_mn
+      endif
+!
+!     if (lcylindrical_coords) then
+!--     g(:,3)=g(:,3)+f(l1:l2,m,n,k1+2)*rcyl_mn1
+!     endif
+!
+    endsubroutine curl_horizontal
 !***********************************************************************
     subroutine curl(f,k,g)
 !

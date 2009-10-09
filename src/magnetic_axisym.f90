@@ -236,6 +236,7 @@ module Magnetic
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_aphi2m=0     ! DIAG_DOC: $\left<A_\phi^2\right>$
   integer :: idiag_bphi2m=0     ! DIAG_DOC: $\left<B_\phi^2\right>$
+  integer :: idiag_bpol2m=0     ! DIAG_DOC: $\left<B_p^2\right>$
   !
   !  plus all the others currently in nomagnetic
   !
@@ -1347,7 +1348,8 @@ module Magnetic
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: aphi,bphi,d2aphi,d2bphi
+      real, dimension (nx,3) :: bpol
+      real, dimension (nx) :: aphi,bphi,d2aphi,d2bphi,bpol2
       real :: alpha_tmp
       integer :: i
       integer, parameter :: nxy=nxgrid*nygrid
@@ -1429,6 +1431,11 @@ module Magnetic
       if (ldiagnos) then
         if (idiag_aphi2m/=0) call sum_mn_name(aphi**2,idiag_aphi2m)
         if (idiag_bphi2m/=0) call sum_mn_name(bphi**2,idiag_bphi2m)
+        if (idiag_bpol2m/=0) then
+          call curl_horizontal(f,iaphi,bpol)
+          call dot2(bpol,bpol2)
+          call sum_mn_name(bpol2,idiag_bpol2m)
+        endif
       endif
 !
     endsubroutine daa_dt
@@ -3292,7 +3299,7 @@ module Magnetic
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_aphi2m=0; idiag_bphi2m=0
+        idiag_aphi2m=0; idiag_bphi2m=0; idiag_bpol2m=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -3300,6 +3307,7 @@ module Magnetic
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'aphi2m',idiag_aphi2m)
         call parse_name(iname,cname(iname),cform(iname),'bphi2m',idiag_bphi2m)
+        call parse_name(iname,cname(iname),cform(iname),'bpol2m',idiag_bpol2m)
       enddo
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
