@@ -22,11 +22,13 @@ if ($var2 eq '' || $var2=~ /-/) {$var2=$var1; $var1='t';}
 #
 $xlog=0;
 $ylog=0;
+$sqrt=0;
 foreach $option (@ARGV){
   if ($option =~ /-/) {
     $found=0;
     if ($option eq '-xlog') {$xlog=1; $found=1;}
     if ($option eq '-ylog') {$ylog=1; $found=1;}
+    if ($option eq '-sqrt') {$sqrt=1; $found=1;}
     if ($found == 0) {
       print "Option $option not recognised! Aborting...\n";
       exit;}
@@ -79,6 +81,10 @@ foreach $line (@ts) {
     $min = $entries[$i2] < $min ? $entries[$i2] : $min;
     }
   }
+if ($sqrt) {
+  $max=sqrt($max);
+  $min=sqrt($min);
+  }
 #
 #  Round min and max to nearest significant digit.
 #
@@ -108,7 +114,11 @@ $i1=$i1+1; $i2=$i2+1;
 $command="echo \"set terminal dumb; set yrange [$min:$max];";
 if ($xlog) {$command="$command set logscale x;";}
 if ($ylog) {$command="$command set logscale y;";}
-$command="$command; plot 'data/time_series.dat' using $i1:$i2\" | gnuplot\n";
+if ($sqrt) {
+  $command="$command; plot 'data/time_series.dat' using $i1:(sqrt(\"\\\$\"$i2))\" | gnuplot\n";}
+else {
+  $command="$command; plot 'data/time_series.dat' using $i1:$i2\" | gnuplot\n";
+  }
 #
 #  Print command to screen and execute.
 #
