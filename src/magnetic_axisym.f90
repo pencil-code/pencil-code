@@ -71,7 +71,8 @@ module Magnetic
   character (len=labellen), dimension(ninit) :: initaa='nothing'
   character (len=labellen) :: borderaa='nothing'
   character (len=labellen), dimension(nresi_max) :: iresistivity=''
-  character (len=labellen) :: Omega_profile='nothing',alpha_profile='const'
+  character (len=labellen) :: alpha_xprofile='const',alpha_yprofile='const'
+  character (len=labellen) :: Omega_xprofile='const',Omega_yprofile='const'
   character (len=labellen) :: fring_profile='tanh'
   ! input parameters
   complex, dimension(3) :: coefaa=(/0.,0.,0./), coefbb=(/0.,0.,0./)
@@ -79,8 +80,20 @@ module Magnetic
   real, dimension(3) :: axisr1=(/0,0,1/),dispr1=(/0.,0.5,0./)
   real, dimension(3) :: axisr2=(/1,0,0/),dispr2=(/0.,-0.5,0./)
   real, dimension(3) :: axisr3=(/1,0,0/),dispr3=(/0.,-0.5,0./)
-  real, dimension(nx,3) :: uxbb !(temporary)
+!
+!  profile functions
+!
+  real, dimension(nx) :: alpha_x,Omega_x,dOmega_x
+  real, dimension(my) :: alpha_y,Omega_y,dOmega_y
+!
   real, target :: zmode=1. !(temporary)
+!
+!  profile parameters
+!
+  real :: alpha_x1=0.,alpha_dx1=0.
+  real :: Omega_x1=0.,Omega_dx1=0.
+  real :: Omega_yc1=0.,Omega_yc2=0.
+!
   real :: fring1=0.,Iring1=0.,Rring1=1.,wr1=0.3
   real :: fring2=0.,Iring2=0.,Rring2=1.,wr2=0.3
   real :: fring3=0.,Iring3=0.,Rring3=1.,wr3=0.3
@@ -98,7 +111,6 @@ module Magnetic
   real :: ampl_B0=0.,D_smag=0.17,B_ext21,B_ext11
   real :: Omega_ampl=0.
   real :: rmode=1.,rm_int=0.,rm_ext=0.
-  real :: nu_ni=0.,nu_ni1,hall_term=0.
   real :: alpha_effect=0.,alpha_quenching=0.,delta_effect=0.,meanfield_etat=0.
   real :: alpha_eps=0.
   real :: alpha_equator=impossible,alpha_equator_gap=0.,alpha_gap_step=0.
@@ -197,10 +209,15 @@ module Magnetic
   character (len=labellen) :: iforcing_continuous_aa='fixed_swirl'
 
   namelist /magnetic_run_pars/ &
-       eta,eta1,eta_hyper2,eta_hyper3,B_ext,omega_Bz_ext,nu_ni,hall_term, &
+       eta,eta1,eta_hyper2,eta_hyper3,B_ext,omega_Bz_ext, &
        lmeanfield_theory,alpha_effect,alpha_quenching,delta_effect, &
        alpha_eps, &
-       lmeanfield_noalpm,alpha_profile, &
+       alpha_xprofile,alpha_x1,alpha_dx1, &
+       alpha_yprofile, &
+       lOmega_effect,Omega_ampl, &
+       Omega_xprofile,Omega_x1,Omega_dx1, &
+       Omega_yprofile,Omega_yc1,Omega_yc2, &
+       lmeanfield_noalpm, &
        meanfield_etat, lohmic_heat, &
        lmeanfield_jxb,lmeanfield_jxb_with_vA2, &
        meanfield_Qs, meanfield_Qp, &
@@ -224,10 +241,10 @@ module Magnetic
        reinitialize_aa,rescale_aa,lB_ext_pot, &
        displacement_gun, &
        pertaa,pertamplaa,D_smag,brms_target,rescaling_fraction, &
-       lOmega_effect,Omega_profile,Omega_ampl,lfreeze_aint,lfreeze_aext, &
+       lfreeze_aint,lfreeze_aext, &
        sigma_ratio,zdep_profile,eta_width,eta_z0, &
        borderaa,eta_aniso_hyper3, &
-       lelectron_inertia,inertial_length,lbext_curvilinear, &
+       lbext_curvilinear, &
        lbb_as_aux,ljj_as_aux,lremove_mean_emf,lkinematic, &
        lbbt_as_aux,ljjt_as_aux, &
        lneutralion_heat, lreset_aa, daareset, &
@@ -298,6 +315,7 @@ module Magnetic
       use FArrayManager
       use Messages, only: fatal_error
       use SharedVariables
+      use Sub, only: erfunc
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
@@ -312,24 +330,6 @@ module Magnetic
 !
       if (eta1/=0.) then
         eta=1./eta1
-      endif
-!
-!  Precalculate 1/inertial_length^2
-!
-      if (inertial_length /= 0.) then
-        linertial_2 = inertial_length**(-2)
-      else
-        linertial_2 = 0.
-        ! make sure not to use this value by checking that
-        ! (inertial_length /= 0.)...
-      endif
-!
-!  Precalculate 1/nu_ni
-!
-      if (nu_ni /= 0.) then
-        nu_ni1=1./nu_ni
-      else
-        nu_ni1=0.
       endif
 !
 !  calculate B_ext21 = 1/B_ext**2 and the unit vector B1_ext = B_ext/|B_ext|
@@ -478,13 +478,57 @@ module Magnetic
             'Timestep is currently only sensitive to fourth order.')
       endif
 !
-!  check for alpha profile
+!  alpha profile
+!  =============
 !
-      if (alpha_profile=='read') then
+      select case (alpha_xprofile)
+      case ('const'); alpha_x=1.
+      case ('erfx'); alpha_x=.5*(1.+erfunc((x(l1:l2)-alpha_x1)/alpha_dx1))
+      case default
+        if (lroot) print*,'No such such value for alpha_yprofile'
+        call fatal_error('initialize_magnetic','')
+      endselect
+!
+!  y direction
+!
+      select case (alpha_yprofile)
+      case ('const'); alpha_y=1.
+      case ('cosy'); alpha_y=cos(y)
+      case ('cosy*sin2y'); alpha_y=1.5*sqrt(3.)*costh*sinth**2
+      case ('read')
         print*,'read alpha profile'
         open(1,file='alpha_input.dat',form='unformatted')
-        read(1) alpha_input
+        read(1) alpha_y
+!--     read(1) alpha_input
         close(1)
+      case default
+        if (lroot) print*,'No such such value for alpha_yprofile'
+        call fatal_error('initialize_magnetic','')
+      endselect
+!
+!  Omega effect and its gradient
+!  =============================
+!
+      if (lOmega_effect) then
+        select case (Omega_xprofile)
+        case ('const'); Omega_x=1.; dOmega_x=0.
+        case ('erfx'); Omega_x=.5*(1.+erfunc((x(l1:l2)-Omega_x1)/Omega_dx1))
+          dOmega_x=exp(-((x(l1:l2)-Omega_x1)/Omega_dx1)**2)/(Omega_dx1*sqrtpi)
+        case default
+          if (lroot) print*,'No such such value for Omega_xprofile'
+          call fatal_error('initialize_magnetic','')
+        endselect
+!
+!  y direction; compute Omega_y and dOmega_y = (dOmega_y/dy)
+!
+        select case (Omega_yprofile)
+        case ('const'); Omega_y=1.; dOmega_y=0.
+        case ('c1+c2*cos2y'); Omega_y=Omega_yc1+Omega_yc2*costh**2
+          dOmega_y=-2.*Omega_yc2*costh*sinth
+        case default
+          if (lroot) print*,'No such such value for Omega_yprofile'
+          call fatal_error('initialize_magnetic','')
+        endselect
       endif
 !
 !  if meanfield theory is invoked, we want to send meanfield_etat to
@@ -698,7 +742,7 @@ module Magnetic
 !
 !  jj pencil always needed when in Weyl gauge
 !
-      if ( (hall_term/=0. .and. ldt) .or. height_eta/=0. .or. ip<=4 .or. &
+      if ( height_eta/=0. .or. ip<=4 .or. &
           (lweyl_gauge) .or. (lspherical_coords) ) &
 !  WL: but doesn't seem to be needed for the cylindrical case
           lpenc_requested(i_jj)=.true.
@@ -758,17 +802,10 @@ module Magnetic
 !
 !  ambipolar diffusion
 !
-      if (nu_ni/=0.) then
-        lpenc_requested(i_va2)=.true.
-        lpenc_requested(i_jxbrxb)=.true.
-        lpenc_requested(i_jxbr2)=.true.
-      endif
-      if (hall_term/=0.) lpenc_requested(i_jxb)=.true.
-      if ((lhydro .and. llorentzforce) .or. nu_ni/=0.) &
+      if (lhydro .and. llorentzforce) &
           lpenc_requested(i_jxbr)=.true.
       if (lresi_smagorinsky_cross .or. delta_effect/=0.) &
           lpenc_requested(i_oo)=.true.
-      if (nu_ni/=0.) lpenc_requested(i_va2)=.true.
       if (lmeanfield_theory) then
         if (meanfield_etat/=0. .or. alpha_effect/=0. .or. delta_effect/=0.) &
             lpenc_requested(i_mf_EMF)=.true.
@@ -1055,7 +1092,6 @@ module Magnetic
 ! uxb
       if (lpencil(i_uxb)) then
         call cross_mn(p%uu,p%bb,p%uxb)
-        call cross_mn(p%uu,p%bbb,uxbb)
 !  add external e-field.
         if (iglobal_ex_ext/=0) p%uxb(:,1)=p%uxb(:,1)+f(l1:l2,m,n,iglobal_ex_ext)
         if (iglobal_ey_ext/=0) p%uxb(:,2)=p%uxb(:,2)+f(l1:l2,m,n,iglobal_ey_ext)
@@ -1258,25 +1294,6 @@ module Magnetic
 !
       if (lpencil(i_mf_EMF)) then
         kx=2*pi/Lx
-        select case(alpha_profile)
-        case('const'); alpha_tmp=1.
-        case('siny'); alpha_tmp=sin(y(m))
-        case('sinz'); alpha_tmp=sin(z(n))
-        case('z'); alpha_tmp=z(n)
-        case('cosy'); alpha_tmp=cos(y(m))
-        case('y*(1+eps*sinx)'); alpha_tmp=y(m)*(1.+alpha_eps*sin(kx*x(l1:l2)))
-        case('step'); alpha_tmp=(1.-step_scalar(y(m),alpha_equator-alpha_equator_gap,alpha_gap_step)&
-                       -step_scalar(y(m),alpha_equator+alpha_equator_gap,alpha_gap_step))
-        case('step-drop'); alpha_tmp=(1. &
-                -step_scalar(y(m),pi/2.-alpha_equator_gap,alpha_gap_step) &
-                -step_scalar(y(m),pi/2+alpha_equator_gap,alpha_gap_step) &
-                -step_scalar(alpha_cutoff_up,y(m),alpha_gap_step) &
-                +step_scalar(y(m),alpha_cutoff_down,alpha_gap_step)) 
-        case('read'); alpha_tmp=alpha_input(l1:l2,m)
-        case('nothing');
-          call inevitably_fatal_error('calc_pencils_magnetic', &
-            'alpha_profile="nothing" has been renamed to "const", please update your run.in')
-        endselect
 !
 !  possibility of dynamical alpha
 !
@@ -1350,7 +1367,8 @@ module Magnetic
 !
       real, dimension (nx,3) :: bpol
       real, dimension (nx) :: aphi,bphi,d2aphi,d2bphi,bpol2
-      real :: alpha_tmp
+      real, dimension (nx) :: alpha_tmp,Omega_tmp
+      real :: eta_tot
       integer :: i
       integer, parameter :: nxy=nxgrid*nygrid
 !
@@ -1378,24 +1396,31 @@ module Magnetic
       d2aphi=d2aphi-aphi*r2_mn*sin2th(m)
       d2bphi=d2bphi-bphi*r2_mn*sin2th(m)
 !
-!  add diffusion term to the right-hand side
+!  add diffusion term to the right-hand side.
+!  Use total eta, eta_tot, which includes microscopic and meanfield eta.
 !
-      df(l1:l2,m,n,iaphi)=df(l1:l2,m,n,iaphi)+eta*d2aphi
-      df(l1:l2,m,n,ibphi)=df(l1:l2,m,n,ibphi)+eta*d2bphi
+      eta_tot=eta+meanfield_etat
+      df(l1:l2,m,n,iaphi)=df(l1:l2,m,n,iaphi)+eta_tot*d2aphi
+      df(l1:l2,m,n,ibphi)=df(l1:l2,m,n,ibphi)+eta_tot*d2bphi
 !
 !  add alpha effect, note that j=-D2a
 !
-        select case(alpha_profile)
-        case('const'); alpha_tmp=1.
-        case('cosy'); alpha_tmp=cos(y(m))
-        case('nothing');
-          call inevitably_fatal_error('calc_pencils_magnetic', &
-            'alpha_profile="nothing" has been renamed to "const"')
-        endselect
-        alpha_tmp=alpha_tmp*alpha_effect
+      alpha_tmp=alpha_effect*alpha_x*alpha_y(m)
+!
+!  Add alpha effect. At the moment this ignores the grad(alpha) terms
 !
       df(l1:l2,m,n,iaphi)=df(l1:l2,m,n,iaphi)+alpha_tmp*bphi
       df(l1:l2,m,n,ibphi)=df(l1:l2,m,n,ibphi)-alpha_tmp*d2aphi
+!
+!  differential rotation, need poloidal field for this, and
+!  add pomega*Bpol.grad(Omega) to the dBphi/dt equation.
+!  Note that grad_theta(Omega)=r1_mn*dOmega_y, but r1_mn cancels with r_mn.
+!
+      call curl_horizontal(f,iaphi,bpol)
+      if (lOmega_effect) then
+        Omega_tmp=sinth(m)*(r_mn*bpol(:,1)*dOmega_x+bpol(:,2)*dOmega_y(m))
+        df(l1:l2,m,n,ibphi)=df(l1:l2,m,n,ibphi)+Omega_ampl*Omega_tmp
+      endif
 !
 !  allow for special routines
 !
@@ -1407,7 +1432,7 @@ module Magnetic
 !  Allow for variable etat (mean field theory)
 !
       if (lfirst.and.ldt) then
-        diffus_eta=diffus_eta+eta
+        diffus_eta=diffus_eta+eta_tot
         diffus_eta=diffus_eta*dxyz_2
       endif
 !
@@ -1432,7 +1457,6 @@ module Magnetic
         if (idiag_aphi2m/=0) call sum_mn_name(aphi**2,idiag_aphi2m)
         if (idiag_bphi2m/=0) call sum_mn_name(bphi**2,idiag_bphi2m)
         if (idiag_bpol2m/=0) then
-          call curl_horizontal(f,iaphi,bpol)
           call dot2(bpol,bpol2)
           call sum_mn_name(bpol2,idiag_bpol2m)
         endif
@@ -1697,51 +1721,6 @@ module Magnetic
       endif
 !
     endsubroutine calc_tau_aa_exterior
-!***********************************************************************
-    subroutine Omega_effect(f,df)
-!
-!  Omega effect coded (normally used in context of mean field theory)
-!  Can do uniform shear (0,Sx,0), and the cosx*cosz profile (solar CZ).
-!
-!  30-apr-05/axel: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real kx
-!
-      intent(in) :: f
-      intent(inout) :: df
-!
-!  use gauge transformation, uxB = -Ay*grad(Uy) + gradient-term
-!
-      select case(Omega_profile)
-      case('nothing'); print*,'Omega_profile=nothing'
-      case('(0,Sx,0)')
-        if (headtt) print*,'Omega_effect: uniform shear in x, S=',Omega_ampl
-        df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)-Omega_ampl*f(l1:l2,m,n,iay)
-      case('(Sz,0,0)')
-        if (headtt) print*,'Omega_effect: uniform shear in z, S=',Omega_ampl
-        df(l1:l2,m,n,iaz)=df(l1:l2,m,n,iaz)-Omega_ampl*f(l1:l2,m,n,iax)
-        if (lhydro) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-Omega_ampl*f(l1:l2,m,n,iuz)
-      case('(0,cosx*cosz,0)')
-        if (headtt) print*,'Omega_effect: solar shear, S=',Omega_ampl
-        df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)+Omega_ampl*f(l1:l2,m,n,iay) &
-            *sin(x(l1:l2))*cos(z(n))
-        df(l1:l2,m,n,iaz)=df(l1:l2,m,n,iaz)+Omega_ampl*f(l1:l2,m,n,iay) &
-            *cos(x(l1:l2))*sin(z(n))
-      case('(0,0,cosx)')
-        kx=2*pi/Lx
-        if (headtt) print*,'Omega_effect: (0,0,cosx), S,kx=',Omega_ampl,kx
-        df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)+Omega_ampl*f(l1:l2,m,n,iaz) &
-            *kx*sin(kx*x(l1:l2))
-      case('(0,0,siny)')
-        if (headtt) print*,'Omega_effect: (0,0,siny), Omega_ampl=',Omega_ampl
-        df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)+Omega_ampl*f(l1:l2,m,n,iaz) &
-            *sin(y(m))
-      case default; print*,'Omega_profile=unknown'
-      endselect
-!
-    endsubroutine Omega_effect
 !***********************************************************************
     subroutine sine_avoid_boundary(ampl,f,kr,r0,rn)
 !

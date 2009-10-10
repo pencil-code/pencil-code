@@ -407,6 +407,8 @@ module Register
 ! An attempt to work with full sphere 
 !  calculate 1/r
 ! For spherical coordinates
+!
+        r_mn=x(l1:l2)
         if (x(l1)==0.) then
           r1_mn(2:)=1./x(l1+1:l2)
           r1_mn(1)=0.
@@ -556,6 +558,13 @@ module Register
         rcyl_weight=rcyl_mn
         if (ipx==0       ) rcyl_weight( 1)=.5*rcyl_weight( 1)
         if (ipx==nprocx-1) rcyl_weight(nx)=.5*rcyl_weight(nx)
+!
+!  Lobachevskii space
+!
+      elseif (coord_system=='Lobachevskii') then
+        lcartesian_coords=.false.
+        lspherical_coords=.false.
+        lcylindrical_coords=.false.
 !
       endif
 !
