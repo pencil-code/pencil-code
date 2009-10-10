@@ -83,8 +83,8 @@ module Magnetic
 !
 !  profile functions
 !
-  real, dimension(nx) :: alpha_x,Omega_x,dOmega_x
-  real, dimension(my) :: alpha_y,Omega_y,dOmega_y
+  real, dimension(nx) :: alpha_x,dalpha_x,Omega_x,dOmega_x
+  real, dimension(my) :: alpha_y,dalpha_y,Omega_y,dOmega_y
 !
   real, target :: zmode=1. !(temporary)
 !
@@ -482,8 +482,9 @@ module Magnetic
 !  =============
 !
       select case (alpha_xprofile)
-      case ('const'); alpha_x=1.
+      case ('const'); alpha_x=1.; dalpha_x=0.
       case ('erfx'); alpha_x=.5*(1.+erfunc((x(l1:l2)-alpha_x1)/alpha_dx1))
+        dalpha_x=exp(-((x(l1:l2)-alpha_x1)/alpha_dx1)**2)/(alpha_dx1*sqrtpi)
       case default
         if (lroot) print*,'No such such value for alpha_yprofile'
         call fatal_error('initialize_magnetic','')
@@ -492,9 +493,10 @@ module Magnetic
 !  y direction
 !
       select case (alpha_yprofile)
-      case ('const'); alpha_y=1.
-      case ('cosy'); alpha_y=cos(y)
-      case ('cosy*sin2y'); alpha_y=1.5*sqrt(3.)*costh*sinth**2
+      case ('const'); alpha_y=1.; dalpha_y=0.
+      case ('cosy'); alpha_y=cos(y); dalpha_y=-sin(y)
+      case ('cosy*sin2y'); alpha_y=1.5*sqrt(3.)*cos(y)*sin(y)**2
+        dalpha_y=1.5*sqrt(3.)*(2.-3.*sin(y)**2)*sin(y)
       case ('read')
         print*,'read alpha profile'
         open(1,file='alpha_input.dat',form='unformatted')
@@ -512,6 +514,7 @@ module Magnetic
       if (lOmega_effect) then
         select case (Omega_xprofile)
         case ('const'); Omega_x=1.; dOmega_x=0.
+        case ('Omega=x'); Omega_x=x(l1:l2); dOmega_x=1.
         case ('erfx'); Omega_x=.5*(1.+erfunc((x(l1:l2)-Omega_x1)/Omega_dx1))
           dOmega_x=exp(-((x(l1:l2)-Omega_x1)/Omega_dx1)**2)/(Omega_dx1*sqrtpi)
         case default
@@ -523,8 +526,8 @@ module Magnetic
 !
         select case (Omega_yprofile)
         case ('const'); Omega_y=1.; dOmega_y=0.
-        case ('c1+c2*cos2y'); Omega_y=Omega_yc1+Omega_yc2*costh**2
-          dOmega_y=-2.*Omega_yc2*costh*sinth
+        case ('c1+c2*cos2y'); Omega_y=Omega_yc1+Omega_yc2*cos(y)**2
+          dOmega_y=-2.*Omega_yc2*cos(y)*sin(y)
         case default
           if (lroot) print*,'No such such value for Omega_yprofile'
           call fatal_error('initialize_magnetic','')
@@ -1367,7 +1370,7 @@ module Magnetic
 !
       real, dimension (nx,3) :: bpol
       real, dimension (nx) :: aphi,bphi,d2aphi,d2bphi,bpol2
-      real, dimension (nx) :: alpha_tmp,Omega_tmp
+      real, dimension (nx) :: alpha_tmp,alpha_tmp2,Omega_tmp
       real :: eta_tot
       integer :: i
       integer, parameter :: nxy=nxgrid*nygrid
@@ -1383,8 +1386,11 @@ module Magnetic
         call identify_bcs('Bphi',ibphi)
       endif
 !
+!  define aphi and bphi, and calculate bpol
+!
       aphi=f(l1:l2,m,n,iaphi)
       bphi=f(l1:l2,m,n,ibphi)
+      call curl_horizontal(f,iaphi,Bpol)
 !
 !  Diffusion operator
 !
@@ -1406,19 +1412,19 @@ module Magnetic
 !  add alpha effect, note that j=-D2a
 !
       alpha_tmp=alpha_effect*alpha_x*alpha_y(m)
+      alpha_tmp2=alpha_effect*(dalpha_x*Bpol(:,2)-r1_mn*dalpha_y(m)*Bpol(:,1))
 !
 !  Add alpha effect. At the moment this ignores the grad(alpha) terms
 !
       df(l1:l2,m,n,iaphi)=df(l1:l2,m,n,iaphi)+alpha_tmp*bphi
-      df(l1:l2,m,n,ibphi)=df(l1:l2,m,n,ibphi)-alpha_tmp*d2aphi
+      df(l1:l2,m,n,ibphi)=df(l1:l2,m,n,ibphi)-alpha_tmp*d2aphi+alpha_tmp2
 !
 !  differential rotation, need poloidal field for this, and
 !  add pomega*Bpol.grad(Omega) to the dBphi/dt equation.
 !  Note that grad_theta(Omega)=r1_mn*dOmega_y, but r1_mn cancels with r_mn.
 !
-      call curl_horizontal(f,iaphi,bpol)
       if (lOmega_effect) then
-        Omega_tmp=sinth(m)*(r_mn*bpol(:,1)*dOmega_x+bpol(:,2)*dOmega_y(m))
+        Omega_tmp=sinth(m)*(r_mn*Bpol(:,1)*dOmega_x+Bpol(:,2)*dOmega_y(m))
         df(l1:l2,m,n,ibphi)=df(l1:l2,m,n,ibphi)+Omega_ampl*Omega_tmp
       endif
 !
@@ -1457,8 +1463,8 @@ module Magnetic
         if (idiag_aphi2m/=0) call sum_mn_name(aphi**2,idiag_aphi2m)
         if (idiag_bphi2m/=0) call sum_mn_name(bphi**2,idiag_bphi2m)
         if (idiag_bpol2m/=0) then
-          call dot2(bpol,bpol2)
-          call sum_mn_name(bpol2,idiag_bpol2m)
+          call dot2(Bpol,Bpol2)
+          call sum_mn_name(Bpol2,idiag_bpol2m)
         endif
       endif
 !
