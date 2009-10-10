@@ -2590,8 +2590,8 @@ find_SN: do n=n1,n2
 !
          dz_SN=z(n)-SNR%z
          if (lperi(3)) then
-           if (dz_SN < Lz/2.) dz_SN=dz_SN-Lz
-           if (dz_SN > -Lz/2.) dz_SN=dz_SN+Lz
+           if (dz_SN > Lz/2.) dz_SN=dz_SN-Lz
+           if (dz_SN < -Lz/2.) dz_SN=dz_SN+Lz
          endif
 !
          dr2_SN=dx_SN**2 + dy_SN**2 + dz_SN**2
