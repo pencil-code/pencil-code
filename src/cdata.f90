@@ -129,8 +129,10 @@ module Cdata
   character (len=3) :: unit_system='cgs'
   double precision :: unit_length=impossible,unit_velocity=impossible
   double precision :: unit_density=impossible,unit_temperature=impossible
-  double precision :: unit_magnetic=3.5449077018110318 !(=sqrt(4*pi))
+  double precision :: unit_magnetic=impossible
+!
 !  Derived units
+!
   double precision :: unit_mass,unit_energy,unit_time,unit_flux
   double precision :: k_B,m_u,m_p,m_e,m_H,m_He,eV, &
                       chiH,chiH_,sigmaH_,sigmaSB,kappa_es

@@ -254,12 +254,6 @@ module Register
       unit_time=unit_length/unit_velocity
       unit_flux=unit_energy/(unit_length**2*unit_time)
 !
-!AB: commented out, because unit_magnetic is not a derived quantity.
-!     unit_magnetic=3.5449077018110318*sqrt(unit_density)*unit_velocity
-!(=sqrt(4*pi))
-! 04-sep-09/fred added unit rho and unit uu to make mu0 dimensionless
-! unit_magnetic declared in cdata.f90 now derived re Antony Mee thesis page 158
-!
 !  Convert physical constants to code units.
 !
       if (unit_system=='cgs') then
@@ -613,8 +607,8 @@ module Register
 !
 !  12-jul-06/axel: adapted from units_eos
 !
-      use Cdata, only: G_Newton,c_light,hbar,lroot, &
-        unit_length,unit_velocity,unit_density,unit_system
+      use Cdata, only: unit_system,G_Newton,c_light,hbar,lroot, &
+        unit_length,unit_velocity,unit_density,unit_magnetic
       use Cparam, only: G_Newton_cgs,c_light_cgs,hbar_cgs,impossible
       use Mpicomm, only: stop_it
 !
@@ -643,11 +637,17 @@ module Register
         endif
       endif
 !
+!  Set unit_magnetic=3.5449077018110318=sqrt(4*pi), unless it was set already.
+!  Note that unit_magnetic determines the value of mu_0 in the rest of the code.
+!
+      if (unit_magnetic == impossible) unit_magnetic=3.5449077018110318
+!
 !  check that everything is OK
 !
       if (lroot) print*,'units_general: unit_velocity=',unit_velocity
       if (lroot) print*,'units_general: unit_density=',unit_density
       if (lroot) print*,'units_general: unit_length=',unit_length
+      if (lroot) print*,'units_general: unit_magnetic=',unit_magnetic
 !
     endsubroutine units_general
 !***********************************************************************

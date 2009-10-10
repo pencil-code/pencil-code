@@ -158,6 +158,8 @@ module Entropy
   integer :: idiag_ethdivum=0   ! DIAG_DOC:
   integer :: idiag_ssm=0        ! DIAG_DOC: $\left<s/c_p\right>$
                                 ! DIAG_DOC:   \quad(mean entropy)
+  integer :: idiag_ss2m=0       ! DIAG_DOC: $\left<(s/c_p)^2\right>$
+                                ! DIAG_DOC:   \quad(mean squared entropy)
   integer :: idiag_eem=0        ! DIAG_DOC: $\left<e\right>$
   integer :: idiag_ppm=0        ! DIAG_DOC: $\left<p\right>$
   integer :: idiag_csm=0        ! DIAG_DOC: $\left<c_{\rm s}\right>$
@@ -182,6 +184,7 @@ module Entropy
   integer :: idiag_TTm=0        ! DIAG_DOC:
   integer :: idiag_TTmax=0      ! DIAG_DOC:
   integer :: idiag_TTmin=0      ! DIAG_DOC:
+  integer :: idiag_fconvm=0     ! DIAG_DOC:
   integer :: idiag_fconvz=0     ! DIAG_DOC:
   integer :: idiag_dcoolz=0     ! DIAG_DOC:
   integer :: idiag_fradz=0      ! DIAG_DOC:
@@ -1943,7 +1946,8 @@ module Entropy
         lpenc_diagnos(i_pp)=.true.
         lpenc_diagnos(i_divu)=.true.
       endif
-      if (idiag_ssm/=0 .or. idiag_ssmz/=0 .or. idiag_ssmy/=0.or.idiag_ssmx/=0.or.idiag_ssmr/=0) &
+      if (idiag_ssm/=0 .or. idiag_ss2m/=0 .or. idiag_ssmz/=0 .or. &
+          idiag_ssmy/=0.or.idiag_ssmx/=0.or.idiag_ssmr/=0) &
            lpenc_diagnos(i_ss)=.true.
       lpenc_diagnos(i_rho)=.true.
       lpenc_diagnos(i_ee)=.true.
@@ -1951,7 +1955,7 @@ module Entropy
           lpenc_diagnos(i_rho)=.true.
           lpenc_diagnos(i_ee)=.true.
       endif
-      if (idiag_fconvz/=0 .or. idiag_fturbz/=0) then
+      if (idiag_fconvm/=0 .or. idiag_fconvz/=0 .or. idiag_fturbz/=0) then
           lpenc_diagnos(i_rho)=.true.
           lpenc_diagnos(i_TT)=.true.  !(to be replaced by enthalpy)
       endif
@@ -2216,11 +2220,14 @@ module Entropy
         if (idiag_ethdivum/=0) &
             call sum_mn_name(p%rho*p%ee*p%divu,idiag_ethdivum)
         if (idiag_ssm/=0) call sum_mn_name(p%ss,idiag_ssm)
+        if (idiag_ss2m/=0) call sum_mn_name(p%ss**2,idiag_ss2m)
         if (idiag_eem/=0) call sum_mn_name(p%ee,idiag_eem)
         if (idiag_ppm/=0) call sum_mn_name(p%pp,idiag_ppm)
         if (idiag_csm/=0) call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
         if (idiag_ugradpm/=0) &
             call sum_mn_name(p%cs2*(p%uglnrho+p%ugss),idiag_ugradpm)
+        if (idiag_fconvm/=0) &
+            call sum_mn_name(p%rho*p%uu(:,3)*p%TT,idiag_fconvm)
 !
 !  radiative heat flux at the bottom (assume here that hcond=hcond0=const)
 !
@@ -3381,12 +3388,12 @@ module Entropy
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_dtc=0; idiag_ethm=0; idiag_ethdivum=0; idiag_ssm=0
+        idiag_dtc=0; idiag_ethm=0; idiag_ethdivum=0; idiag_ssm=0; idiag_ss2m=0
         idiag_eem=0; idiag_ppm=0; idiag_csm=0; idiag_pdivum=0; idiag_heatm=0
         idiag_ugradpm=0; idiag_ethtot=0; idiag_dtchi=0; idiag_ssmphi=0
         idiag_fradbot=0; idiag_fradtop=0; idiag_TTtop=0
         idiag_yHmax=0; idiag_yHm=0; idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0
-        idiag_fconvz=0; idiag_dcoolz=0; idiag_fradz=0; idiag_fturbz=0
+        idiag_fconvm=0; idiag_fconvz=0; idiag_dcoolz=0; idiag_fradz=0; idiag_fturbz=0
         idiag_ssmz=0; idiag_ssmy=0; idiag_ssmx=0; idiag_ssmr=0; idiag_TTmr=0
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_TTmxy=0; idiag_TTmxz=0
         idiag_uxTTmz=0; idiag_uyTTmz=0; idiag_uzTTmz=0; idiag_cs2mphi=0
@@ -3402,6 +3409,7 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'ethdivum',idiag_ethdivum)
         call parse_name(iname,cname(iname),cform(iname),'ethm',idiag_ethm)
         call parse_name(iname,cname(iname),cform(iname),'ssm',idiag_ssm)
+        call parse_name(iname,cname(iname),cform(iname),'ss2m',idiag_ss2m)
         call parse_name(iname,cname(iname),cform(iname),'eem',idiag_eem)
         call parse_name(iname,cname(iname),cform(iname),'ppm',idiag_ppm)
         call parse_name(iname,cname(iname),cform(iname),'pdivum',idiag_pdivum)
@@ -3417,6 +3425,7 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'TTmax',idiag_TTmax)
         call parse_name(iname,cname(iname),cform(iname),'TTmin',idiag_TTmin)
         call parse_name(iname,cname(iname),cform(iname),'TTp',idiag_TTp)
+        call parse_name(iname,cname(iname),cform(iname),'fconvm',idiag_fconvm)
       enddo
 !
 !  check for those quantities for which we want yz-averages
@@ -3482,11 +3491,13 @@ module Entropy
         write(3,*) 'i_ethdivum=',idiag_ethdivum
         write(3,*) 'i_ethm=',idiag_ethm
         write(3,*) 'i_ssm=',idiag_ssm
+        write(3,*) 'i_ss2m=',idiag_ss2m
         write(3,*) 'i_eem=',idiag_eem
         write(3,*) 'i_ppm=',idiag_ppm
         write(3,*) 'i_pdivum=',idiag_pdivum
         write(3,*) 'i_heatm=',idiag_heatm
         write(3,*) 'i_csm=',idiag_csm
+        write(3,*) 'i_fconvm=',idiag_fconvm
         write(3,*) 'i_ugradpm=',idiag_ugradpm
         write(3,*) 'i_fradbot=',idiag_fradbot
         write(3,*) 'i_fradtop=',idiag_fradtop
