@@ -2472,6 +2472,7 @@ find_SN: do n=n1,n2
 !  Calculate integral of mass cavity profile
 !
 !  22-may-03/tony: coded
+!  10-oct-09/axel: return zero density if the volume is zero
 !
       use Sub
       use Mpicomm
@@ -2507,15 +2508,20 @@ find_SN: do n=n1,n2
          enddo
       enddo
 !
+!  calculate mean density inside the remnant.
+!  Return zero if the volume is zero.
+!
       call mpireduce_sum_double(tmp,tmp2,3)
       call mpibcast_double(tmp2,3)
       ekintot=tmp2(3)*dv
       if (abs(tmp2(2)) < 1e-30) then
         write(0,*) 'tmp = ', tmp
-        call fatal_error("interstellar.get_properties", &
-            "Dividing by zero?")
+!       call fatal_error("interstellar.get_properties", &
+!           "Dividing by zero?")
+        rhom=0.
+      else
+        rhom=tmp2(1)/tmp2(2)
       endif
-      rhom=tmp2(1)/tmp2(2)
 !
     endsubroutine get_properties
 !***********************************************************************
