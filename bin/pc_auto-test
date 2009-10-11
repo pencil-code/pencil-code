@@ -1291,7 +1291,7 @@ sub s_to_hms{
 }
 # ---------------------------------------------------------------------- #
 sub quote {
-# Quote most non-word characters in a string, but not a foew common ones
+# Quote most non-word characters in a string, but not a few common ones
     my ($text) = @_;
     $text = "\Q$text\E";
     $text =~ s{\\(/|-|_)}{$1}g;  # unquote some chars
