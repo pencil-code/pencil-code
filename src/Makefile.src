@@ -64,6 +64,7 @@ PARTICLES_COLLISIONS  = noparticles_collisions
 PARTICLES_MAIN        = noparticles_main
 PARTICLES_NBODY       = noparticles_nbody
 PARTICLES             = noparticles
+PARTICLES_MPICOMM     = noparticles_mpicomm
 PARTICLES_NUMBER      = noparticles_number
 PARTICLES_RADIUS      = noparticles_radius
 PARTICLES_SELFGRAVITY = noparticles_selfgravity
