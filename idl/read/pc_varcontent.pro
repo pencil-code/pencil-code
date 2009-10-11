@@ -139,7 +139,6 @@ varcontent[iaa].idlvarloc  = 'aa_loc'
 varcontent[iaa].idlinitloc = INIT_3VECTOR_LOC
 varcontent[iaa].skip       = 2
 ;
-help,iaphi,ibphi
 default, iaphi, 0
 varcontent[iaphi].variable   = 'A_phi (aphi)'
 varcontent[iaphi].idlvar     = 'aphi'
