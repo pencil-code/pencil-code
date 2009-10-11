@@ -71,10 +71,10 @@ module Particles_sub
 !
       close(1)
 !
-! If we are inserting particles contiuously during the run root must
-! know the total number of particles in the simulation
+!  If we are inserting particles contiuously during the run root must
+!  know the total number of particles in the simulation.
 !    
-      if (npar_loc /= 0) then
+      if (npar_loc/=0) then
         call mpireduce_max_scl_int(maxval(ipar(1:npar_loc)),npar_total)
       else
         call mpireduce_max_scl_int(npar_loc,npar_total)
@@ -288,7 +288,6 @@ module Particles_sub
 !
         if (nxgrid/=1) then
           if (boundx=='p') then
-   
 !  xp < x0
             if (fp(k,ixp)< xyz0(1)) then
               fp(k,ixp)=fp(k,ixp)+Lxyz(1)
@@ -318,13 +317,13 @@ module Particles_sub
             endif
           elseif (boundx=='out') then
 !
-!  Do nothing. A massive particle, can be out of the
-!  box. A star, for example, in a cylindrical simulation
+!  Do nothing. A massive particle, can be out of the box. A star, for example,
+!  in a cylindrical simulation
 !
           elseif (boundx=='flk') then
 !
-!  Flush-Keplerian - flush the particle to 
-!  the outer boundary with keplerian speed
+!  Flush-Keplerian - flush the particle to the outer boundary with keplerian
+!  speed
 !
             if (lcylindrical_coords) then
               if ((fp(k,ixp)< rp_int).or.(fp(k,ixp)>= rp_ext)) then
@@ -1216,7 +1215,7 @@ module Particles_sub
         fname(iname)=0.
         fname(iname)=fname(iname)+maxval(a)
 !
-!  set corresponding entry in itype_name
+!  Set corresponding entry in itype_name.
 !
         if (present(lneg)) then
           itype_name(iname)=ilabel_max_neg
@@ -1246,7 +1245,7 @@ module Particles_sub
 !
         fname(iname)=fname(iname)+sum(a)
 !
-!  Set corresponding entry in itype_name
+!  Set corresponding entry in itype_name.
 !
         itype_name(iname)=ilabel_integrate
 !
@@ -1695,7 +1694,7 @@ module Particles_sub
 !  Find index (ix0, iy0, iz0) of nearest grid point of all the particles.
 !
 !  23-jan-05/anders: coded
-!  08-jul-08/kapelrud: support for non-equidist. grids
+!  08-jul-08/kapelrud: support for non-equidistant grids
 !
       use Mpicomm, only: stop_it
 !
@@ -2781,5 +2780,4 @@ print*,'removed particle:',fp(k,:)
 !
     endsubroutine interp_field_pencil
 !***********************************************************************
-
 endmodule Particles_sub
