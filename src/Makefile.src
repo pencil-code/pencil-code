@@ -119,9 +119,16 @@ include Makefile.inc
 # Compile files with particle programming structure if particles are chosen.
 #
 ifneq ($(PARTICLES),noparticles)
-  PARTICLES_MAIN =   particles_main
-  PARTICLES_SUB  =   particles_sub
-  GHOSTFOLD      =   ghostfold_$(MPICOMM)
+  PARTICLES_MAIN    =   particles_main
+  PARTICLES_SUB     =   particles_sub
+  GHOSTFOLD         =   ghostfold_$(MPICOMM)
+  PARTICLES_MPICOMM = noparticles_mpicomm
+  ifeq ($(MPICOMM),mpicomm)
+    PARTICLES_MPICOMM = particles_mpicomm
+  endif
+  ifeq ($(MPICOMM),mpicomm_double)
+    PARTICLES_MPICOMM = particles_mpicomm
+  endif
 endif
 # 
 # Compile files with the proper FFT libraries. If condition not really needed
@@ -1248,7 +1255,7 @@ physics=$(VISCOSITY).o $(SHOCK).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY
 #
 switchable=$(physics) $(BORDER_PROFILES).o $(INITIAL_CONDITION).o
 #
-comm_deps=$(technical) sub.o $(IO).o snapshot.o param_io.o  $(MPICOMM_FIX).o $(GHOSTFOLD).o $(switchable) $(POWER).o $(STRUCT_FUNC).o $(PARTICLES_MAIN).o $(PARTICLES_SUB).o
+comm_deps=$(technical) sub.o $(IO).o snapshot.o param_io.o  $(MPICOMM_FIX).o $(GHOSTFOLD).o $(switchable) $(POWER).o $(STRUCT_FUNC).o $(PARTICLES_MAIN).o $(PARTICLES_SUB).o $(PARTICLES_MPICOMM).o
 #
 start_deps=$(comm_deps) $(TESTPERTURB).o $(DEBUG).o $(GSL).o
 #

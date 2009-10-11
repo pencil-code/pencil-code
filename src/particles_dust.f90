@@ -1437,6 +1437,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       use EquationOfState, only: gamma, beta_glnrho_global
       use General, only: random_number_wrapper
+      use Particles_mpicomm
 !
       real, dimension (mpar_loc,mpvar) :: fp
       real, dimension (mx,my,mz,mfarray) :: f
