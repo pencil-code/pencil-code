@@ -150,11 +150,18 @@ end
 ddt=2e-4
 if (trace) then begin
    for ipar=0,npar-1 do begin
-      oplot,obj.xp(ipar,*),obj.yp(ipar,*),ps=3
-      ARROW, obj.xp(ipar,*), obj.yp(ipar,*),$
-             obj.xp(ipar,*)+obj.ux(ipar,*)*ddt, $
-             obj.yp(ipar,*)+obj.uy(ipar,*)*ddt, $
+       if (param.coord_system eq 'cylindric') then begin
+           xx0=obj.xp(ipar,*)*cos(obj.yp(ipar,*))
+           yy0=obj.xp(ipar,*)*sin(obj.yp(ipar,*))
+       endif else begin
+           xx0=obj.xp(ipar,*)
+           yy0=obj.yp(ipar,*)
+           ARROW, xx0, yy0,$
+             xx0+obj.ux(ipar,*)*ddt, $
+             yy0+obj.uy(ipar,*)*ddt, $
              /data,col=122,HSIZE=4
+       endelse
+       oplot,xx0,yy0,ps=3
    end 
 end
 ;
@@ -168,9 +175,31 @@ if (velofield) then begin
    m1=objdim.m1
    m2=objdim.m2
    n1=objdim.n1
-   velovect,reform(objvar.uu(l1:l2,m1:m2,n1,0)),$
-            reform(objvar.uu(l1:l2,m1:m2,n1,1)),$
-            objvar.x(l1:l2),objvar.y(m1:m2),/overplot
+   for iii=l1,l2 do begin
+       for jjj=m1,m2 do begin
+           if (param.coord_system eq 'cylindric') then begin
+               xx0=objvar.x(iii)*cos(objvar.y(jjj))
+               yy0=objvar.x(iii)*sin(objvar.y(jjj))
+               ux=cos(objvar.y(jjj))*objvar.uu(iii,jjj,n1,0)$
+                 -sin(objvar.y(jjj))*objvar.uu(iii,jjj,n1,1)
+               uy=sin(objvar.y(jjj))*objvar.uu(iii,jjj,n1,0)$
+                 +cos(objvar.y(jjj))*objvar.uu(iii,jjj,n1,1)
+           endif else begin
+               xx0=objvar.x(iii)
+               yy0=objvar.y(jjj)
+               ux=uu(iii,jjj,n1,0)
+               uy=uu(iii,jjj,n1,1)
+           endelse
+           if ((xx0 gt xmin) and (xx0 lt xmax)) then begin
+               if ((yy0 gt ymin) and (yy0 lt ymax)) then begin
+                   ARROW, xx0, yy0,$
+                     xx0+ux*ddt, $
+                     yy0+uy*ddt, $
+                     /data,col=122,HSIZE=4                    
+               endif
+           end
+       end
+   endif 
 endif
 ;
 ; Plot the removed particles as blue dots
