@@ -33,9 +33,10 @@ module Special
 
   ! input parameters
   real :: bet,gam,rho,xxini,yyini,zzini
-  character(len=50) :: init='zero'
+  real, dimension (ninit) :: ampl=0.
+  character (len=labellen), dimension(ninit) :: init='nothing'
   namelist /special_init_pars/ &
-    init,bet,gam,rho,xxini,yyini,zzini
+    init,ampl,bet,gam,rho,xxini,yyini,zzini
 
   ! run parameters
   namelist /special_run_pars/ &
@@ -93,29 +94,31 @@ module Special
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
 !
+      use Initcond
       use Mpicomm
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      integer :: j
 !
       intent(inout) :: f
 !
 !  initial condition
 !
-      select case(init)
-        case('nothing'); if (lroot) print*,'init_special: nothing'
+      do j=1,ninit
+        select case(init(j))
         case('zero'); f(:,:,:,ispecial1:ispecial3)=0.
+        case('nothing'); if (lroot) print*,'init_special: nothing'
+        case('gaussian-noise'); call gaunoise(ampl(j),f,ispecial1,ispecial3)
         case('set')
-          f(:,:,:,ispecial1)=xxini
-          f(:,:,:,ispecial2)=yyini
-          f(:,:,:,ispecial3)=zzini
+          f(:,:,:,ispecial1)=f(:,:,:,ispecial1)+xxini
+          f(:,:,:,ispecial2)=f(:,:,:,ispecial2)+yyini
+          f(:,:,:,ispecial3)=f(:,:,:,ispecial3)+zzini
         case default
-          !
-          !  Catch unknown values
-          !
-          if (lroot) print*,'init_special: No such value for init: ', trim(init)
+          if (lroot) print*,'init_special: No such value: ',trim(init(j))
           call stop_it("")
-      endselect
+        endselect
+      enddo
 !
     endsubroutine init_special
 !***********************************************************************

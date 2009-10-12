@@ -302,6 +302,14 @@ program start
     kz_ny = 0.0
   endif
 !
+!  Set random seed independent of processor prior to initial conditions.
+!  Do this only if seed0 is modified from its original value.
+!
+  if (seed0/=1812) then
+    seed(1)=seed0
+    call random_seed_wrapper(PUT=seed)
+  endif
+!
 !  Parameter dependent initialization of module variables and final
 !  pre-timestepping setup (must be done before need_XXXX can be used, for
 !  example).
@@ -401,10 +409,13 @@ program start
   if (lhyperviscosity_strict)   call hyperviscosity_strict(f)
   if (lhyperresistivity_strict) call hyperresistivity_strict(f)
 !
-!  Set random seed independent of processor.
+!  Set random seed independent of processor after initial conditions.
+!  Do this only if seed0 is not already changed from its original value.
 !
-  seed(1)=seed0
-  call random_seed_wrapper(PUT=seed)
+  if (seed0==1812) then
+    seed(1)=seed0
+    call random_seed_wrapper(PUT=seed)
+  endif
 !
 !  Write to disk.
 !
