@@ -182,6 +182,14 @@ if (trace) then begin
        if (param.coord_system eq 'cylindric') then begin
            xx0=obj.xp(ipar,*)*cos(obj.yp(ipar,*))
            yy0=obj.xp(ipar,*)*sin(obj.yp(ipar,*))
+           ux_loc=cos(obj.yp(ipar,*))*obj.ux(ipar,*)$
+                 -sin(obj.yp(ipar,*))*obj.uy(ipar,*)
+           uy_loc=sin(obj.yp(ipar,*))*obj.ux(ipar,*)$
+                 +cos(obj.yp(ipar,*))*obj.uy(ipar,*)
+           ARROW, xx0, yy0,$
+             xx0+ux_loc*ddt, $
+             yy0+uy_loc*ddt, $
+             /data,col=255,HSIZE=4           
        endif else begin
            xx0=obj.xp(ipar,*)
            yy0=obj.yp(ipar,*)
