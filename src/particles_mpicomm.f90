@@ -59,8 +59,10 @@ module Particles_mpicomm
           ipx_rec=ipx+dipx
           ipy_rec=ipy+dipy
           if (lshear) then
-            if (ipx_rec<0)        ipy_rec=ipy_rec-ceiling(deltay/Lxyz_loc(2))
-            if (ipx_rec>nprocx-1) ipy_rec=ipy_rec+ceiling(deltay/Lxyz_loc(2))
+            if (ipx_rec<0) &
+                ipy_rec=ipy_rec-ceiling(deltay/Lxyz_loc(2)-0.5)
+            if (ipx_rec>nprocx-1) &
+                ipy_rec=ipy_rec+ceiling(deltay/Lxyz_loc(2)-0.5)
           endif
           ipz_rec=ipz+dipz
           do while (ipx_rec<0);        ipx_rec=ipx_rec+nprocx; enddo
@@ -198,6 +200,24 @@ module Particles_mpicomm
                 'redist_particles_procs: Particle ', ipar(k), &
                 ' moves out of proc ', iproc, &
                 ' and into proc ', iproc_rec
+!
+!  Check that particle wants to migrate to neighbouring processor.
+!
+            if ((.not.lstart .or. present(linsert)) .and. &
+                (.not.any(iproc_rec==iproc_comm(1:nproc_comm))) ) then
+              print*, 'redist_particles_procs: particle ', ipar(k), ' wants to'
+              print*, '    migrate to a processor that is not a neighbour!'
+              print*, 'redist_particles_procs: iproc, iproc_rec=', &
+                  iproc, iproc_rec
+              print*, 'redist_particles_procs: iproc_comm=', &
+                  iproc_comm(1:nproc_comm)
+              print*, 'redist_particles_procs: xxp=', fp(k,ixp:izp)
+              print*, 'redist_particles_procs: deltay=', deltay
+              call fatal_error_local("","")
+            endif
+!
+!  Check that particle wants to migrate to existing processor.
+!
             if (iproc_rec>=ncpus .or. iproc_rec<0) then
               call warning('redist_particles_procs','',iproc)
               print*, 'redist_particles_procs: receiving proc does not exist'
