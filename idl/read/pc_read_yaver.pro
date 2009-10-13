@@ -249,9 +249,9 @@ if (iplot eq -1) then begin
         if (it eq 0 ) then $
           print, '  ------ it -------- t ---------- var ----- min(var) ------- max(var) ------'
         for ivar=0,nvar-1 do begin
-            print, it, tt[it/njump], variables[ivar], $
-                min(array_global[*,*,it/njump,ivarpos[ivar]]), $
-                max(array_global[*,*,it/njump,ivarpos[ivar]]), $
+            print, it, tt[it], variables[ivar], $
+                min(array_global[*,*,it,ivarpos[ivar]]), $
+                max(array_global[*,*,it,ivarpos[ivar]]), $
                 format='(i11,e17.7,A12,2e17.7)'
         endfor
       endif
@@ -363,8 +363,10 @@ endif else begin
         endfor
       endif
     endif else begin
-      dummy=zero
-      readu, file, dummy
+      for ip=0,n_elements(filename)-1 do begin
+        dummy=zero
+        readu, filelun[ip], dummy
+      endfor
     endelse
 ;;
     it=it+1
@@ -383,8 +385,8 @@ endelse
 ;;
 if (nit ne 0) then begin
   makeobject="object = create_struct(name=objectname,['t'," + $
-      arraytostring(variables,quote="'",/noleader) + "],"+"tt[0:it/njump-1],"+$
-      arraytostring(variables+'[*,*,0:it/njump-1]',/noleader) + ")"
+      arraytostring(variables,quote="'",/noleader) + "],"+"tt,"+$
+      arraytostring(variables,/noleader) + ")"
 ;;
   if (execute(makeobject) ne 1) then begin
     message, 'ERROR evaluating variables: ' + makeobject, /info
