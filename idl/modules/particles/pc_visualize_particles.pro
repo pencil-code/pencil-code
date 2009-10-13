@@ -15,7 +15,8 @@ END
 ;
 pro pc_visualize_particles,png=png,removed=removed, savefile=savefile,xmin=xmin,$
                            xmax=xmax,ymin=ymin,ymax=ymax,tmin=tmin,tmax=tmax,$
-                           w=w,trace=trace,velofield=velofield,dots=dots
+                           w=w,trace=trace,velofield=velofield,dots=dots,$
+                           finalpng=finalpng
 ;
 device,decompose=0
 loadct,5
@@ -23,6 +24,7 @@ loadct,5
 ; Set defaults
 ;
 default,png,0
+default,finalpng,0
 default,removed,0
 default,savefile,1
 default,tmin,-1e37
@@ -164,7 +166,8 @@ for i=0,n_steps-1 do begin
       if png eq 1 then begin
          istr2 = strtrim(string(i,'(I20.4)'),2) ;(only up to 9999 frames)
          file='img_'+istr2+'.png'
-         write_png,file,tvrd()
+         print,'Writing file: ',file
+         write_png,file,tvrd(/true)
       endif else begin
          wait,w
       endelse
@@ -185,7 +188,7 @@ if (trace) then begin
            ARROW, xx0, yy0,$
              xx0+obj.ux(ipar,*)*ddt, $
              yy0+obj.uy(ipar,*)*ddt, $
-             /data,col=122,HSIZE=4
+             /data,col=255,HSIZE=4
        endelse
        oplot,xx0,yy0,ps=3
    end 
@@ -236,10 +239,11 @@ endif
 ;
 ; Write png files if required
 ;
-if png eq 1 then begin
+if (png or finalpng) then begin
     istr2 = strtrim(string(i+1,'(I20.4)'),2) ;(only up to 9999 frames)
     file='img_'+istr2+'.png'
-    write_png,file,tvrd()
+    print,'Writing file: ',file
+    write_png,file,tvrd(/true)
 endif
 ;
 END
