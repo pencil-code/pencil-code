@@ -15,14 +15,14 @@ END
 ;
 pro pc_visualize_particles,png=png,removed=removed, savefile=savefile,xmin=xmin,$
                            xmax=xmax,ymin=ymin,ymax=ymax,tmin=tmin,tmax=tmax,$
-                           w=w,trace=trace,velofield=velofield
+                           w=w,trace=trace,velofield=velofield,dots=dots
 ;
 device,decompose=0
 loadct,5
 ;
 ; Set defaults
 ;
-default,writepng,0
+default,png,0
 default,removed,0
 default,savefile,1
 default,tmin,-1e37
@@ -30,12 +30,14 @@ default,tmax,1e37
 default,w,0.03
 default,trace,0
 default,velofield,0
+default,dots,0
 ;
 ; Read dimensions and namelists
 ;
 pc_read_dim,obj=procdim
 pc_read_param, object=param
-pc_read_pvar,obj=objpvar,/solid_object,irmv=irmv,theta_arr=theta_arr,savefile=savefile
+pc_read_pvar,obj=objpvar,/solid_object,irmv=irmv,theta_arr=theta_arr,$
+  savefile=savefile
 pc_read_pstalk,obj=obj
 dims=size(obj.xp)
 npar=dims[1]
@@ -116,6 +118,22 @@ WINDOW,3,XSIZE=1024*xr/yr*1.6,YSIZE=1024
 !x.range=[xmin,xmax]
 !y.range=[ymin,ymax]
 ;
+; Choose symbol for representing particles
+;
+if (dots) then begin
+    psym=3
+endif else begin
+    psym=sym(1)
+endelse
+;
+; Find number of cylinders
+;
+if (param.coord_system eq 'cylindric') then begin
+    ncylinders=1
+endif else begin
+    ncylinders=param.ncylinders
+endelse
+;
 ; Show results
 ;
 for i=0,n_steps-1 do begin
@@ -127,15 +145,23 @@ for i=0,n_steps-1 do begin
       if (param.coord_system eq 'cylindric') then begin
          xp=obj.xp(*,i)*cos(obj.yp(*,i))
          yp=obj.xp(*,i)*sin(obj.yp(*,i))
-         plot,xp,yp,psym=sym(1),symsize=1,/iso,title=titlestring
+         plot,xp,yp,psym=psym,symsize=1,/iso,title=titlestring 
+         POLYFILL, CIRCLE_(xpos, $
+                           ypos, $
+                           radius),color=122        
       endif else begin
-         plot,obj.xp(*,i),obj.yp(*,i),psym=sym(1),symsize=1,/iso,title=titlestring
-      endelse
-      POLYFILL, CIRCLE_(xpos, ypos, radius),color=122
+         plot,obj.xp(*,i),obj.yp(*,i),psym=psym,symsize=1,/iso,$
+           title=titlestring
+         for icyl=0,ncylinders-1 do begin
+             POLYFILL, CIRCLE_(param.cylinder_xpos[icyl], $
+                               param.cylinder_ypos[icyl], $
+                               param.cylinder_radius[icyl]),color=122
+         end
+     endelse
       ;
       ; Do we want to write png files or to show results on screen
       ;
-      if writepng eq 1 then begin
+      if png eq 1 then begin
          istr2 = strtrim(string(i,'(I20.4)'),2) ;(only up to 9999 frames)
          file='img_'+istr2+'.png'
          write_png,file,tvrd()
@@ -187,8 +213,8 @@ if (velofield) then begin
            endif else begin
                xx0=objvar.x(iii)
                yy0=objvar.y(jjj)
-               ux=uu(iii,jjj,n1,0)
-               uy=uu(iii,jjj,n1,1)
+               ux=objvar.uu(iii,jjj,n1,0)
+               uy=objvar.uu(iii,jjj,n1,1)
            endelse
            if ((xx0 gt xmin) and (xx0 lt xmax)) then begin
                if ((yy0 gt ymin) and (yy0 lt ymax)) then begin
@@ -199,7 +225,7 @@ if (velofield) then begin
                endif
            end
        end
-   endif 
+   end
 endif
 ;
 ; Plot the removed particles as blue dots
@@ -210,7 +236,7 @@ endif
 ;
 ; Write png files if required
 ;
-if writepng eq 1 then begin
+if png eq 1 then begin
     istr2 = strtrim(string(i+1,'(I20.4)'),2) ;(only up to 9999 frames)
     file='img_'+istr2+'.png'
     write_png,file,tvrd()
