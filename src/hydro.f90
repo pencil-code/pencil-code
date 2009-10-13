@@ -1494,8 +1494,10 @@ module Hydro
       if (Omega/=0.) then
         if (lcylindrical_coords) then
           call coriolis_cylindrical(df,p)
+          call coriolis_cylindrical_del2p(f,p)
         elseif (lspherical_coords) then
           call coriolis_spherical(df,p)
+          call coriolis_spherical_del2p(f,p)
         elseif (lprecession) then
           call precession(df,p)
         else
@@ -2508,6 +2510,63 @@ module Hydro
 !
     endsubroutine coriolis_spherical
 !***********************************************************************
+
+    subroutine coriolis_spherical_del2p(f,p)
+!
+!  coriolis_spherical terms using spherical polars
+!
+!  21-feb-07/axel+dhruba: coded
+!
+      use Mpicomm, only: stop_it
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+      real :: c2,s2
+!
+!  info about coriolis_spherical term
+!
+      if (headtt) then
+        print*, 'coriolis_spherical: Omega=', Omega
+      endif
+!
+! Not yet coded for angular velocity at an angle with the z axis. 
+!
+      if (theta/=0) then
+         print*, 'coriolis_spherical: Omega=,theta=', Omega,theta
+         call fatal_error("coriolis_spherical:","not coded if the angular velocity is at an angle to the z axis. ")
+      endif
+!
+!  In (r,theta,phi) coords, we have Omega=(costh, -sinth, 0). Thus,
+!
+!                    ( costh)   (u1)      (+sinth*u3)
+!  -2Omega x U = -2O*(-sinth) X (u2) = 2O*(+costh*u3)
+!                    (   0  )   (u3)      (-costh*u2-sinth*u1)
+!
+!  With c2=2*Omega*costh and s2=-2*Omega*sinth we have then
+!
+!                (-s2*u3)
+!  -2Omega x U = (+c2*u3)
+!                (-c2*u2+s2*u1)
+!
+      if (lcoriolis_force) then 
+        c2= 2*Omega*costh(m)
+        s2=-2*Omega*sinth(m)
+        f(l1:l2,m,n,idel2p_anelastic)=f(l1:l2,m,n,idel2p_anelastic)-& 
+          s2*p%uu(:,3)*p%rho(:)
+        f(l1:l2,m,n,idel2p_anelastic+1)=f(l1:l2,m,n,idel2p_anelastic+1)+&
+          c2*p%uu(:,3)*p%rho(:)
+        f(l1:l2,m,n,idel2p_anelastic+2)=f(l1:l2,m,n,idel2p_anelastic+2)-& 
+          c2*p%uu(:,2)*p%rho(:)+s2*p%uu(:,1)*p%rho(:)
+      endif
+!
+!  Centrifugal force
+!
+      if (lcentrifugal_force) & 
+          call stop_it("duu_dt: Centrifugal force not "//&
+          "implemented in spherical coordinates")
+!
+    endsubroutine coriolis_spherical_del2p
+!*****************************************************************
     subroutine coriolis_cylindrical(df,p)
 !
 !  Coriolis terms using cylindrical coords
@@ -2552,6 +2611,51 @@ module Hydro
 !
     endsubroutine coriolis_cylindrical
 !***********************************************************************
+
+    subroutine coriolis_cylindrical_del2p(f,p)
+!
+!  Coriolis terms using cylindrical coords
+!  The formulation is the same as in cartesian, but it is better to 
+!  keep it here because precession is not implemented for 
+!  cylindrical coordinates.
+!
+!  19-sep-07/steveb: coded
+!
+     use Mpicomm, only: stop_it
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+      real :: c2
+!
+!  info about coriolis_cylindrical term
+!
+      if (headtt) &
+          print*, 'coriolis_cylindrical: Omega=', Omega
+!
+! Not yet coded for angular velocity at an angle with the z axis. 
+!
+      if (theta/=0) then
+         print*, 'coriolis_cylindrical: Omega=,theta=', Omega,theta
+         call fatal_error("coriolis_cylindrical:","not coded if the angular velocity is at an angle to the z axis. ")
+      endif
+!
+!  -2 Omega x u
+!    
+      if (lcoriolis_force) then 
+        c2=2*Omega
+        f(l1:l2,m,n,idel2p_anelastic)=f(l1:l2,m,n,idel2p_anelastic)+c2*p%uu(:,2)*p%rho(:)
+        f(l1:l2,m,n,idel2p_anelastic)=f(l1:l2,m,n,idel2p_anelastic)-c2*p%uu(:,1)*p%rho(:)
+      endif
+!
+!  Centrifugal force
+!
+      if (lcentrifugal_force) &
+          f(l1:l2,m,n,idel2p_anelastic)=f(l1:l2,m,n,idel2p_anelastic)+x(l1:l2)*Omega**2
+!
+!  Note, there is no z-component
+!
+    endsubroutine coriolis_cylindrical_del2p
+!********************************************************************
     subroutine coriolis_xdep(df,p)
 !
 !  Coriolis terms in Cartesian coordinates with Omega depending 
