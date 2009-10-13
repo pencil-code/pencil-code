@@ -652,8 +652,10 @@ module Equ
         headtt=.false.
       enddo mn_loop
 !DM+PC 
-! calculation related to aneasltic approximation should go here. 
-! first calcualte divergence of  f(:,:,:,idel2p:idelp2p+2)
+! calculation related to anelastic approximation should go here. 
+! first set the boundary conditions for f(:,:,:,idel2p:idel2p+2)
+! (needed for divergence calculation)
+! then calculate divergence of  f(:,:,:,idel2p:idelp2p+2)
 ! then solve Poisson eqn. 
 ! then add contribution from new pressure to density, temperature and entropy etc 
 !
