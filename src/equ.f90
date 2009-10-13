@@ -386,7 +386,7 @@ module Equ
         if (lchemistry)       call calc_pencils_chemistry(f,p)
         if (lviscosity)       call calc_pencils_viscosity(f,p)
         if (lforcing_cont)    call calc_pencils_forcing(f,p)
-                              call calc_pencils_entropy(f,p)
+        if (ldensity_anelastic) call calc_pencils_entropy(f,p)
         if (llorenz_gauge)    call calc_pencils_lorenz_gauge(f,p)
         if (lmagnetic)        call calc_pencils_magnetic(f,p)
         if (lpolymer)         call calc_pencils_polymer(f,p)
@@ -415,11 +415,13 @@ module Equ
 !  even if lentropy=.false.
 !
         call duu_dt(f,df,p)
-        call dlnrho_dt(f,df,p)
 ! If we use anelastic approximation we can calculate contribution 
 ! from entropy only after we know pressure. 
 !DM+PC
-        if(.not.ldensity_anelastic) call dss_dt(f,df,p)
+        if(.not.ldensity_anelastic) then 
+          call dlnrho_dt(f,df,p)
+          call dss_dt(f,df,p)
+        endif
 !
 !  Magnetic field evolution
 !
@@ -649,6 +651,12 @@ module Equ
 !
         headtt=.false.
       enddo mn_loop
+!DM+PC 
+! calculation related to aneasltic approximation should go here. 
+! first calcualte divergence of  f(:,:,:,idel2p:idelp2p+2)
+! then solve Poisson eqn. 
+! then add contribution from new pressure to density, temperature and entropy etc 
+!
 !     
 !  Integrate diagnostics related to solid cells (e.g. drag and lift).
 ! 
