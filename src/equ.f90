@@ -278,7 +278,7 @@ module Equ
 !  set indices and check whether communication must now be completed
 !  if test_nonblocking=.true., we communicate immediately as a test.
 !
-      do imn=1,ny*nz
+  mn_loop: do imn=1,ny*nz
         n=nn(imn)
         m=mm(imn)
         lfirstpoint=(imn==1)      ! true for very first m-n loop
@@ -416,7 +416,10 @@ module Equ
 !
         call duu_dt(f,df,p)
         call dlnrho_dt(f,df,p)
-        call dss_dt(f,df,p)
+! If we use anelastic approximation we can calculate contribution 
+! from entropy only after we know pressure. 
+!DM+PC
+        if(.not.ldensity_anelastic) call dss_dt(f,df,p)
 !
 !  Magnetic field evolution
 !
@@ -645,7 +648,7 @@ module Equ
 !  end of loops over m and n
 !
         headtt=.false.
-      enddo
+      enddo mn_loop
 !     
 !  Integrate diagnostics related to solid cells (e.g. drag and lift).
 ! 

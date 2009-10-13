@@ -134,7 +134,7 @@ module Density
 !  Identify version number (generated automatically by CVS).
 !
       if (lroot) call svn_id( &
-          "$Id: density.f90 11827 2009-10-02 06:44:55Z ajohan@strw.leidenuniv.nl $")
+          "$Id: density_anelastic.f90 11886 2009-10-13 12:51:11 mppiyali@gmail.com $")
 !
     endsubroutine register_density
 !***********************************************************************
