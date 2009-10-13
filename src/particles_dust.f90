@@ -529,7 +529,7 @@ module Particles
       real :: vpx_sum, vpy_sum, vpz_sum
       real :: r, p, q, px, py, pz, eps, cs, k2_xxp, rp2
       real :: dim1, npar_loc_x, npar_loc_y, npar_loc_z, dx_par, dy_par, dz_par
-      real :: rad,rad_scl,phi,tmp,OO
+      real :: rad,rad_scl,phi,tmp,OO,xx0,yy0,r2
       integer :: l, j, k, ix0, iy0, iz0
       logical :: lequidistant=.false.
 !
@@ -623,9 +623,18 @@ module Particles
             if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
             if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
             if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
-            if (nxgrid/=1) fp(k,ixp)=xp0+fp(k,ixp)*Lx0
-            if (nygrid/=1) fp(k,iyp)=yp0+fp(k,iyp)*Ly0
-            if (nzgrid/=1) fp(k,izp)=zp0+fp(k,izp)*Lz0
+            if (lcylindrical_coords) then
+              xx0=xp0+fp(k,ixp)*Lx0
+              yy0=yp0+fp(k,iyp)*Ly0
+              r2=xx0**2+yy0**2
+              if (nxgrid/=1) fp(k,ixp)=sqrt(r2)
+              if (nygrid/=1) fp(k,iyp)=atan(yy0/xx0)+pi*(xx0/abs(xx0)-1)*0.5
+              if (nzgrid/=1) fp(k,izp)=zp0+fp(k,izp)*Lz0
+            else
+              if (nxgrid/=1) fp(k,ixp)=xp0+fp(k,ixp)*Lx0
+              if (nygrid/=1) fp(k,iyp)=yp0+fp(k,iyp)*Ly0
+              if (nzgrid/=1) fp(k,izp)=zp0+fp(k,izp)*Lz0
+            endif
           enddo
 
        case ('random-cylindrical','random-cyl')
@@ -957,9 +966,17 @@ k_loop:   do while (.not. (k>npar_loc))
           if (lroot) print*, 'init_particles: Constant particle velocity'
           if (lroot) &
               print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
-          fp(1:npar_loc,ivpx)=vpx0
-          fp(1:npar_loc,ivpy)=vpy0
-          fp(1:npar_loc,ivpz)=vpz0
+          if (lcylindrical_coords) then
+            fp(1:npar_loc,ivpx)&
+                =vpx0*cos(fp(k,iyp))+vpy0*sin(fp(k,iyp))
+            fp(1:npar_loc,ivpy)&
+                =vpy0*cos(fp(k,iyp))-vpx0*sin(fp(k,iyp))
+            fp(1:npar_loc,ivpz)=vpz0
+          else
+            fp(1:npar_loc,ivpx)=vpx0
+            fp(1:npar_loc,ivpy)=vpy0
+            fp(1:npar_loc,ivpz)=vpz0
+          endif
 
         case ('sinwave-phase')
           if (lroot) print*, 'init_particles: sinwave-phase'
@@ -1199,6 +1216,7 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (mpar_loc,mpvar)   :: fp
       integer, dimension (mpar_loc,3)    :: ineargrid
       logical                            :: linsertmore=.false., linsert=.true.
+      real :: xx0, yy0,r2
 !
       integer :: j, k, n_insert, npar_loc_old, iii
 !
@@ -1240,9 +1258,18 @@ k_loop:   do while (.not. (k>npar_loc))
                 if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
                 if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
                 if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
-                if (nxgrid/=1) fp(k,ixp)=xp0+fp(k,ixp)*Lx0
-                if (nygrid/=1) fp(k,iyp)=yp0+fp(k,iyp)*Ly0
-                if (nzgrid/=1) fp(k,izp)=zp0+fp(k,izp)*Lz0
+                if (lcylindrical_coords) then
+                  xx0=xp0+fp(k,ixp)*Lx0
+                  yy0=yp0+fp(k,iyp)*Ly0
+                  r2=xx0**2+yy0**2
+                  if (nxgrid/=1) fp(k,ixp)=sqrt(r2)
+                  if (nygrid/=1) fp(k,iyp)=atan(yy0/xx0)+pi*(xx0/abs(xx0)-1)*0.5
+                  if (nzgrid/=1) fp(k,izp)=zp0+fp(k,izp)*Lz0
+                else
+                  if (nxgrid/=1) fp(k,ixp)=xp0+fp(k,ixp)*Lx0
+                  if (nygrid/=1) fp(k,iyp)=yp0+fp(k,iyp)*Ly0
+                  if (nzgrid/=1) fp(k,izp)=zp0+fp(k,izp)*Lz0
+                endif
               enddo
 !              
             case ('nothing')
@@ -1254,17 +1281,29 @@ k_loop:   do while (.not. (k>npar_loc))
               call fatal_error('init_particles','')
 !              
             endselect
+          enddo
 !
 !  Initial particle velocity.
 !
+          do j=1,ninit
             select case(initvvp(j))
             case ('nothing')
               if (j==1) print*, 'init_particles: No particle velocity set'
 !              
             case ('constant')
-              fp(npar_loc_old+1:npar_loc,ivpx)=vpx0
-              fp(npar_loc_old+1:npar_loc,ivpy)=vpy0
-              fp(npar_loc_old+1:npar_loc,ivpz)=vpz0
+              if (lcylindrical_coords) then
+                fp(npar_loc_old+1:npar_loc,ivpx)&
+                    =vpx0*cos(fp(npar_loc_old+1:npar_loc,iyp))&
+                    +vpy0*sin(fp(npar_loc_old+1:npar_loc,iyp))
+                fp(npar_loc_old+1:npar_loc,ivpy)&
+                    =vpy0*cos(fp(npar_loc_old+1:npar_loc,iyp))&
+                    -vpx0*sin(fp(npar_loc_old+1:npar_loc,iyp))
+                fp(npar_loc_old+1:npar_loc,ivpz)=vpz0
+              else
+                fp(npar_loc_old+1:npar_loc,ivpx)=vpx0
+                fp(npar_loc_old+1:npar_loc,ivpy)=vpy0
+                fp(npar_loc_old+1:npar_loc,ivpz)=vpz0
+              endif
 !              
             case default
               print*, 'insert_particles: No such such value for initvvp: ', &
