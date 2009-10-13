@@ -16,6 +16,7 @@
 ! PENCILS PROVIDED u3u21; u1u32; u2u13; del2u(3); del4u(3); del6u(3)
 ! PENCILS PROVIDED u2u31; u3u12; u1u23
 ! PENCILS PROVIDED graddivu(3); del6u_bulk(3); grad5divu(3)
+! PENCILS PROVIDED rhougu(3)
 !
 !***************************************************************
 module Hydro
@@ -1107,6 +1108,7 @@ module Hydro
       use Mpicomm, only: stop_it
 !
       if (ladvection_velocity) lpenc_requested(i_ugu)=.true.
+      if (ldensity_anelastic) lpenc_requested(i_rhougu)=.true.
       if (lprecession) lpenc_requested(i_rr)=.true.
       if (ldt.or.(eckmann_friction/=0)) lpenc_requested(i_uu)=.true.
       if (Omega/=0.0) lpenc_requested(i_uu)=.true.
@@ -1185,6 +1187,7 @@ module Hydro
       endif
       if (idiag_uguxm/=0 .or. idiag_uguym/=0 .or. idiag_uguzm/=0) &
           lpenc_diagnos(i_ugu)=.true.
+          lpenc_diagnos(i_rhougu)=.true.
       if (idiag_ugu2m/=0) lpenc_diagnos(i_ugu2)=.true.
       if (idiag_uguxmx/=0 .or. idiag_uguymx/=0 .or. idiag_uguzmx/=0 .or. &
           idiag_uguxmy/=0 .or. idiag_uguymy/=0 .or. idiag_uguzmy/=0 .or. &
@@ -1231,6 +1234,10 @@ module Hydro
       if (lpencil_in(i_ugu)) then
         lpencil_in(i_uu)=.true.
         lpencil_in(i_uij)=.true.
+      endif
+      if (lpencil_in(i_rhougu)) then
+        lpencil_in(i_rho)=.true.
+        lpencil_in(i_ugu)=.true.
       endif
       if (lpencil_in(i_u3u21) .or. &
           lpencil_in(i_u1u32) .or. &
@@ -1343,6 +1350,12 @@ module Hydro
         endif
         call u_dot_grad(f,iuu,p%uij,p%uu,p%ugu,UPWIND=lupw_uu)
       endif
+
+      if (lpencil(i_rhougu)) then
+       p%rhougu(:,1)=p%rho*p%ugu(:,1)
+       p%rhougu(:,2)=p%rho*p%ugu(:,2)
+       p%rhougu(:,3)=p%rho*p%ugu(:,3)
+      endif
 ! ugu2
       if (lpencil(i_ugu2)) call dot2_mn(p%ugu,p%ugu2)
 !
@@ -1440,11 +1453,12 @@ module Hydro
       type (pencil_case) :: p
 !
       real, dimension (nx) :: space_part_re,space_part_im,u2t,uot,out,fu
+      real, dimension (nx) :: rho_anelastic
       real :: c2,s2,kx
-      integer :: j
+      integer :: j, jloop,iloop
 !
-      intent(in) :: f,p
-      intent(out) :: df
+      intent(in) :: p
+      intent(out) :: f,df
 !
 !  Identify module and boundary conditions.
 !
@@ -1457,8 +1471,19 @@ module Hydro
 !
 !  Advection term.
 !
-      if (ladvection_velocity) &
+      if (ladvection_velocity) then 
           df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
+        if (ldensity_anelastic) then
+          do jloop=0,2
+            f(l1:l2,m,n,idel2p_anelastic+jloop)= & 
+              f(l1:l2,m,n,idel2p_anelastic+jloop)- &
+              p%rho(:)*p%ugu(:,jloop+1)
+!          f(l1:l2,m,n,idel2p_anelastic:idel2p_anelastic+2)= & 
+!          f(l1:l2,m,n,idel2p_anelastic:idel2p_anelastic+2)- &
+!          p%rhougu(1:nx,1:3)
+          end do
+        endif
+      endif
 !
 !  Coriolis force, -2*Omega x u (unless lprecession=T)
 !  Omega=(-sin_theta, 0, cos_theta), where theta corresponds to

@@ -639,6 +639,16 @@ endif
 #LD_MPI= #(caps.iafe.uba.ar)
 #LIBMPISUFFIX=#(caps.iafe.uba.ar)
 ##
+##  Piyali's laptop
+##
+##FC=/usr/bin/gfortran -I/usr/lib/openmpi/include #(piyali-laptop)
+#FC=mpif90 -I/usr/lib/openmpi/include #(piyali-laptop)
+#F77=$(FC) #(piyali-laptop*)
+#CC=gcc #(piyali-laptop*)
+#FFLAGS=-O3 #(piyali-laptop*)
+#FFLAGS_DOUBLE=-fdefault-real-8  #(piyali-laptop*)
+#LD_MPI=-L/usr/lib/openmpi/lib -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl #(piyali-laptop*)
+##
 ##  Pencil-Code Servers
 ##
 ##FC=/usr/bin/gfortran -I/usr/lib/openmpi/include #(norlx5*)
