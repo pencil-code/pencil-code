@@ -131,6 +131,7 @@ module Magnetic
   integer :: nrings=2
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
   logical :: llorentzforce=.true.,linduction=.true.
+  logical :: lalpha_phi_equation=.true.
   logical :: lresi_eta_const=.false.
   logical :: lresi_etaSS=.false.
   logical :: lresi_hyper2=.false.
@@ -214,6 +215,7 @@ module Magnetic
        alpha_eps, &
        alpha_xprofile,alpha_x1,alpha_dx1, &
        alpha_yprofile, &
+       lalpha_phi_equation, &
        lOmega_effect,Omega_ampl, &
        Omega_xprofile,Omega_x1,Omega_dx1, &
        Omega_yprofile,Omega_yc1,Omega_yc2, &
@@ -1417,7 +1419,9 @@ module Magnetic
 !  Add alpha effect. At the moment this ignores the grad(alpha) terms
 !
       df(l1:l2,m,n,iaphi)=df(l1:l2,m,n,iaphi)+alpha_tmp*bphi
-      df(l1:l2,m,n,ibphi)=df(l1:l2,m,n,ibphi)-alpha_tmp*d2aphi+alpha_tmp2
+      if (lalpha_phi_equation) then
+        df(l1:l2,m,n,ibphi)=df(l1:l2,m,n,ibphi)-alpha_tmp*d2aphi+alpha_tmp2
+      endif
 !
 !  differential rotation, need poloidal field for this, and
 !  add pomega*Bpol.grad(Omega) to the dBphi/dt equation.
