@@ -387,7 +387,6 @@ module Equ
         if (lviscosity)       call calc_pencils_viscosity(f,p)
         if (lforcing_cont)    call calc_pencils_forcing(f,p)
         if (.not.ldensity_anelastic) call calc_pencils_entropy(f,p)
-!                              call calc_pencils_entropy(f,p)
         if (llorenz_gauge)    call calc_pencils_lorenz_gauge(f,p)
         if (lmagnetic)        call calc_pencils_magnetic(f,p)
         if (lpolymer)         call calc_pencils_polymer(f,p)

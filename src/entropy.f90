@@ -445,6 +445,7 @@ module Entropy
           if (initss(1) .eq. 'shell_layers') then
 !           lmultilayer=.true.   ! this is the default...
             if (hcond1==impossible) hcond1=(mpoly1+1.)/(mpoly0+1.)
+            if (hcond2==impossible) hcond2=(mpoly2+1.)/(mpoly0+1.)
             call get_cp1(cp1)
             beta0=-cp1*g0/(mpoly0+1)*gamma/gamma_m1
             beta1=-cp1*g0/(mpoly1+1)*gamma/gamma_m1
