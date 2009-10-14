@@ -51,7 +51,9 @@ module Deriv
 
   interface  der_onesided_4_slice                ! Overload the der function
     module procedure  der_onesided_4_slice_main  ! derivative of an 'mvar' variable
+    module procedure  der_onesided_4_slice_main_point
     module procedure  der_onesided_4_slice_other ! derivative of another field
+    module procedure  der_onesided_4_slice_other_point
   endinterface
 
   contains
@@ -1648,6 +1650,65 @@ module Deriv
       endif
     endsubroutine
 !***********************************************************************
+  subroutine der_onesided_4_slice_main_point(f,sgn,k,df,lll,mmm,nnn,j)
+!
+      use Cdata
+!
+!  made using der_onesided_4_slice_main. One sided derivstive is calculated 
+!  at one point (lll,mmm,nnn) 
+!
+!   15-okt-09/Natalia: coded.
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real  :: df
+      real :: fac
+      integer :: pos,lll,mmm,nnn,k,sgn,j
+!
+      intent(in)  :: f,k,lll,mmm,nnn,sgn,j
+      intent(out) :: df
+
+      if (j==1) then
+       pos=lll
+        if (nxgrid/=1) then
+          fac=1./12.*dx_1(pos)
+          df = fac*(-sgn*25*f(pos,mmm,nnn,k)&
+                  +sgn*48*f(pos+sgn*1,mmm,nnn,k)&
+                  -sgn*36*f(pos+sgn*2,mmm,nnn,k)&
+                  +sgn*16*f(pos+sgn*3,mmm,nnn,k)&
+                  -sgn*3 *f(pos+sgn*4,mmm,nnn,k))
+        else
+          df=0.
+          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in x-directder_onesided_4_sliceion'
+        endif
+      elseif (j==2) then
+       pos=mmm
+        if (nygrid/=1) then
+          fac=1./12.*dy_1(pos)
+          df = fac*(-sgn*25*f(lll,pos,nnn,k)&
+                  +sgn*48*f(lll,pos+sgn*1,nnn,k)&
+                  -sgn*36*f(lll,pos+sgn*2,nnn,k)&
+                  +sgn*16*f(lll,pos+sgn*3,nnn,k)&
+                  -sgn*3 *f(lll,pos+sgn*4,nnn,k))
+        else
+          df=0.
+          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in y-direction'
+        endif
+      elseif (j==3) then
+       pos=nnn
+        if (nzgrid/=1) then
+          fac=1./12.*dz_1(pos)
+          df = fac*(-sgn*25*f(lll,mmm,pos,k)&
+                  +sgn*48*f(lll,mmm,pos+sgn*1,k)&
+                  -sgn*36*f(lll,mmm,pos+sgn*2,k)&
+                  +sgn*16*f(lll,mmm,pos+sgn*3,k)&
+                  -sgn*3 *f(lll,mmm,pos+sgn*4,k))
+        else
+          df=0.
+          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in z-direction'
+        endif
+      endif
+    endsubroutine
+!***********************************************************************
    subroutine der_onesided_4_slice_other(f,sgn,df,pos,j)
       use Cdata
 !
@@ -1686,11 +1747,11 @@ module Deriv
       elseif (j==2) then
         if (nygrid/=1) then
           fac=1./12.*dy_1(pos)
-          df = fac*(-sgn*25*f(l1:l2,pos,n1:n2)&
-                  +sgn*48*f(l1:l2,pos+sgn*1,n1:n2)&
-                  -sgn*36*f(l1:l2,pos+sgn*2,n1:n2)&
-                  +sgn*16*f(l1:l2,pos+sgn*3,n1:n2)&
-                  -sgn*3 *f(l1:l2,pos+sgn*4,n1:n2))
+          df = fac*(-sgn*25*(f(l1:l2,pos,n1:n2)-f(l1:l2,pos+sgn*1,n1:n2))&
+                    +sgn*23*(f(l1:l2,pos+sgn*1,n1:n2)-f(l1:l2,pos+sgn*2,n1:n2))&
+                    -sgn*13*(f(l1:l2,pos+sgn*2,n1:n2)-f(l1:l2,pos+sgn*3,n1:n2))&
+                    +sgn*3*(f(l1:l2,pos+sgn*3,n1:n2)-f(l1:l2,pos+sgn*4,n1:n2)))
+
         else
           df=0.
           if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in y-direction'
@@ -1699,10 +1760,73 @@ module Deriv
         if (nzgrid/=1) then
           fac=1./12.*dz_1(pos)
           df = fac*(-sgn*25*f(l1:l2,m1:m2,pos)&
-                  +sgn*48*f(l1:l2,m1:m2,pos+sgn*1)&
-                  -sgn*36*f(l1:l2,m1:m2,pos+sgn*2)&
-                  +sgn*16*f(l1:l2,m1:m2,pos+sgn*3)&
-                  -sgn*3 *f(l1:l2,m1:m2,pos+sgn*4))
+                    +sgn*48*f(l1:l2,m1:m2,pos+sgn*1)&
+                    -sgn*36*f(l1:l2,m1:m2,pos+sgn*2)&
+                    +sgn*16*f(l1:l2,m1:m2,pos+sgn*3)&
+                    -sgn*3 *f(l1:l2,m1:m2,pos+sgn*4))
+
+
+
+        else
+          df=0.
+          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in z-direction'
+        endif
+      endif
+    endsubroutine
+!***********************************************************************
+  subroutine der_onesided_4_slice_other_point(f,sgn,df,lll,mmm,nnn,j)
+      use Cdata
+!
+!
+!  made using der_onesided_4_slice_other. One sided derivstive is calculated 
+!  at one point (lll,mmm,nnn) 
+!
+!   15-okt-09/Natalia: coded.
+
+!
+      real, dimension (mx,my,mz) :: f
+      real :: df
+      real :: fac
+      integer :: pos,lll,mmm,nnn,k,sgn,j
+!
+      intent(in)  :: f,lll,mmm,nnn,sgn,j
+      intent(out) :: df
+
+      if (j==1) then
+       pos=lll
+        if (nxgrid/=1) then
+          fac=1./12.*dx_1(pos)
+          df = fac*(-sgn*25*f(pos,mmm,nnn)&
+                  +sgn*48*f(pos+sgn*1,mmm,nnn)&
+                  -sgn*36*f(pos+sgn*2,mmm,nnn)&
+                  +sgn*16*f(pos+sgn*3,mmm,nnn)&
+                  -sgn*3 *f(pos+sgn*4,mmm,nnn))
+        else
+          df=0.
+          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in x-directder_onesided_4_sliceion'
+        endif
+      elseif (j==2) then
+       pos=mmm
+        if (nygrid/=1) then
+          fac=1./12.*dy_1(pos)
+          df = fac*(-sgn*25*(f(lll,pos,nnn)-f(lll,pos+sgn*1,nnn))&
+                  +sgn*23*(f(lll,pos+sgn*1,nnn)-f(lll,pos+sgn*2,nnn))&
+                  -sgn*13*(f(lll,pos+sgn*2,nnn)-f(lll,pos+sgn*3,nnn))&
+                  +sgn*3*(f(lll,pos+sgn*3,nnn)-f(lll,pos+sgn*4,nnn)))
+
+        else
+          df=0.
+          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in y-direction'
+        endif
+      elseif (j==3) then
+       pos=nnn
+        if (nzgrid/=1) then
+          fac=1./12.*dz_1(pos)
+          df = fac*(-sgn*25*f(lll,mmm,pos)&
+                  +sgn*48*f(lll,mmm,pos+sgn*1)&
+                  -sgn*36*f(lll,mmm,pos+sgn*2)&
+                  +sgn*16*f(lll,mmm,pos+sgn*3)&
+                  -sgn*3 *f(lll,mmm,pos+sgn*4))
 
 
 
