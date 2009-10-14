@@ -4237,7 +4237,7 @@ module Chemistry
       real, dimension (ny) :: tmpy
       real, dimension (nz) :: tmpz
 !
-      integer :: lll, sgn,i,j,k, nn, nnn, mm, mmm, irho_tmp
+      integer :: lll, sgn,sgn1,sgn2,i,j,k, nn, nnn, mm, mmm, irho_tmp
       real :: Mach_num, nscbc_sigma_out
 !
       intent(inout) :: f
@@ -4325,25 +4325,58 @@ module Chemistry
         call der_onesided_4_slice(f,sgn,ilnTT,dlnT_dxj(:,:,1),lll,1)
 
        if (nygrid /= 1) then
+      !  call der_onesided_4_slice(pp,sgn,tmp2_pp(:,:),lll,2)
 
-        call der_onesided_4_slice(f,sgn,iux,tmp12(:,:),lll,2)
-        call der_onesided_4_slice(f,sgn,iuy,tmp22(:,:),lll,2)
-        call der_onesided_4_slice(f,sgn,iuz,tmp32(:,:),lll,2)
-        call der_onesided_4_slice(rho_full,sgn,tmp2_rho(:,:),lll,2)
-        call der_onesided_4_slice(pp,sgn,tmp2_pp(:,:),lll,2)
-        call der_onesided_4_slice(mom2,sgn,dmom2_dy(:,:),lll,2)
-        call der_onesided_4_slice(rhoE_pU(:,:,:,1),sgn,drhoE_pU(:,:,1),lll,2)
 
+          do i=n1,n2
+          call der_pencil(2,f(lll,:,i,iux),tmpy)
+          call der_pencil(2,f(lll,:,i,iux),tmp12(:,i))
+          call der_pencil(2,f(lll,:,i,iuy),tmp22(:,i))
+          call der_pencil(2,f(lll,:,i,iuz),tmp32(:,i))
+          call der_pencil(2,rho_full(lll,:,i),tmp2_rho(:,i))
+          call der_pencil(2,pp(lll,:,i),tmp2_pp(:,i))
+          call der_pencil(2,mom2(lll,:,i),dmom2_dy(:,i))
+          call der_pencil(2,rhoE_pU(lll,:,i,1),drhoE_pU(:,i,1))
+
+          enddo
+
+!print*,'nat1',tmp2_rho(m1,n1)
+
+         do i=n1,n2
+         do j=m1,m2
+
+        ! if ((j<m1+4) .and. (m2>m1+4)) then
+         if ((j<=m1+6) .or. (j>=m2-6)) then
+           if (j<=m1+6) sgn1=+1
+          !else
+           if (j>=m2-6)  sgn1=-1
+         ! endif
+
+
+          call der_onesided_4_slice(f,sgn1,iux,tmp12(j,i),lll,j,i,2)
+          call der_onesided_4_slice(f,sgn1,iuy,tmp22(j,i),lll,j,i,2)
+          call der_onesided_4_slice(f,sgn1,iuz,tmp32(j,i),lll,j,i,2)
+          call der_onesided_4_slice(rho_full,sgn1,tmp2_rho(j,i),lll,j,i,2)
+          call der_onesided_4_slice(pp_full,sgn1,tmp2_pp(j,i),lll,j,i,2)
+          call der_onesided_4_slice(mom2,sgn1,dmom2_dy(j,i),lll,j,i,2)
+          call der_onesided_4_slice(rhoE_pU(:,:,:,1),sgn1,drhoE_pU(j,i,1),lll,j,i,2)
+         endif
+         enddo
+
+         enddo
+
+
+!print*,'nat2',tmp2_rho(m1,n1)
    
-        do i=n1,n2
-         ! call der2_pencil(2,f(lll,:,i,iux),tmpy)
-         ! d2u1_dy2(:,i-n1+1)=tmpy(:)
-         ! call der2_pencil(2,f(lll,:,i,iuy),tmpy)
-         ! d2u2_dy2(:,i-n1+1)=tmpy(:)
-         ! call der2_pencil(2,f(lll,:,i,iuz),tmpy)
-         ! d2u3_dy2(:,i-n1+1)=tmpy(:)
-         ! call der_pencil(2,f(lll,:,i,ilnTT),dlnT_dxj(:,i,2))
-        enddo
+   !     do i=n1,n2
+   !       call der2_pencil(2,f(lll,:,i,iux),tmpy)
+   !       d2u1_dy2(:,i-n1+1)=tmpy(:)
+   !       call der2_pencil(2,f(lll,:,i,iuy),tmpy)
+   !       d2u2_dy2(:,i-n1+1)=tmpy(:)
+   !       call der2_pencil(2,f(lll,:,i,iuz),tmpy)
+   !       d2u3_dy2(:,i-n1+1)=tmpy(:)
+   !       call der_pencil(2,f(lll,:,i,ilnTT),dlnT_dxj(:,i,2))
+   !     enddo
       else
         tmp32=0
         tmp22=0
@@ -4355,7 +4388,7 @@ module Chemistry
         d2u1_dy2=0
         d2u2_dy2=0
         d2u3_dy2=0
-        dlnT_dxj(:,:,2)=0.
+        dlnT_dxj(:,:,2)=0
       endif
         dui_dxj(:,:,1,2)=tmp12(m1:m2,n1:n2)
         dui_dxj(:,:,2,2)=tmp22(m1:m2,n1:n2)
@@ -4364,15 +4397,17 @@ module Chemistry
         grad_pp(:,:,2)=tmp2_pp(m1:m2,n1:n2)
 
       if (nzgrid /= 1) then
-       
-          call der_onesided_4_slice(f,sgn,iux,tmp13(:,:),lll,3)
-          call der_onesided_4_slice(f,sgn,iuy,tmp23(:,:),lll,3)
-          call der_onesided_4_slice(f,sgn,iuz,tmp33(:,:),lll,3)
-          call der_onesided_4_slice(rho_full,sgn,tmp3_rho(:,:),lll,3)
-          call der_onesided_4_slice(pp,sgn,tmp3_pp(:,:),lll,2)
-          call der_onesided_4_slice(mom3,sgn,dmom3_dz(:,:),lll,3)
-          call der_onesided_4_slice(rhoE_pU(:,:,:,2),sgn,drhoE_pU(:,:,2),lll,3)
-          
+         do i=n1,n2
+         do j=m1,m2
+          call der_onesided_4_slice(f,sgn,iux,tmp13(j,i),lll,j,i,3)
+          call der_onesided_4_slice(f,sgn,iuy,tmp23(j,i),lll,j,i,3)
+          call der_onesided_4_slice(f,sgn,iuz,tmp33(j,i),lll,j,i,3)
+          call der_onesided_4_slice(rho_full,sgn,tmp3_rho(j,i),lll,j,i,3)
+          call der_onesided_4_slice(pp,sgn,tmp3_pp(j,i),lll,j,i,3)
+          call der_onesided_4_slice(mom3,sgn,dmom3_dz(j,i),lll,j,i,3)
+          call der_onesided_4_slice(rhoE_pU(:,:,:,2),sgn,drhoE_pU(j,i,2),lll,j,i,3)
+         enddo
+         enddo 
 
       else
         tmp33=0
@@ -4389,17 +4424,17 @@ module Chemistry
         grad_rho(:,:,3)=tmp3_rho(m1:m2,n1:n2)
         grad_pp(:,:,3)=tmp3_pp(m1:m2,n1:n2)
 
-       if ((nygrid /= 1) .and. (nzgrid /= 1)) then
+       if ((nygrid /= 1) .or. (nzgrid /= 1)) then
 
           T_1(:,:)=(-dmom2_dy(m1:m2,n1:n2)-dmom3_dz(m1:m2,n1:n2)) &
                    /rho0(m1:m2,n1:n2)
           T_2(:,:)=-f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,1,2) &
                    -f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,1,3) !&
-         !          -nu_full(lll,m1:m2,n1:n2)*(d2u1_dy2+d2u1_dz2)
+                   !-nu_full(lll,m1:m2,n1:n2)*(d2u1_dy2+d2u1_dz2)
           T_3(:,:)=-f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,2,2) &
                    -f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,2,3) &
                    -grad_pp(:,:,2)/rho0(m1:m2,n1:n2) !&
-              !     -nu_full(lll,m1:m2,n1:n2)*(d2u2_dy2+d2u2_dz2)
+                   !-nu_full(lll,m1:m2,n1:n2)*(d2u2_dy2+d2u2_dz2)
           T_4(:,:)=-f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,3,2) &
                    -f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,3,3) &
                    -grad_pp(:,:,3)/rho0(m1:m2,n1:n2)
@@ -4510,16 +4545,16 @@ module Chemistry
       ! + RHS_T_full(lll,m1:m2,n1:n2)
 
       
-   !   if ((nygrid /= 1) .or.(nzgrid /= 1))  then
+      if ((nygrid /= 1) .and.(nzgrid /= 1))  then
 
-        if ((nygrid /= 1) .and.(nzgrid /= 1))  then
+   !     if ((nygrid /= 1) .or.(nzgrid /= 1))  then
          df(lll,m1:m2,n1:n2,irho_tmp) = df(lll,m1:m2,n1:n2,irho_tmp) + T_1(:,:)
          df(lll,m1:m2,n1:n2,iux)      = df(lll,m1:m2,n1:n2,iux)      + T_2(:,:)
          df(lll,m1:m2,n1:n2,iuy)      = df(lll,m1:m2,n1:n2,iuy)      + T_3(:,:)
          df(lll,m1:m2,n1:n2,iuz)      = df(lll,m1:m2,n1:n2,iuz)      + T_4(:,:)
          df(lll,m1:m2,n1:n2,ilnTT)    = df(lll,m1:m2,n1:n2,ilnTT)    + T_5(:,:)
   
-      ! if ((nygrid /= 1) .and.(nzgrid /= 1))  then
+    !   if ((nygrid /= 1) .and.(nzgrid /= 1))  then
      
        do i=1,2 
           if (i==1) then
@@ -4571,14 +4606,18 @@ module Chemistry
           call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dx,lll,1)
       !    call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dy,lll,2)
        !   call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dz,lll,3)
-          do i=m1,m2
+          do j=m1,m2
+           do i=n1,n2
          !   call der_pencil(2,f(lll,:,i,ichemspec(k)),dYk_dy(:,i))
-            call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dy(:,i,:),i,2)
-         enddo
+            call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dy(lll,j,i),lll,j,i,2)
+           enddo
+          enddo
             do i=n1,n2
+             do j=m1,m2
          !   call der_pencil(2,f(lll,:,i,ichemspec(k)),dYk_dy(:,i))
-            call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dz(:,:,i),i,3)
-         enddo
+              call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dz(lll,j,i),lll,j,i,3)
+             enddo
+           enddo
           df(lll,m1:m2,n1:n2,ichemspec(k))=&
               -f(lll,m1:m2,n1:n2,iux)*dYk_dx &
            !   -f(lll,m1:m2,n1:n2,iuy)*dYk_dy &
@@ -4646,7 +4685,7 @@ module Chemistry
       real, dimension (nx,nz,3)   :: grad_rho, grad_pp
 
 !
-      integer :: mmm, sgn,i,j,k, irho_tmp, nn, nnn, ll, lll
+      integer :: mmm, sgn,sgn1,i,j,k, irho_tmp, nn, nnn, ll, lll
       real :: Mach_num,nscbc_sigma_out
 !
       intent(inout) :: f
@@ -4734,14 +4773,24 @@ module Chemistry
       call der_onesided_4_slice(f,sgn,iuz,dui_dxj(:,:,3,2),mmm,2)
 
       if (nxgrid /= 1) then
+         do i=n1,n2
+         do j=l1,l2
 
-          call der_onesided_4_slice(f,sgn,iux,tmp11(:,:),mmm,1)
-          call der_onesided_4_slice(f,sgn,iuy,tmp21(:,:),mmm,1)
-          call der_onesided_4_slice(f,sgn,iuz,tmp31(:,:),mmm,1)
-          call der_onesided_4_slice(rho_full,sgn,tmp1_rho(:,:),mmm,1)
-          call der_onesided_4_slice(pp,sgn,tmp1_pp(:,:),mmm,1)
-          call der_onesided_4_slice(mom1,sgn,dmom1_dx(:,:),mmm,1)
-          call der_onesided_4_slice(rhoE_pU(:,:,:,1),sgn,drhoE_pU(:,:,1),mmm,1)
+         if ((j>l2-4) .and. (l2>l1+4)) then
+           sgn1=-1
+          else
+           sgn1=1
+          endif
+
+          call der_onesided_4_slice(f,sgn1,iux,tmp11(j,i),j,mmm,i,1)
+          call der_onesided_4_slice(f,sgn1,iuy,tmp21(j,i),j,mmm,i,1)
+          call der_onesided_4_slice(f,sgn1,iuz,tmp31(j,i),j,mmm,i,1)
+          call der_onesided_4_slice(rho_full,sgn1,tmp1_rho(j,i),j,mmm,i,1)
+          call der_onesided_4_slice(pp,sgn1,tmp1_pp(j,i),j,mmm,i,1)
+          call der_onesided_4_slice(mom1,sgn1,dmom1_dx(j,i),j,mmm,i,1)
+          call der_onesided_4_slice(rhoE_pU(:,:,:,1),sgn1,drhoE_pU(j,i,1),j,mmm,i,1)
+        enddo
+        enddo
 
       else
         tmp31=0
@@ -4759,13 +4808,17 @@ module Chemistry
         grad_pp(:,:,1)=tmp1_pp(l1:l2,n1:n2)
 
       if (nzgrid /= 1) then
-     
-          call der_onesided_4_slice(f,sgn,iux,tmp13(:,:),mmm,3)
-          call der_onesided_4_slice(f,sgn,iuy,tmp23(:,:),mmm,3)
-          call der_onesided_4_slice(f,sgn,iuz,tmp33(:,:),mmm,3)
-          call der_onesided_4_slice(rho_full,sgn,tmp3_rho(:,:),mmm,3)
-          call der_onesided_4_slice(pp,sgn,tmp3_pp(:,:),mmm,2)
-          call der_onesided_4_slice(mom3,sgn,dmom3_dz(:,:),mmm,3)
+         do i=n1,n2
+         do j=l1,l2
+          call der_onesided_4_slice(f,sgn,iux,tmp13(j,i),j,mmm,i,3)
+          call der_onesided_4_slice(f,sgn,iuy,tmp23(j,i),j,mmm,i,3)
+          call der_onesided_4_slice(f,sgn,iuz,tmp33(j,i),j,mmm,i,3)
+          call der_onesided_4_slice(rho_full,sgn,tmp3_rho(j,i),j,mmm,i,3)
+          call der_onesided_4_slice(pp,sgn,tmp3_pp(j,i),j,mmm,i,3)
+          call der_onesided_4_slice(mom3,sgn,dmom3_dz(j,i),j,mmm,i,3)
+          call der_onesided_4_slice(rhoE_pU(:,:,:,2),sgn,drhoE_pU(j,i,2),j,mmm,i,3)
+         enddo
+         enddo
 
       else
         tmp33=0
@@ -4774,6 +4827,7 @@ module Chemistry
         tmp3_rho=0
         tmp3_pp=0
         dmom3_dz=0
+        drhoE_pU(:,:,2)=0
       endif
         dui_dxj(:,:,1,3)=tmp13(l1:l2,n1:n2)
         dui_dxj(:,:,2,3)=tmp23(l1:l2,n1:n2)
@@ -4793,7 +4847,7 @@ module Chemistry
                    -f(l1:l2,mmm,n1:n2,iuz)*dui_dxj(:,:,3,3) &
                    -grad_pp(:,:,3)/rho0(l1:l2,n1:n2)
           T_5(:,:)=+drho_prefac(:,:)*(gamma0(l1:l2,n1:n2)-1.)*gamma0(l1:l2,n1:n2) &
-                   *(drhoE_pU(l1:l2,n1:n2,1)+drhoE_pU(l1:l2,n1:n2,2))
+                   *(drhoE_pU(l1:l2,n1:n2,1)+drhoE_pU(l1:l2,n1:n2,3))
 
         endif
 
@@ -4905,21 +4959,21 @@ module Chemistry
       df(l1:l2,mmm,n1:n2,iuy) = -1./&
           (2.*rho0(l1:l2,n1:n2)*cs0_ar(l1:l2,n1:n2))*(M_5 - M_1) !&
       df(l1:l2,mmm,n1:n2,iuz) = -M_4
-  !    df(l1:l2,mmm,n1:n2,ilnTT) = drho_prefac(:,:)*(-M_2 &
-  !        +0.5*(gamma0(l1:l2,n1:n2)-1.)*(M_5+M_1))
+      df(l1:l2,mmm,n1:n2,ilnTT) = drho_prefac(:,:)*(-M_2 &
+          +0.5*(gamma0(l1:l2,n1:n2)-1.)*(M_5+M_1))
     
     !   if ((nxgrid /= 1) .or. (nzgrid /= 1)) then
-      if ((nxgrid /= 1) .and. (nzgrid /= 1)) then
+    !  if ((nxgrid /= 1) .and. (nzgrid /= 1)) then
     
-         df(l1:l2,mmm,n1:n2,irho_tmp) = df(l1:l2,mmm,n1:n2,irho_tmp) + T_1(:,:)
-         df(l1:l2,mmm,n1:n2,iux) =      df(l1:l2,mmm,n1:n2,iux)      + T_2(:,:)
-         df(l1:l2,mmm,n1:n2,iuy) =      df(l1:l2,mmm,n1:n2,iuy)      + T_3(:,:)
-         df(l1:l2,mmm,n1:n2,iuz) =      df(l1:l2,mmm,n1:n2,iuz)      + T_4(:,:)
-         df(l1:l2,mmm,n1:n2,ilnTT) =    df(l1:l2,mmm,n1:n2,ilnTT)    + T_1(:,:)
+        ! df(l1:l2,mmm,n1:n2,irho_tmp) = df(l1:l2,mmm,n1:n2,irho_tmp) + T_1(:,:)
+        ! df(l1:l2,mmm,n1:n2,iux) =      df(l1:l2,mmm,n1:n2,iux)      + T_2(:,:)
+        ! df(l1:l2,mmm,n1:n2,iuy) =      df(l1:l2,mmm,n1:n2,iuy)      + T_3(:,:)
+        !df(l1:l2,mmm,n1:n2,iuz) =      df(l1:l2,mmm,n1:n2,iuz)      + T_4(:,:)
+        !df(l1:l2,mmm,n1:n2,ilnTT) =    df(l1:l2,mmm,n1:n2,ilnTT)    + T_1(:,:)
   
       
 
-     !  if ((nxgrid /= 1) .and. (nzgrid /= 1)) then
+       if ((nxgrid /= 1) .and. (nzgrid /= 1)) then
         do i=1,2 
          if (i==1) then
           nn=n1
@@ -4969,11 +5023,15 @@ module Chemistry
     !      call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dx,mmm,1)
           call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dy,mmm,2)
       !    call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dz,mmm,3)
-          do i=l1,l2
-           call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dx(i,:,:),i,1)
+          do i=n1,n2
+          do j=l1,l2
+           call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dx(j,mmm,i),j,mmm,i,1)
+          enddo
           enddo
           do i=n1,n2
-            call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dz(:,:,i),i,3)
+          do j=l1,l2
+            call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dz(j,mmm,i),j,mmm,i,3)
+          enddo
           enddo
 
           df(l1:l2,mmm,n1:n2,ichemspec(k))=&
@@ -5064,7 +5122,7 @@ module Chemistry
         print*, "bc_nscbc_subout_z: ", topbot, " should be `top' or `bot'"
       endselect
 
-      if (leos_chemistry) then
+                        if (leos_chemistry) then
          cs20_ar=cs2_full(:,:,nnn)
          cs0_ar=cs2_full(:,:,nnn)**0.5
          gamma0=gamma_full(:,:,nnn)
@@ -5117,19 +5175,18 @@ module Chemistry
       call der_onesided_4_slice(f,sgn,iuy,dui_dxj(:,:,2,3),nnn,3)
       call der_onesided_4_slice(f,sgn,iuz,dui_dxj(:,:,3,3),nnn,3)
 
-
- 
-  
-      
       if (nxgrid /= 1) then
-
-          call der_onesided_4_slice(f,sgn,iux,tmp11(:,:),nnn,1)
-          call der_onesided_4_slice(f,sgn,iuy,tmp21(:,:),nnn,1)
-          call der_onesided_4_slice(f,sgn,iuz,tmp31(:,:),nnn,1)
-          call der_onesided_4_slice(rho_full,sgn,tmp1_rho(:,:),nnn,1)
-          call der_onesided_4_slice(pp,sgn,tmp1_pp(:,:),nnn,1)
-          call der_onesided_4_slice(mom1,sgn,dmom1_dx(:,:),nnn,1)
-          call der_onesided_4_slice(rhoE_pU(:,:,:,1),sgn,drhoE_pU(:,:,1),nnn,1)
+         do i=m1,m2
+         do j=l1,l2
+          call der_onesided_4_slice(f,sgn,iux,tmp11(i,j),i,j,nnn,1)
+          call der_onesided_4_slice(f,sgn,iuy,tmp21(i,j),i,j,nnn,1)
+          call der_onesided_4_slice(f,sgn,iuz,tmp31(i,j),i,j,nnn,1)
+          call der_onesided_4_slice(rho_full,sgn,tmp1_rho(i,j),i,j,nnn,1)
+          call der_onesided_4_slice(pp,sgn,tmp1_pp(i,j),i,j,nnn,1)
+          call der_onesided_4_slice(mom1,sgn,dmom1_dx(i,j),i,j,nnn,1)
+          call der_onesided_4_slice(rhoE_pU(:,:,:,1),sgn,drhoE_pU(i,j,1),i,j,nnn,1)
+         enddo
+         enddo
 
       else
         tmp31=0
@@ -5146,15 +5203,18 @@ module Chemistry
         grad_rho(:,:,1)=tmp1_rho(l1:l2,m1:m2)
         grad_pp(:,:,1)=tmp1_pp(l1:l2,m1:m2)
 
-       if (nygrid /= 1) then
-
-        call der_onesided_4_slice(f,sgn,iux,tmp12(:,:),nnn,2)
-        call der_onesided_4_slice(f,sgn,iuy,tmp22(:,:),nnn,2)
-        call der_onesided_4_slice(f,sgn,iuz,tmp32(:,:),nnn,2)
-        call der_onesided_4_slice(rho_full,sgn,tmp2_rho(:,:),nnn,2)
-        call der_onesided_4_slice(pp,sgn,tmp2_pp(:,:),nnn,2)
-        call der_onesided_4_slice(mom2,sgn,dmom2_dy(:,:),nnn,2)
-        call der_onesided_4_slice(rhoE_pU(:,:,:,2),sgn,drhoE_pU(:,:,2),nnn,2)
+      if (nygrid /= 1) then
+        do i=m1,m2
+        do j=l1,l2
+         call der_onesided_4_slice(f,sgn,iux,tmp12(j,i),j,i,nnn,2)
+         call der_onesided_4_slice(f,sgn,iuy,tmp22(j,i),j,i,nnn,2)
+         call der_onesided_4_slice(f,sgn,iuz,tmp32(j,i),j,i,nnn,2)
+         call der_onesided_4_slice(rho_full,sgn,tmp2_rho(j,i),j,i,nnn,2)
+         call der_onesided_4_slice(pp,sgn,tmp2_pp(j,i),j,i,nnn,2)
+         call der_onesided_4_slice(mom2,sgn,dmom2_dy(j,i),j,i,nnn,2)
+         call der_onesided_4_slice(rhoE_pU(:,:,:,2),sgn,drhoE_pU(j,i,2),j,i,nnn,2)
+        enddo
+        enddo
       else
         tmp32=0
         tmp22=0
@@ -5162,7 +5222,7 @@ module Chemistry
         tmp2_rho=0
         tmp2_pp=0
         dmom2_dy=0
-        drhoE_pU(:,:,1)=0
+        drhoE_pU(:,:,2)=0
       endif
         dui_dxj(:,:,1,2)=tmp12(l1:l2,m1:m2)
         dui_dxj(:,:,2,2)=tmp22(l1:l2,m1:m2)
@@ -5171,7 +5231,6 @@ module Chemistry
         grad_pp(:,:,2)=tmp2_pp(l1:l2,m1:m2)
 
 
-      
         if ((nxgrid /= 1)  .or. (nygrid /= 1))  then
          T_1(:,:)=(-dmom1_dx(l1:l2,m1:m2)-dmom2_dy(l1:l2,m1:m2)) &
                    /rho0(l1:l2,m1:m2)
@@ -5181,7 +5240,6 @@ module Chemistry
          T_3(:,:)=-f(l1:l2,m1:m2,nnn,iux)*dui_dxj(:,:,2,1) &
                    -f(l1:l2,m1:m2,nnn,iuy)*dui_dxj(:,:,2,2)  &
                    -grad_pp(:,:,2)/rho0(l1:l2,m1:m2)
-                  
          T_4(:,:)=-f(l1:l2,m1:m2,nnn,iux)*dui_dxj(:,:,3,1) &
                    -f(l1:l2,m1:m2,nnn,iuy)*dui_dxj(:,:,3,2)
          T_5(:,:)=+drho_prefac(:,:)*(gamma0(l1:l2,m1:m2)-1.)*gamma0(l1:l2,m1:m2) &
@@ -5287,9 +5345,9 @@ module Chemistry
           (2.*rho0(l1:l2,m1:m2)*cs0_ar(l1:l2,m1:m2))*(N_5 - N_1) 
         df(l1:l2,m1:m2,nnn,iux) = -N_3
         df(l1:l2,m1:m2,nnn,iuy) = -N_4
-      !  df(l1:l2,m1:m2,nnn,ilnTT) = -1./&
-      !   (rho0(l1:l2,m1:m2)*cs20_ar(l1:l2,m1:m2))*(-N_2 &
-      !  +0.5*(gamma0(l1:l2,m1:m2)-1.)*(N_5+N_1))
+        df(l1:l2,m1:m2,nnn,ilnTT) = -1./&
+         (rho0(l1:l2,m1:m2)*cs20_ar(l1:l2,m1:m2))*(-N_2 &
+        +0.5*(gamma0(l1:l2,m1:m2)-1.)*(N_5+N_1))
  
      if ((nxgrid /= 1) .and. (nygrid /= 1)) then
      
@@ -5346,11 +5404,15 @@ module Chemistry
      !     call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dx,nnn,1)
      !     call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dy,nnn,2)
           call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dz,nnn,3)
-          do i=l1,l2
-            call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dx(i,:,:),i,1)
+          do i=m1,m2
+          do j=l1,l2
+            call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dx(j,i,nnn),j,i,nnn,1)
+          enddo
           enddo
           do i=m1,m2
-            call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dy(:,i,:),i,2)
+          do j=l1,l2
+            call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dy(j,i,nnn),j,i,nnn,2)
+          enddo
           enddo
 
           df(l1:l2,m1:m2,nnn,ichemspec(k))=&
