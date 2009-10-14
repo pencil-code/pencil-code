@@ -391,6 +391,20 @@ module Entropy
       endif
 
     endsubroutine calc_pencils_entropy
+    subroutine calc_pencils_entropy_after_mn(f,p)
+!
+! Do nothing 
+! DM+PC
+
+      use EquationOfState, only: gamma,gamma_m1,cs20,lnrho0,profz_eos
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
+!
+    endsubroutine calc_pencils_entropy_after_mn
 !**********************************************************************
     subroutine dss_dt(f,df,p)
 !
@@ -526,6 +540,26 @@ module Entropy
       endif
 
     endsubroutine dss_dt
+!**********************************************************************
+    subroutine dss_dt_after_mn(f,df,p)
+!
+! Do nothing.
+! DM+PC
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+!
+      integer :: j,ju
+!
+      intent(in) :: f,p
+      intent(out) :: df
+!
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+!
+    endsubroutine dss_dt_after_mn
 !***********************************************************************
     subroutine calc_heatcond_constchi(df,p)
 !

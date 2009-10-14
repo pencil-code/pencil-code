@@ -214,6 +214,22 @@ module Entropy
 !
     endsubroutine calc_pencils_entropy
 !**********************************************************************
+!***********************************************************************
+    subroutine calc_pencils_entropy_after_mn(f,p)
+!
+! Do nothing 
+! DM+PC
+
+      use EquationOfState, only: gamma,gamma_m1,cs20,lnrho0,profz_eos
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
+!
+    endsubroutine calc_pencils_entropy_after_mn
+!**********************************************************************
     subroutine dss_dt(f,df,p)
 !
 !  Calculate pressure gradient term for isothermal/polytropic equation
@@ -272,6 +288,25 @@ module Entropy
       call keep_compiler_quiet(f)
 !
     endsubroutine dss_dt
+!***********************************************************************
+!**********************************************************************
+    subroutine dss_dt_after_mn(f,df,p)
+!
+! Do nothing.
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+!
+      integer :: j,ju
+!
+      intent(in) :: f,p
+      intent(out) :: df
+!
+
+      call keep_compiler_quiet(f)
+!
+    endsubroutine dss_dt_after_mn
 !***********************************************************************
     subroutine calc_heatcond_ADI(finit,f)
 !

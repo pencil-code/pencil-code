@@ -23,6 +23,7 @@ module Density
   use Cdata
   use Messages
   use EquationOfState
+  use Sub, only : keep_compiler_quiet
 !
   use Special
 !
@@ -1473,6 +1474,25 @@ module Density
       if (lpencil(i_uij5glnrho)) call multmv(p%uij5,p%glnrho,p%uij5glnrho)
 !
     endsubroutine calc_pencils_density
+!***********************************************************************
+    subroutine calc_pencils_density_after_mn(f,p)
+!
+!  Do nothing, not even set stuff to zero 
+!  But stuff needs to be added here. 
+!  DM+PC
+!  14-oct-09/dhruba: coded
+!
+      use EquationOfState, only: lnrho0, rho0
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
+      intent(in) :: f
+      intent(inout) :: p
+
+      call keep_compiler_quiet(f)
+!
+    endsubroutine calc_pencils_density_after_mn
 !***********************************************************************
     subroutine density_before_boundary(f)
 !
