@@ -51,9 +51,9 @@ module Deriv
 
   interface  der_onesided_4_slice                ! Overload the der function
     module procedure  der_onesided_4_slice_main  ! derivative of an 'mvar' variable
-    module procedure  der_onesided_4_slice_main_point
+    module procedure  der_onesided_4_slice_main_pt
     module procedure  der_onesided_4_slice_other ! derivative of another field
-    module procedure  der_onesided_4_slice_other_point
+    module procedure  der_onesided_4_slice_other_pt
   endinterface
 
   contains
@@ -1650,14 +1650,14 @@ module Deriv
       endif
     endsubroutine
 !***********************************************************************
-  subroutine der_onesided_4_slice_main_point(f,sgn,k,df,lll,mmm,nnn,j)
+  subroutine der_onesided_4_slice_main_pt(f,sgn,k,df,lll,mmm,nnn,j)
 !
       use Cdata
 !
 !  made using der_onesided_4_slice_main. One sided derivstive is calculated 
 !  at one point (lll,mmm,nnn) 
 !
-!   15-okt-09/Natalia: coded.
+!  15-oct-09/Natalia: coded.
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real  :: df
@@ -1774,14 +1774,15 @@ module Deriv
       endif
     endsubroutine
 !***********************************************************************
-  subroutine der_onesided_4_slice_other_point(f,sgn,df,lll,mmm,nnn,j)
+  subroutine der_onesided_4_slice_other_pt(f,sgn,df,lll,mmm,nnn,j)
       use Cdata
 !
 !
 !  made using der_onesided_4_slice_other. One sided derivstive is calculated 
 !  at one point (lll,mmm,nnn) 
 !
-!   15-okt-09/Natalia: coded.
+!  15-oct-09/Natalia: coded.
+!  15-oct-09/axel: changed file name to shorter version
 
 !
       real, dimension (mx,my,mz) :: f
