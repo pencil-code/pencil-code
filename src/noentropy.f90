@@ -304,7 +304,7 @@ module Entropy
       intent(out) :: df
 !
 
-      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(f,df)
 !
     endsubroutine dss_dt_after_mn
 !***********************************************************************
