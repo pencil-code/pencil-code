@@ -41,6 +41,8 @@ module EquationOfState
   integer, parameter :: ilnrho_lnTT=4,ilnrho_cs2=5
   integer, parameter :: irho_cs2=6, irho_ss=7, irho_lnTT=8, ilnrho_TT=9
   integer, parameter :: irho_TT=10
+! DM+PC
+!  integer, parameter :: ipp_ss=11
 !
   integer :: iglobal_cs2, iglobal_glnTT
 
@@ -368,6 +370,10 @@ module EquationOfState
         case (ieosvar_rho+ieosvar_TT)
           if (lroot) print*,"select_eos_variable: Using rho and TT"
           ieosvars=irho_TT
+! DM+PC
+!        case (ieosvar_pp+ieosvar_ss)
+!          if (lroot) print*,"select_eos_variable: Using pp and ss"
+!          ieosvars=ipp_ss
         case default
           if (lroot) print*,"select_eos_variable: Thermodynamic variable combination, ieosvar_selected= ",ieosvar_selected
           call fatal_error("select_eos_variable", &
