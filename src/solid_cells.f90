@@ -34,10 +34,6 @@ module Solid_Cells
   real                          :: cx_cum=0, cy_cum=0
   integer                       :: idragcount=0
   real                          :: theta_shift=1e-2
-  
-!!ForDebug->!!! Debug:
-!!ForDebug->  real                          :: testcpx,testcpy,testctx,testcty
-!!ForDebug->  integer                       :: testcounter
 !
   namelist /solid_cells_init_pars/ &
        cylinder_temp, ncylinders, cylinder_radius, cylinder_xpos, &
@@ -48,7 +44,7 @@ module Solid_Cells
   namelist /solid_cells_run_pars/  &
        interpolation_method,cylinder_skin,lclose_interpolation,lclose_linear
 !
-  ! diagnostic variables (need to be consistent with reset list below)
+!  diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_c_dragx=0       ! DIAG_DOC: 
   integer :: idiag_c_dragy=0       ! DIAG_DOC: 
 !
@@ -123,12 +119,12 @@ module Solid_Cells
       do jj=1,ninit
       select case(initsolid_cells(jj))
 !
-!   This overrides any initial conditions set in the Hydro module.
+!  This overrides any initial conditions set in the Hydro module.
 !
       case('nothing')
         if (lroot) print*,'init_solid_cells: nothing'
       case('cylinderstream_x')
-!   Stream functions for flow around a cylinder as initial condition. 
+!  Stream functions for flow around a cylinder as initial condition. 
         call gaunoise(ampl_noise,f,iux,iuz)
         f(:,:,:,iux)=f(:,:,:,iux)+init_uu
         shiftx=0
@@ -190,7 +186,7 @@ module Solid_Cells
         end do
         enddo
       case('cylinderstream_y')
-!   Stream functions for flow around a cylinder as initial condition.
+!  Stream functions for flow around a cylinder as initial condition.
         call gaunoise(ampl_noise,f,iux,iuz)
         f(:,:,:,iuy)=f(:,:,:,iuy)+init_uu
         shifty=0
@@ -266,58 +262,58 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
     endsubroutine init_solid_cells
 !***********************************************************************  
   subroutine fp_nearest_grid
-    !
-    ! Find coordinates for nearest grid point of all the 
-    ! "forcepoints" (fp) for each cylinder (assume cylinder with axis
-    ! parallel to the z direction. Assign values to fpnearestgrid.
-    !
-    ! mar-2009/kragset: coded
-    !
-
+!
+!  Find coordinates for nearest grid point of all the 
+!  "forcepoints" (fp) for each cylinder (assume cylinder with axis
+!  parallel to the z direction. Assign values to fpnearestgrid.
+!
+!  mar-2009/kragset: coded
+!
+!
     integer              :: icyl,iforcepoint, ipoint, inearest, icoord(8,3)
     integer              :: ixl, iyl, izl, ixu, iyu, izu, ju, jl, jm
     real                 :: rcyl, xcyl, ycyl, zcyl,fpx, fpy, fpz
     real                 :: dx1, dy1, dz1
     real                 :: dist_to_fp2(8), dist_to_cent2(8), twopi
     logical              :: interiorpoint
-
+!
     dx1=1/dx
     dy1=1/dy
     dz1=1/dz
-
+!
     twopi=2.*pi
-
-    ! Loop over all cylinders 
+!
+!  Loop over all cylinders 
     do icyl=1,ncylinders
       rcyl = cylinder(icyl,iradius)
       xcyl = cylinder(icyl,ixpos)
       ycyl = cylinder(icyl,iypos)
       zcyl = z(n1) !! Needs to be corrected in order to provide variable n in 3D
-      
-      ! Loop over all forcepoints on each cylinder, icyl
+!
+!  Loop over all forcepoints on each cylinder, icyl
       do iforcepoint=1,nforcepoints
-        
-        !! Marking whether fp is within this processor's domain or not 
+!        
+!  Marking whether fp is within this processor's domain or not 
         interiorpoint = .true.
-
-        !! Fp coordinates
-        ! Shifting the location of the forcpoints in the thetal direction
-        ! in order to avoid problems with autotesting
+!
+!  Fp coordinates
+!  Shifting the location of the forcpoints in the thetal direction
+!  in order to avoid problems with autotesting
         fpx = xcyl - rcyl * sin(twopi*(iforcepoint-theta_shift)/nforcepoints)
         fpy = ycyl - rcyl * cos(twopi*(iforcepoint-theta_shift)/nforcepoints)
         fpz = z(n1)
-        !
-        !  Find nearest grid point in x-direction
-        !          
+!
+!  Find nearest grid point in x-direction
+!          
         if (nxgrid/=1) then
           if (fpx .ge. x(l1-1) .and. fpx .le. x(l2+1)) then
             if (lequidist(1)) then
               ixl = int((fpx-x(1))*dx1) + 1
               ixu = ixl+1
             else
-              !
-              ! Find nearest grid point by bisection if grid is not equidistant
-              !
+!
+!  Find nearest grid point by bisection if grid is not equidistant
+!
               ju=l2+1; jl=l1-1
               do while((ju-jl)>1)
                 jm=(ju+jl)/2
@@ -336,18 +332,18 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
         else
           print*,"WARNING: Solid cells need nxgrid > 1."
         endif
-        !
-        !  Find nearest grid point in y-direction
-        !          
+!
+!  Find nearest grid point in y-direction
+!          
         if (nygrid/=1) then
           if (fpy .ge. y(m1-1) .and. fpy .le. y(m2+1)) then
             if (lequidist(2)) then
               iyl = int((fpy-y(1))*dy1) + 1
               iyu = iyl+1
             else
-              !
-              ! Find nearest grid point by bisection if grid is not equidistant
-              !
+!
+!  Find nearest grid point by bisection if grid is not equidistant
+!
               ju=m2; jl=m1
               do while((ju-jl)>1)
                 jm=(ju+jl)/2
@@ -366,18 +362,18 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
         else
           print*,"WARNING: Solid cells need nygrid > 1."
         endif
-        !
-        !  Find nearest grid point in z-direction
-        !          
+!
+!  Find nearest grid point in z-direction
+!          
         if (nzgrid/=1) then
           if (fpz .ge. z(n1-1) .and. fpz .le. z(n2+1)) then
             if (lequidist(3)) then
               izl = int((fpz-z(1))*dz1) + 1
               izu = izl+1
             else
-              !
-              ! Find nearest grid point by bisection if grid is not equidistant
-              !
+!
+!  Find nearest grid point by bisection if grid is not equidistant
+!
               ju=n2; jl=n1
               do while((ju-jl)>1)
                 jm=(ju+jl)/2
@@ -394,19 +390,18 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
             interiorpoint=.false.
           end if
         else
-          ! z direction is irrelevant when in 2D
+!  z direction is irrelevant when in 2D
           izl=n1
           izu=n1
         endif
-        
-        !
-        ! Now, we have the upper and lower (x,y,z)-coordinates: 
-        ! ixl, ixu, iyl, iyu, izl, izu,
-        ! i.e. the eight corners of the grid cell containing the forcepoint (fp).
-        ! Decide which ones are outside the cylinder, and which one of these
-        ! is the closest one to fp:
-        !
-        ! Check if fp is within this processor's local domain
+!
+!  Now, we have the upper and lower (x,y,z)-coordinates: 
+!  ixl, ixu, iyl, iyu, izl, izu,
+!  i.e. the eight corners of the grid cell containing the forcepoint (fp).
+!  Decide which ones are outside the cylinder, and which one of these
+!  is the closest one to fp:
+!
+!  Check if fp is within this processor's local domain
         if (interiorpoint) then
           dist_to_fp2(1) = (x(ixl)-fpx)**2+(y(iyl)-fpy)**2+(z(izl)-fpz)**2 
           dist_to_fp2(2) = (x(ixu)-fpx)**2+(y(iyl)-fpy)**2+(z(izl)-fpz)**2 
@@ -434,8 +429,8 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
           icoord(8,:) = (/ixl,iyu,izu/)
           inearest=0
           do ipoint=1,8 ! Actually, 4 is sufficient in 2D / for cylinder
-            ! Test if we are in a fluid cell, i.e.
-            ! that mod(ba(ix,iy,iz,1),10) = 0 
+!  Test if we are in a fluid cell, i.e.
+!  that mod(ba(ix,iy,iz,1),10) = 0 
             if (mod(ba(icoord(ipoint,1),icoord(ipoint,2),icoord(ipoint,3),1),10) &
                 .eq. 0 .and. inearest .eq. 0) then
               inearest=ipoint
@@ -447,8 +442,8 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
               end if
             end if
           end do
-          
-          ! Coordinates of nearest grid point. Zero if outside local domain.
+!          
+!  Coordinates of nearest grid point. Zero if outside local domain.
           if (inearest > 0) then
             fpnearestgrid(icyl,iforcepoint,:) = icoord(inearest,:)
           else
@@ -460,18 +455,18 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
         end if
       end do
     end do
-
+!
   end subroutine fp_nearest_grid
-  !***********************************************************************  
+!***********************************************************************  
   subroutine dsolid_dt(f,df,p)
-    !
-    ! Find pressure and stress in all the forcepoints (fp) positioned on 
-    ! cylinder surface, based on values in nearest grid point.
-    !
-    ! mar-2009/kragset: coded
-    !
+!
+! Find pressure and stress in all the forcepoints (fp) positioned on 
+! cylinder surface, based on values in nearest grid point.
+!
+! mar-2009/kragset: coded
+!
     use viscosity, only: getnu
-    
+!    
     real, dimension (mx,my,mz,mfarray), intent(in):: f
     real, dimension (mx,my,mz,mvar), intent(in)   :: df
     type (pencil_case), intent(in)                :: p
@@ -482,10 +477,10 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
     real    :: nu, twonu, xr, yr, rr2, a2
     real    :: force_x, force_y
     real    :: twopi, nvec(3)
-
+!
     if (ldiagnos) then
 !      
-! Reset cumulating quantities before calculations in first pencil
+!  Reset cumulating quantities before calculations in first pencil
 !
       if (imn .eq. 1) then
         c_dragx=0.
@@ -493,28 +488,28 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
         rhosum=0
         irhocount=0
       end if
-
+!
       if (idiag_c_dragx .ne. 0 .or. idiag_c_dragy .ne. 0) then 
         call getnu(nu)
         twopi=2.*pi
         twonu=2.*nu
-
+!
         do icyl=1,ncylinders
           do ifp=1,nforcepoints
             iy0=fpnearestgrid(icyl,ifp,2)
-
+!
             iz0=n !!fpnearestgrid(icyl,ifp,3) doesn't yet provide correct iz0
 !
-! Test: Use this pencil for force calculation?
+!  Test: Use this pencil for force calculation?
 !
             if (iy0 .eq. m .and. iz0 .eq. n) then
               ix0=fpnearestgrid(icyl,ifp,1)
               ! Test: ix0 in local domain?
               if (ix0 .ge. l1 .and. ix0 .le. l2) then
 !
-! Acquire pressure and stress from grid point (ix0,iy0,iz0).
-! Shifting the location of the forcpoints in the thetal direction
-! in order to avoid problems with autotesting
+!  Acquire pressure and stress from grid point (ix0,iy0,iz0).
+!  Shifting the location of the forcpoints in the thetal direction
+!  in order to avoid problems with autotesting
 !
                 fp_pressure=p%pp(ix0-nghost)
                 fp_stress(:,:)=twonu*p%rho(ix0-nghost)*p%sij(ix0-nghost,:,:)
@@ -523,14 +518,14 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
                 nvec(2) = -cos(twopi*(ifp-theta_shift)/nforcepoints)
                 nvec(3) = 0
 !
-! Force in x direction
+!  Force in x direction
 !
                 force_x = -fp_pressure*nvec(1) &
                     + fp_stress(1,1)*nvec(1) &
                     + fp_stress(1,2)*nvec(2) & 
                     + fp_stress(1,3)*nvec(3) 
 !                
-! Force in y direction
+!  Force in y direction
 !
                 force_y = -fp_pressure*nvec(2) &
                     + fp_stress(2,1)*nvec(1) &
@@ -543,8 +538,8 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
           end do
         end do
 !
-! Calculate average density of the domain, excluded
-! solid cell regions:
+!  Calculate average density of the domain, excluded
+!  solid cell regions:
 !
         do i=l1,l2
           do icyl=1,ncylinders
@@ -554,12 +549,12 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
             rr2 = xr**2 + yr**2            
             if (ncylinders > 1) then 
 !
-! If-test below will not detect if grid point is inside cylinder 
-! if more than one cylinder are present. Yet to be implemented.
+!  If-test below will not detect if grid point is inside cylinder 
+!  if more than one cylinder are present. Yet to be implemented.
 !
               write(*,*) "WARNING: Rho-aver. not implemented for ncylinders > 1"
               call fatal_error('solid_cells_dsolid_dt','')
-              
+!             
             end if
             if (rr2 .gt. a2) then
               rhosum = rhosum + p%rho(i-nghost)
@@ -569,48 +564,40 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
         end do
       end if
     end if
-
+!
   end subroutine dsolid_dt
-  !***********************************************************************  
+!***********************************************************************  
   subroutine dsolid_dt_integrate
-    !
-    ! Calculate drag- and lift-coefficients for solid cell cylinders
-    ! by integrating fluid force on cylinder surface. 
-    !
-    ! mar-2009/kragset: coded
-    !
-    
+!
+!  Calculate drag- and lift-coefficients for solid cell cylinders
+!  by integrating fluid force on cylinder surface. 
+!
+!  mar-2009/kragset: coded
+!
     use mpicomm
 
     real    :: rhosum_all, c_dragx_all, c_dragy_all, cpx,ctx,cpy,cty
     integer :: irhocount_all, testcounter_all
     real    :: norm, refrho0
-    
+!    
     if (ldiagnos) then
       if (idiag_c_dragx .ne. 0 .or. idiag_c_dragy .ne. 0) then 
-
-        ! Collect and sum rhosum, irhocount, c_dragx and c_dragy
+!
+!  Collect and sum rhosum, irhocount, c_dragx and c_dragy
         call mpireduce_sum(rhosum,rhosum_all)
         call mpireduce_sum_int(irhocount,irhocount_all)
         call mpireduce_sum(c_dragx,c_dragx_all)
         call mpireduce_sum(c_dragy,c_dragy_all)
-
-!!ForDebug->!!! Debug:
-!!ForDebug->        call mpireduce_sum(testcpx,cpx)
-!!ForDebug->        call mpireduce_sum(testcpy,cpy)
-!!ForDebug->        call mpireduce_sum(testctx,ctx)
-!!ForDebug->        call mpireduce_sum(testcty,cty)
-!!ForDebug->        call mpireduce_sum_int(testcounter,testcounter_all)
-        
+!        
         if (lroot) then          
           refrho0 = rhosum_all / irhocount_all
           norm = 2. * pi / (ncylinders*nforcepoints*refrho0*init_uu**2)
-          
+!          
           c_dragx = c_dragx_all * norm
           c_dragy = c_dragy_all * norm
-
-          ! Calculate and write average drag coefficients
-          ! for increasing time intervals
+!
+!  Calculate and write average drag coefficients
+!  for increasing time intervals
           cx_cum = cx_cum + c_dragx 
           cy_cum = cy_cum + c_dragy
           idragcount = idragcount + 1
@@ -618,69 +605,56 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
           write(79,80) it-1, t, cx_cum/idragcount, cy_cum/idragcount, idragcount
           close(79)
 80        format(1I5,3F15.8,1I5)
-
-
-
-!!ForDebug->!!! Debug:
-!!ForDebug->          cpx=cpx*norm
-!!ForDebug->          cpy=cpy*norm
-!!ForDebug->          ctx=ctx*norm
-!!ForDebug->          cty=cty*norm
-!!ForDebug->          open(unit=81, file='coeffs.dat', position = 'APPEND')
-!!ForDebug->          write(81,82) t, c_dragx, c_dragy, cpx,ctx,cpy,cty,testcounter_all
-!!ForDebug->          close(81)
-!!ForDebug->82        format(1F15.8, 4F12.8, 2X,F15.8,2X,F12.8,1I5)
-          
+!          
         end if
       end if
       if (idiag_c_dragx .ne. 0) fname(idiag_c_dragx)=c_dragx
       if (idiag_c_dragy .ne. 0) fname(idiag_c_dragy)=c_dragy
     end if
-    
+ !   
   end subroutine dsolid_dt_integrate
-  !***********************************************************************  
+ !***********************************************************************  
   subroutine rprint_solid_cells(lreset,lwrite)
-    !
-    !  Reads and registers print parameters relevant for solid cells
-    !
-    !   mar-2009/kragset: coded
-    !
-    
+!
+!  Reads and registers print parameters relevant for solid cells
+!
+!   mar-2009/kragset: coded
+!
+!    
     use cdata
     use sub
     use diagnostics
-    
+!    
     integer :: iname
     logical :: lreset,lwr
     logical, optional :: lwrite
-
+!
     lwr = .false.
     if (present(lwrite)) lwr=lwrite
-
-    !
-    !  Reset everything in case of reset
-    ! 
+!
+!  Reset everything in case of reset
+! 
     if (lreset) then
       idiag_c_dragx=0 
       idiag_c_dragy=0
     end if
-    !
-    !  check for those quantities that we want to evaluate online
-    !
+!
+!  check for those quantities that we want to evaluate online
+!
     do iname=1,nname
       call parse_name(iname,cname(iname),cform(iname),'c_dragx',idiag_c_dragx)
       call parse_name(iname,cname(iname),cform(iname),'c_dragy',idiag_c_dragy)
     end do
-    !
-    !  write column, idiag_XYZ, where our variable XYZ is stored
-    !
+!
+!  write column, idiag_XYZ, where our variable XYZ is stored
+!
     if (lwr) then
       write(3,*) 'i_c_dragx=',idiag_c_dragx
       write(3,*) 'i_c_dragy=',idiag_c_dragy
     end if
-    
+!    
   end subroutine rprint_solid_cells
-  !***********************************************************************  
+!***********************************************************************  
     subroutine update_solid_cells(f)
 !
 !  Set the boundary values of the solid area such that we get a 
@@ -790,9 +764,9 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
             endif
           else
 !
-! For fluid points very close to the solid surface the value of the point
-! is found from interpolation between the value at the closest grid line
-! and the value at the solid surface.
+!  For fluid points very close to the solid surface the value of the point
+!  is found from interpolation between the value at the closest grid line
+!  and the value at the solid surface.
 !
             if (lclose_linear) then
               if (ba(i,j,k,1)==10) then
@@ -886,8 +860,8 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
           +f(lower_i,lower_j,k,ivar)*hx2*hy2 &
           +f(upper_i,lower_j,k,ivar)*hx1*hy2)/((hx1+hx2)*(hy1+hy2))
 !
-! If the mirror point is very close to the surface of the cylinder 
-! some special treatment is required.
+!  If the mirror point is very close to the surface of the cylinder 
+!  some special treatment is required.
 !
       if (lclose_interpolation .and. ivar < 4) then
         xxp=(/xmirror,ymirror,0.0/)
@@ -900,27 +874,27 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
         fluid_point)
 !
 !  20-mar-2009/nils: coded
-!
-! If fluid_point=.true. this routine check if any of the corners in 
-! the interpolation cell are inside a solid geometry. 
-! If they are: some special treatment is required.
-!
-! If fluid_point=.false. the routine use the value at the surface
-! of the solid geometry together with the interpolated value at the nearest
-! grid line in the direction away from the solid geometry to set a value
-! at a grid point which is very close to the solid geometry.
-!
-! WARNING: This routine only works for cylinders with an infinitely long
-! WARNING: central axis in the z-direction!
-!
-! The interpolation point, named p, has coordinates [xp,yp].
-! The point s on the cylinder surface, with coordinates [xs,ys], is 
-! placed such that the line from s to p is a normal to the cylinder surface.
-!
-! If one of the corner points of the grid cell is within a solid geometry
-! the normal passing through both s and p are continued outward until a
-! grid line is reached. If this line has constant, say y, then the variables
-! constdir and vardir are given the values 2 and 1, respectively.  
+!  
+!  If fluid_point=.true. this routine check if any of the corners in 
+!  the interpolation cell are inside a solid geometry. 
+!  If they are: some special treatment is required.
+!  
+!  If fluid_point=.false. the routine use the value at the surface
+!  of the solid geometry together with the interpolated value at the nearest
+!  grid line in the direction away from the solid geometry to set a value
+!  at a grid point which is very close to the solid geometry.
+!  
+!  WARNING: This routine only works for cylinders with an infinitely long
+!  WARNING: central axis in the z-direction!
+!  
+!  The interpolation point, named p, has coordinates [xp,yp].
+!  The point s on the cylinder surface, with coordinates [xs,ys], is 
+!  placed such that the line from s to p is a normal to the cylinder surface.
+!  
+!  If one of the corner points of the grid cell is within a solid geometry
+!  the normal passing through both s and p are continued outward until a
+!  grid line is reached. If this line has constant, say y, then the variables
+!  constdir and vardir are given the values 2 and 1, respectively.  
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: ix0_,iy0_,iz0_,ivar1
@@ -939,19 +913,19 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
       real :: x1,x2,f1,f2,rij_min,rij_max,inputvalue,smallx,gp
       logical, intent(in) :: fluid_point
 !
-! Check if we really want this special treatment close to the fluid-solid 
-! interface
+!  Check if we really want this special treatment close to the fluid-solid 
+!  interface
 !
       if ((.not. fluid_point .and. lclose_interpolation) &
           .or. ( fluid_point .and. lclose_linear)) then
 !
-! This subrutine is not working (and should never be used) with other
-! variables than the velocity.
+!  This subrutine is not working (and should never be used) with other
+!  variables than the velocity.
 !
         if (ivar1 > iuz) call fatal_error('close_interpolation',&
             'This subroutine should never be called for anything but velocity!')
 !
-! Define some help variables
+!  Define some help variables
 !
         x0=cylinder(icyl,ixpos)
         y0=cylinder(icyl,iypos)
@@ -988,14 +962,14 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
         iy1=iy0+1
         iz1=iz0+1
 !
-! Find distance from corner points to the cylinder center
+!  Find distance from corner points to the cylinder center
 !
         rij(1,1)=sqrt((x(ix0)-x0)**2+(y(iy0)-y0)**2)
         rij(1,2)=sqrt((x(ix0)-x0)**2+(y(iy1)-y0)**2)
         rij(2,1)=sqrt((x(ix1)-x0)**2+(y(iy0)-y0)**2)
         rij(2,2)=sqrt((x(ix1)-x0)**2+(y(iy1)-y0)**2) 
 !
-! Check if we want special treatment
+!  Check if we want special treatment
 !
         if ((minval(rij) < rs) .or. fluid_point) then
 !
@@ -1015,8 +989,8 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
           R1=verylarge
           Rsmall=verylarge/2.0
 !
-! Find the x and y coordinates of p in a coordiante system with origin
-! in the center of the cylinder
+!  Find the x and y coordinates of p in a coordiante system with origin
+!  in the center of the cylinder
 !
           yp_cylinder=yp-y0
           xp_cylinder=xp-x0
@@ -1024,37 +998,37 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
           p_cylinder(2)=yp_cylinder
           rp=sqrt(xp_cylinder**2+yp_cylinder**2)
 !
-! Determine the point s on the cylinder surface where the normal to the
-! cylinder surface pass through the point p. 
+!  Determine the point s on the cylinder surface where the normal to the
+!  cylinder surface pass through the point p. 
 !
           xs=rs/rp*xp
           ys=rs/rp*yp
 !
-! Find distance from point p to point s
+!  Find distance from point p to point s
 !
           dist=(xp-xs)**2+(yp-ys)**2
 !
-! Find which grid line is the closest one in the direction
-! away from the cylinder surface
+!  Find which grid line is the closest one in the direction
+!  away from the cylinder surface
 !
-! Check the distance etc. to all the four (in 2D) possible 
-! grid lines. Pick the grid line which the normal to the
-! cylinder surface (which also pass through the point [xp,yp])
-! cross first. This grid line should however
-! be OUTSIDE the point [xp,yp] compared to the cylinder surface.
+!  Check the distance etc. to all the four (in 2D) possible 
+!  grid lines. Pick the grid line which the normal to the
+!  cylinder surface (which also pass through the point [xp,yp])
+!  cross first. This grid line should however
+!  be OUTSIDE the point [xp,yp] compared to the cylinder surface.
 !
           do counter=1,4
             constdir=constdir_arr(counter)
             vardir=vardir_arr(counter)
             topbot_tmp=topbot_arr(counter)
 !
-! Find the position, xtemp, in the variable direction
-! where the normal cross the grid line
+!  Find the position, xtemp, in the variable direction
+!  where the normal cross the grid line
 !
             xtemp=(p_cylinder(vardir)/(p_cylinder(constdir)+tini))*(bordervalue(constdir,topbot_tmp)-cylinder(icyl,constdir+1))
 !
-! Find the distance, r, from the center of the cylinder
-! to the point where the normal cross the grid line
+!  Find the distance, r, from the center of the cylinder
+!  to the point where the normal cross the grid line
 !
             if (abs(xtemp) > verylarge) then
               r=verylarge*2
@@ -1062,9 +1036,9 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
               r=sqrt(xtemp**2+(bordervalue(constdir,topbot_tmp)-cylinder(icyl,constdir+1))**2)
             endif
 !
-! Check if the point xtemp is outside the cylinder,
-! outside the point [xp,yp] and that it cross the grid
-! line within this grid cell
+!  Check if the point xtemp is outside the cylinder,
+!  outside the point [xp,yp] and that it cross the grid
+!  line within this grid cell
 !
             if ((r > rs) .and. (r > rp) &
                 .and.(xtemp+cylinder(icyl,vardir+1) >= bordervalue(vardir,1))&
@@ -1074,7 +1048,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
               R1=verylarge
             endif
 !
-! If we have a new all time low (in radius) then go on....
+!  If we have a new all time low (in radius) then go on....
 !
             if (R1 < Rsmall) then
               Rsmall=R1                
@@ -1094,7 +1068,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
             endif
           end do
 !
-! Check that we have found a valid distance
+!  Check that we have found a valid distance
 !
           if (Rsmall==verylarge/2.0) then
             print*,'fluid_point=',fluid_point
@@ -1115,10 +1089,10 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
                 'A valid radius is not found!')            
            endif
 !
-! Check if the endpoints in the variable direction are
-! outside the cylinder. If they are not then define the endpoints
-! as where the grid line cross the cylinder surface.
-! Find the variable value at the endpoints.
+!  Check if the endpoints in the variable direction are
+!  outside the cylinder. If they are not then define the endpoints
+!  as where the grid line cross the cylinder surface.
+!  Find the variable value at the endpoints.
 !
           min=1
           if (dirconst == 2) then
@@ -1137,23 +1111,23 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
           call find_point(rij_max,rs,varval,inputvalue,x2,bordervalue(dirvar,1),&
               bordervalue(dirvar,2),min,f2,cylinder(icyl,dirvar+1))
 !
-! Find the interpolation values between the two endpoints of
-! the line and the normal from the cylinder.
+!  Find the interpolation values between the two endpoints of
+!  the line and the normal from the cylinder.
 !
           rint1=xyint(dirvar)-x1
           rint2=x2-xyint(dirvar)
 !
-! Find the interpolated value on the line
+!  Find the interpolated value on the line
 !
           fint=(rint1*f2+rint2*f1)/(x2-x1)
 !
-! Find the weigthing factors for the point on the line
-! and the point on the cylinder surface.
+!  Find the weigthing factors for the point on the line
+!  and the point on the cylinder surface.
 !
           rps=rp-rs
           rintp=Rsmall-rp
 !
-! Perform the final interpolation
+!  Perform the final interpolation
 !
           gpp=(rps*fint+rintp*0)/(Rsmall-rs)
         endif
@@ -1179,14 +1153,14 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
         cyl_pos=cylinder(icyl,2:4)
         distance2=0
 !
-! Loop only over x and y direction since this is a cylindrical geometry
+!  Loop only over x and y direction since this is a cylindrical geometry
 !
         do i=1,2
           distance2=distance2+(cyl_pos(i)-part_pos(i))**2
         enddo
 !
-! The cylinder_skin is the closest a particle can get to the solid 
-! cell before it is captured (this variable is normally zero).
+!  The cylinder_skin is the closest a particle can get to the solid 
+!  cell before it is captured (this variable is normally zero).
 !
         if (sqrt(distance2)<cyl_rad+part_rad+cylinder_skin) then
           in_solid_cell=.true.
@@ -1211,9 +1185,9 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
              (ba(i,m,n,2).ne.0).or.&
              (ba(i,m,n,3).ne.0)) then
 !
-! If this is a fluid point which has to be interpolated because it is very
-! close to the solid geometry (i.e. ba(i,m,n,1) == 10) then only the 
-! velocity components should be frozen.
+!  If this is a fluid point which has to be interpolated because it is very
+!  close to the solid geometry (i.e. ba(i,m,n,1) == 10) then only the 
+!  velocity components should be frozen.
 !
           if (ba(i,m,n,1) == 10) then
             df(i,m,n,iux:iuz)=0
@@ -1613,10 +1587,10 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !***********************************************************************  
     subroutine find_point(rij,rs,f,yin,xout,xmin,xmax,min,fout,x0)
 !
-! 20-mar-2009/nils: coded
+!  20-mar-2009/nils: coded
 !
-! Check if a grid line has any of it ends inside a solid cell - if so
-! find the point where the grid line enters the solid cell.
+!  Check if a grid line has any of it ends inside a solid cell - if so
+!  find the point where the grid line enters the solid cell.
 !
       integer, intent(in) :: min
       real, intent(in) :: xmin,xmax,rij,rs,f,yin,x0
@@ -1644,15 +1618,15 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
     endsubroutine find_point
 !***********************************************************************  
     subroutine pencil_criteria_solid_cells()
-      !
-      !  All pencils that the Solid_Cells module depends on are specified here.
-      !
-      !  mar-2009/kragset: coded
-      !
+!
+!  All pencils that the Solid_Cells module depends on are specified here.
+!
+!  mar-2009/kragset: coded
+!
       use Cdata
-      !
-      !! Request p and sij-pencils here
-      !! Request rho-pencil
+!
+!  Request p and sij-pencils here
+!  Request rho-pencil
       lpenc_requested(i_pp)=.true.
       lpenc_requested(i_sij)=.true.
       lpenc_requested(i_rho)=.true.
