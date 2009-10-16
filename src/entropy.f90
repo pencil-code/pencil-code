@@ -457,7 +457,11 @@ module Entropy
             cs2bot=gamma_m1*TT_int
           else
             lmultilayer=.false.  ! to ensure that hcond=cte
-            TT_ext=T0            ! T0 defined in start.in for geodynamo
+            if (T0/=0.0) then
+              TT_ext=T0            ! T0 defined in start.in for geodynamo
+            else
+              TT_ext=cs20/gamma_m1 ! T0 defined from cs20
+            endif
             if (coord_system=='spherical')then
               r_ext=x(l2)
               r_int=x(l1)
