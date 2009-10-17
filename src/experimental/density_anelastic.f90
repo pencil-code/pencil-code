@@ -1303,7 +1303,6 @@ module Density
     subroutine calc_pencils_density(f,p)
 !
 !  Dummy routine copied from nodensity.f90 
-!  DM+PC needs to change. 
 !
 !  20-11-04/anders: coded
 !

@@ -213,7 +213,6 @@ module Entropy
       call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_entropy
-!**********************************************************************
 !***********************************************************************
     subroutine calc_pencils_entropy_after_mn(f,p)
 !
@@ -288,7 +287,6 @@ module Entropy
       call keep_compiler_quiet(f)
 !
     endsubroutine dss_dt
-!***********************************************************************
 !**********************************************************************
     subroutine dss_dt_after_mn(f,df,p)
 !
