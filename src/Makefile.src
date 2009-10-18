@@ -1102,6 +1102,9 @@ endif
 #FFLAGS=-O3
 #CFLAGS=-DFUNDERSC=2
 #LD_MPI=
+#
+#  Nils' machine
+#
 #FC=xlf90 #(Nils)
 #F77=xlf  #(Nils)
 #FFLAGS= -w -qsuppress=1501-510  #(Nils)
@@ -1123,6 +1126,12 @@ endif
 #FC=mpif90 #(Chandrasekhar)
 #FFLAGS= -O3 #(Chandrasekhar)
 #CFLAGS=-DFUNDERSC=1 #(Chandrasekhar)
+##
+## norosx52 (Mac Pro, 8 cores)
+##
+#FC=mpif90 #(norosx52)
+#FFLAGS= -O3 #(norosx52)
+#CFLAGS=-DFUNDERSC=1 -m32 #(norosx52)
 ##
 ## Dhruba's laptop 
 ##
