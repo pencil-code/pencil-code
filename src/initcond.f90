@@ -52,7 +52,7 @@ module Initcond
   public :: corona_init,mdi_init
   public :: innerbox
   public :: couette, couette_rings
-  public :: strange
+  public :: strange,phi_siny_over_r2
 
   interface posnoise            ! Overload the `posnoise' function
     module procedure posnoise_vect
@@ -76,6 +76,35 @@ module Initcond
   contains
 
 !***********************************************************************
+
+    subroutine phi_siny_over_r2(ampl,f,i)
+!
+!  A_phi ~ sin(y)/R^2 if R>=0.7 field (in terms of vector potential)
+!  
+!  14-oct-09/irina: coded
+!
+      real :: ampl      
+      integer :: i,j,k
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: n, dmx,radius, dtheta,theta
+    
+     dmx=(l2-l1)/mx
+     dtheta=pi/my 
+     f(:,:,:,i)=0.0
+
+     do j=1,mx
+       radius=l1+(j-1)*dmx
+     if (radius>=0.7) then
+       do k=1,my  
+        theta=pi*(k-1)*dtheta
+        f(j,k,:,i)=sin(theta)/radius**2
+       enddo
+     endif 
+    enddo 
+!
+    endsubroutine phi_siny_over_r2
+
+!**********************************************************************
     subroutine sinxsinz(ampl,f,i,kx,ky,kz,KKx,KKy,KKz)
 !
 !  sinusoidal wave. Note: f(:,:,:,j) with j=i+1 is set.
@@ -2791,6 +2820,7 @@ module Initcond
       endif
 !
     endsubroutine halfcos_x
+
 !***********************************************************************
     subroutine uniform_x(ampl,f,i)
 !
