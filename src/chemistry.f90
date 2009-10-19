@@ -4875,47 +4875,6 @@ module Chemistry
         df(l1:l2,mmm,n1:n2,ilnTT) =    df(l1:l2,mmm,n1:n2,ilnTT)    + T_5(:,:)
        
 
-       if ((nxgrid /= 1) .or. (nzgrid /= 1)) then
-        do i=1,2 
-         if (i==1) then
-          nn=n1
-          nnn=1
-         elseif (i==2) then
-          nn=n2
-          nnn=nz
-         endif
-
-        do j=1,2
-         if (j==1) then
-            ll=l1
-            lll=1
-         elseif (j==2) then
-            ll=l2
-            lll=nx
-         endif
-
-
-        df(ll,mmm,nn,irho_tmp) = &
-          drho_prefac(lll,nnn)*(L_2(lll,i)+0.5*(L_5(lll,i) + L_1(lll,i))) &
-        + drho_prefac(lll,nnn)*(M_2(lll,nnn)+0.5*(M_5(lll,nnn) + M_1(lll,nnn))) &
-        + drho_prefac(lll,nnn)*(N_2(lll,nnn)+0.5*(N_5(lll,nnn) + N_1(lll,nnn)))
-        df(ll,mmm,nn,iux) =  -1./&
-          (2.*rho0(ll,nn)*cs0_ar(ll,nn))*(L_5(lll,i) - L_1(lll,i)) &
-          -M_3(lll,nnn)-N_2(lll,nnn)
-       df(ll,mmm,nn,iuy) =  - L_3(lll,i) - 1./&
-          (2.*rho0(ll,nn)*cs0_ar(ll,nn))*(M_5(lll,nnn) - M_1(lll,nnn))-N_3(lll,nnn)
-        df(ll,mmm,nn,iuz) =  - L_4(lll,i) - M_4(lll,nnn)  - N_4(lll,nnn) 
-       df(ll,mmm,nn,ilnTT) = drho_prefac(lll,nnn)*(-L_2(lll,i) &
-          +0.5*(gamma0(ll,nn)-1.)*(L_5(lll,i)+L_1(lll,i)))  &
-          +drho_prefac(lll,nnn)*(-M_2(lll,nnn) &
-          +0.5*(gamma0(ll,nn)-1.)*(M_5(lll,nnn)+M_1(lll,nnn))) &
-           +drho_prefac(lll,nnn)*(-N_2(lll,nnn) &
-          +0.5*(gamma0(ll,nn)-1.)*(N_5(lll,nnn)+N_1(lll,nnn)))
-      enddo
-      enddo
-
-    endif
-
 
 !!!
 !!! Corner points
@@ -4941,11 +4900,11 @@ module Chemistry
           call der_onesided_4_slice(pp_full,sgn1,tmp1_pp(j,i),j,mmm,i,1)
          enddo
          enddo
-          dui_dxj(:,:,1,1)=tmp11(l1:l2,n1:n2)
-          dui_dxj(:,:,2,1)=tmp21(l1:l2,n1:n2)
-          dui_dxj(:,:,3,1)=tmp31(l1:l2,n1:n2)
-          grad_rho(:,:,1)=tmp1_rho(l1:l2,n1:n2)
-          grad_pp(:,:,1)=tmp1_pp(l1:l2,n1:n2)
+ !         dui_dxj(:,:,1,1)=tmp11(l1:l2,n1:n2)
+ !        dui_dxj(:,:,2,1)=tmp21(l1:l2,n1:n2)
+ !        dui_dxj(:,:,3,1)=tmp31(l1:l2,n1:n2)
+ !         grad_rho(:,:,1)=tmp1_rho(l1:l2,n1:n2)
+ !         grad_pp(:,:,1)=tmp1_pp(l1:l2,n1:n2)
       
          do i=1,2 
           if (i==1) then
@@ -5044,6 +5003,49 @@ module Chemistry
         N_5=0
        endif
   
+
+
+       if ((nxgrid /= 1) .or. (nzgrid /= 1)) then
+        do i=1,2 
+         if (i==1) then
+          nn=n1
+          nnn=1
+         elseif (i==2) then
+          nn=n2
+          nnn=nz
+         endif
+
+        do j=1,2
+         if (j==1) then
+            ll=l1
+            lll=1
+         elseif (j==2) then
+            ll=l2
+            lll=nx
+         endif
+
+
+        df(ll,mmm,nn,irho_tmp) = &
+          drho_prefac(lll,nnn)*(L_2(lll,i)+0.5*(L_5(lll,i) + L_1(lll,i))) &
+        + drho_prefac(lll,nnn)*(M_2(lll,nnn)+0.5*(M_5(lll,nnn) + M_1(lll,nnn))) &
+        + drho_prefac(lll,nnn)*(N_2(lll,nnn)+0.5*(N_5(lll,nnn) + N_1(lll,nnn)))
+        df(ll,mmm,nn,iux) =  -1./&
+          (2.*rho0(ll,nn)*cs0_ar(ll,nn))*(L_5(lll,i) - L_1(lll,i)) &
+          -M_3(lll,nnn)-N_2(lll,nnn)
+       df(ll,mmm,nn,iuy) =  - L_3(lll,i) - 1./&
+          (2.*rho0(ll,nn)*cs0_ar(ll,nn))*(M_5(lll,nnn) - M_1(lll,nnn))-N_3(lll,nnn)
+        df(ll,mmm,nn,iuz) =  - L_4(lll,i) - M_4(lll,nnn)  - N_4(lll,nnn) 
+       df(ll,mmm,nn,ilnTT) = drho_prefac(lll,nnn)*(-L_2(lll,i) &
+          +0.5*(gamma0(ll,nn)-1.)*(L_5(lll,i)+L_1(lll,i)))  &
+          +drho_prefac(lll,nnn)*(-M_2(lll,nnn) &
+          +0.5*(gamma0(ll,nn)-1.)*(M_5(lll,nnn)+M_1(lll,nnn))) &
+           +drho_prefac(lll,nnn)*(-N_2(lll,nnn) &
+          +0.5*(gamma0(ll,nn)-1.)*(N_5(lll,nnn)+N_1(lll,nnn)))
+      enddo
+      enddo
+
+    endif
+
 
 
       if (nchemspec>1) then
