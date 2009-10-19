@@ -408,13 +408,7 @@ module Special
       type (pencil_case), intent(in) :: p
       integer :: l_sz
 
-     if (left_buffer_zone) then
-
-      l_sz=int(0.15*nxgrid)
-     ! df(l1:l_sz,m,n,ilnrho)=df(l1:l_sz,m,n,ilnrho)&  
-!            -3.*(x(l1:l_sz)-x(l_sz))**3/(Lxyz(1)-x(l_sz))**3 &
-!            /dt*(f(l1:l_sz,m,n,ilnrho)-f(l1,m,n,ilnrho))
-     endif
+     
 !
 ! Keep compiler quiet by ensuring every parameter is used
 !
@@ -433,7 +427,7 @@ module Special
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-      integer :: i, l_sz
+      integer :: i, l_sz,l_sz_1
 !
 !      do i=1,3
 !        divtau(l1:l2,m,n,i)=p%fvisc(:,i)*p%rho(:)
@@ -446,11 +440,83 @@ module Special
 
 ! buffer zone to damp the acustic waves!!!!!!!!!!!
     if (left_buffer_zone) then
-      l_sz=int(0.15*nxgrid)
-      df(l1:l_sz,m,n,iux)=df(l1:l_sz,m,n,iux)&  
-            -3.*(x(l1:l_sz)-x(l_sz))**3/(Lxyz(1)-x(l_sz))**3 &
-            /dt*(f(l1:l_sz,m,n,iux)-f(l1,m,n,iux))
-    endif
+      l_sz=nxgrid-int(0.2*nxgrid)
+      l_sz_1=int(0.2*nxgrid)
+   
+      df(l_sz:l2,m,n,iux)=df(l_sz:l2,m,n,iux)&  
+           -(x(l_sz:l2)-x(l_sz))**3/(Lxyz(1)-x(l_sz))**3 &
+           /(dt)*(f(l_sz:l2,m,n,iux)-0.)
+      
+       df(l_sz:l2,m,n,iuy)=df(l_sz:l2,m,n,iuy)&  
+           -(x(l_sz:l2)-x(l_sz))**3/(Lxyz(1)-x(l_sz))**3 &
+           /(dt)*(f(l_sz:l2,m,n,iuy)-0.)
+
+         df(l_sz:l2,m,n,ilnTT)=df(l_sz:l2,m,n,ilnTT)&  
+           -(x(l_sz:l2)-x(l_sz))**3/(Lxyz(1)-x(l_sz))**3 &
+           /(dt)*(f(l_sz:l2,m,n,ilnTT)-6.39693)  
+
+          df(l_sz:l2,m,n,ilnrho)=df(l_sz:l2,m,n,ilnrho)&  
+           -(x(l_sz:l2)-x(l_sz))**3/(Lxyz(1)-x(l_sz))**3 &
+           /(dt)*(f(l_sz:l2,m,n,ilnrho)+7.73236 )  
+      
+       
+        
+          df(l1+1:l_sz_1,m,n,iux)=df(l1+1:l_sz_1,m,n,iux)&  
+           -(x(l1+1:l_sz_1)-x(l_sz_1))**3/(x(l1+1)-x(l_sz_1))**3 &
+           /(3*dt)*(f(l1+1:l_sz_1,m,n,iux)-0.)
+         
+          df(l1+1:l_sz_1,m,n,iuy)=df(l1+1:l_sz_1,m,n,iuy)&  
+          -(x(l1+1:l_sz_1)-x(l_sz_1))**3/(x(l1+1)-x(l_sz_1))**3 &
+         /(3*dt)*(f(l1+1:l_sz_1,m,n,iuy)-0.)
+
+          df(l1+1:l_sz_1,m,n,ilnTT)=df(l1+1:l_sz_1,m,n,ilnTT)&  
+           -(x(l1+1:l_sz_1)-x(l_sz_1))**3/(x(l1+1)-x(l_sz_1))**3 &
+          /(3*dt)*(f(l1+1:l_sz_1,m,n,ilnTT)-6.39693)
+           
+          df(l1+1:l_sz_1,m,n,ilnrho)=df(l1+1:l_sz_1,m,n,ilnrho)&  
+           -(x(l1+1:l_sz_1)-x(l_sz_1))**3/(x(l1+1)-x(l_sz_1))**3 &
+           /(3*dt)*(f(l1+1:l_sz_1,m,n,ilnrho)+7.73236)
+
+     
+       if ((m<=l_sz_1) .and. (m>=m1)) then
+
+
+        df(l_sz_1-3:,m,n,iux)=df(l_sz_1-3:,m,n,iux)&  
+           -(y(m)-y(l_sz_1))**3/(y(m1)-y(l_sz_1))**3 &
+           /(dt)*(f(l_sz_1-3:,m,n,iux)-0.)
+        df(l_sz_1-3:,m,n,iuy)=df(l_sz_1-3:,m,n,iuy)&  
+           -(y(m)-y(l_sz_1))**3/(y(m1)-y(l_sz_1))**3 &
+           /(dt)*(f(l_sz_1-3:,m,n,iuy)-0.)
+        df(l_sz_1-3:,m,n,ilnrho)=df(l_sz_1-3:,m,n,ilnrho)&  
+           -(y(m)-y(l_sz_1))**3/(y(m1)-y(l_sz_1))**3 &
+           /(dt)*(f(l_sz_1-3:,m,n,ilnrho)+7.73236)
+        df(l_sz_1-3:,m,n,ilnTT)=df(l_sz_1-3:,m,n,ilnTT)&  
+           -(y(m)-y(l_sz_1))**3/(y(m1)-y(l_sz_1))**3 &
+           /(dt)*(f(l_sz_1-3:,m,n,ilnTT)-6.39693)
+    
+        
+
+       elseif (m>=l_sz) then
+
+
+        df(l_sz_1-1:,m,n,iux)=df(l_sz_1-1:,m,n,iux)&  
+           -(y(m)-y(l_sz))**3/(Lxyz(2)-y(l_sz))**3 &
+          /(dt)*(f(l_sz_1-1:,m,n,iux)-0.)
+        df(l_sz_1-1:,m,n,iuy)=df(l_sz_1-1:,m,n,iuy)&  
+          -(y(m)-y(l_sz))**3/(Lxyz(2)-y(l_sz))**3 &
+          /(dt)*(f(l_sz_1-1:,m,n,iuy)-0.)
+        df(l_sz_1-1:,m,n,ilnrho)=df(l_sz_1-1:,m,n,ilnrho)&  
+           -(y(m)-y(l_sz-1))**3/(Lxyz(2)-y(l_sz))**3 &
+          /(dt)*(f(l_sz_1-1:,m,n,ilnrho)+7.73236)
+        df(l_sz_1-1:,m,n,ilnTT)=df(l_sz_1-1:,m,n,ilnTT)&  
+           -(y(m)-y(l_sz))**3/(Lxyz(2)-y(l_sz))**3 &
+           /(dt)*(f(l_sz_1-1:,m,n,ilnTT)-6.39693)
+
+       endif
+
+     endif
+
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     endsubroutine special_calc_hydro
 !***********************************************************************
@@ -480,12 +546,6 @@ module Special
       type (pencil_case), intent(in) :: p
       integer :: l_sz
 
-     if (left_buffer_zone) then
-      l_sz=int(0.15*nxgrid)
-      df(l1:l_sz,m,n,ilnTT)=df(l1:l_sz,m,n,ilnTT)&  
-            -3.*(x(l1:l_sz)-x(l_sz))**3/(Lxyz(1)-x(l_sz))**3 &
-            /dt*(f(l1:l_sz,m,n,ilnTT)-f(l1,m,n,ilnTT))
-     endif
 
 ! Keep compiler quiet by ensuring every parameter is used
       call keep_compiler_quiet(df)
