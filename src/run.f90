@@ -240,7 +240,7 @@ program run
   call rtime(trim(directory)//'/time.dat',t)
   if (mglobal/=0)  &
       call input_globals(trim(directory_snap)//'/global.dat', &
-      f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
+      f(:,:,:,mvar+maux:mvar+maux+mglobal),mglobal)
 !
 !  Set initial time to zero if requested.
 !
@@ -316,7 +316,7 @@ program run
 !
   if (mglobal/=0)  &
       call output_globals(trim(directory_snap)//'/global.dat', &
-      f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
+      f(:,:,:,mvar+maux:mvar+maux+mglobal),mglobal)
 !
 !  Update ghost zones, so rprint works corrected for at the first
 !  time step even if we didn't read ghost zones.
@@ -635,7 +635,7 @@ program run
       if (mod(it,isaveglobal)==0) then
         if (mglobal/=0)  &
           call output_globals(trim(directory_snap)//'/global.dat', &
-              f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
+              f(:,:,:,mvar+maux:mvar+maux+mglobal),mglobal)
       endif
     endif
 !
