@@ -28,11 +28,8 @@ module Solid_Cells
   character (len=labellen) :: interpolation_method='staircase'
   integer, parameter :: iradius=1, ixpos=2,iypos=3,izpos=4,itemp=5
   logical :: lclose_interpolation=.false., lclose_linear=.false.
-  real                          :: c_dragx, c_dragy
   real                          :: rhosum
   integer                       :: irhocount
-  real                          :: cx_cum=0, cy_cum=0
-  integer                       :: idragcount=0
   real                          :: theta_shift=1e-2
 !
   namelist /solid_cells_init_pars/ &
@@ -49,6 +46,7 @@ module Solid_Cells
   integer :: idiag_c_dragy=0       ! DIAG_DOC: 
 !
   integer, allocatable :: fpnearestgrid(:,:,:)
+  real, allocatable    :: c_dragx(:), c_dragy(:)
   contains
 !***********************************************************************
     subroutine initialize_solid_cells
@@ -86,15 +84,17 @@ module Solid_Cells
       call find_solid_cell_boundaries
       call calculate_shift_matrix
 !
-      !
-      ! Find nearest grid point of the "forcepoints" on all cylinders
-      ! (needs also to be called elsewhere if cylinders move)
-      !
+!
+! Find nearest grid point of the "forcepoints" on all cylinders
+! (needs also to be called elsewhere if cylinders move)
+!
       allocate(fpnearestgrid(ncylinders,nforcepoints,3))
+      allocate(c_dragx(ncylinders))
+      allocate(c_dragy(ncylinders))
       call fp_nearest_grid
       rhosum    = 0.0
       irhocount = 0
-      !
+!
     endsubroutine initialize_solid_cells
 !***********************************************************************
     subroutine init_solid_cells(f)
@@ -246,9 +246,9 @@ module Solid_Cells
         end do
 if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
       case default
-        !
-        !  Catch unknown values
-        !
+!
+!  Catch unknown values
+!
         if (lroot) print*,'No such value for init_solid_cells:',&
              trim(initsolid_cells(jj))
         call fatal_error('init_solid_cells','')
@@ -431,11 +431,11 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
           do ipoint=1,8 ! Actually, 4 is sufficient in 2D / for cylinder
 !  Test if we are in a fluid cell, i.e.
 !  that mod(ba(ix,iy,iz,1),10) = 0 
-            if (mod(ba(icoord(ipoint,1),icoord(ipoint,2),icoord(ipoint,3),1),10) &
+            if (mod(ba(icoord(ipoint,1),icoord(ipoint,2),icoord(ipoint,3),1),10)&
                 .eq. 0 .and. inearest .eq. 0) then
               inearest=ipoint
             else if ( &
-                mod(ba(icoord(ipoint,1),icoord(ipoint,2),icoord(ipoint,3),1),10) &
+                mod(ba(icoord(ipoint,1),icoord(ipoint,2),icoord(ipoint,3),1),10)&
                 .eq. 0 ) then
               if (dist_to_fp2(ipoint) .le. dist_to_fp2(inearest)) then
                 inearest=ipoint
@@ -460,10 +460,11 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !***********************************************************************  
   subroutine dsolid_dt(f,df,p)
 !
-! Find pressure and stress in all the forcepoints (fp) positioned on 
-! cylinder surface, based on values in nearest grid point.
+!  Find pressure and stress in all the forcepoints (fp) positioned on 
+!  cylinder surface, based on values in nearest grid point.
 !
-! mar-2009/kragset: coded
+!  mar-2009/kragset: coded
+!  okt-2009/kragset: updated to include multiple cylinders
 !
     use viscosity, only: getnu
 !    
@@ -531,8 +532,8 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
                     + fp_stress(2,1)*nvec(1) &
                     + fp_stress(2,2)*nvec(2) & 
                     + fp_stress(2,3)*nvec(3)                 
-                c_dragx = c_dragx + force_x
-                c_dragy = c_dragy + force_y
+                c_dragx(icyl) = c_dragx(icyl) + force_x
+                c_dragy(icyl) = c_dragy(icyl) + force_y
               end if
             end if
           end do
@@ -542,25 +543,10 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !  solid cell regions:
 !
         do i=l1,l2
-          do icyl=1,ncylinders
-            a2 = cylinder(icyl,1)**2
-            xr=x(i)-cylinder(icyl,2)
-            yr=y(m)-cylinder(icyl,3)
-            rr2 = xr**2 + yr**2            
-            if (ncylinders > 1) then 
-!
-!  If-test below will not detect if grid point is inside cylinder 
-!  if more than one cylinder are present. Yet to be implemented.
-!
-              write(*,*) "WARNING: Rho-aver. not implemented for ncylinders > 1"
-              call fatal_error('solid_cells_dsolid_dt','')
-!             
-            end if
-            if (rr2 .gt. a2) then
-              rhosum = rhosum + p%rho(i-nghost)
-              irhocount = irhocount+1
-            end if
-          end do
+          if (mod(ba(i,m,n,1),10) .eq. 0) then
+            rhosum = rhosum + p%rho(i-nghost)
+            irhocount = irhocount+1
+          end if
         end do
       end if
     end if
@@ -573,11 +559,13 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !  by integrating fluid force on cylinder surface. 
 !
 !  mar-2009/kragset: coded
+!  okt-2009/kragset: updated to include multiple cylinders
 !
     use mpicomm
 
-    real    :: rhosum_all, c_dragx_all, c_dragy_all, cpx,ctx,cpy,cty
-    integer :: irhocount_all, testcounter_all
+    real    :: rhosum_all, c_dragx_all(ncylinders), c_dragy_all(ncylinders)
+    real    :: cpx,ctx,cpy,cty
+    integer :: irhocount_all,icyl
     real    :: norm, refrho0
 !    
     if (ldiagnos) then
@@ -586,30 +574,31 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !  Collect and sum rhosum, irhocount, c_dragx and c_dragy
         call mpireduce_sum(rhosum,rhosum_all)
         call mpireduce_sum_int(irhocount,irhocount_all)
-        call mpireduce_sum(c_dragx,c_dragx_all)
-        call mpireduce_sum(c_dragy,c_dragy_all)
+        call mpireduce_sum(c_dragx,c_dragx_all,ncylinders)
+        call mpireduce_sum(c_dragy,c_dragy_all,ncylinders)
 !        
         if (lroot) then          
           refrho0 = rhosum_all / irhocount_all
-          norm = 2. * pi / (ncylinders*nforcepoints*refrho0*init_uu**2)
+          norm = 2. * pi / (nforcepoints*refrho0*init_uu**2)
 !          
           c_dragx = c_dragx_all * norm
           c_dragy = c_dragy_all * norm
-!
-!  Calculate and write average drag coefficients
-!  for increasing time intervals
-          cx_cum = cx_cum + c_dragx 
-          cy_cum = cy_cum + c_dragy
-          idragcount = idragcount + 1
-          open(unit=79, file='data/dragcoeffsavg.dat', position='APPEND')
-          write(79,80) it-1, t, cx_cum/idragcount, cy_cum/idragcount, idragcount
-          close(79)
-80        format(1I5,3F15.8,1I5)
 !          
+!  Write drag coefficients for all cylinders
+!
+          open(unit=81,file='data/dragcoeffs.dat',position='APPEND')
+          write(81,84) it-1, t
+          do icyl=1,ncylinders
+            write(81,82) c_dragx(icyl), c_dragy(icyl)
+          end do
+          write(81,*) ' ' ! Adds a line break
+          close(81)
+84        format(1I5,1F15.8,$)
+82        format(2F15.8,$)
         end if
       end if
-      if (idiag_c_dragx .ne. 0) fname(idiag_c_dragx)=c_dragx
-      if (idiag_c_dragy .ne. 0) fname(idiag_c_dragy)=c_dragy
+      if (idiag_c_dragx .ne. 0) fname(idiag_c_dragx)=c_dragx(1)
+      if (idiag_c_dragy .ne. 0) fname(idiag_c_dragy)=c_dragy(1)
     end if
  !   
   end subroutine dsolid_dt_integrate
