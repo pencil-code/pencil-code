@@ -65,7 +65,7 @@ module Special
   include '../special.h'
 
   ! input parameters
-  logical :: left_buffer_zone=.false.
+  !logical :: left_buffer_zone=.false.
 
   character (len=labellen) :: initstream='default'
 
@@ -90,7 +90,7 @@ module Special
    initstream,rho_init, T_init, Y1_init, Y2_init, Y3_init, H_max, ux_init, &
    index_H2, index_O2, index_H2O, &
    index_N2,init_TT1,init_TT2,init_lnTT1, init_x1, init_x2,  init_p2, &
-   left_buffer_zone, init_lnrho, init_ux, lT_prof1, lT_prof2,lT_tanh, str_thick
+   init_lnrho, init_ux, lT_prof1, lT_prof2,lT_tanh, str_thick
 ! run parameters
   namelist /chem_stream_run_pars/ &
    test
@@ -437,85 +437,6 @@ module Special
         mmu1(l1:l2,m,n)=p%mu1(:)
      !    print*,'Natalia',p%pp(l1+1), p%fvisc(l1+1,1),mmu1(l1+1,4,4)
         ldivtau=.true.
-
-! buffer zone to damp the acustic waves!!!!!!!!!!!
-    if (left_buffer_zone) then
-      l_sz=nxgrid-int(0.2*nxgrid)
-      l_sz_1=int(0.2*nxgrid)
-   
-      df(l_sz:l2,m,n,iux)=df(l_sz:l2,m,n,iux)&  
-           -(x(l_sz:l2)-x(l_sz))**3/(Lxyz(1)-x(l_sz))**3 &
-           /(dt)*(f(l_sz:l2,m,n,iux)-0.)
-      
-       df(l_sz:l2,m,n,iuy)=df(l_sz:l2,m,n,iuy)&  
-           -(x(l_sz:l2)-x(l_sz))**3/(Lxyz(1)-x(l_sz))**3 &
-           /(dt)*(f(l_sz:l2,m,n,iuy)-0.)
-
-         df(l_sz:l2,m,n,ilnTT)=df(l_sz:l2,m,n,ilnTT)&  
-           -(x(l_sz:l2)-x(l_sz))**3/(Lxyz(1)-x(l_sz))**3 &
-           /(dt)*(f(l_sz:l2,m,n,ilnTT)-6.39693)  
-
-          df(l_sz:l2,m,n,ilnrho)=df(l_sz:l2,m,n,ilnrho)&  
-           -(x(l_sz:l2)-x(l_sz))**3/(Lxyz(1)-x(l_sz))**3 &
-           /(dt)*(f(l_sz:l2,m,n,ilnrho)+7.73236 )  
-      
-       
-        
-          df(l1+1:l_sz_1,m,n,iux)=df(l1+1:l_sz_1,m,n,iux)&  
-           -(x(l1+1:l_sz_1)-x(l_sz_1))**3/(x(l1+1)-x(l_sz_1))**3 &
-           /(3*dt)*(f(l1+1:l_sz_1,m,n,iux)-0.)
-         
-          df(l1+1:l_sz_1,m,n,iuy)=df(l1+1:l_sz_1,m,n,iuy)&  
-          -(x(l1+1:l_sz_1)-x(l_sz_1))**3/(x(l1+1)-x(l_sz_1))**3 &
-         /(3*dt)*(f(l1+1:l_sz_1,m,n,iuy)-0.)
-
-          df(l1+1:l_sz_1,m,n,ilnTT)=df(l1+1:l_sz_1,m,n,ilnTT)&  
-           -(x(l1+1:l_sz_1)-x(l_sz_1))**3/(x(l1+1)-x(l_sz_1))**3 &
-          /(3*dt)*(f(l1+1:l_sz_1,m,n,ilnTT)-6.39693)
-           
-          df(l1+1:l_sz_1,m,n,ilnrho)=df(l1+1:l_sz_1,m,n,ilnrho)&  
-           -(x(l1+1:l_sz_1)-x(l_sz_1))**3/(x(l1+1)-x(l_sz_1))**3 &
-           /(3*dt)*(f(l1+1:l_sz_1,m,n,ilnrho)+7.73236)
-
-     
-       if ((m<=l_sz_1) .and. (m>=m1)) then
-
-
-        df(l_sz_1-3:,m,n,iux)=df(l_sz_1-3:,m,n,iux)&  
-           -(y(m)-y(l_sz_1))**3/(y(m1)-y(l_sz_1))**3 &
-           /(dt)*(f(l_sz_1-3:,m,n,iux)-0.)
-        df(l_sz_1-3:,m,n,iuy)=df(l_sz_1-3:,m,n,iuy)&  
-           -(y(m)-y(l_sz_1))**3/(y(m1)-y(l_sz_1))**3 &
-           /(dt)*(f(l_sz_1-3:,m,n,iuy)-0.)
-        df(l_sz_1-3:,m,n,ilnrho)=df(l_sz_1-3:,m,n,ilnrho)&  
-           -(y(m)-y(l_sz_1))**3/(y(m1)-y(l_sz_1))**3 &
-           /(dt)*(f(l_sz_1-3:,m,n,ilnrho)+7.73236)
-        df(l_sz_1-3:,m,n,ilnTT)=df(l_sz_1-3:,m,n,ilnTT)&  
-           -(y(m)-y(l_sz_1))**3/(y(m1)-y(l_sz_1))**3 &
-           /(dt)*(f(l_sz_1-3:,m,n,ilnTT)-6.39693)
-    
-        
-
-       elseif (m>=l_sz) then
-
-
-        df(l_sz_1-1:,m,n,iux)=df(l_sz_1-1:,m,n,iux)&  
-           -(y(m)-y(l_sz))**3/(Lxyz(2)-y(l_sz))**3 &
-          /(dt)*(f(l_sz_1-1:,m,n,iux)-0.)
-        df(l_sz_1-1:,m,n,iuy)=df(l_sz_1-1:,m,n,iuy)&  
-          -(y(m)-y(l_sz))**3/(Lxyz(2)-y(l_sz))**3 &
-          /(dt)*(f(l_sz_1-1:,m,n,iuy)-0.)
-        df(l_sz_1-1:,m,n,ilnrho)=df(l_sz_1-1:,m,n,ilnrho)&  
-           -(y(m)-y(l_sz-1))**3/(Lxyz(2)-y(l_sz))**3 &
-          /(dt)*(f(l_sz_1-1:,m,n,ilnrho)+7.73236)
-        df(l_sz_1-1:,m,n,ilnTT)=df(l_sz_1-1:,m,n,ilnTT)&  
-           -(y(m)-y(l_sz))**3/(Lxyz(2)-y(l_sz))**3 &
-           /(dt)*(f(l_sz_1-1:,m,n,ilnTT)-6.39693)
-
-       endif
-
-     endif
-
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     endsubroutine special_calc_hydro
