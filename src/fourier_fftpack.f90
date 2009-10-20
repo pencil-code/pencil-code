@@ -1089,7 +1089,7 @@ module Fourier
       logical :: lforward
 !
       if (nprocx>1) &
-          call fatal_error('fourier_transform_shear_xy_xy','Must have nprocx=1!')
+          call fatal_error('fourier_transform_xy_xy','Must have nprocx=1!')
 !
       if (mod(nxgrid,nygrid)/=0) call fatal_error('fourier_transform_xy_xy', &
           'nxgrid needs to be an integer multiple of nygrid.')
