@@ -340,8 +340,8 @@ module Grid
           yprim2=    Ly*(g2der2*a**2)/2
 
           if (lparticles) then
-            g2proc=y00+Ly*(g2proc-g2lo)/2
             call grid_profile(a*xi2proc-pi/2,grid_func(2),g2proc)
+            g2proc=y00+Ly*(g2proc-g2lo)/2
             g2proc(0)=g2proc(1)-y(m1+1)+y(m1)
             g2proc(2*nprocy+1)=g2proc(2*nprocy)+y(m2)-y(m2-1)
           endif
