@@ -333,7 +333,7 @@ endif
 ##For single processor runs on the frontend:
 ##FC=xlf95_r -I/bgsys/drivers/ppcfloor/comm/include #(genius1|jugene[3-4])
 ##CC=xlc_r -I/bgsys/drivers/ppcfloor/comm/include #(genius1|jugene[3-4])
-##For MPI on the work nodes:
+##For MPI runs on the work nodes:
 #FC=mpixlf95_r -I/bgsys/drivers/ppcfloor/comm/include #(genius1|jugene[3-4])
 #CC=mpixlc_r -I/bgsys/drivers/ppcfloor/comm/include #(genius1|jugene[3-4])
 #F77=xlf_r #(genius1|jugene[3-4])
