@@ -53,7 +53,7 @@ module Special
 ! Declare any index variables necessary
 !
   ! other variables (needs to be consistent with reset list below)
-  integer :: idiag_etatm=0
+  integer :: idiag_etatm=0,idiag_etmax=0,idiag_etrms=0
   integer :: idiag_alpmm=0,idiag_ammax=0,idiag_amrms=0,idiag_alpmmz=0
 
   contains
@@ -207,15 +207,16 @@ module Special
 !
         call dot_mn(p%mf_EMF,p%jj,EMFdotJ)
         EJ_kfEB=EMFdotJ-kf_alpm*EMFdotB
-
         df(l1:l2,m,n,ietat)=df(l1:l2,m,n,ietat)&
-	    -(2./3.)*EJ_kfEB/kf_alpm**2/(eta+etat)
+          -(2./3.)*EJ_kfEB/kf_alpm**2/(eta+etat)
       endif
 !
 !  diagnostics
 !
       if (ldiagnos) then
         if (idiag_etatm/=0) call sum_mn_name(etat,idiag_etatm)
+        if (idiag_etmax/=0) call max_mn_name(alpm,idiag_etmax)
+        if (idiag_etrms/=0) call sum_mn_name(alpm**2,idiag_etrms,lsqrt=.true.)
         if (idiag_alpmm/=0) call sum_mn_name(alpm,idiag_alpmm)
         if (idiag_ammax/=0) call max_mn_name(alpm,idiag_ammax)
         if (idiag_amrms/=0) call sum_mn_name(alpm**2,idiag_amrms,lsqrt=.true.)
@@ -288,7 +289,7 @@ module Special
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_etatm=0
+        idiag_etatm=0; idiag_etmax=0; idiag_etrms=0
         idiag_alpmm=0; idiag_ammax=0; idiag_amrms=0; idiag_alpmmz=0
       endif
 !
@@ -296,6 +297,8 @@ module Special
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'etatm',idiag_etatm)
+        call parse_name(iname,cname(iname),cform(iname),'etmax',idiag_etmax)
+        call parse_name(iname,cname(iname),cform(iname),'etrms',idiag_etrms)
         call parse_name(iname,cname(iname),cform(iname),'alpmm',idiag_alpmm)
         call parse_name(iname,cname(iname),cform(iname),'ammax',idiag_ammax)
         call parse_name(iname,cname(iname),cform(iname),'amrms',idiag_amrms)
@@ -312,6 +315,8 @@ module Special
 !
       if (lwr) then
         write(3,*) 'i_etatm=',idiag_etatm
+        write(3,*) 'i_etmax=',idiag_etmax
+        write(3,*) 'i_etrms=',idiag_etrms
         write(3,*) 'i_alpmm=',idiag_alpmm
         write(3,*) 'i_ammax=',idiag_ammax
         write(3,*) 'i_amrms=',idiag_amrms
