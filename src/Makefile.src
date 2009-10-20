@@ -1107,9 +1107,9 @@ endif
 #FFLAGS=-O3
 #CFLAGS=-DFUNDERSC=2
 #LD_MPI=
-#
-#  Nils' machine
-#
+##
+##  Nils' machine
+##
 #FC=xlf90 #(Nils)
 #F77=xlf  #(Nils)
 #FFLAGS= -w -qsuppress=1501-510  #(Nils)
