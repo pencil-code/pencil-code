@@ -975,12 +975,12 @@ module Chemistry
              l_sz=nxgrid-int(0.2*nxgrid)
              l_sz_1=int(0.2*nxgrid)
 
-               f(l_sz:,j2,j3,iux)=0.
-               f(:l_sz_1,j2,j3,iux)=0.
-                f(j1,l_sz:,j3,iuy)=0.
-               f(j1,:l_sz_1,j3,iuy)=0.
-                 f(j1,j2,l_sz:,iuz)=0.
-               f(j1,j2,:l_sz_1,iuz)=0.
+          if (nxgrid/=1)     f(l_sz:,j2,j3,iux)=0.
+          if (nxgrid/=1)     f(:l_sz_1,j2,j3,iux)=0.
+          if (nygrid/=1)     f(j1,l_sz:,j3,iuy)=0.
+          if (nygrid/=1)     f(j1,:l_sz_1,j3,iuy)=0.
+          if (nzgrid/=1)     f(j1,j2,l_sz:,iuz)=0.
+          if (nzgrid/=1)     f(j1,j2,:l_sz_1,iuz)=0.
           enddo
         enddo
       enddo
