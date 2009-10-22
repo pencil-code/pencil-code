@@ -5305,7 +5305,7 @@ module Chemistry
          df(l1:l2,m1:m2,nnn,ilnTT) =    df(l1:l2,m1:m2,nnn,ilnTT)    + T_5(:,:)
 
       
-      
+      !  if ((nxgrid /= 1) .and. (nygrid /= 1)) then
 !
 ! Corner points
 !
@@ -5365,7 +5365,7 @@ module Chemistry
         L_5=0 
        endif
         
-
+ !  if ((nxgrid /= 1) .and. (nygrid /= 1)) then
        if (nygrid /= 1) then
 
         do i=l1,l2
@@ -5446,7 +5446,7 @@ module Chemistry
            (2.*rho0(ll,mm)*cs0_ar(ll,mm))*(L_5(lll,i) - L_1(lll,i)) &
            -M_3(lll,i)-N_3(lll,mmm)
          df(ll,mm,nnn,iuy) =  - L_3(lll,i) - 1./&
-           (2.*rho0(ll,mm)*cs0_ar(ll,mm))*(M_5(mmm,i) - M_1(mmm,i))-N_2(lll,nnn)
+           (2.*rho0(ll,mm)*cs0_ar(ll,mm))*(M_5(mmm,i) - M_1(mmm,i))-N_4(lll,nnn)
          df(ll,mmm,nn,iuz) =  - L_4(lll,i) - M_4(lll,nnn)  - 1./&
            (2.*rho0(ll,mm)*cs0_ar(ll,mm))*(N_5(lll,mmm) - N_1(lll,mmm))
          df(ll,mm,nnn,ilnTT) = drho_prefac(lll,mmm)*(-L_2(lll,i) &
@@ -5522,11 +5522,6 @@ module Chemistry
       real :: dt1, func_y,func_z, ux_ref,uy_ref,uz_ref,lnTT_ref,lnrho_ref
       logical :: lzone_y=.false.,lzone_z=.false.
 
-
-
-          
-    
-
        dt1=1./dt
 
        ux_ref=0.
@@ -5534,7 +5529,6 @@ module Chemistry
        uz_ref=0.
        lnrho_ref=-7.73236
        lnTT_ref=6.39693
-       
 
        sz_r_x=l2-int(0.1*nxgrid)
        sz_l_x=int(0.1*nxgrid)+l1
