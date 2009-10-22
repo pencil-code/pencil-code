@@ -84,7 +84,7 @@ module Magnetic
 !  profile functions
 !
   real, dimension(nx) :: alpha_x,dalpha_x,Omega_x,dOmega_x
-  real, dimension(my) :: alpha_y,dalpha_y,Omega_y,dOmega_y
+  real, dimension(my) :: alpha_y,dalpha_y,Omega_y,dOmega_y,Omega_tmp0
 !
   real, target :: zmode=1. !(temporary)
 !
@@ -1415,7 +1415,7 @@ module Magnetic
 !  add alpha effect, note that j=-D2a
 !
       alpha_tmp=alpha_effect*alpha_x*alpha_y(m)
-      alpha_tmp2=alpha_effect*(dalpha_x*Bpol(:,2)-r1_mn*dalpha_y(m)*Bpol(:,1))
+     alpha_tmp2=alpha_effect*(dalpha_x*Bpol(:,2)-r1_mn*dalpha_y(m)*Bpol(:,1))
 !
 !  Add alpha effect. At the moment this ignores the grad(alpha) terms
 !
@@ -1429,7 +1429,8 @@ module Magnetic
 !  Note that grad_theta(Omega)=r1_mn*dOmega_y, but r1_mn cancels with r_mn.
 !
       if (lOmega_effect) then
-        Omega_tmp=sinth(m)*(r_mn*Bpol(:,1)*dOmega_x+Bpol(:,2)*dOmega_y(m))
+ !!      Omega_tmp=sinth(m)*(r_mn*Bpol(:,1)*dOmega_x+Bpol(:,2)*dOmega_y(m))
+       Omega_tmp=sinth(m)*(r_mn*Bpol(:,1)*dOmega_x*Omega_y(m)+2*Bpol(:,2)*dOmega_y(m)*Omega_x)
         df(l1:l2,m,n,ibphi)=df(l1:l2,m,n,ibphi)+Omega_ampl*Omega_tmp
       endif
 !
