@@ -4257,14 +4257,12 @@ module Chemistry
 !
       select case(topbot)
       case('bot')
-        lll = l1
-        sgn = 1
+        lll = l1; sgn = 1
         if (leos_chemistry) then
           p_inf(1,:,:)=pp_full(l1,m1:m2,n1:n2)
         endif
       case('top')
-        lll = l2
-        sgn = -1
+        lll = l2; sgn = -1
         if (leos_chemistry) then
           p_inf(nx,:,:)=pp_full(l2,m1:m2,n1:n2)
         endif
@@ -4455,11 +4453,9 @@ module Chemistry
          do i=n1,n2
          do jj=1,2
            if (jj==1) then
-             j=m1
-             sgn1=1
+             j=m1; sgn1=1
            elseif(jj==2) then
-             j=m2
-             sgn1=-1
+             j=m2; sgn1=-1
            endif
           call der_onesided_4_slice(f,sgn1,iux,dui_dxj(j,i,1,2),lll,j,i,2)
           call der_onesided_4_slice(f,sgn1,iuy,dui_dxj(j,i,2,2),lll,j,i,2)
@@ -4471,11 +4467,9 @@ module Chemistry
      
         do i=1,2 
          if (i==1) then
-          nn=n1
-          nnn=1
+          nn=n1; nnn=1
          elseif (i==2) then
-          nn=n2
-          nnn=nz
+          nn=n2; nnn=nz
          endif
           M_1(1,i)=(f(lll,m1,nn,iuy) - cs0_ar(m1,nn))&
             *(grad_pp(1,nnn,2)-rho0(m1,nn)*cs0_ar(m1,nn)*dui_dxj(1,nnn,2,2))
@@ -4495,11 +4489,7 @@ module Chemistry
             *(grad_pp(ny,nnn,2)+ rho0(m2,nn)*cs0_ar(m2,nn)*dui_dxj(ny,nnn,2,2))
         enddo
        else
-        M_1=0
-        M_2=0
-        M_3=0
-        M_4=0
-        M_5=0
+        M_1=0; M_2=0; M_3=0; M_4=0; M_5=0
        endif
       if (nzgrid /= 1) then
          do i=m1,m2
@@ -4522,11 +4512,9 @@ module Chemistry
 
         do i=1,2 
          if (i==1) then
-          mm=m1
-          mmm=1
+          mm=m1;  mmm=1
          elseif (i==2) then
-          mm=m2
-          mmm=ny
+          mm=m2;  mmm=ny
          endif
 
          N_1(1,i)=(f(lll,mm,n1,iuz) - cs0_ar(mmm,n1))&
@@ -4549,29 +4537,21 @@ module Chemistry
             *(grad_pp(mmm,nz,3)+ rho0(mm,n2)*cs0_ar(mm,n2)*dui_dxj(mmm,nz,3,3))
         enddo
        else
-        N_1=0
-        N_2=0
-        N_3=0
-        N_4=0
-        N_5=0
+        N_1=0; N_2=0; N_3=0; N_4=0; N_5=0
        endif
 
        do i=1,2 
           if (i==1) then
-           nn=n1
-           nnn=1
+           nn=n1; nnn=1
           elseif (i==2) then
-           nn=n2
-           nnn=nz
+           nn=n2; nnn=nz
           endif
 
          do j=1,2
          if (j==1) then
-            mm=m1
-            mmm=1
+            mm=m1; mmm=1
          elseif (j==2) then
-            mm=m2
-            mmm=ny
+            mm=m2; mmm=ny
          endif
        
          df(lll,mm,nn,irho_tmp) =  &
@@ -4690,14 +4670,12 @@ module Chemistry
 
       select case(topbot)
       case('bot')
-        mmm = m1
-        sgn = 1
+        mmm = m1; sgn = 1
         if (leos_chemistry) then
           p_inf(:,1,:)=pp_full(l1:l2,m1,n1:n2)
         endif
       case('top')
-        mmm = m2
-        sgn = -1
+        mmm = m2; sgn = -1
         if (leos_chemistry) then
           p_inf(:,ny,:)=pp_full(l1:l2,m2,n1:n2)
         endif
@@ -4880,8 +4858,7 @@ module Chemistry
          do jj=1,2
 
           if (jj==1) then
-             j=l1              
-             sgn1=+1
+             j=l1; sgn1=+1
           elseif (jj==2) then
              j=l2
              sgn1=-1
@@ -4923,11 +4900,7 @@ module Chemistry
        
         enddo
         else
-        L_1=0
-        L_2=0 
-        L_3=0 
-        L_4=0 
-        L_5=0 
+        L_1=0; L_2=0; L_3=0; L_4=0; L_5=0 
        endif
 !
        if (nzgrid /= 1) then
@@ -4936,11 +4909,9 @@ module Chemistry
          do jj=1,2
 
           if (jj==1) then
-             j=n1              
-             sgn1=+1
+             j=n1; sgn1=+1
           elseif (jj==2) then
-             j=l2
-             sgn1=-1
+             j=l2; sgn1=-1
           endif
         
           call der_onesided_4_slice(f,sgn1,iux,dui_dxj(i,j,1,3),i,mmm,j,3)
@@ -4980,30 +4951,22 @@ module Chemistry
             *(grad_pp(lll,nz,3)+ rho0(ll,n2)*cs0_ar(ll,n2)*dui_dxj(lll,nz,3,3))
         enddo
        else
-        N_1=0
-        N_2=0
-        N_3=0
-        N_4=0
-        N_5=0
+        N_1=0; N_2=0; N_3=0; N_4=0; N_5=0
        endif
   
   
         do i=1,2 
          if (i==1) then
-          nn=n1
-          nnn=1
+          nn=n1; nnn=1
          elseif (i==2) then
-          nn=n2
-          nnn=nz
+          nn=n2; nnn=nz
          endif
 
         do j=1,2
          if (j==1) then
-            ll=l1
-            lll=1
+            ll=l1; lll=1
          elseif (j==2) then
-            ll=l2
-            lll=nx
+            ll=l2; lll=nx
          endif
 
 
@@ -5112,14 +5075,12 @@ module Chemistry
 !
       select case(topbot)
       case('bot')
-        nnn = n1
-        sgn = 1
+        nnn = n1; sgn = 1
         if (leos_chemistry) then
           p_inf(:,:,1)=pp_full(l1:l2,m1:m2,n1)
         endif
       case('top')
-        nnn = n2
-        sgn = -1
+        nnn = n2; sgn = -1
         if (leos_chemistry) then
           p_inf(:,:,nz)=pp_full(l1:l2,m1:m2,n2)
         endif
@@ -5321,11 +5282,9 @@ module Chemistry
  
         do i=1,2 
          if (i==1) then
-          mm=m1
-          mmm=1
+          mm=m1; mmm=1
          elseif (i==2) then
-          mm=m2
-          mmm=ny
+          mm=m2; mmm=ny
          endif
           L_1(1,i)=(f(l1,mm,nnn,iux) - cs0_ar(l1,mm))&
             *(grad_pp(1,mmm,1)-rho0(l1,mm)*cs0_ar(l1,mm)*dui_dxj(1,mmm,1,1))
@@ -5345,11 +5304,7 @@ module Chemistry
             *(grad_pp(nx,mmm,1)+ rho0(l2,mm)*cs0_ar(l2,mm)*dui_dxj(nx,mmm,1,1))
        enddo
        else
-        L_1=0
-        L_2=0 
-        L_3=0 
-        L_4=0 
-        L_5=0 
+        L_1=0; L_2=0; L_3=0; L_4=0; L_5=0 
        endif
         
  !  if ((nxgrid /= 1) .and. (nygrid /= 1)) then
@@ -5374,11 +5329,9 @@ module Chemistry
       
         do i=1,2 
          if (i==1) then
-          ll=l1
-          lll=1
+          ll=l1; lll=1
          elseif (i==2) then
-          ll=l2
-          lll=nx
+          ll=l2; lll=nx
          endif
           M_1(1,i)=(f(ll,m1,nnn,iuy) - cs0_ar(ll,m1))&
             *(grad_pp(lll,1,2)-rho0(ll,m1)*cs0_ar(ll,m1)*dui_dxj(lll,1,2,2))
@@ -5398,29 +5351,21 @@ module Chemistry
             *(grad_pp(lll,ny,2)+ rho0(ll,m2)*cs0_ar(ll,m2)*dui_dxj(lll,ny,2,2))
         enddo
        else
-        M_1=0
-        M_2=0
-        M_3=0
-        M_4=0
-        M_5=0
+        M_1=0; M_2=0; M_3=0; M_4=0; M_5=0
        endif
 
         do i=1,2 
          if (i==1) then
-          mm=m1
-          mmm=1
+          mm=m1; mmm=1
          elseif (i==2) then
-          mm=m2
-          mmm=ny
+          mm=m2; mmm=ny
          endif
 
         do j=1,2
          if (j==1) then
-            ll=l1
-            lll=1
+            ll=l1; lll=1
          elseif (j==2) then
-            ll=l2
-            lll=nx
+            ll=l2; lll=nx
          endif
 
 
