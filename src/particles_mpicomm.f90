@@ -203,7 +203,7 @@ module Particles_mpicomm
 !
 !  Check that particle wants to migrate to neighbouring processor.
 !
-            if ((.not.lstart .or. present(linsert)) .and. &
+            if (.not. (lstart .or. present(linsert)) .and. &
                 (.not.any(iproc_rec==iproc_comm(1:nproc_comm))) ) then
               print*, 'redist_particles_procs: particle ', ipar(k), ' wants to'
               print*, '    migrate to a processor that is not a neighbour!'
