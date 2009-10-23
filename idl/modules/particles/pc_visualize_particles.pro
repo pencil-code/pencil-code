@@ -16,7 +16,8 @@ END
 pro pc_visualize_particles,png=png,removed=removed, savefile=savefile,xmin=xmin,$
                            xmax=xmax,ymin=ymin,ymax=ymax,tmin=tmin,tmax=tmax,$
                            w=w,trace=trace,velofield=velofield,dots=dots,$
-                           finalpng=finalpng
+                           finalpng=finalpng,xtrace=xtrace,ytrace=ytrace,$
+                           store_vec=store_vec
 ;
 device,decompose=0
 loadct,5
@@ -31,6 +32,8 @@ default,tmin,-1e37
 default,tmax,1e37
 default,w,0.03
 default,trace,0
+default,xtrace,0
+default,ytrace,0
 default,velofield,0
 default,dots,0
 ;
@@ -39,14 +42,25 @@ default,dots,0
 pc_read_dim,obj=procdim
 pc_read_param, object=param
 pc_read_pvar,obj=objpvar,/solid_object,irmv=irmv,theta_arr=theta_arr,$
-  savefile=savefile
+  savefile=savefile,trmv=trmv
 pc_read_pstalk,obj=obj
 dims=size(obj.xp)
 npar=dims[1]
 print,'npar=',npar
 ;
+; Find number of cylinders
+;
+if (param.coord_system eq 'cylindric') then begin
+    ncylinders=1
+endif else begin
+    ncylinders=param.ncylinders
+endelse
+;
 ; Set some auxillary variables
 ;
+radius=fltarr(ncylinders,1)
+xpos=fltarr(ncylinders,1)
+ypos=fltarr(ncylinders,1)
 nx=procdim.nx
 ny=procdim.ny
 dims=size(obj.xp)
@@ -54,17 +68,17 @@ n_parts=dims(1)
 n_steps=dims(2)
 print,'param.coord_system=',param.coord_system
 if (param.coord_system eq 'cylindric') then begin
-    radius=param.xyz0[0]
-    xpos=0.0
-    ypos=0.0
+    radius[0]=param.xyz0[0]
+    xpos[0]=0.0
+    ypos[0]=0.0
     default,xmax,param.xyz1[0]
     default,xmin,-xmax
     default,ymax, xmax
     default,ymin,-xmax
 endif else begin
-    radius=param.cylinder_radius[0]
-    xpos=param.cylinder_xpos[0]
-    ypos=param.cylinder_ypos[0]
+    radius=param.cylinder_radius[0:ncylinders-1]
+    xpos=param.cylinder_xpos[0:ncylinders-1]
+    ypos=param.cylinder_ypos[0:ncylinders-1]
     default,xmax,param.xyz1[0]
     default,xmin,param.xyz0[0]
     default,ymax,param.xyz1[1]
@@ -75,13 +89,123 @@ print,'xmax=',xmax
 print,'ymin=',ymin
 print,'ymax=',ymax
 ;
+; Check if we are inserting particles continuously
+;
+dummy=findfile('./data/param2.nml', COUNT=countfile)
+if (countfile gt 0) then begin
+    pc_read_param, object=param2,/param2
+    linsert_particles_continuously=param2.linsert_particles_continuously
+endif else begin
+    pc_read_param, object=param
+    linsert_particles_continuously=param.linsert_particles_continuously
+endelse
+;
+;  Check how many particles have collided with a solid object
+;
+solid_object=1
+print_remove_data=0
+if (solid_object) then begin
+  pc_read_ts,obj=ts
+  dims=size(irmv)
+  solid_colls=fltarr(ncylinders,1)
+  solid_colls[*]=0
+  front_colls=solid_colls
+  back_colls=solid_colls
+  maxy=param.xyz1[1]
+  theta_arr=fltarr(10000,2)
+  for icyl=0,ncylinders-1 do begin
+      if (param.coord_system eq 'cylindric') then begin
+          init_uu=param.ampluu
+      endif else begin
+          init_uu=param.init_uu
+      endelse
+      for k=0,dims[1]-1 do begin        
+          if (dims[0]>0) then begin              
+              x0=objpvar.xx[irmv[k],0]-xpos[icyl]
+              y0=objpvar.xx[irmv[k],1]-ypos[icyl]
+              deposition_radius2=x0^2+y0^2
+              deposition_radius=sqrt(deposition_radius2)
+              if (deposition_radius lt radius[icyl]*1.1) then begin
+                  theta_tmp=acos(y0/deposition_radius)
+                  theta=3.1415-theta_tmp
+                  if (print_remove_data) then begin
+                      print,'time,k,r,x,y,theta=',$
+                        trmv[k],irmv[k],deposition_radius,x0,y0,theta
+                  endif
+                  if (total(solid_colls[icyl]) lt 10000) then begin
+                      theta_arr[solid_colls[icyl],0]=theta
+                      theta_arr[solid_colls[icyl],1]=trmv[k]
+                  endif
+                  solid_colls[icyl]=solid_colls[icyl]+1
+                  if (objpvar.xx[irmv[k],1] gt ypos[icyl]) then begin
+                      back_colls[icyl]=back_colls[icyl]+1
+                  endif else begin
+                      front_colls[icyl]=front_colls[icyl]+1
+                  endelse
+              endif
+          endif
+      endfor
+  endfor
+  lambda=67e-9
+  diameter=2*param.ap0
+  Stokes_Cunningham=1+2*lambda/diameter*(1.257+0.4*exp(-1.1*diameter/(2*lambda)))
+  tau_p=param.rhops*diameter^2/(18.0*param2.nu)
+;  print,'rhops,diameter,nu=',param.rhops,diameter,param2.nu
+;  print,'tau_p,init_uu,radius[icyl]=',tau_p,init_uu,radius[icyl]
+  ;
+  ; Assume that the radii of all cylinders are the same
+  ;
+  Stokes=tau_p*init_uu/radius[0]
+; Check how large the box for the initial particle positions is
+; compared to the radius of the cylinder.
+  fractional_area=-param.xp0/radius[0]
+; Find the capture efficiency
+  if (linsert_particles_continuously) then begin
+      initial_time=ts.t[0]
+      final_time=min([objpvar.t,param2.max_particle_insert_time])
+      npar_inserted=(final_time-initial_time)*param2.particles_insert_rate
+  endif else begin
+      npar_inserted=npar
+  endelse
+  eta=float(solid_colls)*fractional_area/npar
+  front_eta=float(front_colls)*fractional_area/npar
+  back_eta=float(back_colls)*fractional_area/npar
+  print,'Stokes_Cunningham=',Stokes_Cunningham
+  print,'Stokes number=',Stokes
+  print,'Total number of particles:',npar
+  for icyl=0,ncylinders-1 do begin
+      print,'--------icyl=',icyl,'---------------------'
+      print,'Number of collisions with the solid geometry is:',solid_colls[icyl]
+      print,'Capture efficiency on front side=',front_eta[icyl]
+      print,'Capture efficiency on back side =',back_eta[icyl]
+      print,'Capture efficiency              =',eta[icyl]
+  endfor
+  print,'--------Total---------------------'
+  print,'Number of collisions with the solid geometry is:',total(solid_colls)
+  print,'Capture efficiency on front side=',total(front_eta)
+  print,'Capture efficiency on back side =',total(back_eta)
+  print,'Capture efficiency              =',total(eta)      
+  if (savefile) then begin
+      save,Stokes,eta,Stokes_Cunningham,front_eta,back_eta,filename='./data/capture_eff.sav'
+  endif
+endif
+;
 ; Find positions of removed particles (to be used later for plotting them).
 ;
-if (removed eq 1) then begin
+dims=size(irmv)
+if ((removed eq 1) and (dims[0] ne 0) ) then begin
     removed_pos=objpvar.xx(irmv,*)
     skin=nx
-    collision_radius=sqrt((removed_pos(*,0)-xpos)^2+(removed_pos(*,1)-ypos)^2)
-    solid_colls=where(collision_radius lt radius+1e-3)
+    for icyl=0,ncylinders-1 do begin
+        collision_radius=sqrt($
+                               (removed_pos(*,0)-xpos[icyl])^2+$
+                               (removed_pos(*,1)-ypos[icyl])^2)
+        if ( icyl eq 0) then begin
+            solid_colls=where(collision_radius lt radius[icyl]*1.1)
+        endif else begin
+            solid_colls=[solid_colls,where(collision_radius lt radius[icyl]*1.1)]
+        endelse
+    end
 endif
 ;
 ; Find where (in radians) the particles hit the surface of the cylinder as a
@@ -90,7 +214,6 @@ endif
 theta_=theta_arr[*,0]
 time_=theta_arr[*,1]
 here=where(theta_ ne 0)
-print,here
 if (here[0] ne -1) then begin
     WINDOW,4,XSIZE=128*2,YSIZE=256*2
     theta=theta_[here]
@@ -128,14 +251,6 @@ endif else begin
     psym=sym(1)
 endelse
 ;
-; Find number of cylinders
-;
-if (param.coord_system eq 'cylindric') then begin
-    ncylinders=1
-endif else begin
-    ncylinders=param.ncylinders
-endelse
-;
 ; Show results
 ;
 for i=0,n_steps-1 do begin
@@ -155,9 +270,9 @@ for i=0,n_steps-1 do begin
          plot,obj.xp(*,i),obj.yp(*,i),psym=psym,symsize=1,/iso,$
            title=titlestring
          for icyl=0,ncylinders-1 do begin
-             POLYFILL, CIRCLE_(param.cylinder_xpos[icyl], $
-                               param.cylinder_ypos[icyl], $
-                               param.cylinder_radius[icyl]),color=122
+             POLYFILL, CIRCLE_(xpos[icyl], $
+                               ypos[icyl], $
+                               radius[icyl]),color=122
          end
      endelse
       ;
@@ -173,6 +288,17 @@ for i=0,n_steps-1 do begin
       endelse
    endif
 end
+;
+; Do we want to give x and y values of the trace as output?
+;
+xytrace=0
+if (arg_present(xtrace) or arg_present(ytrace)) then begin
+    dims=size(obj.xp)
+    timeiter=dims[2]
+    xtrace=dblarr(npar,timeiter)
+    ytrace=dblarr(npar,timeiter)
+    xytrace=1
+endif
 ;
 ; Do we want to show the trace of the particles?
 ;
@@ -199,12 +325,18 @@ if (trace) then begin
              /data,col=255,HSIZE=4
        endelse
        oplot,xx0,yy0,ps=3
+       if (xytrace) then begin
+           xtrace(ipar,*)=xx0
+           ytrace(ipar,*)=yy0
+       endif
    end 
 end
 ;
 ; Do we want to overplot the velocity field?
 ;
 if (velofield) then begin
+    store_vec=fltarr(10000,4)
+    store_count=0
    pc_read_var,obj=objvar
    pc_read_dim,obj=objdim
    l1=objdim.l1
@@ -232,7 +364,12 @@ if (velofield) then begin
                    ARROW, xx0, yy0,$
                      xx0+ux*ddt, $
                      yy0+uy*ddt, $
-                     /data,col=122,HSIZE=4                    
+                     /data,col=122,HSIZE=4  
+                   store_vec(store_count,0)=xx0
+                   store_vec(store_count,1)=yy0
+                   store_vec(store_count,2)=xx0+ux*ddt
+                   store_vec(store_count,3)=yy0+uy*ddt
+                   store_count=store_count+1
                endif
            end
        end
@@ -242,7 +379,7 @@ endif
 ; Plot the removed particles as blue dots
 ;
 if (removed eq 1) then begin
-    oplot,removed_pos(solid_colls,0),removed_pos(solid_colls,1),col=45,ps=sym(1)
+    oplot,removed_pos(solid_colls,0),removed_pos(solid_colls,1),col=45,ps=psym
 endif
 ;
 ; Write png files if required

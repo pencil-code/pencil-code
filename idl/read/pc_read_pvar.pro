@@ -37,6 +37,20 @@ pc_read_dim, obj=dim, datadir=datadir, /quiet
 pc_read_pdim, obj=pdim, datadir=datadir, /quiet
 pc_set_precision, dim=dim, /quiet
 ;
+; Check if we are inserting particles continuously
+;
+;
+;  Check if file exists.
+;
+dummy=findfile('./data/param2.nml', COUNT=countfile)
+if (countfile gt 0) then begin
+    pc_read_param, object=param2,/param2
+    linsert_particles_continuously=param2.linsert_particles_continuously
+endif else begin
+    pc_read_param, object=param
+    linsert_particles_continuously=param.linsert_particles_continuously
+endelse
+;
 ;  Derived dimensions.
 ;
 mpvar=pdim.mpvar
@@ -326,67 +340,6 @@ if (rmv) then begin
   endif
 endif
 ;
-;  Check how many particles have collided with a solid object
-;
-if (keyword_set(solid_object)) then begin
-  pc_read_param, object=param
-  pc_read_param, object=param2,/param2
-  dims=size(irmv)
-  solid_colls=0
-  front_colls=0
-  back_colls=0
-  maxy=param.xyz1[1]
-  theta_arr=fltarr(10000,2)
-; This should eventually be a loop over all solid objects
-  cyl_ypos=param.cylinder_ypos[0]
-  cyl_xpos=param.cylinder_xpos[0]
-  for k=0,dims[1]-1 do begin        
-      if (dims[0]>0) then begin
-          if (array[irmv[k],1] lt maxy) then begin
-              x0=array[irmv[k],0]-cyl_xpos
-              y0=array[irmv[k],1]-cyl_ypos
-              radius2=x0^2+y0^2
-              radius=sqrt(radius2)
-              theta_tmp=acos(y0/radius)
-              theta=3.1415-theta_tmp
-              print,'time,k,r,x,y,theta=',trmv[k],irmv[k],sqrt(radius2),x0,y0,theta
-              if (solid_colls lt 10000) then begin
-                  theta_arr[solid_colls,0]=theta
-                  theta_arr[solid_colls,1]=trmv[k]
-              endif
-              solid_colls=solid_colls+1
-              if (array[irmv[k],1] gt cyl_ypos) then begin
-                  back_colls=back_colls+1
-              endif else begin
-                  front_colls=front_colls+1
-              endelse
-          endif
-      endif
-  endfor
-  lambda=67e-9
-  diameter=2*param.ap0
-  Stokes_Cunningham=1+2*lambda/diameter*(1.257+0.4*exp(-1.1*diameter/(2*lambda)))
-  tau_p=param.rhops*diameter^2/(18.0*param2.nu)
-  Stokes=tau_p*param.init_uu/param.cylinder_radius[0]
-; Check how large the box for the initial particle positions is
-; compared to the cylinder of the radius.
-  fractional_area=-param.xp0/param.cylinder_radius[0]
-; Find the capture efficiency
-  eta=float(solid_colls)*fractional_area/npar
-  front_eta=float(front_colls)*fractional_area/npar
-  back_eta=float(back_colls)*fractional_area/npar
-  print,'Stokes_Cunningham=',Stokes_Cunningham
-  print,'Number of collisions with the solid geometry is:',solid_colls
-  print,'Total number of particles:',npar
-  print,'Capture efficiency on front side=',front_eta
-  print,'Capture efficiency on back side =',back_eta
-  print,'Capture efficiency=',eta
-  print,'Stokes number=',Stokes
-  if (savefile) then begin
-      save,Stokes,eta,Stokes_Cunningham,front_eta,back_eta,filename='./data/capture_eff.sav'
-  endif
-endif
-;
 ;  Trim x, y and z arrays.
 ;
 x=x[dim.l1:dim.l2]
@@ -403,8 +356,31 @@ for iv=1L,mpvar do begin
 endfor
 ;
 ;  Check if all particles found exactly once.
+;  Allow for particles not beeing found if particles are beeing 
+;  inserted continuously.
 ;
 if (not keyword_set(quiet)) then begin
+  if (linsert_particles_continuously) then begin
+    if (rmv) then begin
+    if ( (max(ipar+ipar_rmv) gt 1) ) then begin
+      print, 'Warning: Some particles found more'
+      print, 'than once in snapshot files.'
+      print, 'Particle number---No. of occurences'
+      for i=0,npar-1 do begin
+        if ( (ipar[i]+ipar_rmv[i] gt 1) ) then print, i, ipar[i], ipar_rmv[i]
+      endfor
+    endif
+    endif else begin
+    if ( (max(ipar) gt 1)) then begin
+      print, 'Warning: Some particles found more'
+      print, 'than once in snapshot files.'
+      print, 'Particle number---No. of occurences'
+      for i=0,npar-1 do begin
+        if ( ipar[i] gt 1 ) then print, i, ipar[i]
+      endfor
+    endif
+  endelse  
+  endif else begin
   if (rmv) then begin
     if ( (max(ipar+ipar_rmv) ne 1) or (min(ipar+ipar_rmv) ne 1) ) then begin
       print, 'Warning: Some particles not found at all or found more'
@@ -423,6 +399,7 @@ if (not keyword_set(quiet)) then begin
         if ( ipar[i] ne 1 ) then print, i, ipar[i]
       endfor
     endif
+  endelse
   endelse
 endif
 ;
