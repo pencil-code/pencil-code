@@ -32,7 +32,7 @@ module Special
 
   include '../special.h'
 
-  character (len=labellen) :: initalpm='zero',Omega_profile='nothing'
+  character (len=labellen) :: initalpm='zero',Omega_profile='nothing', initetam='constant'
 
   ! input parameters
   real :: amplalpm=.1
@@ -40,7 +40,7 @@ module Special
   real :: Omega_ampl=.0
 
   namelist /special_init_pars/ &
-       initalpm,amplalpm,kx_alpm,ky_alpm,kz_alpm
+       initalpm,amplalpm,kx_alpm,ky_alpm,kz_alpm,initetam
 
   ! run parameters
   real :: kf_alpm=1., alpmdiff=0.
@@ -203,13 +203,17 @@ module Special
         endif
 !
 !  etat evolution
-!  d_t eta= tau/3 *d_t <u^2> with 1/tau=kf^2(eta+etat) and d_t <u^2>= -2*J.E_EMF+2kfB.E_EMF
 !
+       select case(initetam)
+        case('evolving'); 
+!  d_t eta= tau/3 *d_t <u^2> with 1/tau=kf^2(eta+etat) and d_t <u^2>= -2*J.E_EMF+2kfB.E_EMF
         call dot_mn(p%mf_EMF,p%jj,EMFdotJ)
         EJ_kfEB=EMFdotJ-kf_alpm*EMFdotB
         df(l1:l2,m,n,ietat)=df(l1:l2,m,n,ietat)&
           -(2./3.)*EJ_kfEB/kf_alpm**2/(eta+etat)
-      endif
+       case('constant'); df(:,:,:,ietat)=0.
+      endselect
+     endif
 !
 !  diagnostics
 !
