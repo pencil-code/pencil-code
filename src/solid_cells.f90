@@ -1268,7 +1268,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !  First we look in x-direction
 !
         k=l1
-        do j=1,my
+        do j=m1,m2
 !
 !  Check if we are inside the cylinder for y(j) (i.e. if x2>0)
 !
@@ -1279,7 +1279,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !
             xval_p=cylinder(icyl,2)+sqrt(x2)
             xval_m=cylinder(icyl,2)-sqrt(x2)            
-            do i=1,mx
+            do i=l1,l2
               if (x(i)<xval_p .and. x(i)>xval_m) then
                 !
                 if (x(i+1)>xval_p) then
@@ -1354,7 +1354,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !
 !  Then we look in y-direction
 !
-        do i=1,mx
+        do i=l1,l2
 !
 !  Check if we are inside the cylinder for x(i) (i.e. if y2>0)
 !
@@ -1365,7 +1365,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !
             yval_p=cylinder(icyl,3)+sqrt(y2)
             yval_m=cylinder(icyl,3)-sqrt(y2)            
-            do j=1,mx
+            do j=m1,m2
               if (y(j)<yval_p .and. y(j)>yval_m) then
                 if (y(j+1)>yval_p) then
                   if (.not. ba_defined(i,j)) then
