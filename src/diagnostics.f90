@@ -34,6 +34,7 @@ module Diagnostics
   public :: yzintegrate_mn_name_x,xzintegrate_mn_name_y,xyintegrate_mn_name_z
   public :: allocate_yaverages,allocate_zaverages
   public :: yaverages_clean_up,zaverages_clean_up
+  public :: init_xaver
 !
   character (len=5) :: ch2davg
 !
@@ -1307,7 +1308,7 @@ module Diagnostics
 !   5-jun-02/axel: adapted from sum_mn_name
 !
       real, dimension (nx) :: a
-      integer :: iname,n_nghost,isum
+      integer :: iname,n_nghost,isum,lmax
 !
 !  Initialize to zero, including other parts of the z-array
 !  which are later merged with an mpi reduce command.
@@ -1316,14 +1317,21 @@ module Diagnostics
 !
 !  n starts with nghost+1=4, so the correct index is n-nghost
 !
+      lmax=l2
       n_nghost=n-nghost
-      if (lspherical_coords.or.lcylindrical_coords)then
-        do isum=l1,l2
-          fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+ & 
-                              x(isum)*a(isum)
-        enddo
-      else
-        fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+sum(a)
+      if(lav_smallx)  lmax=ixav_max
+      if(.not.loutside_avg) then
+        if (lspherical_coords.or.lcylindrical_coords)then
+          do isum=l1,lmax
+            fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+ & 
+                                x(isum)*a(isum)
+          enddo
+        else
+          do isum=l1,lmax
+            fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+ & 
+                                a(isum)
+          enddo
+        endif
       endif
 !
     endsubroutine xysum_mn_name_z
@@ -1337,7 +1345,7 @@ module Diagnostics
 !  12-oct-05/anders: adapted from xysum_mn_name_z
 !
       real, dimension (nx) :: a
-      integer :: iname,m_nghost,isum
+      integer :: iname,m_nghost,isum,lmax
 !
 !  Initialize to zero, including other parts of the z-array
 !  which are later merged with an mpi reduce command.
@@ -1347,15 +1355,20 @@ module Diagnostics
 !  m starts with mghost+1=4, so the correct index is m-nghost
 !
       m_nghost=m-nghost
-!     if (lspherical_coords)then
-!AB: Dhruba, please check what to do
-      if (lspherical_coords.and.nxgrid>1)then
-        do isum=l1,l2
-          fnamey(m_nghost,ipy+1,iname)=fnamey(m_nghost,ipy+1,iname)+ &
+      lmax=l2
+      if(lav_smallx) lmax=ixav_max
+      if(.not.loutside_avg) then
+        if (lspherical_coords.and.nxgrid>1)then
+          do isum=l1,lmax
+            fnamey(m_nghost,ipy+1,iname)=fnamey(m_nghost,ipy+1,iname)+ &
                               x(isum)*sinth(m)*a(isum)
-        enddo
-      else ! also correct for cylindrical
-        fnamey(m_nghost,ipy+1,iname)=fnamey(m_nghost,ipy+1,iname)+sum(a)
+          enddo
+        else ! also correct for cylindrical
+          do isum=l1,lmax
+            fnamey(m_nghost,ipy+1,iname)=fnamey(m_nghost,ipy+1,iname)+ &
+                              a(isum)
+          enddo
+        endif
       endif
 !
     endsubroutine xzsum_mn_name_y
@@ -1693,5 +1706,21 @@ module Diagnostics
       deallocate(cnamexy,cformxy) 
 !
     endsubroutine zaverages_clean_up
+!*******************************************************************
+    subroutine init_xaver
+!
+! initialize variables for x-averaging 
+!
+!   12-aug-09/dhruba: coded
+!
+   integer :: lx
+
+   if(xav_max.lt.x(l1)) loutside_avg=.true.  
+   ixav_max=l1   
+   do lx=l1,l2
+     if(x(lx).lt.xav_max) ixav_max=lx
+   enddo
+!
+    endsubroutine init_xaver
 !*******************************************************************
 endmodule Diagnostics

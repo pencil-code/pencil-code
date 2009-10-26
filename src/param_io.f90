@@ -90,7 +90,8 @@ module Param_IO
        border_frac_z,luse_latitude, &
        lshift_datacube_x,lfargo_advection,&
        yequator,&
-       lequatory, lequatorz, zequator
+       lequatory, lequatorz, zequator,&
+       lav_smallx,xav_max 
 
 !
   namelist /run_pars/ &
@@ -146,7 +147,8 @@ module Param_IO
        crash_file_dtmin_factor,niter_poisson, &
        lADI,ltestperturb,eps_rkf,eps_stiff,timestep_scaling, &
        lequatory, lequatorz, zequator,&
-       lini_t_eq_zero
+       lini_t_eq_zero,&
+       lav_smallx,xav_max 
   contains
 !***********************************************************************
     subroutine get_datadir(dir)

@@ -173,6 +173,7 @@ module Magnetic
   real :: tau_aa_exterior=0.
   real :: sigma_ratio=1.,eta_width=0.,eta_z0=1.
   real :: alphaSSm=0.
+  real :: alpha_rmax=0.,alpha_width=0.
   real :: k1_ff=1.,ampl_ff=1.,swirl=1.
   real :: k1x_ff=1.,k1y_ff=1.,k1z_ff=1.
   real :: inertial_length=0.,linertial_2
@@ -219,6 +220,7 @@ module Magnetic
        bthresh,bthresh_per_brms, &
        iresistivity,lweyl_gauge,lupw_aa, &
        alphaSSm, &
+       alpha_rmax,alpha_width,&
        eta_int,eta_ext,eta_shock,wresistivity, &
        rhomin_jxb,va2max_jxb,va2power_jxb,llorentzforce,linduction, &
        reinitialize_aa,rescale_aa,lB_ext_pot, &
@@ -937,7 +939,11 @@ module Magnetic
 !
 !  Beltrami fields, put k=-k to make sure B=curl(A) has the right phase
 !
-        case('Beltrami-x'); call beltrami(amplaa(j),f,iaa,KX=-kx_aa(j),phase=phasex_aa(j))
+        case('Beltrami-x')
+               call beltrami(amplaa(j),f,iaa,KX=-kx_aa(j),phase=phasex_aa(j))
+        case('Beltrami-xy')
+               call beltrami(amplaa(j),f,iaa,KX=kx_aa(j),phase=phasex_aa(j))
+               call beltrami(amplaa(j),f,iaa,KY=-kx_aa(j),phase=phasex_aa(j))
         case('Beltrami-y'); call beltrami(amplaa(j),f,iaa,KY=-ky_aa(j),phase=phasey_aa(j))
         case('Beltrami-z'); call beltrami(amplaa(j),f,iaa,KZ=-kz_aa(j),phase=phasez_aa(j))
 !
@@ -1791,8 +1797,11 @@ module Magnetic
         case('z'); alpha_tmp=z(n)
         case('cosy'); alpha_tmp=cos(y(m))
         case('y*(1+eps*sinx)'); alpha_tmp=y(m)*(1.+alpha_eps*sin(kx*x(l1:l2)))
-        case('step'); alpha_tmp=(1.-step_scalar(y(m),alpha_equator-alpha_equator_gap,alpha_gap_step)&
-                       -step_scalar(y(m),alpha_equator+alpha_equator_gap,alpha_gap_step))
+        case('step-nhemi'); alpha_tmp=-tanh((y(m)-pi/2)/alpha_gap_step)
+        case('step'); alpha_tmp=-tanh((y(m)-pi/2)/alpha_gap_step)
+        case('ystep-xcutoff')
+           alpha_tmp=-tanh((y(m)-pi/2)/alpha_gap_step)& 
+             *(1+stepdown(x,alpha_rmax,alpha_width))
         case('step-drop'); alpha_tmp=(1. &
                 -step_scalar(y(m),pi/2.-alpha_equator_gap,alpha_gap_step) &
                 -step_scalar(y(m),pi/2+alpha_equator_gap,alpha_gap_step) &

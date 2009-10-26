@@ -180,6 +180,10 @@ program run
   if (lequatory) yequator=xyz0(2)+0.5*Lxyz(2)
   if (lequatorz) zequator=xyz0(3)+0.5*Lxyz(3)
 !
+! and limits to xaveraging.
+! 
+ if(lav_smallx) call init_xaver
+!
 !  Inner radius for freezing variables defaults to r_min.
 !  Note: currently (July 2005), hydro.f90 uses a different approach:
 !  r_int will override rdampint, which doesn't seem to make much sense (if

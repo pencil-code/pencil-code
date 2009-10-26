@@ -386,8 +386,6 @@ module Equ
         if (lchemistry)       call calc_pencils_chemistry(f,p)
         if (lviscosity)       call calc_pencils_viscosity(f,p)
         if (lforcing_cont)    call calc_pencils_forcing(f,p)
-!AB     if (lentropy)         call calc_pencils_entropy(f,p)
-!AB: need to call entropy pencils even without entropy.
                               call calc_pencils_entropy(f,p)
         if (llorenz_gauge)    call calc_pencils_lorenz_gauge(f,p)
         if (lmagnetic)        call calc_pencils_magnetic(f,p)

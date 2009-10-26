@@ -1228,7 +1228,6 @@ module Forcing
  !! -------------     
     endsubroutine forcing_chandra_kendall
 !***********************************************************************
-!***********************************************************************
     subroutine forcing_cktest(f)
 !
 ! Testing the Chandrasekhar-Kendall forcing function

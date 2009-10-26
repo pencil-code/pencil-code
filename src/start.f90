@@ -52,7 +52,8 @@ program start
   use Cosmicrayflux,    only: init_fcr
   use Cosmicray,        only: init_ecr
   use Density,          only: init_lnrho
-  use Diagnostics,     only: yaverages_clean_up,zaverages_clean_up
+  use Diagnostics,      only: yaverages_clean_up,zaverages_clean_up,&
+                              init_xaver
   use Dustdensity,      only: init_nd
   use Dustvelocity,     only: init_uud
   use Entropy,          only: init_ss
@@ -223,6 +224,10 @@ program start
 !
   if (lequatory) yequator=xyz0(2)+0.5*Lxyz(2)
   if (lequatorz) zequator=xyz0(3)+0.5*Lxyz(3)
+!
+! set up limits of averaging if needed.
+!
+  if(lav_smallx) call init_xaver
 !
 !  Size of box at local processor
 !

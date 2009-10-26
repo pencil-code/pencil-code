@@ -949,6 +949,8 @@ endif
 ##
 #FC=/home/dhruba/mpich2/bin/mpif90 -f90=/opt/pathscale/bin/pathf90 -fno-second-underscore  #(hyades.maths.qmul.ac.uk)
 #FFLAGS= -O3 -static -I/home/dhruba/mpich2/include/ -L/home/dhruba/Library/lib -I/home/dhruba/Library/include/ -subverbose#(hyades.maths.qmul.ac.uk)
+#FFLAGS_DOUBLE = -r8 #(hyades.maths.qmul.ac.uk)
+#CFLAGS_DOUBLE = -DDOUBLE_PRECISION #(hyades.maths.qmul.ac.uk)
 #CC=/home/dhruba/mpich2/bin/mpicc -I/home/dhruba/Library/include#(hyades.maths.qmul.ac.uk)
 #LD_MPI = -L/home/dhruba/mpich2/lib/ -lmpich#(hyades.maths.qmul.ac.uk)
 ##
