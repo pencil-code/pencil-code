@@ -186,7 +186,7 @@ if (solid_object) then begin
   print,'Capture efficiency on back side =',total(back_eta)
   print,'Capture efficiency              =',total(eta)      
   if (savefile) then begin
-      save,Stokes,eta,Stokes_Cunningham,front_eta,back_eta,filename='./data/capture_eff.sav'
+      save,Stokes,eta,Stokes_Cunningham,front_eta,back_eta,ncylinders,filename='./data/capture_eff.sav'
   endif
 endif
 ;
@@ -379,7 +379,7 @@ endif
 ; Plot the removed particles as blue dots
 ;
 if (removed eq 1) then begin
-    oplot,removed_pos(solid_colls,0),removed_pos(solid_colls,1),col=45,ps=psym
+    oplot,removed_pos(solid_colls,0),removed_pos(solid_colls,1),col=45,ps=sym(1)
 endif
 ;
 ; Write png files if required
