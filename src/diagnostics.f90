@@ -1216,7 +1216,7 @@ module Diagnostics
               fname(iname) = 0.
               do isum=l1,l2
                 fname(iname)=fname(iname)+ & 
-                        x(isum)*x(isum)*sinth(m)*aux(isum)*dv
+                        x(isum)*x(isum)*sinth(m)*aux(isum-nghost)*dv
               enddo
             else
               fname(iname)=sum(aux)*dv
@@ -1225,7 +1225,7 @@ module Diagnostics
             if (lspherical_coords)then
               do isum=l1,l2
                 fname(iname)=fname(iname)+ &  
-                      x(isum)*x(isum)*sinth(isum)*aux(isum)*dv
+                      x(isum)*x(isum)*sinth(isum)*aux(isum-nghost)*dv
               enddo
             else
               fname(iname)=fname(iname)+sum(aux)*dv
@@ -1324,15 +1324,15 @@ module Diagnostics
         if (lspherical_coords.or.lcylindrical_coords)then
           do isum=l1,lmax
             fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+ & 
-                                x(isum)*a(isum)
+                                x(isum)*a(isum-nghost)
           enddo
         else
-!         do isum=l1,lmax
-!           fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+ & 
-!                               a(isum)
-!         enddo
+         do isum=l1,lmax
+           fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+ & 
+                               a(isum-nghost)
+         enddo
 !AB: Dhruba, the line above gives a different result, making the auto-test fail
-          fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+sum(a)
+!          fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+sum(a)
         endif
       endif
 !
@@ -1363,12 +1363,12 @@ module Diagnostics
         if (lspherical_coords.and.nxgrid>1)then
           do isum=l1,lmax
             fnamey(m_nghost,ipy+1,iname)=fnamey(m_nghost,ipy+1,iname)+ &
-                              x(isum)*sinth(m)*a(isum)
+                              x(isum)*sinth(m)*a(isum-nghost)
           enddo
         else ! also correct for cylindrical
           do isum=l1,lmax
             fnamey(m_nghost,ipy+1,iname)=fnamey(m_nghost,ipy+1,iname)+ &
-                              a(isum)
+                              a(isum-nghost)
           enddo
         endif
       endif
@@ -1392,7 +1392,7 @@ module Diagnostics
 !
       if (lspherical_coords)then
         do isum=l1,l2
-          fnamex(isum,ipx+1,iname)=fnamex(isum,ipx+1,iname)+x(isum)*x(isum)*sinth(m)*a(isum)
+          fnamex(isum,ipx+1,iname)=fnamex(isum,ipx+1,iname)+x(isum)*x(isum)*sinth(m)*a(isum-nghost)
         enddo
       elseif (lcylindrical_coords) then
         do isum=l1,l2
