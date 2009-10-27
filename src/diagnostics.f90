@@ -1327,10 +1327,12 @@ module Diagnostics
                                 x(isum)*a(isum)
           enddo
         else
-          do isum=l1,lmax
-            fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+ & 
-                                a(isum)
-          enddo
+!         do isum=l1,lmax
+!           fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+ & 
+!                               a(isum)
+!         enddo
+!AB: Dhruba, the line above gives a different result, making the auto-test fail
+          fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+sum(a)
         endif
       endif
 !
