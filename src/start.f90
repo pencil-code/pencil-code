@@ -227,7 +227,7 @@ program start
 !
 ! set up limits of averaging if needed.
 !
-  if(lav_smallx) call init_xaver
+  if (lav_smallx) call init_xaver
 !
 !  Size of box at local processor
 !

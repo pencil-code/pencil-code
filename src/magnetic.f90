@@ -1932,7 +1932,6 @@ module Magnetic
 !    dA/dt = u x B - eta j + grad(Phi).
 !
 !  If lweyl_gauge=T, we choose Phi = const. and solve
-!    dA/dt = u x B - eta j.
 !  Else, if lweyl_gauge=F, we make the gauge choice Phi = eta div(A)
 !  and thus solve
 !    dA/dt = u x B + eta laplace(A) + div(A) grad(eta).
@@ -1974,8 +1973,13 @@ module Magnetic
         do j=1,3
           fres(:,j)=fres(:,j)+eta_xy(l1:l2,m)*p%del2a(:,j)+geta_xy(l1:l2,m,j)*p%diva
         enddo
-        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_xy(l1,m)		!!probably a different eta value would suit better here?
-        etatotal=etatotal+eta_xy(l1,m)		!!
+!
+!  time step check fir eta_xy part
+!  (KK: probably a different eta value would suit better here?)
+!
+        !if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_xy(l1,m)
+        if (lfirst.and.ldt) diffus_eta=diffus_eta+maxval(eta_xy(:,m))
+        etatotal=etatotal+eta_xy(l1,m)
       endif
 !
       if (lresi_zdep) then 

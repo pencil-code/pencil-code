@@ -1713,7 +1713,7 @@ module Diagnostics
 !
 ! initialize variables for x-averaging 
 !
-!   12-aug-09/dhruba: coded
+!  26-oct-09/dhruba: coded
 !
    integer :: lx
 

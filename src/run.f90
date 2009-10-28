@@ -182,7 +182,7 @@ program run
 !
 ! and limits to xaveraging.
 ! 
- if(lav_smallx) call init_xaver
+  if (lav_smallx) call init_xaver
 !
 !  Inner radius for freezing variables defaults to r_min.
 !  Note: currently (July 2005), hydro.f90 uses a different approach:
