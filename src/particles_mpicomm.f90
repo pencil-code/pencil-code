@@ -325,7 +325,7 @@ module Particles_mpicomm
         endif
         call fatal_error_local_collect()
 !
-!  Sort array of migrating particle in order of receiving processor.
+!  Sort array of migrating particles in order of receiving processor.
 !
         if (nmig_leave_total>=1) then
           ileave_high_max=0
