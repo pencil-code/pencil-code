@@ -35,12 +35,12 @@ module Special
   character (len=labellen) :: initalpm='zero',Omega_profile='nothing', initetam='constant'
 
   ! input parameters
-  real :: amplalpm=.1
+  real :: amplalpm=.1, ampletat=1.
   real :: kx_alpm=1.,ky_alpm=1.,kz_alpm=1.
   real :: Omega_ampl=.0
 
   namelist /special_init_pars/ &
-       initalpm,amplalpm,kx_alpm,ky_alpm,kz_alpm,initetam
+       initalpm,amplalpm,ampletat,kx_alpm,ky_alpm,kz_alpm
 
   ! run parameters
   real :: kf_alpm=1., alpmdiff=0.
@@ -128,7 +128,7 @@ module Special
 !
       select case(initalpm)
         case('zero'); f(:,:,:,ialpm)=0.; f(:,:,:,ietat)=0.
-        case('constant'); f(:,:,:,ialpm)=amplalpm; f(:,:,:,ietat)=0.
+        case('constant'); f(:,:,:,ialpm)=amplalpm; f(:,:,:,ietat)=ampletat
         case default; call stop_it('init_alpm: bad initalpm='//trim(initalpm))
       endselect
 !
