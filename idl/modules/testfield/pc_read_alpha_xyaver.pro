@@ -111,25 +111,19 @@ etaij_end=reform(etaij(*,nt-1,*,*))
 print,tt(nt-1),nt
 tt=xyaver.t
 ;
-nevery=40
+;  coarsegrain data by factor nevery
+;
+default,nevery,40
 ntout=nt/nevery
-print,'ntout=',ntout
+print,'coarsegrain data: nevery,nt,ntout=',nevery,nt,ntout
 print,'nz=',nz
 it2=nt-1
 it1=nt-nevery*ntout
 ;
-ttt=every(tt,nevery)
-alpijc=reform((reform(alpij(*,it1:it2,*,*),nz,nevery,ntout,2,2))(*,nevery-1,*,*,*))
-etaijc=reform((reform(etaij(*,it1:it2,*,*),nz,nevery,ntout,2,2))(*,nevery-1,*,*,*))
+;  coarsegrain using averaging
 ;
-save,file='alpetaijm_end.sav',zzz,alpijm,etaijm,alpij_end,etaij_end,tt
-;
-;  save courase grained arrays
-;
-alpij=alpijc
-etaij=etaijc
-tt=ttt
-;save,file='alpetaij.sav',zzz,alpij,etaij,tt
-save,file='alpetaij.sav',zzz,alpijm,etaijm,alpij_end,etaij_end,ntgood
+pc_coarsegrain,tt,alpij,nevery,ttt,alpijc,/aver
+pc_coarsegrain,tt,etaij,nevery,ttt,etaijc,/aver
+save,file='alpetaijc.sav',zzz,alpijc,etaijc,alpij_end,etaij_end,tt,ttt
 ;
 END
