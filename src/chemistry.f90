@@ -976,8 +976,8 @@ module Chemistry
            if (nzgrid==1) f(j1,j2,j3,iuz)=0. 
 
            if (nxgrid/=1) then
-             l_sz=nxgrid-int(0.1*nxgrid)
-             l_sz_1=int(0.1*nxgrid)+l1
+             l_sz=nxgrid-int(0.15*nxgrid)
+             l_sz_1=int(0.15*nxgrid)+l1
 
               f(l_sz:,j2,j3,iux)=0.
               f(:l_sz_1,j2,j3,iux)=0.
@@ -988,8 +988,8 @@ module Chemistry
            endif
 
           if (nygrid/=1)   then
-             l_sz=nygrid-int(0.1*nygrid)
-             l_sz_1=int(0.1*nygrid)+m1
+             l_sz=nygrid-int(0.15*nygrid)
+             l_sz_1=int(0.15*nygrid)+m1
              f(j1,l_sz:,j3,iux)=0.
             f(j1,:l_sz_1,j3,iux)=0.
             
@@ -1000,8 +1000,8 @@ module Chemistry
           endif
 
           if (nzgrid/=1)  then
-             l_sz=nzgrid-int(0.1*nzgrid)
-             l_sz_1=int(0.1*nzgrid)+n1
+             l_sz=nzgrid-int(0.15*nzgrid)
+             l_sz_1=int(0.15*nzgrid)+n1
              f(j1,j2,l_sz:,iuz)=0.
              f(j1,j2,:l_sz_1,iuz)=0.
              f(j1,j2,l_sz:,iuy)=0.
@@ -5330,12 +5330,12 @@ module Chemistry
   
          if (j==1) then
           ll1=sz_r_x
-       !   ll2=l2
-           ll2=mx
+          ll2=l2
+       !    ll2=mx
           func_x(ll1:ll2)=(x(ll1:ll2)-x(ll1))**3/(x(ll2)-x(ll1))**3
          elseif (j==2) then
-         ! ll1=l1+1
-          ll1=1
+          ll1=l1!+1
+        !  ll1=1
           ll2=sz_l_x
           func_x(ll1:ll2)=(x(ll1:ll2)-x(ll2))**3/(x(ll1)-x(ll2))**3
          endif
@@ -5369,8 +5369,8 @@ module Chemistry
     
        if (lzone_y) then
         
-          sz_l_x=1
-          sz_r_x=mx
+        !  sz_l_x=1
+        !  sz_r_x=mx
         df(sz_l_x:sz_r_x,m,n,iux)=df(sz_l_x:sz_r_x,m,n,iux)&  
            -func_y*(f(sz_l_x:sz_r_x,m,n,iux)-ux_ref)*dt1
         df(sz_l_x:sz_r_x,m,n,iuy)=df(sz_l_x:sz_r_x,m,n,iuy)&  
@@ -5398,8 +5398,8 @@ module Chemistry
        endif      
     
        if (lzone_z) then
-          sz_l_x=1
-          sz_r_x=mx
+        !  sz_l_x=1
+        !  sz_r_x=mx
          
         df(sz_l_x:sz_r_x,m,n,iux)=df(sz_l_x:sz_r_x,m,n,iux)&  
            -func_z*(f(sz_l_x:sz_r_x,m,n,iux)-ux_ref)*dt1
