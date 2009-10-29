@@ -27,6 +27,7 @@ module Particles_collisions
   include 'particles_collisions.h'
 !
   real :: lambda_mfp_single=1.0, coeff_restitution=1.0
+  integer :: ncoll_max_par=-1
   logical :: lcollision_random_angle=.false., lcollision_big_ball=.false.
   logical :: lshear_in_vp=.true.
   character (len=labellen) :: icoll='random-angle'
@@ -34,7 +35,8 @@ module Particles_collisions
   integer :: idiag_ncoll
 !
   namelist /particles_coll_run_pars/ &
-      lambda_mfp_single, coeff_restitution, icoll, lshear_in_vp
+      lambda_mfp_single, coeff_restitution, icoll, lshear_in_vp, &
+      ncoll_max_par
 !
   contains
 !***********************************************************************
@@ -82,7 +84,7 @@ module Particles_collisions
       real, dimension (3) :: nvec, vvkcm_normal, vvkcm_parall
       real, dimension (3) :: tmp1, tmp2
       real :: deltavjk, tau_coll1, prob, r, theta_rot, phi_rot, ncoll
-      integer :: l, j, k
+      integer :: l, j, k, ncoll_par
 !
 !  Reset collision counter.
 !
@@ -101,7 +103,9 @@ module Particles_collisions
           if (k>0) then
             do while (k/=0)
               j=k
-              do while (kneighbour(j)/=0)
+              ncoll_par=0
+              do while (kneighbour(j)/=0 .and. &
+                  (ncoll_max_par==-1 .or. (ncoll_par<ncoll_max_par)))
                 j=kneighbour(j)
                 xpk=fp(k,ixp:izp)
                 vpk=fp(k,ivpx:ivpz)
@@ -234,6 +238,7 @@ module Particles_collisions
                     fp(k,ivpx:ivpz)=vpk
                     fp(j,ivpx:ivpz)=vpj
                     ncoll=ncoll+1.0
+                    ncoll_par=ncoll_par+1.0
 !
                   endif
                 endif
