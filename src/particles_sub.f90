@@ -15,7 +15,6 @@ module Particles_sub
 !
   public :: input_particles, output_particles
   public :: wsnap_particles, boundconds_particles
-  public :: dist_particles_evenly_procs
   public :: sum_par_name, max_par_name, sum_par_name_nw, integrate_par_name
   public :: interpolate_linear
   public :: interpolate_quadratic, interpolate_quadratic_spline
@@ -33,7 +32,7 @@ module Particles_sub
 !
   contains
 !***********************************************************************
-    subroutine input_particles(filename,fp,npar_loc,ipar)
+    subroutine input_particles(filename,fp,ipar)
 !
 !  Read snapshot file with particle data.
 !
@@ -44,11 +43,10 @@ module Particles_sub
       real, dimension (mpar_loc,mpvar) :: fp
       character (len=*) :: filename
       integer, dimension (mpar_loc) :: ipar
-      integer :: npar_loc
 !      real :: t_sp   ! t in single precision for backwards compatibility
 !
       intent (in) :: filename
-      intent (out) :: fp,npar_loc,ipar
+      intent (out) :: fp,ipar
 !
       open(1,FILE=filename,FORM='unformatted')
 !
@@ -82,7 +80,7 @@ module Particles_sub
 !
     endsubroutine input_particles
 !***********************************************************************
-    subroutine output_particles(filename,fp,npar_loc,ipar)
+    subroutine output_particles(filename,fp,ipar)
 !
 !  Write snapshot file with particle data.
 !
@@ -93,10 +91,9 @@ module Particles_sub
       character(len=*) :: filename
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension(mpar_loc) :: ipar
-      integer :: npar_loc
       real :: t_sp   ! t in single precision for backwards compatibility
 !
-      intent (in) :: filename, npar_loc, ipar
+      intent (in) :: filename, ipar
 !
       t_sp = t
       if (ip<=8.and.lroot) print*,'output_particles: writing snapshot file '// &
@@ -122,7 +119,7 @@ module Particles_sub
 !
     endsubroutine output_particles
 !***********************************************************************
-    subroutine wsnap_particles(snapbase,fp,enum,lsnap,dsnap_par_minor,dsnap_par,npar_loc,ipar,flist,nobound)
+    subroutine wsnap_particles(snapbase,fp,enum,lsnap,dsnap_par_minor,dsnap_par,ipar,flist,nobound)
 !
 !  Write particle snapshot file, labelled consecutively if enum==.true.
 !  Otherwise just write a snapshot without label (used e.g. for pvar.dat)
@@ -138,7 +135,6 @@ module Particles_sub
       real, dimension (mpar_loc,mpvar) :: fp
       real :: dsnap_par_minor, dsnap_par
       integer, dimension (mpar_loc) :: ipar
-      integer :: npar_loc
       logical :: enum, lsnap, nobound
       character (len=*) :: snapbase, flist
 !
@@ -179,8 +175,8 @@ module Particles_sub
           call update_snaptime(fpar,tsnap_par,nsnap_par,dsnap_par,t,lsnap_par,nsnap_par_ch,ENUM=.true.)
           if (lsnap_par) then
             snapname = trim(snapbase) // '_' // trim(nsnap_par_ch)
-            call boundconds_particles(fp,npar_loc,ipar)
-            call output_particles(snapname,fp,npar_loc,ipar)
+            call boundconds_particles(fp,ipar)
+            call output_particles(snapname,fp,ipar)
             if (ip<=10 .and. lroot) &
                 print*,'wsnap_particles: written snapshot ', snapname
             if (present(flist)) call log_filename_to_file(snapname,flist)
@@ -194,8 +190,8 @@ module Particles_sub
           if (lsnap_minor) then
             call chn(nsnap-1,nsnap_ch_last,'')
             snapname=snapbase//trim(nsnap_ch_last)//'.'//trim(nsnap_minor_ch)
-            call boundconds_particles(fp,npar_loc,ipar)
-            call output_particles(snapname,fp,npar_loc,ipar)
+            call boundconds_particles(fp,ipar)
+            call output_particles(snapname,fp,ipar)
             if (ip<=10 .and. lroot) &
                 print*,'wsnap_particles: written snapshot ', snapname
             if (present(flist)) call log_filename_to_file(snapname,flist)
@@ -208,8 +204,8 @@ module Particles_sub
                              ENUM=.true.)
         if (lsnap) then
           snapname=snapbase//nsnap_ch
-          call boundconds_particles(fp,npar_loc,ipar)
-          call output_particles(snapname,fp,npar_loc,ipar)
+          call boundconds_particles(fp,ipar)
+          call output_particles(snapname,fp,ipar)
           if (ip<=10 .and. lroot) &
               print*,'wsnap_particles: written snapshot ', snapname
           if (present(flist)) call log_filename_to_file(snapname,flist)
@@ -222,11 +218,11 @@ module Particles_sub
 !
         snapname=snapbase
         if (present(nobound)) then
-          if (.not. nobound) call boundconds_particles(fp,npar_loc,ipar)
+          if (.not. nobound) call boundconds_particles(fp,ipar)
         else
-          call boundconds_particles(fp,npar_loc,ipar)
+          call boundconds_particles(fp,ipar)
         endif
-        call output_particles(snapname,fp,npar_loc,ipar)
+        call output_particles(snapname,fp,ipar)
         if (ip<=10 .and. lroot) &
              print*,'wsnap_particles: written snapshot ', snapname
         if (present(flist)) call log_filename_to_file(snapname,flist)
@@ -234,7 +230,7 @@ module Particles_sub
 !
     endsubroutine wsnap_particles
 !***********************************************************************
-    subroutine boundconds_particles(fp,npar_loc,ipar,dfp,linsert)
+    subroutine boundconds_particles(fp,ipar,dfp,linsert)
 !
 !  Global boundary conditions for particles.
 !
@@ -245,15 +241,16 @@ module Particles_sub
       use Particles_mpicomm
 !
       real, dimension (mpar_loc,mpvar) :: fp
+      integer, dimension (mpar_loc) :: ipar
       real, dimension (mpar_loc,mpvar), optional :: dfp
       logical, optional :: linsert
-      integer, dimension (mpar_loc) :: ipar
-      real :: xold,yold,rad,r1old,OO
-      integer :: npar_loc,k,ik,k1,k2
-      character (len=2*bclen+1) :: boundx,boundy,boundz
+!
+      real :: xold, yold, rad, r1old, OO
+      integer :: k, ik, k1, k2
+      character (len=2*bclen+1) :: boundx, boundy, boundz
       logical :: lnbody
 !
-      intent (inout) :: fp, npar_loc, ipar, dfp
+      intent (inout) :: fp, ipar, dfp
 !
 !  Reversing direction of looping is needed for removal
 !
@@ -379,26 +376,26 @@ module Particles_sub
             if (lcylindrical_coords) then
               if ((fp(k,ixp)< rp_int).or.(fp(k,ixp)>= rp_ext)) then
                 if (present(dfp)) then
-                  call remove_particle(fp,npar_loc,ipar,k,dfp)
+                  call remove_particle(fp,ipar,k,dfp)
                 else
-                  call remove_particle(fp,npar_loc,ipar,k)
+                  call remove_particle(fp,ipar,k)
                 endif
               endif
             elseif (lcartesian_coords) then 
               if (lcylinder_in_a_box) then 
                 if ((rad< rp_int).or.(rad>= rp_ext)) then
                   if (present(dfp)) then
-                    call remove_particle(fp,npar_loc,ipar,k,dfp)
+                    call remove_particle(fp,ipar,k,dfp)
                   else
-                    call remove_particle(fp,npar_loc,ipar,k)
+                    call remove_particle(fp,ipar,k)
                   endif
                 endif
               else
                 if (fp(k,ixp)<=xyz0(1) .or. fp(k,ixp)>=xyz1(1)) then
                   if (present(dfp)) then
-                    call remove_particle(fp,npar_loc,ipar,k,dfp)
+                    call remove_particle(fp,ipar,k,dfp)
                   else
-                    call remove_particle(fp,npar_loc,ipar,k)
+                    call remove_particle(fp,ipar,k)
                   endif
                 endif
               endif
@@ -445,9 +442,9 @@ module Particles_sub
             if (lcartesian_coords) then
               if (fp(k,iyp)<=xyz0(2) .or. fp(k,iyp)>=xyz1(2)) then
                 if (present(dfp)) then
-                  call remove_particle(fp,npar_loc,ipar,k,dfp)
+                  call remove_particle(fp,ipar,k,dfp)
                 else
-                  call remove_particle(fp,npar_loc,ipar,k)
+                  call remove_particle(fp,ipar,k)
                 endif
               endif
             endif
@@ -490,9 +487,9 @@ module Particles_sub
             if (lcartesian_coords) then
               if (fp(k,iyp)<=xyz0(3) .or. fp(k,iyp)>=xyz1(3)) then
                 if (present(dfp)) then
-                  call remove_particle(fp,npar_loc,ipar,k,dfp)
+                  call remove_particle(fp,ipar,k,dfp)
                 else
-                  call remove_particle(fp,npar_loc,ipar,k)
+                  call remove_particle(fp,ipar,k)
                 endif
               endif
             endif
@@ -508,182 +505,20 @@ module Particles_sub
       if (lmpicomm) then
         if (present(dfp)) then
           if (present(linsert)) then
-            call redist_particles_procs(fp,npar_loc,ipar,dfp,linsert=.true.)
+            call redist_particles_procs(fp,ipar,dfp,linsert=.true.)
           else
-            call redist_particles_procs(fp,npar_loc,ipar,dfp)
+            call redist_particles_procs(fp,ipar,dfp)
           endif
         else
           if (present(linsert)) then
-            call redist_particles_procs(fp,npar_loc,ipar,linsert=.true.)
+            call redist_particles_procs(fp,ipar,linsert=.true.)
           else
-            call redist_particles_procs(fp,npar_loc,ipar)
+            call redist_particles_procs(fp,ipar)
           endif
         endif
       endif
 !
     endsubroutine boundconds_particles
-!***********************************************************************
-    subroutine dist_particles_evenly_procs(npar_loc,ipar)
-!
-!  Distribute particles evenly among processors.
-!
-!  05-jan-05/anders: coded
-!
-      use Mpicomm,  only: mpibcast_int
-!
-      integer :: npar_loc
-      integer, dimension (mpar_loc) :: ipar
-!
-      integer :: i, k, jspec, npar_per_species, npar_rest, icycle, iproc_rec
-      integer :: npar_per_species_missed
-      integer, dimension (0:ncpus-1) :: ipar1, ipar2
-      integer, dimension (0:ncpus-1) :: npar_loc_array, npar_rest_array
-!
-      intent (inout) :: npar_loc,ipar
-!
-!  Set index interval of particles that belong to the local processor.
-!
-!  WL:
-!  For runs with few particles (rather arbitrarily set to npar==nspar),
-!  set them all at the root processor at first. Not an optimal solution, but
-!  it will do for now. The best thing would be to allocate all nbody particles
-!  at the root and the rest (if any) distributed evenly 
-!
-      if (lparticles_nbody.and.(npar==nspar)) then
-        if (lroot) then
-          npar_loc=npar
-          !also needs to initialize ipar(k)
-          do k=1,nspar
-            ipar(k)=k
-            ipar_nbody(k)=k
-          enddo
-        endif
-        call mpibcast_int(ipar_nbody,nspar)
-      else if (linsert_particles_continuously) then
-        npar_loc=0
-        ipar=0
-      else
-!
-!  Place particles evenly on all processors. Some processors may get an extra
-!  particle if the particle number is not divisible by the number of processors.
-!
-        npar_loc =npar/ncpus
-        npar_rest=npar-npar_loc*ncpus
-        do i=0,ncpus-1
-          if (i<npar_rest) then
-            npar_loc_array(i)=npar_loc+1
-          else
-            npar_loc_array(i)=npar_loc
-          endif
-        enddo
-        npar_loc=npar_loc_array(iproc)
-        if (lroot) print*, 'dist_particles_evenly_procs: npar_loc_array     =',&
-            npar_loc_array
-!
-!  If there are zero particles on a processor, set ipar1 and ipar2 to zero.
-!
-        if (npar_species==1) then
-          do i=0,ncpus-1
-            if (npar_loc_array(i)==0) then
-              ipar1(i)=0
-              ipar2(i)=0
-            else
-              if (i==0) then
-                ipar1(i)=1
-              else
-                ipar1(i)=maxval(ipar2(0:i-1))+1
-              endif
-              ipar2(i)=ipar1(i) + npar_loc_array(i) - 1
-            endif
-          enddo
-!
-          if (lroot) then
-            print*, 'dist_particles_evenly_procs: ipar1 =', ipar1
-            print*, 'dist_particles_evenly_procs: ipar2 =', ipar2
-          endif
-!
-!  Fill in particle index between ipar1 and ipar2.
-!
-          do k=1,npar_loc
-            ipar(k)=k-1+ipar1(iproc)
-          enddo
-        else
-!
-!  Must have same number of particles in each species.
-!
-          if (mod(npar,npar_species)/=0) then
-            if (lroot) then
-              print*, 'dist_particles_evenly_procs: npar_species '// &
-                  'must be a whole multiple of npar!'
-              print*, 'npar_species, npar=', npar_species, npar
-            endif
-            call fatal_error('dist_particles_evenly_procs','')
-          endif
-!
-!  Distribute particle species evenly among processors.
-!        
-          npar_per_species=npar/npar_species
-!
-          do jspec=1,npar_species
-            do k=1,npar_per_species/ncpus
-              ipar(k+npar_per_species/ncpus*(jspec-1))= &
-                 k+npar_per_species*(jspec-1)+iproc*(npar_per_species/ncpus)
-            enddo
-          enddo
-!
-!  Calculate right index for each species.
-!
-          ipar_fence_species(1)=npar_per_species
-          ipar_fence_species(npar_species)=npar
-          ipar_fence_species(1)=npar_per_species
-          ipar_fence_species(npar_species)=npar
-!
-          do jspec=2,npar_species-1
-            ipar_fence_species(jspec)= &
-                ipar_fence_species(jspec-1)+npar_per_species
-          enddo
-!
-          if (lroot) then
-            print*, 'dist_particles_evenly_procs: npar_per_species   =', &
-                npar_per_species
-            print*, 'dist_particles_evenly_procs: ipar_fence_species =', &
-                ipar_fence_species
-          endif
-!
-!  It is not always possible to have the same number of particles of each
-!  species at each processor. In that case we place the remaining particles
-!  by hand in order of increasing processor number.
-!
-          npar_rest_array=npar_loc_array-npar_per_species/ncpus*npar_species
-!
-          if (lroot .and. (minval(npar_rest_array)/=0)) &
-              print*, 'dist_particles_evenly_procs: npar_rest_array    =', &
-              npar_rest_array
-!
-          npar_per_species_missed = &
-              npar_per_species-ncpus*(npar_per_species/ncpus)
-          icycle   =1
-          iproc_rec=0
-          do k=1,npar_per_species_missed*npar_species
-            jspec=(k-1)/npar_per_species_missed+1
-            if (iproc==iproc_rec) &
-                ipar(npar_loc-npar_rest_array(iproc_rec)+icycle)= &
-                ipar_fence_species(jspec)-jspec*npar_per_species_missed+k
-            if (lroot) print*, 'dist_particles_evenly_procs: placed ', &
-                'particle', ipar_fence_species(jspec)- &
-                jspec*npar_per_species_missed+k, &
-                ' on proc', iproc_rec, ' in species', jspec
-            iproc_rec=iproc_rec+1
-            if (iproc_rec==ncpus) then
-              iproc_rec=0
-              icycle=icycle+1
-            endif
-          enddo
-        endif
-!
-      endif
-!
-    endsubroutine dist_particles_evenly_procs
 !***********************************************************************
     subroutine sum_par_name(a,iname,lsqrt)
 !
@@ -2071,18 +1906,18 @@ module Particles_sub
 !
     endsubroutine get_particles_interdistance
 !***********************************************************************
-    subroutine remove_particle(fp,npar_loc,ipar,k,dfp,ineargrid,ks)
+    subroutine remove_particle(fp,ipar,k,dfp,ineargrid,ks)
 !
       real, dimension (mpar_loc,mpvar) :: fp
       real, dimension (mpar_loc,mpvar), optional :: dfp
       integer, dimension (mpar_loc) :: ipar
       integer, dimension (mpar_loc,3), optional :: ineargrid
       integer, optional :: ks
-      integer :: npar_loc,k
+      integer :: k
       logical :: lnbody
       real :: t_sp   ! t in single precision for backwards compatibility
 !   
-      intent (inout) :: fp, npar_loc, dfp,ineargrid
+      intent (inout) :: fp, dfp,ineargrid
       intent (in)    :: k
 !
       t_sp = t

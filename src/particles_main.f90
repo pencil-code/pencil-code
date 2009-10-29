@@ -9,6 +9,7 @@ module Particles_main
   use Particles
   use Particles_cdata
   use Particles_collisions
+  use Particles_mpicomm
   use Particles_nbody
   use Particles_number
   use Particles_radius
@@ -88,6 +89,7 @@ module Particles_main
         call fatal_error('particles_initialize_modules','')
       endif
 !
+      call initialize_particles_mpicomm   (f,lstarting)
       call initialize_particles           (f,lstarting)
       call initialize_particles_radius    (f,lstarting)
       call initialize_particles_spin      (f,lstarting)
@@ -135,7 +137,7 @@ module Particles_main
 !
       character (len=*) :: filename
 !
-      call input_particles(filename,fp,npar_loc,ipar)  
+      call input_particles(filename,fp,ipar)  
 !
     endsubroutine particles_read_snapshot
 !***********************************************************************
@@ -152,9 +154,9 @@ module Particles_main
       logical :: lsnap
 !
       if (present(flist)) then
-        call wsnap_particles(chsnap,fp,enum,lsnap,dsnap_par_minor,dsnap_par,npar_loc,ipar,flist)
+        call wsnap_particles(chsnap,fp,enum,lsnap,dsnap_par_minor,dsnap_par,ipar,flist)
       else
-        call wsnap_particles(chsnap,fp,enum,lsnap,dsnap_par_minor,dsnap_par,npar_loc,ipar)
+        call wsnap_particles(chsnap,fp,enum,lsnap,dsnap_par_minor,dsnap_par,ipar)
       endif
 !
     endsubroutine particles_write_snapshot
@@ -167,7 +169,7 @@ module Particles_main
 !
       character (len=*) :: chsnap
 !
-      call wsnap_particles(chsnap,dfp,.false.,.false.,0.0,0.0,npar_loc,ipar,nobound=.true.)
+      call wsnap_particles(chsnap,dfp,.false.,.false.,0.0,0.0,ipar,nobound=.true.)
 !
     endsubroutine particles_write_dsnapshot
 !***********************************************************************
@@ -222,7 +224,7 @@ module Particles_main
 !
 !  First apply boundary conditions to the newly updated particle positions.
 !
-      call boundconds_particles(fp,npar_loc,ipar,dfp=dfp)
+      call boundconds_particles(fp,ipar,dfp=dfp)
 !
 !  Remove particles that are too close to sink particles or sink points.
 !  WARNING: ineargrid and the mapped particle density have not been updated

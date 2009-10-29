@@ -105,7 +105,7 @@ module Particles
 !
 !  Distribute particles evenly among processors to begin with.
 !
-      if (lstarting) call dist_particles_evenly_procs(npar_loc,ipar)
+      if (lstarting) call dist_particles_evenly_procs(ipar)
 !
       if (rhop_tilde==0.0) then
 ! For stratification, take into account gas present outside the simulation box.
@@ -343,7 +343,7 @@ module Particles
 !
 !  Redistribute particles among processors (now that positions are determined).
 !
-      call boundconds_particles(fp,npar_loc,ipar)
+      call boundconds_particles(fp,ipar)
 !
 !  Map particle positions on the grid.
 !

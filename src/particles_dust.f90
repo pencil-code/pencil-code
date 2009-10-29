@@ -234,10 +234,6 @@ module Particles
       real :: rhom
       integer :: ierr, jspec
 !
-!  Distribute particles evenly among processors to begin with.
-!
-      if (lstarting) call dist_particles_evenly_procs(npar_loc,ipar)
-!
 !  The inverse stopping time is needed for drag force and collisional cooling.
 !
       if (tausp/=0.0) tausp1=1/tausp
@@ -936,7 +932,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Redistribute particles among processors (now that positions are determined).
 !
-      call boundconds_particles(fp,npar_loc,ipar)
+      call boundconds_particles(fp,ipar)
 !
 !  Map particle position on the grid.
 !
@@ -1334,7 +1330,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Redistribute particles among processors.
 !
-        call boundconds_particles(fp,npar_loc,ipar,linsert=.true.)
+        call boundconds_particles(fp,ipar,linsert=.true.)
 !
 !  Map particle position on the grid.
 !
@@ -1546,7 +1542,7 @@ k_loop:   do while (.not. (k>npar_loc))
       if (lmpicomm) then
         lmigration_redo_org=lmigration_redo
         lmigration_redo=.true.
-        call redist_particles_procs(fp,npar_loc,ipar)
+        call redist_particles_procs(fp,ipar)
         lmigration_redo=lmigration_redo_org
       endif
 !
@@ -2700,7 +2696,7 @@ k_loop:   do while (.not. (k>npar_loc))
           rp=sqrt((fp(k,ixp)-xsinkpoint)**2+(fp(k,iyp)-ysinkpoint)**2+ &
              (fp(k,izp)-zsinkpoint)**2)
           if (rp<rsinkpoint) then
-            call remove_particle(fp,npar_loc,ipar,k,dfp,ineargrid)
+            call remove_particle(fp,ipar,k,dfp,ineargrid)
           else
             k=k+1
           endif
@@ -2713,7 +2709,7 @@ k_loop:   do while (.not. (k>npar_loc))
         k=1
         do while (k<=npar_loc)
           if (in_solid_cell(fp(k,ixp:izp),fp(k,iap))) then
-            call remove_particle(fp,npar_loc,ipar,k,dfp,ineargrid)
+            call remove_particle(fp,ipar,k,dfp,ineargrid)
           else
             k=k+1
           endif

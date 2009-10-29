@@ -544,7 +544,7 @@ module Particles_nbody
 !
 !  Redistribute particles among processors (now that positions are determined).
 !
-      call boundconds_particles(fp,npar_loc,ipar)
+      call boundconds_particles(fp,ipar)
 !
 !  Initial particle velocity.
 !
@@ -630,7 +630,7 @@ module Particles_nbody
 !
 !  Make the particles known to all processors
 !
-      call boundconds_particles(fp,npar_loc,ipar)
+      call boundconds_particles(fp,ipar)
       call bcast_nbodyarray(fp)
 !
     endsubroutine init_particles_nbody
@@ -931,7 +931,7 @@ module Particles_nbody
 !  simulation
 !
           if (laccretion(ks).and.(r2_ij.le.rs2)) then
-            call remove_particle(fp,npar_loc,ipar,k,dfp,ineargrid,ks)
+            call remove_particle(fp,ipar,k,dfp,ineargrid,ks)
             !add mass of the removed particle to the accreting particle
             if (ladd_mass(ks)) pmass(ks)=pmass(ks)+mp_tilde
             goto 99
@@ -1758,7 +1758,7 @@ module Particles_nbody
                     !removing must always be done backwards 
                     do kn=pnp(i),1,-1 
                       if (.not.(any(ipar(k).eq.ipar_nbody))) &
-                           call remove_particle(fp,npar_loc,ipar,pik(i,kn))
+                           call remove_particle(fp,ipar,pik(i,kn))
                     enddo
 !
 !  create a new particle at the center of the cell
