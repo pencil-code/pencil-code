@@ -20,6 +20,7 @@ module Particles
   use Messages
   use Particles_cdata
   use Particles_sub
+  use Particles_mpicomm
   use Sub, only: keep_compiler_quiet
 !
   implicit none

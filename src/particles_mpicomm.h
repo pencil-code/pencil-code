@@ -2,3 +2,4 @@
   private
 
   public :: initialize_particles_mpicomm, redist_particles_procs
+  public :: dist_particles_evenly_procs
