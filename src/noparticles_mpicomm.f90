@@ -93,7 +93,7 @@ module Particles_mpicomm
 !
     endsubroutine dist_particles_evenly_procs
 !***********************************************************************
-    subroutine redist_particles_procs(fp,ipar,dfp,linsert)
+    subroutine migrate_particles(fp,ipar,dfp,linsert)
 !
 !  11-oct-09/anders: dummy
 !
@@ -109,6 +109,6 @@ module Particles_mpicomm
       if (present(dfp)) call keep_compiler_quiet(dfp)
       if (present(linsert)) call keep_compiler_quiet(linsert)
 !
-    endsubroutine redist_particles_procs
+    endsubroutine migrate_particles
 !***********************************************************************
 endmodule Particles_mpicomm

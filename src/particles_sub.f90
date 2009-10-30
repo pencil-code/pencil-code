@@ -505,15 +505,15 @@ module Particles_sub
       if (lmpicomm) then
         if (present(dfp)) then
           if (present(linsert)) then
-            call redist_particles_procs(fp,ipar,dfp,linsert=.true.)
+            call migrate_particles(fp,ipar,dfp,linsert=.true.)
           else
-            call redist_particles_procs(fp,ipar,dfp)
+            call migrate_particles(fp,ipar,dfp)
           endif
         else
           if (present(linsert)) then
-            call redist_particles_procs(fp,ipar,linsert=.true.)
+            call migrate_particles(fp,ipar,linsert=.true.)
           else
-            call redist_particles_procs(fp,ipar)
+            call migrate_particles(fp,ipar)
           endif
         endif
       endif

@@ -1542,7 +1542,7 @@ k_loop:   do while (.not. (k>npar_loc))
       if (lmpicomm) then
         lmigration_redo_org=lmigration_redo
         lmigration_redo=.true.
-        call redist_particles_procs(fp,ipar)
+        call migrate_particles(fp,ipar)
         lmigration_redo=lmigration_redo_org
       endif
 !

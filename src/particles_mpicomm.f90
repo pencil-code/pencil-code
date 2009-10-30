@@ -194,7 +194,7 @@ module Particles_mpicomm
 !
     endsubroutine dist_particles_evenly_procs
 !***********************************************************************
-    subroutine redist_particles_procs(fp,ipar,dfp,linsert)
+    subroutine migrate_particles(fp,ipar,dfp,linsert)
 !
 !  Redistribute particles among processors based on the local yz-interval
 !  of each processor.
@@ -373,7 +373,7 @@ module Particles_mpicomm
 !
           if (iproc_rec/=iproc) then
             if (ip<=7) print '(a,i7,a,i3,a,i3)', &
-                'redist_particles_procs: Particle ', ipar(k), &
+                'migrate_particles: Particle ', ipar(k), &
                 ' moves out of proc ', iproc, &
                 ' and into proc ', iproc_rec
 !
@@ -381,31 +381,31 @@ module Particles_mpicomm
 !
             if (.not. (lstart .or. present(linsert)) .and. &
                 (.not.any(iproc_rec==iproc_comm(1:nproc_comm))) ) then
-              print*, 'redist_particles_procs: particle ', ipar(k), ' wants to'
+              print*, 'migrate_particles: particle ', ipar(k), ' wants to'
               print*, '    migrate to a processor that is not a neighbour!'
-              print*, 'redist_particles_procs: iproc, iproc_rec=', &
+              print*, 'migrate_particles: iproc, iproc_rec=', &
                   iproc, iproc_rec
-              print*, 'redist_particles_procs: iproc_comm=', &
+              print*, 'migrate_particles: iproc_comm=', &
                   iproc_comm(1:nproc_comm)
-              print*, 'redist_particles_procs: xxp=', fp(k,ixp:izp)
-              print*, 'redist_particles_procs: deltay=', deltay
+              print*, 'migrate_particles: xxp=', fp(k,ixp:izp)
+              print*, 'migrate_particles: deltay=', deltay
               call fatal_error_local("","")
             endif
 !
 !  Check that particle wants to migrate to existing processor.
 !
             if (iproc_rec>=ncpus .or. iproc_rec<0) then
-              call warning('redist_particles_procs','',iproc)
-              print*, 'redist_particles_procs: receiving proc does not exist'
-              print*, 'redist_particles_procs: iproc, iproc_rec=', &
+              call warning('migrate_particles','',iproc)
+              print*, 'migrate_particles: receiving proc does not exist'
+              print*, 'migrate_particles: iproc, iproc_rec=', &
                   iproc, iproc_rec
-              print*, 'redist_particles_procs: ipar(k), xxp=', &
+              print*, 'migrate_particles: ipar(k), xxp=', &
                   ipar(k), fp(k,ixp:izp)
-              print*, 'redist_particles_procs: x0_mig, x1_mig=', &
+              print*, 'migrate_particles: x0_mig, x1_mig=', &
                   procx_bounds(ipx), procx_bounds(ipx+1)
-              print*, 'redist_particles_procs: y0_mig, y1_mig=', &
+              print*, 'migrate_particles: y0_mig, y1_mig=', &
                   procy_bounds(ipy), procy_bounds(ipy+1)
-              print*, 'redist_particles_procs: z0_mig, z1_mig=', &
+              print*, 'migrate_particles: z0_mig, z1_mig=', &
                   procz_bounds(ipz), procz_bounds(ipz+1)
               call fatal_error_local("","")
             endif
@@ -417,7 +417,7 @@ module Particles_mpicomm
             if (sum(nmig_leave)>npar_mig) then
               if (.not. lstart) then
                 print '(a,i3,a,i3,a)', &
-                    'redist_particles_procs: too many particles migrating '// &
+                    'migrate_particles: too many particles migrating '// &
                     'from proc ', iproc, ' to proc ', iproc_rec
                 print*, '                       (npar_mig=', npar_mig, 'nmig=',sum(nmig_leave),')'
               endif
@@ -434,7 +434,7 @@ module Particles_mpicomm
                 lredo=.true.
                 exit
               else
-                call fatal_error('redist_particles_procs','')
+                call fatal_error('migrate_particles','')
               endif
             endif
             fp_mig(nmig_leave_total,:)=fp(k,:)
@@ -457,7 +457,7 @@ module Particles_mpicomm
 !
 !  Print out information about number of migrating particles.
 !
-        if (ip<=8) print*, 'redist_particles_procs: iproc, nmigrate = ', &
+        if (ip<=8) print*, 'migrate_particles: iproc, nmigrate = ', &
             iproc, sum(nmig_leave)
 !
 !  Diagnostic about number of migrating particles.
@@ -494,10 +494,10 @@ module Particles_mpicomm
 !  Check that there is room for the new particles at each processor.
 !
         if (npar_loc+sum(nmig_enter)>mpar_loc) then
-          print*, 'redist_particles_proc: Too many particles want to be at proc', iproc
-          print*, 'redist_particles_proc: npar_loc, mpar_loc, nmig=', &
+          print*, 'migrate_particles: Too many particles want to be at proc', iproc
+          print*, 'migrate_particles: npar_loc, mpar_loc, nmig=', &
               npar_loc, mpar_loc, sum(nmig_enter)
-          call fatal_error_local('redist_particles_proc','')
+          call fatal_error_local('migrate_particles','')
         endif
         call fatal_error_local_collect()
 !
@@ -541,13 +541,13 @@ module Particles_mpicomm
                 call mpirecv_real(dfp(npar_loc+1:npar_loc+nmig_enter(i),:), &
                 (/nmig_enter(i),mpvar/),i,itag_dfp)
             if (ip<=6) then
-              print*, 'redist_particles_procs: iproc, iproc_send=', iproc, i
-              print*, 'redist_particles_procs: received fp=', &
+              print*, 'migrate_particles: iproc, iproc_send=', iproc, i
+              print*, 'migrate_particles: received fp=', &
                   fp(npar_loc+1:npar_loc+nmig_enter(i),:)
-              print*, 'redist_particles_procs: received ipar=', &
+              print*, 'migrate_particles: received ipar=', &
                   ipar(npar_loc+1:npar_loc+nmig_enter(i))
               if (present(dfp)) &
-                  print*, 'redist_particles_procs: received dfp=',&
+                  print*, 'migrate_particles: received dfp=',&
                   dfp(npar_loc+1:npar_loc+nmig_enter(i),:)
             endif
 !
@@ -558,33 +558,33 @@ module Particles_mpicomm
                 if (nxgrid/=1) then
                   if (fp(k,ixp)<procx_bounds(ipx) .or. &
                       fp(k,ixp)>=procx_bounds(ipx+1)) then
-                    print*, 'redist_particles_procs: received particle '// &
+                    print*, 'migrate_particles: received particle '// &
                         'closer to ghost point than to physical grid point!'
-                    print*, 'redist_particles_procs: ipar, xxp=', &
+                    print*, 'migrate_particles: ipar, xxp=', &
                         ipar(k), fp(k,ixp:izp)
-                    print*, 'redist_particles_procs: x0_mig, x1_mig=', &
+                    print*, 'migrate_particles: x0_mig, x1_mig=', &
                         procx_bounds(ipx), procx_bounds(ipx+1)
                   endif
                 endif
                 if (nygrid/=1) then
                   if (fp(k,iyp)<procy_bounds(ipy) .or. &
                       fp(k,iyp)>=procy_bounds(ipy+1)) then
-                    print*, 'redist_particles_procs: received particle '// &
+                    print*, 'migrate_particles: received particle '// &
                         'closer to ghost point than to physical grid point!'
-                    print*, 'redist_particles_procs: ipar, xxp=', &
+                    print*, 'migrate_particles: ipar, xxp=', &
                         ipar(k), fp(k,ixp:izp)
-                    print*, 'redist_particles_procs: y0_mig, y1_mig=', &
+                    print*, 'migrate_particles: y0_mig, y1_mig=', &
                         procy_bounds(ipy), procy_bounds(ipy+1)
                   endif
                 endif
                 if (nzgrid/=1) then
                   if (fp(k,izp)<procz_bounds(ipz) .or. &
                       fp(k,izp)>=procz_bounds(ipz+1)) then
-                    print*, 'redist_particles_procs: received particle '// &
+                    print*, 'migrate_particles: received particle '// &
                         'closer to ghost point than to physical grid point!'
-                    print*, 'redist_particles_procs: ipar, xxp=', &
+                    print*, 'migrate_particles: ipar, xxp=', &
                         ipar(k), fp(k,ixp:izp)
-                    print*, 'redist_particles_procs: z0_mig, z1_mig=', &
+                    print*, 'migrate_particles: z0_mig, z1_mig=', &
                         procz_bounds(ipz), procz_bounds(ipz+1)
                   endif
                 endif
@@ -592,10 +592,10 @@ module Particles_mpicomm
             endif
             npar_loc=npar_loc+nmig_enter(i)
             if (npar_loc>mpar_loc) then
-              print*, 'redist_particles_proc: Too many particles at proc', iproc
-              print*, 'redist_particles_proc: npar_loc, mpar_loc=', &
+              print*, 'migrate_particles: Too many particles at proc', iproc
+              print*, 'migrate_particles: npar_loc, mpar_loc=', &
                   npar_loc, mpar_loc
-              call fatal_error('redist_particles_proc','')
+              call fatal_error('migrate_particles','')
             endif
           endif
 !
@@ -612,13 +612,13 @@ module Particles_mpicomm
                     call mpisend_real(dfp_mig(ileave_low(j):ileave_high(j),:), &
                     (/nmig_leave(j),mpvar/),j,itag_dfp)
                 if (ip<=6) then
-                  print*, 'redist_particles_proc: iproc, iproc_rec=', iproc, j
-                  print*, 'redist_particles_proc: sent fp=', &
+                  print*, 'migrate_particles: iproc, iproc_rec=', iproc, j
+                  print*, 'migrate_particles: sent fp=', &
                       fp_mig(ileave_low(j):ileave_high(j),:)
-                  print*, 'redist_particles_proc: sent ipar=', &
+                  print*, 'migrate_particles: sent ipar=', &
                       ipar_mig(ileave_low(j):ileave_high(j))
                   if (present(dfp)) &
-                      print*, 'redist_particles_proc: sent dfp=', &
+                      print*, 'migrate_particles: sent dfp=', &
                       dfp_mig(ileave_low(j):ileave_high(j),:)
                 endif
               endif
@@ -639,6 +639,6 @@ module Particles_mpicomm
 !
       enddo
 !
-    endsubroutine redist_particles_procs
+    endsubroutine migrate_particles
 !***********************************************************************
 endmodule Particles_mpicomm
