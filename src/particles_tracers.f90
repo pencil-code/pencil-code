@@ -104,10 +104,6 @@ module Particles
 !
       real :: rhom
 !
-!  Distribute particles evenly among processors to begin with.
-!
-      if (lstarting) call dist_particles_evenly_procs(ipar)
-!
       if (rhop_tilde==0.0) then
 ! For stratification, take into account gas present outside the simulation box.
         if (lgrav) then
