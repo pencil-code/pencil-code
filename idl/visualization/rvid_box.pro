@@ -45,7 +45,8 @@ pro rvid_box, field, $
   z_bot_twice=z_bot_twice, z_top_twice=z_top_twice, $
   z_topbot_swap=z_topbot_swap, xrot=xrot, zrot=zrot, zof=zof, $
   magnify=magnify, xpos=xpos, zpos=zpos, xmax=xmax, ymax=ymax, $
-  xlabel=xlabel, ylabel=ylabel, label=label, size_label=size_label, $
+  xlabel=xlabel, ylabel=ylabel, tlabel=tlabel, label=label, $
+  size_label=size_label, $
   monotonous_scaling=monotonous_scaling, symmetric_scaling=symmetric_scaling, $
   nobottom=nobottom, oversaturate=oversaturate, cylinder=cylinder, $
   tunit=tunit, qswap=qswap, bar=bar, nolabel=nolabel, norm=norm, $
@@ -85,6 +86,7 @@ default,xmax,1.0
 default,ymax,1.0
 default,xlabel,0.08
 default,ylabel,1.18
+default,tlabel,'!8t'
 default,label,''
 default,size_label,1.4
 default,thlabel,1.0
@@ -332,6 +334,7 @@ while ( (not eof(1)) and (t le tmax) ) do begin
 ;  Plot normal box.
 ;
       if (not keyword_set(shell)) then begin
+print,'zof=',zof
         boxbotex_scl,xy2s,xys,xzs,yzs,xmax,ymax,zof=zof,zpos=zpos,ip=3,$
             amin=amin/oversaturate,amax=amax/oversaturate,dev=dev,$
             xpos=xpos,magnify=magnify,nobottom=nobottom,norm=norm,$
@@ -343,7 +346,7 @@ while ( (not eof(1)) and (t le tmax) ) do begin
         endif else begin
           if (label eq '') then begin
             xyouts,xlabel,ylabel, $
-                '!8t!3='+string(t/tunit,fo=fo)+'!c!6'+title, $
+                tlabel+'!3='+string(t/tunit,fo=fo)+'!c!6'+title, $
                 col=1,siz=size_label,charthick=thlabel
           endif else begin
             xyouts,xlabel,ylabel, $
@@ -396,7 +399,7 @@ while ( (not eof(1)) and (t le tmax) ) do begin
         default, divbar, 2
         default, blabel, ''
         !p.title=blabel
-        colorbar, pos=[.82,.15,.84,.85], color=1, div=divbar,$
+        colorbar, pos=[.80,.15,.82,.85], color=1, div=divbar,$
             range=[amin,amax]/bnorm, /right, /vertical, $
             format=bformat, charsize=bsize, title=title
         !p.title=''
