@@ -201,7 +201,10 @@ module Particles_mpicomm
 !
 !  01-jan-05/anders: coded
 !
-!  TODO: For ncpus>>1000 this subroutine possibly uses too much memory.
+!  TODO:
+!    - For ncpus>>1000 this subroutine possibly uses too much memory.
+!    - Optimize lmigration_redo to not reanalyse particles that have already
+!      been considered.
 !
       use Mpicomm
       use Diagnostics, only: max_name
