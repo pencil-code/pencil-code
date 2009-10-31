@@ -58,13 +58,13 @@ include 'NSCBC.h'
   real :: Ly_in
   real :: Lz_in
 !
-namelist /NSCBC_init_pars/  &
-    nscbc_bc, nscbc_sigma_in, nscbc_sigma_out, p_infty, inlet_from_file,&
-    turb_inlet_dir
-
-namelist /NSCBC_run_pars/  &
-    nscbc_bc, nscbc_sigma_in, nscbc_sigma_out, p_infty, inlet_from_file,&
-    turb_inlet_dir
+  namelist /NSCBC_init_pars/  &
+      nscbc_bc, nscbc_sigma_in, nscbc_sigma_out, p_infty, inlet_from_file,&
+      turb_inlet_dir
+!
+  namelist /NSCBC_run_pars/  &
+      nscbc_bc, nscbc_sigma_in, nscbc_sigma_out, p_infty, inlet_from_file,&
+      turb_inlet_dir
 !
   contains
 !***********************************************************************
@@ -335,7 +335,7 @@ namelist /NSCBC_run_pars/  &
             call fatal_error("nscbc_boundtreat_xyz",'You must specify nscbc bouncond!')
           endselect
         endif
-      end do
+      enddo
 !
     endsubroutine
 !***********************************************************************
@@ -571,7 +571,7 @@ namelist /NSCBC_run_pars/  &
         L_5 = (f(lll,m1:m2,n1:n2,iux) - sgn*cs0_ar(m1:m2,n1:n2))*&
              (cs20_ar(m1:m2,n1:n2)*grad_rho(:,:,1)&
              - sgn*rho0*cs0_ar(m1:m2,n1:n2)*dui_dxj(:,:,1,1))
-      end if
+      endif
 !
 !  Add terms due to derivatives parallell to the boundary
 !  NILS: Viscous terms in the x direction are missing!
@@ -912,7 +912,7 @@ namelist /NSCBC_run_pars/  &
         L_5 = (f(l1:l2,lll,n1:n2,iuy) - sgn*cs0_ar(l1:l2,n1:n2))*&
              (cs20_ar(l1:l2,n1:n2)*grad_rho(:,:,2)&
              -sgn*rho0*cs0_ar(l1:l2,n1:n2)*dui_dxj(:,:,2,2))
-      end if
+      endif
 !
 !  Add terms due to derivatives parallell to the boundary
 !
@@ -1017,6 +1017,7 @@ namelist /NSCBC_run_pars/  &
       if (lnscbc) call parse_nscbc(nscbc_bc,nscbc_bc1,nscbc_bc2)
 !
 99    return
+!
     endsubroutine read_NSCBC_init_pars
 !***********************************************************************
     subroutine read_NSCBC_run_pars(unit,iostat)
@@ -1076,23 +1077,26 @@ namelist /NSCBC_run_pars/  &
       endif
 !
 99    return
+!
     endsubroutine read_NSCBC_run_pars
 !***********************************************************************
     subroutine write_NSCBC_init_pars(unit)
+!
       integer, intent(in) :: unit
-
+!
       write(unit,NML=NSCBC_init_pars)
-
+!
     endsubroutine write_NSCBC_init_pars
 !***********************************************************************
     subroutine write_NSCBC_run_pars(unit)
+!
       integer, intent(in) :: unit
-
+!
       write(unit,NML=NSCBC_run_pars)
-
+!
     endsubroutine write_NSCBC_run_pars
 !***********************************************************************
-      subroutine parse_nscbc(bc,bc1,bc2)
+    subroutine parse_nscbc(bc,bc1,bc2)
 !
 !  Parse boundary conditions, which may be in the form `a' (applies to
 !  both `lower' and `upper' boundary) or `a:s' (use `a' for lower,
@@ -1112,35 +1116,35 @@ namelist /NSCBC_run_pars/  &
 !
 !   7-jul-08/arne: adapted from parse_bc
 !
-        character (len=2*nscbc_len+1), dimension(3) :: bc
-        character (len=nscbc_len), dimension(3) :: bc1,bc2
-        integer :: j,isep
+      character (len=2*nscbc_len+1), dimension(3) :: bc
+      character (len=nscbc_len), dimension(3) :: bc1,bc2
+      integer :: j,isep
 !
-        intent(in) :: bc
-        intent(out) :: bc1,bc2
+      intent(in) :: bc
+      intent(out) :: bc1,bc2
 !
-        do j=1,3
-          isep = index(bc(j),':')
-          if (isep > 0) then
-            bc1(j) = bc(j)(1:isep-1)
-            bc2(j) = bc(j)(isep+1:)
-          else
-            bc1(j) = bc(j)(1:nscbc_len)
-            bc2(j) = bc(j)(1:nscbc_len)
-          endif
-        enddo
+      do j=1,3
+        isep = index(bc(j),':')
+        if (isep > 0) then
+          bc1(j) = bc(j)(1:isep-1)
+          bc2(j) = bc(j)(isep+1:)
+        else
+          bc1(j) = bc(j)(1:nscbc_len)
+          bc2(j) = bc(j)(1:nscbc_len)
+        endif
+      enddo
 !
-      endsubroutine
+    endsubroutine
 !***********************************************************************
-      subroutine NSCBC_clean_up
+    subroutine NSCBC_clean_up
 !
 !  Deallocate all allocatable arrays
 !
-        if (allocated(f_in)) deallocate(f_in)
-        if (allocated(x_in)) deallocate(x_in)
-        if (allocated(y_in)) deallocate(y_in)
-        if (allocated(z_in)) deallocate(z_in)
+      if (allocated(f_in)) deallocate(f_in)
+      if (allocated(x_in)) deallocate(x_in)
+      if (allocated(y_in)) deallocate(y_in)
+      if (allocated(z_in)) deallocate(z_in)
 !
-      end subroutine NSCBC_clean_up
+    endsubroutine NSCBC_clean_up
 !***********************************************************************
-  end module NSCBC
+endmodule NSCBC

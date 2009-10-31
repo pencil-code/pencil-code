@@ -1,5 +1,4 @@
 ! $Id$
-
 module Sub
 !
   use Cdata
@@ -788,8 +787,8 @@ module Sub
       do i=1,3
         do j=1,3
           c(:,i,j)=a(:,j)*b(:,i)
-        end do
-      end do
+        enddo
+      enddo
 !
     endsubroutine multvv_mat_mn
 !***********************************************************************
@@ -807,8 +806,8 @@ module Sub
       do i=1,3
          do j=1,3
             c=c+a(:,i,j)*b(:,i,j)
-         end do
-      end do
+         enddo
+      enddo
 !
     endsubroutine multmm_sc_mn
 !***********************************************************************
@@ -846,8 +845,8 @@ module Sub
       do i=1,3
          do j=1,3
             b=b+a(:,i,j)**2
-         end do
-      end do
+         enddo
+      enddo
 !
     endsubroutine multm2_mn
 !***********************************************************************
@@ -5075,7 +5074,7 @@ nameloop: do
         pi_func=enum/denom
 
       endif
-
+!
     endfunction pi_function
 !***********************************************************************
     function gamma_function(x)
@@ -5089,9 +5088,9 @@ nameloop: do
 !
       real, intent(in) :: x
       real :: gamma_function
-
+!
       gamma_function=pi_function(x-1)
-
+!
     endfunction gamma_function
 !***********************************************************************
     subroutine tensor_diffusion_coef(gecr,ecr_ij,bij,bb,vKperp,vKpara,rhs,llog,gvKperp,gvKpara)
@@ -5225,9 +5224,9 @@ nameloop: do
 !
       intent(in)    :: f
       intent(inout) :: maxf
-
+!
       maxf = max(f,maxf)
-
+!
     endsubroutine max_for_dt_nx_nx
 !***********************************************************************
     subroutine max_for_dt_1_nx(f,maxf)
@@ -5241,9 +5240,9 @@ nameloop: do
 !
       intent(in)    :: f
       intent(inout) :: maxf
-
+!
       maxf = max(f,maxf)
-
+!
     endsubroutine max_for_dt_1_nx
 !***********************************************************************
     subroutine max_for_dt_1_1_1_nx(f1,f2,f3,maxf)
@@ -5257,9 +5256,9 @@ nameloop: do
 !
       intent(in)    :: f1,f2,f3
       intent(inout) :: maxf
-
+!
       maxf = max(f1,f2,f3,maxf)
-
+!
     endsubroutine max_for_dt_1_1_1_nx
 !***********************************************************************
     function pencil_multiply1(s,v)
@@ -5272,11 +5271,11 @@ nameloop: do
       real, dimension(nx), intent(in) :: s
       real, dimension(nx,3), intent(in) :: v
       real, dimension(nx,3) :: pencil_multiply1
-
+!
       integer :: i
-
+!
       do i=1,3; pencil_multiply1(:,i) = s(:) * v(:,i); enddo
-
+!
     endfunction pencil_multiply1
 !***********************************************************************
     function pencil_multiply2(v,s)
@@ -5289,11 +5288,11 @@ nameloop: do
       real, dimension(nx,3), intent(in) :: v
       real, dimension(nx), intent(in) :: s
       real, dimension(nx,3) :: pencil_multiply2
-
+!
       integer :: i
-
+!
       do i=1,3; pencil_multiply2(:,i) = v(:,i) * s(:); enddo
-
+!
     endfunction pencil_multiply2
 !***********************************************************************
     function pencil_add1(s,v)
@@ -5306,11 +5305,11 @@ nameloop: do
       real, dimension(nx), intent(in) :: s
       real, dimension(nx,3), intent(in) :: v
       real, dimension(nx,3) :: pencil_add1
-
+!
       integer :: i
-
+!
       do i=1,3; pencil_add1(:,i) = s(:) + v(:,i); enddo
-
+!
     endfunction pencil_add1
 !***********************************************************************
     function pencil_add2(v,s)
@@ -5323,11 +5322,11 @@ nameloop: do
       real, dimension(nx,3), intent(in) :: v
       real, dimension(nx), intent(in) :: s
       real, dimension(nx,3) :: pencil_add2
-
+!
       integer :: i
-
+!
       do i=1,3; pencil_add2(:,i) = v(:,i) + s(:); enddo
-
+!
     endfunction pencil_add2
 !***********************************************************************
     function pencil_divide1(s,v)
@@ -5340,11 +5339,11 @@ nameloop: do
       real, dimension(nx), intent(in) :: s
       real, dimension(nx,3), intent(in) :: v
       real, dimension(nx,3) :: pencil_divide1
-
+!
       integer :: i
-
+!
       do i=1,3; pencil_divide1(:,i) = s(:) / v(:,i); enddo
-
+!
     endfunction pencil_divide1
 !***********************************************************************
     function pencil_divide2(v,s)
@@ -5357,11 +5356,11 @@ nameloop: do
       real, dimension(nx,3), intent(in) :: v
       real, dimension(nx), intent(in) :: s
       real, dimension(nx,3) :: pencil_divide2
-
+!
       integer :: i
-
+!
       do i=1,3; pencil_divide2(:,i) = v(:,i) / s(:); enddo
-
+!
     endfunction pencil_divide2
 !***********************************************************************
     function pencil_substract1(s,v)
@@ -5374,11 +5373,11 @@ nameloop: do
       real, dimension(nx), intent(in) :: s
       real, dimension(nx,3), intent(in) :: v
       real, dimension(nx,3) :: pencil_substract1
-
+!
       integer :: i
-
+!
       do i=1,3; pencil_substract1(:,i) = s(:) - v(:,i); enddo
-
+!
     endfunction pencil_substract1
 !***********************************************************************
     function pencil_substract2(v,s)
@@ -5391,15 +5390,15 @@ nameloop: do
       real, dimension(nx,3), intent(in) :: v
       real, dimension(nx), intent(in) :: s
       real, dimension(nx,3) :: pencil_substract2
-
+!
       integer :: i
-
+!
       do i=1,3; pencil_substract2(:,i) = v(:,i) - s(:); enddo
-
+!
     endfunction pencil_substract2
 !***********************************************************************
     function erfunc_pt(x)
-
+!
 ! Error function from Numerical Recipes.
 ! erfunc(x) = 1 - erfc(x)
 !
@@ -5408,25 +5407,25 @@ nameloop: do
 ! 15-Jan-2007/dintrans: coded
 !
     implicit none
-
+!
     real :: erfunc_pt,dumerfc,x,t,z
-
+!
     z = abs(x)
     t = 1.0 / ( 1.0 + 0.5 * z )
-
+!
     dumerfc =  t * exp(-z * z - 1.26551223 + t *        &
         ( 1.00002368 + t * ( 0.37409196 + t *           &
         ( 0.09678418 + t * (-0.18628806 + t *           &
         ( 0.27886807 + t * (-1.13520398 + t *           &
         ( 1.48851587 + t * (-0.82215223 + t * 0.17087277 )))))))))
-
+!
     if ( x.lt.0.0 ) dumerfc = 2.0 - dumerfc
     erfunc_pt = 1.0 - dumerfc
-
+!
     endfunction erfunc_pt
 !***********************************************************************
     function erfunc_mn(x)
-
+!
 ! Error function from Numerical Recipes.
 ! erfunc_mn(x) = 1 - erfc(x)
 !
@@ -5435,23 +5434,23 @@ nameloop: do
 ! 15-Jan-2007/dintrans: coded
 !
     implicit none
-
+!
     real, dimension(:) :: x
     real, dimension(size(x,1)) :: erfunc_mn,dumerfc,t,z
-
+!
     z = abs(x)
     t = 1.0 / ( 1.0 + 0.5 * z )
-
+!
     dumerfc =  t * exp(-z * z - 1.26551223 + t *        &
         ( 1.00002368 + t * ( 0.37409196 + t *           &
         ( 0.09678418 + t * (-0.18628806 + t *           &
         ( 0.27886807 + t * (-1.13520398 + t *           &
         ( 1.48851587 + t * (-0.82215223 + t * 0.17087277 )))))))))
-
+!
     where ( x.lt.0. ) dumerfc = 2.0 - dumerfc
-
+!
     erfunc_mn = 1.0 - dumerfc
-
+!
     endfunction erfunc_mn
 !***********************************************************************
     subroutine power_law_mn(const,dist,plaw_,output,xref)
@@ -5595,7 +5594,7 @@ nameloop: do
       i1=i-2 ; i2=i-1
       interp1=(fr(i1)*(r(i2)-r0)+fr(i2)*(r0-r(i1)))/(r(i2)-r(i1))
     endif
-
+!
     endfunction interp1
 !***********************************************************************
     subroutine ludcmp(a,indx)
@@ -5626,14 +5625,15 @@ nameloop: do
           a(imax,:)=a(j,:)
           a(j,:)=swap
           vv(imax)=vv(j)
-        end if
+        endif
         indx(j)=imax
         if (a(j,j) == 0.0) a(j,j)=tiny(0.)
         a(j+1:n,j)=a(j+1:n,j)/a(j,j)
         a(j+1:n,j+1:n)=a(j+1:n,j+1:n)-spread(a(j+1:n,j),dim=2,ncopies=(n-j)) * &
             spread(a(j,j+1:n),dim=1,ncopies=(n-j))
-      end do
-    end subroutine ludcmp
+      enddo
+!
+    endsubroutine ludcmp
 !***********************************************************************
     subroutine lubksb(a,indx,b)
 !
@@ -5662,13 +5662,13 @@ nameloop: do
           summ=summ-dot_product(a(i,ii:i-1),b(ii:i-1))
         else if (summ /= 0.0) then
           ii=i
-        end if
+        endif
         b(i)=summ
-      end do
+      enddo
       do i=n,1,-1
         b(i) = (b(i)-dot_product(a(i,i+1:n),b(i+1:n)))/a(i,i)
-      end do
-    end subroutine lubksb
+      enddo
+!
+    endsubroutine lubksb
 !***********************************************************************
-  endmodule Sub
-  
+endmodule Sub

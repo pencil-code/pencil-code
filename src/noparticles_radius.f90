@@ -63,7 +63,7 @@ module Particles_radius
       call keep_compiler_quiet(npar_high)
       call keep_compiler_quiet(init)
 !
-    end subroutine set_particle_radius
+    endsubroutine set_particle_radius
 !***********************************************************************
     subroutine pencil_criteria_par_radius()
 !

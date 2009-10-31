@@ -671,15 +671,15 @@ module Forcing
 ! respectively, and epsilon=force_strength/force.
 !
       if (force_strength/=0.) then
-         call dot(force_direction,force_direction,fd2)
-         fd=sqrt(fd2)
-         do j=1,3
-            fda(:,j) = 1. + (force_strength/force) &
-                 *(kk(j)*force_direction(j)/(k*fd))**2 &
-                 *force_direction(j)/fd
-         end do
+        call dot(force_direction,force_direction,fd2)
+        fd=sqrt(fd2)
+        do j=1,3
+           fda(:,j) = 1. + (force_strength/force) &
+                *(kk(j)*force_direction(j)/(k*fd))**2 &
+                *force_direction(j)/fd
+        enddo
       else
-         fda = 1.
+        fda = 1.
       endif
 !
 !  In the past we always forced the du/dt, but in some cases

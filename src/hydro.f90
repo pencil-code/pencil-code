@@ -1030,9 +1030,9 @@ module Hydro
                                *(1. - a2/rr2)*wall_smoothing
                 f(l,m,:,iuy) = -ampluu(j)*sin(y(m))&
                                *(1. + a2/rr2)*wall_smoothing
-              end do
+              enddo
             endif
-          end do
+          enddo
 
 
         case default
@@ -1455,7 +1455,7 @@ module Hydro
 !          f(l1:l2,m,n,idel2p_anelastic:idel2p_anelastic+2)= & 
 !          f(l1:l2,m,n,idel2p_anelastic:idel2p_anelastic+2)- &
 !          p%rhougu(1:nx,1:3)
-          end do
+          enddo
         endif
       endif
 !
@@ -2561,7 +2561,7 @@ module Hydro
 
       endif
 
-   end subroutine coriolis_cartesian
+   endsubroutine coriolis_cartesian
 !***********************************************************************
    subroutine coriolis_spherical(df,p)
 !

@@ -160,14 +160,14 @@ module Solid_Cells
       if (lreset) then
         idiag_c_dragx=0 
         idiag_c_dragy=0
-      end if
+      endif
 !
 !  check for those quantities that we want to evaluate online
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'c_dragx',idiag_c_dragx)
         call parse_name(iname,cname(iname),cform(iname),'c_dragy',idiag_c_dragy)
-      end do
+      enddo
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
 !  idl needs this even if everything is zero
@@ -175,11 +175,11 @@ module Solid_Cells
       if (lwr) then
         write(3,*) 'i_c_dragx=',idiag_c_dragx
         write(3,*) 'i_c_dragy=',idiag_c_dragy
-      end if
+      endif
       
       call keep_compiler_quiet(lreset)
       
-    end subroutine rprint_solid_cells
+    endsubroutine rprint_solid_cells
 !***********************************************************************  
     subroutine pencil_criteria_solid_cells()
 !
@@ -191,7 +191,7 @@ module Solid_Cells
 !
       call keep_compiler_quiet(unit)
 !
-    end subroutine pencil_criteria_solid_cells
+    endsubroutine pencil_criteria_solid_cells
 !***********************************************************************  
     subroutine close_interpolation(f,ix0,iy0,iz0,icyl,ivar1,xxp,gpp,&
         fluid_point)

@@ -1327,8 +1327,8 @@ module Diagnostics
 !
       lmax=l2
       n_nghost=n-nghost
-      if(lav_smallx)  lmax=ixav_max
-      if(.not.loutside_avg) then
+      if (lav_smallx)  lmax=ixav_max
+      if (.not.loutside_avg) then
         if (lspherical_coords.or.lcylindrical_coords)then
           do isum=l1,lmax
             fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+ & 
@@ -1366,8 +1366,8 @@ module Diagnostics
 !
       m_nghost=m-nghost
       lmax=l2
-      if(lav_smallx) lmax=ixav_max
-      if(.not.loutside_avg) then
+      if (lav_smallx) lmax=ixav_max
+      if (.not.loutside_avg) then
         if (lspherical_coords.and.nxgrid>1)then
           do isum=l1,lmax
             fnamey(m_nghost,ipy+1,iname)=fnamey(m_nghost,ipy+1,iname)+ &
@@ -1675,22 +1675,19 @@ module Diagnostics
 !***********************************************************************
     real function get_from_fname(iname)
 !
-!   gets value from fname
+!   Gets value from fname.
 !
 !   30-oct-09/MR: coded
 !
-    use Cdata, only:fname
-    implicit none
-
     integer, intent(in) :: iname
-
+!
     if ( iname<1.or.iname>nname ) then
       call fatal_error('get_from_fname', 'index not in legal range')
       get_from_fname = 0
     endif
-
+!
     get_from_fname = fname(iname)
-
+!
     endfunction get_from_fname
 !***********************************************************************
     subroutine allocate_yaverages
@@ -1744,13 +1741,15 @@ module Diagnostics
 !  26-oct-09/dhruba: coded
 !
    integer :: lx
-
-   if(xav_max.lt.x(l1)) loutside_avg=.true.  
-   ixav_max=l1   
-   do lx=l1,l2
-     if(x(lx).lt.xav_max) ixav_max=lx
-   enddo
 !
-    endsubroutine init_xaver
+     if (xav_max.lt.x(l1)) loutside_avg=.true.  
+!
+     ixav_max=l1   
+!
+     do lx=l1,l2
+       if (x(lx).lt.xav_max) ixav_max=lx
+     enddo
+!
+   endsubroutine init_xaver
 !*******************************************************************
 endmodule Diagnostics

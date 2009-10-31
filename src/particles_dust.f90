@@ -1320,8 +1320,8 @@ k_loop:   do while (.not. (k>npar_loc))
           if (nxgrid==1) fp(npar_loc_old+1:npar_loc,ixp)=x(nghost+1)
           if (nygrid==1) fp(npar_loc_old+1:npar_loc,iyp)=y(nghost+1)
           if (nzgrid==1) fp(npar_loc_old+1:npar_loc,izp)=z(nghost+1)
-        end if
-      end if ! if (lroot) then    
+        endif
+      endif ! if (lroot) then    
 !
 !  Redistribute particles only when t < max_particle_insert_time.
 !  Could have included some other tests here aswell......

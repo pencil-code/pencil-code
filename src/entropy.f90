@@ -2768,8 +2768,8 @@ module Entropy
          tmpv(:,i)=0.
          do j=1,3
             tmpv(:,i)=tmpv(:,i) + p%bb(:,j)*p%bij(:,j,i)
-         end do
-      end do
+         enddo
+      enddo
       call multsv_mn(2*b1*b1,tmpv,tmpv2)
       tmpv=2.*p%glnrho+0.5*p%glnTT-tmpv2
       call multsv_mn(vKperp,tmpv,gvKperp)

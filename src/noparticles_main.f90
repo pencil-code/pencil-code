@@ -344,7 +344,6 @@ module Particles_main
 !
       call keep_compiler_quiet(f)
 !
-    end subroutine particles_insert_continuously
+    endsubroutine particles_insert_continuously
 !***********************************************************************
-
 endmodule Particles_main

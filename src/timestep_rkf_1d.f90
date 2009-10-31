@@ -87,7 +87,7 @@ module Timestep
           ! Guard against infinitesimal time steps
           print*, 'WARNING: Timestep underflow in rkqs()'
         endif
-      end do
+      enddo
 
 !      print*,"errmax, errcon", errmax,errcon
       if (errmax > errcon) then

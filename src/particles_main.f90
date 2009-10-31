@@ -840,8 +840,8 @@ module Particles_main
 !
       if (linsert_particles_continuously) then
         call insert_particles(f,fp,ineargrid)
-      end if
+      endif
 !
-    end subroutine particles_insert_continuously
+    endsubroutine particles_insert_continuously
 !***********************************************************************
 endmodule Particles_main

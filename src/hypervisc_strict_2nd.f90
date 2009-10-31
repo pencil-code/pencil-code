@@ -350,7 +350,7 @@ module Hypervisc_strict
                              +3.*var(:,:,mz  ))/(2.*dz) 
       endif
 !
-    end subroutine der_2nd_nof
+    endsubroutine der_2nd_nof
 !***********************************************************************
     subroutine del2v_2nd(f,del2f,k)
 !   

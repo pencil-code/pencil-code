@@ -180,10 +180,10 @@ module Solid_Cells
                 f(i,j,k,ilnrho)=f(l2,m2,n2,ilnrho)&
                      *f(l2,m2,n2,ilnTT)/cylinder(icyl,5)
               endif
-            end if
-          end do
-        end do
-        end do
+            endif
+          enddo
+        enddo
+        enddo
         enddo
       case('cylinderstream_y')
 !  Stream functions for flow around a cylinder as initial condition.
@@ -239,11 +239,11 @@ module Solid_Cells
                 f(i,j,k,ilnrho)=f(l2,m2,n2,ilnrho)&
                      *f(l2,m2,n2,ilnTT)/cylinder(icyl,5)
               endif
-            end if
-          end do
-        end do
-        end do
-        end do
+            endif
+          enddo
+        enddo
+        enddo
+        enddo
 if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
       case default
 !
@@ -358,7 +358,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
             endif
           else
             interiorpoint=.false.
-          end if
+          endif
         else
           print*,"WARNING: Solid cells need nygrid > 1."
         endif
@@ -388,7 +388,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
             endif
           else
             interiorpoint=.false.
-          end if
+          endif
         else
 !  z direction is irrelevant when in 2D
           izl=n1
@@ -439,24 +439,24 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
                 .eq. 0 ) then
               if (dist_to_fp2(ipoint) .le. dist_to_fp2(inearest)) then
                 inearest=ipoint
-              end if
-            end if
-          end do
+              endif
+            endif
+          enddo
 !          
 !  Coordinates of nearest grid point. Zero if outside local domain.
           if (inearest > 0) then
             fpnearestgrid(icyl,iforcepoint,:) = icoord(inearest,:)
           else
             print*, "WARNING: Could not find fpnearestgrid!"
-          end if
+          endif
 
         else ! fp is outside local domain and fpnearestgrid shouldn't exist
           fpnearestgrid(icyl,iforcepoint,:) = 0
-        end if
-      end do
-    end do
+        endif
+      enddo
+    enddo
 !
-  end subroutine fp_nearest_grid
+  endsubroutine fp_nearest_grid
 !***********************************************************************  
   subroutine dsolid_dt(f,df,p)
 !
@@ -488,7 +488,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
         c_dragy=0.
         rhosum=0
         irhocount=0
-      end if
+      endif
 !
       if (idiag_c_dragx .ne. 0 .or. idiag_c_dragy .ne. 0) then 
         call getnu(nu)
@@ -534,10 +534,10 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
                     + fp_stress(2,3)*nvec(3)                 
                 c_dragx(icyl) = c_dragx(icyl) + force_x
                 c_dragy(icyl) = c_dragy(icyl) + force_y
-              end if
-            end if
-          end do
-        end do
+              endif
+            endif
+          enddo
+        enddo
 !
 !  Calculate average density of the domain, excluded
 !  solid cell regions:
@@ -546,12 +546,12 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
           if (mod(ba(i,m,n,1),10) .eq. 0) then
             rhosum = rhosum + p%rho(i-nghost)
             irhocount = irhocount+1
-          end if
-        end do
-      end if
-    end if
+          endif
+        enddo
+      endif
+    endif
 !
-  end subroutine dsolid_dt
+  endsubroutine dsolid_dt
 !***********************************************************************  
   subroutine dsolid_dt_integrate
 !
@@ -590,18 +590,18 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
           write(81,84) it-1, t
           do icyl=1,ncylinders
             write(81,82) c_dragx(icyl), c_dragy(icyl)
-          end do
+          enddo
           write(81,*) ' ' ! Adds a line break
           close(81)
 84        format(1I5,1F15.8,$)
 82        format(2F15.8,$)
-        end if
-      end if
+        endif
+      endif
       if (idiag_c_dragx .ne. 0) fname(idiag_c_dragx)=c_dragx(1)
       if (idiag_c_dragy .ne. 0) fname(idiag_c_dragy)=c_dragy(1)
-    end if
+    endif
  !   
-  end subroutine dsolid_dt_integrate
+  endsubroutine dsolid_dt_integrate
  !***********************************************************************  
   subroutine rprint_solid_cells(lreset,lwrite)
 !
@@ -626,23 +626,23 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
     if (lreset) then
       idiag_c_dragx=0 
       idiag_c_dragy=0
-    end if
+    endif
 !
 !  check for those quantities that we want to evaluate online
 !
     do iname=1,nname
       call parse_name(iname,cname(iname),cform(iname),'c_dragx',idiag_c_dragx)
       call parse_name(iname,cname(iname),cform(iname),'c_dragy',idiag_c_dragy)
-    end do
+    enddo
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
 !
     if (lwr) then
       write(3,*) 'i_c_dragx=',idiag_c_dragx
       write(3,*) 'i_c_dragy=',idiag_c_dragy
-    end if
+    endif
 !    
-  end subroutine rprint_solid_cells
+  endsubroutine rprint_solid_cells
 !***********************************************************************  
     subroutine update_solid_cells(f)
 !
@@ -723,10 +723,10 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !
             if (lower_i .eq. 0 .or. upper_i .eq. 0) then
               call fatal_error('update_solid_cells:','lower_i==0 or upper_i==0')
-            end if
+            endif
             if (lower_j .eq. 0 .or. upper_j .eq. 0) then
               call fatal_error('update_solid_cells:','lower_j==0 or upper_j==0')
-            end if            
+            endif            
 !
 !  First we use interpolations to find the value of the mirror point.
 !  Then we use the interpolated value to find the value of the ghost point
@@ -1055,7 +1055,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
               endif
               inputvalue=bordervalue(constdir,topbot_tmp)-cylinder(icyl,constdir+1)
             endif
-          end do
+          enddo
 !
 !  Check that we have found a valid distance
 !
@@ -1619,6 +1619,6 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
       lpenc_requested(i_pp)=.true.
       lpenc_requested(i_sij)=.true.
       lpenc_requested(i_rho)=.true.
-    end subroutine pencil_criteria_solid_cells
+    endsubroutine pencil_criteria_solid_cells
 !***********************************************************************  
-  endmodule Solid_Cells
+endmodule Solid_Cells

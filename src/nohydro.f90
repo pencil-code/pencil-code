@@ -769,11 +769,9 @@ kky_aa=2.*pi
       real, dimension (mx,my,mz,mvar), intent(out) :: df
       real, dimension (nx,3),          intent(in)  :: uu
       integer,                         intent(in)  :: velind
-
 ! velind is start index for velocity variable to which Coriolis force corresponds
 ! x,y,z -components referred to by velind, velind+1, velind+2      (MR:IMMER ERF†LLT?)
-
-   end subroutine coriolis_cartesian
+   endsubroutine coriolis_cartesian
 !***********************************************************************
     subroutine calc_lhydro_pars(f)
 !
@@ -1116,7 +1114,7 @@ kky_aa=2.*pi
 !
     do modeN=1,KS_modes
       k_unit(:,modeN)=KS_k(:,modeN)/k(modeN)
-    end do
+    enddo
 !
     kmax=k(KS_modes)
     kmin=k(1)
@@ -1126,12 +1124,12 @@ kky_aa=2.*pi
       if (modeN.gt.1.and.modeN.lt.KS_modes) &
                 dk(modeN)=(k(modeN+1)-k(modeN-1))/2.
       if (modeN==KS_modes) dk(modeN)=(k(modeN)-k(modeN-1))/2.
-    end do
+    enddo
 !
     do modeN=1,KS_modes
        energy(modeN)=((k(modeN)**2 +1.)**(-11./6.))*(k(modeN)**2) &
                          *exp(-0.5*(k(modeN)/kmax)**2)
-    end do
+    enddo
 !
     ps=sqrt(2.*energy*dk)
 !
@@ -1162,7 +1160,7 @@ kky_aa=2.*pi
     do modeN=1,KS_modes
        KS_A(:,modeN)=ps(modeN)*KS_A(:,modeN)
        KS_B(:,modeN)=ps(modeN)*KS_B(:,modeN)
-    end do
+    enddo
 !
 !   form RA = RA x k_unit and RB = RB x k_unit
 !
@@ -1247,27 +1245,27 @@ kky_aa=2.*pi
    !        k(:,num)=k_option(:,i) !load current k_option into k that we keep
    !        klengths(num)=mkunit(i)  ! store the length also
    !      endif
-   !    end do
+   !    enddo
    !   endif
    !   if (i==10000.and.num.lt.KS_modes)print*,"Haven't got",KS_modes,"modes!!!!"
-   ! end do
+   ! enddo
    ! do i=1,KS_modes
    !    do s1=1,KS_modes
    !       if (kk(i)==klengths(s1))then
    !          orderK(:,i)=k(:,s1)
    !       endif
-   !    end do
-   ! end do
+   !    enddo
+   ! enddo
    ! k=orderK
    ! do i=1,KS_modes
    !   unit_k(:,i)=k(:,i)/kk(i)
-   ! end do
+   ! enddo
    ! do i=1,N
    ! !now we find delk as defined in Malik & Vassilicos' paper
    !    if (i==1)delk(i)=(kk(i+1)-kk(i))/2.0D0 
    !    if (i==KS_modes)delk(i)=(kk(i)-kk(i-1))/2.0D0 
    !    if (i.gt.1.and.i.lt.KS_modes)delk(i)=(kk(i+1)-kk(i-1))/2.0D0  
-   ! end do
+   ! enddo
    ! endsubroutine random_isotropic_KS_setup_abag
 !***********************************************************************
     subroutine input_persistent_hydro(id,lun,done)

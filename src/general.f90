@@ -695,14 +695,14 @@ module General
          c=-w1(k)/w2(k-1)
          w2(k)=w2(k)+c*w3(k-1)
          d(k)=d(k)+c*d(k-1)
-      end do
+      enddo
 !
 ! backsubstitute
 !
       d(mz)=d(mz)/w2(mz)
       do k=mz-1,1,-1
          d(k)=(d(k)-w3(k)*d(k+1))/w2(k)
-      end do
+      enddo
 
       spline_derivative=d
     endfunction spline_derivative
@@ -772,14 +772,14 @@ module General
          c=-w1(k)/w2(k-1)
          w2(k)=w2(k)+c*w3(k-1)
          d(k)=d(k)+c*d(k-1)
-      end do
+      enddo
 !
 ! backsubstitute
 !
       d(mz)=d(mz)/w2(mz)
       do k=mz-1,1,-1
          d(k)=(d(k)-w3(k)*d(k+1))/w2(k)
-      end do
+      enddo
 
       spline_derivative_double=d
     endfunction spline_derivative_double
@@ -810,7 +810,7 @@ module General
 
       do k=2,mz
          q(k)=q(k)+q(k-1)
-      end do
+      enddo
 
       spline_integral=q
     endfunction spline_integral
@@ -843,7 +843,7 @@ module General
 
       do k=2,mz
          q(k)=q(k)+q(k-1)
-      end do
+      enddo
 
       spline_integral_double=q
     endfunction spline_integral_double

@@ -759,7 +759,7 @@ module Chemistry
 !
 !  Initialize temperature
 !
-        if(lT_tanh) then
+        if (lT_tanh) then
           del=init_x2-init_x1
           f(k,:,:,ilnTT)=f(k,:,:,ilnTT)+log((init_TT2+init_TT1)*0.5  &
               +((init_TT2-init_TT1)*0.5)  &
@@ -1555,11 +1555,11 @@ module Chemistry
           if (.not. inside) then
             inside = .true.
             nchemspectemp=nchemspectemp+1
-          end if
+          endif
         else
           inside=.false.
-        end if
-      end do
+        endif
+      enddo
       if (inside) nchemspectemp=nchemspectemp-1
       close(19)
       if (lroot) print*,'Number of compounds=',nchemspectemp
@@ -5507,7 +5507,7 @@ module Chemistry
         enddo; enddo; enddo
       endif
       
-    end subroutine jacobn
+    endsubroutine jacobn
 !***********************************************************************
 
 !********************************************************************
