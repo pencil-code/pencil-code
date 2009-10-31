@@ -3045,9 +3045,9 @@ module Mpicomm
 !
 !   18-oct-2009/MR: Coded
 !
-      implicit none
-
       use Cdata
+
+      implicit none
 
       real, dimension(mz,3), intent(inout) :: vec
       integer, intent(in)                  :: ivar
@@ -3064,10 +3064,10 @@ module Mpicomm
 
         call MPI_IRECV(ubufi,nbuf,MPI_REAL, &
                        zuneigh,tolowz,MPI_COMM_WORLD,irecv_rq_fromuppz,ierr)
-        call MPI_IRECV(lbufz,nbuf,MPI_REAL, &
+        call MPI_IRECV(lbufi,nbuf,MPI_REAL, &
                        zlneigh,touppz,MPI_COMM_WORLD,irecv_rq_fromlowz,ierr)
 
-        call MPI_ISEND(lbufz,nbuf,MPI_REAL, &
+        call MPI_ISEND(lbufo,nbuf,MPI_REAL, &
                        zlneigh,tolowz,MPI_COMM_WORLD,isend_rq_tolowz,ierr)
         call MPI_ISEND(ubufo,nbuf,MPI_REAL, &
                        zuneigh,touppz,MPI_COMM_WORLD,isend_rq_touppz,ierr)
@@ -3078,10 +3078,10 @@ module Mpicomm
         do j=1,3
 
           if (ipz/=0 .or. bcz1(j-1+ivar)=='p') &
-            vec(1:n1-1,j)=lbufi                 !read from buffer in lower ghostzones
+            vec(1:n1-1,j)=lbufi(:,j)            !read from buffer in lower ghostzones
           
           if (ipz/=nprocz-1 .or. bcz2(j-1+ivar)=='p') &
-            vec(n2+1:mz,j)=ubufi                !read from buffer in upper ghostzones
+            vec(n2+1:mz,j)=ubufi(:,j)           !read from buffer in upper ghostzones
 
         enddo
 
