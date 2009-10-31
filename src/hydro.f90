@@ -2018,8 +2018,8 @@ module Hydro
     if ( lspherical_coords .or. lcylindrical_coords ) then
 
       if ( .not.present(uu) ) then
-        call stop_it("Error: deformation matrix for curvilinear co-ordinates &
-requires providing of the velocity itself!!!")
+        call stop_it("Error: deformation matrix for curvilinear co-ordinates" &
+                     //"requires providing of the velocity itself!!!")
         return
       endif
 
