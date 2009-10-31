@@ -35,6 +35,7 @@ module Hydro
   real, allocatable, dimension (:) :: KS_omega !or through whole field for each wavenumber?
   integer :: KS_modes = 3
   real, allocatable, dimension (:) :: Zl,dZldr,Pl,dPldtheta
+  real :: ampl_fcont_uu=1.
 !
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
