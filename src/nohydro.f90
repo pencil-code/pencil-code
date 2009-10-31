@@ -759,6 +759,22 @@ kky_aa=2.*pi
 
     endsubroutine traceless_strain
 !***********************************************************************
+   subroutine coriolis_cartesian(df,uu,velind)
+!
+!  coriolis terms for cartesian geometry
+!
+!  30-oct-09/MR: outsourced, parameter velind added
+!  checked to be an equivalent change by auot-test conv-slab-noequi, mdwarf
+!
+      real, dimension (mx,my,mz,mvar), intent(out) :: df
+      real, dimension (nx,3),          intent(in)  :: uu
+      integer,                         intent(in)  :: velind
+
+! velind is start index for velocity variable to which Coriolis force corresponds
+! x,y,z -components referred to by velind, velind+1, velind+2      (MR:IMMER ERF†LLT?)
+
+   end subroutine coriolis_cartesian
+!***********************************************************************
     subroutine calc_lhydro_pars(f)
 !
 !  dummy routine
