@@ -262,7 +262,7 @@ module Shear
 !  Loop through all the duy/dt equations and add -S*ux contribution.
 !
       if (ltestflow) then
-        do j=iuutest+1,iuxtestpq,3
+        do j=iuutest+1,iuutest+ntestflow-1,4
           df(l1:l2,m,n,j)=df(l1:l2,m,n,j)-Sshear*f(l1:l2,m,n,j-1)
         enddo
       endif

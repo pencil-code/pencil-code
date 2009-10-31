@@ -143,7 +143,9 @@ module Testflow
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      intent(inout) :: f,df
+!
+      intent(in)    :: f
+      intent(inout) :: df
 !
       call keep_compiler_quiet(f)
 !

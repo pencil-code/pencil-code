@@ -50,7 +50,11 @@ module Density
   real, dimension(mz) :: dlnrhodz_init_z=0.0, glnrho2_init_z=0.0
   real, target :: plaw=0.0
   real :: lnrho_z_shift=0.0
+
+  real, dimension (nz,3) :: glnrhomz
+
   real :: powerlr=3.0, zoverh=1.5, hoverr=0.05
+
   integer, parameter :: ndiff_max=4
   logical :: lmass_source=.false.,lcontinuity_gas=.true.
   logical :: lupw_lnrho=.false.,lupw_rho=.false.
@@ -62,6 +66,7 @@ module Density
   logical :: lrho_as_aux=.false., ldiffusion_nolog=.false.
   logical :: lshare_plaw=.false.,lmassdiff_fix=.false.
   logical :: lcheck_negative_density=.false.
+  logical :: lcalc_glnrhomean=.false.
 !
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
   character (len=labellen) :: strati_type='lnrho_ss'
@@ -95,7 +100,8 @@ module Density
       lnrho_const,plaw,lcontinuity_gas,borderlnrho,                 &
       diffrho_hyper3_aniso,lfreeze_lnrhosqu,density_floor,          &
       lanti_shockdiffusion,lrho_as_aux,ldiffusion_nolog,            &
-      lcheck_negative_density,lmassdiff_fix
+      lcheck_negative_density,lmassdiff_fix,lcalc_glnrhomean
+
 ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_rhom=0       ! DIAG_DOC: $\left<\varrho\right>$
                                 ! DIAG_DOC:   \quad(mean density)
@@ -975,6 +981,58 @@ module Density
 !
     endsubroutine init_lnrho
 !***********************************************************************
+    subroutine calc_ldensity_pars(f)
+
+!   31-aug-09/MR: adapted from calc_lhydro_pars
+!
+      use Sub, only: grad
+      use Mpicomm, only: mpiallreduce_sum
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(in) :: f
+
+      real :: fact
+      real, dimension(nx,3) :: gradlnrho
+      real, dimension(nz,3) :: temp
+
+      integer :: j,nxy=nxgrid*nygrid,nl,ml
+!
+!  caclculate mean gradient of lnrho
+!
+      if (lcalc_glnrhomean) then
+
+        fact=1./nxy
+
+        do n=1,nz
+         
+          glnrhomz(n,:)=0.
+          
+          do m=1,ny
+            
+            call grad(f,ilnrho,gradlnrho)
+            do j=1,3
+
+               glnrhomz(n,j)=glnrhomz(n,j)+sum(gradlnrho(:,j))
+
+            enddo
+       
+          enddo	
+
+          if (nprocy>1) then             
+ 
+            call mpiallreduce_sum(glnrhomz,temp,(/nz,3/),idir=2)
+            glnrhomz = temp
+
+          endif
+
+          glnrhomz(n,:) = fact*glnrhomz(n,:)
+					
+        enddo
+
+      endif
+
+   endsubroutine calc_ldensity_pars
+!***********************************************************************
     subroutine polytropic_lnrho_z( &
          f,mpoly,zint,zbot,zblend,isoth,cs2int,lnrhoint)
 !
@@ -1308,7 +1366,7 @@ module Density
 !
 !  19-11-04/anders: coded
 !
-      use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij
+      use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij, dot_mn
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1374,7 +1432,15 @@ module Density
         else
           if (lupw_rho) call stop_it("calc_pencils_density: you switched "//&
                "lupw_rho instead of lupw_lnrho")
+          !!print*,'density: n,m, glnrho-x:', n,m, p%glnrho(:,1)
+          !!print*,'density: n,m, glnrho-y:', n,m, p%glnrho(:,2)
+          !!print*,'density: n,m, glnrho-z:', n,m, p%glnrho(:,3)
+          !!print*,'density: n,m, uu-x:', n,m, p%uu(:,1)
+          !!print*,'density: n,m, uu-y:', n,m, p%uu(:,2)
+          !!print*,'density: n,m, uu-z:', n,m, p%uu(:,3)
           call u_dot_grad(f,ilnrho,p%glnrho,p%uu,p%uglnrho,UPWIND=lupw_lnrho)
+          !!print*,'density: n,m, uglnrho-x:', n,m,p%uglnrho
+          !!print*,'nl: n,m,density:', n,m,maxval(p%uglnrho), minval(p%uglnrho)
         endif
       endif
 !
@@ -1542,7 +1608,10 @@ module Density
           if (ldensity_nolog) then
             df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   - p%ugrho - p%rho*p%divu
           else
+            !!df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%divu
             df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%uglnrho - p%divu
+            !!print*,'density: n,m,p%glnrho:', n,m,maxval(p%glnrho), minval(p%glnrho)
+            !!print*,'density: n,m,p%uu:', n,m,maxval(p%uu), minval(p%uu)
           endif
         else
           if (ldensity_nolog) then

@@ -156,17 +156,16 @@ module Deriv
 
       use Cdata
 !
-      real, dimension (mz) :: f,df
-      real, dimension (nz) :: fac
+      real, dimension (mz), intent(in)  :: f
+      real, dimension (nz), intent(out) :: df
 !
-      intent(in)  :: f
-      intent(out) :: df
+      real, dimension (nz) :: fac
 !
       if (nzgrid/=1) then
         fac=(1./60)*dz_1(n1:n2)
-        df(n1:n2)=fac*(+ 45.0*(f(n1+1:n2+1)-f(n1-1:n2-1)) &
-                       -  9.0*(f(n1+2:n2+2)-f(n1-2:n2-2)) &
-                       +      (f(n1+3:n2+3)-f(n1-3:n2-3)))
+        df=fac*(+ 45.0*(f(n1+1:n2+1)-f(n1-1:n2-1)) &
+                -  9.0*(f(n1+2:n2+2)-f(n1-2:n2-2)) &
+                +      (f(n1+3:n2+3)-f(n1-3:n2-3)))
       else
         df=0.
         if (ip<=5) print*, 'der_other: Degenerate case in z-direction'

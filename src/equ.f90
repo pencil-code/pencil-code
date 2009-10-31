@@ -262,13 +262,14 @@ module Equ
 !  Calculate averages, currently only required for certain settings
 !  in hydro of the testfield procedure (only when lsoca=.false.)
 !
-      if (lhydro.and.ldensity) call calc_lhydro_pars(f)
-      if (lforcing_cont)       call calc_lforcing_cont_pars(f)
-      if (lforcing_cont)       call calc_lforcing_cont_pars(f)
-      if (ltestscalar)         call calc_ltestscalar_pars(f)
-      if (ltestfield)          call calc_ltestfield_pars(f,p)
-      if (ltestflow)           call calc_ltestflow_nonlin_terms(f,df)
-      if (lspecial)            call calc_lspecial_pars(f)
+
+      if (lhydro.and.ldensity)    call calc_lhydro_pars(f)
+      if (lforcing_cont)          call calc_lforcing_cont_pars(f)
+      if (ltestscalar)            call calc_ltestscalar_pars(f)
+      if (ltestfield)             call calc_ltestfield_pars(f,p)
+      if (ltestflow)              call calc_ltestflow_nonlin_terms(f,df)
+      if (ltestflow.and.ldensity) call calc_ldensity_pars(f)
+      if (lspecial)               call calc_lspecial_pars(f)
 !
 !  Calculate quantities for a chemical mixture
 !

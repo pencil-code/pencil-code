@@ -23,6 +23,9 @@ module Density
 !
   implicit none
 !
+  logical :: lcalc_glnrhomean=.false.,lupw_lnrho=.false.
+  real, dimension (nz,3) :: glnrhomz
+
   include 'density.h'
 !
   contains
@@ -65,6 +68,14 @@ module Density
       call keep_compiler_quiet(f)
 !
     endsubroutine init_lnrho
+!***********************************************************************
+    subroutine calc_ldensity_pars(f)
+
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+  endsubroutine calc_ldensity_pars
 !***********************************************************************
     subroutine pencil_criteria_density()
 !

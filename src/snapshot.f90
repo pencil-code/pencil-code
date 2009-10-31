@@ -314,7 +314,7 @@ module Snapshot
       real, dimension (mx,my,mz,nv) :: a
       character (len=*) :: file
       real :: t_sp   ! t in single precision for backwards compatibility
-!
+! 
       t_sp = t
       if (ip<=8.and.lroot) print*,'output_vect: nv =', nv
 !

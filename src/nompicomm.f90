@@ -1211,6 +1211,31 @@ module Mpicomm
 !
     endsubroutine z2x
 !***********************************************************************
+    subroutine fill_zghostzones_3vec(vec,ivar)
+!
+!  Fills the upper and lower ghostzones for periodic BCs and a 3-vector vec.
+!  ivar, ivar+1, ivar+2 indices of the variables vec corresponds to
+!
+!  20-oct-09/MR: coded
+!
+      use Cdata
+
+      implicit none
+
+      real, dimension(mz,3), intent(inout) :: vec
+      integer, intent(in)                  :: ivar
+
+      integer :: j
+
+      do j=1,3
+        if ( bcz1(ivar+j-1)=='p' ) then
+          vec(1:n1-1        ,j) = vec(n2i:n2,j)
+          vec(n2+1:n2+nghost,j) = vec(n1:n1i,j)
+        endif
+      enddo
+
+    endsubroutine fill_zghostzones_3vec
+!***********************************************************************
     subroutine communicate_bc_aa_pot(f,topbot)
 !
 !  Helper routine for bc_aa_pot in Magnetic.

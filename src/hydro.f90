@@ -26,6 +26,7 @@ module Hydro
   use Viscosity
   use Messages
   use Sub, only: keep_compiler_quiet
+  use Deriv, only : der_pencil
 !
   implicit none
 !
@@ -40,7 +41,7 @@ module Hydro
   real, target, dimension (nx,ny) :: divu_xy2,u2_xy2,o2_xy2,mach_xy2
   real, target, dimension (nx,nz) :: divu_xz,u2_xz,o2_xz,mach_xz
   real, target, dimension (ny,nz) :: divu_yz,u2_yz,o2_yz,mach_yz
-  real, dimension (nz,3) :: uumz
+  real, dimension (nz,3) :: uumz,guumz=0.
   real, target, dimension (nx,ny) :: divu_xy3,divu_xy4,u2_xy3,u2_xy4,mach_xy4
   real, target, dimension (nx,ny) :: o2_xy3,o2_xy4,mach_xy3
 !
@@ -1284,37 +1285,10 @@ module Hydro
       if (lpencil(i_uij)) call gij(f,iuu,p%uij,1)
       if (lpencil(i_divu)) call div_mn(p%uij,p%divu,p%uu)
 !
-!  calculate the strain tensor sij, if requested
+!  calculate the traceless_strain tensor sij, if requested
 !
-      if (lpencil(i_sij)) then
-        do j=1,3
-          do i=1,3
-            p%sij(:,i,j)=.5*(p%uij(:,i,j)+p%uij(:,j,i))
-          enddo
-          p%sij(:,j,j)=p%sij(:,j,j)-(1./3.)*p%divu
-        enddo
-        if (lspherical_coords) then
-! p%sij(:,1,1) remains unchanged in spherical coordinates  
-          p%sij(:,1,2)=p%sij(:,1,2)-.5*r1_mn*p%uu(:,2)
-          p%sij(:,1,3)=p%sij(:,1,3)-.5*r1_mn*p%uu(:,3)
-          p%sij(:,2,1)=p%sij(:,1,2)
-          p%sij(:,2,2)=p%sij(:,2,2)+r1_mn*p%uu(:,1) 
-          p%sij(:,2,3)=p%sij(:,2,3)-.5*r1_mn*cotth(m)*p%uu(:,3)
-          p%sij(:,3,1)=p%sij(:,1,3)
-          p%sij(:,3,2)=p%sij(:,2,3)
-          p%sij(:,3,3)=p%sij(:,3,3)+r1_mn*p%uu(:,1)+cotth(m)*r1_mn*p%uu(:,2) 
-        elseif (lcylindrical_coords) then
-          p%sij(:,1,2)=p%sij(:,1,2)-.5*rcyl_mn1*p%uu(:,2)
-          p%sij(:,2,2)=p%sij(:,2,2)+.5*rcyl_mn1*p%uu(:,1)
-          p%sij(:,2,1)=p%sij(:,1,2)
-        endif
-        if (lshear) then
-          if (lshear_rateofstrain) then
-            p%sij(:,1,2)=p%sij(:,1,2)+Sshear
-            p%sij(:,2,1)=p%sij(:,2,1)+Sshear
-          endif
-        endif
-      endif
+      if (lpencil(i_sij)) &
+        call traceless_strain( p%uij, p%divu, p%sij, p%uu )
 ! sij2
       if (lpencil(i_sij2)) call multm2_mn(p%sij,p%sij2)
 ! uij5
@@ -1492,6 +1466,7 @@ module Hydro
 !  (theta,phi,r) i.e. (south,east,up), in spherical polar coordinates
 !
       if (Omega/=0.) then
+
         if (lcylindrical_coords) then
           call coriolis_cylindrical(df,p)
           call coriolis_cylindrical_del2p(f,p)
@@ -1501,40 +1476,9 @@ module Hydro
         elseif (lprecession) then
           call precession(df,p)
         else
-          if (theta==0) then
-            if (lcoriolis_force) then
-              if (headtt) print*,'duu_dt: add Coriolis force; Omega=',Omega
-              c2=2*Omega
-              df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+c2*p%uu(:,2)
-              df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-c2*p%uu(:,1)
-            endif
-!
-!  add centrifugal force (doing this with periodic boundary
-!  conditions in x and y would not be compatible, so it is
-!  therefore usually ignored in those cases!)
-!
-            if (lcentrifugal_force) then
-              if (headtt) print*,'duu_dt: add Centrifugal force; Omega=',Omega
-              df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+x(l1:l2)*Omega**2
-              df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+y(  m  )*Omega**2
-            endif
-          else
-!
-!  add Coriolis force with an angle (defined such that theta=60,
-!  for example, would correspond to 30 degrees latitude).
-!  Omega=(-sin_theta, 0, cos_theta).
-!
-            if (lcoriolis_force) then
-              if (headtt) &
-                  print*,'duu_dt: Coriolis force; Omega, theta=', Omega, theta
-              c2= 2*Omega*cos(theta*pi/180.)
-              s2=-2*Omega*sin(theta*pi/180.)
-              df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+c2*p%uu(:,2)
-              df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-c2*p%uu(:,1)+s2*p%uu(:,3)
-              df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)             -s2*p%uu(:,2)
-            endif
-          endif
+          call coriolis_cartesian(df,p%uu,iux)
         endif
+
       endif
 !
 !  Coriolis force with in Cartesian domain with Omega=Omega(x)
@@ -2034,6 +1978,81 @@ module Hydro
 !
     endsubroutine duu_dt
 !***********************************************************************
+    subroutine traceless_strain( uij, divu, sij, uu )
+!
+!  Calculates traceless rate-of-strain tensor sij from derivative tensor uij
+!  and divergence divu within each pencil;
+!  curvilinear co-ordinates require optional velocity argument uu
+
+!  16-oct-09/MR: carved out from calc_pencils_hydro
+
+    use Cdata
+    use Mpicomm, only:stop_it
+
+    implicit none
+
+    real, dimension(nx,3,3)         :: uij, sij
+    real, dimension(nx)             :: divu
+    real, dimension(nx,3), optional :: uu
+
+    intent(in)  :: uij, divu
+    intent(out) :: sij
+
+!   in-place operation is possible, i.e. uij and sij may refer to the same array
+
+    integer :: i,j
+   
+    do j=1,3                                    
+  
+      sij(:,j,j)=uij(:,j,j)
+
+      do i=j+1,3
+        sij(:,i,j)=.5*(uij(:,i,j)+uij(:,j,i))
+        sij(:,j,i)=sij(:,i,j)
+      enddo
+
+      sij(:,j,j)=sij(:,j,j)-(1./3.)*divu
+
+    enddo
+ 
+    if ( lspherical_coords .or. lcylindrical_coords ) then
+
+      if ( .not.present(uu) ) then
+        call stop_it("Error: deformation matrix for curvilinear co-ordinates requires &
+providing of the velocity itself!!!")
+        return
+      endif
+
+    endif
+
+    if (lspherical_coords) then
+! sij(:,1,1) remains unchanged in spherical coordinates  
+      sij(:,1,2)=sij(:,1,2)-.5*r1_mn*uu(:,2)
+      sij(:,1,3)=sij(:,1,3)-.5*r1_mn*uu(:,3)
+      sij(:,2,1)=sij(:,1,2)
+      sij(:,2,2)=sij(:,2,2)+r1_mn*uu(:,1) 
+      sij(:,2,3)=sij(:,2,3)-.5*r1_mn*cotth(m)*uu(:,3)
+      sij(:,3,1)=sij(:,1,3)
+      sij(:,3,2)=sij(:,2,3)
+      sij(:,3,3)=sij(:,3,3)+r1_mn*uu(:,1)+cotth(m)*r1_mn*uu(:,2) 
+
+    elseif (lcylindrical_coords) then
+
+      sij(:,1,2)=sij(:,1,2)-.5*rcyl_mn1*uu(:,2)
+      sij(:,2,2)=sij(:,2,2)+.5*rcyl_mn1*uu(:,1)
+      sij(:,2,1)=sij(:,1,2)
+    
+    endif
+    
+    if (lshear) then
+      if (lshear_rateofstrain) then
+        sij(:,1,2)=sij(:,1,2)+Sshear
+        sij(:,2,1)=sij(:,2,1)+Sshear
+      endif
+    endif
+
+    endsubroutine traceless_strain
+!***************************************************************************
     subroutine time_integrals_hydro(f,p)
 !
 !  Calculate time_integrals within each pencil (as long as each
@@ -2066,7 +2085,8 @@ module Hydro
 !   9-nov-06/axel: adapted from calc_ltestfield_pars
 !  31-jul-08/axel: Poincare force with O=(sinalp*cosot,sinalp*sinot,cosalp)
 !
-      use Mpicomm, only: mpiallreduce_sum
+      use Mpicomm, only: mpiallreduce_sum, fill_zghostzones_3vec
+      use Deriv, only: der_z
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: rho,rux,ruy,ruz
@@ -2081,6 +2101,8 @@ module Hydro
       real :: c,s,sinalp,cosalp,OO2,alpha_precession_rad
       integer :: m,n,i,j
       real :: fact
+      real, dimension(mz,3) :: uumzl=0.
+      real, dimension(nz,3) :: temp
 !
 !     intent(in) :: f
       intent(inout) :: f
@@ -2124,13 +2146,31 @@ module Hydro
 !  do mean field for each component
 !
       if (lcalc_uumean) then
+
         fact=1./nxy
+        uumz = 0.
+
         do n=n1,n2
-          uumz(n,:)=0.
-          do j=1,3
-            uumz(n-n1+1,j)=fact*sum(f(l1:l2,m1:m2,n,j))
-          enddo
+        do j=1,3
+          uumz(n-n1+1,j)=fact*sum(f(l1:l2,m1:m2,n,iux+j-1))
         enddo
+        enddo
+        
+        uumzl(n1:n2,:) = uumz
+        
+        call fill_zghostzones_3vec(uumzl,iux)
+   
+        do j=1,3
+          call der_z(uumzl(:,j),guumz(:,j))
+        enddo
+
+      endif
+
+      if (nprocy>1) then             
+ 
+        call mpiallreduce_sum(guumz,temp,(/nz,3/),idir=2)
+        guumz = temp
+
       endif
 !
 !  do communication for array of size nz*nprocz*3*njtest
@@ -2457,7 +2497,73 @@ module Hydro
 !
     endsubroutine precession
 !***********************************************************************
-    subroutine coriolis_spherical(df,p)
+   subroutine coriolis_cartesian(df,uu,velind)
+!
+!  coriolis terms for cartesian geometry
+!
+!  30-oct-09/MR: outsourced, parameter velind added
+!  checked to be an equivalent change by auot-test conv-slab-noequi, mdwarf
+!
+      real, dimension (mx,my,mz,mvar), intent(out) :: df
+      real, dimension (nx,3),          intent(in)  :: uu
+      integer,                         intent(in)  :: velind
+
+! velind is start index for velocity variable to which Coriolis force corresponds
+! x,y,z -components referred to by velind, velind+1, velind+2      (MR:IMMER ERF†LLT?)
+
+      real :: c2, s2
+
+      if (Omega==0.) return
+
+      if (theta==0) then
+
+        if (lcoriolis_force) then
+
+          if (headtt) print*,'duu_dt: add Coriolis force; Omega=',Omega
+          
+          c2=2*Omega
+          df(l1:l2,m,n,velind  )=df(l1:l2,m,n,velind  )+c2*uu(:,2)
+          df(l1:l2,m,n,velind+1)=df(l1:l2,m,n,velind+1)-c2*uu(:,1)
+
+        endif
+!
+!  add centrifugal force (doing this with periodic boundary
+!  conditions in x and y would not be compatible, so it is
+!  therefore usually ignored in those cases!)
+!
+        if (lcentrifugal_force) then
+
+          if (headtt) print*,'duu_dt: add Centrifugal force; Omega=',Omega
+          df(l1:l2,m,n,velind  )=df(l1:l2,m,n,velind  )+x(l1:l2)*Omega**2
+          df(l1:l2,m,n,velind+1)=df(l1:l2,m,n,velind+1)+y(  m  )*Omega**2
+
+        endif
+
+      else
+!
+!  add Coriolis force with an angle (defined such that theta=60,
+!  for example, would correspond to 30 degrees latitude).
+!  Omega=(-sin_theta, 0, cos_theta).
+!
+        if (lcoriolis_force) then
+
+          if (headtt) &
+            print*,'duu_dt: Coriolis force; Omega, theta=', Omega, theta
+
+          c2= 2*Omega*cos(theta*pi/180.)
+          s2=-2*Omega*sin(theta*pi/180.)
+
+          df(l1:l2,m,n,velind  )=df(l1:l2,m,n,velind  )+c2*uu(:,2)
+          df(l1:l2,m,n,velind+1)=df(l1:l2,m,n,velind+1)-c2*uu(:,1)+s2*uu(:,3)
+          df(l1:l2,m,n,velind+2)=df(l1:l2,m,n,velind+2)           -s2*uu(:,2)
+
+        endif
+
+      endif
+
+   end subroutine coriolis_cartesian
+!***********************************************************************
+   subroutine coriolis_spherical(df,p)
 !
 !  coriolis_spherical terms using spherical polars
 !

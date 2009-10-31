@@ -14,6 +14,7 @@
   public :: mpireduce_sum_int, mpireduce_sum, mpireduce_sum_double
   public :: mpireduce_max, mpireduce_min
   public :: mpiallreduce_max, mpiallreduce_sum, mpiallreduce_sum_int
+  public :: mpiallreduce_sum_arr, mpiallreduce_sum_arr2
   public :: mpireduce_or, mpireduce_and
   public :: mpibcast_real,mpibcast_logical
   public :: mpibcast_real_arr
@@ -30,6 +31,8 @@
   public :: z2x
   public :: communicate_bc_aa_pot,transp_xy_other,transp_other
 
+  public :: fill_zghostzones_3vec
+  
 ! Radiation ray routines
   public :: radboundary_xy_recv,radboundary_xy_send
   public :: radboundary_zx_recv,radboundary_zx_send

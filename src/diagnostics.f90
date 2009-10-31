@@ -34,6 +34,7 @@ module Diagnostics
   public :: yzintegrate_mn_name_x,xzintegrate_mn_name_y,xyintegrate_mn_name_z
   public :: allocate_yaverages,allocate_zaverages
   public :: yaverages_clean_up,zaverages_clean_up
+  public :: get_from_fname
   public :: init_xaver
 !
   character (len=5) :: ch2davg
@@ -889,15 +890,22 @@ module Diagnostics
 !  Calculate the summation of a, which is supplied at each call.
 !
 !  17-jun-09/ccyang: adapted from max_name
-!
+!  03-sep-09/MR: corrected to real sum
+
       real, intent(in) :: a
       integer, intent(in) :: iname
 !
-      fname(iname)=a
+     if (lfirstpoint) then
+
+       fname(iname)=a
 !
 !  set corresponding entry in itype_name
 !
       itype_name(iname)=ilabel_sum
+
+     else
+       fname(iname)=fname(iname)+a
+     endif
 !
     endsubroutine sum_name
 !***********************************************************************
@@ -1007,7 +1015,7 @@ module Diagnostics
               fname(iname)=fname(iname)+sum(a)
             endif
           endif
-        endif
+         endif
 !
 !  set corresponding entry in itype_name
 !
@@ -1664,6 +1672,26 @@ module Diagnostics
       endif
 !
     endsubroutine phisum_mn_name_rz
+!***********************************************************************
+    real function get_from_fname(iname)
+!
+!   gets value from fname
+!
+!   30-oct-09/MR: coded
+!
+    use Cdata, only:fname
+    implicit none
+
+    integer, intent(in) :: iname
+
+    if ( iname<1.or.iname>nname ) then
+      call fatal_error('get_from_fname', 'index not in legal range')
+      get_from_fname = 0
+    endif
+
+    get_from_fname = fname(iname)
+
+    endfunction get_from_fname
 !***********************************************************************
     subroutine allocate_yaverages
 !

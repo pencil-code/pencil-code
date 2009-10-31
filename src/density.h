@@ -10,4 +10,5 @@
 
   public :: pencil_criteria_density, pencil_interdep_density
   public :: calc_pencils_density
+  public :: glnrhomz,lcalc_glnrhomean,calc_ldensity_pars,lupw_lnrho
   public :: calc_pencils_density_after_mn

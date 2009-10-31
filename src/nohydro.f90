@@ -25,9 +25,11 @@ module Hydro
   include 'hydro.h'
 !
   real, dimension (nz,3) :: uumz=0.
+  real, dimension (mz,3) :: uumzg=0.,guumz=0.
+
   real :: u_out_kep=0.0
   real :: tphase_kinflow=-1.,phase1=0., phase2=0.
-  logical :: lpressuregradient_gas=.true.,lcalc_uumean=.false.
+  logical :: lpressuregradient_gas=.true.,lcalc_uumean=.false.,lupw_uu=.false.
 !
   real, allocatable, dimension (:,:) :: KS_k,KS_A,KS_B !or through whole field for each wavenumber?
   real, allocatable, dimension (:) :: KS_omega !or through whole field for each wavenumber?
@@ -735,6 +737,25 @@ kky_aa=2.*pi
       call keep_compiler_quiet(p)
 !
     endsubroutine time_integrals_hydro
+!***********************************************************************
+    subroutine traceless_strain( uij, divu, sij, uu )
+!
+!  Calculates traceless rate-of-strain tensor sij from derivative tensor uij
+!  and divergence divu within each pencil;
+!  curvilinear co-ordinates require optional velocity argument uu
+
+!  16-oct-09/MR: dummy
+
+    implicit none
+
+    real, dimension(nx,3,3)         :: uij, sij
+    real, dimension(nx)             :: divu
+    real, dimension(nx,3), optional :: uu
+
+    intent(in)  :: uij, divu
+    intent(out) :: sij
+
+    endsubroutine traceless_strain
 !***********************************************************************
     subroutine calc_lhydro_pars(f)
 !

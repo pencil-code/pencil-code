@@ -43,7 +43,7 @@ module Forcing
   integer :: kfountain=5,ifff,iffx,iffy,iffz,i2fff,i2ffx,i2ffy,i2ffz
   logical :: lwork_ff=.false.,lmomentum_ff=.false.
   logical :: lhydro_forcing=.true.,lmagnetic_forcing=.false.
-  logical :: lcrosshel_forcing=.false.,ltestfield_forcing=.false.
+  logical :: lcrosshel_forcing=.false.,ltestfield_forcing=.false.,ltestflow_forcing=.false.
   logical :: lhelical_test=.false.,lrandom_location=.true.
   logical :: lwrite_psi=.false.
   logical :: lscale_kvector_tobox=.false.,lwrite_gausspot_to_file=.true.
@@ -707,32 +707,45 @@ module Forcing
             variable_rhs=f(l1:l2,m,n,iffx:iffz)
             do j=1,3
               if (extent(j)) then
-                jf=j+ifff-1
-                j2f=j+i2fff-1
+                
                 forcing_rhs(:,j)=rho1*profx_ampl*profz_ampl(n)*force_ampl &
                   *real(cmplx(coef1(j),profx_hel*profz_hel(n)*coef2(j)) &
                   *fx(l1:l2)*fy(m)*fz(n))*fda(:,j)
+
                 forcing_rhs2(:,j)=rho1*profx_ampl*profz_ampl(n)*force_ampl &
                   *real(cmplx(0.,coef3(j)) &
                   *fx(l1:l2)*fy(m)*fz(n))*fda(:,j)
-                if (lhelical_test) then
-                  f(l1:l2,m,n,jf)=forcing_rhs(:,j)
-                else
-                  f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
+
+                if (ifff/=0) then
+
+                  jf=j+ifff-1
+                  j2f=j+i2fff-1
+
+                  if (lhelical_test) then
+                    f(l1:l2,m,n,jf)=forcing_rhs(:,j)
+                  else
+                    f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
 !
 !  allow here for forcing both in u and in b=curla. In that case one sets
 !  lhydro_forcing=F, lmagnetic_forcing=F, lcrosshel_forcing=T
 !
-                  if (lcrosshel_forcing) then
-                    f(l1:l2,m,n,j2f)=f(l1:l2,m,n,j2f)+forcing_rhs2(:,j)
+                    if (lcrosshel_forcing) then
+                      f(l1:l2,m,n,j2f)=f(l1:l2,m,n,j2f)+forcing_rhs2(:,j)
+                    endif
                   endif
+                
                 endif
+
                 if (ltestfield_forcing) then
                   do jtest=1,12
                     iaxtest=iaatest+3*(jtest-1)
                     jf=j+iaxtest-1
                     f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
                   enddo
+                endif
+		if (ltestflow_forcing) then                      ! only for testflow # 0 = primary turbulence
+                  jf=j+iuutest-1
+                  f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
                 endif
               endif
             enddo
@@ -813,6 +826,7 @@ module Forcing
 !  set to zero. 
 !
 !  22-sep-08/dhruba: adapted from forcing_hel
+!   6-oct-09/MR: according to Axel, this routine is now superseded by forcing_hel and should be deleted
 
       use Mpicomm
       use General

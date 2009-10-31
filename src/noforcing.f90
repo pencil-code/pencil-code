@@ -22,6 +22,7 @@ module Forcing
 !
   implicit none
 !
+  logical :: lhydro_forcing=.false.,ltestflow_forcing=.false.
   include 'forcing.h'
 !
   integer :: idiag_rufm=0

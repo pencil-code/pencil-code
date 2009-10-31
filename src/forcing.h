@@ -8,7 +8,8 @@
   public :: rprint_forcing
   public :: addforce
   public :: forcing_continuous, calc_lforcing_cont_pars
-
+  public :: lhydro_forcing, ltestflow_forcing
+  
   public :: pencil_criteria_forcing, pencil_interdep_forcing
   public :: calc_pencils_forcing
   public :: forcing_clean_up

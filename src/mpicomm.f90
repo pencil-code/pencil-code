@@ -3036,6 +3036,70 @@ module Mpicomm
       f(l2+1:mx  ,:,nn1:nn2,iax:iaz) = f( l1:l1i,:,nn1:nn2,iax:iaz)
 !
     endsubroutine communicate_bc_aa_pot
+!***************************************************************************
+    subroutine fill_zghostzones_3vec(vec,ivar)
+!
+!  Fills z-direction ghostzones of (mz,3)-array vec depending on the number of processors in z-direction.
+!  The three components of vec are supposed to be subject to the same z-boundary condiitons like the variables 
+!  ivar, ivar+1, ivar+2   
+!
+!   18-oct-2009/MR: Coded
+!
+      implicit none
+
+      use Cdata
+
+      real, dimension(mz,3), intent(inout) :: vec
+      integer, intent(in)                  :: ivar
+
+      integer                    :: ierr, nbuf, j
+      real, dimension (nghost,3) :: lbufi,ubufi,lbufo,ubufo
+
+      if (nprocz>1) then
+
+        lbufo = vec(n1:n1i,:)                        !!(lower z-zone)
+        ubufo = vec(n2i:n2,:)                        !!(upper z-zone)
+
+        nbuf=nghost*3
+
+        call MPI_IRECV(ubufi,nbuf,MPI_REAL, &
+                       zuneigh,tolowz,MPI_COMM_WORLD,irecv_rq_fromuppz,ierr)
+        call MPI_IRECV(lbufz,nbuf,MPI_REAL, &
+                       zlneigh,touppz,MPI_COMM_WORLD,irecv_rq_fromlowz,ierr)
+
+        call MPI_ISEND(lbufz,nbuf,MPI_REAL, &
+                       zlneigh,tolowz,MPI_COMM_WORLD,isend_rq_tolowz,ierr)
+        call MPI_ISEND(ubufo,nbuf,MPI_REAL, &
+                       zuneigh,touppz,MPI_COMM_WORLD,isend_rq_touppz,ierr)
+
+        call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,ierr)
+        call MPI_WAIT(irecv_rq_fromlowz,irecv_stat_fl,ierr)
+
+        do j=1,3
+
+          if (ipz/=0 .or. bcz1(j-1+ivar)=='p') &
+            vec(1:n1-1,j)=lbufi                 !read from buffer in lower ghostzones
+          
+          if (ipz/=nprocz-1 .or. bcz2(j-1+ivar)=='p') &
+            vec(n2+1:mz,j)=ubufi                !read from buffer in upper ghostzones
+
+        enddo
+
+        call MPI_WAIT(isend_rq_tolowz,isend_stat_tl,ierr)
+        call MPI_WAIT(isend_rq_touppz,isend_stat_tu,ierr)
+     
+      else
+
+        do j=1,3
+          if ( bcz1(ivar+j-1)=='p' ) then
+            vec(1   :n1-1     ,j) = vec(n2i:n2 ,j)
+            vec(n2+1:n2+nghost,j) = vec(n1 :n1i,j)
+          endif
+        enddo
+
+      endif
+
+    endsubroutine fill_zghostzones_3vec
 !***********************************************************************
     subroutine z2x(a,xi,yj,yproc_no,az)
 !

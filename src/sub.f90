@@ -2330,7 +2330,7 @@ module Sub
 !     del2f=dfdx+dfdy+dfdz
 !
 !   endsubroutine del2v_graddiv
-!***********************************************************************
+!*************************************************************************************
     subroutine del4(f,k,del4f)
 !
 !  calculate del4 (defined here as d^4/dx^4 + d^4/dy^4 + d^4/dz^4, rather
@@ -2614,7 +2614,7 @@ module Sub
 !
     endsubroutine u_dot_grad_mat
 !***********************************************************************
-    subroutine u_dot_grad_scl(f,k,gradf,uu,ugradf,upwind)
+    subroutine u_dot_grad_scl(f,k,gradf,uu,ugradf,upwind,ladd)
 !
 !  Do advection-type term u.grad f_k.
 !  Assumes gradf to be known, but takes f and k as arguments to be able
@@ -2622,19 +2622,28 @@ module Sub
 !
 ! 28-Aug-2007/dintrans: attempt of upwinding in cylindrical coordinates
 ! 29-Aug-2007/dhruba: attempt of upwinding in spherical coordinates. 
-!
+! 28-Sep-2009/MR: ladd added for incremental work
+
       use Deriv, only: der6
 !
-      intent(in) :: f,k,gradf,uu,upwind
+      logical :: ladd1
+
+      intent(in) :: f,k,gradf,uu,upwind,ladd
       intent(out) :: ugradf
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: uu,gradf
       real, dimension (nx) :: ugradf, del6f
       integer :: k
-      logical, optional :: upwind
+      logical, optional :: upwind, ladd
 !
-      call dot_mn(uu,gradf,ugradf)
+      if (present(ladd)) then
+        ladd1=ladd
+      else
+        ladd1=.false.
+      endif
+!
+      call dot_mn(uu,gradf,ugradf,ladd1)
 !
 !  upwind correction (currently just for z-direction)
 !

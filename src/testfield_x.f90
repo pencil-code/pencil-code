@@ -481,7 +481,7 @@ module Testfield
       real, dimension (nx,3) :: del2Atest2,graddivatest,aatest,jjtest,jxbrtest
       real, dimension (nx,3,3) :: aijtest,bijtest
       real, dimension (nx) :: bpq2,Epq2
-      integer :: jtest,jfnamez,j, i1=1, i2=2, i3=3, i4=4
+      integer :: jtest,jfnamez,j, i1=1, i2=2, i3=3, i4=4, iuxtest, iuytest, iuztest
       logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
 !
       intent(in)     :: f,p
@@ -566,7 +566,7 @@ module Testfield
 !  Calculate Lorentz force
 !
         if (ltestflow) then
-          iuxtest=iuutest+4*(jtest-1)
+          iuxtest=iuutest+4*(jtest-1)                   !!!MR: only correct if jtest refers to number of testflow
           iuytest=iuxtest+1 !(even though its not used)
           iuztest=iuxtest+2
           aatest=f(l1:l2,m,n,iaxtest:iaztest)
