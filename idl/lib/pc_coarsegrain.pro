@@ -1,5 +1,5 @@
 ;$Id$
-pro pc_coarsegrain,t,f,nevery,tt,ff,aver=aver,first=first
+pro pc_coarsegrain,t,f,nevery,tt,ff,aver=aver,firstindex=firstindex
 ;
 ;  Coarsegrain data array in the second (or, optionally the first) index.
 ;  The keyword /aver allows averaging over the coarsegrained direction.
@@ -18,9 +18,9 @@ s=size(f)
 ;
 ;  consider option of coarsegraining over first index
 ;
-if keyword_set(first) then begin
-  if s[2] ne nt then stop,'wrong f array size'
-  nz=s[1]
+if keyword_set(firstindex) then begin
+  if s[1] ne nt then stop,'wrong f array size'
+  nz=s[2]
   if keyword_set(aver) then begin
     ff=total(reform(f(it1:it2,*),nevery,ntout,nz),1)/nevery
   endif else begin
