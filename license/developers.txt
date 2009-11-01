@@ -20,9 +20,11 @@ Piyali Chatterjee, mppiyali/gmail.com,     +46-8-5537-8375
 Fabio Del Sordo, fabio/nordita.org         +46 8 5537 8277
 Boris Dintrans   dintrans/ast.obs-mip.fr   +33 5 6133 2811    +33 6 61 24 79 83, boris.dintrans, bdintrans
 Wolfgang Dobler, wdobler/gmail.com,        +49 33201 43791,   +49 1520 4056 762, +49 305331 12083 (office), wdobler, mob (new): +49 1 51 281 23 472
+Gustavo Guerrero, tavo.buk/gmail.com,      +468 5537 8718,    +46 76 089 1432
 Anders Johansen  ajohan@strw.leidenuniv.nl +31 71 527 8454    +31 648 211 427
 Nils E.L. Haugen Nils.E.Haugen/sintef.no   +47 73 55 06 75    +47 986 086 83, +47 72878737 (home)
 Tobias Heinemann T.Heinemann/damtp.cam.ac.uk +44 1223 337 907 +44 784 716 5958
+Alexander Hubbard, alex.i.hubbard/gmail.com,  +468 5537 8573, +46 70 924 2713
 André Kapelrud   kapelrud/stud.ntnu.no
 Maarit Korpi     maarit.korpi/helsinki.fi
 Petri Käpylä     petri.kapyla/helsinki.fi  +358 9 191 22952   +358 40 533 4117
@@ -31,7 +33,7 @@ Tony Mee         eemynotna/gmail.com       +44 207 7739436    +44 782 540 3751
 Dhrubaditya Mitra, dhruba.mitra/gmail.com  +44 207 882 3187   +44 782 808 3503, dhruba, dhrubaditya
 Jeffrey S. Oishi joishi/amnh.org           +1 212 313 7439
 Raphael Plasson, +46 7 3575 8374,  
-Matthias Rheinhardt, mreinhardt/aip.de,                     , +49 49 3044 19348, rei,
+Matthias Rheinhardt, mreinhardt/aip.de,    +468 5537 8708   , +49 49 3044 19348, rei,
 Graeme R. Sarson g.r.sarson/ncl.ac.uk      +44 191 222 5375
 Nishant K. Singh, nishant.cosmo@gmail.com, +91 9916785745
 Andrew Snodin    andrew.snodin/ncl.ac.uk
