@@ -384,6 +384,7 @@ module Entropy
           endif
 !
         else
+          ! lmultilayer=False
           !
           !  NOTE: in future we should define chiz=chi(z) or Kz=K(z) here.
           !  calculate hcond and FbotKbot=Fbot/K
@@ -406,6 +407,15 @@ module Entropy
             !  Fbot=-gamma/(gamma-1)*hcond0*gravz/(mpoly+1)
             !  if (lroot) print*, &
             !       'initialize_entropy: Calculated Fbot = ', Fbot
+            endif
+          else
+            ! define hcond0 from the given value of Fbot
+            if (bcz1(iss)=='c1') then
+              hcond0=gamma_m1/gamma*(mpoly0+1.)*Fbot
+              Kbot=hcond0
+              FbotKbot=gamma/gamma_m1/(mpoly0+1.)
+              if (lroot) print*, &
+                   'initialize_entropy: Calculated hcond0 = ', hcond0
             endif
           endif
           !
