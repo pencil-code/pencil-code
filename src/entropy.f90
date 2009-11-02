@@ -64,7 +64,7 @@ module Entropy
   real :: deltaT_poleq=0.,beta_hand=1.,r_bcz=0.
   real :: tau_cool=0.0, TTref_cool=0.0
   real :: cs0hs=0.0,H0hs=0.0,rho0hs=0.0
-  real :: chit_aniso=0.0,xbot=0.0
+  real :: chit_aniso=0.0,xbot=0.0,xtop=0.0
   integer, parameter :: nheatc_max=4
   logical :: lturbulent_heat=.false.
   logical :: lheatc_Kprof=.false.,lheatc_Kconst=.false.
@@ -144,7 +144,7 @@ module Entropy
       tdown, allp,beta_glnrho_global,ladvection_entropy, &
       lviscosity_heat,r_bcz,lfreeze_sint,lfreeze_sext,lhcond_global, &
       tau_cool,TTref_cool,mixinglength_flux,chiB,chi_hyper3_aniso, Ftop, &
-      chit_aniso,xbot
+      chit_aniso,xbot,xtop
 
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
@@ -188,6 +188,7 @@ module Entropy
   integer :: idiag_fconvz=0     ! DIAG_DOC:
   integer :: idiag_dcoolz=0     ! DIAG_DOC:
   integer :: idiag_fradz=0      ! DIAG_DOC:
+  integer :: idiag_fradz_Kprof=0 ! DIAG_DOC:
   integer :: idiag_fturbz=0     ! DIAG_DOC:
   integer :: idiag_ssmx=0       ! DIAG_DOC:
   integer :: idiag_ssmy=0       ! DIAG_DOC:
@@ -2983,8 +2984,8 @@ module Entropy
 !  Write radiative flux array
 !
       if (l1ddiagnos) then
-        if (idiag_fradz/=0) call xysum_mn_name_z(-hcond*p%TT*p%glnTT(:,3),idiag_fradz)
-        if (idiag_fturbz/=0) call xysum_mn_name_z(-chi_t*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
+        if (idiag_fradz_Kprof/=0) call xysum_mn_name_z(-hcond*p%TT*p%glnTT(:,3),idiag_fradz_Kprof)
+        if (idiag_fturbz/=0) call xysum_mn_name_z(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
       endif
 !
 !  "turbulent" entropy diffusion
@@ -3436,7 +3437,7 @@ module Entropy
         idiag_ssmz=0; idiag_ssmy=0; idiag_ssmx=0; idiag_ssmr=0; idiag_TTmr=0
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_TTmxy=0; idiag_TTmxz=0
         idiag_uxTTmz=0; idiag_uyTTmz=0; idiag_uzTTmz=0; idiag_cs2mphi=0
-        idiag_ssmxy=0; idiag_ssmxz=0
+        idiag_ssmxy=0; idiag_ssmxz=0; idiag_fradz_Kprof=0 
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -3488,6 +3489,7 @@ module Entropy
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fconvz',idiag_fconvz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'dcoolz',idiag_dcoolz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradz',idiag_fradz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradz_Kprof',idiag_fradz_Kprof)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ssmz',idiag_ssmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'TTmz',idiag_TTmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uxTTmz',idiag_uxTTmz)
@@ -3547,6 +3549,7 @@ module Entropy
         write(3,*) 'i_fconvz=',idiag_fconvz
         write(3,*) 'i_dcoolz=',idiag_dcoolz
         write(3,*) 'i_fradz=',idiag_fradz
+        write(3,*) 'i_fradz_Kprof=',idiag_fradz_Kprof
         write(3,*) 'i_ssmz=',idiag_ssmz
         write(3,*) 'i_TTmz=',idiag_TTmz
         write(3,*) 'i_uxTTmz=',idiag_uxTTmz
@@ -3763,7 +3766,8 @@ module Entropy
       endif
 !
       if (lspherical_coords) then
-        chit_prof = 1 + (chit_prof1-1)*step(x(l1:l2),xbot,-widthss)
+        chit_prof = 1 + (chit_prof1-1)*step(x(l1:l2),xbot,-widthss) &
+                      + (chit_prof2-1)*step(x(l1:l2),xtop,widthss)
       endif
 !
     endsubroutine chit_profile
@@ -3793,7 +3797,8 @@ module Entropy
       endif
 !
       if (lspherical_coords) then
-        glchit_prof(:,1) = (chit_prof1-1)*der_step(x(l1:l2),xbot,-widthss)
+        glchit_prof(:,1) = (chit_prof1-1)*der_step(x(l1:l2),xbot,-widthss) &
+                         + (chit_prof2-1)*der_step(x(l1:l2),xtop,widthss)
         glchit_prof(:,2:3) = 0.
       endif
 !
