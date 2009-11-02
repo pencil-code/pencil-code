@@ -430,9 +430,9 @@ module Magnetic
   integer :: idiag_gpxbm=0      ! DIAG_DOC:
   integer :: idiag_uxDxuxbm=0   ! DIAG_DOC:
   integer :: idiag_jbmphi=0     ! PHIAVG_DOC: $\left<\Jv\cdot\Bv\right>_\varphi$
-  integer :: idiag_b3b21m=0     ! DIAG_DOC:
-  integer :: idiag_b1b32m=0     ! DIAG_DOC:
-  integer :: idiag_b2b13m=0     ! DIAG_DOC:
+  integer :: idiag_b3b21m=0     ! DIAG_DOC: $\left<B_3 B_{2,1} \right>$
+  integer :: idiag_b1b32m=0     ! DIAG_DOC: $\left<B_1 B_{3,2} \right>$
+  integer :: idiag_b2b13m=0     ! DIAG_DOC: $\left<B_2 B_{1,3} \right>$
   integer :: idiag_EMFdotBm=0   ! DIAG_DOC:
   integer :: idiag_udotxbm=0    ! DIAG_DOC:
   integer :: idiag_uxbdotm=0    ! DIAG_DOC:

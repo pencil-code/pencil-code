@@ -585,6 +585,15 @@ endif
 #FFLAGS_DOUBLE=-autodouble #(nl6)
 ##include $(PENCIL_HOME)/src/Makefile_ifort.incl #(nl6)
 ##
+## Axel on norlx55 (gfortran)
+##
+#FC=mpif90 #(norlx55*)
+#FFLAGS= -O3 #(norlx55*)
+#CC=mpicc #(norlx55*)
+#CFLAGS=-O3 #(norlx55*)
+#LD_MPI= #(norlx55*)
+#LIBMPISUFFIX= #(norlx55*)
+##
 ## Axel on fe03 (ifc 8.1)
 ##
 #FC=mpif90 #(fe03*)
