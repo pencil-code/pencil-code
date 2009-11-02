@@ -391,7 +391,8 @@ module Hydro
   integer :: idiag_ekinz=0      ! DIAG_DOC: 
   integer :: idiag_totangmom=0  ! DIAG_DOC: 
   integer :: idiag_fmassz=0     ! DIAG_DOC: 
-  integer :: idiag_fkinz=0      ! DIAG_DOC: 
+  integer :: idiag_fkinz=0      ! DIAG_DOC: $\left<{1\over2}\varrho\uv^2 u_z\right>_{xy}$
+  integer :: idiag_fkinxy=0     ! DIAG_DOC: $\left<{1\over2}\varrho\uv^2 u_x\right>_{z}$
   integer :: idiag_fxbxm=0      ! DIAG_DOC: 
   integer :: idiag_fxbym=0      ! DIAG_DOC: 
   integer :: idiag_fxbzm=0      ! DIAG_DOC: 
@@ -1186,6 +1187,10 @@ module Hydro
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_u2)=.true.
       endif
+      if (idiag_fkinxy/=0) then
+        lpenc_diagnos2d(i_rho)=.true.
+        lpenc_diagnos2d(i_u2)=.true.
+      endif
       if (idiag_uguxm/=0 .or. idiag_uguym/=0 .or. idiag_uguzm/=0) &
           lpenc_diagnos(i_ugu)=.true.
           lpenc_diagnos(i_rhougu)=.true.
@@ -1942,6 +1947,7 @@ module Hydro
             call zsum_mn_name_xy(p%rho*p%uu(:,1)*p%uu(:,3),idiag_ruxuzmxy)
         if (idiag_ruyuzmxy/=0) &
             call zsum_mn_name_xy(p%rho*p%uu(:,2)*p%uu(:,3),idiag_ruyuzmxy)
+        if (idiag_fkinxy/=0)  call zsum_mn_name_xy(.5*p%rho*p%u2*p%uu(:,1),idiag_fkinxy)
       else
 !
 !  idiag_uxmxy and idiag_uymxy also need to be calculated when
@@ -3179,6 +3185,7 @@ module Hydro
         idiag_ekinz=0
         idiag_fmassz=0
         idiag_fkinz=0
+        idiag_fkinxy=0
         idiag_fxbxm=0
         idiag_fxbym=0
         idiag_fxbzm=0
@@ -3484,6 +3491,7 @@ module Hydro
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ruxuymxy',idiag_ruxuymxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ruxuzmxy',idiag_ruxuzmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ruyuzmxy',idiag_ruyuzmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'fkinxy',idiag_fkinxy)
       enddo
 !
 !  check for those quantities for which we want phi-averages
@@ -3605,6 +3613,7 @@ module Hydro
         write(3,*) 'i_uzpt=',idiag_uzpt
         write(3,*) 'i_fmassz=',idiag_fmassz
         write(3,*) 'i_fkinz=',idiag_fkinz
+        write(3,*) 'i_fkinxy=',idiag_fkinxy
         write(3,*) 'i_ekinz=',idiag_ekinz
         write(3,*) 'i_uxmz=',idiag_uxmz
         write(3,*) 'i_uymz=',idiag_uymz
