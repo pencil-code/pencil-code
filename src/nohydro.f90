@@ -740,23 +740,25 @@ kky_aa=2.*pi
 !
     endsubroutine time_integrals_hydro
 !***********************************************************************
-    subroutine traceless_strain( uij, divu, sij, uu )
+    subroutine traceless_strain(uij,divu,sij,uu)
 !
 !  Calculates traceless rate-of-strain tensor sij from derivative tensor uij
 !  and divergence divu within each pencil;
 !  curvilinear co-ordinates require optional velocity argument uu
-
+!
 !  16-oct-09/MR: dummy
-
-    implicit none
-
+!
     real, dimension(nx,3,3)         :: uij, sij
     real, dimension(nx)             :: divu
     real, dimension(nx,3), optional :: uu
-
-    intent(in)  :: uij, divu
-    intent(out) :: sij
-
+!
+    intent(in) :: uij, divu, sij
+!
+    call keep_compiler_quiet(uij)
+    call keep_compiler_quiet(sij)
+    call keep_compiler_quiet(divu)
+    if (present(uu)) call keep_compiler_quiet(uu)
+!
     endsubroutine traceless_strain
 !***********************************************************************
    subroutine coriolis_cartesian(df,uu,velind)

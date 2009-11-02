@@ -1276,26 +1276,18 @@ module Hydro
 ! uu
       if (lpencil(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
 ! u2
-      if (lpencil(i_u2)) then
-        call dot2_mn(p%uu,p%u2)
-      endif
-!
-!  calculate uij and divu, if requested
-!
+      if (lpencil(i_u2)) call dot2_mn(p%uu,p%u2)
+! uij
       if (lpencil(i_uij)) call gij(f,iuu,p%uij,1)
+! divu
       if (lpencil(i_divu)) call div_mn(p%uij,p%divu,p%uu)
-!
-!  calculate the traceless_strain tensor sij, if requested
-!
-      if (lpencil(i_sij)) &
-        call traceless_strain( p%uij, p%divu, p%sij, p%uu )
+! sij
+      if (lpencil(i_sij)) call traceless_strain(p%uij,p%divu,p%sij,p%uu)
 ! sij2
       if (lpencil(i_sij2)) call multm2_mn(p%sij,p%sij2)
 ! uij5
       if (lpencil(i_uij5)) call gij(f,iuu,p%uij5,5)
-!
 ! oo (=curlu)
-!
       if (lpencil(i_oo)) then
         call curl_mn(p%uij,p%oo,p%uu)
       endif
@@ -1332,23 +1324,17 @@ module Hydro
       endif
 ! ugu2
       if (lpencil(i_ugu2)) call dot2_mn(p%ugu,p%ugu2)
-!
 ! u3u21, u1u32, u2u13, u2u31, u3u12, u1u23
-!
       if (lpencil(i_u3u21)) p%u3u21=p%uu(:,3)*p%uij(:,2,1)
       if (lpencil(i_u1u32)) p%u1u32=p%uu(:,1)*p%uij(:,3,2)
       if (lpencil(i_u2u13)) p%u2u13=p%uu(:,2)*p%uij(:,1,3)
       if (lpencil(i_u2u31)) p%u2u31=p%uu(:,2)*p%uij(:,3,1)
       if (lpencil(i_u3u12)) p%u3u12=p%uu(:,3)*p%uij(:,1,2)
       if (lpencil(i_u1u23)) p%u1u23=p%uu(:,1)*p%uij(:,2,3)
-!
 ! del4u and del6u
-!
       if (lpencil(i_del4u)) call del4v(f,iuu,p%del4u)
       if (lpencil(i_del6u)) call del6v(f,iuu,p%del6u)
-!
 ! del6u_bulk
-!
       if (lpencil(i_del6u_bulk)) then
         call der6(f,iux,tmp,1)
         p%del6u_bulk(:,1)=tmp
@@ -1357,10 +1343,7 @@ module Hydro
         call der6(f,iuz,tmp,3)
         p%del6u_bulk(:,3)=tmp
       endif
-!
-! del2u
-! graddivu
-!
+! del2u, graddivu
       if (.not.lcartesian_coords.or.lalways_use_gij_etc) then
         if (lpencil(i_graddivu)) then 
           if (headtt.or.ldebug) print*,'calc_pencils_hydro: call gij_etc'
@@ -1387,9 +1370,7 @@ module Hydro
           if (lpencil(i_graddivu)) call del2v_etc(f,iuu,GRADDIV=p%graddivu)
         endif
       endif
-!
 ! grad5divu
-!
       if (lpencil(i_grad5divu)) then
         do i=1,3
           tmp=0.0
@@ -1978,53 +1959,43 @@ module Hydro
 !
     endsubroutine duu_dt
 !***********************************************************************
-    subroutine traceless_strain( uij, divu, sij, uu )
+    subroutine traceless_strain(uij,divu,sij,uu)
 !
 !  Calculates traceless rate-of-strain tensor sij from derivative tensor uij
 !  and divergence divu within each pencil;
 !  curvilinear co-ordinates require optional velocity argument uu
-
+!
 !  16-oct-09/MR: carved out from calc_pencils_hydro
-
-    use Cdata
-    use Mpicomm, only:stop_it
-
-    implicit none
-
+!
     real, dimension(nx,3,3)         :: uij, sij
     real, dimension(nx)             :: divu
     real, dimension(nx,3), optional :: uu
-
+!
+    integer :: i,j
+!   
     intent(in)  :: uij, divu
     intent(out) :: sij
-
-!   in-place operation is possible, i.e. uij and sij may refer to the same array
-
-    integer :: i,j
-   
+!
+!  In-place operation is possible, i.e. uij and sij may refer to the same array.
+!
     do j=1,3                                    
-  
       sij(:,j,j)=uij(:,j,j)
-
       do i=j+1,3
         sij(:,i,j)=.5*(uij(:,i,j)+uij(:,j,i))
         sij(:,j,i)=sij(:,i,j)
       enddo
-
       sij(:,j,j)=sij(:,j,j)-(1./3.)*divu
-
     enddo
- 
-    if ( lspherical_coords .or. lcylindrical_coords ) then
-
-      if ( .not.present(uu) ) then
-        call stop_it("Error: deformation matrix for curvilinear co-ordinates" &
-                     //"requires providing of the velocity itself!!!")
+! 
+    if (lspherical_coords.or.lcylindrical_coords) then
+      if (.not.present(uu)) then
+        call fatal_error('traceless_strain', &
+            'Deformation matrix for curvilinear co-ordinates'// &
+            'requires providing of the velocity itself')
         return
       endif
-
     endif
-
+!
     if (lspherical_coords) then
 ! sij(:,1,1) remains unchanged in spherical coordinates  
       sij(:,1,2)=sij(:,1,2)-.5*r1_mn*uu(:,2)
@@ -2035,22 +2006,19 @@ module Hydro
       sij(:,3,1)=sij(:,1,3)
       sij(:,3,2)=sij(:,2,3)
       sij(:,3,3)=sij(:,3,3)+r1_mn*uu(:,1)+cotth(m)*r1_mn*uu(:,2) 
-
     elseif (lcylindrical_coords) then
-
       sij(:,1,2)=sij(:,1,2)-.5*rcyl_mn1*uu(:,2)
       sij(:,2,2)=sij(:,2,2)+.5*rcyl_mn1*uu(:,1)
       sij(:,2,1)=sij(:,1,2)
-    
     endif
-    
+!    
     if (lshear) then
       if (lshear_rateofstrain) then
         sij(:,1,2)=sij(:,1,2)+Sshear
         sij(:,2,1)=sij(:,2,1)+Sshear
       endif
     endif
-
+!
     endsubroutine traceless_strain
 !***************************************************************************
     subroutine time_integrals_hydro(f,p)
