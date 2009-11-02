@@ -41,7 +41,7 @@ module Gravity
   real :: gravz_const=1.,reduced_top=1.
   real :: g0=0.
   real :: r0_pot=0.,r1_pot1=0.    ! peak radius for smoothed potential
-  integer :: n_pot=10,n_pot1=10   ! exponent for smoothed potential
+  real :: n_pot=10,n_pot1=10   ! exponent for smoothed potential
   real :: qgshear=1.5  ! (global) shear parameter
                        !     1.5 for Keplerian disks, 1.0 for galaxies
 
