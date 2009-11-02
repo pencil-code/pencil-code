@@ -189,7 +189,9 @@ module Entropy
   integer :: idiag_dcoolz=0     ! DIAG_DOC:
   integer :: idiag_fradz=0      ! DIAG_DOC:
   integer :: idiag_fradz_Kprof=0 ! DIAG_DOC:
+  integer :: idiag_fradxy_Kprof=0 ! DIAG_DOC:
   integer :: idiag_fturbz=0     ! DIAG_DOC:
+  integer :: idiag_fturbxy=0    ! DIAG_DOC:
   integer :: idiag_ssmx=0       ! DIAG_DOC:
   integer :: idiag_ssmy=0       ! DIAG_DOC:
   integer :: idiag_ssmz=0       ! DIAG_DOC:
@@ -204,6 +206,7 @@ module Entropy
   integer :: idiag_uxTTmz=0     ! DIAG_DOC:
   integer :: idiag_uyTTmz=0     ! DIAG_DOC:
   integer :: idiag_uzTTmz=0     ! DIAG_DOC:
+  integer :: idiag_uxTTmxy=0    ! DIAG_DOC:
   integer :: idiag_ssmxy=0      ! DIAG_DOC: $\left< s \right>_{z}$
   integer :: idiag_ssmxz=0      ! DIAG_DOC: $\left< s \right>_{y}$
 
@@ -1975,12 +1978,17 @@ module Entropy
           lpenc_diagnos(i_rho)=.true.
           lpenc_diagnos(i_TT)=.true.  !(to be replaced by enthalpy)
       endif
+      if (idiag_fturbxy/=0) then
+          lpenc_diagnos2d(i_rho)=.true.
+          lpenc_diagnos2d(i_TT)=.true.
+      endif
       if (idiag_TTm/=0 .or. idiag_TTmx/=0 .or. idiag_TTmy/=0 .or. &
           idiag_TTmz/=0 .or. idiag_TTmr/=0 .or. idiag_TTmax/=0 .or. &
           idiag_TTmin/=0 .or. idiag_uxTTmz/=0 .or.idiag_uyTTmz/=0 .or. &
           idiag_uzTTmz/=0) &
           lpenc_diagnos(i_TT)=.true.
-      if (idiag_TTmxy/=0 .or. idiag_TTmxz/=0) lpenc_diagnos2d(i_TT)=.true.
+      if (idiag_TTmxy/=0 .or. idiag_TTmxz/=0 .or. idiag_uxTTmxy/=0) &
+          lpenc_diagnos2d(i_TT)=.true.
       if (idiag_yHm/=0 .or. idiag_yHmax/=0) lpenc_diagnos(i_yH)=.true.
       if (idiag_dtc/=0) lpenc_diagnos(i_cs2)=.true.
       if (idiag_TTp/=0) then
@@ -2327,8 +2335,9 @@ module Entropy
         if (idiag_TTmxz/=0) call ysum_mn_name_xz(p%TT,idiag_TTmxz)
         if (idiag_ssmxy/=0) call zsum_mn_name_xy(p%ss,idiag_ssmxy)
         if (idiag_ssmxz/=0) call ysum_mn_name_xz(p%ss,idiag_ssmxz)
+        if (idiag_uxTTmxy/=0) call zsum_mn_name_xy(p%uu(:,1)*p%TT,idiag_uxTTmxy)
       endif
-!
+
     endsubroutine dss_dt
 !**********************************************************************
     subroutine dss_dt_after_mn(f,df,p)
@@ -2998,6 +3007,13 @@ module Entropy
         if (idiag_fturbz/=0) call xysum_mn_name_z(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
       endif
 !
+!  2d-averages
+!
+      if (l2davgfirst) then
+        if (idiag_fradxy_Kprof/=0) call zsum_mn_name_xy(-hcond*p%TT*p%glnTT(:,1),idiag_fradxy_Kprof)
+        if (idiag_fturbxy/=0) call zsum_mn_name_xy(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,1),idiag_fturbxy)
+      endif
+!
 !  "turbulent" entropy diffusion
 !  should only be present if g.gradss > 0 (unstable stratification)
 !  But this is not curently being checked.
@@ -3447,7 +3463,8 @@ module Entropy
         idiag_ssmz=0; idiag_ssmy=0; idiag_ssmx=0; idiag_ssmr=0; idiag_TTmr=0
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_TTmxy=0; idiag_TTmxz=0
         idiag_uxTTmz=0; idiag_uyTTmz=0; idiag_uzTTmz=0; idiag_cs2mphi=0
-        idiag_ssmxy=0; idiag_ssmxz=0; idiag_fradz_Kprof=0 
+        idiag_ssmxy=0; idiag_ssmxz=0; idiag_fradz_Kprof=0; idiag_uxTTmxy=0
+        idiag_fturbxy=0; idiag_fradxy_Kprof=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -3517,6 +3534,9 @@ module Entropy
       do inamexy=1,nnamexy
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'TTmxy',idiag_TTmxy)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'ssmxy',idiag_ssmxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'uxTTmxy',idiag_uxTTmxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fturbxy',idiag_fturbxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fradxy_Kprof',idiag_fradxy_Kprof)
       enddo
 !
 !  check for those quantities for which we want y-averages
@@ -3556,10 +3576,12 @@ module Entropy
         write(3,*) 'i_ssmphi=',idiag_ssmphi
         write(3,*) 'i_cs2mphi=',idiag_cs2mphi
         write(3,*) 'i_fturbz=',idiag_fturbz
+        write(3,*) 'i_fturbxy=',idiag_fturbxy
         write(3,*) 'i_fconvz=',idiag_fconvz
         write(3,*) 'i_dcoolz=',idiag_dcoolz
         write(3,*) 'i_fradz=',idiag_fradz
         write(3,*) 'i_fradz_Kprof=',idiag_fradz_Kprof
+        write(3,*) 'i_fradxy_Kprof=',idiag_fradxy_Kprof
         write(3,*) 'i_ssmz=',idiag_ssmz
         write(3,*) 'i_TTmz=',idiag_TTmz
         write(3,*) 'i_uxTTmz=',idiag_uxTTmz
@@ -3579,6 +3601,7 @@ module Entropy
         write(3,*) 'ilnTT=',ilnTT
         write(3,*) 'i_TTmxy=',idiag_TTmxy
         write(3,*) 'i_TTmxz=',idiag_TTmxz
+        write(3,*) 'i_uxTTmxy=',idiag_uxTTmxy
         write(3,*) 'i_ssmxy=',idiag_ssmxy
         write(3,*) 'i_ssmxz=',idiag_ssmxz
       endif
