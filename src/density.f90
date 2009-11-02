@@ -1608,10 +1608,7 @@ module Density
           if (ldensity_nolog) then
             df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   - p%ugrho - p%rho*p%divu
           else
-            !!df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%divu
             df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%uglnrho - p%divu
-            !!print*,'density: n,m,p%glnrho:', n,m,maxval(p%glnrho), minval(p%glnrho)
-            !!print*,'density: n,m,p%uu:', n,m,maxval(p%uu), minval(p%uu)
           endif
         else
           if (ldensity_nolog) then

@@ -7,11 +7,12 @@
 
 !  Note: this routine requires that MVAR and MAUX contributions
 !  together with njtestflow are set correctly in the cparam.local file.
-!  njtestflow must be set at the end of the file such that 3*njtestflow=MVAR.
+!  njtestflow must be set at the end of the file such that
+!  4*(njtestflow+1)=MVAR.
 !
 !  Example:
-!  ! MVAR CONTRIBUTION 12
-!  ! MAUX CONTRIBUTION 12
+!  ! MVAR CONTRIBUTION 28
+!  ! MAUX CONTRIBUTION 28
 !  integer, parameter :: njtestflow=6
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -40,7 +41,7 @@ module Testflow
     module procedure insert_array_mult
   endinterface
 
-  integer, parameter :: njtestflow=6
+!AB integer, parameter :: njtestflow=6  !obsolete
 !
 ! Slice precalculation buffers
 !
@@ -101,7 +102,7 @@ module Testflow
                                ktestflow,           &    ! wavenumber for testflow (if sinusoidal)
                                lugu_as_aux,         &    ! ??
                                duuinit,             &    !
-                               wamp			 ! amplitude of the testflows
+                               wamp                      ! amplitude of the testflows
 
   ! diagnostic variables (needs to be consistent with reset list below)
 
@@ -329,10 +330,14 @@ module Testflow
 
       iuxtest=iuutest
       ihhtest=iuutest+3
-      
-      f(:,:,:,iuutest:iuutest+ntestflow-1)=0.		!MR: richtig??
 !
-      do j=1,ninit	
+!  initialize to zero
+!
+!AXEL f(:,:,:,iuutest:iuutest+ntestflow-1)=0.
+!
+!  loop over different choices of initial conditions
+!
+      do j=1,ninit
 
         if ( inituutest(j)(1:15).eq.'gaussian-noise-' ) then
 
@@ -343,7 +348,6 @@ module Testflow
 
           read( inituutest(j)(11:11), '(i1)' ) jtest
           selector='sinwave-x'
-      
         else
           selector = inituutest(j)
         endif
@@ -644,7 +648,7 @@ module Testflow
 
           endif
 
-          call h_dot_grad(U0test,uijfluct,uufluct,U0testgu)			
+          call h_dot_grad(U0test,uijfluct,uufluct,U0testgu)
                                           !this parameter without meaning in cartesian geometry
 
           call multsv(uufluct(:,3),gU0test,ugU0test) 
@@ -678,7 +682,7 @@ module Testflow
             endif
 
             U0testgu = uijfluct(:,:,3)*gH0test
-							        
+
             call multsv(0.5*ghfluct(:,3),gU0test,ugU0test)
             ugU0test(:,3) = ugU0test(:,3) + 0.5*ghfluct(:,3)*gU0test(:,3)
             
@@ -796,7 +800,7 @@ module Testflow
         endif
 !
         if (t >= tuuinit) then
-	  
+ 
           call init_uutest(f) !MR: ist nicht das gemeint???
           !!!call initialize_testflow(f,reinitialize_uutest)
           call update_snaptime(file,tuuinit,nuuinit,duuinit,t,ltestflow_out,ch,.false.)
@@ -934,8 +938,8 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
 !
 !  velocity gradient matrix and velocity divergence of testflow solution
 !  
-            call gij(f,iuxtest,uijtest,1)		!!p               
-            call div_mn(uijtest,divutest,uutest)	!!p
+            call gij(f,iuxtest,uijtest,1)               !!p               
+            call div_mn(uijtest,divutest,uutest)        !!p
 !
 !  calculate traceless strain tensor sijtest from uijtest
            
@@ -995,7 +999,7 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
             if ( jtest.eq.0 .or. .not.lsoca_testflow ) then
               !!print*, jtest,m,n,iuxtest,iuztest,ihhtest
               df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest)+unltest      ! nonlinear parts stored in df 
-              !!!!df(l1:l2,m,n,ihhtest        )=df(l1:l2,m,n,ihhtest        )+hnltest
+              df(l1:l2,m,n,ihhtest        )=df(l1:l2,m,n,ihhtest        )+hnltest
              
               !!if ( jtest.eq.0 ) print*,'nl: n,m,ghtest:', n,m, ghtest(:,1)
               !!if ( jtest.eq.0 ) print*,'nl: n,m,ghtest:', n,m, ghtest(:,2)
@@ -1059,11 +1063,11 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
             do j=1,3
 
               ju = iuxtest+j-1
-              df(l1:l2,m1:m2,n,ju)=df(l1:l2,m1:m2,n,ju)-unltestm(j,jtest)
+!AXEL         df(l1:l2,m1:m2,n,ju)=df(l1:l2,m1:m2,n,ju)-unltestm(j,jtest)
 
             enddo
            
-            df(l1:l2,m1:m2,n,ihhtest)=df(l1:l2,m1:m2,n,ihhtest)-hnltestm(jtest)
+!AXEL       df(l1:l2,m1:m2,n,ihhtest)=df(l1:l2,m1:m2,n,ihhtest)-hnltestm(jtest)
        
           endif
 
@@ -1112,13 +1116,13 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
     implicit none
 
     integer, intent(in) :: indz
-    real, dimension (3,0:njtestflow) :: Fipq 	        ! double index pq in single one (second) subsumed 
+    real, dimension (3,0:njtestflow) :: Fipq            ! double index pq in single one (second) subsumed 
     real, dimension (0:njtestflow) :: Qipq
 
     real, dimension (2,2) :: aklam
     integer :: i,j,i3,i4,i5,i6,k
 
-      Fipq=Fipq/(wamp*nz)		               	
+      Fipq=Fipq/(wamp*nz)
       Qipq=Qipq/(wamp*nz)                               ! factor nz for averaging over z
 
       !!if (ldiagnos) &
@@ -1127,7 +1131,7 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
       do j=1,njtestflow
 
         do i=1,3    
-          if (idiag_Fipq(i,j)/=0) call sum_name( Fipq(i,j), idiag_Fipq(i,j) )		
+          if (idiag_Fipq(i,j)/=0) call sum_name( Fipq(i,j), idiag_Fipq(i,j) )
         enddo
 
         if (idiag_Qpq(j)/=0) call sum_name( Qipq(j), idiag_Qpq(j) )
@@ -1500,7 +1504,7 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
 ! 
       do iname=1,nname
 
-        call parse_name(iname,cname(iname),cform(iname),'gal',idiag_gal)		
+        call parse_name(iname,cname(iname),cform(iname),'gal',idiag_gal)
         call parse_name(iname,cname(iname),cform(iname),'aklam',idiag_aklam)
         call parse_name(iname,cname(iname),cform(iname),'nu',idiag_nu)
         call parse_name(iname,cname(iname),cform(iname),'kappa',idiag_kappa)
