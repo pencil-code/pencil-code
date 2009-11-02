@@ -18,11 +18,12 @@
 %%   testperturb.f90
 %%   lorenz_gauge.f90
 %%   testfield_z.f90
-%%   chemistry.f90
 %%   nosolid_cells.f90
+%%   chemistry.f90
 %%   noentropy.f90
 %%   solid_cells.f90
 %%   nolorenz_gauge.f90
+%%   magnetic_axisym.f90
 %%   testscalar.f90
 
 % ---------------------------------------------------------------- %
@@ -128,6 +129,12 @@
   \var{ux2mxz}    & $\left< u_x^2 \right>_{y}$ \\
   \var{uy2mxz}    & $\left< u_y^2 \right>_{y}$ \\
   \var{uz2mxz}    & $\left< u_z^2 \right>_{y}$ \\
+  \var{u3u21m}    & $\left<u_3 u_{2,1}\right>$ \\
+  \var{u1u32m}    & $\left<u_1 u_{3,2}\right>$ \\
+  \var{u2u13m}    & $\left<u_2 u_{1,3}\right>$ \\
+  \var{u2u31m}    & $\left<u_2 u_{3,1}\right>$ \\
+  \var{u3u12m}    & $\left<u_3 u_{1,2}\right>$ \\
+  \var{u1u23m}    & $\left<u_1 u_{2,3}\right>$ \\
   \var{ruxm}      & $\left<\varrho u_x\right>$
                     \quad(mean $x$-momentum density) \\
   \var{ruym}      & $\left<\varrho u_y\right>$
@@ -188,6 +195,8 @@
                     \quad(maximum Mach number) \\
   \var{ekin}      & $\left<{1\over2}\varrho\uv^2\right>$ \\
   \var{ekintot}   & $\int_V{1\over2}\varrho\uv^2\, dV$ \\
+  \var{fkinz}     & $\left<{1\over2}\varrho\uv^2 u_z\right>_{xy}$ \\
+  \var{fkinxy}    & $\left<{1\over2}\varrho\uv^2 u_x\right>_{z}$ \\
   \var{uxglnrym}  & $\left<u_x\partial_y\ln\varrho\right>$ \\
   \var{uyglnrxm}  & $\left<u_y\partial_x\ln\varrho\right>$ \\
   \var{uxuydivum} & $\left<u_x u_y\nabla\cdot\uv\right>$ \\
@@ -210,6 +219,8 @@
                     [=internal] energy) \\
   \var{ssm}       & $\left<s/c_p\right>$
                     \quad(mean entropy) \\
+  \var{ss2m}      & $\left<(s/c_p)^2\right>$
+                    \quad(mean squared entropy) \\
   \var{eem}       & $\left<e\right>$ \\
   \var{ppm}       & $\left<p\right>$ \\
   \var{csm}       & $\left<c_{\rm s}\right>$ \\
@@ -399,6 +410,9 @@
   \var{bxbymxz}   & $\left< B_x B_y \right>_{y}$ \\
   \var{bxbzmxz}   & $\left< B_x B_z \right>_{y}$ \\
   \var{bybzmxz}   & $\left< B_y B_z \right>_{y}$ \\
+  \var{b3b21m}    & $\left<B_3 B_{2,1} \right>$ \\
+  \var{b1b32m}    & $\left<B_1 B_{3,2} \right>$ \\
+  \var{b2b13m}    & $\left<B_2 B_{1,3} \right>$ \\
   \var{examx}     & $\left<\Ev\times\Av\right>|_x$ \\
   \var{examy}     & $\left<\Ev\times\Av\right>|_y$ \\
   \var{examz}     & $\left<\Ev\times\Av\right>|_z$ \\
@@ -522,34 +536,23 @@
 \midrule
   \multicolumn{2}{c}{Module \file{testflow_z.f90}} \\
 \midrule
-  \var{lam11}     & $\lambda_{11}$ \\
-  \var{lam21}     & $\lambda_{21}$ \\
-  \var{lam12}     & $\lambda_{12}$ \\
-  \var{lam22}     & $\lambda_{22}$ \\
-  \var{nu11}      & $\nu_{113}k$ \\
-  \var{nu21}      & $\nu_{213}k$ \\
-  \var{nu12}      & $\nu_{123}k$ \\
-  \var{nu22}      & $\nu_{223}k$ \\
-  \var{u0rms}     & $\left<u_{0}^2\right>$ \\
-  \var{u11rms}    & $\left<u_{11}^2\right>$ \\
-  \var{u21rms}    & $\left<u_{21}^2\right>$ \\
-  \var{u12rms}    & $\left<u_{12}^2\right>$ \\
-  \var{u22rms}    & $\left<u_{22}^2\right>$ \\
-  \var{F111z}     & ${\cal F}_1^{11}$ \\
-  \var{F211z}     & ${\cal F}_2^{11}$ \\
-  \var{F311z}     & ${\cal F}_3^{11}$ \\
-  \var{F121z}     & ${\cal F}_1^{21}$ \\
-  \var{F221z}     & ${\cal F}_2^{21}$ \\
-  \var{F321z}     & ${\cal F}_3^{21}$ \\
-  \var{F112z}     & ${\cal F}_1^{12}$ \\
-  \var{F212z}     & ${\cal F}_2^{12}$ \\
-  \var{F312z}     & ${\cal F}_3^{12}$ \\
-  \var{F122z}     & ${\cal F}_1^{22}$ \\
-  \var{F222z}     & ${\cal F}_2^{22}$ \\
-  \var{F322z}     & ${\cal F}_3^{22}$ \\
-  \var{F10z}      & ${\cal F}_1^{0}$ \\
-  \var{F20z}      & ${\cal F}_2^{0}$ \\
-  \var{F30z}      & ${\cal F}_3^{0}$ \\
+  \var{gal}       & GAL-coefficients, couple  $\overline{F}$ and $\overline{U}$ \\
+  \var{nu}        & $\nu$-tensor,     couples $\overline{F}$ and $\partial \overline{U}/\partial z$ \\
+  \var{aklam}     & $\lambda$-tensor, couples $\overline{F}$ and $\overline{W}$ \\
+  \var{chi}       & $\chi$-vector,    couples $\overline{F}$ and ${\overline{G}}_z$ \\
+  \var{kappa}     & $\kappa$-vector,  couples $\overline{Q}$ and $\overline{U}$ \\
+  \var{psi}       & $\psi$-vector,    couples $\overline{Q}$ and $\overline{W}$ \\
+  \var{pi}        & $\pi$-scalar,     couples $\overline{Q}$ and ${\overline{G}}_z$
+                    $\alpha_{K,ij}$
+                    $\lambda_{ij}$
+                    $\nu_{ij}$
+                    $\chi_i$
+                    $\kappa_i$
+                    $\psi_i$
+                    ${\cal F}_i^{pq}$
+                    ${\cal Q}^{pq}$
+                    $\left<{u^{pq}}^2\right>$
+                    $\left<{h^{pq}}^2\right>$ \\
   \var{ux0mz}     & $\left<u_{x}\right>_{xy}$ \\
   \var{uy0mz}     & $\left<u_{y}\right>_{xy}$ \\
   \var{uz0mz}     & $\left<u_{z}\right>_{xy}$ \\
@@ -700,6 +703,9 @@
   \var{M22z}      & $\left<{\cal M}_{22}\right>_{xy}$ \\
   \var{M33z}      & $\left<{\cal M}_{33}\right>_{xy}$ \\
 \midrule
+  \multicolumn{2}{c}{Module \file{nosolid_cells.f90}} \\
+\midrule
+\midrule
   \multicolumn{2}{c}{Module \file{chemistry.f90}} \\
 \midrule
   \var{Y1m}       & $\left<Y_1\right>$ \\
@@ -730,9 +736,6 @@
   \var{Y8mz}      & $\left<Y_8\right>_{xy}(z)$ \\
   \var{Y9mz}      & $\left<Y_9\right>_{xy}(z)$ \\
 \midrule
-  \multicolumn{2}{c}{Module \file{nosolid_cells.f90}} \\
-\midrule
-\midrule
   \multicolumn{2}{c}{Module \file{noentropy.f90}} \\
 \midrule
   \var{dtc}       & $\delta t/[c_{\delta t}\,\delta_x
@@ -754,6 +757,12 @@
   \var{phip2}     & $\phi(x2,y2,z2)>$ \\
   \var{phibzm}    & $\left<\phi B_z\right>$ \\
   \var{phibzmz}   & $\left<\phi B_z\right>_{xy}$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{magnetic_axisym.f90}} \\
+\midrule
+  \var{aphi2m}    & $\left<A_\phi^2\right>$ \\
+  \var{bphi2m}    & $\left<B_\phi^2\right>$ \\
+  \var{bpol2m}    & $\left<B_p^2\right>$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{testscalar.f90}} \\
 \midrule
