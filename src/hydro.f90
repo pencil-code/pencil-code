@@ -288,6 +288,7 @@ module Hydro
                                 ! PHIAVG_DOC:  $(\varpi,\varphi,z)$]
   integer :: idiag_upmphi=0     ! PHIAVG_DOC: $\left<u_\varphi\right>_\varphi$
   integer :: idiag_uzmphi=0     ! PHIAVG_DOC: $\left<u_z\right>_\varphi$
+  integer :: idiag_ursphmphi=0  ! PHIAVG_DOC: $\left<u_r\right>_\varphi$
   ! For the manual: uumphi      ! PHIAVG_DOC: shorthand for \var{urmphi},
                                 ! PHIAVG_DOC: \var{upmphi} and \var{uzmphi}
                                 ! PHIAVG_DOC: together
@@ -1178,6 +1179,7 @@ module Hydro
         lpenc_diagnos(i_pomx)=.true.
         lpenc_diagnos(i_pomy)=.true.
       endif
+      if (idiag_ursphmphi/=0) lpenc_diagnos2d(i_evr)=.true.
       if (idiag_upmr/=0 .or. idiag_opmr/=0 .or. idiag_upmphi/=0) then
         lpenc_diagnos(i_phix)=.true.
         lpenc_diagnos(i_phiy)=.true.
@@ -1895,6 +1897,9 @@ module Hydro
       if (l2davgfirst) then
         if (idiag_urmphi/=0) &
             call phisum_mn_name_rz(p%uu(:,1)*p%pomx+p%uu(:,2)*p%pomy,idiag_urmphi)
+        if (idiag_ursphmphi/=0) &
+            call phisum_mn_name_rz((p%uu(:,1)*p%evr(:,1)+p%uu(:,2)*p%evr(:,2)+ &
+                               p%uu(:,3)*p%evr(:,3))**2,idiag_ursphmphi)
         if (idiag_upmphi/=0) &
             call phisum_mn_name_rz(p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy,idiag_upmphi)
         if (idiag_uzmphi/=0) &
@@ -3094,6 +3099,7 @@ module Hydro
         idiag_u3u12mz=0
         idiag_u1u23mz=0
         idiag_urmphi=0
+        idiag_ursphmphi=0
         idiag_upmphi=0
         idiag_uzmphi=0
         idiag_u2mphi=0
@@ -3498,6 +3504,7 @@ module Hydro
 !
       do irz=1,nnamerz
         call parse_name(irz,cnamerz(irz),cformrz(irz),'urmphi',idiag_urmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'ursphmphi',idiag_ursphmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'upmphi',idiag_upmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'uzmphi',idiag_uzmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'u2mphi',idiag_u2mphi)
@@ -3646,6 +3653,7 @@ module Hydro
         write(3,*) 'i_uz2mxz=',idiag_uz2mxz
         write(3,*) 'i_u2mz=',idiag_u2mz
         write(3,*) 'i_urmphi=',idiag_urmphi
+        write(3,*) 'i_ursphmhi=',idiag_ursphmphi
         write(3,*) 'i_upmphi=',idiag_upmphi
         write(3,*) 'i_uzmphi=',idiag_uzmphi
         write(3,*) 'i_u2mphi=',idiag_u2mphi
