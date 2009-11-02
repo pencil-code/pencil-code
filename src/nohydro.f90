@@ -771,8 +771,9 @@ kky_aa=2.*pi
       real, dimension (mx,my,mz,mvar), intent(out) :: df
       real, dimension (nx,3),          intent(in)  :: uu
       integer,                         intent(in)  :: velind
-! velind is start index for velocity variable to which Coriolis force corresponds
-! x,y,z -components referred to by velind, velind+1, velind+2      (MR:IMMER ERF†LLT?)
+!
+      call keep_compiler_quiet(df)
+!
    endsubroutine coriolis_cartesian
 !***********************************************************************
     subroutine calc_lhydro_pars(f)
