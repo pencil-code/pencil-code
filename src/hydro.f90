@@ -1450,11 +1450,11 @@ module Hydro
 
         if (lcylindrical_coords) then
           call coriolis_cylindrical(df,p)
-          call coriolis_cylindrical_del2p(f,p)
+          if (ldensity_anelastic) call coriolis_cylindrical_del2p(f,p)
         elseif (lspherical_coords) then
           call coriolis_spherical(df,p)
-          call coriolis_spherical_del2p(f,p)
-        elseif (lprecession) then
+          if (ldensity_anelastic) call coriolis_spherical_del2p(f,p)
+       elseif (lprecession) then
           call precession(df,p)
         else
           call coriolis_cartesian(df,p%uu,iux)
