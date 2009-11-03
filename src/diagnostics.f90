@@ -1339,8 +1339,6 @@ module Diagnostics
            fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+ & 
                                a(isum-nghost)
          enddo
-!AB: Dhruba, the line above gives a different result, making the auto-test fail
-!          fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+sum(a)
         endif
       endif
 !
