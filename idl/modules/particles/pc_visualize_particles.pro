@@ -93,11 +93,15 @@ print,'ymax=',ymax
 ;
 npart_radii=0
 dims=size(param.ap0)
-ninit=dims[1]
-for i=0,ninit-1 do begin
-   if (param.ap0[i] ne 0) then begin
-      npart_radii=npart_radii+1
-   endif
+if (dims[0] gt 0) then begin
+    ninit=dims[1]
+    for i=0,ninit-1 do begin
+        if (param.ap0[i] ne 0) then begin
+            npart_radii=npart_radii+1
+        endif
+    end
+endif else begin
+    npart_radii=1
 end
 print,'npart_radii=',npart_radii
 ;
@@ -212,7 +216,7 @@ if (solid_object) then begin
            front_eta[icyl],$
            back_eta[icyl],$
            solid_colls[icyl,i],$
-           Stokes_Cunningham,FORMAT='(E12.3,I6,F12.5,5E12.3)'
+           Stokes_Cunningham,FORMAT='(E12.3,I6,F12.5,2E12.3,I12,E12.3)'
      endfor
      if (ncylinders gt 1) then begin
         print,$
@@ -222,15 +226,7 @@ if (solid_object) then begin
            total(front_eta),$
            total(back_eta),$
            total(solid_colls[*,i]),$
-           Stokes_Cunningham,FORMAT='(E12.3,A6,F12.5,5E12.3)'
-
-
-;;         print,'--------Total---------------------'
-;;         print,'Number of colls with the solid geometry of this particle type is:',$
-;;               total(solid_colls[*,i])
-;;         print,'Capture efficiency on front side=',total(front_eta)
-;;         print,'Capture efficiency on back side =',total(back_eta)
-;;         print,'Capture efficiency              =',total(eta)      
+           Stokes_Cunningham,FORMAT='(E12.3,A6,F12.5,2E12.3,I12,E12.3)'
      endif
      if (savefile) then begin
         filename='./data/capture_eff.sav'
@@ -264,6 +260,7 @@ endif
 ; Find where (in radians) the particles hit the surface of the cylinder as a
 ; function of time
 ;
+print,'The initial time of the simulation is  t =',min(obj.t)
 for i=0,npart_radii-1 do begin
    theta_=theta_arr[i,*,0]
    time_=theta_arr[i,*,1]
@@ -278,21 +275,20 @@ for i=0,npart_radii-1 do begin
       !x.range=[min(obj.t),objpvar.t]
       !y.range=[min(theta),max(theta)]
       if (i eq 0) then begin
-         plot,timereal,theta,ps=i,ytit='!4h!6',xtit='time'
-         print,'The first particle hit the surface at t=',min(timereal)
-         print,'The last particle hit the surface at t =',max(timereal)
+         plot,timereal,theta,ps=i+1,ytit='!4h!6',xtit='time'
+         print,'The first particle hit the surface at  t =',min(timereal)
+         print,'The last particle hit the surface at   t =',max(timereal)
          if (savefile) then begin
             save,timereal,theta,filename='./data/theta.sav'
          endif
       endif else begin
-         oplot,timereal,theta,ps=i
+         oplot,timereal,theta,ps=i+1
       end
    endif else begin
       print,'No particles has hit the cylinder surface!'
    endelse
 end
-print,'The initial time of the simulation is  t =',min(obj.t)
-print,'The final time of the simulation is  t   =',objpvar.t
+print,'The final time of the simulation is    t =',objpvar.t
 ;
 ; Set window size
 ;
