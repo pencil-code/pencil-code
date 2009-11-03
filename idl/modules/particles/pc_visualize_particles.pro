@@ -89,6 +89,18 @@ print,'xmax=',xmax
 print,'ymin=',ymin
 print,'ymax=',ymax
 ;
+; Find how many different particle radii we have
+;
+npart_radii=0
+dims=size(param.ap0)
+ninit=dims[1]
+for i=0,ninit-1 do begin
+   if (param.ap0[i] ne 0) then begin
+      npart_radii=npart_radii+1
+   endif
+end
+print,'npart_radii=',npart_radii
+;
 ; Check if we are inserting particles continuously
 ;
 dummy=findfile('./data/param2.nml', COUNT=countfile)
@@ -107,12 +119,12 @@ print_remove_data=0
 if (solid_object) then begin
   pc_read_ts,obj=ts
   dims=size(irmv)
-  solid_colls=fltarr(ncylinders,1)
-  solid_colls[*]=0
+  solid_colls=fltarr(ncylinders,npart_radii)
+  solid_colls[*,*]=0
   front_colls=solid_colls
   back_colls=solid_colls
   maxy=param.xyz1[1]
-  theta_arr=fltarr(10000,2)
+  theta_arr=fltarr(npart_radii,10000,2)
   for icyl=0,ncylinders-1 do begin
       if (param.coord_system eq 'cylindric') then begin
           init_uu=param.ampluu
@@ -121,73 +133,114 @@ if (solid_object) then begin
       endelse
       for k=long(0),long(dims[1])-1 do begin        
           if (dims[0]>0) then begin              
-              x0=objpvar.xx[irmv[k],0]-xpos[icyl]
-              y0=objpvar.xx[irmv[k],1]-ypos[icyl]
-              deposition_radius2=x0^2+y0^2
-              deposition_radius=sqrt(deposition_radius2)
-              if (deposition_radius lt radius[icyl]*1.1) then begin
-                  theta_tmp=acos(y0/deposition_radius)
-                  theta=3.1415-theta_tmp
-                  if (print_remove_data) then begin
-                      print,'time,k,r,x,y,theta=',$
-                        trmv[k],irmv[k],deposition_radius,x0,y0,theta
-                  endif
-                  if (total(solid_colls[icyl]) lt 10000) then begin
-                      theta_arr[solid_colls[icyl],0]=theta
-                      theta_arr[solid_colls[icyl],1]=trmv[k]
-                  endif
-                  solid_colls[icyl]=solid_colls[icyl]+1
-                  if (objpvar.xx[irmv[k],1] gt ypos[icyl]) then begin
-                      back_colls[icyl]=back_colls[icyl]+1
-                  endif else begin
-                      front_colls[icyl]=front_colls[icyl]+1
-                  endelse
-              endif
+             x0=objpvar.xx[irmv[k],0]-xpos[icyl]
+             y0=objpvar.xx[irmv[k],1]-ypos[icyl]
+             deposition_radius2=x0^2+y0^2
+             deposition_radius=sqrt(deposition_radius2)
+             if (deposition_radius lt radius[icyl]*1.1) then begin
+                ipart_radii=0
+                while (objpvar.a[irmv[k]] ne param.ap0(ipart_radii)) do begin
+                   ipart_radii=ipart_radii+1
+                end
+                theta_tmp=acos(y0/deposition_radius)
+                theta=3.1415-theta_tmp
+                if (print_remove_data) then begin
+                   print,'time,k,r,x,y,theta=',$
+                         trmv[k],irmv[k],deposition_radius,x0,y0,theta
+                endif
+                if (total(solid_colls[icyl]) lt 10000) then begin
+                   theta_arr[ipart_radii,solid_colls[icyl,ipart_radii],0]=theta
+                   theta_arr[ipart_radii,solid_colls[icyl,ipart_radii],1]=trmv[k]
+                endif
+                solid_colls[icyl,ipart_radii]=solid_colls[icyl,ipart_radii]+1
+                if (objpvar.xx[irmv[k],1] gt ypos[icyl]) then begin
+                   back_colls[icyl,ipart_radii]=back_colls[icyl,ipart_radii]+1
+                endif else begin
+                   front_colls[icyl,ipart_radii]=front_colls[icyl,ipart_radii]+1
+                endelse
+             endif
           endif
-      endfor
-  endfor
-  lambda=67e-9
-  diameter=2*param.ap0
-  Stokes_Cunningham=1+2*lambda/diameter*(1.257+0.4*exp(-1.1*diameter/(2*lambda)))
-  tau_p=param.rhops*diameter^2/(18.0*param2.nu)
-;  print,'rhops,diameter,nu=',param.rhops,diameter,param2.nu
-;  print,'tau_p,init_uu,radius[icyl]=',tau_p,init_uu,radius[icyl]
+       endfor
+   endfor
+  ; 
+  ; Find how many particles have been inserted
   ;
-  ; Assume that the radii of all cylinders are the same
-  ;
-  Stokes=tau_p*init_uu/radius[0]
-; Check how large the box for the initial particle positions is
-; compared to the radius of the cylinder.
-  fractional_area=-param.xp0/radius[0]
-; Find the capture efficiency
   if (linsert_particles_continuously) then begin
-      initial_time=ts.t[0]
-      final_time=min([objpvar.t,param2.max_particle_insert_time])
-      npar_inserted=(final_time-initial_time)*param2.particles_insert_rate
+     initial_time=ts.t[0]
+     final_time=min([objpvar.t,param2.max_particle_insert_time])
+     npar_inserted=(final_time-initial_time)*param2.particles_insert_rate
   endif else begin
-      npar_inserted=npar
+     npar_inserted=npar
   endelse
-  eta=float(solid_colls)*fractional_area/npar_inserted
-  front_eta=float(front_colls)*fractional_area/npar_inserted
-  back_eta=float(back_colls)*fractional_area/npar_inserted
-  print,'Stokes_Cunningham=',Stokes_Cunningham
-  print,'Stokes number=',Stokes
   print,'Total number of inserted particles:',npar_inserted
-  for icyl=0,ncylinders-1 do begin
-      print,'--------icyl=',icyl,'---------------------'
-      print,'Number of collisions with the solid geometry is:',solid_colls[icyl]
-      print,'Capture efficiency on front side=',front_eta[icyl]
-      print,'Capture efficiency on back side =',back_eta[icyl]
-      print,'Capture efficiency              =',eta[icyl]
-  endfor
-  print,'--------Total---------------------'
-  print,'Number of collisions with the solid geometry is:',total(solid_colls)
-  print,'Capture efficiency on front side=',total(front_eta)
-  print,'Capture efficiency on back side =',total(back_eta)
-  print,'Capture efficiency              =',total(eta)      
-  if (savefile) then begin
-      save,Stokes,eta,Stokes_Cunningham,front_eta,back_eta,ncylinders,filename='./data/capture_eff.sav'
-  endif
+  lambda=67e-9
+  ;
+  ; Loop over all particle diameters
+  ;
+  for i=0,npart_radii-1 do begin
+     diameter=2*param.ap0[i]
+     Stokes_Cunningham=1+2*lambda/diameter*$
+                       (1.257+0.4*exp(-1.1*diameter/(2*lambda)))
+     tau_p=param.rhops*diameter^2/(18.0*param2.nu)
+     ;
+     ; Assume that the radii of all cylinders are the same
+     ;
+     Stokes=tau_p*init_uu/radius[0]
+     ;
+     ; Check how large the box for the initial particle positions is
+     ; compared to the radius of the cylinder.
+     ;
+     fractional_area=-param.xp0/radius[0]
+     ;
+     ; Print header
+     ;
+     if (i eq 0) then begin
+        print,'Part. dia.','icyl','Stokes','eta_front','eta_back','n_colls',$
+        'Cs',FORMAT='(A12,A6,5A12)'
+     endif
+     ;
+     ; Find the capture efficiency
+     ;
+     eta=float(solid_colls[*,i])*fractional_area/npar_inserted
+     front_eta=float(front_colls[*,i])*fractional_area/npar_inserted
+     back_eta=float(back_colls[*,i])*fractional_area/npar_inserted
+     for icyl=0,ncylinders-1 do begin
+        print,$
+           diameter,$
+           icyl+1,$
+           Stokes,$
+           front_eta[icyl],$
+           back_eta[icyl],$
+           solid_colls[icyl,i],$
+           Stokes_Cunningham,FORMAT='(E12.3,I6,F12.5,5E12.3)'
+     endfor
+     if (ncylinders gt 1) then begin
+        print,$
+           diameter,$
+           'All',$
+           Stokes,$
+           total(front_eta),$
+           total(back_eta),$
+           total(solid_colls[*,i]),$
+           Stokes_Cunningham,FORMAT='(E12.3,A6,F12.5,5E12.3)'
+
+
+;;         print,'--------Total---------------------'
+;;         print,'Number of colls with the solid geometry of this particle type is:',$
+;;               total(solid_colls[*,i])
+;;         print,'Capture efficiency on front side=',total(front_eta)
+;;         print,'Capture efficiency on back side =',total(back_eta)
+;;         print,'Capture efficiency              =',total(eta)      
+     endif
+     if (savefile) then begin
+        filename='./data/capture_eff.sav'
+        if (i gt 0) then begin
+           filename='./data/capture_eff'+str(i)+'.sav'           
+        endif
+        save,Stokes,eta,Stokes_Cunningham,front_eta,back_eta,ncylinders,$
+             filename=filename
+     endif
+  end ; Particle diameter loop
 endif
 ;
 ; Find positions of removed particles (to be used later for plotting them).
@@ -211,27 +264,33 @@ endif
 ; Find where (in radians) the particles hit the surface of the cylinder as a
 ; function of time
 ;
-theta_=theta_arr[*,0]
-time_=theta_arr[*,1]
-here=where(theta_ ne 0)
-if (here[0] ne -1) then begin
-    WINDOW,4,XSIZE=128*2,YSIZE=256*2
-    theta=theta_[here]
-    timereal=time_[here]
-    dims=size(theta)
-    ind=indgen(dims[1])
-    !x.range=[0,max(ind)]
-    !x.range=[min(obj.t),objpvar.t]
-    !y.range=[min(theta),max(theta)]
-    plot,timereal,theta,ps=2,ytit='!4h!6',xtit='time'
-    print,'The first particle hit the surface at t=',min(timereal)
-    print,'The last particle hit the surface at t =',max(timereal)
-    if (savefile) then begin
-       save,timereal,theta,filename='./data/theta.sav'
-    endif
-endif else begin
-    print,'No particles has hit the cylinder surface!'
-endelse
+for i=0,npart_radii-1 do begin
+   theta_=theta_arr[i,*,0]
+   time_=theta_arr[i,*,1]
+   here=where(theta_ ne 0)
+   if (here[0] ne -1) then begin
+      WINDOW,4,XSIZE=128*2,YSIZE=256*2
+      theta=theta_[here]
+      timereal=time_[here]
+      dims=size(theta)
+      ind=indgen(dims[1])
+      !x.range=[0,max(ind)]
+      !x.range=[min(obj.t),objpvar.t]
+      !y.range=[min(theta),max(theta)]
+      if (i eq 0) then begin
+         plot,timereal,theta,ps=i,ytit='!4h!6',xtit='time'
+         print,'The first particle hit the surface at t=',min(timereal)
+         print,'The last particle hit the surface at t =',max(timereal)
+         if (savefile) then begin
+            save,timereal,theta,filename='./data/theta.sav'
+         endif
+      endif else begin
+         oplot,timereal,theta,ps=i
+      end
+   endif else begin
+      print,'No particles has hit the cylinder surface!'
+   endelse
+end
 print,'The initial time of the simulation is  t =',min(obj.t)
 print,'The final time of the simulation is  t   =',objpvar.t
 ;
