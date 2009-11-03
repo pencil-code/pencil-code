@@ -119,7 +119,7 @@ if (solid_object) then begin
       endif else begin
           init_uu=param.init_uu
       endelse
-      for k=0,dims[1]-1 do begin        
+      for k=long(0),long(dims[1])-1 do begin        
           if (dims[0]>0) then begin              
               x0=objpvar.xx[irmv[k],0]-xpos[icyl]
               y0=objpvar.xx[irmv[k],1]-ypos[icyl]
@@ -167,12 +167,12 @@ if (solid_object) then begin
   endif else begin
       npar_inserted=npar
   endelse
-  eta=float(solid_colls)*fractional_area/npar
-  front_eta=float(front_colls)*fractional_area/npar
-  back_eta=float(back_colls)*fractional_area/npar
+  eta=float(solid_colls)*fractional_area/npar_inserted
+  front_eta=float(front_colls)*fractional_area/npar_inserted
+  back_eta=float(back_colls)*fractional_area/npar_inserted
   print,'Stokes_Cunningham=',Stokes_Cunningham
   print,'Stokes number=',Stokes
-  print,'Total number of particles:',npar
+  print,'Total number of inserted particles:',npar_inserted
   for icyl=0,ncylinders-1 do begin
       print,'--------icyl=',icyl,'---------------------'
       print,'Number of collisions with the solid geometry is:',solid_colls[icyl]
@@ -218,22 +218,22 @@ if (here[0] ne -1) then begin
     WINDOW,4,XSIZE=128*2,YSIZE=256*2
     theta=theta_[here]
     timereal=time_[here]
-    time=timereal-min(timereal)
     dims=size(theta)
     ind=indgen(dims[1])
     !x.range=[0,max(ind)]
-    !x.range=[min(time),max(time)]
+    !x.range=[min(obj.t),objpvar.t]
     !y.range=[min(theta),max(theta)]
-    plot,time,theta,ps=2,ytit='!4h!6',xtit='time'
+    plot,timereal,theta,ps=2,ytit='!4h!6',xtit='time'
     print,'The first particle hit the surface at t=',min(timereal)
     print,'The last particle hit the surface at t =',max(timereal)
     if (savefile) then begin
-       save,time,theta,filename='./data/theta.sav'
+       save,timereal,theta,filename='./data/theta.sav'
     endif
 endif else begin
     print,'No particles has hit the cylinder surface!'
 endelse
-print,'The final time of the simulation is  t =',objpvar.t
+print,'The initial time of the simulation is  t =',min(obj.t)
+print,'The final time of the simulation is  t   =',objpvar.t
 ;
 ; Set window size
 ;
