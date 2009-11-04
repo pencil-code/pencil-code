@@ -1170,9 +1170,9 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !
       do i=l1,l2
         if (&
-             (ba(i,m,n,1).ne.0).or.&
-             (ba(i,m,n,2).ne.0).or.&
-             (ba(i,m,n,3).ne.0)) then
+            (ba(i,m,n,1).ne.0).or.&
+            (ba(i,m,n,2).ne.0).or.&
+            (ba(i,m,n,3).ne.0)) then
 !
 !  If this is a fluid point which has to be interpolated because it is very
 !  close to the solid geometry (i.e. ba(i,m,n,1) == 10) then only the 
@@ -1248,6 +1248,10 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !                       is outside the geometry. 
 !  If ba(ip,jp,kp,2)=-3 we are inside a solid geometry, and the point at jp+3
 !                       is outside the geometry. 
+!  If ba(ip,jp,kp,2)=11 we are inside a solid geometry, either close to or far 
+!                       from the boundary, but the position (ip,jp,kp) is a ghost
+!                       point at the current processor.
+!
 !  The number stored in ba(ip,jp,kp,4) is the number of the cylinder
 !
 !  19-nov-2008/nils: coded
@@ -1264,6 +1268,9 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !  geometries!)
 !
       do icyl=1,ncylinders
+        x_cyl=cylinder(icyl,ixpos)
+        y_cyl=cylinder(icyl,iypos)
+        r_cyl=cylinder(icyl,iradius)
 !
 !  First we look in x-direction
 !
@@ -1437,18 +1444,15 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
         enddo
 !
 !  If we interpolate points which are very close to the solid surface
-!  these points has to be "marked" for later use
+!  these points has to be "marked" for later use.
 !
         if (lclose_linear) then
           limit_close_linear=dxmin/2
-          x_cyl=cylinder(icyl,ixpos)
-          y_cyl=cylinder(icyl,iypos)
-          r_cyl=cylinder(icyl,iradius)
 !
 !  Loop over all points
 !
-          do i=1,mx
-            do j=1,my
+          do i=l1,l2
+            do j=m1,m2
               r_point=sqrt(((x(i)-x_cyl)**2+(y(j)-y_cyl)**2))
               dr=r_point-r_cyl
               if ((dr .ge. 0) .and. (dr<limit_close_linear)) then
@@ -1458,6 +1462,48 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
             enddo
           enddo
         endif
+!
+!  Fill ba array also for ghost points - need only know whether
+!  we are actually inside cylinder (then ba = 11), not how close we are to 
+!  the border.
+!
+!  Lower and upper ghost points in y direction
+!
+        do j=1,nghost
+          do i=1,mx
+            !  Lower ghost points
+            r_point=sqrt((((x(i)-x_cyl)**2+(y(j)-y_cyl)**2)))
+            if (r_point .lt. r_cyl) then
+              ba(i,j,:,1:3)=11
+              ba(i,j,:,4)=icyl
+            end if
+            !  Upper ghost points
+            r_point=sqrt((((x(i)-x_cyl)**2+(y(my-nghost+j)-y_cyl)**2)))
+            if (r_point .lt. r_cyl) then
+              ba(i,my-nghost+j,:,1:3)=11
+              ba(i,my-nghost+j,:,4)=icyl
+            end if
+          enddo
+        enddo
+!
+! Lower and upper ghost points in x direction
+!
+        do j=m1,m2
+          do i=1,nghost
+            !  Lower (left) ghost points
+            r_point=sqrt((((x(i)-x_cyl)**2+(y(j)-y_cyl)**2)))
+            if (r_point .lt. r_cyl) then
+              ba(i,j,:,1:3)=11
+              ba(i,j,:,4)=icyl
+            end if
+            !  Upper (right) ghost points
+            r_point=sqrt((((x(mx-nghost+i)-x_cyl)**2+(y(j)-y_cyl)**2)))
+            if (r_point .lt. r_cyl) then
+              ba(mx-nghost+i,j,:,1:3)=11
+              ba(mx-nghost+i,j,:,4)=icyl
+            end if
+          enddo
+        enddo
 !
 ! Finalize loop over all cylinders
 !
