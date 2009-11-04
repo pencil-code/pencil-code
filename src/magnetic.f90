@@ -1122,7 +1122,7 @@ module Magnetic
           (lweyl_gauge) .or. (lspherical_coords) ) &
 !  WL: but doesn't seem to be needed for the cylindrical case
           lpenc_requested(i_jj)=.true.
-      if ((eta/=0..or.meanfield_etat/=0.).and. &
+      if ((eta/=0..or.meanfield_etat/=0..or.ietat/=0).and. &
           (.not.lweyl_gauge)) lpenc_requested(i_del2a)=.true.
       if (dvid/=0.) lpenc_video(i_jb)=.true.
       if (lresi_eta_const .or. lresi_shell .or. &
@@ -1190,7 +1190,8 @@ module Magnetic
           lpenc_requested(i_oo)=.true.
       if (nu_ni/=0.) lpenc_requested(i_va2)=.true.
       if (lmeanfield_theory) then
-        if (meanfield_etat/=0. .or. alpha_effect/=0. .or. delta_effect/=0.) &
+        if (meanfield_etat/=0. .or. ietat/=0 .or. &
+            alpha_effect/=0. .or. delta_effect/=0.) &
             lpenc_requested(i_mf_EMF)=.true.
         if (delta_effect/=0.) lpenc_requested(i_oxj)=.true.
       endif
@@ -1432,7 +1433,7 @@ module Magnetic
         lpencil_in(i_b2)=.true.
         lpencil_in(i_bb)=.true.
         if (delta_effect/=0.) lpencil_in(i_oxJ)=.true.
-        if (meanfield_etat/=0.) then
+        if (meanfield_etat/=0. .or. ietat/=0) then
           if (lweyl_gauge) then
             lpencil_in(i_jj)=.true.
           else
@@ -2224,7 +2225,8 @@ module Magnetic
 !  additional terms if Mean Field Theory is included
 !
       if (lmeanfield_theory.and. &
-        (meanfield_etat/=0..or.alpha_effect/=0..or.delta_effect/=0.)) then
+        (meanfield_etat/=0. .or. ietat/=0 .or. &
+        alpha_effect/=0..or.delta_effect/=0.)) then
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%mf_EMF
         if (lOmega_effect) call Omega_effect(f,df)
       endif

@@ -56,6 +56,9 @@ module Special
   integer :: idiag_etatm=0,idiag_etmax=0,idiag_etrms=0
   integer :: idiag_alpmm=0,idiag_ammax=0,idiag_amrms=0,idiag_alpmmz=0
 
+  logical, pointer :: lmeanfield_theory
+  real, pointer :: meanfield_etat,eta
+
   contains
 
 !***********************************************************************
@@ -73,7 +76,7 @@ module Special
       call farray_register_pde('alpm',ialpm)
       call farray_register_pde('etat',ietat)
       lalpm=.true.
-!--   letat=.true.
+!     letat=.true.
 !
 !  Identify version number.
 !
@@ -126,6 +129,9 @@ module Special
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
+!  inititialize alpm and etat. Not that the f-array in ietat only contains
+!  the part not already included in meanfield_etat
+!
       select case(initalpm)
         case('zero'); f(:,:,:,ialpm)=0.; f(:,:,:,ietat)=0.
         case('constant'); f(:,:,:,ialpm)=amplalpm; f(:,:,:,ietat)=ampletat
@@ -161,16 +167,17 @@ module Special
 !  18-nov-04/axel: coded
 !  17-sep-09/axel+koen: added etat evolution
 !
-      use Diagnostics
       use Sub
+      use Diagnostics
+      use SharedVariables, only : get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: galpm
       real, dimension (nx) :: alpm,etat,ugalpm,EMFdotB,EMFdotJ
       real, dimension (nx) :: divflux,del2alpm,EJ_kfEB
-      real :: eta=.1
       type (pencil_case) :: p
+      integer :: ierr
 !
       intent(in)  :: f
       intent(out) :: df
@@ -178,42 +185,60 @@ module Special
 !  identify module and boundary conditions
 !
       if (headtt) call identify_bcs('alpm',ialpm)
+      if (headtt) call identify_bcs('etat',ietat)
+!
+!  get meanfield_etat and eta. Leave df(l1:l2,m,n,ialpm) unchanged
+!  if lmeanfield_theory is false.
+!
+      call get_shared_variable('lmeanfield_theory',lmeanfield_theory,ierr)
+      if (ierr/=0) &
+          call fatal_error("dspecial_dt: ", &
+              "cannot get shared var lmeanfield_theory")
+      if (lmeanfield_theory) then
+        call get_shared_variable('meanfield_etat',meanfield_etat,ierr)
+        if (ierr/=0) &
+            call fatal_error("dspecial_dt: ", &
+                "cannot get shared var meanfield_etat")
+        call get_shared_variable('eta',eta,ierr)
+        if (ierr/=0) &
+            call fatal_error("dspecial_dt: ", "cannot get shared var eta")
 !
 !  Abbreviations
 !        
-      alpm=f(l1:l2,m,n,ialpm)
-      etat=f(l1:l2,m,n,ietat)
+        alpm=f(l1:l2,m,n,ialpm)
+        etat=f(l1:l2,m,n,ietat)+meanfield_etat
 !
 !  dynamical quenching equation
 !  with advection flux proportional to uu
 !
-      if (lmagnetic) then
-        call dot_mn(p%mf_EMF,p%bb,EMFdotB)
-        call divflux_from_Omega_effect(p,divflux)
-        df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)&
-           -2*kf_alpm**2*(etat*EMFdotB+eta*alpm)-etat*divflux
-        if (ladvect_alpm) then
-          call grad(f,ialpm,galpm)
-          call dot_mn(p%uu,galpm,ugalpm)
-          df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)-ugalpm
-        endif
-        if (alpmdiff/=0) then
-          call del2(f,ialpm,del2alpm)
-          df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)+alpmdiff*del2alpm
-        endif
+        if (lmagnetic) then
+          call dot_mn(p%mf_EMF,p%bb,EMFdotB)
+          call divflux_from_Omega_effect(p,divflux)
+          df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)&
+             -2*kf_alpm**2*(etat*EMFdotB+eta*alpm)-etat*divflux
+          if (ladvect_alpm) then
+            call grad(f,ialpm,galpm)
+            call dot_mn(p%uu,galpm,ugalpm)
+            df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)-ugalpm
+          endif
+          if (alpmdiff/=0) then
+            call del2(f,ialpm,del2alpm)
+            df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)+alpmdiff*del2alpm
+          endif
 !
 !  etat evolution
 !
-       select case(initetam)
-        case('evolving'); 
+          select case(initetam)
+          case('evolving'); 
 !  d_t eta= tau/3 *d_t <u^2> with 1/tau=kf^2(eta+etat) and d_t <u^2>= -2*J.E_EMF+2kfB.E_EMF
-        call dot_mn(p%mf_EMF,p%jj,EMFdotJ)
-        EJ_kfEB=EMFdotJ-kf_alpm*EMFdotB
-        df(l1:l2,m,n,ietat)=df(l1:l2,m,n,ietat)&
-          -(2./3.)*EJ_kfEB/kf_alpm**2/(eta+etat)
-       case('constant'); df(:,:,:,ietat)=0.
-      endselect
-     endif
+          call dot_mn(p%mf_EMF,p%jj,EMFdotJ)
+          EJ_kfEB=EMFdotJ-kf_alpm*EMFdotB
+          df(l1:l2,m,n,ietat)=df(l1:l2,m,n,ietat)&
+            -(2./3.)*EJ_kfEB/kf_alpm**2/(eta+etat)
+          case('constant'); df(:,:,:,ietat)=0.
+          endselect
+        endif
+      endif
 !
 !  diagnostics
 !

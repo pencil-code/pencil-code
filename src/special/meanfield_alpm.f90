@@ -161,10 +161,9 @@ module Special
 !
 !  18-nov-04/axel: coded
 !
+      use Sub
       use Diagnostics
       use SharedVariables, only : get_shared_variable
-!
-      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -179,10 +178,6 @@ module Special
 !  identify module and boundary conditions
 !
       if (headtt) call identify_bcs('alpm',ialpm)
-!
-!  Abbreviations
-!        
-      alpm=f(l1:l2,m,n,ialpm)
 !
 !  get meanfield_etat and eta. Leave df(l1:l2,m,n,ialpm) unchanged
 !  if lmeanfield_theory is false.
@@ -200,6 +195,10 @@ module Special
         if (ierr/=0) &
             call fatal_error("dspecial_dt: ", "cannot get shared var eta")
 !
+!  Abbreviations
+!        
+      alpm=f(l1:l2,m,n,ialpm)
+!
 !  dynamical quenching equation
 !  with advection flux proportional to uu
 !
@@ -208,7 +207,7 @@ module Special
           call divflux_from_Omega_effect(p,divflux)
           df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)&
              -2*meanfield_etat*kf_alpm**2*EMFdotB &
-             -2*eta*alpm-meanfield_etat*divflux
+             -2*eta*kf_alpm**2*alpm-meanfield_etat*divflux
           if (ladvect_alpm) then
             call grad(f,ialpm,galpm)
             call dot_mn(p%uu,galpm,ugalpm)
