@@ -19,12 +19,12 @@ default, rmv, 0
 default, oldrmv, 0
 default, savefile, 1
 ;
-if n_elements(ivar) eq 1 then begin
-    default,varfile_,'PVAR'
-    varfile=varfile_+strcompress(string(ivar),/remove_all)
+if (n_elements(ivar) eq 1) then begin
+  default,varfile_,'PVAR'
+  varfile=varfile_+strcompress(string(ivar),/remove_all)
 endif else begin
-    default,varfile_,'pvar.dat'
-    varfile=varfile_
+  default,varfile_,'pvar.dat'
+  varfile=varfile_
 endelse
 ;
 ;  Set rmv if solid_objects
@@ -37,18 +37,18 @@ pc_read_dim, obj=dim, datadir=datadir, /quiet
 pc_read_pdim, obj=pdim, datadir=datadir, /quiet
 pc_set_precision, dim=dim, /quiet
 ;
-; Check if we are inserting particles continuously
-;
-;
 ;  Check if file exists.
 ;
 dummy=findfile('./data/param2.nml', COUNT=countfile)
+;
+; Check if we are inserting particles continuously
+;
 if (countfile gt 0) then begin
-    pc_read_param, object=param2,/param2
-    linsert_particles_continuously=param2.linsert_particles_continuously
+  pc_read_param, object=param2,/param2
+  linsert_particles_continuously=param2.linsert_particles_continuously
 endif else begin
-    pc_read_param, object=param
-    linsert_particles_continuously=param.linsert_particles_continuously
+  pc_read_param, object=param
+  linsert_particles_continuously=param.linsert_particles_continuously
 endelse
 ;
 ;  Derived dimensions.
@@ -64,7 +64,7 @@ t=zero
 x=fltarr(dim.mx)*one & y=fltarr(dim.my)*one & z=fltarr(dim.mz)*one
 dx=zero &  dy=zero &  dz=zero
 ;
-;
+;  Read processor dimensions if reading just one processor.
 ;
 if (ncpus gt 1) then begin
   pc_read_dim, obj=procdim, datadir=datadir, proc=0, /quiet
