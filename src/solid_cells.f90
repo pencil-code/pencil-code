@@ -593,7 +593,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
           enddo
           write(81,*) ' ' ! Adds a line break
           close(81)
-84        format(1I5,1F15.8,$)
+84        format(1I7,1F15.8,$)
 82        format(2F15.8,$)
         endif
       endif
