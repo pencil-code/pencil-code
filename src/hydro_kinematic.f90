@@ -11,11 +11,7 @@
 !
 ! PENCILS PROVIDED oo(3); ou; uij(3,3); uu(3); u2; sij(3,3)
 ! PENCILS PROVIDED divu; uij5(3,3); graddivu(3)
-!***************************************************************
-!! Note : To store the velocity field use 
-!!        ! MAUX CONTRIBUTION 3 
-!! above 
-!***************************************************************
+!************************************************************************
 module Hydro
 !
   use Cparam
@@ -42,6 +38,18 @@ module Hydro
   real :: ampl_fcont_uu=1.
   logical :: lforcing_cont_uu=.false.
 !
+!
+!init parameters
+!
+!
+!run parameters
+!
+  character (len=labellen) :: kinematic_flow='none'
+  real :: wind_amp=0.,wind_rmin=impossible,wind_step_width=0.
+  character (len=labellen) :: wind_profile='none'
+  namelist /hydro_run_pars/ &
+    kinematic_flow,wind_amp,wind_profile,wind_rmin,wind_step_width
+!
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
   integer :: idiag_dtu=0,idiag_urms=0,idiag_umax=0,idiag_uzrms=0
@@ -56,6 +64,7 @@ module Hydro
   integer :: idiag_phase1=0,idiag_phase2=0
   integer :: idiag_ekintot=0, idiag_ekin=0
 !
+
   contains
 !***********************************************************************
     subroutine register_hydro()
@@ -96,6 +105,7 @@ module Hydro
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
+      kinflow=kinematic_flow
       if (kinflow=='KS') then
 !        call random_isotropic_KS_setup(-5./3.,1.,(nxgrid)/2.)
 !
@@ -113,9 +123,6 @@ module Hydro
 !     ! MAUX CONTRIBUTION 3
 !  in the beginning of your src/cparam.local file, *before* setting
 !  ncpus, nprocy, etc.
-!DM
-! The above is not required any longer as we can do the same 
-! at the top of this file if we want to store the velocity field. 
 !
 !  After a reload, we need to rewrite index.pro, but the auxiliary
 !  arrays are already allocated and must not be allocated again.
@@ -166,7 +173,10 @@ module Hydro
 !   1-jul-09/axel: added more for kinflow
 !
 !  pencils for kinflow
-!
+! DM
+! The following line can be later removed and the variable kinematic_flow replaced
+! by kinflow. 
+      kinflow=kinematic_flow
       if (kinflow/='') then
         lpenc_requested(i_uu)=.true.
         if (kinflow=='eddy') then
@@ -229,6 +239,7 @@ module Hydro
       type (pencil_case) :: p
 !
       real, dimension(nx) :: kdotxwt, cos_kdotxwt, sin_kdotxwt
+      real, dimension(nx) :: wind_prof
       real, dimension(nx) :: tmp_mn, cos1_mn, cos2_mn
       real :: kkx_aa, kky_aa, kkz_aa, fac, fac2
       real :: fpara, dfpara, ecost, esint, epst, sin2t, cos2t
@@ -625,6 +636,27 @@ kky_aa=2.*pi
         p%uu(:,2)=+fac*sin(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))*eps1
         p%uu(:,3)=+fac*cos(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))*sqrt(2.)
         if (lpencil(i_divu)) p%divu=0.
+!
+! Radial wind
+!
+      elseif (kinflow=='radial-wind') then
+        if(.not.lspherical_coords)  & 
+          call fatal_error('hydro_kinematic:calc_pencils_hydro ',& 
+                'radial-wind kinflow makes sense only in spherical coordinate. ')
+        select case(wind_profile)
+        case('none'); wind_prof=0.
+        case('constant'); wind_prof=1.
+        case('radial-step'); wind_prof=step(x(l1:l2),wind_rmin,wind_step_width)
+        case('default');
+          call fatal_error('hydro_kinematic', 'no such wind profile. ')
+        endselect
+!
+        if (lpencil(i_uu)) then
+          if (headtt) print*,'Radial wind'
+          p%uu(:,1)=wind_amp*wind_prof
+          p%uu(:,2)=0.
+          p%uu(:,3)=0.
+        endif
 !
 !  KS-flow
 !
@@ -1348,8 +1380,13 @@ kky_aa=2.*pi
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      if (present(iostat)) then
+        read(unit,NML=hydro_run_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=hydro_run_pars,ERR=99)
+      endif
+!
+99    return
 !
     endsubroutine read_hydro_run_pars
 !***********************************************************************
@@ -1357,7 +1394,7 @@ kky_aa=2.*pi
 !
       integer, intent(in) :: unit
 !
-      call keep_compiler_quiet(unit)
+      write(unit,NML=hydro_run_pars)
 !
     endsubroutine write_hydro_run_pars
 !***********************************************************************

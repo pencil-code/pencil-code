@@ -478,6 +478,10 @@ module Cdata
 !
 !  Kinematic flows (computed by nohydro, so must be defined here).
 !  [AJ: should probably not be defined here; AB: would hydro.h be better??]
+! DM : I suggest we move these to hydro_kinematic as that is going to 
+! do the kinematic flow.  I have introduced a variable in hydro_kinematic
+! called kinematic_flow. If hydro_kinematic is used kinflow is overwritten
+! by this variable. 
 !
   character (len=40) :: kinflow=''
   logical :: lkinflow_as_aux

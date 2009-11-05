@@ -193,6 +193,7 @@ module Magnetic
   logical :: lkinematic=.false.
   logical :: luse_Bext_in_b2=.false.
   logical :: lmean_friction=.false.
+  logical :: llarge_scale_velocity=.false.
   character (len=labellen) :: zdep_profile='fs'
   character (len=labellen) :: eta_xy_profile='schnack89'
   character (len=labellen) :: iforcing_continuous_aa='fixed_swirl'
@@ -233,7 +234,8 @@ module Magnetic
        lbb_as_aux,ljj_as_aux,lremove_mean_emf,lkinematic, &
        lbbt_as_aux,ljjt_as_aux, &
        lneutralion_heat, lreset_aa, daareset, &
-       luse_Bext_in_b2, ampl_fcont_aa
+       luse_Bext_in_b2, ampl_fcont_aa,&
+       llarge_scale_velocity
 
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_b2tm=0       ! DIAG_DOC: $\left<\bv(t)\cdot\int_0^t\bv(t')
@@ -1850,6 +1852,10 @@ module Magnetic
             call multsv_mn_add(-f(l1:l2,m,n,ietat),p%jj,p%mf_EMF)
           endif
         endif
+!
+! possibility of adding contribution from large-scale-velocity
+!
+        if(llarge_scale_velocity) p%mf_EMF=p%mf_EMF+p%uxb
       endif
       if (lpencil(i_mf_EMFdotB)) call dot_mn(p%mf_EMF,p%bb,p%mf_EMFdotB)
 !
