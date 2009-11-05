@@ -1,49 +1,44 @@
-;
-; $Id$
-;
-;   Read particle dimension data.
-;
+;;
+;; $Id$
+;;
+;;  Read particle dimension data.
+;;
 pro pc_read_pdim, npar=npar, mpvar=mpvar, object=object, datadir=datadir, $
-    PRINT=PRINT, QUIET=QUIET
-COMPILE_OPT IDL2,HIDDEN
+    print=print, quiet=quiet
+compile_opt IDL2,HIDDEN
 ;
-; Default data directory
+; Default data directory.
 ;
 if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 ;
-; Initialize / set default returns for ALL variables
+; Initialize all variables.
 ;
 npar=0L
 mpvar=0L
 npar_stalk=0L
 ;
-; Get a unit number
+; Check for existence and read the data.
 ;
-GET_LUN, file
-
 filename=datadir+'/pdim.dat'
-;
-; Check for existence and read the data
-;
-dummy=findfile(filename, COUNT=found)
+dummy=findfile(filename, count=found)
 if (found gt 0) then begin
-  IF ( not keyword_set(QUIET) ) THEN print, 'Reading ' + filename + '...'
-  openr,file,filename
-  readf,file,npar,mpvar,npar_stalk
-  FREE_LUN,file
+  if (not keyword_set(quiet)) then print, 'Reading ' + filename + '...'
+  get_lun, file
+  openr, file, filename
+  readf, file, npar, mpvar, npar_stalk
+  free_lun, file
 endif else begin
-  FREE_LUN,file
   message, 'ERROR: cannot find file ' + filename
 endelse
 ;
-; Build structure of all the variables
+; Build structure of all the variables.
 ;
-object = CREATE_STRUCT(name=objectname, ['npar','mpvar','npar_stalk'], npar, mpvar, npar_stalk)
+object = create_struct(name=objectname, ['npar','mpvar','npar_stalk'], npar, mpvar, npar_stalk)
 ;
-; If requested print a summary
+; Print a summary if requested.
 ;
-if (keyword_set(PRINT)) then begin
+if (keyword_set(print)) then begin
   print, '     (npar,mpvar,npar_stalk) = (',npar,',',mpvar,',',npar_stalk,')'
 endif
-
+;
 end
