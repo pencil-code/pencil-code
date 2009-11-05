@@ -1,17 +1,20 @@
-! $Id$
+
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lhydro = .false.
-! CPARAM logical, parameter :: lhydro_kinematic = .false.
+! CPARAM logical, parameter :: lhydro_kinematic = .true.
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED oo(3); ou; uij(3,3); uu(3); u2; sij(3,3)
 ! PENCILS PROVIDED divu; uij5(3,3); graddivu(3)
-!
+!***************************************************************
+!! Note : To store the velocity field use 
+!!        ! MAUX CONTRIBUTION 3 
+!! above 
 !***************************************************************
 module Hydro
 !
@@ -71,7 +74,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call svn_id( &
-           "$Id$")
+           "$Id: hydro_kinematic.f90 11998 2009-11-02 13:07:27Z AxelBrandenburg $")
 !
 !  Share lpressuregradient_gas so Entropy module knows whether to apply
 !  pressure gradient or not.
@@ -110,6 +113,9 @@ module Hydro
 !     ! MAUX CONTRIBUTION 3
 !  in the beginning of your src/cparam.local file, *before* setting
 !  ncpus, nprocy, etc.
+!DM
+! The above is not required any longer as we can do the same 
+! at the top of this file if we want to store the velocity field. 
 !
 !  After a reload, we need to rewrite index.pro, but the auxiliary
 !  arrays are already allocated and must not be allocated again.

@@ -7,6 +7,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lhydro = .true.
+! CPARAM logical, parameter :: lhydro_kinematic = .false.
 !
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
