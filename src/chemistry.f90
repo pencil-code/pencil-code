@@ -355,7 +355,7 @@ module Chemistry
       endif
 
      endif
-
+     
 
       call keep_compiler_quiet(f)
 !
@@ -869,7 +869,7 @@ module Chemistry
       real :: initial_mu1, final_massfrac_O2
       logical :: found_specie, lzero=.false.
 
-      real :: Rad
+      real :: Rad, sz1,sz2
  
      lflame_front=.true.
 !
@@ -911,16 +911,20 @@ module Chemistry
 !  
 !   log_inlet_density=&
 !      log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
-      do j3=nn1,nn2
-        do j2=mm1,mm2
-          do j1=ll1,ll2
+    !  do j3=nn1,nn2
+    !    do j2=mm1,mm2
+    !      do j1=ll1,ll2
 
       
+        do j3=1,mz
+      
+       do j2=1,my
+      do j1=1,mx
 
-    !   do j3=1,mz
-    !   do j2=1,my
-    !  do j1=1,mx
-
+  !     do j3=1,nxgrid+8
+  !    do j2=1,nygrid+8
+  !    do j1=1,nzgrid+8
+      
         Rad=0.
        if (nxgrid >1) then
         Rad=x(j1)**2
@@ -933,6 +937,7 @@ module Chemistry
        endif
        
 
+       
    
 
        Rad=(Rad)**0.5
@@ -976,38 +981,62 @@ module Chemistry
            if (nzgrid==1) f(j1,j2,j3,iuz)=0. 
 
            if (nxgrid/=1) then
-             l_sz=nxgrid-int(0.15*nxgrid)
-             l_sz_1=int(0.15*nxgrid)+l1
+        
+              sz1=(xyz0(1)+Lxyz(1)*0.15)
+              sz2=(xyz0(1)+Lxyz(1)*(1.-0.15))
+            if ((x(j1)<sz1) .or. (sz2<x(j1))) then
+              
+             
+            ! l_sz=l1+nxgrid-int(0.15*nxgrid)
+            ! l_sz_1=int(0.15*nxgrid)+l1
 
-              f(l_sz:,j2,j3,iux)=0.
-              f(:l_sz_1,j2,j3,iux)=0.
-              f(l_sz:,j2,j3,iuy)=0.
-              f(:l_sz_1,j2,j3,iuy)=0.
-              f(l_sz:,j2,j3,iuz)=0.
-              f(:l_sz_1,j2,j3,iuz)=0.
+            !  f(l_sz:,j2,j3,iux)=0.
+            !  f(:l_sz_1,j2,j3,iux)=0.
+            !  f(l_sz:,j2,j3,iuy)=0.
+            !  f(:l_sz_1,j2,j3,iuy)=0.
+            !  f(l_sz:,j2,j3,iuz)=0.
+            !  f(:l_sz_1,j2,j3,iuz)=0.
+               f(j1,j2,j3,iux)=0.
+    
+             endif   
            endif
 
           if (nygrid/=1)   then
-             l_sz=nygrid-int(0.15*nygrid)
-             l_sz_1=int(0.15*nygrid)+m1
-             f(j1,l_sz:,j3,iux)=0.
-            f(j1,:l_sz_1,j3,iux)=0.
-            
-            f(j1,l_sz:,j3,iuy)=0.
-            f(j1,:l_sz_1,j3,iuy)=0.
-            f(j1,l_sz:,j3,iuz)=0.
-            f(j1,:l_sz_1,j3,iuz)=0.
+             
+            sz1=(xyz0(2)+Lxyz(2)*0.1)
+            sz2=(xyz0(2)+Lxyz(2)*(1-0.15))
+              if ((y(j2)<sz1) .or. (y(j2)>sz2)) then
+         	         
+         !    l_sz=m1+nygrid-int(0.15*nygrid)
+         !    l_sz_1=int(0.15*nygrid)+m1
+         !    f(j1,l_sz:,j3,iux)=0.
+         !   f(j1,:l_sz_1,j3,iux)=0.
+         !   
+         !   f(j1,l_sz:,j3,iuy)=0.
+         !   f(j1,:l_sz_1,j3,iuy)=0.
+         !   f(j1,l_sz:,j3,iuz)=0.
+         !   f(j1,:l_sz_1,j3,iuz)=0.
+             f(j1,j2,j3,iuy)=0.
+             endif
           endif
 
           if (nzgrid/=1)  then
-             l_sz=nzgrid-int(0.15*nzgrid)
-             l_sz_1=int(0.15*nzgrid)+n1
-             f(j1,j2,l_sz:,iuz)=0.
-             f(j1,j2,:l_sz_1,iuz)=0.
-             f(j1,j2,l_sz:,iuy)=0.
-             f(j1,j2,:l_sz_1,iuy)=0.
-             f(j1,j2,l_sz:,iux)=0.
-             f(j1,j2,:l_sz_1,iux)=0.
+           sz1=(xyz0(3)+Lxyz(3)*0.15)
+           sz2=(xyz0(3)+Lxyz(3)*(1-0.15))
+           
+           if ((z(j3)<sz1) .or. (z(j3)>sz2)) then
+              
+           !  l_sz=n1+nzgrid-int(0.15*nzgrid)
+           !  l_sz_1=int(0.15*nzgrid)+n1
+           !  f(j1,j2,l_sz:,iuz)=0.
+           ! f(j1,j2,:l_sz_1,iuz)=0.
+           !  f(j1,j2,l_sz:,iuy)=0.
+           !  f(j1,j2,:l_sz_1,iuy)=0.
+           !  f(j1,j2,l_sz:,iux)=0.
+           !  f(j1,j2,:l_sz_1,iux)=0.
+             f(j1,j2,j3,iuz)=0.
+          endif 
+   
          endif
               
              
@@ -5312,15 +5341,16 @@ module Chemistry
        lnrho_ref=-7.73236
        lnTT_ref=6.39693
 
-       sz_r_x=l2-int(0.2*nxgrid)
+       sz_r_x=nxgrid+l1-int(0.2*nxgrid)
        sz_l_x=int(0.2*nxgrid)+l1
-       sz_r_y=m2-int(0.2*nygrid)
+       sz_r_y=nygrid+m1-int(0.2*nygrid)
        sz_l_y=int(0.2*nygrid)+m1
-       sz_r_z=n2-int(0.2*nzgrid)
+       sz_r_z=nzgrid+n1-int(0.2*nzgrid)
        sz_l_z=int(0.2*nzgrid)+n1
        ll1=l1
        ll2=l2
-       
+
+              
        if (nxgrid/=1) then
 
         if (sz_r_x<=l1) call fatal_error('to use ldamp_zone_NSCBC',&
