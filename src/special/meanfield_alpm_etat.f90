@@ -40,14 +40,14 @@ module Special
   real :: Omega_ampl=.0
 
   namelist /special_init_pars/ &
-       initalpm,amplalpm,ampletat,kx_alpm,ky_alpm,kz_alpm
+       initalpm,initetam,amplalpm,ampletat,kx_alpm,ky_alpm,kz_alpm
 
   ! run parameters
   real :: kf_alpm=1., alpmdiff=0.
   logical :: ladvect_alpm=.false.
 
   namelist /special_run_pars/ &
-       kf_alpm,ladvect_alpm,alpmdiff, &
+       initetam,kf_alpm,ladvect_alpm,alpmdiff, &
        Omega_profile,Omega_ampl
 !
 ! Declare any index variables necessary
@@ -230,7 +230,10 @@ module Special
 !
           select case(initetam)
           case('evolving'); 
-!  d_t eta= tau/3 *d_t <u^2> with 1/tau=kf^2(eta+etat) and d_t <u^2>= -2*J.E_EMF+2kfB.E_EMF
+!
+!  compute d_t eta= tau/3 *d_t <u^2> with 1/tau=kf^2(eta+etat)
+!  and d_t <u^2>= -2*J.E_EMF+2kfB.E_EMF
+!
           call dot_mn(p%mf_EMF,p%jj,EMFdotJ)
           EJ_kfEB=EMFdotJ-kf_alpm*EMFdotB
           df(l1:l2,m,n,ietat)=df(l1:l2,m,n,ietat)&
