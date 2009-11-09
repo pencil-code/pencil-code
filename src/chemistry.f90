@@ -1046,7 +1046,11 @@ module Chemistry
 !  Initialize velocity
 !
             f(j1,j2,j3,iux)=f(j1,j2,j3,iux)  &
-                +init_ux*exp(log_inlet_density)/exp(f(j1,j2,j3,ilnrho))
+                +init_ux!*exp(log_inlet_density)/exp(f(j1,j2,j3,ilnrho))
+            f(j1,j2,j3,iuy)=f(j1,j2,j3,iuy)  &
+                +init_ux!*exp(log_inlet_density)/exp(f(j1,j2,j3,ilnrho))
+            f(j1,j2,j3,iuz)=f(j1,j2,j3,iuz)  &
+                +init_ux!*exp(log_inlet_density)/exp(f(j1,j2,j3,ilnrho))
 !
           enddo
         enddo
