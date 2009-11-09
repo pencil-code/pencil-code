@@ -954,16 +954,24 @@ module Chemistry
         else
 
 
-          if (RR>del) then
-            f(j1,j2,j3,ilnTT)=f(j1,j2,j3,ilnTT)+log(init_TT1)
+      !    if (RR>del) then
+      !      f(j1,j2,j3,ilnTT)=f(j1,j2,j3,ilnTT)+log(init_TT1)
 
-          else
+      !    else
 !            f(j1,j2,j3,ilnTT)=f(j1,j2,j3,ilnTT)+&
 !                log((RR-RR1)/(RR2-RR1) &
  !               *(init_TT2-init_TT1)+init_TT1)
-           f(j1,j2,j3,ilnTT)=f(j1,j2,j3,ilnTT)+log(init_TT2)
+     !      f(j1,j2,j3,ilnTT)=f(j1,j2,j3,ilnTT)+log(init_TT2)
 
-          endif
+     !     endif
+     
+     
+      
+        if (RR<del) then
+          f(j1,j2,j3,ilnTT)=log(init_TT1)+log(4.)*((del-RR)/del)**2
+         else
+          f(j1,j2,j3,ilnTT)=log(init_TT1)
+         endif
 
         endif
 
@@ -984,14 +992,20 @@ module Chemistry
               *(exp(RR/del)-exp(-RR/del))/(exp(RR/del)+exp(-RR/del))
 !
         else
+       !   if (RR<del) then
+       !     f(j1,j2,j3,i_H2O)=initial_massfractions(ichem_H2)/mH2*mH2O 
+       !     f(j1,j2,j3,i_H2)=initial_massfractions(ichem_H2)
+       !  endif
+
+
           if (RR<del) then
-            f(j1,j2,j3,i_H2O)=initial_massfractions(ichem_H2)/mH2*mH2O !&
-                !*(exp(f(j1,j2,j3,ilnTT))-init_TT1) &
-                !/(init_TT2-init_TT1)
-            f(j1,j2,j3,i_H2)=initial_massfractions(ichem_H2)! &
-                !*(exp(f(j1,j2,j3,ilnTT))-init_TT2) &
-                !/(init_TT1-init_TT2)
-          endif
+          f(j1,j2,j3,i_H2)=initial_massfractions(ichem_H2)*(1.-((del-RR)/del)**2)
+	  f(j1,j2,j3,i_H2O)=initial_massfractions(ichem_H2)/mH2*mH2O*(1.-((del-RR)/del)**2)
+         else
+          f(j1,j2,j3,i_H2)=initial_massfractions(ichem_H2)
+	  f(j1,j2,j3,i_H2O)=initial_massfractions(ichem_H2)/mH2*mH2O
+         endif
+	  
         endif
 !
 !  Initialize oxygen
@@ -1008,7 +1022,8 @@ module Chemistry
        !     f(j1,j2,j3,i_O2)=final_massfrac_O2
        !  endif
           if (RR<del) then
-            f(j1,j2,j3,i_O2)=final_massfrac_O2
+            f(j1,j2,j3,i_O2)=(final_massfrac_O2-initial_massfractions(ichem_O2))*((del-RR)/del)**2  &
+	        +initial_massfractions(ichem_O2)
           else
 
            f(j1,j2,j3,i_O2)=initial_massfractions(ichem_O2)
