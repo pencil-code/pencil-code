@@ -271,15 +271,15 @@ module BorderProfiles
 !  the variable toward some target solution on the boundary.
 !
 !  The driving is applied in the inner stripe between
-!  r_int and r_int+2*w, and in the outer stripe between
-!  r_ext-2*w and r_ext, as sketched below
-!  
+!  r_int_border and r_int_border+2*w, and in the outer stripe between
+!  r_ext_border-2*w and r_ext_border, as sketched below
+!
 !  Radial extent of the box:
 !
 !   -------------------------------------------
 !  | border |        untouched        | border |
 !   -------------------------------------------
-! r_int    r_int        ...          r_ext    r_ext
+! r_int_border    r_int_border        ...          r_ext_border    r_ext_border
 !          +2*w                      -2*w
 ! 
       real, dimension (mx,my,mz,mfarray) :: f
@@ -289,15 +289,17 @@ module BorderProfiles
       real :: pborder,inverse_drive_time
       integer :: i,j
 !
-!  Perform "border_driving" only if r < r_int or r > r_ext, but
+!  Perform "border_driving" only if r < r_int_border or r > r_ext_border, but
 !  take into acount that the profile further inside on both ends.
+!  Note: instead of setting r_int_border=0 (to mask out the middle),
+!  put it to a negative value instead, to avoid surprises at r=0.
 !
       do i=1,nx
         if ( &
             !inner stripe
-             (p%rborder_mn(i).le.r_int+2*wborder_int).or.&
+             (p%rborder_mn(i).le.r_int_border+2*wborder_int).or.&
             !outer stripe
-             (p%rborder_mn(i).ge.r_ext-2*wborder_ext)) then
+             (p%rborder_mn(i).ge.r_ext_border-2*wborder_ext)) then
 !        
           call get_drive_time(p,inverse_drive_time,i)
           call get_border(p,pborder,i)
@@ -313,8 +315,8 @@ module BorderProfiles
 !
 ! Apply a step function that smoothly goes from zero to one on both sides.
 ! In practice, means that the driving takes place
-! from r_int to r_int+2*wborder_int, and
-! from r_ext-2*wborder_ext to r_ext
+! from r_int_border to r_int_border+2*wborder_int, and
+! from r_ext_border-2*wborder_ext to r_ext_border
 !
 ! Regions away from these limits are unaffected, because we use SHIFT=+/-1.
 !
@@ -338,8 +340,8 @@ module BorderProfiles
 ! cint = 1-step_int , cext = step_ext
 ! pborder = cint+cext
 !
-      pborder = 1-cubic_step(rlim_mn,r_int,wborder_int,SHIFT=1.) + &
-           cubic_step(rlim_mn,r_ext,wborder_ext,SHIFT=-1.)
+      pborder = 1-cubic_step(rlim_mn,r_int_border,wborder_int,SHIFT=1.) + &
+           cubic_step(rlim_mn,r_ext_border,wborder_ext,SHIFT=-1.)
 !
     endsubroutine get_border
 !***********************************************************************

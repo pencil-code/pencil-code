@@ -669,7 +669,7 @@ module Magnetic
         case('hyper3_strict')
           if (lroot) print*, 'resistivity: strict hyper3 with positive definite heating rate'
           lresi_hyper3_strict=.true.
-	case('xydep')
+        case('xydep')
           if (lroot) print*, 'resistivity: xy-dependent'
           lresi_xydep=.true.
           call eta_xy_dep(eta_xy,geta_xy,eta_xy_profile)
@@ -2976,6 +2976,8 @@ module Magnetic
       real, dimension(nx,3) :: f_target
       integer :: ju,j
 !
+!  select for different target profiles
+!
       select case(borderaa)
 !
       case('zero','0')
@@ -2997,6 +2999,8 @@ module Magnetic
              trim(borderaa)
         call fatal_error('set_border_magnetic',errormsg)
       endselect
+!
+!  apply border profile
 !
       if (borderaa /= 'nothing') then
         do j=1,3
@@ -5110,32 +5114,31 @@ module Magnetic
 !
       select case (eta_xy_profile)
       case('schnack89')
-	do i=1,mx
-	do j=1,my
+      do i=1,mx
+        do j=1,my
           r2(i,j)=x(i)**2+y(j)**2
-	enddo
-	enddo
-
+        enddo
+      enddo
 !
 !  define eta_r: resistivity profile from Y.L. Ho, S.C. Prager & 
 !              D.D. Schnack, Phys rev letters vol 62 nr 13 1989
 !  and define gradr_eta_xy: 1/r *d_r(eta_xy))
 !
 !  rmax2 should be gotten from input ? 
-	
-	rmax2=1.
-        eta_xy = eta*(1+9*(r2/rmax2)**15)**2
-        gradr_eta_xy= 540*eta*(1+9*(r2/rmax2)**15)*(r2/rmax2)**14/rmax2**0.5
+!
+      rmax2=1.
+      eta_xy = eta*(1+9*(r2/rmax2)**15)**2
+      gradr_eta_xy= 540*eta*(1+9*(r2/rmax2)**15)*(r2/rmax2)**14/rmax2**0.5
 !
 !  gradient
 !
-        do i=1,nx
-	do j=1,nY 
-          geta_xy(i,j,1) = x(i)*gradr_eta_xy(i,j)
-          geta_xy(i,j,2) = y(j)*gradr_eta_xy(i,j)
-          geta_xy(i,j,3) = 0.
-	enddo
-        enddo
+      do i=1,nx
+      do j=1,nY 
+        geta_xy(i,j,1) = x(i)*gradr_eta_xy(i,j)
+        geta_xy(i,j,2) = y(j)*gradr_eta_xy(i,j)
+        geta_xy(i,j,3) = 0.
+      enddo
+      enddo
 
       endselect
 !
