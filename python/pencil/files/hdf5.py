@@ -130,7 +130,7 @@ class param_file:
 
 class h5file:
     ''' High level access to a pencil code HDF5 file
-        self.datadir: data directory (surprising, isn't it!)
+        self.datadir: data directory (surprising, isnt it!)
         self.f: HDF5 file, accessed through h5py module
         self.param: parameter subgroup
         self.data: data subgroup
@@ -353,9 +353,17 @@ class h5file:
                             append(subsec[res[0]],res[1])
                         else:
                             dat=N.array(res[1])
-                            subsec.create_dataset(res[0],data=dat.reshape([1]+list(dat.shape)),maxshape=tuple([None]+list(dat.shape)))
+                            try:
+                                subsec.create_dataset(res[0],data=dat.reshape([1]+list(dat.shape)),maxshape=tuple([None]+list(dat.shape)))
+                            except ValueError:
+                                print "Warning! Multiple presence of "+res[0]+" in params.log run parameters"
+                                subsec[res[0]][0]=res[1]
                     else:
-                        subsec.create_dataset(res[0],data=res[1])
+                        try:
+                            subsec.create_dataset(res[0],data=res[1])
+                        except ValueError:
+                            print "Warning! Multiple presence of "+res[0]+" in params.log init parameters"
+                            subsec[res[0]][0]=res[1]
                 elif descr=='e':
                     break
             del(fpar)
