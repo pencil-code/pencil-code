@@ -39,6 +39,8 @@ module BorderProfiles
 !  border_frac_[xyz] is a 2-D array, separately for all three directions.
 !  border_frac_[xyz]=1 would affect everything between center and border.
 !
+!   9-nov-09/axel: set r_int_border and r_ext_border if still impossible
+!
       use Cdata
       use Messages
 !
@@ -47,6 +49,12 @@ module BorderProfiles
       real, dimension(nz) :: zeta
       real :: border_width, lborder, uborder
       integer :: l
+!
+!  if r_int_border and/or r_ext_border are still set to impossible,
+!  then put them equal to r_int and r_ext, respectively.
+!
+      if (r_int_border==impossible) r_int_border=r_int
+      if (r_ext_border==impossible) r_ext_border=r_ext
 !
 !  x-direction
 !

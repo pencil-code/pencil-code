@@ -75,7 +75,7 @@ module Cdata
   real, dimension(3) :: Lxyz_loc,xyz0_loc,xyz1_loc
   real :: x0,y0,z0,Lx,Ly,Lz
   real :: r_int=0.,r_ext=impossible   ! for spherical shell problems
-  real :: r_int_border=0.,r_ext_border=impossible
+  real :: r_int_border=impossible,r_ext_border=impossible
   real :: r_ref=1.,rsmooth=0.,box_volume=1.0
 !
 !  Time integration parameters.
