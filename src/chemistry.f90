@@ -44,6 +44,8 @@ module Chemistry
   real :: Cp_const=impossible
   real :: Cv_const=impossible
   real :: init_x1=-0.2,init_x2=0.2
+  real :: init_y1=-0.2,init_y2=0.2
+  real :: init_z1=-0.2,init_z2=0.2
   real :: init_TT1=400, init_TT2=2400., init_ux
   real :: str_thick=0.02
   real :: init_pressure=10.13e5
@@ -117,7 +119,8 @@ module Chemistry
   namelist /chemistry_init_pars/ &
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
       amplchemk,amplchemk2, chem_diff,nu_spec, BinDif_simple, visc_simple, &
-      lambda_const, visc_const,Cp_const,Cv_const,diffus_const,init_x1,init_x2, &
+      lambda_const, visc_const,Cp_const,Cv_const,diffus_const,init_x1,init_x2, & 
+      init_y1,init_y2,init_z1,init_z2,&
       init_TT1,init_TT2,init_ux,l1step_test,Sc_number,init_pressure,lfix_Sc, str_thick, &
       lfix_Pr,lT_tanh,ldamp_zone_NSCBC
 
@@ -439,6 +442,8 @@ module Chemistry
            endif
         case('flame_front')
           call flame_front(f)
+        case('flame_front_3D')
+          call flame_front_3D(f)
         case('flame_blob')
           call flame_blob(f)
         case default
@@ -856,6 +861,202 @@ module Chemistry
       if (ldensity_nolog) f(:,:,:,irho)=exp(f(:,:,:,ilnrho))
 !
     endsubroutine flame_front
+!***********************************************************************
+   subroutine flame_front_3D(f)
+!
+! 06.05.2009/Nils Erland L. Haugen: adapted from similar
+!                                   routine in special/chem_stream.f90
+! This routine set up the initial profiles used in 1D flame speed measurments
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: mu1
+      integer :: k,j,i,j1,j2,j3
+
+      real :: mO2, mH2, mN2, mH2O
+      real :: log_inlet_density, del
+      integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
+      real :: initial_mu1, final_massfrac_O2,RR,RR1,RR2
+      logical :: found_specie
+! 
+      lflame_front=.true.
+!
+      call air_field(f)
+!
+! Initialize some indexes
+!
+      call find_species_index('H2' ,i_H2 ,ichem_H2 ,found_specie)
+      call find_species_index('O2' ,i_O2 ,ichem_O2 ,found_specie)
+      call find_species_index('N2' ,i_N2 ,ichem_N2 ,found_specie)
+      call find_species_index('H2O',i_H2O,ichem_H2O,found_specie)
+      mO2 =species_constants(ichem_O2 ,imass)
+      mH2 =species_constants(ichem_H2 ,imass)
+      mH2O=species_constants(ichem_H2O,imass)
+      mN2 =species_constants(ichem_N2 ,imass)
+!
+! Find approximate value for the mass fraction of O2 after the flame front
+!
+      final_massfrac_O2&
+          =(initial_massfractions(ichem_O2)/mO2&
+          -initial_massfractions(ichem_H2)/(2*mH2))*mO2
+!
+!  Initialize temperature and species
+!
+     ! do k=1,mx
+       
+        do j3=nn1,nn2
+        do j2=mm1,mm2
+        do j1=ll1,ll2
+
+       RR=0.
+       RR1=0.
+       Rr2=0.
+       del=0.
+       if (nxgrid >1) then
+
+       RR=x(j1)**2
+       RR1=(init_x1)**2+(init_y1)**2+(init_z1)**2
+       RR2=(init_x2)**2+(init_y2)**2+(init_z2)**2
+     !  del=((init_x2-init_x1)**2)
+        del=init_x2-init_x1
+
+!        Rad=x(j1)**2
+       endif
+       if (nygrid>1) then
+       ! Rad=Rad+y(j2)**2
+
+       RR=RR+y(j2)**2
+       RR1=RR1+(init_y1)**2
+       RR2=RR2+(init_y2)**2
+     !    del=(del+(init_y2-init_y1)**2)
+       endif
+       if (nzgrid>1) then
+      ! Rad=Rad+z(j3)**2
+       RR=RR+z(j3)**2
+       RR1=RR1+(init_z1)**2
+       RR2=RR2+(init_z2)**2
+     !     del=(del+(init_z2-init_z1)**2)
+       endif
+
+
+       RR=sqrt(RR)
+       RR1=sqrt(RR1)
+       RR2=sqrt(RR2)
+     !  del=sqrt(del)
+
+!
+!  Initialize temperature
+!
+        if (lT_tanh) then
+        !  del=init_x2-init_x1
+          f(j1,j2,j3,ilnTT)=f(j1,j2,j3,ilnTT)+log((init_TT2+init_TT1)*0.5  &
+              +((init_TT2-init_TT1)*0.5)  &
+              *(exp(RR/del)-exp(-RR/del))/(exp(RR/del)+exp(-RR/del)))
+        else
+
+
+          if (RR>del) then
+            f(j1,j2,j3,ilnTT)=f(j1,j2,j3,ilnTT)+log(init_TT1)
+
+          else
+!            f(j1,j2,j3,ilnTT)=f(j1,j2,j3,ilnTT)+&
+!                log((RR-RR1)/(RR2-RR1) &
+ !               *(init_TT2-init_TT1)+init_TT1)
+           f(j1,j2,j3,ilnTT)=f(j1,j2,j3,ilnTT)+log(init_TT2)
+
+          endif
+
+        endif
+
+
+
+!
+!  Initialize steam and hydrogen
+!
+        if (lT_tanh) then
+     !     del=(init_x2-init_x1)/3.
+             del=(RR2-RR1)/3.
+          f(j1,j2,j3,i_H2)=(0.+f(l1,m1,n1,i_H2))*0.5  &
+              +(0.-f(l1,m1,n1,i_H2))*0.5  &
+              *(exp(RR/del)-exp(-RR/del))/(exp(RR/del)+exp(-RR/del))
+!
+          f(j1,j2,j3,i_H2O)=(f(l1,m1,n1,i_H2)/2.*18.+f(l1,m1,n1,i_H2O))*0.5  &
+              +((f(l1,m1,n1,i_H2)/2.*18.-f(l1,m1,n1,i_H2O))*0.5)  &
+              *(exp(RR/del)-exp(-RR/del))/(exp(RR/del)+exp(-RR/del))
+!
+        else
+          if (RR<del) then
+            f(j1,j2,j3,i_H2O)=initial_massfractions(ichem_H2)/mH2*mH2O !&
+                !*(exp(f(j1,j2,j3,ilnTT))-init_TT1) &
+                !/(init_TT2-init_TT1)
+            f(j1,j2,j3,i_H2)=initial_massfractions(ichem_H2)! &
+                !*(exp(f(j1,j2,j3,ilnTT))-init_TT2) &
+                !/(init_TT1-init_TT2)
+          endif
+        endif
+!
+!  Initialize oxygen
+!
+        if (lT_tanh) then
+        !  del=(init_x2-init_x1)
+            del=(RR2-RR1)/3.
+          f(j1,j2,j3,i_O2)=(f(l2,m2,n2,i_O2)+f(l1,m1,n1,i_O2))*0.5  &
+              +((f(l2,m2,n2,i_O2)-f(l1,m1,n1,i_O2))*0.5)  &
+              *(exp(RR/del)-exp(-RR/del))/(exp(RR/del)+exp(-RR/del))
+        else
+
+       !   if (RR<del) then
+       !     f(j1,j2,j3,i_O2)=final_massfrac_O2
+       !  endif
+          if (RR<del) then
+            f(j1,j2,j3,i_O2)=final_massfrac_O2
+          else
+
+           f(j1,j2,j3,i_O2)=initial_massfractions(ichem_O2)
+
+ !                 (RR-RR2)/(RR1-RR2) &
+ !               *(initial_massfractions(ichem_O2)-final_massfrac_O2)&
+ !              +final_massfrac_O2
+          endif
+        endif
+      enddo
+      enddo
+      enddo
+!
+      call calc_for_chem_mixture(f)
+!
+!  Find logaritm of density at inlet
+!
+      initial_mu1&
+          =initial_massfractions(ichem_H2)/(mH2)&
+          +initial_massfractions(ichem_O2)/(mO2)&
+          +initial_massfractions(ichem_H2O)/(mH2O)&
+          +initial_massfractions(ichem_N2)/(mN2)
+      log_inlet_density=&
+          log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
+!
+      do j3=nn1,nn2
+        do j2=mm1,mm2
+          do j1=ll1,ll2
+!
+!  Initialize density
+!
+            f(j1,j2,j3,ilnrho)=log(init_pressure)-log(Rgas)  &
+                -f(j1,j2,j3,ilnTT)-log(mu1_full(j1,j2,j3))
+!
+!  Initialize velocity
+!
+            f(j1,j2,j3,iux)=f(j1,j2,j3,iux)  &
+                +init_ux*exp(log_inlet_density)/exp(f(j1,j2,j3,ilnrho))
+!
+          enddo
+        enddo
+      enddo
+!
+!  Check if we want nolog of density
+!
+      if (ldensity_nolog) f(:,:,:,irho)=exp(f(:,:,:,ilnrho))
+!
+    endsubroutine flame_front_3D
 !***********************************************************************
     subroutine flame_blob(f)
 
