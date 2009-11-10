@@ -562,11 +562,14 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !  okt-2009/kragset: updated to include multiple cylinders
 !
     use mpicomm
+    use general
 
     real    :: rhosum_all, c_dragx_all(ncylinders), c_dragy_all(ncylinders)
     real    :: cpx,ctx,cpy,cty
     integer :: irhocount_all,icyl
     real    :: norm, refrho0
+    character*50  :: numberstring
+    character*500 :: solid_cell_drag
 !    
     if (ldiagnos) then
       if (idiag_c_dragx .ne. 0 .or. idiag_c_dragy .ne. 0) then 
@@ -585,16 +588,19 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
           c_dragy = c_dragy_all * norm
 !          
 !  Write drag coefficients for all cylinders
-!
+!  (may need to expand solid_cell_drag to more
+!  characters if large number of cylinders)
+! 
           open(unit=81,file='data/dragcoeffs.dat',position='APPEND')
-          write(81,84) it-1, t
+          write(solid_cell_drag,84) it-1, t
           do icyl=1,ncylinders
-            write(81,82) c_dragx(icyl), c_dragy(icyl)
+            write(numberstring,82) c_dragx(icyl), c_dragy(icyl)
+            call safe_character_append(solid_cell_drag,numberstring)
           enddo
-          write(81,*) ' ' ! Adds a line break
+          write(81,*) trim(solid_cell_drag)
           close(81)
-84        format(1I7,1F15.8,$)
-82        format(2F15.8,$)
+84        format(1I8,1F15.8)
+82        format(2F15.8)
         endif
       endif
       if (idiag_c_dragx .ne. 0) fname(idiag_c_dragx)=c_dragx(1)
