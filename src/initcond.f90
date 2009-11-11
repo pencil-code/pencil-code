@@ -19,7 +19,7 @@ module Initcond
   public :: soundwave,sinwave,sinwave_phase,coswave,coswave_phase,cos_cos_sin
   public :: hatwave
   public :: sph_constb 
-  public :: gaunoise, posnoise
+  public :: gaunoise, posnoise, posnoise_rel
   public :: gaunoise_rprof
   public :: gaussian, gaussian3d, gaussianpos, beltrami, rolls, tor_pert
   public :: jump, bjump, bjumpz, stratification, stratification_x
@@ -3104,7 +3104,7 @@ module Initcond
         do n=1,mz; do m=1,my
           do i=i1,i2
             call random_number_wrapper(tmp)
-            f(:,m,n,i)=f(:,m,n,i)+ampl*(1.+ampl_rel*tmp)
+            f(:,m,n,i)=f(:,m,n,i)+ampl*(1.+ampl_rel*(tmp-0.5))
           enddo
         enddo; enddo
       endif
@@ -3131,7 +3131,7 @@ module Initcond
           if (lroot) print*,'posnoise_vect: variable i=',i
         do n=1,mz; do m=1,my
           call random_number_wrapper(tmp)
-          f(:,m,n,i)=f(:,m,n,i)+ampl*(1.+ampl_rel*tmp)
+          f(:,m,n,i)=f(:,m,n,i)+ampl*(1.+ampl_rel*(tmp-0.5))
         enddo; enddo
       endif
 !
