@@ -59,6 +59,11 @@ module Initcond
     module procedure posnoise_scal
   endinterface
 
+  interface posnoise_rel        ! Overload the `posnoise' function
+    module procedure posnoise_rel_vect
+    module procedure posnoise_rel_scal
+  endinterface
+
   interface gaunoise            ! Overload the `gaunoise' function
     module procedure gaunoise_vect
     module procedure gaunoise_scal
@@ -3077,6 +3082,60 @@ module Initcond
 !
 !
     endsubroutine posnoise_scal
+!***********************************************************************
+    subroutine posnoise_rel_vect(ampl,ampl_rel,f,i1,i2)
+!
+!  Add noise (= box distributed) white noise for variables i1:i2
+!
+!  28-may-04/axel: adapted from gaunoise
+!
+      integer :: i,i1,i2
+      real, dimension (mx) :: tmp
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: ampl,ampl_rel
+!
+!  set random noise vector
+!
+      if (ampl==0) then
+        if (lroot) print*,'posnoise_vect: ampl=0 for i1,i2=',i1,i2
+      else
+        if ((ip<=8).and.lroot) print*,'posnoise_vect: i1,i2=',i1,i2
+          if (lroot) print*,'posnoise_vect: variable i=',i
+        do n=1,mz; do m=1,my
+          do i=i1,i2
+            call random_number_wrapper(tmp)
+            f(:,m,n,i)=f(:,m,n,i)+ampl*(1.+ampl_rel*tmp)
+          enddo
+        enddo; enddo
+      endif
+!
+    endsubroutine posnoise_rel_vect
+!***********************************************************************
+    subroutine posnoise_rel_scal(ampl,ampl_rel,f,i)
+!
+!  Add noise (= box distributed) white noise for variables i1:i2
+!
+!  28-may-04/axel: adapted from gaunoise
+!
+      integer :: i
+      real, dimension (mx) :: tmp
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: ampl,ampl_rel
+!
+!  set random noise vector
+!
+      if (ampl==0) then
+        if (lroot) print*,'posnoise_vect: ampl=0 for i=',i
+      else
+        if ((ip<=8).and.lroot) print*,'posnoise_vect: i=',i
+          if (lroot) print*,'posnoise_vect: variable i=',i
+        do n=1,mz; do m=1,my
+          call random_number_wrapper(tmp)
+          f(:,m,n,i)=f(:,m,n,i)+ampl*(1.+ampl_rel*tmp)
+        enddo; enddo
+      endif
+!
+    endsubroutine posnoise_rel_scal
 !***********************************************************************
     subroutine gaunoise_vect(ampl,f,i1,i2)
 !

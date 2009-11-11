@@ -399,9 +399,13 @@ module Chemistry
           do k=1,nchemspec
             call posnoise(amplchemk(k),f,ichemspec(k))
           enddo
+        case('positive-noise-rel')
+          do k=1,nchemspec
+            call posnoise_rel(amplchemk(k),amplchemk2(k),f,ichemspec(k))
+          enddo
         case('10p-noise')     ! set conc to amplchemk with 10% noise
           do k=1,nchemspec
-            call posnoise(amplchemk(k)/10,f,ichemspec(k))
+            call posnoise(0.1*amplchemk(k),f,ichemspec(k))
             f(:,:,:,ichemspec(k))=f(:,:,:,ichemspec(k))+0.9*amplchemk(k)
           enddo
         case('innerbox')
