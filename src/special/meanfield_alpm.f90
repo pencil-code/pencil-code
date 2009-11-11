@@ -136,6 +136,32 @@ module Special
 !
     endsubroutine init_special
 !***********************************************************************
+    subroutine pencil_criteria_special()
+!
+!  All pencils that this special module depends on are specified here.
+!
+!  25-feb-07/axel: adapted
+!
+      if (lmagnetic) then
+        lpenc_requested(i_bb)=.true.
+        lpenc_requested(i_mf_EMF)=.true.
+        lpenc_requested(i_mf_EMFdotB)=.true.
+      endif
+!
+    endsubroutine pencil_criteria_special
+!***********************************************************************
+    subroutine pencil_interdep_special(lpencil_in)
+!
+!  Interdependency among pencils provided by this module are specified here.
+!
+!  18-07-06/tony: coded
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+      call keep_compiler_quiet(lpencil_in)
+!
+    endsubroutine pencil_interdep_special
+!***********************************************************************
     subroutine calc_pencils_special(f,p)
 !
 !  Calculate Hydro pencils.
@@ -168,7 +194,7 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: galpm
-      real, dimension (nx) :: alpm,ugalpm,EMFdotB,divflux,del2alpm
+      real, dimension (nx) :: alpm,ugalpm,divflux,del2alpm
       type (pencil_case) :: p
       integer :: ierr
 !
@@ -203,10 +229,9 @@ module Special
 !  with advection flux proportional to uu
 !
         if (lmagnetic) then
-          call dot_mn(p%mf_EMF,p%bb,EMFdotB)
           call divflux_from_Omega_effect(p,divflux)
           df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)&
-             -2*meanfield_etat*kf_alpm**2*EMFdotB &
+             -2*meanfield_etat*kf_alpm**2*p%mf_EMFdotB &
              -2*eta*kf_alpm**2*alpm-meanfield_etat*divflux
           if (ladvect_alpm) then
             call grad(f,ialpm,galpm)
