@@ -528,8 +528,16 @@ module Register
         lspherical_coords=.false.
         lcylindrical_coords=.true.
 !
+!  Note: for consistency with spherical, 1/rcyl should really be rcyl1_mn,
+!  not rcyl_mn1
+!
         rcyl_mn=x(l1:l2)
-        rcyl_mn1=max(1./x(l1:l2),tini)
+        if (x(l1)==0.) then
+          rcyl_mn1(2:)=1./x(l1+1:l2)
+          rcyl_mn1(1)=0.
+        else
+          rcyl_mn1=1./x(l1:l2)
+        endif
         rcyl_mn2=rcyl_mn1**2
         r_int=x(l1)
         r_ext=x(l2)
@@ -742,7 +750,7 @@ module Register
       use NeutralDensity,  only: pencil_criteria_neutraldensity
       use Magnetic,        only: pencil_criteria_magnetic
       use Lorenz_gauge,    only: pencil_criteria_lorenz_gauge
-      use Polymer,    only: pencil_criteria_polymer
+      use Polymer,         only: pencil_criteria_polymer
       use Testscalar,      only: pencil_criteria_testscalar
       use Testfield,       only: pencil_criteria_testfield
       use Testflow,        only: pencil_criteria_testflow

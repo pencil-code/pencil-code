@@ -1460,8 +1460,13 @@ module Sub
         b(:,3)=b(:,3)+a(:,2)*r1_mn
       endif
 !
+!  adjustments for cylindrical coordinate system
+!  If we go all the way to the center, we need to put a regularity condition.
+!  We do this here currently up to second order.
+!
       if (lcylindrical_coords.and.present(a)) then
-         b(:,3)=b(:,3)+a(:,2)*rcyl_mn1
+        b(:,3)=b(:,3)+a(:,2)*rcyl_mn1
+        if (rcyl_mn(1)==0.) b(1,3)=(4.*b(2,3)-b(3,3))/3.
       endif
 !
     endsubroutine curl_mn

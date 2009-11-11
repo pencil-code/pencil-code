@@ -141,6 +141,10 @@ module Boundcond
                   ! BCX_DOC: $f_{N+i}=2 f_{N}-f_{N-i}$;
                   ! BCX_DOC: implies $f''(x_0)=0$
                   call bc_sym_x(f,-1,topbot,j,REL=.true.)
+                case ('cpc')
+                  ! BCX_DOC: cylindrical perfect conductor
+                  ! BCX_DOC: implies $f"+f'/R=0$
+                  call bc_cpc_x(f,topbot,j)
                 case ('v')
                   ! BCX_DOC: vanishing third derivative
                   call bc_van_x(f,topbot,j)
@@ -808,6 +812,51 @@ module Boundcond
       endselect
 !
     endsubroutine bc_sym_x
+!***********************************************************************
+    subroutine bc_cpc_x(f,topbot,j)
+!
+!  This condition gives A"+A'/R=0.
+!  We compute the A1 point using a 2nd-order formula,
+!  i.e. A1 = - (1-dx/2R)*A_(-1)/(1+x/2R).
+!  Next, we compute A2 using a 4th-order formula,
+!  and finally A3 using a 6th-order formula.
+!
+!  11-nov-09/axel+koen: coded
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (my,mz) :: extra1a,extra1b,extra2
+      integer :: sgn,i,j
+      real :: dxR
+!
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+        dxR=-dx/x(l2)
+        i=-0; f(l2+i,:,:,j)=0.
+        i=-1; f(l2+i,:,:,j)=-(1.-.5*dxR)*f(l2-i,:,:,j)/(1.+.5*dxR)
+        extra1a=(1.+8.*dxR)*f(l2+i,:,:,j)+(1.-8.*dxR)*f(l2-i,:,:,j)
+        extra1b=(1.+.5*dxR)*f(l2+i,:,:,j)+(1.-.5*dxR)*f(l2-i,:,:,j)
+        i=-2; f(l2+i,:,:,j)=(-(1.-   dxR)*f(l2-i,:,:,j)+extra1a)/(1.+   dxR)
+        extra2=27.*((1.+dxR)*f(l2+i,:,:,j)+(1.-dxR)*f(l2-i,:,:,j)+10.*extra1b)
+        i=-3; f(l2+i,:,:,j)=(-(2.-3.*dxR)*f(l2-i,:,:,j)+extra2)/(2.+3.*dxR)
+
+      case('top')               ! top boundary
+        dxR=dx/x(l2)
+        i=0; f(l2+i,:,:,j)=0.
+        i=1; f(l2+i,:,:,j)=-(1.-.5*dxR)*f(l2-i,:,:,j)/(1.+.5*dxR)
+        extra1a=(1.+8.*dxR)*f(l2+i,:,:,j)+(1.-8.*dxR)*f(l2-i,:,:,j)
+        extra1b=(1.+.5*dxR)*f(l2+i,:,:,j)+(1.-.5*dxR)*f(l2-i,:,:,j)
+        i=2; f(l2+i,:,:,j)=(-(1.-   dxR)*f(l2-i,:,:,j)+extra1a)/(1.+   dxR)
+        extra2=27.*((1.+dxR)*f(l2+i,:,:,j)+(1.-dxR)*f(l2-i,:,:,j)+10.*extra1b)
+        i=3; f(l2+i,:,:,j)=(-(2.-3.*dxR)*f(l2-i,:,:,j)+extra2)/(2.+3.*dxR)
+
+      case default
+        print*, "bc_cpc_x: ", topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bc_cpc_x
 !***********************************************************************
     subroutine bc_symset_x(f,sgn,topbot,j,rel,val)
 !
