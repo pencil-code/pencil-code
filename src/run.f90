@@ -111,7 +111,7 @@ program run
   integer DEFAULT, IGNORE, USER
   parameter ( DEFAULT=0, IGNORE=1, USER=-1 )
 
-  integer sigret, signal
+  integer sigret
 
   external regexit
 !
@@ -376,8 +376,8 @@ program run
 
 ! example signal catching for SIGINT and SIGUSR1
 
-  sigret = signal( SIGINT , regexit )
-  sigret = signal( SIGUSR1, regexit )
+  call signal( SIGINT , regexit, sigret )
+  call signal( SIGUSR1, regexit, sigret )
 !
 !  Do loop in time.
 !
