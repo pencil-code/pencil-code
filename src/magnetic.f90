@@ -949,6 +949,7 @@ module Magnetic
         case('Beltrami-y'); call beltrami(amplaa(j),f,iaa,KY=-ky_aa(j),phase=phasey_aa(j))
         case('Beltrami-z'); call beltrami(amplaa(j),f,iaa,KZ=-kz_aa(j),phase=phasez_aa(j))
 !
+        case('Bessel-x'); call bessel_x(amplaa(j),f,iaa,kx_aa(j))
         case('propto-ux'); call wave_uu(amplaa(j),f,iaa,kx=kx_aa(j))
         case('propto-uy'); call wave_uu(amplaa(j),f,iaa,ky=ky_aa(j))
         case('propto-uz'); call wave_uu(amplaa(j),f,iaa,kz=kz_aa(j))

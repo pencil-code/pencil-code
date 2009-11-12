@@ -21,7 +21,8 @@ module Initcond
   public :: sph_constb 
   public :: gaunoise, posnoise, posnoise_rel
   public :: gaunoise_rprof
-  public :: gaussian, gaussian3d, gaussianpos, beltrami, rolls, tor_pert
+  public :: gaussian, gaussian3d, gaussianpos, beltrami, bessel_x
+  public :: rolls, tor_pert
   public :: jump, bjump, bjumpz, stratification, stratification_x
   public :: modes, modev, modeb, crazy
   public :: trilinear, baroclinic
@@ -1425,6 +1426,36 @@ module Initcond
       endif
 !
     endsubroutine beltrami
+!***********************************************************************
+    subroutine bessel_x(ampl,f,i,kx)
+!
+!  Bessel function field (as initial condition)
+!
+!  12-nov-09/axel: coded
+!
+      integer :: i,j,l
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx) :: J0,J1
+      real :: ampl,kx
+!
+!  set x-dependent Bessel function field
+!
+      if (ampl==0) then
+        if (lroot) print*,'bessel_x: ampl=0; kx=',kx
+      else
+        if (lroot) print*,'bessel_x: Bessel function field: kx,i=',kx,i
+        do l=1,mx
+          !call besselj_nu_int(J0(l),0,kx*x(l))
+          !call besselj_nu_int(J1(l),1,kx*x(l))
+          J0(l)=bessj(0,kx*x(l))
+          J1(l)=bessj(1,kx*x(l))
+          print*,'AXEL: arg,J0=',kx*x(l),J0(l),J1(l)
+        enddo
+        j=i+1; f(:,:,:,j)=f(:,:,:,j)+ampl*spread(spread(J1,2,my),3,mz)
+        j=i+2; f(:,:,:,j)=f(:,:,:,j)+ampl*spread(spread(J0,2,my),3,mz)
+      endif
+!
+    endsubroutine bessel_x
 !***********************************************************************
     subroutine rolls(ampl,f,i,kx,kz)
 !
