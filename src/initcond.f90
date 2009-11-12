@@ -21,7 +21,7 @@ module Initcond
   public :: sph_constb 
   public :: gaunoise, posnoise, posnoise_rel
   public :: gaunoise_rprof
-  public :: gaussian, gaussian3d, gaussianpos, beltrami, bessel_x
+  public :: gaussian, gaussian3d, gaussianpos, beltrami, bessel_x, bessel_az_x
   public :: rolls, tor_pert
   public :: jump, bjump, bjumpz, stratification, stratification_x
   public :: modes, modev, modeb, crazy
@@ -1436,7 +1436,7 @@ module Initcond
       integer :: i,j,l
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) :: J0,J1
-      real :: ampl,kx
+      real :: ampl,kx,kx1
 !
 !  set x-dependent Bessel function field
 !
@@ -1444,17 +1444,42 @@ module Initcond
         if (lroot) print*,'bessel_x: ampl=0; kx=',kx
       else
         if (lroot) print*,'bessel_x: Bessel function field: kx,i=',kx,i
+        kx1=1./kx
         do l=1,mx
-          !AB: Wlad to check:-- call besselj_nu_int(J0(l),0,kx*x(l))
-          !AB: Wlad to check:-- call besselj_nu_int(J1(l),1,kx*x(l))
-          J0(l)=bessj(0,kx*x(l))
-          J1(l)=bessj(1,kx*x(l))
+          J0(l)=kx1*bessj(0,kx*x(l))
+          J1(l)=kx1*bessj(1,kx*x(l))
         enddo
         j=i+1; f(:,:,:,j)=f(:,:,:,j)+ampl*spread(spread(J1,2,my),3,mz)
         j=i+2; f(:,:,:,j)=f(:,:,:,j)+ampl*spread(spread(J0,2,my),3,mz)
       endif
 !
     endsubroutine bessel_x
+!***********************************************************************
+    subroutine bessel_az_x(ampl,f,i,kx)
+!
+!  Bessel function field (as initial condition)
+!
+!  12-nov-09/axel: coded
+!
+      integer :: i,j,l
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx) :: J0,J1
+      real :: ampl,kx,kx1
+!
+!  set x-dependent Bessel function field
+!
+      if (ampl==0) then
+        if (lroot) print*,'bessel_az_x: ampl=0; kx=',kx
+      else
+        if (lroot) print*,'bessel_az_x: Bessel function field: kx,i=',kx,i
+        kx1=1./kx
+        do l=1,mx
+          J0(l)=kx1*bessj(0,kx*x(l))
+        enddo
+        j=i+2; f(:,:,:,j)=f(:,:,:,j)+ampl*spread(spread(J0,2,my),3,mz)
+      endif
+!
+    endsubroutine bessel_az_x
 !***********************************************************************
     subroutine rolls(ampl,f,i,kx,kz)
 !

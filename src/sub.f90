@@ -1444,7 +1444,7 @@ module Sub
       real, dimension (nx,3,3), intent (in) :: aij
       real, dimension (nx,3), intent (in), optional :: a
       real, dimension (nx,3), intent (out) :: b
-      integer :: i1=1,i2=2,i3=3
+      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7
 !
       b(:,1)=aij(:,3,2)-aij(:,2,3)
       b(:,2)=aij(:,1,3)-aij(:,3,1)
@@ -1467,7 +1467,8 @@ module Sub
 !
       if (lcylindrical_coords.and.present(a)) then
         b(:,3)=b(:,3)+a(:,2)*rcyl_mn1
-        if (rcyl_mn(1)==0.) b(i1,3)=(4.*b(i2,3)-b(i3,3))/3.
+        if (rcyl_mn(1)==0.) b(i1,3)=(360.*b(i2,3)-450.*b(i3,3)+400.*b(i4,3) &
+                                    -225.*b(i5,3)+72.*b(i6,3)-10.*b(i7,3))/147.
       endif
 !
     endsubroutine curl_mn

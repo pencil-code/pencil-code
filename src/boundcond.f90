@@ -130,8 +130,11 @@ module Boundcond
                   ! BCX_DOC: implies $f'(x_N)=f'''(x_0)=0$
                   call bc_sym_x(f,+1,topbot,j)
                 case ('ss')
-                  ! BCX_DOC: symmetry [???]
+                  ! BCX_DOC: symmetry, plus function value given
                   call bc_symset_x(f,+1,topbot,j)
+                case ('s0d')
+                  ! BCX_DOC: symmetry, function value such that df/dx=0
+                  call bc_symset0der_x(f,topbot,j)
                 case ('a')
                   ! BCX_DOC: antisymmetry, $f_{N+i}=-f_{N-i}$;
                   ! BCX_DOC: implies $f(x_N)=f''(x_0)=0$
@@ -905,6 +908,44 @@ module Boundcond
       endselect
 !
     endsubroutine bc_symset_x
+!***********************************************************************
+    subroutine bc_symset0der_x(f,topbot,j)
+!
+!  This routine works like bc_sym_x, but sets the function value to what
+!  it should be for vanishing one-sided derivative.
+!
+!  12-nov-09/axel+koen: coded
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i,j
+!
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+        f(l1,m1:m2,n1:n2,j)=(360.*f(l1+1,m1:m2,n1:n2,j) &
+                            -450.*f(l1+2,m1:m2,n1:n2,j) &
+                            +400.*f(l1+3,m1:m2,n1:n2,j) &
+                            -225.*f(l1+4,m1:m2,n1:n2,j) &
+                             +72.*f(l1+5,m1:m2,n1:n2,j) &
+                             -10.*f(l1+6,m1:m2,n1:n2,j))/147.
+        do i=1,nghost; f(l1-i,:,:,j)=f(l1+i,:,:,j); enddo
+
+      case('top')               ! top boundary
+        f(l2,m1:m2,n1:n2,j)=(360.*f(l2-1,m1:m2,n1:n2,j) &
+                            -450.*f(l2-2,m1:m2,n1:n2,j) &
+                            +400.*f(l2-3,m1:m2,n1:n2,j) &
+                            -225.*f(l2-4,m1:m2,n1:n2,j) &
+                             +72.*f(l2-5,m1:m2,n1:n2,j) &
+                             -10.*f(l2-6,m1:m2,n1:n2,j))/147.
+        do i=1,nghost; f(l2+i,:,:,j)=f(l2-i,:,:,j); enddo
+
+      case default
+        print*, "bc_symset0der_x: ", topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bc_symset0der_x
 !***********************************************************************
     subroutine bc_slope_x(f,slope,topbot,j,rel,val)
 !
