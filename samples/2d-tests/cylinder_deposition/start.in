@@ -49,10 +49,10 @@
   bcpz='p'
 !  rp_int=0.01
   xp0=-16.85e-3
-  yp0=-0.399
-  zp0=0
+  yp0=0.0
+  zp0=1e-6
   Lx0=33.7e-3
-  Ly0=0.48
+  Ly0=0.1
   Lz0=0
   mean_free_path_gas=67e-9
   interp_pol_rho='cic'
