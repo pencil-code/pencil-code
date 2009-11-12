@@ -825,7 +825,7 @@ module Boundcond
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (my,mz) :: extra1a,extra1b,extra2
+      real, dimension (my,mz) :: extra1,extra2
       integer :: sgn,i,j
       real :: dxR
 !
@@ -835,21 +835,19 @@ module Boundcond
         dxR=-dx/x(l2)
         i=-0; f(l2+i,:,:,j)=0.
         i=-1; f(l2+i,:,:,j)=-(1.-.5*dxR)*f(l2-i,:,:,j)/(1.+.5*dxR)
-        extra1a=(1.+8.*dxR)*f(l2+i,:,:,j)+(1.-8.*dxR)*f(l2-i,:,:,j)
-        extra1b=(1.+.5*dxR)*f(l2+i,:,:,j)+(1.-.5*dxR)*f(l2-i,:,:,j)
-        i=-2; f(l2+i,:,:,j)=(-(1.-   dxR)*f(l2-i,:,:,j)+extra1a)/(1.+   dxR)
-        extra2=27.*((1.+dxR)*f(l2+i,:,:,j)+(1.-dxR)*f(l2-i,:,:,j)+10.*extra1b)
-        i=-3; f(l2+i,:,:,j)=(-(2.-3.*dxR)*f(l2-i,:,:,j)+extra2)/(2.+3.*dxR)
+        extra1=(1.+.5*dxR)*f(l2+i,:,:,j)+(1.-.5*dxR)*f(l2-i,:,:,j)
+        i=-2; f(l2+i,:,:,j)=(-(1.-   dxR)*f(l2-i,:,:,j)+16.*extra1)/(1.+dxR)
+        extra2=(1.+dxR)*f(l2+i,:,:,j)+(1.-dxR)*f(l2-i,:,:,j)-10.*extra1
+        i=-3; f(l2+i,:,:,j)=(-(2.-3.*dxR)*f(l2-i,:,:,j)+27.*extra2)/(2.+3.*dxR)
 
       case('top')               ! top boundary
         dxR=dx/x(l2)
         i=0; f(l2+i,:,:,j)=0.
         i=1; f(l2+i,:,:,j)=-(1.-.5*dxR)*f(l2-i,:,:,j)/(1.+.5*dxR)
-        extra1a=(1.+8.*dxR)*f(l2+i,:,:,j)+(1.-8.*dxR)*f(l2-i,:,:,j)
-        extra1b=(1.+.5*dxR)*f(l2+i,:,:,j)+(1.-.5*dxR)*f(l2-i,:,:,j)
-        i=2; f(l2+i,:,:,j)=(-(1.-   dxR)*f(l2-i,:,:,j)+extra1a)/(1.+   dxR)
-        extra2=27.*((1.+dxR)*f(l2+i,:,:,j)+(1.-dxR)*f(l2-i,:,:,j)+10.*extra1b)
-        i=3; f(l2+i,:,:,j)=(-(2.-3.*dxR)*f(l2-i,:,:,j)+extra2)/(2.+3.*dxR)
+        extra1=(1.+.5*dxR)*f(l2+i,:,:,j)+(1.-.5*dxR)*f(l2-i,:,:,j)
+        i=2; f(l2+i,:,:,j)=(-(1.-   dxR)*f(l2-i,:,:,j)+16.*extra1)/(1.+dxR)
+        extra2=(1.+dxR)*f(l2+i,:,:,j)+(1.-dxR)*f(l2-i,:,:,j)-10.*extra1
+        i=3; f(l2+i,:,:,j)=(-(2.-3.*dxR)*f(l2-i,:,:,j)+27.*extra2)/(2.+3.*dxR)
 
       case default
         print*, "bc_cpc_x: ", topbot, " should be `top' or `bot'"

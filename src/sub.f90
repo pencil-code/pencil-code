@@ -1444,6 +1444,7 @@ module Sub
       real, dimension (nx,3,3), intent (in) :: aij
       real, dimension (nx,3), intent (in), optional :: a
       real, dimension (nx,3), intent (out) :: b
+      integer :: i1=1,i2=2,i3=3
 !
       b(:,1)=aij(:,3,2)-aij(:,2,3)
       b(:,2)=aij(:,1,3)-aij(:,3,1)
@@ -1462,11 +1463,11 @@ module Sub
 !
 !  adjustments for cylindrical coordinate system
 !  If we go all the way to the center, we need to put a regularity condition.
-!  We do this here currently up to second order.
+!  We do this here currently up to second order, and only for curl_mn.
 !
       if (lcylindrical_coords.and.present(a)) then
         b(:,3)=b(:,3)+a(:,2)*rcyl_mn1
-        if (rcyl_mn(1)==0.) b(1,3)=(4.*b(2,3)-b(3,3))/3.
+        if (rcyl_mn(1)==0.) b(i1,3)=(4.*b(i2,3)-b(i3,3))/3.
       endif
 !
     endsubroutine curl_mn
