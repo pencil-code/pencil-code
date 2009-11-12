@@ -681,13 +681,13 @@ endif
 #FFLAGS_DOUBLE=-fdefault-real-8  #(koen-linux*)
 ##LD_MPI=-L/usr/lib/openmpi/lib -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl #(koen-linux*)
 ##
-## Axel on Ferlin using openmpi (ferlin)
+## Ferlin using openmpi (ferlin)
 ##
-#FC=mpif90 #(a07c01n03.pdc.kth.se)
-#CC=mpicc #(a07c01n03.pdc.kth.se)
-#FFLAGS=-O3 -vec-report0 #(a07c01n03.pdc.kth.se)
-#LD_MPI= #(a07c01n03.pdc.kth.se)
-#FFLAGS_DOUBLE=-r8 #(a07c01n03.pdc.kth.se)
+#FC=mpif90 #(a07c01n08.pdc.kth.se)
+#CC=mpicc #(a07c01n08.pdc.kth.se)
+#FFLAGS=-O3 -vec-report0 #(a07c01n08.pdc.kth.se)
+#LD_MPI= #(a07c01n08.pdc.kth.se)
+#FFLAGS_DOUBLE=-r8 #(a07c01n08.pdc.kth.se)
 ##
 ##  Simon's laptop
 ##
