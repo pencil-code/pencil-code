@@ -1239,7 +1239,7 @@ module General
 
       integer, parameter :: IACC = 40
       real, parameter :: BIGNO = 1.D10, BIGNI = 1.D-10
-      real :: X,BESSJ,BESSJ0,BESSJ1,TOX,BJM,BJ,BJP,SUM1
+      real :: X,BESSJ,TOX,BJM,BJ,BJP,SUM1
       integer :: N,J,M,JSUM
 !
       IF (N.EQ.0) THEN
@@ -1291,7 +1291,7 @@ module General
       RETURN
     endfunction BESSJ
 
-      FUNCTION BESSJ0 (X)
+    FUNCTION BESSJ0 (X)
       REAL :: X,BESSJ0,AX,FR,FS,Z,FP,FQ,XX
 
 !     This subroutine calculates the First Kind Bessel Function of
