@@ -23,7 +23,8 @@ module Particles_radius
 !
   include 'particles_radius.h'
 !
-  real :: ap0=0.0, vthresh_sweepup=-1.0, deltavp12_floor=0.0
+  real :: vthresh_sweepup=-1.0, deltavp12_floor=0.0
+  real, dimension (ninit) :: ap0=0.0
   real :: tstart_sweepup_par=0.0, cdtps=0.2
   logical :: lsweepup_par=.true.
   character (len=labellen), dimension(ninit) :: initap='nothing'
@@ -79,9 +80,17 @@ module Particles_radius
 !
 !  Calculate the number density of bodies within a superparticle.
 !
-      mp_tilde=4/3.*pi*rhops*ap0**3
-      if (lroot) print*, 'initialize_particles_radius: '// &
-          'mass per dust grain mp_tilde=', mp_tilde
+      if (npart_radii > 1 .and. &
+          (.not. lcartesian_coords .or. &
+          lparticles_nbody .or. &
+          lparticles_number .or. &
+          lparticles_spin)) then 
+        call fatal_error('initialize_particles_radius: npart_radii > 1','')
+      else
+        mp_tilde=4/3.*pi*rhops*ap0(1)**3
+        if (lroot) print*, 'initialize_particles_radius: '// &
+            'mass per dust grain mp_tilde=', mp_tilde
+      endif
 !
       call keep_compiler_quiet(f)
 !
@@ -93,14 +102,16 @@ module Particles_radius
 !
 !  18-sep-09/nils: adapted from init_particles_radius
 !
+      use General, only: random_number_wrapper
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       integer :: npar_low,npar_high
       logical, optional :: init
       logical :: initial
+      real :: radius_fraction
 !
-      integer :: j
+      integer :: j,ind
 !
       initial=.false.
       if (present(init)) then
@@ -116,8 +127,9 @@ module Particles_radius
 
         case('constant')
           if (initial.and.lroot) print*, 'set_particles_radius: constant radius'
-          fp(npar_low:npar_high,iap)=ap0
-
+          call random_number_wrapper(radius_fraction)
+          ind=ceiling(npart_radii*radius_fraction)
+          fp(npar_low:npar_high,iap)=ap0(ind)
         endselect
 
       enddo
@@ -262,12 +274,23 @@ module Particles_radius
 !
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
+      integer :: i
 !
       if (present(iostat)) then
         read(unit,NML=particles_radius_init_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=particles_radius_init_pars,ERR=99)
       endif
+!
+! Find how many different particle radii we are using
+! This must be done because not all parts of the code are adapted to 
+! work with more than one particle radius.
+!
+      do i=1,ninit
+        if (ap0(i) .ne. 0) then
+          npart_radii=npart_radii+1
+        endif
+      enddo
 !
 99    return
 !

@@ -24,7 +24,7 @@ module Particles_cdata
   integer :: iupx=0, iupy=0, iupz=0
   integer :: ipviscx=0, ipviscy=0, ipviscz=0
   integer :: inp=0
-  integer :: idiag_nmigmax=0
+  integer :: idiag_nmigmax=0, npart_radii=0
   integer, dimension(ny*nz) :: npar_imn, k1_imn, k2_imn
   logical :: linterpolate_spline=.true.
   logical :: lparticlemesh_cic=.false., lparticlemesh_tsc=.false.
