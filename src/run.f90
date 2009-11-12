@@ -376,8 +376,8 @@ program run
 
 ! example signal catching for SIGINT and SIGUSR1
 
-  sigret = signal( SIGINT , regexit, USER )
-  sigret = signal( SIGUSR1, regexit, USER )
+  sigret = signal( SIGINT , regexit )
+  sigret = signal( SIGUSR1, regexit )
 !
 !  Do loop in time.
 !
