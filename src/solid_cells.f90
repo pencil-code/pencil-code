@@ -23,7 +23,6 @@ module Solid_Cells
   real, dimension(max_items)    :: cylinder_xpos,cylinder_ypos,cylinder_zpos
   integer, dimension(mx,my,mz,4):: ba,ba_shift
   real :: skin_depth=0, init_uu=0, ampl_noise=0, cylinder_skin=0
-  real :: limit_close_linear
   character (len=labellen), dimension(ninit) :: initsolid_cells='nothing'
   character (len=labellen) :: interpolation_method='staircase'
   integer, parameter :: iradius=1, ixpos=2,iypos=3,izpos=4,itemp=5
@@ -31,15 +30,17 @@ module Solid_Cells
   real                          :: rhosum
   integer                       :: irhocount
   real                          :: theta_shift=1e-2
+  real                          :: limit_close_linear=0.5
 !
   namelist /solid_cells_init_pars/ &
        cylinder_temp, ncylinders, cylinder_radius, cylinder_xpos, &
        cylinder_ypos, cylinder_zpos, initsolid_cells, skin_depth, init_uu, &
        ampl_noise,interpolation_method, nforcepoints,cylinder_skin,&
-       lclose_interpolation,lclose_linear
+       lclose_interpolation,lclose_linear,limit_close_linear
 !
   namelist /solid_cells_run_pars/  &
-       interpolation_method,cylinder_skin,lclose_interpolation,lclose_linear
+       interpolation_method,cylinder_skin,lclose_interpolation,lclose_linear,&
+       limit_close_linear
 !
 !  diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_c_dragx=0       ! DIAG_DOC: 
@@ -771,7 +772,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
                 r_cyl=cylinder(icyl,iradius)
                 r_point=sqrt(((x(i)-x_cyl)**2+(y(j)-y_cyl)**2))
                 dr=r_point-r_cyl
-                if ((dr > 0) .and. (dr<limit_close_linear)) then
+                if ((dr > 0) .and. (dr<dxmin*limit_close_linear)) then
                   xxp=(/x(i),y(j),z(k)/)
                   call close_interpolation(f,i,j,k,icyl,iux,xxp,gpp,.true.)
                   f(i,j,k,iux)=gpp
@@ -907,6 +908,10 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
       integer :: constdir,vardir,topbot_tmp,dirconst,dirvar,icyl,counter,topbot
       real :: x1,x2,f1,f2,rij_min,rij_max,inputvalue,smallx,gp
       logical, intent(in) :: fluid_point
+      real :: fintx, finty,fint_ur,fint_ut,drp,dri,f2x,f2y,f1x,f1y
+      real, save :: urp,utp
+      logical :: quadratic
+
 !
 !  Check if we really want this special treatment close to the fluid-solid 
 !  interface
@@ -1020,7 +1025,8 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !  Find the position, xtemp, in the variable direction
 !  where the normal cross the grid line
 !
-            xtemp=(p_cylinder(vardir)/(p_cylinder(constdir)+tini))*(bordervalue(constdir,topbot_tmp)-cylinder(icyl,constdir+1))
+            xtemp=(p_cylinder(vardir)/(p_cylinder(constdir)+tini))&
+                *(bordervalue(constdir,topbot_tmp)-cylinder(icyl,constdir+1))
 !
 !  Find the distance, r, from the center of the cylinder
 !  to the point where the normal cross the grid line
@@ -1028,7 +1034,8 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
             if (abs(xtemp) > verylarge) then
               r=verylarge*2
             else
-              r=sqrt(xtemp**2+(bordervalue(constdir,topbot_tmp)-cylinder(icyl,constdir+1))**2)
+              r=sqrt(xtemp**2+(bordervalue(constdir,topbot_tmp)&
+                  -cylinder(icyl,constdir+1))**2)
             endif
 !
 !  Check if the point xtemp is outside the cylinder,
@@ -1059,7 +1066,8 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
                 rij_min=rij(topbot_tmp,1)
                 rij_max=rij(topbot_tmp,2)
               endif
-              inputvalue=bordervalue(constdir,topbot_tmp)-cylinder(icyl,constdir+1)
+              inputvalue=bordervalue(constdir,topbot_tmp)&
+                  -cylinder(icyl,constdir+1)
             endif
           enddo
 !
@@ -1089,22 +1097,66 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !  as where the grid line cross the cylinder surface.
 !  Find the variable value at the endpoints.
 !
-          min=1
-          if (dirconst == 2) then
-            varval=f(borderindex(dirvar,1),borderindex(dirconst,topbot),iz0,ivar1)
-          else
-            varval=f(borderindex(dirconst,topbot),borderindex(dirvar,1),iz0,ivar1)
-          endif
-          call find_point(rij_min,rs,varval,inputvalue,x1,bordervalue(dirvar,1),&
-              bordervalue(dirvar,2),min,f1,cylinder(icyl,dirvar+1))
-          min=0
-          if (dirconst == 2) then
-            varval=f(borderindex(dirvar,2),borderindex(dirconst,topbot),iz0,ivar1)
-          else
-            varval=f(borderindex(dirconst,topbot),borderindex(dirvar,2),iz0,ivar1)
-          endif
-          call find_point(rij_max,rs,varval,inputvalue,x2,bordervalue(dirvar,1),&
-              bordervalue(dirvar,2),min,f2,cylinder(icyl,dirvar+1))
+           quadratic=.true.
+           min=1
+           if (dirconst == 2) then
+             varval=f(borderindex(dirvar,1),borderindex(dirconst,topbot),&
+                 iz0,ivar1)
+           else
+             varval=f(borderindex(dirconst,topbot),borderindex(dirvar,1),&
+                 iz0,ivar1)
+           endif
+           call find_point(rij_min,rs,varval,inputvalue,x1,&
+               bordervalue(dirvar,1),bordervalue(dirvar,2),&
+               min,f1,cylinder(icyl,dirvar+1))
+!
+! If we want quadratic interpolation of the radial velocity we
+! must find both the interploated x and y velocity in order to 
+! do interpolations for the radial and theta directions.
+!
+           if (quadratic .and. ivar1==iux) then
+             if (dirconst == 2) then
+               varval=f(borderindex(dirvar,1),borderindex(dirconst,topbot),&
+                   iz0,iuy)
+             else
+               varval=f(borderindex(dirconst,topbot),borderindex(dirvar,1),&
+                   iz0,iuy)
+             endif
+             call find_point(rij_min,rs,varval,inputvalue,x1,&
+                 bordervalue(dirvar,1),bordervalue(dirvar,2),&
+                 min,f1y,cylinder(icyl,dirvar+1))
+             f1x=f1
+           endif
+!
+           min=0
+           if (dirconst == 2) then
+             varval=f(borderindex(dirvar,2),borderindex(dirconst,topbot),&
+                 iz0,ivar1)
+           else
+             varval=f(borderindex(dirconst,topbot),borderindex(dirvar,2),&
+                 iz0,ivar1)
+           endif
+           call find_point(rij_max,rs,varval,inputvalue,x2,&
+               bordervalue(dirvar,1),bordervalue(dirvar,2),&
+               min,f2,cylinder(icyl,dirvar+1))
+!
+! If we want quadratic interpolation of the radial velocity we
+! must find both the interploated x and y velocity in order to 
+! do interpolations for the radial and theta directions.
+!
+           if (quadratic .and. ivar1==iux) then
+             if (dirconst == 2) then
+               varval=f(borderindex(dirvar,2),borderindex(dirconst,topbot),&
+                   iz0,iuy)
+             else
+               varval=f(borderindex(dirconst,topbot),borderindex(dirvar,2),&
+                   iz0,iuy)
+             endif
+             call find_point(rij_max,rs,varval,inputvalue,x2,&
+                 bordervalue(dirvar,1),bordervalue(dirvar,2),&
+                 min,f2y,cylinder(icyl,dirvar+1))
+             f2x=f2
+           endif
 !
 !  Find the interpolation values between the two endpoints of
 !  the line and the normal from the cylinder.
@@ -1112,19 +1164,39 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
           rint1=xyint(dirvar)-x1
           rint2=x2-xyint(dirvar)
 !
+          if (quadratic .and. (ivar1 .ne. iuz)) then
+            if (ivar1==iux) then
+              fintx=(rint1*f2x+rint2*f1x)/(x2-x1)
+              finty=(rint1*f2y+rint2*f1y)/(x2-x1)
+              fint_ur    =fintx*xp_cylinder/rs+finty*yp_cylinder/rs
+              fint_ut=finty*xp_cylinder/rs-fintx*yp_cylinder/rs
+              drp=rp-rs
+              dri=Rsmall-rs
+              urp=(drp/dri)**2*fint_ur
+              utp=(drp/dri)*fint_ut
+              gpp=urp*xp_cylinder/rs-utp*yp_cylinder/rs
+            elseif (ivar1==iuy) then
+              gpp=urp*yp_cylinder/rs+utp*xp_cylinder/rs
+            else
+              call fatal_error('close_interpolation',&
+                  'Yor ivar1 is not correct!') 
+            endif
+          else
+!
 !  Find the interpolated value on the line
 !
-          fint=(rint1*f2+rint2*f1)/(x2-x1)
+            fint=(rint1*f2+rint2*f1)/(x2-x1)
 !
 !  Find the weigthing factors for the point on the line
 !  and the point on the cylinder surface.
-!
-          rps=rp-rs
-          rintp=Rsmall-rp
+!          
+            rps=rp-rs
+            rintp=Rsmall-rp
 !
 !  Perform the final interpolation
 !
-          gpp=(rps*fint+rintp*0)/(Rsmall-rs)
+            gpp=(rps*fint+rintp*0)/(Rsmall-rs)
+          endif
         endif
       endif
 !
@@ -1453,7 +1525,6 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !  these points has to be "marked" for later use.
 !
         if (lclose_linear) then
-          limit_close_linear=dxmin/2
 !
 !  Loop over all points
 !
@@ -1461,7 +1532,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
             do j=m1,m2
               r_point=sqrt(((x(i)-x_cyl)**2+(y(j)-y_cyl)**2))
               dr=r_point-r_cyl
-              if ((dr .ge. 0) .and. (dr<limit_close_linear)) then
+              if ((dr .ge. 0) .and. (dr<limit_close_linear*dxmin)) then
                 ba(i,j,:,1)=10
                 ba(i,j,:,4)=icyl
               endif
