@@ -1445,11 +1445,10 @@ module Initcond
       else
         if (lroot) print*,'bessel_x: Bessel function field: kx,i=',kx,i
         do l=1,mx
-          !call besselj_nu_int(J0(l),0,kx*x(l))
-          !call besselj_nu_int(J1(l),1,kx*x(l))
+          !AB: Wlad to check:-- call besselj_nu_int(J0(l),0,kx*x(l))
+          !AB: Wlad to check:-- call besselj_nu_int(J1(l),1,kx*x(l))
           J0(l)=bessj(0,kx*x(l))
           J1(l)=bessj(1,kx*x(l))
-          print*,'AXEL: arg,J0=',kx*x(l),J0(l),J1(l)
         enddo
         j=i+1; f(:,:,:,j)=f(:,:,:,j)+ampl*spread(spread(J1,2,my),3,mz)
         j=i+2; f(:,:,:,j)=f(:,:,:,j)+ampl*spread(spread(J0,2,my),3,mz)
