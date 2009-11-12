@@ -124,7 +124,8 @@ module Particles
       brownian_T0, lnostore_uu, ldtgrav_par, ldragforce_radialonly, &
       lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, &
       lcoriolis_force_par, lcentrifugal_force_par, &
-      Lx0, Ly0, Lz0, lglobalrandom, linsert_particles_continuously
+      Lx0, Ly0, Lz0, lglobalrandom, linsert_particles_continuously, &
+      lrandom_particle_pencils
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -152,7 +153,7 @@ module Particles
       lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, &
       lcoriolis_force_par, lcentrifugal_force_par, &
       linsert_particles_continuously, particles_insert_rate, &
-      max_particle_insert_time
+      max_particle_insert_time, lrandom_particle_pencils
 
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0

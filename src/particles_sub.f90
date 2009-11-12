@@ -1433,7 +1433,62 @@ module Particles_sub
           'sort_particles_imn: iproc, ncount, isorttype, lrunningsort=', &
           iproc, ncount, isorttype, lrunningsort
 !
+      if (lrandom_particle_pencils) then
+        if (present(dfp)) then
+          call random_particle_pencils(fp,ineargrid,ipar,dfp)
+        else
+          call random_particle_pencils(fp,ineargrid,ipar)
+        endif
+      endif
+!
     endsubroutine sort_particles_imn
+!***********************************************************************
+    subroutine random_particle_pencils(fp,ineargrid,ipar,dfp)
+!
+!  Randomize particles within each pencil to avoid low index particles
+!  always being considered first.
+!
+!  12-nov-09/anders: coded
+!
+      use General, only: random_number_wrapper
+!
+      real, dimension (mpar_loc,mpvar) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
+      integer, dimension (mpar_loc) :: ipar
+      real, dimension (mpar_loc,mpvar), optional :: dfp
+!
+      real, dimension (mpvar) :: fp_swap, dfp_swap
+      real :: r
+      integer, dimension (3) :: ineargrid_swap
+      integer :: ipar_swap, imn, k, kswap
+!
+      intent (out) :: fp, ineargrid, ipar, dfp
+!
+      do imn=1,ny*nz
+        if (npar_imn(imn)>=2) then
+          do k=k1_imn(imn),k2_imn(imn)
+            call random_number_wrapper(r)
+            kswap=k1_imn(imn)+floor(r*npar_imn(imn))
+            if (kswap/=k) then
+              print*, 'QQQ', imn, k, kswap
+              fp_swap=fp(kswap,:)
+              ineargrid_swap=ineargrid(kswap,:)
+              ipar_swap=ipar(kswap)
+              if (present(dfp)) dfp_swap=dfp(kswap,:)
+              fp(kswap,:)=fp(k,:)
+              ineargrid(kswap,:)=ineargrid(k,:)
+              ipar(kswap)=ipar(k)
+              if (present(dfp)) dfp(kswap,:)=dfp(k,:)
+              fp(k,:)=fp_swap
+              ineargrid(k,:)=ineargrid_swap
+              ipar(k)=ipar_swap
+              if (present(dfp)) dfp(k,:)=dfp_swap
+            endif
+          enddo
+        endif
+      enddo
+!
+    endsubroutine random_particle_pencils
 !***********************************************************************
     subroutine map_xxp_grid(f,fp,ineargrid)
 !
