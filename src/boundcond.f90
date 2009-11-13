@@ -531,6 +531,12 @@ module Boundcond
               case ('1s')
                 ! BCZ_DOC: one-sided
                 call bc_onesided_z(f,topbot,j)
+              case ('fg')
+                ! BCZ_DOC: ``freeze'' value, i.e. maintain initial 
+                !  value at boundary, also mantaining the
+                !  ghost zones at the initial coded value, i.e.,
+                !  keep the gradient frozen as well
+                call bc_freeze_var_z(topbot,j)
               case ('c1')
                 ! BCZ_DOC: complex
                 if (j==iss) call bc_ss_flux(f,topbot)

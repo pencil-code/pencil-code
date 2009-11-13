@@ -303,6 +303,7 @@ module Pscalar
       integer :: i
 !
       if (.not. nopscalar) lpenc_requested(i_ugcc)=.true.
+      if (lnotpassive) lpenc_requested(i_cc)=.true.
       if (lpscalar_sink) lpenc_requested(i_rho1)=.true.
       if (pscalar_diff/=0.) then
         lpenc_requested(i_gcc)=.true.

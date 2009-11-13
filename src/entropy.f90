@@ -62,7 +62,7 @@ module Entropy
   real :: tauheat_buffer=0.,TTheat_buffer=0.,zheat_buffer=0.,dheat_buffer1=0.
   real :: heat_uniform=0.,cool_RTV=0.
   real :: deltaT_poleq=0.,beta_hand=1.,r_bcz=0.
-  real :: tau_cool=0.0, TTref_cool=0.0
+  real :: tau_cool=0.0, TTref_cool=0.0, tau_cool2=0.0
   real :: cs0hs=0.0,H0hs=0.0,rho0hs=0.0
   real :: chit_aniso=0.0,xbot=0.0,xtop=0.0
   integer, parameter :: nheatc_max=4
@@ -126,7 +126,7 @@ module Entropy
       T0,ampl_TT,kx_ss,ky_ss,kz_ss,beta_glnrho_global,ladvection_entropy, &
       lviscosity_heat, &
       r_bcz,luminosity,wheat,hcond0,tau_cool,TTref_cool,lhcond_global, &
-      cool_fac,cs0hs,H0hs,rho0hs
+      cool_fac,cs0hs,H0hs,rho0hs, tau_cool2
 !
 ! run parameters
   namelist /entropy_run_pars/ &
@@ -144,7 +144,7 @@ module Entropy
       tdown, allp,beta_glnrho_global,ladvection_entropy, &
       lviscosity_heat,r_bcz,lfreeze_sint,lfreeze_sext,lhcond_global, &
       tau_cool,TTref_cool,mixinglength_flux,chiB,chi_hyper3_aniso, Ftop, &
-      chit_aniso,xbot,xtop
+      chit_aniso,xbot,xtop,tau_cool2
 
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
@@ -2213,7 +2213,8 @@ module Entropy
       if ((luminosity/=0.0) .or. (cool/=0.0) .or. &
           (tau_cor/=0.0) .or. (tauheat_buffer/=0.0) .or. &
           (heat_uniform/=0.0) .or. (tau_cool/=0.0) .or. &
-          (cool_ext/=0.0 .and. cool_int/=0.0) .or. lturbulent_heat) &
+          (cool_ext/=0.0 .and. cool_int/=0.0) .or. lturbulent_heat .or. &
+          (tau_cool2 /=0)) &
           call calc_heat_cool(df,p,Hmax)
       if (tdown/=0.0) call newton_cool(df,p)
       if (cool_RTV/=0.0) call calc_heat_cool_RTV(df,p)
@@ -3287,6 +3288,8 @@ module Entropy
 !
       if (tau_cool/=0.0) &
           heat=heat-p%rho*p%cp*gamma_inv*(p%TT-TTref_cool)/tau_cool
+      if (tau_cool2/=0.0) &
+          heat = heat - (p%cs2-cs2cool)/cs2cool/p%rho1/tau_cool2
 !
 !  Add "coronal" heating (to simulate a hot corona).
 !  Assume a linearly increasing reference profile.
