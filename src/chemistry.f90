@@ -399,15 +399,6 @@ module Chemistry
           do k=1,nchemspec
             call posnoise(amplchemk(k),f,ichemspec(k))
           enddo
-        case('positive-noise-rel')
-          do k=1,nchemspec
-            call posnoise_rel(amplchemk(k),amplchemk2(k),f,ichemspec(k))
-          enddo
-        case('10p-noise')     ! set conc to amplchemk with 10% noise
-          do k=1,nchemspec
-            call posnoise(0.1*amplchemk(k),f,ichemspec(k))
-            f(:,:,:,ichemspec(k))=f(:,:,:,ichemspec(k))+0.9*amplchemk(k)
-          enddo
         case('innerbox')
           do k=1,nchemspec
             call innerbox(amplchemk(k),amplchemk2(k),f,ichemspec(k),widthchem)
@@ -1542,7 +1533,7 @@ module Chemistry
 
             do k=1,nchemspec
               Diff_full_add(j1,j2,j3,k)=Diff_full(j1,j2,j3,k)*&
-                  species_constants(k,imass)/unit_mass*mu1_full(j1,j2,j3)
+                  species_constants(k,imass)/unit_mass*mu1_full(j1,j2,j3)!*0.8
             enddo
          enddo
          enddo
@@ -1564,7 +1555,13 @@ module Chemistry
 !
           do k=1,nchemspec
             species_cond(j1,j2,j3,k)=(species_viscosity(j1,j2,j3,k)) &
-                /(species_constants(k,imass)/unit_mass)*Rgas*15./4.! 15./4.
+                /(species_constants(k,imass)/unit_mass)*Rgas* &
+         !      (5./2.*(1.-5./(pi+2.))*3./2. &  
+         !     +Bin_Diff_coef(j1,j2,j3,k,k)*rho_full(j1,j2,j3) &
+         !     /species_viscosity(j1,j2,j3,k)*  &
+         !      ((1.+5./(pi+2.))*3./2.+(Cv_full(j1,j2,j3)/Rgas-3.)) )
+
+            15./4.! 15./4.
             tmp_sum(j1,j2,j3)=tmp_sum(j1,j2,j3)  &
                              +XX_full(j1,j2,j3,k)*species_cond(j1,j2,j3,k)
             tmp_sum2(j1,j2,j3)=tmp_sum2(j1,j2,j3) &
@@ -3907,12 +3904,22 @@ module Chemistry
     if (BinDif_simple) then
         do k=1,nchemspec
           do j=k,nchemspec
+          if (j/=k) then
+
             eps_jk=(tran_data(j,2)*tran_data(k,2))**0.5
             sigma_jk=0.5*(tran_data(j,3)+tran_data(k,3))*1e-8
             m_jk=(species_constants(j,imass)*species_constants(k,imass)) &
                 /(species_constants(j,imass)+species_constants(k,imass))/Na
-            tmp_local=(m_jk)**(-0.5)*(sigma_jk*unit_length)**(-2)*unit_time
+          
+          else
+            eps_jk=tran_data(j,2)
+            sigma_jk=tran_data(j,3)*1e-8
+            m_jk=species_constants(j,imass)/Na
 
+          endif
+
+           tmp_local=(m_jk)**(-0.5)*(sigma_jk*unit_length)**(-2)*unit_time
+           
           do j3=nn1,nn2
           do j2=mm1,mm2
           do j1=ll1,ll2
@@ -4710,7 +4717,7 @@ module Chemistry
                 !   -nu_full(lll,m1:m2,n1:n2)*(d2u1_dy2+d2u1_dz2)
           T_3_y(:,:)=-f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,2,2) &
                      -grad_pp(:,:,2)/rho0(m1:m2,n1:n2) 
-         T_3_z(:,:)=-f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,2,2) 
+         T_3_z(:,:)=-f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,2,3) 
                 !   -nu_full(lll,m1:m2,n1:n2)*(d2u2_dy2+d2u2_dz2)
           T_4_y(:,:)=-f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,3,2) 
          T_4_z(:,:)=-f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,3,3) &
