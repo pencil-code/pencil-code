@@ -1433,7 +1433,10 @@ module Particles_sub
           'sort_particles_imn: iproc, ncount, isorttype, lrunningsort=', &
           iproc, ncount, isorttype, lrunningsort
 !
-      if (lrandom_particle_pencils) then
+!  Possible to randomize particles inside each pencil. This screws with the
+!  pencil consistency check, so we turn it off when the test is running.
+!
+      if (lrandom_particle_pencils .and. (.not.lpencil_check_at_work)) then
         if (present(dfp)) then
           call random_particle_pencils(fp,ineargrid,ipar,dfp)
         else
@@ -1447,6 +1450,8 @@ module Particles_sub
 !
 !  Randomize particles within each pencil to avoid low index particles
 !  always being considered first.
+!
+!  Slows down simulation by around 10%.
 !
 !  12-nov-09/anders: coded
 !
