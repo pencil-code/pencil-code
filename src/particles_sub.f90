@@ -532,11 +532,11 @@ module Particles_sub
       integer :: iname
       logical, optional :: lsqrt
 !
-      integer, save :: icount=0
+      integer, dimension(mname), save :: icount=0
 !
       if (iname/=0) then
 !
-        if (icount==0) then
+        if (icount(iname)==0) then
           fname(iname)=0.0
           fweight(iname)=0.0
         endif
@@ -554,10 +554,10 @@ module Particles_sub
 !
 !  Reset sum when npar_loc particles have been considered.
 !
-        icount=icount+size(a)
-        if (icount==npar_loc) then
-          icount=0
-        elseif (icount>=npar_loc) then
+        icount(iname)=icount(iname)+size(a)
+        if (icount(iname)==npar_loc) then
+          icount(iname)=0
+        elseif (icount(iname)>=npar_loc) then
           print*, 'sum_par_name: Too many particles entered this sub.'
           print*, 'sum_par_name: Can only do statistics on npar_loc particles!'
           call fatal_error('sum_par_name','')
