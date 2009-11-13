@@ -32,7 +32,7 @@ module Particles_collisions
   logical :: lshear_in_vp=.true.
   character (len=labellen) :: icoll='random-angle'
 !
-  integer :: idiag_ncoll
+  integer :: idiag_ncollpm=0, idiag_npartpm=0
 !
   namelist /particles_coll_run_pars/ &
       lambda_mfp_single, coeff_restitution, icoll, lshear_in_vp, &
@@ -178,21 +178,23 @@ module Particles_collisions
                 if (npart_max_par/=-1 .and. npart_par==npart_max_par) exit
               enddo
               k=kneighbour(k)
+!
+!  Collision diagnostics. This is done after the last sub-time-step, so we
+!  can not use ldiagnos. Collision diagnostics are always delayed by one
+!  time-step.
+!
+              if (mod(it,it1)==0) then
+                if (idiag_ncollpm/=0) &
+                    call sum_par_name((/float(ncoll_par)/),idiag_ncollpm)
+                if (idiag_npartpm/=0) &
+                    call sum_par_name((/float(npart_par)/),idiag_npartpm)
+              endif
+!
             enddo
           endif
 !
         enddo
       enddo
-!
-      if (mod(it,it1)==0) then
-        if (ncoll/=0) then
-          if (idiag_ncoll/=0) &
-              call sum_weighted_name((/float(ncoll)/),(/1.0/),idiag_ncoll)
-        else
-          if (idiag_ncoll/=0) &
-              call sum_weighted_name((/0.0/),(/0.0/),idiag_ncoll)
-        endif
-      endif
 !
     endsubroutine calc_particles_collisions
 !***********************************************************************
@@ -354,11 +356,12 @@ module Particles_collisions
       integer :: iname
 !
       if (lreset) then
-        idiag_ncoll=0
+        idiag_ncollpm=0; idiag_npartpm=0
       endif
 !
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'ncoll',idiag_ncoll)
+        call parse_name(iname,cname(iname),cform(iname),'ncollpm',idiag_ncollpm)
+        call parse_name(iname,cname(iname),cform(iname),'npartpm',idiag_npartpm)
       enddo
 !
     endsubroutine rprint_particles_collisions
