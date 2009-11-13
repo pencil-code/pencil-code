@@ -121,11 +121,15 @@ module Particles_main
 !
     endsubroutine particles_timestep_first
 !***********************************************************************
-    subroutine particles_timestep_second()
+    subroutine particles_timestep_second(f)
 !
 !  Time evolution of particle variables.
 !
 !  22-aug-05/anders: dummy
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine particles_timestep_second
 !***********************************************************************

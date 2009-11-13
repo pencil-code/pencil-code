@@ -1470,7 +1470,6 @@ module Particles_sub
             call random_number_wrapper(r)
             kswap=k1_imn(imn)+floor(r*npar_imn(imn))
             if (kswap/=k) then
-              print*, 'QQQ', imn, k, kswap
               fp_swap=fp(kswap,:)
               ineargrid_swap=ineargrid(kswap,:)
               ipar_swap=ipar(kswap)

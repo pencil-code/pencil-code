@@ -119,7 +119,7 @@ module Timestep
 !
 !  Time evolution of particle variables.
 !
-        if (lparticles) call particles_timestep_second()
+        if (lparticles) call particles_timestep_second(f)
 !
 !  Advance deltay of the shear (and, optionally, perform shear advection
 !  by shifting all variables and their derivatives).
