@@ -753,11 +753,11 @@ subroutine regexit
 
   implicit none
 
-  integer status
+  integer :: stat,system
   
   if (lroot) then
     print *,'End of the program run.x due to signal'
-    status = system('touch STOP')
+    stat=system('touch STOP')
   endif
   
 endsubroutine regexit
