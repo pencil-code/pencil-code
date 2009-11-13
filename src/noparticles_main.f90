@@ -113,17 +113,9 @@ module Particles_main
 !
     endsubroutine particles_write_pdim
 !***********************************************************************
-    subroutine particles_timestep_first()
+    subroutine particles_timestep_first(f)
 !
 !  Setup dfp in the beginning of each itsub.
-!
-!  22-aug-05/anders: dummy
-!
-    endsubroutine particles_timestep_first
-!***********************************************************************
-    subroutine particles_timestep_second(f)
-!
-!  Time evolution of particle variables.
 !
 !  22-aug-05/anders: dummy
 !
@@ -131,7 +123,27 @@ module Particles_main
 !
       call keep_compiler_quiet(f)
 !
+    endsubroutine particles_timestep_first
+!***********************************************************************
+    subroutine particles_timestep_second()
+!
+!  Time evolution of particle variables.
+!
+!  22-aug-05/anders: dummy
+!
     endsubroutine particles_timestep_second
+!***********************************************************************
+    subroutine particles_load_balance(f)
+!
+!  Redistribute particles among the processors for better load balancing.
+!
+!  04-nov-09/anders: dummy
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine particles_load_balance
 !***********************************************************************
     subroutine particles_boundconds(f)
 !
