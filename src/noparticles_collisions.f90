@@ -40,13 +40,15 @@ module Particles_collisions
 !
     endsubroutine initialize_particles_collisions
 !***********************************************************************
-    subroutine calc_particles_collisions(fp,ineargrid)
+    subroutine calc_particles_collisions(f,fp,ineargrid)
 !
 !  23-mar-09/anders: dummy
 !
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
+      call keep_compiler_quiet(f)
       call keep_compiler_quiet(fp)
       call keep_compiler_quiet(ineargrid)
 !
