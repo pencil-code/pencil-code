@@ -638,7 +638,7 @@ module Particles_mpicomm
           lredo_all=.false.
         endif
 !
-!  If sum is not zero, then the while loop while be executed once more.
+!  If sum is not zero, then the while loop will be executed once more.
 !
       enddo
 !
