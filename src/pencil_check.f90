@@ -58,6 +58,7 @@ module Pencil_check
 !
       if (lroot) print*, &
           'pencil_consistency_check: checking pencil case (takes some time)'
+      lpencil_check_at_work=.true.
 !
 ! Prevent code from dying due to any errors...
 !
@@ -256,6 +257,8 @@ f_loop:   do iv=1,mvar
       call life_support_off('end of pencil consistency check/')
 !
       if (ldie) call fatal_error('pencil_consistency_check','DYING')
+!
+      lpencil_check_at_work=.false.
 !
       call keep_compiler_quiet(f)
 !

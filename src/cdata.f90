@@ -252,6 +252,7 @@ module Cdata
   logical :: lpencil_check=.false., lpencil_init=.false.
   logical :: lpencil_requested_swap=.true., lpencil_diagnos_swap=.false.
   logical :: lpencil_check_diagnos_opti=.false.
+  logical :: lpencil_check_at_work=.false.
   integer :: ipencil_swap=0
 !
 !  Variables related to calculating diagnostic output.
