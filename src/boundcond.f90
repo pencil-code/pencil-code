@@ -861,9 +861,7 @@ module Boundcond
 !***********************************************************************
     subroutine bc_symset_x(f,sgn,topbot,j,rel,val)
 !
-!  This routine works like bc_sym_x, but sets the function value to what
-!  it should be for vanishing one-sided derivative.
-!  At the moment the derivative is only 2nd order accurate.
+!  This routine works like bc_sym_x, but sets the function value to val
 !
 !  Symmetry boundary conditions.
 !  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
@@ -918,31 +916,35 @@ module Boundcond
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i,j
+      integer :: i,j,i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
 !
       select case(topbot)
-
+!
+!  bottom (left end of the domain)
+!
       case('bot')               ! bottom boundary
-        f(l1,m1:m2,n1:n2,j)=(360.*f(l1+1,m1:m2,n1:n2,j) &
-                            -450.*f(l1+2,m1:m2,n1:n2,j) &
-                            +400.*f(l1+3,m1:m2,n1:n2,j) &
-                            -225.*f(l1+4,m1:m2,n1:n2,j) &
-                             +72.*f(l1+5,m1:m2,n1:n2,j) &
-                             -10.*f(l1+6,m1:m2,n1:n2,j))/147.
+        f(l1,m1:m2,n1:n2,j)=(360.*f(l1+i1,m1:m2,n1:n2,j) &
+                            -450.*f(l1+i2,m1:m2,n1:n2,j) &
+                            +400.*f(l1+i3,m1:m2,n1:n2,j) &
+                            -225.*f(l1+i4,m1:m2,n1:n2,j) &
+                             +72.*f(l1+i5,m1:m2,n1:n2,j) &
+                             -10.*f(l1+i6,m1:m2,n1:n2,j))/147.
         do i=1,nghost; f(l1-i,:,:,j)=f(l1+i,:,:,j); enddo
-
+!
+!  top (right end of the domain)
+!
       case('top')               ! top boundary
-        f(l2,m1:m2,n1:n2,j)=(360.*f(l2-1,m1:m2,n1:n2,j) &
-                            -450.*f(l2-2,m1:m2,n1:n2,j) &
-                            +400.*f(l2-3,m1:m2,n1:n2,j) &
-                            -225.*f(l2-4,m1:m2,n1:n2,j) &
-                             +72.*f(l2-5,m1:m2,n1:n2,j) &
-                             -10.*f(l2-6,m1:m2,n1:n2,j))/147.
+        f(l2,m1:m2,n1:n2,j)=(360.*f(l2-i1,m1:m2,n1:n2,j) &
+                            -450.*f(l2-i2,m1:m2,n1:n2,j) &
+                            +400.*f(l2-i3,m1:m2,n1:n2,j) &
+                            -225.*f(l2-i4,m1:m2,n1:n2,j) &
+                             +72.*f(l2-i5,m1:m2,n1:n2,j) &
+                             -10.*f(l2-i6,m1:m2,n1:n2,j))/147.
         do i=1,nghost; f(l2+i,:,:,j)=f(l2-i,:,:,j); enddo
-
+!
       case default
         print*, "bc_symset0der_x: ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bc_symset0der_x
