@@ -169,7 +169,7 @@ module Magnetic
   ! run parameters
   real :: eta=0.,eta1=0.,eta_hyper2=0.,eta_hyper3=0.,height_eta=0.,eta_out=0.
   real :: meanfield_molecular_eta=0.
-  real :: eta_int=0.,eta_ext=0.,wresistivity=.01
+  real :: eta_int=0.,eta_ext=0.,wresistivity=.01,eta_xy_max=1.
   real :: tau_aa_exterior=0.
   real :: sigma_ratio=1.,eta_width=0.,eta_z0=1.
   real :: alphaSSm=0.
@@ -222,7 +222,7 @@ module Magnetic
        iresistivity,lweyl_gauge,lupw_aa, &
        alphaSSm, &
        alpha_rmax,alpha_width,&
-       eta_int,eta_ext,eta_shock,wresistivity, &
+       eta_int,eta_ext,eta_shock,wresistivity,eta_xy_max, &
        rhomin_jxb,va2max_jxb,va2power_jxb,llorentzforce,linduction, &
        reinitialize_aa,rescale_aa,lB_ext_pot, &
        displacement_gun, &
@@ -1983,11 +1983,11 @@ module Magnetic
           fres(:,j)=fres(:,j)+eta_xy(l1:l2,m)*p%del2a(:,j)+geta_xy(l1:l2,m,j)*p%diva
         enddo
 !
-!  time step check fir eta_xy part
-!  (KK: probably a different eta value would suit better here?)
+!  time step check for eta_xy part
+
 !
         !if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_xy(l1,m)
-        if (lfirst.and.ldt) diffus_eta=diffus_eta+maxval(eta_xy(:,m))
+        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_xy_max
         etatotal=etatotal+eta_xy(l1,m)
       endif
 !
@@ -5106,14 +5106,12 @@ module Magnetic
       real, dimension(mx,my) :: eta_xy,r2,gradr_eta_xy
       real, dimension(mx,my,3)  :: geta_xy
       character (len=labellen) :: eta_xy_profile
-      real :: rmax2      
+      real :: rmax2,a,w      
       integer :: i,j
 
-!     
+     
       intent(out) :: eta_xy,geta_xy
-!
-!  adapted from etazdep
-!
+
       select case (eta_xy_profile)
       case('schnack89')
       do i=1,mx
@@ -5122,23 +5120,33 @@ module Magnetic
         enddo
       enddo
 !
-!  define eta_r: resistivity profile from Y.L. Ho, S.C. Prager & 
+!  define eta_xy: radial resistivity profile from Y.L. Ho, S.C. Prager & 
 !              D.D. Schnack, Phys rev letters vol 62 nr 13 1989
 !  and define gradr_eta_xy: 1/r *d_r(eta_xy))
 !
-!  rmax2 should be gotten from input ? 
-!
+!  to prevent numerically impossible diffusivities the value outside rmax2 
+!  the diffusivity is set to stay below an input value eta_xy_max (> 100*eta),
+!  keeping the transition continuous in the first derivative
+!  
       rmax2=1.
-      eta_xy = eta*(1+9*(r2/rmax2)**15)**2
-      gradr_eta_xy= 540*eta*(1+9*(r2/rmax2)**15)*(r2/rmax2)**14/rmax2**0.5
-!
+      a=(eta_xy_max-100.*eta)/eta_xy_max
+      w=(eta_xy_max-100.*eta)/(5400.*eta)
+
+      do i=1,mx
+      do j=1,my 
+!  inside
+        if (r2(i,j) < rmax2) then
+          eta_xy(i,j) = eta*(1.+9.*(r2(i,j)/rmax2)**15)**2
+          gradr_eta_xy= 540.*eta*(1.+9.*(r2(i,j)/rmax2)**15)*(r2(i,j)/rmax2)**14/rmax2**0.5
+!  outside
+        else
+          eta_xy(i,j) = eta_xy_max*(1.-a*exp(-(r2(i,j)**0.5-rmax2**0.5)/w))
+          gradr_eta_xy(i,j)= eta_xy_max*(a*exp(-(r2(i,j)**0.5-rmax2**0.5)/w))/w/rmax2**0.5
+        endif
 !  gradient
-!
-      do i=1,nx
-      do j=1,nY 
-        geta_xy(i,j,1) = x(i)*gradr_eta_xy(i,j)
-        geta_xy(i,j,2) = y(j)*gradr_eta_xy(i,j)
-        geta_xy(i,j,3) = 0.
+          geta_xy(i,j,1) = x(i)*gradr_eta_xy(i,j)
+          geta_xy(i,j,2) = y(j)*gradr_eta_xy(i,j)
+          geta_xy(i,j,3) = 0.
       enddo
       enddo
 
