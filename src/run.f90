@@ -108,9 +108,6 @@ program run
   integer SIGFPE, SIGINT, SIGHUP, SIGTERM, SIGPWR, SIGCPULIM, SIGXCPU, SIGUSR1
   parameter ( SIGFPE=8, SIGINT=2, SIGHUP=1, SIGTERM=15, SIGUSR1=30 )
 
-  integer DEFAULT, IGNORE, USER
-  parameter ( DEFAULT=0, IGNORE=1, USER=-1 )
-
   integer sigret
 
   external regexit
@@ -748,14 +745,20 @@ endprogram run
 
 subroutine regexit
 
-! signal handling routine, touches STOP
+! signal handling routine, touches STOP if root node, does nothing otherwise
 
 !  12-nov-09/MR: coded
 
-  integer status
-  print *,'End of the program run.x due to signal'
+  use Cdata, only: lroot
 
-  status = system('touch STOP')
-    
+  implicit none
+
+  integer status
+  
+  if (lroot) then
+    print *,'End of the program run.x due to signal'
+    status = system('touch STOP')
+  endif
+  
 endsubroutine regexit
 
