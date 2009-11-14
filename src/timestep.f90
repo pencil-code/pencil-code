@@ -101,8 +101,8 @@ module Timestep
         if (ldt) dt_beta_ts=dt*beta_ts
         if (ip<=6) print*, 'rk_2n: iproc, dt=', iproc, dt  !(all have same dt?)
 !
-! Add artificial damping at the location of SN explosions for a short time
-! after insertion.
+!  Add artificial damping at the location of SN explosions for a short time
+!  after insertion.
 !
         if (linterstellar) call calc_snr_damp_int(dt_beta_ts(itsub))
 !
@@ -123,7 +123,7 @@ module Timestep
 !  Discrete particle collisions. Must be done in the end of the time-step so
 !  that dt is known.
 !
-        if (lparticles .and. itsub==3) call particles_collisions()
+        if (lparticles .and. itsub==3) call particles_discrete_collisions()
 !
 !  Advance deltay of the shear (and, optionally, perform shear advection
 !  by shifting all variables and their derivatives).

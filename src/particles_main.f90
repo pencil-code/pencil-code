@@ -212,7 +212,7 @@ module Particles_main
 !
     endsubroutine particles_timestep_second
 !***********************************************************************
-    subroutine particles_collisions()
+    subroutine particles_discrete_collisions()
 !
 !  Discrete particle collisions.
 !
@@ -225,7 +225,7 @@ module Particles_main
         call calc_particles_collisions(fp,ineargrid)
       endif
 !
-    endsubroutine particles_collisions
+    endsubroutine particles_discrete_collisions
 !***********************************************************************
     subroutine particles_load_balance(f)
 !

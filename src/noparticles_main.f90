@@ -129,13 +129,13 @@ module Particles_main
 !
     endsubroutine particles_timestep_second
 !***********************************************************************
-    subroutine particles_collisions()
+    subroutine particles_discrete_collisions()
 !
 !  Discrete particle collisions.
 !
 !  13-nov-09/anders: dummy
 !
-    endsubroutine particles_collisions
+    endsubroutine particles_discrete_collisions
 !***********************************************************************
     subroutine particles_load_balance(f)
 !
