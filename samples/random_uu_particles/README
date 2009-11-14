@@ -11,7 +11,8 @@ Status:
 Recommended resolution:
     64x64x64 (nu=2.0e-4)
 Comments:
-    Tests drag force coupling between gas and particles, including heating.
+    Tests drag force coupling between gas and particles, including heating, and
+    particle collisions.
 
     For momentum conservation, try:
     IDL> pc_read_const, obj=cst

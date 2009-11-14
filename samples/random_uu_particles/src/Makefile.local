@@ -20,7 +20,7 @@ VISCOSITY =   viscosity
 DUSTDENSITY  = nodustdensity
 DUSTVELOCITY = nodustvelocity
 
-PARTICLES =   particles_dust
+PARTICLES            =   particles_dust
+PARTICLES_COLLISIONS =   particles_collisions
 
-# Use double precision
 REAL_PRECISION = double

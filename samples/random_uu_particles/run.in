@@ -26,3 +26,6 @@
   ldragforce_dust_par=T, ldragforce_gas_par=T
   ldragforce_heat=T
 /
+&particles_coll_run_pars
+  lambda_mfp_single=0.1
+/

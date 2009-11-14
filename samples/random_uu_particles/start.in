@@ -25,4 +25,5 @@
   delta_vp0=0.05
   eps_dtog=1.0
   lparticlemesh_cic=T
+  lrandom_particle_pencils=T
 /
