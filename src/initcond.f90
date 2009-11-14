@@ -1438,7 +1438,9 @@ module Initcond
       real, dimension (mx) :: J0,J1
       real :: ampl,kx,kx1
 !
-!  set x-dependent Bessel function field
+!  set x-dependent Bessel function field.
+!  For Az, subtract value on boundary so that it matches
+!  the perfect conductor boundary condition.
 !
       if (ampl==0) then
         if (lroot) print*,'bessel_x: ampl=0; kx=',kx
@@ -1446,7 +1448,7 @@ module Initcond
         if (lroot) print*,'bessel_x: Bessel function field: kx,i=',kx,i
         kx1=1./kx
         do l=1,mx
-          J0(l)=kx1*bessj(0,kx*x(l))
+          J0(l)=kx1*(bessj(0,kx*x(l))-bessj(0,kx*xyz1(1)))
           J1(l)=kx1*bessj(1,kx*x(l))
         enddo
         j=i+1; f(:,:,:,j)=f(:,:,:,j)+ampl*spread(spread(J1,2,my),3,mz)

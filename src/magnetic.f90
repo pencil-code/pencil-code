@@ -238,6 +238,8 @@ module Magnetic
        llarge_scale_velocity
 
   ! diagnostic variables (need to be consistent with reset list below)
+  integer :: idiag_ab_int=0     ! DIAG_DOC: $\int\Av\cdot\Bv\;dV$
+  integer :: idiag_jb_int=0     ! DIAG_DOC: $\int\jv\cdot\Bv\;dV$
   integer :: idiag_b2tm=0       ! DIAG_DOC: $\left<\bv(t)\cdot\int_0^t\bv(t')
                                 ! DIAG_DOC:   dt'\right>$
   integer :: idiag_bjtm=0       ! DIAG_DOC: $\left<\bv(t)\cdot\int_0^t\jv(t')
@@ -1238,8 +1240,9 @@ module Magnetic
           idiag_examz1/=0 .or. idiag_examz2/=0 .or. idiag_examz3/=0 &
          ) lpenc_diagnos(i_aa)=.true.
       if (idiag_arms/=0 .or. idiag_amax/=0) lpenc_diagnos(i_a2)=.true.
-      if (idiag_abm/=0 .or. idiag_abmh/=0 .or. idiag_abmz/=0) & 
-         lpenc_diagnos(i_ab)=.true.
+      if (idiag_ab_int/=0 .or. idiag_abm/=0 .or. idiag_abmh/=0 &
+          .or. idiag_abmz/=0) & 
+          lpenc_diagnos(i_ab)=.true.
       if (idiag_djuidjbim/=0 .or. idiag_b3b21m/=0 &
           .or. idiag_dexbmx/=0 .or. idiag_dexbmy/=0 .or. idiag_dexbmz/=0 &
           .or. idiag_b1b32m/=0 .or.  idiag_b2b13m/=0) &
@@ -1249,7 +1252,7 @@ module Magnetic
           idiag_ajm/=0 ) &
           lpenc_diagnos(i_j2)=.true.
       if (idiag_epsAD/=0) lpenc_diagnos(i_jxbr2)=.true.
-      if (idiag_jbm/=0 .or. idiag_jbmz/=0) lpenc_diagnos(i_jb)=.true.
+      if (idiag_jb_int/=0 .or. idiag_jbm/=0 .or. idiag_jbmz/=0) lpenc_diagnos(i_jb)=.true.
       if (idiag_jbmphi/=0) lpenc_diagnos2d(i_jb)=.true.
       if (idiag_vArms/=0 .or. idiag_vAmax/=0 .or. idiag_vA2m/=0) lpenc_diagnos(i_va2)=.true.
       if (idiag_cosubm/=0) lpenc_diagnos(i_cosub)=.true.
@@ -2474,6 +2477,11 @@ module Magnetic
 !  output kx_aa for calculating k_effective
 !
         if (idiag_kx_aa/=0) call save_name(kx_aa(1),idiag_kx_aa)
+!
+!  helicity integrals
+!
+        if (idiag_ab_int/=0) call integrate_mn_name(p%jb,idiag_ab_int)
+        if (idiag_jb_int/=0) call integrate_mn_name(p%jb,idiag_jb_int)
 !
 ! <J.B>
 !
@@ -5608,6 +5616,7 @@ module Magnetic
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
+        idiag_ab_int=0; idiag_jb_int=0
         idiag_b2tm=0
         idiag_bjtm=0
         idiag_jbtm=0
@@ -5690,6 +5699,8 @@ module Magnetic
 !  check for those quantities that we want to evaluate online
 !
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'ab_int',idiag_ab_int)
+        call parse_name(iname,cname(iname),cform(iname),'jb_int',idiag_jb_int)
         call parse_name(iname,cname(iname),cform(iname),'dteta',idiag_dteta)
         call parse_name(iname,cname(iname),cform(iname),'aybym2',idiag_aybym2)
         call parse_name(iname,cname(iname),cform(iname),'exaym2',idiag_exaym2)
@@ -6039,6 +6050,8 @@ module Magnetic
 !  write column, idiag_XYZ, where our variable XYZ is stored
 !
       if (lwr) then
+        write(3,*) 'i_ab_int=',idiag_ab_int
+        write(3,*) 'i_jb_int=',idiag_jb_int
         write(3,*) 'i_dteta=',idiag_dteta
         write(3,*) 'i_aybym2=',idiag_aybym2
         write(3,*) 'i_exaym2=',idiag_exaym2
