@@ -188,16 +188,11 @@ module Particles_main
 !
     endsubroutine particles_write_pdim
 !***********************************************************************
-    subroutine particles_timestep_first(f)
+    subroutine particles_timestep_first
 !
 !  Setup dfp in the beginning of each itsub.
 !
 !  07-jan-05/anders: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      if (lparticles_collisions .and. itsub==1) &
-          call calc_particles_collisions(f,fp,ineargrid)
 !
       if (itsub==1) then
         dfp(1:npar_loc,:)=0.
@@ -216,6 +211,21 @@ module Particles_main
       fp(1:npar_loc,:) = fp(1:npar_loc,:) + dt_beta_ts(itsub)*dfp(1:npar_loc,:)
 !
     endsubroutine particles_timestep_second
+!***********************************************************************
+    subroutine particles_collisions(f)
+!
+!  Discrete particle collisions.
+!
+!  13-nov-09/anders: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      if (lparticles_collisions .and. itsub==3) then
+        call boundconds_particles(fp,ipar)
+        call calc_particles_collisions(f,fp,ineargrid)
+      endif
+!
+    endsubroutine particles_collisions
 !***********************************************************************
     subroutine particles_load_balance(f)
 !

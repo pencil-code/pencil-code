@@ -20,12 +20,11 @@ module Timestep
 !   2-apr-01/axel: coded
 !  14-sep-01/axel: moved itorder to cdata
 !
-      use Mpicomm
-      use Cdata
-      use Equ
-      use Particles_main
       use BorderProfiles
+      use Equ
       use Interstellar, only: calc_snr_damp_int
+      use Mpicomm
+      use Particles_main
       use Shear, only: advance_shear
       use Special, only: special_after_timestep
 !
@@ -75,7 +74,7 @@ module Timestep
 !
 !  Set up particle derivative array.
 !
-        if (lparticles) call particles_timestep_first(f)
+        if (lparticles) call particles_timestep_first()
 !
 !  Change df according to the chosen physics modules.
 !
@@ -100,7 +99,7 @@ module Timestep
 !  Calculate dt_beta_ts (e.g. for t=t+dt_beta_ts(itsub)*ds or for Dustdensity)
 !
         if (ldt) dt_beta_ts=dt*beta_ts
-        if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc,dt  !(all have same dt?)
+        if (ip<=6) print*, 'rk_2n: iproc, dt=', iproc, dt  !(all have same dt?)
 !
 ! Add artificial damping at the location of SN explosions for a short time
 ! after insertion.
@@ -120,6 +119,11 @@ module Timestep
 !  Time evolution of particle variables.
 !
         if (lparticles) call particles_timestep_second()
+!
+!  Discrete particle collisions. Must be done in the end of the time-step so
+!  that dt is known.
+!
+        if (lparticles .and. itsub==3) call particles_collisions(f)
 !
 !  Advance deltay of the shear (and, optionally, perform shear advection
 !  by shifting all variables and their derivatives).

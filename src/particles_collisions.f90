@@ -179,9 +179,12 @@ module Particles_collisions
               enddo
               k=kneighbour(k)
 !
-!  Collision diagnostics. This is done after the last sub-time-step, so we
-!  can not use ldiagnos. Collision diagnostics are always delayed by one
-!  time-step.
+!  Collision diagnostics. Since this subroutine is called in the last sub-
+!  time-step, we can not use ldiagnos. Therefore we calculate collision
+!  diagnostics in the preceding time-step. This has the side effect that
+!
+!    a) Collision diagnostics for time-step zero are all zero
+!    b) Collision diagnostics are not particle normalized if it1==1
 !
               if (mod(it,it1)==0) then
                 if (idiag_ncollpm/=0) &
@@ -192,7 +195,6 @@ module Particles_collisions
 !
             enddo
           endif
-!
         enddo
       enddo
 !

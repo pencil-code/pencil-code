@@ -113,15 +113,11 @@ module Particles_main
 !
     endsubroutine particles_write_pdim
 !***********************************************************************
-    subroutine particles_timestep_first(f)
+    subroutine particles_timestep_first()
 !
 !  Setup dfp in the beginning of each itsub.
 !
 !  22-aug-05/anders: dummy
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
 !
     endsubroutine particles_timestep_first
 !***********************************************************************
@@ -132,6 +128,18 @@ module Particles_main
 !  22-aug-05/anders: dummy
 !
     endsubroutine particles_timestep_second
+!***********************************************************************
+    subroutine particles_collisions(f)
+!
+!  Discrete particle collisions.
+!
+!  13-nov-09/anders: dummy
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine particles_collisions
 !***********************************************************************
     subroutine particles_load_balance(f)
 !
