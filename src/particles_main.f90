@@ -263,15 +263,18 @@ module Particles_main
       if (lparticles)       call create_sink_particles(f,fp,dfp,ineargrid)
       if (lparticles_nbody) call create_sink_particles_nbody(f,fp,dfp,ineargrid)
 !
-!  Map the particle positions and velocities on the grid for later use.
+!  Find nearest grid point for each particle.
 !
       call map_nearest_grid(fp,ineargrid)
-      call map_xxp_grid(f,fp,ineargrid)
-      call map_vvp_grid(f,fp,ineargrid)
 !
 !  Sort particles so that they can be accessed contiguously in the memory.
 !
       call sort_particles_imn(fp,ineargrid,ipar,dfp=dfp)
+!
+!  Map the particle positions and velocities on the grid.
+!
+      call map_xxp_grid(f,fp,ineargrid)
+      call map_vvp_grid(f,fp,ineargrid)
 !
 !  Distribute the n-body particles across processors
 !
