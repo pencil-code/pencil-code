@@ -72,7 +72,7 @@ module Particles_collisions
 !
     endsubroutine initialize_particles_collisions
 !***********************************************************************
-    subroutine calc_particles_collisions(f,fp,ineargrid)
+    subroutine calc_particles_collisions(fp,ineargrid)
 !
 !  Calculate collisions between superparticles by comparing the collision
 !  time-scale to the time-step. A random number is used to determine
@@ -86,13 +86,16 @@ module Particles_collisions
       use Diagnostics
       use General
 !
-      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (3) :: xpj, xpk, vpj, vpk
       real :: deltavjk, tau_coll1, prob, r
+      integer, dimension (nx) :: np_pencil
       integer :: l, j, k, np_point, ncoll, ncoll_par, npart_par
+!
+      intent (in) :: ineargrid
+      intent (inout) :: fp
 !
 !  Reset collision counter.
 !
@@ -105,16 +108,27 @@ module Particles_collisions
 !  Create list of shepherd and neighbour particles for each grid cell in the
 !  current pencil.
 !
-        call shepherd_neighbour(fp,ineargrid,kshepherd,kneighbour)
-!
 !  Note: with npart_max_par>0, it is safest to also set
 !  lrandom_particle_pencils=T. Otherwise there is a risk that a particle
 !  always interacts with the same subset of other particles.
 !
+        call shepherd_neighbour(fp,ineargrid,kshepherd,kneighbour)
+!
+!  Calculate number of particles per grid point. This is only needed in order
+!  to limit the number of collision partners. Note that f(:,:,:,inp) is not
+!  up-to-date at this time.
+!
+        if (npart_max_par/=-1) then
+          np_pencil=0
+          do k=k1_imn(imn),k2_imn(imn)
+            np_pencil(ineargrid(k,1)-nghost)=np_pencil(ineargrid(k,1)-nghost)+1
+          enddo
+        endif
+!
         do l=l1,l2
           k=kshepherd(l-nghost)
           if (k>0) then
-            np_point=f(ineargrid(k,1),ineargrid(k,2),ineargrid(k,3),inp)
+            np_point=np_pencil(l-nghost)
             do while (k/=0)
               j=k
               npart_par=0

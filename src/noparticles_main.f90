@@ -129,15 +129,11 @@ module Particles_main
 !
     endsubroutine particles_timestep_second
 !***********************************************************************
-    subroutine particles_collisions(f)
+    subroutine particles_collisions()
 !
 !  Discrete particle collisions.
 !
 !  13-nov-09/anders: dummy
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
 !
     endsubroutine particles_collisions
 !***********************************************************************

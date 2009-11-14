@@ -212,17 +212,17 @@ module Particles_main
 !
     endsubroutine particles_timestep_second
 !***********************************************************************
-    subroutine particles_collisions(f)
+    subroutine particles_collisions()
 !
 !  Discrete particle collisions.
 !
 !  13-nov-09/anders: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-!
       if (lparticles_collisions .and. itsub==3) then
         call boundconds_particles(fp,ipar)
-        call calc_particles_collisions(f,fp,ineargrid)
+        call map_nearest_grid(fp,ineargrid)
+        call sort_particles_imn(fp,ineargrid,ipar)
+        call calc_particles_collisions(fp,ineargrid)
       endif
 !
     endsubroutine particles_collisions
