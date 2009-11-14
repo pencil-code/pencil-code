@@ -54,6 +54,7 @@ module Special
        Omega_profile,Omega_ampl
 
   ! other variables (needs to be consistent with reset list below)
+  integer :: idiag_alpm_int=0
   integer :: idiag_alpmm=0,idiag_ammax=0,idiag_amrms=0,idiag_alpmmz=0
 
   logical, pointer :: lmeanfield_theory
@@ -248,6 +249,7 @@ module Special
 !  diagnostics
 !
       if (ldiagnos) then
+        if (idiag_alpm_int/=0) call integrate_mn_name(alpm,idiag_alpm_int)
         if (idiag_alpmm/=0) call sum_mn_name(alpm,idiag_alpmm)
         if (idiag_ammax/=0) call max_mn_name(alpm,idiag_ammax)
         if (idiag_amrms/=0) call sum_mn_name(alpm**2,idiag_amrms,lsqrt=.true.)
@@ -320,12 +322,14 @@ module Special
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
+        idiag_alpm_int=0
         idiag_alpmm=0; idiag_ammax=0; idiag_amrms=0; idiag_alpmmz=0
       endif
 !
 !  check for those quantities that we want to evaluate online
 !
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'alpm_int',idiag_alpm_int)
         call parse_name(iname,cname(iname),cform(iname),'alpmm',idiag_alpmm)
         call parse_name(iname,cname(iname),cform(iname),'ammax',idiag_ammax)
         call parse_name(iname,cname(iname),cform(iname),'amrms',idiag_amrms)
@@ -341,6 +345,7 @@ module Special
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
+        write(3,*) 'i_alpm_int=',idiag_alpm_int
         write(3,*) 'i_alpmm=',idiag_alpmm
         write(3,*) 'i_ammax=',idiag_ammax
         write(3,*) 'i_amrms=',idiag_amrms
