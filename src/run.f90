@@ -105,10 +105,12 @@ program run
 
 ! declarations for signal handling
 
-  integer SIGFPE, SIGINT, SIGHUP, SIGTERM, SIGPWR, SIGCPULIM, SIGXCPU, SIGUSR1
+  integer :: SIGFPE, SIGINT, SIGHUP, SIGTERM, SIGPWR, SIGCPULIM, SIGXCPU, SIGUSR1
   parameter ( SIGFPE=8, SIGINT=2, SIGHUP=1, SIGTERM=15, SIGUSR1=30 )
 
-  integer sigret
+  integer :: sigret,signal,signal_
+  integer :: DEFAULT, IGNORE, USER
+  parameter ( DEFAULT=0, IGNORE=1, USER=-1 )
 
   external regexit
 !
@@ -373,8 +375,8 @@ program run
 
 ! example signal catching for SIGINT and SIGUSR1
 
-  call signal( SIGINT , regexit, sigret )
-  call signal( SIGUSR1, regexit, sigret )
+!  sigret = signal( SIGINT , regexit, USER )
+!  sigret = signal( SIGUSR1, regexit, USER )
 !
 !  Do loop in time.
 !
