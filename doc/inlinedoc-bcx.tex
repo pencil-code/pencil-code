@@ -16,12 +16,15 @@
   \var{p}         & periodic \\
   \var{s}         & symmetry, $f_{N+i}=f_{N-i}$;
                     implies $f'(x_N)=f'''(x_0)=0$ \\
-  \var{ss}        & symmetry [???] \\
+  \var{ss}        & symmetry, plus function value given \\
+  \var{s0d}       & symmetry, function value such that df/dx=0 \\
   \var{a}         & antisymmetry, $f_{N+i}=-f_{N-i}$;
                     implies $f(x_N)=f''(x_0)=0$ \\
   \var{a2}        & antisymmetry relative to boundary value,
                     $f_{N+i}=2 f_{N}-f_{N-i}$;
                     implies $f''(x_0)=0$ \\
+  \var{cpc}       & cylindrical perfect conductor
+                    implies $f"+f'/R=0$ \\
   \var{v}         & vanishing third derivative \\
   \var{cop}       & copy value of last physical point to all ghost cells \\
   \var{1s}        & onesided \\

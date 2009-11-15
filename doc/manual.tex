@@ -1185,7 +1185,7 @@ take here.
 we have, you may be able to skip this step; but blame yourself if things
 don't compile, then.
 If not, you can run \cmd{make} with explicit flags, see
-Sec.~\ref{S-make-flags} and in particular Table~\ref{Tab-make-flags}.
+Sect.~\ref{S-make-flags} and in particular Table~\ref{Tab-make-flags}.
 
 
 \subsubsection{Running \cmd{make}}
@@ -2496,7 +2496,7 @@ for a $y$-$z$ slice):
 In the file \file{xyaver.in}, $z$-dependent (horizontal) averages are listed.
 They are written to the file \file[xyaverages.dat]{data/xyaverages.dat}.
 A new line of averages is written every \var{it1}th time steps.
-See Sec.~\ref{S-new-output-diagnostics} on how to add new averages.
+See Sect.~\ref{S-new-output-diagnostics} on how to add new averages.
 
 We can also output in \file{print.in} the associated mean square value
 of the horizontal field, but this requires that in \file{xyaver.in} the
@@ -3106,7 +3106,7 @@ Note that in some cases, `wiggles' in $\ln\rho$ will develop despite
 sufficiently large diffusion coefficients, essentially because the
 continuity equation contains no dissipative term.
 For convection runs (but not only for these), we have found that this can
-often be prevented by \name[Upwinding]{upwinding}, see Sec.~\ref{S-upwind}.
+often be prevented by \name[Upwinding]{upwinding}, see Sect.~\ref{S-upwind}.
 
 If the Mach number of the code approaches unity, i.e.\ if the rms velocity
 becomes comparable with the speed of sound, shocks may form.
@@ -3325,7 +3325,7 @@ a new directory) and then to overwrite the
 \file[var.dat]{data/proc*/var.dat} files with the correct ones.
 
 For restarting from runs that didn't have magnetic fields, passive scalar
-fields, or test fields, see Section~\ref{RestartingFromLessPhysics}.
+fields, or test fields, see Sect.~\ref{RestartingFromLessPhysics}.
 
 % ---------------------------------------------------------------------- %
 
@@ -4579,7 +4579,7 @@ ions and neutrals.
 
 Here we only state the basic equations.
 A full description about the implementation is given in
-Section~\ref{S-radi-trans} and in the original paper by
+Sect.~\ref{S-radi-trans} and in the original paper by
 Heinemann et al.\ (2006).
 
 The basic equation for radiative transfer is
@@ -4914,7 +4914,7 @@ for magnetohydrodynamics.
 This a rapidly evolving field and we refer the interested reader to
 recent papers in this field, e.g.\ by Sur et al.\ (2008) or
 Brandenburg et al.\ (2008).
-For technical details, see also Section~\ref{RestartingFromLessPhysics}.
+For technical details, see also Sect.~\ref{RestartingFromLessPhysics}.
 
 % ====================================================================== %
 
@@ -5862,7 +5862,7 @@ Also, keep in mind that the code is public, so your changes should
 make sense from a broader perspective and should not only be intended
 for yourself.
 Regarding more general aspects about coding standards see
-Section~\ref{CodingStandards}.
+Sect.~\ref{CodingStandards}.
 
 % ---------------------------------------------------------------------- %
 \begin{figure}[htb]
@@ -6001,7 +6001,10 @@ If you think you find an error, file a ticket at
 You can of course also repair it!
 
 \section{Adapting the code}
+
 \subsection{The {\sc Pencil Code} coding standard}
+\index{Coding standards}
+
 As with any code longer than a few lines the appearance and layout
 of the source code is of the utmost importance.  Well laid out
 code is more easy to read and understand and as such is less prone
@@ -6044,7 +6047,7 @@ non-trivial modifications were made.
 \end{itemize}
 
 These and other issues are discussed in more depth and with examples in
-Appendix~\ref{coding-standard}.
+Appendix~\ref{coding-standard}, and in particular in Sect.~\ref{CodingStandards}.
 
 \subsection{Adding new output diagnostics}
 \label{S-new-output-diagnostics}
@@ -6141,7 +6144,7 @@ in the code, and we were only now adding it, we would need to do the following
 If, instead of a mean value, you want a new maximum quantity, you need to
 replace \code{sum\_mn\_name()} by \code{max\_mn\_name()}.
 
-Sec.~\ref{S-hor-averages} describes how to output horizontal averages
+Sect.~\ref{S-hor-averages} describes how to output horizontal averages
 of the magnetic and velocity fields. New such averages can be added to
 the code by using the existing averaging procedures \code{calc\_bmz()}
 or \code{calc\_jmz()} as examples.
@@ -6398,7 +6401,7 @@ or
 (September 2009) takes about 2 hours on a mid-end Linux PC.
 
 The \cmd{pencil-test} script is useful for cron jobs and allows the actual
-test to run on a remote computer. See Sec.~\ref{S-nightly-tests} below.
+test to run on a remote computer. See Sect.~\ref{S-nightly-tests} below.
 
 For a complete list of options, run \cmd{pc_auto-test --help} and/or
 \cmd{pencil-test --help}.
@@ -6948,6 +6951,7 @@ in Fig~\ref{cvsstat}.
 % ---------------------------------------------------------------------- %
 % ====================================================================== %
 \section{Coding standard}
+\index{Coding standards}
 \label{coding-standard}
 
 The numerous elements that make up the {\sc Pencil Code} are written
@@ -6960,8 +6964,8 @@ As well as improving the readability of the code, by having some
 naming conventions for example aids greatly in understanding what
 the code does.
 
-There is a standard for all aspect of the code be it Fortran source,
-shell scripts, Perl scripts, LaTeX source, Makefiles or otherwise.
+There is a standard for all aspects of the code, be it Fortran source,
+shell scripts, Perl scripts, LaTeX source, Makefiles, or otherwise.
 Where nothing has been explicitly stated it is recommended that
 similar existing examples found in the code are used as a template.
 
@@ -6972,7 +6976,7 @@ lowercase filenames.
 Fortran source files all have the `.f90' extension.  Files that
 contain `non-executable code' i.e. declarations that are included into
 other files are given the extension `.h' and those that are generated
-dynamically at compile time have a `.inc' extension.
+dynamically at compile time have an `.inc' extension.
 
 Fortran source code defining a module is placed in files whose names
 begin with the Fortran module name in all lowercase.  Where there
@@ -6986,7 +6990,12 @@ placed in files with the extension `.in'
 
 \subsection{Fortran Code}
 \label{CodingStandards}
-\index{Coding standards}
+
+The code should remain fully compatible with the Fortran90 standard.
+This ensures that the code will run on all platforms.
+Indeed, an important aspect of {\sc Pencil Code} philosophy is to be maximally flexible.
+This also means that useful non-standard extensions to the code should be hidden in and
+be made accessible through suitable non-default modules.
 
 Fortran is not case-sensitive but in almost all instances we prescribe
 some form of capitalization for readability.
