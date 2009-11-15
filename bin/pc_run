@@ -202,8 +202,8 @@ $ENV{PARENT_PID } = $$;
 
 # Make SCRATCH_DIR unique, so different
 # jobs running simultaneously will not interfere with each other.
-$ENV{SCRATCH_DIR} = '/scratch/pencil-'
-  . (defined $ENV{JOB_ID} ? $ENV{JOB_ID} : $ENV{PARENT_PID});
+my scratch_suffix = defined $ENV{JOB_ID} ? $ENV{JOB_ID} : $ENV{PARENT_PID};
+$ENV{SCRATCH_DIR} = $ENV{SCRATCH_DIR} . "/pencil-$scratch_suffix";
 
 $ENV{SSH        } = 'ssh';
 $ENV{SCP        } = 'scp';
