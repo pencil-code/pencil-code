@@ -178,6 +178,7 @@ my %dispatch_table = (
 # ..extracted from config:
 my $local_disc          = $runtime_params{'local_disc'         } || 0;
 my $one_local_disc      = $runtime_params{'one_local_disc'     } || 0;
+my $scratch_dir         = $runtime_params{'scratch_dir'        } || '/scratch';
 my $local_binary        = $runtime_params{'local_binary'       } || 0;
 my $remote_top          = $runtime_params{'remote_top'         } || 0;
 my $master_node         = $runtime_params{'master_node'        } || undef;
@@ -200,10 +201,12 @@ $ENV{PATH} = "$ENV{PATH}:$ENV{PENCIL_HOME}/bin" if defined $ENV{PENCIL_HOME};
 # Propagate current pid to copy-snapshots
 $ENV{PARENT_PID } = $$;
 
-# Make SCRATCH_DIR unique, so different
+# Make scratch_dir unique, so different
 # jobs running simultaneously will not interfere with each other.
-my scratch_suffix = defined $ENV{JOB_ID} ? $ENV{JOB_ID} : $ENV{PARENT_PID};
-$ENV{SCRATCH_DIR} = $ENV{SCRATCH_DIR} . "/pencil-$scratch_suffix";
+my $scratch_suffix = defined $ENV{JOB_ID} ? $ENV{JOB_ID} : $ENV{PARENT_PID};
+$scratch_dir = $scratch_dir . "/pencil-$scratch_suffix";
+# Propagate to copy-snapshots
+$ENV{SCRATCH_DIR} = $scratch_dir;
 
 $ENV{SSH        } = 'ssh';
 $ENV{SCP        } = 'scp';
@@ -1325,6 +1328,8 @@ END {
     clear_lock() if ($locked);
     unlink 'resubmit.log';
     unlink 'rs';
+
+system('env | sort'); # @@@
 
     Pencil::Util::notify('building') if $notify;
 
