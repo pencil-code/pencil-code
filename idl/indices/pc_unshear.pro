@@ -4,6 +4,9 @@
 ;;  Transform from sheared to unsheared frame by shifting data along the
 ;;  y-direction to match last purely periodic state.
 ;;
+;;  This routine is distinct from idl/modules/shear/pc_unshift.
+;;  This routine also allows for unshifting in Fourier space.
+;;
 ;;  Author : Anders Johansen
 ;;  Date   : 06/06/2008
 ;;
@@ -11,7 +14,7 @@
 ;;          a : trimmed 2-D or 3-D array of scalar, vector, or matrix data
 ;;     deltay : azimuthal distance between periodic points at inner and outer
 ;;              radial edge of the box. May be calculated from
-;;                deltay=-Sshear*Lx*t
+;;                deltay=-Sshear*Lx*t, where Lx=xyz0(0)-xyz1(0)
 ;;          x : trimmed array of x coordinates
 ;;      param : structure containing initial conditions, used if deltay is not
 ;;              provided
