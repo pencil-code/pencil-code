@@ -9448,7 +9448,9 @@ double precision, $\varepsilon\approx10^{-15}$.
                  you just want to add a perturbation to the magnetic field,
                  you'd give no initial condition for density and velocity
                  (so you keep the data from a hopefully relaxed run),
-                 and just add whatever you need for the magnetic field.\\
+                 and just add whatever you need for the magnetic field.
+                 In this connection you may want to \cmd{touch NOERASE},
+                 so as not to erase the previous data.\\
   \var{lread_oldsnap_nomag} [\code{F}]
                & if set \code{T}, the old snapshot from a non-magnetic run
                  will be read in before producing (overwriting) initial
