@@ -174,6 +174,8 @@ module Particles
   integer :: idiag_dvpx2m=0, idiag_dvpy2m=0, idiag_dvpz2m=0
   integer :: idiag_dvpm=0,idiag_dvpmax=0
   integer :: idiag_rhopmxz=0, idiag_nparpmax=0
+  integer :: idiag_eccpxm=0, idiag_eccpym=0, idiag_eccpzm=0
+  integer :: idiag_eccpx2m=0, idiag_eccpy2m=0, idiag_eccpz2m=0
 !
   contains
 !***********************************************************************
@@ -2651,6 +2653,36 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_vpxmax/=0) call max_par_name(fp(1:npar_loc,ivpx),idiag_vpxmax)
         if (idiag_vpymax/=0) call max_par_name(fp(1:npar_loc,ivpy),idiag_vpymax)
         if (idiag_vpzmax/=0) call max_par_name(fp(1:npar_loc,ivpz),idiag_vpzmax)
+        if (idiag_eccpxm/=0) call sum_par_name( &
+            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2)*fp(1:npar_loc,ixp)/gravr- &
+            sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
+            fp(1:npar_loc,ivpx)/gravr-fp(1:npar_loc,ixp)/ &
+            sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)),idiag_eccpxm)
+        if (idiag_eccpym/=0) call sum_par_name( &
+            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2)*fp(1:npar_loc,iyp)/gravr- &
+            sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
+            fp(1:npar_loc,ivpy)/gravr-fp(1:npar_loc,iyp)/ &
+            sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)),idiag_eccpym)
+        if (idiag_eccpzm/=0) call sum_par_name( &
+            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2)*fp(1:npar_loc,izp)/gravr- &
+            sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
+            fp(1:npar_loc,ivpz)/gravr-fp(1:npar_loc,izp)/ &
+            sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)),idiag_eccpzm)
+        if (idiag_eccpx2m/=0) call sum_par_name(( &
+            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2)*fp(1:npar_loc,ixp)/gravr- &
+            sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
+            fp(1:npar_loc,ivpx)/gravr-fp(1:npar_loc,ixp)/ &
+            sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)))**2,idiag_eccpx2m)
+        if (idiag_eccpy2m/=0) call sum_par_name(( &
+            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2)*fp(1:npar_loc,iyp)/gravr- &
+            sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
+            fp(1:npar_loc,ivpy)/gravr-fp(1:npar_loc,iyp)/ &
+            sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)))**2,idiag_eccpy2m)
+        if (idiag_eccpz2m/=0) call sum_par_name(( &
+            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2)*fp(1:npar_loc,izp)/gravr- &
+            sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
+            fp(1:npar_loc,ivpz)/gravr-fp(1:npar_loc,izp)/ &
+            sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)))**2,idiag_eccpz2m)
         if (idiag_rhoptilm/=0) then
           do k=1,npar_loc
             call get_nptilde(fp,k,np_tilde)
@@ -3810,6 +3842,8 @@ k_loop:   do while (.not. (k>npar_loc))
         idiag_rhopmxy=0; idiag_rhopmxz=0; idiag_rhopmr=0
         idiag_dvpx2m=0; idiag_dvpy2m=0; idiag_dvpz2m=0
         idiag_dvpmax=0; idiag_dvpm=0; idiag_nparpmax=0
+        idiag_eccpxm=0; idiag_eccpym=0; idiag_eccpzm=0
+        idiag_eccpx2m=0; idiag_eccpy2m=0; idiag_eccpz2m=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
@@ -3841,6 +3875,12 @@ k_loop:   do while (.not. (k>npar_loc))
         call parse_name(iname,cname(iname),cform(iname),'lpx2m',idiag_lpx2m)
         call parse_name(iname,cname(iname),cform(iname),'lpy2m',idiag_lpy2m)
         call parse_name(iname,cname(iname),cform(iname),'lpz2m',idiag_lpz2m)
+        call parse_name(iname,cname(iname),cform(iname),'eccpxm',idiag_eccpxm)
+        call parse_name(iname,cname(iname),cform(iname),'eccpym',idiag_eccpym)
+        call parse_name(iname,cname(iname),cform(iname),'eccpzm',idiag_eccpzm)
+        call parse_name(iname,cname(iname),cform(iname),'eccpx2m',idiag_eccpx2m)
+        call parse_name(iname,cname(iname),cform(iname),'eccpy2m',idiag_eccpy2m)
+        call parse_name(iname,cname(iname),cform(iname),'eccpz2m',idiag_eccpz2m)
         call parse_name(iname,cname(iname),cform(iname),'dtdragp',idiag_dtdragp)
         call parse_name(iname,cname(iname),cform(iname),'npm',idiag_npm)
         call parse_name(iname,cname(iname),cform(iname),'np2m',idiag_np2m)
@@ -3859,7 +3899,7 @@ k_loop:   do while (.not. (k>npar_loc))
         call parse_name(iname,cname(iname),cform(iname),'dvpz2m',idiag_dvpz2m)
         call parse_name(iname,cname(iname),cform(iname),'dvpm',idiag_dvpm)
         call parse_name(iname,cname(iname),cform(iname),'dvpmax',idiag_dvpmax)
-         call parse_name(iname,cname(iname),cform(iname), &
+        call parse_name(iname,cname(iname),cform(iname), &
             'rhoptilm',idiag_rhoptilm)
         call parse_name(iname,cname(iname),cform(iname), &
             'dedragp',idiag_dedragp)
