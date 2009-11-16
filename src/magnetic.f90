@@ -1804,6 +1804,7 @@ module Magnetic
         case('siny'); alpha_tmp=sin(y(m))
         case('sinz'); alpha_tmp=sin(z(n))
         case('z'); alpha_tmp=z(n)
+        case('z/H'); alpha_tmp=z(n)/xyz1(3)
         case('cosy'); alpha_tmp=cos(y(m))
         case('y*(1+eps*sinx)'); alpha_tmp=y(m)*(1.+alpha_eps*sin(kx*x(l1:l2)))
         case('step-nhemi'); alpha_tmp=-tanh((y(m)-pi/2)/alpha_gap_step)
