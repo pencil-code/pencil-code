@@ -83,6 +83,7 @@ program run
   use Testscalar,      only: rescaling_testscalar
   use Testfield,       only: rescaling_testfield
   use TestPerturb,     only: testperturb_begin, testperturb_finalize
+  use Signal_handling, only: signal_prepare
   use Timeavg
   use Timestep
 !
@@ -102,17 +103,6 @@ program run
   integer :: it_last_diagnostic,it_this_diagnostic
   integer :: i,ivar
   real, allocatable, dimension (:,:,:,:) :: finit
-
-! declarations for signal handling
-
-  integer :: SIGFPE, SIGINT, SIGHUP, SIGTERM, SIGPWR, SIGCPULIM, SIGXCPU, SIGUSR1
-  parameter ( SIGFPE=8, SIGINT=2, SIGHUP=1, SIGTERM=15, SIGUSR1=30 )
-
-  integer :: sigret,signal,signal_
-  integer :: DEFAULT, IGNORE, USER
-  parameter ( DEFAULT=0, IGNORE=1, USER=-1 )
-
-  external regexit
 !
   lrun = .true.
 !
@@ -372,11 +362,10 @@ program run
       if (lroot) call stop_it("it1d smaller than it1")
     endif
   endif
-
-! example signal catching for SIGINT and SIGUSR1
-
-!  sigret = signal( SIGINT , regexit, USER )
-!  sigret = signal( SIGUSR1, regexit, USER )
+!
+!  Prepare signal catching
+!
+  call signal_prepare()
 !
 !  Do loop in time.
 !
@@ -752,23 +741,3 @@ program run
   if (lwrite_zaverages) call zaverages_clean_up() 
 !
 endprogram run
-
-subroutine regexit
-
-! signal handling routine, touches STOP if root node, does nothing otherwise
-
-!  12-nov-09/MR: coded
-
-  use Cdata, only: lroot
-
-  implicit none
-
-  integer :: stat,system
-  
-  if (lroot) then
-    print *,'End of the program run.x due to signal'
-    stat=system('touch STOP')
-  endif
-  
-endsubroutine regexit
-
