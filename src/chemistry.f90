@@ -5644,7 +5644,7 @@ module Chemistry
       logical :: lzone_y=.false.,lzone_z=.false.
 
        dt1=1./dt
-       del=0.15
+       del=0.1
 
        ux_ref=0.
        uy_ref=0.
