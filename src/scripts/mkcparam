@@ -130,7 +130,7 @@ line: while (defined($line=<INPUT>)) {
   extract_decl ($line, $mvar_decl    , \$mvar     );
   extract_decl ($line, $maux_decl    , \$maux     );
   extract_decl ($line, $mglobal_decl , \$mglobal  );
-  extract_decl ($line, $mscratch_decl , \$mscratch  );
+  extract_decl ($line, $mscratch_decl, \$mscratch );
   extract_decl ($line, $maux_com_decl, \$maux_com );
   extract_decl ($line, $mpvar_decl   , \$mpvar    );
 #
@@ -283,6 +283,10 @@ my $npar_mig=0;
 my $npar_species=0;
 my $nspar=0;
 my $npar_stalk=0;
+my $nbrickx=0;
+my $nbricky=0;
+my $nbrickz=0;
+my $nblockmax=0;
 foreach $line (@cparam) {
   $line=substr($line, 0, index($line,"!"));# Ignore lines that are commented out
   if ($line=~ 'mpar_loc')     {$mpar_loc=1;}
@@ -290,6 +294,10 @@ foreach $line (@cparam) {
   if ($line=~ 'npar_species') {$npar_species=1;}
   if ($line=~ 'nspar')        {$nspar=1;}
   if ($line=~ 'npar_stalk')   {$npar_stalk=1;}
+  if ($line=~ 'nbrickx')      {$nbrickx=1;}
+  if ($line=~ 'nbricky')      {$nbricky=1;}
+  if ($line=~ 'nbrickz')      {$nbrickz=1;}
+  if ($line=~ 'nblockmax')    {$nblockmax=1;}
   }
 #
 # Write default values of undefined particle parameters to cparam.inc.
@@ -299,6 +307,10 @@ if ($npar_mig eq 0)     {print OUT "integer, parameter :: npar_mig=1\n";}
 if ($npar_species eq 0) {print OUT "integer, parameter :: npar_species=1\n";}
 if ($nspar eq 0)        {print OUT "integer, parameter :: nspar=1\n";}
 if ($npar_stalk eq 0)   {print OUT "integer, parameter :: npar_stalk=0\n";}
+if ($nbrickx eq 0)      {print OUT "integer, parameter :: nbrickx=1\n";}
+if ($nbricky eq 0)      {print OUT "integer, parameter :: nbricky=1\n";}
+if ($nbrickz eq 0)      {print OUT "integer, parameter :: nbrickz=1\n";}
+if ($nblockmax eq 0)    {print OUT "integer, parameter :: nblockmax=1\n";}
 #
 # Insert all CPARAM lines, extracted from the headers of the chosen physics
 # modules.
