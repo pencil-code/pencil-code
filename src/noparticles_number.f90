@@ -14,7 +14,6 @@ module Particles_number
 !
   use Cdata
   use Particles_cdata
-  use Particles_sub
   use Sub, only: keep_compiler_quiet
 !
   implicit none
