@@ -1807,7 +1807,7 @@ module Magnetic
         case('cosy'); alpha_tmp=cos(y(m))
         case('y*(1+eps*sinx)'); alpha_tmp=y(m)*(1.+alpha_eps*sin(kx*x(l1:l2)))
         case('step-nhemi'); alpha_tmp=-tanh((y(m)-pi/2)/alpha_gap_step)
-        case('step'); alpha_tmp=-tanh((y(m)-pi/2)/alpha_gap_step)
+        case('stepy'); alpha_tmp=-tanh((y(m)-yequator)/alpha_gap_step)
         case('ystep-xcutoff')
            alpha_tmp=-tanh((y(m)-pi/2)/alpha_gap_step)& 
              *(1+stepdown(x(l1:l2),alpha_rmax,alpha_width))
