@@ -1205,7 +1205,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Map particle velocity on the grid.
 !
-      if (.not. lparticles_block) call map_vvp_grid(f,fp,ineargrid)
+      call map_vvp_grid(f,fp,ineargrid)
 !
 !  Sort particles (must happen at the end of the subroutine so that random
 !  positions and velocities are not displaced relative to when there is no

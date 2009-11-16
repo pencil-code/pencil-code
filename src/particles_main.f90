@@ -304,7 +304,7 @@ module Particles_main
 !  Map the particle positions and velocities on the grid.
 !
       call map_xxp_grid(f,fp,ineargrid)
-      if (.not. lparticles_block) call map_vvp_grid(f,fp,ineargrid)
+      call map_vvp_grid(f,fp,ineargrid)
 !
 !  Distribute the n-body particles across processors
 !
