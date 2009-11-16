@@ -1456,4 +1456,24 @@ module Particles_map
 !
     endsubroutine interp_field_pencil
 !***********************************************************************
+    subroutine sort_particles_iblock(fp,ineargrid,dfp)
+!
+!  Sort the particles so that they appear in order of the global brick index.
+!  That is, sorted first by processor number and then by local brick index.
+!
+!  16-nov-09/anders: dummy
+!
+      real, dimension (mpar_loc,mpvar) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
+      real, dimension (mpar_loc,mpvar), optional :: dfp
+!
+      call fatal_error('sort_particles_iblock', &
+          'only implemented for block domain decomposition')
+!
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ineargrid)
+      if (present(dfp)) call keep_compiler_quiet(dfp)
+!
+    endsubroutine sort_particles_iblock
+!***********************************************************************
 endmodule Particles_map
