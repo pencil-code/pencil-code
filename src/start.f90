@@ -458,11 +458,13 @@ program start
 !
   if (lroot) then
     call wdim(trim(datadir)//'/dim.dat', &
-      nxgrid+2*nghost,nygrid+2*nghost,nzgrid+2*nghost)
+        nxgrid+2*nghost,nygrid+2*nghost,nzgrid+2*nghost)
     if (lparticles) &
-      call particles_write_pdim(trim(datadir)//'/pdim.dat')
+        call particles_write_pdim(trim(datadir)//'/pdim.dat')
+    if (lparticles) &
+        call particles_write_block(trim(datadir)//'/bdim.dat')
     if (lparticles_nbody) &
-      call particles_nbody_write_spdim(trim(datadir)//'/spdim.dat')
+        call particles_nbody_write_spdim(trim(datadir)//'/spdim.dat')
   endif
 !
 !  Write global variables.

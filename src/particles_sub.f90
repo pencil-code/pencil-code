@@ -33,7 +33,6 @@ module Particles_sub
       real, dimension (mpar_loc,mpvar) :: fp
       character (len=*) :: filename
       integer, dimension (mpar_loc) :: ipar
-!      real :: t_sp   ! t in single precision for backwards compatibility
 !
       intent (in) :: filename
       intent (out) :: fp,ipar
@@ -52,8 +51,7 @@ module Particles_sub
 !
 !  Read snapshot time.
 !
-!        read(1) t_sp
-!        t = t_sp
+!        read(1) t
 !
         if (ip<=8) print*, 'input_particles: read ', filename
 !
@@ -119,13 +117,14 @@ module Particles_sub
 !  26-nov-08/ccyang: add independent sequence for particle snapshots
 !
       use General
-      use IO
+      use Io
+      use Particles_mpicomm, only: output_blocks
       use Sub
 !
       real, dimension (mpar_loc,mpvar) :: fp
       real :: dsnap_par_minor, dsnap_par
-      integer, dimension (mpar_loc) :: ipar
       logical :: enum, lsnap, nobound
+      integer, dimension (mpar_loc) :: ipar
       character (len=*) :: snapbase, flist
 !
       integer, save :: ifirst=0, nsnap, nsnap_minor, nsnap_par
@@ -142,17 +141,17 @@ module Particles_sub
 !
       if (enum) then
 !
-!  at first call, need to initialize tsnap
-!  tsnap calculated in read_snaptime, but only available to root processor
+!  At first call, need to initialize tsnap.
+!  tsnap calculated in read_snaptime, but only available to root processor.
 !
         if (ifirst==0) then
           call safe_character_assign(fmajor,trim(datadir)//'/tsnap.dat')
           call read_snaptime(fmajor,tsnap,nsnap,dsnap,t)
-          if (dsnap_par_minor > 0.) then
+          if (dsnap_par_minor>0.0) then
             call safe_character_assign(fminor,trim(datadir)//'/tsnap_minor.dat')
             call read_snaptime(fminor,tsnap_minor,nsnap_minor,dsnap_par_minor,t)
           endif
-          if (dsnap_par > 0.) then
+          if (dsnap_par>0.0) then
             call safe_character_assign(fpar,trim(datadir)//'/tsnap_par.dat')
             call read_snaptime(fpar,tsnap_par,nsnap_par,dsnap_par,t)
           endif
@@ -161,10 +160,10 @@ module Particles_sub
 !
 !  Output independent sequence of particle snapshots.
 !
-        if (dsnap_par > 0.) then
+        if (dsnap_par>0.0) then
           call update_snaptime(fpar,tsnap_par,nsnap_par,dsnap_par,t,lsnap_par,nsnap_par_ch,ENUM=.true.)
           if (lsnap_par) then
-            snapname = trim(snapbase) // '_' // trim(nsnap_par_ch)
+            snapname=trim(snapbase)//'_'//trim(nsnap_par_ch)
             call boundconds_particles(fp,ipar)
             call output_particles(snapname,fp,ipar)
             if (ip<=10 .and. lroot) &
@@ -175,7 +174,7 @@ module Particles_sub
 !
 !  Possible to output minor particle snapshots (e.g. for a movie).
 !
-        if (dsnap_par_minor > 0.) then
+        if (dsnap_par_minor>0.0) then
           call update_snaptime(fminor,tsnap_minor,nsnap_minor,dsnap_par_minor,t,lsnap_minor,nsnap_minor_ch,ENUM=.true.)
           if (lsnap_minor) then
             call chn(nsnap-1,nsnap_ch_last,'')
@@ -213,6 +212,8 @@ module Particles_sub
           call boundconds_particles(fp,ipar)
         endif
         call output_particles(snapname,fp,ipar)
+        if (lparticles_block) &
+            call output_blocks(trim(directory_snap)//'/block.dat')
         if (ip<=10 .and. lroot) &
              print*,'wsnap_particles: written snapshot ', snapname
         if (present(flist)) call log_filename_to_file(snapname,flist)

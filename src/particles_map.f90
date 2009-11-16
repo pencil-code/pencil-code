@@ -3,6 +3,13 @@
 !  This module contains subroutines for mapping particles on the mesh.
 !  Different domain decompositions have different versions of this module.
 !
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxiliary variables added by this module
+!
+! CPARAM logical, parameter :: lparticles_block = .false.
+!
+!***************************************************************
 module Particles_map
 !
   use Cdata

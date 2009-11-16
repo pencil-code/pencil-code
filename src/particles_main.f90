@@ -189,6 +189,25 @@ module Particles_main
 !
     endsubroutine particles_write_pdim
 !***********************************************************************
+    subroutine particles_write_block(filename)
+!
+!  Write block domain decomposition parameters to file.
+!
+!  05-nov-09/anders: coded
+!
+      character (len=*) :: filename
+!
+      if (lparticles_block) then
+        open(1,file=filename)
+          write(1,'(4i9)') nbrickx, nbricky, nbrickz, nblockmax
+          write(1,'(4i9)') mxb, myb, mzb, nghostb
+          write(1,'(3i9)') nxb, nyb, nzb
+          write(1,'(6i9)') l1b, l2b, m1b, m2b, n1b, n2b
+        close(1)
+      endif
+!
+    endsubroutine particles_write_block
+!***********************************************************************
     subroutine particles_timestep_first
 !
 !  Setup dfp in the beginning of each itsub.

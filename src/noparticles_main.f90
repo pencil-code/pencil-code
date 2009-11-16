@@ -113,6 +113,18 @@ module Particles_main
 !
     endsubroutine particles_write_pdim
 !***********************************************************************
+    subroutine particles_write_block(filename)
+!
+!  Write block domain decomposition parameters to file.
+!
+!  16-nov-09/anders: dummy
+!
+      character (len=*) :: filename
+!
+      call keep_compiler_quiet(filename)
+!
+    endsubroutine particles_write_block
+!***********************************************************************
     subroutine particles_timestep_first()
 !
 !  Setup dfp in the beginning of each itsub.

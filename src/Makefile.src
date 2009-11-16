@@ -1449,7 +1449,7 @@ diagrams_svg: run.svg run_nocdata.svg start.svg start_nocdata.svg switchable.svg
 #  Compilation rules.
 #
 cparam.inc: Makefile.src Makefile.local cparam.local scripts/mkcparam
-	scripts/mkcparam $(switchable:.o=.f90) grid.f90 $(DERIV).f90 cparam.local -o cparam.inc
+	scripts/mkcparam $(switchable:.o=.f90) grid.f90 $(DERIV).f90 $(PARTICLES_MAP).f90 cparam.local -o cparam.inc
 # 
 cparam.o:  cparam.f90 cparam.local cparam.inc
 	if [ "" ]; then \
