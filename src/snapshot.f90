@@ -41,7 +41,7 @@ module Snapshot
       character (len=*) :: chsnap, flist
       real, dimension (mx,my,mz,msnap) :: a
       integer :: msnap
-      logical :: enum, bcs, noghost
+      logical :: enum, noghost
       optional :: enum, flist, noghost
 !
       real, save :: tsnap
@@ -452,9 +452,6 @@ module Snapshot
       character (len=*) :: filename
       integer :: nv
       real, dimension (mx,my,mz,nv) :: a
-      real, allocatable, dimension (:,:,:) :: aa
-      integer :: ggmx,ggmy,ggmz,ggnv
-      real :: tscratch
 !
       if (lserial_io) call start_serialize()
 !
