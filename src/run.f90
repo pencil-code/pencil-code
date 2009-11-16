@@ -547,6 +547,12 @@ program run
     if (lout)   call write_1daverages()
     if (l2davg) call write_2daverages()
 !
+!  Ensure better load balancing of particles by giving equal number of
+!  particles to each CPU. This only works when block domain decomposition of
+!  particles is activated.
+!      
+    if (lparticles) call particles_load_balance(f)
+!
 !  07-Sep-07/dintrans+gastine: Implicit advance of the radiative diffusion
 !  in the temperature equation (using temperature_idealgas).
 !
