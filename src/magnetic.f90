@@ -1488,14 +1488,13 @@ module Magnetic
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      real, dimension (nx,3) :: bb_ext,bb_ext_pot
+!      real, dimension (nx,3) :: bb_ext_pot
       real, dimension (nx) :: rho1_jxb,alpha_total
       real, dimension (nx) :: alpha_tmp
       real, dimension (nx) :: jcrossb2 
       real, dimension (nx) :: meanfield_Qs_func, meanfield_Qp_func
       real, dimension (nx) :: meanfield_Qs_der, meanfield_Qp_der, BiBk_Bki
       real, dimension (nx) :: meanfield_Bs21, meanfield_Bp21
-      real, dimension (nx) :: meanfield_Bs2, meanfield_Bp2
       real, dimension (nx) :: meanfield_urms21,meanfield_etaB2
       real, dimension (nx,3) :: Bk_Bki
       real :: B2_ext,c,s,kx
@@ -2981,10 +2980,10 @@ module Magnetic
       use BorderProfiles, only: border_driving,set_border_initcond
       use Mpicomm, only: stop_it
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension(mx,my,mz,mvar) :: df
-      real, dimension(nx,3) :: f_target
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx,3) :: f_target
       integer :: ju,j
 !
 !  select for different target profiles
@@ -3178,7 +3177,7 @@ module Magnetic
       integer :: j
 !
       intent(in) :: f
-      intent(out) :: df
+      intent(inout) :: df
 !
       if (headtt) print*,'calc_tau_aa_exterior: tau=',tau_aa_exterior
       if (z(n)>zgrav) then
@@ -4149,7 +4148,7 @@ module Magnetic
       logical,save :: first=.true.
       real,dimension(2) :: b2mxy_local,b2mxy
       real :: bmxy_rms,nVol2d_local,btemp
-      integer :: l,j
+      integer :: l
 !
 !  This only works if bxmz and bzmz are in xyaver, so print warning if this is
 !  not ok.
@@ -4871,8 +4870,8 @@ module Magnetic
       real, parameter :: tol=10*epsilon(1.0)
       integer :: l
       real, dimension(mx,my,mz) :: Ax_ext,Ay_ext
-      real, dimension(nx,3) :: bb_ext_pot
-      real, dimension(nx) :: bb_x,bb_y,bb_z
+ !     real, dimension(nx,3) :: bb_ext_pot
+!      real, dimension(nx) :: bb_x,bb_y,bb_z
 !
 !  calculate un-normalized |B| at r=r_ref and z=0 for later normalization
 !
