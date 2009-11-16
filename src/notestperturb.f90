@@ -4,6 +4,8 @@
 
 module TestPerturb
 
+  use Sub, only: keep_compiler_quiet
+  
   implicit none
 
   real :: dummy
@@ -38,6 +40,8 @@ module TestPerturb
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
+      call keep_compiler_quiet(unit,iostat)
+!
     endsubroutine read_testperturb_init_pars
 !***********************************************************************
     subroutine write_testperturb_init_pars(unit)
@@ -45,6 +49,8 @@ module TestPerturb
 !  Dummy routine
 !
       integer, intent(in) :: unit
+!
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_testperturb_init_pars
 !***********************************************************************
@@ -55,6 +61,8 @@ module TestPerturb
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
+      call keep_compiler_quiet(unit,iostat)
+!
     endsubroutine read_testperturb_run_pars
 !***********************************************************************
     subroutine write_testperturb_run_pars(unit)
@@ -63,6 +71,8 @@ module TestPerturb
 !
       integer, intent(in) :: unit
 !
+      call keep_compiler_quiet(unit)
+!
     endsubroutine write_testperturb_run_pars
 !***********************************************************************
     subroutine testperturb_begin(f,df)
@@ -70,12 +80,12 @@ module TestPerturb
 !  Dummy routine
 !
       use Cparam, only: mx,my,mz,mfarray,mvar
-      use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
 !
       call keep_compiler_quiet(f,df)
+!
     endsubroutine testperturb_begin
 !***********************************************************************
     subroutine testperturb_finalize(f)
@@ -83,11 +93,11 @@ module TestPerturb
 !  Dummy routine
 !
       use Cparam, only: mx,my,mz,mfarray,mvar
-      use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
+!
     endsubroutine testperturb_finalize
 !***********************************************************************
     subroutine rprint_testperturb(lreset,lwrite)
@@ -96,6 +106,8 @@ module TestPerturb
 !
       logical :: lreset
       logical, optional :: lwrite
+!
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_testperturb
 !***********************************************************************
