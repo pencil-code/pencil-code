@@ -1546,50 +1546,8 @@ module Chemistry
 ! NILS: The current implementation is *not* in accordance with chapter 5.2 in
 ! NILS: the chemkin manual - this should be fixed!
 !
-         do j3=nn1,nn2
-         do j2=mm1,mm2
-         do j1=1,mx
 
-          tmp_sum(j1,j2,j3)=0.
-          tmp_sum2(j1,j2,j3)=0.
-!
-          do k=1,nchemspec
-            species_cond(j1,j2,j3,k)=(species_viscosity(j1,j2,j3,k)) &
-                /(species_constants(k,imass)/unit_mass)*Rgas* &
-         !      (5./2.*(1.-5./(pi+2.))*3./2. &  
-         !     +Bin_Diff_coef(j1,j2,j3,k,k)*rho_full(j1,j2,j3) &
-         !     /species_viscosity(j1,j2,j3,k)*  &
-         !      ((1.+5./(pi+2.))*3./2.+(Cv_full(j1,j2,j3)/Rgas-3.)) )
-
-            15./4.! 15./4.
-            tmp_sum(j1,j2,j3)=tmp_sum(j1,j2,j3)  &
-                             +XX_full(j1,j2,j3,k)*species_cond(j1,j2,j3,k)
-            tmp_sum2(j1,j2,j3)=tmp_sum2(j1,j2,j3) &
-                             +XX_full(j1,j2,j3,k)/species_cond(j1,j2,j3,k)
-
-          enddo
-         enddo
-         enddo
-         enddo
-
-          do j1=1,mx
-          do j2=mm1,mm2
-          do j3=nn1,nn2
-           if ((tmp_sum2(j1,j2,j3))<=0.) then
-            lambda_full(j1,j2,j3)=0.
-           else
-            lambda_full(j1,j2,j3)=0.5*(tmp_sum(j1,j2,j3)+1./tmp_sum2(j1,j2,j3))
-           endif
-
-           if (lambda_const<impossible) then
-            lambda_full(j1,j2,j3)=lambda_const
-           endif
-
-
-          enddo
-          enddo
-          enddo
-
+      call calc_therm_diffus_coef(f)
 
 !
 !  Dimensionless Standard-state molar enthalpy H0/RT
@@ -3914,7 +3872,7 @@ module Chemistry
           else
             eps_jk=tran_data(j,2)
             sigma_jk=tran_data(j,3)*1e-8
-            m_jk=species_constants(j,imass)/Na
+            m_jk=species_constants(j,imass)/Na/2.
 
           endif
 
@@ -4063,6 +4021,121 @@ module Chemistry
       enddo
 !
     endsubroutine calc_diff_visc_coef
+!***************************************************************
+    subroutine calc_therm_diffus_coef(f)
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,nchemspec) :: species_cond
+      real, dimension (mx,my,mz) :: tmp_sum, tmp_sum2, tmp_val
+      real, dimension (mx,my,mz) :: AA,BB, Cv_vib_R, f_tran, f_rot, f_vib
+      intent(in) :: f
+      integer :: j1,j2,j3,k
+      real :: Cv_rot_R, Cv_tran_R
+ 
+!TTTTTTTTTTT
+    
+      do j3=nn1,nn2
+      do j2=mm1,mm2
+      do j1=1,mx
+
+          tmp_sum(j1,j2,j3)=0.
+          tmp_sum2(j1,j2,j3)=0.
+!
+
+     
+      do k=1,nchemspec
+
+       if (tran_data(k,1)==0.) then
+          Cv_tran_R=1.5
+          Cv_rot_R=0.
+          Cv_vib_R=0.
+        elseif (tran_data(k,1)==1.) then
+          Cv_tran_R=1.5
+          Cv_rot_R=1.
+          Cv_vib_R(j1,j2,j3)=cvspec_full(j1,j2,j3,k)-2.5
+        elseif (tran_data(k,1)==2.) then
+          Cv_tran_R=1.5
+          Cv_rot_R=1.5
+          Cv_vib_R(j1,j2,j3)=cvspec_full(j1,j2,j3,k)-3.
+        endif
+       
+  
+         tmp_val(j1,j2,j3)=Bin_Diff_coef(j1,j2,j3,k,k)*rho_full(j1,j2,j3) &
+              /species_viscosity(j1,j2,j3,k)
+            
+       
+
+!if (j1==l1) print*,'Cv_vib_R=', Cv_vib_R(j1,j2,j3),cvspec_full(j1,j2,j3,k),k
+             
+          if (tran_data(k,1)>0.) then
+
+           AA(j1,j2,j3)=2.5-tmp_val(j1,j2,j3)
+           BB(j1,j2,j3)=tran_data(k,6)+2./pi*(5./3.*Cv_rot_R+tmp_val(j1,j2,j3))
+
+               
+           f_tran(j1,j2,j3)=2.5*(1.- 2./pi*Cv_rot_R/Cv_tran_R*AA(j1,j2,j3)/BB(j1,j2,j3))
+           f_rot(j1,j2,j3)=tmp_val(j1,j2,j3)*(1+2./pi*AA(j1,j2,j3)/BB(j1,j2,j3))
+           f_vib(j1,j2,j3)=tmp_val(j1,j2,j3)
+          else
+           f_tran(j1,j2,j3)=2.5
+   
+          endif
+
+             
+            !species_cond(j1,j2,j3,k)=(species_viscosity(j1,j2,j3,k)) &
+            !    /(species_constants(k,imass)/unit_mass)*Rgas* &
+            !   (5./2.*(1.-5./(pi+5.))*3./2. &  
+            !  +tmp_val(j1,j2,j3)*  &
+            !   ((1.+5./(pi+5.))*3./2.+(Cv_full(j1,j2,j3)/Rgas-3.)) )
+
+            species_cond(j1,j2,j3,k)=(species_viscosity(j1,j2,j3,k)) &
+                /(species_constants(k,imass)/unit_mass)*Rgas* &
+              (f_tran(j1,j2,j3)*Cv_tran_R+f_rot(j1,j2,j3)*Cv_rot_R  &
+                +f_vib(j1,j2,j3)*Cv_vib_R(j1,j2,j3))
+
+
+             
+
+         !   15./4.! 15./4.
+            tmp_sum(j1,j2,j3)=tmp_sum(j1,j2,j3)  &
+                             +XX_full(j1,j2,j3,k)*species_cond(j1,j2,j3,k)
+            tmp_sum2(j1,j2,j3)=tmp_sum2(j1,j2,j3) &
+                             +XX_full(j1,j2,j3,k)/species_cond(j1,j2,j3,k)
+
+          enddo
+         enddo
+         enddo
+         enddo
+
+  do k=1,nchemspec
+!print*,maxval(Bin_Diff_coef(:,mm1:mm2,nn1:nn2,k,k)*rho_full(:,mm1:mm2,nn1:nn2) &
+!              /species_viscosity(:,mm1:mm2,nn1:nn2,k))
+!print*, minval(species_cond(:,mm1:mm2,nn1:nn2,k)),k
+!  print*, species_cond(l1,m1,n1,k),species_cond(l2,m1,n1,k),k
+
+  enddo
+
+          do j1=1,mx
+          do j2=mm1,mm2
+          do j3=nn1,nn2
+           if ((tmp_sum2(j1,j2,j3))<=0.) then
+            lambda_full(j1,j2,j3)=0.
+           else
+            lambda_full(j1,j2,j3)=0.5*(tmp_sum(j1,j2,j3)+1./tmp_sum2(j1,j2,j3))
+           endif
+
+           if (lambda_const<impossible) then
+            lambda_full(j1,j2,j3)=lambda_const
+           endif
+
+
+          enddo
+          enddo
+          enddo
+
+
+
+    endsubroutine calc_therm_diffus_coef
 !***************************************************************
     subroutine calc_diffusion_term(f,p)
 !
@@ -5565,11 +5638,13 @@ module Chemistry
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       real, dimension (mx) :: func_x
-      integer :: i, j,  sz_l_x,sz_r_x,  sz_l_y,sz_r_y, sz_l_z,sz_r_z,ll1,ll2
+      integer :: i, j, j1,  sz_l_x,sz_r_x,  sz_l_y,sz_r_y, sz_l_z,sz_r_z,ll1,ll2
       real :: dt1, func_y,func_z, ux_ref,uy_ref,uz_ref,lnTT_ref,lnrho_ref
+      real :: sz1,sz2, sz1_x,sz2_x, del
       logical :: lzone_y=.false.,lzone_z=.false.
 
        dt1=1./dt
+       del=0.15
 
        ux_ref=0.
        uy_ref=0.
@@ -5577,109 +5652,108 @@ module Chemistry
        lnrho_ref=-7.73236
        lnTT_ref=6.39693
 
-       sz_r_x=nxgrid+l1-int(0.2*nxgrid)
-       sz_l_x=int(0.2*nxgrid)+l1
-       sz_r_y=nygrid+m1-int(0.2*nygrid)
-       sz_l_y=int(0.2*nygrid)+m1
-       sz_r_z=nzgrid+n1-int(0.2*nzgrid)
-       sz_l_z=int(0.2*nzgrid)+n1
-       ll1=l1
-       ll2=l2
-
-              
+  
+        do j1=l1,l2
+                 
        if (nxgrid/=1) then
 
-        if (sz_r_x<=l1) call fatal_error('to use ldamp_zone_NSCBC',&
-                  'you should increase nxgrid!')
+         
+         sz1_x=(xyz0(1)+Lxyz(1)*del)
+         sz2_x=(xyz0(1)+Lxyz(1)*(1.-del))
+        
 
-        do j=1,2
-  
-         if (j==1) then
-          ll1=sz_r_x
-          ll2=l2
-       !    ll2=mx
-          func_x(ll1:ll2)=(x(ll1:ll2)-x(ll1))**3/(x(ll2)-x(ll1))**3
-         elseif (j==2) then
-          ll1=l1!+1
-        !  ll1=1
-          ll2=sz_l_x
-          func_x(ll1:ll2)=(x(ll1:ll2)-x(ll2))**3/(x(ll1)-x(ll2))**3
-         endif
+     !     if (sz_r_x<=l1) call fatal_error('to use ldamp_zone_NSCBC',&
+     !               'you should increase nxgrid!')
 
-          df(ll1:ll2,m,n,iux)=df(ll1:ll2,m,n,iux)&  
-            -func_x(ll1:ll2)*(f(ll1:ll2,m,n,iux)-ux_ref)*dt1
-          df(ll1:ll2,m,n,iuy)=df(ll1:ll2,m,n,iuy)&  
-            -func_x(ll1:ll2)*(f(ll1:ll2,m,n,iuy)-uy_ref)*dt1
-          df(ll1:ll2,m,n,iuz)=df(ll1:ll2,m,n,iuz)&  
-            -func_x(ll1:ll2)*(f(ll1:ll2,m,n,iuz)-uz_ref)*dt1
-          df(ll1:ll2,m,n,ilnrho)=df(ll1:ll2,m,n,ilnrho)&  
-            -func_x(ll1:ll2)*(f(ll1:ll2,m,n,ilnrho)-lnrho_ref)*dt1
-          df(ll1:ll2,m,n,ilnTT)=df(ll1:ll2,m,n,ilnTT)&  
-            -func_x(ll1:ll2)*(f(ll1:ll2,m,n,ilnTT)-lnTT_ref)*dt1  
+          if (x(j1)<sz1) then
+           func_x(j1)=(sz1-x(j1))**3/(del*Lxyz(1))**3
+    
+          elseif (sz2<x(j1)) then
+           func_x(j1)=(x(j1)-sz2)**3/(del*Lxyz(1))**3
+     
+          endif
 
-        enddo
+        if ((x(j1)<sz1) .or. (sz2<x(j1))) then
+
+          df(j1,m,n,iux)=df(j1,m,n,iux)-func_x(j1)*(f(j1,m,n,iux)-ux_ref)*dt1
+          df(j1,m,n,iuy)=df(j1,m,n,iuy)-func_x(j1)*(f(j1,m,n,iuy)-uy_ref)*dt1
+          df(j1,m,n,iuz)=df(j1,m,n,iuz)-func_x(j1)*(f(j1,m,n,iuz)-uz_ref)*dt1
+          df(j1,m,n,ilnrho)=df(j1,m,n,ilnrho)  &
+            -func_x(j1)*(f(j1,m,n,ilnrho)-lnrho_ref)*dt1
+          df(j1,m,n,ilnTT)=df(j1,m,n,ilnTT)&  
+            -func_x(j1)*(f(j1,m,n,ilnTT)-lnTT_ref)*dt1  
+
+        endif
+     
        endif
+      
        
        if (nygrid/=1) then
 
-       if (sz_r_y<=m1) call fatal_error('to use ldamp_zone_NSCBC',&
-                  'you should increase nygrid!')
+      ! if (sz_r_y<=m1) call fatal_error('to use ldamp_zone_NSCBC',&
+      !            'you should increase nygrid!')
 
-       if ((m<=sz_l_y) .and. (m>=m1)) then
-        func_y=(y(m)-y(sz_l_y))**3/(y(m1)-y(sz_l_y))**3 
+          
+         sz1=(xyz0(2)+Lxyz(2)*del)
+         sz2=(xyz0(2)+Lxyz(2)*(1.-del))
+
+         
+       if ((y(m)<=sz1) .and. (y(m)>=xyz0(2))) then
+        func_y=(sz1-y(m))**3/(Lxyz(2)*del)**3 
         lzone_y=.true.
-       elseif ((m>=sz_r_y) .and. (m<=m2)) then 
-        func_y= (y(m)-y(sz_r_y))**3/(y(m2)-y(sz_r_y))**3 
+       elseif ((y(m)>=sz2) .and. (y(m)<=xyz0(2)+Lxyz(2))) then 
+        func_y= (y(m)-sz2)**3/(Lxyz(2)*del)**3 
         lzone_y=.true.
-       endif      
-    
+       endif     
+
        if (lzone_y) then
-        
-        !  sz_l_x=1
-        !  sz_r_x=mx
-        df(sz_l_x:sz_r_x,m,n,iux)=df(sz_l_x:sz_r_x,m,n,iux)&  
-           -func_y*(f(sz_l_x:sz_r_x,m,n,iux)-ux_ref)*dt1
-        df(sz_l_x:sz_r_x,m,n,iuy)=df(sz_l_x:sz_r_x,m,n,iuy)&  
-           -func_y*(f(sz_l_x:sz_r_x,m,n,iuy)-uy_ref)*dt1
-        df(sz_l_x:sz_r_x,m,n,iuz)=df(sz_l_x:sz_r_x,m,n,iuz)&  
-           -func_y*(f(sz_l_x:sz_r_x,m,n,iuz)-uz_ref)*dt1
-        df(sz_l_x:sz_r_x,m,n,ilnrho)=df(sz_l_x:sz_r_x,m,n,ilnrho)&  
-           -func_y*(f(sz_l_x:sz_r_x,m,n,ilnrho)-lnrho_ref)*dt1
-        df(sz_l_x:sz_r_x,m,n,ilnTT)=df(sz_l_x:sz_r_x,m,n,ilnTT)&  
-           -func_y*(f(sz_l_x:sz_r_x,m,n,ilnTT)-lnTT_ref)*dt1
+    
+        if ((x(j1)>sz1_x) .and. (x(j1)<sz2_x)) then
+        df(j1,m,n,iux)=df(j1,m,n,iux)-func_y*(f(j1,m,n,iux)-ux_ref)*dt1
+        df(j1,m,n,iuy)=df(j1,m,n,iuy)-func_y*(f(j1,m,n,iuy)-uy_ref)*dt1
+        df(j1,m,n,iuz)=df(j1,m,n,iuz)-func_y*(f(j1,m,n,iuz)-uz_ref)*dt1
+        df(j1,m,n,ilnrho)=df(j1,m,n,ilnrho)&  
+           -func_y*(f(j1,m,n,ilnrho)-lnrho_ref)*dt1
+        df(j1,m,n,ilnTT)=df(j1,m,n,ilnTT)&  
+           -func_y*(f(j1,m,n,ilnTT)-lnTT_ref)*dt1
+        endif
+  
         lzone_y=.false.
+     
        endif
        endif
 
       if (nzgrid/=1) then
-        if (sz_r_z<=n1) call fatal_error('to use ldamp_zone_NSCBC',&
-                  'you should increase nzgrid!')
+
+         sz1=(xyz0(3)+Lxyz(3)*del)
+         sz2=(xyz0(3)+Lxyz(3)*(1.-del))
+
          
-      if ((n<=sz_l_z) .and. (n>=n1)) then
-        func_z=(z(n)-z(sz_l_z))**3/(z(n1)-z(sz_l_z))**3 
+       if ((z(n)<=sz1) .and. (z(n)>=xyz0(3))) then
+        func_z=(sz1-z(n))**3/(Lxyz(3)*del)**3 
         lzone_z=.true.
-       elseif ((n>=sz_r_z) .and. (n<=n2)) then 
-        func_z= (z(n)-z(sz_r_z))**3/(z(n2)-z(sz_r_z))**3 
+       elseif ((z(n)>=sz2) .and. (z(n)<=xyz0(3)+Lxyz(3))) then 
+        func_z= (z(n)-sz2)**3/(Lxyz(3)*del)**3 
         lzone_z=.true.
-       endif      
+       endif  
     
        if (lzone_z) then
-        !  sz_l_x=1
-        !  sz_r_x=mx
+        if ((x(j1)>sz1_x) .and. (x(j1)<sz2_x)) then
          
-        df(sz_l_x:sz_r_x,m,n,iux)=df(sz_l_x:sz_r_x,m,n,iux)&  
-           -func_z*(f(sz_l_x:sz_r_x,m,n,iux)-ux_ref)*dt1
-        df(sz_l_x:sz_r_x,m,n,iuy)=df(sz_l_x:sz_r_x,m,n,iuy)&  
-           -func_z*(f(sz_l_x:sz_r_x,m,n,iuy)-uy_ref)*dt1
-        df(sz_l_x:sz_r_x,m,n,iuz)=df(sz_l_x:sz_r_x,m,n,iuz)&  
-           -func_z*(f(sz_l_x:sz_r_x,m,n,iuz)-uz_ref)*dt1
-        df(sz_l_x:sz_r_x,m,n,ilnrho)=df(sz_l_x:sz_r_x,m,n,ilnrho)&  
-           -func_z*(f(sz_l_x:sz_r_x,m,n,ilnrho)-lnrho_ref)*dt1
-        df(sz_l_x:sz_r_x,m,n,ilnTT)=df(sz_l_x:sz_r_x,m,n,ilnTT)&  
-           -func_z*(f(sz_l_x:sz_r_x,m,n,ilnTT)-lnTT_ref)*dt1
+        df(j1,m,n,iux)=df(j1,m,n,iux)-func_z*(f(j1,m,n,iux)-ux_ref)*dt1
+        df(j1,m,n,iuy)=df(j1,m,n,iuy)-func_z*(f(j1,m,n,iuy)-uy_ref)*dt1
+        df(j1,m,n,iuz)=df(j1,m,n,iuz)-func_z*(f(j1,m,n,iuz)-uz_ref)*dt1
+        df(j1,m,n,ilnrho)=df(j1,m,n,ilnrho) &
+                -func_z*(f(j1,m,n,ilnrho)-lnrho_ref)*dt1
+        df(j1,m,n,ilnTT)=df(j1,m,n,ilnTT)  &
+                -func_z*(f(j1,m,n,ilnTT)-lnTT_ref)*dt1
         lzone_z=.false.
+        endif
+    
        endif
        endif
+
+       enddo
 
     endsubroutine damp_zone_for_NSCBC
 !***********************************************************************
