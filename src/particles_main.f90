@@ -255,7 +255,13 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      call keep_compiler_quiet(f)
+      if (lparticles_block .and. mod(it,100)==0) then
+        call particles_boundconds(f)
+        call load_balance_particles(f,fp,ipar)
+        call map_nearest_grid(fp,ineargrid)
+        call sort_particles_iblock(fp,ineargrid,dfp=dfp)
+        call map_xxp_grid(f,fp,ineargrid)
+      endif
 !
     endsubroutine particles_load_balance
 !***********************************************************************
@@ -289,12 +295,16 @@ module Particles_main
 !
 !  Sort particles so that they can be accessed contiguously in the memory.
 !
-      call sort_particles_imn(fp,ineargrid,ipar,dfp=dfp)
+      if (lparticles_block) then
+        call sort_particles_iblock(fp,ineargrid,dfp=dfp)
+      else
+        call sort_particles_imn(fp,ineargrid,ipar,dfp=dfp)
+      endif
 !
 !  Map the particle positions and velocities on the grid.
 !
       call map_xxp_grid(f,fp,ineargrid)
-      call map_vvp_grid(f,fp,ineargrid)
+      if (.not. lparticles_block) call map_vvp_grid(f,fp,ineargrid)
 !
 !  Distribute the n-body particles across processors
 !

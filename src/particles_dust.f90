@@ -20,6 +20,7 @@ module Particles
   use Messages
   use Particles_cdata
   use Particles_map
+  use Particles_mpicomm
   use Particles_sub
   use Particles_radius
   use Sub, only: keep_compiler_quiet
@@ -893,6 +894,10 @@ k_loop:   do while (.not. (k>npar_loc))
           enddo
 
         case ('hole')
+
+          if (lparticles_block) call fatal_error('init_particles', &
+                'hole initial condition not implemented for '// &
+                'block domain decomposition')
           call map_nearest_grid(fp,ineargrid)
           call map_xxp_grid(f,fp,ineargrid)
           call sort_particles_imn(fp,ineargrid,ipar)
@@ -940,8 +945,18 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Map particle position on the grid.
 !
-      call map_nearest_grid(fp,ineargrid)
-      call map_xxp_grid(f,fp,ineargrid)
+      if (lparticles_block) then
+        call map_nearest_grid(fp,ineargrid)
+        call sort_particles_iblock(fp,ineargrid)
+        call map_xxp_grid(f,fp,ineargrid)
+        call load_balance_particles(f,fp,ipar)
+        call map_nearest_grid(fp,ineargrid)
+        call sort_particles_iblock(fp,ineargrid)
+        call map_xxp_grid(f,fp,ineargrid)
+      else
+        call map_nearest_grid(fp,ineargrid)
+        call map_xxp_grid(f,fp,ineargrid)
+      endif
 !
 !  Initial particle velocity.
 !
@@ -1190,13 +1205,13 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Map particle velocity on the grid.
 !
-      call map_vvp_grid(f,fp,ineargrid)
+      if (.not. lparticles_block) call map_vvp_grid(f,fp,ineargrid)
 !
 !  Sort particles (must happen at the end of the subroutine so that random
 !  positions and velocities are not displaced relative to when there is no
 !  sorting).
 !
-      call sort_particles_imn(fp,ineargrid,ipar)
+      if (.not. lparticles_block) call sort_particles_imn(fp,ineargrid,ipar)
 !
     endsubroutine init_particles
 !***********************************************************************
