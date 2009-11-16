@@ -681,4 +681,22 @@ module Particles_mpicomm
 !
     endsubroutine input_blocks
 !***********************************************************************
+    subroutine load_balance_particles(f,fp,ipar)
+!
+!  This subroutine counts particles in the bricks at the local processor
+!  and distributes the bricks in such a away that there is approximately
+!  equal number of particles per processor.
+!
+!  16-nov-09/anders: dummy
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mpvar) :: fp
+      integer, dimension (mpar_loc) :: ipar
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ipar)
+!
+    endsubroutine load_balance_particles
+!***********************************************************************
 endmodule Particles_mpicomm

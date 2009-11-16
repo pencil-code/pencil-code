@@ -2,7 +2,7 @@
   private
 
   public :: initialize_particles_mpicomm, migrate_particles
-  public :: output_blocks, input_blocks
+  public :: output_blocks, input_blocks, load_balance_particles
 
   public :: nxb, nyb, nzb, nbx, nby, nbz, nbricks, nghostb, mxb, myb, mzb
   public :: l1b, l2b, m1b, m2b, n1b, n2b
