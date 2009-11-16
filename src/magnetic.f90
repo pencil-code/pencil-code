@@ -1810,7 +1810,7 @@ module Magnetic
         case('step'); alpha_tmp=-tanh((y(m)-pi/2)/alpha_gap_step)
         case('ystep-xcutoff')
            alpha_tmp=-tanh((y(m)-pi/2)/alpha_gap_step)& 
-             *(1+stepdown(x,alpha_rmax,alpha_width))
+             *(1+stepdown(x(l1:l2),alpha_rmax,alpha_width))
         case('step-drop'); alpha_tmp=(1. &
                 -step_scalar(y(m),pi/2.-alpha_equator_gap,alpha_gap_step) &
                 -step_scalar(y(m),pi/2+alpha_equator_gap,alpha_gap_step) &
