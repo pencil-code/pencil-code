@@ -69,13 +69,13 @@ module Equ
       use Testscalar
       use Viscosity, only: calc_viscosity, calc_pencils_viscosity
 !
-      logical :: early_finalize,ldiagnos_mdt
+      logical :: early_finalize
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: maxadvec,maxdiffus,maxdiffus2,maxdiffus3
       real, dimension (nx) :: pfreeze,pfreeze_int,pfreeze_ext
-      integer :: i,iv
+      integer :: iv
       integer :: ivar1,ivar2
       intent(inout)  :: f       ! inout due to  lshift_datacube_x,
                                 ! density floor, or velocity ceiling
