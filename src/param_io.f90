@@ -224,7 +224,7 @@ module Param_IO
 !   6-jul-02/axel: in case of error, print sample namelist
 !  21-oct-03/tony: moved sample namelist stuff to a separate procedure
 !
-      integer :: ierr,i
+      integer :: ierr
       logical, optional :: print,file
       character (len=30) :: label='[none]'
 !
@@ -573,7 +573,7 @@ module Param_IO
       use Dustvelocity, only: copy_bcs_dust
       use Slices, only: setup_slices
 !
-      integer :: ierr,i
+      integer :: ierr
       logical, optional :: print,file
       character (len=*), optional :: annotation
       character (len=30) :: label='[none]'
