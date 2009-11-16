@@ -19,6 +19,7 @@ module Particles_collisions
   use Cdata
   use Messages
   use Particles_cdata
+  use Particles_map
   use Particles_sub
   use Sub, only: keep_compiler_quiet
 !

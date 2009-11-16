@@ -65,6 +65,7 @@ PARTICLES_COLLISIONS  = noparticles_collisions
 PARTICLES_MAIN        = noparticles_main
 PARTICLES_NBODY       = noparticles_nbody
 PARTICLES             = noparticles
+PARTICLES_MAP         = noparticles_map
 PARTICLES_MPICOMM     = noparticles_mpicomm
 PARTICLES_NUMBER      = noparticles_number
 PARTICLES_RADIUS      = noparticles_radius
@@ -122,6 +123,7 @@ include Makefile.inc
 #
 ifneq ($(PARTICLES),noparticles)
   PARTICLES_MAIN    =   particles_main
+  PARTICLES_MAP     =   particles_map
   PARTICLES_SUB     =   particles_sub
   GHOSTFOLD         =   ghostfold_$(MPICOMM)
   PARTICLES_MPICOMM = noparticles_mpicomm
@@ -1292,7 +1294,7 @@ physics=$(VISCOSITY).o $(SHOCK).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY
 #
 switchable=$(physics) $(BORDER_PROFILES).o $(INITIAL_CONDITION).o
 #
-comm_deps=$(technical) sub.o $(IO).o snapshot.o param_io.o  $(MPICOMM_FIX).o $(GHOSTFOLD).o $(switchable) $(POWER).o $(STRUCT_FUNC).o $(PARTICLES_MAIN).o $(PARTICLES_SUB).o $(PARTICLES_MPICOMM).o
+comm_deps=$(technical) sub.o $(IO).o snapshot.o param_io.o  $(MPICOMM_FIX).o $(GHOSTFOLD).o $(switchable) $(POWER).o $(STRUCT_FUNC).o $(PARTICLES_MAIN).o $(PARTICLES_SUB).o $(PARTICLES_MAP).o $(PARTICLES_MPICOMM).o
 #
 start_deps=$(comm_deps) $(TESTPERTURB).o $(DEBUG).o $(GSL).o
 #

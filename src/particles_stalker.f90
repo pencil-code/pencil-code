@@ -17,6 +17,7 @@ module Particles_stalker
 
   use Cdata
   use Particles_cdata
+  use Particles_map
   use Particles_sub
   use Messages
 

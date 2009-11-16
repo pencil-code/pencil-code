@@ -9,6 +9,7 @@ module Particles_main
   use Particles
   use Particles_cdata
   use Particles_collisions
+  use Particles_map
   use Particles_mpicomm
   use Particles_nbody
   use Particles_number
