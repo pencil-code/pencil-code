@@ -47,10 +47,11 @@ module Polymer
 !  14-aug-08/dhruba: initialize polymer field (dummy at present)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
       logical :: lstarting
 !
       if (NO_WARN) print*, lstarting
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine initialize_polymer
 !***********************************************************************
@@ -79,6 +80,8 @@ module Polymer
 !  18-aug-2008/dhruba: coded
 !
       logical, dimension(npencils) :: lpencil_in
+!
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_polymer
 !***********************************************************************
@@ -117,11 +120,15 @@ module Polymer
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
+      call keep_compiler_quiet(unit,iostat)
+!
     endsubroutine read_polymer_init_pars
 !***********************************************************************
     subroutine write_polymer_init_pars(unit)
 !
       integer, intent(in) :: unit
+!
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_polymer_init_pars
 !***********************************************************************
@@ -130,11 +137,15 @@ module Polymer
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
+      call keep_compiler_quiet(unit,iostat)
+!
     endsubroutine read_polymer_run_pars
 !***********************************************************************
     subroutine write_polymer_run_pars(unit)
 !
      integer, intent(in) :: unit
+!
+     call keep_compiler_quiet(unit)
 !
     endsubroutine write_polymer_run_pars
 !***********************************************************************
@@ -144,6 +155,9 @@ module Polymer
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices)
 !
     endsubroutine get_slices_polymer
 !***********************************************************************
@@ -155,6 +169,8 @@ module Polymer
 !
       logical :: lreset
       logical, optional :: lwrite
+!
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_polymer
 !***********************************************************************
