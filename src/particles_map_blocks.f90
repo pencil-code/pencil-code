@@ -326,7 +326,7 @@ module Particles_map
 !
     endsubroutine map_vvp_grid
 !***********************************************************************
-    subroutine sort_particles_iblock(fp,ineargrid,dfp)
+    subroutine sort_particles_iblock(fp,ineargrid,ipar,dfp)
 !
 !  Sort the particles so that they appear in order of the global brick index.
 !  That is, sorted first by processor number and then by local brick index.
@@ -335,6 +335,7 @@ module Particles_map
 !
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
+      integer, dimension (mpar_loc) :: ipar
       real, dimension (mpar_loc,mpvar), optional :: dfp
 !
       integer, dimension (mpar_loc) :: ipark_sorted_proc, ipark_sorted_block
@@ -343,7 +344,7 @@ module Particles_map
       integer, dimension (0:nbricks-1) :: k1_ibrick, k2_ibrick, npar_ibrick
       integer :: k, ibrick, iblock, iproc2
 !
-      intent(inout) :: fp,ineargrid,dfp
+      intent(inout) :: fp,ineargrid,dfp,ipar
 !
 !  Sort blocks by parent processor and by parent brick.
 !
@@ -1375,7 +1376,7 @@ module Particles_map
 !
     endsubroutine sort_particles_imn
 !***********************************************************************
-    subroutine shepherd_neighbour(fp,ineargrid,kshepherd,kneighbour)
+    subroutine shepherd_neighbour_pencil(fp,ineargrid,kshepherd,kneighbour)
 !
 !  Create a shepherd/neighbour list of particles in the pencil.
 !
@@ -1386,7 +1387,7 @@ module Particles_map
       integer, dimension (nx) :: kshepherd
       integer, dimension (:) :: kneighbour
 !
-      call fatal_error('shepherd_neighbour', &
+      call fatal_error('shepherd_neighbour_pencil', &
           'not implemented for block domain decomposition')
 !
       call keep_compiler_quiet(fp)
@@ -1394,7 +1395,37 @@ module Particles_map
       call keep_compiler_quiet(kshepherd)
       call keep_compiler_quiet(kneighbour)
 !
-    endsubroutine shepherd_neighbour
+    endsubroutine shepherd_neighbour_pencil
+!***********************************************************************
+    subroutine shepherd_neighbour_block(fp,ineargrid,kshepherd,kneighbour, &
+        iblock)
+!
+!  Create a shepherd/neighbour list of particles in the block.
+!
+!  17-nov-09/anders: coded
+!
+      real, dimension (mpar_loc,mpvar) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
+      integer, dimension (nxb,nyb,nzb) :: kshepherd
+      integer, dimension (:) :: kneighbour
+      integer :: iblock
+!
+      integer :: k, ix0, iy0, iz0
+!
+      intent (in) :: fp, ineargrid
+!
+      kshepherd=0
+      if (iblock==0) kneighbour=0
+!
+      if (npar_iblock(iblock)/=0) then
+        do k=k1_iblock(iblock),k2_iblock(iblock)
+          ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+          kneighbour(k)=kshepherd(ix0-nghostb,iy0-nghostb,iz0-nghostb)
+          kshepherd(ix0-nghostb,iy0-nghostb,iz0-nghostb)=k
+        enddo
+      endif
+!
+    endsubroutine shepherd_neighbour_block
 !***********************************************************************
     subroutine interpolation_consistency_check()
 !

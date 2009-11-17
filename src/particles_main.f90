@@ -241,8 +241,13 @@ module Particles_main
       if (lparticles_collisions .and. itsub==3) then
         call boundconds_particles(fp,ipar)
         call map_nearest_grid(fp,ineargrid)
-        call sort_particles_imn(fp,ineargrid,ipar)
-        call calc_particles_collisions(fp,ineargrid)
+        if (lparticles_blocks) then
+          call sort_particles_iblock(fp,ineargrid,ipar)
+          call calc_particles_collisions_blocks(fp,ineargrid)
+        else
+          call sort_particles_imn(fp,ineargrid,ipar)
+          call calc_particles_collisions_pencils(fp,ineargrid)
+        endif
       endif
 !
     endsubroutine particles_discrete_collisions
@@ -259,7 +264,7 @@ module Particles_main
         call particles_boundconds(f)
         call load_balance_particles(f,fp,ipar)
         call map_nearest_grid(fp,ineargrid)
-        call sort_particles_iblock(fp,ineargrid,dfp=dfp)
+        call sort_particles_iblock(fp,ineargrid,ipar,dfp=dfp)
         call map_xxp_grid(f,fp,ineargrid)
       endif
 !
@@ -296,7 +301,7 @@ module Particles_main
 !  Sort particles so that they can be accessed contiguously in the memory.
 !
       if (lparticles_blocks) then
-        call sort_particles_iblock(fp,ineargrid,dfp=dfp)
+        call sort_particles_iblock(fp,ineargrid,ipar,dfp=dfp)
       else
         call sort_particles_imn(fp,ineargrid,ipar,dfp=dfp)
       endif
@@ -442,7 +447,7 @@ module Particles_main
 !  Create shepherd/neighbour list of required.
 !
       if (lshepherd_neighbour) &
-          call shepherd_neighbour(fp,ineargrid,kshepherd,kneighbour)
+          call shepherd_neighbour_pencil(fp,ineargrid,kshepherd,kneighbour)
 !
 !  Interpolate required quantities using the predefined policies. Variables
 !  are found in interp.

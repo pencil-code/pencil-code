@@ -1456,7 +1456,7 @@ module Particles_map
 !
     endsubroutine interp_field_pencil
 !***********************************************************************
-    subroutine sort_particles_iblock(fp,ineargrid,dfp)
+    subroutine sort_particles_iblock(fp,ineargrid,ipar,dfp)
 !
 !  Sort the particles so that they appear in order of the global brick index.
 !  That is, sorted first by processor number and then by local brick index.
@@ -1465,6 +1465,7 @@ module Particles_map
 !
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
+      integer :: ipar
       real, dimension (mpar_loc,mpvar), optional :: dfp
 !
       call fatal_error('sort_particles_iblock', &
@@ -1472,6 +1473,7 @@ module Particles_map
 !
       call keep_compiler_quiet(fp)
       call keep_compiler_quiet(ineargrid)
+      call keep_compiler_quiet(ipar)
       if (present(dfp)) call keep_compiler_quiet(dfp)
 !
     endsubroutine sort_particles_iblock

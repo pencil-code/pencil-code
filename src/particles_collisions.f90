@@ -20,6 +20,7 @@ module Particles_collisions
   use Messages
   use Particles_cdata
   use Particles_map
+  use Particles_mpicomm
   use Particles_sub
   use Sub, only: keep_compiler_quiet
 !
@@ -73,7 +74,7 @@ module Particles_collisions
 !
     endsubroutine initialize_particles_collisions
 !***********************************************************************
-    subroutine calc_particles_collisions(fp,ineargrid)
+    subroutine calc_particles_collisions_pencils(fp,ineargrid)
 !
 !  Calculate collisions between superparticles by comparing the collision
 !  time-scale to the time-step. A random number is used to determine
@@ -113,7 +114,7 @@ module Particles_collisions
 !  lrandom_particle_pencils=T. Otherwise there is a risk that a particle
 !  always interacts with the same subset of other particles.
 !
-        call shepherd_neighbour(fp,ineargrid,kshepherd,kneighbour)
+        call shepherd_neighbour_pencil(fp,ineargrid,kshepherd,kneighbour)
 !
 !  Calculate number of particles per grid point. This is only needed in order
 !  to limit the number of collision partners. Note that f(:,:,:,inp) is not
@@ -213,7 +214,152 @@ module Particles_collisions
         enddo
       enddo
 !
-    endsubroutine calc_particles_collisions
+    endsubroutine calc_particles_collisions_pencils
+!***********************************************************************
+    subroutine calc_particles_collisions_blocks(fp,ineargrid)
+!
+!  Calculate collisions between superparticles by comparing the collision
+!  time-scale to the time-step. A random number is used to determine
+!  whether two superparticles collide in this time-step.
+!
+!  Collisions change the velocity vectors of the colliding particles
+!  instantaneously.
+!
+!  23-mar-09/anders: coded
+!
+      use Diagnostics
+      use General
+!
+      real, dimension (mpar_loc,mpvar) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      real, dimension (3) :: xpj, xpk, vpj, vpk
+      real :: deltavjk, tau_coll1, prob, r
+      integer, dimension (nxb,nyb,nzb) :: kshepherdb, np_block
+      integer :: ix, iy, iz, iblock, ix0, iy0, iz0
+      integer :: j, k, np_point, ncoll, ncoll_par, npart_par
+!
+      intent (in) :: ineargrid
+      intent (inout) :: fp
+!
+!  Reset collision counter.
+!
+      ncoll=0
+!
+!  Block loop.
+!
+      do iblock=0,nblock_loc-1
+!
+!  Create list of shepherd and neighbour particles for each grid cell in the
+!  current block.
+!
+!  Note: with npart_max_par>0, it is safest to also set
+!  lrandom_particle_pencils=T. Otherwise there is a risk that a particle
+!  always interacts with the same subset of other particles.
+!
+        call shepherd_neighbour_block(fp,ineargrid,kshepherdb,kneighbour,iblock)
+!
+!  Calculate number of particles per grid point. This is only needed in order
+!  to limit the number of collision partners. Note that f(:,:,:,inp) is not
+!  up-to-date at this time.
+!
+        if (npart_max_par/=-1) then
+          np_block=0
+          do k=k1_iblock(iblock),k2_iblock(iblock)
+            ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+            np_block(ix0-nghostb,iy0-nghostb,iz0-nghostb)= &
+                np_block(ix0-nghostb,iy0-nghostb,iz0-nghostb)+1
+          enddo
+        endif
+!
+        do iz=n1b,n2b; do iy=m1b,m2b; do ix=l1b,l2b
+          k=kshepherdb(ix-nghostb,iy-nghostb,iz-nghostb)
+          if (k>0) then
+            np_point=np_block(ix-nghostb,iy-nghostb,iz-nghostb)
+            do while (k/=0)
+              j=k
+              npart_par=0
+              ncoll_par=0
+              do while (.true.)
+                j=kneighbour(j)
+                if (j==0) then
+                  if (npart_max_par/=-1 .and. npart_max_par<np_point) then
+                    j=kshepherdb(ix-nghostb,iy-nghostb,iz-nghostb)
+                  else
+                    exit
+                  endif
+                endif
+!
+!  Calculate the relative speed of particles j and k.
+!
+                xpk=fp(k,ixp:izp)
+                vpk=fp(k,ivpx:ivpz)
+                if (lshear .and. lshear_in_vp) vpk(2)=vpk(2)-qshear*Omega*xpk(1)
+                xpj=fp(j,ixp:izp)
+                vpj=fp(j,ivpx:ivpz)
+                if (lshear .and. lshear_in_vp) vpj(2)=vpj(2)-qshear*Omega*xpj(1)
+                deltavjk=sqrt(sum((vpk-vpj)**2))
+!
+!  The time-scale for collisions between a representative particle from
+!  superparticle k and the particle cluster in superparticle j is
+!
+!    tau_coll = 1/(n*sigma*dv) = lambda/dv
+!
+!  where lambda is the mean free path of a particle relative to a single
+!  superparticle (this is a constant).
+!
+                tau_coll1=deltavjk/lambda_mfp_single
+!
+!  Increase collision rate artificially for fewer collisions.
+!
+                if (npart_max_par/=-1 .and. npart_max_par<np_point) then
+                  tau_coll1=tau_coll1*np_point/npart_max_par
+                endif
+!
+                if (tau_coll1/=0.0) then
+!
+!  The probability for a collision in this time-step is dt/tau_coll.
+!
+                  prob=dt*tau_coll1
+                  call random_number_wrapper(r)
+                  if (r<=prob) then
+                    if (lshear .and. lshear_in_vp) then
+                      vpk(2)=vpk(2)+qshear*Omega*xpk(1)
+                      vpj(2)=vpj(2)+qshear*Omega*xpj(1)
+                    endif
+                    call particle_collision(xpj,xpk,vpj,vpk,j,k)
+                    fp(k,ivpx:ivpz)=vpk
+                    fp(j,ivpx:ivpz)=vpj
+                    ncoll=ncoll+1
+                    ncoll_par=ncoll_par+1
+                  endif
+                endif
+                npart_par=npart_par+1
+                if (ncoll_max_par/=-1 .and. ncoll_par==ncoll_max_par) exit
+                if (npart_max_par/=-1 .and. npart_par==npart_max_par) exit
+              enddo
+              k=kneighbour(k)
+!
+!  Collision diagnostics. Since this subroutine is called in the last sub-
+!  time-step, we can not use ldiagnos. Therefore we calculate collision
+!  diagnostics in the preceding time-step. This has the side effect that
+!
+!    a) Collision diagnostics for time-step zero are all zero
+!    b) Collision diagnostics are not particle normalized if it1==1
+!
+              if (mod(it,it1)==0) then
+                if (idiag_ncollpm/=0) &
+                    call sum_par_name((/float(ncoll_par)/),idiag_ncollpm)
+                if (idiag_npartpm/=0) &
+                    call sum_par_name((/float(npart_par)/),idiag_npartpm)
+              endif
+!
+            enddo
+          endif
+        enddo; enddo; enddo
+      enddo
+!
+    endsubroutine calc_particles_collisions_blocks
 !***********************************************************************
     subroutine particle_collision(xpj,xpk,vpj,vpk,j,k)
 !

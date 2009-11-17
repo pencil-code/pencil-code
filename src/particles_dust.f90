@@ -947,11 +947,11 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if (lparticles_blocks) then
         call map_nearest_grid(fp,ineargrid)
-        call sort_particles_iblock(fp,ineargrid)
+        call sort_particles_iblock(fp,ineargrid,ipar)
         call map_xxp_grid(f,fp,ineargrid)
         call load_balance_particles(f,fp,ipar)
         call map_nearest_grid(fp,ineargrid)
-        call sort_particles_iblock(fp,ineargrid)
+        call sort_particles_iblock(fp,ineargrid,ipar)
         call map_xxp_grid(f,fp,ineargrid)
       else
         call map_nearest_grid(fp,ineargrid)
