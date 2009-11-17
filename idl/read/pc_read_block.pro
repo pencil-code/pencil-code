@@ -46,7 +46,7 @@ iproc_foster_brick=lonarr(nbricks)
 ;
 ; Check for existence and read the data.
 ;
-filename=datadir+'/proc'+strtrim(proc,2)+'/block.dat'
+filename=datadir+'/proc'+strtrim(proc,2)+'/blocks.dat'
 dummy=findfile(filename, count=found)
 if (found gt 0) then begin
   if ( not keyword_set(quiet) ) then print, 'Reading ' + filename + '...'
