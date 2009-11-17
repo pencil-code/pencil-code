@@ -197,7 +197,7 @@ module Particles_main
 !
       character (len=*) :: filename
 !
-      if (lparticles_block) then
+      if (lparticles_blocks) then
         open(1,file=filename)
           write(1,'(4i9)') nbrickx, nbricky, nbrickz, nblockmax
           write(1,'(4i9)') mxb, myb, mzb, nghostb
@@ -255,7 +255,7 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (lparticles_block .and. mod(it,100)==0) then
+      if (lparticles_blocks .and. mod(it,100)==0) then
         call particles_boundconds(f)
         call load_balance_particles(f,fp,ipar)
         call map_nearest_grid(fp,ineargrid)
@@ -295,7 +295,7 @@ module Particles_main
 !
 !  Sort particles so that they can be accessed contiguously in the memory.
 !
-      if (lparticles_block) then
+      if (lparticles_blocks) then
         call sort_particles_iblock(fp,ineargrid,dfp=dfp)
       else
         call sort_particles_imn(fp,ineargrid,ipar,dfp=dfp)

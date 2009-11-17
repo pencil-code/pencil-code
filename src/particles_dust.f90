@@ -895,7 +895,7 @@ k_loop:   do while (.not. (k>npar_loc))
 
         case ('hole')
 
-          if (lparticles_block) call fatal_error('init_particles', &
+          if (lparticles_blocks) call fatal_error('init_particles', &
                 'hole initial condition not implemented for '// &
                 'block domain decomposition')
           call map_nearest_grid(fp,ineargrid)
@@ -945,7 +945,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Map particle position on the grid.
 !
-      if (lparticles_block) then
+      if (lparticles_blocks) then
         call map_nearest_grid(fp,ineargrid)
         call sort_particles_iblock(fp,ineargrid)
         call map_xxp_grid(f,fp,ineargrid)
@@ -1211,7 +1211,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  positions and velocities are not displaced relative to when there is no
 !  sorting).
 !
-      if (.not. lparticles_block) call sort_particles_imn(fp,ineargrid,ipar)
+      if (.not. lparticles_blocks) call sort_particles_imn(fp,ineargrid,ipar)
 !
     endsubroutine init_particles
 !***********************************************************************

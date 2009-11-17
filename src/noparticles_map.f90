@@ -6,7 +6,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: lparticles_block = .false.
+! CPARAM logical, parameter :: lparticles_blocks = .false.
 !
 !***************************************************************
 module Particles_map
