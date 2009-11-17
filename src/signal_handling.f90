@@ -22,8 +22,10 @@ module Signal_handling
   public :: signal_prepare
   public :: read_signal_init_pars
   public :: write_signal_init_pars
+  public :: emergency_stop
 
 !
+  logical :: emergency_stop=.false.
   integer, dimension(2) :: sigval=-1  ! 2 is the max number of signal to catch
 ! input parameters
   namelist /signal_init_pars/ &
@@ -43,8 +45,9 @@ subroutine regexit()
 
   if (lroot) then
     print *,'End of the program run.x due to signal'
-    stat=system('touch STOP')
+    !stat=system('touch STOP')
   endif
+  emergency_stop=.true.
 
 endsubroutine regexit
 !*****************************************************************************

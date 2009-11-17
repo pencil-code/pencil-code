@@ -83,7 +83,7 @@ program run
   use Testscalar,      only: rescaling_testscalar
   use Testfield,       only: rescaling_testfield
   use TestPerturb,     only: testperturb_begin, testperturb_finalize
-  use Signal_handling, only: signal_prepare
+  use Signal_handling, only: signal_prepare, emergency_stop
   use Timeavg
   use Timestep
 !
@@ -372,14 +372,15 @@ program run
   Time_loop: do while (it<=nt)
     lout=mod(it-1,it1).eq.0
     l1dout=mod(it-1,it1d).eq.0
-    if (lout) then
+    if (lout .or. emergency_stop) then
 !
 !  Exit do loop if file `STOP' exists.
 !
       stop = control_file_exists("STOP", DELETE=.true.)
       call mpibcast_logical(stop, 1)
-      if (stop .or. t>tmax) then
+      if (stop .or. t>tmax .or. emergency_stop) then
         if (lroot) then
+          if (emergency_stop) print*, "done: Emergency stop requested"
           if (stop) print*, "done: found STOP file"
           if (t>tmax) print*, "done: t > tmax"
           resubmit = control_file_exists("RESUBMIT", DELETE=.true.)
