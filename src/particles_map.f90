@@ -15,6 +15,7 @@ module Particles_map
   use Cdata
   use Messages
   use Particles_cdata
+  use Particles_mpicomm
   use Sub, only: keep_compiler_quiet
 !
   implicit none
@@ -1211,7 +1212,7 @@ module Particles_map
 !
     endsubroutine particle_pencil_index
 !***********************************************************************
-    subroutine shepherd_neighbour(fp,ineargrid,kshepherd,kneighbour)
+    subroutine shepherd_neighbour_pencil(fp,ineargrid,kshepherd,kneighbour)
 !
 !  Create a shepherd/neighbour list of particles in the pencil.
 !
@@ -1235,7 +1236,30 @@ module Particles_map
         enddo
       endif
 !
-    endsubroutine shepherd_neighbour
+    endsubroutine shepherd_neighbour_pencil
+!***********************************************************************
+    subroutine shepherd_neighbour_block(fp,ineargrid,kshepherdb,kneighbour, &
+        iblock)
+!
+!  Create a shepherd/neighbour list of particles in the block.
+!
+!  17-nov-09/anders: dummy
+!
+      real, dimension (mpar_loc,mpvar) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
+      integer, dimension (nxb,nyb,nzb) :: kshepherdb
+      integer, dimension (:) :: kneighbour
+      integer :: iblock
+!
+      intent (in) :: fp, ineargrid, kshepherdb, kneighbour, iblock
+!
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ineargrid)
+      call keep_compiler_quiet(kshepherdb(1,1,1))
+      call keep_compiler_quiet(kneighbour)
+      call keep_compiler_quiet(iblock)
+!
+    endsubroutine shepherd_neighbour_block
 !***********************************************************************
     subroutine interpolation_consistency_check()
 !
@@ -1465,7 +1489,7 @@ module Particles_map
 !
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
-      integer :: ipar
+      integer, dimension (mpar_loc) :: ipar
       real, dimension (mpar_loc,mpvar), optional :: dfp
 !
       call fatal_error('sort_particles_iblock', &
