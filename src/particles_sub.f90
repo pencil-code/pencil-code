@@ -213,7 +213,7 @@ module Particles_sub
         endif
         call output_particles(snapname,fp,ipar)
         if (lparticles_blocks) &
-            call output_blocks(trim(directory_snap)//'/block.dat')
+            call output_blocks(trim(directory_snap)//'/blocks.dat')
         if (ip<=10 .and. lroot) &
              print*,'wsnap_particles: written snapshot ', snapname
         if (present(flist)) call log_filename_to_file(snapname,flist)
