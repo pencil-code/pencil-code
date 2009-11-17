@@ -13,9 +13,9 @@ module Particles_mpicomm
 !
   include 'particles_mpicomm.h'
 !
-  integer, parameter :: nxb=0, nyb=0, nzb=0, nbx=0, nby=0, nbz=0
-  integer, parameter :: nbricks=0, nghostb=0, mxb=0,myb=0, mzb=0
-  integer, parameter :: l1b=0, l2b=0, m1b=0, m2b=0, n1b=0, n2b=0
+  integer, parameter :: nxb=1, nyb=1, nzb=1, nbx=1, nby=1, nbz=1
+  integer, parameter :: nbricks=0, nghostb=0, mxb=1, myb=1, mzb=1
+  integer, parameter :: l1b=1, l2b=1, m1b=1, m2b=1, n1b=1, n2b=1
   integer, dimension (0:0) :: k1_iproc=0, k2_iproc=0, npar_iproc=0
   integer, dimension (0:0) :: k1_iblock=0, k2_iblock=0, npar_iblock=0
   integer, dimension (1) :: ibrick_parent_par, iproc_parent_par
