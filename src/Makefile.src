@@ -136,13 +136,13 @@ ifneq ($(PARTICLES),noparticles)
     PARTICLES_MPICOMM =   particles_mpicomm
   endif
 endif
-ifeq ($(PARTICLES_MAP),particles_map_block)
+ifeq ($(PARTICLES_MAP),particles_map_blocks)
   PARTICLES_MPICOMM = noparticles_mpicomm
   ifeq ($(MPICOMM),mpicomm)
-    PARTICLES_MPICOMM = particles_mpicomm_block
+    PARTICLES_MPICOMM = particles_mpicomm_blocks
   endif
   ifeq ($(MPICOMM),mpicomm_double)
-    PARTICLES_MPICOMM = particles_mpicomm_block
+    PARTICLES_MPICOMM = particles_mpicomm_blocks
   endif
 endif
 # 
