@@ -659,7 +659,7 @@ module Particles_mpicomm
 !***********************************************************************
     subroutine output_blocks(filename)
 !
-!  Write block decomposition to file.
+!  Write block domain decomposition to file.
 !
 !  16-nov-09/anders: dummy
 !
@@ -671,7 +671,7 @@ module Particles_mpicomm
 !***********************************************************************
     subroutine input_blocks(filename)
 !
-!  Read block decomposition from file.
+!  Read block domain decomposition from file.
 !
 !  16-nov-09/anders: dummy
 !
