@@ -399,6 +399,10 @@ module Chemistry
           do k=1,nchemspec
             call posnoise(amplchemk(k),f,ichemspec(k))
           enddo
+        case('positive-noise-rel')
+          do k=1,nchemspec
+            call posnoise_rel(amplchemk(k),amplchemk2(k),f,ichemspec(k))
+          enddo
         case('innerbox')
           do k=1,nchemspec
             call innerbox(amplchemk(k),amplchemk2(k),f,ichemspec(k),widthchem)
