@@ -38,6 +38,7 @@ module Param_IO
   use Shear
   use Shock
   use Solid_Cells
+  use Signal_handling
   use Special
   use Sub
   use Testfield
@@ -319,6 +320,10 @@ module Param_IO
       if (ierr/=0) call sample_startpars('chemistry_init_pars',ierr)
 !
       call sgi_fix(lsgifix,1,'start.in')
+      call read_signal_init_pars(1,IOSTAT=ierr)
+      if (ierr/=0) call sample_startpars('signal_init_pars',ierr)
+!
+      call sgi_fix(lsgifix,1,'start.in')
       call read_dustvelocity_init_pars(1,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('dustvelocity_init_pars',ierr)
 !
@@ -470,6 +475,7 @@ module Param_IO
         if (lpscalar          ) print*,'&pscalar_init_pars         /'
         if (lchiral           ) print*,'&chiral_init_pars          /'
         if (lchemistry        ) print*,'&chemistry_init_pars       /'
+        if (lsignal           ) print*,'&signal_init_pars          /'
         if (ldustvelocity     ) print*,'&dustvelocity_init_pars    /'
         if (ldustdensity      ) print*,'&dustdensity_init_pars     /'
         if (lneutralvelocity  ) print*,'&neutralvelocity_init_pars /'
@@ -537,6 +543,7 @@ module Param_IO
         call write_pscalar_init_pars(unit)
         call write_chiral_init_pars(unit)
         call write_chemistry_init_pars(unit)
+        call write_signal_init_pars(unit)
         call write_dustvelocity_init_pars(unit)
         call write_dustdensity_init_pars(unit)
         call write_neutralvelocity_init_pars(unit)
@@ -1085,6 +1092,7 @@ module Param_IO
         call write_pscalar_init_pars(1)
         call write_chiral_init_pars(1)
         call write_chemistry_init_pars(1)
+        call write_signal_init_pars(1)
         call write_dustvelocity_init_pars(1)
         call write_dustdensity_init_pars(1)
         call write_neutralvelocity_init_pars(1)
@@ -1142,6 +1150,7 @@ module Param_IO
       call read_pscalar_init_pars(1)
       call read_chiral_init_pars(1)
       call read_chemistry_init_pars(1)
+      call read_signal_init_pars(1)
       call read_dustvelocity_init_pars(1)
       call read_dustdensity_init_pars(1)
       call read_neutralvelocity_init_pars(1)

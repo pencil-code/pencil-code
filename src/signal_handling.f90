@@ -1,5 +1,16 @@
 ! $Id$
 
+
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxiliary variables added by this module
+!
+! CPARAM logical, parameter :: lsignal = .true.
+!
+! MVAR CONTRIBUTION 0
+! MAUX CONTRIBUTION 0
+!
+!***************************************************************
 module Signal_handling
 
 !  Used for signal handling in run.f90
@@ -9,7 +20,15 @@ module Signal_handling
   private
 
   public :: signal_prepare
+  public :: read_signal_init_pars
+  public :: write_signal_init_pars
+
 !
+  integer, dimension(2) :: sigval=-1  ! 2 is the max number of signal to catch
+! input parameters
+  namelist /signal_init_pars/ &
+      sigval
+
   contains
 !***********************************************************************
 subroutine regexit()
@@ -35,13 +54,40 @@ subroutine signal_prepare()
 !
 ! declarations for signal handling
 !
-  integer, parameter :: SIGFPE=8, SIGINT=2, SIGHUP=1, SIGTERM=15, SIGUSR1=30
-  integer, parameter :: USER=-1
-  integer :: sigret,signal
+!  integer, parameter :: SIGFPE=8, SIGINT=2, SIGHUP=1, SIGTERM=15, SIGUSR1=10
+!  Signal numbers are arch dependent.
+! Instead, should be declared by user in start.in, signal_init_pars section
+!  integer, parameter :: USER=-1
+  integer :: i,sigret,signal
 !
-  sigret = signal( SIGINT , regexit, USER )
-  sigret = signal( SIGUSR1, regexit, USER )
+  do i=1, 2
+    if (sigval(i) /= -1) then
+      sigret = signal( sigval(i) , regexit) !, USER ) ! Do not compile here (gfortran) with third param. Raphael.
+    endif
+  enddo
 !
 endsubroutine signal_prepare
+!***********************************************************************
+    subroutine read_signal_init_pars(unit,iostat)
+!
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+!
+      if (present(iostat)) then
+        read(unit,NML=signal_init_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=signal_init_pars,ERR=99)
+      endif
+!
+99    return
+    endsubroutine read_signal_init_pars
+!***********************************************************************
+   subroutine write_signal_init_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      write(unit,NML=signal_init_pars)
+!
+    endsubroutine write_signal_init_pars
 !*****************************************************************************
 endmodule Signal_handling
