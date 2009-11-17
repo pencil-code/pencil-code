@@ -1093,7 +1093,7 @@ module Particles_mpicomm
 !  any processor. This may happen if the brick was previously empty.
 !
           if (iproc_rec==iproc .and. iproc_foster_brick(ibrick_rec)==-1) then
-            if (ip<=60) then
+            if (ip<=6) then
               print'(A,i5,A,i5)', 'migrate_particles_proc_to_block: '// &
                   'opened brick ', ibrick_rec, ' at processor ', iproc
             endif
@@ -1357,7 +1357,7 @@ module Particles_mpicomm
       integer :: ipvar, nblock_send, npar_loc_tmp
       integer :: k1_send, k2_send
 !
-      if (ip<=60) then
+      if (ip<=6) then
         print*, 'load_balance_particles: iproc, npar_loc (before) =', &
             iproc, npar_loc
       endif
@@ -1516,7 +1516,7 @@ module Particles_mpicomm
 !  Now each processor has a list of particle blocks that would lead to
 !  good load balancing.
 !
-      if (ip<=60) then
+      if (ip<=6) then
         print*, 'load_balance_particles: iproc, nblock_loc, npar_sum=', &
             iproc, nblock_loc, npar_sum
         print*, 'load_balance_particles: iproc, iproc_parent_block=', &
@@ -1873,7 +1873,7 @@ module Particles_mpicomm
         iblock=iblock+1
       enddo
 !
-      if (ip<=60) then
+      if (ip<=6) then
         print*, 'load_balance_particles: iproc, npar_loc (after ) =', &
             iproc, npar_loc
       endif
