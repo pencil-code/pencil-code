@@ -81,6 +81,16 @@ module Particles_mpicomm
 !  Initially the blocks are set to be all the local processor's bricks.
 !
         nblock_loc=nbx*nby*nbz
+        if (nblock_loc>nblockmax) then
+          if (lroot) then
+            print*, 'initialize_particles_mpicomm: allocated too few blocks!'
+            print*, 'initialize_particles_mpicomm: nblock_loc, nblockmax=', &
+                nblock_loc, nblockmax
+            print*, 'initialize_particles_mpicomm: set nblock_loc higher in'// &
+                ' cparam.local'
+          endif
+          call fatal_error('initialize_particles_mpicomm','')
+        endif
         iproc_parent_block(0:nblock_loc-1)=iproc
         iproc_foster_brick(0:nblock_loc-1)=iproc
         iproc_parent_par(1:npar_loc)=iproc
