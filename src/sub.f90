@@ -102,11 +102,12 @@ module Sub
     module procedure keep_compiler_quiet_p
     module procedure keep_compiler_quiet_bc
     module procedure keep_compiler_quiet_sl
+    module procedure keep_compiler_quiet_i
     module procedure keep_compiler_quiet_i1d
     module procedure keep_compiler_quiet_i2d
-    module procedure keep_compiler_quiet_i
-    module procedure keep_compiler_quiet_l1d
+    module procedure keep_compiler_quiet_i3d
     module procedure keep_compiler_quiet_l
+    module procedure keep_compiler_quiet_l1d
     module procedure keep_compiler_quiet_c
   endinterface
 !
@@ -4293,6 +4294,27 @@ module Sub
 !
       endsubroutine keep_compiler_quiet_sl
 !***********************************************************************
+      subroutine keep_compiler_quiet_i(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+        integer  :: v1, v2, v3, v4
+        optional ::     v2, v3, v4
+!
+        if (NO_WARN) then
+          call error('keep_compiler_quiet_1', &
+              'The world is a disk, and we never got here...')
+          print*,                  v1
+          if (present(v2)) print*, v2
+          if (present(v3)) print*, v3
+          if (present(v4)) print*, v4
+        endif
+!
+      endsubroutine keep_compiler_quiet_i
+!***********************************************************************
       subroutine keep_compiler_quiet_i1d(v1,v2,v3,v4)
 !
 !  Call this to avoid compiler warnings about unused variables.
@@ -4335,26 +4357,26 @@ module Sub
 !
       endsubroutine keep_compiler_quiet_i2d
 !***********************************************************************
-      subroutine keep_compiler_quiet_i(v1,v2,v3,v4)
+      subroutine keep_compiler_quiet_i3d(v1,v2,v3,v4)
 !
 !  Call this to avoid compiler warnings about unused variables.
 !  Optional arguments allow for more variables of the same shape+type.
 !
 !  04-aug-06/wolf: coded
 !
-        integer  :: v1, v2, v3, v4
-        optional ::     v2, v3, v4
+        integer, dimension(:,:,:)  :: v1, v2, v3, v4
+        optional                   ::     v2, v3, v4
 !
         if (NO_WARN) then
-          call error('keep_compiler_quiet_1', &
+          call error('keep_compiler_quiet_i3d', &
               'The world is a disk, and we never got here...')
-          print*,                  v1
-          if (present(v2)) print*, v2
-          if (present(v3)) print*, v3
-          if (present(v4)) print*, v4
+          print*,                  v1(1,1,1)
+          if (present(v2)) print*, v2(1,1,1)
+          if (present(v3)) print*, v3(1,1,1)
+          if (present(v4)) print*, v4(1,1,1)
         endif
 !
-      endsubroutine keep_compiler_quiet_i
+      endsubroutine keep_compiler_quiet_i3d
 !***********************************************************************
       subroutine keep_compiler_quiet_l1d(v1,v2,v3,v4)
 !
