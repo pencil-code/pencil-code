@@ -4863,6 +4863,7 @@ module Chemistry
 !
       integer :: mmm, sgn,sgn1,i,j,jj,k, irho_tmp, nn, nnn, ll, lll
       real :: Mach_num,nscbc_sigma_out
+      logical :: lcorner_x=.false.,lcorner_y=.false.,lcorner_z=.false.
 !
       intent(inout) :: f
       intent(out) :: df
@@ -5050,7 +5051,14 @@ module Chemistry
 !!! Corner points
 !!!
 !!!
-        if ((nxgrid /= 1)) then 
+
+        if ((x(l1)==xyz0(1))  .or. (x(l2)==Lxyz(1)))  lcorner_x=.true.
+        if ((y(mmm)==xyz0(2)) .or. (y(mmm)==Lxyz(2))) lcorner_y=.true.
+        if ((z(n1)==xyz0(3))  .or. (z(n2)==Lxyz(3)))  lcorner_z=.true.
+
+      
+
+        if ((nxgrid /= 1) .and. (lcorner_y) ) then 
            L_1(:,:)=(f(l1:l2,mmm,n1:n2,iux) - cs0_ar(l1:l2,n1:n2))&
              *(grad_pp(:,:,1)-rho0(l1:l2,n1:n2)*cs0_ar(l1:l2,n1:n2)*dui_dxj(:,:,1,1))
            L_2(:,:)=f(l1:l2,mmm,n1:n2,iux)*(cs20_ar(l1:l2,n1:n2) &
@@ -5069,7 +5077,7 @@ module Chemistry
         L_1=0; L_2=0; L_3=0; L_4=0; L_5=0 
        endif
 !
-       if (nzgrid /= 1) then
+       if ((nzgrid /= 1) .and. (lcorner_y)) then
          N_1(:,:)=(f(l1:l2,mmm,n1:n2,iuz) - cs0_ar(l1:l2,n1:n2))&
           *(grad_pp(:,:,3)-rho0(l1:l2,n1:n2)*cs0_ar(l1:l2,n1:n2)*dui_dxj(:,:,3,3))
         
@@ -5092,7 +5100,7 @@ module Chemistry
         N_1=0; N_2=0; N_3=0; N_4=0; N_5=0
        endif
   
-
+       if ((lcorner_x) .and. (lcorner_y)) then
         do i=1,2
          if (i==1) then
             ll=l1; lll=1
@@ -5117,7 +5125,9 @@ module Chemistry
            +drho_prefac(lll,:)*(-M_2(lll,:) &
            +0.5*(gamma0(ll,n1:n2)-1.)*(M_5(lll,:)+M_1(lll,:))) +T_5_z(lll,:)
          enddo
+        endif
 
+      
         do i=1,2 
          if (i==1) then
           nn=n1; nnn=1
@@ -5125,6 +5135,7 @@ module Chemistry
           nn=n2; nnn=nz
          endif
  
+         if ((lcorner_y) .and. (lcorner_z)) then
           df(l1:l2,mmm,nn,irho_tmp) = T_1_x(:,nnn) &
           + drho_prefac(:,nnn)*(M_2(:,nnn)+0.5*(M_5(:,nnn) + M_1(:,nnn))) &
           + drho_prefac(:,nnn)*(N_4(:,nnn)+0.5*(N_5(:,nnn) + N_1(:,nnn)))
@@ -5139,6 +5150,7 @@ module Chemistry
            +0.5*(gamma0(l1:l2,nn)-1.)*(M_5(:,nnn)+M_1(:,nnn))) &
            +drho_prefac(:,nnn)*(-N_4(:,nnn) &
            +0.5*(gamma0(l1:l2,nn)-1.)*(N_5(:,nnn)+N_1(:,nnn)))
+         endif
           
 
         do j=1,2
@@ -5149,7 +5161,7 @@ module Chemistry
          endif
       
 !NNNNNNNN
-   
+       if ((lcorner_x) .and. (lcorner_y) .and. (lcorner_z)) then
         df(ll,mmm,nn,irho_tmp) = &
           drho_prefac(lll,nnn)*(L_2(lll,nnn)+0.5*(L_5(lll,nnn) + L_1(lll,nnn))) &
           + drho_prefac(lll,nnn)*(M_2(lll,nnn)+0.5*(M_5(lll,nnn) + M_1(lll,nnn))) &
@@ -5167,6 +5179,7 @@ module Chemistry
           +0.5*(gamma0(ll,nn)-1.)*(M_5(lll,nnn)+M_1(lll,nnn))) &
            +drho_prefac(lll,nnn)*(-N_4(lll,nnn) &
           +0.5*(gamma0(ll,nn)-1.)*(N_5(lll,nnn)+N_1(lll,nnn)))
+       endif
       enddo
       enddo
 
@@ -5248,6 +5261,8 @@ module Chemistry
 !
       integer :: nnn, sgn,sgn1,i,j,jj,k, mmm,mm,lll,ll, irho_tmp
       real :: Mach_num,nscbc_sigma_out
+
+      logical :: lcorner_x=.false.,lcorner_y=.false.,lcorner_z=.false.
 !
       intent(inout) :: f
       intent(out) :: df
@@ -5431,9 +5446,13 @@ module Chemistry
 !
 ! Corner points
 !
+        if ((x(l1)==xyz0(1))   .or. (x(l2)==Lxyz(1)))   lcorner_x=.true.
+        if ((y(m1)==xyz0(2))   .or. (y(m2)==Lxyz(2)))   lcorner_y=.true.
+        if ((z(nnn)==xyz0(3))  .or. (z(nnn)==Lxyz(3)))  lcorner_z=.true.
+      
 
-      if ((nxgrid /= 1)) then 
-       L_1=(f(l1:l2,m1:m2,nnn,iux) - cs0_ar(l1:l2,m1:m2))&
+       if ((nxgrid /= 1) .and. (lcorner_z)) then 
+         L_1=(f(l1:l2,m1:m2,nnn,iux) - cs0_ar(l1:l2,m1:m2))&
             *(grad_pp(:,:,1)-rho0(l1:l2,m1:m2)*cs0_ar(l1:l2,m1:m2)*dui_dxj(:,:,1,1))
           L_2=f(l1:l2,m1:m2,nnn,iux)*(cs20_ar(l1:l2,m1:m2) &
                   *grad_rho(:,:,1)-grad_pp(:,:,1))
@@ -5452,7 +5471,7 @@ module Chemistry
         L_1=0; L_2=0; L_3=0; L_4=0; L_5=0 
        endif
  
-       if (nygrid /= 1) then
+       if ((nygrid /= 1)  .and. (lcorner_z) ) then
            M_1=(f(l1:l2,m1:m2,nnn,iuy) - cs0_ar(l1:l2,m1:m2))&
             *(grad_pp(:,:,2)-rho0(l1:l2,m1:m2)*cs0_ar(l1:l2,m1:m2)*dui_dxj(:,:,2,2))
           M_3=f(l1:l2,m1:m2,nnn,iuy)*dui_dxj(:,:,1,2)
@@ -5472,7 +5491,7 @@ module Chemistry
 
 
 
-       
+        if ((lcorner_x) .and. (lcorner_z)) then
         do j=1,2
          if (j==1) then
             ll=l1; lll=1
@@ -5496,6 +5515,7 @@ module Chemistry
            + drho_prefac(lll,:)*(-N_2(lll,:) &
            + 0.5*(gamma0(ll,m1:m2)-1.)*(N_5(lll,:)+N_1(lll,:)))
        enddo
+       endif
 
 
 
@@ -5507,7 +5527,7 @@ module Chemistry
           mm=m2; mmm=ny
          endif
 
-
+        if ((lcorner_y) .and. (lcorner_z)) then
          df(l1:l2,mm,nnn,irho_tmp) = T_1_x(:,mmm)&
           + drho_prefac(:,mmm)*(M_2(:,mmm)+0.5*(M_5(:,mmm) + M_1(:,mmm))) &
           + drho_prefac(:,mmm)*(N_2(:,mmm)+0.5*(N_5(:,mmm) &
@@ -5522,8 +5542,11 @@ module Chemistry
            +0.5*(gamma0(l1:l2,mm)-1.)*(M_5(:,mmm)+M_1(:,mmm))) &
            +drho_prefac(:,mmm)*(-N_2(:,mmm) &
            +0.5*(gamma0(l1:l2,mm)-1.)*(N_5(:,mmm)+N_1(:,mmm)))
+        endif
 
-        do j=1,2
+
+        if ((lcorner_x) .and. (lcorner_y) .and. (lcorner_z)) then
+         do j=1,2
          if (j==1) then
             ll=l1; lll=1
          elseif (j==2) then
@@ -5532,11 +5555,11 @@ module Chemistry
 
       
 !NNNNNNNN
-
-        df(ll,mm,nnn,irho_tmp) = &
-          drho_prefac(lll,mmm)*(L_2(lll,mmm)+0.5*(L_5(lll,mmm) + L_1(lll,mmm))) &
-        + drho_prefac(lll,mmm)*(M_2(lll,mmm)+0.5*(M_5(lll,mmm) + M_1(lll,mmm))) &
-        + drho_prefac(lll,mmm)*(N_2(lll,mmm)+0.5*(N_5(lll,mmm) + N_1(lll,mmm)))
+       
+         df(ll,mm,nnn,irho_tmp) = &
+           drho_prefac(lll,mmm)*(L_2(lll,mmm)+0.5*(L_5(lll,mmm) + L_1(lll,mmm))) &
+         + drho_prefac(lll,mmm)*(M_2(lll,mmm)+0.5*(M_5(lll,mmm) + M_1(lll,mmm))) &
+         + drho_prefac(lll,mmm)*(N_2(lll,mmm)+0.5*(N_5(lll,mmm) + N_1(lll,mmm)))
 
          df(ll,mm,nnn,iux) =  -1./&
            (2.*rho0(ll,mm)*cs0_ar(ll,mm))*(L_5(lll,mmm) - L_1(lll,mmm)) &
@@ -5551,9 +5574,11 @@ module Chemistry
            +0.5*(gamma0(ll,mm)-1.)*(M_5(lll,mmm)+M_1(lll,mmm))) &
            +drho_prefac(lll,mmm)*(-N_2(lll,mmm) &
            +0.5*(gamma0(ll,mm)-1.)*(N_5(lll,mmm)+N_1(lll,mmm)))
-
-      enddo
-      enddo
+       enddo
+       endif
+       enddo 
+       
+      
 
      endif
 
