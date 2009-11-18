@@ -1023,9 +1023,10 @@ module Particles_mpicomm
       integer, dimension (0:ncpus-1) :: nmig_leave, nmig_enter
       integer, dimension (0:ncpus-1) :: ileave_low, ileave_high
       integer, dimension (0:ncpus-1) :: iproc_rec_count
+      integer, dimension (0:nblockmax-1) :: ibrick_global_arr
       integer :: ix0, iy0, iz0, ipx0, ipy0, ipz0, ibx0, iby0, ibz0
       integer :: ibrick_rec, iproc_rec, nmig_enter_proc, nmig_leave_proc
-      integer :: i, j, k, iblock
+      integer :: i, j, k, iblock, iblockl, iblocku, iblockm, ibrick_global_rec
       integer :: nmig_leave_total, ileave_high_max
       integer :: itag_nmig=500, itag_ipar=510, itag_fp=520, itag_dfp=530
       logical :: lredo, lredo_all, lmigrate
@@ -1037,6 +1038,11 @@ module Particles_mpicomm
         dx1=1/dx; dy1=1/dy; dz1=1/dz
         lfirstcall=.false.
       endif
+!
+      call sort_blocks()
+      ibrick_global_arr(0:nblock_loc-1)= &
+          iproc_parent_block(0:nblock_loc-1)*nbricks+ &
+          ibrick_parent_block(0:nblock_loc-1)
 !
 !  Possible to iterate until all particles have migrated.
 !
@@ -1081,13 +1087,21 @@ module Particles_mpicomm
           ibrick_rec=ibx0+iby0*nbx+ibz0*nbx*nby
           iproc_rec =ipx0+ipy0*nprocx+ipz0*nprocx*nprocy
           lmigrate=.true.
-          do iblock=0,nblock_loc-1
-            if (iproc_parent_block(iblock)==iproc_rec .and. &
-                ibrick_parent_block(iblock)==ibrick_rec) then
-              lmigrate=.false.
-              exit
+          ibrick_global_rec=iproc_rec*nbricks+ibrick_rec
+!
+!  Find nearest block by bisection.
+!
+          iblockl=0; iblocku=nblock_loc-1
+          do while (abs(iblocku-iblockl)>1)
+            iblockm=(iblockl+iblocku)/2
+            if (ibrick_global_rec>ibrick_global_arr(iblockm)) then
+              iblockl=iblockm
+            else
+              iblocku=iblockm
             endif
           enddo
+          if (ibrick_global_rec==ibrick_global_arr(iblockl) .or. &
+              ibrick_global_rec==ibrick_global_arr(iblocku)) lmigrate=.false.
 !
 !  Open up new block if brick where particle has moved is not adopted by
 !  any processor. This may happen if the brick was previously empty.
@@ -1096,6 +1110,7 @@ module Particles_mpicomm
             if (ip<=6) then
               print'(A,i5,A,i5)', 'migrate_particles_proc_to_block: '// &
                   'opened brick ', ibrick_rec, ' at processor ', iproc
+                  print*, ipar(k)
             endif
             iproc_parent_par(k)=iproc
             ibrick_parent_par(k)=ibrick_rec
@@ -1125,6 +1140,10 @@ module Particles_mpicomm
             xb(:,nblock_loc-1)=xbrick(:,ibrick_rec)
             yb(:,nblock_loc-1)=ybrick(:,ibrick_rec)
             zb(:,nblock_loc-1)=zbrick(:,ibrick_rec)
+            call sort_blocks()
+            ibrick_global_arr(0:nblock_loc-1)= &
+                iproc_parent_block(0:nblock_loc-1)*nbricks+ &
+            ibrick_parent_block(0:nblock_loc-1)
             lmigrate=.false.
           endif
 !
@@ -1357,7 +1376,7 @@ module Particles_mpicomm
       integer :: ipvar, nblock_send, npar_loc_tmp
       integer :: k1_send, k2_send
 !
-      if (ip<=6) then
+      if (ip<=60) then
         print*, 'load_balance_particles: iproc, npar_loc (before) =', &
             iproc, npar_loc
       endif
@@ -1873,7 +1892,7 @@ module Particles_mpicomm
         iblock=iblock+1
       enddo
 !
-      if (ip<=6) then
+      if (ip<=60) then
         print*, 'load_balance_particles: iproc, npar_loc (after ) =', &
             iproc, npar_loc
       endif
@@ -1976,5 +1995,98 @@ module Particles_mpicomm
       close(lun_output)
 !
     endsubroutine input_blocks
+!***********************************************************************
+    subroutine sort_blocks()
+!
+!  Sort the blocks by parent processor and by parent brick index.
+!
+!  04-nov-09/anders: coded
+!
+      integer, dimension (0:ncpus-1) :: nblock_iproc, iiproc, i1_iproc, i2_iproc
+      integer, dimension (0:nbricks-1) :: nblock_ibrick, iibrick
+      integer, dimension (0:nbricks-1) :: i1_ibrick, i2_ibrick
+      integer, dimension (0:nblockmax-1) :: i_sorted_proc, i_sorted_brick
+      integer :: i, iproc2, ib
+!
+      nblock_iproc=0
+!
+!  Calculate the number of blocks from each processor.
+!
+      do i=0,nblock_loc-1
+        nblock_iproc(iproc_parent_block(i))= &
+            nblock_iproc(iproc_parent_block(i))+1
+      enddo
+!
+!  Calculate beginning and ending block index for each processor.
+!
+      i=0
+      do iproc2=0,ncpus-1
+        if (nblock_iproc(iproc2)/=0) then
+          i1_iproc(iproc2)=i
+          i2_iproc(iproc2)=i1_iproc(iproc2)+nblock_iproc(iproc2)-1
+          i=i+nblock_iproc(iproc2)
+        else
+          i1_iproc(iproc2)=0
+          i2_iproc(iproc2)=0
+        endif
+      enddo
+!
+!  Sort blocks according to parent processor.
+!
+      iiproc=i1_iproc
+      do i=0,nblock_loc-1
+        i_sorted_proc(iiproc(iproc_parent_block(i)))=i
+        iiproc(iproc_parent_block(i))=iiproc(iproc_parent_block(i))+1
+      enddo
+      iproc_parent_block(0:nblock_loc-1)= &
+          iproc_parent_block(i_sorted_proc(0:nblock_loc-1))
+      ibrick_parent_block(0:nblock_loc-1)= &
+          ibrick_parent_block(i_sorted_proc(0:nblock_loc-1))
+      xb(:,0:nblock_loc-1)=xb(:,i_sorted_proc(0:nblock_loc-1))
+      yb(:,0:nblock_loc-1)=yb(:,i_sorted_proc(0:nblock_loc-1))
+      zb(:,0:nblock_loc-1)=zb(:,i_sorted_proc(0:nblock_loc-1))
+!
+!  Calculate the number of particles in each brick.
+!
+      do iproc2=0,ncpus-1
+        nblock_ibrick=0
+        if (nblock_iproc(iproc2)/=0) then
+          do i=i1_iproc(iproc2),i2_iproc(iproc2)
+            nblock_ibrick(ibrick_parent_block(i))= &
+                nblock_ibrick(ibrick_parent_block(i))+1
+          enddo
+!
+!  Calculate beginning and ending particle index for each brick.
+!
+          i=i1_iproc(iproc2)
+          do ib=0,nbricks-1
+            if (nblock_ibrick(ib)/=0) then
+              i1_ibrick(ib)=i
+              i2_ibrick(ib)=i1_ibrick(ib)+nblock_ibrick(ib)-1
+              i=i+nblock_ibrick(ib)
+            else
+              i1_ibrick(ib)=0
+              i2_ibrick(ib)=0
+            endif
+          enddo
+          iibrick=i1_ibrick
+          do i=i1_iproc(iproc2),i2_iproc(iproc2)
+            i_sorted_brick(iibrick(ibrick_parent_block(i)))=i
+            iibrick(ibrick_parent_block(i))=iibrick(ibrick_parent_block(i))+1
+          enddo
+        endif
+      enddo
+!
+!  Sort blocks according to parent brick.
+!
+      iproc_parent_block(0:nblock_loc-1)= &
+          iproc_parent_block(i_sorted_brick(0:nblock_loc-1))
+      ibrick_parent_block(0:nblock_loc-1)= &
+          ibrick_parent_block(i_sorted_brick(0:nblock_loc-1))
+      xb(:,0:nblock_loc-1)=xb(:,i_sorted_brick(0:nblock_loc-1))
+      yb(:,0:nblock_loc-1)=yb(:,i_sorted_brick(0:nblock_loc-1))
+      zb(:,0:nblock_loc-1)=zb(:,i_sorted_brick(0:nblock_loc-1))
+!
+    endsubroutine sort_blocks
 !***********************************************************************
 endmodule Particles_mpicomm

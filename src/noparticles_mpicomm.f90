@@ -124,6 +124,24 @@ module Particles_mpicomm
 !
     endsubroutine migrate_particles
 !***********************************************************************
+    subroutine load_balance_particles(f,fp,ipar)
+!   
+!  This subroutine counts particles in the bricks at the local processor
+!  and distributes the bricks in such a away that there is approximately
+!  equal number of particles per processor.
+!   
+!  16-nov-09/anders: dummy
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mpvar) :: fp
+      integer, dimension (mpar_loc) :: ipar
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ipar)
+!   
+    endsubroutine load_balance_particles
+!***********************************************************************
     subroutine output_blocks(filename)
 !
 !  Write block domain decomposition to file.
@@ -148,22 +166,12 @@ module Particles_mpicomm
 !
     endsubroutine input_blocks
 !***********************************************************************
-    subroutine load_balance_particles(f,fp,ipar)
-!   
-!  This subroutine counts particles in the bricks at the local processor
-!  and distributes the bricks in such a away that there is approximately
-!  equal number of particles per processor.
-!   
-!  16-nov-09/anders: dummy
+    subroutine sort_blocks()
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mpvar) :: fp
-      integer, dimension (mpar_loc) :: ipar
+!  Sort the blocks by parent processor and by parent brick index.
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(fp)
-      call keep_compiler_quiet(ipar)
-!   
-    endsubroutine load_balance_particles
+!  18-nov-09/anders: dummy
+!
+    endsubroutine sort_blocks
 !***********************************************************************
 endmodule Particles_mpicomm
