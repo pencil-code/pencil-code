@@ -85,14 +85,10 @@ module Lorenz_gauge
 !  initialise lorenz_gauge condition; called from start.f90
 !  06-oct-2003/tony: coded
 !
-      use Initcond
-      use Mpicomm
-      use Sub
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
       intent(inout) :: f
-
+!
       call keep_compiler_quiet(f)
 !
     endsubroutine init_lorenz_gauge
@@ -149,51 +145,56 @@ module Lorenz_gauge
 !
 !   06-oct-03/tony: coded
 !
-      use Diagnostics
-      use Mpicomm
-      use Sub
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-!
-      real, dimension (nx,3) :: gphi
-      real, dimension (nx) :: phi,del2phi
 !
       intent(in) :: f,p
       intent(inout) :: df
 !
 !  identify module and boundary conditions
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
-
+!
     endsubroutine dlorenz_gauge_dt
 !***********************************************************************
     subroutine read_lorenz_gauge_init_pars(unit,iostat)
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
-
+!
+      call keep_compiler_quiet(unit,iostat)      
+!
     endsubroutine read_lorenz_gauge_init_pars
 !***********************************************************************
     subroutine write_lorenz_gauge_init_pars(unit)
+!
       integer, intent(in) :: unit
 !
 !  write name list
 !
+!
+      call keep_compiler_quiet(unit)
+!
     endsubroutine write_lorenz_gauge_init_pars
 !***********************************************************************
     subroutine read_lorenz_gauge_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
+      call keep_compiler_quiet(unit,iostat)      
+!
     endsubroutine read_lorenz_gauge_run_pars
 !***********************************************************************
     subroutine write_lorenz_gauge_run_pars(unit)
+!
       integer, intent(in) :: unit
-
+!
+      call keep_compiler_quiet(unit)
+!
     endsubroutine write_lorenz_gauge_run_pars
 !***********************************************************************
     subroutine rprint_lorenz_gauge(lreset,lwrite)
@@ -202,14 +203,13 @@ module Lorenz_gauge
 !
 !   06-oct-03/tony: coded
 !
-      use Diagnostics
-      use Sub
+!   define counters
 !
-!  define counters
-!
-      integer :: iname,inamez
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+!
+      call keep_compiler_quiet(lreset)  
+      call keep_compiler_quiet(lwrite)  
 !
     endsubroutine rprint_lorenz_gauge
 !***********************************************************************
@@ -222,9 +222,8 @@ module Lorenz_gauge
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (slice_data) :: slices
 !
-      integer :: inamev
-!
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices)
 !
     endsubroutine get_slices_lorenz_gauge
 !***********************************************************************
