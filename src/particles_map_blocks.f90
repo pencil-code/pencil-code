@@ -73,7 +73,6 @@ module Particles_map
 !  Sort blocks by parent processor and by parent brick and create global
 !  brick array.
 !
-      call sort_blocks()
       ibrick_global_arr(0:nblock_loc-1)= &
           iproc_parent_block(0:nblock_loc-1)*nbricks+ &
           ibrick_parent_block(0:nblock_loc-1)
@@ -405,6 +404,7 @@ module Particles_map
 !
       if (npar_loc>0) then
         ineargrid(1:npar_loc,:)=ineargrid(ipark_sorted(1:npar_loc),:)
+        inearblock(1:npar_loc)=inearblock(ipark_sorted(1:npar_loc))
         ipar(1:npar_loc)=ipar(ipark_sorted(1:npar_loc))
         ibrick_parent_par(1:npar_loc)= &
             ibrick_parent_par(ipark_sorted(1:npar_loc))

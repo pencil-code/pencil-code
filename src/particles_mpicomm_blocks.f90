@@ -1039,10 +1039,8 @@ module Particles_mpicomm
         lfirstcall=.false.
       endif
 !
-!  Sort blocks by parent processor and by parent brick and create global
-!  brick array.
+!  Create global brick array.
 !
-      call sort_blocks()
       ibrick_global_arr(0:nblock_loc-1)= &
           iproc_parent_block(0:nblock_loc-1)*nbricks+ &
           ibrick_parent_block(0:nblock_loc-1)
@@ -1874,6 +1872,10 @@ module Particles_mpicomm
         endif
         ibrick=ibrick+1
       enddo
+!
+!  Sort the blocks by parent processors and by parent brick index.
+!
+      call sort_blocks()
 !
 !  Make a list of parents, for communicating migrating particles later.
 !
