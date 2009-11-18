@@ -109,8 +109,8 @@ module Density
   integer :: idiag_lnrho2m=0    ! DIAG_DOC:
   integer :: idiag_drho2m=0     ! DIAG_DOC:
   integer :: idiag_drhom=0      ! DIAG_DOC:
-  integer :: idiag_rhomin=0     ! DIAG_DOC:
-  integer :: idiag_rhomax=0     ! DIAG_DOC:
+  integer :: idiag_rhomin=0     ! DIAG_DOC: $\min(\rho)$
+  integer :: idiag_rhomax=0     ! DIAG_DOC: $\max(\rho)$
   integer :: idiag_ugrhom=0     ! DIAG_DOC: $\left<\uv\cdot\nabla\varrho\right>$
   integer :: idiag_uglnrhom=0   ! DIAG_DOC:
   integer :: idiag_lnrhomphi=0  ! PHIAVG_DOC: $\left<\ln\varrho\right>_\varphi$
@@ -1756,13 +1756,13 @@ module Density
         if (lentropy.and.(.not.pretend_lnTT)) then
           df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + f(l1:l2,m,n,iss)*tmp
         elseif (lentropy.and.pretend_lnTT) then
-          call warning('dlnrho_dt', &
+          if (headtt) call warning('dlnrho_dt', &
               'massdiff_fix not yet implemented for pretend_lnTT')
         elseif (ltemperature.and.(.not. ltemperature_nolog)) then
-          call warning('dlnrho_dt', &
+          if (headtt) call warning('dlnrho_dt', &
               'massdiff_fix not yet implemented for ltemperature')
         elseif (ltemperature.and.ltemperature_nolog) then
-          call warning('dlnrho_dt', &
+          if (headtt) call warning('dlnrho_dt', &
               'massdiff_fix not yet implemented for ltemperature_nolog')
         endif
       endif
