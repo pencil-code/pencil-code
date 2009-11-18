@@ -1612,85 +1612,88 @@ module Particles_mpicomm
         iblock=0
         do while (iblock<nblock_loc)
           iproc_recv=iproc_grandparent(iblock)
-          iblock1=iblock
-          iblock2=iblock
-          npar_recv=npblock(iblock1)
-          do while (iblock2<nblock_loc-1)
-            if (iproc_grandparent(iblock2+1)==iproc_recv) then
-              iblock2=iblock2+1
-              npar_recv=npar_recv+npblock(iblock2)
-            else
-              if (iproc_grandparent(iblock2+1)==iproc) then
-                iblock2=iblock2+1
-              else
-                exit
-              endif
-            endif
-          enddo
+          npar_recv=npblock(iblock)
           if (iproc/=iproc_recv) then
+            ibrick_global= &
+                iproc_parent_block(iblock)*nbricks+ibrick_parent_block(iblock)
             call MPI_IRECV(fp(npar_loc_tmp+1:npar_loc_tmp+npar_recv,ipvar), &
                 npar_recv, MPI_DOUBLE_PRECISION, iproc_recv, &
-                tag_id+iproc*ncpus+iproc_recv, &
-                MPI_COMM_WORLD, ireq, ierr)
+                tag_id+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
             nreq=nreq+1
             ireq_array(nreq)=ireq
-            if (ipvar==1) then
-              call MPI_IRECV(ipar(npar_loc_tmp+1:npar_loc_tmp+npar_recv), &
-                  npar_recv, MPI_INTEGER, iproc_recv, &
-                  tag_id+100+iproc*ncpus+iproc_recv, &
-                  MPI_COMM_WORLD, ireq, ierr)
-              nreq=nreq+1
-              ireq_array(nreq)=ireq
-            endif
             npar_loc_tmp=npar_loc_tmp+npar_recv
           endif
-          iblock=iblock2+1
+          iblock=iblock+1
         enddo
 !
-!  Initiate non-blocking send.
+!  Initiate non-blocking send of particles.
 !
         iblock=0
         do while (iblock<nblock_loc_old)
           iproc_send=iproc_grandchild(iblock)
-          iblock1=iblock
-          iblock2=iblock
-          k1_send=k1_iblock(iblock1)
-          k2_send=k2_iblock(iblock2)
-          do while (iblock2<nblock_loc_old-1)
-            if (iproc_grandchild(iblock2+1)==iproc_send) then
-              iblock2=iblock2+1
-              if (k2_iblock(iblock2)/=0) k2_send=k2_iblock(iblock2)
-            else
-              if (iproc_grandchild(iblock2+1)/=-1) exit
-              iblock2=iblock2+1
-            endif
-          enddo
+          k1_send=k1_iblock(iblock)
+          k2_send=k2_iblock(iblock)
           if (iproc_send/=iproc .and. iproc_send/=-1) then
+            ibrick_global= &
+                iproc_parent_old(iblock)*nbricks+ibrick_parent_old(iblock)
             call MPI_ISEND(fp(k1_send:k2_send,ipvar),(k2_send-k1_send+1), &
-                MPI_DOUBLE_PRECISION, iproc_send, &
-                tag_id+iproc_send*ncpus+iproc, &
+                MPI_DOUBLE_PRECISION, iproc_send, tag_id+ibrick_global, &
                 MPI_COMM_WORLD, ireq, ierr)
             nreq=nreq+1
             ireq_array(nreq)=ireq
-            if (ipvar==1) then
-              call MPI_ISEND(ipar(k1_iblock(iblock1):k2_iblock(iblock2)), &
-                  (k2_send-k1_send+1), &
-                  MPI_INTEGER, iproc_send, &
-                  tag_id+100+iproc_send*ncpus+iproc, &
-                  MPI_COMM_WORLD, ireq, ierr)
-              nreq=nreq+1
-              ireq_array(nreq)=ireq
-            endif
           endif
-          iblock=iblock2+1
+          iblock=iblock+1
         enddo
 !
-!  Make sure that non-blocking communication has finished before continuing.
+!  Make sure that non-blocking communication of particles has finished before
+!  continuing.
 !
         do ireq=1,nreq
           call MPI_WAIT(ireq_array(ireq),stat,ierr)
         enddo
 !
+      enddo
+!
+!  We continue to send the index number of the particles.
+!
+      npar_loc_tmp=npar_loc
+      nreq=0
+      iblock=0
+      do while (iblock<nblock_loc)
+        iproc_recv=iproc_grandparent(iblock)
+        npar_recv=npblock(iblock)
+        if (iproc/=iproc_recv) then
+          ibrick_global= &
+              iproc_parent_block(iblock)*nbricks+ibrick_parent_block(iblock)
+          call MPI_IRECV(ipar(npar_loc_tmp+1:npar_loc_tmp+npar_recv), &
+              npar_recv, MPI_INTEGER, iproc_recv, &
+              tag_id+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
+          nreq=nreq+1
+          ireq_array(nreq)=ireq
+          npar_loc_tmp=npar_loc_tmp+npar_recv
+        endif
+        iblock=iblock+1
+      enddo
+!
+      iblock=0
+      do while (iblock<nblock_loc_old)
+        iproc_send=iproc_grandchild(iblock)
+        k1_send=k1_iblock(iblock)
+        k2_send=k2_iblock(iblock)
+        if (iproc_send/=iproc .and. iproc_send/=-1) then
+          ibrick_global= &
+              iproc_parent_old(iblock)*nbricks+ibrick_parent_old(iblock)
+          call MPI_ISEND(ipar(k1_send:k2_send),(k2_send-k1_send+1), &
+              MPI_INTEGER, iproc_send, tag_id+ibrick_global, &
+              MPI_COMM_WORLD, ireq, ierr)
+          nreq=nreq+1
+          ireq_array(nreq)=ireq
+        endif
+        iblock=iblock+1
+      enddo
+!
+      do ireq=1,nreq
+        call MPI_WAIT(ireq_array(ireq),stat,ierr)
       enddo
 !
 !  Increase particle number according to received blocks.
@@ -1776,25 +1779,21 @@ module Particles_mpicomm
       iblock=0
       do while (iblock<nblock_loc_old)
         iproc_send=iproc_grandchild(iblock)
-        iblock1=iblock
-        iblock2=iblock
-        k1_send=k1_iblock(iblock1)
-        k2_send=k2_iblock(iblock2)
-        do while (iblock2<nblock_loc_old-1 .and. &
-            iproc_grandchild(iblock2+1)==iproc_send)
-          iblock2=iblock2+1
-          if (k2_iblock(iblock2)/=0) then
-            if (k1_send==0) k1_send=k1_iblock(iblock2)
-            k2_send=k2_iblock(iblock2)
-          endif
-        enddo
+        k1_send=k1_iblock(iblock)
+        k2_send=k2_iblock(iblock)
         if (iproc_send/=iproc .and. iproc_send/=-1) then
           nblock_send=k2_send-k1_send+1
           fp(k1_send:npar_loc-nblock_send,:)=fp(k2_send+1:npar_loc,:)
           ipar(k1_send:npar_loc-nblock_send)=ipar(k2_send+1:npar_loc)
           npar_loc=npar_loc-nblock_send
+          k1_iblock(iblock)=0
+          k2_iblock(iblock)=0
+          k1_iblock(iblock+1:nblock_loc_old-1)= &
+              k1_iblock(iblock+1:nblock_loc_old-1)-nblock_send
+          k2_iblock(iblock+1:nblock_loc_old-1)= &
+              k2_iblock(iblock+1:nblock_loc_old-1)-nblock_send
         endif
-        iblock=iblock2+1
+        iblock=iblock+1
       enddo
 !
 !  Make a list of foster parents, for communicating migrating particles later.
