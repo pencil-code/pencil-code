@@ -70,6 +70,9 @@ module Particles_map
         lfirstcall=.false.
       endif
 !
+!  Sort blocks by parent processor and by parent brick and create global
+!  brick array.
+!
       call sort_blocks()
       ibrick_global_arr(0:nblock_loc-1)= &
           iproc_parent_block(0:nblock_loc-1)*nbricks+ &
@@ -389,10 +392,6 @@ module Particles_map
       integer :: k, ibrick, iblock, iproc2
 !
       intent(inout) :: fp,ineargrid,dfp,ipar
-!
-!  Sort blocks by parent processor and by parent brick.
-!
-      call sort_blocks()
 !
 !  Determine beginning and ending index of particles from each processor.
 !
