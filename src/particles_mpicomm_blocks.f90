@@ -1791,6 +1791,7 @@ module Particles_mpicomm
         if (iproc_send/=iproc .and. iproc_send/=-1) then
           nblock_send=k2_send-k1_send+1
           fp(k1_send:npar_loc-nblock_send,:)=fp(k2_send+1:npar_loc,:)
+          ipar(k1_send:npar_loc-nblock_send)=ipar(k2_send+1:npar_loc)
           npar_loc=npar_loc-nblock_send
         endif
         iblock=iblock2+1
