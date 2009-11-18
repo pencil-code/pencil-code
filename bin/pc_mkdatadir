@@ -40,6 +40,8 @@ else if (($hn =~ fe*) && ($USER =~ brandenb)) then
   set str='s/people\/disk2/wkspace3/g'
 else if ($hn =~ fe*) then
   set str='s/people\/disk2/wkspace3/g'
+else if (($hn =~ node1309) && ($USER =~ csc01114)) then
+  set str=''
 else if ($hn =~ node[0-9]*) then
   set str='s/clx\/userhpe\/'$USER'/scratch\/'$USER'\/DATA/g'
 else if ($hn =~ sp[0-9]*) then
