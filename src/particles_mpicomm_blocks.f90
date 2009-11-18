@@ -39,6 +39,7 @@ module Particles_mpicomm
   real, dimension (mxb,myb,mzb,mvar,0:nblockmax-1) :: dfb
 !
   integer, dimension (mpar_loc) :: ibrick_parent_par, iproc_parent_par
+  integer, dimension (mpar_loc) :: inearblock
   integer, dimension (0:nblockmax-1) :: ibrick_parent_block, iproc_parent_block
   integer, dimension (0:nbricks-1) :: iproc_foster_brick
   integer, dimension (ncpus) :: iproc_parent_list, iproc_foster_list
@@ -1089,7 +1090,7 @@ module Particles_mpicomm
           lmigrate=.true.
           ibrick_global_rec=iproc_rec*nbricks+ibrick_rec
 !
-!  Find nearest block by bisection.
+!  Find nearest block by binary search.
 !
           iblockl=0; iblocku=nblock_loc-1
           do while (abs(iblocku-iblockl)>1)

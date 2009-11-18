@@ -56,7 +56,10 @@ module Particles_map
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       double precision, save :: dx1, dy1, dz1
+      integer, dimension (0:nblockmax-1) :: ibrick_global_arr
       integer :: k, ix0, iy0, iz0, ibx0, iby0, ibz0, ipx0, ipy0, ipz0
+      integer :: iblockl, iblocku, iblockm, ibrick_global_par
+      logical :: lbinary_search
       logical, save :: lfirstcall=.true.
 !
       intent(in)  :: fp
@@ -66,6 +69,11 @@ module Particles_map
         dx1=1/dx; dy1=1/dy; dz1=1/dz
         lfirstcall=.false.
       endif
+!
+      call sort_blocks()
+      ibrick_global_arr(0:nblock_loc-1)= &
+          iproc_parent_block(0:nblock_loc-1)*nbricks+ &
+          ibrick_parent_block(0:nblock_loc-1)
 !
 !  Default values in case of missing directions.
 !
@@ -108,6 +116,42 @@ module Particles_map
         ineargrid(k,1)=ix0; ineargrid(k,2)=iy0; ineargrid(k,3)=iz0
         ibrick_parent_par(k)=ibx0+iby0*nbx+ibz0*nbx*nby
         iproc_parent_par(k) =ipx0+ipy0*nprocx+ipz0*nprocx*nprocy
+!
+!  Check if nearest block is the same as for previous particle.
+!
+        lbinary_search=.true.
+        if (k>=2) then
+          if (iproc_parent_par(k)==iproc_parent_par(k-1) .and. &
+              ibrick_parent_par(k)==ibrick_parent_par(k-1)) then
+            inearblock(k)=inearblock(k-1)
+            lbinary_search=.false.
+          endif
+        endif
+!
+!  Find nearest block by binary search.
+!
+        if (lbinary_search) then
+          ibrick_global_par=iproc_parent_par(k)*nbricks+ibrick_parent_par(k)
+          iblockl=0; iblocku=nblock_loc-1
+          do while (abs(iblocku-iblockl)>1)
+            iblockm=(iblockl+iblocku)/2
+            if (ibrick_global_par>ibrick_global_arr(iblockm)) then
+              iblockl=iblockm
+            else
+              iblocku=iblockm
+            endif
+          enddo
+          if (ibrick_global_arr(iblockl)==ibrick_global_par) then
+            inearblock(k)=iblockl
+          elseif (ibrick_global_arr(iblocku)==ibrick_global_par) then
+            inearblock(k)=iblocku
+          else
+            print*, 'map_nearest_grid: particle does not belong to any '// &
+                 'adopted block'
+            print*, 'map_nearest_grid: it, itsub, iproc, ipar=', &
+                 it, itsub, iproc, ipar(k)
+          endif
+        endif
       enddo
 !
     endsubroutine map_nearest_grid
