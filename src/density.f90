@@ -162,6 +162,7 @@ module Density
       use Gravity, only: lnumerical_equilibrium
       use Mpicomm
       use SharedVariables
+      use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
@@ -366,6 +367,8 @@ module Density
 !  that the module can request the right pencils.
 !
       if (borderlnrho/='nothing') call request_border_driving()
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine initialize_density
 !***********************************************************************
@@ -990,12 +993,12 @@ module Density
 !
       real, dimension (mx,my,mz,mfarray) :: f
       intent(in) :: f
-
+!
       real :: fact
       real, dimension(nx,3) :: gradlnrho
       real, dimension(nz,3) :: temp
-
-      integer :: j,nxy=nxgrid*nygrid,nl,ml
+!
+      integer :: j,nxy=nxgrid*nygrid
 !
 !  caclculate mean gradient of lnrho
 !
@@ -1054,7 +1057,6 @@ module Density
       use Gravity, only: gravz
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: p
       real, dimension (mz) :: stp
       real :: tmp,mpoly,zint,zbot,zblend,beta1,cs2int,lnrhoint
       integer :: isoth
@@ -1236,7 +1238,7 @@ module Density
       real, dimension (nx) :: lnrho,cs2
       real, dimension (nx,3) :: glnrho
       real, dimension (nx,3) :: gg_mn
-      integer :: i,j
+      integer :: j
 
       do m=m1,m2
       do n=n1,n2
@@ -1372,7 +1374,7 @@ module Density
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      integer :: i, mm, nn
+      integer :: i
 !
       intent(inout) :: f,p
 !
@@ -1557,6 +1559,7 @@ module Density
       intent(inout) :: p
 
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_density_after_mn
 !***********************************************************************
@@ -1950,13 +1953,10 @@ module Density
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx)   :: strat,tmp1,tmp2,cs2
       real, dimension (mx)   :: rr_sph,rr,rr_cyl,lnrhomid
-      real                   :: ptlaw,cp1,rmid,lat,g0
+      real                   :: ptlaw,rmid,lat,g0
       integer, pointer       :: iglobal_cs2,iglobal_glnTT
-      integer                :: i,ics2
+      integer                :: ics2
       logical                :: lheader,lenergy,lpresent_zed
-!
-      real, dimension(nx,3)  :: gpotself
-      real, dimension(nx)    :: usg
 !
       if (lroot) print*,&
            'local isothermal_density: locally isothermal approximation'
@@ -2131,7 +2131,7 @@ module Density
       real, dimension (nx)   :: cs2,tmp1,tmp2,corr,gslnrho,gslnTT
       integer                :: i,ics2
       logical                :: lheader,lenergy
-      real                   :: cp1,ptlaw
+      real                   :: ptlaw
 !
       if (lroot) print*,'Correcting density gradient on the '//&
            'centrifugal force'
