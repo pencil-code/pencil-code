@@ -45,9 +45,9 @@ module Density
   real :: wdamp=0.,density_floor=-1.0
   real :: mass_source_Mdot=0.,mass_source_sigma=0.
   real :: radial_percent_smooth=10.,rshift=0.0
-  real, dimension(3) :: diffrho_hyper3_aniso=0.
-  real, dimension(mz) :: lnrho_init_z=0.0,del2lnrho_init_z=0.0
-  real, dimension(mz) :: dlnrhodz_init_z=0.0, glnrho2_init_z=0.0
+  real, dimension (3) :: diffrho_hyper3_aniso=0.
+  real, dimension (mz) :: lnrho_init_z=0.0,del2lnrho_init_z=0.0
+  real, dimension (mz) :: dlnrhodz_init_z=0.0, glnrho2_init_z=0.0
   real, target :: plaw=0.0
   real :: lnrho_z_shift=0.0
 
@@ -995,8 +995,8 @@ module Density
       intent(in) :: f
 !
       real :: fact
-      real, dimension(nx,3) :: gradlnrho
-      real, dimension(nz,3) :: temp
+      real, dimension (nx,3) :: gradlnrho
+      real, dimension (nz,3) :: temp
 !
       integer :: j,nxy=nxgrid*nygrid
 !
@@ -1834,9 +1834,9 @@ module Density
       use BorderProfiles,  only: border_driving,set_border_initcond
       use Mpicomm,         only: stop_it
 !
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      real, dimension(nx) :: f_target
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx) :: f_target
       type (pencil_case)  :: p
 !
       select case(borderlnrho)
@@ -2223,8 +2223,8 @@ module Density
 !
       use Sub, only: get_radial_distance
 !
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx) :: rr_sph,rr_cyl,arg
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx) :: rr_sph,rr_cyl,arg
       real :: rmid,fac
       logical :: lheader
 !
@@ -2264,11 +2264,11 @@ module Density
       use Boundcond,   only:update_ghosts
       use Mpicomm,     only:stop_it
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 
-      real, dimension(nx,3) :: gpotself
-      real, dimension(nx) :: tmp1,tmp2
-      real, dimension(nx) :: gspotself,rr_cyl,rr_sph
+      real, dimension (nx,3) :: gpotself
+      real, dimension (nx) :: tmp1,tmp2
+      real, dimension (nx) :: gspotself,rr_cyl,rr_sph
       logical :: lheader
       integer :: i
 !
@@ -2353,7 +2353,7 @@ module Density
       endif ! if (lselfgravity)
 !
     endsubroutine correct_for_selfgravity    
-!**********************************************************************
+!***********************************************************************
     subroutine power_law_gaussian_disk(f)
 !
 !  power-law with gaussian z
@@ -2363,8 +2363,8 @@ module Density
       use Sub, only: get_radial_distance
       use Gravity, only: g0
 !
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx) :: rr_sph,rr_cyl
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx) :: rr_sph,rr_cyl
       logical :: lheader
 !
       if (lroot) print*,'setting density gradient of power '//&
@@ -2383,7 +2383,7 @@ module Density
       call impose_density_floor(f)
 !
     endsubroutine power_law_gaussian_disk
-!**********************************************************************
+!***********************************************************************
     subroutine power_law_disk(f)
 !
 !  Simple power-law disk. It sets only the density, whereas 
@@ -2394,8 +2394,8 @@ module Density
 !
       use Sub, only: get_radial_distance
 !
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx) :: rr_sph,rr_cyl
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx) :: rr_sph,rr_cyl
       logical :: lheader
 !
       if (lroot) print*,'setting density gradient of power '//&
@@ -2410,7 +2410,7 @@ module Density
       enddo
 !
     endsubroutine power_law_disk
-!**********************************************************************
+!***********************************************************************
     subroutine polytropic_simple(f)
 !
 !  Polytropic stratification (for lnrho and ss)
@@ -2553,7 +2553,7 @@ module Density
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension(nx) :: dlnrhodt,fint,fext,pdamp,fprofile,fnorm
+      real, dimension (nx) :: dlnrhodt,fint,fext,pdamp,fprofile,fnorm
 !
       if (ldebug) print*,'mass_source: cs20,cs0=',cs20,cs0
 !
