@@ -152,9 +152,14 @@ module Particles_map
                  'adopted block'
             print*, 'map_nearest_grid: it, itsub, iproc, ipar=', &
                  it, itsub, iproc, ipar(k)
+            call fatal_error_local('map_nearest_grid','')
           endif
         endif
       enddo
+!
+!  Stop if any particles are not present in any adopted block.
+!
+      call fatal_error_local_collect()
 !
     endsubroutine map_nearest_grid
 !***********************************************************************
