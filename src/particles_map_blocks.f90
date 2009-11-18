@@ -385,162 +385,68 @@ module Particles_map
       integer, dimension (mpar_loc) :: ipar
       real, dimension (mpar_loc,mpvar), optional :: dfp
 !
-      integer, dimension (mpar_loc) :: ipark_sorted_proc, ipark_sorted_block
-      integer, dimension (0:ncpus-1) :: kkproc
-      integer, dimension (0:nbricks-1) :: kkbrick
-      integer, dimension (0:nbricks-1) :: k1_ibrick, k2_ibrick, npar_ibrick
-      integer :: k, ibrick, iblock, iproc2
+      integer, dimension (mpar_loc) :: ipark_sorted
+      integer, dimension (0:nblockmax-1) :: kk
+      integer :: k
 !
-      intent(inout) :: fp,ineargrid,dfp,ipar
+      intent(inout) :: fp, ineargrid, dfp, ipar
 !
-!  Determine beginning and ending index of particles from each processor.
+!  Determine beginning and ending index of particles from each block.
 !
-      call particle_proc_index()
+      call particle_block_index()
 !
-!  Sort particles by parent processor.
+!  Sort particles by blocks (counting sort).
 !
-      kkproc=k1_iproc
+      kk=k1_iblock
       do k=1,npar_loc
-        ipark_sorted_proc(kkproc(iproc_parent_par(k)))=k
-        kkproc(iproc_parent_par(k))=kkproc(iproc_parent_par(k))+1
+        ipark_sorted(kk(inearblock(k)))=k
+        kk(inearblock(k))=kk(inearblock(k))+1
       enddo
 !
       if (npar_loc>0) then
-        ineargrid(1:npar_loc,:)=ineargrid(ipark_sorted_proc(1:npar_loc),:)
-        ipar(1:npar_loc)=ipar(ipark_sorted_proc(1:npar_loc))
+        ineargrid(1:npar_loc,:)=ineargrid(ipark_sorted(1:npar_loc),:)
+        ipar(1:npar_loc)=ipar(ipark_sorted(1:npar_loc))
         ibrick_parent_par(1:npar_loc)= &
-            ibrick_parent_par(ipark_sorted_proc(1:npar_loc))
+            ibrick_parent_par(ipark_sorted(1:npar_loc))
         iproc_parent_par(1:npar_loc)= &
-            iproc_parent_par(ipark_sorted_proc(1:npar_loc))
-        fp(1:npar_loc,:)=fp(ipark_sorted_proc(1:npar_loc),:)
-        if (present(dfp)) dfp(1:npar_loc,:)=dfp(ipark_sorted_proc(1:npar_loc),:)
-      endif
-!
-!  Determine beginning and ending index of particles in each block.
-!
-      iblock=0
-      npar_iblock(0:nblock_loc-1)=0
-      k1_iblock(0:nblock_loc-1)=0
-      k2_iblock(0:nblock_loc-1)=0
-      do iproc2=0,ncpus-1
-        if (npar_iproc(iproc2)/=0) then
-          call particle_brick_index(iproc2,k1_ibrick,k2_ibrick,npar_ibrick)
-          kkbrick=k1_ibrick
-          do k=k1_iproc(iproc2),k2_iproc(iproc2)
-            ipark_sorted_block(kkbrick(ibrick_parent_par(k)))=k
-            kkbrick(ibrick_parent_par(k))=kkbrick(ibrick_parent_par(k))+1
-          enddo
-          do ibrick=0,nbricks-1
-            if (npar_ibrick(ibrick)/=0) then
-              do while (ibrick_parent_block(iblock)<ibrick)
-                iblock=iblock+1  !  Skip blocks with zero particles
-                if (iblock==nblock_loc-1) exit
-              enddo
-              k1_iblock(iblock)=k1_ibrick(ibrick)
-              k2_iblock(iblock)=k2_ibrick(ibrick)
-              npar_iblock(iblock)=npar_ibrick(ibrick)
-              iblock=iblock+1
-            endif
-          enddo
-        else
-          do while (iproc_parent_block(iblock)==iproc2)
-            iblock=iblock+1
-            if (iblock>nblock_loc-1) exit
-          enddo
-        endif
-      enddo
-!
-!  Sort particles by parent brick.
-!
-      if (npar_loc>0) then
-        ineargrid(1:npar_loc,:)=ineargrid(ipark_sorted_block(1:npar_loc),:)
-        ipar(1:npar_loc)=ipar(ipark_sorted_block(1:npar_loc))
-        ibrick_parent_par(1:npar_loc)= &
-            ibrick_parent_par(ipark_sorted_block(1:npar_loc))
-        iproc_parent_par(1:npar_loc)= &
-            iproc_parent_par(ipark_sorted_block(1:npar_loc))
-        fp(1:npar_loc,:)=fp(ipark_sorted_block(1:npar_loc),:)
-        if (present(dfp)) &
-            dfp(1:npar_loc,:)=dfp(ipark_sorted_block(1:npar_loc),:)
+            iproc_parent_par(ipark_sorted(1:npar_loc))
+        fp(1:npar_loc,:)=fp(ipark_sorted(1:npar_loc),:)
+        if (present(dfp)) dfp(1:npar_loc,:)=dfp(ipark_sorted(1:npar_loc),:)
       endif
 !
     endsubroutine sort_particles_iblock
 !***********************************************************************
-    subroutine particle_proc_index()
+    subroutine particle_block_index()
 !
-!  Calculate the beginning and ending index of particles adopted from the
-!  other processors.
+!  Calculate the beginning and ending index of particles in each block.
 !
-!  12-oct-09/anders: coded
+!  18-nov-09/anders: coded
 !
-      integer :: k, iproc2
+      integer :: k, iblock
 !
-      npar_iproc=0
+      npar_iblock=0
 !
-!  Calculate the number of particles adopted from each processor.
+!  Calculate the number of particles adopted from each block.
 !
       do k=1,npar_loc
-        npar_iproc(iproc_parent_par(k))=npar_iproc(iproc_parent_par(k))+1
+        npar_iblock(inearblock(k))=npar_iblock(inearblock(k))+1
       enddo
 !
-!  Calculate beginning and ending particle index for each processor.
+!  Calculate beginning and ending particle index for each block.
 !
       k=0
-      do iproc2=0,ncpus-1
-        if (npar_iproc(iproc2)/=0) then
-          k1_iproc(iproc2)=k+1
-          k2_iproc(iproc2)=k1_iproc(iproc2)+npar_iproc(iproc2)-1
-          k=k+npar_iproc(iproc2)
+      do iblock=0,nblock_loc-1
+        if (npar_iblock(iblock)/=0) then
+          k1_iblock(iblock)=k+1
+          k2_iblock(iblock)=k1_iblock(iblock)+npar_iblock(iblock)-1
+          k=k+npar_iblock(iblock)
         else
-          k1_iproc(iproc2)=0
-          k2_iproc(iproc2)=0
+          k1_iblock(iblock)=0
+          k2_iblock(iblock)=0
         endif
       enddo
 !
-    endsubroutine particle_proc_index
-!***********************************************************************
-    subroutine particle_brick_index(iproc2,k1_ibrick,k2_ibrick,npar_ibrick)
-!
-!  Calculate the beginning and ending index of particles in all bricks at
-!  a given processor.
-!
-!  12-oct-09/anders: coded
-!
-      use Mpicomm, only: stop_it
-!
-      integer :: iproc2
-      integer, dimension (0:nbricks-1) :: k1_ibrick, k2_ibrick, npar_ibrick
-!
-      integer :: k, ibrick
-!
-      intent(in)  :: iproc2
-      intent(out) :: k1_ibrick, k2_ibrick, npar_ibrick
-!
-      npar_ibrick=0
-!
-!  Calculate the number of particles in each (remote) brick.
-!
-      if (npar_iproc(iproc2)/=0) then
-        do k=k1_iproc(iproc2),k2_iproc(iproc2)
-          npar_ibrick(ibrick_parent_par(k))=npar_ibrick(ibrick_parent_par(k))+1
-        enddo
-!
-!  Calculate beginning and ending particle index for each brick.
-!
-        k=k1_iproc(iproc2)
-        do ibrick=0,nbricks-1
-          if (npar_ibrick(ibrick)/=0) then
-            k1_ibrick(ibrick)=k
-            k2_ibrick(ibrick)=k1_ibrick(ibrick)+npar_ibrick(ibrick)-1
-            k=k+npar_ibrick(ibrick)
-          else
-            k1_ibrick(ibrick)=0
-            k2_ibrick(ibrick)=0
-          endif
-        enddo
-      endif
-!
-    endsubroutine particle_brick_index
+    endsubroutine particle_block_index
 !***********************************************************************
     subroutine fill_blocks_with_bricks(f,ivar1,ivar2)
 !

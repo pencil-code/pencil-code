@@ -26,7 +26,6 @@ module Particles_mpicomm
   integer, parameter :: m1b=nghostb+1,m2b=m1b+nyb-1
   integer, parameter :: n1b=nghostb+1,n2b=n1b+nzb-1
   integer :: nbrick_foster, nproc_parent, nproc_foster, nblock_loc
-  integer, dimension (0:ncpus-1) :: k1_iproc, k2_iproc, npar_iproc
   integer, dimension (0:nblockmax-1) :: k1_iblock, k2_iblock, npar_iblock
   real, dimension (mxb,0:nbricks-1) :: xbrick
   real, dimension (myb,0:nbricks-1) :: ybrick
