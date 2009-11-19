@@ -53,7 +53,7 @@ module Cosmicray
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_cosmicray
-!***************************************:********************************
+!***********************************************************************
     subroutine read_cosmicray_init_pars(unit,iostat)
 !
       integer, intent(in) :: unit
@@ -183,6 +183,8 @@ module Cosmicray
       if (lwr) then
         write(3,*) 'iecr=',iecr
       endif
+!
+      call keep_compiler_quiet(lreset)
 !
     endsubroutine rprint_cosmicray
 !***********************************************************************
