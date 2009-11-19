@@ -214,6 +214,18 @@ module Particles_collisions
         enddo
       enddo
 !
+!  We need to register the diagnostic type, even if there are no particles
+!  at the local processor. This is a bug and should be fixed.
+!
+      if (it==1) then
+        if (npar_loc==0) then
+          if (idiag_ncollpm/=0) &
+              call sum_par_name(fp(1:npar_loc,ixp),idiag_ncollpm)
+          if (idiag_npartpm/=0) &
+              call sum_par_name(fp(1:npar_loc,ixp),idiag_npartpm)
+        endif
+      endif
+!
     endsubroutine particles_collisions_pencils
 !***********************************************************************
     subroutine particles_collisions_blocks(fp,ineargrid)

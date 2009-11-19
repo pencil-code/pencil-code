@@ -517,6 +517,12 @@ module Particles_sub
 !  Works for particle diagnostics. The number of particles is stored as
 !  a weight used later for normalisation of sum.
 !
+!  TODO: All processors must enter this subroutine in order to set the
+!        diagnostics type right, even processors with no particles.
+!        One can do this by calling sum_par_name(fp(1:npar_loc,ixp),...),
+!        which sends an array of zero size. This is a bug and needs to be
+!        fixed.
+!
 !  02-jan-05/anders: adapted from sum_mn_name
 !
       real, dimension (:) :: a
