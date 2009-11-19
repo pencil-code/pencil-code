@@ -5098,14 +5098,15 @@ module Chemistry
 
       
          if (z(n2)==Lxyz(3)) then
-          N_1(:,nz)=KK(:,nz)*(cs20_ar(l1:l2,nz)/gamma0(l1:l2,nz)*&
+          N_1(:,nz)=KK(:,nz)*(cs20_ar(l1:l2,n2)/gamma0(l1:l2,n2)*&
             rho0(l1:l2,n2)-p_inf(:,mmm-3,nz))
          endif
          if (z(n1)==xyz0(3)) then
           N_5(:,1)=KK(:,1)*(cs20_ar(l1:l2,n1)/gamma0(l1:l2,n1)*&
-             rho0(l1:l2,1)-p_inf(:,mmm-3,1))
+             rho0(l1:l2,n1)-p_inf(:,mmm-3,1))
          endif
     
+
        else
         N_1=0; N_2=0; N_3=0; N_4=0; N_5=0
        endif
