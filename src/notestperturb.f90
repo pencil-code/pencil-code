@@ -40,7 +40,8 @@ module TestPerturb
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      call keep_compiler_quiet(unit,iostat)
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_testperturb_init_pars
 !***********************************************************************
@@ -61,7 +62,8 @@ module TestPerturb
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      call keep_compiler_quiet(unit,iostat)
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_testperturb_run_pars
 !***********************************************************************
@@ -107,7 +109,8 @@ module TestPerturb
       logical :: lreset
       logical, optional :: lwrite
 !
-      call keep_compiler_quiet(lreset,lwrite)
+      call keep_compiler_quiet(lreset)
+      if (present(lwrite)) call keep_compiler_quiet(lwrite)
 !
     endsubroutine rprint_testperturb
 !***********************************************************************
