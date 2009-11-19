@@ -422,10 +422,10 @@ module Particles_mpicomm
 !
           ibrick_rec=ibx0+iby0*nbx+ibz0*nbx*nby
           iproc_rec =ipx0+ipy0*nprocx+ipz0*nprocx*nprocy
-          ibrick_global_rec=iproc_rec*nbricks+ibrick_rec
 !
 !  Find out whether particle has left the blocks adopted by this processor.
 !
+          ibrick_global_rec=iproc_rec*nbricks+ibrick_rec
           if (ibrick_global_rec==ibrick_global_rec_previous) then
             lmigrate=lmigrate_previous
           else
@@ -1045,9 +1045,9 @@ module Particles_mpicomm
       integer :: ix0, iy0, iz0, ipx0, ipy0, ipz0, ibx0, iby0, ibz0
       integer :: ibrick_rec, iproc_rec, nmig_enter_proc, nmig_leave_proc
       integer :: i, j, k, iblockl, iblocku, iblockm, ibrick_global_rec
-      integer :: nmig_leave_total, ileave_high_max
+      integer :: ibrick_global_rec_previous, nmig_leave_total, ileave_high_max
       integer :: itag_nmig=500, itag_ipar=510, itag_fp=520, itag_dfp=530
-      logical :: lredo, lredo_all, lmigrate
+      logical :: lredo, lredo_all, lmigrate, lmigrate_previous
       logical, save :: lfirstcall=.true.
 !
       intent (inout) :: fp, ipar, dfp
@@ -1062,6 +1062,7 @@ module Particles_mpicomm
       ibrick_global_arr(0:nblock_loc-1)= &
           iproc_parent_block(0:nblock_loc-1)*nbricks+ &
           ibrick_parent_block(0:nblock_loc-1)
+      ibrick_global_rec_previous=-1
 !
 !  Possible to iterate until all particles have migrated.
 !
@@ -1105,22 +1106,28 @@ module Particles_mpicomm
 !
           ibrick_rec=ibx0+iby0*nbx+ibz0*nbx*nby
           iproc_rec =ipx0+ipy0*nprocx+ipz0*nprocx*nprocy
-          lmigrate=.true.
+!
+!  Find out whether the particle is in any block adopted by the local processor.
+!
           ibrick_global_rec=iproc_rec*nbricks+ibrick_rec
-!
-!  Find nearest block by binary search.
-!
-          iblockl=0; iblocku=nblock_loc-1
-          do while (abs(iblocku-iblockl)>1)
-            iblockm=(iblockl+iblocku)/2
-            if (ibrick_global_rec>ibrick_global_arr(iblockm)) then
-              iblockl=iblockm
-            else
-              iblocku=iblockm
-            endif
-          enddo
-          if (ibrick_global_rec==ibrick_global_arr(iblockl) .or. &
-              ibrick_global_rec==ibrick_global_arr(iblocku)) lmigrate=.false.
+          if (ibrick_global_rec==ibrick_global_rec_previous) then
+            lmigrate=lmigrate_previous
+          else
+            lmigrate=.true.
+            iblockl=0; iblocku=nblock_loc-1
+            do while (abs(iblocku-iblockl)>1)
+              iblockm=(iblockl+iblocku)/2
+              if (ibrick_global_rec>ibrick_global_arr(iblockm)) then
+                iblockl=iblockm
+              else
+                iblocku=iblockm
+              endif
+            enddo
+            if (ibrick_global_rec==ibrick_global_arr(iblockl) .or. &
+                ibrick_global_rec==ibrick_global_arr(iblocku)) lmigrate=.false.
+          endif
+          ibrick_global_rec_previous=ibrick_global_rec
+          lmigrate_previous=lmigrate
 !
 !  Open up new block if brick where particle has moved is not adopted by
 !  any processor. This may happen if the brick was previously empty.
