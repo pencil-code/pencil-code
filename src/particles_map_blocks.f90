@@ -59,6 +59,8 @@ module Particles_map
       integer, dimension (0:nblockmax-1) :: ibrick_global_arr
       integer :: k, ix0, iy0, iz0, ibx0, iby0, ibz0, ipx0, ipy0, ipz0
       integer :: iblockl, iblocku, iblockm, ibrick_global_par
+      integer :: iproc_parent_par, ibrick_parent_par
+      integer :: iproc_parent_par_previous, ibrick_parent_par_previous
       logical :: lbinary_search
       logical, save :: lfirstcall=.true.
 !
@@ -116,15 +118,15 @@ module Particles_map
 !  Calculate processor, brick, and grid point index of particle.
 !
         ineargrid(k,1)=ix0; ineargrid(k,2)=iy0; ineargrid(k,3)=iz0
-        ibrick_parent_par(k)=ibx0+iby0*nbx+ibz0*nbx*nby
-        iproc_parent_par(k) =ipx0+ipy0*nprocx+ipz0*nprocx*nprocy
+        ibrick_parent_par=ibx0+iby0*nbx+ibz0*nbx*nby
+        iproc_parent_par =ipx0+ipy0*nprocx+ipz0*nprocx*nprocy
 !
 !  Check if nearest block is the same as for previous particle.
 !
         lbinary_search=.true.
         if (k>=2) then
-          if (iproc_parent_par(k)==iproc_parent_par(k-1) .and. &
-              ibrick_parent_par(k)==ibrick_parent_par(k-1)) then
+          if (iproc_parent_par==iproc_parent_par_previous .and. &
+              ibrick_parent_par==ibrick_parent_par_previous) then
             inearblock(k)=inearblock(k-1)
             lbinary_search=.false.
           endif
@@ -133,7 +135,7 @@ module Particles_map
 !  Find nearest block by binary search.
 !
         if (lbinary_search) then
-          ibrick_global_par=iproc_parent_par(k)*nbricks+ibrick_parent_par(k)
+          ibrick_global_par=iproc_parent_par*nbricks+ibrick_parent_par
           iblockl=0; iblocku=nblock_loc-1
           do while (abs(iblocku-iblockl)>1)
             iblockm=(iblockl+iblocku)/2
@@ -155,6 +157,8 @@ module Particles_map
             call fatal_error_local('map_nearest_grid','')
           endif
         endif
+        iproc_parent_par_previous=iproc_parent_par
+        ibrick_parent_par_previous=ibrick_parent_par
       enddo
 !
 !  Stop if any particles are not present in any adopted block.
@@ -411,10 +415,6 @@ module Particles_map
         ineargrid(1:npar_loc,:)=ineargrid(ipark_sorted(1:npar_loc),:)
         inearblock(1:npar_loc)=inearblock(ipark_sorted(1:npar_loc))
         ipar(1:npar_loc)=ipar(ipark_sorted(1:npar_loc))
-        ibrick_parent_par(1:npar_loc)= &
-            ibrick_parent_par(ipark_sorted(1:npar_loc))
-        iproc_parent_par(1:npar_loc)= &
-            iproc_parent_par(ipark_sorted(1:npar_loc))
         fp(1:npar_loc,:)=fp(ipark_sorted(1:npar_loc),:)
         if (present(dfp)) dfp(1:npar_loc,:)=dfp(ipark_sorted(1:npar_loc),:)
       endif

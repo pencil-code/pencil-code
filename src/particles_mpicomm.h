@@ -11,7 +11,6 @@
   public :: xbrick, ybrick, zbrick, xb, yb, zb
   public :: k1_iblock, k2_iblock, npar_iblock
   public :: fb, dfb
-  public :: ibrick_parent_par, iproc_parent_par
   public :: ibrick_parent_block, iproc_parent_block, inearblock
   public :: iproc_foster_brick
   public :: iproc_parent_list,iproc_foster_list

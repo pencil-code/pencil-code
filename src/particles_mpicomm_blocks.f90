@@ -37,7 +37,6 @@ module Particles_mpicomm
   real, dimension (mxb,myb,mzb,mvar+maux,0:nblockmax-1) :: fb
   real, dimension (mxb,myb,mzb,mvar,0:nblockmax-1) :: dfb
 !
-  integer, dimension (mpar_loc) :: ibrick_parent_par, iproc_parent_par
   integer, dimension (mpar_loc) :: inearblock
   integer, dimension (0:nblockmax-1) :: ibrick_parent_block, iproc_parent_block
   integer, dimension (0:nbricks-1) :: iproc_foster_brick
@@ -93,8 +92,6 @@ module Particles_mpicomm
         endif
         iproc_parent_block(0:nblock_loc-1)=iproc
         iproc_foster_brick(0:nblock_loc-1)=iproc
-        iproc_parent_par(1:npar_loc)=iproc
-        ibrick_parent_par(1:npar_loc)=-1
         do ibrick=0,nbricks-1
           ibrick_parent_block(ibrick)=ibrick
         enddo
@@ -1134,8 +1131,6 @@ module Particles_mpicomm
                   'opened brick ', ibrick_rec, ' at processor ', iproc
                   print*, ipar(k)
             endif
-            iproc_parent_par(k)=iproc
-            ibrick_parent_par(k)=ibrick_rec
             iproc_foster_brick(ibrick_rec)=iproc
             nbrick_foster=nbrick_foster+1
             if (nproc_parent>=1) then

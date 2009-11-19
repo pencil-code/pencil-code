@@ -17,7 +17,7 @@ module Particles_mpicomm
   integer, parameter :: nbricks=0, nghostb=0, mxb=1, myb=1, mzb=1
   integer, parameter :: l1b=1, l2b=1, m1b=1, m2b=1, n1b=1, n2b=1
   integer, dimension (0:0) :: k1_iblock=0, k2_iblock=0, npar_iblock=0
-  integer, dimension (1) :: ibrick_parent_par, iproc_parent_par, inearblock
+  integer, dimension (1) :: inearblock
   integer, dimension (0:0) :: ibrick_parent_block, iproc_parent_block
   integer, dimension (0:0) :: iproc_foster_brick
   integer, dimension (1) :: iproc_parent_list, iproc_foster_list
