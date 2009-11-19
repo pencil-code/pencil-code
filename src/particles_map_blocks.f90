@@ -636,10 +636,6 @@ module Particles_map
       nreq=0
       nvar=ivar2-ivar1+1
 !
-!  Zero all bricks, so that we do not add to previous values.
-!
-      f(:,:,:,ivar1:ivar2)=0.0
-!
 !  Fill up bricks with blocks from local processor.
 !
       do iblock=0,nblock_loc-1
