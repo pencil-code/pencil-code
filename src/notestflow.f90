@@ -71,6 +71,8 @@ module Testflow
 !
       logical, dimension(npencils) :: lpencil_in
 !
+      call keep_compiler_quiet(lpencil_in)
+!
     endsubroutine pencil_interdep_testflow
 !***********************************************************************
     subroutine read_testflow_init_pars(unit,iostat)
@@ -147,7 +149,7 @@ module Testflow
       intent(in)    :: f
       intent(inout) :: df
 !
-      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(f,df)
 !
     endsubroutine calc_ltestflow_nonlin_terms
 !***********************************************************************
