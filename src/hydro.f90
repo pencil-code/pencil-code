@@ -48,7 +48,7 @@ module Hydro
 !
 !  cosine and sine function for setting test fields and analysis
 !
-  real, dimension(mz) :: c2z,csz,s2z,cz,sz
+  real, dimension (mz) :: c2z,csz,s2z,cz,sz
 !
 !  precession matrices
 !
@@ -70,12 +70,12 @@ module Hydro
   real, dimension (ninit) :: ampluu=0.0
   character (len=labellen), dimension(ninit) :: inituu='nothing'
   character (len=labellen) :: borderuu='nothing'
-  real, dimension(3) :: uu_const=(/0.,0.,0./)
-  complex, dimension(3) :: coefuu=(/0.,0.,0./)
+  real, dimension (3) :: uu_const=(/0.,0.,0./)
+  complex, dimension (3) :: coefuu=(/0.,0.,0./)
   real :: u_out_kep=0.0, velocity_ceiling=-1.0
   real :: mu_omega=0., gap=0.
   integer :: nb_rings=0
-  real, dimension(5) :: om_rings=0.
+  real, dimension (5) :: om_rings=0.
   integer :: N_modes_uu=0
   logical :: ladvection_velocity=.true.
   logical :: lprecession=.false.
@@ -466,7 +466,7 @@ module Hydro
       use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension(mz) :: c,s
+      real, dimension (mz) :: c,s
       logical :: lstarting
       integer :: ierr
 !
@@ -646,7 +646,7 @@ module Hydro
       real, dimension (nx) :: r,p,tmp,prof
       real :: kabs,crit,eta_sigma,tmp0
       real :: a2, rr2, wall_smoothing
-      integer :: j,i,l,ierr
+      integer :: j,i,l
 !
 !  inituu corresponds to different initializations of uu (called from start).
 !
@@ -1221,7 +1221,7 @@ module Hydro
 !
 !  20-nov-04/anders: coded
 !
-      logical, dimension(npencils) :: lpencil_in
+      logical, dimension (npencils) :: lpencil_in
 !
       if (lpencil_in(i_u2)) lpencil_in(i_uu)=.true.
       if (lpencil_in(i_divu)) lpencil_in(i_uij)=.true.
@@ -1416,9 +1416,8 @@ module Hydro
       type (pencil_case) :: p
 !
       real, dimension (nx) :: space_part_re,space_part_im,u2t,uot,out,fu
-      real, dimension (nx) :: rho_anelastic
-      real :: c2,s2,kx
-      integer :: j, jloop,iloop
+      real :: kx
+      integer :: j, jloop
 !
       intent(in) :: p
       intent(out) :: f,df
@@ -1979,9 +1978,9 @@ module Hydro
 !
 !  16-oct-09/MR: carved out from calc_pencils_hydro
 !
-    real, dimension(nx,3,3)         :: uij, sij
-    real, dimension(nx)             :: divu
-    real, dimension(nx,3), optional :: uu
+    real, dimension (nx,3,3)         :: uij, sij
+    real, dimension (nx)             :: divu
+    real, dimension (nx,3), optional :: uu
 !
     integer :: i,j
 !   
@@ -2032,7 +2031,7 @@ module Hydro
     endif
 !
     endsubroutine traceless_strain
-!***************************************************************************
+!***********************************************************************
     subroutine time_integrals_hydro(f,p)
 !
 !  Calculate time_integrals within each pencil (as long as each
@@ -2072,7 +2071,6 @@ module Hydro
       real, dimension (nx) :: rho,rux,ruy,ruz
       integer, parameter :: nreduce=3
       real, dimension (nreduce) :: fsum_tmp,fsum
-      real, dimension (3,3) :: mat_cori1=0.,mat_cori2=0.
       real, dimension (3,3) :: mat_cent1=0.,mat_cent2=0.,mat_cent3=0.
       integer :: nxy=nxgrid*nygrid
 !     real, dimension (nz,nprocz,3) :: uumz1
@@ -2081,8 +2079,8 @@ module Hydro
       real :: c,s,sinalp,cosalp,OO2,alpha_precession_rad
       integer :: m,n,i,j
       real :: fact
-      real, dimension(mz,3) :: uumzl=0.
-      real, dimension(nz,3) :: temp
+      real, dimension (mz,3) :: uumzl=0.
+      real, dimension (nz,3) :: temp
 !
 !     intent(in) :: f
       intent(inout) :: f
@@ -2262,10 +2260,10 @@ module Hydro
       use BorderProfiles,  only: border_driving,set_border_initcond
       use Mpicomm,         only: stop_it
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension(mx,my,mz,mvar) :: df
-      real, dimension(nx,3) :: f_target
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx,3) :: f_target
       integer :: j,ju
 !
       select case(borderuu)
@@ -2322,8 +2320,8 @@ module Hydro
       use Mpicomm, only: stop_it
       use Particles_nbody, only: get_totalmass
 !
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx) :: rr_cyl,rr_sph,OO,g_r,tmp
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx) :: rr_cyl,rr_sph,OO,g_r,tmp
       real :: g0_
       integer :: i
 !
@@ -2652,7 +2650,7 @@ module Hydro
           "implemented in spherical coordinates")
 !
     endsubroutine coriolis_spherical_del2p
-!*****************************************************************
+!***********************************************************************
     subroutine coriolis_cylindrical(df,p)
 !
 !  Coriolis terms using cylindrical coords
@@ -2741,7 +2739,7 @@ module Hydro
 !  Note, there is no z-component
 !
     endsubroutine coriolis_cylindrical_del2p
-!********************************************************************
+!***********************************************************************
     subroutine coriolis_xdep(df,p)
 !
 !  Coriolis terms in Cartesian coordinates with Omega depending 
@@ -2753,7 +2751,7 @@ module Hydro
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension(nx) :: c1, c2
+      real, dimension (nx) :: c1, c2
 !
 !  info about coriolis_cylindrical term
 !
@@ -2786,9 +2784,9 @@ module Hydro
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension(nx) :: pdamp,fint_work,fext_work
-      real, dimension(nx,3) :: fint,fext
-      real :: zbot,ztop,t_infl,t_span,tau,pfade, xm, xp
+      real, dimension (nx) :: pdamp,fint_work,fext_work
+      real, dimension (nx,3) :: fint,fext
+      real :: zbot,ztop,t_infl,t_span,tau,pfade
       integer :: i,j
 !
 !  warn about the damping term
@@ -3791,11 +3789,10 @@ module Hydro
       use Mpicomm
 !
       logical,save :: first=.true.
-      real, dimension(nx,ny) :: fsumxy
-      real, dimension(nx) :: uxmx,uymx,uzmx
-      real, dimension(ny) :: uxmy,uymy,uzmy,umx2,umy2
+      real, dimension (nx,ny) :: fsumxy
+      real, dimension (nx) :: uxmx,uymx,uzmx
+      real, dimension (ny) :: uxmy,uymy,uzmy,umx2,umy2
       real :: umx,umy,umz
-      integer :: l,j
 !
 !  For vector output (of oo vectors) we need orms
 !  on all processors. It suffices to have this for times when lout=.true.,
@@ -3909,7 +3906,6 @@ module Hydro
 !
       logical,save :: first=.true.
       real :: omumz
-      integer :: j
 !
 !  This only works if uxmz, uymz, bxmz, bymz, are in xyaver,
 !  so print warning if this is not ok.
@@ -3948,7 +3944,6 @@ module Hydro
 !
       logical,save :: first=.true.
       real :: umbmz
-      integer :: j
 !
 !  This only works if uxmz, uymz, bxmz, bymz, are in xyaver,
 !  so print warning if this is not ok.
@@ -3987,7 +3982,6 @@ module Hydro
 !
       logical,save :: first=.true.
       real :: umxbmz
-      integer :: j
 !
 !  This only works if uxmz, uymz, bxmz, bymz, are in xyaver,
 !  so print warning if this is not ok.
@@ -4351,5 +4345,5 @@ module Hydro
       print*, 'I should not be called. '
 !
     endsubroutine hydro_clean_up
-!*******************************************************************      
+!***********************************************************************
 endmodule Hydro
