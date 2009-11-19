@@ -39,7 +39,7 @@ module Particles_collisions
 !
     endsubroutine initialize_particles_collisions
 !***********************************************************************
-    subroutine calc_particles_collisions_pencils(fp,ineargrid)
+    subroutine particles_collisions_pencils(fp,ineargrid)
 !
 !  23-mar-09/anders: dummy
 !
@@ -49,9 +49,9 @@ module Particles_collisions
       call keep_compiler_quiet(fp)
       call keep_compiler_quiet(ineargrid)
 !
-    endsubroutine calc_particles_collisions_pencils
+    endsubroutine particles_collisions_pencils
 !***********************************************************************
-    subroutine calc_particles_collisions_blocks(fp,ineargrid)
+    subroutine particles_collisions_blocks(fp,ineargrid)
 !
 !  17-nov-09/anders: dummy
 !
@@ -61,7 +61,7 @@ module Particles_collisions
       call keep_compiler_quiet(fp)
       call keep_compiler_quiet(ineargrid)
 !
-    endsubroutine calc_particles_collisions_blocks
+    endsubroutine particles_collisions_blocks
 !***********************************************************************
     subroutine read_particles_coll_run_pars(unit,iostat)
 !

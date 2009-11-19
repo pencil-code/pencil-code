@@ -243,10 +243,10 @@ module Particles_main
         call map_nearest_grid(fp,ineargrid)
         if (lparticles_blocks) then
           call sort_particles_iblock(fp,ineargrid,ipar)
-          call calc_particles_collisions_blocks(fp,ineargrid)
+          call particles_collisions_blocks(fp,ineargrid)
         else
           call sort_particles_imn(fp,ineargrid,ipar)
-          call calc_particles_collisions_pencils(fp,ineargrid)
+          call particles_collisions_pencils(fp,ineargrid)
         endif
       endif
 !

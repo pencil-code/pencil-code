@@ -74,7 +74,7 @@ module Particles_collisions
 !
     endsubroutine initialize_particles_collisions
 !***********************************************************************
-    subroutine calc_particles_collisions_pencils(fp,ineargrid)
+    subroutine particles_collisions_pencils(fp,ineargrid)
 !
 !  Calculate collisions between superparticles by comparing the collision
 !  time-scale to the time-step. A random number is used to determine
@@ -214,9 +214,9 @@ module Particles_collisions
         enddo
       enddo
 !
-    endsubroutine calc_particles_collisions_pencils
+    endsubroutine particles_collisions_pencils
 !***********************************************************************
-    subroutine calc_particles_collisions_blocks(fp,ineargrid)
+    subroutine particles_collisions_blocks(fp,ineargrid)
 !
 !  Calculate collisions between superparticles by comparing the collision
 !  time-scale to the time-step. A random number is used to determine
@@ -359,7 +359,7 @@ module Particles_collisions
         enddo; enddo; enddo
       enddo
 !
-    endsubroutine calc_particles_collisions_blocks
+    endsubroutine particles_collisions_blocks
 !***********************************************************************
     subroutine particle_collision(xpj,xpk,vpj,vpk,j,k)
 !
