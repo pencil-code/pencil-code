@@ -143,7 +143,6 @@ module Testscalar
 !  Dummy routine
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mz) :: c,s
 !
       call keep_compiler_quiet(f)
 !
