@@ -356,22 +356,32 @@ module Particles_mpicomm
       integer, dimension (0:ncpus-1) :: nmig_leave, nmig_enter
       integer, dimension (0:ncpus-1) :: ileave_low, ileave_high
       integer, dimension (0:ncpus-1) :: iproc_rec_count
+      integer, dimension (0:nblockmax-1) :: ibrick_global_arr
       integer :: ix0, iy0, iz0, ipx0, ipy0, ipz0, ibx0, iby0, ibz0
       integer :: ibrick_rec, iproc_rec, nmig_enter_proc, nmig_leave_proc
       integer :: i, j, k, iblock, nmig_enter_proc_tot, nmig_leave_proc_tot
+      integer :: ibrick_global, ibrick_global_rec, ibrick_global_rec_previous
+      integer :: iblockl, iblocku, iblockm
       integer :: nmig_leave_total, ileave_high_max
       integer :: itag_nmig=500, itag_ipar=510, itag_fp=520, itag_dfp=530
-      logical :: lredo, lredo_all, lmigrate
+      logical :: lredo, lredo_all, lmigrate, lmigrate2, lmigrate_previous
       logical, save :: lfirstcall=.true.
 !
       intent (inout) :: fp, ipar, dfp
-!
-      nmig_enter_proc_tot=0
 !
       if (lfirstcall) then
         dx1=1/dx; dy1=1/dy; dz1=1/dz
         lfirstcall=.false.
       endif
+!
+      ibrick_global_arr(0:nblock_loc-1)= &
+          iproc_parent_block(0:nblock_loc-1)*nbricks+ &
+          ibrick_parent_block(0:nblock_loc-1)
+!      print*, 'BBBBBBB', ibrick_global_arr(0:nblock_loc-1)
+!      call fatal_error('','')
+      ibrick_global_rec_previous=-1
+!
+      nmig_enter_proc_tot=0
 !
 !  Possible to iterate until all particles have migrated.
 !
@@ -415,30 +425,41 @@ module Particles_mpicomm
 !
           ibrick_rec=ibx0+iby0*nbx+ibz0*nbx*nby
           iproc_rec =ipx0+ipy0*nprocx+ipz0*nprocx*nprocy
+          ibrick_global_rec=iproc_rec*nbricks+ibrick_rec
 !
 !  Find out whether particle has left the blocks adopted by this processor.
 !
-          lmigrate=.false.
-          if ((ibrick_rec/=ibrick_parent_par(k) .or. &
-              iproc_rec/=iproc_parent_par(k))) then
-            if (iproc/=iproc_parent_par(k)) then
+          if (ibrick_global_rec==ibrick_global_rec_previous) then
+            lmigrate=lmigrate_previous
+          else
+            if (iproc==iproc_parent_block(inearblock(k))) then
+              lmigrate=.false.
+            else
               lmigrate=.true.
-              do iblock=0,nblock_loc-1
-                if (iproc_parent_block(iblock)==iproc_rec .and. &
-                    ibrick_parent_block(iblock)==ibrick_rec) then
-                  lmigrate=.false.
-                  exit
+              iblockl=0; iblocku=nblock_loc-1
+              do while (abs(iblocku-iblockl)>1)
+                iblockm=(iblockl+iblocku)/2
+                if (ibrick_global_rec>ibrick_global_arr(iblockm)) then
+                  iblockl=iblockm
+                else
+                  iblocku=iblockm
                 endif
               enddo
+              if (ibrick_global_rec==ibrick_global_arr(iblockl) .or. &
+                  ibrick_global_rec==ibrick_global_arr(iblocku)) then
+                lmigrate=.false.
+              endif
             endif
           endif
+          lmigrate_previous=lmigrate
+          ibrick_global_rec_previous=ibrick_global
 !
 !  Migrate particle to parent, if it is no longer in any block at the current
 !  processor. The parent will then either keep the particle or send it to
 !  a new parent.
 !
           if (lmigrate) then
-            iproc_rec=iproc_parent_par(k)
+            iproc_rec=iproc_parent_block(inearblock(k))
             if (ip<=7) print '(a,i7,a,i3,a,i3)', &
                 'migrate_particles: Particle ', ipar(k), &
                 ' moves out of proc ', iproc, ' and into proc ', iproc_rec
