@@ -27,6 +27,7 @@ if (-e "LOCK") then
   echo "(if it is left over from a crash, remove it by hand: rm LOCK)"
   echo ""
   echo "Will *not* start in this directory, as code may already be running."
+  echo "(create an empty file NEVERLOCK to tell the code not to write a LOCK file)"
   echo "Checking for NEWDIR file to tell us to run somewhere else:"
   if (-e "NEWDIR") then
     if (-s "NEWDIR") then
