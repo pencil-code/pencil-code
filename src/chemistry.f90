@@ -5068,11 +5068,12 @@ module Chemistry
            L_5(:,:)=(f(l1:l2,mmm,n1:n2,iux) + cs0_ar(l1:l2,n1:n2))&
             *(grad_pp(:,:,1)+ rho0(l1:l2,n1:n2)*cs0_ar(l1:l2,n1:n2)*dui_dxj(:,:,1,1))
 
-           
+          if (lcorner_x) then
            L_1(nx,:)=KK(nx,:)*(cs20_ar(l2,n1:n2)/gamma0(l2,n1:n2) &
                *rho0(l2,n1:n2)-p_inf(nx,mmm-3,:)) 
            L_5(1,:)=KK(1,:)*(cs20_ar(l1,n1:n2)/gamma0(l1,n1:n2)*&
              rho0(l1,n1:n2)-p_inf(1,mmm-3,:))
+          endif
         else
         L_1=0; L_2=0; L_3=0; L_4=0; L_5=0 
        endif
@@ -5091,10 +5092,12 @@ module Chemistry
          N_5(:,:)=(f(l1:l2,mmm,n1:n2,iuz) + cs0_ar(l1:l2,n1:n2))&
             *(grad_pp(:,:,3)+ rho0(l1:l2,n1:n2)*cs0_ar(l1:l2,n1:n2)*dui_dxj(:,:,3,3))
 
+        if (lcorner_z) then
           N_1(:,nz)=KK(:,nz)*(cs20_ar(l1:l2,nz)/gamma0(l1:l2,nz)*&
             rho0(l1:l2,n2)-p_inf(:,mmm-3,nz))
           N_5(:,1)=KK(:,1)*(cs20_ar(l1:l2,n1)/gamma0(l1:l2,n1)*&
              rho0(l1:l2,1)-p_inf(:,mmm-3,1))
+        endif
     
        else
         N_1=0; N_2=0; N_3=0; N_4=0; N_5=0
@@ -5461,10 +5464,12 @@ module Chemistry
           L_5=(f(l1:l2,m1:m2,nnn,iux) + cs0_ar(l1:l2,m1:m2))&
             *(grad_pp(:,:,1)+ rho0(l1:l2,m1:m2)*cs0_ar(l1:l2,m1:m2)*dui_dxj(:,:,1,1))
 
+         if (lcorner_x) then
           L_1(nx,:)=KK(nx,:)*(cs20_ar(l2,m1:m2)/gamma0(l2,m1:m2)*&
            rho0(l2,m1:m2)-p_inf(nx,:,nnn-3))
           L_5(1,:)=KK(1,:)*(cs20_ar(l1,m1:m2)/gamma0(l1,m1:m2)*&
             rho0(l1,m1:m2)-p_inf(1,:,nnn-3))
+         endif
           
      
        else
@@ -5481,10 +5486,12 @@ module Chemistry
           M_5=(f(l1:l2,m1:m2,nnn,iuy) + cs0_ar(l1:l2,m1:m2))&
             *(grad_pp(:,:,2)+ rho0(l1:l2,m1:m2)*cs0_ar(l1:l2,m1:m2)*dui_dxj(:,:,2,2))
          
+         if (lcorner_y) then
           M_1(:,ny)=KK(:,ny)*(cs20_ar(l1:l2,m2)/gamma0(l1:l2,m2)*&
             rho0(l1:l2,m2)-p_inf(:,ny,nnn-3))
           M_5(:,1)=KK(:,1)*(cs20_ar(l1:l2,m1)/gamma0(l1:l2,m1)*&
             rho0(l1:l2,m1)-p_inf(:,1,nnn-3))
+         endif
       else
         M_1=0; M_2=0; M_3=0; M_4=0; M_5=0
        endif
