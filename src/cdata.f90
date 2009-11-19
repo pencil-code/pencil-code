@@ -266,12 +266,12 @@ module Cdata
   integer, parameter :: mname=100,mnamev=100,mnamerz=20
   integer, parameter :: mnamez=30,mnamey=30,mnamex=30,mnamer=30
   integer, dimension (mname) :: itype_name=0
-  real, dimension (mname) :: fname, fweight
+  real, dimension (mname) :: fname=0.0, fweight=0.0
   real, dimension (nz,nprocz) :: z_allprocs=0.0
   real, dimension (nx,nprocx,mnamex) :: fnamex=0.0
   real, dimension (ny,nprocy,mnamey) :: fnamey=0.0
   real, dimension (nz,nprocz,mnamez) :: fnamez=0.0
-  real, dimension (nrcyl,mnamer) :: fnamer=0.
+  real, dimension (nrcyl,mnamer) :: fnamer=0.0
   real, allocatable, dimension(:,:,:) :: fnamexy, fnamexz
   real, dimension (nrcyl,0:nz,nprocz,mnamerz) :: fnamerz=0.0
   real, dimension (nrcyl,nx) :: phiavg_profile=0.0
@@ -284,7 +284,8 @@ module Cdata
   character (len=30) :: cnamex(mnamex),cformx(mnamex)
   character (len=30) :: cnamer(mnamer),cformr(mnamer)
   character (len=30) :: cnamerz(mnamerz),cformrz(mnamerz)
-  logical :: lout=.false.,headt=.false.,headtt=.true.,ldt,lfirst=.false.,llast=.false.
+  logical :: lout=.false.,headt=.false.,headtt=.true.,ldt
+  logical :: lfirst=.false.,llast=.false.
   logical :: ldiagnos=.false.,lvideo=.false.,lwrite_prof=.true.
   logical :: l2davg=.false.,l2davgfirst=.false.
   logical :: l1ddiagnos=.false.,l1dout=.false.,l1dphiavg=.false.
