@@ -595,7 +595,6 @@ class h5file:
                     t[0]=raw_data[cutoff:][0]
                 else:
                     append(t,raw_data[cutoff:][0])
-            data=raw_data[:cutoff].reshape(vsizep,hsizep)
             if islice>act_slice:
                 slices.resize((islice+1,self.nbslices,vsize,hsize))
             if override or islice>=self.__last_timeslice:
