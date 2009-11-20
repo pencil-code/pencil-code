@@ -5485,11 +5485,12 @@ module Chemistry
           L_5=(f(l1:l2,m1:m2,nnn,iux) + cs0_ar(l1:l2,m1:m2))&
             *(grad_pp(:,:,1)+ rho0(l1:l2,m1:m2)*cs0_ar(l1:l2,m1:m2)*dui_dxj(:,:,1,1))
 
-         if (x(l1)==xyz0(1)) then
+         if (x(l2)==Lxyz(1)) then
           L_1(nx,:)=KK(nx,:)*(cs20_ar(l2,m1:m2)/gamma0(l2,m1:m2)*&
            rho0(l2,m1:m2)-p_inf(nx,:,nnn-3))
          endif
-         if (x(l2)==Lxyz(1)) then
+
+         if (x(l1)==xyz0(1)) then
           L_5(1,:)=KK(1,:)*(cs20_ar(l1,m1:m2)/gamma0(l1,m1:m2)*&
             rho0(l1,m1:m2)-p_inf(1,:,nnn-3))
          endif
