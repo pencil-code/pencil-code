@@ -154,19 +154,19 @@ correctly describing the current implementation.
     are intended to be stocked in the respective subgroups.
   \item[ver] String Attribute. Version of the
     pencil-code HDF5 file. The format described in this file
-    corresponds to the version \texttt{v0.1}. 
+    corresponds to the version \texttt{v0.1}.
+  \item[WorkDir] Directory of the Pencil Code run. It is expended to
+    the full pathname from the entered working directory.
   \item[dateC] String Attribute. Date of creation of the
     file. All dates are formatted as a string typeset as ISO 8601 dates in
-    the format 'YYYY-MM-DD HH:mm:ss.SSS Z'.
-    \note{Maybe there are specific type format to stock dates,
-      but I couldn't find it.}%
-    \note{`SSS' are miliseconds (won't hurt, even if they may not help,
-      either).
-      `Z' is the time zone.
-      We deviate from ISO by separating first and second part with a space.
-    }
+    the format 'YYYY-MM-DDTHH:mm:ss.SSS', using the python
+    \texttt{datatime} module.
   \item[dateM] String Attribute. Date of last modification of the
     file.
+  \item[precision] String Attribute. Set up there as is can be set up
+    independently of the format used in Pencil Code data (typically
+    used to force the HDF file data to be converted from double to
+    single, for reducing the file size) 
   \item[/param/] Subgroup intended to stock all the parameters data
     relative to the runs. \note{I assume that all the relevant
       parameters can be found in \texttt{params.log} in datafile. The interest
