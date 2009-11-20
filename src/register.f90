@@ -422,9 +422,14 @@ module Register
         r_int=x(l1)
         r_ext=x(l2)
 !
-!  calculate sin(theta)
+!  calculate sin(theta). Make sure that sinth=1 if there is no y extent,
+!  regardless of the value of y. This is needed for correct integrations.
 !
-        sinth=sin(y)
+        if (ny==1) then
+          sinth=1.
+        else
+          sinth=sin(y)
+        endif
 !
 ! Calculate cos(theta) via latitude, which allows us to ensure
 ! that sin(lat(midpoint)) = 0 exactly
@@ -467,8 +472,12 @@ module Register
 !
         tanth=sinth*cos1th
 !
-! Box volume and volume element - it is wrong for spherical, since
-! sinth also changes with y-position 
+!  Box volume and volume element - it is wrong for spherical, since
+!  sinth also changes with y-position 
+!
+!  Split up volume differential as (dr) * (r*dtheta) * (r*sinth*dphi)
+!  and assume that sinth=1 if there is no theta extent.
+!  This should always give a volume of 4pi/3*(r2^3-r1^3) for constant integrand
 !
         box_volume=1.;dvolume=1.;dvolume_1=1.
         if (nxgrid/=1) then
@@ -480,11 +489,19 @@ module Register
           box_volume = box_volume*(-(cos(xyz1(2))  -cos(xyz0(2))))
           dvolume    = dvolume   *x(l1:l2)*dy
           dvolume_1  = dvolume_1 *r1_mn*dy_1(mpoint)
+        else
+          box_volume = box_volume*2.
+          dvolume    = dvolume   *x(l1:l2)*2.
+          dvolume_1  = dvolume_1 *r1_mn*dy_1(mpoint)*.5
         endif
         if (nzgrid/=1) then
           box_volume = box_volume*Lxyz(3)
           dvolume    = dvolume   *x(l1:l2)*sinth(mpoint)*dz
           dvolume_1  = dvolume_1 *r1_mn*sin1th(mpoint)*dz_1(npoint)
+        else
+          box_volume = box_volume*2.*pi
+          dvolume    = dvolume   *x(l1:l2)*sinth(mpoint)*2.*pi
+          dvolume_1  = dvolume_1 *r1_mn*sin1th(mpoint)*dz_1(npoint)*.5*pi_1
         endif
 !
 !  weighted coordinates for integration purposes
@@ -554,6 +571,10 @@ module Register
           box_volume = box_volume*Lxyz(2)
           dvolume    = dvolume   *rcyl_mn*dy
           dvolume_1  = dvolume_1 *rcyl_mn1*dy_1(mpoint)
+        else
+          box_volume = box_volume*2.*pi
+          dvolume    = dvolume   *rcyl_mn*2.*pi
+          dvolume_1  = dvolume_1 *rcyl_mn1*.5*pi_1
         endif
         if (nzgrid/=1) then
           box_volume = box_volume*Lxyz(3)

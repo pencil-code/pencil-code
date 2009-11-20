@@ -299,13 +299,8 @@ module Diagnostics
             if (itype_name(iname)==ilabel_sum_par)        &
                 fname(iname)=fsum(isum_count)/fweight(isum_count)
 !
-            if (itype_name(iname)==ilabel_integrate) then
-              dv=1.
-              if (nxgrid/=1.and.lequidist(1)) dv=dv*dx
-              if (nygrid/=1.and.lequidist(2)) dv=dv*dy
-              if (nzgrid/=1.and.lequidist(3)) dv=dv*dz
-              fname(iname)=fsum(isum_count)*dv
-             endif
+            if (itype_name(iname)==ilabel_integrate)            &
+                fname(iname)=fsum(isum_count)
 !
              if (itype_name(iname)==ilabel_surf)          &
                  fname(iname)=fsum(isum_count)
@@ -1287,13 +1282,37 @@ module Diagnostics
       real, dimension (nx) :: a,fac
       integer :: iname
 !
-      fac=1.
+!  initialize by the volume element (which is different for different m and n)
+!
+      fac=dvolume
 !
 !     equidistant case are handled in equ.f90
 !
       if (.not.lequidist(1)) fac=fac*xprim(l1:l2)
       if (.not.lequidist(2)) fac=fac*yprim(m)
       if (.not.lequidist(3)) fac=fac*zprim(n)
+!
+!  For a non-periodic mesh, multiply boundary points by 1/2.
+!  Do it for each direction in turn.
+!  If a direction has no extent, it is automatically periodic
+!  and the corresponding step is not called.
+!
+      if (.not.lperi(1)) then
+        if (ipx==0) fac(1)=.5*fac(1)
+        if (ipx==nprocx-1) fac(nx)=.5*fac(nx)
+      endif
+!
+      if (.not.lperi(2)) then
+        if (ipy==0.and.m==m1) fac=.5*fac
+        if (ipy==nprocy-1.and.m==m2) fac=.5*fac
+      endif
+!
+      if (.not.lperi(3)) then
+        if (ipz==0.and.n==n1) fac=.5*fac
+        if (ipz==nprocz-1.and.n==n2) fac=.5*fac
+      endif
+!
+!  initialize if one the first point, or add up otherwise
 !
       if (lfirstpoint) then
         fname(iname)=sum(a*fac)
