@@ -60,6 +60,31 @@ module Particles_mpicomm
 !
       intent (in) :: f, lstarting
 !
+!  Check consistency of brick partition.
+!
+      if (mod(nbrickx,nprocx)/=0) then
+        if (lroot) print*, 'initialize_particles_mpicomm: nbrickx must be ' // &
+            'an integer multiple of nprocx'
+        if (lroot) print*, 'initialize_particles_mpicomm: nbrickx, nprocx=', &
+            nbrickx, nprocx
+        call fatal_error_local('initialize_particles_mpicomm','')
+      endif
+      if (mod(nbricky,nprocy)/=0) then
+        if (lroot) print*, 'initialize_particles_mpicomm: nbricky must be ' // &
+            'an integer multiple of nprocy'
+        if (lroot) print*, 'initialize_particles_mpicomm: nbricky, nprocy=', &
+            nbricky, nprocy
+        call fatal_error_local('initialize_particles_mpicomm','')
+      endif
+      if (mod(nbrickz,nprocz)/=0) then
+        if (lroot) print*, 'initialize_particles_mpicomm: nbrickz must be ' // &
+            'an integer multiple of nprocz'
+        if (lroot) print*, 'initialize_particles_mpicomm: nbrickz, nprocz=', &
+            nbricky, nprocy
+        call fatal_error_local('initialize_particles_mpicomm','')
+      endif
+      call fatal_error_local_collect()
+!
 !  Distribute particles evenly among processors to begin with.
 !
       if (lstarting) call dist_particles_evenly_procs(ipar)
@@ -374,8 +399,6 @@ module Particles_mpicomm
       ibrick_global_arr(0:nblock_loc-1)= &
           iproc_parent_block(0:nblock_loc-1)*nbricks+ &
           ibrick_parent_block(0:nblock_loc-1)
-!      print*, 'BBBBBBB', ibrick_global_arr(0:nblock_loc-1)
-!      call fatal_error('','')
       ibrick_global_rec_previous=-1
 !
       nmig_enter_proc_tot=0
