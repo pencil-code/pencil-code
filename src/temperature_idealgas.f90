@@ -565,7 +565,10 @@ module Entropy
 !  Diagnostics
 !
       if (idiag_TTmax/=0) lpenc_diagnos(i_TT)  =.true.
-      if (idiag_gTmax/=0) lpenc_diagnos(i_gTT) =.true.
+      if (idiag_gTmax/=0) then
+         lpenc_diagnos(i_glnTT) =.true.
+         lpenc_diagnos(i_TT) =.true.
+      endif
       if (idiag_TTmin/=0) lpenc_diagnos(i_TT)  =.true.
       if (idiag_TTm/=0)   lpenc_diagnos(i_TT)  =.true.
       if (idiag_fradtop/=0) then
@@ -796,8 +799,8 @@ module Entropy
       if (ldiagnos) then
         if (idiag_TTmax/=0) call max_mn_name(p%TT,idiag_TTmax)
         if (idiag_gTmax/=0) then
-           call dot2(p%gTT,tmp)
-           call max_mn_name(sqrt(tmp),idiag_gTmax)
+           call dot2(p%glnTT,tmp)
+           call max_mn_name(p%TT*sqrt(tmp),idiag_gTmax)
         endif
         if (idiag_TTmin/=0) call max_mn_name(-p%TT,idiag_TTmin,lneg=.true.)
         if (idiag_TTm/=0)   call sum_mn_name(p%TT,idiag_TTm)
