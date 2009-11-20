@@ -165,7 +165,8 @@ module Lorenz_gauge
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      call keep_compiler_quiet(unit,iostat)      
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_lorenz_gauge_init_pars
 !***********************************************************************
@@ -174,7 +175,6 @@ module Lorenz_gauge
       integer, intent(in) :: unit
 !
 !  write name list
-!
 !
       call keep_compiler_quiet(unit)
 !
@@ -185,7 +185,8 @@ module Lorenz_gauge
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      call keep_compiler_quiet(unit,iostat)      
+      call keep_compiler_quiet(unit)      
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_lorenz_gauge_run_pars
 !***********************************************************************
@@ -209,7 +210,7 @@ module Lorenz_gauge
       logical, optional :: lwrite
 !
       call keep_compiler_quiet(lreset)  
-      call keep_compiler_quiet(lwrite)  
+      if (present(lwrite)) call keep_compiler_quiet(lwrite)  
 !
     endsubroutine rprint_lorenz_gauge
 !***********************************************************************
@@ -223,7 +224,7 @@ module Lorenz_gauge
       type (slice_data) :: slices
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(slices)
+      call keep_compiler_quiet(slices%ready)
 !
     endsubroutine get_slices_lorenz_gauge
 !***********************************************************************
