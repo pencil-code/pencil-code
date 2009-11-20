@@ -120,7 +120,8 @@ module Polymer
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      call keep_compiler_quiet(unit,iostat)
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_polymer_init_pars
 !***********************************************************************
@@ -137,7 +138,8 @@ module Polymer
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      call keep_compiler_quiet(unit,iostat)
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_polymer_run_pars
 !***********************************************************************
@@ -170,7 +172,8 @@ module Polymer
       logical :: lreset
       logical, optional :: lwrite
 !
-      call keep_compiler_quiet(lreset,lwrite)
+      call keep_compiler_quiet(lreset)
+      if (present(lwrite)) call keep_compiler_quiet(lwrite)
 !
     endsubroutine rprint_polymer
 !***********************************************************************
