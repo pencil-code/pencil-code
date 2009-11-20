@@ -258,7 +258,7 @@ module EquationOfState
       endif
 !
     endsubroutine initialize_eos
-!*******************************************************************
+!***********************************************************************
     subroutine select_eos_variable(variable,findex)
 !
 !  Select eos variable
@@ -381,7 +381,7 @@ module EquationOfState
       endselect
 !
     endsubroutine select_eos_variable
-!*******************************************************************
+!***********************************************************************
     subroutine getmu(mu_tmp)
 !
 !  Calculate average particle mass in the gas relative to
@@ -402,7 +402,7 @@ module EquationOfState
         mu_tmp=mu
       endif
     endsubroutine getmu
-!*******************************************************************
+!***********************************************************************
     subroutine rprint_eos(lreset,lwrite)
 !
 !  Writes iyH and ilnTT to index.pro file
@@ -416,7 +416,7 @@ module EquationOfState
       logical, optional :: lwrite
 !
       call keep_compiler_quiet(lreset)
-      call keep_compiler_quiet(lwrite)
+      if (present(lwrite)) call keep_compiler_quiet(lwrite)
 !
     endsubroutine rprint_eos
 !***********************************************************************
