@@ -8259,16 +8259,16 @@ continue from \file{VAR1} at $128^3$ (on
   \file{var.dat} (remesh.csh so far only works with \file{var.dat}):
   \begin{alltt}
   \prompt{unix> } cd run_64
-  \prompt{run_64> } reprodir ../tmp_64 {\sl or } new tmp_64
+  \prompt{run_64> } pc_newrun ../tmp_64 {\sl or } new tmp_64
   \prompt{run_64> } mkdir -p ../tmp_64/data {\sl or } (cd ../tmp_64/; crtmp)
   \prompt{run_64> } (cd ../tmp_64/data ; mkproc-tree \(N_0\))
   \prompt{run_64> } restart-new-dir-VAR ../tmp_64 1
   \end{alltt}
 
-\item Create the new run directory:
+\item Create the new run directory (linking the excutables with -s):
   \begin{alltt}
   \prompt{run_64> } cd ../tmp_64
-  \prompt{tmp_64> } reprodir -l ../run_128 {\sl or } new run_128
+  \prompt{tmp_64> } pc_newrun -s ../run_128 {\sl or } new run_128
   \prompt{tmp_64> } vi ../run_128/src/cparam.local
   {\sl{}# set nxgrid=128, ncpus=16, nprocy=4}
   \prompt{tmp_64> } (cd ../run_128; crtmp; pc_setupsrc; make)
