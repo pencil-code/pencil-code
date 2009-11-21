@@ -152,7 +152,7 @@ module Grid
         ! hopefully, we will only ever multiply by the following quantities:
         xprim = 0.
         xprim2 = 0.
-        dx_1 = 0.
+        dx_1 = 1.
         dx_tilde = 0.
         g1proc=x00
       else
@@ -299,7 +299,7 @@ module Grid
         ! hopefully, we will only ever multiply by the following quantities:
         yprim = 0.
         yprim2 = 0.
-        dy_1 = 0.
+        dy_1 = 1.
         dy_tilde = 0.
         g2proc=y00
       else
@@ -406,7 +406,7 @@ module Grid
         ! hopefully, we will only ever multiply by the following quantities:
         zprim = 0.
         zprim2 = 0.
-        dz_1 = 0.
+        dz_1 = 1.
         dz_tilde = 0.
         g3proc=z00
       else

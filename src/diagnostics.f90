@@ -961,14 +961,25 @@ module Diagnostics
 !  Update [28-Sep-2004 wd]:
 !    Done here, but not yet in all other routines
 !
-      real, dimension (nx) :: a
+      real, dimension (nx) :: a,a_scaled
       real :: ppart,qpart
       integer :: iname,isum
       integer, optional :: ipart
       logical, optional :: lsqrt, lint
-
+!
+!  Only do something if iname is not zero
 !
       if (iname /= 0) then
+!
+!  set corresponding entry in itype_name
+!
+        if (present(lsqrt)) then
+          itype_name(iname)=ilabel_sum_sqrt
+        elseif (present(lint)) then
+          itype_name(iname)=ilabel_integrate
+        else
+          itype_name(iname)=ilabel_sum
+        endif
 !
 !  set fraction if old and new stuff
 !
@@ -980,7 +991,7 @@ module Diagnostics
             qpart=1.
           endif
 !
-!  use it
+!  add up contributions, taking coordinate system into acount (particles)
 !
           if (lspherical_coords) then
             fname(iname)=qpart*fname(iname)+ppart*sum(r2_weight*sinth_weight(m)*a)
@@ -993,35 +1004,35 @@ module Diagnostics
 !  normal method
 !
         else
+!
+!  scale "a" with volume differential if integration option is set
+!
+          if (present(lint)) then
+            a_scaled=a*xprim(l1:l2)*yprim(m)*zprim(n)
+          else
+            a_scaled=a
+          endif
+!
+!  add up contributions, taking coordinate system into acount (fluid)
+!
           if (lfirstpoint) then
             if (lspherical_coords) then
-              fname(iname)=sum(r2_weight*sinth_weight(m)*a)
+              fname(iname)=sum(r2_weight*sinth_weight(m)*a_scaled)
             elseif (lcylindrical_coords) then
-              fname(iname)=sum(rcyl_weight*a)
+              fname(iname)=sum(rcyl_weight*a_scaled)
             else
-              fname(iname)=sum(a)
+              fname(iname)=sum(a_scaled)
             endif
           else
             if (lspherical_coords) then
-              fname(iname)=fname(iname)+sum(r2_weight*sinth_weight(m)*a)
+              fname(iname)=fname(iname)+sum(r2_weight*sinth_weight(m)*a_scaled)
             elseif (lcylindrical_coords) then
-              fname(iname)=fname(iname)+sum(rcyl_weight*a)
+              fname(iname)=fname(iname)+sum(rcyl_weight*a_scaled)
             else
-              fname(iname)=fname(iname)+sum(a)
+              fname(iname)=fname(iname)+sum(a_scaled)
             endif
           endif
          endif
-!
-!  set corresponding entry in itype_name
-!
-
-        if (present(lsqrt)) then
-          itype_name(iname)=ilabel_sum_sqrt
-        elseif (present(lint)) then
-          itype_name(iname)=ilabel_integrate
-        else
-          itype_name(iname)=ilabel_sum
-        endif
 !
       endif
 !
@@ -1284,18 +1295,12 @@ module Diagnostics
 !
 !  initialize by the volume element (which is different for different m and n)
 !
-      fac=dvolume
-!
-!     equidistant case are handled in equ.f90
-!
-      if (.not.lequidist(1)) fac=fac*xprim(l1:l2)
-      if (.not.lequidist(2)) fac=fac*yprim(m)
-      if (.not.lequidist(3)) fac=fac*zprim(n)
-!
+      fac=xprim(l1:l2)*yprim(m)*zprim(n)
+ 
 !  For a non-periodic mesh, multiply boundary points by 1/2.
 !  Do it for each direction in turn.
 !  If a direction has no extent, it is automatically periodic
-!  and the corresponding step is not called.
+!  and the corresponding step is therefore not called.
 !
       if (.not.lperi(1)) then
         if (ipx==0) fac(1)=.5*fac(1)

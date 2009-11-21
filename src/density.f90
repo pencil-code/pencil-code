@@ -122,7 +122,8 @@ module Density
   integer :: idiag_rhomxy=0     ! DIAG_DOC:
   integer :: idiag_rhomxz=0     ! DIAG_DOC:
   integer :: idiag_rhomr=0      ! DIAG_DOC:
-  integer :: idiag_totmass=0    ! DIAG_DOC:
+  integer :: idiag_totmass=0    ! DIAG_DOC: $\int\varrho\,dV$
+  integer :: idiag_mass=0       ! DIAG_DOC: $\int\varrho\,dV$
 !
   contains
 !***********************************************************************
@@ -1312,7 +1313,8 @@ module Density
       if (idiag_rhom/=0 .or. idiag_rhomz/=0 .or. idiag_rhomy/=0 .or. &
            idiag_rhomx/=0 .or. idiag_rho2m/=0 .or. idiag_rhomin/=0 .or. &
            idiag_rhomax/=0 .or. idiag_rhomxy/=0 .or. idiag_rhomxz/=0 .or. &
-           idiag_totmass/=0 .or. idiag_drho2m/=0 .or. idiag_drhom/=0) &
+           idiag_totmass/=0 .or. idiag_mass/=0 .or. idiag_drho2m/=0 .or. &
+           idiag_drhom/=0) &
            lpenc_diagnos(i_rho)=.true.
       if (idiag_lnrho2m/=0) lpenc_diagnos(i_lnrho)=.true.
       if (idiag_ugrhom/=0) lpenc_diagnos(i_ugrho)=.true.
@@ -1809,6 +1811,7 @@ module Density
       if (ldiagnos) then
         if (idiag_rhom/=0)     call sum_mn_name(p%rho,idiag_rhom)
         if (idiag_totmass/=0)  call sum_mn_name(p%rho,idiag_totmass,lint=.true.)
+        if (idiag_mass/=0)     call integrate_mn_name(p%rho,idiag_mass)
         if (idiag_rhomin/=0) &
             call max_mn_name(-p%rho,idiag_rhomin,lneg=.true.)
         if (idiag_rhomax/=0)   call max_mn_name(p%rho,idiag_rhomax)
@@ -2695,7 +2698,7 @@ module Density
         idiag_rhomin=0; idiag_rhomax=0; idiag_dtd=0
         idiag_lnrhomphi=0; idiag_rhomphi=0
         idiag_rhomz=0; idiag_rhomy=0; idiag_rhomx=0 
-        idiag_rhomxy=0; idiag_rhomr=0; idiag_totmass=0
+        idiag_rhomxy=0; idiag_rhomr=0; idiag_totmass=0; idiag_mass=0
         idiag_rhomxz=0
       endif
 !
@@ -2714,6 +2717,7 @@ module Density
         call parse_name(iname,cname(iname),cform(iname),'uglnrhom',idiag_uglnrhom)
         call parse_name(iname,cname(iname),cform(iname),'dtd',idiag_dtd)
         call parse_name(iname,cname(iname),cform(iname),'totmass',idiag_totmass)
+        call parse_name(iname,cname(iname),cform(iname),'mass',idiag_mass)
       enddo
 !
 !  check for those quantities for which we want xy-averages
@@ -2785,6 +2789,7 @@ module Density
         write(3,*) 'i_rhomr=',idiag_rhomr
         write(3,*) 'i_dtd=',idiag_dtd
         write(3,*) 'i_totmass=',idiag_totmass
+        write(3,*) 'i_mass=',idiag_mass
       endif
 !
     endsubroutine rprint_density
