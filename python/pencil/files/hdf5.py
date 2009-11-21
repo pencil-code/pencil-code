@@ -173,11 +173,11 @@ class h5file:
         else:
             mode='w'
         self.f=h5py.File(datafile,mode)
-        if workdir==None:
-            workdir="./"
-        self.datadir=workdir+'data/'   # Are all data file in the workdir/data/  folder ???
-        self.workdir=workdir
         if mode=='w':                 # New file, or forced overriden file
+            if workdir==None:
+                workdir="./"
+            self.datadir=os.path.join(workdir,'data')   # Are all data file in the workdir/data/  folder ???
+            self.workdir=workdir
             self.__creating=True
             self.__created()
             self.f.attrs['name']='PencilCode'      # Setup datafile informations
@@ -187,15 +187,14 @@ class h5file:
             self.set_param(force_single)
             self.__last_timeslice=0
             self.set_data()
-            self.__creating=False
         else:            # Open an existing file and setup the class members. No modif made here.
             if self.f.attrs.get('name','none') != 'PencilCode':
                 print "Warning! Probably not a pencil code hdf5 file!!!"
             else:
                 if workdir==None:
-                    self.workdir=self.f.attrs.get('WorkDir','Unset!')
-                else:
-                    self.workdir=workdir
+                    workdir=self.f.attrs.get('WorkDir','Unset!')
+                self.datadir=os.path.join(workdir,'data') 
+                self.workdir=workdir
                 print "Pencil code hdf5 file version ",self.f.attrs.get('ver','Unset!')," of the dataset ", self.workdir
                 if self.f.attrs.get('ver','Unset!') != VERSION:
                     print "Warning! This file is of a different version than this program ("+VERSION+")"
@@ -207,6 +206,7 @@ class h5file:
                     self.__last_timeslice=self.data['slices_time'].shape[0]
                 except KeyError:
                     self.__last_timeslice=0
+        self.__creating=False
         self.flush()
     def __del__(self):
         self.close()       #Should this be done manually, or should I assume that this will be automatically done ?
@@ -242,7 +242,7 @@ class h5file:
             Should only be called by set_param'''
         if self.__updating:
             print "Reading dim.dat...",
-            fpar=file(self.datadir+'dim.dat')  # read data from file
+            fpar=file(os.path.join(self.datadir,'dim.dat'))  # read data from file
             line=fpar.readline().split()
             if len(line) == 6:
                 mx,my,mz,mvar,maux,mglobal = tuple(map(int,line))
@@ -315,7 +315,7 @@ class h5file:
                 raise TypeError("Incompatible old file. Probably a change in the number of processors.")
             for i in range(-1,nproc):
                 if i != -1:
-                    fpar=file(self.datadir+'proc'+str(i)+'/dim.dat')
+                    fpar=file(os.path.join(self.datadir,'proc'+str(i),'dim.dat'))
                     line=fpar.readline().split()
                     if len(line) == 6:
                         mx,my,mz,mvar,maux,mglobal = tuple(map(int,line))
@@ -369,7 +369,7 @@ class h5file:
             Should only be called by set_param'''
         if self.__updating:
             print "Reading params.log...",
-            fpar=param_file(self.datadir+'params.log',precision=self.precision)
+            fpar=param_file(os.path.join(self.datadir,'params.log'),precision=self.precision)
             while True:
                 (descr,res)=fpar.readline()
                 if descr=='i':
@@ -394,7 +394,7 @@ class h5file:
                     else:
                         try:
                             self.param['run/timerun'][run_num]=res
-                        except IndexError:
+                        except ValueError:
                             append(self.param['run/timerun'],res)                            
                 elif descr=='&':
                     subsec=self.param[sec].require_group(res)
@@ -413,7 +413,7 @@ class h5file:
                         else:
                             try:
                                 subsec[res[0]][run_num]=res[1]
-                            except IndexError:
+                            except ValueError:
                                 append(subsec[res[0]],res[1])
                     else:
                         if self.__creating:
@@ -423,7 +423,7 @@ class h5file:
                                 print "Warning! Multiple presence of "+res[0]+" in params.log init parameters"
                                 subsec[res[0]]=res[1]
                         else:
-                            subsec[res[0]]=res[1]
+                            subsec[res[0]][...]=res[1]
                 elif descr=='e':
                     break
             del(fpar)
@@ -433,18 +433,18 @@ class h5file:
             Should only be called by set_param'''
         if self.__updating:
             print "Reading index.pro...",
-            fpar=param_file(self.datadir+'index.pro',False,precision=self.precision)
+            fpar=param_file(os.path.join(self.datadir,'index.pro'),False,precision=self.precision)
             while True:
                 (descr,res)=fpar.readline()
                 if descr=='p':
                     try:
                         self.param['index'].create_dataset(res[0],data=res[1])
                     except(ValueError):
-                        print "Multiple parameter "+res[0]+" in index.pro file..."
+#                        print "Multiple parameter "+res[0]+" in index.pro file..."
                         try:
                             self.param['index'][res[0]][...]=res[1]
                         except TypeError:
-                            print "Parameter "+res[0]+" defined with different multiplicty."
+#                            print "Parameter "+res[0]+" defined with different multiplicty."
                             del self.param['index/'+res[0]]
                             self.param['index'].create_dataset(res[0],data=res[1])
                 elif descr=='e':
@@ -456,7 +456,7 @@ class h5file:
             Should only be called by set_data'''
         if self.__updating:
             print "Reading time_series.dat...",
-            fdat=file(self.datadir+'time_series.dat','r')
+            fdat=file(os.path.join(self.datadir,'time_series.dat'),'r')
             columns=fdat.readline().replace("-"," ").strip("#\n").split()
             nbcol=len(columns)
             if self.__creating:
@@ -489,6 +489,7 @@ class h5file:
                 else:
                     append(self.data['time_series'],line)
                 line=read_cut_line(fdat,self.precision)
+                line_num+=1
             fdat.close()
             print "Done."
     def __read_slices(self,override):
@@ -498,7 +499,7 @@ class h5file:
         '''
         if self.__updating:
             print "Reading slices:",
-            fvid=file(self.workdir+'video.in','r')
+            fvid=file(os.path.join(self.workdir,'video.in'),'r')
             names=[]
             while 1:
                 tmp=fvid.readline().strip()
@@ -541,11 +542,13 @@ class h5file:
                 del(self.data['slices_time'])
             t=self.data.create_dataset('slices_time',(1,),dtype=self.precision,maxshape=(None,))
         if proc < 0:
-            return timeslice  # the proc number should be precised
-        filename = self.datadir+'/proc'+str(proc)+'/slice_'+self.data['slices_names'][field]+'.'+extension
+            print "Please provide the proc number."
+            return timeslice  
+        filename = os.path.join(self.datadir,'proc'+str(proc),'slice_'+self.data['slices_names'][field]+'.'+extension)
         try:
             infile = npfile(filename,endian=format)
         except IOError:   # Current slice not present for this proc
+#            print "Bad file "+filename
             return timeslice
         # set up slice plane
         newly=True  # If the slices have been previously been created, it will be set to False
@@ -571,7 +574,8 @@ class h5file:
             offh= hsizep*self.param['dim/ipy'][proc+1]  # local offset
             offv= vsizep*self.param['dim/ipz'][proc+1] 
         else:
-            return
+            print "Bad slice name "+extension
+            return timeslice
         if self.data.listnames().count('slices_'+extension)==0:
             slices=self.data.create_dataset('slices_'+extension,(1,self.nbslices,vsize,hsize),dtype=self.precision,maxshape=(None,self.nbslices,vsize,hsize))
         else:
