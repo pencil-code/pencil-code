@@ -22,7 +22,8 @@
 ;;    datadir : directory for reading param, used if param is not provided
 ;;
 function pc_unshear, a, deltay=deltay, xax=xax, x0=x0, Lx=Lx, Ly=Ly, $
-    param=param, t=t, interpolation_type=interpolation_type, datadir=datadir
+    param=param, t=t, interpolation_type=interpolation_type, datadir=datadir, $
+    nowrap=nowrap
 ;
 ; Default values.
 ;
@@ -101,7 +102,17 @@ if (interpolation_type eq 'linear') then begin
   dy=Ly/ny
   for ix=0,nx-1 do begin
     pencil_y=reform(a[ix,*,*,*,*])
-    deltay_x=(deltay mod Ly)*(xax[ix]-x0)/Lx
+;
+;  Compute the amount of shift at each x.
+;  By default, wrap back each time S*t is an integer,
+;  unless /nowrap is given as keyword.
+;
+    if keyword_set(nowrap) then begin
+      deltay_x=deltay*(xax[ix]-x0)/Lx
+    endif else begin
+      deltay_x=(deltay mod Ly)*(xax[ix]-x0)/Lx
+    endelse
+;
     deltay_x_int=fix(deltay_x/dy)
     deltay_x_fra=deltay_x/dy-deltay_x_int
 ;
@@ -131,7 +142,17 @@ endif else if (interpolation_type eq 'sixth') then begin
 ;
   dy=Ly/ny
   for ix=0,nx-1 do begin
-    deltay_x=(deltay mod Ly)*(xax[ix]-x0)/Lx
+;
+;  Compute the amount of shift at each x.
+;  By default, wrap back each time S*t is an integer,
+;  unless /nowrap is given as keyword.
+;
+    if keyword_set(nowrap) then begin
+      deltay_x=deltay*(xax[ix]-x0)/Lx
+    endif else begin
+      deltay_x=(deltay mod Ly)*(xax[ix]-x0)/Lx
+    endelse
+;
     deltay_x_int=fix(deltay_x/dy)
     deltay_x_fra=deltay_x/dy-deltay_x_int
 
@@ -183,8 +204,14 @@ endif else if (interpolation_type eq 'fourier') then begin
   for ix=0,nx-1 do begin
 ;
 ;  Define complex shift array.
+;  By default, wrap back each time S*t is an integer,
+;  unless /nowrap is given as keyword.
 ;
-    deltay_x=(deltay mod Ly)*(xax[ix]-x0)/Lx
+    if keyword_set(nowrap) then begin
+      deltay_x=deltay*(xax[ix]-x0)/Lx
+    endif else begin
+      deltay_x=(deltay mod Ly)*(xax[ix]-x0)/Lx
+    endelse
 ;
 ;  Fourier transform along y.
 ;
