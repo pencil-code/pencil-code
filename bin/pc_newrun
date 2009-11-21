@@ -7,17 +7,21 @@
 #  you may want to adapt pc_mkdatadir for your particular machine).
 #
 #  Usage:
-#     new run1 run2
+#     pc_newrun run1 run2
 #  Alternative usage, if one is already in run1
-#     new run2
+#     pc_newrun run2
 #  Options: -s or --same_source also mirrors the source directory
 #
 
-case $1 in
-  ""|"-s"|"--same_source")
+case "$1" in
+   -h|--help)
+   echo "Usage: pc_newrun [-s]"
+   exit;;
+
+   -s|--same_source)
    echo "Using same source directory"
    same_source=1
-   shift
+   shift;;
 esac
 
 if [ $# -eq 2 ]; then
