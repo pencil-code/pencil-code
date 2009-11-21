@@ -266,10 +266,11 @@ program run
 !  The following is here to avoid division in sub.f90 for diagnostic
 !  outputs of integrated values in the non equidistant case.
 !  Do this even for uniform meshes, in which case xprim=dx, etc.
+!  Remember that dx_1=0 for runs without extent in that direction.
 !
-  xprim=1./dx_1
-  yprim=1./dy_1
-  zprim=1./dz_1
+  if (nxgrid==1) then; xprim=1.; else; xprim=1./dx_1; endif
+  if (nygrid==1) then; yprim=1.; else; yprim=1./dy_1; endif
+  if (nzgrid==1) then; zprim=1.; else; zprim=1./dz_1; endif
 !
 !  Determine slice positions and whether slices are to be written on this
 !  processor. This can only be done after the grid has been established.
