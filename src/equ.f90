@@ -73,7 +73,7 @@ module Equ
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx) :: maxadvec,maxdiffus,maxdiffus2,maxdiffus3
+      real, dimension (nx) :: maxadvec,advec2,maxdiffus,maxdiffus2,maxdiffus3
       real, dimension (nx) :: pfreeze,pfreeze_int,pfreeze_ext
       integer :: iv
       integer :: ivar1,ivar2
@@ -300,39 +300,54 @@ module Equ
 !  advective and diffusive timestep for that module.
 !  (note: advec_cs2 and advec_va2 are inverse _squared_ timesteps)
 !
-        if (lfirst) then
-          advec_crad2=0.0
-          advec_cs2=0.0
-          advec_csn2=0.0
-          advec_hall=0.0
-          advec_shear=0.0
-          advec_uu=0.0
-          advec_uud=0.0
-          advec_uun=0.0
-          advec_va2=0.0
-          diffus_chem=0.0
-          diffus_chi=0.0
-          diffus_chi3=0.0
-          diffus_chiral=0.0
-          diffus_cr=0.0
-          diffus_diffnd=0.0
-          diffus_diffnd3=0.0
-          diffus_diffrho=0.0
-          diffus_diffrho3=0.0
-          diffus_diffrhon=0.0
-          diffus_diffrhon3=0.0
-          diffus_eta=0.0
-          diffus_eta2=0.0
-          diffus_eta3=0.0
-          diffus_nu=0.0
-          diffus_nu2=0.0
-          diffus_nu3=0.0
-          diffus_nud=0.0
-          diffus_nud3=0.0
-          diffus_nun=0.0
-          diffus_nun3=0.0
-          diffus_pscalar=0.0
-          diffus_pscalar3=0.0
+        if (lfirst.and.ldt) then
+          if (lhydro) then
+            advec_uu=0.0
+          endif
+          if (ldensity) then
+            diffus_diffrho=0.0; diffus_diffrho3=0.0
+            if (leos) advec_cs2=0.0
+          endif
+          if (lentropy) then
+            diffus_chi=0.0; diffus_chi3=0.0
+          endif
+          if (lmagnetic) then
+            advec_va2=0.0; advec_hall=0.0
+            diffus_eta=0.0; diffus_eta2=0.0; diffus_eta3=0.0
+          endif
+          if (ldustvelocity) then
+            advec_uud=0.0; diffus_nud=0.0; diffus_nud3=0.0
+          endif
+          if (lpscalar) then
+            diffus_pscalar=0.0; diffus_pscalar3=0.0
+          endif
+          if (ldustdensity) then
+            diffus_diffnd=0.0; diffus_diffnd3=0.0
+          endif
+          if (lviscosity) then
+            diffus_nu=0.0; diffus_nu2=0.0; diffus_nu3=0.0
+          endif
+          if (lradiation) then
+            advec_crad2=0.0
+          endif
+          if (lshear) then
+            advec_shear=0.0
+          endif
+          if (lchemistry) then
+            diffus_chem=0.0
+          endif
+          if (lchiral) then
+            diffus_chiral=0.0
+          endif
+          if (lcosmicray) then
+            diffus_cr=0.0
+          endif
+          if (lneutraldensity) then
+            diffus_diffrhon=0.0; diffus_diffrhon3=0.0
+          endif
+          if (lneutralvelocity) then
+            advec_uun=0.0; advec_csn2=0.0; diffus_nun=0.0; diffus_nun3=0.0
+          endif
         endif
 !
 !  The following is only kept for backwards compatibility.
@@ -362,9 +377,7 @@ module Equ
 !  [AB: Isn't it true that not all 2-D averages use rcyl_mn?
 !  lwrite_phiaverages=T is required, and perhaps only that.]
 !
-        if (l2davgfirst) then
-          lpencil(i_rcyl_mn)=.true.
-        endif
+        if (l2davgfirst) lpencil(i_rcyl_mn)=.true.
 !
 !  Calculate grid/geometry related pencils.
 !
@@ -559,20 +572,47 @@ module Equ
 !
 ! WL: why isn't advec_uud in this calculation?
 !
-          maxadvec=advec_uu+advec_shear+advec_hall+advec_uun+&
-              sqrt(advec_cs2+advec_va2+advec_crad2+advec_csn2)
-          maxdiffus=max(diffus_nu,diffus_chi,diffus_eta,diffus_diffrho, &
-              diffus_pscalar,diffus_cr,diffus_nud,diffus_diffnd,diffus_chiral, &
-              diffus_chem,diffus_diffrhon,diffus_nun)
-          maxdiffus2=max(diffus_nu2,diffus_eta2)
-          maxdiffus3=max(diffus_nu3,diffus_diffrho3,diffus_eta3, &
-              diffus_chi3,diffus_nud3,diffus_diffnd3,diffus_pscalar3, &
-              diffus_diffrhon3,diffus_nun3)
-!
-          if (nxgrid==1.and.nygrid==1.and.nzgrid==1) then
-            maxadvec=0.0
-            maxdiffus=0.0
+          maxadvec=0.0
+          maxdiffus=0.0
+          maxdiffus2=0.0
+          maxdiffus3=0.0
+          if (lhydro) maxadvec=maxadvec+advec_uu
+          if (lshear) maxadvec=maxadvec+advec_shear
+          if (lneutralvelocity) maxadvec=maxadvec+advec_uun
+          if (ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity) then
+            advec2=0.0
+            if (ldensity) advec2=advec2+advec_cs2
+            if (lmagnetic) advec2=advec2+advec_va2
+            if (lradiation) advec2=advec2+advec_crad2
+            if (lneutralvelocity) advec2=advec2+advec_csn2
+            maxadvec=maxadvec+sqrt(advec2)
           endif
+!
+          if (lviscosity) maxdiffus=max(diffus_nu,maxdiffus)
+          if (ldensity) maxdiffus=max(diffus_diffrho,maxdiffus)
+          if (lentropy) maxdiffus=max(diffus_chi,maxdiffus)
+          if (lmagnetic) maxdiffus=max(diffus_eta,maxdiffus)
+          if (lpscalar) maxdiffus=max(diffus_pscalar,maxdiffus)
+          if (lcosmicray) maxdiffus=max(diffus_cr,maxdiffus)
+          if (ldustvelocity) maxdiffus=max(diffus_nud,maxdiffus)
+          if (ldustdensity) maxdiffus=max(diffus_diffnd,maxdiffus)
+          if (lchiral) maxdiffus=max(diffus_chiral,maxdiffus)
+          if (lchemistry) maxdiffus=max(diffus_chem,maxdiffus)
+          if (lneutralvelocity) maxdiffus=max(diffus_nun,maxdiffus)
+          if (lneutraldensity) maxdiffus=max(diffus_diffrhon,maxdiffus)
+!
+          if (lviscosity) maxdiffus2=max(diffus_nu2,maxdiffus2)
+          if (lmagnetic) maxdiffus2=max(diffus_eta2,maxdiffus2)
+!
+          if (lviscosity) maxdiffus3=max(diffus_nu3,maxdiffus3)
+          if (ldensity) maxdiffus3=max(diffus_diffrho3,maxdiffus3)
+          if (lmagnetic) maxdiffus3=max(diffus_eta3,maxdiffus3)
+          if (lentropy) maxdiffus3=max(diffus_chi3,maxdiffus3)
+          if (ldustvelocity) maxdiffus3=max(diffus_nud3,maxdiffus3)
+          if (ldustdensity) maxdiffus3=max(diffus_diffnd3,maxdiffus3)
+          if (lpscalar) maxdiffus3=max(diffus_pscalar3,maxdiffus3)
+          if (lneutralvelocity) maxdiffus3=max(diffus_nun3,maxdiffus3)
+          if (lneutraldensity) maxdiffus3=max(diffus_diffrhon3,maxdiffus3)
 !
 !  Exclude the frozen zones from the time-step calculation.
 !
@@ -608,10 +648,12 @@ module Equ
 !
           dt1_advec  = maxadvec/cdt
           dt1_diffus = maxdiffus/cdtv + maxdiffus2/cdtv2 + maxdiffus3/cdtv3
-          dt1_reac   = reac_chem/cdtc
+          dt1_max    = max(dt1_max,sqrt(dt1_advec**2+dt1_diffus**2))
 !
-          dt1_max=max(dt1_max,sqrt(dt1_advec**2+dt1_diffus**2),dt1_reac)
-
+          if (lchemistry) then
+            dt1_reac = reac_chem/cdtc
+            dt1_max = max(dt1_max,dt1_reac)
+          endif
 !
           if (ldiagnos.and.idiag_dtv/=0) then
             call max_mn_name(maxadvec/cdt,idiag_dtv,l_dt=.true.)
@@ -657,12 +699,11 @@ module Equ
 !
       call calc_pencils_density_after_mn(f,p)
       call calc_pencils_entropy_after_mn(f,p)
-!
       call dss_dt_after_mn(f,df,p)
+!
 !  Integrate diagnostics related to solid cells (e.g. drag and lift).
 ! 
      if (lsolid_cells) call dsolid_dt_integrate
-
 !
 !  Calculate the gradient of the potential if there is room allocated in the
 !  f-array.
@@ -880,18 +921,18 @@ module Equ
 !
 !  Check for NaNs in the advection time-step.
 !
-     if (notanumber(dt1_advec)) then
-       print*, 'pde: dt1_advec contains a NaN at iproc=', iproc
-       if (lhydro)           print*, 'advec_uu   =',advec_uu
-       if (lshear)           print*, 'advec_shear=',advec_shear
-       if (lmagnetic)        print*, 'advec_hall =',advec_hall
-       if (lneutralvelocity) print*, 'advec_uun  =',advec_uun
-       if (lentropy)         print*, 'advec_cs2  =',advec_cs2
-       if (lmagnetic)        print*, 'advec_va2  =',advec_va2
-       if (lradiation)       print*, 'advec_crad2=',advec_crad2
-       if (lneutralvelocity) print*, 'advec_csn2 =',advec_csn2
-       call fatal_error_local('pde','')
-     endif
+      if (notanumber(dt1_advec)) then
+        print*, 'pde: dt1_advec contains a NaN at iproc=', iproc
+        if (lhydro)           print*, 'advec_uu   =',advec_uu
+        if (lshear)           print*, 'advec_shear=',advec_shear
+        if (lmagnetic)        print*, 'advec_hall =',advec_hall
+        if (lneutralvelocity) print*, 'advec_uun  =',advec_uun
+        if (lentropy)         print*, 'advec_cs2  =',advec_cs2
+        if (lmagnetic)        print*, 'advec_va2  =',advec_va2
+        if (lradiation)       print*, 'advec_crad2=',advec_crad2
+        if (lneutralvelocity) print*, 'advec_csn2 =',advec_csn2
+        call fatal_error_local('pde','')
+      endif
 !
 !  Diagnostics.
 !
