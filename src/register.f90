@@ -379,24 +379,42 @@ module Register
         lspherical_coords=.false.
         lcylindrical_coords=.false.
 !
-! Box volume and volume element
+!  Box volume and volume element
+!  x-extent
 !
         box_volume=1.;dvolume=1.;dvolume_1=1.
         if (nxgrid/=1) then
           box_volume = box_volume*Lxyz(1)
           dvolume    = dvolume   *dx
           dvolume_1  = dvolume_1 *dx_1(l1:l2)
+          dVol1=xprim
+        else
+          dVol1=1.
         endif
+!
+!  y-extent
+!
         if (nygrid/=1) then
           box_volume = box_volume*Lxyz(2)
           dvolume    = dvolume   *dy
           dvolume_1  = dvolume_1 *dy_1(mpoint)
+          dVol2=yprim
+        else
+          dVol2=1.
         endif
+!
+!  z-extent
+!
         if (nzgrid/=1) then
           box_volume = box_volume*Lxyz(3)
           dvolume    = dvolume   *dz
           dvolume_1  = dvolume_1 *dz_1(npoint)
+          dVol3=zprim
+        else
+          dVol3=1.
         endif
+!
+!  Spherical coordinate system
 !
       elseif (coord_system=='spherical' &
         .or.coord_system=='spherical_coords') then
@@ -478,30 +496,44 @@ module Register
 !  Split up volume differential as (dr) * (r*dtheta) * (r*sinth*dphi)
 !  and assume that sinth=1 if there is no theta extent.
 !  This should always give a volume of 4pi/3*(r2^3-r1^3) for constant integrand
+!  r extent:
 !
         box_volume=1.;dvolume=1.;dvolume_1=1.
         if (nxgrid/=1) then
-          box_volume = box_volume*1./3*(xyz1(1)**3-xyz0(1)**3)
+          box_volume = box_volume*1./3.*(xyz1(1)**3-xyz0(1)**3)
           dvolume    = dvolume   *dx
           dvolume_1  = dvolume_1 *dx_1(l1:l2)
+          dVol1=x**2*xprim
+        else
+          dVol1=1./3.*(xyz1(1)**3-xyz0(1)**3)
         endif
+!
+!  theta extent (if non-radially symmetric)
+!
         if (nygrid/=1) then
           box_volume = box_volume*(-(cos(xyz1(2))  -cos(xyz0(2))))
           dvolume    = dvolume   *x(l1:l2)*dy
           dvolume_1  = dvolume_1 *r1_mn*dy_1(mpoint)
+          dVol2=sinth*yprim
         else
           box_volume = box_volume*2.
           dvolume    = dvolume   *x(l1:l2)*2.
           dvolume_1  = dvolume_1 *r1_mn*dy_1(mpoint)*.5
+          dVol2=2.
         endif
+!
+!  phi extent (if non-axisymmetry)
+!
         if (nzgrid/=1) then
           box_volume = box_volume*Lxyz(3)
           dvolume    = dvolume   *x(l1:l2)*sinth(mpoint)*dz
           dvolume_1  = dvolume_1 *r1_mn*sin1th(mpoint)*dz_1(npoint)
+          dVol3=zprim
         else
           box_volume = box_volume*2.*pi
           dvolume    = dvolume   *x(l1:l2)*sinth(mpoint)*2.*pi
           dvolume_1  = dvolume_1 *r1_mn*sin1th(mpoint)*dz_1(npoint)*.5*pi_1
+          dVol3=2.*pi
         endif
 !
 !  weighted coordinates for integration purposes
@@ -515,7 +547,9 @@ module Register
             sinth_weight_across_proc(itheta)=sin(xyz0(2)+dy*itheta)
           enddo
         endif
+!
 ! Calculate the volume of the box, for non-cartesian coordinates
+!
         nVol=0.
         do xj=l1,l2
           do yj=m1,m2
@@ -566,20 +600,34 @@ module Register
           box_volume = box_volume*.5*(xyz1(1)**2-xyz0(1)**2)
           dvolume    = dvolume   *dx
           dvolume_1  = dvolume_1 *dx_1(l1:l2)
+          dVol1=x*xprim
+        else
+          dVol1=x
         endif
+!
+!  theta extent (non-cylindrically symmetric)
+!
         if (nygrid/=1) then
           box_volume = box_volume*Lxyz(2)
           dvolume    = dvolume   *rcyl_mn*dy
           dvolume_1  = dvolume_1 *rcyl_mn1*dy_1(mpoint)
+          dVol2=yprim
         else
           box_volume = box_volume*2.*pi
           dvolume    = dvolume   *rcyl_mn*2.*pi
           dvolume_1  = dvolume_1 *rcyl_mn1*.5*pi_1
+          dVol2=2.*pi
         endif
+!
+!  z extent (vertically extended)
+!
         if (nzgrid/=1) then
           box_volume = box_volume*Lxyz(3)
           dvolume    = dvolume   *dz
           dvolume_1  = dvolume_1 *dz_1(npoint)
+          dVol3=zprim
+        else
+          dVol3=1.
         endif
 !
 !  Trapezoidal rule
@@ -595,6 +643,26 @@ module Register
         lspherical_coords=.false.
         lcylindrical_coords=.false.
 !
+      endif
+!
+!  For a non-periodic mesh, multiply boundary points by 1/2.
+!  Do it for each direction in turn.
+!  If a direction has no extent, it is automatically periodic
+!  and the corresponding step is therefore not called.
+!
+      if (.not.lperi(1)) then
+        if (ipx==0) dVol1(1)=.5*dVol1(1)
+        if (ipx==nprocx-1) dVol1(nx)=.5*dVol1(nx)
+      endif
+!
+      if (.not.lperi(2)) then
+        if (ipy==0.and.m==m1) dVol2=.5*dVol2
+        if (ipy==nprocy-1.and.m==m2) dVol2=.5*dVol2
+      endif
+!
+      if (.not.lperi(3)) then
+        if (ipz==0.and.n==n1) dVol3=.5*dVol3
+        if (ipz==nprocz-1.and.n==n2) dVol3=.5*dVol3
       endif
 !
 !  print the value for which output is being produced

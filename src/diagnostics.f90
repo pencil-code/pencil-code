@@ -1295,29 +1295,9 @@ module Diagnostics
 !
 !  initialize by the volume element (which is different for different m and n)
 !
-      fac=xprim(l1:l2)*yprim(m)*zprim(n)
- 
-!  For a non-periodic mesh, multiply boundary points by 1/2.
-!  Do it for each direction in turn.
-!  If a direction has no extent, it is automatically periodic
-!  and the corresponding step is therefore not called.
+      fac=dVol1(l1:l2)*dVol2(m)*dVol3(n)
 !
-      if (.not.lperi(1)) then
-        if (ipx==0) fac(1)=.5*fac(1)
-        if (ipx==nprocx-1) fac(nx)=.5*fac(nx)
-      endif
-!
-      if (.not.lperi(2)) then
-        if (ipy==0.and.m==m1) fac=.5*fac
-        if (ipy==nprocy-1.and.m==m2) fac=.5*fac
-      endif
-!
-      if (.not.lperi(3)) then
-        if (ipz==0.and.n==n1) fac=.5*fac
-        if (ipz==nprocz-1.and.n==n2) fac=.5*fac
-      endif
-!
-!  initialize if one the first point, or add up otherwise
+!  initialize if one is on the first point, or add up otherwise
 !
       if (lfirstpoint) then
         fname(iname)=sum(a*fac)

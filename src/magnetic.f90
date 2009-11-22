@@ -2480,7 +2480,7 @@ module Magnetic
 !
 !  helicity integrals
 !
-        if (idiag_ab_int/=0) call integrate_mn_name(p%jb,idiag_ab_int)
+        if (idiag_ab_int/=0) call integrate_mn_name(p%ab,idiag_ab_int)
         if (idiag_jb_int/=0) call integrate_mn_name(p%jb,idiag_jb_int)
 !
 ! <J.B>
