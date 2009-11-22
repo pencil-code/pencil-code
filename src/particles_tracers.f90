@@ -379,9 +379,7 @@ module Particles
       if (lpencil_in(i_epsp)) then
         lpencil_in(i_rho)=.true.
         lpencil_in(i_rhop)=.true.
-        lcalc_np=.true.
       endif
-      if (lpencil_in(i_rhop)) lcalc_np=.true.
 !
     endsubroutine pencil_interdep_particles
 !***********************************************************************
