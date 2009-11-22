@@ -36,7 +36,8 @@ module Particles
   real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0, eps_dtog=0.01
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0
-  real :: tausg_min=0.0, tausg1_max=0.0, epsp_friction_increase=0.0, cdtp=0.2
+  real :: tausg_min=0.0, tausg1_max=0.0, epsp_friction_increase=0.0
+  real :: cdtp=0.2, cdtpgrav=0.1
   real :: gravx=0.0, gravz=0.0, gravr=1.0, kx_gg=1.0, kz_gg=1.0
   real :: gravsmooth=0.0, gravsmooth2=0.0, Ri0=0.25, eps1=0.5
   real :: kx_xxp=0.0, ky_xxp=0.0, kz_xxp=0.0, amplxxp=0.0
@@ -69,24 +70,18 @@ module Particles
   logical :: lcollisional_dragforce_cooling=.false.
   logical :: ltau_coll_min_courant=.true.
   logical :: ldragforce_equi_global_eps=.false.
-  logical :: ldraglaw_epstein=.true.
-  logical :: ldraglaw_epstein_stokes_linear=.false.
-  logical :: ldraglaw_steadystate=.false.
-  logical :: ldraglaw_variable=.false.
+  logical :: ldraglaw_epstein=.true., ldraglaw_epstein_stokes_linear=.false.
+  logical :: ldraglaw_steadystate=.false., ldraglaw_variable=.false.
   logical :: ldraglaw_epstein_transonic=.false.
   logical :: ldraglaw_eps_stk_transonic=.false.
   logical :: ldraglaw_variable_density=.false.
   logical :: lcoldstart_amplitude_correction=.false.
-  logical :: luse_tau_ap=.true.
-  logical :: lshort_friction_approx=.false.
+  logical :: luse_tau_ap=.true., lshort_friction_approx=.false.
   logical :: lbrownian_forces=.false.
-  logical :: lenforce_policy=.false.
-  logical :: lnostore_uu=.true.
-  logical :: ldtgrav_par=.false.
-  logical :: lsinkpoint=.false.
-  logical :: lglobalrandom=.false.
-  logical :: lcoriolis_force_par=.true.
-  logical :: lcentrifugal_force_par=.false.
+  logical :: lenforce_policy=.false., lnostore_uu=.true.
+  logical :: ldt_grav_par=.false., ldt_adv_par=.true.
+  logical :: lsinkpoint=.false., lglobalrandom=.false.
+  logical :: lcoriolis_force_par=.true., lcentrifugal_force_par=.false.
 !
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -123,16 +118,16 @@ module Particles
       tausp_short_friction,ldraglaw_steadystate,tstart_liftforce_par, &
       tstart_brownian_par, lbrownian_forces, lenforce_policy, &
       interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, &
-      brownian_T0, lnostore_uu, ldtgrav_par, ldragforce_radialonly, &
+      brownian_T0, lnostore_uu, ldt_grav_par, ldragforce_radialonly, &
       lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, &
-      lcoriolis_force_par, lcentrifugal_force_par, &
+      lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, &
       Lx0, Ly0, Lz0, lglobalrandom, linsert_particles_continuously, &
       lrandom_particle_pencils, lnocalc_np, lnocalc_rhop
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
       ldragforce_gas_par, ldragforce_dust_par, &
-      rhop_tilde, eps_dtog, cdtp, lpar_spec, &
+      rhop_tilde, eps_dtog, cdtp, cdtpgrav, lpar_spec, &
       linterp_reality_check, nu_epicycle, &
       gravx_profile, gravz_profile, gravr_profile, &
       gravx, gravz, gravr, gravsmooth, kx_gg, kz_gg, &
@@ -151,9 +146,9 @@ module Particles
       tausp_short_friction, ldraglaw_steadystate, tstart_liftforce_par, &
       tstart_brownian_par, lbrownian_forces, lenforce_policy, &
       interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, &
-      brownian_T0, lnostore_uu, ldtgrav_par, ldragforce_radialonly, &
+      brownian_T0, lnostore_uu, ldt_grav_par, ldragforce_radialonly, &
       lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, &
-      lcoriolis_force_par, lcentrifugal_force_par, &
+      lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, &
       linsert_particles_continuously, particles_insert_rate, &
       max_particle_insert_time, lrandom_particle_pencils, lnocalc_np, &
       lnocalc_rhop
@@ -1872,12 +1867,32 @@ k_loop:   do while (.not. (k>npar_loc))
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
 !
+      integer :: k, ix0, iy0, iz0
+      real :: dt1_advpx, dt1_advpy, dt1_advpz
+!
+!  Contribution of dust particles to time step.
+!
+      if (lfirst.and.ldt.and.ldt_adv_par) then
+        if (npar_imn(imn)/=0) then
+          do k=k1_imn(imn),k2_imn(imn)
+            ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+            dt1_advpx=abs(fp(k,ivpx))*dx_1(ix0)
+            if (lshear) then
+              dt1_advpy=(-qshear*Omega*fp(k,ixp)+abs(fp(k,ivpy)))*dy_1(iy0)
+            else
+              dt1_advpy=abs(fp(k,ivpy))*dy_1(iy0)
+            endif
+            dt1_advpz=abs(fp(k,ivpz))*dz_1(iz0)
+            dt1_max(ix0-nghost)=max(dt1_max(ix0-nghost), &
+                sqrt(dt1_advpx**2+dt1_advpy**2+dt1_advpz**2)/cdtp)
+          enddo
+        endif
+      endif
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
-      call keep_compiler_quiet(fp)
       call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(p)
-      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine dxxp_dt_pencil
 !***********************************************************************
@@ -1905,7 +1920,6 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension(:), allocatable :: rep,stocunn
       real :: rho_point, rho1_point, tausp1_par, up2
       real :: weight, weight_x, weight_y, weight_z
-      real :: dt1_advpx, dt1_advpy, dt1_advpz
       integer :: k, l, ix0, iy0, iz0
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
       logical :: lnbody
@@ -2275,25 +2289,6 @@ k_loop:   do while (.not. (k>npar_loc))
         endif
       endif
 !
-!  Contribution of dust particles to time step.
-!
-      if (lfirst.and.ldt) then
-        if (npar_imn(imn)/=0) then
-          do k=k1_imn(imn),k2_imn(imn)
-            ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-            dt1_advpx=abs(fp(k,ivpx))*dx_1(ix0)
-            if (lshear) then
-              dt1_advpy=(-qshear*Omega*fp(k,ixp)+abs(fp(k,ivpy)))*dy_1(iy0)
-            else
-              dt1_advpy=abs(fp(k,ivpy))*dy_1(iy0)
-            endif
-            dt1_advpz=abs(fp(k,ivpz))*dz_1(iz0)
-            dt1_max(ix0-nghost)=max(dt1_max(ix0-nghost), &
-                sqrt(dt1_advpx**2+dt1_advpy**2+dt1_advpz**2)/cdtp)
-          enddo
-        endif
-      endif
-!
 !  For short friction time approximation we need to record the pressure
 !  gradient force and the Lorentz force.
 !
@@ -2634,7 +2629,7 @@ k_loop:   do while (.not. (k>npar_loc))
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
             endif
 !  Limit time-step if particles close to gravity source.
-            if (ldtgrav_par.and.(lfirst.and.ldt)) then
+            if (ldt_grav_par.and.(lfirst.and.ldt)) then
               if (lcartesian_coords) then
                 vsph=sqrt(fp(k,ivpx)**2+fp(k,ivpy)**2+fp(k,ivpz)**2)
               elseif (lcylindrical_coords) then
@@ -2642,7 +2637,7 @@ k_loop:   do while (.not. (k>npar_loc))
               elseif (lspherical_coords) then
                 vsph=abs(fp(k,ivpx))
               endif
-              dt1_max=max(dt1_max,10.0*vsph/rsph)
+              dt1_max=max(dt1_max,vsph/rsph/cdtpgrav)
             endif
           enddo
 !
@@ -3841,7 +3836,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !***********************************************************************
     subroutine rprint_particles(lreset,lwrite)
 !
-!  Read and register print parameters relevant for particles
+!  Read and register print parameters relevant for particles.
 !
 !  29-dec-04/anders: coded
 !
@@ -3853,11 +3848,11 @@ k_loop:   do while (.not. (k>npar_loc))
       integer :: iname,inamez,inamey,inamex,inamexy,inamexz,inamer,inamerz
       logical :: lwr
 !
-!  Write information to index.pro
+!  Write information to index.pro.
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-
+!
       if (lwr) then
         write(3,*) 'ixp=', ixp
         write(3,*) 'iyp=', iyp
@@ -3869,7 +3864,7 @@ k_loop:   do while (.not. (k>npar_loc))
         write(3,*) 'irhop=', irhop
       endif
 !
-!  Reset everything in case of reset
+!  Reset everything in case of reset.
 !
       if (lreset) then
         idiag_xpm=0; idiag_ypm=0; idiag_zpm=0
@@ -3894,7 +3889,7 @@ k_loop:   do while (.not. (k>npar_loc))
         idiag_eccpx2m=0; idiag_eccpy2m=0; idiag_eccpz2m=0
       endif
 !
-!  Run through all possible names that may be listed in print.in
+!  Run through all possible names that may be listed in print.in.
 !
       if (lroot .and. ip<14) print*,'rprint_particles: run through parse list'
       do iname=1,nname
@@ -3955,7 +3950,7 @@ k_loop:   do while (.not. (k>npar_loc))
             'decollp',idiag_decollp)
       enddo
 !
-!  check for those quantities for which we want x-averages
+!  Check for those quantities for which we want x-averages.
 !
       do inamex=1,nnamex
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'npmx',idiag_npmx)
@@ -3963,7 +3958,7 @@ k_loop:   do while (.not. (k>npar_loc))
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'epspmx',idiag_epspmx)
       enddo
 !
-!  check for those quantities for which we want y-averages
+!  Check for those quantities for which we want y-averages.
 !
       do inamey=1,nnamey
         call parse_name(inamey,cnamey(inamey),cformy(inamey),'npmy',idiag_npmy)
@@ -3971,7 +3966,7 @@ k_loop:   do while (.not. (k>npar_loc))
         call parse_name(inamey,cnamey(inamey),cformy(inamey),'epspmy',idiag_epspmy)
       enddo
 !
-!  check for those quantities for which we want z-averages
+!  Check for those quantities for which we want z-averages.
 !
       do inamez=1,nnamez
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'npmz',idiag_npmz)
@@ -3979,25 +3974,25 @@ k_loop:   do while (.not. (k>npar_loc))
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'epspmz',idiag_epspmz)
       enddo
 !
-!  check for those quantities for which we want xy-averages
+!  Check for those quantities for which we want xy-averages.
 !
       do inamexy=1,nnamexy
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'rhopmxy',idiag_rhopmxy)
       enddo
 !
-!  check for those quantities for which we want xz-averages
+!  Check for those quantities for which we want xz-averages.
 !
       do inamexz=1,nnamexz
         call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'rhopmxz',idiag_rhopmxz)
       enddo
 !
-!  check for those quantities for which we want phiz-averages
+!  Check for those quantities for which we want phiz-averages.
 !
       do inamer=1,nnamer
         call parse_name(inamer,cnamer(inamer),cformr(inamer),'rhopmr',idiag_rhopmr)
       enddo
 !
-!  check for those quantities for which we want phi-averages
+!  Check for those quantities for which we want phi-averages.
 !
       do inamerz=1,nnamerz
         call parse_name(inamerz,cnamer(inamerz),cformr(inamerz),'rhopmphi',idiag_rhopmphi)
