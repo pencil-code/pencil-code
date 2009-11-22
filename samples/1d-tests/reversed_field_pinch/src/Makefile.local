@@ -11,4 +11,4 @@ ENTROPY   = noentropy
 MAGNETIC  =   magnetic
 VISCOSITY = noviscosity
 SPECIAL   =   special/meanfield_alpm
-#REAL_PRECISION=double
+REAL_PRECISION=double
