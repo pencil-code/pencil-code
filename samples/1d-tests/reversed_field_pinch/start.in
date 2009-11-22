@@ -1,0 +1,20 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters for forced helical MHD turbulence
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2009-11-22 12:46:07 brandenb Exp $'
+  coord_system='cylindric'
+  xyz0=0.,-1.,-1.
+  xyz1=+1.,+1.,+1.
+  bcx='a:s','a:cpc','s0d:cpc','s0d'
+  lwrite_aux=T
+  lperi=F,T,T
+/
+&magnetic_init_pars
+  initaa='Bessel-x', amplaa=1., kx_aa=3.83170597
+  lbb_as_aux=T, ljj_as_aux=T
+/
+&special_init_pars
+  initalpm='constant', amplalpm=1.
+/

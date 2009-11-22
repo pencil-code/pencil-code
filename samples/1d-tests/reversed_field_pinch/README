@@ -1,0 +1,21 @@
+Directory:
+    ${PENCIL_HOME}/samples/1d-tests/reversed_field_pinch
+SVN Id:
+    $Id: README 10936 2009-05-25 04:47:00Z ajohan@strw.leidenuniv.nl $
+Maintainer:
+    Axel Brandenburg <brandenb/nordita[dot]dk>
+Added:
+    22-Nov-2009
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Recommended resolution:
+    32x1x1 for eta=1e-2 is fine.
+Comments:
+    The initial field is a Bessel function. The field decays resistively
+    subject to magnetic helicity evolution, as modeled by the dynamical
+    alpha equation. A diffusive magnetic helicity flux is added.
+References:
+    The formalism is close to that used in:
+    Brandenburg, A., Candelaresi, S., & Chatterjee, P.: 2009,
+    ``Small-scale magnetic helicity losses from a mean-field dynamo,''
+    Monthly Notices Roy. Astron. Soc. 398, 1414-1422 (arXiv:0905.0242)
