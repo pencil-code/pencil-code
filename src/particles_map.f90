@@ -874,7 +874,7 @@ module Particles_map
 !
 !  Calculate the number of particles in each grid cell.
 !
-      if (inp/=0) then
+      if (inp/=0 .and. (.not. lnocalc_np)) then
         f(:,:,:,inp)=0.0
         do k=1,npar_loc
           !exclude the massive particles from the mapping

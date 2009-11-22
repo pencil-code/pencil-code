@@ -127,7 +127,7 @@ module Particles
       lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, &
       lcoriolis_force_par, lcentrifugal_force_par, &
       Lx0, Ly0, Lz0, lglobalrandom, linsert_particles_continuously, &
-      lrandom_particle_pencils, lnocalc_rhop
+      lrandom_particle_pencils, lnocalc_np, lnocalc_rhop
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -155,8 +155,8 @@ module Particles
       lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, &
       lcoriolis_force_par, lcentrifugal_force_par, &
       linsert_particles_continuously, particles_insert_rate, &
-      max_particle_insert_time, lrandom_particle_pencils, lnocalc_rhop
-
+      max_particle_insert_time, lrandom_particle_pencils, lnocalc_np, &
+      lnocalc_rhop
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0, idiag_rp2m=0
@@ -339,12 +339,9 @@ module Particles
 !
 !  Share Keplerian gravity.
 !
-      if (gravr_profile=='newtonian' .or. &
-          gravr_profile=='newtonian-central') then
-        call put_shared_variable('gravr',gravr,ierr)
-        if (ierr/=0) call fatal_error('initialize_particles', &
-            'there was a problem when sharing gravr')
-      endif
+      call put_shared_variable('gravr',gravr,ierr)
+      if (ierr/=0) call fatal_error('initialize_particles', &
+          'there was a problem when sharing gravr')
 !
 !  Inverse of minimum gas friction time (time-step control).
 !
@@ -1803,8 +1800,15 @@ k_loop:   do while (.not. (k>npar_loc))
         lpenc_requested(i_jxbr)=.true.
       endif
 !
-      lpenc_diagnos(i_np)=.true.
-      lpenc_diagnos(i_rhop)=.true.
+      if (idiag_npm/=0 .or. idiag_np2m/=0 .or. idiag_npmax/=0 .or. &
+          idiag_npmin/=0 .or. idiag_npmx/=0 .or. idiag_npmy/=0 .or. &
+          idiag_npmz/=0 .or. idiag_nparpmax/=0) lpenc_diagnos(i_np)=.true.
+      if (idiag_rhopm/=0 .or. idiag_rhoprms/=0 .or. idiag_rhop2m/=0 .or. &
+          idiag_rhopmax/=0 .or. idiag_rhopmin/=0 .or. idiag_rhopmphi/=0 .or. &
+          idiag_rhopmx/=0 .or. idiag_rhopmy/=0 .or. idiag_rhopmz/=0) &
+          lpenc_diagnos(i_rhop)=.true.
+      if (idiag_rhopmxy/=0 .or. idiag_rhopmr/=0 .or. idiag_rhopmxz/=0) &
+          lpenc_diagnos2d(i_rhop)=.true.
       if (idiag_dedragp/=0 .or. idiag_decollp/=0) then
         lpenc_diagnos(i_TT1)=.true.
         lpenc_diagnos(i_rho1)=.true.
