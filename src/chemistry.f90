@@ -5052,9 +5052,7 @@ module Chemistry
 !!!
 !!!
 
-    !    if ((x(l1)==xyz0(1))  .or. (x(l2)==Lxyz(1)))  lcorner_x=.true.
-    !    if ((z(n1)==xyz0(3))  .or. (z(n2)==Lxyz(3)))  lcorner_z=.true.
-
+   
         if (nxgrid /= 1) then 
            L_1(:,:)=(f(l1:l2,mmm,n1:n2,iux) - cs0_ar(l1:l2,n1:n2))&
              *(grad_pp(:,:,1)-rho0(l1:l2,n1:n2)*cs0_ar(l1:l2,n1:n2)*dui_dxj(:,:,1,1))
@@ -5186,6 +5184,11 @@ module Chemistry
          endif
 
 !NNNNNNNN
+
+       if ((x(l1)==xyz0(1))  .or. (x(l2)==Lxyz(1)))  lcorner_x=.true.
+       if ((z(n1)==xyz0(3))  .or. (z(n2)==Lxyz(3)))  lcorner_z=.true.
+
+
        if ((lcorner_x)  .and. (lcorner_z)) then
         df(ll,mmm,nn,irho_tmp) = &
           drho_prefac(lll,nnn)*(L_2(lll,nnn)+0.5*(L_5(lll,nnn) + L_1(lll,nnn))) &
@@ -5472,8 +5475,7 @@ module Chemistry
 !
 ! Corner points
 !
-        !if ((x(l1)==xyz0(1))   .or. (x(l2)==Lxyz(1)))   lcorner_x=.true.
-        !if ((y(m1)==xyz0(2))   .or. (y(m2)==Lxyz(2)))   lcorner_y=.true.
+     
 
        if (nxgrid /= 1) then 
          L_1=(f(l1:l2,m1:m2,nnn,iux) - cs0_ar(l1:l2,m1:m2))&
@@ -5485,12 +5487,11 @@ module Chemistry
           L_5=(f(l1:l2,m1:m2,nnn,iux) + cs0_ar(l1:l2,m1:m2))&
             *(grad_pp(:,:,1)+ rho0(l1:l2,m1:m2)*cs0_ar(l1:l2,m1:m2)*dui_dxj(:,:,1,1))
 
-         if (x(l2)==Lxyz(1)) then
+         if (x(l1)==xyz0(1)) then
           L_1(nx,:)=KK(nx,:)*(cs20_ar(l2,m1:m2)/gamma0(l2,m1:m2)*&
            rho0(l2,m1:m2)-p_inf(nx,:,nnn-3))
          endif
-
-         if (x(l1)==xyz0(1)) then
+         if (x(l2)==Lxyz(1)) then
           L_5(1,:)=KK(1,:)*(cs20_ar(l1,m1:m2)/gamma0(l1,m1:m2)*&
             rho0(l1,m1:m2)-p_inf(1,:,nnn-3))
          endif
@@ -5599,6 +5600,9 @@ module Chemistry
            ll=l2; lll=nx
            if (x(l2)==Lxyz(1))   lcorner_x=.true.
          endif
+
+        if ((x(l1)==xyz0(1))   .or. (x(l2)==Lxyz(1)))   lcorner_x=.true.
+        if ((y(m1)==xyz0(2))   .or. (y(m2)==Lxyz(2)))   lcorner_y=.true.
 
         if ((lcorner_x) .and. (lcorner_y)) then
          df(ll,mm,nnn,irho_tmp) = &
