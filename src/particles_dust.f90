@@ -127,7 +127,7 @@ module Particles
       lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, &
       lcoriolis_force_par, lcentrifugal_force_par, &
       Lx0, Ly0, Lz0, lglobalrandom, linsert_particles_continuously, &
-      lrandom_particle_pencils
+      lrandom_particle_pencils, lnocalc_rhop
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -155,7 +155,7 @@ module Particles
       lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, &
       lcoriolis_force_par, lcentrifugal_force_par, &
       linsert_particles_continuously, particles_insert_rate, &
-      max_particle_insert_time, lrandom_particle_pencils
+      max_particle_insert_time, lrandom_particle_pencils, lnocalc_rhop
 
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
@@ -231,7 +231,7 @@ module Particles
 !
       use EquationOfState, only: cs0,rho0
       use FArrayManager
-      use SharedVariables,only:get_shared_variable
+      use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
@@ -337,6 +337,15 @@ module Particles
 !
       if (gravsmooth/=0.0) gravsmooth2=gravsmooth**2
 !
+!  Share Keplerian gravity.
+!
+      if (gravr_profile=='newtonian' .or. &
+          gravr_profile=='newtonian-central') then
+        call put_shared_variable('gravr',gravr,ierr)
+        if (ierr/=0) call fatal_error('initialize_particles', &
+            'there was a problem when sharing gravr')
+      endif
+!
 !  Inverse of minimum gas friction time (time-step control).
 !
       if (tausg_min/=0.0) tausg1_max=1.0/tausg_min
@@ -366,7 +375,6 @@ module Particles
 !  Need to map particles on the grid for dragforce on gas.
 !
       if (ldragforce_gas_par) then
-        lcalc_np=.true.
 !
 !  When drag force is smoothed, df is also set in the first ghost zone. This
 !  region needs to be folded back into the df array after pde is finished,
@@ -1228,9 +1236,9 @@ k_loop:   do while (.not. (k>npar_loc))
       use General, only: random_number_wrapper
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mpvar)   :: fp
-      integer, dimension (mpar_loc,3)    :: ineargrid
-      logical                            :: linsertmore=.false., linsert=.true.
+      real, dimension (mpar_loc,mpvar) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
+      logical :: linsertmore=.true.
       real :: xx0, yy0,r2
 !
       integer :: j, k, n_insert, npar_loc_old, iii
@@ -2239,7 +2247,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  particles.
 !
       if (lcompensate_friction_increase) &
-          call compensate_friction_increase(f,df,fp,dfp,p,ineargrid)
+          call compensate_friction_increase(f,fp,dfp,p,ineargrid)
 !
 !  Add lift forces.
 !
@@ -2350,6 +2358,8 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
+      real :: dt1_advpx, dt1_advpy, dt1_advpz
+      integer :: k
       logical :: lheader, lfirstcall=.true.
 !
       intent (in) :: f, fp, ineargrid
@@ -2412,6 +2422,24 @@ k_loop:   do while (.not. (k>npar_loc))
           dfp(1:npar_loc,iyp) - qshear*Omega*fp(1:npar_loc,ixp)
 !
       if (lfirstcall) lfirstcall=.false.
+!
+!  Contribution of dust particles to time step.
+!
+      if (lparticles_blocks) then
+        if (lfirst.and.ldt) then
+          do k=1,npar_loc
+            dt1_advpx=abs(fp(k,ivpx))*dx_1(1)
+            if (lshear) then
+              dt1_advpy=(-qshear*Omega*fp(k,ixp)+abs(fp(k,ivpy)))*dy_1(1)
+            else
+              dt1_advpy=abs(fp(k,ivpy))*dy_1(1)
+            endif
+            dt1_advpz=abs(fp(k,ivpz))*dz_1(1)
+            dt1_max(1)=max(dt1_max(1), &
+                sqrt(dt1_advpx**2+dt1_advpy**2+dt1_advpz**2)/cdtp)
+          enddo
+        endif
+      endif
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
@@ -2764,6 +2792,8 @@ k_loop:   do while (.not. (k>npar_loc))
           endif
         enddo
       endif
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine remove_particles_sink
 !***********************************************************************
@@ -3213,7 +3243,6 @@ k_loop:   do while (.not. (k>npar_loc))
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real, dimension (nx,npar_species,npar_species) :: tau_coll_species
       real, dimension (nx,npar_species,npar_species) :: tau_coll1_species
       real, dimension (nx,3,npar_species) :: vvpm_species
       real, dimension (nx,npar_species) :: np_species, vpm_species
@@ -3489,7 +3518,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine collisional_cooling
 !***********************************************************************
-    subroutine compensate_friction_increase(f,df,fp,dfp,p,ineargrid)
+    subroutine compensate_friction_increase(f,fp,dfp,p,ineargrid)
 !
 !  Compensate for increased friction time in regions of high solids-to-gas
 !  ratio by applying missing friction force to particles only.
@@ -3499,7 +3528,6 @@ k_loop:   do while (.not. (k>npar_loc))
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid

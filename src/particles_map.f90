@@ -899,7 +899,7 @@ module Particles_map
 !       a density that falls linearly outwards.
 !       This is equivalent to a second order spline interpolation scheme.
 !
-      if (irhop/=0) then
+      if (irhop/=0 .and. (.not. lnocalc_rhop)) then
         f(:,:,:,irhop)=0.0
         if (lparticlemesh_cic) then
 !
@@ -1235,6 +1235,8 @@ module Particles_map
           kshepherd(ix0-nghost)=k
         enddo
       endif
+!
+      call keep_compiler_quiet(fp)
 !
     endsubroutine shepherd_neighbour_pencil
 !***********************************************************************
