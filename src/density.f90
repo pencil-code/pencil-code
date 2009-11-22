@@ -986,7 +986,7 @@ module Density
     endsubroutine init_lnrho
 !***********************************************************************
     subroutine calc_ldensity_pars(f)
-
+!
 !   31-aug-09/MR: adapted from calc_lhydro_pars
 !
       use Sub, only: grad
@@ -1001,40 +1001,26 @@ module Density
 !
       integer :: j,nxy=nxgrid*nygrid
 !
-!  caclculate mean gradient of lnrho
+!  Calculate mean gradient of lnrho.
 !
       if (lcalc_glnrhomean) then
-
         fact=1./nxy
-
         do n=1,nz
-         
           glnrhomz(n,:)=0.
-          
           do m=1,ny
-            
             call grad(f,ilnrho,gradlnrho)
             do j=1,3
-
-               glnrhomz(n,j)=glnrhomz(n,j)+sum(gradlnrho(:,j))
-
+              glnrhomz(n,j)=glnrhomz(n,j)+sum(gradlnrho(:,j))
             enddo
-       
-          enddo	
-
+          enddo
           if (nprocy>1) then             
- 
             call mpiallreduce_sum(glnrhomz,temp,(/nz,3/),idir=2)
             glnrhomz = temp
-
           endif
-
           glnrhomz(n,:) = fact*glnrhomz(n,:)
-					
         enddo
-
       endif
-
+!
    endsubroutine calc_ldensity_pars
 !***********************************************************************
     subroutine polytropic_lnrho_z( &
