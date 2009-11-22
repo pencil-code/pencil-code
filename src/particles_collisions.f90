@@ -539,6 +539,8 @@ module Particles_collisions
         call parse_name(iname,cname(iname),cform(iname),'npartpm',idiag_npartpm)
       enddo
 !
+      if (present(lwrite)) call keep_compiler_quiet(lwrite)
+!
     endsubroutine rprint_particles_collisions
 !***********************************************************************
 endmodule Particles_collisions
