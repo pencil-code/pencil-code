@@ -56,16 +56,22 @@ module Particles_spin
 !
       intent(inout) :: f
 !
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+!
     endsubroutine init_particles_spin
 !***********************************************************************
     subroutine prepare_curl_vectorfield(f)
 !
-!  Prepare the curl(uu) field here so that ghost zones can be communicated between
-!  processors before the spin is calculated in dpl_dt_pencil.
+!  Prepare the curl(uu) field here so that ghost zones can be communicated
+!  between processors before the spin is calculated in dpl_dt_pencil.
 !
 !  22-jul-08/kapelrud: coded
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+!
+      call keep_compiler_quiet(f)
+!
     endsubroutine prepare_curl_vectorfield
 !***********************************************************************
     subroutine pencil_criteria_par_spin()
@@ -95,6 +101,7 @@ module Particles_spin
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(fp)
       call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(p)
       call keep_compiler_quiet(ineargrid)
 !
     endsubroutine dps_dt_pencil
@@ -163,7 +170,6 @@ module Particles_spin
       logical :: lreset
       logical, optional :: lwrite
 !
-      integer :: iname
       logical :: lwr
 !
 !  Write information to index.pro
@@ -190,6 +196,10 @@ module Particles_spin
 !
       liftforce=0.0
 !
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(k)
+      call keep_compiler_quiet(rep)
+!
     endsubroutine calc_liftforce
 !***********************************************************************
     subroutine particles_spin_prepencil_calc(f)
@@ -197,6 +207,8 @@ module Particles_spin
 !  12-aug-08/kapelrud: dummy coded
 !
       real,dimension(mx,my,mz,mfarray),intent(inout) :: f
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine particles_spin_prepencil_calc
 !***********************************************************************
