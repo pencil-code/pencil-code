@@ -386,6 +386,10 @@ module Equ
               dline_1(:,1)=dx_1(l1:l2)
               dline_1(:,2)=rcyl_mn1*dy_1(m)
               dline_1(:,3)=dz_1(n)
+            else if (lcartesian_coords) then
+              dline_1(:,1)=dx_1(l1:l2)
+              dline_1(:,2)=dy_1(m)
+              dline_1(:,3)=dz_1(n)
             endif
             dxyz_2 = dline_1(:,1)**2+dline_1(:,2)**2+dline_1(:,3)**2
             dxyz_4 = dline_1(:,1)**4+dline_1(:,2)**4+dline_1(:,3)**4
