@@ -65,98 +65,62 @@ module Param_IO
   logical :: lcylindrical
 !
   namelist /init_pars/ &
-       cvsid,ip,xyz0,xyz1,Lxyz,lperi,lshift_origin, &
-       coord_system,lequidist,coeff_grid,zeta_grid0,grid_func,xyz_star, &
-       lwrite_ic,lnowrite,luniform_z_mesh_aspect_ratio, &
-       unit_system,unit_length,unit_velocity,unit_density,unit_temperature, &
-       unit_magnetic, &
-       c_light,G_Newton,hbar, &
-       random_gen,seed0,nfilter,lserial_io, &
-       der2_type, &
-       lread_oldsnap,lread_oldsnap_nomag,lread_oldsnap_nopscalar, &
-       lread_oldsnap_notestfield, &
-       lwrite_aux,pretend_lnTT, &
-       lprocz_slowest, lcopysnapshots_exp, &
-       bcx,bcy,bcz,r_int,r_ext,r_ref,rsmooth, &
-       r_int_border,r_ext_border, &
-       mu0,force_lower_bound,force_upper_bound, &
-       tstart, &
-       fbcx1,fbcx2,fbcy1,fbcy2,fbcz1,fbcz2,fbcz1_1,fbcz1_2,fbcz2_1,fbcz2_2, &
-       fbcx1_2,fbcx2_2, &
-       xyz_step,xi_step_frac,xi_step_width, &
-       niter_poisson, &
-!AB/15-Mar-07: the lcylindrical is kept to produce a warning: outdated
-       lcylindrical, &
-       lcylinder_in_a_box,lsphere_in_a_box,llocal_iso,init_loops,lwrite_2d,&
-       lcylindrical_gravity,border_frac_x,border_frac_y, &
-       border_frac_z,luse_latitude, &
-       lshift_datacube_x,lfargo_advection,&
-       yequator,&
-       lequatory, lequatorz, zequator,&
-       lav_smallx,xav_max 
-
+      cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, coord_system, &
+      lequidist, coeff_grid, zeta_grid0, grid_func, xyz_star, lwrite_ic, &
+      lnowrite, luniform_z_mesh_aspect_ratio, unit_system, unit_length, &
+      unit_velocity, unit_density, unit_temperature, unit_magnetic, c_light, &
+      G_Newton, hbar, random_gen, seed0, nfilter, lserial_io, der2_type, &
+      lread_oldsnap, lread_oldsnap_nomag, lread_oldsnap_nopscalar, &
+      lread_oldsnap_notestfield, lwrite_aux, pretend_lnTT, lprocz_slowest, &
+      lcopysnapshots_exp, bcx, bcy, bcz, r_int, r_ext, r_ref, rsmooth, &
+      r_int_border, r_ext_border, mu0, force_lower_bound, force_upper_bound, &
+      tstart, fbcx1, fbcx2, fbcy1, fbcy2, fbcz1, fbcz2, fbcz1_1, fbcz1_2, &
+      fbcz2_1, fbcz2_2, fbcx1_2, fbcx2_2, xyz_step, xi_step_frac, &
+      xi_step_width, niter_poisson, lcylindrical, lcylinder_in_a_box, &
+      lsphere_in_a_box, llocal_iso, init_loops, lwrite_2d, &
+      lcylindrical_gravity, border_frac_x, border_frac_y, border_frac_z, &
+      luse_latitude, lshift_datacube_x, lfargo_advection, yequator, lequatory, &
+      lequatorz, zequator, lav_smallx, xav_max 
 !
   namelist /run_pars/ &
-       cvsid,ip,nt,it1,it1d,dt,cdt,ddt,cdtv,cdtv2,cdtv3,&
-       cdts,cdtr,cdtc,isave,itorder, &
-       dsnap,d2davg,dvid,dtmin,dspec,tmax,iwig,awig,ialive, max_walltime, &
-       dtmax, &
-       vel_spec,mag_spec,uxj_spec,vec_spec,ou_spec,ab_spec,ub_spec, &
-       vel_phispec,mag_phispec,uxj_phispec,vec_phispec,ou_phispec,ab_phispec, &
-       EP_spec, &
-       ro_spec,TT_spec,ss_spec,cc_spec,cr_spec,isaveglobal, &
-       lr_spec,r2u_spec,r3u_spec, &
-       rhocc_pdf,cc_pdf,lncc_pdf,gcc_pdf,lngcc_pdf, &
-       kinflow,eps_kinflow,omega_kinflow,ampl_kinflow,lkinflow_as_aux, &
-       ampl_kinflow_x,ampl_kinflow_y,ampl_kinflow_z,&
-       kx_kinflow,ky_kinflow,kz_kinflow, &
-       dtphase_kinflow, &
-       kinflow_ck_Balpha,kinflow_ck_ell,&
-       random_gen, &
-       der2_type, &
-       lrmwig_rho,lrmwig_full,lrmwig_xyaverage, &
-       ltime_integrals, &
-       lnowrite, &
-       noghost_for_isave, &
-       lwrite_yaverages,lwrite_zaverages,lwrite_phiaverages,test_nonblocking, &
-       lread_oldsnap_nomag,lread_oldsnap_nopscalar, &
-       lread_oldsnap_notestfield, &
-       comment_char, &
-       ix,iy,iz,iz2,iz3,iz4,slice_position,zbot_slice,ztop_slice, &
-       bcx,bcy,bcz,r_int,r_ext, &
-       r_int_border,r_ext_border, &
-       lfreeze_varsquare,lfreeze_varint,lfreeze_varext, &
-       xfreeze_square,yfreeze_square,rfreeze_int,rfreeze_ext, &
-       wfreeze,wfreeze_int,wfreeze_ext, &
-       wborder,wborder_int,wborder_ext, &
-       tborder, &
-       fshift_int,fshift_ext, &
-       fbcx1,fbcx2,fbcy1,fbcy2,fbcz1,fbcz2, &
-       fbcx1_2,fbcx2_2,&
-       fbcz1_1, fbcz1_2, fbcz2_1,fbcz2_2, &
-       Udrift_bc, &
-       ttransient,tavg,idx_tavg,lserial_io,nr_directions, &
-       lsfu,lsfb,lsfz1,lsfz2,lsfflux,lpdfu,lpdfb,lpdfz1,lpdfz2,oned, &
-       lwrite_aux,onedall,pretend_lnTT,old_cdtv,lmaxadvec_sum, &
-       save_lastsnap, lwrite_dvar, &
-       force_lower_bound,force_upper_bound,twod, &
-       border_frac_x,border_frac_y,border_frac_z, &
-       lpoint,mpoint,npoint, &
-       lpoint2,mpoint2,npoint2, &
-       lcylinder_in_a_box, lsphere_in_a_box,&
-       ipencil_swap,lpencil_requested_swap,lpencil_diagnos_swap, &
-       lpencil_check,lpencil_check_diagnos_opti,lpencil_init,lwrite_2d, &
-       lbidiagonal_derij,lisotropic_advection, &
-       crash_file_dtmin_factor,niter_poisson, &
-       lADI,ltestperturb,eps_rkf,eps_stiff,timestep_scaling, &
-       lequatory, lequatorz, zequator,&
-       lini_t_eq_zero,&
-       lav_smallx,xav_max 
+      cvsid, ip, nt, it1, it1d, dt, cdt, ddt, cdtv, cdtv2, cdtv3, cdts, cdtr, &
+      cdtc, isave, itorder, dsnap, d2davg, dvid, dtmin, dspec, tmax, iwig, &
+      awig, ialive, max_walltime, dtmax, ldt_paronly, vel_spec, mag_spec, &
+      uxj_spec, vec_spec, ou_spec, ab_spec, ub_spec, vel_phispec, mag_phispec, &
+      uxj_phispec, vec_phispec, ou_phispec, ab_phispec, EP_spec, ro_spec, &
+      TT_spec, ss_spec, cc_spec, cr_spec, isaveglobal, lr_spec, r2u_spec, &
+      r3u_spec, rhocc_pdf, cc_pdf, lncc_pdf, gcc_pdf, lngcc_pdf, kinflow, &
+      eps_kinflow, omega_kinflow, ampl_kinflow, lkinflow_as_aux, &
+      ampl_kinflow_x, ampl_kinflow_y, ampl_kinflow_z, kx_kinflow, ky_kinflow, &
+      kz_kinflow, dtphase_kinflow, kinflow_ck_Balpha, kinflow_ck_ell, &
+      random_gen, der2_type, lrmwig_rho, lrmwig_full, lrmwig_xyaverage, &
+      ltime_integrals, lnowrite, noghost_for_isave, lwrite_yaverages, &
+      lwrite_zaverages, lwrite_phiaverages, test_nonblocking, &
+      lread_oldsnap_nomag, lread_oldsnap_nopscalar, lread_oldsnap_notestfield, &
+      comment_char, ix, iy, iz, iz2, iz3, iz4, slice_position, zbot_slice, &
+      ztop_slice, bcx, bcy, bcz, r_int, r_ext, r_int_border, r_ext_border, &
+      lfreeze_varsquare, lfreeze_varint, lfreeze_varext, xfreeze_square, &
+      yfreeze_square, rfreeze_int, rfreeze_ext, wfreeze, wfreeze_int, &
+      wfreeze_ext, wborder, wborder_int, wborder_ext, tborder, fshift_int, &
+      fshift_ext, fbcx1, fbcx2, fbcy1, fbcy2, fbcz1, fbcz2, fbcx1_2, fbcx2_2, &
+      fbcz1_1, fbcz1_2, fbcz2_1, fbcz2_2, Udrift_bc, ttransient, tavg, &
+      idx_tavg, lserial_io, nr_directions, lsfu, lsfb, lsfz1, lsfz2, lsfflux, &
+      lpdfu, lpdfb, lpdfz1, lpdfz2, oned, lwrite_aux, onedall, pretend_lnTT, &
+      old_cdtv, lmaxadvec_sum, save_lastsnap, lwrite_dvar, force_lower_bound, &
+      force_upper_bound, twod, border_frac_x, border_frac_y, border_frac_z, &
+      lpoint, mpoint, npoint, lpoint2, mpoint2, npoint2, lcylinder_in_a_box, &
+      lsphere_in_a_box, ipencil_swap, lpencil_requested_swap, &
+      lpencil_diagnos_swap, lpencil_check, lpencil_check_diagnos_opti, &
+      lpencil_init, lwrite_2d, lbidiagonal_derij, lisotropic_advection, &
+      crash_file_dtmin_factor, niter_poisson, lADI, ltestperturb, eps_rkf, &
+      eps_stiff, timestep_scaling, lequatory, lequatorz, zequator, &
+      lini_t_eq_zero, lav_smallx, xav_max, ldt_paronly
+!
   contains
 !***********************************************************************
     subroutine get_datadir(dir)
 !
-!  Overwrite datadir from datadir.in, if that exists
+!  Overwrite datadir from datadir.in, if that exists.
 !
 !   2-oct-02/wolf: coded
 !  25-oct-02/axel: default is taken from cdata.f90 where it's defined
@@ -166,7 +130,7 @@ module Param_IO
       character (len=*) :: dir
       logical :: exist
 !
-!  let root processor check for existence of datadir.in
+!  Let root processor check for existence of datadir.in.
 !
       if (lroot) then
         inquire(FILE='datadir.in',EXIST=exist)
@@ -177,11 +141,11 @@ module Param_IO
         endif
       endif
 !
-!  tell other processors whether we need to communicate dir (i.e. datadir)
+!  Tell other processors whether we need to communicate dir (i.e. datadir).
 !
       call mpibcast_logical(exist, 1)
 !
-!  let root processor communicate dir (i.e. datadir) to all other processors
+!  Let root processor communicate dir (i.e. datadir) to all other processors.
 !
       if (exist) call mpibcast_char(dir, len(dir))
 !

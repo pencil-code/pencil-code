@@ -256,10 +256,10 @@ module Equ
 !  set inverse timestep to zero before entering loop over m and n
 !
       if (lfirst.and.ldt) then
-        if (dtmax/=0) then
-          dt1_max=1./dtmax
+        if (dtmax/=0.0) then
+          dt1_max=1/dtmax
         else
-          dt1_max=0.
+          dt1_max=0.0
         endif
       endif
 !
@@ -316,7 +316,7 @@ module Equ
 !  advective and diffusive timestep for that module.
 !  (note: advec_cs2 and advec_va2 are inverse _squared_ timesteps)
 !
-        if (lfirst.and.ldt) then
+        if (lfirst.and.ldt.and.(.not.ldt_paronly)) then
           if (lhydro) then
             advec_uu=0.0
           endif
@@ -584,7 +584,7 @@ module Equ
 !  The dimension of the run ndim (=0, 1, 2, or 3) enters the viscous time step.
 !  This has to do with the term on the diagonal, cdtv depends on order of scheme
 !
-        if (lfirst.and.ldt) then
+        if (lfirst.and.ldt.and.(.not.ldt_paronly)) then
 !
 !  sum or maximum of the advection terms?
 !  (lmaxadvec_sum=.false. by default)
