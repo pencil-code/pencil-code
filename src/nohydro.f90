@@ -234,11 +234,13 @@ module Hydro
       intent(in) :: f
       intent(inout) :: p
 !
-!  introduce new symbol for the first argument of kx_aa, etc, arrays
+!  Introduce new symbol for the first argument of kx_aa, etc, arrays.
 !
-      kkx_aa=kx_aa(1)
-      kky_aa=ky_aa(1)
-      kkz_aa=kz_aa(1)
+      if (kinflow/='') then
+        kkx_aa=kx_aa(1)
+        kky_aa=ky_aa(1)
+        kkz_aa=kz_aa(1)
+      endif
 !
 !  choose from a list of different flow profiles.
 !  Begin with a constant flow in the x direction.
