@@ -2343,20 +2343,17 @@ module Entropy
 !**********************************************************************
     subroutine dss_dt_after_mn(f,df,p)
 !
-! Do nothing.
+!  Do nothing.
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      integer :: j,ju
+      intent(in) :: f,df,p
 !
-      intent(in) :: f,p
-      intent(out) :: df
-!
-
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine dss_dt_after_mn
 !***********************************************************************
