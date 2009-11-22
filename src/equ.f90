@@ -81,7 +81,7 @@ module Equ
                                 ! density floor, or velocity ceiling
       intent(out)    :: df, p
 !
-!  print statements when they are first executed
+!  Print statements when they are first executed.
 !
       headtt = headt .and. lfirst .and. lroot
 !
@@ -96,15 +96,31 @@ module Equ
       l1ddiagnos =lfirst.and.l1dout
       l2davgfirst=lfirst.and.l2davg
 !
-!  derived diagnostics switches
+!  Derived diagnostics switches.
 !
       l1dphiavg=lcylinder_in_a_box.and.l1ddiagnos
 !
-!  record times for diagnostic and 2d average output
+!  Record times for diagnostic and 2d average output.
 !
       if (ldiagnos)    tdiagnos=t    ! (diagnostics are for THIS time)
       if (l1ddiagnos)  t1ddiagnos=t  ! (1-D averages are for THIS time)
       if (l2davgfirst) t2davgfirst=t ! (2-D averages are for THIS time)
+!
+!  Grid spacing. For non equidistant grid or non-cartesian coordinates 
+!  the grid spacing is calculated in the (m,n) loop below.
+!
+      if (lcartesian_coords .and. all(lequidist)) then
+        if (old_cdtv) then
+          dxyz_2 = max(dx_1(l1:l2)**2,dy_1(m1)**2,dz_1(n1)**2)
+        else
+          dline_1(:,1)=dx_1(l1:l2)
+          dline_1(:,2)=dy_1(m1)
+          dline_1(:,3)=dz_1(n1)
+          dxyz_2 = dline_1(:,1)**2+dline_1(:,2)**2+dline_1(:,3)**2
+          dxyz_4 = dline_1(:,1)**4+dline_1(:,2)**4+dline_1(:,3)**4
+          dxyz_6 = dline_1(:,1)**6+dline_1(:,2)**6+dline_1(:,3)**6
+        endif
+      endif
 !
 !  Shift entire data cube by one grid point at the beginning of each
 !  time-step. Useful for smearing out possible x-dependent numerical
@@ -350,28 +366,31 @@ module Equ
           endif
         endif
 !
-!  The following is only kept for backwards compatibility.
-!  Will be deleted in the future.
+!  Grid spacing. In case of equidistant grid and cartesian coordinates
+!  this is calculated before the (m,n) loop.
 !
-        if (old_cdtv) then
-          dxyz_2 = max(dx_1(l1:l2)**2,dy_1(m)**2,dz_1(n)**2)
-        else
-          if (lspherical_coords) then
-            dline_1(:,1)=dx_1(l1:l2)
-            dline_1(:,2)=r1_mn*dy_1(m)
-            dline_1(:,3)=r1_mn*sin1th(m)*dz_1(n)
-          else if (lcylindrical_coords) then
-            dline_1(:,1)=dx_1(l1:l2)
-            dline_1(:,2)=rcyl_mn1*dy_1(m)
-            dline_1(:,3)=dz_1(n)
-          else if (lcartesian_coords) then
-            dline_1(:,1)=dx_1(l1:l2)
-            dline_1(:,2)=dy_1(m)
-            dline_1(:,3)=dz_1(n)
+        if (lspherical_coords.or.lcylindrical_coords.or. &
+            .not.all(lequidist)) then
+          if (old_cdtv) then
+!
+!  The following is only kept for backwards compatibility. Will be deleted in
+!  the future.
+!
+            dxyz_2 = max(dx_1(l1:l2)**2,dy_1(m)**2,dz_1(n)**2)
+          else
+            if (lspherical_coords) then
+              dline_1(:,1)=dx_1(l1:l2)
+              dline_1(:,2)=r1_mn*dy_1(m)
+              dline_1(:,3)=r1_mn*sin1th(m)*dz_1(n)
+            else if (lcylindrical_coords) then
+              dline_1(:,1)=dx_1(l1:l2)
+              dline_1(:,2)=rcyl_mn1*dy_1(m)
+              dline_1(:,3)=dz_1(n)
+            endif
+            dxyz_2 = dline_1(:,1)**2+dline_1(:,2)**2+dline_1(:,3)**2
+            dxyz_4 = dline_1(:,1)**4+dline_1(:,2)**4+dline_1(:,3)**4
+            dxyz_6 = dline_1(:,1)**6+dline_1(:,2)**6+dline_1(:,3)**6
           endif
-          dxyz_2 = dline_1(:,1)**2+dline_1(:,2)**2+dline_1(:,3)**2
-          dxyz_4 = dline_1(:,1)**4+dline_1(:,2)**4+dline_1(:,3)**4
-          dxyz_6 = dline_1(:,1)**6+dline_1(:,2)**6+dline_1(:,3)**6
         endif
 !
 !  [AB: Isn't it true that not all 2-D averages use rcyl_mn?
