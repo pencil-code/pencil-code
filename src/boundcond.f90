@@ -340,8 +340,11 @@ module Boundcond
                   ! BCX_DOC: implies $f'(y_N)=f'''(y_0)=0$
                 call bc_sym_y(f,+1,topbot,j)
               case ('ss')
-                ! BCY_DOC: symmetry [???]
+                ! BCY_DOC: symmetry, plus function value given
                 call bc_symset_y(f,+1,topbot,j)
+              case ('s0d')
+                ! BCY_DOC: symmetry, function value such that df/dy=0
+                call bc_symset0der_y(f,topbot,j)
               case ('a')
                 ! BCY_DOC: antisymmetry
                 call bc_sym_y(f,-1,topbot,j)
@@ -516,6 +519,9 @@ module Boundcond
               case ('s')
                 ! BCZ_DOC: symmetry
                 call bc_sym_z(f,+1,topbot,j)
+              case ('s0d')
+                ! BCZ_DOC: symmetry, function value such that df/dz=0
+                call bc_symset0der_z(f,topbot,j)
               case ('a')
                 ! BCZ_DOC: antisymmetry
                 call bc_sym_z(f,-1,topbot,j)
@@ -917,6 +923,7 @@ module Boundcond
 !
 !  This routine works like bc_sym_x, but sets the function value to what
 !  it should be for vanishing one-sided derivative.
+!  This is the routine to be used as regularity condition on the axis.
 !
 !  12-nov-09/axel+koen: coded
 !
@@ -1319,6 +1326,49 @@ module Boundcond
 !
     endsubroutine bc_symset_y
 !***********************************************************************
+    subroutine bc_symset0der_y(f,topbot,j)
+!
+!  This routine works like bc_sym_y, but sets the function value to what
+!  it should be for vanishing one-sided derivative.
+!  This is the routine to be used as regularity condition on the axis.
+!
+!  19-nov-09/axel: adapted from bc_symset0der_x
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i,j,i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
+!
+      select case(topbot)
+!
+!  bottom (left end of the domain)
+!
+      case('bot')               ! bottom boundary
+        f(:,m1,:,j)=(360.*f(:,m1+i1,:,j) &
+                    -450.*f(:,m1+i2,:,j) &
+                    +400.*f(:,m1+i3,:,j) &
+                    -225.*f(:,m1+i4,:,j) &
+                     +72.*f(:,m1+i5,:,j) &
+                     -10.*f(:,m1+i6,:,j))/147.
+        do i=1,nghost; f(:,m1-i,:,j)=f(:,m1+i,:,j); enddo
+!
+!  top (right end of the domain)
+!
+      case('top')               ! top boundary
+        f(:,m2,:,j)=(360.*f(:,m2-i1,:,j) &
+                    -450.*f(:,m2-i2,:,j) &
+                    +400.*f(:,m2-i3,:,j) &
+                    -225.*f(:,m2-i4,:,j) &
+                     +72.*f(:,m2-i5,:,j) &
+                     -10.*f(:,m2-i6,:,j))/147.
+        do i=1,nghost; f(:,m2+i,:,j)=f(:,m2-i,:,j); enddo
+!
+      case default
+        print*, "bc_symset0der_y: ", topbot, " should be `top' or `bot'"
+!
+      endselect
+!
+    endsubroutine bc_symset0der_y
+!***********************************************************************
     subroutine bc_sym_z(f,sgn,topbot,j,rel,val)
 !
 !  Symmetry boundary conditions.
@@ -1365,6 +1415,49 @@ module Boundcond
       endselect
 !
     endsubroutine bc_sym_z
+!***********************************************************************
+    subroutine bc_symset0der_z(f,topbot,j)
+!
+!  This routine works like bc_sym_z, but sets the function value to what
+!  it should be for vanishing one-sided derivative.
+!  This is the routine to be used as regularity condition on the axis.
+!
+!  22-nov-09/axel: adapted from bc_symset0der_y
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i,j,i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
+!
+      select case(topbot)
+!
+!  bottom (left end of the domain)
+!
+      case('bot')               ! bottom boundary
+        f(:,:,n1,j)=(360.*f(:,:,n1+i1,j) &
+                    -450.*f(:,:,n1+i2,j) &
+                    +400.*f(:,:,n1+i3,j) &
+                    -225.*f(:,:,n1+i4,j) &
+                     +72.*f(:,:,n1+i5,j) &
+                     -10.*f(:,:,n1+i6,j))/147.
+        do i=1,nghost; f(:,:,n1-i,j)=f(:,:,n1+i,j); enddo
+!
+!  top (right end of the domain)
+!
+      case('top')               ! top boundary
+        f(:,:,n2,j)=(360.*f(:,:,n2-i1,j) &
+                    -450.*f(:,:,n2-i2,j) &
+                    +400.*f(:,:,n2-i3,j) &
+                    -225.*f(:,:,n2-i4,j) &
+                     +72.*f(:,:,n2-i5,j) &
+                     -10.*f(:,:,n2-i6,j))/147.
+        do i=1,nghost; f(:,:,n2+i,j)=f(:,:,n2-i,j); enddo
+!
+      case default
+        print*, "bc_symset0der_z: ", topbot, " should be `top' or `bot'"
+!
+      endselect
+!
+    endsubroutine bc_symset0der_z
 !***********************************************************************
     subroutine bc_set_der_x(f,topbot,j,val)
 !
