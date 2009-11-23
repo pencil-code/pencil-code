@@ -1740,12 +1740,12 @@ module Density
           tmp = fdiff
         endif
         if (lhydro) then
-          df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + p%uu(:,1)*tmp
-          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + p%uu(:,2)*tmp
-          df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + p%uu(:,3)*tmp
+          df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - p%uu(:,1)*tmp
+          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - p%uu(:,2)*tmp
+          df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - p%uu(:,3)*tmp
         endif
         if (lentropy.and.(.not.pretend_lnTT)) then
-          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + f(l1:l2,m,n,iss)*tmp
+          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - f(l1:l2,m,n,iss)*tmp
         elseif (lentropy.and.pretend_lnTT) then
           if (headtt) call warning('dlnrho_dt', &
               'massdiff_fix not yet implemented for pretend_lnTT')
