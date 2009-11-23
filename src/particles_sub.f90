@@ -679,9 +679,18 @@ module Particles_sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      real, dimension (nx,ny,nz) :: a1, b1
-      integer :: ikx, iky, ikz
+      real, dimension (:,:,:), allocatable :: a1, b1
+      integer :: ikx, iky, ikz, stat
       real :: k2, k4
+!
+!  Allocate memory for large arrays.
+!
+      allocate(a1(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('sharpen_tsc_density', &
+          'Could not allocate memory for a1')
+      allocate(b1(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('sharpen_tsc_density', &
+          'Could not allocate memory for b1')
 !
       a1=f(l1:l2,m1:m2,n1:n2,irhop)
       b1=0.0
@@ -702,6 +711,11 @@ module Particles_sub
         call fourier_transform(a1,b1,linv=.true.)
       endif
       f(l1:l2,m1:m2,n1:n2,irhop)=a1
+!
+!  Deallocate arrays.
+!
+      if (allocated(a1)) deallocate(a1)
+      if (allocated(b1)) deallocate(b1)
 !
     endsubroutine sharpen_tsc_density
 !***********************************************************************
