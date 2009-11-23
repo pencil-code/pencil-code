@@ -10,6 +10,7 @@ module Boundcond
   use Cparam
   use Messages
   use Mpicomm
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -23,6 +24,8 @@ module Boundcond
 !***********************************************************************
     subroutine update_ghosts(a)
 !
+!  23-nov-09/anders: dummy
+!
       real, dimension (mx,my,mz,mfarray) :: a
 !
       call keep_compiler_quiet(a)
@@ -31,10 +34,10 @@ module Boundcond
 !***********************************************************************
     subroutine boundconds(f,ivar1_opt,ivar2_opt)
 !
+!  23-nov-09/anders: dummy
+!
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
-!
-      integer :: ivar1, ivar2
 !
       call keep_compiler_quiet(f)
       if (present(ivar1_opt)) call keep_compiler_quiet(ivar1_opt)
@@ -43,6 +46,8 @@ module Boundcond
     endsubroutine boundconds
 !***********************************************************************
     subroutine boundconds_x(f,ivar1_opt,ivar2_opt)
+!
+!  23-nov-09/anders: dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
@@ -55,6 +60,8 @@ module Boundcond
 !***********************************************************************
     subroutine boundconds_y(f,ivar1_opt,ivar2_opt)
 !
+!  23-nov-09/anders: dummy
+!
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
@@ -66,6 +73,8 @@ module Boundcond
 !***********************************************************************
     subroutine boundconds_z(f,ivar1_opt,ivar2_opt)
 !
+!  23-nov-09/anders: dummy
+!
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
@@ -76,6 +85,8 @@ module Boundcond
     endsubroutine boundconds_z
 !***********************************************************************
     subroutine bc_per_x(f,topbot,j)
+!
+!  23-nov-09/anders: dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
@@ -89,6 +100,8 @@ module Boundcond
 !***********************************************************************
     subroutine bc_per_y(f,topbot,j)
 !
+!  23-nov-09/anders: dummy
+!
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
       character (len=3) :: topbot
@@ -100,6 +113,8 @@ module Boundcond
     endsubroutine bc_per_y
 !***********************************************************************
     subroutine bc_per_z(f,topbot,j)
+!
+!  23-nov-09/anders: dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
