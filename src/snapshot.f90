@@ -166,7 +166,7 @@ module Snapshot
 !
     endsubroutine rsnap
 !***********************************************************************
-   subroutine powersnap(a,lwrite_only)
+   subroutine powersnap(f,lwrite_only)
 !
 !  Write a snapshot of power spectrum.
 !
@@ -184,16 +184,23 @@ module Snapshot
       use Struct_func
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: a
-      real, dimension (nx,ny,nz) :: b_vec
+      real, dimension (mx,my,mz,mfarray) :: f
+      logical, optional :: lwrite_only
+!
+      real, dimension (:,:,:), allocatable :: b_vec
       character (len=135) :: file
       character (len=5) :: ch
       logical :: lspec,llwrite_only=.false.,ldo_all
-      logical, optional :: lwrite_only
       integer, save :: ifirst=0,nspec
       real, save :: tspec
-      integer :: ivec,im,in
+      integer :: ivec,im,in,stat
       real, dimension (nx) :: bb
+!
+!  Allocate memory for b_vec at run time.
+!
+      allocate(b_vec(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('powersnap', &
+          'Could not allocate memory for b_vec')
 !
 !  Set llwrite_only.
 !
@@ -219,48 +226,48 @@ module Snapshot
       if (ldo_all) &
            call update_snaptime(file,tspec,nspec,dspec,t,lspec,ch,ENUM=.false.)
       if (lspec.or.llwrite_only) then
-        if (ldo_all)  call update_ghosts(a)
-        if (vel_spec) call power(a,'u')
-        if (r2u_spec) call power(a,'r2u')
-        if (r3u_spec) call power(a,'r3u')
-        if (mag_spec) call power(a,'b')
-        if (vec_spec) call power(a,'a')
-        if (uxj_spec) call powerhel(a,'uxj')
-        if (ou_spec)  call powerhel(a,'kin')
-        if (ab_spec)  call powerhel(a,'mag')
-        if (ub_spec)  call powerhel(a,'u.b')
-        if (EP_spec)  call powerhel(a,'bEP')
-        if (ro_spec)  call powerscl(a,'ro')
-        if (lr_spec)  call powerscl(a,'lr')
-        if (TT_spec)  call powerscl(a,'TT')
-        if (ss_spec)  call powerscl(a,'ss')
-        if (cc_spec)  call powerscl(a,'cc')
-        if (cr_spec)  call powerscl(a,'cr')
+        if (ldo_all)  call update_ghosts(f)
+        if (vel_spec) call power(f,'u')
+        if (r2u_spec) call power(f,'r2u')
+        if (r3u_spec) call power(f,'r3u')
+        if (mag_spec) call power(f,'b')
+        if (vec_spec) call power(f,'a')
+        if (uxj_spec) call powerhel(f,'uxj')
+        if (ou_spec)  call powerhel(f,'kin')
+        if (ab_spec)  call powerhel(f,'mag')
+        if (ub_spec)  call powerhel(f,'u.b')
+        if (EP_spec)  call powerhel(f,'bEP')
+        if (ro_spec)  call powerscl(f,'ro')
+        if (lr_spec)  call powerscl(f,'lr')
+        if (TT_spec)  call powerscl(f,'TT')
+        if (ss_spec)  call powerscl(f,'ss')
+        if (cc_spec)  call powerscl(f,'cc')
+        if (cr_spec)  call powerscl(f,'cr')
         if (oned) then
-          if (vel_spec) call power_1d(a,'u',1)
-          if (mag_spec) call power_1d(a,'b',1)
-          if (vec_spec) call power_1d(a,'a',1)
-          if (vel_spec) call power_1d(a,'u',2)
-          if (mag_spec) call power_1d(a,'b',2)
-          if (vec_spec) call power_1d(a,'a',2)
-          if (vel_spec) call power_1d(a,'u',3)
-          if (mag_spec) call power_1d(a,'b',3)
-          if (vec_spec) call power_1d(a,'a',3)
+          if (vel_spec) call power_1d(f,'u',1)
+          if (mag_spec) call power_1d(f,'b',1)
+          if (vec_spec) call power_1d(f,'a',1)
+          if (vel_spec) call power_1d(f,'u',2)
+          if (mag_spec) call power_1d(f,'b',2)
+          if (vec_spec) call power_1d(f,'a',2)
+          if (vel_spec) call power_1d(f,'u',3)
+          if (mag_spec) call power_1d(f,'b',3)
+          if (vec_spec) call power_1d(f,'a',3)
         endif
         if (twod) then
-          if (vel_spec) call power_2d(a,'u')
-          if (mag_spec) call power_2d(a,'b')
-          if (vec_spec) call power_2d(a,'a')
+          if (vel_spec) call power_2d(f,'u')
+          if (mag_spec) call power_2d(f,'b')
+          if (vec_spec) call power_2d(f,'a')
         endif
-        if (vel_phispec) call power_phi(a,'u')
-        if (mag_phispec) call power_phi(a,'b')
-        if (vec_phispec) call power_phi(a,'a')
-        if (ab_phispec)  call powerhel_phi(a,'mag')
-        if (ou_phispec)  call powerhel_phi(a,'kin')
+        if (vel_phispec) call power_phi(f,'u')
+        if (mag_phispec) call power_phi(f,'b')
+        if (vec_phispec) call power_phi(f,'a')
+        if (ab_phispec)  call powerhel_phi(f,'mag')
+        if (ou_phispec)  call powerhel_phi(f,'kin')
 !
 !  Spectra of particle variables.
 !
-        if (lparticles) call particles_powersnap(a)
+        if (lparticles) call particles_powersnap(f)
 !
 !  Structure functions.
 !
@@ -269,34 +276,36 @@ module Snapshot
               lpdfz1 .or. lpdfz2) then
              do n=n1,n2
                do m=m1,m2
-                 call curli(a,iaa,bb,ivec)
+                 call curli(f,iaa,bb,ivec)
                  im=m-nghost
                  in=n-nghost
                  b_vec(:,im,in)=bb
                enddo
             enddo
-            b_vec=b_vec/sqrt(exp(a(l1:l2,m1:m2,n1:n2,ilnrho)))
+            b_vec=b_vec/sqrt(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
           endif
-          if (lsfu)     call structure(a,ivec,b_vec,'u')
-          if (lsfb)     call structure(a,ivec,b_vec,'b')
-          if (lsfz1)    call structure(a,ivec,b_vec,'z1')
-          if (lsfz2)    call structure(a,ivec,b_vec,'z2')
-          if (lsfflux)  call structure(a,ivec,b_vec,'flux')
-          if (lpdfu)    call structure(a,ivec,b_vec,'pdfu')
-          if (lpdfb)    call structure(a,ivec,b_vec,'pdfb')
-          if (lpdfz1)   call structure(a,ivec,b_vec,'pdfz1')
-          if (lpdfz2)   call structure(a,ivec,b_vec,'pdfz2')
+          if (lsfu)     call structure(f,ivec,b_vec,'u')
+          if (lsfb)     call structure(f,ivec,b_vec,'b')
+          if (lsfz1)    call structure(f,ivec,b_vec,'z1')
+          if (lsfz2)    call structure(f,ivec,b_vec,'z2')
+          if (lsfflux)  call structure(f,ivec,b_vec,'flux')
+          if (lpdfu)    call structure(f,ivec,b_vec,'pdfu')
+          if (lpdfb)    call structure(f,ivec,b_vec,'pdfb')
+          if (lpdfz1)   call structure(f,ivec,b_vec,'pdfz1')
+          if (lpdfz2)   call structure(f,ivec,b_vec,'pdfz2')
         enddo
 !
 !  Do pdf of passive scalar field (if present).
 !
-        if (rhocc_pdf) call pdf(a,'rhocc',rhoccm,sqrt(cc2m))
-        if (cc_pdf)    call pdf(a,'cc'   ,rhoccm,sqrt(cc2m))
-        if (lncc_pdf)  call pdf(a,'lncc' ,rhoccm,sqrt(cc2m))
-        if (gcc_pdf)   call pdf(a,'gcc'  ,0.    ,sqrt(gcc2m))
-        if (lngcc_pdf) call pdf(a,'lngcc',0.    ,sqrt(gcc2m))
+        if (rhocc_pdf) call pdf(f,'rhocc',rhoccm,sqrt(cc2m))
+        if (cc_pdf)    call pdf(f,'cc'   ,rhoccm,sqrt(cc2m))
+        if (lncc_pdf)  call pdf(f,'lncc' ,rhoccm,sqrt(cc2m))
+        if (gcc_pdf)   call pdf(f,'gcc'  ,0.    ,sqrt(gcc2m))
+        if (lngcc_pdf) call pdf(f,'lngcc',0.    ,sqrt(gcc2m))
 !
       endif
+!
+      deallocate(b_vec)
 !
     endsubroutine powersnap
 !***********************************************************************
