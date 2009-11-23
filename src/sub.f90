@@ -1,4 +1,15 @@
 ! $Id$
+!
+!  This module contains useful subroutines.
+!
+!  Rules:
+!
+!    - Please do not put very specific subroutines here. If a subroutine
+!      is only needed by a single module, put it directly in that module.
+!
+!    - Please DO NOT use large arrays or global arrays
+!      [e.g. of size (mx,my,mz) or (nxgrid,nygrid,nzgrid)]
+!
 module Sub
 !
   use Cdata
@@ -25,10 +36,8 @@ module Sub
 !
   public :: grad, grad5, div, div_mn, curl, curli, curl_mn, curl_other
   public :: curl_horizontal
-  public :: div_other
   public :: gij, g2ij, gij_etc
   public :: gijk_symmetric
-  public :: gij_psi, gij_psi_etc
   public :: der_step
   public :: u_dot_grad, h_dot_grad
   public :: u_dot_grad_mat
@@ -112,7 +121,6 @@ module Sub
   endinterface
 !
   interface cross
-    module procedure cross_global
     module procedure cross_mn
     module procedure cross_0
   endinterface
@@ -128,64 +136,52 @@ module Sub
   endinterface
 !
   interface dot
-    module procedure dot_global
     module procedure dot_mn
     module procedure dot_0
   endinterface
 !
   interface dot2
-    module procedure dot2_global
     module procedure dot2_mn
     module procedure dot2_0
   endinterface
 !
   interface dot_add
-    ! module procedure dot_global_add ! not yet implemented
     module procedure dot_mn_add
   endinterface
 !
   interface dot_sub
-    ! module procedure dot_global_sub ! not yet implemented
     module procedure dot_mn_sub
   endinterface
 !
   interface multsv
-    module procedure multsv_global
     module procedure multsv_mn
   endinterface
 !
   interface multsv_add
-    module procedure multsv_add_global
     module procedure multsv_add_mn
   endinterface
 !
   interface multvs
-    ! module procedure multvs_global  ! never implemented
     module procedure multvs_mn
   endinterface
 !
   interface multvv_mat
-    ! module procedure multvv_mat_global ! never implemented
     module procedure multvv_mat_mn
   endinterface
 !
   interface multmm_sc
-    ! module procedure multmm_sc_global ! never implemented
     module procedure multmm_sc_mn
   endinterface
 !
   interface multm2
-    ! module procedure multm2_global ! never implemented
     module procedure multm2_mn
   endinterface
 !
   interface multmv_transp
-    ! module procedure multmv_global_transp ! never implemented
     module procedure multmv_mn_transp
   endinterface
 !
   interface multmv
-    ! module procedure multmv_global ! never implemented
     module procedure multmv_mn
   endinterface
 !
@@ -198,25 +194,21 @@ module Sub
   interface cubic_step
     module procedure cubic_step_pt
     module procedure cubic_step_mn
-    module procedure cubic_step_global
   endinterface
 !
   interface cubic_der_step
     module procedure cubic_der_step_pt
     module procedure cubic_der_step_mn
-    module procedure cubic_der_step_global
   endinterface
 !
   interface quintic_step
     module procedure quintic_step_pt
     module procedure quintic_step_mn
-    module procedure quintic_step_global
   endinterface
 !
   interface quintic_der_step
     module procedure quintic_der_step_pt
     module procedure quintic_der_step_mn
-    module procedure quintic_der_step_global
   endinterface
 !
   interface erfunc
@@ -227,7 +219,6 @@ module Sub
   interface sine_step
     module procedure sine_step_pt
     module procedure sine_step_mn
-    module procedure sine_step_global
   endinterface
 !
   interface power_law
@@ -469,21 +460,6 @@ module Sub
 !
     endsubroutine sum_mn
 !***********************************************************************
-    subroutine dot_global(a,b,c)
-!
-!  dot product, c=a.b, on global arrays
-!  29-sep-97/axel: coded
-!
-      real, dimension (mx,my,mz,3) :: a,b
-      real, dimension (mx,my,mz) :: c
-!
-      intent(in) :: a,b
-      intent(out) :: c
-!
-      c=a(:,:,:,1)*b(:,:,:,1)+a(:,:,:,2)*b(:,:,:,2)+a(:,:,:,3)*b(:,:,:,3)
-!
-    endsubroutine dot_global
-!***********************************************************************
     subroutine dot_mn(a,b,c,ladd)
 !
 !  dot product, c=a.b, on pencil arrays
@@ -620,21 +596,6 @@ module Sub
       c = dot_product(a,b)
 !
     endsubroutine dot_0
-!***********************************************************************
-    subroutine dot2_global(a,b)
-!
-!  dot product with itself, to calculate max and rms values of a vector
-!  29-sep-97/axel: coded,
-!
-      real, dimension (mx,my,mz,3) :: a
-      real, dimension (nx) :: b
-!
-      intent(in) :: a
-      intent(out) :: b
-!
-      b=a(l1:l2,m,n,1)**2+a(l1:l2,m,n,2)**2+a(l1:l2,m,n,3)**2
-!
-    endsubroutine dot2_global
 !***********************************************************************
     subroutine dot2_mn(a,b,fast_sqrt,precise_sqrt)
 !
@@ -935,70 +896,6 @@ module Sub
 !
     endsubroutine multmv_mn_transp
 !***********************************************************************
-    subroutine dot2mu(a,b,c)
-!
-!  dot product with itself times scalar, to calculate max and rms values
-!  of a vector, c=b*dot2(a)
-!  29-sep-97/axel: coded,
-!
-      real, dimension (mx,my,mz,3) :: a
-      real, dimension (mx,my,mz) :: b,c
-!
-      intent(in) :: a,b
-      intent(out) :: c
-!
-      c=b*(a(:,:,:,1)**2+a(:,:,:,2)**2+a(:,:,:,3)**2)
-!
-    endsubroutine dot2mu
-!***********************************************************************
-    subroutine dotneg(a,b,c)
-!
-!  negative dot product, c=-a.b
-!  29-sep-97/axel: coded
-!
-      real, dimension (mx,my,mz,3) :: a,b
-      real, dimension (mx,my,mz) :: c
-!
-      intent(in) :: a,b
-      intent(out) :: c
-!
-      c=-a(:,:,:,1)*b(:,:,:,1)-a(:,:,:,2)*b(:,:,:,2)-a(:,:,:,3)*b(:,:,:,3)
-!
-    endsubroutine dotneg
-!***********************************************************************
-    subroutine dotadd(a,b,c)
-!
-!  add dot product, c=c+a.b
-!  29-sep-97/axel: coded
-!
-      real, dimension (mx,my,mz,3) :: a,b
-      real, dimension (mx,my,mz) :: c
-!
-      intent(in) :: a,b
-      intent(out) :: c
-!
-      c=c+a(:,:,:,1)*b(:,:,:,1)+a(:,:,:,2)*b(:,:,:,2)+a(:,:,:,3)*b(:,:,:,3)
-!
-    endsubroutine dotadd
-!***********************************************************************
-    subroutine multsv_global(a,b,c)
-!
-!  multiply scalar with a vector
-!  29-sep-97/axel: coded
-!
-      real, dimension (mx,my,mz,3) :: b,c
-      real, dimension (mx,my,mz) :: a
-      integer :: j
-!
-      intent(in) :: a,b
-      intent(out) :: c
-!
-      do j=1,3
-        c(:,:,:,j)=a*b(:,:,:,j)
-      enddo
-!
-    endsubroutine multsv_global
-!***********************************************************************
     subroutine multsv_mn(a,b,c,ladd)
 !
 !  vector multiplied with scalar, gives vector
@@ -1053,24 +950,6 @@ module Sub
 !
     endsubroutine multsv_mn_add
 !***********************************************************************
-    subroutine multsv_add_global(a,b,c,d)
-!
-!  multiply scalar with a vector and subtract from another vector
-!  29-oct-97/axel: coded
-!
-      real, dimension (mx,my,mz,3) :: a,c,d
-      real, dimension (mx,my,mz) :: b
-      integer :: j
-!
-      intent(in) :: a,b,c
-      intent(out) :: d
-!
-      do j=1,3
-        d(:,:,:,j)=a(:,:,:,j)+b*c(:,:,:,j)
-      enddo
-!
-    endsubroutine multsv_add_global
-!***********************************************************************
     subroutine multsv_add_mn(a,b,c,d)
 !
 !  multiply scalar with a vector and subtract from another vector
@@ -1089,24 +968,6 @@ module Sub
 !
     endsubroutine multsv_add_mn
 !***********************************************************************
-    subroutine multsv_sub(a,b,c,d)
-!
-!  multiply scalar with a vector and subtract from another vector
-!  29-oct-97/axel: coded
-!
-      real, dimension (mx,my,mz,3) :: a,c,d
-      real, dimension (mx,my,mz) :: b
-      integer :: j
-!
-      intent(in) :: a,b,c
-      intent(out) :: d
-!
-      do j=1,3
-        d(:,:,:,j)=a(:,:,:,j)-b*c(:,:,:,j)
-      enddo
-!
-    endsubroutine multsv_sub
-!***********************************************************************
     subroutine multvs_mn(a,b,c)
 !
 !  vector pencil multiplied with scalar pencil, gives vector pencil
@@ -1121,21 +982,6 @@ module Sub
       enddo
 !
     endsubroutine multvs_mn
-!***********************************************************************
-    subroutine cross_global(a,b,c)
-!
-!  cross product, c = a x b, on global arrays
-!
-      real, dimension (mx,my,mz,3) :: a,b,c
-!
-      intent(in) :: a,b
-      intent(out) :: c
-!
-      c(:,:,:,1)=a(:,:,:,2)*b(:,:,:,3)-a(:,:,:,3)*b(:,:,:,2)
-      c(:,:,:,2)=a(:,:,:,3)*b(:,:,:,1)-a(:,:,:,1)*b(:,:,:,3)
-      c(:,:,:,3)=a(:,:,:,1)*b(:,:,:,2)-a(:,:,:,2)*b(:,:,:,1)
-!
-    endsubroutine cross_global
 !***********************************************************************
     subroutine cross_mn(a,b,c)
 !
@@ -1256,33 +1102,6 @@ module Sub
 !
     endsubroutine gijk_symmetric
 !***********************************************************************
-    subroutine gij_psi(psif,ee,g)
-!
-!  calculate gradient of a scalar field multiplied by a constant vector),
-!  return matrix
-!  31-jul-07/dhruba: adapted from gij
-!
-      use Deriv, only: der
-      use Messages, only: fatal_error
-!
-      real, dimension (mx,my,mz) :: psif
-      real, dimension (3) :: ee
-      real, dimension (nx,3,3) :: g
-      real, dimension (nx) :: tmp
-      integer :: i,j
-!
-      intent(in) :: psif
-      intent(out) :: g
-!
-      do i=1,3
-        do j=1,3
-            call der(psif*ee(i),tmp,j)
-            g(:,i,j) = tmp
-        enddo
-      enddo
-!
-    endsubroutine gij_psi
-!***********************************************************************
     subroutine grad_main(f,k,g)
 !
 !  calculate gradient of a scalar, get vector
@@ -1382,30 +1201,6 @@ module Sub
       endif
 !
     endsubroutine div
-!***********************************************************************
-    subroutine div_other(f,g)
-! 
-      use Deriv, only: der
-
-      real, dimension (mx,my,mz,3) :: f
-      real, dimension (nx) :: g, tmp
-!
-      call der(f(:,:,:,1),tmp,1)
-      g=tmp
-      call der(f(:,:,:,2),tmp,2)
-      g=g+tmp
-      call der(f(:,:,:,3),tmp,3)
-      g=g+tmp
-!
-      if (lspherical_coords) then
-        g=g+2.*r1_mn*f(l1:l2,m,n,1)+r1_mn*cotth(m)*f(l1:l2,m,n,2)
-      endif
-!
-      if (lcylindrical_coords) then
-        g=g+rcyl_mn1*f(l1:l2,m,n,1)
-      endif
-!
-    endsubroutine div_other
 !***********************************************************************
     subroutine div_mn(aij,b,a)
 !
@@ -2154,131 +1949,6 @@ module Sub
 !
     endsubroutine gij_etc
 !***********************************************************************
-    subroutine gij_psi_etc(psif,ee,aa,aij,Bij,del2,graddiv)
-!
-!  calculate B_i,j = eps_ikl A_l,jk and A_l,kk
-!
-!  1-aug-07/dhruba : adapted from gij_etc
-      use Deriv, only: der2,derij
-      use Mpicomm, only: stop_it
-!
-      real, dimension (mx,my,mz), intent (in) :: psif
-      real, dimension(3), intent(in) :: ee
-      real, dimension (nx,3,3), intent (out) :: bij
-      real, dimension (nx,3,3), intent (in), optional :: aij
-      real, dimension (nx,3), intent (out), optional :: del2,graddiv
-      real, dimension (nx,3), intent (in), optional :: aa
-!
-!  locally used variables
-!
-      real, dimension (nx,3,3,3) :: d2A
-      real, dimension (nx) :: tmp
-      integer :: i,j
-!
-! 
-!
-!  calculate all mixed and non-mixed second derivatives
-!  of the vector potential (A_k,ij)
-!
-!  do not calculate both d^2 A/(dx dy) and d^2 A/(d dx)
-!  (This wasn't spotted by me but by a guy from SGI...)
-!  Note: for non-cartesian coordinates there are different correction terms,
-!  see below.
-!
-      do i=1,3
-        do j=1,3
-          call der2(psif*ee(i),tmp,j); d2A(:,j,j,i)=tmp
-        enddo
-!!DHRUBA 
-        call derij(psif*ee(i),tmp,2,3); d2A(:,2,3,i)=tmp; d2A(:,3,2,i)=tmp
-        call derij(psif*ee(i),tmp,3,1); d2A(:,3,1,i)=tmp; d2A(:,1,3,i)=tmp
-        call derij(psif*ee(i),tmp,1,2); d2A(:,1,2,i)=tmp; d2A(:,2,1,i)=tmp
-      enddo
-!
-!  corrections for spherical polars from swapping mixed derivatives:
-!  Psi_{,theta^ r^} = Psi_{,r^ theta^} - Psi_{,\theta^}/r
-!  Psi_{,phi^ r^} = Psi_{,r^ phi^} - Psi_{,\phi^}/r
-!  Psi_{,phi^ theta^} = Psi_{,theta^ phi^} - Psi_{,\phi^}*r^{-1}*cot(theta)
-!
-      if (lspherical_coords) then
-        do i=1,3
-          d2A(:,2,1,i)=d2A(:,2,1,i)-aij(:,i,2)*r1_mn
-          d2A(:,3,1,i)=d2A(:,3,1,i)-aij(:,i,3)*r1_mn
-          d2A(:,3,2,i)=d2A(:,3,2,i)-aij(:,i,3)*r1_mn*cotth(m)
-        enddo
-      endif
-!
-!  for cylindrical, only
-!  Psi_{,phi^ pom^} = Psi_{,pom^ phi^} - Psi_{,\phi^}/pom
-!
-      if (lcylindrical_coords) then
-         do i=1,3
-            d2A(:,2,1,i)=d2A(:,2,1,i)-aij(:,i,2)*rcyl_mn1
-         enddo
-      endif
-!
-!  calculate b_i,j = eps_ikl A_l,kj, as well as optionally,
-!  del2_i = A_i,jj and graddiv_i = A_j,ji
-!
-      bij(:,1,:)=d2A(:,2,:,3)-d2A(:,3,:,2)
-      bij(:,2,:)=d2A(:,3,:,1)-d2A(:,1,:,3)
-      bij(:,3,:)=d2A(:,1,:,2)-d2A(:,2,:,1)
-!
-!  corrections for spherical coordinates
-!
-      if (lspherical_coords) then
-        bij(:,3,2)=bij(:,3,2)+aij(:,2,2)*r1_mn
-        bij(:,2,3)=bij(:,2,3)-aij(:,3,3)*r1_mn
-        bij(:,1,3)=bij(:,1,3)+aij(:,3,3)*r1_mn*cotth(m)
-        bij(:,3,1)=bij(:,3,1)+aij(:,2,1)*r1_mn         -aa(:,2)*r2_mn
-        bij(:,2,1)=bij(:,2,1)-aij(:,3,1)*r1_mn         +aa(:,3)*r2_mn
-        bij(:,1,2)=bij(:,1,2)+aij(:,3,2)*r1_mn*cotth(m)-aa(:,3)*r2_mn*sin2th(m)
-      endif
-!
-!  corrections for cylindrical coordinates
-!
-      if (lcylindrical_coords) then
-        bij(:,3,2)=bij(:,3,2)+ aij(:,2,2)*r1_mn
-        bij(:,3,1)=bij(:,3,1)+(aij(:,2,1)+aij(:,1,2))*rcyl_mn1-aa(:,2)*rcyl_mn2
-      endif   
-!
-!  calculate del2 and graddiv, if requested
-!
-      if (present(graddiv)) then
-!--     graddiv(:,:)=d2A(:,:,1,1)+d2A(:,:,2,2)+d2A(:,:,3,3)
-        graddiv(:,:)=d2A(:,1,:,1)+d2A(:,2,:,2)+d2A(:,3,:,3)
-        if (lspherical_coords) then
-          graddiv(:,1)=graddiv(:,1)+aij(:,1,1)*r1_mn*2+ & 
-             aij(:,2,1)*r1_mn*cotth(m)-aa(:,2)*r2_mn*cotth(m)-aa(:,1)*r2_mn*2
-          graddiv(:,2)=graddiv(:,2)+aij(:,1,2)*r1_mn*2+ & 
-             aij(:,2,2)*r1_mn*cotth(m)-aa(:,2)*r2_mn*sin2th(m)
-          graddiv(:,3)=graddiv(:,3)+aij(:,1,3)*r1_mn*2+ & 
-             aij(:,2,3)*r1_mn*cotth(m)
-        endif
-      endif
-!
-      if (present(del2)) then
-        del2(:,:)=d2A(:,1,1,:)+d2A(:,2,2,:)+d2A(:,3,3,:)
-        if (lspherical_coords.and.present(aij).and.present(aa)) then
-          del2(:,1)= del2(:,1)+&
-            r1_mn*(2.*(aij(:,1,1)-aij(:,2,2)-aij(:,3,3)&
-            -r1_mn*aa(:,1)-cotth(m)*r1_mn*aa(:,2) ) &
-            +cotth(m)*aij(:,1,2) )
-          del2(:,2)=del2(:,2)+&
-            r1_mn*(2.*(aij(:,2,1)-cotth(m)*aij(:,3,3)&
-            +aij(:,1,2) )&
-            +cotth(m)*aij(:,2,2)-r1_mn*sin2th(m)*aa(:,2) )
-          del2(:,3)=del2(:,3)+&
-            r1_mn*(2.*(aij(:,3,1)+aij(:,1,3)&
-            +cotth(m)*aij(:,2,3) ) &
-            +cotth(m)*aij(:,3,2)-r1_mn*sin2th(m)*aa(:,3) )
-        else
-        endif
-        if (lcylindrical_coords)  call stop_it("gij_etc: use del2=graddiv-curlcurl for cylindrical coords")
-      endif
-!
-    endsubroutine gij_psi_etc
-!***********************************************************************
     subroutine g2ij(f,k,g)
 !
 !  calculates the Hessian, i.e. all second derivatives of a scalar
@@ -2305,39 +1975,7 @@ module Sub
       enddo
 !
     endsubroutine g2ij
-!***********************************************************************
-!   subroutine del2v_graddiv(f,del2f,graddiv)
-!
-!  calculate del2 of a vector, get vector
-!  calculate also graddiv of the same vector
-!   3-apr-01/axel: coded
-!
-!     real, dimension (mx,my,mz,3) :: f
-!     real, dimension (mx,my,mz) :: scr
-!     real, dimension (mx,3) :: del2f,graddiv
-!     real, dimension (mx) :: tmp
-!     integer :: j
-!
-!  do the del2 diffusion operator
-!
-!     do i=1,3
-!       s=0.
-!       scr=f(:,:,:,i)
-!       do j=1,3
-!         call der2(scr,tmp,j)
-!tst      if (i==j) graddiv(:,i,j)=tmp
-!tst      s=s+tmp
-!       enddo
-!       del2f(:,j)=s
-!     enddo
-
-!     call der2(f,dfdx,1)
-!     call der2(f,dfdy,2)
-!     call der2(f,dfdz,3)
-!     del2f=dfdx+dfdy+dfdz
-!
-!   endsubroutine del2v_graddiv
-!*************************************************************************************
+!*************************************************************************
     subroutine del4(f,k,del4f)
 !
 !  calculate del4 (defined here as d^4/dx^4 + d^4/dy^4 + d^4/dz^4, rather
@@ -2813,8 +2451,8 @@ module Sub
       read(1,10) t_sp,x,y,z
       t = t_sp
       close(1)
-!10    format(1p8e10.3)
 10    format(8e10.3)
+!
     endsubroutine inpuf
 !***********************************************************************
     subroutine outpup(file,a,nv)
@@ -2829,6 +2467,7 @@ module Sub
       open(1,file=file,form='unformatted')
       write(1) a
       close(1)
+!
     endsubroutine outpup
 !***********************************************************************
     subroutine outpui(file,a,nv)
@@ -2843,6 +2482,7 @@ module Sub
       open(1,file=file,form='formatted')
       write(1,*) a
       close(1)
+!
     endsubroutine outpui
 !***********************************************************************
     subroutine outpuf(file,a,nv)
@@ -2860,8 +2500,8 @@ module Sub
       write(1,10) a
       write(1,10) t_sp,x,y,z
       close(1)
-!10    format(1p8e10.3)
 10    format(8e10.3)
+!
     endsubroutine outpuf
 !***********************************************************************
     character function numeric_precision()
@@ -2911,21 +2551,21 @@ module Sub
         myout1=my
         mzout1=mz
       endif
-      !
-      !  only root writes allprocs/dim.dat (with io_mpio.f90),
-      !  but everybody writes to their procN/dim.dat (with io_dist.f90)
-      !
+!
+!  only root writes allprocs/dim.dat (with io_mpio.f90),
+!  but everybody writes to their procN/dim.dat (with io_dist.f90)
+!
       if (lroot .or. .not. lmonolithic_io) then
         open(1,file=file)
         write(1,'(3i7,3i5)') mxout1,myout1,mzout1,mvar,maux,mglobal
-        !
-        !  check for double precision
-        !
+!
+!  check for double precision
+!
         prec = numeric_precision()
         write(1,'(a)') prec
-        !
-        !  write number of ghost cells (could be different in x, y and z)
-        !
+!
+!  write number of ghost cells (could be different in x, y and z)
+!
         write(1,'(3i5)') nghost, nghost, nghost
         if (present(mzout)) then
           if (lprocz_slowest) iprocz_slowest=1
@@ -2940,8 +2580,7 @@ module Sub
       endsubroutine wdim
 !***********************************************************************
       subroutine rdim(file,mx_in,my_in,mz_in,mvar_in,maux_in,mglobal_in,&
-          prec_in,nghost_in,&
-          ipx_in, ipy_in, ipz_in)
+          prec_in,nghost_in,ipx_in, ipy_in, ipz_in)
 !
 !  write dimension to file
 !
@@ -2952,15 +2591,15 @@ module Sub
       integer           :: mx_in,my_in,mz_in,iprocz_slowest=0
       integer           :: mvar_in,maux_in,mglobal_in,nghost_in
       integer           :: ipx_in, ipy_in, ipz_in
-      !
-      !  Every processor writes to their procN/dim.dat (with io_dist.f90)
-      !
+!
+!  Every processor writes to their procN/dim.dat (with io_dist.f90)
+!
       open(124,file=file,FORM='formatted')
       read(124,*) mx_in,my_in,mz_in,mvar_in,maux_in,mglobal_in
       read(124,*) prec_in
       read(124,*) nghost_in, nghost_in, nghost_in
       read(124,*) ipx_in, ipy_in, ipz_in
-      !
+!
       close(124)
 !
       endsubroutine rdim
@@ -3141,37 +2780,6 @@ module Sub
 !
     endsubroutine vecout
 !***********************************************************************
-    subroutine debugs (a,label)
-!
-!  print variable for debug purposes
-!  29-oct-97/axel: coded
-!
-      character (len=*) :: label
-      real, dimension (mx,my,mz) :: a
-!
-      if (ip.le.6) then
-        print*,'DEBUG: ',label,', min/max=',minval(a),maxval(a)
-      endif
-!
-    endsubroutine debugs
-!***********************************************************************
-    subroutine debugv (a,label)
-!
-!  print variable for debug purposes
-!  29-oct-97/axel: coded
-!
-      character (len=*) :: label
-      real, dimension (mx,my,mz,3) :: a
-      integer :: j
-!
-      if (ip.le.6) then
-        do j=1,3
-          print*,'DEBUG: ',label,', min/max=',minval(a),maxval(a),j
-        enddo
-      endif
-!
-    endsubroutine debugv
-!***********************************************************************
     subroutine despike(f,j,retval,factor)
 !
 !  Remove large spikes from
@@ -3235,138 +2843,6 @@ module Sub
       enddo
 !
     endsubroutine smooth_kernel
-!***********************************************************************
-    subroutine smooth_3d(ff,nsmooth)
-!
-!  Smooth scalar vector field FF binomially N times, i.e. with the
-!  binomial coefficients (2*N \above k)/2^{2*N}.
-!  20-apr-99/wolf: coded
-!
-!  WARNING: This routine is likely to be broken if you use MPI
-!
-      real, dimension (mx,my,mz) :: ff
-      integer :: j,nsmooth
-!
-      do j=1,3
-        call smooth_1d(ff,j,nsmooth)
-      enddo
-!
-    endsubroutine smooth_3d
-!***********************************************************************
-    subroutine smooth_1d(ff,idir,nsmooth)
-!
-!  Smooth scalar vector field FF binomially N times in direction IDIR.
-!  20-apr-99/wolf: coded
-!   1-sep-01/axel: adapted for case with ghost layers
-!
-!  WARNING: This routine is likely to be broken if you use MPI
-!
-      real, dimension (mx,my,mz) :: ff,gg
-      integer :: idir,i,nsmooth
-!
-!  don't smooth in directions in which there is no extent
-!
-      if (idir.eq.1.and.mx.lt.3) return
-      if (idir.eq.2.and.my.lt.3) return
-      if (idir.eq.3.and.mz.lt.3) return
-!
-      do i=1,nsmooth
-        gg = ff
-        select case (idir)
-        case (1)                  ! x direction
-          ff(2:mx-1,:,:) = (gg(1:mx-2,:,:) + 2*gg(2:mx-1,:,:) + gg(3:mx,:,:))/4.
-        case (2)                  ! y direction
-          ff(:,2:my-1,:) = (gg(:,1:my-2,:) + 2*gg(:,2:my-1,:) + gg(:,3:my,:))/4.
-        case (3)                  ! z direction
-          ff(:,:,2:mz-1) = (gg(:,:,1:mz-2) + 2*gg(:,:,2:mz-1) + gg(:,:,3:mz))/4.
-        case default
-          print*,'Bad call to smooth_1d, idir = ', idir, ' should be 1,2 or 3'
-          STOP 1                ! Return nonzero exit status
-        endselect
-      enddo
-!
-    endsubroutine smooth_1d
-!***********************************************************************
-    subroutine nearmax(f,g)
-!
-!  extract nearest maxima
-!  12-oct-97/axel: coded
-!
-      real, dimension (mx,my,mz) :: f,g
-!
-      g(1     ,:,:)=max(f(1     ,:,:),f(2     ,:,:))
-      g(2:mx-1,:,:)=max(f(1:mx-2,:,:),f(2:mx-1,:,:),f(3:mx,:,:))
-      g(  mx  ,:,:)=max(              f(  mx-1,:,:),f(  mx,:,:))
-!
-!  check for degeneracy
-!
-      if (my.gt.1) then
-        f(:,1     ,:)=max(g(:,1     ,:),g(:,2     ,:))
-        f(:,2:my-1,:)=max(g(:,1:my-2,:),g(:,2:my-1,:),g(:,3:my,:))
-        f(:,  my  ,:)=max(              g(:,  my-1,:),g(:,  my,:))
-      else
-        f=g
-      endif
-!
-!  check for degeneracy
-!
-      if (mz.gt.1) then
-        g(:,:,1     )=max(f(:,:,1     ),f(:,:,2     ))
-        g(:,:,2:mz-1)=max(f(:,:,1:mz-2),f(:,:,2:mz-1),f(:,:,3:mz))
-        g(:,:,  mz  )=max(              f(:,:,  mz-1),f(:,:,  mz))
-      else
-        g=f
-      endif
-!
-    endsubroutine nearmax
-!***********************************************************************
-    subroutine wmax(lun,f)
-!
-!  calculate th location of the first few maxima
-!   6-jan-00/axel: coded
-!
-      integer :: n,m,l,lun,imax,imax2
-      integer, parameter :: nmax=10
-      real, dimension (4,nmax) :: fmax
-      real, dimension (mx,my,mz) :: f
-      real :: t_sp   ! t in single precision for backwards compatibility
-!
-      t_sp = t
-      fmax=0
-      do n=1,mz
-      do m=1,my
-      do l=1,mx
-        !
-        !  find out whether this f is larger than the smallest max so far
-        !
-        if (f(l,m,n).gt.fmax(1,1)) then
-          !
-          !  yes, ok, so now we need to sort it in
-          !
-          sort_f_in: do imax=nmax,1,-1
-            if (f(l,m,n).gt.fmax(1,imax)) then
-              !
-              !  shift the rest downwards
-              !
-              do imax2=1,imax-1
-                fmax(:,imax2)=fmax(:,imax2+1)
-              enddo
-              fmax(1,imax)=f(l,m,n)
-              fmax(2,imax)=x(l)
-              fmax(3,imax)=y(m)
-              fmax(4,imax)=z(n)
-              exit sort_f_in
-!              goto 99
-            endif
-          enddo sort_f_in
-        endif
-!99      continue
-      enddo
-      enddo
-      enddo
-      write(lun,*) t_sp,fmax
-!
-    endsubroutine wmax
 !***********************************************************************
     subroutine identify_bcs(varname_input,idx)
 !
@@ -3651,26 +3127,6 @@ module Sub
 !
       endfunction cubic_step_mn
 !***********************************************************************
-      function cubic_step_global(x,x0,width,shift)
-!
-!  Smooth unit step function with cubic (smooth) transition over [x0-w,x0+w].
-!  Version for 3d-array arg.
-!
-!  18-apr-04/wolf: coded
-!
-        real, dimension(mx,my,mz) :: x,cubic_step_global,xi
-        real :: x0,width
-        real, optional :: shift
-        real :: relshift
-!
-        if (present(shift)) then; relshift=shift; else; relshift=0.; endif
-        xi = (x-x0)/(width+tini) - relshift
-        xi = max(xi,-1.)
-        xi = min(xi, 1.)
-        cubic_step_global = 0.5 + xi*(0.75-xi**2*0.25)
-!
-      endfunction cubic_step_global
-!***********************************************************************
       function cubic_der_step_pt(x,x0,width,shift)
 !
 !  Derivative of smooth unit step function, localized to [x0-w,x0+w].
@@ -3714,27 +3170,6 @@ module Sub
         cubic_der_step_mn = (0.75-xi**2*0.75) * width1
 !
       endfunction cubic_der_step_mn
-!***********************************************************************
-      function cubic_der_step_global(x,x0,width,shift)
-!
-!  Derivative of smooth unit step function, localized to [x0-w,x0+w].
-!  Version for 3d-array arg.
-!
-!  12-jul-05/axel: adapted from cubic_step_global
-!
-        real, dimension(mx,my,mz) :: x,cubic_der_step_global,xi
-        real :: x0,width
-        real, optional :: shift
-        real :: relshift,width1
-!
-        if (present(shift)) then; relshift=shift; else; relshift=0.; endif
-        width1 = 1./(width+tini)
-        xi = (x-x0)*width1 - relshift
-        xi = max(xi,-1.)
-        xi = min(xi, 1.)
-        cubic_der_step_global = (0.75-xi**2*0.75) * width1
-!
-      endfunction cubic_der_step_global
 !***********************************************************************
       function quintic_step_pt(x,x0,width,shift)
 !
@@ -3784,27 +3219,6 @@ module Sub
 !
       endfunction quintic_step_mn
 !***********************************************************************
-      function quintic_step_global(x,x0,width,shift)
-!
-!  Smooth unit step function with quintic (smooth) transition over [x0-w,x0+w].
-!
-!  Version for 3d-array arg.
-!
-!  09-aug-05/wolf: coded
-!
-        real, dimension(mx,my,mz) :: x,quintic_step_global,xi
-        real :: x0,width
-        real, optional :: shift
-        real :: relshift
-!
-        if (present(shift)) then; relshift=shift; else; relshift=0.; endif
-        xi = (x-x0)/(width+tini) - relshift
-        xi = max(xi,-1.)
-        xi = min(xi, 1.)
-        quintic_step_global = 0.5 + xi*(0.9375 + xi**2*(-0.625 + xi**2*0.1875))
-!
-      endfunction quintic_step_global
-!***********************************************************************
       function quintic_der_step_pt(x,x0,width,shift)
 !
 !  Derivative of smooth unit step function, localized to [x0-w,x0+w].
@@ -3853,29 +3267,6 @@ module Sub
 !
       endfunction quintic_der_step_mn
 !***********************************************************************
-      function quintic_der_step_global(x,x0,width,shift)
-!
-!  Derivative of smooth unit step function, localized to [x0-w,x0+w].
-!
-!  Version for 3d-array arg.
-!
-!  09-aug-05/wolf: coded
-!
-        real, dimension(mx,my,mz) :: x,quintic_der_step_global,xi
-        real :: x0,width
-        real, optional :: shift
-        real :: relshift,width1
-!
-        if (present(shift)) then; relshift=shift; else; relshift=0.; endif
-        width1 = 1./(width+tini)
-        xi = (x-x0)*width1 - relshift
-        xi = max(xi,-1.)
-        xi = min(xi, 1.)
-        quintic_der_step_global = (0.9375 + xi**2*(-1.875 + xi**2*0.9375)) &
-                                  * width1
-!
-      endfunction quintic_der_step_global
-!***********************************************************************
       function sine_step_pt(x,x0,width,shift)
 !
 !  Smooth unit step function with sine (smooth) transition over [x0-w,x0+w].
@@ -3923,27 +3314,6 @@ module Sub
         sine_step_mn = 0.5*(1+sin(0.5*pi*xi))
 !
       endfunction sine_step_mn
-!***********************************************************************
-      function sine_step_global(x,x0,width,shift)
-!
-!  Smooth unit step function with sine (smooth) transition over [x0-w,x0+w].
-!
-!  Version for 3d-array arg.
-!
-!  13-jun-06/tobi: Adapted from cubic_step
-!
-        real, dimension(mx,my,mz) :: x,sine_step_global,xi
-        real :: x0,width
-        real, optional :: shift
-        real :: relshift
-!
-        if (present(shift)) then; relshift=shift; else; relshift=0.; endif
-        xi = (x-x0)/(width+tini) - relshift
-        xi = max(xi,-1.)
-        xi = min(xi, 1.)
-        sine_step_global = 0.5*(1+sin(0.5*pi*xi))
-!
-      endfunction sine_step_global
 !***********************************************************************
       function notanumber_0(f)
 !
@@ -4713,29 +4083,6 @@ nameloop: do
 666     return
 !
       endfunction read_line_from_file
-!***********************************************************************
-      subroutine rmwig0(f)
-!
-!  There is no diffusion acting on the density, and wiggles in
-!  lnrho are not felt in the momentum equation at all (zero gradient).
-!  Thus, in order to keep lnrho smooth one needs to smooth lnrho
-!  in sporadic time intervals.
-!
-!  11-jul-01/axel: adapted from similar version in f77 code
-!
-!  WARNING: THIS ROUTINE IS LIKELY TO BE BROKEN IF YOU USE MPI
-!
-      real, dimension (mx,my,mz) :: tmp
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-!  copy
-!
-      print*,'remove wiggles in lnrho, t=',t
-      tmp=exp(f(:,:,:,ilnrho))
-      call smooth_3d(tmp,1)
-      f(:,:,:,ilnrho)=log(tmp)
-!
-    endsubroutine rmwig0
 !***********************************************************************
     subroutine get_nseed(nseed)
 !
