@@ -1,10 +1,12 @@
 ! $Id$
 !
-!  This module produces slices for animation purposes
+!  This module produces slices for animation purposes.
 !
 module Slices
 !
   use Cdata
+  use Messages
+  use Sub
 !
   implicit none
 !
@@ -34,8 +36,6 @@ module Slices
 !  08-oct-02/tony: increased size of file to handle datadir//'/tvid.dat'
 !  13-nov-02/axel: added more fields, use wslice.
 !  18-mar-03/axel: added dust velocity
-!
-      use Sub
 !
       integer, save :: ifirst=0
 !
@@ -82,13 +82,11 @@ module Slices
       use Hydro,           only: get_slices_hydro
       use Interstellar,    only: get_slices_interstellar
       use Magnetic,        only: get_slices_magnetic
-      use Messages
       use Particles_main,  only: get_slices_particles
       use Pscalar,         only: get_slices_pscalar
       use Radiation,       only: get_slices_radiation
       use Shock,           only: get_slices_shock
       use Special,         only: get_slices_special
-      use Sub
       use Testfield,       only: get_slices_testfield
       use Testflow,        only: get_slices_testflow
       use Testscalar,      only: get_slices_testscalar
@@ -259,8 +257,6 @@ module Slices
 !  processor.
 !
 !  29-may-06/tobi: wrapped code from param_io.f90 into this subroutine
-!
-      use Messages, only: fatal_error
 !
 !  set slice position. The default for slice_position is 'p' for periphery,
 !  although setting ix, iy, iz, iz2 by hand will overwrite this.
