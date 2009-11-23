@@ -225,7 +225,7 @@ module Particles_map
 !       a density that falls linearly outwards.
 !       This is equivalent to a second order spline interpolation scheme.
 !
-      if (irhop/=0) then
+      if (irhop/=0 .and. (.not.lnocalc_rhop)) then
         f(:,:,:,irhop)=0.0
         fb(:,:,:,irhop,0:nblock_loc-1)=0.0
         if (lparticlemesh_cic) then
@@ -1244,6 +1244,9 @@ module Particles_map
       integer, dimension (nx) :: kshepherd
       integer, dimension (:) :: kneighbour
 !
+      intent (in) :: fp, ineargrid
+      intent (out) :: kshepherd, kneighbour
+!
       call fatal_error('shepherd_neighbour_pencil', &
           'not implemented for block domain decomposition')
 !
@@ -1270,6 +1273,7 @@ module Particles_map
       integer :: k, ix0, iy0, iz0
 !
       intent (in) :: fp, ineargrid
+      intent (out) :: kshepherd, kneighbour
 !
       kshepherd=0
       if (iblock==0) kneighbour=0

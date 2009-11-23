@@ -1253,7 +1253,11 @@ module Particles_map
       integer, dimension (:) :: kneighbour
       integer :: iblock
 !
-      intent (in) :: fp, ineargrid, kshepherdb, kneighbour, iblock
+      intent (in) :: fp, ineargrid, iblock
+      intent (out) :: kshepherdb, kneighbour
+!
+      call fatal_error('shepherd_neighbour_block', &
+          'only implemented for block domain decomposition')
 !
       call keep_compiler_quiet(fp)
       call keep_compiler_quiet(ineargrid)

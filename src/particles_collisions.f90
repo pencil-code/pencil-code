@@ -254,8 +254,6 @@ module Particles_collisions
       intent (in) :: ineargrid
       intent (inout) :: fp
 !
-      if (.not. lparticles_blocks) return
-!
 !  Reset collision counter.
 !
       ncoll=0
