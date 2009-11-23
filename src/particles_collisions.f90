@@ -29,16 +29,17 @@ module Particles_collisions
   include 'particles_collisions.h'
 !
   real :: lambda_mfp_single=1.0, coeff_restitution=1.0
+  real, pointer :: gravr
   integer :: ncoll_max_par=-1, npart_max_par=-1
   logical :: lcollision_random_angle=.false., lcollision_big_ball=.false.
-  logical :: lshear_in_vp=.true.
+  logical :: lshear_in_vp=.true., lkeplerian_flat=.false.
   character (len=labellen) :: icoll='random-angle'
 !
   integer :: idiag_ncollpm=0, idiag_npartpm=0
 !
   namelist /particles_coll_run_pars/ &
       lambda_mfp_single, coeff_restitution, icoll, lshear_in_vp, &
-      ncoll_max_par, npart_max_par
+      ncoll_max_par, npart_max_par, lkeplerian_flat
 !
   contains
 !***********************************************************************
@@ -46,8 +47,12 @@ module Particles_collisions
 !
 !  07-oct-08/anders: coded
 !
+      use SharedVariables, only: get_shared_variable
+!
       real, dimension (mx,my,mz,mfarray) :: f
       logical, intent(in) :: lstarting
+!
+      integer :: ierr
 !
       select case(icoll)
       case ('random-angle'); lcollision_random_angle=.true.
@@ -68,6 +73,10 @@ module Particles_collisions
         endif
         call fatal_error('initialize_particles_collisions','')
       endif
+!
+      call get_shared_variable('gravr',gravr,ierr)
+      if (ierr/=0) call fatal_error('initialize_particles_collisions', &
+          'there was a problem when getting gravr')
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
@@ -93,6 +102,7 @@ module Particles_collisions
 !
       real, dimension (3) :: xpj, xpk, vpj, vpk
       real :: deltavjk, tau_coll1, prob, r
+      real :: espec, asemi, omega_orbit
       integer, dimension (nx) :: np_pencil
       integer :: l, j, k, np_point, ncoll, ncoll_par, npart_par
 !
@@ -153,7 +163,28 @@ module Particles_collisions
                 xpj=fp(j,ixp:izp)
                 vpj=fp(j,ivpx:ivpz)
                 if (lshear .and. lshear_in_vp) vpj(2)=vpj(2)-qshear*Omega*xpj(1)
-                deltavjk=sqrt(sum((vpk-vpj)**2))
+!
+!  For Keplerian particle discs, where the scale height of the particles is
+!  given by their velocity dispersion Hp~vrms/OmegaK, we can use the 2-D
+!  approach suggested by Lithwick & Chiang (2007). The collision time scale is
+!
+!    tcol=1/(n*sigma*vrms)=lambda/vrms
+!
+!  The particle density is n~Sigma/Hp, giving
+!
+!    tcol=1/(Sigma*sigma*OmegaK)=lambda0/(Omega*dx)
+!
+!  Here we used that lambda0=1/(nptilde*sigma) has been calculated as if
+!  the particle scale height was dx.
+!
+                if (lkeplerian_flat) then
+                  espec=sum(vpk**2)/2-gravr/sqrt(sum(xpk**2))
+                  asemi=-gravr/(2*espec)
+                  omega_orbit=sqrt(gravr/asemi**3)
+                  deltavjk=omega_orbit*dx
+                else
+                  deltavjk=sqrt(sum((vpk-vpj)**2))
+                endif
 !
 !  The time-scale for collisions between a representative particle from
 !  superparticle k and the particle cluster in superparticle j is
