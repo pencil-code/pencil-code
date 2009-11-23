@@ -19,3 +19,8 @@ References:
     Brandenburg, A., Candelaresi, S., & Chatterjee, P.: 2009,
     ``Small-scale magnetic helicity losses from a mean-field dynamo,''
     Monthly Notices Roy. Astron. Soc. 398, 1414-1422 (arXiv:0905.0242)
+
+Scaling results for different resolution (alpm_int should be pi)
+     nx    pi
+     32  3.15140
+    512  3.14163
