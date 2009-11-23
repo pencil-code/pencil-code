@@ -14,17 +14,17 @@
 !
 !***************************************************************
 module Particles_stalker
-
+!
   use Cdata
   use Particles_cdata
   use Particles_map
   use Particles_sub
   use Messages
-
+!
   implicit none
-
+!
   include 'particles_stalker.h'
-
+!
   real :: dstalk=0.1, tstalk=0.0
   integer :: iscratch=0, nout=0, nvar_stalk=0
   logical :: linterpolate_cic=.false., linterpolate_tsc=.true.
@@ -32,17 +32,16 @@ module Particles_stalker
   logical :: lstalk_uu=.true., lstalk_guu=.false.
   logical :: lstalk_rho=.true., lstalk_grho=.false.
   logical :: lstalk_bb=.true.
-
+!
   namelist /particles_stalker_init_pars/ &
       dstalk, linterpolate_cic, linterpolate_tsc, &
       lstalk_xx, lstalk_vv, lstalk_uu, lstalk_guu, lstalk_rho, lstalk_grho, &
       lstalk_bb
-
+!
   namelist /particles_stalker_run_pars/ &
       dstalk, linterpolate_cic, linterpolate_tsc
-
+!
   contains
-
 !***********************************************************************
     subroutine initialize_particles_stalker(f,lstarting)
 !
@@ -66,7 +65,8 @@ module Particles_stalker
 !
 !  Need scratch slot in f array to interpolate derived variables.
 !
-      call farray_acquire_scratch_area('scratch',iscratch)
+      if (lstalk_guu .or. lstalk_grho .or. lstalk_bb) &
+          call farray_acquire_scratch_area('scratch',iscratch)
 !
 !  Turn off stalking if physics not selected.
 !
