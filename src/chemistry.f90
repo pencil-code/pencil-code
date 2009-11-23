@@ -5185,8 +5185,8 @@ module Chemistry
 
 !NNNNNNNN
 
-       if ((x(l1)==xyz0(1))  .or. (x(l2)==Lxyz(1)))  lcorner_x=.true.
-       if ((z(n1)==xyz0(3))  .or. (z(n2)==Lxyz(3)))  lcorner_z=.true.
+    !   if ((x(l1)==xyz0(1))  .or. (x(l2)==Lxyz(1)))  lcorner_x=.true.
+    !   if ((z(n1)==xyz0(3))  .or. (z(n2)==Lxyz(3)))  lcorner_z=.true.
 
 
        if ((lcorner_x)  .and. (lcorner_z)) then
@@ -5548,6 +5548,7 @@ module Chemistry
            + T_5_y(lll,:) &
            + drho_prefac(lll,:)*(-N_2(lll,:) &
            + 0.5*(gamma0(ll,m1:m2)-1.)*(N_5(lll,:)+N_1(lll,:)))
+         lcorner_x=.false.
        endif
        enddo
 
@@ -5601,8 +5602,8 @@ module Chemistry
            if (x(l2)==Lxyz(1))   lcorner_x=.true.
          endif
 
-        if ((x(l1)==xyz0(1))   .or. (x(l2)==Lxyz(1)))   lcorner_x=.true.
-        if ((y(m1)==xyz0(2))   .or. (y(m2)==Lxyz(2)))   lcorner_y=.true.
+   !     if ((x(l1)==xyz0(1))   .or. (x(l2)==Lxyz(1)))   lcorner_x=.true.
+   !     if ((y(m1)==xyz0(2))   .or. (y(m2)==Lxyz(2)))   lcorner_y=.true.
 
         if ((lcorner_x) .and. (lcorner_y)) then
          df(ll,mm,nnn,irho_tmp) = &
