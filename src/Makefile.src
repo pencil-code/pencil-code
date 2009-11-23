@@ -19,6 +19,7 @@ MPICOMM           =   mpicomm
 NSCBC             = noNSCBC
 POWER             = nopower_spectrum
 SOLID_CELLS       = nosolid_cells
+SLICES            =   slices
 SIGNAL_HANDLING   = nosignal_handling
 STRUCT_FUNC       = nostruct_func
 TIMEAVG           = notimeavg
@@ -1296,7 +1297,7 @@ MPICOMM_FIX=$(MPICOMM)$(LIBMPISUFFIX)
 #
 #  Technical modules (cannot add to cparam.inc).
 #
-technical=cparam.o cdata.o particles_cdata.o messages.o general.o farray.o shared_variables.o $(FOURIER).o slices.o $(DERIV).o boundcond.o filter.o initcond.o register.o diagnostics.o $(TIMEAVG).o persist.o $(GRID).o $(SOLID_CELLS).o $(NSCBC).o
+technical=cparam.o cdata.o particles_cdata.o messages.o general.o farray.o shared_variables.o $(FOURIER).o $(SLICES).o $(DERIV).o boundcond.o filter.o initcond.o register.o diagnostics.o $(TIMEAVG).o persist.o $(GRID).o $(SOLID_CELLS).o $(NSCBC).o
 #
 #  Switchable physics modules.
 #
