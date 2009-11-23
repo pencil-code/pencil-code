@@ -1,20 +1,23 @@
 ! $Id$
-
-module Initcond
-
+!
 !  This module contains code used by the corresponding physics
 !  modules to set up various initial conditions (stratitication,
 !  perturbations, and other structures). This module is not used
 !  during run time (although it is used by the physics modules that
 !  are used both during run time and for the initial condition).
-
+!
+module Initcond
+!
   use Cdata
   use General
+  use Messages
   use Mpicomm
-  use Sub, Only : erfunc
+  use Sub
+!
   implicit none
-
+!
   private
+!
   public :: arcade_x, vecpatternxy, bipolar, bipolar_restzero
   public :: soundwave,sinwave,sinwave_phase,coswave,coswave_phase,cos_cos_sin
   public :: hatwave
@@ -54,35 +57,33 @@ module Initcond
   public :: innerbox
   public :: couette, couette_rings
   public :: strange,phi_siny_over_r2
-
+!
   interface posnoise            ! Overload the `posnoise' function
     module procedure posnoise_vect
     module procedure posnoise_scal
   endinterface
-
+!
   interface posnoise_rel        ! Overload the `posnoise' function
     module procedure posnoise_rel_vect
     module procedure posnoise_rel_scal
   endinterface
-
+!
   interface gaunoise            ! Overload the `gaunoise' function
     module procedure gaunoise_vect
     module procedure gaunoise_scal
     module procedure gaunoise_prof_vect
     module procedure gaunoise_prof_scal
   endinterface
-
+!
   interface gaunoise_rprof      ! Overload the `gaunoise_rprof' function
     module procedure gaunoise_rprof_vect
     module procedure gaunoise_rprof_scal
   endinterface
-
+!
   character(LEN=labellen) :: wave_fmt1='(1x,a,4f8.2)'
-
+!
   contains
-
 !***********************************************************************
-
     subroutine phi_siny_over_r2(ampl,f,i)
 !
 !  A_phi ~ sin(y)/R^2 if R>=0.7 field (in terms of vector potential)
@@ -109,7 +110,6 @@ module Initcond
     enddo 
 !
     endsubroutine phi_siny_over_r2
-
 !**********************************************************************
     subroutine sinxsinz(ampl,f,i,kx,ky,kz,KKx,KKy,KKz)
 !
@@ -788,7 +788,7 @@ module Initcond
         f(:,:,:,i)=f(:,:,:,i)+spread(spread((omx*x),2,my),3,mz) ! velocity up=omx*x
       endif
 !
-      if (allocated(omx))    deallocate(omx)
+      if (allocated(omx)) deallocate(omx)
 !
     endsubroutine couette_rings
 !***********************************************************************
@@ -1949,7 +1949,7 @@ module Initcond
         if (exist) then
           open(19,file=trim(directory)//'/stratification.ascii')
         else
-          call stop_it('stratification: *** error *** - no input file')
+          call fatal_error('stratification','no input file')
         endif
       endif
 !
@@ -2030,7 +2030,7 @@ module Initcond
                 ' lines (with ghost zones). It does contain',n-1, &
                 ' lines though.'
         endif
-        call stop_it('')
+        call fatal_error('','')
 
       endselect
 !
@@ -2066,7 +2066,7 @@ module Initcond
         if (exist) then
           open(19,file=trim(directory)//'/stratification.ascii')
         else
-          call stop_it('stratification: *** error *** - no input file')
+          call fatal_error('stratification','no input file')
         endif
       endif
 !
@@ -2147,7 +2147,7 @@ module Initcond
                 ' lines (with ghost zones). It does contain',n-1, &
                 ' lines though.'
         endif
-        call stop_it('')
+        call fatal_error('','')
 
       endselect
 !
@@ -3637,16 +3637,24 @@ module Initcond
       use Fourier
 !
       real :: ampl,initpower,cutoff
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: i1,i2
 !
-      real, dimension (nx,ny,nz) :: k2
+      real, dimension (:,:,:), allocatable :: k2, u_re, u_im
       real, dimension (nx) :: k2x
       real, dimension (ny) :: k2y
       real, dimension (nz) :: k2z
-      real, dimension (mx,my,mz,mfarray) :: f
 !
-      real, dimension (nx,ny,nz) :: u_re,u_im
-      integer :: i
+      integer :: i, stat
+!
+!  Allocate memory for arrays.
+!
+      allocate(k2(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('powern','Could not allocate memory for k2')
+      allocate(u_re(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('powern','Could not allocate memory for u_re')
+      allocate(u_im(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('powern','Could not allocate memory for u_im')
 !
       if (ampl==0) then
         f(:,:,:,i1:i2)=0
@@ -3691,9 +3699,14 @@ module Initcond
                      initpower,', k0 =',cutoff,' : var  i=',i
             endif
           enddo !i
-      endif !(initpower.ne.2.).or.(cutoff.ne.0.)
-
-    endif !(ampl.eq.0)
+        endif !(initpower.ne.2.).or.(cutoff.ne.0.)
+!
+      endif !(ampl.eq.0)
+!
+!  Deallocate arrays.
+!
+      if (allocated(k2)) deallocate(k2)
+      if (allocated(u_re)) deallocate(u_im)
 !
     endsubroutine powern
 !***********************************************************************
@@ -3710,15 +3723,30 @@ module Initcond
       use Fourier
 !
       logical, intent(in), optional :: lscale_tobox
-      integer :: i,i1,i2,ikx,iky,ikz
-      real, dimension (nx,ny,nz) :: k2
-      real, dimension(nxgrid) :: kx
-      real, dimension(nygrid) :: ky
-      real, dimension(nzgrid) :: kz
+      integer :: i,i1,i2,ikx,iky,ikz,stat
+      real, dimension (:,:,:), allocatable :: k2, u_re, u_im, r
+      real, dimension (:), allocatable :: kx, ky, kz
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx,ny,nz) :: u_re,u_im,r
       real :: ampl,initpower,mhalf,cutoff,scale_factor
-
+!
+!  Allocate memory for arrays.
+!
+      allocate(k2(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('powern','Could not allocate memory for k2')
+      allocate(u_re(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('powern','Could not allocate memory for u_re')
+      allocate(u_im(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('powern','Could not allocate memory for u_im')
+      allocate(kx(nxgrid),stat=stat)
+      if (stat>0) call fatal_error('mdi_init', &
+          'Could not allocate memory for kx')
+      allocate(ky(nygrid),stat=stat)
+      if (stat>0) call fatal_error('mdi_init', &
+          'Could not allocate memory for ky')
+      allocate(kz(nzgrid),staT=stat)
+      if (stat>0) call fatal_error('mdi_init', &
+          'Could not allocate memory for kz')
+!
       if (ampl==0) then
         f(:,:,:,i1:i2)=0
         if (lroot) print*,'power_randomphase: set variable to zero; i1,i2=',i1,i2
@@ -3780,6 +3808,14 @@ module Initcond
         enddo !i
 
       endif !(ampl.eq.0)
+!
+!  Deallocate arrays.
+!
+      if (allocated(k2)) deallocate(k2)
+      if (allocated(u_re)) deallocate(u_im)
+      if (allocated(kx)) deallocate(kx)
+      if (allocated(ky)) deallocate(ky)
+      if (allocated(kz)) deallocate(kz)
 !
     endsubroutine power_randomphase
 !***********************************************************************
@@ -3956,9 +3992,9 @@ module Initcond
       lenergy=ltemperature.or.lentropy
 !
       if (lenergy.and.llocal_iso) &
-           call stop_it("set_thermodynamical_quantities: You are "//&
-           "evolving the energy, but llocal_iso is switched "//&
-           " on in start.in. Better stop and change it")
+           call fatal_error('set_thermodynamical_quantities','You are '//&
+           'evolving the energy, but llocal_iso is switched '//&
+           ' on in start.in. Better stop and change it')
 !
 !  Break if gamma=1.0 and energy is solved
 !
@@ -3979,7 +4015,7 @@ module Initcond
           print*,"(containing the '!') to the header of the "//&
                "src/cparam.local file"
           print*,""
-          call stop_it("")
+          call fatal_error('','')
         endif
       endif
 !
@@ -4028,11 +4064,12 @@ module Initcond
             f(l1:l2,m,n,iss)=1./(gamma*cp1)*(log(cs2/cs20)-gamma_m1*(lnrho-lnrho0))
           else
 !
-            call stop_it("No thermodynamical variable. Choose if you want "//&
-                 "a local thermodynamical approximation "//&
-                 "(switch llocal_iso=T init_pars and entropy=noentropy on "//&
-                 "Makefile.local), or if you want to compute the "//&
-                 "temperature directly and evolve it in time.")
+            call fatal_error('set_thermodynamical_quantities', &
+                'No thermodynamical variable. Choose if you want '//&
+                'a local thermodynamical approximation '//&
+                '(switch llocal_iso=T init_pars and entropy=noentropy on '//&
+                'Makefile.local), or if you want to compute the '//&
+                'temperature directly and evolve it in time.')
           endif
         enddo
       enddo
@@ -4169,15 +4206,42 @@ module Initcond
       use Sub
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(nxgrid,nygrid) :: kx,ky,k2
 !
-      real, dimension(nxgrid,nygrid) :: Bz0_i,Bz0_r,A_r,A_i
-!
-      real, dimension(nxgrid) :: kxp
-      real, dimension(nygrid) :: kyp
-!
+      real, dimension(:,:), allocatable :: kx,ky,k2,Bz0_i,Bz0_r,A_r,A_i
+      real, dimension(:), allocatable :: kxp, kyp
       real :: mu0_SI,u_b
-      integer :: i,idx2,idy2
+      integer :: i,idx2,idy2,stat
+!
+!  Allocate memory for arrays.
+!
+      allocate(kx(nxgrid,nygrid),stat=stat)
+      if (stat>0) call fatal_error('mdi_init', &
+          'Could not allocate memory for kx')
+      allocate(ky(nxgrid,nygrid),stat=stat)
+      if (stat>0) call fatal_error('mdi_init', &
+          'Could not allocate memory for ky')
+      allocate(k2(nxgrid,nygrid),stat=stat)
+      if (stat>0) call fatal_error('mdi_init', &
+          'Could not allocate memory for k2')
+      allocate(Bz0_i(nxgrid,nygrid),stat=stat)
+      if (stat>0) call fatal_error('mdi_init', &
+          'Could not allocate memory for Bz0_i')
+      allocate(Bz0_r(nxgrid,nygrid),stat=stat)
+      if (stat>0) call fatal_error('mdi_init', &
+          'Could not allocate memory for Bz0_r')
+      allocate(A_r(nxgrid,nygrid),stat=stat)
+      if (stat>0) call fatal_error('mdi_init', &
+          'Could not allocate memory for A_r')
+      allocate(A_i(nxgrid,nygrid),stat=stat)
+      if (stat>0) call fatal_error('mdi_init', &
+          'Could not allocate memory for A_i')
+      allocate(kxp(nxgrid),stat=stat)
+      if (stat>0) call fatal_error('mdi_init', &
+          'Could not allocate memory for kxp')
+      allocate(kyp(nxgrid),stat=stat)
+      if (stat>0) call fatal_error('mdi_init', &
+          'Could not allocate memory for kyp')
+!
 !
 !  Auxiliary quantities:
 !
@@ -4241,6 +4305,18 @@ module Initcond
 !
          f(l1:l2,m1:m2,i,iaz)=0.
       enddo
+!
+!  Deallocate arrays.
+!
+      if (allocated(kx)) deallocate(kx)
+      if (allocated(ky)) deallocate(ky)
+      if (allocated(k2)) deallocate(k2)
+      if (allocated(Bz0_i)) deallocate(Bz0_i)
+      if (allocated(Bz0_r)) deallocate(Bz0_r)
+      if (allocated(A_r)) deallocate(A_r)
+      if (allocated(A_i)) deallocate(A_i)
+      if (allocated(kxp)) deallocate(kxp)
+      if (allocated(kyp)) deallocate(kyp)
 !
     endsubroutine mdi_init
 !*********************************************************
