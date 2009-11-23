@@ -81,8 +81,8 @@ module EquationOfState
 !
 !  dummy
 !
-      gamma_m1=gamma-1.
-      gamma_inv=1./gamma
+      gamma_m1=gamma-1.0
+      gamma_inv=1/gamma
 !
     endsubroutine units_eos
 !***********************************************************************
@@ -113,8 +113,9 @@ module EquationOfState
 !   12-aug-03/tony: implemented dummy
 !
       real, intent(out) :: mu
-
-      mu=0.
+!
+      mu=0.0
+!
     endsubroutine getmu
 !*******************************************************************
     subroutine rprint_eos(lreset,lwrite)
@@ -203,16 +204,18 @@ module EquationOfState
     endsubroutine ioncalc
 !***********************************************************************
     subroutine getdensity(EE,TT,yH,rho)
-
+!
       real, intent(in) :: EE,TT,yH
       real, intent(inout) :: rho
-
+!
       call fatal_error('getdensity','SHOULD NOT BE CALLED WITH NOEOS')
-      rho = 0.
+!
+      rho = 0.0
+!
       call keep_compiler_quiet(yH)
       call keep_compiler_quiet(EE)
       call keep_compiler_quiet(TT)
-
+!
     endsubroutine getdensity
 !***********************************************************************
     subroutine get_cp1(cp1_)
@@ -241,8 +244,10 @@ module EquationOfState
       real, dimension (nx), intent(in) :: pot
       real, dimension (nx), intent(out) :: tmp
 !
-      tmp=0.
       call fatal_error('isothermal_density_ion','SHOULD NOT BE CALLED WITH NOEOS')
+!
+      tmp=0.0
+!
       call keep_compiler_quiet(pot)
 !
     endsubroutine isothermal_density_ion
@@ -255,14 +260,14 @@ module EquationOfState
 !
 !   02-apr-04/tony: implemented dummy
 !
-!
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx), intent(out) :: cs2,cp1tilde
 !
+      call fatal_error('pressure_gradient_farray','SHOULD NOT BE CALLED WITH NOEOS')
 !
       cs2=impossible
       cp1tilde=impossible
-      call fatal_error('pressure_gradient_farray','SHOULD NOT BE CALLED WITH NOEOS')
+!
       call keep_compiler_quiet(f)
 !
     endsubroutine pressure_gradient_farray
@@ -278,9 +283,11 @@ module EquationOfState
       real, intent(in) :: lnrho,ss
       real, intent(out) :: cs2,cp1tilde
 !
+      call fatal_error('pressure_gradient_point','SHOULD NOT BE CALLED WITH NOEOS')
+!
       cs2=impossible
       cp1tilde=impossible
-      call fatal_error('pressure_gradient_point','SHOULD NOT BE CALLED WITH NOEOS')
+!
       call keep_compiler_quiet(lnrho)
       call keep_compiler_quiet(ss)
 !
@@ -294,17 +301,18 @@ module EquationOfState
 !
 !   02-apr-04/tony: implemented dummy
 !
-!
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx,3), intent(in) :: glnrho,gss
       real, dimension(nx,3), intent(out) :: glnTT
 !
-!
-      glnTT=0.
       call fatal_error('temperature_gradient','SHOULD NOT BE CALLED WITH NOEOS')
+!
+      glnTT=0.0
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(glnrho)
       call keep_compiler_quiet(gss)
+!
     endsubroutine temperature_gradient
 !***********************************************************************
     subroutine temperature_laplacian(f,del2lnrho,del2ss,del2lnTT)
@@ -321,10 +329,12 @@ module EquationOfState
 !
       call fatal_error('temperature_laplacian','SHOULD NOT BE CALLED WITH NOEOS')
 !
-      del2lnTT=0.
+      del2lnTT=0.0
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(del2lnrho)
       call keep_compiler_quiet(del2ss)
+!
     endsubroutine temperature_laplacian
 !***********************************************************************
     subroutine temperature_hessian(f,hlnrho,hss,hlnTT)
@@ -340,7 +350,7 @@ module EquationOfState
       real, dimension(nx,3) :: hlnTT
 !
       call fatal_error('temperature_hessian','now I do not believe you'// &
-                           ' intended to call this!')
+          ' intended to call this!')
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(hlnrho)
@@ -349,13 +359,13 @@ module EquationOfState
     endsubroutine temperature_hessian
 !***********************************************************************
     subroutine eosperturb(f,psize,ee,pp)
-
+!
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer, intent(in) :: psize
       real, dimension(psize), intent(in), optional :: ee,pp
-
-      call not_implemented("eosperturb")
-
+!
+      call not_implemented('eosperturb')
+!
     endsubroutine eosperturb
 !***********************************************************************
     subroutine eoscalc_farray(f,psize,lnrho,ss,yH,mu1,lnTT,ee,pp,kapparho)
@@ -374,14 +384,15 @@ module EquationOfState
 !
       call fatal_error('eoscalc_farray','SHOULD NOT BE CALLED WITH NOEOS')
 !
-      lnrho=0.
-      ss=0.
-      yH=0.
-      mu1=0.
-      lnTT=0.
-      ee=0.
-      pp=0.
-      kapparho=0.
+      lnrho=0.0
+      ss=0.0
+      yH=0.0
+      mu1=0.0
+      lnTT=0.0
+      ee=0.0
+      pp=0.0
+      kapparho=0.0
+!
       call keep_compiler_quiet(f)
 !
     endsubroutine eoscalc_farray
@@ -398,15 +409,15 @@ module EquationOfState
       real, intent(out), optional :: yH,lnTT
       real, intent(out), optional :: ee,pp
 !
-!
       call fatal_error('eoscalc_point','SHOULD NOT BE CALLED WITH NOEOS')
-
-      if (present(lnrho)) lnrho=0.
-      if (present(ss)) ss=0.
+!
+      if (present(lnrho)) lnrho=0.0
+      if (present(ss)) ss=0.0
       if (present(yH)) yH=impossible
-      if (present(lnTT)) lnTT=0.
-      if (present(ee)) ee=0.
-      if (present(pp)) pp=0.
+      if (present(lnTT)) lnTT=0.0
+      if (present(ee)) ee=0.0
+      if (present(pp)) pp=0.0
+!
       call keep_compiler_quiet(ivars)
       call keep_compiler_quiet(var1)
       call keep_compiler_quiet(var2)
@@ -429,15 +440,15 @@ module EquationOfState
       real, dimension(nx), intent(out), optional :: yH,lnTT
       real, dimension(nx), intent(out), optional :: ee,pp
 !
-!
       call fatal_error('eoscalc_pencil','SHOULD NOT BE CALLED WITH NOEOS')
-
-      if (present(lnrho)) lnrho=0.
-      if (present(ss)) ss=0.
+!
+      if (present(lnrho)) lnrho=0.0
+      if (present(ss)) ss=0.0
       if (present(yH)) yH=impossible
-      if (present(lnTT)) lnTT=0.
-      if (present(ee)) ee=0.
-      if (present(pp)) pp=0.
+      if (present(lnTT)) lnTT=0.0
+      if (present(ee)) ee=0.0
+      if (present(pp)) pp=0.0
+!
       call keep_compiler_quiet(ivars)
       call keep_compiler_quiet(var1)
       call keep_compiler_quiet(var2)
@@ -565,16 +576,27 @@ module EquationOfState
       use SharedVariables,only: get_shared_variable
       use Mpicomm,        only: stop_it
 !
-      real, pointer :: Fbot,Ftop,FtopKtop,FbotKbot,hcond0,hcond1,chi
-      logical, pointer :: lmultilayer, lheatc_chiconst
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my) :: tmp_xy,cs2_xy,rho_xy
-      integer :: i,ierr
-
+!
+      real, pointer :: Fbot,Ftop,FtopKtop,FbotKbot,hcond0,hcond1,chi
+      logical, pointer :: lmultilayer, lheatc_chiconst
+      real, dimension (:,:), allocatable :: tmp_xy,cs2_xy,rho_xy
+      integer :: i,ierr,stat
 !
       if (ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
+!
+!  Allocate memory for large arrays.
+!
+      allocate(tmp_xy(mx,my),stat=stat)
+      if (stat>0) call fatal_error('bc_ss_flux', &
+          'Could not allocate memory for tmp_xy')
+      allocate(cs2_xy(mx,my),stat=stat)
+      if (stat>0) call fatal_error('bc_ss_flux', &
+          'Could not allocate memory for cs2_xy')
+      allocate(rho_xy(mx,my),stat=stat)
+      if (stat>0) call fatal_error('bc_ss_flux', &
+          'Could not allocate memory for rho_xy')
 !
 !  Do the `c1' boundary condition (constant heat flux) for entropy.
 !  check whether we want to do top or bottom (this is precessor dependent)
@@ -678,6 +700,12 @@ module EquationOfState
         call fatal_error('bc_ss_flux','invalid argument')
       endselect
 !
+!  Deallocate arrays.
+!
+      if (allocated(tmp_xy)) deallocate(tmp_xy)
+      if (allocated(cs2_xy)) deallocate(cs2_xy)
+      if (allocated(rho_xy)) deallocate(rho_xy)
+!
     endsubroutine bc_ss_flux
 !***********************************************************************
     subroutine bc_ss_flux_turb(f,topbot)
@@ -706,12 +734,19 @@ module EquationOfState
 !
       use Gravity
 !
-      character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my) :: tmp_xy
-      integer :: i
+      character (len=3) :: topbot
+!
+      real, dimension (:,:), allocatable :: tmp_xy
+      integer :: i, stat
 !
       if (ldebug) print*,'bc_ss_temp_old: ENTER - cs20,cs0=',cs20,cs0
+!
+!  Allocate memory for large arrays.
+!
+      allocate(tmp_xy(mx,my),stat=stat)
+      if (stat>0) call fatal_error('bc_ss_temp_old', &
+          'Could not allocate memory for tmp_xy')
 !
 !  Do the `c2' boundary condition (fixed temperature/sound speed) for entropy.
 !  This assumes that the density is already set (ie density must register
@@ -760,6 +795,10 @@ module EquationOfState
       case default
         call fatal_error('bc_ss_temp_old','invalid argument')
       endselect
+!
+!  Deallocate arrays.
+!
+      if (allocated(tmp_xy)) deallocate(tmp_xy)
 !
     endsubroutine bc_ss_temp_old
 !***********************************************************************
@@ -1385,50 +1424,75 @@ module EquationOfState
     endsubroutine bc_stellar_surface
 !***********************************************************************
     subroutine bc_lnrho_cfb_r_iso(f,topbot,j)
+!
       use Mpicomm, only: stop_it
-      character (len=3) :: topbot
+!
       real, dimension (mx,my,mz,mfarray) :: f
+      character (len=3) :: topbot
       integer :: j
+!
       call stop_it("bc_lnrho_cfb_r_iso: NOT IMPLEMENTED IN NOEOS")
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
       call keep_compiler_quiet(j)
+!
     endsubroutine bc_lnrho_cfb_r_iso
 !***********************************************************************
     subroutine bc_lnrho_hds_z_iso(f,topbot)
+!
       use Mpicomm, only: stop_it
-      character (len=3) :: topbot
+!
       real, dimension (mx,my,mz,mfarray) :: f
+      character (len=3) :: topbot
+!
       call stop_it("bc_lnrho_hds_z_iso: NOT IMPLEMENTED IN NOEOS")
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
+!
     endsubroutine bc_lnrho_hds_z_iso
 !***********************************************************************
     subroutine bc_lnrho_hds_z_liso(f,topbot)
+!
       use Mpicomm, only: stop_it
-      character (len=3) :: topbot
+!
       real, dimension (mx,my,mz,mfarray) :: f
+      character (len=3) :: topbot
+!
       call stop_it("bc_lnrho_hds_z_liso: NOT IMPLEMENTED IN NOEOS")
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
+!
     endsubroutine bc_lnrho_hds_z_liso
 !***********************************************************************
     subroutine bc_lnrho_hdss_z_iso(f,topbot)
+!
       use Mpicomm, only: stop_it
-      character (len=3) :: topbot
+!
       real, dimension (mx,my,mz,mfarray) :: f
+      character (len=3) :: topbot
+!
       call stop_it("bc_lnrho_hdss_z_iso: NOT IMPLEMENTED IN NOEOS")
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
+!
     endsubroutine bc_lnrho_hdss_z_iso
 !***********************************************************************
     subroutine bc_lnrho_hdss_z_liso(f,topbot)
+!
       use Mpicomm, only: stop_it
-      character (len=3) :: topbot
+!
       real, dimension (mx,my,mz,mfarray) :: f
+      character (len=3) :: topbot
+!
       call stop_it("bc_lnrho_hdss_z_liso: NOT IMPLEMENTED IN NOEOS")
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
+!
     endsubroutine bc_lnrho_hdss_z_liso
 !***********************************************************************
 endmodule EquationOfState
