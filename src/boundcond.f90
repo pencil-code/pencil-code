@@ -559,7 +559,7 @@ module Boundcond
                 if (j==iaa) call bc_aa_pot2(f,topbot)
               case ('pwd')
                 ! BCZ_DOC: a variant of `pot'
-                if (j==iaa) call bc_aa_pot3(f,topbot)
+!                if (j==iaa) call bc_aa_pot3(f,topbot)
               case ('d2z')
                 ! BCZ_DOC: 
                 call bc_del2zero(f,topbot,j)
@@ -1523,12 +1523,19 @@ module Boundcond
 !
       character (len=3), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
-      real, dimension (mx,my,mz,mvar) :: bc_file_x_array
       integer, intent (in) :: j
-      integer :: i,lbc0,lbc1,lbc2
+!
+      real, dimension (:,:,:,:), allocatable :: bc_file_x_array
+      integer :: i,lbc0,lbc1,lbc2,stat
       real :: lbc,frac
       logical, save :: lbc_file_x=.true.
-
+!
+!  Allocate memory for large array.
+!
+      allocate(bc_file_x_array(mx,my,mz,mvar),stat=stat)
+      if (stat>0) call fatal_error('bc_file_x', &
+          'Could not allocate memory for bc_file_x_array')
+!
       if (lbc_file_x) then
         if (lroot) then
           print*,'opening bc_file_x.dat'
@@ -1575,8 +1582,14 @@ module Boundcond
       goto 98
 99    continue
       if (lroot) print*,'need file with dimension: ',mx,my,mz,mvar
+!
       call stop_it("boundary file bc_file_x.dat not found")
-98  endsubroutine bc_file_x
+!
+!  Deallocate array
+!
+98    if (allocated(bc_file_x_array)) deallocate(bc_file_x_array)
+!
+    endsubroutine bc_file_x
 !***********************************************************************
     subroutine bc_set_spder_x(f,topbot,j,val)
 !
@@ -1699,12 +1712,21 @@ module Boundcond
 !
       character (len=3), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
-      real, dimension (my,mz) :: boundary_value
+      integer, intent (in) :: j
+!
+      real, dimension (:,:), allocatable :: boundary_value
       real, pointer :: Lambda_V0,Lambda_Omega
       logical, pointer :: llambda_effect
-      integer, intent (in) :: j
-      integer :: ierr,k
+      integer :: ierr,k,stat
+!
+!  Allocate memory for large array.
+!
+      allocate(boundary_value(my,mz),stat=stat)
+      if (stat>0) call fatal_error('bc_set_sfree_x', &
+          'Could not allocate memory for bc_set_sfree_x')
+!
 ! -------- Either case get the lambda variables first -----------
+!
       call get_shared_variable('llambda_effect',llambda_effect,ierr)
       if (ierr/=0) call stop_it("bc_set_sfree_x: "//&
           "there was a problem when getting llambda_effect")      
@@ -1747,6 +1769,8 @@ module Boundcond
         call warning('bc_set_sfree_x',topbot//" should be `top' or `bot'")
 !
       endselect
+!
+      if (allocated(boundary_value)) deallocate(boundary_value)
 !
     endsubroutine bc_set_sfree_x
 ! **********************************************************************
@@ -2072,31 +2096,51 @@ module Boundcond
 !
 !  19-aug-03/anders: coded
 !
-    character (len=3) :: topbot
-    real, dimension (mx,my,mz,mfarray) :: f
-    real, dimension (mx,my) :: cpoly0,cpoly1,cpoly2
-    integer :: i,j
-
-    select case(topbot)
-
-    case('bot')
-      cpoly0(:,:)=f(:,:,n1,j)
-      cpoly1(:,:)=-(3*f(:,:,n1,j)-4*f(:,:,n1+1,j)+f(:,:,n1+2,j))/(2*dz)
-      cpoly2(:,:)=-(-f(:,:,n1,j)+2*f(:,:,n1+1,j)-f(:,:,n1+2,j)) /(2*dz**2)
-      do i=1,nghost
-        f(:,:,n1-i,j) = cpoly0(:,:) - cpoly1(:,:)*i*dz + cpoly2(:,:)*(i*dz)**2
-      enddo
-
-    case('top')
-      cpoly0(:,:)=f(:,:,n2,j)
-      cpoly1(:,:)=-(-3*f(:,:,n2,j)+4*f(:,:,n2-1,j)-f(:,:,n2-2,j))/(2*dz)
-      cpoly2(:,:)=-(-f(:,:,n2,j)+2*f(:,:,n2-1,j)-f(:,:,n2-2,j))/(2*dz**2)
-      do i=1,nghost
-        f(:,:,n2+i,j) = cpoly0(:,:) + cpoly1(:,:)*i*dz + cpoly2(:,:)*(i*dz)**2
-      enddo
-
-    endselect
-
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: j
+!
+      real, dimension (:,:), allocatable :: cpoly0,cpoly1,cpoly2
+      integer :: i,stat
+!
+!  Allocate memory for large arrays.
+!
+      allocate(cpoly0(mx,my),stat=stat)
+      if (stat>0) call fatal_error('bc_van3rd_z', &
+          'Could not allocate memory for cpoly0')
+      allocate(cpoly1(mx,my),stat=stat)
+      if (stat>0) call fatal_error('bc_van3rd_z', &
+          'Could not allocate memory for cpoly1')
+      allocate(cpoly2(mx,my),stat=stat)
+      if (stat>0) call fatal_error('bc_van3rd_z', &
+          'Could not allocate memory for cpoly2')
+!
+      select case(topbot)
+!
+      case('bot')
+        cpoly0(:,:)=f(:,:,n1,j)
+        cpoly1(:,:)=-(3*f(:,:,n1,j)-4*f(:,:,n1+1,j)+f(:,:,n1+2,j))/(2*dz)
+        cpoly2(:,:)=-(-f(:,:,n1,j)+2*f(:,:,n1+1,j)-f(:,:,n1+2,j)) /(2*dz**2)
+        do i=1,nghost
+          f(:,:,n1-i,j) = cpoly0(:,:) - cpoly1(:,:)*i*dz + cpoly2(:,:)*(i*dz)**2
+        enddo
+!
+      case('top')
+        cpoly0(:,:)=f(:,:,n2,j)
+        cpoly1(:,:)=-(-3*f(:,:,n2,j)+4*f(:,:,n2-1,j)-f(:,:,n2-2,j))/(2*dz)
+        cpoly2(:,:)=-(-f(:,:,n2,j)+2*f(:,:,n2-1,j)-f(:,:,n2-2,j))/(2*dz**2)
+        do i=1,nghost
+          f(:,:,n2+i,j) = cpoly0(:,:) + cpoly1(:,:)*i*dz + cpoly2(:,:)*(i*dz)**2
+        enddo
+!
+      endselect
+!
+!  Deallocate arrays.
+!
+      if (allocated(cpoly0)) deallocate(cpoly0)
+      if (allocated(cpoly1)) deallocate(cpoly1)
+      if (allocated(cpoly2)) deallocate(cpoly2)
+!
     endsubroutine bc_van3rd_z
 !***********************************************************************
     subroutine bc_onesided_x(f,topbot,j)
@@ -2880,8 +2924,16 @@ module Boundcond
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my) :: fder
-      integer :: i,j
+      integer :: j
+!
+      real, dimension (:,:), allocatable :: fder
+      integer :: i, stat
+!
+!  Allocate memory for large array.
+!
+      allocate(fder(mx,my),stat=stat)
+      if (stat>0) call fatal_error('bc_db_z', &
+          'Could not allocate memory for fder')
 !
       select case(topbot)
 !
@@ -2903,6 +2955,10 @@ module Boundcond
         print*,"bc_db_z: invalid argument for 'bc_db_z'"
       endselect
 !
+!  Deallocate array.
+!
+      if (allocated(fder)) deallocate(fder)
+!
     endsubroutine bc_db_z
 !***********************************************************************
     subroutine bc_db_x(f,topbot,j)
@@ -2921,8 +2977,16 @@ module Boundcond
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (my,mz) :: fder
-      integer :: i,j
+      integer :: j
+!
+      real, dimension (:,:), allocatable :: fder
+      integer :: i,stat
+!
+!  Allocate memory for large array.
+!
+      allocate(fder(mx,my),stat=stat)
+      if (stat>0) call fatal_error('bc_db_z', &
+          'Could not allocate memory for fder')
 !
       select case(topbot)
 !
@@ -2943,6 +3007,11 @@ module Boundcond
       case default
         print*,"bc_db_x: invalid argument for 'bc_db_x'"
       endselect
+!
+!  Deallocate array.
+!
+      if (allocated(fder)) deallocate(fder)
+!
 !
     endsubroutine bc_db_x
 !***********************************************************************
@@ -3296,17 +3365,70 @@ module Boundcond
 !  18-jun-08/bing: quenching depends on B^2, not only Bz^2
 !
        use EquationOfState, only : gamma,gamma_m1,gamma_inv,cs20,lnrho0
-
+!
        real, dimension (mx,my,mz,mfarray) :: f
-       real, dimension (nx,ny),save :: uxl,uxr,uyl,uyr
-       real, dimension (nx,ny) :: uxd,uyd
-       real, dimension (nxgrid,nygrid) :: tmp
-       real, dimension (nx,ny) :: quen,pp,betaq,fac
-       real, dimension (nx,ny) :: bbx,bby,bbz,bb2
-       integer :: lend,iostat=0,i,j
+!
+       real, dimension (:,:), save, allocatable :: uxl,uxr,uyl,uyr
+       real, dimension (:,:), allocatable :: uxd,uyd,quen,pp,betaq,fac
+       real, dimension (:,:), allocatable :: bbx,bby,bbz,bb2,tmp
+       integer :: lend,iostat=0,i,j,stat
        real,save :: tl=0.,tr=0.,delta_t=0.
-
+!
        intent (inout) :: f
+!
+       if (.not.allocated(uxl)) then
+         allocate(uxl(nx,ny),stat=stat)
+         if (stat>0) call fatal_error('uu_driver', &
+             'Could not allocate memory for uxl')
+       endif
+       if (.not.allocated(uxr)) then
+         allocate(uxr(nx,ny),stat=stat)
+         if (stat>0) call fatal_error('uu_driver', &
+             'Could not allocate memory for uxr')
+       endif
+       if (.not.allocated(uyl)) then
+         allocate(uyl(nx,ny),stat=stat)
+         if (stat>0) call fatal_error('uu_driver', &
+             'Could not allocate memory for uyl')
+       endif
+       if (.not.allocated(uyr)) then
+         allocate(uyr(nx,ny),stat=stat)
+         if (stat>0) call fatal_error('uu_driver', &
+             'Could not allocate memory for uyr')
+       endif
+       allocate(uxd(nx,ny),stat=stat)
+       if (stat>0) call fatal_error('uu_driver', &
+           'Could not allocate memory for uxd')
+       allocate(uyd(nx,ny),stat=stat)
+       if (stat>0) call fatal_error('uu_driver', &
+           'Could not allocate memory for uyd')
+       allocate(quen(nx,ny),stat=stat)
+       if (stat>0) call fatal_error('uu_driver', &
+           'Could not allocate memory for quen')
+       allocate(pp(nx,ny),stat=stat)
+       if (stat>0) call fatal_error('uu_driver', &
+           'Could not allocate memory for pp')
+       allocate(betaq(nx,ny),stat=stat)
+       if (stat>0) call fatal_error('uu_driver', &
+           'Could not allocate memory for betaq')
+       allocate(fac(nx,ny),stat=stat)
+       if (stat>0) call fatal_error('uu_driver', &
+           'Could not allocate memory for fac')
+       allocate(bbx(nx,ny),stat=stat)
+       if (stat>0) call fatal_error('uu_driver', &
+           'Could not allocate memory for bbx')
+       allocate(bby(nx,ny),stat=stat)
+       if (stat>0) call fatal_error('uu_driver', &
+           'Could not allocate memory for bby')
+       allocate(bbz(nx,ny),stat=stat)
+       if (stat>0) call fatal_error('uu_driver', &
+           'Could not allocate memory for bbz')
+       allocate(bb2(nx,ny),stat=stat)
+       if (stat>0) call fatal_error('uu_driver', &
+           'Could not allocate memory for bb2')
+       allocate(bb2(nxgrid,nygrid),stat=stat)
+       if (stat>0) call fatal_error('uu_driver', &
+           'Could not allocate memory for tmp')
 !
 !     Read the time table
 !
@@ -3315,7 +3437,7 @@ module Boundcond
           inquire(IOLENGTH=lend) tl
           close (10)
           open (10,file='driver/time_k',form='unformatted',status='unknown',recl=lend,access='direct')
-!
+
           iostat = 0
           i=0
           do while (iostat == 0)
@@ -3341,18 +3463,18 @@ module Boundcond
           uxl = tmp(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
           read (10,rec=2*i)     tmp
           uyl = tmp(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
-
+!
           read (10,rec=2*i+1)   tmp
           uxr = tmp(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)          
           read (10,rec=2*i+2)   tmp
           uyr = tmp(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)                    
           close (10)
-
+!
           uxl = uxl / 10. / unit_velocity
           uxr = uxr / 10. / unit_velocity
           uyl = uyl / 10. / unit_velocity
           uyr = uyr / 10. / unit_velocity
-
+!
        endif
 !
 !   simple linear interploation between timesteps
@@ -3424,7 +3546,7 @@ module Boundcond
 !
        bb2 = bbx*bbx + bby*bby + bbz*bbz
        bb2 = bb2/(2.*mu0)
-!
+
        if (ltemperature) then
           pp = gamma_m1*gamma_inv*exp(f(l1:l2,m1:m2,n1,ilnrho)+f(l1:l2,m1:m2,n1,ilnTT))
        else if (lentropy) then          
@@ -3449,6 +3571,18 @@ module Boundcond
        f(l1:l2,m1:m2,n1,iux)=uxd*quen
        f(l1:l2,m1:m2,n1,iuy)=uyd*quen
 !
+       if (allocated(uxd)) deallocate(uxd)
+       if (allocated(uyd)) deallocate(uyd)
+       if (allocated(quen)) deallocate(quen)
+       if (allocated(pp)) deallocate(pp)
+       if (allocated(betaq)) deallocate(betaq)
+       if (allocated(fac)) deallocate(fac)
+       if (allocated(bbx)) deallocate(bbx)
+       if (allocated(bby)) deallocate(bby)
+       if (allocated(bbz)) deallocate(bbz)
+       if (allocated(bb2)) deallocate(bb2)
+       if (allocated(tmp)) deallocate(tmp)
+!
      endsubroutine uu_driver
 !***********************************************************************
     subroutine bc_lnTT_flux_x(f,topbot)
@@ -3458,11 +3592,18 @@ module Boundcond
 !
       use SharedVariables, only: get_shared_variable
 !
-      real, pointer :: hcond0, hcond1, Fbot
-      character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (my,mz) :: tmp_yz
-      integer :: i,ierr
+      character (len=3) :: topbot
+!
+      real, pointer :: hcond0, hcond1, Fbot
+      real, dimension (:,:), allocatable :: tmp_yz
+      integer :: i,ierr,stat
+!
+!  Allocate memory for large array.
+!
+      allocate(tmp_yz(my,mz),stat=stat)
+      if (stat>0) call fatal_error('bc_lnTT_flux_x', &
+          'Could not allocate memory for tmp_yz')
 !
 !  Do the `c1' boundary condition (constant heat flux) for lnTT.
 !  check whether we want to do top or bottom (this is precessor dependent)
@@ -3498,6 +3639,10 @@ module Boundcond
 
       endselect
 !
+!  Deallocate large array.
+!
+      if (allocated(tmp_yz)) deallocate(tmp_yz)
+!
     endsubroutine bc_lnTT_flux_x
 !***********************************************************************
     subroutine bc_lnTT_flux_z(f,topbot)
@@ -3507,11 +3652,18 @@ module Boundcond
 !
       use SharedVariables, only: get_shared_variable
 !
-      real, pointer :: hcond0, Fbot
-      character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my) :: tmp_xy
-      integer :: i,ierr
+      character (len=3) :: topbot
+!
+      real, dimension (:,:), allocatable :: tmp_xy
+      real, pointer :: hcond0, Fbot
+      integer :: i,ierr,stat
+!
+!  Allocate memory for large array.
+!
+      allocate(tmp_xy(mx,my),stat=stat)
+      if (stat>0) call fatal_error('bc_lnTT_flux_x', &
+          'Could not allocate memory for tmp_yz')
 !
 !  Do the `c1' boundary condition (constant heat flux) for lnTT or TT (if
 !  ltemperature_nolog=.true.) at the bottom _only_.
@@ -3543,6 +3695,10 @@ module Boundcond
 
       endselect
 !
+!  Deallocate large array.
+!
+      if (allocated(tmp_xy)) deallocate(tmp_xy)
+!
     endsubroutine bc_lnTT_flux_z
 !***********************************************************************
     subroutine bc_ss_flux_x(f,topbot)
@@ -3553,11 +3709,21 @@ module Boundcond
       use EquationOfState, only: gamma, gamma_m1, lnrho0, cs20
       use SharedVariables, only: get_shared_variable
 !
-      real, pointer :: FbotKbot, FtopKtop
-      character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (my,mz) :: tmp_yz,cs2_yz
-      integer :: i,ierr
+      character (len=3) :: topbot
+!
+      real, dimension (:,:), allocatable :: tmp_yz,cs2_yz
+      real, pointer :: FbotKbot, FtopKtop
+      integer :: i,ierr,stat
+!
+!  Allocate memory for large arrays.
+!
+      allocate(tmp_yz(my,mz),stat=stat)
+      if (stat>0) call fatal_error('bc_ss_flux_x', &
+          'Could not allocate memory for tmp_yz')
+      allocate(cs2_yz(my,mz),stat=stat)
+      if (stat>0) call fatal_error('bc_ss_flux_x', &
+          'Could not allocate memory for cs2_yz')
 !
 !  Do the `c1' boundary condition (constant heat flux) for entropy.
 !  check whether we want to do top or bottom (this is processor dependent)
@@ -3618,6 +3784,11 @@ module Boundcond
 !
       endselect
 !
+!  Deallocate large arrays.
+!
+      if (allocated(tmp_yz)) deallocate(tmp_yz)
+      if (allocated(cs2_yz)) deallocate(cs2_yz)
+!
     endsubroutine bc_ss_flux_x
 !***********************************************************************
     subroutine bc_del2zero(f,topbot,j)
@@ -3627,14 +3798,31 @@ module Boundcond
 !  11-oct-06/wolf: Adapted from Tobi's bc_aa_pot2
 !
       use Fourier, only: fourier_transform_xy_xy
-
+!
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
       integer, intent (in) :: j
-
-      real, dimension (nx,ny) :: kx,ky,kappa,exp_fact
-      real, dimension (nx,ny) :: tmp_re,tmp_im
-      integer :: i
+!
+      real, dimension (:,:), allocatable :: kx,ky,kappa,exp_fact,tmp_re,tmp_im
+      integer :: i,stat
+!
+!  Allocate memory for large arrays.
+!
+      allocate(kx(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('bc_del2zero', &
+          'Could not allocate memory for kx')
+      allocate(ky(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('bc_del2zero', &
+          'Could not allocate memory for ky')
+      allocate(kappa(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('bc_del2zero', &
+          'Could not allocate memory for kappa')
+      allocate(exp_fact(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('bc_del2zero', &
+          'Could not allocate memory for exp_fact')
+      allocate(tmp_re(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('bc_del2zero', &
+          'Could not allocate memory for tmp_im')
 !
 !  Get local wave numbers
 !
@@ -3656,7 +3844,7 @@ module Boundcond
 !  Potential field condition at the bottom
 !
       case('bot')
-
+!
         do i=1,nghost
 !
 ! Calculate delta_z based on z(), not on dz to improve behavior for
@@ -3675,13 +3863,13 @@ module Boundcond
           ! Transform back
           call fourier_transform_xy_xy(tmp_re,tmp_im,linv=.true.)
           f(l1:l2,m1:m2,n1-i,j) = tmp_re
-
+!
         enddo
 !
 !  Potential field condition at the top
 !
       case('top')
-
+!
         do i=1,nghost
 !
 ! Calculate delta_z based on z(), not on dz to improve behavior for
@@ -3700,15 +3888,24 @@ module Boundcond
           ! Transform back
           call fourier_transform_xy_xy(tmp_re,tmp_im,linv=.true.)
           f(l1:l2,m1:m2,n2+i,j) = tmp_re
-
+!
         enddo
-
+!
       case default
-
+!
         if (lroot) print*,"bc_del2zero: invalid argument"
-
+!
       endselect
-
+!
+!  Deallocate large arrays.
+!
+      if (allocated(kx)) deallocate(kx)
+      if (allocated(ky)) deallocate(ky)
+      if (allocated(kappa)) deallocate(kappa)
+      if (allocated(exp_fact)) deallocate(exp_fact)
+      if (allocated(tmp_re)) deallocate(tmp_re)
+      if (allocated(tmp_im)) deallocate(tmp_im)
+!
     endsubroutine bc_del2zero
 !***********************************************************************
     subroutine bc_zero_x(f,topbot,j)
@@ -3717,8 +3914,8 @@ module Boundcond
 !
 !  11-aug-2009/anders: implemented
 !
-      character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
+      character (len=3) :: topbot
       integer :: j
 !
       select case(topbot)
@@ -3748,8 +3945,8 @@ module Boundcond
 !
 !  13-aug-2007/anders: implemented
 !
-      character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
+      character (len=3) :: topbot
       integer :: j
 !
       select case(topbot)
@@ -3937,11 +4134,38 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
 !
-      real, dimension (nx,ny,iax:iaz) :: aa_re,aa_im
-      real, dimension (nx,ny) :: kx,ky,kappa,kappa1,exp_fact
-      real, dimension (nx,ny) :: tmp_re,tmp_im
+      real, dimension (:,:,:), allocatable :: aa_re,aa_im
+      real, dimension (:,:), allocatable :: kx,ky,kappa,kappa1,exp_fact
+      real, dimension (:,:), allocatable :: tmp_re,tmp_im
       real    :: delta_z
-      integer :: i,j
+      integer :: i,j,stat
+!
+!  Allocate memory for large arrays.
+!
+      allocate(aa_re(nx,ny,iax:iaz),stat=stat)
+      if (stat>0) call fatal_error('bc_aa_pot3', &
+          'Could not allocate memory for aa_re')
+      allocate(aa_im(nx,ny,iax:iaz),stat=stat)
+      if (stat>0) call fatal_error('bc_aa_pot3', &
+          'Could not allocate memory for aa_im')
+      allocate(kx(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('bc_aa_pot3', &
+          'Could not allocate memory for kx')
+      allocate(ky(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('bc_aa_pot3', &
+          'Could not allocate memory for ky')
+      allocate(kappa(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('bc_aa_pot3', &
+          'Could not allocate memory for kappa')
+      allocate(kappa1(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('bc_aa_pot3', &
+          'Could not allocate memory for kappa1')
+      allocate(exp_fact(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('bc_aa_pot3', &
+          'Could not allocate memory for exp_fact')
+      allocate(tmp_re(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('bc_aa_pot3', &
+          'Could not allocate memory for tmp_im')
 !
 !  Get local wave numbers
 !
@@ -3964,7 +4188,7 @@ module Boundcond
 !  Potential field condition at the bottom
 !
       case('bot')
-
+!
         do j=1,nghost
 !
 ! Calculate delta_z based on z(), not on dz to improve behavior for
@@ -3983,7 +4207,7 @@ module Boundcond
             aa_re(:,:,i) = tmp_re*exp_fact
             aa_im(:,:,i) = tmp_im*exp_fact
           enddo
-
+!
          ! Transform back
           do i=iax,iaz
             tmp_re = aa_re(:,:,i)
@@ -3991,7 +4215,7 @@ module Boundcond
             call fourier_transform_xy_xy(tmp_re,tmp_im,linv=.true.)
             f(l1:l2,m1:m2,n1-j,i) = tmp_re
           enddo
-
+!
         enddo
 !
 !  The vector potential needs to be known outside of (l1:l2,m1:m2) as well
@@ -4001,7 +4225,7 @@ module Boundcond
 !  Potential field condition at the top
 !
       case('top')
-
+!
         do j=1,nghost
 !
 ! Calculate delta_z based on z(), not on dz to improve behavior for
@@ -4020,7 +4244,7 @@ module Boundcond
             aa_re(:,:,i) = tmp_re*exp_fact
             aa_im(:,:,i) = tmp_im*exp_fact
           enddo
-
+!
           ! Transform back
           do i=iax,iaz
             tmp_re = aa_re(:,:,i)
@@ -4028,19 +4252,31 @@ module Boundcond
             call fourier_transform_xy_xy(tmp_re,tmp_im,linv=.true.)
             f(l1:l2,m1:m2,n2+j,i) = tmp_re
           enddo
-
+!
         enddo
 !
 !  The vector potential needs to be known outside of (l1:l2,m1:m2) as well
 !
         call communicate_bc_aa_pot(f,topbot)
-
+!
       case default
-
+!
         if (lroot) print*,"bc_aa_pot2: invalid argument"
-
+!
       endselect
-
+!
+!  Deallocate large arrays.
+!
+      if (allocated(aa_re)) deallocate(aa_re)
+      if (allocated(aa_im)) deallocate(aa_im)
+      if (allocated(kx)) deallocate(kx)
+      if (allocated(ky)) deallocate(ky)
+      if (allocated(kappa)) deallocate(kappa)
+      if (allocated(kappa1)) deallocate(kappa1)
+      if (allocated(exp_fact)) deallocate(exp_fact)
+      if (allocated(tmp_re)) deallocate(tmp_re)
+      if (allocated(tmp_im)) deallocate(tmp_im)
+!
     endsubroutine bc_aa_pot3
 !***********************************************************************
     subroutine bc_aa_pot2(f,topbot)
@@ -4053,12 +4289,38 @@ module Boundcond
 
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
-
-      real, dimension (nx,ny,iax:iaz) :: aa_re,aa_im
-      real, dimension (nx,ny) :: kx,ky,kappa,kappa1
-      real, dimension (nx,ny) :: tmp_re,tmp_im
-      real, dimension (nx,ny) :: fac
-      integer :: i,j
+!
+      real, dimension (:,:,:), allocatable :: aa_re,aa_im
+      real, dimension (:,:), allocatable :: kx,ky,kappa,kappa1
+      real, dimension (:,:), allocatable :: tmp_re,tmp_im,fac
+      integer :: i,j,stat
+!
+!  Allocate memory for large arrays.
+!
+      allocate(aa_re(nx,ny,iax:iaz),stat=stat)
+      if (stat>0) call fatal_error('bc_aa_pot2', &
+          'Could not allocate memory for aa_re')
+      allocate(aa_im(nx,ny,iax:iaz),stat=stat)
+      if (stat>0) call fatal_error('bc_aa_pot2', &
+          'Could not allocate memory for aa_im')
+      allocate(kx(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('bc_aa_pot2', &
+          'Could not allocate memory for kx')
+      allocate(ky(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('bc_aa_pot2', &
+          'Could not allocate memory for ky')
+      allocate(kappa(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('bc_aa_pot2', &
+          'Could not allocate memory for kappa')
+      allocate(kappa1(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('bc_aa_pot2', &
+          'Could not allocate memory for kappa1')
+      allocate(tmp_re(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('bc_aa_pot2', &
+          'Could not allocate memory for tmp_im')
+      allocate(fac(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('bc_aa_pot2', &
+          'Could not allocate memory for fac')
 !
 !  Get local wave numbers
 !
@@ -4158,13 +4420,25 @@ module Boundcond
 !  The vector potential needs to be known outside of (l1:l2,m1:m2) as well
 !
         call communicate_bc_aa_pot(f,topbot)
-
-      case default
-
+!
+!      case default
+!
         if (lroot) print*,"bc_aa_pot2: invalid argument"
-
+!
       endselect
-
+!
+!  Deallocate large arrays.
+!
+      if (allocated(aa_re)) deallocate(aa_re)
+      if (allocated(aa_im)) deallocate(aa_im)
+      if (allocated(kx)) deallocate(kx)
+      if (allocated(ky)) deallocate(ky)
+      if (allocated(kappa)) deallocate(kappa)
+      if (allocated(kappa1)) deallocate(kappa1)
+      if (allocated(tmp_re)) deallocate(tmp_re)
+      if (allocated(tmp_im)) deallocate(tmp_im)
+      if (allocated(fac)) deallocate(fac)
+!
     endsubroutine bc_aa_pot2
 !***********************************************************************
       subroutine bc_aa_pot(f,topbot)
@@ -4175,11 +4449,24 @@ module Boundcond
 !  14-jun-2002/axel: adapted from similar
 !   8-jul-2002/axel: introduced topbot argument
 !
-      character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx,ny) :: f2,f3
-      real, dimension (nx,ny,nghost+1) :: fz
-      integer :: j
+      character (len=3) :: topbot
+!
+      real, dimension (:,:), allocatable :: f2,f3
+      real, dimension (:,:,:), allocatable :: fz
+      integer :: j, stat
+!
+!  Allocate memory for large arrays.
+!
+      allocate(f2(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('bc_aa_pot', &
+          'Could not allocate memory for f2')
+      allocate(f3(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('bc_aa_pot', &
+          'Could not allocate memory for f3')
+      allocate(fz(nx,ny,nghost+1),stat=stat)
+      if (stat>0) call fatal_error('bc_aa_pot', &
+          'Could not allocate memory for fz')
 !
 !  potential field condition
 !  check whether we want to do top or bottom (this is precessor dependent)
@@ -4229,6 +4516,12 @@ module Boundcond
         if (lroot) print*,"bc_aa_pot: invalid argument"
       endselect
 !
+!  Deallocate large arrays.
+!
+      if (allocated(f2)) deallocate(f2)
+      if (allocated(f3)) deallocate(f3)
+      if (allocated(fz)) deallocate(fz)
+!
       endsubroutine bc_aa_pot
 !***********************************************************************
       subroutine potential_field(fz,f2,f3,irev)
@@ -4243,12 +4536,52 @@ module Boundcond
 !
       use Fourier
 !
-      real, dimension (nx,ny) :: fac,kk,f1r,f1i,g1r,g1i,f2,f2r,f2i,f3,f3r,f3i
-      real, dimension (nx,ny,nghost+1) :: fz
+      real, dimension (:,:,:) :: fz
+      real, dimension (:,:) :: f2,f3
+      integer :: irev
+!
+      real, dimension (:,:), allocatable :: fac,kk,f1r,f1i,g1r,g1i
+      real, dimension (:,:), allocatable :: f2r,f2i,f3r,f3i
+      real, dimension (:), allocatable :: ky
       real, dimension (nx) :: kx
-      real, dimension (nygrid) :: ky
       real :: delz
-      integer :: i,irev
+      integer :: i,stat
+!
+!  Allocate memory for large arrays.
+!
+      allocate(fac(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('potential_field', &
+          'Could not allocate memory for fac')
+      allocate(kk(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('potential_field', &
+          'Could not allocate memory for kk')
+      allocate(f1r(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('potential_field', &
+          'Could not allocate memory for f1r')
+      allocate(f1i(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('potential_field', &
+          'Could not allocate memory for f1i')
+      allocate(g1r(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('potential_field', &
+          'Could not allocate memory for g1r')
+      allocate(g1i(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('potential_field', &
+          'Could not allocate memory for g1i')
+      allocate(f2r(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('potential_field', &
+          'Could not allocate memory for f2r')
+      allocate(f2i(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('potential_field', &
+          'Could not allocate memory for f2i')
+      allocate(f3r(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('potential_field', &
+          'Could not allocate memory for f3r')
+      allocate(f3i(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('potential_field', &
+          'Could not allocate memory for f3i')
+      allocate(ky(nygrid),stat=stat)
+      if (stat>0) call fatal_error('potential_field', &
+          'Could not allocate memory for ky')
 !
 !  initialize workspace
 !
@@ -4293,6 +4626,19 @@ module Boundcond
         if (irev==-1) fz(:,:,nghost-i+1) = g1r
       enddo
 !
+!  Deallocate large arrays.
+!
+      if (allocated(fac)) deallocate(fac)
+      if (allocated(kk)) deallocate(kk)
+      if (allocated(f1r)) deallocate(f1r)
+      if (allocated(f1i)) deallocate(f1i)
+      if (allocated(g1r)) deallocate(g1i)
+      if (allocated(f2r)) deallocate(f2r)
+      if (allocated(f2i)) deallocate(f2i)
+      if (allocated(f3r)) deallocate(f3r)
+      if (allocated(f3i)) deallocate(f3i)
+      if (allocated(ky)) deallocate(ky)
+!
     endsubroutine potential_field
 !***********************************************************************
     subroutine potentdiv(fz,f2,f3,irev)
@@ -4308,12 +4654,58 @@ module Boundcond
 !
       use Fourier
 !
-      real, dimension (nx,ny) :: fac,kk,kkkx,kkky,f1r,f1i,g1r,g1i,f2,f2r,f2i,f3,f3r,f3i
-      real, dimension (nx,ny,nghost+1) :: fz
+      real, dimension (:,:,:) :: fz
+      real, dimension (:,:) :: f2,f3
+      integer :: irev
+!
+      real, dimension (:,:), allocatable :: fac,kk,kkkx,kkky
+      real, dimension (:,:), allocatable :: f1r,f1i,g1r,g1i,f2r,f2i,f3r,f3i
+      real, dimension (:), allocatable :: ky
       real, dimension (nx) :: kx
-      real, dimension (nygrid) :: ky
       real :: delz
-      integer :: i,irev
+      integer :: i,stat
+!
+!  Allocate memory for large arrays.
+!
+      allocate(fac(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('potentdiv', &
+          'Could not allocate memory for fac')
+      allocate(kk(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('potentdiv', &
+          'Could not allocate memory for kk')
+      allocate(kkkx(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('potentdiv', &
+          'Could not allocate memory for kkkx')
+      allocate(kkky(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('potentdiv', &
+          'Could not allocate memory for kkky')
+      allocate(f1r(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('potentdiv', &
+          'Could not allocate memory for f1r')
+      allocate(f1i(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('potentdiv', &
+          'Could not allocate memory for f1i')
+      allocate(g1r(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('potentdiv', &
+          'Could not allocate memory for g1r')
+      allocate(g1i(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('potentdiv', &
+          'Could not allocate memory for g1i')
+      allocate(f2r(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('potentdiv', &
+          'Could not allocate memory for f2r')
+      allocate(f2i(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('potentdiv', &
+          'Could not allocate memory for f2i')
+      allocate(f3r(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('potentdiv', &
+          'Could not allocate memory for f3r')
+      allocate(f3i(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('potentdiv', &
+          'Could not allocate memory for f3i')
+      allocate(ky(nygrid),stat=stat)
+      if (stat>0) call fatal_error('potentdiv', &
+          'Could not allocate memory for ky')
 !
       f2r=f2; f2i=0
       f3r=f3; f3i=0
@@ -4361,6 +4753,21 @@ module Boundcond
         if (irev==+1) fz(:,:,       i+1) = -g1r
         if (irev==-1) fz(:,:,nghost-i+1) = +g1r
       enddo
+!
+!  Deallocate large arrays.
+!
+      if (allocated(fac)) deallocate(fac)
+      if (allocated(kk)) deallocate(kk)
+      if (allocated(kkkx)) deallocate(kkkx)
+      if (allocated(kkky)) deallocate(kkky)
+      if (allocated(f1r)) deallocate(f1r)
+      if (allocated(f1i)) deallocate(f1i)
+      if (allocated(g1r)) deallocate(g1i)
+      if (allocated(f2r)) deallocate(f2r)
+      if (allocated(f2i)) deallocate(f2i)
+      if (allocated(f3r)) deallocate(f3r)
+      if (allocated(f3i)) deallocate(f3i)
+      if (allocated(ky)) deallocate(ky)
 !
     endsubroutine potentdiv
 !***********************************************************************
