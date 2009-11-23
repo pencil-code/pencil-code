@@ -559,7 +559,7 @@ module Boundcond
                 if (j==iaa) call bc_aa_pot2(f,topbot)
               case ('pwd')
                 ! BCZ_DOC: a variant of `pot'
-!                if (j==iaa) call bc_aa_pot3(f,topbot)
+                if (j==iaa) call bc_aa_pot3(f,topbot)
               case ('d2z')
                 ! BCZ_DOC: 
                 call bc_del2zero(f,topbot,j)
