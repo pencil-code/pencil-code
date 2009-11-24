@@ -222,7 +222,7 @@ module Diagnostics
           intdphi_rel =      (xyz1(2)   -    xyz0(2)) /dy
           intdz_rel   =      (xyz1(3)   -    xyz0(3)) /dz
 !
-!  Prevent zeros from less than 3-dimensional runs
+!  Prevent zeros from less than 3-dimensional runs.
 !
           if (nx==1) intdr_rel=1.
           if (ny==1) intdphi_rel=1.
@@ -699,7 +699,7 @@ module Diagnostics
       character (len=80) :: avgdir,sname,fname
       character (len=1024) :: labels
 !
-!  write result; normalization is already done in phiaverages_rz
+!  Write result; normalization is already done in phiaverages_rz.
 !
       if (lroot.and.nnamerz>0) then
         call safe_character_assign(avgdir, trim(datadir)//'/averages')
@@ -714,7 +714,7 @@ module Diagnostics
         !     (write was messing up on copson without this...)
         write(1) pack(fnamerz(:,1:nz,:,1:nnamerz),.true.)
 !
-!  write labels at the end of file
+!  Write labels at the end of file.
 !
         labels = trim(cnamerz(1))
         do i=2,nnamerz
@@ -723,7 +723,7 @@ module Diagnostics
         write(1) len(labels),labels
         close(1)
 !
-!  write file name to file list
+!  Write file name to file list.
 !
         open(1,FILE=trim(avgdir)//'/phiavg.files',POSITION='append')
         write(1,'(A)') trim(sname)
@@ -756,13 +756,13 @@ module Diagnostics
       intent(inout) :: itest,cform
 !      intent(out)   :: cform
 !
-!  check whether format is given
+!  Check whether format is given.
 !
       iform0=index(cname,' ')
       iform1=index(cname,'(')
       iform2=index(cname,')')
 !
-!  set format; use default if not given
+!  Set format; use default if not given.
 !
       if (iform1>0) then
         cform=cname(iform1+1:iform2-1)
@@ -773,7 +773,7 @@ module Diagnostics
         length=iform0-1
       endif
 !
-!  fix annoying Fortran 0p/1p stuff (Ew.d --> 1pEw.d, Fw.d --> 0pFw.d)
+!  Fix annoying Fortran 0p/1p stuff (Ew.d --> 1pEw.d, Fw.d --> 0pFw.d).
 !
       if ((cform(1:1) == 'e') .or. (cform(1:1) == 'E') &
           .or. (cform(1:1) == 'g') .or. (cform(1:1) == 'G')) then
@@ -783,14 +783,14 @@ module Diagnostics
         call safe_character_assign(cform, '0p'//trim(cform))
       endif
 !
-!  if the name matches, we keep the name and can strip off the format.
+!  If the name matches, we keep the name and can strip off the format.
 !  The remaining name can then be used for the legend.
 !
       if (cname(1:length)==ctest .and. itest==0) then
         itest=iname
       endif
 !
-!  Integer formats are turned into floating point numbers
+!  Integer formats are turned into floating point numbers.
 !
       index_i=index(cform,'i')
       if (index_i/=0) then
@@ -878,7 +878,7 @@ module Diagnostics
 !
       fname(iname)=a
 !
-!  set corresponding entry in itype_name
+!  Set corresponding entry in itype_name.
 !
       itype_name(iname)=ilabel_max
 !
@@ -898,7 +898,7 @@ module Diagnostics
 
        fname(iname)=a
 !
-!  set corresponding entry in itype_name
+!  Set corresponding entry in itype_name.
 !
       itype_name(iname)=ilabel_sum
 
@@ -910,7 +910,7 @@ module Diagnostics
 !***********************************************************************
     subroutine max_mn_name(a,iname,lsqrt,l_dt,lneg,lreciprocal)
 !
-!  successively calculate maximum of a, which is supplied at each call.
+!  Successively calculate maximum of a, which is supplied at each call.
 !  Start from zero if lfirstpoint=.true.
 !
 !   1-apr-01/axel+wolf: coded
@@ -927,7 +927,7 @@ module Diagnostics
         fname(iname)=max(fname(iname),maxval(a))
       endif
 !
-!  set corresponding entry in itype_name
+!  Set corresponding entry in itype_name.
 !
       if (present(lsqrt)) then
         itype_name(iname)=ilabel_max_sqrt
@@ -971,11 +971,11 @@ module Diagnostics
       integer, optional :: ipart
       logical, optional :: lsqrt, lint
 !
-!  Only do something if iname is not zero
+!  Only do something if iname is not zero.
 !
       if (iname /= 0) then
 !
-!  set corresponding entry in itype_name
+!  Set corresponding entry in itype_name.
 !
         if (present(lsqrt)) then
           itype_name(iname)=ilabel_sum_sqrt
@@ -985,7 +985,7 @@ module Diagnostics
           itype_name(iname)=ilabel_sum
         endif
 !
-!  set fraction if old and new stuff
+!  Set fraction if old and new stuff.
 !
         if (present(ipart)) then
           ppart=1./float(ipart)
@@ -995,7 +995,7 @@ module Diagnostics
             qpart=1.
           endif
 !
-!  add up contributions, taking coordinate system into acount (particles)
+!  Add up contributions, taking coordinate system into acount (particles).
 !
           if (lspherical_coords) then
             fname(iname)=qpart*fname(iname)+ppart*sum(r2_weight*sinth_weight(m)*a)
@@ -1005,11 +1005,11 @@ module Diagnostics
             fname(iname)=qpart*fname(iname)+ppart*sum(a)
           endif
 !
-!  normal method
+!  Normal method.
 !
         else
 !
-!  scale "a" with volume differential if integration option is set
+!  Scale "a" with volume differential if integration option is set.
 !
           if (present(lint)) then
             a_scaled=a*xprim(l1:l2)*yprim(m)*zprim(n)
@@ -1017,7 +1017,7 @@ module Diagnostics
             a_scaled=a
           endif
 !
-!  add up contributions, taking coordinate system into acount (fluid)
+!  Add up contributions, taking coordinate system into acount (fluid).
 !
           if (lfirstpoint) then
             if (lspherical_coords) then
@@ -1044,10 +1044,10 @@ module Diagnostics
 !***********************************************************************
     subroutine sum_mn_name_halfy(a,iname)
 !
-! To calculate averages over half the size of box, useful for simulations
-! which includes equator (either cartesian or spherical).  
+!  To calculate averages over half the size of box, useful for simulations
+!  which includes equator (either cartesian or spherical).  
 !
-! dhruba : aped from sum_mn_name
+!  dhruba : aped from sum_mn_name
 !
       real, dimension (nx) :: a
       real :: sum_name
@@ -1179,7 +1179,7 @@ module Diagnostics
         fname(iname)  =fname(iname)  +sum(weight*a)
         fweight(iname)=fweight(iname)+sum(weight)
 !
-!  Set corresponding entry in itype_name
+!  Set corresponding entry in itype_name.
 !
         if (present(lsqrt)) then
           itype_name(iname)=ilabel_sum_weighted_sqrt
@@ -1258,7 +1258,7 @@ module Diagnostics
 !*********************************************************
     subroutine surf_mn_name(a,iname)
 !
-!  successively calculate surface integral. This routine assumes
+!  Successively calculate surface integral. This routine assumes
 !  that "a" contains the partial result for each pencil, so here
 !  we just need to add up the contributions from all processors.
 !  Start from zero if lfirstpoint=.true.
@@ -1274,7 +1274,7 @@ module Diagnostics
         fname(iname)=fname(iname)+a
       endif
 !
-!  set corresponding entry in itype_name
+!  Set corresponding entry in itype_name.
 !
       itype_name(iname)=ilabel_surf
 !
@@ -1282,7 +1282,7 @@ module Diagnostics
 !***********************************************************************
     subroutine integrate_mn_name(a,iname)
 !
-!  successively calculate sum of a, which is supplied at each call.
+!  Successively calculate sum of a, which is supplied at each call.
 !  Start from zero if lfirstpoint=.true. ultimately multiply by dv
 !  to get the integral.  This differs from sum_mn_name by the
 !  setting of ilabel_integrate and hence in the behaviour in the final
@@ -1368,7 +1368,7 @@ module Diagnostics
 !
       if (lfirstpoint) fnamey(:,:,iname)=0.0
 !
-!  m starts with mghost+1=4, so the correct index is m-nghost
+!  m starts with mghost+1=4, so the correct index is m-nghost.
 !
       m_nghost=m-nghost
       lmax=l2
@@ -1446,7 +1446,7 @@ module Diagnostics
         suma = fac*(sum(a(2:nx-1))+.5*(a(1)+a(nx)))
       endif
 !
-!  n starts with nghost+1=4, so the correct index is n-nghost
+!  n starts with nghost+1=4, so the correct index is n-nghost.
 !
       fnamez(n-nghost,ipz+1,iname) = fnamez(n-nghost,ipz+1,iname) + suma
 !
@@ -1480,7 +1480,7 @@ module Diagnostics
         suma = fac*(sum(a(2:nx-1))+.5*(a(1)+a(nx)))
       endif
 !
-!  m starts with mghost+1=4, so the correct index is m-nghost
+!  m starts with mghost+1=4, so the correct index is m-nghost.
 !
       fnamey(m-nghost,ipy+1,iname) = fnamey(m-nghost,ipy+1,iname) + suma
 
@@ -1553,7 +1553,7 @@ module Diagnostics
 !***********************************************************************
     subroutine ysum_mn_name_xz(a,iname)
 !
-!  successively calculate sum over y of a, which is supplied at each call.
+!  Successively calculate sum over y of a, which is supplied at each call.
 !  The result fnamexz is xz-dependent.
 !  Start from zero if lfirstpoint=.true.
 !
@@ -1567,8 +1567,7 @@ module Diagnostics
 !
       if (lfirstpoint) fnamexz(:,:,iname)=0.
 !
-!  n starts with nghost+1=4, so the correct index is n-nghost
-!  keep full x-dependence
+!  n starts with nghost+1=4, so the correct index is n-nghost.
 !
       n_nghost=n-nghost
       if (lspherical_coords.or.lcylindrical_coords)then
@@ -1581,7 +1580,7 @@ module Diagnostics
 !***********************************************************************
     subroutine zsum_mn_name_xy(a,iname)
 !
-!  successively calculate sum over z of a, which is supplied at each call.
+!  Successively calculate sum over z of a, which is supplied at each call.
 !  The result fnamexy is xy-dependent.
 !  Start from zero if lfirstpoint=.true.
 !
@@ -1595,8 +1594,7 @@ module Diagnostics
 !
       if (lfirstpoint) fnamexy(:,:,iname)=0.
 !
-!  m starts with nghost+1=4, so the correct index is m-nghost
-!  keep full x-dependence
+!  m starts with nghost+1=4, so the correct index is m-nghost.
 !
       m_nghost=m-nghost
       fnamexy(:,m_nghost,iname)=fnamexy(:,m_nghost,iname)+a
@@ -1605,7 +1603,7 @@ module Diagnostics
 !***********************************************************************
     subroutine calc_phiavg_profile(p)
 !
-!  Calculate profile for phi-averaging for given pencil
+!  Calculate profile for phi-averaging for given pencil.
 !
 !   2-feb-03/wolf: coded
 !
@@ -1623,9 +1621,10 @@ module Diagnostics
       enddo
 !
       if (.not.(lcylinder_in_a_box.or.lsphere_in_a_box)) &
-           call warning("calc_phiavg_profile","no reason to call it if you are "//&
-           "not using a cylinder or a sphere embedded in a "//&
-           "Cartesian grid") 
+          call warning('calc_phiavg_profile', &
+          'no reason to call it if you are '//&
+          'not using a cylinder or a sphere embedded in a '//&
+          'Cartesian grid') 
 !
     endsubroutine calc_phiavg_profile
 !***********************************************************************
@@ -1935,11 +1934,11 @@ module Diagnostics
 !*******************************************************************
     subroutine init_xaver
 !
-! initialize variables for x-averaging 
+!  Initialize variables for x-averaging.
 !
 !  26-oct-09/dhruba: coded
 !
-   integer :: lx
+     integer :: lx
 !
      if (xav_max.lt.x(l1)) loutside_avg=.true.  
 !
