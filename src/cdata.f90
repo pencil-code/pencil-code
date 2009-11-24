@@ -263,27 +263,24 @@ module Cdata
   integer :: nnamez=0,nnamey=0,nnamex=0,nnamer=0
   integer :: nr_directions=1
   real :: tdiagnos,t1ddiagnos,t2davgfirst
-  integer, parameter :: mname=100,mnamev=100,mnamerz=20
-  integer, parameter :: mnamez=30,mnamey=30,mnamex=30,mnamer=30
+  integer, parameter :: mname=100,mnamev=100
   integer, dimension (mname) :: itype_name=0
   real, dimension (mname) :: fname=0.0, fweight=0.0
   real, dimension (nz,nprocz) :: z_allprocs=0.0
-  real, dimension (nx,nprocx,mnamex) :: fnamex=0.0
-  real, dimension (ny,nprocy,mnamey) :: fnamey=0.0
-  real, dimension (nz,nprocz,mnamez) :: fnamez=0.0
-  real, dimension (nrcyl,mnamer) :: fnamer=0.0
-  real, allocatable, dimension(:,:,:) :: fnamexy, fnamexz
-  real, dimension (nrcyl,0:nz,nprocz,mnamerz) :: fnamerz=0.0
+  real, dimension (:,:,:), allocatable :: fnamex, fnamey, fnamez
+  real, dimension (:,:), allocatable :: fnamer
+  real, dimension(:,:,:), allocatable :: fnamexy, fnamexz
+  real, dimension(:,:,:,:), allocatable :: fnamerz
   real, dimension (nrcyl,nx) :: phiavg_profile=0.0
   character (len=30) :: cname(mname),cform(mname)
   character (len=30) :: cnamev(mname)
   character (len=30), allocatable :: cnamexy(:),cformxy(:)
   character (len=30), allocatable :: cnamexz(:),cformxz(:)
-  character (len=30) :: cnamez(mnamez),cformz(mnamez)
-  character (len=30) :: cnamey(mnamey),cformy(mnamey)
-  character (len=30) :: cnamex(mnamex),cformx(mnamex)
-  character (len=30) :: cnamer(mnamer),cformr(mnamer)
-  character (len=30) :: cnamerz(mnamerz),cformrz(mnamerz)
+  character (len=30), allocatable :: cnamerz(:),cformrz(:)
+  character (len=30), allocatable :: cnamez(:),cformz(:)
+  character (len=30), allocatable :: cnamey(:),cformy(:)
+  character (len=30), allocatable :: cnamex(:),cformx(:)
+  character (len=30), allocatable :: cnamer(:),cformr(:)
   logical :: lout=.false.,headt=.false.,headtt=.true.,ldt=.true.
   logical :: lfirst=.false.,llast=.false.,ldt_paronly=.false.
   logical :: ldiagnos=.false.,lvideo=.false.,lwrite_prof=.true.

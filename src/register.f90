@@ -967,14 +967,14 @@ module Register
 !***********************************************************************
     subroutine rprint_list(lreset)
 !
-!  read variables to print and to calculate averages of from control files
+!  Read variables to print and to calculate averages of from control files.
 !
 !   3-may-01/axel: coded
 !
       use Cdata
       use Param_IO
       use Sub,             only: numeric_precision
-      use Diagnostics,  only: allocate_yaverages,allocate_zaverages
+      use Diagnostics
       use Hydro,           only: rprint_hydro
       use Density,         only: rprint_density
       use Forcing,         only: rprint_forcing
@@ -1007,16 +1007,18 @@ module Register
       use TestPerturb,     only: rprint_testperturb
       use Mpicomm
 !
-      integer :: iname,inamev,inamez,inamey,inamex,inamer,inamexy,inamexz,inamerz
+      integer :: iname,inamev,inamez,inamey,inamex,inamer
+      integer :: inamexy,inamexz,inamerz
       integer :: iname_tmp,iread
       logical :: lreset,exist,print_in_double
       character (LEN=30)    :: cname_tmp
       character (LEN=fnlen) :: print_in_file
 !
-!  read in the list of variables to be printed
-!  recognize "!" and "#" as comments
+!  Read in the list of variables to be printed.
+!  Recognize "!" and "#" as comments.
 !
-      ! read print.in.double if applicable else print.in
+!  Read print.in.double if applicable, else print.in.
+!
       print_in_file = 'print.in'
       inquire(FILE="print.in.double", EXIST=print_in_double)
       if (print_in_double .and. (numeric_precision() == 'D')) then
@@ -1042,90 +1044,147 @@ module Register
         write(1,*) "it(i9)"
         close(1)
         if (lroot) then
-          print*,'You must have a print.in file in the run directory!'
-          print*,'For now we generated a minimalistic version.'
-          print*,'Please edit it and type reload run.'
+          print*, 'You must have a print.in file in the run directory!'
+          print*, 'For now we generated a minimalistic version.'
+          print*, 'Please edit it and type reload run.'
         endif
         goto 91
       endif
 !
-!  read in the list of variables for video slices
+!  Read in the list of variables for video slices.
 !
       inquire(file='video.in',exist=exist)
       if (exist .and. dvid/=0.0) then
         lwrite_slices=.true.
         open(1,file='video.in')
-        do inamev=1,mnamev
-          read(1,*,end=98) cnamev(inamev)
+        inamev=0; iread=0
+        do while (iread==0)
+          inamev=inamev+1
+          read(1,*,iostat=iread) cnamev(inamev)
         enddo
-98      nnamev=inamev-1
+        nnamev=inamev
         close(1)
       endif
-      if (lroot.and.ip<14) print*,'rprint_list: ix,iy,iz,iz2=',ix,iy,iz,iz2
-      if (lroot.and.ip<14) print*,'rprint_list: nnamev=',nnamev
+      if (lroot.and.ip<14) print*, 'rprint_list: ix,iy,iz,iz2=',ix,iy,iz,iz2
+      if (lroot.and.ip<14) print*, 'rprint_list: nnamev=', nnamev
 !
-!  read in the list of variables for xy-averages
+!  Read in the list of variables for xy-averages.
 !
       inquire(file='xyaver.in',exist=exist)
       if (exist) then
+!  Count the number of lines in it first.
         open(1,file='xyaver.in')
-        do inamez=1,mnamez
-          read(1,*,end=97) cnamez(inamez)
+        nnamez=0; iread=0
+        do while (iread==0)
+          read(1,*,iostat=iread)
+          if (iread==0) nnamez=nnamez+1
         enddo
-97      nnamez=inamez-1
         close(1)
+        if (nnamez>0) then
+!  Allocate the relevant arrays here...
+          call allocate_xyaverages()
+!  ... then read into these arrays.
+          open(1,file='xyaver.in')
+          inamez=0; iread=0
+          do while (iread==0)
+            inamez=inamez+1
+            read(1,*,iostat=iread) cnamez(inamez)
+          enddo
+          close(1)
+        endif
       endif
-      if (lroot.and.ip<14) print*,'rprint_list: nnamez=',nnamez
+      if (lroot.and.ip<14) print*, 'rprint_list: nnamez=',nnamez
 !
-!  read in the list of variables for xz-averages
+!  Read in the list of variables for xz-averages.
 !
       inquire(file='xzaver.in',exist=exist)
       if (exist) then
+!  Count the number of lines in it first.
         open(1,file='xzaver.in')
-        do inamey=1,mnamey
-          read(1,*,end=92) cnamey(inamey)
+        nnamey=0; iread=0
+        do while (iread==0)
+          read(1,*,iostat=iread)
+          if (iread==0) nnamey=nnamey+1
         enddo
-92      nnamey=inamey-1
         close(1)
+        if (nnamey>0) then
+!  Allocate the relevant arrays here...
+          call allocate_xzaverages()
+!  ... then read into these arrays.
+          open(1,file='xzaver.in')
+          inamey=0; iread=0
+          do while (iread==0)
+            inamey=inamey+1
+            read(1,*,iostat=iread) cnamey(inamey)
+          enddo
+          close(1)
+        endif
       endif
-      if (lroot.and.ip<14) print*,'rprint_list: nnamey=',nnamey
+      if (lroot.and.ip<14) print*, 'rprint_list: nnamey=',nnamey
 !
-!  read in the list of variables for yz-averages
+!  Read in the list of variables for yz-averages.
 !
       inquire(file='yzaver.in',exist=exist)
       if (exist) then
+!  Count the number of lines in it first.
         open(1,file='yzaver.in')
-        do inamex=1,mnamex
-          read(1,*,end=93) cnamex(inamex)
+        nnamex=0; iread=0
+        do while (iread==0)
+          read(1,*,iostat=iread)
+          if (iread==0) nnamex=nnamex+1
         enddo
-93      nnamex=inamex-1
         close(1)
+        if (nnamex>0) then
+!  Allocate the relevant arrays here...
+          call allocate_yzaverages()
+!  ... then read into these arrays.
+          open(1,file='yzaver.in')
+          inamex=0; iread=0
+          do while (iread==0)
+            inamex=inamex+1
+            read(1,*,iostat=iread) cnamex(inamex)
+          enddo
+          close(1)
+        endif
       endif
-      if (lroot.and.ip<14) print*,'rprint_list: nnamex=',nnamex
+      if (lroot.and.ip<14) print*, 'rprint_list: nnamex=',nnamex
 !
-!  read in the list of variables for yz-averages
+!  Read in the list of variables for phi-z-averages.
 !
       inquire(file='phizaver.in',exist=exist)
       if (exist) then
+!  Count the number of lines in it first.
         open(1,file='phizaver.in')
-        do inamer=1,mnamer
-          read(1,*,end=990) cnamer(inamer)
+        nnamer=0; iread=0
+        do while (iread==0)
+          read(1,*,iostat=iread)
+          if (iread==0) nnamer=nnamer+1
         enddo
-990      nnamer=inamer-1
         close(1)
+        if (nnamer>0) then
+!  Allocate the relevant arrays here...
+          call allocate_phizaverages()
+!  ... then read into these arrays.
+          open(1,file='phizaver.in')
+          inamer=0; iread=0
+          do while (iread==0)
+            inamer=inamer+1
+            read(1,*,iostat=iread) cnamer(inamer)
+          enddo
+          close(1)
+        endif
       else
-         lwrite_phizaverages=.false. ! switch phizaverages off
+        lwrite_phizaverages=.false. ! switch phizaverages off
       endif
-      if (lroot.and.ip<14) print*,'rprint_list: nnamer=',nnamer
+      if (lroot.and.ip<14) print*, 'rprint_list: nnamer=', nnamer
 !
-! 2-d averages: Read the files and allocate the relevant arrays here. 
+!  2-D averages: Read the files and allocate the relevant arrays here.
 !
-!
-!  read in the list of variables for y-averages
+!  Read in the list of variables for y-averages.
 !
       inquire(file='yaver.in',exist=exist)
       if (exist) then
-! count the number of lines in it first 
+!  Count the number of lines in it first.
         open(1,file='yaver.in')
         nnamexz=0; iread=0
         do while (iread==0)
@@ -1133,24 +1192,28 @@ module Register
           if (iread==0) nnamexz=nnamexz+1
         enddo
         close(1)
-! allocate the relevant arrays here
-        call allocate_yaverages()
-! then read into these arrays
-        open(1,file='yaver.in')
-        do inamexz=1,nnamexz
-          read(1,*,end=94) cnamexz(inamexz)
-        enddo
-94      close(1)
+        if (nnamexz>0) then
+!  Allocate the relevant arrays here...
+          call allocate_yaverages()
+!  ... then read into these arrays.
+          open(1,file='yaver.in')
+          inamexz=0; iread=0
+          do while (iread==0)
+            inamexz=inamexz+1
+            read(1,*,iostat=iread) cnamexz(inamexz)
+          enddo
+          close(1)
+        endif
       else
         lwrite_yaverages = .false. ! switch yaverages off
       endif
       if (lroot.and.ip<14) print*,'rprint_list: nnamexz=',nnamexz
 !
-!  read in the list of variables for z-averages
+!  Read in the list of variables for z-averages.
 !
       inquire(file='zaver.in',exist=exist)
       if (exist) then
-! count the number of lines in it first 
+!  Count the number of lines in it first.
         open(1,file='zaver.in')
         nnamexy=0; iread=0
         do while (iread==0)
@@ -1158,44 +1221,60 @@ module Register
           if (iread==0) nnamexy=nnamexy+1
         enddo
         close(1)
-! allocate the relevant arrays here
-        call allocate_zaverages()
-! then read the quantities to be z-averaged
-        open(1,file='zaver.in')
-        do inamexy=1,nnamexy
-          read(1,*,end=96) cnamexy(inamexy)
-        enddo
-96      close(1)
+        if (nnamexy>0) then
+!  Allocate the relevant arrays here...
+          call allocate_zaverages()
+!  ... then read into these arrays.
+          open(1,file='zaver.in')
+          inamexy=0; iread=0
+          do while (iread==0)
+            inamexy=inamexy+1
+            read(1,*,iostat=iread) cnamexy(inamexy)
+          enddo
+          close(1)
+        endif
       else
         lwrite_zaverages = .false. ! switch zaverages off
       endif
       if (lroot.and.ip<14) print*,'rprint_list: nnamexy=',nnamexy
 !
-!  read in the list of variables for phi-averages
+!  Read in the list of variables for phi-averages.
 !
       inquire(file='phiaver.in',exist=exist)
       if (exist) then
+!  Count the number of lines in it first.
         open(1,file='phiaver.in')
-        do inamerz=1,mnamerz
-          read(1,*,end=95) cnamerz(inamerz)
+        nnamerz=0; iread=0
+        do while (iread==0)
+          read(1,*,iostat=iread)
+          if (iread==0) nnamerz=nnamerz+1
         enddo
-95      nnamerz=inamerz-1
         close(1)
-!
+        if (nnamerz>0) then
+!  Allocate the relevant arrays here...
+          call allocate_phiaverages()
+!  ... then read into these arrays.
+          open(1,file='phiaver.in')
+          inamerz=0; iread=0
+          do while (iread==0)
+            inamerz=inamerz+1
+            read(1,*,iostat=iread) cnamerz(inamerz)
+          enddo
+          close(1)
+        endif
       else
         lwrite_phiaverages = .false. ! switch phiaverages off
       endif
       if (lroot.and.ip<14) print*,'rprint_list: nnamerz=',nnamerz
 !
-!  set logical for 2-D averages
+!  Set logical for 2-D averages.
 !
-      lwrite_2daverages=lwrite_yaverages&
-                    .or.lwrite_zaverages&
-                    .or.lwrite_phiaverages
+      lwrite_2daverages= &
+          lwrite_yaverages.or.lwrite_zaverages.or.lwrite_phiaverages
 !
-!  check which variables are set
+!  Check which variables are set.
 !  For the convenience of idl users, the indices of variables in
-!  the f-array and the time_series.dat files are written to data/index.pro
+!  the f-array and the time_series.dat files are written to data/index.pro.
 !
       if (lroot) open(3,file=trim(datadir)//'/index.pro',position='append')
       call rprint_general         (lreset,LWRITE=lroot)
@@ -1230,7 +1309,6 @@ module Register
       call rprint_shear           (lreset,LWRITE=lroot)
       call rprint_testperturb     (lreset,LWRITE=lroot)
       if (lroot) close(3)
-
 !
     endsubroutine rprint_list
 !***********************************************************************
@@ -1313,7 +1391,4 @@ module Register
 !
     endsubroutine rprint_general
 !***********************************************************************
-
 endmodule Register
-
-!!! End of file register.f90

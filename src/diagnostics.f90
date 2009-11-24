@@ -24,19 +24,25 @@ module Diagnostics
   public :: phiaverages_rz
   public :: write_1daverages, write_2daverages
   public :: write_2daverages_prepare, write_zaverages
-  public :: expand_cname, parse_name, save_name, save_name_halfz, max_name, sum_name
-  public :: max_mn_name,sum_mn_name,integrate_mn_name,sum_weighted_name
-  public :: sum_mn_name_halfy, surf_mn_name,sum_lim_mn_name
+  public :: expand_cname, parse_name, save_name, save_name_halfz
+  public :: max_name, sum_name
+  public :: max_mn_name, sum_mn_name, integrate_mn_name, sum_weighted_name
+  public :: sum_mn_name_halfy, surf_mn_name, sum_lim_mn_name
   public :: sum_mn_name_halfz
   public :: xysum_mn_name_z, xzsum_mn_name_y, yzsum_mn_name_x
   public :: phizsum_mn_name_r, ysum_mn_name_xz, zsum_mn_name_xy
   public :: phisum_mn_name_rz, calc_phiavg_profile
-  public :: yzintegrate_mn_name_x,xzintegrate_mn_name_y,xyintegrate_mn_name_z
-  public :: allocate_yaverages,allocate_zaverages
-  public :: yaverages_clean_up,zaverages_clean_up
+  public :: yzintegrate_mn_name_x, xzintegrate_mn_name_y, xyintegrate_mn_name_z
+  public :: allocate_xyaverages, allocate_xzaverages, allocate_yzaverages
+  public :: allocate_phizaverages
+  public :: allocate_yaverages, allocate_zaverages, allocate_phiaverages
+  public :: xyaverages_clean_up, xzaverages_clean_up, yzaverages_clean_up
+  public :: phizaverages_clean_up
+  public :: yaverages_clean_up, zaverages_clean_up, phiaverages_clean_up
   public :: get_from_fname
   public :: init_xaver
 !
+  integer :: mnamer
   character (len=5) :: ch2davg
 !
   contains
@@ -368,13 +374,13 @@ module Diagnostics
 !
 !   6-jun-02/axel: coded
 !
-      real, dimension (nz,nprocz,mnamez) :: fsumz
+      real, dimension (nz,nprocz,nnamez) :: fsumz
 !
 !  Communicate over all processors.
 !  The result is only present on the root processor
 !
       if (nnamez>0) then
-        call mpireduce_sum(fnamez,fsumz,(/nz,nprocz,mnamez/))
+        call mpireduce_sum(fnamez,fsumz,(/nz,nprocz,nnamez/))
         if (lroot) &
             fnamez(:,:,1:nnamez)=fsumz(:,:,1:nnamez)/(nx*ny*nprocx*nprocy)
       endif
@@ -387,13 +393,13 @@ module Diagnostics
 !
 !  12-oct-05/anders: adapted from xyaverages_z
 !
-      real, dimension (ny,nprocy,mnamey) :: fsumy
+      real, dimension (ny,nprocy,nnamey) :: fsumy
 !
 !  Communicate over all processors.
 !  The result is only present on the root processor.
 !
       if (nnamey>0) then
-        call mpireduce_sum(fnamey,fsumy,(/ny,nprocy,mnamey/))
+        call mpireduce_sum(fnamey,fsumy,(/ny,nprocy,nnamey/))
         if (lroot) &
             fnamey(:,:,1:nnamey)=fsumy(:,:,1:nnamey)/(nx*nz*nprocx*nprocz)
       endif
@@ -406,13 +412,13 @@ module Diagnostics
 !
 !   2-oct-05/anders: adapted from xyaverages_z
 !
-      real, dimension (nx,nprocx,mnamex) :: fsumx
+      real, dimension (nx,nprocx,nnamex) :: fsumx
 !
 !  Communicate over all processors.
 !  The result is only present on the root processor.
 !
       if (nnamex>0) then
-        call mpireduce_sum(fnamex,fsumx,(/nx,nprocx,mnamex/))
+        call mpireduce_sum(fnamex,fsumx,(/nx,nprocx,nnamex/))
         if (lroot) &
             fnamex(:,:,1:nnamex)=fsumx(:,:,1:nnamex)/(ny*nz*nprocy*nprocz)
       endif
@@ -425,7 +431,7 @@ module Diagnostics
 !  
 !  29-jan-07/wlad: adapted from yzaverages_x and phiaverages_rz
 !
-      real, dimension (nrcyl,mnamer) :: fsumr
+      real, dimension (nrcyl,nnamer) :: fsumr
       real, dimension (nrcyl) :: norm
       integer :: in,ir
 !
@@ -434,7 +440,7 @@ module Diagnostics
 !
       if (nnamer>0) then
         !the extra slot is where the normalization is stored
-        call mpireduce_sum(fnamer,fsumr,(/nrcyl,mnamer/))
+        call mpireduce_sum(fnamer,fsumr,(/nrcyl,nnamer/))
         if (lroot) then
            norm=fsumr(:,nnamer+1)
            do in=1,nnamer
@@ -491,14 +497,14 @@ module Diagnostics
 !  9-dec-02/wolf: coded
 !
       integer :: i
-      real, dimension (nrcyl,0:nz,nprocz,mnamerz) :: fsumrz
+      real, dimension (nrcyl,0:nz,nprocz,nnamerz) :: fsumrz
 !
 !  Communicate over all processors.
 !  The result is only present on the root processor
 !  normalize by sum of unity which is accumulated in fnamerz(:,0,:,1).
 !
       if (nnamerz>0) then
-        call mpireduce_sum(fnamerz,fsumrz,(/nrcyl,nz+1,nprocz,mnamerz/))
+        call mpireduce_sum(fnamerz,fsumrz,(/nrcyl,nz+1,nprocz,nnamerz/))
         if (lroot) then
           do i=1,nnamerz
             fnamerz(:,1:nz,:,i)=fsumrz(:,1:nz,:,i)/spread(fsumrz(:,0,:,1),2,nz)
@@ -802,8 +808,6 @@ module Diagnostics
 !
 !   1-apr-04/wolf: coded
 !
-      use Mpicomm, only: stop_it
-!
       character (len=*), dimension(:) :: ccname
       integer :: nname
       character (len=*) :: vlabel,xlabel,ylabel,zlabel
@@ -818,7 +822,7 @@ module Diagnostics
       do while (i <= nname)
         if (ccname(i) == vlabel) then
           if (nname+2 > mname) then ! sanity check
-            call stop_it("EXPAND_CNAME: Too many labels in list")
+            call fatal_error('expand_cname','Too many labels in list')
           endif
           ccname(i+3:nname+2) = ccname(i+1:nname)
           ccname(i:i+2) = (/xlabel,ylabel,zlabel/)
@@ -1520,8 +1524,6 @@ module Diagnostics
 !
 !  29-jan-07/wlad: adapted from yzsum_mn_name_x and phisum_mn_name
 !
-      use Mpicomm, only: stop_it
-!
       real, dimension (nx) :: a
       integer :: iname,ir,nnghost
 !
@@ -1529,22 +1531,22 @@ module Diagnostics
       if (lfirstpoint.and.iname==nnamer) fnamer(:,iname+1)=0.
 !
       do ir=1,nrcyl
-         fnamer(ir,iname) = fnamer(ir,iname) + sum(a*phiavg_profile(ir,:))
+        fnamer(ir,iname) = fnamer(ir,iname) + sum(a*phiavg_profile(ir,:))
       enddo
 !
-! Normalization factor, just needs to be done once.
-! As is it a z-average, multiply by nz afterwards.
+!  Normalization factor, just needs to be done once.
+!  As is it a z-average, multiply by nz afterwards.
 !
       nnghost=n-nghost
       if ((iname==nnamer).and.(nnghost==1)) then
-!check if an extra slot is available on fnamer
-         if (nnamer==mnamer) &
-              call stop_it("no slot for phi-normalization. decrease nnamer")
+!  Check if an extra slot is available on fnamer.
+        if (nnamer==mnamer) call fatal_error('phizsum_mn_name_r', &
+            'no slot for phi-normalization. decrease nnamer')
 !
-         do ir=1,nrcyl
-            fnamer(ir,iname+1) &
-                 = fnamer(ir,iname+1) + sum(1.*phiavg_profile(ir,:))*nz
-         enddo
+        do ir=1,nrcyl
+          fnamer(ir,iname+1)= &
+              fnamer(ir,iname+1) + sum(1.*phiavg_profile(ir,:))*nz
+        enddo
       endif
 !
     endsubroutine phizsum_mn_name_r
@@ -1683,7 +1685,7 @@ module Diagnostics
 !
     integer, intent(in) :: iname
 !
-    if ( iname<1.or.iname>nname ) then
+    if (iname<1.or.iname>nname) then
       call fatal_error('get_from_fname', 'index not in legal range')
       get_from_fname = 0
     endif
@@ -1692,49 +1694,244 @@ module Diagnostics
 !
     endfunction get_from_fname
 !***********************************************************************
+    subroutine allocate_xyaverages
+!
+!  Allocate the variables needed for xy-averages.
+!
+!   24-nov-09/anders: copied from allocate_yaverages
+!
+      integer :: stat
+!
+      allocate(fnamez(nz,nprocz,nnamez),stat=stat)
+!
+      if (stat>0) then
+        call fatal_error('allocate_xyaverages', &
+            'Could not allocate memory for fnamez')
+      else
+        if (lroot) print*, 'allocate_xyaverages: allocated memory for '// &
+            'fnamez  with nnamez  =', nnamez
+      endif
+!
+      allocate(cnamez(nnamez),cformz(nnamez)) 
+!
+    endsubroutine allocate_xyaverages
+!***********************************************************************
+    subroutine allocate_xzaverages
+!
+!  Allocate the variables needed for xz-averages.
+!
+!   24-nov-09/anders: copied from allocate_yaverages
+!
+      integer :: stat
+!
+      allocate(fnamey(ny,nprocy,nnamey),stat=stat)
+!
+      if (stat>0) then
+        call fatal_error('allocate_xzaverages', &
+            'Could not allocate memory for fnamey')
+      else
+        if (lroot) print*, 'allocate_xzaverages: allocated memory for '// &
+            'fnamey  with nnamey  =', nnamey
+      endif
+!
+      allocate(cnamey(nnamey),cformy(nnamey)) 
+!
+    endsubroutine allocate_xzaverages
+!***********************************************************************
+    subroutine allocate_yzaverages
+!
+!  Allocate the variables needed for yz-averages.
+!
+!   24-nov-09/anders: copied from allocate_yaverages
+!
+      integer :: stat
+!
+      allocate(fnamex(nx,nprocx,nnamex),stat=stat)
+!
+      if (stat>0) then
+        call fatal_error('allocate_yzaverages', &
+            'Could not allocate memory for fnamex')
+      else
+        if (lroot) print*, 'allocate_yzaverages: allocated memory for '// &
+            'fnamex  with nnamex  =', nnamex
+      endif
+!
+      allocate(cnamex(nnamex),cformx(nnamex)) 
+!
+    endsubroutine allocate_yzaverages
+!***********************************************************************
+    subroutine allocate_phizaverages
+!
+!  Allocate the variables needed for phiz-averages.
+!
+!   24-nov-09/anders: copied from allocate_yaverages
+!
+      integer :: stat
+!
+      mnamer=nnamer+1
+      allocate(fnamer(nrcyl,mnamer),stat=stat)
+!
+      if (stat>0) then
+        call fatal_error('allocate_phizaverages', &
+            'Could not allocate memory for fnamer')
+      else
+        if (lroot) print*, 'allocate_phizaverages: allocated memory for '// &
+            'fnamer  with nnamer+1 =', mnamer
+      endif
+!
+      allocate(cnamer(nnamer),cformr(nnamer)) 
+!
+    endsubroutine allocate_phizaverages
+!***********************************************************************
     subroutine allocate_yaverages
 !
-!  Allocate the variables needed for yaverages.
+!  Allocate the variables needed for y-averages.
 !
 !   12-aug-09/dhruba: coded
 !
-      allocate(fnamexz(nx,nz,nnamexz))
+      integer :: stat
+!
+      allocate(fnamexz(nx,nz,nnamexz),stat=stat)
+!
+      if (stat>0) then
+        call fatal_error('allocate_yaverages', &
+            'Could not allocate memory for fnamexz')
+      else
+        if (lroot) print*, 'allocate_yaverages : allocated memory for '// &
+            'fnamexz with nnamexz =', nnamexz
+      endif
+!
       allocate(cnamexz(nnamexz),cformxz(nnamexz)) 
 !
     endsubroutine allocate_yaverages
 !*******************************************************************
     subroutine allocate_zaverages
 !
-!  Allocate the variables needed for zaverages.
+!  Allocate the variables needed for z-averages.
 !
 !   12-aug-09/dhruba: coded
 !
-      allocate(fnamexy(nx,ny,nnamexy))
+      integer :: stat
+!
+      allocate(fnamexy(nx,ny,nnamexy),stat=stat)
+!
+      if (stat>0) then
+        call fatal_error('allocate_zaverages', &
+            'Could not allocate memory for fnamexy')
+      else
+        if (lroot) print*, 'allocate_zaverages : allocated memory for '// &
+            'fnamexy with nnamexy =', nnamexy
+      endif
+!
       allocate(cnamexy(nnamexy),cformxy(nnamexy))
 !
     endsubroutine allocate_zaverages
+!*******************************************************************
+    subroutine allocate_phiaverages
+!
+!  Allocate the variables needed for phi-averages.
+!
+!   24-nov-09/anders: copied from allocate_zaverages
+!
+      integer :: stat
+!
+      allocate(fnamerz(nrcyl,0:nz,nprocz,nnamerz),stat=stat)
+!
+      if (stat>0) then
+        call fatal_error('allocate_phiaverages', &
+            'Could not allocate memory for fnamerz')
+      else
+        if (lroot) print*, 'allocate_phiaverages : allocated memory for '// &
+            'fnamerz with nnamerz =', nnamerz
+      endif
+!
+      allocate(cnamerz(nnamerz),cformrz(nnamerz))
+!
+    endsubroutine allocate_phiaverages
+!***********************************************************************
+    subroutine xyaverages_clean_up
+!
+!  Allocate the variables needed for xy-averages.
+!
+!   24-nov-09/anders: copied from yaverages_clean_up
+!
+      if (allocated(fnamez)) deallocate(fnamez)
+      if (allocated(cnamez)) deallocate(cnamez)
+      if (allocated(cformz)) deallocate(cformz)
+!
+    endsubroutine xyaverages_clean_up
+!***********************************************************************
+    subroutine xzaverages_clean_up
+!
+!  Allocate the variables needed for xz-averages.
+!
+!   24-nov-09/anders: copied from yaverages_clean_up
+!
+      if (allocated(fnamey)) deallocate(fnamey)
+      if (allocated(cnamey)) deallocate(cnamey)
+      if (allocated(cformy)) deallocate(cformy)
+!
+    endsubroutine xzaverages_clean_up
+!***********************************************************************
+    subroutine yzaverages_clean_up
+!
+!  Allocate the variables needed for yz-averages.
+!
+!   24-nov-09/anders: copied from yaverages_clean_up
+!
+      if (allocated(fnamex)) deallocate(fnamex)
+      if (allocated(cnamex)) deallocate(cnamex)
+      if (allocated(cformx)) deallocate(cformx)
+!
+    endsubroutine yzaverages_clean_up
+!***********************************************************************
+    subroutine phizaverages_clean_up
+!
+!  Allocate the variables needed for phiz-averages.
+!
+!   24-nov-09/anders: copied from yaverages_clean_up
+!
+      if (allocated(fnamer)) deallocate(fnamer)
+      if (allocated(cnamer)) deallocate(cnamer)
+      if (allocated(cformr)) deallocate(cformr)
+!
+    endsubroutine phizaverages_clean_up
 !***********************************************************************
     subroutine yaverages_clean_up
 !
-!  Allocate the variables needed for yaverages.
+!  Allocate the variables needed for y-averages.
 !
 !   12-aug-09/dhruba: coded
 !
-      deallocate(fnamexz)
-      deallocate(cnamexz,cformxz) 
+      if (allocated(fnamexz)) deallocate(fnamexz)
+      if (allocated(cnamexz)) deallocate(cnamexz)
+      if (allocated(cformxz)) deallocate(cformxz)
 !
     endsubroutine yaverages_clean_up
 !*******************************************************************
     subroutine zaverages_clean_up
 !
-!  Allocate the variables needed for yaverages.
+!  Allocate the variables needed for z-averages.
 !
 !   12-aug-09/dhruba: coded
 !
-      deallocate(fnamexy)
-      deallocate(cnamexy,cformxy) 
+      if (allocated(fnamexy)) deallocate(fnamexy)
+      if (allocated(cnamexy)) deallocate(cnamexy)
+      if (allocated(cformxy)) deallocate(cformxy)
 !
     endsubroutine zaverages_clean_up
+!*******************************************************************
+    subroutine phiaverages_clean_up
+!
+!  Allocate the variables needed for phi-averages.
+!
+!   24-nov-09/anders: copied from zaverages_clean_up
+!
+      if (allocated(fnamerz)) deallocate(fnamerz)
+      if (allocated(cnamerz)) deallocate(cnamerz)
+      if (allocated(cformrz)) deallocate(cformrz)
+!
+    endsubroutine phiaverages_clean_up
 !*******************************************************************
     subroutine init_xaver
 !
