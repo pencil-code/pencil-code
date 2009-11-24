@@ -58,7 +58,7 @@ module Pscalar
   real :: pscalar_diff_hyper3=0.0, rhoccm=0.0, cc2m=0.0, gcc2m=0.0
   real :: pscalar_sink=0.0, Rpscalar_sink=0.5
   real :: lam_gradC=0., om_gradC=0., lambda_cc=0.
-  real :: scalaracc=1.
+  real :: scalaracc=0.
   logical :: lpscalar_sink, lgradC_profile=.false., lreactions=.false.
   logical :: lnotpassive=.false.
 !
@@ -68,7 +68,6 @@ module Pscalar
        lpscalar_sink,pscalar_sink,Rpscalar_sink, &
        lreactions, lambda_cc, &
        lam_gradC, om_gradC, lgradC_profile, &
-       scalaracc, &
        lnotpassive
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rhoccm=0, idiag_ccmax=0, idiag_ccmin=0., idiag_ccm=0
@@ -126,6 +125,7 @@ module Pscalar
         call init_lncc_simple(f)
       endif
 !
+      if (lnotpassive) scalaracc=3./5./hoverr**2
     endsubroutine initialize_pscalar
 !***********************************************************************
     subroutine init_lncc_simple(f)

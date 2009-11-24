@@ -499,7 +499,7 @@ module Density
               ky_lnrho(j),kz_lnrho(j), kxx_lnrho(j), kyy_lnrho(j), &
               kzz_lnrho(j))
         case('isotdisk')
-          call isotdisk(powerlr,f,ilnrho,zoverh, hoverr,gamma)
+          call isotdisk(powerlr,f,ilnrho,zoverh, hoverr)
           f(1:mx,1:my,1:mz,iss)=-(gamma-1)/gamma*f(1:mx,1:my,1:mz,ilnrho)
 !          call isotdisk(powerlr,f,iss,zoverh,hoverr, -(gamma-1)/gamma)
         case('sinx_siny_sinz')

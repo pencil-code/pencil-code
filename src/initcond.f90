@@ -3499,7 +3499,7 @@ module Initcond
 !
     endsubroutine triquad
 !***********************************************************************
-    subroutine isotdisk(powerlr,f,ivar,zoverh,hoverr,gamma)
+    subroutine isotdisk(powerlr,f,ivar,zoverh,hoverr)
 !
 !  eek
 !
@@ -3510,7 +3510,7 @@ module Initcond
       integer :: ivar
 !
       real, dimension (nx) :: tmp
-      real :: zoverh, hoverr, gamma
+      real :: zoverh, hoverr
 !
       if (lroot) print*, 'isotdisk: ivar = ', ivar
 !
@@ -3520,7 +3520,7 @@ module Initcond
             -zoverh/(hoverr)*z(n) &
             +(powerlr/2-3*zoverh**2)*x(1:mx)**2 &
             -0.5/(hoverr**2)*z(n)**2 &
-            +3.*zoverh/hoverr*z(n)*x(1:mx))*gamma
+            +3.*zoverh/hoverr*z(n)*x(1:mx))
 !
       enddo; enddo
 !
