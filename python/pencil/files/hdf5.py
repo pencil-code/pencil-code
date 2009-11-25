@@ -149,7 +149,7 @@ class h5file:
         self.precision: precision of the float data ('d' for double, 'f' for single)
         self.nbslices: number of variables recorded in slices
         '''
-    def __init__(self,workdir=None,datafile="datafile.hdf5", force_create=False, force_single=False):
+    def __init__(self,workdir=None,datafile="data.hdf5", force_create=False, force_single=False):
         '''Create a hdf5 file from pencil code data.
 
             If the HDF file already exists, it will not be automatically updated if
@@ -167,7 +167,14 @@ class h5file:
             datafile: name of the hdf5 file
 
             Set force_single to True to force to stock the floats in single precision
-            (useful to decrease the file size, if single precision is sufficient for plotting purpose)'''
+            (useful to decrease the file size, if single precision is sufficient for plotting purpose)
+
+            If datafile is unset, it is defaulting to data.hdf5
+
+            If the given datafile exists, it will be open and all parameters will be set from it.
+            If you specify at the same time, the workdir, be aware that it may leads some conflicts if
+            you give a different working dir than previously recorded,
+            '''
         if os.path.exists(datafile) and force_create==False:
             mode='a'
         else:
@@ -194,7 +201,7 @@ class h5file:
                 if workdir==None:
                     workdir=self.f.attrs.get('WorkDir','Unset!')
                 self.datadir=os.path.join(workdir,'data') 
-                self.workdir=workdir
+                self.workdir=os.path.abspath(workdir)
                 print "Pencil code hdf5 file version ",self.f.attrs.get('ver','Unset!')," of the dataset ", self.workdir
                 if self.f.attrs.get('ver','Unset!') != VERSION:
                     print "Warning! This file is of a different version than this program ("+VERSION+")"
@@ -210,6 +217,9 @@ class h5file:
         self.flush()
     def __del__(self):
         self.close()       #Should this be done manually, or should I assume that this will be automatically done ?
+    def __repr__(self):
+        '''Returns a short description of the file'''
+        return  "PencilCode HDF5 "+self.f.attrs.get('ver','Unset!')+" of "+os.path.basename(self.workdir)
     def __created(self):
         ''' Change Creation time '''
         self.f.attrs['dateC']=datestring()
