@@ -117,6 +117,13 @@ varcontent[iuu].idlvarloc  = 'uu_loc'
 varcontent[iuu].idlinitloc = INIT_3VECTOR_LOC
 varcontent[iuu].skip       = 2
 ;
+default, ipp, 0
+varcontent[ipp].variable   = 'pressure (pp)'
+varcontent[ipp].idlvar     = 'pp'
+varcontent[ipp].idlinit    = INIT_SCALAR
+varcontent[ipp].idlvarloc  = 'pp_loc'
+varcontent[ipp].idlinitloc = INIT_SCALAR_LOC
+;
 default, ilnrho, 0
 varcontent[ilnrho].variable   = 'Log density (lnrho)'
 varcontent[ilnrho].idlvar     = 'lnrho'
