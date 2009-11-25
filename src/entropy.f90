@@ -41,7 +41,7 @@ module Entropy
   real :: ss_left=1.,ss_right=1.
   real :: ss0=0.,khor_ss=1.,ss_const=0.
   real :: pp_const=0.
-  real :: tau_ss_exterior=0.,T0=1.
+  real :: tau_ss_exterior=0.,T0=0.
   real :: mixinglength_flux=0.
   !parameters for Sedov type initial condition
   real :: center1_x=0., center1_y=0., center1_z=0.
@@ -449,7 +449,7 @@ module Entropy
             print*,'initialize_entropy: set boundary temperatures for spherical shell problem'
           endif
 !
-!  calulate temperature gradient from polytropic index
+!  calculate temperature gradient from polytropic index
 !
           call get_cp1(cp1)
           beta1=cp1*g0/(mpoly+1)*gamma/gamma_m1
@@ -483,15 +483,16 @@ module Entropy
             endif
             TT_int=TT_ext*(1.+beta1*(r_ext/r_int-1.))
           endif
-          if (lroot) then
-            print*,'initialize_entropy: g0,mpoly,beta1',g0,mpoly,beta1
-            print*,'initialize_entropy: TT_int, TT_ext=',TT_int,TT_ext
-          endif
 !         set up cooling parameters for spherical shell in terms of
 !         sound speeds
           call get_soundspeed(log(TT_ext),cs2_ext)
           call get_soundspeed(log(TT_int),cs2_int)
           cs2cool=cs2_ext
+          if (lroot) then
+            print*,'initialize_entropy: g0,mpoly,beta1',g0,mpoly,beta1
+            print*,'initialize_entropy: TT_int, TT_ext=',TT_int,TT_ext
+            print*,'initialize_entropy: cs2_ext, cs2_int=',cs2_ext, cs2_int
+          endif
 !
         case('star_heat')
           if (hcond1==impossible) hcond1=(mpoly1+1.)/(mpoly0+1.)
@@ -3205,12 +3206,12 @@ module Entropy
             theta_profile=(1./3.-(p%rcyl_mn/p%z_mn)**2)*deltaT_poleq
             prof = step(p%r_mn,r_ext,wcool)      ! outer heating/cooling step
             heat = heat - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext*theta_profile
-            prof = 1 - step(p%r_mn,r_int,wcool)  ! inner heating/cooling step
+            prof = 1. - step(p%r_mn,r_int,wcool)  ! inner heating/cooling step
             heat = heat - cool_int*prof*(p%cs2-cs2_int)/cs2_int*theta_profile
           else
             prof = step(p%r_mn,r_ext,wcool)     ! outer heating/cooling step
             heat = heat - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext
-            prof = 1 - step(p%r_mn,r_int,wcool) ! inner heating/cooling step
+            prof = 1. - step(p%r_mn,r_int,wcool) ! inner heating/cooling step
             heat = heat - cool_int*prof*(p%cs2-cs2_int)/cs2_int
           endif
 !
