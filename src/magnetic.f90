@@ -926,6 +926,7 @@ module Magnetic
         case('nothing'); if (lroot .and. j==1) print*,'init_aa: nothing'
         case('zero', '0'); f(:,:,:,iax:iaz) = 0.
         case('rescale'); f(:,:,:,iax:iaz)=amplaa(j)*f(:,:,:,iax:iaz)
+        case('bsiny'); call acosy(amplaa(j),f,iaa,ky_aa(j)) 
         case('mode'); call modev(amplaa(j),coefaa,f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
         case('modeb'); call modeb(amplaa(j),coefbb,f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
         case('sph_constb'); call sph_constb(amplaa(j),f,iaa)
@@ -1621,7 +1622,10 @@ module Magnetic
           if (.not. lpencil(i_bij)) p%bij=0.0      ! Avoid warnings from pencil
           if (.not. lpencil(i_del2A)) p%del2A=0.0  ! consistency check...
           if (.not. lpencil(i_graddiva)) p%graddiva=0.0
-          if (lpencil(i_jj)) call curl_mn(p%bij,p%jj,p%bb)
+!          if (lpencil(i_jj)) call curl_mn(p%bij,p%jj,p%bb)
+!DM curl in cartesian does not need p%bb, then it is better not
+! to give it. 
+          if (lpencil(i_jj)) call curl_mn(p%bij,p%jj)
         else
           call gij_etc(f,iaa,p%aa,p%aij,p%bij,GRADDIV=p%graddiva)
           call curl_mn(p%bij,p%jj,p%bb)
@@ -1804,10 +1808,12 @@ module Magnetic
         case('sinz'); alpha_tmp=sin(z(n))
         case('z'); alpha_tmp=z(n)
         case('z/H'); alpha_tmp=z(n)/xyz1(3)
+        case('y/H'); alpha_tmp=y(m)/xyz1(3)
         case('cosy'); alpha_tmp=cos(y(m))
         case('y*(1+eps*sinx)'); alpha_tmp=y(m)*(1.+alpha_eps*sin(kx*x(l1:l2)))
         case('step-nhemi'); alpha_tmp=-tanh((y(m)-pi/2)/alpha_gap_step)
         case('stepy'); alpha_tmp=-tanh((y(m)-yequator)/alpha_gap_step)
+        case('stepz'); alpha_tmp=-tanh((z(n)-zequator)/alpha_gap_step)
         case('ystep-xcutoff')
            alpha_tmp=-tanh((y(m)-pi/2)/alpha_gap_step)& 
              *(1+stepdown(x(l1:l2),alpha_rmax,alpha_width))
@@ -1829,7 +1835,7 @@ module Magnetic
         else
           alpha_total=alpha_effect*alpha_tmp
         endif
-!
+
 !  possibility of conventional alpha quenching (rescales alpha_total)
 !  initialize EMF with alpha_total*bb
 !

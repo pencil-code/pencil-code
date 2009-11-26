@@ -21,6 +21,7 @@ module Initcond
   public :: arcade_x, vecpatternxy, bipolar, bipolar_restzero
   public :: soundwave,sinwave,sinwave_phase,coswave,coswave_phase,cos_cos_sin
   public :: hatwave
+  public :: acosy
   public :: sph_constb 
   public :: gaunoise, posnoise, posnoise_rel
   public :: gaunoise_rprof
@@ -1174,6 +1175,26 @@ module Initcond
 !
     endsubroutine wave_uu
 !***********************************************************************
+    subroutine acosy(ampl,f,i,ky)
+!
+!  mode
+!
+!  30-oct-03/axel: coded
+!
+      integer :: i,ivv
+      real, dimension (mx,my,mz,mfarray) :: f
+      complex, dimension (3) :: coef
+      complex :: ii=(0.,1.)
+      real :: ampl,kx,ky,kz
+!
+      do n=n1,n2; do m=m1,m2
+        f(l1:l2,m,n,i)=ampl*cos(ky*y(m))
+        f(l1:l2,m,n,i+1)=0.
+        f(l1:l2,m,n,i+2)=0
+      enddo; enddo
+!
+    endsubroutine acosy
+!***********************************************************************
     subroutine modes(ampl,coef,f,i,kx,ky,kz)
 !
 !  mode
@@ -1204,9 +1225,11 @@ module Initcond
       complex :: ii=(0.,1.)
       real :: ampl,kx,ky,kz
 !
-      do ivv=0,2
-        f(l1:l2,m,n,ivv+i)=ampl*real(coef(ivv+1)*exp(ii*(kx*x(l1:l2)+ky*y(m)+kz*z(n))))
-      enddo
+      do n=n1,n2; do m=m1,m2
+        do ivv=0,2
+          f(l1:l2,m,n,ivv+i)=ampl*real(coef(ivv+1)*exp(ii*(kx*x(l1:l2)+ky*y(m)+kz*z(n))))
+        enddo
+      enddo;enddo
 !
     endsubroutine modev
 !***********************************************************************
@@ -1229,9 +1252,11 @@ module Initcond
       coef(3)=(kx*coefb(2)-ky*coefb(1))/k2
       print*,'coef=',coef
 !
-      do ivv=0,2
-        f(l1:l2,m,n,ivv+i)=ampl*real(coef(ivv+1)*exp(ii*(kx*x(l1:l2)+ky*y(m)+kz*z(n))))
-      enddo
+      do n=n1,n2; do m=m1,m2
+        do ivv=0,2
+          f(l1:l2,m,n,ivv+i)=ampl*real(coef(ivv+1)*exp(ii*(kx*x(l1:l2)+ky*y(m)+kz*z(n))))
+        enddo
+      enddo; enddo
 !
     endsubroutine modeb
 !***********************************************************************
