@@ -1341,22 +1341,26 @@ module Register
 !
 !  phi-averages
 !
-      !
-      !  expand some shorthand labels
-      !
-      call expand_cname(cnamerz,nnamerz,'uumphi','urmphi','upmphi','uzmphi')
-      call expand_cname(cnamerz,nnamerz,'bbmphi','brmphi','bpmphi','bzmphi')
-      call expand_cname(cnamerz,nnamerz,'uxbmphi','uxbrmphi','uxbpmphi','uxbzmphi')
-      call expand_cname(cnamerz,nnamerz,'jxbmphi','jxbrmphi','jxbpmphi','jxbzmphi')
+!DM(nov 09) Do the following only when nnamerz>0 because cnamerz is now
+! dynamicall allocated. 
+      if(nnamerz.gt.0) then
+!
+!  expand some shorthand labels
+!
+        call expand_cname(cnamerz,nnamerz,'uumphi','urmphi','upmphi','uzmphi')
+        call expand_cname(cnamerz,nnamerz,'bbmphi','brmphi','bpmphi','bzmphi')
+        call expand_cname(cnamerz,nnamerz,'uxbmphi','uxbrmphi','uxbpmphi','uxbzmphi')
+        call expand_cname(cnamerz,nnamerz,'jxbmphi','jxbrmphi','jxbpmphi','jxbzmphi')
       !
       !  some generic quantities (mostly coordinates for debugging)
       !
-      do irz=1,nnamerz
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'rcylmphi',idiag_rcylmphi)
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'phimphi', idiag_phimphi)
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'zmphi',   idiag_zmphi)
+        do irz=1,nnamerz
+          call parse_name(irz,cnamerz(irz),cformrz(irz),'rcylmphi',idiag_rcylmphi)
+          call parse_name(irz,cnamerz(irz),cformrz(irz),'phimphi', idiag_phimphi)
+          call parse_name(irz,cnamerz(irz),cformrz(irz),'zmphi',   idiag_zmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'rmphi',   idiag_rmphi)
-      enddo
+        enddo
+     endif
 !
 !  write column where which variable is stored
 !
