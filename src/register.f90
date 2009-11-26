@@ -1085,9 +1085,7 @@ module Register
           call allocate_xyaverages()
 !  ... then read into these arrays.
           open(1,file='xyaver.in')
-          inamez=0; iread=0
-          do while (iread==0)
-            inamez=inamez+1
+          do inamez=1,nnamez
             read(1,*,iostat=iread) cnamez(inamez)
           enddo
           close(1)
@@ -1112,9 +1110,7 @@ module Register
           call allocate_xzaverages()
 !  ... then read into these arrays.
           open(1,file='xzaver.in')
-          inamey=0; iread=0
-          do while (iread==0)
-            inamey=inamey+1
+          do inamey=1,nnamey
             read(1,*,iostat=iread) cnamey(inamey)
           enddo
           close(1)
@@ -1139,9 +1135,7 @@ module Register
           call allocate_yzaverages()
 !  ... then read into these arrays.
           open(1,file='yzaver.in')
-          inamex=0; iread=0
-          do while (iread==0)
-            inamex=inamex+1
+          do inamex=1,nnamex
             read(1,*,iostat=iread) cnamex(inamex)
           enddo
           close(1)
@@ -1166,9 +1160,7 @@ module Register
           call allocate_phizaverages()
 !  ... then read into these arrays.
           open(1,file='phizaver.in')
-          inamer=0; iread=0
-          do while (iread==0)
-            inamer=inamer+1
+          do inamer=1,nnamer
             read(1,*,iostat=iread) cnamer(inamer)
           enddo
           close(1)
@@ -1197,9 +1189,7 @@ module Register
           call allocate_yaverages()
 !  ... then read into these arrays.
           open(1,file='yaver.in')
-          inamexz=0; iread=0
-          do while (iread==0)
-            inamexz=inamexz+1
+          do inamexz=1,nnamexz
             read(1,*,iostat=iread) cnamexz(inamexz)
           enddo
           close(1)
@@ -1226,9 +1216,7 @@ module Register
           call allocate_zaverages()
 !  ... then read into these arrays.
           open(1,file='zaver.in')
-          inamexy=0; iread=0
-          do while (iread==0)
-            inamexy=inamexy+1
+          do inamexy=1,nnamexy
             read(1,*,iostat=iread) cnamexy(inamexy)
           enddo
           close(1)
@@ -1255,9 +1243,7 @@ module Register
           call allocate_phiaverages()
 !  ... then read into these arrays.
           open(1,file='phiaver.in')
-          inamerz=0; iread=0
-          do while (iread==0)
-            inamerz=inamerz+1
+          do inamerz=1,nnamerz
             read(1,*,iostat=iread) cnamerz(inamerz)
           enddo
           close(1)
