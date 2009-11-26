@@ -87,7 +87,8 @@ module Testflow
 
   logical :: reinitialize_uutest=.false., &
              lsoca_testflow=.true., &
-             lkinem_testflow=.false.
+             lkinem_testflow=.false., &
+             lburgers_testflow=.false.
 
   character (len=labellen) :: itestflow='U11-U21'
 
@@ -95,6 +96,7 @@ module Testflow
                                zextent,             &    ! ??
                                lsoca_testflow,      &    ! flag for SOCA
                                lkinem_testflow,     &    ! flag for kinematic calculation
+                               lburgers_testflow,   &    ! flag for disconnecting enthalpy from velocity
                                nutest,              &    ! viscosity in testflow equations
                                nutest1,             &    ! reciprocal viscosity
                                itestflow,           &    ! name of used testflow set, legal values
@@ -619,7 +621,8 @@ module Testflow
 !  rhs of continuity equation (nonlinear terms already in df, if needed!),
 !  dh^pq/dt = n.l.Terms - cs^2*div u^pq -u.gradH^pq - U^pq.gradh
 !
-        df(l1:l2,m,n,ihhtest)=df(l1:l2,m,n,ihhtest) - cs2test*divutest
+        if ( .not.lburgers_testflow ) &
+          df(l1:l2,m,n,ihhtest)=df(l1:l2,m,n,ihhtest) - cs2test*divutest
 !
 !       testflow inhomogeneity
 !
@@ -636,14 +639,16 @@ module Testflow
           !!if ( jtest.eq.2 .and. ( maxval(ghfluct(:,2)-U0ghtest(:))/=0. .or. minval(ghfluct(:,2)-U0ghtest(:))/=0. ) ) &
             !!print*, 'U0ghtest, n, m:', n, m, ghfluct(:,2)-U0ghtest(:)
 
-          df(l1:l2,m,n,ihhtest)=df(l1:l2,m,n,ihhtest)-U0ghtest-uufluct(:,3)*gH0test
+          if ( .not.lburgers_testflow ) &
+            df(l1:l2,m,n,ihhtest)=df(l1:l2,m,n,ihhtest)-U0ghtest-uufluct(:,3)*gH0test
  
         endif
 !
 !  rhs of momentum equation (nonlinear terms already in df, if needed!),
 !  du^pq/dt = n.l.Terms - grad h^pq -u.gradU^pq - U^pq.gradu
 !
-        df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) - ghtest
+        if ( .not.lburgers_testflow ) &
+          df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) - ghtest
 !
 !       testflow inhomogeneity
 !
@@ -703,8 +708,9 @@ module Testflow
 
             call multsv(-(1./3.)*gU0test(:,3),ghfluct,ugU0test,.true.)       !  ~
 
-            df(l1:l2,m,n,iuxtest:iuztest) =   df(l1:l2,m,n,iuxtest:iuztest) &
-                                            + 2.*nutest*cs2test1*(U0testgu+ugU0test)
+            if ( .not.lburgers_testflow ) &
+              df(l1:l2,m,n,iuxtest:iuztest) =   df(l1:l2,m,n,iuxtest:iuztest) &
+                                              + 2.*nutest*cs2test1*(U0testgu+ugU0test)
           endif
           
         endif
@@ -1115,18 +1121,18 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
               if (idiag_nuij(k,1)/=0) &
                 call surf_mn_name( wamp*(+k1sz(n)*gal1*k1sz(n)+k1cz(n)*gal1*k1cz(n)), idiag_nuij(k,1)    )
        
-            !!!!case('quadratic') 
-              !!!!if (idiag_aklamij(k,1)/=0) &
-                  !!!!call surf_mn_name( -wamp*gal2*z(n), idiag_aklamij(k,1) )
+            case('quadratic') 
+              if (idiag_aklamij(k,1)/=0) &
+                  call surf_mn_name( -wamp*gal2*z(n), idiag_aklamij(k,1) )
 
-              !!!!if (idiag_aklamij(k,2)/=0) &
-                  !!!!call surf_mn_name(  wamp*gal1*z(n), idiag_aklamij(k,2) )
+              if (idiag_aklamij(k,2)/=0) &
+                  call surf_mn_name(  wamp*gal1*z(n), idiag_aklamij(k,2) )
 
              end select
 
           enddo
 
-          if ( .false. ) then		!!!! itestflow=='quadratic') then
+          if ( itestflow=='quadratic') then
    
             aklam1 = get_from_fname(idiag_aklamij(k,1))
             aklam2 = get_from_fname(idiag_aklamij(k,2))
@@ -1479,20 +1485,20 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
       select case(jtest)
 
       case(P1Q1)
-        U0test(:,1)=0.; U0test(:,2)=0.; U0test(:,3)=0.		!!! wamp
+        U0test(:,1)=wamp; U0test(:,2)=0.; U0test(:,3)=0.		!!! wamp
         gU0test=0.  
 
       case(P2Q1)
-        U0test(:,1)=0.; U0test(:,2)=0.; U0test(:,3)=0.		!!! wamp
+        U0test(:,1)=0.; U0test(:,2)=wamp; U0test(:,3)=0.		!!! wamp
         gU0test=0.      
 
       case(P1Q2)
-        U0test(:,1)=0.; U0test(:,2)=0.; U0test(:,3)=0.		!!!  wamp*z(n)
-        gU0test(:,1)=0.; gU0test(:,2)=0.; gU0test(:,3)=0.	!!!  wamp
+        U0test(:,1)=wamp*z(n); U0test(:,2)=0.; U0test(:,3)=0.		!!!  wamp*z(n)
+        gU0test(:,1)=wamp; gU0test(:,2)=0.; gU0test(:,3)=0.		!!!  wamp
 
       case(P2Q2)
-        U0test(:,1)=0.; U0test(:,2)=0.; U0test(:,3)=0.		!!!!	wamp*z(n); U0test(:,3)=0.
-        gU0test(:,1)=0.; gU0test(:,2)=0.;; gU0test(:,3)=0.	!!!!    wamp; gU0test(:,3)=0.
+        U0test(:,1)=0.; U0test(:,2)=wamp*z(n); U0test(:,3)=0.		!!!!	wamp*z(n); 
+        gU0test(:,1)=0.; gU0test(:,2)=wamp; gU0test(:,3)=0.		!!!!    wamp; 
 
       case(P1Q3)
         U0test(:,1)=wamp*zq2(n); U0test(:,2)=0.; U0test(:,3)=0.		
@@ -1567,7 +1573,7 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
 
         enddo
         enddo
-
+       
         p=1
         do j=0,njtestflow
 
@@ -1584,23 +1590,24 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
 
           call parse_name(iname,cname(iname),cform(iname),'u'//name,idiag_upqrms(j))
           call parse_name(iname,cname(iname),cform(iname),'h'//name,idiag_hpqrms(j))
-
+          
           if ( j.gt.0 ) then
 
             do i=1,3    
-              call parse_name(iname,cnamez(iname),cformz(iname),'F'//cind2,idiag_Fipq(i,j))
+              call parse_name(iname,cname(iname),cform(iname),'F'//cind2,idiag_Fipq(i,j))
             enddo
 
             write(cind,'(i1)') j
-            call parse_name(iname,cnamez(iname),cformz(iname),'Q'//cind,idiag_Qpq(j))
+            call parse_name(iname,cname(iname),cform(iname),'Q'//cind,idiag_Qpq(j))
  
           endif
+           
         enddo
 
         idiag_map(iname) = iname       ! initialising the index mapping vector for cname und cform
 
       enddo
-      
+          
       nname_old = nname
 
       call update_diag( idiag_gal, idiag_galij, 'gal' )
