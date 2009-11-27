@@ -1009,7 +1009,7 @@ module Register
 !
       integer :: iname,inamev,inamez,inamey,inamex,inamer
       integer :: inamexy,inamexz,inamerz
-      integer :: iname_tmp,iread
+      integer :: iname_tmp,iread,iadd
       logical :: lreset,exist,print_in_double
       character (LEN=30)    :: cname_tmp
       character (LEN=fnlen) :: print_in_file
@@ -1232,15 +1232,25 @@ module Register
       if (exist) then
 !  Count the number of lines in it first.
         open(1,file='phiaver.in')
-        nnamerz=0; iread=0
+        nnamerz=0; iread=0 ; iadd=0
         do while (iread==0)
-          read(1,*,iostat=iread)
+          read(1,*,iostat=iread) cname_tmp
           if (iread==0) nnamerz=nnamerz+1
+          if (cname_tmp=='uumphi')  iadd=iadd+2
+          if (cname_tmp=='bbmphi')  iadd=iadd+2
+          if (cname_tmp=='uxbmphi') iadd=iadd+2
+          if (cname_tmp=='jxbmphi') iadd=iadd+2
         enddo
         close(1)
+!  28-nov-2009/dintrans: increase nnamerz just before the array allocation
+!  to take into account the possible additional values due to shorthand labels
+        nnamerz=nnamerz+iadd
         if (nnamerz>0) then
 !  Allocate the relevant arrays here...
           call allocate_phiaverages()
+!  28-nov-2009/dintrans: and come back to the former value after the 
+!  allocation otherwise expand_name() crashes below
+          nnamerz=nnamerz-iadd
 !  ... then read into these arrays.
           open(1,file='phiaver.in')
           do inamerz=1,nnamerz
