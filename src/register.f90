@@ -602,7 +602,7 @@ module Register
           dvolume_1  = dvolume_1 *dx_1(l1:l2)
           dVol1=x*xprim
         else
-          dVol1=x
+          dVol1=1./2.*(xyz1(1)**2-xyz0(1)**2)
         endif
 !
 !  theta extent (non-cylindrically symmetric)
