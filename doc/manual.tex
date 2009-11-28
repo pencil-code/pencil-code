@@ -6825,6 +6825,7 @@ where \code{nw=nx*ny*nz}.
  128 & fe1   & 0.35 & $512^3$ & magn/noentro & 2x64   &  9-sep-02 & AB \\
  128 & fe1   & 0.094& $786^3$ & magn/noentro &4x32/ifc6& 9-sep-02 & AB \\
  256 & giga2 & 0.028& $1024^3$& magn/noentro &4x64/ifc6&20-aug-04 & AB \\
+ 512 &Neolith&0.0073& $256^3$ & magn/noentro &        & 20-nov-09 & AB \\
     \bottomrule
   \end{longtable}
   %\end{tabular}
@@ -8173,6 +8174,21 @@ are the ones that provide quenching at high $k$.
 Momentum conservation is a cheap bonus.
 Angular momentum conservation is perhaps playing it too safe, at great
 computational expense. \index{Hyperviscosity}
+
+\subsubsection{Choosing the coefficient}
+
+When changing the resolution, one wants to keep the grid Reynolds number,
+here defined as
+\begin{equation}
+\Rey_{\rm grid}=u_{\rm rms}\left/\left(\nu_n k_{\rm Ny}^{2n-1}\right)\right.
+\end{equation}
+approximately constant.
+Here, $k_{\rm Ny}=\pi/\delta x$ is the Nyquist wavenumber and
+$\delta x$ is the mesh spacing.
+Thus, when doubling the number of meshpoints, we can decrease the
+viscosity by a factor of about $2^5=32$ (Haugen \& Brandenburg 2004).
+This shows that hyperviscosity can allow
+a dramatic increase of the Reynolds number based on the scale of the box.
 
 \subsection{Anisotropic hyperdissipation}
 
