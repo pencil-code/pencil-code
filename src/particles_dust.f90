@@ -169,7 +169,7 @@ module Particles
   integer :: idiag_epspmx=0, idiag_epspmy=0, idiag_epspmz=0
   integer :: idiag_mpt=0, idiag_dedragp=0, idiag_rhopmxy=0, idiag_rhopmr=0
   integer :: idiag_dvpx2m=0, idiag_dvpy2m=0, idiag_dvpz2m=0
-  integer :: idiag_dvpm=0,idiag_dvpmax=0
+  integer :: idiag_dvpm=0, idiag_dvpmax=0, idiag_epotpm=0
   integer :: idiag_rhopmxz=0, idiag_nparpmax=0
   integer :: idiag_eccpxm=0, idiag_eccpym=0, idiag_eccpzm=0
   integer :: idiag_eccpx2m=0, idiag_eccpy2m=0, idiag_eccpz2m=0
@@ -2637,7 +2637,8 @@ k_loop:   do while (.not. (k>npar_loc))
               elseif (lspherical_coords) then
                 vsph=abs(fp(k,ivpx))
               endif
-              dt1_max=max(dt1_max,vsph/rsph/cdtpgrav)
+              dt1_max(ineargrid(k,1))= &
+                  max(dt1_max(ineargrid(k,1)),vsph/rsph/cdtpgrav)
             endif
           enddo
 !
@@ -2688,11 +2689,10 @@ k_loop:   do while (.not. (k>npar_loc))
             call sum_par_name(fp(1:npar_loc,ivpy)**2,idiag_vpy2m)
         if (idiag_vpz2m/=0) &
             call sum_par_name(fp(1:npar_loc,ivpz)**2,idiag_vpz2m)
-        if (idiag_ekinp/=0) &
-            call sum_par_name(0.5*rhop_tilde*npar_per_cell* &
-                             (fp(1:npar_loc,ivpx)**2 + &
-                              fp(1:npar_loc,ivpy)**2 + &
-                              fp(1:npar_loc,ivpz)**2),idiag_ekinp)
+        if (idiag_ekinp/=0) call sum_par_name(0.5*rhop_tilde*npar_per_cell* &
+            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
+        if (idiag_epotpm/=0) call sum_par_name( &
+            -gravr/sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)),idiag_epotpm)
         if (idiag_vpxmax/=0) call max_par_name(fp(1:npar_loc,ivpx),idiag_vpxmax)
         if (idiag_vpymax/=0) call max_par_name(fp(1:npar_loc,ivpy),idiag_vpymax)
         if (idiag_vpzmax/=0) call max_par_name(fp(1:npar_loc,ivpz),idiag_vpzmax)
@@ -3879,7 +3879,7 @@ k_loop:   do while (.not. (k>npar_loc))
         idiag_rhopm=0; idiag_rhoprms=0; idiag_rhop2m=0; idiag_rhopmax=0
         idiag_rhopmin=0; idiag_decollp=0; idiag_rhopmphi=0
         idiag_nparmax=0; idiag_nmigmax=0; idiag_mpt=0
-        idiag_npmx=0; idiag_npmy=0; idiag_npmz=0
+        idiag_npmx=0; idiag_npmy=0; idiag_npmz=0; idiag_epotpm=0
         idiag_rhopmx=0; idiag_rhopmy=0; idiag_rhopmz=0
         idiag_epspmx=0; idiag_epspmy=0; idiag_epspmz=0
         idiag_rhopmxy=0; idiag_rhopmxz=0; idiag_rhopmr=0
@@ -3948,6 +3948,8 @@ k_loop:   do while (.not. (k>npar_loc))
             'dedragp',idiag_dedragp)
         call parse_name(iname,cname(iname),cform(iname), &
             'decollp',idiag_decollp)
+        call parse_name(iname,cname(iname),cform(iname), &
+            'epotpm',idiag_epotpm)
       enddo
 !
 !  Check for those quantities for which we want x-averages.
