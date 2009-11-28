@@ -999,25 +999,34 @@ module Density
       real, dimension (nx,3) :: gradlnrho
       real, dimension (nz,3) :: temp
 !
-      integer :: j,nxy=nxgrid*nygrid
+      integer :: j,nxy=nxgrid*nygrid,nl
 !
 !  Calculate mean gradient of lnrho.
 !
       if (lcalc_glnrhomean) then
+
         fact=1./nxy
-        do n=1,nz
+        do n=n1,n2
+
+          nl = n-n1+1
           glnrhomz(n,:)=0.
-          do m=1,ny
+
+          do m=m1,m2
+
             call grad(f,ilnrho,gradlnrho)
+             
             do j=1,3
-              glnrhomz(n,j)=glnrhomz(n,j)+sum(gradlnrho(:,j))
+              glnrhomz(nl,j)=glnrhomz(nl,j)+sum(gradlnrho(:,j))
             enddo
           enddo
+
           if (nprocy>1) then             
             call mpiallreduce_sum(glnrhomz,temp,(/nz,3/),idir=2)
             glnrhomz = temp
           endif
-          glnrhomz(n,:) = fact*glnrhomz(n,:)
+
+          glnrhomz(nl,:) = fact*glnrhomz(nl,:)
+
         enddo
       endif
 !
@@ -1422,14 +1431,7 @@ module Density
         else
           if (lupw_rho) call stop_it("calc_pencils_density: you switched "//&
                "lupw_rho instead of lupw_lnrho")
-          !!print*,'density: n,m, glnrho-x:', n,m, p%glnrho(:,1)
-          !!print*,'density: n,m, glnrho-y:', n,m, p%glnrho(:,2)
-          !!print*,'density: n,m, glnrho-z:', n,m, p%glnrho(:,3)
-          !!print*,'density: n,m, uu-x:', n,m, p%uu(:,1)
-          !!print*,'density: n,m, uu-y:', n,m, p%uu(:,2)
-          !!print*,'density: n,m, uu-z:', n,m, p%uu(:,3)
           call u_dot_grad(f,ilnrho,p%glnrho,p%uu,p%uglnrho,UPWIND=lupw_lnrho)
-          !!print*,'density: n,m, uglnrho-x:', n,m,p%uglnrho
           !!print*,'nl: n,m,density:', n,m,maxval(p%uglnrho), minval(p%uglnrho)
         endif
       endif
