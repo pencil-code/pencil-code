@@ -1242,15 +1242,9 @@ module Register
           if (cname_tmp=='jxbmphi') iadd=iadd+2
         enddo
         close(1)
-!  28-nov-2009/dintrans: increase nnamerz just before the array allocation
-!  to take into account the possible additional values due to shorthand labels
-        nnamerz=nnamerz+iadd
         if (nnamerz>0) then
 !  Allocate the relevant arrays here...
-          call allocate_phiaverages()
-!  28-nov-2009/dintrans: and come back to the former value after the 
-!  allocation otherwise expand_name() crashes below
-          nnamerz=nnamerz-iadd
+          call allocate_phiaverages(iadd)
 !  ... then read into these arrays.
           open(1,file='phiaver.in')
           do inamerz=1,nnamerz

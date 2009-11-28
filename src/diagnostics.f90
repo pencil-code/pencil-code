@@ -1848,25 +1848,25 @@ module Diagnostics
 !
     endsubroutine allocate_zaverages
 !*******************************************************************
-    subroutine allocate_phiaverages
+    subroutine allocate_phiaverages(iadd)
 !
 !  Allocate the variables needed for phi-averages.
 !
 !   24-nov-09/anders: copied from allocate_zaverages
 !
-      integer :: stat
+      integer :: stat, iadd
 !
-      allocate(fnamerz(nrcyl,0:nz,nprocz,nnamerz),stat=stat)
+      allocate(fnamerz(nrcyl,0:nz,nprocz,nnamerz+iadd),stat=stat)
 !
       if (stat>0) then
         call fatal_error('allocate_phiaverages', &
             'Could not allocate memory for fnamerz')
       else
         if (lroot) print*, 'allocate_phiaverages : allocated memory for '// &
-            'fnamerz with nnamerz =', nnamerz
+            'fnamerz with nnamerz =', nnamerz+iadd
       endif
 !
-      allocate(cnamerz(nnamerz),cformrz(nnamerz))
+      allocate(cnamerz(nnamerz+iadd),cformrz(nnamerz+iadd))
 !
     endsubroutine allocate_phiaverages
 !***********************************************************************
