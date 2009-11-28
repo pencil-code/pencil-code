@@ -475,6 +475,8 @@ module Hydro
       if (.not. leos) then
         call stop_it('initialize_hydro: EOS=noeos but hydro requires an EQUATION OF STATE for the fluid')
       endif
+
+      if (.not.lforcing_cont) lforcing_cont_uu=.false.   ! to block use of uninitalised p%fcont 
 !
 !  calculate cosz*sinz, cos^2, and sinz^2, to take moments with
 !  of ux2, uxuy, etc.
@@ -649,7 +651,7 @@ module Hydro
       integer :: j,i,l
 !
 !  inituu corresponds to different initializations of uu (called from start).
-!
+!     
       do j=1,ninit
 
         select case(inituu(j))
@@ -2129,15 +2131,15 @@ module Hydro
         uumz = 0.
 
         do n=n1,n2
-        do j=1,3
-          uumz(n-n1+1,j)=fact*sum(f(l1:l2,m1:m2,n,iux+j-1))
-        enddo
+          do j=1,3
+            uumz(n-n1+1,j)=fact*sum(f(l1:l2,m1:m2,n,iux+j-1))
+          enddo
         enddo
         
         uumzl(n1:n2,:) = uumz
         
-        call fill_zghostzones_3vec(uumzl,iux)
-   
+        call fill_zghostzones_3vec(uumzl,iux)      !MR: checked by numbers        
+
         do j=1,3
           call der_z(uumzl(:,j),guumz(:,j))
         enddo
