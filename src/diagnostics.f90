@@ -24,7 +24,7 @@ module Diagnostics
   public :: phiaverages_rz
   public :: write_1daverages, write_2daverages
   public :: write_2daverages_prepare, write_zaverages
-  public :: expand_cname, parse_name, save_name, save_name_halfz
+  public :: expand_cname, parse_name, fparse_name, save_name, save_name_halfz
   public :: max_name, sum_name
   public :: max_mn_name, sum_mn_name, integrate_mn_name, sum_weighted_name
   public :: sum_mn_name_halfy, surf_mn_name, sum_lim_mn_name
@@ -733,7 +733,7 @@ module Diagnostics
 !
     endsubroutine write_phiaverages
 !***********************************************************************
-    subroutine parse_name(iname,cname,cform,ctest,itest)
+    integer function fparse_name(iname,cname,cform,ctest,itest)
 !
 !  Parse name and format of scalar print variable
 !  On output, ITEST is set to INAME if CNAME matches CTEST
@@ -788,6 +788,9 @@ module Diagnostics
 !
       if (cname(1:length)==ctest .and. itest==0) then
         itest=iname
+        fparse_name=iname
+      else 
+        fparse_name=0
       endif
 !
 !  Integer formats are turned into floating point numbers.
@@ -798,6 +801,25 @@ module Diagnostics
         cform=trim(cform)//'.0'
       endif
 !
+    endfunction fparse_name
+!***********************************************************************
+    subroutine parse_name(iname,cname,cform,ctest,itest)
+!
+!   subroutine wrapper around fparse_name function: ignores return value 
+
+!   26-nov-09/MR: coded
+!
+      character (len=*) :: cname,cform
+      character (len=*) :: ctest
+      integer :: iname,itest
+!
+      intent(in)    :: iname,cname,ctest
+      intent(inout) :: itest,cform
+
+      integer iret;
+
+      iret = fparse_name(iname,cname,cform,ctest,itest)
+
     endsubroutine parse_name
 !***********************************************************************
     subroutine expand_cname(ccname,nname,vlabel,xlabel,ylabel,zlabel)
