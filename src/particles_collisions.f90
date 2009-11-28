@@ -164,6 +164,10 @@ module Particles_collisions
                 vpj=fp(j,ivpx:ivpz)
                 if (lshear .and. lshear_in_vp) vpj(2)=vpj(2)-qshear*Omega*xpj(1)
 !
+!  Only consider collisions between particles approaching each other.
+!
+                if (sum((vpk-vpj)*(xpk-xpj))<0.0) then
+!
 !  For Keplerian particle discs, where the scale height of the particles is
 !  given by their velocity dispersion Hp~vrms/OmegaK, we can use the 2-D
 !  approach suggested by Lithwick & Chiang (2007). The collision time scale is
@@ -177,14 +181,14 @@ module Particles_collisions
 !  Here we used that lambda0=1/(nptilde*sigma) has been calculated as if
 !  the particle scale height was dx.
 !
-                if (lkeplerian_flat) then
-                  espec=sum(vpk**2)/2-gravr/sqrt(sum(xpk**2))
-                  asemi=-gravr/(2*espec)
-                  omega_orbit=sqrt(gravr/asemi**3)
-                  deltavjk=omega_orbit*dx
-                else
-                  deltavjk=sqrt(sum((vpk-vpj)**2))
-                endif
+                  if (lkeplerian_flat) then
+                    espec=sum(vpk**2)/2-gravr/sqrt(sum(xpk**2))
+                    asemi=-gravr/(2*espec)
+                    omega_orbit=sqrt(gravr/asemi**3)
+                    deltavjk=omega_orbit*dx
+                  else
+                    deltavjk=sqrt(sum((vpk-vpj)**2))
+                  endif
 !
 !  The time-scale for collisions between a representative particle from
 !  superparticle k and the particle cluster in superparticle j is
@@ -194,30 +198,31 @@ module Particles_collisions
 !  where lambda is the mean free path of a particle relative to a single
 !  superparticle (this is a constant).
 !
-                tau_coll1=deltavjk/lambda_mfp_single
+                 tau_coll1=deltavjk/lambda_mfp_single
 !
 !  Increase collision rate artificially for fewer collisions.
 !
-                if (npart_max_par/=-1 .and. npart_max_par<np_point) then
-                  tau_coll1=tau_coll1*np_point/npart_max_par
-                endif
+                  if (npart_max_par/=-1 .and. npart_max_par<np_point) then
+                    tau_coll1=tau_coll1*np_point/npart_max_par
+                  endif
 !
-                if (tau_coll1/=0.0) then
+                  if (tau_coll1/=0.0) then
 !
 !  The probability for a collision in this time-step is dt/tau_coll.
 !
-                  prob=dt*tau_coll1
-                  call random_number_wrapper(r)
-                  if (r<=prob) then
-                    if (lshear .and. lshear_in_vp) then
-                      vpk(2)=vpk(2)+qshear*Omega*xpk(1)
-                      vpj(2)=vpj(2)+qshear*Omega*xpj(1)
+                    prob=dt*tau_coll1
+                    call random_number_wrapper(r)
+                    if (r<=prob) then
+                      if (lshear .and. lshear_in_vp) then
+                        vpk(2)=vpk(2)+qshear*Omega*xpk(1)
+                        vpj(2)=vpj(2)+qshear*Omega*xpj(1)
+                      endif
+                      call particle_collision(xpj,xpk,vpj,vpk,j,k)
+                      fp(k,ivpx:ivpz)=vpk
+                      fp(j,ivpx:ivpz)=vpj
+                      ncoll=ncoll+1
+                      ncoll_par=ncoll_par+1
                     endif
-                    call particle_collision(xpj,xpk,vpj,vpk,j,k)
-                    fp(k,ivpx:ivpz)=vpk
-                    fp(j,ivpx:ivpz)=vpj
-                    ncoll=ncoll+1
-                    ncoll_par=ncoll_par+1
                   endif
                 endif
                 npart_par=npart_par+1
