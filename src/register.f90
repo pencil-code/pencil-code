@@ -359,12 +359,12 @@ module Register
 !  Coordinate-related issues: nonuniform meshes, different corrdinate systems
 !
 !  Set z_allprocs, which contains the z values from all processors
-!  ignore the ghost zones
+!  ignore the ghost zones.
 !
         z_allprocs(:,ipz+1)=z(n1:n2)
 !
-!  communicate z_allprocs over all processors (if there are more than 1)
-!  the final result is only present on the root processor
+!  Communicate z_allprocs over all processors (if there are more than 1)
+!  the final result is only present on the root processor.
 !
       if (nprocz>1) then
         z_allprocs_tmp=z_allprocs
@@ -379,7 +379,7 @@ module Register
         lspherical_coords=.false.
         lcylindrical_coords=.false.
 !
-!  Box volume and volume element
+!  Box volume and volume element.
 !  x-extent
 !
         box_volume=1.;dvolume=1.;dvolume_1=1.
@@ -435,12 +435,12 @@ module Register
         endif
         r2_mn=r1_mn**2
 !
-!  inner and outer radius per processor
+!  Inner and outer radius per processor.
 !
         r_int=x(l1)
         r_ext=x(l2)
 !
-!  calculate sin(theta). Make sure that sinth=1 if there is no y extent,
+!  Calculate sin(theta). Make sure that sinth=1 if there is no y extent,
 !  regardless of the value of y. This is needed for correct integrations.
 !
         if (ny==1) then
@@ -449,8 +449,8 @@ module Register
           sinth=sin(y)
         endif
 !
-! Calculate cos(theta) via latitude, which allows us to ensure
-! that sin(lat(midpoint)) = 0 exactly
+!  Calculate cos(theta) via latitude, which allows us to ensure
+!  that sin(lat(midpoint)) = 0 exactly.
 !
         if (luse_latitude) then
           lat=pi/2-y
@@ -459,7 +459,7 @@ module Register
           costh=cos(y)
         endif
 !
-!  calculate 1/sin(theta). To avoid the axis we check that sinth
+!  Calculate 1/sin(theta). To avoid the axis we check that sinth
 !  is always larger than a minmal value, sinth_min. The problem occurs
 !  on theta=pi, because the theta range is normally only specified
 !  with no more than 6 digits, e.g. theta = 0., 3.14159.
@@ -471,11 +471,11 @@ module Register
         endwhere
         sin2th=sin1th**2
 !
-!  calculate cot(theta)
+!  Calculate cot(theta).
 !
         cotth=costh*sin1th
 !
-!  calculate 1/cos(theta). To avoid the axis we check that costh
+!  Calculate 1/cos(theta). To avoid the axis we check that costh
 !  is always larger than a minmal value, costh_min. The problem occurs
 !  on theta=pi, because the theta range is normally only specified
 !  with no more than 6 digits, e.g. theta = 0., 3.14159.
@@ -486,12 +486,12 @@ module Register
           cos1th=0.
         endwhere
 !
-!  calculate tan(theta)
+!  Calculate tan(theta).
 !
         tanth=sinth*cos1th
 !
 !  Box volume and volume element - it is wrong for spherical, since
-!  sinth also changes with y-position 
+!  sinth also changes with y-position.
 !
 !  Split up volume differential as (dr) * (r*dtheta) * (r*sinth*dphi)
 !  and assume that sinth=1 if there is no theta extent.
@@ -508,7 +508,7 @@ module Register
           dVol1=1./3.*(xyz1(1)**3-xyz0(1)**3)
         endif
 !
-!  theta extent (if non-radially symmetric)
+!  Theta extent (if non-radially symmetric)
 !
         if (nygrid/=1) then
           box_volume = box_volume*(-(cos(xyz1(2))  -cos(xyz0(2))))
@@ -548,7 +548,7 @@ module Register
           enddo
         endif
 !
-! Calculate the volume of the box, for non-cartesian coordinates
+!  Calculate the volume of the box, for non-cartesian coordinates.
 !
         nVol=0.
         do xj=l1,l2
@@ -570,7 +570,7 @@ module Register
         sinth_weight_across_proc(1)=0.5*sinth_weight_across_proc(1)
         sinth_weight_across_proc(nygrid)=0.5*sinth_weight_across_proc(nygrid)
 !
-!  end of coord_system=='spherical_coords' query
+!  End of coord_system=='spherical_coords' query.
 !  Introduce new names (cylindrical_coords), in addition to the old ones.
 !
       elseif (coord_system=='cylindric' &
@@ -580,7 +580,7 @@ module Register
         lcylindrical_coords=.true.
 !
 !  Note: for consistency with spherical, 1/rcyl should really be rcyl1_mn,
-!  not rcyl_mn1
+!  not rcyl_mn1.
 !
         rcyl_mn=x(l1:l2)
         if (x(l1)==0.) then
@@ -593,7 +593,7 @@ module Register
         r_int=x(l1)
         r_ext=x(l2)
 !
-! Box volume and volume element
+!  Box volume and volume element.
 !
         box_volume=1.;dvolume=1.;dvolume_1=1.
         if (nxgrid/=1) then
@@ -665,7 +665,7 @@ module Register
         if (ipz==nprocz-1.and.n==n2) dVol3=.5*dVol3
       endif
 !
-!  print the value for which output is being produced
+!  Print the value for which output is being produced.
 !  (Have so far only bothered about single processor output.)
 !
       if (lroot) then
@@ -679,7 +679,7 @@ module Register
         print*,'(x,y,z)(point2)=',x(lpoint2),y(mpoint2),z(npoint2)
       endif
 !
-!  cleanup profile files
+!  Clean up profile files.
 !
       call remove_zprof()
       lwrite_prof=.true.
@@ -748,7 +748,7 @@ module Register
 !
       if (unit_magnetic == impossible) unit_magnetic=3.5449077018110318
 !
-!  check that everything is OK
+!  Check that everything is OK.
 !
       if (lroot) print*,'units_general: unit_velocity=',unit_velocity
       if (lroot) print*,'units_general: unit_density=',unit_density
@@ -781,7 +781,7 @@ module Register
 !
       call pencil_criteria()
 !
-!  Set interdependent pencils
+!  Set interdependent pencils.
 !
       do i=1,3
         call pencil_interdep(lpenc_requested)
@@ -1310,7 +1310,7 @@ module Register
 !***********************************************************************
     subroutine rprint_general(lreset,lwrite)
 !
-!  reads and registers *general* print parameters
+!  Reads and registers *general* print parameters.
 !
 !   8-jun-02/axel: adapted from hydro
 !
@@ -1324,7 +1324,7 @@ module Register
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-!  reset everything in case of RELOAD
+!  Reset everything in case of RELOAD.
 !  (general variables that are defined in Cdata)
 !
       if (lreset) then
@@ -1334,7 +1334,7 @@ module Register
         idiag_dtv=0; idiag_dtdiffus=0
       endif
 !
-!  iname runs through all possible names that may be listed in print.in
+!  iname runs through all possible names that may be listed in print.in.
 !
       if (lroot.and.ip<14) print*,'rprint_register: run through parse list'
       do iname=1,nname
@@ -1351,28 +1351,26 @@ module Register
 !
 !  phi-averages
 !
-!DM(nov 09) Do the following only when nnamerz>0 because cnamerz is now
-! dynamicall allocated. 
-      if(nnamerz.gt.0) then
+      if (nnamerz>0) then
 !
-!  expand some shorthand labels
+!  Expand some shorthand labels.
 !
         call expand_cname(cnamerz,nnamerz,'uumphi','urmphi','upmphi','uzmphi')
         call expand_cname(cnamerz,nnamerz,'bbmphi','brmphi','bpmphi','bzmphi')
         call expand_cname(cnamerz,nnamerz,'uxbmphi','uxbrmphi','uxbpmphi','uxbzmphi')
         call expand_cname(cnamerz,nnamerz,'jxbmphi','jxbrmphi','jxbpmphi','jxbzmphi')
-      !
-      !  some generic quantities (mostly coordinates for debugging)
-      !
+!
+!  Some generic quantities (mostly coordinates for debugging).
+!
         do irz=1,nnamerz
           call parse_name(irz,cnamerz(irz),cformrz(irz),'rcylmphi',idiag_rcylmphi)
-          call parse_name(irz,cnamerz(irz),cformrz(irz),'phimphi', idiag_phimphi)
-          call parse_name(irz,cnamerz(irz),cformrz(irz),'zmphi',   idiag_zmphi)
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'rmphi',   idiag_rmphi)
+          call parse_name(irz,cnamerz(irz),cformrz(irz),'phimphi',idiag_phimphi)
+          call parse_name(irz,cnamerz(irz),cformrz(irz),'zmphi',idiag_zmphi)
+          call parse_name(irz,cnamerz(irz),cformrz(irz),'rmphi',idiag_rmphi)
         enddo
-     endif
+      endif
 !
-!  write column where which variable is stored
+!  Write column where which variable is stored.
 !
       if (lwr) then
         write(3,*) 'i_t=',idiag_t
