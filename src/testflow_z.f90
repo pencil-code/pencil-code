@@ -108,13 +108,13 @@ module Testflow
 
   ! diagnostic variables (needs to be consistent with reset list below)
 
-  integer :: idiag_gal=0                            ! DIAG_DOC: GAL-coefficients, couple  $\overbar F$ and $\overbar U$
-  integer :: idiag_nu=0                             ! DIAG_DOC: $\nu$-tensor,     couples $\overbar F$ and $\partial \overbar U$/\partial z$
-  integer :: idiag_aklam=0                          ! DIAG_DOC: $\lambda$-tensor, couples $\overbar F$ and $\overbar W$
-  integer :: idiag_chi=0                            ! DIAG_DOC: $\chi$-vector,    couples $\overbar F$ and ${\overbar G}_z$
-  integer :: idiag_kappa=0                          ! DIAG_DOC: $\kappa$-vector,  couples $\overbar Q$ and $\overbar U$
-  integer :: idiag_psi=0                            ! DIAG_DOC: $\psi$-vector,    couples $\overbar Q$ and $\overbar W$
-  integer :: idiag_pi=0                             ! DIAG_DOC: $\pi$-scalar,     couples $\overbar Q$ and ${\overbar G}_z$
+  integer :: idiag_gal=0                            ! DIAG_DOC: GAL-coefficients, couple  $\overline F$ and $\overline U$
+  integer :: idiag_nu=0                             ! DIAG_DOC: $\nu$-tensor,     couples $\overline F$ and $\partial \overline U/\partial z$
+  integer :: idiag_aklam=0                          ! DIAG_DOC: $\lambda$-tensor, couples $\overline F$ and $\overline W$
+  integer :: idiag_chi=0                            ! DIAG_DOC: $\chi$-vector,    couples $\overline F$ and ${\overline G}_z$
+  integer :: idiag_kappa=0                          ! DIAG_DOC: $\kappa$-vector,  couples $\overline Q$ and $\overline U$
+  integer :: idiag_psi=0                            ! DIAG_DOC: $\psi$-vector,    couples $\overline Q$ and $\overline W$
+  integer :: idiag_pi=0                             ! DIAG_DOC: $\pi$-scalar,     couples $\overline Q$ and ${\overline G}_z$
 
   integer, dimension(2,2) :: idiag_galij=0, &       ! DIAG_DOC: $\alpha_{K,ij}$
                              idiag_aklamij=0, &     ! DIAG_DOC: $\lambda_{ij}$   
