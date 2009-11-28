@@ -1458,6 +1458,7 @@ module Fourier
       complex, dimension(nygrid) :: a_cmplx, cmplx_shift
       real, dimension(nygrid,max(nz/nprocy,1)) :: a_re_new, a_im_new
       integer :: n, nz_new, ipy_from, ipy_to, iproc_from, iproc_to
+      integer :: nprocy_used
       integer, parameter :: itag=666
 !
 !  Fourier transform of the subdivided y-interval is done by collecting
@@ -1514,29 +1515,26 @@ module Fourier
           if (ipy==0) a_re_new(1:ny,1)=a_re(:,1)
         else
 !
-!  Present z-direction. Here nz must be a whole multiple of nprocy (e.g. nz=8,
-!  nprocy=4). This constraint could be removed with a bit of work if it should
-!  become necessary.
+!  Present z-direction. If nz<nygrid we have less y-pencils to shift than
+!  we have processors. In that case we give one pencil to the first
+!  nprocy_used processors, while the other processors get zero pencils.
 !
-          if (modulo(nz,nprocy)/=0) then
-            if (lroot) then
-              print*, 'fourier_shift_yz_y: nz must be a whole '// &
-                  'multiple of nprocy!'
-              print*, 'fourier_shift_yz_y: nz, nprocy=', nz, nprocy
-            endif
-            call fatal_error('fourier_shift_yz_y','')
+          if (nz>=nprocy) then
+            nprocy_used=nprocy
+          else
+            nprocy_used=nz
           endif
 !
           do ipy_from=0,nprocy-1
             iproc_from=ipz*nprocy*nprocx+ipy_from*nprocx+ipx
-            if (ipy/=ipy_from) then
+            if (ipy/=ipy_from .and. ipy<nprocy_used) then
               call mpirecv_real( &
                   a_re_new(ipy_from*ny+1:(ipy_from+1)*ny,:), &
                   (/ny,nz_new/),iproc_from,itag)
             else
-              a_re_new(ipy*ny+1:(ipy+1)*ny,:) = &
+              if (ipy<nprocy_used) a_re_new(ipy*ny+1:(ipy+1)*ny,:) = &
                   a_re(:,ipy*nz_new+1:(ipy+1)*nz_new)
-              do ipy_to=0,nprocy-1
+              do ipy_to=0,nprocy_used-1
                 iproc_to=ipz*nprocy*nprocx+ipy_to*nprocx+ipx
                 if (ipy/=ipy_to) call mpisend_real( &
                     a_re(:,ipy_to*nz_new+1:(ipy_to+1)*nz_new), &
@@ -1589,14 +1587,14 @@ module Fourier
           if (ipy==0) a_re(:,1)=a_re_new(1:ny,1)
         else
 !  Present z-direction.
-          do ipy_from=0,nprocy-1
+          do ipy_from=0,nprocy_used-1
             iproc_from=ipz*nprocy*nprocx+ipy_from*nprocx+ipx
             if (ipy/=ipy_from) then
               call mpirecv_real( &
                   a_re(:,ipy_from*nz_new+1:(ipy_from+1)*nz_new), &
                   (/ny,nz_new/),iproc_from,itag)
             else
-              a_re(:,ipy*nz_new+1:(ipy+1)*nz_new)= &
+              if (ipy<nprocy_used) a_re(:,ipy*nz_new+1:(ipy+1)*nz_new)= &
                   a_re_new(ipy*ny+1:(ipy+1)*ny,:)
               do ipy_to=0,nprocy-1
                 iproc_to=ipz*nprocy*nprocx+ipy_to*nprocx+ipx
