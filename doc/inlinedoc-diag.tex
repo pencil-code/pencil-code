@@ -15,7 +15,6 @@
 %%   viscosity.f90
 %%   testfield_xz.f90
 %%   shear.f90
-%%   testperturb.f90
 %%   lorenz_gauge.f90
 %%   testfield_z.f90
 %%   nosolid_cells.f90
@@ -205,7 +204,11 @@
 \midrule
   \var{rhom}      & $\left<\varrho\right>$
                     \quad(mean density) \\
+  \var{rhomin}    & $\min(\rho)$ \\
+  \var{rhomax}    & $\max(\rho)$ \\
   \var{ugrhom}    & $\left<\uv\cdot\nabla\varrho\right>$ \\
+  \var{totmass}   & $\int\varrho\,dV$ \\
+  \var{mass}      & $\int\varrho\,dV$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{entropy.f90}} \\
 \midrule
@@ -538,13 +541,13 @@
 \midrule
   \multicolumn{2}{c}{Module \file{testflow_z.f90}} \\
 \midrule
-  \var{gal}       & GAL-coefficients, couple  $\overline{F}$ and $\overline{U}$ \\
-  \var{nu}        & $\nu$-tensor,     couples $\overline{F}$ and $\partial \overline{U}/\partial z$ \\
-  \var{aklam}     & $\lambda$-tensor, couples $\overline{F}$ and $\overline{W}$ \\
-  \var{chi}       & $\chi$-vector,    couples $\overline{F}$ and ${\overline{G}}_z$ \\
-  \var{kappa}     & $\kappa$-vector,  couples $\overline{Q}$ and $\overline{U}$ \\
-  \var{psi}       & $\psi$-vector,    couples $\overline{Q}$ and $\overline{W}$ \\
-  \var{pi}        & $\pi$-scalar,     couples $\overline{Q}$ and ${\overline{G}}_z$
+  \var{gal}       & GAL-coefficients, couple  $\overline F$ and $\overline U$ \\
+  \var{nu}        & $\nu$-tensor,     couples $\overline F$ and $\partial \overline U/\partial z$ \\
+  \var{aklam}     & $\lambda$-tensor, couples $\overline F$ and $\overline W$ \\
+  \var{chi}       & $\chi$-vector,    couples $\overline F$ and ${\overline G}_z$ \\
+  \var{kappa}     & $\kappa$-vector,  couples $\overline Q$ and $\overline U$ \\
+  \var{psi}       & $\psi$-vector,    couples $\overline Q$ and $\overline W$ \\
+  \var{pi}        & $\pi$-scalar,     couples $\overline Q$ and ${\overline G}_z$
                     $\alpha_{K,ij}$
                     $\lambda_{ij}$
                     $\nu_{ij}$
@@ -593,21 +596,6 @@
 \midrule
   \var{dtshear}   & advec\_shear/cdt \\
   \var{deltay}    & deltay \\
-\midrule
-  \multicolumn{2}{c}{Module \file{testperturb.f90}} \\
-\midrule
-  \var{alp11}     & $\alpha_{11}$ \\
-  \var{alp21}     & $\alpha_{21}$ \\
-  \var{alp31}     & $\alpha_{31}$ \\
-  \var{alp12}     & $\alpha_{12}$ \\
-  \var{alp22}     & $\alpha_{22}$ \\
-  \var{alp32}     & $\alpha_{32}$ \\
-  \var{eta11}     & $\eta_{113}k$ \\
-  \var{eta21}     & $\eta_{213}k$ \\
-  \var{eta31}     & $\eta_{313}k$ \\
-  \var{eta12}     & $\eta_{123}k$ \\
-  \var{eta22}     & $\eta_{223}k$ \\
-  \var{eta32}     & $\eta_{323}k$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{lorenz_gauge.f90}} \\
 \midrule
