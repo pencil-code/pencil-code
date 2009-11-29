@@ -17,6 +17,7 @@
 module Particles
 !
   use Cdata
+  use Cparam
   use Messages
   use Particles_cdata
   use Particles_map
@@ -1902,7 +1903,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  25-apr-06/anders: coded
 !
-      use Cparam, only: lparticles_spin
       use Diagnostics
       use EquationOfState, only: cs20, gamma
       use Particles_number, only: get_nptilde
@@ -1998,15 +1998,15 @@ k_loop:   do while (.not. (k>npar_loc))
               if (.not.interp%luu) then
                 if (lhydro) then
                   if (lparticlemesh_cic) then
-                    call interpolate_linear( &
-                         f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
+                    call interpolate_linear(f,iux,iuz, &
+                        fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k))
                   elseif (lparticlemesh_tsc) then
                     if (linterpolate_spline) then
-                      call interpolate_quadratic_spline( &
-                           f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
+                      call interpolate_quadratic_spline(f,iux,iuz, &
+                          fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k))
                     else
-                      call interpolate_quadratic( &
-                           f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
+                      call interpolate_quadratic(f,iux,iuz, &
+                          fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k))
                     endif
                   else
                     uup=f(ix0,iy0,iz0,iux:iuz)
@@ -2294,7 +2294,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if (lshort_friction_approx) f(l1:l2,m,n,iscratch_short_friction:iscratch_short_friction+2)=p%fpres+p%jxbr
 !
-!  Diagnostic output
+!  Diagnostic output.
 !
       if (ldiagnos) then
         if (idiag_npm/=0)      call sum_mn_name(p%np,idiag_npm)
@@ -2307,11 +2307,9 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_rhopmax/=0)  call max_mn_name(p%rhop,idiag_rhopmax)
         if (idiag_rhopmin/=0)  call max_mn_name(-p%rhop,idiag_rhopmin,lneg=.true.)
         if (idiag_dedragp/=0)  call sum_mn_name(drag_heat,idiag_dedragp)
-        if (idiag_dvpx2m /=0  .or. &
-            idiag_dvpx2m /=0  .or. &
-            idiag_dvpx2m /=0  .or. &
-            idiag_dvpm   /=0  .or. &
-            idiag_dvpmax /=0)  call calculate_rms_speed(fp,ineargrid,p)
+        if (idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. &
+            idiag_dvpm  /=0 .or. idiag_dvpmax/=0) &
+            call calculate_rms_speed(fp,ineargrid,p)
       endif
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
@@ -2337,7 +2335,7 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_rhopmxz/=0)  call ysum_mn_name_xz(p%rhop,idiag_rhopmxz)
       endif
 !
-!  Clean up (free allocated memory)
+!  Clean up (free allocated memory).
 !
       if (allocated(rep)) deallocate(rep)
       if (allocated(stocunn)) deallocate(stocunn)
