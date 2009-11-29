@@ -3997,7 +3997,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Check for those quantities for which we want phi-averages.
 !
       do inamerz=1,nnamerz
-        call parse_name(inamerz,cnamer(inamerz),cformr(inamerz),'rhopmphi',idiag_rhopmphi)
+        call parse_name(inamerz,cnamerz(inamerz),cformrz(inamerz),'rhopmphi',idiag_rhopmphi)
       enddo
 !
     endsubroutine rprint_particles
