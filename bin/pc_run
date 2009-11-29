@@ -520,7 +520,7 @@ sub scp_local_files {
 # ---------------------------------------------------------------------- #
 sub scp {
 # Transfer a file using `scp'
-    my ($source, $remhost, $target);
+    my ($source, $remhost, $target) = @_;
 
     my @scp = split(/\s+/, $ENV{SCP}); # split cmd name and options
     system(@scp, $source, "${remhost}:$target") == 0
