@@ -1,15 +1,18 @@
 #!/bin/csh
 # CVS: $Id$
 
-# Name:   copy-snapshots
-# Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# Date:   24-Sep-2002
+# Name:   copy-snapshots_exp
 # Description:
-#   Copy snapshots VAR# and TAVG# from /scratch to $PBS_O_WORKDIR (from
-#   where the code started).
-#     Relies on PBS (and on tcsh)  and is needed on Horseshoe (the Odense
-#   cluster).
-#     Should better be a Perl script.
+#   Copy snapshots VAR# and TAVG# from /scratch to the current data directory.
+#   Should better be a Perl script.
+#
+#   This version uses the lists move-me.list and moved-files.list that are
+#   written by the code with lcopysnapshots_exp=T (in start.in:&init_pars).
+#
+#   It currently runs fine with local_disc=1, one_local_disc=0.
+#   For one_local_disc=1, howerver, pc_run currently resets the node list
+#   to just the first node, which means that only data files under proc0/
+#   are copied.
 
 set debug = 0
 foreach argv_scalar ($argv)
