@@ -792,12 +792,7 @@ sub setup_datadir {
 
     ## Clean up previous runs
     unless (-e 'NOERASE') {
-        my $tsfile = "$data_dir/time_series.dat";
-        if (-e $tsfile && -s $tsfile) {
-            my $archived_tsfile = "$data_dir/time_series" . timestr();
-            rename $tsfile, $archived_tsfile
-              or die "Cannot rename $tsfile to $archived_tsfile: $!\n";
-        }
+        archive_time_series();
         my @files_to_delete = (
             <$data_dir/*.dat>,
             <$data_dir/*.nml>,
@@ -950,7 +945,7 @@ sub honour_nostart {
 #
     if (-e 'NOSTART') {
         print "Found NOSTART file. Won't run start.x\n";
-        stash_time_series();
+        archive_time_series();
         exit 0;
     }
 }
@@ -1064,14 +1059,14 @@ sub get_file_content {
     return "@content";
 }
 # ---------------------------------------------------------------------- #
-sub stash_time_series {
+sub archive_time_series {
 # Rename an existing data/timeseries.dat file to
 # data/time_series.<timestring>
     my $tseries = "$data_dir/time_series.dat";
-    if (-e $tseries) {
-        my $stashed_series = "$data_dir/time_series." . timestr();
-        rename $tseries, $stashed_series
-          or die "Cannot rename $tseries to $stashed_series: $!\n";
+    if (-e $tseries && -s $tseries) {
+        my $archived_series = "$data_dir/time_series." . timestr();
+        rename $tseries, $archived_series
+          or die "Cannot rename $tseries to $archived_series: $!\n";
     }
 }
 # ---------------------------------------------------------------------- #
