@@ -972,16 +972,16 @@ sub handle_local_binary {
 # ---------------------------------------------------------------------- #
 sub handle_copy_snapshots {
 # If local disk is used, copy var.dat back to the data directory
-    my ($logfile, @files) = @_;
+    my ($logfile) = @_;
 
     if ($local_disc) {
-        print "Copying ", join(",", @files), " back to data directory\n";
-
         clear_file($logfile);
         copy_snapshots($logfile, 'var.dat');
         copy_snapshots($logfile, 'VAR0');
         my %to_copy = get_files_to_copy_to_local_disc;
-        foreach my $file (keys %to_copy) {
+        my @files = keys %to_copy;
+        print "Copying ", join(",", @files), " back to data directory\n";
+        foreach my $file (@files) {
             if ($to_copy{$file}) {
                 copy_snapshots($logfile, $file);
             }
