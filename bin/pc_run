@@ -1014,7 +1014,7 @@ sub kill_remote_processes {
         print "  pid $pid\n";
         if ( `ps -p $pid | fgrep -c $pid` ) {
             $! = 0;
-            kill $SIG{'KILL'}, $pid
+            kill "KILL", $pid
               or warn "Couldn't kill process $pid: $!\n";
         }
     }
