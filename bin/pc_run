@@ -1329,7 +1329,7 @@ END {
     unlink 'resubmit.log';
     unlink 'rs';
 
-system('env | sort'); # @@@
+    system('env | sort') if ($debug);
 
     Pencil::Util::notify('building') if $notify;
 
