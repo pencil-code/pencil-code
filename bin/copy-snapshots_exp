@@ -57,13 +57,13 @@ if ($?varfile) then
     if ($debug) then
       printf "\n  ##Checking if scratch directory is accessible\n"
       printf "\n$SSH $node \\ls -ltd $SCRATCH_DIR :\n"
-      $SSH $node "\\ls -ltd $SCRATCH_DIR"
+      $SSH $node "\ls -ltd $SCRATCH_DIR"
       printf "\n\n  ##Checking for presence of $varfile on scratch disc\n"
       printf "\n$SSH $node \\ls -ltd $SCRATCH_DIR/proc*/$varfile $SCRATCH_DIR/allprocs/$varfile :\n"
-      $SSH $node "\\ls -ltd $SCRATCH_DIR/proc*/$varfile $SCRATCH_DIR/allprocs/$varfile"
+      $SSH $node "\ls -ltd $SCRATCH_DIR/proc*/$varfile $SCRATCH_DIR/allprocs/$varfile"
       printf "\n  ##Checking for presence of $varfile in data directory\n"
       printf "\n$SSH $node \\ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile :\n"
-      $SSH $node "\\ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile"
+      $SSH $node "\ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile"
       echo
     endif
 ##
@@ -82,7 +82,7 @@ if ($?varfile) then
     if ($debug) then
       printf "\n  ##Checking for changes to $varfile in data directory\n"
       printf "\n$SSH $node \\ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile :\n"
-      $SSH $node "\\ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile"
+      $SSH $node "\ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile"
     endif
 
   end  # loop over nodes
