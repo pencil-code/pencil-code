@@ -259,7 +259,7 @@ sub start_cmd {
     mpi_run_cmd($start_x);
     clear_lock();
 
-    handle_copy_snapshots();
+    handle_copy_snapshots('copy-snapshots-start.log');
 }
 # ---------------------------------------------------------------------- #
 sub run_cmd {
@@ -281,7 +281,7 @@ sub run_cmd {
     run_system_cmd_recoverably('pc_deprecated_slice_links');
     write_job_id('FINISHED');
 
-    handle_copy_snapshots();
+    handle_copy_snapshots('copy-snapshots-run.log');
 }
 # ---------------------------------------------------------------------- #
 sub mpi_run_cmd {
