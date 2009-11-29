@@ -210,7 +210,7 @@ $ENV{SCRATCH_DIR} = $scratch_dir;
 
 $ENV{SSH        } = 'ssh';
 $ENV{SCP        } = 'scp';
-$ENV{NODELIST   } = join ':', get_node_list(); # may be modfied by mpi_run_cmd
+$ENV{NODELIST   } = join ':', get_node_list($Ncpus); # may be modfied by mpi_run_cmd
 
 my @subcmds = expand_cmd_sequence(@ARGV);
 print STDERR "Commands: <", join(">, <", @subcmds), ">\n" if ($debug);
@@ -636,7 +636,7 @@ sub local_settings {
     );
     print count_with_plural_s($settings{'ncpus'}, 'CPU'), "\n" unless $quiet;
 
-    my @nodes = get_node_list();
+    my @nodes = get_node_list($settings{'ncpus'});
 
     my $N = @nodes + 0;
     my $ppn = $settings{'ncpus'} / $N;
@@ -825,6 +825,8 @@ sub get_node_list {
 # $ENV{VAR}, or from the calue of $ENV{VAR}.
 # If a function ref is given, that function takes the environment variable
 # as argument and returns @nodelist.
+    my ($ncpus) = @_;
+
     my %qs_map = (
         'PE_HOSTFILE'          => 'SGE',
         'PBS_NODEFILE'         => 'PBS',
@@ -861,7 +863,7 @@ sub get_node_list {
     # Fall back on host name
     my $hn = `hostname`;
     chomp $hn;
-    return ($hn);
+    return ($hn) x $ncpus;
 }
 # ---------------------------------------------------------------------- #
 sub default_qs_handler {
