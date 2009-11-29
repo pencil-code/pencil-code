@@ -396,12 +396,15 @@ sub setup_local_disc {
     if ($one_local_disc) {
         # Common scratch disc: Set nodelist to first node (or master node,
         # if specified in the host configuration)
-        warn "Overwriting \$NODELIST\n" unless $quiet;
+        my $old_nodelist = $ENV{NODELIST};
+        $old_nodelist = "<empty>" if ($old_nodelist eq '');
         if (defined $master_node) {
             $ENV{NODELIST} = $master_node;
         } else {
             $ENV{NODELIST} =~ s/:.*//;
         }
+        warn "Overwriting \$NODELIST\n  $old_nodelist\n  -> $ENV{NODELIST}"
+          unless $quiet;
     }
 
     # Create subdirectories on local scratch disc (start will also create
