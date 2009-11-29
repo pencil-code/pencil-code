@@ -973,11 +973,11 @@ sub handle_copy_snapshots {
         clear_file($logfile);
         copy_snapshots($logfile, 'var.dat');
         copy_snapshots($logfile, 'VAR0');
-        my %to_copy = get_files_to_copy_to_local_disc;
+        my %to_copy = get_files_to_copy_to_local_disc();
         my @files = keys %to_copy;
         print "Copying ", join(",", @files), " back to data directory\n";
         foreach my $file (@files) {
-            if ($to_copy{$file}) {
+            if (-e $file) {
                 copy_snapshots($logfile, $file);
             }
         }
