@@ -1668,6 +1668,6 @@ nodebug.o:            nodebug.f90 cdata.o $(MPICOMM_FIX).o
 #
 # Dependencies
 #
-include Makefile.depend
+#include Makefile.depend
 
 # DO NOT DELETE

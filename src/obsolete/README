@@ -4,3 +4,5 @@ Here we store routines that are not to be used, but we keep
 them here in this location for some time just in case something
 useful was in them after all.
 
+nohydro_old.f90 is an old version and contains the possibility of
+of kinematic flows. It is now 

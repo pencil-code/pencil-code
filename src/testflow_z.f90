@@ -1928,6 +1928,7 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
       character*(*), intent(in) :: cdiagname
 
       character(len=30) cformat
+      character(len=30), dimension(4) :: ch_tmp
 
       integer :: iname, i, j, nname_form, indx
 
@@ -1950,7 +1951,7 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
 
       else
 
-        call mark_del_elems( cname, nname, mat_diag_indices )	     ! delete inquiries for individual elements and mark them in idiag_map by 0
+        call mark_del_elems( cname, nname, mat_diag_indices )     ! delete inquiries for individual elements and mark them in idiag_map by 0
 
         indx = idiag_map(mat_diag_ind)
         cformat = cname(indx)
@@ -1959,8 +1960,11 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
         nname_form=nname
    
         call del_elem( cname, indx, nname )                                                         ! replace inquiry for the whole tensor by inquiries for    
-        call insert( cname, (/cdiagname//'11'//cformat,cdiagname//'12'//cformat, &
-                              cdiagname//'21'//cformat,cdiagname//'22'//cformat/), 4, indx, nname ) ! all elements
+        ch_tmp(1) = cdiagname//'11'//cformat
+        ch_tmp(2) = cdiagname//'12'//cformat
+        ch_tmp(3) = cdiagname//'21'//cformat
+        ch_tmp(4) = cdiagname//'22'//cformat
+        call insert( cname, ch_tmp, 4, indx, nname ) ! all elements
         do i=1,2
           do j=1,2
 
@@ -1970,7 +1974,7 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
           enddo
         enddo
        
-	 if ( mat_diag_ind.lt.nname_old ) &
+        if ( mat_diag_ind.lt.nname_old ) &
           idiag_map(mat_diag_ind+1:nname_old) = idiag_map(mat_diag_ind+1:nname_old)+3
 
         cformat = cform(indx)

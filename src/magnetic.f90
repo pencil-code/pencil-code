@@ -308,6 +308,8 @@ module Magnetic
   integer :: idiag_azm=0        ! DIAG_DOC:
   integer :: idiag_arms=0       ! DIAG_DOC:
   integer :: idiag_amax=0       ! DIAG_DOC:
+  integer :: idiag_Qsm=0        ! DIAG_DOC: $\left<Q_p(\overline{B})\right>$
+  integer :: idiag_Qpm=0        ! DIAG_DOC: $\left<Q_p(\overline{B})\right>$
   integer :: idiag_beta1m=0     ! DIAG_DOC: $\left<\Bv^2/(2\mu_0 p)\right>$
                                 ! DIAG_DOC:   \quad(mean inverse plasma beta)
   integer :: idiag_beta1max=0   ! DIAG_DOC: $\max[\Bv^2/(2\mu_0 p)]$
@@ -1485,6 +1487,7 @@ module Magnetic
 !
       use Sub
       use Deriv
+      use Diagnostics, only: sum_mn_name
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -1877,7 +1880,14 @@ module Magnetic
 !
      if (lbb_as_aux) f(l1:l2,m,n,ibx:ibz)=p%bb
      if (ljj_as_aux) f(l1:l2,m,n,ijx:ijz)=p%jj
-!       
+!
+!  calculate diagnostics
+!
+      if (ldiagnos) then
+        if (idiag_Qsm/=0) call sum_mn_name(meanfield_Qs_func,idiag_Qsm)
+        if (idiag_Qpm/=0) call sum_mn_name(meanfield_Qp_func,idiag_Qpm)
+      endif
+!
     endsubroutine calc_pencils_magnetic
 !***********************************************************************
     subroutine daa_dt(f,df,p)
@@ -5644,6 +5654,7 @@ module Magnetic
         idiag_bxmin=0; idiag_bymin=0; idiag_bzmin=0
         idiag_bxmax=0; idiag_bymax=0; idiag_bzmax=0
         idiag_vAmax=0; idiag_dtb=0; idiag_arms=0; idiag_amax=0
+        idiag_Qsm=0; idiag_Qpm=0
         idiag_beta1m=0; idiag_beta1max=0
         idiag_bxm=0; idiag_bym=0; idiag_bzm=0
         idiag_axm=0; idiag_aym=0; idiag_azm=0
@@ -5760,6 +5771,8 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'vArms',idiag_vArms)
         call parse_name(iname,cname(iname),cform(iname),'vAmax',idiag_vAmax)
         call parse_name(iname,cname(iname),cform(iname),'vA2m',idiag_vA2m)
+        call parse_name(iname,cname(iname),cform(iname),'Qsm',idiag_Qsm)
+        call parse_name(iname,cname(iname),cform(iname),'Qpm',idiag_Qpm)
         call parse_name(iname,cname(iname),cform(iname),&
             'beta1m',idiag_beta1m)
         call parse_name(iname,cname(iname),cform(iname),&
@@ -6106,6 +6119,8 @@ module Magnetic
         write(3,*) 'i_vArms=',idiag_vArms
         write(3,*) 'i_vAmax=',idiag_vAmax
         write(3,*) 'i_vA2m=',idiag_vA2m
+        write(3,*) 'i_Qsm=',idiag_Qsm
+        write(3,*) 'i_Qpm=',idiag_Qpm
         write(3,*) 'i_beta1m=',idiag_beta1m
         write(3,*) 'i_beta1max=',idiag_beta1max
         write(3,*) 'i_dtb=',idiag_dtb
