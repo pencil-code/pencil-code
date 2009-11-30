@@ -271,7 +271,7 @@ module Particles_main
 !
     endsubroutine particles_pde_pencil
 !***********************************************************************
-    subroutine particles_pde_blocks(f,df,p)
+    subroutine particles_pde_blocks(f,df)
 !
 !  Dynamical evolution of particle variables in blocks.
 !
@@ -283,7 +283,6 @@ module Particles_main
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
-      call keep_compiler_quiet(p)
 !
     endsubroutine particles_pde_blocks
 !***********************************************************************
