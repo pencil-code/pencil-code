@@ -1822,7 +1822,7 @@ module Magnetic
                 -step_scalar(y(m),pi/2.+alpha_equator_gap,alpha_gap_step) &
                 -step_scalar(alpha_cutoff_up,y(m),alpha_gap_step) &
                 +step_scalar(y(m),alpha_cutoff_down,alpha_gap_step))
-        case('surface_z'); alpha_tmp=0.5*(1.-erfunc(z/alpha_width))
+        case('surface_z'); alpha_tmp=0.5*(1.-erfunc(z(n)/alpha_width))
         case('read'); alpha_tmp=alpha_input(l1:l2,m)
         case('nothing');
           call inevitably_fatal_error('calc_pencils_magnetic', &
