@@ -2,6 +2,14 @@
 !
 !  This module takes care of everything related to dust particles.
 !
+!  This version is for block domain decomposition of particles. See
+!  particles_map_blocks.f90 for documentation.
+!
+!  The file is relatively stripped down relative to particles_dust.f90, as
+!  there is no guarantee that everything would have worked for block domain
+!  decomposition. Feel free to add functionality from particles_dust.f90, but
+!  be careful and test that it works properly for block domain decomposition.
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 !
 ! Declare (for generation of cparam.inc) the number of f array
