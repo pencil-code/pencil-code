@@ -342,7 +342,7 @@ module Particles_map
 !  Fill the bricks on each processor with particle density assigned on the
 !  blocks.
 !
-        call fill_bricks_with_blocks(f,inp,irhop)
+        call fill_bricks_with_blocks(f,fb,mfarray,inp,irhop)
 !
 !  Fold first ghost zone of f.
 !
@@ -351,13 +351,13 @@ module Particles_map
 !  Give folded rhop back to the blocks on the foster parents.
 !
         if (lparticlemesh_cic.or.lparticlemesh_tsc) &
-            call fill_blocks_with_bricks(f,irhop,irhop)
+            call fill_blocks_with_bricks(f,fb,mfarray,irhop,irhop)
 !
       else
 !
 !  Only particle number density.
 !
-        call fill_bricks_with_blocks(f,inp,inp)
+        call fill_bricks_with_blocks(f,fb,mfarray,inp,inp)
       endif
 !
     endsubroutine map_xxp_grid
@@ -453,24 +453,28 @@ module Particles_map
 !
     endsubroutine particle_block_index
 !***********************************************************************
-    subroutine fill_blocks_with_bricks(f,ivar1,ivar2)
+    subroutine fill_blocks_with_bricks(a,ab,marray,ivar1,ivar2)
 !
 !  Fill adopted blocks with bricks from the f-array.
 !
 !  04-nov-09/anders: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      integer :: ivar1, ivar2
+      real, dimension (mx,my,mz,marray) :: a
+      real, dimension (mxb,myb,mzb,marray,0:nblockmax-1) :: ab
+      integer :: marray,ivar1, ivar2
 !
       integer, dimension (1000) :: ireq_array
       integer, dimension (MPI_STATUS_SIZE) :: stat
-      real, dimension (mxb,myb,mzb,ivar2-ivar1+1,0:nbricks-1) :: fb_send
-      real, dimension (mxb,myb,mzb,ivar2-ivar1+1,0:nblockmax-1) :: fb_recv
+      real, dimension (mxb,myb,mzb,ivar2-ivar1+1,0:nbricks-1) :: ab_send
+      real, dimension (mxb,myb,mzb,ivar2-ivar1+1,0:nblockmax-1) :: ab_recv
       integer :: ibx, iby, ibz, ix1, ix2, iy1, iy2, iz1, iz2
       integer :: ierr, ireq, nreq, nvar, iblock, iblock1, iblock2
       integer :: ibrick, ibrick1, ibrick2
       integer :: ibrick_send, ibrick1_send, ibrick2_send
       integer :: iproc_recv, iproc_send, nblock_recv, nbrick_send, tag_id
+!
+      intent (in) :: a,ivar1, ivar2
+      intent (out) :: ab
 !
       tag_id=100
       nreq=0
@@ -487,7 +491,7 @@ module Particles_map
           ix1=l1-1+ibx*nxb; ix2=l1+(ibx+1)*nxb
           iy1=m1-1+iby*nyb; iy2=m1+(iby+1)*nyb
           iz1=n1-1+ibz*nzb; iz2=n1+(ibz+1)*nzb
-          fb(:,:,:,ivar1:ivar2,iblock)=f(ix1:ix2,iy1:iy2,iz1:iz2,ivar1:ivar2)
+          ab(:,:,:,ivar1:ivar2,iblock)=a(ix1:ix2,iy1:iy2,iz1:iz2,ivar1:ivar2)
         endif
       enddo
 !
@@ -502,8 +506,8 @@ module Particles_map
           ix1=l1-1+ibx*nxb; ix2=l1+(ibx+1)*nxb
           iy1=m1-1+iby*nyb; iy2=m1+(iby+1)*nyb
           iz1=n1-1+ibz*nzb; iz2=n1+(ibz+1)*nzb
-          fb_send(:,:,:,1:nvar,ibrick_send)= &
-              f(ix1:ix2,iy1:iy2,iz1:iz2,ivar1:ivar2)
+          ab_send(:,:,:,1:nvar,ibrick_send)= &
+              a(ix1:ix2,iy1:iy2,iz1:iz2,ivar1:ivar2)
           ibrick_send=ibrick_send+1
         endif
       enddo
@@ -524,7 +528,7 @@ module Particles_map
         enddo
         if (iproc_parent_block(iblock)/=iproc) then
           nblock_recv=iblock2-iblock1+1
-          call MPI_IRECV(fb_recv(:,:,:,1:nvar,iblock1:iblock2), &
+          call MPI_IRECV(ab_recv(:,:,:,1:nvar,iblock1:iblock2), &
               mxb*myb*mzb*nvar*nblock_recv, MPI_DOUBLE_PRECISION, iproc_recv, &
               tag_id+iproc_recv, MPI_COMM_WORLD, ireq, ierr)
           nreq=nreq+1
@@ -559,7 +563,7 @@ module Particles_map
         if (iproc_foster_brick(ibrick)/=iproc .and. &
             iproc_foster_brick(ibrick)/=-1) then
           nbrick_send=ibrick2_send-ibrick1_send+1
-          call MPI_ISEND(fb_send(:,:,:,1:nvar,ibrick1_send:ibrick2_send), &
+          call MPI_ISEND(ab_send(:,:,:,1:nvar,ibrick1_send:ibrick2_send), &
               mxb*myb*mzb*nvar*nbrick_send, MPI_DOUBLE_PRECISION, iproc_send, &
               tag_id+iproc, MPI_COMM_WORLD, ireq, ierr)
           nreq=nreq+1
@@ -593,28 +597,29 @@ module Particles_map
           endif
         enddo
         if (iproc_parent_block(iblock)/=iproc) then
-          fb(:,:,:,ivar1:ivar2,iblock1:iblock2)= &
-              fb_recv(:,:,:,1:nvar,iblock1:iblock2)
+          ab(:,:,:,ivar1:ivar2,iblock1:iblock2)= &
+              ab_recv(:,:,:,1:nvar,iblock1:iblock2)
         endif
         iblock=iblock2+1
       enddo
 !
     endsubroutine fill_blocks_with_bricks
 !***********************************************************************
-    subroutine fill_bricks_with_blocks(f,ivar1,ivar2,nosum_opt)
+    subroutine fill_bricks_with_blocks(a,ab,marray,ivar1,ivar2,nosum_opt)
 !
 !  Fill bricks (i.e. the f-array) with blocks adopted by other processors.
 !
 !  04-nov-09/anders: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      integer :: ivar1, ivar2
+      real, dimension (mx,my,mz,marray) :: a
+      real, dimension (mxb,myb,mzb,marray,0:nblockmax-1) :: ab
+      integer :: marray, ivar1, ivar2
       logical, optional :: nosum_opt
 !
       integer, dimension (1000) :: ireq_array
       integer, dimension (MPI_STATUS_SIZE) :: stat
-      real, dimension (mxb,myb,mzb,ivar2-ivar1+1,0:nblockmax-1) :: fb_send
-      real, dimension (mxb,myb,mzb,ivar2-ivar1+1,0:nbricks-1) :: fb_recv
+      real, dimension (mxb,myb,mzb,ivar2-ivar1+1,0:nblockmax-1) :: ab_send
+      real, dimension (mxb,myb,mzb,ivar2-ivar1+1,0:nbricks-1) :: ab_recv
       integer :: ibx, iby, ibz, ix1, ix2, iy1, iy2, iz1, iz2
       integer :: ierr, ireq, nreq, nvar, iblock, iblock1, iblock2
       integer :: ibrick, ibrick1, ibrick2
@@ -623,8 +628,8 @@ module Particles_map
       integer :: iproc_recv, iproc_send, nbrick_recv, nblock_send, tag_id
       logical :: nosum
 !
-      intent (in) :: ivar1, ivar2
-      intent (out) :: f
+      intent (in) :: ab,ivar1, ivar2
+      intent (out) :: a
 !
       if (present(nosum_opt)) then
         nosum=nosum_opt
@@ -648,12 +653,12 @@ module Particles_map
           iy1=m1-1+iby*nyb; iy2=m1+(iby+1)*nyb
           iz1=n1-1+ibz*nzb; iz2=n1+(ibz+1)*nzb
           if (nosum) then
-            f(ix1:ix2,iy1:iy2,iz1:iz2,ivar1:ivar2)= &
-                fb(:,:,:,ivar1:ivar2,iblock)
+            a(ix1:ix2,iy1:iy2,iz1:iz2,ivar1:ivar2)= &
+                ab(:,:,:,ivar1:ivar2,iblock)
           else
-            f(ix1:ix2,iy1:iy2,iz1:iz2,ivar1:ivar2)= &
-                f(ix1:ix2,iy1:iy2,iz1:iz2,ivar1:ivar2)+ &
-                fb(:,:,:,ivar1:ivar2,iblock)
+            a(ix1:ix2,iy1:iy2,iz1:iz2,ivar1:ivar2)= &
+                a(ix1:ix2,iy1:iy2,iz1:iz2,ivar1:ivar2)+ &
+                ab(:,:,:,ivar1:ivar2,iblock)
           endif
         endif
       enddo
@@ -665,7 +670,7 @@ module Particles_map
       do while (iblock<nblock_loc)
         if (iproc_parent_block(iblock)/=iproc .and. &
             iproc_parent_block(iblock)/=-1) then
-          fb_send(:,:,:,1:nvar,iblock_send)=fb(:,:,:,ivar1:ivar2,iblock)
+          ab_send(:,:,:,1:nvar,iblock_send)=ab(:,:,:,ivar1:ivar2,iblock)
           iblock_send=iblock_send+1
         endif
         iblock=iblock+1
@@ -697,7 +702,7 @@ module Particles_map
         if (iproc_foster_brick(ibrick)/=iproc .and. &
             iproc_foster_brick(ibrick)/=-1) then
           nbrick_recv=ibrick2_recv-ibrick1_recv+1
-          call MPI_IRECV(fb_recv(:,:,:,1:nvar,ibrick1_recv:ibrick2_recv), &
+          call MPI_IRECV(ab_recv(:,:,:,1:nvar,ibrick1_recv:ibrick2_recv), &
               mxb*myb*mzb*nvar*nbrick_recv, MPI_DOUBLE_PRECISION, iproc_recv, &
               tag_id+iproc_recv, MPI_COMM_WORLD, ireq, ierr)
           nreq=nreq+1
@@ -733,7 +738,7 @@ module Particles_map
         if (iproc_parent_block(iblock)/=iproc .and. &
             iproc_parent_block(iblock)/=-1) then
           nblock_send=iblock2_send-iblock1_send+1
-          call MPI_ISEND(fb_send(:,:,:,1:nvar,iblock1_send:iblock2_send), &
+          call MPI_ISEND(ab_send(:,:,:,1:nvar,iblock1_send:iblock2_send), &
               mxb*myb*mzb*nvar*nblock_send, MPI_DOUBLE_PRECISION, iproc_send, &
               tag_id+iproc, MPI_COMM_WORLD, ireq, ierr)
           nreq=nreq+1
@@ -765,12 +770,12 @@ module Particles_map
           iy1=m1-1+iby*nyb; iy2=m1+(iby+1)*nyb
           iz1=n1-1+ibz*nzb; iz2=n1+(ibz+1)*nzb
           if (nosum) then
-            f(ix1:ix2,iy1:iy2,iz1:iz2,ivar1:ivar2)= &
-                fb_recv(:,:,:,1:nvar,ibrick_recv)
+            a(ix1:ix2,iy1:iy2,iz1:iz2,ivar1:ivar2)= &
+                ab_recv(:,:,:,1:nvar,ibrick_recv)
           else
-            f(ix1:ix2,iy1:iy2,iz1:iz2,ivar1:ivar2)= &
-                f(ix1:ix2,iy1:iy2,iz1:iz2,ivar1:ivar2)+ &
-                fb_recv(:,:,:,1:nvar,ibrick_recv)
+            a(ix1:ix2,iy1:iy2,iz1:iz2,ivar1:ivar2)= &
+                a(ix1:ix2,iy1:iy2,iz1:iz2,ivar1:ivar2)+ &
+                ab_recv(:,:,:,1:nvar,ibrick_recv)
           endif
           ibrick_recv=ibrick_recv+1
         endif
@@ -778,7 +783,7 @@ module Particles_map
 !
     endsubroutine fill_bricks_with_blocks
 !***********************************************************************
-    subroutine interpolate_linear(f,ivar1,ivar2,xxp,gp,inear,ipar)
+    subroutine interpolate_linear(f,ivar1,ivar2,xxp,gp,inear,iblock,ipar)
 !
 !  Interpolate the value of g to arbitrary (xp, yp, zp) coordinate
 !  using the linear interpolation formula
@@ -794,51 +799,53 @@ module Particles_map
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      integer :: ivar1, ivar2
       real, dimension (3) :: xxp
-      integer, dimension (3) :: inear
-      integer :: ivar1, ivar2, ivar, icyl=1
       real, dimension (ivar2-ivar1+1) :: gp
+      integer, dimension (3) :: inear
+      integer :: iblock
       integer, optional :: ipar
 !
       real, dimension (ivar2-ivar1+1) :: g1, g2, g3, g4, g5, g6, g7, g8
       real :: xp0, yp0, zp0
       real, save :: dxdydz1, dxdy1, dxdz1, dydz1, dx1, dy1, dz1
-      integer :: i, ix0, iy0, iz0
+      integer :: i, ix0, iy0, iz0, ivar, ib
       logical :: lfirstcall=.true.
 !
       intent(in)  :: f, xxp, ivar1
       intent(out)  :: gp
 !
-      call fatal_error('interpolate_linear', &
-          'not implemented for block domain decomposition')
+!  Abbreviations.
+!
+      ix0=inear(1); iy0=inear(2); iz0=inear(3)
+      ib=iblock
 !
 !  Determine index value of lowest lying corner point of grid box surrounding
 !  the interpolation point.
 !
-      ix0=inear(1); iy0=inear(2); iz0=inear(3)
-      if ( (x(ix0)>xxp(1)) .and. nxgrid/=1) ix0=ix0-1
-      if ( (y(iy0)>xxp(2)) .and. nygrid/=1) iy0=iy0-1
-      if ( (z(iz0)>xxp(3)) .and. nzgrid/=1) iz0=iz0-1
+      if ( (xb(ix0,iblock)>xxp(1)) .and. nxgrid/=1) ix0=ix0-1
+      if ( (yb(iy0,iblock)>xxp(2)) .and. nygrid/=1) iy0=iy0-1
+      if ( (zb(iz0,iblock)>xxp(3)) .and. nzgrid/=1) iz0=iz0-1
 !
 !  Check if the grid point interval is really correct.
 !
-      if ((x(ix0)<=xxp(1) .and. x(ix0+1)>=xxp(1) .or. nxgrid==1) .and. &
-          (y(iy0)<=xxp(2) .and. y(iy0+1)>=xxp(2) .or. nygrid==1) .and. &
-          (z(iz0)<=xxp(3) .and. z(iz0+1)>=xxp(3) .or. nzgrid==1)) then
+      if ((xb(ix0,ib)<=xxp(1) .and. xb(ix0+1,ib)>=xxp(1) .or. nxgrid==1) .and. &
+          (yb(iy0,ib)<=xxp(2) .and. yb(iy0+1,ib)>=xxp(2) .or. nygrid==1) .and. &
+          (zb(iz0,ib)<=xxp(3) .and. zb(iz0+1,ib)>=xxp(3) .or. nzgrid==1)) then
         ! Everything okay
       else
         print*, 'interpolate_linear: Interpolation point does not ' // &
             'lie within the calculated grid point interval.'
         print*, 'iproc = ', iproc
         if (present(ipar)) print*, 'ipar= ', ipar
-        print*, 'mx, x(1), x(mx) = ', mx, x(1), x(mx)
-        print*, 'my, y(1), y(my) = ', my, y(1), y(my)
-        print*, 'mz, z(1), z(mz) = ', mz, z(1), z(mz)
-        print*, 'ix0, iy0, iz0 = ', ix0, iy0, iz0
-        print*, 'xp, xp0, xp1 = ', xxp(1), x(ix0), x(ix0+1)
-        print*, 'yp, yp0, yp1 = ', xxp(2), y(iy0), y(iy0+1)
-        print*, 'zp, zp0, zp1 = ', xxp(3), z(iz0), z(iz0+1)
-        call stop_it('interpolate_linear')
+        print*, 'mxb, xb(1), xb(mx) = ', mxb, xb(1,ib), xb(mxb,ib)
+        print*, 'myb, yb(1), yb(my) = ', myb, yb(1,ib), yb(myb,ib)
+        print*, 'mzb, zb(1), zb(mz) = ', mzb, zb(1,ib), zb(mzb,ib)
+        print*, 'iblock, ix0, iy0, iz0 = ', iblock, ix0, iy0, iz0
+        print*, 'xp, xp0, xp1 = ', xxp(1), xb(ix0,ib), xb(ix0+1,ib)
+        print*, 'yp, yp0, yp1 = ', xxp(2), yb(iy0,ib), yb(iy0+1,ib)
+        print*, 'zp, zp0, zp1 = ', xxp(3), zb(iz0,ib), zb(iz0+1,ib)
+        call fatal_error('interpolate_linear','')
       endif
 !
 !  Redefine the interpolation point in coordinates relative to lowest corner.
@@ -846,9 +853,9 @@ module Particles_map
 !  that the interpolation is bilinear for 2D grids.
 !
       xp0=0; yp0=0; zp0=0
-      if (nxgrid/=1) xp0=xxp(1)-x(ix0)
-      if (nygrid/=1) yp0=xxp(2)-y(iy0)
-      if (nzgrid/=1) zp0=xxp(3)-z(iz0)
+      if (nxgrid/=1) xp0=xxp(1)-xb(ix0,ib)
+      if (nygrid/=1) yp0=xxp(2)-yb(iy0,ib)
+      if (nzgrid/=1) zp0=xxp(3)-zb(iz0,ib)
 !
 !  Calculate derived grid spacing parameters needed for interpolation.
 !  For an equidistant grid we only need to do this at the first call.
@@ -856,19 +863,19 @@ module Particles_map
       if (lequidist(1)) then
         if (lfirstcall) dx1=dx_1(ix0) !1/dx
       else
-        dx1=1/(x(ix0+1)-x(ix0))
+        dx1=1/(xb(ix0+1,ib)-xb(ix0,ib))
       endif
 !
       if (lequidist(2)) then
         if (lfirstcall) dy1=dy_1(iy0)
       else
-        dy1=1/(y(iy0+1)-y(iy0))
+        dy1=1/(yb(iy0+1,ib)-yb(iy0,ib))
       endif
 !
       if (lequidist(3)) then
         if (lfirstcall) dz1=dz_1(iz0)
       else
-        dz1=1/(z(iz0+1)-z(iz0))
+        dz1=1/(zb(iz0+1,ib)-zb(iz0,ib))
       endif
 !
       if ( (.not. all(lequidist)) .or. lfirstcall) then
@@ -878,14 +885,14 @@ module Particles_map
 !
 !  Function values at all corners.
 !
-      g1=f(ix0  ,iy0  ,iz0  ,ivar1:ivar2)
-      g2=f(ix0+1,iy0  ,iz0  ,ivar1:ivar2)
-      g3=f(ix0  ,iy0+1,iz0  ,ivar1:ivar2)
-      g4=f(ix0+1,iy0+1,iz0  ,ivar1:ivar2)
-      g5=f(ix0  ,iy0  ,iz0+1,ivar1:ivar2)
-      g6=f(ix0+1,iy0  ,iz0+1,ivar1:ivar2)
-      g7=f(ix0  ,iy0+1,iz0+1,ivar1:ivar2)
-      g8=f(ix0+1,iy0+1,iz0+1,ivar1:ivar2)
+      g1=fb(ix0  ,iy0  ,iz0  ,ivar1:ivar2,ib)
+      g2=fb(ix0+1,iy0  ,iz0  ,ivar1:ivar2,ib)
+      g3=fb(ix0  ,iy0+1,iz0  ,ivar1:ivar2,ib)
+      g4=fb(ix0+1,iy0+1,iz0  ,ivar1:ivar2,ib)
+      g5=fb(ix0  ,iy0  ,iz0+1,ivar1:ivar2,ib)
+      g6=fb(ix0+1,iy0  ,iz0+1,ivar1:ivar2,ib)
+      g7=fb(ix0  ,iy0+1,iz0+1,ivar1:ivar2,ib)
+      g8=fb(ix0+1,iy0+1,iz0+1,ivar1:ivar2,ib)
 !
 !  Interpolation formula.
 !
@@ -893,19 +900,6 @@ module Particles_map
           xp0*yp0*dxdy1*(g1-g2-g3+g4) + xp0*zp0*dxdz1*(g1-g2-g5+g6) + &
           yp0*zp0*dydz1*(g1-g3-g5+g7) + &
           xp0*yp0*zp0*dxdydz1*(-g1+g2+g3-g4+g5-g6-g7+g8)
-!
-!  If we have solid geometry we might want some special treatment very close
-!  to the surface of the solid geometry
-!
-
-      if (lsolid_cells) then
-        do ivar=ivar1,ivar2
-          if (ivar < 4) then
-            call close_interpolation(f,ix0,iy0,iz0,icyl,ivar,xxp,&
-                gp(ivar-ivar1+1),.false.)
-          endif
-        enddo
-      endif
 !
 !  Do a reality check on the interpolation scheme.
 !
@@ -916,7 +910,7 @@ module Particles_map
             print*, 'interpolate_linear: a values at the corner points!'
             print*, 'interpolate_linear: ipar, xxp=', ipar, xxp
             print*, 'interpolate_linear: x0, y0, z0=', &
-                x(ix0), y(iy0), z(iz0)
+                xb(ix0,ib), yb(iy0,ib), zb(iz0,ib)
             print*, 'interpolate_linear: i, gp(i)=', i, gp(i)
             print*, 'interpolate_linear: g1...g8=', &
                 g1(i), g2(i), g3(i), g4(i), g5(i), g6(i), g7(i), g8(i)
@@ -927,7 +921,7 @@ module Particles_map
             print*, 'interpolate_linear: a values at the corner points!'
             print*, 'interpolate_linear: xxp=', xxp
             print*, 'interpolate_linear: x0, y0, z0=', &
-                x(ix0), y(iy0), z(iz0)
+                xb(ix0,ib), yb(iy0,ib), zb(iz0,ib)
             print*, 'interpolate_linear: i, gp(i)=', i, gp(i)
             print*, 'interpolate_linear: g1...g8=', &
                 g1(i), g2(i), g3(i), g4(i), g5(i), g6(i), g7(i), g8(i)
@@ -940,7 +934,7 @@ module Particles_map
 !
     endsubroutine interpolate_linear
 !***********************************************************************
-    subroutine interpolate_quadratic(f,ivar1,ivar2,xxp,gp,inear,ipar)
+    subroutine interpolate_quadratic(f,ivar1,ivar2,xxp,gp,inear,iblock,ipar)
 !
 !  Quadratic interpolation of g to arbitrary (xp, yp, zp) coordinate
 !  using the biquadratic interpolation function
@@ -987,26 +981,27 @@ module Particles_map
 !  09-jun-06/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (3) :: xxp
-      integer, dimension (3) :: inear
       integer :: ivar1, ivar2
+      real, dimension (3) :: xxp
       real, dimension (ivar2-ivar1+1) :: gp
+      integer, dimension (3) :: inear
+      integer :: iblock
       integer, optional :: ipar
 !
       real, dimension (9,ivar2-ivar1+1) :: cc
       real, dimension (ivar2-ivar1+1) :: g1, g2, g3, g4, g5, g6, g7, g8, g9
       real :: dxp, dzp
       real, save :: dx1, dx2, dz1, dz2, dx1dz1, dx2dz1, dx1dz2, dx2dz2
-      integer :: ix0, iy0, iz0
+      integer :: ix0, iy0, iz0, ib
       logical, save :: lfirstcall=.true.
 !
       intent(in)  :: f, xxp, ivar1
       intent(out) :: gp
 !
-      call fatal_error('interpolate_quadratic', &
-          'not implemented for block domain decomposition')
+!  Abbreviations.
 !
       ix0=inear(1); iy0=inear(2); iz0=inear(3)
+      ib=iblock
 !
 !  Not implemented in y-direction yet (but is easy to generalise).
 !
@@ -1027,15 +1022,15 @@ module Particles_map
 !
 !  Define function values at the grid points.
 !
-      g1=f(ix0-1,iy0,iz0-1,ivar1:ivar2)
-      g2=f(ix0  ,iy0,iz0-1,ivar1:ivar2)
-      g3=f(ix0+1,iy0,iz0-1,ivar1:ivar2)
-      g4=f(ix0-1,iy0,iz0  ,ivar1:ivar2)
-      g5=f(ix0  ,iy0,iz0  ,ivar1:ivar2)
-      g6=f(ix0+1,iy0,iz0  ,ivar1:ivar2)
-      g7=f(ix0-1,iy0,iz0+1,ivar1:ivar2)
-      g8=f(ix0  ,iy0,iz0+1,ivar1:ivar2)
-      g9=f(ix0+1,iy0,iz0+1,ivar1:ivar2)
+      g1=fb(ix0-1,iy0,iz0-1,ivar1:ivar2,ib)
+      g2=fb(ix0  ,iy0,iz0-1,ivar1:ivar2,ib)
+      g3=fb(ix0+1,iy0,iz0-1,ivar1:ivar2,ib)
+      g4=fb(ix0-1,iy0,iz0  ,ivar1:ivar2,ib)
+      g5=fb(ix0  ,iy0,iz0  ,ivar1:ivar2,ib)
+      g6=fb(ix0+1,iy0,iz0  ,ivar1:ivar2,ib)
+      g7=fb(ix0-1,iy0,iz0+1,ivar1:ivar2,ib)
+      g8=fb(ix0  ,iy0,iz0+1,ivar1:ivar2,ib)
+      g9=fb(ix0+1,iy0,iz0+1,ivar1:ivar2,ib)
 !
 !  Calculate the coefficients of the interpolation formula (see introduction).
 !
@@ -1051,8 +1046,8 @@ module Particles_map
 !
 !  Calculate the value of the interpolation function at the point (dxp,dzp).
 !
-      dxp=xxp(1)-x(ix0)
-      dzp=xxp(3)-z(iz0)
+      dxp=xxp(1)-xb(ix0,ib)
+      dzp=xxp(3)-zb(iz0,ib)
 !
       gp = cc(1,:)            + cc(2,:)*dxp        + cc(3,:)*dxp**2        + &
            cc(4,:)*dzp        + cc(5,:)*dzp**2     + cc(6,:)*dxp*dzp       + &
@@ -1062,58 +1057,60 @@ module Particles_map
 !
     endsubroutine interpolate_quadratic
 !***********************************************************************
-    subroutine interpolate_quadratic_spline(f,ivar1,ivar2,xxp,gp,inear,ipar)
+    subroutine interpolate_quadratic_spline(f,ivar1,ivar2,xxp,gp,inear,iblock,ipar)
 !
 !  Quadratic spline interpolation of the function g to the point xxp=(xp,yp,zp).
 !
 !  10-jun-06/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (3) :: xxp
-      integer, dimension (3) :: inear
       integer :: ivar1, ivar2
+      real, dimension (3) :: xxp
       real, dimension (ivar2-ivar1+1) :: gp
+      integer, dimension (3) :: inear
+      integer :: iblock
       integer, optional :: ipar
 !
       real :: fac_x_m1, fac_x_00, fac_x_p1
       real :: fac_y_m1, fac_y_00, fac_y_p1
       real :: fac_z_m1, fac_z_00, fac_z_p1
       real :: dxp0, dyp0, dzp0
-      integer :: ix0, iy0, iz0
+      integer :: ix0, iy0, iz0, ib
 !
       intent(in)  :: f, xxp, ivar1
       intent(out) :: gp
 !
-      call fatal_error('interpolate_quadratic_spline', &
-          'not implemented for block domain decomposition')
+!  Abbreviations.
+!
+      ix0=inear(1); iy0=inear(2); iz0=inear(3)
+      ib=iblock
 !
 !  Redefine the interpolation point in coordinates relative to nearest grid
 !  point and normalize with the cell size.
 !
-      ix0=inear(1); iy0=inear(2); iz0=inear(3)
-      dxp0=(xxp(1)-x(ix0))*dx_1(ix0)
-      dyp0=(xxp(2)-y(iy0))*dy_1(iy0)
-      dzp0=(xxp(3)-z(iz0))*dz_1(iz0)
+      dxp0=(xxp(1)-xb(ix0,ib))*dx_1(ix0)
+      dyp0=(xxp(2)-yb(iy0,ib))*dy_1(iy0)
+      dzp0=(xxp(3)-zb(iz0,ib))*dz_1(iz0)
 !
 !  Interpolation formulae.
 !
       if (dimensionality==0) then
-        gp=f(ix0,iy0,iz0,ivar1:ivar2)
+        gp=fb(ix0,iy0,iz0,ivar1:ivar2,ib)
       elseif (dimensionality==1) then
         if (nxgrid/=1) then
-          gp = 0.5*(0.5-dxp0)**2*f(ix0-1,iy0,iz0,ivar1:ivar2) + &
-                  (0.75-dxp0**2)*f(ix0  ,iy0,iz0,ivar1:ivar2) + &
-               0.5*(0.5+dxp0)**2*f(ix0+1,iy0,iz0,ivar1:ivar2)
+          gp = 0.5*(0.5-dxp0)**2*fb(ix0-1,iy0,iz0,ivar1:ivar2,ib) + &
+                  (0.75-dxp0**2)*fb(ix0  ,iy0,iz0,ivar1:ivar2,ib) + &
+               0.5*(0.5+dxp0)**2*fb(ix0+1,iy0,iz0,ivar1:ivar2,ib)
         endif
         if (nygrid/=1) then
-          gp = 0.5*(0.5-dyp0)**2*f(ix0,iy0-1,iz0,ivar1:ivar2) + &
-                  (0.75-dyp0**2)*f(ix0,iy0  ,iz0,ivar1:ivar2) + &
-               0.5*(0.5+dyp0)**2*f(ix0,iy0+1,iz0,ivar1:ivar2)
+          gp = 0.5*(0.5-dyp0)**2*fb(ix0,iy0-1,iz0,ivar1:ivar2,ib) + &
+                  (0.75-dyp0**2)*fb(ix0,iy0  ,iz0,ivar1:ivar2,ib) + &
+               0.5*(0.5+dyp0)**2*fb(ix0,iy0+1,iz0,ivar1:ivar2,ib)
         endif
         if (nzgrid/=1) then
-          gp = 0.5*(0.5-dzp0)**2*f(ix0,iy0,iz0-1,ivar1:ivar2) + &
-                  (0.75-dzp0**2)*f(ix0,iy0,iz0  ,ivar1:ivar2) + &
-               0.5*(0.5+dzp0)**2*f(ix0,iy0,iz0+1,ivar1:ivar2)
+          gp = 0.5*(0.5-dzp0)**2*fb(ix0,iy0,iz0-1,ivar1:ivar2,ib) + &
+                  (0.75-dzp0**2)*fb(ix0,iy0,iz0  ,ivar1:ivar2,ib) + &
+               0.5*(0.5+dzp0)**2*fb(ix0,iy0,iz0+1,ivar1:ivar2,ib)
         endif
       elseif (dimensionality==2) then
         if (nxgrid==1) then
@@ -1124,15 +1121,15 @@ module Particles_map
           fac_z_00 = 0.75-dzp0**2
           fac_z_p1 = 0.5*(0.5+dzp0)**2
 !
-          gp= fac_y_00*fac_z_00*f(ix0,iy0,iz0,ivar1:ivar2) + &
-              fac_y_00*( f(ix0,iy0  ,iz0+1,ivar1:ivar2)*fac_z_p1 + &
-                         f(ix0,iy0  ,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
-              fac_z_00*( f(ix0,iy0+1,iz0  ,ivar1:ivar2)*fac_y_p1 + &
-                         f(ix0,iy0-1,iz0  ,ivar1:ivar2)*fac_y_m1 ) + &
-              fac_y_p1*( f(ix0,iy0+1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
-                         f(ix0,iy0+1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
-              fac_y_m1*( f(ix0,iy0-1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
-                         f(ix0,iy0-1,iz0-1,ivar1:ivar2)*fac_z_m1 )
+          gp= fac_y_00*fac_z_00*fb(ix0,iy0,iz0,ivar1:ivar2,ib) + &
+              fac_y_00*( fb(ix0,iy0  ,iz0+1,ivar1:ivar2,ib)*fac_z_p1 + &
+                         fb(ix0,iy0  ,iz0-1,ivar1:ivar2,ib)*fac_z_m1 ) + &
+              fac_z_00*( fb(ix0,iy0+1,iz0  ,ivar1:ivar2,ib)*fac_y_p1 + &
+                         fb(ix0,iy0-1,iz0  ,ivar1:ivar2,ib)*fac_y_m1 ) + &
+              fac_y_p1*( fb(ix0,iy0+1,iz0+1,ivar1:ivar2,ib)*fac_z_p1 + &
+                         fb(ix0,iy0+1,iz0-1,ivar1:ivar2,ib)*fac_z_m1 ) + &
+              fac_y_m1*( fb(ix0,iy0-1,iz0+1,ivar1:ivar2,ib)*fac_z_p1 + &
+                         fb(ix0,iy0-1,iz0-1,ivar1:ivar2,ib)*fac_z_m1 )
         elseif (nygrid==1) then
           fac_x_m1 = 0.5*(0.5-dxp0)**2
           fac_x_00 = 0.75-dxp0**2
@@ -1141,15 +1138,15 @@ module Particles_map
           fac_z_00 = 0.75-dzp0**2
           fac_z_p1 = 0.5*(0.5+dzp0)**2
 !
-          gp= fac_x_00*fac_z_00*f(ix0,iy0,iz0,ivar1:ivar2) + &
-              fac_x_00*( f(ix0  ,iy0,iz0+1,ivar1:ivar2)*fac_z_p1 + &
-                         f(ix0  ,iy0,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
-              fac_z_00*( f(ix0+1,iy0,iz0  ,ivar1:ivar2)*fac_x_p1 + &
-                         f(ix0-1,iy0,iz0  ,ivar1:ivar2)*fac_x_m1 ) + &
-              fac_x_p1*( f(ix0+1,iy0,iz0+1,ivar1:ivar2)*fac_z_p1 + &
-                         f(ix0+1,iy0,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
-              fac_x_m1*( f(ix0-1,iy0,iz0+1,ivar1:ivar2)*fac_z_p1 + &
-                         f(ix0-1,iy0,iz0-1,ivar1:ivar2)*fac_z_m1 )
+          gp= fac_x_00*fac_z_00*fb(ix0,iy0,iz0,ivar1:ivar2,ib) + &
+              fac_x_00*( fb(ix0  ,iy0,iz0+1,ivar1:ivar2,ib)*fac_z_p1 + &
+                         fb(ix0  ,iy0,iz0-1,ivar1:ivar2,ib)*fac_z_m1 ) + &
+              fac_z_00*( fb(ix0+1,iy0,iz0  ,ivar1:ivar2,ib)*fac_x_p1 + &
+                         fb(ix0-1,iy0,iz0  ,ivar1:ivar2,ib)*fac_x_m1 ) + &
+              fac_x_p1*( fb(ix0+1,iy0,iz0+1,ivar1:ivar2,ib)*fac_z_p1 + &
+                         fb(ix0+1,iy0,iz0-1,ivar1:ivar2,ib)*fac_z_m1 ) + &
+              fac_x_m1*( fb(ix0-1,iy0,iz0+1,ivar1:ivar2,ib)*fac_z_p1 + &
+                         fb(ix0-1,iy0,iz0-1,ivar1:ivar2,ib)*fac_z_m1 )
         elseif (nzgrid==1) then
           fac_x_m1 = 0.5*(0.5-dxp0)**2
           fac_x_00 = 0.75-dxp0**2
@@ -1158,15 +1155,15 @@ module Particles_map
           fac_y_00 = 0.75-dyp0**2
           fac_y_p1 = 0.5*(0.5+dyp0)**2
 !
-          gp= fac_x_00*fac_y_00*f(ix0,iy0,iz0,ivar1:ivar2) + &
-              fac_x_00*( f(ix0  ,iy0+1,iz0,ivar1:ivar2)*fac_y_p1 + &
-                         f(ix0  ,iy0-1,iz0,ivar1:ivar2)*fac_y_m1 ) + &
-              fac_y_00*( f(ix0+1,iy0  ,iz0,ivar1:ivar2)*fac_x_p1 + &
-                         f(ix0-1,iy0  ,iz0,ivar1:ivar2)*fac_x_m1 ) + &
-              fac_x_p1*( f(ix0+1,iy0+1,iz0,ivar1:ivar2)*fac_y_p1 + &
-                         f(ix0+1,iy0-1,iz0,ivar1:ivar2)*fac_y_m1 ) + &
-              fac_x_m1*( f(ix0-1,iy0+1,iz0,ivar1:ivar2)*fac_y_p1 + &
-                         f(ix0-1,iy0-1,iz0,ivar1:ivar2)*fac_y_m1 )
+          gp= fac_x_00*fac_y_00*fb(ix0,iy0,iz0,ivar1:ivar2,ib) + &
+              fac_x_00*( fb(ix0  ,iy0+1,iz0,ivar1:ivar2,ib)*fac_y_p1 + &
+                         fb(ix0  ,iy0-1,iz0,ivar1:ivar2,ib)*fac_y_m1 ) + &
+              fac_y_00*( fb(ix0+1,iy0  ,iz0,ivar1:ivar2,ib)*fac_x_p1 + &
+                         fb(ix0-1,iy0  ,iz0,ivar1:ivar2,ib)*fac_x_m1 ) + &
+              fac_x_p1*( fb(ix0+1,iy0+1,iz0,ivar1:ivar2,ib)*fac_y_p1 + &
+                         fb(ix0+1,iy0-1,iz0,ivar1:ivar2,ib)*fac_y_m1 ) + &
+              fac_x_m1*( fb(ix0-1,iy0+1,iz0,ivar1:ivar2,ib)*fac_y_p1 + &
+                         fb(ix0-1,iy0-1,iz0,ivar1:ivar2,ib)*fac_y_m1 )
         endif
       elseif (dimensionality==3) then
         fac_x_m1 = 0.5*(0.5-dxp0)**2
@@ -1179,33 +1176,33 @@ module Particles_map
         fac_z_00 = 0.75-dzp0**2
         fac_z_p1 = 0.5*(0.5+dzp0)**2
 !
-        gp= fac_x_00*fac_y_00*fac_z_00*f(ix0,iy0,iz0,ivar1:ivar2) + &
-            fac_x_00*fac_y_00*( f(ix0  ,iy0  ,iz0+1,ivar1:ivar2)*fac_z_p1 + &
-                                f(ix0  ,iy0  ,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
-            fac_x_00*fac_z_00*( f(ix0  ,iy0+1,iz0  ,ivar1:ivar2)*fac_y_p1 + &
-                                f(ix0  ,iy0-1,iz0  ,ivar1:ivar2)*fac_y_m1 ) + &
-            fac_y_00*fac_z_00*( f(ix0+1,iy0  ,iz0  ,ivar1:ivar2)*fac_x_p1 + &
-                                f(ix0-1,iy0  ,iz0  ,ivar1:ivar2)*fac_x_m1 ) + &
-            fac_x_p1*fac_y_p1*( f(ix0+1,iy0+1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
-                                f(ix0+1,iy0+1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
-            fac_x_p1*fac_y_m1*( f(ix0+1,iy0-1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
-                                f(ix0+1,iy0-1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
-            fac_x_m1*fac_y_p1*( f(ix0-1,iy0+1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
-                                f(ix0-1,iy0+1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
-            fac_x_m1*fac_y_m1*( f(ix0-1,iy0-1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
-                                f(ix0-1,iy0-1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
-            fac_x_00*fac_y_p1*( f(ix0  ,iy0+1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
-                                f(ix0  ,iy0+1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
-            fac_x_00*fac_y_m1*( f(ix0  ,iy0-1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
-                                f(ix0  ,iy0-1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
-            fac_y_00*fac_z_p1*( f(ix0+1,iy0  ,iz0+1,ivar1:ivar2)*fac_x_p1 + &
-                                f(ix0-1,iy0  ,iz0+1,ivar1:ivar2)*fac_x_m1 ) + &
-            fac_y_00*fac_z_m1*( f(ix0+1,iy0  ,iz0-1,ivar1:ivar2)*fac_x_p1 + &
-                                f(ix0-1,iy0  ,iz0-1,ivar1:ivar2)*fac_x_m1 ) + &
-            fac_z_00*fac_x_p1*( f(ix0+1,iy0+1,iz0  ,ivar1:ivar2)*fac_y_p1 + &
-                                f(ix0+1,iy0-1,iz0  ,ivar1:ivar2)*fac_y_m1 ) + &
-            fac_z_00*fac_x_m1*( f(ix0-1,iy0+1,iz0  ,ivar1:ivar2)*fac_y_p1 + &
-                                f(ix0-1,iy0-1,iz0  ,ivar1:ivar2)*fac_y_m1 )
+        gp= fac_x_00*fac_y_00*fac_z_00*fb(ix0,iy0,iz0,ivar1:ivar2,ib) + &
+            fac_x_00*fac_y_00*(fb(ix0  ,iy0  ,iz0+1,ivar1:ivar2,ib)*fac_z_p1 + &
+                               fb(ix0  ,iy0  ,iz0-1,ivar1:ivar2,ib)*fac_z_m1)+ &
+            fac_x_00*fac_z_00*(fb(ix0  ,iy0+1,iz0  ,ivar1:ivar2,ib)*fac_y_p1 + &
+                               fb(ix0  ,iy0-1,iz0  ,ivar1:ivar2,ib)*fac_y_m1)+ &
+            fac_y_00*fac_z_00*(fb(ix0+1,iy0  ,iz0  ,ivar1:ivar2,ib)*fac_x_p1 + &
+                               fb(ix0-1,iy0  ,iz0  ,ivar1:ivar2,ib)*fac_x_m1)+ &
+            fac_x_p1*fac_y_p1*(fb(ix0+1,iy0+1,iz0+1,ivar1:ivar2,ib)*fac_z_p1 + &
+                               fb(ix0+1,iy0+1,iz0-1,ivar1:ivar2,ib)*fac_z_m1)+ &
+            fac_x_p1*fac_y_m1*(fb(ix0+1,iy0-1,iz0+1,ivar1:ivar2,ib)*fac_z_p1 + &
+                               fb(ix0+1,iy0-1,iz0-1,ivar1:ivar2,ib)*fac_z_m1)+ &
+            fac_x_m1*fac_y_p1*(fb(ix0-1,iy0+1,iz0+1,ivar1:ivar2,ib)*fac_z_p1 + &
+                               fb(ix0-1,iy0+1,iz0-1,ivar1:ivar2,ib)*fac_z_m1)+ &
+            fac_x_m1*fac_y_m1*(fb(ix0-1,iy0-1,iz0+1,ivar1:ivar2,ib)*fac_z_p1 + &
+                               fb(ix0-1,iy0-1,iz0-1,ivar1:ivar2,ib)*fac_z_m1)+ &
+            fac_x_00*fac_y_p1*(fb(ix0  ,iy0+1,iz0+1,ivar1:ivar2,ib)*fac_z_p1 + &
+                               fb(ix0  ,iy0+1,iz0-1,ivar1:ivar2,ib)*fac_z_m1)+ &
+            fac_x_00*fac_y_m1*(fb(ix0  ,iy0-1,iz0+1,ivar1:ivar2,ib)*fac_z_p1 + &
+                               fb(ix0  ,iy0-1,iz0-1,ivar1:ivar2,ib)*fac_z_m1)+ &
+            fac_y_00*fac_z_p1*(fb(ix0+1,iy0  ,iz0+1,ivar1:ivar2,ib)*fac_x_p1 + &
+                               fb(ix0-1,iy0  ,iz0+1,ivar1:ivar2,ib)*fac_x_m1)+ &
+            fac_y_00*fac_z_m1*(fb(ix0+1,iy0  ,iz0-1,ivar1:ivar2,ib)*fac_x_p1 + &
+                               fb(ix0-1,iy0  ,iz0-1,ivar1:ivar2,ib)*fac_x_m1)+ &
+            fac_z_00*fac_x_p1*(fb(ix0+1,iy0+1,iz0  ,ivar1:ivar2,ib)*fac_y_p1 + &
+                               fb(ix0+1,iy0-1,iz0  ,ivar1:ivar2,ib)*fac_y_m1)+ &
+            fac_z_00*fac_x_m1*(fb(ix0-1,iy0+1,iz0  ,ivar1:ivar2,ib)*fac_y_p1 + &
+                               fb(ix0-1,iy0-1,iz0  ,ivar1:ivar2,ib)*fac_y_m1 )
       endif
 !
       call keep_compiler_quiet(ipar)

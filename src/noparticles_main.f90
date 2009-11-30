@@ -257,7 +257,7 @@ module Particles_main
 !***********************************************************************
     subroutine particles_pde_pencil(f,df,p)
 !
-!  Dynamical evolution of particle variables.
+!  Dynamical evolution of particle variables in pencils.
 !
 !  20-apr-06/anders: dummy
 !
@@ -270,6 +270,22 @@ module Particles_main
       call keep_compiler_quiet(p)
 !
     endsubroutine particles_pde_pencil
+!***********************************************************************
+    subroutine particles_pde_blocks(f,df,p)
+!
+!  Dynamical evolution of particle variables in blocks.
+!
+!  30-nov-09/anders: dummy
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
+!
+    endsubroutine particles_pde_blocks
 !***********************************************************************
     subroutine particles_create_sinks(f)
 !

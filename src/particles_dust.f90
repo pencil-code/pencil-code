@@ -896,9 +896,6 @@ k_loop:   do while (.not. (k>npar_loc))
 
         case ('hole')
 
-          if (lparticles_blocks) call fatal_error('init_particles', &
-                'hole initial condition not implemented for '// &
-                'block domain decomposition')
           call map_nearest_grid(fp,ineargrid)
           call map_xxp_grid(f,fp,ineargrid)
           call sort_particles_imn(fp,ineargrid,ipar)
@@ -946,18 +943,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Map particle position on the grid.
 !
-      if (lparticles_blocks) then
-        call map_nearest_grid(fp,ineargrid)
-        call sort_particles_iblock(fp,ineargrid,ipar)
-        call map_xxp_grid(f,fp,ineargrid)
-        call load_balance_particles(f,fp,ipar)
-        call map_nearest_grid(fp,ineargrid)
-        call sort_particles_iblock(fp,ineargrid,ipar)
-        call map_xxp_grid(f,fp,ineargrid)
-      else
-        call map_nearest_grid(fp,ineargrid)
-        call map_xxp_grid(f,fp,ineargrid)
-      endif
+      call boundconds_particles(fp,ipar)
+      call map_nearest_grid(fp,ineargrid)
+      call map_xxp_grid(f,fp,ineargrid)
 !
 !  Initial particle velocity.
 !
@@ -1212,7 +1200,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  positions and velocities are not displaced relative to when there is no
 !  sorting).
 !
-      if (.not. lparticles_blocks) call sort_particles_imn(fp,ineargrid,ipar)
+      call sort_particles_imn(fp,ineargrid,ipar)
 !
     endsubroutine init_particles
 !***********************************************************************
@@ -1856,6 +1844,394 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine calc_pencils_particles
 !***********************************************************************
+    subroutine dxxp_dt(f,df,fp,dfp,ineargrid)
+!
+!  Evolution of dust particle position.
+!
+!  02-jan-05/anders: coded
+!
+      use General, only: random_number_wrapper, random_seed_wrapper
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      real :: dt1_advpx, dt1_advpy, dt1_advpz
+      integer :: k
+      logical :: lheader, lfirstcall=.true.
+!
+      intent (in) :: f, fp, ineargrid
+      intent (inout) :: df, dfp
+!
+!  Print out header information in first time step.
+!
+      lheader=lfirstcall .and. lroot
+!
+!  Identify module and boundary conditions.
+!
+      if (lheader) print*,'dxxp_dt: Calculate dxxp_dt'
+      if (lheader) then
+        print*, 'dxxp_dt: Particles boundary condition bcpx=', bcpx
+        print*, 'dxxp_dt: Particles boundary condition bcpy=', bcpy
+        print*, 'dxxp_dt: Particles boundary condition bcpz=', bcpz
+      endif
+!
+      if (lheader) print*, 'dxxp_dt: Set rate of change of particle '// &
+          'position equal to particle velocity.'
+!
+!  The rate of change of a particle's position is the particle's velocity.
+!
+      if (lcartesian_coords) then
+!
+        if (nxgrid/=1) &
+             dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + fp(1:npar_loc,ivpx)
+        if (nygrid/=1) &
+             dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + fp(1:npar_loc,ivpy)
+        if (nzgrid/=1) &
+             dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + fp(1:npar_loc,ivpz)
+!
+      elseif (lcylindrical_coords) then
+!
+        if (nxgrid/=1) &
+             dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + fp(1:npar_loc,ivpx)
+        if (nygrid/=1) &
+             dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + &
+             fp(1:npar_loc,ivpy)/max(fp(1:npar_loc,ixp),tini)
+        if (nzgrid/=1) &
+             dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + fp(1:npar_loc,ivpz)
+!
+      elseif (lspherical_coords) then
+!
+        if (nxgrid/=1) &
+             dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + fp(1:npar_loc,ivpx)
+        if (nygrid/=1) &
+             dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + &
+             fp(1:npar_loc,ivpy)/max(fp(1:npar_loc,ixp),tini)
+        if (nzgrid/=1) &
+             dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + &
+             fp(1:npar_loc,ivpz)/(max(fp(1:npar_loc,ixp),tini)*&
+                                                    sin(fp(1:npar_loc,iyp)))
+!
+      endif
+!
+!  With shear there is an extra term due to the background shear flow.
+!
+      if (lshear.and.nygrid/=1) dfp(1:npar_loc,iyp) = &
+          dfp(1:npar_loc,iyp) - qshear*Omega*fp(1:npar_loc,ixp)
+!
+      if (lfirstcall) lfirstcall=.false.
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(ineargrid)
+!
+    endsubroutine dxxp_dt
+!***********************************************************************
+    subroutine dvvp_dt(f,df,fp,dfp,ineargrid)
+!
+!  Evolution of dust particle velocity.
+!
+!  29-dec-04/anders: coded
+!
+      use Diagnostics
+      use EquationOfState, only: cs20, gamma
+      use Particles_number, only: get_nptilde
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      real, dimension(3) :: ggp
+      real :: Omega2, np_tilde, rsph, vsph, OO2
+      integer :: k
+      logical :: lheader, lfirstcall=.true.
+!
+      intent (in) :: f, fp, ineargrid
+      intent (inout) :: df, dfp
+!
+!  Print out header information in first time step.
+!
+      lheader=lfirstcall .and. lroot
+      if (lheader) print*,'dvvp_dt: Calculate dvvp_dt'
+!
+!  Add Coriolis force from rotating coordinate frame.
+!
+      if (Omega/=0.) then
+        if (lcoriolis_force_par) then 
+          if (lheader) print*,'dvvp_dt: Add Coriolis force; Omega=', Omega
+          Omega2=2*Omega
+          if (.not.lspherical_coords) then 
+            dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega2*fp(1:npar_loc,ivpy)
+            dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) - Omega2*fp(1:npar_loc,ivpx)
+          else 
+            print*,'dvvp_dt: Coriolis force on the particles is '
+            print*,'not yet implemented for spherical coordinates.'
+            call fatal_error('dvvp_dt','')
+          endif
+        endif
+!
+! Centrifugal force
+!
+        if (lcentrifugal_force_par) then 
+          if (lheader) print*,'dvvp_dt: Add Centrifugal force; Omega=', Omega
+          if (lcartesian_coords) then 
+!
+            dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + &
+                Omega**2*fp(1:npar_loc,ixp)
+!
+            dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) + &
+                Omega**2*fp(1:npar_loc,iyp)
+!
+          elseif (lcylindrical_coords) then 
+            dfp(1:npar_loc,ivpx) = &
+                dfp(1:npar_loc,ivpx) + Omega**2*fp(1:npar_loc,ixp)
+          else
+            print*,'dvvp_dt: Centrifugal force on the particles is '
+            print*,'not implemented for spherical coordinates.'
+            call fatal_error('dvvp_dt','')
+          endif
+        endif
+!
+!  With shear there is an extra term due to the background shear flow.
+!
+        if (lshear) dfp(1:npar_loc,ivpy) = &
+            dfp(1:npar_loc,ivpy) + qshear*Omega*fp(1:npar_loc,ivpx)
+      endif
+!
+!  Add constant background pressure gradient beta=alpha*H0/r0, where alpha
+!  comes from a global pressure gradient P = P0*(r/r0)^alpha.
+!  (the term must be added to the dust equation of motion when measuring
+!  velocities relative to the shear flow modified by the global pressure grad.)
+!
+      if (beta_dPdr_dust/=0.0 .and. t>=tstart_dragforce_par) then
+        dfp(1:npar_loc,ivpx) = &
+            dfp(1:npar_loc,ivpx) + 1/gamma*cs20*beta_dPdr_dust_scaled
+      endif
+!
+!  Gravity on the particles.
+!
+      if (t>=tstart_grav_par) then
+!
+!  Gravity in the x-direction.
+!
+        select case (gravx_profile)
+!
+          case ('')
+            if (lheader) print*, 'dvvp_dt: No gravity in x-direction.'
+!
+          case ('zero')
+            if (lheader) print*, 'dvvp_dt: No gravity in x-direction.'
+!
+          case ('linear')
+            if (lheader) print*, 'dvvp_dt: Linear gravity field in x-direction.'
+            dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) - &
+                nu_epicycle2*fp(1:npar_loc,ixp)
+!
+          case ('plain')
+            if (lheader) print*, 'dvvp_dt: Plain gravity field in x-direction.'
+            dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) - gravx
+!
+          case ('sinusoidal')
+            if (lheader) &
+                print*, 'dvvp_dt: Sinusoidal gravity field in x-direction.'
+            dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) - &
+                gravx*sin(kx_gg*fp(1:npar_loc,ixp))
+!
+          case default
+            call fatal_error('dvvp_dt','chosen gravx_profile is not valid!')
+!
+        endselect
+!
+!  Gravity in the z-direction.
+!
+        select case (gravz_profile)
+!
+          case ('')
+            if (lheader) print*, 'dvvp_dt: No gravity in z-direction.'
+!
+          case ('zero')
+            if (lheader) print*, 'dvvp_dt: No gravity in z-direction.'
+!
+          case ('linear')
+            if (lheader) print*, 'dvvp_dt: Linear gravity field in z-direction.'
+            dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) - &
+                nu_epicycle2*fp(1:npar_loc,izp)
+!
+          case ('sinusoidal')
+            if (lheader) &
+                print*, 'dvvp_dt: Sinusoidal gravity field in z-direction.'
+            dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) - &
+                gravz*sin(kz_gg*fp(1:npar_loc,izp))
+!
+          case default
+            call fatal_error('dvvp_dt','chosen gravz_profile is not valid!')
+!
+        endselect
+!
+!  Radial gravity.
+!
+        select case (gravr_profile)
+!
+        case ('')
+          if (lheader) print*, 'dvvp_dt: No radial gravity'
+!
+        case ('zero')
+          if (lheader) print*, 'dvvp_dt: No radial gravity'
+!
+        case('newtonian-central','newtonian')
+          if (lparticles_nbody) &
+              call fatal_error('dvvp_dt','You are using massive particles. '//&
+              'The N-body code should take care of the stellar-like '// &
+              'gravity on the dust. Switch off the '// &
+              'gravr_profile=''newtonian'' on particles_init')
+          if (lheader) &
+               print*, 'dvvp_dt: Newtonian gravity from a fixed central object'
+          do k=1,npar_loc
+            if (lcartesian_coords) then
+              rsph=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2+gravsmooth2)
+              OO2=rsph**(-3)*gravr
+              ggp(1) = -fp(k,ixp)*OO2
+              ggp(2) = -fp(k,iyp)*OO2
+              ggp(3) = -fp(k,izp)*OO2
+              dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
+            elseif (lcylindrical_coords) then
+              rsph=sqrt(fp(k,ixp)**2+fp(k,izp)**2+gravsmooth2)
+              OO2=rsph**(-3)*gravr
+              ggp(1) = -fp(k,ixp)*OO2
+              ggp(2) = 0.0
+              ggp(3) = -fp(k,izp)*OO2
+              dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
+            elseif (lspherical_coords) then
+              rsph=sqrt(fp(k,ixp)**2+gravsmooth2)
+              OO2=rsph**(-3)*gravr
+              ggp(1) = -fp(k,ixp)*OO2
+              ggp(2) = 0.0; ggp(3) = 0.0
+              dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
+            endif
+!  Limit time-step if particles close to gravity source.
+            if (ldt_grav_par.and.(lfirst.and.ldt)) then
+              if (lcartesian_coords) then
+                vsph=sqrt(fp(k,ivpx)**2+fp(k,ivpy)**2+fp(k,ivpz)**2)
+              elseif (lcylindrical_coords) then
+                vsph=sqrt(fp(k,ivpx)**2+fp(k,ivpz)**2)
+              elseif (lspherical_coords) then
+                vsph=abs(fp(k,ivpx))
+              endif
+              dt1_max(ineargrid(k,1))= &
+                  max(dt1_max(ineargrid(k,1)),vsph/rsph/cdtpgrav)
+            endif
+          enddo
+!
+        case default
+          call fatal_error('dvvp_dt','chosen gravr_profile is not valid!')
+!
+        endselect
+!
+      endif
+!
+!  Diagnostic output
+!
+      if (ldiagnos) then
+        if (idiag_nparmax/=0)  call max_name(npar_loc,idiag_nparmax)
+        if (idiag_nparpmax/=0) call max_name(maxval(npar_imn),idiag_nparpmax)
+        if (idiag_xpm/=0)  call sum_par_name(fp(1:npar_loc,ixp),idiag_xpm)
+        if (idiag_ypm/=0)  call sum_par_name(fp(1:npar_loc,iyp),idiag_ypm)
+        if (idiag_zpm/=0)  call sum_par_name(fp(1:npar_loc,izp),idiag_zpm)
+        if (idiag_xp2m/=0) call sum_par_name(fp(1:npar_loc,ixp)**2,idiag_xp2m)
+        if (idiag_yp2m/=0) call sum_par_name(fp(1:npar_loc,iyp)**2,idiag_yp2m)
+        if (idiag_zp2m/=0) call sum_par_name(fp(1:npar_loc,izp)**2,idiag_zp2m)
+        if (idiag_rp2m/=0) call sum_par_name(fp(1:npar_loc,ixp)**2+ &
+            fp(1:npar_loc,iyp)**2+fp(1:npar_loc,izp)**2,idiag_rp2m)
+        if (idiag_vpxm/=0) call sum_par_name(fp(1:npar_loc,ivpx),idiag_vpxm)
+        if (idiag_vpym/=0) call sum_par_name(fp(1:npar_loc,ivpy),idiag_vpym)
+        if (idiag_vpzm/=0) call sum_par_name(fp(1:npar_loc,ivpz),idiag_vpzm)
+        if (idiag_lpxm/=0) call sum_par_name( &
+            fp(1:npar_loc,iyp)*fp(1:npar_loc,ivpz)- &
+            fp(1:npar_loc,izp)*fp(1:npar_loc,ivpy),idiag_lpxm)
+        if (idiag_lpym/=0) call sum_par_name( &
+            fp(1:npar_loc,izp)*fp(1:npar_loc,ivpx)- &
+            fp(1:npar_loc,ixp)*fp(1:npar_loc,ivpz),idiag_lpym)
+        if (idiag_lpzm/=0) call sum_par_name( &
+            fp(1:npar_loc,ixp)*fp(1:npar_loc,ivpy)- &
+            fp(1:npar_loc,iyp)*fp(1:npar_loc,ivpx),idiag_lpzm)
+        if (idiag_lpx2m/=0) call sum_par_name( &
+            (fp(1:npar_loc,iyp)*fp(1:npar_loc,ivpz)- &
+            fp(1:npar_loc,izp)*fp(1:npar_loc,ivpy))**2,idiag_lpx2m)
+        if (idiag_lpy2m/=0) call sum_par_name( &
+            (fp(1:npar_loc,izp)*fp(1:npar_loc,ivpx)- &
+            fp(1:npar_loc,ixp)*fp(1:npar_loc,ivpz))**2,idiag_lpy2m)
+        if (idiag_lpz2m/=0) call sum_par_name( &
+            (fp(1:npar_loc,ixp)*fp(1:npar_loc,ivpy)- &
+            fp(1:npar_loc,iyp)*fp(1:npar_loc,ivpx))**2,idiag_lpz2m)
+        if (idiag_vpx2m/=0) &
+            call sum_par_name(fp(1:npar_loc,ivpx)**2,idiag_vpx2m)
+        if (idiag_vpy2m/=0) &
+            call sum_par_name(fp(1:npar_loc,ivpy)**2,idiag_vpy2m)
+        if (idiag_vpz2m/=0) &
+            call sum_par_name(fp(1:npar_loc,ivpz)**2,idiag_vpz2m)
+        if (idiag_ekinp/=0) call sum_par_name(0.5*rhop_tilde*npar_per_cell* &
+            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
+        if (idiag_epotpm/=0) call sum_par_name( &
+            -gravr/sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)),idiag_epotpm)
+        if (idiag_vpxmax/=0) call max_par_name(fp(1:npar_loc,ivpx),idiag_vpxmax)
+        if (idiag_vpymax/=0) call max_par_name(fp(1:npar_loc,ivpy),idiag_vpymax)
+        if (idiag_vpzmax/=0) call max_par_name(fp(1:npar_loc,ivpz),idiag_vpzmax)
+        if (idiag_eccpxm/=0) call sum_par_name( &
+            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2)*fp(1:npar_loc,ixp)/gravr- &
+            sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
+            fp(1:npar_loc,ivpx)/gravr-fp(1:npar_loc,ixp)/ &
+            sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)),idiag_eccpxm)
+        if (idiag_eccpym/=0) call sum_par_name( &
+            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2)*fp(1:npar_loc,iyp)/gravr- &
+            sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
+            fp(1:npar_loc,ivpy)/gravr-fp(1:npar_loc,iyp)/ &
+            sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)),idiag_eccpym)
+        if (idiag_eccpzm/=0) call sum_par_name( &
+            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2)*fp(1:npar_loc,izp)/gravr- &
+            sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
+            fp(1:npar_loc,ivpz)/gravr-fp(1:npar_loc,izp)/ &
+            sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)),idiag_eccpzm)
+        if (idiag_eccpx2m/=0) call sum_par_name(( &
+            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2)*fp(1:npar_loc,ixp)/gravr- &
+            sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
+            fp(1:npar_loc,ivpx)/gravr-fp(1:npar_loc,ixp)/ &
+            sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)))**2,idiag_eccpx2m)
+        if (idiag_eccpy2m/=0) call sum_par_name(( &
+            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2)*fp(1:npar_loc,iyp)/gravr- &
+            sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
+            fp(1:npar_loc,ivpy)/gravr-fp(1:npar_loc,iyp)/ &
+            sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)))**2,idiag_eccpy2m)
+        if (idiag_eccpz2m/=0) call sum_par_name(( &
+            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2)*fp(1:npar_loc,izp)/gravr- &
+            sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
+            fp(1:npar_loc,ivpz)/gravr-fp(1:npar_loc,izp)/ &
+            sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)))**2,idiag_eccpz2m)
+        if (idiag_rhoptilm/=0) then
+          do k=1,npar_loc
+            call get_nptilde(fp,k,np_tilde)
+            call sum_par_name( &
+                (/4/3.*pi*rhops*fp(k,iap)**3*np_tilde/),idiag_rhoptilm)
+          enddo
+        endif
+        if (idiag_mpt/=0) then
+          do k=1,npar_loc
+            call get_nptilde(fp,k,np_tilde)
+            call integrate_par_name( &
+                (/4/3.*pi*rhops*fp(k,iap)**3*np_tilde/),idiag_mpt)
+          enddo
+        endif
+      endif
+!
+      if (lfirstcall) lfirstcall=.false.
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(ineargrid)
+!
+    endsubroutine dvvp_dt
+!***********************************************************************
     subroutine dxxp_dt_pencil(f,df,fp,dfp,p,ineargrid)
 !
 !  Evolution of particle position (called from main pencil loop).
@@ -2310,6 +2686,8 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. &
             idiag_dvpm  /=0 .or. idiag_dvpmax/=0) &
             call calculate_rms_speed(fp,ineargrid,p)
+        if (idiag_dtdragp/=0.and.(lfirst.and.ldt))  &
+            call max_mn_name(dt1_drag,idiag_dtdragp,l_dt=.true.)
       endif
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
@@ -2325,8 +2703,6 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_epspmy/=0)  call xzsum_mn_name_y(p%epsp,idiag_epspmy)
         if (idiag_epspmz/=0)  call xysum_mn_name_z(p%epsp,idiag_epspmz)
         if (idiag_rhopmr/=0)  call phizsum_mn_name_r(p%rhop,idiag_rhopmr)
-        if (idiag_dtdragp/=0.and.(lfirst.and.ldt))  &
-            call max_mn_name(dt1_drag,idiag_dtdragp,l_dt=.true.)
       endif
 !
       if (l2davgfirst) then
@@ -2342,411 +2718,43 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine dvvp_dt_pencil
 !***********************************************************************
-    subroutine dxxp_dt(f,df,fp,dfp,ineargrid)
+    subroutine dxxp_dt_blocks(f,df,fp,dfp,ineargrid)
 !
-!  Evolution of dust particle position.
+!  Evolution of particle position in blocks.
 !
-!  02-jan-05/anders: coded
-!
-      use General, only: random_number_wrapper, random_seed_wrapper
+!  29-nov-09/anders: dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real :: dt1_advpx, dt1_advpy, dt1_advpz
-      integer :: k
-      logical :: lheader, lfirstcall=.true.
-!
-      intent (in) :: f, fp, ineargrid
-      intent (inout) :: df, dfp
-!
-!  Print out header information in first time step.
-!
-      lheader=lfirstcall .and. lroot
-!
-!  Identify module and boundary conditions.
-!
-      if (lheader) print*,'dxxp_dt: Calculate dxxp_dt'
-      if (lheader) then
-        print*, 'dxxp_dt: Particles boundary condition bcpx=', bcpx
-        print*, 'dxxp_dt: Particles boundary condition bcpy=', bcpy
-        print*, 'dxxp_dt: Particles boundary condition bcpz=', bcpz
-      endif
-!
-      if (lheader) print*, 'dxxp_dt: Set rate of change of particle '// &
-          'position equal to particle velocity.'
-!
-!  The rate of change of a particle's position is the particle's velocity.
-!
-      if (lcartesian_coords) then
-!
-        if (nxgrid/=1) &
-             dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + fp(1:npar_loc,ivpx)
-        if (nygrid/=1) &
-             dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + fp(1:npar_loc,ivpy)
-        if (nzgrid/=1) &
-             dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + fp(1:npar_loc,ivpz)
-!
-      elseif (lcylindrical_coords) then
-!
-        if (nxgrid/=1) &
-             dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + fp(1:npar_loc,ivpx)
-        if (nygrid/=1) &
-             dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + &
-             fp(1:npar_loc,ivpy)/max(fp(1:npar_loc,ixp),tini)
-        if (nzgrid/=1) &
-             dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + fp(1:npar_loc,ivpz)
-!
-      elseif (lspherical_coords) then
-!
-        if (nxgrid/=1) &
-             dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + fp(1:npar_loc,ivpx)
-        if (nygrid/=1) &
-             dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + &
-             fp(1:npar_loc,ivpy)/max(fp(1:npar_loc,ixp),tini)
-        if (nzgrid/=1) &
-             dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + &
-             fp(1:npar_loc,ivpz)/(max(fp(1:npar_loc,ixp),tini)*&
-                                                    sin(fp(1:npar_loc,iyp)))
-!
-      endif
-!
-!  With shear there is an extra term due to the background shear flow.
-!
-      if (lshear.and.nygrid/=1) dfp(1:npar_loc,iyp) = &
-          dfp(1:npar_loc,iyp) - qshear*Omega*fp(1:npar_loc,ixp)
-!
-      if (lfirstcall) lfirstcall=.false.
-!
-!  Contribution of dust particles to time step.
-!
-      if (lparticles_blocks) then
-        if (lfirst.and.ldt) then
-          do k=1,npar_loc
-            dt1_advpx=abs(fp(k,ivpx))*dx_1(1)
-            if (lshear) then
-              dt1_advpy=(-qshear*Omega*fp(k,ixp)+abs(fp(k,ivpy)))*dy_1(1)
-            else
-              dt1_advpy=abs(fp(k,ivpy))*dy_1(1)
-            endif
-            dt1_advpz=abs(fp(k,ivpz))*dz_1(1)
-            dt1_max(1)=max(dt1_max(1), &
-                sqrt(dt1_advpx**2+dt1_advpy**2+dt1_advpz**2)/cdtp)
-          enddo
-        endif
-      endif
-!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(ineargrid)
 !
-    endsubroutine dxxp_dt
+    endsubroutine dxxp_dt_blocks
 !***********************************************************************
-    subroutine dvvp_dt(f,df,fp,dfp,ineargrid)
+    subroutine dvvp_dt_blocks(f,df,fp,dfp,ineargrid)
 !
-!  Evolution of dust particle velocity.
+!  Evolution of particle velocity in blocks.
 !
-!  29-dec-04/anders: coded
-!
-      use Diagnostics
-      use EquationOfState, only: cs20, gamma
-      use Particles_number, only: get_nptilde
+!  29-nov-09/anders: dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real, dimension(3) :: ggp
-      real :: Omega2, np_tilde, rsph, vsph, OO2
-      integer :: k
-      logical :: lheader, lfirstcall=.true.
-!
-      intent (in) :: f, fp, ineargrid
-      intent (inout) :: df, dfp
-!
-!  Print out header information in first time step.
-!
-      lheader=lfirstcall .and. lroot
-      if (lheader) print*,'dvvp_dt: Calculate dvvp_dt'
-!
-!  Add Coriolis force from rotating coordinate frame.
-!
-      if (Omega/=0.) then
-        if (lcoriolis_force_par) then 
-          if (lheader) print*,'dvvp_dt: Add Coriolis force; Omega=', Omega
-          Omega2=2*Omega
-          if (.not.lspherical_coords) then 
-            dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega2*fp(1:npar_loc,ivpy)
-            dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) - Omega2*fp(1:npar_loc,ivpx)
-          else 
-            print*,'dvvp_dt: Coriolis force on the particles is '
-            print*,'not yet implemented for spherical coordinates.'
-            call fatal_error('dvvp_dt','')
-          endif
-        endif
-!
-! Centrifugal force
-!
-        if (lcentrifugal_force_par) then 
-          if (lheader) print*,'dvvp_dt: Add Centrifugal force; Omega=', Omega
-          if (lcartesian_coords) then 
-!
-            dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + &
-                Omega**2*fp(1:npar_loc,ixp)
-!
-            dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) + &
-                Omega**2*fp(1:npar_loc,iyp)
-!
-          elseif (lcylindrical_coords) then 
-            dfp(1:npar_loc,ivpx) = &
-                dfp(1:npar_loc,ivpx) + Omega**2*fp(1:npar_loc,ixp)
-          else
-            print*,'dvvp_dt: Centrifugal force on the particles is '
-            print*,'not implemented for spherical coordinates.'
-            call fatal_error('dvvp_dt','')
-          endif
-        endif
-!
-!  With shear there is an extra term due to the background shear flow.
-!
-        if (lshear) dfp(1:npar_loc,ivpy) = &
-            dfp(1:npar_loc,ivpy) + qshear*Omega*fp(1:npar_loc,ivpx)
-      endif
-!
-!  Add constant background pressure gradient beta=alpha*H0/r0, where alpha
-!  comes from a global pressure gradient P = P0*(r/r0)^alpha.
-!  (the term must be added to the dust equation of motion when measuring
-!  velocities relative to the shear flow modified by the global pressure grad.)
-!
-      if (beta_dPdr_dust/=0.0 .and. t>=tstart_dragforce_par) then
-        dfp(1:npar_loc,ivpx) = &
-            dfp(1:npar_loc,ivpx) + 1/gamma*cs20*beta_dPdr_dust_scaled
-      endif
-!
-!  Gravity on the particles.
-!
-      if (t>=tstart_grav_par) then
-!
-!  Gravity in the x-direction.
-!
-        select case (gravx_profile)
-!
-          case ('')
-            if (lheader) print*, 'dvvp_dt: No gravity in x-direction.'
-!
-          case ('zero')
-            if (lheader) print*, 'dvvp_dt: No gravity in x-direction.'
-!
-          case ('linear')
-            if (lheader) print*, 'dvvp_dt: Linear gravity field in x-direction.'
-            dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) - &
-                nu_epicycle2*fp(1:npar_loc,ixp)
-!
-          case ('plain')
-            if (lheader) print*, 'dvvp_dt: Plain gravity field in x-direction.'
-            dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) - gravx
-!
-          case ('sinusoidal')
-            if (lheader) &
-                print*, 'dvvp_dt: Sinusoidal gravity field in x-direction.'
-            dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) - &
-                gravx*sin(kx_gg*fp(1:npar_loc,ixp))
-!
-          case default
-            call fatal_error('dvvp_dt','chosen gravx_profile is not valid!')
-!
-        endselect
-!
-!  Gravity in the z-direction.
-!
-        select case (gravz_profile)
-!
-          case ('')
-            if (lheader) print*, 'dvvp_dt: No gravity in z-direction.'
-!
-          case ('zero')
-            if (lheader) print*, 'dvvp_dt: No gravity in z-direction.'
-!
-          case ('linear')
-            if (lheader) print*, 'dvvp_dt: Linear gravity field in z-direction.'
-            dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) - &
-                nu_epicycle2*fp(1:npar_loc,izp)
-!
-          case ('sinusoidal')
-            if (lheader) &
-                print*, 'dvvp_dt: Sinusoidal gravity field in z-direction.'
-            dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) - &
-                gravz*sin(kz_gg*fp(1:npar_loc,izp))
-!
-          case default
-            call fatal_error('dvvp_dt','chosen gravz_profile is not valid!')
-!
-        endselect
-!
-!  Radial gravity.
-!
-        select case (gravr_profile)
-!
-        case ('')
-          if (lheader) print*, 'dvvp_dt: No radial gravity'
-!
-        case ('zero')
-          if (lheader) print*, 'dvvp_dt: No radial gravity'
-!
-        case('newtonian-central','newtonian')
-          if (lparticles_nbody) &
-              call fatal_error('dvvp_dt','You are using massive particles. '//&
-              'The N-body code should take care of the stellar-like '// &
-              'gravity on the dust. Switch off the '// &
-              'gravr_profile=''newtonian'' on particles_init')
-          if (lheader) &
-               print*, 'dvvp_dt: Newtonian gravity from a fixed central object'
-          do k=1,npar_loc
-            if (lcartesian_coords) then
-              rsph=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2+gravsmooth2)
-              OO2=rsph**(-3)*gravr
-              ggp(1) = -fp(k,ixp)*OO2
-              ggp(2) = -fp(k,iyp)*OO2
-              ggp(3) = -fp(k,izp)*OO2
-              dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
-            elseif (lcylindrical_coords) then
-              rsph=sqrt(fp(k,ixp)**2+fp(k,izp)**2+gravsmooth2)
-              OO2=rsph**(-3)*gravr
-              ggp(1) = -fp(k,ixp)*OO2
-              ggp(2) = 0.0
-              ggp(3) = -fp(k,izp)*OO2
-              dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
-            elseif (lspherical_coords) then
-              rsph=sqrt(fp(k,ixp)**2+gravsmooth2)
-              OO2=rsph**(-3)*gravr
-              ggp(1) = -fp(k,ixp)*OO2
-              ggp(2) = 0.0; ggp(3) = 0.0
-              dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
-            endif
-!  Limit time-step if particles close to gravity source.
-            if (ldt_grav_par.and.(lfirst.and.ldt)) then
-              if (lcartesian_coords) then
-                vsph=sqrt(fp(k,ivpx)**2+fp(k,ivpy)**2+fp(k,ivpz)**2)
-              elseif (lcylindrical_coords) then
-                vsph=sqrt(fp(k,ivpx)**2+fp(k,ivpz)**2)
-              elseif (lspherical_coords) then
-                vsph=abs(fp(k,ivpx))
-              endif
-              dt1_max(ineargrid(k,1))= &
-                  max(dt1_max(ineargrid(k,1)),vsph/rsph/cdtpgrav)
-            endif
-          enddo
-!
-        case default
-          call fatal_error('dvvp_dt','chosen gravr_profile is not valid!')
-!
-        endselect
-!
-      endif
-!
-!  Diagnostic output
-!
-      if (ldiagnos) then
-        if (idiag_nparmax/=0)  call max_name(npar_loc,idiag_nparmax)
-        if (idiag_nparpmax/=0) call max_name(maxval(npar_imn),idiag_nparpmax)
-        if (idiag_xpm/=0)  call sum_par_name(fp(1:npar_loc,ixp),idiag_xpm)
-        if (idiag_ypm/=0)  call sum_par_name(fp(1:npar_loc,iyp),idiag_ypm)
-        if (idiag_zpm/=0)  call sum_par_name(fp(1:npar_loc,izp),idiag_zpm)
-        if (idiag_xp2m/=0) call sum_par_name(fp(1:npar_loc,ixp)**2,idiag_xp2m)
-        if (idiag_yp2m/=0) call sum_par_name(fp(1:npar_loc,iyp)**2,idiag_yp2m)
-        if (idiag_zp2m/=0) call sum_par_name(fp(1:npar_loc,izp)**2,idiag_zp2m)
-        if (idiag_rp2m/=0) call sum_par_name(fp(1:npar_loc,ixp)**2+ &
-            fp(1:npar_loc,iyp)**2+fp(1:npar_loc,izp)**2,idiag_rp2m)
-        if (idiag_vpxm/=0) call sum_par_name(fp(1:npar_loc,ivpx),idiag_vpxm)
-        if (idiag_vpym/=0) call sum_par_name(fp(1:npar_loc,ivpy),idiag_vpym)
-        if (idiag_vpzm/=0) call sum_par_name(fp(1:npar_loc,ivpz),idiag_vpzm)
-        if (idiag_lpxm/=0) call sum_par_name( &
-            fp(1:npar_loc,iyp)*fp(1:npar_loc,ivpz)- &
-            fp(1:npar_loc,izp)*fp(1:npar_loc,ivpy),idiag_lpxm)
-        if (idiag_lpym/=0) call sum_par_name( &
-            fp(1:npar_loc,izp)*fp(1:npar_loc,ivpx)- &
-            fp(1:npar_loc,ixp)*fp(1:npar_loc,ivpz),idiag_lpym)
-        if (idiag_lpzm/=0) call sum_par_name( &
-            fp(1:npar_loc,ixp)*fp(1:npar_loc,ivpy)- &
-            fp(1:npar_loc,iyp)*fp(1:npar_loc,ivpx),idiag_lpzm)
-        if (idiag_lpx2m/=0) call sum_par_name( &
-            (fp(1:npar_loc,iyp)*fp(1:npar_loc,ivpz)- &
-            fp(1:npar_loc,izp)*fp(1:npar_loc,ivpy))**2,idiag_lpx2m)
-        if (idiag_lpy2m/=0) call sum_par_name( &
-            (fp(1:npar_loc,izp)*fp(1:npar_loc,ivpx)- &
-            fp(1:npar_loc,ixp)*fp(1:npar_loc,ivpz))**2,idiag_lpy2m)
-        if (idiag_lpz2m/=0) call sum_par_name( &
-            (fp(1:npar_loc,ixp)*fp(1:npar_loc,ivpy)- &
-            fp(1:npar_loc,iyp)*fp(1:npar_loc,ivpx))**2,idiag_lpz2m)
-        if (idiag_vpx2m/=0) &
-            call sum_par_name(fp(1:npar_loc,ivpx)**2,idiag_vpx2m)
-        if (idiag_vpy2m/=0) &
-            call sum_par_name(fp(1:npar_loc,ivpy)**2,idiag_vpy2m)
-        if (idiag_vpz2m/=0) &
-            call sum_par_name(fp(1:npar_loc,ivpz)**2,idiag_vpz2m)
-        if (idiag_ekinp/=0) call sum_par_name(0.5*rhop_tilde*npar_per_cell* &
-            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
-        if (idiag_epotpm/=0) call sum_par_name( &
-            -gravr/sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)),idiag_epotpm)
-        if (idiag_vpxmax/=0) call max_par_name(fp(1:npar_loc,ivpx),idiag_vpxmax)
-        if (idiag_vpymax/=0) call max_par_name(fp(1:npar_loc,ivpy),idiag_vpymax)
-        if (idiag_vpzmax/=0) call max_par_name(fp(1:npar_loc,ivpz),idiag_vpzmax)
-        if (idiag_eccpxm/=0) call sum_par_name( &
-            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2)*fp(1:npar_loc,ixp)/gravr- &
-            sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
-            fp(1:npar_loc,ivpx)/gravr-fp(1:npar_loc,ixp)/ &
-            sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)),idiag_eccpxm)
-        if (idiag_eccpym/=0) call sum_par_name( &
-            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2)*fp(1:npar_loc,iyp)/gravr- &
-            sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
-            fp(1:npar_loc,ivpy)/gravr-fp(1:npar_loc,iyp)/ &
-            sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)),idiag_eccpym)
-        if (idiag_eccpzm/=0) call sum_par_name( &
-            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2)*fp(1:npar_loc,izp)/gravr- &
-            sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
-            fp(1:npar_loc,ivpz)/gravr-fp(1:npar_loc,izp)/ &
-            sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)),idiag_eccpzm)
-        if (idiag_eccpx2m/=0) call sum_par_name(( &
-            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2)*fp(1:npar_loc,ixp)/gravr- &
-            sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
-            fp(1:npar_loc,ivpx)/gravr-fp(1:npar_loc,ixp)/ &
-            sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)))**2,idiag_eccpx2m)
-        if (idiag_eccpy2m/=0) call sum_par_name(( &
-            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2)*fp(1:npar_loc,iyp)/gravr- &
-            sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
-            fp(1:npar_loc,ivpy)/gravr-fp(1:npar_loc,iyp)/ &
-            sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)))**2,idiag_eccpy2m)
-        if (idiag_eccpz2m/=0) call sum_par_name(( &
-            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2)*fp(1:npar_loc,izp)/gravr- &
-            sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
-            fp(1:npar_loc,ivpz)/gravr-fp(1:npar_loc,izp)/ &
-            sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)))**2,idiag_eccpz2m)
-        if (idiag_rhoptilm/=0) then
-          do k=1,npar_loc
-            call get_nptilde(fp,k,np_tilde)
-            call sum_par_name( &
-                (/4/3.*pi*rhops*fp(k,iap)**3*np_tilde/),idiag_rhoptilm)
-          enddo
-        endif
-        if (idiag_mpt/=0) then
-          do k=1,npar_loc
-            call get_nptilde(fp,k,np_tilde)
-            call integrate_par_name( &
-                (/4/3.*pi*rhops*fp(k,iap)**3*np_tilde/),idiag_mpt)
-          enddo
-        endif
-      endif
-!
-      if (lfirstcall) lfirstcall=.false.
-!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(ineargrid)
 !
-    endsubroutine dvvp_dt
+    endsubroutine dvvp_dt_blocks
 !***********************************************************************
     subroutine remove_particles_sink(f,fp,dfp,ineargrid)
 !

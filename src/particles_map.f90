@@ -1508,4 +1508,28 @@ module Particles_map
 !
     endsubroutine sort_particles_iblock
 !***********************************************************************
+    subroutine fill_blocks_with_bricks(a,ab,marray,ivar1,ivar2)
+!
+!  Fill adopted blocks with bricks from the f-array.
+!
+!  04-nov-09/anders: coded
+!
+      real, dimension (mx,my,mz,marray) :: a
+      real, dimension (mxb,myb,mzb,marray,0:nblockmax-1) :: ab
+      integer :: marray,ivar1, ivar2
+!
+    endsubroutine fill_blocks_with_bricks
+!***********************************************************************
+    subroutine fill_bricks_with_blocks(a,ab,marray,ivar1,ivar2)
+!
+!  Fill adopted blocks with bricks from the f-array.
+!
+!  04-nov-09/anders: coded
+!
+      real, dimension (mx,my,mz,marray) :: a
+      real, dimension (mxb,myb,mzb,marray,0:nblockmax-1) :: ab
+      integer :: marray,ivar1, ivar2
+!
+    endsubroutine fill_bricks_with_blocks
+!***********************************************************************
 endmodule Particles_map

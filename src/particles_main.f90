@@ -311,6 +311,16 @@ module Particles_main
       call map_xxp_grid(f,fp,ineargrid)
       call map_vvp_grid(f,fp,ineargrid)
 !
+!  Fill adopted blocks with gas density and gas velocity field, for calculating
+!  drag forces.
+!
+      if (lparticles_blocks) then
+        if (lfill_density) &
+            call fill_blocks_with_bricks(f,fb,mfarray,ilnrho,ilnrho)
+        if (lfill_velocity) &
+            call fill_blocks_with_bricks(f,fb,mfarray,iux,iuz)
+      endif
+!
 !  Distribute the n-body particles across processors
 !
       if (lparticles_nbody) call bcast_nbodyarray(fp)
@@ -431,9 +441,44 @@ module Particles_main
 !
     endsubroutine particles_calc_pencils
 !***********************************************************************
-    subroutine particles_pde_pencil(f,df,p)
+    subroutine particles_pde(f,df)
 !
 !  Dynamical evolution of particle variables.
+!
+!  07-jan-05/anders: coded
+!
+      use Mpicomm
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+!
+      intent (in)  :: f
+      intent (out) :: df
+!
+!  Write information about local particle environment to file.
+!
+      if (itsub==1)               call particles_stalker_sub(f,fp,ineargrid)
+!
+!  Dynamical equations.
+!
+      if (lparticles)             call dxxp_dt(f,df,fp,dfp,ineargrid)
+      if (lparticles)             call dvvp_dt(f,df,fp,dfp,ineargrid)
+      if (lparticles_radius)      call dap_dt(f,df,fp,dfp,ineargrid)
+      if (lparticles_spin)        call dps_dt(f,df,fp,dfp,ineargrid)
+      if (lparticles_number)      call dnptilde_dt(f,df,fp,dfp,ineargrid)
+      if (lparticles_selfgravity) call dvvp_dt_selfgrav(f,df,fp,dfp,ineargrid)
+      if (lparticles_nbody)       call dxxp_dt_nbody(dfp)
+      if (lparticles_nbody)       call dvvp_dt_nbody(f,df,fp,dfp,ineargrid)
+!
+!  Correct for curvilinear geometry.
+!
+      call correct_curvilinear
+!
+    endsubroutine particles_pde
+!***********************************************************************
+    subroutine particles_pde_pencil(f,df,p)
+!
+!  Dynamical evolution of particle variables in pencils.
 !
 !  20-apr-06/anders: coded
 !
@@ -473,40 +518,31 @@ module Particles_main
 !
     endsubroutine particles_pde_pencil
 !***********************************************************************
-    subroutine particles_pde(f,df)
+    subroutine particles_pde_blocks(f,df)
 !
-!  Dynamical evolution of particle variables.
+!  Dynamical evolution of particle variables in blocks.
 !
-!  07-jan-05/anders: coded
-!
-      use Mpicomm
+!  29-nov-09/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
 !
-      intent (in)  :: f
-      intent (out) :: df
+      intent (inout) :: f, df
 !
-!  Write information about local particle environment to file.
+!  Zero the block contribution to time evolution of gas velocity.
 !
-      if (itsub==1)               call particles_stalker_sub(f,fp,ineargrid)
+      dfb(:,:,:,iux:iuz,0:nblock_loc-1)=0.0
 !
 !  Dynamical equations.
 !
-      if (lparticles)             call dxxp_dt(f,df,fp,dfp,ineargrid)
-      if (lparticles)             call dvvp_dt(f,df,fp,dfp,ineargrid)
-      if (lparticles_radius)      call dap_dt(f,df,fp,dfp,ineargrid)
-      if (lparticles_spin)        call dps_dt(f,df,fp,dfp,ineargrid)
-      if (lparticles_number)      call dnptilde_dt(f,df,fp,dfp,ineargrid)
-      if (lparticles_selfgravity) call dvvp_dt_selfgrav(f,df,fp,dfp,ineargrid)
-      if (lparticles_nbody)       call dxxp_dt_nbody(dfp)
-      if (lparticles_nbody)       call dvvp_dt_nbody(f,df,fp,dfp,ineargrid)
+      if (lparticles) call dxxp_dt_blocks(f,df,fp,dfp,ineargrid)
+      if (lparticles) call dvvp_dt_blocks(f,df,fp,dfp,ineargrid)
 !
-!  Correct for curvilinear geometry.
+!  Add block contribution to df to the main grid.
 !
-      call correct_curvilinear
+      call fill_bricks_with_blocks(df,dfb,mvar,iux,iuz)
 !
-    endsubroutine particles_pde
+    endsubroutine particles_pde_blocks
 !***********************************************************************    
     subroutine correct_curvilinear
 !

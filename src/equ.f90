@@ -739,8 +739,9 @@ module Equ
         call boundconds_z(f,igpotselfx,igpotselfz)
       endif
 !
-!  Change dfp according to the chosen particle modules
+!  Change df and dfp according to the chosen particle modules.
 !
+      if (lparticles) call particles_pde_blocks(f,df)
       if (lparticles) call particles_pde(f,df)
 !
 !  Electron inertia: our df(:,:,:,iax:iaz) so far is

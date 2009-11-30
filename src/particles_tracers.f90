@@ -406,6 +406,81 @@ module Particles
 !
     endsubroutine calc_pencils_particles
 !***********************************************************************
+    subroutine dxxp_dt(f,df,fp,dfp,ineargrid)
+!
+!  Evolution of tracer particle position.
+!
+!  02-jan-05/anders: coded
+!
+      use Diagnostics
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      intent (in) :: f, fp, ineargrid
+      intent (inout) :: dfp, df
+!
+      logical :: lheader, lfirstcall=.true.
+!
+      lheader=lfirstcall .and. lroot
+!
+!  Vertical gravity in the short friction time approximation.
+!
+      select case (gravz_profile)
+!
+        case ('zero')
+          if (lheader) &
+              print*, 'dxxp_dt_pencil: No gravity in z-direction.'
+!
+        case ('linear')
+          if (lheader) &
+              print*, 'dxxp_dt_pencil: Linear gravity field in z-direction.'
+          dfp(1:npar_loc,izp)=dfp(1:npar_loc,izp) - &
+              tausp*nu_epicycle2*fp(1:npar_loc,izp)
+!
+      endselect
+!
+!  Diagnostic output
+!
+      if (ldiagnos) then
+        if (idiag_xpm/=0) call sum_par_name(fp(1:npar_loc,ixp),idiag_xpm)
+        if (idiag_ypm/=0) call sum_par_name(fp(1:npar_loc,iyp),idiag_ypm)
+        if (idiag_zpm/=0) call sum_par_name(fp(1:npar_loc,izp),idiag_zpm)
+        if (idiag_xp2m/=0) call sum_par_name(fp(1:npar_loc,ixp)**2,idiag_xp2m)
+        if (idiag_yp2m/=0) call sum_par_name(fp(1:npar_loc,iyp)**2,idiag_yp2m)
+        if (idiag_zp2m/=0) call sum_par_name(fp(1:npar_loc,izp)**2,idiag_zp2m)
+        if (idiag_nparmax/=0) call max_name(npar_loc,idiag_nparmax)
+      endif
+!
+      if (lfirstcall) lfirstcall=.false.
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(ineargrid)
+!
+    endsubroutine dxxp_dt
+!***********************************************************************
+    subroutine dvvp_dt(f,df,fp,dfp,ineargrid)
+!
+!  Evolution of dust particle velocity.
+!
+!  22-aug-05/anders: dummy
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
+!
+    endsubroutine dvvp_dt
+!***********************************************************************
     subroutine dxxp_dt_pencil(f,df,fp,dfp,p,ineargrid)
 !
 !  Evolution of tracer particle position (called from main pencil loop).
@@ -524,68 +599,11 @@ module Particles
 !
     endsubroutine dvvp_dt_pencil
 !***********************************************************************
-    subroutine dxxp_dt(f,df,fp,dfp,ineargrid)
+    subroutine dxxp_dt_blocks(f,df,fp,dfp,ineargrid)
 !
-!  Evolution of tracer particle position.
+!  Evolution of particle position in blocks.
 !
-!  02-jan-05/anders: coded
-!
-      use Diagnostics
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
-      integer, dimension (mpar_loc,3) :: ineargrid
-!
-      intent (in) :: f, fp, ineargrid
-      intent (inout) :: dfp, df
-!
-      logical :: lheader, lfirstcall=.true.
-!
-      lheader=lfirstcall .and. lroot
-!
-!  Vertical gravity in the short friction time approximation.
-!
-      select case (gravz_profile)
-!
-        case ('zero')
-          if (lheader) &
-              print*, 'dxxp_dt_pencil: No gravity in z-direction.'
-!
-        case ('linear')
-          if (lheader) &
-              print*, 'dxxp_dt_pencil: Linear gravity field in z-direction.'
-          dfp(1:npar_loc,izp)=dfp(1:npar_loc,izp) - &
-              tausp*nu_epicycle2*fp(1:npar_loc,izp)
-!
-      endselect
-!
-!  Diagnostic output
-!
-      if (ldiagnos) then
-        if (idiag_xpm/=0) call sum_par_name(fp(1:npar_loc,ixp),idiag_xpm)
-        if (idiag_ypm/=0) call sum_par_name(fp(1:npar_loc,iyp),idiag_ypm)
-        if (idiag_zpm/=0) call sum_par_name(fp(1:npar_loc,izp),idiag_zpm)
-        if (idiag_xp2m/=0) call sum_par_name(fp(1:npar_loc,ixp)**2,idiag_xp2m)
-        if (idiag_yp2m/=0) call sum_par_name(fp(1:npar_loc,iyp)**2,idiag_yp2m)
-        if (idiag_zp2m/=0) call sum_par_name(fp(1:npar_loc,izp)**2,idiag_zp2m)
-        if (idiag_nparmax/=0) call max_name(npar_loc,idiag_nparmax)
-      endif
-!
-      if (lfirstcall) lfirstcall=.false.
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(dfp)
-      call keep_compiler_quiet(ineargrid)
-!
-    endsubroutine dxxp_dt
-!***********************************************************************
-    subroutine dvvp_dt(f,df,fp,dfp,ineargrid)
-!
-!  Evolution of dust particle velocity.
-!
-!  22-aug-05/anders: dummy
+!  29-nov-09/anders: dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -598,7 +616,26 @@ module Particles
       call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(ineargrid)
 !
-    endsubroutine dvvp_dt
+    endsubroutine dxxp_dt_blocks
+!***********************************************************************
+    subroutine dvvp_dt_blocks(f,df,fp,dfp,ineargrid)
+!
+!  Evolution of particle velocity in blocks.
+!
+!  29-nov-09/anders: dummy
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
+!
+    endsubroutine dvvp_dt_blocks
 !***********************************************************************
     subroutine remove_particles_sink(f,fp,dfp,ineargrid)
 !

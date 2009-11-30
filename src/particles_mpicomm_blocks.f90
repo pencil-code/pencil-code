@@ -42,6 +42,8 @@ module Particles_mpicomm
   integer, dimension (0:nbricks-1) :: iproc_foster_brick
   integer, dimension (ncpus) :: iproc_parent_list, iproc_foster_list
 !
+  logical :: lfill_density=.false., lfill_velocity=.false.
+!
   include 'mpif.h'
 !
   contains
