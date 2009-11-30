@@ -591,7 +591,6 @@ module Testfield
       real, dimension (nx,3) :: del2Atest,uufluct
       real, dimension (nx,3) :: del2Atest2,graddivAtest,aatest,jjtest
       real, dimension (nx,3) :: jxbrtest,jxbtest1,jxbtest2
-      real, dimension (nx,3) :: jxbtest_ext,uxbtest_ext,BB_ext
       real, dimension (nx,3) :: del2Utest ,graddivUtest,uutest,ootest
       real, dimension (nx,3,3) :: aijtest,bijtest,Mijtest,uijtest,oijtest
       real, dimension (nx) :: jbpq,upq2,bpq2,Epq2,s2kzDF1,s2kzDF2,unity=1.
@@ -676,13 +675,6 @@ module Testfield
           call fatal_error('daatest_dt','undefined itestfield value')
         endselect
 !
-!  add an external field, if present
-!
-        !if (B_ext(1)/=0.) B0test(:,1)=B0test(:,1)+B_ext(1)
-        !if (B_ext(2)/=0.) B0test(:,2)=B0test(:,2)+B_ext(2)
-        !if (B_ext(3)/=0.) B0test(:,3)=B0test(:,3)+B_ext(3)
-        BB_ext=spread(B_ext,1,nx)
-!
         call cross_mn(uufluct,B0test,uxB)
         if (lsoca) then
           df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
@@ -717,7 +709,8 @@ module Testfield
             +uxB+etatest*del2Atest+duxbtest
         endif
 !
-!  add possibility of forcing that is not delta-correlated in time
+!  Add possibility of forcing that is not delta-correlated in time.
+!  This is not normally correct in the application of the testfield method.
 !
       if (lforcing_cont_aatest) &
         df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
@@ -750,17 +743,13 @@ module Testfield
           endselect
           call cross_mn(J0test,p%bb,jxbtest1)
           call cross_mn(p%jj,B0test,jxbtest2)
-          call cross_mn(jjtest,BB_ext,jxbtest_ext)
-          call cross_mn(uutest,BB_ext,uxbtest_ext)
           !call multsv_mn(p%rho1,jxbrtest,jxbrtest)
-          jxbrtest=jxbtest1+jxbtest2+jxbtest_ext
+          jxbrtest=jxbtest1+jxbtest2
 !
 !  add them all together
 !
           df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
               +jxbrtest+nutest*del2Utest
-          df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
-              +uxbtest_ext
         else
           uutest=0.
         endif
