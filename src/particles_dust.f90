@@ -943,7 +943,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Map particle position on the grid.
 !
-      call boundconds_particles(fp,ipar)
       call map_nearest_grid(fp,ineargrid)
       call map_xxp_grid(f,fp,ineargrid)
 !
