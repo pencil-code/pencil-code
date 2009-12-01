@@ -1515,7 +1515,7 @@ module Fourier
           if (ipy==0) a_re_new(1:ny,1)=a_re(:,1)
         else
 !
-!  Present z-direction. If nz<nygrid we have less y-pencils to shift than
+!  Present z-direction. If nz<nprocy we have less y-pencils to shift than
 !  we have processors. In that case we give one pencil to the first
 !  nprocy_used processors, while the other processors get zero pencils.
 !
@@ -1592,7 +1592,7 @@ module Fourier
             if (ipy/=ipy_from) then
               call mpirecv_real( &
                   a_re(:,ipy_from*nz_new+1:(ipy_from+1)*nz_new), &
-                  (/ny,nz_new/),iproc_from,itag)
+                  (/ny,nz_new/),iproc_from,itag+100)
             else
               if (ipy<nprocy_used) a_re(:,ipy*nz_new+1:(ipy+1)*nz_new)= &
                   a_re_new(ipy*ny+1:(ipy+1)*ny,:)
@@ -1600,7 +1600,7 @@ module Fourier
                 iproc_to=ipz*nprocy*nprocx+ipy_to*nprocx+ipx
                 if (ipy/=ipy_to) call mpisend_real( &
                     a_re_new(ipy_to*ny+1:(ipy_to+1)*ny,:), &
-                    (/ny,nz_new/),iproc_to,itag)
+                    (/ny,nz_new/),iproc_to,itag+100)
               enddo
             endif
           enddo
