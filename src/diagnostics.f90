@@ -1723,7 +1723,13 @@ module Diagnostics
 !
       integer :: stat
 !
+!  Allocate and initialize to zero. Setting it to zero is only
+!  necessary because of the pencil test, which doesn't compute these
+!  averages, and only evaluates its output for special purposes
+!  such as computing mean field energies in calc_bmz, for example,
+!
       allocate(fnamez(nz,nprocz,nnamez),stat=stat)
+      fnamez=0.
 !
       if (stat>0) then
         call fatal_error('allocate_xyaverages', &
