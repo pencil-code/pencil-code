@@ -279,8 +279,6 @@ module Shock
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
-      integer :: inamev
-!
 !  Loop over slices
 !
       select case (trim(slices%name))
