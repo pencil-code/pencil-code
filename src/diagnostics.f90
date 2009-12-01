@@ -853,7 +853,7 @@ module Diagnostics
         endif
         i = i+1
       enddo
-
+!
     endsubroutine expand_cname
 !***********************************************************************
     subroutine save_name(a,iname)
