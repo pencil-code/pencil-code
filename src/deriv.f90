@@ -66,8 +66,6 @@ module Deriv
       use Cdata
       use Messages
 !
-      real :: border_width, lborder, uborder
-!
       select case(der2_type)
 !
       case ('standard')
@@ -1726,7 +1724,7 @@ module Deriv
       real, dimension (mx,my,mz) :: f
       real, dimension (:,:) :: df
       real :: fac
-      integer :: pos,k,sgn,j
+      integer :: pos,sgn,j
 !
       intent(in)  :: f,pos,sgn,j
       intent(out) :: df
@@ -1787,7 +1785,7 @@ module Deriv
       real, dimension (mx,my,mz) :: f
       real :: df
       real :: fac
-      integer :: pos,lll,mmm,nnn,k,sgn,j
+      integer :: pos,lll,mmm,nnn,sgn,j
 !
       intent(in)  :: f,lll,mmm,nnn,sgn,j
       intent(out) :: df
