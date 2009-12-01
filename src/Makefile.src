@@ -668,9 +668,9 @@ endif
 #F77=g95 #(norlx51)
 #F77FLAGS= #(norlx51)
 #LD_MPI= -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl #(norlx51)
-#
-#  More stringent settings for auto-testing
-#
+##
+##  More stringent settings for auto-testing
+##
 #FC=g95 -fno-second-underscore -std=f95 -I/usr/lib/openmpi/include #(norlx51)
 #F77=$(FC) #(norlx51)
 #FFLAGS=-O1 -g #(norlx51)
