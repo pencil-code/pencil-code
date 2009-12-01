@@ -159,7 +159,7 @@ module Polymer
       type (slice_data) :: slices
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(slices)
+      call keep_compiler_quiet(slices%ready)
 !
     endsubroutine get_slices_polymer
 !***********************************************************************
