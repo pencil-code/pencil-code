@@ -94,7 +94,7 @@ module Cparam
 !  pi and its derivatives
 !
   real, parameter :: pi=3.14159265358979324D0
-  real, parameter :: pi_1=1./pi,pi4_1=pi**(-4)
+  real, parameter :: pi_1=1./pi,pi4_1=pi**(-4),pi5_1=pi**(-5)
   real, parameter :: sqrtpi=1.7724539
 !
 ! physical constants, taken from:

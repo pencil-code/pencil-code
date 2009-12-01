@@ -212,6 +212,8 @@ module Density
 !
       lnothing=.false.
 !
+!  different choices of mass diffusion (if any)
+!
       do i=1,ndiff_max
         select case (idiff(i))
         case ('normal')

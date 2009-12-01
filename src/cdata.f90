@@ -338,6 +338,8 @@ module Cdata
                                 ! PHIAVG_DOC: (useful for debugging)
   integer :: idiag_dtv=0        ! DIAG_DOC:
   integer :: idiag_dtdiffus=0   ! DIAG_DOC:
+  integer :: idiag_Rmesh=0      ! DIAG_DOC: $R_{\rm mesh}$
+  integer :: idiag_Rmesh3=0     ! DIAG_DOC: $R_{\rm mesh}$
   integer :: idiag_nu_LES=0     ! DIAG_DOC:
 !
 !  Emergency brake:

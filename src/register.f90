@@ -1325,7 +1325,7 @@ module Register
         idiag_t=0; idiag_it=0; idiag_dt=0; idiag_walltime=0
         idiag_timeperstep=0
         idiag_rcylmphi=0; idiag_phimphi=0; idiag_zmphi=0; idiag_rmphi=0
-        idiag_dtv=0; idiag_dtdiffus=0
+        idiag_dtv=0; idiag_dtdiffus=0; idiag_Rmesh=0; idiag_Rmesh3=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in.
@@ -1337,6 +1337,8 @@ module Register
         call parse_name(iname,cname(iname),cform(iname),'dt',idiag_dt)
         call parse_name(iname,cname(iname),cform(iname),'dtv',idiag_dtv)
         call parse_name(iname,cname(iname),cform(iname),'dtdiffus',idiag_dtdiffus)
+        call parse_name(iname,cname(iname),cform(iname),'Rmesh',idiag_Rmesh)
+        call parse_name(iname,cname(iname),cform(iname),'Rmesh3',idiag_Rmesh3)
         call parse_name(iname,cname(iname),cform(iname),&
             'walltime',idiag_walltime)
         call parse_name(iname,cname(iname),cform(iname),&
@@ -1378,6 +1380,8 @@ module Register
         write(3,*) 'i_rmphi=',idiag_rmphi
         write(3,*) 'i_dtv=',idiag_dtv
         write(3,*) 'i_dtdiffus=',idiag_dtdiffus
+        write(3,*) 'i_Rmesh=',idiag_Rmesh
+        write(3,*) 'i_Rmesh3=',idiag_Rmesh3
         write(3,*) 'nname=',nname
       endif
 !

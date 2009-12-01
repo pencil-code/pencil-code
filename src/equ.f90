@@ -667,7 +667,7 @@ module Equ
             endif
           endif
 !
-!  cdt, cdtv, and cdtc are empirical coefficients
+!  cdt, cdtv, and cdtc are empirical non-dimensional coefficients
 !
           dt1_advec  = maxadvec/cdt
           dt1_diffus = maxdiffus/cdtv + maxdiffus2/cdtv2 + maxdiffus3/cdtv3
@@ -683,6 +683,15 @@ module Equ
           endif
           if (ldiagnos.and.idiag_dtdiffus/=0) then
             call max_mn_name(maxdiffus/cdtv,idiag_dtdiffus,l_dt=.true.)
+          endif
+!
+!  Regular and hyperdiffusive mesh Reynolds numbers
+!
+          if (ldiagnos) then
+            if (idiag_Rmesh/=0) &
+                call max_mn_name(pi_1*maxadvec/(maxdiffus+tini),idiag_Rmesh)
+            if (idiag_Rmesh3/=0) &
+                call max_mn_name(pi5_1*maxadvec/(maxdiffus3+tini),idiag_Rmesh3)
           endif
         endif
 !
