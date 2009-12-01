@@ -1808,9 +1808,9 @@ module Entropy
 
       implicit none
 
-      integer :: i, j, jj
+      integer :: j, jj
       real, dimension(mx,my,mz,mfarray) :: finit,f
-      real, dimension(mz) :: source, rho, TT
+      real, dimension(mz) :: rho, TT
       real, dimension(nz) :: a, b, c, rhs, work
       real  :: cp1, dz_2, wz
 !
@@ -1846,6 +1846,8 @@ module Entropy
       endif
       call tridag(a, b, c, rhs, work)
       f(4,4,n1:n2,ilnTT)=work
+!
+      call keep_compiler_quiet(finit)
 !
     endsubroutine ADI_Kconst_1d
 !***********************************************************************
@@ -2071,14 +2073,11 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      integer :: j,ju
-!
       intent(in) :: f,p
       intent(out) :: df
 !
-
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine dss_dt_after_mn
 !***********************************************************************
