@@ -12,7 +12,7 @@ import tempfile as T
 import numpy as N
 from mpl_toolkits.mplot3d import Axes3D
 
-def make_movie(data,tmin=0,tmax=0,dt=1,output="/tmp/out.avi",dim=-1):
+def make_movie(data,tmin=0,tmax=0,dt=1,output="/tmp/out.avi",dim=-1,min=-1,max=1,stride=1):
     """
     read 2D slices from data and assemble an animation in a movie.
 
@@ -25,6 +25,9 @@ def make_movie(data,tmin=0,tmax=0,dt=1,output="/tmp/out.avi",dim=-1):
      tmax -- end time
      dt -- step time
      output -- output filename
+     min -- minimum data value
+     max -- maximum data value
+     def --  stride for 3D plot
     """
     files=""
     flist=[]
@@ -41,11 +44,13 @@ def make_movie(data,tmin=0,tmax=0,dt=1,output="/tmp/out.avi",dim=-1):
     for t in range(tmin,tmax,dt):
         ax.cla()
         if dim==1:
-            ax.plot(data(t))
+            ax.plot(data(t),)
+            P.ylim([min,max])
         elif dim==3:
-            ax.plot_surface(x,y,data(t))
+            ax.plot_surface(x,y,data(t),rstride=stride, cstride=stride, cmap=P.cm.jet)
+            ax.set_zlim3d([min,max])
         else:
-            ax.imshow(data(t))
+            ax.imshow(data(t),vmin=min,vmax=max)
         tmp=T.NamedTemporaryFile(suffix=".png")
         fname=tmp.name
         flist+=[tmp]
