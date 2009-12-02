@@ -4,25 +4,33 @@
 ;;   Read yz-averages from file
 ;;
 pro pc_read_yzaver, object=object, varfile=varfile, datadir=datadir, $
-    monotone=monotone, quiet=quiet
+    nx=nx, double=double, monotone=monotone, quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;;
 ;;  Default data directory.
 ;;
 if (not keyword_set(datadir)) then datadir=pc_get_datadir()
+default, double, 0
 default, varfile, 'yzaverages.dat'
 default, monotone, 0
 default, quiet, 0
 ;;
 ;;  Get necessary dimensions.
 ;;
-pc_read_dim, obj=dim, datadir=datadir, quiet=quiet
-pc_set_precision, dim=dim, quiet=quiet
-;;
-;;  Derived dimensions.
-;;
-nx=dim.nx
+if (not keyword_set(nx)) then begin
+  pc_read_dim, obj=dim, datadir=datadir, quiet=quiet
+  pc_set_precision, dim=dim, quiet=quiet
+  nx=dim.nx
+endif else begin
+  if (double) then begin
+    zero=0.0d
+    one=1.0d
+  endif else begin
+    zero=0.0
+    one=1.0
+  endelse
+endelse
 ;;
 ;;  Read variables from xyaver.in
 ;;
