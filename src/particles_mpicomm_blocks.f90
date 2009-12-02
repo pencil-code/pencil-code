@@ -1600,21 +1600,31 @@ module Particles_mpicomm
 !  parent.
 !
       iproc_grandparent=iproc_parent_block
+      nreq=0
       ibrick=0
       do while (ibrick<nbricks)
         if (iproc_foster_brick(ibrick)/=-1) then
-          call MPI_SEND(iproc_foster_old(ibrick), 1, MPI_INTEGER, &
-              iproc_foster_brick(ibrick), tag_id+ibrick, MPI_COMM_WORLD, ierr)
+          call MPI_ISEND(iproc_foster_old(ibrick), 1, MPI_INTEGER, &
+              iproc_foster_brick(ibrick), tag_id+ibrick, MPI_COMM_WORLD, &
+              ireq, ierr)
+          nreq=nreq+1
+          ireq_array(nreq)=ireq
         endif 
         ibrick=ibrick+1
       enddo
 !
       iblock=0
       do while (iblock<nblock_loc)
-        call MPI_RECV(iproc_grandparent(iblock), 1, MPI_INTEGER, &
+        call MPI_IRECV(iproc_grandparent(iblock), 1, MPI_INTEGER, &
             iproc_parent_block(iblock), tag_id+ibrick_parent_block(iblock), &
-            MPI_COMM_WORLD, stat, ierr)
+            MPI_COMM_WORLD, stat, ireq, ierr)
+        nreq=nreq+1
+        ireq_array(nreq)=ireq
         iblock=iblock+1
+      enddo
+!
+      do ireq=1,nreq
+        call MPI_WAIT(ireq_array(ireq),stat,ierr)
       enddo
 !
 !  Each grand parent processor must know where to send the previously
@@ -1622,11 +1632,15 @@ module Particles_mpicomm
 !  blocks, since such a block could have been non-empty when the grand parent
 !  got it.
 !
+      nreq=0
       ibrick=0
       do while (ibrick<nbricks)
         if (iproc_foster_old(ibrick)/=-1) then
-          call MPI_SEND(iproc_foster_brick(ibrick), 1, MPI_INTEGER, &
-              iproc_foster_old(ibrick), tag_id+ibrick, MPI_COMM_WORLD, ierr)
+          call MPI_ISEND(iproc_foster_brick(ibrick), 1, MPI_INTEGER, &
+              iproc_foster_old(ibrick), tag_id+ibrick, MPI_COMM_WORLD, &
+              ireq, ierr)
+          nreq=nreq+1
+          ireq_array(nreq)=ireq
         endif
         ibrick=ibrick+1
       enddo
@@ -1634,10 +1648,16 @@ module Particles_mpicomm
       iproc_grandchild=iproc_parent_block
       iblock=0
       do while (iblock<nblock_loc_old)
-        call MPI_RECV(iproc_grandchild(iblock), 1, MPI_INTEGER, &
+        call MPI_IRECV(iproc_grandchild(iblock), 1, MPI_INTEGER, &
             iproc_parent_old(iblock), tag_id+ibrick_parent_old(iblock), &
-            MPI_COMM_WORLD, stat, ierr)
+            MPI_COMM_WORLD, ireq, ierr)
+        nreq=nreq+1
+        ireq_array(nreq)=ireq
         iblock=iblock+1
+      enddo
+!
+      do ireq=1,nreq
+        call MPI_WAIT(ireq_array(ireq),stat,ierr)
       enddo
 !
       if (ip<=6) then
