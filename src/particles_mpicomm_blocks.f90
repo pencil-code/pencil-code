@@ -1617,7 +1617,7 @@ module Particles_mpicomm
       do while (iblock<nblock_loc)
         call MPI_IRECV(iproc_grandparent(iblock), 1, MPI_INTEGER, &
             iproc_parent_block(iblock), tag_id+ibrick_parent_block(iblock), &
-            MPI_COMM_WORLD, stat, ireq, ierr)
+            MPI_COMM_WORLD, ireq, ierr)
         nreq=nreq+1
         ireq_array(nreq)=ireq
         iblock=iblock+1
