@@ -454,7 +454,7 @@ module Boundcond
 !
       real, dimension (mcom) :: fbcz12, fbcz12_1, fbcz12_2
       !real :: Ftopbot,FtopbotK
-      integer :: ivar1, ivar2, j, k, ip_ok, ierr
+      integer :: ivar1, ivar2, j, k, ip_ok
       character (len=bclen), dimension(mcom) :: bc12
       character (len=3) :: topbot
       type (boundary_condition) :: bc
@@ -841,7 +841,7 @@ module Boundcond
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (my,mz) :: extra1,extra2
-      integer :: sgn,i,j
+      integer :: i,j
       real :: dxR
 !
       select case(topbot)
@@ -1787,7 +1787,7 @@ module Boundcond
       integer, intent(in) :: jj
       integer :: i,j,k
       real, dimension(mcom),intent(in) :: fracall,uzeroall
-      real :: frac,uzero,ylim,ymid,ydif,y1,zlim,zmid,zdif,z1
+      real :: frac,uzero,ylim,ymid,y1,zlim,zmid,z1
       real :: yhat_min,yhat_max,zhat_min,zhat_max
       real, parameter :: width_hat=0.01
       real, dimension (ny) :: hatprofy
@@ -2154,7 +2154,7 @@ module Boundcond
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i,j,k
+      integer :: j,k
 !
       select case(topbot)
 
@@ -2280,7 +2280,7 @@ module Boundcond
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i,j,k
+      integer :: j,k
 !
       select case(topbot)
 
@@ -2405,7 +2405,7 @@ module Boundcond
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i,j,k
+      integer :: j,k
 !
       select case(topbot)
 
@@ -3371,7 +3371,7 @@ module Boundcond
        real, dimension (:,:), save, allocatable :: uxl,uxr,uyl,uyr
        real, dimension (:,:), allocatable :: uxd,uyd,quen,pp,betaq,fac
        real, dimension (:,:), allocatable :: bbx,bby,bbz,bb2,tmp
-       integer :: lend,iostat=0,i,j,stat
+       integer :: lend,iostat=0,i,stat
        real,save :: tl=0.,tr=0.,delta_t=0.
 !
        intent (inout) :: f
