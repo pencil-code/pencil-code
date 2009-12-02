@@ -1159,17 +1159,12 @@ module Chemistry
        if (nzgrid>1) then
         Rad=Rad+z(j3)**2
        endif
-       
-
-       
-   
 
        Rad=(Rad)**0.5
 
    !  if (j3==4)    print*,Rad,Rad**0.5,x(j1),y(j2),'  ',j1,j2   
 
   !      Rad=abs(x(j1))
-     
          if (Rad<0.2) then
           f(j1,j2,j3,ilnTT)=log(init_TT1)+log(3.5)*((0.2-Rad)/0.2)**2
          else
@@ -1177,16 +1172,13 @@ module Chemistry
          endif
           mu1(j1,j2,j3)=f(j1,j2,j3,i_H2)/(2.*mH2)+f(j1,j2,j3,i_O2)/(2.*mO2) &
               +f(j1,j2,j3,i_H2O)/(2.*mH2+mO2)+f(j1,j2,j3,i_N2)/(2.*mN2)
-  
-
-
 
          f(j1,j2,j3,ilnrho)=log(init_pressure)-log(Rgas)-f(j1,j2,j3,ilnTT)  &
               -log(mu1_full(j1,j2,j3))
 
       !  f(j1,j2,j3,ilnrho)=log(init_pressure)-log(Rgas)-f(l1,m1,n1,ilnTT)  &
       !      -log(mu1_full(l1,m1,n1))
-            
+
 
 
  !      f(j1,j2,j3,ilnrho)=log(init_pressure)-log(Rgas)  &
@@ -1227,8 +1219,7 @@ module Chemistry
               f(j1,j2,j3,iuz)=0.
            endif 
           endif
-              
-             
+
           enddo
         enddo
       enddo
@@ -4386,6 +4377,292 @@ module Chemistry
 !********************************************************************
 !!!!!!!!!  NSCBC boundary conditions
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine bc_nscbc_subin_x_new(f,df,topbot,val)
+!
+!   nscbc case
+!   subsonic inflow boundary conditions
+!   now it is 2D case (should be corrected for 3D case)
+!    ux,uy,T are fixed, drho  is calculated
+!
+!   16-nov-09/natalia: coded.
+!
+!
+  use MpiComm, only: stop_it
+      use EquationOfState, only: cs0, cs20
+      use Deriv, only: der_onesided_4_slice,der_pencil, der2_pencil
+!      use Chemistry
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      character (len=3) :: topbot
+      real, dimension (my,mz) :: rho0,TT0,gamma0
+      real, dimension (mx,my,mz) :: mom2,mom3!, rho_ux2, rho_uy2
+      real, dimension (mx,my,mz) :: rho_gamma, rhoE_p
+      real, dimension (mx,my,mz,2) ::  rhoE_pU
+      real, dimension (my,mz) ::  dYk_dx,dYk_dy,dYk_dz
+      real, dimension (ny,nz) :: drho_prefac, KK
+      
+      real, dimension (ny,nz) :: L_1, L_2, L_3, L_4, L_5
+      real, dimension (ny,2)  :: M_1, M_2, M_3, M_4, M_5
+      real, dimension (nz,2)  :: N_1, N_2, N_3, N_4, N_5
+  !    
+      real, dimension (my,mz) :: cs2x,cs0_ar,cs20_ar,dmom2_dy,dmom3_dz
+      real, dimension (my,mz,2) :: drhoE_pU!,dYk_dy
+   !   real, dimension (mx,my,mz,nchemspec) :: bound_rhs_Y
+    !  real, dim(:,nnn)ension (ny,nz) :: bound_rhs_T
+      real, dimension (mx,my,mz) :: cs2_full, gamma_full
+      real, dimension (nx,ny,nz) :: p_inf
+      
+      real, dimension (ny,nz,3,3) :: dui_dxj
+      real, dimension (mx,my,mz)     :: tmp11,tmp21,tmp31,tmp1_pp,tmp1_rho,tmp1_lnTT
+      real, dimension (my,mz)     :: tmp1,tmp2,tmp3, tmp_rho,tmp_pp       
+      real, dimension (ny,nz,3)   :: grad_rho, grad_pp
+     ! real, dimension(ny,nz) ::     d2u1_dy2,d2u1_dz2
+     ! real, dimension(ny,nz) ::     d2u2_dy2,d2u2_dz2,d2u3_dy2,d2u3_dz2
+      real, dimension (ny,nz,3) :: dlnT_dxj
+      real, dimension (ny,nz) :: T_1_y, T_2_y, T_3_y, T_4_y, T_5_y
+      real, dimension (ny,nz) :: T_1_z, T_2_z, T_3_z, T_4_z, T_5_z
+      real, dimension (ny) :: tmpy
+      real, dimension (nz) :: tmpz
+      real, dimension (mcom), optional :: val
+!
+      integer :: lll, sgn,sgn1,sgn2,i,j,k,jj, nn, nnn, mm, mmm, irho_tmp
+      real :: Mach_num, nscbc_sigma_out
+      real :: U0_x=10.,U0_y=0.,U0_z=0.,T0=600.
+!
+      intent(inout) :: f
+      intent(out) :: df
+    !  intent(in) :: nscbc_sigma_out
+      real :: nscbc_sigma=0.5
+!
+  
+      if (leos_chemistry) then
+        call get_cs2_full(cs2_full)
+        call get_gamma_full(gamma_full)
+      endif
+!
+      select case(topbot)
+      case('bot')
+        lll = l1; sgn = 1
+        if (leos_chemistry) then
+          p_inf(1,:,:)=pp_full(l1,m1:m2,n1:n2)
+        endif
+      case('top')
+        lll = l2; sgn = -1
+        if (leos_chemistry) then
+          p_inf(nx,:,:)=pp_full(l2,m1:m2,n1:n2)
+        endif
+      case default
+        print*, "bc_nscbc_subin_x: ", topbot, " should be `top' or `bot'"
+      endselect
+ 
+
+      if (leos_chemistry) then
+         cs20_ar=cs2_full(lll,:,:)
+         cs0_ar=cs2_full(lll,:,:)**0.5
+         gamma0=gamma_full(lll,:,:)
+
+        if (ldensity_nolog) then
+        ! rho_full = f(:,:,:,irho)
+          rho0(:,:) = f(lll,:,:,irho)
+          drho_prefac=-1./cs20_ar(m1:m2,n1:n2)
+          irho_tmp=irho
+          call stop_it('bc_nscbc_nref_subout_x: NSCBC works now only for lnrho')
+        else
+         ! rho_full = exp(f(:,:,:,ilnrho))
+          rho0(:,:) = rho_full(lll,:,:)
+          drho_prefac=-1./rho0(m1:m2,n1:n2)/cs20_ar(m1:m2,n1:n2)
+          irho_tmp=ilnrho
+        endif
+
+         TT0(:,:) = TT_full(lll,:,:)
+         mom2(lll,:,:)=rho0(:,:)*f(lll,:,:,iuy)
+         mom3(lll,:,:)=rho0(:,:)*f(lll,:,:,iuz)
+         rhoE_p(lll,:,:)=0.5*rho_full(lll,:,:) &
+            *(f(lll,:,:,iux)**2+f(lll,:,:,iuy)**2+f(lll,:,:,iuz)**2) &
+             +gamma_full(lll,:,:)/(gamma_full(lll,:,:)-1)*pp_full(lll,:,:)
+         rhoE_pU(lll,:,:,1)=rhoE_p(lll,:,:)*f(lll,:,:,iuy) 
+         rhoE_pU(lll,:,:,2)=rhoE_p(lll,:,:)*f(lll,:,:,iuz)
+
+
+         Mach_num=maxval(f(lll,m1:m2,n1:n2,iux)/cs0_ar(m1:m2,n1:n2))
+         KK=nscbc_sigma*(1.-Mach_num*Mach_num)/Lxyz(1)
+
+      else
+        print*,"bc_nscbc_subin_x: leos_idealgas=",leos_idealgas,"."
+        print*,"NSCBC subsonic inflos is only implemented "//&
+            "for the chemistry case."
+        print*,"Boundary treatment skipped."
+        return
+      endif
+
+        call der_onesided_4_slice(rho_full,sgn,grad_rho(:,:,1),lll,1)
+        call der_onesided_4_slice(pp_full,sgn,grad_pp(:,:,1),lll,1)
+        call der_onesided_4_slice(f,sgn,iux,dui_dxj(:,:,1,1),lll,1)
+        call der_onesided_4_slice(f,sgn,iuy,dui_dxj(:,:,2,1),lll,1)
+        call der_onesided_4_slice(f,sgn,iuz,dui_dxj(:,:,3,1),lll,1)
+        call der_onesided_4_slice(f,sgn,ilnTT,dlnT_dxj(:,:,1),lll,1)
+
+
+       if (nygrid /= 1) then
+    
+         do i=n1,n2
+          call der_pencil(2,f(lll,:,i,iux),tmp1(:,i))
+          call der_pencil(2,f(lll,:,i,iuy),tmp2(:,i))
+          call der_pencil(2,f(lll,:,i,iuz),tmp3(:,i))
+          call der_pencil(2,rho_full(lll,:,i),tmp_rho(:,i))
+          call der_pencil(2,pp_full(lll,:,i),tmp_pp(:,i))
+          call der_pencil(2,mom2(lll,:,i),dmom2_dy(:,i))
+          call der_pencil(2,rhoE_pU(lll,:,i,1),drhoE_pU(:,i,1))
+         enddo
+
+      else
+        tmp3=0
+        tmp2=0
+        tmp1=0
+        tmp_rho=0
+        tmp_pp=0
+        dmom2_dy=0
+        drhoE_pU(:,:,1)=0
+
+      endif
+        dui_dxj(:,:,1,2)=tmp1(m1:m2,n1:n2)
+        dui_dxj(:,:,2,2)=tmp2(m1:m2,n1:n2)
+        dui_dxj(:,:,3,2)=tmp3(m1:m2,n1:n2)
+        grad_rho(:,:,2)=tmp_rho(m1:m2,n1:n2)
+        grad_pp(:,:,2)=tmp_pp(m1:m2,n1:n2)
+
+      if (nzgrid /= 1) then
+         do j=m1,m2
+          call der_pencil(3,f(lll,j,:,iux),tmp1(j,:))
+          call der_pencil(3,f(lll,j,:,iuy),tmp2(j,:))
+          call der_pencil(3,f(lll,j,:,iuz),tmp3(j,:))
+          call der_pencil(3,rho_full(lll,j,:),tmp_rho(j,:))
+          call der_pencil(3,pp_full(lll,j,:),tmp_pp(j,:))
+          call der_pencil(3,mom3(lll,j,:),dmom3_dz(j,:))
+          call der_pencil(3,rhoE_pU(lll,j,:,2),drhoE_pU(j,:,2))
+         enddo
+      else
+        tmp3=0
+        tmp2=0
+        tmp1=0
+        tmp_rho=0
+        tmp_pp=0
+        dmom3_dz=0
+        drhoE_pU(:,:,2)=0
+      endif
+        dui_dxj(:,:,1,3)=tmp1(m1:m2,n1:n2)
+        dui_dxj(:,:,2,3)=tmp2(m1:m2,n1:n2)
+        dui_dxj(:,:,3,3)=tmp3(m1:m2,n1:n2)
+        grad_rho(:,:,3)=tmp_rho(m1:m2,n1:n2)
+        grad_pp(:,:,3)=tmp_pp(m1:m2,n1:n2)
+
+!
+
+
+       if ((nygrid /= 1) .or.(nzgrid /= 1))  then
+
+          T_1_y(:,:)=-dmom2_dy(m1:m2,n1:n2)/rho0(m1:m2,n1:n2)
+          T_1_z(:,:)=-dmom3_dz(m1:m2,n1:n2)/rho0(m1:m2,n1:n2)
+          T_2_y(:,:)=-f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,1,2) 
+          T_2_z(:,:)=-f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,1,3) !&
+                !   -nu_full(lll,m1:m2,n1:n2)*(d2u1_dy2+d2u1_dz2)
+          T_3_y(:,:)=-f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,2,2) &
+                     -grad_pp(:,:,2)/rho0(m1:m2,n1:n2) 
+         T_3_z(:,:)=-f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,2,3) 
+                !   -nu_full(lll,m1:m2,n1:n2)*(d2u2_dy2+d2u2_dz2)
+          T_4_y(:,:)=-f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,3,2) 
+         T_4_z(:,:)=-f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,3,3) &
+                     -grad_pp(:,:,3)/rho0(m1:m2,n1:n2)
+          T_5_y(:,:)= drho_prefac(:,:)*(gamma0(m1:m2,n1:n2)-1.) &
+                      *gamma0(m1:m2,n1:n2)*drhoE_pU(m1:m2,n1:n2,1)
+          T_5_z(:,:)= drho_prefac(:,:)*(gamma0(m1:m2,n1:n2)-1.) &
+                      *gamma0(m1:m2,n1:n2)*(drhoE_pU(m1:m2,n1:n2,2))
+
+       endif
+
+
+      select case(topbot)
+      case('bot')
+        L_5=-KK*cs20_ar(m1:m2,n1:n2)*rho0(m1:m2,n1:n2)&
+           *(f(lll,m1:m2,n1:n2,iux)-U0_x) &
+           +(T_5_y +T_5_z) &
+           +rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*(T_2_y +T_2_z)
+      case('top')
+        L_1=-KK*cs20_ar(m1:m2,n1:n2)*rho0(m1:m2,n1:n2)&
+           *(f(lll,m1:m2,n1:n2,iux)-U0_x)&
+           +(T_5_y +T_5_z) &
+           -rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*(T_2_y +T_2_z)
+     endselect
+!
+       L_2 = -nscbc_sigma*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*Rgas/Lxyz(1) &
+           *(TT0(m1:m2,n1:n2)-T0)+cs20_ar(m1:m2,n1:n2)*(T_1_y +T_1_z)-(T_5_y +T_5_z)
+       L_3 = nscbc_sigma*cs0_ar(m1:m2,n1:n2)/Lxyz(1)*(f(lll,m1:m2,n1:n2,iuy)-U0_y) &
+             +(T_3_y +T_3_z)
+       L_4 = nscbc_sigma*cs0_ar(m1:m2,n1:n2)/Lxyz(1)*(f(lll,m1:m2,n1:n2,iuz)-U0_z) &
+             +(T_4_y +T_4_z)
+!
+       df(lll,m1:m2,n1:n2,irho_tmp) = &
+         drho_prefac*(L_2+0.5*(L_5 + L_1)) 
+       df(lll,m1:m2,n1:n2,iux) =  &
+         -1./(2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2))*(L_5 - L_1)
+       df(lll,m1:m2,n1:n2,iuy) = -L_3
+       df(lll,m1:m2,n1:n2,iuz) = -L_4
+       df(lll,m1:m2,n1:n2,ilnTT) = &
+          -1./(rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*(-L_2 &
+          +0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1)) 
+
+
+        if ((nygrid /= 1) .or.(nzgrid /= 1))  then
+
+
+         df(lll,m1:m2,n1:n2,irho_tmp) = df(lll,m1:m2,n1:n2,irho_tmp) + T_1_y + T_1_z
+         df(lll,m1:m2,n1:n2,iux)      = df(lll,m1:m2,n1:n2,iux)      + T_2_y + T_2_z
+         df(lll,m1:m2,n1:n2,iuy)      = df(lll,m1:m2,n1:n2,iuy)      + T_3_y + T_3_z
+         df(lll,m1:m2,n1:n2,iuz)      = df(lll,m1:m2,n1:n2,iuz)      + T_4_y + T_4_z
+         df(lll,m1:m2,n1:n2,ilnTT)    = df(lll,m1:m2,n1:n2,ilnTT)    + T_5_y + T_5_z
+
+
+       endif
+
+!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      if (nchemspec>1) then
+       do k=1,nchemspec
+          call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dx(m1:m2,n1:n2),lll,1)
+         do i=n1,n2
+          call der_pencil(2,f(lll,:,i,ichemspec(k)),dYk_dy(:,i))
+         enddo
+         do i=m1,m2
+           call der_pencil(3,f(lll,i,:,ichemspec(k)),dYk_dz(i,:))
+         enddo
+!NMNMNMN
+           df(lll,m1:m2,n1:n2,ichemspec(k))=&
+              -f(lll,m1:m2,n1:n2,iux)*dYk_dx(m1:m2,n1:n2) &
+              -f(lll,m1:m2,n1:n2,iuy)*dYk_dy(m1:m2,n1:n2) &
+              -f(lll,m1:m2,n1:n2,iuz)*dYk_dz(m1:m2,n1:n2) &
+              + RHS_Y_full(lll,m1:m2,n1:n2,k)
+
+       ! if (lfilter) then
+         do i=m1,m2
+         do j=n1,n2
+           if ((f(lll,i,j,ichemspec(k))+df(lll,i,j,ichemspec(k))*dt)<-1e-25 ) then
+             df(lll,i,j,ichemspec(k))=-1e-25*dt
+           endif
+           if ((f(lll,i,j,ichemspec(k))+df(lll,i,j,ichemspec(k))*dt)>1.) then
+             f(lll,i,j,ichemspec(k))=1.*dt
+           endif
+         enddo
+         enddo
+       ! endif
+       enddo
+      endif
+!
+
+
+    endsubroutine bc_nscbc_subin_x_new
+!***********************************************************
    subroutine bc_nscbc_subin_x(f,df,topbot,val)
 !
 !   nscbc case
