@@ -281,8 +281,8 @@ module Particles_main
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine particles_pde_blocks
 !***********************************************************************
@@ -377,6 +377,8 @@ module Particles_main
 !
       ivar1 = 0
       ivar2 = 0
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine particles_doprepencil_calc
 !***********************************************************************
