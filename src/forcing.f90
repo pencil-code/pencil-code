@@ -2930,7 +2930,7 @@ module Forcing
           fact=ampl_ff
           p%fcont(:,1)=-fact*cosx(l1:l2)*siny(m)
           p%fcont(:,2)=+fact*sinx(l1:l2)*cosy(m)
-          p%fcont(:,3)=+fact*cosx(l1:l2)*cosy(m)*sqrt(2.)
+          p%fcont(:,3)=+relhel*fact*cosx(l1:l2)*cosy(m)*sqrt(2.)
         elseif (iforcing_cont=='KolmogorovFlow-x') then
           fact=ampl_ff
           p%fcont(:,1)=0
