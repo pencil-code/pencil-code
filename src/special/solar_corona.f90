@@ -357,7 +357,7 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
       
-      real, dimension (nx) :: newton=0.,newtonr=0.
+      real, dimension (nx) :: newton=0.
       real, dimension (150) :: b_lnT,b_z,b_lnrho
       real, dimension (mz), save :: blnTT,blnrho
       real :: dummy
