@@ -3388,6 +3388,7 @@ module Magnetic
     endsubroutine curflux
 !***********************************************************************
     subroutine read_magnetic_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
@@ -3398,9 +3399,11 @@ module Magnetic
       endif
 !
 99    return
+!
     endsubroutine read_magnetic_init_pars
 !***********************************************************************
     subroutine write_magnetic_init_pars(unit)
+!
       integer, intent(in) :: unit
 !
       write(unit,NML=magnetic_init_pars)
@@ -3408,6 +3411,7 @@ module Magnetic
     endsubroutine write_magnetic_init_pars
 !***********************************************************************
     subroutine read_magnetic_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
@@ -3418,9 +3422,11 @@ module Magnetic
       endif
 !
 99    return
+!
     endsubroutine read_magnetic_run_pars
 !***********************************************************************
     subroutine write_magnetic_run_pars(unit)
+!
       integer, intent(in) :: unit
 !
       write(unit,NML=magnetic_run_pars)
