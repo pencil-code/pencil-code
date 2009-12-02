@@ -1527,8 +1527,8 @@ module Fourier
 !
           do ipy_from=0,nprocy-1
             iproc_from=ipz*nprocy*nprocx+ipy_from*nprocx+ipx
-            if (ipy/=ipy_from .and. ipy<nprocy_used) then
-              call mpirecv_real( &
+            if (ipy/=ipy_from) then
+              if (ipy<nprocy_used) call mpirecv_real( &
                   a_re_new(ipy_from*ny+1:(ipy_from+1)*ny,:), &
                   (/ny,nz_new/),iproc_from,itag)
             else
