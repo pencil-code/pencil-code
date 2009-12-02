@@ -52,8 +52,7 @@ program start
   use Cosmicrayflux,    only: init_fcr
   use Cosmicray,        only: init_ecr
   use Density,          only: init_lnrho
-  use Diagnostics,      only: yaverages_clean_up,zaverages_clean_up,&
-                              init_xaver
+  use Diagnostics
   use Dustdensity,      only: init_nd
   use Dustvelocity,     only: init_uud
   use Entropy,          only: init_ss
@@ -492,7 +491,15 @@ program start
 !
   call farray_clean_up()
   call sharedvars_clean_up()
-  If (lwrite_yaverages) call yaverages_clean_up() 
-  If (lwrite_zaverages) call zaverages_clean_up() 
+!
+!  Before reading the rprint_list deallocate the arrays allocated for
+!  1-D and 2-D diagnostics.
+!
+                          call xyaverages_clean_up()
+                          call xzaverages_clean_up()
+                          call yzaverages_clean_up()
+  if (lwrite_yaverages)   call yaverages_clean_up() 
+  if (lwrite_zaverages)   call zaverages_clean_up() 
+  if (lwrite_phiaverages) call phiaverages_clean_up()
 !
 endprogram
