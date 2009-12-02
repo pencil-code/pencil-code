@@ -23,7 +23,7 @@ pc_set_precision, dim=dim, /quiet
 ;
 ; Read block dimensions from file.
 ;
-pc_read_bdim, obj=bdim
+pc_read_bdim, obj=bdim, /quiet
 nxb=bdim.nxb
 nyb=bdim.nyb
 nzb=bdim.nzb
