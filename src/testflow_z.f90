@@ -1614,11 +1614,11 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
         gU0test(:,1)=0.; gU0test(:,2)=wamp; gU0test(:,3)=0.
 
       case(P1Q3)
-        U0test(:,1)=wamp*zq2(n); U0test(:,2)=0.; U0test(:,3)=0.		
+        U0test(:,1)=wamp*zq2(n); U0test(:,2)=0.; U0test(:,3)=0.
         gU0test(:,1)=wamp*z(n); gU0test(:,2)=0.; gU0test(:,3)=0.	
 
       case(P2Q3)
-        U0test(:,1)=0.; U0test(:,2)=wamp*zq2(n); U0test(:,3)=0.
+        U0test(:,1)=0.; U0test(:,2)=wamp*zq2(n); U0test(:,3)=0.	
         gU0test(:,1)=0.; gU0test(:,2)=wamp*z(n); gU0test(:,3)=0.
 
       case default
@@ -1928,7 +1928,6 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
       character*(*), intent(in) :: cdiagname
 
       character(len=30) cformat
-      character(len=30), dimension(4) :: ch_tmp
 
       integer :: iname, i, j, nname_form, indx
 
@@ -1960,11 +1959,8 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
         nname_form=nname
    
         call del_elem( cname, indx, nname )                                                         ! replace inquiry for the whole tensor by inquiries for    
-        ch_tmp(1) = cdiagname//'11'//cformat
-        ch_tmp(2) = cdiagname//'12'//cformat
-        ch_tmp(3) = cdiagname//'21'//cformat
-        ch_tmp(4) = cdiagname//'22'//cformat
-        call insert( cname, ch_tmp, 4, indx, nname ) ! all elements
+        call insert( cname, (/cdiagname//'11'//cformat,cdiagname//'12'//cformat, &
+                              cdiagname//'21'//cformat,cdiagname//'22'//cformat/), 4, indx, nname ) ! all elements
         do i=1,2
           do j=1,2
 
