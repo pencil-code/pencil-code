@@ -57,7 +57,7 @@ module Messages
 !
 ! Set a flag if colored output has been requested.
 !
-        inquire(FILE="COLOR", EXIST=ltermcap_color)
+      inquire(FILE="COLOR", EXIST=ltermcap_color)
 !
     endsubroutine initialize_messages
 !***********************************************************************
@@ -69,14 +69,16 @@ module Messages
       if (.not.llife_support) then
         errors=errors+1
 !
-        call terminal_highlight_error()
-        write (*,'(A18)',ADVANCE='NO') "NOT IMPLEMENTED: "
-        call terminal_defaultcolor()
-        if (present(message)) then
-          write(*,*) trim(location) // ": " // trim(message)
-        else
-          write(*,*) trim(location) // ": " // &
-              "Some feature waits to get implemented -- by you?"
+        if (lroot .or. ncpus<=32) then
+          call terminal_highlight_error()
+          write (*,'(A18)',ADVANCE='NO') "NOT IMPLEMENTED: "
+          call terminal_defaultcolor()
+          if (present(message)) then
+            write(*,*) trim(location) // ": " // trim(message)
+          else
+            write(*,*) trim(location) // ": " // &
+                "Some feature waits to get implemented -- by you?"
+          endif
         endif
 !
         if (ldie_onfatalerror) call die_gracefully
@@ -93,10 +95,12 @@ module Messages
       if (.not.llife_support) then
         errors=errors+1
 !
-        call terminal_highlight_fatal_error()
-        write (*,'(A13)',ADVANCE='NO') "FATAL ERROR: "
-        call terminal_defaultcolor()
-        write (*,*) trim(location) // ": " // trim(message)
+        if (lroot .or. ncpus<=32) then
+          call terminal_highlight_fatal_error()
+          write (*,'(A13)',ADVANCE='NO') "FATAL ERROR: "
+          call terminal_defaultcolor()
+          write (*,*) trim(location) // ": " // trim(message)
+        endif
 !
         if (ldie_onfatalerror) call die_gracefully
 !
@@ -115,10 +119,12 @@ module Messages
 !
       errors=errors+1
 !
-      call terminal_highlight_fatal_error()
-      write (*,'(A13)',ADVANCE='NO') "FATAL ERROR: "
-      call terminal_defaultcolor()
-      write (*,*) trim(location) // ": " // trim(message)
+      if (lroot .or. ncpus<=32) then
+        call terminal_highlight_fatal_error()
+        write (*,'(A13)',ADVANCE='NO') "FATAL ERROR: "
+        call terminal_defaultcolor()
+        write (*,*) trim(location) // ": " // trim(message)
+      endif
 !
       call die_gracefully()
 !
@@ -137,10 +143,12 @@ module Messages
       if (.not.llife_support) then
         fatal_errors=fatal_errors+1
 !
-        call terminal_highlight_fatal_error()
-        write (*,'(A13)',ADVANCE='NO') "FATAL ERROR: "
-        call terminal_defaultcolor()
-        write (*,*) trim(location) // ": " // trim(message)
+        if (lroot .or. ncpus<=32) then
+          call terminal_highlight_fatal_error()
+          write (*,'(A13)',ADVANCE='NO') "FATAL ERROR: "
+          call terminal_defaultcolor()
+          write (*,*) trim(location) // ": " // trim(message)
+        endif
 !
       endif
 !
@@ -180,10 +188,12 @@ module Messages
       if (.not.llife_support) then
         errors=errors+1
 !
-        call terminal_highlight_error()
-        write (*,'(A7)',ADVANCE='NO') "ERROR: "
-        call terminal_defaultcolor()
-        write (*,*) trim(location) // ": " // trim(message)
+        if (lroot .or. ncpus<=32) then
+          call terminal_highlight_error()
+          write (*,'(A7)',ADVANCE='NO') "ERROR: "
+          call terminal_defaultcolor()
+          write (*,*) trim(location) // ": " // trim(message)
+        endif
 !
         if (ldie_onerror) call die_gracefully
 !
@@ -201,10 +211,12 @@ module Messages
       integer, optional :: ip
 !
       if (.not.llife_support) then
-        call terminal_highlight_warning()
-        write (*,'(A9)',ADVANCE='NO') "WARNING:"
-        call terminal_defaultcolor()
-        write (*,*) trim(location) // ": " // trim(message)
+        if (lroot .or. ncpus<=32) then
+          call terminal_highlight_warning()
+          write (*,'(A9)',ADVANCE='NO') "WARNING:"
+          call terminal_defaultcolor()
+          write (*,*) trim(location) // ": " // trim(message)
+        endif
 !
         if (ldie_onwarning) call die_gracefully
 !
