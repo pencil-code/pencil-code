@@ -90,6 +90,7 @@ module Particles_radius
       call keep_compiler_quiet(fp)
       call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(ineargrid)
+      call keep_compiler_quiet(p)
 !
     endsubroutine dap_dt_pencil
 !***********************************************************************
