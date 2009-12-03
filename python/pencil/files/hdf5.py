@@ -219,7 +219,7 @@ class h5file:
         self.close()       #Should this be done manually, or should I assume that this will be automatically done ?
     def __repr__(self):
         '''Returns a short description of the file'''
-        return  "PencilCode HDF5 "+self.f.attrs.get('ver','Unset!')+" of "+os.path.basename(self.workdir)
+        return  "PencilCode HDF5 "+self.f.attrs.get('ver','Unset!')+" of "+os.path.basename(os.path.normpath(self.workdir))
     def __created(self):
         ''' Change Creation time '''
         self.f.attrs['dateC']=datestring()
