@@ -529,18 +529,22 @@ module Particles_main
 !
       intent (inout) :: f, df
 !
+      if (lparticles_blocks) then
+!
 !  Zero the block contribution to time evolution of gas velocity.
 !
-      dfb(:,:,:,iux:iuz,0:nblock_loc-1)=0.0
+        dfb(:,:,:,iux:iuz,0:nblock_loc-1)=0.0
 !
 !  Dynamical equations.
 !
-      if (lparticles) call dxxp_dt_blocks(f,df,fp,dfp,ineargrid)
-      if (lparticles) call dvvp_dt_blocks(f,df,fp,dfp,ineargrid)
+        if (lparticles) call dxxp_dt_blocks(f,df,fp,dfp,ineargrid)
+        if (lparticles) call dvvp_dt_blocks(f,df,fp,dfp,ineargrid)
 !
 !  Add block contribution to df to the main grid.
 !
-      call fill_bricks_with_blocks(df,dfb,mvar,iux,iuz)
+        call fill_bricks_with_blocks(df,dfb,mvar,iux,iuz)
+!
+      endif
 !
     endsubroutine particles_pde_blocks
 !***********************************************************************    
