@@ -11,6 +11,6 @@ ENTROPY   =   temperature_ionization
 MAGNETIC  =   magnetic
 RADIATION =   radiation_ray
 EOS       =   eos_temperature_ionization
-SHOCK     =   shock_perp
+SHOCK     =   shock
 GRAVITY   =   gravity_simple
 FOURIER   =   fourier_fftpack
