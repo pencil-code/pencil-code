@@ -42,6 +42,7 @@ module Particles_mpicomm
   integer, dimension (0:nbricks-1) :: iproc_foster_brick
   integer, dimension (ncpus) :: iproc_parent_list, iproc_foster_list
 !
+  integer :: it1_loadbalance=100
   logical :: lfill_density=.false., lfill_velocity=.false.
 !
   include 'mpif.h'
@@ -1768,38 +1769,37 @@ module Particles_mpicomm
 !
       npar_loc=npar_loc_tmp
 !
-!  Communicate xb, yb, zb arrays. 
+!  Communicate xb, yb, zb arrays. We allow self-communication here, although
+!  transfer within a processor could be done by some intelligent copying.
 !
       nreq=0
       iblock=0
       do while (iblock<nblock_loc)
         iproc_recv=iproc_grandparent(iblock)
-        if (iproc_recv/=iproc) then
-          ibrick_global= &
-              iproc_parent_block(iblock)*nbricks+ibrick_parent_block(iblock)
-          call MPI_IRECV(xb_recv(:,iblock:iblock), mxb, &
-              MPI_DOUBLE_PRECISION, iproc_recv, &
-              tag_id+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
-          nreq=nreq+1
-          ireq_array(nreq)=ireq
-          call MPI_IRECV(yb_recv(:,iblock:iblock), &
-              myb, MPI_DOUBLE_PRECISION, iproc_recv, &
-              tag_id+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
-          nreq=nreq+1
-          ireq_array(nreq)=ireq
-          call MPI_IRECV(zb_recv(:,iblock:iblock), mzb, &
-              MPI_DOUBLE_PRECISION, iproc_recv, &
-              tag_id+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
-          nreq=nreq+1
-          ireq_array(nreq)=ireq
-        endif
+        ibrick_global= &
+            iproc_parent_block(iblock)*nbricks+ibrick_parent_block(iblock)
+        call MPI_IRECV(xb_recv(:,iblock:iblock), mxb, &
+            MPI_DOUBLE_PRECISION, iproc_recv, &
+            tag_id+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
+        nreq=nreq+1
+        ireq_array(nreq)=ireq
+        call MPI_IRECV(yb_recv(:,iblock:iblock), &
+            myb, MPI_DOUBLE_PRECISION, iproc_recv, &
+            tag_id+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
+        nreq=nreq+1
+        ireq_array(nreq)=ireq
+        call MPI_IRECV(zb_recv(:,iblock:iblock), mzb, &
+            MPI_DOUBLE_PRECISION, iproc_recv, &
+            tag_id+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
+        nreq=nreq+1
+        ireq_array(nreq)=ireq
         iblock=iblock+1
       enddo
 !
       iblock=0
       do while (iblock<nblock_loc_old)
         iproc_send=iproc_grandchild(iblock)
-        if (iproc_send/=-1 .and. iproc_send/=iproc) then
+        if (iproc_send/=-1) then
           ibrick_global= &
               iproc_parent_old(iblock)*nbricks+ibrick_parent_old(iblock)
           call MPI_ISEND(xb(:,iblock:iblock), mxb, &
@@ -1823,19 +1823,6 @@ module Particles_mpicomm
 !
       do ireq=1,nreq
         call MPI_WAIT(ireq_array(ireq),stat,ierr)
-      enddo
-!
-      iblock_old=0
-      do iblock=0,nblock_loc-1
-        if (iproc_grandparent(iblock)==iproc) then
-          do while (iproc_grandchild(iblock_old)/=iproc)
-            iblock_old=iblock_old+1
-          enddo
-          xb_recv(:,iblock)=xb(:,iblock_old)
-          yb_recv(:,iblock)=yb(:,iblock_old)
-          zb_recv(:,iblock)=zb(:,iblock_old)
-          iblock_old=iblock_old+1
-        endif
       enddo
 !
       xb(:,0:nblock_loc-1)=xb_recv(:,0:nblock_loc-1)
