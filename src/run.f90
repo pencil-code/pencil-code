@@ -753,7 +753,12 @@ program run
   call chemistry_clean_up()
   call NSCBC_clean_up()
   if (lADI) deallocate(finit)
-  if (lwrite_yaverages) call yaverages_clean_up() 
-  if (lwrite_zaverages) call zaverages_clean_up() 
+  call xyaverages_clean_up() 
+  call xzaverages_clean_up() 
+  call yzaverages_clean_up() 
+  if (lwrite_phizaverages) call phizaverages_clean_up() 
+  if (lwrite_yaverages)    call yaverages_clean_up() 
+  if (lwrite_zaverages)    call zaverages_clean_up() 
+  if (lwrite_phiaverages)  call phiaverages_clean_up() 
 !
 endprogram run
