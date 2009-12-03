@@ -255,6 +255,21 @@ module Particles_map
                     if (nzgrid/=1) weight=weight* &
                         ( 1.0-abs(fp(k,izp)-zb(izz,ib))*dz1 )
                     fb(ixx,iyy,izz,irhop,ib)=fb(ixx,iyy,izz,irhop,ib) + weight
+!
+!  For debugging:
+!
+!                    if (weight<0.0 .or. weight>1.0) then
+!                      print*, 'map_xxp_grid: weight is wrong'
+!                      print*, 'map_xxp_grid: iproc, it, itsub, ipar=', &
+!                          iproc, it, itsub, ipar(k)
+!                      print*, 'map_xxp_grid: iblock, inearblock=', &
+!                          ib, inearblock(k)
+!                      print*, 'map_xxp_grid: weight=', weight
+!                      print*, 'map_xxp_grid: xxp=', fp(k,ixp:izp)
+!                      print*, 'map_xxp_grid: xb=', xb(:,ib)
+!                      print*, 'map_xxp_grid: yb=', yb(:,ib)
+!                      print*, 'map_xxp_grid: zb=', zb(:,ib)
+!                    endif
                   enddo; enddo; enddo
                 endif
               enddo
@@ -323,6 +338,21 @@ module Particles_map
                     if (nygrid/=1) weight=weight*weight_y
                     if (nzgrid/=1) weight=weight*weight_z
                     fb(ixx,iyy,izz,irhop,ib)=fb(ixx,iyy,izz,irhop,ib) + weight
+!
+!  For debugging:
+!
+!                    if (weight<0.0 .or. weight>1.0) then
+!                      print*, 'map_xxp_grid: weight is wrong'
+!                      print*, 'map_xxp_grid: iproc, it, itsub, ipar=', &
+!                          iproc, it, itsub, ipar(k)
+!                      print*, 'map_xxp_grid: iblock, inearblock=', &
+!                          ib, inearblock(k)
+!                      print*, 'map_xxp_grid: weight=', weight
+!                      print*, 'map_xxp_grid: xxp=', fp(k,ixp:izp)
+!                      print*, 'map_xxp_grid: xb=', xb(:,ib)
+!                      print*, 'map_xxp_grid: yb=', yb(:,ib)
+!                      print*, 'map_xxp_grid: zb=', zb(:,ib)
+!                    endif
                   enddo; enddo; enddo
                 endif
               enddo
