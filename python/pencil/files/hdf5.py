@@ -1,3 +1,11 @@
+# $Id: hdf5.py 12358 2009-12-03 07:39:23Z rplasson $
+#
+# HDF5 conversion and access to PencilCode data
+#
+# Author: R. Plasson (rplasson@nordita.org). 
+# 
+#
+
 import h5py
 import os
 import datetime
