@@ -260,7 +260,7 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (lparticles_blocks .and. mod(it,100)==0) then
+      if (lparticles_blocks .and. mod(it,it1_loadbalance)==0) then
         call particles_boundconds(f)
         call load_balance_particles(f,fp,ipar)
         call map_nearest_grid(fp,ineargrid)
