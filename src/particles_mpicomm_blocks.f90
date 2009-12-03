@@ -1414,12 +1414,12 @@ module Particles_mpicomm
       integer, dimension (0:nblockmax-1) :: npblock, ibrick_give, ibrick_recv
       integer, dimension (0:nblockmax-1) :: iproc_grandparent, iproc_grandchild
       integer, dimension (0:nblockmax-1) :: iproc_parent_old, ibrick_parent_old
-      integer, dimension (1000) :: ireq_array
-      integer :: npar_sum, npar_target, npar_send, npar_recv, npar_requ
-      integer :: npar_brick_own, npar_brick_taken, npar_want, npar_give
+      integer, dimension (nblockmax) :: ireq_array
+      integer :: npar_sum, npar_target, npar_recv, npar_requ
+      integer :: npar_brick_taken, npar_want, npar_give
       integer :: ibrick, iblock, ibx, iby, ibz, di, nblock_loc_old
       integer :: iblock_old, nbrick_give, nbrick_recv, ibrick_global
-      integer :: iproc_left, iproc_right, tag_id, ierr, ireq, nreq
+      integer :: iproc_left, iproc_right, tag_id=100, ierr, ireq, nreq
       integer :: iblock1, iblock2, iproc_recv, iproc_send
       integer :: ipvar, nblock_send, npar_loc_tmp
       integer :: k1_send, k2_send
@@ -1481,30 +1481,15 @@ module Particles_mpicomm
         iproc_left =modulo(iproc-di,ncpus)
         iproc_right=modulo(iproc+di,ncpus)
 !
-!  The number of particles that a processors wants to give away is equal to the
-!  number of particles in its own bricks minus the particles that have already
-!  been given to a foster processor (including the processor itself).
-!
-        tag_id=100
-        npar_send=npar_brick_own-npar_brick_taken
-        call MPI_SEND(npar_send, 1, MPI_DOUBLE_PRECISION, iproc_left, &
-            tag_id, MPI_COMM_WORLD, ierr)
-        call MPI_RECV(npar_recv, 1, MPI_DOUBLE_PRECISION, iproc_right, &
-            tag_id, MPI_COMM_WORLD, stat, ierr)
-        if (ip<=6) then
-          print*, 'iproc, iproc_left, iproc_right, npar_send, npar_recv='
-          print*, iproc, iproc_left, iproc_right, npar_send, npar_recv
-        endif
-!
-!  The receiving processor decides whether it needs any particles from the
-!  sending processor.
+!  Each processor calculates the number of particles required to reach the
+!  targeted particle number.
 !
         npar_want=0
         if (npar_sum<npar_target) npar_want=npar_target-npar_sum
 !
-        call MPI_SEND(npar_want, 1, MPI_DOUBLE_PRECISION, iproc_right, &
+        call MPI_SEND(npar_want, 1, MPI_INTEGER, iproc_right, &
             tag_id, MPI_COMM_WORLD, ierr)
-        call MPI_RECV(npar_requ, 1, MPI_DOUBLE_PRECISION, iproc_left, &
+        call MPI_RECV(npar_requ, 1, MPI_INTEGER, iproc_left, &
             tag_id, MPI_COMM_WORLD, stat, ierr)
         if (ip<=6) then
           print*, 'iproc, iproc_left, iproc_right, npar_want, npar_requ='
