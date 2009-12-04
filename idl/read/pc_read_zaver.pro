@@ -222,6 +222,7 @@ if (iplot eq -1) then begin
     ipx=ipxarray[ip]
     ipy=ipyarray[ip]
     get_lun, filelun
+    print, ip, filelun
     close, filelun
     openr, filelun, filename[ip], /f77, swap_endian=swap_endian
     it=0
@@ -245,6 +246,7 @@ if (iplot eq -1) then begin
       endelse
       it=it+1
     endwhile
+    free_lun, filelun
 ;;
   endfor
 ;;
