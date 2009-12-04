@@ -91,10 +91,9 @@ module Initcond
 !  
 !  14-oct-09/irina: coded
 !
-      real :: ampl      
       integer :: i,j,k
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: n, dmx,radius, dtheta,theta
+      real :: dmx,radius, dtheta,theta
     
      dmx=(l2-l1)/mx
      dtheta=pi/my 
@@ -1181,11 +1180,9 @@ module Initcond
 !
 !  30-oct-03/axel: coded
 !
-      integer :: i,ivv
+      integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
-      complex, dimension (3) :: coef
-      complex :: ii=(0.,1.)
-      real :: ampl,kx,ky,kz
+      real :: ampl,ky
 !
       do n=n1,n2; do m=m1,m2
         f(l1:l2,m,n,i)=ampl*cos(ky*y(m))
@@ -1490,7 +1487,7 @@ module Initcond
 !
       integer :: i,j,l
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx) :: J0,J1
+      real, dimension (mx) :: J0
       real :: ampl,kx,kx1
 !
 !  set x-dependent Bessel function field
@@ -2536,9 +2533,10 @@ module Initcond
       integer :: i,ix,iy
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl
-      real :: arg1,arg2,sy
+!      real :: arg1,arg2
 !
-      if (lroot) print*, 'strange: magnetic field that satisfies open vf condn: for debugging purposes'
+      if (lroot) print*, 'strange: magnetic field that satisfies open  &
+          vf condn: for debugging purposes'
       if (lroot) write(*,*)'DM',xyz0(1),xyz0(2),xyz0(3),xyz1(1),xyz1(2),xyz1(3)
       do ix=l1,l2
         do iy=m1,m2
@@ -2564,6 +2562,9 @@ module Initcond
       real, dimension (nx) :: tmp,modulate,tube_radius_sqr
       real :: ampl,radius,eps,ky
       real :: center1_x,center1_y,center1_z
+!
+! please remove the variable if not needed anymore
+      call keep_compiler_quiet(modulate)
 !
       if (ampl==0) then
         f(:,:,:,i1:i2)=0
@@ -2670,6 +2671,9 @@ module Initcond
       real, dimension (nx) :: modulate
       real :: ampl,a,eps,ky,width,tmp,radius,a_minus_r
       real :: center1_x,center1_y,center1_z
+!
+! please remove the variable if not needed anymore
+      call keep_compiler_quiet(modulate)
 !
       if (ampl==0) then
         f(:,:,:,i1:i2)=0
@@ -3534,7 +3538,6 @@ module Initcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: ivar
 !
-      real, dimension (nx) :: tmp
       real :: zoverh, hoverr
 !
       if (lroot) print*, 'isotdisk: ivar = ', ivar
@@ -4003,10 +4006,10 @@ module Initcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx) :: rr,rr_sph,rr_cyl,cs2,lnrho
-      real, dimension(nx) :: tmp1,tmp2,gslnTT,corr
+      real, dimension(nx) :: gslnTT
       real :: cp1,ptlaw
       integer, pointer, optional :: iglobal_cs2,iglobal_glnTT
-      integer :: i,ics2
+      integer :: ics2
       logical :: lheader,lenergy
 !
       intent(in)  :: ptlaw
@@ -4358,8 +4361,8 @@ module Initcond
       
       real, dimension(mx,my,mz,mfarray) :: f
       real :: tmp,ztop,zbot
-      real, dimension(150) :: b_lnT,b_lnrho,b_z
-      real :: tmprho,tmpT,tmpdT,tmpz,tmpdz
+      real, dimension(150) :: b_lnT,b_z
+      real :: tmprho,tmpT,tmpdT,tmpz
       integer :: i,lend,j
       !
       ! temperature given as function lnT(z) in SI units
