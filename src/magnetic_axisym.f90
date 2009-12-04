@@ -686,7 +686,7 @@ module Magnetic
         case('nothing'); if (lroot .and. j==1) print*,'init_aa: nothing'
         case('zero', '0'); f(:,:,:,iaphi) = 0.; f(:,:,:,ibphi) = 0.
         case('gaussian-noise'); call gaunoise(amplaa(j),f,iaphi); call gaunoise(amplaa(j),f,ibphi)
-        case('dipolar-field'); f(:,:,:,ibphi) = 0.; call phi_siny_over_r2(amplaa(j),f,iaphi)
+        case('dipolar-field'); f(:,:,:,ibphi) = 0.; call phi_siny_over_r2(f,iaphi)
 !
         case default
 !

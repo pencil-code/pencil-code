@@ -85,7 +85,7 @@ module Initcond
 !
   contains
 !***********************************************************************
-    subroutine phi_siny_over_r2(ampl,f,i)
+    subroutine phi_siny_over_r2(f,i)
 !
 !  A_phi ~ sin(y)/R^2 if R>=0.7 field (in terms of vector potential)
 !  
