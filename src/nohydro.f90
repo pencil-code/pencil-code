@@ -222,11 +222,11 @@ module Hydro
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      real, dimension(nx) :: kdotxwt, cos_kdotxwt, sin_kdotxwt
-      real, dimension(nx) :: tmp_mn, cos1_mn, cos2_mn
+      real, dimension (nx) :: kdotxwt, cos_kdotxwt, sin_kdotxwt
+      real, dimension (nx) :: tmp_mn, cos1_mn, cos2_mn
       real :: kkx_aa, kky_aa, kkz_aa, fac, fac2
       real :: fpara, dfpara, ecost, esint, epst, sin2t, cos2t
-      integer :: modeN,l
+      integer :: modeN
       real :: sqrt2, sqrt21k1, eps1=1., WW=0.25, k21
       integer :: ell
       real :: Balpha
@@ -751,9 +751,9 @@ kky_aa=2.*pi
 !
 !  16-oct-09/MR: dummy
 !
-    real, dimension(nx,3,3)         :: uij, sij
-    real, dimension(nx)             :: divu
-    real, dimension(nx,3), optional :: uu
+    real, dimension (nx,3,3)         :: uij, sij
+    real, dimension (nx)             :: divu
+    real, dimension (nx,3), optional :: uu
 !
     intent(in) :: uij, divu, sij
 !
@@ -776,6 +776,8 @@ kky_aa=2.*pi
       integer,                         intent(in)  :: velind
 !
       call keep_compiler_quiet(df)
+      call keep_compiler_quiet(uu)
+      call keep_compiler_quiet(velind)
 !
    endsubroutine coriolis_cartesian
 !***********************************************************************
@@ -810,10 +812,10 @@ kky_aa=2.*pi
 !
     real, dimension (3) :: k_unit
     real, dimension (3) :: e1,e2
-    real,dimension (6) :: r
-    real,dimension (3) ::j,l  !get rid of this - these replace ee,ee1
+    real, dimension (6) :: r
+    real, dimension (3) ::j,l  !get rid of this - these replace ee,ee1
     real :: initpower,kmin,kmax
-    real, dimension(KS_modes) :: k,dk,energy,ps
+    real, dimension (KS_modes) :: k,dk,energy,ps
     real :: theta,phi,alpha,beta
     real :: a,mkunit
     real :: newthet,newphi  !get rid of this line if there's no change
@@ -949,9 +951,9 @@ kky_aa=2.*pi
     real, dimension (3) :: k_unit
     real, dimension (3) :: ee,e1,e2
 !    real, dimension (4) :: r
-    real,dimension (6) :: r
+    real, dimension (6) :: r
     real :: initpower,kmin,kmax
-    real, dimension(KS_modes) :: k,dk,energy,ps
+    real, dimension (KS_modes) :: k,dk,energy,ps
     real :: theta,phi,alpha,beta
     real :: ex,ey,ez,norm,a
 
@@ -1084,7 +1086,7 @@ kky_aa=2.*pi
     integer :: modeN
 !
     real, dimension (3,KS_modes) :: k_unit
-    real, dimension(KS_modes) :: k,dk,energy,ps
+    real, dimension (KS_modes) :: k,dk,energy,ps
     real :: initpower,kmin,kmax
 !
     allocate(KS_k(3,KS_modes))
@@ -1191,7 +1193,7 @@ kky_aa=2.*pi
    ! implicit none
    ! real,allocatable,dimension(:,:) :: unit_k,k,A,B,orderK
    ! real,allocatable,dimension(:) :: kk,delk,energy,omega,klengths
-   ! real,dimension(3) :: angle,dir_in,u
+   ! real, dimension (3) :: angle,dir_in,u
    ! real :: k_option(3,10000),mkunit(10000)
    ! real :: arg
    ! real :: turn1,turnN
@@ -1585,5 +1587,5 @@ kky_aa=2.*pi
       print*, 'Done.'
 !
     endsubroutine hydro_clean_up
-!*******************************************************************
+!***********************************************************************
 endmodule Hydro
