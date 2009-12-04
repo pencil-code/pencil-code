@@ -985,7 +985,7 @@ module Magnetic
         case('Bz(x)', '3'); call vfield(amplaa(j),f,iaa)
         case('vfield2'); call vfield2(amplaa(j),f,iaa)
         case('bipolar'); call bipolar(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
-        case('bipolar_restzero'); call bipolar_restzero(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
+        case('bipolar_restzero'); call bipolar_restzero(amplaa(j),f,iaa,kx_aa(j),ky_aa(j))
         case('vecpatternxy'); call vecpatternxy(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
         case('xjump'); call bjump(f,iaa,by_left,by_right,bz_left,bz_right,widthaa,'x')
         case('fluxrings', '4'); call fluxrings(amplaa(j),f,iaa,iaa,fring_profile)

@@ -1600,7 +1600,7 @@ module Initcond
 !
     endsubroutine bipolar
 !***********************************************************************
-    subroutine bipolar_restzero(ampl,f,i,kx,ky,kz)
+    subroutine bipolar_restzero(ampl,f,i,kx,ky)
 !
 !  horizontal pattern with exponential decay (as initial condition)
 !
@@ -1610,7 +1610,7 @@ module Initcond
 !
       integer :: i,j
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: ampl,kx,ky,kz
+      real :: ampl,kx,ky
 !
 !  sets up a nearly force-free bipolar region
 !
