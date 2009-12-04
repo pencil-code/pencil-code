@@ -2458,14 +2458,16 @@ module Initcond
 !
     endsubroutine vortex_2d
 !***********************************************************************
-    subroutine baroclinic(f,gamma,rho0,dlnrhobdx,co1_ss,co2_ss,cs20)
+    subroutine baroclinic(f,gamma,dlnrhobdx,co1_ss,co2_ss,cs20)
 !
+!  Remark 4-dez-09 bing: this routine is nowhere called! Is it still in use?
+! 
 !  Baroclinic shearing sheet initial condition
 !  11-nov-03/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: sz,I_int
-      real :: gamma,rho0,dlnrhobdx,co1_ss,co2_ss,cs20
+      real :: gamma,dlnrhobdx,co1_ss,co2_ss,cs20
 !
 !  Specify vertical entropy and integral of exp(-sz/cp)*z
 !
