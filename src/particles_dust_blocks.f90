@@ -113,7 +113,8 @@ module Particles
   integer :: idiag_lpxm=0, idiag_lpym=0, idiag_lpzm=0
   integer :: idiag_lpx2m=0, idiag_lpy2m=0, idiag_lpz2m=0
   integer :: idiag_npm=0, idiag_np2m=0, idiag_npmax=0, idiag_npmin=0
-  integer :: idiag_rhoptilm=0, idiag_dtdragp=0, idiag_nparmax=0
+  integer :: idiag_rhoptilm=0, idiag_dtdragp=0
+  integer :: idiag_nparmin=0, idiag_nparmax=0
   integer :: idiag_rhopm=0, idiag_rhoprms=0, idiag_rhop2m=0, idiag_rhopmax=0
   integer :: idiag_rhopmin=0, idiag_decollp=0, idiag_rhopmphi=0
   integer :: idiag_npmx=0, idiag_npmy=0, idiag_npmz=0
@@ -1393,7 +1394,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Diagnostic output
 !
       if (ldiagnos) then
-        if (idiag_nparmax/=0)  call max_name(npar_loc,idiag_nparmax)
+        if (idiag_nparmin/=0) call max_name(-npar_loc,idiag_nparmin,lneg=.true.)
+        if (idiag_nparmax/=0) call max_name(+npar_loc,idiag_nparmax)
         if (idiag_xpm/=0)  call sum_par_name(fp(1:npar_loc,ixp),idiag_xpm)
         if (idiag_ypm/=0)  call sum_par_name(fp(1:npar_loc,iyp),idiag_ypm)
         if (idiag_zpm/=0)  call sum_par_name(fp(1:npar_loc,izp),idiag_zpm)
@@ -2119,7 +2121,7 @@ k_loop:   do while (.not. (k>npar_loc))
         idiag_rhoptilm=0; idiag_dtdragp=0; idiag_dedragp=0
         idiag_rhopm=0; idiag_rhoprms=0; idiag_rhop2m=0; idiag_rhopmax=0
         idiag_rhopmin=0; idiag_decollp=0; idiag_rhopmphi=0
-        idiag_nparmax=0; idiag_nmigmax=0; idiag_mpt=0
+        idiag_nparmin=0; idiag_nparmax=0; idiag_nmigmax=0; idiag_mpt=0
         idiag_npmx=0; idiag_npmy=0; idiag_npmz=0; idiag_epotpm=0
         idiag_rhopmx=0; idiag_rhopmy=0; idiag_rhopmz=0
         idiag_epspmx=0; idiag_epspmy=0; idiag_epspmz=0
@@ -2134,6 +2136,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if (lroot .and. ip<14) print*,'rprint_particles: run through parse list'
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'nparmin',idiag_nparmin)
         call parse_name(iname,cname(iname),cform(iname),'nparmax',idiag_nparmax)
         call parse_name(iname,cname(iname),cform(iname),'nparbmax',idiag_nparbmax)
         call parse_name(iname,cname(iname),cform(iname),'xpm',idiag_xpm)
