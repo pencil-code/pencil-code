@@ -233,6 +233,12 @@ module Boundcond
                   ! BCX_DOC: Normal-field bc for spherical coordinate system.
                   ! BCX_DOC: Some people call this the ``(angry) hedgehog bc''.
                   call bc_set_nfr_x(f,topbot,j)
+                case('sa2')
+                  ! BCX_DOC: (d/dr)(r B_{\phi}) = 0 imposes 
+                  ! BCX_DOC: boundary condition on 2nd derivative of 
+                  ! BCX_DOC: r A_{\phi}. Sam applies to $\theta$ 
+                  ! BCX_DOC:  component 
+                  call bc_set_sa2_x(f,topbot,j)
                 case('pfc')
                   !BCX_DOC: perfect-conductor in spherical coordinate: $d/dr( A_r) + 2/r = 0$ . 
                   call bc_set_pfc_x(f,topbot,j)
@@ -1695,6 +1701,40 @@ module Boundcond
       endselect
 !
     endsubroutine bc_set_nfr_x
+! **********************************************************************
+    subroutine bc_set_sa2_x(f,topbot,j)
+! To set the boundary condition:
+! d_r(r B_{\phi} = 0 we need to se
+! (d_r)^2(r A_{\theta}) = 0 which sets the condition 'a2'
+! on r A_{\theta} and vice-versa for A_{\phi} 
+!
+!  3-Dec-2009/dhruba: coded
+!
+      character (len=3), intent (in) :: topbot
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      integer, intent (in) :: j
+      integer :: k
+
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+        do k=1,nghost
+          f(l1-k,:,:,j)= f(l1,:,:,j)*2.*(x(l1)/x(l1-k))&
+                         -f(l1+k,:,:,j)*(x(l1+k)/x(l1-k))
+        enddo
+! 
+     case('top')               ! top boundary
+       do k=1,nghost
+         f(l2+k,:,:,j)= f(l2,:,:,j)*2.*(x(l2)/x(l2+k))&
+                        -f(l2-k,:,:,j)*(x(l2-k)/x(l2+k))
+       enddo
+!
+      case default
+        call warning('bc_set_sa2_x',topbot//" should be `top' or `bot'")
+!
+      endselect
+!
+    endsubroutine bc_set_sa2_x
 ! **********************************************************************
     subroutine bc_set_sfree_x(f,topbot,j)
 !
