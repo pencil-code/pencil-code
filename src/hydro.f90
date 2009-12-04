@@ -966,7 +966,7 @@ module Hydro
           call power_randomphase(ampluu(j),initpower,cutoff,f,iux,iuz,lscale_tobox)
 
         case('random-isotropic-KS')
-          call random_isotropic_KS(ampluu(j),initpower,cutoff,f,iux,iuz,N_modes_uu)
+          call random_isotropic_KS(initpower,cutoff,f,iux,iuz,N_modes_uu)
 
         case('vortex_2d')
 ! Vortex solution of Goodman, Narayan, & Goldreich (1987)

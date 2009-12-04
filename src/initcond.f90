@@ -3844,7 +3844,7 @@ module Initcond
 !
     endsubroutine power_randomphase
 !***********************************************************************
-    subroutine random_isotropic_KS(ampl,initpower,cutoff,f,i1,i2,N_modes)
+    subroutine random_isotropic_KS(initpower,cutoff,f,i1,i2,N_modes)
 !
 !   produces random, isotropic field from energy spectrum following the
 !   KS method (Malik and Vassilicos, 1999.)
@@ -3860,7 +3860,7 @@ module Initcond
 ! how many wavenumbers?
     real, dimension (3,1024) :: kk,RA,RB !or through whole field for each wavenumber?
     real, dimension (3) :: k_unit,vec,ee,e1,e2,field
-    real :: ampl,initpower,cutoff,kmin,ps,k,phi,theta,alpha,beta,dk
+    real :: initpower,cutoff,kmin,ps,k,phi,theta,alpha,beta,dk
     real :: ex,ey,ez,norm,kdotx,r
 
 !
