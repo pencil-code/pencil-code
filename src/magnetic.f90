@@ -939,7 +939,7 @@ module Magnetic
         case('power_randomphase')
           call power_randomphase(amplaa(j),initpower_aa,cutoff_aa,f,iax,iaz)
         case('random-isotropic-KS')
-          call random_isotropic_KS(initpower_aa,f,iax,iaz,N_modes_aa)
+          call random_isotropic_KS(initpower_aa,f,iax,N_modes_aa)
         case('gaussian-noise'); call gaunoise(amplaa(j),f,iax,iaz)
         case('gaussian-noise-rprof')
           call gaunoise_rprof(amplaa(j),f,iax,iaz)
