@@ -54,7 +54,7 @@ module Initcond
   public :: robertsflow
   public :: set_thermodynamical_quantities
   public :: const_lou
-  public :: corona_init,mdi_init
+  public :: corona_init,mdi_init,temp_hydrostatic
   public :: innerbox
   public :: couette, couette_rings
   public :: strange,phi_siny_over_r2
@@ -4344,6 +4344,82 @@ module Initcond
       if (allocated(kyp)) deallocate(kyp)
 !
     endsubroutine mdi_init
+!*********************************************************
+    subroutine temp_hydrostatic(f)
+!
+! 07-dec-05/bing : coded.
+!      intialize the density for given temperprofile in vertical
+!      z direction by solving hydrostatic equilibrium.
+!      dlnrho = - dlnTT + (cp-cv)/T g dz
+!
+      use Cdata
+      use EquationOfState, only: lnrho0,gamma,cs20,cs2top,cs2bot
+      use Gravity, only: gravz
+      
+      real, dimension(mx,my,mz,mfarray) :: f
+      real :: tmp,ztop,zbot
+      real, dimension(150) :: b_lnT,b_lnrho,b_z
+      real :: tmprho,tmpT,tmpdT,tmpz,tmpdz
+      integer :: i,lend,j
+      !
+      ! temperature given as function lnT(z) in SI units
+      ! [T] = K   &   [z] = Mm   & [rho] = kg/m^3
+      !
+      if (pretend_lnTT) print*,'temp_hydrostatic: not implemented for pretend_lnTT=T'
+      !
+      ! read in temperature profile T in [K] and z in [Mm]
+      !
+      inquire(IOLENGTH=lend) tmp
+      open (10,file='driver/b_lnT.dat',form='unformatted',status='unknown',recl=lend*150)
+      read (10) b_lnT
+      read (10) b_z
+      close (10)
+      !
+      b_z = b_z*1.e6/unit_length
+      b_lnT = b_lnT - alog(real(unit_temperature))
+      !
+      ! simple linear interpolation
+      !
+      dz = (b_z(2)-b_z(1))/10.
+      !
+      do j=n1,n2
+         tmprho = lnrho0
+         tmpT = b_lnT(1)
+         tmpz = b_z(1)
+         !      
+         ztop=xyz0(3)+Lxyz(3)
+         zbot=xyz0(3)
+         !
+         do while (tmpz .le. ztop)         
+            if (abs(tmpz-zbot) .lt. dz) cs2bot = (gamma-1.)*exp(tmpT)
+            if (abs(tmpz-ztop) .lt. dz) cs2top = (gamma-1.)*exp(tmpT)
+            if (abs(tmpz-z(j)) .le. dz) then 
+               f(:,:,j,ilnrho) = tmprho
+               f(:,:,j,ilnTT)  = tmpT                            
+            endif
+            ! new z coord
+            tmpz = tmpz+dz
+            ! get T at new z
+            do i=1,149
+               if (tmpz .ge. b_z(i)  .and. tmpz .lt. b_z(i+1) ) then
+!                  tmpdT = linear_inpol(b_z(i),b_z(i+1),b_lnT(i),b_lnT(i+1),tmpz)-tmpT
+
+                  tmpdT = (b_lnT(i+1)-b_lnT(i))/(b_z(i+1)-b_z(i)) * (tmpz-b_z(i)) + b_lnT(i) -tmpT
+                  !blnTT(j) = (b_lnT(i+1)-b_lnT(i))/(b_z(i+1)-b_z(i)) * (z(j)-b_z(i)) + b_lnT(i)
+
+                  tmpT = tmpT + tmpdT
+                  !exit
+               elseif (tmpz .ge. b_z(150)) then
+                  tmpdT = b_lnT(150) - tmpT  
+                  tmpT = tmpT + tmpdT
+                  !exit
+               endif
+            enddo
+            tmprho = tmprho - tmpdT + gamma*(gamma-1.)*gravz*exp(-tmpT) * dz
+         enddo
+      enddo
+!
+    endsubroutine temp_hydrostatic
 !*********************************************************
     subroutine const_lou(ampl,f,i)
 !
