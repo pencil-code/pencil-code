@@ -158,7 +158,7 @@ module Viscosity
 !
       intent(in) :: df,p,Hmax
 !
-      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
       call keep_compiler_quiet(Hmax)
 !
