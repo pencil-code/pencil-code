@@ -180,7 +180,7 @@ module Viscosity
 !    
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      intent (in) :: f,df,p
+      intent (in) :: df,p
 !
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)

@@ -72,6 +72,7 @@ module Magnetic
   character (len=labellen) :: borderaa='nothing'
   character (len=labellen), dimension(nresi_max) :: iresistivity=''
   character (len=labellen) :: Omega_profile='nothing',alpha_profile='const'
+  character (len=labellen) :: EMF_profile='nothing'
   character (len=labellen) :: fring_profile='tanh'
   ! input parameters
   complex, dimension(3) :: coefaa=(/0.,0.,0./), coefbb=(/0.,0.,0./)
@@ -194,6 +195,7 @@ module Magnetic
   logical :: luse_Bext_in_b2=.false.
   logical :: lmean_friction=.false.
   logical :: llarge_scale_velocity=.false.
+  logical :: lEMF_profile=.false. 
   character (len=labellen) :: zdep_profile='fs'
   character (len=labellen) :: eta_xy_profile='schnack89'
   character (len=labellen) :: iforcing_continuous_aa='fixed_swirl'
@@ -235,7 +237,8 @@ module Magnetic
        lbbt_as_aux,ljjt_as_aux, &
        lneutralion_heat, lreset_aa, daareset, &
        luse_Bext_in_b2, ampl_fcont_aa,&
-       llarge_scale_velocity
+       llarge_scale_velocity,&
+       EMF_profile,lEMF_profile
 
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_ab_int=0     ! DIAG_DOC: $\int\Av\cdot\Bv\;dV$
@@ -1495,6 +1498,7 @@ module Magnetic
 !      real, dimension (nx,3) :: bb_ext_pot
       real, dimension (nx) :: rho1_jxb,alpha_total
       real, dimension (nx) :: alpha_tmp
+      real, dimension (nx) :: EMF_prof
       real, dimension (nx) :: jcrossb2 
       real, dimension (nx) :: meanfield_Qs_func, meanfield_Qp_func
       real, dimension (nx) :: meanfield_Qs_der, meanfield_Qp_der, BiBk_Bki
@@ -1871,7 +1875,25 @@ module Magnetic
 ! possibility of adding contribution from large-scale-velocity
 !
         if(llarge_scale_velocity) p%mf_EMF=p%mf_EMF+p%uxb
+!
+! possibility of turning EMF to zero in a certain region.
+!
+        if(lEMF_profile) then
+          select case(EMF_profile)
+          case('xcutoff');
+            EMF_prof= 1+stepdown(x(l1:l2),alpha_rmax,alpha_width)
+          case('nothing');
+          call inevitably_fatal_error('calc_pencils_magnetic', &
+            'lEMF_profile=T, but no profile selected !')
+          endselect
+            p%mf_EMF(:,1)=p%mf_EMF(:,1)*EMF_prof(:)
+            p%mf_EMF(:,2)=p%mf_EMF(:,2)*EMF_prof(:)
+            p%mf_EMF(:,3)=p%mf_EMF(:,3)*EMF_prof(:)
+        endif
       endif
+!
+! EMFdotB
+!
       if (lpencil(i_mf_EMFdotB)) call dot_mn(p%mf_EMF,p%bb,p%mf_EMFdotB)
 !
 !  Store bb in auxiliary variable if requested.

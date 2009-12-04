@@ -44,11 +44,11 @@ module Special
 
   ! run parameters
   real :: kf_alpm=1., alpmdiff=0.
-  logical :: ladvect_alpm=.false.
+  logical :: ladvect_alpm=.false.,lupw_alpm=.false.
 
   namelist /special_run_pars/ &
        kf_alpm,ladvect_alpm,alpmdiff, &
-       Omega_profile,Omega_ampl
+       Omega_profile,Omega_ampl,lupw_alpm
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_alpm_int=0
@@ -233,8 +233,10 @@ module Special
              -2*eta*kf_alpm**2*alpm-meanfield_etat*divflux
           if (ladvect_alpm) then
             call grad(f,ialpm,galpm)
-            call dot_mn(p%uu,galpm,ugalpm)
+!            call dot_mn(p%uu,galpm,ugalpm)
+            call u_dot_grad(f,ialpm,galpm,p%uu,ugalpm,UPWIND=lupw_alpm)
             df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)-ugalpm
+
           endif
           if (alpmdiff/=0) then
             call del2(f,ialpm,del2alpm)

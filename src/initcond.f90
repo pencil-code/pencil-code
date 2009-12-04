@@ -2535,9 +2535,8 @@ module Initcond
       real :: ampl
 !      real :: arg1,arg2
 !
-      if (lroot) print*, 'strange: magnetic field that satisfies open  &
-          vf condn: for debugging purposes'
-      if (lroot) write(*,*)'DM',xyz0(1),xyz0(2),xyz0(3),xyz1(1),xyz1(2),xyz1(3)
+      if (lroot) print*, 'strange: magnetic field that satisfies open', &
+          'vf condn: for debugging purposes'
       do ix=l1,l2
         do iy=m1,m2
 !          arg1= pi*(x(ix)-xyz0(1))/(xyz1(1)-xyz0(1))
