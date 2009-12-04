@@ -1172,6 +1172,8 @@ module Viscosity
 !
       if (lfirst .and. ldt) Hmax=Hmax+p%visc_heat
 !
+      call keep_compiler_quiet(f)
+!
     endsubroutine calc_viscous_heat
 !***********************************************************************
     subroutine calc_viscous_force(df,p)
@@ -1268,7 +1270,7 @@ module Viscosity
 !
     endsubroutine calc_viscous_force
 !***********************************************************************
-    subroutine calc_visc_heat_ppd(f,df,p)
+    subroutine calc_visc_heat_ppd(df,p)
 !    
 !  Calculates viscous dissipation term from D'Angelo et al. (2003)
 ! 
@@ -1276,14 +1278,12 @@ module Viscosity
 ! 
       use Sub
       use Gravity, only: acceleration
-
-      real, dimension (mx,my,mz,mfarray) :: f
+!
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 
       real, dimension (nx) :: diss
       real, dimension (nx) :: rr_sph,rr_cyl,g_r,OO2
-      integer :: i
 
 !
 ! 'Dissipative' heating term Y=9/4 \Sigma \nu \Omega_K^2
@@ -1303,9 +1303,9 @@ module Viscosity
       else
          call fatal_error("calc_visc_heat_ppd","dissipation only implemented for 2d-disk")
       endif
-
+!
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%TT1*diss
-
+!
     endsubroutine calc_visc_heat_ppd
 !***********************************************************************
     subroutine getnu(nu_)

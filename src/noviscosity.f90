@@ -176,14 +176,12 @@ module Viscosity
 !
     endsubroutine calc_viscous_force
 !***********************************************************************
-    subroutine calc_visc_heat_ppd(f,df,p)
+    subroutine calc_visc_heat_ppd(df,p)
 !    
-      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       intent (in) :: f,df,p
 !
-      call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
 !
