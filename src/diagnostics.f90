@@ -890,19 +890,24 @@ module Diagnostics
 !
    endsubroutine save_name_halfz
 !***********************************************************************
-    subroutine max_name(a,iname)
+    subroutine max_name(a,iname,lneg)
 !
 !  Successively calculate maximum of a, which is supplied at each call.
 !
 !  29-aug-05/anders: adapted from save_name
 !
       integer :: a, iname
+      logical, optional :: lneg
 !
       fname(iname)=a
 !
 !  Set corresponding entry in itype_name.
 !
-      itype_name(iname)=ilabel_max
+      if (present(lneg)) then
+        itype_name(iname)=ilabel_max_neg
+      else
+        itype_name(iname)=ilabel_max
+      endif
 !
     endsubroutine max_name
 !***********************************************************************
