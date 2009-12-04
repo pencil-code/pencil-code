@@ -48,7 +48,6 @@ module Solid_Cells
 !  19-nov-08/nils: dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i,j,k,idir
 !
       call keep_compiler_quiet(f)
 !
@@ -61,7 +60,6 @@ module Solid_Cells
 !  19-nov-08/nils: dummy
 !
       real, dimension (mx,my,mz,mvar) :: df
-      integer :: i,j,k
 ! 
       call keep_compiler_quiet(df)
 !
@@ -79,7 +77,8 @@ module Solid_Cells
 !
       in_solid_cell=.false.
 !
-      call keep_compiler_quiet(part_pos )
+      call keep_compiler_quiet(part_pos)
+      call keep_compiler_quiet(part_rad)
 !
     endfunction in_solid_cell
 !***********************************************************************
@@ -125,7 +124,8 @@ module Solid_Cells
       real, dimension (mx,my,mz,mvar):: df
       type (pencil_case):: p
 !
-      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine dsolid_dt
 !***********************************************************************
