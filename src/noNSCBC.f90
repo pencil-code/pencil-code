@@ -1,4 +1,4 @@
-! $Id: boundcond.f90 11648 2009-09-09 09:14:01Z nils.e.haugen $
+! $Id$
 !
 !  Module for NSCBC boundary conditions. 
 !  To be included from boundcond.f90.

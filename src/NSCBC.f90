@@ -1,4 +1,4 @@
-! $Id: boundcond.f90 11648 2009-09-09 09:14:01Z nils.e.haugen $
+! $Id$
 !
 !  Module for NSCBC (Navier-Stokes Characteristic Boundary Conditions).  
 !  NSCBC is an alternative way of imposing (time-dependent) boundary 
