@@ -195,7 +195,7 @@ module Diagnostics
 !  14-aug-03/axel: began adding surface integrals
 !
       real, dimension (mname) :: fmax_tmp, fsum_tmp, fmax, fsum, fweight_tmp
-      real :: dv,vol
+      real :: vol
       integer :: iname,imax_count,isum_count,nmax_count,nsum_count
       logical :: lweight_comm
       logical, save :: first=.true.
@@ -433,7 +433,7 @@ module Diagnostics
 !
       real, dimension (nrcyl,nnamer) :: fsumr
       real, dimension (nrcyl) :: norm
-      integer :: in,ir
+      integer :: in
 !
 !  Communicate over all processors.
 !  The result is only present on the root processor.
@@ -994,7 +994,7 @@ module Diagnostics
 !
       real, dimension (nx) :: a,a_scaled
       real :: ppart,qpart
-      integer :: iname,isum
+      integer :: iname
       integer, optional :: ipart
       logical, optional :: lsqrt, lint
 !
@@ -1078,7 +1078,7 @@ module Diagnostics
 !
       real, dimension (nx) :: a
       real :: sum_name
-      integer :: iname,isum
+      integer :: iname
 
 !
       if (iname /= 0) then
@@ -1131,7 +1131,7 @@ module Diagnostics
 !
       real, dimension (nx) :: a
       real :: sum_name
-      integer :: iname,isum
+      integer :: iname
 !
       if (iname /= 0) then
         sum_name=0
