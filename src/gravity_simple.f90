@@ -394,6 +394,8 @@ module Gravity
 !
 !  Don't do anything
 !
+      call keep_compiler_quiet(f)
+!
     endsubroutine init_gg
 !***********************************************************************
     subroutine pencil_criteria_gravity()
@@ -578,7 +580,6 @@ module Gravity
       real, optional :: pot0,grav
       real :: potx_xpoint,poty_ypoint,potz_zpoint
       real :: prof,xdep,zdep
-      integer :: i
 !
       potx_xpoint=0.
       poty_ypoint=0.
@@ -638,6 +639,10 @@ module Gravity
       endif
 !
       pot = potx_xpoint + poty_ypoint + potz_zpoint
+!
+      if (present(r)) call keep_compiler_quiet(r)
+      if (present(grav)) call keep_compiler_quiet(grav)
+      if (present(pot0)) call keep_compiler_quiet(pot0)
 !
     endsubroutine potential_point
 !***********************************************************************
