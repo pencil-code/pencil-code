@@ -1366,7 +1366,6 @@ module Sub
       real, dimension (mx,my,mz,3) :: f
       real, dimension (nx,3) :: g
       real, dimension (nx) :: tmp1,tmp2
-      integer :: k,k1
 !
       intent(in) :: f
       intent(out) :: g
@@ -1491,7 +1490,6 @@ module Sub
 !
       real, dimension (mx,my,mz) :: f
       real, dimension (nx) :: del2f,d2fdx,d2fdy,d2fdz,tmp
-      integer :: k
 !
       call der2(f,d2fdx,1)
       call der2(f,d2fdy,2)
@@ -2235,8 +2233,7 @@ module Sub
       real, dimension (nx,3,3,3) :: gradM
       real,dimension(nx,3) :: uu
       real, dimension (nx,3,3) :: u_dot_gradM
-      real, dimension (nx) :: tmp
-      integer :: j,k
+      integer :: k
 !
 !  upwind
 !
@@ -2589,7 +2586,7 @@ module Sub
 !
       character (len=*) :: file
       character         :: prec_in
-      integer           :: mx_in,my_in,mz_in,iprocz_slowest=0
+      integer           :: mx_in,my_in,mz_in
       integer           :: mvar_in,maux_in,mglobal_in,nghost_in
       integer           :: ipx_in, ipy_in, ipz_in
 !
@@ -4975,7 +4972,7 @@ nameloop: do
 !
     integer :: nr,istop,i,i1,i2
     real, dimension (nr) :: r,fr
-    real    :: r0,f0,interp1
+    real    :: r0,interp1
 
     if (r0 == r(1)) then
       interp1=fr(1)
