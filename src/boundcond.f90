@@ -251,7 +251,7 @@ module Boundcond
                 case('cfb')
                   ! BCZ_DOC: radial centrifugal balance 
                   if (lcylindrical_coords) then
-                    call bc_lnrho_cfb_r_iso(f,topbot,j)
+                    call bc_lnrho_cfb_r_iso(f,topbot)
                   else
                     print*,'not implemented for other than cylindrical'
                     stop

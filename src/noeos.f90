@@ -1423,19 +1423,17 @@ module EquationOfState
 !
     endsubroutine bc_stellar_surface
 !***********************************************************************
-    subroutine bc_lnrho_cfb_r_iso(f,topbot,j)
+    subroutine bc_lnrho_cfb_r_iso(f,topbot)
 !
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=3) :: topbot
-      integer :: j
 !
       call stop_it("bc_lnrho_cfb_r_iso: NOT IMPLEMENTED IN NOEOS")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
-      call keep_compiler_quiet(j)
 !
     endsubroutine bc_lnrho_cfb_r_iso
 !***********************************************************************

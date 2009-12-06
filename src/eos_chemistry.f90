@@ -2179,7 +2179,7 @@ glnTT(:,i)=impossible
 !
     endsubroutine bc_stellar_surface
 !***********************************************************************
-    subroutine bc_lnrho_cfb_r_iso(f,topbot,j)
+    subroutine bc_lnrho_cfb_r_iso(f,topbot)
 !
 !  Boundary condition for radial centrifugal balance
 !
@@ -2203,7 +2203,7 @@ glnTT(:,i)=impossible
       real, dimension (my,mz) :: cs2,gravterm,centterm,uphi
       real :: dlnrhodz, dssdz
       real :: potp,potm,rad,step
-      integer :: i,j
+      integer :: i
 
 
       if (l_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'

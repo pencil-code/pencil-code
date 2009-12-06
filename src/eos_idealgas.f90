@@ -1712,7 +1712,7 @@ module EquationOfState
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my) :: tmp_xy,cs2_xy,rho_xy,lnrho_xy,ss_xy
-      real, dimension (mx,my) :: cs2_xy1,cs2_xy2,T_xy,T_xy1,T_xy2,Told4
+      real, dimension (mx,my) :: cs2_xy1,cs2_xy2,T_xy,T_xy1,T_xy2
       real :: eps
       integer :: i,ierr,iter,j,k
       integer,parameter :: niter=4
@@ -1885,10 +1885,8 @@ module EquationOfState
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my) :: tmp_xy,cs2_xy,rho_xy,lnrho_xy,ss_xy
-      real, dimension (mx,my) :: cs2_xy1,cs2_xy2,T_xy,T_xy1,T_xy2,Told4
-      real :: eps
-      integer :: i,ierr,iter,j,k
+      real, dimension (mx,my) :: tmp_xy,cs2_xy,rho_xy
+      integer :: i,ierr
 !
       if (ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
 !
@@ -2004,10 +2002,8 @@ module EquationOfState
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my) :: tmp_xy,cs2_xy,rho_xy,lnrho_xy,ss_xy
-      real, dimension (mx,my) :: cs2_xy1,cs2_xy2,T_xy,T_xy1,T_xy2,Told4
-      real :: eps
-      integer :: i,ierr,iter,j,k
+      real, dimension (mx,my) :: tmp_xy,cs2_xy,rho_xy
+      integer :: i,ierr
 !
       if (ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
 !
@@ -2121,8 +2117,7 @@ module EquationOfState
       use SharedVariables, only: get_shared_variable
       use Mpicomm, only: stop_it
 !
-      real, pointer :: Fbot,Ftop,chi_t
-      logical, pointer :: lheatc_chiconst
+      real, pointer :: chi_t
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2929,7 +2924,7 @@ module EquationOfState
 !
     endsubroutine bc_stellar_surface
 !***********************************************************************
-    subroutine bc_lnrho_cfb_r_iso(f,topbot,j)
+    subroutine bc_lnrho_cfb_r_iso(f,topbot)
 !
 !  Boundary condition for radial centrifugal balance
 !
@@ -2952,12 +2947,10 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
       real, dimension (my,mz) :: cs2,gravterm,centterm,uphi
-      real :: dlnrhodz, dssdz
       real :: potp,potm,rad,step
-      integer :: i,j
-
+      integer :: i
+!
       select case (topbot)
-
 !
 !  Bottom boundary
 !
@@ -3183,7 +3176,6 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
 
-      real, dimension (mx,my,nghost) :: ghost_zones
       real, dimension (nx,ny) :: kx,ky,kappa,exp_fact
       real, dimension (nx,ny) :: tmp_re,tmp_im
       real :: pot
@@ -3315,7 +3307,6 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
 
-      real, dimension (mx,my,nghost) :: ghost_zones
       real, dimension (nx,ny) :: kx,ky,kappa,exp_fact
       real, dimension (nx,ny) :: tmp_re,tmp_im
       real, dimension (nx) :: pot,rr_cyl,rr_sph,cs2,tmp1,tmp2
@@ -3499,7 +3490,6 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension (nx) :: potm,potp,tmp1,tmp2,rr_cyl,rr_sph,cs2
       character (len=3), intent (in) :: topbot
-      real :: dlnrhodz, dssdz
       integer :: i
       
       select case (topbot)
