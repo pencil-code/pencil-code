@@ -29,11 +29,11 @@ module Fourier
 !
 !  27-oct-02/axel: adapted from transform_i, for fftpack
 !
-      real, dimension(nx,ny,nz) :: a_re,a_im
+      real, dimension (nx,ny,nz) :: a_re,a_im
       logical, optional :: linv
 !
-      complex, dimension(nx) :: ax
-      real, dimension(4*nx+15) :: wsavex
+      complex, dimension (nx) :: ax
+      real, dimension (4*nx+15) :: wsavex
       integer :: l,m,n
       logical :: lforward
 !
@@ -181,11 +181,11 @@ module Fourier
 !
 !  19-12t-06/anders: adapted from fourier_transform
 !
-      real, dimension(nx,ny,nz) :: a_re,a_im
+      real, dimension (nx,ny,nz) :: a_re,a_im
       logical, optional :: linv
 !
-      complex, dimension(nx) :: ax
-      real, dimension(4*nx+15) :: wsavex
+      complex, dimension (nx) :: ax
+      real, dimension (4*nx+15) :: wsavex
       integer :: l,m,n
       logical :: lforward
 !
@@ -284,11 +284,11 @@ module Fourier
 !
 !  27-oct-02/axel: adapted from transform_fftpack
 !
-      real, dimension(nx,ny,nz) :: a_re,a_im
+      real, dimension (nx,ny,nz) :: a_re,a_im
       logical, optional :: linv
 !
-      complex, dimension(nx) :: ax
-      real, dimension(4*nx+15) :: wsavex
+      complex, dimension (nx) :: ax
+      real, dimension (4*nx+15) :: wsavex
       integer :: l,m,n
 !
       if (nprocx>1) &
@@ -354,11 +354,11 @@ module Fourier
 !
 !  06-feb-03/nils: adapted from transform_fftpack
 !
-      real, dimension(nx,ny,nz) :: a_re,a_im
+      real, dimension (nx,ny,nz) :: a_re,a_im
       logical, optional :: linv
 !
-      complex, dimension(nx) :: ax
-      real, dimension(4*nx+15) :: wsavex
+      complex, dimension (nx) :: ax
+      real, dimension (4*nx+15) :: wsavex
       integer :: m,n
       logical :: lforward
 !
@@ -452,11 +452,11 @@ module Fourier
 !
       use General, only: spline
 !
-      real,dimension(nx,ny,nz)     :: a_re,a_im
-      real,dimension(nygrid,ny,nz) :: tmp_re,tmp_im
-      real,dimension(nygrid),save  :: xnyg
-      real,dimension(4*nygrid+15)  :: wsave
-      complex,dimension(nygrid)    :: ay
+      real, dimension (nx,ny,nz)     :: a_re,a_im
+      real, dimension (nygrid,ny,nz) :: tmp_re,tmp_im
+      real, dimension (nygrid),save  :: xnyg
+      real, dimension (4*nygrid+15)  :: wsave
+      complex, dimension (nygrid)    :: ay
       real    :: dnx
       integer :: l,n,iarr,ix,ido,iup,i
       logical :: lforward,lnormalize,err
@@ -800,7 +800,6 @@ module Fourier
 !
       complex, dimension (nx) :: ax
       complex, dimension (nx) :: ay
-      complex, dimension (nx) :: az
       real, dimension (4*nx+15) :: wsave
       real :: deltay_x
       integer :: l,m,n,two
@@ -919,11 +918,11 @@ module Fourier
 !
       use Mpicomm, only: stop_it
 !
-      real, dimension(:) :: a_re,a_im
+      real, dimension (:) :: a_re,a_im
       logical, optional :: linv
 !
-      complex, dimension(size(a_re,1)) :: ax
-      real, dimension(4*size(a_re,1)+15) :: wsavex
+      complex, dimension (size(a_re,1)) :: ax
+      real, dimension (4*size(a_re,1)+15) :: wsavex
       integer :: nx_other
       logical :: lforward
 !
@@ -982,13 +981,13 @@ module Fourier
 !
       use Mpicomm, only: stop_it
 !
-      real, dimension(:,:) :: a_re,a_im
+      real, dimension (:,:) :: a_re,a_im
       logical, optional :: linv
 !
-      complex, dimension(size(a_re,1)) :: ax
-      complex, dimension(size(a_re,2)) :: ay
-      real, dimension(4*size(a_re,1)+15) :: wsavex
-      real, dimension(4*size(a_re,2)+15) :: wsavey
+      complex, dimension (size(a_re,1)) :: ax
+      complex, dimension (size(a_re,2)) :: ay
+      real, dimension (4*size(a_re,1)+15) :: wsavex
+      real, dimension (4*size(a_re,2)+15) :: wsavey
       integer :: l, m, nx_other, ny_other
       logical :: lforward
 !
@@ -1077,14 +1076,14 @@ module Fourier
 !
       use Mpicomm, only: transp_xy
 !
-      real, dimension(nx,ny) :: a_re,a_im
+      real, dimension (nx,ny) :: a_re,a_im
       logical, optional :: linv
 !
-      complex, dimension(nx) :: ax
-      complex, dimension(nygrid) :: ay
-      real, dimension(4*nx+15) :: wsavex
-      real, dimension(4*nygrid+15) :: wsavey
-      real, dimension(ny) :: deltay_x
+      complex, dimension (nx) :: ax
+      complex, dimension (nygrid) :: ay
+      real, dimension (4*nx+15) :: wsavex
+      real, dimension (4*nygrid+15) :: wsavey
+      real, dimension (ny) :: deltay_x
       integer :: l,m,ibox
       logical :: lforward
 !
@@ -1207,14 +1206,14 @@ module Fourier
 !
       use Mpicomm, only: transp_xy_other,transp_xy
 !
-      real, dimension(:,:) :: a_re,a_im
+      real, dimension (:,:) :: a_re,a_im
       logical, optional :: linv
 !
-      complex, dimension(size(a_re,1)) :: ax
-      complex, dimension(nprocy*size(a_re,2)) :: ay
-      real, dimension(4*size(a_re,1)+15) :: wsavex
-      real, dimension(4*nprocy*size(a_re,2)+15) :: wsavey
-      integer :: l,m,ibox,nx_other,ny_other
+      complex, dimension (size(a_re,1)) :: ax
+      complex, dimension (nprocy*size(a_re,2)) :: ay
+      real, dimension (4*size(a_re,1)+15) :: wsavex
+      real, dimension (4*nprocy*size(a_re,2)+15) :: wsavey
+      integer :: l,m,nx_other,ny_other
       integer :: nxgrid_other,nygrid_other
       logical :: lforward
 !
@@ -1327,12 +1326,12 @@ module Fourier
 !
       use Mpicomm, only: mpirecv_real, mpisend_real
 !
-      real, dimension(ny) :: a_re, a_im
+      real, dimension (ny) :: a_re, a_im
       logical, optional :: linv
 !
-      real, dimension(nygrid) :: a_re_full, a_im_full
-      complex, dimension(nygrid) :: ay
-      real, dimension(4*nygrid+15) :: wsavey
+      real, dimension (nygrid) :: a_re_full, a_im_full
+      complex, dimension (nygrid) :: ay
+      real, dimension (4*nygrid+15) :: wsavey
       integer :: ipy_send
       integer, parameter :: itag1=100, itag2=200
       logical :: lforward
@@ -1455,8 +1454,8 @@ module Fourier
       real, dimension (ny,nz) :: a_re
       real :: shift_y
 !
-      complex, dimension(nygrid) :: a_cmplx, cmplx_shift
-      real, dimension(nygrid,max(nz/nprocy,1)) :: a_re_new, a_im_new
+      complex, dimension (nygrid) :: a_cmplx, cmplx_shift
+      real, dimension (nygrid,max(nz/nprocy,1)) :: a_re_new, a_im_new
       integer :: n, nz_new, ipy_from, ipy_to, iproc_from, iproc_to
       integer :: nprocy_used
       integer, parameter :: itag=666
@@ -1625,7 +1624,7 @@ module Fourier
       real, dimension (nx,ny,nz) :: a_im
       complex, dimension (nx) :: ay
       real, dimension (4*nx+15) :: wsave
-      integer :: l,m,n,two
+      integer :: l,n,two
 !
       two = 2         ! avoid `array out of bounds' below for nygrid=1
 !
@@ -1687,20 +1686,19 @@ module Fourier
 !
       use Mpicomm, only: stop_it
 !
-      real, dimension(na) :: a
-      integer, intent(in) :: na,ifirst_fft
+      real, dimension (na) :: a
+      integer, intent (in) :: na,ifirst_fft
       logical, optional :: linv
-      real, dimension(2*na+15) :: wsavex_temp  
+      real, dimension (2*na+15) :: wsavex_temp  
 !
-      integer :: nx_other
       logical :: lforward
-!----------
+!
       if (ifirst_fft==1) then
 ! Initialize fftpack
         call rffti(na,wsavex_temp)
       else
       endif
-!---------
+!
       lforward=.true.
       if (present(linv)) then
         if (linv) lforward=.false.
