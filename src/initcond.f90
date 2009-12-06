@@ -110,7 +110,7 @@ module Initcond
     enddo 
 !
     endsubroutine phi_siny_over_r2
-!**********************************************************************
+!***********************************************************************
     subroutine sinxsinz(ampl,f,i,kx,ky,kz,KKx,KKy,KKz)
 !
 !  sinusoidal wave. Note: f(:,:,:,j) with j=i+1 is set.
@@ -730,10 +730,10 @@ module Initcond
       use Cdata, only: tini
 
       integer                           :: i, k, l, nr
-      real, dimension(nr)               :: om_nr, xsteps
-      real, dimension(nr+2)             :: om_all, om_diff
-      real, dimension(:), allocatable   :: omx
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension (nr)               :: om_nr, xsteps
+      real, dimension (nr+2)             :: om_all, om_diff
+      real, dimension (:), allocatable   :: omx
+      real, dimension (mx,my,mz,mfarray) :: f
       real                              :: ampl, mu, gap, omegao, omegai, rinner, router, step
       real                              :: x0, y0
       character(len=20)                 :: unfmt
@@ -1909,7 +1909,7 @@ module Initcond
       real, dimension (mx) :: funx
       real, dimension (my) :: funy
       real, dimension (mz) :: funz
-      real, dimension(3) :: Lxyz
+      real, dimension (3) :: Lxyz
       real :: k1,k2,k3,k4,phi1,phi2,phi3,phi4,ampl
       integer :: i,iux,iuy,iuz,l,m,n
 !
@@ -2187,13 +2187,13 @@ module Initcond
 !
       use Mpicomm, only: mpireduce_sum, mpibcast_real
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: hh, xi
       real, dimension (mz) :: hz
       real :: delS,ampl,sigma2,sigma,delta2,delta,eps,radius,a_ell,b_ell,c_ell
       real :: gamma,cs20,gamma_m1,eps2,radius2,width
       real :: lnrhosum_thisbox,rho0
-      real, dimension(1) :: lnrhosum_thisbox_tmp,lnrhosum_wholebox
+      real, dimension (1) :: lnrhosum_thisbox_tmp,lnrhosum_wholebox
       integer :: l
 !
 !  calculate sigma
@@ -2322,7 +2322,7 @@ module Initcond
       real :: gamma,eps2,radius2,width,a_ell,b_ell,c_ell
       real :: gamma_m1,ztop,cs20,hh0
       real :: lnrhosum_thisbox,rho0
-      real, dimension(1) :: lnrhosum_thisbox_tmp,lnrhosum_wholebox
+      real, dimension (1) :: lnrhosum_thisbox_tmp,lnrhosum_wholebox
 !
 !  calculate sigma
 !
@@ -2429,7 +2429,7 @@ module Initcond
 !
 !   8-jun-04/anders: adapted from planet
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: r_ell, xi
       real :: sigma,eps_ell,a_ell,b_ell,width,rbound
 !
@@ -3857,15 +3857,15 @@ module Initcond
 !
 !   24-sept-04/snod: coded first attempt
 !
-    use Sub
-    integer :: modeN,N_modes,l,n,m,i1
-    real, dimension (mx,my,mz,mfarray) :: f
+      use Sub
+      integer :: modeN,N_modes,l,n,m,i1
+      real, dimension (mx,my,mz,mfarray) :: f
 
 ! how many wavenumbers?
-    real, dimension (3,1024) :: kk,RA,RB !or through whole field for each wavenumber?
-    real, dimension (3) :: k_unit,vec,ee,e1,e2,field
-    real :: initpower,kmin,ps,k,phi,theta,alpha,beta,dk
-    real :: ex,ey,ez,norm,kdotx,r
+      real, dimension (3,1024) :: kk,RA,RB !or through whole field for each wavenumber?
+      real, dimension (3) :: k_unit,vec,ee,e1,e2,field
+      real :: initpower,kmin,ps,k,phi,theta,alpha,beta,dk
+      real :: ex,ey,ez,norm,kdotx,r
 
 !
 !    minlen=Lxyz(1)/(nx-1)
@@ -3890,96 +3890,96 @@ module Initcond
 !
 !  set kmin
 !
-    kmin=2.*pi/Lxyz(1)
+      kmin=2.*pi/Lxyz(1)
 !
-    do modeN=1,N_modes
+      do modeN=1,N_modes
 !
 !  pick wavenumber
 !
-       k=modeN*kmin
+        k=modeN*kmin
 !
 !  calculate dk
 !
-       dk=1.0*kmin
+        dk=1.0*kmin
 !
 !   pick 4 random angles for each mode
 !
 
-       call random_number_wrapper(r); theta=pi*(2*r - 0.)
-       call random_number_wrapper(r); phi=pi*(2*r - 0.)
-       call random_number_wrapper(r); alpha=pi*(2*r - 0.)
-       call random_number_wrapper(r); beta=pi*(2*r - 0.)
+        call random_number_wrapper(r); theta=pi*(2*r - 0.)
+        call random_number_wrapper(r); phi=pi*(2*r - 0.)
+        call random_number_wrapper(r); alpha=pi*(2*r - 0.)
+        call random_number_wrapper(r); beta=pi*(2*r - 0.)
 !       call random_number_wrapper(r); gamma(modeN)=pi*(2*r - 0.)  ! random phase?
 
 !
 !   make a random unit vector by rotating fixed vector to random position
 !   (alternatively make a random transformation matrix for each k)
 !
-       k_unit(1)=sin(theta)*cos(phi)
-       k_unit(2)=sin(theta)*sin(phi)
-       k_unit(3)=cos(theta)
+        k_unit(1)=sin(theta)*cos(phi)
+        k_unit(2)=sin(theta)*sin(phi)
+        k_unit(3)=cos(theta)
 !
 !   make a vector kk of length k from the unit vector for each mode
 !
-       kk(:,modeN)=k*k_unit(:)
+        kk(:,modeN)=k*k_unit(:)
 !
 !   construct basis for plane having rr normal to it
 !   (bit of code from forcing to construct x', y')
 !
-       if ((k_unit(2).eq.0).and.(k_unit(3).eq.0)) then
-        ex=0.; ey=1.; ez=0.
-       else
-        ex=1.; ey=0.; ez=0.
-       endif
-       ee = (/ex, ey, ez/)
-       call cross(k_unit(:),ee,e1)
-       call dot2(e1,norm); e1=e1/sqrt(norm) ! e1: unit vector perp. to kk
-       call cross(k_unit(:),e1,e2)
-       call dot2(e2,norm); e2=e2/sqrt(norm) ! e2: unit vector perp. to kk, e1
+        if ((k_unit(2).eq.0).and.(k_unit(3).eq.0)) then
+          ex=0.; ey=1.; ez=0.
+        else
+          ex=1.; ey=0.; ez=0.
+        endif
+        ee = (/ex, ey, ez/)
+        call cross(k_unit(:),ee,e1)
+        call dot2(e1,norm); e1=e1/sqrt(norm) ! e1: unit vector perp. to kk
+        call cross(k_unit(:),e1,e2)
+        call dot2(e2,norm); e2=e2/sqrt(norm) ! e2: unit vector perp. to kk, e1
 !
 !   make two random unit vectors RB and RA in the constructed plane
 !
-       RA(:,modeN) = cos(alpha)*e1 + sin(alpha)*e2
-       RB(:,modeN) = cos(beta)*e1  + sin(beta)*e2
+        RA(:,modeN) = cos(alpha)*e1 + sin(alpha)*e2
+        RB(:,modeN) = cos(beta)*e1  + sin(beta)*e2
 !
 !   define the power spectrum (ps=sqrt(2.*power_spectrum(k)*delta_k/3.))
 !
-       ps=(k**(initpower/2.))*sqrt(dk*2./3.)
+        ps=(k**(initpower/2.))*sqrt(dk*2./3.)
 !
 !   give RA and RB length ps
 !
-       RA(:,modeN)=ps*RA(:,modeN)
-       RB(:,modeN)=ps*RB(:,modeN)
+        RA(:,modeN)=ps*RA(:,modeN)
+        RB(:,modeN)=ps*RB(:,modeN)
 !
 !   form RA = RA x k_unit and RB = RB x k_unit
 !
-       call cross(RA(:,modeN),k_unit(:),RA(:,modeN))
-       call cross(RB(:,modeN),k_unit(:),RB(:,modeN))
+        call cross(RA(:,modeN),k_unit(:),RA(:,modeN))
+        call cross(RB(:,modeN),k_unit(:),RB(:,modeN))
 !
-     enddo
+      enddo
 !
 !   make the field
 !
-    do n=n1,n2
-      do m=m1,m2
-        do l=l1,l2
-          field=0.  ! initialize field
-          vec(1)=x(l)    ! local coordinates?
-          vec(2)=y(m)
-          vec(3)=z(n)
-          do modeN=1,N_modes  ! sum over N_modes modes
-             call dot(kk(:,modeN),vec,kdotx)
-             field = field + cos(kdotx)*RA(:,modeN) + sin(kdotx)*RB(:,modeN)
+      do n=n1,n2
+        do m=m1,m2
+          do l=l1,l2
+            field=0.  ! initialize field
+            vec(1)=x(l)    ! local coordinates?
+            vec(2)=y(m)
+            vec(3)=z(n)
+            do modeN=1,N_modes  ! sum over N_modes modes
+              call dot(kk(:,modeN),vec,kdotx)
+              field = field + cos(kdotx)*RA(:,modeN) + sin(kdotx)*RB(:,modeN)
+            enddo
+            f(l,m,n,i1)   = f(l,m,n,i1)   + field(1)
+            f(l,m,n,i1+1) = f(l,m,n,i1+1) + field(2)
+            f(l,m,n,i1+2) = f(l,m,n,i1+2) + field(3)
           enddo
-          f(l,m,n,i1)   = f(l,m,n,i1)   + field(1)
-          f(l,m,n,i1+1) = f(l,m,n,i1+1) + field(2)
-          f(l,m,n,i1+2) = f(l,m,n,i1+2) + field(3)
         enddo
       enddo
-    enddo
 !
     endsubroutine random_isotropic_KS
-!**********************************************************
+!***********************************************************************
     subroutine set_thermodynamical_quantities&
          (f,ptlaw,ics2,iglobal_cs2,iglobal_glnTT)
 !
@@ -4006,8 +4006,8 @@ module Initcond
       use Messages       , only: warning
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension(nx) :: rr,rr_sph,rr_cyl,cs2,lnrho
-      real, dimension(nx) :: gslnTT
+      real, dimension (nx) :: rr,rr_sph,rr_cyl,cs2,lnrho
+      real, dimension (nx) :: gslnTT
       real :: cp1,ptlaw
       integer, pointer, optional :: iglobal_cs2,iglobal_glnTT
       integer :: ics2
@@ -4127,7 +4127,7 @@ module Initcond
            print*,"thermodynamical quantities successfully set"
 !
     endsubroutine set_thermodynamical_quantities
-!*************************************************************
+!***********************************************************************
     subroutine corona_init(f)
 !
 !  Initialize the density for a given temperature profile 
@@ -4140,9 +4140,9 @@ module Initcond
       use Cdata
       use EquationOfState, only: lnrho0,gamma,gamma_m1,cs20,cs2top,cs2bot
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real :: tmp,ztop,zbot
-      real, dimension(150) :: b_lnT,b_lnrho,b_z
+      real, dimension (150) :: b_lnT,b_lnrho,b_z
       integer :: i,lend,j
 !
 !  temperature given as function lnT(z) in SI units
@@ -4221,7 +4221,7 @@ module Initcond
       enddo
 !
     endsubroutine corona_init
-!*********************************************************
+!***********************************************************************
     subroutine mdi_init(f)
 !
 !  Intialize the vector potential
@@ -4234,10 +4234,10 @@ module Initcond
       use Fourier
       use Sub
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
-      real, dimension(:,:), allocatable :: kx,ky,k2,Bz0_i,Bz0_r,A_r,A_i
-      real, dimension(:), allocatable :: kxp, kyp
+      real, dimension (:,:), allocatable :: kx,ky,k2,Bz0_i,Bz0_r,A_r,A_i
+      real, dimension (:), allocatable :: kxp, kyp
       real :: mu0_SI,u_b
       integer :: i,idx2,idy2,stat
 !
@@ -4348,7 +4348,7 @@ module Initcond
       if (allocated(kyp)) deallocate(kyp)
 !
     endsubroutine mdi_init
-!*********************************************************
+!***********************************************************************
     subroutine temp_hydrostatic(f)
 !
 ! 07-dec-05/bing : coded.
@@ -4360,9 +4360,9 @@ module Initcond
       use EquationOfState, only: lnrho0,gamma,cs20,cs2top,cs2bot
       use Gravity, only: gravz
       
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real :: tmp,ztop,zbot
-      real, dimension(150) :: b_lnT,b_z
+      real, dimension (150) :: b_lnT,b_z
       real :: tmprho,tmpT,tmpdT,tmpz
       integer :: i,lend,j
       !
@@ -4424,26 +4424,26 @@ module Initcond
       enddo
 !
     endsubroutine temp_hydrostatic
-!*********************************************************
+!***********************************************************************
     subroutine const_lou(ampl,f,i)
 !
 !  PLEASE ADD A DESCRIPTION
 !
 !  5-nov-05/weezy: coded
 !
-    use Cdata
-    use General
-
-    real, dimension (mx,my,mz,mfarray) :: f
-    real :: ampl
-    integer::i
+      use Cdata
+      use General
+    
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: ampl
+      integer::i
 !
-    do n=n1,n2; do m=m1,m2
-      f(l1:l2,m,n,i  )=ampl*cos(2.*pi*y(m))/32.*pi
-      f(l1:l2,m,n,i+1)=ampl*cos(2.*pi*z(n))/32.*pi
-      f(l1:l2,m,n,i+2)=ampl*cos(2.*pi*x(l1:l2))/32.*pi
-    enddo; enddo
+      do n=n1,n2; do m=m1,m2
+        f(l1:l2,m,n,i  )=ampl*cos(2.*pi*y(m))/32.*pi
+        f(l1:l2,m,n,i+1)=ampl*cos(2.*pi*z(n))/32.*pi
+        f(l1:l2,m,n,i+2)=ampl*cos(2.*pi*x(l1:l2))/32.*pi
+      enddo; enddo
 !
     endsubroutine const_lou
-!*********************************************************
+!***********************************************************************
 endmodule Initcond
