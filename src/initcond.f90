@@ -1899,7 +1899,7 @@ module Initcond
 !
     endsubroutine coswave_phase
 !***********************************************************************
-    subroutine hawley_etal99a(ampl,f,i,width,Lxyz)
+    subroutine hawley_etal99a(ampl,f,i,Lxyz)
 !
 !  velocity perturbations as used by Hawley et al (1999, ApJ,518,394)
 !
@@ -1910,7 +1910,7 @@ module Initcond
       real, dimension (my) :: funy
       real, dimension (mz) :: funz
       real, dimension(3) :: Lxyz
-      real :: k1,k2,k3,k4,phi1,phi2,phi3,phi4,ampl,width
+      real :: k1,k2,k3,k4,phi1,phi2,phi3,phi4,ampl
       integer :: i,iux,iuy,iuz,l,m,n
 !
 !  set iux, iuy, iuz, based on the value of i
@@ -2551,7 +2551,7 @@ module Initcond
 !
     endsubroutine strange
 !***********************************************************************
-    subroutine htube(ampl,f,i1,i2,radius,eps,center1_x,center1_y,center1_z)
+    subroutine htube(ampl,f,i1,i2,radius,eps,center1_x,center1_z)
 !
 !  Horizontal flux tube (for vector potential, or passive scalar)
 !
@@ -2562,7 +2562,7 @@ module Initcond
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: tmp,modulate,tube_radius_sqr
       real :: ampl,radius,eps,ky
-      real :: center1_x,center1_y,center1_z
+      real :: center1_x,center1_z
 !
 ! please remove the variable if not needed anymore
       call keep_compiler_quiet(modulate)
@@ -2604,7 +2604,7 @@ module Initcond
 !
     endsubroutine htube
 !***********************************************************************
-    subroutine htube_x(ampl,f,i1,i2,radius,eps,center1_x,center1_y,center1_z)
+    subroutine htube_x(ampl,f,i1,i2,radius,eps,center1_y,center1_z)
 !
 !  Horizontal flux tube pointing in the x-direction
 !  (for vector potential, or passive scalar)
@@ -2615,7 +2615,7 @@ module Initcond
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: tmp,modulate,tube_radius_sqr
       real :: ampl,radius,eps,kx
-      real :: center1_x,center1_y,center1_z
+      real :: center1_y,center1_z
 !
       if (ampl==0) then
         f(:,:,:,i1:i2)=0
@@ -2660,7 +2660,7 @@ module Initcond
 !
     endsubroutine htube_x
 !***********************************************************************
-    subroutine htube_erf(ampl,f,i1,i2,a,eps,center1_x,center1_y,center1_z,width)
+    subroutine htube_erf(ampl,f,i1,i2,a,eps,center1_x,center1_z,width)
 !
 !  Horizontal flux tube (for vector potential) which gives error-function border profile
 ! for the magnetic field. , or passive scalar)
@@ -2671,7 +2671,7 @@ module Initcond
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: modulate
       real :: ampl,a,eps,ky,width,tmp,radius,a_minus_r
-      real :: center1_x,center1_y,center1_z
+      real :: center1_x,center1_z
 !
 ! please remove the variable if not needed anymore
       call keep_compiler_quiet(modulate)
