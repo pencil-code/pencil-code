@@ -485,6 +485,9 @@ contains
 !
 !     nothing needs to be done here
 !
+      call keep_compiler_quiet(tau)
+      call keep_compiler_quiet(file)
+!
     endsubroutine wtime
 !***********************************************************************
     subroutine rtime(file,tau)
@@ -493,6 +496,9 @@ contains
       character (len=*) :: file
 !
 !     nothing needs to be done here
+!
+      call keep_compiler_quiet(tau)
+      call keep_compiler_quiet(file)
 !
     endsubroutine rtime
 !***********************************************************************
