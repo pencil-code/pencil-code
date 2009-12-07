@@ -43,7 +43,7 @@ module struct_func
       integer, parameter :: n_pdf=101
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (:,:,:,:), allocatable :: flux_vec
-      real, dimension (nx,ny,nz) :: vect,vectb,b_vec
+      real, dimension (nx,ny,nz) :: vect,b_vec
       real, dimension (imax,qmax,3) :: sf,sf_sum
       real, dimension (ny,nz,3) :: dvect_flux1,dvect_flux2
       real, dimension (ny,nz) :: dvect1,dvect2,sf3_flux1,sf3_flux2
