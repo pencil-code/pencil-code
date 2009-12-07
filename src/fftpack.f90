@@ -683,7 +683,6 @@ subroutine cffti1 ( n, wa, ifac )
   real fi
   integer i
   integer i1
-  integer ib
   integer ido
   integer ifac(15)
   integer ii
@@ -2484,7 +2483,6 @@ subroutine dffti1 ( n, wa, ifac )
   double precision d_pi
   double precision fi
   integer i
-  integer ib
   integer ido
   integer ifac(15)
   integer ii
@@ -2725,7 +2723,6 @@ subroutine dsint1 ( n, war, was, xh, x, ifac )
   integer i
   integer ifac(15)
   integer k
-  integer kc
   integer ns2
   double precision sqrt3
   double precision t1
@@ -3399,7 +3396,6 @@ subroutine ezffti1 ( n, wa, ifac )
   real dch1
   real dsh1
   integer i
-  integer ib
   integer ido
   integer ifac(15)
   integer ii
@@ -3486,7 +3482,6 @@ subroutine i_factor ( n, ifac )
   implicit none
 !
   integer i
-  integer ib
   integer ifac(15)
   integer j
   integer n
@@ -3932,11 +3927,9 @@ subroutine passb4 ( ido, l1, cc, ch, wa1, wa2, wa3 )
 !
   real cc(ido,4,l1)
   real ch(ido,l1,4)
-  real ci1
   real ci2
   real ci3
   real ci4
-  real cr1
   real cr2
   real cr3
   real cr4
@@ -4520,11 +4513,9 @@ subroutine passf4 ( ido, l1, cc, ch, wa1, wa2, wa3 )
 !
   real cc(ido,4,l1)
   real ch(ido,l1,4)
-  real ci1
   real ci2
   real ci3
   real ci4
-  real cr1
   real cr2
   real cr3
   real cr4
@@ -7045,7 +7036,6 @@ subroutine rffti1 ( n, wa, ifac )
   real argld
   real fi
   integer i
-  integer ib
   integer ido
   integer ifac(15)
   integer ii
@@ -7919,7 +7909,6 @@ subroutine sinqb ( n, x, wsave )
 !
   integer n
 !
-  integer k
   real wsave(3*n+15)
   real x(n)
 !
@@ -8009,7 +7998,6 @@ subroutine sinqf ( n, x, wsave )
 !
   integer n
 !
-  integer k
   real wsave(3*n+15)
   real x(n)
 !
@@ -8202,7 +8190,6 @@ subroutine rsint1 ( n, war, was, xh, x, ifac )
   integer i
   integer ifac(15)
   integer k
-  integer kc
   integer ns2
   real, parameter :: sqrt3 = 1.73205080756888E+00
   real t1
