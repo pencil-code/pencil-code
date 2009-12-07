@@ -254,7 +254,8 @@ module Messages
       character (len=200) :: fmt
       character (len=20) :: tmp1,tmp2,tmp3,tmp4
       integer :: if0,if1,iv0,iv1,iy0,iy1,it0,it1,ia0,ia1,iat
-      integer :: wf=18, wv=7, wa=15, wd=19 ! width of individual fields
+      integer :: wf=18, wv=7, wd=19 ! width of individual fields
+!     integer :: wa=15 ! 07-dec-09 bing: commented out because it wasn't used
       integer :: wd1=0
       logical, save :: lfirstcall=.true.
 !
