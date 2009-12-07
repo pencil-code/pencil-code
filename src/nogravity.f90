@@ -123,6 +123,8 @@ module Gravity
 !
 ! Not doing anything (this might change if we decide to store gg)
 !
+      call keep_compiler_quiet(f)
+!
     endsubroutine init_gg
 !***********************************************************************
     subroutine pencil_criteria_gravity()
