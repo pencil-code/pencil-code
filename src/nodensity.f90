@@ -154,6 +154,7 @@ module Density
       intent(inout) :: p
 
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_density_after_mn
 !***********************************************************************
@@ -229,6 +230,7 @@ module Density
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
+      call keep_compiler_quiet(lreset)
 !
     endsubroutine rprint_density
 !***********************************************************************
