@@ -261,6 +261,7 @@ module Fourier
       call keep_compiler_quiet(na)
       call keep_compiler_quiet(ifirst_fft)
       call keep_compiler_quiet(linv)
+      if (present(wsavex_temp)) call keep_compiler_quiet(wsavex_temp)
 !
     endsubroutine fourier_transform_real_1
 !***********************************************************************
