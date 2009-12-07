@@ -98,8 +98,6 @@ module FArrayManager
 !
       character (len=*) :: varname
       integer  :: ivar
-      type (farray_contents_list), pointer :: item
-      integer :: ncomponents
       integer, parameter :: vartype = iFARRAY_TYPE_PDE
       integer, optional :: ierr
       integer, optional :: vector
@@ -129,8 +127,6 @@ module FArrayManager
       integer, optional :: ierr
       integer, optional :: vector
 !
-      type (farray_contents_list), pointer :: item
-      integer :: ncomponents
       integer, parameter :: vartype = iFARRAY_TYPE_GLOBAL
 !
       intent(in)  :: varname,vector
@@ -162,8 +158,6 @@ module FArrayManager
 !
       character (len=*) :: varname
       integer :: ivar
-      type (farray_contents_list), pointer :: item
-      integer :: ncomponents
       integer :: vartype
       integer, optional :: ierr
       integer, optional :: vector
@@ -196,12 +190,11 @@ module FArrayManager
 !
       character (len=*) :: varname
       integer, target   :: ivar
-      integer           :: vartype, i
+      integer           :: vartype
       type (farray_contents_list), pointer :: item, new
       integer :: ncomponents
       integer, optional :: ierr
       integer, optional :: vector
-      integer :: memstat
 !
       intent(in)  :: varname,vartype,vector
       intent(out) :: ivar,ierr
@@ -353,7 +346,7 @@ module FArrayManager
 !
       character (len=*) :: varname
       integer           :: ivar
-      integer           :: vartype, i
+      integer           :: i
       type (farray_contents_list), pointer :: item, new
       integer           :: ncomponents
       integer, optional :: ierr
@@ -452,8 +445,7 @@ module FArrayManager
 !
       character (len=*) :: varname
       integer           :: ivar
-      integer           :: vartype, i
-      type (farray_contents_list), pointer :: item, new
+      type (farray_contents_list), pointer :: item
       integer :: ncomponents
       integer, optional :: ierr
       integer, optional :: vector
@@ -462,7 +454,6 @@ module FArrayManager
       intent(in)  :: varname,ivar,vector
       intent(out) :: ierr
 !
-
       ncomponents=1
       if (present(ierr)) ierr=0
 !
@@ -534,8 +525,6 @@ module FArrayManager
 !
       character (len=*) :: varname
       integer, pointer  :: ivar
-      type (farray_contents_list), pointer :: item
-      integer :: ncomponents
       integer, parameter :: vartype = iFARRAY_TYPE_PDE
       integer, optional :: ierr
       integer, optional :: vector
@@ -559,8 +548,6 @@ module FArrayManager
 !
       character (len=*) :: varname
       integer, pointer  :: ivar
-      type (farray_contents_list), pointer :: item
-      integer :: ncomponents
       integer, parameter :: vartype = iFARRAY_TYPE_GLOBAL
       integer, optional :: ierr
       integer, optional :: vector
@@ -584,8 +571,6 @@ module FArrayManager
 !
       character (len=*) :: varname
       integer, pointer  :: ivar
-      type (farray_contents_list), pointer :: item
-      integer :: ncomponents
       integer :: vartype
       integer, optional :: ierr
       integer, optional :: vector
@@ -618,9 +603,7 @@ module FArrayManager
 !
       character (len=*) :: varname
       integer, pointer  :: ivar
-      integer           :: icomp
       type (farray_contents_list), pointer :: item
-      integer :: ncomponents
       integer, optional :: ierr
       integer, optional :: vector
       integer, optional :: vartype
