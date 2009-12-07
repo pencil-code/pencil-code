@@ -46,7 +46,7 @@ module Chemistry
   real :: init_x1=-0.2,init_x2=0.2
   real :: init_y1=-0.2,init_y2=0.2
   real :: init_z1=-0.2,init_z2=0.2
-  real :: init_TT1=400, init_TT2=2400., init_ux
+  real :: init_TT1=400, init_TT2=2400., init_ux=0., init_uy=0., init_uz=0.
   real :: str_thick=0.02
   real :: init_pressure=10.13e5
 !
@@ -121,7 +121,7 @@ module Chemistry
       amplchemk,amplchemk2, chem_diff,nu_spec, BinDif_simple, visc_simple, &
       lambda_const, visc_const,Cp_const,Cv_const,diffus_const,init_x1,init_x2, & 
       init_y1,init_y2,init_z1,init_z2,&
-      init_TT1,init_TT2,init_ux,l1step_test,Sc_number,init_pressure,lfix_Sc, str_thick, &
+      init_TT1,init_TT2,init_ux,init_uy,init_uz,l1step_test,Sc_number,init_pressure,lfix_Sc, str_thick, &
       lfix_Pr,lT_tanh,ldamp_zone_NSCBC
 
 
@@ -1189,8 +1189,8 @@ module Chemistry
 !
             f(j1,j2,j3,iux)=f(j1,j2,j3,iux)  &
                 +init_ux!*exp(log_inlet_density)/exp(f(j1,j2,j3,ilnrho))
-            f(j1,j2,j3,iuy)=f(j1,j2,j3,iuy)+ init_ux
-            f(j1,j2,j3,iuz)=f(j1,j2,j3,iuz)+ init_ux
+            f(j1,j2,j3,iuy)=f(j1,j2,j3,iuy)+ init_uy
+            f(j1,j2,j3,iuz)=f(j1,j2,j3,iuz)+ init_uz
 
            if (nxgrid==1) f(j1,j2,j3,iux)=0. 
            if (nygrid==1) f(j1,j2,j3,iuy)=0. 
@@ -1200,7 +1200,7 @@ module Chemistry
             sz1=(xyz0(1)+Lxyz(1)*0.15)
             sz2=(xyz0(1)+Lxyz(1)*(1.-0.15))
             if ((x(j1)<sz1) .or. (sz2<x(j1))) then
-              f(j1,j2,j3,iux)=0.
+         !     f(j1,j2,j3,iux)=0.
             endif   
            endif
 
@@ -1208,7 +1208,7 @@ module Chemistry
             sz1=(xyz0(2)+Lxyz(2)*0.15)
             sz2=(xyz0(2)+Lxyz(2)*(1.-0.15))
             if ((y(j2)<sz1) .or. (y(j2)>sz2)) then
-               f(j1,j2,j3,iuy)=0.
+          !     f(j1,j2,j3,iuy)=0.
             endif
           endif
 
@@ -1216,7 +1216,7 @@ module Chemistry
            sz1=(xyz0(3)+Lxyz(3)*0.15)
            sz2=(xyz0(3)+Lxyz(3)*(1.-0.15))
            if ((z(j3)<sz1) .or. (z(j3)>sz2)) then
-              f(j1,j2,j3,iuz)=0.
+           !   f(j1,j2,j3,iuz)=0.
            endif 
           endif
 
@@ -4428,14 +4428,17 @@ module Chemistry
 !
       integer :: lll, sgn,sgn1,sgn2,i,j,k,jj, nn, nnn, mm, mmm, irho_tmp
       real :: Mach_num, nscbc_sigma_out
-      real :: U0_x=10.,U0_y=0.,U0_z=0.,T0=600.
+      real :: U0_x,U0_y,U0_z,T0
 !
+     
       intent(inout) :: f
       intent(out) :: df
     !  intent(in) :: nscbc_sigma_out
       real :: nscbc_sigma=0.5,ita
 !
   
+       U0_x=init_ux;U0_y=init_uy;U0_z=init_uz;T0=init_TT1
+
       if (leos_chemistry) then
         call get_cs2_full(cs2_full)
         call get_gamma_full(gamma_full)
@@ -4671,10 +4674,10 @@ module Chemistry
 !
        df(lll,m1:m2,n1:n2,irho_tmp) = &
          drho_prefac*(L_2+0.5*(L_5 + L_1)) 
-      ! df(lll,m1:m2,n1:n2,iux) =  &
-      !   -1./(2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2))*(L_5 - L_1)
-     !  df(lll,m1:m2,n1:n2,iuy) = -L_3
-     !  df(lll,m1:m2,n1:n2,iuz) = -L_4
+       df(lll,m1:m2,n1:n2,iux) =  &
+         -1./(2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2))*(L_5 - L_1)
+       df(lll,m1:m2,n1:n2,iuy) = -L_3
+       df(lll,m1:m2,n1:n2,iuz) = -L_4
        df(lll,m1:m2,n1:n2,ilnTT) = &
           -1./(rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*(-L_2 &
           +0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1)) 
