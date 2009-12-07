@@ -53,7 +53,7 @@ module EquationOfState
   real, dimension (3) :: beta_glnrho_global=0.0,beta_glnrho_scaled=0.0
 !
   character (len=labellen) :: ieos_profile='nothing'
-  real, dimension(mz) :: profz_eos=1.
+  real, dimension (mz) :: profz_eos=1.
 !
   contains
 !***********************************************************************
@@ -62,8 +62,6 @@ module EquationOfState
 !  14-jun-03/axel: adapted from register_eos
 !
       use Sub
-!
-      logical, save :: first=.true.
 !
       leos=.false.
 !
@@ -91,7 +89,7 @@ module EquationOfState
 !  dummy
 !
     endsubroutine initialize_eos
-!*******************************************************************
+!***********************************************************************
     subroutine select_eos_variable(variable,findex)
 !
 !  Calculate average particle mass in the gas relative to
@@ -105,7 +103,7 @@ module EquationOfState
       call keep_compiler_quiet(findex)
 !
     endsubroutine select_eos_variable
-!*******************************************************************
+!***********************************************************************
     subroutine getmu(mu)
 !
 !  Calculate average particle mass in the gas relative to
@@ -117,7 +115,7 @@ module EquationOfState
       mu=0.0
 !
     endsubroutine getmu
-!*******************************************************************
+!***********************************************************************
     subroutine rprint_eos(lreset,lwrite)
 !
 !  Writes iyH and ilnTT to index.pro file
@@ -159,7 +157,7 @@ module EquationOfState
 !
 !  20-11-04/anders: coded
 !
-      logical, dimension(npencils) :: lpencil_in
+      logical, dimension (npencils) :: lpencil_in
 !
       call keep_compiler_quiet(lpencil_in)
 !
@@ -260,8 +258,8 @@ module EquationOfState
 !
 !   02-apr-04/tony: implemented dummy
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(nx), intent(out) :: cs2,cp1tilde
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (nx), intent(out) :: cs2,cp1tilde
 !
       call fatal_error('pressure_gradient_farray','SHOULD NOT BE CALLED WITH NOEOS')
 !
@@ -301,9 +299,9 @@ module EquationOfState
 !
 !   02-apr-04/tony: implemented dummy
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(nx,3), intent(in) :: glnrho,gss
-      real, dimension(nx,3), intent(out) :: glnTT
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (nx,3), intent(in) :: glnrho,gss
+      real, dimension (nx,3), intent(out) :: glnTT
 !
       call fatal_error('temperature_gradient','SHOULD NOT BE CALLED WITH NOEOS')
 !
@@ -323,9 +321,9 @@ module EquationOfState
 !
 !   12-dec-05/tony: adapted from subroutine temperature_gradient
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(nx), intent(in) :: del2lnrho,del2ss
-      real, dimension(nx), intent(out) :: del2lnTT
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (nx), intent(in) :: del2lnrho,del2ss
+      real, dimension (nx), intent(out) :: del2lnTT
 !
       call fatal_error('temperature_laplacian','SHOULD NOT BE CALLED WITH NOEOS')
 !
@@ -345,26 +343,30 @@ module EquationOfState
 !
 !   13-may-04/tony: adapted from idealgas dummy
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(nx,3), intent(in) :: hlnrho,hss
-      real, dimension(nx,3) :: hlnTT
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (nx,3), intent(in) :: hlnrho,hss
+      real, dimension (nx,3) :: hlnTT
 !
       call fatal_error('temperature_hessian','now I do not believe you'// &
           ' intended to call this!')
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(hlnrho)
-      call keep_compiler_quiet(hss)
+      call keep_compiler_quiet(hlnrho,hss,hlnTT)
 !
     endsubroutine temperature_hessian
 !***********************************************************************
     subroutine eosperturb(f,psize,ee,pp)
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       integer, intent(in) :: psize
-      real, dimension(psize), intent(in), optional :: ee,pp
+      real, dimension (psize), intent(in), optional :: ee,pp
 !
       call not_implemented('eosperturb')
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(psize)
+      if (present(ee)) call keep_compiler_quiet(ee)
+      if (present(pp)) call keep_compiler_quiet(pp)
 !
     endsubroutine eosperturb
 !***********************************************************************
@@ -376,11 +378,11 @@ module EquationOfState
 !
       use Mpicomm, only: stop_it
 
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: psize
-      real, dimension(psize), intent(out), optional :: lnrho,ss
-      real, dimension(psize), intent(out), optional :: yH,lnTT,mu1
-      real, dimension(psize), intent(out), optional :: ee,pp,kapparho
+      real, dimension (psize), intent(out), optional :: lnrho,ss
+      real, dimension (psize), intent(out), optional :: yH,lnTT,mu1
+      real, dimension (psize), intent(out), optional :: ee,pp,kapparho
 !
       call fatal_error('eoscalc_farray','SHOULD NOT BE CALLED WITH NOEOS')
 !
@@ -435,10 +437,10 @@ module EquationOfState
 !                   subroutine pressure_gradient
 !
       integer, intent(in) :: ivars
-      real, dimension(nx), intent(in) :: var1,var2
-      real, dimension(nx), intent(out), optional :: lnrho,ss
-      real, dimension(nx), intent(out), optional :: yH,lnTT
-      real, dimension(nx), intent(out), optional :: ee,pp
+      real, dimension (nx), intent(in) :: var1,var2
+      real, dimension (nx), intent(out), optional :: lnrho,ss
+      real, dimension (nx), intent(out), optional :: yH,lnTT
+      real, dimension (nx), intent(out), optional :: ee,pp
 !
       call fatal_error('eoscalc_pencil','SHOULD NOT BE CALLED WITH NOEOS')
 !
@@ -521,9 +523,9 @@ module EquationOfState
 !  17-oct-03/nils: works also with leos_ionization=T
 !  18-oct-03/tobi: distributed across ionization modules
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: T0
-      real, dimension(nx) :: lnrho,ss
+      real, dimension (nx) :: lnrho,ss
       real :: ss_offset=0.
 !
 !  if T0 is different from unity, we interpret
@@ -554,7 +556,7 @@ module EquationOfState
 !
 !  Currently only implemented for ionization_fixed.
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: T0,rho0
 !
       call keep_compiler_quiet(f)
