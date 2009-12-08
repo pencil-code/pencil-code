@@ -1027,10 +1027,10 @@ endif
 ##
 ## Dhruba on ukmhd cluster
 ##
-#FC=mpif90 -f90=pgf90   #(ukmhd)
-#FFLAGS=  -O3  #(ukmhd)
-#CC=mpicc -cc=pgcc#(ukmhd)
-#LD_MPI = -lmpich #(ukmhd) 
+#FC=mpif90 -f90=pgf90   #(mhdc)
+#FFLAGS=  -O3  #(mhdc)
+#CC=mpicc -cc=pgcc#(mhdc)
+#LD_MPI = -lmpich #(mhdc) 
 ##
 ## Piyali on nordita laptop on maths.qmul cluster
 ##
