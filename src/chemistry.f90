@@ -14,7 +14,7 @@
 ! PENCILS PROVIDED cv; cv1; cp; cp1; YY(nchemspec)
 ! PENCILS PROVIDED cs2; rho1gpp(3); gmu1(3); nu; gradnu(3); nu_art
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
-! PENCILS PROVIDED lambda; glnlambda(3); ghYrho(3);ghYrho_uu; cvspec(nchemspec)
+! PENCILS PROVIDED lambda; glambda(3); ghYrho(3);ghYrho_uu; cvspec(nchemspec)
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
 !
 !***************************************************************
@@ -511,7 +511,7 @@ module Chemistry
          lpenc_requested(i_DYDt_diff)=.true.
          if (lheatc_chemistry) then
            lpenc_requested(i_lambda)=.true.
-           lpenc_requested(i_glnlambda)=.true.
+           lpenc_requested(i_glambda)=.true.
          endif
 !
       endif
@@ -706,7 +706,7 @@ module Chemistry
 !
       if (lpenc_requested(i_lambda)) then
          p%lambda=lambda_full(l1:l2,m,n)
-         if (lpenc_requested(i_glnlambda)) call grad(lambda_full,p%glnlambda)
+         if (lpenc_requested(i_glambda)) call grad(lambda_full,p%glambda)
       endif
 !
 !  Calculate grad(enthalpy)
@@ -725,7 +725,7 @@ module Chemistry
 !
     endsubroutine calc_pencils_chemistry
 !**************************************************************************
-    subroutine flame_front(f)
+      subroutine flame_front(f)
 !
 ! 06.05.2009/Nils Erland L. Haugen: adapted from similar
 !                                   routine in special/chem_stream.f90
@@ -744,6 +744,9 @@ module Chemistry
       lflame_front=.true.
 !
       call air_field(f)
+
+   if (ltemperature_nolog) f(:,:,:,ilnTT)=log(f(:,:,:,ilnTT))
+
 !
 ! Initialize some indexes
 !
@@ -860,9 +863,10 @@ module Chemistry
         enddo
       enddo
 !
-!  Check if we want nolog of density
+!  Check if we want nolog of density or nolog of temperature
 !
       if (ldensity_nolog) f(:,:,:,irho)=exp(f(:,:,:,ilnrho))
+      if (ltemperature_nolog) f(:,:,:,iTT)=exp(f(:,:,:,ilnTT))
 !
     endsubroutine flame_front
 !***********************************************************************
@@ -1265,7 +1269,13 @@ module Chemistry
      else
       rho_full=exp(f(:,:,:,ilnrho))
      endif
-      TT_full=exp(f(:,:,:,ilnTT))
+
+     if (ltemperature_nolog) then
+         TT_full=f(:,:,:,iTT)
+     else
+         TT_full=exp(f(:,:,:,ilnTT))
+     endif
+     ! TT_full=exp(f(:,:,:,ilnTT))
 !
 ! Now this routine is only for chemkin data !!!
 !
@@ -2120,20 +2130,46 @@ module Chemistry
         enddo
        endif
 !
-         if (l1step_test) then
+      !   if (l1step_test) then
+      !    RHS_T_full(l1:l2,m,n)=sum_DYDt(:)
+      !  else
+      !    RHS_T_full(l1:l2,m,n)=(sum_DYDt(:)- Rgas*p%mu1*p%divu)*p%cv1 &
+      !      !/(p%cp-Rgas*p%mu1)&
+      !      -(hYrho_full(l1:l2,m,n)*p%divu(:)+p%ghYrho_uu(:))/p%TT(:)*p%cv1/p%rho(:)
+      !  endif
+
+      !  df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + RHS_T_full(l1:l2,m,n)
+!
+
+
+        if (l1step_test) then
           RHS_T_full(l1:l2,m,n)=sum_DYDt(:)
         else
-          RHS_T_full(l1:l2,m,n)=(sum_DYDt(:)- Rgas*p%mu1*p%divu)*p%cv1 &
+          if (ltemperature_nolog) then
+            RHS_T_full(l1:l2,m,n)=(sum_DYDt(:)- Rgas*p%mu1*p%divu)*p%cv1 &
+            -(hYrho_full(l1:l2,m,n)*p%divu(:)+p%ghYrho_uu(:))*p%cv1/p%rho(:)
+          else
+            RHS_T_full(l1:l2,m,n)=(sum_DYDt(:)- Rgas*p%mu1*p%divu)*p%cv1 &
             !/(p%cp-Rgas*p%mu1)&
             -(hYrho_full(l1:l2,m,n)*p%divu(:)+p%ghYrho_uu(:))/p%TT(:)*p%cv1/p%rho(:)
+          endif
         endif
 
+       
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + RHS_T_full(l1:l2,m,n)
-!
+       
+
 !
         if (lheatc_chemistry) call calc_heatcond_chemistry(f,df,p)
 !
+
+
+
       endif
+
+
+
+
 !
 ! this damping zone is needed in a case of NSCBC
 !
@@ -3846,7 +3882,11 @@ module Chemistry
           do j3=nn1,nn2
           do j2=mm1,mm2
           do j1=ll1,ll2
+           if (ltemperature_nolog) then
+            lnTjk(j1,j2,j3)=log(f(j1,j2,j3,ilnTT)/eps_jk)
+           else
             lnTjk(j1,j2,j3)=f(j1,j2,j3,ilnTT)-log(eps_jk)
+           endif
           !  Omega_kl(j1,j2,j3)=(6.96945701E-1 +3.39628861E-1*lnTjk(j1,j2,j3))
 
 
@@ -3907,7 +3947,11 @@ module Chemistry
             do j2=mm1,mm2
             do j1=ll1,ll2
 
-             lnTjk(j1,j2,j3)=f(j1,j2,j3,ilnTT)-log(eps_jk)
+            if (ltemperature_nolog) then
+             lnTjk(j1,j2,j3)=log(f(j1,j2,j3,ilnTT)/eps_jk)
+            else
+              lnTjk(j1,j2,j3)=f(j1,j2,j3,ilnTT)-log(eps_jk)
+            endif
 
             Omega_kl(j1,j2,j3)= &
                  1./(6.96945701E-1   +3.39628861E-1*lnTjk(j1,j2,j3) &
@@ -3955,7 +3999,11 @@ module Chemistry
           do j3=nn1,nn2
           do j2=mm1,mm2
           do j1=ll1,ll2
+          if (ltemperature_nolog) then
+           lnTk=log(f(j1,j2,j3,ilnTT)/tran_data(k,2))
+          else
            lnTk=f(j1,j2,j3,ilnTT)-log(tran_data(k,2))
+          endif
 
            Omega_kl(j1,j2,j3)=(6.33225679E-1 +3.14473541E-1*lnTk+1.78229325E-2*lnTk*lnTk &
                    -3.99489493E-2*lnTk*lnTk*lnTk+8.98483088E-3*lnTk**4 &
@@ -3971,7 +4019,11 @@ module Chemistry
          delta_st=tran_data(k,4)**2/2./tran_data(k,2)/&
           (tran_data(k,3))**3*(1e-8**3)
 !
+         if (ltemperature_nolog) then
+         lnTk_array=log(f(:,:,:,ilnTT)/tran_data(k,2))
+         else
          lnTk_array=f(:,:,:,ilnTT)-log(tran_data(k,2))
+         endif
          call calc_collision_integral(omega,lnTk_array,Omega_kl)
           do j3=nn1,nn2
           do j2=mm1,mm2
@@ -4167,24 +4219,35 @@ module Chemistry
       real, dimension(mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 
-      real, dimension(nx) :: g2TT, g2TTlnlambda=0., tmp1
+      real, dimension(nx) :: g2TT, g2TTlambda=0., tmp1
       integer :: i
 !
 
-      call dot(p%glnTT,p%glnlambda,g2TTlnlambda)
+      call dot(p%glnTT,p%glambda,g2TTlambda)
       call dot(p%glnTT,p%glnTT,g2TT)
 !
 !  Add heat conduction to RHS of temperature equation
 !
 
+    !  if (l1step_test) then
+    !   tmp1= p%lambda(:)*(p%del2lnTT+g2TT)*p%cv1/p%rho(:)
+    !  else
+    !   tmp1= (p%lambda(:)*(p%del2lnTT+g2TT)+g2TTlnlambda)*p%cv1/p%rho(:)
+    !  endif
       if (l1step_test) then
        tmp1= p%lambda(:)*(p%del2lnTT+g2TT)*p%cv1/p%rho(:)
       else
-       tmp1= (p%lambda(:)*(p%del2lnTT+g2TT)+g2TTlnlambda)*p%cv1/p%rho(:)
+      if (ltemperature_nolog) then
+       tmp1= (p%lambda(:)*p%del2lnTT+g2TTlambda)*p%cv1/p%rho(:)
+       df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + tmp1
+      else
+       tmp1= (p%lambda(:)*(p%del2lnTT+g2TT)+g2TTlambda)*p%cv1/p%rho(:)
+       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp1
       endif
+      endif
+       
 
-
-      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp1
+    !  df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp1
 !
       RHS_T_full(l1:l2,m,n)=RHS_T_full(l1:l2,m,n) + tmp1
 !
@@ -4357,14 +4420,25 @@ module Chemistry
       endif
 
 
-      if (.not. lflame_front) then
+     
+        if (.not. lflame_front) then
 
+      if (ltemperature_nolog) then
+       f(:,:,:,iTT)=TT
+      else
        f(:,:,:,ilnTT)=log(TT)!+f(:,:,:,ilnTT)
+      endif
 !
+      if (ldensity_nolog) then
+       f(:,:,:,ilnrho)=(PP*10./(k_B_cgs/m_u_cgs)*&
+          air_mass/TT)/unit_mass*unit_length**3
+      else
        f(:,:,:,ilnrho)=log((PP*10./(k_B_cgs/m_u_cgs)*&
           air_mass/TT)/unit_mass*unit_length**3)
+      endif
 
       endif
+
 
    !   f(:,:,:,iux)=init_ux
 
@@ -4424,7 +4498,7 @@ module Chemistry
       real, dimension (ny,nz,3)   :: grad_rho, grad_pp
      ! real, dimension(ny,nz) ::     d2u1_dy2,d2u1_dz2
      ! real, dimension(ny,nz) ::     d2u2_dy2,d2u2_dz2,d2u3_dy2,d2u3_dz2
-      real, dimension (ny,nz,3) :: dlnT_dxj
+     ! real, dimension (ny,nz,3) :: dlnT_dxj
       real, dimension (ny,nz) :: T_1_y, T_2_y, T_3_y, T_4_y, T_5_y
       real, dimension (ny,nz) :: T_1_z, T_2_z, T_3_z, T_4_z, T_5_z
       real, dimension (ny) :: tmpy
@@ -4483,7 +4557,11 @@ module Chemistry
           irho_tmp=ilnrho
         endif
 
+        if (ltemperature_nolog) then
+         TT0(:,:) = f(lll,:,:,iTT)
+        else
          TT0(:,:) = exp(f(lll,:,:,ilnTT))
+        endif
          mom2(lll,:,:)=rho0(:,:)*f(lll,:,:,iuy)
          mom3(lll,:,:)=rho0(:,:)*f(lll,:,:,iuz)
          rhoE_p(lll,:,:)=0.5*rho_full(lll,:,:) &
@@ -4509,7 +4587,7 @@ module Chemistry
         call der_onesided_4_slice(f,sgn,iux,dui_dxj(:,:,1,1),lll,1)
         call der_onesided_4_slice(f,sgn,iuy,dui_dxj(:,:,2,1),lll,1)
         call der_onesided_4_slice(f,sgn,iuz,dui_dxj(:,:,3,1),lll,1)
-        call der_onesided_4_slice(f,sgn,ilnTT,dlnT_dxj(:,:,1),lll,1)
+       ! call der_onesided_4_slice(f,sgn,ilnTT,dlnT_dxj(:,:,1),lll,1)
 
 
        if (nygrid /= 1) then
@@ -4683,9 +4761,16 @@ module Chemistry
          -1./(2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2))*(L_5 - L_1)
        df(lll,m1:m2,n1:n2,iuy) = -L_3
        df(lll,m1:m2,n1:n2,iuz) = -L_4
-       df(lll,m1:m2,n1:n2,ilnTT) = &
+
+       if (ltemperature_nolog) then
+        df(lll,m1:m2,n1:n2,iTT) = &
+          -1./(rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*(-L_2 &
+          +0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1))*TT0(m1:m2,n1:n2)
+       else 
+        df(lll,m1:m2,n1:n2,ilnTT) = &
           -1./(rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*(-L_2 &
           +0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1)) 
+       endif
 
 
 
@@ -4788,15 +4873,19 @@ module Chemistry
          cs20_ar=cs2_full(lll,:,:)
          cs0_ar=cs2_full(lll,:,:)**0.5
          gamma0=gamma_full(lll,:,:)
-         TT0=exp(f(lll,:,:,ilnTT))
        !   TT0=TT_full(lll,:,:)
-!print*,'n1',maxval(rho_full),minval(rho_full)
+         if (ltemperature_nolog) then
+          TT0=f(lll,:,:,iTT)
+         else
+          TT0=exp(f(lll,:,:,ilnTT))
+         endif
+         
          if (ldensity_nolog) then
           rho_full=f(:,:,:,irho)
          else
           rho_full=exp(f(:,:,:,ilnrho))
          endif
-!print*,'n2',maxval(rho_full),minval(rho_full)
+
          rho0(:,:) = rho_full(lll,:,:)
          mom2(lll,:,:)=rho0(:,:)*f(lll,:,:,iuy)
          do i=1,my
@@ -4837,8 +4926,15 @@ module Chemistry
           L_1 = L_5+2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*&
               df(lll,m1:m2,n1:n2,iux)
         endselect
+
+        if (ltemperature_nolog) then
+        L_2 = 0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1) &
+            +rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2) &
+            *df(lll,m1:m2,n1:n2,iTT)/TT0(m1:m2,n1:n2)
+        else
         L_2 = 0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1) &
             +rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2)*df(lll,m1:m2,n1:n2,ilnTT)
+        endif
         if (ldensity_nolog) then
           df(lll,m1:m2,n1:n2,ilnrho) = -1./cs20_ar(m1:m2,n1:n2)*&
               (L_2+0.5*(L_5 + L_1)) ! -dmom2_dy(m1:m2,n1:n2)
@@ -4856,7 +4952,7 @@ module Chemistry
 
 !
 !  this conditions can be important!
-!  check withour them
+!  check without them
 !
 
    !     do k=1,nchemspec
@@ -4889,7 +4985,7 @@ module Chemistry
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       character (len=3) :: topbot
-      real, dimension (my,mz) :: rho0,gamma0
+      real, dimension (my,mz) :: rho0,gamma0, TT0
       real, dimension (mx,my,mz) :: mom2,mom3!, rho_ux2, rho_uy2
       real, dimension (mx,my,mz) :: rho_gamma, rhoE_p
       real, dimension (mx,my,mz,2) ::  rhoE_pU
@@ -4913,7 +5009,7 @@ module Chemistry
       real, dimension (ny,nz,3)   :: grad_rho, grad_pp
      ! real, dimension(ny,nz) ::     d2u1_dy2,d2u1_dz2
      ! real, dimension(ny,nz) ::     d2u2_dy2,d2u2_dz2,d2u3_dy2,d2u3_dz2
-      real, dimension (ny,nz,3) :: dlnT_dxj
+   !   real, dimension (ny,nz,3) :: dlnT_dxj
       real, dimension (ny,nz) :: T_1_y, T_2_y, T_3_y, T_4_y, T_5_y
       real, dimension (ny,nz) :: T_1_z, T_2_z, T_3_z, T_4_z, T_5_z
       real, dimension (ny) :: tmpy
@@ -4952,6 +5048,11 @@ module Chemistry
          cs20_ar=cs2_full(lll,:,:)
          cs0_ar=cs2_full(lll,:,:)**0.5
          gamma0=gamma_full(lll,:,:)
+         if (ltemperature_nolog) then
+          TT0=f(lll,:,:,iTT)
+         else
+          TT0=exp(f(lll,:,:,ilnTT))
+         endif
 
         if (ldensity_nolog) then
           rho_full = f(:,:,:,irho)
@@ -5001,7 +5102,7 @@ module Chemistry
         call der_onesided_4_slice(f,sgn,iux,dui_dxj(:,:,1,1),lll,1)
         call der_onesided_4_slice(f,sgn,iuy,dui_dxj(:,:,2,1),lll,1)
         call der_onesided_4_slice(f,sgn,iuz,dui_dxj(:,:,3,1),lll,1)
-        call der_onesided_4_slice(f,sgn,ilnTT,dlnT_dxj(:,:,1),lll,1)
+    !    call der_onesided_4_slice(f,sgn,ilnTT,dlnT_dxj(:,:,1),lll,1)
 
 
        if (nygrid /= 1) then
@@ -5092,10 +5193,16 @@ module Chemistry
          -1./(2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2))*(L_5 - L_1)
        df(lll,m1:m2,n1:n2,iuy) = -L_3
        df(lll,m1:m2,n1:n2,iuz) = -L_4
-       df(lll,m1:m2,n1:n2,ilnTT) = &
+       if (ltemperature_nolog) then
+        df(lll,m1:m2,n1:n2,ilnTT) = &
           -1./(rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*(-L_2 &
-          +0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1)) !&
+          +0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1))*TT0(m1:m2,n1:n2) !&
       ! + RHS_T_full(lll,m1:m2,n1:n2)
+       else
+        df(lll,m1:m2,n1:n2,ilnTT) = &
+          -1./(rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*(-L_2 &
+          +0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1))
+       endif
 !NNNNNNNNNN
 
         if ((nygrid /= 1) .or.(nzgrid /= 1))  then
@@ -5122,7 +5229,12 @@ module Chemistry
          df(lll,m1:m2,n1:n2,iux)      = df(lll,m1:m2,n1:n2,iux)      + T_2_y + T_2_z
          df(lll,m1:m2,n1:n2,iuy)      = df(lll,m1:m2,n1:n2,iuy)      + T_3_y + T_3_z
          df(lll,m1:m2,n1:n2,iuz)      = df(lll,m1:m2,n1:n2,iuz)      + T_4_y + T_4_z
+        if (ltemperature_nolog) then
+         df(lll,m1:m2,n1:n2,ilnTT)    = df(lll,m1:m2,n1:n2,ilnTT)   &
+                                + (T_5_y + T_5_z)*TT0(m1:m2,n1:n2)
+        else
          df(lll,m1:m2,n1:n2,ilnTT)    = df(lll,m1:m2,n1:n2,ilnTT)    + T_5_y + T_5_z
+        endif
 
  !!!
 !!!  Corner points are described in bc_nscbc_nref_subout_y and bc_nscbc_nref_subout_z

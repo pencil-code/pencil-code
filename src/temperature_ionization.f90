@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED Ma2; uglnTT; cvspec(nchemspec)
+! PENCILS PROVIDED Ma2; uglnTT; ugTT; cvspec(nchemspec)
 !
 !***************************************************************
 module Entropy
@@ -50,7 +50,7 @@ module Entropy
   namelist /entropy_init_pars/ &
       initlnTT,radius_lnTT,ampl_lnTT,widthlnTT, &
       lnTT_left,lnTT_right,lnTT_const,TT_const, &
-      kx_lnTT,ky_lnTT,kz_lnTT
+      kx_lnTT,ky_lnTT,kz_lnTT,ltemperature_nolog
 !
   namelist /entropy_run_pars/ &
       lupw_lnTT,lpressuregradient_gas,ladvection_temperature, &
@@ -141,6 +141,13 @@ module Entropy
       if (ierr/=0) call stop_it("initialize_entropy: "//&
            "there was a problem when putting lviscosity_heat")
 !
+!
+!  Set iTT equal to ilnTT if we are considering non-logarithmic temperature.
+!
+      if (ltemperature_nolog) iTT=ilnTT
+
+
+
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
@@ -253,6 +260,14 @@ module Entropy
 !  Interface for user's own initial condition
 !
       if (linitial_condition) call initial_condition_ss(f)
+
+
+!
+!  If unlogarithmic temperature considered, take exp of lnTT resulting from
+!  initlnTT
+!
+      if (ltemperature_nolog) f(:,:,:,iTT)=exp(f(:,:,:,ilnTT))
+
 !
       if (lnothing.and.lroot) print*,'init_ss: nothing'
 !
@@ -296,7 +311,13 @@ module Entropy
         if (tau_heat_cor>0) lpenc_requested(i_TT)=.true.
       endif
 
-      if (ladvection_temperature) lpenc_requested(i_uglnTT)=.true.
+      if (ladvection_temperature) then
+       if (ltemperature_nolog) then
+         lpenc_requested(i_ugTT)=.true.
+       else
+         lpenc_requested(i_uglnTT)=.true.
+       endif
+      endif
 
       if (lheatc_chiconst) then
         lpenc_requested(i_del2lnTT)=.true.
@@ -309,14 +330,9 @@ module Entropy
 
       if (lheatc_hyper3) lpenc_requested(i_del6lnTT)=.true.
 
-     ! if (lchemistry) then
-     !   lpenc_requested(i_DYDt_reac)=.true.
-     !   lpenc_requested(i_DYDt_diff)=.true.
-     !   if (lheatc_chemistry) then
-     !      lpenc_requested(i_lambda)=.true.
-     !      lpenc_requested(i_glnlambda)=.true.
-     !   endif
-     ! endif
+    
+      if (ltemperature_nolog) lpenc_requested(i_TT)=.true.
+     
 
 !
 !  Diagnostics
@@ -362,6 +378,9 @@ module Entropy
       if (lpencil_in(i_uglnTT)) then
         lpencil_in(i_glnTT)=.true.
       endif
+      if (lpencil_in(i_ugTT)) then
+        lpencil_in(i_gTT)=.true.
+      endif
 
     endsubroutine pencil_interdep_entropy
 !***********************************************************************
@@ -388,6 +407,10 @@ module Entropy
 !
       if (lpencil(i_uglnTT)) then
         call u_dot_grad(f,ilnTT,p%glnTT,p%uu,p%uglnTT,UPWIND=lupw_lnTT)
+      endif
+
+      if (lpencil(i_ugTT)) then
+        call u_dot_grad(f,iTT,p%gTT,p%uu,p%ugTT)
       endif
 
     endsubroutine calc_pencils_entropy
@@ -468,7 +491,11 @@ module Entropy
 !  Advection term
 !
       if (ladvection_temperature) then
+       if (ltemperature_nolog) then
+        df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - p%ugTT
+       else
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%uglnTT
+       endif
       endif
 
 !
