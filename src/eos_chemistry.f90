@@ -443,6 +443,7 @@ module EquationOfState
     lpenc_requested(i_glnTT)=.true.
     lpenc_requested(i_del2lnTT)=.true.
 
+
     endsubroutine pencil_criteria_eos
 !***********************************************************************
     subroutine pencil_interdep_eos(lpencil_in)
@@ -491,14 +492,42 @@ module EquationOfState
 !
 !  Temperature
 !
-       if (lpencil(i_lnTT)) p%lnTT=f(l1:l2,m,n,ilnTT)
-       if (lpencil(i_TT)) p%TT=exp(p%lnTT)
+       if (lpencil(i_lnTT)) then
+         if (ltemperature_nolog) then
+          p%lnTT=log(f(l1:l2,m,n,iTT))
+         else
+          p%lnTT=f(l1:l2,m,n,ilnTT)
+         endif
+           
+       endif
+       if (lpencil(i_TT))  then
+         if (ltemperature_nolog) then
+           p%TT=f(l1:l2,m,n,iTT)
+         else
+           p%TT=exp(p%lnTT)
+         endif
+       endif
        if (lpencil(i_TT1)) p%TT1=1./p%TT!
 !
 !  Temperature laplacian and gradient
 !
-        if (lpencil(i_glnTT)) call grad(f,ilnTT,p%glnTT)
-        if (lpencil(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
+        if (lpencil(i_glnTT)) then
+         if (ltemperature_nolog) then
+           call grad(f,iTT,p%glnTT)
+           p%glnTT(:,1)=p%glnTT(:,1)/p%TT(:)
+           p%glnTT(:,2)=p%glnTT(:,2)/p%TT(:)
+           p%glnTT(:,3)=p%glnTT(:,3)/p%TT(:)
+         else
+           call grad(f,ilnTT,p%glnTT)
+         endif
+        endif
+        
+        if (ltemperature_nolog) then
+         if (lpencil(i_gTT)) call grad(f,iTT,p%gTT)
+         if (lpencil(i_del2lnTT)) call del2(f,iTT,p%del2lnTT)
+        else
+         if (lpencil(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
+        endif
 
 
  call keep_compiler_quiet(f)
