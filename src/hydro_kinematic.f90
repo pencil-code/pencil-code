@@ -239,7 +239,7 @@ module Hydro
       type (pencil_case) :: p
 !
       real, dimension(nx) :: kdotxwt, cos_kdotxwt, sin_kdotxwt
-      real, dimension(nx) :: wind_prof
+      real, dimension(nx) :: wind_prof,div_uprof
       real, dimension(nx) :: tmp_mn, cos1_mn, cos2_mn
       real :: kkx_aa, kky_aa, kkz_aa, fac, fac2
       real :: fpara, dfpara, ecost, esint, epst, sin2t, cos2t
@@ -637,6 +637,17 @@ kky_aa=2.*pi
         p%uu(:,3)=+fac*cos(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))*sqrt(2.)
         if (lpencil(i_divu)) p%divu=0.
 !
+! step function along z 
+!
+      elseif (kinflow=='zstep') then
+        if (lpencil(i_uu)) then
+          if (headtt) print*,'wind:step function along z'
+          p%uu(:,1)=0.
+          p%uu(:,2)=0.
+          p%uu(:,3)=wind_amp*step_scalar(z(n),wind_rmin,wind_step_width)
+        endif
+!
+!
 ! Radial wind
 !
       elseif (kinflow=='radial-wind') then
@@ -644,9 +655,12 @@ kky_aa=2.*pi
           call fatal_error('hydro_kinematic:calc_pencils_hydro ',& 
                 'radial-wind kinflow makes sense only in spherical coordinate. ')
         select case(wind_profile)
-        case('none'); wind_prof=0.
-        case('constant'); wind_prof=1.
-        case('radial-step'); wind_prof=step(x(l1:l2),wind_rmin,wind_step_width)
+        case('none'); wind_prof=0.;div_uprof=0.
+        case('constant'); wind_prof=1.;div_uprof=0.
+                        
+        case('radial-step') 
+          wind_prof=step(x(l1:l2),wind_rmin,wind_step_width)
+          div_uprof=der_step(x(l1:l2),wind_rmin,wind_step_width)
         case('default');
           call fatal_error('hydro_kinematic', 'no such wind profile. ')
         endselect
@@ -657,6 +671,7 @@ kky_aa=2.*pi
           p%uu(:,2)=0.
           p%uu(:,3)=0.
         endif
+        p%divu=wind_amp*div_uprof 
 !
 !  KS-flow
 !
