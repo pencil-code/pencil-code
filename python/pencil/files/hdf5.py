@@ -156,8 +156,10 @@ class h5file:
         self.notes: Notes dataset
         self.precision: precision of the float data ('d' for double, 'f' for single)
         self.nbslices: number of variables recorded in slices
+        self.noatime: only set the access date when set to false (avoids modification of the
+                       datafile when only accessed) 
         '''
-    def __init__(self,workdir=None,datafile="data.hdf5", force_create=False, force_single=False):
+    def __init__(self,workdir=None,datafile="data.hdf5", force_create=False, force_single=False, noatime=False):
         '''Create a hdf5 file from pencil code data.
 
             If the HDF file already exists, it will not be automatically updated if
@@ -188,6 +190,7 @@ class h5file:
         else:
             mode='w'
         self.f=h5py.File(datafile,mode)
+        self.noatime=noatime
         if mode=='w':                 # New file, or forced overriden file
             if workdir==None:
                 workdir="./"
@@ -238,7 +241,8 @@ class h5file:
         self.__accessed()
     def __accessed(self):
         ''' Change Access time '''
-        self.f.attrs['dateA']=datestring()
+        if self.noatime  == False:
+            self.f.attrs['dateA']=datestring()
     def __set_tree(self):
         ''' Setup/Check the tree structure of the file'''
         self.param=self.f.require_group('param')  # Setup param group
