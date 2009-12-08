@@ -195,6 +195,8 @@ module Particles_sub
           snapname=snapbase//nsnap_ch
           call boundconds_particles(fp,ipar)
           call output_particles(snapname,fp,ipar)
+          if (lparticles_blocks) &
+              call output_blocks(trim(directory_snap)//'/BLOCKS'//nsnap_ch)
           if (ip<=10 .and. lroot) &
               print*,'wsnap_particles: written snapshot ', snapname
           if (present(flist)) call log_filename_to_file(snapname,flist)
