@@ -13,7 +13,7 @@ pc_read_var,obj=data,/trimall,variables=['rho','pp','cs2'],/magic,/add
 gamma=par.gamma
 gamma1=par.gamma-1
 ss_left=par.ss_left & ss_right=par.ss_right
-rho_left=par.rho_left & rho_right=par.rho_right
+rho_left=par.rho_left(0) & rho_right=par.rho_right(0)
 p_left=exp(gamma*(ss_left+alog(rho_left)))/gamma
 p_right=exp(gamma*(ss_right+alog(rho_right)))/gamma
 ;
