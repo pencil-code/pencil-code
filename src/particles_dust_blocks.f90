@@ -348,7 +348,7 @@ module Particles
       real :: r, p, q, px, py, pz, eps, cs, k2_xxp, rp2
       real :: dim1, npar_loc_x, npar_loc_y, npar_loc_z, dx_par, dy_par, dz_par
       real :: rad,rad_scl,phi,tmp,OO,xx0,yy0,r2
-      integer :: l, j, k, ix0, iy0, iz0
+      integer :: l, j, k, ix0, iy0, iz0, ib
       logical :: lequidistant=.false.
 !
       intent (out) :: f, fp, ineargrid
@@ -864,6 +864,9 @@ k_loop:   do while (.not. (k>npar_loc))
             print*, 'init_particles: beta_glnrho_global=', beta_glnrho_global
           endif
           cs=sqrt(cs20)
+          if (.not.learly_particle_map) call fatal_error('init_particles', &
+              'must have learly_particle_map=T for dragforce_equilibrium')
+          call fill_blocks_with_bricks(f,fb,mfarray,ilnrho,ilnrho)
 !  Calculate average dust-to-gas ratio in box.
           if (ldensity_nolog) then
             eps = sum(f(l1:l2,m1:m2,n1:n2,irhop))/ &
@@ -898,10 +901,11 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Take either global or local dust-to-gas ratio.
             if (.not. ldragforce_equi_global_eps) then
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+              ib=inearblock(k)
               if (ldensity_nolog) then
-                eps=f(ix0,iy0,iz0,irhop)/f(ix0,iy0,iz0,irho)
+                eps=fb(ix0,iy0,iz0,irhop,ib)/fb(ix0,iy0,iz0,irho,ib)
               else
-                eps=f(ix0,iy0,iz0,irhop)/exp(f(ix0,iy0,iz0,ilnrho))
+                eps=fb(ix0,iy0,iz0,irhop,ib)/exp(fb(ix0,iy0,iz0,ilnrho,ib))
               endif
             endif
 !
