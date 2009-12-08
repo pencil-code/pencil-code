@@ -1259,7 +1259,12 @@ module Chemistry
 !
 ! Density and temperature
 !
+
+     if (ldensity_nolog) then
+      rho_full=f(:,:,:,ilnrho)
+     else
       rho_full=exp(f(:,:,:,ilnrho))
+     endif
       TT_full=exp(f(:,:,:,ilnTT))
 !
 ! Now this routine is only for chemkin data !!!
@@ -4466,19 +4471,19 @@ module Chemistry
          gamma0=gamma_full(lll,:,:)
 
         if (ldensity_nolog) then
-        ! rho_full = f(:,:,:,irho)
+         rho_full = f(:,:,:,irho)
           rho0(:,:) = f(lll,:,:,irho)
           drho_prefac=-1./cs20_ar(m1:m2,n1:n2)
           irho_tmp=irho
           call stop_it('bc_nscbc_nref_subout_x: NSCBC works now only for lnrho')
         else
-         ! rho_full = exp(f(:,:,:,ilnrho))
+          rho_full = exp(f(:,:,:,ilnrho))
           rho0(:,:) = rho_full(lll,:,:)
           drho_prefac=-1./rho0(m1:m2,n1:n2)/cs20_ar(m1:m2,n1:n2)
           irho_tmp=ilnrho
         endif
 
-         TT0(:,:) = TT_full(lll,:,:)
+         TT0(:,:) = exp(f(lll,:,:,ilnTT))
          mom2(lll,:,:)=rho0(:,:)*f(lll,:,:,iuy)
          mom3(lll,:,:)=rho0(:,:)*f(lll,:,:,iuz)
          rhoE_p(lll,:,:)=0.5*rho_full(lll,:,:) &
@@ -4784,7 +4789,14 @@ module Chemistry
          cs0_ar=cs2_full(lll,:,:)**0.5
          gamma0=gamma_full(lll,:,:)
          TT0=exp(f(lll,:,:,ilnTT))
-         rho_full=exp(f(:,:,:,ilnrho))
+       !   TT0=TT_full(lll,:,:)
+!print*,'n1',maxval(rho_full),minval(rho_full)
+         if (ldensity_nolog) then
+          rho_full=f(:,:,:,irho)
+         else
+          rho_full=exp(f(:,:,:,ilnrho))
+         endif
+!print*,'n2',maxval(rho_full),minval(rho_full)
          rho0(:,:) = rho_full(lll,:,:)
          mom2(lll,:,:)=rho0(:,:)*f(lll,:,:,iuy)
          do i=1,my
@@ -4828,7 +4840,7 @@ module Chemistry
         L_2 = 0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1) &
             +rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2)*df(lll,m1:m2,n1:n2,ilnTT)
         if (ldensity_nolog) then
-          df(lll,m1:m2,n1:n2,irho) = -1./cs20_ar(m1:m2,n1:n2)*&
+          df(lll,m1:m2,n1:n2,ilnrho) = -1./cs20_ar(m1:m2,n1:n2)*&
               (L_2+0.5*(L_5 + L_1)) ! -dmom2_dy(m1:m2,n1:n2)
         else
           df(lll,m1:m2,n1:n2,ilnrho) = &
@@ -4892,7 +4904,7 @@ module Chemistry
       real, dimension (my,mz,2) :: drhoE_pU!,dYk_dy
    !   real, dimension (mx,my,mz,nchemspec) :: bound_rhs_Y
     !  real, dim(:,nnn)ension (ny,nz) :: bound_rhs_T
-      real, dimension (mx,my,mz) :: cs2_full, gamma_full
+      real, dimension (mx,my,mz) :: cs2_full, gamma_full,pp
       real, dimension (nx,ny,nz) :: p_inf
       
       real, dimension (ny,nz,3,3) :: dui_dxj
@@ -4942,33 +4954,33 @@ module Chemistry
          gamma0=gamma_full(lll,:,:)
 
         if (ldensity_nolog) then
-        ! rho_full = f(:,:,:,irho)
+          rho_full = f(:,:,:,irho)
           rho0(:,:) = f(lll,:,:,irho)
           drho_prefac=-1./cs20_ar(m1:m2,n1:n2)
           irho_tmp=irho
-          call stop_it('bc_nscbc_nref_subout_x: NSCBC works now only for lnrho')
+        !  call stop_it('bc_nscbc_nref_subout_x: NSCBC works now only for lnrho')
         else
-         ! rho_full = exp(f(:,:,:,ilnrho))
+          rho_full = exp(f(:,:,:,ilnrho))
           rho0(:,:) = rho_full(lll,:,:)
           drho_prefac=-1./rho0(m1:m2,n1:n2)/cs20_ar(m1:m2,n1:n2)
           irho_tmp=ilnrho
         endif
 
-       !  do i=1,my
-       !  do k=1,mz
-       !   if (minval(gamma_full(:,i,k))<=0.) then
-       !    pp_(:,i,k)=0.
-       !   else
-       !    pp_(:,i,k)=cs2_full(:,i,k)*rho_full(:,i,k)/gamma_full(:,i,k)
-       !   endif
-       !  enddo
-       !  enddo
+         do i=1,my
+         do k=1,mz
+          if (minval(gamma_full(:,i,k))<=0.) then
+           pp(:,i,k)=0.
+          else
+           pp(:,i,k)=cs2_full(:,i,k)*rho_full(:,i,k)/gamma_full(:,i,k)
+          endif
+         enddo
+         enddo
 
          mom2(lll,:,:)=rho0(:,:)*f(lll,:,:,iuy)
          mom3(lll,:,:)=rho0(:,:)*f(lll,:,:,iuz)
          rhoE_p(lll,:,:)=0.5*rho_full(lll,:,:) &
             *(f(lll,:,:,iux)**2+f(lll,:,:,iuy)**2+f(lll,:,:,iuz)**2) &
-             +gamma_full(lll,:,:)/(gamma_full(lll,:,:)-1)*pp_full(lll,:,:)
+             +gamma_full(lll,:,:)/(gamma_full(lll,:,:)-1)*pp(lll,:,:)
          rhoE_pU(lll,:,:,1)=rhoE_p(lll,:,:)*f(lll,:,:,iuy) 
          rhoE_pU(lll,:,:,2)=rhoE_p(lll,:,:)*f(lll,:,:,iuz)
 
@@ -4985,7 +4997,7 @@ module Chemistry
       endif
 
         call der_onesided_4_slice(rho_full,sgn,grad_rho(:,:,1),lll,1)
-        call der_onesided_4_slice(pp_full,sgn,grad_pp(:,:,1),lll,1)
+        call der_onesided_4_slice(pp,sgn,grad_pp(:,:,1),lll,1)
         call der_onesided_4_slice(f,sgn,iux,dui_dxj(:,:,1,1),lll,1)
         call der_onesided_4_slice(f,sgn,iuy,dui_dxj(:,:,2,1),lll,1)
         call der_onesided_4_slice(f,sgn,iuz,dui_dxj(:,:,3,1),lll,1)
@@ -4999,7 +5011,7 @@ module Chemistry
           call der_pencil(2,f(lll,:,i,iuy),tmp2(:,i))
           call der_pencil(2,f(lll,:,i,iuz),tmp3(:,i))
           call der_pencil(2,rho_full(lll,:,i),tmp_rho(:,i))
-          call der_pencil(2,pp_full(lll,:,i),tmp_pp(:,i))
+          call der_pencil(2,pp(lll,:,i),tmp_pp(:,i))
           call der_pencil(2,mom2(lll,:,i),dmom2_dy(:,i))
           call der_pencil(2,rhoE_pU(lll,:,i,1),drhoE_pU(:,i,1))
          enddo
@@ -5037,7 +5049,7 @@ module Chemistry
           call der_pencil(3,f(lll,j,:,iuy),tmp2(j,:))
           call der_pencil(3,f(lll,j,:,iuz),tmp3(j,:))
           call der_pencil(3,rho_full(lll,j,:),tmp_rho(j,:))
-          call der_pencil(3,pp_full(lll,j,:),tmp_pp(j,:))
+          call der_pencil(3,pp(lll,j,:),tmp_pp(j,:))
           call der_pencil(3,mom3(lll,j,:),dmom3_dz(j,:))
           call der_pencil(3,rhoE_pU(lll,j,:,2),drhoE_pU(j,:,2))
          enddo
@@ -5174,7 +5186,7 @@ module Chemistry
       real, dimension (mx,my,mz,mvar) :: df
       character (len=3) :: topbot
       real, dimension (mx,mz) :: rho0,gamma0
-      real, dimension (mx,my,mz) :: mom1, mom3!, rho_ux2, rho_uy2
+      real, dimension (mx,my,mz) :: mom1, mom3, pp!, rho_ux2, rho_uy2
       real, dimension (mx,mz) ::  dYk_dy,dYk_dx,dYk_dz
       real, dimension (nx,nz) :: drho_prefac, KK
       real, dimension (nx,nz) :: M_1, M_2, M_3, M_4, M_5
@@ -5233,7 +5245,7 @@ module Chemistry
          gamma0=gamma_full(:,mmm,:)
 
         if (ldensity_nolog) then
-        !  rho_full = f(:,:,:,irho)
+          rho_full = f(:,:,:,irho)
           rho0(:,:) = f(:,mmm,:,irho)
           drho_prefac=-1./cs20_ar(l1:l2,n1:n2)
           irho_tmp=irho
@@ -5241,11 +5253,22 @@ module Chemistry
          call stop_it('bc_nscbc_nref_subout_y: NSCBC works now only for lnrho')
 
         else
-        !  rho_full = exp(f(:,:,:,ilnrho))
+          rho_full = exp(f(:,:,:,ilnrho))
           rho0(:,:) = rho_full(:,mmm,:)
           drho_prefac=-1./rho0(l1:l2,n1:n2)/cs20_ar(l1:l2,n1:n2)
           irho_tmp=ilnrho
         endif
+
+         do i=1,my
+         do k=1,mz
+          if (minval(gamma_full(:,i,k))<=0.) then
+           pp(:,i,k)=0.
+          else
+           pp(:,i,k)=cs2_full(:,i,k)*rho_full(:,i,k)/gamma_full(:,i,k)
+          endif
+         enddo
+         enddo
+        
 
          rhoE_p(:,mmm,:)=0.5*rho_full(:,mmm,:) &
             *(f(:,mmm,:,iux)**2+f(:,mmm,:,iuy)**2+f(:,mmm,:,iuz)**2) &
@@ -5268,7 +5291,7 @@ module Chemistry
       endif
 
       call der_onesided_4_slice(rho_full,sgn,grad_rho(:,:,2),mmm,2)
-      call der_onesided_4_slice(pp_full,sgn,grad_pp(:,:,2),mmm,2)
+      call der_onesided_4_slice(pp,sgn,grad_pp(:,:,2),mmm,2)
       call der_onesided_4_slice(f,sgn,iux,dui_dxj(:,:,1,2),mmm,2)
       call der_onesided_4_slice(f,sgn,iuy,dui_dxj(:,:,2,2),mmm,2)
       call der_onesided_4_slice(f,sgn,iuz,dui_dxj(:,:,3,2),mmm,2)
@@ -5279,7 +5302,7 @@ module Chemistry
           call der_pencil(1,f(:,mmm,i,iuy),tmp21(:,i))
           call der_pencil(1,f(:,mmm,i,iuz),tmp31(:,i))
           call der_pencil(1,rho_full(:,mmm,i),tmp1_rho(:,i))
-          call der_pencil(1,pp_full(:,mmm,i),tmp1_pp(:,i))
+          call der_pencil(1,pp(:,mmm,i),tmp1_pp(:,i))
           call der_pencil(1,mom1(:,mmm,i),dmom1_dx(:,i))
           call der_pencil(1,rhoE_pU(:,mmm,i,1),drhoE_pU(:,i,1))
          enddo
@@ -5306,7 +5329,7 @@ module Chemistry
           call der_pencil(3,f(j,mmm,:,iuy),tmp23(j,:))
           call der_pencil(3,f(j,mmm,:,iuz),tmp33(j,:))
           call der_pencil(3,rho_full(j,mmm,:),tmp3_rho(j,:))
-          call der_pencil(3,pp_full(j,mmm,:),tmp3_pp(j,:))
+          call der_pencil(3,pp(j,mmm,:),tmp3_pp(j,:))
           call der_pencil(3,mom3(j,mmm,:),dmom3_dz(j,:))
           call der_pencil(3,rhoE_pU(j,mmm,:,2),drhoE_pU(j,:,2))
 
@@ -5605,7 +5628,7 @@ module Chemistry
       real, dimension (mx,my,mz,mvar) :: df
       character (len=3) :: topbot
       real, dimension (mx,my) :: rho0,gamma0  
-       real, dimension (mx,my,mz) :: mom1,mom2
+       real, dimension (mx,my,mz) :: mom1,mom2,pp
          real, dimension (mx,my,mz) :: rhoE_p
       real, dimension (mx,my,mz,2) ::   rhoE_pU=0.
       real, dimension (mx,my,2) :: drhoE_pU
@@ -5660,22 +5683,32 @@ module Chemistry
          gamma0=gamma_full(:,:,nnn)
 
         if (ldensity_nolog) then
-        !  rho_full = f(:,:,:,irho)
+          rho_full = f(:,:,:,irho)
           rho0(:,:) = f(:,:,nnn,irho)
           drho_prefac=-1./cs20_ar(l1:l2,m1:m2)
            irho_tmp=irho
         else
-        !  rho_full = exp(f(:,:,:,ilnrho))
+          rho_full = exp(f(:,:,:,ilnrho))
           rho0(:,:) = rho_full(:,:,nnn)
           drho_prefac=-1./rho0(l1:l2,m1:m2)/cs20_ar(l1:l2,m1:m2)
            irho_tmp=ilnrho
         endif
 
+         do i=1,my
+         do k=1,mz
+          if (minval(gamma_full(:,i,k))<=0.) then
+           pp(:,i,k)=0.
+          else
+           pp(:,i,k)=cs2_full(:,i,k)*rho_full(:,i,k)/gamma_full(:,i,k)
+          endif
+         enddo
+         enddo
+
          mom1(:,:,nnn)=rho0(:,:)*f(:,:,nnn,iux)
          mom2(:,:,nnn)=rho0(:,:)*f(:,:,nnn,iuy)
          rhoE_p(:,:,nnn)=0.5*rho_full(:,:,nnn) &
             *(f(:,:,nnn,iux)**2+f(:,:,nnn,iuy)**2+f(:,:,nnn,iuz)**2) &
-             +gamma_full(:,:,nnn)/(gamma_full(:,:,nnn)-1)*pp_full(:,:,nnn)
+             +gamma_full(:,:,nnn)/(gamma_full(:,:,nnn)-1)*pp(:,:,nnn)
          rhoE_pU(:,:,nnn,1)=rhoE_p(:,:,nnn)*f(:,:,nnn,iux) 
          rhoE_pU(:,:,nnn,2)=rhoE_p(:,:,nnn)*f(:,:,nnn,iuy)
 
@@ -5691,7 +5724,7 @@ module Chemistry
       endif
 
       call der_onesided_4_slice(rho_full,sgn,grad_rho(:,:,3),nnn,3)
-      call der_onesided_4_slice(pp_full,sgn,grad_pp(:,:,3),nnn,3)
+      call der_onesided_4_slice(pp,sgn,grad_pp(:,:,3),nnn,3)
       call der_onesided_4_slice(f,sgn,iux,dui_dxj(:,:,1,3),nnn,3)
       call der_onesided_4_slice(f,sgn,iuy,dui_dxj(:,:,2,3),nnn,3)
       call der_onesided_4_slice(f,sgn,iuz,dui_dxj(:,:,3,3),nnn,3)
@@ -5703,7 +5736,7 @@ module Chemistry
           call der_pencil(1,f(:,i,nnn,iuy),tmp21(:,i))
           call der_pencil(1,f(:,i,nnn,iuz),tmp31(:,i))
           call der_pencil(1,rho_full(:,i,nnn),tmp1_rho(:,i))
-          call der_pencil(1,pp_full(:,i,nnn),tmp1_pp(:,i))
+          call der_pencil(1,pp(:,i,nnn),tmp1_pp(:,i))
           call der_pencil(1,mom1(:,i,nnn),dmom1_dx(:,i))
           call der_pencil(1,rhoE_pU(:,i,nnn,1),drhoE_pU(:,i,1))
          enddo
@@ -5731,7 +5764,7 @@ module Chemistry
           call der_pencil(2,f(i,:,nnn,iuy),tmp22(i,:))
           call der_pencil(2,f(i,:,nnn,iuz),tmp32(i,:))
           call der_pencil(2,rho_full(i,:,nnn),tmp2_rho(i,:))
-          call der_pencil(2,pp_full(i,:,nnn),tmp2_pp(i,:))
+          call der_pencil(2,pp(i,:,nnn),tmp2_pp(i,:))
           call der_pencil(2,mom2(i,:,nnn),dmom2_dy(i,:))
           call der_pencil(2,rhoE_pU(i,:,nnn,2),drhoE_pU(i,:,2))
          enddo
