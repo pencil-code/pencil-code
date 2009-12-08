@@ -935,9 +935,9 @@ module Equ
 !
 !  Set df=0 for all solid cells.
 !
-      call freeze_solid_cells(df)
+        call freeze_solid_cells(df)
 !
-    enddo
+      enddo
 !
 !  Boundary treatment of the df-array. 
 !
