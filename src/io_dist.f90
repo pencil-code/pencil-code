@@ -485,7 +485,7 @@ contains
 !
 !     nothing needs to be done here
 !
-      call keep_compiler_quiet(tau)
+!AXEL call keep_compiler_quiet(tau)
       call keep_compiler_quiet(file)
 !
     endsubroutine wtime
@@ -497,7 +497,7 @@ contains
 !
 !     nothing needs to be done here
 !
-      call keep_compiler_quiet(tau)
+!AXEL call keep_compiler_quiet(tau)
       call keep_compiler_quiet(file)
 !
     endsubroutine rtime
