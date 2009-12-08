@@ -64,6 +64,7 @@ module Hydro
   integer :: idiag_urmphi=0,idiag_upmphi=0,idiag_uzmphi=0,idiag_u2mphi=0
   integer :: idiag_phase1=0,idiag_phase2=0
   integer :: idiag_ekintot=0, idiag_ekin=0
+  integer :: idiag_divum=0
 !
 
   contains
@@ -191,6 +192,7 @@ module Hydro
       if (idiag_urms/=0 .or. idiag_umax/=0 .or. idiag_u2m/=0 .or. &
           idiag_um2/=0) lpenc_diagnos(i_u2)=.true.
       if (idiag_oum/=0) lpenc_diagnos(i_ou)=.true.
+      if (idiag_divum/=0) lpenc_diagnos(i_divu)=.true.
 !
     endsubroutine pencil_criteria_hydro
 !***********************************************************************
@@ -726,6 +728,7 @@ kky_aa=2.*pi
         if (idiag_ekintot/=0) &
             call integrate_mn_name(.5*p%rho*p%u2,idiag_ekintot)
       endif
+        if (idiag_divum/=0)  call sum_mn_name(p%divu,idiag_divum)
 !
       call keep_compiler_quiet(f)
 !
@@ -1449,6 +1452,7 @@ kky_aa=2.*pi
         idiag_Marms=0; idiag_Mamax=0; idiag_divu2m=0; idiag_epsK=0
         idiag_urmphi=0; idiag_upmphi=0; idiag_uzmphi=0; idiag_u2mphi=0
         idiag_ekin=0; idiag_ekintot=0
+        idiag_divum=0 
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -1474,6 +1478,7 @@ kky_aa=2.*pi
         call parse_name(iname,cname(iname),cform(iname),'uyuzm',idiag_uyuzm)
         call parse_name(iname,cname(iname),cform(iname),'orms',idiag_orms)
         call parse_name(iname,cname(iname),cform(iname),'omax',idiag_omax)
+        call parse_name(iname,cname(iname),cform(iname),'divum',idiag_divum)
         call parse_name(iname,cname(iname),cform(iname),'ruxm',idiag_ruxm)
         call parse_name(iname,cname(iname),cform(iname),'ruym',idiag_ruym)
         call parse_name(iname,cname(iname),cform(iname),'ruzm',idiag_ruzm)
@@ -1541,6 +1546,7 @@ kky_aa=2.*pi
         write(3,*) 'i_oumphi=',idiag_oumphi
         write(3,*) 'i_phase1=',idiag_phase1
         write(3,*) 'i_phase2=',idiag_phase2
+        write(3,*) 'i_divum=',idiag_divum
         write(3,*) 'nname=',nname
         write(3,*) 'iuu=',iuu
         write(3,*) 'iux=',iux
