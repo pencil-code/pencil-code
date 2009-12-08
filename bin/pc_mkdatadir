@@ -24,11 +24,14 @@ if ($hn =~ mhd*.st-and.ac.uk) then
   set str='s/home/work2/g'
 else if ($hn =~ fend*.dcsc.ku.dk) then
   set str='s/astro/gpfs1\/astro/g'
-else if (($hn =~ a07c01n03*) && ($USER =~ brandenb)) then
+else if (($hn =~ a07c01n08*) && ($USER =~ brandenb)) then
   echo "special entry for Axel"
   #set str='s/afs\/pdc.kth.se\/home\/b/scratch/g'
-  #set str='s/home\/b\/brandenb/misc\/tmp\/projects\/prj.2007-08.brandenb.4/g'
-  set str='s/home\/b\/brandenb/misc\/pdc\/volumes\/pdc\/prj.pdc.brandenb.10/g'
+  set str='s/home\/b\/brandenb/misc\/tmp\/projects\/prj.2007-08.brandenb.1/g'
+  #set str='s/home\/b\/brandenb/misc\/pdc\/volumes\/pdc\/prj.pdc.brandenb.10/g'
+else if (($hn =~ a07c01n08*) && ($USER =~ gustavog)) then
+  echo "special entry for Gustavo"
+  set str='s/home\/g\/gustavog/misc\/tmp\/volumes\/pdc\/prj.pdc.brandenb.11\/gustavog/g'
 else if (($hn =~ a07c01n08*) && ($USER =~ violaine)) then
   echo "special entry for Violaine"
   set str='s/home\/v\/violaine/misc\/tmp\/projects\/prj.2007-08.brandenb.9\/violaine/g'

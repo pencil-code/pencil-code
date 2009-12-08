@@ -59,6 +59,11 @@ endif
 if (-e new_from.dir) then
     cvs add new_from.dir
 endif
+#
+if (-e new_to.dir) then
+    cvs add new_to.dir
+endif
+#
 if (-e remeshed_from.dir) then
     cvs add remeshed_from.dir
 endif

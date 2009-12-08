@@ -78,6 +78,9 @@ targetdir=`pwd`
 #
 $PENCIL_HOME/bin/pc_mkdatadir
 
+#
+#  write source directory name into file new_from.dir
+#
 [ -e data/new_from.dir ] || touch data/new_from.dir
 (echo $olddir; /bin/date) >> data/new_from.dir
 #
@@ -112,12 +115,17 @@ $PENCIL_HOME/bin/pc_mkdatadir
 #
   $PENCIL_HOME/bin/pc_setupsrc
 #
+#  go back into source directory and write the name
+#  of the new target directory into file new_to.dir
+#
+cd $olddir
+[ -e data/new_to.dir ] || touch data/new_to.dir
+(echo $newdir; /bin/date; echo "") >> data/new_to.dir
+#
 #  copy *.in and k.dat files into new directory
 #  the k.dat file is actually only needed for forced
 #  turbulence runs
 #
-
-cd $olddir
 echo "Use *.in files from:" `pwd`; ls -l *.in
 cp *.in $targetdir
 [ -f k.dat ] && cp k.dat $targetdir

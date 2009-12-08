@@ -60,3 +60,8 @@ rmdir $newdir_tail
 mv $olddatadir $newdir_tail
 cd $newdir
 #
+#  write history to file new_from.dir
+#
+[ -e data/new_from.dir ] || touch data/new_from.dir
+(echo ""; echo $olddir renamed to $newdir; /bin/date) >> data/new_from.dir
+#

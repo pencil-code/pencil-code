@@ -5,8 +5,13 @@
 #      copies directory trees to another machine
 #
 #  Examples:
-#     scp-proc-to-proc dim.dat $serv/f90/pencil-code/runs/forced/relax_twist128a
-#     scp-proc-to-proc dim.dat $bar/pencil-code/runs/geodynamo/kws93/128f .
+#
+#  to copy from here to another machine
+#
+#   scp-proc-to-proc dim.dat $nor50/pencil-code/auger/conv-slab/shear/c1cT_64c .
+#
+#  to copy from another machine to here
+#
 #     scp-proc-to-proc dim.dat . $dcsc/pencil-code/axel/MRIexp/128d
 #     scp-proc-to-proc dim.dat . $dcsc/pencil-code/axel/couette/strat128a_mu0.30_g2
 
@@ -29,7 +34,7 @@ foreach proc ($procdirs)
   if ( $counter >= $skip ) then
     echo "scp $3/data/$proc/$1 $2/data/$proc"
     nohup scp $3/data/$proc/$1 $2/data/$proc &
-    sleep 1
+    sleep .2
   endif
   set counter = `expr $counter + 1`
   echo "counter=$counter"
