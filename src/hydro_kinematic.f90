@@ -10,6 +10,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED oo(3); ou; uij(3,3); uu(3); u2; sij(3,3)
+! PENCILS PROVIDED der6u(3) 
 ! PENCILS PROVIDED divu; uij5(3,3); graddivu(3)
 !************************************************************************
 module Hydro
@@ -239,7 +240,7 @@ module Hydro
       type (pencil_case) :: p
 !
       real, dimension(nx) :: kdotxwt, cos_kdotxwt, sin_kdotxwt
-      real, dimension(nx) :: wind_prof,div_uprof
+      real, dimension(nx) :: wind_prof,div_uprof,der6_uprof
       real, dimension(nx) :: tmp_mn, cos1_mn, cos2_mn
       real :: kkx_aa, kky_aa, kkz_aa, fac, fac2
       real :: fpara, dfpara, ecost, esint, epst, sin2t, cos2t
@@ -661,6 +662,7 @@ kky_aa=2.*pi
         case('radial-step') 
           wind_prof=step(x(l1:l2),wind_rmin,wind_step_width)
           div_uprof=der_step(x(l1:l2),wind_rmin,wind_step_width)
+          der6_uprof=der6_step(x(l1:l2),wind_rmin,wind_step_width)
         case('default');
           call fatal_error('hydro_kinematic', 'no such wind profile. ')
         endselect
@@ -672,6 +674,9 @@ kky_aa=2.*pi
           p%uu(:,3)=0.
         endif
         p%divu=wind_amp*div_uprof 
+        p%der6u(:,1)=wind_amp*der6_uprof 
+        p%der6u(:,2)= 0.
+        p%der6u(:,3)= 0.
 !
 !  KS-flow
 !

@@ -39,7 +39,9 @@ module Sub
   public :: gij, g2ij, gij_etc
   public :: gijk_symmetric
   public :: der_step
+  public :: der6_step
   public :: u_dot_grad, h_dot_grad
+  public :: nou_dot_grad_scl
   public :: u_dot_grad_mat
   public :: del2, del2v, del2v_etc
   public :: del4v, del4, del2vi_etc
@@ -2323,6 +2325,65 @@ module Sub
 !
     endsubroutine u_dot_grad_scl
 !***********************************************************************
+    subroutine nou_dot_grad_scl(gradf,uu,ugradf,del6u,upwind,ladd)
+!
+!  Do advection-type term u.grad f_k.
+!  Assumes gradf to be known, but takes f and k as arguments to be able
+!  to calculate upwind correction
+!
+! 28-Aug-2007/dintrans: attempt of upwinding in cylindrical coordinates
+! 29-Aug-2007/dhruba: attempt of upwinding in spherical coordinates. 
+! 28-Sep-2009/MR: ladd added for incremental work
+!
+      logical :: ladd1
+
+      intent(in) :: gradf,uu,upwind,ladd
+      intent(out) :: ugradf
+!
+      real, dimension (nx,3) :: uu,gradf,del6u
+      real, dimension (nx) :: ugradf
+      logical, optional :: upwind,ladd
+!
+      if (present(ladd)) then
+        ladd1=ladd
+      else
+        ladd1=.false.
+      endif
+!
+      call dot_mn(uu,gradf,ugradf,ladd1)
+!
+!  upwind correction (currently just for z-direction)
+!
+      if (present(upwind)) then; if (upwind) then
+!
+!  x-direction
+!
+        ugradf=ugradf-abs(uu(:,1))*del6u(:,1)
+!
+!  y-direction
+!
+        if (lcartesian_coords) then
+          ugradf=ugradf-abs(uu(:,2))*del6u(:,2)
+        else
+          if (lcylindrical_coords) &
+             ugradf=ugradf-rcyl_mn1*abs(uu(:,2))*del6u(:,2)
+          if (lspherical_coords) &
+             ugradf=ugradf-r1_mn*abs(uu(:,2))*del6u(:,2)
+        endif
+!
+!  z-direction
+!
+        if ((lcartesian_coords).or.(lcylindrical_coords)) then
+          ugradf=ugradf-abs(uu(:,3))*del6u(:,3)
+        else
+          if (lspherical_coords) &
+             ugradf=ugradf-r1_mn*sin1th(m)*abs(uu(:,3))*del6u(:,3)
+        endif
+        
+      endif; endif
+!
+    endsubroutine nou_dot_grad_scl
+!***********************************************************************
     subroutine h_dot_grad_vec(hh,gradf,ff,hgradf)
 !
 !  h.gradf for vectors h and f
@@ -3064,6 +3125,32 @@ module Sub
       der_step = 0.5/(width*cosh(arg)**2)
 !
       endfunction der_step
+!***********************************************************************
+    function der6_step(x,x0,width)
+!
+!  6th order derivative of smooth unit STEP() function given 
+!   above (i.e. a bump profile).
+!  Adapt this if you change the STEP() profile, or you will run into
+!  inconsistenies.
+!
+!  08-dec-09/dhruba: aped from der_step
+!
+      real, dimension(:) :: x
+      real, dimension(size(x,1)) :: der6_step,arg,sechx,tanhx
+      real :: x0,width
+!
+!  Some argument gymnastics to avoid `floating overflow' for large
+!  arguments
+!
+      arg = abs((x-x0)/(width+tini))
+      tanhx=tanh(arg)
+      arg = min(arg,8.)         ! cosh^2(8) = 3e+27
+      sechx=1./cosh(arg)
+      der6_step = (1./(2*width**6))*(&
+             -272.0*(sechx**6)*tanhx+416.0*(sechx**4)*(tanhx**3) &
+             -32.0*(sechx**2)*(tanhx**5) )
+!
+      endfunction der6_step
 !***********************************************************************
     function stepdown(x,x0,width)
 !

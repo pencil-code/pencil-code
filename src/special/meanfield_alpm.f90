@@ -192,7 +192,7 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: galpm
-      real, dimension (nx) :: alpm,ugalpm,divflux,del2alpm
+      real, dimension (nx) :: alpm,ugalpm,divflux,del2alpm,alpm_divu
       type (pencil_case) :: p
       integer :: ierr
 !
@@ -233,9 +233,13 @@ module Special
              -2*eta*kf_alpm**2*alpm-meanfield_etat*divflux
           if (ladvect_alpm) then
             call grad(f,ialpm,galpm)
-!            call dot_mn(p%uu,galpm,ugalpm)
-            call u_dot_grad(f,ialpm,galpm,p%uu,ugalpm,UPWIND=lupw_alpm)
-            df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)-ugalpm
+            if(lupw_alpm) then 
+              call nou_dot_grad_scl(galpm,p%uu,ugalpm,p%der6u,upwind=lupw_alpm)
+            else
+              call dot_mn(p%uu,galpm,ugalpm)
+            endif
+            alpm_divu=alpm*p%divu 
+            df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)-ugalpm-alpm_divu
 
           endif
           if (alpmdiff/=0) then

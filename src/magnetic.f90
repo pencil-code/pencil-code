@@ -196,6 +196,7 @@ module Magnetic
   logical :: lmean_friction=.false.
   logical :: llarge_scale_velocity=.false.
   logical :: lEMF_profile=.false. 
+  logical :: lhalox=.false. 
   character (len=labellen) :: zdep_profile='fs'
   character (len=labellen) :: eta_xy_profile='schnack89'
   character (len=labellen) :: iforcing_continuous_aa='fixed_swirl'
@@ -238,7 +239,7 @@ module Magnetic
        lneutralion_heat, lreset_aa, daareset, &
        luse_Bext_in_b2, ampl_fcont_aa,&
        llarge_scale_velocity,&
-       EMF_profile,lEMF_profile
+       EMF_profile,lEMF_profile,lhalox
 
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_ab_int=0     ! DIAG_DOC: $\int\Av\cdot\Bv\;dV$
@@ -1953,7 +1954,7 @@ module Magnetic
       real, dimension (nx) :: fres2,etaSS,penc
       real :: tmp,eta_out1
       real, parameter :: OmegaSS=1.
-      integer :: i,j,k,ju
+      integer :: i,j,k,ju,ix
       integer, parameter :: nxy=nxgrid*nygrid
 !
       intent(inout)  :: f,p
@@ -2285,9 +2286,16 @@ module Magnetic
 !  Note that eta_out is total eta in halo (not eta_out+eta)
 !
       if (height_eta/=0.) then
-        if (headtt) print*,'daa_dt: height_eta,eta_out=',height_eta,eta_out
-        tmp=(z(n)/height_eta)**2
-        eta_out1=eta_out*(1.-exp(-tmp**5/max(1.-tmp,1e-5)))-eta
+        if (headtt) print*,'daa_dt: height_eta,eta_out,lhalox=',height_eta,eta_out,lhalox
+        if(lhalox) then
+          do ix=1,nx
+            tmp=(x(ix)/height_eta)**2
+            eta_out1=eta_out*(1.-exp(-tmp**5/max(1.-tmp,1e-5)))-eta
+          enddo
+        else
+          tmp=(z(n)/height_eta)**2
+          eta_out1=eta_out*(1.-exp(-tmp**5/max(1.-tmp,1e-5)))-eta
+        endif
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-(eta_out1*mu0)*p%jj
       endif
 !
