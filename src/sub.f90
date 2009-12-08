@@ -108,7 +108,7 @@ module Sub
     module procedure keep_compiler_quiet_r2d
     module procedure keep_compiler_quiet_r3d
     module procedure keep_compiler_quiet_r4d
-    module procedure keep_compiler_quiet_d
+!   module procedure keep_compiler_quiet_d
     module procedure keep_compiler_quiet_p
     module procedure keep_compiler_quiet_bc
     module procedure keep_compiler_quiet_sl
@@ -3599,26 +3599,26 @@ module Sub
 !
       endsubroutine keep_compiler_quiet_r4d
 !***********************************************************************
-      subroutine keep_compiler_quiet_d(v1,v2,v3,v4)
+!     subroutine keep_compiler_quiet_d(v1,v2,v3,v4)
 !
 !  Call this to avoid compiler warnings about unused variables.
 !  Optional arguments allow for more variables of the same shape+type.
 !
 !  06-dec-09/bing: coded, copied from wolfgangs verions for real numbers
 !
-        double precision :: v1, v2, v3, v4
-        optional ::     v2, v3, v4
+!       double precision :: v1, v2, v3, v4
+!       optional ::     v2, v3, v4
 !
-        if (NO_WARN) then
-          call error('keep_compiler_quiet_r', &
-              'The world is a disk, and we never got here...')
-          print*,                  v1
-          if (present(v2)) print*, v2
-          if (present(v3)) print*, v3
-          if (present(v4)) print*, v4
-        endif
+!       if (NO_WARN) then
+!         call error('keep_compiler_quiet_r', &
+!             'The world is a disk, and we never got here...')
+!         print*,                  v1
+!         if (present(v2)) print*, v2
+!         if (present(v3)) print*, v3
+!         if (present(v4)) print*, v4
+!       endif
 !
-      endsubroutine keep_compiler_quiet_d
+!     endsubroutine keep_compiler_quiet_d
 !***********************************************************************
       subroutine keep_compiler_quiet_p(v1,v2,v3,v4)
 !
