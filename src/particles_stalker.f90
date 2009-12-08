@@ -63,11 +63,6 @@ module Particles_stalker
         call fatal_error('initialize_particles_stalker','')
       endif
 !
-!  Need scratch slot in f array to interpolate derived variables.
-!
-      if (lstalk_guu .or. lstalk_grho .or. lstalk_bb) &
-          call farray_acquire_scratch_area('scratch',iscratch)
-!
 !  Turn off stalking if physics not selected.
 !
       if (ivpx==0)         lstalk_vv=.false.
@@ -76,6 +71,11 @@ module Particles_stalker
       if (.not. ldensity)  lstalk_rho=.false.
       if (.not. ldensity)  lstalk_grho=.false.
       if (.not. lmagnetic) lstalk_bb=.false.
+!
+!  Need scratch slot in f array to interpolate derived variables.
+!
+      if (lstalk_guu .or. lstalk_grho .or. lstalk_bb) &
+          call farray_acquire_scratch_area('scratch',iscratch)
 !
 !  Count the number of variables to be stalked.
 !
