@@ -27,6 +27,7 @@ module Solid_Cells
   character (len=labellen) :: interpolation_method='staircase'
   integer, parameter :: iradius=1, ixpos=2,iypos=3,izpos=4,itemp=5
   logical :: lclose_interpolation=.false., lclose_linear=.false.
+  logical :: lnointerception=.false.
   real                          :: rhosum
   integer                       :: irhocount
   real                          :: theta_shift=1e-2
@@ -36,11 +37,11 @@ module Solid_Cells
        cylinder_temp, ncylinders, cylinder_radius, cylinder_xpos, &
        cylinder_ypos, cylinder_zpos, initsolid_cells, skin_depth, init_uu, &
        ampl_noise,interpolation_method, nforcepoints,cylinder_skin,&
-       lclose_interpolation,lclose_linear,limit_close_linear
+       lclose_interpolation,lclose_linear,limit_close_linear,lnointerception
 !
   namelist /solid_cells_run_pars/  &
        interpolation_method,cylinder_skin,lclose_interpolation,lclose_linear,&
-       limit_close_linear
+       limit_close_linear,lnointerception
 !
 !  diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_c_dragx=0       ! DIAG_DOC: 
@@ -1210,7 +1211,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !
       logical :: in_solid_cell
       real, dimension(3) :: cyl_pos, part_pos
-      real :: cyl_rad,distance2,part_rad
+      real :: cyl_rad,distance2,part_rad,rad_part
       integer :: icyl, i
 !
       in_solid_cell=.false.
@@ -1226,10 +1227,18 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
           distance2=distance2+(cyl_pos(i)-part_pos(i))**2
         enddo
 !
+!  Check if we want to include interception or not
+!
+        if (lnointerception) then
+          rad_part=0
+        else
+          rad_part=part_rad
+        endif
+!
 !  The cylinder_skin is the closest a particle can get to the solid 
 !  cell before it is captured (this variable is normally zero).
 !
-        if (sqrt(distance2)<cyl_rad+part_rad+cylinder_skin) then
+        if (sqrt(distance2)<cyl_rad+rad_part+cylinder_skin) then
           in_solid_cell=.true.
         endif
       enddo
