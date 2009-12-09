@@ -480,24 +480,26 @@ contains
 !***********************************************************************
     subroutine wtime(file,tau)
 !
-      double precision :: tau
+      double precision :: tau,tmp
       character (len=*) :: file
 !
 !     nothing needs to be done here
 !
-!AXEL call keep_compiler_quiet(tau)
+! temporary work around to keep the compiler quiet
+      tmp = tau 
       call keep_compiler_quiet(file)
 !
     endsubroutine wtime
 !***********************************************************************
     subroutine rtime(file,tau)
 !
-      double precision :: tau
+      double precision :: tau,tmp
       character (len=*) :: file
 !
 !     nothing needs to be done here
 !
-!AXEL call keep_compiler_quiet(tau)
+! temporary work around to keep the compiler quiet
+      tmp = tau 
       call keep_compiler_quiet(file)
 !
     endsubroutine rtime
