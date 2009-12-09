@@ -567,8 +567,14 @@ module Interstellar
          close(1)
       endif
 !
+!  Write unit_Lambda to pc_constants file
 !
-      if (lroot) print*,"initialize_interstellar: t_next_SNI=",t_next_SNI
+      if (lroot) then
+        print*,"initialize_interstellar: t_next_SNI=",t_next_SNI
+        open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
+        write (1,'(a,1pd26.16)') 'unit_Lambda=',unit_Lambda
+        close (1)
+      endif
 !
     endsubroutine initialize_interstellar
 !***********************************************************************
