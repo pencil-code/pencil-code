@@ -1835,6 +1835,9 @@ module Magnetic
         case('nothing');
           call inevitably_fatal_error('calc_pencils_magnetic', &
             'alpha_profile="nothing" has been renamed to "const", please update your run.in')
+        case default;
+          call inevitably_fatal_error('calc_pencils_magnetic', &
+            'alpha_profile no such alpha profile')
         endselect
 !
 !  possibility of dynamical alpha

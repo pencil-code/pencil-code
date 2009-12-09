@@ -654,9 +654,6 @@ kky_aa=2.*pi
 ! Radial wind
 !
       elseif (kinflow=='radial-wind') then
-        if(.not.lspherical_coords)  & 
-          call fatal_error('hydro_kinematic:calc_pencils_hydro ',& 
-                'radial-wind kinflow makes sense only in spherical coordinate. ')
         select case(wind_profile)
         case('none'); wind_prof=0.;div_uprof=0.
         case('constant'); wind_prof=1.;div_uprof=0.
@@ -664,7 +661,8 @@ kky_aa=2.*pi
         case('radial-step') 
           wind_prof=step(x(l1:l2),wind_rmin,wind_step_width)
           div_uprof=der_step(x(l1:l2),wind_rmin,wind_step_width)
-          der6_uprof=der6_step(x(l1:l2),wind_rmin,wind_step_width)
+!          der6_uprof=der6_step(x(l1:l2),wind_rmin,wind_step_width)
+          der6_uprof=0.
         case('default');
           call fatal_error('hydro_kinematic', 'no such wind profile. ')
         endselect

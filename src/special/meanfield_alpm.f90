@@ -43,12 +43,12 @@ module Special
        initalpm,amplalpm,kx_alpm,ky_alpm,kz_alpm
 
   ! run parameters
-  real :: kf_alpm=1., alpmdiff=0.
+  real :: kf_alpm=1., alpmdiff=0.,deltat_alpm=1.
   logical :: ladvect_alpm=.false.,lupw_alpm=.false.
 
   namelist /special_run_pars/ &
        kf_alpm,ladvect_alpm,alpmdiff, &
-       Omega_profile,Omega_ampl,lupw_alpm
+       Omega_profile,Omega_ampl,lupw_alpm,deltat_alpm
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_alpm_int=0
@@ -101,13 +101,6 @@ module Special
 !  24-nov-02/tony: coded
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-! 
-!  set to zero and then call the same initial condition
-!  that was used in start.csh
-!   
-! set the magnetic Reynold number :
-!      Rm_alpm=etat_alpm/eta
-!      write(*,*) 'Dhruba', Rm_alpm,etat_alpm
 !
       call keep_compiler_quiet(f)
 !
@@ -193,10 +186,11 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: galpm
       real, dimension (nx) :: alpm,ugalpm,divflux,del2alpm,alpm_divu
+      double precision :: dtalpm_double
       type (pencil_case) :: p
-      integer :: ierr
-!
-      intent(in)  :: f
+      integer :: ierr,modulot
+! next line commented out temporarily
+!      intent(in)  :: f
       intent(out) :: df
 !
 !  identify module and boundary conditions
@@ -233,14 +227,13 @@ module Special
              -2*eta*kf_alpm**2*alpm-meanfield_etat*divflux
           if (ladvect_alpm) then
             call grad(f,ialpm,galpm)
-            if(lupw_alpm) then 
-              call nou_dot_grad_scl(galpm,p%uu,ugalpm,p%der6u,upwind=lupw_alpm)
-            else
-              call dot_mn(p%uu,galpm,ugalpm)
-            endif
+!             if(lupw_alpm) then 
+!               call nou_dot_grad_scl(galpm,p%uu,ugalpm,p%der6u,upwind=lupw_alpm)
+!             else
+                call dot_mn(p%uu,galpm,ugalpm)
+!             endif
             alpm_divu=alpm*p%divu 
             df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)-ugalpm-alpm_divu
-
           endif
           if (alpmdiff/=0) then
             call del2(f,ialpm,del2alpm)
@@ -248,6 +241,18 @@ module Special
           endif
         endif
       endif
+!
+! reset everything to zero if time is divisible by deltat_alpm
+!
+     if((deltat_alpm/=1.) .and. (t .gt. 1.)) then
+       dtalpm_double=dble(deltat_alpm)
+       modulot=modulo(t,dtalpm_double)
+       if(modulot.eq.0) then
+            f(l1:l2,m,n,ialpm)=0
+            df(l1:l2,m,n,ialpm)=0
+            alpm=f(l1:l2,m,n,ialpm)
+       endif
+     endif    
 !
 !  diagnostics
 !
