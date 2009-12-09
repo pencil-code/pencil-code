@@ -7,7 +7,8 @@ program remesh
   !  times more grid points in each direction. remesh_par should be
   !  a multiple of 2.
   !
-  !  The remeshed result is spread to muly times as many processors
+  !  The remeshed result is spread to mulx times as many processors
+  !  in x direction, muly times as many processors
   !  in y direction and to mulz times as many processors in z 
   !  direction.
   ! 
@@ -28,6 +29,7 @@ program remesh
   !   18-nov-02/axel: proc dir tree written, seed.dat copies to all
   !   22-jun-03/axel: added reading and writing Lx,Ly,Lz (now needed)
   !   25-mar-06/axel: added dx_1, dx_tilde, etc, for uniform mesh *only*
+  !   05-dec-09/simon: added spreading in mulx processors in x direction
   !
   use Cdata
   use Cparam
@@ -51,7 +53,8 @@ program remesh
   integer :: iproc_new, cpu_count=1
   integer, dimension (mprocs) :: cpu_global
   real, dimension (mx,my,mz,mvar) :: a
-  real, dimension (mmy_grid,mmz_grid,mvar) :: f
+  ! SC: added axtra dimension in x direction to 'f' array
+  real, dimension (mmx_grid,mmy_grid,mmz_grid,mvar) :: f
   real, dimension (mmx,mmy,mmz,mvar,mprocs) :: ff
   real, dimension (mmx_grid) :: rx,rdx_1,rdx_tilde
   real, dimension (mmy_grid) :: ry,rdy_1,rdy_tilde
@@ -70,7 +73,7 @@ print*,'mx,my,mz,mvar=',mx,my,mz,mvar
   !
   !  Print out parameters of conversion
   !
-  print*,'increase processor numbers in y and z by muly,mulz=',muly,mulz
+  print*,'increase processor numbers in x, y and z by muly,mulz=',mulx,muly,mulz
   print*,'remesh by factor remesh_par=',remesh_parx,remesh_pary,remesh_parz
   !
   !  Read input parameters from remesh.in
@@ -315,13 +318,19 @@ print*,'mx,my,mz,mvar=',mx,my,mz,mvar
                     addy=1
                     addz=1
                   endif
-                  f(j+addy,k+addz,:)=a(itx,ity,itz,:)
+! SC: added 'i+addx' to 'f' array
+                  f(i+addx,j+addy,k+addz,:)=a(itx,ity,itz,:)
                 enddo
               enddo
               itz=itz+1
             end do
             ity=ity+1
           end do
+! SC: moved the end of the itx loop here
+        itx=itx+1
+      end do
+! SC: the spreading into different processors is now done afte the remeshing
+! in all dimensions
           !
           ! Spreading result to different processors
           !
@@ -337,7 +346,10 @@ print*,'mx,my,mz,mvar=',mx,my,mz,mvar
                 zstart=1+(counz-1)*nnz
                 zstop=counz*nnz+2*nghost
 !NILS: This is not OK if mulx>1....should be fixed
-                ff(i+addx,:,:,:,cpu_local)=f(ystart:ystop,zstart:zstop,:)
+! SC: @NILS: is it OK now?
+! SC: changed 'ff' array from 'ff(i+addx,...)' to 'ff(:,...)'
+! SC: added to 'f' array 'xstart:xstop'
+                ff(:,:,:,:,cpu_local)=f(xstart:xstop,ystart:ystop,zstart:zstop,:)
                 if (itx .eq. 2) then
                   rry(:,cpu_local)=ry(ystart:ystop)
                   rrz(:,cpu_local)=rz(zstart:zstop)
@@ -346,8 +358,8 @@ print*,'mx,my,mz,mvar=',mx,my,mz,mvar
             enddo
           enddo
         enddo
-        itx=itx+1
-      end do
+! SC: former end of the itx loop
+
       !
       !  Smoothing data if muly or mulz is greater than 1
       !
@@ -368,6 +380,7 @@ print*,'mx,my,mz,mvar=',mx,my,mz,mvar
         if (ip<8) print*,'Writing '//trim(file2)
         open(91,file=file2,form='unformatted')
         write(91) ff(:,:,:,:,i)
+! SC: should edit also rx?
         if (lshear) then
            write(91) t_sp,rx,rry(:,i),rrz(:,i),dx,dy,dz,deltay
           print*,'wrote deltay=',deltay
