@@ -263,31 +263,30 @@ print*,'mx,my,mz,mvar=',mx,my,mz,mvar
       itx=remesh_parx
       do i=0,mxout-(2-remesh_parx),remesh_parx
         do ii=0,remesh_parx-1
-          if (remesh_parx .eq. 3) then
-            addx=ii 
-            if (itx .eq. 3)    addx=1
-            if (itx .eq. 2) then
-              if (addx .eq. 0) addx=1
-            endif
-            if (itx .eq. mx-2) then
-              if (addx .eq. 2) addx=1
-            endif
-            if (itx .eq. mx-1) addx=0   
-          elseif (remesh_parx .eq. 2) then
-            addx=ii 
-            if (itx .eq. 2)    addx=1
-            if (itx .eq. mx-1) addx=0   
-          else
-            addx=1
-          endif
           ity=remesh_pary
           do j=0,myout-(2-remesh_pary),remesh_pary
-            itz=remesh_parz
-            do k=0,mzout-(2-remesh_parz),remesh_parz
-              ! Doubling
-              do jj=0,remesh_pary-1
+            do jj=0,remesh_pary-1
+              itz=remesh_parz
+              do k=0,mzout-(2-remesh_parz),remesh_parz
                 do kk=0,remesh_parz-1
-!AB: don't follow this in detail...
+                  ! Doubling
+                  if (remesh_parx .eq. 3) then
+                    addx=ii 
+                    if (itx .eq. 3)    addx=1
+                    if (itx .eq. 2) then
+                      if (addx .eq. 0) addx=1
+                    endif
+                    if (itx .eq. mx-2) then
+                      if (addx .eq. 2) addx=1
+                    endif
+                    if (itx .eq. mx-1) addx=0   
+                  elseif (remesh_parx .eq. 2) then
+                    addx=ii 
+                    if (itx .eq. 2)    addx=1
+                    if (itx .eq. mx-1) addx=0   
+                  else
+                    addx=1
+                  endif
                   if (remesh_pary .eq. 3) then
                     addy=jj 
                     if (ity .eq. 3)    addy=1
@@ -350,10 +349,11 @@ print*,'mx,my,mz,mvar=',mx,my,mz,mvar
 ! SC: changed 'ff' array from 'ff(i+addx,...)' to 'ff(:,...)'
 ! SC: added to 'f' array 'xstart:xstop'
                 ff(:,:,:,:,cpu_local)=f(xstart:xstop,ystart:ystop,zstart:zstop,:)
-                if (itx .eq. 2) then
+!--             if (itx .eq. 2) then
+                  rrx(:,cpu_local)=rx(xstart:xstop)
                   rry(:,cpu_local)=ry(ystart:ystop)
                   rrz(:,cpu_local)=rz(zstart:zstop)
-                endif
+!--             endif
               enddo
             enddo
           enddo
@@ -380,12 +380,11 @@ print*,'mx,my,mz,mvar=',mx,my,mz,mvar
         if (ip<8) print*,'Writing '//trim(file2)
         open(91,file=file2,form='unformatted')
         write(91) ff(:,:,:,:,i)
-! SC: should edit also rx?
         if (lshear) then
-           write(91) t_sp,rx,rry(:,i),rrz(:,i),dx,dy,dz,deltay
+           write(91) t_sp,rrx(:,i),rry(:,i),rrz(:,i),dx,dy,dz,deltay
           print*,'wrote deltay=',deltay
         else
-           write(91) t_sp,rx,rry(:,i),rrz(:,i),dx,dy,dz
+           write(91) t_sp,rrx(:,i),rry(:,i),rrz(:,i),dx,dy,dz
         endif
         close(91)
       enddo
@@ -406,9 +405,9 @@ print*,'mx,my,mz,mvar=',mx,my,mz,mvar
       !
       do i=1,mprocs
 
-        ipxx = modulo(cpu_global(i), nprocx)
-        ipyy = modulo(cpu_global(i)/nprocx, nprocyy)
-        ipzz = cpu_global(i)/(nprocx*nprocyy)
+        ipxx = modulo(cpu_global(i), nprocxx)
+        ipyy = modulo(cpu_global(i)/nprocxx, nprocyy)
+        ipzz = cpu_global(i)/(nprocxx*nprocyy)
         call chn(cpu_global(i),ch)
         call safe_character_assign(dimfile_loc,trim(datadir)//'/proc'//trim(ch)//'/dim.dat')
         call safe_character_assign(dimfile2_loc,trim(destination)//'/'//trim(dimfile_loc))
@@ -429,7 +428,7 @@ print*,'mx,my,mz,mvar=',mx,my,mz,mvar
              '/'//trim(datadir)//'/proc'//trim(ch)//'/grid.dat')
         if (ip<8) print*,'Writing ',gridfile
         open(1,FILE=gridfile,FORM='unformatted')
-        write(1) t_sp,rx,rry(:,i),rrz(:,i),dx,dy,dz
+        write(1) t_sp,rrx(:,i),rry(:,i),rrz(:,i),dx,dy,dz
         write(1) dx,dy,dz
         write(1) Lx,Ly,Lz
         write(1) rdx_1,rdy_1,rdz_1

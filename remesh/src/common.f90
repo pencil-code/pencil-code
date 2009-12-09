@@ -8,7 +8,7 @@ module Common
   !
   !  New grid parameters
   !
-  integer, parameter :: nnx=remesh_parx*nx/muly
+  integer, parameter :: nnx=remesh_parx*nx/mulx
   integer, parameter :: nny=remesh_pary*ny/muly
   integer, parameter :: nnz=remesh_parz*nz/mulz
   integer, parameter :: mmx=remesh_parx*nx/mulx+2*nghost
