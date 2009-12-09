@@ -325,13 +325,13 @@ include 'NSCBC.h'
       logical, optional :: linlet
       logical :: llinlet, non_reflecting_inlet
       real, optional :: u_t
-      real, dimension(ny,nz) :: dlnrho_dx
-      real, dimension(ny,nz) :: rho0, L_1, L_3, L_4, L_5,parallell_term_uz
+      real, dimension(ny,nz) :: dlnrho_dx, TT
+      real, dimension(ny,nz) :: rho0, L_1, L_2, L_3, L_4, L_5,parallell_term_uz
       real, dimension(ny,nz) :: parallell_term_rho,dlnrho_dy,dlnrho_dz
       real, dimension(ny,nz) :: parallell_term_ux,d2u1_dy2,d2u1_dz2
       real, dimension(ny,nz) :: d2u2_dy2,d2u2_dz2,d2u3_dy2,d2u3_dz2
       real, dimension(ny,nz) :: prefac1, prefac2,parallell_term_uy
-      real, dimension(ny,nz,3) :: grad_rho, u_in
+      real, dimension(ny,nz,3) :: grad_rho, u_in, grad_T, grad_P
       real, dimension(ny,nz,3,3) :: dui_dxj
       real, dimension (my,mz) :: cs0_ar,cs20_ar
       real, dimension (my,mz) :: tmp22,tmp12,tmp2_lnrho,tmp33,tmp13,tmp3_lnrho
@@ -372,6 +372,16 @@ include 'NSCBC.h'
         rho0 = exp(f(lll,m1:m2,n1:n2,ilnrho))
       endif
 !
+!  Find temperature
+!
+      if (ilnTT>0) then
+        if (ltemperature_nolog) then
+          TT = f(lll,m1:m2,n1:n2,ilnTT)
+        else
+          TT = exp(f(lll,m1:m2,n1:n2,ilnTT))
+        endif
+      endif
+!
 !  Get viscoity
 !
       call getnu(nu)
@@ -401,6 +411,9 @@ include 'NSCBC.h'
       call der_onesided_4_slice(f,sgn,iux,dui_dxj(:,:,1,1),lll,1)
       call der_onesided_4_slice(f,sgn,iuy,dui_dxj(:,:,2,1),lll,1)
       call der_onesided_4_slice(f,sgn,iuz,dui_dxj(:,:,3,1),lll,1)
+      if (ilnTT>0) then
+        call der_onesided_4_slice(f,sgn,ilnTT,grad_T(:,:,1),lll,1)
+      endif
 !
 !  Do central differencing in the directions parallell to the boundary 
 !  first in the y-direction......
@@ -461,11 +474,28 @@ include 'NSCBC.h'
       dui_dxj(:,:,3,3)=tmp33(m1:m2,n1:n2)
       grad_rho(:,:,3)=tmp3_lnrho(m1:m2,n1:n2)
 !
-!  Find divergence of rho if we solve for logarithm of rho
+!  Find divergence of rho and temperature if we solve for logarithm of rho
 !
       if (.not. ldensity_nolog) then
         do i=1,3
           grad_rho(:,:,i)=grad_rho(:,:,i)*rho0
+        enddo
+      endif
+      if (.not. ltemperature_nolog .and. ilnTT>0) then
+        do i=1,3
+          grad_T(:,:,i)=grad_T(:,:,i)*TT(m1:m2,n1:n2)
+        enddo
+      endif
+!
+!  Find gradient of pressure
+!
+      if (ilnTT>0) then 
+        do i=1,3
+!          grad_P(:,:,i)=grad_rho(:,:,i)*TT(m1:m2,n1:n2)
+        enddo
+      else
+        do i=1,3
+          grad_P(:,:,i)=grad_rho(:,:,i)*cs20_ar(m1:m2,n1:n2)
         enddo
       endif
 !
@@ -572,10 +602,14 @@ include 'NSCBC.h'
 !  Find the L_i's
 !
         L_1 = KK*(rho0*cs20-p_infty)
+        if (ilnTT > 0) then 
+          L_2=f(lll,m1:m2,n1:n2,iux)*&
+              (cs20_ar(m1:m2,n1:n2)*grad_rho(:,:,1)-grad_P(:,:,1))
+        endif
         L_3 = f(lll,m1:m2,n1:n2,iux)*dui_dxj(:,:,2,1)
         L_4 = f(lll,m1:m2,n1:n2,iux)*dui_dxj(:,:,3,1)
         L_5 = (f(lll,m1:m2,n1:n2,iux) - sgn*cs0_ar(m1:m2,n1:n2))*&
-             (cs20_ar(m1:m2,n1:n2)*grad_rho(:,:,1)&
+             (grad_P(:,:,1)&
              - sgn*rho0*cs0_ar(m1:m2,n1:n2)*dui_dxj(:,:,1,1))
       endif
 !
