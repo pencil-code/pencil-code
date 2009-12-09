@@ -320,44 +320,45 @@ print*,'mx,my,mz,mvar=',mx,my,mz,mvar
 ! SC: added 'i+addx' to 'f' array
                   f(i+addx,j+addy,k+addz,:)=a(itx,ity,itz,:)
                 enddo
+                itz=itz+1
               enddo
-              itz=itz+1
             end do
             ity=ity+1
           end do
+        enddo
 ! SC: moved the end of the itx loop here
         itx=itx+1
       end do
+
 ! SC: the spreading into different processors is now done afte the remeshing
 ! in all dimensions
-          !
-          ! Spreading result to different processors
-          !
-          do counx=1,mulx
-            do couny=1,muly
-              do counz=1,mulz
+!
+! Spreading result to different processors
+!
+      do counx=1,mulx
+        do couny=1,muly
+          do counz=1,mulz
 !                cpu_local=(couny-1)+muly*(counz-1)+1
-                cpu_local=(counx-1)+mulx*(couny-1)+mulx*muly*(counz-1)+1
-                xstart=1+(counx-1)*nnx
-                xstop=counx*nnx+2*nghost
-                ystart=1+(couny-1)*nny
-                ystop=couny*nny+2*nghost
-                zstart=1+(counz-1)*nnz
-                zstop=counz*nnz+2*nghost
+            cpu_local=(counx-1)+mulx*(couny-1)+mulx*muly*(counz-1)+1
+            xstart=1+(counx-1)*nnx
+            xstop=counx*nnx+2*nghost
+            ystart=1+(couny-1)*nny
+            ystop=couny*nny+2*nghost
+            zstart=1+(counz-1)*nnz
+            zstop=counz*nnz+2*nghost
 !NILS: This is not OK if mulx>1....should be fixed
 ! SC: @NILS: is it OK now?
 ! SC: changed 'ff' array from 'ff(i+addx,...)' to 'ff(:,...)'
 ! SC: added to 'f' array 'xstart:xstop'
-                ff(:,:,:,:,cpu_local)=f(xstart:xstop,ystart:ystop,zstart:zstop,:)
+            ff(:,:,:,:,cpu_local)=f(xstart:xstop,ystart:ystop,zstart:zstop,:)
 !--             if (itx .eq. 2) then
-                  rrx(:,cpu_local)=rx(xstart:xstop)
-                  rry(:,cpu_local)=ry(ystart:ystop)
-                  rrz(:,cpu_local)=rz(zstart:zstop)
-!--             endif
-              enddo
-            enddo
+            rrx(:,cpu_local)=rx(xstart:xstop)
+            rry(:,cpu_local)=ry(ystart:ystop)
+            rrz(:,cpu_local)=rz(zstart:zstop)
+            !--             endif
           enddo
         enddo
+      enddo
 ! SC: former end of the itx loop
 
       !
