@@ -702,7 +702,7 @@ module Chemistry
 !
       RHS_Y_full(l1:l2,m,n,:)=p%DYDt_reac+p%DYDt_diff
 !
-! Calculate thermal diffusivity
+! Calculate dchethermal diffusivity
 !
       if (lpenc_requested(i_lambda)) then
          p%lambda=lambda_full(l1:l2,m,n)
@@ -2146,7 +2146,7 @@ module Chemistry
           RHS_T_full(l1:l2,m,n)=sum_DYDt(:)
         else
           if (ltemperature_nolog) then
-            RHS_T_full(l1:l2,m,n)=(sum_DYDt(:)- Rgas*p%mu1*p%divu)*p%cv1 &
+            RHS_T_full(l1:l2,m,n)=(sum_DYDt(:)- Rgas*p%mu1*p%divu)*p%cv1*p%TT(:) &
             -(hYrho_full(l1:l2,m,n)*p%divu(:)+p%ghYrho_uu(:))*p%cv1/p%rho(:)
           else
             RHS_T_full(l1:l2,m,n)=(sum_DYDt(:)- Rgas*p%mu1*p%divu)*p%cv1 &
@@ -4223,8 +4223,12 @@ module Chemistry
       integer :: i
 !
 
+     if (ltemperature_nolog) then
+      call dot(p%gTT,p%glambda,g2TTlambda)
+     else
       call dot(p%glnTT,p%glambda,g2TTlambda)
       call dot(p%glnTT,p%glnTT,g2TT)
+     endif
 !
 !  Add heat conduction to RHS of temperature equation
 !

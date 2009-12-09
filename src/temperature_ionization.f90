@@ -105,10 +105,23 @@ module Entropy
 !
       use Mpicomm, only: stop_it
       use SharedVariables, only: put_shared_variable
+      use EquationOfState, only : select_eos_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
       integer :: ierr
+
+!
+!  Set iTT requal to ilnTT if we are considering non-logarithmic temperature.
+!
+      if (ltemperature_nolog) iTT=ilnTT
+!
+!
+      if (ltemperature_nolog) then
+        call select_eos_variable('TT',iTT)
+      else
+        call select_eos_variable('lnTT',ilnTT)
+      endif
 !
 !  Check any module dependencies
 !
@@ -410,7 +423,7 @@ module Entropy
       endif
 
       if (lpencil(i_ugTT)) then
-        call u_dot_grad(f,iTT,p%gTT,p%uu,p%ugTT)
+        call u_dot_grad(f,iTT,p%gTT,p%uu,p%ugTT,UPWIND=lupw_lnTT)
       endif
 
     endsubroutine calc_pencils_entropy
