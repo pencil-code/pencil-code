@@ -34,7 +34,7 @@ include 'NSCBC.h'
   character(len=nscbc_len), dimension(3) :: nscbc_bc1,nscbc_bc2
   character(len=40) :: turb_inlet_dir=''
   real :: nscbc_sigma_out = 1.,nscbc_sigma_in = 1., p_infty=1.
-  logical :: inlet_from_file=.false.
+  logical :: inlet_from_file=.false., jet_inlet=.false.
   logical :: first_NSCBC=.true.
 !
 !  Variables to be used when getting timevarying inlet from file
@@ -60,11 +60,11 @@ include 'NSCBC.h'
 !
   namelist /NSCBC_init_pars/  &
       nscbc_bc, nscbc_sigma_in, nscbc_sigma_out, p_infty, inlet_from_file,&
-      turb_inlet_dir
+      turb_inlet_dir, jet_inlet
 !
   namelist /NSCBC_run_pars/  &
       nscbc_bc, nscbc_sigma_in, nscbc_sigma_out, p_infty, inlet_from_file,&
-      turb_inlet_dir
+      turb_inlet_dir,jet_inlet
 !
   contains
 !***********************************************************************
@@ -233,40 +233,6 @@ include 'NSCBC.h'
               Ly_in=y_in(m2_in+1)-y_in(m1_in)
               Lz_in=z_in(n2_in+1)-z_in(n1_in)
               first_NSCBC=.false.
-!print*,'Lx_in,Ly_in,Lz_in=',Lx_in,Ly_in,Lz_in
-!print*,'l1_in,m1_in,n1_in=',l1_in,m1_in,n1_in
-!print*,'l2_in,m2_in,n2_in=',l2_in,m2_in,n2_in
-!
-!  Check size of arrays
-!            
-!!$              if (j==1) then
-!!$                if ((my_in .ne. my) .or. (mz_in .ne. mz)) then
-!!$                  print*,'my_in,my,mz_in,mz=',my_in,my,mz_in,mz
-!!$                  call stop_it ('The turbulent inlet grid does not conform!')
-!!$                endif
-!!$                if ((Ly_in .ne. Lxyz(2)/nprocy) .or. (Lz_in .ne. Lxyz(3)/nprocz)) then
-!!$                  print*,'Lx_in,Ly_in,Lz_in,Lxyz=',Lx_in,Ly_in,Lz_in,Lxyz
-!!$                  call stop_it ('The turbulent inlet grid does not conform!')
-!!$                endif                
-!!$              elseif (j==2) then
-!!$                if ((mx_in .ne. mx) .or. (mz_in .ne. mz)) then
-!!$                  print*,'mx_in,mx,mz_in,mz=',mx_in,mx,mz_in,mz
-!!$                  call stop_it ('The turbulent inlet grid does not conform !')
-!!$                endif
-!!$                if ((Lx_in .ne. Lxyz(1)/nprocx) .or. (Lz_in .ne. Lxyz(3)/nprocz)) then
-!!$                  print*,'Lx_in,Ly_in,Lz_in,Lxyz=',Lx_in,Ly_in,Lz_in,Lxyz
-!!$                  call stop_it ('The turbulent inlet grid does not conform!')
-!!$                endif                
-!!$              elseif (j==3) then
-!!$                if ((my_in .ne. my) .or. (mx_in .ne. mx)) then
-!!$                  print*,'my_in,my,mx_in,mx=',my_in,my,mx_in,mx
-!!$                  call stop_it ('The turbulent inlet grid does not conform!')
-!!$                endif
-!!$                if ((Lx_in .ne. Lxyz(1)/nprocx) .or. (Ly_in .ne. Lxyz(2)/nprocz)) then
-!!$                  print*,'Lx_in,Ly_in,Lz_in,Lxyz=',Lx_in,Ly_in,Lz_in,Lxyz
-!!$                  call stop_it ('The turbulent inlet grid does not conform!')
-!!$                endif                
-!!$              endif
             endif            
           endif
         endif
@@ -372,8 +338,10 @@ include 'NSCBC.h'
       real, dimension (my,mz) :: tmp23,tmp32
       real, dimension (ny) :: tmpy
       real, dimension (nz) :: tmpz
-      real :: Mach,KK,nu
-      integer lll,i
+      real, dimension (3) :: jet_inner_diameter,jet_outer_diameter
+      real, dimension (2) :: jet_center, jet_velocity
+      real :: Mach,KK,nu,rad,coflow_inner_diameter
+      integer lll,i,jjj,kkk
       integer sgn
       real :: shift, grid_shift, weight, round
       integer :: iround,lowergrid,uppergrid
@@ -509,7 +477,7 @@ include 'NSCBC.h'
 !  I think that what we really want is a Mach number averaged over the 
 !  timescale of several acoustic waves. How could this be done????)
 !
-        Mach=sum(f(lll,m1:m2,n1:n2,iux)/cs0_ar(m1:m2,n1:n2))/(ny*nz)
+      Mach=sum(f(lll,m1:m2,n1:n2,iux)/cs0_ar(m1:m2,n1:n2))/(ny*nz)
 !
 !  Find the L_i's (which really is the Lodi equations)
 !
@@ -533,7 +501,45 @@ include 'NSCBC.h'
               =f_in(lowergrid,m1_in:m2_in,n1_in:n2_in,iux:iuz)*(1-weight)&
               +f_in(uppergrid,m1_in:m2_in,n1_in:n2_in,iux:iuz)*weight
           u_in(:,:,1)=u_in(:,:,1)+u_t
-
+        elseif (jet_inlet) then
+!
+! Find outer and inner diameters of jets and coflow
+!          
+          jet_center(1)=0
+          jet_center(2)=0
+          jet_velocity(1)=u_t*15.
+          jet_inner_diameter(1)=0.0
+          jet_outer_diameter(1)=1e-2
+          jet_inner_diameter(2)=jet_outer_diameter(1)+2e-4
+          if (jet_outer_diameter(2)==0) then
+            coflow_inner_diameter=jet_inner_diameter(2)
+          else
+            coflow_inner_diameter=jet_inner_diameter(3)
+          endif
+!
+! Set velocity profiles
+!          
+          u_in(:,:,2)=0
+          u_in(:,:,3)=0
+          do jjj=1,ny
+            do kkk=1,nz
+              rad=sqrt((y(jjj+m1-1)-jet_center(1))**2+(z(kkk+n1-1)-jet_center(2))**2)
+              if (rad >= coflow_inner_diameter/2) then
+                u_in(jjj,kkk,1)=u_t
+              elseif(&
+                  (rad < jet_outer_diameter(2)/2) .and. &
+                  (rad >= jet_inner_diameter(2)/2)) then
+                u_in(jjj,kkk,1)=jet_velocity(2)
+              elseif(&
+                  (rad < jet_outer_diameter(1)/2) .and. &
+                  (rad >= jet_inner_diameter(1)/2)) then
+                u_in(jjj,kkk,1)=jet_velocity(1)&
+                    *(1-(rad**2/(jet_outer_diameter(1)/2)**2))
+              else
+                u_in(jjj,kkk,1)=0
+              endif
+            enddo
+          enddo
         else
           u_in(:,:,1)=u_t
           u_in(:,:,2)=0.
