@@ -327,6 +327,9 @@ module Equ
           if (lentropy) then
             diffus_chi=0.0; diffus_chi3=0.0
           endif
+          if (ltemperature) then
+            diffus_chi=0.0; diffus_chi3=0.0
+          endif
           if (lmagnetic) then
             advec_va2=0.0; advec_hall=0.0
             diffus_eta=0.0; diffus_eta2=0.0; diffus_eta3=0.0
