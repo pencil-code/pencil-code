@@ -529,7 +529,8 @@ module Particles_map
 !
       ibrick_send=0
       do ibrick=0,nbricks-1
-        if (iproc_foster_brick(ibrick)/=iproc) then
+        if (iproc_foster_brick(ibrick)/=iproc .and. &
+            iproc_foster_brick(ibrick)/=-1) then
           ibx=modulo(ibrick,nbx)
           iby=modulo(ibrick/nbx,nby)
           ibz=ibrick/(nbx*nby)
