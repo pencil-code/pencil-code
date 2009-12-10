@@ -48,7 +48,7 @@ module Poisson
 !
     endsubroutine initialize_poisson
 !***********************************************************************
-    subroutine inverse_laplacian(phi)
+    subroutine inverse_laplacian(f,phi)
 !
 !  Solve the Poisson (or inhomogeneous Helmholtz) equation
 !    (\Laplace - h) f = rhs
@@ -57,6 +57,9 @@ module Poisson
 !
 !  18-may-2007/wolf: adapted from IDL prototype
 !
+      Use Sub, only: keep_compiler_quiet
+!
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx,ny,nz) :: phi,rhs
 !
       real, dimension(3) :: dxyz
@@ -83,6 +86,8 @@ module Poisson
         endif
         call v_cycle(phi,rhs,dxyz)
       enddo
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine inverse_laplacian
 ! !***********************************************************************

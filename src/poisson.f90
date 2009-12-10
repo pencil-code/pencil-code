@@ -86,6 +86,8 @@ module Poisson
 !
 !  17-jul-2007/wolf: coded wrapper
 !
+      Use Sub, only: keep_compiler_quiet
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ny,nz) :: phi
 !
@@ -115,6 +117,8 @@ module Poisson
           call inverse_laplacian_fft(phi)
         endif
       endif
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine inverse_laplacian
 !***********************************************************************
@@ -241,7 +245,7 @@ module Poisson
       real, dimension (nzgrid,nx/nprocz) :: rhst, b1t
       real, dimension (nzgrid) :: a_tri, b_tri, c_tri, r_tri, u_tri
       real :: k2
-      integer :: ikx, iky, ikz
+      integer :: ikx, iky
       logical :: err
 !
 !  identify version
@@ -347,7 +351,7 @@ module Poisson
       logical, dimension(0:ncpus-1,0:ncpus-1) :: lproc_comm_send,lproc_comm_recv
 !
       real :: rr,k2
-      integer :: ikx, iky, ikz
+      integer :: ikx, iky
 !
       real    :: x0,xn,y0,yn,dxc,dyc,dxc1,dyc1,Lxn,Lyn
 !
