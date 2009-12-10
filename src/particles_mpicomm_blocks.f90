@@ -1414,7 +1414,7 @@ module Particles_mpicomm
       integer, dimension (0:nblockmax-1) :: npblock, ibrick_give, ibrick_recv
       integer, dimension (0:nblockmax-1) :: iproc_grandparent, iproc_grandchild
       integer, dimension (0:nblockmax-1) :: iproc_parent_old, ibrick_parent_old
-      integer, dimension (nblockmax) :: ireq_array
+      integer, dimension (2*nblockmax) :: ireq_array
       integer :: npar_sum, npar_target, npar_recv, npar_requ
       integer :: npar_brick_taken, npar_want, npar_give
       integer :: ibrick, iblock, ibx, iby, ibz, di, nblock_loc_old
@@ -1768,16 +1768,6 @@ module Particles_mpicomm
             tag_id+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
         nreq=nreq+1
         ireq_array(nreq)=ireq
-        call MPI_IRECV(yb_recv(:,iblock:iblock), &
-            myb, MPI_DOUBLE_PRECISION, iproc_recv, &
-            tag_id+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
-        nreq=nreq+1
-        ireq_array(nreq)=ireq
-        call MPI_IRECV(zb_recv(:,iblock:iblock), mzb, &
-            MPI_DOUBLE_PRECISION, iproc_recv, &
-            tag_id+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
-        nreq=nreq+1
-        ireq_array(nreq)=ireq
         iblock=iblock+1
       enddo
 !
@@ -1792,11 +1782,75 @@ module Particles_mpicomm
               tag_id+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
           nreq=nreq+1
           ireq_array(nreq)=ireq
+        endif
+        iblock=iblock+1
+      enddo
+!
+      do ireq=1,nreq
+        call MPI_WAIT(ireq_array(ireq),stat,ierr)
+      enddo
+!
+      xb(:,0:nblock_loc-1)=xb_recv(:,0:nblock_loc-1)
+!
+!  Communicate yb array.
+!
+      nreq=0
+      iblock=0
+      do while (iblock<nblock_loc)
+        iproc_recv=iproc_grandparent(iblock)
+        ibrick_global= &
+            iproc_parent_block(iblock)*nbricks+ibrick_parent_block(iblock)
+        call MPI_IRECV(yb_recv(:,iblock:iblock), &
+            myb, MPI_DOUBLE_PRECISION, iproc_recv, &
+            tag_id+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
+        nreq=nreq+1
+        ireq_array(nreq)=ireq
+        iblock=iblock+1
+      enddo
+!
+      iblock=0
+      do while (iblock<nblock_loc_old)
+        iproc_send=iproc_grandchild(iblock)
+        if (iproc_send/=-1) then
+          ibrick_global= &
+              iproc_parent_old(iblock)*nbricks+ibrick_parent_old(iblock)
           call MPI_ISEND(yb(:,iblock:iblock), myb, &
               MPI_DOUBLE_PRECISION, iproc_send, &
               tag_id+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
           nreq=nreq+1
           ireq_array(nreq)=ireq
+        endif
+        iblock=iblock+1
+      enddo
+!
+      do ireq=1,nreq
+        call MPI_WAIT(ireq_array(ireq),stat,ierr)
+      enddo
+!
+      yb(:,0:nblock_loc-1)=yb_recv(:,0:nblock_loc-1)
+!
+!  Communicate zb array.
+!
+      nreq=0
+      iblock=0
+      do while (iblock<nblock_loc)
+        iproc_recv=iproc_grandparent(iblock)
+        ibrick_global= &
+            iproc_parent_block(iblock)*nbricks+ibrick_parent_block(iblock)
+        call MPI_IRECV(zb_recv(:,iblock:iblock), mzb, &
+            MPI_DOUBLE_PRECISION, iproc_recv, &
+            tag_id+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
+        nreq=nreq+1
+        ireq_array(nreq)=ireq
+        iblock=iblock+1
+      enddo
+!
+      iblock=0
+      do while (iblock<nblock_loc_old)
+        iproc_send=iproc_grandchild(iblock)
+        if (iproc_send/=-1) then
+          ibrick_global= &
+              iproc_parent_old(iblock)*nbricks+ibrick_parent_old(iblock)
           call MPI_ISEND(zb(:,iblock:iblock), mzb, &
               MPI_DOUBLE_PRECISION, iproc_send, &
               tag_id+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
@@ -1810,8 +1864,6 @@ module Particles_mpicomm
         call MPI_WAIT(ireq_array(ireq),stat,ierr)
       enddo
 !
-      xb(:,0:nblock_loc-1)=xb_recv(:,0:nblock_loc-1)
-      yb(:,0:nblock_loc-1)=yb_recv(:,0:nblock_loc-1)
       zb(:,0:nblock_loc-1)=zb_recv(:,0:nblock_loc-1)
 !
 !  Remove the particles that are no longer at the present processor.
