@@ -86,7 +86,7 @@ module Poisson
 !
 !  17-jul-2007/wolf: coded wrapper
 !
-      Use Sub, only: keep_compiler_quiet
+      use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ny,nz) :: phi

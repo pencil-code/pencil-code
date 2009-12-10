@@ -57,7 +57,7 @@ module Poisson
 !
 !  18-may-2007/wolf: adapted from IDL prototype
 !
-      Use Sub, only: keep_compiler_quiet
+      use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx,ny,nz) :: phi,rhs
