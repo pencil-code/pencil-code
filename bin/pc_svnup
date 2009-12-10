@@ -71,6 +71,10 @@ if ("$1" != "-src") then
     svn up $PENCIL_HOME/dx
     if ($stat) svn status $PENCIL_HOME/dx
 #
+    echo svn up $PENCIL_HOME/remesh
+    svn up $PENCIL_HOME/remesh
+    if ($stat) svn status $PENCIL_HOME/remesh
+#
     echo svn up $PENCIL_HOME/misc
     svn up $PENCIL_HOME/misc
     if ($stat) svn status $PENCIL_HOME/misc
