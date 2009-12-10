@@ -599,6 +599,7 @@ module Mpicomm
       integer, optional :: idir
 !
       fsum=fsum_tmp
+      if (present(idir).and.NO_WARN) print*,idir
 !
     endsubroutine mpiallreduce_sum_scl
 !***********************************************************************
@@ -609,6 +610,7 @@ module Mpicomm
       integer, optional :: idir
 !
       fsum=fsum_tmp
+      if (present(idir).and.NO_WARN) print*,idir
 !
     endsubroutine mpiallreduce_sum_arr
 !***********************************************************************
@@ -619,6 +621,7 @@ module Mpicomm
       integer, optional :: idir
 !
       fsum=fsum_tmp
+      if (present(idir).and.NO_WARN) print*,idir
 !
     endsubroutine mpiallreduce_sum_arr2
 !***********************************************************************
@@ -629,6 +632,7 @@ module Mpicomm
       integer, optional :: idir
 !
       fsum=fsum_tmp
+      if (present(idir).and.NO_WARN) print*,idir
 !
     endsubroutine mpiallreduce_sum_arr3
 !***********************************************************************
@@ -741,6 +745,7 @@ module Mpicomm
       integer, optional :: idir
 !
       fsum=fsum_tmp
+      if (present(idir).and.NO_WARN) print*,idir
 !
     endsubroutine mpireduce_sum_int_arr3
 !***********************************************************************
@@ -759,6 +764,7 @@ module Mpicomm
       integer, optional :: idir
 !
       fsum=fsum_tmp
+      if (present(idir).and.NO_WARN) print*,idir
 !
     endsubroutine mpireduce_sum_scl
 !***********************************************************************
@@ -769,6 +775,7 @@ module Mpicomm
       integer, optional :: idir
 !
       fsum=fsum_tmp
+      if (present(idir).and.NO_WARN) print*,idir
 !
     endsubroutine mpireduce_sum_arr
 !***********************************************************************
@@ -779,6 +786,7 @@ module Mpicomm
       integer, optional :: idir
 !
       fsum=fsum_tmp
+      if (present(idir).and.NO_WARN) print*,idir
 !
     endsubroutine mpireduce_sum_arr2
 !***********************************************************************
@@ -789,6 +797,7 @@ module Mpicomm
       integer, optional :: idir
 !
       fsum=fsum_tmp
+      if (present(idir).and.NO_WARN) print*,idir
 !
     endsubroutine mpireduce_sum_arr3
 !***********************************************************************
@@ -799,6 +808,7 @@ module Mpicomm
       integer, optional :: idir
 !
       fsum=fsum_tmp
+      if (present(idir).and.NO_WARN) print*,idir
 !
     endsubroutine mpireduce_sum_arr4
 !***********************************************************************
@@ -1208,6 +1218,7 @@ module Mpicomm
       integer, intent(in) :: xi,yj,yproc_no
 !
       az(:)=a(xi,yj,:) 
+      if (NO_WARN) print*,yproc_no
 !
     endsubroutine z2x
 !***********************************************************************
