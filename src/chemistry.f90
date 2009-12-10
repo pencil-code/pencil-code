@@ -1625,49 +1625,49 @@ module Chemistry
         write(file_id,'(7E12.4)') 1./maxval(mu1_full/unit_mass)
         write(file_id,*) ''
         write(file_id,*) 'Density, g/cm^3'
-        write(file_id,'(7E12.4)') minval(rho_full(l1:l2,m1:m2,n1:n2))*unit_mass/unit_length**3, &
-                                  maxval(rho_full(l1:l2,m1:m2,n1:n2))*unit_mass/unit_length**3
+        write(file_id,'(7E12.4)') rho_full(l1,m1,n1)*unit_mass/unit_length**3, &
+                                  rho_full(l2,m2,n2)*unit_mass/unit_length**3
         write(file_id,*) ''
         write(file_id,*) 'Themperature, K'
          ! Commented the next line out because
          ! samples/2d-tests/chemistry_GrayScott apparently has no f(:,:,:,5)
         if (ilnTT>0) write(file_id,'(7E12.4)')  &
-        exp(minval(f(l1:l2,m1:m2,n1:n2,ilnTT)))*unit_temperature, &
-        exp(maxval(f(l1:l2,m1:m2,n1:n2,ilnTT)))*unit_temperature
+        exp(f(l1,m1,n1,ilnTT))*unit_temperature, &
+        exp(f(l2,m2,n2,ilnTT))*unit_temperature
         write(file_id,*) ''
         write(file_id,*) 'Cp,  erg/mole/K'
-        write(file_id,'(7E12.4)') maxval(cp_full(l1:l2,m1:m2,n1:n2))/Rgas*&
-            Rgas_unit_sys/maxval(mu1_full(l1:l2,m1:m2,n1:n2)/unit_mass)
+        write(file_id,'(7E12.4)') cp_full(l1,m1,n1)/Rgas*&
+            Rgas_unit_sys/mu1_full(l1,m1,n1)/unit_mass,cp_full(l2,m2,n2)/Rgas*&
+            Rgas_unit_sys/mu1_full(l2,m2,n2)/unit_mass
         write(file_id,*) ''
         write(file_id,*) 'cp, erg/g/K'
-        write(file_id,'(7E12.4)') maxval(cp_full(l1:l2,m1:m2,n1:n2))/Rgas*Rgas_unit_sys
+        write(file_id,'(7E12.4)') cp_full(l1,m1,n1)/Rgas*Rgas_unit_sys,cp_full(l2,m2,n2)/Rgas*Rgas_unit_sys
         write(file_id,*) ''
         write(file_id,*) 'gamma,max,min'
-        write(file_id,'(7E12.4)') maxval(cp_full(l1:l2,m1:m2,n1:n2)) &
-                                 /maxval(cv_full(l1:l2,m1:m2,n1:n2)),&
-          minval(cp_full(l1:l2,m1:m2,n1:n2))/minval(cv_full(l1:l2,m1:m2,n1:n2))
+        write(file_id,'(7E12.4)') cp_full(l1,m1,n1)/cv_full(l1,m1,n1),&
+            cp_full(l2,m2,n2)/cv_full(l2,m2,n2)
         write(file_id,*) ''
         write(file_id,*) 'Viscosity, g/cm/s,'
-        write(file_id,'(7E12.4)') minval(nu_dyn(l1:l2,m1:m2,n1:n2))*&
-            (unit_mass/unit_length/unit_time),maxval(nu_dyn(l1:l2,m1:m2,n1:n2))*&
+        write(file_id,'(7E12.4)') nu_dyn(l1,m1,n1)*&
+            (unit_mass/unit_length/unit_time),nu_dyn(l2,m1,n1)*&
             (unit_mass/unit_length/unit_time)
         write(file_id,*) ''
         write(file_id,*) 'Species viscosity, g/cm/s,'
         do k=1,nchemspec
-        write(file_id,'(7E12.4)') minval(species_viscosity(l1:l2,m1:m2,n1:n2,k)),  &
-                                  maxval(species_viscosity(l1:l2,m1:m2,n1:n2,k))
+        write(file_id,'(7E12.4)') species_viscosity(l1,m1,n1,k),  &
+                                  species_viscosity(l2-1,m1,n1,k)
         enddo
         write(file_id,*) ''
         write(file_id,*) 'Thermal cond, erg/(cm K s),'
-        write(file_id,'(7E12.4)') (minval(lambda_full(l1:l2,m1:m2,n1:n2))*&
+        write(file_id,'(7E12.4)') (lambda_full(l1,m1,n1)*&
             unit_energy/unit_time/unit_length/unit_temperature), &
-                        (maxval(lambda_full(l1:l2,m1:m2,n1:n2))*&
+                        (lambda_full(l2,m2,n2)*&
             unit_energy/unit_time/unit_length/unit_temperature)
         write(file_id,*) ''
         write(file_id,*) 'Species  Diffusion coefficient, cm^2/s'
         do k=1,nchemspec
-        write(file_id,'(7E12.4)')minval(Diff_full(l1:l2,m1:m2,n1:n2,k))*unit_length**2/unit_time, &
-                                 maxval(Diff_full(l1:l2,m1:m2,n1:n2,k))*unit_length**2/unit_time
+        write(file_id,'(7E12.4)')Diff_full(l1,m1,n1,k)*unit_length**2/unit_time, &
+                                 Diff_full(l2,m2,n2,k)*unit_length**2/unit_time
         enddo
         write(file_id,*) ''
 
@@ -1676,6 +1676,66 @@ module Chemistry
         close(file_id)
         lwrite=.false.
       endif
+!!$      if (lwrite) then
+!!$        open(file_id,file=output_file)
+!!$        write(file_id,*) 'Mixture quantities'
+!!$        write(file_id,*) '*******************'
+!!$        write(file_id,*) ''
+!!$        write(file_id,*) 'Mass, g/mole'
+!!$        write(file_id,'(7E12.4)') 1./maxval(mu1_full/unit_mass)
+!!$        write(file_id,*) ''
+!!$        write(file_id,*) 'Density, g/cm^3'
+!!$        write(file_id,'(7E12.4)') minval(rho_full(l1:l2,m1:m2,n1:n2))*unit_mass/unit_length**3, &
+!!$                                  maxval(rho_full(l1:l2,m1:m2,n1:n2))*unit_mass/unit_length**3
+!!$        write(file_id,*) ''
+!!$        write(file_id,*) 'Themperature, K'
+!!$         ! Commented the next line out because
+!!$         ! samples/2d-tests/chemistry_GrayScott apparently has no f(:,:,:,5)
+!!$        if (ilnTT>0) write(file_id,'(7E12.4)')  &
+!!$        exp(minval(f(l1:l2,m1:m2,n1:n2,ilnTT)))*unit_temperature, &
+!!$        exp(maxval(f(l1:l2,m1:m2,n1:n2,ilnTT)))*unit_temperature
+!!$        write(file_id,*) ''
+!!$        write(file_id,*) 'Cp,  erg/mole/K'
+!!$        write(file_id,'(7E12.4)') maxval(cp_full(l1:l2,m1:m2,n1:n2))/Rgas*&
+!!$            Rgas_unit_sys/maxval(mu1_full(l1:l2,m1:m2,n1:n2)/unit_mass)
+!!$        write(file_id,*) ''
+!!$        write(file_id,*) 'cp, erg/g/K'
+!!$        write(file_id,'(7E12.4)') maxval(cp_full(l1:l2,m1:m2,n1:n2))/Rgas*Rgas_unit_sys
+!!$        write(file_id,*) ''
+!!$        write(file_id,*) 'gamma,max,min'
+!!$        write(file_id,'(7E12.4)') maxval(cp_full(l1:l2,m1:m2,n1:n2)) &
+!!$                                 /maxval(cv_full(l1:l2,m1:m2,n1:n2)),&
+!!$          minval(cp_full(l1:l2,m1:m2,n1:n2))/minval(cv_full(l1:l2,m1:m2,n1:n2))
+!!$        write(file_id,*) ''
+!!$        write(file_id,*) 'Viscosity, g/cm/s,'
+!!$        write(file_id,'(7E12.4)') minval(nu_dyn(l1:l2,m1:m2,n1:n2))*&
+!!$            (unit_mass/unit_length/unit_time),maxval(nu_dyn(l1:l2,m1:m2,n1:n2))*&
+!!$            (unit_mass/unit_length/unit_time)
+!!$        write(file_id,*) ''
+!!$        write(file_id,*) 'Species viscosity, g/cm/s,'
+!!$        do k=1,nchemspec
+!!$        write(file_id,'(7E12.4)') minval(species_viscosity(l1:l2,m1:m2,n1:n2,k)),  &
+!!$                                  maxval(species_viscosity(l1:l2,m1:m2,n1:n2,k))
+!!$        enddo
+!!$        write(file_id,*) ''
+!!$        write(file_id,*) 'Thermal cond, erg/(cm K s),'
+!!$        write(file_id,'(7E12.4)') (minval(lambda_full(l1:l2,m1:m2,n1:n2))*&
+!!$            unit_energy/unit_time/unit_length/unit_temperature), &
+!!$                        (maxval(lambda_full(l1:l2,m1:m2,n1:n2))*&
+!!$            unit_energy/unit_time/unit_length/unit_temperature)
+!!$        write(file_id,*) ''
+!!$        write(file_id,*) 'Species  Diffusion coefficient, cm^2/s'
+!!$        do k=1,nchemspec
+!!$        write(file_id,'(7E12.4)')minval(Diff_full(l1:l2,m1:m2,n1:n2,k))*unit_length**2/unit_time, &
+!!$                                 maxval(Diff_full(l1:l2,m1:m2,n1:n2,k))*unit_length**2/unit_time
+!!$        enddo
+!!$        write(file_id,*) ''
+!!$
+!!$
+!!$        if (lroot) print*,'calc_for_chem_mixture: writing mix_quant.out file'
+!!$        close(file_id)
+!!$        lwrite=.false.
+!!$      endif
 !
 
     endsubroutine calc_for_chem_mixture
