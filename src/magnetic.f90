@@ -39,19 +39,19 @@ module Magnetic
 !
 ! Slice precalculation buffers
 !
-  real, target, dimension (nx,ny,3) :: bb_xy,jj_xy
-  real, target, dimension (nx,ny,3) :: bb_xy2,jj_xy2
-  real, target, dimension (nx,ny,3) :: bb_xy3,jj_xy3
-  real, target, dimension (nx,ny,3) :: bb_xy4,jj_xy4
-  real, target, dimension (nx,nz,3) :: bb_xz,jj_xz
-  real, target, dimension (ny,nz,3) :: bb_yz,jj_yz
+  real, target, dimension (nx,ny,3) :: bb_xy, jj_xy
+  real, target, dimension (nx,ny,3) :: bb_xy2, jj_xy2
+  real, target, dimension (nx,ny,3) :: bb_xy3, jj_xy3
+  real, target, dimension (nx,ny,3) :: bb_xy4, jj_xy4
+  real, target, dimension (nx,nz,3) :: bb_xz, jj_xz
+  real, target, dimension (ny,nz,3) :: bb_yz, jj_yz
 !
-  real, target, dimension (nx,ny) :: b2_xy,jb_xy
-  real, target, dimension (nx,ny) :: b2_xy2,jb_xy2
-  real, target, dimension (nx,ny) :: b2_xy3,jb_xy3
-  real, target, dimension (nx,ny) :: b2_xy4,jb_xy4
-  real, target, dimension (ny,nz) :: b2_yz,jb_yz
-  real, target, dimension (nx,nz) :: b2_xz,jb_xz
+  real, target, dimension (nx,ny) :: b2_xy, jb_xy
+  real, target, dimension (nx,ny) :: b2_xy2, jb_xy2
+  real, target, dimension (nx,ny) :: b2_xy3, jb_xy3
+  real, target, dimension (nx,ny) :: b2_xy4, jb_xy4
+  real, target, dimension (ny,nz) :: b2_yz, jb_yz
+  real, target, dimension (nx,nz) :: b2_xz, jb_xz
 !
   real, target, dimension (nx,ny) :: beta_xy
   real, target, dimension (nx,ny) :: beta_xy2
@@ -66,60 +66,63 @@ module Magnetic
 !
   integer, parameter :: nresi_max=4
 !
-  real, dimension (ninit) :: amplaa=0.0,kx_aa=1.,ky_aa=1.,kz_aa=1.
-  real, dimension (ninit) :: phasex_aa=0., phasey_aa=0., phasez_aa=0.
+  real, dimension (ninit) :: amplaa=0.0, kx_aa=1.0, ky_aa=1.0, kz_aa=1.0
+  real, dimension (ninit) :: phasex_aa=0.0, phasey_aa=0.0, phasez_aa=0.0
   character (len=labellen), dimension(ninit) :: initaa='nothing'
   character (len=labellen) :: borderaa='nothing'
   character (len=labellen), dimension(nresi_max) :: iresistivity=''
-  character (len=labellen) :: Omega_profile='nothing',alpha_profile='const'
+  character (len=labellen) :: Omega_profile='nothing', alpha_profile='const'
   character (len=labellen) :: EMF_profile='nothing'
   character (len=labellen) :: fring_profile='tanh'
   ! input parameters
-  complex, dimension(3) :: coefaa=(/0.,0.,0./), coefbb=(/0.,0.,0./)
-  real, dimension(3) :: B_ext=(/0.,0.,0./),B1_ext,B_ext_tmp,eta_aniso_hyper3
-  real, dimension(3) :: axisr1=(/0,0,1/),dispr1=(/0.,0.5,0./)
-  real, dimension(3) :: axisr2=(/1,0,0/),dispr2=(/0.,-0.5,0./)
-  real, dimension(3) :: axisr3=(/1,0,0/),dispr3=(/0.,-0.5,0./)
+  complex, dimension(3) :: coefaa=(/0.0,0.0,0.0/), coefbb=(/0.0,0.0,0.0/)
+  real, dimension(3) :: B_ext=(/0.0,0.0,0.0/), B1_ext, B_ext_tmp
+  real, dimension(3) :: eta_aniso_hyper3
+  real, dimension(3) :: axisr1=(/0,0,1/), dispr1=(/0.0,0.5,0.0/)
+  real, dimension(3) :: axisr2=(/1,0,0/), dispr2=(/0.0,-0.5,0.0/)
+  real, dimension(3) :: axisr3=(/1,0,0/), dispr3=(/0.0,-0.5,0.0/)
   real, dimension(nx,3) :: uxbb !(temporary)
-  real, target :: zmode=1. !(temporary)
-  real :: fring1=0.,Iring1=0.,Rring1=1.,wr1=0.3
-  real :: fring2=0.,Iring2=0.,Rring2=1.,wr2=0.3
-  real :: fring3=0.,Iring3=0.,Rring3=1.,wr3=0.3
-  real :: radius=.1,epsilonaa=1e-2,widthaa=.5,x0aa=0.,z0aa=0.
-  real :: by_left=0.,by_right=0.,bz_left=0.,bz_right=0.
-  real :: ABC_A=1.,ABC_B=1.,ABC_C=1.
-  real :: bthresh=0.,bthresh_per_brms=0.,brms=0.,bthresh_scl=1.
-  real :: eta_shock=0.
-  real :: rhomin_jxb=0.,va2max_jxb=0.
-  real :: omega_Bz_ext=0.
+  real, target :: zmode=1.0 !(temporary)
+  real :: fring1=0.0, Iring1=0.0, Rring1=1.0, wr1=0.3
+  real :: fring2=0.0, Iring2=0.0, Rring2=1.0, wr2=0.3
+  real :: fring3=0.0, Iring3=0.0, Rring3=1.0, wr3=0.3
+  real :: radius=0.1, epsilonaa=0.01, widthaa=0.5, x0aa=0.0, z0aa=0.0
+  real :: by_left=0.0, by_right=0.0, bz_left=0.0, bz_right=0.0
+  real :: ABC_A=1.0, ABC_B=1.0, ABC_C=1.0
+  real :: bthresh=0.0, bthresh_per_brms=0.0, brms=0.0, bthresh_scl=1.0
+  real :: eta_shock=0.0
+  real :: rhomin_jxb=0.0, va2max_jxb=0.0
+  real :: omega_Bz_ext=0.0
   real :: mu_r=-0.5 !(still needed for backwards compatibility)
-  real :: mu_ext_pot=-0.5,inclaa=0.
-  real :: mu012=.5 !(=1/2mu0)
-  real :: rescale_aa=0.
-  real :: ampl_B0=0.,D_smag=0.17,B_ext21,B_ext11
-  real :: Omega_ampl=0.
-  real :: rmode=1.,rm_int=0.,rm_ext=0.
-  real :: nu_ni=0.,nu_ni1,hall_term=0.
-  real :: alpha_effect=0.,alpha_quenching=0.,delta_effect=0.,meanfield_etat=0.
-  real :: alpha_eps=0.
-  real :: alpha_equator=impossible,alpha_equator_gap=0.,alpha_gap_step=0.
-  real :: alpha_cutoff_up=0.,alpha_cutoff_down=0.
-  real :: meanfield_Qs=1.,meanfield_Qp=1.
-  real :: meanfield_Bs=1.,meanfield_Bp=1.
-  real :: meanfield_kf=1.,meanfield_etaB=0.
-  real :: displacement_gun=0.
-  real :: pertamplaa=0.
-  real :: initpower_aa=0.,cutoff_aa=0.,brms_target=1.,rescaling_fraction=1.
-  real :: phase_beltrami=0., ampl_beltrami=0.
-  real :: bmz=0, bmz_beltrami_phase=0.
-  real :: taareset=0.,daareset=0.
-  real :: center1_x=0., center1_y=0., center1_z=0.
+  real :: mu_ext_pot=-0.5,inclaa=0.0
+  real :: mu012=0.5 !(=1/2mu0)
+  real :: rescale_aa=0.0
+  real :: ampl_B0=0.0, D_smag=0.17, B_ext21, B_ext11
+  real :: Omega_ampl=0.0
+  real :: rmode=1.0, rm_int=0.0, rm_ext=0.0
+  real :: nu_ni=0.0, nu_ni1,hall_term=0.0
+  real :: alpha_effect=0.0, alpha_quenching=0.0, delta_effect=0.0
+  real :: meanfield_etat=0.0
+  real :: alpha_eps=0.0
+  real :: alpha_equator=impossible, alpha_equator_gap=0.0, alpha_gap_step=0.0
+  real :: alpha_cutoff_up=0.0, alpha_cutoff_down=0.0
+  real :: meanfield_Qs=1.0, meanfield_Qp=1.0
+  real :: meanfield_Bs=1.0, meanfield_Bp=1.0
+  real :: meanfield_kf=1.0, meanfield_etaB=0.0
+  real :: displacement_gun=0.0
+  real :: pertamplaa=0.0
+  real :: initpower_aa=0.0, cutoff_aa=0.0, brms_target=1.0
+  real :: rescaling_fraction=1.0
+  real :: phase_beltrami=0.0, ampl_beltrami=0.0
+  real :: bmz=0, bmz_beltrami_phase=0.0
+  real :: taareset=0.0, daareset=0.0
+  real :: center1_x=0.0, center1_y=0.0, center1_z=0.0
   real :: fluxtube_border_width=impossible
-  integer :: nbvec,nbvecmax=nx*ny*nz/4,va2power_jxb=5
+  integer :: nbvec,nbvecmax=nx*ny*nz/4, va2power_jxb=5
   integer :: N_modes_aa=1, naareset
   integer :: nrings=2
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
-  logical :: llorentzforce=.true.,linduction=.true.
+  logical :: llorentzforce=.true., linduction=.true.
   logical :: lresi_eta_const=.false.
   logical :: lresi_etaSS=.false.
   logical :: lresi_hyper2=.false.
@@ -133,59 +136,56 @@ module Magnetic
   logical :: lresi_shell=.false.
   logical :: lresi_smagorinsky=.false.
   logical :: lresi_smagorinsky_cross=.false.
+  logical :: lresi_anomalous=.false.
   logical, target, dimension (3) :: lfrozen_bb_bot=(/.false.,.false.,.false./)
   logical, target, dimension (3) :: lfrozen_bb_top=(/.false.,.false.,.false./)
-  logical :: reinitialize_aa=.false., lohmic_heat=.true., lneutralion_heat=.true.
+  logical :: lohmic_heat=.true., lneutralion_heat=.true.
+  logical :: reinitialize_aa=.false.
   logical :: lB_ext_pot=.false.
   logical :: lforce_free_test=.false.
-  logical :: lmeanfield_theory=.false.,lOmega_effect=.false.
+  logical :: lmeanfield_theory=.false., lOmega_effect=.false.
   logical :: lmeanfield_noalpm=.false.
-  logical :: lmeanfield_jxb=.false.,lmeanfield_jxb_with_vA2=.false.
+  logical :: lmeanfield_jxb=.false., lmeanfield_jxb_with_vA2=.false.
   logical :: lgauss=.false.
-  logical :: lbb_as_aux=.false.,ljj_as_aux=.false.
-  logical :: lbbt_as_aux=.false.,ljjt_as_aux=.false.
+  logical :: lbb_as_aux=.false., ljj_as_aux=.false.
+  logical :: lbbt_as_aux=.false., ljjt_as_aux=.false.
   logical :: lbext_curvilinear=.true., lcheck_positive_va2=.false.
   logical :: lreset_aa=.false.
   character (len=labellen) :: pertaa='zero'
 
   namelist /magnetic_init_pars/ &
-       B_ext, lohmic_heat, &
-       fring1,Iring1,Rring1,wr1,axisr1,dispr1, &
-       fring2,Iring2,Rring2,wr2,axisr2,dispr2, &
-       fring3,Iring3,Rring3,wr3,axisr3,dispr3, &
-       fring_profile,nrings, &
-       radius,epsilonaa,x0aa,z0aa,widthaa, &
-       by_left,by_right,bz_left,bz_right, &
-       initaa,amplaa,kx_aa,ky_aa,kz_aa,coefaa,coefbb, &
-       phasex_aa,phasey_aa,phasez_aa, &
-       inclaa,lpress_equil,lpress_equil_via_ss,mu_r, &
-       mu_ext_pot,lB_ext_pot,lforce_free_test, &
-       ampl_B0,initpower_aa,cutoff_aa,N_modes_aa, &
-       rmode,zmode,rm_int,rm_ext,lgauss,lcheck_positive_va2, &
-       lbb_as_aux,ljj_as_aux,lbext_curvilinear, &
-       lbbt_as_aux,ljjt_as_aux, lneutralion_heat, &
-       center1_x,center1_y,center1_z,fluxtube_border_width, &
-       va2max_jxb,va2power_jxb
+      B_ext, lohmic_heat, fring1, Iring1, Rring1, wr1, axisr1, dispr1, fring2, &
+      Iring2, Rring2, wr2, axisr2, dispr2, fring3, Iring3, Rring3, wr3,  &
+      axisr3, dispr3, fring_profile, nrings, radius, epsilonaa, x0aa, z0aa, &
+      widthaa, by_left, by_right, bz_left, bz_right, initaa, amplaa, kx_aa, &
+      ky_aa, kz_aa, coefaa, coefbb, phasex_aa, phasey_aa, phasez_aa, inclaa, &
+      lpress_equil, lpress_equil_via_ss, mu_r, mu_ext_pot, lB_ext_pot, &
+      lforce_free_test, ampl_B0, initpower_aa, cutoff_aa, N_modes_aa, rmode, &
+      zmode, rm_int, rm_ext, lgauss, lcheck_positive_va2, lbb_as_aux, &
+      ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, &
+      lneutralion_heat, center1_x, center1_y, center1_z, &
+      fluxtube_border_width, va2max_jxb, va2power_jxb
 
   ! run parameters
-  real :: eta=0.,eta1=0.,eta_hyper2=0.,eta_hyper3=0.,height_eta=0.,eta_out=0.
-  real :: meanfield_molecular_eta=0.
-  real :: eta_int=0.,eta_ext=0.,wresistivity=.01,eta_xy_max=1.
-  real :: tau_aa_exterior=0.
-  real :: sigma_ratio=1.,eta_width=0.,eta_z0=1.
-  real :: alphaSSm=0.
-  real :: alpha_rmax=0.,alpha_width=0.
-  real :: k1_ff=1.,ampl_ff=1.,swirl=1.
-  real :: k1x_ff=1.,k1y_ff=1.,k1z_ff=1.
-  real :: inertial_length=0.,linertial_2
-  real :: forcing_continuous_aa_phasefact=1.
-  real :: forcing_continuous_aa_amplfact=1., ampl_fcont_aa=1.
-  real :: LLambda_aa=0.
+  real :: eta=0.0, eta1=0.0, eta_hyper2=0.0, eta_hyper3=0.0, eta_anom=0.0
+  real :: meanfield_molecular_eta=0.0
+  real :: eta_int=0.0, eta_ext=0.0, wresistivity=0.01, eta_xy_max=1.0
+  real :: height_eta=0.0, eta_out=0.0
+  real :: tau_aa_exterior=0.0
+  real :: sigma_ratio=1.0, eta_width=0.0, eta_z0=1.0
+  real :: alphaSSm=0.0
+  real :: alpha_rmax=0.0, alpha_width=0.0
+  real :: k1_ff=1.0, ampl_ff=1.0, swirl=1.0
+  real :: k1x_ff=1.0, k1y_ff=1.0, k1z_ff=1.0
+  real :: inertial_length=0.0, linertial_2
+  real :: forcing_continuous_aa_phasefact=1.0
+  real :: forcing_continuous_aa_amplfact=1.0, ampl_fcont_aa=1.0
+  real :: LLambda_aa=0.0, vcrit_anom=1.0
   real, dimension(mx,my) :: eta_xy
   real, dimension(mx,my,3) :: geta_xy
   real, dimension(mz) :: coskz,sinkz,eta_z
   real, dimension(mz,3) :: geta_z
-  logical :: lfreeze_aint=.false.,lfreeze_aext=.false.
+  logical :: lfreeze_aint=.false., lfreeze_aext=.false.
   logical :: lweyl_gauge=.false.
   logical :: lupw_aa=.false.
   logical :: lforcing_cont_aa=.false.
@@ -202,44 +202,29 @@ module Magnetic
   character (len=labellen) :: iforcing_continuous_aa='fixed_swirl'
 
   namelist /magnetic_run_pars/ &
-       eta,eta1,eta_hyper2,eta_hyper3,B_ext,omega_Bz_ext,nu_ni,hall_term, &
-       lmeanfield_theory,alpha_effect,alpha_quenching,delta_effect, &
-       alpha_eps, &
-       lmeanfield_noalpm,alpha_profile, &
-       meanfield_etat, lohmic_heat, &
-       lmeanfield_jxb,lmeanfield_jxb_with_vA2, &
-       meanfield_Qs, meanfield_Qp, &
-       meanfield_Bs, meanfield_Bp, &
-       meanfield_kf,meanfield_etaB, &
-       alpha_equator,alpha_equator_gap,alpha_gap_step,&
-       alpha_cutoff_up,alpha_cutoff_down,&
-       height_eta,eta_out,tau_aa_exterior, &
-       kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
-       lforcing_cont_aa,iforcing_continuous_aa, &
-       forcing_continuous_aa_phasefact, &
-       forcing_continuous_aa_amplfact, &
-       k1_ff,ampl_ff,swirl,radius, &
-       k1x_ff,k1y_ff,k1z_ff,lcheck_positive_va2, &
-       lmean_friction,LLambda_aa, &
-       bthresh,bthresh_per_brms, &
-       iresistivity,lweyl_gauge,lupw_aa, &
-       alphaSSm, &
-       alpha_rmax,alpha_width,&
-       eta_int,eta_ext,eta_shock,wresistivity,eta_xy_max, &
-       rhomin_jxb,va2max_jxb,va2power_jxb,llorentzforce,linduction, &
-       reinitialize_aa,rescale_aa,lB_ext_pot, &
-       displacement_gun, &
-       pertaa,pertamplaa,D_smag,brms_target,rescaling_fraction, &
-       lOmega_effect,Omega_profile,Omega_ampl,lfreeze_aint,lfreeze_aext, &
-       sigma_ratio,zdep_profile,eta_width,eta_z0, &
-       borderaa,eta_aniso_hyper3, &
-       lelectron_inertia,inertial_length,lbext_curvilinear, &
-       lbb_as_aux,ljj_as_aux,lremove_mean_emf,lkinematic, &
-       lbbt_as_aux,ljjt_as_aux, &
-       lneutralion_heat, lreset_aa, daareset, &
-       luse_Bext_in_b2, ampl_fcont_aa,&
-       llarge_scale_velocity,&
-       EMF_profile,lEMF_profile,lhalox
+      eta, eta1, eta_hyper2, eta_hyper3, eta_anom, B_ext, omega_Bz_ext, nu_ni, &
+      hall_term, lmeanfield_theory, alpha_effect, alpha_quenching, &
+      delta_effect, alpha_eps, lmeanfield_noalpm, alpha_profile, &
+      meanfield_etat, lohmic_heat, lmeanfield_jxb, lmeanfield_jxb_with_vA2, &
+      meanfield_Qs, meanfield_Qp, meanfield_Bs, meanfield_Bp, meanfield_kf, &
+      meanfield_etaB, alpha_equator, alpha_equator_gap, alpha_gap_step, &
+      alpha_cutoff_up, alpha_cutoff_down, height_eta, eta_out, &
+      tau_aa_exterior, kx_aa, ky_aa, kz_aa, ABC_A, ABC_B, ABC_C, &
+      lforcing_cont_aa, iforcing_continuous_aa, &
+      forcing_continuous_aa_phasefact, forcing_continuous_aa_amplfact, k1_ff, &
+      ampl_ff, swirl, radius, k1x_ff, k1y_ff, k1z_ff, lcheck_positive_va2, &
+      lmean_friction, LLambda_aa, bthresh, bthresh_per_brms, iresistivity, &
+      lweyl_gauge, lupw_aa, alphaSSm, alpha_rmax, alpha_width, eta_int, &
+      eta_ext, eta_shock, wresistivity, eta_xy_max, rhomin_jxb, va2max_jxb, &
+      va2power_jxb, llorentzforce, linduction, reinitialize_aa, rescale_aa, &
+      lB_ext_pot, displacement_gun, pertaa, pertamplaa, D_smag, brms_target, &
+      rescaling_fraction, lOmega_effect, Omega_profile, Omega_ampl, &
+      lfreeze_aint, lfreeze_aext, sigma_ratio, zdep_profile, eta_width, &
+      eta_z0, borderaa, eta_aniso_hyper3, lelectron_inertia, inertial_length, &
+      lbext_curvilinear, lbb_as_aux, ljj_as_aux, lremove_mean_emf, lkinematic, &
+      lbbt_as_aux, ljjt_as_aux, lneutralion_heat, lreset_aa, daareset, &
+      luse_Bext_in_b2, ampl_fcont_aa, llarge_scale_velocity, EMF_profile, &
+      lEMF_profile, lhalox, vcrit_anom
 
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_ab_int=0     ! DIAG_DOC: $\int\Av\cdot\Bv\;dV$
@@ -656,6 +641,7 @@ module Magnetic
       lresi_eta_shock_perp=.false.
       lresi_smagorinsky=.false.
       lresi_smagorinsky_cross=.false.
+      lresi_anomalous=.false.
 
       do i=1,nresi_max
         select case (iresistivity(i))
@@ -712,6 +698,9 @@ module Magnetic
         case ('smagorinsky-cross')
           if (lroot) print*, 'resistivity: smagorinsky_cross'
           lresi_smagorinsky_cross=.true.
+        case('anomalous')
+          if (lroot) print*, 'resistivity: anomalous'
+          lresi_anomalous=.true.
         case ('none')
           ! do nothing
         case ('')
@@ -754,6 +743,9 @@ module Magnetic
         if (lresi_eta_shock_perp.and.eta_shock==0.0) &
             call fatal_error('initialize_magnetic', &
             'Resistivity coefficient eta_shock is zero!')
+        if (lresi_anomalous.and.eta_anom==0.0) &
+            call fatal_error('initialize_magnetic', &
+            'Resistivity coefficient eta_anom is zero!')
 !        if (lentropy .and. lohmic_heat .and. .not. lresi_eta_const) &
 !            call fatal_error('initialize_magnetic', &
 !            'Resistivity heating only works with regular resistivity!')
@@ -930,7 +922,7 @@ module Magnetic
 !        
         select case(initaa(j))
         case('nothing'); if (lroot .and. j==1) print*,'init_aa: nothing'
-        case('zero', '0'); f(:,:,:,iax:iaz) = 0.
+        case('zero', '0'); f(:,:,:,iax:iaz) = 0.0
         case('rescale'); f(:,:,:,iax:iaz)=amplaa(j)*f(:,:,:,iax:iaz)
         case('bsiny'); call acosy(amplaa(j),f,iaa,ky_aa(j)) 
         case('mode'); call modev(amplaa(j),coefaa,f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
@@ -1178,6 +1170,10 @@ module Magnetic
         lpenc_requested(i_j2)=.true.
       endif
       if (lresi_dust) lpenc_requested(i_rhop)=.true.
+      if (lresi_anomalous) then
+        lpenc_requested(i_jj)=.true.
+        lpenc_requested(i_rho1)=.true.
+      endif
       if (lentropy .or. ltemperature .or. ldt) lpenc_requested(i_rho1)=.true.
       if (lentropy .or. ltemperature) lpenc_requested(i_TT1)=.true.
       if (ltemperature) lpenc_requested(i_cv1)=.true.
@@ -1955,6 +1951,7 @@ module Magnetic
       real, dimension (nx) :: b2t,bjt,jbt
       real, dimension (nx) :: eta_mn,eta_smag,etatotal
       real, dimension (nx) :: fres2,etaSS,penc
+      real, dimension (nx) :: vdrift
       real :: tmp,eta_out1
       real, parameter :: OmegaSS=1.
       integer :: i,j,k,ju,ix
@@ -2138,6 +2135,22 @@ module Magnetic
         call multsv(eta_smag+eta,p%del2a,fres)
         if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_smag+eta
         etatotal=etatotal+eta_smag+eta
+      endif
+!
+      if (lresi_anomalous) then
+        vdrift=sqrt(sum(p%jj**2,2))*p%rho1
+        if (lweyl_gauge) then
+          where (vdrift>vcrit_anom) &
+              fres(:,i)=fres(:,i)+eta_anom*vdrift/vcrit_anom*p%jj(:,i)
+        else
+          if (lroot) print*, 'daa_dt: must have Weyl gauge for '// &
+              'anomalous resistivity'
+          call fatal_error('daa_dt','')
+        endif
+        if (lfirst.and.ldt) then
+          where (vdrift>vcrit_anom) &
+              diffus_eta=diffus_eta+eta_anom*vdrift/vcrit_anom
+        endif
       endif
 !
 !  Ambipolar diffusion in the strong coupling approximation
