@@ -456,6 +456,7 @@ module FArrayManager
 !
       ncomponents=1
       if (present(ierr)) ierr=0
+      if (present(vector)) ncomponents=vector
 !
       item => find_by_name(varname,only_scratch=.true.)
       if (.not.associated(item)) then
