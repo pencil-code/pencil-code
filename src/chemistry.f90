@@ -1434,7 +1434,7 @@ module Chemistry
             nu_dyn(j1,j2,j3)=0.
             do k=1,nchemspec
               tmp_sum2(j1,j2,j3)=0.
-              do j=1,nchemspec
+              do j=1,k
                 mk_mj=species_constants(k,imass) &
                     /species_constants(j,imass)
                 nuk_nuj(j1,j2,j3)=species_viscosity(j1,j2,j3,k) &
@@ -1444,8 +1444,9 @@ module Chemistry
                 tmp_sum2(j1,j2,j3)=tmp_sum2(j1,j2,j3) &
                                   +XX_full(j1,j2,j3,j)*Phi(j1,j2,j3)
               enddo
+!NATALIA
               nu_dyn(j1,j2,j3)=nu_dyn(j1,j2,j3)+XX_full(j1,j2,j3,k)*&
-                  species_viscosity(j1,j2,j3,k)/tmp_sum2(j1,j2,j3)
+                  species_viscosity(j1,j2,j3,k)!/tmp_sum2(j1,j2,j3)
              enddo
 
               nu_full(j1,j2,j3)=nu_dyn(j1,j2,j3)/rho_full(j1,j2,j3)
@@ -4016,7 +4017,7 @@ module Chemistry
 !
                 delta_jk_star=delta_jk/(eps_jk*k_B_cgs*sigma_jk**3)
                 Omega_kl(j1,j2,j3)=Omega_kl(j1,j2,j3)&
-                    +0.19*delta_jk_star/(TT_full(j1,j2,j3)/eps_jk)
+                    +0.19*delta_jk_star*delta_jk_star/(TT_full(j1,j2,j3)/eps_jk)
                 Bin_Diff_coef(j1,j2,j3,k,j)=prefactor(j1,j2,j3)&
                     /(sqrt(m_jk)*sigma_jk**2*Omega_kl(j1,j2,j3))
               enddo
@@ -4072,7 +4073,7 @@ module Chemistry
           do j1=ll1,ll2
            species_viscosity(j1,j2,j3,k)=TT_full(j1,j2,j3)**0.5&
                /(Omega_kl(j1,j2,j3) &
-               +0.2*delta_st/(TT_full(j1,j2,j3)/tran_data(k,2)))*tmp_local2 &
+               +0.2*delta_st*delta_st/(TT_full(j1,j2,j3)/tran_data(k,2)))*tmp_local2 &
                /(unit_mass/unit_length/unit_time)
           enddo
           enddo
@@ -4162,8 +4163,11 @@ module Chemistry
           if ((tmp_sum2(j1,j2,j3))<=0.) then
             lambda_full(j1,j2,j3)=0.
           else
-            lambda_full(j1,j2,j3)=0.5*(tmp_sum(j1,j2,j3)+1.&
-                /tmp_sum2(j1,j2,j3))
+!NATALIA
+
+           ! lambda_full(j1,j2,j3)=0.5*(tmp_sum(j1,j2,j3)+1.&
+           !     /tmp_sum2(j1,j2,j3))
+            lambda_full(j1,j2,j3)=(tmp_sum(j1,j2,j3))
           endif
           if (lambda_const<impossible) then
             lambda_full(j1,j2,j3)=lambda_const
