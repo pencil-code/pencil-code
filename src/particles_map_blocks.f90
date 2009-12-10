@@ -372,7 +372,8 @@ module Particles_map
 !  Fill the bricks on each processor with particle density assigned on the
 !  blocks.
 !
-        call fill_bricks_with_blocks(f,fb,mfarray,inp,irhop)
+        call fill_bricks_with_blocks(f,fb,mfarray,inp)
+        call fill_bricks_with_blocks(f,fb,mfarray,irhop)
 !
 !  Fold first ghost zone of f.
 !
@@ -381,13 +382,13 @@ module Particles_map
 !  Give folded rhop back to the blocks on the foster parents.
 !
         if (lparticlemesh_cic.or.lparticlemesh_tsc) &
-            call fill_blocks_with_bricks(f,fb,mfarray,irhop,irhop)
+            call fill_blocks_with_bricks(f,fb,mfarray,irhop)
 !
       else
 !
 !  Only particle number density.
 !
-        call fill_bricks_with_blocks(f,fb,mfarray,inp,inp)
+        call fill_bricks_with_blocks(f,fb,mfarray,inp)
       endif
 !
     endsubroutine map_xxp_grid
@@ -483,7 +484,7 @@ module Particles_map
 !
     endsubroutine particle_block_index
 !***********************************************************************
-    subroutine fill_blocks_with_bricks(a,ab,marray,ivar1,ivar2)
+    subroutine fill_blocks_with_bricks(a,ab,marray,ivar)
 !
 !  Fill adopted blocks with bricks from the f-array.
 !
@@ -491,24 +492,23 @@ module Particles_map
 !
       real, dimension (mx,my,mz,marray) :: a
       real, dimension (mxb,myb,mzb,marray,0:nblockmax-1) :: ab
-      integer :: marray,ivar1, ivar2
+      integer :: marray, ivar
 !
-      integer, dimension (1000) :: ireq_array
+      integer, dimension (2*nblockmax) :: ireq_array
       integer, dimension (MPI_STATUS_SIZE) :: stat
-      real, dimension (mxb,myb,mzb,ivar2-ivar1+1,0:nbricks-1) :: ab_send
-      real, dimension (mxb,myb,mzb,ivar2-ivar1+1,0:nblockmax-1) :: ab_recv
+      real, dimension (mxb,myb,mzb,0:nbricks-1) :: ab_send
+      real, dimension (mxb,myb,mzb,0:nblockmax-1) :: ab_recv
       integer :: ibx, iby, ibz, ix1, ix2, iy1, iy2, iz1, iz2
-      integer :: ierr, ireq, nreq, nvar, iblock, iblock1, iblock2
+      integer :: ierr, ireq, nreq, iblock, iblock1, iblock2
       integer :: ibrick, ibrick1, ibrick2
       integer :: ibrick_send, ibrick1_send, ibrick2_send
       integer :: iproc_recv, iproc_send, nblock_recv, nbrick_send, tag_id
 !
-      intent (in) :: a,ivar1, ivar2
+      intent (in) :: a, ivar
       intent (out) :: ab
 !
       tag_id=100
       nreq=0
-      nvar=ivar2-ivar1+1
 !
 !  Fill up blocks with bricks from local processor.
 !
@@ -521,7 +521,7 @@ module Particles_map
           ix1=l1-1+ibx*nxb; ix2=l1+(ibx+1)*nxb
           iy1=m1-1+iby*nyb; iy2=m1+(iby+1)*nyb
           iz1=n1-1+ibz*nzb; iz2=n1+(ibz+1)*nzb
-          ab(:,:,:,ivar1:ivar2,iblock)=a(ix1:ix2,iy1:iy2,iz1:iz2,ivar1:ivar2)
+          ab(:,:,:,ivar,iblock)=a(ix1:ix2,iy1:iy2,iz1:iz2,ivar)
         endif
       enddo
 !
@@ -537,8 +537,7 @@ module Particles_map
           ix1=l1-1+ibx*nxb; ix2=l1+(ibx+1)*nxb
           iy1=m1-1+iby*nyb; iy2=m1+(iby+1)*nyb
           iz1=n1-1+ibz*nzb; iz2=n1+(ibz+1)*nzb
-          ab_send(:,:,:,1:nvar,ibrick_send)= &
-              a(ix1:ix2,iy1:iy2,iz1:iz2,ivar1:ivar2)
+          ab_send(:,:,:,ibrick_send)=a(ix1:ix2,iy1:iy2,iz1:iz2,ivar)
           ibrick_send=ibrick_send+1
         endif
       enddo
@@ -559,8 +558,8 @@ module Particles_map
         enddo
         if (iproc_parent_block(iblock)/=iproc) then
           nblock_recv=iblock2-iblock1+1
-          call MPI_IRECV(ab_recv(:,:,:,1:nvar,iblock1:iblock2), &
-              mxb*myb*mzb*nvar*nblock_recv, MPI_DOUBLE_PRECISION, iproc_recv, &
+          call MPI_IRECV(ab_recv(:,:,:,iblock1:iblock2), &
+              mxb*myb*mzb*nblock_recv, MPI_DOUBLE_PRECISION, iproc_recv, &
               tag_id+iproc_recv, MPI_COMM_WORLD, ireq, ierr)
           nreq=nreq+1
           ireq_array(nreq)=ireq
@@ -594,8 +593,8 @@ module Particles_map
         if (iproc_foster_brick(ibrick)/=iproc .and. &
             iproc_foster_brick(ibrick)/=-1) then
           nbrick_send=ibrick2_send-ibrick1_send+1
-          call MPI_ISEND(ab_send(:,:,:,1:nvar,ibrick1_send:ibrick2_send), &
-              mxb*myb*mzb*nvar*nbrick_send, MPI_DOUBLE_PRECISION, iproc_send, &
+          call MPI_ISEND(ab_send(:,:,:,ibrick1_send:ibrick2_send), &
+              mxb*myb*mzb*nbrick_send, MPI_DOUBLE_PRECISION, iproc_send, &
               tag_id+iproc, MPI_COMM_WORLD, ireq, ierr)
           nreq=nreq+1
           ireq_array(nreq)=ireq
@@ -628,15 +627,14 @@ module Particles_map
           endif
         enddo
         if (iproc_parent_block(iblock)/=iproc) then
-          ab(:,:,:,ivar1:ivar2,iblock1:iblock2)= &
-              ab_recv(:,:,:,1:nvar,iblock1:iblock2)
+          ab(:,:,:,ivar,iblock1:iblock2)=ab_recv(:,:,:,iblock1:iblock2)
         endif
         iblock=iblock2+1
       enddo
 !
     endsubroutine fill_blocks_with_bricks
 !***********************************************************************
-    subroutine fill_bricks_with_blocks(a,ab,marray,ivar1,ivar2,nosum_opt)
+    subroutine fill_bricks_with_blocks(a,ab,marray,ivar,nosum_opt)
 !
 !  Fill bricks (i.e. the f-array) with blocks adopted by other processors.
 !
@@ -644,22 +642,22 @@ module Particles_map
 !
       real, dimension (mx,my,mz,marray) :: a
       real, dimension (mxb,myb,mzb,marray,0:nblockmax-1) :: ab
-      integer :: marray, ivar1, ivar2
+      integer :: marray, ivar
       logical, optional :: nosum_opt
 !
-      integer, dimension (1000) :: ireq_array
+      integer, dimension (2*nblockmax) :: ireq_array
       integer, dimension (MPI_STATUS_SIZE) :: stat
-      real, dimension (mxb,myb,mzb,ivar2-ivar1+1,0:nblockmax-1) :: ab_send
-      real, dimension (mxb,myb,mzb,ivar2-ivar1+1,0:nbricks-1) :: ab_recv
+      real, dimension (mxb,myb,mzb,0:nblockmax-1) :: ab_send
+      real, dimension (mxb,myb,mzb,0:nbricks-1) :: ab_recv
       integer :: ibx, iby, ibz, ix1, ix2, iy1, iy2, iz1, iz2
-      integer :: ierr, ireq, nreq, nvar, iblock, iblock1, iblock2
+      integer :: ierr, ireq, nreq, iblock, iblock1, iblock2
       integer :: ibrick, ibrick1, ibrick2
       integer :: ibrick_recv, ibrick1_recv, ibrick2_recv
       integer :: iblock_send, iblock1_send, iblock2_send
       integer :: iproc_recv, iproc_send, nbrick_recv, nblock_send, tag_id
       logical :: nosum
 !
-      intent (in) :: ab,ivar1, ivar2
+      intent (in) :: ab, ivar
       intent (out) :: a
 !
       if (present(nosum_opt)) then
@@ -670,7 +668,6 @@ module Particles_map
 !
       tag_id=1000
       nreq=0
-      nvar=ivar2-ivar1+1
 !
 !  Fill up bricks with blocks from local processor.
 !
@@ -684,12 +681,10 @@ module Particles_map
           iy1=m1-1+iby*nyb; iy2=m1+(iby+1)*nyb
           iz1=n1-1+ibz*nzb; iz2=n1+(ibz+1)*nzb
           if (nosum) then
-            a(ix1:ix2,iy1:iy2,iz1:iz2,ivar1:ivar2)= &
-                ab(:,:,:,ivar1:ivar2,iblock)
+            a(ix1:ix2,iy1:iy2,iz1:iz2,ivar)=ab(:,:,:,ivar,iblock)
           else
-            a(ix1:ix2,iy1:iy2,iz1:iz2,ivar1:ivar2)= &
-                a(ix1:ix2,iy1:iy2,iz1:iz2,ivar1:ivar2)+ &
-                ab(:,:,:,ivar1:ivar2,iblock)
+            a(ix1:ix2,iy1:iy2,iz1:iz2,ivar)= &
+                a(ix1:ix2,iy1:iy2,iz1:iz2,ivar)+ab(:,:,:,ivar,iblock)
           endif
         endif
       enddo
@@ -701,7 +696,7 @@ module Particles_map
       do while (iblock<nblock_loc)
         if (iproc_parent_block(iblock)/=iproc .and. &
             iproc_parent_block(iblock)/=-1) then
-          ab_send(:,:,:,1:nvar,iblock_send)=ab(:,:,:,ivar1:ivar2,iblock)
+          ab_send(:,:,:,iblock_send)=ab(:,:,:,ivar,iblock)
           iblock_send=iblock_send+1
         endif
         iblock=iblock+1
@@ -733,8 +728,8 @@ module Particles_map
         if (iproc_foster_brick(ibrick)/=iproc .and. &
             iproc_foster_brick(ibrick)/=-1) then
           nbrick_recv=ibrick2_recv-ibrick1_recv+1
-          call MPI_IRECV(ab_recv(:,:,:,1:nvar,ibrick1_recv:ibrick2_recv), &
-              mxb*myb*mzb*nvar*nbrick_recv, MPI_DOUBLE_PRECISION, iproc_recv, &
+          call MPI_IRECV(ab_recv(:,:,:,ibrick1_recv:ibrick2_recv), &
+              mxb*myb*mzb*nbrick_recv, MPI_DOUBLE_PRECISION, iproc_recv, &
               tag_id+iproc_recv, MPI_COMM_WORLD, ireq, ierr)
           nreq=nreq+1
           ireq_array(nreq)=ireq
@@ -769,8 +764,8 @@ module Particles_map
         if (iproc_parent_block(iblock)/=iproc .and. &
             iproc_parent_block(iblock)/=-1) then
           nblock_send=iblock2_send-iblock1_send+1
-          call MPI_ISEND(ab_send(:,:,:,1:nvar,iblock1_send:iblock2_send), &
-              mxb*myb*mzb*nvar*nblock_send, MPI_DOUBLE_PRECISION, iproc_send, &
+          call MPI_ISEND(ab_send(:,:,:,iblock1_send:iblock2_send), &
+              mxb*myb*mzb*nblock_send, MPI_DOUBLE_PRECISION, iproc_send, &
               tag_id+iproc, MPI_COMM_WORLD, ireq, ierr)
           nreq=nreq+1
           ireq_array(nreq)=ireq
@@ -801,12 +796,10 @@ module Particles_map
           iy1=m1-1+iby*nyb; iy2=m1+(iby+1)*nyb
           iz1=n1-1+ibz*nzb; iz2=n1+(ibz+1)*nzb
           if (nosum) then
-            a(ix1:ix2,iy1:iy2,iz1:iz2,ivar1:ivar2)= &
-                ab_recv(:,:,:,1:nvar,ibrick_recv)
+            a(ix1:ix2,iy1:iy2,iz1:iz2,ivar)=ab_recv(:,:,:,ibrick_recv)
           else
-            a(ix1:ix2,iy1:iy2,iz1:iz2,ivar1:ivar2)= &
-                a(ix1:ix2,iy1:iy2,iz1:iz2,ivar1:ivar2)+ &
-                ab_recv(:,:,:,1:nvar,ibrick_recv)
+            a(ix1:ix2,iy1:iy2,iz1:iz2,ivar)= &
+                a(ix1:ix2,iy1:iy2,iz1:iz2,ivar)+ab_recv(:,:,:,ibrick_recv)
           endif
           ibrick_recv=ibrick_recv+1
         endif

@@ -316,9 +316,12 @@ module Particles_main
 !
       if (lparticles_blocks) then
         if (lfill_density) &
-            call fill_blocks_with_bricks(f,fb,mfarray,ilnrho,ilnrho)
-        if (lfill_velocity) &
-            call fill_blocks_with_bricks(f,fb,mfarray,iux,iuz)
+            call fill_blocks_with_bricks(f,fb,mfarray,ilnrho)
+        if (lfill_velocity) then
+          call fill_blocks_with_bricks(f,fb,mfarray,iux)
+          call fill_blocks_with_bricks(f,fb,mfarray,iuy)
+          call fill_blocks_with_bricks(f,fb,mfarray,iuz)
+        endif
       endif
 !
 !  Distribute the n-body particles across processors
@@ -542,7 +545,9 @@ module Particles_main
 !
 !  Add block contribution to df to the main grid.
 !
-        call fill_bricks_with_blocks(df,dfb,mvar,iux,iuz)
+        call fill_bricks_with_blocks(df,dfb,mvar,iux)
+        call fill_bricks_with_blocks(df,dfb,mvar,iuy)
+        call fill_bricks_with_blocks(df,dfb,mvar,iuz)
 !
       endif
 !
