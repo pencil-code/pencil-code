@@ -59,8 +59,6 @@ module Shear
 !
       use SharedVariables, only: put_shared_variable
 !
-      integer :: ierr=0
-!
       if (qshear/=0.0) Sshear=-qshear*Omega
       if (lroot .and. ip<=12) &
           print*,'initialize_shear: Sshear,qshear=',Sshear,qshear
@@ -145,6 +143,8 @@ module Shear
         endif
       endif
 !
+      call keep_compiler_quiet(f)
+!
     endsubroutine shear_before_boundary
 !***********************************************************************
     subroutine pencil_criteria_shear()
@@ -205,7 +205,6 @@ module Shear
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (ny,nz) :: f_tmp_yz
       real, dimension (nx) :: uy0,dfdy
       integer :: j,k
 !
@@ -306,7 +305,7 @@ module Shear
 !
       real, dimension (nx,ny,nz) :: tmp
       real, dimension (nx) :: uy0
-      integer :: l, ivar
+      integer :: ivar
 !
 !  Must currently use lshearadvection_as_shift=T when Sshear is positive.
 !
