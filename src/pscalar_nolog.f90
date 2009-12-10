@@ -518,7 +518,7 @@ module Pscalar
 !  Tensor diffusion (but keep the isotropic one).
 !
         if (tensor_pscalar_diff/=0.) &
-            call tensor_diff(f,df,p,tensor_pscalar_diff)
+            call tensor_diff(df,p,tensor_pscalar_diff)
 !
 !  For the timestep calculation, need maximum diffusion.
 !
@@ -851,7 +851,7 @@ module Pscalar
 !
     endsubroutine calc_mpscalar
 !***********************************************************************
-    subroutine tensor_diff(f,df,p,tensor_pscalar_diff)
+    subroutine tensor_diff(df,p,tensor_pscalar_diff)
 !
 !  Reads file.
 !
@@ -859,7 +859,6 @@ module Pscalar
 !
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real :: tensor_pscalar_diff

@@ -332,7 +332,7 @@ module Pscalar
 !  Tensor diffusion (but keep the isotropic one).
 !
         if (tensor_pscalar_diff/=0.) &
-            call tensor_diff(f,df,p,tensor_pscalar_diff)
+            call tensor_diff(df,p,tensor_pscalar_diff)
 !
         if (lspecial) call special_calc_pscalar(f,df,p)
 !
@@ -574,7 +574,7 @@ module Pscalar
 !
     endsubroutine calc_mpscalar
 !***********************************************************************
-    subroutine tensor_diff(f,df,p,tensor_pscalar_diff)
+    subroutine tensor_diff(df,p,tensor_pscalar_diff)
 !
 !  reads file
 !
@@ -582,7 +582,6 @@ module Pscalar
 !
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real :: tensor_pscalar_diff
