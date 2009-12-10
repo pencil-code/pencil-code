@@ -1631,7 +1631,9 @@ module Chemistry
         write(file_id,*) 'Themperature, K'
          ! Commented the next line out because
          ! samples/2d-tests/chemistry_GrayScott apparently has no f(:,:,:,5)
-        if (ilnTT>0) write(file_id,'(7E12.4)') exp(minval(f(l1:l2,m1:m2,n1:n2,ilnTT)))*unit_temperature,exp(maxval(f(l1:l2,m1:m2,n1:n2,ilnTT)))*unit_temperature
+        if (ilnTT>0) write(file_id,'(7E12.4)')  &
+        exp(minval(f(l1:l2,m1:m2,n1:n2,ilnTT)))*unit_temperature, &
+        exp(maxval(f(l1:l2,m1:m2,n1:n2,ilnTT)))*unit_temperature
         write(file_id,*) ''
         write(file_id,*) 'Cp,  erg/mole/K'
         write(file_id,'(7E12.4)') maxval(cp_full(l1:l2,m1:m2,n1:n2))/Rgas*&
@@ -3886,7 +3888,7 @@ module Chemistry
                     -3.27101257E-4*lnTjk(j1,j2,j3)**6 &
                     +2.51567029E-5*lnTjk(j1,j2,j3)**7)
                 Bin_Diff_coef(j1,j2,j3,k,j)=prefactor(j1,j2,j3)  &
-                    *Omega_kl(j1,j2,j3)*tmp_local
+                    /Omega_kl(j1,j2,j3)*tmp_local
               enddo
               enddo
               enddo
@@ -3938,7 +3940,7 @@ module Chemistry
                 endif
 !
                 Omega_kl(j1,j2,j3)= &
-                    1./(6.96945701E-1   +3.39628861E-1*lnTjk(j1,j2,j3) &
+                    (6.96945701E-1   +3.39628861E-1*lnTjk(j1,j2,j3) &
                     +1.32575555E-2*lnTjk(j1,j2,j3)*lnTjk(j1,j2,j3) &
                     -3.41509659E-2*lnTjk(j1,j2,j3)**3 &
                     +7.71359429E-3*lnTjk(j1,j2,j3)**4 &
