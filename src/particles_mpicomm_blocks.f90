@@ -1153,7 +1153,6 @@ module Particles_mpicomm
                 ibrick_global_rec==ibrick_global_arr(iblocku)) lmigrate=.false.
           endif
           ibrick_global_rec_previous=ibrick_global_rec
-          lmigrate_previous=lmigrate
 !
 !  Open up new block if brick where particle has moved is not adopted by
 !  any processor. This may happen if the brick was previously empty.
@@ -1162,7 +1161,6 @@ module Particles_mpicomm
             if (ip<=6) then
               print'(A,i5,A,i5)', 'migrate_particles_proc_to_block: '// &
                   'opened brick ', ibrick_rec, ' at processor ', iproc
-                  print*, ipar(k)
             endif
             iproc_foster_brick(ibrick_rec)=iproc
             nbrick_foster=nbrick_foster+1
@@ -1196,6 +1194,7 @@ module Particles_mpicomm
             ibrick_parent_block(0:nblock_loc-1)
             lmigrate=.false.
           endif
+          lmigrate_previous=lmigrate
 !
 !  Migrate particle to foster parent, if foster parent differs from parent.
 !
