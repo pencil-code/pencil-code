@@ -1444,9 +1444,9 @@ module Chemistry
                 tmp_sum2(j1,j2,j3)=tmp_sum2(j1,j2,j3) &
                                   +XX_full(j1,j2,j3,j)*Phi(j1,j2,j3)
               enddo
-!NATALIA
+
               nu_dyn(j1,j2,j3)=nu_dyn(j1,j2,j3)+XX_full(j1,j2,j3,k)*&
-                  species_viscosity(j1,j2,j3,k)!/tmp_sum2(j1,j2,j3)
+                  species_viscosity(j1,j2,j3,k)/tmp_sum2(j1,j2,j3)
              enddo
 
               nu_full(j1,j2,j3)=nu_dyn(j1,j2,j3)/rho_full(j1,j2,j3)
@@ -4163,11 +4163,11 @@ module Chemistry
           if ((tmp_sum2(j1,j2,j3))<=0.) then
             lambda_full(j1,j2,j3)=0.
           else
-!NATALIA
 
-           ! lambda_full(j1,j2,j3)=0.5*(tmp_sum(j1,j2,j3)+1.&
-           !     /tmp_sum2(j1,j2,j3))
-            lambda_full(j1,j2,j3)=(tmp_sum(j1,j2,j3))
+
+            lambda_full(j1,j2,j3)=0.5*(tmp_sum(j1,j2,j3)+1.&
+                /tmp_sum2(j1,j2,j3))
+           ! lambda_full(j1,j2,j3)=(tmp_sum(j1,j2,j3))
           endif
           if (lambda_const<impossible) then
             lambda_full(j1,j2,j3)=lambda_const
