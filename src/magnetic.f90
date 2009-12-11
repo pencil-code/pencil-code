@@ -197,10 +197,11 @@ module Magnetic
   logical :: llarge_scale_velocity=.false.
   logical :: lEMF_profile=.false. 
   logical :: lhalox=.false. 
+  logical :: lalpha_profile_total=.false.
   character (len=labellen) :: zdep_profile='fs'
   character (len=labellen) :: eta_xy_profile='schnack89'
   character (len=labellen) :: iforcing_continuous_aa='fixed_swirl'
-
+!
   namelist /magnetic_run_pars/ &
       eta, eta1, eta_hyper2, eta_hyper3, eta_anom, B_ext, omega_Bz_ext, nu_ni, &
       hall_term, lmeanfield_theory, alpha_effect, alpha_quenching, &
@@ -224,7 +225,8 @@ module Magnetic
       lbext_curvilinear, lbb_as_aux, ljj_as_aux, lremove_mean_emf, lkinematic, &
       lbbt_as_aux, ljjt_as_aux, lneutralion_heat, lreset_aa, daareset, &
       luse_Bext_in_b2, ampl_fcont_aa, llarge_scale_velocity, EMF_profile, &
-      lEMF_profile, lhalox, vcrit_anom
+      lEMF_profile, lhalox,vcrit_anom,&
+      lalpha_profile_total
 
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_ab_int=0     ! DIAG_DOC: $\int\Av\cdot\Bv\;dV$
@@ -1839,11 +1841,15 @@ module Magnetic
 !  possibility of dynamical alpha
 !
         if (lalpm.and..not.lmeanfield_noalpm) then
-          alpha_total=alpha_effect*alpha_tmp+f(l1:l2,m,n,ialpm)
+          if(lalpha_profile_total) then
+             alpha_total=(alpha_effect+f(l1:l2,m,n,ialpm))*alpha_tmp
+           else
+             alpha_total=alpha_effect*alpha_tmp+f(l1:l2,m,n,ialpm)
+           endif
         else
           alpha_total=alpha_effect*alpha_tmp
         endif
-
+!
 !  possibility of conventional alpha quenching (rescales alpha_total)
 !  initialize EMF with alpha_total*bb
 !
