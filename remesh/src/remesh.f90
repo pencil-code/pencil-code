@@ -140,7 +140,10 @@ print*,'mx,my,mz,mvar=',mx,my,mz,mvar
     write(1,'(6i7)') mxout_grid,myout_grid,mzout_grid,mvar,maux,mglobal
     write(1,'(a)') prec
     write(1,'(3i3)') nghost, nghost, nghost
-    write(1,'(3i3)') nprocxx, nprocyy, nproczz
+! SC: Added iprocz_slowest = 1 in order to solve an issue with the reading 
+!  of the remeshed dim.dat file.
+!  This should work fine for all cases.
+    write(1,'(4i3)') nprocxx, nprocyy, nproczz, 1
     close(1)
     !
     !  Loop over number of CPU's in original run
@@ -417,7 +420,10 @@ print*,'mx,my,mz,mvar=',mx,my,mz,mvar
         write(1,'(6i7)') mmx,mmy,mmz,mvar,maux,mglobal
         write(1,'(a)') prec
         write(1,'(3i3)') nghost, nghost, nghost
-        write(1,'(3i3)') ipxx, ipyy, ipzz
+! SC: Added iprocz_slowest = 1 in order to solve an issue with the reading 
+!  of the remeshed dim.dat file.
+!  This should work fine for all cases.
+        write(1,'(4i3)') ipxx, ipyy, ipzz, 1
         close(1)
       enddo
       !
