@@ -333,8 +333,6 @@ module General
         endif
       endselect
 !
-      if (NO_WARN) print*, dummy
-!
     endsubroutine random_seed_wrapper
 !***********************************************************************
     function ran0(dummy)
