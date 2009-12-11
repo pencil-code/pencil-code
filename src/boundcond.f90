@@ -3466,7 +3466,7 @@ module Boundcond
        allocate(bb2(nx,ny),stat=stat)
        if (stat>0) call fatal_error('uu_driver', &
            'Could not allocate memory for bb2')
-       allocate(bb2(nxgrid,nygrid),stat=stat)
+       allocate(tmp(nxgrid,nygrid),stat=stat)
        if (stat>0) call fatal_error('uu_driver', &
            'Could not allocate memory for tmp')
 !
