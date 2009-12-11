@@ -4206,6 +4206,9 @@ module Boundcond
       allocate(tmp_re(nx,ny),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot3', &
           'Could not allocate memory for tmp_im')
+      allocate(tmp_im(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('bc_aa_pot3', &
+          'Could not allocate memory for tmp_im')
 !
 !  Get local wave numbers
 !
