@@ -49,9 +49,8 @@ module Polymer
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
-      if (NO_WARN) print*, lstarting
-!
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)      
 !
     endsubroutine initialize_polymer
 !***********************************************************************
