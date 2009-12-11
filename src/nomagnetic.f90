@@ -312,12 +312,10 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mx,3), intent (out) :: bb_hat
-
-      if (NO_WARN) then
-        print *,f
-        bb_hat = 0.
-      endif
-
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(bb_hat)
+!
     endsubroutine bb_unitvec_shock
 !***********************************************************************
     subroutine input_persistent_magnetic(id,lun,done)
