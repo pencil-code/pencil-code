@@ -1302,7 +1302,11 @@ module Density
         if (mass_source_profile=='cylindric') lpenc_requested(i_rcyl_mn)=.true.
       endif
 !
-      if (lmassdiff_fix) lpenc_requested(i_rho1)=.true.
+      if (lmassdiff_fix) then
+        lpenc_requested(i_rho1)=.true.
+        lpenc_requested(i_ss)=.true.
+        lpenc_requested(i_cp)=.true.
+      endif
 !
       lpenc_diagnos2d(i_lnrho)=.true.
       lpenc_diagnos2d(i_rho)=.true.
@@ -1744,12 +1748,12 @@ module Density
           tmp = fdiff
         endif
         if (lhydro) then
-          df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - p%uu(:,1)*tmp
-          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - p%uu(:,2)*tmp
-          df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - p%uu(:,3)*tmp
+          df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - p%uu(:,1)*tmp/2.
+          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - p%uu(:,2)*tmp/2.
+          df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - p%uu(:,3)*tmp/2.
         endif
         if (lentropy.and.(.not.pretend_lnTT)) then
-          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - f(l1:l2,m,n,iss)*tmp
+          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - tmp*p%cp
         elseif (lentropy.and.pretend_lnTT) then
           if (headtt) call warning('dlnrho_dt', &
               'massdiff_fix not yet implemented for pretend_lnTT')
