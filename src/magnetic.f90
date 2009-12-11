@@ -74,7 +74,9 @@ module Magnetic
   character (len=labellen) :: Omega_profile='nothing', alpha_profile='const'
   character (len=labellen) :: EMF_profile='nothing'
   character (len=labellen) :: fring_profile='tanh'
-  ! input parameters
+!
+! Input parameters
+!
   complex, dimension(3) :: coefaa=(/0.0,0.0,0.0/), coefbb=(/0.0,0.0,0.0/)
   real, dimension(3) :: B_ext=(/0.0,0.0,0.0/), B1_ext, B_ext_tmp
   real, dimension(3) :: eta_aniso_hyper3
@@ -152,7 +154,7 @@ module Magnetic
   logical :: lbext_curvilinear=.true., lcheck_positive_va2=.false.
   logical :: lreset_aa=.false.
   character (len=labellen) :: pertaa='zero'
-
+!
   namelist /magnetic_init_pars/ &
       B_ext, lohmic_heat, fring1, Iring1, Rring1, wr1, axisr1, dispr1, fring2, &
       Iring2, Rring2, wr2, axisr2, dispr2, fring3, Iring3, Rring3, wr3,  &
@@ -165,8 +167,9 @@ module Magnetic
       ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, &
       lneutralion_heat, center1_x, center1_y, center1_z, &
       fluxtube_border_width, va2max_jxb, va2power_jxb
-
-  ! run parameters
+!
+! Run parameters
+!
   real :: eta=0.0, eta1=0.0, eta_hyper2=0.0, eta_hyper3=0.0, eta_anom=0.0
   real :: meanfield_molecular_eta=0.0
   real :: eta_int=0.0, eta_ext=0.0, wresistivity=0.01, eta_xy_max=1.0
@@ -225,10 +228,10 @@ module Magnetic
       lbext_curvilinear, lbb_as_aux, ljj_as_aux, lremove_mean_emf, lkinematic, &
       lbbt_as_aux, ljjt_as_aux, lneutralion_heat, lreset_aa, daareset, &
       luse_Bext_in_b2, ampl_fcont_aa, llarge_scale_velocity, EMF_profile, &
-      lEMF_profile, lhalox,vcrit_anom,&
-      lalpha_profile_total
-
-  ! diagnostic variables (need to be consistent with reset list below)
+      lEMF_profile, lhalox, vcrit_anom, lalpha_profile_total
+!
+! Diagnostic variables (need to be consistent with reset list below)
+!
   integer :: idiag_ab_int=0     ! DIAG_DOC: $\int\Av\cdot\Bv\;dV$
   integer :: idiag_jb_int=0     ! DIAG_DOC: $\int\jv\cdot\Bv\;dV$
   integer :: idiag_b2tm=0       ! DIAG_DOC: $\left<\bv(t)\cdot\int_0^t\bv(t')
@@ -525,8 +528,8 @@ module Magnetic
   integer :: idiag_Exmxz=0       ! DIAG_DOC: $\left<{\cal E}_x\right>_{xz}$
   integer :: idiag_Eymxz=0       ! DIAG_DOC: $\left<{\cal E}_y\right>_{xz}$
   integer :: idiag_Ezmxz=0       ! DIAG_DOC: $\left<{\cal E}_z\right>_{xz}$
+!
   contains
-
 !***********************************************************************
     subroutine register_magnetic()
 !
