@@ -79,7 +79,7 @@ module Particles_main
 !
 !  Check if there is enough total space allocated for particles.
 !
-      if (ncpus*mpar_loc<npar) then
+      if (npar/mpar_loc>ncpus) then
         if (lroot) then
           print*, 'particles_initialize_modules: '// &
           'total number of particle slots available at the processors '// &
