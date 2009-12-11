@@ -167,19 +167,19 @@ module Magnetic
       fluxtube_border_width, va2max_jxb, va2power_jxb
 
   ! run parameters
-  real :: eta=0.,eta1=0.,eta_hyper2=0.,eta_hyper3=0.,height_eta=0.,eta_out=0.
-  real :: meanfield_molecular_eta=0.
-  real :: eta_int=0.,eta_ext=0.,wresistivity=.01,eta_xy_max=1.
-  real :: tau_aa_exterior=0.
-  real :: sigma_ratio=1.,eta_width=0.,eta_z0=1.
-  real :: alphaSSm=0.
-  real :: alpha_rmax=0.,alpha_width=0.
-  real :: alpha_zmax=0.
-  real :: k1_ff=1.,ampl_ff=1.,swirl=1.
-  real :: k1x_ff=1.,k1y_ff=1.,k1z_ff=1.
-  real :: inertial_length=0.,linertial_2
-  real :: forcing_continuous_aa_phasefact=1.
-  real :: forcing_continuous_aa_amplfact=1., ampl_fcont_aa=1.
+  real :: eta=0.0, eta1=0.0, eta_hyper2=0.0, eta_hyper3=0.0, eta_anom=0.0
+  real :: meanfield_molecular_eta=0.0
+  real :: eta_int=0.0, eta_ext=0.0, wresistivity=0.01, eta_xy_max=1.0
+  real :: height_eta=0.0, eta_out=0.0
+  real :: tau_aa_exterior=0.0
+  real :: sigma_ratio=1.0, eta_width=0.0, eta_z0=1.0
+  real :: alphaSSm=0.0
+  real :: alpha_rmax=0.0, alpha_width=0.0
+  real :: k1_ff=1.0, ampl_ff=1.0, swirl=1.0
+  real :: k1x_ff=1.0, k1y_ff=1.0, k1z_ff=1.0
+  real :: inertial_length=0.0, linertial_2
+  real :: forcing_continuous_aa_phasefact=1.0
+  real :: forcing_continuous_aa_amplfact=1.0, ampl_fcont_aa=1.0
   real :: LLambda_aa=0.0, vcrit_anom=1.0
   real, dimension(mx,my) :: eta_xy
   real, dimension(mx,my,3) :: geta_xy
@@ -202,46 +202,31 @@ module Magnetic
   character (len=labellen) :: iforcing_continuous_aa='fixed_swirl'
 
   namelist /magnetic_run_pars/ &
-       eta,eta1,eta_hyper2,eta_hyper3,B_ext,omega_Bz_ext,nu_ni,hall_term, &
-       lmeanfield_theory,alpha_effect,alpha_quenching,delta_effect, &
-       alpha_eps, &
-       lmeanfield_noalpm,alpha_profile, &
-       meanfield_etat, lohmic_heat, &
-       lmeanfield_jxb,lmeanfield_jxb_with_vA2, &
-       meanfield_Qs, meanfield_Qp, &
-       meanfield_Bs, meanfield_Bp, &
-       meanfield_kf,meanfield_etaB, &
-       alpha_equator,alpha_equator_gap,alpha_gap_step,&
-       alpha_cutoff_up,alpha_cutoff_down,&
-       height_eta,eta_out,tau_aa_exterior, &
-       kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
-       lforcing_cont_aa,iforcing_continuous_aa, &
-       forcing_continuous_aa_phasefact, &
-       forcing_continuous_aa_amplfact, &
-       k1_ff,ampl_ff,swirl,radius, &
-       k1x_ff,k1y_ff,k1z_ff,lcheck_positive_va2, &
-       lmean_friction,LLambda_aa, &
-       bthresh,bthresh_per_brms, &
-       iresistivity,lweyl_gauge,lupw_aa, &
-       alphaSSm, &
-       alpha_rmax,alpha_width,alpha_zmax,&
-       eta_int,eta_ext,eta_shock,wresistivity,eta_xy_max, &
-       rhomin_jxb,va2max_jxb,va2power_jxb,llorentzforce,linduction, &
-       reinitialize_aa,rescale_aa,lB_ext_pot, &
-       displacement_gun, &
-       pertaa,pertamplaa,D_smag,brms_target,rescaling_fraction, &
-       lOmega_effect,Omega_profile,Omega_ampl,lfreeze_aint,lfreeze_aext, &
-       sigma_ratio,zdep_profile,eta_width,eta_z0, &
-       borderaa,eta_aniso_hyper3, &
-       lelectron_inertia,inertial_length,lbext_curvilinear, &
-       lbb_as_aux,ljj_as_aux,lremove_mean_emf,lkinematic, &
-       lbbt_as_aux,ljjt_as_aux, &
-       lneutralion_heat, lreset_aa, daareset, &
-       luse_Bext_in_b2, ampl_fcont_aa,&
-       llarge_scale_velocity,&
-       EMF_profile,lEMF_profile,lhalox,vcrit_anom
+      eta, eta1, eta_hyper2, eta_hyper3, eta_anom, B_ext, omega_Bz_ext, nu_ni, &
+      hall_term, lmeanfield_theory, alpha_effect, alpha_quenching, &
+      delta_effect, alpha_eps, lmeanfield_noalpm, alpha_profile, &
+      meanfield_etat, lohmic_heat, lmeanfield_jxb, lmeanfield_jxb_with_vA2, &
+      meanfield_Qs, meanfield_Qp, meanfield_Bs, meanfield_Bp, meanfield_kf, &
+      meanfield_etaB, alpha_equator, alpha_equator_gap, alpha_gap_step, &
+      alpha_cutoff_up, alpha_cutoff_down, height_eta, eta_out, &
+      tau_aa_exterior, kx_aa, ky_aa, kz_aa, ABC_A, ABC_B, ABC_C, &
+      lforcing_cont_aa, iforcing_continuous_aa, &
+      forcing_continuous_aa_phasefact, forcing_continuous_aa_amplfact, k1_ff, &
+      ampl_ff, swirl, radius, k1x_ff, k1y_ff, k1z_ff, lcheck_positive_va2, &
+      lmean_friction, LLambda_aa, bthresh, bthresh_per_brms, iresistivity, &
+      lweyl_gauge, lupw_aa, alphaSSm, alpha_rmax, alpha_width, eta_int, &
+      eta_ext, eta_shock, wresistivity, eta_xy_max, rhomin_jxb, va2max_jxb, &
+      va2power_jxb, llorentzforce, linduction, reinitialize_aa, rescale_aa, &
+      lB_ext_pot, displacement_gun, pertaa, pertamplaa, D_smag, brms_target, &
+      rescaling_fraction, lOmega_effect, Omega_profile, Omega_ampl, &
+      lfreeze_aint, lfreeze_aext, sigma_ratio, zdep_profile, eta_width, &
+      eta_z0, borderaa, eta_aniso_hyper3, lelectron_inertia, inertial_length, &
+      lbext_curvilinear, lbb_as_aux, ljj_as_aux, lremove_mean_emf, lkinematic, &
+      lbbt_as_aux, ljjt_as_aux, lneutralion_heat, lreset_aa, daareset, &
+      luse_Bext_in_b2, ampl_fcont_aa, llarge_scale_velocity, EMF_profile, &
+      lEMF_profile, lhalox, vcrit_anom
 
-! diagnostic variables (need to be consistent with reset list below)
+  ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_ab_int=0     ! DIAG_DOC: $\int\Av\cdot\Bv\;dV$
   integer :: idiag_jb_int=0     ! DIAG_DOC: $\int\jv\cdot\Bv\;dV$
   integer :: idiag_b2tm=0       ! DIAG_DOC: $\left<\bv(t)\cdot\int_0^t\bv(t')
