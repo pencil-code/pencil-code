@@ -1313,14 +1313,14 @@ module Chemistry
 !
 ! NILS: Is this really necesarry?
 !
-          if (lpencil(i_rho1gpp)) then
+        !  if (lpencil(i_rho1gpp)) then
            do j2=mm1,mm2
            do j3=nn1,nn2
             pp_full(:,j2,j3)=Rgas*mu1_full(:,j2,j3) &
                             *rho_full(:,j2,j3)*TT_full(:,j2,j3)
            enddo
            enddo
-          endif
+        !  endif
 
 !print*,'pp',maxval(pp_full(l1:l2,m1:m2,n1:n2)),minval(pp_full(l1:l2,m1:m2,n1:n2))
 !print*,'tt',maxval(TT_full(l1:l2,m1:m2,n1:n2)),minval(TT_full(l1:l2,m1:m2,n1:n2))
@@ -1443,6 +1443,10 @@ module Chemistry
                     *(1.+sqrt(nuk_nuj(j1,j2,j3))*mk_mj**(-0.25))**2
                 tmp_sum2(j1,j2,j3)=tmp_sum2(j1,j2,j3) &
                                   +XX_full(j1,j2,j3,j)*Phi(j1,j2,j3)
+
+!if (j1==l1) then
+!if ((Phi(j1,j2,j3))>1.) print*,(Phi(j1,j2,j3))
+!endif
               enddo
 
               nu_dyn(j1,j2,j3)=nu_dyn(j1,j2,j3)+XX_full(j1,j2,j3,k)*&
@@ -1455,6 +1459,8 @@ module Chemistry
         enddo
         enddo
         enddo
+
+
 
 
           if (visc_const<impossible) then
@@ -3901,7 +3907,7 @@ module Chemistry
       do j2=mm1,mm2
       do j1=ll1,ll2
         prefactor(j1,j2,j3)=tmp_local*(TT_full(j1,j2,j3))**0.5*unit_length**3&
-            /(Rgas_unit_sys*rho_full(j1,j2,j3)*mu1_full(j1,j2,j3))
+            /(Rgas_unit_sys*rho_full(j1,j2,j3))
       enddo
       enddo
       enddo
@@ -3941,7 +3947,7 @@ module Chemistry
                   lnTjk(j1,j2,j3)=f(j1,j2,j3,ilnTT)-log(eps_jk)
                 endif
                 Omega_kl(j1,j2,j3)= &
-                    (6.96945701E-1   +3.39628861E-1*lnTjk(j1,j2,j3) &
+                    1./(6.96945701E-1   +3.39628861E-1*lnTjk(j1,j2,j3) &
                     +1.32575555E-2*lnTjk(j1,j2,j3)*lnTjk(j1,j2,j3) &
                     -3.41509659E-2*lnTjk(j1,j2,j3)**3 &
                     +7.71359429E-3*lnTjk(j1,j2,j3)**4 &
@@ -3974,20 +3980,22 @@ module Chemistry
 !  Do non-simplified binary diffusion coefficient
 !
           do k=1,nchemspec
-            do j=1,nchemspec
-              eps_jk=(tran_data(j,2)*tran_data(k,2))**0.5
-              sigma_jk=0.5*(tran_data(j,3)+tran_data(k,3))*1e-8
-              delta_jk=0.5*tran_data(j,4)*tran_data(k,4)
-!
+            do j=k,nchemspec
+       
 !  Account for the difference between eq. 5-4 and 5-31 in the Chemkin theory
 !  manual 
 !
-              if (j/=k) then
+            if (j/=k) then
+                eps_jk=(tran_data(j,2)*tran_data(k,2))**0.5
+                sigma_jk=0.5*(tran_data(j,3)+tran_data(k,3))*1e-8
                 m_jk=(species_constants(j,imass)*species_constants(k,imass)) &
                     /(species_constants(j,imass)+species_constants(k,imass))/Na
               else
+                eps_jk=tran_data(j,2)
+                sigma_jk=tran_data(j,3)*1e-8
                 m_jk=species_constants(j,imass)/(2*Na)
               endif
+  
 !
 ! Loop over all grid points
 !
@@ -4001,31 +4009,49 @@ module Chemistry
                 endif
 !
                 Omega_kl(j1,j2,j3)= &
-                    (6.96945701E-1   +3.39628861E-1*lnTjk(j1,j2,j3) &
+                    1./(6.96945701E-1   +3.39628861E-1*lnTjk(j1,j2,j3) &
                     +1.32575555E-2*lnTjk(j1,j2,j3)*lnTjk(j1,j2,j3) &
                     -3.41509659E-2*lnTjk(j1,j2,j3)**3 &
                     +7.71359429E-3*lnTjk(j1,j2,j3)**4 &
                     +6.16106168E-4*lnTjk(j1,j2,j3)**5 &
                     -3.27101257E-4*lnTjk(j1,j2,j3)**6 &
                     +2.51567029E-5*lnTjk(j1,j2,j3)**7)
-!
-! NILS: Re-wrote and corrected the equation for the binary diffusion coefficient.
-!
-!             Bin_Diff_coef(j1,j2,j3,k,j)=prefactor(j1,j2,j3)/sqrt(m_jk)/sigma_jk**2 &
-!                /(Omega_kl(j1,j2,j3)+0.19*delta_jk/(TT_full(j1,j2,j3)/eps_jk)) &
-!                /(unit_length**2/unit_time)
-!
+
+
+!NATALIA
+                delta_jk=0.5*(tran_data(j,4)*1e-18)**2
                 delta_jk_star=delta_jk/(eps_jk*k_B_cgs*sigma_jk**3)
+                
                 Omega_kl(j1,j2,j3)=Omega_kl(j1,j2,j3)&
                     +0.19*delta_jk_star*delta_jk_star/(TT_full(j1,j2,j3)/eps_jk)
-                Bin_Diff_coef(j1,j2,j3,k,j)=prefactor(j1,j2,j3)&
+               if (j/=k) then
+                Bin_Diff_coef(j1,j2,j3,k,j)=prefactor(j1,j2,j3)/mu1_full(j1,j2,j3)&
                     /(sqrt(m_jk)*sigma_jk**2*Omega_kl(j1,j2,j3))
+               else
+                Bin_Diff_coef(j1,j2,j3,k,j)=prefactor(j1,j2,j3)&
+                    /(sqrt(m_jk)*sigma_jk**2*Omega_kl(j1,j2,j3))*species_constants(k,imass)
+               endif
               enddo
               enddo
               enddo
 !
+ !if (j==k) print*,delta_jk_star,TT_full(l1,m1,n1)/eps_jk, Omega_kl(l1,m1,n1),k
             enddo
           enddo
+
+          do j3=nn1,nn2
+          do j2=mm1,mm2
+          do j1=ll1,ll2
+            do k=1,nchemspec
+              do j=1,k-1
+                Bin_Diff_coef(j1,j2,j3,k,j)=Bin_Diff_coef(j1,j2,j3,j,k)
+              enddo
+            enddo
+          enddo
+          enddo
+          enddo       
+          
+
         endif
       endif
 !
@@ -4059,15 +4085,22 @@ module Chemistry
           enddo
           enddo
         else
-          delta_st=tran_data(k,4)**2/2./tran_data(k,2)/&
-              (tran_data(k,3)*1e-8)**3
 !
+! 1 Debye = 10**(-18) esu -> (1e-18*tran_data(k,4))
+!
+          delta_st=(1e-18*tran_data(k,4))**2/2./ &
+             (tran_data(k,2)*k_B_cgs*(tran_data(k,3)*1e-8)**3)
+!
+ 
+
           if (ltemperature_nolog) then
             lnTk_array=log(f(:,:,:,ilnTT)/tran_data(k,2))
           else
             lnTk_array=f(:,:,:,ilnTT)-log(tran_data(k,2))
           endif
           call calc_collision_integral(omega,lnTk_array,Omega_kl)
+
+
           do j3=nn1,nn2
           do j2=mm1,mm2
           do j1=ll1,ll2
@@ -4080,7 +4113,8 @@ module Chemistry
           enddo
         endif
       enddo
-!
+     !
+ 
     endsubroutine calc_diff_visc_coef
 !***************************************************************
     subroutine calc_therm_diffus_coef(f)
@@ -4090,11 +4124,14 @@ module Chemistry
 !     
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,nchemspec) :: species_cond
-      real, dimension (mx,my,mz) :: tmp_sum, tmp_sum2, tmp_val
+      real, dimension (mx,my,mz) :: tmp_sum, tmp_sum2, tmp_val,ZZ,FF
       real, dimension (mx,my,mz) :: AA,BB, Cv_vib_R, f_tran, f_rot, f_vib
       intent(in) :: f
       integer :: j1,j2,j3,k
-      real :: Cv_rot_R, Cv_tran_R
+      real :: Cv_rot_R, Cv_tran_R,T_st, pi_1_5, pi_2
+
+      pi_1_5=pi**1.5
+      pi_2=pi**2.
 !
       do j3=nn1,nn2
       do j2=mm1,mm2
@@ -4122,11 +4159,21 @@ module Chemistry
 ! The rotational and vibrational contributions are zero for the single
 ! atom molecules but not for the linear or non-linear molecules 
 !
+
+!NATALIA
           if (tran_data(k,1)>0.) then
             tmp_val(j1,j2,j3)=Bin_Diff_coef(j1,j2,j3,k,k)*rho_full(j1,j2,j3)&
                 /species_viscosity(j1,j2,j3,k)
             AA(j1,j2,j3)=2.5-tmp_val(j1,j2,j3)
-            BB(j1,j2,j3)=tran_data(k,6)+2./pi*(5./3.*Cv_rot_R&
+            T_st=tran_data(k,2)/298.
+            FF(j1,j2,j3)=1.+pi_1_5/2.*(T_st)**0.5+(pi_2/4.+2.) &
+             *(T_st)+pi_1_5*(T_st)**1.5
+            ZZ(j1,j2,j3)=tran_data(k,6)*FF(j1,j2,j3)
+            T_st=tran_data(k,2)/TT_full(j1,j2,j3)
+            FF(j1,j2,j3)=1.+pi_1_5/2.*(T_st)**0.5+(pi_2/4.+2.) &
+             *(T_st)+pi_1_5*(T_st)**1.5
+             ZZ(j1,j2,j3)=ZZ(j1,j2,j3)/FF(j1,j2,j3)
+            BB(j1,j2,j3)=ZZ(j1,j2,j3)+2./pi*(5./3.*Cv_rot_R&
                 +tmp_val(j1,j2,j3))
             f_tran(j1,j2,j3)=2.5*(1.- 2./pi*Cv_rot_R/&
                 Cv_tran_R*AA(j1,j2,j3)/BB(j1,j2,j3))
@@ -4142,6 +4189,11 @@ module Chemistry
               /(species_constants(k,imass)/unit_mass)*Rgas* &
                 (f_tran(j1,j2,j3)*Cv_tran_R+f_rot(j1,j2,j3)*Cv_rot_R  &
                 +f_vib(j1,j2,j3)*Cv_vib_R(j1,j2,j3))
+          
+!if (j1==l1) then
+!  print*,'lambda=',species_cond(l1,m1,n1,k),k,tran_data(k,6),pi
+  !print*,Cv_tran_R,Cv_rot_R,Cv_vib_R(l1,m1,n1),f_rot(l1,m1,n1),f_vib(l1,m1,n1)
+!endif
 !
 ! tmp_sum and tmp_sum2 are used later to find the mixture averaged
 ! conductivity.
