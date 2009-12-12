@@ -7,14 +7,13 @@
   lwrite_aux=T
 /
 &eos_init_pars
-gamma=1.
+  gamma=1.
 /
 &hydro_init_pars
   inituu='sound-wave',ampluu=1.0e-1
-!  inituu='zero'
 /
 &density_init_pars
-   initlnrho='sound-wave', ampllnrho=0.2
+  initlnrho='sound-wave', ampllnrho=0.2
 /
 &poisson_init_pars
 /
