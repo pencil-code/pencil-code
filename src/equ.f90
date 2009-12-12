@@ -77,9 +77,9 @@ module Equ
       type (pencil_case) :: p
       real, dimension (nx) :: maxadvec,advec2,maxdiffus,maxdiffus2,maxdiffus3
       real, dimension (nx) :: pfreeze,pfreeze_int,pfreeze_ext
-      real :: mass_per_proc,mass, average_density, average_pressure,&
+      real :: mass_per_proc, average_density, average_pressure,&
               init_average_density
-      integer :: i,iv,ix
+      integer :: iv
       integer :: ivar1,ivar2
       intent(inout)  :: f       ! inout due to  lshift_datacube_x,
                                 ! density floor, or velocity ceiling
