@@ -9,7 +9,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 1
 !
-! PENCILS PROVIDED ss; ee; pp; lnTT; cs2; nabla_ad; glnTT(3); TT; TT1
+! PENCILS PROVIDED ss; ee; pp; lnTT; cs2; nabla_ad; glnTT(3); TT; TT1; gTT(3)
 ! PENCILS PROVIDED yH; del2lnTT; cv; cv1; cp; cp1; gamma; gamma_m1; gamma_inv; mu1
 ! PENCILS PROVIDED hlnTT(3,3); rho1gpp(3); delta; gradcp(3); del6lnTT
 !
@@ -252,6 +252,11 @@ module EquationOfState
       if (lpencil_in(i_TT1)) lpencil_in(i_TT)=.true.
 
       if (lpencil_in(i_gradcp)) lcalc_cp_full=.true.
+
+      if (lpencil_in(i_gTT)) then
+        lpencil_in(i_TT)=.true.
+        lpencil_in(i_glnTT)=.true.
+      endif
 !
       call keep_compiler_quiet(lpencil_in)
 !
@@ -288,7 +293,11 @@ module EquationOfState
       if (lpencil(i_hlnTT)) call g2ij(f,ilnTT,p%hlnTT)
       if (lpencil(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
       if (lpencil(i_del6lnTT)) call del6(f,ilnTT,p%del6lnTT)
-
+      if (lpencil(i_gTT)) then
+        do i=1,3 
+          p%gTT(:,i) =p%TT * p%glnTT(:,i)
+        enddo
+      endif
 !
 !  Ionization fraction
 !
