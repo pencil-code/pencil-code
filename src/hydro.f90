@@ -1423,7 +1423,7 @@ module Hydro
 !
       real, dimension (nx) :: space_part_re,space_part_im,u2t,uot,out,fu
       real :: kx
-      integer :: j, jloop
+      integer :: j
 !
       intent(in) :: p
       intent(out) :: f,df
@@ -2589,7 +2589,6 @@ module Hydro
 !
     endsubroutine coriolis_spherical
 !***********************************************************************
-
     subroutine coriolis_spherical_del2p(f,p)
 !
 !  coriolis_spherical terms using spherical polars
@@ -2600,7 +2599,6 @@ module Hydro
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real :: c2,s2
 !
 !  info about coriolis_spherical term
 !
@@ -2633,6 +2631,9 @@ module Hydro
       if (lcentrifugal_force) & 
           call stop_it("duu_dt: Centrifugal force not "//&
           "implemented in spherical coordinates")
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine coriolis_spherical_del2p
 !***********************************************************************
@@ -2680,7 +2681,6 @@ module Hydro
 !
     endsubroutine coriolis_cylindrical
 !***********************************************************************
-
     subroutine coriolis_cylindrical_del2p(f,p)
 !
 !  Coriolis terms using cylindrical coords
@@ -2694,7 +2694,6 @@ module Hydro
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real :: c2
 !
 !  info about coriolis_cylindrical term
 !
@@ -2708,7 +2707,8 @@ module Hydro
          call fatal_error("coriolis_cylindrical:","not coded if the angular velocity is at an angle to the z axis. ")
       endif
 !
-!    
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine coriolis_cylindrical_del2p
 !***********************************************************************
