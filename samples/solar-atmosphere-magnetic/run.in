@@ -5,8 +5,11 @@
 !
 &run_pars
   cvsid='$Id$'
-  nt=150,it1=10,isave=10,itorder=3
-  bcz = 's','s','a','StS','StS','s:pwd','s:nil','a:nil','s','s'
+  nt=150
+  it1=10
+  isave=10
+  itorder=3
+  bcz = 's','s','a','StS','StS','s:pwd','s:nil','a:nil','s'
   lmaxadvec_sum=T
   lwrite_aux=T
 /
@@ -29,19 +32,26 @@
 /
 &magnetic_run_pars
   iresistivity='hyper3','shock'
-  eta_hyper3=2e-7, eta_shock=5.
+  eta_hyper3=2e-7
+  eta_shock=5.
   B_ext=0.0,0.0,0.892061
-  va2max_jxb=2500., va2power_jxb=4
+  va2max_jxb=2500.
+  va2power_jxb=4
 /
 &radiation_run_pars
   bc_rad='p:p','p:p','S:c'
-  radx=1, rady=1, radz=1, rad2max=1
-  TT_top=4e3,tau_top=0.2
+  radx=1
+  rady=1
+  radz=1
+  rad2max=1
+  TT_top=4e3
+  tau_top=0.2
   lradflux=T
 /
 &viscosity_run_pars
   ivisc='hyper3_nu-const','nu-shock'
-  nu_hyper3=2e-7, nu_shock=5.
+  nu_hyper3=2e-7
+  nu_shock=5.
 /
 &shock_run_pars
   lshock_first=F

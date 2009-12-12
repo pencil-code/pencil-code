@@ -14,8 +14,8 @@
   xyz0  = -1.6544103, -1.6544103, -2.61196  ! first corner of box
   Lxyz  =  3.3088207,  3.3088207,  3.20542  ! box size
   lperi =  T ,   T ,   F        ! periodic direction?
-  bcz = 's','s','a','StS','StS','s:pot','s:nil','a:nil','s','s'
-  bcz = 's','s','a','StS','StS','s:c1','s:nil','a:nil','s','s'
+  bcz = 's','s','a','StS','StS','s:pot','s:nil','a:nil','s'
+  bcz = 's','s','a','StS','StS','s:c1','s:nil','a:nil','s'
 
   lwrite_aux=T                  ! write out auxiliary variables
   ip=14                         ! debugging parameter
@@ -25,7 +25,8 @@
 /
 
 &hydro_init_pars
-  inituu='gaussian-noise', ampluu=0.1
+  inituu='gaussian-noise'
+  ampluu=0.1
 /
 
 &density_init_pars
@@ -34,7 +35,8 @@
 /
 
 &grav_init_pars
-  gravz_profile='const', gravz=-2.75 ! constant gravity in the z-direction
+  gravz_profile='const'         ! constant gravity in the z-direction
+  gravz=-2.75
 /
 
 &entropy_init_pars
@@ -45,7 +47,11 @@
 
 &radiation_init_pars
   bc_rad='p:p','p:p','S:c'
-  radx=1, rady=1, radz=1, rad2max=1
-  TT_top=4e3,tau_top=0.2
+  radx=1
+  rady=1
+  radz=1
+  rad2max=1
+  TT_top=4e3
+  tau_top=0.2
   lradflux=T
 /
