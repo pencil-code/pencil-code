@@ -371,7 +371,7 @@ module Mpicomm
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
-      integer :: ivar1, ivar2, nbufy, nbufz, nbufyz, j
+      integer :: ivar1, ivar2, nbufy, nbufz, nbufyz
 !
       ivar1=1; ivar2=mcom
       if (present(ivar1_opt)) ivar1=ivar1_opt
@@ -725,7 +725,7 @@ module Mpicomm
       integer, dimension (MPI_STATUS_SIZE) :: irecv_stat_fbl, irecv_stat_fbn
       integer, dimension (MPI_STATUS_SIZE) :: isend_stat_tna, isend_stat_tla
       integer, dimension (MPI_STATUS_SIZE) :: isend_stat_tnb, isend_stat_tlb
-      integer :: ivar1, ivar2, m2long, i
+      integer :: ivar1, ivar2, m2long
       double precision :: deltay_dy, frac, c1, c2, c3, c4, c5, c6
 !
       ivar1=1; ivar2=mcom
@@ -1374,7 +1374,7 @@ module Mpicomm
         ibcast_proc=root
       endif
 !
-      call MPI_BCAST(ibcast_array,1,MPI_INTEGER,ibcast_proc, &
+      call MPI_BCAST(ibcast_array,nbcast_array,MPI_INTEGER,ibcast_proc, &
           MPI_COMM_WORLD,ierr)
 !
     endsubroutine mpibcast_int_scl
@@ -3036,7 +3036,7 @@ module Mpicomm
       f(l2+1:mx  ,:,nn1:nn2,iax:iaz) = f( l1:l1i,:,nn1:nn2,iax:iaz)
 !
     endsubroutine communicate_bc_aa_pot
-!***************************************************************************
+!***********************************************************************
     subroutine fill_zghostzones_3vec(vec,ivar)
 !
 !  Fills z-direction ghostzones of (mz,3)-array vec depending on the number of processors in z-direction.
