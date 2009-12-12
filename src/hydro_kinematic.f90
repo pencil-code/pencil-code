@@ -1,5 +1,7 @@
-
-
+! $Id: hydro.f90 12391 2009-12-06 15:07:25Z sven.bingert $
+!
+!  This module supplies a kinematic velocity field.
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -649,7 +651,6 @@ kky_aa=2.*pi
           p%uu(:,2)=0.
           p%uu(:,3)=wind_amp*step_scalar(z(n),wind_rmin,wind_step_width)
         endif
-!
 !
 ! Radial wind
 !
