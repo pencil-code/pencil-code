@@ -8,7 +8,7 @@
   cdt=0.4, cdtv=0.08, cdts=0.08, itorder=3
   dsnap=30. 
   !
-  bcz = 'g:s' ,'nil:s' ,'a','a2','cT','fB:a2','fB:a2','a2:a2'
+  bcz = 'g:s' ,'nil:s' ,'a','a2','cT','fB:pwd','fB:nil','a2:nil'
   force_lower_bound='uxy_convection '
 ! lpencil_check=T
 /
