@@ -126,6 +126,8 @@ module Density
   integer :: idiag_totmass=0    ! DIAG_DOC:
   integer :: idiag_mass=0       ! DIAG_DOC: $\int\varrho\,dV$
   integer :: idiag_divrhoum=0   ! DIAG_DOC: $\left<\nabla\cdot(\varrho\uv)\right>$
+  integer :: idiag_divrhourms=0 ! DIAG_DOC: $\left|\nabla\cdot(\varrho\uv)\right|_{\rm rms}$
+  integer :: idiag_divrhoumax=0 ! DIAG_DOC: $\left|\nabla\cdot(\varrho\uv)\right|_{\rm max}$
 !
   contains
 !***********************************************************************
@@ -1262,7 +1264,7 @@ module Density
       if (idiag_lnrho2m/=0) lpenc_diagnos(i_lnrho)=.true.
       if (idiag_ugrhom/=0) lpenc_diagnos(i_ugrho)=.true.
       if (idiag_uglnrhom/=0) lpenc_diagnos(i_uglnrho)=.true.
-      if (idiag_divrhoum/=0) then
+      if (idiag_divrhoum/=0.or.idiag_divrhourms/=0..or.idiag_divrhoumax/=0.) then
          lpenc_diagnos(i_rho)=.true.
          lpenc_diagnos(i_uglnrho)=.true.
          lpenc_diagnos(i_divu)=.true.
@@ -1426,6 +1428,8 @@ module Density
         if (idiag_ugrhom/=0)   call sum_mn_name(p%ugrho,idiag_ugrhom)
         if (idiag_uglnrhom/=0) call sum_mn_name(p%uglnrho,idiag_uglnrhom)
         if (idiag_divrhoum/=0) call sum_mn_name(p%rho*p%divu+p%rho*p%uglnrho,idiag_divrhoum)
+        if (idiag_divrhourms/=0) call sum_mn_name((p%rho*p%divu+p%rho*p%uglnrho)**2,idiag_divrhourms,lsqrt=.true.)
+        if (idiag_divrhoumax/=0) call max_mn_name(p%rho*p%divu+p%rho*p%uglnrho,idiag_divrhoumax)
         if (idiag_dtd/=0) &
             call max_mn_name(diffus_diffrho/cdtv,idiag_dtd,l_dt=.true.)
       endif
@@ -2302,7 +2306,7 @@ module Density
         idiag_lnrhomphi=0; idiag_rhomphi=0
         idiag_rhomz=0; idiag_rhomy=0; idiag_rhomx=0 
         idiag_rhomxy=0; idiag_rhomr=0; idiag_totmass=0
-        idiag_rhomxz=0; idiag_divrhoum=0
+        idiag_rhomxz=0; idiag_divrhoum=0; idiag_divrhourms=0; idiag_divrhoumax=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -2322,6 +2326,8 @@ module Density
         call parse_name(iname,cname(iname),cform(iname),'totmass',idiag_totmass)
         call parse_name(iname,cname(iname),cform(iname),'mass',idiag_mass)
         call parse_name(iname,cname(iname),cform(iname),'divrhoum',idiag_divrhoum)
+        call parse_name(iname,cname(iname),cform(iname),'divrhourms',idiag_divrhourms)
+        call parse_name(iname,cname(iname),cform(iname),'divrhoumax',idiag_divrhoumax)
       enddo
 !
 !  check for those quantities for which we want xy-averages
@@ -2395,6 +2401,8 @@ module Density
         write(3,*) 'i_totmass=',idiag_totmass
         write(3,*) 'i_mass=',idiag_mass
         write(3,*) 'i_divrhoum=',idiag_divrhoum
+        write(3,*) 'i_divrhourms=',idiag_divrhourms
+        write(3,*) 'i_divrhoumax=',idiag_divrhoumax
       endif
 !
     endsubroutine rprint_density
