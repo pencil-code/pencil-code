@@ -1,4 +1,4 @@
-! $Id: hydro.f90 12391 2009-12-06 15:07:25Z sven.bingert $
+! $Id$
 !
 !  This module supplies a kinematic velocity field.
 !
@@ -87,7 +87,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call svn_id( &
-           "$Id: hydro_kinematic.f90 11998 2009-11-02 13:07:27Z AxelBrandenburg $")
+           "$Id$")
 !
 !  Share lpressuregradient_gas so Entropy module knows whether to apply
 !  pressure gradient or not.
