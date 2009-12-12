@@ -203,7 +203,7 @@ module Entropy
 
       write(unit,NML=entropy_run_pars)
     endsubroutine write_entropy_run_pars
-!!***********************************************************************
+!!**********************************************************************
     subroutine init_ss(f)
 !
 !  initialise entropy; called from start.f90
@@ -441,7 +441,7 @@ module Entropy
       call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_entropy_after_mn
-!**********************************************************************
+!***********************************************************************
     subroutine dss_dt(f,df,p)
 !
 !  calculate right hand side of entropy equation
@@ -580,7 +580,7 @@ module Entropy
       endif
 
     endsubroutine dss_dt
-!**********************************************************************
+!***********************************************************************
     subroutine dss_dt_after_mn(f,df,p)
 !
 ! Do nothing.
@@ -590,14 +590,11 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      integer :: j,ju
-!
       intent(in) :: f,p
       intent(out) :: df
 !
-
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine dss_dt_after_mn
 !***********************************************************************
@@ -802,5 +799,5 @@ module Entropy
       call keep_compiler_quiet(f)
 !
     endsubroutine calc_heatcond_ADI
-!**************************************************************
+!***********************************************************************
 endmodule Entropy
