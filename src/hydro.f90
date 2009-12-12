@@ -1,6 +1,7 @@
 ! $Id$
 !
-!  This module takes care of everything related to velocity
+!  This module takes care of most of the things related to velocity.
+!  Pressure, for example, is added in the energy (entropy) module,
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -18,6 +19,7 @@
 ! PENCILS PROVIDED u2u31; u3u12; u1u23
 ! PENCILS PROVIDED graddivu(3); del6u_bulk(3); grad5divu(3)
 ! PENCILS PROVIDED rhougu(3)
+! PENCILS PROVIDED der6u(3) 
 !
 !***************************************************************
 module Hydro
