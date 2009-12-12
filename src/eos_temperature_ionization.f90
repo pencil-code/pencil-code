@@ -155,7 +155,7 @@ module EquationOfState
       endif
 
     endsubroutine initialize_eos
-!*******************************************************************
+!***********************************************************************
     subroutine select_eos_variable(variable,findex)
 !
 !  dummy (but to be changed)
@@ -258,10 +258,8 @@ module EquationOfState
         lpencil_in(i_glnTT)=.true.
       endif
 !
-      call keep_compiler_quiet(lpencil_in)
-!
     endsubroutine pencil_interdep_eos
-!*******************************************************************
+!***********************************************************************
     subroutine calc_pencils_eos(f,p)
 !
 !  dummy (but to be changed)
@@ -270,15 +268,11 @@ module EquationOfState
 
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-
-      real, dimension (nx) :: rhs,sqrtrhs
+!
       real, dimension (nx) :: yH_term_cv,TT_term_cv
       real, dimension (nx) :: yH_term_cp,TT_term_cp
       real, dimension (nx) :: alpha1,tmp
       integer :: i
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
 !
 !  Temperature
 !
@@ -407,7 +401,7 @@ module EquationOfState
       endif
 
     endsubroutine calc_pencils_eos
-!*******************************************************************
+!***********************************************************************
     subroutine getmu(mu)
 !
 !  Calculate average particle mass in the gas relative to
@@ -418,7 +412,7 @@ module EquationOfState
 
       mu=0.
     endsubroutine getmu
-!*******************************************************************
+!***********************************************************************
     subroutine rprint_eos(lreset,lwrite)
 !
 !  Writes iyH and ilnTT to index.pro file
@@ -491,9 +485,15 @@ module EquationOfState
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer, intent(in) :: psize
       real, dimension(psize), intent(in), optional :: ee,pp,ss
-
+!
       call not_implemented("eosperturb")
-
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(psize)
+      if (present(ee)) call keep_compiler_quiet(ee)
+      if (present(pp)) call keep_compiler_quiet(pp)
+      if (present(ss)) call keep_compiler_quiet(ss)
+!
     endsubroutine eosperturb
 !***********************************************************************
     subroutine getdensity(EE,TT,yH,rho)
@@ -641,6 +641,7 @@ module EquationOfState
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(hlnrho)
       call keep_compiler_quiet(hss)
+      call keep_compiler_quiet(hlnTT)
 !
     endsubroutine temperature_hessian
 !***********************************************************************
@@ -927,8 +928,11 @@ module EquationOfState
 !      
       real, intent(in):: average_density,init_average_density
       real, intent(out):: average_pressure
+!
       call keep_compiler_quiet(average_density)
+      call keep_compiler_quiet(init_average_density)
       call keep_compiler_quiet(average_pressure)
+!
     endsubroutine get_average_pressure
 !***********************************************************************
     subroutine bc_ss_flux(f,topbot)
@@ -950,7 +954,7 @@ module EquationOfState
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my) :: tmp_xy,cs2_xy,rho_xy
-      integer :: i,ierr
+      integer :: i
 !
       if (ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
 !
@@ -1749,7 +1753,7 @@ module EquationOfState
       real, dimension (mx,my) :: cv,cp,cs2,nabla_ad
       real, dimension (mx,my) :: dlnrhodz,dlnTTdz
       real :: fac
-      integer :: i,j
+      integer :: i
 
       select case (topbot)
 
