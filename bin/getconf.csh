@@ -227,6 +227,9 @@ else if ($hn =~ hamlet) then
   echo "hamlet pc, Heidelberg (formerly in Copenhagen)"
   set mpirun = /home/ajohan/mpich/bin/mpirun
 
+else if ($hn =~ saveri) then
+  echo "Piyali's Laptop"
+  set mpirun = /usr/local/bin/mpirun
 else if ($hn =~ giga[0-9][0-9].ncl.ac.uk) then
   echo "Newcastle e-Science Cluster"
   if ($?PBS_JOBID) then

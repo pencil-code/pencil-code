@@ -1539,26 +1539,6 @@ module Density
 !
     endsubroutine calc_pencils_density
 !***********************************************************************
-    subroutine calc_pencils_density_after_mn(f,p)
-!
-!  Do nothing, not even set stuff to zero 
-!  But stuff needs to be added here. 
-!  DM+PC
-!  14-oct-09/dhruba: coded
-!
-      use EquationOfState, only: lnrho0, rho0
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
-!
-      intent(in) :: f
-      intent(inout) :: p
-
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine calc_pencils_density_after_mn
-!***********************************************************************
     subroutine density_before_boundary(f)
 !
 !  Actions to take before boundary conditions are set.
@@ -2846,5 +2826,27 @@ module Density
       endselect
 !
     endsubroutine get_slices_density
+!***********************************************************************
+    subroutine get_slices_pressure(f,slices)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices%ready)
+!
+    endsubroutine get_slices_pressure
+!***********************************************************************
+    subroutine get_init_average_density(f,init_average_density)
+!  10-dec-09/piyali: added to pass initial average density 
+!  equ.f90 
+!
+    real, dimension (mx,my,mz,mfarray):: f
+    real:: init_average_density
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(init_average_density)
+!
+    endsubroutine get_init_average_density
 !***********************************************************************
 endmodule Density

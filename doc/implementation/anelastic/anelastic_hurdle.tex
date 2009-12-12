@@ -1,0 +1,119 @@
+% $Id$
+\documentclass[mathleft]{article}
+\usepackage{graphicx,bm}
+\overfullrule5pt
+\begin{document}
+\graphicspath{{./fig/}{./png/}}
+\newcommand{\pa}{\partial}
+
+\def\vec#1{\ensuremath{\mathchoice{\mbox{\boldmath$\displaystyle#1$}}
+{\mbox{\boldmath$\textstyle#1$}}
+{\mbox{\boldmath$\scriptstyle#1$}}
+{\mbox{\boldmath$\scriptscriptstyle#1$}}}}
+
+\title{Anelastic Approximation without linearization.}
+\author{}
+\maketitle
+
+\section{Notes}
+We started with the definition of anelastic approximation given by,
+\label{sec:intro}
+\begin{eqnarray}
+\vec{\nabla}.(\rho \vec{u}) =0
+\end{eqnarray}
+
+This is contrary to what most people do when they take an anelastic approximation. Usually all thermodynamic variables are written in terms of a base state and a 
+perturbed state. However we have avoided this linearization because in a nonlinear problem like the Navier Stokes it may be possible that the thermodynamic perturbations become larger than the base state.
+
+Taking the divergence of the Navier Stokes equation we get a Poisson equation for Pressure. The anelastic set of equations may be given by,
+\begin{eqnarray}
+\rho=\rho(p,s) \label{rho} \\
+\frac{\pa{s}}{\pa t} = -(\vec{u}.\vec{\nabla})s -\frac{\vec{R}^s}{\rho T}\\
+\nabla^2 p = \nabla_i[\rho \vec{R}^v_i-\nabla_j(\rho u_iu_j)]=g(\rho, \vec{u})\\
+\frac{\pa{\vec{u}}}{\pa t} = -(\vec{u}.\vec{\nabla})\vec{u}
+-\frac{\vec{\nabla} p}{\rho}+\vec{R}^v
+\end{eqnarray}
+I have not explicitly written down all the terms in Navier-Stokes or
+entropy equation, but denoted them with $\vec{R}^v$ or $\vec{R}^s$. The number of variables are $\vec{u}, \rho, p, s$; 4 in number. The temperature, $T$ can be obtained from the ideal gas equation $p = \rho R_g T$.
+
+%%PC: So the statement just below this doesn't hold for incompressibility
+%%PC: or anelastic approx (ref: Appendix of Brandenburg \& Matthaeus 2004)?
+%%AB: Yes, correct, so I commented it out
+%All thermodynamic variables adjust themselves at any time so 
+%that the density inside the domain doesn't change in time even though it may be stratified.
+
+An ideal gas has to satisfy Eq.~(\ref{rho}) between $p$, $\rho$ and $s$ given by
+\begin{equation}
+\ln\rho={1\over\gamma}\ln p-(s-s_0)/c_p
+\end{equation}
+where $s_0$ is a constant.
+For this we use and have extended the eos\_idealgas.f90 module to include a case with ivars=ipp\_ss. The following routines need to be modified.
+\begin{verbatim}
+    module procedure eoscalc_pencil   ! explicit f implicit m,n
+    module procedure eoscalc_point    ! explicit lnrho, ss
+    module procedure eoscalc_farray   ! explicit lnrho, ss
+\end{verbatim}
+Following this modification, the eos\_idealgas module provides $\rho$ as a pencil which is a function of pencils $p$ and $s$.
+Now the number of equations is also 4 (Eq.~2, 3, 4, 6).
+
+%AB: added
+At any given time, the pressure is calculated such that the divergence of
+$\rho\bm{u}$ vanishes.
+This calculation is based on the values of $\rho$, $\bm{u}$, and $s$
+at a given time.
+Since $\bm{u}$ and $s$ are evolving, $p$ will evolve,
+and therefore also $\rho$.
+It would not be correct to iterate at a given time $p$ and modify
+only $\rho$, without at the same time recalculating all the other terms
+on the right hand sides of the other equations.
+
+%AB: commented this out
+%But there is a problem. The Poisson equation and Eq.~6 needs to be solved iteratively at any time step as shown below,
+%\begin{eqnarray}
+%\nabla^2p(t+\delta t) = g(\ln\rho(t), s(t+\delta t))\\
+%\ln\rho(t+\delta t)={1\over\gamma}\ln p(t+\delta t)-(s(t+\delta t)-s_0)/c_p
+%\end{eqnarray}
+%
+%Eq.~ 7, 8 has to be solved in a loop till there is convergence. If this has to be done then the anelastic approximation will be very computationally expensive. Are we wrong somewhere or missed something? Can we work with a variable $\vec{Q}$ given by,
+%\begin{equation}
+%\rho \vec{v} = \nabla\times \vec{Q}?
+%\end{equation}
+%%PC: For 2D it is the simple stream function. But what about 3D? Have you seen any reference for this?
+%AB: the stream function would be a vector field with 3 components.
+%AB: This is more expensive. Super potentials would be an alternative.
+%AB: But for now we are fine.
+%%%%%%%%%%%%%%%%%%%%%%%%
+So, essentially we do the following steps in the pencil code to incorporate the anelastic approximation.
+\begin{itemize}
+\item Start
+\begin{enumerate} 
+\item Initialize $\rho, s, \vec{u}$ at $t=t0$.
+\item Calculate $p_0$ at $t=t0$ from equation of state. This is the pressure offset.
+\item Use duu\_dt module in hydro to fill up iuu:iuu+2 indices in the
+df-array except the $\vec{\nabla} p$ term. This corresponds to $\vec{R^u}$. 
+\item Calculate pressure  necessary to make $\vec{\nabla}.(\rho
+\vec{u})=0$ at $t0$ from $\nabla^2p = \vec{\nabla}.(\rho \vec{R^u})$ and add to $\vec{R^u}$.
+\end{enumerate}
+\item Run
+
+\begin{enumerate} 
+\item $t=t+dt$, time step $\vec{u}$, $s$ using $\rho, p$ 
+at $t$.
+\item Use duu\_dt module in hydro to fill up iuu:iuu+2 indices in the
+df-array except the $\vec{\nabla} p$ term. This corresponds to $\vec{R^u}$ at t+dt. 
+\item Calculate pressure at $t+dt$ from $\nabla^2p =
+\vec{\nabla}.(\rho(t) \vec{R^u}(t+dt))$ and add back to df array. This
+can be done in absence of stratification. In presence of gravity, the
+contribution of pressure to $\vec{\nabla}.(\rho \vec{g})$ has to added to $\nabla^2p$. Adjust boundary conditions for $p$ so that mass flux out of the domain is zero.
+So at the boundaries we have $\oint\rho \vec{u}.\vec{dS}=0$, which implies,
+$$\oint (\vec{\nabla} p - \rho \vec{R^u}).\vec{dS}=0$$
+Without loss of generality this means,
+$$\vec{\hat{n}}.\vec{\nabla} p = \rho \vec{R^u}.\vec{\hat{n}}$$
+
+\item Calculate $\rho$ at $t+dt$ using $\rho = \rho(s, p)$, where s and p are also at t+dt.
+The problem lies in step 3 where $p$,$\rho$ are evaluated at different times. We need to calculate $\rho$ and $p$ simultaneously. One way is iteratively solving step 3 and 4. Another method for isothermal or adiabatic case is to solve the following non-linear Poisson equation.
+$(\nabla^2 - \vec{R^u}.\vec{\nabla} -\vec{\nabla}.\vec{R^u})p = 0$
+\item Go to step~1
+\end{enumerate}
+\end{itemize}
+\end{document}

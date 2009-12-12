@@ -36,6 +36,7 @@ module Sub
 !
   public :: grad, grad5, div, div_mn, curl, curli, curl_mn, curl_other
   public :: curl_horizontal
+  public :: div_other
   public :: gij, g2ij, gij_etc
   public :: gijk_symmetric
   public :: der_step
@@ -1203,6 +1204,30 @@ module Sub
       endif
 !
     endsubroutine div
+!***********************************************************************
+    subroutine div_other(f,g)
+! 
+      use Deriv, only: der
+
+      real, dimension (mx,my,mz,3) :: f
+      real, dimension (nx) :: g, tmp
+!
+      call der(f(:,:,:,1),tmp,1)
+      g=tmp
+      call der(f(:,:,:,2),tmp,2)
+      g=g+tmp
+      call der(f(:,:,:,3),tmp,3)
+      g=g+tmp
+!
+      if (lspherical_coords) then
+        g=g+2.*r1_mn*f(l1:l2,m,n,1)+r1_mn*cotth(m)*f(l1:l2,m,n,2)
+      endif
+!
+      if (lcylindrical_coords) then
+        g=g+rcyl_mn1*f(l1:l2,m,n,1)
+      endif
+!
+    endsubroutine div_other
 !***********************************************************************
     subroutine div_mn(aij,b,a)
 !

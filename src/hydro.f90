@@ -1441,16 +1441,6 @@ module Hydro
 !
       if (ladvection_velocity) then 
           df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
-        if (ldensity_anelastic) then
-          do jloop=0,2
-            f(l1:l2,m,n,idel2p_anelastic+jloop)= & 
-              f(l1:l2,m,n,idel2p_anelastic+jloop)- &
-              p%rho(:)*p%ugu(:,jloop+1)
-!          f(l1:l2,m,n,idel2p_anelastic:idel2p_anelastic+2)= & 
-!          f(l1:l2,m,n,idel2p_anelastic:idel2p_anelastic+2)- &
-!          p%rhougu(1:nx,1:3)
-          enddo
-        endif
       endif
 !
 !  Coriolis force, -2*Omega x u (unless lprecession=T)
@@ -1463,10 +1453,8 @@ module Hydro
 
         if (lcylindrical_coords) then
           call coriolis_cylindrical(df,p)
-          if (ldensity_anelastic) call coriolis_cylindrical_del2p(f,p)
         elseif (lspherical_coords) then
           call coriolis_spherical(df,p)
-          if (ldensity_anelastic) call coriolis_spherical_del2p(f,p)
        elseif (lprecession) then
           call precession(df,p)
         else
@@ -2639,16 +2627,6 @@ module Hydro
 !  -2Omega x U = (+c2*u3)
 !                (-c2*u2+s2*u1)
 !
-      if (lcoriolis_force) then 
-        c2= 2*Omega*costh(m)
-        s2=-2*Omega*sinth(m)
-        f(l1:l2,m,n,idel2p_anelastic)=f(l1:l2,m,n,idel2p_anelastic)-& 
-          s2*p%uu(:,3)*p%rho(:)
-        f(l1:l2,m,n,idel2p_anelastic+1)=f(l1:l2,m,n,idel2p_anelastic+1)+&
-          c2*p%uu(:,3)*p%rho(:)
-        f(l1:l2,m,n,idel2p_anelastic+2)=f(l1:l2,m,n,idel2p_anelastic+2)-& 
-          c2*p%uu(:,2)*p%rho(:)+s2*p%uu(:,1)*p%rho(:)
-      endif
 !
 !  Centrifugal force
 !
@@ -2730,20 +2708,7 @@ module Hydro
          call fatal_error("coriolis_cylindrical:","not coded if the angular velocity is at an angle to the z axis. ")
       endif
 !
-!  -2 Omega x u
 !    
-      if (lcoriolis_force) then 
-        c2=2*Omega
-        f(l1:l2,m,n,idel2p_anelastic)=f(l1:l2,m,n,idel2p_anelastic)+c2*p%uu(:,2)*p%rho(:)
-        f(l1:l2,m,n,idel2p_anelastic)=f(l1:l2,m,n,idel2p_anelastic)-c2*p%uu(:,1)*p%rho(:)
-      endif
-!
-!  Centrifugal force
-!
-      if (lcentrifugal_force) &
-          f(l1:l2,m,n,idel2p_anelastic)=f(l1:l2,m,n,idel2p_anelastic)+x(l1:l2)*Omega**2
-!
-!  Note, there is no z-component
 !
     endsubroutine coriolis_cylindrical_del2p
 !***********************************************************************

@@ -41,6 +41,7 @@ module Poisson
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ny,nz) :: phi
 !
+      call keep_compiler_quiet(f)
       call keep_compiler_quiet(phi)
       call keep_compiler_quiet(f)
 !

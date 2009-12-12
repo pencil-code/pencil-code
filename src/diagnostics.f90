@@ -18,7 +18,7 @@ module Diagnostics
   private
 !
   public :: initialize_prints, prints
-  public :: diagnostic, initialize_time_integrals
+  public :: diagnostic, initialize_time_integrals,get_average_density
   public :: xyaverages_z, xzaverages_y, yzaverages_x
   public :: phizaverages_r, yaverages_xz, zaverages_xy
   public :: phiaverages_rz
@@ -27,6 +27,7 @@ module Diagnostics
   public :: expand_cname, parse_name, fparse_name, save_name, save_name_halfz
   public :: max_name, sum_name
   public :: max_mn_name, sum_mn_name, integrate_mn_name, sum_weighted_name
+  public :: integrate_mn
   public :: sum_mn_name_halfy, surf_mn_name, sum_lim_mn_name
   public :: sum_mn_name_halfz
   public :: xysum_mn_name_z, xzsum_mn_name_y, yzsum_mn_name_x
@@ -187,6 +188,24 @@ module Diagnostics
 !
     endsubroutine prints
 !***********************************************************************
+    subroutine get_average_density(mass_per_proc,average_density)
+!
+!  Finalize calculation of diagnostic quantities (0-D).
+!
+!   1-dec-09/dhruba+piyali:  aped from diagnostic
+!
+      real :: mass_per_proc,mass,average_density
+!
+!  Communicate over all processors.
+!
+      call mpireduce_sum(mass_per_proc,mass,1)
+!
+!  The result is present everywhere
+!
+       average_density=mass/box_volume
+!
+    endsubroutine get_average_density
+!**********************************************************************
     subroutine diagnostic
 !
 !  Finalize calculation of diagnostic quantities (0-D).
@@ -293,7 +312,7 @@ module Diagnostics
             if (itype_name(iname)==ilabel_max_reciprocal) &
                 fname(iname)=1./fmax(imax_count)
 !
-          elseif (itype_name(iname)>0) then ! sum
+          elseif (itype_name(iname)>0) then 
             isum_count=isum_count+1
 !
             if (itype_name(iname)==ilabel_sum)            &
@@ -1306,6 +1325,36 @@ module Diagnostics
       itype_name(iname)=ilabel_surf
 !
     endsubroutine surf_mn_name
+!***********************************************************************
+    subroutine integrate_mn(a,inta)
+!
+!  Successively calculate sum of a, which is supplied at each call.
+!  Start from zero if lfirstpoint=.true. ultimately multiply by dv
+!  to get the integral.  This differs from sum_mn_name by the
+!  setting of ilabel_integrate and hence in the behaviour in the final
+!  step.
+!
+!  Note, for regular integration (uniform meshes) it is better
+!  to use the usual sum_mn_name routine with lint=.true.
+!
+!   1-dec-09/dhruba+piyali: 
+!
+      real, dimension (nx) :: a,fac
+      real :: inta
+!
+!  initialize by the volume element (which is different for different m and n)
+!
+      fac=dVol1(l1:l2)*dVol2(m)*dVol3(n)
+!
+!  initialize if one is on the first point, or add up otherwise
+!
+      if (lfirstpoint) then
+        inta=sum(a*fac)
+      else
+        inta=inta+sum(a*fac)
+      endif
+!
+    endsubroutine integrate_mn
 !***********************************************************************
     subroutine integrate_mn_name(a,iname)
 !

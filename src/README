@@ -64,4 +64,9 @@ if one wants the velocity field to be affected by the magnetic field.
 
        6-sep-09: status is currently unclear. It may be redundant.
 
+The anelastic branch
+--------------------
+
+This is currently the anelastic branch. The developments on this branch
+should be merged into the main trunk by December 15 or 16.
 

@@ -1,0 +1,15 @@
+Directory:
+    ${PENCIL_HOME}/samples/1d-tests/sod_10
+SVN Id:
+    $Id: README 10936 2009-05-25 04:47:00Z ajohan@strw.leidenuniv.nl $
+Maintainer:
+    Axel Brandenburg <brandenb/nordita[dot]dk>
+Added:
+    09-Oct-2002
+Status:
+    has been working in this form since 26-Feb-2006
+Recommended resolution:
+    400 meshpoints in -3.7 < x < 6.3, with nu=0.02 and ,chi=5e-4
+Comments:
+    Comments can start on this line,
+    and continue later, as long as they are indented.

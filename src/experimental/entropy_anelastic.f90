@@ -30,7 +30,7 @@ module Entropy
 !
   implicit none
 !
-  include 'entropy.h'
+  include '../entropy.h'
 !
   real :: radius_ss=0.1,ampl_ss=0.,widthss=2*epsi,epsilon_ss=0.
   real :: luminosity=0.,wheat=0.1,cool=0.,rcool=0.,wcool=0.1
@@ -62,7 +62,7 @@ module Entropy
   real :: tauheat_buffer=0.,TTheat_buffer=0.,zheat_buffer=0.,dheat_buffer1=0.
   real :: heat_uniform=0.,cool_RTV=0.
   real :: deltaT_poleq=0.,beta_hand=1.,r_bcz=0.
-  real :: tau_cool=0.0, TTref_cool=0.0
+  real :: tau_cool=0.0, TTref_cool=0.0, tau_cool2=0.0
   real :: cs0hs=0.0,H0hs=0.0,rho0hs=0.0
   real :: chit_aniso=0.0,xbot=0.0
   integer, parameter :: nheatc_max=4
@@ -203,6 +203,7 @@ module Entropy
   integer :: idiag_uxTTmz=0     ! DIAG_DOC:
   integer :: idiag_uyTTmz=0     ! DIAG_DOC:
   integer :: idiag_uzTTmz=0     ! DIAG_DOC:
+  integer :: idiag_uxTTmxy=0    ! DIAG_DOC:
   integer :: idiag_ssmxy=0      ! DIAG_DOC: $\left< s \right>_{z}$
   integer :: idiag_ssmxz=0      ! DIAG_DOC: $\left< s \right>_{y}$
 
@@ -228,12 +229,14 @@ module Entropy
 !  identify version number
 !
       if (lroot) call svn_id( &
-          "$Id: entropy.f90 11900 2009-10-13 23:02:31Z boris.dintrans $")
+          "$Id: entropy_anelastic.f90 11900 2009-10-13 23:02:31Z dhruba.mitra $")
 !
 !  Get the shared variable lpressuregradient_gas from Hydro module.
 !
-      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)     
-      if (ierr/=0) call fatal_error('register_entropy','there was a problem getting lpressuregradient_gas')
+      call get_shared_variable('lpressuregradient_gas',&
+               lpressuregradient_gas,ierr)     
+      if (ierr/=0) call fatal_error('register_entropy',& 
+       'there was a problem getting lpressuregradient_gas')
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -276,7 +279,12 @@ module Entropy
         if (pretend_lnTT) then
           call select_eos_variable('lnTT',iss)
         else
-          call select_eos_variable('ss',iss)
+          if (gamma_m1.eq.0.) then
+            call fatal_error('initialize_entropy',& 
+                 'Use experimental/noentropy for isothermal case')
+          else
+            call select_eos_variable('ss',iss)
+          endif
         endif
 !ajwm      endif
 !
@@ -2012,57 +2020,293 @@ module Entropy
 !***********************************************************************
     subroutine calc_pencils_entropy(f,p)
 !
-! Do nothing 
-! DM+PC
-
+!  Calculate all entropy pencils except the pressure gradient
+!  08-dec-2009/piyali:adapted 
       use EquationOfState, only: gamma,gamma_m1,cs20,lnrho0,profz_eos
-!
+      use Sub
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+! ss
+      if (lpencil(i_ss)) p%ss=f(l1:l2,m,n,iss)
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
+! Ma2
+      if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
+! ugss
+      if (lpencil(i_ugss)) &
+          call u_dot_grad(f,iss,p%gss,p%uu,p%ugss,UPWIND=lupw_ss)
+! for pretend_lnTT
+      if (lpencil(i_uglnTT)) &
+          call u_dot_grad(f,iss,p%glnTT,p%uu,p%uglnTT,UPWIND=lupw_ss)
 !    
     endsubroutine calc_pencils_entropy
 !**********************************************************************
     subroutine dss_dt(f,df,p)
-! Do nothing
+!
+!  Calculate right hand side of entropy equation,
+!  ds/dt = -u.grads + [H-C + div(K*gradT) + mu0*eta*J^2 + ...]
+!
+!   08-dec-09/piyali: adapted from entropy.f90
+      use Diagnostics
+      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, gamma_inv, cs0
+      use Special, only: special_calc_entropy
+      use Sub
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
+      real, dimension (nx) :: Hmax
+      real :: ztop,xi,profile_cor,uT,fradz,TTtop
       integer :: j,ju
 !
-      intent(in) :: f,p
+      intent(inout)  :: f,p
       intent(out) :: df
 !
-
-      call keep_compiler_quiet(f)
+      Hmax = 0.
 !
-
+!  Identify module and boundary conditions.
+!
+      if (headtt.or.ldebug) print*,'dss_dt: SOLVE dss_dt'
+      if (headtt) call identify_bcs('ss',iss)
+      if (headtt) print*,'dss_dt: lnTT,cs2,cp1=', p%lnTT(1), p%cs2(1), p%cp1(1)
+!
+!  ``cs2/dx^2'' for timestep
+!
+      if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
+      if (headtt.or.ldebug) print*,'dss_dt: max(advec_cs2) =',maxval(advec_cs2)
+!
+!  Velocity damping in the coronal heating zone
+!
+        if (tau_cor>0) then
+          ztop=xyz0(3)+Lxyz(3)
+          if (z(n)>=z_cor) then
+            xi=(z(n)-z_cor)/(ztop-z_cor)
+            profile_cor=xi**2*(3-2*xi)
+            df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - &
+                profile_cor*f(l1:l2,m,n,iux:iuz)/tau_cor
+          endif
+        endif
+!
+!
+!  Advection of entropy.
+!  If pretend_lnTT=.true., we pretend that ss is actually lnTT
+!  Otherwise, in the regular case with entropy, s is the dimensional
+!  specific entropy, i.e. it is not divided by cp.
+!  NOTE: in the entropy module is it lnTT that is advanced, so
+!  there are additional cv1 terms on the right hand side.
+!
+      if (ladvection_entropy) then
+         if (pretend_lnTT) then
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%divu*gamma_m1-p%uglnTT
+         else
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%ugss
+         endif
+      endif
+!
+!  Calculate viscous contribution to entropy
+!
+      if (lviscosity .and. lviscosity_heat) call calc_viscous_heat(f,df,p,Hmax)
+!
+!  Entry possibility for "personal" entries.
+!  In that case you'd need to provide your own "special" routine.
+!
+      if (lspecial) call special_calc_entropy(f,df,p)
+!
+!  Thermal conduction delegated to different subroutines.
+!
+      if (lheatc_Kprof)    call calc_heatcond(f,df,p)
+      if (lheatc_Kconst)   call calc_heatcond_constK(df,p)
+      if (lheatc_chiconst) call calc_heatcond_constchi(df,p)
+      if (lheatc_shock)    call calc_heatcond_shock(df,p)
+      if (lheatc_hyper3ss) call calc_heatcond_hyper3(df,p)
+      if (lheatc_spitzer)  call calc_heatcond_spitzer(df,p)
+      if (lheatc_hubeny)   call calc_heatcond_hubeny(df,p)
+      if (lheatc_corona) then
+        call calc_heatcond_spitzer(df,p)
+        call newton_cool(df,p)
+        call calc_heat_cool_RTV(df,p)
+      endif
+      if (lheatc_tensordiffusion) call calc_heatcond_tensor(df,p)
+      if (lheatc_hyper3ss_polar) call calc_heatcond_hyper3_polar(f,df)
+      if (lheatc_hyper3ss_aniso) call calc_heatcond_hyper3_aniso(f,df)
+!
+!  Explicit heating/cooling terms.
+!
+      if ((luminosity/=0.0) .or. (cool/=0.0) .or. &
+          (tau_cor/=0.0) .or. (tauheat_buffer/=0.0) .or. &
+          (heat_uniform/=0.0) .or. (tau_cool/=0.0) .or. &
+          (cool_ext/=0.0 .and. cool_int/=0.0) .or. lturbulent_heat .or. &
+          (tau_cool2 /=0)) &
+          call calc_heat_cool(df,p,Hmax)
+      if (tdown/=0.0) call newton_cool(df,p)
+      if (cool_RTV/=0.0) call calc_heat_cool_RTV(df,p)
+!
+!  Interstellar radiative cooling and UV heating.
+!
+      if (linterstellar) call calc_heat_cool_interstellar(f,df,p,Hmax)
+!
+!  Possibility of entropy relaxation in exterior region.
+!
+      if (tau_ss_exterior/=0.) call calc_tau_ss_exterior(df,p)
+!
+!  Apply border profile
+!
+      if (lborder_profiles) call set_border_entropy(f,df,p)
+!
+!  Phi-averages
+!
+      if (l2davgfirst) then
+        if (idiag_ssmphi/=0)  call phisum_mn_name_rz(p%ss,idiag_ssmphi)
+        if (idiag_cs2mphi/=0) call phisum_mn_name_rz(p%cs2,idiag_cs2mphi)
+      endif
+!
+!  Enforce maximum heating rate timestep constraint
+!
+!      if (lfirst.and.ldt) dt1_max=max(dt1_max,Hmax/ee/cdts)
+!
+!  Calculate entropy related diagnostics.
+!
+      if (ldiagnos) then
+        !uT=unit_temperature !(define shorthand to avoid long lines below)
+        uT=1. !(AB: for the time being; to keep compatible with auto-test
+        if (idiag_TTmax/=0)  call max_mn_name(p%TT*uT,idiag_TTmax)
+        if (idiag_TTmin/=0)  call max_mn_name(-p%TT*uT,idiag_TTmin,lneg=.true.)
+        if (idiag_TTm/=0)    call sum_mn_name(p%TT*uT,idiag_TTm)
+        if (idiag_pdivum/=0) call sum_mn_name(p%pp*p%divu,idiag_pdivum)
+        if (idiag_yHmax/=0)  call max_mn_name(p%yH,idiag_yHmax)
+        if (idiag_yHm/=0)    call sum_mn_name(p%yH,idiag_yHm)
+        if (idiag_dtc/=0) &
+            call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
+        if (idiag_ethm/=0)    call sum_mn_name(p%rho*p%ee,idiag_ethm)
+        if (idiag_ethtot/=0) call integrate_mn_name(p%rho*p%ee,idiag_ethtot)
+        if (idiag_ethdivum/=0) &
+            call sum_mn_name(p%rho*p%ee*p%divu,idiag_ethdivum)
+        if (idiag_ssm/=0) call sum_mn_name(p%ss,idiag_ssm)
+        if (idiag_ss2m/=0) call sum_mn_name(p%ss**2,idiag_ss2m)
+        if (idiag_eem/=0) call sum_mn_name(p%ee,idiag_eem)
+        if (idiag_ppm/=0) call sum_mn_name(p%pp,idiag_ppm)
+        if (idiag_csm/=0) call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
+        if (idiag_ugradpm/=0) &
+            call sum_mn_name(p%cs2*(p%uglnrho+p%ugss),idiag_ugradpm)
+        if (idiag_fconvm/=0) &
+            call sum_mn_name(p%rho*p%uu(:,3)*p%TT,idiag_fconvm)
+!
+!  radiative heat flux at the bottom (assume here that hcond=hcond0=const)
+!
+        if (idiag_fradbot/=0) then
+          if (ipz==0       .and.n==n1) then
+            fradz=sum(-hcond0*p%TT*p%glnTT(:,3)*dsurfxy)
+          else
+            fradz=0.
+          endif
+          call surf_mn_name(fradz,idiag_fradbot)
+        endif
+!
+!  radiative heat flux at the top (assume here that hcond=hcond0=const)
+!
+        if (idiag_fradtop/=0) then
+          if (ipz==nprocz-1.and.n==n2) then
+            fradz=sum(-hcond0*p%TT*p%glnTT(:,3)*dsurfxy)
+          else
+            fradz=0.
+          endif
+          call surf_mn_name(fradz,idiag_fradtop)
+        endif
+!
+!  mean temperature at the top
+!
+        if (idiag_TTtop/=0) then
+          if (ipz==nprocz-1.and.n==n2) then
+            TTtop=sum(p%TT*dsurfxy)
+          else
+            TTtop=0.
+          endif
+          call surf_mn_name(TTtop,idiag_TTtop)
+        endif
+!
+!  calculate integrated temperature in in limited radial range
+!
+        if (idiag_TTp/=0) call sum_lim_mn_name(p%rho*p%cs2*gamma_inv,idiag_TTp,p)
+      endif
+!
+!  1-D averages.
+!
+      if (l1ddiagnos) then
+        if (idiag_fradz/=0) call xysum_mn_name_z(-hcond0*p%TT*p%glnTT(:,3),idiag_fradz)
+        if (idiag_fconvz/=0) &
+            call xysum_mn_name_z(p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
+        if (idiag_ssmz/=0)  call xysum_mn_name_z(p%ss,idiag_ssmz)
+        if (idiag_ssmy/=0)  call xzsum_mn_name_y(p%ss,idiag_ssmy)
+        if (idiag_ssmx/=0)  call yzsum_mn_name_x(p%ss,idiag_ssmx)
+        if (idiag_TTmx/=0)  call yzsum_mn_name_x(p%TT,idiag_TTmx)
+        if (idiag_TTmy/=0)  call xzsum_mn_name_y(p%TT,idiag_TTmy)
+        if (idiag_TTmz/=0)  call xysum_mn_name_z(p%TT,idiag_TTmz)
+        if (idiag_ssmr/=0)  call phizsum_mn_name_r(p%ss,idiag_ssmr)
+        if (idiag_TTmr/=0)  call phizsum_mn_name_r(p%TT,idiag_TTmr)
+        if (idiag_uxTTmz/=0) &
+            call xysum_mn_name_z(p%uu(:,1)*p%TT,idiag_uxTTmz)
+        if (idiag_uyTTmz/=0) &
+            call xysum_mn_name_z(p%uu(:,2)*p%TT,idiag_uyTTmz)
+        if (idiag_uzTTmz/=0) &
+            call xysum_mn_name_z(p%uu(:,3)*p%TT,idiag_uzTTmz)
+      endif
+!
+!  2-D averages.
+!
+      if (l2davgfirst) then
+        if (idiag_TTmxy/=0) call zsum_mn_name_xy(p%TT,idiag_TTmxy)
+        if (idiag_TTmxz/=0) call ysum_mn_name_xz(p%TT,idiag_TTmxz)
+        if (idiag_ssmxy/=0) call zsum_mn_name_xy(p%ss,idiag_ssmxy)
+        if (idiag_ssmxz/=0) call ysum_mn_name_xz(p%ss,idiag_ssmxz)
+        if (idiag_uxTTmxy/=0) call zsum_mn_name_xy(p%uu(:,1)*p%TT,idiag_uxTTmxy)
+      endif
+!
     endsubroutine dss_dt
 !***********************************************************************
     subroutine calc_pencils_entropy_after_mn(f,p)
+!  Calculate Entropy pencils.
 !
-! At present does nothing, but this needs to change
-! DM+PC
-
+!  02-dec-09/piyali: adapted from calc_pencils_entropy
+!
       use EquationOfState, only: gamma,gamma_m1,cs20,lnrho0,profz_eos
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
+      integer :: j
+!
+      intent(in) :: f
+      intent(inout) :: p
+! Ma2
+      if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
+! fpres (=pressure gradient force)
+      if (lpencil(i_fpres)) then
+        do j=1,3
+          if (llocal_iso) then
+            p%fpres(:,j)=-p%cs2*(p%glnrho(:,j)+p%glnTT(:,j))
+          elseif (ldensity_anelastic) then
+            p%fpres(:,j)=-p%gpp(:,j)/exp(p%lnrho)
+          endif
+          if (profz_eos(n)/=1.0) p%fpres(:,j)=profz_eos(n)*p%fpres(:,j)
+        enddo
+      endif
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
-!    
-
+!
     
     endsubroutine calc_pencils_entropy_after_mn
 !**********************************************************************
     subroutine dss_dt_after_mn(f,df,p)
-! At present does nothing, but this needs to change later. 
+! Added dss_dt from noentropy to dss_dt_after_mn
 ! DM+PC
-
+!
+!  Calculate pressure gradient term for isothermal/polytropic equation
+!  of state in the anelastic case.
+!
+      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled
+      use Diagnostics
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -2071,6 +2315,42 @@ module Entropy
 !
       intent(in) :: f,p
       intent(out) :: df
+!
+!  ``cs2/dx^2'' for timestep
+!
+      if (leos.and.ldensity) then ! no sound waves without equation of state
+        if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
+        if (headtt.or.ldebug) print*,'dss_dt: max(advec_cs2) =',maxval(advec_cs2)
+      endif
+!
+!  Add isothermal/polytropic pressure term in momentum equation
+!
+      if (lhydro .and. lpressuregradient_gas) then
+        do j=1,3
+          ju=j+iuu-1
+          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)+p%fpres(:,j)
+        enddo
+!
+!  Add pressure force from global density gradient.
+!
+        if (maxval(abs(beta_glnrho_global))/=0.0) then
+          if (headtt) print*, 'dss_dt: adding global pressure gradient force'
+          do j=1,3
+            df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) &
+                - p%cs2*beta_glnrho_scaled(j)
+          enddo
+        endif
+     endif
+!
+!  Calculate entropy related diagnostics
+!
+      if (ldiagnos) then
+        if (idiag_dtc/=0) &
+            call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
+        if (idiag_ugradpm/=0) &
+            call sum_mn_name(p%rho*p%cs2*p%uglnrho,idiag_ugradpm)
+        if (idiag_ethm/=0) call sum_mn_name(p%rho*p%ee,idiag_ethm)
+      endif
 !
 
       call keep_compiler_quiet(f)
@@ -3339,28 +3619,6 @@ module Entropy
           if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,iss)
           slices%ready=.true.
 !
-!  Pressure.
-!
-        case ('pp')
-          do m=m1,m2; do n=n1,n2
-            call eoscalc(ilnrho_ss,f(ix_loc,m,n,ilnrho),f(ix_loc,m,n,iss),pp=tmpval)
-            slices%yz(m-m1+1,n-n1+1)=tmpval
-          enddo; enddo
-          do l=l1,l2; do n=n1,n2
-            call eoscalc(ilnrho_ss,f(l,iy_loc,n,ilnrho),f(l,iy_loc,n,iss),pp=tmpval)
-            slices%xz(l-l1+1,n-n1+1)=tmpval
-          enddo; enddo
-          do l=l1,l2; do m=m1,m2
-            call eoscalc(ilnrho_ss,f(l,m,iz_loc,ilnrho),f(l,m,iz_loc,iss),pp=tmpval)
-            slices%xy(l-l1+1,m-m1+1)=tmpval
-            call eoscalc(ilnrho_ss,f(l,m,iz2_loc,ilnrho),f(l,m,iz2_loc,iss),pp=tmpval)
-            slices%xy2(l-l1+1,m-m1+1)=tmpval
-            call eoscalc(ilnrho_ss,f(l,m,iz3_loc,ilnrho),f(l,m,iz3_loc,iss),pp=tmpval)
-            slices%xy3(l-l1+1,m-m1+1)=tmpval
-            call eoscalc(ilnrho_ss,f(l,m,iz4_loc,ilnrho),f(l,m,iz4_loc,iss),pp=tmpval)
-            slices%xy4(l-l1+1,m-m1+1)=tmpval
-          enddo; enddo
-          slices%ready=.true.
 !
       endselect
 !   

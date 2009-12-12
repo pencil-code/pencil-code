@@ -5,11 +5,12 @@
   public :: eoscalc,pressure_gradient,temperature_gradient,get_cp1
   public :: temperature_laplacian,get_ptlaw
   public :: ilnrho_ss, ilnrho_lnTT, ilnrho_pp, ilnrho_ee, ilnrho_TT
-  public :: ipp_ss
+  public :: ipp_ss,ipp_lnTT
   public :: eosperturb
   public :: get_soundspeed
   public :: getmu
   public :: getdensity
+  public :: get_average_pressure
                                                                                                        
   public :: register_eos
   public :: initialize_eos, units_eos

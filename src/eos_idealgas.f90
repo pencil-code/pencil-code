@@ -40,9 +40,8 @@ module EquationOfState
   integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3
   integer, parameter :: ilnrho_lnTT=4,ilnrho_cs2=5
   integer, parameter :: irho_cs2=6, irho_ss=7, irho_lnTT=8, ilnrho_TT=9
-  integer, parameter :: irho_TT=10, ipp_ss=11
+  integer, parameter :: irho_TT=10, ipp_ss=11,ipp_lnTT=12
 ! DM+PC
-!  integer, parameter :: ipp_ss=11
 !
   integer :: iglobal_cs2, iglobal_glnTT
 
@@ -60,7 +59,7 @@ module EquationOfState
   real :: xHe=0.
   real :: mu=1.
 
-  real :: cs0=1., rho0=1.
+  real :: cs0=1., rho0=1.,pp0=1.
   real :: cs20=1., lnrho0=0.
   real :: ptlaw=0.
   real :: gamma=5./3.
@@ -68,6 +67,7 @@ module EquationOfState
   real :: gamma_m1    !(=gamma-1)
   real :: gamma_inv   !(=1/gamma)
   real :: cp=impossible, cp1=impossible, cv=impossible, cv1=impossible
+  real :: pres_corr
   real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=1., cs2top=1.
   real :: cs2cool=0.
@@ -92,7 +92,7 @@ module EquationOfState
   ! run parameters
   namelist /eos_run_pars/  xHe, mu, cp, cs0, rho0, gamma, error_cp, ptlaw, &
     cs2top_ini, dcs2top_ini, &
-    ieos_profile, width_eos_prof
+    ieos_profile, width_eos_prof,pres_corr
 
   contains
 
@@ -208,12 +208,14 @@ module EquationOfState
       else
         lnTT0=log(cs20/cp)  !(isothermal/polytropic cases: check!)
       endif
+!DM+PC
+      pp0=Rgas*exp(lnTT0)*rho0
 !
 !  check that everything is OK
 !
       if (lroot) then
         print*,'initialize_eos: unit_temperature=',unit_temperature
-        print*,'initialize_eos: cp,lnTT0,cs0=',cp,lnTT0,cs0
+        print*,'initialize_eos: cp,lnTT0,cs0, pp0=',cp,lnTT0,cs0,pp0
       endif
 !
 !  calculate profile functions (used as prefactors to turn off pressure
@@ -323,6 +325,7 @@ module EquationOfState
           endif
       elseif (variable=='pp') then
           this_var=ieosvar_pp
+!          leos_isothermal=.true.
           if (findex.lt.0) then
             leos_isobaric=.true.
           endif
@@ -371,14 +374,18 @@ module EquationOfState
           if (lroot) print*,"select_eos_variable: Using rho and TT"
           ieosvars=irho_TT
 ! DM+PC
-!        case (ieosvar_pp+ieosvar_ss)
-!          if (lroot) print*,"select_eos_variable: Using pp and ss"
-!          ieosvars=ipp_ss
+        case (ieosvar_pp+ieosvar_ss)
+          if (lroot) print*,"select_eos_variable: Using pp and ss"
+          ieosvars=ipp_ss
+        case (ieosvar_pp+ieosvar_lnTT)
+          if (lroot) print*,"select_eos_variable: Using pp and lnTT"
+          ieosvars=ipp_lnTT
         case default
           if (lroot) print*,"select_eos_variable: Thermodynamic variable combination, ieosvar_selected= ",ieosvar_selected
           call fatal_error("select_eos_variable", &
              "This thermodynamic variable combination is not implemented: ")
       endselect
+
 !
     endsubroutine select_eos_variable
 !***********************************************************************
@@ -594,7 +601,48 @@ module EquationOfState
           lpencil_in(i_glnTT)=.true.
           lpencil_in(i_TT1)=.true.
         endif
-!
+!DM+PC
+      case(ipp_ss)
+        if (leos_isentropic) then
+           call fatal_error('eos_isentropic', 'isentropic case not yet coded')
+        elseif (leos_isothermal) then
+          if (lpencil_in(i_lnrho)) then 
+            lpencil_in(i_pp)=.true.
+            lpencil_in(i_TT)=.true.
+          endif
+          if (lpencil_in(i_rho)) lpencil_in(i_lnrho)=.true. 
+        else
+          if (lpencil_in(i_cs2)) then 
+            lpencil_in(i_rho)=.true. 
+            lpencil_in(i_pp)=.true. 
+          endif
+          if (lpencil_in(i_TT1)) lpencil_in(i_TT)=.true. 
+          if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true. 
+          if (lpencil_in(i_lnTT)) lpencil_in(i_lnrho)=.true. 
+          if (lpencil_in(i_rho)) lpencil_in(i_lnrho)=.true. 
+          if (lpencil_in(i_lnrho)) then
+            lpencil_in(i_pp)=.true. 
+            lpencil_in(i_ss)=.true.
+          endif
+        endif
+!        
+
+      case (ipp_lnTT)
+        if (leos_isentropic) then
+           call fatal_error('eos_isentropic', 'isentropic case not yet coded')
+        elseif (leos_isothermal) then
+          if (lpencil_in(i_rho)) lpencil_in(i_lnrho)=.true. 
+          if (lpencil_in(i_cs2)) then 
+            lpencil_in(i_rho)=.true. 
+          endif
+        else
+          if (lpencil_in(i_rho)) lpencil_in(i_lnrho)=.true. 
+          if (lpencil_in(i_cs2)) then 
+            lpencil_in(i_rho)=.true. 
+          endif
+          if (lpencil_in(i_TT1)) lpencil_in(i_TT)=.true. 
+          if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true. 
+        endif
       case default
         call fatal_error("pencil_interdep_eos","case not implemented yet")
       endselect
@@ -617,7 +665,7 @@ module EquationOfState
       intent(in) :: f
       intent(inout) :: p
       real, dimension(nx) :: grhogrho,d2rho,tmp
-      integer :: i
+      integer :: i,ix
 !
 !  Convert del2lnrho to rho-only terms; done here to avoid
 !  repeated calls to dot2
@@ -789,6 +837,66 @@ module EquationOfState
           if (lpencil(i_pp)) p%pp=p%rho*p%cs2
         else
           call fatal_error("calc_pencils_eos","Full equation of state not implemented for ilnrho_cs2")
+        endif
+
+!
+!  work out thermodynamic quantities for given pp and ss (anelastic case)
+! DM+PC
+      case (ipp_ss)
+        if (ldensity_anelastic) then
+          p%pp=f(l1:l2,m,n,ipp)
+        else
+          call fatal_error("calc_pencils_eos","for input pair (pp,ss) anelastic must be used")
+        endif
+        if (leos_isentropic) then
+          call fatal_error("calc_pencils_eos","isentropic not implemented for (pp,ss) ")
+          if (lpencil(i_ss)) p%ss=0.0d0
+          if (lpencil(i_lnrho)) p%lnrho=log(p%pp/pp0)/gamma
+          if (lpencil(i_rho)) p%rho=exp(log(p%pp/pp0)/gamma)
+          if (lpencil(i_TT)) p%TT=(p%pp/pp0)**(1.-gamma_inv)
+          if (lpencil(i_lnTT)) p%lnTT=(1.-gamma_inv)*log(p%pp/pp0)
+          if (lpencil(i_cs2)) p%cs2=cs20*(p%pp/pp0)**(1.-gamma_inv)
+        elseif (leos_isothermal) then
+          if (lpencil(i_lnrho)) p%lnrho=log(gamma*p%pp/(cs20*rho0))-p%lnTT
+          if (lpencil(i_rho)) p%rho=exp(p%lnrho)
+          if (lpencil(i_cs2)) p%cs2=cs20
+          if (lpencil(i_lnTT)) p%lnTT=lnTT0
+          if (lpencil(i_glnTT)) p%glnTT=0
+          if (lpencil(i_hlnTT)) p%hlnTT=0
+          if (lpencil(i_del2lnTT)) p%del2lnTT=0
+        elseif (leos_localisothermal) then
+          call fatal_error("calc_pencils_eos","Local Isothermal case not implemented for ipp_ss")
+        else
+          if (lpencil(i_lnrho)) p%lnrho=log(gamma*p%pp/(cs20*rho0))/gamma-p%ss*cp1
+          if (lpencil(i_rho)) p%rho=exp(p%lnrho)
+          if (lpencil(i_ss)) p%ss=f(l1:l2,m,n,iss)
+          if (lpencil(i_lnTT)) p%lnTT=gamma_m1*p%lnrho-log(Rgas)+p%ss*cp1
+          if (lpencil(i_TT)) p%TT=exp(p%lnTT)
+          if (lpencil(i_TT1)) p%TT1=1./p%TT
+          if (lpencil(i_cs2))  p%cs2=gamma*p%pp/p%rho
+          if (lpencil(i_glnTT)) p%glnTT=gamma_m1*p%glnrho+cv1*p%gss
+          if (lpencil(i_del2lnTT)) then
+              p%del2lnTT=(gamma_m1-1.)*p%del2lnrho+cv1*p%del2ss
+          endif
+        endif
+!
+       case (ipp_lnTT)
+        if (ldensity_anelastic) then
+          p%pp=f(l1:l2,m,n,ipp)
+        else
+          call fatal_error("calc_pencils_eos","for input pair (pp,lnTT) anelastic must be used")
+        endif
+        if (leos_isentropic) then
+          call fatal_error("calc_pencils_eos","isentropic not implemented for (pp,lnTT) ")
+        elseif (leos_isothermal) then
+          if (lpencil(i_lnTT)) p%lnTT=lnTT0
+          if (lpencil(i_lnrho)) p%lnrho=log(gamma*p%pp/(cs20*rho0))-p%lnTT
+          if (lpencil(i_cs2)) p%cs2=cs20
+          if (lpencil(i_glnTT)) p%glnTT=0
+          if (lpencil(i_hlnTT)) p%hlnTT=0
+          if (lpencil(i_del2lnTT)) p%del2lnTT=0
+        elseif (leos_localisothermal) then
+          call fatal_error("calc_pencils_eos","Local Isothermal case not implemented for ipp_lnTT")
         endif
 !
 !  internal energy
@@ -1278,7 +1386,8 @@ module EquationOfState
       real, intent(out), optional :: ee,pp,cs2
       real :: lnrho_,ss_,lnTT_,ee_,pp_,cs2_,TT_
 !
-      if (gamma_m1==0.) call fatal_error('eoscalc_point','gamma=1 not allowed w/entropy')
+      if (gamma_m1==0.and..not.ldensity_anelastic) call fatal_error &
+        ('eoscalc_point','gamma=1 not allowed w/entropy')
 !
       select case (ivars)
 
@@ -1330,6 +1439,13 @@ module EquationOfState
         pp_=ee_*var1*gamma_m1
         cs2_=cp*gamma_m1*TT_
 
+      case (ipp_lnTT)
+        if (leos_isothermal) then
+        pp_=var1
+        lnrho_=pp_*Rgas*exp(lnTT0)
+        TT_=exp(lnTT0)
+        endif
+        
       case default
         call not_implemented('eoscalc_point')
       end select
@@ -1420,7 +1536,13 @@ module EquationOfState
         ee_=cv*TT_
         pp_=ee_*var1*gamma_m1
         cs2_=cp*gamma_m1*TT_
-
+!DM+PC
+      case (ipp_ss)
+        pp_=var1
+        ss_=var2
+        lnrho_=log(pp)/gamma-ss/cp
+        TT_=pp_/((gamma_m1)*cv*exp(lnrho_))
+        cs2_=cp*gamma_m1*TT_
       case default
         call not_implemented('eoscalc_point')
       end select
@@ -1691,6 +1813,21 @@ module EquationOfState
       endselect
 !
     endsubroutine bc_ss_flux_orig
+!***********************************************************************
+    subroutine get_average_pressure(average_density,& 
+               init_average_density,average_pressure)
+!   01-dec-2009/piyali+dhruba: coded
+      use Cdata
+!      
+      real,intent(in):: average_density,init_average_density
+      real,intent(inout):: average_pressure
+      if (leos_isothermal) then
+        average_pressure = average_density*Rgas*exp(lnTT0)
+      else
+        average_pressure = average_pressure+((average_density/& 
+                           init_average_density)**gamma-1.0)*pp0*pres_corr
+      endif  
+    endsubroutine get_average_pressure
 !***********************************************************************
     subroutine bc_ss_flux_tmp(f,topbot)
 !

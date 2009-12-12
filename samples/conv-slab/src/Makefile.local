@@ -3,7 +3,8 @@
 ### Included by `Makefile'
 ###
 
-MPICOMM   = nompicomm
+LDMPI=-lmpi
+MPICOMM   = mpicomm
 IO        =   io_dist
 
 HYDRO     =   hydro

@@ -72,10 +72,14 @@ module Equ
       logical :: early_finalize
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx) :: phi_rhs_pencil
+      real, dimension (nx,3) :: df_iuu_pencil
       type (pencil_case) :: p
       real, dimension (nx) :: maxadvec,advec2,maxdiffus,maxdiffus2,maxdiffus3
       real, dimension (nx) :: pfreeze,pfreeze_int,pfreeze_ext
-      integer :: iv
+      real :: mass_per_proc,mass, average_density, average_pressure,&
+              init_average_density
+      integer :: i,iv,ix
       integer :: ivar1,ivar2
       intent(inout)  :: f       ! inout due to  lshift_datacube_x,
                                 ! density floor, or velocity ceiling
@@ -209,6 +213,8 @@ module Equ
 !  AND shock calculation
 !
       call boundconds_x(f)
+      if (ldensity_anelastic) call boundconds_x(f,irhs,irhs+2)
+      
 !
 !  Initiate (non-blocking) communication and do boundary conditions.
 !  Required order:
@@ -218,10 +224,30 @@ module Equ
 !
       if (ldebug) print*,'pde: bef. initiate_isendrcv_bdry'
       call initiate_isendrcv_bdry(f)
+      if (ldensity_anelastic) then 
+        call initiate_isendrcv_bdry(f,irhs,irhs+2)
+        call initiate_isendrcv_bdry(f,ipp,ipp)
+        call initiate_isendrcv_bdry(f,ilnrho,ilnrho)
+      endif
       if (early_finalize) then
         call finalize_isendrcv_bdry(f)
+        if (ldensity_anelastic) then
+          call finalize_isendrcv_bdry(f,irhs,irhs+2)
+          call finalize_isendrcv_bdry(f,ipp,ipp)
+          call finalize_isendrcv_bdry(f,ilnrho,ilnrho)
+        endif
         call boundconds_y(f)
+        if (ldensity_anelastic) then
+          call boundconds_y(f,irhs,irhs+2)
+          call boundconds_y(f,ipp,ipp)
+          call boundconds_y(f,ilnrho,ilnrho)
+        endif
         call boundconds_z(f)
+        if (ldensity_anelastic) then
+          call boundconds_z(f,irhs,irhs+2)
+          call boundconds_z(f,ipp,ipp)
+          call boundconds_z(f,ilnrho,ilnrho)
+        endif
       endif
 !
 ! update solid cell "ghost points". This must be done in order to get the
@@ -291,15 +317,26 @@ module Equ
 !
       if (lchemistry .and. ldensity) call calc_for_chem_mixture(f)
 !
-!  do loop over y and z
 !  set indices and check whether communication must now be completed
 !  if test_nonblocking=.true., we communicate immediately as a test.
 !
-  mn_loop: do imn=1,ny*nz
+
+!  do loop over y and z
+!
+
+      mn_loop: do imn=1,ny*nz
         n=nn(imn)
         m=mm(imn)
         lfirstpoint=(imn==1)      ! true for very first m-n loop
         llastpoint=(imn==(ny*nz)) ! true for very last m-n loop
+!
+! store the velocity part of df array in a temporary array 
+!while solving the anelastic case.
+!
+        if (ldensity_anelastic) then 
+          df_iuu_pencil(1:nx,1:3) = df(l1:l2,m,n,iuu:iuu+2)
+          df(l1:l2,m,n,iuu:iuu+2)=0.
+        endif
 !
 !        if (loptimise_ders) der_call_count=0 !DERCOUNT
 !
@@ -307,8 +344,23 @@ module Equ
 !
         if (.not.early_finalize.and.necessary(imn)) then
           call finalize_isendrcv_bdry(f)
+          if (ldensity_anelastic) then
+            call finalize_isendrcv_bdry(f,irhs,irhs+2)
+            call finalize_isendrcv_bdry(f,ipp,ipp)
+            call finalize_isendrcv_bdry(f,ilnrho,ilnrho)
+          endif
           call boundconds_y(f)
+          if (ldensity_anelastic) then
+            call boundconds_y(f,irhs,irhs+2)
+            call boundconds_y(f,ipp,ipp)
+            call boundconds_y(f,ilnrho,ilnrho)
+          endif
           call boundconds_z(f)
+          if (ldensity_anelastic) then 
+            call boundconds_z(f,irhs,irhs+2)
+            call boundconds_z(f,ipp,ipp)
+            call boundconds_z(f,ilnrho,ilnrho)
+          endif
         endif
 !
 !  For each pencil, accumulate through the different modules
@@ -421,7 +473,7 @@ module Equ
 !
                               call calc_pencils_hydro(f,p)
                               call calc_pencils_density(f,p)
-                              call calc_pencils_eos(f,p)
+        if (.not.ldensity_anelastic)  call calc_pencils_eos(f,p)
         if (lshock)           call calc_pencils_shock(f,p)
         if (lchemistry)       call calc_pencils_chemistry(f,p)
         if (lviscosity)       call calc_pencils_viscosity(f,p)
@@ -445,6 +497,8 @@ module Equ
         if (lspecial)         call calc_pencils_special(f,p)
         if (lborder_profiles) call calc_pencils_borderprofiles(f,p)
         if (lparticles)       call particles_calc_pencils(f,p)
+
+
 !
 !  --------------------------------------------------------
 !  NO CALLS MODIFYING PENCIL_CASE PENCILS BEYOND THIS POINT
@@ -720,21 +774,65 @@ module Equ
 !debug      'pde','ONE OR MORE DERIVATIVES HAS BEEN DOUBLE CALLED') !DERCOUNT
 !debug   endif
 !
+! In the anelastic case, put the contribution from previous time back 
+! in df arrayand add to rhs. 
+!
+        if (ldensity_anelastic) then 
+          f(l1:l2,m,n,irhs) = p%rho*df(l1:l2,m,n,iuu)
+          f(l1:l2,m,n,irhs+1) = p%rho*df(l1:l2,m,n,iuu+1)
+          f(l1:l2,m,n,irhs+2) = p%rho*df(l1:l2,m,n,iuu+2)
+          df(l1:l2,m,n,iuu:iuu+2) = df_iuu_pencil(1:nx,1:3) +&
+                                    df(l1:l2,m,n,iuu:iuu+2)
+          call integrate_mn(p%rho,mass_per_proc)
+        endif
+!
 !  end of loops over m and n
 !
         headtt=.false.
       enddo mn_loop
-!DM+PC 
-! calculation related to anelastic approximation should go here. 
-! first set the boundary conditions for f(:,:,:,idel2p:idel2p+2)
-! (needed for divergence calculation)
-! then calculate divergence of  f(:,:,:,idel2p:idelp2p+2)
-! then solve Poisson eqn. 
-! then add contribution from new pressure to density, temperature and entropy etc 
 !
-      call calc_pencils_density_after_mn(f,p)
-      call calc_pencils_entropy_after_mn(f,p)
-      call dss_dt_after_mn(f,df,p)
+! If we are imposing the anelastic constraint: 
+!
+      if (ldensity_anelastic) then
+! set boundary conditions on f(:,:,:,irhs:irhs+2) here
+! Find the divergence of rhs.
+      div_rhs_loop: do imn=1,ny*nz
+          n=nn(imn)
+          m=mm(imn)
+          lfirstpoint=(imn==1)      ! true for very first m-n loop
+          llastpoint=(imn==(ny*nz)) ! true for very last m-n loop
+          call div(f,irhs,phi_rhs_pencil)
+          f(l1:l2,m,n,ipp)=phi_rhs_pencil
+      enddo div_rhs_loop
+!
+! get pressure from inverting the Laplacian
+!
+      call inverse_laplacian(f,f(l1:l2,m1:m2,n1:n2,ipp))
+!
+! For periodic boundary conditions the mean pressure now must be
+! added to the pressure we obtained from inverting the Laplacian.
+! For this we need the average density first.  
+!
+      call get_average_density(mass_per_proc,average_density)
+      call get_average_pressure(average_density,& 
+                init_average_density,average_pressure)
+      f(l1:l2,m1:m2,n1:n2,ipp) = f(l1:l2,m1:m2,n1:n2,ipp) + &
+                            average_pressure
+      anelastic_mn_loop: do imn=1,ny*nz
+        n=nn(imn)
+        m=mm(imn)
+        lfirstpoint=(imn==1)      ! true for very first m-n loop
+        llastpoint=(imn==(ny*nz)) ! true for very last m-n loop
+! Calculate the fpres pencil
+        call calc_pencils_entropy_after_mn(f,p)
+! Add it to df(:,:,:,iuu)
+        call dss_dt_after_mn(f,df,p)
+! Update the pressure pencil by f(:,:,:,ipp) calculated by Poisson Eq.
+        call calc_pencils_eos(f,p)
+        f(l1:l2,m,n,ilnrho)=p%lnrho
+      enddo anelastic_mn_loop
+! anelastic parts ends 
+    endif
 !
 !  Integrate diagnostics related to solid cells (e.g. drag and lift).
 ! 

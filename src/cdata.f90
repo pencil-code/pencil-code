@@ -186,7 +186,7 @@ module Cdata
 !
   integer :: nvar,naux,naux_com
   integer :: ilnrho=0, irho=0
-  integer :: idel2p_anelastic=0
+  integer :: ipp=0,irhs=0
   integer :: iuu=0,iux=0,iuy=0,iuz=0,iss=0
   integer :: iox=0,ioy=0,ioz=0
   integer :: iuut=0,iuxt=0,iuyt=0,iuzt=0,ioot=0,ioxt=0,ioyt=0,iozt=0

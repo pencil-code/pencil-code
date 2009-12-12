@@ -37,7 +37,7 @@ module EquationOfState
   end interface
 ! integers specifying which independent variables to use in eoscalc
   integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3,ilnrho_lnTT=4
-  integer, parameter :: ilnrho_TT=9, ipp_ss=11
+  integer, parameter :: ilnrho_TT=9, ipp_ss=11,ipp_lnTT=12
 !
   real :: cp=impossible, cp1=impossible
 !
@@ -565,6 +565,18 @@ module EquationOfState
 !
     endsubroutine isothermal_lnrho_ss
 !***********************************************************************
+     subroutine get_average_pressure(average_density,&
+                init_average_density,average_pressure)
+!   01-dec-2009/piyali+dhruba: coded
+      use Cdata
+!      
+      real, intent(in):: average_density,init_average_density
+      real, intent(out):: average_pressure
+      call keep_compiler_quiet(average_density)
+      call keep_compiler_quiet(average_pressure)
+    endsubroutine get_average_pressure
+!***********************************************************************
+
     subroutine bc_ss_flux(f,topbot)
 !
 !  constant flux boundary condition for entropy (called when bcz='c1')
