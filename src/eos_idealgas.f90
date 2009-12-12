@@ -665,7 +665,7 @@ module EquationOfState
       intent(in) :: f
       intent(inout) :: p
       real, dimension(nx) :: grhogrho,d2rho,tmp
-      integer :: i,ix
+      integer :: i
 !
 !  Convert del2lnrho to rho-only terms; done here to avoid
 !  repeated calls to dot2
