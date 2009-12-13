@@ -895,6 +895,9 @@ module Density
         case('compressive-shwave')
 !  Should be consistent with density 
           f(:,:,:,ilnrho) = log(rho_const + f(:,:,:,ilnrho))
+        case('anelastic')
+          f(:,:,:,ilnrho) = 0.
+          f(:,:,:,ipp) = exp(f(:,:,:,ilnrho))*cs20
 !
         case default
 !

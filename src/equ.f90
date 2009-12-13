@@ -474,7 +474,7 @@ module Equ
 !
                               call calc_pencils_hydro(f,p)
                               call calc_pencils_density(f,p)
-        if (.not.ldensity_anelastic)  call calc_pencils_eos(f,p)
+                              call calc_pencils_eos(f,p)
         if (lshock)           call calc_pencils_shock(f,p)
         if (lchemistry)       call calc_pencils_chemistry(f,p)
         if (lviscosity)       call calc_pencils_viscosity(f,p)
@@ -819,6 +819,8 @@ module Equ
 !        average_pressure=cs20*average_density
         f(l1:l2,m1:m2,n1:n2,ipp) = f(l1:l2,m1:m2,n1:n2,ipp) + &
                     average_pressure
+!  Refresh the f-array with the new density
+        f(l1:l2,m1:m2,n1:n2,ilnrho)=log(f(l1:l2,m1:m2,n1:n2,ipp)/cs20)
 !  Update the boundary conditions for the new pressure (needed to
 !  compute grad(P)
         call initiate_isendrcv_bdry(f,ipp)
@@ -827,19 +829,12 @@ module Equ
 !
         do n=n1,n2
         do m=m1,m2
-! Update the pressure pencil by f(:,:,:,ipp) calculated by Poisson Eq.
-          call calc_pencils_eos(f,p)
-          f(l1:l2,m,n,ilnrho)=p%lnrho
-! Add the pressure gradient term to the NS equation
+!  Add the pressure gradient term to the NS equation
           call grad(f,ipp,gpp)
           do j=1,3
             ju=j+iuu-1
             df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-gpp(:,j)/p%rho
           enddo
-! Calculate the fpres pencil
-!         call calc_pencils_entropy_after_mn(f,p)
-! Add it to df(:,:,:,iuu)
-!         call dss_dt_after_mn(f,df,p)
         enddo
         enddo
 ! anelastic parts ends 
