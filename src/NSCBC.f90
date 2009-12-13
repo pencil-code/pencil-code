@@ -483,7 +483,7 @@ include 'NSCBC.h'
       endif
       if (.not. ltemperature_nolog .and. ilnTT>0) then
         do i=1,3
-          grad_T(:,:,i)=grad_T(:,:,i)*TT(m1:m2,n1:n2)
+          grad_T(:,:,i)=grad_T(:,:,i)*TT
         enddo
       endif
 !
@@ -491,7 +491,7 @@ include 'NSCBC.h'
 !
       if (ilnTT>0) then 
         do i=1,3
-!          grad_P(:,:,i)=grad_rho(:,:,i)*TT(m1:m2,n1:n2)
+!          grad_P(:,:,i)=grad_rho(:,:,i)*TT
         enddo
       else
         do i=1,3
