@@ -835,10 +835,9 @@ module EquationOfState
         else
           call fatal_error("calc_pencils_eos","Full equation of state not implemented for ilnrho_cs2")
         endif
-
 !
 !  work out thermodynamic quantities for given pp and ss (anelastic case)
-! DM+PC
+!
       case (ipp_ss)
         if (ldensity_anelastic) then
           p%pp=f(l1:l2,m,n,ipp)

@@ -168,7 +168,7 @@ module EquationOfState
 !  Calculate Entropy pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
-!  02-04-06/tony: coded
+!  02-apr-06/tony: coded
 !
       use Sub
 !
@@ -178,10 +178,16 @@ module EquationOfState
       intent(in) :: f
       intent(inout) :: p
 !
+!  set default values
+!
       if (lpencil(i_cp1)) p%cp1=0.
+      if (lpencil(i_rho)) p%rho=rho0
+      if (lpencil(i_lnrho)) p%lnrho=log(rho0)
+      if (lpencil(i_cs2)) p%cs2=cs20
+!
+!  result doesn't depend of f, so keep compiler quiet
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_eos
 !***********************************************************************

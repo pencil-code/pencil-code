@@ -476,7 +476,7 @@ module Hydro
 !
 ! Check any module dependencies
 !
-      if (.not. leos) then
+      if (.not. leos .and..not.ldensity_anelastic) then
         call stop_it('initialize_hydro: EOS=noeos but hydro requires an EQUATION OF STATE for the fluid')
       endif
 
@@ -986,17 +986,20 @@ module Hydro
               f(l,m,n,iuy)=+ampluu(j)*x(l)
             endif
           enddo; enddo; enddo
-
+!
+!  compressive (non-vortical) shear wave of Johnson & Gammie (2005a)
+!
         case('compressive-shwave')
-! compressive (non-vortical) shear wave of Johnson & Gammie (2005a)
-          call coswave_phase(f,iux,ampl_ux(j),kx_uu,ky_uu,kz_uu,phase_ux(j))
-          call coswave_phase(f,iuy,ampl_uy(j),kx_uu,ky_uu,kz_uu,phase_uy(j))
-          eta_sigma = (2. - qshear)*Omega
-          do n=n1,n2; do m=m1,m2
-            f(l1:l2,m,n,ilnrho) = -kx_uu*ampl_uy(j)*eta_sigma* & 
-                (cos(kx_uu*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n)) + &
-                sin(kx_uu*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n)))
-          enddo; enddo
+          if (ldensity.or.ldensity_anelastic) then
+            call coswave_phase(f,iux,ampl_ux(j),kx_uu,ky_uu,kz_uu,phase_ux(j))
+            call coswave_phase(f,iuy,ampl_uy(j),kx_uu,ky_uu,kz_uu,phase_uy(j))
+            eta_sigma = (2. - qshear)*Omega
+            do n=n1,n2; do m=m1,m2
+              f(l1:l2,m,n,ilnrho) = -kx_uu*ampl_uy(j)*eta_sigma* & 
+                  (cos(kx_uu*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n)) + &
+                  sin(kx_uu*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n)))
+            enddo; enddo
+          endif
 
         case('incompressive-shwave')
 ! incompressible shear wave of Johnson & Gammine (2005a)
@@ -1507,7 +1510,7 @@ module Hydro
       endif
       if (headtt.or.ldebug) print*,'duu_dt: max(advec_uu) =',maxval(advec_uu)
 !
-!  Eckmann Friction, used only in two dimensional runs.
+!  Ekman Friction, used only in two dimensional runs.
 !
      if (eckmann_friction/=0) &
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-eckmann_friction*p%uu
