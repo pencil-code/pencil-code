@@ -10,12 +10,14 @@
   gamma=1.
 /
 &hydro_init_pars
-  inituu='sound-wave',ampluu=1.0e-1
+  inituu='sinwave-ux-kx',ampluu=.01
 /
 &density_init_pars
-  initlnrho='anelastic'
+  initlnrho='-ln(1+u2/2cs02)'
 /
 &poisson_init_pars
 /
 &entropy_init_pars
+/
+&viscosity_init_pars
 /
