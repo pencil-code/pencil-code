@@ -91,7 +91,11 @@ module Entropy
         call select_eos_variable('cs2',-2) !special local isothermal
       else
         if (gamma_m1 == 0.) then
-          call select_eos_variable('cs2',-1) !isothermal => polytropic
+          if (ldensity_anelastic) then
+            call select_eos_variable('lnTT',-1) !isothermal => polytropic
+          else
+            call select_eos_variable('cs2',-1) !isothermal => polytropic
+          endif
         else
           call select_eos_variable('ss',-1) !isentropic => polytropic
         endif
