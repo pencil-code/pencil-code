@@ -2427,9 +2427,9 @@ module Density
     real :: init_average_density
     intent(in):: f
       do m=m1,m2; do n=n1,n2
-            call integrate_mn(exp(f(l1:l2,m,n,ilnrho)),mass_per_proc)
+            call integrate_mn(exp(f(l1:l2,m,n,ilnrho)),mass_per_proc(1))
       enddo;      enddo
-      call get_average_density(mass_per_proc,init_average_density)
+      call get_average_density(mass_per_proc(1),init_average_density)
 !
 !
     endsubroutine get_init_average_density
