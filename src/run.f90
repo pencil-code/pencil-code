@@ -53,11 +53,10 @@ program run
   use Dustvelocity,    only: init_uud
   use Entropy,         only: calc_heatcond_ADI
   use Equ,             only: debug_imn_arrays,initialize_pencils
-  use EquationOfState
+  use EquationOfState, only: ioninit,ioncalc
   use FArrayManager,   only: farray_clean_up
   use Filter
-  use Forcing
-  use General
+  use Forcing,         only: forcing_clean_up,addforce
   use Hydro,           only: hydro_clean_up 
   use Interstellar,    only: check_SN
   use IO
@@ -72,10 +71,8 @@ program run
   use Particles_nbody, only: particles_nbody_read_snapshot, &
                              particles_nbody_write_snapshot
   use Pencil_check,    only: pencil_consistency_check
-  use Power_spectrum
   use Register
   use SharedVariables, only: sharedvars_clean_up
-  use Shear
   use Slices
   use Snapshot
   use Sub
@@ -84,7 +81,7 @@ program run
   use TestPerturb,     only: testperturb_begin, testperturb_finalize
   use Signal_handling, only: signal_prepare, emergency_stop
   use Timeavg
-  use Timestep
+  use Timestep,        only: rk_2n
 !
   implicit none
 !
