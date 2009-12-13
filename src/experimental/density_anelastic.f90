@@ -1349,10 +1349,6 @@ module Density
           enddo
         endif
       endif
-! gpp
-     if (lpencil(i_gpp)) then
-        call grad(f,ipp,p%gpp)
-     endif
 ! del2lnrho
       if (lpencil(i_del2lnrho)) then
         if (ldensity_nolog) then
