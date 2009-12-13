@@ -736,7 +736,7 @@ program run
       if (lparticles) then
         write(*,'(A,1pG10.3)') &
            ' Wall clock time/timestep/(meshpoint+particle) [microsec] =', &
-           wall_clock_time/count/(nw+npar)/ncpus/1e-6
+           wall_clock_time/count/(nw+npar/ncpus)/ncpus/1e-6
       else
         write(*,'(A,1pG10.3)') &
            ' Wall clock time/timestep/meshpoint [microsec] =', &
