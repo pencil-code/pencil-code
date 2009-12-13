@@ -1,6 +1,8 @@
 ! $Id$
 !
-!  Dummy routine for ideal gas
+!  Routine for ideal gas with variable degree of ionization and hence
+!  variable mean molecular weight. Here, the ionization fraction, yH,
+!  is allocated as an additional auxiliary array in f.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -262,7 +264,7 @@ module EquationOfState
 !***********************************************************************
     subroutine calc_pencils_eos(f,p)
 !
-!  dummy (but to be changed)
+!  Calculate relevant eos pencils
 !
       use Sub, only: grad,del2,del6,g2ij
 
