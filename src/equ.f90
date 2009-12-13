@@ -789,9 +789,6 @@ module Equ
 !
         headtt=.false.
       enddo mn_loop
-      print*, '   '
-      print*, 't, iproc, mass_per_proc=', t, iproc, mass_per_proc
-      print*, '   '
 !
 !  Set first the boundary conditions on rhs
 !
@@ -812,7 +809,6 @@ module Equ
 !  get pressure from inverting the Laplacian
 !
         call inverse_laplacian(f,f(l1:l2,m1:m2,n1:n2,ipp))
-      print*,'P after inverse_laplacian=',f(l1:l2,m1:m2,n1:n2,ipp)
 !
 !  For periodic boundary conditions the mean pressure now must be
 !  added to the pressure we obtained from inverting the Laplacian.
