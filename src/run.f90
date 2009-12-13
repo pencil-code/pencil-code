@@ -45,20 +45,19 @@
 !***********************************************************************
 program run
 !
-  use Boundcond
+  use Boundcond,       only: update_ghosts
   use Cdata
   use Chemistry,       only: chemistry_clean_up
   use Diagnostics
   use Dustdensity,     only: init_nd
   use Dustvelocity,    only: init_uud
   use Entropy,         only: calc_heatcond_ADI
-  use Equ
+  use Equ,             only: debug_imn_arrays,initialize_pencils
   use EquationOfState
   use FArrayManager,   only: farray_clean_up
   use Filter
   use Forcing
   use General
-  use Gravity
   use Hydro,           only: hydro_clean_up 
   use Interstellar,    only: check_SN
   use IO
@@ -740,7 +739,7 @@ program run
       if (lparticles) then
         write(*,'(A,1pG10.3)') &
            ' Wall clock time/timestep/(meshpoint+particle) [microsec] =', &
-           wall_clock_time/count/(nw+npar/ncpus)/ncpus/1e-6
+           wall_clock_time/count/(nw+npar)/ncpus/1e-6
       else
         write(*,'(A,1pG10.3)') &
            ' Wall clock time/timestep/meshpoint [microsec] =', &
