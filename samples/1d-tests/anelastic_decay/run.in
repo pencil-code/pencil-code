@@ -19,5 +19,5 @@
 &entropy_run_pars
 /
 &viscosity_run_pars
-  nu=0.2,ivisc='nu-const'
+  nu=0.
 /

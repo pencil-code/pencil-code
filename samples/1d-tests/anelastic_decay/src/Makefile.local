@@ -6,7 +6,7 @@
 MPICOMM  = nompicomm
 GRAVITY  = nogravity
 FORCING  = noforcing
-ENTROPY  =   experimental/noentropy
+ENTROPY  = noentropy
 MAGNETIC = nomagnetic
 HYDRO    =   hydro
 DENSITY  =   experimental/density_anelastic
