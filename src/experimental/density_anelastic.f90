@@ -2332,6 +2332,12 @@ module Density
         call parse_name(iname,cname(iname),cform(iname),'divrhoum',idiag_divrhoum)
         call parse_name(iname,cname(iname),cform(iname),'divrhourms',idiag_divrhourms)
         call parse_name(iname,cname(iname),cform(iname),'divrhoumax',idiag_divrhoumax)
+!
+!  alternatively, use these shorter names: drurms and drumax,
+!  instead of divrhourms and divrhoumax
+!
+        call parse_name(iname,cname(iname),cform(iname),'drurms',idiag_divrhourms)
+        call parse_name(iname,cname(iname),cform(iname),'drumax',idiag_divrhoumax)
       enddo
 !
 !  check for those quantities for which we want xy-averages
