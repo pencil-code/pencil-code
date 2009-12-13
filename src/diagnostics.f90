@@ -192,7 +192,7 @@ module Diagnostics
 !
 !  Finalize calculation of diagnostic quantities (0-D).
 !
-!   1-dec-09/dhruba+piyali:  aped from diagnostic
+!   1-dec-09/dhruba+piyali: adapted from diagnostic
 !
       real :: mass_per_proc,mass,average_density
 !

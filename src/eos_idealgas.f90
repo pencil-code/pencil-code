@@ -1816,17 +1816,21 @@ module EquationOfState
 !***********************************************************************
     subroutine get_average_pressure(average_density,& 
                init_average_density,average_pressure)
+!
 !   01-dec-2009/piyali+dhruba: coded
+!
       use Cdata
 !      
       real,intent(in):: average_density,init_average_density
       real,intent(inout):: average_pressure
+!
       if (leos_isothermal) then
         average_pressure = average_density*Rgas*exp(lnTT0)
       else
         average_pressure = average_pressure+((average_density/& 
                            init_average_density)**gamma-1.0)*pp0*pres_corr
       endif  
+!
     endsubroutine get_average_pressure
 !***********************************************************************
     subroutine bc_ss_flux_tmp(f,topbot)

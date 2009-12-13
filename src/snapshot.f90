@@ -123,6 +123,7 @@ module Snapshot
 ! the vector potential is initialised as junk data. And then
 ! init_aa just adds to it, so junk remains junk. Anyhow
 ! the initialisation to zero cannot do any harm.  
+!
         if (lread_oldsnap_nomag) then
           f(:,:,:,iax:iaz)=0.
           print*,'read old snapshot file (but without magnetic field)'

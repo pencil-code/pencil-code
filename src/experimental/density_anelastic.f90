@@ -888,6 +888,10 @@ module Density
                  cmplx(0,-0.5*Omega/(kx_lnrho(j)*rho0))))
           enddo; enddo
 !
+        case('-ln(1+u2/2cs02)')
+          f(:,:,:,ilnrho) = -alog(1. &
+            +(f(:,:,:,iux)**2+f(:,:,:,iuy)**2+f(:,:,:,iuz)**2)/(2.*cs0**2))
+!
         case('compressive-shwave')
 !  Should be consistent with density 
           f(:,:,:,ilnrho) = log(rho_const + f(:,:,:,ilnrho))

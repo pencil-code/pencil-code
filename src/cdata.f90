@@ -117,7 +117,7 @@ module Cdata
   real :: dsnap=100.,d2davg=100.,dvid=0.,dspec=impossible
   real :: crash_file_dtmin_factor=-1.0
   integer :: isave=100,ialive=0,isaveglobal=0
-  logical :: lwrite_aux=.false., lwrite_dvar=.false.
+  logical :: lread_aux=.false., lwrite_aux=.false., lwrite_dvar=.false.
   logical :: lreinit=.false.
   logical :: lread_oldsnap=.false., lread_oldsnap_nomag=.false.
   logical :: lread_oldsnap_nopscalar=.false.

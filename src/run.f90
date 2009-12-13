@@ -101,7 +101,7 @@ program run
   real :: wall_clock_time=0., time_per_step=0.
   double precision :: time_last_diagnostic, time_this_diagnostic
   integer :: it_last_diagnostic,it_this_diagnostic
-  integer :: i,ivar
+  integer :: i,ivar,mvar_in
   real, allocatable, dimension (:,:,:,:) :: finit
 !
   lrun = .true.
@@ -203,6 +203,14 @@ program run
     mvar_io = mvar
   endif
 !
+! Shall we read also auxilary variables?
+!
+  if (lread_aux) then
+    mvar_in = mvar+maux
+  else
+    mvar_in = mvar
+  endif
+!
 !  Print resolution and dimension of the simulation.
 !
   dimensionality=min(nxgrid-1,1)+min(nygrid-1,1)+min(nzgrid-1,1)
@@ -233,7 +241,7 @@ program run
 !  This directory must exist, but may be linked to another disk.
 !  NOTE: for io_dist, rtime doesn't read the time, only for io_mpio.
 !
-  call rsnap(trim(directory_snap)//'/var.dat',f,mvar)
+  call rsnap(trim(directory_snap)//'/var.dat',f,mvar_in)
   if (lparticles) &
      call particles_read_snapshot(trim(directory_snap)//'/pvar.dat')
   if (lparticles_nbody) &
