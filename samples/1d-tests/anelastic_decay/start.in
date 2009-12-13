@@ -1,6 +1,6 @@
 !  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
 !
-! Initialisation parameters for shock tube problem.
+! Initialisation parameters for the anelastic problem
 !
 &init_pars
   cvsid='$Id: start.in 9840 2008-09-05 07:29:37Z ajohan $'
@@ -13,12 +13,9 @@
   inituu='sound-wave',ampluu=1.0e-1
 /
 &density_init_pars
-  initlnrho='sound-wave', ampllnrho=0.2
+  initlnrho='anelastic'
 /
 &poisson_init_pars
 /
 &entropy_init_pars
-/
-&viscosity_init_pars
-  nu=0.2,ivisc='nu-const'
 /
