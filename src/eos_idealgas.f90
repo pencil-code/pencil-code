@@ -40,7 +40,7 @@ module EquationOfState
   integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3
   integer, parameter :: ilnrho_lnTT=4,ilnrho_cs2=5
   integer, parameter :: irho_cs2=6, irho_ss=7, irho_lnTT=8, ilnrho_TT=9
-  integer, parameter :: irho_TT=10, ipp_ss=11,ipp_lnTT=12
+  integer, parameter :: irho_TT=10, ipp_ss=11,ipp_cs2=12
 ! DM+PC
 !
   integer :: iglobal_cs2, iglobal_glnTT
@@ -377,9 +377,9 @@ module EquationOfState
         case (ieosvar_pp+ieosvar_ss)
           if (lroot) print*,"select_eos_variable: Using pp and ss"
           ieosvars=ipp_ss
-        case (ieosvar_pp+ieosvar_lnTT)
+        case (ieosvar_pp+ieosvar_cs2)
           if (lroot) print*,"select_eos_variable: Using pp and lnTT"
-          ieosvars=ipp_lnTT
+          ieosvars=ipp_cs2
         case default
           if (lroot) print*,"select_eos_variable: Thermodynamic variable combination, ieosvar_selected= ",ieosvar_selected
           call fatal_error("select_eos_variable", &
@@ -627,19 +627,16 @@ module EquationOfState
         endif
 !        
 
-      case (ipp_lnTT)
+      case (ipp_cs2)
         if (leos_isentropic) then
            call fatal_error('eos_isentropic', 'isentropic case not yet coded')
         elseif (leos_isothermal) then
-          if (lpencil_in(i_rho)) lpencil_in(i_lnrho)=.true. 
-          if (lpencil_in(i_cs2)) then 
-            lpencil_in(i_rho)=.true. 
+          if (lpencil_in(i_lnrho)) then 
+            lpencil_in(i_pp)=.true.
           endif
+          if (lpencil_in(i_rho)) lpencil_in(i_lnrho)=.true. 
         else
           if (lpencil_in(i_rho)) lpencil_in(i_lnrho)=.true. 
-          if (lpencil_in(i_cs2)) then 
-            lpencil_in(i_rho)=.true. 
-          endif
           if (lpencil_in(i_TT1)) lpencil_in(i_TT)=.true. 
           if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true. 
         endif
@@ -880,7 +877,7 @@ module EquationOfState
           endif
         endif
 !
-       case (ipp_lnTT)
+       case (ipp_cs2)
         if (ldensity_anelastic) then
           p%pp=f(l1:l2,m,n,ipp)
         else
@@ -889,16 +886,15 @@ module EquationOfState
         if (leos_isentropic) then
           call fatal_error("calc_pencils_eos","isentropic not implemented for (pp,lnTT) ")
         elseif (leos_isothermal) then
-          if (lpencil(i_lnTT)) p%lnTT=lnTT0
-!         if (lpencil(i_lnrho)) p%lnrho=log(gamma*p%pp/(cs20*rho0))-p%lnTT
-          if (lpencil(i_lnrho)) p%lnrho=log(p%pp/cs20)
           if (lpencil(i_cs2)) p%cs2=cs20
+          if (lpencil(i_lnTT)) p%lnTT=lnTT0
+          if (lpencil(i_lnrho)) p%lnrho=log(p%pp/cs20)
           if (lpencil(i_glnTT)) p%glnTT=0
           if (lpencil(i_hlnTT)) p%hlnTT=0
           if (lpencil(i_del2lnTT)) p%del2lnTT=0
           if (lpencil(i_rho)) p%rho=p%pp/cs20
         elseif (leos_localisothermal) then
-          call fatal_error("calc_pencils_eos","Local Isothermal case not implemented for ipp_lnTT")
+          call fatal_error("calc_pencils_eos","Local Isothermal case not implemented for ipp_cs2")
         endif
 !
 !  internal energy
@@ -1441,10 +1437,10 @@ module EquationOfState
         pp_=ee_*var1*gamma_m1
         cs2_=cp*gamma_m1*TT_
 
-      case (ipp_lnTT)
+      case (ipp_cs2)
         if (leos_isothermal) then
         pp_=var1
-        lnrho_=pp_*Rgas*exp(lnTT0)
+        lnrho_=pp_*cs20
         TT_=exp(lnTT0)
         endif
         

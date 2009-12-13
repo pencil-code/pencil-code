@@ -37,7 +37,7 @@ module EquationOfState
   end interface
 ! integers specifying which independent variables to use in eoscalc
   integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3,ilnrho_lnTT=4
-  integer, parameter :: ilnrho_TT=5, ipp_ss=11,ipp_lnTT=12
+  integer, parameter :: ilnrho_TT=5, ipp_ss=11,ipp_cs2=12
 !  secondary parameters calculated in initialize
   real :: mu1_0,Rgas
   real :: TT_ion,lnTT_ion,TT_ion_,lnTT_ion_
