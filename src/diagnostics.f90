@@ -194,15 +194,18 @@ module Diagnostics
 !
 !   1-dec-09/dhruba+piyali: adapted from diagnostic
 !
-      real :: mass_per_proc,mass,average_density
+      real, dimension(1) :: mass_per_proc,mass
+      real:: average_density
 !
 !  Communicate over all processors.
 !
       call mpireduce_sum(mass_per_proc,mass,1)
+
 !
 !  The result is present everywhere
 !
-       average_density=mass/box_volume
+       average_density=mass(1)/box_volume
+      call mpibcast_real(average_density,1)
 !
     endsubroutine get_average_density
 !**********************************************************************

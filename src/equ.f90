@@ -77,7 +77,8 @@ module Equ
       type (pencil_case) :: p
       real, dimension (nx) :: maxadvec,advec2,maxdiffus,maxdiffus2,maxdiffus3
       real, dimension (nx) :: pfreeze,pfreeze_int,pfreeze_ext
-      real :: mass_per_proc, average_density, average_pressure
+      real, dimension(1) :: mass_per_proc
+      real :: average_density, average_pressure
       real :: init_average_density=0.
       integer :: iv
       integer :: ivar1,ivar2
@@ -781,7 +782,7 @@ module Equ
           f(l1:l2,m,n,irhs+2) = p%rho*df(l1:l2,m,n,iuu+2)
           df(l1:l2,m,n,iuu:iuu+2) = df_iuu_pencil(1:nx,1:3) +&
                                     df(l1:l2,m,n,iuu:iuu+2)
-          call integrate_mn(p%rho,mass_per_proc)
+          call integrate_mn(p%rho,mass_per_proc(1))
         endif
 !
 !  end of loops over m and n
@@ -816,11 +817,10 @@ module Equ
 !  For this we need the average density first.  
 !
         call get_average_density(mass_per_proc,average_density)
-!       call get_average_pressure(average_density,& 
-!           init_average_density,average_pressure)
-average_pressure=cs20*average_density
+        call get_average_pressure(average_density,average_pressure)
+!        average_pressure=cs20*average_density
         f(l1:l2,m1:m2,n1:n2,ipp) = f(l1:l2,m1:m2,n1:n2,ipp) + &
-                            average_pressure
+                    average_pressure
 !
         do n=n1,n2
         do m=m1,m2

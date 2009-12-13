@@ -695,7 +695,7 @@ endif
 ##  Piyali's laptop
 ##
 ##FC=/usr/bin/gfortran -I/usr/local/lib #(saveri)
-#FC=/usr/local/bin/mpif90 -I/usr/local/lib/ #(saveri)
+#FC=/usr/local/bin/mpif90 -I/usr/local/include/ #(saveri)
 #F77=$(FC) #(saveri*)
 #CC=gcc #(saveri*)
 #FFLAGS=-O3 #(saveri*)

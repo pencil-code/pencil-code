@@ -1297,12 +1297,11 @@ module EquationOfState
     endsubroutine isothermal_lnrho_ss
 
 !***********************************************************************
-     subroutine get_average_pressure(average_density,&
-                init_average_density,average_pressure)
+     subroutine get_average_pressure(average_density,average_pressure)
 !   01-dec-2009/piyali+dhrube: coded
       use Cdata
 !      
-      real, intent(in):: average_density,init_average_density
+      real, intent(in):: average_density
       real, intent(out):: average_pressure
       call keep_compiler_quiet(average_density)
       call keep_compiler_quiet(average_pressure)

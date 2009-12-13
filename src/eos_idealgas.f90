@@ -1814,21 +1814,21 @@ module EquationOfState
 !
     endsubroutine bc_ss_flux_orig
 !***********************************************************************
-    subroutine get_average_pressure(average_density,& 
-               init_average_density,average_pressure)
+    subroutine get_average_pressure(average_density,average_pressure)
 !
 !   01-dec-2009/piyali+dhruba: coded
 !
       use Cdata
 !      
-      real,intent(in):: average_density,init_average_density
+      real,intent(in):: average_density
       real,intent(inout):: average_pressure
 !
       if (leos_isothermal) then
-        average_pressure = average_density*Rgas*exp(lnTT0)
+        average_pressure = average_density*cs20
       else
-        average_pressure = average_pressure+((average_density/& 
-                           init_average_density)**gamma-1.0)*pp0*pres_corr
+        call fatal_error('get_average_pressure','Non isothermal case no coded yet')
+!        average_pressure = average_pressure+((average_density/& 
+!                           init_average_density)**gamma-1.0)*pp0*pres_corr
       endif  
 !
     endsubroutine get_average_pressure
