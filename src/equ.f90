@@ -73,7 +73,7 @@ module Equ
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: phi_rhs_pencil
-      real, dimension (nx,3) :: df_iuu_pencil
+      real, dimension (nx,3) :: df_iuu_pencil, gpp
       type (pencil_case) :: p
       real, dimension (nx) :: maxadvec,advec2,maxdiffus,maxdiffus2,maxdiffus3
       real, dimension (nx) :: pfreeze,pfreeze_int,pfreeze_ext
@@ -81,7 +81,7 @@ module Equ
       real :: average_density, average_pressure
       real :: init_average_density=0.
       integer :: iv
-      integer :: ivar1,ivar2
+      integer :: ivar1,ivar2,j,ju
       intent(inout)  :: f       ! inout due to  lshift_datacube_x,
                                 ! density floor, or velocity ceiling
       intent(out)    :: df, p
@@ -776,6 +776,9 @@ module Equ
 !  In the anelastic case, put the contribution from previous time back 
 !  in df array and set rhs to this value. 
 !
+        do j=l1,l2
+          write(11,'(2e14.5)') x(j), df(j,m,n,iuu)
+        enddo
         if (ldensity_anelastic) then 
           f(l1:l2,m,n,irhs) = p%rho*df(l1:l2,m,n,iuu)
           f(l1:l2,m,n,irhs+1) = p%rho*df(l1:l2,m,n,iuu+1)
@@ -789,15 +792,16 @@ module Equ
 !
         headtt=.false.
       enddo mn_loop
+      print*, '   '
+      print*, 't, iproc, mass_per_proc=', t, iproc, mass_per_proc
+      print*, '   '
 !
 !  Set first the boundary conditions on rhs
 !
       if (ldensity_anelastic) then
         call initiate_isendrcv_bdry(f,irhs,irhs+2)
         call finalize_isendrcv_bdry(f,irhs,irhs+2)
-        call boundconds_x(f,irhs,irhs+2)
-        call boundconds_y(f,irhs,irhs+2)
-        call boundconds_z(f,irhs,irhs+2)
+        call boundconds(f,irhs,irhs+2)
 !
 !  Find the divergence of rhs
 !
@@ -811,6 +815,7 @@ module Equ
 !  get pressure from inverting the Laplacian
 !
         call inverse_laplacian(f,f(l1:l2,m1:m2,n1:n2,ipp))
+      print*,'P after inverse_laplacian=',f(l1:l2,m1:m2,n1:n2,ipp)
 !
 !  For periodic boundary conditions the mean pressure now must be
 !  added to the pressure we obtained from inverting the Laplacian.
@@ -821,16 +826,27 @@ module Equ
 !        average_pressure=cs20*average_density
         f(l1:l2,m1:m2,n1:n2,ipp) = f(l1:l2,m1:m2,n1:n2,ipp) + &
                     average_pressure
+!  Update the boundary conditions for the new pressure (needed to
+!  compute grad(P)
+        call initiate_isendrcv_bdry(f,ipp)
+        call finalize_isendrcv_bdry(f,ipp)
+        call boundconds(f,ipp,ipp)
 !
         do n=n1,n2
         do m=m1,m2
-! Calculate the fpres pencil
-          call calc_pencils_entropy_after_mn(f,p)
-! Add it to df(:,:,:,iuu)
-          call dss_dt_after_mn(f,df,p)
 ! Update the pressure pencil by f(:,:,:,ipp) calculated by Poisson Eq.
           call calc_pencils_eos(f,p)
           f(l1:l2,m,n,ilnrho)=p%lnrho
+! Add the pressure gradient term to the NS equation
+          call grad(f,ipp,gpp)
+          do j=1,3
+            ju=j+iuu-1
+            df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-gpp(:,j)/p%rho
+          enddo
+! Calculate the fpres pencil
+!         call calc_pencils_entropy_after_mn(f,p)
+! Add it to df(:,:,:,iuu)
+!         call dss_dt_after_mn(f,df,p)
         enddo
         enddo
 ! anelastic parts ends 

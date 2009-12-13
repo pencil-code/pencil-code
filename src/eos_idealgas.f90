@@ -890,11 +890,13 @@ module EquationOfState
           call fatal_error("calc_pencils_eos","isentropic not implemented for (pp,lnTT) ")
         elseif (leos_isothermal) then
           if (lpencil(i_lnTT)) p%lnTT=lnTT0
-          if (lpencil(i_lnrho)) p%lnrho=log(gamma*p%pp/(cs20*rho0))-p%lnTT
+!         if (lpencil(i_lnrho)) p%lnrho=log(gamma*p%pp/(cs20*rho0))-p%lnTT
+          if (lpencil(i_lnrho)) p%lnrho=log(p%pp/cs20)
           if (lpencil(i_cs2)) p%cs2=cs20
           if (lpencil(i_glnTT)) p%glnTT=0
           if (lpencil(i_hlnTT)) p%hlnTT=0
           if (lpencil(i_del2lnTT)) p%del2lnTT=0
+          if (lpencil(i_rho)) p%rho=p%pp/cs20
         elseif (leos_localisothermal) then
           call fatal_error("calc_pencils_eos","Local Isothermal case not implemented for ipp_lnTT")
         endif
