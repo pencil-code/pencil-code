@@ -776,9 +776,6 @@ module Equ
 !  In the anelastic case, put the contribution from previous time back 
 !  in df array and set rhs to this value. 
 !
-        do j=l1,l2
-          write(11,'(2e14.5)') x(j), df(j,m,n,iuu)
-        enddo
         if (ldensity_anelastic) then 
           f(l1:l2,m,n,irhs) = p%rho*df(l1:l2,m,n,iuu)
           f(l1:l2,m,n,irhs+1) = p%rho*df(l1:l2,m,n,iuu+1)
