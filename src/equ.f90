@@ -729,10 +729,14 @@ module Equ
           dt1_diffus = maxdiffus/cdtv + maxdiffus2/cdtv2 + maxdiffus3/cdtv3
           dt1_max    = max(dt1_max,sqrt(dt1_advec**2+dt1_diffus**2))
 !
+!  time step constraint from speed of chemical reactions
+!
           if (lchemistry) then
             dt1_reac = reac_chem/cdtc
             dt1_max = max(dt1_max,dt1_reac)
           endif
+!
+!  Diagnostics showing how close to advective and diffusive time steps we are
 !
           if (ldiagnos.and.idiag_dtv/=0) then
             call max_mn_name(maxadvec/cdt,idiag_dtv,l_dt=.true.)

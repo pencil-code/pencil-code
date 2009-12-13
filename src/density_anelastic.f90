@@ -888,6 +888,8 @@ module Density
                  cmplx(0,-0.5*Omega/(kx_lnrho(j)*rho0))))
           enddo; enddo
 !
+!  initial condition for 1-D anelastic problems
+!
         case('-ln(1+u2/2cs02)')
           f(:,:,:,ilnrho) = -alog(1. &
             +(f(:,:,:,iux)**2+f(:,:,:,iuy)**2+f(:,:,:,iuz)**2)/(2.*cs0**2))
@@ -897,7 +899,6 @@ module Density
           f(:,:,:,ilnrho) = log(rho_const + f(:,:,:,ilnrho))
         case('anelastic')
           f(:,:,:,ilnrho) = 0.
-          f(:,:,:,ipp) = exp(f(:,:,:,ilnrho))*cs20
 !
         case default
 !
@@ -908,6 +909,11 @@ module Density
           call fatal_error('init_lnrho',errormsg)
  
         endselect
+!
+!  if the ipp f-array exists (e.g. in anelastic problems), set it
+!  (for now corresponding to an isothermal eos)
+!
+        if (ipp/=0) f(:,:,:,ipp) = exp(f(:,:,:,ilnrho))*cs20
 !
         if (lroot) print*,'init_lnrho: initlnrho('//trim(iinit_str)//') = ', &
             trim(initlnrho(j))
