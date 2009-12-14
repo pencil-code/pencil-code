@@ -151,9 +151,13 @@ module Particles_map
             inearblock(k)=iblocku
           else
             print*, 'map_nearest_grid: particle does not belong to any '// &
-                 'adopted block'
+                'adopted block'
             print*, 'map_nearest_grid: it, itsub, iproc, ipar=', &
-                 it, itsub, iproc, ipar(k)
+                it, itsub, iproc, ipar(k)
+            print*, 'map_nearest_grid: ipx0, ipy0, ipz0, iproc0=', &
+                ipx0, ipy0, ipz0, ipx0+ipy0*nprocx+ipz0*nprocx*nprocy
+            print*, 'map_nearest_grid: ipx , ipy , ipz , iproc =', &
+                ipx, ipy, ipz, iproc
             call fatal_error_local('map_nearest_grid','')
           endif
         endif
