@@ -962,26 +962,27 @@ module Particles_mpicomm
 !
             if (lmigration_real_check) then
               do k=npar_loc+1,npar_loc+nmig_enter(i)
-                if (nxgrid/=1) then
-                  if (fp(k,ixp)< procx_bounds(ipx)   .or. &
-                      fp(k,ixp)>=procx_bounds(ipx+1) .or. &
-                      fp(k,iyp)< procy_bounds(ipy)   .or. &
-                      fp(k,iyp)>=procy_bounds(ipy+1) .or. &
-                      fp(k,izp)< procz_bounds(ipz)   .or. &
-                      fp(k,izp)>=procz_bounds(ipz+1)) then
-                    print*, 'migrate_particles: received particle '// &
-                        'closer to ghost point than to physical grid point!'
-                    print*, 'migrate_particles: iproc, iproc_rec, it, itsub=', &
-                        iproc, i, it, itsub
-                    print*, 'migrate_particles: ipar, xxp=', &
-                        ipar(k), fp(k,ixp:izp)
-                    print*, 'migrate_particles: x0_mig, x1_mig=', &
-                        procx_bounds(ipx), procx_bounds(ipx+1)
-                    print*, 'migrate_particles: y0_mig, y1_mig=', &
-                        procy_bounds(ipy), procy_bounds(ipy+1)
-                    print*, 'migrate_particles: z0_mig, z1_mig=', &
-                        procz_bounds(ipz), procz_bounds(ipz+1)
-                  endif
+                if ((nxgrid/=1.and.( &
+                    fp(k,ixp)< procx_bounds(ipx)     .or. &
+                    fp(k,ixp)>=procx_bounds(ipx+1))) .or. &
+                    (nygrid/=1.and.( &
+                    fp(k,iyp)< procy_bounds(ipy)     .or. &
+                    fp(k,iyp)>=procy_bounds(ipy+1))) .or. &
+                    (nzgrid/=1.and.( &
+                    fp(k,izp)< procz_bounds(ipz)     .or. &
+                    fp(k,izp)>=procz_bounds(ipz+1)))) then
+                  print*, 'migrate_particles: received particle '// &
+                      'closer to ghost point than to physical grid point!'
+                  print*, 'migrate_particles: iproc, iproc_rec, it, itsub=', &
+                      iproc, i, it, itsub
+                  print*, 'migrate_particles: ipar, xxp=', &
+                      ipar(k), fp(k,ixp:izp)
+                  print*, 'migrate_particles: x0_mig, x1_mig=', &
+                      procx_bounds(ipx), procx_bounds(ipx+1)
+                  print*, 'migrate_particles: y0_mig, y1_mig=', &
+                      procy_bounds(ipy), procy_bounds(ipy+1)
+                  print*, 'migrate_particles: z0_mig, z1_mig=', &
+                      procz_bounds(ipz), procz_bounds(ipz+1)
                 endif
               enddo
             endif
