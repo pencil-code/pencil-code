@@ -1,9 +1,9 @@
 !  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
 !
-! Runtime parameters for shock tube problem.
+! Runtime parameters for the anelastic approximation
 !
 &run_pars
-  cvsid='$Id: run.in 9840 2008-09-05 07:29:37Z ajohan $'
+  cvsid='$Id$',
   nt=201, it1=5, itorder=3
   dsnap=20.0, dvid=0.2
   lpencil_check=F

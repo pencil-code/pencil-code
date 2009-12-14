@@ -3,7 +3,7 @@
 ! Initialisation parameters for the anelastic problem
 !
 &init_pars
-  cvsid='$Id: start.in 9840 2008-09-05 07:29:37Z ajohan $'
+  cvsid='$Id$'
   lwrite_aux=T
 /
 &eos_init_pars
@@ -16,8 +16,4 @@
   initlnrho='-ln(1+u2/2cs02)'
 /
 &poisson_init_pars
-/
-&entropy_init_pars
-/
-&viscosity_init_pars
 /
