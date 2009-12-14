@@ -378,7 +378,7 @@ module EquationOfState
           if (lroot) print*,"select_eos_variable: Using pp and ss"
           ieosvars=ipp_ss
         case (ieosvar_pp+ieosvar_cs2)
-          if (lroot) print*,"select_eos_variable: Using pp and lnTT"
+          if (lroot) print*,"select_eos_variable: Using pp and cs2"
           ieosvars=ipp_cs2
         case default
           if (lroot) print*,"select_eos_variable: Thermodynamic variable combination, ieosvar_selected= ",ieosvar_selected

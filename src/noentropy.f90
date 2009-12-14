@@ -91,7 +91,7 @@ module Entropy
         call select_eos_variable('cs2',-2) !special local isothermal
       else
         if (gamma_m1 == 0.) then
-            call select_eos_variable('cs2',-1) !isothermal
+          call select_eos_variable('cs2',-1) !isothermal
         else
           call select_eos_variable('ss',-1) !isentropic => polytropic
         endif

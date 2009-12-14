@@ -2440,7 +2440,6 @@ module Density
 !
     endsubroutine get_init_average_density
 !***********************************************************************
-
     subroutine get_slices_density(f,slices)
 !
 !  Write slices for animation of Density variables.
