@@ -19,6 +19,7 @@ module Particles_sub
   public :: wsnap_particles, boundconds_particles
   public :: sum_par_name, max_par_name, sum_par_name_nw, integrate_par_name
   public :: remove_particle, get_particles_interdistance
+  public :: count_particles
 !
   contains
 !***********************************************************************
@@ -813,9 +814,6 @@ module Particles_sub
       write(20) fp(k,:)
       close(20)
 !
-
-print*,'removed particle:',fp(k,:)
-
       if (lroot.and.(ip<=8)) print*,'removed particle ',ipar(k)
 !
 !  Switch the removed particle with the last particle present in the processor
@@ -831,5 +829,18 @@ print*,'removed particle:',fp(k,:)
       npar_loc=npar_loc-1
 !
     endsubroutine remove_particle
+!***********************************************************************
+    subroutine count_particles(ipar,npar_found)
+!
+      use Mpicomm, only: mpireduce_sum_int
+!
+      integer, dimension (mpar_loc) :: ipar
+      integer :: npar_found
+!
+      npar_found=0
+!
+      call mpireduce_sum_int(npar_loc,npar_found)
+!
+    endsubroutine count_particles
 !***********************************************************************
 endmodule Particles_sub
