@@ -114,7 +114,7 @@ module Particles
   integer :: idiag_lpx2m=0, idiag_lpy2m=0, idiag_lpz2m=0
   integer :: idiag_npm=0, idiag_np2m=0, idiag_npmax=0, idiag_npmin=0
   integer :: idiag_rhoptilm=0, idiag_dtdragp=0
-  integer :: idiag_nparmin=0, idiag_nparmax=0
+  integer :: idiag_nparmin=0, idiag_nparmax=0, idiag_npargone=0
   integer :: idiag_rhopm=0, idiag_rhoprms=0, idiag_rhop2m=0, idiag_rhopmax=0
   integer :: idiag_rhopmin=0, idiag_decollp=0, idiag_rhopmphi=0
   integer :: idiag_npmx=0, idiag_npmy=0, idiag_npmz=0
@@ -1209,7 +1209,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       real, dimension(3) :: ggp
       real :: Omega2, np_tilde, rsph, vsph, OO2
-      integer :: k
+      integer :: k, npar_found
       logical :: lheader, lfirstcall=.true.
 !
       intent (in) :: f, fp, ineargrid
@@ -1485,6 +1485,11 @@ k_loop:   do while (.not. (k>npar_loc))
             call integrate_par_name( &
                 (/4/3.*pi*rhops*fp(k,iap)**3*np_tilde/),idiag_mpt)
           enddo
+        endif
+        if (idiag_npargone/=0) then
+          call count_particles(ipar,npar_found)
+          if (idiag_npargone/=0) &
+              call save_name(float(npar-npar_found),idiag_npargone)
         endif
       endif
 !
@@ -2134,6 +2139,7 @@ k_loop:   do while (.not. (k>npar_loc))
         idiag_dvpmax=0; idiag_dvpm=0; idiag_nparbmax=0
         idiag_eccpxm=0; idiag_eccpym=0; idiag_eccpzm=0
         idiag_eccpx2m=0; idiag_eccpy2m=0; idiag_eccpz2m=0
+        idiag_npargone=0
       endif
 !
 !  Run through all possible names that may be listed in print.in.
@@ -2198,6 +2204,8 @@ k_loop:   do while (.not. (k>npar_loc))
             'decollp',idiag_decollp)
         call parse_name(iname,cname(iname),cform(iname), &
             'epotpm',idiag_epotpm)
+        call parse_name(iname,cname(iname),cform(iname), &
+            'npargone',idiag_npargone)
       enddo
 !
 !  Check for those quantities for which we want x-averages.
