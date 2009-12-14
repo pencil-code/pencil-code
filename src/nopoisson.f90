@@ -47,6 +47,21 @@ module Poisson
 !
     endsubroutine inverse_laplacian
 !***********************************************************************
+    subroutine inverse_laplacian_semispectral(f,phi)
+!
+!  Solve the Poisson equation by Fourier transforming on a periodic grid.
+!
+!  15-may-2006/anders+jeff: dummy
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,ny,nz) :: phi
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(phi)
+      call keep_compiler_quiet(f)
+!
+    endsubroutine inverse_laplacian_semispectral
+!***********************************************************************
     subroutine read_poisson_init_pars(unit,iostat)
 !
 !  Read Poisson init parameters.

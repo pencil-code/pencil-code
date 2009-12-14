@@ -914,7 +914,7 @@ module Density
 !  if the ipp f-array exists (e.g. in anelastic problems), set it
 !  (for now corresponding to an isothermal eos)
 !
-        if (ipp/=0) f(:,:,:,ipp) = exp(f(:,:,:,ilnrho))*cs20
+        if (ipp/=0.and.leos) f(:,:,:,ipp) = exp(f(:,:,:,ilnrho))*cs20
 !
         if (lroot) print*,'init_lnrho: initlnrho('//trim(iinit_str)//') = ', &
             trim(initlnrho(j))
