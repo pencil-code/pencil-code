@@ -246,4 +246,19 @@ module Density
 !
     endsubroutine get_init_average_density
 !***********************************************************************
+    subroutine anelastic_after_mn(f, p, df, mass_per_proc)
+!
+!  14-dec-09/dintrans: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension(1) :: mass_per_proc
+      type (pencil_case) :: p
+!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(mass_per_proc)
+!
+    endsubroutine anelastic_after_mn
+!***********************************************************************
 endmodule Density

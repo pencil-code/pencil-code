@@ -899,6 +899,7 @@ module Density
           f(:,:,:,ilnrho) = log(rho_const + f(:,:,:,ilnrho))
         case('anelastic')
           f(:,:,:,ilnrho) = 0.
+          f(:,:,:,ipp) = cs20
 !
         case default
 !
@@ -2526,6 +2527,71 @@ module Density
       endselect
 !
     endsubroutine get_slices_pressure
+!***********************************************************************
+    subroutine anelastic_after_mn(f, p, df, mass_per_proc)
+!
+      use Poisson, only: inverse_laplacian
+      use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry
+      use Boundcond, only: boundconds
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, dimension (nx,3) :: gpp
+      real, dimension (nx) :: phi_rhs_pencil
+      real, dimension(1) :: mass_per_proc
+      real :: average_density, average_pressure
+      integer :: j, ju
+!
+!  Set first the boundary conditions on rhs
+!
+      call initiate_isendrcv_bdry(f,irhs,irhs+2)
+      call finalize_isendrcv_bdry(f,irhs,irhs+2)
+      call boundconds(f,irhs,irhs+2)
+!
+!  Find the divergence of rhs
+!
+      do n=n1,n2
+      do m=m1,m2
+        call div(f,irhs,phi_rhs_pencil)
+        f(l1:l2,m,n,ipp)=phi_rhs_pencil
+      enddo
+      enddo
+!
+!  get pressure from inverting the Laplacian
+!
+      call inverse_laplacian(f,f(l1:l2,m1:m2,n1:n2,ipp))
+!
+!  For periodic boundary conditions the mean pressure now must be
+!  added to the pressure we obtained from inverting the Laplacian.
+!  For this we need the average density first.  
+!
+      call get_average_density(mass_per_proc,average_density)
+      call get_average_pressure(average_density,average_pressure)
+!     average_pressure=cs20*average_density
+      f(l1:l2,m1:m2,n1:n2,ipp) = f(l1:l2,m1:m2,n1:n2,ipp) + &
+                    average_pressure
+!  Refresh the f-array with the new density
+      f(l1:l2,m1:m2,n1:n2,ilnrho)=log(f(l1:l2,m1:m2,n1:n2,ipp)/cs20)
+!  Update the boundary conditions for the new pressure (needed to
+!  compute grad(P)
+      call initiate_isendrcv_bdry(f,ipp)
+      call finalize_isendrcv_bdry(f,ipp)
+      call boundconds(f,ipp,ipp)
+!
+!  Add the pressure gradient term to the NS equation
+!
+      do n=n1,n2
+      do m=m1,m2
+        call grad(f,ipp,gpp)
+        do j=1,3
+          ju=j+iuu-1
+          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-gpp(:,j)/p%rho
+        enddo
+      enddo
+      enddo
+!
+    endsubroutine anelastic_after_mn
 !***********************************************************************
 !
 endmodule Density

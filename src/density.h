@@ -11,4 +11,4 @@
   public :: pencil_criteria_density, pencil_interdep_density
   public :: calc_pencils_density
   public :: glnrhomz,lcalc_glnrhomean,calc_ldensity_pars,lupw_lnrho
-  public :: get_init_average_density
+  public :: get_init_average_density, anelastic_after_mn
