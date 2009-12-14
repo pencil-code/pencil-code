@@ -640,18 +640,7 @@ module EquationOfState
       real, intent(in) :: lnrho,ss
       real, intent(out) :: cs2,cp1tilde
 !
-!  pretend_lnTT
-!
-    if (.not. l_gamma_m1) then
-      if (pretend_lnTT) then
-        cs2=gamma_m1*exp(gamma*cp1*ss)
-      else
-        cs2=cs20*exp(cv1*ss+gamma_m1*(lnrho-lnrho0))
-      endif
-      cp1tilde=cp1
-    else
-     call stop_it('gamma is a pencil now: pressure_gradient_point can not be used for this moment')
-    endif
+      call stop_it(' pressure_gradient_point should never be called')
 !
     endsubroutine pressure_gradient_point
 !***********************************************************************
@@ -663,6 +652,8 @@ module EquationOfState
 !
 !   17-nov-03/tobi: adapted from subroutine eoscalc
 !
+      use Mpicomm, only: stop_it 
+!
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx,3), intent(in) :: glnrho,gss
       real, dimension(nx,3), intent(out) :: glnTT
@@ -670,24 +661,7 @@ module EquationOfState
 
       integer :: i
 !
-      if (gamma_m1==0.) call fatal_error('temperature_gradient', &
-        'gamma=1 not allowed with entropy turned on!')
-!
-!  pretend_lnTT
-!
-      if (pretend_lnTT) then
-        glnTT=gss
-       else
-        if (.not. l_gamma_m1) then
-         glnTT=gamma_m1*glnrho+cv1*gss
-        else
-         do i=1,3 
-       !   glnTT(:,i)=p%gamma_m1(:)*glnrho(:,i)+p%cv1(:)*gss(:,i)
-!AB: set instead to impossible
-glnTT(:,i)=impossible
-         enddo
-        endif
-      endif
+      call stop_it('temperature_gradient should never be called')
 !
       call keep_compiler_quiet(f)
     endsubroutine temperature_gradient
@@ -706,21 +680,9 @@ glnTT(:,i)=impossible
   !    type (pencil_case) :: p
 
 !
-      if (gamma_m1==0.) call fatal_error('temperature_laplacian','gamma=1 not allowed w/entropy')
+      call fatal_error('temperature_laplacian','SHould not be called!')
 !
-!  pretend_lnTT
-!
-      if (pretend_lnTT) then
-        del2lnTT=del2ss
-      else
-        if (.not. l_gamma_m1) then
-         del2lnTT=gamma_m1*del2lnrho+cv1*del2ss
-        else
-   !       del2lnTT=p%gamma_m1*del2lnrho+p%cv1*del2ss
-        endif
-      endif
-!
-      call keep_compiler_quiet(f)
+     call keep_compiler_quiet(f)
     endsubroutine temperature_laplacian
 !***********************************************************************
     subroutine temperature_hessian(f,hlnrho,hss,hlnTT)
