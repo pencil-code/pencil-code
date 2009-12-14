@@ -20,6 +20,11 @@
   public :: bc_nscbc_nref_subout_z
 
   public :: jacobn
+  public :: get_mu1_slicex
+  public :: get_gamma_slice
+  public :: get_cs2_slice
+
+  public :: Rgas
 
 !  public :: get_p_infx
 !  public :: get_p_infy

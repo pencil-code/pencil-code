@@ -838,23 +838,17 @@ module Chemistry
       log_inlet_density=&
           log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
 !
-      do j3=nn1,nn2
-        do j2=mm1,mm2
-          do j1=ll1,ll2
 !
 !  Initialize density
 !
-            f(j1,j2,j3,ilnrho)=log(init_pressure)-log(Rgas)  &
-                -f(j1,j2,j3,ilnTT)-log(mu1_full(j1,j2,j3))
+      f(:,:,:,ilnrho)=log(init_pressure)-log(Rgas)  &
+          -f(:,:,:,ilnTT)-log(mu1_full)
 !
 !  Initialize velocity
 !
-            f(j1,j2,j3,iux)=f(j1,j2,j3,iux)  &
-                +init_ux*exp(log_inlet_density)/exp(f(j1,j2,j3,ilnrho))
+      f(:,:,:,iux)=f(:,:,:,iux)  &
+          +init_ux*exp(log_inlet_density)/exp(f(:,:,:,ilnrho))
 !
-          enddo
-        enddo
-      enddo
 !
 !  Check if we want nolog of density or nolog of temperature
 !
@@ -1448,7 +1442,6 @@ module Chemistry
 !if ((Phi(j1,j2,j3))>1.) print*,(Phi(j1,j2,j3))
 !endif
               enddo
-
               nu_dyn(j1,j2,j3)=nu_dyn(j1,j2,j3)+XX_full(j1,j2,j3,k)*&
                   species_viscosity(j1,j2,j3,k)/tmp_sum2(j1,j2,j3)
              enddo
@@ -4215,11 +4208,8 @@ module Chemistry
           if ((tmp_sum2(j1,j2,j3))<=0.) then
             lambda_full(j1,j2,j3)=0.
           else
-
-
             lambda_full(j1,j2,j3)=0.5*(tmp_sum(j1,j2,j3)+1.&
                 /tmp_sum2(j1,j2,j3))
-           ! lambda_full(j1,j2,j3)=(tmp_sum(j1,j2,j3))
           endif
           if (lambda_const<impossible) then
             lambda_full(j1,j2,j3)=lambda_const
@@ -4357,6 +4347,32 @@ module Chemistry
 !
 
     endsubroutine get_cs2_full
+!***********************************************************************
+   subroutine get_cs2_slice(slice,dir,index)
+!
+! Find a slice of the speed of sound
+!
+! 2009.12.10: Nils Erland L. Haugen (coded)
+!
+      use Mpicomm
+!
+      real, dimension (:,:), intent(out) :: slice
+      integer, intent(in) :: index, dir
+!
+      if (dir==1) then 
+        slice=cp_full(index,:,:)/cv_full(index,:,:)&
+            *mu1_full(index,:,:)*TT_full(index,:,:)*Rgas
+      elseif (dir==2) then 
+        slice=cp_full(:,index,:)/cv_full(:,index,:)&
+            *mu1_full(:,index,:)*TT_full(:,index,:)*Rgas
+      elseif (dir==3) then 
+        slice=cp_full(:,:,index)/cv_full(:,:,index)&
+            *mu1_full(:,:,index)*TT_full(:,:,index)*Rgas
+      else
+        call fatal_error('get_cs2_slice','No such dir!')
+      endif
+!
+    endsubroutine get_cs2_slice
 !*************************************************************
     subroutine get_gamma_full(gamma_full)
 !
@@ -4377,10 +4393,28 @@ module Chemistry
        endif
       enddo
       enddo
-
-
     endsubroutine get_gamma_full
 !*************************************************************
+    subroutine get_gamma_slice(slice,dir,index)
+!
+!  Get a 2D slice of gamma
+!
+!  2009.12.10: Nils Erland L. Haugen (coded)
+!
+      real, dimension (:,:), intent(out)  :: slice
+      integer, intent(in) :: index, dir
+!
+      if (dir==1) then 
+        slice=cp_full(index,:,:)/cv_full(index,:,:)
+      elseif (dir==2) then 
+        slice=cp_full(:,index,:)/cv_full(:,index,:)
+      elseif (dir==3) then 
+        slice=cp_full(:,:,index)/cv_full(:,:,index)
+      else
+        call fatal_error('get_gamma_slice','No such dir!')
+      endif
+      !
+    endsubroutine get_gamma_slice
 !*************************************************************
     subroutine air_field(f)
 !
@@ -4888,8 +4922,6 @@ module Chemistry
        enddo
       endif
 !
-
-
     endsubroutine bc_nscbc_subin_x_new
 !***********************************************************
    subroutine bc_nscbc_subin_x(f,df,topbot,val)
@@ -5022,7 +5054,7 @@ module Chemistry
           df(lll,m1:m2,n1:n2,ilnrho) = &
               -1./rho0(m1:m2,n1:n2)/cs20_ar(m1:m2,n1:n2) &
               *(L_2+0.5*(L_5 + L_1)) !&
-          ! -1./rho0(m1:m2,n1:n2)*dmom2_dy(m1:m2,n1:n2)
+           !-1./rho0(m1:m2,n1:n2)*dmom2_dy(m1:m2,n1:n2)
         endif
 
 !
@@ -5041,8 +5073,6 @@ module Chemistry
    !      f(lll,m1:m2,n1:n2,iux) = u_t
    !     f(lll,m1:m2,n1:n2,ilnTT) = T_t
    !      df(lll,m1:m2,n1:n2,ilnTT)=0.
-
-
     endsubroutine bc_nscbc_subin_x
 !***********************************************************
 !***********************************************************
@@ -5168,7 +5198,6 @@ module Chemistry
 
          Mach_num=maxval(f(lll,m1:m2,n1:n2,iux)/cs0_ar(m1:m2,n1:n2))
          KK=nscbc_sigma_out*(1.-Mach_num*Mach_num)*cs0_ar(m1:m2,n1:n2)/Lxyz(1)
-
       else
         print*,"bc_nscbc_subin_x: leos_idealgas=",leos_idealgas,"."
         print*,"NSCBC subsonic inflos is only implemented "//&
@@ -5249,6 +5278,7 @@ module Chemistry
         grad_rho(:,:,3)=tmp_rho(m1:m2,n1:n2)
         grad_pp(:,:,3)=tmp_pp(m1:m2,n1:n2)
 
+
 !
       select case(topbot)
       case('bot')
@@ -5322,6 +5352,12 @@ module Chemistry
 
 
        endif
+
+
+
+
+
+
 
 !!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -6455,7 +6491,23 @@ module Chemistry
       
     endsubroutine jacobn
 !***********************************************************************
-
+    subroutine get_mu1_slicex(slice,grad_slice,index,sgn)
+!
+! For the NSCBC boudary conditions the slice of mu1 at the boundary
+! is required.
+!
+! 2009.12.10: Nils Erland L. Haugen (coded)
+!
+      use Deriv, only: der_onesided_4_slice_other
+!
+      real, dimension(ny,nz), intent(out)   :: slice
+      real, dimension(ny,nz), intent(out) :: grad_slice
+      integer, intent(in) :: index, sgn
+!
+      slice=mu1_full(index,m1:m2,n1:n2)
+      call der_onesided_4_slice_other(mu1_full,sgn,grad_slice,index,1)
+!
+    end subroutine get_mu1_slicex
 !********************************************************************
   subroutine chemistry_clean_up()
 

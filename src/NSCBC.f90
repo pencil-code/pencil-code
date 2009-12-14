@@ -255,11 +255,11 @@ include 'NSCBC.h'
             if (j==1) then 
               direction = 1
               call bc_nscbc_prf_x(f,df,topbot,.true.,linlet=.true.,&
-                  u_t=valx(direction))
+                  u_t=valx(direction),T_t=valx(ilnTT))
             elseif (j==2) then 
               direction = 2
               call bc_nscbc_prf_y(f,df,topbot,.true.,linlet=.true.,&
-                  u_t=valy(direction))
+                  u_t=valy(direction),T_t=valy(ilnTT))
             elseif (j==3) then 
               direction = 3
               call fatal_error("nscbc_boundtreat_xyz",'bc_nscbc_prf_z is not yet implemented')
@@ -269,11 +269,11 @@ include 'NSCBC.h'
             if (j==1) then 
               direction = 1
               call bc_nscbc_prf_x(f,df,topbot,.false.,linlet=.true.,&
-                  u_t=valx(direction))
+                  u_t=valx(direction),T_t=valx(ilnTT))
             elseif (j==2) then 
               direction = 2
               call bc_nscbc_prf_y(f,df,topbot,.false.,linlet=.true.,&
-                  u_t=valy(direction))
+                  u_t=valy(direction),T_t=valy(ilnTT))
             elseif (j==3) then 
               direction = 3
               call fatal_error("nscbc_boundtreat_xyz",'bc_nscbc_prf_z is not yet implemented')
@@ -305,7 +305,7 @@ include 'NSCBC.h'
 !
     endsubroutine
 !***********************************************************************
-    subroutine bc_nscbc_prf_x(f,df,topbot,non_reflecting_inlet,linlet,u_t)
+    subroutine bc_nscbc_prf_x(f,df,topbot,non_reflecting_inlet,linlet,u_t,T_t)
 !
 !   Calculate du and dlnrho at a partially reflecting outlet/inlet normal to 
 !   x-direction acc. to LODI relations. Uses a one-sided finite diff. stencil.
@@ -324,24 +324,24 @@ include 'NSCBC.h'
       character (len=3) :: topbot
       logical, optional :: linlet
       logical :: llinlet, non_reflecting_inlet
-      real, optional :: u_t
-      real, dimension(ny,nz) :: dlnrho_dx, TT
+      real, optional :: u_t, T_t
+      real, dimension(ny,nz) :: dlnrho_dx, TT, mu1, grad_P, grad_mu1
       real, dimension(ny,nz) :: rho0, L_1, L_2, L_3, L_4, L_5,parallell_term_uz
       real, dimension(ny,nz) :: parallell_term_rho,dlnrho_dy,dlnrho_dz
       real, dimension(ny,nz) :: parallell_term_ux,d2u1_dy2,d2u1_dz2
       real, dimension(ny,nz) :: d2u2_dy2,d2u2_dz2,d2u3_dy2,d2u3_dz2
       real, dimension(ny,nz) :: prefac1, prefac2,parallell_term_uy
-      real, dimension(ny,nz,3) :: grad_rho, u_in, grad_T, grad_P
+      real, dimension(ny,nz,3) :: grad_rho, u_in, grad_T
       real, dimension(ny,nz,3,3) :: dui_dxj
-      real, dimension (my,mz) :: cs0_ar,cs20_ar
+      real, dimension (my,mz) :: cs0_ar,cs20_ar, gamma
       real, dimension (my,mz) :: tmp22,tmp12,tmp2_lnrho,tmp33,tmp13,tmp3_lnrho
-      real, dimension (my,mz) :: tmp23,tmp32
+      real, dimension (my,mz) :: tmp23,tmp32,dYk_dx
       real, dimension (ny) :: tmpy
       real, dimension (nz) :: tmpz
       real, dimension (3) :: jet_inner_diameter,jet_outer_diameter
       real, dimension (2) :: jet_center, jet_velocity
-      real :: Mach,KK,nu,rad,coflow_inner_diameter
-      integer lll,i,jjj,kkk
+      real :: Mach,KK,nu,rad,coflow_inner_diameter, cs0_average
+      integer lll,i,jjj,kkk,j,k
       integer sgn
       real :: shift, grid_shift, weight, round
       integer :: iround,lowergrid,uppergrid
@@ -353,6 +353,8 @@ include 'NSCBC.h'
       if (present(linlet)) llinlet = linlet
       if (llinlet.and..not.present(u_t)) call stop_it(&
            'bc_nscbc_prf_x: when using linlet=T, you must also specify u_t)')
+      if (llinlet.and.ilnTT>0.and..not.present(T_t)) call stop_it(&
+           'bc_nscbc_prf_x: when using linlet=T, you must also specify T_t)')
       select case(topbot)
       case('bot')
         lll = l1
@@ -374,12 +376,10 @@ include 'NSCBC.h'
 !
 !  Find temperature
 !
-      if (ilnTT>0) then
-        if (ltemperature_nolog) then
-          TT = f(lll,m1:m2,n1:n2,ilnTT)
-        else
-          TT = exp(f(lll,m1:m2,n1:n2,ilnTT))
-        endif
+      if (iTT>0) then
+        TT = f(lll,m1:m2,n1:n2,iTT)
+      elseif (ilnTT>0) then
+        TT = exp(f(lll,m1:m2,n1:n2,ilnTT))
       endif
 !
 !  Get viscoity
@@ -393,17 +393,18 @@ include 'NSCBC.h'
       if (leos_idealgas) then
         cs20_ar(m1:m2,n1:n2)=cs20
         cs0_ar(m1:m2,n1:n2)=cs0
-        prefac1 = -1./(2.*cs20)
-        prefac2 = -1./(2.*rho0*cs0)
       elseif (leos_chemistry) then
-        call fatal_error('bc_nscbc_prf_x',&
-            'This sub routine is not yet adapted to work with leos_chemsitry!')
+        call get_cs2_slice(cs20_ar,1,lll)
+        cs0_ar=sqrt(cs20_ar)
       else
         print*,"bc_nscbc_prf_x: leos_idealgas=",leos_idealgas,"."
-        print*,"NSCBC boundary treatment only implemented for an ideal gas." 
-        print*,"Boundary treatment skipped."
+        print*,"bc_nscbc_prf_x: leos_chemistry=",leos_chemistry,"."
+        print*,"NSCBC boundary treatment only implemented for ideal gas or" 
+        print*,"chemistry. Boundary treatment skipped."
         return
       endif
+      prefac1 = -1./(2.*cs20_ar(m1:m2,n1:n2))
+      prefac2 = -1./(2.*rho0*cs0_ar(m1:m2,n1:n2))
 !
 !  Calculate one-sided derivatives in the boundary normal direction
 !
@@ -411,8 +412,12 @@ include 'NSCBC.h'
       call der_onesided_4_slice(f,sgn,iux,dui_dxj(:,:,1,1),lll,1)
       call der_onesided_4_slice(f,sgn,iuy,dui_dxj(:,:,2,1),lll,1)
       call der_onesided_4_slice(f,sgn,iuz,dui_dxj(:,:,3,1),lll,1)
-      if (ilnTT>0) then
+      if (ilnTT>0 .or. iTT>0) then
         call der_onesided_4_slice(f,sgn,ilnTT,grad_T(:,:,1),lll,1)
+        call get_mu1_slicex(mu1,grad_mu1,lll,sgn)
+        call get_gamma_slice(gamma,1,lll)
+      else
+        gamma=1.
       endif
 !
 !  Do central differencing in the directions parallell to the boundary 
@@ -490,13 +495,16 @@ include 'NSCBC.h'
 !  Find gradient of pressure
 !
       if (ilnTT>0) then 
-        do i=1,3
-!          grad_P(:,:,i)=grad_rho(:,:,i)*TT
-        enddo
+        grad_P(:,:)&
+            =grad_rho(:,:,1)*TT*Rgas*mu1&
+            +grad_T(:,:,1)*rho0*Rgas*mu1&
+            +Rgas*grad_mu1*TT*rho0
+
+!!$print*,'grad_P,grad_rho,grad_T,grad_mu1=',grad_P,grad_rho(:,:,1),grad_T(:,:,1),grad_mu1
+!!$print*,'rho0,TT,Rgas,mu1=',rho0,TT,Rgas,mu1
+!!$print*,'P=',rho0*TT*Rgas*mu1
       else
-        do i=1,3
-          grad_P(:,:,i)=grad_rho(:,:,i)*cs20_ar(m1:m2,n1:n2)
-        enddo
+        grad_P(:,:)=grad_rho(:,:,1)*cs20_ar(m1:m2,n1:n2)
       endif
 !
 !  Find Mach number 
@@ -514,8 +522,7 @@ include 'NSCBC.h'
       if (llinlet) then
 !  This L_1 is correct only for p=cs^2*rho
         L_1 = (f(lll,m1:m2,n1:n2,iux) - sgn*cs0_ar(m1:m2,n1:n2))&
-            *(cs20_ar(m1:m2,n1:n2)*grad_rho(:,:,1) &
-            - sgn*rho0*cs0_ar(m1:m2,n1:n2)*dui_dxj(:,:,1,1))
+            *(grad_P - sgn*rho0*cs0_ar(m1:m2,n1:n2)*dui_dxj(:,:,1,1))
 !
 !  Find velocity at inlet
 !
@@ -576,6 +583,9 @@ include 'NSCBC.h'
           u_in(:,:,3)=0.
         endif
         if (non_reflecting_inlet) then
+          if (ilnTT>0) then
+            call fatal_error('NSCBC.f90','non reflecting inlet is not implemented for ilnTT>0')
+          endif
 !
 !  The inlet in non-reflecting only when nscbc_sigma_in is set to 0, this 
 !  might however lead to problems as the inlet velocity will tend to drift 
@@ -592,24 +602,30 @@ include 'NSCBC.h'
           L_3=0
           L_4=0
           L_5 = L_1
+          L_2=0.5*(gamma(m1:m2,n1:n2)-1)*(L_5+L_1)
         endif
       else
 !
 !  Find the parameter determining 
 !
-        KK=nscbc_sigma_out*(1-Mach**2)*cs0/Lxyz(1)
+        cs0_average=sum(cs0_ar(m1:m2,n1:n2))/(ny*nz)
+        KK=nscbc_sigma_out*(1-Mach**2)*cs0_average/Lxyz(1)
 !
 !  Find the L_i's
 !
-        L_1 = KK*(rho0*cs20-p_infty)
+!!$print*,'KK,nscbc_sigma_out,Mach,cs0_average,Lxyz(1),rho0,=',KK,nscbc_sigma_out,Mach,cs0_average,Lxyz(1),rho0
+!!$print*,'cs20_ar(m1:m2,n1:n2),gamma(m1:m2,n1:n2),p_infty=',cs20_ar(m1:m2,n1:n2),gamma(m1:m2,n1:n2),p_infty
+        L_1 = KK*(rho0*cs20_ar(m1:m2,n1:n2)/gamma(m1:m2,n1:n2)-p_infty)
         if (ilnTT > 0) then 
           L_2=f(lll,m1:m2,n1:n2,iux)*&
-              (cs20_ar(m1:m2,n1:n2)*grad_rho(:,:,1)-grad_P(:,:,1))
+              (cs20_ar(m1:m2,n1:n2)*grad_rho(:,:,1)-grad_P)
+        else
+          L_2=0
         endif
         L_3 = f(lll,m1:m2,n1:n2,iux)*dui_dxj(:,:,2,1)
         L_4 = f(lll,m1:m2,n1:n2,iux)*dui_dxj(:,:,3,1)
         L_5 = (f(lll,m1:m2,n1:n2,iux) - sgn*cs0_ar(m1:m2,n1:n2))*&
-             (grad_P(:,:,1)&
+             (grad_P&
              - sgn*rho0*cs0_ar(m1:m2,n1:n2)*dui_dxj(:,:,1,1))
       endif
 !
@@ -660,35 +676,53 @@ include 'NSCBC.h'
       parallell_term_uy=0
       parallell_term_uz=0
 !
-!  Find the evolution equations at the boundary
+!  Find the evolution equation for the x velocity at the boundary
+!  For 'top' L_1 plays the role of L5 and L_5 the role of L1
 !
       select case(topbot)
-     ! NB: For 'top' L_1 plays the role of L5 and L_5 the role of L1
       case('bot')
-        df(lll,m1:m2,n1:n2,ilnrho) = prefac1*(L_1 + L_5)-parallell_term_rho
         if (llinlet) then
           df(lll,m1:m2,n1:n2,iux) = prefac2*( L_5 - L_1)-parallell_term_ux
         else
           df(lll,m1:m2,n1:n2,iux) = prefac2*( L_1 - L_5)-parallell_term_ux
         endif
-        df(lll,m1:m2,n1:n2,iuy) = -L_3-parallell_term_uy
-        df(lll,m1:m2,n1:n2,iuz) = -L_4-parallell_term_uz
       case('top')
-        df(lll,m1:m2,n1:n2,ilnrho) = prefac1*(L_1 + L_5)-parallell_term_rho
         if (llinlet) then
           df(lll,m1:m2,n1:n2,iux) = prefac2*( L_1 - L_5)-parallell_term_ux
         else
           df(lll,m1:m2,n1:n2,iux) = prefac2*(-L_1 + L_5)-parallell_term_ux
         endif
-        df(lll,m1:m2,n1:n2,iuy) = -L_3-parallell_term_uy
-        df(lll,m1:m2,n1:n2,iuz) = -L_4-parallell_term_uz
       endselect
+!
+!  Find the evolution equation for the other equations at the boundary
+!
+      df(lll,m1:m2,n1:n2,ilnrho) = prefac1*(2*L_2 + L_1 + L_5)-parallell_term_rho
+      if (ilnTT>0) then
+        df(lll,m1:m2,n1:n2,ilnTT) = &
+            -1./(rho0*cs20_ar(m1:m2,n1:n2))*(-L_2 &
+            +0.5*(gamma(m1:m2,n1:n2)-1.)*(L_5+L_1))*TT
+      endif
+      df(lll,m1:m2,n1:n2,iuy) = -L_3-parallell_term_uy
+      df(lll,m1:m2,n1:n2,iuz) = -L_4-parallell_term_uz
 !
 !  Check if we are solving for logrho or rho
 !
       if (.not. ldensity_nolog) then
-        df(lll,m1:m2,n1:n2,irho)=df(lll,m1:m2,n1:n2,irho)/rho0
+        df(lll,m1:m2,n1:n2,ilnrho)=df(lll,m1:m2,n1:n2,ilnrho)/rho0
       endif
+!
+!  Check if we are solving for logT or T
+!
+      if (.not. ltemperature_nolog .and. ilnTT>0) then
+        df(lll,m1:m2,n1:n2,ilnTT)=df(lll,m1:m2,n1:n2,ilnTT)/TT
+      endif
+!!$
+!!$print*,'rho0,TT,cs20_ar=',rho0,TT,cs20_ar(m1:m2,n1:n2)
+!!$print*,'gamma(m1:m2,n1:n2)=',gamma(m1:m2,n1:n2)
+!!$print*,'df(lll,m1:m2,n1:n2,1:5)=',df(lll,m1:m2,n1:n2,1:5)
+!!$print*,'L_1,L_2,L_3,L_4,L_5=', L_1,L_2,L_3,L_4,L_5
+!!$print*,'2*L_2 + L_1 + L_5=',2*L_2 + L_1 + L_5
+
 !
 ! Impose required variables at the boundary
 !
@@ -697,12 +731,49 @@ include 'NSCBC.h'
           f(lll,m1:m2,n1:n2,iux) = u_in(:,:,1)
           f(lll,m1:m2,n1:n2,iuy) = u_in(:,:,2)
           f(lll,m1:m2,n1:n2,iuz) = u_in(:,:,3)
+          if (ilnTT>0) then
+            f(lll,m1:m2,n1:n2,ilnTT) = T_t
+          endif
         endif
+      endif 
+
+
+
+
+      if (nchemspec>1) then
+        do k=1,nchemspec
+          call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dx(m1:m2,n1:n2),lll,1)
+!!$          do i=n1,n2
+!!$            call der_pencil(2,f(lll,:,i,ichemspec(k)),dYk_dy(:,i))
+!!$          enddo
+!!$          do i=m1,m2
+!!$            call der_pencil(3,f(lll,i,:,ichemspec(k)),dYk_dz(i,:))
+!!$          enddo
+           df(lll,m1:m2,n1:n2,ichemspec(k))=&
+              -f(lll,m1:m2,n1:n2,iux)*dYk_dx(m1:m2,n1:n2)
+!!$              -f(lll,m1:m2,n1:n2,iuy)*dYk_dy(m1:m2,n1:n2) &
+!!$              -f(lll,m1:m2,n1:n2,iuz)*dYk_dz(m1:m2,n1:n2) &
+!!$              + RHS_Y_full(lll,m1:m2,n1:n2,k)
+
+           do i=m1,m2
+           do j=n1,n2
+             if ((f(lll,i,j,ichemspec(k))+df(lll,i,j,ichemspec(k))*dt)<-1e-25 ) then
+               df(lll,i,j,ichemspec(k))=-1e-25*dt
+             endif
+             if ((f(lll,i,j,ichemspec(k))+df(lll,i,j,ichemspec(k))*dt)>1.) then
+               f(lll,i,j,ichemspec(k))=1.*dt
+             endif
+           enddo
+           enddo
+       enddo
       endif
+!
+
+
 
     endsubroutine bc_nscbc_prf_x
 !***********************************************************************
-    subroutine bc_nscbc_prf_y(f,df,topbot,non_reflecting_inlet,linlet,u_t)
+    subroutine bc_nscbc_prf_y(f,df,topbot,non_reflecting_inlet,linlet,u_t,T_t)
 !
 !   Calculate du and dlnrho at a partially reflecting outlet/inlet normal to 
 !   y-direction acc. to LODI relations. Uses a one-sided finite diff. stencil.
@@ -721,7 +792,7 @@ include 'NSCBC.h'
       character (len=3) :: topbot
       logical, optional :: linlet
       logical :: llinlet, non_reflecting_inlet
-      real, optional :: u_t
+      real, optional :: u_t,T_t
       real, dimension(nx,nz) :: dlnrho_dx,dlnrho_dy,dlnrho_dz
       real, dimension(nx,nz) :: rho0, L_1, L_3, L_4, L_5,parallell_term_uz
       real, dimension(nx,nz) :: parallell_term_rho

@@ -18,6 +18,8 @@ module Chemistry
 !
   implicit none
 !
+  real :: Rgas
+!
   include 'chemistry.h'
 !
   contains
@@ -207,5 +209,50 @@ module Chemistry
       call keep_compiler_quiet(jacob(1,1,1,1,1))
 !
     endsubroutine jacobn
+!***********************************************************************
+    subroutine get_mu1_slicex(slice,grad_slice,index,sgn)
+!
+! For the NSCBC boudary conditions the slice of mu1 at the boundary
+! is required.
+!
+! 2009.12.10: Nils Erland L. Haugen (coded)
+!
+      real, dimension(ny,nz), intent(out) :: slice, grad_slice
+      integer, intent(in) :: index, sgn
+!
+      call keep_compiler_quiet(slice)
+      call keep_compiler_quiet(grad_slice)
+!
+    end subroutine get_mu1_slicex
+!*************************************************************
+    subroutine get_gamma_slice(slice,index,dir)
+!
+!  Get a 2D slice of gamma
+!
+!  2009.12.10: Nils Erland L. Haugen (coded)
+!
+      real, dimension (:,:), intent(out)  :: slice
+      integer, intent(in) :: index,dir
+!
+      call keep_compiler_quiet(slice)
+      call keep_compiler_quiet(index)
+      call keep_compiler_quiet(dir)
+      !
+    endsubroutine get_gamma_slice
+!*************************************************************
+    subroutine get_cs2_slice(slice,index,dir)
+!
+!  Get a 2D slice of cs2
+!
+!  2009.12.10: Nils Erland L. Haugen (coded)
+!
+      real, dimension (:,:), intent(out)  :: slice
+      integer, intent(in) :: index,dir
+!
+      call keep_compiler_quiet(slice)
+      call keep_compiler_quiet(index)
+      call keep_compiler_quiet(dir)
+      !
+    endsubroutine get_cs2_slice
 !***********************************************************************
 endmodule Chemistry
