@@ -140,9 +140,9 @@ module Density
 !
       use FArrayManager
 !
-      call farray_register_auxiliary('rhs',irhs,vector=3,communicated=.true.)
-      call farray_register_auxiliary('pp',ipp,communicated=.true.)
       call farray_register_auxiliary('lnrho',ilnrho,communicated=.true.)
+      call farray_register_auxiliary('pp',ipp,communicated=.true.)
+      call farray_register_auxiliary('rhs',irhs,vector=3,communicated=.true.)
 !
 !  Identify version number (generated automatically by CVS).
 !
