@@ -49,9 +49,11 @@ module Hydro
 !
   character (len=labellen) :: kinematic_flow='none'
   real :: wind_amp=0.,wind_rmin=impossible,wind_step_width=0.
+  real :: circ_amp=0.,circ_rmax=0.,circ_step_width=0.
   character (len=labellen) :: wind_profile='none'
   namelist /hydro_run_pars/ &
-    kinematic_flow,wind_amp,wind_profile,wind_rmin,wind_step_width
+    kinematic_flow,wind_amp,wind_profile,wind_rmin,wind_step_width,&
+    circ_rmax,circ_step_width,circ_amp
 !
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
@@ -245,13 +247,17 @@ module Hydro
 !
       real, dimension(nx) :: kdotxwt, cos_kdotxwt, sin_kdotxwt
       real, dimension(nx) :: wind_prof,div_uprof,der6_uprof
+      real, dimension(nx) :: div_vel_prof
+      real, dimension(nx) :: vel_prof
       real, dimension(nx) :: tmp_mn, cos1_mn, cos2_mn
+      real, dimension(nx) :: rone
       real :: kkx_aa, kky_aa, kkz_aa, fac, fac2
       real :: fpara, dfpara, ecost, esint, epst, sin2t, cos2t
       integer :: modeN,l
       real :: sqrt2, sqrt21k1, eps1=1., WW=0.25, k21
       integer :: ell
       real :: Balpha
+      real :: theta,theta1
 !
       intent(in) :: f
       intent(inout) :: p
@@ -664,8 +670,8 @@ kky_aa=2.*pi
           div_uprof=der_step(x(l1:l2),wind_rmin,wind_step_width)
 !          der6_uprof=der6_step(x(l1:l2),wind_rmin,wind_step_width)
           der6_uprof=0.
-        case('default');
-          call fatal_error('hydro_kinematic', 'no such wind profile. ')
+        case default;
+          call fatal_error('hydro_kinematic:kinflow = radial wind', 'no such wind profile. ')
         endselect
 !
         if (lpencil(i_uu)) then
@@ -675,6 +681,49 @@ kky_aa=2.*pi
           p%uu(:,3)=0.
         endif
         p%divu=wind_amp*div_uprof 
+        p%der6u(:,1)=wind_amp*der6_uprof 
+        p%der6u(:,2)= 0.
+        p%der6u(:,3)= 0.
+!
+! Radial wind+circulation
+!
+      elseif (kinflow=='radial-wind+circ') then
+        select case(wind_profile)
+        case('none'); wind_prof=0.;div_uprof=0.
+        case('constant'); wind_prof=1.;div_uprof=0.
+                        
+        case('radial-step') 
+          wind_prof=step(x(l1:l2),wind_rmin,wind_step_width)
+          div_uprof=der_step(x(l1:l2),wind_rmin,wind_step_width)
+!          der6_uprof=der6_step(x(l1:l2),wind_rmin,wind_step_width)
+          der6_uprof=0.
+        case default;
+          call fatal_error('hydro_kinematic: kinflow= radial_wind-circ', 'no such wind profile. ')
+        endselect
+!
+        rone=xyz0(1)
+        theta=y(m)
+        theta1=xyz0(2)
+        if (lpencil(i_uu)) then
+          if (headtt) print*,'Radial wind and circulation: not complete yet'
+          vel_prof=circ_amp*(1+stepdown(x(l1:l2),circ_rmax,circ_step_width))
+          div_vel_prof=-der_step(x(l1:l2),circ_rmax,circ_step_width)
+
+          p%uu(:,1)=vel_prof*(r1_mn**2)*(sin1th(m))*(&
+            2*sin(theta-theta1)*cos(theta-theta1)*cos(theta)&
+            -sin(theta)*sin(theta-theta1)**2)*&
+           (x(l1:l2)-1.)*(x(l1:l2)-rone)**2 + & 
+           wind_amp*wind_prof
+          p%uu(:,2)=-vel_prof*r1_mn*sin1th(m)*(&
+            cos(theta)*sin(theta-theta1)**2)*&
+           (x(l1:l2)-rone)*(3*x(l1:l2)-rone-2.)
+          p%uu(:,3)=0.
+        endif
+        p%divu=div_uprof*wind_amp + &
+          div_vel_prof*(r1_mn**2)*(sin1th(m))*(&
+            2*sin(theta-theta1)*cos(theta-theta1)*cos(theta)&
+            -sin(theta)*sin(theta-theta1)**2)*&
+           (x(l1:l2)-1.)*(x(l1:l2)-rone)**2 
         p%der6u(:,1)=wind_amp*der6_uprof 
         p%der6u(:,2)= 0.
         p%der6u(:,3)= 0.
@@ -1607,7 +1656,7 @@ kky_aa=2.*pi
       real :: Balpha,jl,jlp1,jlm1,LPl,LPlm1
       integer :: ell
 !
-      print*, 'Initializing variables from Chandrasekhar-Kendall flow'
+      print*, 'Initializing variables for Chandrasekhar-Kendall flow'
       print*, 'Allocating..'
       allocate(Zl(mx),dZldr(mx))
       allocate(Pl(my),dPldtheta(my))
