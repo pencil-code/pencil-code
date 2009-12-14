@@ -135,8 +135,8 @@ module Equ
         enddo; enddo
       endif
 !
-!  need to finalize communication early either for test purposes, or
-!  when radiation transfer of global ionization is calculatearsd.
+!  Need to finalize communication early either for test purposes, or
+!  when radiation transfer of global ionization is calculated.
 !  This could in principle be avoided (but it not worth it now)
 !
       early_finalize=test_nonblocking.or. &
@@ -211,8 +211,6 @@ module Equ
 !  AND shock calculation
 !
       call boundconds_x(f)
-!AXEL if (ldensity_anelastic) call boundconds_x(f,irhs,irhs+2)
-      
 !
 !  Initiate (non-blocking) communication and do boundary conditions.
 !  Required order:
@@ -222,30 +220,10 @@ module Equ
 !
       if (ldebug) print*,'pde: bef. initiate_isendrcv_bdry'
       call initiate_isendrcv_bdry(f)
-!AXEL if (ldensity_anelastic) then 
-!AXEL   call initiate_isendrcv_bdry(f,irhs,irhs+2)
-!AXEL   call initiate_isendrcv_bdry(f,ipp,ipp)
-!AXEL   call initiate_isendrcv_bdry(f,ilnrho,ilnrho)
-!AXEL endif
       if (early_finalize) then
         call finalize_isendrcv_bdry(f)
-!AXEL   if (ldensity_anelastic) then
-!AXEL     call finalize_isendrcv_bdry(f,irhs,irhs+2)
-!AXEL     call finalize_isendrcv_bdry(f,ipp,ipp)
-!AXEL     call finalize_isendrcv_bdry(f,ilnrho,ilnrho)
-!AXEL   endif
         call boundconds_y(f)
-!AXEL   if (ldensity_anelastic) then
-!AXEL     call boundconds_y(f,irhs,irhs+2)
-!AXEL     call boundconds_y(f,ipp,ipp)
-!AXEL     call boundconds_y(f,ilnrho,ilnrho)
-!AXEL   endif
         call boundconds_z(f)
-!AXEL   if (ldensity_anelastic) then
-!AXEL     call boundconds_z(f,irhs,irhs+2)
-!AXEL     call boundconds_z(f,ipp,ipp)
-!AXEL     call boundconds_z(f,ilnrho,ilnrho)
-!AXEL   endif
       endif
 !
 ! update solid cell "ghost points". This must be done in order to get the
@@ -277,7 +255,7 @@ module Equ
       if (lhyperviscosity_strict)   call hyperviscosity_strict(f)
       if (lhyperresistivity_strict) call hyperresistivity_strict(f)
 !
-!  set inverse timestep to zero before entering loop over m and n
+!  Set inverse timestep to zero before entering loop over m and n.
 !
       if (lfirst.and.ldt) then
         if (dtmax/=0.0) then
@@ -295,7 +273,7 @@ module Equ
       if (leos_ionization.or.leos_temperature_ionization) call ioncalc(f)
       if (lradiation_ray) call radtransfer(f)
 !
-!  calculate shock profile (simple)
+!  Calculate shock profile (simple).
 !
       if (lshock) call calc_shock_profile_simple(f)
 !
@@ -315,50 +293,30 @@ module Equ
 !
       if (lchemistry .and. ldensity) call calc_for_chem_mixture(f)
 !
-!  set indices and check whether communication must now be completed
-!  if test_nonblocking=.true., we communicate immediately as a test.
+!  Do loop over m and n.
 !
-
-!  do loop over y and z
-!
-
       mn_loop: do imn=1,ny*nz
         n=nn(imn)
         m=mm(imn)
         lfirstpoint=(imn==1)      ! true for very first m-n loop
         llastpoint=(imn==(ny*nz)) ! true for very last m-n loop
 !
-!  store the velocity part of df array in a temporary array 
+!  Store the velocity part of df array in a temporary array 
 !  while solving the anelastic case.
 !
         if (ldensity_anelastic) then 
           df_iuu_pencil(1:nx,1:3) = df(l1:l2,m,n,iuu:iuu+2)
-          df(l1:l2,m,n,iuu:iuu+2)=0.
+          df(l1:l2,m,n,iuu:iuu+2)=0.0
         endif
 !
 !        if (loptimise_ders) der_call_count=0 !DERCOUNT
 !
-! make sure all ghost points are set
+!  Make sure all ghost points are set.
 !
         if (.not.early_finalize.and.necessary(imn)) then
           call finalize_isendrcv_bdry(f)
-          if (ldensity_anelastic) then
-            call finalize_isendrcv_bdry(f,irhs,irhs+2)
-            call finalize_isendrcv_bdry(f,ipp,ipp)
-            call finalize_isendrcv_bdry(f,ilnrho,ilnrho)
-          endif
           call boundconds_y(f)
-          if (ldensity_anelastic) then
-            call boundconds_y(f,irhs,irhs+2)
-            call boundconds_y(f,ipp,ipp)
-            call boundconds_y(f,ilnrho,ilnrho)
-          endif
           call boundconds_z(f)
-          if (ldensity_anelastic) then 
-            call boundconds_z(f,irhs,irhs+2)
-            call boundconds_z(f,ipp,ipp)
-            call boundconds_z(f,ilnrho,ilnrho)
-          endif
         endif
 !
 !  For each pencil, accumulate through the different modules
@@ -786,7 +744,7 @@ module Equ
           call integrate_mn(p%rho,mass_per_proc(1))
         endif
 !
-!  end of loops over m and n
+!  End of loops over m and n.
 !
         headtt=.false.
       enddo mn_loop
