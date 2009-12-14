@@ -422,8 +422,6 @@ module Register
         lspherical_coords=.true.
         lcylindrical_coords=.false.
 !
-! An attempt to work with full sphere 
-!  calculate 1/r
 ! For spherical coordinates
 !
         r_mn=x(l1:l2)
