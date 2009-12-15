@@ -334,10 +334,9 @@ module Particles_nbody
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
-      integer, dimension (mpar_loc,3) :: ineargrid
-      real, dimension(mspar) :: ang_vel,kep_vel,sma
+      real, dimension(mspar) :: kep_vel,sma
       real, dimension(mspar,3) :: position,velocity
-      real :: tmp,tmp2,rr,fac,parc
+      real :: tmp,parc
       integer :: k,ks
 
       intent (in) :: f
@@ -906,9 +905,9 @@ module Particles_nbody
 !
       real, dimension (mpar_loc,mpvar) :: fp,dfp
       real, dimension (mspar) :: sq_hills
-      real, dimension (3) :: evr,acc
+      real, dimension (3) :: evr
       integer, dimension (mpar_loc,3) :: ineargrid
-      real :: r2_ij,rs2,invr3_ij,rr
+      real :: r2_ij,rs2,invr3_ij
       integer :: k, ks
 !
       intent(inout) :: fp,dfp
@@ -1114,7 +1113,7 @@ module Particles_nbody
       real, dimension(nx) :: dv,jac,dqy,tmp
       real :: dqx,dqz,rp0,fac
       real, dimension(3) :: xxpar,accg,sum_loc
-      integer :: k,j
+      integer :: j
       type (pencil_case) :: p      
       logical :: lfirstcall=.true.
 !
@@ -1497,8 +1496,7 @@ module Particles_nbody
       real, dimension (mx,mspar) :: rp_mn,rpcyl_mn
       real, dimension (mx,3)     :: ggp,ggt
       real, dimension (mx)       :: grav_particle,rrp
-      real, dimension (3)        :: acc
-      integer                    :: ks,i
+      integer                    :: ks
 !
       intent(out) :: ggt
 !
@@ -1903,15 +1901,15 @@ module Particles_nbody
       use Mpicomm
 !
       real, dimension(mpar_loc,mpvar) :: fp
-      real, dimension(maxsink,mspvar) :: fcsp_loc,fcsp
+      real, dimension(maxsink,mspvar) :: fcsp
       real, dimension(nspar,mspvar) :: fleft
 !
-      integer :: nc,nc_proc,ncr,nf,kc,j,nc_loc
-
+      integer :: nc,nf,kc,j
+!
       real, dimension(0:ncpus-1,nspar,mpvar) :: fcsp_mig
       integer, dimension(0:ncpus-1) :: nsmig
       integer :: iz0,iy0,ipz_rec,ipy_rec,iproc_rec,npar_tot
-      integer:: ns,np,i
+      integer:: ns,i
       double precision :: dy1,dz1
 !
 !  How many particles are present in the whole grid? Needed to set
@@ -2216,8 +2214,6 @@ module Particles_nbody
       integer, intent(inout)                :: ic
       integer, intent(in)                   :: par,nc
 !
-      real, dimension(3) :: evr
-      real    :: e1,e2,e3,e10,e20,e30
       real    :: dist,link_length
       integer :: k      
 !
@@ -2349,12 +2345,12 @@ module Particles_nbody
 ! 
 !  01-apr-08/wlad: coded
 !
-      integer, save :: ifirst=0, nsnap, nsnap_minor
-      real, save :: tsnap,tsnap_minor
+      integer, save :: ifirst=0, nsnap
+      real, save :: tsnap
       character (len=*) :: snapbase,flist
       character (len=fnlen) :: snapname, filename_diag
       logical :: enum,lsnap
-      character (len=5) :: nsnap_ch,nsnap_minor_ch,nsnap_ch_last
+      character (len=5) :: nsnap_ch
       optional :: flist
 !          
       if (enum) then
