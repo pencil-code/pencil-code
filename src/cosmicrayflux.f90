@@ -17,6 +17,7 @@ module Cosmicrayflux
   use Cdata
   use Cparam
   use Messages
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
