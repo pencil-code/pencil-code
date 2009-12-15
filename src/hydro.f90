@@ -1001,9 +1001,9 @@ module Hydro
             enddo; enddo
           endif
         case( 'anelastic-2dxy')
-          print*, "anelastic-2dxy: ampl_ux/ky_uu = ", ampl_ux(j)/ky_uu
+          print*, "anelastic-2dxy: ampl_uz,kx_uu,ky_uu = ", ampl_uz(j),kx_uu,ky_uu
           do n=n1,n2; do m=m1,m2
-            f(l1:l2,m,n,iuz)=sin(x(l1:l2))*sin(y(m))
+            f(l1:l2,m,n,iuz)=ampl_uz(j)*sin(kx_uu*x(l1:l2))*sin(ky_uu*y(m))
           enddo; enddo
           call update_ghosts(f)
 ! 2D curl
