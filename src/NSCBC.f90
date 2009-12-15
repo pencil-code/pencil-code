@@ -125,6 +125,7 @@ include 'NSCBC.h'
       integer :: ipx_in, ipy_in, ipz_in, iproc_in, nprocx_in, nprocy_in, nprocz_in
       character (len=120) :: directory_in
       character (len=5) :: chproc_in
+      real :: T_t
 
       intent(inout) :: f
       intent(inout) :: df
@@ -252,28 +253,34 @@ include 'NSCBC.h'
             endif
           case('part_ref_inlet')
 !   Partially reflecting inlet, ie. impose a velocity u_t.
+            T_t=0
             if (j==1) then 
               direction = 1
+              if (ilnTT > 0) T_t=valx(ilnTT)
               call bc_nscbc_prf_x(f,df,topbot,.true.,linlet=.true.,&
-                  u_t=valx(direction),T_t=valx(ilnTT))
+                  u_t=valx(direction),T_t=T_t)
             elseif (j==2) then 
               direction = 2
+              if (ilnTT > 0) T_t=valy(ilnTT)
               call bc_nscbc_prf_y(f,df,topbot,.true.,linlet=.true.,&
-                  u_t=valy(direction),T_t=valy(ilnTT))
+                  u_t=valy(direction),T_t=T_t)
             elseif (j==3) then 
               direction = 3
               call fatal_error("nscbc_boundtreat_xyz",'bc_nscbc_prf_z is not yet implemented')
             endif
           case('ref_inlet')
 !   Partially reflecting inlet, ie. impose a velocity u_t.
+            T_t=0
             if (j==1) then 
               direction = 1
+              if (ilnTT > 0) T_t=valx(ilnTT)
               call bc_nscbc_prf_x(f,df,topbot,.false.,linlet=.true.,&
-                  u_t=valx(direction),T_t=valx(ilnTT))
+                  u_t=valx(direction),T_t=T_t)
             elseif (j==2) then 
               direction = 2
+              if (ilnTT > 0) T_t=valy(ilnTT)
               call bc_nscbc_prf_y(f,df,topbot,.false.,linlet=.true.,&
-                  u_t=valy(direction),T_t=valy(ilnTT))
+                  u_t=valy(direction),T_t=T_t)
             elseif (j==3) then 
               direction = 3
               call fatal_error("nscbc_boundtreat_xyz",'bc_nscbc_prf_z is not yet implemented')
