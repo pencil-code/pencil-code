@@ -506,10 +506,6 @@ include 'NSCBC.h'
             =grad_rho(:,:,1)*TT*Rgas*mu1&
             +grad_T(:,:,1)*rho0*Rgas*mu1&
             +Rgas*grad_mu1*TT*rho0
-
-!!$print*,'grad_P,grad_rho,grad_T,grad_mu1=',grad_P,grad_rho(:,:,1),grad_T(:,:,1),grad_mu1
-!!$print*,'rho0,TT,Rgas,mu1=',rho0,TT,Rgas,mu1
-!!$print*,'P=',rho0*TT*Rgas*mu1
       else
         grad_P(:,:)=grad_rho(:,:,1)*cs20_ar(m1:m2,n1:n2)
       endif
@@ -534,6 +530,8 @@ include 'NSCBC.h'
 !  Find velocity at inlet
 !
         if (inlet_from_file) then
+          if (Lx_in == 0) call fatal_error('bc_nscbc_prf_x',&
+              'Lx_in=0. Check that the precisions are the same.')
           round=t*u_t/Lx_in
           iround=int(round)
           shift=round-iround
@@ -723,13 +721,6 @@ include 'NSCBC.h'
       if (.not. ltemperature_nolog .and. ilnTT>0) then
         df(lll,m1:m2,n1:n2,ilnTT)=df(lll,m1:m2,n1:n2,ilnTT)/TT
       endif
-!!$
-!!$print*,'rho0,TT,cs20_ar=',rho0,TT,cs20_ar(m1:m2,n1:n2)
-!!$print*,'gamma(m1:m2,n1:n2)=',gamma(m1:m2,n1:n2)
-!!$print*,'df(lll,m1:m2,n1:n2,1:5)=',df(lll,m1:m2,n1:n2,1:5)
-!!$print*,'L_1,L_2,L_3,L_4,L_5=', L_1,L_2,L_3,L_4,L_5
-!!$print*,'2*L_2 + L_1 + L_5=',2*L_2 + L_1 + L_5
-
 !
 ! Impose required variables at the boundary
 !
@@ -743,10 +734,10 @@ include 'NSCBC.h'
           endif
         endif
       endif 
-
-
-
-
+!
+! Check if we have species. In reality this should be the same for all
+! "passive" scalars. Should implement this......
+!
       if (nchemspec>1) then
         do k=1,nchemspec
           call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dx(m1:m2,n1:n2),lll,1)
@@ -963,32 +954,15 @@ include 'NSCBC.h'
 !  Find velocity at inlet
 !
         if (inlet_from_file) then
-!yyyy
+          if (Ly_in == 0) call fatal_error('bc_nscbc_prf_y',&
+              'Ly_in=0. Check that the precisions are the same.')
           round=t*u_t/Ly_in
           iround=int(round)
           shift=round-iround
           grid_shift=shift*ny_in
           lowergrid=m1_in+int(grid_shift)
           uppergrid=lowergrid+1
-!!$          print*,'lowergrid=',lowergrid
-!!$          print*,'t=',t
-!!$          print*,'u_t=',u_t
-!!$          print*,'Ly_in=',Ly_in
-!!$          print*,'round=',round
-!!$          print*,'shift=',shift
-!!$          print*,'grid_shift=',grid_shift
           weight=grid_shift-int(grid_shift)
-!!$if (lroot) then
-!!$print*,'lowergrid=',lowergrid
-!!$print*,'t=',t
-!!$print*,'u_t=',u_t
-!!$print*,'Ly_in=',Ly_in
-!!$print*,'round=',round
-!!$print*,'iround=',iround
-!!$print*,'shift=',shift
-!!$print*,'grid_shift=',grid_shift
-!!$endif
-
           u_in(:,:,:)&
               =f_in(l1_in:l2_in,lowergrid,n1_in:n2_in,iux:iuz)*(1-weight)&
               +f_in(l1_in:l2_in,uppergrid,n1_in:n2_in,iux:iuz)*weight
