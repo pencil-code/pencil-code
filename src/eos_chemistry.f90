@@ -642,6 +642,7 @@ module EquationOfState
 !
       call stop_it(' pressure_gradient_point should never be called')
 !
+      call keep_compiler_quiet(cs2,cp1tilde)
     endsubroutine pressure_gradient_point
 !***********************************************************************
     subroutine temperature_gradient(f,glnrho,gss,glnTT)
@@ -663,7 +664,11 @@ module EquationOfState
 !
       call stop_it('temperature_gradient should never be called')
 !
+!  given that we just stopped, it cannot become worse by setting
+!  cp1tilde to impossible, which allows the compiler to compile.
+!
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(glnrho,gss,glnTT)
     endsubroutine temperature_gradient
 !***********************************************************************
     subroutine temperature_laplacian(f,del2lnrho,del2ss,del2lnTT)
@@ -683,6 +688,7 @@ module EquationOfState
       call fatal_error('temperature_laplacian','SHould not be called!')
 !
      call keep_compiler_quiet(f)
+     call keep_compiler_quiet(del2lnrho,del2ss,del2lnTT)
     endsubroutine temperature_laplacian
 !***********************************************************************
     subroutine temperature_hessian(f,hlnrho,hss,hlnTT)
