@@ -24,7 +24,7 @@ module Testfield
 
   use Cparam
   use Messages
-
+  use Sub, only: keep_compiler_quiet
   implicit none
 
   include 'testfield.h'
@@ -99,8 +99,6 @@ module Testfield
       use Mpicomm
       use Sub
 !
-      logical, save :: first=.true.
-      integer :: j
 !
 !  Register test field.
 !
@@ -170,9 +168,6 @@ module Testfield
       use InitialCondition, only: initial_condition_aatest
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx,3) :: bb
-      real, dimension (nx) :: b2,fact
-      real :: beq2
 !
       select case(initaatest)
 
@@ -214,6 +209,8 @@ module Testfield
       use Cdata
 !
       logical, dimension(npencils) :: lpencil_in
+!
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_testfield
 !***********************************************************************
@@ -273,10 +270,10 @@ module Testfield
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 
-      real, dimension (nx,3) :: bb,aa,uxB,bbtest,btest,uxbtest,duxbtest
+      real, dimension (nx,3) :: uxB,bbtest,btest,uxbtest,duxbtest
       real, dimension (nx,3) :: del2Atest
 !     real :: fnamez_mean
-      integer :: jtest,jfnamez,j
+      integer :: jtest,j
       integer,save :: ifirst=0
       logical :: ltestfield_out
       character (len=5) :: ch='\_/^\'
@@ -498,6 +495,9 @@ module Testfield
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices%ready)
 !
     endsubroutine get_slices_testfield
 !***********************************************************************
