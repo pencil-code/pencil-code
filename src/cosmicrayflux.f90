@@ -76,7 +76,8 @@ module Cosmicrayflux
       real, dimension (mx,my,mz,mfarray) :: f
 
       if (tau /= 0.) tau1=1./tau
-
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine initialize_cosmicrayflux
 !***********************************************************************
@@ -130,6 +131,8 @@ module Cosmicrayflux
 !
       logical, dimension(npencils) :: lpencil_in
 !
+      call keep_compiler_quiet(lpencil_in)
+!
     endsubroutine pencil_interdep_cosmicrayflux
 !***********************************************************************
     subroutine calc_pencils_cosmicrayflux(f,p)
@@ -141,6 +144,9 @@ module Cosmicrayflux
 
       intent(in)  :: f
       intent(inout) :: p
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 ! fcr
 !      if (lpencil(i_fcr)) p%fcr=f(l1:l2,m,n,ifcrx:ifcrz)
 !
