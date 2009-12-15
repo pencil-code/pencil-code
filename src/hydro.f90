@@ -1000,7 +1000,20 @@ module Hydro
                   sin(kx_uu*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n)))
             enddo; enddo
           endif
-
+        case( 'anelastic-2dxy')
+          print*, "anelastic-2dxy: ampl_ux/ky_uu = ", ampl_ux(j)/ky_uu
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iuz)=sin(x(l1:l2))*sin(y(m))
+          enddo; enddo
+          call update_ghosts(f)
+! 2D curl
+          do n=n1,n2;do m=m1,m2
+            call grad(f,iuz,tmp_nx3)
+            f(l1:l2,m,n,iux) = -tmp_nx3(:,2)
+            f(l1:l2,m,n,iuy) =  tmp_nx3(:,1)
+          enddo;enddo
+          f(:,:,:,iuz)=0.
+!
         case('incompressive-shwave')
 ! incompressible shear wave of Johnson & Gammine (2005a)
           print*, "incomp-shwave: ampl_ux/ky_uu = ", ampl_ux(j)/ky_uu

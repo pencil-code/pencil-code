@@ -2565,13 +2565,18 @@ module Density
 !  added to the pressure we obtained from inverting the Laplacian.
 !  For this we need the average density first.  
 !
-      call get_average_density(mass_per_proc,average_density)
-      call get_average_pressure(average_density,average_pressure)
-!     average_pressure=cs20*average_density
+      if (leos) then
+        call get_average_density(mass_per_proc,average_density)
+        call get_average_pressure(average_density,average_pressure)
+      else
+        average_pressure=0.0
+      endif
       f(l1:l2,m1:m2,n1:n2,ipp) = f(l1:l2,m1:m2,n1:n2,ipp) + &
                     average_pressure
 !  Refresh the f-array with the new density
-      f(l1:l2,m1:m2,n1:n2,ilnrho)=log(f(l1:l2,m1:m2,n1:n2,ipp)/cs20)
+      if (leos) then
+       f(l1:l2,m1:m2,n1:n2,ilnrho)=log(f(l1:l2,m1:m2,n1:n2,ipp)/cs20)
+      endif
 !  Update the boundary conditions for the new pressure (needed to
 !  compute grad(P)
       call initiate_isendrcv_bdry(f,ipp)
