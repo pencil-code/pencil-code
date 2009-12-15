@@ -222,6 +222,7 @@ module Chemistry
 !
       call keep_compiler_quiet(slice)
       call keep_compiler_quiet(grad_slice)
+      call keep_compiler_quiet(index,sgn)
 !
     end subroutine get_mu1_slicex
 !*************************************************************

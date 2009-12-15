@@ -518,7 +518,7 @@ module Chiral
 !
       use Diagnostics
 !
-      integer :: iname,inamez
+      integer :: iname
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
