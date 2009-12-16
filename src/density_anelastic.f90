@@ -898,8 +898,11 @@ module Density
 !  Should be consistent with density 
           f(:,:,:,ilnrho) = log(rho_const + f(:,:,:,ilnrho))
         case('anelastic')
-          f(:,:,:,ilnrho) = 0.
-          f(:,:,:,ipp) = cs20
+          haut=-cs20/gravz
+          do n=n1,n2
+            f(:,:,n,ipp) = 1.0+exp(-z(n)/haut)
+          enddo
+          f(:,:,:,ilnrho) = log(f(:,:,:,ipp)/cs20)
 !
         case default
 !
@@ -2613,6 +2616,7 @@ module Density
       use General, only: tridag
       use Mpicomm, only: transp_xz, transp_zx
       use Fourier, only: fourier_transform_xy
+      use Gravity, only: gravz
 !
       real, dimension (nx,ny,nz) :: phi, b1
       real, dimension (nzgrid,nx/nprocz) :: rhst
@@ -2620,11 +2624,6 @@ module Density
       real :: k2
       integer :: ikx, iky
       logical :: err
-!
-!  identify version
-!
-      if (lroot .and. ip<10) call svn_id( &
-        "$Id: poisson.f90 12460 2009-12-10 15:19:51Z sven.bingert $")
 !
 !  The right-hand-side of the pressure equation is purely real.
 !
@@ -2634,7 +2633,7 @@ module Density
 !
       call fourier_transform_xy(phi,b1)
 !
-!  Solve for discrete z-direction with zero density above and below z-boundary.
+!  Solve for discrete z-direction
 !
       do iky=1,ny
         call transp_xz(phi(:,iky,:),rhst)
@@ -2644,17 +2643,12 @@ module Density
           k2=kx_fft(ikx+nz*ipz)**2+ky_fft(iky)**2
           b_tri=-2.0/dz**2-k2
 !
-          if (k2==0.0) then
-            b_tri(1)=-2.0/dz**2-2*dz/xyz0(3)
-            c_tri(1)=1.0/dz**2+1.0
-            b_tri(nzgrid)=-2.0/dz**2-2*dz/xyz1(3)
-            a_tri(nzgrid)=1.0/dz**2+1.0
-          else
-            b_tri(1)=-2.0/dz**2-2*sqrt(k2)*dz
-            c_tri(1)=1.0/dz**2+1.0
-            b_tri(nzgrid)=-2.0/dz**2-2*sqrt(k2)*dz
-            a_tri(nzgrid)=1.0/dz**2+1.0
-          endif
+!  Boundary conditions in the z-direction
+!
+          b_tri(1)=-2.0/dz**2-k2-2.0*dz*gravz/cs20
+          c_tri(1)=1.0/dz**2+1.0
+          b_tri(nzgrid)=-2.0/dz**2-k2+2.0*dz*gravz/cs20
+          a_tri(nzgrid)=1.0/dz**2+1.0
 !
           r_tri=rhst(:,ikx)
           call tridag(a_tri,b_tri,c_tri,r_tri,u_tri,err)
