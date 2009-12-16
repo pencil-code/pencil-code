@@ -20,7 +20,7 @@ module Special
 
   implicit none
 
-  include 'special.h'
+  include '../special.h'
 
   real :: tdown=0.,allp=0.,Kgpara=0.,cool_RTV=0.,Kgpara2=0.,tdownr=0.,allpr=0.
   real :: lntt0=0.,wlntt=0.,bmdi=0.,hcond1=0.,heatexp=0.,heatamp=0.,Ksat=0.
@@ -263,8 +263,8 @@ module Special
 !
 !   06-jul-06/tony: coded
 !
-      use Fourier
-      use Mpicomm, only: stop_it
+      use Fourier, only : fourier_transform_other
+      use Mpicomm, only : stop_it
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(nxgrid,nygrid) :: kx,ky,k2
@@ -352,20 +352,16 @@ module Special
 !
 !  newton cooling
 !
-      use Diagnostics
-      use EquationOfState, only:lnrho0 
-      use Sub
-      
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-      
+!
       real, dimension (nx) :: newton=0.
       real, dimension (150) :: b_lnT,b_z,b_lnrho
       real, dimension (mz), save :: blnTT,blnrho
       real :: dummy
       integer :: i,lend,j
 !
-      if (headtt) print*,'special_calc_entropy: newton cooling',tdown,lnrho0
+      if (headtt) print*,'special_calc_entropy: newton cooling',tdown
 !
 !  Initial temperature profile is given in ln(T) [K] over z [Mm]
 !  It will be read at the beginning and then kept in memory
@@ -436,25 +432,25 @@ module Special
 !    Div K T Grad ln T
 !      =Grad(KT).Grad(lnT)+KT DivGrad(lnT)
 !
-       use Diagnostics 
-       use Sub
-       use Io, only: output_pencil
-       use EquationOfState, only: gamma
+       use Diagnostics,     only : max_mn_name
+       use Sub,             only : dot2,dot,multsv,multmv
+       use Io,              only : output_pencil
+       use EquationOfState, only : gamma
 !
        real, dimension (mx,my,mz,mvar) :: df
        real, dimension (nx,3) :: hhh,bunit,tmpv,gKp
        real, dimension (nx) :: tmpj,hhh2,quenchfactor,b1
        real, dimension (nx) :: rhs,chix,cosbgT,gT2,b2,tmpk
-       real, dimension (nx) :: Kspitzer,Ksaturat,chi_1,chi_2
+       real, dimension (nx) :: chi_1,chi_2
        real :: Ksatb
        integer :: i,j,k
        type (pencil_case) :: p
 !
 !  calculate unit vector of bb
 !
-       call dot2_mn(p%bb,tmpj,PRECISE_SQRT=.true.)
+       call dot2(p%bb,tmpj,PRECISE_SQRT=.true.)
        b1=1./max(tini,tmpj)
-       call multsv_mn(b1,p%bb,bunit)
+       call multsv(b1,p%bb,bunit)
 !
 !  calculate H_i
 !
@@ -468,20 +464,19 @@ module Special
              hhh(:,i)=hhh(:,i)+bunit(:,j)*(p%bij(:,i,j)+bunit(:,i)*tmpj(:))
           enddo
        enddo
-       call multsv_mn(b1,hhh,tmpv)
+       call multsv(b1,hhh,tmpv)
 !
 !  calculate abs(h) limiting
 !
-       call dot2_mn(tmpv,hhh2,PRECISE_SQRT=.true.)
+       call dot2(tmpv,hhh2,PRECISE_SQRT=.true.)
 !
 !  limit the length of h
 !
       quenchfactor=1./max(1.,3.*hhh2*dxmax)
-      call multsv_mn(quenchfactor,tmpv,hhh)
+      call multsv(quenchfactor,tmpv,hhh)
 !
       call dot(hhh,p%glnTT,rhs)
-!
-      
+!      
       Ksatb = Ksat*7.28e7 /unit_velocity**3. * unit_temperature**1.5
       call dot2(p%glnTT,tmpj,FAST_SQRT=.true.)
 !
@@ -512,8 +507,8 @@ module Special
       call dot(bunit,p%glnTT,tmpk)
       rhs = rhs + tmpj*tmpk
 !
-      call multmv_mn(p%hlnTT,bunit,tmpv)
-      call dot_mn(tmpv,bunit,tmpj)
+      call multmv(p%hlnTT,bunit,tmpv)
+      call dot(tmpv,bunit,tmpj)
       rhs = rhs + tmpj
 !
       rhs = gamma*rhs*chi_1
@@ -548,9 +543,9 @@ module Special
 !    additional heat conduction where the heat flux is
 !    is proportional to \rho abs(gradT)
 !
-      use Diagnostics
-      use Sub, only: dot_mn,dot2_mn
-      use EquationOfState, only: gamma
+      use Diagnostics,     only : max_mn_name
+      use Sub,             only : dot,dot2
+      use EquationOfState, only : gamma
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: tmpv
@@ -559,7 +554,7 @@ module Special
       integer :: i,j
       type (pencil_case) :: p
 !
-      call dot2_mn(p%glnTT,tmpi)
+      call dot2(p%glnTT,tmpi)
 !
       tmpv(:,:)=0.
       do i=1,3
@@ -567,9 +562,9 @@ module Special
             tmpv(:,i)=tmpv(:,i)+p%glnTT(:,j)*p%hlnTT(:,j,i)
          enddo
       enddo
-      call dot_mn(tmpv,p%glnTT,tmpj)
+      call dot(tmpv,p%glnTT,tmpj)
 !
-      call dot_mn(p%glnrho,p%glnTT,g2)
+      call dot(p%glnrho,p%glnTT,g2)
 !
       rhs = exp(p%lnTT)*(tmpi*(p%del2lnTT + 2.*tmpi + g2) +  tmpj)/max(tini,sqrt(tmpi))
 !
@@ -589,9 +584,9 @@ module Special
 !***********************************************************************
     subroutine calc_heatcond_constchi(df,p)
  
-      use Diagnostics
-      use Sub
-      use EquationOfState, only: gamma
+      use Diagnostics,     only : max_mn_name
+      use Sub,             only : dot2,dot,multsv,multmv
+      use EquationOfState, only : gamma
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -610,9 +605,9 @@ module Special
 !      
 !  calculate unit vector of bb
 !
-      call dot2_mn(p%bb,abs_b,PRECISE_SQRT=.true.)
+      call dot2(p%bb,abs_b,PRECISE_SQRT=.true.)
       b1=1./max(tini,abs_b)
-      call multsv_mn(b1,p%bb,bunit)
+      call multsv(b1,p%bb,bunit)
 !
 !  calculate first H_i
 !
@@ -626,32 +621,32 @@ module Special
           hhh(:,i)=hhh(:,i)+bunit(:,j)*(p%bij(:,i,j)+bunit(:,i)*tmpj(:))
         enddo
       enddo
-      call multsv_mn(b1,hhh,tmpv)
+      call multsv(b1,hhh,tmpv)
 !
 !  calculate abs(h) for limiting H vector
 !
-      call dot2_mn(tmpv,hhh2,PRECISE_SQRT=.true.)
+      call dot2(tmpv,hhh2,PRECISE_SQRT=.true.)
 !
 !  limit the length of H
 !
       quenchfactor=1./max(1.,3.*hhh2*dxmax)
-      call multsv_mn(quenchfactor,tmpv,hhh)
+      call multsv(quenchfactor,tmpv,hhh)
 !
 !  dot H with Grad lnTT
 !
-      call dot_mn(hhh,p%glnTT,tmp)
+      call dot(hhh,p%glnTT,tmp)
 !
 !  dot Hessian matrix of lnTT with bi*bj, and add into tmp
 !
-      call multmv_mn(p%hlnTT,bunit,tmpv)
-      call dot_mn(tmpv,bunit,tmpj)
+      call multmv(p%hlnTT,bunit,tmpv)
+      call dot(tmpv,bunit,tmpj)
       tmp = tmp+tmpj
 !
 !  calculate (Grad lnTT * bunit)^2 needed for lnecr form; also add into tmp
 !
-      call dot_mn(p%glnTT,bunit,tmpi)
+      call dot(p%glnTT,bunit,tmpi)
 !
-      call dot_mn(p%glnrho,bunit,tmpj)
+      call dot(p%glnrho,bunit,tmpj)
       tmp=tmp+(tmpj+tmpi)*tmpi
 !
 !  calculate rhs
@@ -679,8 +674,8 @@ module Special
 !  30-jan-08/bing: coded
 !
       use EquationOfState, only: gamma
-      use Sub, only: cubic_step,notanumber
-      use Mpicomm, only: stop_it
+      use Sub,             only: cubic_step,notanumber
+      use Mpicomm,         only: stop_it
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: lnQ,rtv_cool=0.,lnTT_SI,lnneni
@@ -752,10 +747,6 @@ module Special
 !
 !  30-jan-08/bing: coded
 !
-      use EquationOfState, only: gamma
-      use Sub, only: cubic_step,notanumber
-      use Mpicomm, only: stop_it
-!
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: heatinput
       type (pencil_case) :: p
@@ -781,7 +772,7 @@ module Special
 !**  copies dummy routines from nospecial.f90 for any Special      **
 !**  routines not implemented in this file                         **
 !**                                                                **
-    include 'special_dummies.inc'
+    include '../special_dummies.inc'
 !********************************************************************
 
 endmodule Special
