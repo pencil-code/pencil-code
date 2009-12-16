@@ -79,6 +79,7 @@ module Density
   complex :: coeflnrho=0.
 !
   integer :: iglobal_gg=0
+  integer :: niter=1
 !
   namelist /density_init_pars/ &
       ampllnrho,initlnrho,widthlnrho,                    &
@@ -102,7 +103,7 @@ module Density
       lnrho_const,plaw,lcontinuity_gas,borderlnrho,                 &
       diffrho_hyper3_aniso,lfreeze_lnrhosqu,density_floor,          &
       lanti_shockdiffusion,lrho_as_aux,ldiffusion_nolog,            &
-      lcheck_negative_density,lmassdiff_fix
+      lcheck_negative_density,lmassdiff_fix,niter
 ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_rhom=0       ! DIAG_DOC: $\left<\varrho\right>$
                                 ! DIAG_DOC:   \quad(mean density)
@@ -2543,22 +2544,23 @@ module Density
       real, dimension (nx) :: phi_rhs_pencil
       real, dimension(1) :: mass_per_proc
       real :: average_density, average_pressure
-      integer :: j, ju
+      integer :: j, ju,iter
 !
 !  Set first the boundary conditions on rhs
 !
-      call initiate_isendrcv_bdry(f,irhs,irhs+2)
-      call finalize_isendrcv_bdry(f,irhs,irhs+2)
-      call boundconds(f,irhs,irhs+2)
+      do iter=1, niter
+        call initiate_isendrcv_bdry(f,irhs,irhs+2)
+        call finalize_isendrcv_bdry(f,irhs,irhs+2)
+        call boundconds(f,irhs,irhs+2)
 !
 !  Find the divergence of rhs
 !
-      do n=n1,n2
-      do m=m1,m2
-        call div(f,irhs,phi_rhs_pencil)
-        f(l1:l2,m,n,ipp)=phi_rhs_pencil
-      enddo
-      enddo
+        do n=n1,n2
+        do m=m1,m2
+          call div(f,irhs,phi_rhs_pencil)
+          f(l1:l2,m,n,ipp)=phi_rhs_pencil
+        enddo
+        enddo
 !
 !  get pressure from inverting the Laplacian
 !
@@ -2572,18 +2574,32 @@ module Density
 !  added to the pressure we obtained from inverting the Laplacian.
 !  For this we need the average density first.  
 !
-      if (leos) then
-        call get_average_density(mass_per_proc,average_density)
-        call get_average_pressure(average_density,average_pressure)
-      else
-        average_pressure=0.0
-      endif
-      f(l1:l2,m1:m2,n1:n2,ipp) = f(l1:l2,m1:m2,n1:n2,ipp) + &
+        if (leos) then
+          call get_average_density(mass_per_proc,average_density)
+          call get_average_pressure(average_density,average_pressure)
+        else
+          average_pressure=0.0
+        endif
+        f(l1:l2,m1:m2,n1:n2,ipp) = f(l1:l2,m1:m2,n1:n2,ipp) + &
                     average_pressure
 !  Refresh the f-array with the new density
-      if (leos) then
-       f(l1:l2,m1:m2,n1:n2,ilnrho)=log(f(l1:l2,m1:m2,n1:n2,ipp)/cs20)
-      endif
+        if (leos) then
+         f(l1:l2,m1:m2,n1:n2,ilnrho)=log(f(l1:l2,m1:m2,n1:n2,ipp)/cs20)
+        endif
+
+        do n=n1,n2; do m=m1,m2
+          f(l1:l2,m,n,irhs)=exp(f(l1:l2,m,n,ilnrho))*f(l1:l2,m,n,irhs)/& 
+                          exp(p%lnrho)
+          f(l1:l2,m,n,irhs+1)=exp(f(l1:l2,m,n,ilnrho))*f(l1:l2,m,n,irhs+1)/& 
+                            exp(p%lnrho)
+          f(l1:l2,m,n,irhs+2)=exp(f(l1:l2,m,n,ilnrho))*f(l1:l2,m,n,irhs+2)/&
+                            exp(p%lnrho)
+        enddo; enddo
+
+        do n=n1,n2; do m=m1,m2
+          p%lnrho=exp(f(l1:l2,m,n,ilnrho))
+        enddo; enddo
+     enddo
 !  Update the boundary conditions for the new pressure (needed to
 !  compute grad(P)
       call initiate_isendrcv_bdry(f,ipp)
