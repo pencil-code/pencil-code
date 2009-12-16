@@ -901,8 +901,8 @@ module Density
           f(:,:,:,ilnrho) = log(rho_const + f(:,:,:,ilnrho))
         case('anelastic')
           call get_shared_variable('rho_eq', rho_eq, ierr)
-          do m=m1,m2
-            print*, y(m), rho_eq(m)
+          do n=n1,n2
+            print*, z(n), rho_eq(n)
           enddo
 !
         case default
@@ -1350,8 +1350,8 @@ module Density
 ! DM+PC (at present we are working only with log rho) 
       if(ldensity_nolog) call fatal_error('density_anelastic','working with lnrho')
       call get_shared_variable('rho_eq', rho_eq, ierr)
-      p%rho=rho_eq(m)
-      p%lnrho=log(rho_eq(m))
+      p%rho=rho_eq(n)
+      p%lnrho=log(rho_eq(n))
 ! rho and rho1
       if (lcheck_negative_density .and. any(p%rho <= 0.)) &
             call fatal_error_local('calc_pencils_density', 'negative density detected')
@@ -2553,8 +2553,8 @@ module Density
 !  Multiply the RHS by rho_eq before taking the divergence
 !
       call get_shared_variable('rho_eq', rho_eq, ierr)
-      do m=m1,m2
-        f(l1:l2,m,n1:n2,irhs:irhs+2)=rho_eq(m)*f(l1:l2,m,n1:n2,irhs:irhs+2)
+      do n=n1,n2
+        f(l1:l2,m1:m2,n,irhs:irhs+2)=rho_eq(n)*f(l1:l2,m1:m2,n,irhs:irhs+2)
       enddo
 !
 !  Set first the boundary conditions on rhs
@@ -2594,7 +2594,7 @@ module Density
         call grad(f,ipp,gpp)
         do j=1,3
           ju=j+iuu-1
-          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-gpp(:,j)/rho_eq(m)
+          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-gpp(:,j)/rho_eq(n)
         enddo
       enddo
       enddo

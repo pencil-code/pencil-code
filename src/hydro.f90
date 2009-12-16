@@ -470,8 +470,7 @@ module Hydro
       use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mz) :: c,s
-      real, dimension (my) :: rho_eq
+      real, dimension (mz) :: c, s, rho_eq
       logical :: lstarting
       integer :: ierr
 !
@@ -626,8 +625,8 @@ module Hydro
       endif
 
 !  temporary trick that re-initialize rho_eq
-      do m=m1,m2
-        rho_eq(m)=exp(-0.1*y(m))
+      do n=n1,n2
+        rho_eq(n)=exp(-0.1*z(n))
       enddo
       call put_shared_variable('rho_eq', rho_eq, ierr)
 
@@ -661,7 +660,7 @@ module Hydro
       real :: kabs,crit,eta_sigma,tmp0
       real :: a2, rr2, wall_smoothing
       integer :: j,i,l, ierr
-      real, dimension(my) :: rho_eq
+      real, dimension(mz) :: rho_eq
 !
 !  inituu corresponds to different initializations of uu (called from start).
 !     
@@ -1026,17 +1025,17 @@ module Hydro
           call put_shared_variable('rho_eq', rho_eq, ierr)
 
         case( 'anelastic-2dxz')
-          print*, "anelastic-2dxy: ampl_uz,kx_uu,ky_uu = ", ampl_uz(j),kx_uu,kz_uu
+          print*, "anelastic-2dxz: ampl_uy,kx_uu,kz_uu = ", ampl_uy(j),kx_uu,kz_uu
           do n=n1,n2; do m=m1,m2
-            f(l1:l2,m,n,iuy)=ampl_uy(j)*sin(kx_uu*x(l1:l2))*sin(kz_uu*z(m))
+            f(l1:l2,m,n,iuy)=ampl_uy(j)*sin(kx_uu*x(l1:l2))*sin(kz_uu*z(n))
           enddo; enddo
           call update_ghosts(f)
 ! 2D curl
           do n=n1,n2;do m=m1,m2
-            rho_eq(m)=exp(-0.1*y(m))
+            rho_eq(n)=exp(-0.1*z(n))
             call grad(f,iuy,tmp_nx3)
-            f(l1:l2,m,n,iux) = -tmp_nx3(:,2)/rho_eq(m)
-            f(l1:l2,m,n,iuz) =  tmp_nx3(:,1)/rho_eq(m)
+            f(l1:l2,m,n,iux) = -tmp_nx3(:,3)/rho_eq(n)
+            f(l1:l2,m,n,iuz) =  tmp_nx3(:,1)/rho_eq(n)
           enddo;enddo
           f(:,:,:,iuy)=0.
           call put_shared_variable('rho_eq', rho_eq, ierr)
