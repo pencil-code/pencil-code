@@ -357,7 +357,7 @@ module Density
       logical :: lnothing
 !
       intent(inout) :: f
-      real, dimension(:), pointer :: rho_eq
+      type (pencil_case) :: p
 !
 !  Define bottom and top height.
 !
@@ -900,9 +900,9 @@ module Density
 !  Should be consistent with density 
           f(:,:,:,ilnrho) = log(rho_const + f(:,:,:,ilnrho))
         case('anelastic')
-          call get_shared_variable('rho_eq', rho_eq, ierr)
           do n=n1,n2
-            print*, z(n), rho_eq(n)
+            call calc_pencils_density(f,p)
+            print*, z(n), p%rho
           enddo
 !
         case default
@@ -1338,7 +1338,6 @@ module Density
 !  20-11-04/anders: coded
 !
       use EquationOfState, only: lnrho0, rho0
-      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -1346,12 +1345,15 @@ module Density
       intent(in) :: f
       intent(inout) :: p
       integer :: i, mm, nn, ierr
-      real, dimension(:), pointer :: rho_eq
 ! DM+PC (at present we are working only with log rho) 
       if(ldensity_nolog) call fatal_error('density_anelastic','working with lnrho')
-      call get_shared_variable('rho_eq', rho_eq, ierr)
-      p%rho=rho_eq(n)
-      p%lnrho=log(rho_eq(n))
+
+!
+! Anelastic case: we give rho0 only here
+!
+      p%rho=exp(-0.1*z(n))
+      p%lnrho=log(p%rho)
+
 ! rho and rho1
       if (lcheck_negative_density .and. any(p%rho <= 0.)) &
             call fatal_error_local('calc_pencils_density', 'negative density detected')
@@ -2538,23 +2540,24 @@ module Density
       use Poisson, only: inverse_laplacian
       use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry
       use Boundcond, only: boundconds
-      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx,3) :: gpp
       real, dimension (nx) :: phi_rhs_pencil
-      real, dimension(1) :: mass_per_proc
-      real :: average_density, average_pressure
-      integer :: j, ju,iter, ierr
-      real, dimension(:), pointer :: rho_eq
+      real, dimension (1)  :: mass_per_proc
+      integer :: j, ju
 !
-!  Multiply the RHS by rho_eq before taking the divergence
+!  Multiply the RHS by rho before taking the divergence
 !
-      call get_shared_variable('rho_eq', rho_eq, ierr)
+      do m=m1,m2
       do n=n1,n2
-        f(l1:l2,m1:m2,n,irhs:irhs+2)=rho_eq(n)*f(l1:l2,m1:m2,n,irhs:irhs+2)
+        call calc_pencils_density(f,p)
+        f(l1:l2,m,n,irhs)=p%rho*f(l1:l2,m,n,irhs)
+        f(l1:l2,m,n,irhs+1)=p%rho*f(l1:l2,m,n,irhs+1)
+        f(l1:l2,m,n,irhs+2)=p%rho*f(l1:l2,m,n,irhs+2)
+      enddo
       enddo
 !
 !  Set first the boundary conditions on rhs
@@ -2592,9 +2595,10 @@ module Density
       do n=n1,n2
       do m=m1,m2
         call grad(f,ipp,gpp)
+        call calc_pencils_density(f,p)
         do j=1,3
           ju=j+iuu-1
-          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-gpp(:,j)/rho_eq(n)
+          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-gpp(:,j)/p%rho
         enddo
       enddo
       enddo
@@ -2638,16 +2642,29 @@ module Density
         c_tri(:)=1.0/dz**2
         do ikx=1,nxgrid/nprocz
           k2=kx_fft(ikx+nz*ipz)**2+ky_fft(iky)**2
-          b_tri=-2.0/dz**2-k2
+          if (k2==0.0) then
+            b_tri=-2.0/dz**2-2.0/dz/xyz0(3)
+          else
+            b_tri=-2.0/dz**2-k2
+          endif
+          r_tri=rhst(:,ikx)
 !
 !  Boundary conditions in the z-direction
 !
-          b_tri(1)=-2.0/dz**2-k2-2.0*gravz/cs20/dz
+!         b_tri(1)=-2.0/dz**2-k2-2.0*gravz/cs20/dz
+!         c_tri(1)=2.0/dz**2
+!         b_tri(nzgrid)=-2.0/dz**2-k2+2.0*gravz/cs20/dz
+!         a_tri(nzgrid)=2.0/dz**2
+! dP_1/dz=0
+!         b_tri(1)=1.0
+!         c_tri(1)=-1.0
+!         a_tri(nzgrid)=-1.0
+!         b_tri(nzgrid)=1.0
+!         r_tri(1)=0.0
+!         r_tri(nzgrid)=0.0
           c_tri(1)=2.0/dz**2
-          b_tri(nzgrid)=-2.0/dz**2-k2+2.0*gravz/cs20/dz
-          a_tri(nzgrid)=2.0/dz**2
+          a_tri(nzgrid)=2.d0/dz**2
 !
-          r_tri=rhst(:,ikx)
           call tridag(a_tri,b_tri,c_tri,r_tri,u_tri,err)
           rhst(:,ikx)=u_tri
         enddo

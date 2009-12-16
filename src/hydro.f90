@@ -470,7 +470,7 @@ module Hydro
       use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mz) :: c, s, rho_eq
+      real, dimension (mz) :: c, s
       logical :: lstarting
       integer :: ierr
 !
@@ -624,12 +624,6 @@ module Hydro
         call put_shared_variable('dx_forc', dx_forc, ierr)
       endif
 
-!  temporary trick that re-initialize rho_eq
-      do n=n1,n2
-        rho_eq(n)=exp(-0.1*z(n))
-      enddo
-      call put_shared_variable('rho_eq', rho_eq, ierr)
-
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
@@ -650,17 +644,17 @@ module Hydro
       use Mpicomm, only: stop_it
       use Sub
       use Boundcond,only:update_ghosts
-      use SharedVariables, only: put_shared_variable
+      use Density, only: calc_pencils_density
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real, dimension (nx,3) :: tmp_nx3
       real, dimension (mx) :: tmpmx
-      real, dimension (nx) :: r,p,tmp,prof
+      real, dimension (nx) :: r,p1,tmp,prof
       real :: kabs,crit,eta_sigma,tmp0
       real :: a2, rr2, wall_smoothing
       integer :: j,i,l, ierr
-      real, dimension(mz) :: rho_eq
+      type (pencil_case) :: p
 !
 !  inituu corresponds to different initializations of uu (called from start).
 !     
@@ -928,8 +922,8 @@ module Hydro
 !WD: Can't we incorporate this into the urand stuff?
             print*, 'init_uu: ampluu(j)=',ampluu(j)
             call random_number_wrapper(r)
-            call random_number_wrapper(p)
-!          tmp=sqrt(-2*log(r))*sin(2*pi*p)*exp(-z(n)**2*10.)
+            call random_number_wrapper(p1)
+!          tmp=sqrt(-2*log(r))*sin(2*pi*p1)*exp(-z(n)**2*10.)
             tmp=exp(-z(n)**2*10.)*cos(2.*x(l1:l2)+sin(4.*x(l1:l2)))
             f(l1:l2,m,n,iuz)=f(l1:l2,m,n,iuz)+ampluu(j)*tmp
           enddo; enddo
@@ -1016,13 +1010,12 @@ module Hydro
           call update_ghosts(f)
 ! 2D curl
           do n=n1,n2;do m=m1,m2
-            rho_eq(m)=exp(-0.1*y(m))
+            call calc_pencils_density(f,p)
             call grad(f,iuz,tmp_nx3)
-            f(l1:l2,m,n,iux) = -tmp_nx3(:,2)/rho_eq(m)
-            f(l1:l2,m,n,iuy) =  tmp_nx3(:,1)/rho_eq(m)
+            f(l1:l2,m,n,iux) = -tmp_nx3(:,2)/p%rho
+            f(l1:l2,m,n,iuy) =  tmp_nx3(:,1)/p%rho
           enddo;enddo
           f(:,:,:,iuz)=0.
-          call put_shared_variable('rho_eq', rho_eq, ierr)
 
         case( 'anelastic-2dxz')
           print*, "anelastic-2dxz: ampl_uy,kx_uu,kz_uu = ", ampl_uy(j),kx_uu,kz_uu
@@ -1032,13 +1025,12 @@ module Hydro
           call update_ghosts(f)
 ! 2D curl
           do n=n1,n2;do m=m1,m2
-            rho_eq(n)=exp(-0.1*z(n))
+            call calc_pencils_density(f,p)
             call grad(f,iuy,tmp_nx3)
-            f(l1:l2,m,n,iux) = -tmp_nx3(:,3)/rho_eq(n)
-            f(l1:l2,m,n,iuz) =  tmp_nx3(:,1)/rho_eq(n)
+            f(l1:l2,m,n,iux) = -tmp_nx3(:,3)/p%rho
+            f(l1:l2,m,n,iuz) =  tmp_nx3(:,1)/p%rho
           enddo;enddo
           f(:,:,:,iuy)=0.
-          call put_shared_variable('rho_eq', rho_eq, ierr)
 !
         case('incompressive-shwave')
 ! incompressible shear wave of Johnson & Gammine (2005a)
