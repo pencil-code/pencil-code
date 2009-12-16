@@ -1293,7 +1293,7 @@ module Radiation
 !***********************************************************************
     subroutine radiative_cooling(f,df,p)
 !
-!  Add radiative cooling to entropy/temperature equation
+!  Add radiative cooling to entropy/temperature equation.
 !
 !  25-mar-03/axel+tobi: coded
 !
@@ -1306,8 +1306,9 @@ module Radiation
       type (pencil_case) :: p
       real, dimension (nx) :: cooling,Qrad2
 !
-!  add radiative cooling, either from the intensity
-!  or in the diffusion approximation
+!  Add radiative cooling, either from the intensity or in the diffusion
+!  approximation.
+!
 !  AB: Tobi, would it be better/possible to redefine Qrad so as
 !  AB: to include the kapparho factor. Then we'd have Qrad=-divFrad.
 !
@@ -1321,7 +1322,7 @@ module Radiation
         cooling=f(l1:l2,m,n,ikapparho)*f(l1:l2,m,n,iQrad)
       endif
 !
-!  Add radiative cooling
+!  Add radiative cooling.
 !
       if (lcooling) then
         if (lentropy) then
@@ -1332,7 +1333,7 @@ module Radiation
         endif
       endif
 !
-!  diagnostics
+!  Diagnostics.
 !
       if (ldiagnos) then
         Qrad2=f(l1:l2,m,n,iQrad)**2
@@ -1794,12 +1795,10 @@ module Radiation
 !  21-11-04/anders: coded
 !
       if (lcooling) then
-
 !
-!  need cv1 in any case for the time step calculation
+!  Need cv1 in any case for the time step calculation.
 !
         lpenc_requested(i_cv1)=.true.
-
         if (lentropy) then
           lpenc_requested(i_TT1)=.true.
           lpenc_requested(i_rho1)=.true.
@@ -1807,23 +1806,21 @@ module Radiation
           lpenc_requested(i_glnrho)=.true.
           lpenc_requested(i_cp1)=.true.
         endif
-
         if (ltemperature) then
-          lpenc_requested(i_TT)=.true.!!
+          lpenc_requested(i_TT)=.true.
           lpenc_requested(i_TT1)=.true.
           lpenc_requested(i_rho1)=.true.
           lpenc_requested(i_cv1)=.true.
         endif
-
       endif
-
+!
       if (lrad_cool_diffus) then
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_TT)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_del2lnTT)=.true.
         lpenc_requested(i_cp1)=.true.
-     endif
+      endif
 !
     endsubroutine pencil_criteria_radiation
 !***********************************************************************
