@@ -900,7 +900,7 @@ module Density
         case('anelastic')
           haut=-cs20/gravz
           do n=n1,n2
-            f(:,:,n,ipp) = 1.0+exp(-z(n)/haut)
+            f(:,:,n,ipp) = exp(-z(n)/haut)
           enddo
           f(:,:,:,ilnrho) = log(f(:,:,:,ipp)/cs20)
 !
@@ -2645,10 +2645,10 @@ module Density
 !
 !  Boundary conditions in the z-direction
 !
-          b_tri(1)=-2.0/dz**2-k2-2.0*dz*gravz/cs20
-          c_tri(1)=1.0/dz**2+1.0
-          b_tri(nzgrid)=-2.0/dz**2-k2+2.0*dz*gravz/cs20
-          a_tri(nzgrid)=1.0/dz**2+1.0
+          b_tri(1)=-2.0/dz**2-k2-2.0*gravz/cs20/dz
+          c_tri(1)=2.0/dz**2
+          b_tri(nzgrid)=-2.0/dz**2-k2+2.0*gravz/cs20/dz
+          a_tri(nzgrid)=2.0/dz**2
 !
           r_tri=rhst(:,ikx)
           call tridag(a_tri,b_tri,c_tri,r_tri,u_tri,err)
