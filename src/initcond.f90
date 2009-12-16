@@ -3767,13 +3767,13 @@ module Initcond
       allocate(u_im(nx,ny,nz),stat=stat)
       if (stat>0) call fatal_error('powern','Could not allocate memory for u_im')
       allocate(kx(nxgrid),stat=stat)
-      if (stat>0) call fatal_error('mdi_init', &
+      if (stat>0) call fatal_error('powern', &
           'Could not allocate memory for kx')
       allocate(ky(nygrid),stat=stat)
-      if (stat>0) call fatal_error('mdi_init', &
+      if (stat>0) call fatal_error('powern', &
           'Could not allocate memory for ky')
       allocate(kz(nzgrid),staT=stat)
-      if (stat>0) call fatal_error('mdi_init', &
+      if (stat>0) call fatal_error('powern', &
           'Could not allocate memory for kz')
 !
       if (ampl==0) then
