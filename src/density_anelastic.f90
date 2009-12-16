@@ -2559,7 +2559,8 @@ module Density
 !
 !  get pressure from inverting the Laplacian
 !
-      call inverse_laplacian(f,f(l1:l2,m1:m2,n1:n2,ipp))
+!     call inverse_laplacian(f,f(l1:l2,m1:m2,n1:n2,ipp))
+      call inverse_laplacian_pressure(f(l1:l2,m1:m2,n1:n2,ipp))
 !
 !  For periodic boundary conditions the mean pressure now must be
 !  added to the pressure we obtained from inverting the Laplacian.
@@ -2597,5 +2598,72 @@ module Density
 !
     endsubroutine anelastic_after_mn
 !***********************************************************************
+    subroutine inverse_laplacian_pressure(phi)
 !
+!  Solve the pressure equation in the anelastic case by Fourier 
+!  transforming in the xy-plane and solving the discrete matrix 
+!  equation in the z-direction. Inspired from inverse_laplacian_semispectral 
+!  coded in the Poisson module.
+!
+!  16-dec-09/dintrans: coded
+!
+      use General, only: tridag
+      use Mpicomm, only: transp_xz, transp_zx
+      use Fourier, only: fourier_transform_xy
+!
+      real, dimension (nx,ny,nz) :: phi, b1
+      real, dimension (nzgrid,nx/nprocz) :: rhst
+      real, dimension (nzgrid) :: a_tri, b_tri, c_tri, r_tri, u_tri
+      real :: k2
+      integer :: ikx, iky
+      logical :: err
+!
+!  identify version
+!
+      if (lroot .and. ip<10) call svn_id( &
+        "$Id: poisson.f90 12460 2009-12-10 15:19:51Z sven.bingert $")
+!
+!  The right-hand-side of the pressure equation is purely real.
+!
+      b1 = 0.0
+!
+!  Forward transform (to k-space).
+!
+      call fourier_transform_xy(phi,b1)
+!
+!  Solve for discrete z-direction with zero density above and below z-boundary.
+!
+      do iky=1,ny
+        call transp_xz(phi(:,iky,:),rhst)
+        a_tri(:)=1.0/dz**2
+        c_tri(:)=1.0/dz**2
+        do ikx=1,nxgrid/nprocz
+          k2=kx_fft(ikx+nz*ipz)**2+ky_fft(iky)**2
+          b_tri=-2.0/dz**2-k2
+!
+          if (k2==0.0) then
+            b_tri(1)=-2.0/dz**2-2*dz/xyz0(3)
+            c_tri(1)=1.0/dz**2+1.0
+            b_tri(nzgrid)=-2.0/dz**2-2*dz/xyz1(3)
+            a_tri(nzgrid)=1.0/dz**2+1.0
+          else
+            b_tri(1)=-2.0/dz**2-2*sqrt(k2)*dz
+            c_tri(1)=1.0/dz**2+1.0
+            b_tri(nzgrid)=-2.0/dz**2-2*sqrt(k2)*dz
+            a_tri(nzgrid)=1.0/dz**2+1.0
+          endif
+!
+          r_tri=rhst(:,ikx)
+          call tridag(a_tri,b_tri,c_tri,r_tri,u_tri,err)
+          rhst(:,ikx)=u_tri
+        enddo
+        call transp_zx(rhst,phi(:,iky,:))
+      enddo
+!
+!  Inverse transform (to real space).
+!
+      call fourier_transform_xy(phi,b1,linv=.true.)
+!
+    endsubroutine inverse_laplacian_pressure
+!***********************************************************************
 endmodule Density
