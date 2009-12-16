@@ -11,8 +11,8 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED gTT(3); mu1; gamma; gamma_m1; gamma_inv; gradcp(3)
-! PENCILS PROVIDED cv; cv1; cp; cp1; YY(nchemspec)
-! PENCILS PROVIDED cs2; rho1gpp(3); gmu1(3); nu; gradnu(3); nu_art
+! PENCILS PROVIDED cv; cv1; cp; cp1; YY(nchemspec); gXXk(3,nchemspec); ghhk(3,nchemspec)
+! PENCILS PROVIDED cs2; rho1gpp(3); glnpp(3); gmu1(3); nu; gradnu(3); nu_art
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
 ! PENCILS PROVIDED lambda; glambda(3); ghYrho(3);ghYrho_uu
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
@@ -33,9 +33,9 @@ module Chemistry
   real, dimension (mx,my,mz) :: cp_full,cv_full,mu1_full, nu_full, pp_full
   real, dimension (mx,my,mz) :: lambda_full, rho_full, nu_art_full=0.
   real, dimension (mx,my,mz,nchemspec) :: cv_R_spec_full
-  real, dimension (mx,my,mz,nchemspec) ::  cp_R_spec
+  real, dimension (mx,my,mz,nchemspec) ::  cp_R_spec, hhk_full
   real, dimension (mx,my,mz) ::  TT_full
-  real, dimension (mx,my,mz) :: hYrho_full, e_int_full
+  real, dimension (mx,my,mz) ::  e_int_full
 
   real :: lambda_const=impossible
   real :: visc_const=impossible
@@ -484,6 +484,8 @@ module Chemistry
 !  13-aug-07/steveb: coded
 !
       lpenc_requested(i_YY)=.true.
+      lpenc_requested(i_gXXk)=.true.
+      lpenc_requested(i_ghhk)=.true.
       lpenc_requested(i_cs2)=.true.
 !
       lpenc_requested(i_DYDt_reac)=.true.
@@ -492,6 +494,7 @@ module Chemistry
        if (lcheminp) then
          lpenc_requested(i_rho)=.true.
          lpenc_requested(i_lnrho)=.true.
+         lpenc_requested(i_glnpp)=.true.
          lpenc_requested(i_mu1)=.true.
          lpenc_requested(i_gmu1)=.true.
          lpenc_requested(i_pp)=.true.
@@ -505,6 +508,7 @@ module Chemistry
          lpenc_requested(i_gamma_inv)=.true.
          lpenc_requested(i_ghYrho)=.true.
          lpenc_requested(i_ghYrho_uu)=.true.
+            
 !
          lpenc_requested(i_DYDt_reac)=.true.
          lpenc_requested(i_DYDt_diff)=.true.
@@ -547,6 +551,7 @@ module Chemistry
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension (nx) :: mu1_cgs, cp_spec
+      real, dimension (nx,3) :: gXX_tmp, ghhk_tmp
       real, dimension (mx) :: tmp_sum, tmp_sum2
       real, dimension (nchemspec,nchemspec) :: Phi
 !
@@ -561,6 +566,20 @@ module Chemistry
 !
       if (lpencil(i_YY)) then
         do k=1,nchemspec;  p%YY(:,k)=f(l1:l2,m,n,ichemspec(k)); enddo
+      endif
+      
+      if (lpencil(i_gXXk)) then
+       do k=1,nchemspec 
+         call grad(XX_full(:,:,:,k),gXX_tmp)
+         do i=1,3; p%gXXk(:,i,k)=gXX_tmp(:,i); enddo
+       enddo
+      endif
+
+     if (lpencil(i_ghhk)) then
+       do k=1,nchemspec 
+         call grad(hhk_full(:,:,:,k),ghhk_tmp)
+         do i=1,3; p%ghhk(:,i,k)=ghhk_tmp(:,i); enddo
+       enddo
       endif
 !
       if (lcheminp) then
@@ -604,6 +623,37 @@ module Chemistry
 !  Pressure
 !
         if (lpencil(i_pp)) p%pp = Rgas*p%TT*p%mu1*p%rho
+
+!
+!  Logarithmic pressure gradient
+!
+        if (lpencil(i_rho1gpp)) then
+!
+! NILS: rho1gpp should be calculated from gradT, gradlnrho and gradmu
+! NILS: instead. When this is implemented one should remove the
+! NILS: calculation of pp_full
+!
+          call grad(pp_full,p%rho1gpp)
+!
+          do i=1,3
+            p%rho1gpp(:,i)=p%rho1gpp(:,i)/p%rho(:)
+          enddo
+!
+          !do i=1,3
+          !  p%rho1gpp(:,i) = p%gamma_inv*p%cs2*&
+          !      (p%glnrho(:,i)+p%glnTT(:,i)+p%gmu1(:,i)/p%mu1(:))
+          !enddo
+        endif
+!
+! Gradient of the lnpp
+!
+       if (lpencil(i_glnpp)) then
+            do i=1,3
+             p%glnpp(:,i)=p%rho1gpp(:,i)*p%rho(:)/p%pp(:)
+            enddo
+       endif
+      
+
 !
 !  Specific heat at constant pressure
 !
@@ -639,26 +689,7 @@ module Chemistry
 !  NB:this is wrong for the chemistry case
 !------------------------------------------
 !  WL: what is wrong?
-!
-!  Logarithmic pressure gradient
-!
-        if (lpencil(i_rho1gpp)) then
-!
-! NILS: rho1gpp should be calculated from gradT, gradlnrho and gradmu
-! NILS: instead. When this is implemented one should remove the
-! NILS: calculation of pp_full
-!
-          call grad(pp_full,p%rho1gpp)
-!
-          do i=1,3
-            p%rho1gpp(:,i)=p%rho1gpp(:,i)/p%rho(:)
-          enddo
-!
-          !do i=1,3
-          !  p%rho1gpp(:,i) = p%gamma_inv*p%cs2*&
-          !      (p%glnrho(:,i)+p%glnTT(:,i)+p%gmu1(:,i)/p%mu1(:))
-          !enddo
-        endif
+
 !
 !  Viscosity of a mixture
 !
@@ -704,9 +735,9 @@ module Chemistry
 !
 !  Calculate grad(enthalpy)
 !
-      if (lpenc_requested(i_ghYrho)) then
-        call grad(hYrho_full,p%ghYrho)
-      endif
+    !  if (lpenc_requested(i_ghYrho)) then
+    !   call grad(hYrho_full,p%ghYrho)
+    !  endif
 
       if (lpenc_requested(i_ghYrho_uu)) then
         call dot_mn(p%ghYrho,p%uu,p%ghYrho_uu)
@@ -826,7 +857,8 @@ module Chemistry
         endif
       enddo
 !
-      call calc_for_chem_mixture(f)
+    call calc_for_chem_mixture(f)
+
 !
 !  Find logaritm of density at inlet
 !
@@ -837,18 +869,25 @@ module Chemistry
           +initial_massfractions(ichem_N2)/(mN2)
       log_inlet_density=&
           log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
+print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
+
 !
 !
 !  Initialize density
 !
       f(l1:l2,m1:m2,n1:n2,ilnrho)=log(init_pressure)-log(Rgas)  &
           -f(l1:l2,m1:m2,n1:n2,ilnTT)-log(mu1_full(l1:l2,m1:m2,n1:n2))
+
+
+
 !
 !  Initialize velocity
 !
       f(l1:l2,m1:m2,n1:n2,iux)=f(l1:l2,m1:m2,n1:n2,iux)  &
           +init_ux*exp(log_inlet_density)/exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
 !
+
+     call calc_for_chem_mixture(f)
 !
 !  Check if we want nolog of density or nolog of temperature
 !
@@ -1257,6 +1296,7 @@ module Chemistry
       rho_full=exp(f(:,:,:,ilnrho))
      endif
 
+
      if (ltemperature_nolog) then
          TT_full=f(:,:,:,iTT)
      else
@@ -1304,6 +1344,10 @@ module Chemistry
             enddo
            enddo
           enddo
+!do k=1,nchemspec
+!print*,'XX_full', XX_full(l1,m1,n1,k)
+!enddo
+
 !
 ! NILS: Is this really necesarry?
 !
@@ -1443,7 +1487,7 @@ module Chemistry
 !endif
               enddo
               nu_dyn(j1,j2,j3)=nu_dyn(j1,j2,j3)+XX_full(j1,j2,j3,k)*&
-                  species_viscosity(j1,j2,j3,k)/tmp_sum2(j1,j2,j3)
+                  species_viscosity(j1,j2,j3,k)!/tmp_sum2(j1,j2,j3)
              enddo
 
               nu_full(j1,j2,j3)=nu_dyn(j1,j2,j3)/rho_full(j1,j2,j3)
@@ -1501,7 +1545,8 @@ module Chemistry
 
             do k=1,nchemspec
               Diff_full_add(j1,j2,j3,k)=Diff_full(j1,j2,j3,k)*&
-                  species_constants(k,imass)/unit_mass*mu1_full(j1,j2,j3)!*0.8
+                  species_constants(k,imass)/unit_mass &
+                  *mu1_full(j1,j2,j3)!*0.8
             enddo
          enddo
          enddo
@@ -1547,18 +1592,17 @@ module Chemistry
         do j2=mm1,mm2
         do j1=1,mx
 
-          hYrho_full(j1,j2,j3)=0.
+         
           do k=1,nchemspec
-            hYrho_full(j1,j2,j3)=hYrho_full(j1,j2,j3)&
-               +H0_RT(j1,j2,j3,k)*Rgas*TT_full(j1,j2,j3)&
-               *f(j1,j2,j3,ichemspec(k))/species_constants(k,imass)
+            hhk_full(j1,j2,j3,k)=H0_RT(j1,j2,j3,k)*Rgas*TT_full(j1,j2,j3)&
+               /species_constants(k,imass)
           enddo
 !
 !  Internal energy
 !
-          e_int_full(j1,j2,j3)=hYrho_full(j1,j2,j3) &
-                    -Rgas*TT_full(j1,j2,j3)*mu1_full(j1,j2,j3)
-          hYrho_full(j1,j2,j3)=hYrho_full(j1,j2,j3)*rho_full(j1,j2,j3)
+        !  e_int_full(j1,j2,j3)=hYrho_full(j1,j2,j3) &
+        !            -Rgas*TT_full(j1,j2,j3)*mu1_full(j1,j2,j3)
+        !  hYrho_full(j1,j2,j3)=hYrho_full(j1,j2,j3)*rho_full(j1,j2,j3)
         enddo
         enddo
         enddo
@@ -1576,40 +1620,12 @@ module Chemistry
    !             *f(l1:l2,m1:m2,n1:n2,ichemspec(k))/species_constants(k,imass)
    !       enddo
 !
-! Also the values at the ghost zones are required for hYrho_full
-!
-   !       do i=1,nghost
-   !         hYrho_full(i,:,:)=hYrho_full(l1,:,:)
-   !         hYrho_full(l2+i,:,:)=hYrho_full(l2,:,:)
-   !         hYrho_full(:,i,:)=hYrho_full(:,m1,:)
-   !         hYrho_full(:,m2+i,:)=hYrho_full(:,m2,:)
-   !         hYrho_full(:,:,i)=hYrho_full(:,:,n1)
-   !         hYrho_full(:,:,n2+i)=hYrho_full(:,:,n2)
-   !       enddo
-!
 !  Internal energy
 !
     !      e_int_full=hYrho_full-Rgas*TT_full*mu1_full
     !      hYrho_full=hYrho_full*rho_full
 !
-!.......................................................
-
-!!$if (lroot) then
-!!$lmid=(l2-l1)/2+l1
-!!$print*,'e_int_full=',e_int_full(l1,m1,n1),e_int_full(lmid,m1,n1),e_int_full(l2,m1,n1)
-!!$print*,'hYrho_full=',hYrho_full(l1,m1,n1),hYrho_full(lmid,m1,n1),hYrho_full(l2,m1,n1)
-!!$print*,'H0_RT=',H0_RT(l1,m1,n1,1),H0_RT(lmid,m1,n1,1),H0_RT(l2,m1,n1,1)
-!!$print*,'lambda_full=',lambda_full(l1,m1,n1),lambda_full(lmid,m1,n1),lambda_full(l2,m1,n1)
-!!$print*,'Diff_full=',Diff_full(l1,m1,n1,1),Diff_full(lmid,m1,n1,1),Diff_full(l2,m1,n1,1)
-!!$print*,'mu1_full=',mu1_full(l1,m1,n1),mu1_full(lmid,m1,n1),mu1_full(l2,m1,n1)
-!!$print*,'nu_full=',nu_full(l1,m1,n1),nu_full(lmid,m1,n1),nu_full(l2,m1,n1)
-!!$print*,'cp_full=',cp_full(l1,m1,n1),cp_full(lmid,m1,n1),cp_full(l2,m1,n1)
-!!$print*,'cv_full=',cv_full(l1,m1,n1),cv_full(lmid,m1,n1),cv_full(l2,m1,n1)
-!!$print*,'pp_full=',pp_full(l1,m1,n1),pp_full(lmid,m1,n1),pp_full(l2,m1,n1)
-!!$print*,'xx_full=',xx_full(l1,m1,n1,1),xx_full(lmid,m1,n1,1),xx_full(l2,m1,n1,1)
-!!$print*,'rho_full=',rho_full(l1,m1,n1),rho_full(lmid,m1,n1),rho_full(l2,m1,n1)
-!!$print*,'TT_full=',TT_full(l1,m1,n1),TT_full(lmid,m1,n1),TT_full(l2,m1,n1)
-!!$endif
+!
 
         else
           call stop_it('This case works only for cgs units system!')
@@ -2086,8 +2102,9 @@ module Chemistry
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: gchemspec
-      real, dimension (nx) :: ugchemspec, sum_DYDT, ghYrho_uu=0.
+      real, dimension (nx,3) :: gchemspec, dk
+      real, dimension (nx) :: ugchemspec, sum_DYDT, sum_hk_DYDt_diff!,ghYrho_uu=0.
+      real, dimension (nx) :: sum_dk_ghk,dk_dhhk
       type (pencil_case) :: p
 !
 !  indices
@@ -2172,9 +2189,19 @@ module Chemistry
         enddo
        else
         sum_DYDt=0.
+        sum_hk_DYDt_diff=0.
+        sum_dk_ghk=0.
+        
         do k=1,nchemspec
           sum_DYDt=sum_DYDt+Rgas/species_constants(k,imass)*&
               (1.-H0_RT(l1:l2,m,n,k))*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
+          sum_hk_DYDt_diff=sum_hk_DYDt_diff+hhk_full(l1:l2,m,n,k)*p%DYDt_diff(:,k)
+          do i=1,3
+           dk(:,i)=p%gXXk(:,i,k)+(XX_full(l1:l2,m,n,k)-f(l1:l2,m,n,ichemspec(k)))*p%glnpp(:,i)
+          enddo
+           call dot_mn(dk,p%ghhk(:,:,k),dk_dhhk)
+
+           sum_dk_ghk=sum_dk_ghk+f(l1:l2,m,n,ichemspec(k))*dk_dhhk
         enddo
        endif
 !
@@ -2194,12 +2221,13 @@ module Chemistry
           RHS_T_full(l1:l2,m,n)=sum_DYDt(:)
         else
           if (ltemperature_nolog) then
-            RHS_T_full(l1:l2,m,n)=(sum_DYDt(:)- Rgas*p%mu1*p%divu)*p%cv1*p%TT(:) &
-            -(hYrho_full(l1:l2,m,n)*p%divu(:)+p%ghYrho_uu(:))*p%cv1/p%rho(:)
+            RHS_T_full(l1:l2,m,n)=(sum_DYDt(:)- Rgas*p%mu1*p%divu)*p%cv1*p%TT(:)! &
+           ! -(hYrho_full(l1:l2,m,n)*p%divu(:)+p%ghYrho_uu(:))*p%cv1/p%rho(:)
           else
             RHS_T_full(l1:l2,m,n)=(sum_DYDt(:)- Rgas*p%mu1*p%divu)*p%cv1 &
-            !/(p%cp-Rgas*p%mu1)&
-            -(hYrho_full(l1:l2,m,n)*p%divu(:)+p%ghYrho_uu(:))/p%TT(:)*p%cv1/p%rho(:)
+         !   -(hYrho_full(l1:l2,m,n)*p%divu(:)+p%ghYrho_uu(:))/p%TT(:)*p%cv1/p%rho(:)
+           +(sum_hk_DYDt_diff-sum_dk_ghk)/p%TT(:)*p%cv1
+           
           endif
         endif
 
@@ -3884,6 +3912,8 @@ module Chemistry
 !  28.08.2009: Nils Erland L. Haugen (Corrected the calculation of the 
 !              prefactor.) 
 !
+      use Mpicomm
+
       real, dimension (mx,my,mz,mfarray) :: f
       intent(in) :: f
       real, dimension (mx,my,mz) :: Omega_kl, prefactor
@@ -3891,7 +3921,9 @@ module Chemistry
       integer :: k,j,j1,j2,j3
       real :: eps_jk, sigma_jk, m_jk, delta_jk, delta_st
       character (len=7) :: omega
-      real :: Na=6.022E23,tmp_local,tmp_local2, lnTk, delta_jk_star
+      real :: Na=6.022E23 ,tmp_local,tmp_local2, lnTk, delta_jk_star
+
+
 !
 !  Find binary diffusion coefficients
 !
@@ -3914,60 +3946,7 @@ module Chemistry
 ! Check if we use simplified version of the binary diffusion calculation
 !
         if (BinDif_simple) then
-          do k=1,nchemspec
-            do j=k,nchemspec
-              if (j/=k) then
-                eps_jk=(tran_data(j,2)*tran_data(k,2))**0.5
-                sigma_jk=0.5*(tran_data(j,3)+tran_data(k,3))*1e-8
-                m_jk=(species_constants(j,imass)*species_constants(k,imass)) &
-                    /(species_constants(j,imass)+species_constants(k,imass))/Na
-              else
-                eps_jk=tran_data(j,2)
-                sigma_jk=tran_data(j,3)*1e-8
-                m_jk=species_constants(j,imass)/(2*Na)
-              endif
-!
-              tmp_local=(m_jk)**(-0.5)*(sigma_jk*unit_length)**(-2)*unit_time
-!
-!  Loop over all grid points
-!           
-              do j3=nn1,nn2
-              do j2=mm1,mm2
-              do j1=ll1,ll2
-                if (ltemperature_nolog) then
-                  lnTjk(j1,j2,j3)=log(f(j1,j2,j3,ilnTT)/eps_jk)
-                else
-                  lnTjk(j1,j2,j3)=f(j1,j2,j3,ilnTT)-log(eps_jk)
-                endif
-                Omega_kl(j1,j2,j3)= &
-                    1./(6.96945701E-1   +3.39628861E-1*lnTjk(j1,j2,j3) &
-                    +1.32575555E-2*lnTjk(j1,j2,j3)*lnTjk(j1,j2,j3) &
-                    -3.41509659E-2*lnTjk(j1,j2,j3)**3 &
-                    +7.71359429E-3*lnTjk(j1,j2,j3)**4 &
-                    +6.16106168E-4*lnTjk(j1,j2,j3)**5 &
-                    -3.27101257E-4*lnTjk(j1,j2,j3)**6 &
-                    +2.51567029E-5*lnTjk(j1,j2,j3)**7)
-                Bin_Diff_coef(j1,j2,j3,k,j)=prefactor(j1,j2,j3)  &
-                    /Omega_kl(j1,j2,j3)*tmp_local
-              enddo
-              enddo
-              enddo
-            enddo
-          enddo
-!
-!  Set the symertic components of the binary diffusion coefficient
-!
-          do j3=nn1,nn2
-          do j2=mm1,mm2
-          do j1=ll1,ll2
-            do k=1,nchemspec
-              do j=1,k-1
-                Bin_Diff_coef(j1,j2,j3,k,j)=Bin_Diff_coef(j1,j2,j3,j,k)
-              enddo
-            enddo
-          enddo
-          enddo
-          enddo          
+          call stop_it('BinDif_simple case does not work now!')
         else
 !
 !  Do non-simplified binary diffusion coefficient
@@ -3983,10 +3962,12 @@ module Chemistry
                 sigma_jk=0.5*(tran_data(j,3)+tran_data(k,3))*1e-8
                 m_jk=(species_constants(j,imass)*species_constants(k,imass)) &
                     /(species_constants(j,imass)+species_constants(k,imass))/Na
+                delta_jk=0.5*tran_data(j,4)*tran_data(k,4)*1e-18*1e-18
               else
                 eps_jk=tran_data(j,2)
                 sigma_jk=tran_data(j,3)*1e-8
                 m_jk=species_constants(j,imass)/(2*Na)
+                delta_jk=0.5*(tran_data(j,4)*1e-18)**2
               endif
   
 !
@@ -4012,7 +3993,7 @@ module Chemistry
 
 
 !NATALIA
-                delta_jk=0.5*(tran_data(j,4)*1e-18)**2
+              
                 delta_jk_star=delta_jk/(eps_jk*k_B_cgs*sigma_jk**3)
                 
                 Omega_kl(j1,j2,j3)=Omega_kl(j1,j2,j3)&
@@ -4020,9 +4001,20 @@ module Chemistry
                if (j/=k) then
                 Bin_Diff_coef(j1,j2,j3,k,j)=prefactor(j1,j2,j3)/mu1_full(j1,j2,j3)&
                     /(sqrt(m_jk)*sigma_jk**2*Omega_kl(j1,j2,j3))
+
+
                else
                 Bin_Diff_coef(j1,j2,j3,k,j)=prefactor(j1,j2,j3)&
                     /(sqrt(m_jk)*sigma_jk**2*Omega_kl(j1,j2,j3))*species_constants(k,imass)
+       
+!if (j1==l1) then
+!  if ((j==3) ) then
+!   print*,'Om',Omega_kl(j1,j2,j3),species_constants(j,imass),species_constants(k,imass),sigma_jk
+!   print*,'Tst',exp(lnTjk(j1,j2,j3)),delta_jk_star
+!  endif
+!endif
+!if (j1==l1) print*,'BIn_dif',Bin_Diff_coef(j1,j2,j3,k,j),rho_full(j1,j2,j3),TT_full(j1,j2,j3)
+
                endif
               enddo
               enddo
@@ -4047,6 +4039,7 @@ module Chemistry
 
         endif
       endif
+
 !
 !  Calculate viscosity
 !
@@ -4184,7 +4177,7 @@ module Chemistry
                 +f_vib(j1,j2,j3)*Cv_vib_R(j1,j2,j3))
           
 !if (j1==l1) then
-!  print*,'lambda=',species_cond(l1,m1,n1,k),k,tran_data(k,6),pi
+ ! print*,'lambda=',species_cond(l1,m1,n1,k),k
   !print*,Cv_tran_R,Cv_rot_R,Cv_vib_R(l1,m1,n1),f_rot(l1,m1,n1),f_vib(l1,m1,n1)
 !endif
 !
@@ -4231,11 +4224,13 @@ module Chemistry
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx,3) :: gXX, gDiff_full_add, gchemspec
+      real, dimension (mx,my,mz) :: lnpp, Xk_Yk
+      real, dimension (nx,3) :: gXX, gDiff_full_add, gchemspec, gXk_Yk
       real, dimension (nx) :: del2chemspec
-      real, dimension (nx) :: diff_op,diff_op1,diff_op2,xdot, del2XX
+      real, dimension (nx) :: diff_op,diff_op1,diff_op2,xdot, del2XX, del2lnpp
+      real, dimension (nx) :: glnpp_gXkYk,glnrho_glnpp,gD_glnpp
       real :: diff_k
-      integer :: j,k
+      integer :: j,k,i
 !
       intent(in) :: f
 !
@@ -4258,14 +4253,32 @@ module Chemistry
 !
           if (ldiffusion) then
 !
+          
             call del2(XX_full(:,:,:,k),del2XX)
-            call grad(XX_full(:,:,:,k),gXX)
-            call dot_mn(p%glnrho,gXX,diff_op1)
-!
+         
+            call dot_mn(p%glnrho,p%gXXk(:,:,k),diff_op1)
             call grad(Diff_full_add(:,:,:,k),gDiff_full_add)
-            call dot_mn(gDiff_full_add,gXX,diff_op2)
+            call dot_mn(gDiff_full_add,p%gXXk(:,:,k),diff_op2)
+!
+
+            lnpp=log(pp_full)
+            call del2(lnpp(:,:,:),del2lnpp)
+
+            Xk_Yk=XX_full(:,:,:,k)-f(:,:,:,ichemspec(k))
+            call grad(Xk_Yk,gXk_Yk)
+            
+           
+
+            call dot_mn(p%glnrho,p%glnpp,glnrho_glnpp)
+            call dot_mn(gDiff_full_add,p%glnpp,gD_glnpp)
+            call dot_mn(gXk_Yk,p%glnpp,glnpp_gXkYk)
+
+
           endif
-          p%DYDt_diff(:,k)=Diff_full_add(l1:l2,m,n,k)*(del2XX+diff_op1)+diff_op2
+          p%DYDt_diff(:,k)=Diff_full_add(l1:l2,m,n,k)*(del2XX+diff_op1)+diff_op2 &
+          +Diff_full_add(l1:l2,m,n,k)*Xk_Yk(l1:l2,m,n)*del2lnpp &
+          +Diff_full_add(l1:l2,m,n,k)*Xk_Yk(l1:l2,m,n)*glnrho_glnpp &
+          +Xk_Yk(l1:l2,m,n)*gD_glnpp+Diff_full_add(l1:l2,m,n,k)*glnpp_gXkYk
         endif
       enddo
 !
