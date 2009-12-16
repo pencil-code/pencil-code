@@ -2559,8 +2559,11 @@ module Density
 !
 !  get pressure from inverting the Laplacian
 !
-!     call inverse_laplacian(f,f(l1:l2,m1:m2,n1:n2,ipp))
-      call inverse_laplacian_pressure(f(l1:l2,m1:m2,n1:n2,ipp))
+      if (lperi(3)) then
+        call inverse_laplacian(f,f(l1:l2,m1:m2,n1:n2,ipp))
+      else
+        call inverse_laplacian_z(f(l1:l2,m1:m2,n1:n2,ipp))
+      endif
 !
 !  For periodic boundary conditions the mean pressure now must be
 !  added to the pressure we obtained from inverting the Laplacian.
@@ -2598,7 +2601,7 @@ module Density
 !
     endsubroutine anelastic_after_mn
 !***********************************************************************
-    subroutine inverse_laplacian_pressure(phi)
+    subroutine inverse_laplacian_z(phi)
 !
 !  Solve the pressure equation in the anelastic case by Fourier 
 !  transforming in the xy-plane and solving the discrete matrix 
@@ -2664,6 +2667,6 @@ module Density
 !
       call fourier_transform_xy(phi,b1,linv=.true.)
 !
-    endsubroutine inverse_laplacian_pressure
+    endsubroutine inverse_laplacian_z
 !***********************************************************************
 endmodule Density
