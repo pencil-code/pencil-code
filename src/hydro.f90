@@ -1024,6 +1024,22 @@ module Hydro
           enddo;enddo
           f(:,:,:,iuz)=0.
           call put_shared_variable('rho_eq', rho_eq, ierr)
+
+        case( 'anelastic-2dxz')
+          print*, "anelastic-2dxy: ampl_uz,kx_uu,ky_uu = ", ampl_uz(j),kx_uu,kz_uu
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iuy)=ampl_uy(j)*sin(kx_uu*x(l1:l2))*sin(kz_uu*z(m))
+          enddo; enddo
+          call update_ghosts(f)
+! 2D curl
+          do n=n1,n2;do m=m1,m2
+            rho_eq(m)=exp(-0.1*y(m))
+            call grad(f,iuy,tmp_nx3)
+            f(l1:l2,m,n,iux) = -tmp_nx3(:,2)/rho_eq(m)
+            f(l1:l2,m,n,iuz) =  tmp_nx3(:,1)/rho_eq(m)
+          enddo;enddo
+          f(:,:,:,iuy)=0.
+          call put_shared_variable('rho_eq', rho_eq, ierr)
 !
         case('incompressive-shwave')
 ! incompressible shear wave of Johnson & Gammine (2005a)

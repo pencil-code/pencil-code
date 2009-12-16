@@ -2543,7 +2543,7 @@ module Density
       real, dimension (nx,3) :: gpp
       real, dimension (nx) :: phi_rhs_pencil
       real, dimension(1) :: mass_per_proc
-      real :: average_density, average_pressure
+      real :: average_density, average_pressure,cp
       integer :: j, ju,iter
 !
 !  Set first the boundary conditions on rhs
@@ -2584,7 +2584,13 @@ module Density
                     average_pressure
 !  Refresh the f-array with the new density
         if (leos) then
-         f(l1:l2,m1:m2,n1:n2,ilnrho)=log(f(l1:l2,m1:m2,n1:n2,ipp)/cs20)
+         if (gamma==1.0) then
+           f(l1:l2,m1:m2,n1:n2,ilnrho)=log(f(l1:l2,m1:m2,n1:n2,ipp)/cs20)
+         else
+           cp=p%cp(10)
+           f(l1:l2,m1:m2,n1:n2,ilnrho)=log(gamma*&
+           f(l1:l2,m1:m2,n1:n2,ipp)/cs20)/gamma-f(l1:l2,m1:m2,n1:n2,iss)/cp
+         endif
         endif
 
         do n=n1,n2; do m=m1,m2
