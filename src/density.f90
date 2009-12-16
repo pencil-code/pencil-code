@@ -1574,7 +1574,6 @@ module Density
 !
       intent(in)  :: f,p
       intent(out) :: df
-      print*, 'AAA', it, itsub, n, p%TT
 !
 !  Identify module and boundary conditions.
 !
