@@ -1574,6 +1574,7 @@ module Density
 !
       intent(in)  :: f,p
       intent(out) :: df
+      print*, 'AAA', it, itsub, n, p%TT
 !
 !  Identify module and boundary conditions.
 !
@@ -1860,7 +1861,7 @@ module Density
 !***********************************************************************
     subroutine isothermal_density(f)
 !
-!  Isothermal stratification (for lnrho and ss)
+!  Isothermal stratification (for lnrho and ss).
 !  This routine should be independent of the gravity module used.
 !  When entropy is present, this module also initializes entropy.
 !
@@ -1878,15 +1879,17 @@ module Density
       use Gravity
 !
       real, dimension (mx,my,mz,mfarray) :: f
+!
       real, dimension (nx) :: pot,tmp
       real :: cp1
 !
-!  Stratification depends on the gravity potential
+!  Stratification depends on the gravity potential.
 !
-      if (lroot) print*,'isothermal_density: isothermal stratification'
+      if (lroot) print*, 'isothermal_density: isothermal stratification'
       if (gamma/=1.0) then
         if ((.not. lentropy) .and. (.not. ltemperature)) & 
-          call fatal_error('isothermal_density','for gamma/=1.0, you need entropy or temperature!');
+            call fatal_error('isothermal_density', &
+            'for gamma/=1.0, you need entropy or temperature!');
       endif
 !
       call get_cp1(cp1)
@@ -1895,8 +1898,8 @@ module Density
           call potential(x(l1:l2),y(m),z(n),pot=pot)
           tmp=-gamma*pot/cs20
           f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) + lnrho0 + tmp
-          if (lentropy) f(l1:l2,m,n,iss) = f(l1:l2,m,n,iss) &
-               -gamma_m1*(f(l1:l2,m,n,ilnrho)-lnrho0)/gamma
+          if (lentropy) f(l1:l2,m,n,iss) = f(l1:l2,m,n,iss) - &
+              (1/cp1)*gamma_m1*(f(l1:l2,m,n,ilnrho)-lnrho0)/gamma
           if (ltemperature) f(l1:l2,m,n,ilnTT)=log(cs20*cp1/gamma_m1)
         enddo
       enddo
