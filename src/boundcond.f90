@@ -606,6 +606,7 @@ module Boundcond
 !                 if (j==iss)    call bc_lnrho_hydrostatic_z(f,topbot)
                 else
                   if (j==ilnrho) call bc_lnrho_hds_z_iso(f,topbot)
+                  if (j==ipp)    call bc_pp_hds_z_iso(f,topbot)
 !                 if (j==iss)    call bc_lnrho_hydrostatic_z(f,topbot)
                 endif
               case ('cp')
@@ -5214,5 +5215,36 @@ module Boundcond
       endselect
 !
     endsubroutine bc_inlet_outlet_cyl
+!***********************************************************************
+    subroutine bc_pp_hds_z_iso(f,topbot)
+!
+!  Boundary condition for pressure
+!
+!  This sets \partial_{z} p = \rho g_{z},
+!  i.e. it enforces hydrostatic equlibrium at the boundary for the
+!  pressure with an isothermal EOS.
+!
+!  16-dec-2009/dintrans: coded
+!
+      use Gravity, only: gravz
+      use EquationOfState, only : cs20
+!
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      character (len=3), intent (in) :: topbot
+      real    :: haut
+      integer :: i, stat
+!
+      haut=cs20/gravz
+      if (topbot.eq.'bot') then
+        do i=1,nghost
+          f(:,:,n1-i,ipp) = f(:,:,n1+i,ipp)-2.0*i*dz*f(:,:,n1,ipp)/haut
+        enddo
+      else
+        do i=1,nghost
+          f(:,:,n2+i,ipp) = f(:,:,n2-i,ipp)+2.0*i*dz*f(:,:,n2,ipp)/haut
+        enddo
+      endif
+!
+    endsubroutine bc_pp_hds_z_iso
 !***********************************************************************
 endmodule Boundcond
