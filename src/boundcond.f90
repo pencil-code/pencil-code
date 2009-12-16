@@ -3087,6 +3087,9 @@ module Boundcond
             call uu_driver(f)
          !case ('kepler')
          !   call bc_force_kepler(f,n1,j)
+         case ('mag_time')
+            call bc_force_aa_time(f)
+            call uu_driver(f)
          case ('cT')
             f(:,:,n1,j) = log(cs2bot/gamma_m1)
          case ('vel_time')
@@ -3624,6 +3627,179 @@ module Boundcond
        if (allocated(tmp)) deallocate(tmp)
 !
      endsubroutine uu_driver
+!***********************************************************************
+    subroutine bc_force_aa_time(f)
+!
+!
+!
+      use Fourier, only : fourier_transform_other
+!       
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, save :: tl=0.,tr=0.,delta_t=0.
+      integer :: iostat,lend,i,idx2,idy2,stat
+      logical :: ex
+!
+      real, dimension (:,:), allocatable, save :: Bz0l,Bz0r      
+      real, dimension (:,:), allocatable :: Bz0_i,Bz0_r
+      real, dimension (:,:), allocatable :: A_i,A_r
+!
+      real, dimension (:,:), allocatable :: kx,ky,k2
+      real, dimension (nxgrid) :: kxp
+      real, dimension (nygrid) :: kyp
+!
+      real :: mu0_SI,u_b,time_SI
+!
+      if (.not.allocated(Bz0l)) then
+        allocate(Bz0l(nxgrid,nygrid),stat=stat)
+        if (stat>0) call fatal_error('bc_force_aa_time', &
+            'Could not allocate memory for Bz0l')
+      endif
+      if (.not.allocated(Bz0r)) then
+        allocate(Bz0r(nxgrid,nygrid),stat=stat)
+        if (stat>0) call fatal_error('bc_force_aa_time', &
+            'Could not allocate memory for Bz0r')
+      endif
+      if (.not.allocated(Bz0_i)) then
+        allocate(Bz0_i(nxgrid,nygrid),stat=stat)
+        if (stat>0) call fatal_error('bc_force_aa_time', &
+            'Could not allocate memory for Bz0_i')
+      endif
+      if (.not.allocated(Bz0_r)) then
+        allocate(Bz0_r(nxgrid,nygrid),stat=stat)
+        if (stat>0) call fatal_error('bc_force_aa_time', &
+            'Could not allocate memory for Bz0_r')
+      endif
+      if (.not.allocated(A_i)) then
+        allocate(A_i(nxgrid,nygrid),stat=stat)
+        if (stat>0) call fatal_error('bc_force_aa_time', &
+            'Could not allocate memory for A_i')
+      endif
+      if (.not.allocated(A_r)) then
+        allocate(A_r(nxgrid,nygrid),stat=stat)
+        if (stat>0) call fatal_error('bc_force_aa_time', &
+            'Could not allocate memory for A_r')
+      endif
+      if (.not.allocated(kx)) then
+        allocate(kx(nxgrid,nygrid),stat=stat)
+        if (stat>0) call fatal_error('bc_force_aa_time', &
+            'Could not allocate memory for kx')
+      endif
+      if (.not.allocated(ky)) then
+        allocate(ky(nxgrid,nygrid),stat=stat)
+        if (stat>0) call fatal_error('bc_force_aa_time', &
+            'Could not allocate memory for ky')
+      endif
+      if (.not.allocated(k2)) then
+        allocate(k2(nxgrid,nygrid),stat=stat)
+        if (stat>0) call fatal_error('bc_force_aa_time', &
+            'Could not allocate memory for k2')
+      endif
+!
+      time_SI = t*unit_time
+!
+      idx2 = min(2,nxgrid)
+      idy2 = min(2,nygrid)
+!
+      kxp=cshift((/(i-(nxgrid-1)/2,i=0,nxgrid-1)/),+(nxgrid-1)/2)*2*pi/Lx
+      kyp=cshift((/(i-(nygrid-1)/2,i=0,nygrid-1)/),+(nygrid-1)/2)*2*pi/Ly
+!
+      kx =spread(kxp,2,nygrid)
+      ky =spread(kyp,1,nxgrid)
+      k2 = kx*kx + ky*ky
+!
+      if (tr+delta_t.le.time_SI) then 
+        !
+        inquire(IOLENGTH=lend) tl
+        inquire (file='driver/time',exist=ex)
+        if (ex) then
+          open (10,file='driver/time',form='unformatted',status='unknown', &
+              recl=lend,access='direct')
+        else
+          print*,'File does not exists'
+        endif
+        open (10,file='driver/time',form='unformatted',status='unknown', &
+            recl=lend,access='direct')
+        !
+        iostat = 0
+        tl = 0.
+        i=0
+        do while (iostat == 0)
+          i=i+1
+          read (10,rec=i,iostat=iostat) tr
+          if (iostat /= 0) then
+            delta_t = time_SI                  ! EOF is reached => read again
+            read (10,rec=i+1,iostat=iostat) tl
+            iostat=-1
+          else
+            if (tr+delta_t.gt.time_SI)  then 
+              iostat=-1 ! correct time step is reached
+            else
+              tl = tr
+            endif
+          endif
+        enddo
+        close (10)
+        
+        inquire (file='driver/mag_z.dat',exist=ex)
+        if (ex) then 
+          open (10,file='driver/mag_z.dat',form='unformatted',status='unknown', &
+              recl=lend*nxgrid*nygrid,access='direct')
+          read(10,rec=i,iostat=iostat) Bz0l
+          read(10,rec=i+1,iostat=iostat) Bz0r
+          close (10)
+        else
+          print*,'Warning file does not exit: driver/mag_z.dat'
+        endif
+        mu0_SI = 4.*pi*1.e-7
+        u_b = unit_velocity*sqrt(mu0_SI/mu0*unit_density)
+!
+        Bz0l = Bz0l *  1e-4 / u_b
+        Bz0r = Bz0r *  1e-4 / u_b
+!
+      endif
+      !
+      Bz0_r  = (time_SI - (tl+delta_t)) * (Bz0r - Bz0l) / (tr - tl) + Bz0l
+      !
+      Bz0_i = 0.
+      !
+      ! Fourier Transform of Bz0:
+      !
+      call fourier_transform_other(Bz0_r,Bz0_i)
+      !      
+      ! First the Ax component:
+      where (k2 .ne. 0 )
+        A_r = -Bz0_i*ky/k2
+        A_i =  Bz0_r*ky/k2
+        !
+      elsewhere
+        A_r = -Bz0_i*ky/ky(1,idy2)
+        A_i =  Bz0_r*ky/ky(1,idy2)
+      endwhere
+      !
+      call fourier_transform_other(A_r,A_i,linv=.true.)
+      f(l1:l2,m1:m2,n1,iax) = A_r(ipx*nx+1:(ipx+1)*nx+1,ipy*ny+1:(ipy+1)*ny+1)
+      !
+      !  then Ay component:
+      where (k2 .ne. 0 )
+        A_r =  Bz0_i*kx/k2
+        A_i = -Bz0_r*kx/k2
+      elsewhere
+        A_r =  Bz0_i*kx/kx(idx2,1)
+        A_i = -Bz0_r*kx/kx(idx2,1)
+      endwhere
+      !
+      call fourier_transform_other(A_r,A_i,linv=.true.)
+      f(l1:l2,m1:m2,n1,iay) = A_r(ipx*nx+1:(ipx+1)*nx+1,ipy*ny+1:(ipy+1)*ny+1)
+      !
+      if (allocated(Bz0_r)) deallocate(Bz0_r)
+      if (allocated(Bz0_i)) deallocate(Bz0_i)
+      if (allocated(A_r)) deallocate(A_r)
+      if (allocated(A_i)) deallocate(A_i)
+      if (allocated(kx)) deallocate(kx)
+      if (allocated(ky)) deallocate(ky)
+      if (allocated(k2)) deallocate(k2)
+!
+    endsubroutine bc_force_aa_time
 !***********************************************************************
     subroutine bc_lnTT_flux_x(f,topbot)
 !
