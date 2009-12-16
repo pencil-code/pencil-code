@@ -841,19 +841,19 @@ module Chemistry
 !
 !  Initialize density
 !
-      f(:,:,:,ilnrho)=log(init_pressure)-log(Rgas)  &
-          -f(:,:,:,ilnTT)-log(mu1_full)
+      f(l1:l2,m1:m2,n1:n2,ilnrho)=log(init_pressure)-log(Rgas)  &
+          -f(l1:l2,m1:m2,n1:n2,ilnTT)-log(mu1_full(l1:l2,m1:m2,n1:n2))
 !
 !  Initialize velocity
 !
-      f(:,:,:,iux)=f(:,:,:,iux)  &
-          +init_ux*exp(log_inlet_density)/exp(f(:,:,:,ilnrho))
+      f(l1:l2,m1:m2,n1:n2,iux)=f(l1:l2,m1:m2,n1:n2,iux)  &
+          +init_ux*exp(log_inlet_density)/exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
 !
 !
 !  Check if we want nolog of density or nolog of temperature
 !
-      if (ldensity_nolog) f(:,:,:,irho)=exp(f(:,:,:,ilnrho))
-      if (ltemperature_nolog) f(:,:,:,iTT)=exp(f(:,:,:,ilnTT))
+      if (ldensity_nolog) f(l1:l2,m1:m2,n1:n2,irho)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+      if (ltemperature_nolog) f(l1:l2,m1:m2,n1:n2,iTT)=exp(f(l1:l2,m1:m2,n1:n2,ilnTT))
 !
     endsubroutine flame_front
 !***********************************************************************
