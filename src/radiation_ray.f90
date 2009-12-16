@@ -1,16 +1,5 @@
 ! $Id$
-
-!** AUTOMATIC CPARAM.INC GENERATION ****************************
-! Declare (for generation of cparam.inc) the number of f array
-! variables and auxiliary variables added by this module
 !
-! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 5
-!
-!***************************************************************
-
-module Radiation
-
 !  Radiation (solves transfer equation along rays)
 !  The direction of the ray is given by the vector (lrad,mrad,nrad),
 !  and the parameters radx0,rady0,radz0 gives the maximum number of
@@ -20,7 +9,17 @@ module Radiation
 !  The z-direction has to be non-periodic
 !
 !  TODO: Calculate weights properly
-
+!
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxiliary variables added by this module
+!
+! MVAR CONTRIBUTION 0
+! MAUX CONTRIBUTION 5
+!
+!***************************************************************
+module Radiation
+!
   use Cparam
   use Messages
   use Sub, only: keep_compiler_quiet
@@ -33,12 +32,12 @@ module Radiation
     real :: val
     logical :: set
   endtype Qbound
-
+!
   type Qpoint !Qpt
     real, pointer :: val
     logical, pointer :: set
   endtype Qpoint
-
+!
   type radslice
     real, dimension (nx,ny) :: xy2
   endtype radslice
@@ -1876,45 +1875,49 @@ module Radiation
     endsubroutine de_dt
 !***********************************************************************
     subroutine read_radiation_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=radiation_init_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=radiation_init_pars,ERR=99)
       endif
-
-
+!
 99    return
+!
     endsubroutine read_radiation_init_pars
 !***********************************************************************
     subroutine write_radiation_init_pars(unit)
+!
       integer, intent(in) :: unit
-
+!
       write(unit,NML=radiation_init_pars)
-
+!
     endsubroutine write_radiation_init_pars
 !***********************************************************************
     subroutine read_radiation_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=radiation_run_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=radiation_run_pars,ERR=99)
       endif
-
-
+!
 99    return
+!
     endsubroutine read_radiation_run_pars
 !***********************************************************************
     subroutine write_radiation_run_pars(unit)
+!
       integer, intent(in) :: unit
-
+!
       write(unit,NML=radiation_run_pars)
-
+!
     endsubroutine write_radiation_run_pars
 !*******************************************************************
     subroutine rprint_radiation(lreset,lwrite)
@@ -1988,8 +1991,6 @@ module Radiation
         write(3,*) 'iFrady=',iFrady
         write(3,*) 'iFradz=',iFradz
       endif
-!
-      call keep_compiler_quiet(lreset)
 !
     endsubroutine rprint_radiation
 !***********************************************************************
@@ -2214,6 +2215,4 @@ module Radiation
 !
     endsubroutine calc_rad_diffusion
 !***********************************************************************
-
-
 endmodule Radiation
