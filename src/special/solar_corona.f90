@@ -23,7 +23,7 @@ module Special
   include 'special.h'
 
   real :: tdown=0.,allp=0.,Kgpara=0.,cool_RTV=0.,Kgpara2=0.,tdownr=0.,allpr=0.
-  real :: lntt0=0.,wlntt=0.,bmdi=0.,hcond1=0.,heatmax=0.
+  real :: lntt0=0.,wlntt=0.,bmdi=0.,hcond1=0.,heatexp=0.,heatamp=0.,Ksat=0.
 
   real, parameter, dimension (37) :: intlnT = (/ &
           8.74982,  8.86495,  8.98008,  9.09521,  9.21034,  9.44060,  9.67086,  9.90112,  10.1314,  10.2465 &
@@ -42,7 +42,7 @@ module Special
 ! run parameters
   namelist /special_run_pars/ &
        tdown,allp,Kgpara,cool_RTV,lntt0,wlntt,bmdi,hcond1,Kgpara2, &
-       tdownr,allpr,heatmax
+       tdownr,allpr,heatexp,heatamp,Ksat
 
 !!
 !! Declare any index variables necessary for main or
@@ -108,7 +108,8 @@ module Special
       if (Kgpara2/=0) then
          lpenc_requested(i_glnrho)=.true.
          lpenc_requested(i_lnTT)=.true.
-         lpenc_requested(i_lnrho)=.true.
+         lpenc_requested(i_glnTT)=.true.
+         lpenc_requested(i_del2lnTT)=.true.
       endif
 !
       if (Kgpara/=0) then
@@ -246,6 +247,7 @@ module Special
       if (cool_RTV/=0) call calc_heat_cool_RTV(df,p)
       if (tdown/=0) call calc_heat_cool_newton(df,p)
       if (Kgpara2/=0) call calc_heatcond_grad(df,p)
+      if (heatamp/=0) call calc_artif_heating(df,p)
 !
       call keep_compiler_quiet(f)
 !
@@ -430,16 +432,21 @@ module Special
 !***********************************************************************
      subroutine calc_heatcond_tensor(df,p)
 !
-!    heat conduction with T^5/2
+!    anisotropic heat conduction with T^5/2
+!    Div K T Grad ln T
+!      =Grad(KT).Grad(lnT)+KT DivGrad(lnT)
 !
        use Diagnostics 
        use Sub
+       use Io, only: output_pencil
        use EquationOfState, only: gamma
 !
        real, dimension (mx,my,mz,mvar) :: df
-       real, dimension (nx,3) :: hhh,bunit,tmpv
+       real, dimension (nx,3) :: hhh,bunit,tmpv,gKp
        real, dimension (nx) :: tmpj,hhh2,quenchfactor,b1
-       real, dimension (nx) :: rhs,chix,cosbgT,gT2,b2
+       real, dimension (nx) :: rhs,chix,cosbgT,gT2,b2,tmpk
+       real, dimension (nx) :: Kspitzer,Ksaturat,chi_1,chi_2
+       real :: Ksatb
        integer :: i,j,k
        type (pencil_case) :: p
 !
@@ -449,7 +456,7 @@ module Special
        b1=1./max(tini,tmpj)
        call multsv_mn(b1,p%bb,bunit)
 !
-!  calculate first H_i
+!  calculate H_i
 !
        do i=1,3
           hhh(:,i)=0.
@@ -474,19 +481,47 @@ module Special
 !
       call dot(hhh,p%glnTT,rhs)
 !
-      call dot(bunit,p%glnTT,tmpj)
-      rhs = rhs + tmpj*tmpj
+      
+      Ksatb = Ksat*7.28e7 /unit_velocity**3. * unit_temperature**1.5
+      call dot2(p%glnTT,tmpj,FAST_SQRT=.true.)
+!
+      chi_1 =  Kgpara * exp(2.5*p%lnTT-p%lnrho)
+!
+      where (tmpj .le. tini)
+        chi_2 =  0.
+      elsewhere
+        chi_2 =  Ksatb  * exp(0.5*p%lnTT)/max(tini,tmpj)
+      endwhere
+!
+      tmpv(:,:)=0.
+      do i=1,3
+        do j=1,3
+          tmpv(:,i)=tmpv(:,i)+p%glnTT(:,j)*p%hlnTT(:,j,i)
+        enddo
+      enddo
+!
+      gKp = 3.5 * p%glnTT
+      where (chi_1 .gt. chi_2)
+        gKp(:,1)  = p%glnrho(:,1) + 1.5*p%glnTT(:,1) - tmpv(:,1)/max(tini,tmpj**2.)
+        gKp(:,2)  = p%glnrho(:,2) + 1.5*p%glnTT(:,2) - tmpv(:,2)/max(tini,tmpj**2.)
+        gKp(:,3)  = p%glnrho(:,3) + 1.5*p%glnTT(:,3) - tmpv(:,3)/max(tini,tmpj**2.)
+        chi_1 =  chi_2
+      endwhere
+!
+      call dot(bunit,gKp,tmpj)
+      call dot(bunit,p%glnTT,tmpk)
+      rhs = rhs + tmpj*tmpk
 !
       call multmv_mn(p%hlnTT,bunit,tmpv)
       call dot_mn(tmpv,bunit,tmpj)
       rhs = rhs + tmpj
 !
-      rhs = rhs *2./5.* Kgpara*exp(-p%lnrho)
+      rhs = gamma*rhs*chi_1
 !
       df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+ rhs
 !
-!     for timestep extension multiply with the 
-!     cosine between grad T and bunit
+!  for timestep extension multiply with the 
+!  cosine between grad T and bunit
 !
       call dot(p%bb,p%glnTT,cosbgT)
       call dot2(p%glnTT,gT2)
@@ -498,8 +533,8 @@ module Special
          cosbgT=cosbgT/sqrt(gT2*b2)
       endwhere
 !
-      if (lfirst.and.ldt) then
-        chix=cosbgT*Kgpara*exp(2.5*p%lnTT-p%lnrho)
+      if (ldt) then
+        chix=abs(cosbgT)*chi_1
         diffus_chi=diffus_chi + gamma*chix*dxyz_2
         if (ldiagnos.and.idiag_dtchi2/=0) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
@@ -509,13 +544,18 @@ module Special
     endsubroutine calc_heatcond_tensor
 !***********************************************************************
     subroutine calc_heatcond_grad(df,p)
-!      
+!
+!    additional heat conduction where the heat flux is
+!    is proportional to \rho abs(gradT)
+!
+      use Diagnostics
       use Sub, only: dot_mn,dot2_mn
+      use EquationOfState, only: gamma
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: tmpv
       real, dimension (nx) :: tmpj,tmpi
-      real, dimension (nx) :: rhs,g2
+      real, dimension (nx) :: rhs,g2,chix
       integer :: i,j
       type (pencil_case) :: p
 !
@@ -528,17 +568,23 @@ module Special
          enddo
       enddo
       call dot_mn(tmpv,p%glnTT,tmpj)
+!
       call dot_mn(p%glnrho,p%glnTT,g2)
 !
-      rhs = exp(2.*p%lnTT+alog(Kgpara2))*( &
-           tmpi *(p%del2lnTT + tmpi + g2) + &
-           2. * tmpj)
+      rhs = exp(p%lnTT)*(tmpi*(p%del2lnTT + 2.*tmpi + g2) +  tmpj)/max(tini,sqrt(tmpi))
 !
 !      if (itsub .eq. 3 .and. ip .eq. 118) call output_pencil(trim(directory)//'/tensor3.dat',rhs,1)
 !
-      df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+ rhs
+      df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+ Kgpara2 * rhs
 !
-
+      if (lfirst.and.ldt) then
+        chix=Kgpara2*exp(p%lnTT)*sqrt(tmpi)
+        diffus_chi=diffus_chi + gamma*chix*dxyz_2
+        if (ldiagnos.and.idiag_dtchi2/=0) then
+          call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
+        endif
+      endif      
+!
     endsubroutine calc_heatcond_grad
 !***********************************************************************
     subroutine calc_heatcond_constchi(df,p)
@@ -701,6 +747,31 @@ module Special
       endif
 !           
     endsubroutine calc_heat_cool_RTV
+!***********************************************************************
+    subroutine calc_artif_heating(df,p)
+!
+!  30-jan-08/bing: coded
+!
+      use EquationOfState, only: gamma
+      use Sub, only: cubic_step,notanumber
+      use Mpicomm, only: stop_it
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx) :: heatinput
+      type (pencil_case) :: p
+      
+      heatinput=heatamp*(+exp(-abs(z(n))/heatexp) & 
+                         +exp(-abs(z(n))/heatexp*30)*1e4) & 
+                         *exp(-p%lnrho-p%lntt)
+      
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)+heatinput
+
+      if (lfirst.and.ldt) then
+         !
+         dt1_max=max(dt1_max,heatinput/cdts)
+      endif
+
+    endsubroutine calc_artif_heating
 !***********************************************************************
     
 !********************************************************************
