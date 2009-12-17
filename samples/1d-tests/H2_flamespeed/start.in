@@ -18,14 +18,15 @@
 &hydro_init_pars
 /
 &density_init_pars
+ldensity_nolog=F
 /
 &entropy_init_pars
 /
 &chemistry_init_pars
   initchem='flame_front'
 !  initchem='air','flame_front'
-  BInDif_simple=T
-  visc_simple=T
+  BInDif_simple=F
+  visc_simple=F
   init_pressure=1.013e6
   init_TT1=750.
   init_TT2=2500.
