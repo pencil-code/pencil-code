@@ -384,7 +384,7 @@ module Particles_mpicomm
       integer :: ix0, iy0, iz0, ipx0, ipy0, ipz0, ibx0, iby0, ibz0
       integer :: ibrick_rec, iproc_rec, nmig_enter_proc, nmig_leave_proc
       integer :: i, j, k, iblock, nmig_enter_proc_tot, nmig_leave_proc_tot
-      integer :: ibrick_global, ibrick_global_rec, ibrick_global_rec_previous
+      integer :: ibrick_global_rec, ibrick_global_rec_previous
       integer :: iblockl, iblocku, iblockm
       integer :: nmig_leave_total, ileave_high_max
       integer :: itag_nmig=500, itag_ipar=510, itag_fp=520, itag_dfp=530
@@ -402,6 +402,7 @@ module Particles_mpicomm
           iproc_parent_block(0:nblock_loc-1)*nbricks+ &
           ibrick_parent_block(0:nblock_loc-1)
       ibrick_global_rec_previous=-1
+      lmigrate_previous=.false.
 !
       nmig_enter_proc_tot=0
 !
@@ -452,7 +453,7 @@ module Particles_mpicomm
 !
           ibrick_global_rec=iproc_rec*nbricks+ibrick_rec
           if (ibrick_global_rec==ibrick_global_rec_previous) then
-            lmigrate=lmigrate_previous
+            if (iproc_rec/=iproc) lmigrate=lmigrate_previous
           else
             if (iproc==iproc_parent_block(inearblock(k))) then
               lmigrate=.false.
@@ -474,7 +475,7 @@ module Particles_mpicomm
             endif
           endif
           lmigrate_previous=lmigrate
-          ibrick_global_rec_previous=ibrick_global
+          ibrick_global_rec_previous=ibrick_global_rec
 !
 !  Migrate particle to parent, if it is no longer in any block at the current
 !  processor. The parent will then either keep the particle or send it to
@@ -485,8 +486,8 @@ module Particles_mpicomm
             if (ip<=7) print '(a,i8,a,i4,a,i4)', &
                 'migrate_particles: Particle ', ipar(k), &
                 ' moves out of proc ', iproc, ' and into proc ', iproc_rec
-            if (ip<=7) then
-              if (iproc_rec==iproc) then  ! Quick reality check
+            if (ip<=7) then  ! Quick reality check
+              if (iproc_rec==iproc) then
                 print '(a,i8,a,i3,a,i4)', &
                     'migrate_particles: Particle ', ipar(k), &
                     ' moves out of proc ', iproc, ' and into proc ', iproc_rec
@@ -830,7 +831,7 @@ module Particles_mpicomm
                 'migrate_particles: Particle ', ipar(k), &
                 ' moves out of proc ', iproc, &
                 ' and into proc ', iproc_rec
-              if (ip<=7) then  !  Quick reality check
+            if (ip<=7) then  !  Quick reality check
               if (.not.any(iproc_rec==iproc_comm(1:nproc_comm))) then
                 print*, 'migrate_particles: trying to migrate to processor '// &
                     'that is not in comm list'
@@ -2159,5 +2160,32 @@ module Particles_mpicomm
       zb(:,0:nblock_loc-1)=zb(:,i_sorted_brick(0:nblock_loc-1))
 !
     endsubroutine sort_blocks
+!***********************************************************************
+    subroutine report_missing_particles(message)
+!
+      use Mpicomm, only: mpireduce_sum_int
+!
+      character (len=*) :: message
+!
+      integer :: npar_found
+!
+      npar_found=0
+!
+      call mpireduce_sum_int(npar_loc,npar_found)
+      call mpibcast_int(npar_found,1)
+!
+      if (npar_found/=npar) then
+        if (lroot) then
+          print*, 'report_missing_particles: there are particles missing'
+          print*, 'report_missing_particles: npar, npar_found=', &
+              npar, npar_found
+          print*, 'report_missing_particles: it, itsub, t=', &
+              it, itsub, t
+          print*, 'report_missing_particles: message=', message
+        endif
+        call fatal_error('report_missing_particles','')
+      endif
+!
+    endsubroutine report_missing_particles
 !***********************************************************************
 endmodule Particles_mpicomm
