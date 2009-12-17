@@ -349,7 +349,6 @@ module Particles_mpicomm
 !
       call migrate_particles_proc_to_block(fp,ipar,dfp)
 !
-!
 !  Diagnostic about number of migrating particles.
 !  WARNING: in time-steps where snapshots are written, this diagnostic
 !  parameter will be zero (quite confusing)!
@@ -389,7 +388,7 @@ module Particles_mpicomm
       integer :: iblockl, iblocku, iblockm
       integer :: nmig_leave_total, ileave_high_max
       integer :: itag_nmig=500, itag_ipar=510, itag_fp=520, itag_dfp=530
-      logical :: lredo, lredo_all, lmigrate, lmigrate2, lmigrate_previous
+      logical :: lredo, lredo_all, lmigrate, lmigrate_previous
       logical, save :: lfirstcall=.true.
 !
       intent (inout) :: fp, ipar, dfp
@@ -483,9 +482,30 @@ module Particles_mpicomm
 !
           if (lmigrate) then
             iproc_rec=iproc_parent_block(inearblock(k))
-            if (ip<=7) print '(a,i7,a,i3,a,i3)', &
+            if (ip<=7) print '(a,i8,a,i4,a,i4)', &
                 'migrate_particles: Particle ', ipar(k), &
                 ' moves out of proc ', iproc, ' and into proc ', iproc_rec
+            if (ip<=7) then
+              if (iproc_rec==iproc) then  ! Quick reality check
+                print '(a,i8,a,i3,a,i4)', &
+                    'migrate_particles: Particle ', ipar(k), &
+                    ' moves out of proc ', iproc, ' and into proc ', iproc_rec
+                print*, 'migrate_particles: iproc_rec=iproc - this is ridiculous'
+                print*, 'migrate_particles: ibrick_rec, iproc_rec, inearblock=', &
+                    ibrick_rec, iproc_rec, inearblock(k)
+                print*, 'migrate_particles: ipx0, ipy0, ipz0=', ipx0, ipy0, ipz0
+                print*, 'migrate_particles: lmigrate, lmigrate_previous=', &
+                    lmigrate, lmigrate_previous
+                print*, 'migrate_particles: ibrick_rec, ibrick_global_rec=', &
+                    ibrick_rec, ibrick_global_rec
+                print*, 'migrate_particles: iblockl, iblocku=', &
+                    iblockl, iblocku
+                print*, 'migrate_particles: iproc_parent_block=', &
+                    iproc_parent_block(0:nblock_loc-1)
+                print*, 'migrate_particles: ibrick_parent_block=', &
+                    ibrick_parent_block(0:nblock_loc-1)
+              endif
+            endif
 !
 !  Copy migrating particle to the end of the fp array.
 !
@@ -694,7 +714,7 @@ module Particles_mpicomm
       integer :: i, j, k, iproc_rec, ipx_rec, ipy_rec, ipz_rec
       integer :: nmig_leave_total, ileave_high_max
       logical :: lredo, lredo_all
-      integer :: itag_nmig=500, itag_ipar=510, itag_fp=520, itag_dfp=530
+      integer :: itag_nmig=540, itag_ipar=550, itag_fp=560, itag_dfp=570
       logical :: lmigrate
       logical, save :: lfirstcall=.true.
 !
@@ -713,8 +733,10 @@ module Particles_mpicomm
           ipx_rec=ipx+dipx
           ipy_rec=ipy+dipy
           if (lshear) then
-            if (ipx_rec<0)        ipy_rec=ipy_rec-ceiling(deltay/Lxyz_loc(2))
-            if (ipx_rec>nprocx-1) ipy_rec=ipy_rec+ceiling(deltay/Lxyz_loc(2))
+            if (ipx_rec<0) &
+                ipy_rec=ipy_rec-ceiling(deltay/Lxyz_loc(2)-0.5)
+            if (ipx_rec>nprocx-1) &
+                ipy_rec=ipy_rec+ceiling(deltay/Lxyz_loc(2)-0.5)
           endif
           ipz_rec=ipz+dipz
           do while (ipx_rec<0);        ipx_rec=ipx_rec+nprocx; enddo
@@ -804,10 +826,31 @@ module Particles_mpicomm
 !  and b) its parent processor is not this processor.
 !
           if (lmigrate) then
-            if (ip<=7) print '(a,i7,a,i3,a,i3)', &
+            if (ip<=7) print '(a,i8,a,i4,a,i4)', &
                 'migrate_particles: Particle ', ipar(k), &
                 ' moves out of proc ', iproc, &
                 ' and into proc ', iproc_rec
+              if (ip<=7) then  !  Quick reality check
+              if (.not.any(iproc_rec==iproc_comm(1:nproc_comm))) then
+                print*, 'migrate_particles: trying to migrate to processor '// &
+                    'that is not in comm list'
+                print '(a,i8,a,i4,a,i4)', &
+                  'migrate_particles: Particle ', ipar(k), &
+                  ' moves out of proc ', iproc, &
+                  ' and into proc ', iproc_rec
+                print*, 'migrate_particles: iproc, iproc_rec=', &
+                    iproc, iproc_rec
+                print*, 'migrate_particles: ipx , ipy , ipz =', &
+                    ipx, ipy, ipz
+                print*, 'migrate_particles: ipx0, ipy0, ipz0=', &
+                    ipx0, ipy0, ipz0
+                print*, 'migrate_particles: it, itsub, t, deltay=', &
+                    it, itsub, t, deltay
+                print*, 'migrate_particles: fp=', fp(k,:)
+                print*, 'migrate_particles: iproc_comm=', &
+                    iproc_comm(1:nproc_comm)
+              endif
+            endif
             if (iproc_rec>=ncpus .or. iproc_rec<0) then
               call warning('migrate_particles','',iproc)
               print*, 'migrate_particles: receiving proc does not exist'
@@ -1061,7 +1104,7 @@ module Particles_mpicomm
       integer :: ibrick_rec, iproc_rec, nmig_enter_proc, nmig_leave_proc
       integer :: i, j, k, iblockl, iblocku, iblockm, ibrick_global_rec
       integer :: ibrick_global_rec_previous, nmig_leave_total, ileave_high_max
-      integer :: itag_nmig=500, itag_ipar=510, itag_fp=520, itag_dfp=530
+      integer :: itag_nmig=580, itag_ipar=590, itag_fp=600, itag_dfp=610
       logical :: lredo, lredo_all, lmigrate, lmigrate_previous
       logical, save :: lfirstcall=.true.
 !
@@ -1189,7 +1232,7 @@ module Particles_mpicomm
 !
           if (lmigrate) then
             iproc_rec=iproc_foster_brick(ibrick_rec)
-            if (ip<=7) print '(a,i7,a,i3,a,i3)', &
+            if (ip<=7) print '(a,i8,a,i4,a,i4)', &
                 'migrate_particles: Particle ', ipar(k), &
                 ' moves out of proc ', iproc, ' and into proc ', iproc_rec
 !
