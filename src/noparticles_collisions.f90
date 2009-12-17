@@ -86,7 +86,8 @@ module Particles_collisions
       logical :: lreset
       logical, optional :: lwrite
 !
-      call keep_compiler_quiet(lreset,lwrite)
+      call keep_compiler_quiet(lreset)
+      call keep_compiler_quiet(present(lwrite))
 !
     endsubroutine rprint_particles_collisions
 !*******************************************************************

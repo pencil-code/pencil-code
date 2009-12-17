@@ -302,6 +302,7 @@ module EquationOfState
       logical, optional :: lwrite
 !
       call keep_compiler_quiet(lreset)
+      call keep_compiler_quiet(present(lwrite))
 !
     endsubroutine rprint_eos
 !***********************************************************************
@@ -477,7 +478,6 @@ module EquationOfState
 !  12-jul-03/tobi: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mx) :: lnrho,ss,yH,lnTT
 !
       f(:,:,:,iyH) = 0.5*(yHmax-yHmin)
       call ioncalc(f)
@@ -714,13 +714,15 @@ module EquationOfState
     endsubroutine temperature_hessian
 !***********************************************************************
     subroutine eosperturb(f,psize,ee,pp,ss)
-
+!
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer, intent(in) :: psize
       real, dimension(psize), intent(in), optional :: ee,pp,ss
-
+!
       call not_implemented("eosperturb")
-
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(present(ee),present(pp),present(ss))
+!
     endsubroutine eosperturb
 !***********************************************************************
     subroutine eoscalc_farray(f,psize,lnrho,ss,yH,lnTT,ee,pp,kapparho)
