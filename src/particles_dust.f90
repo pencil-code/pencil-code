@@ -1857,8 +1857,6 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real :: dt1_advpx, dt1_advpy, dt1_advpz
-      integer :: k
       logical :: lheader, lfirstcall=.true.
 !
       intent (in) :: f, fp, ineargrid
