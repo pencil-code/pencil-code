@@ -494,6 +494,7 @@ endif
 #FC=mpixlf95_r -I/bgsys/drivers/ppcfloor/comm/include #(genius1|jugene[3-4])
 #CC=mpixlc_r -I/bgsys/drivers/ppcfloor/comm/include #(genius1|jugene[3-4])
 #F77=xlf_r #(genius1|jugene[3-4])
+##FFLAGS=-C -g -qsigtrap -O3 #(genius1|jugene[3-4])
 #FFLAGS=-O3 #(genius1|jugene[3-4])
 #CFLAGS=-O3 #(genius1|jugene[3-4])
 #FFLAGS_DOUBLE=-qrealsize=8 #(genius1|jugene[3-4])
