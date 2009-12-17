@@ -512,7 +512,7 @@ endif
 #FFLAGS=-O3 -vec-report0 -assume nounderscore -I/usr/local/openmpi_slurm/include/ #(yang)
 #CC=gcc #(efigi)
 #CFLAGS=-O3 -m32 #(efigi|mithra|shal|pcgastine)
-#LD_MPI=-lmpi -lmpi_f77 #(mithra)
+#LD_MPI=-L/usr/lib/openmpi -lmpi -lmpi_f77 #(mithra)
 #LD_MPI=-L/usr/lib/openmpi -lmpi #(shal)
 #LD_MPI=-L/usr/lib/openmpi/1.2.4-gcc -lmpi -lmpi_f77 #(pcgastine)
 #LD_MPI=-L/usr/lib64/openmpi/1.2.7-gcc/lib -lmpi -lmpi_f77 #(star3)

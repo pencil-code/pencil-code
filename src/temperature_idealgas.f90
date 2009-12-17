@@ -1403,8 +1403,8 @@ module Entropy
         if (nx == 1) then
           call ADI_Kconst_1d(finit,f)
         else
-          call ADI_Kconst(finit,f)
-!         call toto(finit,f)
+!          call ADI_Kconst(finit,f)
+         call toto(finit,f)
         endif
       else
         if (nx == 1) then
