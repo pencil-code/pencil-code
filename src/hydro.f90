@@ -653,7 +653,7 @@ module Hydro
       real, dimension (nx) :: r,p1,tmp,prof
       real :: kabs,crit,eta_sigma,tmp0
       real :: a2, rr2, wall_smoothing
-      integer :: j,i,l, ierr
+      integer :: j,i,l
       type (pencil_case) :: p
 !
 !  inituu corresponds to different initializations of uu (called from start).

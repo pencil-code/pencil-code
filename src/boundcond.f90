@@ -3650,51 +3650,27 @@ module Boundcond
 !
       real :: mu0_SI,u_b,time_SI
 !
-      if (.not.allocated(Bz0l)) then
-        allocate(Bz0l(nxgrid,nygrid),stat=stat)
-        if (stat>0) call fatal_error('bc_force_aa_time', &
-            'Could not allocate memory for Bz0l')
-      endif
-      if (.not.allocated(Bz0r)) then
-        allocate(Bz0r(nxgrid,nygrid),stat=stat)
-        if (stat>0) call fatal_error('bc_force_aa_time', &
-            'Could not allocate memory for Bz0r')
-      endif
-      if (.not.allocated(Bz0_i)) then
-        allocate(Bz0_i(nxgrid,nygrid),stat=stat)
-        if (stat>0) call fatal_error('bc_force_aa_time', &
-            'Could not allocate memory for Bz0_i')
-      endif
-      if (.not.allocated(Bz0_r)) then
-        allocate(Bz0_r(nxgrid,nygrid),stat=stat)
-        if (stat>0) call fatal_error('bc_force_aa_time', &
-            'Could not allocate memory for Bz0_r')
-      endif
-      if (.not.allocated(A_i)) then
-        allocate(A_i(nxgrid,nygrid),stat=stat)
-        if (stat>0) call fatal_error('bc_force_aa_time', &
-            'Could not allocate memory for A_i')
-      endif
-      if (.not.allocated(A_r)) then
-        allocate(A_r(nxgrid,nygrid),stat=stat)
-        if (stat>0) call fatal_error('bc_force_aa_time', &
-            'Could not allocate memory for A_r')
-      endif
-      if (.not.allocated(kx)) then
-        allocate(kx(nxgrid,nygrid),stat=stat)
-        if (stat>0) call fatal_error('bc_force_aa_time', &
-            'Could not allocate memory for kx')
-      endif
-      if (.not.allocated(ky)) then
-        allocate(ky(nxgrid,nygrid),stat=stat)
-        if (stat>0) call fatal_error('bc_force_aa_time', &
-            'Could not allocate memory for ky')
-      endif
-      if (.not.allocated(k2)) then
-        allocate(k2(nxgrid,nygrid),stat=stat)
-        if (stat>0) call fatal_error('bc_force_aa_time', &
-            'Could not allocate memory for k2')
-      endif
+      iostat = 0 
+      stat = 0
+      if (.not.allocated(Bz0l))  allocate(Bz0l(nxgrid,nygrid),stat=iostat)      
+      if (.not.allocated(Bz0r))  allocate(Bz0r(nxgrid,nygrid),stat=stat)
+      iostat = max(stat,iostat)
+      if (.not.allocated(Bz0_i)) allocate(Bz0_i(nxgrid,nygrid),stat=stat)
+      iostat = max(stat,iostat)
+      if (.not.allocated(Bz0_r)) allocate(Bz0_r(nxgrid,nygrid),stat=stat)
+      iostat = max(stat,iostat)
+      if (.not.allocated(A_i))   allocate(A_i(nxgrid,nygrid),stat=stat)
+      iostat = max(stat,iostat)
+      if (.not.allocated(A_r))   allocate(A_r(nxgrid,nygrid),stat=stat)
+      iostat = max(stat,iostat)
+      if (.not.allocated(kx))    allocate(kx(nxgrid,nygrid),stat=stat)
+      iostat = max(stat,iostat)
+      if (.not.allocated(ky))    allocate(ky(nxgrid,nygrid),stat=stat)
+      iostat = max(stat,iostat)
+      if (.not.allocated(k2))    allocate(k2(nxgrid,nygrid),stat=stat)
+!      
+      if (iostat>0) call fatal_error('bc_force_aa_time', &
+          'Could not allocate memory for all variable, please check')
 !
       time_SI = t*unit_time
 !
@@ -5232,7 +5208,7 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
       real    :: haut
-      integer :: i, stat
+      integer :: i
 !
       haut=cs20/gravz
       if (topbot.eq.'bot') then
