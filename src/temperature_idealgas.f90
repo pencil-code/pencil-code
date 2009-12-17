@@ -1925,11 +1925,12 @@ module Entropy
       use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, get_cp1
       use General, only: tridag
       use Gravity, only: gravz
-      use Mpicomm, only: transp_xz, transp_zx, mpisend_real, mpirecv_real
+      use Mpicomm, only: transp_xz, transp_zx, mpisend_real, mpirecv_real, &
+                         mpibarrier
 
       implicit none
 
-      integer :: i,j
+      integer :: i,j,tagr1,tagr2,tags1,tags2
       real, dimension(mx,my,mz,mfarray) :: finit,f
       real, dimension(nx,nz)  :: finter, source, rho, TT
       real, dimension(nx)     :: ax, bx, cx, wx, rhsx, workx
@@ -1989,26 +1990,29 @@ module Entropy
       call transp_xz(finter, fintert)
       call transp_xz(rho, rhot)
       call transp_xz(source, sourcet)
+      call mpibarrier()
 
 ! communicate gridpoints in the x-direction for periodic BC
+      tagr1 = 200 + 10*(iproc)   + iproc - 1
+      tagr2 = 200 + 10*(iproc)   + iproc
+      tags1 = 200 + 10*(iproc-1) + iproc - 2
+      tags2 = 200 + 10*(iproc+1) + iproc + 1
       if (iproc==0) then
         call mpisend_real(fintert(:,1), nzgrid, nprocz-1, 111)
-        call mpisend_real(fintert(:,nx/nprocz), nzgrid, nprocz-1, 112)
-        call mpirecv_real(tmp1, nzgrid, nprocz-1, 113)
-        call mpirecv_real(tmp2, nzgrid, nprocz-1, 114)
+        call mpisend_real(fintert(:,nx/nprocz), nzgrid, iproc+1, tags2)
+        call mpirecv_real(tmp1, nzgrid, iproc+1, tagr1)
+        call mpirecv_real(tmp2, nzgrid, nprocz-1, 112)
       elseif (iproc==nprocz-1) then
         call mpirecv_real(tmp1, nzgrid, 0, 111)
-        call mpirecv_real(tmp2, nzgrid, 0, 112)
-        call mpisend_real(fintert(:,1), nzgrid, 0, 113)
-        call mpisend_real(fintert(:,nx/nprocz), nzgrid, 0, 114)
+        call mpirecv_real(tmp2, nzgrid, iproc-1, tagr2)
+        call mpisend_real(fintert(:,1), nzgrid, iproc-1, tags1)
+        call mpisend_real(fintert(:,nx/nprocz), nzgrid, 0, 112)
+      else
+        call mpisend_real(fintert(:,1), nzgrid, iproc-1, tags1)
+        call mpisend_real(fintert(:,nx/nprocz), nzgrid, iproc+1, tags2)
+        call mpirecv_real(tmp1, nzgrid, iproc+1, tagr1)
+        call mpirecv_real(tmp2, nzgrid, iproc-1, tagr2)
       endif
-!     if (iproc==nprocz-1) then
-!       call mpisend_real(fintert(:,1), nzgrid, 0, 113)
-!       call mpisend_real(fintert(:,nx/nprocz), nzgrid, 0, 114)
-!     else
-!       call mpirecv_real(tmp1, nzgrid, nprocz-1, 113)
-!       call mpirecv_real(tmp2, nzgrid, nprocz-1, 114)
-!     endif
 !
 !  columns dealt implicitly
 !
