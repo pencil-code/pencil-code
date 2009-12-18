@@ -120,10 +120,12 @@ module Particles_number
             print*, 'init_particles_number: np_tilde0=', np_tilde0
           endif
           fp(1:npar_loc,inptilde)=np_tilde0
-
+!
         endselect
-
+!
       enddo
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine init_particles_number
 !***********************************************************************
@@ -307,6 +309,8 @@ module Particles_number
 !
       lfirstcall=.false.
 !
+      call keep_compiler_quiet(ineargrid)
+!
     endsubroutine dnptilde_dt_pencil
 !***********************************************************************
     subroutine dnptilde_dt(f,df,fp,dfp,ineargrid)
@@ -327,6 +331,10 @@ module Particles_number
       if (ldiagnos) then
         if (idiag_nptm/=0) call sum_par_name(fp(1:npar_loc,inptilde),idiag_nptm)
       endif
+!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine dnptilde_dt
 !***********************************************************************

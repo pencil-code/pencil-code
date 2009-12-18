@@ -840,6 +840,7 @@ module Particles_sub
       npar_found=0
 !
       call mpireduce_sum_int(npar_loc,npar_found)
+      call keep_compiler_quiet(ipar)
 !
     endsubroutine count_particles
 !***********************************************************************
