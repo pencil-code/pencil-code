@@ -2102,7 +2102,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: gchemspec, dk
+      real, dimension (nx,3) :: gchemspec, dk_D
       real, dimension (nx) :: ugchemspec, sum_DYDT, sum_hk_DYDt_diff!,ghYrho_uu=0.
       real, dimension (nx) :: sum_dk_ghk,dk_dhhk
       type (pencil_case) :: p
@@ -2192,14 +2192,18 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
         sum_hk_DYDt_diff=0.
         sum_dk_ghk=0.
         
+!NANANAN
+
         do k=1,nchemspec
           sum_DYDt=sum_DYDt+Rgas/species_constants(k,imass)*&
               (1.-H0_RT(l1:l2,m,n,k))*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
           sum_hk_DYDt_diff=sum_hk_DYDt_diff+hhk_full(l1:l2,m,n,k)*p%DYDt_diff(:,k)
           do i=1,3
-           dk(:,i)=p%gXXk(:,i,k)+(XX_full(l1:l2,m,n,k)-f(l1:l2,m,n,ichemspec(k)))*p%glnpp(:,i)
+           dk_D(:,i)=(p%gXXk(:,i,k) &
+            +(XX_full(l1:l2,m,n,k)-f(l1:l2,m,n,ichemspec(k)))*p%glnpp(:,i)) &
+            *Diff_full_add(l1:l2,m,n,k)
           enddo
-           call dot_mn(dk,p%ghhk(:,:,k),dk_dhhk)
+           call dot_mn(dk_D,p%ghhk(:,:,k),dk_dhhk)
 
            sum_dk_ghk=sum_dk_ghk+f(l1:l2,m,n,ichemspec(k))*dk_dhhk
         enddo
