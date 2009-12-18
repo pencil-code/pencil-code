@@ -801,10 +801,10 @@ module Chemistry
               +((init_TT2-init_TT1)*0.5)  &
               *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del)))
         else
-          if (x(k)<init_x1) then
+          if (x(k)<=init_x1) then
             f(k,:,:,ilnTT)=log(init_TT1)
           endif
-          if (x(k)>init_x2) then
+          if (x(k)>=init_x2) then
             f(k,:,:,ilnTT)=log(init_TT2)
           endif
           if (x(k)>init_x1 .and. x(k)<init_x2) then
