@@ -633,6 +633,8 @@ module Particles_nbody
       call boundconds_particles(fp,ipar)
       call bcast_nbodyarray(fp)
 !
+      call keep_compiler_quiet(f)
+!
     endsubroutine init_particles_nbody
 !***********************************************************************
     subroutine dvvp_dt_nbody_pencil(f,df,fp,dfp,p,ineargrid)
@@ -894,6 +896,8 @@ module Particles_nbody
 !
       if (lheader) print*,'dvvp_dt_nbody: Finished dvvp_dt_nbody'
       if (lfirstcall) lfirstcall=.false.
+!
+      call keep_compiler_quiet(f,df)
 !
     endsubroutine dvvp_dt_nbody
 !************************************************************
@@ -1868,7 +1872,9 @@ module Particles_nbody
         endif
 !
       endif
-!      
+!
+      call keep_compiler_quiet(dfp)
+!
     endsubroutine create_sink_particles_nbody
 !***********************************************************************
     subroutine remove_particles_sink_nbody(f,fp,dfp,ineargrid)
@@ -2385,6 +2391,8 @@ module Particles_nbody
         if (ip<=10 .and. lroot) &
              print*,'written snapshot ', snapname
       endif
+!
+      call keep_compiler_quiet(flist)
 !
     endsubroutine particles_nbody_write_snapshot
 !***********************************************************************
