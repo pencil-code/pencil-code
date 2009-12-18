@@ -453,7 +453,8 @@ module Particles_mpicomm
 !
           ibrick_global_rec=iproc_rec*nbricks+ibrick_rec
           if (ibrick_global_rec==ibrick_global_rec_previous) then
-            if (iproc_rec/=iproc) lmigrate=lmigrate_previous
+            if (iproc_rec/=iproc_parent_block(inearblock(k))) &
+                lmigrate=lmigrate_previous
           else
             if (iproc==iproc_parent_block(inearblock(k))) then
               lmigrate=.false.
