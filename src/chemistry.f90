@@ -4224,13 +4224,13 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (mx,my,mz) :: lnpp, Xk_Yk
+      real, dimension (mx,my,mz) :: Xk_Yk
       real, dimension (nx,3) :: gXX, gDiff_full_add, gchemspec, gXk_Yk
       real, dimension (nx) :: del2chemspec
-      real, dimension (nx) :: diff_op,diff_op1,diff_op2,xdot, del2XX, del2lnpp
-      real, dimension (nx) :: glnpp_gXkYk,glnrho_glnpp,gD_glnpp
+      real, dimension (nx) :: diff_op,diff_op1,diff_op2,xdot, del2XX, del2pp, del2lnpp
+      real, dimension (nx) :: glnpp_gXkYk,glnrho_glnpp,gD_glnpp, glnpp_glnpp
       real :: diff_k
-      integer :: j,k,i
+      integer :: j,k,i, j1,j2,j3
 !
       intent(in) :: f
 !
@@ -4261,8 +4261,11 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
             call dot_mn(gDiff_full_add,p%gXXk(:,:,k),diff_op2)
 !
 
-            lnpp=log(pp_full)
-            call del2(lnpp(:,:,:),del2lnpp)
+       
+            call del2(pp_full(:,:,:),del2pp)
+            call dot_mn(p%glnpp,p%glnpp,glnpp_glnpp)
+
+            del2lnpp=del2pp/p%pp-glnpp_glnpp
 
             Xk_Yk=XX_full(:,:,:,k)-f(:,:,:,ichemspec(k))
             call grad(Xk_Yk,gXk_Yk)
