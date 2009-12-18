@@ -249,7 +249,6 @@ module  power_spectrum
 !  passive scalar contributions (hardwired for now)
 !
   integer :: itmp1=8,itmp2=9
-  real, dimension(nx) :: tmp1,tmp2
   real, dimension(nx,3) :: gtmp1,gtmp2
   real :: BextEP=.1 !(hard-wired for now/Axel)
 !
@@ -413,7 +412,7 @@ module  power_spectrum
 !  one could in principle reuse the df array for memory purposes.
 !
   integer, parameter :: nk=nx/2
-  integer :: i,k,ikx,iky,ikz,im,in,ivec
+  integer :: i,k,ikx,iky,ikz
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im
   real, dimension(nk) :: spectrum=0.,spectrum_sum=0
@@ -730,12 +729,11 @@ module  power_spectrum
   use General
   use Mpicomm
 !
-  integer :: i,l,i_pdf
+  integer :: l,i_pdf
   integer, parameter :: n_pdf=3001
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension (nx,3) :: gcc
   real, dimension (nx) :: pdf_var,gcc2
-  real, dimension(n_pdf) :: pdf_xx
   integer, dimension (n_pdf) :: pdf_yy
   real :: pdf_min,pdf_max,pdf_mean,pdf_rms,pdf_dx,pdf_dx1,pdf_scl
   character (len=120) :: pdf_file=''
@@ -828,14 +826,14 @@ endsubroutine pdf
 ! The \phi direction is the z direction. 
 ! ----------------------------------------------------------------------
   integer, parameter :: nk=nz/2
-  integer :: i,j,k,l,ikz,im,in,ivec,ispec,ifirst_fft
+  integer :: j,l,im,in,ivec,ispec,ifirst_fft
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a1
   real, dimension(nx) :: bb
   real, dimension(nzgrid/2) :: spectrum=0.,spectrum_sum=0
   real, dimension(nzgrid) :: aatemp
   real, dimension(2*nzgrid+15) :: fftpack_temp
-  real :: kz,nVol2d,spec_real,spec_imag
+  real :: nVol2d,spec_real,spec_imag
   character (len=*) :: sp
   !
   !  identify version
@@ -937,7 +935,7 @@ endsubroutine pdf
 ! The \phi direction is the z direction. 
 ! ----------------------------------------------------------------------
   integer, parameter :: nk=nz/2
-  integer :: i,j,k,l,ikz,im,in,ivec,ispec,ifirst_fft
+  integer :: j,l,im,in,ivec,ispec,ifirst_fft
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a1,b1
   real, dimension(nx) :: bbi
@@ -945,7 +943,7 @@ endsubroutine pdf
   real, dimension(nzgrid/2) :: spectrumhel=0.,spectrumhel_sum=0
   real, dimension(nzgrid) :: aatemp,bbtemp
   real, dimension(2*nzgrid+15) :: fftpack_temp
-  real :: kz,nVol2d,spec_reala,spec_imaga,spec_realb,spec_imagb
+  real :: nVol2d,spec_reala,spec_imaga,spec_realb,spec_imagb
   character (len=*) :: sp
 !
 !  identify version
