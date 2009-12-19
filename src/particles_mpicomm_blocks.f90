@@ -338,15 +338,18 @@ module Particles_mpicomm
 !  Migrate particles that are no longer in any block maintained by the
 !  processor.
 !
+      if (ip<10) call report_missing_particles('migrate_particles (0)')
       call migrate_particles_block_to_proc(fp,ipar,dfp,nmig_leave)
 !
 !  Migrate particles to actual parent, in case that differs from previous
 !  parent.
 !
+      if (ip<10) call report_missing_particles('migrate_particles (1)')
       call migrate_particles_proc_to_proc(fp,ipar,dfp)
 !
 !  Migrate particles from parent to foster parents.
 !
+      if (ip<10) call report_missing_particles('migrate_particles (2)')
       call migrate_particles_proc_to_block(fp,ipar,dfp)
 !
 !  Diagnostic about number of migrating particles.
@@ -357,6 +360,8 @@ module Particles_mpicomm
 !            call max_name(nmig_leave_proc,idiag_nmigmax)
 !
       if (present(linsert)) call keep_compiler_quiet(linsert)
+!
+      if (ip<10) call report_missing_particles('migrate_particles (3)')
 !
     endsubroutine migrate_particles
 !***********************************************************************
@@ -453,26 +458,21 @@ module Particles_mpicomm
 !
           ibrick_global_rec=iproc_rec*nbricks+ibrick_rec
           if (ibrick_global_rec==ibrick_global_rec_previous) then
-            if (iproc_rec/=iproc_parent_block(inearblock(k))) &
-                lmigrate=lmigrate_previous
+            lmigrate=lmigrate_previous
           else
-            if (iproc==iproc_parent_block(inearblock(k))) then
-              lmigrate=.false.
-            else
-              lmigrate=.true.
-              iblockl=0; iblocku=nblock_loc-1
-              do while (abs(iblocku-iblockl)>1)
-                iblockm=(iblockl+iblocku)/2
-                if (ibrick_global_rec>ibrick_global_arr(iblockm)) then
-                  iblockl=iblockm
-                else
-                  iblocku=iblockm
-                endif
-              enddo
-              if (ibrick_global_rec==ibrick_global_arr(iblockl) .or. &
-                  ibrick_global_rec==ibrick_global_arr(iblocku)) then
-                lmigrate=.false.
+            lmigrate=.true.
+            iblockl=0; iblocku=nblock_loc-1
+            do while (abs(iblocku-iblockl)>1)
+              iblockm=(iblockl+iblocku)/2
+              if (ibrick_global_rec>ibrick_global_arr(iblockm)) then
+                iblockl=iblockm
+              else
+                iblocku=iblockm
               endif
+            enddo
+            if (ibrick_global_rec==ibrick_global_arr(iblockl) .or. &
+                ibrick_global_rec==ibrick_global_arr(iblocku)) then
+              lmigrate=.false.
             endif
           endif
           lmigrate_previous=lmigrate
@@ -482,7 +482,7 @@ module Particles_mpicomm
 !  processor. The parent will then either keep the particle or send it to
 !  a new parent.
 !
-          if (lmigrate) then
+          if (lmigrate.and.(iproc/=iproc_parent_block(inearblock(k)))) then
             iproc_rec=iproc_parent_block(inearblock(k))
             if (ip<=7) print '(a,i8,a,i4,a,i4)', &
                 'migrate_particles: Particle ', ipar(k), &
