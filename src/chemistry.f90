@@ -2205,7 +2205,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
           enddo
            call dot_mn(dk_D,p%ghhk(:,:,k),dk_dhhk)
 
-           sum_dk_ghk=sum_dk_ghk+f(l1:l2,m,n,ichemspec(k))*dk_dhhk
+           sum_dk_ghk=sum_dk_ghk+dk_dhhk
         enddo
        endif
 !
@@ -2230,7 +2230,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
           else
             RHS_T_full(l1:l2,m,n)=(sum_DYDt(:)- Rgas*p%mu1*p%divu)*p%cv1 &
          !   -(hYrho_full(l1:l2,m,n)*p%divu(:)+p%ghYrho_uu(:))/p%TT(:)*p%cv1/p%rho(:)
-           +(sum_hk_DYDt_diff-sum_dk_ghk)/p%TT(:)*p%cv1
+           +(sum_hk_DYDt_diff+sum_dk_ghk)/p%TT(:)*p%cv1
            
           endif
         endif
