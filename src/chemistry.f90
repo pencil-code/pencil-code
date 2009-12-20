@@ -1339,7 +1339,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !!$                XX_full(:,j2,j3,k)=0.
 !!$              else
                 XX_full(:,j2,j3,k)=f(:,j2,j3,ichemspec(k))*unit_mass &
-                 /(species_constants(k,imass)/mu1_full(:,j2,j3))
+                 /(species_constants(k,imass)*mu1_full(:,j2,j3))
 !!$              endif
             enddo
            enddo
