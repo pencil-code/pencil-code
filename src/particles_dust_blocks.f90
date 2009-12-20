@@ -1682,14 +1682,14 @@ k_loop:   do while (.not. (k>npar_loc))
 !
                 if (lhydro) then
                   if (lparticlemesh_cic) then
-                    call interpolate_linear(fb,iux,iuz, &
+                    call interpolate_linear(iux,iuz, &
                         fp(k,ixp:izp),uup,ineargrid(k,:),iblock,ipar(k))
                   elseif (lparticlemesh_tsc) then
                     if (linterpolate_spline) then
-                      call interpolate_quadratic_spline(fb,iux,iuz, &
+                      call interpolate_quadratic_spline(iux,iuz, &
                           fp(k,ixp:izp),uup,ineargrid(k,:),iblock,ipar(k))
                     else
-                      call interpolate_quadratic(fb,iux,iuz, &
+                      call interpolate_quadratic(iux,iuz, &
                           fp(k,ixp:izp),uup,ineargrid(k,:),iblock,ipar(k))
                     endif
                   else
