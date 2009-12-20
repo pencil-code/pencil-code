@@ -311,19 +311,6 @@ module Particles_main
       call map_xxp_grid(f,fp,ineargrid)
       call map_vvp_grid(f,fp,ineargrid)
 !
-!  Fill adopted blocks with gas density and gas velocity field, for calculating
-!  drag forces.
-!
-      if (lparticles_blocks) then
-        if (lfill_density) &
-            call fill_blocks_with_bricks(f,fb,mfarray,ilnrho)
-        if (lfill_velocity) then
-          call fill_blocks_with_bricks(f,fb,mfarray,iux)
-          call fill_blocks_with_bricks(f,fb,mfarray,iuy)
-          call fill_blocks_with_bricks(f,fb,mfarray,iuz)
-        endif
-      endif
-!
 !  Distribute the n-body particles across processors
 !
       if (lparticles_nbody) call bcast_nbodyarray(fp)
@@ -533,6 +520,16 @@ module Particles_main
       intent (inout) :: f, df
 !
       if (lparticles_blocks) then
+!
+!  Fill adopted blocks with gas density and gas velocity field, for calculating
+!  drag forces.
+!
+        if (lfill_density) call fill_blocks_with_bricks(f,fb,mfarray,ilnrho)
+        if (lfill_velocity) then
+          call fill_blocks_with_bricks(f,fb,mfarray,iux)
+          call fill_blocks_with_bricks(f,fb,mfarray,iuy)
+          call fill_blocks_with_bricks(f,fb,mfarray,iuz)
+        endif
 !
 !  Zero the block contribution to time evolution of gas velocity.
 !
