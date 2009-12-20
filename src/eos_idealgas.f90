@@ -1,7 +1,7 @@
 ! $Id$
-
+!
 !  Equation of state for an ideal gas without ionization.
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -36,44 +36,33 @@ module EquationOfState
     module procedure pressure_gradient_farray  ! explicit f implicit m,n
     module procedure pressure_gradient_point   ! explicit lnrho, ss
   end interface
-! integers specifying which independent variables to use in eoscalc
+!
+!  Integers specifying which independent variables to use in eoscalc.
+!
   integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3
   integer, parameter :: ilnrho_lnTT=4,ilnrho_cs2=5
   integer, parameter :: irho_cs2=6, irho_ss=7, irho_lnTT=8, ilnrho_TT=9
   integer, parameter :: irho_TT=10, ipp_ss=11,ipp_cs2=12
-! DM+PC
-!
   integer :: iglobal_cs2, iglobal_glnTT
-
-  ! secondary parameters calculated in initialize
-!  real :: TT_ion=impossible,TT_ion_=impossible
-!  real :: ss_ion=impossible,kappa0=impossible
-!  real :: lnrho_H=impossible,lnrho_e=impossible,lnrho_e_=impossible
-!  real :: lnrho_p=impossible,lnrho_He=impossible
 !
   real :: lnTT0=impossible
-!
-!  initialize the helium fraction (by mass) to 0.
-!  and the mean molecular weight mu to unity.
-!
-  real :: xHe=0.
-  real :: mu=1.
-
-  real :: cs0=1., rho0=1.,pp0=1.
-  real :: cs20=1., lnrho0=0.
-  real :: ptlaw=0.
-  real :: gamma=5./3.
-  real :: Rgas_cgs=0., Rgas, error_cp=1e-6
+  real :: xHe=0.0
+  real :: mu=1.0
+  real :: cs0=1.0, rho0=1.0, pp0=1.0
+  real :: cs20=1.0, lnrho0=0.0
+  real :: ptlaw=0.0
+  real :: gamma=5.0/3.0
+  real :: Rgas_cgs=0.0, Rgas, error_cp=1.0e-6
   real :: gamma_m1    !(=gamma-1)
   real :: gamma_inv   !(=1/gamma)
   real :: cp=impossible, cp1=impossible, cv=impossible, cv1=impossible
   real :: pres_corr
   real :: cs2top_ini=impossible, dcs2top_ini=impossible
-  real :: cs2bot=1., cs2top=1.
-  real :: cs2cool=0.
+  real :: cs2bot=1.0, cs2top=1.0
+  real :: cs2cool=0.0
   real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
-  real :: width_eos_prof=.2
-  real, dimension(3) :: beta_glnrho_global=0., beta_glnrho_scaled=0.
+  real :: width_eos_prof=0.2
+  real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
   integer :: isothtop=0
 
   integer :: ieosvars=-1, ieosvar1=-1, ieosvar2=-1, ieosvar_count=0
@@ -83,19 +72,20 @@ module EquationOfState
   logical :: leos_localisothermal=.false.
 
   character (len=labellen) :: ieos_profile='nothing'
-  real, dimension(mz) :: profz_eos=1.
-
-  ! input parameters
-  namelist /eos_init_pars/ xHe, mu, cp, cs0, rho0, gamma, error_cp, ptlaw, &
-    cs2top_ini, dcs2top_ini
-
-  ! run parameters
-  namelist /eos_run_pars/  xHe, mu, cp, cs0, rho0, gamma, error_cp, ptlaw, &
-    cs2top_ini, dcs2top_ini, &
-    ieos_profile, width_eos_prof,pres_corr
-
+  real, dimension(mz) :: profz_eos=1.0
+!
+!  Input parameters.
+!
+  namelist /eos_init_pars/ &
+      xHe, mu, cp, cs0, rho0, gamma, error_cp, ptlaw, cs2top_ini, dcs2top_ini
+!
+!  Run parameters.
+!
+  namelist /eos_run_pars/ &
+      xHe, mu, cp, cs0, rho0, gamma, error_cp, ptlaw, cs2top_ini, &
+      dcs2top_ini, ieos_profile, width_eos_prof,pres_corr
+!
   contains
-
 !***********************************************************************
     subroutine register_eos()
 !
@@ -107,17 +97,17 @@ module EquationOfState
       leos=.true.
       leos_idealgas=.true.
 !
-      iyH = 0
-      ilnTT = 0
+      iyH=0
+      ilnTT=0
 !
       if ((ip<=8) .and. lroot) then
         print*, 'register_eos: ionization nvar = ', nvar
       endif
 !
-!  identify version number
+!  Identify version number.
 !
       if (lroot) call svn_id( &
-           '$Id$')
+          '$Id$')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -134,18 +124,18 @@ module EquationOfState
 !
       real :: Rgas_unit_sys, cp_reference
 !
-!  set gamma_m1, cs20, and lnrho0
+!  Set gamma_m1, cs20, and lnrho0.
 !  (used currently for non-dimensional equation of state)
 !
-      gamma_m1=gamma-1.
-      gamma_inv=1./gamma
+      gamma_m1=gamma-1.0
+      gamma_inv=1/gamma
 !
-!  avoid floating overflow if cs0 was not set:
+!  Avoid floating overflow if cs0 was not set.
 !
       cs20=cs0**2
       lnrho0=log(rho0)
 !
-! Initialize variable selection code (needed for RELOADing)
+!  Initialize variable selection code (needed for RELOADing).
 !
       ieosvars=-1
       ieosvar_count=0
@@ -154,77 +144,76 @@ module EquationOfState
 !  If unit_temperature is set, cp must follow from this.
 !  Conversely, if cp is set, then unit_temperature must follow from this.
 !  If unit_temperature and cp are set, the problem is overdetermined,
-!    but it may still be correct, so this will be checked here.
-!  When gamma=1. (gamma_m1=0.), write Rgas=mu*cp or cp=Rgas/mu.
+!  but it may still be correct, so this will be checked here.
+!  When gamma=1.0 (gamma_m1=0.0), write Rgas=mu*cp or cp=Rgas/mu.
 !
-      if (unit_system == 'cgs') then
-         Rgas_unit_sys = k_B_cgs/m_u_cgs
-      elseif (unit_system == 'SI') then
-         Rgas_unit_sys = k_B_cgs/m_u_cgs*1.e-4
+      if (unit_system=='cgs') then
+        Rgas_unit_sys=k_B_cgs/m_u_cgs
+      elseif (unit_system=='SI') then
+        Rgas_unit_sys=k_B_cgs/m_u_cgs*1.0e-4
       endif
 !
-      if (unit_temperature == impossible) then
-        if (cp == impossible) cp=1.
-        if (gamma_m1 == 0.) then
+      if (unit_temperature==impossible) then
+        if (cp==impossible) cp=1.0
+        if (gamma_m1==0.0) then
           Rgas=mu*cp
         else
-          Rgas=mu*gamma_m1*gamma_inv*cp
+          Rgas=mu*(1.0-gamma_inv)*cp
         endif
         unit_temperature=unit_velocity**2*Rgas/Rgas_unit_sys
       else
         Rgas=Rgas_unit_sys*unit_temperature/unit_velocity**2
-        if (cp == impossible) then
-          if (gamma_m1 == 0.) then
+        if (cp==impossible) then
+          if (gamma_m1==0.0) then
             cp=Rgas/mu
           else
             cp=Rgas/(mu*gamma_m1*gamma_inv)
           endif
         else
 !
-!  checking whether the units are overdetermined.
-!  This is assumed to be the case when the to differ by error_cp
+!  Checking whether the units are overdetermined.
+!  This is assumed to be the case when the to differ by error_cp.
 !
-          if (gamma_m1 == 0.) then
+          if (gamma_m1==0.0) then
             cp_reference=Rgas/mu
           else
             cp_reference=Rgas/(mu*gamma_m1*gamma_inv)
           endif
           if (abs(cp-cp_reference)/cp > error_cp) then
-            if (lroot) print*,'initialize_eos: consistency: cp=',cp, &
-               'while: cp_reference=',cp_reference
-            call stop_it('initialize_eos')
+            if (lroot) print*,'initialize_eos: consistency: cp=', cp , &
+                'while: cp_reference=', cp_reference
+            call fatal_error('initialize_eos','')
           endif
         endif
       endif
-      cp1=1./cp
+      cp1=1/cp
       cv=gamma_inv*cp
       cv1=gamma*cp1
 !
-!  Need to calculate the equivalent of cs0
+!  Need to calculate the equivalent of cs0.
 !  Distinguish between gamma=1 case and not.
 !
-      if (gamma_m1 /= 0.) then
+      if (gamma_m1/=0.0) then
         lnTT0=log(cs20/(cp*gamma_m1))  !(general case)
       else
         lnTT0=log(cs20/cp)  !(isothermal/polytropic cases: check!)
       endif
-!DM+PC
       pp0=Rgas*exp(lnTT0)*rho0
 !
-!  check that everything is OK
+!  Check that everything is OK.
 !
       if (lroot) then
-        print*,'initialize_eos: unit_temperature=',unit_temperature
-        print*,'initialize_eos: cp,lnTT0,cs0, pp0=',cp,lnTT0,cs0,pp0
+        print*, 'initialize_eos: unit_temperature=', unit_temperature
+        print*, 'initialize_eos: cp, lnTT0, cs0, pp0=', cp, lnTT0, cs0, pp0
       endif
 !
-!  calculate profile functions (used as prefactors to turn off pressure
-!  gradient term)
+!  Calculate profile functions (used as prefactors to turn off pressure
+!  gradient term).
 !
       if (ieos_profile=='nothing') then
-        profz_eos=1.
+        profz_eos=1.0
       elseif (ieos_profile=='surface_z') then
-        profz_eos=.5*(1.-erfunc(z/width_eos_prof))
+        profz_eos=0.5*(1.0-erfunc(z/width_eos_prof))
       endif
 !
     endsubroutine units_eos
@@ -233,25 +222,16 @@ module EquationOfState
 !
       use Mpicomm, only: stop_it
 !
-! Initialize variable selection code (needed for RELOADing)
+!  Initialize variable selection code (needed for RELOADing).
 !
       ieosvars=-1
       ieosvar_count=0
 !
-!  write constants to disk. In future we may want to deal with this
+!  Write constants to disk. In future we may want to deal with this
 !  using an include file or another module.
 !
       if (lroot) then
         open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
-!        write (1,*) 'TT_ion=',TT_ion
-!        write (1,*) 'TT_ion_=',TT_ion_
-!        write (1,*) 'lnrho_e=',lnrho_e
-!        write (1,*) 'lnrho_H=',lnrho_H
-!        write (1,*) 'lnrho_p=',lnrho_p
-!        write (1,*) 'lnrho_He=',lnrho_He
-!        write (1,*) 'lnrho_e_=',lnrho_e_
-!        write (1,*) 'ss_ion=',ss_ion
-!        write (1,*) 'kappa0=',kappa0
         write (1,'(a,1pd26.16)') 'k_B=',k_B
         write (1,'(a,1pd26.16)') 'm_H=',m_H
         write (1,*) 'lnTTO=',lnTT0
