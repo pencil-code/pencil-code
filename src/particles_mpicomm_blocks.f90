@@ -113,7 +113,7 @@ module Particles_mpicomm
             print*, 'initialize_particles_mpicomm: allocated too few blocks!'
             print*, 'initialize_particles_mpicomm: nblock_loc, nblockmax=', &
                 nblock_loc, nblockmax
-            print*, 'initialize_particles_mpicomm: set nblock_loc higher in'// &
+            print*, 'initialize_particles_mpicomm: set nblockmax higher in'// &
                 ' cparam.local'
           endif
           call fatal_error('initialize_particles_mpicomm','')
