@@ -726,7 +726,7 @@ module Chemistry
 !
       RHS_Y_full(l1:l2,m,n,:)=p%DYDt_reac+p%DYDt_diff
 !
-! Calculate dchethermal diffusivity
+! Calculate chethermal diffusivity
 !
       if (lpenc_requested(i_lambda)) then
          p%lambda=lambda_full(l1:l2,m,n)
@@ -2217,10 +2217,10 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
           RHS_T_full(l1:l2,m,n)=sum_DYDt(:)
         else
           if (ltemperature_nolog) then
-        !    RHS_T_full(l1:l2,m,n)=(sum_DYDt(:))*p%cv1*p%TT(:)! &
+        !    RHS_T_full(l1:l2,m,n)=(sum_DYDt(:)- Rgas*p%mu1*p%divu)*p%cv1*p%TT(:)! &
            ! -(hYrho_full(l1:l2,m,n)*p%divu(:)+p%ghYrho_uu(:))*p%cv1/p%rho(:)
           else
-            RHS_T_full(l1:l2,m,n)=sum_DYDt(:)*p%cv1 &
+            RHS_T_full(l1:l2,m,n)=(sum_DYDt(:)-Rgas*p%mu1*p%divu)*p%cv1 &
         
            +sum_dk_ghk/p%TT(:)*p%cv1+sum_hhk_DYDt_reac/p%TT(:)*p%cv1
            
@@ -4197,9 +4197,9 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
           if ((tmp_sum2(j1,j2,j3))<=0.) then
             lambda_full(j1,j2,j3)=0.
           else
-        !    lambda_full(j1,j2,j3)=0.5*(tmp_sum(j1,j2,j3)+1.&
-         !       /tmp_sum2(j1,j2,j3))
-            lambda_full(j1,j2,j3)=(tmp_sum(j1,j2,j3))
+            lambda_full(j1,j2,j3)=0.5*(tmp_sum(j1,j2,j3)+1.&
+                /tmp_sum2(j1,j2,j3))
+         !   lambda_full(j1,j2,j3)=(tmp_sum(j1,j2,j3))
           endif
           if (lambda_const<impossible) then
             lambda_full(j1,j2,j3)=lambda_const
