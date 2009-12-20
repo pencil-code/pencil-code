@@ -1,3 +1,8 @@
 #!/bin/bash
-
+#
+#  This script removes an extra dot in the time_series.dat file.
+#  Such a dot can be the result of having exceeded the space in
+#  the format of time, so that it is too close to the space for
+#  the time step output. (This is actually a bug and could be fixed.)
+#
 perl -i.bak -pe 's/^(\s*[0-9]+)\./$1 /' data/time_series.dat
