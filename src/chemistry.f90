@@ -1339,7 +1339,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !!$                XX_full(:,j2,j3,k)=0.
 !!$              else
                 XX_full(:,j2,j3,k)=f(:,j2,j3,ichemspec(k))*unit_mass &
-                 /(species_constants(k,imass)*mu1_full(:,j2,j3))
+                 /(species_constants(k,imass)/mu1_full(:,j2,j3))
 !!$              endif
             enddo
            enddo
@@ -2104,7 +2104,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: gchemspec, dk_D
       real, dimension (nx) :: ugchemspec, sum_DYDT, sum_hk_DYDt_diff!,ghYrho_uu=0.
-      real, dimension (nx) :: sum_dk_ghk,dk_dhhk
+      real, dimension (nx) :: sum_dk_ghk,dk_dhhk,sum_hhk_DYDt_reac
       type (pencil_case) :: p
 !
 !  indices
@@ -2189,15 +2189,16 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
         enddo
        else
         sum_DYDt=0.
-        sum_hk_DYDt_diff=0.
+        
+        sum_hhk_DYDt_reac=0.
         sum_dk_ghk=0.
         
 !NANANAN
 
         do k=1,nchemspec
-          sum_DYDt=sum_DYDt+Rgas/species_constants(k,imass)*&
-              (1.-H0_RT(l1:l2,m,n,k))*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
-          sum_hk_DYDt_diff=sum_hk_DYDt_diff+hhk_full(l1:l2,m,n,k)*p%DYDt_diff(:,k)
+          sum_DYDt=sum_DYDt+Rgas/species_constants(k,imass)&
+              *(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
+          sum_hhk_DYDt_reac=sum_hhk_DYDt_reac-hhk_full(l1:l2,m,n,k)*p%DYDt_reac(:,k)
           do i=1,3
            dk_D(:,i)=(p%gXXk(:,i,k) &
             +(XX_full(l1:l2,m,n,k)-f(l1:l2,m,n,ichemspec(k)))*p%glnpp(:,i)) &
@@ -2209,28 +2210,19 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
         enddo
        endif
 !
-      !   if (l1step_test) then
-      !    RHS_T_full(l1:l2,m,n)=sum_DYDt(:)
-      !  else
-      !    RHS_T_full(l1:l2,m,n)=(sum_DYDt(:)- Rgas*p%mu1*p%divu)*p%cv1 &
-      !      !/(p%cp-Rgas*p%mu1)&
-      !      -(hYrho_full(l1:l2,m,n)*p%divu(:)+p%ghYrho_uu(:))/p%TT(:)*p%cv1/p%rho(:)
-      !  endif
-
-      !  df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + RHS_T_full(l1:l2,m,n)
-!
+   
 
 
         if (l1step_test) then
           RHS_T_full(l1:l2,m,n)=sum_DYDt(:)
         else
           if (ltemperature_nolog) then
-            RHS_T_full(l1:l2,m,n)=(sum_DYDt(:)- Rgas*p%mu1*p%divu)*p%cv1*p%TT(:)! &
+        !    RHS_T_full(l1:l2,m,n)=(sum_DYDt(:))*p%cv1*p%TT(:)! &
            ! -(hYrho_full(l1:l2,m,n)*p%divu(:)+p%ghYrho_uu(:))*p%cv1/p%rho(:)
           else
-            RHS_T_full(l1:l2,m,n)=(sum_DYDt(:)- Rgas*p%mu1*p%divu)*p%cv1 &
-         !   -(hYrho_full(l1:l2,m,n)*p%divu(:)+p%ghYrho_uu(:))/p%TT(:)*p%cv1/p%rho(:)
-           +(sum_hk_DYDt_diff+sum_dk_ghk)/p%TT(:)*p%cv1
+            RHS_T_full(l1:l2,m,n)=sum_DYDt(:)*p%cv1 &
+        
+           +sum_dk_ghk/p%TT(:)*p%cv1+sum_hhk_DYDt_reac/p%TT(:)*p%cv1
            
           endif
         endif
@@ -4205,8 +4197,9 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
           if ((tmp_sum2(j1,j2,j3))<=0.) then
             lambda_full(j1,j2,j3)=0.
           else
-            lambda_full(j1,j2,j3)=0.5*(tmp_sum(j1,j2,j3)+1.&
-                /tmp_sum2(j1,j2,j3))
+        !    lambda_full(j1,j2,j3)=0.5*(tmp_sum(j1,j2,j3)+1.&
+         !       /tmp_sum2(j1,j2,j3))
+            lambda_full(j1,j2,j3)=(tmp_sum(j1,j2,j3))
           endif
           if (lambda_const<impossible) then
             lambda_full(j1,j2,j3)=lambda_const
