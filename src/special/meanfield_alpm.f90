@@ -460,10 +460,11 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case) :: p
       !
-      intent(in) :: f,df,p
+      intent(in) :: p
 
 !!
 !!  SAMPLE IMPLEMENTATION
@@ -476,7 +477,7 @@ module Special
 !!
 !!
 !
-      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
 !
     endsubroutine special_calc_magnetic
@@ -491,10 +492,11 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case) :: p
       !
-      intent(in) :: f,df,p
+      intent(in) :: p
 
 !!
 !!  SAMPLE IMPLEMENTATION
@@ -505,7 +507,7 @@ module Special
 !!
 !!
 !
-      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
 !
     endsubroutine special_calc_entropy
