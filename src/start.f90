@@ -424,15 +424,15 @@ program start
 !  Write to disk.
 !
   if (lwrite_ic) then
-    call wsnap(trim(directory_snap)//'/VAR0',f, &
-        mvar_io,ENUM=.false.,FLIST='varN.list')
     if (lparticles) &
-        call particles_write_snapshot(trim(directory_snap)//'/PVAR0', &
+        call particles_write_snapshot(trim(directory_snap)//'/PVAR0',f, &
         ENUM=.false.,FLIST='pvarN.list')
     if (lparticles_nbody.and.lroot) &
         call particles_nbody_write_snapshot(&
         trim(datadir)//'/proc0/SPVAR0', &
         ENUM=.false.,FLIST='spvarN.list')
+    call wsnap(trim(directory_snap)//'/VAR0',f, &
+        mvar_io,ENUM=.false.,FLIST='varN.list')
   endif
 !
 !  The option lnowrite writes everything except the actual var.dat file.
@@ -441,14 +441,14 @@ program start
 !
   lnoerase = control_file_exists("NOERASE")
   if (.not.lnowrite .and. .not.lnoerase) then
-    if (ip<12) print*,'START: writing to ' // trim(directory_snap)//'/var.dat'
-    call wsnap(trim(directory_snap)//'/var.dat',f,mvar_io,ENUM=.false.)
+    if (ip<12) print*,'START: writing to '//trim(directory_snap)//'/var.dat'
     if (lparticles) &
-        call particles_write_snapshot(trim(directory_snap)//'/pvar.dat', &
+        call particles_write_snapshot(trim(directory_snap)//'/pvar.dat',f, &
         ENUM=.false.)
     if (lparticles_nbody.and.lroot) &
          call particles_nbody_write_snapshot(&
          trim(datadir)//'/proc0/spvar.dat', ENUM=.false.)
+    call wsnap(trim(directory_snap)//'/var.dat',f,mvar_io,ENUM=.false.)
     call wtime(trim(directory)//'/time.dat',t)
   endif
   call wdim(trim(directory)//'/dim.dat')

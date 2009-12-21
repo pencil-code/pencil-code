@@ -16,7 +16,7 @@ module Particles_sub
   private
 !
   public :: input_particles, output_particles
-  public :: wsnap_particles, boundconds_particles
+  public :: boundconds_particles
   public :: sum_par_name, max_par_name, sum_par_name_nw, integrate_par_name
   public :: remove_particle, get_particles_interdistance
   public :: count_particles
@@ -107,122 +107,6 @@ module Particles_sub
       close(lun_output)
 !
     endsubroutine output_particles
-!***********************************************************************
-    subroutine wsnap_particles(snapbase,fp,enum,lsnap,dsnap_par_minor,dsnap_par,ipar,flist,nobound)
-!
-!  Write particle snapshot file, labelled consecutively if enum==.true.
-!  Otherwise just write a snapshot without label (used e.g. for pvar.dat)
-!
-!  29-dec-04/anders: adapted from wsnap
-!  04-oct-08/ccyang: use a separate log file for minor snapshots
-!  26-nov-08/ccyang: add independent sequence for particle snapshots
-!
-      use General
-      use Io
-      use Particles_mpicomm, only: output_blocks
-      use Sub
-!
-      real, dimension (mpar_loc,mpvar) :: fp
-      real :: dsnap_par_minor, dsnap_par
-      logical :: enum, lsnap, nobound
-      integer, dimension (mpar_loc) :: ipar
-      character (len=*) :: snapbase, flist
-!
-      integer, save :: ifirst=0, nsnap, nsnap_minor, nsnap_par
-      real, save :: tsnap, tsnap_minor, tsnap_par
-      character (len=fnlen), save :: fmajor, fminor, fpar
-      logical :: lsnap_minor=.false., lsnap_par=.false.
-      character (len=fnlen) :: snapname
-      character (len=5) :: nsnap_ch,nsnap_minor_ch,nsnap_par_ch,nsnap_ch_last
-!
-      optional :: flist, nobound
-!
-!  Output snapshot with label in 'tsnap' time intervals
-!  file keeps the information about number and time of last snapshot
-!
-      if (enum) then
-!
-!  At first call, need to initialize tsnap.
-!  tsnap calculated in read_snaptime, but only available to root processor.
-!
-        if (ifirst==0) then
-          call safe_character_assign(fmajor,trim(datadir)//'/tsnap.dat')
-          call read_snaptime(fmajor,tsnap,nsnap,dsnap,t)
-          if (dsnap_par_minor>0.0) then
-            call safe_character_assign(fminor,trim(datadir)//'/tsnap_minor.dat')
-            call read_snaptime(fminor,tsnap_minor,nsnap_minor,dsnap_par_minor,t)
-          endif
-          if (dsnap_par>0.0) then
-            call safe_character_assign(fpar,trim(datadir)//'/tsnap_par.dat')
-            call read_snaptime(fpar,tsnap_par,nsnap_par,dsnap_par,t)
-          endif
-          ifirst=1
-        endif
-!
-!  Output independent sequence of particle snapshots.
-!
-        if (dsnap_par>0.0) then
-          call update_snaptime(fpar,tsnap_par,nsnap_par,dsnap_par,t,lsnap_par,nsnap_par_ch,ENUM=.true.)
-          if (lsnap_par) then
-            snapname=trim(snapbase)//'_'//trim(nsnap_par_ch)
-            call boundconds_particles(fp,ipar)
-            call output_particles(snapname,fp,ipar)
-            if (ip<=10 .and. lroot) &
-                print*,'wsnap_particles: written snapshot ', snapname
-            if (present(flist)) call log_filename_to_file(snapname,flist)
-          endif
-        endif
-!
-!  Possible to output minor particle snapshots (e.g. for a movie).
-!
-        if (dsnap_par_minor>0.0) then
-          call update_snaptime(fminor,tsnap_minor,nsnap_minor,dsnap_par_minor,t,lsnap_minor,nsnap_minor_ch,ENUM=.true.)
-          if (lsnap_minor) then
-            call chn(nsnap-1,nsnap_ch_last,'')
-            snapname=snapbase//trim(nsnap_ch_last)//'.'//trim(nsnap_minor_ch)
-            call boundconds_particles(fp,ipar)
-            call output_particles(snapname,fp,ipar)
-            if (ip<=10 .and. lroot) &
-                print*,'wsnap_particles: written snapshot ', snapname
-            if (present(flist)) call log_filename_to_file(snapname,flist)
-          endif
-        endif
-!
-!  Regular data snapshots must come synchronized with the fluid snapshots.
-!
-        call update_snaptime(fmajor,tsnap,nsnap,dsnap,t,lsnap,nsnap_ch, &
-                             ENUM=.true.)
-        if (lsnap) then
-          snapname=snapbase//nsnap_ch
-          call boundconds_particles(fp,ipar)
-          call output_particles(snapname,fp,ipar)
-          if (lparticles_blocks) &
-              call output_blocks(trim(directory_snap)//'/BLOCKS'//nsnap_ch)
-          if (ip<=10 .and. lroot) &
-              print*,'wsnap_particles: written snapshot ', snapname
-          if (present(flist)) call log_filename_to_file(snapname,flist)
-          nsnap_minor=1
-        endif
-!
-      else
-!
-!  Write snapshot without label
-!
-        snapname=snapbase
-        if (present(nobound)) then
-          if (.not. nobound) call boundconds_particles(fp,ipar)
-        else
-          call boundconds_particles(fp,ipar)
-        endif
-        call output_particles(snapname,fp,ipar)
-        if (lparticles_blocks) &
-            call output_blocks(trim(directory_snap)//'/blocks.dat')
-        if (ip<=10 .and. lroot) &
-             print*,'wsnap_particles: written snapshot ', snapname
-        if (present(flist)) call log_filename_to_file(snapname,flist)
-      endif
-!
-    endsubroutine wsnap_particles
 !***********************************************************************
     subroutine boundconds_particles(fp,ipar,dfp,linsert)
 !
