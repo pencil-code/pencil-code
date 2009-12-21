@@ -9,7 +9,7 @@
   dsnap=30. 
   !
   bcz = 'g:s' ,'nil:s' ,'a','a2','cT','fB:pwd','fB:nil','a2:nil'
-  force_lower_bound='uxy_convection '
+  force_lower_bound='uxy_convection'
 ! lpencil_check=T
 /
 &eos_run_pars

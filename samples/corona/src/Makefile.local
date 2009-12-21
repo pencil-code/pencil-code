@@ -18,3 +18,5 @@ SHOCK	  =   shock
 SPECIAL   =   special/solar_corona
 
 FOURIER   =   fourier_fftpack
+
+REAL_PRECISION = double
