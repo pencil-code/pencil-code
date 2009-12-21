@@ -73,30 +73,34 @@ module Particles_main
 !
     endsubroutine particles_read_snapshot
 !***********************************************************************
-    subroutine particles_write_snapshot(chsnap,enum,flist)
+    subroutine particles_write_snapshot(chsnap,f,enum,flist)
 !
 !  Write particle snapshot to file.
 !
 !  22-aug-05/anders: dummy
 !
+      real, dimension (mx,my,mz,mfarray) :: f      
       logical :: enum
       character (len=*) :: chsnap,flist
       optional :: flist
 !
+      call keep_compiler_quiet(f)
       call keep_compiler_quiet(chsnap)
       call keep_compiler_quiet(enum)
       call keep_compiler_quiet(flist)
 !
     endsubroutine particles_write_snapshot
 !***********************************************************************
-    subroutine particles_write_dsnapshot(chsnap)
+    subroutine particles_write_dsnapshot(chsnap,f)
 !
 !  Write particle derivative snapshot to file.
 !
 !  22-aug-05/anders: dummy
 !
+      real, dimension (mx,my,mz,mfarray) :: f
       character (len=*) :: chsnap
 !
+      call keep_compiler_quiet(f)
       call keep_compiler_quiet(chsnap)
 !
     endsubroutine particles_write_dsnapshot
