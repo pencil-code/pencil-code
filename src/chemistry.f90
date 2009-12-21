@@ -3436,10 +3436,14 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
         elseif (maxval(abs(high_coeff(:,reac))) > 0.) then
           write(file_id,*) 'HIGH/',high_coeff(:,reac)
         endif
+        if (maxval(abs(troe_coeff(:,reac))) > 0.) then
+          write(file_id,*) 'TROE/',troe_coeff(:,reac)
+        endif
         if (minval(a_k4(:,reac))<impossible) then
           write(file_id,*) a_k4(:,reac)
         endif
 !
+
       enddo
 !
       write(file_id,*) 'END'
@@ -3467,12 +3471,13 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       real, dimension (nx) :: rho_cgs,p_atm
       real :: Rcal
       integer :: k , reac, j, i, v, t
-      real  :: sum_tmp=0., T_low, T_mid, T_up, tmp
+      real  :: sum_tmp=0., T_low, T_mid, T_up, tmp, ddd
       logical,save :: lwrite=.true.
       character (len=20) :: input_file="./data/react.out"
       integer :: file_id=123
       real :: B_n_0,alpha_n_0,E_an_0
-      real, dimension (nx) ::  kf_0,Kc_0,Pr,sum_sp,prod1_0,prod2_0
+      real, dimension (nx) :: kf_0,Kc_0,Pr,sum_sp,prod1_0,prod2_0
+      real, dimension (nx) :: Fcent, ccc, nnn, lnPr, FF,tmpF
       integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
 
 !
@@ -3605,6 +3610,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
           Pr=kf_0/kf*mix_conc
           kf=kf*(Pr/(1.+Pr))
           kr(:)=kf(:)/Kc_0
+
         elseif (maxval(abs(high_coeff(:,reac))) > 0.) then
           B_n_0=high_coeff(1,reac)
           alpha_n_0=high_coeff(2,reac)
@@ -3614,6 +3620,22 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
           kf=kf*(1./(1.+Pr))
           kr(:)=kf(:)/Kc_0
         endif
+
+        if (maxval(abs(troe_coeff(:,reac))) > 0.) then
+         Fcent=(1.-troe_coeff(1,reac))*exp(-p%TT(:)/troe_coeff(2,reac)) &
+         +troe_coeff(1,reac)*exp(-p%TT(:)/troe_coeff(3,reac))
+         ccc=-0.4-0.67*log10(Fcent)
+         nnn=0.75-1.27*log10(Fcent)
+         ddd=0.14
+         lnPr=log10(Pr)
+         tmpF=((lnPr+ccc)/(nnn-ddd*(lnPr+ccc)))**2
+         tmpF=1./(1.+tmpF)
+         FF=tmpF*log10(Fcent)
+         FF=10**(FF)
+         kf=kf*FF
+         kr(:)=kf(:)/Kc_0
+        endif
+!print*,'BATA',maxval(kf),maxval(kf_0),reac, maxval(FF)
 !
 !  Find forward (vreact_p) and backward (vreact_m) rate of
 !  progress variable.
