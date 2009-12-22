@@ -745,6 +745,14 @@ k_loop:   do while (.not. (k>npar_loc))
         call map_nearest_grid(fp,ineargrid)
         call sort_particles_iblock(fp,ineargrid,ipar)
         call map_xxp_grid(f,fp,ineargrid)
+        if (any(initvvp=='random') .or. &     ! Over reaction, but can
+            any(initvvp=='random-x') .or. &   ! cause a lot of frustration
+            any(initvvp=='random-y') .or. &   ! when comparing block results
+            any(initvvp=='random-z')) then    ! with normal results
+          if (lroot) print*, 'init_particles: for random particle velocity '// &
+              'initial conditions you should use learly_particle_map=F'
+          call fatal_error('init_particles','')
+        endif
       endif
 !
 !  Initial particle velocity.
