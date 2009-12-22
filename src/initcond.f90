@@ -3766,6 +3766,8 @@ module Initcond
       if (stat>0) call fatal_error('powern','Could not allocate memory for u_re')
       allocate(u_im(nx,ny,nz),stat=stat)
       if (stat>0) call fatal_error('powern','Could not allocate memory for u_im')
+      allocate(r(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('powern','Could not allocate memory for r')
       allocate(kx(nxgrid),stat=stat)
       if (stat>0) call fatal_error('powern', &
           'Could not allocate memory for kx')
@@ -3840,8 +3842,10 @@ module Initcond
 !
 !  Deallocate arrays.
 !
-      if (allocated(k2)) deallocate(k2)
-      if (allocated(u_re)) deallocate(u_im)
+      if (allocated(k2))   deallocate(k2)
+      if (allocated(u_re)) deallocate(u_re)
+      if (allocated(u_im)) deallocate(u_im)
+      if (allocated(r))  deallocate(r)
       if (allocated(kx)) deallocate(kx)
       if (allocated(ky)) deallocate(ky)
       if (allocated(kz)) deallocate(kz)
