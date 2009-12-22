@@ -589,6 +589,17 @@ kky_aa=2.*pi
         p%uu(:,3)=-fac*(cos(kkx_aa*x(l1:l2)+ecost)+sin(kky_aa*y(m)+esint))
         if (lpencil(i_divu)) p%divu=0.
 !
+!  potential flow, u=gradphi, with phi=sinx*siny*sinz
+!  assume kkx_aa=kky_aa=kkz_aa
+!
+      elseif (kinflow=='potential') then
+        if (headtt) print*,'potential; kx_aa=',kkx_aa,kky_aa,kkz_aa
+        fac=ampl_kinflow*kkx_aa
+        p%uu(:,1)=fac*cos(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))*sin(kkz_aa*z(n))
+        p%uu(:,2)=fac*sin(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))*sin(kkz_aa*z(n))
+        p%uu(:,3)=fac*sin(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))*cos(kkz_aa*z(n))
+        if (lpencil(i_divu)) p%divu=fac
+!
 !  Convection rolls
 !  Stream function: psi_y = cos(kx*x) * cos(kz*z)
 !

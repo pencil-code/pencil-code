@@ -234,7 +234,9 @@ module EquationOfState
         open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
         write (1,'(a,1pd26.16)') 'k_B=',k_B
         write (1,'(a,1pd26.16)') 'm_H=',m_H
+        write (1,*) 'lnrho0=',lnrho0
         write (1,*) 'lnTTO=',lnTT0
+        write (1,*) 'cs20=',cs20
         write (1,*) 'cp=',cp
         close (1)
       endif

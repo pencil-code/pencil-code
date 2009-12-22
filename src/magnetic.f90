@@ -3269,6 +3269,11 @@ module Magnetic
 !
 !  Omega effect coded (normally used in context of mean field theory)
 !  Can do uniform shear (0,Sx,0), and the cosx*cosz profile (solar CZ).
+!  In most cases the Omega effect can be modeled using hydro_kinematic,
+!  but this is not possible when the flow varies in a direction that
+!  is not a coordinate direction, e.g. when U=(0,Sx,0) and A=A(z,t).
+!  In such cases the Omega effect must be rewritten in terms of
+!  velocity gradients operating on A, i.e. (gradU)^T.A, instead of UxB.
 !
 !  30-apr-05/axel: coded
 !

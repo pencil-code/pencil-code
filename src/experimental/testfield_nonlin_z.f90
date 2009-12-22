@@ -51,6 +51,7 @@ module Testfield
   real, dimension (ninit) :: phasex_aatest=0.,phasez_aatest=0.
   real, dimension (ninit) :: amplaatest=0.
   integer :: iuxtest=0,iuytest=0,iuztest=0,iuxtestpq=0,iuztestpq=0
+  integer :: iu0xtest=0,iu0ztest=0
   integer, dimension (njtest) :: nuxb=0
   integer :: iE0=0
 
@@ -141,6 +142,7 @@ module Testfield
   integer :: idiag_b21rms=0     ! DIAG_DOC: $\left<b_{21}^2\right>^{1/2}$
   integer :: idiag_b12rms=0     ! DIAG_DOC: $\left<b_{12}^2\right>^{1/2}$
   integer :: idiag_b22rms=0     ! DIAG_DOC: $\left<b_{22}^2\right>^{1/2}$
+  integer :: idiag_u0rms=0      ! DIAG_DOC: $\left<u_{0}^2\right>^{1/2}$
   integer :: idiag_b0rms=0      ! DIAG_DOC: $\left<b_{0}^2\right>^{1/2}$
   integer :: idiag_jb0m=0       ! DIAG_DOC: $\left<jb_{0}\right>$
   integer :: idiag_E11rms=0     ! DIAG_DOC: $\left<{\cal E}_{11}^2\right>^{1/2}$
@@ -365,6 +367,10 @@ module Testfield
         call fatal_error('initialize_testfield','undefined itestfield value')
       endselect
 !
+!  override iE0 if njtest is big enough
+!
+      if (njtest==5) iE0=5
+!
 !  set to zero and then rescale the testfield
 !  (in future, could call something like init_aa_simple)
 !
@@ -562,8 +568,10 @@ module Testfield
 !  testfield evolution:
 !
 !  calculate da^(pq)/dt=Uxb^(pq)+uxB^(pq)+uxb-<uxb>+eta*del2A^(pq),
-!    where p=1,2 and q=1 (if B11-B21) and optionally q=2 (if B11-B22)
 !  and du^(pq)/dt=Jxb^(pq)+jxB^(pq)+jxb-<jxb>+eta*del2U^(pq),
+!    where p=1,2 and q=1 (if B11-B21) and optionally q=2 (if B11-B22),
+!  and  da^(0)/dt=uxb-<uxb>+Eext+eta*del2A^(0),
+!  with du^(0)/dt=jxb-<jxb>+Fext+eta*del2U^(0),
 !
 !  also calculate corresponding Lorentz force in connection with
 !  testflow method
@@ -589,11 +597,11 @@ module Testfield
       real, dimension (nx,3,njtest) :: Eipq,bpq,jpq,upq
       real, dimension (nx,3) :: del2Atest,uufluct
       real, dimension (nx,3) :: del2Atest2,graddivAtest,aatest,jjtest
-      real, dimension (nx,3) :: jxbrtest,jxbtest1,jxbtest2
-      real, dimension (nx,3) :: del2Utest ,graddivUtest,uutest,ootest
+      real, dimension (nx,3) :: jxbrtest,jxbtest1,jxbtest2,u0xb0,j0xb0
+      real, dimension (nx,3) :: del2Utest ,graddivUtest,uutest,ootest,u0test
       real, dimension (nx,3,3) :: aijtest,bijtest,Mijtest,uijtest,oijtest
       real, dimension (nx) :: jbpq,upq2,bpq2,Epq2,s2kzDF1,s2kzDF2,unity=1.
-      integer :: jtest,jfnamez,j, i1=1, i2=2, i3=3, i4=4 !, iuxtest, iuytest, iuztest
+      integer :: jtest,jfnamez,j, i1=1, i2=2, i3=3, i4=4
       logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
 !
       intent(in)     :: f,p
@@ -674,6 +682,8 @@ module Testfield
           call fatal_error('daatest_dt','undefined itestfield value')
         endselect
 !
+!  add always diffusion term, and uxB only if jtest /= iE0
+!
         call cross_mn(uufluct,B0test,uxB)
         if (lsoca) then
           df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
@@ -710,8 +720,9 @@ module Testfield
 !
 !  Add possibility of forcing that is not delta-correlated in time.
 !  This is not normally correct in the application of the testfield method.
+!  Do this only for iE0.
 !
-        if (lforcing_cont_aatest) &
+        if (lforcing_cont_aatest.and.jtest==iE0) &
           df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
               +ampl_fcont_aatest*p%fcont
 !
@@ -749,14 +760,26 @@ module Testfield
 !
           df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
               +jxbrtest+nutest*del2Utest
+!
+!  if jtest==iE0, add non-SOCA term
+!
+          if (jtest==iE0) then
+            if (headtt.or.ldebug) print*,'daatest_dt: added non-SOCA jxb term'
+            call cross_mn(uutest,bbtest,u0xb0)
+            call cross_mn(jjtest,bbtest,j0xb0)
+            df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest)+j0xb0
+            df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+u0xb0
+          else
+          endif
         else
           uutest=0.
         endif
 !
-!  add them all together
-!  subtract average emf, unless we ignore the <uxb> term (lignore_uxbtestm=T)
+!  Add djxbtest to rhs, unless we do SOCA.
+!  Subtract average emf, unless we ignore the <uxb> term (lignore_uxbtestm=T).
 !
-        if (lsoca_jxb) then
+        if (.not.lsoca_jxb) then
+          if (headtt.or.ldebug) print*,'daatest_dt: added non-SOCA jxb term'
           if (lignore_jxbtestm) then
             djxbtest(:,:)=jxbtest(:,:)
           else
@@ -781,10 +804,31 @@ module Testfield
            idiag_M11/=0.or.idiag_M22/=0.or.idiag_M33/=0.or. &
            idiag_M11z/=0.or.idiag_M22z/=0.or.idiag_M33z/=0)) then
           aatest=f(l1:l2,m,n,iaxtest:iaztest)
+!
+!  get u0 (if iE0 /= 0)
+!
+          if (iE0/=0) then
+            iu0xtest=iuutest+3*(iE0-1); iu0ztest=iu0xtest+2
+            u0test=f(l1:l2,m,n,iu0xtest:iu0ztest)
+          else
+            u0test=0.
+          endif
+!
+!  compute uxb etc
+!
           call gij(f,iaxtest,aijtest,1)
           call curl_mn(aijtest,bbtest,aatest)
-          call cross_mn(p%uu,bbtest,uxbtest)
+!
+!  Version I
+!
+          !call cross_mn(p%uu,bbtest,uxbtest)
+          !call cross_mn(u0test,p%bb,uxbtest2)
+!
+!  Version II
+!
+          !call cross_mn(u0test,bbtest,uxbtest)
           call cross_mn(uutest,p%bb,uxbtest2)
+!
           if (idiag_M11cc/=0.or.idiag_M11ss/=0.or. &
               idiag_M22cc/=0.or.idiag_M22ss/=0.or. &
               idiag_M12cs/=0.or. &
@@ -998,6 +1042,11 @@ module Testfield
         if (idiag_jb0m/=0) then
           call dot(jpq(:,:,iE0),bpq(:,:,iE0),jbpq)
           call sum_mn_name(jbpq,idiag_jb0m)
+        endif
+!
+        if (idiag_u0rms/=0) then
+          call dot2(upq(:,:,iE0),bpq2)
+          call sum_mn_name(bpq2,idiag_u0rms,lsqrt=.true.)
         endif
 !
         if (idiag_b0rms/=0) then
@@ -1491,7 +1540,7 @@ module Testfield
         idiag_M11cc=0; idiag_M11ss=0; idiag_M22cc=0; idiag_M22ss=0
         idiag_M12cs=0
         idiag_M11z=0; idiag_M22z=0; idiag_M33z=0; idiag_bamp=0
-        idiag_jb0m=0; idiag_b0rms=0; idiag_E0rms=0
+        idiag_jb0m=0; idiag_u0rms=0; idiag_b0rms=0; idiag_E0rms=0
         idiag_u11rms=0; idiag_u21rms=0; idiag_u12rms=0; idiag_u22rms=0
         idiag_b11rms=0; idiag_b21rms=0; idiag_b12rms=0; idiag_b22rms=0
         idiag_E11rms=0; idiag_E21rms=0; idiag_E12rms=0; idiag_E22rms=0
@@ -1563,6 +1612,7 @@ module Testfield
         call parse_name(iname,cname(iname),cform(iname),'b22rms',idiag_b22rms)
         call parse_name(iname,cname(iname),cform(iname),'jb0m',idiag_jb0m)
         call parse_name(iname,cname(iname),cform(iname),'bamp',idiag_bamp)
+        call parse_name(iname,cname(iname),cform(iname),'u0rms',idiag_u0rms)
         call parse_name(iname,cname(iname),cform(iname),'b0rms',idiag_b0rms)
         call parse_name(iname,cname(iname),cform(iname),'E11rms',idiag_E11rms)
         call parse_name(iname,cname(iname),cform(iname),'E21rms',idiag_E21rms)
@@ -1661,6 +1711,7 @@ module Testfield
         write(3,*) 'idiag_b12rms=',idiag_b12rms
         write(3,*) 'idiag_b22rms=',idiag_b22rms
         write(3,*) 'idiag_jb0m=',idiag_jb0m
+        write(3,*) 'idiag_u0rms=',idiag_u0rms
         write(3,*) 'idiag_b0rms=',idiag_b0rms
         write(3,*) 'idiag_E11rms=',idiag_E11rms
         write(3,*) 'idiag_E21rms=',idiag_E21rms
