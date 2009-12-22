@@ -622,10 +622,14 @@ module Equ
             maxadvec=maxadvec+sqrt(advec2)
           endif
 !
+!  Time step constaints from each module.
+!  (At the moment, magnetic and testfield use the same variable.)
+!
           if (lviscosity) maxdiffus=max(diffus_nu,maxdiffus)
           if (ldensity) maxdiffus=max(diffus_diffrho,maxdiffus)
           if (lentropy) maxdiffus=max(diffus_chi,maxdiffus)
           if (lmagnetic) maxdiffus=max(diffus_eta,maxdiffus)
+          if (ltestfield) maxdiffus=max(diffus_eta,maxdiffus)
           if (lpscalar) maxdiffus=max(diffus_pscalar,maxdiffus)
           if (lcosmicray) maxdiffus=max(diffus_cr,maxdiffus)
           if (ldustvelocity) maxdiffus=max(diffus_nud,maxdiffus)
