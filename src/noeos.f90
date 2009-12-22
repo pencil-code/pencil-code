@@ -181,8 +181,6 @@ module EquationOfState
 !  set default values
 !
       if (lpencil(i_cp1)) p%cp1=0.
-      if (lpencil(i_rho)) p%rho=rho0
-      if (lpencil(i_lnrho)) p%lnrho=log(rho0)
       if (lpencil(i_cs2)) p%cs2=cs20
 !
 !  result doesn't depend of f, so keep compiler quiet
