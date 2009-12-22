@@ -1020,17 +1020,23 @@ module Hydro
         case( 'anelastic-2dxz')
           print*, "anelastic-2dxz: ampl_uy,kx_uu,kz_uu = ", ampl_uy(j),kx_uu,kz_uu
           do n=n1,n2; do m=m1,m2
-            f(l1:l2,m,n,iuy)=ampl_uy(j)*sin(kx_uu*x(l1:l2))*sin(kz_uu*z(n))
+!            f(l1:l2,m,n,iuy)=ampl_uy(j)*sin(kx_uu*x(l1:l2))*sin(kz_uu*z(n))
+            f(l1:l2,m,n,iuy)=ampl_uy(j)*exp(-kx_uu*x(l1:l2)**2-kz_uu*z(n)**2)
           enddo; enddo
           call update_ghosts(f)
 ! 2D curl
           do n=n1,n2;do m=m1,m2
             call calc_pencils_density(f,p)
             call grad(f,iuy,tmp_nx3)
-            f(l1:l2,m,n,iux) = -tmp_nx3(:,3)/p%rho
-            f(l1:l2,m,n,iuz) =  tmp_nx3(:,1)/p%rho
+            f(l1:l2,m,n,iux) = -tmp_nx3(:,3)/exp(f(l1:l2,m,n,ilnrho))
+            f(l1:l2,m,n,iuz) =  tmp_nx3(:,1)/exp(f(l1:l2,m,n,ilnrho))
+            do l=l1,l2
+              write(15,*) l,n,f(l,m,n,iux),f(l,m,n,iuz)
+            enddo
           enddo;enddo
           f(:,:,:,iuy)=0.
+          write(*,*) 'PC:init_uu','Finished initializing uu'
+
 !
         case('incompressive-shwave')
 ! incompressible shear wave of Johnson & Gammine (2005a)

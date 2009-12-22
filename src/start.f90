@@ -349,8 +349,19 @@ program start
         print '(A33,i3,A25)', 'start: -- performing loop number', i, &
         ' of initial conditions --'
     call init_gg        (f)
-    call init_uu        (f)
-    call init_lnrho     (f)
+!
+!  This is a temporary solution for calculating the correct initial
+!  condition for incompressible case where we need to set div(rho u)=0
+!  The dust-vortex auto-test requires that uu is initialised before
+!  lnrho
+!
+    if (ldensity_anelastic) then
+      call init_lnrho     (f)
+      call init_uu        (f)
+    else
+      call init_uu        (f)
+      call init_lnrho     (f)
+    endif
     call init_ss        (f)
     call init_aa        (f)
     call init_lorenz_gauge (f)

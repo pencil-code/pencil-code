@@ -11,7 +11,7 @@
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 5
-! COMMUNICATED AUXILIARIES 5
+! COMMUNICATED AUXILIARIES 4
 !
 ! PENCILS PROVIDED lnrho; rho; rho1; glnrho(3); grho(3); gpp(3); 
 ! PENCILS PROVIDED uglnrho; ugrho
@@ -32,7 +32,7 @@ module Density
 !
   implicit none
 !
-  include 'density_anelastic.h'
+  include '../density_anelastic.h'
 !
   real, dimension (ninit) :: ampllnrho=0.0, widthlnrho=0.1
   real, dimension (ninit) :: rho_left=1.0, rho_right=1.0
@@ -141,7 +141,8 @@ module Density
 !
       use FArrayManager
 !
-      call farray_register_auxiliary('lnrho',ilnrho,communicated=.true.)
+!      call farray_register_auxiliary('lnrho',ilnrho,communicated=.true.)
+      call farray_register_auxiliary('lnrho',ilnrho)
       call farray_register_auxiliary('pp',ipp,communicated=.true.)
       call farray_register_auxiliary('rhs',irhs,vector=3,communicated=.true.)
 !
@@ -900,10 +901,11 @@ module Density
 !  Should be consistent with density 
           f(:,:,:,ilnrho) = log(rho_const + f(:,:,:,ilnrho))
         case('anelastic')
-          do n=n1,n2
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,ilnrho)=-0.1*z(n)
+            f(l1:l2,m,n,ipp)=0.0
             call calc_pencils_density(f,p)
-            print*, z(n), p%rho
-          enddo
+          enddo; enddo
 !
         case default
 !
@@ -1344,14 +1346,14 @@ module Density
 !
       intent(in) :: f
       intent(inout) :: p
-      integer :: i, mm, nn, ierr
+      integer :: i, mm, nn, ierr,l
 ! DM+PC (at present we are working only with log rho) 
       if(ldensity_nolog) call fatal_error('density_anelastic','working with lnrho')
 
 !
 ! Anelastic case: we give rho0 only here
 !
-      p%rho=exp(-0.1*z(n))
+      p%rho=exp(f(l1:l2,m,n,ilnrho))
       p%lnrho=log(p%rho)
 
 ! rho and rho1
@@ -2537,37 +2539,42 @@ module Density
 !***********************************************************************
     subroutine anelastic_after_mn(f, p, df, mass_per_proc)
 !
-      use Poisson, only: inverse_laplacian
+      use Poisson, only: inverse_laplacian,inverse_laplacian_semispectral
       use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry
       use Boundcond, only: boundconds
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx,ny,nz) :: pold
       type (pencil_case) :: p
       real, dimension (nx,3) :: gpp
       real, dimension (nx) :: phi_rhs_pencil
       real, dimension (1)  :: mass_per_proc
-      integer :: j, ju
+      integer :: j, ju, l
+      
+      if (headt) call identify_bcs('pp',ipp)
 !
 !  Multiply the RHS by rho before taking the divergence
 !
-      do m=m1,m2
-      do n=n1,n2
-        call calc_pencils_density(f,p)
-        f(l1:l2,m,n,irhs)=p%rho*f(l1:l2,m,n,irhs)
-        f(l1:l2,m,n,irhs+1)=p%rho*f(l1:l2,m,n,irhs+1)
-        f(l1:l2,m,n,irhs+2)=p%rho*f(l1:l2,m,n,irhs+2)
-      enddo
-      enddo
+!      do m=m1,m2
+!      do n=n1,n2
+!        call calc_pencils_density(f,p)
+!        f(l1:l2,m,n,irhs)=p%rho*f(l1:l2,m,n,irhs)
+!        f(l1:l2,m,n,irhs+1)=p%rho*f(l1:l2,m,n,irhs+1)
+!        f(l1:l2,m,n,irhs+2)=p%rho*f(l1:l2,m,n,irhs+2)
+!      enddo
+!      enddo
 !
 !  Set first the boundary conditions on rhs
 !
       call initiate_isendrcv_bdry(f,irhs,irhs+2)
       call finalize_isendrcv_bdry(f,irhs,irhs+2)
       call boundconds(f,irhs,irhs+2)
+
 !
 !  Find the divergence of rhs
 !
+      pold(1:nx,1:ny,1:nz)=f(l1:l2,m1:m2,n1:n2,ipp)
       do n=n1,n2
         do m=m1,m2
           call div(f,irhs,phi_rhs_pencil)
@@ -2578,10 +2585,35 @@ module Density
 !  get pressure from inverting the Laplacian
 !
       if (lperi(3)) then
+!        do n=n1,n2
+!          do l=l1,l2
+!            write(16,*) l,n,f(l,m1:m2,n,ipp)
+!          enddo 
+!        enddo 
         call inverse_laplacian(f,f(l1:l2,m1:m2,n1:n2,ipp))
+!        do n=n1,n2
+!          do l=l1,l2
+!            write(17,*) l,n,f(l,m1:m2,n,ipp)
+!          enddo 
+!        enddo 
+!        close(17)
       else
-        call inverse_laplacian_z(f(l1:l2,m1:m2,n1:n2,ipp))
+        do n=n1,n2
+          do l=l1,l2
+            write(16,*) l,n,f(l,m1:m2,n,ipp)
+          enddo 
+        enddo 
+        close(16)
+        call inverse_laplacian_z(pold,f(l1:l2,m1:m2,n1:n2,ipp))
+!        call inverse_laplacian_semispectral(f(l1:l2,m1:m2,n1:n2,ipp))
+        do n=n1,n2
+          do l=l1,l2
+            write(17,*) l,n,f(l,m1:m2,n,ipp)
+          enddo 
+        enddo 
+        close(17)
       endif
+!      stop
 !
 !  Update the boundary conditions for the new pressure (needed to
 !  compute grad(P)
@@ -2605,25 +2637,25 @@ module Density
 !
     endsubroutine anelastic_after_mn
 !***********************************************************************
-    subroutine inverse_laplacian_z(phi)
+    subroutine inverse_laplacian_z(pold,phi)
 !
 !  Solve the pressure equation in the anelastic case by Fourier 
 !  transforming in the xy-plane and solving the discrete matrix 
 !  equation in the z-direction. Inspired from inverse_laplacian_semispectral 
 !  coded in the Poisson module.
 !
-!  16-dec-09/dintrans: coded
+!  16-dec-09/dintrans+piyali: coded
 !
       use General, only: tridag
       use Mpicomm, only: transp_xz, transp_zx
-      use Fourier, only: fourier_transform_xy
+      use Fourier, only: fourier_transform_xy,fourier_transform_x
       use Gravity, only: gravz
 !
-      real, dimension (nx,ny,nz) :: phi, b1
-      real, dimension (nzgrid,nx/nprocz) :: rhst
-      real, dimension (nzgrid) :: a_tri, b_tri, c_tri, r_tri, u_tri
+      real, dimension (nx,ny,nz) :: phi, b1, pold
+      real, dimension (nzgrid,nx/nprocz) :: rhst,rhst2
+      real, dimension (nzgrid-1) :: a_tri, b_tri, c_tri, r_tri, u_tri
       real :: k2
-      integer :: ikx, iky
+      integer :: ikx, iky,ikz
       logical :: err
 !
 !  The right-hand-side of the pressure equation is purely real.
@@ -2632,48 +2664,48 @@ module Density
 !
 !  Forward transform (to k-space).
 !
-      call fourier_transform_xy(phi,b1)
+        call fourier_transform_xy(phi,b1)
+        call fourier_transform_xy(pold,b1)
+        
 !
 !  Solve for discrete z-direction
 !
       do iky=1,ny
         call transp_xz(phi(:,iky,:),rhst)
+        call transp_xz(pold(:,iky,:),rhst2)
         a_tri(:)=1.0/dz**2
         c_tri(:)=1.0/dz**2
         do ikx=1,nxgrid/nprocz
           k2=kx_fft(ikx+nz*ipz)**2+ky_fft(iky)**2
-          if (k2==0.0) then
-            b_tri=-2.0/dz**2-2.0/dz/xyz0(3)
-          else
-            b_tri=-2.0/dz**2-k2
-          endif
-          r_tri=rhst(:,ikx)
+          b_tri=-2.0/dz**2-k2
+          rhst2(1,ikx)=0.
+          rhst2(nzgrid,ikx)=0.
+          r_tri(1:nzgrid-1)=rhst(2:nzgrid,ikx)
+          r_tri(1)=rhst(2,ikx)-rhst2(1,ikx)/dz**2
+          r_tri(nzgrid-1)=rhst(nzgrid,ikx)-rhst2(nzgrid,ikx)/dz**2
 !
 !  Boundary conditions in the z-direction
-!
-!         b_tri(1)=-2.0/dz**2-k2-2.0*gravz/cs20/dz
-!         c_tri(1)=2.0/dz**2
-!         b_tri(nzgrid)=-2.0/dz**2-k2+2.0*gravz/cs20/dz
-!         a_tri(nzgrid)=2.0/dz**2
 ! dP_1/dz=0
 !         b_tri(1)=1.0
-!         c_tri(1)=-1.0
-!         a_tri(nzgrid)=-1.0
+!         c_tri(1)=0.0
+!         a_tri(nzgrid)=0.0
 !         b_tri(nzgrid)=1.0
-!         r_tri(1)=0.0
-!         r_tri(nzgrid)=0.0
-          c_tri(1)=2.0/dz**2
-          a_tri(nzgrid)=2.d0/dz**2
+!         r_tri(1)=0.0*u_tri(2)
+!         r_tri(nzgrid)=0.0*u_tri(nzgrid-1)
+!          c_tri(1)=2.0/dz**2
+!          a_tri(nzgrid)=2.d0/dz**2
 !
           call tridag(a_tri,b_tri,c_tri,r_tri,u_tri,err)
-          rhst(:,ikx)=u_tri
+          rhst(2:nzgrid,ikx)=u_tri(1:nzgrid-1)
+          rhst(1,ikx)=0.
+          rhst(nzgrid,ikx)=0.
         enddo
         call transp_zx(rhst,phi(:,iky,:))
       enddo
 !
 !  Inverse transform (to real space).
 !
-      call fourier_transform_xy(phi,b1,linv=.true.)
+        call fourier_transform_xy(phi,b1,linv=.true.)
 !
     endsubroutine inverse_laplacian_z
 !***********************************************************************
