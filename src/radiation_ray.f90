@@ -295,11 +295,11 @@ module Radiation
 !  arad_normal = 4pi/c*arad
 !
       if (source_function_type=='LTE') then
-        arad=SigmaSB/pi
-        arad_normal=4.*SigmaSB/c_light
+        arad=sigmaSB/pi
+        arad_normal=4*sigmaSB/c_light
       else
-        arad=0.
-        arad_normal=0.
+        arad=0.0
+        arad_normal=0.0
       endif
 !
 !  debug output
