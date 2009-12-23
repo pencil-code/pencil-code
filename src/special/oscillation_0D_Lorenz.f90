@@ -63,7 +63,7 @@ module Special
       if (lroot) call svn_id( &
            "$Id$")
 !
-      call farray_register_pde('ispecial',ispecial,vector=3)
+      call farray_register_pde('spec_3vec',ispecial,vector=3)
 !
       ispecial1=ispecial
       ispecial2=ispecial+1
