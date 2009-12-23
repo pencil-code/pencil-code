@@ -184,6 +184,14 @@ varcontent[iuut].idlvarloc  = 'uut_loc'
 varcontent[iuut].idlinitloc = INIT_3VECTOR_LOC
 varcontent[iuut].skip       = 2
 ;
+;default, iglobal_gg, 0
+;varcontent[iglobal_gg].variable   = 'Gravity (global_gg)'
+;varcontent[iglobal_gg].idlvar     = 'global_gg'
+;varcontent[iglobal_gg].idlinit    = INIT_3VECTOR
+;varcontent[iglobal_gg].idlvarloc  = 'global_gg_loc'
+;varcontent[iglobal_gg].idlinitloc = INIT_3VECTOR_LOC
+;varcontent[iglobal_gg].skip       = 2
+;
 default, iaatest, 0
 default, ntestfield, 0
 varcontent[iaatest].variable   = 'Testfield vector potential (aatest)'
@@ -283,6 +291,14 @@ varcontent[ispecial].idlvar     = 'special'
 varcontent[ispecial].idlinit    = INIT_SCALAR
 varcontent[ispecial].idlvarloc  = 'special_loc'
 varcontent[ispecial].idlinitloc = INIT_SCALAR_LOC
+;
+default, ispec_3vec, 0
+varcontent[ispec_3vec].variable   = 'Special_3vector'
+varcontent[ispec_3vec].idlvar     = 'spec_3vec'
+varcontent[ispec_3vec].idlinit    = INIT_3VECTOR
+varcontent[ispec_3vec].idlvarloc  = 'spec_3vec_loc'
+varcontent[ispec_3vec].idlinitloc = INIT_3VECTOR_LOC
+varcontent[ispec_3vec].skip       = 2
 ;
 default, iphi, 0
 varcontent[iphi].variable   = 'Electric potential (phi)'
