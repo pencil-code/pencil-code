@@ -43,7 +43,8 @@ module Particles_mpicomm
   integer, dimension (ncpus) :: iproc_parent_list, iproc_foster_list
 !
   integer :: it1_loadbalance=100
-  logical :: lfill_density=.false., lfill_velocity=.false.
+  logical :: lfill_blocks_density=.false., lfill_blocks_velocity=.false.
+  logical :: lfill_bricks_velocity=.false.
 !
   include 'mpif.h'
 !
@@ -329,43 +330,29 @@ module Particles_mpicomm
       real, dimension (mpar_loc,mpvar), optional :: dfp
       logical, optional :: linsert
 !
-      integer :: nmig_leave, nmig_leave_tot
-!
-!  Keep track of number of migrating particles for diagnostics.
-!
-      nmig_leave_tot=0
-!
 !  Migrate particles that are no longer in any block maintained by the
 !  processor.
 !
       if (ip<10) call report_missing_particles('migrate_particles (0)')
-      call migrate_particles_block_to_proc(fp,ipar,dfp,nmig_leave)
+      call migrate_particles_block_to_proc(fp,ipar,dfp)
+      if (ip<10) call report_missing_particles('migrate_particles (1)')
 !
 !  Migrate particles to actual parent, in case that differs from previous
 !  parent.
 !
-      if (ip<10) call report_missing_particles('migrate_particles (1)')
       call migrate_particles_proc_to_proc(fp,ipar,dfp)
+      if (ip<10) call report_missing_particles('migrate_particles (2)')
 !
 !  Migrate particles from parent to foster parents.
 !
-      if (ip<10) call report_missing_particles('migrate_particles (2)')
       call migrate_particles_proc_to_block(fp,ipar,dfp)
-!
-!  Diagnostic about number of migrating particles.
-!  WARNING: in time-steps where snapshots are written, this diagnostic
-!  parameter will be zero (quite confusing)!
-!
-!        if (ldiagnos.and.(idiag_nmigmax/=0)) &
-!            call max_name(nmig_leave_proc,idiag_nmigmax)
+      if (ip<10) call report_missing_particles('migrate_particles (3)')
 !
       if (present(linsert)) call keep_compiler_quiet(linsert)
 !
-      if (ip<10) call report_missing_particles('migrate_particles (3)')
-!
     endsubroutine migrate_particles
 !***********************************************************************
-    subroutine migrate_particles_block_to_proc(fp,ipar,dfp,nmig_leave_in)
+    subroutine migrate_particles_block_to_proc(fp,ipar,dfp)
 !
 !  Migrate particles that are no longer in an adopted block to the
 !  (previous) parent processor. The parent processor then either keeps
@@ -373,10 +360,11 @@ module Particles_mpicomm
 !
 !  28-oct-09/anders: coded
 !
+      use Diagnostics, only: max_name
+!
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc) :: ipar
       real, dimension (mpar_loc,mpvar), optional :: dfp
-      integer, optional :: nmig_leave_in
 !
       real, dimension (npar_mig,mpvar) :: fp_mig, dfp_mig
       real, save :: dx1, dy1, dz1
@@ -387,8 +375,8 @@ module Particles_mpicomm
       integer, dimension (0:ncpus-1) :: iproc_rec_count
       integer, dimension (0:nblockmax-1) :: ibrick_global_arr
       integer :: ix0, iy0, iz0, ipx0, ipy0, ipz0, ibx0, iby0, ibz0
-      integer :: ibrick_rec, iproc_rec, nmig_enter_proc, nmig_leave_proc
-      integer :: i, j, k, iblock, nmig_enter_proc_tot, nmig_leave_proc_tot
+      integer :: ibrick_rec, iproc_rec, nmig_enter_proc
+      integer :: i, j, k, iblock, nmig_enter_proc_tot
       integer :: ibrick_global_rec, ibrick_global_rec_previous
       integer :: iblockl, iblocku, iblockm
       integer :: nmig_leave_total, ileave_high_max
@@ -556,10 +544,15 @@ module Particles_mpicomm
 !
 !  Print out information about number of migrating particles.
 !
-        nmig_leave_proc=sum(nmig_leave)
-        nmig_leave_proc_tot=nmig_leave_proc_tot+nmig_leave_proc
         if (ip<=8) print*, 'migrate_particles: iproc, nmigrate = ', &
-            iproc, nmig_leave_proc
+            iproc, sum(nmig_leave)
+!
+!  Diagnostic about number of migrating particles.
+!  WARNING: in time-steps where snapshots are written, this diagnostic
+!  parameter will be zero (quite confusing)!
+!
+        if (ldiagnos.and.(idiag_nmigmax/=0)) &
+            call max_name(sum(nmig_leave),idiag_nmigmax)
 !
 !  Share information about number of migrating particles. We only communicate
 !  particles between processors that are either parents or foster parents
@@ -686,8 +679,6 @@ module Particles_mpicomm
 !  If sum is not zero, then the while loop will be executed once more.
 !
       enddo
-!
-      if (present(nmig_leave_in)) nmig_leave_in=nmig_leave_proc_tot
 !
     endsubroutine migrate_particles_block_to_proc
 !***********************************************************************
@@ -1103,7 +1094,7 @@ module Particles_mpicomm
       integer, dimension (0:ncpus-1) :: iproc_rec_count
       integer, dimension (0:nblockmax-1) :: ibrick_global_arr
       integer :: ix0, iy0, iz0, ipx0, ipy0, ipz0, ibx0, iby0, ibz0
-      integer :: ibrick_rec, iproc_rec, nmig_enter_proc, nmig_leave_proc
+      integer :: ibrick_rec, iproc_rec, nmig_enter_proc
       integer :: i, j, k, iblockl, iblocku, iblockm, ibrick_global_rec
       integer :: ibrick_global_rec_previous, nmig_leave_total, ileave_high_max
       integer :: itag_nmig=580, itag_ipar=590, itag_fp=600, itag_dfp=610
@@ -1285,9 +1276,8 @@ module Particles_mpicomm
 !
 !  Print out information about number of migrating particles.
 !
-        nmig_leave_proc=sum(nmig_leave)
         if (ip<=8) print*, 'migrate_particles: iproc, nmigrate = ', &
-            iproc, nmig_leave_proc
+            iproc, sum(nmig_leave)
 !
 !  Share information about number of migrating particles. We only communicate
 !  particles between processors that are either parents or foster parents of

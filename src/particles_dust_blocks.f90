@@ -194,8 +194,9 @@ module Particles
 !  For drag force calculation we need to fill blocks with information about
 !  the gas density field and the gas velocity field.
 !
-      if (ldragforce_dust_par) lfill_velocity=.true.
-      if (ldragforce_gas_par)  lfill_density=.true.
+      if (ldragforce_dust_par) lfill_blocks_velocity=.true.
+      if (ldragforce_gas_par)  lfill_blocks_density=.true.
+      if (ldragforce_gas_par)  lfill_bricks_velocity=.true.
 !
 !  Multiple dust species. Friction time is given in the array tausp_species.
 !
