@@ -23,7 +23,11 @@ stats        =[ $
                'min(statvar)', $
                'max(statvar)', $
                'mean(statvar)',$
-               'stddev(statvar)' ]
+               ;'stddev(statvar)' ]
+               ;
+               ;  work-around to prevent stddev from exiting on scalars
+               ;
+               'stddev(statvar*[1,1])' ]
 stat_formats =[ $
                'A10',$
                'A',$
