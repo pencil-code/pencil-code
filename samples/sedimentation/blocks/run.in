@@ -1,0 +1,32 @@
+!
+&run_pars
+  cvsid='$Id: run.in 10934 2009-05-25 03:50:45Z ajohan@strw.leidenuniv.nl $',
+  nt=20, it1=5, cdt=0.4, cdtv=0.25, isave=1000, itorder=3
+  dsnap=6.2831853, dvid=0.2, d2davg=0.2, dtmin=1.0e-6
+  slice_position='m'
+  lpencil_check=T
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+  lupw_rho=T
+/
+&grav_run_pars
+  lgravz_gas=T
+/
+&entropy_run_pars
+  lupw_ss=T
+  lviscosity_heat=F
+/
+&shear_run_pars
+  qshear=1.5
+/
+&viscosity_run_pars
+  nu_hyper3=4.0e-15, ivisc='hyper3_rho_nu-const_symm'
+/
+&particles_run_pars
+  ldragforce_dust_par=T, ldragforce_gas_par=T
+  epsp_friction_increase=500.0
+/
