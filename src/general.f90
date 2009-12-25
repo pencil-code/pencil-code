@@ -21,7 +21,7 @@ module General
   public :: input_persistent_general, output_persistent_general
   public :: find_index_range
 
-  public :: spline,tridag,complex_phase,erfcc
+  public :: spline,tridag,pendag,complex_phase,erfcc
   public :: besselj_nu_int,calc_complete_ellints
   public :: bessj
 
@@ -928,6 +928,71 @@ module General
       enddo
 !
     endsubroutine tridag_double
+!***********************************************************************
+    subroutine pendag (m,a,b,c,d,e,r)
+!
+!  Solve pentadiagonal system of M linear equations.
+!  A,B,C,D,E are the diagonals (A:subsub, B:sub, C:main, etc.).
+!  R is the rhs on input and contains the solution on output
+!
+!  01-apr-00/John (Newcastle): written
+!
+implicit none
+
+integer :: i,m
+real :: x
+real, dimension (m) :: a,b,c,d,e,r
+
+! eliminate sub-diagonals
+
+   x    = b(2)/c(1)
+   c(2) = c(2)-d(1)*x
+   d(2) = d(2)-e(1)*x
+   r(2) = r(2)-r(1)*x
+
+do i=3,m-1,1
+
+   x    = a(i)/c(i-2)
+   b(i) = b(i)-d(i-2)*x
+   c(i) = c(i)-e(i-2)*x
+   r(i) = r(i)-r(i-2)*x
+
+   x    = b(i)/c(i-1)
+   c(i) = c(i)-d(i-1)*x
+   d(i) = d(i)-e(i-1)*x
+   r(i) = r(i)-r(i-1)*x
+
+end do
+
+   x    = a(m)/c(m-2)
+   b(m) = b(m)-d(m-2)*x
+   c(m) = c(m)-e(m-2)*x
+   r(m) = r(m)-r(m-2)*x
+
+   x    = b(m)/c(m-1)
+   c(m) = c(m)-d(m-1)*x
+   r(m) = r(m)-r(m-1)*x
+
+
+! eliminate super-diagonals
+
+   r(m-1) = r(m-1) - d(m-1)*r(m)/c(m)
+
+do i = m-2 , 1 , -1
+
+   r(i)   = r(i) - d(i)*r(i+1)/c(i+1) - e(i)*r(i+2)/c(i+2)
+
+end do
+
+! reduce c's to unity, leaving the answers in r
+
+do i = 1 , m , 1
+ 
+   r(i) = r(i) / c(i)
+
+end do
+
+    endsubroutine pendag
 !***********************************************************************
     subroutine spline(arrx,arry,x2,S,psize1,psize2,err)
 !
