@@ -228,9 +228,6 @@ module Forcing
         sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
         siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
         sinz=sin(k1_ff*z); cosz=cos(k1_ff*z)
-      elseif (iforcing_cont=='Kolmogorov') then
-        if (lroot) print*,'forcing_cont: Kolmogorov'
-        cosx=cos(k1_ff*x)
       elseif (iforcing_cont=='RobertsFlow') then
         if (lroot) print*,'forcing_cont: Roberts Flow'
         sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
@@ -2929,11 +2926,6 @@ module Forcing
           p%fcont(:,1)=fact*(sinz(n    )+fact2*cosy(m)    )
           p%fcont(:,2)=fact*(sinx(l1:l2)+fact2*cosz(n)    )
           p%fcont(:,3)=fact*(siny(m    )+fact2*cosx(l1:l2))
-        elseif (iforcing_cont=='Kolmogorov') then
-          fact=ampl_ff
-          p%fcont(:,1)=0.
-          p%fcont(:,2)=fact*cosx(l1:l2)
-          p%fcont(:,3)=0.
         elseif (iforcing_cont=='RobertsFlow') then
           fact=ampl_ff
           p%fcont(:,1)=-fact*cosx(l1:l2)*siny(m)
