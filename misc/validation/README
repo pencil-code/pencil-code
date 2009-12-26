@@ -27,7 +27,7 @@ to update everything to the most recent status first, i.e.
 
 Your own changes will be merged into this latest version as before.
 
-NOTE: The functionality of the head of the trunck should be preserved
+NOTE: The functionality of the head of the trunk should be preserved
 at all times. However, accidents do happen. For the benefit of all
 other developers, any errors should be corrected within 1-2 hours.
 The pc_svnup -validate option allows all other people to stay away
