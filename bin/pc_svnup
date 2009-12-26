@@ -15,8 +15,8 @@ if ("$1" == "-h" || "$1" == "-help") then
   exit 1
 endif
 #
-if ("$1" == "-vaidated" || "$2" == "-vaidated") then
-  set rev="-r `cat $PENCIL_HOME/utils/svn_tools/vaidated.dat`"
+if ("$1" == "-validated" || "$2" == "-validated") then
+  set rev="-r `cat $PENCIL_HOME/utils/svn_tools/validated.dat`"
 else
   set rev="-rHEAD"
 endif
