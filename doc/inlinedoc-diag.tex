@@ -24,6 +24,7 @@
 %%   nolorenz_gauge.f90
 %%   magnetic_axisym.f90
 %%   testscalar.f90
+%%   density_anelastic.f90
 
 % ---------------------------------------------------------------- %
 \begin{longtable}{lp{0.7\textwidth}}
@@ -38,6 +39,8 @@
   \var{dt}        & time step $\delta t$ \\
   \var{walltime}  & wall clock time since start of
                     run.x, in seconds \\
+  \var{Rmesh}     & $R_{\rm mesh}$ \\
+  \var{Rmesh3}    & $R_{\rm mesh}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{hydro.f90}} \\
 \midrule
@@ -140,6 +143,8 @@
                     \quad(mean $y$-momentum density) \\
   \var{ruzm}      & $\left<\varrho u_z\right>$
                     \quad(mean $z$-momentum density) \\
+  \var{ruxtot}    & $\left<\rho |u|\right>$
+                    \quad(mean absolute $x$-momentum density) \\
   \var{rumax}     & $\max(\varrho |\uv|)$
                     \quad(maximum modulus of momentum) \\
   \var{ruxuym}    & $\left<\varrho u_x u_y\right>$
@@ -305,6 +310,8 @@
                     \quad(time step relative to
                     resistive time step;
                     see \S~\ref{time-step}) \\
+  \var{Qsm}       & $\left<Q_p(\overline{B})\right>$ \\
+  \var{Qpm}       & $\left<Q_p(\overline{B})\right>$ \\
   \var{beta1m}    & $\left<\Bv^2/(2\mu_0 p)\right>$
                     \quad(mean inverse plasma beta) \\
   \var{beta1max}  & $\max[\Bv^2/(2\mu_0 p)]$
@@ -444,9 +451,11 @@
                     of J parallel to B \\
   \var{jperpm}    & Mean value of the component
                     of J perpendicular to B \\
-  \var{Exmxz}     & $\left<{\cal E}_x\right>_{xz}$ \\
-  \var{Eymxz}     & $\left<{\cal E}_y\right>_{xz}$ \\
-  \var{Ezmxz}     & $\left<{\cal E}_z\right>_{xz}$ \\
+  \var{Exmxz}     & $\left<{\cal E}_x\right>_{y}$ \\
+  \var{Eymxz}     & $\left<{\cal E}_y\right>_{y}$ \\
+  \var{Ezmxz}     & $\left<{\cal E}_z\right>_{y}$ \\
+  \var{etatotalmx} & $\left<\eta\right>_{yz}$ \\
+  \var{etatotalmz} & $\left<\eta\right>_{xy}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{pscalar.f90}} \\
 \midrule
@@ -783,6 +792,16 @@
   \var{F12z}      & ${\cal F}_1^{2}$ \\
   \var{F22z}      & ${\cal F}_2^{2}$ \\
   \var{F32z}      & ${\cal F}_3^{2}$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{density_anelastic.f90}} \\
+\midrule
+  \var{rhom}      & $\left<\varrho\right>$
+                    \quad(mean density) \\
+  \var{ugrhom}    & $\left<\uv\cdot\nabla\varrho\right>$ \\
+  \var{mass}      & $\int\varrho\,dV$ \\
+  \var{divrhoum}  & $\left<\nabla\cdot(\varrho\uv)\right>$ \\
+  \var{divrhourms} & $\left|\nabla\cdot(\varrho\uv)\right|_{\rm rms}$ \\
+  \var{divrhoumax} & $\left|\nabla\cdot(\varrho\uv)\right|_{\rm max}$ \\
 %
 \bottomrule
 \end{longtable}
