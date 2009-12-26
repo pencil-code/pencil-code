@@ -935,7 +935,7 @@ module General
 !  A,B,C,D,E are the diagonals (A:subsub, B:sub, C:main, etc.).
 !  R is the rhs on input and contains the solution on output
 !
-!  01-apr-00/John (Newcastle): written
+!  01-apr-00/John Crowe (Newcastle): written
 !
 implicit none
 
