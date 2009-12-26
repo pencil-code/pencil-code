@@ -386,6 +386,15 @@ handle_lock_file() or exit(LOCK_FAILED) unless ($list_only);
 # Remember current directory
 my $cwd = `pwd`; chomp($cwd);
 
+# If $PC_SET_VALIDATED is set, then update validated.dat
+if [ $PC_SET_VALIDATED ]; then
+  cd $PENCIL_HOME/utils/svn_tools
+  svn up
+  echo "`date` (previous validated revision: `cat validated.dat`)" \
+    >> `uname -n`.auto-test
+  svn ci -m "updated by auto-test on `uname -n` by $USER"
+fi
+
 # Make sure we are in the top directory and have the right PATH
 die "Need to set environment variable PENCIL_HOME\n"
     unless (defined($pencil_home));
@@ -1442,6 +1451,12 @@ END {
                 print "Test succeeded.\n";
             } elsif ($ntests > 1) {
                 print "All $ntests tests succeeded.\n";
+                # If $PC_SET_VALIDATED is set, then update validated.dat
+                if [ $PC_SET_VALIDATED ]; then
+                  cd $PENCIL_HOME/utils/svn_tools
+                  awk '{print $4}' `uname -n`.auto-test |head -1 >validated.dat
+                  svn ci -m "updated by auto-test on `uname -n` by $USER"
+                fi
             }
             elsif (($ntests < 1) && ! $failed) {
                 print "There was no test to run???\n";
