@@ -12,11 +12,14 @@ if ("$1" == "-h" || "$1" == "-help") then
   echo '-I  update only the src and bin directories'
   echo '-src  update only the src directory'
   echo '-s  check svn status as well'
+  echo '-val or -validated  merge current changes into validated version'
   exit 1
 endif
 #
-if ("$1" == "-validated" || "$2" == "-validated") then
-  set rev="-r `cat $PENCIL_HOME/utils/svn_tools/validated.dat`"
+if ("$1" == "-validated" || "$1" == "-val" || \
+    "$2" == "-validated" || "$2" == "-val" || \
+    "$3" == "-validated" || "$3" == "-val") then
+  set rev="-r `cat $PENCIL_HOME/misc/validation/validated.dat`"
 else
   set rev="-rHEAD"
 endif
