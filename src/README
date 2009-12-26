@@ -64,9 +64,15 @@ if one wants the velocity field to be affected by the magnetic field.
 
        6-sep-09: status is currently unclear. It may be redundant.
 
-The anelastic branch
+The anelastic module
 --------------------
 
-This is currently the anelastic branch. The developments on this branch
-should be merged into the main trunk by December 15 or 16.
+The former anelastic branch is now inactive and all changes have been
+merged into the main trunk.
+
+     density_anelastic.f90
+
+       26-dec-09: several aspects of this module are now working,
+       but it is still experimental and should not be used for
+       production runs.
 
