@@ -15,72 +15,80 @@ if ("$1" == "-h" || "$1" == "-help") then
   exit 1
 endif
 #
+if ("$1" == "-vaidated" || "$2" == "-vaidated") then
+  set rev="-r `cat $PENCIL_HOME/utils/svn_tools/vaidated.dat`"
+else
+  set rev="-rHEAD"
+endif
+#
+#echo svn up -N $rev $PENCIL_HOME/
+#svn up -N $rev $PENCIL_HOME
 if ("$1" == "-s" || "$2" == "-s") then
   set stat=1
 else
   set stat=0
 endif
 #
-echo svn up -N $PENCIL_HOME/
-svn up -N $PENCIL_HOME
-if ($stat) svn status -N $PENCIL_HOME
+#echo svn up -N $rev $PENCIL_HOME/
+#svn up -N $rev $PENCIL_HOME
+#if ($stat) svn status -N $PENCIL_HOME
 #
-echo svn up $PENCIL_HOME/src
-svn up $PENCIL_HOME/src
+echo svn up $rev $PENCIL_HOME/src
+svn up $rev $PENCIL_HOME/src
 if ($stat) svn status $PENCIL_HOME/src
 #
 if ("$1" != "-src") then
-  echo svn up $PENCIL_HOME/bin
-  svn up $PENCIL_HOME/bin
+  echo svn up $rev $PENCIL_HOME/bin
+  svn up $rev $PENCIL_HOME/bin
   if ($stat) svn status $PENCIL_HOME/bin
 #
   if ("$1" != "-I") then
-    echo svn up $PENCIL_HOME/samples
-    svn up $PENCIL_HOME/samples
+    echo svn up $rev $PENCIL_HOME/samples
+    svn up $rev $PENCIL_HOME/samples
     if ($stat) svn status $PENCIL_HOME/samples
 #
-    echo svn up $PENCIL_HOME/lib
-    svn up $PENCIL_HOME/lib
+    echo svn up $rev $PENCIL_HOME/lib
+    svn up $rev $PENCIL_HOME/lib
     if ($stat) svn status $PENCIL_HOME/lib
 #
-    echo svn up $PENCIL_HOME/config
-    svn up $PENCIL_HOME/config
+    echo svn up $rev $PENCIL_HOME/config
+    svn up $rev $PENCIL_HOME/config
     if ($stat) svn status $PENCIL_HOME/config
 #
-    echo svn up $PENCIL_HOME/doc
-    svn up $PENCIL_HOME/doc
+    echo svn up $rev $PENCIL_HOME/doc
+    svn up $rev $PENCIL_HOME/doc
     if ($stat) svn status $PENCIL_HOME/doc
 #
-    echo svn up $PENCIL_HOME/idl
-    svn up $PENCIL_HOME/idl
+    echo svn up $rev $PENCIL_HOME/idl
+    svn up $rev $PENCIL_HOME/idl
     if ($stat) svn status $PENCIL_HOME/idl
 #
-    echo svn up $PENCIL_HOME/python
-    svn up $PENCIL_HOME/python
+    echo svn up $rev $PENCIL_HOME/python
+    svn up $rev $PENCIL_HOME/python
     if ($stat) svn status $PENCIL_HOME/python
 #
-    echo svn up $PENCIL_HOME/license
-    svn up $PENCIL_HOME/license
+    echo svn up $rev $PENCIL_HOME/license
+    svn up $rev $PENCIL_HOME/license
     if ($stat) svn status $PENCIL_HOME/license
 #
-    echo svn up $PENCIL_HOME/bugs
-    svn up $PENCIL_HOME/bugs
+    echo svn up $rev $PENCIL_HOME/bugs
+    svn up $rev $PENCIL_HOME/bugs
     if ($stat) svn status $PENCIL_HOME/bugs
 #
-    echo svn up $PENCIL_HOME/dx
-    svn up $PENCIL_HOME/dx
+    echo svn up $rev $PENCIL_HOME/dx
+    svn up $rev $PENCIL_HOME/dx
     if ($stat) svn status $PENCIL_HOME/dx
 #
-    echo svn up $PENCIL_HOME/remesh
-    svn up $PENCIL_HOME/remesh
+    echo svn up $rev $PENCIL_HOME/remesh
+    svn up $rev $PENCIL_HOME/remesh
     if ($stat) svn status $PENCIL_HOME/remesh
 #
-    echo svn up $PENCIL_HOME/misc
-    svn up $PENCIL_HOME/misc
+    echo svn up $rev $PENCIL_HOME/misc
+    svn up $rev $PENCIL_HOME/misc
     if ($stat) svn status $PENCIL_HOME/misc
 #
-    echo svn up $PENCIL_HOME/utils
-    svn up $PENCIL_HOME/utils
+    echo svn up $rev $PENCIL_HOME/utils
+    svn up $rev $PENCIL_HOME/utils
     if ($stat) svn status $PENCIL_HOME/utils
   endif
 endif
