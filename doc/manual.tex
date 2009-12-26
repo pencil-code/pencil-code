@@ -1013,23 +1013,44 @@ back up your changes before upgrading.
 
 Here is the upgrading procedure:
 \begin{enumerate}
-%\item Go to the top directory of the code:
-%  \begin{alltt}
-%  \prompt{unix> } cd somewhere/pencil-code \
-%  \end{alltt}
 \item Perform a \cmd{svn} update of the tree:
   \begin{alltt}
   \prompt{unix> } pc_svnup \
   \end{alltt}
-% (This is equivalent to typing \cmd{cvs -q update -dP} from the top directory
-% of the code, except that it only performs a full update of the core
-% {\sc Pencil Code} directories.  This for example avoids the problem of having
-% a partially checked out \file{runs} directory under your {\sc Pencil Code}
-% which would otherwise be checked out in full if the simple cvs command
-% were used.)
 \item Fix any conflicts you encounter and make sure the examples in the
   directory \file{samples/} are still working.
 \end{enumerate}
+
+% ---------------------------------------------------------------------- %
+
+\subsection{Getting the last validated versions}
+\index{svn}
+
+The script \cmd{pc_svnup} accepts arguments -val or -validated, which
+means that the current changes on a user's machine will be merged
+into the last working version. This way every user can be sure that
+any problems with the code must be due to the current changes done
+by this user since the last check-in.
+
+Examples:
+  \begin{alltt}
+  \prompt{unix> } pc_svnup -src -s -validated\
+  \end{alltt}
+
+brings all files in \file[src/]{\$PENCIL_HOME/src} to the last validated
+status, and merges all your changes into this version. This allows you
+to work with this, but in order to check in your changes you have to
+update everything to the most recent status first, i.e.
+  \begin{alltt}
+  \prompt{unix> } pc_svnup -src\
+  \end{alltt}
+Your own changes will be merged into this latest version as before.
+
+NOTE: The functionality of the head of the trunk should be preserved
+at all times. However, accidents do happen. For the benefit of all
+other developers, any errors should be corrected within 1-2 hours.
+The \cmd{pc_svnup -val} option allows all other people to stay away
+from any trouble.
 
 % ---------------------------------------------------------------------- %
 
@@ -3040,8 +3061,8 @@ and temperatures are in
 For some choices of density and velocity units, Table~\ref{Tab-units-B-T}
 shows the resulting units of magnetic field and temperature.
 
-On the other hand, as soon as material equations are used (e.\,g.~one of
-the popular parametrizations for radiative losses, Kramers opacity,
+On the other hand, as soon as material equations are used (e.g.\ one of
+the popular parameterizations for radiative losses, Kramers opacity,
 Spitzer conductivities or ionization, which implies well-defined
 ionization energies), the corresponding routines in the code need to know
 the units you are using.
@@ -3060,7 +3081,7 @@ the parameters \var{unit_system},
 \end{Verbatim}
 
 Note: The default unit system is \code{unit_system='cgs'} which is a
-synonym for \code{unit_system='babylonian cubits'}.
+synonym for \code{unit_system='Babylonian cubits'}.
 
 
 %% You can run the code in physical units.  Suppose you want the unit length
@@ -4288,7 +4309,7 @@ module.
 
 We can write the viscosity as the divergence of a tensor $\tau_{ij,j}$,
 \begin{equation}
-  \rho \frac{\partial u_i}{\partial t} = \tau_{ij,j} \, ,
+  \rho \frac{\partial u_i}{\partial t} = ...+\tau_{ij,j} \, ,
 \end{equation}
 where $\tau_{ij}=2\nu\rho{\sf S}_{ij}$ is the stress tensor. The viscous power
 density $P$ is
@@ -6762,6 +6783,7 @@ where \code{nw=nx*ny*nz}.
    8 & Hwwsx5& 0.50 & $256^3$ & convstar     & 8.6 GB & 29-jan-03 & WD \\
    8 &Neolith& 0.444& $128^3$ & magn/noentro &        &  6-dec-07 & AB \\
    8 &Ferlin & 0.450&  $64^3$ &1test/noentro &        & 21-jun-09 & AB \\
+   8 &nor52  & 2.00 &  $32^3$ & magn/noentro &        &  2-dec-09 & AB \\
   16 & fe1   & 1.77 &  $64^3$ & convstar     &        &  9-feb-03 & AB \\
   16 & copson& 0.596& $128^3$ & geodynamo/ks95 &      & 21-nov-03 & DM \\
   16 & fe1   & 0.94 & $128^3$ & magn/noentro &  4x4   &  8-sep-02 & AB \\
