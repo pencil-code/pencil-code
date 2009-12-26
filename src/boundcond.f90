@@ -234,10 +234,9 @@ module Boundcond
                   ! BCX_DOC: Some people call this the ``(angry) hedgehog bc''.
                   call bc_set_nfr_x(f,topbot,j)
                 case('sa2')
-                  ! BCX_DOC: (d/dr)(r B_{\phi}) = 0 imposes 
+                  ! BCX_DOC: $(d/dr)(r B_{\phi}) = 0$ imposes 
                   ! BCX_DOC: boundary condition on 2nd derivative of 
-                  ! BCX_DOC: r A_{\phi}. Sam applies to $\theta$ 
-                  ! BCX_DOC:  component 
+                  ! BCX_DOC: $r A_{\phi}$. Same applies to $\theta$ component.
                   call bc_set_sa2_x(f,topbot,j)
                 case('pfc')
                   !BCX_DOC: perfect-conductor in spherical coordinate: $d/dr( A_r) + 2/r = 0$ . 
