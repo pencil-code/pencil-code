@@ -343,6 +343,13 @@ while (not eof(1)) do begin
   ny_plane=planesize[2]
   x2=rebin(x,zoom*nx_plane)
   y2=rebin(y,zoom*ny_plane)
+;
+;  if extension eq 'xz', then our y2 wasn't right.
+;
+if extension eq 'xz' then y2=rebin(z,zoom*ny_plane)
+;
+;  other options
+;
   if (keyword_set(exponential)) then begin
     plane2=rebin(exp(plane),zoom*[nx_plane,ny_plane])
   endif else if (keyword_set(nsmooth)) then begin
@@ -399,14 +406,14 @@ while (not eof(1)) do begin
         endif
         if (keyword_set(contourplot)) then begin
            contourfill, plane2, x2, y2, levels=grange(amin,amax,60), $
-               tit='!8t!6 ='+string(t/tunit,fo="(f6.1)"), _extra=_extra
+               tit='!8t!6 ='+string(t/tunit,fo="(f7.1)"), _extra=_extra
         end else if (keyword_set(polar)) then begin
           if (style_polar eq 'fill') then begin
             contourfill, plane2, x2, y2, levels=grange(amin,amax,60), $
-                tit='!8t!6 ='+string(t/tunit,fo="(f6.1)"), _extra=_extra
+                tit='!8t!6 ='+string(t/tunit,fo="(f7.1)"), _extra=_extra
           end else if (style_polar eq 'lines') then begin
             contour, plane2, x2, y2, nlevels=nlevels, $
-                tit='!8t!6 ='+string(t/tunit,fo="(f6.1)"), _extra=_extra
+                tit='!8t!6 ='+string(t/tunit,fo="(f7.1)"), _extra=_extra
           endif
         endif else begin
 ;          plotimage, plane2, range=[amin,amax]
