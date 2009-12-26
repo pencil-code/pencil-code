@@ -1,10 +1,34 @@
 $Id$
 
-In this directory, the number in the file validated.dat
-gives the revision number of the last successful auto-test
-that was run by a user authorized to reset validated.dat.
+In this directory, the number in the file validated.dat gives the
+revision number of the last successful auto-test that was run by a
+user authorized to reset validated.dat.
 
 For authorized users, the auto-test script writes the date of
 each auto-test together with the previous revision number into
 a machine-specific file, e.g. norosx52.albanova.se.auto-test.
 
+The script pc_svnup accepts arguments -val or -validated, which
+means that the current changes on a user's machine will be merged
+into the last working version. This way every user can be sure that
+any problems with the code must be due to the current changes done
+by this user since the last check-in.
+
+Examples:
+
+  pc_svnup -src -s -val
+
+brings all files in $PENCIL_HOME/src to the last validated status,
+and merges all your changes into this version. This allows you to
+work with this, but in order to check in your changes you have
+to update everything to the most recent status first, i.e.
+
+  pc_svnup -src
+
+Your own changes will be merged into this latest version as before.
+
+NOTE: The functionality of the head of the trunck should be preserved
+at all times. However, accidents do happen. For the benefit of all
+other developers, any errors should be corrected within 1-2 hours.
+The pc_svnup -validate option allows all other people to stay away
+from any trouble.
