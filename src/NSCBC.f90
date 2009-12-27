@@ -252,7 +252,7 @@ include 'NSCBC.h'
               call fatal_error("nscbc_boundtreat_xyz",'bc_nscbc_prf_z is not yet implemented')
             endif
           case('part_ref_inlet')
-!   Partially reflecting inlet, ie. impose a velocity u_t.
+!   Partially reflecting inlet, ie, impose a velocity u_t.
             T_t=0
             if (j==1) then 
               direction = 1
@@ -269,7 +269,7 @@ include 'NSCBC.h'
               call fatal_error("nscbc_boundtreat_xyz",'bc_nscbc_prf_z is not yet implemented')
             endif
           case('ref_inlet')
-!   Partially reflecting inlet, ie. impose a velocity u_t.
+!   Partially reflecting inlet, ie, impose a velocity u_t.
             T_t=0
             if (j==1) then 
               direction = 1
