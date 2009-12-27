@@ -4634,7 +4634,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       real, dimension (ny,nz)  :: M_1, M_2, M_3, M_4, M_5
       real, dimension (ny,nz)  :: N_1, N_2, N_3, N_4, N_5
   !    
-      real, dimension (my,mz) :: cs2x,cs0_ar,cs20_ar,dmom2_dy,dmom3_dz
+      real, dimension (my,mz) :: cs0_ar,cs20_ar,dmom2_dy,dmom3_dz
       real, dimension (my,mz,2) :: drhoE_pU!,dYk_dy
    !   real, dimension (mx,my,mz,nchemspec) :: bound_rhs_Y
     !  real, dim(:,nnn)ension (ny,nz) :: bound_rhs_T
@@ -4642,7 +4642,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       real, dimension (nx,ny,nz) :: p_inf
       
       real, dimension (ny,nz,3,3) :: dui_dxj
-      real, dimension (mx,my,mz)     :: tmp11,tmp21,tmp31,tmp1_pp,tmp1_rho,tmp1_lnTT
       real, dimension (my,mz)     :: tmp1,tmp2,tmp3, tmp_rho,tmp_pp       
       real, dimension (ny,nz,3)   :: grad_rho, grad_pp
      ! real, dimension(ny,nz) ::     d2u1_dy2,d2u1_dz2
@@ -4650,18 +4649,15 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
      ! real, dimension (ny,nz,3) :: dlnT_dxj
       real, dimension (ny,nz) :: T_1_y, T_2_y, T_3_y, T_4_y, T_5_y
       real, dimension (ny,nz) :: T_1_z, T_2_z, T_3_z, T_4_z, T_5_z
-      real, dimension (ny) :: tmpy
-      real, dimension (nz) :: tmpz
       real, dimension (mcom), optional :: val
 !
-      integer :: lll, sgn,sgn1,sgn2,i,j,k,jj, nn, nnn, mm, mmm, irho_tmp
-      real :: Mach_num, nscbc_sigma_out
+      integer :: lll, sgn,i,j,k, nnn, mm, mmm, irho_tmp
+      real :: Mach_num
       real :: U0_x,U0_y,U0_z,T0
 !
      
       intent(inout) :: f
       intent(out) :: df
-    !  intent(in) :: nscbc_sigma_out
       real :: nscbc_sigma=0.5,ita
 !
   
@@ -4985,7 +4981,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       real, dimension(nchemspec) :: YYi
       real, dimension (mcom), optional :: val
       integer :: lll,i, sgn,k
-      real :: Mach_num, u_t, T_t
+      real :: u_t, T_t
 !
       intent(inout) :: f
       intent(out) :: df
@@ -5141,7 +5137,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       real, dimension (ny,2)  :: M_1, M_2, M_3, M_4, M_5
       real, dimension (nz,2)  :: N_1, N_2, N_3, N_4, N_5
   !    
-      real, dimension (my,mz) :: cs2x,cs0_ar,cs20_ar,dmom2_dy,dmom3_dz
+      real, dimension (my,mz) :: cs0_ar,cs20_ar,dmom2_dy,dmom3_dz
       real, dimension (my,mz,2) :: drhoE_pU!,dYk_dy
    !   real, dimension (mx,my,mz,nchemspec) :: bound_rhs_Y
     !  real, dim(:,nnn)ension (ny,nz) :: bound_rhs_T
@@ -5149,7 +5145,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       real, dimension (nx,ny,nz) :: p_inf
       
       real, dimension (ny,nz,3,3) :: dui_dxj
-      real, dimension (mx,my,mz)     :: tmp11,tmp21,tmp31,tmp1_pp,tmp1_rho,tmp1_lnTT
       real, dimension (my,mz)     :: tmp1,tmp2,tmp3, tmp_rho,tmp_pp       
       real, dimension (ny,nz,3)   :: grad_rho, grad_pp
      ! real, dimension(ny,nz) ::     d2u1_dy2,d2u1_dz2
@@ -5157,10 +5152,8 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
    !   real, dimension (ny,nz,3) :: dlnT_dxj
       real, dimension (ny,nz) :: T_1_y, T_2_y, T_3_y, T_4_y, T_5_y
       real, dimension (ny,nz) :: T_1_z, T_2_z, T_3_z, T_4_z, T_5_z
-      real, dimension (ny) :: tmpy
-      real, dimension (nz) :: tmpz
 !
-      integer :: lll, sgn,sgn1,sgn2,i,j,k,jj, nn, nnn, mm, mmm, irho_tmp
+      integer :: lll, sgn,i,j,k, nnn, irho_tmp
       real :: Mach_num, nscbc_sigma_out
 !
       intent(inout) :: f
@@ -5457,7 +5450,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       real, dimension (nx,nz)  :: N_1, N_2, N_3, N_4, N_5
       real, dimension (nx,nz) :: T_1_x, T_2_x, T_3_x, T_4_x, T_5_x
       real, dimension (nx,nz) :: T_1_z, T_2_z, T_3_z, T_4_z, T_5_z
-      real, dimension (mx,mz) :: cs2y,cs0_ar,cs20_ar,dmom1_dx,dmom3_dz
+      real, dimension (mx,mz) :: cs0_ar,cs20_ar,dmom1_dx,dmom3_dz
       real, dimension (mx,my,mz) :: rhoE_p
       real, dimension (mx,my,mz,2) ::   rhoE_pU
       real, dimension (mx,mz,2) :: drhoE_pU
@@ -5472,7 +5465,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       real, dimension (nx,nz,3)   :: grad_rho, grad_pp
 
 !
-      integer :: mmm, sgn,sgn1,i,j,jj,k, irho_tmp, nn, nnn, ll, lll
+      integer :: mmm, sgn,i,j,k, irho_tmp, nn, nnn, ll, lll
       real :: Mach_num,nscbc_sigma_out
       logical :: lcorner_x=.false.,lcorner_z=.false.
 !
@@ -5900,8 +5893,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       real, dimension (nx,ny)  :: M_1, M_2, M_3, M_4, M_5
       real, dimension (nx,ny)  :: L_1, L_2, L_3, L_4, L_5
 
-      real, dimension (mx,my) :: cs2z,cs0_ar,cs20_ar,dmom1_dx,dmom2_dy
-      real, dimension (nx,ny,nchemspec) :: bound_rhs_Y
+      real, dimension (mx,my) :: cs0_ar,cs20_ar,dmom1_dx,dmom2_dy
       real, dimension (mx,my,mz) :: cs2_full, gamma_full
       real, dimension (nx,ny,nz) :: p_inf
       real, dimension(nx,ny,3,3) :: dui_dxj=0.
@@ -5911,7 +5903,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       real, dimension (nx,ny) :: T_1_x, T_2_x, T_3_x, T_4_x, T_5_x
       real, dimension (nx,ny) :: T_1_y, T_2_y, T_3_y, T_4_y, T_5_y
 !
-      integer :: nnn, sgn,sgn1,i,j,jj,k, mmm,mm,lll,ll, irho_tmp
+      integer :: nnn, sgn,i,j,k, mmm,mm,lll,ll, irho_tmp
       real :: Mach_num,nscbc_sigma_out
 
       logical :: lcorner_x=.false.,lcorner_y=.false.
@@ -6315,7 +6307,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       real, dimension (mx) :: func_x
-      integer :: i, j, j1,  sz_l_x,sz_r_x,  sz_l_y,sz_r_y, sz_l_z,sz_r_z,ll1,ll2
+      integer :: i, j, j1,ll1,ll2
       real :: dt1, func_y,func_z, ux_ref,uy_ref,uz_ref,lnTT_ref,lnrho_ref
       real :: sz1,sz2, sz1_x,sz2_x, del
       logical :: lzone_y=.false.,lzone_z=.false.
