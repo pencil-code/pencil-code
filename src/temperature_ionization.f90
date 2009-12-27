@@ -387,14 +387,14 @@ module Entropy
         lpencil_in(i_u2)=.true.
         lpencil_in(i_cs2)=.true.
       endif
-
+!
       if (lpencil_in(i_uglnTT)) then
         lpencil_in(i_glnTT)=.true.
       endif
       if (lpencil_in(i_ugTT)) then
         lpencil_in(i_gTT)=.true.
       endif
-
+!
     endsubroutine pencil_interdep_entropy
 !***********************************************************************
     subroutine calc_pencils_entropy(f,p)
@@ -408,12 +408,10 @@ module Entropy
 
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       type (pencil_case), intent (inout) :: p
-
 !
 !  Mach Speed
 !
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
-
 !
 !  Temperature advection
 !  (Needs to be here because of lupw_lnTT)
@@ -421,18 +419,17 @@ module Entropy
       if (lpencil(i_uglnTT)) then
         call u_dot_grad(f,ilnTT,p%glnTT,p%uu,p%uglnTT,UPWIND=lupw_lnTT)
       endif
-
+!
       if (lpencil(i_ugTT)) then
         call u_dot_grad(f,iTT,p%gTT,p%uu,p%ugTT,UPWIND=lupw_lnTT)
       endif
-
+!
     endsubroutine calc_pencils_entropy
+!***********************************************************************
     subroutine calc_pencils_entropy_after_mn(f,p)
 !
 ! Do nothing 
 ! DM+PC
-
-      use EquationOfState, only: gamma,gamma_m1,cs20,lnrho0,profz_eos
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -452,8 +449,8 @@ module Entropy
 !   9-jun-02/axel: pressure gradient added to du/dt already here
 !   2-feb-03/axel: added possibility of ionization
 !
-      use Diagnostics
-      use Sub
+      use Diagnostics, only: max_mn_name,sum_mn_name
+      use Sub, only: cubic_step,identify_bcs
       use Viscosity, only: calc_viscous_heat
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
@@ -467,7 +464,6 @@ module Entropy
 !  Initialize maximum heating to zero
 !
       Hmax = 0.0
-
 !
 !  Identify module and boundary conditions
 !
@@ -531,7 +527,6 @@ module Entropy
 
     !  if (lheatc_chemistry) call calc_heatcond_chemistry(f,df,p)
 
-
 !
 !  Interstellar radiative cooling and UV heating
 !
@@ -540,8 +535,6 @@ module Entropy
 !
 !  Need to add left-hand-side of the continuity equation (see manual)
 !
-
-
       if (ldensity) then
        if (.not. lchemistry) then
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%gamma_m1*p%divu/p%delta
@@ -554,8 +547,6 @@ module Entropy
     !    df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - f(l1:l2,m,n,ilnTT)*p%cv1(:)*sum_DYDt(:)
        endif
       endif
-
-
 !
 !  Calculate temperature related diagnostics
 !
@@ -578,7 +569,7 @@ module Entropy
         if (idiag_csm/=0) call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
         if (idiag_mum/=0) call sum_mn_name(1/p%mu1,idiag_mum)
       endif
-
+!
     endsubroutine dss_dt
 !***********************************************************************
     subroutine dss_dt_after_mn(f,df,p)
@@ -604,15 +595,14 @@ module Entropy
 !           =chi*(g2.glnTT+g2lnTT),
 !  where g2=glnrho+glnTT
 !
-      use Diagnostics
-      use Sub
+      use Diagnostics, only: max_mn_name
+      use Sub, only: dot,multsv
 
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 
       real, dimension (nx) :: g2,gamma
       real, dimension (nx,3) :: gradlncp
-
 !
 !  g2
 !
@@ -629,7 +619,6 @@ module Entropy
 !  Add heat conduction to RHS of temperature equation
 !
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chi*(g2 + p%del2lnTT)
-
 !
 !  check maximum diffusion from thermal diffusion
 !
@@ -646,8 +635,8 @@ module Entropy
 !
 !
 !
-      use Diagnostics
-
+      use Diagnostics, only: max_mn_name
+!
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 
@@ -655,7 +644,6 @@ module Entropy
 !  Add heat conduction to RHS of temperature equation
 !
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + chi_hyper3*p%del6lnTT
-
 !
 !  check maximum diffusion from thermal diffusion
 !
@@ -665,16 +653,16 @@ module Entropy
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
         endif
       endif
-
+!
     endsubroutine calc_heatcond_hyper3
 !***********************************************************************
     subroutine calc_heat_cool(df,p)
-
+!
       use Sub, only: cubic_step
-
+!
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-
+!
       real, dimension (nx) :: heat
       real :: prof
 !
@@ -788,10 +776,6 @@ module Entropy
     endsubroutine get_slices_entropy
 !***********************************************************************
     subroutine calc_heatcond_ADI(finit,f)
-!
-      use Cparam
-!
-      implicit none
 !
       real, dimension(mx,my,mz,mfarray) :: finit,f
 !
