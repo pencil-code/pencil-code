@@ -38,13 +38,12 @@ module Particles_mpicomm
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
-      integer :: iblock
-!
       intent (in) :: f, lstarting
 !
 !  Distribute particles evenly among processors to begin with.
 !
       if (lstarting) call dist_particles_evenly_procs(ipar)
+      call keep_compiler_quiet(f)
 !
     endsubroutine initialize_particles_mpicomm
 !***********************************************************************
