@@ -11,7 +11,7 @@
   bcy = 'p','p','p', 'p',    'p'
   bcz = 's','s','a','a2','c1:cT'
   cdtv=0.30
-! lpencil_check=T
+  lpencil_check=T
 /
 &eos_run_pars
 /
