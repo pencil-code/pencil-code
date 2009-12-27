@@ -3,7 +3,7 @@
 !
 &run_pars
   cvsid='$Id$',
-  nt=100, it1=1, cdt=0.4, cdtv=0.4, isave=1000, itorder=3
+  nt=100, it1=10, cdt=0.4, cdtv=0.4, isave=1000, itorder=3
   dsnap=1.0e37, dvid=1.0, dtmin=1e-9
   lpencil_check=T
   dtmax=1.0e9
