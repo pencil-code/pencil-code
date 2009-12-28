@@ -527,8 +527,6 @@ module Chemistry
 !
 !  13-aug-07/steveb: coded
 !
-      use Sub, only: keep_compiler_quiet
-!
       logical, dimension(npencils) :: lpencil_in
 !
       call keep_compiler_quiet(lpencil_in)
@@ -1766,7 +1764,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
       use Cdata
       use Mpicomm, only: stop_it
-      use Sub, only: keep_compiler_quiet
       use General, only: chn
 !
       character (len=80) :: chemicals='' 
@@ -1966,7 +1963,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
       use Cdata
       use Mpicomm, only: stop_it
-      use Sub, only: keep_compiler_quiet
       use General, only: chn
 !
       character (len=20) :: input_file='chem.inp'
@@ -2625,8 +2621,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
 !  13-aug-07/steveb: dummy
 !  16-may-09/raphael: added more slices
-!
-      use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
@@ -3687,8 +3681,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       real, dimension (nx) :: xdot
       type (pencil_case) :: p
       integer :: k,j
-      real :: sum_omega
-      real :: sum_Y
       integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
 !
       p%DYDt_reac=0.
@@ -4244,9 +4236,9 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (mx,my,mz) :: Xk_Yk
-      real, dimension (nx,3) :: gXX, gDiff_full_add, gchemspec, gXk_Yk
+      real, dimension (nx,3) :: gDiff_full_add, gchemspec, gXk_Yk
       real, dimension (nx) :: del2chemspec
-      real, dimension (nx) :: diff_op,diff_op1,diff_op2,xdot, del2XX, del2pp, del2lnpp
+      real, dimension (nx) :: diff_op,diff_op1,diff_op2,del2XX, del2pp, del2lnpp
       real, dimension (nx) :: glnpp_gXkYk,glnrho_glnpp,gD_glnpp, glnpp_glnpp
       real :: diff_k
       integer :: j,k,i, j1,j2,j3
@@ -4615,7 +4607,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !   16-nov-09/natalia: coded.
 !
 !
-  use MpiComm, only: stop_it
+    use MpiComm, only: stop_it
       use EquationOfState, only: cs0, cs20
       use Deriv, only: der_onesided_4_slice,der_pencil, der2_pencil
 !      use Chemistry
@@ -4625,14 +4617,13 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       character (len=3) :: topbot
       real, dimension (my,mz) :: rho0,TT0,gamma0
       real, dimension (mx,my,mz) :: mom2,mom3!, rho_ux2, rho_uy2
-      real, dimension (mx,my,mz) :: rho_gamma, rhoE_p
+      real, dimension (mx,my,mz) :: rhoE_p
       real, dimension (mx,my,mz,2) ::  rhoE_pU
       real, dimension (my,mz) ::  dYk_dx,dYk_dy,dYk_dz
       real, dimension (ny,nz) :: drho_prefac, KK
       
       real, dimension (ny,nz) :: L_1, L_2, L_3, L_4, L_5
       real, dimension (ny,nz)  :: M_1, M_2, M_3, M_4, M_5
-      real, dimension (ny,nz)  :: N_1, N_2, N_3, N_4, N_5
   !    
       real, dimension (my,mz) :: cs0_ar,cs20_ar,dmom2_dy,dmom3_dz
       real, dimension (my,mz,2) :: drhoE_pU!,dYk_dy
@@ -4651,7 +4642,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       real, dimension (ny,nz) :: T_1_z, T_2_z, T_3_z, T_4_z, T_5_z
       real, dimension (mcom), optional :: val
 !
-      integer :: lll, sgn,i,j,k, nnn, mm, mmm, irho_tmp
+      integer :: lll, sgn,i,j,k, mm, mmm, irho_tmp
       real :: Mach_num
       real :: U0_x,U0_y,U0_z,T0
 !
@@ -4661,6 +4652,8 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       real :: nscbc_sigma=0.5,ita
 !
   
+      if (present(val)) call keep_compiler_quiet(val)
+
        U0_x=init_ux;U0_y=init_uy;U0_z=init_uz;T0=init_TT1
 
       if (leos_chemistry) then
@@ -5128,14 +5121,12 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       character (len=3) :: topbot
       real, dimension (my,mz) :: rho0,gamma0, TT0
       real, dimension (mx,my,mz) :: mom2,mom3!, rho_ux2, rho_uy2
-      real, dimension (mx,my,mz) :: rho_gamma, rhoE_p
+      real, dimension (mx,my,mz) :: rhoE_p
       real, dimension (mx,my,mz,2) ::  rhoE_pU
       real, dimension (my,mz) ::  dYk_dx,dYk_dy,dYk_dz
       real, dimension (ny,nz) :: drho_prefac, KK
       
       real, dimension (ny,nz) :: L_1, L_2, L_3, L_4, L_5
-      real, dimension (ny,2)  :: M_1, M_2, M_3, M_4, M_5
-      real, dimension (nz,2)  :: N_1, N_2, N_3, N_4, N_5
   !    
       real, dimension (my,mz) :: cs0_ar,cs20_ar,dmom2_dy,dmom3_dz
       real, dimension (my,mz,2) :: drhoE_pU!,dYk_dy
@@ -5153,7 +5144,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       real, dimension (ny,nz) :: T_1_y, T_2_y, T_3_y, T_4_y, T_5_y
       real, dimension (ny,nz) :: T_1_z, T_2_z, T_3_z, T_4_z, T_5_z
 !
-      integer :: lll, sgn,i,j,k, nnn, irho_tmp
+      integer :: lll, sgn,i,j,k,irho_tmp
       real :: Mach_num, nscbc_sigma_out
 !
       intent(inout) :: f
