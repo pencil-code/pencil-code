@@ -93,6 +93,7 @@ module Particles_radius
       endif
 !
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_radius
 !***********************************************************************
@@ -134,6 +135,8 @@ module Particles_radius
 
       enddo
 !
+      call keep_compiler_quiet(f)
+!
     endsubroutine set_particle_radius
 !***********************************************************************
     subroutine pencil_criteria_par_radius()
@@ -165,7 +168,7 @@ module Particles_radius
 !
       real, dimension (nx) :: dt1_sweepup
       real :: deltavp, np_tilde
-      integer :: k, ix0, iy0, iz0
+      integer :: k, ix0
       logical :: lheader, lfirstcall=.true.
 !
       intent (in) :: f, fp
@@ -242,6 +245,8 @@ module Particles_radius
 !
       lfirstcall=.false.
 !
+      call keep_compiler_quiet(f)
+!
     endsubroutine dap_dt_pencil
 !***********************************************************************
     subroutine dap_dt(f,df,fp,dfp,ineargrid)
@@ -267,6 +272,10 @@ module Particles_radius
         if (idiag_apmax/=0) &
             call max_par_name(fp(1:npar_loc,iap),idiag_apmax)
       endif
+!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine dap_dt
 !***********************************************************************
