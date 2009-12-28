@@ -321,7 +321,7 @@ module Register
       call initialize_lorenz_gauge(f)
       call initialize_polymer(f,lstarting)
       call initialize_testscalar(f)
-      call initialize_testfield(f)
+      call initialize_testfield(f,lstarting)
       call initialize_testflow(f)
       call initialize_radiation()
       call initialize_pscalar(f)

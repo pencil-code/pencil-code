@@ -226,7 +226,7 @@ module Testfield
 !
     endsubroutine register_testfield
 !***********************************************************************
-    subroutine initialize_testfield(f)
+    subroutine initialize_testfield(f,lstarting)
 !
 !  Perform any post-parameter-read initialization
 !
@@ -237,6 +237,7 @@ module Testfield
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx) :: xtestfield
+      logical, intent(in) :: lstarting
       integer :: jtest
 !
 !  Precalculate etatest if 1/etatest (==etatest1) is given instead
@@ -339,6 +340,7 @@ module Testfield
         close(1)
       endif
 !
+      call keep_compiler_quiet(lstarting)
     endsubroutine initialize_testfield
 !***********************************************************************
     subroutine init_aatest(f)

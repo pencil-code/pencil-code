@@ -128,7 +128,7 @@ module Testfield
 !
     endsubroutine register_testfield
 !***********************************************************************
-    subroutine initialize_testfield(f)
+    subroutine initialize_testfield(f,lstarting)
 !
 !  Perform any post-parameter-read initialization
 !
@@ -137,6 +137,7 @@ module Testfield
       use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      logical, intent(in) :: lstarting
 !
 !  set to zero and then rescale the testfield
 !  (in future, could call something like init_aa_simple)
@@ -156,6 +157,7 @@ module Testfield
         close(1)
       endif
 !
+      call keep_compiler_quiet(lstarting)
     endsubroutine initialize_testfield
 !***********************************************************************
     subroutine init_aatest(f)

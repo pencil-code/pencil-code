@@ -40,13 +40,15 @@ module Testfield
 !
     endsubroutine register_testfield
 !***********************************************************************
-    subroutine initialize_testfield(f)
+    subroutine initialize_testfield(f,lstarting)
 !
 !  Dummy routine
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      logical, intent(in) :: lstarting
 !
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_testfield
 !***********************************************************************

@@ -123,7 +123,7 @@ module Testfield
 !
     endsubroutine register_testfield
 !***********************************************************************
-    subroutine initialize_testfield(f)
+    subroutine initialize_testfield(f,lstarting)
 !
 !  Perform any post-parameter-read initialization
 !
@@ -132,6 +132,7 @@ module Testfield
       use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      logical, intent(in) :: lstarting
 !
 !  set to zero and then rescale the testfield
 !  (in future, could call something like init_aa_simple)
@@ -152,6 +153,7 @@ module Testfield
         close(1)
       endif
 !
+      call keep_compiler_quiet(lstarting)
     endsubroutine initialize_testfield
 !***********************************************************************
     subroutine init_aatest(f)
@@ -479,12 +481,12 @@ module Testfield
 !  reinitialize aatest
 !  note that ltestfield_out is not used
 !
-         if (t >= taainit) then
-            reinitialize_aatest=.true.
-            call initialize_testfield(f)
-            reinitialize_aatest=.false.
-            call update_snaptime(file,taainit,naainit,daainit,t,ltestfield_out,ch,.false.)
-         endif
+!         if (t >= taainit) then
+!            reinitialize_aatest=.true.
+!            call initialize_testfield(f,lstarting)
+!            reinitialize_aatest=.false.
+!            call update_snaptime(file,taainit,naainit,daainit,t,ltestfield_out,ch,.false.)
+!         endif
       endif
 !
     endsubroutine daatest_dt

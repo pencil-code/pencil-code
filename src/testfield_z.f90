@@ -75,10 +75,12 @@ module Testfield
 
   ! run parameters
   real :: etatest=0.,etatest1=0.
+  real :: ampl_fcont_aatest=1.
   real, dimension(njtest) :: rescale_aatest=0.
   logical :: ltestfield_newz=.true.,leta_rank2=.true.
   logical :: ltestfield_taver=.false.
   logical :: llorentzforce_testfield=.false.
+  logical :: lforcing_cont_aatest=.false.
   namelist /testfield_run_pars/ &
        B_ext,reinitialize_aatest,zextent,lsoca,lsoca_jxb, &
        lset_bbtest2,etatest,etatest1,itestfield,ktestfield, &
@@ -86,6 +88,7 @@ module Testfield
        ltestfield_newz,leta_rank2,lphase_adjust,phase_testfield, &
        ltestfield_taver,llorentzforce_testfield, &
        luxb_as_aux,ljxb_as_aux,lignore_uxbtestm, &
+       lforcing_cont_aatest,ampl_fcont_aatest, &
        daainit,linit_aatest,bamp, &
        rescale_aatest
 
@@ -244,7 +247,7 @@ module Testfield
 !
     endsubroutine register_testfield
 !***********************************************************************
-    subroutine initialize_testfield(f)
+    subroutine initialize_testfield(f,lstarting)
 !
 !  Perform any post-parameter-read initialization
 !
@@ -256,6 +259,7 @@ module Testfield
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(mz) :: ztestfield, c, s
       real :: ktestfield_effective
+      logical, intent(in) :: lstarting
       integer :: jtest
 !
 !  Precalculate etatest if 1/etatest (==etatest1) is given instead
@@ -263,6 +267,7 @@ module Testfield
       if (etatest1/=0.) then
         etatest=1./etatest1
       endif
+      if (lroot) print*,'initialize_testfield: etatest=',etatest
 !
 !  set cosine and sine function for setting test fields and analysis
 !  Choice of using rescaled z-array or original z-array
@@ -404,6 +409,7 @@ module Testfield
         close(1)
       endif
 !
+      call keep_compiler_quiet(lstarting)
     endsubroutine initialize_testfield
 !***********************************************************************
     subroutine init_aatest(f)
@@ -678,6 +684,12 @@ module Testfield
           df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
             +uxB+etatest*del2Atest+duxbtest
         endif
+!
+!  add possibility of forcing that is not delta-correlated in time
+!
+      if (lforcing_cont_aatest) &
+        df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
+            +ampl_fcont_aatest*p%fcont
 !
 !  Calculate Lorentz force for sinlge B11 testfield and add to duu
 !

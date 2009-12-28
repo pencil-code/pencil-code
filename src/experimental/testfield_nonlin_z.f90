@@ -62,7 +62,7 @@ module Testfield
   logical :: zextent=.true.,lsoca=.false.,lsoca_jxb=.true.,lset_bbtest2=.false.
   logical :: luxb_as_aux=.false.,ljxb_as_aux=.false.,linit_aatest=.false.
   logical :: lignore_uxbtestm=.false., lignore_jxbtestm=.false., lphase_adjust=.false.
-  character (len=labellen) :: itestfield='B11-B21'
+  character (len=labellen) :: itestfield='B11-B21',itestfield_method='(i)'
   real :: ktestfield=1., ktestfield1=1.
   real :: lin_testfield=0.,lam_testfield=0.,om_testfield=0.,delta_testfield=0.
   real :: delta_testfield_next=0., delta_testfield_time=0.
@@ -77,20 +77,19 @@ module Testfield
 
   ! run parameters
   real :: etatest=0.,etatest1=0.,nutest=0.,nutest1=0.
-  real :: ampl_fcont_aatest=1.
+  real :: ampl_fcont_aatest=1.,ampl_fcont_uutest=1.
   real, dimension(njtest) :: rescale_aatest=0.,rescale_uutest=0.
   logical :: ltestfield_newz=.true.,leta_rank2=.true.
-  logical :: llorentzforce_testfield=.true.
-  logical :: lforcing_cont_aatest=.false.
+  logical :: lforcing_cont_aatest=.false.,lforcing_cont_uutest=.false.
   namelist /testfield_run_pars/ &
        B_ext,reinitialize_aatest,zextent,lsoca,lsoca_jxb, &
-       lset_bbtest2,itestfield,ktestfield, &
+       lset_bbtest2,itestfield,ktestfield,itestfield_method, &
        etatest,etatest1,nutest,nutest1, &
        lin_testfield,lam_testfield,om_testfield,delta_testfield, &
        ltestfield_newz,leta_rank2,lphase_adjust,phase_testfield, &
-       llorentzforce_testfield, &
        luxb_as_aux,ljxb_as_aux,lignore_uxbtestm,lignore_jxbtestm, &
        lforcing_cont_aatest,ampl_fcont_aatest, &
+       lforcing_cont_uutest,ampl_fcont_uutest, &
        daainit,linit_aatest,bamp, &
        rescale_aatest,rescale_uutest
 
@@ -271,7 +270,7 @@ module Testfield
 !
     endsubroutine register_testfield
 !***********************************************************************
-    subroutine initialize_testfield(f)
+    subroutine initialize_testfield(f,lstarting)
 !
 !  Perform any post-parameter-read initialization
 !
@@ -283,6 +282,7 @@ module Testfield
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(mz) :: ztestfield, c, s
       real :: ktestfield_effective
+      logical, intent(in) :: lstarting
       integer :: jtest
 !
 !  Precalculate etatest if 1/etatest (==etatest1) is given instead
@@ -353,19 +353,13 @@ module Testfield
 !
 !  calculate iE0
 !
-      select case(itestfield)
-        case('Beltrami'); iE0=1
-        case('B11-B22_lin'); iE0=0
-        case('B11-B21+B=0'); iE0=3
-        case('B11-B22+B=0'); iE0=5
-        case('B11-B21'); iE0=0
-        case('B11-B22'); iE0=0
-        case('B11'); iE0=1
-        case('B12'); iE0=1
-        case('B=0'); iE0=1
-      case default
-        call fatal_error('initialize_testfield','undefined itestfield value')
-      endselect
+      if (.not.lstarting) then
+        select case(itestfield)
+          case('B11-B22'); iE0=0
+        case default
+          call fatal_error('initialize_testfield','undefined itestfield value')
+        endselect
+      endif
 !
 !  override iE0 if njtest is big enough
 !
@@ -594,11 +588,11 @@ module Testfield
       real, dimension (nx,3) :: uxbtest,duxbtest,jxbtest,djxbtest,eetest
       real, dimension (nx,3) :: uxbtest2,J0test=0,jxB0rtest,J0xbrtest
       real, dimension (nx,3,3,njtest) :: Mijpq
-      real, dimension (nx,3,njtest) :: Eipq,bpq,jpq,upq
-      real, dimension (nx,3) :: del2Atest,uufluct
+      real, dimension (nx,3,njtest) :: Eipq,Fipq,bpq,jpq,upq
+      real, dimension (nx,3) :: del2Atest,uufluct,bbfluct,jjfluct
       real, dimension (nx,3) :: del2Atest2,graddivAtest,aatest,jjtest
       real, dimension (nx,3) :: jxbrtest,jxbtest1,jxbtest2,u0xb0,j0xb0
-      real, dimension (nx,3) :: del2Utest ,graddivUtest,uutest,ootest,u0test
+      real, dimension (nx,3) :: del2Utest ,graddivUtest,uutest,ootest
       real, dimension (nx,3,3) :: aijtest,bijtest,Mijtest,uijtest,oijtest
       real, dimension (nx) :: jbpq,upq2,bpq2,Epq2,s2kzDF1,s2kzDF2,unity=1.
       integer :: jtest,jfnamez,j, i1=1, i2=2, i3=3, i4=4
@@ -616,179 +610,107 @@ module Testfield
         if (iaztest /= 0) call identify_bcs('Aztest',iaztest)
       endif
 !
-!  calculate uufluct=U-Umean
+!  loop over all fields
 !
-      if (lcalc_uumean) then
-        do j=1,3
-          uufluct(:,j)=p%uu(:,j)-uumz(n,j)
-        enddo
-      else
-        uufluct=p%uu
-      endif
+      do jtest=1,njtest
+        iaxtest=iaatest+3*(jtest-1); iaztest=iaxtest+2
+        iuxtest=iuutest+3*(jtest-1); iuztest=iuxtest+2
 !
-!  Multiply by exponential factor if lam_testfield is different from zero.
-!  Allow also for linearly increasing testfields
-!  Keep bamp1=1 for oscillatory fields.
+!  do diffusion terms
 !
-      if (lam_testfield/=0..or.lin_testfield/=0. .or. &
-          om_testfield/=0..or.delta_testfield/=0.) then
-        if (lam_testfield/=0.) then
-          taainit_previous=taainit-daainit
-          bamp=exp(lam_testfield*(t-taainit_previous))
-          bamp1=1./bamp
-        endif
-        if (lin_testfield/=0.) then
-          taainit_previous=taainit-daainit
-          bamp=lin_testfield*(t-taainit_previous-daainit/2.)
-          bamp1=1./bamp
-        endif
-        if (om_testfield/=0.) then
-          bamp=cos(om_testfield*t)
-          bamp1=1.
-        endif
-        if (delta_testfield/=0.) then
-          if (t.ge.delta_testfield_next.and.t.le.(delta_testfield_next+dt)) then
-            delta_testfield_time=t
-            delta_testfield_next=t+delta_testfield
+        call del2v(f,iaxtest,del2Atest)
+        call del2v(f,iuxtest,del2Utest)
+        df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
+          +etatest*del2Atest
+        df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
+          +nutest*del2Utest
+!
+!  possibility of non-soca terms
+!
+        if (.not.lsoca) then
+!
+!  subtract average emf, unless we ignore the <uxb> term (lignore_uxbtestm=T)
+!
+          if (iuxb/=0.and..not.ltest_uxb) then
+            uxbtest=f(l1:l2,m,n,iuxb+3*(jtest-1):iuxb+3*jtest-1)
+            if (lignore_uxbtestm) then
+              duxbtest(:,:)=uxbtest(:,:)
+            else
+              do j=1,3
+                duxbtest(:,j)=uxbtest(:,j)-uxbtestm(n,j,jtest)
+              enddo
+            endif
+            df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
+                +duxbtest
           endif
-          if (t>=delta_testfield_time-.1*dt.and.t<=delta_testfield_time+.1*dt) then
-            bamp=1.
+!
+!  subtract average emf, unless we ignore the <jxb> term (lignore_jxbtestm=T)
+!
+          if (ijxb/=0.and..not.ltest_jxb) then
+            jxbtest=f(l1:l2,m,n,ijxb+3*(jtest-1):ijxb+3*jtest-1)
+            if (lignore_jxbtestm) then
+              djxbtest(:,:)=jxbtest(:,:)
+            else
+              do j=1,3
+                djxbtest(:,j)=jxbtest(:,j)-jxbtestm(n,j,jtest)
+              enddo
+            endif
+            df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
+              +djxbtest
+          endif
+!
+!  end of .not.lsoca
+!
+        endif
+!
+!  Do things differently for the reference fields.
+!
+        if (jtest==iE0) then
+!
+!  Add possibility of forcing that is not delta-correlated in time.
+!
+          if (lforcing_cont_aatest) &
+            df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
+              +ampl_fcont_aatest*p%fcont
+          if (lforcing_cont_uutest) &
+            df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
+            +ampl_fcont_uutest*p%fcont
+        else
+!
+!  Calculate uufluct=U-Umean.
+!  For now, accept bb and bb as having no mean fields.
+!
+          if (lcalc_uumean) then
+            do j=1,3
+              uufluct(:,j)=p%uu(:,j)-uumz(n,j)
+            enddo
           else
-            bamp=0.
+            uufluct=p%uu
           endif
-          bamp1=1.
-        endif
-      endif
+          bbfluct=p%bb
+          jjfluct=p%jj
 !
 !  do each of the 9 test fields at a time
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
 !  Note: the same block of lines occurs again further down in the file.
 !
-      do jtest=1,njtest
-        iaxtest=iaatest+3*(jtest-1); iaztest=iaxtest+2
-        iuxtest=iuutest+3*(jtest-1); iuztest=iuxtest+2
-        call del2v(f,iaxtest,del2Atest)
-        select case(itestfield)
-          case('Beltrami'); call set_bbtest_Beltrami(B0test,jtest)
-          case('B11-B22_lin'); call set_bbtest_B11_B22_lin(B0test,jtest)
-          case('B11-B21+B=0'); call set_bbtest_B11_B21(B0test,jtest)
-          case('B11-B22+B=0'); call set_bbtest_B11_B22(B0test,jtest)
-          case('B11-B21'); call set_bbtest_B11_B21(B0test,jtest)
-          case('B11-B22'); call set_bbtest_B11_B22(B0test,jtest)
-          case('B11'); call set_bbtest_B11_B22(B0test,jtest)
-          case('B12'); call set_bbtest_B11_B22(B0test,3)
-          case('B=0') !(dont do anything)
-        case default
-          call fatal_error('daatest_dt','undefined itestfield value')
-        endselect
-!
-!  add always diffusion term, and uxB only if jtest /= iE0
-!
-        call cross_mn(uufluct,B0test,uxB)
-        if (lsoca) then
-          df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
-            +uxB+etatest*del2Atest
-        else
-!
-!  use f-array for uxb (if space has been allocated for this) and
-!  if we don't test (i.e. if ltest_uxb=.false.)
-!
-          if (iuxb/=0.and..not.ltest_uxb) then
-            uxbtest=f(l1:l2,m,n,iuxb+3*(jtest-1):iuxb+3*jtest-1)
-          else
-            aatest=f(l1:l2,m,n,iaxtest:iaztest)
-            call gij(f,iaxtest,aijtest,1)
-            call curl_mn(aijtest,bbtest,aatest)
-            call cross_mn(p%uu,bbtest,uxbtest)
-          endif
-!
-!  subtract average emf, unless we ignore the <uxb> term (lignore_uxbtestm=T)
-!
-          if (lignore_uxbtestm) then
-            duxbtest(:,:)=uxbtest(:,:)
-          else
-            do j=1,3
-              duxbtest(:,j)=uxbtest(:,j)-uxbtestm(n,j,jtest)
-            enddo
-          endif
-!
-!  advance test field equation
-!
-          df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
-            +uxB+etatest*del2Atest+duxbtest
-        endif
-!
-!  Add possibility of forcing that is not delta-correlated in time.
-!  This is not normally correct in the application of the testfield method.
-!  Do this only for iE0.
-!
-        if (lforcing_cont_aatest.and.jtest==iE0) &
-          df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
-              +ampl_fcont_aatest*p%fcont
-!
-!  Calculate Lorentz force for sinlge B11 testfield and add to duu
-!
-        if (llorentzforce_testfield) then
-          aatest=f(l1:l2,m,n,iaxtest:iaztest)
-          uutest=f(l1:l2,m,n,iuxtest:iuztest)
-          call gij(f,iaxtest,aijtest,1)
-          call gij(f,iuxtest,uijtest,1)
-          call gij_etc(f,iaxtest,aatest,aijtest,bijtest,del2Atest2,graddivAtest)
-          call gij_etc(f,iuxtest,uutest,uijtest,oijtest,del2Utest,graddivUtest)
-!
-!  calculate jpq and bpq
-!
-          call curl_mn(aijtest,bbtest,aatest)
-          call curl_mn(bijtest,jjtest,bbtest)
-!
-!  calculate jpq x B0pq
-!
           select case(itestfield)
-            case('B11-B22'); call set_J0test_B11_B22(J0test,jtest)
-            case('B11'); call set_J0test_B11_B21(J0test,jtest)
-            case('B12'); call set_J0test_B11_B21(J0test,jtest)
-            case('B=0') !(dont do anything)
+          case('B11-B22')
+            call set_bbtest_B11_B22(B0test,jtest)
+            call set_J0test_B11_B22(J0test,jtest)
           case default
             call fatal_error('daatest_dt','undefined itestfield value')
           endselect
-          call cross_mn(J0test,p%bb,jxbtest1)
-          call cross_mn(p%jj,B0test,jxbtest2)
-          !call multsv_mn(p%rho1,jxbrtest,jxbrtest)
+          call cross_mn(uufluct,B0test,uxB)
+          call cross_mn(jjfluct,B0test,jxbtest1)
+          call cross_mn(J0test,bbfluct,jxbtest2)
+          !call multsv_mn(p%rho1,jxbtest1+jxbtest2,jxbrtest)
           jxbrtest=jxbtest1+jxbtest2
+          df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+uxB
+          df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest)+jxbrtest
 !
-!  add them all together
+!  advance test field equation
 !
-          df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
-              +jxbrtest+nutest*del2Utest
-!
-!  if jtest==iE0, add non-SOCA term
-!
-          if (jtest==iE0) then
-            if (headtt.or.ldebug) print*,'daatest_dt: added non-SOCA jxb term'
-            call cross_mn(uutest,bbtest,u0xb0)
-            call cross_mn(jjtest,bbtest,j0xb0)
-            df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest)+j0xb0
-            df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+u0xb0
-          else
-          endif
-        else
-          uutest=0.
-        endif
-!
-!  Add djxbtest to rhs, unless we do SOCA.
-!  Subtract average emf, unless we ignore the <uxb> term (lignore_uxbtestm=T).
-!
-        if (.not.lsoca_jxb) then
-          if (headtt.or.ldebug) print*,'daatest_dt: added non-SOCA jxb term'
-          if (lignore_jxbtestm) then
-            djxbtest(:,:)=jxbtest(:,:)
-          else
-            do j=1,3
-              djxbtest(:,j)=jxbtest(:,j)-jxbtestm(n,j,jtest)
-            enddo
-          endif
-          df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
-            +djxbtest
         endif
 !
 !  calculate alpha, begin by calculating uxbtest (if not already done above)
@@ -805,29 +727,7 @@ module Testfield
            idiag_M11z/=0.or.idiag_M22z/=0.or.idiag_M33z/=0)) then
           aatest=f(l1:l2,m,n,iaxtest:iaztest)
 !
-!  get u0 (if iE0 /= 0)
-!
-          if (iE0/=0) then
-            iu0xtest=iuutest+3*(iE0-1); iu0ztest=iu0xtest+2
-            u0test=f(l1:l2,m,n,iu0xtest:iu0ztest)
-          else
-            u0test=0.
-          endif
-!
-!  compute uxb etc
-!
-          call gij(f,iaxtest,aijtest,1)
-          call curl_mn(aijtest,bbtest,aatest)
-!
-!  Version I
-!
-          !call cross_mn(p%uu,bbtest,uxbtest)
-          !call cross_mn(u0test,p%bb,uxbtest2)
-!
-!  Version II
-!
-          !call cross_mn(u0test,bbtest,uxbtest)
-          call cross_mn(uutest,p%bb,uxbtest2)
+!  Settings for quadratic quantities (magnetic stress)
 !
           if (idiag_M11cc/=0.or.idiag_M11ss/=0.or. &
               idiag_M22cc/=0.or.idiag_M22ss/=0.or. &
@@ -840,8 +740,20 @@ module Testfield
         endif
         bpq(:,:,jtest)=bbtest
         upq(:,:,jtest)=uutest
-        Eipq(:,:,jtest)=(uxbtest+uxbtest2)*bamp1
+!
+!  restore uxbtest and jxbtest from f-array
+!
+        uxbtest=f(l1:l2,m,n,iuxb+3*(jtest-1):iuxb+3*jtest-1)
+        jxbtest=f(l1:l2,m,n,ijxb+3*(jtest-1):ijxb+3*jtest-1)
+!
+!  evaluate
+!
+        Eipq(:,:,jtest)=uxbtest*bamp1
+        Fipq(:,:,jtest)=jxbtest*bamp1
         if (ldiagnos.and.idiag_jb0m/=0) jpq(:,:,jtest)=jjtest
+!
+!  enddo loop for jtest
+!
       enddo
 !
 !  diffusive time step, just take the max of diffus_eta (if existent)
@@ -1175,7 +1087,7 @@ module Testfield
       use Cdata
       use Sub
       use Hydro, only: calc_pencils_hydro
-      use Magnetic, only: idiag_bcosphz, idiag_bsinphz
+      use Magnetic, only: calc_pencils_magnetic, idiag_bcosphz, idiag_bsinphz
       use Mpicomm, only: mpireduce_sum, mpibcast_real, mpibcast_real_arr
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1190,6 +1102,7 @@ module Testfield
       real, dimension (nx,3) :: uxbtest1,jxbtest1
       real, dimension (nx,3) :: uxbtest2,jxbtest2
       real, dimension (nx,3) :: del2Atest2,graddivatest
+      real, dimension (nx,3) :: u0ref,b0ref,j0ref
       integer :: jtest,j,nxy=nxgrid*nygrid,juxb,jjxb
       logical :: headtt_save
       real :: fac, bcosphz, bsinphz, fac1=0., fac2=1.
@@ -1202,54 +1115,106 @@ module Testfield
       headtt_save=headtt
       fac=1./nxy
 !
-!  do each of the 9 test fields at a time
-!  but exclude redundancies, e.g. if the averaged field lacks x extent.
-!  Note: the same block of lines occurs again further up in the file.
+!  Stop if iE0 is too small.
 !
-      do jtest=1,njtest
-        iaxtest=iaatest+3*(jtest-1); iaztest=iaxtest+2
-        iuxtest=iuutest+3*(jtest-1); iuztest=iuxtest+2
-        if (lsoca) then
-          uxbtestm(:,:,jtest)=0.
-          jxbtestm(:,:,jtest)=0.
-        else
+      if (iE0/=5) then
+        call fatal_error('calc_ltestfield_pars','need ntest=5 for u0ref')
+      endif
+!
+!  Start mn loop
+!
+      do n=n1,n2
+      do m=m1,m2
+!
+!  Begin by getting/computing fields from main run.
+!
+        call calc_pencils_hydro(f,p)
+        call calc_pencils_magnetic(f,p)
+!
+!  Count jtest backwards, so we have access to the reference fields.
+!
+        do jtest=njtest,1,-1
+!
+!  initialize counter for mean fields
+!
+          uxbtestm(n,:,jtest)=0.
+          jxbtestm(n,:,jtest)=0.
+!
+!  Compute test fields aatest, bbtest, jjtest, and uutest,
+!  and set bbref, jjref, uuref if jtest=iE0 (first point in loop)
+!
+          iaxtest=iaatest+3*(jtest-1); iaztest=iaxtest+2
+          iuxtest=iuutest+3*(jtest-1); iuztest=iuxtest+2
+          aatest=f(l1:l2,m,n,iaxtest:iaztest)
+          uutest=f(l1:l2,m,n,iuxtest:iuztest)
 !
 !  calculate uxb, and put it into f-array
 !
-          do n=n1,n2
-            uxbtestm(n,:,jtest)=0.
-            jxbtestm(n,:,jtest)=0.
-            do m=m1,m2
-              aatest=f(l1:l2,m,n,iaxtest:iaztest)
-              uutest=f(l1:l2,m,n,iuxtest:iuztest)
-              call calc_pencils_hydro(f,p)
-              call gij(f,iaxtest,aijtest,1)
-              call gij_etc(f,iaxtest,aatest,aijtest,bijtest,del2Atest2,graddivatest)
-              call curl_mn(aijtest,bbtest,aatest)
-              call curl_mn(bijtest,jjtest,bbtest)
-              call cross_mn(p%uu,bbtest,uxbtest1)
-              call cross_mn(p%jj,bbtest,jxbtest1)
-              call cross_mn(uutest,p%bb,uxbtest2)
-              call cross_mn(jjtest,p%bb,jxbtest2)
-              uxbtest=uxbtest1+uxbtest2
-              jxbtest=jxbtest1+jxbtest2
-              juxb=iuxb+3*(jtest-1)
-              jjxb=ijxb+3*(jtest-1)
-              if (iuxb/=0) f(l1:l2,m,n,juxb:juxb+2)=uxbtest
-              if (ijxb/=0) f(l1:l2,m,n,jjxb:jjxb+2)=jxbtest
-              do j=1,3
-                uxbtestm(n,j,jtest)=uxbtestm(n,j,jtest)+fac*sum(uxbtest(:,j))
-                jxbtestm(n,j,jtest)=jxbtestm(n,j,jtest)+fac*sum(jxbtest(:,j))
-              enddo
-              headtt=.false.
-            enddo
-            do j=1,3
-              uxbtestm1(n-n1+1,ipz+1,j,jtest)=uxbtestm(n,j,jtest)
-              jxbtestm1(n-n1+1,ipz+1,j,jtest)=jxbtestm(n,j,jtest)
-            enddo
-          enddo
+          call gij(f,iaxtest,aijtest,1)
+          call gij_etc(f,iaxtest,aatest,aijtest,bijtest,del2Atest2,graddivatest)
+          call curl_mn(aijtest,bbtest,aatest)
+          call curl_mn(bijtest,jjtest,bbtest)
 !
-        endif
+!  Get u0ref, b0ref, and j0ref (if iE0=5).
+!  Also compute u0 x b0 and j0 x b0, and put into corresponding array.
+!  They continue to exist throughout the jtest loop.
+!
+          if (iE0/=0) then
+            u0ref=uutest
+            b0ref=bbtest
+            j0ref=jjtest
+            call cross_mn(u0ref,b0ref,uxbtest)
+            call cross_mn(j0ref,b0ref,jxbtest)
+          else
+!
+!  Calculate uxb and jxb, and put it into f-array, depending on whether we use
+!  Testfield Method (i) or (ii).
+!
+            select case(itestfield_method)
+            case('(i)')
+              call cross_mn(p%uu,bbtest,uxbtest1)
+              call cross_mn(uutest,b0ref,uxbtest2)
+              call cross_mn(p%jj,bbtest,jxbtest1)
+              call cross_mn(jjtest,b0ref,jxbtest2)
+            case('(ii)')
+              call cross_mn(u0ref,bbtest,uxbtest1)
+              call cross_mn(uutest,p%bb,uxbtest2)
+              call cross_mn(j0ref,bbtest,jxbtest1)
+              call cross_mn(jjtest,p%bb,jxbtest2)
+            case default
+              call fatal_error('calc_ltestfield_pars','??itestfield_method')
+            endselect
+            uxbtest=uxbtest1+uxbtest2
+            jxbtest=jxbtest1+jxbtest2
+          endif
+          juxb=iuxb+3*(jtest-1)
+          jjxb=ijxb+3*(jtest-1)
+          if (iuxb/=0) f(l1:l2,m,n,juxb:juxb+2)=uxbtest
+          if (ijxb/=0) f(l1:l2,m,n,jjxb:jjxb+2)=jxbtest
+!
+!  Add corresponding contribution into averaged arrays, uxbtestm, jxbtestm
+!
+          do j=1,3
+            uxbtestm(n,j,jtest)=uxbtestm(n,j,jtest)+fac*sum(uxbtest(:,j))
+            jxbtestm(n,j,jtest)=jxbtestm(n,j,jtest)+fac*sum(jxbtest(:,j))
+          enddo
+          headtt=.false.
+!
+!  finish jtest and mn loops
+!
+        enddo
+      enddo
+      enddo
+!
+!  Set uxbtestm1 and jxbtestm1 for communication.
+!
+      do jtest=njtest,1,-1
+        do j=1,3
+          do n=n1,n2
+            uxbtestm1(n-n1+1,ipz+1,j,jtest)=uxbtestm(n,j,jtest)
+            jxbtestm1(n-n1+1,ipz+1,j,jtest)=jxbtestm(n,j,jtest)
+          enddo
+        enddo
       enddo
 !
 !  do communication for array of size nz*nprocz*3*njtest
