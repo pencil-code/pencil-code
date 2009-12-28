@@ -195,6 +195,9 @@ module Entropy
   integer :: idiag_ssmx=0       ! DIAG_DOC:
   integer :: idiag_ssmy=0       ! DIAG_DOC:
   integer :: idiag_ssmz=0       ! DIAG_DOC:
+  integer :: idiag_ppmx=0       ! DIAG_DOC:
+  integer :: idiag_ppmy=0       ! DIAG_DOC:
+  integer :: idiag_ppmz=0       ! DIAG_DOC:
   integer :: idiag_TTp=0        ! DIAG_DOC:
   integer :: idiag_ssmr=0       ! DIAG_DOC:
   integer :: idiag_TTmx=0       ! DIAG_DOC:
@@ -1967,8 +1970,10 @@ module Entropy
         lpenc_diagnos(i_divu)=.true.
       endif
       if (idiag_ssm/=0 .or. idiag_ss2m/=0 .or. idiag_ssmz/=0 .or. &
-          idiag_ssmy/=0.or.idiag_ssmx/=0.or.idiag_ssmr/=0) &
+          idiag_ssmy/=0 .or. idiag_ssmx/=0 .or. idiag_ssmr/=0) &
            lpenc_diagnos(i_ss)=.true.
+      if (idiag_ppmx/=0 .or. idiag_ppmy/=0 .or. idiag_ppmz/=0) &
+         lpenc_diagnos(i_pp)=.true.
       lpenc_diagnos(i_rho)=.true.
       lpenc_diagnos(i_ee)=.true.
       if (idiag_ethm/=0 .or. idiag_ethtot/=0 .or. idiag_ethdivum/=0 ) then
@@ -2173,13 +2178,11 @@ module Entropy
 !  there are additional cv1 terms on the right hand side.
 !
       if (ladvection_entropy) then
-         if (pretend_lnTT) then
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%divu*gamma_m1-p%uglnTT
-            !df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - (p%divu*gamma_m1 + p%uglnTT)*gamma_inv*p%cp
-            !df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%divu*gamma_m1 - p%uglnTT
-         else
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%ugss
-         endif
+        if (pretend_lnTT) then
+          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%divu*gamma_m1-p%uglnTT
+        else
+          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%ugss
+        endif
       endif
 !
 !  Calculate viscous contribution to entropy
@@ -2314,9 +2317,12 @@ module Entropy
         if (idiag_fradz/=0) call xysum_mn_name_z(-hcond0*p%TT*p%glnTT(:,3),idiag_fradz)
         if (idiag_fconvz/=0) &
             call xysum_mn_name_z(p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
-        if (idiag_ssmz/=0)  call xysum_mn_name_z(p%ss,idiag_ssmz)
-        if (idiag_ssmy/=0)  call xzsum_mn_name_y(p%ss,idiag_ssmy)
         if (idiag_ssmx/=0)  call yzsum_mn_name_x(p%ss,idiag_ssmx)
+        if (idiag_ssmy/=0)  call xzsum_mn_name_y(p%ss,idiag_ssmy)
+        if (idiag_ssmz/=0)  call xysum_mn_name_z(p%ss,idiag_ssmz)
+        if (idiag_ppmx/=0)  call yzsum_mn_name_x(p%pp,idiag_ppmx)
+        if (idiag_ppmy/=0)  call xzsum_mn_name_y(p%pp,idiag_ppmy)
+        if (idiag_ppmz/=0)  call xysum_mn_name_z(p%pp,idiag_ppmz)
         if (idiag_TTmx/=0)  call yzsum_mn_name_x(p%TT,idiag_TTmx)
         if (idiag_TTmy/=0)  call xzsum_mn_name_y(p%TT,idiag_TTmy)
         if (idiag_TTmz/=0)  call xysum_mn_name_z(p%TT,idiag_TTmz)
@@ -3460,8 +3466,9 @@ module Entropy
         idiag_ugradpm=0; idiag_ethtot=0; idiag_dtchi=0; idiag_ssmphi=0
         idiag_fradbot=0; idiag_fradtop=0; idiag_TTtop=0
         idiag_yHmax=0; idiag_yHm=0; idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0
-        idiag_fconvm=0; idiag_fconvz=0; idiag_dcoolz=0; idiag_fradz=0; idiag_fturbz=0
-        idiag_ssmz=0; idiag_ssmy=0; idiag_ssmx=0; idiag_ssmr=0; idiag_TTmr=0
+        idiag_fconvm=0; idiag_fconvz=0; idiag_dcoolz=0; idiag_fradz=0
+        idiag_fturbz=0; idiag_ppmx=0; idiag_ppmy=0; idiag_ppmz=0
+        idiag_ssmx=0; idiag_ssmy=0; idiag_ssmz=0; idiag_ssmr=0; idiag_TTmr=0
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_TTmxy=0; idiag_TTmxz=0
         idiag_uxTTmz=0; idiag_uyTTmz=0; idiag_uzTTmz=0; idiag_cs2mphi=0
         idiag_ssmxy=0; idiag_ssmxz=0; idiag_fradz_Kprof=0; idiag_uxTTmxy=0
@@ -3500,6 +3507,7 @@ module Entropy
 !
       do inamex=1,nnamex
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'ssmx',idiag_ssmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'ppmx',idiag_ppmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'TTmx',idiag_TTmx)
       enddo
 !
@@ -3507,6 +3515,7 @@ module Entropy
 !
       do inamey=1,nnamey
         call parse_name(inamey,cnamey(inamey),cformy(inamey),'ssmy',idiag_ssmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'ppmy',idiag_TTmy)
         call parse_name(inamey,cnamey(inamey),cformy(inamey),'TTmy',idiag_TTmy)
       enddo
 !
@@ -3520,6 +3529,7 @@ module Entropy
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradz_Kprof',idiag_fradz_Kprof)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ssmz',idiag_ssmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'TTmz',idiag_TTmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ppmz',idiag_ppmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uxTTmz',idiag_uxTTmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uyTTmz',idiag_uyTTmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzTTmz',idiag_uzTTmz)
