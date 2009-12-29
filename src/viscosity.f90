@@ -925,10 +925,10 @@ module Viscosity
           endif
         endif
 !
-        if (lfirst.and.ldt) p%diffus_total=p%diffus_total+&
+        if (lfirst.and.ldt) p%diffus_total3=p%diffus_total3+&
              (nu_aniso_hyper3(1)*dx_1(l1:l2)**6 + &
               nu_aniso_hyper3(2)*dy_1(  m  )**6 + &
-              nu_aniso_hyper3(3)*dz_1(  n  )**6)/ dxyz_2
+              nu_aniso_hyper3(3)*dz_1(  n  )**6)/ dxyz_6
 !
       endif
 !
@@ -957,10 +957,10 @@ module Viscosity
 !
 ! diffusion time: it will be multiplied by dxyz_2 again further down
 !
-         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+&
+         if (lfirst.and.ldt) p%diffus_total3=p%diffus_total3+&
                  (nu_aniso_hyper3(1)*dx_1(l1:l2)**6 + &
                   nu_aniso_hyper3(2)*dy_1(  m  )**6 + &
-                  nu_aniso_hyper3(3)*dz_1(  n  )**6)/ dxyz_2
+                  nu_aniso_hyper3(3)*dz_1(  n  )**6)/ dxyz_6
 !
       endif
 !
