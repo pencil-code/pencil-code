@@ -325,7 +325,8 @@ module Testfield
 !
 !  calculate iE0
 !
-      select case(itestfield)
+      if (.not.lstarting) then
+        select case(itestfield)
         case('Beltrami'); iE0=1
         case('B11-B22_lin'); iE0=0
         case('B11-B21+B=0'); iE0=3
@@ -335,9 +336,10 @@ module Testfield
         case('B11'); iE0=1
         case('B12'); iE0=1
         case('B=0'); iE0=1
-      case default
-        call fatal_error('initialize_testfield','undefined itestfield value')
-      endselect
+        case default
+          call fatal_error('initialize_testfield','undefined itestfield value')
+        endselect
+      endif
 !
 !  set to zero and then rescale the testfield
 !  (in future, could call something like init_aa_simple)
@@ -409,7 +411,6 @@ module Testfield
         close(1)
       endif
 !
-      call keep_compiler_quiet(lstarting)
     endsubroutine initialize_testfield
 !***********************************************************************
     subroutine init_aatest(f)
