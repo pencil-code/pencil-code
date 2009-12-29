@@ -590,7 +590,7 @@ program run
 !
 !  Check for SNe, and update f if necessary (see interstellar.f90).
 !
-    if (linterstellar) call check_SN(f,df)
+    if (linterstellar) call check_SN(f)
 !
     if (lout.and.lroot.and.(idiag_walltime/=0 .or. max_walltime/=0.)) then
       time2=mpiwtime()

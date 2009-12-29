@@ -402,8 +402,6 @@ module Interstellar
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
-      logical, save :: first=.true.
-      logical :: exist
       real :: mu
 !
       f(:,:,:,icooling)=0.0
@@ -704,8 +702,6 @@ module Interstellar
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
-      integer :: inamev
-!
 !  Loop over slices
 !
       select case (trim(slices%name))
@@ -779,7 +775,6 @@ module Interstellar
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      real, dimension (mx,my,mz,mvar) :: df
       logical :: lnothing=.true.
       character (len=5) :: iinit_str
       integer :: i,j,iSNR
@@ -805,7 +800,7 @@ module Interstellar
           SNRs(iSNR)%t=t
           SNRs(iSNR)%radius=width_SN
           call position_SN_testposition(f,SNRs(iSNR))
-          call explode_SN(f,df,SNRs(iSNR))
+          call explode_SN(f,SNRs(iSNR))
           lSNI=.false.
           lSNII=.false.
         case('sedov')
@@ -818,7 +813,7 @@ module Interstellar
           center_SN_y=0.
           center_SN_z=0.
           call position_SN_testposition(f,SNRs(iSNR))
-          call explode_SN(f,df,SNRs(iSNR))
+          call explode_SN(f,SNRs(iSNR))
           lSNI=.false.
           lSNII=.false.
         case('courant-friedricks')
@@ -831,7 +826,7 @@ module Interstellar
           center_SN_y=0.
           center_SN_z=-0.015
           call position_SN_testposition(f,SNRs(iSNR))
-          call explode_SN(f,df,SNRs(iSNR))
+          call explode_SN(f,SNRs(iSNR))
           iSNR=get_free_SNR()
           SNRs(iSNR)%site%TT=1E20
           SNRs(iSNR)%site%rho=0.
@@ -841,7 +836,7 @@ module Interstellar
           center_SN_y=0.
           center_SN_z=0.015
           call position_SN_testposition(f,SNRs(iSNR))
-          call explode_SN(f,df,SNRs(iSNR))
+          call explode_SN(f,SNRs(iSNR))
           lSNI=.false.
           lSNII=.false.
         case('kompaneets')
@@ -855,7 +850,7 @@ module Interstellar
           center_SN_y=0.
           center_SN_z=0.
           call position_SN_testposition(f,SNRs(iSNR))
-          call explode_SN(f,df,SNRs(iSNR))
+          call explode_SN(f,SNRs(iSNR))
           lSNI=.false.
           lSNII=.false.
         case('multiple')
@@ -871,7 +866,7 @@ module Interstellar
             else
               call position_SN_gaussianz(f,h_SNII,SNRs(i))
             endif
-            call explode_SN(f,df,SNRs(i))
+            call explode_SN(f,SNRs(i))
           enddo
 
         case default
@@ -1190,13 +1185,12 @@ cool_loop: do i=1,ncool
       endif
     endsubroutine calc_heat
 !***********************************************************************
-    subroutine check_SN(f,df)
+    subroutine check_SN(f)
 !
 !  Checks for SNe, and implements appropriately:
 !   relevant subroutines in entropy.f90
 !
     real, dimension(mx,my,mz,mfarray) :: f
-    real, dimension(mx,my,mz,mvar) :: df
     logical :: l_SNI=.false.   !only allow SNII if no SNI this step
                                !(may not be worth keeping)
 !
@@ -1211,18 +1205,17 @@ cool_loop: do i=1,ncool
     if (t < t_settle) return
     call calc_snr_damping_factor(f)
     call tidy_SNRs
-    if (lSNI) call check_SNI (f,df,l_SNI)
-    if (lSNII) call check_SNII(f,df,l_SNI)
+    if (lSNI) call check_SNI (f,l_SNI)
+    if (lSNII) call check_SNII(f,l_SNI)
     call calc_snr_damping_add_heat(f)
 !
     endsubroutine check_SN
 !***********************************************************************
-    subroutine check_SNI(f,df,l_SNI)
+    subroutine check_SNI(f,l_SNI)
 !
 !  If time for next SNI, then implement, and calculate time of subsequent SNI
 !
     real, dimension(mx,my,mz,mfarray) :: f
-    real, dimension(mx,my,mz,mvar) :: df
     logical :: l_SNI
     integer :: try_count, iSNR, ierr
 !
@@ -1261,7 +1254,7 @@ cool_loop: do i=1,ncool
           cycle
         endif
 
-        call explode_SN(f,df,SNRs(iSNR),ierr)
+        call explode_SN(f,SNRs(iSNR),ierr)
         if (ierr==iEXPLOSION_OK) then
           call set_next_SNI
           l_SNI=.true.
@@ -1289,7 +1282,7 @@ cool_loop: do i=1,ncool
           if (lroot.and.ip<20) print*,'check_SNI: Next SNI at time = ',t_next_SNI
     endsubroutine set_next_SNI
 !***********************************************************************
-    subroutine check_SNII(f,df,l_SNI)
+    subroutine check_SNII(f,l_SNI)
 !
 !  Check for SNII, via self-regulating scheme.
 !
@@ -1298,8 +1291,7 @@ cool_loop: do i=1,ncool
     use EquationOfState, only: eoscalc
 !
     real, dimension(mx,my,mz,mfarray) :: f
-    real, dimension(mx,my,mz,mvar) :: df
-    real, dimension(nx) :: rho,rho_cloud,ss,lnTT,TT,yH
+    real, dimension(nx) :: rho,rho_cloud,lnTT,TT,yH
     real :: cloud_mass,cloud_mass_dim,freq_SNII,prob_SNII
     real, dimension(1) :: franSN,fsum1,fsum1_tmp,fmpi1
     real, dimension(ncpus) :: cloud_mass_byproc
@@ -1375,7 +1367,7 @@ cool_loop: do i=1,ncool
       SNRs(iSNR)%t=t
       SNRs(iSNR)%radius=width_SN
       SNRs(iSNR)%SN_type=2
-      call explode_SN(f,df,SNRs(iSNR))
+      call explode_SN(f,SNRs(iSNR))
       last_SN_t=0.
     endif
     !
@@ -1389,7 +1381,6 @@ cool_loop: do i=1,ncool
     type (SNRemnant), intent(inout) :: SNR
 
     real :: z00, x00, y00
-    real, dimension(3) :: fran3
     integer :: i
 !
     if (headtt) print*,'position_SN_testposition: ENTER'
@@ -1565,7 +1556,7 @@ cool_loop: do i=1,ncool
     real, dimension(0:ncpus) :: cum_prob_byproc
     real, dimension(1) :: franSN
     real :: cloud_mass,cum_mass,cum_prob_onproc
-    real, dimension(nx) :: lnrho,rho,ss,lnTT,TT,yH
+    real, dimension(nx) :: lnrho,rho,lnTT,TT,yH
     integer :: icpu,l,m,n
 !
 !
@@ -1800,7 +1791,7 @@ find_SN: do n=n1,n2
 !
     endsubroutine share_SN_parameters
 !***********************************************************************
-    subroutine explode_SN(f,df,SNR,ierr)
+    subroutine explode_SN(f,SNR,ierr)
       !
       !  Implement SN (of either type), at pre-calculated position
       !  (This can all be made more efficient, after debugging.)
@@ -1810,9 +1801,9 @@ find_SN: do n=n1,n2
       !
       use EquationOfState, only: ilnrho_ee, eoscalc, getdensity, eosperturb
       use Mpicomm, only: mpireduce_max, mpibcast_real, mpibcast_double, mpireduce_sum_double
+      use Sub, only: keep_compiler_quiet
 !
       real, intent(inout), dimension(mx,my,mz,mfarray) :: f
-      real, intent(inout), dimension(mx,my,mz,mvar) :: df
       type (SNRemnant), intent(inout) :: SNR
       integer, optional :: ierr
 
@@ -1827,11 +1818,9 @@ find_SN: do n=n1,n2
 !
       double precision, dimension(nx) :: deltarho, deltaEE
       double precision, dimension(nx,3) :: deltauu
-      real, dimension(1) :: fmpi1, fmpi1_tmp
       double precision, dimension(2) :: dmpi2, dmpi2_tmp
       real, dimension(nx) ::  lnrho, yH, lnTT, TT, rho_old, ee_old
       real, dimension(nx,3) :: uu
-      character (len=5) :: ch
       real :: maxlnTT
       real :: radiusA, radiusB
       integer :: i
@@ -2240,7 +2229,7 @@ find_SN: do n=n1,n2
       if (present(ierr)) then
         ierr=iEXPLOSION_OK
       endif
-
+!
     endsubroutine explode_SN
 !!***********************************************************************
 !    subroutine calc_interstellar_SNR_smooth(f)
@@ -2293,12 +2282,11 @@ find_SN: do n=n1,n2
       use Sub
 !
       real, intent(inout), dimension(mx,my,mz,mfarray) :: f
-      integer, dimension(3) :: worst
-      real, dimension(nx,3) :: r_vec, r_hat, uu
-      real, dimension(nx) :: uur, ttc
+      real, dimension(nx,3) :: r_vec, uu
+      real, dimension(nx) :: uur
       real, dimension(nx) :: r2, lnrho
       real :: radius2, fac, fac2
-      integer :: l=0, i, iSNR
+      integer :: i, iSNR
 !
       do i=1,nSNR
         iSNR=SNR_index(i)
@@ -2487,7 +2475,6 @@ find_SN: do n=n1,n2
       type (SNRemnant) :: remnant
       double precision :: radius2
       double precision :: rhom, ekintot
-      integer :: point_count
       real, dimension(nx) :: rho, u2
       integer, dimension(nx) :: mask
       double precision, dimension(3) :: tmp,tmp2
@@ -2578,7 +2565,6 @@ find_SN: do n=n1,n2
       double precision,dimension(nx) :: dx_SN, dr_SN
       double precision :: dy_SN
       double precision :: dz_SN
-      integer :: j
 !
 !  Obtain distance to SN
 !
@@ -2625,10 +2611,9 @@ find_SN: do n=n1,n2
 !
       type (SNRemnant), intent(in) :: SNR
       real,dimension(mx), intent(out) :: dr2_SN_mx
-      real,dimension(mx) :: dx_SN, dr_SN
+      real,dimension(mx) :: dx_SN
       real :: dy_SN
       real :: dz_SN
-      integer :: j
 !
 !  Obtain distance to SN
 !
@@ -2934,7 +2919,6 @@ find_SN: do n=n1,n2
 !***********************************************************************
     subroutine free_SNR(iSNR)
 !
-      integer :: get_free_SNR
       integer :: i,iSNR
 !
       if (SNRs(iSNR)%state==SNstate_invalid) then
