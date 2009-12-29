@@ -1114,13 +1114,13 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: mu1
-      integer :: k,j,i,j1,j2,j3, l_sz, l_sz_1
+      integer :: k,j,i,j1,j2,j3
 
       real :: mO2, mH2, mN2, mH2O
-      real :: log_inlet_density, del
+      real :: log_inlet_density
       integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
       real :: initial_mu1, final_massfrac_O2
-      logical :: found_specie, lzero=.false.
+      logical :: found_specie
 
       real :: Rad, sz1,sz2
  
@@ -1271,12 +1271,10 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) ::  tmp_sum,tmp_sum2, nuk_nuj, nu_dyn, Phi
-   !   real, dimension (mx,my,mz,nchemspec,nchemspec) :: Phi
-      real, dimension (mx,my,mz,nchemspec) :: species_cond
+!     real, dimension (mx,my,mz,nchemspec,nchemspec) :: Phi
 !
       intent(in) :: f
       integer :: k,i,j, j1,j2,j3
-      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
       real :: T_up, T_mid, T_low, T_loc, tmp
       real :: mk_mj
 !
@@ -1284,7 +1282,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       logical,save :: lwrite=.true.
 !
       character (len=20) :: output_file="./data/mix_quant.out"
-      integer :: file_id=123,lmid
+      integer :: file_id=123
 !
 ! Density and temperature
 !
@@ -1772,7 +1770,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       real, dimension (mx,my,mz,mfarray) :: f
       real :: dummy
       logical :: exist,exist1,exist2
-      integer :: i,j,k,stat,reac,spec
+      integer :: i,j,k,stat
       integer :: nchemspectemp
       character :: tmpchar
       logical :: inside
@@ -2098,7 +2096,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: gchemspec, dk_D
-      real, dimension (nx) :: ugchemspec, sum_DYDT, sum_hk_DYDt_diff!,ghYrho_uu=0.
+      real, dimension (nx) :: ugchemspec, sum_DYDT!,sum_hk_DYDt_diff,ghYrho_uu=0.
       real, dimension (nx) :: sum_dk_ghk,dk_dhhk,sum_hhk_DYDt_reac
       type (pencil_case) :: p
 !
@@ -2110,9 +2108,9 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       intent(in) :: f,p
       intent(inout) :: df
 !
-      real,dimension(nchemspec) :: reac_rate=0.
+      !      real,dimension(nchemspec) :: reac_rate=0.
 !
-      real,dimension(nx) :: sum_reac_rate
+!      real,dimension(nx) :: sum_reac_rate
 !
 !  identify module and boundary conditions
 !
@@ -2444,7 +2442,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       integer :: iname,inamez
       logical :: lreset,lwr
       logical, optional :: lwrite
-      character (len=5) :: schem,schemspec,snd1,smd1,smi1
+      character (len=5) :: schemspec,snd1
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
@@ -2972,14 +2970,14 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
       use Mpicomm
 !
-      logical :: IsReaction=.false.,LastSpecie,found_new_reaction=.false.
+      logical :: IsReaction=.false.,found_new_reaction=.false.
       logical, save :: find_specie, found_specie
       integer, optional :: NrOfReactions
       integer, save :: ind_glob, ind_chem
       integer :: i,k,file_id=123, StartInd, StopInd, StartInd_add
       integer :: StopInd_add, StopInd_add_,StopIndName
       integer :: VarNumber, VarNumber_add, SeparatorInd
-      integer :: StartSpecie,stoi, PlusInd
+      integer :: PlusInd
       integer :: LastLeftCharacter,ParanthesisInd,Mplussind
       character (len=80) :: ChemInpLine, ChemInpLine_add
       character (len=*) :: input_file
@@ -3465,16 +3463,14 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       real, dimension (nx) :: kf=0., kr=0.
       real, dimension (nx) :: rho_cgs,p_atm
       real :: Rcal
-      integer :: k , reac, j, i, v, t
+      integer :: k , reac, j, i
       real  :: sum_tmp=0., T_low, T_mid, T_up, tmp, ddd
       logical,save :: lwrite=.true.
       character (len=20) :: input_file="./data/react.out"
       integer :: file_id=123
       real :: B_n_0,alpha_n_0,E_an_0
-      real, dimension (nx) :: kf_0,Kc_0,Pr,sum_sp,prod1_0,prod2_0
+      real, dimension (nx) :: kf_0,Kc_0,Pr,sum_sp
       real, dimension (nx) :: Fcent, ccc, nnn, lnPr, FF,tmpF
-      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
-
 !
       if (lwrite)  open(file_id,file=input_file)
 !
@@ -3787,8 +3783,8 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
       use Mpicomm
 !
-      logical :: IsSpecie=.false., emptyfile
-      logical ::  found_specie
+      logical :: emptyfile
+      logical :: found_specie
       integer :: file_id=123, ind_glob, ind_chem
       character (len=80) :: ChemInpLine
       character (len=10) :: specie_string
@@ -3932,7 +3928,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       integer :: k,j,j1,j2,j3
       real :: eps_jk, sigma_jk, m_jk, delta_jk, delta_st
       character (len=7) :: omega
-      real :: Na=6.022E23 ,tmp_local,tmp_local2, lnTk, delta_jk_star
+      real :: Na=6.022E23 ,tmp_local,tmp_local2, delta_jk_star
 
 
 !
@@ -4196,7 +4192,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (mx,my,mz) :: Xk_Yk
       real, dimension (nx,3) :: gDiff_full_add, gchemspec, gXk_Yk
@@ -4413,13 +4408,13 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: sum_Y
 !
-      logical :: IsSpecie=.false., emptyfile=.true.
-      logical ::  found_specie
+      logical :: emptyfile=.true.
+      logical :: found_specie
       integer :: file_id=123, ind_glob, ind_chem
       character (len=80) :: ChemInpLine
       character (len=10) :: specie_string
       character (len=1)  :: tmp_string
-      integer :: VarNumber,i,j,k=1
+      integer :: i,j,k=1
       real :: YY_k, air_mass, TT=300., PP=1.013e6 ! (in dynes = 1atm)
       real, dimension(nchemspec)    :: stor2
       integer, dimension(nchemspec) :: stor1
