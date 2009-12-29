@@ -2366,7 +2366,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
 !
-      if (l1ddiagnos) then
+      if (l1davgfirst) then
         if (idiag_Y1mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i1)),idiag_Y1mz)
         if (idiag_Y2mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i2)),idiag_Y2mz)
         if (idiag_Y3mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i3)),idiag_Y3mz)

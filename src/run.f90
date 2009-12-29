@@ -376,8 +376,8 @@ program run
 !  Do loop in time.
 !
   Time_loop: do while (it<=nt)
-    lout=mod(it-1,it1).eq.0
-    l1dout=mod(it-1,it1d).eq.0
+    lout  =mod(it-1,it1) .eq.0
+    l1davg=mod(it-1,it1d).eq.0
     if (lout .or. emergency_stop) then
 !
 !  Exit do loop if file `STOP' exists.
@@ -558,7 +558,7 @@ program run
 !  Print diagnostic averages to screen and file.
 !
     if (lout)   call prints()
-    if (lout)   call write_1daverages()
+    if (l1davg) call write_1daverages()
     if (l2davg) call write_2daverages()
 !
 !  Ensure better load balancing of particles by giving equal number of

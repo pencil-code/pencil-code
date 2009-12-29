@@ -95,17 +95,17 @@ module Equ
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
 !
       ldiagnos   =lfirst.and.lout
-      l1ddiagnos =lfirst.and.l1dout
+      l1davgfirst=lfirst.and.l1davg
       l2davgfirst=lfirst.and.l2davg
 !
 !  Derived diagnostics switches.
 !
-      l1dphiavg=lcylinder_in_a_box.and.l1ddiagnos
+      l1dphiavg=lcylinder_in_a_box.and.l1davgfirst
 !
 !  Record times for diagnostic and 2d average output.
 !
       if (ldiagnos)    tdiagnos=t    ! (diagnostics are for THIS time)
-      if (l1ddiagnos)  t1ddiagnos=t  ! (1-D averages are for THIS time)
+      if (l1davgfirst) t1ddiagnos=t  ! (1-D averages are for THIS time)
       if (l2davgfirst) t2davgfirst=t ! (2-D averages are for THIS time)
 !
 !  Grid spacing. For non equidistant grid or non-cartesian coordinates 
@@ -997,7 +997,7 @@ module Equ
 !
 !  1-D diagnostics.
 !
-      if (l1ddiagnos) then
+      if (l1davgfirst) then
         call xyaverages_z
         call xzaverages_y
         call yzaverages_x

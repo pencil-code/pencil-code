@@ -358,7 +358,7 @@ module Pscalar
         if (idiag_ccglnrm/=0) call sum_mn_name(p%cc*p%glnrho(:,3),idiag_ccglnrm)
       endif
 !
-      if (l1ddiagnos) then
+      if (l1davgfirst) then
          if (idiag_lnccmz/=0) call xysum_mn_name_z(p%lncc,idiag_lnccmz)
          if (idiag_lnccmy/=0) call xzsum_mn_name_y(p%lncc,idiag_lnccmy)
          if (idiag_lnccmx/=0) call yzsum_mn_name_x(p%lncc,idiag_lnccmx)

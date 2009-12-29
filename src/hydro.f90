@@ -1847,7 +1847,7 @@ module Hydro
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
 !
-      if (l1ddiagnos) then
+      if (l1davgfirst) then
         if (idiag_fmassz/=0) call xysum_mn_name_z(p%rho*p%uu(:,3),idiag_fmassz)
         if (idiag_fkinz/=0)  call xysum_mn_name_z(.5*p%rho*p%u2*p%uu(:,3),idiag_fkinz)
         if (idiag_uxmz/=0)   call xysum_mn_name_z(p%uu(:,1),idiag_uxmz)

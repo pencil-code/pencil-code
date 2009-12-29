@@ -2696,7 +2696,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
 !
-      if (l1ddiagnos) then
+      if (l1davgfirst) then
         if (idiag_npmx/=0)    call yzsum_mn_name_x(p%np,idiag_npmx)
         if (idiag_npmy/=0)    call xzsum_mn_name_y(p%np,idiag_npmy)
         if (idiag_npmz/=0)    call xysum_mn_name_z(p%np,idiag_npmz)

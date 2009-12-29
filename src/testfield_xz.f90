@@ -341,7 +341,7 @@ module Testfield
 !
 !  calculate alpha, begin by calculating uxbtest (if not already done above)
 !
-        if ((ldiagnos.or.l1ddiagnos).and.lsoca) then
+        if ((ldiagnos.or.l1davgfirst).and.lsoca) then
           call curl(f,iaxtest,btest)
           call cross_mn(p%uu,btest,uxbtest)
         endif

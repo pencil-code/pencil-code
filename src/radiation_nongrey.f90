@@ -1430,7 +1430,7 @@ module Radiation
         endif
       endif
 !      
-      if (l1ddiagnos) then
+      if (l1davgfirst) then
         if (idiag_xyFradzm/=0) then
            call xysum_mn_name_z(f(l1:l2,m,n,iFradz),idiag_xyFradzm)
         endif

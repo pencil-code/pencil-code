@@ -238,7 +238,7 @@ module Lorenz_gauge
 !
       endif
 !
-      if (l1ddiagnos .or. (ldiagnos .and. ldiagnos_need_zaverages)) then
+      if (l1davgfirst .or. (ldiagnos .and. ldiagnos_need_zaverages)) then
         if (idiag_phibzmz/=0)   call xysum_mn_name_z(p%bb(:,3),idiag_phibzmz)
       endif
 !

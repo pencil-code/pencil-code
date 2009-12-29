@@ -2758,7 +2758,7 @@ module Magnetic
 !                                                                               
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1.
 !             
-      if (l1ddiagnos .or. (ldiagnos .and. ldiagnos_need_zaverages)) then
+      if (l1davgfirst .or. (ldiagnos .and. ldiagnos_need_zaverages)) then
         if (idiag_bxmx/=0)   call yzsum_mn_name_x(p%bb(:,1),idiag_bxmx)
         if (idiag_bymx/=0)   call yzsum_mn_name_x(p%bb(:,2),idiag_bymx)
         if (idiag_bzmx/=0)   call yzsum_mn_name_x(p%bb(:,3),idiag_bzmx)

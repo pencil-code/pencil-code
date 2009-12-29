@@ -635,7 +635,7 @@ module NeutralVelocity
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
 !
-      if (l1ddiagnos) then
+      if (l1davgfirst) then
         if (idiag_unxmz/=0)   call xysum_mn_name_z(p%uun(:,1),idiag_unxmz)
         if (idiag_unymz/=0)   call xysum_mn_name_z(p%uun(:,2),idiag_unymz)
         if (idiag_unzmz/=0)   call xysum_mn_name_z(p%uun(:,3),idiag_unzmz)

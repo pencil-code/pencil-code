@@ -563,7 +563,7 @@ module Particles
         if (idiag_epsmin/=0) call max_mn_name(-p%epsp,idiag_epsmin,lneg=.true.)
       endif
 !
-      if (l1ddiagnos) then
+      if (l1davgfirst) then
         if (idiag_npmx/=0)   call yzsum_mn_name_x(p%np,idiag_npmx)
         if (idiag_rhopmx/=0) call yzsum_mn_name_x(p%rhop,idiag_rhopmx)
         if (idiag_epspmx/=0) call yzsum_mn_name_x(p%epsp,idiag_epspmx)

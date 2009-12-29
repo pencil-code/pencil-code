@@ -1135,7 +1135,7 @@ module Dustdensity
             endif
           endif
 !
-          if (l1ddiagnos.and.idiag_rhodmz(k)/=0) then
+          if (l1davgfirst.and.idiag_rhodmz(k)/=0) then
             if (lmdvar) then
               call xysum_mn_name_z(p%nd(:,k)*f(l1:l2,m,n,imd(k)),idiag_rhodmz(k))
             else
@@ -1143,7 +1143,7 @@ module Dustdensity
             endif
           endif
 !
-          if (l1ddiagnos.and.idiag_ndmx(k)/=0) then
+          if (l1davgfirst.and.idiag_ndmx(k)/=0) then
             if (lmdvar) then
               call yzsum_mn_name_x(p%nd(:,k)*f(l1:l2,m,n,imd(k)),idiag_ndmx(k))
             else

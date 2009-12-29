@@ -285,7 +285,7 @@ module Cdata
   logical :: lfirst=.false.,llast=.false.,ldt_paronly=.false.
   logical :: ldiagnos=.false.,lvideo=.false.,lwrite_prof=.true.
   logical :: l2davg=.false.,l2davgfirst=.false.
-  logical :: l1ddiagnos=.false.,l1dout=.false.,l1dphiavg=.false.
+  logical :: l1davg=.false.,l1davgfirst=.false.,l1dphiavg=.false.
   logical :: lwrite_phizaverages=.true.
   logical :: lwrite_yaverages=.true.,lwrite_zaverages=.true.,lwrite_phiaverages=.true.
   logical :: ldiagnos_need_zaverages=.false.

@@ -815,7 +815,7 @@ module NeutralDensity
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
 !
-      if (l1ddiagnos) then
+      if (l1davgfirst) then
          if (idiag_rhonmr/=0)    call phizsum_mn_name_r(p%rhon,idiag_rhonmr)
          if (idiag_rhonmz/=0)    call xysum_mn_name_z(p%rhon,idiag_rhonmz)
          if (idiag_rhonmx/=0)    call yzsum_mn_name_x(p%rhon,idiag_rhonmx)

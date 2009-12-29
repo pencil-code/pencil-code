@@ -1881,7 +1881,7 @@ module Entropy
               lpenc_requested(i_r_mn)=.true.
             endif
           endif
-          if (l1ddiagnos) then
+          if (l1davgfirst) then
              lpenc_requested(i_TT)=.true.
              lpenc_requested(i_gss)=.true.
              lpenc_requested(i_rho)=.true.
@@ -2313,7 +2313,7 @@ module Entropy
 !
 !  1-D averages.
 !
-      if (l1ddiagnos) then
+      if (l1davgfirst) then
         if (idiag_fradz/=0) call xysum_mn_name_z(-hcond0*p%TT*p%glnTT(:,3),idiag_fradz)
         if (idiag_fconvz/=0) &
             call xysum_mn_name_z(p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
@@ -3007,7 +3007,7 @@ module Entropy
 !
 !  Write radiative flux array
 !
-      if (l1ddiagnos) then
+      if (l1davgfirst) then
         if (idiag_fradz_Kprof/=0) call xysum_mn_name_z(-hcond*p%TT*p%glnTT(:,3),idiag_fradz_Kprof)
         if (idiag_fturbz/=0) call xysum_mn_name_z(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
       endif
@@ -3160,7 +3160,7 @@ module Entropy
 !
 !  Write divergence of cooling flux.
 !
-        if (l1ddiagnos) then
+        if (l1davgfirst) then
           if (idiag_dcoolz/=0) call xysum_mn_name_z(heat,idiag_dcoolz)
         endif
       endif

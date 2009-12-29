@@ -782,7 +782,7 @@ module Testfield
 !
 !  calculate alpha, begin by calculating uxbtest (if not already done above)
 !
-        if ((ldiagnos.or.l1ddiagnos).and. &
+        if ((ldiagnos.or.l1davgfirst).and. &
           (lsoca.or.ltest_uxb.or.idiag_b0rms/=0.or. &
            idiag_b11rms/=0.or.idiag_b21rms/=0.or. &
            idiag_b12rms/=0.or.idiag_b22rms/=0.or. &

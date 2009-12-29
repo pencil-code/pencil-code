@@ -352,7 +352,7 @@ module Testfield
 !
 !  calculate alpha, begin by calculating uxbtest (if not already done above)
 !
-          if ((ldiagnos.or.l1ddiagnos).and.lsoca) then
+          if ((ldiagnos.or.l1davgfirst).and.lsoca) then
               call curl(f,iaxtest,btest)
               call cross_mn(p%uu,btest,uxbtest)
            endif
@@ -423,7 +423,7 @@ module Testfield
 !
 !  in the following block, we have already swapped the 4-6 entries with 7-9
 !
-          if (l1ddiagnos) then
+          if (l1davgfirst) then
             select case(jtest)
             case(1)
               if (idiag_alp11z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_alp11z)

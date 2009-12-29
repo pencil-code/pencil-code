@@ -559,7 +559,7 @@ module Testscalar
 !
 !  calculate kappa, begin by calculating uctest (not ugtest!)
 !
-        if (ldiagnos.or.l1ddiagnos) then
+        if (ldiagnos.or.l1davgfirst) then
           cctest=f(l1:l2,m,n,jcctest)
           do j=1,3
             uctest(:,j)=p%uu(:,j)*cctest

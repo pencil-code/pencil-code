@@ -1114,7 +1114,7 @@ module Dustvelocity
 !
 !  xy-averages
 !
-      if (l1ddiagnos) then
+      if (l1davgfirst) then
         do k=1,ndustspec
           if (idiag_udxmz(k)/=0) &
               call xysum_mn_name_z(p%uud(:,1,k),idiag_udxmz(k))
