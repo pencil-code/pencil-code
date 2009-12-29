@@ -3671,6 +3671,11 @@ module Boundcond
       if (iostat>0) call fatal_error('bc_force_aa_time', &
           'Could not allocate memory for all variable, please check')
 !
+      inquire (file='driver/mag_z.dat',exist=ex)
+      if (.not. ex) call fatal_error('bc_force_aa_time','File does not exists: mag_z.dat')
+      inquire (file='driver/time',exist=ex)
+      if (.not. ex) call fatal_error('bc_force_aa_time','File does not exists: time')
+!
       time_SI = t*unit_time
 !
       idx2 = min(2,nxgrid)
@@ -3686,13 +3691,6 @@ module Boundcond
       if (tr+delta_t.le.time_SI) then 
         !
         inquire(IOLENGTH=lend) tl
-        inquire (file='driver/time',exist=ex)
-        if (ex) then
-          open (10,file='driver/time',form='unformatted',status='unknown', &
-              recl=lend,access='direct')
-        else
-          print*,'File does not exists'
-        endif
         open (10,file='driver/time',form='unformatted',status='unknown', &
             recl=lend,access='direct')
         !
@@ -3701,31 +3699,26 @@ module Boundcond
         i=0
         do while (iostat == 0)
           i=i+1
-          read (10,rec=i,iostat=iostat) tr
-          if (iostat /= 0) then
+          read (10,rec=i,iostat=iostat) tl
+          read (10,rec=i+1,iostat=iostat) tr
+          if (iostat /= 0) then            
             delta_t = time_SI                  ! EOF is reached => read again
-            read (10,rec=i+1,iostat=iostat) tl
+            i=1
+            read (10,rec=i,iostat=iostat) tl
+            read (10,rec=i+1,iostat=iostat) tr
             iostat=-1
           else
-            if (tr+delta_t.gt.time_SI)  then 
-              iostat=-1 ! correct time step is reached
-            else
-              tl = tr
-            endif
+            if (tl+delta_t .lt. time_SI .and. tr+delta_t.gt.time_SI ) iostat=-1 ! correct time step is reached
           endif
         enddo
         close (10)
         
-        inquire (file='driver/mag_z.dat',exist=ex)
-        if (ex) then 
-          open (10,file='driver/mag_z.dat',form='unformatted',status='unknown', &
-              recl=lend*nxgrid*nygrid,access='direct')
-          read(10,rec=i,iostat=iostat) Bz0l
-          read(10,rec=i+1,iostat=iostat) Bz0r
-          close (10)
-        else
-          print*,'Warning file does not exit: driver/mag_z.dat'
-        endif
+        open (10,file='driver/mag_z.dat',form='unformatted',status='unknown', &
+            recl=lend*nxgrid*nygrid,access='direct')
+        read(10,rec=i,iostat=iostat) Bz0l
+        read(10,rec=i+1,iostat=iostat) Bz0r
+        close (10)
+!
         mu0_SI = 4.*pi*1.e-7
         u_b = unit_velocity*sqrt(mu0_SI/mu0*unit_density)
 !
