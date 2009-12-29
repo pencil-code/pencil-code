@@ -725,7 +725,15 @@ module Testfield
            idiag_M12cs/=0.or. &
            idiag_M11/=0.or.idiag_M22/=0.or.idiag_M33/=0.or. &
            idiag_M11z/=0.or.idiag_M22z/=0.or.idiag_M33z/=0)) then
+!
+!  uutest and bbtest were only needed for the non-SOCA parts that
+!  are calculated elsewhere. Therefore, for diagnostics, we need
+!  to recalculate them here.
+!
+          uutest=f(l1:l2,m,n,iuxtest:iuztest)
           aatest=f(l1:l2,m,n,iaxtest:iaztest)
+          call gij(f,iaxtest,aijtest,1)
+          call curl_mn(aijtest,bbtest,aatest)
 !
 !  Settings for quadratic quantities (magnetic stress)
 !
@@ -1131,14 +1139,14 @@ module Testfield
         call calc_pencils_hydro(f,p)
         call calc_pencils_magnetic(f,p)
 !
-!  Count jtest backwards, so we have access to the reference fields.
+!  Count jtest backward, so we have access to the reference fields.
 !
         do jtest=njtest,1,-1
 !
 !  initialize counter for mean fields
 !
-          uxbtestm(n,:,jtest)=0.
-          jxbtestm(n,:,jtest)=0.
+          uxbtestm(:,:,jtest)=0.
+          jxbtestm(:,:,jtest)=0.
 !
 !  Compute test fields aatest, bbtest, jjtest, and uutest,
 !  and set bbref, jjref, uuref if jtest=iE0 (first point in loop)
@@ -1159,7 +1167,7 @@ module Testfield
 !  Also compute u0 x b0 and j0 x b0, and put into corresponding array.
 !  They continue to exist throughout the jtest loop.
 !
-          if (iE0/=0) then
+          if (jtest==iE0) then
             u0ref=uutest
             b0ref=bbtest
             j0ref=jjtest
