@@ -192,14 +192,13 @@ module Interstellar
 !
     endsubroutine calc_heat_cool_interstellar
 !***********************************************************************
-    subroutine check_SN(f,df)
+    subroutine check_SN(f)
 !
 !  dummy routine for checking for SNe (interstellar)
 !
     real, dimension(mx,my,mz,mfarray) :: f
-    real, dimension(mx,my,mz,mvar) :: df
 !
-    call keep_compiler_quiet(f,df)
+    call keep_compiler_quiet(f)
 !
     endsubroutine check_SN
 !***********************************************************************
