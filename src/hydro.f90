@@ -194,6 +194,9 @@ module Hydro
   integer :: idiag_ux2mx=0      ! DIAG_DOC: $\left<u_x^2\right>_{yz}$
   integer :: idiag_uy2mx=0      ! DIAG_DOC: $\left<u_y^2\right>_{yz}$
   integer :: idiag_uz2mx=0      ! DIAG_DOC: $\left<u_z^2\right>_{yz}$
+  integer :: idiag_ox2mx=0      ! DIAG_DOC: $\left<\omega_x^2\right>_{yz}$
+  integer :: idiag_oy2mx=0      ! DIAG_DOC: $\left<\omega_y^2\right>_{yz}$
+  integer :: idiag_oz2mx=0      ! DIAG_DOC: $\left<\omega_z^2\right>_{yz}$
   integer :: idiag_uxuycsm=0    ! DIAG_DOC: $\left<u_xu_y\cos kz\sin kz\right>$
   integer :: idiag_ux2my=0      ! DIAG_DOC: 
   integer :: idiag_uy2my=0      ! DIAG_DOC: 
@@ -1871,6 +1874,9 @@ module Hydro
         if (idiag_ux2mx/=0)  call yzsum_mn_name_x(p%uu(:,1)**2,idiag_ux2mx)
         if (idiag_uy2mx/=0)  call yzsum_mn_name_x(p%uu(:,2)**2,idiag_uy2mx)
         if (idiag_uz2mx/=0)  call yzsum_mn_name_x(p%uu(:,3)**2,idiag_uz2mx)
+        if (idiag_ox2mx/=0)  call yzsum_mn_name_x(p%oo(:,1)**2,idiag_ox2mx)
+        if (idiag_oy2mx/=0)  call yzsum_mn_name_x(p%oo(:,2)**2,idiag_oy2mx)
+        if (idiag_oz2mx/=0)  call yzsum_mn_name_x(p%oo(:,3)**2,idiag_oz2mx)
         if (idiag_uxuymz/=0) &
             call xysum_mn_name_z(p%uu(:,1)*p%uu(:,2),idiag_uxuymz)
         if (idiag_uxuzmz/=0) &
@@ -3070,6 +3076,9 @@ module Hydro
         idiag_ux2mx=0
         idiag_uy2mx=0
         idiag_uz2mx=0
+        idiag_ox2mx=0
+        idiag_oy2mx=0
+        idiag_oz2mx=0
         idiag_ux2my=0
         idiag_uy2my=0
         idiag_uz2my=0
@@ -3382,6 +3391,12 @@ module Hydro
             'uy2mx',idiag_uy2mx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex), &
             'uz2mx',idiag_uz2mx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
+            'ox2mx',idiag_ox2mx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
+            'oy2mx',idiag_oy2mx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
+            'oz2mx',idiag_oz2mx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex), &
             'uxuymx',idiag_uxuymx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex), &
