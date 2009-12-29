@@ -64,6 +64,7 @@ module Chemistry
 
   logical :: BinDif_simple=.false.
   logical :: visc_simple=.false.
+  logical :: lT_const=.false.
 
   logical :: lfilter=.false.
   logical :: lkreactions_profile=.false.
@@ -122,7 +123,7 @@ module Chemistry
       lambda_const, visc_const,Cp_const,Cv_const,diffus_const,init_x1,init_x2, & 
       init_y1,init_y2,init_z1,init_z2,&
       init_TT1,init_TT2,init_ux,init_uy,init_uz,l1step_test,Sc_number,init_pressure,lfix_Sc, str_thick, &
-      lfix_Pr,lT_tanh,ldamp_zone_NSCBC
+      lfix_Pr,lT_tanh,ldamp_zone_NSCBC, lT_const
 
 
 ! run parameters
@@ -1300,7 +1301,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
      else
          TT_full=exp(f(:,:,:,ilnTT))
      endif
-     ! TT_full=exp(f(:,:,:,ilnTT))
 !
 ! Now this routine is only for chemkin data !!!
 !
@@ -1342,9 +1342,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
             enddo
            enddo
           enddo
-!do k=1,nchemspec
-!print*,'XX_full', XX_full(l1,m1,n1,k)
-!enddo
 
 !
 ! NILS: Is this really necesarry?
@@ -1358,14 +1355,25 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
            enddo
         !  endif
 
-!print*,'pp',maxval(pp_full(l1:l2,m1:m2,n1:n2)),minval(pp_full(l1:l2,m1:m2,n1:n2))
-!print*,'tt',maxval(TT_full(l1:l2,m1:m2,n1:n2)),minval(TT_full(l1:l2,m1:m2,n1:n2))
-
 !
 !  Specific heat at constant pressure
 !
+
+        if ((Cp_const<impossible) .or. (Cv_const<impossible)) then
+
+          if (Cp_const<impossible) then
+            cp_full=Cp_const*mu1_full
+            cv_full=(Cp_const-Rgas)*mu1_full
+          endif
+
+          if (Cv_const<impossible) then
+            cv_full=Cv_const*mu1_full
+          endif
+
+         else
           cp_full=0.
           cv_full=0.
+
           do k=1,nchemspec
             T_low=species_constants(k,iTemp1)
             T_mid=species_constants(k,iTemp2)
@@ -1415,30 +1423,18 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
                     call fatal_error('calc_for_chem_mixture',&
                         'TT_full(j1,j2,j3) is outside range')
                   endif
-
-
                  cp_full(j1,j2,j3)=cp_full(j1,j2,j3)+f(j1,j2,j3,ichemspec(k))  &
                   *cp_R_spec(j1,j2,j3,k)/species_constants(k,imass)*Rgas
                  cv_full(j1,j2,j3)=cv_full(j1,j2,j3)+f(j1,j2,j3,ichemspec(k))  &
                   *cv_R_spec_full(j1,j2,j3,k)/species_constants(k,imass)*Rgas
-
-
                 enddo
               enddo
             enddo
 !
           enddo
+        endif
 
-
-          if (Cp_const<impossible) then
-            Cp_full=Cp_const
-            Cv_full=Cp_const-Rgas
-          endif
-
-
-          if (Cv_const<impossible) then
-            Cv_full=Cv_const
-          endif
+         
 !
 !  Binary diffusion coefficients
 !
@@ -1452,6 +1448,11 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
 !  Viscosity of a mixture
 !
+
+       
+       if (visc_const<impossible) then
+                nu_full=visc_const
+       else
 
         do j3=nn1,nn2
         do j2=mm1,mm2
@@ -1470,20 +1471,17 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
             nu_dyn(j1,j2,j3)=0.
             do k=1,nchemspec
               tmp_sum2(j1,j2,j3)=0.
-              do j=1,k
-                mk_mj=species_constants(k,imass) &
-                    /species_constants(j,imass)
-                nuk_nuj(j1,j2,j3)=species_viscosity(j1,j2,j3,k) &
-                    /species_viscosity(j1,j2,j3,j)
-                Phi(j1,j2,j3)=1./sqrt(8.)*1./sqrt(1.+mk_mj) &
-                    *(1.+sqrt(nuk_nuj(j1,j2,j3))*mk_mj**(-0.25))**2
-                tmp_sum2(j1,j2,j3)=tmp_sum2(j1,j2,j3) &
-                                  +XX_full(j1,j2,j3,j)*Phi(j1,j2,j3)
+            !  do j=1,k
+            !    mk_mj=species_constants(k,imass) &
+            !        /species_constants(j,imass)
+            !    nuk_nuj(j1,j2,j3)=species_viscosity(j1,j2,j3,k) &
+            !        /species_viscosity(j1,j2,j3,j)
+            !    Phi(j1,j2,j3)=1./sqrt(8.)*1./sqrt(1.+mk_mj) &
+            !        *(1.+sqrt(nuk_nuj(j1,j2,j3))*mk_mj**(-0.25))**2
+            !    tmp_sum2(j1,j2,j3)=tmp_sum2(j1,j2,j3) &
+            !                      +XX_full(j1,j2,j3,j)*Phi(j1,j2,j3)
 
-!if (j1==l1) then
-!if ((Phi(j1,j2,j3))>1.) print*,(Phi(j1,j2,j3))
-!endif
-              enddo
+            !  enddo
               nu_dyn(j1,j2,j3)=nu_dyn(j1,j2,j3)+XX_full(j1,j2,j3,k)*&
                   species_viscosity(j1,j2,j3,k)!/tmp_sum2(j1,j2,j3)
              enddo
@@ -1494,13 +1492,8 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
         enddo
         enddo
         enddo
+       endif
 
-
-
-
-          if (visc_const<impossible) then
-                nu_full=visc_const
-          endif
 !
 !  Diffusion coeffisient of a mixture
 !
@@ -1508,6 +1501,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
          do j2=mm1,mm2
          do j1=1,mx
 
+            Diff_full(j1,j2,j3,:)=0.
             if (.not. lone_spec) then
 
              if (diffus_const<impossible) then
@@ -1517,7 +1511,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
                Diff_full(j1,j2,j3,k)=species_viscosity(j1,j2,j3,k) &
                                     /rho_full(j1,j2,j3)/Sc_number
               enddo
-             else
+             elseif (ldiffusion) then
 !
 ! The mixture diffusion coefficient as described in eq. 5-45 of the Chemkin
 ! manual. Previously eq. 5-44 was used, but due to problems in the limit
@@ -1538,24 +1532,28 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
                  Diff_full(j1,j2,j3,k)=mu1_full(j1,j2,j3)*tmp_sum2(j1,j2,j3)&
                      /tmp_sum(j1,j2,j3)
               enddo
-             endif
+             
+            endif
             endif
 
-            do k=1,nchemspec
+             do k=1,nchemspec
               Diff_full_add(j1,j2,j3,k)=Diff_full(j1,j2,j3,k)*&
                   species_constants(k,imass)/unit_mass &
                   *mu1_full(j1,j2,j3)!*0.8
-            enddo
+             enddo
+           
          enddo
          enddo
          enddo
 !
 !  Thermal diffusivity
 !
-         call calc_therm_diffus_coef(f)
+        if (lheatc_chemistry) call calc_therm_diffus_coef(f)
 !
 !  Dimensionless Standard-state molar enthalpy H0/RT
 !
+
+         if (.not. lT_const) then
           do k=1,nchemspec
             T_low=species_constants(k,iTemp1)
             T_mid=species_constants(k,iTemp2)
@@ -1604,6 +1602,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
         enddo
         enddo
         enddo
+       endif
 
 !
 !.......................................................
@@ -2194,15 +2193,20 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
         do k=1,nchemspec
           sum_DYDt=sum_DYDt+Rgas/species_constants(k,imass)&
               *(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
-          sum_hhk_DYDt_reac=sum_hhk_DYDt_reac-hhk_full(l1:l2,m,n,k)*p%DYDt_reac(:,k)
+          if (lreactions) then
+           sum_hhk_DYDt_reac=sum_hhk_DYDt_reac-hhk_full(l1:l2,m,n,k)*p%DYDt_reac(:,k)
+          endif
+
+         if (ldiffusion) then
           do i=1,3
            dk_D(:,i)=(p%gXXk(:,i,k) &
             +(XX_full(l1:l2,m,n,k)-f(l1:l2,m,n,ichemspec(k)))*p%glnpp(:,i)) &
             *Diff_full_add(l1:l2,m,n,k)
           enddo
            call dot_mn(dk_D,p%ghhk(:,:,k),dk_dhhk)
-
            sum_dk_ghk=sum_dk_ghk+dk_dhhk
+         endif
+
         enddo
        endif
 !
@@ -2223,16 +2227,13 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
           endif
         endif
 
-       
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + RHS_T_full(l1:l2,m,n)
-       
+        if (.not. lT_const) then
+         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + RHS_T_full(l1:l2,m,n)
+        endif     
 
 !
         if (lheatc_chemistry) call calc_heatcond_chemistry(f,df,p)
 !
-
-
-
       endif
 
 
@@ -3957,7 +3958,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
         if (BinDif_simple) then
           call stop_it('BinDif_simple case does not work now!')
-        else
+        elseif (ldiffusion) then
 !
 !  Do non-simplified binary diffusion coefficient
 !
@@ -4000,10 +4001,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
                     +6.16106168E-4*lnTjk(j1,j2,j3)**5 &
                     -3.27101257E-4*lnTjk(j1,j2,j3)**6 &
                     +2.51567029E-5*lnTjk(j1,j2,j3)**7)
-
-
-!NATALIA
-              
                 delta_jk_star=delta_jk/(eps_jk*k_B_cgs*sigma_jk**3)
                 
                 Omega_kl(j1,j2,j3)=Omega_kl(j1,j2,j3)&
@@ -4016,21 +4013,11 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
                else
                 Bin_Diff_coef(j1,j2,j3,k,j)=prefactor(j1,j2,j3)&
                     /(sqrt(m_jk)*sigma_jk**2*Omega_kl(j1,j2,j3))*species_constants(k,imass)
-       
-!if (j1==l1) then
-!  if ((j==3) ) then
-!   print*,'Om',Omega_kl(j1,j2,j3),species_constants(j,imass),species_constants(k,imass),sigma_jk
-!   print*,'Tst',exp(lnTjk(j1,j2,j3)),delta_jk_star
-!  endif
-!endif
-!if (j1==l1) print*,'BIn_dif',Bin_Diff_coef(j1,j2,j3,k,j),rho_full(j1,j2,j3),TT_full(j1,j2,j3)
-
+ 
                endif
               enddo
               enddo
               enddo
-!
- !if (j==k) print*,delta_jk_star,TT_full(l1,m1,n1)/eps_jk, Omega_kl(l1,m1,n1),k
             enddo
           enddo
 
@@ -4046,8 +4033,9 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
           enddo
           enddo       
           
-
-        endif
+      else
+       Bin_Diff_coef=0.
+      endif
       endif
 
 !
@@ -4061,34 +4049,14 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
         tmp_local2=(species_constants(k,imass))**0.5/(tran_data(k,3)*1e-8)**2 &
             *tmp_local
         if (visc_simple) then
-          do j3=nn1,nn2
-          do j2=mm1,mm2
-          do j1=ll1,ll2
-            if (ltemperature_nolog) then
-              lnTk=log(f(j1,j2,j3,ilnTT)/tran_data(k,2))
-            else
-              lnTk=f(j1,j2,j3,ilnTT)-log(tran_data(k,2))
-            endif
-            Omega_kl(j1,j2,j3)=(6.33225679E-1 +3.14473541E-1*lnTk&
-                +1.78229325E-2*lnTk*lnTk &
-                -3.99489493E-2*lnTk*lnTk*lnTk+8.98483088E-3*lnTk**4 &
-                +7.00167217E-4*lnTk**5-3.82733808E-4*lnTk**6&
-                +2.97208112E-5*lnTk**7)
-            species_viscosity(j1,j2,j3,k)=TT_full(j1,j2,j3)**0.5 &
-                *(Omega_kl(j1,j2,j3))*tmp_local2 &
-                /(unit_mass/unit_length/unit_time)
-          enddo
-          enddo
-          enddo
-        else
+          call stop_it('visc_simple case does not work now!')
+        elseif (visc_const==impossible) then
 !
 ! 1 Debye = 10**(-18) esu -> (1e-18*tran_data(k,4))
 !
           delta_st=(1e-18*tran_data(k,4))**2/2./ &
              (tran_data(k,2)*k_B_cgs*(tran_data(k,3)*1e-8)**3)
 !
- 
-
           if (ltemperature_nolog) then
             lnTk_array=log(f(:,:,:,ilnTT)/tran_data(k,2))
           else
@@ -4156,7 +4124,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 ! atom molecules but not for the linear or non-linear molecules 
 !
 
-!NATALIA
           if (tran_data(k,1)>0.) then
             tmp_val(j1,j2,j3)=Bin_Diff_coef(j1,j2,j3,k,k)*rho_full(j1,j2,j3)&
                 /species_viscosity(j1,j2,j3,k)
@@ -4185,11 +4152,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
               /(species_constants(k,imass)/unit_mass)*Rgas* &
                 (f_tran(j1,j2,j3)*Cv_tran_R+f_rot(j1,j2,j3)*Cv_rot_R  &
                 +f_vib(j1,j2,j3)*Cv_vib_R(j1,j2,j3))
-          
-!if (j1==l1) then
- ! print*,'lambda=',species_cond(l1,m1,n1,k),k
-  !print*,Cv_tran_R,Cv_rot_R,Cv_vib_R(l1,m1,n1),f_rot(l1,m1,n1),f_vib(l1,m1,n1)
-!endif
+ 
 !
 ! tmp_sum and tmp_sum2 are used later to find the mixture averaged
 ! conductivity.
