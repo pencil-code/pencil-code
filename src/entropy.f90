@@ -62,9 +62,9 @@ module Entropy
   real :: tauheat_buffer=0.,TTheat_buffer=0.,zheat_buffer=0.,dheat_buffer1=0.
   real :: heat_uniform=0.,cool_RTV=0.
   real :: deltaT_poleq=0.,beta_hand=1.,r_bcz=0.
-  real :: tau_cool=0.0, TTref_cool=0.0, tau_cool2=0.0
+  real :: tau_cool=0.0, tau_diff=0.0, TTref_cool=0.0, tau_cool2=0.0
   real :: cs0hs=0.0,H0hs=0.0,rho0hs=0.0
-  real :: chit_aniso=0.0,xbot=0.0,xtop=0.0
+  real :: xbot=0.0,xtop=0.0
   integer, parameter :: nheatc_max=4
   logical :: lturbulent_heat=.false.
   logical :: lheatc_Kprof=.false.,lheatc_Kconst=.false.
@@ -144,7 +144,7 @@ module Entropy
       tdown, allp,beta_glnrho_global,ladvection_entropy, &
       lviscosity_heat,r_bcz,lfreeze_sint,lfreeze_sext,lhcond_global, &
       tau_cool,TTref_cool,mixinglength_flux,chiB,chi_hyper3_aniso, Ftop, &
-      chit_aniso,xbot,xtop,tau_cool2
+      xbot,xtop,tau_cool2,tau_diff
 
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
@@ -2371,7 +2371,7 @@ module Entropy
 !
 !  28-jul-06/wlad: coded
 !
-      use BorderProfiles, only: border_driving
+      use BorderProfiles, only: border_driving,set_border_initcond
       use EquationOfState, only: cs20,get_ptlaw,get_cp1,lnrho0
       use Sub, only: power_law
 !
@@ -2393,6 +2393,8 @@ module Entropy
         call power_law(cs20,p%rcyl_mn,ptlaw,cs2,r_ref)
         f_target=1./(gamma*cp1)*(log(cs2/cs20)-gamma_m1*lnrho0)
          !f_target= gamma_inv*log(cs2_0) !- gamma_m1*gamma_inv*lnrho
+      case('initial-condition')
+        call set_border_initcond(f,iss,f_target)
       case('nothing')
          if (lroot.and.ip<=5) &
               print*,"set_border_entropy: borderss='nothing'"
@@ -2689,7 +2691,12 @@ module Entropy
 !
 !  This particular version assumes a simple polytrope, so mpoly is known
 !
-      hcond=Kbot
+      if (tau_diff==0) then
+        hcond=Kbot
+      else
+        hcond=Kbot/tau_diff
+      endif
+!
       if (headtt) then
         print*,'calc_heatcond_constK: hcond=', maxval(hcond)
       endif
@@ -3250,7 +3257,6 @@ module Entropy
 !       prof = 0.5*(1+tanh((r_mn-1.)/wcool))
         if (rcool==0.) rcool=r_ext
         prof = step(x(l1:l2),rcool,wcool)
- 
 !
 !  pick type of cooling
 !
