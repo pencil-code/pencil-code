@@ -53,7 +53,7 @@ module Particles_map
 !
       real, dimension (ivar2-ivar1+1) :: g1, g2, g3, g4, g5, g6, g7, g8
       real :: xp0, yp0, zp0
-      real, save :: dxdydz1, dxdy1, dxdz1, dydz1, dx1, dy1, dz1
+      double precision, save :: dxdydz1, dxdy1, dxdz1, dydz1, dx1, dy1, dz1
       integer :: i, ix0, iy0, iz0
       logical :: lfirstcall=.true.
 !
@@ -244,7 +244,8 @@ module Particles_map
       real, dimension (9,ivar2-ivar1+1) :: cc
       real, dimension (ivar2-ivar1+1) :: g1, g2, g3, g4, g5, g6, g7, g8, g9
       real :: dxp, dzp
-      real, save :: dx1, dx2, dz1, dz2, dx1dz1, dx2dz1, dx1dz2, dx2dz2
+      double precision, save :: dx1, dx2, dz1, dz2
+      double precision, save :: dx1dz1, dx2dz1, dx1dz2, dx2dz2
       integer :: ix0, iy0, iz0
       logical, save :: lfirstcall=.true.
 !
