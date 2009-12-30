@@ -182,6 +182,19 @@ ifeq ($(GSL),gsl_wrapper_r8)
   LD_GSL = -lgsl -lgslcblas
 endif
 # 
+# Check for inconsistent settings in Makefile.local.
+#
+ifeq ($(HYDRO),nohydro)
+  ifneq ($(VISCOSITY),noviscosity)
+nohydro_message:
+	@echo ";;; You are using HYDRO = nohydro, but VISCOSITY is not noviscosity."
+	@echo ";;; One can only use viscosity in connection with the hydro module."
+	@echo ";;; Please adapt the settings in Makefile.local."
+	exit 1
+
+  endif
+endif
+# 
 # Check for outdated features.
 #
 ifneq ($(BORDER_PROF),)
