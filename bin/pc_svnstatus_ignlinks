@@ -1,0 +1,14 @@
+#!/bin/csh
+#
+#  Quick script to ignore symbolic links when getting 'svn status'.
+#
+if ( $argv == '') set argv=*
+#
+foreach file ( $argv )
+  if (-e $file && !(-l $file) && !(-d $file)) svn status $file
+  if (-d $file) then
+    foreach file2 ( `\ls $file` )
+      if (-e $file/$file2 && !(-l $file/$file2) ) svn status $file/$file2
+    end
+  endif
+end
