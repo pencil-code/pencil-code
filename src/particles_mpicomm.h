@@ -14,5 +14,6 @@
   public :: ibrick_parent_block, iproc_parent_block, inearblock
   public :: iproc_foster_brick
   public :: iproc_parent_list,iproc_foster_list
+  public :: xref_par, yref_par, zref_par
   public :: lfill_blocks_density, lfill_blocks_velocity, lfill_bricks_velocity
   public :: it1_loadbalance

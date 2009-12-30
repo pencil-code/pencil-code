@@ -88,7 +88,7 @@ module Particles_map
 !  Find processor, brick, and grid x-coordinate.
 !
         if (nxgrid/=1) then
-          ix0=nx*ipx+nint((fp(k,ixp)-x(l1))*dx1)+1
+          ix0=nint((fp(k,ixp)-xref_par)*dx1)+1
           ipx0=(ix0-1)/nx
           ix0=ix0-ipx0*nx
           ibx0=(ix0-1)/nxb
@@ -98,7 +98,7 @@ module Particles_map
 !  Find processor, brick, and grid y-coordinate.
 !
         if (nygrid/=1) then
-          iy0=ny*ipy+nint((fp(k,iyp)-y(m1))*dy1)+1
+          iy0=nint((fp(k,iyp)-yref_par)*dy1)+1
           ipy0=(iy0-1)/ny
           iy0=iy0-ipy0*ny
           iby0=(iy0-1)/nyb
@@ -108,7 +108,7 @@ module Particles_map
 !  Find processor, brick, and grid z-coordinate.
 !
         if (nzgrid/=1) then
-          iz0=nz*ipz+nint((fp(k,izp)-z(n1))*dz1)+1
+          iz0=nint((fp(k,izp)-zref_par)*dz1)+1
           ipz0=(iz0-1)/nz
           iz0=iz0-ipz0*nz
           ibz0=(iz0-1)/nzb

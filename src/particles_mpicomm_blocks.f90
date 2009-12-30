@@ -42,6 +42,7 @@ module Particles_mpicomm
   integer, dimension (0:nbricks-1) :: iproc_foster_brick
   integer, dimension (ncpus) :: iproc_parent_list, iproc_foster_list
 !
+  real :: xref_par=0.0, yref_par=0.0, zref_par=0.0
   integer :: it1_loadbalance=100
   logical :: lfill_blocks_density=.false., lfill_blocks_velocity=.false.
   logical :: lfill_bricks_velocity=.false.
@@ -141,6 +142,18 @@ module Particles_mpicomm
 !
         call input_blocks(trim(directory_snap)//'/blocks.dat')
       endif
+!
+!  For placing particles in blocks the CPUs need a common reference point that
+!  is not affected by round off errors or representation noise.
+!
+      if (lroot) then
+        xref_par=x(l1)
+        yref_par=y(m1)
+        zref_par=z(n1)
+      endif
+      call mpibcast_real(xref_par,1)
+      call mpibcast_real(yref_par,1)
+      call mpibcast_real(zref_par,1)
 !
       call keep_compiler_quiet(f)
 !
@@ -417,21 +430,21 @@ module Particles_mpicomm
           ipx0=0; ipy0=0; ipz0=0
 !
           if (nxgrid/=1) then  !  Find processor and brick x-coordinate
-            ix0=nx*ipx+nint((fp(k,ixp)-x(l1))*dx1)+1
+            ix0=nint((fp(k,ixp)-xref_par)*dx1)+1
             ipx0=(ix0-1)/nx
             ix0=ix0-ipx0*nx
             ibx0=(ix0-1)/nxb
           endif
 !
           if (nygrid/=1) then  !  Find processor and brick y-coordinate
-            iy0=ny*ipy+nint((fp(k,iyp)-y(m1))*dy1)+1
+            iy0=nint((fp(k,iyp)-yref_par)*dy1)+1
             ipy0=(iy0-1)/ny
             iy0=iy0-ipy0*ny
             iby0=(iy0-1)/nyb
           endif
 !
           if (nzgrid/=1) then  !  Find processor and brick z-coordinate
-            iz0=nz*ipz+nint((fp(k,izp)-z(n1))*dz1)+1
+            iz0=nint((fp(k,izp)-zref_par)*dz1)+1
             ipz0=(iz0-1)/nz
             iz0=iz0-ipz0*nz
             ibz0=(iz0-1)/nzb
@@ -776,21 +789,21 @@ module Particles_mpicomm
           ipx0=0; ipy0=0; ipz0=0
 !
           if (nxgrid/=1) then  !  Find processor and brick x-coordinate
-            ix0=nx*ipx+nint((fp(k,ixp)-x(l1))*dx1)+1
+            ix0=nint((fp(k,ixp)-xref_par)*dx1)+1
             ipx0=(ix0-1)/nx
             ix0=ix0-ipx0*nx
             ibx0=(ix0-1)/nxb
           endif
 !
           if (nygrid/=1) then  !  Find processor and brick y-coordinate
-            iy0=ny*ipy+nint((fp(k,iyp)-y(m1))*dy1)+1
+            iy0=nint((fp(k,iyp)-yref_par)*dy1)+1
             ipy0=(iy0-1)/ny
             iy0=iy0-ipy0*ny
             iby0=(iy0-1)/nyb
           endif
 !
           if (nzgrid/=1) then  !  Find processor and brick z-coordinate
-            iz0=nz*ipz+nint((fp(k,izp)-z(n1))*dz1)+1
+            iz0=nint((fp(k,izp)-zref_par)*dz1)+1
             ipz0=(iz0-1)/nz
             iz0=iz0-ipz0*nz
             ibz0=(iz0-1)/nzb
@@ -1133,21 +1146,21 @@ module Particles_mpicomm
           ipx0=0; ipy0=0; ipz0=0
 !
           if (nxgrid/=1) then  !  Find processor and brick x-coordinate
-            ix0=nx*ipx+nint((fp(k,ixp)-x(l1))*dx1)+1
+            ix0=nint((fp(k,ixp)-xref_par)*dx1)+1
             ipx0=(ix0-1)/nx
             ix0=ix0-ipx0*nx
             ibx0=(ix0-1)/nxb
           endif
 !
           if (nygrid/=1) then  !  Find processor and brick y-coordinate
-            iy0=ny*ipy+nint((fp(k,iyp)-y(m1))*dy1)+1
+            iy0=nint((fp(k,iyp)-yref_par)*dy1)+1
             ipy0=(iy0-1)/ny
             iy0=iy0-ipy0*ny
             iby0=(iy0-1)/nyb
           endif
 !
           if (nzgrid/=1) then  !  Find processor and brick z-coordinate
-            iz0=nz*ipz+nint((fp(k,izp)-z(n1))*dz1)+1
+            iz0=nint((fp(k,izp)-zref_par)*dz1)+1
             ipz0=(iz0-1)/nz
             iz0=iz0-ipz0*nz
             ibz0=(iz0-1)/nzb
