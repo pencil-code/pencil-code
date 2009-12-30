@@ -1715,11 +1715,9 @@ module Density
         if (lentropy.and.(.not.pretend_lnTT)) then
           df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - tmp*p%cp
         elseif (lentropy.and.pretend_lnTT) then
-          if (headtt) call warning('dlnrho_dt', &
-              'massdiff_fix not yet implemented for pretend_lnTT')
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - tmp
         elseif (ltemperature.and.(.not. ltemperature_nolog)) then
-          if (headtt) call warning('dlnrho_dt', &
-              'massdiff_fix not yet implemented for ltemperature')
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - tmp
         elseif (ltemperature.and.ltemperature_nolog) then
           if (headtt) call warning('dlnrho_dt', &
               'massdiff_fix not yet implemented for ltemperature_nolog')
