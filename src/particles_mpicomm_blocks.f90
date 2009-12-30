@@ -380,7 +380,7 @@ module Particles_mpicomm
       real, dimension (mpar_loc,mpvar), optional :: dfp
 !
       real, dimension (npar_mig,mpvar) :: fp_mig, dfp_mig
-      real, save :: dx1, dy1, dz1
+      double precision, save :: dx1, dy1, dz1
       integer, dimension (npar_mig) :: ipar_mig, iproc_rec_array
       integer, dimension (npar_mig) :: isort_array
       integer, dimension (0:ncpus-1) :: nmig_leave, nmig_enter
@@ -486,7 +486,7 @@ module Particles_mpicomm
           if (lmigrate.and.(iproc/=iproc_parent_block(inearblock(k)))) then
             iproc_rec=iproc_parent_block(inearblock(k))
             if (ip<=7) print '(a,i8,a,i4,a,i4)', &
-                'migrate_particles: Particle ', ipar(k), &
+                'migrate_particles_block_to_proc: Particle ', ipar(k), &
                 ' moves out of proc ', iproc, ' and into proc ', iproc_rec
             if (ip<=7) then  ! Quick reality check
               if (iproc_rec==iproc) then
@@ -707,7 +707,7 @@ module Particles_mpicomm
       real, dimension (mpar_loc,mpvar), optional :: dfp
 !
       real, dimension (npar_mig,mpvar) :: fp_mig, dfp_mig
-      real, save :: dx1, dy1, dz1
+      double precision, save :: dx1, dy1, dz1
       integer, dimension (npar_mig) :: ipar_mig, iproc_rec_array
       integer, dimension (npar_mig) :: isort_array
       integer, dimension (0:ncpus-1) :: nmig_leave, nmig_enter
@@ -833,7 +833,7 @@ module Particles_mpicomm
 !
           if (lmigrate) then
             if (ip<=7) print '(a,i8,a,i4,a,i4)', &
-                'migrate_particles: Particle ', ipar(k), &
+                'migrate_particles_proc_to_proc: Particle ', ipar(k), &
                 ' moves out of proc ', iproc, &
                 ' and into proc ', iproc_rec
             if (ip<=7) then  !  Quick reality check
@@ -1099,7 +1099,7 @@ module Particles_mpicomm
       real, dimension (mpar_loc,mpvar), optional :: dfp
 !
       real, dimension (npar_mig,mpvar) :: fp_mig, dfp_mig
-      real, save :: dx1, dy1, dz1
+      double precision, save :: dx1, dy1, dz1
       integer, dimension (npar_mig) :: ipar_mig, iproc_rec_array
       integer, dimension (npar_mig) :: isort_array
       integer, dimension (0:ncpus-1) :: nmig_leave, nmig_enter
@@ -1239,7 +1239,7 @@ module Particles_mpicomm
           if (lmigrate) then
             iproc_rec=iproc_foster_brick(ibrick_rec)
             if (ip<=7) print '(a,i8,a,i4,a,i4)', &
-                'migrate_particles: Particle ', ipar(k), &
+                'migrate_particles_proc_to_block: Particle ', ipar(k), &
                 ' moves out of proc ', iproc, ' and into proc ', iproc_rec
 !
 !  Copy migrating particle to the end of the fp array.
