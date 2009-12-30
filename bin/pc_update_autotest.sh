@@ -11,5 +11,5 @@ if [ $PC_SET_VALIDATED ]; then
   svn up;
   echo "`date` (previously validated revision: `cat validated.dat`)" \
     >> `uname -n`.autotest;
-  svn ci -m "AUTOMATIC update by auto-test on `uname -n` by $USER";
+  #svn ci -m "AUTOMATIC update by auto-test on `uname -n` by $USER";
 fi

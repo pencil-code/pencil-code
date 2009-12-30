@@ -39,6 +39,7 @@ link_root_makefile()
   echo Linked root Makefile.
 }
 #
+#-----------------------------------------------------------------------------
 make_src_dir()
 {
 ## src subdirectory
@@ -83,6 +84,7 @@ link_src_files()
   cd $old_dir
 }
 #
+#-----------------------------------------------------------------------------
 make_special_dir()
 {
 ## src subdirectory
@@ -126,6 +128,51 @@ link_special_files()
   cd $old_dir
 }
 #
+#-----------------------------------------------------------------------------
+make_inactive_dir()
+{
+## src subdirectory
+  [ -h $src/inactive ] && rm $src/inactive
+  if [ ! -d $src/inactive ]; then
+    echo "No inactive directory found: creating new one (`pwd`/src/inactive)."
+    mkdir $src/inactive
+  fi
+}
+#
+link_inactive_files()
+{
+#
+#  LINK all *.f90, *.f, and the Makefile to local src directory
+#
+  echo "Linking files in '$src/inactive'."
+  old_dir="`pwd`"
+  cd $src/inactive
+  n=0
+  to_link=
+  for file in $srcdir/inactive/*.f90
+  do
+    if [ -f $file ] || [ -d $file ]; then
+      if [ -h "`basename $file`" ]; then
+        rm -f "`basename $file`"
+        to_link="$to_link $file"
+        #ln -s $file .
+      elif [ -f "`basename $file`" ] \
+        || [ -d "`basename $file`" ]; then
+        n="`expr $n + 1`"
+        existf="$existf`basename $file` "
+      else
+        to_link="$to_link $file"
+        #ln -s $file .
+      fi
+    else
+      echo "No such file: $file"
+    fi
+  done
+  [ "$to_link" ] && ln -s $to_link .
+  cd $old_dir
+}
+#
+#-----------------------------------------------------------------------------
 make_experimental_dir()
 {
 ## src subdirectory
@@ -169,6 +216,7 @@ link_experimental_files()
   cd $old_dir
 }
 #
+#-----------------------------------------------------------------------------
 make_initial_condition_dir()
 {
 ## src subdirectory
@@ -211,6 +259,7 @@ link_initial_condition_files()
   [ "$to_link" ] && ln -s $to_link .
   cd $old_dir
 #
+#-----------------------------------------------------------------------------
 #  Local initial condition subroutines can be saved in initial_condition
 #  folder in run directory.
 #
@@ -351,6 +400,8 @@ make_src_dir
 link_src_files
 make_special_dir
 link_special_files
+make_inactive_dir
+link_inactive_files
 make_experimental_dir
 link_experimental_files
 make_initial_condition_dir

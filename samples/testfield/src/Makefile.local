@@ -14,4 +14,4 @@ GRAVITY   = nogravity
 FORCING   = noforcing
 VISCOSITY = noviscosity
 EOS       = noeos
-TESTFIELD =   testfield
+TESTFIELD =   inactive/testfield
