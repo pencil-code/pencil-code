@@ -517,7 +517,7 @@ module Special
         if (idiag_uruzm/=0)  call sum_lim_mn_name(p%rho*ur*uz,idiag_uruzm,p)
       endif
 !
-      if (l1ddiagnos) then 
+      if (l1davgfirst) then 
         if (idiag_urupmr/=0) &
              call phizsum_mn_name_r(p%rho*ur*up,idiag_urupmr)
         if (idiag_mdotmr/=0) &
@@ -594,7 +594,7 @@ module Special
        if (idiag_brbzm/=0)  call sum_lim_mn_name(br*bz,idiag_brbzm,p)
      endif
 !
-     if (l1ddiagnos.and.idiag_brbpmr/=0) &
+     if (l1davgfirst.and.idiag_brbpmr/=0) &
           call phizsum_mn_name_r(br*bp,idiag_brbpmr)
 !
     endsubroutine special_calc_magnetic
