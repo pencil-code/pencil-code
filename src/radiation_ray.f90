@@ -1,12 +1,16 @@
 ! $Id$
 !
-!  Radiation (solves transfer equation along rays)
-!  The direction of the ray is given by the vector (lrad,mrad,nrad),
-!  and the parameters radx0,rady0,radz0 gives the maximum number of
-!  steps of the direction vector in the corresponding direction.
+!  Radiation (solves transfer equation along rays).
 !
-!  This module currently does not work for fully periodic domains.
-!  The z-direction has to be non-periodic
+!  The direction of the ray is given by the vector (lrad,mrad,nrad), and the
+!  parameters radx0,rady0,radz0 gives the maximum number of steps of the
+!  direction vector in the corresponding direction.
+!
+!  This module currently does not work for fully periodic domains. The
+!  z-direction has to be non-periodic
+!
+!  Note that Qrad is the heating rate (Q=I-S) and *not* the cooling rate used
+!  in Heinemann et al. 2006.
 !
 !  TODO: Calculate weights properly
 !
@@ -20,6 +24,7 @@
 !***************************************************************
 module Radiation
 !
+  use Cdata
   use Cparam
   use Messages
   use Sub, only: keep_compiler_quiet
@@ -52,7 +57,7 @@ module Radiation
   real, target, dimension (nx,nz,mnu) :: Jrad_xz
   real, target, dimension (ny,nz,mnu) :: Jrad_yz
 !
-  real, dimension (mx,my,mz) :: Srad,tau,Qrad,Qrad0
+  real, dimension (mx,my,mz) :: Srad, tau, Qrad, Qrad0
   real, dimension (mx,my,mz,3) :: Frad
   type (Qbound), dimension (my,mz), target :: Qbc_yz
   type (Qbound), dimension (mx,mz), target :: Qbc_zx
@@ -62,60 +67,61 @@ module Radiation
   type (Qpoint), dimension (mx,my) :: Qpt_xy
 
   character (len=2*bclen+1), dimension(3) :: bc_rad=(/'0:0','0:0','S:0'/)
-  character (len=bclen), dimension(3) :: bc_rad1,bc_rad2
-  character (len=bclen) :: bc_ray_x,bc_ray_y,bc_ray_z
+  character (len=bclen), dimension(3) :: bc_rad1, bc_rad2
+  character (len=bclen) :: bc_ray_x, bc_ray_y, bc_ray_z
   integer, parameter :: maxdir=26
   integer, dimension (maxdir,3) :: dir
   real, dimension (maxdir,3) :: unit_vec
-  real, dimension (maxdir) :: weight,weightn,mu
+  real, dimension (maxdir) :: weight, weightn, mu
   type (radslice), dimension (maxdir), target :: Isurf
   real :: arad
-  real :: dtau_thresh_min,dtau_thresh_max
-  integer :: lrad,mrad,nrad,rad2
-  integer :: idir,ndir
-  integer :: l,m,n
-  integer :: llstart,llstop,ll1,ll2,lsign
-  integer :: mmstart,mmstop,mm1,mm2,msign
-  integer :: nnstart,nnstop,nn1,nn2,nsign
-  integer :: ipzstart,ipzstop,ipystart,ipystop
+  real :: dtau_thresh_min, dtau_thresh_max
+  integer :: lrad, mrad, nrad, rad2
+  integer :: idir, ndir
+  integer :: l
+  integer :: llstart, llstop, ll1, ll2, lsign
+  integer :: mmstart, mmstop, mm1, mm2, msign
+  integer :: nnstart, nnstop, nn1, nn2, nsign
+  integer :: ipzstart, ipzstop, ipystart, ipystop
   integer :: nIsurf
-  logical :: lperiodic_ray,lperiodic_ray_x,lperiodic_ray_y,lperiodic_ray_z
-  character (len=labellen) :: source_function_type='LTE',opacity_type='Hminus'
+  logical :: lperiodic_ray, lperiodic_ray_x, lperiodic_ray_y, lperiodic_ray_z
+  character (len=labellen) :: source_function_type='LTE', opacity_type='Hminus'
   character (len=labellen) :: angle_weight='constant'
-  real :: tau_top=0.0,TT_top=0.0
-  real :: tau_bot=0.0,TT_bot=0.0
+  real :: tau_top=0.0, TT_top=0.0
+  real :: tau_bot=0.0, TT_bot=0.0
   real :: kappa_cst=1.0, kapparho_cst=1.0
-  real :: Srad_const=1.0,amplSrad=1.0,radius_Srad=1.0
-  real :: kx_Srad=0.0,ky_Srad=0.0,kz_Srad=0.0
-  real :: kapparho_const=1.0,amplkapparho=1.0,radius_kapparho=1.0
-  real :: kx_kapparho=0.0,ky_kapparho=0.0,kz_kapparho=0.0
+  real :: Srad_const=1.0, amplSrad=1.0, radius_Srad=1.0
+  real :: kx_Srad=0.0, ky_Srad=0.0, kz_Srad=0.0
+  real :: kapparho_const=1.0, amplkapparho=1.0, radius_kapparho=1.0
+  real :: kx_kapparho=0.0, ky_kapparho=0.0, kz_kapparho=0.0
   real :: Frad_boundary_ref=0.0
-  real :: cdtrad_thin=1., cdtrad_thick=0.8
-  real :: scalefactor_Srad=1.
+  real :: cdtrad_thin=1.0, cdtrad_thick=0.8
+  real :: scalefactor_Srad=1.0
 !
 !  Default values for one pair of vertical rays
 !
-  integer :: radx=0,rady=0,radz=1,rad2max=1,nnu=1
+  integer :: radx=0, rady=0, radz=1, rad2max=1, nnu=1
   integer, dimension (3) :: single_ray
 !
-  logical :: lcooling=.true.,lrad_debug=.false.
-  logical :: lintrinsic=.true.,lcommunicate=.true.,lrevision=.true.
-  logical :: lradpressure=.false.,lradflux=.false.,lsingle_ray=.false.
+  logical :: lcooling=.true., lrad_debug=.false.
+  logical :: lintrinsic=.true., lcommunicate=.true., lrevision=.true.
+  logical :: lradpressure=.false., lradflux=.false., lsingle_ray=.false.
 
   logical :: lrad_cool_diffus=.false., lrad_pres_diffus=.false.
   logical :: lcheck_tau_division=.false. 
 
-  character :: lrad_str,mrad_str,nrad_str
+  character :: lrad_str, mrad_str, nrad_str
   character(len=3) :: raydir_str
 !
 !  Definition of dummy variables for FLD routine
 !
-  real :: DFF_new=0.  !(dum)
-  integer :: idiag_frms=0,idiag_fmax=0,idiag_Erad_rms=0,idiag_Erad_max=0
-  integer :: idiag_Egas_rms=0,idiag_Egas_max=0,idiag_Qradrms=0,idiag_Qradmax=0
-  integer :: idiag_Fradzm=0,idiag_Sradm=0,idiag_xyFradzm=0
-  integer :: idiag_dtchi=0,idiag_dtrad=0
-
+  real :: DFF_new=0.0  !(dum)
+  integer :: idiag_frms=0, idiag_fmax=0, idiag_Erad_rms=0, idiag_Erad_max=0
+  integer :: idiag_Egas_rms=0, idiag_Egas_max=0
+  integer :: idiag_Qradrms=0, idiag_Qradmax=0
+  integer :: idiag_Fradzm=0, idiag_Sradm=0, idiag_xyFradzm=0
+  integer :: idiag_dtchi=0, idiag_dtrad=0
+!
   namelist /radiation_init_pars/ &
        radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst,kapparho_cst, &
        TT_top,TT_bot,tau_top,tau_bot,source_function_type,opacity_type, &
@@ -124,7 +130,7 @@ module Radiation
        lintrinsic,lcommunicate,lrevision,lradflux, &
        Frad_boundary_ref,lrad_cool_diffus, lrad_pres_diffus, &
        scalefactor_Srad,angle_weight,lcheck_tau_division
-
+!
   namelist /radiation_run_pars/ &
        radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst, &
        TT_top,TT_bot,tau_top,tau_bot,source_function_type,opacity_type, &
@@ -135,17 +141,15 @@ module Radiation
        Frad_boundary_ref,lrad_cool_diffus,lrad_pres_diffus, &
        cdtrad_thin,cdtrad_thick, &
        scalefactor_Srad,angle_weight,lcheck_tau_division
-
+!
   contains
-
 !***********************************************************************
     subroutine register_radiation()
 !
-!  Initialize radiation flags
+!  Initialize radiation flags.
 !
 !  24-mar-03/axel+tobi: coded
 !
-      use Cdata
       use FArrayManager
 !
       lradiation=.true.
@@ -158,12 +162,12 @@ module Radiation
       call farray_register_auxiliary('Frad',iFrad,vector=3)
       iFradx = iFrad; iFrady = iFrad+1; iFradz = iFrad+2
 !
-!  Identify version number (generated automatically by CVS).
+!  Identify version number (generated automatically by SVN).
 !
       if (lroot) call svn_id( &
           "$Id$")
 !
-!  Writing files for use with IDL
+!  Writing files for use with IDL.
 !
       aux_var(aux_count)=',Qrad $'
       aux_count=aux_count+1
@@ -182,33 +186,31 @@ module Radiation
 !***********************************************************************
     subroutine initialize_radiation()
 !
-!  Calculate number of directions of rays
-!  Do this in the beginning of each run
+!  Calculate number of directions of rays.
+!  Do this in the beginning of each run.
 !
 !  16-jun-03/axel+tobi: coded
 !  03-jul-03/tobi: position array added
 !
-      use Cdata, only: lroot,sigmaSB,c_light,pi,datadir
-      use Cdata, only: dx,dy,dz
       use Sub, only: parse_bc_rad
       use Mpicomm, only: stop_it
-
+!
       real :: radlength,arad_normal
       logical :: periodic_xy_plane,bad_ray,ray_good
 !
-!  Check that the number of rays does not exceed maximum
+!  Check that the number of rays does not exceed maximum.
 !
       if (radx>1) call stop_it("radx currently must not be greater than 1")
       if (rady>1) call stop_it("rady currently must not be greater than 1")
       if (radz>1) call stop_it("radz currently must not be greater than 1")
 !
-!  Check boundary conditions
+!  Check boundary conditions.
 !
       if (lroot.and.ip<14) print*,'initialize_radiation: bc_rad =',bc_rad
 
       call parse_bc_rad(bc_rad,bc_rad1,bc_rad2)
 !
-!  Count
+!  Count.
 !
       idir=1
       nIsurf=0
@@ -218,11 +220,11 @@ module Radiation
       do lrad=-radx,radx
 !
 !  The value of rad2 determines whether a ray is along a coordinate axis (1),
-!  a face diagonal (2), or a room diagonal (3)
+!  a face diagonal (2), or a room diagonal (3).
 !
         rad2=lrad**2+mrad**2+nrad**2
 !
-!  Check whether the horizontal plane is fully periodic
+!  Check whether the horizontal plane is fully periodic.
 !
         periodic_xy_plane=all(bc_rad1(1:2)=='p').and.all(bc_rad2(1:2)=='p')
 !
@@ -232,8 +234,8 @@ module Radiation
 !
         bad_ray=(rad2==2.and.nrad==0.and.periodic_xy_plane)
 !
-!  For single rays: single_ray must match (lrad,mrad,nrad)
-!  Otherwise, check for length of rays
+!  For single rays: single_ray must match (lrad,mrad,nrad).
+!  Otherwise, check for length of rays.
 !
         if (lsingle_ray) then
           ray_good=(lrad==single_ray(1) &
@@ -243,7 +245,7 @@ module Radiation
           ray_good=(rad2>0.and.rad2<=rad2max).and.(.not.bad_ray)
         endif
 !
-!  proceed with good rays
+!  Proceed with good rays.
 !
         if (ray_good) then
           dir(idir,1)=lrad
@@ -251,45 +253,42 @@ module Radiation
           dir(idir,3)=nrad
 
 !
-!  Ray length from one grid point to the next one
+!  Ray length from one grid point to the next one.
 !
           radlength=sqrt((lrad*dx)**2+(mrad*dy)**2+(nrad*dz)**2)
-
 !
 !  mu = cos(theta)
 !
           mu(idir)=nrad*dz/radlength
-
 !
-!  define unit vector
+!  Define unit vector.
 !
           unit_vec(idir,1)=lrad*dx/radlength
           unit_vec(idir,2)=mrad*dy/radlength
           unit_vec(idir,3)=nrad*dz/radlength
-
+!
           idir=idir+1
-
+!
         endif
-
+!
       enddo
       enddo
       enddo
 !
-!  Total number of directions
+!  Total number of directions.
 !
       ndir=idir-1
 !
-!  Determine when terms like  exp(-dtau)-1  are to be evaluated
-!  as a power series
+!  Determine when terms like exp(-dtau)-1 are to be evaluated as a power series.
 !
-!  Experimentally determined optimum
+!  Experimentally determined optimum.
 !  Relative errors for (emdtau1, emdtau2) will be
-!  (1e-6, 1.5e-4) for floats and (3e-13, 1e-8) for doubles
+!  (1e-6, 1.5e-4) for floats and (3e-13, 1e-8) for doubles.
 !
       dtau_thresh_min=1.6*epsilon(dtau_thresh_min)**0.25
       dtau_thresh_max=-log(tiny(dtau_thresh_max))
 !
-!  Calculate arad for LTE source function
+!  Calculate arad for LTE source function.
 !  Note that this arad is *not* the usual radiation-density constant.
 !  so S = arad*TT^4 = (c/4pi)*arad_normal*TT^4, so
 !  arad_normal = 4pi/c*arad
@@ -302,7 +301,7 @@ module Radiation
         arad_normal=0.0
       endif
 !
-!  debug output
+!  Debug output.
 !  NOTE: arad is only used when S=(c/4pi)*aT^4=(sigmaSB/pi)*T^4
 !
       if (lroot.and.ip<9) then
@@ -311,7 +310,7 @@ module Radiation
         print*,'initialize_radiation: sigmaSB=',sigmaSB
       endif
 !
-!  Calculate weights
+!  Calculate weights.
 !
       call calc_angle_weights
 !
@@ -329,7 +328,6 @@ module Radiation
 !
 !  18-may-07/wlad: coded
 !
-      use Cdata, only: dx,dy,dz,pi,lroot
       use Mpicomm, only: stop_it
 !
       real :: xyplane,yzplane,xzplane,room,xaxis
@@ -341,13 +339,13 @@ module Radiation
         if (ndir>0) weight=4*pi/ndir
         weightn=weight
 !
-!  Calculate weights for weighed integrals involving one unit vector nhat
+!  Calculate weights for weighed integrals involving one unit vector nhat.
 !
         if (ndir==2) weightn=weightn/3.
 !
       case ('spherical-harmonics')
 !
-!  Check if dx==dy and that dx/dz lies in the positive range
+!  Check if dx==dy and that dx/dz lies in the positive range.
 !
         if (dx/=dy) then
           print*,'dx,dy=',dx,dy
@@ -357,7 +355,7 @@ module Radiation
         if (aspect_ratio.lt.0.69.or.aspect_ratio.gt.sqrt(3.)) &
              call stop_it("initialize_radiation: weights go negative for this dx/dz ratio")
 !
-!  Calculate the weights
+!  Calculate the weights.
 !
         mu2=dx**2/(dx**2+dz**2)
         xaxis=1/42.*(4.-1./mu2) ; yaxis=xaxis
@@ -366,7 +364,7 @@ module Radiation
         yzplane=(5.-6.*mu2)/(420.*mu2*(mu2-1)**2) ; xzplane=yzplane
         room=(2.-mu2)**3/(840.*mu2*(mu2-1)**2)
 !
-!  Allocate the weights on the appropriate rays
+!  Allocate the weights on the appropriate rays.
 !
         do idir=1,ndir
           !axes
@@ -394,55 +392,50 @@ module Radiation
 !***********************************************************************
     subroutine radtransfer(f)
 !
-!  Integration of the radiative transfer equation along rays
+!  Integration of the radiative transfer equation along rays.
 !
-!  This routine is called before the communication part
-!  (certainly needs to be given a better name)
-!  All rays start with zero intensity
+!  This routine is called before the communication part (certainly needs to be
+!  given a better name).  All rays start with zero intensity.
 !
 !  16-jun-03/axel+tobi: coded
 !
-      use Cdata, only: ldebug,headt,iQrad,iFrad,iFradx,iFradz,lvideo,lfirst, &
-        ix_loc,iy_loc,iz_loc,iz2_loc,iz3_loc,iz4_loc
-      use Mpicomm, only: stop_it
-!
       real, dimension(mx,my,mz,mfarray) :: f
+!
       integer :: j,k,inu
 !
-!  Identifier
+!  Identifier.
 !
-      if (ldebug.and.headt) print*,'radtransfer'
+      if (ldebug.and.headt) print*, 'radtransfer'
 !
-!  coninue only if we either have more than a single ray, or,
-!  if we do have a single ray, when also lvideo.and.lfirst are true
-!  so that the result is used for visualization.
+!  Continue only if we either have more than a single ray, or, if we do have a
+!  single ray, when also lvideo.and.lfirst are true so that the result is used
+!  for visualization.
 !
       if ((.not.lsingle_ray) .or. (lsingle_ray.and.lvideo.and.lfirst)) then
 !
-!  Do loop over all frequency bins
+!  Do loop over all frequency bins.
 !
       do inu=1,nnu
 !
-!  Calculate source function and opacity
+!  Calculate source function and opacity.
 !
         call source_function(f,inu)
         call opacity(f)
 !
-!  do the rest only if we don't do diffusion approximation
+!  Do the rest only if we do not do diffusion approximation.
 !
         if (lrad_cool_diffus.or.lrad_pres_diffus) then
-          if (headt) print*,'do diffusion approximation, no rays'
+          if (headt) print*, 'radtransfer: do diffusion approximation, no rays'
         else
 !
-!  Initialize heating rate and radiative flux only
-!  at first frequency point
+!  Initialize heating rate and radiative flux only at first frequency point.
 !
           if (inu==1) then
-            f(:,:,:,iQrad)=0
-            if (lradflux) f(:,:,:,iFradx:iFradz)=0
+            f(:,:,:,iQrad)=0.0
+            if (lradflux) f(:,:,:,iFradx:iFradz)=0.0
           endif
 !
-!  loop over rays
+!  Loop over rays.
 !
           do idir=1,ndir
             call raydirection
@@ -464,14 +457,14 @@ module Radiation
 !
             if (lrevision) call Qrevision
 !
-!  calculate heating rate, so at the end of the loop
+!  Calculate heating rate, so at the end of the loop
 !  f(:,:,:,iQrad) = \int_{4\pi} (I-S) d\Omega, not divided by 4pi.
 !  In the paper the directional Q is defined with the opposite sign.
 !  For now, add contributions from all frequencies with the same weight.
 !
             f(:,:,:,iQrad)=f(:,:,:,iQrad)+weight(idir)*Qrad
 !
-!  calculate radiative flux
+!  Calculate radiative flux.
 !  For now, add contributions from all frequencies with the same weight.
 !
             if (lradflux) then
@@ -481,26 +474,26 @@ module Radiation
               enddo
             endif
 !
-!  enddo from idir
+!  enddo from idir.
 !
           enddo
 !
-!  end of no-diffusion approximation query
+!  End of no-diffusion approximation query.
 !
         endif
 !
-!  calculate slices of J = S + Q/(4pi) 
+!  Calculate slices of J=S+Q/(4pi).
 !
         if (lvideo.and.lfirst) then
-          Jrad_yz(:,:,inu)=Qrad(ix_loc,m1:m2,n1:n2)+Srad(ix_loc,m1:m2,n1:n2)
-          Jrad_xz(:,:,inu)=Qrad(l1:l2,iy_loc,n1:n2)+Srad(l1:l2,iy_loc,n1:n2)
-          Jrad_xy(:,:,inu)=Qrad(l1:l2,m1:m2,iz_loc)+Srad(l1:l2,m1:m2,iz_loc)
+          Jrad_yz(:,:,inu)= Qrad(ix_loc,m1:m2,n1:n2) +Srad(ix_loc,m1:m2,n1:n2)
+          Jrad_xz(:,:,inu)= Qrad(l1:l2,iy_loc,n1:n2) +Srad(l1:l2,iy_loc,n1:n2)
+          Jrad_xy(:,:,inu)= Qrad(l1:l2,m1:m2,iz_loc) +Srad(l1:l2,m1:m2,iz_loc)
           Jrad_xy2(:,:,inu)=Qrad(l1:l2,m1:m2,iz2_loc)+Srad(l1:l2,m1:m2,iz2_loc)
           Jrad_xy3(:,:,inu)=Qrad(l1:l2,m1:m2,iz3_loc)+Srad(l1:l2,m1:m2,iz3_loc)
           Jrad_xy4(:,:,inu)=Qrad(l1:l2,m1:m2,iz4_loc)+Srad(l1:l2,m1:m2,iz4_loc)
         endif
 !
-!  end of frequency loop (inu)
+!  End of frequency loop (inu).
 !
       enddo
 !
@@ -512,23 +505,19 @@ module Radiation
 !***********************************************************************
     subroutine raydirection
 !
-!  Determine certain variables depending on the ray direction
+!  Determine certain variables depending on the ray direction.
 !
 !  10-nov-03/tobi: coded
 !
-      use Cdata, only: ldebug,headt
-!
-!  Identifier
-!
       if (ldebug.and.headt) print*,'raydirection'
 !
-!  Get direction components
+!  Get direction components.
 !
       lrad=dir(idir,1)
       mrad=dir(idir,2)
       nrad=dir(idir,3)
 !
-!  Determine start and stop positions
+!  Determine start and stop positions.
 !
       llstart=l1; llstop=l2; ll1=l1; ll2=l2; lsign=+1
       mmstart=m1; mmstop=m2; mm1=m1; mm2=m2; msign=+1
@@ -540,7 +529,7 @@ module Radiation
       if (nrad>0) then; nnstart=n1; nnstop=n2; nn1=n1-nrad; nsign=+1; endif
       if (nrad<0) then; nnstart=n2; nnstop=n1; nn2=n2-nrad; nsign=-1; endif
 !
-!  Determine boundary conditions
+!  Determine boundary conditions.
 !
       if (lrad>0) bc_ray_x=bc_rad1(1)
       if (lrad<0) bc_ray_x=bc_rad2(1)
@@ -555,14 +544,14 @@ module Radiation
       lperiodic_ray_y=(lrad==0.and.mrad/=0.and.nrad==0.and.bc_ray_y=='p')
       lperiodic_ray=(lperiodic_ray_x.or.lperiodic_ray_y)
 !
-!  Determine start and stop processors
+!  Determine start and stop processors.
 !
       if (mrad>0) then; ipystart=0; ipystop=nprocy-1; endif
       if (mrad<0) then; ipystart=nprocy-1; ipystop=0; endif
       if (nrad>0) then; ipzstart=0; ipzstop=nprocz-1; endif
       if (nrad<0) then; ipzstart=nprocz-1; ipzstop=0; endif
 !
-!  Label for debug output
+!  Label for debug output.
 !
       if (lrad_debug) then
         lrad_str='0'; mrad_str='0'; nrad_str='0'
@@ -574,20 +563,19 @@ module Radiation
         if (nrad<0) nrad_str='m'
         raydir_str=lrad_str//mrad_str//nrad_str
       endif
-
+!
     endsubroutine raydirection
 !***********************************************************************
     subroutine Qintrinsic(f)
 !
-!  Integration radiation transfer equation along rays
+!  Integration radiation transfer equation along rays.
 !
-!  This routine is called before the communication part
-!  All rays start with zero intensity
+!  This routine is called before the communication part.
+!  All rays start with zero intensity.
 !
 !  16-jun-03/axel+tobi: coded
 !   3-aug-03/axel: added max(dtau,dtaumin) construct
 !
-      use Cdata, only: ldebug,headt,dx,dy,dz,directory_snap,ikapparho,epsi
       use IO, only: output
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
@@ -595,20 +583,20 @@ module Radiation
       real :: dtau_m,dtau_p,dSdtau_m,dSdtau_p
       real :: dtau_mm,dtau_pp
 !
-!  identifier
+!  Identifier.
 !
       if (ldebug.and.headt) print*,'Qintrinsic'
 !
-!  line elements
+!  Line elements.
 !
       dlength=sqrt((dx*lrad)**2+(dy*mrad)**2+(dz*nrad)**2)
 !
-!  set optical depth and intensity initially to zero
+!  Set optical depth and intensity initially to zero.
 !
-      tau=0
-      Qrad=0
+      tau=0.0
+      Qrad=0.0
 !
-!  loop over all meshpoints
+!  Loop over all meshpoints.
 !
       do n=nnstart,nnstop,nsign
       do m=mmstart,mmstop,msign
@@ -619,13 +607,13 @@ module Radiation
         dtau_p=sqrt(f(l,m,n,ikapparho)* &
                     f(l+lrad,m+mrad,n+nrad,ikapparho))*dlength
 !
-!  avoid divisions by zero when the optical depth is such
+!  Avoid divisions by zero when the optical depth is such.
 !
         dtau_mm=dtau_m 
         dtau_pp=dtau_p 
         if (lcheck_tau_division) then
-          if (dtau_m.eq.0.0) dtau_mm=epsi
-          if (dtau_p.eq.0.0) dtau_pp=epsi
+          if (dtau_m==0.0) dtau_mm=epsi
+          if (dtau_p==0.0) dtau_pp=epsi
         endif
 !
         dSdtau_m=(Srad(l,m,n)-Srad(l-lrad,m-mrad,n-nrad))/dtau_mm
@@ -652,7 +640,7 @@ module Radiation
       enddo
       enddo
 !
-!  debug output
+!  Debug output.
 !
       if (lrad_debug) then
         call output(trim(directory_snap)//'/tau-'//raydir_str//'.dat',tau,1)
@@ -798,7 +786,6 @@ module Radiation
 !
 !  30-jul-05/tobi: coded
 !
-      use Cdata, only: ipy,ipz
       use Mpicomm, only: radboundary_xy_recv,radboundary_xy_send
       use Mpicomm, only: radboundary_zx_recv,radboundary_zx_send
       use Mpicomm, only: radboundary_zx_sendrecv
@@ -984,7 +971,6 @@ module Radiation
 !
 !  DOCUMENT ME!
 !
-      use Cdata, only: ipy,iproc
       use Mpicomm, only: radboundary_zx_periodic_ray
       use IO, only: output
 
@@ -997,14 +983,14 @@ module Radiation
 !  x-direction
 !
       if (lrad/=0) then
-  !
-  !  Intrinsic heating rate and optical depth at the downstream boundary.
-  !
+!
+!  Intrinsic heating rate and optical depth at the downstream boundary.
+!
         Qrad_yz=Qrad(llstop,m1:m2,n1:n2)
         tau_yz=tau(llstop,m1:m2,n1:n2)
-  !
-  !  Try to avoid time consuming exponentials and loss of precision.
-  !
+!
+!  Try to avoid time consuming exponentials and loss of precision.
+!
         where (tau_yz>dtau_thresh_max)
           emtau1_yz=1.0
         elsewhere (tau_yz<dtau_thresh_min)
@@ -1012,9 +998,9 @@ module Radiation
         elsewhere
           emtau1_yz=1-exp(-tau_yz)
         endwhere
-  !
-  !  The requirement of periodicity gives the following heating rate at the
-  !  upstream boundary.
+!
+!  The requirement of periodicity gives the following heating rate at the
+!  upstream boundary.
   !
         Qrad0(llstart-lrad,m1:m2,n1:n2)=Qrad_yz/emtau1_yz
 
@@ -1023,51 +1009,51 @@ module Radiation
 !  y-direction
 !
       if (mrad/=0) then
-  !
-  !  Intrinsic heating rate and optical depth at the downstream boundary of
-  !  each processor.
-  !
+!
+!  Intrinsic heating rate and optical depth at the downstream boundary of
+!  each processor.
+!
         Qrad_zx=Qrad(l1:l2,mmstop,n1:n2)
         tau_zx=tau(l1:l2,mmstop,n1:n2)
-  !
-  !  Gather intrinsic heating rates and optical depths from all processors
-  !  into one rank-3 array available on each processor.
-  !
+!
+!  Gather intrinsic heating rates and optical depths from all processors
+!  into one rank-3 array available on each processor.
+!
         call radboundary_zx_periodic_ray(Qrad_zx,tau_zx,Qrad_zx_all,tau_zx_all)
-  !
-  !  Find out in which direction we want to loop over processors.
-  !
+!
+!  Find out in which direction we want to loop over processors.
+!
         if (mrad>0) then; ipystart=0; ipystop=nprocy-1; endif
         if (mrad<0) then; ipystart=nprocy-1; ipystop=0; endif
-  !
-  !  We need the sum of all intrinsic optical depths and the attenuated sum of
-  !  all intrinsic heating rates. The latter needs to be summed in the
-  !  downstream direction starting at the current processor. Set both to zero
-  !  initially.
-  !
+!
+!  We need the sum of all intrinsic optical depths and the attenuated sum of
+!  all intrinsic heating rates. The latter needs to be summed in the
+!  downstream direction starting at the current processor. Set both to zero
+!  initially.
+!
         Qrad_tot_zx=0.0
         tau_tot_zx=0.0
-  !
-  !  Do the sum from the this processor to the last one in the downstream
-  !  direction.
-  !
+!
+!  Do the sum from the this processor to the last one in the downstream
+!  direction.
+!
         do ipm=ipy,ipystop,msign
           Qrad_tot_zx=Qrad_tot_zx*exp(-tau_zx_all(:,:,ipm))+Qrad_zx_all(:,:,ipm)
           tau_tot_zx=tau_tot_zx+tau_zx_all(:,:,ipm)
         enddo
-  !
-  !  Do the sum from the first processor in the upstream direction to the one
-  !  before this one.
-  !
+!
+!  Do the sum from the first processor in the upstream direction to the one
+!  before this one.
+!
         do ipm=ipystart,ipy-msign,msign
           Qrad_tot_zx=Qrad_tot_zx*exp(-tau_zx_all(:,:,ipm))+Qrad_zx_all(:,:,ipm)
           tau_tot_zx=tau_tot_zx+tau_zx_all(:,:,ipm)
         enddo
-  !
-  !  To calculate the boundary heating rate we need to compute an exponential
-  !  term involving the total optical depths across all processors.
-  !  Try to avoid time consuming exponentials and loss of precision.
-  !
+!
+!  To calculate the boundary heating rate we need to compute an exponential
+!  term involving the total optical depths across all processors.
+!  Try to avoid time consuming exponentials and loss of precision.
+!
         where (tau_tot_zx>dtau_thresh_max)
           emtau1_tot_zx=1.0
         elsewhere (tau_tot_zx<dtau_thresh_min)
@@ -1075,32 +1061,30 @@ module Radiation
         elsewhere
           emtau1_tot_zx=1-exp(-tau_tot_zx)
         endwhere
-  !
-  !  The requirement of periodicity gives the following heating rate at the
-  !  upstream boundary of this processor.
-  !
+!
+!  The requirement of periodicity gives the following heating rate at the
+!  upstream boundary of this processor.
+!
         Qrad0(l1:l2,mmstart-mrad,n1:n2)=Qrad_tot_zx/emtau1_tot_zx
-
+!
       endif
-
+!
     endsubroutine Qperiodic
 !***********************************************************************
     subroutine Qrevision
 !
-!  This routine is called after the communication part
-!  The true boundary intensities I0 are now known and
-!  the correction term I0*exp(-tau) is added
+!  This routine is called after the communication part. The true boundary
+!  intensities I0 are now known and the correction term I0*exp(-tau) is added.
 !
 !  16-jun-03/axel+tobi: coded
 !
-      use Cdata, only: ldebug,headt,directory_snap,ipz
       use IO, only: output
 !
-!  identifier
+!  Identifier.
 !
       if (ldebug.and.headt) print*,'Qrevision'
 !
-!  do the ray...
+!  Do the ray...
 !
       do n=nnstart,nnstop,nsign
       do m=mmstart,mmstop,msign
@@ -1111,7 +1095,7 @@ module Radiation
       enddo
       enddo
 !
-!  calculate surface intensity for upward rays
+!  Calculate surface intensity for upward rays.
 !
       if (nrad>0) then
         Isurf(idir)%xy2=Qrad(l1:l2,m1:m2,nnstop)+Srad(l1:l2,m1:m2,nnstop)
@@ -1291,7 +1275,6 @@ module Radiation
 !
 !  25-mar-03/axel+tobi: coded
 !
-      use Cdata
       use Diagnostics
       use Sub
 !
@@ -1348,7 +1331,6 @@ module Radiation
 !
 !  17-may-06/axel: coded
 !
-      use Cdata
       use Diagnostics
       use Sub
 
@@ -1386,24 +1368,24 @@ module Radiation
 !***********************************************************************
     subroutine source_function(f,inu)
 !
-!  calculates source function
-!  (This module is currently ignored if diffusion approximation is used)
+!  Calculates source function.
+!
+!  This module is currently ignored if diffusion approximation is used.
 !
 !   3-apr-04/tobi: coded
 !   8-feb-09/axel: added B2 for visualisation purposes
 !
-      use Cdata, only: m,n,x,y,z,Lx,Ly,Lz,dx,dy,dz,pi,directory_snap
       use EquationOfState, only: eoscalc
       use Mpicomm, only: stop_it
       use IO, only: output
-
+!
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       logical, save :: lfirst=.true.
       real, dimension(mx) :: lnTT
       integer :: inu
-
+!
       select case (source_function_type)
-
+!
       case ('LTE')
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady
@@ -1411,7 +1393,7 @@ module Radiation
           Srad(:,m,n)=arad*exp(4*lnTT)*scalefactor_Srad
         enddo
         enddo
-
+!
       case ('blob')
         if (lfirst) then
           Srad=Srad_const &
@@ -1420,7 +1402,7 @@ module Radiation
                        *spread(spread(exp(-(z/radius_Srad)**2),1,mx),2,my)
           lfirst=.false.
         endif
-
+!
       case ('cos')
         if (lfirst) then
           Srad=Srad_const &
@@ -1431,32 +1413,32 @@ module Radiation
         endif
 !
 !  Source function proportional to magnetic energy density
-!  (used for visualization purposes)
-!  Needs to be done at every time step (not just when lfirst=.true.)
+!  (used for visualization purposes).
+!  Needs to be done at every time step (not just when lfirst=.true.).
 !
       case ('B2')
         call calc_Srad_B2(f,Srad)
-
+!
       case ('B2+W2')
         if (inu==1) then
           call calc_Srad_B2(f,Srad)
         elseif (inu==2) then
           call calc_Srad_W2(f,Srad)
         endif
-
+!
       case ('nothing')
-          Srad=0.
-
+          Srad=0.0
+!
       case default
-        call stop_it('no such source function type: '//&
-                     trim(source_function_type))
-
-      end select
-
+        call fatal_error('source_function', &
+            'no such source function type: '//trim(source_function_type))
+!
+      endselect
+!
       if (lrad_debug) then
         call output(trim(directory_snap)//'/Srad.dat',Srad,1)
       endif
-
+!
     endsubroutine source_function
 !***********************************************************************
     subroutine opacity(f)
@@ -1469,8 +1451,6 @@ module Radiation
 !   3-apr-04/tobi: coded
 !   8-feb-09/axel: added B2 for visualisation purposes
 !
-      use Cdata, only: ilnrho,x,y,z,m,n,Lx,Ly,Lz,dx,dy,dz,pi,directory_snap
-      use Cdata, only: kappa_es,ikapparho, m_H, sigmaH_
       use EquationOfState, only: eoscalc
       use Mpicomm, only: stop_it
       use IO, only: output
@@ -1608,7 +1588,6 @@ module Radiation
 !
 !  21-feb-2009/axel: coded
 !
-      use Cdata, only: m,n,iaa,iax,iaz
       use Sub, only: gij, curl_mn, dot2_mn
       use Mpicomm, only: stop_it
 !
@@ -1642,7 +1621,6 @@ module Radiation
 !
 !  21-feb-2009/axel: coded
 !
-      use Cdata, only: m,n,iuu,iux,iuz
       use Sub, only: gij, curl_mn, dot2_mn
       use Mpicomm, only: stop_it
 !
@@ -1676,7 +1654,6 @@ module Radiation
 !
 !  21-feb-2009/axel: coded
 !
-      use Cdata, only: m,n,iaa,iax,iaz,ikapparho
       use Sub, only: gij, curl_mn, dot2_mn
       use Mpicomm, only: stop_it
 !
@@ -1723,7 +1700,6 @@ module Radiation
 !
 !  21-feb-2009/axel: coded
 !
-      use Cdata, only: m,n,iaa,iax,iaz,iuu,iux,iuz,ikapparho
       use Sub, only: gij, curl_mn, dot2_mn
       use Mpicomm, only: stop_it
 !
@@ -1773,8 +1749,6 @@ module Radiation
 !  initialise radiation; called from start.f90
 !
 !  15-jul-2002/nils: dummy routine
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -1919,7 +1893,6 @@ module Radiation
 !
 !  16-jul-02/nils: adapted from rprint_hydro
 !
-      use Cdata
       use Diagnostics
 !
       integer :: iname,inamez
@@ -1991,8 +1964,6 @@ module Radiation
 !  Write slices for animation of radiation variables.
 !
 !  26-jul-06/tony: coded
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
@@ -2100,8 +2071,6 @@ module Radiation
 !  12-apr-06/natalia: adapted from Wolfgang's more complex version
 !   3-nov-06/axel: included gradient of conductivity, gradK.gradT
 !
-      use Cdata
-      use Cparam
       use Diagnostics
       use EquationOfState
       use Sub
