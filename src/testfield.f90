@@ -274,11 +274,7 @@ module Testfield
 
       real, dimension (nx,3) :: uxB,bbtest,btest,uxbtest,duxbtest
       real, dimension (nx,3) :: del2Atest
-!     real :: fnamez_mean
       integer :: jtest,j
-      integer,save :: ifirst=0
-!      logical :: ltestfield_out
-!      character (len=5) :: ch='\_/^\'
       character (len=130) :: file
 !
       intent(in)     :: f,p
@@ -465,29 +461,6 @@ module Testfield
           endif
         endif
       enddo
-!
-! initialize aatest periodically if requested
-!
-      if (linit_aatest) then
-         file=trim(datadir)//'/tinit_aatest.dat'
-         if (ifirst==0) then
-            call read_snaptime(trim(file),taainit,naainit,daainit,t)
-            if (taainit==0 .or. taainit < t-daainit) then
-              taainit=t+daainit
-            endif
-            ifirst=1
-         endif
-!
-!  reinitialize aatest
-!  note that ltestfield_out is not used
-!
-!         if (t >= taainit) then
-!            reinitialize_aatest=.true.
-!            call initialize_testfield(f,lstarting)
-!            reinitialize_aatest=.false.
-!            call update_snaptime(file,taainit,naainit,daainit,t,ltestfield_out,ch,.false.)
-!         endif
-      endif
 !
     endsubroutine daatest_dt
 !***********************************************************************
