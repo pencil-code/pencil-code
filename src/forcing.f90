@@ -41,6 +41,7 @@ module Forcing
   real, dimension(nx) :: profx_ampl=1.,profx_hel=1.
   real, dimension(mz) :: profz_ampl=1.,profz_hel=0. !(initialize profz_hel=1)
   integer :: kfountain=5,ifff,iffx,iffy,iffz,i2fff,i2ffx,i2ffy,i2ffz
+  integer :: itestflow_forcing_offset=0,itestfield_forcing_offset=0
   logical :: lwork_ff=.false.,lmomentum_ff=.false.
   logical :: lhydro_forcing=.true.,lmagnetic_forcing=.false.
   logical :: lcrosshel_forcing=.false.,ltestfield_forcing=.false.,ltestflow_forcing=.false.
@@ -62,7 +63,7 @@ module Forcing
   real,allocatable,dimension(:,:,:) :: RYlm_list,IYlm_list
   integer :: helsign=0,nlist_ck=25
   real :: fpre = 1.0,ck_equator_gap=0.,ck_gap_step=0.
-  integer :: icklist
+  integer :: icklist,jtest_aa0=5,jtest_uu0=1
 ! Persistent stuff
   real :: tsforce=-10.
   real, dimension (3) :: location
@@ -93,6 +94,7 @@ module Forcing
        omega_ff,location_fixed,lrandom_location,lwrite_gausspot_to_file, &
        wff_ampl,xff_ampl,zff_ampl,zff_hel, &
        lhydro_forcing,lmagnetic_forcing,lcrosshel_forcing,ltestfield_forcing, &
+       ltestflow_forcing,jtest_aa0,jtest_uu0, &
        max_force,dtforce,dtforce_duration,old_forcing_evector, &
        iforce_profile,lscale_kvector_tobox, &
        force_direction, force_strength, &
@@ -735,16 +737,19 @@ module Forcing
                   endif
                 
                 endif
-
+!
+!  If one of the testfield methods is used, we need to add a forcing term
+!  in one of the auxiliary equations. Their location is denoted by jtest_aa0
+!  and jtest_uu0 for the testfield and testflow equations, respectively.
+!  In the testflow module, jtest_uu0=1 is used, while in the testfield_nonlinear
+!  module jtest_uu0=5 is used, so for now we give them by hand.
+!
                 if (ltestfield_forcing) then
-                  do jtest=1,12
-                    iaxtest=iaatest+3*(jtest-1)
-                    jf=j+iaxtest-1
-                    f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
-                  enddo
+                  jf=j+iaatest-1+3*(jtest_aa0-1)
+                  f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
                 endif
-		if (ltestflow_forcing) then                      ! only for testflow # 0 = primary turbulence
-                  jf=j+iuutest-1
+                if (ltestflow_forcing) then
+                  jf=j+iuutest-1+3*(jtest_uu0-1)
                   f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
                 endif
               endif
