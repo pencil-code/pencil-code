@@ -1,0 +1,31 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM   =   mpicomm
+
+HYDRO     =   hydro
+DENSITY   =   density
+ENTROPY   =   entropy
+MAGNETIC  = nomagnetic
+RADIATION = noradiation
+PSCALAR   = nopscalar
+
+GRAVITY   =   gravity_simple
+FORCING   = noforcing
+SHEAR     =   shear
+GLOBAL    = noglobal
+
+SELFGRAVITY = noselfgravity
+FOURIER     =   fourier_fftpack
+POISSON     = nopoisson
+
+DUSTDENSITY  = nodustdensity
+DUSTVELOCITY = nodustvelocity
+
+PARTICLES             =   particles_dust_blocks
+PARTICLES_MAP         =   particles_map_blocks
+PARTICLES_SELFGRAVITY = noparticles_selfgravity
+
+REAL_PRECISION = double
