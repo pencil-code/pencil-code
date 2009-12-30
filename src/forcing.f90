@@ -472,8 +472,6 @@ module Forcing
 !
 !  additional stuff for test fields
 !
-      integer :: jtest
-!
       if (ifirst==0) then
         if (lroot) print*,'forcing_hel: opening k.dat'
         open(9,file='k.dat')
