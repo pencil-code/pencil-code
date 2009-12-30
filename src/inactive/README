@@ -1,0 +1,13 @@
+$Id$
+
+This directory contains modules that are normally still functional,
+and therefore also auto-tested, but they are now largely superseeded
+by other modules with a similar name. They are not really experimental
+either, because they are not currently being developed. Once any
+of these modules are being routinely used for production runs, we'll
+move them back to the src directory.
+
+This directory helps removing some of the ballast of the src directory
+and it prevents those modules from being accidently identified by
+newcomers as important modules that have been used for any recent
+production runs.
