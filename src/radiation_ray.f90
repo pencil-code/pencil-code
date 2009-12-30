@@ -214,7 +214,7 @@ module Radiation
 !
       idir=1
       nIsurf=0
-
+!
       do nrad=-radz,radz
       do mrad=-rady,rady
       do lrad=-radx,radx
@@ -341,7 +341,7 @@ module Radiation
 !
 !  Calculate weights for weighed integrals involving one unit vector nhat.
 !
-        if (ndir==2) weightn=weightn/3.
+        if (ndir==2) weightn=weightn/3
 !
       case ('spherical-harmonics')
 !
@@ -384,8 +384,8 @@ module Radiation
         weightn=weight
 !
       case default
-        call stop_it('no such angle-weighting: '//&
-                     trim(angle_weight))
+        call fatal_error('calc_angle_weights', &
+            'no such angle-weighting: '//trim(angle_weight))
       endselect
 !
     endsubroutine calc_angle_weights
@@ -799,137 +799,110 @@ module Radiation
 
       logical :: all_yz,all_zx
 !
-!  Initially no boundaries are set
+!  Initially no boundaries are set.
 !
       Qbc_xy%set=.false.
       Qbc_yz%set=.false.
       Qbc_zx%set=.false.
-
+!
       all_yz=.false.
       all_zx=.false.
 !
-!  Either receive or set xy-boundary heating rate
+!  Either receive or set xy-boundary heating rate.
 !
       if (nrad/=0) then
-
+!
         if (ipz==ipzstart) then
           call radboundary_xy_set(Qrecv_xy)
         else
           call radboundary_xy_recv(nrad,idir,Qrecv_xy)
         endif
 !
-!  Copy the above heating rates to the xy-target arrays which are then set
+!  Copy the above heating rates to the xy-target arrays which are then set.
 !
         Qbc_xy(ll1:ll2,mm1:mm2)%val = Qrecv_xy(ll1:ll2,mm1:mm2)
         Qbc_xy(ll1:ll2,mm1:mm2)%set = .true.
-
+!
       endif
 !
-!  do the same for the yz- and zx-target arrays where those boundaries
+!  Do the same for the yz- and zx-target arrays where those boundaries
 !  overlap with the xy-boundary and calculate exp(-tau) and Qrad at the
 !  downstream boundaries.
 !
       if (lrad/=0) then
-
         if (bc_ray_x/='p') then
-
           call radboundary_yz_set(Qrecv_yz)
-
+!
           Qbc_yz(mm1:mm2,nn1:nn2)%val = Qrecv_yz(mm1:mm2,nn1:nn2)
           Qbc_yz(mm1:mm2,nn1:nn2)%set = .true.
-
+!
           all_yz=.true.
-
         else
-
           Qbc_yz(mm1:mm2,nnstart-nrad)%val = Qrecv_xy(llstart-lrad,mm1:mm2)
           Qbc_yz(mm1:mm2,nnstart-nrad)%set = .true.
-
+!
           emtau_yz(mm1:mm2,nn1:nn2) = exp(-tau(llstop,mm1:mm2,nn1:nn2))
            Qrad_yz(mm1:mm2,nn1:nn2) =     Qrad(llstop,mm1:mm2,nn1:nn2)
-
         endif
-
+!
       else
-
         all_yz=.true.
-
-      endif
-
-      if (mrad/=0) then
-
-        if (bc_ray_y/='p') then
-
-          call radboundary_zx_set(Qrecv_zx)
-
-          Qbc_zx(ll1:ll2,nn1:nn2)%val = Qrecv_zx(ll1:ll2,nn1:nn2)
-          Qbc_zx(ll1:ll2,nn1:nn2)%set = .true.
-
-          all_zx=.true.
-
-        else
-
-          Qbc_zx(ll1:ll2,nnstart-nrad)%val = Qrecv_xy(ll1:ll2,mmstart-mrad)
-          Qbc_zx(ll1:ll2,nnstart-nrad)%set = .true.
-
-          emtau_zx(ll1:ll2,nn1:nn2) = exp(-tau(ll1:ll2,mmstop,nn1:nn2))
-           Qrad_zx(ll1:ll2,nn1:nn2) =     Qrad(ll1:ll2,mmstop,nn1:nn2)
-
-        endif
-
-      else
-
-        all_zx=.true.
-
       endif
 !
-!  communicate along the y-direction until all upstream heating rates at
+      if (mrad/=0) then
+        if (bc_ray_y/='p') then
+          call radboundary_zx_set(Qrecv_zx)
+!
+          Qbc_zx(ll1:ll2,nn1:nn2)%val = Qrecv_zx(ll1:ll2,nn1:nn2)
+          Qbc_zx(ll1:ll2,nn1:nn2)%set = .true.
+!
+          all_zx=.true.
+        else
+          Qbc_zx(ll1:ll2,nnstart-nrad)%val = Qrecv_xy(ll1:ll2,mmstart-mrad)
+          Qbc_zx(ll1:ll2,nnstart-nrad)%set = .true.
+!
+          emtau_zx(ll1:ll2,nn1:nn2) = exp(-tau(ll1:ll2,mmstop,nn1:nn2))
+           Qrad_zx(ll1:ll2,nn1:nn2) =     Qrad(ll1:ll2,mmstop,nn1:nn2)
+        endif
+      else
+        all_zx=.true.
+      endif
+!
+!  Communicate along the y-direction until all upstream heating rates at
 !  the yz- and zx-boundaries are determined.
 !
       if ((lrad/=0.and..not.all_yz).or.(mrad/=0.and..not.all_zx)) then; do
-
         if (lrad/=0.and..not.all_yz) then
-
           forall (m=mm1:mm2,n=nn1:nn2,Qpt_yz(m,n)%set.and..not.Qbc_yz(m,n)%set)
-
             Qbc_yz(m,n)%val = Qpt_yz(m,n)%val*emtau_yz(m,n)+Qrad_yz(m,n)
             Qbc_yz(m,n)%set = Qpt_yz(m,n)%set
-
           endforall
-
+!
           all_yz=all(Qbc_yz(mm1:mm2,nn1:nn2)%set)
-
+!
           if (all_yz.and.all_zx) exit
-
         endif
-
+!
         if (mrad/=0.and..not.all_zx) then
-
           forall (l=ll1:ll2,n=nn1:nn2,Qpt_zx(l,n)%set.and..not.Qbc_zx(l,n)%set)
-
             Qsend_zx(l,n) = Qpt_zx(l,n)%val*emtau_zx(l,n)+Qrad_zx(l,n)
-
           endforall
-
+!
           if (nprocy>1) then
             call radboundary_zx_sendrecv(mrad,idir,Qsend_zx,Qrecv_zx)
           else
             Qrecv_zx=Qsend_zx
           endif
-
+!
           forall (l=ll1:ll2,n=nn1:nn2,Qpt_zx(l,n)%set.and..not.Qbc_zx(l,n)%set)
-
             Qbc_zx(l,n)%val = Qrecv_zx(l,n)
             Qbc_zx(l,n)%set = Qpt_zx(l,n)%set
-
           endforall
-
+!
           all_zx=all(Qbc_zx(ll1:ll2,nn1:nn2)%set)
-
+!
           if (all_yz.and.all_zx) exit
-
         endif
-
       enddo; endif
 !
 !  copy all heating rates at the upstream boundaries to Qrad0 which is used in
@@ -938,11 +911,11 @@ module Radiation
       if (lrad/=0) then
         Qrad0(llstart-lrad,mm1:mm2,nn1:nn2)=Qbc_yz(mm1:mm2,nn1:nn2)%val
       endif
-
+!
       if (mrad/=0) then
         Qrad0(ll1:ll2,mmstart-mrad,nn1:nn2)=Qbc_zx(ll1:ll2,nn1:nn2)%val
       endif
-
+!
       if (nrad/=0) then
         Qrad0(ll1:ll2,mm1:mm2,nnstart-nrad)=Qbc_xy(ll1:ll2,mm1:mm2)%val
       endif
@@ -952,19 +925,15 @@ module Radiation
 !  to the next processor.
 !
       if (nrad/=0.and.ipz/=ipzstop) then
-
         forall (l=ll1:ll2,m=mm1:mm2)
-
           emtau_xy(l,m) = exp(-tau(l,m,nnstop))
           Qrad_xy(l,m) = Qrad(l,m,nnstop)
           Qsend_xy(l,m) = Qpt_xy(l,m)%val*emtau_xy(l,m)+Qrad_xy(l,m)
-
         endforall
-
+!
         call radboundary_xy_send(nrad,idir,Qsend_xy)
-
       endif
-
+!
     endsubroutine Qcommunicate
 !***********************************************************************
     subroutine Qperiodic
@@ -1200,7 +1169,7 @@ module Radiation
 !  Set intensity equal to a pre-defined incoming intensity
 !
       if (bc_ray_z=='F') then
-         Qrad0_zx=-Srad(:,mmstart-mrad,:)+Frad_boundary_ref/(2.*weightn(idir))
+        Qrad0_zx=-Srad(:,mmstart-mrad,:)+Frad_boundary_ref/(2.*weightn(idir))
       endif
 !
     endsubroutine radboundary_zx_set
