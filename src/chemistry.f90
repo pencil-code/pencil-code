@@ -12,7 +12,7 @@
 !
 ! PENCILS PROVIDED gTT(3); mu1; gamma
 ! PENCILS PROVIDED cv; cv1; cp; cp1; YY(nchemspec); gXXk(3,nchemspec); ghhk(3,nchemspec)
-! PENCILS PROVIDED cs2; rho1gpp(3); glnpp(3); gmu1(3); nu; gradnu(3)
+! PENCILS PROVIDED cs2; rho1gpp(3); glnpp(3); gmu1(3); nu; gradnu(3),gamma_m1, gradcp(3)
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
 ! PENCILS PROVIDED lambda; glambda(3)
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
