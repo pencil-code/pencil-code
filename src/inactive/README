@@ -1,7 +1,7 @@
 $Id$
 
 This directory contains modules that are normally still functional,
-and therefore also auto-tested, but they are now largely superseeded
+and therefore also auto-tested, but they are now largely superseded
 by other modules with a similar name. They are not really experimental
 either, because they are not currently being developed. Once any
 of these modules are being routinely used for production runs, we'll
