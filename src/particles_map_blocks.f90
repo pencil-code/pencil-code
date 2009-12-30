@@ -115,6 +115,21 @@ module Particles_map
           iz0=iz0-ibz0*nzb+1
         endif
 !
+!  Check that particle is not closest to ghost cell (or completely outside
+!  bounds).
+!
+        if ((ix0<l1b.or.ix0>l2b).or.(iy0<m1b.or.iy0>m2b).or. &
+            (iz0<n1b.or.iz0>n2b)) then
+          print*, 'map_nearest_grid: grid index of particle out of bounds'
+          print*, 'map_nearest_grid: it, itsub, iproc, k, ipar=', &
+              it, itsub, iproc, k, ipar(k)
+          print*, 'map_nearest_grid: ix0 , iy0 , iz0 =', ix0, iy0, iz0
+          print*, 'map_nearest_grid: ibx0, iby0, ibz0=', ibx0, iby0, ibz0
+          print*, 'map_nearest_grid: ipx0, ipy0, ipz0=', ipx0, ipy0, ipz0
+          print*, 'map_nearest_grid: fp=', fp(k,:)
+          call fatal_error_local('map_nearest_grid','')
+        endif
+!
 !  Calculate processor, brick, and grid point index of particle.
 !
         ineargrid(k,1)=ix0; ineargrid(k,2)=iy0; ineargrid(k,3)=iz0
@@ -152,12 +167,24 @@ module Particles_map
           else
             print*, 'map_nearest_grid: particle does not belong to any '// &
                 'adopted block'
-            print*, 'map_nearest_grid: it, itsub, iproc, ipar=', &
-                it, itsub, iproc, ipar(k)
+            print*, 'map_nearest_grid: it, itsub, iproc, k, ipar=', &
+                it, itsub, iproc, k, ipar(k)
             print*, 'map_nearest_grid: ipx0, ipy0, ipz0, iproc0=', &
                 ipx0, ipy0, ipz0, ipx0+ipy0*nprocx+ipz0*nprocx*nprocy
             print*, 'map_nearest_grid: ipx , ipy , ipz , iproc =', &
                 ipx, ipy, ipz, iproc
+            print*, 'map_nearest_grid: ibx0, iby0, ibz0=', ibx0, iby0, ibz0
+            print*, 'map_nearest_grid: ibrick_global_par, iblockl, iblocku =', &
+                ibrick_global_par, iblockl, iblocku
+            print*, 'map_nearest_grid: ibrick_global_arr =', &
+                ibrick_global_arr(0:nblock_loc-1)
+            print*, 'map_nearest_grid: fp=', fp(k,:)
+            print*, 'map_nearest_grid: xl=', xb(:,iblockl)
+            print*, 'map_nearest_grid: yl=', yb(:,iblockl)
+            print*, 'map_nearest_grid: zl=', zb(:,iblockl)
+            print*, 'map_nearest_grid: xu=', xb(:,iblocku)
+            print*, 'map_nearest_grid: yu=', yb(:,iblocku)
+            print*, 'map_nearest_grid: zu=', zb(:,iblocku)
             call fatal_error_local('map_nearest_grid','')
           endif
         endif
@@ -184,7 +211,7 @@ module Particles_map
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real :: weight, weight_x, weight_y, weight_z
-      real, save :: dx1, dy1, dz1
+      double precision, save :: dx1, dy1, dz1
       integer :: k, ix0, iy0, iz0, ixx, iyy, izz, ib
       integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1
       logical :: lnbody
@@ -835,7 +862,7 @@ module Particles_map
 !
       real, dimension (ivar2-ivar1+1) :: g1, g2, g3, g4, g5, g6, g7, g8
       real :: xp0, yp0, zp0
-      real, save :: dxdydz1, dxdy1, dxdz1, dydz1, dx1, dy1, dz1
+      double precision, save :: dxdydz1, dxdy1, dxdz1, dydz1, dx1, dy1, dz1
       integer :: i, ix0, iy0, iz0, ivar, ib
       logical :: lfirstcall=.true.
 !
@@ -1017,7 +1044,8 @@ module Particles_map
       real, dimension (9,ivar2-ivar1+1) :: cc
       real, dimension (ivar2-ivar1+1) :: g1, g2, g3, g4, g5, g6, g7, g8, g9
       real :: dxp, dzp
-      real, save :: dx1, dx2, dz1, dz2, dx1dz1, dx2dz1, dx1dz2, dx2dz2
+      double precision, save :: dx1, dx2, dz1, dz2
+      double precision, save :: dx1dz1, dx2dz1, dx1dz2, dx2dz2
       integer :: ix0, iy0, iz0, ib
       logical, save :: lfirstcall=.true.
 !
