@@ -378,9 +378,15 @@ module Testfield
         endselect
       endif
 !
-!  override iE0 if njtest is big enough
+!  Override iE0 if njtest is big enough.
+!  This method of identifying the location of the reference field is not very elegant.
+!  Don't rescale the reference field, so put rescale_aatest=rescale_uutest=1.
 !
-      if (njtest==5) iE0=5
+      if (njtest==5) then
+        iE0=5
+        rescale_aatest(iE0)=1.
+        rescale_uutest(iE0)=1.
+      endif
 !
 !  set to zero and then rescale the testfield
 !  (in future, could call something like init_aa_simple)
