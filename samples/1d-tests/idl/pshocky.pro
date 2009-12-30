@@ -9,7 +9,7 @@ save_state
 
 pc_read_param,obj=par 
 pc_read_param,obj=par2,/param2
-pc_read_var,obj=data,/trimall,variables=['rho','pp','cs2'],/magic,/add
+pc_read_var,obj=data,/trimall,variables=['pp','cs2'],/magic,/add
 gamma=par.gamma
 gamma1=par.gamma-1
 ss_left=par.ss_left & ss_right=par.ss_right
@@ -22,9 +22,14 @@ p_right=exp(gamma*(ss_right+alog(rho_right)))/gamma
 yyy=data.y
 uuu=data.uu[*,1]
 sss=data.ss
-llnrho=data.lnrho
+if (par.ldensity_nolog) then begin
+  rho=data.lnrho
+  llnrho=alog(data.lnrho)
+endif else begin
+  rho=exp(data.lnrho)
+  llnrho=data.lnrho
+endelse
 cs2=data.cs2
-rho=data.rho
 ppp=data.pp
 
 ;
