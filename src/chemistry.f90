@@ -10,11 +10,11 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED gTT(3); mu1; gamma; gamma_m1; gamma_inv; gradcp(3)
+! PENCILS PROVIDED gTT(3); mu1; gamma
 ! PENCILS PROVIDED cv; cv1; cp; cp1; YY(nchemspec); gXXk(3,nchemspec); ghhk(3,nchemspec)
-! PENCILS PROVIDED cs2; rho1gpp(3); glnpp(3); gmu1(3); nu; gradnu(3); nu_art
+! PENCILS PROVIDED cs2; rho1gpp(3); glnpp(3); gmu1(3); nu; gradnu(3)
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
-! PENCILS PROVIDED lambda; glambda(3); ghYrho(3);ghYrho_uu
+! PENCILS PROVIDED lambda; glambda(3)
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
 !
 !***************************************************************
@@ -31,7 +31,7 @@ module Chemistry
 
   real :: Rgas, Rgas_unit_sys=1.
   real, dimension (mx,my,mz) :: cp_full,cv_full,mu1_full, nu_full, pp_full
-  real, dimension (mx,my,mz) :: lambda_full, rho_full, nu_art_full=0.
+  real, dimension (mx,my,mz) :: lambda_full, rho_full!, nu_art_full=0.
   real, dimension (mx,my,mz,nchemspec) :: cv_R_spec_full
   real, dimension (mx,my,mz,nchemspec) ::  cp_R_spec, hhk_full
   real, dimension (mx,my,mz) ::  TT_full
@@ -59,6 +59,7 @@ module Chemistry
   logical :: lreactions=.true.
   logical :: ladvection=.true.
   logical :: ldiffusion=.true.
+!  logical :: lnospec_eqns=.true.
 
   logical :: lheatc_chemistry=.true.
 
@@ -292,6 +293,12 @@ module Chemistry
         ladvection=.false.
         ldiffusion=.false.
       endif
+
+!     if (lreactions==.false.) 
+!     if (ladvection==.false.)
+!     if (ldiffusion==.false.) then
+!      lnospec_eqns=.true.   
+!     endif
 !
 !  check for the existence of chemistry input files
 !
@@ -501,14 +508,10 @@ module Chemistry
          lpenc_requested(i_pp)=.true.
          lpenc_requested(i_cp)=.true.
          lpenc_requested(i_cp1)=.true.
-         lpenc_requested(i_gradcp)=.true.
          lpenc_requested(i_cv)=.true.
          lpenc_requested(i_cv1)=.true.
          lpenc_requested(i_gamma)=.true.
-         lpenc_requested(i_gamma_m1)=.true.
-         lpenc_requested(i_gamma_inv)=.true.
-         lpenc_requested(i_ghYrho)=.true.
-         lpenc_requested(i_ghYrho_uu)=.true.
+    
             
 !
          lpenc_requested(i_DYDt_reac)=.true.
@@ -567,14 +570,14 @@ module Chemistry
         do k=1,nchemspec;  p%YY(:,k)=f(l1:l2,m,n,ichemspec(k)); enddo
       endif
       
-      if (lpencil(i_gXXk)) then
+      if (lpencil(i_gXXk) .and. ldiffusion) then
        do k=1,nchemspec 
          call grad(XX_full(:,:,:,k),gXX_tmp)
          do i=1,3; p%gXXk(:,i,k)=gXX_tmp(:,i); enddo
        enddo
       endif
 
-     if (lpencil(i_ghhk)) then
+     if (lpencil(i_ghhk) .and. lreactions) then
        do k=1,nchemspec 
          call grad(hhk_full(:,:,:,k),ghhk_tmp)
          do i=1,3; p%ghhk(:,i,k)=ghhk_tmp(:,i); enddo
@@ -589,7 +592,7 @@ module Chemistry
           p%mu1=mu1_full(l1:l2,m,n)
         endif
 !
-        if (lpencil(i_gmu1)) call grad(mu1_full,p%gmu1)
+!        if (lpencil(i_gmu1)) call grad(mu1_full,p%gmu1)
 !
 !  Mole fraction XX
 !
@@ -651,8 +654,6 @@ module Chemistry
              p%glnpp(:,i)=p%rho1gpp(:,i)*p%rho(:)/p%pp(:)
             enddo
        endif
-      
-
 !
 !  Specific heat at constant pressure
 !
@@ -664,7 +665,7 @@ module Chemistry
 !
 !  Gradient of the above
 !
-        if (lpencil(i_gradcp)) call grad(cp_full,p%gradcp)
+!        if (lpencil(i_gradcp)) call grad(cp_full,p%gradcp)
 !
 !  Specific heat at constant volume (i.e. density)
 !
@@ -677,8 +678,8 @@ module Chemistry
 !  Polytropic index
 !
         if (lpencil(i_gamma)) p%gamma = p%cp*p%cv1
-        if (lpencil(i_gamma_inv)) p%gamma_inv = p%cv*p%cp1
-        if (lpencil(i_gamma_m1)) p%gamma_m1 = p%gamma - 1
+  !      if (lpencil(i_gamma_inv)) p%gamma_inv = p%cv*p%cp1
+  !      if (lpencil(i_gamma_m1)) p%gamma_m1 = p%gamma - 1
 !
 !  Sound speed
 !
@@ -701,12 +702,6 @@ module Chemistry
 !
       endif
 !
-!  Artificial Viscosity of a mixture
-!
-      if (lpencil(i_nu_art)) then
-        p%nu_art=nu_art_full(l1:l2,m,n)
-      endif
-!
 ! Calculate the reaction term and the corresponding pencil
 !
       if (lreactions .and. lpencil(i_DYDt_reac)) then
@@ -727,7 +722,7 @@ module Chemistry
 !
 ! Calculate chethermal diffusivity
 !
-      if (lpenc_requested(i_lambda)) then
+      if (lpenc_requested(i_lambda) .and. lheatc_chemistry) then
          p%lambda=lambda_full(l1:l2,m,n)
          if (lpenc_requested(i_glambda)) call grad(lambda_full,p%glambda)
       endif
@@ -738,9 +733,9 @@ module Chemistry
     !   call grad(hYrho_full,p%ghYrho)
     !  endif
 
-      if (lpenc_requested(i_ghYrho_uu)) then
-        call dot_mn(p%ghYrho,p%uu,p%ghYrho_uu)
-      endif
+    !   if (lpenc_requested(i_ghYrho_uu)) then
+    !    call dot_mn(p%ghYrho,p%uu,p%ghYrho_uu)
+    !  endif
 
 !
       call keep_compiler_quiet(f)
@@ -876,9 +871,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
       f(l1:l2,m1:m2,n1:n2,ilnrho)=log(init_pressure)-log(Rgas)  &
           -f(l1:l2,m1:m2,n1:n2,ilnTT)-log(mu1_full(l1:l2,m1:m2,n1:n2))
-
-
-
 !
 !  Initialize velocity
 !
@@ -1438,16 +1430,13 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
           inquire(file='tran.dat',exist=tran_exist)
 
-
-
           if (tran_exist) then
             call calc_diff_visc_coef(f)
           endif
 !
 !  Viscosity of a mixture
 !
-
-       
+      
        if (visc_const<impossible) then
                 nu_full=visc_const
        else
@@ -1581,46 +1570,20 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
 !  Enthalpy flux
 !
-
+        if (lreactions) then
         do j3=nn1,nn2
         do j2=mm1,mm2
         do j1=1,mx
-
-         
           do k=1,nchemspec
             hhk_full(j1,j2,j3,k)=H0_RT(j1,j2,j3,k)*Rgas*TT_full(j1,j2,j3)&
                /species_constants(k,imass)
           enddo
-!
-!  Internal energy
-!
-        !  e_int_full(j1,j2,j3)=hYrho_full(j1,j2,j3) &
-        !            -Rgas*TT_full(j1,j2,j3)*mu1_full(j1,j2,j3)
-        !  hYrho_full(j1,j2,j3)=hYrho_full(j1,j2,j3)*rho_full(j1,j2,j3)
         enddo
         enddo
         enddo
+        endif
        endif
 
-!
-!.......................................................
-!................................................
-!  Enthalpy flux
-!
-   !       hYrho_full=0.
-   !       do k=1,nchemspec
-   !         hYrho_full(l1:l2,m1:m2,n1:n2)=hYrho_full(l1:l2,m1:m2,n1:n2)&
-   !             +H0_RT(l1:l2,m1:m2,n1:n2,k)&
-   !             *Rgas*TT_full(l1:l2,m1:m2,n1:n2)&
-   !             *f(l1:l2,m1:m2,n1:n2,ichemspec(k))/species_constants(k,imass)
-   !       enddo
-!
-!  Internal energy
-!
-    !      e_int_full=hYrho_full-Rgas*TT_full*mu1_full
-    !      hYrho_full=hYrho_full*rho_full
-!
-!
 
         else
           call stop_it('This case works only for cgs units system!')
@@ -2096,7 +2059,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: gchemspec, dk_D
-      real, dimension (nx) :: ugchemspec, sum_DYDT!,sum_hk_DYDt_diff,ghYrho_uu=0.
+      real, dimension (nx) :: ugchemspec, sum_DYDT
       real, dimension (nx) :: sum_dk_ghk,dk_dhhk,sum_hhk_DYDt_reac
       type (pencil_case) :: p
 !

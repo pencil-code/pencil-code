@@ -13,7 +13,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED fvisc(3); diffus_total; diffus_total2; diffus_total3
-! PENCILS PROVIDED visc_heat; nu; nu_art; gradnu(3); sgnu(3)
+! PENCILS PROVIDED visc_heat; nu; gradnu(3); sgnu(3)
 !
 !***************************************************************
 module Viscosity
@@ -659,8 +659,8 @@ module Viscosity
 
         if (ldensity) then
           do i=1,3
-            p%fvisc(:,i)=2*(p%nu+p%nu_art)*p%sglnrho(:,i) &
-            +(p%nu+p%nu_art)*(p%del2u(:,i)+1./3.*p%graddivu(:,i)) &
+            p%fvisc(:,i)=2*p%nu*p%sglnrho(:,i) &
+            +p%nu*(p%del2u(:,i)+1./3.*p%graddivu(:,i)) &
             +2*p%sgnu(:,i)
        !  if (maxval(p%nu)<0) then
        !    call stop_it("Negative viscosity!")
@@ -671,7 +671,7 @@ module Viscosity
 !
 !  viscous heating and time step
 !
-        if (lpencil(i_visc_heat)) p%visc_heat=2*(p%nu+p%nu_art)*p%sij2
+        if (lpencil(i_visc_heat)) p%visc_heat=2*p%nu*p%sij2
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+p%nu
       endif
 !
