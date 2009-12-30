@@ -180,6 +180,7 @@ module Cdata
   logical :: leos=.false., leos_idealgas=.false., leos_chemistry=.false.
   logical :: leos_ionization=.false.,leos_fixed_ionization=.false.
   logical :: ltestperturb=.false.
+  logical :: lweno_transport=.false.
   logical :: lstart=.false., lrun=.false., lreloading=.false.
 !
 !  Variable indices (default zero, set later by relevant physics modules).

@@ -133,7 +133,7 @@ module Entropy
 !
       use EquationOfState, only: beta_glnrho_scaled
 !
-      if (lhydro) lpenc_requested(i_fpres)=.true.
+      if (lhydro .and. lpressuregradient_gas) lpenc_requested(i_fpres)=.true.
       if (leos.and.ldt) lpenc_requested(i_cs2)=.true.
       if (maxval(abs(beta_glnrho_scaled))/=0.0) lpenc_requested(i_cs2)=.true.
 !

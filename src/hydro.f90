@@ -18,8 +18,7 @@
 ! PENCILS PROVIDED u3u21; u1u32; u2u13; del2u(3); del4u(3); del6u(3)
 ! PENCILS PROVIDED u2u31; u3u12; u1u23
 ! PENCILS PROVIDED graddivu(3); del6u_bulk(3); grad5divu(3)
-! PENCILS PROVIDED rhougu(3)
-! PENCILS PROVIDED der6u(3) 
+! PENCILS PROVIDED rhougu(3); der6u(3); transpurho(3)
 !
 !***************************************************************
 module Hydro
@@ -1160,7 +1159,16 @@ module Hydro
 !
       use Mpicomm, only: stop_it
 !
-      if (ladvection_velocity) lpenc_requested(i_ugu)=.true.
+      if (ladvection_velocity) then
+        if (lweno_transport) then
+          lpenc_requested(i_uu)=.true.
+          lpenc_requested(i_rho1)=.true.
+          lpenc_requested(i_transprho)=.true.
+          lpenc_requested(i_transpurho)=.true.
+        else
+          lpenc_requested(i_ugu)=.true.
+        endif
+      endif
       if (ldensity_anelastic) lpenc_requested(i_rhougu)=.true.
       if (lprecession) lpenc_requested(i_rr)=.true.
       if (ldt.or.(eckmann_friction/=0)) lpenc_requested(i_uu)=.true.
@@ -1319,8 +1327,9 @@ module Hydro
 !  26-mar-07/axel: started using the gij_etc routine
 !
       use Deriv
-      use Sub
       use Mpicomm, only: stop_it
+      use Sub
+      use WENO_transport
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -1439,6 +1448,12 @@ module Hydro
           p%grad5divu(:,i)=tmp
         enddo
       endif
+! transpurho
+      if (lpencil(i_transpurho)) then
+        call weno_transp(f,m,n,iux,irho,iux,iuy,iuz,p%transpurho(:,1),dx_1,dy_1,dz_1)
+        call weno_transp(f,m,n,iuy,irho,iux,iuy,iuz,p%transpurho(:,2),dx_1,dy_1,dz_1)
+        call weno_transp(f,m,n,iuz,irho,iux,iuy,iuz,p%transpurho(:,3),dx_1,dy_1,dz_1)
+      endif
 !
     endsubroutine calc_pencils_hydro
 !***********************************************************************
@@ -1483,7 +1498,14 @@ module Hydro
 !  Advection term.
 !
       if (ladvection_velocity) then 
+        if (lweno_transport) then
+          do j=1,3
+            df(l1:l2,m,n,iux-1+j)=df(l1:l2,m,n,iux-1+j) &
+                - p%transpurho(:,j)*p%rho1 + p%uu(:,j)*p%rho1*p%transprho
+          enddo
+        else
           df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
+        endif
       endif
 !
 !  Coriolis force, -2*Omega x u (unless lprecession=T)

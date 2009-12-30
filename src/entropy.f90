@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED ugss; Ma2; fpres(3); uglnTT
+! PENCILS PROVIDED ugss; Ma2; fpres(3); uglnTT; transprhos
 !
 !***************************************************************
 module Entropy
@@ -1823,7 +1823,15 @@ module Entropy
           tau_cor>0) lpenc_requested(i_cp1)=.true.
       if (ldt) lpenc_requested(i_cs2)=.true.
       if (lpressuregradient_gas) lpenc_requested(i_fpres)=.true.
-      if (ladvection_entropy) lpenc_requested(i_ugss)=.true.
+      if (ladvection_entropy) then
+        if (lweno_transport) then
+          lpenc_requested(i_rho1)=.true.
+          lpenc_requested(i_transprho)=.true.
+          lpenc_requested(i_transprhos)=.true.
+        else
+          lpenc_requested(i_ugss)=.true.
+        endif
+      endif
       if (lviscosity.and.lviscosity_heat) then
         lpenc_requested(i_TT1)=.true.
         lpenc_requested(i_visc_heat)=.true.
@@ -2048,6 +2056,7 @@ module Entropy
 !
       use EquationOfState
       use Sub
+      use WENO_transport
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -2079,6 +2088,9 @@ module Entropy
           enddo
         endif
       endif
+!  transprhos
+      if (lpencil(i_transprhos)) &
+          call weno_transp(f,m,n,iss,irho,iux,iuy,iuz,p%transprhos,dx_1,dy_1,dz_1)
 !
     endsubroutine calc_pencils_entropy
 !***********************************************************************
@@ -2181,7 +2193,12 @@ module Entropy
         if (pretend_lnTT) then
           df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%divu*gamma_m1-p%uglnTT
         else
-          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%ugss
+          if (lweno_transport) then
+            df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+                - p%transprhos*p%rho1 + p%ss*p%rho1*p%transprho
+          else
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%ugss
+          endif
         endif
       endif
 !

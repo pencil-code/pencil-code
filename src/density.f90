@@ -14,7 +14,7 @@
 !
 ! PENCILS PROVIDED lnrho; rho; rho1; glnrho(3); grho(3); uglnrho; ugrho
 ! PENCILS PROVIDED glnrho2; del2lnrho; del2rho; del6lnrho; del6rho
-! PENCILS PROVIDED hlnrho(3,3); sglnrho(3); uij5glnrho(3)
+! PENCILS PROVIDED hlnrho(3,3); sglnrho(3); uij5glnrho(3); transprho
 !
 !***************************************************************
 module Density
@@ -1262,11 +1262,15 @@ module Density
 !
       if (ldensity_nolog) lpenc_requested(i_rho)=.true.
       if (lcontinuity_gas) then
-        lpenc_requested(i_divu)=.true.
-        if (ldensity_nolog) then
-          lpenc_requested(i_ugrho)=.true.
+        if (lweno_transport) then
+          lpenc_requested(i_transprho)=.true.
         else
-          lpenc_requested(i_uglnrho)=.true.
+          lpenc_requested(i_divu)=.true.
+          if (ldensity_nolog) then
+            lpenc_requested(i_ugrho)=.true.
+          else
+            lpenc_requested(i_uglnrho)=.true.
+          endif
         endif
       endif
       if (ldiff_shock) then
@@ -1371,8 +1375,9 @@ module Density
 !
 !  19-11-04/anders: coded
 !
-      use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij, dot_mn
+      use WENO_transport
       use Mpicomm, only: stop_it
+      use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij, dot_mn
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -1380,9 +1385,7 @@ module Density
       integer :: i
 !
       intent(inout) :: f,p
-!
 ! lnrho
-!
       if (lpencil(i_lnrho)) then
         if (ldensity_nolog) then
           p%lnrho=log(f(l1:l2,m,n,irho))
@@ -1390,9 +1393,7 @@ module Density
           p%lnrho=f(l1:l2,m,n,ilnrho)
         endif
       endif
-!
 ! rho1 and rho
-!
       if (ldensity_nolog) then
         if (lpencil(i_rho)) then
           p%rho=f(l1:l2,m,n,irho)
@@ -1404,9 +1405,7 @@ module Density
         if (lpencil(i_rho1)) p%rho1=exp(-f(l1:l2,m,n,ilnrho))
         if (lpencil(i_rho)) p%rho=1.0/p%rho1
       endif
-!
 ! glnrho and grho
-!
       if (lpencil(i_glnrho).or.lpencil(i_grho)) then
         if (ldensity_nolog) then
           call grad(f,ilnrho,p%grho)
@@ -1428,9 +1427,7 @@ module Density
           endif
         endif
       endif
-!
 ! uglnrho
-!
       if (lpencil(i_uglnrho)) then
         if (ldensity_nolog) then
           call dot(p%uu,p%glnrho,p%uglnrho)
@@ -1441,9 +1438,7 @@ module Density
           !!print*,'nl: n,m,density:', n,m,maxval(p%uglnrho), minval(p%uglnrho)
         endif
       endif
-!
 ! ugrho
-!
       if (lpencil(i_ugrho)) then
         if (ldensity_nolog) then
           if (lupw_lnrho) call stop_it("calc_pencils_density: you switched "//&
@@ -1453,13 +1448,9 @@ module Density
           call dot(p%uu,p%grho,p%ugrho)
         endif
       endif
-!
 ! glnrho2
-!
       if (lpencil(i_glnrho2)) call dot2(p%glnrho,p%glnrho2)
-!
 ! del2lnrho
-!
       if (lpencil(i_del2lnrho)) then
         if (ldensity_nolog) then
           if (headtt) then
@@ -1470,9 +1461,7 @@ module Density
           call del2(f,ilnrho,p%del2lnrho)
         endif
       endif
-!
 ! del2rho
-!
       if (lpencil(i_del2rho)) then
         if (ldensity_nolog) then
           call del2(f,ilnrho,p%del2rho)
@@ -1486,9 +1475,7 @@ module Density
           endif
         endif
       endif
-!
 ! del6rho
-!
       if (lpencil(i_del6rho)) then
         if (ldensity_nolog) then
           call del6(f,ilnrho,p%del6rho)
@@ -1502,9 +1489,7 @@ module Density
           endif
         endif
       endif
-!
 ! del6lnrho
-!
       if (lpencil(i_del6lnrho)) then
         if (ldensity_nolog) then
           if (headtt) then
@@ -1515,9 +1500,7 @@ module Density
           call del6(f,ilnrho,p%del6lnrho)
         endif
       endif
-!
 ! hlnrho
-!
       if (lpencil(i_hlnrho)) then
         if (ldensity_nolog) then
           if (headtt) then
@@ -1528,14 +1511,13 @@ module Density
           call g2ij(f,ilnrho,p%hlnrho)
         endif
       endif
-!
 ! sglnrho
-!
       if (lpencil(i_sglnrho)) call multmv(p%sij,p%glnrho,p%sglnrho)
-!
 ! uij5glnrho
-!
       if (lpencil(i_uij5glnrho)) call multmv(p%uij5,p%glnrho,p%uij5glnrho)
+! transprho
+      if (lpencil(i_transprho)) &
+          call weno_transp(f,m,n,irho,-1,iux,iuy,iuz,p%transprho,dx_1,dy_1,dz_1)
 !
     endsubroutine calc_pencils_density
 !***********************************************************************
@@ -1583,19 +1565,18 @@ module Density
 !  Continuity equation.
 !
       if (lcontinuity_gas) then
-        if (ieos_profile=='nothing') then
+        if (lweno_transport) then
+          if (ldensity_nolog) then
+            df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   - p%transprho
+          else
+            call fatal_error('dlnrho_dt','can not do WENO transport for '// &
+                'logarithmic density!')
+          endif
+        else
           if (ldensity_nolog) then
             df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   - p%ugrho - p%rho*p%divu
           else
             df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%uglnrho - p%divu
-          endif
-        else
-          if (ldensity_nolog) then
-            df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   &
-              - profz_eos(n)*(p%ugrho + p%rho*p%divu)
-          else
-            df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) &
-              - profz_eos(n)*(p%uglnrho + p%divu)
           endif
         endif
       endif
