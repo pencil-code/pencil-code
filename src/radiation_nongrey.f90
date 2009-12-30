@@ -1354,12 +1354,12 @@ module Radiation
 !
       if (lrad_cool_diffus.or.lrad_pres_diffus) then
         call stop_it("radiative_cooling: diffusion not implemented for non-grey RT")
-        !call calc_rad_diffusion(f,df,p)
+        !call calc_rad_diffusion(f,p)
         !cooling=f(l1:l2,m,n,iQrad)
       else
         if (any(opacity_type=='kappa_es')) then 
           call stop_it("radiative_cooling: scattering not implemented for non-grey RT")
-          call calc_rad_diffusion(f,df,p)
+          call calc_rad_diffusion(f,p)
         endif
         cooling=divF(l1:l2,m,n)
         !cooling=f(l1:l2,m,n,iQrad)*f(l1:l2,m,n,ikapparho) !just the 1st frequency (visible)
@@ -2103,7 +2103,7 @@ module Radiation
 !
     endsubroutine get_slices_radiation
 !***********************************************************************
-    subroutine calc_rad_diffusion(f,df,p)
+    subroutine calc_rad_diffusion(f,p)
 !
 !  radiation in the diffusion approximation
 !

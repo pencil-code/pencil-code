@@ -407,7 +407,6 @@ module Radiation
       use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(nx) :: Jrad
       integer :: j,k,inu
 !
 !  Identifier
@@ -427,7 +426,7 @@ module Radiation
 !  Calculate source function and opacity
 !
         call source_function(f,inu)
-        call opacity(f,inu)
+        call opacity(f)
 !
 !  do the rest only if we don't do diffusion approximation
 !
@@ -595,7 +594,6 @@ module Radiation
       real :: Srad1st,Srad2nd,dlength,emdtau1,emdtau2,emdtau
       real :: dtau_m,dtau_p,dSdtau_m,dSdtau_p
       real :: dtau_mm,dtau_pp
-      character(len=3) :: raydir
 !
 !  identifier
 !
@@ -675,8 +673,6 @@ module Radiation
 !
 !  30-jul-05/tobi: coded
 !
-      integer :: steps
-      integer :: minsteps
       integer :: lsteps,msteps,nsteps
       real, pointer :: val
       logical, pointer :: set
@@ -810,7 +806,7 @@ module Radiation
       real, dimension (my,mz) :: emtau_yz,Qrad_yz
       real, dimension (mx,mz) :: emtau_zx,Qrad_zx
       real, dimension (mx,my) :: emtau_xy,Qrad_xy
-      real, dimension (my,mz) :: Qsend_yz,Qrecv_yz
+      real, dimension (my,mz) :: Qrecv_yz !,Qsend_yz CHECK why this is not used!
       real, dimension (mx,mz) :: Qsend_zx,Qrecv_zx
       real, dimension (mx,my) :: Qrecv_xy,Qsend_xy
 
@@ -993,7 +989,7 @@ module Radiation
       use IO, only: output
 
       real, dimension(ny,nz) :: Qrad_yz,tau_yz,emtau1_yz
-      real, dimension(nx,nz) :: Qrad_zx,tau_zx,emtau1_zx
+      real, dimension(nx,nz) :: Qrad_zx,tau_zx !,emtau1_zx
       real, dimension(nx,nz) :: Qrad_tot_zx,tau_tot_zx,emtau1_tot_zx
       real, dimension(nx,nz,0:nprocy-1) :: Qrad_zx_all,tau_zx_all
       integer :: ipystart,ipystop,ipm
@@ -1137,7 +1133,6 @@ module Radiation
       use Mpicomm, only: stop_it
 !
       real, dimension(my,mz), intent(out) :: Qrad0_yz
-      real :: Irad_yz
 !
 !  No incoming intensity
 !
@@ -1187,7 +1182,6 @@ module Radiation
       use Mpicomm, only: stop_it
 !
       real, dimension(mx,mz), intent(out) :: Qrad0_zx
-      real :: Irad_zx
 !
 !  No incoming intensity
 !
@@ -1315,10 +1309,10 @@ module Radiation
 !  AB: the following looks strange ...
 !
       if (lrad_cool_diffus.or.lrad_pres_diffus) then
-        call calc_rad_diffusion(f,df,p)
+        call calc_rad_diffusion(f,p)
         cooling=f(l1:l2,m,n,iQrad)
       else
-        if (opacity_type=='kappa_es') call calc_rad_diffusion(f,df,p)
+        if (opacity_type=='kappa_es') call calc_rad_diffusion(f,p)
         cooling=f(l1:l2,m,n,ikapparho)*f(l1:l2,m,n,iQrad)
       endif
 !
@@ -1465,7 +1459,7 @@ module Radiation
 
     endsubroutine source_function
 !***********************************************************************
-    subroutine opacity(f,inu)
+    subroutine opacity(f)
 !
 !  calculates opacity
 !
@@ -1485,8 +1479,8 @@ module Radiation
       real, dimension(mx) :: tmp,lnrho,lnTT,yH
       real :: kappa0, kappa0_cgs,k1,k2
       logical, save :: lfirst=.true.
-      integer :: i,inu
-
+      integer :: i
+!
       select case (opacity_type)
 
       case ('Hminus')
@@ -1850,6 +1844,7 @@ module Radiation
       intent(in) :: f,p
 !
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_radiation
 !***********************************************************************
@@ -2002,7 +1997,6 @@ module Radiation
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
-      integer :: inamev
       integer, save :: idir_last=0
 !
 !  Loop over slices
@@ -2099,7 +2093,7 @@ module Radiation
 !
     endsubroutine get_slices_radiation
 !***********************************************************************
-    subroutine calc_rad_diffusion(f,df,p)
+    subroutine calc_rad_diffusion(f,p)
 !
 !  radiation in the diffusion approximation
 !
@@ -2114,14 +2108,12 @@ module Radiation
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (pencil_case) :: p
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: glnThcond,duu
-      real, dimension (nx) :: Krad,chi_rad,g2,diffus_chi1
+      real, dimension (nx) :: Krad,chi_rad,g2
       real, dimension (nx) :: local_optical_depth,opt_thin,opt_thick,dt1_rad
-      real :: fact, rho_max=0. !, dl_max=0.
-      integer :: j,k,  zone_size
+      real :: fact
+      integer :: j,k
 
-      intent(inout) :: f,df
+      intent(inout) :: f
       intent(in) :: p
 !
 !  calculate diffusion coefficient, Krad=16*sigmaSB*T^3/(3*kappa*rho)
