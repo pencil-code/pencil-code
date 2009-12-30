@@ -277,8 +277,8 @@ module Testfield
 !     real :: fnamez_mean
       integer :: jtest,j
       integer,save :: ifirst=0
-      logical :: ltestfield_out
-      character (len=5) :: ch='\_/^\'
+!      logical :: ltestfield_out
+!      character (len=5) :: ch='\_/^\'
       character (len=130) :: file
 !
       intent(in)     :: f,p
