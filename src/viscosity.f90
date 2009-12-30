@@ -506,7 +506,6 @@ module Viscosity
         lpenc_requested(i_glnrho)=.true.
         lpenc_requested(i_sglnrho)=.true.
         lpenc_requested(i_nu)=.true.
-        lpenc_requested(i_nu_art)=.true.
         lpenc_requested(i_gradnu)=.true.
         lpenc_requested(i_sgnu)=.true.
         lpenc_diagnos(i_sij2)=.true.
