@@ -1435,7 +1435,6 @@ module Density
           if (lupw_rho) call stop_it("calc_pencils_density: you switched "//&
                "lupw_rho instead of lupw_lnrho")
           call u_dot_grad(f,ilnrho,p%glnrho,p%uu,p%uglnrho,UPWIND=lupw_lnrho)
-          !!print*,'nl: n,m,density:', n,m,maxval(p%uglnrho), minval(p%uglnrho)
         endif
       endif
 ! ugrho
