@@ -275,7 +275,6 @@ module Testfield
       real, dimension (nx,3) :: uxB,bbtest,btest,uxbtest,duxbtest
       real, dimension (nx,3) :: del2Atest
       integer :: jtest,j
-      character (len=130) :: file
 !
       intent(in)     :: f,p
       intent(inout)  :: df
