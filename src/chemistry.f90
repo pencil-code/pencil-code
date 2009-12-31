@@ -552,17 +552,11 @@ module Chemistry
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension (nx) :: mu1_cgs, cp_spec
       real, dimension (nx,3) :: gXX_tmp, ghhk_tmp
-      real, dimension (mx) :: tmp_sum, tmp_sum2
-      real, dimension (nchemspec,nchemspec) :: Phi
 !
       intent(in) :: f
       intent(inout) :: p
-      integer :: k,i,j
-      real :: T_local, T_up, T_mid, T_low, tmp,  lnT_local
-      real :: mk_mj, nuk_nuj
-      logical :: lcheminp_tmp=.false.
+      integer :: k,i
 !
 !  Mass fraction YY
 !
@@ -750,8 +744,7 @@ module Chemistry
 ! This routine set up the initial profiles used in 1D flame speed measurments
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: mu1
-      integer :: k,j,i,j1,j2,j3
+      integer :: k
 
       real :: mO2, mH2, mN2, mH2O
       real :: log_inlet_density, del
@@ -894,8 +887,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 ! This routine set up the initial profiles used in 1D flame speed measurments
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: mu1
-      integer :: k,j,i,j1,j2,j3
+      integer :: j1,j2,j3
 
       real :: mO2, mH2, mN2, mH2O
       real :: log_inlet_density, del
@@ -1106,10 +1098,9 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: mu1
-      integer :: k,j,i,j1,j2,j3
+      integer :: j1,j2,j3
 
       real :: mO2, mH2, mN2, mH2O
-      real :: log_inlet_density
       integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
       real :: initial_mu1, final_massfrac_O2
       logical :: found_specie
@@ -1262,13 +1253,12 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) ::  tmp_sum,tmp_sum2, nuk_nuj, nu_dyn, Phi
+      real, dimension (mx,my,mz) ::  tmp_sum,tmp_sum2, nu_dyn
 !     real, dimension (mx,my,mz,nchemspec,nchemspec) :: Phi
 !
       intent(in) :: f
-      integer :: k,i,j, j1,j2,j3
+      integer :: k,j, j1,j2,j3
       real :: T_up, T_mid, T_low, T_loc, tmp
-      real :: mk_mj
 !
       logical :: tran_exist=.false.
       logical,save :: lwrite=.true.
@@ -1729,11 +1719,11 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       character (len=80) :: chemicals='' 
       ! Careful, limits the absolut size of the input matrix !!!
       character (len=15) :: file1='chemistry_m.dat',file2='chemistry_p.dat'
-      character (len=20) :: input_file='chem.inp'
+!      character (len=20) :: input_file='chem.inp'
       real, dimension (mx,my,mz,mfarray) :: f
       real :: dummy
       logical :: exist,exist1,exist2
-      integer :: i,j,k,stat
+      integer :: i,j,stat
       integer :: nchemspectemp
       character :: tmpchar
       logical :: inside
@@ -1913,6 +1903,8 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
         enddo
       endif
 !
+      call keep_compiler_quiet(f)
+!
     endsubroutine astrobiology_data
 !**********************************************************************
     subroutine chemkin_data(f)
@@ -2032,7 +2024,9 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       endif
 
 100   format(8i4)
-
+!
+      call keep_compiler_quiet(f)
+!
     endsubroutine chemkin_data
 !**********************************************************************
     subroutine dchemistry_dt(f,df,p)
@@ -2824,7 +2818,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       character (len=*), intent(in) :: input_file
       integer :: file_id=123, ind_glob, ind_chem
       character (len=80) :: ChemInpLine
-      integer :: In1,In2,In3,In4,In5,iElement,iTemperature,nn2,StopInd
+      integer :: In1,In2,In3,In4,In5,iElement,iTemperature,StopInd
       integer :: NumberOfElement_i
       logical :: IsThermo=.false., found_specie
       real, dimension(4) :: MolMass
@@ -4144,6 +4138,8 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
         enddo
         enddo
 !
+        call keep_compiler_quiet(f)
+!
     endsubroutine calc_therm_diffus_coef
 !***************************************************************
     subroutine calc_diffusion_term(f,p)
@@ -4162,7 +4158,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       real, dimension (nx) :: diff_op,diff_op1,diff_op2,del2XX, del2pp, del2lnpp
       real, dimension (nx) :: glnpp_gXkYk,glnrho_glnpp,gD_glnpp, glnpp_glnpp
       real :: diff_k
-      integer :: j,k,i, j1,j2,j3
+      integer :: k
 !
       intent(in) :: f
 !
@@ -4234,7 +4230,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       type (pencil_case) :: p
 
       real, dimension(nx) :: g2TT, g2TTlambda=0., tmp1
-      integer :: i
 !
 
      if (ltemperature_nolog) then
@@ -4269,7 +4264,8 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
       RHS_T_full(l1:l2,m,n)=RHS_T_full(l1:l2,m,n) + tmp1
 !
-
+      call keep_compiler_quiet(f)
+!
     endsubroutine calc_heatcond_chemistry
 !***********************************************************************
    subroutine get_cs2_full(cs2_full)
@@ -4377,7 +4373,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       character (len=80) :: ChemInpLine
       character (len=10) :: specie_string
       character (len=1)  :: tmp_string
-      integer :: i,j,k=1
+      integer :: j,k=1
       real :: YY_k, air_mass, TT=300., PP=1.013e6 ! (in dynes = 1atm)
       real, dimension(nchemspec)    :: stor2
       integer, dimension(nchemspec) :: stor1
@@ -6219,7 +6215,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       real, dimension (mx) :: func_x
-      integer :: i, j, j1,ll1,ll2
+      integer :: j1
       real :: dt1, func_y,func_z, ux_ref,uy_ref,uz_ref,lnTT_ref,lnrho_ref
       real :: sz1,sz2, sz1_x,sz2_x, del
       logical :: lzone_y=.false.,lzone_z=.false.
