@@ -3797,8 +3797,8 @@ module Magnetic
           call mpireduce_sum(fnamexy(:,:,idiag_bzmxy),fsumxy,(/nx,ny/),idir=2)
           bzmx=sum(fsumxy,dim=2)/nygrid
         endif
-        if (ipx==0 .and. ipz==0) then
-          call mpireduce_sum(bymx**2+bzmx**2,bmx2,nx,idir=2)
+        if (ipy==0 .and. ipz==0) then
+          call mpireduce_sum(bymx**2+bzmx**2,bmx2,nx,idir=1)
         endif
         bmx=sqrt(sum(bmx2)/nxgrid)
       endif
