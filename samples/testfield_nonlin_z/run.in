@@ -1,0 +1,39 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  run parameters for nonlinear test-field method
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2010-01-01 18:05:23 brandenb Exp $',
+  nt=51, it1=10, isave=500, itorder=3
+  dsnap=500, dvid=100., ialive=1
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  ladvection_velocity=F
+  lforcing_cont_uu=F
+  lcalc_uumean=T
+/
+&forcing_run_pars
+  lforcing_cont=T, iforcing_cont='RobertsFlow', ampl_ff=1.
+/
+&magnetic_run_pars
+  lforcing_cont_aa=T
+  lcalc_aamean=T
+  B_ext=1.,0,0
+  eta=1.
+/
+&testfield_run_pars
+  linit_aatest=T, daainit=100., reinitialize_from_mainrun=T
+  itestfield='B11-B22', ktestfield=1.
+  etatest=1., nutest=1.
+  lsoca=F, lsoca_jxb=F
+  bamp=1., ltestfield_newz=F
+  lforcing_cont_uutest=F
+  lforcing_cont_aatest=T
+  itestfield_method='(i)'
+  lphase_adjust=T, phase_testfield=0.
+/
+&viscosity_run_pars
+  nu=1., ivisc='simplified'
+/

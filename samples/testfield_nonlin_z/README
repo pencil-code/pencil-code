@@ -1,0 +1,17 @@
+Directory:
+    ${PENCIL_HOME}/samples/testfield_nonlin_z
+SVN Id:
+    $Id: README 10936 2009-05-25 04:47:00Z ajohan@strw.leidenuniv.nl $
+Maintainer:
+    Axel Brandenburg <brandenb/nordita[dot]dk>
+Added:
+     3-Jan-2010
+Status:
+    New reference data since 3-Jan-2010
+Recommended resolution:
+    32x32x32 for forcing strengths ampl_ff=10 and 100
+Comments:
+    This is a nonlinear test-field method needed for magnetically
+    dominated flows. For ktestfield=0 (not currently the default)
+    the imposed-field and test-field methods agree.
+References:
