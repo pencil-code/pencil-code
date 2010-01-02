@@ -215,6 +215,7 @@ module Mpicomm
 !  Communicators
 !
   integer :: MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM
+  integer :: MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE
 !
   integer :: isend_rq_tolowx,isend_rq_touppx,irecv_rq_fromlowx,irecv_rq_fromuppx
   integer :: isend_rq_tolowy,isend_rq_touppy,irecv_rq_fromlowy,irecv_rq_fromuppy
@@ -280,7 +281,7 @@ module Mpicomm
 !  Warn the user if using nprocx>1 (this warning should eventually be deleted).
 !
       if (nprocx/=1) then
-        if (lroot) print*, 'WARNING: nprocx > 1 is not yet well tested'
+        if (lroot) print*, 'WARNING: for nprocx > 1 Fourier transform is not OK'
       endif
 !
 !  Avoid overlapping ghost zones.
@@ -356,6 +357,12 @@ module Mpicomm
           MPI_COMM_YBEAM, ierr)
       call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipx+nprocx*ipy, ipz, &
           MPI_COMM_ZBEAM, ierr)
+      call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipz, ipx+nprocx*ipy, &
+          MPI_COMM_XYPLANE, ierr)
+      call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipy, ipx+nprocx*ipz, &
+          MPI_COMM_XZPLANE, ierr)
+      call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipx, ipy+nprocy*ipz, &
+          MPI_COMM_YZPLANE, ierr)
 !
     endsubroutine mpicomm_init
 !***********************************************************************
@@ -656,10 +663,22 @@ module Mpicomm
         if (ipx==0 .or. ipx==nprocx-1) then
           ipx_partner=(nprocx-ipx-1)
           ystep = displs/ny
-          nextya=ipz*nprocy*nprocx+modulo(ipy-ystep,nprocy)  *nprocx+ipx_partner
-          lastya=ipz*nprocy*nprocx+modulo(ipy-ystep-1,nprocy)*nprocx+ipx_partner
-          lastyb=ipz*nprocy*nprocx+modulo(ipy+ystep,nprocy)  *nprocx+ipx_partner
-          nextyb=ipz*nprocy*nprocx+modulo(ipy+ystep+1,nprocy)*nprocx+ipx_partner
+          if (deltay>=0) then
+            nextya=ipz*nprocy*nprocx+modulo(ipy-ystep,nprocy)  *nprocx+ipx_partner
+            lastya=ipz*nprocy*nprocx+modulo(ipy-ystep-1,nprocy)*nprocx+ipx_partner
+            lastyb=ipz*nprocy*nprocx+modulo(ipy+ystep,nprocy)  *nprocx+ipx_partner
+            nextyb=ipz*nprocy*nprocx+modulo(ipy+ystep+1,nprocy)*nprocx+ipx_partner
+          else
+!
+!  The following is probably not quite right (I see some imperfections
+!  near the x boundaries.
+!
+            nextya=ipz*nprocy*nprocx+modulo(ipy-ystep,nprocy)  *nprocx+ipx_partner
+            lastya=ipz*nprocy*nprocx+modulo(ipy-ystep-1,nprocy)*nprocx+ipx_partner
+            lastyb=ipz*nprocy*nprocx+modulo(ipy+ystep,nprocy)  *nprocx+ipx_partner
+            nextyb=ipz*nprocy*nprocx+modulo(ipy+ystep+1,nprocy)*nprocx+ipx_partner
+          endif
+!
           fao(:,:,:,ivar1:ivar2) = f(l1:l1i,:,:,ivar1:ivar2)
           fbo(:,:,:,ivar1:ivar2) = f(l2i:l2,:,:,ivar1:ivar2)
           nbufx_gh=my*mz*nghost*(ivar2-ivar1+1)
@@ -713,9 +732,7 @@ module Mpicomm
 !  Subroutine for shearing sheet boundary conditions
 !
 !  20-june-02/nils: adapted from pencil_mpi
-!
-!  Sliding periodic boundary conditions in x
-!  ulf:02-mar-02
+!  02-mar-02/ulf: Sliding periodic boundary conditions in x
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
@@ -1443,7 +1460,7 @@ module Mpicomm
 !
 !  Communicate real array(:,:) to other processor.
 !
-!  25-fev-08/wlad: adapted
+!  25-feb-08/wlad: adapted
 !
       integer, dimension(2) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
@@ -1583,6 +1600,9 @@ module Mpicomm
         if (idir==1) mpiprocs=MPI_COMM_XBEAM
         if (idir==2) mpiprocs=MPI_COMM_YBEAM
         if (idir==3) mpiprocs=MPI_COMM_ZBEAM
+        if (idir==12) mpiprocs=MPI_COMM_XYPLANE
+        if (idir==13) mpiprocs=MPI_COMM_XZPLANE
+        if (idir==23) mpiprocs=MPI_COMM_YZPLANE
       else
         mpiprocs=MPI_COMM_WORLD 
       endif
@@ -1606,6 +1626,9 @@ module Mpicomm
         if (idir==1) mpiprocs=MPI_COMM_XBEAM
         if (idir==2) mpiprocs=MPI_COMM_YBEAM
         if (idir==3) mpiprocs=MPI_COMM_ZBEAM
+        if (idir==12) mpiprocs=MPI_COMM_XYPLANE
+        if (idir==13) mpiprocs=MPI_COMM_XZPLANE
+        if (idir==23) mpiprocs=MPI_COMM_YZPLANE
       else
         mpiprocs=MPI_COMM_WORLD 
       endif
@@ -1631,6 +1654,9 @@ module Mpicomm
         if (idir==1) mpiprocs=MPI_COMM_XBEAM
         if (idir==2) mpiprocs=MPI_COMM_YBEAM
         if (idir==3) mpiprocs=MPI_COMM_ZBEAM
+        if (idir==12) mpiprocs=MPI_COMM_XYPLANE
+        if (idir==13) mpiprocs=MPI_COMM_XZPLANE
+        if (idir==23) mpiprocs=MPI_COMM_YZPLANE
       else
         mpiprocs=MPI_COMM_WORLD 
       endif
@@ -1656,6 +1682,9 @@ module Mpicomm
         if (idir==1) mpiprocs=MPI_COMM_XBEAM
         if (idir==2) mpiprocs=MPI_COMM_YBEAM
         if (idir==3) mpiprocs=MPI_COMM_ZBEAM
+        if (idir==12) mpiprocs=MPI_COMM_XYPLANE
+        if (idir==13) mpiprocs=MPI_COMM_XZPLANE
+        if (idir==23) mpiprocs=MPI_COMM_YZPLANE
       else
         mpiprocs=MPI_COMM_WORLD 
       endif
@@ -1869,6 +1898,9 @@ module Mpicomm
           if (idir==1) mpiprocs=MPI_COMM_XBEAM
           if (idir==2) mpiprocs=MPI_COMM_YBEAM
           if (idir==3) mpiprocs=MPI_COMM_ZBEAM
+          if (idir==12) mpiprocs=MPI_COMM_XYPLANE
+          if (idir==13) mpiprocs=MPI_COMM_XZPLANE
+          if (idir==23) mpiprocs=MPI_COMM_YZPLANE
         else
           mpiprocs=MPI_COMM_WORLD 
         endif
@@ -1898,6 +1930,9 @@ module Mpicomm
           if (idir==1) mpiprocs=MPI_COMM_XBEAM
           if (idir==2) mpiprocs=MPI_COMM_YBEAM
           if (idir==3) mpiprocs=MPI_COMM_ZBEAM
+          if (idir==12) mpiprocs=MPI_COMM_XYPLANE
+          if (idir==13) mpiprocs=MPI_COMM_XZPLANE
+          if (idir==23) mpiprocs=MPI_COMM_YZPLANE
         else
           mpiprocs=MPI_COMM_WORLD 
         endif
@@ -1927,6 +1962,9 @@ module Mpicomm
           if (idir==1) mpiprocs=MPI_COMM_XBEAM
           if (idir==2) mpiprocs=MPI_COMM_YBEAM
           if (idir==3) mpiprocs=MPI_COMM_ZBEAM
+          if (idir==12) mpiprocs=MPI_COMM_XYPLANE
+          if (idir==13) mpiprocs=MPI_COMM_XZPLANE
+          if (idir==23) mpiprocs=MPI_COMM_YZPLANE
         else
           mpiprocs=MPI_COMM_WORLD 
         endif
@@ -1956,6 +1994,9 @@ module Mpicomm
           if (idir==1) mpiprocs=MPI_COMM_XBEAM
           if (idir==2) mpiprocs=MPI_COMM_YBEAM
           if (idir==3) mpiprocs=MPI_COMM_ZBEAM
+          if (idir==12) mpiprocs=MPI_COMM_XYPLANE
+          if (idir==13) mpiprocs=MPI_COMM_XZPLANE
+          if (idir==23) mpiprocs=MPI_COMM_YZPLANE
         else
           mpiprocs=MPI_COMM_WORLD 
         endif
@@ -1985,6 +2026,9 @@ module Mpicomm
           if (idir==1) mpiprocs=MPI_COMM_XBEAM
           if (idir==2) mpiprocs=MPI_COMM_YBEAM
           if (idir==3) mpiprocs=MPI_COMM_ZBEAM
+          if (idir==12) mpiprocs=MPI_COMM_XYPLANE
+          if (idir==13) mpiprocs=MPI_COMM_XZPLANE
+          if (idir==23) mpiprocs=MPI_COMM_YZPLANE
         else
           mpiprocs=MPI_COMM_WORLD 
         endif

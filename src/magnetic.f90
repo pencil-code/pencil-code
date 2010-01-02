@@ -60,6 +60,13 @@ module Magnetic
   real, target, dimension (ny,nz) :: beta_yz
   real, target, dimension (nx,nz) :: beta_xz
 !
+!  xy-averaged field
+!
+  real, dimension (mz,3) :: aamz
+  real, dimension (nz,3) :: bbmz,jjmz
+!
+!  array for inputting alpha profile
+!
   real, dimension (mx,my) :: alpha_input
 !
 ! Parameters
@@ -191,6 +198,7 @@ module Magnetic
   logical :: lfreeze_aint=.false., lfreeze_aext=.false.
   logical :: lweyl_gauge=.false.
   logical :: lupw_aa=.false.
+  logical :: lcalc_aamean=.false.
   logical :: lforcing_cont_aa=.false.
   logical :: lelectron_inertia=.false.
   logical :: lremove_mean_emf=.false.
@@ -214,6 +222,7 @@ module Magnetic
       meanfield_etaB, alpha_equator, alpha_equator_gap, alpha_gap_step, &
       alpha_cutoff_up, alpha_cutoff_down, height_eta, eta_out, &
       tau_aa_exterior, kx_aa, ky_aa, kz_aa, ABC_A, ABC_B, ABC_C, &
+      lcalc_aamean, &
       lforcing_cont_aa, iforcing_continuous_aa, &
       forcing_continuous_aa_phasefact, forcing_continuous_aa_amplfact, k1_ff, &
       ampl_ff, swirl, radius, k1x_ff, k1y_ff, k1z_ff, lcheck_positive_va2, &
@@ -3045,6 +3054,64 @@ module Magnetic
       endif
 !
     endsubroutine df_diagnos_magnetic
+!***********************************************************************
+    subroutine calc_lmagnetic_pars(f)
+!
+!  Calculate <A>, which is needed for test-field methods.
+!
+!   2-jan-10/axel: adapted from calc_lhydro_pars
+!
+      use Mpicomm, only: mpiallreduce_sum
+      use Deriv, only: der_z,der2_z
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: ax,ay,az
+      integer, parameter :: nreduce=3
+      real, dimension (nreduce) :: fsum_tmp,fsum
+      integer :: nxy=nxgrid*nygrid
+      integer :: m,n,i,j
+      real :: fact
+      real, dimension (mz,3) :: aamz1,aamz1_tmp
+      real, dimension (nz,3) :: gaamz,d2aamz
+!
+      intent(inout) :: f
+!
+!  Compute mean field for each component. Include the ghost zones,
+!  because they have just been set.
+!
+      if (lcalc_aamean) then
+        fact=1./nxy
+        do j=1,3
+          do n=1,mz
+            aamz(n,j)=fact*sum(f(l1:l2,m1:m2,n,iax+j-1))
+          enddo
+        enddo
+!
+!  communication over all processors in the xy plane
+!
+        if (nprocx>1.or.nprocy>1) then
+          call mpiallreduce_sum(aamz,aamz1_tmp,(/mz,3/),idir=12)
+          aamz=aamz1_tmp
+        endif
+!
+!  Compute first and second derivatives.
+!
+        do j=1,3
+          call der_z(aamz(:,j),gaamz(:,j))
+          call der2_z(aamz(:,j),d2aamz(:,j))
+        enddo
+!
+!  Compute mean magnetic field and current density.
+!
+        bbmz(:,1)=-gaamz(:,2)
+        bbmz(:,2)=+gaamz(:,1)
+        bbmz(:,3)=0.
+        jjmz(:,1)=-d2aamz(:,1)
+        jjmz(:,2)=-d2aamz(:,2)
+        jjmz(:,3)=0.
+      endif
+!
+    endsubroutine calc_lmagnetic_pars
 !***********************************************************************
     subroutine set_border_magnetic(f,df,p)
 !

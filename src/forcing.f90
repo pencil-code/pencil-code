@@ -543,25 +543,23 @@ module Forcing
       k=sqrt(k2)
       if (ip.lt.4) write(88,'(6f10.5)') k,kx0,kx,ky,kz,deltay
 !
-! Find e-vector
+!  Find e-vector:
+!  Start with old method (not isotropic) for now.
+!  Pick e1 if kk not parallel to ee1. ee2 else.
 !
-      !
-      ! Start with old method (not isotropic) for now.
-      ! Pick e1 if kk not parallel to ee1. ee2 else.
-      !
       if ((ky.eq.0).and.(kz.eq.0)) then
         ex=0; ey=1; ez=0
       else
         ex=1; ey=0; ez=0
       endif
       if (.not. old_forcing_evector) then
-        !
-        !  Isotropize ee in the plane perp. to kk by
-        !  (1) constructing two basis vectors for the plane perpendicular
-        !      to kk, and
-        !  (2) choosing a random direction in that plane (angle phi)
-        !  Need to do this in order for the forcing to be isotropic.
-        !
+ !
+ !  Isotropize ee in the plane perp. to kk by
+ !  (1) constructing two basis vectors for the plane perpendicular
+ !      to kk, and
+ !  (2) choosing a random direction in that plane (angle phi)
+ !  Need to do this in order for the forcing to be isotropic.
+ !
         kk = (/kx, ky, kz/)
         ee = (/ex, ey, ez/)
         call cross(kk,ee,e1)

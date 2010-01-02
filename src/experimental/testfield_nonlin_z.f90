@@ -59,6 +59,7 @@ module Testfield
   real, dimension(3) :: B_ext=(/0.,0.,0./)
   real :: taainit=0.,daainit=0.,taainit_previous=0.
   logical :: reinitialize_aatest=.false.
+  logical :: reinitialize_from_mainrun=.false.
   logical :: zextent=.true.,lsoca=.false.,lsoca_jxb=.true.,lset_bbtest2=.false.
   logical :: luxb_as_aux=.false.,ljxb_as_aux=.false.,linit_aatest=.false.
   logical :: lignore_uxbtestm=.false., lignore_jxbtestm=.false., lphase_adjust=.false.
@@ -82,7 +83,8 @@ module Testfield
   logical :: ltestfield_newz=.true.,leta_rank2=.true.
   logical :: lforcing_cont_aatest=.false.,lforcing_cont_uutest=.false.
   namelist /testfield_run_pars/ &
-       B_ext,reinitialize_aatest,zextent,lsoca,lsoca_jxb, &
+       reinitialize_aatest,reinitialize_from_mainrun, &
+       B_ext,zextent,lsoca,lsoca_jxb, &
        lset_bbtest2,itestfield,ktestfield,itestfield_method, &
        etatest,etatest1,nutest,nutest1, &
        lin_testfield,lam_testfield,om_testfield,delta_testfield, &
@@ -600,6 +602,7 @@ module Testfield
       use Cdata
       use Diagnostics
       use Hydro, only: uumz,lcalc_uumean
+      use Magnetic, only: aamz,bbmz,jjmz,lcalc_aamean
       use Mpicomm, only: stop_it
       use Sub
 !
@@ -723,7 +726,6 @@ module Testfield
         else
 !
 !  Calculate uufluct=U-Umean.
-!  For now, accept bb and bb as having no mean fields.
 !
           if (lcalc_uumean) then
             do j=1,3
@@ -732,8 +734,16 @@ module Testfield
           else
             uufluct=p%uu
           endif
-          bbfluct=p%bb
-          jjfluct=p%jj
+!
+!  Calculate bbfluct=B-Bmean and jjfluct=J-Jmean.
+!
+          if (lcalc_aamean) then
+            do j=1,3
+              bbfluct(:,j)=p%bb(:,j)-bbmz(n,j)
+              jjfluct(:,j)=p%jj(:,j)-jjmz(n,j)
+            enddo
+          else
+          endif
 !
 !  do each of the 9 test fields at a time
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
@@ -1318,13 +1328,15 @@ module Testfield
 !
       use Cdata
       use Sub
+      use Hydro, only: uumz,lcalc_uumean
+      use Magnetic, only: aamz,bbmz,jjmz,lcalc_aamean
 !
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=130) :: file
       character (len=5) :: ch='\_/^\'
       logical :: ltestfield_out
       integer,save :: ifirst=0
-      integer :: j,jtest
+      integer :: j,jtest,jaatest,juutest,jaa,juu
 !
       intent(inout) :: f
 !
@@ -1348,12 +1360,39 @@ module Testfield
           do jtest=1,njtest
             iaxtest=iaatest+3*(jtest-1); iaztest=iaxtest+2
             iuxtest=iuutest+3*(jtest-1); iuztest=iuxtest+2
-            do j=iaxtest,iaztest
-              do n=n1,n2
+            do n=n1,n2
+              do j=iaxtest,iaztest
                 f(l1:l2,m1:m2,n,j)=rescale_aatest(jtest)*f(l1:l2,m1:m2,n,j)
+              enddo
+              do j=iuxtest,iuztest
+                f(l1:l2,m1:m2,n,j)=rescale_uutest(jtest)*f(l1:l2,m1:m2,n,j)
               enddo
             enddo
           enddo
+!
+!  Reinitialize reference fields with fluctuations of main run.
+!
+          if (reinitialize_from_mainrun) then
+            if (lcalc_aamean.and.lcalc_uumean) then
+              jtest=iE0
+              iaxtest=iaatest+3*(jtest-1)
+              iuxtest=iuutest+3*(jtest-1)
+              do n=n1,n2
+                do j=1,3
+                  jaatest=iaxtest+j-1;  jaa=iax+j-1
+                  juutest=iuxtest+j-1;  juu=iux+j-1
+                  f(l1:l2,m1:m2,n,jaatest)=f(l1:l2,m1:m2,n,jaa)-aamz(n,j)
+                  f(l1:l2,m1:m2,n,juutest)=f(l1:l2,m1:m2,n,juu)-uumz(n,j)
+                enddo
+              enddo
+            else
+              call fatal_error('rescaling_testfield', &
+                  'need lcalc_aamean.and.lcalc_uumean')
+            endif
+          endif
+!
+!  Update next time for rescaling
+!
           call update_snaptime(file,taainit,naainit,daainit,t, &
             ltestfield_out,ch,.false.)
         endif

@@ -27,9 +27,12 @@ module Magnetic
   real, dimension (ninit) :: amplaa=0.0,kx_aa=1.,ky_aa=1.,kz_aa=1.
   real :: kx=1.,ky=1.,kz=1.,ABC_A=1.,ABC_B=1.,ABC_C=1.
   real :: brms=0., bmz_beltrami_phase=0.
+  real, dimension (mz,3) :: aamz
+  real, dimension (nz,3) :: bbmz,jjmz
   real, dimension(nx) :: meanfield_EMFdotB
   real :: inertial_length=0.,linertial_2
   logical :: lelectron_inertia=.false.
+  logical :: lcalc_aamean=.false.
 !
   integer :: idiag_b2m=0,idiag_bm2=0,idiag_j2m=0,idiag_jm2=0,idiag_abm=0
   integer :: idiag_jbm=0,idiag_epsM=0,idiag_vArms=0,idiag_vAmax=0
@@ -179,12 +182,22 @@ module Magnetic
 !
     endsubroutine df_diagnos_magnetic
 !***********************************************************************
+    subroutine calc_lmagnetic_pars(f)
+!
+!  Dummy routine
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(inout) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine calc_lmagnetic_pars
+!***********************************************************************
     subroutine rescaling_magnetic(f)
 !
 !  Dummy routine
 !
       real, dimension (mx,my,mz,mfarray) :: f
-!
       intent(inout) :: f
 !
       call keep_compiler_quiet(f)

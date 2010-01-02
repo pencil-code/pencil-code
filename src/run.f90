@@ -585,8 +585,8 @@ program run
 !
     if (lforcing) call addforce(f)
     if (lrescaling_magnetic)  call rescaling_magnetic(f)
-    if (lrescaling_testscalar) call rescaling_testscalar(f)
     if (lrescaling_testfield) call rescaling_testfield(f)
+    if (lrescaling_testscalar) call rescaling_testscalar(f)
 !
 !  Check for SNe, and update f if necessary (see interstellar.f90).
 !

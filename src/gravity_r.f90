@@ -127,7 +127,7 @@ module Gravity
 !  Ensure the reserved array slots are initialized to zero, so we can add
 !  ninit different gravity fields. 
 !
-        if (igg==0) call farray_register_global('gg',iglobal_gg,vector=3)
+        if (igg==0) call farray_register_global('global_gg',iglobal_gg,vector=3)
         f(l1:l2,m1:m2,n1:n2,iglobal_gg:iglobal_gg+2) = 0.
 !
         do j=1,1
@@ -419,7 +419,7 @@ module Gravity
       type (pencil_case) :: p
       integer, pointer :: iglobal_gg
 
-      call farray_use_global('gg',iglobal_gg)
+      call farray_use_global('global_gg',iglobal_gg)
 ! 
 ! if statement for testing purposes
 !
