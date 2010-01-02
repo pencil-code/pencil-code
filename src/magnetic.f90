@@ -3934,7 +3934,6 @@ module Magnetic
       use Mpicomm
 !
       logical,save :: first=.true.
-      real :: bmz
 !
 !  This only works if bxmz and bzmz are in xyaver, so print warning if this is
 !  not ok.
