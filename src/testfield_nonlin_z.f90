@@ -743,6 +743,8 @@ module Testfield
               jjfluct(:,j)=p%jj(:,j)-jjmz(n,j)
             enddo
           else
+            bbfluct=p%bb
+            jjfluct=p%jj
           endif
 !
 !  do each of the 9 test fields at a time
