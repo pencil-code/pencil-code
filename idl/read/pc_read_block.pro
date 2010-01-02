@@ -4,13 +4,15 @@
 ;  Read block domain decomposition from file.
 ;
 pro pc_read_block, object=object, datadir=datadir, proc=proc, $
-    print=print, quiet=quiet
+    swap=swap, quiet=quiet
 compile_opt IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;
-; Default processor.
+; Default settings.
 ;
 default, proc, 0
+default, swap, 0
+default, quiet, 0
 ;
 ; Default data directory.
 ;
@@ -51,7 +53,7 @@ dummy=findfile(filename, count=found)
 if (found gt 0) then begin
   if ( not keyword_set(quiet) ) then print, 'Reading ' + filename + '...'
   get_lun, file
-  openr, file, filename, /f77
+  openr, file, filename, /f77, swap_endian=swap
   readu, file, t
   readu, file, nblock_loc, nproc_parent, nproc_foster
   readu, file, iproc_foster_brick
@@ -73,6 +75,11 @@ if (found gt 0) then begin
     readu, file, dummy
     readu, file, dummy
     readu, file, dummy
+    iproc_parent_block=-1
+    ibrick_parent_block=-1
+    xb=-1.0*one
+    yb=-1.0*one
+    zb=-1.0*one
   endelse
   if (nproc_parent gt 0) then begin
     iproc_parent_list=lonarr(nproc_parent)
