@@ -1704,6 +1704,13 @@ module Particles_mpicomm
           iproc_recv=iproc_grandparent(iblock)
           npar_recv=npblock(iblock)
           if (iproc/=iproc_recv) then
+            if (npar_loc_tmp+npar_recv>mpar_loc) then
+              print*, 'load_balance_particles: '// &
+                  'Too many particles want to be at proc', iproc
+              print*, 'load_balance_particles: npar_loc, mpar_loc, npar_recv=',&
+                  npar_loc, mpar_loc, npar_recv
+              call fatal_error_local('load_balance_particles','')
+            endif
             ibrick_global= &
                 iproc_parent_block(iblock)*nbricks+ibrick_parent_block(iblock)
             call MPI_IRECV(fp(npar_loc_tmp+1:npar_loc_tmp+npar_recv,ipvar), &
