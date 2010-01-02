@@ -411,7 +411,7 @@ handle_lock_file() or exit(LOCK_FAILED) unless ($list_only);
 my $cwd = `pwd`; chomp($cwd);
 
 # pc_update_autotest
-system("pc_update_autotest.sh");
+system("$ENV{PENCIL_HOME}/bin/pc_update_autotest.sh");
 
 # Make sure we are in the top directory and have the right PATH
 die "Need to set environment variable PENCIL_HOME\n"
@@ -1473,7 +1473,7 @@ END {
             } elsif ($ntests > 1) {
                 print "All $ntests tests succeeded.\n";
                 # pc_update_validated
-                system("pc_update_validated.sh");
+                system("$ENV{PENCIL_HOME}/bin/pc_update_validated.sh");
             }
             elsif (($ntests < 1) && ! $failed) {
                 print "There was no test to run???\n";
