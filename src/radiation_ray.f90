@@ -1396,7 +1396,7 @@ module Radiation
         endif
 !
       case ('nothing')
-          Srad=0.0
+        Srad=0.0
 !
       case default
         call fatal_error('source_function', &
