@@ -2144,11 +2144,12 @@ module Entropy
 !
 !  ``cs2/dx^2'' for timestep
 !
-      if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
-      if (headtt.or.ldebug) print*,'dss_dt: max(advec_cs2) =',maxval(advec_cs2)
+      if (lhydro.and.lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
+      if (headtt.or.ldebug) &
+          print*, 'dss_dt: max(advec_cs2) =', maxval(advec_cs2)
 !
 !  Pressure term in momentum equation (setting lpressuregradient_gas to
-!  .false. allows suppressing pressure term for test purposes)
+!  .false. allows suppressing pressure term for test purposes).
 !
       if (lhydro) then
         if (lpressuregradient_gas) then
