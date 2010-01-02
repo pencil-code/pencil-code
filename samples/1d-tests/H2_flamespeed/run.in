@@ -3,8 +3,9 @@
 !
 &run_pars
   cvsid='$Id: run.in,v 1.3 2009-03-17 10:59:27 nbabkovs Exp $',
-  nt=31, it1=5, cdtv=0.4, isave=100, itorder=5
-  dsnap=5e-4, dvid=5e-4, dtmin=1e-30, dt=1e-10
+  nt=31, it1=5, cdtv=0.4, isave=100, itorder=3
+  dsnap=5e-4, dvid=5e-4, dtmin=1e-30, dt=1e-8
+  !lpencil_check=T
 /
 &eos_run_pars
 /
