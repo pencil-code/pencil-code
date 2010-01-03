@@ -380,7 +380,7 @@ module Particles_mpicomm
       real, dimension (mpar_loc,mpvar), optional :: dfp
 !
       real, dimension (npar_mig,mpvar) :: fp_mig, dfp_mig
-      double precision, save :: dx1, dy1, dz1
+      real, save :: dx1, dy1, dz1
       integer, dimension (npar_mig) :: ipar_mig, iproc_rec_array
       integer, dimension (npar_mig) :: isort_array
       integer, dimension (0:ncpus-1) :: nmig_leave, nmig_enter
@@ -707,7 +707,7 @@ module Particles_mpicomm
       real, dimension (mpar_loc,mpvar), optional :: dfp
 !
       real, dimension (npar_mig,mpvar) :: fp_mig, dfp_mig
-      double precision, save :: dx1, dy1, dz1
+      real, save :: dx1, dy1, dz1
       integer, dimension (npar_mig) :: ipar_mig, iproc_rec_array
       integer, dimension (npar_mig) :: isort_array
       integer, dimension (0:ncpus-1) :: nmig_leave, nmig_enter
@@ -1099,7 +1099,7 @@ module Particles_mpicomm
       real, dimension (mpar_loc,mpvar), optional :: dfp
 !
       real, dimension (npar_mig,mpvar) :: fp_mig, dfp_mig
-      double precision, save :: dx1, dy1, dz1
+      real, save :: dx1, dy1, dz1
       integer, dimension (npar_mig) :: ipar_mig, iproc_rec_array
       integer, dimension (npar_mig) :: isort_array
       integer, dimension (0:ncpus-1) :: nmig_leave, nmig_enter

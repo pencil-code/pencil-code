@@ -55,7 +55,7 @@ module Particles_map
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      double precision, save :: dx1, dy1, dz1
+      real, save :: dx1, dy1, dz1
       integer, dimension (0:nblockmax-1) :: ibrick_global_arr
       integer :: k, ix0, iy0, iz0, ibx0, iby0, ibz0, ipx0, ipy0, ipz0
       integer :: iblockl, iblocku, iblockm, ibrick_global_par
@@ -211,7 +211,7 @@ module Particles_map
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real :: weight, weight_x, weight_y, weight_z
-      double precision, save :: dx1, dy1, dz1
+      real, save :: dx1, dy1, dz1
       integer :: k, ix0, iy0, iz0, ixx, iyy, izz, ib
       integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1
       logical :: lnbody
@@ -862,7 +862,7 @@ module Particles_map
 !
       real, dimension (ivar2-ivar1+1) :: g1, g2, g3, g4, g5, g6, g7, g8
       real :: xp0, yp0, zp0
-      double precision, save :: dxdydz1, dxdy1, dxdz1, dydz1, dx1, dy1, dz1
+      real, save :: dxdydz1, dxdy1, dxdz1, dydz1, dx1, dy1, dz1
       integer :: i, ix0, iy0, iz0, ivar, ib
       logical :: lfirstcall=.true.
 !
@@ -1044,8 +1044,8 @@ module Particles_map
       real, dimension (9,ivar2-ivar1+1) :: cc
       real, dimension (ivar2-ivar1+1) :: g1, g2, g3, g4, g5, g6, g7, g8, g9
       real :: dxp, dzp
-      double precision, save :: dx1, dx2, dz1, dz2
-      double precision, save :: dx1dz1, dx2dz1, dx1dz2, dx2dz2
+      real, save :: dx1, dx2, dz1, dz2
+      real, save :: dx1dz1, dx2dz1, dx1dz2, dx2dz2
       integer :: ix0, iy0, iz0, ib
       logical, save :: lfirstcall=.true.
 !
