@@ -767,7 +767,7 @@ module Entropy
       use General, only: chn
       use Initcond
       use InitialCondition, only: initial_condition_ss
-      use EquationOfState,  only: mpoly, isothtop, &
+      use EquationOfState,  only: isothtop, &
                                 mpoly0, mpoly1, mpoly2, cs2cool, cs0, &
                                 rho0, lnrho0, isothermal_entropy, &
                                 isothermal_lnrho_ss, eoscalc, ilnrho_pp, &
@@ -1352,9 +1352,9 @@ module Entropy
 !  12-jul-05/axel: coded
 !  17-Nov-05/dintrans: updated using strat_MLT
 !
-      use Gravity, only: gravz, z1
+      use Gravity, only: z1
       use General, only: safe_character_assign
-      use EquationOfState, only: gamma, gamma_m1, rho0, lnrho0, cs0, &
+      use EquationOfState, only: gamma_m1, rho0, lnrho0, &
                                  cs20, cs2top, eoscalc, ilnrho_lnTT
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -1597,7 +1597,7 @@ module Entropy
 !   but abandoned as overcomplicated to adapt for nprocz /= 0.]
 !
       use Mpicomm, only: mpibcast_real
-      use EquationOfState, only: eoscalc, ilnrho_pp, getmu,rho0, eosperturb
+      use EquationOfState, only: eoscalc, ilnrho_pp, getmu, eosperturb
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx) :: absz
@@ -2097,9 +2097,7 @@ module Entropy
     subroutine calc_pencils_entropy_after_mn(f,p)
 !
 ! Do nothing 
-! DM+PC
-
-      use EquationOfState, only: gamma,gamma_m1,cs20,lnrho0,profz_eos
+! DM+
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
