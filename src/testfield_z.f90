@@ -426,9 +426,6 @@ module Testfield
       use InitialCondition, only: initial_condition_aatest
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx,3) :: bb
-      real, dimension (nx) :: b2,fact
-      real :: beq2
       integer :: j
 !
       do j=1,ninit
@@ -486,9 +483,11 @@ module Testfield
 !
 !  26-jun-05/anders: adapted from magnetic
 !
-      use Cdata
+      use Sub, only: keep_compiler_quiet
 !
       logical, dimension(npencils) :: lpencil_in
+!
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_testfield
 !***********************************************************************
@@ -556,7 +555,7 @@ module Testfield
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 
-      real, dimension (nx,3) :: bb,aa,uxB,B0test=0,bbtest
+      real, dimension (nx,3) :: uxB,B0test=0,bbtest
       real, dimension (nx,3) :: uxbtest,duxbtest,jxbtest,djxbrtest,eetest
       real, dimension (nx,3) :: J0test=0,jxB0rtest,J0xbrtest
       real, dimension (nx,3,3,njtest) :: Mijpq
@@ -565,7 +564,7 @@ module Testfield
       real, dimension (nx,3) :: del2Atest2,graddivatest,aatest,jjtest,jxbrtest
       real, dimension (nx,3,3) :: aijtest,bijtest,Mijtest
       real, dimension (nx) :: jbpq,bpq2,Epq2,s2kzDF1,s2kzDF2,unity=1.
-      integer :: jtest,jfnamez,j, i1=1, i2=2, i3=3, i4=4, iuxtest, iuytest, iuztest
+      integer :: jtest,j, i1=1, i2=2, i3=3, i4=4, iuxtest, iuytest, iuztest
       logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
 !
       intent(in)     :: f,p
@@ -1082,6 +1081,8 @@ module Testfield
 ! 
 !  12-sep-09/axel: adapted from the corresponding magnetic routine
 ! 
+      use Sub, only: keep_compiler_quiet
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 ! 
@@ -1103,6 +1104,8 @@ module Testfield
             if (slices%index<=3) slices%ready=.true.
           endif
       endselect
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine get_slices_testfield
 !***********************************************************************
@@ -1482,7 +1485,7 @@ module Testfield
       use Cdata
       use Diagnostics
 !
-      integer :: iname,inamez,inamexz
+      integer :: iname,inamez
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
