@@ -119,13 +119,13 @@ module Solid_Cells
       integer i,j,k,cyl,jj,icyl
 !
       do jj=1,ninit
-      select case(initsolid_cells(jj))
+      select case (initsolid_cells(jj))
 !
 !  This overrides any initial conditions set in the Hydro module.
 !
-      case('nothing')
+      case ('nothing')
         if (lroot) print*,'init_solid_cells: nothing'
-      case('cylinderstream_x')
+      case ('cylinderstream_x')
 !  Stream functions for flow around a cylinder as initial condition. 
         call gaunoise(ampl_noise,f,iux,iuz)
         f(:,:,:,iux)=f(:,:,:,iux)+init_uu
@@ -187,7 +187,7 @@ module Solid_Cells
         enddo
         enddo
         enddo
-      case('cylinderstream_y')
+      case ('cylinderstream_y')
 !  Stream functions for flow around a cylinder as initial condition.
         call gaunoise(ampl_noise,f,iux,iuz)
         f(:,:,:,iuy)=f(:,:,:,iuy)+init_uu

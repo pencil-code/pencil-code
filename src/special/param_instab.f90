@@ -98,10 +98,10 @@ module Special
 !
 !  initial condition
 !
-      select case(init)
-        case('nothing'); if (lroot) print*,'init_special: nothing'
-        case('zero'); f(:,:,:,ispecial1)=0.; f(:,:,:,ispecial2)=0.
-        case('set'); f(:,:,:,ispecial1)=u1ini; f(:,:,:,ispecial2)=u2ini
+      select case (init)
+        case ('nothing'); if (lroot) print*,'init_special: nothing'
+        case ('zero'); f(:,:,:,ispecial1)=0.; f(:,:,:,ispecial2)=0.
+        case ('set'); f(:,:,:,ispecial1)=u1ini; f(:,:,:,ispecial2)=u2ini
         case default
           !
           !  Catch unknown values

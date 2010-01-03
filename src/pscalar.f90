@@ -141,35 +141,35 @@ module Pscalar
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      select case(initlncc)
-        case('zero'); f(:,:,:,ilncc)=0.
-        case('constant'); f(:,:,:,ilncc)=log(cc_const)
-        case('gaussian-x'); call gaussian(ampllncc,f,ilncc,kx=kx_lncc)
-        case('gaussian-y'); call gaussian(ampllncc,f,ilncc,ky=ky_lncc)
-        case('gaussian-z'); call gaussian(ampllncc,f,ilncc,kz=kz_lncc)
-        case('parabola-x'); call parabola(ampllncc,f,ilncc,kx=kx_lncc)
-        case('parabola-y'); call parabola(ampllncc,f,ilncc,ky=ky_lncc)
-        case('parabola-z'); call parabola(ampllncc,f,ilncc,kz=kz_lncc)
-        case('gaussian-noise'); call gaunoise(ampllncc,f,ilncc,ilncc)
-        case('wave-x'); call wave(ampllncc,f,ilncc,kx=kx_lncc)
-        case('wave-y'); call wave(ampllncc,f,ilncc,ky=ky_lncc)
-        case('wave-z'); call wave(ampllncc,f,ilncc,kz=kz_lncc)
-        case('propto-ux'); call wave_uu(ampllncc,f,ilncc,kx=kx_lncc)
-        case('propto-uy'); call wave_uu(ampllncc,f,ilncc,ky=ky_lncc)
-        case('propto-uz'); call wave_uu(ampllncc,f,ilncc,kz=kz_lncc)
-        case('tang-discont-z')
+      select case (initlncc)
+        case ('zero'); f(:,:,:,ilncc)=0.
+        case ('constant'); f(:,:,:,ilncc)=log(cc_const)
+        case ('gaussian-x'); call gaussian(ampllncc,f,ilncc,kx=kx_lncc)
+        case ('gaussian-y'); call gaussian(ampllncc,f,ilncc,ky=ky_lncc)
+        case ('gaussian-z'); call gaussian(ampllncc,f,ilncc,kz=kz_lncc)
+        case ('parabola-x'); call parabola(ampllncc,f,ilncc,kx=kx_lncc)
+        case ('parabola-y'); call parabola(ampllncc,f,ilncc,ky=ky_lncc)
+        case ('parabola-z'); call parabola(ampllncc,f,ilncc,kz=kz_lncc)
+        case ('gaussian-noise'); call gaunoise(ampllncc,f,ilncc,ilncc)
+        case ('wave-x'); call wave(ampllncc,f,ilncc,kx=kx_lncc)
+        case ('wave-y'); call wave(ampllncc,f,ilncc,ky=ky_lncc)
+        case ('wave-z'); call wave(ampllncc,f,ilncc,kz=kz_lncc)
+        case ('propto-ux'); call wave_uu(ampllncc,f,ilncc,kx=kx_lncc)
+        case ('propto-uy'); call wave_uu(ampllncc,f,ilncc,ky=ky_lncc)
+        case ('propto-uz'); call wave_uu(ampllncc,f,ilncc,kz=kz_lncc)
+        case ('tang-discont-z')
           print*,'init_lncc: widthlncc=',widthlncc
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,ilncc)=-1.0+2*0.5*(1.+tanh(z(n)/widthlncc))
           enddo; enddo
-        case('hor-tube'); call htube2(ampllncc,f,ilncc,ilncc,radius_lncc,epsilon_lncc)
+        case ('hor-tube'); call htube2(ampllncc,f,ilncc,ilncc,radius_lncc,epsilon_lncc)
         case default; call stop_it('init_lncc: bad initlncc='//trim(initlncc))
       endselect
 !
 !  Superimpose something else.
 !
-      select case(initlncc2)
-        case('wave-x'); call wave(ampllncc2,f,ilncc,ky=5.)
+      select case (initlncc2)
+        case ('wave-x'); call wave(ampllncc2,f,ilncc,ky=5.)
       endselect
 !
 !  Interface for user's own initial condition.

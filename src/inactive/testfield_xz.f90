@@ -178,9 +178,9 @@ module Testfield
       real, dimension (nx) :: b2,fact
       real :: beq2
 !
-      select case(initaatest)
+      select case (initaatest)
 
-      case('zero', '0'); f(:,:,:,iaatest:iaatest+ntestfield-1)=0.
+      case ('zero', '0'); f(:,:,:,iaatest:iaatest+ntestfield-1)=0.
 
       case default
         !
@@ -307,8 +307,8 @@ module Testfield
         iaxtest=iaatest+3*(jtest-1)
         iaztest=iaxtest+2
         call del2v(f,iaxtest,del2Atest)
-        select case(itestfield)
-          case('B11-B21'); call set_bbtest(bbtest,jtest,ktestfield)
+        select case (itestfield)
+          case ('B11-B21'); call set_bbtest(bbtest,jtest,ktestfield)
         case default
           call fatal_error('daatest_dt','undefined itestfield value')
         endselect
@@ -578,9 +578,9 @@ module Testfield
 !
 !  set bbtest for each of the 9 cases
 !
-      select case(jtest)
-      case(1); bbtest(:,1)=cz; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case(2); bbtest(:,1)=sz; bbtest(:,2)=0.; bbtest(:,3)=0.
+      select case (jtest)
+      case (1); bbtest(:,1)=cz; bbtest(:,2)=0.; bbtest(:,3)=0.
+      case (2); bbtest(:,1)=sz; bbtest(:,2)=0.; bbtest(:,3)=0.
       case default; bbtest(:,:)=0.
       endselect
 !

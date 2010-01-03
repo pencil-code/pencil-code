@@ -394,57 +394,57 @@ module Chemistry
 !
       lnothing=.false.
       do j=1,ninit
-        select case(initchem(j))
+        select case (initchem(j))
 !
-        case('nothing')
+        case ('nothing')
           if (lroot .and. .not. lnothing) print*, 'init_chem: nothing '
           lnothing=.true.
-        case('constant')
+        case ('constant')
           do k=1,nchemspec
             f(:,:,:,ichemspec(k))=amplchemk(k)
           enddo
-        case('positive-noise')
+        case ('positive-noise')
           do k=1,nchemspec
             call posnoise(amplchemk(k),f,ichemspec(k))
           enddo
-        case('positive-noise-rel')
+        case ('positive-noise-rel')
           do k=1,nchemspec
             call posnoise_rel(amplchemk(k),amplchemk2(k),f,ichemspec(k))
           enddo
-        case('innerbox')
+        case ('innerbox')
           do k=1,nchemspec
             call innerbox(amplchemk(k),amplchemk2(k),f,ichemspec(k),widthchem)
           enddo
-        case('cos2x_cos2y_cos2z')
+        case ('cos2x_cos2y_cos2z')
           do k=1,nchemspec
             call cos2x_cos2y_cos2z(amplchemk(k),f,ichemspec(k))
           enddo
-        case('coswave-x')
+        case ('coswave-x')
           do k=1,nchemspec
             call coswave(amplchem,f,ichemspec(k),kx=kx_chem)
           enddo
-        case('gaussian-x')
+        case ('gaussian-x')
           do k=1,nchemspec
             call gaussian(amplchem,f,ichemspec(k),kx=kx_chem)
           enddo
-        case('gaussian-pos')
+        case ('gaussian-pos')
           do k=1,nchemspec
             call gaussianpos(amplchemk(k),f,ichemspec(k),widthchem,kx_chem,ky_chem,kz_chem)
             print*,"c(",x(l1),",",y(m1),",",z(n1),")=", f(l1,m1,n1,ichemspec(k))                     
           enddo
-        case('hatwave-x')
+        case ('hatwave-x')
           do k=1,nchemspec
             call hatwave(amplchem,f,ichemspec(k),widthchem,kx=kx_chem)
           enddo
-        case('hatwave-y')
+        case ('hatwave-y')
           do k=1,nchemspec
             call hatwave(amplchem,f,ichemspec(k),widthchem,ky=ky_chem)
           enddo
-        case('hatwave-z')
+        case ('hatwave-z')
           do k=1,nchemspec
             call hatwave(amplchem,f,ichemspec(k),widthchem,kz=kz_chem)
           enddo
-        case('air')
+        case ('air')
           if (lroot ) print*, 'init_chem: air '
            inquire(file='air.dat',exist=air_exist)
            if (air_exist) then
@@ -452,11 +452,11 @@ module Chemistry
            else
             call stop_it('there is no air.dat file')
            endif
-        case('flame_front')
+        case ('flame_front')
           call flame_front(f)
-        case('flame_front_3D')
+        case ('flame_front_3D')
           call flame_front_3D(f)
-        case('flame_blob')
+        case ('flame_blob')
           call flame_blob(f)
         case default
 !
@@ -1994,7 +1994,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
         allocate(a_k4(nchemspec,nreactions),STAT=stat)
         a_k4=impossible
         if (stat>0) call stop_it("Couldn't allocate memory for troe_coeff")
-        allocate(Mplus_case(nreactions),STAT=stat)
+        allocate(Mplus_case (nreactions),STAT=stat)
         Mplus_case=.false.
         if (stat>0) call stop_it("Couldn't allocate memory for Mplus_case")
       endif
@@ -2729,17 +2729,17 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       real, intent(out) :: MolMass
 !
       select case (element_name)
-      case('H')
+      case ('H')
         MolMass=1.00794
-      case('C')
+      case ('C')
         MolMass=12.0107
-      case('N')
+      case ('N')
         MolMass=14.00674
-      case('O')
+      case ('O')
         MolMass=15.9994
-      case('Ar','AR')
+      case ('Ar','AR')
         MolMass=39.948
-      case('He','HE')
+      case ('He','HE')
         MolMass=4.0026
       case default
         if (lroot) print*,'element_name=',element_name
@@ -3012,7 +3012,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 
 !
                     if (ParanthesisInd>0) then
-                      Mplus_case(k)=.true.
+                      Mplus_case (k)=.true.
                     endif
 !
                     i=1
@@ -3589,7 +3589,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !  progress variable.
 !  (vreact_p - vreact_m) is labeled q in the chemkin manual
 !
-        if (Mplus_case(reac)) then
+        if (Mplus_case (reac)) then
           vreact_p(:,reac)=prod1*kf
           vreact_m(:,reac)=prod2*kr
         else
@@ -3837,7 +3837,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       real, dimension(8) :: aa
 !
       select case (omega)
-      case('Omega11')
+      case ('Omega11')
         aa(1)= 6.96945701E-1
         aa(2)= 3.39628861E-1
         aa(3)= 1.32575555E-2
@@ -3846,7 +3846,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
         aa(6)= 6.16106168E-4
         aa(7)=-3.27101257E-4
         aa(8)= 2.51567029E-5
-      case('Omega22')
+      case ('Omega22')
         aa(1)= 6.33225679E-1
         aa(2)= 3.14473541E-1
         aa(3)= 1.78229325E-2
@@ -4578,13 +4578,13 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
         call get_gamma_full(gamma_full)
       endif
 !
-      select case(topbot)
-      case('bot')
+      select case (topbot)
+      case ('bot')
         lll = l1; sgn = 1
         if (leos_chemistry) then
           p_inf(1,:,:)=pp_full(l1,m1:m2,n1:n2)
         endif
-      case('top')
+      case ('top')
         lll = l2; sgn = -1
         if (leos_chemistry) then
           p_inf(nx,:,:)=pp_full(l2,m1:m2,n1:n2)
@@ -4725,13 +4725,13 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 
       ita=1.
 
-      select case(topbot)
-      case('bot')
+      select case (topbot)
+      case ('bot')
         L_5=ita*(1.-Mach_num*Mach_num)/Lxyz(1)*cs20_ar(m1:m2,n1:n2)*rho0(m1:m2,n1:n2)&
            *(f(lll,m1:m2,n1:n2,iux)-U0_x) &
            +(T_5_y +T_5_z) &
            +rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*(T_2_y +T_2_z)
-      case('top')
+      case ('top')
         L_1=ita*(1.-Mach_num*Mach_num)/Lxyz(1)*cs20_ar(m1:m2,n1:n2)*rho0(m1:m2,n1:n2)&
            *(f(lll,m1:m2,n1:n2,iux)-U0_x)&
            +(T_5_y +T_5_z) &
@@ -4767,12 +4767,12 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
          mm=m1
          mmm=1
 
-       select case(topbot)
-         case('bot')
+       select case (topbot)
+         case ('bot')
            M_5(mmm,:)=0.
            L_5(mmm,:)=L_5(mmm,:)-M_1(mmm,:)/2.-rho0(mm,n1:n2)*cs0_ar(mm,n1:n2)*M_2(mmm,:)
            L_3(mmm,:)=L_3(mmm,:)+M_1(mmm,:)/(2.*rho0(mm,n1:n2)*cs0_ar(mm,n1:n2))
-         case('top')
+         case ('top')
            M_1(mmm,:)=0.
            L_1(mmm,:)=L_1(mmm,:)-M_5(mmm,:)/2.-rho0(mm,n1:n2)*cs0_ar(mm,n1:n2)*M_2(mmm,:)
            L_3(mmm,:)=L_3(mmm,:)-M_5(mmm,:)/(2.*rho0(mm,n1:n2)*cs0_ar(mm,n1:n2))
@@ -4780,12 +4780,12 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
        elseif (i==2) then
          mm=m2
          mmm=ny
-        select case(topbot)
-         case('bot')
+        select case (topbot)
+         case ('bot')
            M_5(mmm,:)=0.
            L_5(mmm,:)=L_5(mmm,:)-M_1(mmm,:)/2.-rho0(mm,n1:n2)*cs0_ar(mm,n1:n2)*M_2(mmm,:)
            L_3(mmm,:)=L_3(mmm,:)+M_1(mmm,:)/(2.*rho0(mm,n1:n2)*cs0_ar(mm,n1:n2))
-          case('top')
+          case ('top')
            M_1(mmm,:)=0.
            L_1(mmm,:)=L_1(mmm,:)-M_5(mmm,:)/2.-rho0(mm,n1:n2)*cs0_ar(mm,n1:n2)*M_2(mmm,:)
            L_3(mmm,:)=L_3(mmm,:)-M_5(mmm,:)/(2.*rho0(mm,n1:n2)*cs0_ar(mm,n1:n2))
@@ -4911,11 +4911,11 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
         call get_gamma_full(gamma_full)
       endif
 !
-      select case(topbot)
-      case('bot')
+      select case (topbot)
+      case ('bot')
         lll = l1
         sgn = 1
-      case('top')
+      case ('top')
         lll = l2
         sgn = -1
       case default
@@ -4967,13 +4967,13 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
           call der_pencil(2,mom2(lll,:,i),dmom2_dy(:,i))
         enddo
 
-        select case(topbot)
-        case('bot')
+        select case (topbot)
+        case ('bot')
           L_1 = (f(lll,m1:m2,n1:n2,iux) - cs0_ar(m1:m2,n1:n2))*&
               (dpp_dx - rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dux_dx)
           L_5 =L_1-2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*&
               df(lll,m1:m2,n1:n2,iux)
-        case('top')
+        case ('top')
           L_5 = (f(lll,m1:m2,n1:n2,iux) + cs0_ar(m1:m2,n1:n2))*&
               (dpp_dx + rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dux_dx)
           L_1 = L_5+2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*&
@@ -5074,13 +5074,13 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
         call get_gamma_full(gamma_full)
       endif
 !
-      select case(topbot)
-      case('bot')
+      select case (topbot)
+      case ('bot')
         lll = l1; sgn = 1
         if (leos_chemistry) then
           p_inf(1,:,:)=pp_full(l1,m1:m2,n1:n2)
         endif
-      case('top')
+      case ('top')
         lll = l2; sgn = -1
         if (leos_chemistry) then
           p_inf(nx,:,:)=pp_full(l2,m1:m2,n1:n2)
@@ -5216,13 +5216,13 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 
 
 !
-      select case(topbot)
-      case('bot')
+      select case (topbot)
+      case ('bot')
         L_5=KK*(cs20_ar(m1:m2,n1:n2)/gamma0(m1:m2,n1:n2)*&
             rho0(m1:m2,n1:n2)-p_inf(1,1:ny,1:nz)) 
         L_1 = (f(lll,m1:m2,n1:n2,iux) - cs0_ar(m1:m2,n1:n2))*&
            (grad_pp(:,:,1)-rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dui_dxj(:,:,1,1))
-      case('top')
+      case ('top')
         L_1=KK*(cs20_ar(m1:m2,n1:n2)/gamma0(m1:m2,n1:n2)*&
             rho0(m1:m2,n1:n2)-p_inf(nx,1:ny,1:nz))
         L_5 = (f(lll,m1:m2,n1:n2,iux) + cs0_ar(m1:m2,n1:n2))*&
@@ -5387,13 +5387,13 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       endif
 !
 
-      select case(topbot)
-      case('bot')
+      select case (topbot)
+      case ('bot')
         mmm = m1; sgn = 1
         if (leos_chemistry) then
           p_inf(:,1,:)=pp_full(l1:l2,m1,n1:n2)
         endif
-      case('top')
+      case ('top')
         mmm = m2; sgn = -1
         if (leos_chemistry) then
           p_inf(:,ny,:)=pp_full(l1:l2,m2,n1:n2)
@@ -5516,13 +5516,13 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 
 
 !
-      select case(topbot)
-      case('bot')
+      select case (topbot)
+      case ('bot')
         M_5=KK*(cs20_ar(l1:l2,n1:n2)/gamma0(l1:l2,n1:n2)*&
             rho0(l1:l2,n1:n2)-p_inf(1:nx,1,1:nz))
         M_1 = (f(l1:l2,mmm,n1:n2,iuy) - cs0_ar(l1:l2,n1:n2))*&
             (grad_pp(:,:,2)- rho0(l1:l2,n1:n2)*cs0_ar(l1:l2,n1:n2)*dui_dxj(:,:,2,2))
-      case('top')
+      case ('top')
         M_1=KK*(cs20_ar(l1:l2,n1:n2)/gamma0(l1:l2,n1:n2)*&
             rho0(l1:l2,n1:n2)-p_inf(1:nx,ny,1:nz))
         M_5 = (f(l1:l2,mmm,n1:n2,iuy) + cs0_ar(l1:l2,n1:n2))*&
@@ -5825,13 +5825,13 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
         call get_gamma_full(gamma_full)
       endif
 !
-      select case(topbot)
-      case('bot')
+      select case (topbot)
+      case ('bot')
         nnn = n1; sgn = 1
         if (leos_chemistry) then
           p_inf(:,:,1)=pp_full(l1:l2,m1:m2,n1)
         endif
-      case('top')
+      case ('top')
         nnn = n2; sgn = -1
         if (leos_chemistry) then
           p_inf(:,:,nz)=pp_full(l1:l2,m1:m2,n2)
@@ -5947,13 +5947,13 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
         grad_pp(:,:,2)=tmp2_pp(l1:l2,m1:m2)
 
 !
-      select case(topbot)
-      case('bot')
+      select case (topbot)
+      case ('bot')
         N_5=KK*(cs20_ar(l1:l2,m1:m2)/gamma0(l1:l2,m1:m2)*&
             rho0(l1:l2,m1:m2)-p_inf(1:nx,1:ny,1))
         N_1 = (f(l1:l2,m1:m2,nnn,iuz) - cs0_ar(l1:l2,m1:m2))*&
             (grad_pp(:,:,3)- rho0(l1:l2,m1:m2)*cs0_ar(l1:l2,m1:m2)*dui_dxj(:,:,3,3))
-     case('top')
+      case ('top')
         N_1=KK*(cs20_ar(l1:l2,m1:m2)/gamma0(l1:l2,m1:m2)*&
           rho0(l1:l2,m1:m2)-p_inf(1:nx,1:ny,nz))
         N_5 = (f(l1:l2,m1:m2,nnn,iuz) + cs0_ar(l1:l2,m1:m2))*&

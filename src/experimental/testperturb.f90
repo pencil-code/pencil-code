@@ -101,11 +101,11 @@ module TestPerturb
 !
 !  determine number of testfields, njest
 !
-        select case(itestfield)
-          case('B11-B21+B=0'); njtest=3
-          case('B11-B21'); njtest=2
-          case('B11-B22'); njtest=4
-          case('B=0'); njtest=1
+        select case (itestfield)
+          case ('B11-B21+B=0'); njtest=3
+          case ('B11-B21'); njtest=2
+          case ('B11-B22'); njtest=4
+          case ('B=0'); njtest=1
         case default
           call fatal_error('testperturb','undefined itestfield value')
         endselect
@@ -224,9 +224,9 @@ module TestPerturb
 !  do each of the test fields one after another
 !
         do jtest=1,njtest
-          select case(itestfield)
-            case('B11-B22'); call add_A0test_B11_B22(f,jtest)
-            case('B=0') !(dont do anything)
+          select case (itestfield)
+            case ('B11-B22'); call add_A0test_B11_B22(f,jtest)
+            case ('B=0') !(dont do anything)
           case default
             call fatal_error('testperturb_begin','undefined itestfield value')
           endselect
@@ -254,29 +254,29 @@ module TestPerturb
 !  Note that we have not subtracted the contributions from the EMF
 !  of the mean magnetic and velocity fields. Need to check.
 !
-            select case(jtest)
-            case(1)
+            select case (jtest)
+            case (1)
               call sum_mn_name(B1cz(n)*uxb(:,1),idiag_alp11)
               call sum_mn_name(B1cz(n)*uxb(:,2),idiag_alp21)
               call sum_mn_name(B1cz(n)*uxb(:,3),idiag_alp31)
               call sum_mn_name(-B1k1sz(n)*uxb(:,1),idiag_eta11)
               call sum_mn_name(-B1k1sz(n)*uxb(:,2),idiag_eta21)
               call sum_mn_name(-B1k1sz(n)*uxb(:,3),idiag_eta31)
-            case(2)
+            case (2)
               call sum_mn_name(B1sz(n)*uxb(:,1),idiag_alp11,ipart=2)
               call sum_mn_name(B1sz(n)*uxb(:,2),idiag_alp21,ipart=2)
               call sum_mn_name(B1sz(n)*uxb(:,3),idiag_alp31,ipart=2)
               call sum_mn_name(B1k1cz(n)*uxb(:,1),idiag_eta11,ipart=2)
               call sum_mn_name(B1k1cz(n)*uxb(:,2),idiag_eta21,ipart=2)
               call sum_mn_name(B1k1cz(n)*uxb(:,3),idiag_eta31,ipart=2)
-            case(3)
+            case (3)
               call sum_mn_name(B1cz(n)*uxb(:,1),idiag_alp12)
               call sum_mn_name(B1cz(n)*uxb(:,2),idiag_alp22)
               call sum_mn_name(B1cz(n)*uxb(:,3),idiag_alp32)
               call sum_mn_name(-B1k1sz(n)*uxb(:,1),idiag_eta12)
               call sum_mn_name(-B1k1sz(n)*uxb(:,2),idiag_eta22)
               call sum_mn_name(-B1k1sz(n)*uxb(:,3),idiag_eta32)
-            case(4)
+            case (4)
               call sum_mn_name(B1sz(n)*uxb(:,1),idiag_alp12,ipart=2)
               call sum_mn_name(B1sz(n)*uxb(:,2),idiag_alp22,ipart=2)
               call sum_mn_name(B1sz(n)*uxb(:,3),idiag_alp32,ipart=2)
@@ -405,11 +405,11 @@ module TestPerturb
 !
 !  add testfield contribution to the f array
 !
-      select case(jtest)
-      case(1); f(:,:,:,iay)=f(:,:,:,iay)-spread(spread(Bk1sz,1,mx),2,my)
-      case(2); f(:,:,:,iay)=f(:,:,:,iay)+spread(spread(Bk1cz,1,mx),2,my)
-      case(3); f(:,:,:,iax)=f(:,:,:,iax)+spread(spread(Bk1sz,1,mx),2,my)
-      case(4); f(:,:,:,iax)=f(:,:,:,iax)-spread(spread(Bk1cz,1,mx),2,my)
+      select case (jtest)
+      case (1); f(:,:,:,iay)=f(:,:,:,iay)-spread(spread(Bk1sz,1,mx),2,my)
+      case (2); f(:,:,:,iay)=f(:,:,:,iay)+spread(spread(Bk1cz,1,mx),2,my)
+      case (3); f(:,:,:,iax)=f(:,:,:,iax)+spread(spread(Bk1sz,1,mx),2,my)
+      case (4); f(:,:,:,iax)=f(:,:,:,iax)-spread(spread(Bk1cz,1,mx),2,my)
       case default; call stop_it('add_A0test_B11_B22: jtest incorrect')
       endselect
 !

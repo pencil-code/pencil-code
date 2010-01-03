@@ -124,39 +124,39 @@ module Cosmicray
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      select case(initecr)
-        case('zero'); f(:,:,:,iecr)=0.
-        case('constant'); f(:,:,:,iecr)=ecr_const
-        case('const_ecr'); f(:,:,:,iecr)=ecr_const
-        case('blob'); call blob(amplecr,f,iecr,radius_ecr,x_pos_cr,y_pos_cr,0.)
-        case('gaussian-x'); call gaussian(amplecr,f,iecr,kx=kx_ecr)
-        case('gaussian-y'); call gaussian(amplecr,f,iecr,ky=ky_ecr)
-        case('gaussian-z'); call gaussian(amplecr,f,iecr,kz=kz_ecr)
-        case('parabola-x'); call parabola(amplecr,f,iecr,kx=kx_ecr)
-        case('parabola-y'); call parabola(amplecr,f,iecr,ky=ky_ecr)
-        case('parabola-z'); call parabola(amplecr,f,iecr,kz=kz_ecr)
-        case('gaussian-noise'); call gaunoise(amplecr,f,iecr,iecr)
-        case('wave-x'); call wave(amplecr,f,iecr,kx=kx_ecr)
-        case('wave-y'); call wave(amplecr,f,iecr,ky=ky_ecr)
-        case('wave-z'); call wave(amplecr,f,iecr,kz=kz_ecr)
-        case('propto-ux'); call wave_uu(amplecr,f,iecr,kx=kx_ecr)
-        case('propto-uy'); call wave_uu(amplecr,f,iecr,ky=ky_ecr)
-        case('propto-uz'); call wave_uu(amplecr,f,iecr,kz=kz_ecr)
-        case('tang-discont-z')
+      select case (initecr)
+        case ('zero'); f(:,:,:,iecr)=0.
+        case ('constant'); f(:,:,:,iecr)=ecr_const
+        case ('const_ecr'); f(:,:,:,iecr)=ecr_const
+        case ('blob'); call blob(amplecr,f,iecr,radius_ecr,x_pos_cr,y_pos_cr,0.)
+        case ('gaussian-x'); call gaussian(amplecr,f,iecr,kx=kx_ecr)
+        case ('gaussian-y'); call gaussian(amplecr,f,iecr,ky=ky_ecr)
+        case ('gaussian-z'); call gaussian(amplecr,f,iecr,kz=kz_ecr)
+        case ('parabola-x'); call parabola(amplecr,f,iecr,kx=kx_ecr)
+        case ('parabola-y'); call parabola(amplecr,f,iecr,ky=ky_ecr)
+        case ('parabola-z'); call parabola(amplecr,f,iecr,kz=kz_ecr)
+        case ('gaussian-noise'); call gaunoise(amplecr,f,iecr,iecr)
+        case ('wave-x'); call wave(amplecr,f,iecr,kx=kx_ecr)
+        case ('wave-y'); call wave(amplecr,f,iecr,ky=ky_ecr)
+        case ('wave-z'); call wave(amplecr,f,iecr,kz=kz_ecr)
+        case ('propto-ux'); call wave_uu(amplecr,f,iecr,kx=kx_ecr)
+        case ('propto-uy'); call wave_uu(amplecr,f,iecr,ky=ky_ecr)
+        case ('propto-uz'); call wave_uu(amplecr,f,iecr,kz=kz_ecr)
+        case ('tang-discont-z')
           print*,'init_ecr: widthecr=',widthecr
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,iecr)=-1.+2.*0.5*(1.+tanh(z(n)/widthecr))
           enddo; enddo
-        case('hor-tube'); call htube2(amplecr,f,iecr,iecr,radius_ecr,epsilon_ecr)
+        case ('hor-tube'); call htube2(amplecr,f,iecr,iecr,radius_ecr,epsilon_ecr)
         case default; call stop_it('init_ecr: bad initecr='//trim(initecr))
       endselect
 !
 !  superimpose something else
 !
-      select case(initecr2)
-        case('wave-x'); call wave(amplecr2,f,iecr,ky=5.)
-        case('constant'); f(:,:,:,iecr)=f(:,:,:,iecr)+ecr_const
-        case('blob2'); call blob(amplecr,f,iecr,radius_ecr,x_pos_cr2,y_pos_cr2,0.)
+      select case (initecr2)
+        case ('wave-x'); call wave(amplecr2,f,iecr,ky=5.)
+        case ('constant'); f(:,:,:,iecr)=f(:,:,:,iecr)+ecr_const
+        case ('blob2'); call blob(amplecr,f,iecr,radius_ecr,x_pos_cr2,y_pos_cr2,0.)
       endselect
 !
 !  Interface for user's own initial condition

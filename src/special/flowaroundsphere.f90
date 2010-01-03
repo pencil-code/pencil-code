@@ -179,12 +179,12 @@ module Special
       real :: wall_smoothing_temp
       integer i,j,k,cyl
 
-      select case(initspecial)
-        case('nothing')
+      select case (initspecial)
+        case ('nothing')
           if (lroot) print*,'init_special: nothing'
           sphere_type = 'none'
           sph_dia = 2.*sphere_radius
-        case('sphere')
+        case ('sphere')
           print*,'init_special: sphere'
           sph_center_x = l1
           sph_rad = sphere_radius
@@ -210,13 +210,13 @@ module Special
           call stop_it("")
       endselect
 
-      select case(special_inituu)
+      select case (special_inituu)
 !
 !   This overrides any initial conditions set in the Hydro module.
 !
-        case('nothing')
+        case ('nothing')
           if (lroot) print*,'special_inituu: nothing'
-        case('cylinderstream')
+        case ('cylinderstream')
 !   Stream functions for flow around a cylinder as initial condition. 
           a2 = sph_rad**2
           do i=l1,l2
@@ -230,7 +230,7 @@ module Special
                                       *(1. + a2/rr2)
             end do
           end do
-  case('cylinderstream_nils_x')
+  case ('cylinderstream_nils_x')
 !   Stream functions for flow around a cylinder as initial condition. 
           a2 = sph_rad**2
           f(:,:,:,iux:iuz)=0
@@ -277,7 +277,7 @@ module Special
               end do
             end do
           end do
-  case('cylinderstream_nils_y')
+  case ('cylinderstream_nils_y')
 !   Stream functions for flow around a cylinder as initial condition. 
           a2 = sph_rad**2
           f(:,:,:,iux:iuz)=0
@@ -325,7 +325,7 @@ module Special
               end do
             end do
           end do
-        case('const-x')
+        case ('const-x')
 !
 !   ux = const., uy = 0 in domain.
 !
@@ -337,7 +337,7 @@ module Special
                   -sin(z(n1:n2))*special_infuu
             end do
           enddo
-        case('const-y')
+        case ('const-y')
 !
 !   ux = 0, uy = const. in domain.
 !
@@ -358,12 +358,12 @@ module Special
           call stop_it("")
       endselect
 
-      select case(sphere_type)
-        case('none')
+      select case (sphere_type)
+        case ('none')
           if (lroot) print*,'sphere_type: none'
-        case('freeze','nscbc_wall')
+        case ('freeze','nscbc_wall')
           call sph_vel(f,0.)
-        case('ghosts')
+        case ('ghosts')
           call sph_vel(f,0.)
           call sph_ghosts(f)
         case default

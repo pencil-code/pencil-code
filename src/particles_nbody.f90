@@ -362,7 +362,7 @@ module Particles_nbody
         velocity(:,3) = vspz0
       endif
 !
-      select case(initxxsp)
+      select case (initxxsp)
 
       case ('nothing')
         if (lroot) print*, 'init_particles_nbody: nothing'
@@ -373,7 +373,7 @@ module Particles_nbody
           fp(1:mspar,ixp:izp)=0.
         endif
 !
-      case('constant')
+      case ('constant')
         if (lroot) &
             print*, 'init_particles_nbody: All nbody particles at x,y,z=', xsp0, ysp0, zsp0
         do k=1,npar_loc
@@ -548,7 +548,7 @@ module Particles_nbody
 !
 !  Initial particle velocity.
 !
-      select case(initvvsp)
+      select case (initvvsp)
 
       case ('nothing')
         if (lroot) print*, 'init_particles: No particle velocity set'

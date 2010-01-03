@@ -241,8 +241,8 @@ include 'NSCBC.h'
 !  Check if this is a physical boundary
 !
         if (ip_test==ip_ok) then
-          select case(bc12(j))
-          case('part_ref_outlet')
+          select case (bc12(j))
+          case ('part_ref_outlet')
 !   Partially reflecting outlet.
             if (j==1) then 
               call bc_nscbc_prf_x(f,df,topbot,.false.)
@@ -251,7 +251,7 @@ include 'NSCBC.h'
             elseif (j==3) then 
               call fatal_error("nscbc_boundtreat_xyz",'bc_nscbc_prf_z is not yet implemented')
             endif
-          case('part_ref_inlet')
+          case ('part_ref_inlet')
 !   Partially reflecting inlet, ie, impose a velocity u_t.
             T_t=0
             if (j==1) then 
@@ -268,7 +268,7 @@ include 'NSCBC.h'
               direction = 3
               call fatal_error("nscbc_boundtreat_xyz",'bc_nscbc_prf_z is not yet implemented')
             endif
-          case('ref_inlet')
+          case ('ref_inlet')
 !   Partially reflecting inlet, ie, impose a velocity u_t.
             T_t=0
             if (j==1) then 
@@ -285,13 +285,13 @@ include 'NSCBC.h'
               direction = 3
               call fatal_error("nscbc_boundtreat_xyz",'bc_nscbc_prf_z is not yet implemented')
             endif
-          case('subsonic_inflow')
+          case ('subsonic_inflow')
 ! Subsonic inflow 
             if (j==1) then
               call bc_nscbc_subin_x(f,df,topbot,valx)
             elseif (j==2) then
             endif
-          case('subson_nref_outflow')
+          case ('subson_nref_outflow')
             if (j==1) then
               call bc_nscbc_nref_subout_x(f,df,topbot,nscbc_sigma_out)
             elseif (j==2) then
@@ -299,9 +299,9 @@ include 'NSCBC.h'
             elseif (j==3) then
               call bc_nscbc_nref_subout_z(f,df,topbot,nscbc_sigma_out)
             endif
-          case('')
+          case ('')
 !   Do nothing.
-          case('none')
+          case ('none')
             print*,'nscbc_boundtreat_xyz: doing nothing!'
 !   Do nothing.
           case default
@@ -362,11 +362,11 @@ include 'NSCBC.h'
            'bc_nscbc_prf_x: when using linlet=T, you must also specify u_t)')
       if (llinlet.and.ilnTT>0.and..not.present(T_t)) call stop_it(&
            'bc_nscbc_prf_x: when using linlet=T, you must also specify T_t)')
-      select case(topbot)
-      case('bot')
+      select case (topbot)
+      case ('bot')
         lll = l1
         sgn = 1
-      case('top')
+      case ('top')
         lll = l2
         sgn = -1
       case default
@@ -684,14 +684,14 @@ include 'NSCBC.h'
 !  Find the evolution equation for the x velocity at the boundary
 !  For 'top' L_1 plays the role of L5 and L_5 the role of L1
 !
-      select case(topbot)
-      case('bot')
+      select case (topbot)
+      case ('bot')
         if (llinlet) then
           df(lll,m1:m2,n1:n2,iux) = prefac2*( L_5 - L_1)-parallell_term_ux
         else
           df(lll,m1:m2,n1:n2,iux) = prefac2*( L_1 - L_5)-parallell_term_ux
         endif
-      case('top')
+      case ('top')
         if (llinlet) then
           df(lll,m1:m2,n1:n2,iux) = prefac2*( L_1 - L_5)-parallell_term_ux
         else
@@ -818,11 +818,11 @@ include 'NSCBC.h'
       if (present(linlet)) llinlet = linlet
       if (llinlet.and..not.present(u_t)) call stop_it(&
            'bc_nscbc_prf_y: when using linlet=T, you must also specify u_t)')
-      select case(topbot)
-      case('bot')
+      select case (topbot)
+      case ('bot')
         lll = m1
         sgn = 1
-      case('top')
+      case ('top')
         lll = m2
         sgn = -1
       case default
@@ -1051,9 +1051,9 @@ include 'NSCBC.h'
 !
 !  Find the evolution equations at the boundary
 !
-      select case(topbot)
+      select case (topbot)
       ! NB: For 'top' L_1 plays the role of L5 and L_5 the role of L1
-      case('bot')
+      case ('bot')
         df(l1:l2,lll,n1:n2,ilnrho) = prefac1*(L_5 + L_1)-parallell_term_rho
         if (llinlet) then
           df(l1:l2,lll,n1:n2,iuy) = prefac2*( L_5 - L_1)-parallell_term_uy
@@ -1062,7 +1062,7 @@ include 'NSCBC.h'
         endif
         df(l1:l2,lll,n1:n2,iux) = -L_3-parallell_term_ux
         df(l1:l2,lll,n1:n2,iuz) = -L_4-parallell_term_uz
-      case('top')
+      case ('top')
         df(l1:l2,lll,n1:n2,ilnrho) = prefac1*(L_1 + L_5)-parallell_term_rho
         if (llinlet) then
           df(l1:l2,lll,n1:n2,iuy) = prefac2*(-L_5 + L_1)-parallell_term_uy

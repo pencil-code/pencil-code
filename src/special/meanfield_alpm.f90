@@ -119,9 +119,9 @@ module Special
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
-      select case(initalpm)
-        case('zero'); f(:,:,:,ialpm)=0.
-        case('constant'); f(:,:,:,ialpm)=amplalpm
+      select case (initalpm)
+        case ('zero'); f(:,:,:,ialpm)=0.
+        case ('constant'); f(:,:,:,ialpm)=amplalpm
         case default; call stop_it('init_alpm: bad initalpm='//trim(initalpm))
       endselect
 !
@@ -527,13 +527,13 @@ module Special
 !
 !  Fi = a*eps_ijl Slk BjBk
 !
-      select case(Omega_profile)
-      case('nothing'); if (headtt) print*,'Omega_profile=nothing'
+      select case (Omega_profile)
+      case ('nothing'); if (headtt) print*,'Omega_profile=nothing'
         divflux=0               ! or we will be using uninitialized memory...
-      case('(0,Sx,0)')
+      case ('(0,Sx,0)')
         if (headtt) print*,'divflux: uniform shear, S=',Omega_ampl
         divflux=Omega_ampl*(p%bb(:,1)*p%bij(:,1,3)-p%bb(:,2)*p%bij(:,2,3))
-      case('(0,cosx*cosz,0)')
+      case ('(0,cosx*cosz,0)')
         if (headtt) print*,'divflux: solar shear, S=',Omega_ampl
         divflux=Omega_ampl*((p%bb(:,2)*p%bij(:,2,1)-   p%bb(:,3)*p%bij(:,3,1)&
                          +.5*p%bb(:,3)*p%bij(:,1,3)+.5*p%bb(:,1)*p%bij(:,3,3))&

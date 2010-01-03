@@ -215,15 +215,15 @@ module General
 !
       intent(out) :: a
 !
-      select case(random_gen)
+      select case (random_gen)
 !
-      case('system')
+      case ('system')
         call random_number(a)
-      case('min_std')
+      case ('min_std')
         do i=1,size(a,1)
           a(i)=ran0(rstate(1))
         enddo
-      case('nr_f90')
+      case ('nr_f90')
         do i=1,size(a,1)
           a(i)=mars_ran()
         enddo
@@ -247,15 +247,15 @@ module General
 !
       intent(out) :: a
 !
-      select case(random_gen)
+      select case (random_gen)
 !
-      case('system')
+      case ('system')
         call random_number(a)
-      case('min_std')
+      case ('min_std')
         do i=1,size(a,1); do j=1,size(a,2); do k=1,size(a,3)
           a(i,j,k)=ran0(rstate(1))
         enddo; enddo; enddo
-      case('nr_f90')
+      case ('nr_f90')
         do i=1,size(a,1); do j=1,size(a,2); do k=1,size(a,3)
           a(i,j,k)=mars_ran()
         enddo; enddo; enddo
@@ -305,14 +305,14 @@ module General
       integer, optional :: size
       integer :: nseed
 !
-      select case(random_gen)
+      select case (random_gen)
 !
-      case('system')
+      case ('system')
         call random_seed(SIZE=nseed)
         if (present(size)) size=nseed
         if (present(get))  call random_seed(GET=get(1:nseed))
         if (present(put))  call random_seed(PUT=put(1:nseed))
-      case('min_std')
+      case ('min_std')
         nseed=1
         if (present(size)) size=nseed
         if (present(get))  get=rstate(1)

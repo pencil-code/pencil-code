@@ -658,84 +658,84 @@ module Hydro
 !     
       do j=1,ninit
 
-        select case(inituu(j))
+        select case (inituu(j))
 
-        case('nothing'); if (lroot .and. j==1) print*,'init_uu: nothing'
-        case('zero', '0')
+        case ('nothing'); if (lroot .and. j==1) print*,'init_uu: nothing'
+        case ('zero', '0')
           if (lroot) print*,'init_uu: zero velocity'
           ! Ensure really is zero, as may have used lread_oldsnap
           f(:,:,:,iux:iuz)=0.
-        case('const_uu'); do i=1,3; f(:,:,:,iuu+i-1) = uu_const(i); enddo
-        case('mode'); call modev(ampluu(j),coefuu,f,iuu,kx_uu,ky_uu,kz_uu)
-        case('gaussian-noise'); call gaunoise(ampluu(j),f,iux,iuz)
-        case('gaussian-noise-x'); call gaunoise(ampluu(j),f,iux)
-        case('gaussian-noise-y'); call gaunoise(ampluu(j),f,iuy)
-        case('gaussian-noise-z'); call gaunoise(ampluu(j),f,iuz)
-        case('gaussian-noise-xy'); call gaunoise(ampluu(j),f,iux,iuy)
-        case('gaussian-noise-rprof'); call gaunoise_rprof(ampluu(j),f,iux,iuz)
-        case('xjump')
+        case ('const_uu'); do i=1,3; f(:,:,:,iuu+i-1) = uu_const(i); enddo
+        case ('mode'); call modev(ampluu(j),coefuu,f,iuu,kx_uu,ky_uu,kz_uu)
+        case ('gaussian-noise'); call gaunoise(ampluu(j),f,iux,iuz)
+        case ('gaussian-noise-x'); call gaunoise(ampluu(j),f,iux)
+        case ('gaussian-noise-y'); call gaunoise(ampluu(j),f,iuy)
+        case ('gaussian-noise-z'); call gaunoise(ampluu(j),f,iuz)
+        case ('gaussian-noise-xy'); call gaunoise(ampluu(j),f,iux,iuy)
+        case ('gaussian-noise-rprof'); call gaunoise_rprof(ampluu(j),f,iux,iuz)
+        case ('xjump')
           call jump(f,iux,uu_left,uu_right,widthuu,'x')
           call jump(f,iuy,uy_left,uy_right,widthuu,'x')
-        case('Beltrami-x'); call beltrami(ampluu(j),f,iuu,kx=kx_uu)
-        case('Beltrami-y'); call beltrami(ampluu(j),f,iuu,ky=ky_uu)
-        case('Beltrami-z'); call beltrami(ampluu(j),f,iuu,kz=kz_uu)
-        case('rolls'); call rolls(ampluu(j),f,iuu,kx_uu,kz_uu)
-        case('trilinear-x'); call trilinear(ampluu(j),f,iux)
-        case('trilinear-y'); call trilinear(ampluu(j),f,iuy)
-        case('trilinear-z'); call trilinear(ampluu(j),f,iuz)
-        case('cos-cos-sin-uz'); call cos_cos_sin(ampluu(j),f,iuz)
-        case('tor_pert'); call tor_pert(ampluu(j),f,iux)
-        case('diffrot'); call diffrot(ampluu(j),f,iuy)
-        case('centrifugal-balance','global-shear'); call centrifugal_balance(f)
-        case('olddiffrot'); call olddiffrot(ampluu(j),f,iuy)
-        case('sinwave-phase')
+        case ('Beltrami-x'); call beltrami(ampluu(j),f,iuu,kx=kx_uu)
+        case ('Beltrami-y'); call beltrami(ampluu(j),f,iuu,ky=ky_uu)
+        case ('Beltrami-z'); call beltrami(ampluu(j),f,iuu,kz=kz_uu)
+        case ('rolls'); call rolls(ampluu(j),f,iuu,kx_uu,kz_uu)
+        case ('trilinear-x'); call trilinear(ampluu(j),f,iux)
+        case ('trilinear-y'); call trilinear(ampluu(j),f,iuy)
+        case ('trilinear-z'); call trilinear(ampluu(j),f,iuz)
+        case ('cos-cos-sin-uz'); call cos_cos_sin(ampluu(j),f,iuz)
+        case ('tor_pert'); call tor_pert(ampluu(j),f,iux)
+        case ('diffrot'); call diffrot(ampluu(j),f,iuy)
+        case ('centrifugal-balance','global-shear'); call centrifugal_balance(f)
+        case ('olddiffrot'); call olddiffrot(ampluu(j),f,iuy)
+        case ('sinwave-phase')
           call sinwave_phase(f,iux,ampl_ux(j),kx_ux(j),ky_ux(j),kz_ux(j),phase_ux(j))
           call sinwave_phase(f,iuy,ampl_uy(j),kx_uy(j),ky_uy(j),kz_uy(j),phase_uy(j))
           call sinwave_phase(f,iuz,ampl_uz(j),kx_uz(j),ky_uz(j),kz_uz(j),phase_uz(j))
-        case('coswave-phase')
+        case ('coswave-phase')
           call coswave_phase(f,iux,ampl_ux(j),kx_ux(j),ky_ux(j),kz_ux(j),phase_ux(j))
           call coswave_phase(f,iuy,ampl_uy(j),kx_uy(j),ky_uy(j),kz_uy(j),phase_uy(j))
           call coswave_phase(f,iuz,ampl_uz(j),kx_uz(j),ky_uz(j),kz_uz(j),phase_uz(j))
-        case('sinwave-x'); call sinwave(ampluu(j),f,iux,kx=kx_uu)
-        case('sinwave-y'); call sinwave(ampluu(j),f,iuy,ky=ky_uu)
-        case('sinwave-z'); call sinwave(ampluu(j),f,iuz,kz=kz_uu)
-        case('sinwave-ux-kx'); call sinwave(ampluu(j),f,iux,kx=kx_uu)
-        case('sinwave-ux-ky'); call sinwave(ampluu(j),f,iux,ky=ky_uu)
-        case('sinwave-ux-kz'); call sinwave(ampluu(j),f,iux,kz=kz_uu)
-        case('sinwave-uy-kx'); call sinwave(ampluu(j),f,iuy,kx=kx_uu)
-        case('sinwave-uy-ky'); call sinwave(ampluu(j),f,iuy,ky=ky_uu)
-        case('sinwave-uy-kz'); call sinwave(ampluu(j),f,iuy,kz=kz_uu)
-        case('sinwave-uz-kx'); call sinwave(ampluu(j),f,iuz,kx=kx_uu)
-        case('sinwave-uz-ky'); call sinwave(ampluu(j),f,iuz,ky=ky_uu)
-        case('sinwave-uz-kz'); call sinwave(ampluu(j),f,iuz,kz=kz_uu)
-        case('sinwave-y-z')
+        case ('sinwave-x'); call sinwave(ampluu(j),f,iux,kx=kx_uu)
+        case ('sinwave-y'); call sinwave(ampluu(j),f,iuy,ky=ky_uu)
+        case ('sinwave-z'); call sinwave(ampluu(j),f,iuz,kz=kz_uu)
+        case ('sinwave-ux-kx'); call sinwave(ampluu(j),f,iux,kx=kx_uu)
+        case ('sinwave-ux-ky'); call sinwave(ampluu(j),f,iux,ky=ky_uu)
+        case ('sinwave-ux-kz'); call sinwave(ampluu(j),f,iux,kz=kz_uu)
+        case ('sinwave-uy-kx'); call sinwave(ampluu(j),f,iuy,kx=kx_uu)
+        case ('sinwave-uy-ky'); call sinwave(ampluu(j),f,iuy,ky=ky_uu)
+        case ('sinwave-uy-kz'); call sinwave(ampluu(j),f,iuy,kz=kz_uu)
+        case ('sinwave-uz-kx'); call sinwave(ampluu(j),f,iuz,kx=kx_uu)
+        case ('sinwave-uz-ky'); call sinwave(ampluu(j),f,iuz,ky=ky_uu)
+        case ('sinwave-uz-kz'); call sinwave(ampluu(j),f,iuz,kz=kz_uu)
+        case ('sinwave-y-z')
           if (lroot) print*, 'init_uu: sinwave-y-z, ampluu=', ampluu(j)
           call sinwave(ampluu(j),f,iuy,kz=kz_uu)
-        case('sinwave-z-y')
+        case ('sinwave-z-y')
           if (lroot) print*, 'init_uu: sinwave-z-y, ampluu=', ampluu(j)
           call sinwave(ampluu(j),f,iuz,ky=ky_uu)
-        case('sinwave-z-x')
+        case ('sinwave-z-x')
           if (lroot) print*, 'init_uu: sinwave-z-x, ampluu=', ampluu(j)
           call sinwave(ampluu(j),f,iuz,kx=kx_uu)
-        case('damped_sinwave-z-x')
+        case ('damped_sinwave-z-x')
           if (lroot) print*, 'init_uu: damped_sinwave-z-x, ampluu=', ampluu(j)
           do m=m1,m2; do n=n1,n2
             f(:,m,n,iuz)=f(:,m,n,iuz)+ampluu(j)*sin(kx_uu*x)*exp(-10*z(n)**2)
           enddo; enddo
-        case('coswave-x'); call coswave(ampluu(j),f,iux,kx=kx_uu)
-        case('coswave-y'); call coswave(ampluu(j),f,iuy,ky=ky_uu)
-        case('coswave-z'); call coswave(ampluu(j),f,iuz,kz=kz_uu)
-        case('coswave-x-z'); call coswave(ampluu(j),f,iux,kz=kz_uu)
-        case('coswave-z-x'); call coswave(ampluu(j),f,iuz,kx=kx_uu)
-        case('x1cosycosz'); call x1_cosy_cosz(ampluu(j),f,iuy,ky=ky_uu,kz=kz_uu)
-        case('couette'); call couette(ampluu(j),mu_omega,f,iuy)
-        case('couette_rings'); call couette_rings(ampluu(j),mu_omega,nb_rings,om_rings,gap,f,iuy)
-        case('soundwave-x'); call soundwave(ampluu(j),f,iux,kx=kx_uu)
-        case('soundwave-y'); call soundwave(ampluu(j),f,iuy,ky=ky_uu)
-        case('soundwave-z'); call soundwave(ampluu(j),f,iuz,kz=kz_uu)
-        case('robertsflow'); call robertsflow(ampluu(j),f,iuu)
-        case('hawley-et-al'); call hawley_etal99a(ampluu(j),f,iuu,Lxyz)
-        case('sound-wave', '11')
+        case ('coswave-x'); call coswave(ampluu(j),f,iux,kx=kx_uu)
+        case ('coswave-y'); call coswave(ampluu(j),f,iuy,ky=ky_uu)
+        case ('coswave-z'); call coswave(ampluu(j),f,iuz,kz=kz_uu)
+        case ('coswave-x-z'); call coswave(ampluu(j),f,iux,kz=kz_uu)
+        case ('coswave-z-x'); call coswave(ampluu(j),f,iuz,kx=kx_uu)
+        case ('x1cosycosz'); call x1_cosy_cosz(ampluu(j),f,iuy,ky=ky_uu,kz=kz_uu)
+        case ('couette'); call couette(ampluu(j),mu_omega,f,iuy)
+        case ('couette_rings'); call couette_rings(ampluu(j),mu_omega,nb_rings,om_rings,gap,f,iuy)
+        case ('soundwave-x'); call soundwave(ampluu(j),f,iux,kx=kx_uu)
+        case ('soundwave-y'); call soundwave(ampluu(j),f,iuy,ky=ky_uu)
+        case ('soundwave-z'); call soundwave(ampluu(j),f,iuz,kz=kz_uu)
+        case ('robertsflow'); call robertsflow(ampluu(j),f,iuu)
+        case ('hawley-et-al'); call hawley_etal99a(ampluu(j),f,iuu,Lxyz)
+        case ('sound-wave', '11')
 !
 !  sound wave (should be consistent with density module)
 !
@@ -744,7 +744,7 @@ module Hydro
             f(l1:l2,m,n,iux)=uu_const(1)+ampluu(j)*sin(kx_uu*x(l1:l2))
           enddo; enddo
 
-        case('sound-wave2')
+        case ('sound-wave2')
 !
 !  sound wave (should be consistent with density module)
 !
@@ -758,7 +758,7 @@ module Hydro
             endif
           enddo; enddo
 
-        case('shock-tube', '13')
+        case ('shock-tube', '13')
 !
 !  shock tube test (should be consistent with density module)
 !
@@ -768,7 +768,7 @@ module Hydro
             f(l1:l2,m,n,iux)=uu_left+(uu_right-uu_left)*prof
           enddo; enddo
 
-        case('tanhx')
+        case ('tanhx')
 !
 !  Burgers shock
 !
@@ -778,7 +778,7 @@ module Hydro
             f(l1:l2,m,n,iux)=prof
           enddo; enddo
 
-        case('tanhy')
+        case ('tanhy')
 !
 !  A*tanh(y/d) profile in the x-direction
 !
@@ -790,7 +790,7 @@ module Hydro
             enddo
           enddo
 
-        case('shock-sphere')
+        case ('shock-sphere')
 !
 !  shock tube test (should be consistent with density module)
 !
@@ -802,7 +802,7 @@ module Hydro
           enddo; enddo
 !
 
-        case('bullets')
+        case ('bullets')
 !
 !  blob-like velocity perturbations (bullets)
 !
@@ -812,7 +812,7 @@ module Hydro
           enddo; enddo
 
 
-        case('bullets_x')
+        case ('bullets_x')
 !
 !  blob-like velocity perturbations in x-direction (bullets)
 !
@@ -823,7 +823,7 @@ module Hydro
           enddo; enddo
 
 
-        case('Alfven-circ-x')
+        case ('Alfven-circ-x')
 !
 !  circularly polarised Alfven wave in x direction
 !
@@ -839,7 +839,7 @@ module Hydro
                 ampluu(j)*cos(pi*z(n)/Lxyz(3))*sin(2*pi*y(m)/Lxyz(2))
           enddo; enddo
 
-        case('linear-shear')
+        case ('linear-shear')
 !
 !  Linear shear
 !
@@ -848,49 +848,49 @@ module Hydro
             f(l,m,n1:n2,iuy) = ampluu(j)*z(n1:n2)
           enddo; enddo
 !
-        case('tanh-x-z')
+        case ('tanh-x-z')
           if (lroot) print*, &
               'init_uu: tanh-x-z, widthuu, ampluu=', widthuu, ampluu(j)
           do l=l1,l2; do m=m1,m2
             f(l,m,n1:n2,iux) = ampluu(j)*tanh(z(n1:n2)/widthuu)
           enddo; enddo
 !
-        case('tanh-y-z')
+        case ('tanh-y-z')
           if (lroot) print*, &
               'init_uu: tanh-y-z, widthuu, ampluu=', widthuu, ampluu(j)
           do l=l1,l2; do m=m1,m2
             f(l,m,n1:n2,iuy) = ampluu(j)*tanh(z(n1:n2)/widthuu)
           enddo; enddo
 !
-        case('gauss-x-z')
+        case ('gauss-x-z')
           if (lroot) print*, &
               'init_uu: gauss-x-z, widthuu, ampluu=', widthuu, ampluu(j)
           do l=l1,l2; do m=m1,m2
             f(l,m,n1:n2,iux) = ampluu(j)*exp(-z(n1:n2)**2/widthuu**2)
           enddo; enddo
 !
-        case('const-ux')
+        case ('const-ux')
 !
 !  constant x-velocity
 !
           if (lroot) print*,'init_uu: constant x-velocity'
           f(:,:,:,iux) = ampluu(j)
 
-        case('const-uy')
+        case ('const-uy')
 !
 !  constant y-velocity
 !
           if (lroot) print*,'init_uu: constant y-velocity'
           f(:,:,:,iuy) = ampluu(j)
 
-        case('const-uz')
+        case ('const-uz')
 !
 !  constant z-velocity
 !
           if (lroot) print*,'init_uu: constant z-velocity'
           f(:,:,:,iuz) = ampluu(j)
 !
-        case('omega-z')
+        case ('omega-z')
 !
 !  constant x-velocity
 !
@@ -903,7 +903,7 @@ module Hydro
             enddo
           enddo
 !
-        case('tang-discont-z')
+        case ('tang-discont-z')
 !
 !  tangential discontinuity: velocity is directed along x,
 !  ux=uu_lower for z<0 and ux=uu_upper for z>0. This can
@@ -926,7 +926,7 @@ module Hydro
             f(l1:l2,m,n,iuz)=f(l1:l2,m,n,iuz)+ampluu(j)*tmp
           enddo; enddo
 
-        case('Fourier-trunc')
+        case ('Fourier-trunc')
 !
 !  truncated simple Fourier series as nontrivial initial profile
 !  for convection. The corresponding stream function is
@@ -946,7 +946,7 @@ module Hydro
             f(l1:l2,m,n,iuy) = tmp*ky_uu/kabs
           enddo; enddo
 
-        case('up-down')
+        case ('up-down')
 !
 !  flow upwards in one spot, downwards in another; not soneloidal
 !
@@ -959,27 +959,27 @@ module Hydro
             f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) - 0.7*prof*exp(-0.5*(tmp**2)/widthuu**2)
           enddo; enddo
 
-        case('powern')
+        case ('powern')
 ! initial spectrum k^power
           call powern(ampluu(j),initpower,cutoff,f,iux,iuz)
 
-        case('power_randomphase')
+        case ('power_randomphase')
 ! initial spectrum k^power
           call power_randomphase(ampluu(j),initpower,cutoff,f,iux,iuz,lscale_tobox)
 
-        case('random-isotropic-KS')
+        case ('random-isotropic-KS')
           call random_isotropic_KS(initpower,f,iux,N_modes_uu)
 
-        case('vortex_2d')
+        case ('vortex_2d')
 ! Vortex solution of Goodman, Narayan, & Goldreich (1987)
           call vortex_2d(f,b_ell,widthuu,rbound)
 
-        case('sub-Keplerian')
+        case ('sub-Keplerian')
           if (lroot) print*, 'init_hydro: set sub-Keplerian gas velocity'
           f(:,:,:,iux) = -1/(2*Omega)*cs20*beta_glnrho_scaled(2)
           f(:,:,:,iuy) = 1/(2*Omega)*cs20*beta_glnrho_scaled(1)
 
-        case('rigid')
+        case ('rigid')
           do n=n1,n2; do m=m1,m2; do l=l1,l2
             if (x(l)**2+y(m)**2+z(n)**2<=radiusuu**2) then
               f(l,m,n,iux)=-ampluu(j)*y(m)
@@ -989,7 +989,7 @@ module Hydro
 !
 !  compressive (non-vortical) shear wave of Johnson & Gammie (2005a)
 !
-        case('compressive-shwave')
+        case ('compressive-shwave')
           if (ldensity.or.ldensity_anelastic) then
             call coswave_phase(f,iux,ampl_ux(j),kx_uu,ky_uu,kz_uu,phase_ux(j))
             call coswave_phase(f,iuy,ampl_uy(j),kx_uu,ky_uu,kz_uu,phase_uy(j))
@@ -1000,7 +1000,7 @@ module Hydro
                   sin(kx_uu*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n)))
             enddo; enddo
           endif
-        case( 'anelastic-2dxy')
+        case ( 'anelastic-2dxy')
           print*, "anelastic-2dxy: ampl_uz,kx_uu,ky_uu = ", ampl_uz(j),kx_uu,ky_uu
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,iuz)=ampl_uz(j)*sin(kx_uu*x(l1:l2))*sin(ky_uu*y(m))
@@ -1015,7 +1015,7 @@ module Hydro
           enddo;enddo
           f(:,:,:,iuz)=0.
 
-        case( 'anelastic-2dxz')
+        case ( 'anelastic-2dxz')
           print*, "anelastic-2dxz: ampl_uy,kx_uu,kz_uu = ", ampl_uy(j),kx_uu,kz_uu
           do n=n1,n2; do m=m1,m2
 !            f(l1:l2,m,n,iuy)=ampl_uy(j)*sin(kx_uu*x(l1:l2))*sin(kz_uu*z(n))
@@ -1036,7 +1036,7 @@ module Hydro
           write(*,*) 'PC:init_uu','Finished initializing uu'
 
 !
-        case('incompressive-shwave')
+        case ('incompressive-shwave')
 ! incompressible shear wave of Johnson & Gammine (2005a)
           print*, "incomp-shwave: ampl_ux/ky_uu = ", ampl_ux(j)/ky_uu
 ! Get the streamfunction, save it in the iuz slot
@@ -1052,7 +1052,7 @@ module Hydro
           enddo;enddo
           f(:,:,:,iuz)=0.
 !
-        case('cylcoords-stream-x')
+        case ('cylcoords-stream-x')
 ! Constant velocity in x-direction in cylinder coordinates  
           do l=l1,l2; do m=m1,m2
             wall_smoothing=1-exp(-((x(l)-r_cyl)/skin_depth)**2)
@@ -1062,7 +1062,7 @@ module Hydro
           f(:,:,:,iuz)=0.
           f(1:l1,:,:,iux:iuz)=0.
 
-        case('cylinderstream_cyl')
+        case ('cylinderstream_cyl')
 !   Stream functions for flow around a cylinder as initial condition.
 !   Cylindrical coordinates. Flow in x-direction. 
           a2 = r_cyl**2
@@ -2327,23 +2327,23 @@ module Hydro
       real, dimension (nx,3) :: f_target
       integer :: j,ju
 !
-      select case(borderuu)
+      select case (borderuu)
 !
-      case('zero','0')
+      case ('zero','0')
         f_target=0.
 !
-      case('constant')
+      case ('constant')
         do j=1,3
           f_target(:,j) = uu_const(j)
         enddo
 !
-      case('initial-condition')
+      case ('initial-condition')
         do j=1,3
           ju=j+iuu-1
           call set_border_initcond(f,ju,f_target(:,j))
         enddo  
 !
-      case('nothing')
+      case ('nothing')
         if (lroot.and.ip<=5) &
              print*,"set_border_hydro: borderuu='nothing'"
 !
@@ -4178,7 +4178,7 @@ module Hydro
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer :: l1bc,l2bc
 !
-      select case(interior_bc_hydro_profile)
+      select case (interior_bc_hydro_profile)
 !
 !  single propeller blade
 !
@@ -4224,7 +4224,7 @@ module Hydro
       logical :: ldiffrot_test
       integer :: llx
 !
-      select case(prof_diffrot)
+      select case (prof_diffrot)
 !
 !  diffrot profile from Brandenburg & Sandin (2004, A&A)
 !
@@ -4352,7 +4352,7 @@ module Hydro
 !  radial_uniform_shear
 !  uphi = slope*x + uoffset
 !
-      case('radial_uniform_shear')
+      case ('radial_uniform_shear')
        uinn = omega_in*x(l1)
        uext = omega_out*x(l2)
        slope = (uext - uinn)/(x(l2)-x(l1))

@@ -672,11 +672,11 @@ kky_aa=2.*pi
 ! Radial wind
 !
       elseif (kinflow=='radial-wind') then
-        select case(wind_profile)
-        case('none'); wind_prof=0.;div_uprof=0.
-        case('constant'); wind_prof=1.;div_uprof=0.
+        select case (wind_profile)
+        case ('none'); wind_prof=0.;div_uprof=0.
+        case ('constant'); wind_prof=1.;div_uprof=0.
                         
-        case('radial-step') 
+        case ('radial-step') 
           wind_prof=step(x(l1:l2),wind_rmin,wind_step_width)
           div_uprof=der_step(x(l1:l2),wind_rmin,wind_step_width)
 !          der6_uprof=der6_step(x(l1:l2),wind_rmin,wind_step_width)
@@ -699,11 +699,11 @@ kky_aa=2.*pi
 ! Radial wind+circulation
 !
       elseif (kinflow=='radial-wind+circ') then
-        select case(wind_profile)
-        case('none'); wind_prof=0.;div_uprof=0.
-        case('constant'); wind_prof=1.;div_uprof=0.
+        select case (wind_profile)
+        case ('none'); wind_prof=0.;div_uprof=0.
+        case ('constant'); wind_prof=1.;div_uprof=0.
                         
-        case('radial-step') 
+        case ('radial-step') 
           wind_prof=step(x(l1:l2),wind_rmin,wind_step_width)
           div_uprof=der_step(x(l1:l2),wind_rmin,wind_step_width)
 !          der6_uprof=der6_step(x(l1:l2),wind_rmin,wind_step_width)

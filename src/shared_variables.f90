@@ -709,10 +709,10 @@ module SharedVariables
       intent(in)  :: ierr
 !
       select case (ierr)
-      case(iSHVAR_ERR_NOSUCHVAR);     string='SHVAR_ERR_NOSUCHVAR'
-      case(iSHVAR_ERR_WRONGTYPE);     string='SHVAR_ERR_WRONGTYPE'
-      case(iSHVAR_ERR_DUPLICATE);     string='SHVAR_ERR_DUPLICATE'
-      case(iSHVAR_ERR_NOTASSOCIATED); string='SHVAR_ERR_NOTASSOCIATED'
+      case (iSHVAR_ERR_NOSUCHVAR);     string='SHVAR_ERR_NOSUCHVAR'
+      case (iSHVAR_ERR_WRONGTYPE);     string='SHVAR_ERR_WRONGTYPE'
+      case (iSHVAR_ERR_DUPLICATE);     string='SHVAR_ERR_DUPLICATE'
+      case (iSHVAR_ERR_NOTASSOCIATED); string='SHVAR_ERR_NOTASSOCIATED'
       case default;                   string='Undocumented ierr!'
       endselect
 !

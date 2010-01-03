@@ -451,7 +451,7 @@ module Particles
 !
 !  Overwrite with new policy variables:
 !     
-      select case(interp_pol_uu)
+      select case (interp_pol_uu)
       case ('tsc')
         interp%pol_uu=tsc
       case ('cic')
@@ -463,7 +463,7 @@ module Particles
           'interp_pol_uu: '//trim(interp_pol_uu))
       endselect
 !
-      select case(interp_pol_oo)
+      select case (interp_pol_oo)
       case ('tsc')
         interp%pol_oo=tsc
       case ('cic')
@@ -475,7 +475,7 @@ module Particles
           'interp_pol_oo: '//trim(interp_pol_oo))
       endselect
 !
-      select case(interp_pol_TT)
+      select case (interp_pol_TT)
       case ('tsc')
         interp%pol_TT=tsc
       case ('cic')
@@ -487,7 +487,7 @@ module Particles
           'interp_pol_TT: '//trim(interp_pol_TT))
       endselect
 !
-      select case(interp_pol_rho)
+      select case (interp_pol_rho)
       case ('tsc')
         interp%pol_rho=tsc
       case ('cic')
@@ -556,7 +556,7 @@ module Particles
 !
       do j=1,ninit
 
-        select case(initxxp(j))
+        select case (initxxp(j))
 
         case ('nothing')
           if (lroot .and. j==1) print*, 'init_particles: nothing'
@@ -951,7 +951,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       do j=1,ninit
 
-        select case(initvvp(j))
+        select case (initvvp(j))
 
         case ('nothing')
           if (lroot.and.j==1) print*, 'init_particles: No particle velocity set'
@@ -1054,7 +1054,7 @@ k_loop:   do while (.not. (k>npar_loc))
             fp(k,ivpx:ivpz) = uup
           enddo
 
-        case('jeans-wave-dustpar-x')
+        case ('jeans-wave-dustpar-x')
         ! assumes rhs_poisson_const=1 !
           do k=1,npar_loc
             fp(k,ivpx) = fp(k,ivpx) - amplxxp* &
@@ -1062,7 +1062,7 @@ k_loop:   do while (.not. (k>npar_loc))
                 (2*kx_xxp*1.0*tausp)*sin(kx_xxp*(fp(k,ixp)))
           enddo
 
-        case('dragforce_equilibrium')
+        case ('dragforce_equilibrium')
 !
 !  Equilibrium between drag forces on dust and gas and other forces
 !  (from Nakagawa, Sekiya, & Hayashi 1986).
@@ -1122,7 +1122,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
           enddo
 !
-        case('dragforce_equi_dust')
+        case ('dragforce_equi_dust')
 !
 !  Equilibrium between drag force and Coriolis force on the dust.
 !
@@ -1255,7 +1255,7 @@ k_loop:   do while (.not. (k>npar_loc))
 ! Insert particles in chosen position (as in init_particles).
 !
           do j=1,ninit
-            select case(initxxp(j))
+            select case (initxxp(j))
             case ('random-box')
 !             
               do k=npar_loc_old+1,npar_loc
@@ -1290,7 +1290,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Initial particle velocity.
 !
           do j=1,ninit
-            select case(initvvp(j))
+            select case (initvvp(j))
             case ('nothing')
               if (j==1) print*, 'init_particles: No particle velocity set'
 !              
@@ -2078,7 +2078,7 @@ k_loop:   do while (.not. (k>npar_loc))
         case ('zero')
           if (lheader) print*, 'dvvp_dt: No radial gravity'
 !
-        case('newtonian-central','newtonian')
+        case ('newtonian-central','newtonian')
           if (lparticles_nbody) &
               call fatal_error('dvvp_dt','You are using massive particles. '//&
               'The N-body code should take care of the stellar-like '// &

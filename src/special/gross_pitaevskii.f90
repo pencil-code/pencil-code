@@ -274,39 +274,39 @@ module Special
 !!
 !!  SAMPLE IMPLEMENTATION
 !!
-      select case(initgpe)
-        case('nothing'); if (lroot) print*,'init_special: nothing'
-        case('constant', '0'); 
+      select case (initgpe)
+        case ('nothing'); if (lroot) print*,'init_special: nothing'
+        case ('constant', '0'); 
           f(:,:,:,ipsi_real) = 1.
           f(:,:,:,ipsi_imag) = 1.
-        case('vortex-line'); 
+        case ('vortex-line'); 
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,ipsi_real:ipsi_imag) = vortex_line(vl0)
           enddo; enddo
-        case('vortex-pair'); 
+        case ('vortex-pair'); 
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,ipsi_real:ipsi_imag) = complex_mult(vortex_line(vl1), &
                                                vortex_line(vl3))
           enddo; enddo
-        case('sphere'); 
+        case ('sphere'); 
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,ipsi_real) = imaged_sphere(0.,0.,0.,1)
             !f(l1:l2,m,n,ipsi_real) = sphere(0.,0.,0.)
             f(l1:l2,m,n,ipsi_imag) = 0.
           enddo; enddo
-        case('add-vortex-ring'); 
+        case ('add-vortex-ring'); 
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,ipsi_real:ipsi_imag) = &
               f(l1:l2,m,n,ipsi_real:ipsi_imag) &
                * vortex_ring(vr1)
           enddo; enddo
-        case('add-vortex-pair'); 
+        case ('add-vortex-pair'); 
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,ipsi_real:ipsi_imag) = &
               f(l1:l2,m,n,ipsi_real:ipsi_imag) &
                * vortex_line(vl2) * vortex_line(vl4) 
           enddo; enddo
-        case('vortex-ring'); 
+        case ('vortex-ring'); 
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,ipsi_real:ipsi_imag) = vortex_ring(vr1)
           enddo; enddo

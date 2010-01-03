@@ -98,9 +98,9 @@ module Cosmicrayflux
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      select case(initfcr)
+      select case (initfcr)
 
-      case('zero', '0'); f(:,:,:,ifcrx:ifcrz) = 0.
+      case ('zero', '0'); f(:,:,:,ifcrx:ifcrz) = 0.
 ! probably no more cases needed for fcr
       case default
 !

@@ -373,8 +373,8 @@ module Testfield
 !  calculate iE0
 !
       if (.not.lstarting) then
-        select case(itestfield)
-          case('B11-B22'); iE0=0
+        select case (itestfield)
+          case ('B11-B22'); iE0=0
         case default
           call fatal_error('initialize_testfield','undefined itestfield value')
         endselect
@@ -480,24 +480,24 @@ module Testfield
 !
       do j=1,ninit
 
-      select case(initaatest(j))
+      select case (initaatest(j))
 
-      case('zero'); f(:,:,:,iaatest:iaatest+ntestfield-1)=0.
-      case('gaussian-noise-1'); call gaunoise(amplaatest(j),f,iaxtest+0,iaztest+0)
-      case('gaussian-noise-2'); call gaunoise(amplaatest(j),f,iaxtest+3,iaztest+3)
-      case('gaussian-noise-3'); call gaunoise(amplaatest(j),f,iaxtest+6,iaztest+6)
-      case('gaussian-noise-4'); call gaunoise(amplaatest(j),f,iaxtest+9,iaztest+9)
-      case('gaussian-noise-5'); call gaunoise(amplaatest(j),f,iaxtest+12,iaztest+12)
-      case('sinwave-x-1'); call sinwave(amplaatest(j),f,iaxtest+0+1,kx=kx_aatest(j))
-      case('sinwave-x-2'); call sinwave(amplaatest(j),f,iaxtest+3+1,kx=kx_aatest(j))
-      case('sinwave-x-3'); call sinwave(amplaatest(j),f,iaxtest+6+1,kx=kx_aatest(j))
-      case('Beltrami-x-1'); call beltrami(amplaatest(j),f,iaxtest+0,kx=-kx_aatest(j),phase=phasex_aatest(j))
-      case('Beltrami-z-1'); call beltrami(amplaatest(j),f,iaxtest+0,kz=-kz_aatest(j),phase=phasez_aatest(j))
-      case('Beltrami-z-2'); call beltrami(amplaatest(j),f,iaxtest+3,kz=-kz_aatest(j),phase=phasez_aatest(j))
-      case('Beltrami-z-3'); call beltrami(amplaatest(j),f,iaxtest+6,kz=-kz_aatest(j),phase=phasez_aatest(j))
-      case('Beltrami-z-4'); call beltrami(amplaatest(j),f,iaxtest+9,kz=-kz_aatest(j),phase=phasez_aatest(j))
-      case('Beltrami-z-5'); call beltrami(amplaatest(j),f,iaxtest+12,kz=-kz_aatest(j),phase=phasez_aatest(j))
-      case('nothing'); !(do nothing)
+      case ('zero'); f(:,:,:,iaatest:iaatest+ntestfield-1)=0.
+      case ('gaussian-noise-1'); call gaunoise(amplaatest(j),f,iaxtest+0,iaztest+0)
+      case ('gaussian-noise-2'); call gaunoise(amplaatest(j),f,iaxtest+3,iaztest+3)
+      case ('gaussian-noise-3'); call gaunoise(amplaatest(j),f,iaxtest+6,iaztest+6)
+      case ('gaussian-noise-4'); call gaunoise(amplaatest(j),f,iaxtest+9,iaztest+9)
+      case ('gaussian-noise-5'); call gaunoise(amplaatest(j),f,iaxtest+12,iaztest+12)
+      case ('sinwave-x-1'); call sinwave(amplaatest(j),f,iaxtest+0+1,kx=kx_aatest(j))
+      case ('sinwave-x-2'); call sinwave(amplaatest(j),f,iaxtest+3+1,kx=kx_aatest(j))
+      case ('sinwave-x-3'); call sinwave(amplaatest(j),f,iaxtest+6+1,kx=kx_aatest(j))
+      case ('Beltrami-x-1'); call beltrami(amplaatest(j),f,iaxtest+0,kx=-kx_aatest(j),phase=phasex_aatest(j))
+      case ('Beltrami-z-1'); call beltrami(amplaatest(j),f,iaxtest+0,kz=-kz_aatest(j),phase=phasez_aatest(j))
+      case ('Beltrami-z-2'); call beltrami(amplaatest(j),f,iaxtest+3,kz=-kz_aatest(j),phase=phasez_aatest(j))
+      case ('Beltrami-z-3'); call beltrami(amplaatest(j),f,iaxtest+6,kz=-kz_aatest(j),phase=phasez_aatest(j))
+      case ('Beltrami-z-4'); call beltrami(amplaatest(j),f,iaxtest+9,kz=-kz_aatest(j),phase=phasez_aatest(j))
+      case ('Beltrami-z-5'); call beltrami(amplaatest(j),f,iaxtest+12,kz=-kz_aatest(j),phase=phasez_aatest(j))
+      case ('nothing'); !(do nothing)
 
       case default
         !
@@ -756,8 +756,8 @@ module Testfield
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
 !  Note: the same block of lines occurs again further down in the file.
 !
-          select case(itestfield)
-          case('B11-B22')
+          select case (itestfield)
+          case ('B11-B22')
             call set_bbtest_B11_B22(B0test,jtest)
             call set_J0test_B11_B22(J0test,jtest)
           case default
@@ -1232,13 +1232,13 @@ module Testfield
 !  Calculate uxb and jxb, and put it into f-array, depending on whether we use
 !  Testfield Method (i) or (ii).
 !
-            select case(itestfield_method)
-            case('(i)')
+            select case (itestfield_method)
+            case ('(i)')
               call cross_mn(p%uu,bbtest,uxbtest1)
               call cross_mn(uutest,b0ref,uxbtest2)
               call cross_mn(p%jj,bbtest,jxbtest1)
               call cross_mn(jjtest,b0ref,jxbtest2)
-            case('(ii)')
+            case ('(ii)')
               call cross_mn(u0ref,bbtest,uxbtest1)
               call cross_mn(uutest,p%bb,uxbtest2)
               call cross_mn(j0ref,bbtest,jxbtest1)
@@ -1427,8 +1427,8 @@ module Testfield
 !
 !  set B0test for each of the 9 cases
 !
-      select case(jtest)
-      case(1); B0test(:,1)=bamp*cz(n); B0test(:,2)=bamp*sz(n); B0test(:,3)=0.
+      select case (jtest)
+      case (1); B0test(:,1)=bamp*cz(n); B0test(:,2)=bamp*sz(n); B0test(:,3)=0.
       case default; B0test(:,:)=0.
       endselect
 !
@@ -1450,9 +1450,9 @@ module Testfield
 !
 !  set B0test for each of the 9 cases
 !
-      select case(jtest)
-      case(1); B0test(:,1)=bamp*cz(n); B0test(:,2)=0.; B0test(:,3)=0.
-      case(2); B0test(:,1)=bamp*sz(n); B0test(:,2)=0.; B0test(:,3)=0.
+      select case (jtest)
+      case (1); B0test(:,1)=bamp*cz(n); B0test(:,2)=0.; B0test(:,3)=0.
+      case (2); B0test(:,1)=bamp*sz(n); B0test(:,2)=0.; B0test(:,3)=0.
       case default; B0test(:,:)=0.
       endselect
 !
@@ -1474,9 +1474,9 @@ module Testfield
 !
 !  set J0test for each of the 9 cases
 !
-      select case(jtest)
-      case(1); J0test(:,1)=0.; J0test(:,2)=-bamp*ktestfield*sz(n); J0test(:,3)=0.
-      case(2); J0test(:,1)=0.; J0test(:,2)=+bamp*ktestfield*cz(n); J0test(:,3)=0.
+      select case (jtest)
+      case (1); J0test(:,1)=0.; J0test(:,2)=-bamp*ktestfield*sz(n); J0test(:,3)=0.
+      case (2); J0test(:,1)=0.; J0test(:,2)=+bamp*ktestfield*cz(n); J0test(:,3)=0.
       case default; J0test(:,:)=0.
       endselect
 !
@@ -1498,11 +1498,11 @@ module Testfield
 !
 !  set J0test for each of the 9 cases
 !
-      select case(jtest)
-      case(1); J0test(:,1)=0.; J0test(:,2)=-bamp*ktestfield*sz(n); J0test(:,3)=0.
-      case(2); J0test(:,1)=0.; J0test(:,2)=+bamp*ktestfield*cz(n); J0test(:,3)=0.
-      case(3); J0test(:,1)=+bamp*ktestfield*sz(n); J0test(:,2)=0.; J0test(:,3)=0.
-      case(4); J0test(:,1)=-bamp*ktestfield*cz(n); J0test(:,2)=0.; J0test(:,3)=0.
+      select case (jtest)
+      case (1); J0test(:,1)=0.; J0test(:,2)=-bamp*ktestfield*sz(n); J0test(:,3)=0.
+      case (2); J0test(:,1)=0.; J0test(:,2)=+bamp*ktestfield*cz(n); J0test(:,3)=0.
+      case (3); J0test(:,1)=+bamp*ktestfield*sz(n); J0test(:,2)=0.; J0test(:,3)=0.
+      case (4); J0test(:,1)=-bamp*ktestfield*cz(n); J0test(:,2)=0.; J0test(:,3)=0.
       case default; J0test(:,:)=0.
       endselect
 !
@@ -1524,11 +1524,11 @@ module Testfield
 !
 !  set B0test for each of the 9 cases
 !
-      select case(jtest)
-      case(1); B0test(:,1)=bamp*cz(n); B0test(:,2)=0.; B0test(:,3)=0.
-      case(2); B0test(:,1)=bamp*sz(n); B0test(:,2)=0.; B0test(:,3)=0.
-      case(3); B0test(:,1)=0.; B0test(:,2)=bamp*cz(n); B0test(:,3)=0.
-      case(4); B0test(:,1)=0.; B0test(:,2)=bamp*sz(n); B0test(:,3)=0.
+      select case (jtest)
+      case (1); B0test(:,1)=bamp*cz(n); B0test(:,2)=0.; B0test(:,3)=0.
+      case (2); B0test(:,1)=bamp*sz(n); B0test(:,2)=0.; B0test(:,3)=0.
+      case (3); B0test(:,1)=0.; B0test(:,2)=bamp*cz(n); B0test(:,3)=0.
+      case (4); B0test(:,1)=0.; B0test(:,2)=bamp*sz(n); B0test(:,3)=0.
       case default; B0test(:,:)=0.
       endselect
 !
@@ -1550,11 +1550,11 @@ module Testfield
 !
 !  set B0test for each of the 9 cases
 !
-      select case(jtest)
-      case(1); B0test(:,1)=bamp     ; B0test(:,2)=0.; B0test(:,3)=0.
-      case(2); B0test(:,1)=bamp*z(n); B0test(:,2)=0.; B0test(:,3)=0.
-      case(3); B0test(:,1)=0.; B0test(:,2)=bamp     ; B0test(:,3)=0.
-      case(4); B0test(:,1)=0.; B0test(:,2)=bamp*z(n); B0test(:,3)=0.
+      select case (jtest)
+      case (1); B0test(:,1)=bamp     ; B0test(:,2)=0.; B0test(:,3)=0.
+      case (2); B0test(:,1)=bamp*z(n); B0test(:,2)=0.; B0test(:,3)=0.
+      case (3); B0test(:,1)=0.; B0test(:,2)=bamp     ; B0test(:,3)=0.
+      case (4); B0test(:,1)=0.; B0test(:,2)=bamp*z(n); B0test(:,3)=0.
       case default; B0test(:,:)=0.
       endselect
 !

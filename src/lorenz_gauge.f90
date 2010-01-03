@@ -106,12 +106,12 @@ module Lorenz_gauge
 !
 !  SAMPLE IMPLEMENTATION
 !
-      select case(init)
-        case('nothing'); if (lroot) print*,'init_lorenz_gauge: nothing'
-        case('zero'); f(:,:,:,iphi)=0.
-        case('sinwave-x'); call sinwave(ampl,f,iphi,kx=kx)
-        case('sinwave-y'); call sinwave(ampl,f,iphi,ky=ky)
-        case('sinwave-z'); call sinwave(ampl,f,iphi,kz=kz)
+      select case (init)
+        case ('nothing'); if (lroot) print*,'init_lorenz_gauge: nothing'
+        case ('zero'); f(:,:,:,iphi)=0.
+        case ('sinwave-x'); call sinwave(ampl,f,iphi,kx=kx)
+        case ('sinwave-y'); call sinwave(ampl,f,iphi,ky=ky)
+        case ('sinwave-z'); call sinwave(ampl,f,iphi,kz=kz)
 
         case default
           !

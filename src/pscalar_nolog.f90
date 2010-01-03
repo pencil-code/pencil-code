@@ -156,32 +156,32 @@ module Pscalar
       if (epsilon_lncc/=impossible) epsilon_cc=epsilon_lncc
       if (widthlncc/=impossible) widthcc=widthlncc
 !
-      select case(initcc)
-        case('zero'); f(:,:,:,icc)=0.
-        case('constant'); f(:,:,:,icc)=cc_const
-        case('hat-x'); call hat(amplcc,f,icc,widthcc,kx=kx_cc)
-        case('hat-y'); call hat(amplcc,f,icc,widthcc,ky=ky_cc)
-        case('hat-z'); call hat(amplcc,f,icc,widthcc,kz=kz_cc)
-        case('gaussian-x'); call gaussian(amplcc,f,icc,kx=kx_cc)
-        case('gaussian-y'); call gaussian(amplcc,f,icc,ky=ky_cc)
-        case('gaussian-z'); call gaussian(amplcc,f,icc,kz=kz_cc)
-        case('parabola-x'); call parabola(amplcc,f,icc,kx=kx_cc)
-        case('parabola-y'); call parabola(amplcc,f,icc,ky=ky_cc)
-        case('parabola-z'); call parabola(amplcc,f,icc,kz=kz_cc)
-        case('gaussian-noise'); call gaunoise(amplcc,f,icc,icc)
-        case('wave-x'); call wave(amplcc,f,icc,kx=kx_cc)
-        case('wave-y'); call wave(amplcc,f,icc,ky=ky_cc)
-        case('wave-z'); call wave(amplcc,f,icc,kz=kz_cc)
-        case('linprof-x'); call linprof(amplcc,f,icc,kx=kx_cc)
-        case('linprof-y'); call linprof(amplcc,f,icc,ky=ky_cc)
-        case('linprof-z'); call linprof(amplcc,f,icc,kz=kz_cc)
-        case('propto-ux'); call wave_uu(amplcc,f,icc,kx=kx_cc)
-        case('propto-uy'); call wave_uu(amplcc,f,icc,ky=ky_cc)
-        case('propto-uz'); call wave_uu(amplcc,f,icc,kz=kz_cc)
-        case('cosx_cosy_cosz'); call cosx_cosy_cosz(amplcc,f,icc,kx_cc,ky_cc,kz_cc)
-        case('triquad'); call triquad(amplcc,f,icc,kx_cc,ky_cc,kz_cc, &
+      select case (initcc)
+        case ('zero'); f(:,:,:,icc)=0.
+        case ('constant'); f(:,:,:,icc)=cc_const
+        case ('hat-x'); call hat(amplcc,f,icc,widthcc,kx=kx_cc)
+        case ('hat-y'); call hat(amplcc,f,icc,widthcc,ky=ky_cc)
+        case ('hat-z'); call hat(amplcc,f,icc,widthcc,kz=kz_cc)
+        case ('gaussian-x'); call gaussian(amplcc,f,icc,kx=kx_cc)
+        case ('gaussian-y'); call gaussian(amplcc,f,icc,ky=ky_cc)
+        case ('gaussian-z'); call gaussian(amplcc,f,icc,kz=kz_cc)
+        case ('parabola-x'); call parabola(amplcc,f,icc,kx=kx_cc)
+        case ('parabola-y'); call parabola(amplcc,f,icc,ky=ky_cc)
+        case ('parabola-z'); call parabola(amplcc,f,icc,kz=kz_cc)
+        case ('gaussian-noise'); call gaunoise(amplcc,f,icc,icc)
+        case ('wave-x'); call wave(amplcc,f,icc,kx=kx_cc)
+        case ('wave-y'); call wave(amplcc,f,icc,ky=ky_cc)
+        case ('wave-z'); call wave(amplcc,f,icc,kz=kz_cc)
+        case ('linprof-x'); call linprof(amplcc,f,icc,kx=kx_cc)
+        case ('linprof-y'); call linprof(amplcc,f,icc,ky=ky_cc)
+        case ('linprof-z'); call linprof(amplcc,f,icc,kz=kz_cc)
+        case ('propto-ux'); call wave_uu(amplcc,f,icc,kx=kx_cc)
+        case ('propto-uy'); call wave_uu(amplcc,f,icc,ky=ky_cc)
+        case ('propto-uz'); call wave_uu(amplcc,f,icc,kz=kz_cc)
+        case ('cosx_cosy_cosz'); call cosx_cosy_cosz(amplcc,f,icc,kx_cc,ky_cc,kz_cc)
+        case ('triquad'); call triquad(amplcc,f,icc,kx_cc,ky_cc,kz_cc, &
             kxx_cc, kyy_cc,kzz_cc)
-        case('semiangmom'); f(:,:,:,icc)=(1-2*powerlr*hoverr**2-1.5*zoverh**2*hoverr**2) &
+        case ('semiangmom'); f(:,:,:,icc)=(1-2*powerlr*hoverr**2-1.5*zoverh**2*hoverr**2) &
             *spread(spread(x,2,my),3,mz) &
             +3*zoverh*hoverr*spread(spread(z,1,mx),2,my)
         case default; call stop_it('init_lncc: bad initcc='//trim(initcc))
@@ -189,9 +189,9 @@ module Pscalar
 !
 !  superimpose something else
 !
-      select case(initcc2)
-        case('wave-x'); call wave(amplcc2,f,icc,ky=5.)
-        case('constant'); f(:,:,:,icc)=f(:,:,:,icc)+amplcc2
+      select case (initcc2)
+        case ('wave-x'); call wave(amplcc2,f,icc,ky=5.)
+        case ('constant'); f(:,:,:,icc)=f(:,:,:,icc)+amplcc2
       endselect
 !
 !  add floor value if cc_min is set
@@ -228,59 +228,59 @@ module Pscalar
       if (epsilon_lncc/=impossible) epsilon_cc=epsilon_lncc
       if (widthlncc/=impossible) widthcc=widthlncc
 !
-      select case(initcc)
-        case('zero'); f(:,:,:,icc)=0.
-        case('constant'); f(:,:,:,icc)=cc_const
-        case('hatwave-x'); call hatwave(amplcc,f,icc,widthcc,kx=kx_cc)
-        case('hatwave-y'); call hatwave(amplcc,f,icc,widthcc,ky=ky_cc)
-        case('hatwave-z'); call hatwave(amplcc,f,icc,widthcc,kz=kz_cc)
-        case('hat-x'); call hat(amplcc,f,icc,widthcc,kx=kx_cc)
-        case('hat-y'); call hat(amplcc,f,icc,widthcc,ky=ky_cc)
-        case('hat-z'); call hat(amplcc,f,icc,widthcc,kz=kz_cc)
-        case('gaussian-x'); call gaussian(amplcc,f,icc,kx=kx_cc)
-        case('gaussian-y'); call gaussian(amplcc,f,icc,ky=ky_cc)
-        case('gaussian-z'); call gaussian(amplcc,f,icc,kz=kz_cc)
-        case('parabola-x'); call parabola(amplcc,f,icc,kx=kx_cc)
-        case('parabola-y'); call parabola(amplcc,f,icc,ky=ky_cc)
-        case('parabola-z'); call parabola(amplcc,f,icc,kz=kz_cc)
-        case('gaussian-noise'); call gaunoise(amplcc,f,icc,icc)
-        case('wave-x'); call wave(amplcc,f,icc,kx=kx_cc)
-        case('wave-y'); call wave(amplcc,f,icc,ky=ky_cc)
-        case('wave-z'); call wave(amplcc,f,icc,kz=kz_cc)
-        case('linprof-x'); call linprof(amplcc,f,icc,kx=kx_cc)
-        case('linprof-y'); call linprof(amplcc,f,icc,ky=ky_cc)
-        case('linprof-z'); call linprof(amplcc,f,icc,kz=kz_cc)
-        case('propto-ux'); call wave_uu(amplcc,f,icc,kx=kx_cc)
-        case('propto-uy'); call wave_uu(amplcc,f,icc,ky=ky_cc)
-        case('propto-uz'); call wave_uu(amplcc,f,icc,kz=kz_cc)
-        case('cosx_cosy_cosz'); call cosx_cosy_cosz(amplcc,f,icc,kx_cc,ky_cc,kz_cc)
-        case('triquad'); call triquad(amplcc,f,icc,kx_cc,ky_cc,kz_cc, &
+      select case (initcc)
+        case ('zero'); f(:,:,:,icc)=0.
+        case ('constant'); f(:,:,:,icc)=cc_const
+        case ('hatwave-x'); call hatwave(amplcc,f,icc,widthcc,kx=kx_cc)
+        case ('hatwave-y'); call hatwave(amplcc,f,icc,widthcc,ky=ky_cc)
+        case ('hatwave-z'); call hatwave(amplcc,f,icc,widthcc,kz=kz_cc)
+        case ('hat-x'); call hat(amplcc,f,icc,widthcc,kx=kx_cc)
+        case ('hat-y'); call hat(amplcc,f,icc,widthcc,ky=ky_cc)
+        case ('hat-z'); call hat(amplcc,f,icc,widthcc,kz=kz_cc)
+        case ('gaussian-x'); call gaussian(amplcc,f,icc,kx=kx_cc)
+        case ('gaussian-y'); call gaussian(amplcc,f,icc,ky=ky_cc)
+        case ('gaussian-z'); call gaussian(amplcc,f,icc,kz=kz_cc)
+        case ('parabola-x'); call parabola(amplcc,f,icc,kx=kx_cc)
+        case ('parabola-y'); call parabola(amplcc,f,icc,ky=ky_cc)
+        case ('parabola-z'); call parabola(amplcc,f,icc,kz=kz_cc)
+        case ('gaussian-noise'); call gaunoise(amplcc,f,icc,icc)
+        case ('wave-x'); call wave(amplcc,f,icc,kx=kx_cc)
+        case ('wave-y'); call wave(amplcc,f,icc,ky=ky_cc)
+        case ('wave-z'); call wave(amplcc,f,icc,kz=kz_cc)
+        case ('linprof-x'); call linprof(amplcc,f,icc,kx=kx_cc)
+        case ('linprof-y'); call linprof(amplcc,f,icc,ky=ky_cc)
+        case ('linprof-z'); call linprof(amplcc,f,icc,kz=kz_cc)
+        case ('propto-ux'); call wave_uu(amplcc,f,icc,kx=kx_cc)
+        case ('propto-uy'); call wave_uu(amplcc,f,icc,ky=ky_cc)
+        case ('propto-uz'); call wave_uu(amplcc,f,icc,kz=kz_cc)
+        case ('cosx_cosy_cosz'); call cosx_cosy_cosz(amplcc,f,icc,kx_cc,ky_cc,kz_cc)
+        case ('triquad'); call triquad(amplcc,f,icc,kx_cc,ky_cc,kz_cc, &
             kxx_cc,kyy_cc,kzz_cc)
-        case('semiangmom'); f(:,:,:,icc)=(1-2*powerlr*hoverr**2-1.5*zoverh**2*hoverr**2) &
+        case ('semiangmom'); f(:,:,:,icc)=(1-2*powerlr*hoverr**2-1.5*zoverh**2*hoverr**2) &
             *spread(spread(x,2,my),3,mz) &
             +3*zoverh*hoverr*spread(spread(z,1,mx),2,my)
-        case('sound-wave')
+        case ('sound-wave')
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,icc)=-amplcc*cos(kx_cc*x(l1:l2))
           enddo; enddo
-        case('tang-discont-z')
+        case ('tang-discont-z')
           print*,'init_lncc: widthcc=',widthcc
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,icc)=-1.0+2*.5*(1.+tanh(z(n)/widthcc))
           enddo; enddo
-        case('hor-tube'); call htube2(amplcc,f,icc,icc,radius_cc,epsilon_cc)
-        case('jump-x'); call jump(f,icc,cc_const,0.,widthcc,'x')
-        case('jump-x-neg'); call jump(f,icc,0.,cc_const,widthcc,'x')
-        case('jump'); call jump(f,icc,cc_const,0.,widthcc,'z')
+        case ('hor-tube'); call htube2(amplcc,f,icc,icc,radius_cc,epsilon_cc)
+        case ('jump-x'); call jump(f,icc,cc_const,0.,widthcc,'x')
+        case ('jump-x-neg'); call jump(f,icc,0.,cc_const,widthcc,'x')
+        case ('jump'); call jump(f,icc,cc_const,0.,widthcc,'z')
         case default; call stop_it('init_lncc: bad initcc='//trim(initcc))
       endselect
 
 !
 !  superimpose something else
 !
-      select case(initcc2)
-        case('wave-x'); call wave(amplcc2,f,icc,ky=5.)
-        case('constant'); f(:,:,:,icc)=f(:,:,:,icc)+amplcc2
+      select case (initcc2)
+        case ('wave-x'); call wave(amplcc2,f,icc,ky=5.)
+        case ('constant'); f(:,:,:,icc)=f(:,:,:,icc)+amplcc2
       endselect
 !
 !  Interface for user's own initial condition

@@ -270,13 +270,13 @@ module Testfield
 !  calculate iE0
 !
       if (.not.lstarting) then
-        select case(itestfield)
-        case('Beltrami'); iE0=1
-        case('B11-B21+B=0'); iE0=3
-        case('B11-B22+B=0'); iE0=5
-        case('B11-B21'); iE0=0
-        case('B11-B22'); iE0=0
-        case('B=0') !(dont do anything)
+        select case (itestfield)
+        case ('Beltrami'); iE0=1
+        case ('B11-B21+B=0'); iE0=3
+        case ('B11-B22+B=0'); iE0=5
+        case ('B11-B21'); iE0=0
+        case ('B11-B22'); iE0=0
+        case ('B=0') !(dont do anything)
         case default
           call fatal_error('initialize_testfield','undefined itestfield value')
         endselect
@@ -363,19 +363,19 @@ module Testfield
 !
       do j=1,ninit
 
-      select case(initaatest(j))
+      select case (initaatest(j))
 
-      case('zero'); f(:,:,:,iaatest:iaatest+ntestfield-1)=0.
-      case('gaussian-noise-1'); call gaunoise(amplaatest(j),f,iaxtest+0,iaztest+0)
-      case('gaussian-noise-2'); call gaunoise(amplaatest(j),f,iaxtest+3,iaztest+3)
-      case('gaussian-noise-3'); call gaunoise(amplaatest(j),f,iaxtest+6,iaztest+6)
-      case('sinwave-x-1'); call sinwave(amplaatest(j),f,iaxtest+0+1,kx=kx_aatest)
-      case('sinwave-x-2'); call sinwave(amplaatest(j),f,iaxtest+3+1,kx=kx_aatest)
-      case('sinwave-x-3'); call sinwave(amplaatest(j),f,iaxtest+6+1,kx=kx_aatest)
-      case('Beltrami-z-1'); call beltrami(amplaatest(j),f,iaxtest+0,kz=kz_aatest)
-      case('Beltrami-z-3'); call beltrami(amplaatest(j),f,iaxtest+6,kz=kz_aatest)
-      case('Beltrami-z-5'); call beltrami(amplaatest(j),f,iaxtest+12,kz=kz_aatest)
-      case('nothing'); !(do nothing)
+      case ('zero'); f(:,:,:,iaatest:iaatest+ntestfield-1)=0.
+      case ('gaussian-noise-1'); call gaunoise(amplaatest(j),f,iaxtest+0,iaztest+0)
+      case ('gaussian-noise-2'); call gaunoise(amplaatest(j),f,iaxtest+3,iaztest+3)
+      case ('gaussian-noise-3'); call gaunoise(amplaatest(j),f,iaxtest+6,iaztest+6)
+      case ('sinwave-x-1'); call sinwave(amplaatest(j),f,iaxtest+0+1,kx=kx_aatest)
+      case ('sinwave-x-2'); call sinwave(amplaatest(j),f,iaxtest+3+1,kx=kx_aatest)
+      case ('sinwave-x-3'); call sinwave(amplaatest(j),f,iaxtest+6+1,kx=kx_aatest)
+      case ('Beltrami-z-1'); call beltrami(amplaatest(j),f,iaxtest+0,kz=kz_aatest)
+      case ('Beltrami-z-3'); call beltrami(amplaatest(j),f,iaxtest+6,kz=kz_aatest)
+      case ('Beltrami-z-5'); call beltrami(amplaatest(j),f,iaxtest+12,kz=kz_aatest)
+      case ('nothing'); !(do nothing)
 
       case default
         !
@@ -517,13 +517,13 @@ module Testfield
         iaxtest=iaatest+3*(jtest-1)
         iaztest=iaxtest+2
         call del2v(f,iaxtest,del2Atest)
-        select case(itestfield)
-          case('Beltrami'); call set_bbtest_Beltrami(B0test,jtest)
-          case('B11-B21+B=0'); call set_bbtest_B11_B21(B0test,jtest)
-          case('B11-B22+B=0'); call set_bbtest_B11_B22(B0test,jtest)
-          case('B11-B21'); call set_bbtest_B11_B21(B0test,jtest)
-          case('B11-B22'); call set_bbtest_B11_B22(B0test,jtest)
-          case('B=0') !(dont do anything)
+        select case (itestfield)
+          case ('Beltrami'); call set_bbtest_Beltrami(B0test,jtest)
+          case ('B11-B21+B=0'); call set_bbtest_B11_B21(B0test,jtest)
+          case ('B11-B22+B=0'); call set_bbtest_B11_B22(B0test,jtest)
+          case ('B11-B21'); call set_bbtest_B11_B21(B0test,jtest)
+          case ('B11-B22'); call set_bbtest_B11_B22(B0test,jtest)
+          case ('B=0') !(dont do anything)
         case default
           call fatal_error('daatest_dt','undefined itestfield value')
         endselect
@@ -587,11 +587,11 @@ module Testfield
 !
 !  calculate J0pq x bpq
 !
-          select case(itestfield)
-!           case('B11-B21+B=0'); call set_J0test(J0test,jtest)
-            case('B11-B21'); call set_J0test_B11_B21(J0test,jtest)
-!           case('B11-B22'); call set_J0test_B11_B22(J0test,jtest)
-            case('B=0') !(dont do anything)
+          select case (itestfield)
+!           case ('B11-B21+B=0'); call set_J0test(J0test,jtest)
+            case ('B11-B21'); call set_J0test_B11_B21(J0test,jtest)
+!           case ('B11-B22'); call set_J0test_B11_B22(J0test,jtest)
+            case ('B=0') !(dont do anything)
           case default
             call fatal_error('daatest_dt','undefined itestfield value')
           endselect
@@ -1024,8 +1024,8 @@ module Testfield
 !
 !  set B0test for each of the 9 cases
 !
-      select case(jtest)
-      case(1); B0test(:,1)=cx; B0test(:,2)=sx; B0test(:,3)=0.
+      select case (jtest)
+      case (1); B0test(:,1)=cx; B0test(:,2)=sx; B0test(:,3)=0.
       case default; B0test(:,:)=0.
       endselect
 !
@@ -1047,9 +1047,9 @@ module Testfield
 !
 !  set B0test for each of the 9 cases
 !
-      select case(jtest)
-      case(1); B0test(:,1)=cx; B0test(:,2)=0.; B0test(:,3)=0.
-      case(2); B0test(:,1)=sx; B0test(:,2)=0.; B0test(:,3)=0.
+      select case (jtest)
+      case (1); B0test(:,1)=cx; B0test(:,2)=0.; B0test(:,3)=0.
+      case (2); B0test(:,1)=sx; B0test(:,2)=0.; B0test(:,3)=0.
       case default; B0test(:,:)=0.
       endselect
 !
@@ -1071,9 +1071,9 @@ module Testfield
 !
 !  set J0test for each of the 9 cases
 !
-      select case(jtest)
-      case(1); J0test(:,1)=0.; J0test(:,2)=-ktestfield*sx; J0test(:,3)=0.
-      case(2); J0test(:,1)=0.; J0test(:,2)=+ktestfield*cx; J0test(:,3)=0.
+      select case (jtest)
+      case (1); J0test(:,1)=0.; J0test(:,2)=-ktestfield*sx; J0test(:,3)=0.
+      case (2); J0test(:,1)=0.; J0test(:,2)=+ktestfield*cx; J0test(:,3)=0.
       case default; J0test(:,:)=0.
       endselect
 !
@@ -1095,11 +1095,11 @@ module Testfield
 !
 !  set B0test for each of the 9 cases
 !
-      select case(jtest)
-      case(1); B0test(:,1)=0.; B0test(:,2)=bamp*cx; B0test(:,3)=0.
-      case(2); B0test(:,1)=0.; B0test(:,2)=bamp*sx; B0test(:,3)=0.
-      case(3); B0test(:,1)=0.; B0test(:,2)=0.; B0test(:,3)=bamp*cx
-      case(4); B0test(:,1)=0.; B0test(:,2)=0.; B0test(:,3)=bamp*sx
+      select case (jtest)
+      case (1); B0test(:,1)=0.; B0test(:,2)=bamp*cx; B0test(:,3)=0.
+      case (2); B0test(:,1)=0.; B0test(:,2)=bamp*sx; B0test(:,3)=0.
+      case (3); B0test(:,1)=0.; B0test(:,2)=0.; B0test(:,3)=bamp*cx
+      case (4); B0test(:,1)=0.; B0test(:,2)=0.; B0test(:,3)=bamp*sx
       case default; B0test(:,:)=0.
       endselect
 !

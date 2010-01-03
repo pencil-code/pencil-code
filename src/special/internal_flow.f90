@@ -93,12 +93,12 @@ module Special
       !
       ! Select case
       !
-      select case(initspecial)
-      case('nothing'); if (lroot) print*,'init_special: nothing'
-      case('poiseulle_xy')
+      select case (initspecial)
+      case ('nothing'); if (lroot) print*,'init_special: nothing'
+      case ('poiseulle_xy')
         f(:,:,:,iux:iuz)=0
         call poiseulle_flowx_wally(f,central_vel)
-      case('poiseulle_xy_noise')
+      case ('poiseulle_xy_noise')
         f(:,:,:,iux:iuz)=0
         height=Lxyz(2)/2
         h2=height**2
@@ -110,9 +110,9 @@ module Special
           enddo
         enddo
         call poiseulle_flowx_wally(f,central_vel)
-      case('velocity_defect_xy')
+      case ('velocity_defect_xy')
         call velocity_defect_flowx_wally(f,central_vel,Re_tau)
-      case('log_law_xy')
+      case ('log_law_xy')
         call log_law_flowx_wally(f,central_vel,Re_tau)
       case default
         !
@@ -749,9 +749,9 @@ endif
 !
       if (present(rel)) then; relative=rel; else; relative=.false.; endif
 
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         if (present(val)) then
           ! Multiply by three halfs to get max velocity from mean velocity
           umax=val!*3/2
@@ -775,7 +775,7 @@ endif
           f(l1,:,:,j)=(4.*f(l1+1,:,:,j)-f(l1+2,:,:,j))/3.
         endif
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         if (present(val)) then
           umax=val
         else

@@ -203,7 +203,7 @@ module Grid
               dxyz=dxyz_step(2,:),xistep=xi_step(2,:),delta=xi_step_width(2,:))
           endif
 
-        case('duct')
+        case ('duct')
           a = pi/(max(nxgrid-1,1))
           call grid_profile(a*xi1  -pi/2,grid_func(1),g1,g1der1,g1der2)
           call grid_profile(a*xi1lo-pi/2,grid_func(1),g1lo)
@@ -235,7 +235,7 @@ module Grid
             enddo            
           endif
 
-        case('squared')
+        case ('squared')
           ! Grid distance increases linearily
           a=max(nxgrid,1)
           b=-max(nxgrid,1)/10
@@ -263,7 +263,7 @@ module Grid
             enddo            
           endif
         
-        case('frozensphere')
+        case ('frozensphere')
           ! Just like sinh, except set dx constant below a certain radius, and
           ! constant for top ghost points.
           a=coeff_grid(1,1)*dx
@@ -415,7 +415,7 @@ module Grid
         if (err) &
             call fatal_error('construct_grid','unknown grid_func '//grid_func(3))
 
-        select case(grid_func(3))
+        select case (grid_func(3))
 
         case ('linear','sinh')
 
@@ -737,7 +737,7 @@ module Grid
         if (present(gder1)) gder1= cos(xi)
         if (present(gder2)) gder2=-sin(xi)
 
-      case('squared')
+      case ('squared')
         ! Grid distance increases linearily
         g=0.5*xi**2
         if (present(gder1)) gder1= xi
@@ -839,7 +839,7 @@ module Grid
         if (present(gder1)) gder1= cos(xi)
         if (present(gder2)) gder2=-sin(xi)
 
-      case('squared')
+      case ('squared')
         ! Grid distance increases linearily
         g=0.5*xi**2
         if (present(gder1)) gder1= xi

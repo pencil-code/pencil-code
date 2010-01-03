@@ -92,9 +92,9 @@ module Boundcond
       if (present(ivar1_opt)) ivar1=ivar1_opt
       if (present(ivar2_opt)) ivar2=ivar2_opt
 !
-      select case(nxgrid)
+      select case (nxgrid)
 !
-      case(1)
+      case (1)
         if (headtt) print*, 'boundconds_x: no x-boundary'
 !
 !  Boundary conditions in x.
@@ -118,7 +118,7 @@ module Boundcond
             do j=ivar1,ivar2
               if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcx',k,'(',j,')=',bc12(j)
               if (ipx==ip_ok) then
-                select case(bc12(j))
+                select case (bc12(j))
                 case ('0')
                   ! BCX_DOC: zero value in ghost zones, free value on boundary
                   call bc_zero_x(f,topbot,j)
@@ -226,19 +226,19 @@ module Boundcond
                 case ('spd')
                   ! BCX_DOC:  sets $d(rA_{\alpha})/dr = \mathtt{fbcx12(j)}$
                   call bc_set_spder_x(f,topbot,j,fbcx12(j))
-                case('sfr')
+                case ('sfr')
                   ! BCX_DOC: stress-free boundary condition for spherical coordinate system. 
                   call bc_set_sfree_x(f,topbot,j)
-                case('nfr')
+                case ('nfr')
                   ! BCX_DOC: Normal-field bc for spherical coordinate system.
                   ! BCX_DOC: Some people call this the ``(angry) hedgehog bc''.
                   call bc_set_nfr_x(f,topbot,j)
-                case('sa2')
+                case ('sa2')
                   ! BCX_DOC: $(d/dr)(r B_{\phi}) = 0$ imposes 
                   ! BCX_DOC: boundary condition on 2nd derivative of 
                   ! BCX_DOC: $r A_{\phi}$. Same applies to $\theta$ component.
                   call bc_set_sa2_x(f,topbot,j)
-                case('pfc')
+                case ('pfc')
                   !BCX_DOC: perfect-conductor in spherical coordinate: $d/dr( A_r) + 2/r = 0$ . 
                   call bc_set_pfc_x(f,topbot,j)
                  case ('fix')
@@ -247,7 +247,7 @@ module Boundcond
                  case ('fil')
                   ! BCX_DOC: set boundary value from a file
                   call bc_file_x(f,topbot,j)
-                case('cfb')
+                case ('cfb')
                   ! BCZ_DOC: radial centrifugal balance 
                   if (lcylindrical_coords) then
                     call bc_lnrho_cfb_r_iso(f,topbot)
@@ -259,7 +259,7 @@ module Boundcond
                   ! BCX_DOC: set to given value(s) or function
                   call bc_force_x(f, -1, topbot, j)
                 case ('nil')
-                case('ioc')
+                case ('ioc')
                   !BCX_DOC: inlet/outlet on western/eastern hemisphere 
                   !BCX_DOC: in cylindrical coordinates 
                   call bc_inlet_outlet_cyl(f,topbot,j,fbcx12)
@@ -318,9 +318,9 @@ module Boundcond
       if (present(ivar1_opt)) ivar1=ivar1_opt
       if (present(ivar2_opt)) ivar2=ivar2_opt
 !
-      select case(nygrid)
+      select case (nygrid)
 !
-      case(1)
+      case (1)
         if (headtt) print*,'boundconds_y: no y-boundary'
 !
 !  Boundary conditions in y
@@ -336,7 +336,7 @@ module Boundcond
           do j=ivar1,ivar2
             if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcy',k,'(',j,')=',bc12(j)
             if (ipy==ip_ok) then
-              select case(bc12(j))
+              select case (bc12(j))
               case ('p')
                 ! BCY_DOC: periodic
                 call bc_per_y(f,topbot,j)
@@ -402,14 +402,14 @@ module Boundcond
               case ('der')
                 ! BCY_DOC: set derivative on the boundary
                 call bc_set_der_y(f,topbot,j,fbcy12(j))
-              case('sfr')
+              case ('sfr')
                   ! BCY_DOC: stress-free boundary condition for spherical coordinate system. 
                 call bc_set_sfree_y(f,topbot,j)
-              case('nfr')
+              case ('nfr')
                   ! BCY_DOC: Normal-field bc for spherical coordinate system.
                   ! BCY_DOC: Some people call this the ``(angry) hedgehog bc''.
                 call bc_set_nfr_y(f,topbot,j)
-              case('pfc')
+              case ('pfc')
                   !BCY_DOC: perfect conducting boundary condition along $\theta$ boundary  
                 call bc_set_pfc_y(f,topbot,j)
               case ('')
@@ -470,9 +470,9 @@ module Boundcond
       if (present(ivar1_opt)) ivar1=ivar1_opt
       if (present(ivar2_opt)) ivar2=ivar2_opt
 !
-      select case(nzgrid)
+      select case (nzgrid)
 !
-      case(1)
+      case (1)
         if (headtt) print*,'boundconds_z: no z-boundary'
 !
 !  Boundary conditions in z
@@ -514,7 +514,7 @@ module Boundcond
           do j=ivar1,ivar2
             if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcz',k,'(',j,')=',bc12(j)
             if (ipz==ip_ok) then
-              select case(bc12(j))
+              select case (bc12(j))
               case ('0')
                 ! BCZ_DOC: zero value in ghost zones, free value on boundary
                 call bc_zero_z(f,topbot,j)
@@ -725,12 +725,12 @@ module Boundcond
       integer :: j
       character (len=3) :: topbot
 !
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         if (nprocx==1) f(1:l1-1,:,:,j) = f(l2i:l2,:,:,j)
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         if (nprocx==1) f(l2+1:mx,:,:,j) = f(l1:l1i,:,:,j)
 
       case default
@@ -749,12 +749,12 @@ module Boundcond
       integer :: j
       character (len=3) :: topbot
 !
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         if (nprocy==1) f(:,1:m1-1,:,j) = f(:,m2i:m2,:,j)
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         if (nprocy==1) f(:,m2+1:my,:,j) = f(:,m1:m1i,:,j)
 
       case default
@@ -773,12 +773,12 @@ module Boundcond
       integer :: j
       character (len=3) :: topbot
 !
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         if (nprocz==1) f(:,:,1:n1-1,j) = f(:,:,n2i:n2,j)
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         if (nprocz==1) f(:,:,n2+1:mz,j) = f(:,:,n1:n1i,j)
 
       case default
@@ -807,9 +807,9 @@ module Boundcond
 !
       if (present(rel)) then; relative=rel; else; relative=.false.; endif
 
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         if (present(val)) f(l1,m1:m2,n1:n2,j)=val(j)
         if (relative) then
           do i=1,nghost; f(l1-i,:,:,j)=2*f(l1,:,:,j)+sgn*f(l1+i,:,:,j); enddo
@@ -818,7 +818,7 @@ module Boundcond
           if (sgn<0) f(l1,:,:,j) = 0. ! set bdry value=0 (indep of initcond)
         endif
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         if (present(val)) f(l2,m1:m2,n1:n2,j)=val(j)
         if (relative) then
           do i=1,nghost; f(l2+i,:,:,j)=2*f(l2,:,:,j)+sgn*f(l2-i,:,:,j); enddo
@@ -850,9 +850,9 @@ module Boundcond
       integer :: i,j
       real :: dxR
 !
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         dxR=-dx/x(l2)
         i=-0; f(l2+i,:,:,j)=0.
         i=-1; f(l2+i,:,:,j)=-(1.-.5*dxR)*f(l2-i,:,:,j)/(1.+.5*dxR)
@@ -861,7 +861,7 @@ module Boundcond
         extra2=(1.+dxR)*f(l2+i,:,:,j)+(1.-dxR)*f(l2-i,:,:,j)-10.*extra1
         i=-3; f(l2+i,:,:,j)=(-(2.-3.*dxR)*f(l2-i,:,:,j)+27.*extra2)/(2.+3.*dxR)
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         dxR=dx/x(l2)
         i=0; f(l2+i,:,:,j)=0.
         i=1; f(l2+i,:,:,j)=-(1.-.5*dxR)*f(l2-i,:,:,j)/(1.+.5*dxR)
@@ -898,9 +898,9 @@ module Boundcond
 !
       if (present(rel)) then; relative=rel; else; relative=.false.; endif
 
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         if (present(val)) f(l1,m1:m2,n1:n2,j)=val(j)
         if (relative) then
           do i=1,nghost; f(l1-i,:,:,j)=2*f(l1,:,:,j)+sgn*f(l1+i,:,:,j); enddo
@@ -909,7 +909,7 @@ module Boundcond
           f(l1,:,:,j)=(4.*f(l1+1,:,:,j)-f(l1+2,:,:,j))/3.
         endif
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         if (present(val)) f(l2,m1:m2,n1:n2,j)=val(j)
         if (relative) then
           do i=1,nghost; f(l2+i,:,:,j)=2*f(l2,:,:,j)+sgn*f(l2-i,:,:,j); enddo
@@ -937,11 +937,11 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j,i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom (left end of the domain)
 !
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         f(l1,m1:m2,n1:n2,j)=(360.*f(l1+i1,m1:m2,n1:n2,j) &
                             -450.*f(l1+i2,m1:m2,n1:n2,j) &
                             +400.*f(l1+i3,m1:m2,n1:n2,j) &
@@ -952,7 +952,7 @@ module Boundcond
 !
 !  top (right end of the domain)
 !
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         f(l2,m1:m2,n1:n2,j)=(360.*f(l2-i1,m1:m2,n1:n2,j) &
                             -450.*f(l2-i2,m1:m2,n1:n2,j) &
                             +400.*f(l2-i3,m1:m2,n1:n2,j) &
@@ -990,9 +990,9 @@ module Boundcond
 !
       if (present(rel)) then; relative=rel; else; relative=.false.; endif
 
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         if (present(val)) f(l1,m1:m2,n1:n2,j)=val(j)
         if (relative) then
           do i=1,nghost
@@ -1005,7 +1005,7 @@ module Boundcond
 !         f(l1,:,:,j)=(2.*x(l1+1)*f(l1+1,:,:,j)-.5*x(l1+2)*f(l1+2,:,:,j))/(1.5*x(l1))
         endif
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         if (present(val)) f(l2,m1:m2,n1:n2,j)=val(j)
         if (relative) then
           do i=1,nghost
@@ -1053,9 +1053,9 @@ module Boundcond
 !
       if (present(rel)) then; relative=rel; else; relative=.false.; endif
 
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         if (present(val)) f(l1,m1:m2,n1:n2,j)=val(j)
         if (relative) then
           do i=1,nghost
@@ -1071,7 +1071,7 @@ module Boundcond
           enddo
         endif
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         if (present(val)) f(l2,m1:m2,n1:n2,j)=val(j)
         if (relative) then
           do i=1,nghost
@@ -1108,18 +1108,18 @@ module Boundcond
       real, dimension (mcom) :: dist
       integer :: i,j
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom
 !
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         do i=1,nghost
           f(l1-i,:,:,j)=f(l1+i,:,:,j)*exp((x(l1-i)-x(l1+i))/dist(j))
         enddo
 !
 !  top
 !
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         do i=1,nghost
           f(l2+i,:,:,j)=f(l2-i,:,:,j)*exp((x(l2+i)-x(l2-i))/dist(j))
         enddo
@@ -1147,18 +1147,18 @@ module Boundcond
       real, dimension (mcom) :: dist
       integer :: i,j
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom
 !
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         do i=1,nghost
           f(:,:,n1-i,j)=f(:,:,n1+i,j)*exp((z(n1-i)-z(n1+i))/dist(j))
         enddo
 !
 !  top
 !
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         do i=1,nghost
           f(:,:,n2+i,j)=f(:,:,n2-i,j)*exp((z(n2+i)-z(n2-i))/dist(j))
         enddo
@@ -1199,9 +1199,9 @@ module Boundcond
 !
       if (present(rel)) then; relative=rel; else; relative=.false.; endif
 
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         if (present(val)) f(l1,m1:m2,n1:n2,j)=val(j)
         if (relative) then
           do i=1,nghost
@@ -1214,7 +1214,7 @@ module Boundcond
           enddo
         endif
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         if (present(val)) f(l2,m1:m2,n1:n2,j)=val(j)
         if (relative) then
           do i=1,nghost
@@ -1254,9 +1254,9 @@ module Boundcond
 !
       if (present(rel)) then; relative=rel; else; relative=.false.; endif
 
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         if (present(val)) f(l1:l2,m1,n1:n2,j)=val(j)
         if (relative) then
           do i=1,nghost; f(:,m1-i,:,j)=2*f(:,m1,:,j)+sgn*f(:,m1+i,:,j); enddo
@@ -1265,7 +1265,7 @@ module Boundcond
           if (sgn<0) f(:,m1,:,j) = 0. ! set bdry value=0 (indep of initcond)
         endif
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         if (present(val)) f(l1:l2,m2,n1:n2,j)=val(j)
         if (relative) then
           do i=1,nghost; f(:,m2+i,:,j)=2*f(:,m2,:,j)+sgn*f(:,m2-i,:,j); enddo
@@ -1305,9 +1305,9 @@ module Boundcond
 !
       if (present(rel)) then; relative=rel; else; relative=.false.; endif
 
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         if (present(val)) f(l1:l2,m1,n1:n2,j)=val(j)
         if (relative) then
           do i=1,nghost; f(:,m1-i,:,j)=2*f(:,m1,:,j)+sgn*f(:,m1+i,:,j); enddo
@@ -1316,7 +1316,7 @@ module Boundcond
           f(:,m1,:,j)=(4.*f(:,m1+1,:,j)-f(:,m1+2,:,j))/3.
         endif
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         if (present(val)) f(l1:l2,m2,n1:n2,j)=val(j)
         if (relative) then
           do i=1,nghost; f(:,m2+i,:,j)=2*f(:,m2,:,j)+sgn*f(:,m2-i,:,j); enddo
@@ -1344,11 +1344,11 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j,i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom (left end of the domain)
 !
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         f(:,m1,:,j)=(360.*f(:,m1+i1,:,j) &
                     -450.*f(:,m1+i2,:,j) &
                     +400.*f(:,m1+i3,:,j) &
@@ -1359,7 +1359,7 @@ module Boundcond
 !
 !  top (right end of the domain)
 !
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         f(:,m2,:,j)=(360.*f(:,m2-i1,:,j) &
                     -450.*f(:,m2-i2,:,j) &
                     +400.*f(:,m2-i3,:,j) &
@@ -1395,9 +1395,9 @@ module Boundcond
 !
       if (present(rel)) then; relative=rel; else; relative=.false.; endif
 
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         if (present(val)) f(l1:l2,m1:m2,n1,j)=val(j)
         if (relative) then
           do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j); enddo
@@ -1406,7 +1406,7 @@ module Boundcond
           if (sgn<0) f(:,:,n1,j) = 0. ! set bdry value=0 (indep of initcond)
         endif
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         if (present(val)) f(l1:l2,m1:m2,n2,j)=val(j)
         if (relative) then
           do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j); enddo
@@ -1434,11 +1434,11 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j,i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom (left end of the domain)
 !
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         f(:,:,n1,j)=(360.*f(:,:,n1+i1,j) &
                     -450.*f(:,:,n1+i2,j) &
                     +400.*f(:,:,n1+i3,j) &
@@ -1449,7 +1449,7 @@ module Boundcond
 !
 !  top (right end of the domain)
 !
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         f(:,:,n2,j)=(360.*f(:,:,n2-i1,j) &
                     -450.*f(:,:,n2-i2,j) &
                     +400.*f(:,:,n2-i3,j) &
@@ -1478,12 +1478,12 @@ module Boundcond
 
       integer :: i
 
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         do i=1,nghost; f(l1-i,:,:,j) = f(l1+i,:,:,j) - 2*i*dx*val; enddo
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         do i=1,nghost; f(l2+i,:,:,j) = f(l2-i,:,:,j) + 2*i*dx*val; enddo
 
       case default
@@ -1508,11 +1508,11 @@ module Boundcond
       real, intent (in) :: val
       integer :: i
 
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         do i=1,nghost;f(l1-i,:,:,j)=val; enddo
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         do i=1,nghost; f(l2+i,:,:,j)=val; enddo
       case default
         call warning('bc_fix_x',topbot//" should be `top' or `bot'")
@@ -1552,11 +1552,11 @@ module Boundcond
         lbc_file_x=.false.
       endif
 
-      select case(topbot)
+      select case (topbot)
 !
 !  x - Udrift_bc*t = dx * (ix - Udrift_bc*t/dx)
 !
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         lbc=Udrift_bc*t*dx_1(1)+1.
         lbc0=int(lbc)
         frac=mod(lbc,real(lbc0))
@@ -1566,7 +1566,7 @@ module Boundcond
           f(l1-i,:,:,j)=(1-frac)*bc_file_x_array(lbc1,:,:,j) &
                            +frac*bc_file_x_array(lbc2,:,:,j)
         enddo
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
 !
 !  note: this "top" thing hasn't been adapted or tested yet.
 !  The -lbc0-1 has been changed to +lbc0+1, but has not been tested yet.
@@ -1613,12 +1613,12 @@ module Boundcond
       integer :: i
 
       if (lspherical_coords)then
-        select case(topbot)
-        case('bot')               ! bottom boundary
+        select case (topbot)
+        case ('bot')               ! bottom boundary
         do i=1,nghost
           f(l1-i,:,:,j)=f(l1+i,:,:,j)-2*i*dx*(val-f(l1,:,:,j)*r1_mn(1))
         enddo
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         do i=1,nghost
           f(l2+i,:,:,j)=f(l2-i,:,:,j)+2*i*dx*(val-f(l2,:,:,j)*r1_mn(nx))
         enddo
@@ -1648,15 +1648,15 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
 
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
 ! The coding assumes we are using 6-th order centered finite difference for our
 ! derivatives. 
         f(l1-1,:,:,j)= f(l1+1,:,:,j) +  2.*60.*f(l1,:,:,j)*dx/(45.*x(l1))
         f(l1-2,:,:,j)= f(l1+2,:,:,j) +  2.*60.*f(l1,:,:,j)*dx/(9.*x(l1))
         f(l1-3,:,:,j)= f(l1+3,:,:,j) +  2.*60.*f(l1,:,:,j)*dx/x(l1)
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         f(l2+1,:,:,j)= f(l2-1,:,:,j) -  2.*60.*f(l2,:,:,j)*dx/(45.*x(l2))
         f(l2+2,:,:,j)= f(l2-2,:,:,j) -  2.*60.*f(l2,:,:,j)*dx/(9.*x(l2))
         f(l2+3,:,:,j)= f(l2-3,:,:,j) -  2.*60.*f(l2,:,:,j)*dx/(x(l2))
@@ -1683,14 +1683,14 @@ module Boundcond
       integer, intent (in) :: j
       integer :: k
 
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         do k=1,nghost
           f(l1-k,:,:,j)= f(l1+k,:,:,j)*(x(l1+k)/x(l1-k))
         enddo
 ! 
-     case('top')               ! top boundary
+     case ('top')               ! top boundary
        do k=1,nghost
          f(l2+k,:,:,j)= f(l2-k,:,:,j)*(x(l2-k)/x(l2+k))
        enddo
@@ -1715,15 +1715,15 @@ module Boundcond
       integer, intent (in) :: j
       integer :: k
 
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         do k=1,nghost
           f(l1-k,:,:,j)= f(l1,:,:,j)*2.*(x(l1)/x(l1-k))&
                          -f(l1+k,:,:,j)*(x(l1+k)/x(l1-k))
         enddo
 ! 
-     case('top')               ! top boundary
+     case ('top')               ! top boundary
        do k=1,nghost
          f(l2+k,:,:,j)= f(l2,:,:,j)*2.*(x(l2)/x(l2+k))&
                         -f(l2-k,:,:,j)*(x(l2-k)/x(l2+k))
@@ -1780,9 +1780,9 @@ module Boundcond
       else
       endif
 !
-      select case(topbot)
+      select case (topbot)
 ! bottom boundary
-      case('bot')
+      case ('bot')
 !
         if ((llambda_effect).and.(j.eq.iuz)) then
           do k=1,nghost
@@ -1794,7 +1794,7 @@ module Boundcond
           enddo
         endif
 ! top boundary
-      case('top')
+      case ('top')
         if ((llambda_effect).and.(j.eq.iuz)) then
           do k=1,nghost
             f(l2+k,:,:,j)= f(l2-k,:,:,j)*((x(l2+k)/x(l2-k))**(1-Lambda_V0))
@@ -1839,8 +1839,8 @@ module Boundcond
 !      write(*,*) frac,uzero,y0,z0,y1,z1
      if (lspherical_coords)then
 !
-        select case(topbot)
-        case('bot')               ! bottom boundary
+        select case (topbot)
+        case ('bot')               ! bottom boundary
           ylim = (y1-y0)*frac
           ymid = y0+(y1-y0)/2.
           yhat_min=ymid-ylim/2.
@@ -1860,7 +1860,7 @@ module Boundcond
             enddo
           enddo
 !
-        case('top')               ! top boundary
+        case ('top')               ! top boundary
           call warning('bc_set_jethat_x','Jet flowing out of the exit boundary ?')
           do i=1,nghost
             f(l2+i,:,:,j)=0.
@@ -1891,13 +1891,13 @@ module Boundcond
       integer, intent (in) :: j
       integer :: k
 !
-      select case(topbot)
+      select case (topbot)
 !
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         do k=1,nghost
           f(:,m1-k,:,j)= f(:,m1+k,:,j)*sinth(m1+k)*sin1th(m1-k)
         enddo
-       case('top')               ! top boundary
+       case ('top')               ! top boundary
          do k=1,nghost
            f(:,m2+k,:,j)= f(:,m2-k,:,j)*sinth(m2-k)*sin1th(m2+k)
          enddo
@@ -1924,13 +1924,13 @@ module Boundcond
       integer, intent (in) :: j
       integer :: k
 !
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         do k=1,nghost
           f(:,m1-k,:,j)= f(:,m1+k,:,j)*sinth(m1-k)*sin1th(m1+k)
         enddo
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         do k=1,nghost
           f(:,m2+k,:,j)= f(:,m2-k,:,j)*sinth(m2+k)*sin1th(m2-k)
         enddo
@@ -1959,9 +1959,9 @@ module Boundcond
       integer, intent (in) :: j
       real :: cottheta
 !
-      select case(topbot)
+      select case (topbot)
 !
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
 !
 ! The coding assumes we are using 6-th order centered finite difference for our
 ! derivatives. 
@@ -1970,7 +1970,7 @@ module Boundcond
         f(:,m1-1,:,j)= f(:,m1+1,:,j) +  60.*dy*cottheta*f(:,m1,:,j)/45.
         f(:,m1-2,:,j)= f(:,m1+2,:,j) -  60.*dy*cottheta*f(:,m1,:,j)/9.
         f(:,m1-3,:,j)= f(:,m1+3,:,j) +  60.*dy*cottheta*f(:,m1,:,j)
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         cottheta= cotth(m2)
         f(:,m2+1,:,j)= f(:,m2-1,:,j) -  60.*dy*cottheta*f(:,m2,:,j)/45.
         f(:,m2+2,:,j)= f(:,m2-2,:,j) +  60.*dy*cottheta*f(:,m2,:,j)/9.
@@ -1996,12 +1996,12 @@ module Boundcond
 
       integer :: i
 
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         do i=1,nghost; f(:,m1-i,:,j) = f(:,m1+i,:,j) - 2*i*dy*val; enddo
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         do i=1,nghost; f(:,m2+i,:,j) = f(:,m2-i,:,j) + 2*i*dy*val; enddo
 
       case default
@@ -2024,12 +2024,12 @@ module Boundcond
 
       integer :: i
 
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         do i=1,nghost; f(:,:,n1-i,j) = f(:,:,n1+i,j) - 2*i*dz*val; enddo
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         do i=1,nghost; f(:,:,n2+i,j) = f(:,:,n2-i,j) + 2*i*dz*val; enddo
 
       case default
@@ -2050,14 +2050,14 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j
 
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
           do i=1,nghost
             f(l1-i,:,:,j)=((nghost+1-i)*f(l1,:,:,j))/(nghost+1)
           enddo
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
           do i=1,nghost
             f(l2+i,:,:,j)=((nghost+1-i)*f(l2,:,:,j))/(nghost+1)
           enddo
@@ -2080,14 +2080,14 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j
 
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
           do i=1,nghost
             f(:,m1-i,:,j)=((nghost+1-i)*f(:,m1,:,j))/(nghost+1)
           enddo
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
           do i=1,nghost
             f(:,m2+i,:,j)=((nghost+1-i)*f(:,m2,:,j))/(nghost+1)
           enddo
@@ -2110,14 +2110,14 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j
 
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
           do i=1,nghost
             f(:,:,n1-i,j)=((nghost+1-i)*f(:,:,n1,j))/(nghost+1)
           enddo
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
           do i=1,nghost
             f(:,:,n2+i,j)=((nghost+1-i)*f(:,:,n2,j))/(nghost+1)
           enddo
@@ -2155,9 +2155,9 @@ module Boundcond
       if (stat>0) call fatal_error('bc_van3rd_z', &
           'Could not allocate memory for cpoly2')
 !
-      select case(topbot)
+      select case (topbot)
 !
-      case('bot')
+      case ('bot')
         cpoly0(:,:)=f(:,:,n1,j)
         cpoly1(:,:)=-(3*f(:,:,n1,j)-4*f(:,:,n1+1,j)+f(:,:,n1+2,j))/(2*dz)
         cpoly2(:,:)=-(-f(:,:,n1,j)+2*f(:,:,n1+1,j)-f(:,:,n1+2,j)) /(2*dz**2)
@@ -2165,7 +2165,7 @@ module Boundcond
           f(:,:,n1-i,j) = cpoly0(:,:) - cpoly1(:,:)*i*dz + cpoly2(:,:)*(i*dz)**2
         enddo
 !
-      case('top')
+      case ('top')
         cpoly0(:,:)=f(:,:,n2,j)
         cpoly1(:,:)=-(-3*f(:,:,n2,j)+4*f(:,:,n2-1,j)-f(:,:,n2-2,j))/(2*dz)
         cpoly2(:,:)=-(-f(:,:,n2,j)+2*f(:,:,n2-1,j)-f(:,:,n2-2,j))/(2*dz**2)
@@ -2196,9 +2196,9 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j,k
 !
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
           k=l1-1
           f(k,:,:,j)=7*f(k+1,:,:,j) &
                    -21*f(k+2,:,:,j) &
@@ -2227,7 +2227,7 @@ module Boundcond
                    -72*f(k+8,:,:,j) &
                    +10*f(k+9,:,:,j)
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
           k=l2+1
           f(k,:,:,j)=7*f(k-1,:,:,j) &
                    -21*f(k-2,:,:,j) &
@@ -2275,9 +2275,9 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j,k
 !
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         do i=1,nghost
           k=l1-i
           f(k,:,:,j)=7*f(k+1,:,:,j) &
@@ -2289,7 +2289,7 @@ module Boundcond
                       +f(k+7,:,:,j)
         enddo
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         do i=1,nghost
           k=l2+i
           f(k,:,:,j)=7*f(k-1,:,:,j) &
@@ -2322,9 +2322,9 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j,k
 !
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
           k=m1-1
           f(:,k,:,j)=7*f(:,k+1,:,j) &
                    -21*f(:,k+2,:,j) &
@@ -2353,7 +2353,7 @@ module Boundcond
                    -72*f(:,k+8,:,j) &
                    +10*f(:,k+9,:,j)
                                
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
           k=m2+1               
           f(:,k,:,j)=7*f(:,k-1,:,j) &
                    -21*f(:,k-2,:,j) &
@@ -2401,9 +2401,9 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j,k
 !
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         do i=1,nghost
           k=n1-i
           f(:,:,k,j)=7*f(:,:,k+1,j) &
@@ -2415,7 +2415,7 @@ module Boundcond
                       +f(:,:,k+7,j)
         enddo
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         do i=1,nghost
           k=n2+i
           f(:,:,k,j)=7*f(:,:,k-1,j) &
@@ -2447,9 +2447,9 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j,k
 !
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
           k=n1-1
           f(:,:,k,j)=7*f(:,:,k+1,j) &
                    -21*f(:,:,k+2,j) &
@@ -2478,7 +2478,7 @@ module Boundcond
                    -72*f(:,:,k+8,j) &
                    +10*f(:,:,k+9,j)
                                
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
           k=n2+1               
           f(:,:,k,j)=7*f(:,:,k-1,j) &
                    -21*f(:,:,k-2,j) &
@@ -2526,14 +2526,14 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
 !
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         f(:,:,n1-1,j)=0.25*(  9*f(:,:,n1,j)- 3*f(:,:,n1+1,j)- 5*f(:,:,n1+2,j)+ 3*f(:,:,n1+3,j))
         f(:,:,n1-2,j)=0.05*( 81*f(:,:,n1,j)-43*f(:,:,n1+1,j)-57*f(:,:,n1+2,j)+39*f(:,:,n1+3,j))
         f(:,:,n1-3,j)=0.05*(127*f(:,:,n1,j)-81*f(:,:,n1+1,j)-99*f(:,:,n1+2,j)+73*f(:,:,n1+3,j))
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         f(:,:,n2+1,j)=0.25*(  9*f(:,:,n2,j)- 3*f(:,:,n2-1,j)- 5*f(:,:,n2-2,j)+ 3*f(:,:,n2-3,j))
         f(:,:,n2+2,j)=0.05*( 81*f(:,:,n2,j)-43*f(:,:,n2-1,j)-57*f(:,:,n2-2,j)+39*f(:,:,n2-3,j))
         f(:,:,n2+3,j)=0.05*(127*f(:,:,n2,j)-81*f(:,:,n2-1,j)-99*f(:,:,n2-2,j)+73*f(:,:,n2-3,j))
@@ -2557,14 +2557,14 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
 !
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         f(l1-1,:,:,j)=0.25*(  9*f(l1,:,:,j)- 3*f(l1+1,:,:,j)- 5*f(l1+2,:,:,j)+ 3*f(l1+3,:,:,j))
         f(l1-2,:,:,j)=0.05*( 81*f(l1,:,:,j)-43*f(l1+1,:,:,j)-57*f(l1+2,:,:,j)+39*f(l1+3,:,:,j))
         f(l1-3,:,:,j)=0.05*(127*f(l1,:,:,j)-81*f(l1+1,:,:,j)-99*f(l1+2,:,:,j)+73*f(l1+3,:,:,j))
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         f(l2+1,:,:,j)=0.25*(  9*f(l2,:,:,j)- 3*f(l2-1,:,:,j)- 5*f(l2-2,:,:,j)+ 3*f(l2-3,:,:,j))
         f(l2+2,:,:,j)=0.05*( 81*f(l2,:,:,j)-43*f(l2-1,:,:,j)-57*f(l2-2,:,:,j)+39*f(l2-3,:,:,j))
         f(l2+3,:,:,j)=0.05*(127*f(l2,:,:,j)-81*f(l2-1,:,:,j)-99*f(l2-2,:,:,j)+73*f(l2-3,:,:,j))
@@ -2588,14 +2588,14 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
 !
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         f(:,m1-1,:,j)=0.25*(  9*f(:,m1,:,j)- 3*f(:,m1+1,:,j)- 5*f(:,m1+2,:,j)+ 3*f(:,m1+3,:,j))
         f(:,m1-2,:,j)=0.05*( 81*f(:,m1,:,j)-43*f(:,m1+1,:,j)-57*f(:,m1+2,:,j)+39*f(:,m1+3,:,j))
         f(:,m1-3,:,j)=0.05*(127*f(:,m1,:,j)-81*f(:,m1+1,:,j)-99*f(:,m1+2,:,j)+73*f(:,m1+3,:,j))
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         f(:,m2+1,:,j)=0.25*(  9*f(:,m2,:,j)- 3*f(:,m2-1,:,j)- 5*f(:,m2-2,:,j)+ 3*f(:,m2-3,:,j))
         f(:,m2+2,:,j)=0.05*( 81*f(:,m2,:,j)-43*f(:,m2-1,:,j)-57*f(:,m2-2,:,j)+39*f(:,m2-3,:,j))
         f(:,m2+3,:,j)=0.05*(127*f(:,m2,:,j)-81*f(:,m2-1,:,j)-99*f(:,m2-2,:,j)+73*f(:,m2-3,:,j))
@@ -2626,14 +2626,14 @@ module Boundcond
       n1p4=n1+4
       n2m4=n2-4
 !
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         f(:,:,n1-1,j)=0.2   *(  9*f(:,:,n1,j)                 -  4*f(:,:,n1+2,j)- 3*f(:,:,n1+3,j)+ 3*f(:,:,n1p4,j))
         f(:,:,n1-2,j)=0.2   *( 15*f(:,:,n1,j)- 2*f(:,:,n1+1,j)-  9*f(:,:,n1+2,j)- 6*f(:,:,n1+3,j)+ 7*f(:,:,n1p4,j))
         f(:,:,n1-3,j)=1./35.*(157*f(:,:,n1,j)-33*f(:,:,n1+1,j)-108*f(:,:,n1+2,j)-68*f(:,:,n1+3,j)+87*f(:,:,n1p4,j))
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         f(:,:,n2+1,j)=0.2   *(  9*f(:,:,n2,j)                 -  4*f(:,:,n2-2,j)- 3*f(:,:,n2-3,j)+ 3*f(:,:,n2m4,j))
         f(:,:,n2+2,j)=0.2   *( 15*f(:,:,n2,j)- 2*f(:,:,n2-1,j)-  9*f(:,:,n2-2,j)- 6*f(:,:,n2-3,j)+ 7*f(:,:,n2m4,j))
         f(:,:,n2+3,j)=1./35.*(157*f(:,:,n2,j)-33*f(:,:,n2-1,j)-108*f(:,:,n2-2,j)-68*f(:,:,n2-3,j)+87*f(:,:,n2m4,j))
@@ -2664,14 +2664,14 @@ module Boundcond
       l1p4=l1+4
       l2m4=l2-4
 !
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         f(l1-1,:,:,j)=0.2   *(  9*f(l1,:,:,j)                 -  4*f(l1+2,:,:,j)- 3*f(l1+3,:,:,j)+ 3*f(l1p4,:,:,j))
         f(l1-2,:,:,j)=0.2   *( 15*f(l1,:,:,j)- 2*f(l1+1,:,:,j)-  9*f(l1+2,:,:,j)- 6*f(l1+3,:,:,j)+ 7*f(l1p4,:,:,j))
         f(l1-3,:,:,j)=1./35.*(157*f(l1,:,:,j)-33*f(l1+1,:,:,j)-108*f(l1+2,:,:,j)-68*f(l1+3,:,:,j)+87*f(l1p4,:,:,j))
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         f(l2+1,:,:,j)=0.2   *(  9*f(l2,:,:,j)                 -  4*f(l2-2,:,:,j)- 3*f(l2-3,:,:,j)+ 3*f(l2m4,:,:,j))
         f(l2+2,:,:,j)=0.2   *( 15*f(l2,:,:,j)- 2*f(l2-1,:,:,j)-  9*f(l2-2,:,:,j)- 6*f(l2-3,:,:,j)+ 7*f(l2m4,:,:,j))
         f(l2+3,:,:,j)=1./35.*(157*f(l2,:,:,j)-33*f(l2-1,:,:,j)-108*f(l2-2,:,:,j)-68*f(l2-3,:,:,j)+87*f(l2m4,:,:,j))
@@ -2702,14 +2702,14 @@ module Boundcond
       m1p4=m1+4
       m2m4=m2-4
 !
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         f(:,m1-1,:,j)=0.2   *(  9*f(:,m1,:,j)                 -  4*f(:,m1+2,:,j)- 3*f(:,m1+3,:,j)+ 3*f(:,m1p4,:,j))
         f(:,m1-2,:,j)=0.2   *( 15*f(:,m1,:,j)- 2*f(:,m1+1,:,j)-  9*f(:,m1+2,:,j)- 6*f(:,m1+3,:,j)+ 7*f(:,m1p4,:,j))
         f(:,m1-3,:,j)=1./35.*(157*f(:,m1,:,j)-33*f(:,m1+1,:,j)-108*f(:,m1+2,:,j)-68*f(:,m1+3,:,j)+87*f(:,m1p4,:,j))
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         f(:,m2+1,:,j)=0.2   *(  9*f(:,m2,:,j)                 -  4*f(:,m2-2,:,j)- 3*f(:,m2-3,:,j)+ 3*f(:,m2m4,:,j))
         f(:,m2+2,:,j)=0.2   *( 15*f(:,m2,:,j)- 2*f(:,m2-1,:,j)-  9*f(:,m2-2,:,j)- 6*f(:,m2-3,:,j)+ 7*f(:,m2m4,:,j))
         f(:,m2+3,:,j)=1./35.*(157*f(:,m2,:,j)-33*f(:,m2-1,:,j)-108*f(:,m2-2,:,j)-68*f(:,m2-3,:,j)+87*f(:,m2m4,:,j))
@@ -2732,9 +2732,9 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j,l,i
 !
-      select case(topbot)
+      select case (topbot)
 !
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         do i=1,nghost
           do n=1,mz
             do l=1,mx
@@ -2747,7 +2747,7 @@ module Boundcond
           enddo
         enddo
 !
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         do i=1,nghost
           do n=1,mz
             do l=1,mx
@@ -2779,41 +2779,41 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
 !
-      select case(topbot)
+      select case (topbot)
 
-!       case('bot')               ! bottom boundary
+!       case ('bot')               ! bottom boundary
 !         f(:,:,n1  ,j)= 0.       ! set bdry value=0 (indep of initcond)
 !         f(:,:,n1-1,j)=- 3*f(:,:,n1+1,j)+  f(:,:,n1+2,j)
 !         f(:,:,n1-2,j)=- 8*f(:,:,n1+1,j)+3*f(:,:,n1+2,j)
 !         f(:,:,n1-3,j)=-15*f(:,:,n1+1,j)+6*f(:,:,n1+2,j)
 
-!       case('top')               ! top boundary
+!       case ('top')               ! top boundary
 !         f(:,:,n2  ,j)= 0.       ! set bdry value=0 (indep of initcond)
 !         f(:,:,n2+1,j)=- 3*f(:,:,n2-1,j)+  f(:,:,n2-2,j)
 !         f(:,:,n2+2,j)=- 8*f(:,:,n2-1,j)+3*f(:,:,n2-2,j)
 !         f(:,:,n2+3,j)=-15*f(:,:,n2-1,j)+6*f(:,:,n2-2,j)
 
 !! Nyquist-filtering
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         f(:,:,n1  ,j)=0.        ! set bdry value=0 (indep of initcond)
         f(:,:,n1-1,j)=(1/11.)*(-17*f(:,:,n1+1,j)- 9*f(:,:,n1+2,j)+ 8*f(:,:,n1+3,j))
         f(:,:,n1-2,j)=      2*(- 2*f(:,:,n1+1,j)-   f(:,:,n1+2,j)+   f(:,:,n1+3,j))
         f(:,:,n1-3,j)=(3/11.)*(-27*f(:,:,n1+1,j)-13*f(:,:,n1+2,j)+14*f(:,:,n1+3,j))
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         f(:,:,n2  ,j)=0.        ! set bdry value=0 (indep of initcond)
         f(:,:,n2+1,j)=(1/11.)*(-17*f(:,:,n2-1,j)- 9*f(:,:,n2-2,j)+ 8*f(:,:,n2-3,j))
         f(:,:,n2+2,j)=      2*(- 2*f(:,:,n2-1,j)-   f(:,:,n2-2,j)+   f(:,:,n2-3,j))
         f(:,:,n2+3,j)=(3/11.)*(-27*f(:,:,n2-1,j)-13*f(:,:,n2-2,j)+14*f(:,:,n2-3,j))
 
 ! !! Nyquist-transparent
-!       case('bot')               ! bottom boundary
+!       case ('bot')               ! bottom boundary
 !         f(:,:,n1  ,j)=0.        ! set bdry value=0 (indep of initcond)
 !         f(:,:,n1-1,j)=(1/11.)*(-13*f(:,:,n1+1,j)-14*f(:,:,n1+2,j)+10*f(:,:,n1+3,j))
 !         f(:,:,n1-2,j)=(1/11.)*(-48*f(:,:,n1+1,j)-17*f(:,:,n1+2,j)+20*f(:,:,n1+3,j))
 !         f(:,:,n1-3,j)=         - 7*f(:,:,n1+1,j)- 4*f(:,:,n1+2,j)+ 4*f(:,:,n1+3,j)
 
-!       case('top')               ! top boundary
+!       case ('top')               ! top boundary
 !         f(:,:,n2  ,j)=0.        ! set bdry value=0 (indep of initcond)
 !         f(:,:,n2+1,j)=(1/11.)*(-13*f(:,:,n2-1,j)-14*f(:,:,n2-2,j)+10*f(:,:,n2-3,j))
 !         f(:,:,n2+2,j)=(1/11.)*(-48*f(:,:,n2-1,j)-17*f(:,:,n2-2,j)+20*f(:,:,n2-3,j))
@@ -2840,15 +2840,15 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
 !
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         f(:,:,n1  ,j)=0.        ! set bdry value=0 (indep of initcond)
         f(:,:,n1-1,j)=0.25*(- 3*f(:,:,n1+1,j)- 5*f(:,:,n1+2,j)+ 3*f(:,:,n1+3,j))
         f(:,:,n1-2,j)=0.05*(-43*f(:,:,n1+1,j)-57*f(:,:,n1+2,j)+39*f(:,:,n1+3,j))
         f(:,:,n1-3,j)=0.05*(-81*f(:,:,n1+1,j)-99*f(:,:,n1+2,j)+73*f(:,:,n1+3,j))
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         f(:,:,n2  ,j)=0.        ! set bdry value=0 (indep of initcond)
         f(:,:,n2+1,j)=0.25*(- 3*f(:,:,n2-1,j)- 5*f(:,:,n2-2,j)+ 3*f(:,:,n2-3,j))
         f(:,:,n2+2,j)=0.05*(-43*f(:,:,n2-1,j)-57*f(:,:,n2-2,j)+39*f(:,:,n2-3,j))
@@ -2881,15 +2881,15 @@ module Boundcond
       n1p4=n1+4
       n2m4=n2-4
 !
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         f(:,:,n1  ,j)= 0.       ! set bdry value=0 (indep of initcond)
         f(:,:,n1-1,j)=0.2   *(                 -  4*f(:,:,n1+2,j)- 3*f(:,:,n1+3,j)+ 3*f(:,:,n1p4,j))
         f(:,:,n1-2,j)=0.2   *(- 2*f(:,:,n1+1,j)-  9*f(:,:,n1+2,j)- 6*f(:,:,n1+3,j)+ 7*f(:,:,n1p4,j))
         f(:,:,n1-3,j)=1./35.*(-33*f(:,:,n1+1,j)-108*f(:,:,n1+2,j)-68*f(:,:,n1+3,j)+87*f(:,:,n1p4,j))
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         f(:,:,n2  ,j)= 0.       ! set bdry value=0 (indep of initcond)
         f(:,:,n2+1,j)=0.2   *(                 -  4*f(:,:,n2-2,j)- 3*f(:,:,n2-3,j)+ 3*f(:,:,n2m4,j))
         f(:,:,n2+2,j)=0.2   *(- 2*f(:,:,n2-1,j)-  9*f(:,:,n2-2,j)- 6*f(:,:,n2-3,j)+ 7*f(:,:,n2m4,j))
@@ -2913,9 +2913,9 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j,i
 !
-      select case(topbot)
+      select case (topbot)
 !
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
         do i=1,nghost
           do n=1,mz
             do m=1,my
@@ -2928,7 +2928,7 @@ module Boundcond
           enddo
         enddo
 !
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         do i=1,nghost
           do n=1,mz
             do m=1,my
@@ -2975,17 +2975,17 @@ module Boundcond
       if (stat>0) call fatal_error('bc_db_z', &
           'Could not allocate memory for fder')
 !
-      select case(topbot)
+      select case (topbot)
 !
 ! Bottom boundary
 !
-      case('bot')
+      case ('bot')
         do i=1,nghost
           fder=(-3*f(:,:,n1-i+1,j)+4*f(:,:,n1-i+2,j)&
                -f(:,:,n1-i+3,j))/(2*dz)
           f(:,:,n1-i,j)=f(:,:,n1-i+2,j)-2*dz*fder
         enddo
-      case('top')
+      case ('top')
         do i=1,nghost
           fder=(3*f(:,:,n2+i-1,j)-4*f(:,:,n2+i-2,j)&
                +f(:,:,n2+i-3,j))/(2*dz)
@@ -3028,17 +3028,17 @@ module Boundcond
       if (stat>0) call fatal_error('bc_db_z', &
           'Could not allocate memory for fder')
 !
-      select case(topbot)
+      select case (topbot)
 !
 ! Bottom boundary
 !
-      case('bot')
+      case ('bot')
         do i=1,nghost
           fder=(-3*f(l1-i+1,:,:,j)+4*f(l1-i+2,:,:,j)&
                -f(l1-i+3,:,:,j))/(2*dx)
           f(l1-i,:,:,j)=f(l1-i+2,:,:,j)-2*dx*fder
         enddo
-      case('top')
+      case ('top')
         do i=1,nghost
           fder=(3*f(l2+i-1,:,:,j)-4*f(l2+i-2,:,:,j)&
                +f(l2+i-3,:,:,j))/(2*dx)
@@ -3073,11 +3073,11 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: sgn,i,j
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  lower boundary
 !
-      case('bot')
+      case ('bot')
          select case (force_lower_bound)
          case ('uxy_sin-cos')
             call bc_force_uxy_sin_cos(f,n1,j)
@@ -3106,7 +3106,7 @@ module Boundcond
 !
 !  upper boundary
 !
-      case('top')
+      case ('top')
          select case (force_upper_bound)
          case ('uxy_sin-cos')
             call bc_force_uxy_sin_cos(f,n2,j)
@@ -3148,11 +3148,11 @@ module Boundcond
       real, pointer :: ampl_forc, k_forc, w_forc
       integer :: sgn, i, j, ierr
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  lower boundary
 !
-      case('bot')
+      case ('bot')
          select case (force_lower_bound)
          case ('vel_time')
             if (j /= iuy) call stop_it("BC_FORCE_X: only valid for uy")
@@ -3180,7 +3180,7 @@ module Boundcond
 !
 !  upper boundary
 !
-      case('top')
+      case ('top')
          select case (force_upper_bound)
          case ('vel_time')
             if (j /= iuy) call stop_it("BC_FORCE_X: only valid for uy")
@@ -3270,12 +3270,12 @@ module Boundcond
       integer :: j
       character (len=3) :: topbot
 !
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
           f(1:l1-1,:,:,j)=1.
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
           f(l2+1:mx,:,:,j)=1.
 
       case default
@@ -3295,12 +3295,12 @@ module Boundcond
       integer :: j
       character (len=3) :: topbot
 !
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
           f(:,1:m1-1,:,j)=1.
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
           f(:,m2+1:my,:,j)=1.
 
       case default
@@ -3320,12 +3320,12 @@ module Boundcond
       integer :: j
       character (len=3) :: topbot
 !
-      select case(topbot)
+      select case (topbot)
 
-      case('bot')               ! bottom boundary
+      case ('bot')               ! bottom boundary
           f(:,:,1:n1-1,j)=1.
 
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
           f(:,:,n2+1:mz,j)=1.
 
       case default
@@ -3345,10 +3345,10 @@ module Boundcond
 !
       lfrozen_bcs_x = .true.    ! set flag
 
-      select case(topbot)
-      case('bot')               ! bottom boundary
+      select case (topbot)
+      case ('bot')               ! bottom boundary
         lfrozen_bot_var_x(j) = .true.
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         lfrozen_top_var_x(j) = .true.
       case default
         print*, "bc_freeze_var_x: ", topbot, " should be `top' or `bot'"
@@ -3366,10 +3366,10 @@ module Boundcond
 !
       lfrozen_bcs_y = .true.    ! set flag
 
-      select case(topbot)
-      case('bot')               ! bottom boundary
+      select case (topbot)
+      case ('bot')               ! bottom boundary
         lfrozen_bot_var_y(j) = .true.
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         lfrozen_top_var_y(j) = .true.
       case default
         print*, "bc_freeze_var_y: ", topbot, " should be `top' or `bot'"
@@ -3387,10 +3387,10 @@ module Boundcond
 !
       lfrozen_bcs_z = .true.    ! set flag
 
-      select case(topbot)
-      case('bot')               ! bottom boundary
+      select case (topbot)
+      case ('bot')               ! bottom boundary
         lfrozen_bot_var_z(j) = .true.
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         lfrozen_top_var_z(j) = .true.
       case default
         print*, "bc_freeze_var_z: ", topbot, " should be `top' or `bot'"
@@ -3805,12 +3805,12 @@ module Boundcond
 !
       if (headtt) print*,'bc_lnTT_flux_x: Fbot,hcond,dx=',Fbot,hcond0*hcond1,dx
 
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !  ===============
 !
-      case('bot')
+      case ('bot')
         tmp_yz=-Fbot/(hcond0*hcond1)/exp(f(l1,:,:,ilnTT))
 !
 !  enforce dlnT/dx = - Fbot/(K*T)
@@ -3864,8 +3864,8 @@ module Boundcond
 !
       if (headtt) print*,'bc_lnTT_flux_z: Fbot,hcond,dz=',Fbot,hcond0,dz
 
-      select case(topbot)
-      case('bot')
+      select case (topbot)
+      case ('bot')
         if (ltemperature_nolog) then
           tmp_xy=-Fbot/hcond0
         else
@@ -3917,12 +3917,12 @@ module Boundcond
       if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
            "there was a problem when getting FbotKbot")
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !  ===============
 !
-      case('bot')
+      case ('bot')
         if (headtt) print*,'bc_ss_flux_x: FbotKbot=',FbotKbot
 !
 !  calculate Fbot/(K*cs2)
@@ -3942,7 +3942,7 @@ module Boundcond
 !  top boundary
 !  ============
 !
-      case('top')
+      case ('top')
 !
         call get_shared_variable('FtopKtop',FtopKtop,ierr)
         if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
@@ -4024,11 +4024,11 @@ module Boundcond
 !
 !  Check whether we want to do top or bottom (this is precessor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  Potential field condition at the bottom
 !
-      case('bot')
+      case ('bot')
 !
         do i=1,nghost
 !
@@ -4053,7 +4053,7 @@ module Boundcond
 !
 !  Potential field condition at the top
 !
-      case('top')
+      case ('top')
 !
         do i=1,nghost
 !
@@ -4103,16 +4103,16 @@ module Boundcond
       character (len=3) :: topbot
       integer :: j
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  Bottom boundary.
 !
-      case('bot')
+      case ('bot')
         f(1:l1-1,:,:,j)=0.0
 !
 !  Top boundary.
 !
-      case('top')
+      case ('top')
         f(n2+1:mx,:,:,j)=0.0
 !
 !  Default.
@@ -4134,16 +4134,16 @@ module Boundcond
       character (len=3) :: topbot
       integer :: j
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  Bottom boundary.
 !
-      case('bot')
+      case ('bot')
         f(:,:,1:n1-1,j)=0.0
 !
 !  Top boundary.
 !
-      case('top')
+      case ('top')
         f(:,:,n2+1:mz,j)=0.0
 !
 !  Default.
@@ -4170,11 +4170,11 @@ module Boundcond
 !
       integer :: i, ix, iy
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  Bottom boundary.
 !
-      case('bot')
+      case ('bot')
         do iy=1,my; do ix=1,mx
           if (f(ix,iy,n1,j)<=0.0) then  ! 's'
             do i=1,nghost; f(ix,iy,n1-i,j)=+f(ix,iy,n1+i,j); enddo
@@ -4186,7 +4186,7 @@ module Boundcond
 !
 !  Top boundary.
 !
-      case('top')
+      case ('top')
         do iy=1,my; do ix=1,mx
           if (f(ix,iy,n2,j)>=0.0) then  ! 's'
             do i=1,nghost; f(ix,iy,n2+i,j)=+f(ix,iy,n2-i,j); enddo
@@ -4217,16 +4217,16 @@ module Boundcond
 !
       integer :: i
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  Bottom boundary.
 !
-      case('bot')
+      case ('bot')
         do i=1,nghost; f(l1-i,:,:,j)=f(l1,:,:,j); enddo
 !
 !  Top boundary.
 !
-      case('top')
+      case ('top')
         do i=1,nghost; f(l2+i,:,:,j)=f(l2,:,:,j); enddo
 !
 !  Default.
@@ -4250,16 +4250,16 @@ module Boundcond
 !
       integer :: i
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  Bottom boundary.
 !
-      case('bot')
+      case ('bot')
         do i=1,nghost; f(:,:,n1-i,j)=f(:,:,n1,j); enddo
 !
 !  Top boundary.
 !
-      case('top')
+      case ('top')
         do i=1,nghost; f(:,:,n2+i,j)=f(:,:,n2,j); enddo
 !
 !  Default.
@@ -4295,10 +4295,10 @@ module Boundcond
             'there was a problem getting lfrozen_bb_top')
       endif
 !
-      select case(topbot)
-      case('bot')               ! bottom boundary
+      select case (topbot)
+      case ('bot')               ! bottom boundary
         lfrozen_bb_bot(j-iax+1) = .true.    ! set flag
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         lfrozen_bb_top(j-iax+1) = .true.    ! set flag
       case default
         print*, "bc_frozen_in_bb: ", topbot, " should be `top' or `bot'"
@@ -4371,11 +4371,11 @@ module Boundcond
 !
 !  Check whether we want to do top or bottom (this is precessor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  Potential field condition at the bottom
 !
-      case('bot')
+      case ('bot')
 !
         do j=1,nghost
 !
@@ -4412,7 +4412,7 @@ module Boundcond
 !
 !  Potential field condition at the top
 !
-      case('top')
+      case ('top')
 !
         do j=1,nghost
 !
@@ -4531,11 +4531,11 @@ module Boundcond
 !
 !  Check whether we want to do top or bottom (this is precessor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  Potential field condition at the bottom
 !
-      case('bot')
+      case ('bot')
 !
 !  Fourier transforms of x- and y-components on the boundary
 !
@@ -4573,7 +4573,7 @@ module Boundcond
 !
 !  Potential field condition at the top
 !
-      case('top')
+      case ('top')
 !
 !  Fourier transforms of x- and y-components on the boundary
 !
@@ -4659,11 +4659,11 @@ module Boundcond
 !  potential field condition
 !  check whether we want to do top or bottom (this is precessor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  potential field condition at the bottom
 !
-      case('bot')
+      case ('bot')
         if (headtt) print*,'bc_aa_pot: pot-field bdry cond at bottom'
         if (mod(nxgrid,nygrid)/=0) &
              call stop_it("bc_aa_pot: pot-field doesn't work "//&
@@ -4683,7 +4683,7 @@ module Boundcond
 !
 !  potential field condition at the top
 !
-      case('top')
+      case ('top')
         if (headtt) print*,'bc_aa_pot: pot-field bdry cond at top'
         if (mod(nxgrid,nygrid)/=0) &
              call stop_it("bc_aa_pot: pot-field doesn't work "//&
@@ -4990,16 +4990,16 @@ module Boundcond
               call warning('bc_wind',"no defined density, using rho=1 ?")
       endif
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  Bottom boundary.
 !
-      case('bot')
+      case ('bot')
          ntb = n1
 !
 !  Top boundary.
 !
-       case('top')
+       case ('top')
          ntb = n2
 !
 !  Default.
@@ -5151,11 +5151,11 @@ module Boundcond
       integer :: j,i
       real, dimension(mcom) :: val
 
-      select case(topbot)
-      case('bot')
+      select case (topbot)
+      case ('bot')
         call fatal_error('bc_inlet_outlet_cyl', &
           'this boundary condition is not allowed for bottom boundary')
-      case('top')
+      case ('top')
         do m=m1,m2
           if (      (y(m).ge.xyz0(2) +   Lxyz(2)/4)&
               .and. (y(m).le.xyz0(2) + 3*Lxyz(2)/4)) then

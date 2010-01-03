@@ -372,7 +372,7 @@ module Particles
 !
       do j=1,ninit
 
-        select case(initxxp(j))
+        select case (initxxp(j))
 
         case ('nothing')
           if (lroot .and. j==1) print*, 'init_particles: nothing'
@@ -760,7 +760,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       do j=1,ninit
 
-        select case(initvvp(j))
+        select case (initvvp(j))
 
         case ('nothing')
           if (lroot.and.j==1) print*, 'init_particles: No particle velocity set'
@@ -855,7 +855,7 @@ k_loop:   do while (.not. (k>npar_loc))
           call mpireduce_sum(sum(fp(1:npar_loc,ivpz)),vpz_sum)
           fp(1:npar_loc,ivpz)=fp(1:npar_loc,ivpz)-vpz_sum/npar
 
-        case('jeans-wave-dustpar-x')
+        case ('jeans-wave-dustpar-x')
         ! assumes rhs_poisson_const=1 !
           do k=1,npar_loc
             fp(k,ivpx) = fp(k,ivpx) - amplxxp* &
@@ -863,7 +863,7 @@ k_loop:   do while (.not. (k>npar_loc))
                 (2*kx_xxp*1.0*tausp)*sin(kx_xxp*(fp(k,ixp)))
           enddo
 
-        case('dragforce_equilibrium')
+        case ('dragforce_equilibrium')
 !
 !  Equilibrium between drag forces on dust and gas and other forces
 !  (from Nakagawa, Sekiya, & Hayashi 1986).
@@ -927,7 +927,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
           enddo
 !
-        case('dragforce_equi_dust')
+        case ('dragforce_equi_dust')
 !
 !  Equilibrium between drag force and Coriolis force on the dust.
 !
@@ -1353,7 +1353,7 @@ k_loop:   do while (.not. (k>npar_loc))
         case ('zero')
           if (lheader) print*, 'dvvp_dt: No radial gravity'
 !
-        case('newtonian-central','newtonian')
+        case ('newtonian-central','newtonian')
           if (lparticles_nbody) &
               call fatal_error('dvvp_dt','You are using massive particles. '//&
               'The N-body code should take care of the stellar-like '// &

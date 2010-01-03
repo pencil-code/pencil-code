@@ -384,105 +384,105 @@ module Density
 !
         call chn(j,iinit_str)
 !
-        select case(initlnrho(j))
+        select case (initlnrho(j))
 !
-        case('zero', '0'); f(:,:,:,ilnrho)=0.
-        case('const_lnrho'); f(:,:,:,ilnrho)=lnrho_const
-        case('const_rho'); f(:,:,:,ilnrho)=log(rho_const)
-        case('constant'); f(:,:,:,ilnrho)=log(rho_left(j))
-        case('mode')
+        case ('zero', '0'); f(:,:,:,ilnrho)=0.
+        case ('const_lnrho'); f(:,:,:,ilnrho)=lnrho_const
+        case ('const_rho'); f(:,:,:,ilnrho)=log(rho_const)
+        case ('constant'); f(:,:,:,ilnrho)=log(rho_left(j))
+        case ('mode')
           call modes(ampllnrho(j),coeflnrho,f,ilnrho,kx_lnrho(j), &
               ky_lnrho(j),kz_lnrho(j))
-        case('blob')
+        case ('blob')
           call blob(ampllnrho(j),f,ilnrho,radius_lnrho(j),xblob,yblob,zblob)
-        case('blob_hs')
+        case ('blob_hs')
           print*, 'init_lnrho: put a blob in hydrostatic equilibrium:'// &
           'radius_lnrho, ampllnrho, position=',radius_lnrho(j), &
           ampllnrho(j), xblob, yblob, zblob
           call blob(ampllnrho(j),f,ilnrho,radius_lnrho(j),xblob,yblob,zblob)
           call blob(-ampllnrho(j),f,iss,radius_lnrho(j),xblob,yblob,zblob)
-        case('isothermal'); call isothermal_density(f)
-        case('local-isothermal'); call local_isothermal_density(f)
-        case('power-law'); call power_law_disk(f)
-        case('galactic-disk'); call exponential_fall(f)
-        case('stratification'); call stratification(f,strati_type)
-        case('stratification-x'); call stratification_x(f,strati_type)
-        case('polytropic_simple'); call polytropic_simple(f)
-        case('hydrostatic-z', '1')
+        case ('isothermal'); call isothermal_density(f)
+        case ('local-isothermal'); call local_isothermal_density(f)
+        case ('power-law'); call power_law_disk(f)
+        case ('galactic-disk'); call exponential_fall(f)
+        case ('stratification'); call stratification(f,strati_type)
+        case ('stratification-x'); call stratification_x(f,strati_type)
+        case ('polytropic_simple'); call polytropic_simple(f)
+        case ('hydrostatic-z', '1')
           print*, 'init_lnrho: use polytropic_simple instead!'
-        case('xjump')
+        case ('xjump')
           call jump(f,ilnrho,lnrho_left(j),lnrho_right(j),widthlnrho(j),'x')
-        case('yjump')
+        case ('yjump')
           call jump(f,ilnrho,lnrho_left(j),lnrho_right(j),widthlnrho(j),'y')
-        case('zjump')
+        case ('zjump')
           call jump(f,ilnrho,lnrho_left(j),lnrho_right(j),widthlnrho(j),'z')
-        case('soundwave-x')
+        case ('soundwave-x')
           call soundwave(ampllnrho(j),f,ilnrho,kx=kx_lnrho(j))
-        case('soundwave-y')
+        case ('soundwave-y')
           call soundwave(ampllnrho(j),f,ilnrho,ky=ky_lnrho(j))
-        case('soundwave-z')
+        case ('soundwave-z')
           call soundwave(ampllnrho(j),f,ilnrho,kz=kz_lnrho(j))
-        case('sinwave-phase')
+        case ('sinwave-phase')
           call sinwave_phase(f,ilnrho,ampllnrho(j),kx_lnrho(j), &
               ky_lnrho(j),kz_lnrho(j),phase_lnrho(j))
-        case('sinwave-phase-nolog')
+        case ('sinwave-phase-nolog')
           do m=m1,m2; do n=n1,n2
             f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) + &
                 alog(1+amplrho(j)*sin(kx_lnrho(j)*x(l1:l2)+ &
                 ky_lnrho(j)*y(m)+kz_lnrho(j)*z(n)+phase_lnrho(j)))
           enddo; enddo
-        case('coswave-phase')
+        case ('coswave-phase')
           call coswave_phase(f,ilnrho,ampllnrho(j),kx_lnrho(j), &
               ky_lnrho(j),kz_lnrho(j),phase_lnrho(j))
-        case('sinwave-x')
+        case ('sinwave-x')
           call sinwave(ampllnrho(j),f,ilnrho,kx=kx_lnrho(j))
-        case('sinwave-y')
+        case ('sinwave-y')
           call sinwave(ampllnrho(j),f,ilnrho,ky=ky_lnrho(j))
-        case('sinwave-z')
+        case ('sinwave-z')
           call sinwave(ampllnrho(j),f,ilnrho,kz=kz_lnrho(j))
-        case('coswave-x')
+        case ('coswave-x')
           call coswave(ampllnrho(j),f,ilnrho,kx=kx_lnrho(j))
-        case('coswave-y')
+        case ('coswave-y')
           call coswave(ampllnrho(j),f,ilnrho,ky=ky_lnrho(j))
-        case('coswave-z')
+        case ('coswave-z')
           call coswave(ampllnrho(j),f,ilnrho,kz=kz_lnrho(j))
-        case('triquad')
+        case ('triquad')
           call triquad(ampllnrho(j),f,ilnrho,kx_lnrho(j), &
               ky_lnrho(j),kz_lnrho(j), kxx_lnrho(j), kyy_lnrho(j), &
               kzz_lnrho(j))
-        case('isotdisk')
+        case ('isotdisk')
           call isotdisk(powerlr,f,ilnrho,zoverh, hoverr)
           f(1:mx,1:my,1:mz,iss)=-(gamma-1)/gamma*f(1:mx,1:my,1:mz,ilnrho)
 !          call isotdisk(powerlr,f,iss,zoverh,hoverr, -(gamma-1)/gamma)
-        case('sinx_siny_sinz')
+        case ('sinx_siny_sinz')
           call sinx_siny_sinz(ampllnrho(j),f,ilnrho, &
               kx_lnrho(j),ky_lnrho(j),kz_lnrho(j))
-        case('corona'); call corona_init(f)
-        case('gaussian3d')
+        case ('corona'); call corona_init(f)
+        case ('gaussian3d')
           call gaussian3d(ampllnrho(j),f,ilnrho,radius_lnrho(j)) 
-        case('plaw_gauss_disk'); call power_law_gaussian_disk(f)
-        case('gaussian-z')
+        case ('plaw_gauss_disk'); call power_law_gaussian_disk(f)
+        case ('gaussian-z')
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) - &
                 z(n)**2/(2*radius_lnrho(j)**2)
           enddo; enddo
-        case('gauss-z-offset')
+        case ('gauss-z-offset')
           do n=n1,n2
              f(:,:,n,ilnrho) = f(:,:,n,ilnrho) + &
                 alog(exp(f(:,:,n,ilnrho))+ &
                 ampllnrho(j)*(exp(-(z(n)+lnrho_z_shift)**2/ &
                 (2*radius_lnrho(j)**2))))
           enddo
-        case('gaussian-noise')
+        case ('gaussian-noise')
           If (lnrho_left(j) /= 0.) f(:,:,:,ilnrho)=lnrho_left(j)
           call gaunoise(ampllnrho(j),f,ilnrho,ilnrho)
-        case('gaussian-noise-x')
+        case ('gaussian-noise-x')
 !
 !  Noise, but just x-dependent.
 !
           call gaunoise(ampllnrho(j),f,ilnrho,ilnrho)
           f(:,:,:,ilnrho)=spread(spread(f(:,4,4,ilnrho),2,my),3,mz) !(watch 1-D)
-        case('rho-jump-z', '2')
+        case ('rho-jump-z', '2')
 !
 !  Density jump (for shocks).
 !
@@ -497,7 +497,7 @@ module Density
 !
 !  A*tanh(y/d) profile
 !
-        case('tanhy')
+        case ('tanhy')
           if (lroot) print*,'init_lnrho: tangential discontinuity'
           do m=m1,m2
             prof=ampllnrho(j)*tanh(y(m)/widthlnrho(j))
@@ -712,7 +712,7 @@ module Density
 !
           cs2bot = cs20 + gamma*gravz/(mpoly0+1)*(zbot-zref)
           cs2top = cs20 + gamma*gravz/(mpoly0+1)*(ztop-zref)
-        case('sound-wave', '11')
+        case ('sound-wave', '11')
 !
 !  Sound wave (should be consistent with hydro module).
 !
@@ -721,7 +721,7 @@ module Density
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,ilnrho)=lnrho_const+ampllnrho(j)*sin(kx_lnrho(j)*x(l1:l2))
           enddo; enddo
-        case('sound-wave-exp')
+        case ('sound-wave-exp')
 !
 !  Sound wave (should be consistent with hydro module).
 !
@@ -730,7 +730,7 @@ module Density
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,ilnrho)=log(rho_const+amplrho(j)*sin(kx_lnrho(j)*x(l1:l2)))
           enddo; enddo
-        case('sound-wave2')
+        case ('sound-wave2')
 !
 !  Sound wave (should be consistent with hydro module).
 !
@@ -739,7 +739,7 @@ module Density
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,ilnrho)=lnrho_const+ampllnrho(j)*cos(kx_lnrho(j)*x(l1:l2))
           enddo; enddo
-        case('shock-tube', '13')
+        case ('shock-tube', '13')
 !
 !  Shock tube test (should be consistent with hydro module).
 !
@@ -749,7 +749,7 @@ module Density
             f(l1:l2,m,n,ilnrho)=log(rho_left(j))+ &
                 (log(rho_right(j))-log(rho_left(j)))*prof
           enddo; enddo
-        case('sin-xy')
+        case ('sin-xy')
 !
 !  sin profile in x and y.
 !
@@ -758,7 +758,7 @@ module Density
             f(l1:l2,m,n,ilnrho)=log(rho0) + &
                 ampllnrho(j)*sin(kx_lnrho(j)*x(l1:l2))*sin(ky_lnrho(j)*y(m))
           enddo; enddo
-        case('sin-xy-rho')
+        case ('sin-xy-rho')
 !
 !  sin profile in x and y, but in rho, not ln(rho).
 !
@@ -767,7 +767,7 @@ module Density
             f(l1:l2,m,n,ilnrho)=log(rho0*(1+ &
                 ampllnrho(j)*sin(kx_lnrho(j)*x(l1:l2))*sin(ky_lnrho(j)*y(m))))
           enddo; enddo
-        case('linear')
+        case ('linear')
 !
 !  Linear profile in kk.xxx.
 !
@@ -778,33 +778,33 @@ module Density
                 ky_lnrho(j)*y(m)+kz_lnrho(j)*z(n))/ &
                 sqrt(kx_lnrho(j)**2+ky_lnrho(j)**2+kz_lnrho(j)**2)
           enddo; enddo
-        case('planet')
+        case ('planet')
 !
 !  Planet solution of Goodman, Narayan & Goldreich (1987).
 !  (Simple 3-D)
 !
           call planet(rbound,f,eps_planet,radius_lnrho(j), &
               gamma,cs20,rho0,widthlnrho(j),hh0)
-        case('planet_hc')
+        case ('planet_hc')
 !
 !  Planet solution of Goodman, Narayan & Goldreich (1987).
 !  (3-D with hot corona)
 !
           call planet_hc(amplrho(j),f,eps_planet, &
               radius_lnrho(j), gamma,cs20,rho0,widthlnrho(j))
-        case('Ferriere')
+        case ('Ferriere')
           call information('init_lnrho','Ferriere set in entropy')
-        case('Galactic-hs')
+        case ('Galactic-hs')
           call information('init_lnrho', &
               'Galactic hydrostatic equilibrium setup done in entropy')
-        case('geo-kws')
+        case ('geo-kws')
 !
 !  Radial hydrostatic profile in shell region only.
 !
           call information('init_lnrho', &
               'kws hydrostatic in spherical shell region')
           call shell_lnrho(f)
-        case('geo-kws-constant-T','geo-benchmark')
+        case ('geo-kws-constant-T','geo-benchmark')
 !
 !  Radial hydrostatic profile throughout box, which is consistent
 !  with constant temperature in exterior regions, and gives continuous
@@ -816,7 +816,7 @@ module Density
         case ('step_xz')
           call fatal_error('init_lnrho','neutron_star initial condition '// &
               'is now in the special/neutron_star.f90 code')
-        case('jeans-wave-x')
+        case ('jeans-wave-x')
 !
 !  Soundwave + self gravity.
 !
@@ -838,7 +838,7 @@ module Density
               f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + 0.0
             endif
           enddo; enddo
-        case('jeans-wave-oblique')
+        case ('jeans-wave-oblique')
 !
 !  Soundwave + self gravity.
 !
@@ -866,7 +866,7 @@ module Density
                 sin(kz_lnrho(j)*z(n)+complex_phase(omega_jeans*ampllnrho(j)))
           enddo; enddo
 !
-        case('toomre-wave-x')
+        case ('toomre-wave-x')
 !
 !  Soundwave + self gravity + (differential) rotation.
 !
@@ -891,14 +891,14 @@ module Density
 !
 !  initial condition for 1-D anelastic problems
 !
-        case('-ln(1+u2/2cs02)')
+        case ('-ln(1+u2/2cs02)')
           f(:,:,:,ilnrho) = -alog(1. &
             +(f(:,:,:,iux)**2+f(:,:,:,iuy)**2+f(:,:,:,iuz)**2)/(2.*cs0**2))
 !
-        case('compressive-shwave')
+        case ('compressive-shwave')
 !  Should be consistent with density 
           f(:,:,:,ilnrho) = log(rho_const + f(:,:,:,ilnrho))
-        case('anelastic')
+        case ('anelastic')
           haut=-cs20/gravz
           do n=n1,n2
             f(:,:,n,ipp) = exp(-z(n)/haut)
@@ -1467,9 +1467,9 @@ module Density
       real, dimension(nx) :: f_target
       type (pencil_case)  :: p
 !
-      select case(borderlnrho)
+      select case (borderlnrho)
 !
-      case('zero','0')
+      case ('zero','0')
         if (plaw.ne.0) call stop_it("borderlnrho: density is not flat but "//&
              "you are calling zero border")
         if (ldensity_nolog) then  
@@ -1478,7 +1478,7 @@ module Density
           f_target=1.
         endif
 !
-      case('constant')
+      case ('constant')
         if (plaw.ne.0) call stop_it("borderlnrho: density is not flat but "//&
              "you are calling constant border")
         if (ldensity_nolog) then 
@@ -1487,10 +1487,10 @@ module Density
           f_target=lnrho_const
         endif
 !
-      case('initial-condition')
+      case ('initial-condition')
         call set_border_initcond(f,ilnrho,f_target)
 !
-      case('nothing')
+      case ('nothing')
         if (lroot.and.ip<=5) &
             print*,"set_border_lnrho: borderlnrho='nothing'"
 !

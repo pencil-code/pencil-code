@@ -148,13 +148,13 @@ module Entropy
       lnothing = .false.
 !
       select case (iheatcond)
-        case('K-const')
+        case ('K-const')
           lheatc_Kconst=.true.
           call information('initialize_TT', &
           ' heat conduction: K=cst --> gamma*K/(rho*cp)*lapl(T)')
           if (initlnTT(1).ne.'rad_equil') &
             Fbot=gamma/(gamma-1.)*hcond0*g0/(mpoly0+1.)
-        case('K-profile')
+        case ('K-profile')
           lheatc_Kprof=.true.
 ! 
 !  TODO..... ailleurs !
@@ -162,10 +162,10 @@ module Entropy
           hcond1=(mpoly1+1.)/(mpoly0+1.)
           Fbot=gamma/(gamma-1.)*hcond0*g0/(mpoly0+1.)
           call information('initialize_entropy',' heat conduction: K=K(r)')
-        case('K-arctan')
+        case ('K-arctan')
           lheatc_Karctan=.true.         
           call information('initialize_entropy',' heat conduction: arctan profile')
-        case('chi-const')
+        case ('chi-const')
           lheatc_chiconst=.true.
           call information('initialize_entropy',' heat conduction: constant chi')
         case ('nothing')
@@ -244,19 +244,19 @@ module Entropy
 !
 !  select different initial conditions
 !
-          select case(initlnTT(j))
-          case('zero', '0'); f(:,:,:,ilnTT) = 0.
-          case('const_lnTT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+lnTT_const
-          case('const_TT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+log(TT_const)
-          case('single_polytrope'); call single_polytrope(f)
-          case('rad_equil')
+          select case (initlnTT(j))
+          case ('zero', '0'); f(:,:,:,ilnTT) = 0.
+          case ('const_lnTT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+lnTT_const
+          case ('const_TT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+log(TT_const)
+          case ('single_polytrope'); call single_polytrope(f)
+          case ('rad_equil')
             call rad_equil(f)
             if (ampl_lnTT.ne.0.) then
               print*,'add a bubble with:',ampl_lnTT,radius_lnTT,center1_x,center1_y,center1_z
               call blob(ampl_lnTT,f,ilnTT,radius_lnTT,center1_x,center1_y,center1_z)
               call blob(-ampl_lnTT,f,ilnrho,radius_lnTT,center1_x,center1_y,center1_z)
             endif
-          case('bubble_hs')
+          case ('bubble_hs')
 !         print*,'init_lnTT: put bubble in hydrostatic equilibrium: radius_lnTT,ampl_lnTT=',radius_lnTT,ampl_lnTT,center1_x,center1_y,center1_z
             call blob(ampl_lnTT,f,ilnTT,radius_lnTT,center1_x,center1_y,center1_z)
             call blob(-ampl_lnTT,f,ilnrho,radius_lnTT,center1_x,center1_y,center1_z)

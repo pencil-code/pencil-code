@@ -378,7 +378,7 @@ module Radiation
 !
       real :: xyplane,yzplane,xzplane,room,xaxis,yaxis,zaxis,aspect_ratio,mu2
 !
-      select case(angle_weight) 
+      select case (angle_weight) 
 !
       case ('constant') 
         if (ndir>0) weight=4*pi/ndir
@@ -1461,7 +1461,7 @@ module Radiation
 
       select case (source_function_type(inu))
 
-      case('Planck')
+      case ('Planck')
         nu=nufreq(inu)
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady

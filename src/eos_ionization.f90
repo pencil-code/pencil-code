@@ -1363,12 +1363,12 @@ module EquationOfState
       if (ierr/=0) call stop_it("bc_ss_flux: "//&
            "there was a problem when getting lheatc_chiconst")
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !  ---------------
 !
-      case('bot')
+      case ('bot')
         if (lmultilayer) then
           if (headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
         else
@@ -1403,7 +1403,7 @@ module EquationOfState
 !  top boundary
 !  ------------
 !
-      case('top')
+      case ('top')
         if (lmultilayer) then
           if (headtt) print*,'bc_ss_flux: Ftop,hcond=',Ftop,hcond0*hcond1
         else
@@ -1648,11 +1648,11 @@ module EquationOfState
 !
 !  check whether we want to do top or bottom (this is processor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !
-      case('bot')
+      case ('bot')
         do i=1,nghost
           f(:,:,n1-i,ilnTT) = f(:,:,n1+i,ilnTT)
         enddo
@@ -1685,7 +1685,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case('top')
+      case ('top')
         do i=1,nghost
           f(:,:,n2+i,ilnTT) = f(:,:,n2-i,ilnTT)
         enddo

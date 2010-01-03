@@ -109,12 +109,12 @@ module Particles_number
 !
       do j=1,ninit
 
-        select case(initnptilde(j))
+        select case (initnptilde(j))
 
-        case('nothing')
+        case ('nothing')
           if (lroot.and.j==1) print*, 'init_particles_number: nothing'
 
-        case('constant')
+        case ('constant')
           if (lroot) then
             print*, 'init_particles_number: constant internal number'
             print*, 'init_particles_number: np_tilde0=', np_tilde0

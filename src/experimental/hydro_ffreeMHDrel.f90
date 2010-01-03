@@ -135,24 +135,24 @@ module Hydro
 !
 !  inituu corresponds to different initializations of uu (called from start).
 !
-      select case(inituu)
+      select case (inituu)
 
-      case('zero', '0'); if (lroot) print*,'init_uu: zero velocity'
-      case('gaussian-noise'); call gaunoise(ampluu,f,iux,iuz)
-      case('gaussian-noise-x'); call gaunoise(ampluu,f,iux,iux)
-      case('xjump'); call jump(f,iux,uu_left,uu_right,widthuu,'x')
+      case ('zero', '0'); if (lroot) print*,'init_uu: zero velocity'
+      case ('gaussian-noise'); call gaunoise(ampluu,f,iux,iuz)
+      case ('gaussian-noise-x'); call gaunoise(ampluu,f,iux,iux)
+      case ('xjump'); call jump(f,iux,uu_left,uu_right,widthuu,'x')
                      call jump(f,iuy,uy_left,uy_right,widthuu,'x')
-      case('Beltrami-x'); call beltrami(ampluu,f,iuu,KX=1.)
-      case('Beltrami-y'); call beltrami(ampluu,f,iuu,KY=1.)
-      case('Beltrami-z'); call beltrami(ampluu,f,iuu,KZ=1.)
-      case('trilinear-x'); call trilinear(ampluu,f,iux)
-      case('trilinear-y'); call trilinear(ampluu,f,iuy)
-      case('trilinear-z'); call trilinear(ampluu,f,iuz)
-      case('cos-cos-sin-uz'); call cos_cos_sin(ampluu,f,iuz)
-      case('tor_pert'); call tor_pert(ampluu,f,iux)
-      case('diffrot'); call diffrot(ampluu,f,iuy)
+      case ('Beltrami-x'); call beltrami(ampluu,f,iuu,KX=1.)
+      case ('Beltrami-y'); call beltrami(ampluu,f,iuu,KY=1.)
+      case ('Beltrami-z'); call beltrami(ampluu,f,iuu,KZ=1.)
+      case ('trilinear-x'); call trilinear(ampluu,f,iux)
+      case ('trilinear-y'); call trilinear(ampluu,f,iuy)
+      case ('trilinear-z'); call trilinear(ampluu,f,iuz)
+      case ('cos-cos-sin-uz'); call cos_cos_sin(ampluu,f,iuz)
+      case ('tor_pert'); call tor_pert(ampluu,f,iux)
+      case ('diffrot'); call diffrot(ampluu,f,iuy)
 
-      case('sound-wave', '11')
+      case ('sound-wave', '11')
         !
         !  sound wave (should be consistent with density module)
         !
@@ -161,7 +161,7 @@ module Hydro
           f(l1:l2,m,n,iux)=ampluu*sin(kx_uu*x(l1:l2))
         enddo; enddo
 
-      case('sound-wave2')
+      case ('sound-wave2')
         !
         !  sound wave (should be consistent with density module)
         !
@@ -175,7 +175,7 @@ module Hydro
           endif
         enddo; enddo
 
-      case('shock-tube', '13')
+      case ('shock-tube', '13')
 !
 !  shock tube test (should be consistent with density module)
 !
@@ -184,7 +184,7 @@ module Hydro
           f(l1:l2,m,n,iux)=uu_left+(uu_right-uu_left)*0.5*(1.+tanh(x(l1:l2)/widthuu))
         enddo; enddo
 
-      case('bullets')
+      case ('bullets')
 !
 !  blob-like velocity perturbations (bullets)
 !
@@ -193,7 +193,7 @@ module Hydro
           f(l1:l2,m,n,iuz)=f(l1:l2,m,n,iuz)-ampluu*exp(-(x(l1:l2)**2+y(m)**2+z(n)**2)/widthuu)
         enddo; enddo
 
-      case('Alfven-circ-x')
+      case ('Alfven-circ-x')
 !
 !  circularly polarised Alfven wave in x direction
 !
@@ -203,28 +203,28 @@ module Hydro
           f(l1:l2,m,n,iuz) = ampluu*cos(kx_uu*x(l1:l2))
         enddo; enddo
 
-      case('const-ux')
+      case ('const-ux')
 !
 !  constant x-velocity
 !
         if (lroot) print*,'init_uu: constant x-velocity'
         f(:,:,:,iux) = ampluu
 
-      case('const-uy')
+      case ('const-uy')
 !
 !  constant y-velocity
 !
         if (lroot) print*,'init_uu: constant y-velocity'
         f(:,:,:,iuy) = ampluu
 
-      case('const-uz')
+      case ('const-uz')
 !
 !  constant z-velocity
 !
         if (lroot) print*,'init_uu: constant z-velocity'
         f(:,:,:,iuz) = ampluu
 
-      case('tang-discont-z')
+      case ('tang-discont-z')
 !
 !  tangential discontinuity: velocity is directed along x,
 !  ux=uu_lower for z<0 and ux=uu_upper for z>0. This can
@@ -245,7 +245,7 @@ module Hydro
           f(l1:l2,m,n,iuz)=f(l1:l2,m,n,iuz)+ampluu*tmp
         enddo; enddo
 
-      case('Fourier-trunc')
+      case ('Fourier-trunc')
 !
 !  truncated simple Fourier series as nontrivial initial profile
 !  for convection. The corresponding stream function is
@@ -266,7 +266,7 @@ module Hydro
           f(l1:l2,m,n,iuy) = tmp*ky_uu/kabs
         enddo; enddo
 
-      case('up-down')
+      case ('up-down')
 !
 !  flow upwards in one spot, downwards in another; not soneloidal
 !

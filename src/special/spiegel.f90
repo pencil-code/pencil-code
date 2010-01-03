@@ -173,8 +173,8 @@ module Special
       intent(inout) :: f
 
 !!
-      select case(initnstar)
-        case('default')
+      select case (initnstar)
+        case ('default')
           if (lroot) print*,'init_special: Default neutron star setup'
           call density_init(f)
           call entropy_init(f)

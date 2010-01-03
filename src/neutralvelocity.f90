@@ -237,25 +237,25 @@ module NeutralVelocity
 !
       do j=1,ninit
 
-        select case(inituun(j))
+        select case (inituun(j))
 
-        case('nothing'); if (lroot .and. j==1) print*,'init_uun: nothing'
-        case('zero', '0')
+        case ('nothing'); if (lroot .and. j==1) print*,'init_uun: nothing'
+        case ('zero', '0')
           if (lroot) print*,'init_uu: zero velocity'
           ! Ensure really is zero, as may have used lread_oldsnap
           f(:,:,:,iunx:iunz)=0.
-        case('const_uun'); do i=1,3; f(:,:,:,iuun+i-1) = uun_const(i); enddo
-        case('gaussian-noise'); call gaunoise(ampluun(j),f,iunx,iunz)
-        case('gaussian-noise-x'); call gaunoise(ampluun(j),f,iunx)
-        case('gaussian-noise-y'); call gaunoise(ampluun(j),f,iuny)
-        case('gaussian-noise-z'); call gaunoise(ampluun(j),f,iunz)
-        case('gaussian-noise-xy'); call gaunoise(ampluun(j),f,iunx,iuny)
-        case('sinwave-x'); call sinwave(ampluun(j),f,iunx,kx=kx_uun)
-        case('sinwave-y'); call sinwave(ampluun(j),f,iuny,ky=ky_uun)
-        case('sinwave-z'); call sinwave(ampluun(j),f,iunz,kz=kz_uun)
-        case('gaussian-noise-rprof')
+        case ('const_uun'); do i=1,3; f(:,:,:,iuun+i-1) = uun_const(i); enddo
+        case ('gaussian-noise'); call gaunoise(ampluun(j),f,iunx,iunz)
+        case ('gaussian-noise-x'); call gaunoise(ampluun(j),f,iunx)
+        case ('gaussian-noise-y'); call gaunoise(ampluun(j),f,iuny)
+        case ('gaussian-noise-z'); call gaunoise(ampluun(j),f,iunz)
+        case ('gaussian-noise-xy'); call gaunoise(ampluun(j),f,iunx,iuny)
+        case ('sinwave-x'); call sinwave(ampluun(j),f,iunx,kx=kx_uun)
+        case ('sinwave-y'); call sinwave(ampluun(j),f,iuny,ky=ky_uun)
+        case ('sinwave-z'); call sinwave(ampluun(j),f,iunz,kz=kz_uun)
+        case ('gaussian-noise-rprof')
           call gaunoise_rprof(ampluun(j),f,iunx,iunz)
-        case('follow-ions'); f(:,:,:,iunx:iunz)=f(:,:,:,iux:iuz)  
+        case ('follow-ions'); f(:,:,:,iunx:iunz)=f(:,:,:,iux:iuz)  
         case default
           !
           !  Catch unknown values
@@ -715,20 +715,20 @@ module NeutralVelocity
 ! (like a corona, no neutralvelocitystatic equilibrium)
 !
 
-      select case(borderuun)
-      case('zero','0')
+      select case (borderuun)
+      case ('zero','0')
          f_target=0.
-      case('constant')
+      case ('constant')
          do j=1,3
             f_target(:,j) = uun_const(j)
          enddo
-      case('globaldisc')
+      case ('globaldisc')
          tmp = max(p%rcyl_mn**(-3) - ptlaw*cs20/p%rcyl_mn**(ptlaw+2),0.)
          OO = sqrt(tmp)
          f_target(:,1) = -y(  m  )*OO
          f_target(:,2) =  x(l1:l2)*OO
          f_target(:,3) =  0.
-      case('globaldisc-strat')
+      case ('globaldisc-strat')
          tmp = g0*(p%r_mn**(-3) - cs20*p%rcyl_mn**(-4))
          !this is also wrong!
          where (tmp.ge.0)
@@ -739,9 +739,9 @@ module NeutralVelocity
          f_target(:,1) = -y(  m  )*OO
          f_target(:,2) =  x(l1:l2)*OO
          f_target(:,3) =  0.
-      !case('initial-condition')
+      !case ('initial-condition')
       !   f_target=f(l1:l2,mcount,ncount,iunx:iunz)
-      case('nothing')
+      case ('nothing')
          if (lroot.and.ip<=5) &
               print*,"set_border_neutralvelocity: borderuu='nothing'"
       case default
@@ -788,7 +788,7 @@ module NeutralVelocity
       do j=1,ninit
          select case (iviscn(j))
 !
-         case('rhon_nun-const') 
+         case ('rhon_nun-const') 
 !
 !  viscous force: mu/rho*(del2u+graddivu/3)
 !  -- the correct expression for rho*nu=const
@@ -801,7 +801,7 @@ module NeutralVelocity
             !if (lpencil(i_visc_heat)) visc_heat=visc_heat + 2*nun*p%snij2*p%rhon1
             if (lfirst.and.ldt) diffus_nun=diffus_nun+munrhon1*dxyz_2
 
-         case('nun-const')
+         case ('nun-const')
 !
 !  viscous force: nu*(del2u+graddivu/3+2S.glnrho)
 !  -- the correct expression for nu=const
@@ -817,7 +817,7 @@ module NeutralVelocity
         !if (lpencil(i_visc_heat)) visc_heat=visc_heat + 2*nun*p%snij2
             if (lfirst.and.ldt) diffus_nun=diffus_nun+nun*dxyz_2
 !
-         case('hyper3_nun-const')
+         case ('hyper3_nun-const')
 !
 !  Viscous force: nun*(del6un+Sn.glnrhon), where Sn_ij=d^5 un_i/dx_j^5
 !
@@ -827,7 +827,7 @@ module NeutralVelocity
             fvisc = fvisc + nun_hyper3*(p%del6un+unij5glnrhon)
             if (lfirst.and.ldt) diffus_nun3=diffus_nun3+nun_hyper3*dxyz_6
 !
-         case('hyper3-cyl','hyper3_cyl','hyper3-sph','hyper3_sph')
+         case ('hyper3-cyl','hyper3_cyl','hyper3-sph','hyper3_sph')
 !
 !  Viscous force: anysotropic hyperviscosity
 !
@@ -841,7 +841,7 @@ module NeutralVelocity
                   diffus_nun3=diffus_nun3+nun_hyper3*pi4_1*dxyz_2
            enddo
 !
-     !    case('shock','nun-shock')
+     !    case ('shock','nun-shock')
      !      if (.not. lshock) &
      !           call stop_it('calc_viscous_force_neutral: shock viscosity'// &
      !           ' but module setting SHOCK=noshock')

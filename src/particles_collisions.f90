@@ -54,7 +54,7 @@ module Particles_collisions
 !
       integer :: ierr
 !
-      select case(icoll)
+      select case (icoll)
       case ('random-angle'); lcollision_random_angle=.true.
       case ('big-ball');     lcollision_big_ball=.true.
       case default

@@ -326,8 +326,8 @@ module Timestep
 !          print*,df(l1:l2,m,n,j)," (",err,")"
           ! Get the maximum error over the whole field
           !
-          select case(timestep_scaling(j))
-          case('per_var_err')
+          select case (timestep_scaling(j))
+          case ('per_var_err')
             !
             ! Per variable error
             !
@@ -339,19 +339,19 @@ module Timestep
             !scal=  ( &
             !     abs(f(l1:l2,m,n,j))  + abs(k(l1:l2,m,n,j,1)) + 1e-30)
             !errmaxs = max(maxval(abs(err/scal)),errmaxs)
-          case('cons_frac_err')
+          case ('cons_frac_err')
             !
             ! Constant fractional error
             !
             errmaxs = max(maxval(abs(err/f(l1:l2,m,n,j))),errmaxs)
-          case('cons_err')
+          case ('cons_err')
             !
             ! Constant error
             !
             !scal = abs(f(l1:l2,m,n,j))+abs(df(l1:l2,m,n,j)*dt)+1e-30!tiny(0.)
             errmaxs = max(maxval(abs(err/fscal(l1:l2,m,n,j))),errmaxs)
             !
-          case('none')
+          case ('none')
             !
             ! No error check
             !

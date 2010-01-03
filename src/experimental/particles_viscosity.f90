@@ -89,10 +89,10 @@ module Particles_viscosity
         case ('simplified', '0')
           if (lroot) print*,'particle viscosity: nup*del2v'
           lviscp_simplified=.true.
-        case('rhop_nup-const', '1')
+        case ('rhop_nup-const', '1')
           if (lroot) print*,'particle viscosity: mup/rhop*(del2v+graddivv/3)'
           lviscp_rhop_nup_const=.true.
-        case('nup-const')
+        case ('nup-const')
           if (lroot) &
               print*,'particle viscosity: nup*(del2v+graddivv/3+2S.glnrhop)'
           lviscp_nup_const=.true.

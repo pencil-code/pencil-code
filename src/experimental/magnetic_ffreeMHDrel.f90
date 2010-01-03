@@ -146,10 +146,10 @@ module Magnetic
       kx_aa=k_aa(1)
       ky_aa=k_aa(2)
       kz_aa=k_aa(3)
-      select case(initaa)
+      select case (initaa)
 
-      case('zero'); f(:,:,:,iax:iaz) = 0.
-      case('wave')
+      case ('zero'); f(:,:,:,iax:iaz) = 0.
+      case ('wave')
 !
 !  wave
 !
@@ -182,7 +182,7 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
           enddo
         enddo; enddo
         !
-      case('current')
+      case ('current')
 !
 !  wave
 !
@@ -817,10 +817,10 @@ if (ip<3.and.m==4.and.n==4) write(61) divE,BdivS,CxE,curlBxB,curlE,curlExE,divEE
 !
       character (len=3) :: topbot
 !
-      select case(topbot)
-      case('bot')               ! bottom boundary
+      select case (topbot)
+      case ('bot')               ! bottom boundary
         lfrozen_bz_z_bot = .true.    ! set flag
-      case('top')               ! top boundary
+      case ('top')               ! top boundary
         lfrozen_bz_z_top = .true.    ! set flag
       case default
         print*, "bc_frozen_in_bb_z: ", topbot, " should be `top' or `bot'"
@@ -846,11 +846,11 @@ if (ip<3.and.m==4.and.n==4) write(61) divE,BdivS,CxE,curlBxB,curlE,curlExE,divEE
 !  potential field condition
 !  check whether we want to do top or bottom (this is precessor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  potential field condition at the bottom
 !
-      case('bot')
+      case ('bot')
         if (headtt) print*,'bc_aa_pot: potential field boundary condition at the bottom'
         if (nprocy/=1) &
              call stop_it("bc_aa_pot: potential field doesn't work yet with nprocy/=1")
@@ -868,7 +868,7 @@ if (ip<3.and.m==4.and.n==4) write(61) divE,BdivS,CxE,curlBxB,curlE,curlExE,divEE
 !
 !  potential field condition at the top
 !
-      case('top')
+      case ('top')
         if (headtt) print*,'bc_aa_pot: potential field boundary condition at the top'
         if (nprocy/=1) &
              call stop_it("bc_aa_pot: potential field doesn't work yet with nprocy/=1")

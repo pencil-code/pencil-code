@@ -206,11 +206,11 @@ module Entropy
 !
       do i=1,nheatc_max
       select case (iheatcond(i))
-        case('K-const')
+        case ('K-const')
           lheatc_Kconst=.true.
           if (lroot) call information('initialize_entropy', &
           ' heat conduction: K=cst --> gamma*K/rho/TT/cp*div(T*grad lnTT)')
-        case('K-profile')
+        case ('K-profile')
           lheatc_Kprof=.true.
 ! 
 !  11-Aug-2008/dintrans: better somewhere else?
@@ -218,12 +218,12 @@ module Entropy
           hcond1=(mpoly1+1.)/(mpoly0+1.)
           Fbot=-gamma/(gamma-1.)*hcond0*g0/(mpoly0+1.)
           if (lroot) call information('initialize_entropy',' heat conduction: K=K(r)')
-        case('K-arctan')
+        case ('K-arctan')
           lheatc_Karctan=.true.         
           if (.not. ltemperature_nolog) &
             call fatal_error('calc_heatcond_arctan','only valid for TT')
           if (lroot) call information('initialize_entropy',' heat conduction: arctan profile')
-        case('chi-const')
+        case ('chi-const')
           lheatc_chiconst=.true.
           if (lroot) call information('initialize_entropy',' heat conduction: constant chi')
         case ('chi-hyper3')
@@ -392,16 +392,16 @@ module Entropy
 !
 !  select different initial conditions
 !
-          select case(initlnTT(j))
-          case('zero', '0'); f(:,:,:,ilnTT) = 0.
+          select case (initlnTT(j))
+          case ('zero', '0'); f(:,:,:,ilnTT) = 0.
 !
-          case('const_lnTT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+lnTT_const
+          case ('const_lnTT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+lnTT_const
 !
-          case('const_TT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+log(TT_const)
+          case ('const_TT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+log(TT_const)
 !
-          case('single_polytrope'); call single_polytrope(f)
+          case ('single_polytrope'); call single_polytrope(f)
 !
-          case('gaussian')
+          case ('gaussian')
             do n=n1,n2
               f(l1:l2,4,n,ilnTT)=exp(-(x(l1:l2)/radius_lnTT)**2)* &
                   exp(-((z(n)-0.5)/radius_lnTT)**2)
@@ -409,16 +409,16 @@ module Entropy
             cs2bot=gamma_m1*f(l1,4,n1,ilnTT)
             cs2top=gamma_m1*f(l1,4,n2,ilnTT)
 !
-          case('rad_equil')
+          case ('rad_equil')
             call rad_equil(f)
 !
-          case('blob_hs')
+          case ('blob_hs')
             if (lroot) print*, 'init_lnTT: hydrostatic blob with ', &
                 radius_lnTT, ampl_lnTT, center1_x, center1_y, center1_z
             call blob(ampl_lnTT,f,ilnTT,radius_lnTT,center1_x,center1_y,center1_z)
             call blob(-ampl_lnTT,f,ilnrho,radius_lnTT,center1_x,center1_y,center1_z)
 !
-          case('isothermal')
+          case ('isothermal')
             if (lroot) print*, 'init_lnTT: isothermal atmosphere'
             if (ltemperature_nolog) then
               f(:,:,:,iTT)  =cs20/gamma_m1
@@ -430,7 +430,7 @@ module Entropy
               f(:,:,n,ilnrho)=lnrho0+(1.-z(n))/haut
             enddo
 !
-          case('hydro_rad')
+          case ('hydro_rad')
             if (lroot) print*, 'init_lnTT: hydrostatic+radiative equilibria'
             if (Fbot==impossible .or. hcond0==impossible) &
                 call stop_it("initialize_lnTT: Fbot or hcond0 not initialized")
@@ -1519,11 +1519,11 @@ module Entropy
         rhsz(nz)=cs2top/gamma_m1
         select case (bcz1(ilnTT))
           ! Constant temperature at the bottom
-          case('cT')
+          case ('cT')
             bz(1)=1.  ; cz(1)=0. 
             rhsz(1)=cs2bot/gamma_m1
           ! Constant flux at the bottom
-          case('c1')
+          case ('c1')
 !           bz(1)=1.   ; cz(1)=-1
 !           rhsz(1)=dz*Fbot/hcond0
 ! we can use here the second-order relation for the first derivative: 
@@ -1648,11 +1648,11 @@ module Entropy
 ! bottom
        select case (bcz1(ilnTT))
 ! Constant temperature at the bottom: T^(n+1)-T^n=0
-         case('cT')
+         case ('cT')
           bz(1)=1. ; cz(1)=0.
           rhsz(1)=0.
 ! Constant flux at the bottom
-         case('c3')
+         case ('c3')
           bz(1)=1. ; cz(1)=-1.
           rhsz(1)=0.
          case default 
@@ -1744,9 +1744,9 @@ module Entropy
 ! bottom bondary condition z=z(n1): constant T or imposed flux dT/dz
 !
       select case (bcz1(ilnTT))
-        case('cT') ! constant temperature
+        case ('cT') ! constant temperature
           f_2d(:,n1-1)=2.*f_2d(:,n1)-f_2d(:,n1+1)
-        case('c3') ! constant flux
+        case ('c3') ! constant flux
           if (.not. present(hcond)) then
             f_2d(:,n1-1)=f_2d(:,n1+1)+2.*dz*Fbot/hcond0
           else 
@@ -2045,11 +2045,11 @@ module Entropy
         rhsz(nzgrid)=cs2top/gamma_m1
         select case (bcz1(ilnTT))
           ! Constant temperature at the bottom
-          case('cT')
+          case ('cT')
             bz(1)=1.  ; cz(1)=0. 
             rhsz(1)=cs2bot/gamma_m1
           ! Constant flux at the bottom
-          case('c1')
+          case ('c1')
 !           bz(1)=1.   ; cz(1)=-1
 !           rhsz(1)=dz*Fbot/hcond0
 ! we can use here the second-order relation for the first derivative: 

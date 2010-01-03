@@ -183,14 +183,14 @@ module Viscosity
 !
       call multm2(sij,sij2)
 !
-      select case(ivisc)
+      select case (ivisc)
        case ('simplified', '0')
          if (headtt) print*,'no heating: ivisc=',ivisc
          heat=0.
-       case('rho_nu-const', '1')
+       case ('rho_nu-const', '1')
          if (headtt) print*,'viscous heating: ivisc=',ivisc
          heat=2.*nu*sij2*rho1
-       case('nu-const', '2')
+       case ('nu-const', '2')
          if (headtt) print*,'viscous heating: ivisc=',ivisc
          heat=2.*nu*sij2
        case default
@@ -232,7 +232,7 @@ module Viscosity
 
         select case (ivisc)
 
-        case('nu-const')
+        case ('nu-const')
           !
           !  viscous force: nu*(del2u+graddivu/3+2S.glnrho)
           !  -- the correct expression for nu=const
@@ -248,7 +248,7 @@ module Viscosity
                  print*,"ldensity better be .true. for ivisc='nu-const'"
           endif
 
-        case('nu-DJO')
+        case ('nu-DJO')
          !  Ditlevsen, Jensen, and Olesen (Phys Rev Lett) show that
          !  E=k^q*psi((t*k^(3+q)/2),nu t^{-(1-q)/(3+q)}), t_code=t-t0
          !  Viscosity is choosen here such that second argument remains constant
@@ -287,7 +287,7 @@ module Viscosity
                  print*,"ldensity better be .true. for ivisc=",ivisc
           endif
 
-        case('nu-DJO-nobulk')
+        case ('nu-DJO-nobulk')
 
          b = - (1.-q_DJO)/(3.+q_DJO)
           if (t.lt.ti_DJO) then

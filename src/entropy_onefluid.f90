@@ -138,10 +138,10 @@ module Entropy
       if (lroot) print*,'initialize_entropy: nheatc_max,iheatcond=',nheatc_max,iheatcond(1:nheatc_max)
       do i=1,nheatc_max
         select case (iheatcond(i))
-        case('simple')
+        case ('simple')
           lheatc_simple=.true.
           if (lroot) print*, 'heat conduction: simple'
-        case('chi-const')
+        case ('chi-const')
           lheatc_chiconst=.true.
           if (lroot) print*, 'heat conduction: constant chi'
         case ('shock')
@@ -264,12 +264,12 @@ module Entropy
 !
 !  select different initial conditions
 !
-          select case(initss(j))
+          select case (initss(j))
 
-            case('zero', '0'); f(:,:,:,iss) = 0.
-            case('const_ss'); f(:,:,:,iss)=f(:,:,:,iss)+ss_const
-            case('isothermal'); call isothermal_entropy(f,T0)
-            case('isothermal_lnrho_ss')
+            case ('zero', '0'); f(:,:,:,iss) = 0.
+            case ('const_ss'); f(:,:,:,iss)=f(:,:,:,iss)+ss_const
+            case ('isothermal'); call isothermal_entropy(f,T0)
+            case ('isothermal_lnrho_ss')
               print*, 'init_ss: Isothermal density and entropy stratification'
               call isothermal_lnrho_ss(f,T0,rho0)
             case default

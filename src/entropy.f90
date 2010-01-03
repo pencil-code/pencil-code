@@ -446,8 +446,8 @@ module Entropy
 
 !   make sure all relevant parameters are set for spherical shell problems
 !
-      select case(initss(1))
-        case('geo-kws','geo-benchmark','shell_layers')
+      select case (initss(1))
+        case ('geo-kws','geo-benchmark','shell_layers')
           if (lroot) then
             print*,'initialize_entropy: set boundary temperatures for spherical shell problem'
           endif
@@ -497,7 +497,7 @@ module Entropy
             print*,'initialize_entropy: cs2_ext, cs2_int=',cs2_ext, cs2_int
           endif
 !
-        case('star_heat')
+        case ('star_heat')
           if (hcond1==impossible) hcond1=(mpoly1+1.)/(mpoly0+1.)
           if (hcond2==impossible) hcond2=(mpoly2+1.)/(mpoly0+1.)
           if (lroot) print*,'initialize_entropy: set cs2cool=cs20'
@@ -507,14 +507,14 @@ module Entropy
           ! only compute the gravity profile
           call star_heat(f,lcompute_grav)
 
-        case('cylind_layers')
+        case ('cylind_layers')
           if (bcx1(iss)=='c1') then
             Fbot=gamma/gamma_m1*hcond0*g0/(mpoly0+1)
             FbotKbot=gamma/gamma_m1*g0/(mpoly0+1)
           endif
           cs2cool=cs2top
 
-        case('single_polytrope')
+        case ('single_polytrope')
           if (cool/=0.) cs2cool=cs0**2
           mpoly=mpoly0  ! needed to compute Fbot when bc=c1 (L383)
 
@@ -559,13 +559,13 @@ module Entropy
       if (lroot) print*,'initialize_entropy: nheatc_max,iheatcond=',nheatc_max,iheatcond(1:nheatc_max)
       do i=1,nheatc_max
         select case (iheatcond(i))
-        case('K-profile')
+        case ('K-profile')
           lheatc_Kprof=.true.
           if (lroot) print*, 'heat conduction: K-profile'
-        case('K-const')
+        case ('K-const')
           lheatc_Kconst=.true.
           if (lroot) print*, 'heat conduction: K=cte'
-        case('chi-const')
+        case ('chi-const')
           lheatc_chiconst=.true.
           if (lroot) print*, 'heat conduction: constant chi'
         case ('tensor-diffusion')
@@ -800,53 +800,53 @@ module Entropy
 !
 !  select different initial conditions
 !
-        select case(initss(j))
+        select case (initss(j))
  
-          case('zero', '0'); f(:,:,:,iss) = 0.
-          case('const_ss'); f(:,:,:,iss)=f(:,:,:,iss)+ss_const
-          case('gaussian-noise'); call gaunoise(ampl_ss,f,iss,iss)
-          case('blob')
+          case ('zero', '0'); f(:,:,:,iss) = 0.
+          case ('const_ss'); f(:,:,:,iss)=f(:,:,:,iss)+ss_const
+          case ('gaussian-noise'); call gaunoise(ampl_ss,f,iss,iss)
+          case ('blob')
             call blob(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
-          case('blob_radeq')
+          case ('blob_radeq')
             call blob_radeq(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
-          case('isothermal'); call isothermal_entropy(f,T0)
-          case('isothermal_lnrho_ss')
+          case ('isothermal'); call isothermal_entropy(f,T0)
+          case ('isothermal_lnrho_ss')
             print*, 'init_ss: Isothermal density and entropy stratification'
             call isothermal_lnrho_ss(f,T0,rho0)
-          case('hydrostatic-isentropic')
+          case ('hydrostatic-isentropic')
             call hydrostatic_isentropic(f,lnrho_bot,ss_const)
-          case('wave')
+          case ('wave')
             do n=n1,n2; do m=m1,m2
               f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+ss_const+ampl_ss*sin(kx_ss*x(l1:l2)+pi)
             enddo; enddo
-          case('Ferriere'); call ferriere(f)
-          case('Galactic-hs'); call galactic_hs(f,rho0hs,cs0hs,H0hs)
-          case('xjump'); call jump(f,iss,ss_left,ss_right,widthss,'x')
-          case('yjump'); call jump(f,iss,ss_left,ss_right,widthss,'y')
-          case('zjump'); call jump(f,iss,ss_left,ss_right,widthss,'z')
-        case('sinxsinz'); call sinxsinz(ampl_ss,f,iss,kx_ss,ky_ss,kz_ss)
-          case('hor-fluxtube')
+          case ('Ferriere'); call ferriere(f)
+          case ('Galactic-hs'); call galactic_hs(f,rho0hs,cs0hs,H0hs)
+          case ('xjump'); call jump(f,iss,ss_left,ss_right,widthss,'x')
+          case ('yjump'); call jump(f,iss,ss_left,ss_right,widthss,'y')
+          case ('zjump'); call jump(f,iss,ss_left,ss_right,widthss,'z')
+        case ('sinxsinz'); call sinxsinz(ampl_ss,f,iss,kx_ss,ky_ss,kz_ss)
+          case ('hor-fluxtube')
             call htube(ampl_ss,f,iss,iss,radius_ss,epsilon_ss,center1_x,center1_z)
-          case('hor-tube')
+          case ('hor-tube')
             call htube2(ampl_ss,f,iss,iss,radius_ss,epsilon_ss)
-          case('mixinglength')
+          case ('mixinglength')
              call mixinglength(mixinglength_flux,f)
              if (ampl_ss/=0.0) &
                  call blob(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
              hcond0=-gamma/(gamma-1)*gravz/(mpoly0+1)/mixinglength_flux
              print*,'init_ss: Fbot, hcond0=', Fbot, hcond0
-          case('sedov')
+          case ('sedov')
             if (lroot) print*,'init_ss: sedov - thermal background with gaussian energy burst'
           call blob(thermal_peak,f,iss,radius_ss,center1_x,center1_y,center1_z)
 !  f(:,:,:,iss) = f(:,:,:,iss) + (log(f(:,:,:,iss) + thermal_background)+log(thermal_scaling))/gamma
-          case('sedov-dual')
+          case ('sedov-dual')
             if (lroot) print*,'init_ss: sedov - thermal background with gaussian energy burst'
           call blob(thermal_peak,f,iss,radius_ss,center1_x,center1_y,center1_z)
           call blob(thermal_peak,f,iss,radius_ss,center2_x,center2_y,center2_z)
 !  f(:,:,:,iss) = (log(f(:,:,:,iss) + thermal_background)+log(thermal_scaling))/gamma
-          case('shock2d')
+          case ('shock2d')
             call shock2d(f)
-          case('isobaric')
+          case ('isobaric')
 !
 !  ss = - ln(rho/rho0)
 !
@@ -861,7 +861,7 @@ module Entropy
                 f(l1:l2,m,n,iss)=ss
               enddo; enddo
             endif
-          case('isentropic', '1')
+          case ('isentropic', '1')
 !
 !  ss = const.
 !
@@ -874,7 +874,7 @@ module Entropy
                 f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+ampl_ss*exp(-tmp/max(radius_ss**2-tmp,1e-20))
               enddo; enddo
             endif
-          case('linprof', '2')
+          case ('linprof', '2')
 !
 !  Linear profile of ss, centered around ss=0.
 !
@@ -882,7 +882,7 @@ module Entropy
             do n=n1,n2; do m=m1,m2
               f(l1:l2,m,n,iss) = grads0*z(n)
             enddo; enddo
-          case('isentropic-star')
+          case ('isentropic-star')
 !
 !  Isentropic/isothermal hydrostatic sphere"
 !    ss  = 0       for r<R,
@@ -928,7 +928,7 @@ module Entropy
                 endif
               enddo; enddo
             endif
-          case('piecew-poly', '4')
+          case ('piecew-poly', '4')
 !
 !  Piecewise polytropic convection setup.
 !  cs0, rho0 and ss0=0 refer to height z=zref
@@ -956,7 +956,7 @@ module Entropy
             call polytropic_ss_z(f,mpoly0,z2,z1,z2,0,cs2int,ssint)
 !  Stable layer.
             call polytropic_ss_z(f,mpoly1,z1,z0,z1,0,cs2int,ssint)
-          case('piecew-disc', '41')
+          case ('piecew-disc', '41')
 !
 !  piecewise polytropic convective disc
 !  cs0, rho0 and ss0=0 refer to height z=zref
@@ -985,7 +985,7 @@ module Entropy
 !  Stable layer (top).
             call polytropic_ss_disc(f,mpoly2,z2,ztop,ztop,&
                                  isothtop,cs2int,ssint)
-          case('polytropic', '5')
+          case ('polytropic', '5')
 !
 !  polytropic stratification
 !  cs0, rho0 and ss0=0 refer to height z=zref
@@ -1033,7 +1033,7 @@ module Entropy
 !  Vertical temperature profiles for convective layer problem.
 !
             call layer_ss(f)
-          case('blob_hs')
+          case ('blob_hs')
             print*,'init_ss: put blob in hydrostatic equilibrium: radius_ss,ampl_ss=',radius_ss,ampl_ss
             call blob(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
             call blob(-ampl_ss,f,ilnrho,radius_ss,center1_x,center1_y,center1_z)
@@ -1072,7 +1072,7 @@ module Entropy
 !
       select case (pertss)
 !
-      case('zero', '0')
+      case ('zero', '0')
 !
 !  Don't perturb
 !
@@ -1521,7 +1521,7 @@ module Entropy
       real, dimension (nx) :: xr,cos_4phi,sin_theta4,r_mn,rcyl_mn,phi_mn
       real, parameter :: ampl0=.885065
 !
-      select case(initss(1))
+      select case (initss(1))
 !
         case ('geo-kws')
           pert_TT=0.
@@ -2399,21 +2399,21 @@ module Entropy
       real, dimension(nx) :: f_target,cs2
       real :: ptlaw,cp1
 !
-      select case(borderss)
+      select case (borderss)
 !
-      case('zero','0')
+      case ('zero','0')
          f_target=0.
-      case('constant')
+      case ('constant')
          f_target=ss_const
-      case('power-law')
+      case ('power-law')
         call get_ptlaw(ptlaw) 
         call get_cp1(cp1)
         call power_law(cs20,p%rcyl_mn,ptlaw,cs2,r_ref)
         f_target=1./(gamma*cp1)*(log(cs2/cs20)-gamma_m1*lnrho0)
          !f_target= gamma_inv*log(cs2_0) !- gamma_m1*gamma_inv*lnrho
-      case('initial-condition')
+      case ('initial-condition')
         call set_border_initcond(f,iss,f_target)
-      case('nothing')
+      case ('nothing')
          if (lroot.and.ip<=5) &
               print*,"set_border_entropy: borderss='nothing'"
       case default
@@ -3169,7 +3169,7 @@ module Entropy
 !
         if (headtt) print*, 'cooling_profile: cooling_profile,z2,wcool=', &
             cooling_profile, z2, wcool
-        select case(cooling_profile)
+        select case (cooling_profile)
         case ('gaussian')
           prof = spread(exp(-0.5*((ztop-z(n))/wcool)**2), 1, l2-l1+1)
         case ('step')
@@ -3216,7 +3216,7 @@ module Entropy
 !
 !  pick type of cooling
 !
-        select case(cooltype)
+        select case (cooltype)
         case ('cs2', 'Temp')    ! cooling to reference temperature cs2cool
           heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
         case ('cs2-rho', 'Temp-rho') ! cool to reference temperature cs2cool
@@ -3278,7 +3278,7 @@ module Entropy
 !
 !  pick type of cooling
 !
-        select case(cooltype)
+        select case (cooltype)
         case ('shell')          !  heating/cooling at shell boundaries
 !
 !  possibility of a latitudinal heating profile

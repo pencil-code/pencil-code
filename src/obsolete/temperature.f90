@@ -145,9 +145,9 @@ module Entropy
 !
       intent(inout) :: f
 !
-      select case(initlnTT)
-        case('nothing'); if (lroot) print*,'init_ss: nothing'
-        case('zero', '0'); f(:,:,:,ilnTT) = 0.
+      select case (initlnTT)
+        case ('nothing'); if (lroot) print*,'init_ss: nothing'
+        case ('zero', '0'); f(:,:,:,ilnTT) = 0.
         case default
           !
           !  Catch unknown values
@@ -536,7 +536,7 @@ endif
         !
         !  pick type of cooling
         !
-        select case(cooltype)
+        select case (cooltype)
         case ('cs2', 'Temp')    ! cooling to reference temperatur cs2cool
           heat = heat - cool*prof*rho1*(cs2-cs2cool)/cs2cool
         case ('entropy')        ! cooling to reference entropy (currently =0)
@@ -745,11 +745,11 @@ endif
 !  Do the `c1' boundary condition (constant heat flux) for entropy.
 !  check whether we want to do top or bottom (this is precessor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !
-      case('strange-bot')
+      case ('strange-bot')
         if (headtt) print*,'bc_ss_flux: hcond0,hcond1=',hcond0,hcond1
         if (bcz1(ilnrho) /= "a2") &
              call stop_it("BOUNDCONDS: Inconsistent boundary conditions 1.")
@@ -768,7 +768,7 @@ endif
 !  bottom boundary
 !  ===============
 !
-      case('bot')
+      case ('bot')
         if (headt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
 !       if (bcz1(ilnrho)/="a2") call stop_it("bc_ss_flux: bad lnrho bc")
 !
@@ -796,7 +796,7 @@ endif
 !  top boundary
 !  ============
 !
-      case('top')
+      case ('top')
         if (headtt) print*,'bc_ss_flux: hcond0=',hcond0
         if (bcz2(ilnrho) /= "a2") &
              call stop_it("BOUNDCONDS: Inconsistent boundary conditions 2.")
@@ -845,11 +845,11 @@ endif
 !
 !  check whether we want to do top or bottom (this is precessor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !
-      case('bot')
+      case ('bot')
         if (ldebug) print*,'set bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
         if (bcz1(ilnrho) /= "a2") &
@@ -863,7 +863,7 @@ endif
 !
 !  top boundary
 !
-      case('top')
+      case ('top')
         if (ldebug) print*,'set top temperature: cs2top=',cs2top
         if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
 !       if (bcz1(ilnrho) /= "a2") &
@@ -905,11 +905,11 @@ endif
 !
 !  check whether we want to do top or bottom (this is precessor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !
-      case('bot')
+      case ('bot')
         if (ldebug) print*,'set x bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
         tmp = 2/gamma*log(cs2bot/cs20)
@@ -921,7 +921,7 @@ endif
 !
 !  top boundary
 !
-      case('top')
+      case ('top')
         if (ldebug) print*,'set x top temperature: cs2top=',cs2top
         if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
         tmp = 2/gamma*log(cs2top/cs20)
@@ -962,11 +962,11 @@ endif
 !
 !  check whether we want to do top or bottom (this is precessor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !
-      case('bot')
+      case ('bot')
         if (ldebug) print*,'set y bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
         tmp = 2/gamma*log(cs2bot/cs20)
@@ -978,7 +978,7 @@ endif
 !
 !  top boundary
 !
-      case('top')
+      case ('top')
         if (ldebug) print*,'set y top temperature: cs2top=',cs2top
         if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
         tmp = 2/gamma*log(cs2top/cs20)
@@ -1019,11 +1019,11 @@ endif
 !
 !  check whether we want to do top or bottom (this is precessor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !
-      case('bot')
+      case ('bot')
         if (ldebug) print*,'set z bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
         tmp = 2/gamma*log(cs2bot/cs20)
@@ -1035,7 +1035,7 @@ endif
 !
 !  top boundary
 !
-      case('top')
+      case ('top')
         if (ldebug) print*,'set z top temperature: cs2top=',cs2top
         if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
         tmp = 2/gamma*log(cs2top/cs20)
@@ -1074,11 +1074,11 @@ endif
 !
 !  check whether we want to do top or bottom (this is precessor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !
-      case('bot')
+      case ('bot')
         if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
         do i=1,nghost
           f(l1-i,:,:,iss) = f(l1+i,:,:,iss) &
@@ -1087,7 +1087,7 @@ endif
 !
 !  top boundary
 !
-      case('top')
+      case ('top')
         if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
         do i=1,nghost
           f(l2+i,:,:,iss) = f(l2-i,:,:,iss) &
@@ -1123,11 +1123,11 @@ endif
 !
 !  check whether we want to do top or bottom (this is precessor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !
-      case('bot')
+      case ('bot')
         if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
         do i=1,nghost
           f(:,m1-i,:,iss) = f(:,m1+i,:,iss) &
@@ -1136,7 +1136,7 @@ endif
 !
 !  top boundary
 !
-      case('top')
+      case ('top')
         if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
         do i=1,nghost
           f(:,m2+i,:,iss) = f(:,m2-i,:,iss) &
@@ -1172,11 +1172,11 @@ endif
 !
 !  check whether we want to do top or bottom (this is precessor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !
-      case('bot')
+      case ('bot')
         if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
         do i=1,nghost
           f(:,:,n1-i,iss) = f(:,:,n1+i,iss) &
@@ -1185,7 +1185,7 @@ endif
 !
 !  top boundary
 !
-      case('top')
+      case ('top')
         if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
         do i=1,nghost
           f(:,:,n2+i,iss) = f(:,:,n2-i,iss) &
@@ -1219,11 +1219,11 @@ endif
 !  This assumes that the density is already set (ie density must register
 !  first!)
 !
-    select case(topbot)
+    select case (topbot)
 !
 ! Bottom boundary
 !
-    case('bot')
+    case ('bot')
       !  Set cs2 (temperature) in the ghost points to the value on
       !  the boundary
       !
@@ -1236,7 +1236,7 @@ endif
 !
 ! Top boundary
 !
-    case('top')
+    case ('top')
       !  Set cs2 (temperature) in the ghost points to the value on
       !  the boundary
       !

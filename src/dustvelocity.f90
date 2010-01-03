@@ -240,7 +240,7 @@ module Dustvelocity
 !
 !  Grain geometry
 !
-        select case(dust_geometry)
+        select case (dust_geometry)
 
         case ('sphere')
           dimd1 = 0.333333
@@ -400,55 +400,55 @@ module Dustvelocity
 !
       lnothing=.false.
       do j=1,ninit
-        select case(inituud(j))
+        select case (inituud(j))
 
-        case('nothing')
+        case ('nothing')
           if (lroot .and. .not. lnothing) print*, 'init_uud: nothing'
           lnothing=.true.
-        case('zero', '0')
+        case ('zero', '0')
           do k=1,ndustspec; f(:,:,:,iudx(k):iudz(k))=0.0; enddo
           if (lroot) print*,'init_uud: zero dust velocity'
-        case('gaussian-noise')
+        case ('gaussian-noise')
           do k=1,ndustspec; call gaunoise(ampluud,f,iudx(k),iudz(k)); enddo
-        case('sinwave-phase')
+        case ('sinwave-phase')
           do k=1,ndustspec
             call sinwave_phase(f,iudx(k),ampl_udx,kx_uud,ky_uud,kz_uud,phase_udx)
             call sinwave_phase(f,iudy(k),ampl_udy,kx_uud,ky_uud,kz_uud,phase_udy)
             call sinwave_phase(f,iudz(k),ampl_udz,kx_uud,ky_uud,kz_uud,phase_udz)
           enddo
-        case('udx_sinx')
+        case ('udx_sinx')
           do l=1,mx; f(l,:,:,iudx(1)) = ampluud*sin(kx_uud*x(l)); enddo
-        case('udy_siny')
+        case ('udy_siny')
           do m=1,my; f(:,m,:,iudy(1)) = ampluud*sin(ky_uud*y(m)); enddo
-        case('sinwave-z-x')
+        case ('sinwave-z-x')
           if (lroot) print*, 'init_uud: sinwave-z-x, ampluud=', ampluud
           call sinwave(ampluud,f,iudz(1),kx=kx_uud)
-        case('udz_sinz')
+        case ('udz_sinz')
           do n=1,mz; f(:,:,n,iudz(1)) = ampluud*sin(kz_uud*z(n)); enddo
-        case('udz_siny')
+        case ('udz_siny')
           do m=m1,m2
             f(:,m,:,iudz(1)) = f(:,m,:,iudz(1)) + ampluud*sin(ky_uud*y(m))
           enddo
-        case('udx_sinxsinysinz')
+        case ('udx_sinxsinysinz')
           do l=1,mx; do m=1,my; do n=1,mz
             f(l,m,n,iudx(1)) = &
                 ampluud*sin(kx_uud*x(l))*sin(ky_uud*y(m))*sin(kz_uud*z(n))
           enddo; enddo; enddo
-        case('udy_sinxsinysinz')
+        case ('udy_sinxsinysinz')
           do l=1,mx; do m=1,my; do n=1,mz
             f(l,m,n,iudy(1)) = &
                 ampluud*sin(kx_uud*x(l))*sin(ky_uud*y(m))*sin(kz_uud*z(n))
           enddo; enddo; enddo
-        case('udz_sinxsinysinz')
+        case ('udz_sinxsinysinz')
           do l=1,mx; do m=1,my; do n=1,mz
             f(l,m,n,iudz(1)) = &
                 ampluud*sin(kx_uud*x(l))*sin(ky_uud*y(m))*sin(kz_uud*z(n))
           enddo; enddo; enddo
-        case('follow_gas')
+        case ('follow_gas')
           do k=1,ndustspec
             f(:,:,:,iudx(k):iudz(k))=f(:,:,:,iux:iuz)
           enddo
-        case('terminal_vz')
+        case ('terminal_vz')
           if (lroot) print*, 'init_uud: terminal velocity'
           do k=1,ndustspec
             do m=m1,m2
@@ -473,7 +473,7 @@ module Dustvelocity
             enddo
           enddo
 
-        case('vshear_dust')
+        case ('vshear_dust')
 !
 !  Vertical shear due to global pressure gradient and back-reaction drag force
 !  from dust on gas.
@@ -553,7 +553,7 @@ module Dustvelocity
             endif
           enddo; enddo; enddo
 !
-        case('vshear_dust_pseudo')
+        case ('vshear_dust_pseudo')
 !
 !  Vertical shear due to pseudo Coriolis force
 !
@@ -582,7 +582,7 @@ module Dustvelocity
                 u0_gas_pseudo/(1.0 + eps + Omega_pseudo*tausd(1))
           enddo; enddo; enddo
 !
-        case('streaming')
+        case ('streaming')
 !
 !  Mode unstable to streaming instability (Youdin & Goodman 2005)
 !
@@ -989,7 +989,7 @@ module Dustvelocity
 !  Viscous force: nud*del2ud
 !     -- not physically correct (no momentum conservation)
 !
-            case('simplified')
+            case ('simplified')
               if (headtt) print*, 'Viscous force (dust): nud*del2ud'
               fviscd = fviscd + nud(k)*p%del2ud(:,:,k)
               if (lfirst.and.ldt) diffus_nud=diffus_nud+nud(k)*dxyz_2
@@ -997,7 +997,7 @@ module Dustvelocity
 !  Viscous force: nud*(del2ud+graddivud/3+2Sd.glnnd)
 !    -- the correct expression for nud=const
 !
-            case('nud-const')
+            case ('nud-const')
               if (headtt) print*, &
                   'Viscous force (dust): nud*(del2ud+graddivud/3+2Sd.glnnd)'
               if (ldustdensity) then
@@ -1010,12 +1010,12 @@ module Dustvelocity
 !
 !  Viscous force: nud*del6ud (not momentum-conserving)
 !
-            case('hyper3_simplified')
+            case ('hyper3_simplified')
               if (headtt) print*, 'Viscous force (dust): nud*del6ud'
               fviscd = fviscd + nud_hyper3(k)*p%del6ud(:,:,k)
               if (lfirst.and.ldt) diffus_nud3=diffus_nud3+nud_hyper3(k)*dxyz_6
 
-            case('hyper3_rhod_nud-const')
+            case ('hyper3_rhod_nud-const')
 !
 !  Viscous force: mud/rhod*del6ud
 !
@@ -1026,7 +1026,7 @@ module Dustvelocity
               enddo
               if (lfirst.and.ldt) diffus_nud3=diffus_nud3+nud_hyper3(k)*dxyz_6
 
-            case('hyper3_nud-const')
+            case ('hyper3_nud-const')
 !
 !  Viscous force: nud*(del6ud+S.glnnd), where S_ij=d^5 ud_i/dx_j^5
 !
@@ -1185,7 +1185,7 @@ module Dustvelocity
       real, dimension (nx) :: rho,rhod,csrho,cs2,deltaud2
       integer :: k
 !
-      select case(draglaw)
+      select case (draglaw)
 
       case ('epstein_cst')
         ! Do nothing, initialized in initialize_dustvelocity

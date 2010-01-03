@@ -230,28 +230,28 @@ module Entropy
 !
 !  select different initial conditions
 !
-          select case(initlnTT(j))
+          select case (initlnTT(j))
 
-          case('zero', '0'); f(:,:,:,ilnTT) = 0.
-          case('const_lnTT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+lnTT_const
-          case('const_TT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+log(TT_const)
-          case('blob'); call blob(ampl_lnTT,f,ilnTT,radius_lnTT,0.,0.,0.)
-          case('xwave')
+          case ('zero', '0'); f(:,:,:,ilnTT) = 0.
+          case ('const_lnTT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+lnTT_const
+          case ('const_TT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+log(TT_const)
+          case ('blob'); call blob(ampl_lnTT,f,ilnTT,radius_lnTT,0.,0.,0.)
+          case ('xwave')
             do n=n1,n2; do m=m1,m2
               f(l1:l2,m,n,ilnTT)=f(l1:l2,m,n,ilnTT)+ampl_lnTT*sin(kx_lnTT*x(l1:l2))
             enddo; enddo
-          case('ywave')
+          case ('ywave')
             do n=n1,n2; do m=m1,m2
               f(l1:l2,m,n,ilnTT)=f(l1:l2,m,n,ilnTT)+ampl_lnTT*sin(ky_lnTT*y(m))
             enddo; enddo
-          case('zwave')
+          case ('zwave')
             do n=n1,n2; do m=m1,m2
               f(l1:l2,m,n,ilnTT)=f(l1:l2,m,n,ilnTT)+ampl_lnTT*sin(kz_lnTT*z(n))
             enddo; enddo
-          case('xjump'); call jump(f,ilnTT,lnTT_left,lnTT_right,widthlnTT,'x')
-          case('yjump'); call jump(f,ilnTT,lnTT_left,lnTT_right,widthlnTT,'y')
-          case('zjump'); call jump(f,ilnTT,lnTT_left,lnTT_right,widthlnTT,'z')
-          case('gaussian-noise'); call gaunoise(ampl_lnTT,f,ilnTT)
+          case ('xjump'); call jump(f,ilnTT,lnTT_left,lnTT_right,widthlnTT,'x')
+          case ('yjump'); call jump(f,ilnTT,lnTT_left,lnTT_right,widthlnTT,'y')
+          case ('zjump'); call jump(f,ilnTT,lnTT_left,lnTT_right,widthlnTT,'z')
+          case ('gaussian-noise'); call gaunoise(ampl_lnTT,f,ilnTT)
 !
           case default
 !

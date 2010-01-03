@@ -150,19 +150,19 @@ module Gravity
       if (gravx/=0) lgravx=.true.
       select case (gravx_profile)
 !
-      case('zero')
+      case ('zero')
         if (lroot) print*,'initialize_gravity: no x-gravity'
         gravx_xpencil=0.
         lgravx_gas=.false.
         lgravx_dust=.false.
 !
-      case('const')
+      case ('const')
         if (lroot) print*,'initialize_gravity: constant x-grav=', gravx
         gravx_xpencil=gravx
         potx_xpencil=-gravx*(x-xinfty)
         call put_shared_variable('gravx', gravx, ierr)
 !
-      case('const_tilt')
+      case ('const_tilt')
         gravx=sin(grav_tilt*pi/180.)
         if (lroot) print*,'initialize_gravity: constant gravx=', gravx
         gravx_xpencil=gravx
@@ -173,7 +173,7 @@ module Gravity
 !  Calculate zdep here, but don't multiply it onto gravx_xpencil
 !  or potx_xpencil, so they will not be correct yet!
 !
-      case('linear_zdep')      !  Linear gravity profile (for accretion discs)
+      case ('linear_zdep')      !  Linear gravity profile (for accretion discs)
         nux_epicycle2=nux_epicycle**2
         if (lroot) print*,'initialize_gravity: linear x-grav with z dep, nu=', &
           nux_epicycle,kappa_z1,kappa_z2
@@ -185,7 +185,7 @@ module Gravity
 !  for isothermal EOS, we have 0=-cs2*dlnrho+gravx
 !  pot_ratio gives the resulting ratio in the density.
 !
-      case('tanh-pot')
+      case ('tanh-pot')
         if (dgravx==0.) call fatal_error("initialize_gravity","dgravx=0 not OK")
         if (lroot) print*,'initialize_gravity: tanh x-grav, gravx=',gravx
         if (lroot) print*,'initialize_gravity: xgrav,dgravx=',xgrav,dgravx
@@ -193,11 +193,11 @@ module Gravity
         gravx_xpencil=gravx*.5/cosh((x-xgrav)/dgravx)**2
         potx_xpencil=-gravx*.5*(1.+tanh((x-xgrav)/dgravx))*dgravx
 !
-      case('sinusoidal')
+      case ('sinusoidal')
         if (lroot) print*,'initialize_gravity: sinusoidal x-grav, gravx=',gravx
         gravx_xpencil = -gravx*sin(kx_gg*x)
 !
-      case('kepler')
+      case ('kepler')
         if (lroot) print*,'initialize_gravity: kepler x-grav, gravx=',gravx
         gravx_xpencil=-gravx/x**2
         potx_xpencil=-gravx/x
@@ -214,22 +214,22 @@ module Gravity
 !
       select case (gravy_profile)
 !
-      case('zero')
+      case ('zero')
         if (lroot) print*,'initialize_gravity: no y-gravity'
         gravy_ypencil=0.
         lgravy_gas=.false.
         lgravy_dust=.false.
 !
-      case('const')
+      case ('const')
         if (lroot) print*,'initialize_gravity: constant y-grav=', gravy
         gravy_ypencil=gravy
         poty_ypencil=-gravy*(y-yinfty)
 !
-      case('sinusoidal')
+      case ('sinusoidal')
         if (lroot) print*,'initialize_gravity: sinusoidal y-grav, gravy=', gravy
         gravy_ypencil = -gravy*sin(ky_gg*y)
 !
-      case('kepler')
+      case ('kepler')
         if (lroot) print*,'initialize_gravity: kepler gravy, y-grav=', gravy
         gravy_ypencil = -gravy/y**2
 !
@@ -247,35 +247,35 @@ module Gravity
 !
       select case (gravz_profile)
 !
-      case('zero')
+      case ('zero')
         if (lroot) print*,'initialize_gravity: no z-gravity'
         gravz_zpencil=0.
         lgravz_gas=.false.
         lgravz_dust=.false.
 !
-      case('const')
+      case ('const')
         if (lroot) print*,'initialize_gravity: constant gravz=', gravz
         gravz_zpencil=gravz
         potz_zpencil=-gravz*(z-zinfty)
 !
-      case('const_tilt')
+      case ('const_tilt')
         gravz=-cos(grav_tilt*pi/180.)
         if (lroot) print*,'initialize_gravity: constant gravz=', gravz
         gravz_zpencil=gravz
         potz_zpencil=-gravz*(z-zinfty)
 !
-      case('tanh')
+      case ('tanh')
         if (lroot) print*,'initialize_gravity: tanh gravz=', gravz
         gravz_zpencil=-gravz*tanh(z/zref)
         potz_zpencil=gravz*zref*alog(cosh(z/zref))
 !
-      case('boussinesq')
+      case ('boussinesq')
         if (lroot) print*,'initialize_gravity: boussinesq gravz=', gravz
         gravz_zpencil=gravz
         potz_zpencil=-gravz*(z-zinfty)
         lboussinesq=.true.
 !
-      case('const_zero')  !  Const. gravity acc. (but zero for z>zgrav)
+      case ('const_zero')  !  Const. gravity acc. (but zero for z>zgrav)
         if (headtt) print*,'initialize_gravity: const_zero gravz=', gravz
         if (zgrav==impossible .and. lroot) &
             print*,'initialize_gravity: zgrav is not set!'
@@ -283,13 +283,13 @@ module Gravity
           if (z(n)<=zgrav) gravz_zpencil(n) = gravz
         enddo
 !
-      case('linear')      !  Linear gravity profile (for accretion discs)
+      case ('linear')      !  Linear gravity profile (for accretion discs)
         nu_epicycle2=nu_epicycle**2
         if (lroot) print*,'initialize_gravity: linear z-grav, nu=', nu_epicycle
         gravz_zpencil=-nu_epicycle2*z
         potz_zpencil=0.5*nu_epicycle2*(z**2-zinfty**2)
 !
-      case('spherical')
+      case ('spherical')
         nu_epicycle2=nu_epicycle**2
         if (lroot) print*,'initialize_gravity: spherical z-grav, nu, z1=', nu_epicycle, z1
         gravz_zpencil=-nu_epicycle2*z/(1.0+(z/z1)**2)
@@ -299,7 +299,7 @@ module Gravity
 !  Calculate xdep here, but don't multiply it onto gravz_zpencil
 !  or potz_zpencil, so they will not be correct yet!
 !
-      case('linear_xdep')
+      case ('linear_xdep')
         nu_epicycle2=nu_epicycle**2
         if (lroot) print*,'initialize_gravity: linear z-grav with x dep, nu=', &
           nu_epicycle,kappa_x1,kappa_x2
@@ -307,7 +307,7 @@ module Gravity
         gravz_zpencil = -nu_epicycle2*z
         potz_zpencil=0.5*nu_epicycle2*(z**2-zinfty**2)
 !
-      case('linear_smoothed')
+      case ('linear_smoothed')
         nu_epicycle2=nu_epicycle**2
         if (lroot) print*,'initialize_gravity: linear z-grav, '// &
                          'smoothed to zero at top/bottom, nu=', nu_epicycle
@@ -315,16 +315,16 @@ module Gravity
         gravz_zpencil = -nu_epicycle2*z/prof**(1./n_pot+1.)
         potz_zpencil = 0.5*nu_epicycle2*z**2/prof**(1./n_pot)
 !
-      case('sinusoidal')
+      case ('sinusoidal')
         if (lroot) print*,'initialize_gravity: sinusoidal z-grav, gravz=', gravz
         gravz_zpencil = -gravz*sin(kz_gg*z)
         potz_zpencil = -gravz/kz_gg*cos(kz_gg*z)
 !
-      case('kepler')
+      case ('kepler')
         if (lroot) print*,'initialize_gravity: kepler z-grav, gravz=', gravz
         gravz_zpencil = -gravz/z**2
 !
-      case('Ferriere')
+      case ('Ferriere')
 !
 !  Set up physical units.
 !
@@ -345,14 +345,14 @@ module Gravity
 !AB: As it is now, it can never make much sense.
         gravz_zpencil = -(g_A*z/sqrt(z**2+g_B**2) + g_C*z/g_D)
 !
-      case('Galactic-hs')
+      case ('Galactic-hs')
         if (lroot) print*,'Galactic hydrostatic equilibrium gravity profile'
         if (lroot.and.(cs0hs==0.or.H0hs==0)) &
             call fatal_error('initialize-gravity', &
             'Set cs0hs and H0hs in grav_init_pars!')
         gravz_zpencil = -z*(cs0hs/H0hs)**2/sqrt(1 + (z/H0hs)**2)
 !
-      case('reduced_top')
+      case ('reduced_top')
         if (lroot) print*,'initialize_gravity: reduced, gravz=',gravz
         if (zgrav==impossible.and.lroot) print*,'zgrav is not set!'
         ztop = xyz0(3)+Lxyz(3)
@@ -587,14 +587,14 @@ module Gravity
 !
       if (present(x)) then
         select case (gravx_profile)
-        case('zero')
+        case ('zero')
           if (lroot) print*,'potential_point: no x-gravity'
-        case('const')
+        case ('const')
           potx_xpoint=-gravx*(x-xinfty)
-        case('linear_zdep')
+        case ('linear_zdep')
           zdep=(1.+kappa_z1*z+.5*(kappa_z1*z)**2)
           potx_xpoint=0.5*(x**2-xinfty**2)*nux_epicycle**2*zdep
-        case('kepler')
+        case ('kepler')
           potx_xpoint=-gravx/x
         case default
           call fatal_error('potential_point', &
@@ -604,9 +604,9 @@ module Gravity
 !
       if (present(y)) then
         select case (gravy_profile)
-        case('zero')
+        case ('zero')
           if (lroot) print*,'potential_point: no y-gravity'
-        case('const')
+        case ('const')
           poty_ypoint=-gravy*(y-yinfty)
         case default
           call fatal_error('potential_point', &
@@ -616,21 +616,21 @@ module Gravity
 !
       if (present(z)) then
         select case (gravz_profile)
-        case('zero')
+        case ('zero')
           if (lroot) print*,'potential_point: no z-gravity'
-        case('const')
+        case ('const')
           potz_zpoint=-gravz*(z-zinfty)
-        case('linear')
+        case ('linear')
           potz_zpoint=0.5*(z**2-zinfty**2)*nu_epicycle**2
-        case('spherical')
+        case ('spherical')
           potz_zpoint=0.5*nu_epicycle**2*z1**2*alog(1.0+(z/z1)**2)
-        case('linear_xdep')
+        case ('linear_xdep')
           xdep=(1.+kappa_x1*x+.5*(kappa_x1*x)**2)
           potz_zpoint=0.5*(z**2-zinfty**2)*nu_epicycle**2*xdep
-        case('linear_smoothed')
+        case ('linear_smoothed')
           prof = 1. + (z/zref)**(2*n_pot)
           potz_zpoint = 0.5*(nu_epicycle*z)**2/prof**(1./n_pot)
-        case('tanh')
+        case ('tanh')
           potz_zpoint=gravz*zref*alog(cosh(z/zref))
         case default
           call fatal_error('potential_point', &

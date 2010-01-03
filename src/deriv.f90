@@ -66,7 +66,7 @@ module Deriv
       use Cdata
       use Messages
 !
-      select case(der2_type)
+      select case (der2_type)
 !
       case ('standard')
         der2_coef0=-490./180.; der2_coef1=270./180.

@@ -118,51 +118,51 @@ module Chiral
 !
 !  check first for initXX_chiral
 !
-      select case(initXX_chiral)
-        case('zero'); f(:,:,:,iXX_chiral)=0.
-        case('const'); f(:,:,:,iXX_chiral)=amplXX_chiral
-        case('blob'); call blob(amplXX_chiral,f,iXX_chiral,radiusXX_chiral,xposXX_chiral,yposXX_chiral,zposXX_chiral)
-        case('hat-x'); call hat(amplXX_chiral,f,iXX_chiral,widthXX_chiral,kx=kx_XX_chiral)
-        case('hat-y'); call hat(amplXX_chiral,f,iXX_chiral,widthXX_chiral,ky=ky_XX_chiral)
-        case('hat-z'); call hat(amplXX_chiral,f,iXX_chiral,widthXX_chiral,kz=kz_XX_chiral)
-        case('gaussian-x'); call gaussian(amplXX_chiral,f,iXX_chiral,kx=kx_XX_chiral)
-        case('gaussian-y'); call gaussian(amplXX_chiral,f,iXX_chiral,ky=ky_XX_chiral)
-        case('gaussian-z'); call gaussian(amplXX_chiral,f,iXX_chiral,kz=kz_XX_chiral)
-        case('gaussian-noise'); call gaunoise(amplXX_chiral,f,iXX_chiral)
-        case('positive-noise'); call posnoise(amplXX_chiral,f,iXX_chiral)
-        case('wave-x'); call wave(amplXX_chiral,f,iXX_chiral,kx=kx_XX_chiral)
-        case('wave-y'); call wave(amplXX_chiral,f,iXX_chiral,ky=ky_XX_chiral)
-        case('wave-z'); call wave(amplXX_chiral,f,iXX_chiral,kz=kz_XX_chiral)
-        case('cos(x-cosz)'); call cosxz_cosz(amplXX_chiral,f,iXX_chiral,kx_XX_chiral,kz_XX_chiral)
-        case('cosy_sinz'); call cosy_sinz(amplXX_chiral,f,iXX_chiral,ky_XX_chiral,kz_XX_chiral)
-        case('cosx_cosz'); call cosx_cosz(amplXX_chiral,f,iXX_chiral,kx_XX_chiral,kz_XX_chiral)
-        case('cosx_cosy_cosz'); call cosx_cosy_cosz(amplXX_chiral,f,iXX_chiral,kx_XX_chiral,ky_XX_chiral,kz_XX_chiral)
-        case('cosx_siny_cosz'); call cosx_siny_cosz(amplXX_chiral,f,iXX_chiral,kx_XX_chiral,ky_XX_chiral,kz_XX_chiral)
+      select case (initXX_chiral)
+        case ('zero'); f(:,:,:,iXX_chiral)=0.
+        case ('const'); f(:,:,:,iXX_chiral)=amplXX_chiral
+        case ('blob'); call blob(amplXX_chiral,f,iXX_chiral,radiusXX_chiral,xposXX_chiral,yposXX_chiral,zposXX_chiral)
+        case ('hat-x'); call hat(amplXX_chiral,f,iXX_chiral,widthXX_chiral,kx=kx_XX_chiral)
+        case ('hat-y'); call hat(amplXX_chiral,f,iXX_chiral,widthXX_chiral,ky=ky_XX_chiral)
+        case ('hat-z'); call hat(amplXX_chiral,f,iXX_chiral,widthXX_chiral,kz=kz_XX_chiral)
+        case ('gaussian-x'); call gaussian(amplXX_chiral,f,iXX_chiral,kx=kx_XX_chiral)
+        case ('gaussian-y'); call gaussian(amplXX_chiral,f,iXX_chiral,ky=ky_XX_chiral)
+        case ('gaussian-z'); call gaussian(amplXX_chiral,f,iXX_chiral,kz=kz_XX_chiral)
+        case ('gaussian-noise'); call gaunoise(amplXX_chiral,f,iXX_chiral)
+        case ('positive-noise'); call posnoise(amplXX_chiral,f,iXX_chiral)
+        case ('wave-x'); call wave(amplXX_chiral,f,iXX_chiral,kx=kx_XX_chiral)
+        case ('wave-y'); call wave(amplXX_chiral,f,iXX_chiral,ky=ky_XX_chiral)
+        case ('wave-z'); call wave(amplXX_chiral,f,iXX_chiral,kz=kz_XX_chiral)
+        case ('cos(x-cosz)'); call cosxz_cosz(amplXX_chiral,f,iXX_chiral,kx_XX_chiral,kz_XX_chiral)
+        case ('cosy_sinz'); call cosy_sinz(amplXX_chiral,f,iXX_chiral,ky_XX_chiral,kz_XX_chiral)
+        case ('cosx_cosz'); call cosx_cosz(amplXX_chiral,f,iXX_chiral,kx_XX_chiral,kz_XX_chiral)
+        case ('cosx_cosy_cosz'); call cosx_cosy_cosz(amplXX_chiral,f,iXX_chiral,kx_XX_chiral,ky_XX_chiral,kz_XX_chiral)
+        case ('cosx_siny_cosz'); call cosx_siny_cosz(amplXX_chiral,f,iXX_chiral,kx_XX_chiral,ky_XX_chiral,kz_XX_chiral)
         case default; call stop_it('init_chiral: bad init_chiral='//trim(initXX_chiral))
       endselect
 !
 !  check next for initYY_chiral
 !
-      select case(initYY_chiral)
-        case('zero'); f(:,:,:,iYY_chiral)=0.
-        case('const'); f(:,:,:,iYY_chiral)=amplYY_chiral
-        case('blob'); call blob(amplYY_chiral,f,iYY_chiral,radiusYY_chiral,xposYY_chiral,yposYY_chiral,zposYY_chiral)
-        case('hat-x'); call hat(amplYY_chiral,f,iYY_chiral,widthYY_chiral,kx=kx_YY_chiral)
-        case('hat-y'); call hat(amplYY_chiral,f,iYY_chiral,widthYY_chiral,ky=ky_YY_chiral)
-        case('hat-z'); call hat(amplYY_chiral,f,iYY_chiral,widthYY_chiral,kz=kz_YY_chiral)
-        case('gaussian-x'); call gaussian(amplYY_chiral,f,iYY_chiral,kx=kx_YY_chiral)
-        case('gaussian-y'); call gaussian(amplYY_chiral,f,iYY_chiral,ky=ky_YY_chiral)
-        case('gaussian-z'); call gaussian(amplYY_chiral,f,iYY_chiral,kz=kz_YY_chiral)
-        case('gaussian-noise'); call gaunoise(amplYY_chiral,f,iYY_chiral)
-        case('positive-noise'); call posnoise(amplYY_chiral,f,iYY_chiral)
-        case('wave-x'); call wave(amplYY_chiral,f,iYY_chiral,kx=kx_YY_chiral)
-        case('wave-y'); call wave(amplYY_chiral,f,iYY_chiral,ky=ky_YY_chiral)
-        case('wave-z'); call wave(amplYY_chiral,f,iYY_chiral,kz=kz_YY_chiral)
-        case('cos(y-sinz)'); call cosyz_sinz(amplYY_chiral,f,iYY_chiral,ky_YY_chiral,kz_YY_chiral)
-        case('cosy_sinz'); call cosy_sinz(amplYY_chiral,f,iYY_chiral,ky_YY_chiral,kz_YY_chiral)
-        case('cosy_cosz'); call cosy_cosz(amplYY_chiral,f,iYY_chiral,ky_YY_chiral,kz_YY_chiral)
-        case('cosx_cosy_cosz'); call cosx_cosy_cosz(amplYY_chiral,f,iYY_chiral,kx_YY_chiral,ky_YY_chiral,kz_YY_chiral)
-        case('cosx_siny_cosz'); call cosx_siny_cosz(amplYY_chiral,f,iYY_chiral,kx_YY_chiral,ky_YY_chiral,kz_YY_chiral)
+      select case (initYY_chiral)
+        case ('zero'); f(:,:,:,iYY_chiral)=0.
+        case ('const'); f(:,:,:,iYY_chiral)=amplYY_chiral
+        case ('blob'); call blob(amplYY_chiral,f,iYY_chiral,radiusYY_chiral,xposYY_chiral,yposYY_chiral,zposYY_chiral)
+        case ('hat-x'); call hat(amplYY_chiral,f,iYY_chiral,widthYY_chiral,kx=kx_YY_chiral)
+        case ('hat-y'); call hat(amplYY_chiral,f,iYY_chiral,widthYY_chiral,ky=ky_YY_chiral)
+        case ('hat-z'); call hat(amplYY_chiral,f,iYY_chiral,widthYY_chiral,kz=kz_YY_chiral)
+        case ('gaussian-x'); call gaussian(amplYY_chiral,f,iYY_chiral,kx=kx_YY_chiral)
+        case ('gaussian-y'); call gaussian(amplYY_chiral,f,iYY_chiral,ky=ky_YY_chiral)
+        case ('gaussian-z'); call gaussian(amplYY_chiral,f,iYY_chiral,kz=kz_YY_chiral)
+        case ('gaussian-noise'); call gaunoise(amplYY_chiral,f,iYY_chiral)
+        case ('positive-noise'); call posnoise(amplYY_chiral,f,iYY_chiral)
+        case ('wave-x'); call wave(amplYY_chiral,f,iYY_chiral,kx=kx_YY_chiral)
+        case ('wave-y'); call wave(amplYY_chiral,f,iYY_chiral,ky=ky_YY_chiral)
+        case ('wave-z'); call wave(amplYY_chiral,f,iYY_chiral,kz=kz_YY_chiral)
+        case ('cos(y-sinz)'); call cosyz_sinz(amplYY_chiral,f,iYY_chiral,ky_YY_chiral,kz_YY_chiral)
+        case ('cosy_sinz'); call cosy_sinz(amplYY_chiral,f,iYY_chiral,ky_YY_chiral,kz_YY_chiral)
+        case ('cosy_cosz'); call cosy_cosz(amplYY_chiral,f,iYY_chiral,ky_YY_chiral,kz_YY_chiral)
+        case ('cosx_cosy_cosz'); call cosx_cosy_cosz(amplYY_chiral,f,iYY_chiral,kx_YY_chiral,ky_YY_chiral,kz_YY_chiral)
+        case ('cosx_siny_cosz'); call cosx_siny_cosz(amplYY_chiral,f,iYY_chiral,kx_YY_chiral,ky_YY_chiral,kz_YY_chiral)
         case default; call stop_it('init_chiral: bad init_chiral='//trim(initYY_chiral))
       endselect
 !
@@ -295,11 +295,11 @@ module Chiral
 !
 !  selection of different reaction terms
 !
-      select case(chiral_reaction)
+      select case (chiral_reaction)
 !
 !  BAHN model
 !
-      case('BAHN_model')
+      case ('BAHN_model')
 !
 !  reaction terms
 !  X^2/Rtilde^2 - X*R
@@ -332,7 +332,7 @@ module Chiral
       df(l1:l2,m,n,iXX_chiral)=df(l1:l2,m,n,iXX_chiral)+dXX_chiral
       df(l1:l2,m,n,iYY_chiral)=df(l1:l2,m,n,iYY_chiral)+dYY_chiral
 !
-      case('nothing')
+      case ('nothing')
         if (lroot.and.ip<=5) print*,"chiral_reaction='nothing'"
 !
       case default

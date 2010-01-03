@@ -1442,21 +1442,21 @@ module Sub
 !
       select case (i)
 !
-      case(1)
+      case (1)
       call der(f,k1+3,tmp1,2)
       call der(f,k1+2,tmp2,3)
       g=tmp1-tmp2
       if (lspherical_coords) g=tmp1-tmp2& 
             +f(l1:l2,m,n,k1+3)*r1_mn*cotth(m)
 !
-      case(2)
+      case (2)
       call der(f,k1+1,tmp1,3)
       call der(f,k1+3,tmp2,1)
       g=tmp1-tmp2
       if (lspherical_coords) g=tmp1-tmp2& 
             -f(l1:l2,m,n,k1+3)*r1_mn
 !
-      case(3)
+      case (3)
       call der(f,k1+2,tmp1,1)
       call der(f,k1+1,tmp2,2)
       g=tmp1-tmp2
@@ -1770,9 +1770,9 @@ module Sub
 !
       if (present(curlcurl)) then
         select case (ii)
-        case(1); curlcurl=fjji(:,1,2)-fijj(:,1,2)+fjji(:,1,3)-fijj(:,1,3)
-        case(2); curlcurl=fjji(:,2,3)-fijj(:,2,3)+fjji(:,2,1)-fijj(:,2,1)
-        case(3); curlcurl=fjji(:,3,1)-fijj(:,3,1)+fjji(:,3,2)-fijj(:,3,2)
+        case (1); curlcurl=fjji(:,1,2)-fijj(:,1,2)+fjji(:,1,3)-fijj(:,1,3)
+        case (2); curlcurl=fjji(:,2,3)-fijj(:,2,3)+fjji(:,2,1)-fijj(:,2,1)
+        case (3); curlcurl=fjji(:,3,1)-fijj(:,3,1)+fjji(:,3,2)-fijj(:,3,2)
         endselect
       endif
 !

@@ -323,25 +323,25 @@ module NeutralDensity
 
             call chn(j,iinit_str)
 
-            select case(initlnrhon(j))
+            select case (initlnrhon(j))
 !
 ! some one-liners from density
 !
-            case('zero', '0'); f(:,:,:,ilnrhon)=0.
-            case('const_lnrhon'); f(:,:,:,ilnrhon)=lnrhon_const
-            case('const_rhon'); f(:,:,:,ilnrhon)=log(rhon_const)
-            case('constant'); f(:,:,:,ilnrhon)=log(rhon_left)
-            case('scale-ions') 
+            case ('zero', '0'); f(:,:,:,ilnrhon)=0.
+            case ('const_lnrhon'); f(:,:,:,ilnrhon)=lnrhon_const
+            case ('const_rhon'); f(:,:,:,ilnrhon)=log(rhon_const)
+            case ('constant'); f(:,:,:,ilnrhon)=log(rhon_left)
+            case ('scale-ions') 
               if (ldensity_nolog) then 
                 f(:,:,:,ilnrhon)=log(rhon_const)+log(f(:,:,:,ilnrho)) 
               else
                 f(:,:,:,ilnrhon)=log(rhon_const)+f(:,:,:,ilnrho) 
               endif
-            case('sinwave-z'); call sinwave(ampllnrhon,f,ilnrhon,kz=kz_lnrhon)
-            case('gaussian-noise')
+            case ('sinwave-z'); call sinwave(ampllnrhon,f,ilnrhon,kz=kz_lnrhon)
+            case ('gaussian-noise')
                if (lnrhon_left /= 0.) f(:,:,:,ilnrhon)=lnrhon_left
                call gaunoise(ampllnrhon,f,ilnrhon,ilnrhon)
-               !case('globaldisc')
+               !case ('globaldisc')
                !minimum mass solar nebula
                !  if (lroot)  print*,'init_lnrhon: initialize initial condition for Keplerian global disc'
                !  call power_law(f,iglobal_gg,plaw,ptlaw,lstratified)
@@ -856,19 +856,19 @@ module NeutralDensity
       real :: r0_pot=0.1
       integer :: i
 !
-      select case(borderlnrhon)
+      select case (borderlnrhon)
 !
-      case('zero','0')
+      case ('zero','0')
          f_target=0.
-      case('constant')
+      case ('constant')
          f_target=lnrhon_const
-      case('stratification')
+      case ('stratification')
          !OO_sph = sqrt((r_mn**2 + r0_pot**2)**(-1.5))
          !OO_cyl = sqrt((rcyl_mn**2 + r0_pot**2)**(-1.5))
          !cs = OO_cyl*rcyl_mn*cs0
          !f_target=lnrhon_const - 0.5*(theta/cs0)**2
          f_target=(p%rcyl_mn-p%r_mn)/(cs20*p%r_mn)
-      case('nothing')
+      case ('nothing')
          if (lroot.and.ip<=5) &
               print*,"set_border_neutraldensity: borderlnrhon='nothing'"
       case default

@@ -146,9 +146,9 @@ module Special
 !!
 !!  SAMPLE IMPLEMENTATION
 !!
-!!      select case(initspecial)
-!!        case('nothing'); if (lroot) print*,'init_special: nothing'
-!!        case('zero', '0'); f(:,:,:,iSPECIAL_VARIABLE_INDEX) = 0.
+!!      select case (initspecial)
+!!        case ('nothing'); if (lroot) print*,'init_special: nothing'
+!!        case ('zero', '0'); f(:,:,:,iSPECIAL_VARIABLE_INDEX) = 0.
 !!        case default
 !!          if (lroot) print*,'init_special: No such value for initspecial: ', trim(initspecial)
 !!          call stop_it("")

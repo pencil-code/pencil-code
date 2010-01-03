@@ -791,9 +791,9 @@ module Interstellar
 !
 !  select different initial conditions
 !
-      select case(initinterstellar(j))
+      select case (initinterstellar(j))
 
-        case('single')
+        case ('single')
           iSNR=get_free_SNR()
           SNRs(iSNR)%site%TT=1E20
           SNRs(iSNR)%site%rho=0.
@@ -803,7 +803,7 @@ module Interstellar
           call explode_SN(f,SNRs(iSNR))
           lSNI=.false.
           lSNII=.false.
-        case('sedov')
+        case ('sedov')
           iSNR=get_free_SNR()
           SNRs(iSNR)%site%TT=1E20
           SNRs(iSNR)%site%rho=0.
@@ -816,7 +816,7 @@ module Interstellar
           call explode_SN(f,SNRs(iSNR))
           lSNI=.false.
           lSNII=.false.
-        case('courant-friedricks')
+        case ('courant-friedricks')
           iSNR=get_free_SNR()
           SNRs(iSNR)%site%TT=1E20
           SNRs(iSNR)%site%rho=0.
@@ -839,7 +839,7 @@ module Interstellar
           call explode_SN(f,SNRs(iSNR))
           lSNI=.false.
           lSNII=.false.
-        case('kompaneets')
+        case ('kompaneets')
           iSNR=get_free_SNR()
           SNRs(iSNR)%site%TT=1E20
           SNRs(iSNR)%site%rho=0.
@@ -853,7 +853,7 @@ module Interstellar
           call explode_SN(f,SNRs(iSNR))
           lSNI=.false.
           lSNII=.false.
-        case('multiple')
+        case ('multiple')
           do i = 1,initial_SNI
             iSNR=get_free_SNR()
             SNRs(iSNR)%site%TT=1E20

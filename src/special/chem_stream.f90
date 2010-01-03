@@ -215,20 +215,20 @@ module Special
       intent(inout) :: f
 
 !!
-      select case(initstream)
-         case('bomb_x')
+      select case (initstream)
+         case ('bomb_x')
             call bomb_field(f,1)
-         case('bomb_y')
+         case ('bomb_y')
             call bomb_field(f,2)
-         case('bomb_z')
+         case ('bomb_z')
             call bomb_field(f,3)
-         case('flame_spd')
+         case ('flame_spd')
             call flame_spd(f)
-         case('flame_spd_invert')
+         case ('flame_spd_invert')
             call flame_spd(f)
-         case('flame_spd_test')
+         case ('flame_spd_test')
             call flame_spd_test(f)
-        case('default')
+        case ('default')
           if (lroot) print*,'init_special: Default  setup'
         case default
 !
@@ -586,8 +586,8 @@ module Special
       i_N2=ichemspec(index_N2)
       i_H2O=ichemspec(index_H2O)
 
-      select case(direction)
-       case(1)
+      select case (direction)
+       case (1)
         do k=1,mx 
          if (abs(x(k))<0.2) then
           f(k,:,:,ilnTT)=log(T_init)+log(2.)*((0.2-abs(x(k)))/0.2)**2
@@ -598,7 +598,7 @@ module Special
               +f(k,:,:,i_H2O)/(2.*mH+mO)+f(k,:,:,i_N2)/(2.*mN)
           f(k,:,:,ilnrho)=log(init_p2)-log(Rgas)-f(k,:,:,ilnTT)-log(mu1(k,:,:))
         enddo
-       case(2)
+       case (2)
         do k=1,my 
          if (abs(y(k))<0.2) then
           f(:,k,:,ilnTT)=log(T_init)+log(2.)*((0.2-abs(y(k)))/0.2)**2
@@ -609,7 +609,7 @@ module Special
               +f(:,k,:,i_H2O)/(2.*mH+mO)+f(:,k,:,i_N2)/(2.*mN)
           f(:,k,:,ilnrho)=log(init_p2)-log(Rgas)-f(:,k,:,ilnTT)-log(mu1(:,k,:))
         enddo
-       case(3)
+       case (3)
         do k=1,mz 
          if (abs(z(k))<0.2) then
           f(:,:,k,ilnTT)=log(T_init)+log(2.)*((0.2-abs(z(k)))/0.2)**2

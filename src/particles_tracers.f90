@@ -199,7 +199,7 @@ module Particles
       lnothing=.false.
       do j=1,ninit
 
-        select case(initxxp(j))
+        select case (initxxp(j))
 
         case ('nothing')
           if (lroot .and. .not. lnothing) print*, 'init_particles: nothing'
@@ -285,7 +285,7 @@ module Particles
           if (nygrid/=1) &
               fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
 
-        case('dragforce_equilibrium')
+        case ('dragforce_equilibrium')
 !
 !  Equilibrium between drag forces on dust and gas and other forces
 !  (from Nakagawa, Sekiya, & Hayashi 1986).

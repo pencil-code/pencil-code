@@ -1273,17 +1273,17 @@ module Initcond
 !
 !  jump; check direction
 !
-      select case(dir)
+      select case (dir)
 !
-      case('x')
+      case ('x')
         profx=fleft+(fright-fleft)*.5*(1.+tanh(x/width))
         f(:,:,:,i)=f(:,:,:,i)+spread(spread(profx,2,my),3,mz)
 !
-      case('y')
+      case ('y')
         profy=fleft+(fright-fleft)*.5*(1.+tanh(y/width))
         f(:,:,:,i)=f(:,:,:,i)+spread(spread(profy,1,mx),3,mz)
 !
-      case('z')
+      case ('z')
         profz=fleft+(fright-fleft)*.5*(1.+tanh(z/width))
         f(:,:,:,i)=f(:,:,:,i)+spread(spread(profz,1,mx),2,my)
 !
@@ -1309,7 +1309,7 @@ module Initcond
 !
 !  jump; check direction
 !
-      select case(dir)
+      select case (dir)
 !
 !  use correct signs when calling this routine
 !  Ay=+int Bz dx
@@ -1317,7 +1317,7 @@ module Initcond
 !
 !  alog(cosh(x/width)) =
 !
-      case('x')
+      case ('x')
         alog_cosh_xwidth=abs(x/width)+alog(.5*(1.+exp(-2*abs(x/width))))
         profz=.5*(fyright+fyleft)*x &
              +.5*(fyright-fyleft)*width*alog_cosh_xwidth
@@ -1346,8 +1346,8 @@ module Initcond
       real :: fyleft,fyright,fxleft,fxright,width
       character(len=*) :: dir
 
-      select case(dir)
-      case('z')
+      select case (dir)
+      case ('z')
         alog_cosh_zwidth=abs(z/width)+alog(.5*(1.+exp(-2*abs(z/width))))
         profx=.5*(fyright+fyleft)*z &
              +.5*(fyright-fyleft)*width*alog_cosh_zwidth
@@ -1978,8 +1978,8 @@ module Initcond
 !  read data
 !  first the entire stratification file
 !
-      select case(strati_type)
-      case('lnrho_ss')
+      select case (strati_type)
+      case ('lnrho_ss')
         do n=1,mtotal
           read(19,*,iostat=stat) tmp,var1,var2
           if (stat>=0) then
@@ -1991,7 +1991,7 @@ module Initcond
           endif
         enddo
 !
-      case('lnrho_lnTT')
+      case ('lnrho_lnTT')
         do n=1,mtotal
           read(19,*,iostat=stat) tmp,var1,var2
           if (stat>=0) then
@@ -2095,8 +2095,8 @@ module Initcond
 !  read data
 !  first the entire stratification file
 !
-      select case(strati_type)
-      case('lnrho_ss')
+      select case (strati_type)
+      case ('lnrho_ss')
         do n=1,mtotal
           read(19,*,iostat=stat) tmp,var1,var2
           if (stat>=0) then
@@ -2108,7 +2108,7 @@ module Initcond
           endif
         enddo
 !
-      case('lnrho_lnTT')
+      case ('lnrho_lnTT')
         do n=1,mtotal
           read(19,*,iostat=stat) tmp,var1,var2
           if (stat>=0) then

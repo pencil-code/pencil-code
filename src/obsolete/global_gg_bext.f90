@@ -41,7 +41,7 @@ module Global
       integer :: m,n
       character (len=*) ::label
 !
-      select case(label)
+      select case (label)
 
       case ('gg')
         gg(l1:l2,m,n,1:3) = var
@@ -70,7 +70,7 @@ module Global
       integer :: m,n
       character (len=*) ::label
 !
-      select case(label)
+      select case (label)
 
       case ('gg')
         var = gg(l1:l2,m,n,1:3)

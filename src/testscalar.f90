@@ -348,10 +348,10 @@ module Testscalar
 !
       do j=1,ninit
 
-      select case(initcctest(j))
+      select case (initcctest(j))
 
-      case('zero'); f(:,:,:,icctest:icctest+ntestscalar-1)=0.
-      case('nothing'); !(do nothing)
+      case ('zero'); f(:,:,:,icctest:icctest+ntestscalar-1)=0.
+      case ('nothing'); !(do nothing)
 
       case default
         !
@@ -515,9 +515,9 @@ module Testscalar
         jcctest=icctest+(jtest-1)
         call del2(f,jcctest,del2ctest)
         call grad(f,jcctest,ggtest)
-        select case(itestscalar)
-          case('G1-G2'); call set_ggtest_G1_G2(G0test,jtest)
-          case('G=0') !(don't do anything)
+        select case (itestscalar)
+          case ('G1-G2'); call set_ggtest_G1_G2(G0test,jtest)
+          case ('G=0') !(don't do anything)
         case default
           call fatal_error('dcctest_dt','undefined itestscalar value')
         endselect
@@ -904,13 +904,13 @@ module Testscalar
 !
 !  set G0test for each of the 2+2 cases
 !
-      select case(jtest)
-      case(1); G0test(:,1)=0.; G0test(:,2)=0.; G0test(:,3)=camp*cz(n)
-      case(2); G0test(:,1)=0.; G0test(:,2)=0.; G0test(:,3)=camp*sz(n)
-      case(3); G0test(:,1)=camp*cx(:); G0test(:,2)=0.; G0test(:,3)=0.
-      case(4); G0test(:,1)=camp*sx(:); G0test(:,2)=0.; G0test(:,3)=0.
-      case(5); G0test(:,1)=0.; G0test(:,2)=camp*cy(m); G0test(:,3)=0.
-      case(6); G0test(:,1)=0.; G0test(:,2)=camp*sy(m); G0test(:,3)=0.
+      select case (jtest)
+      case (1); G0test(:,1)=0.; G0test(:,2)=0.; G0test(:,3)=camp*cz(n)
+      case (2); G0test(:,1)=0.; G0test(:,2)=0.; G0test(:,3)=camp*sz(n)
+      case (3); G0test(:,1)=camp*cx(:); G0test(:,2)=0.; G0test(:,3)=0.
+      case (4); G0test(:,1)=camp*sx(:); G0test(:,2)=0.; G0test(:,3)=0.
+      case (5); G0test(:,1)=0.; G0test(:,2)=camp*cy(m); G0test(:,3)=0.
+      case (6); G0test(:,1)=0.; G0test(:,2)=camp*sy(m); G0test(:,3)=0.
       case default; G0test(:,:)=0.
       endselect
 !

@@ -161,11 +161,11 @@ module Dustdensity
       do j=1,ninit
         select case (initnd(j))
 
-        case('kernel_cst')
+        case ('kernel_cst')
           dkern(:,:,:) = dkern_cst
           lcalcdkern = .false.
 
-        case('kernel_lin')
+        case ('kernel_lin')
           do i=1,ndustspec; do k=1,ndustspec
             dkern(:,i,k) = dkern_cst*(md(i)+md(k))
           enddo; enddo
@@ -266,36 +266,36 @@ module Dustdensity
       rhodmt=0.
       lnothing=.false.
       do j=1,ninit
-        select case(initnd(j))
+        select case (initnd(j))
 
-        case('nothing')
+        case ('nothing')
           if (lroot .and. .not. lnothing) print*, 'init_nd: nothing'
           lnothing=.true.
-        case('zero')
+        case ('zero')
           f(:,:,:,ind)=0.0
           if (lroot) print*,'init_nd: zero nd'
-        case('const_nd')
+        case ('const_nd')
           f(:,:,:,ind) = f(:,:,:,ind) + nd_const
           if (lroot) print*, 'init_nd: Constant dust number density'
-        case('sinwave-phase')
+        case ('sinwave-phase')
           do k=1,ndustspec
             call sinwave_phase(f,ind(k),amplnd,kx_nd,ky_nd,kz_nd,phase_nd)
           enddo
-        case('sinx')
+        case ('sinx')
           do l=l1,l2
             f(l,:,:,ind(1)) = f(l,:,:,ind(1)) + amplnd*sin(kx_nd*x(l))
           enddo
-        case('sinxsinz')
+        case ('sinxsinz')
           do l=l1,l2; do n=n1,n2
             f(l,:,n,ind(1)) = f(l,:,n,ind(1)) + &
                 amplnd*sin(kx_nd*x(l))*sin(kz_nd*z(n))
           enddo; enddo
-        case('sinxsinysinz')
+        case ('sinxsinysinz')
           do l=l1,l2; do m=m1,m2; do n=n1,n2
             f(l,m,n,ind(1)) = f(l,m,n,ind(1)) + &
                 amplnd*sin(kx_nd*x(l))*sin(ky_nd*y(m))*sin(kz_nd*z(n))
           enddo; enddo; enddo
-        case('gaussian_nd')
+        case ('gaussian_nd')
           if (lroot) print*, 'init_nd: Gaussian distribution in z'
           Hrho   = 1/sqrt(gamma)
           rho00  = 1.0
@@ -303,7 +303,7 @@ module Dustdensity
           do n=n1,n2
             f(:,:,n,ind) = rhod00*exp(-z(n)**2/(2*Hnd**2))
           enddo
-        case('gas_stratif_dustdrag')
+        case ('gas_stratif_dustdrag')
           if (lroot) print*,'init_nd: extra gas stratification due to dust drag'
 !          Hrho=cs0/nu_epicycle
           Hrho   = 1/sqrt(gamma)
@@ -322,21 +322,21 @@ module Dustdensity
             endif
             if (lentropy) f(:,:,n,iss) = (1/gamma-1.0)*lnrho_z
           enddo
-        case('hat3d')
+        case ('hat3d')
           call hat3d(amplnd,f,ind(1),widthnd,kx_nd,ky_nd,kz_nd)
           f(:,:,:,ind(1)) = f(:,:,:,ind(1)) + nd_const
-        case('first')
+        case ('first')
           print*, 'init_nd: All dust particles in first bin.'
           f(:,:,:,ind) = 0.
           f(:,:,:,ind(1)) = nd0
           if (eps_dtog/=0.) f(:,:,:,ind(1))= eps_dtog*exp(f(:,:,:,ilnrho))/md(1)
-        case('firsttwo')
+        case ('firsttwo')
           print*, 'init_nd: All dust particles in first and second bin.'
           f(:,:,:,ind) = 0.
           do k=1,2
             f(:,:,:,ind(k)) = nd0/2
           enddo
-        case('MRN77')   ! Mathis, Rumpl, & Nordsieck (1977)
+        case ('MRN77')   ! Mathis, Rumpl, & Nordsieck (1977)
           print*,'init_nd: Initial dust distribution of MRN77'
           do k=1,ndustspec
             mdpeak = 4/3.*pi*adpeak**3*rhods/unit_md
@@ -356,7 +356,7 @@ module Dustdensity
                 f(:,:,:,ind(k))*eps_dtog*exp(f(:,:,:,ilnrho))/(rhodmt*unit_md)
           enddo
 
-        case('const_epsd')
+        case ('const_epsd')
           do k=1,ndustspec
             if (ldensity_nolog) then
               f(:,:,:,ind(k)) = eps_dtog*f(:,:,:,irho)/(md(k)*unit_md)
@@ -364,7 +364,7 @@ module Dustdensity
               f(:,:,:,ind(k)) = eps_dtog*exp(f(:,:,:,ilnrho))/(md(k)*unit_md)
             endif
           enddo
-        case('const_epsd_global')
+        case ('const_epsd_global')
           do l=1,mx
             do m=1,my
               do k=1,ndustspec
@@ -374,7 +374,7 @@ module Dustdensity
           enddo
           if (lroot) print*, 'init_nd: Dust density set by dust-to-gas '// &
               'ratio  epsd =', eps_dtog
-        case('gaussian_epsd')
+        case ('gaussian_epsd')
           do n=n1,n2; do k=1,ndustspec
             if (ldensity_nolog) then
               f(:,:,n,ind(k)) = f(:,:,n,ind(k)) + f(:,:,n,irho)* &
@@ -386,7 +386,7 @@ module Dustdensity
           enddo; enddo
           if (lroot) print*, 'init_nd: Gaussian epsd with epsd =', eps_dtog
 
-        case('dragforce_equilibrium')
+        case ('dragforce_equilibrium')
 
           do m=m1,m2; do n=n1,n2
             if (ldensity_nolog) then
@@ -419,34 +419,34 @@ module Dustdensity
                 (2*Omega*(1.0+2*eps+eps**2+(Omega*tausd(1))**2))
           enddo; enddo
 
-        case('cosine_lnnd')
+        case ('cosine_lnnd')
           do n=n1,n2; do k=1,ndustspec
             f(:,:,n,ind(k)) = &
                 f(:,:,n,ind(k)) + nd_const*exp(amplnd*cos(kz_nd*z(n)))
           enddo; enddo
           if (lroot) print*, 'init_nd: Cosine lnnd with nd_const=', nd_const
-        case('cosine_nd')
+        case ('cosine_nd')
           do n=n1,n2; do k=1,ndustspec
             f(:,:,n,ind(k)) = f(:,:,n,ind(k)) + 1.0 + nd_const*cos(kz_nd*z(n))
           enddo; enddo
           if (lroot) print*, 'init_nd: Cosine nd with nd_const=', nd_const
-        case('jeans-wave-dust-x')
+        case ('jeans-wave-dust-x')
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,ind(1)) = 1.0 + amplnd*cos(kx_nd*x(l1:l2))
             f(l1:l2,m,n,iudx(1)) = f(l1:l2,m,n,iudx(1)) - amplnd* &
                 (sqrt(1+4*rhs_poisson_const*1.0*tausd(1)**2)-1)/ &
                 (2*kx_nd*1.0*tausd(1))*sin(kx_nd*(x(l1:l2)))
           enddo; enddo
-        case('minimum_nd')
+        case ('minimum_nd')
           where (f(:,:,:,ind).lt.nd_const) f(:,:,:,ind)=nd_const
           if (lroot) print*, 'init_nd: Minimum dust density nd_const=', nd_const
-        case('constant-Ri'); call constant_richardson(f)
-        case('kernel_cst')
+        case ('constant-Ri'); call constant_richardson(f)
+        case ('kernel_cst')
           f(:,:,:,ind) = 0.
           f(:,:,:,ind(1)) = nd0
           if (lroot) print*, &
               'init_nd: Test of dust coagulation with constant kernel'
-        case('kernel_lin')
+        case ('kernel_lin')
           do k=1,ndustspec
             f(:,:,:,ind(k)) = &
                 nd0*( exp(-mdminus(k)/mdave0)-exp(-mdplus(k)/mdave0) )
@@ -1281,7 +1281,7 @@ module Dustdensity
       real, dimension (nx) :: supsatratio1
       real, save :: mu
 !
-      select case(dust_chemistry)
+      select case (dust_chemistry)
 
       case ('ice')
         if (it == 1) call getmu(mu)

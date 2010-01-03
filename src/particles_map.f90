@@ -751,7 +751,7 @@ module Particles_map
           enddo
         enddo
 !  Counting sort.
-      case(3)
+      case (3)
 
         kk=k1_imn
         do k=1,npar_loc
@@ -1467,7 +1467,7 @@ module Particles_map
 !
       if (npar_imn(imn)/=0) then
         do k=k1_imn(imn),k2_imn(imn)
-          select case(policy)
+          select case (policy)
           case (cic)
             call interpolate_linear( &
                 f,i1,i2,fp(k,ixp:izp),vec(k,:),ineargrid(k,:),ipar(k) )

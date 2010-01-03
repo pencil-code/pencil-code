@@ -134,7 +134,7 @@ module Gravity
 !
           lpade=.true.
 
-          select case(ipotential(j))
+          select case (ipotential(j))
 
           case ('zero')           ! zero potential
             if (lroot) print*, 'initialize_gravity: zero gravity potential'
@@ -292,15 +292,15 @@ module Gravity
 !
       select case (gravz_profile)
 !
-      case('zero')
+      case ('zero')
 !
-      case('const')
+      case ('const')
         if (lroot) print*,'initialize_gravity: constant gravz=', gravz
         do n=n1,n2; do m=m1,m2
           f(l1:l2,m,n,iglobal_gg+2)=f(l1:l2,m,n,iglobal_gg+2)+gravz
         enddo; enddo
 !
-      case('linear')
+      case ('linear')
         if (lroot) print*,'initialize_gravity: linear z-grav, nu=', nu_epicycle
         do n=n1,n2; do m=m1,m2
           f(l1:l2,m,n,iglobal_gg+2)=f(l1:l2,m,n,iglobal_gg+2)-nu_epicycle**2*z(n)
@@ -678,7 +678,7 @@ module Gravity
         case ('no-smooth')
           g_r=g_r -g0/rr_mn**2
 !
-        case('smoothed-newton')
+        case ('smoothed-newton')
           !g_r=g_r -g0*rr_mn**(n_pot-1) &
           !     *(rr_mn**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
           pot = -g0*(1. + (r1_pot1*rr_mn)**n_pot1)**(1.0/n_pot1) &
@@ -754,7 +754,7 @@ module Gravity
         case ('no-smooth')
           g_r=g_r -g0/rad**2
 !
-        case('smoothed-newton')
+        case ('smoothed-newton')
           !g_r=g_r -g0*rad**(n_pot-1) &
           !     *(rad**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
           pot = -g0*(1. + (r1_pot1*rad)**n_pot1)**(1.0/n_pot1) &

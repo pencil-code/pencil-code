@@ -106,11 +106,11 @@ module Special
 !  initial condition
 !
       do j=1,ninit
-        select case(init(j))
-        case('zero'); f(:,:,:,ispecial1:ispecial3)=0.
-        case('nothing'); if (lroot) print*,'init_special: nothing'
-        case('gaussian-noise'); call gaunoise(ampl(j),f,ispecial1,ispecial3)
-        case('set')
+        select case (init(j))
+        case ('zero'); f(:,:,:,ispecial1:ispecial3)=0.
+        case ('nothing'); if (lroot) print*,'init_special: nothing'
+        case ('gaussian-noise'); call gaunoise(ampl(j),f,ispecial1,ispecial3)
+        case ('set')
           f(:,:,:,ispecial1)=f(:,:,:,ispecial1)+xxini
           f(:,:,:,ispecial2)=f(:,:,:,ispecial2)+yyini
           f(:,:,:,ispecial3)=f(:,:,:,ispecial3)+zzini

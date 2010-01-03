@@ -121,12 +121,12 @@ module Particles_radius
 !
       do j=1,ninit
 
-        select case(initap(j))
+        select case (initap(j))
 
-        case('nothing')
+        case ('nothing')
           if (initial.and.lroot.and.j==1) print*, 'set_particles_radius: nothing'
 
-        case('constant')
+        case ('constant')
           if (initial.and.lroot) print*, 'set_particles_radius: constant radius'
           call random_number_wrapper(radius_fraction)
           ind=ceiling(npart_radii*radius_fraction)

@@ -116,13 +116,13 @@ module Special
 !
 !  SAMPLE IMPLEMENTATION
 !
-      select case(init)
-        case('nothing'); if (lroot) print*,'init_special: nothing'
-        case('zero'); f(:,:,:,iamx:iamz)=0.
-        case('sinwave-x'); call sinwave(ampl,f,iam,kx=kx)
-        case('sinwave-y'); call sinwave(ampl,f,iam,ky=ky)
-        case('sinwave-z'); call sinwave(ampl,f,iam,kz=kz)
-        case('gaussian-noise'); call gaunoise(ampl,f,iamx,iamz)
+      select case (init)
+        case ('nothing'); if (lroot) print*,'init_special: nothing'
+        case ('zero'); f(:,:,:,iamx:iamz)=0.
+        case ('sinwave-x'); call sinwave(ampl,f,iam,kx=kx)
+        case ('sinwave-y'); call sinwave(ampl,f,iam,ky=ky)
+        case ('sinwave-z'); call sinwave(ampl,f,iam,kz=kz)
+        case ('gaussian-noise'); call gaunoise(ampl,f,iamx,iamz)
 
         case default
           !

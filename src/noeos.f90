@@ -649,13 +649,13 @@ module EquationOfState
       if (ierr/=0) call stop_it("bc_ss_flux: "//&
            "there was a problem when getting lheatc_chiconst")
 !
-      select case(topbot)
+      select case (topbot)
 !
 !
 !  bottom boundary
 !  ===============
 !
-      case('bot')
+      case ('bot')
         if (lmultilayer) then
           if (headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
         else
@@ -686,7 +686,7 @@ module EquationOfState
 !  top boundary
 !  ============
 !
-      case('top')
+      case ('top')
         if (lmultilayer) then
           if (headtt) print*,'bc_ss_flux: Ftop,hcond=',Ftop,hcond0*hcond1
         else
@@ -773,11 +773,11 @@ module EquationOfState
 !
 !  check whether we want to do top or bottom (this is precessor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !
-      case('bot')
+      case ('bot')
         if ((bcz1(ilnrho) /= 'a2') .and. (bcz1(ilnrho) /= 'a3')) &
           call fatal_error('bc_ss_temp_old','Inconsistent boundary conditions 3.')
         if (ldebug) print*, &
@@ -794,7 +794,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case('top')
+      case ('top')
         if ((bcz1(ilnrho) /= 'a2') .and. (bcz1(ilnrho) /= 'a3')) &
           call fatal_error('bc_ss_temp_old','Inconsistent boundary conditions 3.')
         if (ldebug) print*, &
@@ -842,11 +842,11 @@ module EquationOfState
 !
 !  check whether we want to do top or bottom (this is precessor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !
-      case('bot')
+      case ('bot')
         if (ldebug) print*, &
                    'bc_ss_temp_x: set x bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0.) print*, &
@@ -860,7 +860,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case('top')
+      case ('top')
         if (ldebug) print*, &
                        'bc_ss_temp_x: set x top temperature: cs2top=',cs2top
         if (cs2top<=0.) print*, &
@@ -903,11 +903,11 @@ module EquationOfState
 !
 !  check whether we want to do top or bottom (this is precessor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !
-      case('bot')
+      case ('bot')
         if (ldebug) print*, &
                    'bc_ss_temp_y: set y bottom temperature - cs2bot=',cs2bot
         if (cs2bot<=0.) print*, &
@@ -921,7 +921,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case('top')
+      case ('top')
         if (ldebug) print*, &
                      'bc_ss_temp_y: set y top temperature - cs2top=',cs2top
         if (cs2top<=0.) print*, &
@@ -962,11 +962,11 @@ module EquationOfState
 !
 !  check whether we want to do top or bottom (this is processor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !
-      case('bot')
+      case ('bot')
         if (ldebug) print*, &
                    'bc_ss_temp_z: set z bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0.) print*, &
@@ -980,7 +980,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case('top')
+      case ('top')
         if (ldebug) print*, &
                      'bc_ss_temp_z: set z top temperature: cs2top=',cs2top
         if (cs2top<=0.) print*,'bc_ss_temp_z: cannot have cs2top<=0'
@@ -1019,11 +1019,11 @@ module EquationOfState
 !
 !  check whether we want to do top or bottom (this is processor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !
-      case('bot')
+      case ('bot')
         if (ldebug) print*, &
                  'bc_lnrho_temp_z: set z bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0. .and. lroot) print*, &
@@ -1046,7 +1046,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case('top')
+      case ('top')
         if (ldebug) print*, &
                     'bc_lnrho_temp_z: set z top temperature: cs2top=',cs2top
         if (cs2top<=0. .and. lroot) print*, &
@@ -1095,11 +1095,11 @@ module EquationOfState
 !
 !  check whether we want to do top or bottom (this is processor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !
-      case('top')
+      case ('top')
         if (ldebug) print*,'bc_lnrho_pressure_z: lnrho_top,ss_top=',lnrho_top,ss_top
 !
 !  fix entropy if inflow (uz>0); otherwise leave s unchanged
@@ -1135,7 +1135,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case('bot')
+      case ('bot')
         if (ldebug) print*,'bc_lnrho_pressure_z: lnrho_bot,ss_bot=',lnrho_bot,ss_bot
 !
 !  fix entropy if inflow (uz>0); otherwise leave s unchanged
@@ -1198,11 +1198,11 @@ module EquationOfState
 !
 !  check whether we want to do top or bottom (this is processor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !
-      case('bot')
+      case ('bot')
         if (ldebug) print*, &
                    'bc_ss_temp2_z: set z bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0.) print*, &
@@ -1215,7 +1215,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case('top')
+      case ('top')
         if (ldebug) print*, &
                      'bc_ss_temp2_z: set z top temperature: cs2top=',cs2top
         if (cs2top<=0.) print*,'bc_ss_temp2_z: cannot have cs2top<=0'
@@ -1251,11 +1251,11 @@ module EquationOfState
 !
 !  check whether we want to do top or bottom (this is precessor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !
-      case('bot')
+      case ('bot')
         if (cs2bot<=0.) print*, &
                         'bc_ss_stemp_x: cannot have cs2bot<=0'
         do i=1,nghost
@@ -1265,7 +1265,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case('top')
+      case ('top')
         if (cs2top<=0.) print*, &
                         'bc_ss_stemp_x: cannot have cs2top<=0'
         do i=1,nghost
@@ -1300,11 +1300,11 @@ module EquationOfState
 !
 !  check whether we want to do top or bottom (this is precessor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !
-      case('bot')
+      case ('bot')
         if (cs2bot<=0.) print*, &
                        'bc_ss_stemp_y: cannot have cs2bot<=0'
         do i=1,nghost
@@ -1314,7 +1314,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case('top')
+      case ('top')
         if (cs2top<=0.) print*, &
                        'bc_ss_stemp_y: cannot have cs2top<=0'
         do i=1,nghost
@@ -1350,11 +1350,11 @@ module EquationOfState
 !
 !  check whether we want to do top or bottom (this is processor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !
-      case('bot')
+      case ('bot')
           if (cs2bot<=0.) print*, &
                                   'bc_ss_stemp_z: cannot have cs2bot<=0'
           do i=1,nghost
@@ -1364,7 +1364,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case('top')
+      case ('top')
         if (cs2top<=0.) print*, &
                  'bc_ss_stemp_z: cannot have cs2top<=0'
          do i=1,nghost
@@ -1395,11 +1395,11 @@ module EquationOfState
 !  This assumes that the density is already set (ie density must register
 !  first!)
 !
-    select case(topbot)
+    select case (topbot)
 !
 ! Bottom boundary
 !
-    case('bot')
+    case ('bot')
       !  Set cs2 (temperature) in the ghost points to the value on
       !  the boundary
       !
@@ -1412,7 +1412,7 @@ module EquationOfState
 !
 ! Top boundary
 !
-    case('top')
+    case ('top')
       !  Set cs2 (temperature) in the ghost points to the value on
       !  the boundary
       !

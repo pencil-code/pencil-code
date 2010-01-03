@@ -65,7 +65,7 @@ module Deriv
 !
       real :: border_width, lborder, uborder
 !
-      select case(der2_type)
+      select case (der2_type)
 !
       case ('standard')
         der2_coef0=-73766./25200.; der2_coef1=42000./25200.

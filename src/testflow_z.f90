@@ -336,7 +336,7 @@ module Testflow
 !
 !AXEL f(:,:,:,iuutest:iuutest+ntestflow-1)=0.
 
-      do j=1,ninit*njtest	
+      do j=1,ninit*njtest
 !
 !  loop over different choices of initial conditions
 !
@@ -360,18 +360,18 @@ module Testflow
 
         offset = 4*jtest
 
-        select case(selector)
+        select case (selector)
 
-        case('zero'); f(:,:,:,iuutest:iuutest+ntestflow-1)=0.
-        case('constant'); f(:,:,:,iuutest+offset:ihhtest+offset)=ampluutest(j)
-        case('gaussian-noise'); call gaunoise(ampluutest(j),f,iuutest+offset,ihhtest+offset )
-        case('sinwave-x')
+        case ('zero'); f(:,:,:,iuutest:iuutest+ntestflow-1)=0.
+        case ('constant'); f(:,:,:,iuutest+offset:ihhtest+offset)=ampluutest(j)
+        case ('gaussian-noise'); call gaunoise(ampluutest(j),f,iuutest+offset,ihhtest+offset )
+        case ('sinwave-x')
           call sinwave(ampluutest(j),f,iuutest+offset,kx=kx_uutest)
           call sinwave(ampluutest(j),f,ihhtest+offset,kx=kx_uutest)
 
-        case('nothing'); !(do nothing)
+        case ('nothing'); !(do nothing)
 
-        case('user')
+        case ('user')
 !
 !  Interface for user's own initial condition
 !
@@ -520,7 +520,7 @@ module Testflow
 
       if ( iuutest.eq.0 ) return
      
-      U0test=0.; gU0test=0.; gH0test=0.		!!!überflüssig?
+      U0test=0.; gU0test=0.; gH0test=0.
 !
 !  identify module  
 !
@@ -541,13 +541,13 @@ module Testflow
 !  calculate uufluct=U-Umean out of the main run
 !
         do j=1,3
-          uufluct(:,j)=p%uu(:,j)-uumz(n-n1+1,j)		
+          uufluct(:,j)=p%uu(:,j)-uumz(n-n1+1,j)
         enddo
 !
 ! calculate ghfluct=gh-ghmean
 !
         do j=1,3
-          ghfluct(:,j)=p%glnrho(:,j)-glnrhomz(n-n1+1,j)	
+          ghfluct(:,j)=p%glnrho(:,j)-glnrhomz(n-n1+1,j)
         enddo
         
       endif
@@ -571,7 +571,7 @@ module Testflow
 !
 !  velocity vector and enthalpy
 !
-        uutest=f(l1:l2,m,n,iuxtest:iuztest)		! testflow solution # jtest
+        uutest=f(l1:l2,m,n,iuxtest:iuztest)	! testflow solution # jtest
         hhtest=f(l1:l2,m,n,ihhtest)
         !!if ( jtest.eq.1 ) print*, 'uutest, hhtest:', minval(uutest),maxval(uutest), minval(hhtest),maxval(hhtest)
 !
@@ -585,31 +585,31 @@ module Testflow
 
         if (jtest.gt.0) then
 
-          select case(itestflow)                       ! get testflow U^(pq), grad U^(pq), grad H^(pq)
+          select case (itestflow)                       ! get testflow U^(pq), grad U^(pq), grad H^(pq)
 
-            case('W11-W22')
+            case ('W11-W22')
               call set_U0test_W11_W22(U0test,gU0test,jtest) 
               gH0test=0.
 
-            case('onlyconstant')
+            case ('onlyconstant')
 
               call set_U0test_onlyconstant(U0test,gU0test,jtest)
               gH0test=0.
 
-            case('onlylinear')
+            case ('onlylinear')
 
               call set_U0test_onlylinear(U0test,gU0test,jtest)
               gH0test=0.
 
-            case('quadratic')
+            case ('quadratic')
               call set_U0test_quadratic(U0test,gU0test,jtest)
               gH0test=0.
 
-            case('quasiperiodic')
+            case ('quasiperiodic')
               call set_U0test_quasiperiodic(U0test,gU0test,jtest)
               gH0test=0.
 
-            case('quadratic+G')
+            case ('quadratic+G')
 
               if ( jtest.le.6 ) then
                 call set_U0test_quadratic(U0test,gU0test,jtest)
@@ -618,7 +618,7 @@ module Testflow
                 U0test=0.; gU0test=0.; gH0test=wamp
               endif
 
-            case('U=0')
+            case ('U=0')
               U0test=0.; gU0test=0.; gH0test=wamp
               
             case default
@@ -626,7 +626,7 @@ module Testflow
 
           endselect
 
-        endif						! otherwise = for primary turbulence, equal to zero
+        endif ! otherwise = for primary turbulence, equal to zero
 !
 !  rhs of continuity equation (nonlinear terms already in df, if needed!),
 !  dh^pq/dt = n.l.Terms - cs^2*div u^pq -u.gradH^pq - U^pq.gradh
@@ -668,7 +668,7 @@ module Testflow
             uijfluct = p%uij
 
             do i=1,3                                        ! determine fluctuating part of uij
-              uijfluct(:,i,3) = uijfluct(:,i,3) - guumz(n-n1+1,i)	 
+              uijfluct(:,i,3) = uijfluct(:,i,3) - guumz(n-n1+1,i)
             enddo
 
           endif
@@ -707,9 +707,9 @@ module Testflow
             endif
 
             U0testgu = uijfluct(:,:,3)*gH0test                               ! S(u).grad(H^T)
-		
-            call multsv(0.5*ghfluct(:,3),gU0test,ugU0test)	             ! S(U^T).grad(h)        MR: checked by numbers
-            ugU0test(:,3) = ugU0test(:,3) + 0.5*ghfluct(:,3)*gU0test(:,3)    !  ~	
+
+            call multsv(0.5*ghfluct(:,3),gU0test,ugU0test)             ! S(U^T).grad(h)        MR: checked by numbers
+            ugU0test(:,3) = ugU0test(:,3) + 0.5*ghfluct(:,3)*gU0test(:,3)    !  ~
 
             call multsv(-(1./3.)*gU0test(:,3),ghfluct,ugU0test,.true.)       !  ~
 
@@ -759,7 +759,7 @@ module Testflow
         diffus_nu=max(diffus_nu,nutest*dxyz_2)
       endif
 
-      if (idiag_ux0mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,iuutest  ),idiag_ux0mz)	!MR: only testflow # 0
+      if (idiag_ux0mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,iuutest  ),idiag_ux0mz)!MR: only testflow # 0
       if (idiag_uy0mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,iuutest+1),idiag_uy0mz)
       if (idiag_uz0mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,iuutest+2),idiag_uz0mz)
 !
@@ -1127,9 +1127,9 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
         
           do n=n1,n2
 
-            select case(itestflow)   
+            select case (itestflow)   
                     
-            case('W11-W22')
+            case ('W11-W22')
 
               if (idiag_aklamij(k,1)/=0) &
                 call surf_mn_name(  wamp*(-cz(n)*gal2*k1sz(n)+sz(n)*gal2*k1cz(n)),      idiag_aklamij(k,1) )      
@@ -1143,7 +1143,7 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
               if (idiag_nuij(k,1)/=0) &
                 call surf_mn_name( wamp*(+k1sz(n)*gal1*k1sz(n)+k1cz(n)*gal1*k1cz(n)), idiag_nuij(k,1)    )
        
-            case('quadratic') 
+            case ('quadratic') 
 
               if (idiag_aklamij(k,1)/=0) &
                   call surf_mn_name( -wamp*gal2*z(n), idiag_aklamij(k,1) )
@@ -1196,7 +1196,7 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
     real, dimension (2,2) :: aklam
     integer :: i,j,i3,i4,i5,i6,k
 
-      Fipq=Fipq/(wamp*nzgrid)		               	
+      Fipq=Fipq/(wamp*nzgrid)
       Qipq=Qipq/(wamp*nzgrid)                               ! factor nzgrid for averaging over z
 
       !!print*,'z,Fipq=', z(indz), Fipq(1:2,1), Fipq(1:2,2)
@@ -1204,7 +1204,7 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
       do j=1,njtestflow
 
         do i=1,3    
-          if (idiag_Fipq(i,j)/=0) call surf_mn_name( Fipq(i,j), idiag_Fipq(i,j) )   ! surf_mn_name because only simple addition needed		
+          if (idiag_Fipq(i,j)/=0) call surf_mn_name( Fipq(i,j), idiag_Fipq(i,j) )   ! surf_mn_name because only simple addition needed
         enddo
 
         if (idiag_Qpq(j)/=0) call surf_mn_name( Qipq(j), idiag_Qpq(j) )
@@ -1227,9 +1227,9 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
 
       endif
  
-      select case(itestflow)   
+      select case (itestflow)   
                     
-        case('W11-W22')
+        case ('W11-W22')
 
           if (idiag_gal/=0) then
 
@@ -1259,7 +1259,7 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
           !!print*, 'indz=', indz, -k1sz(indz)*Fipq(1,3)+k1cz(indz)*Fipq(1,4), k1sz(indz)*Fipq(2,1)-k1cz(indz)*Fipq(2,2), &
           !!                       -k1sz(indz)*Fipq(2,3)+k1cz(indz)*Fipq(2,4), k1sz(indz)*Fipq(1,1)-k1cz(indz)*Fipq(1,2)
 
-        case('quadratic')
+        case ('quadratic')
 
           if (idiag_gal/=0) then
 
@@ -1275,8 +1275,8 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
               i3=3
               i4=4
               
-              aklam(1,1) =  Fipq(1,i4)		
-              aklam(1,2) = -Fipq(1,i3)	
+              aklam(1,1) =  Fipq(1,i4)
+              aklam(1,2) = -Fipq(1,i3)
               aklam(2,1) =  Fipq(2,i4)
               aklam(2,2) = -Fipq(2,i3)
               !!print*, 'lam=', idiag_gal, idiag_aklam, idiag_nu
@@ -1318,7 +1318,7 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
 
           endif
 
-        case('onlyconstant')
+        case ('onlyconstant')
 
           do i=1,2
             do j=1,2
@@ -1326,15 +1326,15 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
             enddo
           enddo
 
-        case('onlylinear')
+        case ('onlylinear')
 
           if (idiag_aklam/=0) then
 
             i3=3
             i4=4
               
-            aklam(1,1) =  Fipq(1,i4)		
-            aklam(1,2) = -Fipq(1,i3)	
+            aklam(1,1) =  Fipq(1,i4)
+            aklam(1,2) = -Fipq(1,i3)
             aklam(2,1) =  Fipq(2,i4)
             aklam(2,2) = -Fipq(2,i3)
             !!print*, 'lam=', idiag_gal, idiag_aklam, idiag_nu
@@ -1346,9 +1346,9 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
             enddo
 
           endif
-        case('quasi-periodic')
+        case ('quasi-periodic')
 
-        case('W=0')
+        case ('W=0')
  
         case default
               call fatal_error('duutest_dt','undefined itestflow value')
@@ -1381,11 +1381,11 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
 !
 !  set uutest for each of the 9 cases
 !
-      select case(jtest)
+      select case (jtest)
 
-      case(1); uutest(:,1)=cz(n); uutest(:,2)=0.; uutest(:,3)=0.
-      case(2); uutest(:,1)=sz(n); uutest(:,2)=0.; uutest(:,3)=0.
-      case(3); uutest(:,1)=0.   ; uutest(:,2)=0.; uutest(:,3)=0.
+      case (1); uutest(:,1)=cz(n); uutest(:,2)=0.; uutest(:,3)=0.
+      case (2); uutest(:,1)=sz(n); uutest(:,2)=0.; uutest(:,3)=0.
+      case (3); uutest(:,1)=0.   ; uutest(:,2)=0.; uutest(:,3)=0.
       case default; uutest=0.
 
       endselect
@@ -1409,9 +1409,9 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
 !
 !  set uutest for each of the 9 cases
 !
-      select case(jtest)
-      case(1); uutest(:,1)=cz(n); uutest(:,2)=0.; uutest(:,3)=0.
-      case(2); uutest(:,1)=sz(n); uutest(:,2)=0.; uutest(:,3)=0.
+      select case (jtest)
+      case (1); uutest(:,1)=cz(n); uutest(:,2)=0.; uutest(:,3)=0.
+      case (2); uutest(:,1)=sz(n); uutest(:,2)=0.; uutest(:,3)=0.
       case default; uutest=0.
       endselect
 !
@@ -1431,29 +1431,29 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
 !
 !  set U0test and gU0test for each of the various cases
 !
-      select case(jtest)
+      select case (jtest)
 
-      case(1)
+      case (1)
         U0test(:,1)=0.; U0test(:,2)=-wamp*k1sz(n); U0test(:,3)=0.
         gU0test(:,1)=0.; gU0test(:,2)=-wamp*cz(n); gU0test(:,3)=0.
 
-      case(2)
+      case (2)
         U0test(:,1)=0.; U0test(:,2)=+wamp*k1cz(n); U0test(:,3)=0.
         gU0test(:,1)=0.; gU0test(:,2)=-wamp*sz(n); gU0test(:,3)=0.
 
-      case(3)
+      case (3)
         U0test(:,1)=+wamp*k1sz(n); U0test(:,2)=0.; U0test(:,3)=0.
         gU0test(:,1)=+wamp*cz(n); gU0test(:,2)=0.; gU0test(:,3)=0.
 
-      case(4)
+      case (4)
         U0test(:,1)=-wamp*k1cz(n); U0test(:,2)=0.; U0test(:,3)=0.
         gU0test(:,1)=+wamp*sz(n); gU0test(:,2)=0.; gU0test(:,3)=0.
 
-      case(5)
+      case (5)
         U0test(:,1)=wamp; U0test(:,2)=0.; U0test(:,3)=0.
         gU0test=0. 
 
-      case(6)
+      case (6)
         U0test(:,1)=0.; U0test(:,2)=wamp; U0test(:,3)=0.
         gU0test=0.                  
 
@@ -1482,29 +1482,29 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
 
       integer, parameter :: P1Q1=1, P2Q1=2, P1Q2=3, P2Q2=4, P1Q3=5, P2Q3=6, G=7
 
-      select case(jtest)
+      select case (jtest)
 
-      case(P1Q1)
+      case (P1Q1)
         U0test(:,1)=wamp; U0test(:,2)=0.; U0test(:,3)=0.
         gU0test=0.
 
-      case(P2Q1)
+      case (P2Q1)
         U0test(:,1)=0.; U0test(:,2)=wamp; U0test(:,3)=0.
         gU0test=0.
 
-      case(P1Q2)
+      case (P1Q2)
 !        U0test(:,1)=wamp*(1.+z(n)-zc(n)); U0test(:,2)=0.; U0test(:,3)=0.
 !       gU0test(:,1)=wamp-...; gU0test(:,2)=0.; gU0test(:,3)=0.
 
-      case(P2Q2)
+      case (P2Q2)
 !        U0test(:,1)=0.; U0test(:,2)=wamp*(1.+z(n)-zc(n)); U0test(:,3)=0.
 !        gU0test(:,1)=0.; gU0test(:,2)=wamp-...; gU0test(:,3)=0.
 
-      case(P1Q3)
+      case (P1Q3)
 !        U0test(:,1)=wamp*(1.-z(n)+zc(n)); U0test(:,2)=0.; U0test(:,3)=0.
 !        gU0test(:,1)=-wamp+...; gU0test(:,2)=0.; gU0test(:,3)=0.
 
-      case(P2Q3)
+      case (P2Q3)
 !        U0test(:,1)=0.; U0test(:,2)=wamp*(1.-z(n)+zc(n)); U0test(:,3)=0.
 !        gU0test(:,1)=0.; gU0test(:,2)=-wamp+...; gU0test(:,3)=0.
 
@@ -1529,13 +1529,13 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
 
       integer, parameter :: P1Q1=1, P2Q1=2, P1Q2=3, P2Q2=4, P1Q3=5, P2Q3=6, G=7
       
-      select case(jtest)
+      select case (jtest)
 
-      case(P1Q1)
+      case (P1Q1)
         U0test(:,1)=wamp; U0test(:,2)=0.; U0test(:,3)=0.
         gU0test=0.  
 
-      case(P2Q1)
+      case (P2Q1)
         U0test(:,1)=0.; U0test(:,2)=wamp; U0test(:,3)=0.
         gU0test=0.  
     
@@ -1560,13 +1560,13 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
 
       integer, parameter :: P1Q1=1, P2Q1=2, P1Q2=3, P2Q2=4, P1Q3=5, P2Q3=6, G=7
       
-      select case(jtest)
+      select case (jtest)
 
-      case(P1Q2)
-        U0test(:,1)=wamp*z(n); U0test(:,2)=0.; U0test(:,3)=0.		
+      case (P1Q2)
+        U0test(:,1)=wamp*z(n); U0test(:,2)=0.; U0test(:,3)=0.
         gU0test(:,1)=wamp; gU0test(:,2)=0.; gU0test(:,3)=0.
 
-      case(P2Q2)
+      case (P2Q2)
         U0test(:,1)=0.; U0test(:,2)=wamp*z(n); U0test(:,3)=0. 
         gU0test(:,1)=0.; gU0test(:,2)=wamp; gU0test(:,3)=0.
     
@@ -1595,30 +1595,30 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
 
       integer, parameter :: P1Q1=1, P2Q1=2, P1Q2=3, P2Q2=4, P1Q3=5, P2Q3=6, G=7
 
-      select case(jtest)
+      select case (jtest)
 
-      case(P1Q1)
+      case (P1Q1)
         U0test(:,1)=wamp; U0test(:,2)=0.; U0test(:,3)=0.
         gU0test=0.  
 
-      case(P2Q1)
+      case (P2Q1)
         U0test(:,1)=0.; U0test(:,2)=wamp; U0test(:,3)=0.
         gU0test=0.      
 
-      case(P1Q2)
-        U0test(:,1)=wamp*z(n); U0test(:,2)=0.; U0test(:,3)=0.		
+      case (P1Q2)
+        U0test(:,1)=wamp*z(n); U0test(:,2)=0.; U0test(:,3)=0.
         gU0test(:,1)=wamp; gU0test(:,2)=0.; gU0test(:,3)=0.
 
-      case(P2Q2)
+      case (P2Q2)
         U0test(:,1)=0.; U0test(:,2)=wamp*z(n); U0test(:,3)=0. 
         gU0test(:,1)=0.; gU0test(:,2)=wamp; gU0test(:,3)=0.
 
-      case(P1Q3)
+      case (P1Q3)
         U0test(:,1)=wamp*zq2(n); U0test(:,2)=0.; U0test(:,3)=0.
-        gU0test(:,1)=wamp*z(n); gU0test(:,2)=0.; gU0test(:,3)=0.	
+        gU0test(:,1)=wamp*z(n); gU0test(:,2)=0.; gU0test(:,3)=0.
 
-      case(P2Q3)
-        U0test(:,1)=0.; U0test(:,2)=wamp*zq2(n); U0test(:,3)=0.	
+      case (P2Q3)
+        U0test(:,1)=0.; U0test(:,2)=wamp*zq2(n); U0test(:,3)=0.
         gU0test(:,1)=0.; gU0test(:,2)=wamp*z(n); gU0test(:,3)=0.
 
       case default
@@ -1931,7 +1931,7 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
 
       integer :: iname, i, j, nname_form, indx
 
-      if ( mat_diag_ind.eq.0 ) then                    	       ! if complete tensor was not already inquired 
+      if ( mat_diag_ind.eq.0 ) then                           ! if complete tensor was not already inquired 
 
         do iname=1,nname
         do i=1,2

@@ -296,9 +296,9 @@ module Viscosity
 !
       call multm2_mn(sij,sij2)
 !
-      select case(ivisc)
-       case default
-         if (headtt) print*,'no heating: ivisc=',ivisc
+      select case (ivisc)
+        case default
+          if (headtt) print*,'no heating: ivisc=',ivisc
       endselect
 !
       call keep_compiler_quiet(f)

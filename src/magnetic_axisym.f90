@@ -382,33 +382,33 @@ module Magnetic
         case ('etaSS')
           if (lroot) print*, 'resistivity: etaSS (Shakura-Sunyaev)'
           lresi_etaSS=.true.
-        case('hyper2')
+        case ('hyper2')
           if (lroot) print*, 'resistivity: hyper2'
           lresi_hyper2=.true.
-        case('hyper3')
+        case ('hyper3')
           if (lroot) print*, 'resistivity: hyper3'
           lresi_hyper3=.true.
-        case('hyper3_cyl','hyper3-cyl','hyper3_sph','hyper3-sph')
+        case ('hyper3_cyl','hyper3-cyl','hyper3_sph','hyper3-sph')
           if (lroot) print*, 'resistivity: hyper3 curvilinear'
           lresi_hyper3_polar=.true.
-        case('hyper3_strict')
+        case ('hyper3_strict')
           if (lroot) print*, 'resistivity: strict hyper3 with positive definite heating rate'
           lresi_hyper3_strict=.true.
-        case('rdep')
+        case ('rdep')
           if (lroot) print*, 'resistivity: r-dependent'
           lresi_rdep=.true.
           call eta_rdep(eta_r,geta_r,rdep_profile)
-        case('zdep')
+        case ('zdep')
           if (lroot) print*, 'resistivity: z-dependent'
           lresi_zdep=.true.
           call eta_zdep(eta_z,geta_z,zdep_profile)
-        case('dust')
+        case ('dust')
           if (lroot) print*, 'resistivity: depending on dust density'
           lresi_dust=.true.
-        case('hyper3-aniso')
+        case ('hyper3-aniso')
           if (lroot) print*, 'resistivity: hyper3_aniso'
           lresi_hyper3_aniso=.true.
-        case('shell')
+        case ('shell')
           if (lroot) print*, 'resistivity: shell'
           lresi_shell=.true.
         case ('shock','eta-shock')
@@ -682,11 +682,11 @@ module Magnetic
 !
       do j=1,ninit
 !        
-        select case(initaa(j))
-        case('nothing'); if (lroot .and. j==1) print*,'init_aa: nothing'
-        case('zero', '0'); f(:,:,:,iaphi) = 0.; f(:,:,:,ibphi) = 0.
-        case('gaussian-noise'); call gaunoise(amplaa(j),f,iaphi); call gaunoise(amplaa(j),f,ibphi)
-        case('dipolar-field'); f(:,:,:,ibphi) = 0.; call phi_siny_over_r2(f,iaphi)
+        select case (initaa(j))
+        case ('nothing'); if (lroot .and. j==1) print*,'init_aa: nothing'
+        case ('zero', '0'); f(:,:,:,iaphi) = 0.; f(:,:,:,ibphi) = 0.
+        case ('gaussian-noise'); call gaunoise(amplaa(j),f,iaphi); call gaunoise(amplaa(j),f,ibphi)
+        case ('dipolar-field'); f(:,:,:,ibphi) = 0.; call phi_siny_over_r2(f,iaphi)
 !
         case default
 !
@@ -1535,18 +1535,18 @@ module Magnetic
       real, dimension(nx,3) :: f_target
       integer :: ju,j
 !
-      select case(borderaa)
+      select case (borderaa)
 !
-      case('zero','0')
+      case ('zero','0')
         f_target=0.
 !
-      case('initial-condition')
+      case ('initial-condition')
         do j=1,3
           ju=j+iaa-1
           call set_border_initcond(f,ju,f_target(:,j))
         enddo    
 !
-      case('nothing')
+      case ('nothing')
         if (lroot.and.ip<=5) &
              print*,"set_border_magnetic: borderaa='nothing'"
 !
@@ -2410,12 +2410,12 @@ module Magnetic
 !
 !  choice of different profile functions
 !
-      select case(profile)
+      select case (profile)
 !
 !  gaussian profile, exp(-.5*(x/w)^2)/(sqrt(2*pi)*eps),
 !  so its derivative is .5*(1.+erf(-x/(sqrt(2)*eps))
 !
-      case('gaussian')
+      case ('gaussian')
         vv(:,3) = - fring * .5*(1.+erfunc(tmp/(sqrt(2.)*width))) &
                           * exp(-.5*(zz1/width)**2)/(sqrt(2.*pi)*width)
 !
@@ -2423,14 +2423,14 @@ module Magnetic
 !  The name tanh is misleading, because the actual B frofile is
 !  1./cosh^2, but this is harder to write.
 !
-      case('tanh')
+      case ('tanh')
         vv(:,3) = - fring * 0.5*(1+tanh(tmp/width)) &
                           * 0.5/width/cosh(zz1/width)**2
 !
 !  constant profile, so the delta function is approximated by the function
 !  delta(x) = 1/2w, if -w < x < w.
 !
-      case('const')
+      case ('const')
         vv(:,3) = - fring * 0.5*(1.+max(-1.,min(tmp/width,1.))) &
                           * 0.25/width*(1.-sign(1.,abs(zz1)-width))
 !
@@ -2697,8 +2697,8 @@ module Magnetic
  ! calculate ax,ay,az (via ar,atheta,aphi) inside shell (& leave zero outside shell)
 
         do j=1,ninit
-           select case(initaa(j))
-           case('geo-benchmark-case1')
+           select case (initaa(j))
+           case ('geo-benchmark-case1')
               if (lroot .and. imn==1) print*, 'geo_benchmark_B: geo-benchmark-case1'
               C_int=-( -1./63.*r_int**4 + 11./84.*r_int**3*r_ext            &
                      + 317./1050.*r_int**2*r_ext**2                         &
@@ -2761,7 +2761,7 @@ module Magnetic
                       iproc, imn, minval(aphi), maxval(aphi)
               endif
 
-           case('geo-benchmark-case2')
+           case ('geo-benchmark-case2')
               if (lroot .and. imn==1) print*, 'geo_benchmark_B: geo-benchmark-case2 not yet coded.'
 
            case default
@@ -2798,7 +2798,7 @@ module Magnetic
 !  Note the usage of mixed array lengths (nx and my)
 !
       select case (rdep_profile)
-      case('schnack89')
+      case ('schnack89')
         do i=1,nx
         do j=1,my
           r2(i,j)=x(i+l1-1)**2+y(j)**2
@@ -2825,7 +2825,7 @@ module Magnetic
 !
 !  possibility of constant eta_r (as a test)
 !
-      case('constant')
+      case ('constant')
         eta_r=eta
      
 ! 	 gradient
@@ -2852,7 +2852,7 @@ module Magnetic
       intent(out) :: eta_z,geta_z
 !
       select case (zdep_profile)
-        case('fs')
+        case ('fs')
           z2 = z**2.
 !  resistivity profile from Fleming & Stone (ApJ 585:908-920)
           eta_z = eta*exp(-z2/2.+sigma_ratio*erfcc(abs(z))/4.)
@@ -2862,7 +2862,7 @@ module Magnetic
           geta_z(:,2) = 0.
           geta_z(:,3) = eta_z*(-z-sign(1.,z)*sigma_ratio*exp(-z2)/(2.*sqrt(pi)))
 !
-        case('tanh')
+        case ('tanh')
 !  default to spread gradient over ~5 grid cells.           
            if (eta_width == 0.) eta_width = 5.*dz
            eta_z = eta*0.5*(tanh((z + eta_z0)/eta_width) & 

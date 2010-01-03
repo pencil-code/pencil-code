@@ -140,9 +140,9 @@ module Particles_spin
           'at run-time.'
 !
  !     do j=1,ninit
- !       select case(initsp(j))
+ !       select case (initsp(j))
 !
- !       case('nothing')
+ !       case ('nothing')
  !         if (lroot) print*,'init_particles_spin: nothing (setting initial '// &
  !           'particle spin to zero for all particles'
  !         fp(1:npar_loc,ipsx:ipsz)=0.0

@@ -130,10 +130,10 @@ module Entropy
 !
 !
       do j=1,ninit
-        select case(initss(j))
+        select case (initss(j))
 
-          case('zero', '0'); f(:,:,:,iss) = 0.
-          case('const_ss'); f(:,:,:,iss)=f(:,:,:,iss)+ss_const
+          case ('zero', '0'); f(:,:,:,iss) = 0.
+          case ('const_ss'); f(:,:,:,iss)=f(:,:,:,iss)+ss_const
 
         endselect
       enddo

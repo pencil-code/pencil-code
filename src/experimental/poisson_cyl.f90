@@ -88,20 +88,20 @@ module Poisson
         call fatal_error('initialize_poisson','')
       endif
 !
-      select case(ipoisson_method)
+      select case (ipoisson_method)
 
-      case('bessel')
+      case ('bessel')
         if (lroot) print*,'Selecting the cylindrical '//&
              'Poisson solver that employs Bessel functions'
         lsolve_bessel    =.true.
 
-      case('cyl2cart')
+      case ('cyl2cart')
         if (lroot) print*,'Selecting the cylindrical '//&
              'Poisson solver that transforms to a periodic '//&
              'Cartesian grid and applies Fourier transforms there'
         lsolve_cyl2cart  =.true.
 
-      case('sor')
+      case ('sor')
         if (lroot) print*,'Selecting the cylindrical '//&
              'Poisson solver that performs mesh-relaxation with SOR'
         lsolve_relax_sor=.true.

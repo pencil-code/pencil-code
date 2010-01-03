@@ -333,7 +333,7 @@ module Radiation
       real :: xyplane,yzplane,xzplane,room,xaxis
       real :: yaxis,zaxis,aspect_ratio,mu2
 !
-      select case(angle_weight)
+      select case (angle_weight)
 !
       case ('constant')
         if (ndir>0) weight=4*pi/ndir

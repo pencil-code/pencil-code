@@ -182,13 +182,13 @@ module Radiation
       real :: nr1,nr2
       integer :: l12
 !
-      select case(initrad)
+      select case (initrad)
 
-      case('zero', '0') 
+      case ('zero', '0') 
          f(:,:,:,ifx:ifz) = 0.
          f(:,:,:,ie     ) = 1.
-      case('gaussian-noise','1'); call gaunoise(amplee,f,iE)
-      case('equil','2'); call init_equil(f)
+      case ('gaussian-noise','1'); call gaunoise(amplee,f,iE)
+      case ('equil','2'); call init_equil(f)
       case ('cos', '3')
          f(:,:,:,ie) = -amplee*(cos(sqrt(3.)*0.5*xx)*(xx-Lx/2)*(xx+Lx/2)-1)
       case ('step', '4')
@@ -216,15 +216,15 @@ module Radiation
 !
 !  Pertubations
 !
-      select case(pertee)
+      select case (pertee)
          
-      case('none', '0') 
-      case('left','1')
+      case ('none', '0') 
+      case ('left','1')
          l12=(l1+l2)/2
          f(l1:l12,m1:m2,n1:n2,ie) = ampl_pert*f(l1:l12,m1:m2,n1:n2,ie)
-      case('whole','2')
+      case ('whole','2')
          f(:,m1:m2,n1:n2,ie) = ampl_pert*f(:,m1:m2,n1:n2,ie)
-      case('ent','3') 
+      case ('ent','3') 
          !
          !  For perturbing the entropy after haveing found the 
          !  equilibrium between radiation and entropy.

@@ -257,8 +257,8 @@ module Timestep
 
           ! Get the maximum error over the whole field
           !
-          select case(timestep_scaling(j))
-          case('per_var_err')
+          select case (timestep_scaling(j))
+          case ('per_var_err')
             !
             ! Per variable error
             !
@@ -270,19 +270,19 @@ module Timestep
             !scal=  ( &
             !     abs(f(l1:l2,m,n,j))  + abs(k(l1:l2,m,n,j,1)) + 1e-30)
             !errmaxs = max(maxval(abs(err/scal)),errmaxs)
-          case('cons_frac_err')
+          case ('cons_frac_err')
             !
             ! Constant fractional error
             !
             errmaxs = max(maxval(abs(err/f(l1:l2,m,n,j))),errmaxs)
-          case('cons_err')
+          case ('cons_err')
             !
             ! Constant error
             !
             scal = max(abs(f(l1:l2,n,m,j)), 1e-8)
             errmaxs = max(maxval(abs(err/scal)),errmaxs)
             !
-          case('none')
+          case ('none')
             !
             ! No error check
             !

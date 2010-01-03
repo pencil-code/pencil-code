@@ -152,30 +152,30 @@ module Viscosity
         case ('simplified', '0')
           if (lroot) print*,'viscous force: nu*del2v'
           lvisc_simplified=.true.
-        case('rho-nu-const','rho_nu-const', '1')
+        case ('rho-nu-const','rho_nu-const', '1')
           if (lroot) print*,'viscous force: mu/rho*(del2u+graddivu/3)'
           lvisc_rho_nu_const=.true.
-        case('nu-const')
+        case ('nu-const')
           if (lroot) print*,'viscous force: nu*(del2u+graddivu/3+2S.glnrho)'
           if (nu/=0.) lpenc_requested(i_sij)=.true.
           lvisc_nu_const=.true.
-        case('nu-prof')
+        case ('nu-prof')
           if (lroot) print*,'viscous force with a vertical profile for nu'
           if (nu/=0.) lpenc_requested(i_sij)=.true.
           lvisc_nu_prof=.true.
-        case('nu-profx')
+        case ('nu-profx')
           if (lroot) print*,'viscous force with a horizontal profile for nu'
           if (nu/=0.) lpenc_requested(i_sij)=.true.
           lvisc_nu_profx=.true.
-        case('nu-profr')
+        case ('nu-profr')
           if (lroot) print*,'viscous force with a radial profile for nu'
           if (nu/=0.) lpenc_requested(i_sij)=.true.
           lvisc_nu_profr=.true.
-        case('nu-profr-powerlaw','powerlaw','power-law')
+        case ('nu-profr-powerlaw','powerlaw','power-law')
           if (lroot) print*,'viscous force with a power law profile'
           if (nu/=0.) lpenc_requested(i_sij)=.true.
           lvisc_nu_profr_powerlaw=.true.
-        case('nu-shock','shock')
+        case ('nu-shock','shock')
           if (lroot) print*,'viscous force: nu_shock*(XXXXXXXXXXX)'
           lvisc_nu_shock=.true.
           if (.not. lshock) &
