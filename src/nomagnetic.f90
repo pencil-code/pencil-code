@@ -29,7 +29,6 @@ module Magnetic
   real :: brms=0., bmz_beltrami_phase=0.
   real, dimension (mz,3) :: aamz
   real, dimension (nz,3) :: bbmz,jjmz
-  real, dimension(nx) :: meanfield_EMFdotB
   real :: inertial_length=0.,linertial_2
   logical :: lelectron_inertia=.false.
   logical :: lcalc_aamean=.false.
