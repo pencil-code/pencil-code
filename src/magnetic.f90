@@ -3065,13 +3065,11 @@ module Magnetic
       use Deriv, only: der_z,der2_z
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: ax,ay,az
       integer, parameter :: nreduce=3
-      real, dimension (nreduce) :: fsum_tmp,fsum
       integer :: nxy=nxgrid*nygrid
-      integer :: m,n,i,j
+      integer :: n,j
       real :: fact
-      real, dimension (mz,3) :: aamz1,aamz1_tmp
+      real, dimension (mz,3) :: aamz1_tmp
       real, dimension (nz,3) :: gaamz,d2aamz
 !
       intent(inout) :: f
