@@ -2561,7 +2561,7 @@ module Initcond
       integer :: i1,i2
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: tmp,modulate,tube_radius_sqr
-      real :: ampl,radius,eps,ky
+      real :: ampl,radius,eps
       real :: center1_x,center1_z
 !
 ! please remove the variable if not needed anymore
@@ -2571,7 +2571,6 @@ module Initcond
         f(:,:,:,i1:i2)=0
         if (lroot) print*,'htube: set variable to zero; i1,i2=',i1,i2
       else
-        ky=2*pi/Ly
         if (lroot) then
           print*,'htube: implement y-dependent flux tube in xz-plane; i1,i2=',i1,i2
           print*,'htube: radius,eps=',radius,eps
@@ -2670,7 +2669,7 @@ module Initcond
       integer :: i1,i2,l
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: modulate
-      real :: ampl,a,eps,ky,width,tmp,radius,a_minus_r
+      real :: ampl,a,eps,width,tmp,radius,a_minus_r
       real :: center1_x,center1_z
 !
 ! please remove the variable if not needed anymore
@@ -2680,7 +2679,6 @@ module Initcond
         f(:,:,:,i1:i2)=0
         if (lroot) print*,'htube: set variable to zero; i1,i2=',i1,i2
       else
-        ky=2*pi/Ly
         if (lroot) then
           print*,'htube: implement y-dependent flux tube in xz-plane; i1,i2=',i1,i2
           print*,'htube: radius,eps=',radius,eps
@@ -4015,7 +4013,7 @@ module Initcond
       real :: cp1,ptlaw
       integer, pointer, optional :: iglobal_cs2,iglobal_glnTT
       integer :: ics2
-      logical :: lheader,lenergy
+      logical :: lenergy
 !
       intent(in)  :: ptlaw
       intent(out) :: f
@@ -4065,7 +4063,6 @@ module Initcond
 !
       do m=m1,m2
         do n=n1,n2
-          lheader=((m==m1).and.(n==n1).and.lroot)
 !
 !  Put in the global arrays if they are to be static
 !
@@ -4361,7 +4358,7 @@ module Initcond
 !      dlnrho = - dlnTT + (cp-cv)/T g dz
 !
       use Cdata
-      use EquationOfState, only: lnrho0,gamma,cs20,cs2top,cs2bot
+      use EquationOfState, only: lnrho0,gamma,cs2top,cs2bot
       use Gravity, only: gravz
       
       real, dimension (mx,my,mz,mfarray) :: f
