@@ -1,5 +1,16 @@
 $Id$
 
+Much of the documentation in this file is no longer up-to-date.
+Most of th new commands start with pc_, so as to limit the name space
+in a unique way.
+
+In some case we keep the old and the new command. In the case of
+pc_auto-test (and auto-test) we keep both commands, because the
+former works with pc_auto-test, pc_build and pc_run, which not
+used by everybody. The nightly auto-tests work with auto-test, so
+as not to break the auto-test as further development with these
+commands proceeds.
+
 In October 2002 the files in this directory were
 
    4 CVS/                4 cvsci_run*      8 mkdotin*      4 run.csh*       4 x*
