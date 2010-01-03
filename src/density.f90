@@ -163,7 +163,6 @@ module Density
       use Gravity, only: lnumerical_equilibrium
       use Mpicomm
       use SharedVariables
-      use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
