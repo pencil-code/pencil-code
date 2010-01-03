@@ -2505,8 +2505,6 @@ module Density
 !
 !  28-apr-2005/axel: coded
 !
-      use EquationOfState, only: gamma
-      use Gravity, only: lnrho_bot,lnrho_top,ss_bot,ss_top
       use Sub, only: step
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2562,7 +2560,7 @@ module Density
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      real :: density_floor_log
+      real, save :: density_floor_log
       logical, save :: lfirstcall=.true.
 !
       if (density_floor>0.) then
