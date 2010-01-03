@@ -159,7 +159,7 @@ module Entropy
 !
 !  Interdependency among pencils from the Entropy module is specified here.
 !
-!  20-11-04/anders: coded
+!  20-nov-04/anders: coded
 !
       use EquationOfState, only: gamma_m1
 !

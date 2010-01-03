@@ -760,7 +760,7 @@ module Register
 !  Find out which pencils are needed for all time-steps and also for
 !  diagnostics only. Also takes care of interdependent pencils.
 !
-!  20-11-04/anders: coded
+!  20-nov-04/anders: coded
 !
       use Cdata
 !

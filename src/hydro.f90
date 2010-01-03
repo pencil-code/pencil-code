@@ -476,13 +476,9 @@ module Hydro
       logical :: lstarting
       integer :: ierr
 !
-! Check any module dependencies
+!  Block use of uninitalised p%fcont 
 !
-      if (.not. leos .and..not.ldensity_anelastic) then
-        call stop_it('initialize_hydro: EOS=noeos but hydro requires an EQUATION OF STATE for the fluid')
-      endif
-
-      if (.not.lforcing_cont) lforcing_cont_uu=.false.   ! to block use of uninitalised p%fcont 
+      if (.not.lforcing_cont) lforcing_cont_uu=.false.
 !
 !  calculate cosz*sinz, cos^2, and sinz^2, to take moments with
 !  of ux2, uxuy, etc.
@@ -1173,6 +1169,8 @@ module Hydro
       if (lprecession) lpenc_requested(i_rr)=.true.
       if (ldt.or.(eckmann_friction/=0)) lpenc_requested(i_uu)=.true.
       if (Omega/=0.0) lpenc_requested(i_uu)=.true.
+!
+!  Damping terms for lcylinder_in_a_box
 !
       if (tdamp/=0.or.dampuext/=0.or.dampuint/=0) then
         lpenc_requested(i_r_mn)=.true.
