@@ -476,9 +476,6 @@ module Testfield
       use InitialCondition, only: initial_condition_aatest
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx,3) :: bb
-      real, dimension (nx) :: b2,fact
-      real :: beq2
       integer :: j
 !
       do j=1,ninit
@@ -536,9 +533,11 @@ module Testfield
 !
 !  26-jun-05/anders: adapted from magnetic
 !
-      use Cdata
+      use Sub, only: keep_compiler_quiet
 !
       logical, dimension(npencils) :: lpencil_in
+!
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_testfield
 !***********************************************************************
@@ -610,18 +609,18 @@ module Testfield
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 
-      real, dimension (nx,3) :: bb,aa,uxB,B0test=0,bbtest,B0_imposed
+      real, dimension (nx,3) :: uxB,B0test=0,bbtest,B0_imposed
       real, dimension (nx,3) :: uxbtest,duxbtest,jxbtest,djxbtest,eetest
-      real, dimension (nx,3) :: uxbtestK,uxbtest2,J0test=0,jxB0rtest,J0xbrtest
+      real, dimension (nx,3) :: uxbtestK,J0test=0
       real, dimension (nx,3,3,njtest) :: Mijpq
       real, dimension (nx,3,njtest) :: Eipq,Fipq,EKipq,bpq,jpq,upq
       real, dimension (nx,3) :: del2Atest,uufluct,bbfluct,jjfluct
-      real, dimension (nx,3) :: del2Atest2,graddivAtest,aatest,jjtest
-      real, dimension (nx,3) :: jxbrtest,jxbtest1,jxbtest2,u0xb0,j0xb0
-      real, dimension (nx,3) :: del2Utest,graddivUtest,uutest,ootest
-      real, dimension (nx,3,3) :: aijtest,bijtest,Mijtest,uijtest,oijtest
+      real, dimension (nx,3) :: graddivAtest,aatest,jjtest
+      real, dimension (nx,3) :: jxbrtest,jxbtest1,jxbtest2
+      real, dimension (nx,3) :: del2Utest,uutest
+      real, dimension (nx,3,3) :: aijtest,bijtest,Mijtest
       real, dimension (nx) :: jbpq,upq2,bpq2,Epq2,s2kzDF1,s2kzDF2,unity=1.
-      integer :: jtest,jfnamez,j, i1=1, i2=2, i3=3, i4=4
+      integer :: jtest,j, i1=1, i2=2, i3=3, i4=4
       logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
 !
       intent(in)     :: f,p
@@ -1112,6 +1111,8 @@ module Testfield
 ! 
 !  12-sep-09/axel: adapted from the corresponding magnetic routine
 ! 
+      use Sub, only: keep_compiler_quiet
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 ! 
@@ -1133,6 +1134,8 @@ module Testfield
             if (slices%index<=3) slices%ready=.true.
           endif
       endselect
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine get_slices_testfield
 !***********************************************************************
@@ -1164,7 +1167,7 @@ module Testfield
       real, dimension (nx,3) :: u0ref,b0ref,j0ref
       integer :: jtest,j,nxy=nxgrid*nygrid,juxb,jjxb
       logical :: headtt_save
-      real :: fac, bcosphz, bsinphz, fac1=0., fac2=1.
+      real :: fac, bcosphz, bsinphz
 !
       intent(inout) :: f
 !
@@ -1566,7 +1569,7 @@ module Testfield
       use Cdata
       use Diagnostics
 !
-      integer :: iname,inamez,inamexz
+      integer :: iname,inamez
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
