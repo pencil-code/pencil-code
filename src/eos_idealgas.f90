@@ -40,7 +40,7 @@ module EquationOfState
   integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3
   integer, parameter :: ilnrho_lnTT=4,ilnrho_cs2=5
   integer, parameter :: irho_cs2=6, irho_ss=7, irho_lnTT=8, ilnrho_TT=9
-  integer, parameter :: irho_TT=10, ipp_ss=11,ipp_cs2=12
+  integer, parameter :: irho_TT=10, ipp_ss=11, ipp_cs2=12
   integer :: iglobal_cs2, iglobal_glnTT
   real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
   real :: lnTT0=impossible
@@ -346,10 +346,10 @@ module EquationOfState
           if (lroot) print*, 'select_eos_variable: Using rho and TT'
           ieosvars=irho_TT
         case (ieosvar_pp+ieosvar_ss)
-          if (lroot) print*,'select_eos_variable: Using pp and ss'
+          if (lroot) print*, 'select_eos_variable: Using pp and ss'
           ieosvars=ipp_ss
         case (ieosvar_pp+ieosvar_cs2)
-          if (lroot) print*,'select_eos_variable: Using pp and cs2'
+          if (lroot) print*, 'select_eos_variable: Using pp and cs2'
           ieosvars=ipp_cs2
         case default
           if (lroot) print*, 'select_eos_variable: '// &
@@ -415,9 +415,6 @@ module EquationOfState
 !
 !  02-04-06/tony: coded
 !
-!  EOS is a pencil provider but evolves nothing so it is unlokely that
-!  it will require any pencils for it's own use.
-!
     endsubroutine pencil_criteria_eos
 !***********************************************************************
     subroutine pencil_interdep_eos(lpencil_in)
@@ -433,147 +430,117 @@ module EquationOfState
 !
       select case (ieosvars)
 !
+!  Pencils for thermodynamic quantities for given lnrho or rho and ss.
+!
       case (ilnrho_ss,irho_ss)
-        if (lpencil_in(i_ee)) then
-          lpencil_in(i_lnTT)=.true.
-        endif
-        if (lpencil_in(i_pp)) then
-          lpencil_in(i_lnTT)=.true.
-          lpencil_in(i_lnrho)=.true.
-        endif
-        if (lpencil_in(i_TT1)) lpencil_in(i_lnTT)=.true.
-        if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true.
-        if (lpencil_in(i_lnTT)) then
-          lpencil_in(i_lnrho)=.true.
-          lpencil_in(i_ss)=.true.
-        endif
-        if (lpencil_in(i_del2lnTT)) then
-          if (ldensity_nolog) then
-            lpencil_in(i_del2rho)=.true.
-          else
-            lpencil_in(i_del2lnrho)=.true.
-          endif
-          lpencil_in(i_del2ss)=.true.
-        endif
-        if (lpencil_in(i_glnTT)) then
-          lpencil_in(i_glnrho)=.true.
-          lpencil_in(i_gss)=.true.
-        endif
-        if (lpencil_in(i_hlnTT)) then
-          lpencil_in(i_hss)=.true.
-          lpencil_in(i_hlnrho)=.true.
-        endif
         if (leos_isentropic) then
           if (lpencil_in(i_cs2)) lpencil_in(i_lnrho)=.true.
         elseif (leos_isothermal) then
           if (lpencil_in(i_ss)) lpencil_in(i_lnrho)=.true.
           if (lpencil_in(i_gss)) lpencil_in(i_glnrho)=.true.
           if (lpencil_in(i_hss)) lpencil_in(i_hlnrho)=.true.
-          if (lpencil_in(i_del2ss)) then
-            if (ldensity_nolog) then
-              lpencil_in(i_del2rho)=.true.
-            else
-              lpencil_in(i_del2lnrho)=.true.
-            endif
-          endif
+          if (lpencil_in(i_del2ss)) lpencil_in(i_del2lnrho)=.true.
           if (lpencil_in(i_del6ss)) lpencil_in(i_del6lnrho)=.true.
+        elseif (leos_localisothermal) then
         else
           if (lpencil_in(i_cs2)) then
-            lpencil_in(i_lnrho)=.true.
             lpencil_in(i_ss)=.true.
+            lpencil_in(i_lnrho)=.true.
           endif
         endif
-!
-      case (ilnrho_lnTT,irho_lnTT)
+        if (lpencil_in(i_lnTT)) then
+          lpencil_in(i_ss)=.true.
+          lpencil_in(i_lnrho)=.true.
+        endif
+        if (lpencil_in(i_pp)) then
+          lpencil_in(i_lnTT)=.true.
+          lpencil_in(i_lnrho)=.true.
+        endif
+        if (lpencil_in(i_ee)) lpencil_in(i_lnTT)=.true.
         if (lpencil_in(i_TT1)) lpencil_in(i_lnTT)=.true.
         if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true.
+        if (lpencil_in(i_glnTT)) then
+          lpencil_in(i_glnrho)=.true.
+          lpencil_in(i_gss)=.true.
+        endif
+        if (lpencil_in(i_del2lnTT)) then
+          lpencil_in(i_del2lnrho)=.true.
+          lpencil_in(i_del2ss)=.true.
+        endif
+        if (lpencil_in(i_hlnTT)) then
+          lpencil_in(i_hlnrho)=.true.
+          lpencil_in(i_hss)=.true.
+        endif
+!
+!  Pencils for thermodynamic quantities for given lnrho or rho and lnTT.
+!
+      case (ilnrho_lnTT,irho_lnTT)
+        if (leos_isentropic) then
+          if (lpencil_in(i_lnTT)) lpencil_in(i_lnrho)=.true.
+          if (lpencil_in(i_glnTT)) lpencil_in(i_glnrho)=.true.
+          if (lpencil_in(i_hlnTT)) lpencil_in(i_hlnrho)=.true.
+          if (lpencil_in(i_del2lnTT)) lpencil_in(i_del2lnrho)=.true.
+          if (lpencil_in(i_cs2)) lpencil_in(i_lnrho)=.true.
+        elseif (leos_isothermal) then
+        elseif (leos_localisothermal) then
+        else
+          if (lpencil_in(i_cs2)) lpencil_in(i_lnTT)=.true.
+        endif
         if (lpencil_in(i_ss)) then
-          lpencil_in(i_lnrho)=.true.
           lpencil_in(i_lnTT)=.true.
+          lpencil_in(i_lnrho)=.true.
+        endif
+        if (lpencil_in(i_pp)) then
+          lpencil_in(i_lnTT)=.true.
+          lpencil_in(i_lnrho)=.true.
+        endif
+        if (lpencil_in(i_ee)) lpencil_in(i_lnTT)=.true.
+        if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true.
+        if (lpencil_in(i_TT1)) lpencil_in(i_lnTT)=.true.
+        if (lpencil_in(i_gss)) then
+          lpencil_in(i_glnTT)=.true.
+          lpencil_in(i_glnrho)=.true.
         endif
         if (lpencil_in(i_del2ss)) then
-          if (ldensity_nolog) then
-            lpencil_in(i_del2rho)=.true.
-          else
-            lpencil_in(i_del2lnrho)=.true.
-          endif
           lpencil_in(i_del2lnTT)=.true.
-        endif
-        if (lpencil_in(i_gss)) then
-          lpencil_in(i_glnrho)=.true.
-          lpencil_in(i_glnTT)=.true.
+          lpencil_in(i_del2lnrho)=.true.
         endif
         if (lpencil_in(i_hss)) then
           lpencil_in(i_hlnTT)=.true.
           lpencil_in(i_hlnrho)=.true.
         endif
-        if (lpencil_in(i_ee)) lpencil_in(i_lnTT)=.true.
-        if (lpencil_in(i_pp)) then
-          lpencil_in(i_lnTT)=.true.
-          lpencil_in(i_lnrho)=.true.
-        endif
-        if (leos_isentropic) then
-          if (lpencil_in(i_lnTT)) lpencil_in(i_lnrho)=.true.
-          if (lpencil_in(i_glnTT)) lpencil_in(i_glnrho)=.true.
-          if (lpencil_in(i_hlnTT)) lpencil_in(i_hlnrho)=.true.
-          if (lpencil_in(i_del2lnTT)) then
-            if (ldensity_nolog) then
-              lpencil_in(i_del2rho)=.true.
-            else
-              lpencil_in(i_del2lnrho)=.true.
-            endif
-        endif
-          if (lpencil_in(i_cs2)) lpencil_in(i_lnrho)=.true.
-        else
-          if (lpencil_in(i_cs2)) lpencil_in(i_lnTT)=.true.
-        endif
 !
-      case (ilnrho_cs2,irho_cs2)
-        if (lpencil_in(i_TT1)) lpencil_in(i_lnTT)=.true.
-        if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true.
-        if (lpencil_in(i_ee)) lpencil_in(i_lnTT)=.true.
-        if (lpencil_in(i_pp)) lpencil_in(i_rho)=.true.
-        if (leos_isothermal) then
-          if (lpencil_in(i_ss)) lpencil_in(i_lnrho)=.true.
-          if (lpencil_in(i_del2ss)) then 
-            if (ldensity_nolog) then
-              lpencil_in(i_del2rho)=.true.
-            else
-              lpencil_in(i_del2lnrho)=.true.
-            endif
-          endif
-          if (lpencil_in(i_gss)) lpencil_in(i_glnrho)=.true.
-          if (lpencil_in(i_hss)) lpencil_in(i_hlnrho)=.true.
-        else
-          if (lpencil_in(i_pp)) lpencil_in(i_cs2)=.true.
-        endif
+!  Pencils for thermodynamic quantities for given lnrho or rho and TT.
 !
-      case (ilnrho_TT)
-        if (lpencil_in(i_ss)) then
-          lpencil_in(i_lnrho)=.true.
-          lpencil_in(i_lnTT)=.true.
-        endif
+      case (ilnrho_TT,irho_TT)
         if (lpencil_in(i_glnTT)) then
           lpencil_in(i_gTT)=.true.
           lpencil_in(i_TT1)=.true.
         endif
-!
-      case (irho_TT)
         if (lpencil_in(i_ss)) then
-          lpencil_in(i_lnrho)=.true.
           lpencil_in(i_lnTT)=.true.
-        endif
-        if (lpencil_in(i_glnTT)) then
-          lpencil_in(i_gTT)=.true.
-          lpencil_in(i_TT1)=.true.
+          lpencil_in(i_lnrho)=.true.
         endif
         if (lpencil_in(i_del2lnTT)) then
-          lpencil_in(i_del2TT)=.true.
           lpencil_in(i_glnTT)=.true.
           lpencil_in(i_TT1)=.true.
         endif
 !
-      case(ipp_ss)
+!  Pencils for thermodynamic quantities for given lnrho or rho and cs2.
+!
+      case (ilnrho_cs2,irho_cs2)
+        if (leos_isentropic) then
+        elseif (leos_isothermal) then
+          if (lpencil_in(i_ss)) lpencil_in(i_lnrho)=.true.
+          if (lpencil_in(i_del2ss)) lpencil_in(i_del2lnrho)=.true.
+          if (lpencil_in(i_gss)) lpencil_in(i_glnrho)=.true.
+          if (lpencil_in(i_hss)) lpencil_in(i_hlnrho)=.true.
+          if (lpencil_in(i_pp)) lpencil_in(i_rho)=.true.
+        endif
+!
+!  Pencils for thermodynamic quantities for given pp and ss (anelastic case).
+!
+      case (ipp_ss)
         if (leos_isentropic) then
            call fatal_error('eos_isentropic', 'isentropic case not yet coded')
         elseif (leos_isothermal) then
@@ -631,16 +598,8 @@ module EquationOfState
       intent(in) :: f
       intent(inout) :: p
 !
-      real, dimension(nx) :: grhogrho, d2rho, tmp
+      real, dimension(nx) :: tmp
       integer :: i
-!
-!  Convert del2lnrho to rho-only terms; done here to avoid
-!  repeated calls to dot2
-!
-      if (ldensity_nolog) then
-        call dot2(p%grho,grhogrho)
-        d2rho=p%rho1*(p%del2rho+p%rho1*grhogrho)
-      endif
 !
 !  THE FOLLOWING 2 ARE CONCEPTUALLY WRONG
 !  FOR pretend_lnTT since iss actually contain lnTT NOT entropy!
@@ -663,13 +622,7 @@ module EquationOfState
           if (lpencil(i_ss)) p%ss=-(cp-cv)*(p%lnrho-lnrho0)
           if (lpencil(i_gss)) p%gss=-(cp-cv)*p%glnrho
           if (lpencil(i_hss)) p%hss=-(cp-cv)*p%hlnrho
-          if (lpencil(i_del2ss)) then
-            if (ldensity_nolog) then
-              p%del2ss=-(cp-cv)*d2rho
-            else
-              p%del2ss=-(cp-cv)*p%del2lnrho
-            endif
-          endif
+          if (lpencil(i_del2ss)) p%del2ss=-(cp-cv)*p%del2lnrho
           if (lpencil(i_del6ss)) p%del6ss=-(cp-cv)*p%del6lnrho
           if (lpencil(i_cs2)) p%cs2=cs20
         elseif (leos_localisothermal) then
@@ -690,13 +643,7 @@ module EquationOfState
         if (lpencil(i_TT)) p%TT=exp(p%lnTT)
         if (lpencil(i_TT1)) p%TT1=exp(-p%lnTT)
         if (lpencil(i_glnTT)) p%glnTT=gamma_m1*p%glnrho+cv1*p%gss
-        if (lpencil(i_del2lnTT)) then
-          if (ldensity_nolog) then
-            p%del2lnTT=gamma_m1*d2rho+cv1*p%del2ss
-          else
-            p%del2lnTT=gamma_m1*p%del2lnrho+cv1*p%del2ss
-          endif
-        endif
+        if (lpencil(i_del2lnTT)) p%del2lnTT=gamma_m1*p%del2lnrho+cv1*p%del2ss
         if (lpencil(i_hlnTT)) p%hlnTT=gamma_m1*p%hlnrho+cv1*p%hss
 !
 !  Work out thermodynamic quantities for given lnrho or rho and lnTT.
@@ -706,13 +653,7 @@ module EquationOfState
           if (lpencil(i_lnTT)) p%lnTT=gamma_m1*(p%lnrho-lnrho0)+lnTT0
           if (lpencil(i_glnTT)) p%glnTT=gamma_m1*p%glnrho
           if (lpencil(i_hlnTT)) p%hlnTT=gamma_m1*p%hlnrho
-          if (lpencil(i_del2lnTT)) then
-            if (ldensity_nolog) then
-              p%del2lnTT=gamma_m1*d2rho
-            else
-              p%del2lnTT=gamma_m1*p%del2lnrho
-            endif
-          endif
+          if (lpencil(i_del2lnTT)) p%del2lnTT=gamma_m1*p%del2lnrho
           if (lpencil(i_cs2)) p%cs2=cs20*exp(gamma_m1*(p%lnrho-lnrho0))
         elseif (leos_isothermal) then
           if (lpencil(i_lnTT)) p%lnTT=lnTT0
@@ -738,13 +679,7 @@ module EquationOfState
         if (lpencil(i_TT)) p%TT=exp(p%lnTT)
         if (lpencil(i_TT1)) p%TT1=exp(-p%lnTT)
         if (lpencil(i_gss)) p%gss=cv*(p%glnTT-gamma_m1*p%glnrho)
-        if (lpencil(i_del2ss)) then
-          if (ldensity_nolog) then
-            p%del2ss=cv*(p%del2lnTT-gamma_m1*d2rho)
-          else
-            p%del2ss=cv*(p%del2lnTT-gamma_m1*p%del2lnrho)
-          endif
-        endif
+        if (lpencil(i_del2ss)) p%del2ss=cv*(p%del2lnTT-gamma_m1*p%del2lnrho)
         if (lpencil(i_hss)) p%hss=cv*(p%hlnTT-gamma_m1*p%hlnrho)
         if (lpencil(i_del6ss)) call fatal_error('calc_pencils_eos', &
             'del6ss not available for ilnrho_lnTT')
@@ -785,13 +720,7 @@ module EquationOfState
           if (lpencil(i_hlnTT)) p%hlnTT=0.0
           if (lpencil(i_del2lnTT)) p%del2lnTT=0.0
           if (lpencil(i_ss)) p%ss=-(cp-cv)*(p%lnrho-lnrho0)
-          if (lpencil(i_del2ss)) then
-            if (ldensity_nolog) then
-              p%del2ss=-(cp-cv)*d2rho
-            else 
-              p%del2ss=-(cp-cv)*p%del2lnrho
-            endif
-          endif
+          if (lpencil(i_del2ss)) p%del2ss=-(cp-cv)*p%del2lnrho
           if (lpencil(i_gss)) p%gss=-(cp-cv)*p%glnrho
           if (lpencil(i_hss)) p%hss=-(cp-cv)*p%hlnrho
           if (lpencil(i_pp)) p%pp=gamma_inv*p%rho*cs20
@@ -906,10 +835,10 @@ module EquationOfState
 !
 !  Inverse cv and cp values.
 !
-       if (lpencil(i_cv1)) p%cv1=cv1
-       if (lpencil(i_cp1)) p%cp1=cp1
-       if (lpencil(i_cp))  p%cp=1/p%cp1
-       if (lpencil(i_cp1tilde)) p%cp1tilde=cp1
+      if (lpencil(i_cv1)) p%cv1=cv1
+      if (lpencil(i_cp1)) p%cp1=cp1
+      if (lpencil(i_cp))  p%cp=1/p%cp1
+      if (lpencil(i_cp1tilde)) p%cp1tilde=cp1
 !
     endsubroutine calc_pencils_eos
 !***********************************************************************
@@ -1714,12 +1643,12 @@ module EquationOfState
       if (ierr/=0) call stop_it("bc_ss_flux: "//&
            "there was a problem when getting lheatc_chiconst")
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !  ===============
 !
-      case('bot')
+      case ('bot')
         if (lmultilayer) then
           if (headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
         else
@@ -1751,7 +1680,7 @@ module EquationOfState
 !  top boundary
 !  ============
 !
-      case('top')
+      case ('top')
         if (lmultilayer) then
           if (headtt) print*,'bc_ss_flux: Ftop,hcond=',Ftop,hcond0*hcond1
         else
@@ -1860,12 +1789,12 @@ module EquationOfState
       if (ierr/=0) call stop_it("bc_ss_flux: "//&
            "there was a problem when getting lheatc_chiconst")
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !  ===============
 !
-      case('bot')
+      case ('bot')
         if (lmultilayer) then
           if (headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
         else
@@ -1897,7 +1826,7 @@ module EquationOfState
 !  top boundary
 !  ============
 !
-      case('top')
+      case ('top')
         if (lmultilayer) then
           if (headtt) print*,'bc_ss_flux: Ftop,hcond=',Ftop,hcond0*hcond1
         else
@@ -2030,12 +1959,12 @@ module EquationOfState
       if (ierr/=0) call stop_it("bc_ss_flux: "//&
            "there was a problem when getting lheatc_chiconst")
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !  ===============
 !
-      case('bot')
+      case ('bot')
         if (lmultilayer) then
           if (headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
         else
@@ -2067,7 +1996,7 @@ module EquationOfState
 !  top boundary
 !  ============
 !
-      case('top')
+      case ('top')
 !
 !  Set (dcs2/dz) / (dcs2/dz)_ini = (cs2/cs2top_ini)^4
 !  Note that (dcs2/dz) = cs20*[(gamma-1)*dlnrho/dz + gamma*d(s/cp)/dz]
@@ -2146,12 +2075,12 @@ module EquationOfState
       if (ierr/=0) call stop_it("bc_ss_flux: "//&
            "there was a problem when getting lheatc_chiconst")
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !  ===============
 !
-      case('bot')
+      case ('bot')
         if (lmultilayer) then
           if (headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
         else
@@ -2182,7 +2111,7 @@ module EquationOfState
 !  top boundary
 !  ============
 !
-      case('top')
+      case ('top')
 !
 !  check whether we have chi=constant at bottom, in which case
 !  we have the nonconstant rho_xy*chi in tmp_xy.
@@ -2240,12 +2169,12 @@ module EquationOfState
       if (ierr/=0) call stop_it("bc_ss_flux_turb: "//&
            "there was a problem when getting chi_t")
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !  ===============
 !
-      case('bot')
+      case ('bot')
 !
 !  set ghost zones such that dsdz_xy obeys
 !  - chi_t rho T dsdz_xy = sigmaSB*TT^4
@@ -2264,7 +2193,7 @@ module EquationOfState
 !  top boundary
 !  ============
 !
-      case('top')
+      case ('top')
 !
 !  set ghost zones such that dsdz_xy obeys
 !  - chi_t rho T dsdz_xy = sigmaSB*TT^4
@@ -2315,11 +2244,11 @@ module EquationOfState
 !
 !  check whether we want to do top or bottom (this is precessor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !
-      case('bot')
+      case ('bot')
         if ((bcz1(ilnrho) /= 'a2') .and. (bcz1(ilnrho) /= 'a3')) &
           call fatal_error('bc_ss_temp_old','Inconsistent boundary conditions 3.')
         if (ldebug) print*, &
@@ -2336,7 +2265,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case('top')
+      case ('top')
         if ((bcz1(ilnrho) /= 'a2') .and. (bcz1(ilnrho) /= 'a3')) &
           call fatal_error('bc_ss_temp_old','Inconsistent boundary conditions 3.')
         if (ldebug) print*, &
@@ -2380,11 +2309,11 @@ module EquationOfState
 !
 !  check whether we want to do top or bottom (this is processor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !
-      case('bot')
+      case ('bot')
         if (ldebug) print*, &
                    'bc_ss_temp_x: set x bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0.) print*, &
@@ -2406,7 +2335,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case('top')
+      case ('top')
         if (ldebug) print*, &
                        'bc_ss_temp_x: set x top temperature: cs2top=',cs2top
         if (cs2top<=0.) print*, &
@@ -2455,11 +2384,11 @@ module EquationOfState
 !
 !  check whether we want to do top or bottom (this is precessor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !
-      case('bot')
+      case ('bot')
         if (ldebug) print*, &
                    'bc_ss_temp_y: set y bottom temperature - cs2bot=',cs2bot
         if (cs2bot<=0.) print*, &
@@ -2473,7 +2402,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case('top')
+      case ('top')
         if (ldebug) print*, &
                      'bc_ss_temp_y: set y top temperature - cs2top=',cs2top
         if (cs2top<=0.) print*, &
@@ -2514,11 +2443,11 @@ module EquationOfState
 !
 !  check whether we want to do top or bottom (this is processor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !
-      case('bot')
+      case ('bot')
         if (ldebug) print*, &
                    'bc_ss_temp_z: set z bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0.) print*, &
@@ -2544,7 +2473,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case('top')
+      case ('top')
         if (ldebug) print*, &
                    'bc_ss_temp_z: set z top temperature: cs2top=',cs2top
         if (cs2top<=0.) print*, &
@@ -2597,11 +2526,11 @@ module EquationOfState
 !
 !  check whether we want to do top or bottom (this is processor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !
-      case('bot')
+      case ('bot')
         if (ldebug) print*, &
                  'bc_lnrho_temp_z: set z bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0. .and. lroot) print*, &
@@ -2624,7 +2553,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case('top')
+      case ('top')
         if (ldebug) print*, &
                     'bc_lnrho_temp_z: set z top temperature: cs2top=',cs2top
         if (cs2top<=0. .and. lroot) print*, &
@@ -2673,11 +2602,11 @@ module EquationOfState
 !
 !  check whether we want to do top or bottom (this is processor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !
-      case('top')
+      case ('top')
         if (ldebug) print*,'bc_lnrho_pressure_z: lnrho_top,ss_top=',lnrho_top,ss_top
 !
 !  fix entropy if inflow (uz>0); otherwise leave s unchanged
@@ -2713,7 +2642,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case('bot')
+      case ('bot')
         if (ldebug) print*,'bc_lnrho_pressure_z: lnrho_bot,ss_bot=',lnrho_bot,ss_bot
 !
 !  fix entropy if inflow (uz>0); otherwise leave s unchanged
@@ -2776,11 +2705,11 @@ module EquationOfState
 !
 !  check whether we want to do top or bottom (this is processor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !
-      case('bot')
+      case ('bot')
         if (ldebug) print*, &
                    'bc_ss_temp2_z: set z bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0.) print*, &
@@ -2793,7 +2722,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case('top')
+      case ('top')
         if (ldebug) print*, &
                      'bc_ss_temp2_z: set z top temperature: cs2top=',cs2top
         if (cs2top<=0.) print*,'bc_ss_temp2_z: cannot have cs2top<=0'
@@ -2829,11 +2758,11 @@ module EquationOfState
 !
 !  check whether we want to do top or bottom (this is precessor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !
-      case('bot')
+      case ('bot')
         if (cs2bot<=0.) print*, &
                         'bc_ss_stemp_x: cannot have cs2bot<=0'
         do i=1,nghost
@@ -2843,7 +2772,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case('top')
+      case ('top')
         if (cs2top<=0.) print*, &
                         'bc_ss_stemp_x: cannot have cs2top<=0'
         do i=1,nghost
@@ -2878,11 +2807,11 @@ module EquationOfState
 !
 !  check whether we want to do top or bottom (this is precessor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !
-      case('bot')
+      case ('bot')
         if (cs2bot<=0.) print*, &
                        'bc_ss_stemp_y: cannot have cs2bot<=0'
         do i=1,nghost
@@ -2892,7 +2821,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case('top')
+      case ('top')
         if (cs2top<=0.) print*, &
                        'bc_ss_stemp_y: cannot have cs2top<=0'
         do i=1,nghost
@@ -2928,11 +2857,11 @@ module EquationOfState
 !
 !  check whether we want to do top or bottom (this is processor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  bottom boundary
 !
-      case('bot')
+      case ('bot')
           if (cs2bot<=0.) print*, &
                                   'bc_ss_stemp_z: cannot have cs2bot<=0'
           do i=1,nghost
@@ -2942,7 +2871,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case('top')
+      case ('top')
         if (cs2top<=0.) print*, &
                  'bc_ss_stemp_z: cannot have cs2top<=0'
          do i=1,nghost
@@ -2974,11 +2903,11 @@ module EquationOfState
 !  This assumes that the density is already set (ie density must register
 !  first!)
 !
-    select case(topbot)
+    select case (topbot)
 !
 ! Bottom boundary
 !
-    case('bot')
+    case ('bot')
       !  Set cs2 (temperature) in the ghost points to the value on
       !  the boundary
       !
@@ -2990,7 +2919,7 @@ module EquationOfState
 !
 ! Top boundary
 !
-    case('top')
+    case ('top')
       !  Set cs2 (temperature) in the ghost points to the value on
       !  the boundary
       !
@@ -3287,11 +3216,11 @@ module EquationOfState
 !
 !  Check whether we want to do top or bottom (this is precessor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  Potential field condition at the bottom
 !
-      case('bot')
+      case ('bot')
 
         do i=1,nghost
 !
@@ -3334,7 +3263,7 @@ module EquationOfState
 !
 !  Potential field condition at the top
 !
-      case('top')
+      case ('top')
 
         do i=1,nghost
 !
@@ -3417,11 +3346,11 @@ module EquationOfState
 !
 !  Check whether we want to do top or bottom (this is processor dependent)
 !
-      select case(topbot)
+      select case (topbot)
 !
 !  Potential field condition at the bottom
 !
-      case('bot')
+      case ('bot')
 
         do i=1,nghost
 !
@@ -3487,7 +3416,7 @@ module EquationOfState
 !
 !  Potential field condition at the top
 !
-      case('top')
+      case ('top')
 
         do i=1,nghost
 !
