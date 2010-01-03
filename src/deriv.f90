@@ -615,7 +615,7 @@ module Deriv
       real :: fac
       integer :: j,k
       logical, optional :: ignoredx,upwind
-      logical :: igndx,upwnd
+      logical :: igndx
 !
       intent(in)  :: f,k,j,ignoredx
       intent(out) :: df
@@ -623,9 +623,8 @@ module Deriv
 !debug      if (loptimise_ders) der_call_count(k,icount_der4,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der4,j,1) + 1 !DERCOUNT
 !
-      if (.not. lequidist(j)) then
+      if (.not. lequidist(j)) &
         call fatal_error('der4','NOT IMPLEMENTED for no equidistant grid')
-      endif
 !
       if (lspherical_coords) &
            call fatal_error('der4','NOT IMPLEMENTED for spherical coordinates')
@@ -635,12 +634,9 @@ module Deriv
       else
         igndx = .false.
       endif
-      if (present(upwind)) then
-        upwnd = upwind
+!
+      if (present(upwind)) &
         call warning('der4','upwinding not implemented')
-      else
-        upwnd = .false.
-      endif
 !
       if (j==1) then
         if (nxgrid/=1) then
