@@ -865,8 +865,6 @@ module FArrayManager
 !
 !  18-may-2007/wolf: coded
 !
-      use Cdata, only: varname
-!
       call free_list(thelist)
 !
     endsubroutine farray_clean_up
