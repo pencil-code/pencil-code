@@ -8,8 +8,6 @@
   dsnap=500, dvid=100., ialive=1
   lpencil_check=T
 /
-&eos_run_pars
-/
 &hydro_run_pars
   ladvection_velocity=F
   lforcing_cont_uu=F
