@@ -88,8 +88,6 @@ module EquationOfState
 !
 !  14-jun-03/axel: adapted from register_eos
 !
-      use Sub
-!
       leos=.true.
       leos_idealgas=.true.
 !
@@ -402,8 +400,6 @@ module EquationOfState
     endsubroutine rprint_eos
 !***********************************************************************
     subroutine get_slices_eos(f,slices)
-!
-      use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
