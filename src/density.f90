@@ -1364,6 +1364,13 @@ module Density
           lpencil_in(i_glnrho)=.false.
         endif
       endif
+      if (lpencil_in(i_del2lnrho)) then
+        if (ldensity_nolog) then
+          lpencil_in(i_rho1)=.true.
+          lpencil_in(i_del2rho)=.true.
+          lpencil_in(i_glnrho2)=.true.
+        endif
+      endif
 !
     endsubroutine pencil_interdep_density
 !***********************************************************************
@@ -1448,17 +1455,6 @@ module Density
       endif
 ! glnrho2
       if (lpencil(i_glnrho2)) call dot2(p%glnrho,p%glnrho2)
-! del2lnrho
-      if (lpencil(i_del2lnrho)) then
-        if (ldensity_nolog) then
-          if (headtt) then
-            call fatal_error('calc_pencils_density', &
-                'del2lnrho not available for non-logarithmic mass density')
-          endif
-        else
-          call del2(f,ilnrho,p%del2lnrho)
-        endif
-      endif
 ! del2rho
       if (lpencil(i_del2rho)) then
         if (ldensity_nolog) then
@@ -1471,6 +1467,14 @@ module Density
                 call fatal_error('calc_pencils_density',&
                 'del2rho not available for logarithmic mass density')
           endif
+        endif
+      endif
+! del2lnrho
+      if (lpencil(i_del2lnrho)) then
+        if (ldensity_nolog) then
+          p%del2lnrho=p%rho1*p%del2rho-p%glnrho2
+        else
+          call del2(f,ilnrho,p%del2lnrho)
         endif
       endif
 ! del6rho
