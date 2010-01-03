@@ -102,7 +102,7 @@ module Gravity
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: gg_mn=0.0
-      real, dimension (nx)   :: g_r,rr_mn,rr_sph,rr_cyl,gdm,pot
+      real, dimension (nx)   :: g_r,rr_mn,rr_sph,rr_cyl,pot
       logical :: lstarting
       logical :: lpade=.true. ! set to false for 1/r potential
       integer :: j
@@ -313,6 +313,8 @@ module Gravity
 !
       endselect
 !
+      call keep_compiler_quiet(lstarting)
+!
     endsubroutine initialize_gravity
 !***********************************************************************
     subroutine read_gravity_init_pars(unit,iostat)
@@ -364,6 +366,8 @@ module Gravity
       real, dimension (mx,my,mz,mfarray) :: f
 !
 ! Not doing anything (this might change if we decide to save gg to a file)
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine init_gg
 !***********************************************************************
@@ -707,8 +711,6 @@ module Gravity
         endselect
       enddo
 !
-      call keep_compiler_quiet(g_r)
-!
     endsubroutine acceleration_penc_1D
 !***********************************************************************
     subroutine acceleration_point(x,y,z,r,g_r)
@@ -784,8 +786,6 @@ module Gravity
 !              
         endselect
       enddo
-!
-      call keep_compiler_quiet(g_r)
 !
     endsubroutine acceleration_point
 !***********************************************************************
