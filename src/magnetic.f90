@@ -29,7 +29,7 @@ module Magnetic
 !
   use Cdata
   use Cparam
-  use Messages
+  use Messages, only: fatal_error,inevitably_fatal_error,warning,svn_id
   use Sub, only: keep_compiler_quiet
 !
   implicit none
@@ -549,7 +549,7 @@ module Magnetic
 !
 !  1-may-02/wolf: coded
 !
-      use FArrayManager
+      use FArrayManager, only: farray_register_pde
 !
       call farray_register_pde('aa',iaa,vector=3)
       iax = iaa; iay = iaa+1; iaz = iaa+2
@@ -582,7 +582,6 @@ module Magnetic
 !
       use BorderProfiles, only: request_border_driving
       use FArrayManager
-      use Messages, only: fatal_error
       use SharedVariables
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -3021,7 +3020,7 @@ module Magnetic
 !
 !  10-oct-06/axel: coded
 !
-      use Diagnostics
+      use Diagnostics, only: sum_mn_name 
       use Sub
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -3310,7 +3309,7 @@ module Magnetic
 !
 !  29-jul-02/axel: coded
 !
-      use Gravity
+      use Gravity, only: zgrav
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -5364,7 +5363,6 @@ module Magnetic
 !  13-nov-08/wlad : coded
 !
       use FArrayManager
-      use Messages, only: fatal_error
       use Sub,      only: get_radial_distance
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -5562,7 +5560,6 @@ module Magnetic
 !
 !
       use Mpicomm,  only: mpiallreduce_sum
-      use Messages, only: fatal_error
       use Sub    ,  only: curl
 !
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
