@@ -726,21 +726,27 @@ module Testfield
         else
 !
 !  Calculate uufluct=U-Umean.
+!The following comment does not yet apply
+!-  Note that uumz has dimensions mz*3, not nz*3.
 !
           if (lcalc_uumean) then
             do j=1,3
-              uufluct(:,j)=p%uu(:,j)-uumz(n,j)
+!--           uufluct(:,j)=p%uu(:,j)-uumz(n,j)
+!to be changed later...
+              uufluct(:,j)=p%uu(:,j)-uumz(n-n1+1,j)
             enddo
           else
             uufluct=p%uu
           endif
 !
 !  Calculate bbfluct=B-Bmean and jjfluct=J-Jmean.
+!The following comment does not yet apply
+!-  Note that, unlike uumz, bbmz and jjmz have dimensions nz*3.
 !
           if (lcalc_aamean) then
             do j=1,3
-              bbfluct(:,j)=p%bb(:,j)-bbmz(n,j)
-              jjfluct(:,j)=p%jj(:,j)-jjmz(n,j)
+              bbfluct(:,j)=p%bb(:,j)-bbmz(n-n1+1,j)
+              jjfluct(:,j)=p%jj(:,j)-jjmz(n-n1+1,j)
             enddo
           else
             bbfluct=p%bb
