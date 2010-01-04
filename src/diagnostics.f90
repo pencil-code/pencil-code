@@ -255,7 +255,6 @@ module Diagnostics
         endif
         first=.false.
         if (lroot.and.ip<=10) print*,'dVol_rel1=',dVol_rel1
-        if (lroot) print*,'box volume = ', dx*dy*dz/dVol_rel1
       endif
 !
 !  Go through all print names, and sort into communicators
