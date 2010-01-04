@@ -42,6 +42,7 @@ module EquationOfState
   integer, parameter :: irho_cs2=6, irho_ss=7, irho_lnTT=8, ilnrho_TT=9
   integer, parameter :: irho_TT=10, ipp_ss=11, ipp_cs2=12
   integer :: iglobal_cs2, iglobal_glnTT
+  real, dimension(mz) :: profz_eos=1.0
   real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
   real :: lnTT0=impossible
   real :: xHe=0.0
@@ -65,9 +66,7 @@ module EquationOfState
   logical :: leos_isothermal=.false., leos_isentropic=.false.
   logical :: leos_isochoric=.false., leos_isobaric=.false.
   logical :: leos_localisothermal=.false.
-
   character (len=labellen) :: ieos_profile='nothing'
-  real, dimension(mz) :: profz_eos=1.0
 !
 !  Input parameters.
 !
