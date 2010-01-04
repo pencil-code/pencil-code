@@ -197,6 +197,60 @@ f_loop:   do iv=1,mvar
         endif
       enddo
 !
+!  Check pencil initialization.
+!
+      if (lroot) print*, 'pencil_consistency_check: '// &
+          'checking dependence on pencil initialization'
+      df=0.0
+      call random_seed_wrapper(PUT=iseed_org)
+      do i=1,mvar+maux
+        call random_number_wrapper(f_other(:,:,:,i))
+      enddo
+      call initialize_pencils(p,0.5*penc0)
+!
+      lpencil=lpenc_requested
+      call pde(f_other,df,p)
+      if (notanumber(df)) print*,'pencil_consistency_check: NaNs in df'
+!
+!  Compare results.
+!
+      lconsistent=.true.
+      lconsistent_allproc=.false.
+      do i=1,nx
+        if (dt1_max(i)/=dt1_max_ref(i)) then
+          lconsistent=.false.
+          exit
+        endif
+      enddo
+      if (lconsistent) then
+f_lop:  do iv=1,mvar
+          do k=n1,n2; do j=m1,m2; do i=l1,l2
+            lconsistent=(df(i,j,k,iv)==df_ref(i,j,k,iv))
+            if (.not. lconsistent) exit f_lop
+          enddo; enddo; enddo
+        enddo f_lop
+      endif
+!
+      call mpireduce_and(lconsistent,lconsistent_allproc)
+      if (lroot) then
+        if (.not. lconsistent_allproc) then
+          print*, 'pencil_consistency_check: '// &
+              'results depend on pencil initialization'
+          print*, '                          This is a serious problem '// &
+              'that may show the use of'
+          print*, '                          uninitialized pencils. Check '// &
+              'carefully that all'
+          print*, '                          pencils are calculated and '// &
+              'that conjugate pencils are'
+          print*, '                          calculated *after* the '// &
+              'individual components'
+          ldie=.true.
+        else
+          print*, 'pencil_consistency_check: '// &
+              'results are independent of pencil initialization'
+        endif
+      endif
+!
 !  Check diagnostic pencils.
 !
       lout=.true.
@@ -326,16 +380,16 @@ f_loop:   do iv=1,mvar
 !
 !  Return the code to its former mortal state.
 !
-      call life_support_off('end of pencil consistency check/')
+      call life_support_off('end of pencil consistency check')
 !
       call mpireduce_or(ldie,ldie_all)
       call mpibcast_logical(ldie_all,1)
       if (ldie_all) call fatal_error('pencil_consistency_check', &
-          'one or more missing pencils')
+          'one or more tests failed')
 !
       lpencil_check_at_work=.false.
 !
-      call keep_compiler_quiet(f)
+      if (lroot) print*, 'pencil_consistency_check: all tests passed'
 !
     endsubroutine pencil_consistency_check
 !***********************************************************************
