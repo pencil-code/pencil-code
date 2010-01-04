@@ -60,38 +60,34 @@ module Pencil_check
           'pencil_consistency_check: checking pencil case (takes some time)'
       lpencil_check_at_work=.true.
 !
-! Prevent code from dying due to any errors...
+!  Prevent code from dying due to any errors.
 !
       call life_support_on('needed for pencil consistency check')
 !
-!  Allocate memory for alternative df, fname
+!  Allocate memory for alternative df, fname.
 !
       allocate(f_other(mx,my,mz,mfarray)  ,stat=mem_stat1)
       allocate(df_ref(mx,my,mz,mvar)      ,stat=mem_stat2)
       allocate(fname_ref(mname)           ,stat=mem_stat3)
-      if ((mem_stat1 + mem_stat2 + mem_stat3) > 0) then
+      if ((mem_stat1+mem_stat2+mem_stat3)>0) then
         if (lroot) then
-        print*, &
-  "                          Large buffers are needed to perform these tests"
-        print*, &
-  "                          rigourously. For that reason it may only be  "
-        print*, &
-  "                          possible to perform the check on smaller test runs."
-        call fatal_error("pencil_consistency_check", &
-                         "failed to allocate required memory")
+        print*, '  Large buffers are needed to perform these tests'
+        print*, '  rigourously. For that reason it may only be  '
+        print*, '  possible to perform the check on smaller test runs.'
+        call fatal_error('pencil_consistency_check', &
+            'failed to allocate required memory')
         endif
       endif
 !
-! Start with the initial f
+!  Start with the f defined in initial condition.
 !
       f_other=f
 !
-!  Check requested pencils
+!  Check requested pencils.
 !
       lfirst=.true.
       headt=.false.
-      itsub=1                   ! some modules like dustvelocity.f90
-                                ! reference dt_beta_ts(itsub)
+      itsub=1  ! some modules like dustvelocity.f90 reference dt_beta_ts(itsub)
       call random_seed_wrapper(GET=iseed_org)
       call random_seed_wrapper(PUT=iseed_org)
       do i=1,mfarray
@@ -100,13 +96,15 @@ module Pencil_check
       df_ref=0.0
       call initialize_pencils(p,penc0)
 !
-!  Calculate reference results with all requested pencils on
+!  Calculate reference results with all requested pencils on.
 !
       lpencil=lpenc_requested
       call pde(f_other,df_ref,p)
       dt1_max_ref=dt1_max
-      if (notanumber(df_ref))       print*,'pencil_consistency_check: NaNs in df_ref'
-      if (notanumber(dt1_max_ref))  print*,'pencil_consistency_check: NaNs in dt1_max_ref'
+      if (notanumber(df_ref)) &
+          print*,'pencil_consistency_check: NaNs in df_ref'
+      if (notanumber(dt1_max_ref)) &
+          print*,'pencil_consistency_check: NaNs in dt1_max_ref'
 !
       do penc=1,npencils
         df=0.0
@@ -116,14 +114,15 @@ module Pencil_check
         enddo
         call initialize_pencils(p,penc0)
 !
-!  Calculate results with one pencil swapped
+!  Calculate results with one pencil swapped.
 !
         lpencil=lpenc_requested
         lpencil(penc)=(.not. lpencil(penc))
         call pde(f_other,df,p)
-        if (notanumber(df))       print*,'pencil_consistency_check: NaNs in df_ref'
+        if (notanumber(df)) &
+            print*,'pencil_consistency_check: NaNs in df_ref'
 !
-!  Compare results...
+!  Compare results.
 !
         lconsistent=.true.
         lconsistent_allproc=.false.
@@ -161,7 +160,7 @@ f_loop:   do iv=1,mvar
         endif
       enddo
 !
-!  Check diagnostic pencils
+!  Check diagnostic pencils.
 !
       lout=.true.
       lfirst=.true.
@@ -173,7 +172,7 @@ f_loop:   do iv=1,mvar
       fname=0.0; fweight=0.0
       call initialize_pencils(p,penc0)
 !
-!  Calculate reference diagnostics with all diagnostic pencils on
+!  Calculate reference diagnostics with all diagnostic pencils on.
 !
       lpencil=(lpenc_diagnos.or.lpenc_requested)
       ldiagnos=.true.
@@ -189,13 +188,13 @@ f_loop:   do iv=1,mvar
         fname=0.0; fweight=0.0
         call initialize_pencils(p,penc0)
 !
-!  Calculate diagnostics with one pencil swapped
+!  Calculate diagnostics with one pencil swapped.
 !
         lpencil=(lpenc_diagnos.or.lpenc_requested)
         lpencil(penc)=(.not. lpencil(penc))
         call pde(f_other,df,p)
 !
-!  Compare results...
+!  Compare results.
 !
         lconsistent=.true.
         lconsistent_allproc=.false.
@@ -239,7 +238,7 @@ f_loop:   do iv=1,mvar
         endif
       enddo
 !
-!  Clean up
+!  Clean up.
 !
       call random_seed_wrapper(put=iseed_org)
       headt=.true.
