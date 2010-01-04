@@ -1339,6 +1339,12 @@ module Density
       else
         if (lpencil_in(i_rho)) lpencil_in(i_rho1)=.true.
       endif
+      if (lpencil_in(i_grho)) then
+        if (.not.ldensity_nolog) lpencil_in(i_rho)=.true.
+      endif
+      if (lpencil_in(i_glnrho)) then
+        if (ldensity_nolog) lpencil_in(i_rho1)=.true.
+      endif
       if (lpencil_in(i_uglnrho)) then
         lpencil_in(i_uu)=.true.
         lpencil_in(i_glnrho)=.true.
@@ -1355,14 +1361,6 @@ module Density
       if (lpencil_in(i_uij5glnrho)) then
         lpencil_in(i_uij5)=.true.
         lpencil_in(i_glnrho)=.true.
-      endif
-!  The pencils glnrho and grho come in a bundle.
-      if (lpencil_in(i_glnrho) .and. lpencil_in(i_grho)) then
-        if (ldensity_nolog) then
-          lpencil_in(i_grho)=.false.
-        else
-          lpencil_in(i_glnrho)=.false.
-        endif
       endif
       if (lpencil_in(i_del2lnrho)) then
         if (ldensity_nolog) then
@@ -1388,6 +1386,7 @@ module Density
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
+      real, dimension (nx,3) :: tmp3
       integer :: i
 !
       intent(inout) :: f,p
@@ -1413,21 +1412,22 @@ module Density
       endif
 ! glnrho and grho
       if (lpencil(i_glnrho).or.lpencil(i_grho)) then
+        call grad(f,ilnrho,tmp3)
         if (ldensity_nolog) then
-          call grad(f,ilnrho,p%grho)
+          if (lpencil(i_grho)) p%grho=tmp3
           if (lpencil(i_glnrho)) then
             do i=1,3
-              p%glnrho(:,i)=p%grho(:,i)/p%rho
+              p%glnrho(:,i)=tmp3(:,i)*p%rho1
             enddo
           endif
         else
-          call grad(f,ilnrho,p%glnrho)
+          if (lpencil(i_glnrho)) p%glnrho=tmp3
           if (lpencil(i_grho)) then
             if (irho/=0) then
               call grad(f,irho,p%grho)
             else
               do i=1,3
-                p%grho(:,i)=p%rho*p%glnrho(:,i)
+                p%grho(:,i)=p%rho*tmp3(:,i)
               enddo
             endif
           endif
