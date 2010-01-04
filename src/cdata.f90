@@ -250,7 +250,8 @@ module Cdata
 !
 !  Parameters related to the pencil check.
 !
-  logical :: lpencil_check=.false., lpencil_init=.false.
+  logical :: lpencil_check=.false., lpencil_check_small=.true.
+  logical :: lpencil_init=.false.
   logical :: lpencil_requested_swap=.true., lpencil_diagnos_swap=.false.
   logical :: lpencil_check_diagnos_opti=.false.
   logical :: lpencil_check_at_work=.false.

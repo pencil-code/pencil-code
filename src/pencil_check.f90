@@ -42,7 +42,7 @@ module Pencil_check
 !
       use Equ, only: initialize_pencils, pde
       use General, only: random_number_wrapper, random_seed_wrapper
-      use Mpicomm, only: mpireduce_and
+      use Mpicomm, only: mpireduce_and, mpireduce_or, mpibcast_logical
       use Sub, only: notanumber
 !
       real, dimension(mx,my,mz,mfarray) :: f
@@ -51,13 +51,13 @@ module Pencil_check
       real, allocatable, dimension(:,:,:,:) :: df_ref, f_other
       real, allocatable, dimension(:) :: fname_ref
       real, dimension (nx) :: dt1_max_ref
-      integer :: i,j,k,penc,iv
+      integer :: i,j,k,penc,iv,nite
       integer, dimension (mseed) :: iseed_org
-      logical :: lconsistent=.true., lconsistent_allproc=.false., ldie=.false.
+      logical :: lconsistent=.true., lconsistent_allproc=.false.
+      logical :: ldie=.false., ldie_all=.false.
       integer :: mem_stat1, mem_stat2, mem_stat3
 !
-      if (lroot) print*, &
-          'pencil_consistency_check: checking pencil case (takes some time)'
+      if (lroot) print*, 'pencil_consistency_check: checking pencil case'
       lpencil_check_at_work=.true.
 !
 !  Prevent code from dying due to any errors.
@@ -106,7 +106,17 @@ module Pencil_check
       if (notanumber(dt1_max_ref)) &
           print*,'pencil_consistency_check: NaNs in dt1_max_ref'
 !
-      do penc=1,npencils
+      nite=npencils
+      if ((.not.lpencil_check).and.lpencil_check_small) nite=0
+!
+      if (lroot) print*, 'pencil_consistency_check: checking requested pencils'
+!
+      do penc=0,nite
+        if (lroot.and.penc==0) &
+            print*, 'pencil_consistency_check: performing small pencil check'
+        if (lroot.and.penc==1) &
+            print*, 'pencil_consistency_check: performing full pencil check'// &
+            ' (takes a while)'
         df=0.0
         call random_seed_wrapper(PUT=iseed_org)
         do i=1,mvar+maux
@@ -117,10 +127,13 @@ module Pencil_check
 !  Calculate results with one pencil swapped.
 !
         lpencil=lpenc_requested
-        lpencil(penc)=(.not. lpencil(penc))
+        if (penc>0) then
+          lpencil(penc)=(.not. lpencil(penc))
+        else
+          lpencil=.true.
+        endif
         call pde(f_other,df,p)
-        if (notanumber(df)) &
-            print*,'pencil_consistency_check: NaNs in df_ref'
+        if (notanumber(df)) print*,'pencil_consistency_check: NaNs in df'
 !
 !  Compare results.
 !
@@ -144,18 +157,42 @@ f_loop:   do iv=1,mvar
         call mpireduce_and(lconsistent,lconsistent_allproc)
 !
         if (lroot) then
-          if (lconsistent_allproc .and. lpenc_requested(penc)) then
-            print '(a,i4,a)', 'pencil_consistency_check: '// &
-                'possible overcalculation... pencil '//&
-                trim(pencil_names(penc))//' (',penc,')', &
-                'is requested, but does not appear to be required!'
-          elseif ( (.not. lconsistent_allproc) .and. &
-                   (.not. lpenc_requested(penc)) ) then
-            print '(a,i4,a)','pencil_consistency_check: '// &
-                'MISSING PENCIL... pencil '// &
-                trim(pencil_names(penc))//' (',penc,')', &
-                'is not requested, but calculating it changes the results!'
-            ldie=.true.
+          if (penc>0) then
+            if (lconsistent_allproc .and. lpenc_requested(penc)) then
+              print '(a,i4,a)', ' pencil_consistency_check: '// &
+                  'possible overcalculation... pencil '//&
+                  trim(pencil_names(penc))//' (',penc,')'// &
+                  ' is requested, but does not appear to be required!'
+            elseif ( (.not. lconsistent_allproc) .and. &
+                     (.not. lpenc_requested(penc)) ) then
+              print '(a,i4,a)',' pencil_consistency_check: '// &
+                  'MISSING PENCIL... pencil '// &
+                  trim(pencil_names(penc))//' (',penc,')'// &
+                  ' is not requested, but calculating it changes the results!'
+              ldie=.true.
+            endif
+          else
+            if (.not.lconsistent_allproc) then
+              print*, 'pencil_consistency_check: '// &
+                  'the small pencil check has found one or more'
+              print*, '                          MISSING pencils. '// &
+                  'This could be a serious problem.'
+              if (lpencil_check) then
+                print*, 'pencil_consistency_check: '// &
+                    'the full pencil check beginning will now find'
+                print*, '                          out which pencils are missing'
+              else
+                print*, 'pencil_consistency_check: '// &
+                    'you need to run the full pencil check to find'
+                print*, '                          out which ones ('// &
+                    'set lpencil_check=T in &run_pars'
+                print*, '                          and run again)'
+                ldie=.true.
+              endif
+            else
+              print*, 'pencil_consistency_check: '// &
+                  'the small pencil check reported no problems'
+            endif
           endif
         endif
       enddo
@@ -179,7 +216,15 @@ f_loop:   do iv=1,mvar
       call pde(f_other,df,p)
       fname_ref=fname
 !
-      do penc=1,npencils
+      if (lroot) &
+          print*, 'pencil_consistency_check: checking diagnostics pencils'
+!
+      do penc=0,nite
+        if (lroot.and.penc==0) &
+            print*, 'pencil_consistency_check: performing small pencil check'
+        if (lroot.and.penc==1) &
+            print*, 'pencil_consistency_check: performing full pencil check'// &
+            ' (takes a while)'
         df=0.0
         call random_seed_wrapper(put=iseed_org)
         do i=1,mfarray
@@ -191,7 +236,11 @@ f_loop:   do iv=1,mvar
 !  Calculate diagnostics with one pencil swapped.
 !
         lpencil=(lpenc_diagnos.or.lpenc_requested)
-        lpencil(penc)=(.not. lpencil(penc))
+        if (penc>0) then
+          lpencil(penc)=(.not. lpencil(penc))
+        else
+          lpencil=.true.
+        endif
         call pde(f_other,df,p)
 !
 !  Compare results.
@@ -218,22 +267,46 @@ f_loop:   do iv=1,mvar
 !  !ref + !d + !r = d needed and not set, r needed and not set; missing d
 !
         if (lroot) then
-          if (lpencil_check_diagnos_opti .and. &
-              lconsistent_allproc .and. lpenc_diagnos(penc) ) then
-            print '(a,i4,a)','pencil_consistency_check: '// &
-                'OPTIMISATION POTENTIAL... pencil '// &
-                trim(pencil_names(penc))//' (',penc,')', &
-                'is requested for diagnostics, '// &
-                'but does not appear to be required!'
-          elseif ( (.not. lconsistent_allproc) .and. &
-              (.not. lpenc_diagnos(penc)) .and. &
-              (.not. lpenc_requested(penc)) ) then
-            print '(a,i4,a)','pencil_consistency_check: '// &
-                'MISSING PENCIL... pencil '// &
-                trim(pencil_names(penc))//' (',penc,')', &
-                'is not requested for diagnostics, '// &
-                'but calculating it changes the diagnostics!'
-            ldie=.true.
+          if (penc>0) then
+            if (lpencil_check_diagnos_opti .and. &
+                lconsistent_allproc .and. lpenc_diagnos(penc) ) then
+              print '(a,i4,a)','pencil_consistency_check: '// &
+                  'OPTIMISATION POTENTIAL... pencil '// &
+                  trim(pencil_names(penc))//' (',penc,')'// &
+                  ' is requested for diagnostics, '// &
+                  'but does not appear to be required!'
+            elseif ( (.not. lconsistent_allproc) .and. &
+                (.not. lpenc_diagnos(penc)) .and. &
+                (.not. lpenc_requested(penc)) ) then
+              print '(a,i4,a)','pencil_consistency_check: '// &
+                  'MISSING PENCIL... pencil '// &
+                  trim(pencil_names(penc))//' (',penc,')'// &
+                  ' is not requested for diagnostics, '// &
+                  'but calculating it changes the diagnostics!'
+              ldie=.true.
+            endif
+          else
+            if (.not.lconsistent_allproc) then
+              print*, 'pencil_consistency_check: '// &
+                  'the small pencil check has found one or more'
+              print*, '                          MISSING diagnostics pencils. '// &
+                  'This could be a serious problem.'
+              if (lpencil_check) then
+                print*, 'pencil_consistency_check: '// &
+                    'the full pencil check beginning now will find'
+                print*, '                          out which pencils are missing'
+              else
+                print*, 'pencil_consistency_check: '// &
+                    'you need to run the full pencil check to find'
+                print*, '                          out which ones ('// &
+                    'set lpencil_check=T in &run_pars'
+                print*, '                          and run again)'
+                ldie=.true.
+              endif
+            else
+              print*, 'pencil_consistency_check: '// &
+                  'the small pencil check reported no problems'
+            endif
           endif
         endif
       enddo
@@ -255,7 +328,10 @@ f_loop:   do iv=1,mvar
 !
       call life_support_off('end of pencil consistency check/')
 !
-      if (ldie) call fatal_error('pencil_consistency_check','DYING')
+      call mpireduce_or(ldie,ldie_all)
+      call mpibcast_logical(ldie_all,1)
+      if (ldie_all) call fatal_error('pencil_consistency_check', &
+          'one or more missing pencils')
 !
       lpencil_check_at_work=.false.
 !

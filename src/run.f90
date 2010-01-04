@@ -346,7 +346,8 @@ program run
 !
   suppress_pencil_check = control_file_exists("NO-PENCIL-CHECK")
   call mpibcast_logical(suppress_pencil_check, 1)
-  if (lpencil_check .and. .not. suppress_pencil_check) then
+  if ( (lpencil_check .and. .not. suppress_pencil_check) .or. &
+       ((.not.lpencil_check).and.lpencil_check_small) ) then
     call pencil_consistency_check(f,df,p)
   endif
 !
