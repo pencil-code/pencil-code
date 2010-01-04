@@ -30,7 +30,7 @@ module Persist
 !***********************************************************************
     subroutine input_persistent(lun)
 !
-!  Write auxiliary information into snapshot file.
+!  Read auxiliary information from snapshot file.
 !  lun should be set to the same lun as that of the snapshot.
 !
 !  26-may-03/axel: adapted from output_vect
