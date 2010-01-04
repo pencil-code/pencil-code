@@ -1,49 +1,43 @@
 ! $Id$
-
-!!!!!!!!!!!!!!!!!!!!!!!
-!!!   persist.f90   !!!
-!!!!!!!!!!!!!!!!!!!!!!!
-
-!!!  Module to handle variables whose state should persist
-!!!  between executions of run.x, e.g. the random number seeds
-!!!  and some other forcing state information.
-!!!
-!!!  25-Apr-2005/tony: Implemented initial try at backwards compatible
-!!!                    additions to var.dat files.
-!!!
-!!!  The idea is to use integer block and record type tags to store
-!!!  arbitrary extra information in the var files along with the
-!!!  actual field information.
-!!!
-!!!  The integers representing the various block/record types are defined
-!!!  in a separate file, record_types.inc.  These numbers MUST remain unique
-!!!  and MUST not be altered, though adding new types is acceptable.
-!!!  (Else old var.dat files may become unreadable)
-!!!
-
+!
+!  Module to handle variables whose state should persist between executions of
+!  run.x, e.g. the random number seeds and some other forcing state information.
+!
+!  25-Apr-2005/tony: Implemented initial try at backwards compatible
+!                    additions to var.dat files.
+!
+!  The idea is to use integer block and record type tags to store arbitrary
+!  extra information in the var files along with the actual field information.
+!
+!  The integers representing the various block/record types are defined in a
+!  separate file, record_types.inc.  These numbers MUST remain unique and MUST
+!  not be altered, though adding new types is acceptable (else old var.dat
+!  files may become unreadable).
+!
 module Persist
-
+!
+  use Cdata
+!
   implicit none
-
+!
   private
-
+!
   public :: input_persistent, output_persistent
-
+!
   include 'record_types.h'
-
-contains
+!
+  contains
 !***********************************************************************
     subroutine input_persistent(lun)
 !
-!  write auxiliary information into snapshot file
-!  lun should be set to the same lun as that of the snapshot
+!  Write auxiliary information into snapshot file.
+!  lun should be set to the same lun as that of the snapshot.
 !
 !  26-may-03/axel: adapted from output_vect
 !   6-apr-08/axel: added input_persistent_magnetic
 !
-      use Cdata
-      Use Interstellar, only: input_persistent_interstellar
-      Use Forcing, only: input_persistent_forcing
+      use Interstellar, only: input_persistent_interstellar
+      use Forcing, only: input_persistent_forcing
       use General, only: input_persistent_general
       use Magnetic, only: input_persistent_magnetic
       use Hydro, only: input_persistent_hydro
@@ -56,10 +50,11 @@ contains
 !
       read(lun,end=1000) id
       if (id/=id_block_PERSISTENT) then
-        if (lroot) print*,'input_persistent: No persistent data to read'
+        if ((ip<=8).and.lroot) &
+            print*,'input_persistent: No persistent data to read'
         return
       endif
-
+!
 dataloop: do
         read(lun,iostat=ierr,end=1000) id
         done=.false.
@@ -74,22 +69,21 @@ dataloop: do
         if (.not.done) call input_persistent_hydro(id,lun,done)
         if (.not.done) read(lun,end=1000) dummy
       enddo dataloop
-
-      if (lroot) print*,'input_persistent: DONE'
+!
+      if ((ip<=8).and.lroot) print*,'input_persistent: DONE'
       return
-1000  if (lroot) print*,'input_persistent: EOF termination'
+1000  if ((ip<=8).and.lroot) print*,'input_persistent: EOF termination'
 !
     endsubroutine input_persistent
 !***********************************************************************
     subroutine output_persistent(lun_output)
 !
-!  write auxiliary information into snapshot file
+!  Write auxiliary information into snapshot file.
 !  lun should be set to the same lun as that of the snapshot
 !
 !  26-may-03/axel: adapted from output_vect
 !   6-apr-08/axel: added output_persistent_magnetic
 !
-      use Cdata
       use Interstellar, only: output_persistent_interstellar
       use Forcing, only: output_persistent_forcing
       use General, only: output_persistent_general
@@ -109,5 +103,5 @@ dataloop: do
       write(lun_output) id_block_PERSISTENT
 !
     endsubroutine output_persistent
-
+!***********************************************************************
 endmodule Persist
