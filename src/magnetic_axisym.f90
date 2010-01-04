@@ -3237,12 +3237,12 @@ module Magnetic
       if (id==id_record_MAGNETIC_PHASE) then
         read (lun) phase_beltrami
         done=.true.
+        if (lroot) print*, 'input_persistent_magnetic: ', phase_beltrami
       elseif (id==id_record_MAGNETIC_AMPL) then
         read (lun) ampl_beltrami
         done=.true.
+        if (lroot) print*, 'input_persistent_magnetic: ', ampl_beltrami
       endif
-      if (lroot) &
-          print*,'input_persistent_magnetic: ',phase_beltrami,ampl_beltrami
 !
     endsubroutine input_persistent_magnetic
 !***********************************************************************
