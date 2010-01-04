@@ -210,8 +210,10 @@ program run
 !  Print resolution and dimension of the simulation.
 !
   dimensionality=min(nxgrid-1,1)+min(nygrid-1,1)+min(nzgrid-1,1)
-  if (lroot) write(*,'(a,i1,a)') 'This is a ',dimensionality,'-D run'
-  if (lroot) print*, 'nxgrid,nygrid,nzgrid=',nxgrid,nygrid,nzgrid
+  if (lroot) write(*,'(a,i1,a)') ' This is a ',dimensionality,'-D run'
+  if (lroot) print*, 'nxgrid, nygrid, nzgrid=', nxgrid, nygrid, nzgrid
+  if (lroot) print*, 'Lx, Ly, Lz=', Lxyz
+  if (lroot) print*, '      Vbox=', Lxyz(1)*Lxyz(2)*Lxyz(3)
 !
 !  Check if we want to divide cdtv by dimensionality.
 !  (old_cdtv defaults to .false.)
