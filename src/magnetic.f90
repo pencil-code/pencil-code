@@ -5700,8 +5700,8 @@ module Magnetic
 !***********************************************************************
     subroutine input_persistent_magnetic(id,lun,done)
 ! 
-!  Read in the stored phase and amplitude for the
-!  correction of the Beltrami wave forcing
+!  Read in the stored phase and amplitude for the correction of the Beltrami
+!  wave forcing.
 ! 
 !   5-apr-08/axel: adapted from input_persistent_forcing
 !
@@ -5711,12 +5711,12 @@ module Magnetic
       if (id==id_record_MAGNETIC_PHASE) then
         read (lun) phase_beltrami
         done=.true.
+        if (lroot) print*,'input_persistent_magnetic: ', phase_beltrami
       elseif (id==id_record_MAGNETIC_AMPL) then
         read (lun) ampl_beltrami
         done=.true.
+        if (lroot) print*,'input_persistent_magnetic: ', ampl_beltrami
       endif
-      if (lroot) &
-          print*,'input_persistent_magnetic: ',phase_beltrami,ampl_beltrami
 !
     endsubroutine input_persistent_magnetic
 !***********************************************************************
@@ -5730,9 +5730,8 @@ module Magnetic
       integer :: lun
 !
       if (lroot.and.ip<14) then
-        if (phase_beltrami>=0.) &
-            print*,'output_persistent_magnetic: ', &
-              phase_beltrami,ampl_beltrami
+        if (phase_beltrami>=0.0) print*, 'output_persistent_magnetic: ', &
+            phase_beltrami, ampl_beltrami
       endif
 !
 !  write details
