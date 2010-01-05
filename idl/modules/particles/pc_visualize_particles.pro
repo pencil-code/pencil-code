@@ -158,27 +158,52 @@ if (solid_object) then begin
              y0=objpvar.xx[irmv[k],1]-ypos[icyl]
              deposition_radius2=x0^2+y0^2
              deposition_radius=sqrt(deposition_radius2)
+             ;
+             ; Check if the solid collision happended in the vicinity of the
+             ; cylinder. Here this is defined as being closer than 
+             ; 0.2 radii away from the surface.
+             ;
              if (deposition_radius lt radius[icyl]*1.2) then begin
-                ipart_radii=0
-                while (objpvar.a[irmv[k]] ne param.ap0(ipart_radii)) do begin
-                   ipart_radii=ipart_radii+1
-                end
-                theta_tmp=acos(y0/deposition_radius)
-                theta=3.1415-theta_tmp
-                if (print_remove_data) then begin
-                   print,'time,k,r,x,y,theta=',$
-                         trmv[k],irmv[k],deposition_radius,x0,y0,theta
-                endif
-                if (total(solid_colls[icyl]) lt 100000) then begin
-                   theta_arr[ipart_radii,solid_colls[icyl,ipart_radii],0]=theta
-                   theta_arr[ipart_radii,solid_colls[icyl,ipart_radii],1]=trmv[k]
-                endif
-                solid_colls[icyl,ipart_radii]=solid_colls[icyl,ipart_radii]+1
-                if (objpvar.xx[irmv[k],1] gt ypos[icyl]) then begin
-                   back_colls[icyl,ipart_radii]=back_colls[icyl,ipart_radii]+1
-                endif else begin
-                   front_colls[icyl,ipart_radii]=front_colls[icyl,ipart_radii]+1
-                endelse
+                 ;
+                 ; Find the radius of the particle
+                 ;
+                 ipart_radii=0
+                 while (objpvar.a[irmv[k]] ne param.ap0(ipart_radii)) do begin
+                     ipart_radii=ipart_radii+1
+                 end
+                 ;
+                 ; Find the angle of the impaction
+                 ;
+                 theta_tmp=acos(y0/deposition_radius)
+                 theta=3.1415-theta_tmp
+                 if (print_remove_data) then begin
+                     print,'time,k,r,x,y,theta=',$
+                       trmv[k],irmv[k],deposition_radius,x0,y0,theta
+                 endif
+                 ;
+                 ; Store the angle of impaction in an array. 
+                 ;
+                 if (total(solid_colls[icyl]) lt 100000) then begin
+                     theta_arr[ipart_radii,solid_colls[icyl,ipart_radii],0]=$
+                       theta
+                     theta_arr[ipart_radii,solid_colls[icyl,ipart_radii],1]=$
+                       trmv[k]
+                 endif
+                 ;
+                 ; Find the number of solid collisions for a given cylinder 
+                 ; and a given particle radius.
+                 ;
+                 solid_colls[icyl,ipart_radii]=solid_colls[icyl,ipart_radii]+1
+                 ;
+                 ; Find the number of back side and front side collisions.
+                 ;
+                 if (objpvar.xx[irmv[k],1] gt ypos[icyl]) then begin
+                     back_colls[icyl,ipart_radii]=$
+                       back_colls[icyl,ipart_radii]+1
+                 endif else begin
+                     front_colls[icyl,ipart_radii]=$
+                       front_colls[icyl,ipart_radii]+1
+                 endelse
              endif
           endif
        endfor
