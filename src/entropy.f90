@@ -4110,7 +4110,7 @@ module Entropy
 !
     if (present(lcompute_grav)) then
       print*,'only compute the gravity profile',lcompute_grav
-      call farray_use_global('gg',iglobal_gg)
+      call farray_use_global('global_gg', iglobal_gg, vector=3)
       allocate (rr_mn(nx),u_mn(nx),lumi_mn(nx),g_r(nx))
       do imn=1,ny*nz
         m=mm(imn)
