@@ -17,10 +17,11 @@ pro pc_visualize_particles,png=png,removed=removed, savefile=savefile,xmin=xmin,
                            xmax=xmax,ymin=ymin,ymax=ymax,tmin=tmin,tmax=tmax,$
                            w=w,trace=trace,velofield=velofield,dots=dots,$
                            finalpng=finalpng,xtrace=xtrace,ytrace=ytrace,$
-                           store_vec=store_vec
+                           store_vec=store_vec,theta_arr=theta_arr,npart=npart
 ;
 device,decompose=0
 loadct,5
+!p.multi=[0,1,1]
 ;
 ; Set defaults
 ;
@@ -36,12 +37,14 @@ default,xtrace,0
 default,ytrace,0
 default,velofield,0
 default,dots,0
+default,noread,0
+print,'noread=',noread
 ;
 ; Read dimensions and namelists
 ;
 pc_read_dim,obj=procdim
 pc_read_param, object=param
-pc_read_pvar,obj=objpvar,/solid_object,irmv=irmv,theta_arr=theta_arr,$
+pc_read_pvar,obj=objpvar,/solid_object,irmv=irmv,$
   savefile=savefile,trmv=trmv
 pc_read_pstalk,obj=obj
 dims=size(obj.xp)
@@ -116,6 +119,14 @@ endif else begin
     linsert_particles_continuously=param.linsert_particles_continuously
 endelse
 ;
+; Find total number of particles with the different radii
+;
+npart=fltarr(npart_radii)
+for ipart_radii=0,npart_radii-1 do begin
+    npart[ipart_radii]=n_elements(where(objpvar.a eq param.ap0[ipart_radii]))
+end
+print,'npart=',npart
+;
 ;  Check how many particles have collided with a solid object
 ;
 solid_object=1
@@ -128,20 +139,26 @@ if (solid_object) then begin
   front_colls=solid_colls
   back_colls=solid_colls
   maxy=param.xyz1[1]
-  theta_arr=fltarr(npart_radii,10000,2)
+  theta_arr=fltarr(npart_radii,500000,2)
+  ;
+  ; Loop over all cylinders
+  ;
   for icyl=0,ncylinders-1 do begin
       if (param.coord_system eq 'cylindric') then begin
           init_uu=param.ampluu
       endif else begin
           init_uu=param.init_uu
       endelse
+      ;
+      ; Loop over all removed particles
+      ;
       for k=long(0),long(dims[1])-1 do begin        
           if (dims[0]>0) then begin              
              x0=objpvar.xx[irmv[k],0]-xpos[icyl]
              y0=objpvar.xx[irmv[k],1]-ypos[icyl]
              deposition_radius2=x0^2+y0^2
              deposition_radius=sqrt(deposition_radius2)
-             if (deposition_radius lt radius[icyl]*1.1) then begin
+             if (deposition_radius lt radius[icyl]*1.2) then begin
                 ipart_radii=0
                 while (objpvar.a[irmv[k]] ne param.ap0(ipart_radii)) do begin
                    ipart_radii=ipart_radii+1
@@ -152,7 +169,7 @@ if (solid_object) then begin
                    print,'time,k,r,x,y,theta=',$
                          trmv[k],irmv[k],deposition_radius,x0,y0,theta
                 endif
-                if (total(solid_colls[icyl]) lt 10000) then begin
+                if (total(solid_colls[icyl]) lt 100000) then begin
                    theta_arr[ipart_radii,solid_colls[icyl,ipart_radii],0]=theta
                    theta_arr[ipart_radii,solid_colls[icyl,ipart_radii],1]=trmv[k]
                 endif
@@ -173,6 +190,8 @@ if (solid_object) then begin
      initial_time=ts.t[0]
      final_time=min([objpvar.t,param2.max_particle_insert_time])
      npar_inserted=(final_time-initial_time)*param2.particles_insert_rate
+     dimsp=size(where(objpvar.a gt 0))
+     npar_inserted=dimsp[1]
   endif else begin
      npar_inserted=npar
   endelse
@@ -205,9 +224,9 @@ if (solid_object) then begin
      ;
      ; Find the capture efficiency
      ;
-     eta=float(solid_colls[*,i])*fractional_area/npar_inserted
-     front_eta=float(front_colls[*,i])*fractional_area/npar_inserted
-     back_eta=float(back_colls[*,i])*fractional_area/npar_inserted
+     eta=float(solid_colls[*,i])*fractional_area/npart(i)
+     front_eta=float(front_colls[*,i])*fractional_area/npart(i)
+     back_eta=float(back_colls[*,i])*fractional_area/npart(i)
      for icyl=0,ncylinders-1 do begin
         print,$
            diameter,$
@@ -260,33 +279,70 @@ endif
 ; Find where (in radians) the particles hit the surface of the cylinder as a
 ; function of time
 ;
+particle_hit=0
+tmin2=1e38
+tmax2=-1e38
 print,'The initial time of the simulation is  t =',min(obj.t)
+first=1
+WINDOW,4,XSIZE=256*2,YSIZE=256*2
+!p.multi=[0,1,2]
+!x.range=[min(obj.t),objpvar.t]
+!y.range=[0,!pi]
 for i=0,npart_radii-1 do begin
    theta_=theta_arr[i,*,0]
    time_=theta_arr[i,*,1]
    here=where(theta_ ne 0)
    if (here[0] ne -1) then begin
-      WINDOW,4,XSIZE=128*2,YSIZE=256*2
+       particle_hit=1
       theta=theta_[here]
       timereal=time_[here]
       dims=size(theta)
       ind=indgen(dims[1])
-      !x.range=[0,max(ind)]
-      !x.range=[min(obj.t),objpvar.t]
-      !y.range=[min(theta),max(theta)]
-      if (i eq 0) then begin
-         plot,timereal,theta,ps=i+1,ytit='!4h!6',xtit='time'
-         print,'The first particle hit the surface at  t =',min(timereal)
-         print,'The last particle hit the surface at   t =',max(timereal)
+      if (min(timereal) lt tmin2) then begin
+          tmin2=min(timereal)
+      endif
+      if (max(timereal) gt tmax2) then begin
+          tmax2=max(timereal)
+      endif
+      if (first) then begin
+         plot,timereal,theta,ps=1,ytit='!4h!6',xtit='time'
          if (savefile) then begin
-            save,timereal,theta,filename='./data/theta.sav'
+             ap0=param.ap0[0:npart_radii-1]
+            save,timereal,theta_arr,ap0,filename='./data/theta_arr.sav'
          endif
+         first=0
       endif else begin
-         oplot,timereal,theta,ps=i+1
+         oplot,timereal,theta,ps=1
       end
-   endif else begin
-      print,'No particles has hit the cylinder surface!'
-   endelse
+  endif
+end
+first=1
+!x.range=[min(param.ap0[0:npart_radii-1]),max(param.ap0[0:npart_radii-1])]
+for i=0,npart_radii-1 do begin
+    theta_=theta_arr[i,*,0]
+    rad_=param.ap0[i]
+    here=where(theta_ ne 0)
+    if (here[0] ne -1) then begin
+        particle_hit=1
+        theta=theta_[here]
+        rad=time_[here]
+        rad[*]=rad_
+        dims=size(theta)
+        ind=indgen(dims[1])
+        if (first) then begin
+            plot_oi,rad,theta,ps=3,ytit='!4h!6',xtit='particle radius'
+            first=0
+        endif else begin
+            oplot,rad,theta,ps=3
+        end
+    endif
+end
+!p.multi=[0,1,1]
+if (particle_hit) then begin
+    print,'The first particle hit the surface at  t =',tmin2
+    print,'The last particle hit the surface at   t =',tmax2
+endif else begin
+    print,'No particle has hit the surface!'
 end
 print,'The final time of the simulation is    t =',objpvar.t
 ;
@@ -297,6 +353,8 @@ yr=ymax-ymin
 WINDOW,3,XSIZE=1024*xr/yr*1.6,YSIZE=1024
 !x.range=[xmin,xmax]
 !y.range=[ymin,ymax]
+!x.style=1
+!y.style=1
 ;
 ; Choose symbol for representing particles
 ;
