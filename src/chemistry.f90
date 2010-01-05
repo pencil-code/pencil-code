@@ -2081,7 +2081,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
 !  advection terms
 !
-        if (ladvection) then
+        if (lhydro.and.ladvection) then
           call grad(f,ichemspec(k),gchemspec)
           call dot_mn(p%uu,gchemspec,ugchemspec)
           if (lmobility) ugchemspec=ugchemspec*mobility(k)
@@ -4144,7 +4144,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !***************************************************************
     subroutine calc_diffusion_term(f,p)
 !
-!  DOCUMENT ME!!!
+!  Calculate diffusion term, p%DYDt_diff
 !
       use Cdata
       use Mpicomm
@@ -4165,7 +4165,12 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       p%DYDt_diff=0.
       diff_k=chem_diff
 !
+!  Loop over all chemical species.
+!
       do k=1,nchemspec
+!
+!  Simple chemistry (not using ChemKin formalism).
+!  Eliminate need for p%glnrho if density is not included.
 !
         if (.not. lcheminp) then
           if (chem_diff/=0.) then
@@ -4173,8 +4178,12 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
             if (headtt) print*,'dchemistry_dt: k,diff_k=',k,diff_k
             call del2(f,ichemspec(k),del2chemspec)
             call grad(f,ichemspec(k),gchemspec)
-            call dot_mn(p%glnrho,gchemspec,diff_op)
-            diff_op=diff_op+del2chemspec
+            if (ldensity) then
+              call dot_mn(p%glnrho,gchemspec,diff_op)
+              diff_op=diff_op+del2chemspec
+            else
+              diff_op=del2chemspec
+            endif
             p%DYDt_diff(:,k)=diff_k*diff_op
           endif
         else

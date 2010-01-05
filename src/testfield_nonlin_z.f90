@@ -525,6 +525,7 @@ module Testfield
       use Cdata
 !
       lpenc_requested(i_uu)=.true.
+      lpenc_requested(i_bbb)=.true.
 !
     endsubroutine pencil_criteria_testfield
 !***********************************************************************
@@ -745,11 +746,11 @@ module Testfield
 !
           if (lcalc_aamean) then
             do j=1,3
-              bbfluct(:,j)=p%bb(:,j)-bbmz(n-n1+1,j)
+              bbfluct(:,j)=p%bbb(:,j)-bbmz(n-n1+1,j)
               jjfluct(:,j)=p%jj(:,j)-jjmz(n-n1+1,j)
             enddo
           else
-            bbfluct=p%bb
+            bbfluct=p%bbb
             jjfluct=p%jj
           endif
 !
@@ -1241,9 +1242,9 @@ module Testfield
               call cross_mn(jjtest,b0ref,jxbtest2)
             case ('(ii)')
               call cross_mn(u0ref,bbtest,uxbtest1)
-              call cross_mn(uutest,p%bb,uxbtest2)
+              call cross_mn(uutest,p%bbb,uxbtest2)
               call cross_mn(j0ref,bbtest,jxbtest1)
-              call cross_mn(jjtest,p%bb,jxbtest2)
+              call cross_mn(jjtest,p%bbb,jxbtest2)
             case default
               call fatal_error('calc_ltestfield_pars','??itestfield_method')
             endselect
