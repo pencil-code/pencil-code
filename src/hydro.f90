@@ -200,9 +200,12 @@ module Hydro
   integer :: idiag_ux2my=0      ! DIAG_DOC: 
   integer :: idiag_uy2my=0      ! DIAG_DOC: 
   integer :: idiag_uz2my=0      ! DIAG_DOC: 
-  integer :: idiag_ux2mz=0      ! DIAG_DOC: 
-  integer :: idiag_uy2mz=0      ! DIAG_DOC: 
-  integer :: idiag_uz2mz=0      ! DIAG_DOC: 
+  integer :: idiag_ux2mz=0      ! DIAG_DOC: $\left<u_x^2\right>_{xy}$
+  integer :: idiag_uy2mz=0      ! DIAG_DOC: $\left<u_y^2\right>_{xy}$
+  integer :: idiag_uz2mz=0      ! DIAG_DOC: $\left<u_z^2\right>_{xy}$
+  integer :: idiag_rux2mz=0     ! DIAG_DOC: $\left<\varrho u_x^2\right>_{xy}$
+  integer :: idiag_ruy2mz=0     ! DIAG_DOC: $\left<\varrho u_y^2\right>_{xy}$
+  integer :: idiag_ruz2mz=0     ! DIAG_DOC: $\left<\varrho u_z^2\right>_{xy}$
   integer :: idiag_uxuym=0      ! DIAG_DOC: $\left<u_x u_y\right>$
   integer :: idiag_uxuzm=0      ! DIAG_DOC: $\left<u_x u_z\right>$
   integer :: idiag_uyuzm=0      ! DIAG_DOC: $\left<u_y u_z\right>$
@@ -1888,6 +1891,9 @@ module Hydro
         if (idiag_ux2mz/=0)  call xysum_mn_name_z(p%uu(:,1)**2,idiag_ux2mz)
         if (idiag_uy2mz/=0)  call xysum_mn_name_z(p%uu(:,2)**2,idiag_uy2mz)
         if (idiag_uz2mz/=0)  call xysum_mn_name_z(p%uu(:,3)**2,idiag_uz2mz)
+        if (idiag_rux2mz/=0) call xysum_mn_name_z(p%rho*p%uu(:,1)**2,idiag_rux2mz)
+        if (idiag_ruy2mz/=0) call xysum_mn_name_z(p%rho*p%uu(:,2)**2,idiag_ruy2mz)
+        if (idiag_ruz2mz/=0) call xysum_mn_name_z(p%rho*p%uu(:,3)**2,idiag_ruz2mz)
         if (idiag_ux2my/=0)  call xzsum_mn_name_y(p%uu(:,1)**2,idiag_ux2my)
         if (idiag_uy2my/=0)  call xzsum_mn_name_y(p%uu(:,2)**2,idiag_uy2my)
         if (idiag_uz2my/=0)  call xzsum_mn_name_y(p%uu(:,3)**2,idiag_uz2my)
@@ -3105,6 +3111,9 @@ module Hydro
         idiag_ux2mz=0
         idiag_uy2mz=0 
         idiag_uz2mz=0 
+        idiag_rux2mz=0
+        idiag_ruy2mz=0 
+        idiag_ruz2mz=0 
         idiag_uxmz=0
         idiag_uymz=0
         idiag_uzmz=0
@@ -3468,12 +3477,12 @@ module Hydro
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'oxmz',idiag_oxmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'oymz',idiag_oymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ozmz',idiag_ozmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-            'ux2mz',idiag_ux2mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-            'uy2mz',idiag_uy2mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-            'uz2mz',idiag_uz2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ux2mz',idiag_ux2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uy2mz',idiag_uy2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uz2mz',idiag_uz2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rux2mz',idiag_rux2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ruy2mz',idiag_ruy2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ruz2mz',idiag_ruz2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
             'uxuymz',idiag_uxuymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
@@ -3677,6 +3686,12 @@ module Hydro
         write(3,*) 'i_oxmz=',idiag_oxmz
         write(3,*) 'i_oymz=',idiag_oymz
         write(3,*) 'i_ozmz=',idiag_ozmz
+        write(3,*) 'i_ux2mz=',idiag_ux2mz
+        write(3,*) 'i_uy2mz=',idiag_uy2mz
+        write(3,*) 'i_uz2mz=',idiag_uz2mz
+        write(3,*) 'i_rux2mz=',idiag_rux2mz
+        write(3,*) 'i_ruy2mz=',idiag_ruy2mz
+        write(3,*) 'i_ruz2mz=',idiag_ruz2mz
         write(3,*) 'i_uxmxy=',idiag_uxmxy
         write(3,*) 'i_uymxy=',idiag_uymxy
         write(3,*) 'i_uzmxy=',idiag_uzmxy

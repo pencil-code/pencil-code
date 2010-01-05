@@ -404,6 +404,9 @@ module Magnetic
   integer :: idiag_bx2mz=0      ! DIAG_DOC: $\left< B_x^2 \right>_{xy}$
   integer :: idiag_by2mz=0      ! DIAG_DOC: $\left< B_y^2 \right>_{xy}$
   integer :: idiag_bz2mz=0      ! DIAG_DOC: $\left< B_z^2 \right>_{xy}$
+  integer :: idiag_bx2rmz=0     ! DIAG_DOC: $\left< B_x^2/\varrho \right>_{xy}$
+  integer :: idiag_by2rmz=0     ! DIAG_DOC: $\left< B_y^2/\varrho \right>_{xy}$
+  integer :: idiag_bz2rmz=0     ! DIAG_DOC: $\left< B_z^2/\varrho \right>_{xy}$
   integer :: idiag_jbmz=0       ! DIAG_DOC: $\left<\Jv\cdot\Bv\right>|_{xy}$
   integer :: idiag_abmz=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>|_{xy}$
   integer :: idiag_examz1=0     ! DIAG_DOC: $\left<\Ev\times\Av\right>_{xy}|_x$
@@ -2796,6 +2799,9 @@ module Magnetic
         if (idiag_bx2mz/=0)  call xysum_mn_name_z(p%bb(:,1)**2,idiag_bx2mz)
         if (idiag_by2mz/=0)  call xysum_mn_name_z(p%bb(:,2)**2,idiag_by2mz)
         if (idiag_bz2mz/=0)  call xysum_mn_name_z(p%bb(:,3)**2,idiag_bz2mz)
+        if (idiag_bx2rmz/=0) call xysum_mn_name_z(p%bb(:,1)**2*p%rho1,idiag_bx2rmz)
+        if (idiag_by2rmz/=0) call xysum_mn_name_z(p%bb(:,2)**2*p%rho1,idiag_by2rmz)
+        if (idiag_bz2rmz/=0) call xysum_mn_name_z(p%bb(:,3)**2*p%rho1,idiag_bz2rmz)
         if (idiag_jbmz/=0)   call xysum_mn_name_z(p%jb,idiag_jbmz)
         if (idiag_abmz/=0)   call xysum_mn_name_z(p%ab,idiag_abmz)
         if (idiag_etatotalmx/=0) call yzsum_mn_name_x(etatotal,idiag_etatotalmx)
@@ -5785,9 +5791,11 @@ module Magnetic
         idiag_emxamz3=0; idiag_jmx=0; idiag_jmy=0; idiag_jmz=0; idiag_ambmz=0
         idiag_jmbmz=0; idiag_kmz=0; idiag_kx_aa=0
         idiag_ambmzh=0;idiag_ambmzn=0;idiag_ambmzs=0; idiag_bmzph=0
-        idiag_bmzphe=0; idiag_bcosphz=0; idiag_bsinphz=0; idiag_bx2mz=0
-        idiag_by2mz=0; idiag_bz2mz=0; idiag_bxmxy=0; idiag_bymxy=0
-        idiag_bzmxy=0; idiag_jxmxy=0; idiag_jymxy=0; idiag_jzmxy=0
+        idiag_bmzphe=0; idiag_bcosphz=0; idiag_bsinphz=0
+        idiag_bx2mz=0; idiag_by2mz=0; idiag_bz2mz=0
+        idiag_bx2rmz=0; idiag_by2rmz=0; idiag_bz2rmz=0
+        idiag_bxmxy=0; idiag_bymxy=0; idiag_bzmxy=0
+        idiag_jxmxy=0; idiag_jymxy=0; idiag_jzmxy=0
         idiag_bx2mxy=0; idiag_by2mxy=0; idiag_bz2mxy=0; idiag_bxbymxy=0
         idiag_bxbzmxy=0; idiag_bybzmxy=0; idiag_bxbymxz=0; idiag_bxbzmxz=0
         idiag_bybzmxz=0; idiag_bxmxz=0; idiag_bymxz=0; idiag_bzmxz=0
@@ -6078,12 +6086,12 @@ module Magnetic
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'Exmz',idiag_Exmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'Eymz',idiag_Eymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'Ezmz',idiag_Ezmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-            'bx2mz',idiag_bx2mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-            'by2mz',idiag_by2mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-            'bz2mz',idiag_bz2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bx2mz',idiag_bx2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'by2mz',idiag_by2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bz2mz',idiag_bz2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bx2rmz',idiag_bx2rmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'by2rmz',idiag_by2rmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bz2rmz',idiag_bz2rmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
             'bxbymz',idiag_bxbymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
@@ -6291,6 +6299,9 @@ module Magnetic
         write(3,*) 'i_bx2mz=',idiag_bx2mz
         write(3,*) 'i_by2mz=',idiag_by2mz
         write(3,*) 'i_bz2mz=',idiag_bz2mz
+        write(3,*) 'i_bx2rmz=',idiag_bx2rmz
+        write(3,*) 'i_by2rmz=',idiag_by2rmz
+        write(3,*) 'i_bz2rmz=',idiag_bz2rmz
         write(3,*) 'i_bxbymz=',idiag_bxbymz
         write(3,*) 'i_b2mz=',idiag_b2mz
         write(3,*) 'i_bmx=',idiag_bmx
