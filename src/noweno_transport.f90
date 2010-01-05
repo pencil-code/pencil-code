@@ -25,10 +25,6 @@ module WENO_transport
       real, dimension(:), intent(in) :: dq
       real, dimension(:), intent(in)  :: dx_1, dy_1, dz_1
 !
-      print*, 'weno_transp: you are using the nowenotransport module, but lweno_transport=T'
-      print*, 'weno_transp: set WENO_TRANSPORT =   weno_transport in Makefile.local'
-      STOP
-!
       if (.false.) print*, fq
       if (.false.) print*, m
       if (.false.) print*, n
