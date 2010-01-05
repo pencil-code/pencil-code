@@ -851,17 +851,17 @@ module Gravity
     endsubroutine rprint_gravity
 !***********************************************************************
     subroutine compute_gravity_star(f, wheat, luminosity, star_cte)
-
+!
+!  Compute the global gravity field for a star-in-a-box with a central heating
+!  05-jan-2010/dintrans: coded
+!
     use Sub, only: get_radial_distance, erfunc
-
+!
     real, dimension (mx,my,mz,mfarray) :: f
     real :: wheat, luminosity, star_cte
     real, dimension (nx) :: g_r, rr_mn, rr_sph, rr_cyl, u_mn, lumi_mn
     real, dimension (nx,3) :: gg_mn=0.0
-
-    print*,'***** i am in compute_gravity_star'
-    print*,'wheat, luminosity=', wheat, luminosity
-
+!
     do n=n1,n2
     do m=m1,m2
       call get_radial_distance(rr_sph, rr_cyl)
@@ -878,7 +878,7 @@ module Gravity
       f(l1:l2,m,n,iglobal_gg:iglobal_gg+2) = gg_mn
     enddo 
     enddo
-
+!
     endsubroutine compute_gravity_star
 !***********************************************************************
 endmodule Gravity
