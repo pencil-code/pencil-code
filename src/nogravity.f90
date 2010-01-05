@@ -342,4 +342,13 @@ module Gravity
 !
     endsubroutine rprint_gravity
 !***********************************************************************
+    subroutine compute_gravity_star(f, wheat, luminosity, star_cte)
+
+    real, dimension (mx,my,mz,mfarray) :: f
+    real :: wheat, luminosity, star_cte
+
+    call keep_compiler_quiet(f)
+
+    endsubroutine compute_gravity_star
+!***********************************************************************
 endmodule Gravity

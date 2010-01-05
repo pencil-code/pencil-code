@@ -256,7 +256,7 @@ module Entropy
                                  mpoly, mpoly0, mpoly1, mpoly2, &
                                  select_eos_variable,gamma,gamma_m1
       use FArrayManager
-      use Gravity, only: gravz,g0
+      use Gravity, only: gravz, g0, compute_gravity_star
       use Mpicomm, only: stop_it
       use SharedVariables, only: put_shared_variable
 !
@@ -265,9 +265,9 @@ module Entropy
 !
       real, dimension (nx,3) :: glhc
       real, dimension (nx) :: hcond
-      real :: beta1, cp1, beta0, TT_crit
+      real :: beta1, cp1, beta0, TT_crit, star_cte
       integer :: i, ierr, q
-      logical :: lnothing,lcompute_grav
+      logical :: lnothing
       type (pencil_case) :: p
 !
 ! Check any module dependencies
@@ -504,8 +504,9 @@ module Entropy
           cs2cool=cs20
           cs2_ext=cs20
           if (rcool==0.) rcool=r_ext
-          ! only compute the gravity profile
-          call star_heat(f,lcompute_grav)
+          ! compute the gravity profile inside the star
+          star_cte=(mpoly0+1.)/hcond0*gamma_m1/gamma
+          call compute_gravity_star(f, wheat, luminosity, star_cte)
 
         case ('cylind_layers')
           if (bcx1(iss)=='c1') then
@@ -4086,15 +4087,15 @@ module Entropy
 !
     endsubroutine shell_ss_layers
 !***********************************************************************
-    subroutine star_heat(f,lcompute_grav)
+    subroutine star_heat(f)
 !
 !  Initialize entropy for two superposed polytropes with a central heating
 !
 !  20-dec-06/dintrans: coded
 !  28-nov-07/dintrans: merged with strat_heat_grav
+!  05-jan-10/dintrans: now the gravity field is computed in gravity_r
 !
-    use EquationOfState, only: gamma, gamma_m1, rho0, lnrho0, cs20, get_soundspeed,eoscalc, ilnrho_TT
-    use FArrayManager
+    use EquationOfState, only: rho0, lnrho0, get_soundspeed,eoscalc, ilnrho_TT
     use Sub, only: step, interp1, erfunc
 
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -4103,40 +4104,7 @@ module Entropy
     real, dimension (nr) :: r,lnrho,temp,hcond
     real                 :: u,r_mn,lnrho_r,temp_r,cs2,ss,lumi,g 
     real                 :: rhotop, rbot,rt_old,rt_new,rhobot,rb_old,rb_new,crit,r_max
-! variables for the gravity profile
-    logical, optional    :: lcompute_grav
-    integer, pointer     :: iglobal_gg
-    real, allocatable, dimension (:)   :: rr_mn,u_mn,lumi_mn,g_r
 !
-    if (present(lcompute_grav)) then
-      print*,'only compute the gravity profile',lcompute_grav
-      call farray_use_global('global_gg', iglobal_gg, vector=3)
-      allocate (rr_mn(nx),u_mn(nx),lumi_mn(nx),g_r(nx))
-      do imn=1,ny*nz
-        m=mm(imn)
-        n=nn(imn)
-        if (nzgrid == 1) then
-          rr_mn=sqrt(x(l1:l2)**2+y(m)**2)
-        else
-          rr_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
-        endif
-        u_mn=rr_mn/sqrt(2.)/wheat
-        if (nzgrid == 1) then
-          lumi_mn=luminosity*(1.-exp(-u_mn**2))
-          g_r=-lumi_mn/(2.*pi*rr_mn)*(mpoly0+1.)/hcond0*gamma_m1/gamma
-          f(l1:l2,m,n,iglobal_gg+2) = 0.                 ! g_z=0
-        else
-          lumi_mn=luminosity*(erfunc(u_mn)-2.*u_mn/sqrt(pi)*exp(-u_mn**2))
-          g_r=-lumi_mn/(4.*pi*rr_mn**2)*(mpoly0+1.)/hcond0*gamma_m1/gamma
-          f(l1:l2,m,n,iglobal_gg+2) = z(n)/rr_mn*g_r     ! g_z
-        endif
-        f(l1:l2,m,n,iglobal_gg)   = x(l1:l2)/rr_mn*g_r   ! g_x
-        f(l1:l2,m,n,iglobal_gg+1) = y(m)/rr_mn*g_r       ! g_y
-     enddo
-     deallocate(rr_mn,u_mn,lumi_mn,g_r)
-     return
-    endif
-
 ! uncomment to force rhotop=rho0 and just compute the corresponding setup
 !   rhotop=rho0
 !   call strat_heat(lnrho,temp,rhotop,rhobot)
