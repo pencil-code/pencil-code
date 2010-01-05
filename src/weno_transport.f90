@@ -52,8 +52,9 @@ module WENO_transport
       real, dimension(:), intent(out) :: dq_out
       real, dimension(:), intent(in)  :: dx_1, dy_1, dz_1
 !
-      real, allocatable, dimension(:) :: vsig, dq, dl_1
+      real, allocatable, dimension(:) :: vsig, dq, fl, fr
       integer :: i, mx, my, mz, nghost
+      logical :: lflag
 !
 !  Possible to multiply transported variable by another variables, e.g. to
 !  transport the momentum rho*u.
@@ -73,7 +74,8 @@ module WENO_transport
 !
       if (.not. allocated(vsig)) allocate(vsig(mx))
       if (.not. allocated(dq))   allocate(dq  (mx))
-      if (.not. allocated(dl_1)) allocate(dl_1(mx))
+      if (.not. allocated(fl))   allocate(fl(mx))
+      if (.not. allocated(fr))   allocate(fr(mx))
       if (.not. allocated(f))    allocate( f  (-nw:nw,mx))
       if (.not. allocated(df))   allocate(df  (-nw:nw,mx))
 !
@@ -95,8 +97,13 @@ module WENO_transport
           f (i+1,:)=cshift(fq(:,m,n,iux),i)*cshift(fq(:,m,n,iq)*fq(:,m,n,iq1),i)
         endif 
       enddo
+!
+      call weno5_1d(fl)
+!   
+!  Time derivative for x-transport.
 !      
-      call weno5_1d(dq,dx_1)
+      fr = cshift(fl,1)
+      dq = -(fl - fr) * dx_1
 !
 !  WENO transport in y-direction.
 !
@@ -104,6 +111,8 @@ module WENO_transport
           abs(fq(:,m-3,n,iuy)), abs(fq(:,m-2,n,iuy)), abs(fq(:,m-1,n,iuy)), &
           abs(fq(:,m  ,n,iuy)), &
           abs(fq(:,m+1,n,iuy)), abs(fq(:,m+2,n,iuy)), abs(fq(:,m+3,n,iuy)) )
+!
+!  Left fluxes.
 !
       do i=-nw-1+1,nw-1
         if (iq1<0) then
@@ -115,8 +124,25 @@ module WENO_transport
         endif
       enddo
 !      
-      dl_1(:)=dy_1(m)
-!      call weno5_1d(dq,dl_1)
+      call weno5_1d(fl)
+!
+!  Right fluxes.
+!
+      do i=-nw-1+1,nw-1
+        if (iq1<0) then
+          df(i+1,:)=vsig           *fq(:,m+i+1,n,iq)
+          f (i+1,:)=fq(:,m+i+1,n,iuy)*fq(:,m+i+1,n,iq)
+        else
+          df(i+1,:)=vsig             *fq(:,m+i+1,n,iq)*fq(:,m+i+1,n,iq1)
+          f (i+1,:)=fq(:,m+i+1,n,iuy)*fq(:,m+i+1,n,iq)*fq(:,m+i+1,n,iq1)
+        endif
+      enddo
+!
+      call weno5_1d(fr)
+!   
+!  Time derivative for y-transport.
+!      
+      dq = dq - (fl - fr) * dy_1(m)
 !
 !  WENO transport in z-direction.
 !
@@ -135,7 +161,7 @@ module WENO_transport
         endif
       enddo
 !      
-      dl_1=dz_1(n)
+!      dl_1=dz_1(n)
 !      call weno5_1d(dq,dl_1)
 !
 !  Return transport pencil without ghost cells.
@@ -147,30 +173,30 @@ module WENO_transport
 !
       if (allocated(vsig)) deallocate(vsig)
       if (allocated(dq))   deallocate(dq)
-      if (allocated(dl_1)) deallocate(dl_1)
+      if (allocated(fl))   deallocate(fl) 
+      if (allocated(fr))   deallocate(fr)
       if (allocated(f))    deallocate(f)
       if (allocated(df))   deallocate(df)
 !      
     endsubroutine weno5
 !***********************************************************************
-    subroutine weno5_1d(dq,dx_1)
+    subroutine weno5_1d(flux)
 !
 !  Fifth order implementation of WENO scheme (1-D version).
 !
 !  29-dec-09/evghenii: coded
 !
-      real, dimension(:), intent(inout) :: dq
-      real, dimension(:), intent(in) :: dx_1
+      real, dimension(:), intent(inout) :: flux
 !
       real, parameter :: WENO_POW = 2
       real, parameter :: WENO_EPS = 1.0e-6
-      real, dimension(size(dq)) :: b1, b2, b3
-      real, dimension(size(dq)) :: wh1, wh2, wh3, wh
-      real, dimension(size(dq)) :: fh1, fh2, fh3
-      real, dimension(size(dq))         :: flux
+      real, dimension(size(flux)) :: b1, b2, b3
+      real, dimension(size(flux)) :: wh1, wh2, wh3, wh
+      real, dimension(size(flux)) :: fh1, fh2, fh3
       real :: g1, g2, g3
+      integer :: idx
 !
-      f = 0.5 * (f + df)
+      f(:,:) = 0.5 * (f(:,:) + df(:,:))
 !      
       b1(:) = &
           13.0/12.0 * (f(-2,:) - 2.0*f(-1,:) +     f(0,:))**2 + &
@@ -229,11 +255,9 @@ module WENO_transport
       fh1(:) =  1.0/3.0*f(+3,:) - 7.0/6.0*f(+2,:) + 11.0/6.0*f(+1,:)
       fh2(:) = -1.0/6.0*f(+2,:) + 5.0/6.0*f(+1,:) + 1.0/ 3.0*f( 0,:)
       fh3(:) =  1.0/3.0*f(+1,:) + 5.0/6.0*f( 0,:) - 1.0/ 6.0*f(-1,:)
-!    
+!
       flux = flux + wh1*fh1 + wh2*fh2 + wh3*fh3
-!         
-      dq = dq + (cshift(flux, 1) - flux)*dx_1
-!  
+!
     endsubroutine weno5_1d
 !***********************************************************************
 endmodule WENO_transport
