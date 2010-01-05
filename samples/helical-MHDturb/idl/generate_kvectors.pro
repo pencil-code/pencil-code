@@ -24,25 +24,29 @@
 ;  so k1 < kref < k2, where kref^2=kx^2+ky^2+kz^2/ez^2.
 ;  So, for an 1:2 anisotropy (kz=2*kx) we put ez=2.
 ;
+;  For tall boxes, it is useful to allow all smaller kz vectors, so we
+;  put, for a 16x16x256 box, for example, ;dkz=1./16. instead of 1.
+;
 ;  uncomment (or reorder) the following as appropriate
 ;
-ex=1. & ey=1. & ez=1. & kmax=11 & k1=9.99 & k2=10.01 ;(gives 30 vectors)
-ex=1. & ey=1. & ez=1. & kmax=6 & k1=5.5 & k2=6.5   ;(gives  450 vectors)
-ex=1. & ey=1. & ez=1. & kmax=11 & k1=9.9 & k2=10.1   ;(gives 318 vectors)
-ex=1. & ey=1. & ez=1. & kmax=6 & k1=1.5 & k2=2.5   ;(gives 62 vectors)
-ex=1. & ey=1. & ez=1. & kmax=31 & k1=29.9 & k2=30.1   ;(gives 318 vectors)
-ex=1. & ey=1. & ez=1. & kmax=10 & k1=4.0 & k2=5.0    ;(gives 228 vectors)
-ex=1. & ey=1. & ez=1. & kmax=10 & k1=4.5 & k2=5.5    ;(gives 350 vectors)
-ex=1. & ey=1. & ez=1. & kmax=31 & k1=26.9 & k2=27.1   ;(gives 2286 vectors)
-ex=1. & ey=1. & ez=1. & kmax=6  & k1=3.2 & k2=4.8   ;(gives 314 vectors)
-ex=1. & ey=1. & ez=1. & kmax=6  & k1=3.2 & k2=4.6   ;(gives 314 vectors)
-ex=1. & ey=1. & ez=1. & kmax=6  & k1=2.0 & k2=3.0   ;(gives 60 vectors)
-ex=1. & ey=1. & ez=1. & kmax=16 & k1=14.95 & k2=15.05    ;(gives 294 vectors)
-ex=1. & ey=1. & ez=1. & kmax=10 & k1=2.5 & k2=3.5    ;(gives 98 vectors)
-ex=1. & ey=1. & ez=1. & kmax=6 & k1=1.0 & k2=2.0   ;(gives 20 vectors)
-ex=1. & ey=1. & ez=1. & kmax=6 & k1=1.0 & k2=2.01   ;(gives 26 vectors)
-ex=1. & ey=1. & ez=1. & kmax=6 & k1=1.0 & k2=3.0   ;(gives 86 vectors)
-;ex=1. & ey=1. & ez=2. & kmax=10 & k1=3.8 & k2=4.2    ;(gives 98 vectors)
+dkz=1. & ex=1. & ey=1. & ez=1. & kmax=11 & k1=9.99 & k2=10.01 ;(gives 30 vectors)
+dkz=1. & ex=1. & ey=1. & ez=1. & kmax=6 & k1=5.5 & k2=6.5   ;(gives  450 vectors)
+dkz=1. & ex=1. & ey=1. & ez=1. & kmax=11 & k1=9.9 & k2=10.1   ;(gives 318 vectors)
+dkz=1. & ex=1. & ey=1. & ez=1. & kmax=6 & k1=1.5 & k2=2.5   ;(gives 62 vectors)
+dkz=1. & ex=1. & ey=1. & ez=1. & kmax=31 & k1=29.9 & k2=30.1   ;(gives 318 vectors)
+dkz=1. & ex=1. & ey=1. & ez=1. & kmax=10 & k1=4.0 & k2=5.0    ;(gives 228 vectors)
+dkz=1. & ex=1. & ey=1. & ez=1. & kmax=10 & k1=4.5 & k2=5.5    ;(gives 350 vectors)
+dkz=1. & ex=1. & ey=1. & ez=1. & kmax=31 & k1=26.9 & k2=27.1   ;(gives 2286 vectors)
+dkz=1. & ex=1. & ey=1. & ez=1. & kmax=6  & k1=3.2 & k2=4.8   ;(gives 314 vectors)
+dkz=1. & ex=1. & ey=1. & ez=1. & kmax=6  & k1=3.2 & k2=4.6   ;(gives 314 vectors)
+dkz=1. & ex=1. & ey=1. & ez=1. & kmax=6  & k1=2.0 & k2=3.0   ;(gives 60 vectors)
+dkz=1. & ex=1. & ey=1. & ez=1. & kmax=16 & k1=14.95 & k2=15.05    ;(gives 294 vectors)
+dkz=1. & ex=1. & ey=1. & ez=1. & kmax=10 & k1=2.5 & k2=3.5    ;(gives 98 vectors)
+dkz=1. & ex=1. & ey=1. & ez=1. & kmax=6 & k1=1.0 & k2=2.0   ;(gives 20 vectors)
+dkz=1. & ex=1. & ey=1. & ez=1. & kmax=6 & k1=1.0 & k2=2.01   ;(gives 26 vectors)
+dkz=1. & ex=1. & ey=1. & ez=1. & kmax=6 & k1=1.0 & k2=3.0   ;(gives 86 vectors)
+;dkz=1. & ex=1. & ey=1. & ez=2. & kmax=10 & k1=3.8 & k2=4.2    ;(gives 98 vectors)
+;dkz=1./16. & ex=1. & ey=1. & ez=1. & kmax=2. & k1=dkz & k2=2.0   ;(gives 460 vectors)
 ;
 kav=0.
 ;
@@ -51,7 +55,7 @@ if (kmax lt k2) then print, 'Warning: non-spherical region in k-space'
 i=0 ;(initialize counter)
 for kx=-kmax,kmax do begin
 for ky=-kmax,kmax do begin
-for kz=-kmax,kmax do begin
+for kz=-kmax,kmax,dkz do begin
   k=sqrt(float(kx^2+ky^2+kz^2))
   kref=sqrt(float((kx/ex)^2+(ky/ey)^2+(kz/ez)^2))
   if kref gt k1 and kref lt k2 then begin

@@ -360,7 +360,7 @@ module Forcing
       complex, dimension (3) :: ikk
       logical, dimension (3), save :: extent
       integer, parameter :: mk=3000
-      integer, dimension(mk), save :: kkx,kky,kkz
+      real, dimension(mk), save :: kkx,kky,kkz
       integer, save :: ifirst,nk
       integer :: ik,j,jf
 !
@@ -461,7 +461,7 @@ module Forcing
       real, dimension (3) :: coef1,coef2,coef3
       logical, dimension (3), save :: extent
       integer, parameter :: mk=3000
-      integer, dimension(mk), save :: kkx,kky,kkz
+      real, dimension(mk), save :: kkx,kky,kkz
       integer, save :: ifirst=0,nk
       integer :: ik,j,jf,j2f
       real :: kx0,kx,ky,kz,k2,k,force_ampl,pi_over_Lx
@@ -846,7 +846,7 @@ module Forcing
       real, dimension (3) :: coef1,coef2
       logical, dimension (3), save :: extent
       integer, parameter :: mk=3000
-      integer, dimension(mk), save :: kkx,kky,kkz
+      real, dimension(mk), save :: kkx,kky,kkz
       integer, save :: ifirst=0,nk
       integer :: ik,j,jf
       real :: kx0,kx,ky,kz,k2,k
@@ -2012,7 +2012,7 @@ module Forcing
       complex, dimension (mz) :: fz
       complex, dimension (3) :: coef
       integer, parameter :: mk=3000
-      integer, dimension(mk), save :: kkx,kky,kkz
+      real, dimension(mk), save :: kkx,kky,kkz
       integer, save :: ifirst,nk
       integer :: ik,j,jf,kx,ky,kz,kex,key,kez,kkex,kkey,kkez
       real :: k2,k,ex,ey,ez,kde,sig,fact
@@ -2538,7 +2538,7 @@ module Forcing
       real :: mulforce_vec,irufm
       real, dimension (1) :: fsum_tmp,fsum
       integer, parameter :: mk=3000
-      integer, dimension(mk), save :: kkx,kky,kkz
+      real, dimension(mk), save :: kkx,kky,kkz
       integer, save :: ifirst,nk
       integer :: ik1,ik2,ik
       real, save :: kav
