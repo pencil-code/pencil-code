@@ -12,7 +12,7 @@
   lwrite_aux=T
   ip=14
 !  lpencil_check=T
-  lpencil_check=F
+  lpencil_check=F, lpencil_check_small=F
 /
 &eos_run_pars
   xHe=0.1
