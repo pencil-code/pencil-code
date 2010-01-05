@@ -54,7 +54,7 @@ module Pencil_check
       integer :: i,j,k,penc,iv,nite
       integer, dimension (mseed) :: iseed_org
       logical :: lconsistent=.true., lconsistent_allproc=.false.
-      logical :: ldie=.false., ldie_all=.false.
+      logical :: lfound_nan=.false., ldie=.false., ldie_all=.false.
       integer :: mem_stat1, mem_stat2, mem_stat3
 !
       if (lroot) print*, 'pencil_consistency_check: checking pencil case'
@@ -101,10 +101,14 @@ module Pencil_check
       lpencil=lpenc_requested
       call pde(f_other,df_ref,p)
       dt1_max_ref=dt1_max
-      if (notanumber(df_ref)) &
-          print*,'pencil_consistency_check: NaNs in df_ref'
+!
+      lfound_nan=.false.
+      do iv=1,mvar; do n=n1,n2; do m=m1,m2
+        if (notanumber(df_ref(:,m,n,iv))) lfound_nan=.true.
+      enddo; enddo; enddo
+      if (lfound_nan) print*, 'pencil_consistency_check: NaNs in df_ref'
       if (notanumber(dt1_max_ref)) &
-          print*,'pencil_consistency_check: NaNs in dt1_max_ref'
+          print*, 'pencil_consistency_check: NaNs in dt1_max_ref'
 !
       nite=npencils
       if ((.not.lpencil_check).and.lpencil_check_small) nite=0
@@ -133,7 +137,11 @@ module Pencil_check
           lpencil=.true.
         endif
         call pde(f_other,df,p)
-        if (notanumber(df)) print*,'pencil_consistency_check: NaNs in df'
+        lfound_nan=.false.
+        do iv=1,mvar; do n=n1,n2; do m=m1,m2
+          if (notanumber(df(:,m,n,iv))) lfound_nan=.true.
+        enddo; enddo; enddo
+        if (lfound_nan) print*, 'pencil_consistency_check: NaNs in df'
 !
 !  Compare results.
 !
@@ -210,7 +218,10 @@ f_loop:   do iv=1,mvar
 !
       lpencil=lpenc_requested
       call pde(f_other,df,p)
-      if (notanumber(df)) print*,'pencil_consistency_check: NaNs in df'
+      do iv=1,mvar; do n=n1,n2; do m=m1,m2
+        if (notanumber(df(:,m,n,iv))) lfound_nan=.true.
+      enddo; enddo; enddo
+      if (lfound_nan) print*, 'pencil_consistency_check: NaNs in df'
 !
 !  Compare results.
 !
