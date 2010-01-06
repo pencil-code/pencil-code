@@ -813,7 +813,8 @@ module Testfield
         bpq(:,:,jtest)=bbtest
         upq(:,:,jtest)=uutest
 !
-!  restore uxbtest and jxbtest from f-array
+!  Restore uxbtest and jxbtest from f-array, and compute uxbtestK for alpK
+!  computation for comparison.
 !
         call cross_mn(p%uu,bbtest,uxbtestK)
         uxbtest=f(l1:l2,m,n,iuxb+3*(jtest-1):iuxb+3*jtest-1)
@@ -1232,19 +1233,29 @@ module Testfield
           else
 !
 !  Calculate uxb and jxb, and put it into f-array, depending on whether we use
-!  Testfield Method (i) or (ii).
+!  Testfield Method (i) or (ii), or mixed ones of either (iii) or (iv).
 !
             select case (itestfield_method)
-            case ('(i)')
-              call cross_mn(p%uu,bbtest,uxbtest1)
-              call cross_mn(uutest,b0ref,uxbtest2)
+            case ('ju', '(i)')
               call cross_mn(p%jj,bbtest,jxbtest1)
               call cross_mn(jjtest,b0ref,jxbtest2)
-            case ('(ii)')
-              call cross_mn(u0ref,bbtest,uxbtest1)
-              call cross_mn(uutest,p%bbb,uxbtest2)
+              call cross_mn(p%uu,bbtest,uxbtest1)
+              call cross_mn(uutest,b0ref,uxbtest2)
+            case ('bb, (ii)')
               call cross_mn(j0ref,bbtest,jxbtest1)
               call cross_mn(jjtest,p%bbb,jxbtest2)
+              call cross_mn(u0ref,bbtest,uxbtest1)
+              call cross_mn(uutest,p%bbb,uxbtest2)
+            case ('bu', '(iii)')
+              call cross_mn(j0ref,bbtest,jxbtest1)
+              call cross_mn(jjtest,p%bbb,jxbtest2)
+              call cross_mn(p%uu,bbtest,uxbtest1)
+              call cross_mn(uutest,b0ref,uxbtest2)
+            case ('jb', '(iv)')
+              call cross_mn(p%jj,bbtest,jxbtest1)
+              call cross_mn(jjtest,b0ref,jxbtest2)
+              call cross_mn(u0ref,bbtest,uxbtest1)
+              call cross_mn(uutest,p%bbb,uxbtest2)
             case default
               call fatal_error('calc_ltestfield_pars','??itestfield_method')
             endselect
