@@ -81,10 +81,6 @@ module Pencil_check
         endif
       endif
 !
-!  Start with the f defined in initial condition.
-!
-      f_other=f
-!
 !  Check requested pencils.
 !
       lfirst=.true.
@@ -96,6 +92,8 @@ module Pencil_check
         do i=1,mfarray
           call random_number_wrapper(f_other(:,:,:,i))
         enddo
+      else
+        f_other=f
       endif
       df_ref=0.0
       call initialize_pencils(p,penc0)
@@ -146,6 +144,8 @@ module Pencil_check
           do i=1,mvar+maux
             call random_number_wrapper(f_other(:,:,:,i))
           enddo
+        else
+          f_other=f
         endif
         call initialize_pencils(p,penc0)
 !
@@ -240,6 +240,8 @@ f_loop:   do iv=1,mvar
         do i=1,mvar+maux
           call random_number_wrapper(f_other(:,:,:,i))
         enddo
+      else
+        f_other=f
       endif
       call initialize_pencils(p,0.5*penc0)
 !
@@ -303,6 +305,8 @@ f_lop:  do iv=1,mvar
         do i=1,mfarray
           call random_number_wrapper(f_other(:,:,:,i))
         enddo
+      else
+        f_other=f
       endif
       fname=0.0; fweight=0.0
       call initialize_pencils(p,penc0)
@@ -329,6 +333,8 @@ f_lop:  do iv=1,mvar
           do i=1,mfarray
             call random_number_wrapper(f_other(:,:,:,i))
           enddo
+        else
+          f_other=f
         endif
         fname=0.0; fweight=0.0
         call initialize_pencils(p,penc0)
