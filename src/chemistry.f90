@@ -3417,6 +3417,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
       type (pencil_case) :: p
       real, dimension (nx) :: dSR=0.,dHRT=0.,Kp,Kc,prod1,prod2
+      real, dimension (nx) :: dSR_dHRT,dSR_dHRT_max
       real, dimension (nx) :: kf=0., kr=0.
       real, dimension (nx) :: rho_cgs,p_atm
       real :: Rcal
@@ -3486,6 +3487,10 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !  Find forward rate constant for reaction 'reac'
 !
         kf(:)=B_n(reac)*p%TT(:)**alpha_n(reac)*exp(-E_an(reac)/Rcal/p%TT(:))
+!
+!print*,'p%TT=',p%TT
+!AB: Here I find values of p%TT= 749.9975 2.5253 1.148736, etc.
+!
         if (lwrite)  write(file_id,*) 'Nreact= ',reac,  'kf=', maxval(kf)
 !
 !  Find backward rate constant for reaction 'reac'
@@ -3500,12 +3505,34 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
         enddo
         if (lwrite) write(file_id,*) 'Nreact= ',reac,'dSR= ', maxval(dSR)
         if (lwrite) write(file_id,*) 'Nreact= ',reac,'dHRT= ', maxval(dHRT)
-        Kp=exp(dSR-dHRT)
+!
+!  During the pencil check, this quantity can become too large
+!
+        dSR_dHRT_max=700.
+        dSR_dHRT=dSR-dHRT
+        if (any(dSR_dHRT>dSR_dHRT_max)) then
+          print*,'get_reaction_rate: iproc,dSR_dHRT=',iproc,dSR_dHRT
+          dSR_dHRT=min(dSR_dHRT,dSR_dHRT_max)
+        endif
+        Kp=exp(dSR_dHRT)
+!
+!  Continue, hoping that this large value of dSR_dHRT is not a problem
+!
         if (sum_tmp==0.) then
           Kc=Kp
         else
           Kc=Kp*(p_atm/(p%TT*Rgas))**sum_tmp
         endif
+!
+!  Check whether Kc can be negative
+!
+        if (any(Kc==0.)) then
+          print*,'get_reaction_rate: iproc,Kc=',iproc,Kc
+          Kc=Kc+10*tini
+        endif
+!
+!  Continue, hoping that a small value of Kc is not a problem
+!
         kr(:)=kf(:)/Kc
         if (lwrite) write(file_id,*) 'Nreact= ',reac,'Kc= ', maxval(Kc)
         if (lwrite) write(file_id,*) 'Nreact= ',reac,  'kr=', maxval(kr)
