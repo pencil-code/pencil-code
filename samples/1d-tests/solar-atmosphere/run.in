@@ -11,13 +11,10 @@
   lmaxadvec_sum=T
   lwrite_aux=T
   ip=14
-!  lpencil_check=T
-  lpencil_check=F, lpencil_check_small=F
 /
 &eos_run_pars
   xHe=0.1
 /
-
 &hydro_run_pars
 /
 &density_run_pars
@@ -33,7 +30,6 @@
   radx=0,rady=0,radz=1,rad2max=1        ! use only vertical rays
   bc_rad='0:0','0:0','S:0'              ! incoming intensity at boundaries
 /
-
 &viscosity_run_pars
   ivisc='nu-const'
   nu=0.01
