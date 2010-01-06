@@ -39,7 +39,6 @@ module Entropy
   logical :: lupw_lnTT=.false.,lcalc_heat_cool=.false.
   logical :: lheatc_chiconst=.false.,lheatc_chiconst_accurate=.false.
   logical :: lheatc_hyper3=.false.
-  logical :: lviscous_heat=.true.
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
   character (len=5) :: iinit_str
 !
@@ -55,8 +54,7 @@ module Entropy
   namelist /entropy_run_pars/ &
       lupw_lnTT,lpressuregradient_gas,ladvection_temperature, &
       heat_uniform,chi,tau_heat_cor,tau_damp_cor,zcor,TT_cor, &
-      lheatc_chiconst_accurate,lheatc_hyper3,chi_hyper3, &
-      lviscous_heat
+      lheatc_chiconst_accurate,lheatc_hyper3,chi_hyper3
 !
   integer :: idiag_TTmax=0,idiag_TTmin=0,idiag_TTm=0
   integer :: idiag_yHmax=0,idiag_yHmin=0,idiag_yHm=0
@@ -510,7 +508,7 @@ module Entropy
 !
 !  Calculate viscous contribution to temperature
 !
-      if (lviscosity .and. lviscous_heat) call calc_viscous_heat(f,df,p,Hmax)
+      if (lviscosity .and. lviscosity_heat) call calc_viscous_heat(f,df,p,Hmax)
 
 !
 !  Various heating/cooling mechanisms
