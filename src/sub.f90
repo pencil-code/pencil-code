@@ -2205,14 +2205,19 @@ module Sub
       logical, optional :: upwind,ladd
       logical :: ladd1
 !
-!  upwind
+      if (k<1 .or. k>mfarray) then
+        call fatal_error('u_dot_grad_vec','variable index is out of bounds')
+        return
+      endif
+!
+!  Upwind.
 !
       if (present(ladd)) then
         ladd1=ladd
       else
         ladd1=.false.
       endif
-
+!
       if (present(upwind)) then
         do j=1,3
 
@@ -2235,8 +2240,8 @@ module Sub
         enddo
       endif
 !
-!  adjustments for spherical coordinate system.
-!  The following now works for general u.gradA
+!  Adjustments for spherical coordinate system.
+!  The following now works for general u.gradA.
 !
       if (lspherical_coords) then
         ff=f(l1:l2,m,n,k:k+2)
@@ -2245,7 +2250,7 @@ module Sub
         ugradf(:,3)=ugradf(:,3)+r1_mn*(uu(:,3)*ff(:,1)+uu(:,3)*ff(:,2)*cotth(m))
       endif
 !
-!  the following now works for general u.gradA
+!  The following now works for general u.gradA.
 !
       if (lcylindrical_coords) then
         ff=f(l1:l2,m,n,k:k+2)
@@ -2316,6 +2321,11 @@ module Sub
       integer :: k
       logical, optional :: upwind, ladd
 !
+      if (k<1 .or. k>mfarray) then
+        call fatal_error('u_dot_grad_scl','variable index is out of bounds')
+        return
+      endif
+!
       if (present(ladd)) then
         ladd1=ladd
       else
@@ -2324,16 +2334,16 @@ module Sub
 !
       call dot_mn(uu,gradf,ugradf,ladd1)
 !
-!  upwind correction (currently just for z-direction)
+!  Upwind correction (currently just for z-direction).
 !
       if (present(upwind)) then; if (upwind) then
 !
-!  x-direction
+!  x-direction.
 !
         call der6(f,k,del6f,1,UPWIND=.true.)
         ugradf=ugradf-abs(uu(:,1))*del6f
 !
-!  y-direction
+!  y-direction.
 !
         call der6(f,k,del6f,2,UPWIND=.true.)
         if (lcartesian_coords) then
@@ -2345,7 +2355,7 @@ module Sub
              ugradf=ugradf-r1_mn*abs(uu(:,2))*del6f
         endif
 !
-!  z-direction
+!  z-direction.
 !
         call der6(f,k,del6f,3,UPWIND=.true.)
         if ((lcartesian_coords).or.(lcylindrical_coords)) then
