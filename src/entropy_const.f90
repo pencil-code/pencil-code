@@ -149,7 +149,7 @@ module Entropy
       use Density
       use Diagnostics
       use Sub
-      Use EquationOfState, only: pressure_gradient
+      use EquationOfState, only: pressure_gradient
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df

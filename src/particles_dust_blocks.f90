@@ -1917,7 +1917,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  25-sep-08/anders: coded
 !
-      Use Solid_Cells
+      use Solid_Cells
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mpar_loc,mpvar) :: fp, dfp

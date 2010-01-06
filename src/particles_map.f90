@@ -41,7 +41,7 @@ module Particles_map
 !
 !  30-dec-04/anders: coded
 !
-      Use Solid_Cells
+      use Solid_Cells
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f

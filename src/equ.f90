@@ -43,8 +43,8 @@ module Equ
       use Grid, only: calc_pencils_grid
       use Hydro
       use Interstellar, only: interstellar_before_boundary
-      Use Lorenz_gauge
-      Use Magnetic
+      use Lorenz_gauge
+      use Magnetic
       use Hypervisc_strict, only: hyperviscosity_strict
       use Hyperresi_strict, only: hyperresistivity_strict
       use Mpicomm
