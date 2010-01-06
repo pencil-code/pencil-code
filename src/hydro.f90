@@ -737,7 +737,7 @@ module Hydro
         case ('soundwave-y'); call soundwave(ampluu(j),f,iuy,ky=ky_uu)
         case ('soundwave-z'); call soundwave(ampluu(j),f,iuz,kz=kz_uu)
         case ('robertsflow'); call robertsflow(ampluu(j),f,iuu)
-        case ('hawley-et-al'); call hawley_etal99a(ampluu(j),f,iuu,Lxyz)
+        case ('hawley-et-al'); call hawley_etal99a(ampluu(j),f,iuy,Lxyz)
         case ('sound-wave', '11')
 !
 !  sound wave (should be consistent with density module)

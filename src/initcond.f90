@@ -1911,13 +1911,7 @@ module Initcond
       real, dimension (mz) :: funz
       real, dimension (3) :: Lxyz
       real :: k1,k2,k3,k4,phi1,phi2,phi3,phi4,ampl
-      integer :: i,iux,iuy,iuz,l,m,n
-!
-!  set iux, iuy, iuz, based on the value of i
-!
-      iux=i
-      iuy=i+1
-      iuz=i+2
+      integer :: i,l,m,n
 !
 !  velocity perturbations as used by Hawley et al (1999, ApJ,518,394)
 !
@@ -1937,7 +1931,7 @@ module Initcond
       funy=sin(k1*y+phi1)+sin(k2*y+phi2)+sin(k3*y+phi3)+sin(k4*y+phi4)
       funz=sin(k1*z+phi1)+sin(k2*z+phi2)+sin(k3*z+phi3)+sin(k4*z+phi4)
       do n=1,mz; do m=1,my; do l=1,mx
-        f(l,m,n,iuy)=ampl*funx(l)*funy(m)*funz(n)
+        f(l,m,n,i)=ampl*funx(l)*funy(m)*funz(n)
       enddo; enddo; enddo
 !
     endsubroutine hawley_etal99a
