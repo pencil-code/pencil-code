@@ -352,7 +352,7 @@ module Sub
       endif
 !
       if (lcylindrical_coords) &
-           call fatal_error('mean_mn','not implemented for cylindrical')
+          call fatal_error('mean_mn','not implemented for cylindrical')
 !
     endsubroutine mean_mn
 !***********************************************************************
@@ -387,7 +387,7 @@ module Sub
       endif
 !
       if (lcylindrical_coords) &
-           call fatal_error('rms_mn','not implemented for cylindrical')
+          call fatal_error('rms_mn','not implemented for cylindrical')
 !
     endsubroutine rms_mn
 !***********************************************************************
@@ -423,7 +423,7 @@ module Sub
       endif
 !
       if (lcylindrical_coords) &
-           call fatal_error('rms2_mn','not implemented for cylindrical')
+          call fatal_error('rms2_mn','not implemented for cylindrical')
 !
     endsubroutine rms2_mn
 !***********************************************************************
@@ -459,7 +459,7 @@ module Sub
       endif
 !
       if (lcylindrical_coords) &
-           call fatal_error('sum_mn','not implemented for cylindrical')
+          call fatal_error('sum_mn','not implemented for cylindrical')
 !
     endsubroutine sum_mn
 !***********************************************************************
@@ -1277,7 +1277,7 @@ module Sub
 !
       if (lspherical_coords) then
         if (.not. present(a)) then
-          call fatal_error("curl_mn", "Need a for spherical curl")
+          call fatal_error('curl_mn','Need a for spherical curl')
         endif
         b(:,1)=b(:,1)+a(:,3)*r1_mn*cotth(m)
         b(:,2)=b(:,2)-a(:,3)*r1_mn
@@ -1465,8 +1465,8 @@ module Sub
 !
       endselect
 !
-      if (lcylindrical_coords) &
-        call stop_it("curli not implemented for cylindrical coordinates")
+      if (lcylindrical_coords) call fatal_error('curli', &
+          'not implemented for cylindrical coordinates')
 !
     endsubroutine curli
 !***********************************************************************
@@ -1572,8 +1572,8 @@ module Sub
 !
       if (lspherical_coords) then
          if (.not. (present(fij) .and. present(pff))) then
-              call fatal_error("del2v", &
-                  "Cannot do a spherical del2v without aij and aa")
+           call fatal_error('del2v', &
+               'Cannot do a spherical del2v without aij and aa')
          endif
 
 ! for r component (factors of line elements are taken care of inside p%uij
@@ -1657,7 +1657,8 @@ module Sub
         call derij(f,k1+3,tmp,1,2)
         fjik(:,3)=tmp
         if (lcylindrical_coords.or.lspherical_coords) &
-          call stop_it("gradcurl at del2v_etc not implemented for non-cartesian coordinates")
+          call fatal_error('del2v_etc','gradcurl at del2v_etc not '// &
+              'implemented for non-cartesian coordinates')
       endif
 !
       if (present(del2)) then
@@ -1679,8 +1680,9 @@ module Sub
           call der(f,k1+3,tmp,1)
           del2(:,3)=del2(:,3) + tmp*rcyl_mn1
         endif
-        if (lspherical_coords) &
-          call stop_it("del2 at del2v_etc not implemented for spherical coordinates:use gij_etc")
+        if (lspherical_coords) call fatal_error('del2v_etc', &
+            'del2 at del2v_etc not implemented for spherical '// &
+            'coordinates - use gij_etc')
       endif
 !
       if (present(graddiv)) then
@@ -1695,18 +1697,20 @@ module Sub
            call der(f,k1+1,tmp,3)
            graddiv(:,3)=graddiv(:,3)+tmp*rcyl_mn1
         endif
-        if (lspherical_coords) &
-           call stop_it("del2v_etc: graddiv is implemented in gij_etc for spherical coords:use gij_etc")
+        if (lspherical_coords) call fatal_error('del2v_etc', &
+            'graddiv is implemented in gij_etc for spherical '// &
+            'coords - use gij_etc')
       endif
 !
       if (present(curlcurl)) then
         curlcurl(:,1)=fjji(:,1,2)-fijj(:,1,2)+fjji(:,1,3)-fijj(:,1,3)
         curlcurl(:,2)=fjji(:,2,3)-fijj(:,2,3)+fjji(:,2,1)-fijj(:,2,1)
         curlcurl(:,3)=fjji(:,3,1)-fijj(:,3,1)+fjji(:,3,2)-fijj(:,3,2)
-        if (lcylindrical_coords) &
-          call stop_it("curlcurl at del2v_etc not implemented for non-cartesian coordinates")
-        if (lspherical_coords)&
-          call stop_it("curlcurl at del2v_etc not implemented for non-cartesian coordinates:use gij_etc")
+        if (lcylindrical_coords) call fatal_error('del2v_etc', &
+            'curlcurl not implemented for non-cartesian coordinates')
+        if (lspherical_coords) call fatal_error('del2v_etc', &
+            'curlcurl not implemented for non-cartesian coordinates - '// &
+            'use gij_etc')
       endif
 !
       if (present(gradcurl)) then
@@ -1723,7 +1727,8 @@ module Sub
          gradcurl(:,3,3) = fjik(:,2)   - fjik(:,1)
 !
          if (lcylindrical_coords.or.lspherical_coords) &
-           call stop_it("gradcurl at del2v_etc not implemented for non-cartesian coordinates")
+             call fatal_error('del2v_etc','gradcurl not implemented '// &
+             'for non-cartesian coordinates')
       endif
 !
     endsubroutine del2v_etc
@@ -1777,7 +1782,8 @@ module Sub
       endif
 !
       if (lcylindrical_coords.or.lspherical_coords) &
-        call stop_it("del2vi_etc not implemented for non-cartesian coordinates")
+          call fatal_error('del2vi_etc', &
+          'not implemented for non-cartesian coordinates')
 !      
     endsubroutine del2vi_etc
 !***********************************************************************
@@ -1804,11 +1810,11 @@ module Sub
         del4f(:,i)=tmp
       enddo
 !
-!  Exit if this is requested for non-cartesian runs,
-!  unless lpencil_check=T
+!  Exit if this is requested for non-cartesian runs.
 ! 
-      if (.not.lpencil_check.and.(lcylindrical_coords.or.lspherical_coords)) &
-           call stop_it("del4v not implemented for non-cartesian coordinates")
+      if (lcylindrical_coords.or.lspherical_coords) &
+          call fatal_error('del4v', &
+          'not implemented for non-cartesian coordinates')
 !
     endsubroutine del4v
 !***********************************************************************
@@ -1836,11 +1842,11 @@ module Sub
         del6f(:,i)=tmp
       enddo
 !
-!  Exit if this is requested for non-cartesian runs,
-!  unless lpencil_check=T
+!  Exit if this is requested for non-cartesian runs.
 ! 
-      if (.not.lpencil_check.and.(lcylindrical_coords.or.lspherical_coords)) &
-           call stop_it("del6v not implemented for non-cartesian coordinates")
+      if (lcylindrical_coords.or.lspherical_coords) &
+          call fatal_error('del6v', &
+          'not implemented for non-cartesian coordinates')
 !
     endsubroutine del6v
 !***********************************************************************
@@ -1969,7 +1975,8 @@ module Sub
             +cotth(m)*aij(:,3,2)-r1_mn*sin2th(m)*aa(:,3) )
         else
         endif
-        if (lcylindrical_coords)  call stop_it("gij_etc: use del2=graddiv-curlcurl for cylindrical coords")
+        if (lcylindrical_coords) call fatal_error('gij_etc', &
+            'use del2=graddiv-curlcurl for cylindrical coords')
       endif
 !
     endsubroutine gij_etc
@@ -2023,11 +2030,11 @@ module Sub
       call der4(f,k,d4fdz,3)
       del4f = d4fdx + d4fdy + d4fdz
 !
-!  Exit if this is requested for non-cartesian runs,
-!  unless lpencil_check=T
+!  Exit if this is requested for non-cartesian runs.
 ! 
-      if (.not.lpencil_check.and.(lcylindrical_coords.or.lspherical_coords)) &
-           call stop_it("del4 not implemented for non-cartesian coordinates")
+      if (lcylindrical_coords.or.lspherical_coords) &
+          call fatal_error('del4', &
+          'not implemented for non-cartesian coordinates')
 !
     endsubroutine del4
 !***********************************************************************
@@ -2052,11 +2059,11 @@ module Sub
       call der6(f,k,d6fdz,3)
       del6f = d6fdx + d6fdy + d6fdz
 !
-!  Exit if this is requested for lspherical_coords run,
-!  unless lpencil_check=T
+!  Exit if this is requested for lspherical_coords run.
 ! 
-      if (.not.lpencil_check.and.(lspherical_coords.or.lcylindrical_coords)) &
-           call stop_it("del6 not implemented for non-cartesian coordinates")
+      if (lspherical_coords.or.lcylindrical_coords) &
+          call fatal_error('del6', &
+          'not implemented for non-cartesian coordinates')
 !
     endsubroutine del6
 !***********************************************************************
@@ -2081,10 +2088,11 @@ module Sub
       call der6_other(f,d6fdz,3)
       del6f = d6fdx + d6fdy + d6fdz
 !
-!  Exit if this is requested for non-cartesian runs
+!  Exit if this is requested for non-cartesian runs.
 ! 
       if (lcylindrical_coords.or.lspherical_coords) &
-        call stop_it("del6_other not implemented for non-cartesian coordinates")
+          call fatal_error('del6_other', &
+          'not implemented for non-cartesian coordinates')
 !
     endsubroutine del6_other
 !***********************************************************************
@@ -2140,7 +2148,8 @@ module Sub
 !  Exit if this is requested for non-cartesian runs
 ! 
       if (lcylindrical_coords.or.lspherical_coords) &
-        call stop_it("del6fj not implemented for non-cartesian coordinates")
+          call fatal_error('del6fj', &
+          'not implemented for non-cartesian coordinates')
 !
     endsubroutine del6fj
 !***********************************************************************
@@ -2172,7 +2181,8 @@ module Sub
 !  Exit if this is requested for non-cartesian runs
 ! 
       if (lcylindrical_coords.or.lspherical_coords) &
-        call stop_it("del2fjv not implemented for non-cartesian coordinates")
+          call fatal_error('del2fjv', &
+          'not implemented for non-cartesian coordinates')
 !
     endsubroutine del6fjv
 !***********************************************************************
@@ -2515,7 +2525,7 @@ module Sub
         if (lroot) &
              print*, "Error encountered reading ", &
                      size(a), "integers from ", trim(file)
-        call stop_it("")
+        call fatal_error('inpui','')
       endif
     endsubroutine inpui
 !***********************************************************************
@@ -2902,8 +2912,8 @@ module Sub
         enddo
         enddo
       else
-        call fatal_error("shock_max3_pencil_interp", &
-         "Tony got lazy and only implemented the 3D case")
+        call fatal_error('shock_max3_pencil_interp', &
+            'Tony got lazy and only implemented the 3D case')
       endif
 !
 !      factor1=1./factor
@@ -3554,7 +3564,7 @@ module Sub
               c1=n
               c2=n
             case ('default')
-              call stop_it('nan_inform: No such region.')
+              call fatal_error('nan_inform','No such region')
           endselect
 
         endif
@@ -3595,7 +3605,7 @@ module Sub
                   print*,'nan_inform: l, m, n, iproc = ', a, b, c, iproc
                   print*,'----------------------------'
                   if (present(lstop)) then
-                    if (lstop) call stop_it('nan_stop')
+                    if (lstop) call fatal_error('nan_stop','')
                   endif
                 endif
               enddo
@@ -3937,12 +3947,11 @@ module Sub
         intent(in) :: bc
         intent(out) :: bc1,bc2
 !
-
         do j=1,mcom
           if (bc(j) == '') then ! will probably never happen due to default='p'
             if (lroot) print*, 'Empty boundary condition No. ', &
                  j, 'in (x, y, or z)'
-            call stop_it('PARSE_BC')
+            call fatal_error('parse_bc','')
           endif
           isep = index(bc(j),':')
           if (isep > 0) then
@@ -3978,7 +3987,7 @@ module Sub
           if (bc(j) == '') then ! will probably never happen due to default='p'
             if (lroot) print*, 'Empty boundary condition No. ', &
                  j, 'in (x, y, or z)'
-            call stop_it('PARSE_BC')
+            call fatal_error('parse_bc','')
           endif
           isep = index(bc(j),':')
           if (isep > 0) then
@@ -4011,7 +4020,7 @@ module Sub
 !
         if (bc == '') then 
           if (lroot) print*, 'Empty boundary condition in (x, y, or z)'
-          call stop_it('PARSE_BC_RADG')
+          call fatal_error('parse_bc_radg','')
         endif
         isep = index(bc,':')
         if (isep > 0) then
@@ -4210,9 +4219,9 @@ nameloop: do
       ! test whether mseed is large enough for this machine
       !
       if (nseed > mseed) then
-        if (lroot) print*, "This machine requires mseed >= ", nseed, &
-                           ", but you have only ", mseed
-        call stop_it("Need to increase mseed")
+        if (lroot) print*, 'This machine requires mseed >= ', nseed, &
+            ', but you have only ', mseed
+        call fatal_error('get_nseed','Need to increase mseed')
       endif
 !
     endsubroutine get_nseed
@@ -4395,7 +4404,7 @@ nameloop: do
               'jul', 'aug', 'sep', 'oct', 'nov', 'dec' /)
 !
       if (len(date) < 20) &
-        call stop_it('DATE_TIME_STRING: string arg too short')
+          call fatal_error('date_time_string','string arg too short')
 !
       call date_and_time(VALUES=values)
       write(date,'(I2.2,"-",A3,"-",I4.2," ",I2.2,":",I2.2,":",I2.2)') &
@@ -5022,7 +5031,7 @@ nameloop: do
       case default
         print*,'get_radial_distance: '//&
              'the array has dimension=',size(rrmn),' is that correct?'
-        call stop_it('')
+        call fatal_error('get_radial_distance','')
       endselect
 !
 !  Calculate the coordinate-free distance relative to the
@@ -5098,7 +5107,7 @@ nameloop: do
       
       n=size(a,1)
       if (n /= size(a,2)) call fatal_error('ludcmp','non square matrix')
-      if (n /= size(indx)) call fatal_error('ludcmp', 'bad dimension for indx')
+      if (n /= size(indx)) call fatal_error('ludcmp','bad dimension for indx')
       vv=maxval(abs(a),dim=2)
       if (any(vv == 0.0)) call fatal_error('ludcmp','singular matrix')
       vv=1.0/vv
@@ -5137,7 +5146,7 @@ nameloop: do
       
       n=size(a,1)
       if (n /= size(a,2)) call fatal_error('lubksb','non square matrix')
-      if (n /= size(indx)) call fatal_error('lubksb', 'bad dimension for indx')
+      if (n /= size(indx)) call fatal_error('lubksb','bad dimension for indx')
       ii=0
       do i=1,n
         ll=indx(i)
@@ -5303,7 +5312,8 @@ nameloop: do
             +cotth(m)*aij(:,3,2)-r1_mn*sin2th(m)*aa(:,3) )
         else
         endif
-        if (lcylindrical_coords)  call stop_it("gij_etc: use del2=graddiv-curlcurl for cylindrical coords")
+        if (lcylindrical_coords) call fatal_error('gij_etc', &
+            'use del2=graddiv-curlcurl for cylindrical coords')
       endif
 !
     endsubroutine gij_psi_etc
