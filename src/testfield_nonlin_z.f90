@@ -1241,7 +1241,7 @@ module Testfield
               call cross_mn(jjtest,b0ref,jxbtest2)
               call cross_mn(p%uu,bbtest,uxbtest1)
               call cross_mn(uutest,b0ref,uxbtest2)
-            case ('bb, (ii)')
+            case ('bb', '(ii)')
               call cross_mn(j0ref,bbtest,jxbtest1)
               call cross_mn(jjtest,p%bbb,jxbtest2)
               call cross_mn(u0ref,bbtest,uxbtest1)
