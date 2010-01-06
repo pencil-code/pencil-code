@@ -37,8 +37,8 @@ module EquationOfState
     module procedure pressure_gradient_point   ! explicit lnrho, ss
   end interface
 !
-  integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3
-  integer, parameter :: ilnrho_lnTT=4,ilnrho_cs2=5
+  integer, parameter :: ilnrho_ss=1, ilnrho_ee=2, ilnrho_pp=3
+  integer, parameter :: ilnrho_lnTT=4, ilnrho_cs2=5
   integer, parameter :: irho_cs2=6, irho_ss=7, irho_lnTT=8, ilnrho_TT=9
   integer, parameter :: irho_TT=10, ipp_ss=11, ipp_cs2=12
   integer :: iglobal_cs2, iglobal_glnTT
@@ -1472,43 +1472,49 @@ module EquationOfState
     endsubroutine get_soundspeed
 !***********************************************************************
     subroutine read_eos_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=eos_init_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=eos_init_pars,ERR=99)
       endif
-
+!
 99    return
+!
     endsubroutine read_eos_init_pars
 !***********************************************************************
     subroutine write_eos_init_pars(unit)
+!
       integer, intent(in) :: unit
-
+!
       write(unit,NML=eos_init_pars)
-
+!
     endsubroutine write_eos_init_pars
 !***********************************************************************
     subroutine read_eos_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=eos_run_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=eos_run_pars,ERR=99)
       endif
-
+!
 99    return
+!
     endsubroutine read_eos_run_pars
 !***********************************************************************
     subroutine write_eos_run_pars(unit)
+!
       integer, intent(in) :: unit
-
+!
       write(unit,NML=eos_run_pars)
-
+!
     endsubroutine write_eos_run_pars
 !***********************************************************************
     subroutine isothermal_entropy(f,T0)
