@@ -53,8 +53,10 @@ module Pencil_check
       real, dimension (nx) :: dt1_max_ref
       integer :: i,j,k,penc,iv,nite
       integer, dimension (mseed) :: iseed_org
+      logical, dimension (mfarray) :: lfound_nan=.false.
+      logical, dimension (mfarray) :: lfound_nan_loc=.false.
       logical :: lconsistent=.true., lconsistent_allproc=.false.
-      logical :: lfound_nan=.false., ldie=.false., ldie_all=.false.
+      logical :: ldie=.false., ldie_all=.false.
       integer :: mem_stat1, mem_stat2, mem_stat3
 !
       if (lroot) print*, 'pencil_consistency_check: checking pencil case'
@@ -104,9 +106,24 @@ module Pencil_check
 !
       lfound_nan=.false.
       do iv=1,mvar; do n=n1,n2; do m=m1,m2
-        if (notanumber(df_ref(:,m,n,iv))) lfound_nan=.true.
+        if (notanumber(df_ref(:,m,n,iv))) lfound_nan_loc(iv)=.true.
       enddo; enddo; enddo
-      if (lfound_nan) print*, 'pencil_consistency_check: NaNs in df_ref'
+      call mpireduce_or(lfound_nan_loc,lfound_nan,mfarray)
+      call mpibcast_logical(lfound_nan,mfarray)
+      if (lroot) then
+        do iv=1,mvar
+          if (lfound_nan(iv)) &
+            print*, 'pencil_consistency_check: NaNs in df_ref at variable', iv
+        enddo
+      endif
+      if (any(lfound_nan)) then
+        if (lroot) then
+          print*, 'pencil_consistency_check: the presence of NaNs '// &
+               'in df_ref makes this test impossible'
+          print*, 'pencil_consistency_check: quitting pencil check'
+        endif
+        return
+      endif
       if (notanumber(dt1_max_ref)) &
           print*, 'pencil_consistency_check: NaNs in dt1_max_ref'
 !
@@ -139,9 +156,12 @@ module Pencil_check
         call pde(f_other,df,p)
         lfound_nan=.false.
         do iv=1,mvar; do n=n1,n2; do m=m1,m2
-          if (notanumber(df(:,m,n,iv))) lfound_nan=.true.
+          if (notanumber(df(:,m,n,iv))) lfound_nan(iv)=.true.
         enddo; enddo; enddo
-        if (lfound_nan) print*, 'pencil_consistency_check: NaNs in df'
+        do iv=1,mvar
+          if (lfound_nan(iv)) &
+              print*, 'pencil_consistency_check: NaNs in df at variable', iv
+        enddo
 !
 !  Compare results.
 !
@@ -218,10 +238,14 @@ f_loop:   do iv=1,mvar
 !
       lpencil=lpenc_requested
       call pde(f_other,df,p)
+      lfound_nan=.false.
       do iv=1,mvar; do n=n1,n2; do m=m1,m2
-        if (notanumber(df(:,m,n,iv))) lfound_nan=.true.
+        if (notanumber(df(:,m,n,iv))) lfound_nan(iv)=.true.
       enddo; enddo; enddo
-      if (lfound_nan) print*, 'pencil_consistency_check: NaNs in df'
+      do iv=1,mvar
+        if (lfound_nan(iv)) &
+            print*, 'pencil_consistency_check: NaNs in df at variable', iv
+      enddo
 !
 !  Compare results.
 !
