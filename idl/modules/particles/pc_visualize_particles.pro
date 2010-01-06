@@ -139,7 +139,7 @@ if (solid_object) then begin
   front_colls=solid_colls
   back_colls=solid_colls
   maxy=param.xyz1[1]
-  theta_arr=fltarr(npart_radii,500000,2)
+  theta_arr=fltarr(ncylinders,npart_radii,500000,2)
   ;
   ; Loop over all cylinders
   ;
@@ -184,10 +184,10 @@ if (solid_object) then begin
                  ; Store the angle of impaction in an array. 
                  ;
                  if (total(solid_colls[icyl]) lt 100000) then begin
-                     theta_arr[ipart_radii,solid_colls[icyl,ipart_radii],0]=$
-                       theta
-                     theta_arr[ipart_radii,solid_colls[icyl,ipart_radii],1]=$
-                       trmv[k]
+                     theta_arr[icyl,ipart_radii,$
+                               solid_colls[icyl,ipart_radii],0]=theta
+                     theta_arr[icyl,ipart_radii,$
+                               solid_colls[icyl,ipart_radii],1]=trmv[k]
                  endif
                  ;
                  ; Find the number of solid collisions for a given cylinder 
@@ -314,8 +314,8 @@ WINDOW,4,XSIZE=256*2,YSIZE=256*2
 !x.range=[min(obj.t),objpvar.t]
 !y.range=[0,!pi]
 for i=0,npart_radii-1 do begin
-   theta_=theta_arr[i,*,0]
-   time_=theta_arr[i,*,1]
+   theta_=total(theta_arr[*,i,*,0],1)
+   time_=total(theta_arr[*,i,*,1],1)
    here=where(theta_ ne 0)
    if (here[0] ne -1) then begin
        particle_hit=1
@@ -344,7 +344,7 @@ end
 first=1
 !x.range=[min(param.ap0[0:npart_radii-1]),max(param.ap0[0:npart_radii-1])]
 for i=0,npart_radii-1 do begin
-    theta_=theta_arr[i,*,0]
+    theta_=total(theta_arr[*,i,*,0],1)
     rad_=param.ap0[i]
     here=where(theta_ ne 0)
     if (here[0] ne -1) then begin
