@@ -113,11 +113,11 @@ module Param_IO
       lpoint, mpoint, npoint, lpoint2, mpoint2, npoint2, lcylinder_in_a_box, &
       lsphere_in_a_box, ipencil_swap, lpencil_requested_swap, &
       lpencil_diagnos_swap, lpencil_check, lpencil_check_small, &
-      lpencil_check_diagnos_opti, lpencil_init, lwrite_2d, lbidiagonal_derij, &
-      lisotropic_advection, crash_file_dtmin_factor, niter_poisson, lADI, &
-      ltestperturb, eps_rkf, eps_stiff, timestep_scaling, lequatory, &
-      lequatorz, zequator, lini_t_eq_zero, lav_smallx, xav_max, ldt_paronly, &
-      lweno_transport
+      lrandom_f_pencil_check, lpencil_check_diagnos_opti, lpencil_init, &
+      lwrite_2d, lbidiagonal_derij, lisotropic_advection, &
+      crash_file_dtmin_factor, niter_poisson, lADI, ltestperturb, eps_rkf, &
+      eps_stiff, timestep_scaling, lequatory, lequatorz, zequator, &
+      lini_t_eq_zero, lav_smallx, xav_max, ldt_paronly, lweno_transport
 !
   contains
 !***********************************************************************

@@ -90,11 +90,13 @@ module Pencil_check
       lfirst=.true.
       headt=.false.
       itsub=1  ! some modules like dustvelocity.f90 reference dt_beta_ts(itsub)
-      call random_seed_wrapper(GET=iseed_org)
-      call random_seed_wrapper(PUT=iseed_org)
-      do i=1,mfarray
-        call random_number_wrapper(f_other(:,:,:,i))
-      enddo
+      if (lrandom_f_pencil_check) then
+        call random_seed_wrapper(GET=iseed_org)
+        call random_seed_wrapper(PUT=iseed_org)
+        do i=1,mfarray
+          call random_number_wrapper(f_other(:,:,:,i))
+        enddo
+      endif
       df_ref=0.0
       call initialize_pencils(p,penc0)
 !
@@ -139,10 +141,12 @@ module Pencil_check
             print*, 'pencil_consistency_check: performing full pencil check'// &
             ' (takes a while)'
         df=0.0
-        call random_seed_wrapper(PUT=iseed_org)
-        do i=1,mvar+maux
-          call random_number_wrapper(f_other(:,:,:,i))
-        enddo
+        if (lrandom_f_pencil_check) then
+          call random_seed_wrapper(PUT=iseed_org)
+          do i=1,mvar+maux
+            call random_number_wrapper(f_other(:,:,:,i))
+          enddo
+        endif
         call initialize_pencils(p,penc0)
 !
 !  Calculate results with one pencil swapped.
@@ -160,7 +164,8 @@ module Pencil_check
         enddo; enddo; enddo
         do iv=1,mvar
           if (lfound_nan(iv)) &
-              print*, 'pencil_consistency_check: NaNs in df at variable', iv
+              print*, 'pencil_consistency_check: NaNs in df at variable', &
+              iv, ' for pencil ', trim(pencil_names(penc))
         enddo
 !
 !  Compare results.
@@ -230,10 +235,12 @@ f_loop:   do iv=1,mvar
       if (lroot) print*, 'pencil_consistency_check: '// &
           'checking dependence on pencil initialization'
       df=0.0
-      call random_seed_wrapper(PUT=iseed_org)
-      do i=1,mvar+maux
-        call random_number_wrapper(f_other(:,:,:,i))
-      enddo
+      if (lrandom_f_pencil_check) then
+        call random_seed_wrapper(PUT=iseed_org)
+        do i=1,mvar+maux
+          call random_number_wrapper(f_other(:,:,:,i))
+        enddo
+      endif
       call initialize_pencils(p,0.5*penc0)
 !
       lpencil=lpenc_requested
@@ -291,10 +298,12 @@ f_lop:  do iv=1,mvar
       lout=.true.
       lfirst=.true.
       df=0.0
-      call random_seed_wrapper(put=iseed_org)
-      do i=1,mfarray
-        call random_number_wrapper(f_other(:,:,:,i))
-      enddo
+      if (lrandom_f_pencil_check) then
+        call random_seed_wrapper(put=iseed_org)
+        do i=1,mfarray
+          call random_number_wrapper(f_other(:,:,:,i))
+        enddo
+      endif
       fname=0.0; fweight=0.0
       call initialize_pencils(p,penc0)
 !
@@ -315,10 +324,12 @@ f_lop:  do iv=1,mvar
             print*, 'pencil_consistency_check: performing full pencil check'// &
             ' (takes a while)'
         df=0.0
-        call random_seed_wrapper(put=iseed_org)
-        do i=1,mfarray
-          call random_number_wrapper(f_other(:,:,:,i))
-        enddo
+        if (lrandom_f_pencil_check) then
+          call random_seed_wrapper(put=iseed_org)
+          do i=1,mfarray
+            call random_number_wrapper(f_other(:,:,:,i))
+          enddo
+        endif
         fname=0.0; fweight=0.0
         call initialize_pencils(p,penc0)
 !
@@ -402,7 +413,7 @@ f_lop:  do iv=1,mvar
 !
 !  Clean up.
 !
-      call random_seed_wrapper(put=iseed_org)
+      if (lrandom_f_pencil_check) call random_seed_wrapper(put=iseed_org)
       headt=.true.
       lout=.false.
       lfirst=.false.
