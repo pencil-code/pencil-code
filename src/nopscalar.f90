@@ -8,7 +8,7 @@
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
-! PENCILS PROVIDED cc; cc1
+! PENCILS PROVIDED cc; cc1; gcc(3)
 !
 !***************************************************************
 module Pscalar
@@ -114,9 +114,11 @@ module Pscalar
       intent(in) :: f
       intent(inout) :: p
 ! cc
-      if (lpencil(i_cc)) p%cc=1.
+      if (lpencil(i_cc)) p%cc=1.0
 ! cc1
-      if (lpencil(i_cc1)) p%cc1=1.
+      if (lpencil(i_cc1)) p%cc1=1.0
+! gcc
+      if (lpencil(i_cc1)) p%gcc=1.0
 !
       call keep_compiler_quiet(f)
 !
