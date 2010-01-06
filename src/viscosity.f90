@@ -240,7 +240,6 @@ module Viscosity
           lvisc_snr_damp=.true.
         case ('nu-mixture')
           if (lroot) print*,'viscous force: nu is calculated for a mixture'
-          lpenc_requested(i_sij)=.true.
           lvisc_mixture=.true.
         case ('none')
           ! do nothing
@@ -508,9 +507,10 @@ module Viscosity
         lpenc_requested(i_nu)=.true.
         lpenc_requested(i_gradnu)=.true.
         lpenc_requested(i_sgnu)=.true.
-        lpenc_diagnos(i_sij2)=.true.
+        lpenc_requested(i_sij)=.true.
+        if ((lentropy.or.ltemperature).and.lviscosity_heat) &
+            lpenc_requested(i_sij2)=.true.
       endif
-
 !
       if (idiag_meshRemax/=0) lpenc_diagnos(i_u2)=.true.
       if (idiag_epsK/=0.or.idiag_epsK_LES/=0) then
@@ -670,7 +670,7 @@ module Viscosity
 !
 !  viscous heating and time step
 !
-        if (lpencil(i_visc_heat)) p%visc_heat=2*p%nu*p%sij2
+        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*p%nu*p%sij2
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+p%nu
       endif
 !
