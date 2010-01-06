@@ -23,7 +23,6 @@ EOS                   =   eos_ionization
 TESTFIELD             =   inactive/testfield
 DUSTDENSITY           =   dustdensity
 DUSTVELOCITY          =   dustvelocity
-PLANET                = noplanet
 
 PARTICLES             =   particles_dust
 PARTICLES_MAIN        =   particles_main
