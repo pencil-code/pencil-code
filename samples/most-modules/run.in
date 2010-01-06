@@ -1,8 +1,9 @@
 !  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
 &run_pars
   cvsid='$Id$',
-  nt=1, itorder=1, dtmax=1.0e-20
+  nt=1, it1=1, itorder=1, dtmax=1.0e-20
   dsnap=1.0, tavg=2.0
+  lpencil_check=F, lpencil_check_small=F
 /
 &eos_run_pars
 /
