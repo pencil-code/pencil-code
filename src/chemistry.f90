@@ -3416,9 +3416,9 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       real, dimension (nx):: mix_conc
 !
       type (pencil_case) :: p
-      real, dimension (nx) :: dSR=0.,dHRT=0.,Kp,Kc,prod1,prod2
+      real, dimension (nx) :: dSR=0.,dHRT=0.,prod1,prod2, lnKp, lnKc
       real, dimension (nx) :: dSR_dHRT,dSR_dHRT_max
-      real, dimension (nx) :: kf=0., kr=0.
+      real, dimension (nx) :: kf=0., kr=0., lnkf, lnkr
       real, dimension (nx) :: rho_cgs,p_atm
       real :: Rcal
       integer :: k , reac, j, i
@@ -3427,7 +3427,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       character (len=20) :: input_file="./data/react.out"
       integer :: file_id=123
       real :: B_n_0,alpha_n_0,E_an_0
-      real, dimension (nx) :: kf_0,Kc_0,Pr,sum_sp
+      real, dimension (nx) :: kf_0,Pr,sum_sp
       real, dimension (nx) :: Fcent, ccc, nnn, lnPr, FF,tmpF
 !
       if (lwrite)  open(file_id,file=input_file)
@@ -3486,7 +3486,8 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
 !  Find forward rate constant for reaction 'reac'
 !
-        kf(:)=B_n(reac)*p%TT(:)**alpha_n(reac)*exp(-E_an(reac)/Rcal/p%TT(:))
+       ! kf(:)=B_n(reac)*p%TT(:)**alpha_n(reac)*exp(-E_an(reac)/Rcal/p%TT(:))
+        lnkf=log(B_n(reac))+alpha_n(reac)*p%lnTT(:)-E_an(reac)/Rcal/p%TT(:)
 !
 !print*,'p%TT=',p%TT
 !AB: Here I find values of p%TT= 749.9975 2.5253 1.148736, etc.
@@ -3508,34 +3509,39 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
 !  During the pencil check, this quantity can become too large
 !
-        dSR_dHRT_max=700.
+       ! dSR_dHRT_max=700.
         dSR_dHRT=dSR-dHRT
-        if (any(dSR_dHRT>dSR_dHRT_max)) then
-          print*,'get_reaction_rate: iproc,dSR_dHRT=',iproc,dSR_dHRT
-          dSR_dHRT=min(dSR_dHRT,dSR_dHRT_max)
-        endif
-        Kp=exp(dSR_dHRT)
+      !  if (any(dSR_dHRT>dSR_dHRT_max)) then
+      !    print*,'get_reaction_rate: iproc,dSR_dHRT=',iproc,dSR_dHRT
+      !    dSR_dHRT=min(dSR_dHRT,dSR_dHRT_max)
+      !  endif
+       ! Kp=exp(dSR_dHRT)
+       lnKp=dSR_dHRT
+        
 !
 !  Continue, hoping that this large value of dSR_dHRT is not a problem
 !
         if (sum_tmp==0.) then
-          Kc=Kp
+         ! Kc=Kp
+          lnKc=lnKp
         else
-          Kc=Kp*(p_atm/(p%TT*Rgas))**sum_tmp
+       !   Kc=Kp*(p_atm/(p%TT*Rgas))**sum_tmp
+          lnKc=lnKp+sum_tmp*(log(p_atm/Rgas)-p%lnTT)
         endif
 !
 !  Check whether Kc can be negative
 !
-        if (any(Kc==0.)) then
-          print*,'get_reaction_rate: iproc,Kc=',iproc,Kc
-          Kc=Kc+10*tini
-        endif
+     !   if (any(Kc==0.)) then
+     !     print*,'get_reaction_rate: iproc,Kc=',iproc,Kc
+     !     Kc=Kc+10*tini
+     !   endif
 !
 !  Continue, hoping that a small value of Kc is not a problem
 !
-        kr(:)=kf(:)/Kc
-        if (lwrite) write(file_id,*) 'Nreact= ',reac,'Kc= ', maxval(Kc)
-        if (lwrite) write(file_id,*) 'Nreact= ',reac,  'kr=', maxval(kr)
+     !   kr(:)=kf(:)/Kc
+        lnkr(:)=lnkf-lnKc
+        if (lwrite) write(file_id,*) 'Nreact= ',reac,'Kc= ', maxval(exp(lnKc))
+        if (lwrite) write(file_id,*) 'Nreact= ',reac,  'kr=', maxval(exp(lnkr))
         if (lwrite) write(file_id,*)'**************************'
 !
 !  Find the product of the species molar consentrations (where
@@ -3543,14 +3549,22 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
         prod1=1.
         prod2=1.
+      !  lnprod1=0.
+      !  lnprod2=0.
         do k=1,nchemspec
           prod1=prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
               /species_constants(k,imass))**Sijp(k,reac)
+        
+        !  lnprod1=lnprod1+Sijp(k,reac)*log((f(l1:l2,m,n,ichemspec(k))+tini)*rho_cgs(:)&
+         !     /species_constants(k,imass))
         enddo
         do k=1,nchemspec
           prod2=prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
               /species_constants(k,imass))**Sijm(k,reac)
+        !  lnprod2=lnprod2+Sijm(k,reac)*log((f(l1:l2,m,n,ichemspec(k))+tini)*rho_cgs(:)&
+        !      /species_constants(k,imass))
         enddo
+
 !
 !  Finalize writing to file
 !
@@ -3576,24 +3590,28 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
 !  The Lindstrom approach to the fall of reactions
 !
-        Kc_0=Kc
+       ! Kc_0=Kc
         if (maxval(abs(low_coeff(:,reac))) > 0.) then
           B_n_0=low_coeff(1,reac)
           alpha_n_0=low_coeff(2,reac)
           E_an_0=low_coeff(3,reac)
           kf_0(:)=B_n_0*p%TT(:)**alpha_n_0*exp(-E_an_0/Rcal/p%TT(:))
-          Pr=kf_0/kf*mix_conc
-          kf=kf*(Pr/(1.+Pr))
-          kr(:)=kf(:)/Kc_0
+          Pr=kf_0/exp(lnkf)*mix_conc
+         ! kf=kf*(Pr/(1.+Pr))
+          lnkf=lnkf+log(Pr/(1.+Pr))
+         ! kr(:)=kf(:)/Kc_0
+          lnkr=lnkf-lnKc
 
         elseif (maxval(abs(high_coeff(:,reac))) > 0.) then
           B_n_0=high_coeff(1,reac)
           alpha_n_0=high_coeff(2,reac)
           E_an_0=high_coeff(3,reac)
           kf_0(:)=B_n_0*p%TT(:)**alpha_n_0*exp(-E_an_0/Rcal/p%TT(:))
-          Pr=kf_0/kf*mix_conc
-          kf=kf*(1./(1.+Pr))
-          kr(:)=kf(:)/Kc_0
+          Pr=kf_0/exp(lnkf)*mix_conc
+         ! kf=kf*(1./(1.+Pr))
+          lnkf=lnkf-log(1.+Pr)
+          !kr(:)=kf(:)/Kc_0
+          lnkr=lnkf-lnKc
         endif
 
         if (maxval(abs(troe_coeff(:,reac))) > 0.) then
@@ -3607,22 +3625,40 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
          tmpF=1./(1.+tmpF)
          FF=tmpF*log10(Fcent)
          FF=10**(FF)
-         kf=kf*FF
-         kr(:)=kf(:)/Kc_0
+      !   kf=kf*FF
+         lnkf=lnkf+log(FF)
+      !   kr(:)=kf(:)/Kc_0
+         lnkr=lnkf-lnKc
         endif
-!print*,'BATA',maxval(kf),maxval(kf_0),reac, maxval(FF)
 !
 !  Find forward (vreact_p) and backward (vreact_m) rate of
 !  progress variable.
 !  (vreact_p - vreact_m) is labeled q in the chemkin manual
 !
-        if (Mplus_case (reac)) then
-          vreact_p(:,reac)=prod1*kf
-          vreact_m(:,reac)=prod2*kr
+
+       do i=1,nx
+        if (prod1(i)>0) then
+         if (Mplus_case(reac)) then
+          vreact_p(i,reac)=prod1(i)*exp(lnkf(i))
+         else 
+          vreact_p(i,reac)=prod1(i)*exp(lnkf(i))*sum_sp(i)
+         endif
         else
-          vreact_p(:,reac)=prod1*kf*sum_sp
-          vreact_m(:,reac)=prod2*kr*sum_sp
+          vreact_p(i,reac)=0.
         endif
+       enddo
+
+      do i=1,nx
+       if (prod2(i)>0) then
+        if (Mplus_case(reac)) then
+         vreact_m(i,reac)=prod2(i)*exp(lnkr(i))
+        else
+         vreact_m(i,reac)=prod2(i)*exp(lnkr(i))*sum_sp(i)
+        endif
+       else
+         vreact_m(i,reac)=0.
+       endif
+      enddo
 !
 
 
