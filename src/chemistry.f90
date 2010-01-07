@@ -3489,6 +3489,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
        ! kf(:)=B_n(reac)*p%TT(:)**alpha_n(reac)*exp(-E_an(reac)/Rcal/p%TT(:))
         lnkf=log(B_n(reac))+alpha_n(reac)*p%lnTT(:)-E_an(reac)/Rcal*p%TT1(:)
+        kf=exp(lnkf)
 !
 !print*,'p%TT=',p%TT
 !AB: Here I find values of p%TT= 749.9975 2.5253 1.148736, etc.
@@ -3555,15 +3556,10 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
         do k=1,nchemspec
           prod1=prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
               /species_constants(k,imass))**Sijp(k,reac)
-        
-        !  lnprod1=lnprod1+Sijp(k,reac)*log((f(l1:l2,m,n,ichemspec(k))+tini)*rho_cgs(:)&
-         !     /species_constants(k,imass))
         enddo
         do k=1,nchemspec
           prod2=prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
               /species_constants(k,imass))**Sijm(k,reac)
-        !  lnprod2=lnprod2+Sijm(k,reac)*log((f(l1:l2,m,n,ichemspec(k))+tini)*rho_cgs(:)&
-        !      /species_constants(k,imass))
         enddo
 
 !
@@ -3597,9 +3593,10 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
           alpha_n_0=low_coeff(2,reac)
           E_an_0=low_coeff(3,reac)
           kf_0(:)=B_n_0*p%TT(:)**alpha_n_0*exp(-E_an_0/Rcal/p%TT(:))
-          Pr=kf_0/exp(lnkf)*mix_conc
-         ! kf=kf*(Pr/(1.+Pr))
-          lnkf=lnkf+log(Pr/(1.+Pr))
+          Pr=kf_0/kf*mix_conc
+          kf=kf*(Pr/(1.+Pr))
+          lnkf=lnkf+log(Pr)
+          !lnkf=log(kf)
          ! kr(:)=kf(:)/Kc_0
           lnkr=lnkf-lnKc
 
@@ -3609,8 +3606,9 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
           E_an_0=high_coeff(3,reac)
           kf_0(:)=B_n_0*p%TT(:)**alpha_n_0*exp(-E_an_0/Rcal/p%TT(:))
           Pr=kf_0/exp(lnkf)*mix_conc
-         ! kf=kf*(1./(1.+Pr))
+          kf=kf*(1./(1.+Pr))
           lnkf=lnkf-log(1.+Pr)
+         ! lnkf=log(kf)
           !kr(:)=kf(:)/Kc_0
           lnkr=lnkf-lnKc
         endif
@@ -3626,7 +3624,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
          tmpF=1./(1.+tmpF)
          FF=tmpF*log10(Fcent)
          FF=10**(FF)
-      !   kf=kf*FF
+         kf=kf*FF
          lnkf=lnkf+log(FF)
       !   kr(:)=kf(:)/Kc_0
          lnkr=lnkf-lnKc
@@ -3637,12 +3635,14 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !  (vreact_p - vreact_m) is labeled q in the chemkin manual
 !
 
+       kr=exp(lnkr)
+
        do i=1,nx
         if (prod1(i)>0) then
          if (Mplus_case(reac)) then
-          vreact_p(i,reac)=prod1(i)*exp(lnkf(i))
+          vreact_p(i,reac)=prod1(i)*kf(i)
          else 
-          vreact_p(i,reac)=prod1(i)*exp(lnkf(i))*sum_sp(i)
+          vreact_p(i,reac)=prod1(i)*kf(i)*sum_sp(i)
          endif
         else
           vreact_p(i,reac)=0.
@@ -3652,9 +3652,9 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       do i=1,nx
        if (prod2(i)>0) then
         if (Mplus_case(reac)) then
-         vreact_m(i,reac)=prod2(i)*exp(lnkr(i))
+         vreact_m(i,reac)=prod2(i)*kr(i)
         else
-         vreact_m(i,reac)=prod2(i)*exp(lnkr(i))*sum_sp(i)
+         vreact_m(i,reac)=prod2(i)*kr(i)*sum_sp(i)
         endif
        else
          vreact_m(i,reac)=0.
