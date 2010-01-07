@@ -3419,14 +3419,14 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       real, dimension (nx) :: dSR=0.,dHRT=0.,prod1,prod2, lnKp, lnKc
       real, dimension (nx) :: dSR_dHRT,dSR_dHRT_max
       real, dimension (nx) :: kf=0., kr=0., lnkf, lnkr
-      real, dimension (nx) :: rho_cgs,p_atm
+      real, dimension (nx) :: rho_cgs
       real :: Rcal
       integer :: k , reac, j, i
       real  :: sum_tmp=0., T_low, T_mid, T_up, tmp, ddd
       logical,save :: lwrite=.true.
       character (len=20) :: input_file="./data/react.out"
       integer :: file_id=123
-      real :: B_n_0,alpha_n_0,E_an_0
+      real :: B_n_0,alpha_n_0,E_an_0,ln_p_Rgas,p_atm
       real, dimension (nx) :: kf_0,Pr,sum_sp
       real, dimension (nx) :: Fcent, ccc, nnn, lnPr, FF,tmpF
 !
@@ -3437,6 +3437,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       Rcal=Rgas_unit_sys/4.14*1e-7
       rho_cgs=p%rho*unit_mass/unit_length**3
       p_atm=1e6*unit_length**3/unit_energy
+      ln_p_Rgas=log(p_atm/Rgas)
       if (lwrite)  write(file_id,*)'T= ',   p%TT
       if (lwrite)  write(file_id,*)'p_atm= ',   p_atm
 !
@@ -3487,7 +3488,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !  Find forward rate constant for reaction 'reac'
 !
        ! kf(:)=B_n(reac)*p%TT(:)**alpha_n(reac)*exp(-E_an(reac)/Rcal/p%TT(:))
-        lnkf=log(B_n(reac))+alpha_n(reac)*p%lnTT(:)-E_an(reac)/Rcal/p%TT(:)
+        lnkf=log(B_n(reac))+alpha_n(reac)*p%lnTT(:)-E_an(reac)/Rcal*p%TT1(:)
 !
 !print*,'p%TT=',p%TT
 !AB: Here I find values of p%TT= 749.9975 2.5253 1.148736, etc.
@@ -3526,7 +3527,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
           lnKc=lnKp
         else
        !   Kc=Kp*(p_atm/(p%TT*Rgas))**sum_tmp
-          lnKc=lnKp+sum_tmp*(log(p_atm/Rgas)-p%lnTT)
+          lnKc=lnKp+sum_tmp*(ln_p_Rgas-p%lnTT)
         endif
 !
 !  Check whether Kc can be negative
