@@ -37,23 +37,25 @@ module Dustdensity
   integer, parameter :: ndiffd_max=4
   real, dimension(nx,ndustspec,ndustspec) :: dkern
   real, dimension(0:5) :: coeff_smooth=0.0
-  real :: diffnd=0.0,diffnd_hyper3=0.0,diffmd=0.0,diffmi=0.0,diffnd_shock=0.0
-  real :: nd_const=1.,dkern_cst=1.,eps_dtog=0.,Sigmad=1.0
-  real :: mdave0=1., adpeak=5e-4, supsatfac=1.,supsatfac1=1.
-  real :: amplnd=1.,kx_nd=1.,ky_nd=1.,kz_nd=1.,widthnd=1.,Hnd=1.0,Hepsd=1.0
-  real :: phase_nd=0.0,Ri0=1.0, eps1=0.5
+  real :: diffnd=0.0, diffnd_hyper3=0.0, diffnd_shock=0.0
+  real :: diffmd=0.0, diffmi=0.0
+  real :: nd_const=1.0, dkern_cst=1.0, eps_dtog=0.0, Sigmad=1.0
+  real :: mdave0=1.0, adpeak=5.0e-4, supsatfac=1.0, supsatfac1=1.0
+  real :: amplnd=1.0, kx_nd=1.0, ky_nd=1.0, kz_nd=1.0, widthnd=1.0
+  real :: Hnd=1.0, Hepsd=1.0, phase_nd=0.0, Ri0=1.0, eps1=0.5
   real :: z0_smooth=0.0, z1_smooth=0.0, epsz1_smooth=0.0
   real :: ul0=0.0, tl0=0.0, teta=0.0, ueta=0.0, deltavd_imposed=0.0
   integer :: ind_extra
-  character (len=labellen), dimension (ninit) :: initnd='nothing'
+  integer :: iglobal_nd=0
+  character (len=labellen), dimension (ninit) :: initnd='const_nd'
   character (len=labellen), dimension (ndiffd_max) :: idiffd=''
   logical :: ludstickmax=.false.
-  logical :: lcalcdkern=.true.,lkeepinitnd=.false.,ldustcontinuity=.true.
-  logical :: ldustnulling=.false.,lupw_ndmdmi=.false.
+  logical :: lcalcdkern=.true., lkeepinitnd=.false., ldustcontinuity=.true.
+  logical :: ldustnulling=.false., lupw_ndmdmi=.false.
   logical :: ldeltavd_thermal=.false., ldeltavd_turbulent=.false.
   logical :: ldiffusion_dust=.true.
-  logical :: ldiffd_simplified=.false.,ldiffd_dusttogasratio=.false.
-  logical :: ldiffd_hyper3=.false.,ldiffd_hyper3lnnd=.false.
+  logical :: ldiffd_simplified=.false., ldiffd_dusttogasratio=.false.
+  logical :: ldiffd_hyper3=.false., ldiffd_hyper3lnnd=.false.
   logical :: ldiffd_shock=.false.
 !
   namelist /dustdensity_init_pars/ &
@@ -68,15 +70,13 @@ module Dustdensity
       lcalcdkern, supsatfac, ldustcontinuity, ldustnulling, ludstickmax, &
       idiffd, lupw_ndmdmi, deltavd_imposed, &
       diffnd_shock
-!  Diagnostic variables (needs to be consistent with reset list below)
+!
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
   integer :: idiag_ssrm=0,idiag_ssrmax=0,idiag_adm=0,idiag_mdm=0
   integer, dimension(ndustspec) :: idiag_ndm=0,idiag_ndmin=0,idiag_ndmax=0
   integer, dimension(ndustspec) :: idiag_nd2m=0,idiag_rhodm=0,idiag_epsdrms=0
   integer, dimension(ndustspec) :: idiag_ndmx=0,idiag_rhodmz=0
   integer, dimension(ndustspec) :: idiag_rhodmin=0,idiag_rhodmax=0
-!
-  integer :: iglobal_nd=0
 !
   contains
 !***********************************************************************
