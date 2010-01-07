@@ -1247,8 +1247,9 @@ module Particles_nbody
 !  A nbody was found here. Turn the logical true and copy fp to fsp
 !
               lnbody(ks) = .true.
-              fsp(ks,ixp:ivpz) = fp(k,:)
-              fsp(ks,imass)    = pmass(ks)
+              fsp(ks,ixp:izp)   = fp(k,ixp:izp)
+              fsp(ks,ivpx:ivpz) = fp(k,ivpx:ivpz)
+              fsp(ks,imass)      = pmass(ks)
 !
 !  Send it to root. As there will be just mspar calls to
 !  mpisend, the tag can be ipar itself
@@ -1308,7 +1309,8 @@ module Particles_nbody
         do ks=1,mspar
           do k=1,npar_loc
             if (ipar_nbody(ks)==ipar(k)) then
-              fsp(ks,ixp:ivpz) = fp(k,:)
+              fsp(ks,ixp:izp)   = fp(k,ixp:izp)
+              fsp(ks,ivpx:ivpz) = fp(k,ivpx:ivpz)
             endif
           enddo
           fsp(ks,imass)    = pmass(ks)
