@@ -23,36 +23,27 @@ module Pscalar
   implicit none
 !
   include 'pscalar.h'
-! keep old name for backward compatibility
   character (len=labellen) :: initlncc='impossible', initlncc2='impossible'
-!
   character (len=labellen) :: initcc='zero', initcc2='zero'
   character (len=40) :: tensor_pscalar_file
   logical :: nopscalar=.false., reinitalize_cc=.false.
   logical :: reinitalize_lncc=.false.
-! keep old name for backward compatibility
   real :: ampllncc=impossible, widthlncc=impossible, lncc_min
   real :: ampllncc2=impossible, radius_lncc=impossible
   real :: kx_lncc=impossible, ky_lncc=impossible,kz_lncc=impossible
   real :: epsilon_lncc=impossible
-! input parameters
   real :: amplcc=0.1, widthcc=0.5, cc_min=0.0
   real :: amplcc2=0.0, kx_cc=1.0, ky_cc=1.0, kz_cc=1.0, radius_cc=0.0
   real :: kxx_cc=0.0, kyy_cc=0.0, kzz_cc=0.0
   real :: epsilon_cc=0.0, cc_const=1.0
-!
-  real :: zoverh=1., hoverr=0.05, powerlr=3.0
-!
+  real :: zoverh=1.0, hoverr=0.05, powerlr=3.0
   real, dimension(3) :: gradC0=(/0.0,0.0,0.0/)
 !
   namelist /pscalar_init_pars/ &
-       initcc,initcc2,amplcc,amplcc2,kx_cc,ky_cc,kz_cc, &
-       radius_cc,epsilon_cc,widthcc,cc_min,cc_const, &
-       initlncc,initlncc2,ampllncc,ampllncc2,kx_lncc,ky_lncc,kz_lncc, &
-       radius_lncc,epsilon_lncc,widthlncc, kxx_cc, kyy_cc,kzz_cc, &
-       hoverr, powerlr, zoverh
-!
-!
+      initcc, initcc2,amplcc, amplcc2, kx_cc, ky_cc, kz_cc, radius_cc, &
+      epsilon_cc, widthcc, cc_min, cc_const, initlncc, initlncc2, ampllncc, &
+      ampllncc2, kx_lncc, ky_lncc, kz_lncc, radius_lncc, epsilon_lncc, &
+      widthlncc, kxx_cc, kyy_cc, kzz_cc, hoverr, powerlr, zoverh
 ! run parameters
   real :: pscalar_diff=0.0, tensor_pscalar_diff=0.0, soret_diff=0.0
   real :: pscalar_diff_hyper3=0.0, rhoccm=0.0, cc2m=0.0, gcc2m=0.0
@@ -63,12 +54,10 @@ module Pscalar
   logical :: lnotpassive=.false.
 !
   namelist /pscalar_run_pars/ &
-       pscalar_diff,nopscalar,tensor_pscalar_diff,gradC0,soret_diff, &
-       pscalar_diff_hyper3,reinitalize_lncc,reinitalize_cc, &
-       lpscalar_sink,pscalar_sink,Rpscalar_sink, &
-       lreactions, lambda_cc, &
-       lam_gradC, om_gradC, lgradC_profile, &
-       lnotpassive
+      pscalar_diff, nopscalar, tensor_pscalar_diff, gradC0, soret_diff, &
+      pscalar_diff_hyper3, reinitalize_lncc, reinitalize_cc, lpscalar_sink, &
+      pscalar_sink, Rpscalar_sink, lreactions, lambda_cc, lam_gradC, &
+      om_gradC, lgradC_profile, lnotpassive
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rhoccm=0, idiag_ccmax=0, idiag_ccmin=0., idiag_ccm=0
   integer :: idiag_Qrhoccm=0, idiag_Qpsclm=0, idiag_mcct=0
@@ -157,7 +146,8 @@ module Pscalar
       if (widthlncc/=impossible) widthcc=widthlncc
 !
       select case (initcc)
-        case ('zero'); f(:,:,:,icc)=0.
+        case ('nothing')
+        case ('zero'); f(:,:,:,icc)=0.0
         case ('constant'); f(:,:,:,icc)=cc_const
         case ('hat-x'); call hat(amplcc,f,icc,widthcc,kx=kx_cc)
         case ('hat-y'); call hat(amplcc,f,icc,widthcc,ky=ky_cc)
@@ -229,7 +219,8 @@ module Pscalar
       if (widthlncc/=impossible) widthcc=widthlncc
 !
       select case (initcc)
-        case ('zero'); f(:,:,:,icc)=0.
+        case ('nothing')
+        case ('zero'); f(:,:,:,icc)=0.0
         case ('constant'); f(:,:,:,icc)=cc_const
         case ('hatwave-x'); call hatwave(amplcc,f,icc,widthcc,kx=kx_cc)
         case ('hatwave-y'); call hatwave(amplcc,f,icc,widthcc,ky=ky_cc)
