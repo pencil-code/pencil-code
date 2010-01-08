@@ -3543,7 +3543,13 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
         else
           Kc(i)=Kp(i)*(p_atm(i)/(p%TT(i)*Rgas))**sum_tmp
         endif
-        kr(i)=kf(i)/Kc(i)
+        if (Kc(i)==0.) then 
+          print*,'Kc(i)=',Kc(i),'i=',i,'dSR(i)-dHRT(i)=',dSR(i)-dHRT(i)
+          call fatal_error('get_reaction_rate',&
+                        'Kc(i)=0')
+        else
+         kr(i)=kf(i)/Kc(i)
+        endif
        endif
       enddo
      
