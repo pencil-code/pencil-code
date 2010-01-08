@@ -55,7 +55,7 @@ module EquationOfState
   real :: gamma_m1    !(=gamma-1)
   real :: gamma_inv   !(=1/gamma)
   real :: cp=impossible, cp1=impossible, cv=impossible, cv1=impossible
-  real :: pres_corr
+  real :: pres_corr=0.1
   real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=1.0, cs2top=1.0
   real :: cs2cool=0.0
@@ -526,19 +526,11 @@ module EquationOfState
 !
       case (ilnrho_cs2,irho_cs2)
         if (leos_isentropic) then
-        elseif (leos_isothermal) then
-          if (lpencil_in(i_ss)) lpencil_in(i_lnrho)=.true.
-          if (lpencil_in(i_del2ss)) lpencil_in(i_del2lnrho)=.true.
-          if (lpencil_in(i_gss)) lpencil_in(i_glnrho)=.true.
-          if (lpencil_in(i_hss)) lpencil_in(i_hlnrho)=.true.
-          if (lpencil_in(i_pp)) lpencil_in(i_rho)=.true.
-        endif
-!
-!  Pencils for thermodynamic quantities for given pp and ss (anelastic case).
-!
-      case (ipp_ss)
-        if (leos_isentropic) then
-           call fatal_error('eos_isentropic', 'isentropic case not yet coded')
+!           call fatal_error('eos_isentropic', 'isentropic case not yet coded')
+          if (lpencil_in(i_lnrho)) then 
+            lpencil_in(i_pp)=.true.
+            lpencil_in(i_ss)=.true.
+          endif
         elseif (leos_isothermal) then
           if (lpencil_in(i_lnrho)) then 
             lpencil_in(i_pp)=.true.
@@ -754,14 +746,13 @@ module EquationOfState
               'for input pair (pp,ss) anelastic must be used')
         endif
         if (leos_isentropic) then
-          call fatal_error('calc_pencils_eos', &
-              'isentropic not implemented for (pp,ss)')
-          if (lpencil(i_ss)) p%ss=0.0
-          if (lpencil(i_lnrho)) p%lnrho=log(p%pp/pp0)/gamma
-          if (lpencil(i_rho)) p%rho=exp(log(p%pp/pp0)/gamma)
-          if (lpencil(i_TT)) p%TT=(p%pp/pp0)**(1.0-gamma_inv)
-          if (lpencil(i_lnTT)) p%lnTT=(1.0-gamma_inv)*log(p%pp/pp0)
-          if (lpencil(i_cs2)) p%cs2=cs20*(p%pp/pp0)**(1.0-gamma_inv)
+!          call fatal_error("calc_pencils_eos","isentropic not implemented for (pp,ss) ")
+          if (lpencil(i_ss)) p%ss=0.0d0
+          if (lpencil(i_lnrho)) p%lnrho=log(gamma*p%pp/(rho0*cs20))/gamma
+          if (lpencil(i_rho)) p%rho=exp(log(gamma*p%pp/(rho0*cs20))/gamma)
+          if (lpencil(i_TT)) p%TT=(p%pp/pp0)**(1.-gamma_inv)
+          if (lpencil(i_lnTT)) p%lnTT=(1.-gamma_inv)*log(gamma*p%pp/(rho0*cs0))
+          if (lpencil(i_cs2)) p%cs2=cs20*(p%pp/pp0)**(1.-gamma_inv)
         elseif (leos_isothermal) then
           if (lpencil(i_lnrho)) p%lnrho=log(gamma*p%pp/(cs20*rho0))-p%lnTT
           if (lpencil(i_rho)) p%rho=exp(p%lnrho)
@@ -799,8 +790,10 @@ module EquationOfState
               'isentropic not implemented for (pp,lnTT)')
         elseif (leos_isothermal) then
           if (lpencil(i_cs2)) p%cs2=cs20
+!          if (lpencil(i_lnrho)) p%lnrho=log((exp(f(l1:l2,m,n,ilnrho))+p%pp/cs20)/2.0)
+!          if (lpencil(i_rho)) p%rho=(f(l1:l2,m,n,ilnrho)+p%pp/cs20)/2.0
           if (lpencil(i_lnrho)) p%lnrho=log(p%pp/cs20)
-          if (lpencil(i_rho)) p%rho=p%pp/cs20
+          if (lpencil(i_rho)) p%rho=(p%pp/cs20)
           if (lpencil(i_lnTT)) p%lnTT=lnTT0
           if (lpencil(i_glnTT)) p%glnTT=0.0
           if (lpencil(i_hlnTT)) p%hlnTT=0.0
@@ -1715,19 +1708,22 @@ module EquationOfState
 !
     endsubroutine bc_ss_flux_orig
 !***********************************************************************
-    subroutine get_average_pressure(average_density,average_pressure)
+    subroutine get_average_pressure(init_average_density,average_density,&
+                                    average_pressure)
 !
 !   01-dec-2009/piyali+dhruba: coded
 !
-      real,intent(in):: average_density
+      use Cdata
+!     
+      real,intent(in):: init_average_density,average_density
       real,intent(inout):: average_pressure
 !
-      if (leos_isothermal) then
+      if (leos_isothermal.or.lfirst) then
         average_pressure = average_density*cs20
       else
+        average_pressure = average_pressure+((average_density/& 
+                           init_average_density)**gamma-1.0)*pp0*pres_corr
         call fatal_error('get_average_pressure','Non isothermal case no coded yet')
-!        average_pressure = average_pressure+((average_density/& 
-!                           init_average_density)**gamma-1.0)*pp0*pres_corr
       endif  
 !
     endsubroutine get_average_pressure

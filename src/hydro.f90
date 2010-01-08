@@ -1027,7 +1027,6 @@ module Hydro
           call update_ghosts(f)
 ! 2D curl
           do n=n1,n2;do m=m1,m2
-            call calc_pencils_density(f,p)
             call grad(f,iuy,tmp_nx3)
             f(l1:l2,m,n,iux) = -tmp_nx3(:,3)/exp(f(l1:l2,m,n,ilnrho))
             f(l1:l2,m,n,iuz) =  tmp_nx3(:,1)/exp(f(l1:l2,m,n,ilnrho))

@@ -182,6 +182,10 @@ module EquationOfState
 !
       if (lpencil(i_cp1)) p%cp1=0.
       if (lpencil(i_cs2)) p%cs2=cs20
+      if (ldensity_anelastic) then
+        p%lnrho=lnrho0
+        p%rho = exp(p%lnrho)
+      endif
 !
 !  result doesn't depend of f, so keep compiler quiet
 !

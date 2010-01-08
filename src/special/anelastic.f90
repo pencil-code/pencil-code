@@ -1,4 +1,4 @@
-! $Id: density_anelastic.f90 11827 2009-11-30 06:44:55Z mppiyali@gmail.com $
+! $Id: anelastic.f90 11827 2009-11-30 06:44:55Z mppiyali@gmail.com $
 !
 !  This module takes care of the continuity equation.
 !
@@ -11,7 +11,7 @@
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 5
-! COMMUNICATED AUXILIARIES 4
+! COMMUNICATED AUXILIARIES 5
 !
 ! PENCILS PROVIDED lnrho; rho; rho1; glnrho(3); grho(3); gpp(3); 
 ! PENCILS PROVIDED uglnrho; ugrho
@@ -141,8 +141,8 @@ module Density
 !
       use FArrayManager
 !
-!      call farray_register_auxiliary('lnrho',ilnrho,communicated=.true.)
-      call farray_register_auxiliary('lnrho',ilnrho)
+      call farray_register_auxiliary('lnrho',ilnrho,communicated=.true.)
+!      call farray_register_auxiliary('lnrho',ilnrho)
       call farray_register_auxiliary('pp',ipp,communicated=.true.)
       call farray_register_auxiliary('rhs',irhs,vector=3,communicated=.true.)
 !
@@ -350,7 +350,8 @@ module Density
       real :: lnrhoint,cs2int,pot0
       real :: pot_ext,lnrho_ext,cs2_ext,tmp1,k_j2
       real :: zbot,ztop,haut
-      real, dimension(1) :: mass_per_proc
+      real, dimension(1) :: mass_per_proc,pres_per_proc
+      real :: average_density
       real, dimension (nx) :: r_mn,lnrho,TT,ss
       real, pointer :: gravx
       complex :: omega_jeans
@@ -901,11 +902,17 @@ module Density
 !  Should be consistent with density 
           f(:,:,:,ilnrho) = log(rho_const + f(:,:,:,ilnrho))
         case ('anelastic')
-          do n=n1,n2; do m=m1,m2
-            f(l1:l2,m,n,ilnrho)=-0.1*z(n)
-            f(l1:l2,m,n,ipp)=0.0
-            call calc_pencils_density(f,p)
-          enddo; enddo
+!            f(l1:l2,m,n,ilnrho)=-0.1*z(n)
+        do imn=1,ny*nz
+          n=nn(imn)
+          m=mm(imn)
+          lfirstpoint=(imn==1)      ! true for very first m-n loop
+          llastpoint=(imn==(ny*nz)) ! true for very last m-n loop
+          f(l1:l2,m,n,ilnrho)=-0.1*z(n)/cs20
+          call sum_mn(exp(f(l1:l2,m,n,ilnrho)),pres_per_proc(1))
+        enddo
+          call get_average_density(pres_per_proc(1),average_density)
+        write(*,*) 'PC:anelastic:den',average_density
 !
         case default
 !
@@ -1349,12 +1356,8 @@ module Density
       integer :: i, mm, nn, ierr,l
 ! DM+PC (at present we are working only with log rho) 
       if(ldensity_nolog) call fatal_error('density_anelastic','working with lnrho')
-
-!
-! Anelastic case: we give rho0 only here
-!
-      p%rho=exp(f(l1:l2,m,n,ilnrho))
-      p%lnrho=log(p%rho)
+      p%lnrho=f(l1:l2,m,n,ilnrho)
+      p%rho=exp(p%lnrho)
 
 ! rho and rho1
       if (lcheck_negative_density .and. any(p%rho <= 0.)) &
@@ -2550,20 +2553,15 @@ module Density
       real, dimension (nx,3) :: gpp
       real, dimension (nx) :: phi_rhs_pencil
       real, dimension (1)  :: mass_per_proc
+      real    :: average_density,average_pressure,init_average_density
       integer :: j, ju, l
       
       if (headt) call identify_bcs('pp',ipp)
-!
-!  Multiply the RHS by rho before taking the divergence
-!
-!      do m=m1,m2
-!      do n=n1,n2
-!        call calc_pencils_density(f,p)
-!        f(l1:l2,m,n,irhs)=p%rho*f(l1:l2,m,n,irhs)
-!        f(l1:l2,m,n,irhs+1)=p%rho*f(l1:l2,m,n,irhs+1)
-!        f(l1:l2,m,n,irhs+2)=p%rho*f(l1:l2,m,n,irhs+2)
-!      enddo
-!      enddo
+
+        call get_average_density(mass_per_proc(1),average_density)
+        if (it==1) init_average_density=average_density
+        if (it==1) write(*,*) 'PC.anelastic:init_den',init_average_density
+        call get_average_pressure(init_average_density,average_density,average_pressure)
 !
 !  Set first the boundary conditions on rhs
 !
@@ -2575,45 +2573,21 @@ module Density
 !  Find the divergence of rhs
 !
       pold(1:nx,1:ny,1:nz)=f(l1:l2,m1:m2,n1:n2,ipp)
-      do n=n1,n2
-        do m=m1,m2
+      do m=m1,m2; do n=n1,n2
           call div(f,irhs,phi_rhs_pencil)
           f(l1:l2,m,n,ipp)=phi_rhs_pencil
-        enddo
-      enddo
+      enddo; enddo
 !
 !  get pressure from inverting the Laplacian
 !
       if (lperi(3)) then
-!        do n=n1,n2
-!          do l=l1,l2
-!            write(16,*) l,n,f(l,m1:m2,n,ipp)
-!          enddo 
-!        enddo 
         call inverse_laplacian(f,f(l1:l2,m1:m2,n1:n2,ipp))
-!        do n=n1,n2
-!          do l=l1,l2
-!            write(17,*) l,n,f(l,m1:m2,n,ipp)
-!          enddo 
-!        enddo 
-!        close(17)
+        f(:,:,:,ipp)=f(:,:,:,ipp)+average_pressure
+!        write(*,*) 'PC:anelastic:pres',average_density,average_pressure
       else
-        do n=n1,n2
-          do l=l1,l2
-            write(16,*) l,n,f(l,m1:m2,n,ipp)
-          enddo 
-        enddo 
-        close(16)
         call inverse_laplacian_z(pold,f(l1:l2,m1:m2,n1:n2,ipp))
 !        call inverse_laplacian_semispectral(f(l1:l2,m1:m2,n1:n2,ipp))
-        do n=n1,n2
-          do l=l1,l2
-            write(17,*) l,n,f(l,m1:m2,n,ipp)
-          enddo 
-        enddo 
-        close(17)
       endif
-!      stop
 !
 !  Update the boundary conditions for the new pressure (needed to
 !  compute grad(P)
@@ -2627,13 +2601,18 @@ module Density
       do n=n1,n2
       do m=m1,m2
         call grad(f,ipp,gpp)
-        call calc_pencils_density(f,p)
+        call calc_pencils_eos(f,p)
         do j=1,3
           ju=j+iuu-1
           df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-gpp(:,j)/p%rho
         enddo
+        f(l1:l2,m,n,ilnrho)=p%lnrho
       enddo
       enddo
+
+      call initiate_isendrcv_bdry(f,ilnrho)
+      call finalize_isendrcv_bdry(f,ilnrho)
+      call boundconds(f,ilnrho,ilnrho)
 !
     endsubroutine anelastic_after_mn
 !***********************************************************************

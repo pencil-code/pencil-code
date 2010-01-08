@@ -204,7 +204,8 @@ module Diagnostics
 !
 !  The result is present everywhere
 !
-       average_density=mass(1)/box_volume
+!       average_density=mass(1)/box_volume
+       average_density=mass(1)/(nxgrid*nygrid*nzgrid)
       call mpibcast_real(average_density,1)
 !
     endsubroutine get_average_density
@@ -1357,6 +1358,7 @@ module Diagnostics
       endif
 !
     endsubroutine integrate_mn
+
 !***********************************************************************
     subroutine integrate_mn_name(a,iname)
 !

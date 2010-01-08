@@ -430,7 +430,7 @@ module Equ
 !
                               call calc_pencils_hydro(f,p)
                               call calc_pencils_density(f,p)
-                              call calc_pencils_eos(f,p)
+        if (.not.ldensity_anelastic)  call calc_pencils_eos(f,p)
         if (lshock)           call calc_pencils_shock(f,p)
         if (lchemistry)       call calc_pencils_chemistry(f,p)
         if (lviscosity)       call calc_pencils_viscosity(f,p)
@@ -737,18 +737,19 @@ module Equ
 !debug      'pde','ONE OR MORE DERIVATIVES HAS BEEN DOUBLE CALLED') !DERCOUNT
 !debug   endif
 !
-!  In the anelastic case, put the contribution from previous time back 
-!  in df array and set rhs to this value. 
+!  Fill in the rhs of the poisson equation and restore the df(:,:,:,iuu) array
+!  for anelastic case 
 !
-        if (ldensity_anelastic) then 
-         f(l1:l2,m,n,irhs) = p%rho*df(l1:l2,m,n,iuu)
-         f(l1:l2,m,n,irhs+1) = p%rho*df(l1:l2,m,n,iuu+1)
-         f(l1:l2,m,n,irhs+2) = p%rho*df(l1:l2,m,n,iuu+2)
-         call integrate_mn(p%rho,mass_per_proc(1))
-          df(l1:l2,m,n,iuu:iuu+2) = df_iuu_pencil(1:nx,1:3) +&
+         if (ldensity_anelastic) then
+           f(l1:l2,m,n,irhs) = p%rho*df(l1:l2,m,n,iuu)
+           f(l1:l2,m,n,irhs+1) = p%rho*df(l1:l2,m,n,iuu+1)
+           f(l1:l2,m,n,irhs+2) = p%rho*df(l1:l2,m,n,iuu+2)
+           df(l1:l2,m,n,iuu:iuu+2) = df_iuu_pencil(1:nx,1:3) +&
                                     df(l1:l2,m,n,iuu:iuu+2)
-        endif
-!
+           call sum_mn(p%rho,mass_per_proc(1))
+         endif
+
+
 !  End of loops over m and n.
 !
         headtt=.false.
