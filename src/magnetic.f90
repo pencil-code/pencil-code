@@ -1688,7 +1688,7 @@ module Magnetic
             p%cosjb(ix)=p%jb(ix)/sqrt(p%j2(ix)*p%b2(ix))
           endif
         enddo
-        if (lpencil_check) then
+        if (lpencil_check_at_work) then
         ! map penc0 value back to interval [-1,1]
           p%cosjb = modulo(p%cosjb + 1.0, 2.0) - 1
         endif
@@ -1704,12 +1704,6 @@ module Magnetic
             p%jperp=sqrt(jcrossb2(ix))/sqrt(p%b2(ix))
           endif
         enddo
-!        if (lpencil_check) then
-!          sinjb=sqrt(1-(modulo(p%cosjb + 1.0, 2.0) - 1)**2)
-!        else
-!          sinjb=sqrt(1-p%cosjb**2)
-!        endif
-!        p%jperp=sqrt(p%j2)*sinjb
       endif
 ! jxbr
       if (lpencil(i_jxbr)) then
