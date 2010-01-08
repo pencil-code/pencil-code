@@ -250,6 +250,9 @@ module Cdata
 !
 !  Parameters related to the pencil check.
 !
+  real :: penc0=2.345678 ! `impossible' value -- must not be
+                         ! too large, so expressions like
+                         ! exp(gamma_m1*p%lnrho) don't cause overflow
   logical :: lpencil_check=.false., lpencil_check_small=.true.
   logical :: lrandom_f_pencil_check=.true.
   logical :: lpencil_init=.false.
