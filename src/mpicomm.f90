@@ -2525,7 +2525,7 @@ module Mpicomm
         if (lroot) print*,'transp: No clue what var=', var, 'is supposed to mean'
       endif
 !
-!  Synchronize; not strictly necessary, so Axel will prabably remove it..
+!  Synchronize; not strictly necessary, so Axel will probably remove it..
 !
       call mpibarrier()
 !
