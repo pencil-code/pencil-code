@@ -3518,11 +3518,11 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
 !  Find forward rate constant for reaction 'reac'
 !
-        if (prod1(i)==0. .and. prod2(i)==0.) then
-         kf(i)=0.
-        else
+    !    if (prod1(i)==0. .and. prod2(i)==0.) then
+    !     kf(i)=0.
+    !    else
          kf(i)=B_n(reac)*p%TT(i)**alpha_n(reac)*exp(-E_an(reac)/Rcal*p%TT1(i))
-        endif
+    !    endif
 !  
 !  Find backward rate constant for reaction 'reac'
 !
