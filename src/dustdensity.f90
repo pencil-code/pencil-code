@@ -47,7 +47,7 @@ module Dustdensity
   real :: ul0=0.0, tl0=0.0, teta=0.0, ueta=0.0, deltavd_imposed=0.0
   integer :: ind_extra
   integer :: iglobal_nd=0
-  character (len=labellen), dimension (ninit) :: initnd='const_nd'
+  character (len=labellen), dimension (ninit) :: initnd='nothing'
   character (len=labellen), dimension (ndiffd_max) :: idiffd=''
   logical :: ludstickmax=.false.
   logical :: lcalcdkern=.true., lkeepinitnd=.false., ldustcontinuity=.true.
@@ -91,7 +91,7 @@ module Dustdensity
 !
       integer :: k, ind_tmp, imd_tmp, imi_tmp
 !
-!  Set ind to consecutive numbers nvar+1, nvar+2, ..., nvar+ndustspec
+!  Set ind to consecutive numbers nvar+1, nvar+2, ..., nvar+ndustspec.
 !
       call farray_register_pde('nd',ind_tmp,vector=ndustspec)
       do k=1,ndustspec
@@ -121,7 +121,7 @@ module Dustdensity
       if (lroot) call svn_id( &
           "$Id$")
 !
-!  Ensure dust density variables are contiguous with dust velocity
+!  Ensure dust density variables are contiguous with dust velocity.
 !
       if (ldustvelocity) then
         if ((iudz(ndustspec)+1)/=ind(1)) then
@@ -129,6 +129,10 @@ module Dustdensity
               'contiguous in the f-array - as required by copy_bcs_dust')
         endif
       endif
+!
+!  Default dust density non zero.
+!
+      initnd(1)='const_nd'
 !
     endsubroutine register_dustdensity
 !***********************************************************************
@@ -156,7 +160,7 @@ module Dustdensity
           call stop_it('initialize_dustdensity: ' // &
           'Dust growth only works with pscalar')
 !
-!  Special coagulation equation test cases require initialization of kernel
+!  Special coagulation equation test cases require initialization of kernel.
 !
       do j=1,ninit
         select case (initnd(j))
@@ -174,7 +178,7 @@ module Dustdensity
         endselect
       enddo
 !
-!  Initialize dust diffusion
+!  Initialize dust diffusion.
 !
       ldiffd_simplified=.false.
       ldiffd_dusttogasratio=.false.
@@ -228,8 +232,7 @@ module Dustdensity
         ldiffd_shock=.false.
       endif
 !
-!  Hyperdiffusion only works with (not log) density. One must either use
-!  ldensity_nolog=T or work with GLOBAL =   global_nolog_density.
+!  Hyperdiffusion only works with (not log) density.
 !
       if (ldiffd_hyper3 .and. ldustdensity_log) then
         if (lroot) print*,"initialize_dustdensity: Creating global array for nd to use hyperdiffusion"
@@ -240,7 +243,7 @@ module Dustdensity
 !***********************************************************************
     subroutine init_nd(f)
 !
-!  initialise nd; called from start.f90
+!  Initialise dust density; called from start.f90.
 !
 !  7-nov-01/wolf: coded
 ! 28-jun-02/axel: added isothermal
@@ -261,7 +264,7 @@ module Dustdensity
       integer :: j,k,l
       logical :: lnothing
 !
-!  different initializations of nd (called from start).
+!  Different initializations of nd.
 !
       rhodmt=0.
       lnothing=.false.
@@ -455,38 +458,38 @@ module Dustdensity
               'init_nd: Test of dust coagulation with linear kernel'
         case default
 !
-!  Catch unknown values
+!  Catch unknown values.
 !
           if (lroot) print*, 'init_nd: No such value for initnd: ', &
               trim(initnd(j))
-          call stop_it('')
+          call fatal_error('initnd','')
 
         endselect
 !
-!  End loop over initial conditions
+!  End loop over initial conditions.
 !
       enddo
 !
-!  Interface for user's own initial condition
+!  Interface for user's own initial condition.
 !
       if (linitial_condition) call initial_condition_nd(f)
 !
-!  Initialize grain masses
+!  Initialize grain masses.
 !
       if (lmdvar) then
         do k=1,ndustspec; f(:,:,:,imd(k)) = md(k); enddo
       endif
 !
-!  Initialize ice density
+!  Initialize ice density.
 !
-      if (lmice) f(:,:,:,imi) = 0.
+      if (lmice) f(:,:,:,imi) = 0.0
 !
-!  Take logarithm if necessary (remember that nd then really means ln nd)
+!  Take logarithm if necessary (remember that nd then really means ln nd).
 !
       if (ldustdensity_log) f(l1:l2,m1:m2,n1:n2,ilnnd(:)) = &
           log(f(l1:l2,m1:m2,n1:n2,ind(:)))
 !
-!  sanity check
+!  Sanity check.
 !
       if (notanumber(f(l1:l2,m1:m2,n1:n2,ind(:)))) &
           call stop_it('init_nd: Imaginary dust number density values')
