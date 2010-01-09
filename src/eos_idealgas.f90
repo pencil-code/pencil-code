@@ -526,11 +526,21 @@ module EquationOfState
 !
       case (ilnrho_cs2,irho_cs2)
         if (leos_isentropic) then
-!           call fatal_error('eos_isentropic', 'isentropic case not yet coded')
-          if (lpencil_in(i_lnrho)) then 
-            lpencil_in(i_pp)=.true.
-            lpencil_in(i_ss)=.true.
-          endif
+           call fatal_error('eos_isentropic', 'isentropic case not yet coded')
+        elseif (leos_isothermal) then
+          if (lpencil_in(i_ss)) lpencil_in(i_lnrho)=.true.
+          if (lpencil_in(i_del2ss)) lpencil_in(i_del2lnrho)=.true.
+          if (lpencil_in(i_gss)) lpencil_in(i_glnrho)=.true.
+          if (lpencil_in(i_hss)) lpencil_in(i_hlnrho)=.true.
+          if (lpencil_in(i_pp)) lpencil_in(i_rho)=.true.
+        endif
+
+!
+!  Pencils for thermodynamic quantities for given pp and ss (anelastic case only).
+!
+      case(ipp_ss)
+        if (leos_isentropic) then
+           call fatal_error('eos_isentropic', 'isentropic case not yet coded')
         elseif (leos_isothermal) then
           if (lpencil_in(i_lnrho)) then 
             lpencil_in(i_pp)=.true.
@@ -548,13 +558,11 @@ module EquationOfState
           if (lpencil_in(i_rho)) lpencil_in(i_lnrho)=.true. 
           if (lpencil_in(i_lnrho)) then
             lpencil_in(i_pp)=.true. 
-!AXEL       lpencil_in(i_ss)=.true.
-!AXEL: the line above causes a problem for the auto-test
-!AXEL: So, for now, we do it only if ldensity_anelastic.
-            if (ldensity_anelastic) lpencil_in(i_ss)=.true.
+            lpencil_in(i_ss)=.true.
           endif
         endif
 !        
+
       case (ipp_cs2)
         if (leos_isentropic) then
            call fatal_error('eos_isentropic', 'isentropic case not yet coded')
