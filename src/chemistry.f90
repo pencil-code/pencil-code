@@ -19,10 +19,11 @@
 !
 !***************************************************************
 module Chemistry
-
+!
   use Cparam
   use Cdata
   use Messages
+  use Mpicomm, only: stop_it
   use Sub, only: keep_compiler_quiet
 
   implicit none
@@ -213,7 +214,6 @@ module Chemistry
 !   8-jan-08/axel: added modifications analogously to dustdensity
 !   5-mar-08/nils: Read thermodynamical data from chem.inp
 !
-      use Cdata
       use FArrayManager
       use General, only: chn
 !
@@ -263,8 +263,6 @@ module Chemistry
 !  13-aug-07/steveb: coded
 !  19-feb-08/axel: reads in chemistry.dat file
 !
-      use Mpicomm, only: stop_it
-
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: data_file_exit=.false.
       logical :: exist,exist1,exist2
@@ -378,10 +376,8 @@ module Chemistry
 !
 !  13-aug-07/steveb: coded
 !
-      use Cdata
       use Initcond
 !AB:  use InitialCondition, only: initial_condition_chemistry
-      use Mpicomm
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -544,11 +540,8 @@ module Chemistry
 !
 !   13-aug-07/steveb: coded
 !
-      use Cdata
       use Sub
-      use Cparam
       use EquationOfState
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -1246,11 +1239,8 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
 !  DOCUMENT ME!!!
 !
-      use Cdata
       use Sub
-      use Cparam
       use EquationOfState
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) ::  tmp_sum,tmp_sum2, nu_dyn
@@ -1712,8 +1702,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
 !  28-feb-08/axel: coded
 !
-      use Cdata
-      use Mpicomm, only: stop_it
       use General, only: chn
 !
       character (len=80) :: chemicals='' 
@@ -1913,8 +1901,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
 !  DOCUMENT ME FURTHER!!!
 !
-      use Cdata
-      use Mpicomm, only: stop_it
       use General, only: chn
 !
       character (len=20) :: input_file='chem.inp'
@@ -2045,9 +2031,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !    8-jan-08/natalia: included advection/diffusion
 !   20-feb-08/axel: included reactions
 !
-      use Cdata
       use Diagnostics
-      use Mpicomm
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2392,7 +2376,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
 !  13-aug-07/steveb: coded
 !
-      use Cdata
       use Diagnostics
       use General, only: chn
 !
@@ -2688,8 +2671,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
 !  05-feb-08/nils: coded
 !
-      use Cdata
-!
       integer, intent(out) :: ind_glob
       integer, intent(inout) :: ind_chem
       character (len=*), intent(in) :: species_name
@@ -2723,8 +2704,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
 !  05-feb-08/nils: coded
 !
-      use Mpicomm
-!
       character (len=*), intent(in) :: element_name
       real, intent(out) :: MolMass
 !
@@ -2755,8 +2734,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !  the syntax of chem.inp.
 !
 !  06-mar-08/nils: coded
-!
-      use Mpicomm
 !
       logical :: IsSpecie=.false., emptyfile
       integer :: k,file_id=123, StartInd, StopInd
@@ -2924,8 +2901,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !  the syntax of chem.inp.
 !
 !  10-mar-08/nils: coded
-!
-      use Mpicomm
 !
       logical :: IsReaction=.false.,found_new_reaction=.false.
       logical, save :: find_specie, found_specie
@@ -3306,8 +3281,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
 !  10-mar-08/nils: coded
 !
-      use Mpicomm
-!
       integer, intent(in) :: StartInd,StopInd,k
       character (len=*), intent(in) :: ChemInpLine
       integer :: StartSpecie,ind_glob,ind_chem,stoi
@@ -3425,7 +3398,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       character (len=20) :: input_file="./data/react.out"
       integer :: file_id=123
       real :: B_n_0,alpha_n_0,E_an_0
-      real, dimension (nx) :: kf_0,Kc_0,Pr,sum_sp
+      real, dimension (nx) :: kf_0,Pr,sum_sp
       real, dimension (nx) :: Fcent, ccc, nnn, lnPr, FF,tmpF
 !
       if (lwrite)  open(file_id,file=input_file)
@@ -3791,8 +3764,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
 !  01-apr-08/natalia: coded
 !
-      use Mpicomm
-!
       logical :: emptyfile
       logical :: found_specie
       integer :: file_id=123, ind_glob, ind_chem
@@ -3881,8 +3852,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
 !  03-apr-08/natalia: coded
 !
-      use Mpicomm
-!
       character (len=*), intent(in) :: omega
       real,  dimension(mx,my,mz), intent(in)  :: lnTst
       real,  dimension(mx,my,mz), intent(out) :: Omega_kl
@@ -3929,8 +3898,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !  28.08.2009: Nils Erland L. Haugen (Corrected the calculation of the 
 !              prefactor.) 
 !
-      use Mpicomm
-
       real, dimension (mx,my,mz,mfarray) :: f
       intent(in) :: f
       real, dimension (mx,my,mz) :: Omega_kl, prefactor
@@ -4199,8 +4166,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
 !  Calculate diffusion term, p%DYDt_diff
 !
-      use Cdata
-      use Mpicomm
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -4332,8 +4297,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !***********************************************************************
    subroutine get_cs2_full(cs2_full)
 !
-      use Mpicomm
-!
       real, dimension (mx,my,mz) :: cs2_full
 !
       intent(out) :: cs2_full
@@ -4360,8 +4323,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
 ! 2009.12.10: Nils Erland L. Haugen (coded)
 !
-      use Mpicomm
-!
       real, dimension (:,:), intent(out) :: slice
       integer, intent(in) :: index, dir
 !
@@ -4381,8 +4342,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
     endsubroutine get_cs2_slice
 !*************************************************************
     subroutine get_gamma_full(gamma_full)
-!
-      use Mpicomm
 !
       real, dimension (mx,my,mz) :: gamma_full
 !
@@ -4423,8 +4382,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
     endsubroutine get_gamma_slice
 !*************************************************************
     subroutine air_field(f)
-!
-      use Mpicomm
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: sum_Y
@@ -4586,10 +4543,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !   16-nov-09/natalia: coded.
 !
 !
-    use MpiComm, only: stop_it
-      use EquationOfState, only: cs0, cs20
       use Deriv, only: der_onesided_4_slice,der_pencil, der2_pencil
-!      use Chemistry
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -4936,10 +4890,8 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
 !   16-nov-08/natalia: coded.
 !
-      use MpiComm, only: stop_it
       use EquationOfState, only: cs0, cs20
       use Deriv, only: der_onesided_4_slice, der_pencil
-!      use Chemistry
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: mom2
@@ -5090,10 +5042,8 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
 !   16-nov-08/natalia: coded.
 !
-      use MpiComm, only: stop_it
       use EquationOfState, only: cs0, cs20
       use Deriv, only: der_onesided_4_slice,der_pencil, der2_pencil
-!      use Chemistry
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -5404,7 +5354,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
 !   16-jun-09/natalia: coded.
 !
-      use MpiComm, only: stop_it
       use EquationOfState, only: cs0, cs20
       use Deriv, only: der_onesided_4_slice,der_pencil
 !
@@ -5846,7 +5795,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
 !   16-jun-09/natalia: coded.
 !
-      use MpiComm, only: stop_it
       use EquationOfState, only: cs0, cs20
       use Deriv, only: der_onesided_4_slice,der_pencil
 !
@@ -6271,9 +6219,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !    buffer zone to damp the acustic waves!!!!!!!!!!!
 !    important for NSCBC  
 !
-      use Cdata
-      use Mpicomm, only: stop_it
-!
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       real, dimension (mx) :: func_x
@@ -6408,7 +6353,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 ! Check what is necessary...
 !
       use Diagnostics
-      use Mpicomm
       use Sub
 !
       implicit none
@@ -6507,10 +6451,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
     end subroutine get_mu1_slicex
 !********************************************************************
   subroutine chemistry_clean_up()
-
-  use Mpicomm
-
-
+!
   if (allocated(Bin_diff_coef))  deallocate(Bin_diff_coef)
   if (allocated(stoichio))       deallocate(stoichio)
   if (allocated(Sijm))           deallocate(Sijm)
@@ -6527,8 +6468,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
   if (allocated(troe_coeff))     deallocate(troe_coeff)
   if (allocated(a_k4))           deallocate(a_k4)
   if (allocated(Mplus_case))     deallocate(Mplus_case)
-
-
 !
   endsubroutine chemistry_clean_up
 !********************************************************************
