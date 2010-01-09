@@ -7,9 +7,6 @@
 #  This script is used by auto-test and pc_auto-test.
 #
 if [ $PC_SET_VALIDATED ]; then
-  cd $PENCIL_HOME/misc/validation;
-  svn up;
-  echo "`date` (previously validated revision: `cat validated.dat`)" \
-    >> `uname -n`.autotest;
-  #svn ci -m "AUTOMATIC update by auto-test on `uname -n` by $USER";
+  cd $PENCIL_HOME
+  svn info |grep Revision > /tmp/pc_current_revision.dat
 fi

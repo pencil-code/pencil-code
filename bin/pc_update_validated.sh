@@ -8,6 +8,6 @@
 #
 if [ $PC_SET_VALIDATED ]; then
   cd $PENCIL_HOME/misc/validation;
-  awk '{print $3}' `uname -n`.autotest |head -1 >validated.dat;
-  svn ci -m "automatic validation by auto-test on `uname -n` by $USER";
+  awk '{print $2}' /tmp/pc_current_revision.dat >validated.dat;
+  svn ci -m "automatic validation completed: auto-test on `uname -n` by $USER";
 fi
