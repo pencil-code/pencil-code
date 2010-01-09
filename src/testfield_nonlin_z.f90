@@ -533,7 +533,7 @@ module Testfield
       use Cdata
 !
       lpenc_requested(i_uu)=.true.
-      lpenc_requested(i_bbb)=.true.
+      lpenc_diagnos(i_bbb)=.true.
 !
     endsubroutine pencil_criteria_testfield
 !***********************************************************************

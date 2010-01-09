@@ -435,8 +435,10 @@ module Hydro
       iux = iuu; iuy = iuu+1; iuz = iuu+2
 !
 !  Share lpressuregradient_gas so Entropy module knows whether to apply
-!  pressure gradient or not.
+!  pressure gradient or not. But hydro wants pressure gradient only when
+!  then density is computed, i.e. not even with ldensity_anelastic.
 !
+      lpressuregradient_gas=ldensity
       call put_shared_variable('lpressuregradient_gas',&
           lpressuregradient_gas,ierr)     
       if (ierr/=0) call fatal_error('register_hydro',&
