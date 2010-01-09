@@ -438,7 +438,7 @@ module Hydro
 !  pressure gradient or not. But hydro wants pressure gradient only when
 !  then density is computed, i.e. not even with ldensity_anelastic.
 !
-      lpressuregradient_gas=ldensity
+      if  (.not.ldensity) lpressuregradient_gas=.false.
       call put_shared_variable('lpressuregradient_gas',&
           lpressuregradient_gas,ierr)     
       if (ierr/=0) call fatal_error('register_hydro',&
