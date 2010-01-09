@@ -1,6 +1,7 @@
 ! $Id$
+!
 !  This modules addes chemical species and reactions.
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
