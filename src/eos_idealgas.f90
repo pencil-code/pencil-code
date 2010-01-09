@@ -548,7 +548,10 @@ module EquationOfState
           if (lpencil_in(i_rho)) lpencil_in(i_lnrho)=.true. 
           if (lpencil_in(i_lnrho)) then
             lpencil_in(i_pp)=.true. 
-            lpencil_in(i_ss)=.true.
+!AXEL       lpencil_in(i_ss)=.true.
+!AXEL: the line above causes a problem for the auto-test
+!AXEL: So, for now, we do it only if ldensity_anelastic.
+            if (ldensity_anelastic) lpencil_in(i_ss)=.true.
           endif
         endif
 !        
