@@ -1,4 +1,4 @@
-! $Id: anelastic.f90 11827 2009-11-30 06:44:55Z mppiyali@gmail.com $
+! $Id$
 !
 !  This module takes care of the continuity equation.
 !
@@ -150,7 +150,7 @@ module Density
 !  Identify version number (generated automatically by CVS).
 !
       if (lroot) call svn_id( &
-          "$Id: density_anelastic.f90 11886 2009-10-13 12:51:11 mppiyali@gmail.com $")
+          "$Id$")
 !
     endsubroutine register_density
 !***********************************************************************
