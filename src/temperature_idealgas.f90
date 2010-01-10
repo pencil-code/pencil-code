@@ -28,8 +28,8 @@ module Entropy
 
   use Cdata
   use Cparam
-  use EquationOfState, only: mpoly0, mpoly1
-  use Messages
+  use EquationOfState, only: mpoly0,mpoly1
+  use Messages, only: fatal_error,warning,information,svn_id
   use Sub, only: keep_compiler_quiet
 
   implicit none
@@ -367,7 +367,6 @@ module Entropy
 !
       use General,  only: chn
       use Sub,      only: blob
-      use Initcond, only: jump
       use InitialCondition, only: initial_condition_ss
       use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, cs20, &
                                  lnrho0, get_cp1
@@ -665,7 +664,7 @@ module Entropy
 !
       use Deriv, only: der6
       use Diagnostics, only: sum_mn_name,max_mn_name,save_name
-      use EquationOfState, only: gamma_m1,gamma
+      use EquationOfState, only: gamma_m1
       use Special, only: special_calc_entropy
       use Sub, only: dot2,identify_bcs
       use Viscosity, only: calc_viscous_heat
@@ -939,7 +938,6 @@ module Entropy
     subroutine calc_heat_cool(df,p)
 !
       use Diagnostics, only: sum_lim_mn_name
-      use EquationOfState, only: gamma,gamma_m1
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -1553,7 +1551,7 @@ module Entropy
 !
 !    where J_x and J_y denote Jacobian matrices df/dT.
 !
-      use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, get_cp1
+      use EquationOfState, only: gamma,get_cp1
       use General, only: tridag
 
       implicit none
@@ -1851,7 +1849,7 @@ module Entropy
 ! Implicit 1-D case for a temperature-dependent conductivity K(T).
 ! Not really an ADI but keep the generic name for commodity.
 !
-      use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, get_cp1
+      use EquationOfState, only: gamma,get_cp1
       use General, only: tridag
 
       implicit none
@@ -1914,7 +1912,6 @@ module Entropy
 !
       use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, get_cp1
       use General, only: tridag
-      use Gravity, only: gravz
       use Mpicomm, only: transp_xz, transp_zx, mpisend_real, mpirecv_real
 
       implicit none
@@ -2093,9 +2090,6 @@ module Entropy
 !
 ! Do nothing 
 ! DM+PC
-
-      use EquationOfState, only: gamma,gamma_m1,cs20,lnrho0,profz_eos
-!
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
