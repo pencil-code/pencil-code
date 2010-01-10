@@ -323,7 +323,6 @@ module Entropy
       if (ierr/=0) call stop_it("initialize_entropy: "//&
            "there was a problem when putting Fbot")
 !
-!
 !  A word of warning...
 !
       if (lheatc_Kconst .and. hcond0==0.0) then
@@ -1441,7 +1440,7 @@ module Entropy
       real, dimension(nx,nz) :: finter, source, rho, TT
       real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
-      real    :: aalpha, bbeta, cp1, dx_2, dz_2, Fbot, tmp_flux
+      real    :: aalpha, bbeta, cp1, dx_2, dz_2, tmp_flux
 !
       TT=finit(l1:l2,4,n1:n2,ilnTT)
       source=(f(l1:l2,4,n1:n2,ilnTT)-TT)/dt
@@ -1937,7 +1936,7 @@ module Entropy
       real, dimension(nzgrid,nx/nprocz) :: fintert, rhot, sourcet, wtmp
       real, dimension(nzgrid) :: tmp1, tmp2
       real, dimension(nxgrid) :: tmpx1, tmpx2
-      real  :: aalpha, bbeta, cp1, dx_2, dz_2, Fbot
+      real  :: aalpha, bbeta, cp1, dx_2, dz_2
 !
       TT=finit(l1:l2,4,n1:n2,ilnTT)
       source=(f(l1:l2,4,n1:n2,ilnTT)-TT)/dt
