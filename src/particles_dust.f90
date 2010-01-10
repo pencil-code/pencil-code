@@ -236,6 +236,16 @@ module Particles
       real :: rhom
       integer :: ierr, jspec
 !
+!  This module is incompatible with particle block domain decomposition.
+!
+      if (lparticles_blocks) then
+        if (lroot) then
+          print*, 'initialize_particles: must use PARTICLES =  PARTICLES_DUST_BLOCKS'
+          print*, '                      with particle block domain decomposition'
+        endif
+        call fatal_error('initialize_particles','')
+      endif
+!
 !  The inverse stopping time is needed for drag force and collisional cooling.
 !
       if (tausp/=0.0) tausp1=1/tausp
@@ -1050,7 +1060,8 @@ k_loop:   do while (.not. (k>npar_loc))
           if (lroot) &
               print*, 'init_particles: Particle velocity equal to gas velocity'
           do k=1,npar_loc
-            call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:))
+            call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uup, &
+                ineargrid(k,:),0,0)
             fp(k,ivpx:ivpz) = uup
           enddo
 
@@ -2379,14 +2390,14 @@ k_loop:   do while (.not. (k>npar_loc))
                 if (lhydro) then
                   if (lparticlemesh_cic) then
                     call interpolate_linear(f,iux,iuz, &
-                        fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k))
+                        fp(k,ixp:izp),uup,ineargrid(k,:),0,ipar(k))
                   elseif (lparticlemesh_tsc) then
                     if (linterpolate_spline) then
                       call interpolate_quadratic_spline(f,iux,iuz, &
-                          fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k))
+                          fp(k,ixp:izp),uup,ineargrid(k,:),0,ipar(k))
                     else
                       call interpolate_quadratic(f,iux,iuz, &
-                          fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k))
+                          fp(k,ixp:izp),uup,ineargrid(k,:),0,ipar(k))
                     endif
                   else
                     uup=f(ix0,iy0,iz0,iux:iuz)

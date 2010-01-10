@@ -45,7 +45,7 @@ module Particles_mpicomm
   real :: xref_par=0.0, yref_par=0.0, zref_par=0.0
   integer :: it1_loadbalance=100
   logical :: lfill_blocks_density=.false., lfill_blocks_velocity=.false.
-  logical :: lfill_bricks_velocity=.false.
+  logical :: lfill_blocks_gpotself=.false., lfill_bricks_velocity=.false.
 !
   include 'mpif.h'
 !

@@ -29,7 +29,7 @@ module Particles_map
 !
   contains
 !***********************************************************************
-    subroutine interpolate_linear(f,ivar1,ivar2,xxp,gp,inear,ipar)
+    subroutine interpolate_linear(f,ivar1,ivar2,xxp,gp,inear,iblock,ipar)
 !
 !  Interpolate the value of g to arbitrary (xp, yp, zp) coordinate
 !  using the linear interpolation formula
@@ -45,16 +45,16 @@ module Particles_map
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      integer :: ivar1, ivar2
       real, dimension (3) :: xxp
-      integer, dimension (3) :: inear
-      integer :: ivar1, ivar2, ivar, icyl=1
       real, dimension (ivar2-ivar1+1) :: gp
-      integer, optional :: ipar
+      integer, dimension (3) :: inear
+      integer :: iblock, ipar
 !
       real, dimension (ivar2-ivar1+1) :: g1, g2, g3, g4, g5, g6, g7, g8
       real :: xp0, yp0, zp0
-      double precision, save :: dxdydz1, dxdy1, dxdz1, dydz1, dx1, dy1, dz1
-      integer :: i, ix0, iy0, iz0
+      real, save :: dxdydz1, dxdy1, dxdz1, dydz1, dx1, dy1, dz1
+      integer :: ivar, i, ix0, iy0, iz0, icyl=1
       logical :: lfirstcall=.true.
 !
       intent(in)  :: f, xxp, ivar1
@@ -78,7 +78,7 @@ module Particles_map
         print*, 'interpolate_linear: Interpolation point does not ' // &
             'lie within the calculated grid point interval.'
         print*, 'iproc = ', iproc
-        if (present(ipar)) print*, 'ipar= ', ipar
+        print*, 'ipar = ', ipar
         print*, 'mx, x(1), x(mx) = ', mx, x(1), x(mx)
         print*, 'my, y(1), y(my) = ', my, y(1), y(my)
         print*, 'mz, z(1), z(mz) = ', mz, z(1), z(mz)
@@ -188,7 +188,7 @@ module Particles_map
 !
     endsubroutine interpolate_linear
 !***********************************************************************
-    subroutine interpolate_quadratic(f,ivar1,ivar2,xxp,gp,inear,ipar)
+    subroutine interpolate_quadratic(f,ivar1,ivar2,xxp,gp,inear,iblock,ipar)
 !
 !  Quadratic interpolation of g to arbitrary (xp, yp, zp) coordinate
 !  using the biquadratic interpolation function
@@ -235,17 +235,17 @@ module Particles_map
 !  09-jun-06/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (3) :: xxp
-      integer, dimension (3) :: inear
       integer :: ivar1, ivar2
+      real, dimension (3) :: xxp
       real, dimension (ivar2-ivar1+1) :: gp
-      integer, optional :: ipar
+      integer, dimension (3) :: inear
+      integer :: iblock, ipar
 !
       real, dimension (9,ivar2-ivar1+1) :: cc
       real, dimension (ivar2-ivar1+1) :: g1, g2, g3, g4, g5, g6, g7, g8, g9
       real :: dxp, dzp
-      double precision, save :: dx1, dx2, dz1, dz2
-      double precision, save :: dx1dz1, dx2dz1, dx1dz2, dx2dz2
+      real, save :: dx1, dx2, dz1, dz2
+      real, save :: dx1dz1, dx2dz1, dx1dz2, dx2dz2
       integer :: ix0, iy0, iz0
       logical, save :: lfirstcall=.true.
 !
@@ -308,18 +308,18 @@ module Particles_map
 !
     endsubroutine interpolate_quadratic
 !***********************************************************************
-    subroutine interpolate_quadratic_spline(f,ivar1,ivar2,xxp,gp,inear,ipar)
+    subroutine interpolate_quadratic_spline(f,ivar1,ivar2,xxp,gp,inear,iblock,ipar)
 !
 !  Quadratic spline interpolation of the function g to the point xxp=(xp,yp,zp).
 !
 !  10-jun-06/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (3) :: xxp
-      integer, dimension (3) :: inear
       integer :: ivar1, ivar2
+      real, dimension (3) :: xxp
       real, dimension (ivar2-ivar1+1) :: gp
-      integer, optional :: ipar
+      integer, dimension (3) :: inear
+      integer :: iblock, ipar
 !
       real :: fac_x_m1, fac_x_00, fac_x_p1
       real :: fac_y_m1, fac_y_00, fac_y_p1
@@ -1470,14 +1470,14 @@ module Particles_map
           select case (policy)
           case (cic)
             call interpolate_linear( &
-                f,i1,i2,fp(k,ixp:izp),vec(k,:),ineargrid(k,:),ipar(k) )
+                f,i1,i2,fp(k,ixp:izp),vec(k,:),ineargrid(k,:),0,ipar(k) )
           case (tsc)
             if (linterpolate_spline) then
               call interpolate_quadratic_spline( &
-                   f,i1,i2,fp(k,ixp:izp),vec(k,:),ineargrid(k,:),ipar(k) )
+                   f,i1,i2,fp(k,ixp:izp),vec(k,:),ineargrid(k,:),0,ipar(k) )
             else
               call interpolate_quadratic( &
-                   f,i1,i2,fp(k,ixp:izp),vec(k,:),ineargrid(k,:),ipar(k) )
+                   f,i1,i2,fp(k,ixp:izp),vec(k,:),ineargrid(k,:),0,ipar(k) )
             endif
           case (ngp)
             vec(k,:)=f(ineargrid(k,1),ineargrid(k,2),ineargrid(k,3),i1:i2)

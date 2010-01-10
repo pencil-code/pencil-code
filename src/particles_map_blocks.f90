@@ -838,7 +838,7 @@ module Particles_map
 !
     endsubroutine fill_bricks_with_blocks
 !***********************************************************************
-    subroutine interpolate_linear(ivar1,ivar2,xxp,gp,inear,iblock,ipar)
+    subroutine interpolate_linear(f,ivar1,ivar2,xxp,gp,inear,iblock,ipar)
 !
 !  Interpolate the value of g to arbitrary (xp, yp, zp) coordinate
 !  using the linear interpolation formula
@@ -853,12 +853,12 @@ module Particles_map
       use Solid_Cells
       use Mpicomm, only: stop_it
 !
+      real, dimension(mx,my,mz,mfarray) :: f
       integer :: ivar1, ivar2
       real, dimension (3) :: xxp
       real, dimension (ivar2-ivar1+1) :: gp
       integer, dimension (3) :: inear
-      integer :: iblock
-      integer, optional :: ipar
+      integer :: iblock, ipar
 !
       real, dimension (ivar2-ivar1+1) :: g1, g2, g3, g4, g5, g6, g7, g8
       real :: xp0, yp0, zp0
@@ -891,7 +891,7 @@ module Particles_map
         print*, 'interpolate_linear: Interpolation point does not ' // &
             'lie within the calculated grid point interval.'
         print*, 'iproc = ', iproc
-        if (present(ipar)) print*, 'ipar= ', ipar
+        print*, 'ipar = ', ipar
         print*, 'mxb, xb(1), xb(mx) = ', mxb, xb(1,ib), xb(mxb,ib)
         print*, 'myb, yb(1), yb(my) = ', myb, yb(1,ib), yb(myb,ib)
         print*, 'mzb, zb(1), zb(mz) = ', mzb, zb(1,ib), zb(mzb,ib)
@@ -988,7 +988,7 @@ module Particles_map
 !
     endsubroutine interpolate_linear
 !***********************************************************************
-    subroutine interpolate_quadratic(ivar1,ivar2,xxp,gp,inear,iblock,ipar)
+    subroutine interpolate_quadratic(f,ivar1,ivar2,xxp,gp,inear,iblock,ipar)
 !
 !  Quadratic interpolation of g to arbitrary (xp, yp, zp) coordinate
 !  using the biquadratic interpolation function
@@ -1034,12 +1034,12 @@ module Particles_map
 !
 !  09-jun-06/anders: coded
 !
+      real, dimension(mx,my,mz,mfarray) :: f
       integer :: ivar1, ivar2
       real, dimension (3) :: xxp
       real, dimension (ivar2-ivar1+1) :: gp
       integer, dimension (3) :: inear
-      integer :: iblock
-      integer, optional :: ipar
+      integer :: iblock, ipar
 !
       real, dimension (9,ivar2-ivar1+1) :: cc
       real, dimension (ivar2-ivar1+1) :: g1, g2, g3, g4, g5, g6, g7, g8, g9
@@ -1111,18 +1111,18 @@ module Particles_map
 !
     endsubroutine interpolate_quadratic
 !***********************************************************************
-    subroutine interpolate_quadratic_spline(ivar1,ivar2,xxp,gp,inear,iblock,ipar)
+    subroutine interpolate_quadratic_spline(f,ivar1,ivar2,xxp,gp,inear,iblock,ipar)
 !
 !  Quadratic spline interpolation of the function g to the point xxp=(xp,yp,zp).
 !
 !  10-jun-06/anders: coded
 !
+      real, dimension(mx,my,mz,mfarray) :: f
       integer :: ivar1, ivar2
       real, dimension (3) :: xxp
       real, dimension (ivar2-ivar1+1) :: gp
       integer, dimension (3) :: inear
-      integer :: iblock
-      integer, optional :: ipar
+      integer :: iblock, ipar
 !
       real :: fac_x_m1, fac_x_00, fac_x_p1
       real :: fac_y_m1, fac_y_00, fac_y_p1

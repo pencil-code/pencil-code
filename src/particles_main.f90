@@ -534,9 +534,17 @@ module Particles_main
           call fill_blocks_with_bricks(f,fb,mfarray,iuz)
         endif
 !
+!  Fill adopted blocks with gravitational acceleration.
+!
+        if (lfill_blocks_gpotself) then
+          call fill_blocks_with_bricks(f,fb,mfarray,igpotselfx)
+          call fill_blocks_with_bricks(f,fb,mfarray,igpotselfy)
+          call fill_blocks_with_bricks(f,fb,mfarray,igpotselfz)
+        endif
+!
 !  Zero the block contribution to time evolution of gas velocity.
 !
-        dfb(:,:,:,iux:iuz,0:nblock_loc-1)=0.0
+        if (lhydro) dfb(:,:,:,iux:iuz,0:nblock_loc-1)=0.0
 !
 !  Dynamical equations.
 !

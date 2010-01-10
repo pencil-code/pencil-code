@@ -680,7 +680,7 @@ module Particles_nbody
               !interpolate the gravity
               if (linterpolate_linear) then
                 call interpolate_linear(f,iglobal_ggp,&
-                    iglobal_ggp+2,fp(k,ixp:izp),accg,ineargrid(k,:),ipar(k))
+                    iglobal_ggp+2,fp(k,ixp:izp),accg,ineargrid(k,:),0,ipar(k))
               else if (linterpolate_quadratic_spline) then
 !
 ! WL: I am not sure if this interpolation
@@ -688,7 +688,7 @@ module Particles_nbody
 !     beware
 !
                 call interpolate_quadratic_spline(f,iglobal_ggp,&
-                    iglobal_ggp+2,fp(k,ixp:izp),accg,ineargrid(k,:),ipar(k))
+                    iglobal_ggp+2,fp(k,ixp:izp),accg,ineargrid(k,:),0,ipar(k))
               endif
               dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)+accg
             endif

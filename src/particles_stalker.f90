@@ -333,10 +333,10 @@ module Particles_stalker
 !        
         if (lparticlemesh_cic) then
           call interpolate_linear( &
-              f,ivar,ivar,fp(k,ixp:izp),value_loc,ineargrid(k,:),ipar(k))
+              f,ivar,ivar,fp(k,ixp:izp),value_loc,ineargrid(k,:),0,ipar(k))
         elseif (lparticlemesh_tsc) then
           call interpolate_quadratic_spline( &
-              f,ivar,ivar,fp(k,ixp:izp),value_loc,ineargrid(k,:),ipar(k))
+              f,ivar,ivar,fp(k,ixp:izp),value_loc,ineargrid(k,:),0,ipar(k))
         else
           value_loc=(/f(ix0,iy0,iz0,ivar)/)
         endif

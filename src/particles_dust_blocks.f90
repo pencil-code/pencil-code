@@ -187,6 +187,16 @@ module Particles
       real :: rhom
       integer :: ierr, jspec
 !
+!  This module is incompatible with normal domain decomposition.
+!
+      if (.not.lparticles_blocks) then
+        if (lroot) then
+          print*, 'initialize_particles: must use PARTICLES =                   PARTICLES_DUST'
+          print*, '                      for normal domain decomposition'
+        endif
+        call fatal_error('initialize_particles','')
+      endif
+!
 !  The inverse stopping time is needed for drag force and collisional cooling.
 !
       if (tausp/=0.0) tausp1=1/tausp
@@ -194,7 +204,7 @@ module Particles
 !  For drag force calculation we need to fill blocks with information about
 !  the gas density field and the gas velocity field.
 !
-      if (ldragforce_dust_par) lfill_blocks_velocity=.true.
+      if (lhydro.and.ldragforce_dust_par) lfill_blocks_velocity=.true.
       if (ldragforce_gas_par)  lfill_blocks_density=.true.
       if (ldragforce_gas_par)  lfill_bricks_velocity=.true.
 !
@@ -1691,14 +1701,14 @@ k_loop:   do while (.not. (k>npar_loc))
 !
                 if (lhydro) then
                   if (lparticlemesh_cic) then
-                    call interpolate_linear(iux,iuz, &
+                    call interpolate_linear(f,iux,iuz, &
                         fp(k,ixp:izp),uup,ineargrid(k,:),iblock,ipar(k))
                   elseif (lparticlemesh_tsc) then
                     if (linterpolate_spline) then
-                      call interpolate_quadratic_spline(iux,iuz, &
+                      call interpolate_quadratic_spline(f,iux,iuz, &
                           fp(k,ixp:izp),uup,ineargrid(k,:),iblock,ipar(k))
                     else
-                      call interpolate_quadratic(iux,iuz, &
+                      call interpolate_quadratic(f,iux,iuz, &
                           fp(k,ixp:izp),uup,ineargrid(k,:),iblock,ipar(k))
                     endif
                   else

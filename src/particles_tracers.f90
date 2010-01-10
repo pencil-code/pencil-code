@@ -521,15 +521,19 @@ module Particles
         do k=k1_imn(imn),k2_imn(imn)
           if (lparticlemesh_tsc) then
             if (ltrace_dust) then
-              call interpolate_quadratic_spline(f,iudx(1),iudz(1),fp(k,ixp:izp),uu,ineargrid(k,:))
+              call interpolate_quadratic_spline(f,iudx(1),iudz(1), &
+                  fp(k,ixp:izp),uu,ineargrid(k,:),0,ipar(k))
             else
-              call interpolate_quadratic_spline(f,iux,iuz,fp(k,ixp:izp),uu,ineargrid(k,:))
+              call interpolate_quadratic_spline(f,iux,iuz, &
+                  fp(k,ixp:izp),uu,ineargrid(k,:),0,ipar(k))
             endif
           else
             if (ltrace_dust) then
-              call interpolate_linear(f,iudx(1),iudz(1),fp(k,ixp:izp),uu,ineargrid(k,:))
+              call interpolate_linear(f,iudx(1),iudz(1), &
+                  fp(k,ixp:izp),uu,ineargrid(k,:),0,ipar(k))
             else
-              call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uu,ineargrid(k,:))
+              call interpolate_linear(f,iux,iuz, &
+                  fp(k,ixp:izp),uu,ineargrid(k,:),0,ipar(k))
             endif
           endif
 !

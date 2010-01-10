@@ -19,6 +19,7 @@ module Particles_selfgravity
   use Messages
   use Particles_cdata
   use Particles_map
+  use Particles_mpicomm
   use Particles_sub
   use Sub, only: keep_compiler_quiet
 !
@@ -74,6 +75,11 @@ module Particles_selfgravity
       logical :: lstarting
 !
       integer :: ierr
+!
+!  For particle block domain decomposition we need to fill blocks with
+!  information about the gravitational acceleration.
+!
+      if (lparticles_blocks) lfill_blocks_gpotself=.true.
 !
 !  Initialize gravitational acceleration to zero.
 !
@@ -254,12 +260,22 @@ module Particles_selfgravity
         if (lselfgravity_particles) then
           do k=1,npar_loc
             if (lparticlemesh_cic) then
-              call interpolate_linear(f, igpotselfx, igpotselfz, &
-                  fp(k,ixp:izp), gpotself, ineargrid(k,:), ipar(k))
+              if (lparticles_blocks) then
+                call interpolate_linear(f,igpotselfx,igpotselfz, &
+                    fp(k,ixp:izp),gpotself,ineargrid(k,:),inearblock(k),ipar(k))
+              else
+                call interpolate_linear(f,igpotselfx,igpotselfz, &
+                    fp(k,ixp:izp),gpotself,ineargrid(k,:),0,ipar(k))
+              endif
             elseif (lparticlemesh_tsc) then
               if (linterpolate_spline) then
-                call interpolate_quadratic_spline(f, igpotselfx, igpotselfz, &
-                    fp(k,ixp:izp), gpotself, ineargrid(k,:), ipar(k) )
+                if (lparticles_blocks) then
+                  call interpolate_quadratic_spline(f,igpotselfx,igpotselfz, &
+                      fp(k,ixp:izp),gpotself,ineargrid(k,:),inearblock(k),ipar(k))
+                else
+                  call interpolate_quadratic_spline(f,igpotselfx,igpotselfz, &
+                      fp(k,ixp:izp),gpotself,ineargrid(k,:),0,ipar(k))
+                endif
               else
 !
 !  Polynomial interpolation can lead to self acceleration of isolated particle,
@@ -276,8 +292,7 @@ module Particles_selfgravity
               gpotself=f(ineargrid(k,1),ineargrid(k,2),ineargrid(k,3),igpotselfx:igpotselfz)
             endif
 !            
-!  Possibility of switching off self-gravity for the
-!  massive n-body particles
+!  Possibility of switching off self-gravity for the massive n-body particles.
 !
             if (lparticles_nbody.and.(.not.lselfgravity_nbodyparticles)) then 
               lnbody=(lparticles_nbody.and.any(ipar(k).eq.ipar_nbody))
