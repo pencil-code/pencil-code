@@ -94,7 +94,7 @@ program run
   logical :: suppress_pencil_check=.false.
   logical :: lreinit_file=.false.
   logical :: lreload_file=.false., lreload_always_file=.false.
-  real :: wall_clock_time=0., time_per_step=0.
+  real :: wall_clock_time=0.0, time_per_step=0.0
   double precision :: time_last_diagnostic, time_this_diagnostic
   integer :: it_last_diagnostic,it_this_diagnostic
   integer :: i,ivar,mvar_in
@@ -358,10 +358,10 @@ program run
 !  see idiag_timeperstep).
 !
   if (lroot) then
-    time1 = mpiwtime()
-    time_last_diagnostic = time1
-    count = 0
-    it_last_diagnostic = count
+    time1=mpiwtime()
+    time_last_diagnostic=time1
+    count=0
+    it_last_diagnostic=count
   endif
 !        
   if (it1d==impossible_int) then 
@@ -576,9 +576,7 @@ program run
     if (lADI) call calc_heatcond_ADI(finit,f)
     if (ltestperturb) call testperturb_finalize(f)
 !
-    if (lroot) then
-      count = count + 1     !  reliable loop count even for premature exit
-    endif
+    if (lroot) count=count+1     !  reliable loop count even for premature exit
 !
 !  Update time averages and time integrals.
 !
