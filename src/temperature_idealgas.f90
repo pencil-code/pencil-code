@@ -1,4 +1,5 @@
 ! $Id$
+!
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -28,7 +29,6 @@ module Entropy
   use Cdata
   use Cparam
   use EquationOfState, only: mpoly0, mpoly1
-  use Interstellar
   use Messages
   use Sub, only: keep_compiler_quiet
 
@@ -126,7 +126,7 @@ module Entropy
 !
 !  6-nov-01/wolf: coded
 !
-      use FArrayManager
+      use FArrayManager, only: farray_register_pde
 !
       call farray_register_pde('lnTT',ilnTT)
 !
@@ -155,8 +155,7 @@ module Entropy
 !
 !  21-jul-2002/wolf: coded
 !
-      use Cdata
-      use FArrayManager
+      use FArrayManager, only: farray_register_pde,farray_register_global
       use Gravity, only: g0, gravz
       use EquationOfState, only : cs2bot, cs2top, gamma, gamma_m1, &
                                   select_eos_variable
@@ -476,8 +475,6 @@ module Entropy
 !***********************************************************************
     subroutine pencil_criteria_entropy()
 !
-      use Cdata
-!
       if (ldt) lpenc_requested(i_cs2)=.true.
 !
       if (lpressuregradient_gas) lpenc_requested(i_fpres)=.true.
@@ -625,8 +622,8 @@ module Entropy
 !
 !  20-11-04/anders: coded
 ! 
-      use EquationOfState
-      use Sub
+      use EquationOfState, only: gamma_inv
+      use Sub, only: u_dot_grad
 
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       type (pencil_case), intent (inout) :: p
@@ -666,13 +663,11 @@ module Entropy
 !
 !  13-dec-02/axel+tobi: adapted from entropy
 !
-      use Cdata
       use Deriv, only: der6
-      use Diagnostics
+      use Diagnostics, only: sum_mn_name,max_mn_name,save_name
       use EquationOfState, only: gamma_m1,gamma
-      use Mpicomm
       use Special, only: special_calc_entropy
-      use Sub
+      use Sub, only: dot2,identify_bcs
       use Viscosity, only: calc_viscous_heat
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -829,10 +824,9 @@ module Entropy
 !
 !  01-aug-08/wlad: adapted from entropy
 !
-      use Cdata
-      use Diagnostics
+      use Diagnostics, only: max_mn_name
       use EquationOfState, only: gamma
-      use Sub
+      use Sub, only: dot
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -880,7 +874,6 @@ module Entropy
 ! 16-mai-07/gastine+dintrans: compute the radiative and hydrostatic 
 ! equilibria for a given radiative profile defined in heatcond_TT.
 !
-      use Cdata
       use Gravity, only: gravz
       use EquationOfState, only: lnrho0,cs20,cs2top,cs2bot,gamma, &
                                  gamma_m1,eoscalc,ilnrho_TT
@@ -945,9 +938,8 @@ module Entropy
 !***********************************************************************
     subroutine calc_heat_cool(df,p)
 !
-      use Diagnostics
+      use Diagnostics, only: sum_lim_mn_name
       use EquationOfState, only: gamma,gamma_m1
-      use Sub
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -1006,13 +998,16 @@ module Entropy
 !    TT version: cp*chi*Div(rho*gTT)/(rho*cv)
 !           = gamma*chi*(g2.gTT+g2TT) where g2=glnrho
 !
-      use Diagnostics
+      use Diagnostics, only: max_mn_name
       use EquationOfState, only: gamma
-      use Sub
-
+      use Sub, only: dot
+!
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: g2
+!
+      intent(in) :: p
+      intent(inout) :: df
 !
       if (ltemperature_nolog) then
         call dot(p%glnrho,p%glnTT,g2)
@@ -1043,13 +1038,16 @@ module Entropy
 !    TT version: gamma*K/rho/cp*del2(TT)=gamma*chi*del2(TT)
 !  Note: if ldensity=.false. then rho=1 and chi=K/cp
 !
-      use Diagnostics
+      use Diagnostics, only: max_mn_name
       use EquationOfState, only: gamma
-      use Sub
+      use Sub, only: dot
 
       real, dimension(mx,my,mz,mvar) :: df
       type (pencil_case)  :: p
       real, dimension(nx) :: g2, chix
+!
+      intent(in) :: p
+      intent(inout) :: df
 !
 !  Add heat conduction to RHS of temperature equation
 !
@@ -1084,14 +1082,17 @@ module Entropy
 !  calculate gamma/rho*cp*div(K *grad TT)=
 !    gamma*K/rho*cp*(grad LnK.grad TT + del2 TT)
 !
-      use Diagnostics
+      use Diagnostics, only: max_mn_name
       use EquationOfState, only: gamma
-      use Sub
+      use Sub, only: dot,multsv
 
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension (nx)   :: hcond, dhcond, g1, chix
       real, dimension (nx,3) :: gLnhcond=0.
       type (pencil_case)     :: p
+!
+      intent(in) :: p
+      intent(inout) :: df
 !
       call heatcond_TT(p%TT, hcond, dhcond)
 ! must specify the new bottom value of hcond for the 'c1' BC
@@ -1123,9 +1124,9 @@ module Entropy
 !  calculate gamma*K/rho*cp*div(T*grad lnTT)= 
 !              gamma*K/rho*cp*(gradlnTT.gradln(hcond*TT) + del2ln TT)
 !
-      use Diagnostics
+      use Diagnostics, only: max_mn_name
       use EquationOfState, only: gamma
-      use Sub
+      use Sub, only: dot,step,der_step
 
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
@@ -1135,6 +1136,9 @@ module Entropy
       integer :: i
       logical :: lwrite_hcond=.true.
       save :: lwrite_hcond
+!
+      intent(in) :: f,p
+      intent(inout) :: df
 !
       if (lhcond_global) then
         hcond=f(l1:l2,m,n,iglobal_hcond)
@@ -1177,9 +1181,9 @@ module Entropy
 !  
 !  25-aug-09/bing: moved from dss_dt to here
 !
-      use Diagnostics
+      use Diagnostics, only: max_mn_name
       use EquationOfState, only: gamma
-      use Sub
+      use Sub, only: dot,dot2,tensor_diffusion_coef
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -1259,7 +1263,7 @@ module Entropy
 !
 !   1-jun-02/axel: adapted from magnetic fields
 !
-      use Diagnostics
+      use Diagnostics, only: parse_name
 !
       integer :: iname
       logical :: lreset,lwr
@@ -1350,7 +1354,6 @@ module Entropy
 !
 ! 04-aug-07/dintrans: a single polytrope with index mpoly0
 !
-      use Cdata
       use Gravity, only: gravz
       use EquationOfState, only: cs20, lnrho0, gamma, gamma_m1, get_cp1, &
                                  cs2bot, cs2top
@@ -1392,8 +1395,6 @@ module Entropy
 !  ADI_Kconst: constant radiative conductivity
 !  ADI_Kprof: radiative conductivity depends on T, i.e. hcond(T)
 !
-      use Cparam
-
       implicit none
 
       real, dimension(mx,my,mz,mfarray) :: finit, f
@@ -1427,8 +1428,6 @@ module Entropy
 !  where Lambda_x and Lambda_y denote diffusion operators and the source
 !  term comes from the explicit advance.
 !
-      use Cdata
-      use Cparam
       use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, get_cp1
       use General, only: tridag
       use Gravity, only: gravz
@@ -1554,8 +1553,6 @@ module Entropy
 !
 !    where J_x and J_y denote Jacobian matrices df/dT.
 !
-      use Cdata
-      use Cparam
       use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, get_cp1
       use General, only: tridag
 
@@ -1800,8 +1797,6 @@ module Entropy
 ! Implicit Crank Nicolson scheme in 1-D for a constant K (not 
 ! really an ADI but keep the generic name for commodity).
 !
-      use Cdata
-      use Cparam
       use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, get_cp1
       use General, only: tridag
 
@@ -1856,8 +1851,6 @@ module Entropy
 ! Implicit 1-D case for a temperature-dependent conductivity K(T).
 ! Not really an ADI but keep the generic name for commodity.
 !
-      use Cdata
-      use Cparam
       use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, get_cp1
       use General, only: tridag
 
@@ -1919,8 +1912,6 @@ module Entropy
 !  04-sep-2009/dintrans: coded
 !  parallel version of the ADI scheme for the K=cte case
 !
-      use Cdata
-      use Cparam
       use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, get_cp1
       use General, only: tridag
       use Gravity, only: gravz
