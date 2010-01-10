@@ -1,5 +1,7 @@
 ! $Id$
-
+!
+!  This module solves the Poisson equation.
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -114,6 +116,4 @@ module Poisson
 !
     endsubroutine write_poisson_run_pars
 !***********************************************************************
-
 endmodule Poisson
-
