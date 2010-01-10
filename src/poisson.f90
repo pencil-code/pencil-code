@@ -336,9 +336,11 @@ module Poisson
 !
 !  25-may-2008/wlad: coded
 !
-      use Mpicomm
+!      use Mpicomm
+      use Sub, only: keep_compiler_quiet
 !
       real, dimension (nx,ny,nz) :: phi
+      call keep_compiler_quiet(phi)
 !      real, dimension (2*nx,2*ny) :: nphi,nb1
 !
 !      real, dimension (nx,ny,0:ncpus-1) :: phi_send,phi_recv
