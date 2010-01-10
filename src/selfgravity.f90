@@ -372,7 +372,7 @@ module Selfgravity
 !  Diagnostic averages.
 !
       if (ldiagnos) then
-        if (idiag_potselfm/=0) call sum_mn_name(p%potself*p%rho,idiag_potselfm)
+        if (idiag_potselfm/=0) call sum_mn_name(p%potself,idiag_potselfm)
         if (idiag_gpotselfxm/=0) &
             call sum_mn_name(p%gpotself(:,1),idiag_gpotselfxm)
         if (idiag_gpotselfym/=0) &
