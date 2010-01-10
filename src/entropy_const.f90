@@ -1,5 +1,5 @@
 ! $Id$
-
+!
 !  This module is for systems with spatially fixed entropy
 !  distribution. This implies Ds/Dt=u.grads only, which is used
 !  in Ds/Dt=(1/gamma)*Dlnp/Dt-Dlnrho/Dt, for example.

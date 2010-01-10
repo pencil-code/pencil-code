@@ -1,5 +1,5 @@
 ! $Id$
-
+!
 !  This modules solves two reactive scalar advection equations
 !  This is used for modeling the spatial evolution of left and
 !  right handed aminoacids.

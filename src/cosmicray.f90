@@ -1,5 +1,5 @@
 ! $Id$
-
+!
 !  This modules solves the cosmic ray energy density equation.
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
 !  ZEUS 3D implementation.
