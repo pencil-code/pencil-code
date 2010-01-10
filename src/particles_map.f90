@@ -186,6 +186,8 @@ module Particles_map
 !
       if (lfirstcall) lfirstcall=.false.
 !
+      call keep_compiler_quiet(iblock)
+!
     endsubroutine interpolate_linear
 !***********************************************************************
     subroutine interpolate_quadratic(f,ivar1,ivar2,xxp,gp,inear,iblock,ipar)
@@ -304,7 +306,7 @@ module Particles_map
            cc(4,:)*dzp        + cc(5,:)*dzp**2     + cc(6,:)*dxp*dzp       + &
            cc(7,:)*dxp**2*dzp + cc(8,:)*dxp*dzp**2 + cc(9,:)*dxp**2*dzp**2
 !
-      call keep_compiler_quiet(ipar)
+      call keep_compiler_quiet(ipar,iblock)
 !
     endsubroutine interpolate_quadratic
 !***********************************************************************
@@ -451,7 +453,7 @@ module Particles_map
                                 f(ix0-1,iy0-1,iz0  ,ivar1:ivar2)*fac_y_m1 )
       endif
 !
-      call keep_compiler_quiet(ipar)
+      call keep_compiler_quiet(ipar,iblock)
 !
     endsubroutine interpolate_quadratic_spline
 !***********************************************************************
