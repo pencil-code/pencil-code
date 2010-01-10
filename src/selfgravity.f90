@@ -35,17 +35,17 @@ module Selfgravity
 !
   namelist /selfgrav_init_pars/ &
       rhs_poisson_const, lselfgravity_gas, lselfgravity_dust, &
-      lselfgravity_neutrals,tstart_selfgrav, gravitational_const
-
+      lselfgravity_neutrals, tstart_selfgrav, gravitational_const
+!
   namelist /selfgrav_run_pars/ &
       rhs_poisson_const, lselfgravity_gas, lselfgravity_dust, &
-      lselfgravity_neutrals,tstart_selfgrav, gravitational_const
+      lselfgravity_neutrals, tstart_selfgrav, gravitational_const
 !
-  integer :: idiag_gpoten=0, idiag_gpotenmxy=0
+  integer :: idiag_potselfm=0, idiag_potselfmxy=0
   integer :: idiag_gpotselfxm=0, idiag_gpotselfym=0, idiag_gpotselfzm=0
   integer :: idiag_gpotselfx2m=0, idiag_gpotselfy2m=0, idiag_gpotselfz2m=0
-  integer :: idiag_gxgym=0,idiag_gxgzm=0,idiag_gygzm=0
-  integer :: idiag_grgpm=0,idiag_grgzm=0,idiag_gpgzm=0
+  integer :: idiag_gxgym=0, idiag_gxgzm=0, idiag_gygzm=0
+  integer :: idiag_grgpm=0, idiag_grgzm=0, idiag_gpgzm=0
 !
   contains
 !***********************************************************************
@@ -61,7 +61,7 @@ module Selfgravity
 !
       call farray_register_auxiliary('potself',ipotself,communicated=.true.)
 !
-!  Identify version number (generated automatically by CVS)
+!  Identify version number (generated automatically by SVN).
 !
       if (lroot) call svn_id( &
           "$Id$")
@@ -133,7 +133,7 @@ module Selfgravity
         call fatal_error('initialize_selfgravity','')
       endif
 !
-!  Also share rhs_poisson_const
+!  Also share rhs_poisson_const.
 !      
       call put_shared_variable('rhs_poisson_const',rhs_poisson_const,ierr)
       if (ierr/=0) then
@@ -213,7 +213,7 @@ module Selfgravity
 !  15-may-06/anders+jeff: adapted
 !
       lpenc_requested(i_gpotself)=.true.
-      if (idiag_gpoten/=0 .or. idiag_gpotenmxy/=0) then
+      if (idiag_potselfm/=0 .or. idiag_potselfmxy/=0) then
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_potself)=.true.
       endif
@@ -285,7 +285,9 @@ module Selfgravity
             rhs_poisson=rhs_poisson_const*exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
           endif
         endif
-!  Dust.
+!
+!  Contribution from dust.
+!
         if (ldustdensity.and.ldustvelocity.and.lselfgravity_dust) then
           if (ldustdensity_log) then
             if (lselfgravity_gas) then  ! No need to zero rhs.
@@ -370,7 +372,7 @@ module Selfgravity
 !  Diagnostic averages.
 !
       if (ldiagnos) then
-        if (idiag_gpoten/=0) call sum_mn_name(p%potself*p%rho,idiag_gpoten)
+        if (idiag_potselfm/=0) call sum_mn_name(p%potself*p%rho,idiag_potselfm)
         if (idiag_gpotselfxm/=0) &
             call sum_mn_name(p%gpotself(:,1),idiag_gpotselfxm)
         if (idiag_gpotselfym/=0) &
@@ -396,7 +398,8 @@ module Selfgravity
 !  2-D averages.
 !
       if (l2davgfirst) then
-        if (idiag_gpotenmxy/=0) call zsum_mn_name_xy(p%potself*p%rho,idiag_gpotenmxy)
+        if (idiag_potselfmxy/=0) &
+            call zsum_mn_name_xy(p%potself*p%rho,idiag_potselfmxy)
       endif
 !
       call keep_compiler_quiet(f)
@@ -406,12 +409,11 @@ module Selfgravity
 !***********************************************************************
     subroutine calc_cylgrav_stresses(p)
 !
-!  Calculates cylindrical gravitational stresses in a cartesian box
+!  Calculates cylindrical gravitational stresses in a cartesian box.
 !
 !  01-jul-07/wlad: coded 
 ! 
       use Diagnostics, only: sum_mn_name
-      use Mpicomm, only: stop_it
 !
       real, dimension(nx) :: gpotr,gpotp,gpotz
       type (pencil_case) :: p
@@ -428,7 +430,7 @@ module Selfgravity
 !***********************************************************************
     subroutine read_selfgravity_init_pars(unit,iostat)
 !
-!  Read self gravity init parameters
+!  Read self gravity init parameters.
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -440,11 +442,12 @@ module Selfgravity
       endif
 !
 99    return
+!
     endsubroutine read_selfgravity_init_pars
 !***********************************************************************
     subroutine write_selfgravity_init_pars(unit)
 !
-!  Write self gravity init parameters
+!  Write self gravity init parameters.
 !
       integer, intent(in) :: unit
 !
@@ -454,7 +457,7 @@ module Selfgravity
 !***********************************************************************
     subroutine read_selfgravity_run_pars(unit,iostat)
 !
-!  Read self gravity run parameters
+!  Read self gravity run parameters.
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -466,11 +469,12 @@ module Selfgravity
       endif
 !
 99    return
+!
     endsubroutine read_selfgravity_run_pars
 !***********************************************************************
     subroutine write_selfgravity_run_pars(unit)
 !
-!  Write self gravity run parameters
+!  Write self gravity run parameters.
 !
       integer, intent(in) :: unit
 !
@@ -480,8 +484,7 @@ module Selfgravity
 !***********************************************************************
     subroutine rprint_selfgravity(lreset,lwrite)
 !
-!  reads and registers print parameters relevant for gravity advance
-!  dummy routine
+!  Reads and registers print parameters relevant for gravity advance.
 !
 !  16-may-06/anders+jeff: adapted
 !
@@ -496,7 +499,7 @@ module Selfgravity
       if (present(lwrite)) lwr=lwrite
 !
       if (lreset) then
-        idiag_gpoten=0; idiag_gpotenmxy=0
+        idiag_potselfm=0; idiag_potselfmxy=0
         idiag_gpotselfxm=0; idiag_gpotselfym=0; idiag_gpotselfzm=0
         idiag_gpotselfx2m=0; idiag_gpotselfy2m=0; idiag_gpotselfz2m=0
         idiag_gxgym=0; idiag_gxgzm=0; idiag_gygzm=0
@@ -504,7 +507,8 @@ module Selfgravity
       endif
 !
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'gpoten',idiag_gpoten)
+        call parse_name(iname,cname(iname),cform(iname),'potselfm', &
+            idiag_potselfm)
         call parse_name(iname,cname(iname),cform(iname),'gpotselfxm', &
             idiag_gpotselfxm)
         call parse_name(iname,cname(iname),cform(iname),'gpotselfym', &
@@ -525,22 +529,19 @@ module Selfgravity
         call parse_name(iname,cname(iname),cform(iname),'gpgzm',idiag_gpgzm)
       enddo
 !
-!  check for those quantities for which we want z-averages
+!  Check for those quantities for which we want z-averages.
 !
       do inamexy=1,nnamexy
-        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'gpotenmxy', idiag_gpotenmxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy), &
+            'potselfmxy', idiag_potselfmxy)
       enddo
 !
-!  write column where which variable is stored
+!  Write column where which variable is stored.
 !
       if (lwr) then
-        write(3,*) 'i_gpoten=',idiag_gpoten
-        write(3,*) 'i_gpotenmxy=',idiag_gpotenmxy
         write(3,*) 'ipotself=', ipotself
       endif
 !
     endsubroutine rprint_selfgravity
 !***********************************************************************
-
-
 endmodule Selfgravity

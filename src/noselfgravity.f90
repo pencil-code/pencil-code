@@ -1,5 +1,7 @@
 ! $Id$
-
+!
+!  This module takes care of self gravity.
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -19,9 +21,7 @@ module Selfgravity
 !
   include 'selfgravity.h'
 !
-  real :: rhs_poisson_const=0.
-!
-  integer :: idiag_gpoten=0
+  real :: rhs_poisson_const=0.0
 !
   contains
 !***********************************************************************
@@ -115,7 +115,7 @@ module Selfgravity
 !***********************************************************************
     subroutine read_selfgravity_init_pars(unit,iostat)
 !
-!  Read self gravity init parameters
+!  Read self gravity init parameters.
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -127,7 +127,7 @@ module Selfgravity
 !***********************************************************************
     subroutine write_selfgravity_init_pars(unit)
 !
-!  Write self gravity init parameters
+!  Write self gravity init parameters.
 !
       integer, intent(in) :: unit
 !
@@ -137,7 +137,7 @@ module Selfgravity
 !***********************************************************************
     subroutine read_selfgravity_run_pars(unit,iostat)
 !
-!  Read self gravity run parameters
+!  Read self gravity run parameters.
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -149,7 +149,7 @@ module Selfgravity
 !***********************************************************************
     subroutine write_selfgravity_run_pars(unit)
 !
-!  Write self gravity run parameters
+!  Write self gravity run parameters.
 !
       integer, intent(in) :: unit
 !
@@ -159,10 +159,9 @@ module Selfgravity
 !***********************************************************************
     subroutine rprint_selfgravity(lreset,lwrite)
 !
-!  reads and registers print parameters relevant for gravity advance
-!  dummy routine
+!  Reads and registers print parameters relevant for gravity advance.
 !
-!  16-may-06/anders+jeff: adapted
+!  16-may-06/anders+jeff: dummy
 !
       logical :: lreset, lwr
       logical, optional :: lwrite
@@ -172,14 +171,12 @@ module Selfgravity
 !
       call keep_compiler_quiet(lreset)
 !
-!  write column where which variable is stored
+!  Write column where which variable is stored.
 !
       if (lwr) then
-        write(3,*) 'i_gpoten=',idiag_gpoten
         write(3,*) 'ipotself=0'
       endif
 !
     endsubroutine rprint_selfgravity
 !***********************************************************************
-
 endmodule Selfgravity
