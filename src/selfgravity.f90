@@ -41,7 +41,7 @@ module Selfgravity
       rhs_poisson_const, lselfgravity_gas, lselfgravity_dust, &
       lselfgravity_neutrals, tstart_selfgrav, gravitational_const
 !
-  integer :: idiag_potselfm=0, idiag_potselfmxy=0
+  integer :: idiag_potselfm=0, idiag_potself2m=0, idiag_potselfmxy=0
   integer :: idiag_gpotselfxm=0, idiag_gpotselfym=0, idiag_gpotselfzm=0
   integer :: idiag_gpotselfx2m=0, idiag_gpotselfy2m=0, idiag_gpotselfz2m=0
   integer :: idiag_gxgym=0, idiag_gxgzm=0, idiag_gygzm=0
@@ -213,8 +213,8 @@ module Selfgravity
 !  15-may-06/anders+jeff: adapted
 !
       lpenc_requested(i_gpotself)=.true.
-      if (idiag_potselfm/=0 .or. idiag_potselfmxy/=0) then
-        lpenc_diagnos(i_rho)=.true.
+      if (idiag_potselfm/=0 .or. idiag_potself2m/=0.0 .or. &
+          idiag_potselfmxy/=0) then
         lpenc_diagnos(i_potself)=.true.
       endif
 !
@@ -373,6 +373,7 @@ module Selfgravity
 !
       if (ldiagnos) then
         if (idiag_potselfm/=0) call sum_mn_name(p%potself,idiag_potselfm)
+        if (idiag_potself2m/=0) call sum_mn_name(p%potself**2,idiag_potself2m)
         if (idiag_gpotselfxm/=0) &
             call sum_mn_name(p%gpotself(:,1),idiag_gpotselfxm)
         if (idiag_gpotselfym/=0) &
@@ -499,7 +500,7 @@ module Selfgravity
       if (present(lwrite)) lwr=lwrite
 !
       if (lreset) then
-        idiag_potselfm=0; idiag_potselfmxy=0
+        idiag_potselfm=0; idiag_potself2m=0; idiag_potselfmxy=0
         idiag_gpotselfxm=0; idiag_gpotselfym=0; idiag_gpotselfzm=0
         idiag_gpotselfx2m=0; idiag_gpotselfy2m=0; idiag_gpotselfz2m=0
         idiag_gxgym=0; idiag_gxgzm=0; idiag_gygzm=0
@@ -509,6 +510,8 @@ module Selfgravity
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'potselfm', &
             idiag_potselfm)
+        call parse_name(iname,cname(iname),cform(iname),'potself2m', &
+            idiag_potself2m)
         call parse_name(iname,cname(iname),cform(iname),'gpotselfxm', &
             idiag_gpotselfxm)
         call parse_name(iname,cname(iname),cform(iname),'gpotselfym', &
