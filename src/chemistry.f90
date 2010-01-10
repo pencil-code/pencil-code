@@ -250,7 +250,7 @@ module Chemistry
 !
       if (lcheminp) call write_thermodyn()
 !
-!  Identify CVS/SVN version information.
+!  Identify version number (generated automatically by SVN).
 !
       if (lroot) call svn_id( &
           "$Id$")

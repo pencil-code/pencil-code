@@ -7,7 +7,6 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-!
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
@@ -39,7 +38,7 @@ module Neutraldensity
 !
       lneutraldensity = .false.
 !
-!  identify version number (generated automatically by CVS)
+!  Identify version number (generated automatically by SVN).
 !
       if (lroot) call svn_id( &
           "$Id$")
@@ -59,7 +58,7 @@ module Neutraldensity
 !***********************************************************************
     subroutine init_lnrhon(f)
 !
-!  initialise lnrhon; called from start.f90
+!  Initialise lnrhon; called from start.f90.
 !
 !  18-mar-03/axel: adapted from neutraldensity
 !
@@ -109,8 +108,8 @@ module Neutraldensity
 !***********************************************************************
     subroutine dlnrhon_dt(f,df,p)
 !
-!  continuity equation
-!  calculate dlnrhon/dt = - u.gradlnrhon - divud
+!  Continuity equation.
+!  Calculate dlnrhon/dt = - u.gradlnrhon - divud
 !
 !  18-mar-03/axel: adapted from neutraldensity
 !
@@ -162,7 +161,7 @@ module Neutraldensity
 !***********************************************************************
     subroutine rprint_neutraldensity(lreset,lwrite)
 !
-!  reads and registers print parameters relevant for compressible part
+!  Reads and registers print parameters relevant for neutral density.
 !
 !   7-jun-02/axel: incoporated from subroutine pde
 !
@@ -174,7 +173,7 @@ module Neutraldensity
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-!  write column where which neutral density variable is stored
+!  Write column where which neutral density variable is stored.
 !
       if (lwr) then
         write(3,*) 'i_rhonm=',idiag_rhonm

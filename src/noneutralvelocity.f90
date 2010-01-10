@@ -1,9 +1,10 @@
 ! $Id$
+!
 !  This module takes care of everything related to neutral velocity
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
-!
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
@@ -36,7 +37,7 @@ module NeutralVelocity
 !
       lneutralvelocity = .false.
 !
-!  identify version number (generated automatically by CVS)
+!  Identify version number (generated automatically by SVN).
 !
       if (lroot) call svn_id( &
           "$Id$")
@@ -54,7 +55,7 @@ module NeutralVelocity
 !***********************************************************************
     subroutine init_uun(f)
 !
-!  initialise uun; called from start.f90
+!  Initialise uun; called from start.f90.
 !
 !  18-mar-03/axel: dummy routine
 !
@@ -104,9 +105,9 @@ module NeutralVelocity
 !***********************************************************************
     subroutine duun_dt(f,df,p)
 !
-!  velocity evolution
-!  calculate dud/dt = - ud.gradud - 2Omega x ud + grav + Fvisc
-!  no pressure gradient force for neutral!
+!  Velocity evolution.
+!  Calculate dud/dt = - ud.gradud - 2Omega x ud + grav + Fvisc
+!  No pressure gradient force for neutral!
 !
 !  18-mar-03/axel: dummy routine
 !
@@ -158,7 +159,7 @@ module NeutralVelocity
 !***********************************************************************
     subroutine rprint_neutralvelocity(lreset,lwrite)
 !
-!  reads and registers print parameters relevant for hydro part
+!  Reads and registers print parameters relevant for neutral velocity.
 !
 !   3-may-02/axel: coded
 !  27-may-02/axel: added possibility to reset list
@@ -171,7 +172,7 @@ module NeutralVelocity
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-!  write column where which neutral velocity variable is stored
+!  Write column where which neutral velocity variable is stored.
 !
       if (lwr) then
         write(3,*) 'nname=',nname
@@ -182,6 +183,7 @@ module NeutralVelocity
       endif
 !
       call keep_compiler_quiet(lreset)
+!
     endsubroutine rprint_neutralvelocity
 !***********************************************************************
 endmodule NeutralVelocity

@@ -118,7 +118,7 @@ module Radiation
 !***********************************************************************
     subroutine register_radiation()
 !
-!  Initialize radiation flags
+!  Initialize radiation flags.
 !
 !  24-mar-03/axel+tobi: coded
 !
@@ -135,7 +135,7 @@ module Radiation
       call farray_register_auxiliary('Qkapparho',iQkapparho)
       call farray_register_auxiliary('Frad',iFrad,vector=3)
 !
-!  Identify version number (generated automatically by CVS).
+!  Identify version number (generated automatically by SVN).
 !
       if (lroot) call svn_id( &
           "$Id$")

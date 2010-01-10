@@ -91,7 +91,7 @@ module EquationOfState
       call farray_register_auxiliary('yH',iyH)
       call farray_register_auxiliary('lnTT',ilnTT)
 !
-!  Identify version number (generated automatically by CVS).
+!  Identify version number (generated automatically by SVN).
 !
       if (lroot) call svn_id( &
            "$Id$")

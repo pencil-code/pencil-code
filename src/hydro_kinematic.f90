@@ -86,7 +86,7 @@ module Hydro
 !
       integer :: ierr
 !
-!  identify version number (generated automatically by CVS)
+!  Identify version number (generated automatically by SVN).
 !
       if (lroot) call svn_id( &
            "$Id$")

@@ -139,7 +139,7 @@ module Density
 !
       call farray_register_pde('lnrho',ilnrho)
 !
-!  Identify version number (generated automatically by CVS).
+!  Identify version number (generated automatically by SVN).
 !
       if (lroot) call svn_id( &
           "$Id$")

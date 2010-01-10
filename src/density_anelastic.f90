@@ -145,7 +145,7 @@ module Density
       call farray_register_auxiliary('pp',ipp,communicated=.true.)
       call farray_register_auxiliary('rhs',irhs,vector=3,communicated=.true.)
 !
-!  Identify version number (generated automatically by CVS).
+!  Identify version number (generated automatically by SVN).
 !
       if (lroot) call svn_id( &
           "$Id: density_anelastic.f90 11886 2009-10-13 12:51:11 mppiyali@gmail.com $")

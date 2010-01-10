@@ -106,7 +106,7 @@ module Gravity
       use Mpicomm
       use Sub
 !
-!  Identify version number (generated automatically by CVS)
+!  Identify version number (generated automatically by SVN)
 !
       if (lroot) call svn_id( &
            "$Id$")

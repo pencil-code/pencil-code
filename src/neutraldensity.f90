@@ -1,8 +1,8 @@
 ! $Id$
-
+!
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrhon_dt and init_lnrhon, among other auxiliary routines.
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -16,25 +16,22 @@
 ! PENCILS PROVIDED del6lnrhon; del6rhon; snglnrhon(3); alpha; zeta
 !
 !***************************************************************
-
 module NeutralDensity
-
+!
   use Cparam
   use Cdata
   use Messages
-!  use EquationOfState, only: cs0,cs20,lnrho0,rho0, &
-!                             gamma,gamma_m1,cs2top,cs2bot, &
-!                             mpoly,beta_glnrho_global
-
+!
   implicit none
-
+!
   include 'neutraldensity.h'
-  
+!  
   real :: kx_lnrhon=1.,ky_lnrhon=1.,kz_lnrhon=1.
   real :: ampllnrhon=0.,rhon_left=1.,rhon_right=1.
   real :: diffrhon=0.,diffrhon_hyper3=0.,diffrhon_shock=0.
   real :: lnrhon_const=0., rhon_const=1.
   real :: lnrhon_int=0.,lnrhon_ext=0.
+  real :: lnrhon0,lnrhon_left,lnrhon_right,alpha,zeta
   real, dimension(3) :: diffrhon_hyper3_aniso=0.
   integer, parameter :: ndiff_max=4
   logical :: lmass_source=.false.,lcontinuity_neutral=.true.
@@ -45,16 +42,12 @@ module NeutralDensity
   logical :: ldiffn_hyper3_polar=.false.
   logical :: lpretend_star,lramp_up
   real :: star_form_threshold=1.,star_form_exponent=1.5
-
   character (len=labellen), dimension(ninit) :: initlnrhon='nothing'
   character (len=labellen), dimension(ndiff_max) :: idiffn=''
   character (len=labellen) :: borderlnrhon='nothing'
   character (len=5) :: iinit_str
-!
   integer :: iglobal_gg=0
   integer :: iglobal_rhon=0
-!
-  real :: lnrhon0,lnrhon_left,lnrhon_right,alpha,zeta
 !
   namelist /neutraldensity_init_pars/ &
        ampllnrhon,initlnrhon,    &
@@ -63,7 +56,7 @@ module NeutralDensity
        lcontinuity_neutral,lnrhon0,lnrhon_left,lnrhon_right, &
        alpha,zeta,kx_lnrhon,ky_lnrhon,kz_lnrhon,lpretend_star,&
        star_form_threshold,lramp_up,star_form_exponent
-
+!
   namelist /neutraldensity_run_pars/ &
        diffrhon,diffrhon_hyper3,diffrhon_shock,   &
        lupw_lnrhon,lupw_rhon,idiffn,     &
@@ -72,17 +65,17 @@ module NeutralDensity
        lnrhon_const,lcontinuity_neutral,borderlnrhon,    &
        diffrhon_hyper3_aniso,alpha,zeta,lpretend_star, &
        star_form_threshold,lramp_up,star_form_exponent
-
-  ! diagnostic variables (needs to be consistent with reset list below)
+!
+!  Diagnostic variables (needs to be consistent with reset list below).
+!
   integer :: idiag_rhonm=0,idiag_rhon2m=0,idiag_lnrhon2m=0
   integer :: idiag_rhonmin=0,idiag_rhonmax=0,idiag_unglnrhonm=0
   integer :: idiag_lnrhonmphi=0,idiag_rhonmphi=0,idiag_dtnd=0
   integer :: idiag_rhonmz=0, idiag_rhonmy=0, idiag_rhonmx=0
   integer :: idiag_rhonmxy=0, idiag_rhonmr=0
   integer :: idiag_neutralmass=0
-
+!
   contains
-
 !***********************************************************************
     subroutine register_neutraldensity()
 !
@@ -103,7 +96,7 @@ module NeutralDensity
 !      
       lneutraldensity=.true.
 !
-!  identify version number (generated automatically by CVS)
+!  Identify version number (generated automatically by SVN).
 !
       if (lroot) call svn_id( &
            "$Id$")

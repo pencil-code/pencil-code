@@ -15,19 +15,17 @@
 !
 !***************************************************************
 module NeutralVelocity
-
-!  Note that Omega is already defined in cdata.
-
+!
   use Cparam
   use Cdata 
   use Viscosity
   use Messages
-
+!
   implicit none
-
+!
   include 'neutralvelocity.h'
 !
-! init parameters
+!  Init parameters.
 !
   real :: ampl_unx=0.0, ampl_uny=0.0, ampl_unz=0.0
   real :: kx_uun=1., ky_uun=1., kz_uun=1.
@@ -37,20 +35,19 @@ module NeutralVelocity
   real, dimension(3) :: uun_const=(/0.,0.,0./)
   logical :: lcoriolis_force=.true., lcentrifugal_force=.false.
   logical :: ladvection_velocity=.true.,lpressuregradient=.true.
-!collisional drag,ionization,recombination
   logical :: lviscneutral=.true.,lelectron_pressure=.false.
   real :: colldrag=0,electron_pressure=1
-  real :: nun=0.,csn0=0.,csn20,nun_hyper3=0.!,nun_shock=0.
+  real :: nun=0.,csn0=0.,csn20,nun_hyper3=0.
   real, dimension (nx,3,3) :: unij5
-
   character (len=labellen),dimension(ninit) :: iviscn=''
-
+!
   namelist /neutralvelocity_init_pars/ &
-       ampluun, ampl_unx, ampl_uny, ampl_unz, &
-       inituun, uun_const, Omega, lcoriolis_force, lcentrifugal_force, &
-       ladvection_velocity,colldrag,csn0,kx_uun,ky_uun,kz_uun
-
-  ! run parameters
+      ampluun, ampl_unx, ampl_uny, ampl_unz, &
+      inituun, uun_const, Omega, lcoriolis_force, lcentrifugal_force, &
+      ladvection_velocity,colldrag,csn0,kx_uun,ky_uun,kz_uun
+!
+!  Run parameters.
+!
   logical :: lupw_uun=.false.
   logical :: lfreeze_unint=.false.,lfreeze_unext=.false.
 !
@@ -58,10 +55,11 @@ module NeutralVelocity
        Omega,theta, lupw_uun, &
        borderuun, lfreeze_unint, lpressuregradient, &
        lfreeze_unext,lcoriolis_force,lcentrifugal_force,ladvection_velocity, &
-       colldrag,nun,lviscneutral,iviscn,nun,csn0,nun_hyper3,&!,nun_shock
+       colldrag,nun,lviscneutral,iviscn,nun,csn0,nun_hyper3, &
        lelectron_pressure,electron_pressure
-
-  ! other variables (needs to be consistent with reset list below)
+!
+!  Diagnostic variables (needs to be consistent with reset list below).
+!
   integer :: idiag_un2m=0,idiag_unm2=0
   integer :: idiag_unxpt=0,idiag_unypt=0,idiag_unzpt=0,idiag_dtcn=0
   integer :: idiag_dtun=0,idiag_unrms=0,idiag_unmax=0,idiag_unzrms=0,idiag_unzrmaxs=0
@@ -85,9 +83,8 @@ module NeutralVelocity
   integer :: idiag_un2mr=0,idiag_unrunpmr=0
   integer :: idiag_unrmr=0,idiag_unpmr=0,idiag_unzmr=0
   integer :: idiag_divunm=0,idiag_dtnun=0
-
+!
   contains
-
 !***********************************************************************
     subroutine register_neutralvelocity()
 !
@@ -109,7 +106,7 @@ module NeutralVelocity
       call farray_register_pde('uun',iuun,vector=3)
       iunx = iuun; iuny = iuun+1; iunz = iuun+2
 !
-!  Identify version number (generated automatically by CVS).
+!  Identify version number (generated automatically by SVN).
 !
       if (lroot) call svn_id( &
           "$Id$")

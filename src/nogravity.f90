@@ -45,7 +45,7 @@ module Gravity
 !***********************************************************************
     subroutine register_gravity()
 !
-!  initialise gravity flags
+!  Initialise gravity flags.
 !
 !  9-jan-02/wolf: coded
 ! 28-mar-02/axel: adapted from grav_z
@@ -53,7 +53,7 @@ module Gravity
       use Mpicomm
       use Sub
 !
-!  identify version number (generated automatically by CVS)
+!  Identify version number (generated automatically by SVN).
 !
       if (lroot) call svn_id( &
           "$Id$")
@@ -133,7 +133,6 @@ module Gravity
 !
 !  20-11-04/anders: coded
 !
-!
     endsubroutine pencil_criteria_gravity
 !***********************************************************************
     subroutine pencil_interdep_gravity(lpencil_in)
@@ -169,9 +168,9 @@ module Gravity
 !***********************************************************************
     subroutine duu_dt_grav(f,df,p)
 !
-!  add nothing to duu/dt
+!  Add nothing to duu/dt.
 !
-! 28-mar-02/axel: adapted from grav_z
+!  28-mar-02/axel: adapted from grav_z
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -185,7 +184,8 @@ module Gravity
 !***********************************************************************
     subroutine potential_global(pot,pot0)
 !
-!  gravity potential
+!  Gravity potential.
+!
 !  28-mar-02/axel: adapted from grav_z
 !
       real, dimension (mx,my,mz) :: pot
@@ -201,7 +201,8 @@ module Gravity
 !***********************************************************************
     subroutine potential_penc(xmn,ymn,zmn,pot,pot0,grav,rmn)
 !
-!  gravity potential
+!  Gravity potential.
+!
 !  28-mar-02/axel: adapted from grav_z
 !
       real, dimension (nx) :: pot
@@ -226,7 +227,7 @@ module Gravity
 !***********************************************************************
     subroutine potential_point(x,y,z,r, pot,pot0, grav)
 !
-!  Gravity potential in one point
+!  Gravity potential in one point.
 !
 !  20-dec-03/wolf: coded
 !
@@ -255,7 +256,7 @@ module Gravity
 !***********************************************************************
     subroutine acceleration_penc(gg)
 !
-!  Calculates gravitational acceleration on a pencil
+!  Calculates gravitational acceleration on a pencil.
 !
 !  21-apr-07/tobi: adapted from potential_penc
 !
@@ -263,7 +264,7 @@ module Gravity
 
       real, dimension (:,:), intent (out) :: gg
 !
-!  Calculate acceleration from master pencils defined in initialize_gravity
+!  Calculate acceleration from master pencils defined in initialize_gravity.
 !
       call fatal_error("acceleration_penc","Not implemented")
 !
@@ -273,7 +274,7 @@ module Gravity
 !***********************************************************************
     subroutine acceleration_penc_1D(gr)
 !
-!  Calculates gravitational acceleration on a pencil
+!  Calculates gravitational acceleration on a pencil.
 !
 !  21-apr-07/tobi: adapted from potential_penc
 !
@@ -281,17 +282,17 @@ module Gravity
 
       real, dimension (nx), intent (out) :: gr
 !
-!  Calculate acceleration from master pencils defined in initialize_gravity
+!  Calculate acceleration from master pencils defined in initialize_gravity.
 !
       call fatal_error("acceleration_penc_1D","Not implemented")
-
+!
       call keep_compiler_quiet(gr)
 !
     endsubroutine acceleration_penc_1D
 !***********************************************************************
     subroutine acceleration_point(x,y,z,r,g_r)
 !
-!  Gravity in one point
+!  Gravity in one point.
 !
 !  18-nov-08/wlad: coded
 !
@@ -303,9 +304,9 @@ module Gravity
       intent(in)  :: x,y,z,r
       intent(out) :: g_r
 !
-      call stop_it("nograv: acceleration_point not implemented")
+      call fatal_error('acceleration_penc_1D','Not implemented')
 !
-      g_r = 0.
+      g_r = 0.0
 !
       call keep_compiler_quiet(x)
       call keep_compiler_quiet(y)
@@ -317,10 +318,9 @@ module Gravity
 !***********************************************************************
     subroutine rprint_gravity(lreset,lwrite)
 !
-!  reads and registers print parameters relevant for gravity advance
-!  dummy routine
+!  Reads and registers print parameters relevant for gravity advance.
 !
-!  26-apr-03/axel: coded
+!  26-apr-03/axel: dummy
 !
       logical :: lreset,lwr
       logical, optional :: lwrite
@@ -328,8 +328,8 @@ module Gravity
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-!  write column, idiag_XYZ, where our variable XYZ is stored
-!  idl needs this even if everything is zero
+!  Write column, idiag_XYZ, where our variable XYZ is stored.
+!  IDL needs this even if everything is zero.
 !
       if (lwr) then
         write(3,*) 'igg=',igg

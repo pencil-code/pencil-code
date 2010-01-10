@@ -55,7 +55,7 @@
 ! Save the file with a meaningful name, eg. geo_kws.f90 and place
 ! it in the $PENCIL_HOME/src/special directory.  This path has
 ! been created to allow users ot optionally check their contributions
-! in to the Pencil-Code CVS repository.  This may be useful if you
+! in to the Pencil-Code SVN repository.  This may be useful if you
 ! are working on/using the additional physics with somebodyelse or
 ! may require some assistance from one of the main Pencil-Code team.
 !
