@@ -17,6 +17,7 @@
 ! PENCILS PROVIDED uglnrho; ugrho
 ! PENCILS PROVIDED glnrho2; del2lnrho; del2rho; del6lnrho; del6rho
 ! PENCILS PROVIDED hlnrho(3,3); sglnrho(3); uij5glnrho(3)
+! PENCILS PROVIDED transprho
 !
 !***************************************************************
 module Density
