@@ -23,11 +23,10 @@ module Pscalar
   implicit none
 !
   include 'pscalar.h'
-  character (len=labellen) :: initlncc='impossible', initlncc2='impossible'
-  character (len=labellen) :: initcc='zero', initcc2='zero'
-  character (len=40) :: tensor_pscalar_file
-  logical :: nopscalar=.false., reinitalize_cc=.false.
-  logical :: reinitalize_lncc=.false.
+!
+!  Init parameters.
+!
+  real, dimension(3) :: gradC0=(/0.0,0.0,0.0/)
   real :: ampllncc=impossible, widthlncc=impossible, lncc_min
   real :: ampllncc2=impossible, radius_lncc=impossible
   real :: kx_lncc=impossible, ky_lncc=impossible,kz_lncc=impossible
@@ -37,28 +36,36 @@ module Pscalar
   real :: kxx_cc=0.0, kyy_cc=0.0, kzz_cc=0.0
   real :: epsilon_cc=0.0, cc_const=1.0
   real :: zoverh=1.0, hoverr=0.05, powerlr=3.0
-  real, dimension(3) :: gradC0=(/0.0,0.0,0.0/)
+  logical :: nopscalar=.false., reinitalize_cc=.false.
+  logical :: reinitalize_lncc=.false.
+  character (len=labellen) :: initlncc='impossible', initlncc2='impossible'
+  character (len=labellen) :: initcc='zero', initcc2='zero'
+  character (len=40) :: tensor_pscalar_file
 !
   namelist /pscalar_init_pars/ &
       initcc, initcc2,amplcc, amplcc2, kx_cc, ky_cc, kz_cc, radius_cc, &
       epsilon_cc, widthcc, cc_min, cc_const, initlncc, initlncc2, ampllncc, &
       ampllncc2, kx_lncc, ky_lncc, kz_lncc, radius_lncc, epsilon_lncc, &
       widthlncc, kxx_cc, kyy_cc, kzz_cc, hoverr, powerlr, zoverh
-! run parameters
+!
+!  Run parameters.
+!
   real :: pscalar_diff=0.0, tensor_pscalar_diff=0.0, soret_diff=0.0
   real :: pscalar_diff_hyper3=0.0, rhoccm=0.0, cc2m=0.0, gcc2m=0.0
   real :: pscalar_sink=0.0, Rpscalar_sink=0.5
-  real :: lam_gradC=0., om_gradC=0., lambda_cc=0.
-  real :: scalaracc=0.
+  real :: lam_gradC=0.0, om_gradC=0.0, lambda_cc=0.0
+  real :: scalaracc=0.0
   logical :: lpscalar_sink, lgradC_profile=.false., lreactions=.false.
-  logical :: lnotpassive=.false.
+  logical :: lnotpassive=.false., lupw_cc=.false.
 !
   namelist /pscalar_run_pars/ &
       pscalar_diff, nopscalar, tensor_pscalar_diff, gradC0, soret_diff, &
       pscalar_diff_hyper3, reinitalize_lncc, reinitalize_cc, lpscalar_sink, &
       pscalar_sink, Rpscalar_sink, lreactions, lambda_cc, lam_gradC, &
-      om_gradC, lgradC_profile, lnotpassive
-! other variables (needs to be consistent with reset list below)
+      om_gradC, lgradC_profile, lnotpassive, lupw_cc
+!
+!  Diagnostic variables (needs to be consistent with reset list below).
+!
   integer :: idiag_rhoccm=0, idiag_ccmax=0, idiag_ccmin=0., idiag_ccm=0
   integer :: idiag_Qrhoccm=0, idiag_Qpsclm=0, idiag_mcct=0
   integer :: idiag_gcc5m=0, idiag_gcc10m=0
@@ -383,7 +390,8 @@ module Pscalar
 ! gcc
       if (lpencil(i_gcc)) call grad(f,icc,p%gcc)
 ! ugcc
-      if (lpencil(i_ugcc)) call dot_mn(p%uu,p%gcc,p%ugcc)
+      if (lpencil(i_ugcc)) &
+          call u_dot_grad(f,icc,p%gcc,p%uu,p%ugcc,UPWIND=lupw_cc)
 ! gcc2
       if (lpencil(i_gcc2)) call dot2_mn(p%gcc,p%gcc2)
 ! gcc1
