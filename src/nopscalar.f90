@@ -22,8 +22,9 @@ module Pscalar
 !
   include 'pscalar.h'
 !
-!ajwm needed by prints.f90 for some reason.
-  real :: rhoccm=0., cc2m=0., gcc2m=0.
+!  Should not be public:
+!
+  real :: rhoccm=0.0, cc2m=0.0, gcc2m=0.0
   integer :: idiag_gcc2m=0, idiag_cc2m=0, idiag_rhoccm=0
 !
   contains
@@ -31,16 +32,15 @@ module Pscalar
     subroutine register_pscalar()
 !
 !  Initialise variables which should know that we solve for passive
-!  scalar: ilncc; increase nvar accordingly
+!  scalar: ilncc; increase nvar accordingly.
 !
 !  6-jul-02/axel: coded
 !
-      use Mpicomm
       use Sub
 !
-      lpscalar = .false.
+      lpscalar=.false.
 !
-!  identify version number
+!  Identify version number.
 !
       if (lroot) call svn_id( &
           "$Id$")
@@ -49,15 +49,11 @@ module Pscalar
 !***********************************************************************
     subroutine initialize_pscalar(f)
 !
-!  Perform any necessary post-parameter read initialization
-!  Dummy routine
+!  Perform any necessary post-parameter read initialization.
 !
-!  24-nov-02/tony: coded
+!  24-nov-02/tony: dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
-!
-!  set to zero and then call the same initial condition
-!  that was used in start.csh
 !
       call keep_compiler_quiet(f)
 !
@@ -65,14 +61,9 @@ module Pscalar
 !***********************************************************************
     subroutine init_lncc(f)
 !
-!  initialise magnetic field; called from start.f90
-!  AB: maybe we should here call different routines (such as rings)
-!  AB: and others, instead of accummulating all this in a huge routine.
-!  We have an init parameter (initlncc) to stear magnetic i.c. independently.
+!  Initialise passive scalar field.
 !
-!   6-jul-02/axel: coded
-!
-      use Sub
+!   6-jul-02/axel: dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -126,11 +117,9 @@ module Pscalar
 !***********************************************************************
     subroutine dlncc_dt(f,df,p)
 !
-!  magnetic field evolution
+!  Passive scalar evolution.
 !
-!  calculate dc/dt=-uu.gradlncc
-!
-!   6-jul-02/axel: coded
+!   6-jul-02/axel: dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -182,7 +171,7 @@ module Pscalar
 !***********************************************************************
     subroutine rprint_pscalar(lreset,lwrite)
 !
-!  reads and registers print parameters relevant for passive scalar
+!  Reads and registers print parameters relevant for passive scalar.
 !
 !   6-jul-02/axel: coded
 !
@@ -194,13 +183,7 @@ module Pscalar
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-!  reset everything in case of reset
-!  (this needs to be consistent with what is defined above!)
-!
-      if (lreset) then
-      endif
-!
-!  write column where which passive scalar variable is stored
+!  Write column where which passive scalar variable is stored.
 !
       if (lwr) then
         write(3,*) 'i_rhoccm=0'
@@ -210,6 +193,8 @@ module Pscalar
         write(3,*) 'ilncc=0'
         write(3,*) 'icc=0'
       endif
+!
+      call keep_compiler_quiet(lreset)
 !
     endsubroutine rprint_pscalar
 !***********************************************************************
