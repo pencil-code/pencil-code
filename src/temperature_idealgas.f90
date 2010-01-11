@@ -10,7 +10,7 @@
 !  has way more options and features than temperature_idealgas.f90. 
 !
 !  At a later point we may want to rename the module Entropy into Energy
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -25,86 +25,85 @@
 !
 !***************************************************************
 module Entropy
-
+!
   use Cdata
   use Cparam
-  use EquationOfState, only: mpoly0,mpoly1
-  use Messages, only: fatal_error,warning,information,svn_id
+  use EquationOfState, only: mpoly0, mpoly1
+  use Messages
   use Sub, only: keep_compiler_quiet
-
+!
   implicit none
-
+!
   include 'entropy.h'
-
+!
   interface heatcond_TT ! Overload subroutine `hcond_TT' function
     module procedure heatcond_TT_0d  ! get one value (hcond, dhcond)
     module procedure heatcond_TT_1d  ! get 1d-arrays (hcond, dhcond)
     module procedure heatcond_TT_2d  ! get 2d-arrays (hcond, dhcond)
   end interface
-
-  real :: radius_lnTT=0.1,ampl_lnTT=0.,widthlnTT=2*epsi
-  real :: lnTT_left=1.0,lnTT_right=1.0,lnTT_const=0.0,TT_const=1.0
-  real :: kx_lnTT=1.0,ky_lnTT=1.0,kz_lnTT=1.0
-  real :: Kgperp=0.,Kgpara=0.
-  real :: chi=impossible,heat_uniform=0.0,difflnTT_hyper=0.
-  real :: zbot=0.0,ztop=0.0
-  real :: tau_heat_cor=-1.0,tau_damp_cor=-1.0,zcor=0.0,TT_cor=0.0
-  real :: center1_x=0., center1_y=0., center1_z=0.
-  real :: r_bcz=0.,chi_shock=0.,chi_hyper3=0.
-! entries for ADI
-  real :: Tbump=0.,Kmin=0.,Kmax=0.,hole_slope=0.,hole_width=0.
+!
+  real :: radius_lnTT=0.1, ampl_lnTT=0.0, widthlnTT=2*epsi
+  real :: lnTT_left=1.0, lnTT_right=1.0, lnTT_const=0.0, TT_const=1.0
+  real :: kx_lnTT=1.0, ky_lnTT=1.0, kz_lnTT=1.0
+  real :: Kgperp=0.0, Kgpara=0.0
+  real :: chi=impossible, heat_uniform=0.0, difflnTT_hyper=0.0
+  real :: zbot=0.0, ztop=0.0
+  real :: tau_heat_cor=-1.0, tau_damp_cor=-1.0, zcor=0.0, TT_cor=0.0
+  real :: center1_x=0.0, center1_y=0.0, center1_z=0.0
+  real :: r_bcz=0.0, chi_shock=0.0, chi_hyper3=0.0
+  real :: Tbump=0.0, Kmin=0.0, Kmax=0.0, hole_slope=0.0, hole_width=0.0
   real :: hole_alpha ! initialized _after_ the reading
   integer, parameter :: nheatc_max=2
-  logical :: lpressuregradient_gas=.true.,ladvection_temperature=.true.
-  logical :: lupw_lnTT=.false.,lcalc_heat_cool=.false.,lheatc_hyper3=.false.
-  logical :: lheatc_Kconst=.false.,lheatc_Kprof=.false.,lheatc_Karctan=.false.
+  logical :: lpressuregradient_gas=.true., ladvection_temperature=.true.
+  logical :: lupw_lnTT=.false., lcalc_heat_cool=.false., lheatc_hyper3=.false.
+  logical :: lheatc_Kconst=.false., lheatc_Kprof=.false., lheatc_Karctan=.false.
   logical :: lheatc_tensordiffusion=.false.
-  logical :: lheatc_chiconst=.false.,lheatc_chiconst_accurate=.false.
-  logical :: lfreeze_lnTTint=.false.,lfreeze_lnTText=.false.
+  logical :: lheatc_chiconst=.false., lheatc_chiconst_accurate=.false.
+  logical :: lfreeze_lnTTint=.false., lfreeze_lnTText=.false.
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   logical :: lhcond_global=.false.
-  logical :: lheatc_shock=.false.,lheatc_hyper3_polar=.false.
+  logical :: lheatc_shock=.false., lheatc_hyper3_polar=.false.
   logical :: lviscosity_heat=.true.
   integer :: iglobal_hcond=0
   integer :: iglobal_glhc=0
   logical :: linitial_log=.false.
-
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
   character (len=5) :: iinit_str
 
 ! Delete (or use) me asap!
-  real :: hcond0=impossible, hcond1=1.
-  real :: Fbot=impossible,FbotKbot,Ftop,Kbot,FtopKtop
+  real :: hcond0=impossible, hcond1=1.0
+  real :: Fbot=impossible, FbotKbot, Ftop, Kbot, FtopKtop
   logical :: lmultilayer=.false.
 !
-! input parameters
+!  Input parameters.
+!
   namelist /entropy_init_pars/ &
-      initlnTT,radius_lnTT,ampl_lnTT,widthlnTT, &
-      lnTT_left,lnTT_right,lnTT_const,TT_const, &
-      kx_lnTT,ky_lnTT,kz_lnTT,center1_x,center1_y,center1_z, &
-      mpoly0,mpoly1,r_bcz, &
-      Fbot,Tbump,Kmin,Kmax,hole_slope,hole_width,ltemperature_nolog,&
-      linitial_log,hcond0
+      initlnTT, radius_lnTT, ampl_lnTT, widthlnTT, lnTT_left, lnTT_right, &
+      lnTT_const, TT_const, kx_lnTT, ky_lnTT, kz_lnTT, center1_x, center1_y, &
+      center1_z, mpoly0, mpoly1, r_bcz, Fbot, Tbump, Kmin, Kmax, &
+      hole_slope, hole_width, ltemperature_nolog, linitial_log, hcond0
 !
-! run parameters
+!  Run parameters.
+!
   namelist /entropy_run_pars/ &
-      lupw_lnTT,lpressuregradient_gas,ladvection_temperature, &
-      heat_uniform,chi,iheatcond,tau_heat_cor,tau_damp_cor,zcor,TT_cor, &
-      lheatc_chiconst_accurate,hcond0,lcalc_heat_cool,&
-      lfreeze_lnTTint,lfreeze_lnTText,widthlnTT,mpoly0,mpoly1, &
-      lhcond_global,lviscosity_heat,chi_hyper3,chi_shock, &
-      Fbot,Tbump,Kmin,Kmax,hole_slope,hole_width,Kgpara,Kgperp
+      lupw_lnTT, lpressuregradient_gas, ladvection_temperature, heat_uniform,& 
+      chi, iheatcond, tau_heat_cor, tau_damp_cor, zcor, TT_cor, &
+      lheatc_chiconst_accurate, hcond0, lcalc_heat_cool, lfreeze_lnTTint, &
+      lfreeze_lnTText, widthlnTT, mpoly0, mpoly1, lhcond_global, &
+      lviscosity_heat, chi_hyper3, chi_shock, Fbot, Tbump, Kmin, Kmax, &
+      hole_slope, hole_width, Kgpara, Kgperp
 !
-! other variables (needs to be consistent with reset list below)
+!  Diagnostic variables (needs to be consistent with reset list below).
+!
   integer :: idiag_TTmax=0    ! DIAG_DOC: $\max (T)$
   integer :: idiag_gTmax=0    ! DIAG_DOC: $\max (|grad T|)$
   integer :: idiag_TTmin=0    ! DIAG_DOC: $\min (T)$
   integer :: idiag_TTm=0      ! DIAG_DOC: $\left< T \right>$
   integer :: idiag_fradtop=0  ! DIAG_DOC: $<-K{dT\over dz}>_{\text{top}}$ 
                               ! DIAG_DOC: \quad(radiative flux at the top)
-  integer :: idiag_yHmax=0,idiag_yHmin=0,idiag_yHm=0
-  integer :: idiag_ethm=0,idiag_ssm=0,idiag_thcool=0
-  integer :: idiag_eem=0,idiag_ppm=0,idiag_csm=0
+  integer :: idiag_yHmax=0, idiag_yHmin=0, idiag_yHm=0
+  integer :: idiag_ethm=0, idiag_ssm=0, idiag_thcool=0
+  integer :: idiag_eem=0, idiag_ppm=0, idiag_csm=0
   integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
                                 ! DIAG_DOC:   /\max c_{\rm s}]$
                                 ! DIAG_DOC:   \quad(time step relative to
@@ -115,14 +114,13 @@ module Entropy
                                 ! DIAG_DOC:   \quad(time step relative to time
                                 ! DIAG_DOC:   step based on heat conductivity;
                                 ! DIAG_DOC:   see \S~\ref{time-step})
-
+!
   contains
-
 !***********************************************************************
     subroutine register_entropy()
 !
-!  initialise variables which should know that we solve an entropy
-!  equation: ilnTT, etc; increase nvar accordingly
+!  Initialise variables which should know that we solve an entropy
+!  equation: ilnTT, etc; increase nvar accordingly.
 !
 !  6-nov-01/wolf: coded
 !
@@ -151,7 +149,7 @@ module Entropy
 !***********************************************************************
     subroutine initialize_entropy(f,lstarting)
 !
-!  called by run.f90 after reading parameters, but before the time loop
+!  Called by run.f90 after reading parameters, but before the time loop.
 !
 !  21-jul-2002/wolf: coded
 !
@@ -163,9 +161,11 @@ module Entropy
       use Mpicomm, only: stop_it
       use SharedVariables, only: put_shared_variable
 !
+      logical :: lstarting
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: hcond, dhcond
-      logical :: lstarting, lnothing
+      logical :: lnothing
       integer :: i, ierr
 !
 !  Set iTT requal to ilnTT if we are considering non-logarithmic temperature.
@@ -182,12 +182,12 @@ module Entropy
         call select_eos_variable('lnTT',ilnTT)
       endif
 !
-!  freeze temperature
+!  Freeze temperature.
 !
       if (lfreeze_lnTTint) lfreeze_varint(ilnTT)=.true.
       if (lfreeze_lnTText) lfreeze_varext(ilnTT)=.true.
 !
-!  Check whether we want heat conduction
+!  Check whether we want heat conduction.
 !
       lheatc_Kconst= .false.
       lheatc_Kprof= .false.
@@ -195,7 +195,7 @@ module Entropy
       lheatc_tensordiffusion=.false.
       lheatc_chiconst = .false.
 !
-!  Initialize thermal diffusion
+!  Initialize thermal diffusion.
 !
       lheatc_shock=.false.
       lheatc_hyper3=.false.
@@ -250,7 +250,7 @@ module Entropy
 ! WL: is this correct? In density, lnothing=.true. is inside the do-loop
        lnothing=.true.
 !
-!  compute and store hcond and dhcond if hcond_global=.true.
+!  Compute and store hcond and dhcond if hcond_global=.true.
 !
        if (lhcond_global) then
          call farray_register_global("hcond",iglobal_hcond)
@@ -266,7 +266,7 @@ module Entropy
          enddo
        endif
 !
-!  Some initializations for the ADI setup
+!  Some initializations for the ADI setup.
 !
       if (hole_slope.ne.0.) then
         hole_alpha=(Kmax-Kmin)/(pi/2.+atan(hole_slope*hole_width**2))
@@ -276,14 +276,16 @@ module Entropy
       endif
 !
       if (initlnTT(1).eq.'gaussian') then
-! needed when one only works with temperature_idealgas to check the
-! radiative diffusion term, i.e. one solves d(TT)/dt=gamma*chi*del2(TT)
-! with bcz='cT' (all other modules are down)
+!
+!  Needed when one only works with temperature_idealgas to check the radiative
+!  diffusion term, i.e. one solves d(TT)/dt=gamma*chi*del2(TT) with bcz='cT'
+!  (all other modules are down).
+!
         cs2bot=gamma_m1*f(l1,4,n1,ilnTT)
         cs2top=gamma_m1*f(l1,4,n2,ilnTT)
       endif
 !
-! some tricks regarding Fbot and hcond0 when bcz1='c1' (constant flux)
+!  Some tricks regarding Fbot and hcond0 when bcz1='c1' (constant flux).
 !
       if (hole_slope.eq.0.) then
        if (bcz1(ilnTT)=='c1' .and. lrun) then
@@ -341,23 +343,23 @@ module Entropy
             call fatal_error('initialize_entropy', &
             'Conductivity coefficient chi_shock is zero!')
       endif
-
+!
       if (iheatcond(1)=='nothing') then
         if (hcond0 /= impossible) call warning('initialize_entropy', 'No heat conduction, but hcond0 /= 0')
         if (chi /= impossible) call warning('initialize_entropy', 'No heat conduction, but chi /= 0')
       endif
-
+!
       call put_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
       if (ierr/=0) call stop_it("initialize_entropy in temperature_idealgas: "//&
            "there was a problem when putting lviscosity_heat")
-
+!
       call keep_compiler_quiet(lstarting)
-
+!
     endsubroutine initialize_entropy
 !***********************************************************************
     subroutine init_ss(f)
 !
-!  initialise lnTT or TT (; called from start.f90
+!  Initialise lnTT or TT; called from start.f90.
 !
 !  13-dec-2002/axel+tobi: adapted from init_ss
 !
@@ -446,11 +448,11 @@ module Entropy
               f(:,:,n,ilnrho)=lnrho0+ &
                   (1.+expo)*log((1.+alpha/beta)/(z(n)+alpha/beta))
             enddo
-          !
+!
           case default
-          !
-          !  Catch unknown values
-          !
+!
+!  Catch unknown values
+!
             write(unit=errormsg,fmt=*) 'No such value for initss(' &
                            //trim(iinit_str)//'): ',trim(initlnTT(j))
             call fatal_error('init_ss',errormsg)
@@ -473,6 +475,10 @@ module Entropy
     endsubroutine init_ss
 !***********************************************************************
     subroutine pencil_criteria_entropy()
+!
+!  All pencils that the Entropy module depends on are specified here.
+!
+!  20-11-04/anders: coded
 !
       if (ldt) lpenc_requested(i_cs2)=.true.
 !
@@ -655,8 +661,9 @@ module Entropy
     subroutine dss_dt(f,df,p)
 !
 !  Calculate right hand side of temperature equation
-!  heat condution is currently disabled until old stuff,
+!  Heat condution is currently disabled until old stuff,
 !  which in now in calc_heatcond, has been reinstalled.
+!
 !  lnTT version: DlnTT/Dt = -gamma_m1*divu + gamma*cp1*rho1*TT1*RHS
 !    TT version:   DTT/Dt = -gamma_m1*TT*divu + gamma*cp1*rho1*RHS
 !
@@ -679,31 +686,27 @@ module Entropy
       intent(inout) :: f,p
       intent(out) :: df
 !
-!  identify module and boundary conditions
+!  Identify module and boundary conditions.
 !
-      if (headtt.or.ldebug) print*,'SOLVE dlnTT_dt'
+      if (headtt.or.ldebug) print*, 'SOLVE dlnTT_dt'
       if (headtt) call identify_bcs('lnTT',ilnTT)
-      if (headtt) print*,'dss_dt: lnTT,cs2=', p%lnTT(1), p%cs2(1)
+      if (headtt) print*, 'dss_dt: lnTT,cs2=', p%lnTT(1), p%cs2(1)
 !
-!  entropy gradient: needed for advection and pressure gradient
+!  Sound speed squared.
 !
-      !call grad(f,ilnTT,glnTT)
-!
-!  sound speed squared
-!
-      if (headtt) print*,'dss_dt: cs20=',p%cs2(1)
+      if (headtt) print*, 'dss_dt: cs20=', p%cs2(1)
 !
 !  ``cs2/dx^2'' for timestep
 !
       if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
       if (headtt.or.ldebug) print*,'dss_dt: max(advec_cs2) =',maxval(advec_cs2)
 !
-!  subtract pressure gradient term in momentum equation
+!  Add pressure gradient term in momentum equation.
 !
       if (lhydro.and.lpressuregradient_gas) &
-         df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + p%fpres(:,iux:iuz)
+          df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + p%fpres
 !
-!  advection term and PdV-work
+!  Advection term and PdV-work.
 !
       if (ladvection_temperature) then
         if (ltemperature_nolog) then 
@@ -713,15 +716,26 @@ module Entropy
         endif
       endif
 !
-!  Calculate viscous contribution to temperature
+!  Need to add left-hand-side of the continuity equation (see manual).
+!  Check this:
+!
+      if (ldensity) then
+        if (ltemperature_nolog) then
+          df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT)   - gamma_m1*p%TT*p%divu
+        else
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - gamma_m1*p%divu
+        endif
+      endif
+!
+!  Calculate viscous contribution to temperature.
 !
       if (lviscosity.and.lviscosity_heat) call calc_viscous_heat(f,df,p,Hmax)
 !
-!  Various heating conduction contributions
+!  Various heating conduction contributions.
 !
       if (lcalc_heat_cool)  call calc_heat_cool(df,p)
 !
-!  Thermal conduction: only chi=cte for the moment
+!  Thermal conduction: only chi=cte for the moment.
 !
       if (lheatc_chiconst) call calc_heatcond_constchi(df,p)
       if (lheatc_Kconst)   call calc_heatcond_constK(df,p)
@@ -729,7 +743,7 @@ module Entropy
       if (lheatc_Karctan)  call calc_heatcond_arctan(df,p)
       if (lheatc_tensordiffusion) call calc_heatcond_tensor(df,p)
 !
-!  Hyper diffusion
+!  Hyper diffusion.
 !
       if (lheatc_hyper3) then
         if (ltemperature_nolog) then 
@@ -752,7 +766,7 @@ module Entropy
         if (headtt) print*,'dss_dt: chi_hyper3=', chi_hyper3
       endif
 !
-! Shock diffusion 
+!  Shock diffusion.
 !
       if (lheatc_shock) call calc_heatcond_shock(df,p)
 !
@@ -761,7 +775,7 @@ module Entropy
 !
       if (lspecial) call special_calc_entropy(f,df,p)
 !
-!  Add thermal diffusion to temperature equation
+!  Add thermal diffusion to temperature equation.
 !
       if (ltemperature_nolog) then
         df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT)   + thdiff
@@ -769,25 +783,14 @@ module Entropy
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + thdiff
       endif
 !
-!  Information on the timescales
+!  Information on the timescales.
 !
       if (lfirst.and.ldt.and.(headtt.or.ldebug)) then
-          print*,'dss_dt: max(diffus_chi ) =', maxval(diffus_chi)
-          print*,'dss_dt: max(diffus_chi3) =', maxval(diffus_chi3)
+        print*, 'dss_dt: max(diffus_chi ) =', maxval(diffus_chi)
+        print*, 'dss_dt: max(diffus_chi3) =', maxval(diffus_chi3)
       endif
 !
-!  Need to add left-hand-side of the continuity equation (see manual)
-!  Check this
-!
-      if (ldensity) then
-        if (ltemperature_nolog) then
-          df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT)   - gamma_m1*p%TT*p%divu
-        else
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - gamma_m1*p%divu
-        endif
-      endif
-!
-!  Calculate entropy related diagnostics
+!  Calculate entropy related diagnostics.
 !
       if (ldiagnos) then
         if (idiag_TTmax/=0) call max_mn_name(p%TT,idiag_TTmax)
@@ -836,12 +839,12 @@ module Entropy
 !
       if (headtt) print*,'calc_heatcond_shock: chi_shock=',chi_shock
 !
-!  calculate terms for shock diffusion
+!  Calculate terms for shock diffusion.
 !
       call dot(p%gshock,p%glnTT,gshockglnTT)
       call dot(p%glnrho+p%glnTT,p%glnTT,g2)
 !
-!  shock entropy diffusivity
+!  Shock entropy diffusivity.
 !
       if (headtt) print*,'calc_heatcond_shock: chi_shock=',chi_shock
       if (ltemperature_nolog) then
@@ -870,8 +873,10 @@ module Entropy
 !***********************************************************************
     subroutine rad_equil(f)
 !
-! 16-mai-07/gastine+dintrans: compute the radiative and hydrostatic 
-! equilibria for a given radiative profile defined in heatcond_TT.
+!  Compute the radiative and hydrostatic equilibria for a given radiative
+!  profile defined in heatcond_TT.
+!
+!  16-may-07/gastine+dintrans: coded
 !
       use Gravity, only: gravz
       use EquationOfState, only: lnrho0,cs20,cs2top,cs2bot,gamma, &
@@ -887,14 +892,14 @@ module Entropy
                          'rad_equil not implemented for lnTT')
       if (lroot) print*,'init_ss: rad_equil for kappa-mechanism pb'
 !
-! Integrate from top to bottom: z(n2) --> z(n1)
+!  Integrate from top to bottom: z(n2) --> z(n1).
 !
       temp(n2)=cs20/gamma_m1
       lnrho(n2)=lnrho0
       f(:,:,n2,ilnTT)=cs20/gamma_m1
       f(:,:,n2,ilnrho)=lnrho0
 !
-! Calculate the n2-1 gridpoint thanks to a 1st order forward Euler scheme
+!  Calculate the n2-1 gridpoint thanks to a 1st order forward Euler scheme.
 !
       call heatcond_TT_0d(temp(n2), hcond)
       dtemp=Fbot/hcond
@@ -904,7 +909,7 @@ module Entropy
       f(:,:,n2-1,ilnTT)=temp(n2-1)
       f(:,:,n2-1,ilnrho)=lnrho(n2-1)
 !
-! Now we use a 2nd order centered scheme for the other gridpoints
+!  Now we use a 2nd order centered scheme for the other gridpoints.
 !
       do i=n2-1,n1+1,-1
         call heatcond_TT(temp(i), hcond)
@@ -916,8 +921,9 @@ module Entropy
         f(:,:,i-1,ilnrho)=lnrho(i-1)
       enddo
 !
-! Initialize cs2bot by taking into account the new bottom value of temperature
-! Note: cs2top=cs20 already defined in eos_idealgas
+!  Initialize cs2bot by taking into account the new bottom value of temperature
+!  Note: cs2top=cs20 already defined in eos_idealgas.
+!
       cs2bot=gamma_m1*temp(n1)
       print*,'cs2top, cs2bot=', cs2top, cs2bot
 !
@@ -955,9 +961,9 @@ module Entropy
       kappa0=kappa0_cgs*unit_density*unit_length
       kappa=kappa0*p%TT**2
 !
-!  Optical Depth tau=kappa*rho*H
-!  If we are using 2D, the pencil value p%rho is actually
-!   sigma, the column density, sigma=rho*2*H
+!  Optical Depth tau=kappa*rho*H.
+!  If we are using 2D, the pencil value p%rho is actually sigma, the column
+!  density, sigma=rho*2*H
 !
       if (nzgrid==1) then
          tau = .5*kappa*p%rho
@@ -965,17 +971,17 @@ module Entropy
          call fatal_error("calc_heat_cool","opacity not yet implemented for 3D")
       endif
 !
-! Analytical gray description of Hubeny (1990)
-! a1 is the optically thick contribution,
-! a3 the optically thin one.
+!  Analytical gray description of Hubeny (1990)
+!  a1 is the optically thick contribution,
+!  a3 the optically thin one.
 !
       a1=0.375*tau ; a2=0.433013 ; a3=0.25/tau
 !
-! cooling for Energy: 2*sigmaSB*p%TT**4/(a1+a2+a3)
+!  Cooling for energy: 2*sigmaSB*p%TT**4/(a1+a2+a3)
 !
       cooling = 2*sigmaSB*p%rho1*p%TT**4/(a1+a2+a3)
 !
-!  this cooling has dimension of energy over time
+!  This cooling has dimension of energy over time.
 !
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%cv1*p%TT1*cooling
 !
@@ -988,13 +994,13 @@ module Entropy
 !***********************************************************************
     subroutine calc_heatcond_constchi(df,p)
 !
-!  01-mar-07/dintrans: adapted from temperature_ionization
-!
 !  Calculate the radiative diffusion term for chi=cte:
 !  lnTT version: cp*chi*Div(rho*T*glnTT)/(rho*cv*TT)
 !           = gamma*chi*(g2.glnTT+g2lnTT) where g2=glnrho+glnTT
 !    TT version: cp*chi*Div(rho*gTT)/(rho*cv)
 !           = gamma*chi*(g2.gTT+g2TT) where g2=glnrho
+!
+!  01-mar-07/dintrans: adapted from temperature_ionization
 !
       use Diagnostics, only: max_mn_name
       use EquationOfState, only: gamma
@@ -1013,11 +1019,11 @@ module Entropy
         call dot(p%glnTT+p%glnrho,p%glnTT,g2)
       endif
 !
-!  Add heat conduction to RHS of temperature equation
+!  Add heat conduction to RHS of temperature equation.
 !
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chi*(g2 + p%del2lnTT)
 !
-!  check maximum diffusion from thermal diffusion
+!  Check maximum diffusion from thermal diffusion.
 !
       if (lfirst.and.ldt) then
         diffus_chi=diffus_chi+gamma*chi*dxyz_2
@@ -1025,21 +1031,23 @@ module Entropy
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
         endif
       endif
-
+!
     endsubroutine calc_heatcond_constchi
 !***********************************************************************
     subroutine calc_heatcond_constK(df,p)
 !
 !  Calculate the radiative diffusion term for K=cte:
+!
 !  lnTT version: gamma*K/rho/TT/cp*div(T*grad lnTT)
 !                =gamma*K/rho/cp*(gradlnTT.gradlnTT + del2ln TT)
 !    TT version: gamma*K/rho/cp*del2(TT)=gamma*chi*del2(TT)
+!
 !  Note: if ldensity=.false. then rho=1 and chi=K/cp
 !
       use Diagnostics, only: max_mn_name
       use EquationOfState, only: gamma
       use Sub, only: dot
-
+!
       real, dimension(mx,my,mz,mvar) :: df
       type (pencil_case)  :: p
       real, dimension(nx) :: g2, chix
@@ -1047,7 +1055,7 @@ module Entropy
       intent(in) :: p
       intent(inout) :: df
 !
-!  Add heat conduction to RHS of temperature equation
+!  Add heat conduction to RHS of temperature equation.
 !
       if (ldensity) then
         chix=p%rho1*hcond0*p%cp1
@@ -1062,7 +1070,7 @@ module Entropy
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chix*(g2 + p%del2lnTT)
       endif
 !
-!  check maximum diffusion from thermal diffusion
+!  Check maximum diffusion from thermal diffusion.
 !
       if (lfirst.and.ldt) then
         diffus_chi=diffus_chi+gamma*chix*dxyz_2
@@ -1075,10 +1083,12 @@ module Entropy
 !***********************************************************************
     subroutine calc_heatcond_arctan(df,p)
 !
-! 16-mai-07/gastine+dintrans: radiative diffusion with an arctan
-!  profile for the conductivity
-!  calculate gamma/rho*cp*div(K *grad TT)=
-!    gamma*K/rho*cp*(grad LnK.grad TT + del2 TT)
+!  Radiative diffusion with an arctan profile for the conductivity
+!
+!  Calculate gamma/rho*cp*div(K *grad TT)=
+!      gamma*K/rho*cp*(grad LnK.grad TT + del2 TT)
+!
+!  16-may-07/gastine+dintrans: coded
 !
       use Diagnostics, only: max_mn_name
       use EquationOfState, only: gamma
@@ -1093,19 +1103,19 @@ module Entropy
       intent(inout) :: df
 !
       call heatcond_TT(p%TT, hcond, dhcond)
-! must specify the new bottom value of hcond for the 'c1' BC
+!  must specify the new bottom value of hcond for the 'c1' BC
       if (n == n1) hcond0=hcond(1) 
-! grad LnK=grad_T Ln K.grad(TT)
+!  grad LnK=grad_T Ln K.grad(TT)
       dhcond=dhcond/hcond
       call multsv(dhcond, p%gTT, gLnhcond)
       call dot(gLnhcond, p%gTT, g1)
 !
-!  Add heat conduction to RHS of temperature equation
+!  Add heat conduction to RHS of temperature equation.
 !
       chix=p%rho1*hcond*p%cp1
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chix*(g1+p%del2TT)
 !
-!  check maximum diffusion from thermal diffusion
+!  Check maximum diffusion from thermal diffusion.
 !
       if (lfirst.and.ldt) then
         diffus_chi=diffus_chi+gamma*chix*dxyz_2
@@ -1118,17 +1128,19 @@ module Entropy
 !***********************************************************************
     subroutine calc_heatcond(f,df,p)
 !
-!  12-Mar-07/dintrans: coded
 !  calculate gamma*K/rho*cp*div(T*grad lnTT)= 
 !              gamma*K/rho*cp*(gradlnTT.gradln(hcond*TT) + del2ln TT)
+!
+!  12-Mar-07/dintrans: coded
 !
       use Diagnostics, only: max_mn_name
       use EquationOfState, only: gamma
       use Sub, only: dot,step,der_step
-
+!
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       type (pencil_case) :: p
+!
       real, dimension(nx) :: g2,hcond,chix
       real, dimension (nx,3) :: glhc=0.,glnThcond
       integer :: i
@@ -1156,12 +1168,12 @@ module Entropy
       glnThcond = p%glnTT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
       call dot(p%glnTT,glnThcond,g2)
 !
-!  Add heat conduction to RHS of temperature equation
+!  Add heat conduction to RHS of temperature equation.
 !
       chix=p%rho1*hcond*p%cp1
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chix*(g2 + p%del2lnTT)
 !
-!  check maximum diffusion from thermal diffusion
+!  Check maximum diffusion from thermal diffusion.
 !
       if (lfirst.and.ldt) then
         diffus_chi=diffus_chi+gamma*chix*dxyz_2
@@ -1175,7 +1187,7 @@ module Entropy
     subroutine calc_heatcond_tensor(df,p)
 !
 !  Calculates heat conduction parallel and perpendicular (isotropic)
-!  to magnetic field lines
+!  to magnetic field lines.
 !  
 !  25-aug-09/bing: moved from dss_dt to here
 !
@@ -1185,6 +1197,7 @@ module Entropy
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
+!
       real, dimension (nx) :: cosbgT,gT2,b2
       real, dimension (nx) :: vKpara,vKperp,rhs
 !      
@@ -1215,49 +1228,54 @@ module Entropy
     endsubroutine calc_heatcond_tensor
 !***********************************************************************
     subroutine read_entropy_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=entropy_init_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=entropy_init_pars,ERR=99)
       endif
-
+!
 99    return
+!
     endsubroutine read_entropy_init_pars
 !***********************************************************************
     subroutine write_entropy_init_pars(unit)
+!
       integer, intent(in) :: unit
-
+!
       write(unit,NML=entropy_init_pars)
-
+!
     endsubroutine write_entropy_init_pars
 !***********************************************************************
     subroutine read_entropy_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=entropy_run_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=entropy_run_pars,ERR=99)
       endif
-
-
+!
 99    return
+!
     endsubroutine read_entropy_run_pars
 !***********************************************************************
     subroutine write_entropy_run_pars(unit)
+!
       integer, intent(in) :: unit
-
+!
       write(unit,NML=entropy_run_pars)
-
+!
     endsubroutine write_entropy_run_pars
 !***********************************************************************
     subroutine rprint_entropy(lreset,lwrite)
 !
-!  reads and registers print parameters relevant to entropy
+!  Reads and registers print parameters relevant to entropy.
 !
 !   1-jun-02/axel: adapted from magnetic fields
 !
@@ -1270,7 +1288,7 @@ module Entropy
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-!  reset everything in case of reset
+!  Reset everything in case of reset.
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
@@ -1299,7 +1317,7 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'thcool',idiag_thcool)
       enddo
 !
-!  write column where which variable is stored
+!  Write column where which variable is stored.
 !
       if (lwr) then
         write(3,*) 'nname=',nname
@@ -2072,7 +2090,7 @@ module Entropy
 !***********************************************************************
     subroutine dss_dt_after_mn(f,df,p)
 !
-! Do nothing.
+!  Do nothing.
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -2088,8 +2106,8 @@ module Entropy
 !***********************************************************************
     subroutine calc_pencils_entropy_after_mn(f,p)
 !
-! Do nothing 
-! DM+PC
+!  Do nothing 
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
