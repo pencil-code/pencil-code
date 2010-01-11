@@ -44,7 +44,7 @@ module Particles_radius
 !***********************************************************************
     subroutine register_particles_radius()
 !
-!  Set up indices for access to the fp and dfp arrays
+!  Set up indices for access to the fp and dfp arrays.
 !
 !  22-aug-05/anders: coded
 !
@@ -120,19 +120,19 @@ module Particles_radius
       endif
 !
       do j=1,ninit
-
         select case (initap(j))
-
+!
         case ('nothing')
-          if (initial.and.lroot.and.j==1) print*, 'set_particles_radius: nothing'
-
+          if (initial.and.lroot.and.j==1) &
+              print*, 'set_particles_radius: nothing'
+!
         case ('constant')
           if (initial.and.lroot) print*, 'set_particles_radius: constant radius'
           call random_number_wrapper(radius_fraction)
           ind=ceiling(npart_radii*radius_fraction)
           fp(npar_low:npar_high,iap)=ap0(ind)
+!
         endselect
-
       enddo
 !
       call keep_compiler_quiet(f)
@@ -205,7 +205,7 @@ module Particles_radius
                 call fatal_error('dap_dt', &
                     'must have passive scalar module for sweep-up')
               else
-!  Radius increase due to sweep-up
+!  Radius increase due to sweep-up.
                 dfp(k,iap) = dfp(k,iap) + &
                     0.25*deltavp*p%cc(ix0-nghost)*p%rho(ix0-nghost)/rhops
 !
@@ -219,7 +219,7 @@ module Particles_radius
                   df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) - &
                       np_tilde*pi*fp(k,iap)**2*deltavp
                 endif
-!  Time-step contribution
+!  Time-step contribution.
                 if (lfirst.and.ldt) then
                   dt1_sweepup(ix0-nghost) = dt1_sweepup(ix0-nghost) + &
                       np_tilde*pi*fp(k,iap)**2*deltavp
@@ -233,7 +233,7 @@ module Particles_radius
             endif
           enddo
         endif
-!  Time-step contribution
+!  Time-step contribution.
           if (lfirst.and.ldt) then
             dt1_sweepup=dt1_sweepup/cdtps
             dt1_max=max(dt1_max,dt1_sweepup)
@@ -262,7 +262,7 @@ module Particles_radius
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-!  Diagnostic output
+!  Diagnostic output.
 !
       if (ldiagnos) then
         if (idiag_apm/=0) call sum_par_name(fp(1:npar_loc,iap),idiag_apm)
@@ -291,12 +291,12 @@ module Particles_radius
         read(unit,NML=particles_radius_init_pars,ERR=99)
       endif
 !
-! Find how many different particle radii we are using
-! This must be done because not all parts of the code are adapted to 
-! work with more than one particle radius.
+!  Find how many different particle radii we are using. This must be done
+!  because not all parts of the code are adapted to work with more than one
+!  particle radius.
 !
       do i=1,ninit
-        if (ap0(i) .ne. 0) then
+        if (ap0(i)/=0) then
           npart_radii=npart_radii+1
         endif
       enddo
@@ -350,20 +350,20 @@ module Particles_radius
       integer :: iname
       logical :: lwr
 !
-!  Write information to index.pro
+!  Write information to index.pro.
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
       if (lwr) write(3,*) 'iap=', iap
 !
-!  Reset everything in case of reset
+!  Reset everything in case of reset.
 !
       if (lreset) then
         idiag_apm=0; idiag_ap2m=0; idiag_apmin=0; idiag_apmax=0
         idiag_dvp12m=0; idiag_dtsweepp=0
       endif
 !
-!  Run through all possible names that may be listed in print.in
+!  Run through all possible names that may be listed in print.in.
 !
       if (lroot.and.ip<14) &
           print*, 'rprint_particles_radius: run through parse list'
@@ -378,5 +378,4 @@ module Particles_radius
 !
     endsubroutine rprint_particles_radius
 !***********************************************************************
-
 endmodule Particles_radius
