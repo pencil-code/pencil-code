@@ -32,6 +32,7 @@ include 'NSCBC.h'
 !
   character(len=2*nscbc_len+1), dimension(3) :: nscbc_bc=''
   character(len=nscbc_len), dimension(3) :: nscbc_bc1,nscbc_bc2
+  character (len=labellen), dimension(ninit) :: inlet_profile='nothing'
   character(len=40) :: turb_inlet_dir=''
   real :: nscbc_sigma_out = 1.,nscbc_sigma_in = 1., p_infty=1.
   logical :: inlet_from_file=.false., jet_inlet=.false.
@@ -64,7 +65,7 @@ include 'NSCBC.h'
 !
   namelist /NSCBC_run_pars/  &
       nscbc_bc, nscbc_sigma_in, nscbc_sigma_out, p_infty, inlet_from_file,&
-      turb_inlet_dir,jet_inlet
+      turb_inlet_dir,jet_inlet,inlet_profile
 !
   contains
 !***********************************************************************
@@ -249,7 +250,8 @@ include 'NSCBC.h'
             elseif (j==2) then 
               call bc_nscbc_prf_y(f,df,topbot,.false.)
             elseif (j==3) then 
-              call fatal_error("nscbc_boundtreat_xyz",'bc_nscbc_prf_z is not yet implemented')
+              call fatal_error("nscbc_boundtreat_xyz",&
+                  'bc_nscbc_prf_z is not yet implemented')
             endif
           case ('part_ref_inlet')
 !   Partially reflecting inlet, ie, impose a velocity u_t.
@@ -266,7 +268,8 @@ include 'NSCBC.h'
                   u_t=valy(direction),T_t=T_t)
             elseif (j==3) then 
               direction = 3
-              call fatal_error("nscbc_boundtreat_xyz",'bc_nscbc_prf_z is not yet implemented')
+              call fatal_error("nscbc_boundtreat_xyz",&
+                  'bc_nscbc_prf_z is not yet implemented')
             endif
           case ('ref_inlet')
 !   Partially reflecting inlet, ie, impose a velocity u_t.
@@ -283,7 +286,8 @@ include 'NSCBC.h'
                   u_t=valy(direction),T_t=T_t)
             elseif (j==3) then 
               direction = 3
-              call fatal_error("nscbc_boundtreat_xyz",'bc_nscbc_prf_z is not yet implemented')
+              call fatal_error("nscbc_boundtreat_xyz",&
+                  'bc_nscbc_prf_z is not yet implemented')
             endif
           case ('subsonic_inflow')
 ! Subsonic inflow 
@@ -305,7 +309,8 @@ include 'NSCBC.h'
             print*,'nscbc_boundtreat_xyz: doing nothing!'
 !   Do nothing.
           case default
-            call fatal_error("nscbc_boundtreat_xyz",'You must specify nscbc bouncond!')
+            call fatal_error("nscbc_boundtreat_xyz",&
+                'You must specify nscbc bouncond!')
           endselect
         endif
       enddo
@@ -325,6 +330,7 @@ include 'NSCBC.h'
       use Deriv, only: der_onesided_4_slice, der_pencil, der2_pencil
       use Chemistry
       use Viscosity
+      use General, only: random_number_wrapper
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -351,7 +357,13 @@ include 'NSCBC.h'
       integer lll,i,jjj,kkk,j,k
       integer sgn
       real :: shift, grid_shift, weight, round
-      integer :: iround,lowergrid,uppergrid
+      integer :: iround,lowergrid,uppergrid,ii
+      real, dimension(3) :: velo,tmp
+      real, dimension(2) :: radius,theta
+      real :: radius_mean, velocity_ratio,An
+      logical :: non_zero_transveral_velo
+
+
 
       intent(inout) :: f
       intent(inout) :: df
@@ -530,6 +542,7 @@ include 'NSCBC.h'
 !  Find velocity at inlet
 !
         if (inlet_from_file) then
+          non_zero_transveral_velo=.true.
           if (Lx_in == 0) call fatal_error('bc_nscbc_prf_x',&
               'Lx_in=0. Check that the precisions are the same.')
           round=t*u_t/Lx_in
@@ -543,56 +556,123 @@ include 'NSCBC.h'
               =f_in(lowergrid,m1_in:m2_in,n1_in:n2_in,iux:iuz)*(1-weight)&
               +f_in(uppergrid,m1_in:m2_in,n1_in:n2_in,iux:iuz)*weight
           u_in(:,:,1)=u_in(:,:,1)+u_t
-        elseif (jet_inlet) then
+        else
 !
-! Find outer and inner diameters of jets and coflow
-!          
-          jet_center(1)=0
-          jet_center(2)=0
-          jet_velocity(1)=u_t*15.
-          jet_inner_diameter(1)=0.0
-          jet_outer_diameter(1)=1e-2
-          jet_inner_diameter(2)=jet_outer_diameter(1)+2e-4
-          if (jet_outer_diameter(2)==0) then
-            coflow_inner_diameter=jet_inner_diameter(2)
-          else
-            coflow_inner_diameter=jet_inner_diameter(3)
-          endif
+! Define velocity profile at inlet
+!
+          u_in=0
+          do j=1,ninit
+            select case (inlet_profile(j))
+            case ('nothing')
+              if (lroot .and. it==1 .and. j == 1 .and. lfirst) &
+                  print*,'inlet_profile: nothing'
+              non_zero_transveral_velo=.false.
+            case ('uniform')
+              if (lroot .and. it==1 .and. lfirst) &
+                  print*,'inlet_profile: uniform'
+              non_zero_transveral_velo=.false.
+              u_in(:,:,1)=u_in(:,:,1)+u_t
+            case ('coaxial_jet')
+              if (lroot .and. it==1 .and. lfirst) &
+                  print*,'inlet_profile: coaxial_jet'
+              non_zero_transveral_velo=.true.
+              velocity_ratio=3.3
+              velo(1)=u_t
+              velo(2)=velo(1)*velocity_ratio
+              velo(3)=0.04*velo(2)
+              radius(1)=0.0182
+              radius(2)=radius(1)*2.
+              radius_mean=(radius(1)+radius(2))/2.
+              theta(1)=radius(1)/13.
+              theta(2)=radius(2)/20.
+              jet_center(1)=0
+              jet_center(2)=0
 !
 ! Set velocity profiles
 !          
-          u_in(:,:,2)=0
-          u_in(:,:,3)=0
-          do jjj=1,ny
-            do kkk=1,nz
-              rad=sqrt((y(jjj+m1-1)-jet_center(1))**2+(z(kkk+n1-1)-jet_center(2))**2)
-              if (rad >= coflow_inner_diameter/2) then
-                u_in(jjj,kkk,1)=u_t
-              elseif(&
-                  (rad < jet_outer_diameter(2)/2) .and. &
-                  (rad >= jet_inner_diameter(2)/2)) then
-                u_in(jjj,kkk,1)=jet_velocity(2)
-              elseif(&
-                  (rad < jet_outer_diameter(1)/2) .and. &
-                  (rad >= jet_inner_diameter(1)/2)) then
-                u_in(jjj,kkk,1)=jet_velocity(1)&
-                    *(1-(rad**2/(jet_outer_diameter(1)/2)**2))
+              do jjj=1,ny
+                do kkk=1,nz
+                  rad=sqrt(&
+                      (y(jjj+m1-1)-jet_center(1))**2+&
+                      (z(kkk+n1-1)-jet_center(2))**2)
+                  ! Add mean velocity profile
+                  if (rad < radius_mean) then
+                    u_in(jjj,kkk,1)=u_in(jjj,kkk,1)&
+                        +(velo(1)+velo(2))/2&
+                        +(velo(2)-velo(1))/2*tanh((rad-radius(1))/(2*theta(1)))
+                  else
+                    u_in(jjj,kkk,1)=u_in(jjj,kkk,1)&
+                        +(velo(2)+velo(3))/2&
+                        +(velo(3)-velo(2))/2*tanh((rad-radius(2))/(2*theta(2)))
+                  endif
+                  ! Add random noice
+!!$                  call random_number_wrapper(tmp)
+!!$                  An=0.04
+!!$                  if (rad < 0.85*radius(1) ) then
+!!$                    do ii=1,3
+!!$                      u_in(jjj,kkk,ii)=u_in(jjj,kkk,ii)*(1+0.5*(tmp(ii)-0.5)*An)
+!!$                    enddo
+!!$                  elseif ((rad>0.85*radius(1)).and.(rad<1.15*radius(1))) then 
+!!$                    do ii=1,3
+!!$                      u_in(jjj,kkk,ii)=u_in(jjj,kkk,ii)*(1+1.0*(tmp(ii)-0.5)*An)
+!!$                    enddo
+!!$                  elseif ((rad>0.85*radius(2)).and.(rad<1.15*radius(2))) then
+!!$                    do ii=1,3
+!!$                      u_in(jjj,kkk,ii)=u_in(jjj,kkk,ii)*(1+1.0*(tmp(ii)-0.5)*An)
+!!$                    enddo
+!!$                  endif                   
+                enddo
+              enddo
+            case ('test_jet')
+              if (lroot .and. it==1 .and. lfirst) &
+                  print*,'inlet_profile: test_jet'
+              non_zero_transveral_velo=.false.
+              jet_center(1)=0
+              jet_center(2)=0
+              jet_velocity(1)=u_t*15.
+              jet_inner_diameter(1)=0.0
+              jet_outer_diameter(1)=1e-2
+              jet_inner_diameter(2)=jet_outer_diameter(1)+2e-4
+              if (jet_outer_diameter(2)==0) then
+                coflow_inner_diameter=jet_inner_diameter(2)
               else
-                u_in(jjj,kkk,1)=0
+                coflow_inner_diameter=jet_inner_diameter(3)
               endif
-            enddo
+!
+! Set velocity profiles
+!          
+              do jjj=1,ny
+                do kkk=1,nz
+                  rad=sqrt(&
+                      (y(jjj+m1-1)-jet_center(1))**2+&
+                      (z(kkk+n1-1)-jet_center(2))**2)
+                  if (rad >= coflow_inner_diameter/2) then
+                    u_in(jjj,kkk,1)=u_in(jjj,kkk,1)+u_t
+                  elseif(&
+                      (rad < jet_outer_diameter(2)/2) .and. &
+                      (rad >= jet_inner_diameter(2)/2)) then
+                    u_in(jjj,kkk,1)=u_in(jjj,kkk,1)+jet_velocity(2)
+                  elseif(&
+                      (rad < jet_outer_diameter(1)/2) .and. &
+                      (rad >= jet_inner_diameter(1)/2)) then
+                    u_in(jjj,kkk,1)=u_in(jjj,kkk,1)+jet_velocity(1)&
+                        *(1-(rad**2/(jet_outer_diameter(1)/2)**2))
+                  else
+                    u_in(jjj,kkk,1)=u_in(jjj,kkk,1)+0
+                  endif
+                enddo
+              enddo
+
+            end select
           enddo
-        else
-          u_in(:,:,1)=u_t
-          u_in(:,:,2)=0.
-          u_in(:,:,3)=0.
         endif
         if (non_reflecting_inlet) then
           if (ilnTT>0) then
-            call fatal_error('NSCBC.f90','non reflecting inlet is not implemented for ilnTT>0')
+            call fatal_error('NSCBC.f90',&
+                'non reflecting inlet is not implemented for ilnTT>0')
           endif
 !
-!  The inlet in non-reflecting only when nscbc_sigma_in is set to 0, this 
+!  The inlet iw non-reflecting only when nscbc_sigma_in is set to 0, this 
 !  might however lead to problems as the inlet velocity will tend to drift 
 !  away from the target velocity u_t. This problem should be overcome by 
 !  setting a small but non-zero nscbc_sigma_in.
@@ -618,8 +698,6 @@ include 'NSCBC.h'
 !
 !  Find the L_i's
 !
-!!$print*,'KK,nscbc_sigma_out,Mach,cs0_average,Lxyz(1),rho0,=',KK,nscbc_sigma_out,Mach,cs0_average,Lxyz(1),rho0
-!!$print*,'cs20_ar(m1:m2,n1:n2),gamma(m1:m2,n1:n2),p_infty=',cs20_ar(m1:m2,n1:n2),gamma(m1:m2,n1:n2),p_infty
         L_1 = KK*(rho0*cs20_ar(m1:m2,n1:n2)/gamma(m1:m2,n1:n2)-p_infty)
         if (ilnTT > 0) then 
           L_2=f(lll,m1:m2,n1:n2,iux)*&
@@ -727,8 +805,13 @@ include 'NSCBC.h'
       if (llinlet) then
         if (.not. non_reflecting_inlet) then
           f(lll,m1:m2,n1:n2,iux) = u_in(:,:,1)
-          f(lll,m1:m2,n1:n2,iuy) = u_in(:,:,2)
-          f(lll,m1:m2,n1:n2,iuz) = u_in(:,:,3)
+          if (non_zero_transveral_velo) then
+            f(lll,m1:m2,n1:n2,iuy) = u_in(:,:,2)
+            f(lll,m1:m2,n1:n2,iuz) = u_in(:,:,3)
+          else
+            f(lll,m1:m2,n1:n2,iuy) = 0.
+            f(lll,m1:m2,n1:n2,iuz) = 0.
+          endif
           if (ilnTT>0) then
             f(lll,m1:m2,n1:n2,ilnTT) = T_t
           endif
@@ -1121,7 +1204,11 @@ include 'NSCBC.h'
       integer :: i,stat 
       logical :: exist
       character (len=130) :: file
-
+!
+! Define default for the inlet_profile for backward compatibility
+!
+      inlet_profile(1)='uniform'
+!
       if (present(iostat)) then
         read(unit,NML=NSCBC_run_pars,ERR=99, IOSTAT=iostat)
       else
