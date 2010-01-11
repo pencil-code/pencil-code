@@ -126,7 +126,7 @@ module Chemistry
       lambda_const, visc_const,Cp_const,Cv_const,diffus_const,init_x1,init_x2, & 
       init_y1,init_y2,init_z1,init_z2,&
       init_TT1,init_TT2,init_ux,init_uy,init_uz,l1step_test,Sc_number,init_pressure,lfix_Sc, str_thick, &
-      lfix_Pr,lT_tanh,ldamp_zone_NSCBC, lT_const
+      lfix_Pr,lT_tanh,ldamp_zone_NSCBC, lT_const,lheatc_chemistry
 
 
 ! run parameters
@@ -1314,6 +1314,8 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
            enddo
           enddo
 
+
+
 !
 ! NILS: Is this really necesarry?
 !
@@ -1405,7 +1407,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
           enddo
         endif
 
-         
+      
 !
 !  Binary diffusion coefficients
 !
@@ -1414,6 +1416,8 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
           if (tran_exist) then
             call calc_diff_visc_coef(f)
           endif
+
+   
 !
 !  Viscosity of a mixture
 !
@@ -1461,7 +1465,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
         enddo
         enddo
        endif
-
 !
 !  Diffusion coeffisient of a mixture
 !
@@ -1513,10 +1516,13 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
          enddo
          enddo
          enddo
+
 !
 !  Thermal diffusivity
 !
         if (lheatc_chemistry) call calc_therm_diffus_coef(f)
+
+
 !
 !  Dimensionless Standard-state molar enthalpy H0/RT
 !
@@ -2109,7 +2115,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
         sum_DYDt=0.
         do i=1,nx
 
-        sum_DYDt(i)=-p%rho(1)*(p%TT(i)-Tinf)/p%TT(i) &
+        sum_DYDt(i)=-p%rho(1)*(p%TT(i)-Tinf)*p%TT1(i) &
            *Cp_const/lambda_const*beta*(beta-1.)*f(l1,m,n,iux)**2
 
       !   if (p%TT(i)>Tc) then
@@ -2162,7 +2168,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
           else
             RHS_T_full(l1:l2,m,n)=(sum_DYDt(:)-Rgas*p%mu1*p%divu)*p%cv1 &
         
-           +sum_dk_ghk/p%TT(:)*p%cv1+sum_hhk_DYDt_reac/p%TT(:)*p%cv1
+           +sum_dk_ghk*p%TT1(:)*p%cv1+sum_hhk_DYDt_reac*p%TT1(:)*p%cv1
            
           endif
         endif
@@ -3565,7 +3571,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
           B_n_0=low_coeff(1,reac)
           alpha_n_0=low_coeff(2,reac)
           E_an_0=low_coeff(3,reac)
-          kf_0(:)=B_n_0*p%TT(:)**alpha_n_0*exp(-E_an_0/Rcal/p%TT(:))
+          kf_0(:)=B_n_0*p%TT(:)**alpha_n_0*exp(-E_an_0/Rcal*p%TT1(:))
           Pr=kf_0/kf*mix_conc
           kf=kf*(Pr/(1.+Pr))
     !      kr(:)=kf(:)/Kc_0
@@ -3574,7 +3580,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
           B_n_0=high_coeff(1,reac)
           alpha_n_0=high_coeff(2,reac)
           E_an_0=high_coeff(3,reac)
-          kf_0(:)=B_n_0*p%TT(:)**alpha_n_0*exp(-E_an_0/Rcal/p%TT(:))
+          kf_0(:)=B_n_0*p%TT(:)**alpha_n_0*exp(-E_an_0/Rcal*p%TT1(:))
           Pr=kf_0/kf*mix_conc
           kf=kf*(1./(1.+Pr))
     !      kr(:)=kf(:)/Kc_0
