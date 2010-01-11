@@ -53,6 +53,7 @@ module Entropy
   real :: r_bcz=0.0, chi_shock=0.0, chi_hyper3=0.0
   real :: Tbump=0.0, Kmin=0.0, Kmax=0.0, hole_slope=0.0, hole_width=0.0
   real :: hole_alpha ! initialized _after_ the reading
+  real :: hcond0=impossible, hcond1=1.0, Fbot=impossible
   integer, parameter :: nheatc_max=2
   logical :: lpressuregradient_gas=.true., ladvection_temperature=.true.
   logical :: lupw_lnTT=.false., lcalc_heat_cool=.false., lheatc_hyper3=.false.
@@ -60,20 +61,15 @@ module Entropy
   logical :: lheatc_tensordiffusion=.false.
   logical :: lheatc_chiconst=.false., lheatc_chiconst_accurate=.false.
   logical :: lfreeze_lnTTint=.false., lfreeze_lnTText=.false.
-  character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   logical :: lhcond_global=.false.
   logical :: lheatc_shock=.false., lheatc_hyper3_polar=.false.
   logical :: lviscosity_heat=.true.
   integer :: iglobal_hcond=0
   integer :: iglobal_glhc=0
   logical :: linitial_log=.false.
+  character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
   character (len=5) :: iinit_str
-
-! Delete (or use) me asap!
-  real :: hcond0=impossible, hcond1=1.0
-  real :: Fbot=impossible, FbotKbot, Ftop, Kbot, FtopKtop
-  logical :: lmultilayer=.false.
 !
 !  Input parameters.
 !
@@ -136,13 +132,13 @@ module Entropy
 !  Writing files for use with IDL.
 !
       if (lroot) then
-         if (maux == 0) then
-            if (nvar < mvar) write(4,*) ',lnTT $'
-            if (nvar == mvar) write(4,*) ',lnTT'
-         else
-            write(4,*) ',lnTT $'
-         endif
-         write(15,*) 'lnTT = fltarr(mx,my,mz)*one'
+        if (maux == 0) then
+           if (nvar < mvar) write(4,*) ',lnTT $'
+           if (nvar == mvar) write(4,*) ',lnTT'
+        else
+           write(4,*) ',lnTT $'
+        endif
+        write(15,*) 'lnTT = fltarr(mx,my,mz)*one'
       endif
 !                                       
     endsubroutine register_entropy
@@ -287,22 +283,22 @@ module Entropy
 !
 !  Some tricks regarding Fbot and hcond0 when bcz1='c1' (constant flux).
 !
-      if (hole_slope.eq.0.) then
-       if (bcz1(ilnTT)=='c1' .and. lrun) then
-        if (Fbot==impossible .and. hcond0 /= impossible) then
-          Fbot=-gamma/gamma_m1*hcond0*gravz/(mpoly0+1.)
-          if (lroot) print*, &
-                     'initialize_entropy: Calculated Fbot = ', Fbot
+      if (hole_slope==0.0) then
+        if (bcz1(ilnTT)=='c1' .and. lrun) then
+          if (Fbot==impossible .and. hcond0 /= impossible) then
+            Fbot=-gamma/gamma_m1*hcond0*gravz/(mpoly0+1.0)
+            if (lroot) print*, &
+                'initialize_entropy: Calculated Fbot = ', Fbot
+          endif
+          if (hcond0==impossible .and. Fbot /= impossible) then
+            hcond0=-Fbot*gamma_m1/gamma*(mpoly0+1.0)/gravz
+            if (lroot) print*, &
+                'initialize_entropy: Calculated hcond0 = ', hcond0
+          endif
+          if (Fbot==impossible .and. hcond0==impossible) &
+            call fatal_error('temperature_idealgas',  &
+                'Both Fbot and hcond0 are unknown')
         endif
-        if (hcond0==impossible .and. Fbot /= impossible) then
-          hcond0=-Fbot*gamma_m1/gamma*(mpoly0+1.)/gravz
-          if (lroot) print*, &
-                     'initialize_entropy: Calculated hcond0 = ', hcond0
-        endif
-        if (Fbot==impossible .and. hcond0==impossible) &
-          call fatal_error('temperature_idealgas',  &
-                           'Both Fbot and hcond0 are unknown')
-       endif
       endif
 !
 !  30-nov-2007/dintrans: now hcond0 and Fbot are passed to boundcond()
@@ -345,13 +341,13 @@ module Entropy
       endif
 !
       if (iheatcond(1)=='nothing') then
-        if (hcond0 /= impossible) call warning('initialize_entropy', 'No heat conduction, but hcond0 /= 0')
-        if (chi /= impossible) call warning('initialize_entropy', 'No heat conduction, but chi /= 0')
+        if (hcond0/=impossible) call warning('initialize_entropy', 'No heat conduction, but hcond0/=0')
+        if (chi/=impossible) call warning('initialize_entropy', 'No heat conduction, but chi/=0')
       endif
 !
       call put_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
-      if (ierr/=0) call stop_it("initialize_entropy in temperature_idealgas: "//&
-           "there was a problem when putting lviscosity_heat")
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting lviscosity_heat')
 !
       call keep_compiler_quiet(lstarting)
 !
@@ -389,7 +385,7 @@ module Entropy
 
           call chn(j,iinit_str)
 !
-!  select different initial conditions
+!  Select between various initial conditions.
 !
           select case (initlnTT(j))
           case ('zero', '0'); f(:,:,:,ilnTT) = 0.
@@ -451,7 +447,7 @@ module Entropy
 !
           case default
 !
-!  Catch unknown values
+!  Catch unknown values.
 !
             write(unit=errormsg,fmt=*) 'No such value for initss(' &
                            //trim(iinit_str)//'): ',trim(initlnTT(j))
@@ -464,7 +460,7 @@ module Entropy
         endif
       enddo
 !
-!  Interface for user's own initial condition
+!  Interface for user's own initial condition.
 !
       if (linitial_condition) call initial_condition_ss(f)
 !
@@ -563,7 +559,7 @@ module Entropy
         endif
       endif
 !
-!  Diagnostics
+!  Diagnostic pencils.
 !
       if (idiag_TTmax/=0) lpenc_diagnos(i_TT)  =.true.
       if (idiag_gTmax/=0) then
@@ -633,23 +629,15 @@ module Entropy
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       type (pencil_case), intent (inout) :: p
       integer :: j
-!
-!  Mach Speed
-!
+!  Ma2
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
-!
-!  Temperature advection
-!  (Needs to be here because of lupw_lnTT)
-!
+!  uglnTT
       if (lpencil(i_uglnTT)) &
-        call u_dot_grad(f,ilnTT,p%glnTT,p%uu,p%uglnTT,UPWIND=lupw_lnTT)
-!
-      if (lpencil(i_ugTT)) then
-        call u_dot_grad(f,ilnTT,p%gTT,p%uu,p%ugTT,UPWIND=lupw_lnTT)
-      endif
-!
+          call u_dot_grad(f,ilnTT,p%glnTT,p%uu,p%uglnTT,UPWIND=lupw_lnTT)
+!  ugTT
+      if (lpencil(i_ugTT)) &
+          call u_dot_grad(f,ilnTT,p%gTT,p%uu,p%ugTT,UPWIND=lupw_lnTT)
 ! fpres
-!
       if (lpencil(i_fpres)) then
         do j=1,3
           p%fpres(:,j)=-p%cs2*(p%glnrho(:,j) + p%glnTT(:,j))*gamma_inv
@@ -660,9 +648,7 @@ module Entropy
 !***********************************************************************
     subroutine dss_dt(f,df,p)
 !
-!  Calculate right hand side of temperature equation
-!  Heat condution is currently disabled until old stuff,
-!  which in now in calc_heatcond, has been reinstalled.
+!  Calculate right hand side of temperature equation.
 !
 !  lnTT version: DlnTT/Dt = -gamma_m1*divu + gamma*cp1*rho1*TT1*RHS
 !    TT version:   DTT/Dt = -gamma_m1*TT*divu + gamma*cp1*rho1*RHS
@@ -679,7 +665,8 @@ module Entropy
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx) :: Hmax=0., hcond, thdiff=0.,tmp
+!
+      real, dimension (nx) :: Hmax=0.0, hcond, thdiff=0.0, tmp
       real :: fradtop
       integer :: j
 !
@@ -801,7 +788,7 @@ module Entropy
         if (idiag_TTmin/=0) call max_mn_name(-p%TT,idiag_TTmin,lneg=.true.)
         if (idiag_TTm/=0)   call sum_mn_name(p%TT,idiag_TTm)
         if (idiag_fradtop/=0.and.n==n2) then
-          call heatcond_TT(p%TT, hcond)
+          call heatcond_TT(p%TT,hcond)
           fradtop=sum(-hcond*p%glnTT(:,3))/nx
           call save_name(fradtop, idiag_fradtop)
         endif
@@ -819,9 +806,11 @@ module Entropy
 !***********************************************************************
     subroutine calc_heatcond_shock(df,p)
 !
-!  Adds in shock diffusion to the temperature equation.
-!  Ds/Dt = ... + 1/(rho*T) grad(flux), where
-!  flux = chi_shock*rho*T*grads
+!  Add shock diffusion to the temperature equation.
+!
+!    Ds/Dt = ... + 1/(rho*T) grad(flux)
+!
+!  where flux = chi_shock*rho*T*grads.
 !  (in comments we say chi_shock, but in the code this is "chi_shock*p%shock")
 !
 !  01-aug-08/wlad: adapted from entropy
