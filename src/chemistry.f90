@@ -4321,7 +4321,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
      enddo
      enddo
 !
-
     endsubroutine get_cs2_full
 !***********************************************************************
    subroutine get_cs2_slice(slice,dir,index)
@@ -5118,6 +5117,8 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
          else
           TT0=exp(f(lll,:,:,ilnTT))
          endif
+
+
 
         if (ldensity_nolog) then
           rho_full = f(:,:,:,irho)
@@ -6240,15 +6241,18 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
        ux_ref=0.
        uy_ref=0.
        uz_ref=0.
-       lnrho_ref=-7.73236
-       lnTT_ref=6.39693
+     !  lnrho_ref=-7.73236
+       lnTT_ref=log(init_TT1)
 
-  
+      lnrho_ref=&
+         log(init_pressure)-log(Rgas)-lnTT_ref-log(mu1_full(l1,m1,n1)) 
+
         do j1=l1,l2
                  
        if (nxgrid/=1) then
 
-         
+        
+          
          sz1_x=(xyz0(1)+Lxyz(1)*del)
          sz2_x=(xyz0(1)+Lxyz(1)*(1.-del))
         
@@ -6285,6 +6289,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       !            'you should increase nygrid!')
 
           
+
          sz1=(xyz0(2)+Lxyz(2)*del)
          sz2=(xyz0(2)+Lxyz(2)*(1.-del))
 
