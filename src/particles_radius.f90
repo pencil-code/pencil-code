@@ -25,17 +25,18 @@ module Particles_radius
 !
   real :: vthresh_sweepup=-1.0, deltavp12_floor=0.0
   real, dimension (ninit) :: ap0=0.0
-  real :: tstart_sweepup_par=0.0, cdtps=0.2
-  logical :: lsweepup_par=.true.
+  real :: tstart_sweepup_par=0.0, cdtps=0.2, cdtpc=0.2
+  real :: tstart_condensation_par=0.0, apcrit=0.0
+  logical :: lsweepup_par=.true., lcondensation_par=.false.
   character (len=labellen), dimension(ninit) :: initap='nothing'
 !
   namelist /particles_radius_init_pars/ &
-      initap, ap0, rhops, vthresh_sweepup, deltavp12_floor, &
-      lsweepup_par, tstart_sweepup_par, cdtps
+      initap, ap0, rhops, vthresh_sweepup, deltavp12_floor, apcrit, &
+      lsweepup_par, lcondensation_par, tstart_sweepup_par, cdtps
 !
   namelist /particles_radius_run_pars/ &
-      rhops, vthresh_sweepup, deltavp12_floor, &
-      lsweepup_par, tstart_sweepup_par, cdtps
+      rhops, vthresh_sweepup, deltavp12_floor, apcrit, &
+      lsweepup_par, lcondensation_par, tstart_sweepup_par, cdtps
 !
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
   integer :: idiag_dvp12m=0, idiag_dtsweepp=0
@@ -80,14 +81,12 @@ module Particles_radius
 !
 !  Calculate the number density of bodies within a superparticle.
 !
-      if (npart_radii > 1 .and. &
-          (.not. lcartesian_coords .or. &
-          lparticles_nbody .or. &
-          lparticles_number .or. &
-          lparticles_spin)) then 
+      if (npart_radii>1 .and. &
+          (.not. lcartesian_coords .or. lparticles_nbody .or. &
+          lparticles_number .or. lparticles_spin)) then 
         call fatal_error('initialize_particles_radius: npart_radii > 1','')
       else
-        mp_tilde=4/3.*pi*rhops*ap0(1)**3
+        mp_tilde=4/3.0*pi*rhops*ap0(1)**3
         if (lroot) print*, 'initialize_particles_radius: '// &
             'mass per dust grain mp_tilde=', mp_tilde
       endif
@@ -166,8 +165,8 @@ module Particles_radius
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real, dimension (nx) :: dt1_sweepup
-      real :: deltavp, np_tilde
+      real, dimension (nx) :: dt1_sweepup, dt1_condensation, cs
+      real :: deltavp, np_tilde, ppsat, dapdt, supsatratio1
       integer :: k, ix0
       logical :: lheader, lfirstcall=.true.
 !
@@ -204,28 +203,29 @@ module Particles_radius
               if (.not. lpscalar) then
                 call fatal_error('dap_dt', &
                     'must have passive scalar module for sweep-up')
-              else
+              endif
 !  Radius increase due to sweep-up.
-                dfp(k,iap) = dfp(k,iap) + &
-                    0.25*deltavp*p%cc(ix0-nghost)*p%rho(ix0-nghost)/rhops
+              dfp(k,iap) = dfp(k,iap) + &
+                  0.25*deltavp*p%cc(ix0-nghost)*p%rho(ix0-nghost)/rhops
 !
 !  Deplete gas of small grains.
 !
-                call get_nptilde(fp,k,np_tilde)
-                if (lpscalar_nolog) then
-                  df(ix0,m,n,icc) = df(ix0,m,n,icc) - &
-                      np_tilde*pi*fp(k,iap)**2*deltavp*p%cc(ix0-nghost)
-                else
-                  df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) - &
-                      np_tilde*pi*fp(k,iap)**2*deltavp
-                endif
-!  Time-step contribution.
-                if (lfirst.and.ldt) then
-                  dt1_sweepup(ix0-nghost) = dt1_sweepup(ix0-nghost) + &
-                      np_tilde*pi*fp(k,iap)**2*deltavp
-                endif
-!
+              call get_nptilde(fp,k,np_tilde)
+              if (lpscalar_nolog) then
+                df(ix0,m,n,icc) = df(ix0,m,n,icc) - &
+                    np_tilde*pi*fp(k,iap)**2*deltavp*p%cc(ix0-nghost)
+              else
+                df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) - &
+                    np_tilde*pi*fp(k,iap)**2*deltavp
               endif
+!
+!  Time-step contribution of sweep-up.
+!
+              if (lfirst.and.ldt) then
+                dt1_sweepup(ix0-nghost) = dt1_sweepup(ix0-nghost) + &
+                    np_tilde*pi*fp(k,iap)**2*deltavp
+              endif
+!
             endif
 !
             if (ldiagnos) then
@@ -233,7 +233,9 @@ module Particles_radius
             endif
           enddo
         endif
-!  Time-step contribution.
+!
+!  Time-step contribution of sweep-up.
+!
           if (lfirst.and.ldt) then
             dt1_sweepup=dt1_sweepup/cdtps
             dt1_max=max(dt1_max,dt1_sweepup)
@@ -241,7 +243,61 @@ module Particles_radius
                 call max_mn_name(dt1_sweepup,idiag_dtsweepp,l_dt=.true.)
           endif
 !
-      endif
+      endif  ! if (lsweepup_par)
+!
+!  Increase in particle radius due to condensation of monomers from the gas.
+!
+      if (lcondensation_par .and. t>=tstart_condensation_par) then
+!
+        if (lfirst.and.ldt) dt1_sweepup=0.0
+!
+        if (npar_imn(imn)/=0) then
+          cs=sqrt(p%cs2)   ! Should actually be thermal speed of vapor
+          do k=k1_imn(imn),k2_imn(imn)
+            ix0=ineargrid(k,1)
+            if (.not. lpscalar) then
+              call fatal_error('dap_dt', &
+                  'must have passive scalar module for condensation')
+            endif
+            ppsat=6.035e12*exp(-5938*p%TT1(ix0-nghost))  ! Valid for water
+            supsatratio1=ppsat/p%ppvap(ix0-nghost)
+!
+!  Radius increase by condensation or decrease by evaporation.
+!
+            dapdt=cs(ix0-nghost)*p%cc(ix0-nghost)*p%rho(ix0-nghost)/rhops* &
+                (1.0-supsatratio1)
+            if (dapdt<0.0.and.apcrit/=0.0) dapdt=dapdt/(1+apcrit/fp(k,iap))
+            dfp(k,iap)=dfp(k,iap)+dapdt
+!
+!  Deplete gas of small grains.
+!
+            call get_nptilde(fp,k,np_tilde)
+            if (lpscalar_nolog) then
+              df(ix0,m,n,icc) = df(ix0,m,n,icc) - dapdt* &
+                  (4/3.0)*pi*fp(k,iap)**2*rhops*p%rho1(ix0-nghost)*np_tilde
+            else
+              df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) - dapdt* &
+                  (4/3.0)*pi*fp(k,iap)**2*rhops*p%rho1(ix0-nghost)*np_tilde* &
+                  p%cc1(ix0-nghost)
+            endif
+!
+!  Time-step contribution of condensation.
+!
+            if (lfirst.and.ldt) then
+              dt1_condensation(ix0-nghost) = dt1_condensation(ix0-nghost) + &
+                  np_tilde*pi*fp(k,iap)**2*deltavp
+            endif
+          enddo
+        endif
+!
+!  Time-step contribution of condensation.
+!
+          if (lfirst.and.ldt) then
+            dt1_condensation=dt1_condensation/cdtpc
+            dt1_max=max(dt1_max,dt1_condensation)
+          endif
+!
+      endif  ! if (lcondensation_par)
 !
       lfirstcall=.false.
 !
