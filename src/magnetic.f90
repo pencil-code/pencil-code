@@ -436,7 +436,8 @@ module Magnetic
   integer :: idiag_bxbymxz=0    ! DIAG_DOC: $\left< B_x B_y \right>_{y}$
   integer :: idiag_bxbzmxz=0    ! DIAG_DOC: $\left< B_x B_z \right>_{y}$
   integer :: idiag_bybzmxz=0    ! DIAG_DOC: $\left< B_y B_z \right>_{y}$
-  integer :: idiag_uxbm=0       ! DIAG_DOC:
+  integer :: idiag_uxbm=0       ! DIAG_DOC: $\left<\uv\times\Bv\right>\cdot\Bv_0/B_0^2$
+  integer :: idiag_jxbm=0       ! DIAG_DOC: $\left<\jv\times\Bv\right>\cdot\Bv_0/B_0^2$
   integer :: idiag_oxuxbm=0     ! DIAG_DOC:
   integer :: idiag_jxbxbm=0     ! DIAG_DOC:
   integer :: idiag_gpxbm=0      ! DIAG_DOC:
@@ -448,9 +449,9 @@ module Magnetic
   integer :: idiag_EMFdotBm=0   ! DIAG_DOC:
   integer :: idiag_udotxbm=0    ! DIAG_DOC:
   integer :: idiag_uxbdotm=0    ! DIAG_DOC:
-  integer :: idiag_uxbmx=0      ! DIAG_DOC:
-  integer :: idiag_uxbmy=0      ! DIAG_DOC:
-  integer :: idiag_uxbmz=0      ! DIAG_DOC:
+  integer :: idiag_uxbmx=0      ! DIAG_DOC: $\left<(\uv\times\Bv)_x\right>$
+  integer :: idiag_uxbmy=0      ! DIAG_DOC: $\left<(\uv\times\Bv)_y\right>$
+  integer :: idiag_uxbmz=0      ! DIAG_DOC: $\left<(\uv\times\Bv)_z\right>$
   integer :: idiag_uxbcmx=0     ! DIAG_DOC:
   integer :: idiag_uxbcmy=0     ! DIAG_DOC:
   integer :: idiag_uxbsmx=0     ! DIAG_DOC:
@@ -1955,7 +1956,8 @@ module Magnetic
 !
       real, dimension (nx,3) :: geta,uxDxuxb,fres,uxb_upw,tmp2
       real, dimension (nx,3) :: exa,exj,dexb,phib,aa_xyaver
-      real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
+      real, dimension (nx) :: jxb_dotB0,uxb_dotB0
+      real, dimension (nx) :: oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: uj,aj,phi
       real, dimension (nx) :: uxj_dotB0,b3b21,b1b32,b2b13
       real, dimension (nx) :: sign_jo,rho1_jxb
@@ -2695,6 +2697,12 @@ module Magnetic
 !  Calculate <u.(jxb)>.
 !
         if (idiag_ujxbm/=0) call sum_mn_name(p%ujxb,idiag_ujxbm)
+!
+!  Calculate <jxb>.B_0/B_0^2.
+!
+        jxb_dotB0=B_ext(1)*p%jxb(:,1)+B_ext(2)*p%jxb(:,2)+B_ext(3)*p%jxb(:,3)
+        jxb_dotB0=jxb_dotB0*B_ext21
+        if (idiag_jxbm/=0) call sum_mn_name(jxb_dotB0,idiag_jxbm)
 !
 !  Magnetic triple correlation term (for imposed field).
 !
@@ -5794,7 +5802,7 @@ module Magnetic
         idiag_bxbzmxy=0; idiag_bybzmxy=0; idiag_bxbymxz=0; idiag_bxbzmxz=0
         idiag_bybzmxz=0; idiag_bxmxz=0; idiag_bymxz=0; idiag_bzmxz=0
         idiag_axmxz=0; idiag_aymxz=0; idiag_azmxz=0; idiag_Exmxz=0
-        idiag_Eymxz=0; idiag_Ezmxz=0; idiag_uxbm=0; idiag_oxuxbm=0
+        idiag_Eymxz=0; idiag_Ezmxz=0; idiag_jxbm=0; idiag_uxbm=0; idiag_oxuxbm=0
         idiag_jxbxbm=0; idiag_gpxbm=0; idiag_uxDxuxbm=0; idiag_uxbmx=0
         idiag_uxbmy=0; idiag_uxbmz=0; idiag_uxbcmx=0; idiag_uxbsmx=0
         idiag_uxbcmy=0; idiag_uxbsmy=0; idiag_examz1=0; idiag_examz2=0
@@ -5899,6 +5907,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'jxbrym',idiag_jxbrym)
         call parse_name(iname,cname(iname),cform(iname),'jxbrzm',idiag_jxbrzm)
         call parse_name(iname,cname(iname),cform(iname),'jxbr2m',idiag_jxbr2m)
+        call parse_name(iname,cname(iname),cform(iname),'jxbm',idiag_jxbm)
         call parse_name(iname,cname(iname),cform(iname),'uxbm',idiag_uxbm)
         call parse_name(iname,cname(iname),cform(iname),'uxbmx',idiag_uxbmx)
         call parse_name(iname,cname(iname),cform(iname),'uxbmy',idiag_uxbmy)
@@ -6249,6 +6258,7 @@ module Magnetic
         write(3,*) 'i_bxbzm=',idiag_bxbzm
         write(3,*) 'i_bybzm=',idiag_bybzm
         write(3,*) 'i_djuidjbim=',idiag_djuidjbim
+        write(3,*) 'i_jxbm=',idiag_jxbm
         write(3,*) 'i_uxbm=',idiag_uxbm
         write(3,*) 'i_uxbmx=',idiag_uxbmx
         write(3,*) 'i_uxbmy=',idiag_uxbmy
