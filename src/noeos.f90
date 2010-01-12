@@ -12,6 +12,7 @@
 ! PENCILS PROVIDED ss; gss(3); ee; pp; lnTT; cs2; cp1; cp1tilde
 ! PENCILS PROVIDED glnTT(3); TT; TT1; cp
 ! PENCILS PROVIDED yH; hss(3,3); hlnTT(3,3); del2ss; del6ss; del2lnTT
+! PENCILS PROVIDED ppvap
 !
 !***************************************************************
 module EquationOfState
@@ -178,16 +179,14 @@ module EquationOfState
       intent(in) :: f
       intent(inout) :: p
 !
-!  set default values
+!  Set default values.
 !
-      if (lpencil(i_cp1)) p%cp1=0.
+      if (lpencil(i_cp1)) p%cp1=0.0
       if (lpencil(i_cs2)) p%cs2=cs20
       if (ldensity_anelastic) then
         p%lnrho=lnrho0
-        p%rho = exp(p%lnrho)
+        p%rho=exp(p%lnrho)
       endif
-!
-!  result doesn't depend of f, so keep compiler quiet
 !
       call keep_compiler_quiet(f)
 !
@@ -226,7 +225,7 @@ module EquationOfState
 !***********************************************************************
     subroutine get_cp1(cp1_)
 !
-!  return the value of cp1 to outside modules
+!  Return the value of cp1 to outside modules.
 !
       real, intent(out) :: cp1_
 !
@@ -436,7 +435,7 @@ module EquationOfState
 !***********************************************************************
     subroutine eoscalc_pencil(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp)
 !
-!   Calculate thermodynamical quantities
+!   Calculate thermodynamical quantities.
 !
 !   2-feb-03/axel: simple example coded
 !   13-jun-03/tobi: the ionization fraction as part of the f-array
@@ -467,7 +466,7 @@ module EquationOfState
 !***********************************************************************
     subroutine get_soundspeed(lnTT,cs2)
 !
-!  Calculate sound speed for given temperature
+!  Calculate sound speed for given temperature.
 !
 !  02-apr-04/tony: dummy coded
 !
@@ -475,7 +474,7 @@ module EquationOfState
       real, intent(out) :: cs2
 !
       call not_implemented('get_soundspeed')
-      cs2=0.
+      cs2=0.0
       call keep_compiler_quiet(lnTT)
 !
     endsubroutine get_soundspeed
@@ -499,6 +498,7 @@ module EquationOfState
     endsubroutine write_eos_init_pars
 !***********************************************************************
     subroutine read_eos_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
@@ -1335,7 +1335,7 @@ module EquationOfState
 !***********************************************************************
     subroutine bc_ss_stemp_z(f,topbot)
 !
-!  boundary condition for entropy: symmetric temperature
+!  Boundary condition for entropy: symmetric temperature.
 !
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
@@ -1401,25 +1401,26 @@ module EquationOfState
 !
     select case (topbot)
 !
-! Bottom boundary
+!  Bottom boundary
 !
     case ('bot')
-      !  Set cs2 (temperature) in the ghost points to the value on
-      !  the boundary
-      !
+!
+!  Set cs2 (temperature) in the ghost points to the value on
+!  the boundary
+!
       cs2_2d=cs20*exp(gamma_m1*f(:,:,n1,ilnrho)+gamma*f(:,:,n1,iss))
       do i=1,nghost
          f(:,:,n1-i,iss)=1./gamma*(-gamma_m1*f(:,:,n1-i,ilnrho)-log(cs20)&
               +log(cs2_2d))
       enddo
-
 !
-! Top boundary
+!  Top boundary
 !
     case ('top')
-      !  Set cs2 (temperature) in the ghost points to the value on
-      !  the boundary
-      !
+!
+!  Set cs2 (temperature) in the ghost points to the value on
+!  the boundary
+!
       cs2_2d=cs20*exp(gamma_m1*f(:,:,n2,ilnrho)+gamma*f(:,:,n2,iss))
       do i=1,nghost
          f(:,:,n2+i,iss)=1./gamma*(-gamma_m1*f(:,:,n2+i,ilnrho)-log(cs20)&
