@@ -23,4 +23,5 @@ program Toto
 
 endprogram Toto
 
-!!! End of file toto.f90
+!!! End of file minmask.f90
+
