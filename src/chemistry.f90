@@ -6253,8 +6253,8 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 
         
           
-         sz1_x=(xyz0(1)+Lxyz(1)*del)
-         sz2_x=(xyz0(1)+Lxyz(1)*(1.-del))
+         sz1=(xyz0(1)+Lxyz(1)*del)
+         sz2=(xyz0(1)+Lxyz(1)*(1.-del))
         
 
      !     if (sz_r_x<=l1) call fatal_error('to use ldamp_zone_NSCBC',&
