@@ -1,7 +1,4 @@
-pro pc2vdf,tinit,tend
-
-readpath='~/numerics/pencil-code/natalia/chemistry/FisherEqn/3d-tests/32x32x32_periodic'
-writepath='~/share/vapor/'
+pro pc_vapor_create,tinit,tend
 
 readpath='./'
 writepath='./Vapor'
@@ -50,7 +47,7 @@ dim = [nx,ny,nz]
 ; data will only exist at it's native resolution. A value of 1
 ; indicates that a single coarsening should be applied, and so on.
 ;
-num_levels = 0
+num_levels = 2
 
 ;
 ;	Create a new VDF metadata object of the indicated dimension and 
@@ -72,7 +69,7 @@ vdf_setnumtimesteps, mfd,timesteps
 ;	Set the names of the variables the data set will contain. In this case,
 ;	only a single variable will be present, "ml"
 ;
-varnames = ['rho','vx','vy','vz','bx','by','bz']
+varnames = ['rho','vx','vy','vz','ox','oy','oz']
 numvar = size(varnames)
 numvar = numvar(1)
 print,numvar
@@ -169,5 +166,8 @@ plot,  oo[l1:l2,m2/2,n1:n2,1]
 ;	Destroy the "buffered write" data transformation object. 
 ;	We're done with it.
 vdc_bufwritedestroy, dfd
+
+
+cd, readpath
 
 end
