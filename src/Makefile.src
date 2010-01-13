@@ -514,21 +514,18 @@ endif
 #FFLAGS_DOUBLE=-qrealsize=8 #(genius1|jugene[3-4])
 #CFLAGS_DOUBLE=-qrealsize=8 #(genius1|jugene[3-4])
 ##
-## Toulouse's machines: shal, efigi, galileo, mithra, yang & star3, pcgastine
+## Toulouse's machines: efigi, galileo, mithra, yang & star3, pcgastine
 ##
-#include $(PENCIL_HOME)/src/Makefile_ifort.incl #(shal|efigi|mithra|star3|galileo|yang|ulysse|pcgastine)
+#include $(PENCIL_HOME)/src/Makefile_ifort.incl #(efigi|mithra|star3|galileo|yang|pcgastine)
 #FFLAGS=-O3 -stand f90 -I/usr/include/lam #(galileo)
 #FFLAGS=-O3 -xT  #(mithra)
-#FFLAGS=-O3 -I/usr/include/openmpi -I/usr/include/openmpi/64 #(shal)
 #FFLAGS=-O3 -xP -I/usr/include/openmpi/1.2.4-gcc -I/usr/include/openmpi/1.2.4-gcc/32#(pcgastine)
-#FFLAGS=-O0 #(ulysse)
 #FFLAGS=-O3 -I/usr/lib64/openmpi/1.2.7-gcc/include -vec-report0 #(star3)
 #FFLAGS=-O3 -stand f90 -I/home/dintrans/LIB/LAM/include -assume nounderscore #(efigi)
 #FFLAGS=-O3 -vec-report0 -assume nounderscore -I/usr/local/openmpi_slurm/include/ #(yang)
 #CC=gcc #(efigi)
 #CFLAGS=-O3 -m32 #(efigi|mithra|pcgastine)
 #LD_MPI=-L/usr/lib/openmpi -lmpi -lmpi_f77 #(mithra)
-#LD_MPI=-L/usr/lib64/openmpi -lmpi #(shal)
 #LD_MPI=-L/usr/lib/openmpi/1.2.4-gcc -lmpi -lmpi_f77 #(pcgastine)
 #LD_MPI=-L/usr/lib64/openmpi/1.2.7-gcc/lib -lmpi -lmpi_f77 #(star3)
 #LD_MPI=-pthread -L/home/dintrans/LIB/LAM/lib -llammpio -llamf77mpi -lmpi -llam -lutil -ldl #(efigi)
