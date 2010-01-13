@@ -2001,12 +2001,13 @@ module Entropy
         call cyclic(ax, bx, cx, aalpha, bbeta, rhsx, workx, nx)
         finter(:,j)=workx
       enddo
-
+!
 ! do the transpositions x <--> z
+!
       call transp_xz(finter, fintert)
       call transp_xz(rho, rhot)
       call transp_xz(source, sourcet)
-
+!
 ! communicate gridpoints in the x-direction for periodic BC
 !      tagr1 = 400 + 10*(iproc)   + iproc - 1
 !      tagr2 = 400 + 10*(iproc)   + iproc
@@ -2072,6 +2073,7 @@ module Entropy
 ! (T_{j+1}-T_{j_1})/2dz = dT/dz --> T_{j-1} = T_{j+1} - 2*dz*dT/dz 
 ! and insert this expression in the difference relation to eliminate T_{j-1}:
 ! a_{j-1}*T_{j-1} + b_j T_j + c_{j+1}*T_{j+1} = RHS
+!
             cz(1)=cz(1)+az(1)
             rhsz(1)=rhsz(1)-2.*az(1)*dz*Fbot/hcond0
           case default 
