@@ -844,6 +844,7 @@ module Mpicomm
       double precision, dimension(nreduce(1),nreduce(2),nreduce(3)) :: dsum_tmp,dsum
 !
       dsum=dsum_tmp
+
 !
     endsubroutine mpireduce_sum_double_arr3
 !***********************************************************************
@@ -1277,5 +1278,23 @@ module Mpicomm
       f(l2+1:mx  ,:,nn1:nn2,iax:iaz) = f( l1:l1i,:,nn1:nn2,iax:iaz)
 !
     endsubroutine communicate_bc_aa_pot
+!***********************************************************************
+    subroutine MPI_adi_x(tmp1, tmp2, send_buf1, send_buf2)
+!
+!  13-jan-10/dintrans+gastine: coded
+!  Communications for the ADI solver
+!
+      real, dimension(nx) :: tmp1, tmp2, send_buf1, send_buf2
+!
+    endsubroutine MPI_adi_x
+!***********************************************************************
+    subroutine MPI_adi_z(tmp1, tmp2, send_buf1, send_buf2)
+!
+!  13-jan-10/dintrans+gastine: coded
+!  Communications for the ADI solver
+!
+      real, dimension(nzgrid) :: tmp1, tmp2, send_buf1, send_buf2
+!
+    endsubroutine MPI_adi_z
 !***********************************************************************
 endmodule Mpicomm

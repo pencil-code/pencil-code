@@ -1408,8 +1408,11 @@ module Entropy
         if (nx == 1) then
           call ADI_Kconst_1d(finit,f)
         else
-          call ADI_Kconst(finit,f)
-!          call toto(finit,f)
+          if (nprocz>1) then
+            call ADI_Kconst_MPI(finit,f)
+          else
+            call ADI_Kconst(finit,f)
+          endif
         endif
       else
         if (nx == 1) then
@@ -1912,25 +1915,27 @@ module Entropy
 !
     endsubroutine ADI_Kprof_1d
 !***********************************************************************
-    subroutine toto(finit,f)
+    subroutine ADI_Kconst_MPI(finit,f)
 !
 !  04-sep-2009/dintrans: coded
 !  parallel version of the ADI scheme for the K=cte case
 !
       use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, get_cp1
       use General, only: tridag
-      use Mpicomm, only: transp_xz, transp_zx, mpisend_real, mpirecv_real
-
+      use Mpicomm, only: transp_xz, transp_zx, mpisend_real, &
+                         mpirecv_real, MPI_adi_x, MPI_adi_z
+!
       implicit none
-
+!
       integer :: i,j,tagr1,tagr2,tags1,tags2
+      integer, parameter :: nxt=nx/nprocz
       real, dimension(mx,my,mz,mfarray) :: finit,f
       real, dimension(nx,nz)  :: finter, source, rho, TT
       real, dimension(nx)     :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nzgrid) :: az, bz, cz, wz, rhsz, workz
-      real, dimension(nzgrid,nx/nprocz) :: fintert, rhot, sourcet, wtmp
-      real, dimension(nzgrid) :: tmp1, tmp2
-      real, dimension(nxgrid) :: tmpx1, tmpx2
+      real, dimension(nzgrid,nxt) :: fintert, rhot, sourcet, wtmp
+      real, dimension(nx)     :: tmpx1, tmpx2, send_buf1, send_buf2
+      real, dimension(nzgrid) :: tmpz1, tmpz2, send_bufz1, send_bufz2
       real  :: aalpha, bbeta, cp1, dx_2, dz_2
 !
       TT=finit(l1:l2,4,n1:n2,ilnTT)
@@ -1941,50 +1946,53 @@ module Entropy
         rho=1.
       endif
       call get_cp1(cp1)
-      dx_2=1./dx**2
-      dz_2=1./dz**2
+      dx_2=1/dx**2
+      dz_2=1/dz**2
 !
 !  row dealt implicitly
 !
-      tagr1 = 200 + 10*(iproc)   + iproc - 1
-      tagr2 = 200 + 10*(iproc)   + iproc
-      tags1 = 200 + 10*(iproc-1) + iproc - 2
-      tags2 = 200 + 10*(iproc+1) + iproc + 1
-      if (iproc==0) then
-        call mpisend_real(TT(:,nz), nxgrid, iproc+1, tags2)
-        call mpirecv_real(tmpx1, nxgrid, iproc+1, tagr1)
-        !constant temperature: T(j-1)=2*T(j)-T(j+1)
-        tmpx2 = 2*TT(:,1)-TT(:,2)
-      elseif (iproc==nprocz-1) then
-        call mpirecv_real(tmpx2, nxgrid, iproc-1, tagr2)
-        call mpisend_real(TT(:,1), nxgrid, iproc-1, tags1)
-        !constant temperature: T(j+1)=2*T(j)-T(j-1)
-        tmpx1 = 2*TT(:,nz)-TT(:,nz-1)
-      else
-        call mpisend_real(TT(:,1), nxgrid, iproc-1, tags1)
-        call mpisend_real(TT(:,nz), nxgrid, iproc+1, tags2)
-        call mpirecv_real(tmpx1, nxgrid, iproc+1, tagr1)
-        call mpirecv_real(tmpx2, nxgrid, iproc-1, tagr2)
-      endif
+      send_buf1=TT(:,1)
+      send_buf2=TT(:,nz)
+      call MPI_adi_x(tmpx1, tmpx2, send_buf1, send_buf2)
+!      tagr1 = 200 + 10*(iproc)   + iproc - 1
+!      tagr2 = 200 + 10*(iproc)   + iproc
+!      tags1 = 200 + 10*(iproc-1) + iproc - 2
+!      tags2 = 200 + 10*(iproc+1) + iproc + 1
+!      if (iproc==0) then
+!        call mpisend_real(TT(:,nz), nxgrid, iproc+1, tags2)
+!        call mpirecv_real(tmpx1, nxgrid, iproc+1, tagr1)
+!        !constant temperature: T(j-1)=2*T(j)-T(j+1)
+!        tmpx2 = 2*TT(:,1)-TT(:,2)
+!      elseif (iproc==nprocz-1) then
+!        call mpirecv_real(tmpx2, nxgrid, iproc-1, tagr2)
+!        call mpisend_real(TT(:,1), nxgrid, iproc-1, tags1)
+!        !constant temperature: T(j+1)=2*T(j)-T(j-1)
+!        tmpx1 = 2*TT(:,nz)-TT(:,nz-1)
+!      else
+!        call mpisend_real(TT(:,1), nxgrid, iproc-1, tags1)
+!        call mpisend_real(TT(:,nz), nxgrid, iproc+1, tags2)
+!        call mpirecv_real(tmpx1, nxgrid, iproc+1, tagr1)
+!        call mpirecv_real(tmpx2, nxgrid, iproc-1, tagr2)
+!      endif
 !
       do j=1,nz
         wx=dt*gamma*hcond0*cp1/rho(:,j)
-        ax=-wx*dx_2/2.
+        ax=-wx*dx_2/2
         bx=1.+wx*dx_2
         cx=ax
 !
         if (j==1) then
-          rhsx=TT(:,j)+wx*dz_2/2.*                         &
-              (TT(:,j+1)-2.*TT(:,j)+tmpx2)                  &
-               +dt/2.*source(:,j)
+          rhsx=TT(:,j)+wx*dz_2/2*                         &
+              (TT(:,j+1)-2*TT(:,j)+tmpx2)                 &
+               +dt/2*source(:,j)
         elseif (j==nz) then
-          rhsx=TT(:,j)+wx*dz_2/2.*                         &
-              (tmpx1-2.*TT(:,j)+TT(:,j-1))                  &
-               +dt/2.*source(:,j)
+          rhsx=TT(:,j)+wx*dz_2/2*                         &
+              (tmpx1-2*TT(:,j)+TT(:,j-1))                 &
+               +dt/2*source(:,j)
         else
-          rhsx=TT(:,j)+wx*dz_2/2.*                         &
-              (TT(:,j+1)-2.*TT(:,j)+TT(:,j-1))             &
-               +dt/2.*source(:,j)
+          rhsx=TT(:,j)+wx*dz_2/2*                         &
+              (TT(:,j+1)-2*TT(:,j)+TT(:,j-1))             &
+               +dt/2*source(:,j)
         endif
 !
 ! x boundary conditions: periodic
@@ -1994,56 +2002,56 @@ module Entropy
         finter(:,j)=workx
       enddo
 
-! do the transpositions z <--> x
+! do the transpositions x <--> z
       call transp_xz(finter, fintert)
       call transp_xz(rho, rhot)
       call transp_xz(source, sourcet)
 
 ! communicate gridpoints in the x-direction for periodic BC
-      tagr1 = 400 + 10*(iproc)   + iproc - 1
-      tagr2 = 400 + 10*(iproc)   + iproc
-      tags1 = 400 + 10*(iproc-1) + iproc - 2
-      tags2 = 400 + 10*(iproc+1) + iproc + 1
-      if (iproc==0) then
-        call mpisend_real(fintert(:,1), nzgrid, nprocz-1, 111)
-        call mpisend_real(fintert(:,nx/nprocz), nzgrid, iproc+1, tags2)
-        call mpirecv_real(tmp1, nzgrid, iproc+1, tagr1)
-        call mpirecv_real(tmp2, nzgrid, nprocz-1, 112)
-      elseif (iproc==nprocz-1) then
-        call mpirecv_real(tmp1, nzgrid, 0, 111)
-        call mpirecv_real(tmp2, nzgrid, iproc-1, tagr2)
-        call mpisend_real(fintert(:,1), nzgrid, iproc-1, tags1)
-        call mpisend_real(fintert(:,nx/nprocz), nzgrid, 0, 112)
-      else
-        call mpisend_real(fintert(:,1), nzgrid, iproc-1, tags1)
-        call mpisend_real(fintert(:,nx/nprocz), nzgrid, iproc+1, tags2)
-        call mpirecv_real(tmp1, nzgrid, iproc+1, tagr1)
-        call mpirecv_real(tmp2, nzgrid, iproc-1, tagr2)
-      endif
-
+!      tagr1 = 400 + 10*(iproc)   + iproc - 1
+!      tagr2 = 400 + 10*(iproc)   + iproc
+!      tags1 = 400 + 10*(iproc-1) + iproc - 2
+!      tags2 = 400 + 10*(iproc+1) + iproc + 1
+!      if (iproc==0) then
+!        call mpisend_real(fintert(:,1), nzgrid, nprocz-1, 111)
+!        call mpisend_real(fintert(:,nxt), nzgrid, iproc+1, tags2)
+!        call mpirecv_real(tmp1, nzgrid, iproc+1, tagr1)
+!        call mpirecv_real(tmp2, nzgrid, nprocz-1, 112)
+!      elseif (iproc==nprocz-1) then
+!        call mpirecv_real(tmp1, nzgrid, 0, 111)
+!        call mpirecv_real(tmp2, nzgrid, iproc-1, tagr2)
+!        call mpisend_real(fintert(:,1), nzgrid, iproc-1, tags1)
+!        call mpisend_real(fintert(:,nxt), nzgrid, 0, 112)
+!      else
+!        call mpisend_real(fintert(:,1), nzgrid, iproc-1, tags1)
+!        call mpisend_real(fintert(:,nxt), nzgrid, iproc+1, tags2)
+!        call mpirecv_real(tmp1, nzgrid, iproc+1, tagr1)
+!        call mpirecv_real(tmp2, nzgrid, iproc-1, tagr2)
+!      endif
+      send_bufz1=fintert(:,1)
+      send_bufz2=fintert(:,nxt)
+      call MPI_adi_z(tmpz1, tmpz2, send_bufz1, send_bufz2)
 !
 !  columns dealt implicitly
 !
-      do i=1,nx/nprocz
+      do i=1,nxt
         wz=dt*gamma*hcond0*cp1/rhot(:,i)
-        az=-wz*dz_2/2.
+        az=-wz*dz_2/2
         bz=1.+wz*dz_2
         cz=az
 !
         if (i==1) then
-          rhsz=fintert(:,i)+wz*dx_2/2.*               &
-!             (fintert(:,i+1)-2.*fintert(:,i)+fintert(:,nx/nprocz))   &
-              (fintert(:,i+1)-2.*fintert(:,i)+tmp2)   &
-              +dt/2.*sourcet(:,i)
-        elseif (i==nx/nprocz) then
-          rhsz=fintert(:,i)+wz*dx_2/2.*               &
-!             (fintert(:,1)-2.*fintert(:,i)+fintert(:,i-1))   &
-              (tmp1-2.*fintert(:,i)+fintert(:,i-1))   &
-              +dt/2.*sourcet(:,i)
+          rhsz=fintert(:,i)+wz*dx_2/2*               &
+              (fintert(:,i+1)-2*fintert(:,i)+tmpz2)  &
+              +dt/2*sourcet(:,i)
+        elseif (i==nxt) then
+          rhsz=fintert(:,i)+wz*dx_2/2*               &
+              (tmpz1-2*fintert(:,i)+fintert(:,i-1))  &
+              +dt/2*sourcet(:,i)
         else
-          rhsz=fintert(:,i)+wz*dx_2/2.*                        &
-              (fintert(:,i+1)-2.*fintert(:,i)+fintert(:,i-1))  &
-              +dt/2.*sourcet(:,i)
+          rhsz=fintert(:,i)+wz*dx_2/2*                        &
+              (fintert(:,i+1)-2*fintert(:,i)+fintert(:,i-1))  &
+              +dt/2*sourcet(:,i)
         endif
         !
         ! z boundary conditions
@@ -2075,7 +2083,7 @@ module Entropy
       enddo
       call transp_zx(wtmp, f(l1:l2,4,n1:n2,ilnTT))
 !
-    endsubroutine toto
+    endsubroutine ADI_Kconst_MPI
 !***********************************************************************
     subroutine dss_dt_after_mn(f,df,p)
 !

@@ -32,6 +32,7 @@
   public :: communicate_bc_aa_pot,transp_xy_other,transp_other
 
   public :: fill_zghostzones_3vec
+  public :: MPI_adi_x, MPI_adi_z
   
 ! Radiation ray routines
   public :: radboundary_xy_recv,radboundary_xy_send
