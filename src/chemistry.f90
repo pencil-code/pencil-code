@@ -1898,6 +1898,14 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
             do n=1,mz
               kreactions_z(n,j)=0.5*(1.1+cos(pi*z(n)/kreactions_profile_width(j)))
             enddo
+          elseif (kreactions_profile(j)=='spike') then
+            do n=1,mz
+              if (cos(pi*z(n)/kreactions_profile_width(j)) > 0.9) then
+                kreactions_z(n,j)=1
+              else
+                kreactions_z(n,j)=0
+              endif
+            enddo
           endif
         enddo
       endif
