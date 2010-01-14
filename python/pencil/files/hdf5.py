@@ -95,6 +95,8 @@ class param_file:
             return ('&',line[1:].lower())
         if line=='/':
             return ('c',None)
+        if line[0].isdigit():
+            return ('c',None) # Workaround for ignoring cutted lines (should be corrected)
         line=line.split('=')
         name=line[0].lower()
         if line[1][0:3]=='"$I':
