@@ -1922,8 +1922,7 @@ module Entropy
 !
       use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, get_cp1
       use General, only: tridag
-      use Mpicomm, only: transp_xz, transp_zx, mpisend_real, &
-                         mpirecv_real, MPI_adi_x, MPI_adi_z
+      use Mpicomm, only: transp_xz, transp_zx, MPI_adi_x, MPI_adi_z
 !
       implicit none
 !
