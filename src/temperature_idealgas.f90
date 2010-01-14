@@ -1927,14 +1927,14 @@ module Entropy
 !
       implicit none
 !
-      integer :: i,j,tagr1,tagr2,tags1,tags2
+      integer :: i,j
       integer, parameter :: nxt=nx/nprocz
       real, dimension(mx,my,mz,mfarray) :: finit,f
       real, dimension(nx,nz)  :: finter, source, rho, TT
       real, dimension(nx)     :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nzgrid) :: az, bz, cz, wz, rhsz, workz
       real, dimension(nzgrid,nxt) :: fintert, rhot, sourcet, wtmp
-      real, dimension(nx)     :: tmpx1, tmpx2, send_buf1, send_buf2
+      real, dimension(nx)     :: tmpx1, tmpx2, send_bufx1, send_bufx2
       real, dimension(nzgrid) :: tmpz1, tmpz2, send_bufz1, send_bufz2
       real  :: aalpha, bbeta, cp1, dx_2, dz_2
 !
@@ -1949,31 +1949,13 @@ module Entropy
       dx_2=1/dx**2
       dz_2=1/dz**2
 !
-!  row dealt implicitly
+! Communicate the first and last pencils of size nx
 !
-      send_buf1=TT(:,1)
-      send_buf2=TT(:,nz)
-      call MPI_adi_x(tmpx1, tmpx2, send_buf1, send_buf2)
-!      tagr1 = 200 + 10*(iproc)   + iproc - 1
-!      tagr2 = 200 + 10*(iproc)   + iproc
-!      tags1 = 200 + 10*(iproc-1) + iproc - 2
-!      tags2 = 200 + 10*(iproc+1) + iproc + 1
-!      if (iproc==0) then
-!        call mpisend_real(TT(:,nz), nxgrid, iproc+1, tags2)
-!        call mpirecv_real(tmpx1, nxgrid, iproc+1, tagr1)
-!        !constant temperature: T(j-1)=2*T(j)-T(j+1)
-!        tmpx2 = 2*TT(:,1)-TT(:,2)
-!      elseif (iproc==nprocz-1) then
-!        call mpirecv_real(tmpx2, nxgrid, iproc-1, tagr2)
-!        call mpisend_real(TT(:,1), nxgrid, iproc-1, tags1)
-!        !constant temperature: T(j+1)=2*T(j)-T(j-1)
-!        tmpx1 = 2*TT(:,nz)-TT(:,nz-1)
-!      else
-!        call mpisend_real(TT(:,1), nxgrid, iproc-1, tags1)
-!        call mpisend_real(TT(:,nz), nxgrid, iproc+1, tags2)
-!        call mpirecv_real(tmpx1, nxgrid, iproc+1, tagr1)
-!        call mpirecv_real(tmpx2, nxgrid, iproc-1, tagr2)
-!      endif
+      send_bufx1=TT(:,1)
+      send_bufx2=TT(:,nz)
+      call MPI_adi_x(tmpx1, tmpx2, send_bufx1, send_bufx2)
+!
+! Rows dealt implicitly
 !
       do j=1,nz
         wx=dt*gamma*hcond0*cp1/rho(:,j)
@@ -1982,16 +1964,16 @@ module Entropy
         cx=ax
 !
         if (j==1) then
-          rhsx=TT(:,j)+wx*dz_2/2*                         &
-              (TT(:,j+1)-2*TT(:,j)+tmpx2)                 &
+          rhsx=TT(:,j)+wx*dz_2/2*          &
+               (TT(:,j+1)-2*TT(:,j)+tmpx2) &
                +dt/2*source(:,j)
         elseif (j==nz) then
-          rhsx=TT(:,j)+wx*dz_2/2*                         &
-              (tmpx1-2*TT(:,j)+TT(:,j-1))                 &
+          rhsx=TT(:,j)+wx*dz_2/2*          &
+               (tmpx1-2*TT(:,j)+TT(:,j-1)) &
                +dt/2*source(:,j)
         else
-          rhsx=TT(:,j)+wx*dz_2/2*                         &
-              (TT(:,j+1)-2*TT(:,j)+TT(:,j-1))             &
+          rhsx=TT(:,j)+wx*dz_2/2*             &
+              (TT(:,j+1)-2*TT(:,j)+TT(:,j-1)) &
                +dt/2*source(:,j)
         endif
 !
@@ -2002,38 +1984,19 @@ module Entropy
         finter(:,j)=workx
       enddo
 !
-! do the transpositions x <--> z
+! Do the transpositions x <--> z
 !
       call transp_xz(finter, fintert)
       call transp_xz(rho, rhot)
       call transp_xz(source, sourcet)
 !
-! communicate gridpoints in the x-direction for periodic BC
-!      tagr1 = 400 + 10*(iproc)   + iproc - 1
-!      tagr2 = 400 + 10*(iproc)   + iproc
-!      tags1 = 400 + 10*(iproc-1) + iproc - 2
-!      tags2 = 400 + 10*(iproc+1) + iproc + 1
-!      if (iproc==0) then
-!        call mpisend_real(fintert(:,1), nzgrid, nprocz-1, 111)
-!        call mpisend_real(fintert(:,nxt), nzgrid, iproc+1, tags2)
-!        call mpirecv_real(tmp1, nzgrid, iproc+1, tagr1)
-!        call mpirecv_real(tmp2, nzgrid, nprocz-1, 112)
-!      elseif (iproc==nprocz-1) then
-!        call mpirecv_real(tmp1, nzgrid, 0, 111)
-!        call mpirecv_real(tmp2, nzgrid, iproc-1, tagr2)
-!        call mpisend_real(fintert(:,1), nzgrid, iproc-1, tags1)
-!        call mpisend_real(fintert(:,nxt), nzgrid, 0, 112)
-!      else
-!        call mpisend_real(fintert(:,1), nzgrid, iproc-1, tags1)
-!        call mpisend_real(fintert(:,nxt), nzgrid, iproc+1, tags2)
-!        call mpirecv_real(tmp1, nzgrid, iproc+1, tagr1)
-!        call mpirecv_real(tmp2, nzgrid, iproc-1, tagr2)
-!      endif
+! Communicate the first and last pencils of size nzgrid
+!
       send_bufz1=fintert(:,1)
       send_bufz2=fintert(:,nxt)
       call MPI_adi_z(tmpz1, tmpz2, send_bufz1, send_bufz2)
 !
-!  columns dealt implicitly
+! Columns dealt implicitly
 !
       do i=1,nxt
         wz=dt*gamma*hcond0*cp1/rhot(:,i)
