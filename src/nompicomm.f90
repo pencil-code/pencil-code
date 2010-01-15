@@ -1286,7 +1286,10 @@ module Mpicomm
 !
       real, dimension(nx) :: tmp1, tmp2, send_buf1, send_buf2
 !
-    endsubroutine MPI_adi_x
+      call stop_it("MPI_adi should not be used with nompicomm.f90")
+      if (NO_WARN) print*, tmp1, tmp2, send_buf1, send_buf2
+!
+    endsubroutine MPI_adi_x!
 !***********************************************************************
     subroutine MPI_adi_z(tmp1, tmp2, send_buf1, send_buf2)
 !
@@ -1294,6 +1297,9 @@ module Mpicomm
 !  Communications for the ADI solver
 !
       real, dimension(nzgrid) :: tmp1, tmp2, send_buf1, send_buf2
+!
+      call stop_it("MPI_adi should not be used with nompicomm.f90")
+      if (NO_WARN) print*, tmp1, tmp2, send_buf1, send_buf2
 !
     endsubroutine MPI_adi_z
 !***********************************************************************
