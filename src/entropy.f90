@@ -2095,19 +2095,6 @@ module Entropy
 !
     endsubroutine calc_pencils_entropy
 !***********************************************************************
-    subroutine calc_pencils_entropy_after_mn(f,p)
-!
-! Do nothing 
-! DM+
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine calc_pencils_entropy_after_mn
-!**********************************************************************
     subroutine dss_dt(f,df,p)
 !
 !  Calculate right hand side of entropy equation,
@@ -2365,22 +2352,6 @@ module Entropy
 
     endsubroutine dss_dt
 !**********************************************************************
-    subroutine dss_dt_after_mn(f,df,p)
-!
-!  Do nothing.
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
-!
-      intent(in) :: f,df,p
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine dss_dt_after_mn
-!***********************************************************************
     subroutine set_border_entropy(f,df,p)
 !
 !  Calculates the driving term for the border profile

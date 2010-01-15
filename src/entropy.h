@@ -5,7 +5,7 @@
   public :: read_entropy_init_pars, write_entropy_init_pars
   public :: read_entropy_run_pars, write_entropy_run_pars
   public :: rprint_entropy, get_slices_entropy
-  public :: init_ss, dss_dt,dss_dt_after_mn
+  public :: init_ss, dss_dt
   public :: pencil_criteria_entropy, pencil_interdep_entropy
-  public :: calc_pencils_entropy,calc_pencils_entropy_after_mn
+  public :: calc_pencils_entropy
   public :: calc_heatcond_ADI

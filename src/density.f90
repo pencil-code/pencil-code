@@ -1309,6 +1309,7 @@ module Density
         if (lhydro.or.lentropy.or.ltemperature) lpenc_requested(i_rho1)=.true.
         if (lhydro) lpenc_requested(i_uu)=.true.
         if (lentropy) lpenc_requested(i_cp)=.true.
+        if (ltemperature.and.ltemperature_nolog) lpenc_requested(i_TT)=.true.
       endif
 !
       lpenc_diagnos2d(i_lnrho)=.true.
@@ -1722,8 +1723,7 @@ module Density
         elseif (ltemperature.and.(.not. ltemperature_nolog)) then
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - tmp
         elseif (ltemperature.and.ltemperature_nolog) then
-          if (headtt) call warning('dlnrho_dt', &
-              'massdiff_fix not yet implemented for ltemperature_nolog')
+          df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - tmp*p%TT
         endif
       endif
 !

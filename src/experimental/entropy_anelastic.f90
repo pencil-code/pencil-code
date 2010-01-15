@@ -2268,7 +2268,7 @@ module Entropy
 !
 !  02-dec-09/piyali: adapted from calc_pencils_entropy
 !
-      use EquationOfState, only: gamma,gamma_m1,cs20,lnrho0,profz_eos
+      use EquationOfState, only: profz_eos
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -2293,8 +2293,7 @@ module Entropy
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
-!
-    
+!  
     endsubroutine calc_pencils_entropy_after_mn
 !**********************************************************************
     subroutine dss_dt_after_mn(f,df,p)
