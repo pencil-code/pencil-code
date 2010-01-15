@@ -1208,6 +1208,34 @@ module Mpicomm
 !
     endsubroutine transp_zx
 !***********************************************************************
+    subroutine transp_mxmz(a,b)
+!
+!  Doing the transpose of information distributed on several processors.
+!  This routine transposes 2D arrays in x and z only for mx, mz arrays.
+!
+!  15-jan-10/tgastine: Adapted from transp_xz
+!
+      real, dimension(mx,mz), intent(in) :: a
+      real, dimension(mz,mx), intent(out) :: b
+!
+      b=transpose(a)
+!
+    endsubroutine transp_mxmz
+!***********************************************************************
+    subroutine transp_mzmx(b,a)
+!
+!  Doing the transpose of information distributed on several processors.
+!  This routine transposes 2D arrays in x and z only.
+!
+!  15-jan-10/tgastine: Adapted from transp
+!
+      real, dimension(mz,mx), intent(in) :: b
+      real, dimension(mx,mz), intent(out) :: a
+!
+      a=transpose(b)
+!
+    endsubroutine transp_mzmx
+!***********************************************************************
     subroutine z2x(a,xi,yj,yproc_no,az)
 !
 !  Load the z dimension of an array in a 1-d array.

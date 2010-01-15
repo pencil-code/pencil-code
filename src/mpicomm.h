@@ -28,6 +28,7 @@
   public :: initiate_shearing, finalize_shearing
 
   public :: transp,transp_xy,transp_xz,transp_zx
+  public :: transp_mxmz, transp_mzmx
   public :: z2x
   public :: communicate_bc_aa_pot,transp_xy_other,transp_other
 
