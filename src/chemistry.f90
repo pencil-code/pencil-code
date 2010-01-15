@@ -1244,12 +1244,11 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       use EquationOfState
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) ::  tmp_sum,tmp_sum2, nu_dyn, nuk_nuj
-      real, dimension (mx,my,mz) :: Phi
+      real, dimension (mx,my,mz) ::  tmp_sum,tmp_sum2, nu_dyn
 !
       intent(in) :: f
       integer :: k,j, j1,j2,j3
-      real :: T_up, T_mid, T_low, T_loc, tmp, mk_mj
+      real :: T_up, T_mid, T_low, T_loc, tmp
 !
       logical :: tran_exist=.false.
       logical,save :: lwrite=.true.
