@@ -70,10 +70,10 @@ module Chemistry
   logical :: lT_const=.false.
 
   logical :: lfilter=.false.
-  logical :: lkreactions_profile=.false.
+  logical :: lkreactions_profile=.false., lkreactions_alpha=.false.
   integer :: nreactions=0,nreactions1=0,nreactions2=0
   integer :: ll1,ll2,mm1,mm2,nn1,nn2
-  real, allocatable, dimension(:) :: kreactions_profile_width
+  real, allocatable, dimension(:) :: kreactions_profile_width, kreactions_alpha
 
   integer :: mreactions
   integer, allocatable, dimension(:,:) :: stoichio,Sijm,Sijp
@@ -131,7 +131,7 @@ module Chemistry
 
 ! run parameters
   namelist /chemistry_run_pars/ &
-      lkreactions_profile, &
+      lkreactions_profile, lkreactions_alpha, &
       chem_diff,chem_diff_prefactor, nu_spec, ldiffusion, ladvection, &
       lreactions,lchem_cdtc,lheatc_chemistry, BinDif_simple, visc_simple, &
       lmobility,mobility, lfilter,lT_tanh,ldamp_zone_NSCBC
@@ -1780,6 +1780,8 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
         if (stat>0) call stop_it("Couldn't allocate memory for kreactions_profile")
         allocate(kreactions_profile_width(mreactions),STAT=stat)
         if (stat>0) call stop_it("Couldn't allocate memory for kreactions_profile_width")
+        allocate(kreactions_alpha(mreactions),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for kreactions_alpha")
       endif
 !
 !  Initialize data
@@ -1814,9 +1816,19 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
         read(19,*) chemicals
         do j=1,mreactions
           if (lkreactions_profile) then
-            read(19,*) kreactions_p(j),(Sijp(i,j),i=1,nchemspectemp),kreactions_profile(j),kreactions_profile_width(j)
+            if (lkreactions_alpha) then
+              read(19,*) kreactions_p(j),(Sijp(i,j),i=1,nchemspectemp),kreactions_profile(j),&
+                  kreactions_profile_width(j),kreactions_alpha(j)
+            else
+              read(19,*) kreactions_p(j),(Sijp(i,j),i=1,nchemspectemp),kreactions_profile(j),&
+                  kreactions_profile_width(j)
+            endif
           else
-            read(19,*) kreactions_p(j),(Sijp(i,j),i=1,nchemspectemp)
+            if (lkreactions_alpha) then
+              read(19,*) kreactions_p(j),(Sijp(i,j),i=1,nchemspectemp),kreactions_alpha(j)
+            else
+              read(19,*) kreactions_p(j),(Sijp(i,j),i=1,nchemspectemp)
+            endif
           endif
         enddo
         close(19)
@@ -1899,7 +1911,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
             enddo
           elseif (kreactions_profile(j)=='spike') then
             do n=1,mz
-              if (cos(pi*z(n)/kreactions_profile_width(j)) > 0.9) then
+              if (cos(pi*z(n)/kreactions_profile_width(j)) > 0.99) then
                 kreactions_z(n,j)=1
               else
                 kreactions_z(n,j)=0
@@ -3674,6 +3686,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       use Diagnostics
       use Sub
 !
+      real :: alpha
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (nx,mreactions) :: vreactions,vreactions_p,vreactions_m
       real, dimension (nx) :: xdot
@@ -3691,8 +3704,13 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !  Axel' case
 !
         do j=1,nreactions
-          vreactions_p(:,j)=kreactions_p(j)*kreactions_z(n,j)
-          vreactions_m(:,j)=kreactions_m(j)*kreactions_z(n,j)
+          if (lkreactions_alpha) then
+            alpha=kreactions_alpha(j)
+          else
+            alpha=1.
+          endif
+          vreactions_p(:,j)=alpha*kreactions_p(j)*kreactions_z(n,j)
+          vreactions_m(:,j)=alpha*kreactions_m(j)*kreactions_z(n,j)
           do k=1,nchemspec
             vreactions_p(:,j)=vreactions_p(:,j)*&
                 f(l1:l2,m,n,ichemspec(k))**Sijm(k,j)
