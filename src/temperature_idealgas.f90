@@ -1419,7 +1419,11 @@ module Entropy
         if (nx == 1) then
           call ADI_Kprof_1d(finit,f)
         else
-          call ADI_Kprof(finit,f)
+          if (nprocz>1) then
+            call ADI_Kprof_MPI(finit,f)
+          else
+            call ADI_Kprof(finit,f)
+          endif
         endif
       endif
 !
@@ -1676,6 +1680,156 @@ module Entropy
 !
     endsubroutine ADI_Kprof
 !***********************************************************************
+    subroutine ADI_Kprof_MPI(finit,f)
+!
+!  15-jan-10/gastine: coded
+!  2-D ADI scheme for the radiative diffusion term where the radiative
+!  conductivity depends on T (uses heatcond_TT to compute hcond _and_
+!  dhcond). The ADI scheme is of Yakonov's form:
+!
+!    (1-dt/2*J_x)*lambda = f_x(T^n) + f_y(T^n) + source
+!    (1-dt/2*J_y)*beta   = lambda
+!    T^(n+1) = T^n + dt*beta
+!
+!    where J_x and J_y denote Jacobian matrices df/dT.
+!
+      use EquationOfState, only: gamma,get_cp1
+      use General, only: tridag
+      use Mpicomm, only: transp_mxmz, transp_mzmx, &
+                         initiate_isendrcv_bdry, finalize_isendrcv_bdry
+!
+      implicit none
+!
+      integer, parameter :: mxt=nx/nprocz+2*nghost
+      integer, parameter :: mzt=nzgrid+2*nghost
+      integer :: i,j
+      real, dimension(mx,my,mz,mfarray) :: finit, f, ftmp
+      real, dimension(mx,mz) :: source, hcond, dhcond, finter, TT, rho, val
+      real, dimension(mzt,mxt) :: hcondt, dhcondt, fintert, valt, TTt, rhot
+      real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
+      real, dimension(nzgrid)    :: az, bz, cz, wz, rhsz, workz
+      real    :: aalpha, bbeta
+      real    :: dx_2, dz_2, cp1
+!  It is necessary to communicate ghost-zones points between
+!  processors to ensure a correct transposition of these ghost
+!  zones. It is needed by rho,rhot and source,sourcet.
+      call initiate_isendrcv_bdry(f)
+      call finalize_isendrcv_bdry(f)
+      call initiate_isendrcv_bdry(finit)
+      call finalize_isendrcv_bdry(finit)
+      source=(f(:,4,:,ilnTT)-finit(:,4,:,ilnTT))/dt
+      call get_cp1(cp1)
+      dx_2=1./dx**2
+      dz_2=1./dz**2
+! BC important not for the x-direction (always periodic) but for 
+! the z-direction as we must impose the 'c3' BC at the 2nd-order
+! before going in the implicit stuff
+      call heatcond_TT_2d(finit(:,4,:,ilnTT), hcond, dhcond)
+      call boundary_ADI(finit(:,4,:,ilnTT), hcond(:,n1))
+      TT=finit(:,4,:,ilnTT)
+      if (ldensity) then
+        rho=exp(f(:,4,:,ilnrho))
+      else
+        rho=1.
+      endif
+!
+!  rows dealt implicitly
+!
+      do j=n1,n2
+       wx=cp1*gamma/rho(l1:l2,j)
+! ax=-dt/2*J_x for i=i-1 (lower diagonal)
+       ax=-dt*wx*dx_2/4.*(dhcond(l1-1:l2-1,j)    &
+         *(TT(l1-1:l2-1,j)-TT(l1:l2,j))          &
+         +hcond(l1-1:l2-1,j)+hcond(l1:l2,j))
+! bx=1-dt/2*J_x for i=i (main diagonal)
+       bx=1.+dt*wx*dx_2/4.*(dhcond(l1:l2,j)      &
+         *(2.*TT(l1:l2,j)-TT(l1-1:l2-1,j)        &
+         -TT(l1+1:l2+1,j))+2.*hcond(l1:l2,j)     &
+         +hcond(l1+1:l2+1,j)+hcond(l1-1:l2-1,j))
+! cx=-dt/2*J_x for i=i+1 (upper diagonal)
+       cx=-dt*wx*dx_2/4.*(dhcond(l1+1:l2+1,j)    &
+          *(TT(l1+1:l2+1,j)-TT(l1:l2,j))         &
+          +hcond(l1:l2,j)+hcond(l1+1:l2+1,j))
+! rhsx=f_y(T^n) + f_x(T^n) (Eq. 3.6)
+! do first f_y(T^n)
+       rhsx=wx*dz_2/2.*((hcond(l1:l2,j+1)        &
+           +hcond(l1:l2,j))*(TT(l1:l2,j+1)       &
+           -TT(l1:l2,j))-(hcond(l1:l2,j)         &
+           +hcond(l1:l2,j-1))                    &
+           *(TT(l1:l2,j)-TT(l1:l2,j-1)))
+! then add f_x(T^n)
+       rhsx=rhsx+wx*dx_2/2.*((hcond(l1+1:l2+1,j)         &
+           +hcond(l1:l2,j))*(TT(l1+1:l2+1,j)-TT(l1:l2,j))  &
+           -(hcond(l1:l2,j)+hcond(l1-1:l2-1,j))          &
+           *(TT(l1:l2,j)-TT(l1-1:l2-1,j)))+source(l1:l2,j)
+!
+! x boundary conditions: periodic
+       aalpha=cx(nx) ; bbeta=ax(1)
+       call cyclic(ax,bx,cx,aalpha,bbeta,rhsx,workx,nx)
+       finter(l1:l2,j)=workx(1:nx)
+      enddo
+!
+      ftmp(:,4,:,ilnTT)=finter
+      call initiate_isendrcv_bdry(ftmp)
+      call finalize_isendrcv_bdry(ftmp)
+      finter=ftmp(:,4,:,ilnTT)
+!
+!  columns dealt implicitly
+!
+      call transp_mxmz(finter, fintert)
+      call transp_mxmz(rho, rhot)
+      call transp_mxmz(hcond, hcondt)
+      call transp_mxmz(dhcond, dhcondt)
+      call transp_mxmz(TT, TTt)
+!
+      do i=n1,n2
+         wz=dt*cp1*gamma*dz_2/rhot(l1:l2,i)
+         az=-wz/4.*(dhcondt(l1-1:l2-1,i)   &
+           *(TTt(l1-1:l2-1,i)-TTt(l1:l2,i)) &
+           +hcondt(l1-1:l2-1,i)+hcondt(l1:l2,i))
+!
+         bz=1.+wz/4.*(dhcondt(l1:l2,i)*             &
+           (2.*TTt(l1:l2,i)-TTt(l1-1:l2-1,i)         &
+           -TTt(l1+1:l2+1,i))+2.*hcondt(l1:l2,i)     &
+           +hcondt(l1+1:l2+1,i)+hcondt(l1-1:l2-1,i))
+!
+         cz=-wz/4.*(dhcondt(l1+1:l2+1,i)            &
+           *(TTt(l1+1:l2+1,i)-TTt(l1:l2,i))          &
+           +hcondt(l1:l2,i)+hcondt(l1+1:l2+1,i))
+!
+         rhsz=fintert(l1:l2,i)
+!
+! z boundary conditions
+! Constant temperature at the top: T^(n+1)-T^n=0
+         bz(nzgrid)=1. ; az(nzgrid)=0.
+         rhsz(nzgrid)=0.
+! bottom
+         select case (bcz1(ilnTT))
+! Constant temperature at the bottom: T^(n+1)-T^n=0
+           case ('cT')
+             bz(1)=1. ; cz(1)=0.
+             rhsz(1)=0.
+! Constant flux at the bottom
+           case ('c3')
+             bz(1)=1. ; cz(1)=-1.
+             rhsz(1)=0.
+           case default 
+             call fatal_error('ADI_Kprof','bcz on TT must be cT or c3')
+         endselect
+!
+         call tridag(az,bz,cz,rhsz,workz)
+         valt(l1:l2,i)=workz(1:nzgrid)
+      enddo
+      call transp_mzmx(valt,val)
+!
+      f(:,4,:,ilnTT)=finit(:,4,:,ilnTT)+dt*val
+!
+! update hcond used for the 'c3' condition in boundcond.f90
+!
+      call heatcond_TT_1d(f(:,4,n1,ilnTT), hcondADI)
+!
+    endsubroutine ADI_Kprof_MPI
+!***********************************************************************
     subroutine heatcond_TT_2d(TT, hcond, dhcond)
 !
 ! 07-Sep-07/gastine: computed 2-D radiative conductivity hcond(T) with
@@ -1744,10 +1898,13 @@ module Entropy
 !
 ! top boundary condition z=z(n2): always constant temperature
 !
-      f_2d(:,n2+1)=2.*f_2d(:,n2)-f_2d(:,n2-1)
+      if (iproc == nprocz-1) then
+        f_2d(:,n2+1)=2.*f_2d(:,n2)-f_2d(:,n2-1)
+      endif
 !
 ! bottom bondary condition z=z(n1): constant T or imposed flux dT/dz
 !
+      if (iproc==0) then
       select case (bcz1(ilnTT))
         case ('cT') ! constant temperature
           f_2d(:,n1-1)=2.*f_2d(:,n1)-f_2d(:,n1+1)
@@ -1758,6 +1915,7 @@ module Entropy
             f_2d(:,n1-1)=f_2d(:,n1+1)+2.*dz*Fbot/hcond(:)
           endif
       endselect
+      endif
 
     endsubroutine boundary_ADI
 !***********************************************************************
