@@ -164,7 +164,7 @@ module Entropy
       logical :: lnothing
       integer :: i, ierr
 !
-!  Set iTT requal to ilnTT if we are considering non-logarithmic temperature.
+!  Set iTT equal to ilnTT if we are considering non-logarithmic temperature.
 !
       if (ltemperature_nolog) iTT=ilnTT
 !
