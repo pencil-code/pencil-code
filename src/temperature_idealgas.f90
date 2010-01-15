@@ -872,9 +872,10 @@ module Entropy
                                  gamma_m1,eoscalc,ilnrho_TT
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mz) :: temp,lnrho
+      real, dimension (nzgrid) :: temp,lnrho
+      real, dimension(2) :: send_bnd, recv_bnd
       real :: hcond, dtemp, dlnrho, ss
-      integer :: i
+      integer :: i,n,iz
 !
       if (.not. ltemperature_nolog) &
         call fatal_error('temperature_idealgas',  &
@@ -883,37 +884,37 @@ module Entropy
 !
 !  Integrate from top to bottom: z(n2) --> z(n1).
 !
-      temp(n2)=cs20/gamma_m1
-      lnrho(n2)=lnrho0
-      f(:,:,n2,ilnTT)=cs20/gamma_m1
-      f(:,:,n2,ilnrho)=lnrho0
+      temp(nzgrid)=cs20/gamma_m1
+      lnrho(nzgrid)=lnrho0
 !
 !  Calculate the n2-1 gridpoint thanks to a 1st order forward Euler scheme.
 !
-      call heatcond_TT_0d(temp(n2), hcond)
+      call heatcond_TT_0d(temp(nzgrid), hcond)
       dtemp=Fbot/hcond
-      temp(n2-1)=temp(n2)+dz*dtemp
-      dlnrho=(-gamma/gamma_m1*gravz-dtemp)/temp(n2)
-      lnrho(n2-1)=lnrho(n2)+dz*dlnrho
-      f(:,:,n2-1,ilnTT)=temp(n2-1)
-      f(:,:,n2-1,ilnrho)=lnrho(n2-1)
+      temp(nzgrid-1)=temp(nzgrid)+dz*dtemp
+      dlnrho=(-gamma/gamma_m1*gravz-dtemp)/temp(nzgrid)
+      lnrho(nzgrid-1)=lnrho(nzgrid)+dz*dlnrho
 !
 !  Now we use a 2nd order centered scheme for the other gridpoints.
 !
-      do i=n2-1,n1+1,-1
+      do i=nzgrid-1,2,-1
         call heatcond_TT(temp(i), hcond)
         dtemp=Fbot/hcond
         temp(i-1)=temp(i+1)+2.*dz*dtemp
         dlnrho=(-gamma/gamma_m1*gravz-dtemp)/temp(i)
         lnrho(i-1)=lnrho(i+1)+2.*dz*dlnrho
-        f(:,:,i-1,ilnTT)=temp(i-1)
-        f(:,:,i-1,ilnrho)=lnrho(i-1)
+      enddo
+!
+      do n=1,nz
+        iz=ipz*nz+n
+        f(:,:,nghost+n,ilnTT)=temp(iz)
+        f(:,:,nghost+n,ilnrho)=lnrho(iz)
       enddo
 !
 !  Initialize cs2bot by taking into account the new bottom value of temperature
 !  Note: cs2top=cs20 already defined in eos_idealgas.
 !
-      cs2bot=gamma_m1*temp(n1)
+      cs2bot=gamma_m1*temp(1)
       print*,'cs2top, cs2bot=', cs2top, cs2bot
 !
       if (lroot) then
