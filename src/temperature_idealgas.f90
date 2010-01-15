@@ -1782,21 +1782,21 @@ module Entropy
       call transp_mxmz(TT, TTt)
 !
       do i=n1,n2
-         wz=dt*cp1*gamma*dz_2/rhot(l1:l2,i)
-         az=-wz/4.*(dhcondt(l1-1:l2-1,i)   &
-           *(TTt(l1-1:l2-1,i)-TTt(l1:l2,i)) &
-           +hcondt(l1-1:l2-1,i)+hcondt(l1:l2,i))
+         wz=dt*cp1*gamma*dz_2/rhot(n1:n2,i)
+         az=-wz/4.*(dhcondt(n1-1:n2-1,i)   &
+           *(TTt(n1-1:n2-1,i)-TTt(n1:n2,i)) &
+           +hcondt(n1-1:n2-1,i)+hcondt(n1:n2,i))
 !
-         bz=1.+wz/4.*(dhcondt(l1:l2,i)*             &
-           (2.*TTt(l1:l2,i)-TTt(l1-1:l2-1,i)         &
-           -TTt(l1+1:l2+1,i))+2.*hcondt(l1:l2,i)     &
-           +hcondt(l1+1:l2+1,i)+hcondt(l1-1:l2-1,i))
+         bz=1.+wz/4.*(dhcondt(n1:n2,i)*             &
+           (2.*TTt(n1:n2,i)-TTt(n1-1:n2-1,i)         &
+           -TTt(n1+1:n2+1,i))+2.*hcondt(n1:n2,i)     &
+           +hcondt(n1+1:n2+1,i)+hcondt(n1-1:n2-1,i))
 !
-         cz=-wz/4.*(dhcondt(l1+1:l2+1,i)            &
-           *(TTt(l1+1:l2+1,i)-TTt(l1:l2,i))          &
-           +hcondt(l1:l2,i)+hcondt(l1+1:l2+1,i))
+         cz=-wz/4.*(dhcondt(n1+1:n2+1,i)            &
+           *(TTt(n1+1:n2+1,i)-TTt(n1:n2,i))          &
+           +hcondt(n1:n2,i)+hcondt(n1+1:n2+1,i))
 !
-         rhsz=fintert(l1:l2,i)
+         rhsz=fintert(n1:n2,i)
 !
 ! z boundary conditions
 ! Constant temperature at the top: T^(n+1)-T^n=0
@@ -1817,7 +1817,7 @@ module Entropy
          endselect
 !
          call tridag(az,bz,cz,rhsz,workz)
-         valt(l1:l2,i)=workz(1:nzgrid)
+         valt(n1:n2,i)=workz(1:nzgrid)
       enddo
       call transp_mzmx(valt,val)
 !
