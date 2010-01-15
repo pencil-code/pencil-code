@@ -873,7 +873,6 @@ module Entropy
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nzgrid) :: temp,lnrho
-      real, dimension(2) :: send_bnd, recv_bnd
       real :: hcond, dtemp, dlnrho, ss
       integer :: i,n,iz
 !
