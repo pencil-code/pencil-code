@@ -1306,7 +1306,8 @@ module Density
       endif
 !
       if (lmassdiff_fix) then
-        if (lhydro.or.lentropy.or.ltemperature) lpenc_requested(i_rho1)=.true.
+        if ((lhydro.or.lentropy.or.ltemperature).and.ldensity_nolog) &
+            lpenc_requested(i_rho1)=.true.
         if (lhydro) lpenc_requested(i_uu)=.true.
         if (lentropy) lpenc_requested(i_cp)=.true.
         if (ltemperature.and.ltemperature_nolog) lpenc_requested(i_TT)=.true.
