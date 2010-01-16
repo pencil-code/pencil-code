@@ -1203,6 +1203,11 @@ module Testfield
         call fatal_error('calc_ltestfield_pars','need ntest=5 for u0ref')
       endif
 !
+!  initialize counter for mean fields
+!
+      uxbtestm=0.
+      jxbtestm=0.
+!
 !  Start mn loop
 !
       do n=n1,n2
@@ -1216,11 +1221,6 @@ module Testfield
 !  Count jtest backward, so we have access to the reference fields.
 !
         do jtest=njtest,1,-1
-!
-!  initialize counter for mean fields
-!
-          uxbtestm(:,:,jtest)=0.
-          jxbtestm(:,:,jtest)=0.
 !
 !  Compute test fields aatest, bbtest, jjtest, and uutest,
 !  and set bbref, jjref, uuref if jtest=iE0 (first point in loop)

@@ -684,12 +684,17 @@ module Forcing
 !  it may be better to force rho*du/dt (if lmomentum_ff=.true.)
 !  For compatibility with earlier results, lmomentum_ff=.false. by default.
 !
-      if (lmomentum_ff) then
-        rho1=exp(-f(l1:l2,m,n,ilnrho))
-        rho=1./rho1
+      if (ldensity) then
+        if (lmomentum_ff) then
+          rho1=exp(-f(l1:l2,m,n,ilnrho))
+          rho=1./rho1
+        else
+          rho1=1.
+          rho=exp(f(l1:l2,m,n,ilnrho))
+        endif
       else
         rho1=1.
-        rho=exp(f(l1:l2,m,n,ilnrho))
+        rho=1.
       endif
 !
 !  loop the two cases separately, so we don't check for r_ff during

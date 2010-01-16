@@ -583,7 +583,9 @@ module Testfield
 !
       if (lcalc_uumean) then
         do j=1,3
-          uufluct(:,j)=p%uu(:,j)-uumz(n,j)
+          !uufluct(:,j)=p%uu(:,j)-uumz(n,j)
+!AB: later the former version is to be used
+          uufluct(:,j)=p%uu(:,j)-uumz(n-n1+1,j)
         enddo
       else
         uufluct=p%uu
