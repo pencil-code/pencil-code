@@ -254,6 +254,10 @@ module Particles
 !
       if (taucool/=0.0) taucool1=1/taucool
 !
+!  Inverse material density.
+!
+      if (rhops/=0.0) rhops1=1/rhops
+!
 !  Multiple dust species. Friction time is given in the array tausp_species.
 !
       if (npar_species>1) then
