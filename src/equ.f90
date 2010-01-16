@@ -430,6 +430,7 @@ module Equ
 !
                               call calc_pencils_hydro(f,p)
                               call calc_pencils_density(f,p)
+        if (lpscalar)         call calc_pencils_pscalar(f,p)
         if (.not.ldensity_anelastic)  call calc_pencils_eos(f,p)
         if (lshock)           call calc_pencils_shock(f,p)
         if (lchemistry)       call calc_pencils_chemistry(f,p)
@@ -441,7 +442,6 @@ module Equ
         if (lpolymer)         call calc_pencils_polymer(f,p)
         if (lgrav)            call calc_pencils_gravity(f,p)
         if (lselfgravity)     call calc_pencils_selfgravity(f,p)
-        if (lpscalar)         call calc_pencils_pscalar(f,p)
         if (ldustvelocity)    call calc_pencils_dustvelocity(f,p)
         if (ldustdensity)     call calc_pencils_dustdensity(f,p)
         if (lneutralvelocity) call calc_pencils_neutralvelocity(f,p)
@@ -508,9 +508,7 @@ module Equ
 !  Add gravity, if present
 !
         if (lgrav) then
-          if (lhydro.or.ldustvelocity) then
-             call duu_dt_grav(f,df,p)
-          endif
+          if (lhydro.or.ldustvelocity) call duu_dt_grav(f,df,p)
         endif
 !
 !  Self-gravity
