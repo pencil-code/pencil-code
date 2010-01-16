@@ -203,7 +203,10 @@ module Pscalar
       do i=1,3
         if (gradC0(i)/=0.) lpenc_requested(i_uu)=.true.
       enddo
-      if (tensor_pscalar_diff/=0.) lpenc_requested(i_hlncc)=.true.
+      if (tensor_pscalar_diff/=0.0) then
+        lpenc_requested(i_hlncc)=.true.
+        lpencil_in(i_glncc)=.true.
+      endif
 !
       if (idiag_rhoccm/=0 .or. idiag_ccmax/=0 .or. idiag_ccmin/=0 .or. &
           idiag_ucm/=0 .or. idiag_uudcm/=0 .or. idiag_Cz2m/=0 .or. &
@@ -235,7 +238,6 @@ module Pscalar
         lpencil_in(i_uu)=.true.
         lpencil_in(i_glncc)=.true.
       endif
-      if (tensor_pscalar_diff/=0.) lpencil_in(i_glncc)=.true.
 !
     endsubroutine pencil_interdep_pscalar
 !***********************************************************************
