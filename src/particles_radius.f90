@@ -31,6 +31,7 @@ module Particles_radius
   real :: diffusion_coefficient=1.0, diffusion_coefficient1=1.0
   real :: tau_damp_evap=0.0, tau_damp_evap1=0.0
   logical :: lsweepup_par=.true., lcondensation_par=.false.
+  logical :: llatent_heat=.true.
   character (len=labellen), dimension(ninit) :: initap='nothing'
   character (len=labellen) :: condensation_coefficient_type='constant'
 !
@@ -38,13 +39,13 @@ module Particles_radius
       initap, ap0, rhops, vthresh_sweepup, deltavp12_floor, dt_min_evap, &
       lsweepup_par, lcondensation_par, tstart_sweepup_par, cdtps, apmin, &
       condensation_coefficient_type, alpha_cond, diffusion_coefficient, &
-      tau_damp_evap
+      tau_damp_evap, llatent_heat
 !
   namelist /particles_radius_run_pars/ &
       rhops, vthresh_sweepup, deltavp12_floor, dt_min_evap, &
       lsweepup_par, lcondensation_par, tstart_sweepup_par, cdtps, apmin, &
       condensation_coefficient_type, alpha_cond, diffusion_coefficient, &
-      tau_damp_evap
+      tau_damp_evap, llatent_heat
 !
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
   integer :: idiag_dvp12m=0, idiag_dtsweepp=0
@@ -402,11 +403,11 @@ module Particles_radius
 !
             dfp(k,iap)=dfp(k,iap)+dapdt
 !
-!  Deplete gas of small grains.
+!  Vapor monomers are added to the gas or removed from the gas.
 !
             call get_nptilde(fp,k,np_tilde)
             if (lfirst.and.ldt) np_total(ix)=np_total(ix)+np_tilde
-            drhocdt=-dapdt*(4/3.0)*pi*fp(k,iap)**2*rhops*np_tilde
+            drhocdt=-dapdt*4*pi*fp(k,iap)**2*rhops*np_tilde
             if (lpscalar_nolog) then
               df(ix0,m,n,icc)  =df(ix0,m,n,icc)   + p%rho1(ix)*drhocdt
             else
@@ -415,10 +416,10 @@ module Particles_radius
 !
 !  Release latent heat to gas / remove heat from gas.
 !
-!            if (ltemperature) then
-!              df(ix0,m,n,ilnTT)=df(ix0,m,n,ilnTT) - &
-!                  latent_heat_SI*p%rho1(ix)*p%TT1(ix)*p%cv1(ix)*drhocdt
-!            endif
+            if (ltemperature.and.llatent_heat) then
+              df(ix0,m,n,ilnTT)=df(ix0,m,n,ilnTT) - &
+                  latent_heat_SI*p%rho1(ix)*p%TT1(ix)*p%cv1(ix)*drhocdt
+            endif
             if (lfirst.and.ldt) total_surface_area(ix)=total_surface_area(ix)+ &
                 4*pi*fp(k,iap)**2*np_tilde*alpha_cond_par
           enddo
