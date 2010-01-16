@@ -205,7 +205,7 @@ module Pscalar
       enddo
       if (tensor_pscalar_diff/=0.0) then
         lpenc_requested(i_hlncc)=.true.
-        lpencil_in(i_glncc)=.true.
+        lpenc_requested(i_glncc)=.true.
       endif
 !
       if (idiag_rhoccm/=0 .or. idiag_ccmax/=0 .or. idiag_ccmin/=0 .or. &
