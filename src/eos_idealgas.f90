@@ -705,6 +705,7 @@ module EquationOfState
         if (lpencil(i_del6TT)) call del6(f,ieosvar2,p%del6TT)
         if (lpencil(i_ss)) p%ss=cv*(p%lnTT-lnTT0-gamma_m1*(p%lnrho-lnrho0))
         if (lpencil(i_pp)) p%pp=cv*gamma_m1*p%rho*p%TT
+        if (lpencil(i_ee)) p%ee=cv*exp(p%lnTT)
 !
 !  Work out thermodynamic quantities for given lnrho or rho and cs2.
 !
