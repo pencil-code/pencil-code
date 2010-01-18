@@ -1706,7 +1706,7 @@ module Entropy
       integer :: i,j
       real, dimension(mx,my,mz,mfarray) :: finit, f, ftmp
       real, dimension(mx,mz) :: source, hcond, dhcond, finter, TT, rho, val
-      real, dimension(mzt,mxt) :: hcondt, dhcondt, fintert, valt, TTt, rhot
+      real, dimension(mzt,mxt) :: hcondt, dhcondt, fintert, TTt, rhot, valt
       real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nzgrid)    :: az, bz, cz, wz, rhsz, workz
       real    :: aalpha, bbeta
@@ -1825,13 +1825,21 @@ module Entropy
          call tridag(az,bz,cz,rhsz,workz)
          valt(n1t:n2t,i)=workz(1:nzgrid)
       enddo
+      ! Necessary to avoid x-direction discontinuities
+      ftmp(:,4,:,ilnTT)=valt
+      call initiate_isendrcv_bdry(ftmp)
+      call finalize_isendrcv_bdry(ftmp)
+      valt=ftmp(:,4,:,ilnTT)
+!
       call transp_mzmx(valt,val)
 !
       f(:,4,:,ilnTT)=finit(:,4,:,ilnTT)+dt*val
 !
 ! update hcond used for the 'c3' condition in boundcond.f90
 !
-      call heatcond_TT_1d(f(:,4,n1,ilnTT), hcondADI)
+      if (iproc==0) then
+        call heatcond_TT_1d(f(:,4,n1,ilnTT), hcondADI)
+      endif
 !
     endsubroutine ADI_Kprof_MPI
 !***********************************************************************
