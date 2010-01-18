@@ -67,7 +67,7 @@ module Particles_number
 !
     endsubroutine pencil_criteria_par_number
 !***********************************************************************
-    subroutine dnptilde_dt_pencil(f,df,fp,dfp,p,ineargrid)
+    subroutine dnpswarm_dt_pencil(f,df,fp,dfp,p,ineargrid)
 !
 !  Evolution of internal particle number.
 !
@@ -86,9 +86,9 @@ module Particles_number
       call keep_compiler_quiet(ineargrid)
       call keep_compiler_quiet(p)
 !
-    endsubroutine dnptilde_dt_pencil
+    endsubroutine dnpswarm_dt_pencil
 !***********************************************************************
-    subroutine dnptilde_dt(f,df,fp,dfp,ineargrid)
+    subroutine dnpswarm_dt(f,df,fp,dfp,ineargrid)
 !
 !  Evolution of internal particle number.
 !
@@ -105,7 +105,7 @@ module Particles_number
       call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(ineargrid)
 !
-    endsubroutine dnptilde_dt
+    endsubroutine dnpswarm_dt
 !***********************************************************************
     subroutine read_particles_num_init_pars(unit,iostat)
 !

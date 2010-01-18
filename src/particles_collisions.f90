@@ -178,7 +178,7 @@ module Particles_collisions
 !
 !    tcol=1/(Sigma*sigma*OmegaK)=lambda0/(Omega*dx)
 !
-!  Here we used that lambda0=1/(nptilde*sigma) has been calculated as if
+!  Here we used that lambda0=1/(npswarm*sigma) has been calculated as if
 !  the particle scale height was dx.
 !
                   if (lkeplerian_flat) then

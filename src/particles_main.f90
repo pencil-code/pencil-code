@@ -519,7 +519,7 @@ module Particles_main
       if (lparticles)             call dvvp_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_radius)      call dap_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_spin)        call dps_dt(f,df,fp,dfp,ineargrid)
-      if (lparticles_number)      call dnptilde_dt(f,df,fp,dfp,ineargrid)
+      if (lparticles_number)      call dnpswarm_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_selfgravity) call dvvp_dt_selfgrav(f,df,fp,dfp,ineargrid)
       if (lparticles_nbody)       call dxxp_dt_nbody(dfp)
       if (lparticles_nbody)       call dvvp_dt_nbody(f,df,fp,dfp,ineargrid)
@@ -560,7 +560,7 @@ module Particles_main
       if (lparticles)           call dvvp_dt_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_radius)    call dap_dt_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_spin)      call dps_dt_pencil(f,df,fp,dfp,p,ineargrid)
-      if (lparticles_number)    call dnptilde_dt_pencil(f,df,fp,dfp,p,ineargrid)
+      if (lparticles_number)    call dnpswarm_dt_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_selfgravity) &
           call dvvp_dt_selfgrav_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_nbody) &

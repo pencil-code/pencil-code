@@ -26,17 +26,17 @@ module Particles_number
   real :: np_swarm0, vthresh_coagulation=0.0, deltavp22_floor=0.0
   real :: tstart_fragmentation_par=0.0, cdtpf=0.2
   logical :: lfragmentation_par=.true.
-  character (len=labellen), dimension(ninit) :: initnptilde='nothing'
+  character (len=labellen), dimension(ninit) :: initnpswarm='nothing'
 !
   integer :: idiag_nptm=0, idiag_dvp22mwnp=0, idiag_dvp22mwnp2=0
   integer :: idiag_dtfragp=0
 !
   namelist /particles_number_init_pars/ &
-      initnptilde, vthresh_coagulation, deltavp22_floor, &
+      initnpswarm, vthresh_coagulation, deltavp22_floor, &
       lfragmentation_par, tstart_fragmentation_par, cdtpf
 !
   namelist /particles_number_run_pars/ &
-      initnptilde, vthresh_coagulation, deltavp22_floor, &
+      initnpswarm, vthresh_coagulation, deltavp22_floor, &
       lfragmentation_par, tstart_fragmentation_par, cdtpf
 !
   contains
@@ -109,7 +109,7 @@ module Particles_number
 !
       do j=1,ninit
 
-        select case (initnptilde(j))
+        select case (initnpswarm(j))
 
         case ('nothing')
           if (lroot.and.j==1) print*, 'init_particles_number: nothing'
@@ -140,7 +140,7 @@ module Particles_number
 !
     endsubroutine pencil_criteria_par_number
 !***********************************************************************
-    subroutine dnptilde_dt_pencil(f,df,fp,dfp,p,ineargrid)
+    subroutine dnpswarm_dt_pencil(f,df,fp,dfp,p,ineargrid)
 !
 !  Evolution of internal particle number.
 !
@@ -155,7 +155,7 @@ module Particles_number
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (nx) :: dt1_fragmentation
-      real :: deltavp, sigma_jk, cdot, deltavp_sum, nptilde_sum, np2tilde_sum
+      real :: deltavp, sigma_jk, cdot, deltavp_sum, npswarm_sum, np2swarm_sum
       integer :: j, k, l, ncoll
       logical :: lheader, lfirstcall=.true.
 !
@@ -168,7 +168,7 @@ module Particles_number
 !
 !  Identify module and boundary conditions.
 !
-      if (lheader) print*,'dnptilde_dt_pencil: Calculate dnptilde_dt'
+      if (lheader) print*,'dnpswarm_dt_pencil: Calculate dnpswarm_dt'
 !
 !  Collisional fragmentation inside each superparticle.
 !
@@ -180,16 +180,16 @@ module Particles_number
           do l=l1,l2
 !  Need to count collisions for diagnostics.
             if (ldiagnos) then
-              deltavp_sum=0.0; nptilde_sum=0; np2tilde_sum=0; ncoll=0
+              deltavp_sum=0.0; npswarm_sum=0; np2swarm_sum=0; ncoll=0
             endif
 !  Get index number of shepherd particle at grid point.
             k=kshepherd(l-nghost)
 !  Continue only if there is actually a shepherd particle.
             if (k>0) then
               if (ip<=6.and.lroot) then
-                print*, 'dnptilde_dt: l, m, n=', l, m, n
-                print*, 'dnptilde_dt: kshepherd, np(l,m,n)=', k, f(l,m,n,inp)
-                print*, 'dnptilde_dt: x(l), y(m), z(n)  =', x(l), y(m), z(n)
+                print*, 'dnpswarm_dt: l, m, n=', l, m, n
+                print*, 'dnpswarm_dt: kshepherd, np(l,m,n)=', k, f(l,m,n,inp)
+                print*, 'dnpswarm_dt: x(l), y(m), z(n)  =', x(l), y(m), z(n)
               endif
 !  Only continue of the shepherd particle has a neighbour.
               do while (k/=0)
@@ -199,7 +199,7 @@ module Particles_number
                   j=kneighbour(j)
                   if (ip<=6.and.lroot) then
                     print*, &
-                        'dnptilde_dt: collisions between particle ', k, 'and', j
+                        'dnpswarm_dt: collisions between particle ', k, 'and', j
                   endif
 !  Collision speed.
                   deltavp=sqrt( &
@@ -245,15 +245,15 @@ module Particles_number
 !  Need to count collisions for diagnostics.
                   if (ldiagnos) then
                     deltavp_sum =deltavp_sum +deltavp
-                    nptilde_sum =nptilde_sum +fp(j,inpswarm)+fp(k,inpswarm)
-                    np2tilde_sum=np2tilde_sum+fp(j,inpswarm)*fp(k,inpswarm)
+                    npswarm_sum =npswarm_sum +fp(j,inpswarm)+fp(k,inpswarm)
+                    np2swarm_sum=np2swarm_sum+fp(j,inpswarm)*fp(k,inpswarm)
                     ncoll=ncoll+1
                   endif
                 enddo
 !  Subgrid model of collisions within a superparticle.
                 if (deltavp22_floor/=0.0) then
                   if (ip<=6.and.lroot) then
-                    print*, 'dnptilde_dt: collisions within particle ', k
+                    print*, 'dnpswarm_dt: collisions within particle ', k
                   endif
                   deltavp=deltavp22_floor
                   sigma_jk=pi*(fp(k,iap)+fp(k,iap))**2
@@ -269,8 +269,8 @@ module Particles_number
 !  Need to count collisions for diagnostics.
                   if (ldiagnos) then
                     deltavp_sum =deltavp_sum +deltavp
-                    nptilde_sum =nptilde_sum +fp(k,inpswarm)
-                    np2tilde_sum=np2tilde_sum+fp(k,inpswarm)**2
+                    npswarm_sum =npswarm_sum +fp(k,inpswarm)
+                    np2swarm_sum=np2swarm_sum+fp(k,inpswarm)**2
                     ncoll=ncoll+1
                   endif
 !  Time-step contribution
@@ -289,11 +289,11 @@ module Particles_number
 !  Average collision speed per particle
               if (idiag_dvp22mwnp/=0 .and. ncoll>=1) &
                   call sum_weighted_name((/ deltavp_sum/ncoll /), &
-                                         (/ nptilde_sum /),idiag_dvp22mwnp)
+                                         (/ npswarm_sum /),idiag_dvp22mwnp)
 !  Average collision speed per collision
               if (idiag_dvp22mwnp2/=0 .and. ncoll>=1) &
                   call sum_weighted_name((/ deltavp_sum/ncoll /), &
-                                         (/ np2tilde_sum /),idiag_dvp22mwnp2)
+                                         (/ np2swarm_sum /),idiag_dvp22mwnp2)
             endif
           enddo ! l1,l2
 !
@@ -311,9 +311,9 @@ module Particles_number
 !
       call keep_compiler_quiet(ineargrid)
 !
-    endsubroutine dnptilde_dt_pencil
+    endsubroutine dnpswarm_dt_pencil
 !***********************************************************************
-    subroutine dnptilde_dt(f,df,fp,dfp,ineargrid)
+    subroutine dnpswarm_dt(f,df,fp,dfp,ineargrid)
 !
 !  Evolution of internal particle number.
 !
@@ -336,7 +336,7 @@ module Particles_number
       call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(ineargrid)
 !
-    endsubroutine dnptilde_dt
+    endsubroutine dnpswarm_dt
 !***********************************************************************
     subroutine read_particles_num_init_pars(unit,iostat)
 !
