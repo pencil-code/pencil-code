@@ -210,7 +210,7 @@ module Particles_map
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real :: weight, weight_x, weight_y, weight_z
+      real :: weight0, weight, weight_x, weight_y, weight_z
       real, save :: dx1, dy1, dz1
       integer :: k, ix0, iy0, iz0, ixx, iyy, izz, ib
       integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1
@@ -277,14 +277,30 @@ module Particles_map
                   if (nxgrid/=1) ixx1=ixx0+1
                   if (nygrid/=1) iyy1=iyy0+1
                   if (nzgrid/=1) izz1=izz0+1
+!
+!  Calculate mass density per superparticle.
+!
+                  if (lparticles_radius.and.lparticles_number) then
+                    weight0=four_pi_rhops_over_three*fp(k,iap)**3*fp(k,inptilde)
+                  elseif (lparticles_radius) then
+                    weight0=four_pi_rhops_over_three*fp(k,iap)**3*np_tilde
+                  elseif (lparticles_number) then
+                    weight0=mp_tilde*fp(k,inptilde)
+                  else
+                    weight0=1.0
+                  endif
+!
                   do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
-                    weight=1.0
+!
+                    weight=weight0
+!
                     if (nxgrid/=1) weight=weight* &
                         ( 1.0-abs(fp(k,ixp)-xb(ixx,ib))*dx1 )
                     if (nygrid/=1) weight=weight* &
                         ( 1.0-abs(fp(k,iyp)-yb(iyy,ib))*dy1 )
                     if (nzgrid/=1) weight=weight* &
                         ( 1.0-abs(fp(k,izp)-zb(izz,ib))*dz1 )
+!
                     fb(ixx,iyy,izz,irhop,ib)=fb(ixx,iyy,izz,irhop,ib) + weight
 !
 !  For debugging:
@@ -336,6 +352,18 @@ module Particles_map
                     izz0=iz0  ; izz1=iz0
                   endif
 !
+!  Calculate mass density per superparticle.
+!
+                  if (lparticles_radius.and.lparticles_number) then
+                    weight0=four_pi_rhops_over_three*fp(k,iap)**3*fp(k,inptilde)
+                  elseif (lparticles_radius) then
+                    weight0=four_pi_rhops_over_three*fp(k,iap)**3*np_tilde
+                  elseif (lparticles_number) then
+                    weight0=mp_tilde*fp(k,inptilde)
+                  else
+                    weight0=1.0
+                  endif
+!
 !  The nearest grid point is influenced differently than the left and right
 !  neighbours are. A particle that is situated exactly on a grid point gives
 !  3/4 contribution to that grid point and 1/8 to each of the neighbours.
@@ -363,7 +391,7 @@ module Particles_map
                           weight_z=0.75 -   ((fp(k,izp)-zb(izz,ib))*dz1)**2
                     endif
 !
-                    weight=1.0
+                    weight=weight0
 !
                     if (nxgrid/=1) weight=weight*weight_x
                     if (nygrid/=1) weight=weight*weight_y
@@ -393,12 +421,40 @@ module Particles_map
 !
 !  Nearest Grid Point (NGP) method.
 !
-          fb(:,:,:,irhop,0:nblock_loc-1)=fb(:,:,:,inp,0:nblock_loc-1)
+          if (lparticles_radius.or.lparticles_number) then
+            if (npar_iblock(ib)/=0) then
+              do k=k1_iblock(ib),k2_iblock(ib)
+                lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
+                if (.not.lnbody) then
+                  ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+!
+!  Calculate mass density per superparticle.
+!
+                  if (lparticles_radius.and.lparticles_number) then
+                    weight0=four_pi_rhops_over_three*fp(k,iap)**3*fp(k,inptilde)
+                  elseif (lparticles_radius) then
+                    weight0=four_pi_rhops_over_three*fp(k,iap)**3*np_tilde
+                  elseif (lparticles_number) then
+                    weight0=mp_tilde*fp(k,inptilde)
+                  else
+                    weight0=1.0
+                  endif
+!
+                  f(ix0,iy0,iz0,irhop)=f(ix0,iy0,iz0,irhop) + weight0
+!
+                endif
+              enddo
+            endif
+          else
+            fb(:,:,:,irhop,0:nblock_loc-1)=fb(:,:,:,inp,0:nblock_loc-1)
+          endif
         endif
 !
 !  Multiply assigned particle number density by the mass density per particle.
 !
-        fb(:,:,:,irhop,0:nblock_loc-1)=rhop_tilde*fb(:,:,:,irhop,0:nblock_loc-1)
+        if (.not.(lparticles_radius.or.lparticles_number)) &
+            fb(:,:,:,irhop,0:nblock_loc-1)= &
+            rhop_tilde*fb(:,:,:,irhop,0:nblock_loc-1)
 !
 !  Fill the bricks on each processor with particle density assigned on the
 !  blocks.
