@@ -937,7 +937,7 @@ module Particles_nbody
           if (laccretion(ks).and.(r2_ij.le.rs2)) then
             call remove_particle(fp,ipar,k,dfp,ineargrid,ks)
             !add mass of the removed particle to the accreting particle
-            if (ladd_mass(ks)) pmass(ks)=pmass(ks)+mp_tilde
+            if (ladd_mass(ks)) pmass(ks)=pmass(ks)+mp_swarm
             goto 99
           else
             r2_ij=r2_ij+r_smooth(ks)**2
@@ -1793,7 +1793,7 @@ module Particles_nbody
 !  the mass of the new particle is the 
 !  collapsed mass M=m_particle*np
 !
-                    fcsp_loc(nc_loc,imass)    = mp_tilde*pnp(i)
+                    fcsp_loc(nc_loc,imass)    = mp_swarm*pnp(i)
 !         
                   endif
                 endif

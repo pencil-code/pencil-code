@@ -23,7 +23,7 @@ module Particles_number
 !
   include 'particles_number.h'
 !
-  real :: np_tilde0, vthresh_coagulation=0.0, deltavp22_floor=0.0
+  real :: np_swarm0, vthresh_coagulation=0.0, deltavp22_floor=0.0
   real :: tstart_fragmentation_par=0.0, cdtpf=0.2
   logical :: lfragmentation_par=.true.
   character (len=labellen), dimension(ninit) :: initnptilde='nothing'
@@ -80,16 +80,16 @@ module Particles_number
       allocate(kneighbour(mpar_loc))
       lshepherd_neighbour=.true.
 !
-      if (mp_tilde/=0.0) then
-        np_tilde0=rhop_tilde/mp_tilde
+      if (mp_swarm/=0.0) then
+        np_swarm0=rhop_swarm/mp_swarm
       else
         call warning('initialize_particles_number', &
             'Cowardly refusing to divide by zero -- did you set ap0?')
-        np_tilde0=1.0
+        np_swarm0=1.0
       endif
 !
       if (lroot) print*, 'initialize_particles_number: '// &
-          'number density per particle np_tilde0=', np_tilde0
+          'number density per particle np_swarm0=', np_swarm0
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
@@ -117,9 +117,9 @@ module Particles_number
         case ('constant')
           if (lroot) then
             print*, 'init_particles_number: constant internal number'
-            print*, 'init_particles_number: np_tilde0=', np_tilde0
+            print*, 'init_particles_number: np_swarm0=', np_swarm0
           endif
-          fp(1:npar_loc,inptilde)=np_tilde0
+          fp(1:npar_loc,inptilde)=np_swarm0
 !
         endselect
 !

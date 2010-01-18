@@ -77,33 +77,35 @@ module Particles
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
       ldragforce_gas_par, ldragforce_dust_par, bcpx, bcpy, bcpz, tausp, &
-      beta_dPdr_dust, rhop_tilde, eps_dtog, nu_epicycle, rp_int, rp_ext, &
-      gravx_profile, gravz_profile, gravr_profile, gravx, gravz, gravr, &
-      gravsmooth, kx_gg, kz_gg, Ri0, eps1, lmigration_redo, &
+      beta_dPdr_dust, mp_swarm, np_swarm, rhop_swarm, eps_dtog, nu_epicycle, &
+      rp_int, rp_ext, gravx_profile, gravz_profile, gravr_profile, gravx, &
+      gravz, gravr, gravsmooth, kx_gg, kz_gg, Ri0, eps1, lmigration_redo, &
       ldragforce_equi_global_eps, kx_vvp, ky_vvp, kz_vvp, amplvvp, kx_xxp, &
       ky_xxp, kz_xxp, amplxxp, kx_vpx, kx_vpy, kx_vpz, ky_vpx, ky_vpy, ky_vpz, &
       kz_vpx, kz_vpy, kz_vpz, phase_vpx, phase_vpy, phase_vpz, &
       lparticlemesh_cic, lparticlemesh_tsc, linterpolate_spline, &
       tstart_dragforce_par, tstart_grav_par, tausp_species, &
       learly_particle_map, epsp_friction_increase, lmigration_real_check, &
-      ldraglaw_epstein, lcheck_exact_frontier, pdlaw, ldt_grav_par, lsinkpoint,&
-      xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, lcoriolis_force_par, &
-      lcentrifugal_force_par, ldt_adv_par, Lx0, Ly0, Lz0, lglobalrandom, &
-      linsert_particles_continuously, lrandom_particle_pencils, lnocalc_np, &
-      lnocalc_rhop, it1_loadbalance
+      ldraglaw_epstein, lcheck_exact_frontier, pdlaw, ldt_grav_par, &
+      lsinkpoint,xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, & 
+      lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, Lx0, Ly0, &
+      Lz0, lglobalrandom, linsert_particles_continuously, &
+      lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, it1_loadbalance, &
+      np_const, rhop_const
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
-      ldragforce_gas_par, ldragforce_dust_par, rhop_tilde, eps_dtog, cdtp, &
-      cdtpgrav, lpar_spec, linterp_reality_check, nu_epicycle, gravx_profile, &
-      gravz_profile, gravr_profile, gravx, gravz, gravr, gravsmooth, kx_gg, &
-      kz_gg, lmigration_redo, tstart_dragforce_par, tstart_grav_par, &
-      lparticlemesh_cic, lparticlemesh_tsc, epsp_friction_increase, &
-      learly_particle_map, lmigration_real_check, ldraglaw_epstein, &
-      lcheck_exact_frontier, ldt_grav_par, lsinkpoint, xsinkpoint, ysinkpoint, &
-      zsinkpoint, rsinkpoint, lcoriolis_force_par, lcentrifugal_force_par, &
-      ldt_adv_par, linsert_particles_continuously, lrandom_particle_pencils, &
-      lnocalc_np, lnocalc_rhop, it1_loadbalance
+      ldragforce_gas_par, ldragforce_dust_par, mp_swarm, np_swarm, rhop_swarm, &
+      eps_dtog, cdtp, cdtpgrav, lpar_spec, linterp_reality_check, &
+      nu_epicycle, gravx_profile, gravz_profile, gravr_profile, gravx, gravz, &
+      gravr, gravsmooth, kx_gg, kz_gg, lmigration_redo, tstart_dragforce_par, &
+      tstart_grav_par, lparticlemesh_cic, lparticlemesh_tsc, &
+      epsp_friction_increase, learly_particle_map, lmigration_real_check, &
+      ldraglaw_epstein, lcheck_exact_frontier, ldt_grav_par, lsinkpoint, &
+      xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, lcoriolis_force_par, &
+      lcentrifugal_force_par, ldt_adv_par, linsert_particles_continuously, &
+      lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, it1_loadbalance, &
+      np_const, rhop_const
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0, idiag_rp2m=0
@@ -246,28 +248,28 @@ module Particles
 !
 !  Calculate mass density per particle (for back-reaction drag force on gas)
 !  following the formula
-!    rhop_tilde*N_cell = eps*rhom
-!  where rhop_tilde is the mass density per particle, N_cell is the number of
-!  particles per grid cell and rhom is the mean gas density in the box.
+!    rhop_swarm*N_cell = eps*rhom
+!  where rhop_swarm is the mass density per superparticle, N_cell is the number
+!  of particles per grid cell and rhom is the mean gas density in the box.
 !
-      if (rhop_tilde==0.0) then
+      if (rhop_swarm==0.0) then
 !  For stratification, take into account gas present outside the simulation box.
         if ( (lgravz .and. lgravz_gas) .or. gravz_profile=='linear') then
           rhom=sqrt(2*pi)*1.0*1.0/Lz  ! rhom = Sigma/Lz, Sigma=sqrt(2*pi)*H*rho1
         else
           rhom=1.0
         endif
-        rhop_tilde=eps_dtog*rhom/(real(npar)/(nxgrid*nygrid*nzgrid))
+        rhop_swarm=eps_dtog*rhom/(real(npar)/(nxgrid*nygrid*nzgrid))
         if (lroot) print*, 'initialize_particles: '// &
             'dust-to-gas ratio eps_dtog=', eps_dtog
       endif
       if (lroot) then
         print*, 'initialize_particles: '// &
-            'mass per constituent particle mp_tilde=', mp_tilde
+            'mass per constituent particle mp_swarm=', mp_swarm
         print*, 'initialize_particles: '// &
-            'number density per superparticle np_tilde=', np_tilde
+            'number density per superparticle np_swarm=', np_swarm
         print*, 'initialize_particles: '// &
-            'mass density per superparticle rhop_tilde=', rhop_tilde
+            'mass density per superparticle rhop_swarm=', rhop_swarm
       endif
 !
 !  Calculate nu_epicycle**2 for gravity.
@@ -305,7 +307,7 @@ module Particles
         if (lparticlemesh_cic .or. lparticlemesh_tsc) lfold_df=.true.
       endif
 !
-!  Drag force on gas right now assumed rhop_tilde is the same for all particles.
+!  Drag force on gas right now assumed rhop_swarm is the same for all particles.
 !
       if (ldragforce_gas_par.and.(lparticles_radius.or.lparticles_number)) then
         if (lroot) print*, 'initialize_particles: drag force on gas is '// &
@@ -317,9 +319,9 @@ module Particles
 !
       if (lroot) then
         open (1,file=trim(datadir)//'/pc_constants.pro',position='append')
-          write (1,*) 'np_tilde=', np_tilde
-          write (1,*) 'mp_tilde=', mp_tilde
-          write (1,*) 'rhop_tilde=', rhop_tilde
+          write (1,*) 'np_swarm=', np_swarm
+          write (1,*) 'mp_swarm=', mp_swarm
+          write (1,*) 'rhop_swarm=', rhop_swarm
         close (1)
       endif
 !
@@ -1092,7 +1094,7 @@ k_loop:   do while (.not. (k>npar_loc))
         if (irhop/=0) then
           p%rhop=f(l1:l2,m,n,irhop)
         else
-          p%rhop=rhop_tilde*f(l1:l2,m,n,inp)
+          p%rhop=rhop_swarm*f(l1:l2,m,n,inp)
         endif
       endif
 !
@@ -1444,7 +1446,7 @@ k_loop:   do while (.not. (k>npar_loc))
             call sum_par_name(fp(1:npar_loc,ivpy)**2,idiag_vpy2m)
         if (idiag_vpz2m/=0) &
             call sum_par_name(fp(1:npar_loc,ivpz)**2,idiag_vpz2m)
-        if (idiag_ekinp/=0) call sum_par_name(0.5*rhop_tilde*npar_per_cell* &
+        if (idiag_ekinp/=0) call sum_par_name(0.5*rhop_swarm*npar_per_cell* &
             sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
         if (idiag_epotpm/=0) call sum_par_name( &
             -gravr/sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)),idiag_epotpm)
@@ -1483,16 +1485,16 @@ k_loop:   do while (.not. (k>npar_loc))
             sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)))**2,idiag_eccpz2m)
         if (idiag_rhoptilm/=0) then
           do k=1,npar_loc
-            if (lparticles_number) np_tilde=fp(k,inptilde)
+            if (lparticles_number) np_swarm=fp(k,inptilde)
             call sum_par_name( &
-                (/4/3.*pi*rhops*fp(k,iap)**3*np_tilde/),idiag_rhoptilm)
+                (/4/3.*pi*rhops*fp(k,iap)**3*np_swarm/),idiag_rhoptilm)
           enddo
         endif
         if (idiag_mpt/=0) then
           do k=1,npar_loc
-            if (lparticles_number) np_tilde=fp(k,inptilde)
+            if (lparticles_number) np_swarm=fp(k,inptilde)
             call integrate_par_name( &
-                (/4/3.*pi*rhops*fp(k,iap)**3*np_tilde/),idiag_mpt)
+                (/4/3.*pi*rhops*fp(k,iap)**3*np_swarm/),idiag_mpt)
           enddo
         endif
         if (idiag_npargone/=0) then
@@ -1763,7 +1765,7 @@ k_loop:   do while (.not. (k>npar_loc))
                       endif
 !  Add friction force to grid point.
                       dfb(ixx,iyy,izz,iux:iuz,ib)=dfb(ixx,iyy,izz,iux:iuz,ib)- &
-                          rhop_tilde*rho1_point*dragforce*weight
+                          rhop_swarm*rho1_point*dragforce*weight
                     enddo; enddo; enddo
 !
 !  Triangular Shaped Cloud (TSC) scheme.
@@ -1828,7 +1830,7 @@ k_loop:   do while (.not. (k>npar_loc))
                       endif
 !  Add friction force to grid point.
                       dfb(ixx,iyy,izz,iux:iuz,ib)=dfb(ixx,iyy,izz,iux:iuz,ib) -&
-                          rhop_tilde*rho1_point*dragforce*weight
+                          rhop_swarm*rho1_point*dragforce*weight
                     enddo; enddo; enddo
                   else
 !
@@ -1841,7 +1843,7 @@ k_loop:   do while (.not. (k>npar_loc))
                     endif
                     l=ineargrid(k,1)
                     dfb(ix0,iy0,iz0,iux:iuz,ib) = dfb(ix0,iy0,iz0,iux:iuz,ib) -&
-                        rhop_tilde*rho1_point*dragforce
+                        rhop_swarm*rho1_point*dragforce
                   endif
                 endif
 !

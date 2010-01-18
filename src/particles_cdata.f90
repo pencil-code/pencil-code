@@ -14,7 +14,7 @@ module Particles_cdata
   real :: rp_int=-impossible,rp_ext=-impossible
   real :: dsnap_par_minor=0.0, dsnap_par=0.0
   real :: rhops=1.0e10, rhops1=1.0d-10
-  real :: mp_tilde=0.0, np_tilde=0.0, rhop_tilde=0.0
+  real :: mp_swarm=0.0, np_swarm=0.0, rhop_swarm=0.0
   real :: four_pi_rhops_over_three
   real :: np_const=0.0, rhop_const=0.0
   integer, dimension (mpar_loc) :: ipar

@@ -18,8 +18,6 @@ module Particles_number
 !
   implicit none
 !
-  real :: np_tilde0
-!
   include 'particles_number.h'
 !
   contains

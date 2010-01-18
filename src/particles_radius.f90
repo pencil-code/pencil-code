@@ -95,9 +95,9 @@ module Particles_radius
           lparticles_number .or. lparticles_spin)) then 
         call fatal_error('initialize_particles_radius: npart_radii > 1','')
       else
-        mp_tilde=4/3.0*pi*rhops*ap0(1)**3
+        mp_swarm=4/3.0*pi*rhops*ap0(1)**3
         if (lroot) print*, 'initialize_particles_radius: '// &
-            'mass per dust grain mp_tilde=', mp_tilde
+            'mass per dust grain mp_swarm=', mp_swarm
       endif
 !
 !  Short hand for spherical particle prefactor.
@@ -238,7 +238,7 @@ module Particles_radius
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (nx) :: dt1_sweepup
-      real :: deltavp, np_tilde
+      real :: deltavp
       integer :: k, ix0, ix
 !
       intent (in) :: f, fp
@@ -273,20 +273,20 @@ module Particles_radius
 !
 !  Deplete gas of small grains.
 !
-              if (lparticles_radius) np_tilde=fp(k,inptilde)
+              if (lparticles_radius) np_swarm=fp(k,inptilde)
               if (lpscalar_nolog) then
                 df(ix0,m,n,icc) = df(ix0,m,n,icc) - &
-                    np_tilde*pi*fp(k,iap)**2*deltavp*p%cc(ix)
+                    np_swarm*pi*fp(k,iap)**2*deltavp*p%cc(ix)
               else
                 df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) - &
-                    np_tilde*pi*fp(k,iap)**2*deltavp
+                    np_swarm*pi*fp(k,iap)**2*deltavp
               endif
 !
 !  Time-step contribution of sweep-up.
 !
               if (lfirst.and.ldt) then
                 dt1_sweepup(ix) = dt1_sweepup(ix) + &
-                    np_tilde*pi*fp(k,iap)**2*deltavp
+                    np_swarm*pi*fp(k,iap)**2*deltavp
               endif
 !
             endif
@@ -329,7 +329,7 @@ module Particles_radius
       real, dimension (nx) :: ap_equi, vth, dt1_condensation, rhovap
       real, dimension (nx) :: total_surface_area, ppsat, supsatratio1
       real, dimension (nx) :: rhocond_tot, rhosat, np_total
-      real :: dapdt, drhocdt, np_tilde, alpha_cond_par, fdamp_evap
+      real :: dapdt, drhocdt, alpha_cond_par, fdamp_evap
       integer :: k, ix, ix0
 !
       intent (in) :: f, fp
@@ -409,9 +409,9 @@ module Particles_radius
 !
 !  Vapor monomers are added to the gas or removed from the gas.
 !
-            if (lparticles_radius) np_tilde=fp(k,inptilde)
-            if (lfirst.and.ldt) np_total(ix)=np_total(ix)+np_tilde
-            drhocdt=-dapdt*4*pi*fp(k,iap)**2*rhops*np_tilde
+            if (lparticles_radius) np_swarm=fp(k,inptilde)
+            if (lfirst.and.ldt) np_total(ix)=np_total(ix)+np_swarm
+            drhocdt=-dapdt*4*pi*fp(k,iap)**2*rhops*np_swarm
             if (lpscalar_nolog) then
               df(ix0,m,n,icc)  =df(ix0,m,n,icc)   + p%rho1(ix)*drhocdt
             else
@@ -425,14 +425,14 @@ module Particles_radius
                   latent_heat_SI*p%rho1(ix)*p%TT1(ix)*p%cv1(ix)*drhocdt
             endif
             if (lfirst.and.ldt) total_surface_area(ix)=total_surface_area(ix)+ &
-                4*pi*fp(k,iap)**2*np_tilde*alpha_cond_par
+                4*pi*fp(k,iap)**2*np_swarm*alpha_cond_par
           enddo
 !
 !  Time-step contribution of condensation.
 !
           if (lfirst.and.ldt) then
             ap_equi=((p%rhop+(1.0-supsatratio1)*rhovap)/ &
-                (4.0/3.0*pi*rhops*np_tilde*p%np))**(1.0/3.0)
+                (4.0/3.0*pi*rhops*np_swarm*p%np))**(1.0/3.0)
             do ix=1,nx
               if (rhocond_tot(ix)>rhosat(ix)) then
                 dt1_condensation(ix) = max(total_surface_area(ix)*vth(ix), &

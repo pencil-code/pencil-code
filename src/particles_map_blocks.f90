@@ -283,9 +283,9 @@ module Particles_map
                   if (lparticles_radius.and.lparticles_number) then
                     weight0=four_pi_rhops_over_three*fp(k,iap)**3*fp(k,inptilde)
                   elseif (lparticles_radius) then
-                    weight0=four_pi_rhops_over_three*fp(k,iap)**3*np_tilde
+                    weight0=four_pi_rhops_over_three*fp(k,iap)**3*np_swarm
                   elseif (lparticles_number) then
-                    weight0=mp_tilde*fp(k,inptilde)
+                    weight0=mp_swarm*fp(k,inptilde)
                   else
                     weight0=1.0
                   endif
@@ -357,9 +357,9 @@ module Particles_map
                   if (lparticles_radius.and.lparticles_number) then
                     weight0=four_pi_rhops_over_three*fp(k,iap)**3*fp(k,inptilde)
                   elseif (lparticles_radius) then
-                    weight0=four_pi_rhops_over_three*fp(k,iap)**3*np_tilde
+                    weight0=four_pi_rhops_over_three*fp(k,iap)**3*np_swarm
                   elseif (lparticles_number) then
-                    weight0=mp_tilde*fp(k,inptilde)
+                    weight0=mp_swarm*fp(k,inptilde)
                   else
                     weight0=1.0
                   endif
@@ -433,9 +433,9 @@ module Particles_map
                   if (lparticles_radius.and.lparticles_number) then
                     weight0=four_pi_rhops_over_three*fp(k,iap)**3*fp(k,inptilde)
                   elseif (lparticles_radius) then
-                    weight0=four_pi_rhops_over_three*fp(k,iap)**3*np_tilde
+                    weight0=four_pi_rhops_over_three*fp(k,iap)**3*np_swarm
                   elseif (lparticles_number) then
-                    weight0=mp_tilde*fp(k,inptilde)
+                    weight0=mp_swarm*fp(k,inptilde)
                   else
                     weight0=1.0
                   endif
@@ -454,7 +454,7 @@ module Particles_map
 !
         if (.not.(lparticles_radius.or.lparticles_number)) &
             fb(:,:,:,irhop,0:nblock_loc-1)= &
-            rhop_tilde*fb(:,:,:,irhop,0:nblock_loc-1)
+            rhop_swarm*fb(:,:,:,irhop,0:nblock_loc-1)
 !
 !  Fill the bricks on each processor with particle density assigned on the
 !  blocks.

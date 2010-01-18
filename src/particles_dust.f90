@@ -97,7 +97,7 @@ module Particles
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
       ldragforce_gas_par, ldragforce_dust_par, bcpx, bcpy, bcpz, tausp, &
-      beta_dPdr_dust, np_tilde, mp_tilde, rhop_tilde, eps_dtog, nu_epicycle, &
+      beta_dPdr_dust, np_swarm, mp_swarm, rhop_swarm, eps_dtog, nu_epicycle, &
       rp_int, rp_ext, gravx_profile, gravz_profile, gravr_profile, gravx, &
       gravz, gravr, gravsmooth, kx_gg, kz_gg, Ri0, eps1, lmigration_redo, &
       ldragforce_equi_global_eps, coeff, kx_vvp, ky_vvp, kz_vvp, amplvvp, &
@@ -125,8 +125,8 @@ module Particles
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
-      ldragforce_gas_par, ldragforce_dust_par, np_tilde, mp_tilde, &
-      rhop_tilde, eps_dtog, cdtp, cdtpgrav, lpar_spec, linterp_reality_check, &
+      ldragforce_gas_par, ldragforce_dust_par, np_swarm, mp_swarm, &
+      rhop_swarm, eps_dtog, cdtp, cdtpgrav, lpar_spec, linterp_reality_check, &
       nu_epicycle, gravx_profile, gravz_profile, gravr_profile, gravx, &
       gravz, gravr, gravsmooth, kx_gg, kz_gg, lmigration_redo, &
       tstart_dragforce_par, tstart_grav_par, lparticlemesh_cic, &
@@ -290,28 +290,28 @@ module Particles
       endif
 !  Calculate mass density per particle (for back-reaction drag force on gas)
 !  following the formula
-!    rhop_tilde*N_cell = eps*rhom
-!  where rhop_tilde is the mass density per particle, N_cell is the number of
-!  particles per grid cell and rhom is the mean gas density in the box.
+!    rhop_swarm*N_cell = eps*rhom
+!  where rhop_swarm is the mass density per superparticle, N_cell is the number
+!  of particles per grid cell and rhom is the mean gas density in the box.
 !
-      if (rhop_tilde==0.0) then
+      if (rhop_swarm==0.0) then
 !  For stratification, take into account gas present outside the simulation box.
         if ((lgravz .and. lgravz_gas) .or. gravz_profile=='linear') then
           rhom=sqrt(2*pi)*1.0*1.0/Lz  ! rhom = Sigma/Lz, Sigma=sqrt(2*pi)*H*rho1
         else
           rhom=1.0
         endif
-        rhop_tilde=eps_dtog*rhom/(real(npar)/(nxgrid*nygrid*nzgrid))
+        rhop_swarm=eps_dtog*rhom/(real(npar)/(nxgrid*nygrid*nzgrid))
         if (lroot) print*, 'initialize_particles: '// &
             'dust-to-gas ratio eps_dtog=', eps_dtog
       endif
       if (lroot) then
         print*, 'initialize_particles: '// &
-            'mass per constituent particle mp_tilde=', mp_tilde
+            'mass per constituent particle mp_swarm=', mp_swarm
         print*, 'initialize_particles: '// &
-            'number density per superparticle np_tilde=', np_tilde
+            'number density per superparticle np_swarm=', np_swarm
         print*, 'initialize_particles: '// &
-            'mass density per superparticle rhop_tilde=', rhop_tilde
+            'mass density per superparticle rhop_swarm=', rhop_swarm
       endif
 !
 !  Calculate nu_epicycle**2 for gravity.
@@ -411,7 +411,7 @@ module Particles
         endif
       endif
 !
-!  Drag force on gas right now assumed rhop_tilde is the same for all particles.
+!  Drag force on gas right now assumed rhop_swarm is the same for all particles.
 !
       if (ldragforce_gas_par.and.(lparticles_radius.or.lparticles_number)) then
         if (lroot) print*, 'initialize_particles: drag force on gas is '// &
@@ -500,9 +500,9 @@ module Particles
 !
       if (lroot) then
         open (1,file=trim(datadir)//'/pc_constants.pro',position='append')
-          write (1,*) 'np_tilde=', np_tilde
-          write (1,*) 'mp_tilde=', mp_tilde
-          write (1,*) 'rhop_tilde=', rhop_tilde
+          write (1,*) 'np_swarm=', np_swarm
+          write (1,*) 'mp_swarm=', mp_swarm
+          write (1,*) 'rhop_swarm=', rhop_swarm
         close (1)
       endif
 !
@@ -1836,7 +1836,7 @@ k_loop:   do while (.not. (k>npar_loc))
         if (irhop/=0) then
           p%rhop=f(l1:l2,m,n,irhop)
         else
-          p%rhop=rhop_tilde*f(l1:l2,m,n,inp)
+          p%rhop=rhop_swarm*f(l1:l2,m,n,inp)
         endif
       endif
 !
@@ -2169,7 +2169,7 @@ k_loop:   do while (.not. (k>npar_loc))
             call sum_par_name(fp(1:npar_loc,ivpy)**2,idiag_vpy2m)
         if (idiag_vpz2m/=0) &
             call sum_par_name(fp(1:npar_loc,ivpz)**2,idiag_vpz2m)
-        if (idiag_ekinp/=0) call sum_par_name(0.5*rhop_tilde*npar_per_cell* &
+        if (idiag_ekinp/=0) call sum_par_name(0.5*rhop_swarm*npar_per_cell* &
             sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
         if (idiag_epotpm/=0) call sum_par_name( &
             -gravr/sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)),idiag_epotpm)
@@ -2208,16 +2208,16 @@ k_loop:   do while (.not. (k>npar_loc))
             sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)))**2,idiag_eccpz2m)
         if (idiag_rhoptilm/=0) then
           do k=1,npar_loc
-            if (lparticles_number) np_tilde=fp(k,inptilde)
+            if (lparticles_number) np_swarm=fp(k,inptilde)
             call sum_par_name( &
-                (/4/3.*pi*rhops*fp(k,iap)**3*np_tilde/),idiag_rhoptilm)
+                (/4/3.*pi*rhops*fp(k,iap)**3*np_swarm/),idiag_rhoptilm)
           enddo
         endif
         if (idiag_mpt/=0) then
           do k=1,npar_loc
-            if (lparticles_number) np_tilde=fp(k,inptilde)
+            if (lparticles_number) np_swarm=fp(k,inptilde)
             call integrate_par_name( &
-                (/4/3.*pi*rhops*fp(k,iap)**3*np_tilde/),idiag_mpt)
+                (/4/3.*pi*rhops*fp(k,iap)**3*np_swarm/),idiag_mpt)
           enddo
         endif
         if (idiag_npargone/=0) then
@@ -2480,10 +2480,10 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Add friction force to grid point.
                     if (lcartesian_coords) then
                       df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                          rhop_tilde*rho1_point*dragforce*weight
+                          rhop_swarm*rho1_point*dragforce*weight
                     else
                       df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                          rhop_tilde*box_volume/(nxgrid*nygrid*nzgrid)* &
+                          rhop_swarm*box_volume/(nxgrid*nygrid*nzgrid)* &
                           dvolume_1(ixx)*rho1_point*dragforce*weight
                     endif
                   enddo; enddo; enddo
@@ -2554,10 +2554,10 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Add friction force to grid point.
                     if (lcartesian_coords) then
                       df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                          rhop_tilde*rho1_point*dragforce*weight
+                          rhop_swarm*rho1_point*dragforce*weight
                     else
                       df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                          rhop_tilde*box_volume/(nxgrid*nygrid*nzgrid)* &
+                          rhop_swarm*box_volume/(nxgrid*nygrid*nzgrid)* &
                           dvolume_1(ixx)*rho1_point*dragforce*weight
                     endif
                   enddo; enddo; enddo
@@ -2568,10 +2568,10 @@ k_loop:   do while (.not. (k>npar_loc))
                   l=ineargrid(k,1)
                   if (lcartesian_coords) then
                     df(l,m,n,iux:iuz) = df(l,m,n,iux:iuz) - &
-                        rhop_tilde*p%rho1(l-nghost)*dragforce
+                        rhop_swarm*p%rho1(l-nghost)*dragforce
                   else
                     df(l,m,n,iux:iuz) = df(l,m,n,iux:iuz) - &
-                        rhop_tilde*box_volume/(nxgrid*nygrid*nzgrid)* &
+                        rhop_swarm*box_volume/(nxgrid*nygrid*nzgrid)* &
                         dvolume_1(l-nghost)*p%rho1(l-nghost)*dragforce
                   endif
                 endif
@@ -2587,7 +2587,7 @@ k_loop:   do while (.not. (k>npar_loc))
                 endif
 !
                 drag_heat(ix0-nghost)=drag_heat(ix0-nghost) + &
-                     rhop_tilde*tausp1_par*up2
+                     rhop_swarm*tausp1_par*up2
               endif
 !
 !  The minimum friction time of particles in a grid cell sets the local friction
@@ -3352,7 +3352,7 @@ k_loop:   do while (.not. (k>npar_loc))
                 tau_coll1(ix0-nghost)*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:))
             if (lcollisional_heat .or. ldiagnos) then
               coll_heat(ix0-nghost) = coll_heat(ix0-nghost) + & 
-                  rhop_tilde*tau_coll1(ix0-nghost)*&
+                  rhop_swarm*tau_coll1(ix0-nghost)*&
                   sum(fp(k,ivpx:ivpz)*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:)))
             endif
           enddo
@@ -3394,7 +3394,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Cooling time-scale.
                 tau_cool1_par= &
                     (1.0-coeff_restitution)* &
-                    rhop_tilde*deltavp*(tausp_parj+tausp_park)**2/ &
+                    rhop_swarm*deltavp*(tausp_parj+tausp_park)**2/ &
                     (tausp_parj3+tausp_park3)
                 dt1_cool=dt1_cool+tau_cool1_par
 !                if (tau_coll_min>0.0) then
@@ -3466,7 +3466,7 @@ k_loop:   do while (.not. (k>npar_loc))
                   (vvpm_species(:,2,ispecies)-vvpm_species(:,2,jspecies))**2 + &
                   (vvpm_species(:,3,ispecies)-vvpm_species(:,3,jspecies))**2)
             tau_coll1_species(:,jspecies,ispecies) = &
-                  vcoll*np_species(:,ispecies)*rhop_tilde*p%rho1 / ( &
+                  vcoll*np_species(:,ispecies)*rhop_swarm*p%rho1 / ( &
                 tausp_species(jspecies)**3/ &
                 (tausp_species(ispecies)+tausp_species(jspecies))**2 )
             where (np_species(:,ispecies)/=0.0) &
@@ -3506,7 +3506,7 @@ k_loop:   do while (.not. (k>npar_loc))
                   (fp(k,ivpx:ivpz)-vvpm_species(ix0-nghost,:,jspecies))
               if (lcollisional_heat .or. ldiagnos) then
                 coll_heat(ix0-nghost) = coll_heat(ix0-nghost) + &
-                    rhop_tilde*tau_coll1_species(ix0-nghost,ispecies,jspecies)*&
+                    rhop_swarm*tau_coll1_species(ix0-nghost,ispecies,jspecies)*&
                     sum(fp(k,ivpx:ivpz)*(fp(k,ivpx:ivpz) - &
                                          vvpm_species(ix0-nghost,:,jspecies)))
               endif
@@ -3775,7 +3775,7 @@ k_loop:   do while (.not. (k>npar_loc))
       endif
 !
       Szero=216*nu*k_B*TT*pi_1/ &
-        (dia**5*stocunn*rhop_tilde**2/interp_rho(k))
+        (dia**5*stocunn*rhop_swarm**2/interp_rho(k))
 !
       if (dt==0.0) then
         force=0.0

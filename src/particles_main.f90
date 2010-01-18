@@ -94,9 +94,9 @@ module Particles_main
 !  Set mass and number density of individual particles inside each
 !  superparticle. The mass of a superparticle is defined through
 !
-!    *   mp_tilde : mass of constituent particles
-!    *   np_tilde : number density of constituent particles
-!    * rhop_tilde : mass density of superparticle
+!    *   mp_swarm : mass of constituent particles
+!    *   np_swarm : number density of constituent particles
+!    * rhop_swarm : mass density of superparticle
 !
 !  One can either input these quantities by hand or set the wanted number
 !  density and mass density per grid cell (np_const or rhop_const).
@@ -108,19 +108,19 @@ module Particles_main
               'Particles_number modules'
           call fatal_error('particles_initialize_modules','')
         endif
-        if (mp_tilde==0.0 .and. np_tilde==0.0) then
+        if (mp_swarm==0.0 .and. np_swarm==0.0) then
           if (lroot) print*, 'particles_initialize_modules: '// &
-              'must set either mp_tilde or np_tilde when using rhop_const'
+              'must set either mp_swarm or np_swarm when using rhop_const'
           call fatal_error('particles_initialize_modules','')
         endif
-        if (mp_tilde/=0.0 .and. np_tilde/=0.0) then
+        if (mp_swarm/=0.0 .and. np_swarm/=0.0) then
           if (lroot) print*, 'particles_initialize_modules: '// &
-              'may not set both mp_tilde and np_tilde when using rhop_const'
+              'may not set both mp_swarm and np_swarm when using rhop_const'
           call fatal_error('particles_initialize_modules','')
         endif
-        rhop_tilde=rhop_const/(real(npar)/(nxgrid*nygrid*nzgrid))
-        if (mp_tilde==0.0) mp_tilde=rhop_tilde/np_tilde
-        if (np_tilde==0.0) np_tilde=rhop_tilde/mp_tilde
+        rhop_swarm=rhop_const/(real(npar)/(nxgrid*nygrid*nzgrid))
+        if (mp_swarm==0.0) mp_swarm=rhop_swarm/np_swarm
+        if (np_swarm==0.0) np_swarm=rhop_swarm/mp_swarm
       elseif (np_const/=0.0) then
         if (lparticles_number) then
           if (lroot) print*, 'particles_initialize_modules: '// &
@@ -128,16 +128,16 @@ module Particles_main
           call fatal_error('particles_initialize_modules','')
         endif
         if (.not.lparticles_radius) then
-          if (mp_tilde==0.0) then
+          if (mp_swarm==0.0) then
             if (lroot) print*, 'particles_initialize_modules: '// &
-                'must have mp_tilde non zero when setting np_const'
+                'must have mp_swarm non zero when setting np_const'
             call fatal_error('particles_initialize_modules','')
           endif
         endif
-        np_tilde=np_const/(real(npar)/(nxgrid*nygrid*nzgrid))
-        rhop_tilde=np_tilde*mp_tilde
+        np_swarm=np_const/(real(npar)/(nxgrid*nygrid*nzgrid))
+        rhop_swarm=np_swarm*mp_swarm
       else
-        if (rhop_tilde==0.0) rhop_tilde=mp_tilde*np_tilde
+        if (rhop_swarm==0.0) rhop_swarm=mp_swarm*np_swarm
       endif
 !
 !  Initialize individual modules.
@@ -153,13 +153,13 @@ module Particles_main
       call initialize_particles_collisions(f,lstarting)
       call initialize_particles_stalker   (f,lstarting)
 !
-!  Stop if rhop_tilde is zero.
+!  Stop if rhop_swarm is zero.
 !
-      if (rhop_tilde==0.0) then
+      if (rhop_swarm==0.0) then
         if (lroot) then
-          print*, 'particles_initialize_modules: rhop_tilde is zero'
+          print*, 'particles_initialize_modules: rhop_swarm is zero'
           print*, 'particles_initialize_modules: '// &
-              'np_tilde, mp_tilde, rhop_tilde=', np_tilde, mp_tilde, rhop_tilde
+              'np_swarm, mp_swarm, rhop_swarm=', np_swarm, mp_swarm, rhop_swarm
         endif
         call fatal_error('particles_initialize_modules','')
       endif
@@ -1115,10 +1115,10 @@ module Particles_main
             slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,irhop)
             slices%ready = .true.
           else
-            slices%yz= rhop_tilde * f(slices%ix,m1:m2    ,n1:n2     ,inp)
-            slices%xz= rhop_tilde * f(l1:l2    ,slices%iy,n1:n2     ,inp)
-            slices%xy= rhop_tilde * f(l1:l2    ,m1:m2    ,slices%iz ,inp)
-            slices%xy2=rhop_tilde * f(l1:l2    ,m1:m2    ,slices%iz2,inp)
+            slices%yz= rhop_swarm * f(slices%ix,m1:m2    ,n1:n2     ,inp)
+            slices%xz= rhop_swarm * f(l1:l2    ,slices%iy,n1:n2     ,inp)
+            slices%xy= rhop_swarm * f(l1:l2    ,m1:m2    ,slices%iz ,inp)
+            slices%xy2=rhop_swarm * f(l1:l2    ,m1:m2    ,slices%iz2,inp)
            slices%ready = .true.
           endif
 !

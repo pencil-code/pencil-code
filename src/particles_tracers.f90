@@ -105,24 +105,24 @@ module Particles
 !
       real :: rhom
 !
-      if (rhop_tilde==0.0) then
+      if (rhop_swarm==0.0) then
 ! For stratification, take into account gas present outside the simulation box.
         if ((lgravz .and. lgravz_gas) .or. gravz_profile=='linear' ) then
           rhom=sqrt(2*pi)*1.0*1.0/Lz  ! rhom = Sigma/Lz, Sigma=sqrt(2*pi)*H*rho1
         else
           rhom=1.0
         endif
-        rhop_tilde=eps_dtog*rhom/(real(npar)/(nxgrid*nygrid*nzgrid))
+        rhop_swarm=eps_dtog*rhom/(real(npar)/(nxgrid*nygrid*nzgrid))
         if (lroot) print*, 'initialize_particles: '// &
             'dust-to-gas ratio eps_dtog=', eps_dtog
       endif
       if (lroot) then
         print*, 'initialize_particles: '// &
-            'mass per constituent particle mp_tilde=', mp_tilde
+            'mass per constituent particle mp_swarm=', mp_swarm
         print*, 'initialize_particles: '// &
-            'number density per superparticle np_tilde=', np_tilde
+            'number density per superparticle np_swarm=', np_swarm
         print*, 'initialize_particles: '// &
-            'mass density per superparticle rhop_tilde=', rhop_tilde
+            'mass density per superparticle rhop_swarm=', rhop_swarm
       endif
 !
 !  Calculate nu_epicycle**2 for gravity.
@@ -278,10 +278,10 @@ module Particles
           endif
 !  Calculate average dust-to-gas ratio in box.
           if (ldensity_nolog) then
-            eps = rhop_tilde*sum(f(l1:l2,m1:m2,n1:n2,inp))/ &
+            eps = rhop_swarm*sum(f(l1:l2,m1:m2,n1:n2,inp))/ &
                 sum(f(l1:l2,m1:m2,n1:n2,irho))
           else
-            eps = rhop_tilde*sum(f(l1:l2,m1:m2,n1:n2,inp))/ &
+            eps = rhop_swarm*sum(f(l1:l2,m1:m2,n1:n2,inp))/ &
                 sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
           endif
 !
@@ -293,9 +293,9 @@ module Particles
 !  Take either global or local dust-to-gas ratio.
             if (.not. ldragforce_equi_global_eps) then
               if (ldensity_nolog) then
-                eps = rhop_tilde*f(l1:l2,m,n,inp)/f(l1:l2,m,n,irho)
+                eps = rhop_swarm*f(l1:l2,m,n,inp)/f(l1:l2,m,n,irho)
               else
-                eps = rhop_tilde*f(l1:l2,m,n,inp)/exp(f(l1:l2,m,n,ilnrho))
+                eps = rhop_swarm*f(l1:l2,m,n,inp)/exp(f(l1:l2,m,n,ilnrho))
               endif
             endif
 
@@ -380,7 +380,7 @@ module Particles
         if (irhop/=0) then 
           p%rhop=f(l1:l2,m,n,irhop)
         else
-          p%rhop=rhop_tilde*f(l1:l2,m,n,inp)
+          p%rhop=rhop_swarm*f(l1:l2,m,n,inp)
         endif
       endif
 ! epsp

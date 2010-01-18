@@ -924,9 +924,9 @@ module Particles_map
               if (lparticles_radius.and.lparticles_number) then
                 weight0=four_pi_rhops_over_three*fp(k,iap)**3*fp(k,inptilde)
               elseif (lparticles_radius) then
-                weight0=four_pi_rhops_over_three*fp(k,iap)**3*np_tilde
+                weight0=four_pi_rhops_over_three*fp(k,iap)**3*np_swarm
               elseif (lparticles_number) then
-                weight0=mp_tilde*fp(k,inptilde)
+                weight0=mp_swarm*fp(k,inptilde)
               else
                 weight0=1.0
               endif
@@ -977,9 +977,9 @@ module Particles_map
               if (lparticles_radius.and.lparticles_number) then
                 weight0=four_pi_rhops_over_three*fp(k,iap)**3*fp(k,inptilde)
               elseif (lparticles_radius) then
-                weight0=four_pi_rhops_over_three*fp(k,iap)**3*np_tilde
+                weight0=four_pi_rhops_over_three*fp(k,iap)**3*np_swarm
               elseif (lparticles_number) then
-                weight0=mp_tilde*fp(k,inptilde)
+                weight0=mp_swarm*fp(k,inptilde)
               else
                 weight0=1.0
               endif
@@ -1035,9 +1035,9 @@ module Particles_map
                 if (lparticles_radius.and.lparticles_number) then
                   weight0=four_pi_rhops_over_three*fp(k,iap)**3*fp(k,inptilde)
                 elseif (lparticles_radius) then
-                  weight0=four_pi_rhops_over_three*fp(k,iap)**3*np_tilde
+                  weight0=four_pi_rhops_over_three*fp(k,iap)**3*np_swarm
                 elseif (lparticles_number) then
-                  weight0=mp_tilde*fp(k,inptilde)
+                  weight0=mp_swarm*fp(k,inptilde)
                 endif
 !
                 f(ix0,iy0,iz0,irhop)=f(ix0,iy0,iz0,irhop) + weight0
@@ -1054,10 +1054,10 @@ module Particles_map
         if (lparticlemesh_cic.or.lparticlemesh_tsc) call fold_f(f,irhop,irhop)
         if (.not.(lparticles_radius.or.lparticles_number)) then
           if (lcartesian_coords) then
-            f(l1:l2,m1:m2,n1:n2,irhop)=rhop_tilde*f(l1:l2,m1:m2,n1:n2,irhop)  
+            f(l1:l2,m1:m2,n1:n2,irhop)=rhop_swarm*f(l1:l2,m1:m2,n1:n2,irhop)  
           else
             do m=m1,m2; do n=n1,n2
-              f(l1:l2,m,n,irhop)=f(l1:l2,m,n,irhop)*mp_tilde*dvolume_1
+              f(l1:l2,m,n,irhop)=f(l1:l2,m,n,irhop)*mp_swarm*dvolume_1
             enddo; enddo
           endif
         endif
@@ -1216,7 +1216,7 @@ module Particles_map
 !  Normalize the assigned momentum by the particle density in the grid cell.
 !
           where (f(l1:l2,m1:m2,n1:n2,irhop)/=0.0) &
-              f(l1:l2,m1:m2,n1:n2,iupx+ivp)=rhop_tilde* &
+              f(l1:l2,m1:m2,n1:n2,iupx+ivp)=rhop_swarm* &
               f(l1:l2,m1:m2,n1:n2,iupx+ivp)/f(l1:l2,m1:m2,n1:n2,irhop)
         enddo
 !

@@ -235,7 +235,7 @@ module Particles_spin
 !
 !  Calculate angular momentum
 !
- !         ip_tilde=0.4*mp_tilde*fp(k,iap)**2
+ !         ip_tilde=0.4*mp_swarm*fp(k,iap)**2
 !
  !         tau=8.0*pi*interp_rho(k)*nu*fp(k,iap)**3* &
  !             (0.5*interp_oo(k,:)-fp(k,ipsx:ipsz))
@@ -421,7 +421,7 @@ module Particles_spin
       endif
 !
       call cross(interp_uu(k,:)-fp(ivpx:ivpz),interp_oo(k,:),dlift)
-      dlift=1.61*csaff*dia**2*nu**0.5*interp_rho(k)*oo**(-0.5)*dlift/mp_tilde
+      dlift=1.61*csaff*dia**2*nu**0.5*interp_rho(k)*oo**(-0.5)*dlift/mp_swarm
 !
     endsubroutine calc_saffman_liftforce
 !***********************************************************************
@@ -466,7 +466,7 @@ module Particles_spin
       ps_rel=fp(ipsx:ipsz)-0.5*interp_oo(k,:)
       call cross(uu_rel,ps_rel,dlift)
       dlift=dlift/sqrt(sum(ps_rel**2))
-      dlift=0.25*interp_rho(k)*(rep*nu/fp(iap))*const_lr*area/mp_tilde*dlift
+      dlift=0.25*interp_rho(k)*(rep*nu/fp(iap))*const_lr*area/mp_swarm*dlift
 !
     endsubroutine calc_magnus_liftforce
 !***********************************************************************
