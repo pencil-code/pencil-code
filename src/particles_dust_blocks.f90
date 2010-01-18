@@ -251,7 +251,7 @@ module Particles
 !  particles per grid cell and rhom is the mean gas density in the box.
 !
       if (rhop_tilde==0.0) then
-! For stratification, take into account gas present outside the simulation box.
+!  For stratification, take into account gas present outside the simulation box.
         if ( (lgravz .and. lgravz_gas) .or. gravz_profile=='linear') then
           rhom=sqrt(2*pi)*1.0*1.0/Lz  ! rhom = Sigma/Lz, Sigma=sqrt(2*pi)*H*rho1
         else
@@ -303,6 +303,14 @@ module Particles
 !  region needs to be folded back into the df array after pde is finished,
 !
         if (lparticlemesh_cic .or. lparticlemesh_tsc) lfold_df=.true.
+      endif
+!
+!  Drag force on gas right now assumed rhop_tilde is the same for all particles.
+!
+      if (ldragforce_gas_par.and.(lparticles_radius.or.lparticles_number)) then
+        if (lroot) print*, 'initialize_particles: drag force on gas is '// &
+            'not yet implemented for variable particle radius or number'
+        call fatal_error('initialize_particles','')
       endif
 !
 !  Write constants to disk.
