@@ -80,12 +80,12 @@ module Particles_number
       allocate(kneighbour(mpar_loc))
       lshepherd_neighbour=.true.
 !
-      if (mp_tilde /= 0) then
-        np_tilde0 = rhop_tilde/mp_tilde
+      if (mp_tilde/=0.0) then
+        np_tilde0=rhop_tilde/mp_tilde
       else
-        call warning("initlz_partcls_number", &
-            "Cowardly refusing to divide by zero -- did you set ap0?")
-        np_tilde0 = 1
+        call warning('initialize_particles_number', &
+            'Cowardly refusing to divide by zero -- did you set ap0?')
+        np_tilde0=1.0
       endif
 !
       if (lroot) print*, 'initialize_particles_number: '// &
