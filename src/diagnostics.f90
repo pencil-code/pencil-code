@@ -109,7 +109,7 @@ module Diagnostics
 !
 !  Add general (not module-specific) quantities for diagnostic output. If the
 !  timestep (=dt) is to be written, it is known only after rk_2n, so the best
-!  place to enter it into the save list is here Use 1.*(it-1) to have floating
+!  place to enter it into the save list is here. Use 1.0*(it-1) to have floating
 !  point or double precision.
 !
       if (lroot) then
@@ -185,6 +185,8 @@ module Diagnostics
 !
       if (ldebug) write(*,*) 'exit prints'
       first = .false.
+!
+      fname(1:nname)=0.0
 !
     endsubroutine prints
 !***********************************************************************
@@ -921,7 +923,15 @@ module Diagnostics
       integer :: a, iname
       logical, optional :: lneg
 !
-      fname(iname)=a
+      if (present(lneg)) then
+        if (lneg) then
+          if (a<fname(iname)) fname(iname)=a
+        else
+          if (a>fname(iname)) fname(iname)=a
+        endif
+      else
+        if (a>fname(iname)) fname(iname)=a
+      endif
 !
 !  Set corresponding entry in itype_name.
 !
@@ -939,7 +949,7 @@ module Diagnostics
 !
 !  17-jun-09/ccyang: adapted from max_name
 !  03-sep-09/MR: corrected to real sum
-
+!
       real, intent(in) :: a
       integer, intent(in) :: iname
 !
@@ -949,7 +959,7 @@ module Diagnostics
 !
 !  Set corresponding entry in itype_name.
 !
-      itype_name(iname)=ilabel_sum
+       itype_name(iname)=ilabel_sum
 
      else
        fname(iname)=fname(iname)+a
@@ -1022,7 +1032,7 @@ module Diagnostics
 !
 !  Only do something if iname is not zero.
 !
-      if (iname /= 0) then
+      if (iname/=0) then
 !
 !  Set corresponding entry in itype_name.
 !
