@@ -702,6 +702,8 @@ module Particles_mpicomm
 !
 !  28-oct-09/anders: coded
 !
+      use Diagnostics, only: max_name
+!
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc) :: ipar
       real, dimension (mpar_loc,mpvar), optional :: dfp
@@ -923,6 +925,13 @@ module Particles_mpicomm
         if (ip<=8) print*, 'migrate_particles: iproc, nmigrate = ', &
             iproc, sum(nmig_leave)
 !
+!  Diagnostic about number of migrating particles.
+!  WARNING: in time-steps where snapshots are written, this diagnostic
+!  parameter will be zero (quite confusing)!
+!
+        if (ldiagnos.and.(idiag_nmigmax/=0)) &
+            call max_name(sum(nmig_leave),idiag_nmigmax)
+!
 !  Share information about number of migrating particles. For the initial
 !  condition we allow all processors to communicate particles. However, this
 !  is extremely slow when the processor number is high (>>100). Thus we only
@@ -1093,6 +1102,8 @@ module Particles_mpicomm
 !  28-oct-09/anders: coded
 !
 !  TODO: For ncpus>>1000 this subroutine possibly uses too much memory.
+!
+      use Diagnostics, only: max_name
 !
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc) :: ipar
@@ -1291,6 +1302,13 @@ module Particles_mpicomm
 !
         if (ip<=8) print*, 'migrate_particles: iproc, nmigrate = ', &
             iproc, sum(nmig_leave)
+!
+!  Diagnostic about number of migrating particles.
+!  WARNING: in time-steps where snapshots are written, this diagnostic
+!  parameter will be zero (quite confusing)!
+!
+        if (ldiagnos.and.(idiag_nmigmax/=0)) &
+            call max_name(sum(nmig_leave),idiag_nmigmax)
 !
 !  Share information about number of migrating particles. We only communicate
 !  particles between processors that are either parents or foster parents of
