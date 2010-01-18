@@ -25,6 +25,6 @@
   deltavp12_floor=0.01
 /
 &particles_number_init_pars
-  initnptilde='constant'
+  initnpswarm='constant'
   deltavp22_floor=0.01
 /
