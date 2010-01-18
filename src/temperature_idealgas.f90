@@ -1701,6 +1701,8 @@ module Entropy
 !
       integer, parameter :: mxt=nx/nprocz+2*nghost
       integer, parameter :: mzt=nzgrid+2*nghost
+      integer, parameter :: l1t=nghost+1, n1t=nghost+1
+      integer, parameter :: l2t=l1t+nx/nprocz-1, n2t=n1t+nzgrid-1
       integer :: i,j
       real, dimension(mx,my,mz,mfarray) :: finit, f, ftmp
       real, dimension(mx,mz) :: source, hcond, dhcond, finter, TT, rho, val
@@ -1785,22 +1787,22 @@ module Entropy
       call transp_mxmz(dhcond, dhcondt)
       call transp_mxmz(TT, TTt)
 !
-      do i=n1,n2
-         wz=dt*cp1*gamma*dz_2/rhot(n1:n1+nzgrid-1,i)
-         az=-wz/4.*(dhcondt(n1-1:n1+nzgrid-2,i)   &
-           *(TTt(n1-1:n1+nzgrid-2,i)-TTt(n1:n1+nzgrid-1,i)) &
-           +hcondt(n1-1:n1+nzgrid-2,i)+hcondt(n1:n1+nzgrid-1,i))
+      do i=l1t,l2t
+         wz=dt*cp1*gamma*dz_2/rhot(n1t:n2t,i)
+         az=-wz/4.*(dhcondt(n1t-1:n2t-1,i)   &
+           *(TTt(n1t-1:n2t-1,i)-TTt(n1t:n2t,i)) &
+           +hcondt(n1t-1:n2t-1,i)+hcondt(n1t:n2t,i))
 !
-         bz=1.+wz/4.*(dhcondt(n1:n1+nzgrid-1,i)*             &
-           (2.*TTt(n1:n1+nzgrid-1,i)-TTt(n1-1:n1+nzgrid-2,i)         &
-           -TTt(n1+1:n1+nzgrid,i))+2.*hcondt(n1:n1+nzgrid-1,i)     &
-           +hcondt(n1+1:n1+nzgrid,i)+hcondt(n1-1:n1+nzgrid-2,i))
+         bz=1.+wz/4.*(dhcondt(n1t:n2t,i)*             &
+           (2.*TTt(n1t:n2t,i)-TTt(n1t-1:n2t-1,i)         &
+           -TTt(n1t+1:n2t+1,i))+2.*hcondt(n1t:n2t,i)     &
+           +hcondt(n1t+1:n2t+1,i)+hcondt(n1t-1:n2t-1,i))
 !
-         cz=-wz/4.*(dhcondt(n1+1:n1+nzgrid,i)            &
-           *(TTt(n1+1:n1+nzgrid,i)-TTt(n1:n1+nzgrid-1,i))          &
-           +hcondt(n1:n1+nzgrid-1,i)+hcondt(n1+1:n1+nzgrid,i))
+         cz=-wz/4.*(dhcondt(n1t+1:n2t+1,i)            &
+           *(TTt(n1t+1:n2t+1,i)-TTt(n1t:n2t,i))          &
+           +hcondt(n1t:n2t,i)+hcondt(n1t+1:n2t+1,i))
 !
-         rhsz=fintert(n1:n1+nzgrid-1,i)
+         rhsz=fintert(n1t:n2t,i)
 !
 ! z boundary conditions
 ! Constant temperature at the top: T^(n+1)-T^n=0
@@ -1821,7 +1823,7 @@ module Entropy
          endselect
 !
          call tridag(az,bz,cz,rhsz,workz)
-         valt(n1:n1+nzgrid-1,i)=workz(1:nzgrid)
+         valt(n1t:n2t,i)=workz(1:nzgrid)
       enddo
       call transp_mzmx(valt,val)
 !
