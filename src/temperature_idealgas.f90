@@ -1709,9 +1709,11 @@ module Entropy
       real, dimension(nzgrid)    :: az, bz, cz, wz, rhsz, workz
       real    :: aalpha, bbeta
       real    :: dx_2, dz_2, cp1
+!
 !  It is necessary to communicate ghost-zones points between
 !  processors to ensure a correct transposition of these ghost
 !  zones. It is needed by rho,rhot and source,sourcet.
+!
       call initiate_isendrcv_bdry(f)
       call finalize_isendrcv_bdry(f)
       call initiate_isendrcv_bdry(finit)
@@ -1720,9 +1722,11 @@ module Entropy
       call get_cp1(cp1)
       dx_2=1./dx**2
       dz_2=1./dz**2
+!
 ! BC important not for the x-direction (always periodic) but for 
 ! the z-direction as we must impose the 'c3' BC at the 2nd-order
 ! before going in the implicit stuff
+!
       call heatcond_TT_2d(finit(:,4,:,ilnTT), hcond, dhcond)
       call boundary_ADI(finit(:,4,:,ilnTT), hcond(:,n1))
       TT=finit(:,4,:,ilnTT)
@@ -1782,21 +1786,21 @@ module Entropy
       call transp_mxmz(TT, TTt)
 !
       do i=n1,n2
-         wz=dt*cp1*gamma*dz_2/rhot(n1:n2,i)
-         az=-wz/4.*(dhcondt(n1-1:n2-1,i)   &
-           *(TTt(n1-1:n2-1,i)-TTt(n1:n2,i)) &
-           +hcondt(n1-1:n2-1,i)+hcondt(n1:n2,i))
+         wz=dt*cp1*gamma*dz_2/rhot(n1:n1+nzgrid-1,i)
+         az=-wz/4.*(dhcondt(n1-1:n1+nzgrid-2,i)   &
+           *(TTt(n1-1:n1+nzgrid-2,i)-TTt(n1:n1+nzgrid-1,i)) &
+           +hcondt(n1-1:n1+nzgrid-2,i)+hcondt(n1:n1+nzgrid-1,i))
 !
-         bz=1.+wz/4.*(dhcondt(n1:n2,i)*             &
-           (2.*TTt(n1:n2,i)-TTt(n1-1:n2-1,i)         &
-           -TTt(n1+1:n2+1,i))+2.*hcondt(n1:n2,i)     &
-           +hcondt(n1+1:n2+1,i)+hcondt(n1-1:n2-1,i))
+         bz=1.+wz/4.*(dhcondt(n1:n1+nzgrid-1,i)*             &
+           (2.*TTt(n1:n1+nzgrid-1,i)-TTt(n1-1:n1+nzgrid-2,i)         &
+           -TTt(n1+1:n1+nzgrid,i))+2.*hcondt(n1:n1+nzgrid-1,i)     &
+           +hcondt(n1+1:n1+nzgrid,i)+hcondt(n1-1:n1+nzgrid-2,i))
 !
-         cz=-wz/4.*(dhcondt(n1+1:n2+1,i)            &
-           *(TTt(n1+1:n2+1,i)-TTt(n1:n2,i))          &
-           +hcondt(n1:n2,i)+hcondt(n1+1:n2+1,i))
+         cz=-wz/4.*(dhcondt(n1+1:n1+nzgrid,i)            &
+           *(TTt(n1+1:n1+nzgrid,i)-TTt(n1:n1+nzgrid-1,i))          &
+           +hcondt(n1:n1+nzgrid-1,i)+hcondt(n1+1:n1+nzgrid,i))
 !
-         rhsz=fintert(n1:n2,i)
+         rhsz=fintert(n1:n1+nzgrid-1,i)
 !
 ! z boundary conditions
 ! Constant temperature at the top: T^(n+1)-T^n=0
@@ -1817,7 +1821,7 @@ module Entropy
          endselect
 !
          call tridag(az,bz,cz,rhsz,workz)
-         valt(n1:n2,i)=workz(1:nzgrid)
+         valt(n1:n1+nzgrid-1,i)=workz(1:nzgrid)
       enddo
       call transp_mzmx(valt,val)
 !
