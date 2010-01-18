@@ -31,7 +31,8 @@ module Particles
   include 'particles.h'
 !
   complex, dimension (7) :: coeff=(0.0,0.0)
-  real, dimension (npar_species) :: tausp_species=0.0, tausp1_species=0.0
+  real, target, dimension (npar_species) :: tausp_species=0.0
+  real, target, dimension (npar_species) :: tausp1_species=0.0
   real :: xp0=0.0, yp0=0.0, zp0=0.0, vpx0=0.0, vpy0=0.0, vpz0=0.0
   real :: Lx0=0.0, Ly0=0.0, Lz0=0.0
   real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0, eps_dtog=0.01
@@ -262,9 +263,9 @@ module Particles
 !  Must have set tausp_species for drag force.
 !
         if (ldragforce_dust_par .or. ldragforce_gas_par) then
-          if (any(tausp_species==0)) then
+          if (any(tausp_species==0.0)) then
             if (lroot) print*, &
-                'initialize_particles: drag force must have tausp_species/=0 !'
+                'initialize_particles: drag force must have tausp_species/=0.0!'
                 call fatal_error('initialize_particles','')
           endif
 !
@@ -277,8 +278,14 @@ module Particles
         endif
       else
         tausp_species(1)=tausp
-        if (tausp_species(1)/=0.0) &
-            tausp1_species(1)=1/tausp_species(1)
+        if (tausp_species(1)/=0.0) tausp1_species(1)=1/tausp_species(1)
+      endif
+!
+!  Share friction time (but only if Epstein drag regime!).
+!
+      if (ldraglaw_epstein) then
+        call put_shared_variable( 'tausp_species', tausp_species)
+        call put_shared_variable('tausp1_species',tausp1_species)
       endif
 !
 !  Global gas pressure gradient seen from the perspective of the dust.
@@ -3105,9 +3112,9 @@ k_loop:   do while (.not. (k>npar_loc))
           elseif (lcylindrical_coords) then
             OO=fp(k,ixp)**(-1.5)
           elseif (lspherical_coords) then
-            call fatal_error("get_frictiontime",&
-                 "variable draglaw not implemented for"//&
-                 "spherical coordinates")
+            call fatal_error('get_frictiontime', &
+                'variable draglaw not implemented for '//&
+                'spherical coordinates')
           endif
         else
           OO=nu_epicycle
@@ -3119,12 +3126,12 @@ k_loop:   do while (.not. (k>npar_loc))
       if (present(lstokes)) then
 !
         if (lfirstcall) &
-             print*,'get_frictiontime: Epstein-Stokes transonic drag law'
+            print*, 'get_frictiontime: Epstein-Stokes transonic drag law'
 !
 !  The mach number and the correction fd to flows of arbitrary mach number
 !
         mach=sqrt((duu(1)**2+duu(2)**2+duu(3)**2)/p%cs2(inx0))
-        fd=sqrt(1+(9.*pi/128)*mach**2)
+        fd=sqrt(1+(9.0*pi/128)*mach**2)
 !
 !  For Stokes drag, the mean free path is needed
 !
@@ -3154,35 +3161,35 @@ k_loop:   do while (.not. (k>npar_loc))
 !  radius
 !
         if (iap/=0) then
-          inv_particle_radius=1./fp(k,iap)
+          inv_particle_radius=1/fp(k,iap)
         else
           if (luse_tau_ap) then
             ! use tausp as the radius (in meter) to make life easier
             inv_particle_radius=tmp1
           else
             if (nzgrid==1) then
-              inv_particle_radius=.5*pi*tmp1       !rhops=1, particle_radius in meters
+              inv_particle_radius=0.5*pi*tmp1     !rhops=1, particle_radius in meters
             else
               inv_particle_radius=sqrt(pi/8)*tmp1 !rhops=1, particle_radius in meters
             endif
           endif
         endif
 !
-        knudsen=.5*lambda*inv_particle_radius
+        knudsen=0.5*lambda*inv_particle_radius
 !
 !  The Stokes drag depends non-linearly on 
 !
 !    Re = 2*s*rho_g*|delta(v)|/mu_kin
 !
-        reynolds=3.*sqrt(pi/8)*mach/knudsen
+        reynolds=3*sqrt(pi/8)*mach/knudsen
 !
 !  the Reynolds number of the flow over the particle. It can parameterized by 
 !        
-        if (reynolds.le.500) then
-          kd=1+0.15*reynolds**0.687
-        elseif ((reynolds.gt.500).and.(reynolds.le.1500)) then
+        if (reynolds<=500) then
+          kd=1.0+0.15*reynolds**0.687
+        elseif ((reynolds>500).and.(reynolds<=1500)) then
           kd=3.96e-6*reynolds**2.4
-        elseif  (reynolds.gt.1500) then
+        elseif (reynolds>1500) then
           kd=0.11*reynolds
         endif
 !
@@ -3198,10 +3205,10 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Only use Epstein drag
 !
         if (lfirstcall) &
-             print*,'get_frictiontime: Epstein transonic drag law'
+            print*,'get_frictiontime: Epstein transonic drag law'
 !
         mach2=(duu(1)**2+duu(2)**2+duu(3)**2)/p%cs2(inx0)
-        fd=sqrt(1+(9.*pi/128)*mach2)
+        fd=sqrt(1+(9.0*pi/128)*mach2)
         fac=fd
 !
       endif
