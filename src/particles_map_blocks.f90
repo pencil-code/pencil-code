@@ -281,11 +281,11 @@ module Particles_map
 !  Calculate mass density per superparticle.
 !
                   if (lparticles_radius.and.lparticles_number) then
-                    weight0=four_pi_rhops_over_three*fp(k,iap)**3*fp(k,inptilde)
+                    weight0=four_pi_rhops_over_three*fp(k,iap)**3*fp(k,inpswarm)
                   elseif (lparticles_radius) then
                     weight0=four_pi_rhops_over_three*fp(k,iap)**3*np_swarm
                   elseif (lparticles_number) then
-                    weight0=mp_swarm*fp(k,inptilde)
+                    weight0=mp_swarm*fp(k,inpswarm)
                   else
                     weight0=1.0
                   endif
@@ -355,11 +355,11 @@ module Particles_map
 !  Calculate mass density per superparticle.
 !
                   if (lparticles_radius.and.lparticles_number) then
-                    weight0=four_pi_rhops_over_three*fp(k,iap)**3*fp(k,inptilde)
+                    weight0=four_pi_rhops_over_three*fp(k,iap)**3*fp(k,inpswarm)
                   elseif (lparticles_radius) then
                     weight0=four_pi_rhops_over_three*fp(k,iap)**3*np_swarm
                   elseif (lparticles_number) then
-                    weight0=mp_swarm*fp(k,inptilde)
+                    weight0=mp_swarm*fp(k,inpswarm)
                   else
                     weight0=1.0
                   endif
@@ -431,11 +431,11 @@ module Particles_map
 !  Calculate mass density per superparticle.
 !
                   if (lparticles_radius.and.lparticles_number) then
-                    weight0=four_pi_rhops_over_three*fp(k,iap)**3*fp(k,inptilde)
+                    weight0=four_pi_rhops_over_three*fp(k,iap)**3*fp(k,inpswarm)
                   elseif (lparticles_radius) then
                     weight0=four_pi_rhops_over_three*fp(k,iap)**3*np_swarm
                   elseif (lparticles_number) then
-                    weight0=mp_swarm*fp(k,inptilde)
+                    weight0=mp_swarm*fp(k,inpswarm)
                   else
                     weight0=1.0
                   endif

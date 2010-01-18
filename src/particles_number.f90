@@ -52,7 +52,7 @@ module Particles_number
 !
 !  Index for particle internal number.
 !
-      inptilde=npvar+1
+      inpswarm=npvar+1
 !
 !  Increase npvar accordingly.
 !
@@ -119,7 +119,7 @@ module Particles_number
             print*, 'init_particles_number: constant internal number'
             print*, 'init_particles_number: np_swarm0=', np_swarm0
           endif
-          fp(1:npar_loc,inptilde)=np_swarm0
+          fp(1:npar_loc,inpswarm)=np_swarm0
 !
         endselect
 !
@@ -211,21 +211,21 @@ module Particles_number
 !  Collision cross section.
                   sigma_jk=pi*(fp(j,iap)+fp(k,iap))**2
 !  Collision rate between two superparticles.
-                  cdot=sigma_jk*fp(j,inptilde)*fp(k,inptilde)*deltavp
+                  cdot=sigma_jk*fp(j,inpswarm)*fp(k,inpswarm)*deltavp
 !  Either coagulation...    [warning: this coagulation scheme is a bit cheaty]
                   if (deltavp<=vthresh_coagulation) then
-                    dfp(j,inptilde) = dfp(j,inptilde) - 0.5*cdot
-                    dfp(k,inptilde) = dfp(k,inptilde) - 0.5*cdot
-                    if (fp(k,inptilde)/=0.0) &
+                    dfp(j,inpswarm) = dfp(j,inpswarm) - 0.5*cdot
+                    dfp(k,inpswarm) = dfp(k,inpswarm) - 0.5*cdot
+                    if (fp(k,inpswarm)/=0.0) &
                         dfp(k,iap) = dfp(k,iap) + &
-                        1/3.*(0.5*cdot)*fp(k,iap)/fp(k,inptilde)
-                    if (fp(j,inptilde)/=0.0) &
+                        1/3.*(0.5*cdot)*fp(k,iap)/fp(k,inpswarm)
+                    if (fp(j,inpswarm)/=0.0) &
                         dfp(j,iap) = dfp(j,iap) + &
-                        1/3.*(0.5*cdot)*fp(j,iap)/fp(j,inptilde)
+                        1/3.*(0.5*cdot)*fp(j,iap)/fp(j,inpswarm)
 !  ...or fragmentation.
                   else
-                    dfp(j,inptilde) = dfp(j,inptilde) - cdot
-                    dfp(k,inptilde) = dfp(k,inptilde) - cdot
+                    dfp(j,inpswarm) = dfp(j,inpswarm) - cdot
+                    dfp(k,inpswarm) = dfp(k,inpswarm) - cdot
                     if (lpscalar_nolog) then
                       df(l,m,n,icc) = df(l,m,n,icc) + &
                           p%rho1(l-nghost)*4/3.*pi*rhops* &
@@ -245,8 +245,8 @@ module Particles_number
 !  Need to count collisions for diagnostics.
                   if (ldiagnos) then
                     deltavp_sum =deltavp_sum +deltavp
-                    nptilde_sum =nptilde_sum +fp(j,inptilde)+fp(k,inptilde)
-                    np2tilde_sum=np2tilde_sum+fp(j,inptilde)*fp(k,inptilde)
+                    nptilde_sum =nptilde_sum +fp(j,inpswarm)+fp(k,inpswarm)
+                    np2tilde_sum=np2tilde_sum+fp(j,inpswarm)*fp(k,inpswarm)
                     ncoll=ncoll+1
                   endif
                 enddo
@@ -257,8 +257,8 @@ module Particles_number
                   endif
                   deltavp=deltavp22_floor
                   sigma_jk=pi*(fp(k,iap)+fp(k,iap))**2
-                  cdot = sigma_jk*fp(k,inptilde)*fp(k,inptilde)*deltavp
-                  dfp(k,inptilde) = dfp(k,inptilde) - cdot
+                  cdot = sigma_jk*fp(k,inpswarm)*fp(k,inpswarm)*deltavp
+                  dfp(k,inpswarm) = dfp(k,inpswarm) - cdot
                   if (lpscalar_nolog) then
                     df(l,m,n,icc) = df(l,m,n,icc) + &
                         p%rho1(l-nghost)*4/3.*pi*rhops*fp(k,iap)**3*cdot
@@ -269,8 +269,8 @@ module Particles_number
 !  Need to count collisions for diagnostics.
                   if (ldiagnos) then
                     deltavp_sum =deltavp_sum +deltavp
-                    nptilde_sum =nptilde_sum +fp(k,inptilde)
-                    np2tilde_sum=np2tilde_sum+fp(k,inptilde)**2
+                    nptilde_sum =nptilde_sum +fp(k,inpswarm)
+                    np2tilde_sum=np2tilde_sum+fp(k,inpswarm)**2
                     ncoll=ncoll+1
                   endif
 !  Time-step contribution
@@ -329,7 +329,7 @@ module Particles_number
 !  Diagnostic output
 !
       if (ldiagnos) then
-        if (idiag_nptm/=0) call sum_par_name(fp(1:npar_loc,inptilde),idiag_nptm)
+        if (idiag_nptm/=0) call sum_par_name(fp(1:npar_loc,inpswarm),idiag_nptm)
       endif
 !
       call keep_compiler_quiet(f,df)
@@ -344,7 +344,7 @@ module Particles_number
       integer, intent (inout), optional :: iostat
 !
       if (present(iostat)) then
-        read(unit,NML=particles_number_init_pars,ERR=99, IOSTAT=iostat)
+        read(unit,NML=particles_number_init_pars,ERR=99,IOSTAT=iostat)
       else
         read(unit,NML=particles_number_init_pars,ERR=99)
       endif
@@ -367,7 +367,7 @@ module Particles_number
       integer, intent (inout), optional :: iostat
 !
       if (present(iostat)) then
-        read(unit,NML=particles_number_run_pars,ERR=99, IOSTAT=iostat)
+        read(unit,NML=particles_number_run_pars,ERR=99,IOSTAT=iostat)
       else
         read(unit,NML=particles_number_run_pars,ERR=99)
       endif
@@ -402,7 +402,7 @@ module Particles_number
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-      if (lwr) write(3,*) 'inptilde=', inptilde
+      if (lwr) write(3,*) 'inpswarm=', inpswarm
 !
 !  Reset everything in case of reset
 !
@@ -426,5 +426,4 @@ module Particles_number
 !
     endsubroutine rprint_particles_number
 !***********************************************************************
-
 endmodule Particles_number

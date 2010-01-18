@@ -1485,14 +1485,14 @@ k_loop:   do while (.not. (k>npar_loc))
             sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)))**2,idiag_eccpz2m)
         if (idiag_rhoptilm/=0) then
           do k=1,npar_loc
-            if (lparticles_number) np_swarm=fp(k,inptilde)
+            if (lparticles_number) np_swarm=fp(k,inpswarm)
             call sum_par_name( &
                 (/4/3.*pi*rhops*fp(k,iap)**3*np_swarm/),idiag_rhoptilm)
           enddo
         endif
         if (idiag_mpt/=0) then
           do k=1,npar_loc
-            if (lparticles_number) np_swarm=fp(k,inptilde)
+            if (lparticles_number) np_swarm=fp(k,inpswarm)
             call integrate_par_name( &
                 (/4/3.*pi*rhops*fp(k,iap)**3*np_swarm/),idiag_mpt)
           enddo

@@ -273,7 +273,7 @@ module Particles_radius
 !
 !  Deplete gas of small grains.
 !
-              if (lparticles_radius) np_swarm=fp(k,inptilde)
+              if (lparticles_radius) np_swarm=fp(k,inpswarm)
               if (lpscalar_nolog) then
                 df(ix0,m,n,icc) = df(ix0,m,n,icc) - &
                     np_swarm*pi*fp(k,iap)**2*deltavp*p%cc(ix)
@@ -409,7 +409,7 @@ module Particles_radius
 !
 !  Vapor monomers are added to the gas or removed from the gas.
 !
-            if (lparticles_radius) np_swarm=fp(k,inptilde)
+            if (lparticles_radius) np_swarm=fp(k,inpswarm)
             if (lfirst.and.ldt) np_total(ix)=np_total(ix)+np_swarm
             drhocdt=-dapdt*4*pi*fp(k,iap)**2*rhops*np_swarm
             if (lpscalar_nolog) then

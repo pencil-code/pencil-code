@@ -161,7 +161,7 @@ module Particles_number
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-      if (lwr) write(3,*) 'inptilde=', inptilde
+      if (lwr) write(3,*) 'inpswarm=', inpswarm
 !
       call keep_compiler_quiet(lreset)
 !
