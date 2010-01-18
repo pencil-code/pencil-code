@@ -12,8 +12,11 @@ module Particles_cdata
   integer, parameter :: mspvar=mpvar+1 
 !
   real :: rp_int=-impossible,rp_ext=-impossible
-  real :: dsnap_par_minor=0.0, dsnap_par=0.
-  real :: rhops=1.0e10, rhops1=1.0d-10, rhop_tilde=0.0, mp_tilde=0.0
+  real :: dsnap_par_minor=0.0, dsnap_par=0.0
+  real :: rhops=1.0e10, rhops1=1.0d-10
+  real :: mp_tilde=0.0, np_tilde=0.0, rhop_tilde=0.0
+  real :: four_pi_rhops_over_three
+  real :: np_const=0.0, rhop_const=0.0
   integer, dimension (mpar_loc) :: ipar
   integer, dimension (nspar)    :: ipar_nbody
   integer, dimension (npar_species) :: ipar_fence_species=0

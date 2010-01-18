@@ -107,40 +107,22 @@ module Particles
 !
       if (rhop_tilde==0.0) then
 ! For stratification, take into account gas present outside the simulation box.
-        if (lgrav) then
+        if ((lgravz .and. lgravz_gas) .or. gravz_profile=='linear' ) then
           rhom=sqrt(2*pi)*1.0*1.0/Lz  ! rhom = Sigma/Lz, Sigma=sqrt(2*pi)*H*rho1
         else
           rhom=1.0
         endif
         rhop_tilde=eps_dtog*rhom/(real(npar)/(nxgrid*nygrid*nzgrid))
-        if (lroot) then
-          print*, 'initialize_particles: '// &
+        if (lroot) print*, 'initialize_particles: '// &
             'dust-to-gas ratio eps_dtog=', eps_dtog
-          print*, 'initialize_particles: '// &
-            'mass density per particle rhop_tilde=', rhop_tilde
-        endif
-      else
-        if (lroot) print*, 'initialize_particles: '// &
-            'mass density per particle rhop_tilde=', rhop_tilde
       endif
-!
-! Calculate mass per particle
-!   mp_tilde*N = eps*Int(rho*dv) = eps*rhom*V
-! where N is the total number of particles, eps is the dust to gas ratio and
-! V is the total volume of the box
-!
-      if (mp_tilde==0.0) then
-        rhom=1.0
-        mp_tilde  =eps_dtog*rhom*box_volume/real(npar)
-        if (lroot) then
-          print*, 'initialize_particles: '// &
-               'dust-to-gas ratio eps_dtog=', eps_dtog
-          print*, 'initialize_particles: '// &
-               'mass per particle mp_tilde=', mp_tilde
-        endif
-      else
-        if (lroot) print*, 'initialize_particles: '// &
-             'mass per particle mp_tilde=', mp_tilde
+      if (lroot) then
+        print*, 'initialize_particles: '// &
+            'mass per constituent particle mp_tilde=', mp_tilde
+        print*, 'initialize_particles: '// &
+            'number density per superparticle np_tilde=', np_tilde
+        print*, 'initialize_particles: '// &
+            'mass density per superparticle rhop_tilde=', rhop_tilde
       endif
 !
 !  Calculate nu_epicycle**2 for gravity.

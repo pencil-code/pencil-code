@@ -258,35 +258,16 @@ module Particles
           rhom=1.0
         endif
         rhop_tilde=eps_dtog*rhom/(real(npar)/(nxgrid*nygrid*nzgrid))
-        if (lroot) then
-          print*, 'initialize_particles: '// &
+        if (lroot) print*, 'initialize_particles: '// &
             'dust-to-gas ratio eps_dtog=', eps_dtog
-          print*, 'initialize_particles: '// &
-            'mass density per particle rhop_tilde=', rhop_tilde
-        endif
-      else
-        if (lroot) print*, 'initialize_particles: '// &
-            'mass density per particle rhop_tilde=', rhop_tilde
       endif
-!
-! Calculate mass per particle for drag-force and back-reaction in curvilinear
-! coordinates. It follows simply
-!   mp_tilde*N = eps*Int(rho*dv) = eps*rhom*V
-! where N is the total number of particles, eps is the dust to gas ratio and
-! V is the total volume of the box 
-!
-      if (mp_tilde==0.0) then
-        rhom=1.0*rho0
-        mp_tilde  =eps_dtog*rhom*box_volume/real(npar)
-        if (lroot) then
-          print*, 'initialize_particles: '// &
-               'dust-to-gas ratio eps_dtog=', eps_dtog
-          print*, 'initialize_particles: '// &
-               'mass per particle mp_tilde=', mp_tilde
-        endif
-      else
-        if (lroot) print*, 'initialize_particles: '// &
-             'mass per particle mp_tilde=', mp_tilde
+      if (lroot) then
+        print*, 'initialize_particles: '// &
+            'mass per constituent particle mp_tilde=', mp_tilde
+        print*, 'initialize_particles: '// &
+            'number density per superparticle np_tilde=', np_tilde
+        print*, 'initialize_particles: '// &
+            'mass density per superparticle rhop_tilde=', rhop_tilde
       endif
 !
 !  Calculate nu_epicycle**2 for gravity.
@@ -327,7 +308,9 @@ module Particles
 !  Write constants to disk.
 !
       if (lroot) then
-        open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
+        open (1,file=trim(datadir)//'/pc_constants.pro',position='append')
+          write (1,*) 'np_tilde=', np_tilde
+          write (1,*) 'mp_tilde=', mp_tilde
           write (1,*) 'rhop_tilde=', rhop_tilde
         close (1)
       endif
@@ -1219,7 +1202,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       use Diagnostics
       use EquationOfState, only: cs20, gamma
-      use Particles_number, only: get_nptilde
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -1227,7 +1209,7 @@ k_loop:   do while (.not. (k>npar_loc))
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension(3) :: ggp
-      real :: Omega2, np_tilde, rsph, vsph, OO2
+      real :: Omega2, rsph, vsph, OO2
       integer :: k, npar_found
       logical :: lheader, lfirstcall=.true.
 !
@@ -1493,14 +1475,14 @@ k_loop:   do while (.not. (k>npar_loc))
             sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)))**2,idiag_eccpz2m)
         if (idiag_rhoptilm/=0) then
           do k=1,npar_loc
-            call get_nptilde(fp,k,np_tilde)
+            if (lparticles_number) np_tilde=fp(k,inptilde)
             call sum_par_name( &
                 (/4/3.*pi*rhops*fp(k,iap)**3*np_tilde/),idiag_rhoptilm)
           enddo
         endif
         if (idiag_mpt/=0) then
           do k=1,npar_loc
-            call get_nptilde(fp,k,np_tilde)
+            if (lparticles_number) np_tilde=fp(k,inptilde)
             call integrate_par_name( &
                 (/4/3.*pi*rhops*fp(k,iap)**3*np_tilde/),idiag_mpt)
           enddo
@@ -1550,7 +1532,6 @@ k_loop:   do while (.not. (k>npar_loc))
       use Cparam, only: lparticles_spin
       use Diagnostics
       use EquationOfState, only: cs20, gamma
-      use Particles_number, only: get_nptilde
       use Particles_spin, only: calc_liftforce
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1651,7 +1632,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       use Diagnostics
       use EquationOfState, only: cs20, gamma
-      use Particles_number, only: get_nptilde
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df

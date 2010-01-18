@@ -42,10 +42,6 @@ module Particles_number
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
-      np_tilde0=rhop_tilde/mp_tilde
-      if (lroot) print*, 'initialize_particles_number: '// &
-          'number density per particle np_tilde0=', np_tilde0
-!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
@@ -112,32 +108,6 @@ module Particles_number
       call keep_compiler_quiet(ineargrid)
 !
     endsubroutine dnptilde_dt
-!***********************************************************************
-    subroutine get_nptilde(fp,k,np_tilde)
-!
-!  Get internal particle number.
-!
-!  25-oct-05/anders: coded
-!
-      use Messages, only: fatal_error
-!
-      real, dimension (mpar_loc,mpvar) :: fp
-      real :: np_tilde
-      integer :: k
-!
-      intent (in)  :: fp, k
-      intent (out) :: np_tilde
-!
-      if (k<1 .or. k>mpar_loc) then
-        if (lroot) print*, 'get_nptilde: k out of range, k=', k
-        call fatal_error('get_nptilde','')
-      endif
-!
-      np_tilde=np_tilde0
-!
-      call keep_compiler_quiet(fp)
-!
-    endsubroutine get_nptilde
 !***********************************************************************
     subroutine read_particles_num_init_pars(unit,iostat)
 !

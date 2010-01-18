@@ -921,14 +921,29 @@ module Particles_map
               if (nygrid/=1) iyy1=iyy0+1
               if (nzgrid/=1) izz1=izz0+1
               do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
+!
                 weight=1.0
+!
                 if (nxgrid/=1) &
-                     weight=weight*( 1.0-abs(fp(k,ixp)-x(ixx))*dx_1(ixx) )
+                    weight=weight*( 1.0-abs(fp(k,ixp)-x(ixx))*dx_1(ixx) )
                 if (nygrid/=1) &
-                     weight=weight*( 1.0-abs(fp(k,iyp)-y(iyy))*dy_1(iyy) )
+                    weight=weight*( 1.0-abs(fp(k,iyp)-y(iyy))*dy_1(iyy) )
                 if (nzgrid/=1) &
-                     weight=weight*( 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz) )
+                    weight=weight*( 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz) )
+!
+                if (lparticles_radius.and.lparticles_number) then
+                  weight=weight*four_pi_rhops_over_three* &
+                      fp(k,iap)**3*fp(k,inptilde)
+                elseif (lparticles_radius) then
+                  weight=weight*four_pi_rhops_over_three*fp(k,iap)**3*np_tilde
+                elseif (lparticles_number) then
+                  weight=weight*mp_tilde*fp(k,inptilde)
+                else
+                  weight=rhop_tilde*weight
+                endif
+!
                 f(ixx,iyy,izz,irhop)=f(ixx,iyy,izz,irhop) + weight
+!
               enddo; enddo; enddo
             endif
           enddo
@@ -970,29 +985,42 @@ module Particles_map
                                      0.5*(abs(fp(k,ixp)-x(ixx))*dx_1(ixx))**2
                 else
                   if (nxgrid/=1) &
-                       weight_x = 0.75  -   ((fp(k,ixp)-x(ixx))*dx_1(ixx))**2
+                      weight_x = 0.75  -   ((fp(k,ixp)-x(ixx))*dx_1(ixx))**2
                 endif
                 if ( ((iyy-iy0)==-1) .or. ((iyy-iy0)==+1) ) then
                   weight_y = 1.125 - 1.5* abs(fp(k,iyp)-y(iyy))*dy_1(iyy) + &
                                      0.5*(abs(fp(k,iyp)-y(iyy))*dy_1(iyy))**2
                 else
                   if (nygrid/=1) &
-                       weight_y = 0.75  -   ((fp(k,iyp)-y(iyy))*dy_1(iyy))**2
+                      weight_y = 0.75  -   ((fp(k,iyp)-y(iyy))*dy_1(iyy))**2
                 endif
                 if ( ((izz-iz0)==-1) .or. ((izz-iz0)==+1) ) then
                   weight_z = 1.125 - 1.5* abs(fp(k,izp)-z(izz))*dz_1(izz) + &
                                      0.5*(abs(fp(k,izp)-z(izz))*dz_1(izz))**2
                 else
                   if (nzgrid/=1) &
-                       weight_z = 0.75  -   ((fp(k,izp)-z(izz))*dz_1(izz))**2
+                      weight_z = 0.75  -   ((fp(k,izp)-z(izz))*dz_1(izz))**2
                 endif
-
+!
                 weight=1.0
-
+!
                 if (nxgrid/=1) weight=weight*weight_x
                 if (nygrid/=1) weight=weight*weight_y
                 if (nzgrid/=1) weight=weight*weight_z
+!
+                if (lparticles_radius.and.lparticles_number) then
+                  weight=weight*four_pi_rhops_over_three* &
+                      fp(k,iap)**3*fp(k,inptilde)
+                elseif (lparticles_radius) then
+                  weight=weight*four_pi_rhops_over_three*fp(k,iap)**3*np_tilde
+                elseif (lparticles_number) then
+                  weight=weight*mp_tilde*fp(k,inptilde)
+                else
+                  weight=rhop_tilde*weight
+                endif
+!
                 f(ixx,iyy,izz,irhop)=f(ixx,iyy,izz,irhop) + weight
+!
               enddo; enddo; enddo
             endif
           enddo
@@ -1000,21 +1028,42 @@ module Particles_map
 !  Nearest Grid Point (NGP) method.
 !
         else
-          f(l1:l2,m1:m2,n1:n2,irhop)=f(l1:l2,m1:m2,n1:n2,inp)
+          do k=1,npar_loc
+            lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
+            if (.not.lnbody) then 
+              ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+!
+              weight=1.0
+!
+              if (lparticles_radius.and.lparticles_number) then
+                weight=weight*four_pi_rhops_over_three* &
+                    fp(k,iap)**3*fp(k,inptilde)
+              elseif (lparticles_radius) then
+                weight=weight*four_pi_rhops_over_three*fp(k,iap)**3*np_tilde
+              elseif (lparticles_number) then
+                weight=weight*mp_tilde*fp(k,inptilde)
+              else
+                weight=rhop_tilde*weight
+              endif
+!
+              f(ix0,iy0,iz0,irhop)=f(ix0,iy0,iz0,irhop) + weight
+!
+            endif
+          enddo
         endif
 !
 !  Fold first ghost zone of f.
 !
         if (lparticlemesh_cic.or.lparticlemesh_tsc) call fold_f(f,irhop,irhop)
-        if (lcartesian_coords) then
-          f(l1:l2,m1:m2,n1:n2,irhop)=rhop_tilde*f(l1:l2,m1:m2,n1:n2,irhop)  
-        else
-          do m=m1,m2; do n=n1,n2
-            f(l1:l2,m,n,irhop)=f(l1:l2,m,n,irhop)*mp_tilde*dvolume_1
-          enddo; enddo
-        endif
+!        if (lcartesian_coords) then
+!          f(l1:l2,m1:m2,n1:n2,irhop)=rhop_tilde*f(l1:l2,m1:m2,n1:n2,irhop)  
+!        else
+!          do m=m1,m2; do n=n1,n2
+!            f(l1:l2,m,n,irhop)=f(l1:l2,m,n,irhop)*mp_tilde*dvolume_1
+!          enddo; enddo
+!        endif
 !        call sharpen_tsc_density(f)
-        endif
+      endif
 !
     endsubroutine map_xxp_grid
 !***********************************************************************

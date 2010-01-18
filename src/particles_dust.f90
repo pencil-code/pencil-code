@@ -96,63 +96,58 @@ module Particles
 !
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
-      ldragforce_gas_par, ldragforce_dust_par, &
-      bcpx, bcpy, bcpz, tausp, beta_dPdr_dust, rhop_tilde, &
-      eps_dtog, nu_epicycle, rp_int, rp_ext, &
-      gravx_profile, gravz_profile, gravr_profile, &
-      gravx, gravz, gravr, gravsmooth, kx_gg, kz_gg, Ri0, eps1, &
-      lmigration_redo, ldragforce_equi_global_eps, coeff, &
-      kx_vvp, ky_vvp, kz_vvp, amplvvp, kx_xxp, ky_xxp, kz_xxp, amplxxp, &
-      kx_vpx, kx_vpy, kx_vpz, ky_vpx, ky_vpy, ky_vpz, kz_vpx, kz_vpy, kz_vpz, &
-      phase_vpx, phase_vpy, phase_vpz, lcoldstart_amplitude_correction, &
-      lparticlemesh_cic, lparticlemesh_tsc, linterpolate_spline, &
-      tstart_dragforce_par, tstart_grav_par, taucool, &
-      lcollisional_cooling_taucool, lcollisional_cooling_rms, &
-      lcollisional_cooling_twobody, tausp_species, &
+      ldragforce_gas_par, ldragforce_dust_par, bcpx, bcpy, bcpz, tausp, &
+      beta_dPdr_dust, np_tilde, mp_tilde, rhop_tilde, eps_dtog, nu_epicycle, &
+      rp_int, rp_ext, gravx_profile, gravz_profile, gravr_profile, gravx, &
+      gravz, gravr, gravsmooth, kx_gg, kz_gg, Ri0, eps1, lmigration_redo, &
+      ldragforce_equi_global_eps, coeff, kx_vvp, ky_vvp, kz_vvp, amplvvp, &
+      kx_xxp, ky_xxp, kz_xxp, amplxxp, kx_vpx, kx_vpy, kx_vpz, ky_vpx, &
+      ky_vpy, ky_vpz, kz_vpx, kz_vpy, kz_vpz, phase_vpx, phase_vpy, &
+      phase_vpz, lcoldstart_amplitude_correction, lparticlemesh_cic, &
+      lparticlemesh_tsc, linterpolate_spline, tstart_dragforce_par, &
+      tstart_grav_par, taucool, lcollisional_cooling_taucool, &
+      lcollisional_cooling_rms, lcollisional_cooling_twobody, tausp_species, &
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
       tstart_collisional_cooling, tausg_min, l_hole, m_hole, n_hole, &
-      epsp_friction_increase,lcollisional_dragforce_cooling, &
-      ldragforce_heat, lcollisional_heat, lcompensate_friction_increase, &
+      epsp_friction_increase,lcollisional_dragforce_cooling, ldragforce_heat, &
+      lcollisional_heat, lcompensate_friction_increase, &
       lmigration_real_check, ldraglaw_epstein, ldraglaw_epstein_stokes_linear, &
       mean_free_path_gas, ldraglaw_epstein_transonic, lcheck_exact_frontier,&
       ldraglaw_eps_stk_transonic, pdlaw, lshort_friction_approx, &
       tausp_short_friction,ldraglaw_steadystate,tstart_liftforce_par, &
       tstart_brownian_par, lbrownian_forces, lenforce_policy, &
-      interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, &
-      brownian_T0, lnostore_uu, ldt_grav_par, ldragforce_radialonly, &
-      lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, &
-      lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, &
-      Lx0, Ly0, Lz0, lglobalrandom, linsert_particles_continuously, &
-      lrandom_particle_pencils, lnocalc_np, lnocalc_rhop
+      interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, brownian_T0, &
+      lnostore_uu, ldt_grav_par, ldragforce_radialonly, lsinkpoint, &
+      xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, lcoriolis_force_par, &
+      lcentrifugal_force_par, ldt_adv_par, Lx0, Ly0, Lz0, lglobalrandom, &
+      linsert_particles_continuously, lrandom_particle_pencils, lnocalc_np, &
+      lnocalc_rhop, np_const, rhop_const
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
-      ldragforce_gas_par, ldragforce_dust_par, &
-      rhop_tilde, eps_dtog, cdtp, cdtpgrav, lpar_spec, &
-      linterp_reality_check, nu_epicycle, &
-      gravx_profile, gravz_profile, gravr_profile, &
-      gravx, gravz, gravr, gravsmooth, kx_gg, kz_gg, &
-      lmigration_redo, tstart_dragforce_par, tstart_grav_par, &
-      lparticlemesh_cic, lparticlemesh_tsc, taucool, &
-      lcollisional_cooling_taucool, lcollisional_cooling_rms, &
-      lcollisional_cooling_twobody, lcollisional_dragforce_cooling, &
-      tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
-      tstart_collisional_cooling, tausg_min, epsp_friction_increase, &
-      ldragforce_heat, lcollisional_heat, lcompensate_friction_increase, &
-      lmigration_real_check,ldraglaw_variable, luse_tau_ap, &
-      ldraglaw_epstein, ldraglaw_epstein_stokes_linear, mean_free_path_gas, &
-      ldraglaw_epstein_transonic, lcheck_exact_frontier, &
+      ldragforce_gas_par, ldragforce_dust_par, np_tilde, mp_tilde, &
+      rhop_tilde, eps_dtog, cdtp, cdtpgrav, lpar_spec, linterp_reality_check, &
+      nu_epicycle, gravx_profile, gravz_profile, gravr_profile, gravx, &
+      gravz, gravr, gravsmooth, kx_gg, kz_gg, lmigration_redo, &
+      tstart_dragforce_par, tstart_grav_par, lparticlemesh_cic, &
+      lparticlemesh_tsc, taucool, lcollisional_cooling_taucool, &
+      lcollisional_cooling_rms, lcollisional_cooling_twobody, &
+      lcollisional_dragforce_cooling, tau_coll_min, ltau_coll_min_courant, &
+      coeff_restitution, tstart_collisional_cooling, tausg_min, &
+      epsp_friction_increase, ldragforce_heat, lcollisional_heat, &
+      lcompensate_friction_increase, lmigration_real_check,ldraglaw_variable, &
+      luse_tau_ap, ldraglaw_epstein, ldraglaw_epstein_stokes_linear, &
+      mean_free_path_gas, ldraglaw_epstein_transonic, lcheck_exact_frontier, &
       ldraglaw_eps_stk_transonic, lshort_friction_approx, &
-      ldraglaw_variable_density, &
-      tausp_short_friction, ldraglaw_steadystate, tstart_liftforce_par, &
-      tstart_brownian_par, lbrownian_forces, lenforce_policy, &
-      interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, &
-      brownian_T0, lnostore_uu, ldt_grav_par, ldragforce_radialonly, &
-      lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, &
-      lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, &
+      ldraglaw_variable_density, tausp_short_friction, ldraglaw_steadystate, &
+      tstart_liftforce_par, tstart_brownian_par, lbrownian_forces, &
+      lenforce_policy, interp_pol_uu,interp_pol_oo, interp_pol_TT, &
+      interp_pol_rho, brownian_T0, lnostore_uu, ldt_grav_par, &
+      ldragforce_radialonly, lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, &
+      rsinkpoint, lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, &
       linsert_particles_continuously, particles_insert_rate, &
       max_particle_insert_time, lrandom_particle_pencils, lnocalc_np, &
-      lnocalc_rhop
+      lnocalc_rhop, np_const, rhop_const
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0, idiag_rp2m=0
@@ -226,7 +221,7 @@ module Particles
 !
 !  29-dec-04/anders: coded
 !
-      use EquationOfState, only: cs0,rho0
+      use EquationOfState, only: cs0, rho0
       use FArrayManager
       use SharedVariables, only: put_shared_variable
 !
@@ -293,7 +288,6 @@ module Particles
         if (lroot) print*, 'initialize_particles: Global pressure '// &
             'gradient with beta_dPdr_dust=', beta_dPdr_dust
       endif
-!
 !  Calculate mass density per particle (for back-reaction drag force on gas)
 !  following the formula
 !    rhop_tilde*N_cell = eps*rhom
@@ -301,42 +295,23 @@ module Particles
 !  particles per grid cell and rhom is the mean gas density in the box.
 !
       if (rhop_tilde==0.0) then
-! For stratification, take into account gas present outside the simulation box.
-        if ( (lgravz .and. lgravz_gas) .or. gravz_profile=='linear') then
+!  For stratification, take into account gas present outside the simulation box.
+        if ((lgravz .and. lgravz_gas) .or. gravz_profile=='linear') then
           rhom=sqrt(2*pi)*1.0*1.0/Lz  ! rhom = Sigma/Lz, Sigma=sqrt(2*pi)*H*rho1
         else
           rhom=1.0
         endif
         rhop_tilde=eps_dtog*rhom/(real(npar)/(nxgrid*nygrid*nzgrid))
-        if (lroot) then
-          print*, 'initialize_particles: '// &
+        if (lroot) print*, 'initialize_particles: '// &
             'dust-to-gas ratio eps_dtog=', eps_dtog
-          print*, 'initialize_particles: '// &
-            'mass density per particle rhop_tilde=', rhop_tilde
-        endif
-      else
-        if (lroot) print*, 'initialize_particles: '// &
-            'mass density per particle rhop_tilde=', rhop_tilde
       endif
-!
-! Calculate mass per particle for drag-force and back-reaction in curvilinear
-! coordinates. It follows simply
-!   mp_tilde*N = eps*Int(rho*dv) = eps*rhom*V
-! where N is the total number of particles, eps is the dust to gas ratio and
-! V is the total volume of the box 
-!
-      if (mp_tilde==0.0) then
-        rhom=1.0*rho0
-        mp_tilde  =eps_dtog*rhom*box_volume/real(npar)
-        if (lroot) then
-          print*, 'initialize_particles: '// &
-               'dust-to-gas ratio eps_dtog=', eps_dtog
-          print*, 'initialize_particles: '// &
-               'mass per particle mp_tilde=', mp_tilde
-        endif
-      else
-        if (lroot) print*, 'initialize_particles: '// &
-             'mass per particle mp_tilde=', mp_tilde
+      if (lroot) then
+        print*, 'initialize_particles: '// &
+            'mass per constituent particle mp_tilde=', mp_tilde
+        print*, 'initialize_particles: '// &
+            'number density per superparticle np_tilde=', np_tilde
+        print*, 'initialize_particles: '// &
+            'mass density per superparticle rhop_tilde=', rhop_tilde
       endif
 !
 !  Calculate nu_epicycle**2 for gravity.
@@ -436,6 +411,14 @@ module Particles
         endif
       endif
 !
+!  Drag force on gas right now assumed rhop_tilde is the same for all particles.
+!
+      if (ldragforce_gas_par.and.(lparticles_radius.or.lparticles_number)) then
+        if (lroot) print*, 'initialize_particles: drag force on gas is '// &
+            'not yet implemented for variable particle radius or number'
+        call fatal_error('initialize_particles','')
+      endif
+!
 !  Set up interpolation logicals. These logicals can be OR'ed with some logical
 !  in the other particle modules' initialization subroutines to enable
 !  interpolation based on some condition local to that module.
@@ -516,7 +499,9 @@ module Particles
 !  Write constants to disk.
 !
       if (lroot) then
-        open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
+        open (1,file=trim(datadir)//'/pc_constants.pro',position='append')
+          write (1,*) 'np_tilde=', np_tilde
+          write (1,*) 'mp_tilde=', mp_tilde
           write (1,*) 'rhop_tilde=', rhop_tilde
         close (1)
       endif
@@ -1949,7 +1934,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       use Diagnostics
       use EquationOfState, only: cs20, gamma
-      use Particles_number, only: get_nptilde
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -1957,7 +1941,7 @@ k_loop:   do while (.not. (k>npar_loc))
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension(3) :: ggp
-      real :: Omega2, np_tilde, rsph, vsph, OO2
+      real :: Omega2, rsph, vsph, OO2
       integer :: k, npar_found
       logical :: lheader, lfirstcall=.true.
 !
@@ -2224,14 +2208,14 @@ k_loop:   do while (.not. (k>npar_loc))
             sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)))**2,idiag_eccpz2m)
         if (idiag_rhoptilm/=0) then
           do k=1,npar_loc
-            call get_nptilde(fp,k,np_tilde)
+            if (lparticles_number) np_tilde=fp(k,inptilde)
             call sum_par_name( &
                 (/4/3.*pi*rhops*fp(k,iap)**3*np_tilde/),idiag_rhoptilm)
           enddo
         endif
         if (idiag_mpt/=0) then
           do k=1,npar_loc
-            call get_nptilde(fp,k,np_tilde)
+            if (lparticles_number) np_tilde=fp(k,inptilde)
             call integrate_par_name( &
                 (/4/3.*pi*rhops*fp(k,iap)**3*np_tilde/),idiag_mpt)
           enddo
@@ -2300,7 +2284,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       use Diagnostics
       use EquationOfState, only: cs20, gamma
-      use Particles_number, only: get_nptilde
       use Particles_spin, only: calc_liftforce
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2497,10 +2480,11 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Add friction force to grid point.
                     if (lcartesian_coords) then
                       df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                           rhop_tilde*rho1_point*dragforce*weight
+                          rhop_tilde*rho1_point*dragforce*weight
                     else
                       df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                           mp_tilde*dvolume_1(ixx)*rho1_point*dragforce*weight
+                          rhop_tilde*box_volume/(nxgrid*nygrid*nzgrid)* &
+                          dvolume_1(ixx)*rho1_point*dragforce*weight
                     endif
                   enddo; enddo; enddo
 !
@@ -2570,10 +2554,11 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Add friction force to grid point.
                     if (lcartesian_coords) then
                       df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                           rhop_tilde*rho1_point*dragforce*weight
+                          rhop_tilde*rho1_point*dragforce*weight
                     else
                       df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                           mp_tilde*dvolume_1(ixx)*rho1_point*dragforce*weight
+                          rhop_tilde*box_volume/(nxgrid*nygrid*nzgrid)* &
+                          dvolume_1(ixx)*rho1_point*dragforce*weight
                     endif
                   enddo; enddo; enddo
                 else
@@ -2583,10 +2568,11 @@ k_loop:   do while (.not. (k>npar_loc))
                   l=ineargrid(k,1)
                   if (lcartesian_coords) then
                     df(l,m,n,iux:iuz) = df(l,m,n,iux:iuz) - &
-                         rhop_tilde*p%rho1(l-nghost)*dragforce
+                        rhop_tilde*p%rho1(l-nghost)*dragforce
                   else
                     df(l,m,n,iux:iuz) = df(l,m,n,iux:iuz) - &
-                         mp_tilde*dvolume_1(l-nghost)*p%rho1(l-nghost)*dragforce
+                        rhop_tilde*box_volume/(nxgrid*nygrid*nzgrid)* &
+                        dvolume_1(l-nghost)*p%rho1(l-nghost)*dragforce
                   endif
                 endif
               endif

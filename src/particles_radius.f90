@@ -39,13 +39,13 @@ module Particles_radius
       initap, ap0, rhops, vthresh_sweepup, deltavp12_floor, dt_min_evap, &
       lsweepup_par, lcondensation_par, tstart_sweepup_par, cdtps, apmin, &
       condensation_coefficient_type, alpha_cond, diffusion_coefficient, &
-      tau_damp_evap, llatent_heat
+      tau_damp_evap, llatent_heat, cdtpc
 !
   namelist /particles_radius_run_pars/ &
       rhops, vthresh_sweepup, deltavp12_floor, dt_min_evap, &
       lsweepup_par, lcondensation_par, tstart_sweepup_par, cdtps, apmin, &
       condensation_coefficient_type, alpha_cond, diffusion_coefficient, &
-      tau_damp_evap, llatent_heat
+      tau_damp_evap, llatent_heat, cdtpc
 !
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
   integer :: idiag_dvp12m=0, idiag_dtsweepp=0
@@ -99,6 +99,10 @@ module Particles_radius
         if (lroot) print*, 'initialize_particles_radius: '// &
             'mass per dust grain mp_tilde=', mp_tilde
       endif
+!
+!  Short hand for spherical particle prefactor.
+!
+      four_pi_rhops_over_three=4*pi*rhops/3.0
 !
 !  Inverse coefficients.
 !
@@ -269,7 +273,7 @@ module Particles_radius
 !
 !  Deplete gas of small grains.
 !
-              call get_nptilde(fp,k,np_tilde)
+              if (lparticles_radius) np_tilde=fp(k,inptilde)
               if (lpscalar_nolog) then
                 df(ix0,m,n,icc) = df(ix0,m,n,icc) - &
                     np_tilde*pi*fp(k,iap)**2*deltavp*p%cc(ix)
@@ -405,7 +409,7 @@ module Particles_radius
 !
 !  Vapor monomers are added to the gas or removed from the gas.
 !
-            call get_nptilde(fp,k,np_tilde)
+            if (lparticles_radius) np_tilde=fp(k,inptilde)
             if (lfirst.and.ldt) np_total(ix)=np_total(ix)+np_tilde
             drhocdt=-dapdt*4*pi*fp(k,iap)**2*rhops*np_tilde
             if (lpscalar_nolog) then

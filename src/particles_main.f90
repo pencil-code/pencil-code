@@ -91,6 +91,57 @@ module Particles_main
         call fatal_error('particles_initialize_modules','')
       endif
 !
+!  Set mass and number density of individual particles inside each
+!  superparticle. The mass of a superparticle is defined through
+!
+!    *   mp_tilde : mass of constituent particles
+!    *   np_tilde : number density of constituent particles
+!    * rhop_tilde : mass density of superparticle
+!
+!  One can either input these quantities by hand or set the wanted number
+!  density and mass density per grid cell (np_const or rhop_const).
+!
+      if (rhop_const/=0.0) then
+        if (lparticles_radius.or.lparticles_number) then
+          if (lroot) print*, 'particles_initialize_modules: '// &
+              'can not use rhop_const together with Particles_radius or '// &
+              'Particles_number modules'
+          call fatal_error('particles_initialize_modules','')
+        endif
+        if (mp_tilde==0.0 .and. np_tilde==0.0) then
+          if (lroot) print*, 'particles_initialize_modules: '// &
+              'must set either mp_tilde or np_tilde when using rhop_const'
+          call fatal_error('particles_initialize_modules','')
+        endif
+        if (mp_tilde/=0.0 .and. np_tilde/=0.0) then
+          if (lroot) print*, 'particles_initialize_modules: '// &
+              'may not set both mp_tilde and np_tilde when using rhop_const'
+          call fatal_error('particles_initialize_modules','')
+        endif
+        rhop_tilde=rhop_const/(real(npar)/(nxgrid*nygrid*nzgrid))
+        if (mp_tilde==0.0) mp_tilde=rhop_tilde/np_tilde
+        if (np_tilde==0.0) np_tilde=rhop_tilde/mp_tilde
+      elseif (np_const/=0.0) then
+        if (lparticles_number) then
+          if (lroot) print*, 'particles_initialize_modules: '// &
+              'can not use np_const together with Particles_number module'
+          call fatal_error('particles_initialize_modules','')
+        endif
+        if (.not.lparticles_radius) then
+          if (mp_tilde==0.0) then
+            if (lroot) print*, 'particles_initialize_modules: '// &
+                'must have mp_tilde non zero when setting np_const'
+            call fatal_error('particles_initialize_modules','')
+          endif
+        endif
+        np_tilde=np_const/(real(npar)/(nxgrid*nygrid*nzgrid))
+        rhop_tilde=np_tilde*mp_tilde
+      else
+        if (rhop_tilde==0.0) rhop_tilde=mp_tilde*np_tilde
+      endif
+!
+!  Initialize individual modules.
+!
       call initialize_particles_mpicomm   (f,lstarting)
       call initialize_particles           (f,lstarting)
       call initialize_particles_radius    (f,lstarting)
@@ -101,6 +152,17 @@ module Particles_main
       call initialize_particles_viscosity (f,lstarting)
       call initialize_particles_collisions(f,lstarting)
       call initialize_particles_stalker   (f,lstarting)
+!
+!  Stop if rhop_tilde is zero.
+!
+      if (rhop_tilde==0.0) then
+        if (lroot) then
+          print*, 'particles_initialize_modules: rhop_tilde is zero'
+          print*, 'particles_initialize_modules: '// &
+              'np_tilde, mp_tilde, rhop_tilde=', np_tilde, mp_tilde, rhop_tilde
+        endif
+        call fatal_error('particles_initialize_modules','')
+      endif
 !
 !  Make sure all requested interpolation variables are available.
 !
