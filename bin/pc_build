@@ -38,6 +38,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #       --host-id=<id>
 #                   Use the given <id> as host ID.
 #       --notify    Tell us (audibly and visually) when compilation is done.
+#       --fast      Shortcut for the option FFLAGS+='-O0'
 #   -q, --quiet     Be quiet.
 #   -v, --version   Print version number.
 # Examples:
@@ -102,6 +103,7 @@ GetOptions(\%opts,
                -f=s --config-files=s
                -H=s --host-id=s
                     --notify
+                    --fast
                -q   --quiet
                -v   --version )
           ) or die "Aborting.\n";
@@ -121,6 +123,11 @@ my $config_files = ($opts{'f'} || $opts{'config-files'} || undef);
 my $host_id      = ($opts{'H'} || $opts{'host-id'}      || undef);
 my $notify       = (              $opts{'notify'}       || '');
 my $quiet        = ($opts{'q'} || $opts{'quiet'}        || '');
+my $fast         = (              $opts{'fast'}         || '');
+
+if ($fast) {
+    push(@ARGV, 'FFLAGS+=-O0')
+}
 
 my @extra_make_args = @ARGV;
 
@@ -133,7 +140,6 @@ if ($clean) {
     system('make', 'clean');
     exit 0;
 }
-
 
 my @config_files;
 mention($Pencil::ConfigFinder::debug);
