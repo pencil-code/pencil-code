@@ -1340,11 +1340,19 @@ module Entropy
 !  Loop over slices
 !
       select case (trim(slices%name))
-
 !
 !  Temperature.
 !
-        case ('tt') 
+        case ('TT') 
+          slices%yz =exp(f(ix_loc,m1:m2,n1:n2,ilnTT))
+          slices%xz =exp(f(l1:l2,iy_loc,n1:n2,ilnTT))
+          slices%xy =exp(f(l1:l2,m1:m2,iz_loc,ilnTT))
+          slices%xy2=exp(f(l1:l2,m1:m2,iz2_loc,ilnTT))
+          if (lwrite_slice_xy3) slices%xy3=exp(f(l1:l2,m1:m2,iz3_loc,ilnTT))
+          if (lwrite_slice_xy4) slices%xy4=exp(f(l1:l2,m1:m2,iz4_loc,ilnTT))
+          slices%ready=.true.
+!  lnTT
+        case ('lnTT') 
           slices%yz =f(ix_loc,m1:m2,n1:n2,ilnTT)
           slices%xz =f(l1:l2,iy_loc,n1:n2,ilnTT)
           slices%xy =f(l1:l2,m1:m2,iz_loc,ilnTT)
@@ -1352,7 +1360,7 @@ module Entropy
           if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,ilnTT)
           if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,ilnTT)
           slices%ready=.true.
-
+!
       endselect
 !
     endsubroutine get_slices_entropy
