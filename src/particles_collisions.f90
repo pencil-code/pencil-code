@@ -28,18 +28,20 @@ module Particles_collisions
 !
   include 'particles_collisions.h'
 !
-  real :: lambda_mfp_single=1.0, coeff_restitution=1.0
+  real, pointer, dimension (:) :: tausp_species, tausp1_species
   real, pointer :: gravr
+  real :: lambda_mfp_single=1.0, coeff_restitution=1.0
   integer :: ncoll_max_par=-1, npart_max_par=-1
   logical :: lcollision_random_angle=.false., lcollision_big_ball=.false.
   logical :: lshear_in_vp=.true., lkeplerian_flat=.false.
+  logical :: ltauc_from_tauf=.false.
   character (len=labellen) :: icoll='random-angle'
 !
   integer :: idiag_ncollpm=0, idiag_npartpm=0
 !
   namelist /particles_coll_run_pars/ &
       lambda_mfp_single, coeff_restitution, icoll, lshear_in_vp, &
-      ncoll_max_par, npart_max_par, lkeplerian_flat
+      ncoll_max_par, npart_max_par, lkeplerian_flat, ltauc_from_tauf
 !
   contains
 !***********************************************************************
@@ -74,9 +76,14 @@ module Particles_collisions
         call fatal_error('initialize_particles_collisions','')
       endif
 !
-      call get_shared_variable('gravr',gravr,ierr)
-      if (ierr/=0) call fatal_error('initialize_particles_collisions', &
-          'there was a problem when getting gravr')
+!  Get radial gravity from gravity module.
+!
+      call get_shared_variable('gravr',gravr)
+!
+!  Get friction time from dust particle module.
+!
+      call get_shared_variable( 'tausp_species', tausp_species)
+      call get_shared_variable('tausp1_species',tausp1_species)
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
@@ -95,6 +102,7 @@ module Particles_collisions
 !  23-mar-09/anders: coded
 !
       use Diagnostics
+      use EquationOfState, only: cs0, rho0
       use General
 !
       real, dimension (mpar_loc,mpvar) :: fp
@@ -103,8 +111,10 @@ module Particles_collisions
       real, dimension (3) :: xpj, xpk, vpj, vpk
       real :: deltavjk, tau_coll1, prob, r
       real :: espec, asemi, omega_orbit
+      real :: tausp_j, tausp_k, tausp1_j, tausp1_k
       integer, dimension (nx) :: np_pencil
       integer :: l, j, k, np_point, ncoll, ncoll_par, npart_par
+      integer :: jspec, kspec
 !
       intent (in) :: ineargrid
       intent (inout) :: fp
@@ -143,6 +153,11 @@ module Particles_collisions
             np_point=np_pencil(l-nghost)
             do while (k/=0)
               j=k
+              if (ltauc_from_tauf) then
+                kspec=npar_species*(ipar(k)-1)/npar+1
+                tausp_k=tausp_species(kspec)
+                tausp1_k=tausp1_species(kspec)
+              endif
               npart_par=0
               ncoll_par=0
               do while (.true.)
@@ -153,6 +168,11 @@ module Particles_collisions
                   else
                     exit
                   endif
+                endif
+                if (ltauc_from_tauf) then
+                  jspec=npar_species*(ipar(j)-1)/npar+1
+                  tausp_j=tausp_species(jspec)
+                  tausp1_j=tausp1_species(jspec)
                 endif
 !
 !  Calculate the relative speed of particles j and k.
@@ -191,14 +211,44 @@ module Particles_collisions
                   endif
 !
 !  The time-scale for collisions between a representative particle from
-!  superparticle k and the particle cluster in superparticle j is
+!  superparticle k and the particle swarm in superparticle j is
 !
 !    tau_coll = 1/(n*sigma*dv) = lambda/dv
 !
 !  where lambda is the mean free path of a particle relative to a single
-!  superparticle (this is a constant).
+!  superparticle and sigma is the collisional cross section.
 !
-                 tau_coll1=deltavjk/lambda_mfp_single
+!  We can further write the collision time of a representative particle from
+!  swarm k colliding with the particles of swarm j in terms of their friction
+!  times.
+!
+!    tau_coll_k = 1/(nj*sigma_jk*dv_jk) = mj/(rhoj*sigma_jk*dv_jk)
+!               = (4/3)*pi*rhops*aj^3/(rhoj*pi*(aj+ak)^2*dv_jk)
+!               = (4/3)*rhops*aj^3/(rhoj*(aj+ak)^2*dv_jk)
+!               = (4/3)*tau_fric_j*(rhog/rhoj)*(cs/dv_jk)*
+!                     tau_fric_j^2/(tau_fric_j+tau_fric_k)^2
+!
+                 if (ltauc_from_tauf) then
+                   if (lparticles_radius.or.lparticles_number) then
+                     if (lroot) print*, 'particles_collisions_pencils: ', &
+                         'not implemented for variable particle radius '// &
+                         'or particle number'
+                     call fatal_error('particles_collisions_pencils','')
+                   endif
+                   if (npar_species>1) then
+                     tau_coll1=0.75*min(tausp1_j,tausp1_k)*deltavjk/cs0* &
+                         rhop_swarm/rho0*(tausp_j+tausp_k)**2* &
+                         min(tausp1_j,tausp1_k)**2
+                   else
+                     tau_coll1=3*tausp1_j*deltavjk/cs0*rhop_swarm/rho0
+                   endif
+                 else
+!
+!  If the mean free path is a user supplied constant, then we can readily
+!  calculate the collision time-scale.
+!
+                   tau_coll1=deltavjk/lambda_mfp_single
+                 endif
 !
 !  Increase collision rate artificially for fewer collisions.
 !
