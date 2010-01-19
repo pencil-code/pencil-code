@@ -28,15 +28,45 @@ module Special
 
   integer :: dummy
   character(len=24) :: initspecial='nothing'
+  logical :: first_time=.true. 
+!
+!  Variables to be used when getting timevarying inlet from file
+!
+  real, allocatable, dimension(:,:,:,:) :: f_in
+  real, allocatable, dimension(:) :: x_in
+  real, allocatable, dimension(:) :: y_in
+  real, allocatable, dimension(:) :: z_in
+  character :: prec_in
+  real :: t_in,dx_in,dy_in,dz_in
+  integer :: mx_in,my_in,mz_in,nv_in
+  integer :: l1_in, nx_in, ny_in, nz_in
+  integer :: mvar_in,maux_in,mglobal_in
+  integer :: nghost_in
+  integer :: m1_in  
+  integer :: n1_in
+  integer :: l2_in
+  integer :: m2_in
+  integer :: n2_in
+  real :: Lx_in
+  real :: Ly_in
+  real :: Lz_in
+  character (len=60) :: turbfile
+  character(len=40) :: turb_inlet_dir='' 
+  logical :: proc_at_inlet
+  integer :: ipx_in, ipy_in, ipz_in, iproc_in, nprocx_in, nprocy_in, nprocz_in
+  character (len=120) :: directory_in
+  character (len=5) :: chproc_in
+
+
 
 !!  character, len(50) :: initcustom
 
 ! input parameters
   namelist /jet_init_pars/ &
-      initspecial
+      initspecial,turb_inlet_dir
   ! run parameters
   namelist /jet_run_pars/  &
-       dummy
+       turb_inlet_dir
 
   contains
 
@@ -57,14 +87,10 @@ module Special
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
-!  06-oct-03/tony: coded
+!  19-jan-10/nils: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-!!
-!!  Initialize any module variables which are parameter dependent
-!!
 !
-! DO NOTHING
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_special
@@ -483,20 +509,79 @@ module Special
 !
 !   2008-06-19/nils: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       type (boundary_condition) :: bc
-!!$!
-!!$      select case (bc%bcname)
-!!$      case ('poi')
-!!$        select case (bc%location)
-!!$        case (iBC_X_TOP)
-!!$          call bc_poi_x(f,-1,'top',iux,REL=.true.,val=bc%value1)
-!!$        case (iBC_X_BOT)
-!!$          call bc_poi_x(f,-1,'bot',iux,REL=.true.,val=bc%value1)
-!!$        end select
-!!$      end select
+!
+      select case (bc%bcname)
+      case ('tur')
+        select case (bc%location)
+        case (iBC_X_TOP)
+          call bc_turb(f,bc%value1,'top',1,bc%ivar)
+        case (iBC_X_BOT)
+          call bc_turb(f,bc%value1,'bot',1,bc%ivar)
+          bc%done=.true.
+        end select
+      end select
 !
     endsubroutine special_boundconds
+!***********************************************************************
+    subroutine bc_turb(f,u_t,topbot,j,ivar)
+!
+! Use a prerun simulation as inlet condition
+!
+! 2010-10-15/nils: coded
+!      
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f 
+      real :: shift, grid_shift, weight, round
+      integer :: iround,lower,upper,ii,j,imin,imax,ivar
+      character (len=3) :: topbot
+      real :: T_t,u_t
+!
+! Read data from file only initially
+! At later times this is stored in processor memory.
+!
+      if (first_time) then
+        call read_turbulent_data(topbot,j)
+      end if
+!
+! Set all ghost points at the same time
+!
+      if (ivar==iux) then 
+!
+! Set which ghost points to update
+!
+        if (topbot=='bot') then
+          imin=1
+          imax=3
+        else
+          imin=l1+1
+          imax=mx
+        endif
+!
+! Set data at ghost points
+!
+        if (Lx_in == 0) call fatal_error('bc_nscbc_prf_x',&
+            'Lx_in=0. Check that the precisions are the same.')
+        round=t*u_t/Lx_in
+        iround=int(round)
+        shift=round-iround
+        grid_shift=shift*nx_in
+        lower=l1_in+int(grid_shift)
+        upper=lower+1
+        weight=grid_shift-int(grid_shift)
+        f(imin:imax,m1:m2,n1:n2,iux:iuz)&
+            =f_in(lower-3:lower-1,m1_in:m2_in,n1_in:n2_in,iux:iuy)*(1-weight)&
+            +f_in(upper-3:upper-1,m1_in:m2_in,n1_in:n2_in,iux:iuy)*weight
+        f(imin:imax,m1:m2,n1:n2,ilnrho)&
+            =f_in(lower-3:lower-1,m1_in:m2_in,n1_in:n2_in,ilnrho)*(1-weight)&
+            +f_in(upper-3:upper-1,m1_in:m2_in,n1_in:n2_in,ilnrho)*weight
+!
+! Add mean flow velocity on top of the turubulence
+!      
+        f(imin:imax,m1:m2,n1:n2,iux)=f(imin:imax,m1:m2,n1:n2,iux)+u_t
+      endif
+!
+    end subroutine bc_turb
 !***********************************************************************
     subroutine special_before_boundary(f)
 !
@@ -513,6 +598,133 @@ module Special
       call keep_compiler_quiet(f)
 !
     endsubroutine special_before_boundary
+!***********************************************************************
+    subroutine read_turbulent_data(topbot,j)
+!
+!   This subroutine will read data from pre-run isotropic box
+!
+!   19-jan-10/nils: coded
+!
+      use General, only: safe_character_assign, chn
+      use Sub, only : rdim
+!
+      character (len=3), intent(in) :: topbot
+      integer, intent(in) :: j
+      integer :: i,stat 
+      logical :: exist
+      character (len=130) :: file
+!
+! Read the size of the data to be found on the file.
+!
+      file=trim(turb_inlet_dir)//'/data/proc0/dim.dat'
+      inquire(FILE=trim(file),EXIST=exist)
+      if (exist) then
+        call rdim(file,&
+            mx_in,my_in,mz_in,mvar_in,maux_in,mglobal_in,prec_in,&
+            nghost_in,ipx_in, ipy_in, ipz_in)
+        nv_in=mvar_in+maux_in+mglobal_in
+      else
+        print*,'file=',file
+        call fatal_error('bc_turb','Could not find file!')
+      endif
+!
+! Allocate array for data to be used at the inlet.
+! For now every processor reads all the data - this is clearly an overkill,
+! but we leav it like this during the development of this feature.
+!
+      allocate( f_in(mx_in,my_in,mz_in,nv_in),STAT=stat)
+      if (stat>0) call fatal_error('bc_turb',&
+          "Couldn't allocate memory for f_in ")
+      allocate( x_in(mx_in),STAT=stat)
+      if (stat>0) call fatal_error('bc_turb',&
+          "Couldn't allocate memory for x_in ")
+      allocate( y_in(my_in),STAT=stat)
+      if (stat>0) call fatal_error('bc_turb',&
+          "Couldn't allocate memory for y_in ")
+      allocate( z_in(mz_in),STAT=stat)
+      if (stat>0) call fatal_error('bc_turb',&
+          "Couldn't allocate memory for z_in ")
+!
+! Check which processor we want to read from.
+! In the current implementation it is required that:
+!   1) The number of mesh points and processors at the interface between 
+!      the two computational domains are equal. The two comp. domains I 
+!      am refering to here is the domain of the current simulation and the
+!      domain of the pre-run isotropic turbulence simulation defining the
+!      turbulence at the inlet.
+!   2) The pre-run simulaion can not have multiple processors in the flow
+!      direction of the current simulation.   
+!          
+      if (lprocz_slowest) then
+        ipx_in=ipx
+        ipy_in=ipy
+        ipz_in=ipz
+        nprocx_in=nprocx
+        nprocy_in=nprocy
+        nprocz_in=nprocz
+        if (j==1) then
+          if ((topbot=='bot'.and.ipx==0).or.&
+              (topbot=='top'.and.ipx==nprocx-1)) then
+            proc_at_inlet=.true.
+            ipx_in=0
+            nprocx_in=1
+          endif
+        elseif (j==2) then
+          if ((topbot=='bot'.and.ipy==0).or.&
+              (topbot=='top'.and.ipy==nprocy-1)) then
+            proc_at_inlet=.true.
+            ipy_in=0
+            nprocy_in=1
+          endif
+        elseif (j==3) then
+          if ((topbot=='bot'.and.ipz==0).or.&
+              (topbot=='top'.and.ipz==nprocz-1)) then
+            proc_at_inlet=.true.
+            ipz_in=0
+            nprocz_in=1
+          endif
+        else
+          call fatal_error("bc_turb_x",'No such direction!')
+        endif
+        iproc_in=ipz_in*nprocy_in*nprocx_in+ipy_in*nprocx_in+ipx_in
+      else
+        call fatal_error("bc_turb_x",&
+            'lprocz_slowest=F not implemeted for inlet from file!')
+      endif
+!
+!  Read data only if required, i.e. if we are at a processor handling inlets
+!
+      if (proc_at_inlet) then
+        print*,'datadir=',datadir
+        call chn(iproc_in,chproc_in)
+        call safe_character_assign(directory_in,&
+            trim(turb_inlet_dir)//'/data/proc'//chproc_in)
+        print*,'directory_in=',directory_in
+        call safe_character_assign(turbfile,&
+            trim(directory_in)//'/var.dat')
+        print*,'turbfile=',turbfile
+        open(1,FILE=turbfile,FORM='unformatted')
+        if (ip<=8) print*,'input: open, mx_in,my_in,mz_in,nv_in=',&
+            mx_in,my_in,mz_in,nv_in
+        read(1) f_in
+        read(1) t_in,x_in,y_in,z_in,dx_in,dy_in,dz_in
+        nx_in=mx_in-2*nghost
+        ny_in=my_in-2*nghost
+        nz_in=mz_in-2*nghost
+        l1_in=nghost+1
+        m1_in=nghost+1
+        n1_in=nghost+1
+        l2_in=mx_in-nghost
+        m2_in=my_in-nghost
+        n2_in=mz_in-nghost
+        Lx_in=x_in(l2_in+1)-x_in(l1_in)
+        Ly_in=y_in(m2_in+1)-y_in(m1_in)
+        Lz_in=z_in(n2_in+1)-z_in(n1_in)
+        first_time=.false.
+        close(1)
+      endif
+!
+    end subroutine read_turbulent_data
 !***********************************************************************
 
 !********************************************************************
