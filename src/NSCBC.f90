@@ -235,6 +235,7 @@ include 'NSCBC.h'
               Ly_in=y_in(m2_in+1)-y_in(m1_in)
               Lz_in=z_in(n2_in+1)-z_in(n1_in)
               first_NSCBC=.false.
+              close(1)
             endif            
           endif
         endif
