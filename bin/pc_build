@@ -18,6 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   pc_build
 # Author: wd (wdobler [at] gmail [dot] com)
 # Date:   23-Jun-2009
+# SVN: $Id$
 # Description:
 #   Compile the Pencil Code, using settings from the `Makefile' section in
 #   the appropriate configuration files.
@@ -126,7 +127,7 @@ my $quiet        = ($opts{'q'} || $opts{'quiet'}        || '');
 my $fast         = (              $opts{'fast'}         || '');
 
 if ($fast) {
-    push(@ARGV, 'FFLAGS+=-O0')
+    push @ARGV, 'FFLAGS+=-O0';
 }
 
 my @extra_make_args = @ARGV;
