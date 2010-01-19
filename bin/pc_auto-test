@@ -256,6 +256,7 @@ Options:
        --no-summary        \tDo not summarize at the end
        --no-lock           \tIgnore and don't write lock file
        --debug             \tPrint lots of debugging output
+       --fast              \tShortcut for the option FFLAGS+=-O0 of pc_build
 Examples:
   pc_auto-test      # run standard program, recycling .o files
   pc_auto-test -C   # run standard program, compiling from scratch
@@ -311,6 +312,7 @@ GetOptions(\%opts,
                     --nodelist=s
                     --no-summary
                     --nolock      --no-lock
+                    --fast
                )) or $help=1, die "$!\n";
 
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
@@ -351,6 +353,7 @@ my $nosummary   = (              $opts{'no-summary'}      || 0    );
 my $suppress_check = (           $opts{'no-pencil-check'} || 0    );
 my $nolock      = (              $opts{'nolock'}          || $opts{'no-lock'}
                                                              || 0 );
+my $fast        = (              $opts{'fast'}            || ''   );
 
 my @exit_status=('setting up directory',
                  'cleaning up',
@@ -802,6 +805,9 @@ sub test_compile {
         } else {
             $reference_out = 'reference.out';
             printf "$indi_fmt ", '';
+        }
+        if ($fast) {
+            push @makeopts, 'FFLAGS+=-O0';
         }
         print STDERR "\@makeopts = @makeopts\n" if ($debug);
         test_shell_cmd("@pc_build @makeopts", $dir, "compilation",
