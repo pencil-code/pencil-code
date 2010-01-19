@@ -114,9 +114,9 @@ varcontent[iap].variable = 'Particle radius (a)'
 varcontent[iap].idlvar   = 'a'
 varcontent[iap].idlinit  = INIT_SCALAR
 ;
-varcontent[inptilde].variable = 'Particle internal number (nptilde)'
-varcontent[inptilde].idlvar   = 'nptilde'
-varcontent[inptilde].idlinit  = INIT_SCALAR
+varcontent[inpswarm].variable = 'Particle internal number (nptilde)'
+varcontent[inpswarm].idlvar   = 'nptilde'
+varcontent[inpswarm].idlinit  = INIT_SCALAR
 ;
 varcontent[0].variable    = 'UNKNOWN'
 varcontent[0].idlvar      = 'UNKNOWN'
