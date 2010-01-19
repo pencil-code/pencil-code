@@ -26,7 +26,7 @@ module Particles_radius
   real :: vthresh_sweepup=-1.0, deltavp12_floor=0.0
   real, dimension (ninit) :: ap0=0.0
   real :: tstart_sweepup_par=0.0, cdtps=0.2, cdtpc=0.2
-  real :: tstart_condensation_par=0.0, dt_min_evap=0.0
+  real :: tstart_condensation_par=0.0
   real :: apmin=0.0, latent_heat_SI=2.257e6, alpha_cond=1.0, alpha_cond1=1.0
   real :: diffusion_coefficient=1.0, diffusion_coefficient1=1.0
   real :: tau_damp_evap=0.0, tau_damp_evap1=0.0
@@ -36,13 +36,13 @@ module Particles_radius
   character (len=labellen) :: condensation_coefficient_type='constant'
 !
   namelist /particles_radius_init_pars/ &
-      initap, ap0, rhops, vthresh_sweepup, deltavp12_floor, dt_min_evap, &
+      initap, ap0, rhops, vthresh_sweepup, deltavp12_floor, &
       lsweepup_par, lcondensation_par, tstart_sweepup_par, cdtps, apmin, &
       condensation_coefficient_type, alpha_cond, diffusion_coefficient, &
       tau_damp_evap, llatent_heat, cdtpc
 !
   namelist /particles_radius_run_pars/ &
-      rhops, vthresh_sweepup, deltavp12_floor, dt_min_evap, &
+      rhops, vthresh_sweepup, deltavp12_floor, &
       lsweepup_par, lcondensation_par, tstart_sweepup_par, cdtps, apmin, &
       condensation_coefficient_type, alpha_cond, diffusion_coefficient, &
       tau_damp_evap, llatent_heat, cdtpc
@@ -273,7 +273,7 @@ module Particles_radius
 !
 !  Deplete gas of small grains.
 !
-              if (lparticles_radius) np_swarm=fp(k,inpswarm)
+              if (lparticles_number) np_swarm=fp(k,inpswarm)
               if (lpscalar_nolog) then
                 df(ix0,m,n,icc) = df(ix0,m,n,icc) - &
                     np_swarm*pi*fp(k,iap)**2*deltavp*p%cc(ix)
@@ -409,7 +409,7 @@ module Particles_radius
 !
 !  Vapor monomers are added to the gas or removed from the gas.
 !
-            if (lparticles_radius) np_swarm=fp(k,inpswarm)
+            if (lparticles_number) np_swarm=fp(k,inpswarm)
             if (lfirst.and.ldt) np_total(ix)=np_total(ix)+np_swarm
             drhocdt=-dapdt*4*pi*fp(k,iap)**2*rhops*np_swarm
             if (lpscalar_nolog) then
