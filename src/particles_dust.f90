@@ -151,7 +151,8 @@ module Particles
       lnocalc_rhop, np_const, rhop_const
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
-  integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0, idiag_rp2m=0
+  integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
+  integer :: idiag_rpm=0, idiag_rp2m=0
   integer :: idiag_vpxm=0, idiag_vpym=0, idiag_vpzm=0
   integer :: idiag_vpx2m=0, idiag_vpy2m=0, idiag_vpz2m=0, idiag_ekinp=0
   integer :: idiag_vpxmax=0, idiag_vpymax=0, idiag_vpzmax=0
@@ -2147,6 +2148,8 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_xp2m/=0) call sum_par_name(fp(1:npar_loc,ixp)**2,idiag_xp2m)
         if (idiag_yp2m/=0) call sum_par_name(fp(1:npar_loc,iyp)**2,idiag_yp2m)
         if (idiag_zp2m/=0) call sum_par_name(fp(1:npar_loc,izp)**2,idiag_zp2m)
+        if (idiag_rpm/=0)  call sum_par_name(sqrt(fp(1:npar_loc,ixp)**2+ &
+            fp(1:npar_loc,iyp)**2+fp(1:npar_loc,izp)**2),idiag_rpm)
         if (idiag_rp2m/=0) call sum_par_name(fp(1:npar_loc,ixp)**2+ &
             fp(1:npar_loc,iyp)**2+fp(1:npar_loc,izp)**2,idiag_rp2m)
         if (idiag_vpxm/=0) call sum_par_name(fp(1:npar_loc,ivpx),idiag_vpxm)
@@ -3886,7 +3889,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if (lreset) then
         idiag_xpm=0; idiag_ypm=0; idiag_zpm=0
-        idiag_xp2m=0; idiag_yp2m=0; idiag_zp2m=0; idiag_rp2m=0
+        idiag_xp2m=0; idiag_yp2m=0; idiag_zp2m=0; idiag_rpm=0; idiag_rp2m=0
         idiag_vpxm=0; idiag_vpym=0; idiag_vpzm=0
         idiag_vpx2m=0; idiag_vpy2m=0; idiag_vpz2m=0; idiag_ekinp=0
         idiag_vpxmax=0; idiag_vpymax=0; idiag_vpzmax=0
@@ -3921,6 +3924,7 @@ k_loop:   do while (.not. (k>npar_loc))
         call parse_name(iname,cname(iname),cform(iname),'xp2m',idiag_xp2m)
         call parse_name(iname,cname(iname),cform(iname),'yp2m',idiag_yp2m)
         call parse_name(iname,cname(iname),cform(iname),'zp2m',idiag_zp2m)
+        call parse_name(iname,cname(iname),cform(iname),'rpm',idiag_rpm)
         call parse_name(iname,cname(iname),cform(iname),'rp2m',idiag_rp2m)
         call parse_name(iname,cname(iname),cform(iname),'vpxm',idiag_vpxm)
         call parse_name(iname,cname(iname),cform(iname),'vpym',idiag_vpym)
