@@ -28,7 +28,7 @@ module Entropy
 !
   use Cdata
   use Cparam
-  use EquationOfState, only: mpoly0, mpoly1
+  use EquationOfState, only: mpoly0, mpoly1, mpoly2
   use Messages
   use Sub, only: keep_compiler_quiet
 !
@@ -76,7 +76,7 @@ module Entropy
   namelist /entropy_init_pars/ &
       initlnTT, radius_lnTT, ampl_lnTT, widthlnTT, lnTT_left, lnTT_right, &
       lnTT_const, TT_const, kx_lnTT, ky_lnTT, kz_lnTT, center1_x, center1_y, &
-      center1_z, mpoly0, mpoly1, r_bcz, Fbot, Tbump, Kmin, Kmax, &
+      center1_z, mpoly0, mpoly1, mpoly2, r_bcz, Fbot, Tbump, Kmin, Kmax, &
       hole_slope, hole_width, ltemperature_nolog, linitial_log, hcond0
 !
 !  Run parameters.
@@ -395,6 +395,8 @@ module Entropy
           case ('const_TT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+log(TT_const)
 !
           case ('single_polytrope'); call single_polytrope(f)
+!
+          case ('piecew_poly'); call piecew_poly(f)
 !
           case ('gaussian')
             do n=n1,n2
@@ -1393,6 +1395,56 @@ module Entropy
       cs2top=cs20
 !
     endsubroutine single_polytrope
+!***********************************************************************
+    subroutine piecew_poly(f)
+!
+!  computes piecewice polytropic and hydrostatic atmosphere
+!  adapted from singel_polytrope
+!  19-jan-10/bing: coded
+!
+      use Gravity, only: gravz, z1, z2
+      use EquationOfState, only: cs2top, gamma, gamma_m1, lnrho0, get_cp1
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real :: Ttop, T1, T0, beta0, beta1, beta2, cp1, temp
+      real :: lnrhotop, lnrho1, lnrho_0, ztop
+      integer :: i
+!
+      call get_cp1(cp1) 
+!
+!  top boundary values
+      Ttop=cs2top*cp1/gamma_m1
+      lnrhotop = lnrho0
+      ztop=xyz0(3)+Lxyz(3)
+!
+!  temperature gradients
+      beta0 =-cp1*gravz/(mpoly0+1.)*gamma/gamma_m1
+      beta1 =-cp1*gravz/(mpoly1+1.)*gamma/gamma_m1
+      beta2 =-cp1*gravz/(mpoly2+1.)*gamma/gamma_m1
+!
+      T1 = Ttop + beta2*(ztop-z2)
+      T0 = T1   + beta1*(z2-z1)
+!
+      lnrho1 =  lnrhotop+mpoly2*log(T1/Ttop)
+      lnrho_0 = lnrho1  +mpoly1*log(T0/T1)
+!
+      do  i=n2,n1,-1
+        if (z(i) >= z2)                 temp = Ttop + beta2*(ztop-z(i))
+        if (z(i) < z2 .and. z(i) >= z1) temp = T1   + beta1*(z2-z(i))
+        if (z(i) < z1)                  temp = T0   + beta0*(z1-z(i))
+!
+        if (ltemperature_nolog) then
+          f(:,:,i,iTT)  =temp
+        else
+          f(:,:,i,ilnTT)=log(temp)
+        endif
+!
+        if (z(i) >= z2) f(:,:,i,ilnrho)=lnrhotop+mpoly2*log(temp/Ttop)        
+        if (z(i) < z2 .and. z(i) >= z1 ) f(:,:,i,ilnrho)=lnrho1+mpoly1*log(temp/T1)        
+        if (z(i) < z1) f(:,:,i,ilnrho)=lnrho_0+mpoly0*log(temp/T0)        
+      enddo
+!
+    endsubroutine piecew_poly
 !***********************************************************************
     subroutine calc_heatcond_ADI(finit,f)
 !
