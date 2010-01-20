@@ -455,6 +455,8 @@ module Chemistry
           call flame_front_3D(f)
         case ('flame_blob')
           call flame_blob(f)
+        case ('flame_slab')
+          call flame_slab(f)
         case default
 !
 !  Catch unknown values
@@ -1235,6 +1237,87 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       if (ldensity_nolog) f(:,:,:,irho)=exp(f(:,:,:,ilnrho))
 !
     endsubroutine flame_blob
+!***********************************************************************
+!***********************************************************************
+    subroutine flame_slab(f)
+
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: mu1
+      integer :: j1,j2,j3
+      real :: mO2, mH2, mN2, mH2O
+      integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
+      real :: initial_mu1, final_massfrac_O2
+      logical :: found_specie
+      real :: Rad
+
+     lflame_front=.true.
+!
+      call air_field(f)
+!
+! Initialize some indexes
+!
+      call find_species_index('H2' ,i_H2 ,ichem_H2 ,found_specie)
+      call find_species_index('O2' ,i_O2 ,ichem_O2 ,found_specie)
+      call find_species_index('N2' ,i_N2 ,ichem_N2 ,found_specie)
+      call find_species_index('H2O',i_H2O,ichem_H2O,found_specie)
+      mO2 =species_constants(ichem_O2 ,imass)
+      mH2 =species_constants(ichem_H2 ,imass)
+      mH2O=species_constants(ichem_H2O,imass)
+      mN2 =species_constants(ichem_N2 ,imass)
+!
+! Find approximate value for the mass fraction of O2 after the flame front
+!
+      final_massfrac_O2&
+          =(initial_massfractions(ichem_O2)/mO2&
+          -initial_massfractions(ichem_H2)/(2*mH2))*mO2
+!
+!  Initialize temperature and species
+!
+!  it is in air_field(f)
+!___________________________________________
+
+      call calc_for_chem_mixture(f)
+!
+!  Find logaritm of density at inlet
+!
+      initial_mu1&
+          =initial_massfractions(ichem_H2)/(mH2)&
+          +initial_massfractions(ichem_O2)/(mO2)&
+          +initial_massfractions(ichem_H2O)/(mH2O)&
+          +initial_massfractions(ichem_N2)/(mN2)
+
+       do j1=1,mx
+         Rad=abs(x(j1))
+         if (Rad<0.2) then
+          f(j1,:,:,ilnTT)=log(init_TT1)+log(3.5)*((0.2-Rad)/0.2)**2
+         else
+          f(j1,:,:,ilnTT)=log(init_TT1)
+         endif
+          mu1(j1,:,:)=f(j1,:,:,i_H2)/(2.*mH2)+f(j1,:,:,i_O2)/(2.*mO2) &
+              +f(j1,:,:,i_H2O)/(2.*mH2+mO2)+f(j1,:,:,i_N2)/(2.*mN2)
+
+         f(j1,:,:,ilnrho)=log(init_pressure)-log(Rgas)-f(j1,:,:,ilnTT)  &
+              -log(mu1_full(j1,:,:))
+
+!
+!  Initialize velocity
+!
+            f(j1,:,:,iux)=f(j1,:,:,iux)  &
+                +init_ux!*exp(log_inlet_density)/exp(f(j1,j2,j3,ilnrho))
+            f(j1,:,:,iuy)=f(j1,:,:,iuy)+ init_uy
+            f(j1,:,:,iuz)=f(j1,:,:,iuz)+ init_uz
+
+           if (nxgrid==1) f(j1,:,:,iux)=0. 
+           if (nygrid==1) f(j1,:,:,iuy)=0. 
+           if (nzgrid==1) f(j1,:,:,iuz)=0. 
+
+      enddo
+!
+!  Check if we want nolog of density
+!
+      if (ldensity_nolog) f(:,:,:,irho)=exp(f(:,:,:,ilnrho))
+!
+    endsubroutine flame_slab
 !***********************************************************************
     subroutine calc_for_chem_mixture(f)
 !
