@@ -192,7 +192,6 @@ module Particles_radius
 !
 !  22-aug-05/anders: coded
 !
-      use Diagnostics
       use Particles_number
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -228,7 +227,7 @@ module Particles_radius
 !
 !  22-aug-05/anders: coded
 !
-      use Diagnostics
+      use Diagnostics, only: max_mn_name
       use Particles_number
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -308,6 +307,8 @@ module Particles_radius
 !
       endif
 !
+      call keep_compiler_quiet(f)
+!
     endsubroutine dap_dt_sweepup_pencil
 !***********************************************************************
     subroutine dap_dt_condensation_pencil(f,df,fp,dfp,p,ineargrid)
@@ -317,7 +318,6 @@ module Particles_radius
 !
 !  15-jan-10/anders: coded
 !
-      use Diagnostics
       use Particles_number
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -548,7 +548,7 @@ module Particles_radius
 !
 !  22-aug-05/anders: coded
 !
-      use Diagnostics
+      use Diagnostics, only: parse_name
 !
       logical :: lreset
       logical, optional :: lwrite
