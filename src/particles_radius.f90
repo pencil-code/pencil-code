@@ -388,20 +388,28 @@ module Particles_radius
 !
 !  Radius increase by condensation or decrease by evaporation.
 !
-            dapdt=0.25*vth(ix)*rhovap(ix)*rhops1*(1.0-supsatratio1(ix))* &
-                alpha_cond_par
+            if (fp(k,iap)<apmin) then
 !
 !  Do not allow particles to become smaller than a minimum radius.
 !
-            if (rhocond_tot(ix)<rhosat(ix)) then
-              fdamp_evap=0.5*(tanh((fp(k,iap)-2*apmin)/(0.1*apmin))+1.0)
-              dapdt=fdamp_evap*dapdt+(1.0-fdamp_evap)*tau_damp_evap1* &
-                  (fp(k,iap)-apmin)
+              dapdt=-tau_damp_evap1*(fp(k,iap)-apmin)
               if (lfirst .and. ldt) then
-                dt1_condensation(ix)=max(dt1_condensation(ix), &
-                    0.25*vth(ix)*(rhosat(ix)-rhocond_tot(ix))* &
-                    rhops1*(1/fp(k,iap))*alpha_cond*fdamp_evap+ &
-                    (1.0-fdamp_evap)*tau_damp_evap1)
+                dt1_condensation(ix)=max(dt1_condensation(ix),tau_damp_evap1)
+              endif
+            else
+              dapdt=0.25*vth(ix)*rhovap(ix)*rhops1*(1.0-supsatratio1(ix))* &
+                  alpha_cond_par
+!
+!  Damp approach to minimum size. The radius decreases linearly with time in
+!  the limit of small particles; therefore we need to damp the evaporation to
+!  avoid small time-steps.
+!
+              if (dapdt<0.0) then
+                dapdt=dapdt*min(1.0,(fp(k,iap)/apmin-1.0)**2)
+                if (lfirst .and. ldt) then
+                  dt1_condensation(ix)=max(dt1_condensation(ix), &
+                      abs(dapdt/(fp(k,iap)-apmin)))
+                endif
               endif
             endif
 !
@@ -424,6 +432,7 @@ module Particles_radius
               df(ix0,m,n,ilnTT)=df(ix0,m,n,ilnTT) - &
                   latent_heat_SI*p%rho1(ix)*p%TT1(ix)*p%cv1(ix)*drhocdt
             endif
+!
             if (lfirst.and.ldt) total_surface_area(ix)=total_surface_area(ix)+ &
                 4*pi*fp(k,iap)**2*np_swarm*alpha_cond_par
           enddo
