@@ -11,7 +11,7 @@
   dtmin=1e-6,
   dsnap=6.283 ,dvid=1., d2davg=6.283 
   tmax=628.30
-  slice_position='m'
+  slice_position='w'
   lpencil_check=T
 /
 &eos_run_pars
@@ -28,11 +28,12 @@
   ivisc='hyper3-sph','nu-shock'
   nu_hyper3=5e-3,nu_shock=2.
 /
+&shock_run_pars
+/
 &particles_run_pars
   ldragforce_dust_par=F
 /
 &particles_nbody_run_pars
   lfollow_particle=T,T
 /
-&shock_run_pars
-/
+
