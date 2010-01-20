@@ -1441,18 +1441,17 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
           else
             nu_dyn(j1,j2,j3)=0.
             do k=1,nchemspec
-              tmp_sum2(j1,j2,j3)=0.
-             ! do j=1,k
-             !   mk_mj=species_constants(k,imass) &
-             !       /species_constants(j,imass)
-             !   nuk_nuj(j1,j2,j3)=species_viscosity(j1,j2,j3,k) &
-             !       /species_viscosity(j1,j2,j3,j)
-             !   Phi(j1,j2,j3)=1./sqrt(8.)*1./sqrt(1.+mk_mj) &
-             !       *(1.+sqrt(nuk_nuj(j1,j2,j3))*mk_mj**(-0.25))**2
-             !   tmp_sum2(j1,j2,j3)=tmp_sum2(j1,j2,j3) &
-             !                     +XX_full(j1,j2,j3,j)*Phi(j1,j2,j3)
-
-             ! enddo
+!              tmp_sum2(j1,j2,j3)=0.
+!              do j=1,k
+!                mk_mj=species_constants(k,imass) &
+!                    /species_constants(j,imass)
+!                nuk_nuj(j1,j2,j3)=species_viscosity(j1,j2,j3,k) &
+!                    /species_viscosity(j1,j2,j3,j)
+!                Phi(j1,j2,j3)=1./sqrt(8.)*1./sqrt(1.+mk_mj) &
+!                    *(1.+sqrt(nuk_nuj(j1,j2,j3))*mk_mj**(-0.25))**2
+!                tmp_sum2(j1,j2,j3)=tmp_sum2(j1,j2,j3) &
+!                                  +XX_full(j1,j2,j3,j)*Phi(j1,j2,j3)
+!              enddo
               nu_dyn(j1,j2,j3)=nu_dyn(j1,j2,j3)+XX_full(j1,j2,j3,k)*&
                   species_viscosity(j1,j2,j3,k)!/tmp_sum2(j1,j2,j3)
              enddo
@@ -3449,7 +3448,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
 
         do k=1,nchemspec
-        T_low=species_constants(k,iTemp1)
+        T_low=species_constants(k,iTemp1)-10.
         T_mid=species_constants(k,iTemp2)
         T_up= species_constants(k,iTemp3)
          do i=1,nx
@@ -6285,6 +6284,9 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
          sz1_x=(xyz0(1)+Lxyz(1)*del)
          sz2_x=(xyz0(1)+Lxyz(1)*(1.-del))
         
+!         sz1=(xyz0(2)+Lxyz(2)*del)
+!         sz2=(xyz0(2)+Lxyz(2)*(1.-del))
+
 
      !     if (sz_r_x<=l1) call fatal_error('to use ldamp_zone_NSCBC',&
      !               'you should increase nxgrid!')
@@ -6333,7 +6335,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 
        if (lzone_y) then
     
-        if ((x(j1)>sz1_x) .and. (x(j1)<sz2_x)) then
+!        if ((x(j1)>sz1_x) .and. (x(j1)<sz2_x)) then
         df(j1,m,n,iux)=df(j1,m,n,iux)-func_y*(f(j1,m,n,iux)-ux_ref)*dt1
         df(j1,m,n,iuy)=df(j1,m,n,iuy)-func_y*(f(j1,m,n,iuy)-uy_ref)*dt1
         df(j1,m,n,iuz)=df(j1,m,n,iuz)-func_y*(f(j1,m,n,iuz)-uz_ref)*dt1
@@ -6345,7 +6347,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
   
         lzone_y=.false.
      
-       endif
+!       endif
        endif
 
       if (nzgrid/=1) then
@@ -6363,7 +6365,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
        endif  
     
        if (lzone_z) then
-        if ((x(j1)>sz1_x) .and. (x(j1)<sz2_x)) then
+!        if ((x(j1)>sz1_x) .and. (x(j1)<sz2_x)) then
          
         df(j1,m,n,iux)=df(j1,m,n,iux)-func_z*(f(j1,m,n,iux)-ux_ref)*dt1
         df(j1,m,n,iuy)=df(j1,m,n,iuy)-func_z*(f(j1,m,n,iuy)-uy_ref)*dt1
@@ -6373,7 +6375,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
         df(j1,m,n,ilnTT)=df(j1,m,n,ilnTT)  &
                 -func_z*(f(j1,m,n,ilnTT)-lnTT_ref)*dt1
         lzone_z=.false.
-        endif
+!        endif
     
        endif
        endif
