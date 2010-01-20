@@ -498,6 +498,8 @@ module Shock
 !
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
 !
+      call keep_compiler_quiet(f)
+!
     endsubroutine calc_shock_profile_simple
 !***********************************************************************
 endmodule Shock
