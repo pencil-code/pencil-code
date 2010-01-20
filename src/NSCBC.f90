@@ -36,7 +36,7 @@ include 'NSCBC.h'
   character(len=40) :: turb_inlet_dir=''
   real :: nscbc_sigma_out = 1.,nscbc_sigma_in = 1., p_infty=1.
   logical :: inlet_from_file=.false., jet_inlet=.false.
-  logical :: first_NSCBC=.true.
+  logical :: first_NSCBC=.true.,onesided_inlet=.true.
 !
 !  Variables to be used when getting timevarying inlet from file
 !
@@ -58,6 +58,7 @@ include 'NSCBC.h'
   real :: Lx_in
   real :: Ly_in
   real :: Lz_in
+  real :: smooth_time=0.
 !
   namelist /NSCBC_init_pars/  &
       nscbc_bc, nscbc_sigma_in, nscbc_sigma_out, p_infty, inlet_from_file,&
@@ -65,7 +66,7 @@ include 'NSCBC.h'
 !
   namelist /NSCBC_run_pars/  &
       nscbc_bc, nscbc_sigma_in, nscbc_sigma_out, p_infty, inlet_from_file,&
-      turb_inlet_dir,jet_inlet,inlet_profile
+      turb_inlet_dir,jet_inlet,inlet_profile,smooth_time,onesided_inlet
 !
   contains
 !***********************************************************************
@@ -339,17 +340,19 @@ include 'NSCBC.h'
       logical, optional :: linlet
       logical :: llinlet, non_reflecting_inlet
       real, optional :: u_t, T_t
-      real, dimension(ny,nz) :: dlnrho_dx, TT, mu1, grad_P, grad_mu1
+      real, dimension(ny,nz) :: dlnrho_dx, TT, mu1, grad_mu1
       real, dimension(ny,nz) :: rho0, L_1, L_2, L_3, L_4, L_5,parallell_term_uz
       real, dimension(ny,nz) :: parallell_term_rho,dlnrho_dy,dlnrho_dz
       real, dimension(ny,nz) :: parallell_term_ux,d2u1_dy2,d2u1_dz2
+      real, dimension(ny,nz) :: parallell_term_P
       real, dimension(ny,nz) :: d2u2_dy2,d2u2_dz2,d2u3_dy2,d2u3_dz2
       real, dimension(ny,nz) :: prefac1, prefac2,parallell_term_uy
-      real, dimension(ny,nz,3) :: grad_rho, u_in, grad_T
+      real, dimension(ny,nz) :: T_1,T_2,T_3,T_4,T_5,P0
+      real, dimension(ny,nz,3) :: grad_rho, u_in, grad_T, grad_P
       real, dimension(ny,nz,3,3) :: dui_dxj
-      real, dimension (my,mz) :: cs0_ar,cs20_ar, gamma
+      real, dimension (my,mz) :: cs0_ar,cs20_ar, gamma,tmp1_T
       real, dimension (my,mz) :: tmp22,tmp12,tmp2_lnrho,tmp33,tmp13,tmp3_lnrho
-      real, dimension (my,mz) :: tmp23,tmp32,dYk_dx
+      real, dimension (my,mz) :: tmp23,tmp32,dYk_dx,tmp11,tmp21,tmp31,tmp1_lnrho
       real, dimension (ny) :: tmpy
       real, dimension (nz) :: tmpz
       real, dimension (3) :: jet_inner_diameter,jet_outer_diameter
@@ -361,7 +364,7 @@ include 'NSCBC.h'
       integer :: iround,lowergrid,uppergrid,ii
       real, dimension(3) :: velo,tmp
       real, dimension(2) :: radius,theta
-      real :: radius_mean, velocity_ratio,An
+      real :: radius_mean, velocity_ratio,An,smooth
       logical :: non_zero_transveral_velo
 
 
@@ -426,18 +429,43 @@ include 'NSCBC.h'
       prefac1 = -1./(2.*cs20_ar(m1:m2,n1:n2))
       prefac2 = -1./(2.*rho0*cs0_ar(m1:m2,n1:n2))
 !
-!  Calculate one-sided derivatives in the boundary normal direction
+!  Calculate derivatives in the boundary normal direction
+!  For the inlet the divergence of the velocity might be found both by one-sided
+!  derivatives (default) and by central differencing.
+!  The central differencing is particularly interesting when turbulent
+!  inlet conditions from a pre-run data file is used.
 !
       call der_onesided_4_slice(f,sgn,ilnrho,grad_rho(:,:,1),lll,1)
-      call der_onesided_4_slice(f,sgn,iux,dui_dxj(:,:,1,1),lll,1)
-      call der_onesided_4_slice(f,sgn,iuy,dui_dxj(:,:,2,1),lll,1)
-      call der_onesided_4_slice(f,sgn,iuz,dui_dxj(:,:,3,1),lll,1)
-      if (ilnTT>0 .or. iTT>0) then
-        call der_onesided_4_slice(f,sgn,ilnTT,grad_T(:,:,1),lll,1)
-        call get_mu1_slicex(mu1,grad_mu1,lll,sgn)
-        call get_gamma_slice(gamma,1,lll)
+      if (onesided_inlet .or. .not. llinlet) then
+        call der_onesided_4_slice(f,sgn,iux,dui_dxj(:,:,1,1),lll,1)
+        call der_onesided_4_slice(f,sgn,iuy,dui_dxj(:,:,2,1),lll,1)
+        call der_onesided_4_slice(f,sgn,iuz,dui_dxj(:,:,3,1),lll,1)
+        if (ilnTT>0 .or. iTT>0) then
+          call der_onesided_4_slice(f,sgn,ilnTT,grad_T(:,:,1),lll,1)
+          call get_mu1_slicex(mu1,grad_mu1,lll,sgn)
+          call get_gamma_slice(gamma,1,lll)
+        else
+          gamma=1.
+        endif
       else
-        gamma=1.
+        do k=n1,n2
+          call der_pencil(1,f(lll,:,k,iux),tmp11(:,k))
+          call der_pencil(1,f(lll,:,k,iuy),tmp21(:,k))
+          call der_pencil(1,f(lll,:,k,iuz),tmp31(:,k))
+          if (ilnTT>0 .or. iTT>0) then
+            call der_pencil(1,f(lll,:,k,ilnTT),tmp1_T(:,k))
+          endif
+        enddo
+        dui_dxj(:,:,1,1)=tmp11(m1:m2,n1:n2)
+        dui_dxj(:,:,2,1)=tmp21(m1:m2,n1:n2)
+        dui_dxj(:,:,3,1)=tmp31(m1:m2,n1:n2)
+        if (ilnTT>0 .or. iTT>0) then
+          grad_T(:,:,1)=tmp1_T(m1:m2,n1:n2)
+          call get_mu1_slicex(mu1,grad_mu1,lll,sgn)
+          call get_gamma_slice(gamma,1,lll)
+        else
+          gamma=1.
+        endif
       endif
 !
 !  Do central differencing in the directions parallell to the boundary 
@@ -499,7 +527,7 @@ include 'NSCBC.h'
       dui_dxj(:,:,3,3)=tmp33(m1:m2,n1:n2)
       grad_rho(:,:,3)=tmp3_lnrho(m1:m2,n1:n2)
 !
-!  Find divergence of rho and temperature if we solve for logarithm of rho
+!  Find gradient of rho and temperature
 !
       if (.not. ldensity_nolog) then
         do i=1,3
@@ -512,16 +540,20 @@ include 'NSCBC.h'
         enddo
       endif
 !
-!  Find gradient of pressure
+!  Find pressure and the gradient of pressure
 !
-      if (ilnTT>0) then 
-        grad_P(:,:)&
-            =grad_rho(:,:,1)*TT*Rgas*mu1&
-            +grad_T(:,:,1)*rho0*Rgas*mu1&
-            +Rgas*grad_mu1*TT*rho0
-      else
-        grad_P(:,:)=grad_rho(:,:,1)*cs20_ar(m1:m2,n1:n2)
-      endif
+      do i=1,3
+        if (ilnTT>0) then 
+          grad_P(:,:,i)&
+              =grad_rho(:,:,i)*TT*Rgas*mu1&
+              +grad_T(:,:,i)*rho0*Rgas*mu1&
+              +Rgas*grad_mu1*TT*rho0
+          P0=rho0*Rgas*mu1*TT
+        else
+          grad_P(:,:,i)=grad_rho(:,:,i)*cs20_ar(m1:m2,n1:n2)
+          P0=rho0*cs20_ar(m1:m2,n1:n2)
+        endif
+      enddo
 !
 !  Find Mach number 
 !  (NILS: I do not think this is a good way to determine the Mach
@@ -533,14 +565,27 @@ include 'NSCBC.h'
 !
       Mach=sum(f(lll,m1:m2,n1:n2,iux)/cs0_ar(m1:m2,n1:n2))/(ny*nz)
 !
-!  Find the L_i's (which really is the Lodi equations)
+!  We will need the transversal terms of the waves entering the domain
+!
+      T_1= rho0*dui_dxj(:,:,2,2)+f(lll,m1:m2,n1:n2,iuy)*grad_rho(:,:,2)&
+          +rho0*dui_dxj(:,:,3,3)+f(lll,m1:m2,n1:n2,iuz)*grad_rho(:,:,3)
+      T_2= f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,1,2)&
+          +f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,1,3)
+      T_3= f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,2,2)&
+          +f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,2,3)&
+          +grad_P(:,:,2)/rho0
+      T_4= f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,3,2)&
+          +f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,3,3)&
+          +grad_P(:,:,3)/rho0
+      T_5= f(lll,m1:m2,n1:n2,iuy)*grad_P(:,:,2)&
+          +f(lll,m1:m2,n1:n2,iuz)*grad_P(:,:,3)&
+          +gamma(m1:m2,n1:n2)*P0*(dui_dxj(:,:,2,2)+dui_dxj(:,:,3,3))
 !
       if (llinlet) then
-!  This L_1 is correct only for p=cs^2*rho
-        L_1 = (f(lll,m1:m2,n1:n2,iux) - sgn*cs0_ar(m1:m2,n1:n2))&
-            *(grad_P - sgn*rho0*cs0_ar(m1:m2,n1:n2)*dui_dxj(:,:,1,1))
 !
-!  Find velocity at inlet
+!  Find velocity at inlet.
+!  First we check if we are using a pre-run data file as inlet
+!  condition, if not the chosen inlet profile will be used.
 !
         if (inlet_from_file) then
           non_zero_transveral_velo=.true.
@@ -553,9 +598,23 @@ include 'NSCBC.h'
           lowergrid=l1_in+int(grid_shift)
           uppergrid=lowergrid+1
           weight=grid_shift-int(grid_shift)
+!
+!  Do we want a smooth start
+!
+          if (smooth_time .gt. 0) then
+            smooth=min(t/smooth_time,1.)
+          else
+            smooth=1.
+          endif
+!
+!  Set the turbulent inlet velocity
+!
           u_in(:,:,:)&
-              =f_in(lowergrid,m1_in:m2_in,n1_in:n2_in,iux:iuz)*(1-weight)&
-              +f_in(uppergrid,m1_in:m2_in,n1_in:n2_in,iux:iuz)*weight
+              =(f_in(lowergrid,m1_in:m2_in,n1_in:n2_in,iux:iuz)*(1-weight)&
+              +f_in(uppergrid,m1_in:m2_in,n1_in:n2_in,iux:iuz)*weight)*smooth
+!
+!  Add the mean inlet velocity to the turbulent one
+!
           u_in(:,:,1)=u_in(:,:,1)+u_t
         else
 !
@@ -564,15 +623,18 @@ include 'NSCBC.h'
           u_in=0
           do j=1,ninit
             select case (inlet_profile(j))
+!
             case ('nothing')
               if (lroot .and. it==1 .and. j == 1 .and. lfirst) &
                   print*,'inlet_profile: nothing'
               non_zero_transveral_velo=.false.
+!
             case ('uniform')
               if (lroot .and. it==1 .and. lfirst) &
                   print*,'inlet_profile: uniform'
               non_zero_transveral_velo=.false.
               u_in(:,:,1)=u_in(:,:,1)+u_t
+!
             case ('coaxial_jet')
               if (lroot .and. it==1 .and. lfirst) &
                   print*,'inlet_profile: coaxial_jet'
@@ -588,9 +650,6 @@ include 'NSCBC.h'
               theta(2)=radius(2)/20.
               jet_center(1)=0
               jet_center(2)=0
-!
-! Set velocity profiles
-!          
               do jjj=1,ny
                 do kkk=1,nz
                   rad=sqrt(&
@@ -606,84 +665,38 @@ include 'NSCBC.h'
                         +(velo(2)+velo(3))/2&
                         +(velo(3)-velo(2))/2*tanh((rad-radius(2))/(2*theta(2)))
                   endif
-                  ! Add random noice
-!!$                  call random_number_wrapper(tmp)
-!!$                  An=0.04
-!!$                  if (rad < 0.85*radius(1) ) then
-!!$                    do ii=1,3
-!!$                      u_in(jjj,kkk,ii)=u_in(jjj,kkk,ii)*(1+0.5*(tmp(ii)-0.5)*An)
-!!$                    enddo
-!!$                  elseif ((rad>0.85*radius(1)).and.(rad<1.15*radius(1))) then 
-!!$                    do ii=1,3
-!!$                      u_in(jjj,kkk,ii)=u_in(jjj,kkk,ii)*(1+1.0*(tmp(ii)-0.5)*An)
-!!$                    enddo
-!!$                  elseif ((rad>0.85*radius(2)).and.(rad<1.15*radius(2))) then
-!!$                    do ii=1,3
-!!$                      u_in(jjj,kkk,ii)=u_in(jjj,kkk,ii)*(1+1.0*(tmp(ii)-0.5)*An)
-!!$                    enddo
-!!$                  endif                   
                 enddo
               enddo
-            case ('test_jet')
-              if (lroot .and. it==1 .and. lfirst) &
-                  print*,'inlet_profile: test_jet'
-              non_zero_transveral_velo=.false.
-              jet_center(1)=0
-              jet_center(2)=0
-              jet_velocity(1)=u_t*15.
-              jet_inner_diameter(1)=0.0
-              jet_outer_diameter(1)=1e-2
-              jet_inner_diameter(2)=jet_outer_diameter(1)+2e-4
-              if (jet_outer_diameter(2)==0) then
-                coflow_inner_diameter=jet_inner_diameter(2)
-              else
-                coflow_inner_diameter=jet_inner_diameter(3)
-              endif
-!
-! Set velocity profiles
-!          
-              do jjj=1,ny
-                do kkk=1,nz
-                  rad=sqrt(&
-                      (y(jjj+m1-1)-jet_center(1))**2+&
-                      (z(kkk+n1-1)-jet_center(2))**2)
-                  if (rad >= coflow_inner_diameter/2) then
-                    u_in(jjj,kkk,1)=u_in(jjj,kkk,1)+u_t
-                  elseif(&
-                      (rad < jet_outer_diameter(2)/2) .and. &
-                      (rad >= jet_inner_diameter(2)/2)) then
-                    u_in(jjj,kkk,1)=u_in(jjj,kkk,1)+jet_velocity(2)
-                  elseif(&
-                      (rad < jet_outer_diameter(1)/2) .and. &
-                      (rad >= jet_inner_diameter(1)/2)) then
-                    u_in(jjj,kkk,1)=u_in(jjj,kkk,1)+jet_velocity(1)&
-                        *(1-(rad**2/(jet_outer_diameter(1)/2)**2))
-                  else
-                    u_in(jjj,kkk,1)=u_in(jjj,kkk,1)+0
-                  endif
-                enddo
-              enddo
-
             end select
+!            
           enddo
         endif
+!
+!  Having found the velocity at the inlet we are now ready to start
+!  defining the L's, which are really the Lodi equations.
+!
+        L_1 = (f(lll,m1:m2,n1:n2,iux) - sgn*cs0_ar(m1:m2,n1:n2))&
+            *(grad_P(:,:,1) - sgn*rho0*cs0_ar(m1:m2,n1:n2)*dui_dxj(:,:,1,1))
         if (non_reflecting_inlet) then
           if (ilnTT>0) then
             call fatal_error('NSCBC.f90',&
                 'non reflecting inlet is not implemented for ilnTT>0')
+          else
+            L_2=0
           endif
 !
-!  The inlet iw non-reflecting only when nscbc_sigma_in is set to 0, this 
+!  The inlet is non-reflecting only when nscbc_sigma_in is set to 0, this 
 !  might however lead to problems as the inlet velocity will tend to drift 
 !  away from the target velocity u_t. This problem should be overcome by 
 !  setting a small but non-zero nscbc_sigma_in.
 !
           L_3=nscbc_sigma_in*(f(lll,m1:m2,n1:n2,iuy)-u_in(:,:,2))&
-              *cs0_ar(m1:m2,n1:n2)/Lxyz(1)
+              *cs0_ar(m1:m2,n1:n2)/Lxyz(1)-T_3
           L_4=nscbc_sigma_in*(f(lll,m1:m2,n1:n2,iuz)-u_in(:,:,3))&
-              *cs0_ar(m1:m2,n1:n2)/Lxyz(1)
+              *cs0_ar(m1:m2,n1:n2)/Lxyz(1)-T_4
           L_5 = nscbc_sigma_in*cs20_ar(m1:m2,n1:n2)*rho0&
-              *sgn*(f(lll,m1:m2,n1:n2,iux)-u_in(:,:,1))*(1-Mach**2)/Lxyz(1)
+              *sgn*(f(lll,m1:m2,n1:n2,iux)-u_in(:,:,1))*(1-Mach**2)/Lxyz(1)&
+              -(T_5+sgn*rho0*cs0_ar(m1:m2,n1:n2)*T_2)
         else
           L_3=0
           L_4=0
@@ -697,68 +710,21 @@ include 'NSCBC.h'
         cs0_average=sum(cs0_ar(m1:m2,n1:n2))/(ny*nz)
         KK=nscbc_sigma_out*(1-Mach**2)*cs0_average/Lxyz(1)
 !
-!  Find the L_i's
+!  Find the L_i's. 
 !
-        L_1 = KK*(rho0*cs20_ar(m1:m2,n1:n2)/gamma(m1:m2,n1:n2)-p_infty)
+        L_1 = KK*(P0-p_infty)-(T_5-sgn*rho0*cs0_ar(m1:m2,n1:n2)*T_2)
         if (ilnTT > 0) then 
           L_2=f(lll,m1:m2,n1:n2,iux)*&
-              (cs20_ar(m1:m2,n1:n2)*grad_rho(:,:,1)-grad_P)
+              (cs20_ar(m1:m2,n1:n2)*grad_rho(:,:,1)-grad_P(:,:,1))
         else
           L_2=0
         endif
         L_3 = f(lll,m1:m2,n1:n2,iux)*dui_dxj(:,:,2,1)
         L_4 = f(lll,m1:m2,n1:n2,iux)*dui_dxj(:,:,3,1)
         L_5 = (f(lll,m1:m2,n1:n2,iux) - sgn*cs0_ar(m1:m2,n1:n2))*&
-             (grad_P&
+             (grad_P(:,:,1)&
              - sgn*rho0*cs0_ar(m1:m2,n1:n2)*dui_dxj(:,:,1,1))
       endif
-!
-!  Add terms due to derivatives parallell to the boundary
-!  NILS: Viscous terms in the x direction are missing!
-!
-!!$      parallell_term_rho &
-!!$           =rho0*dui_dxj(:,:,2,2)+f(lll,m1:m2,n1:n2,iuy)*grad_rho(:,:,2)&
-!!$           +rho0*dui_dxj(:,:,3,3)+f(lll,m1:m2,n1:n2,iuz)*grad_rho(:,:,3)
-!!$      parallell_term_ux &
-!!$           =f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,1,2)&
-!!$           +f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,1,3)&
-!!$           +nu*(d2u1_dy2+d2u1_dz2)
-!!$      parallell_term_uy &
-!!$           =f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,2,2)&
-!!$           +f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,2,3)&
-!!$           +cs20_ar(m1:m2,n1:n2)*grad_rho(:,:,2)/rho0&
-!!$           +nu*(d2u2_dy2+d2u2_dz2)
-!!$      parallell_term_uz &
-!!$           =f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,3,2)&
-!!$           +f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,3,3)&
-!!$           +cs20_ar(m1:m2,n1:n2)*grad_rho(:,:,3)/rho0&
-!!$           +nu*(d2u3_dy2+d2u3_dz2)
-
-
-!print*,'x----------------------------------------------------'
-!!$print*,'uy=',f(lll,m1:m2,n1:n2,iuy)
-!!$print*,'uz=',f(lll,m1:m2,n1:n2,iuz)
-!!$print*,'dui_dxj(:,:,1,2)=',dui_dxj(:,:,1,2)
-!!$print*,'dui_dxj(:,:,1,3)=',dui_dxj(:,:,1,3)
-!!$print*,'parallell_term_ux=',parallell_term_ux
-!!$print*,maxval(f(lll,m1:m2,n1:n2,iuy)),maxval(dui_dxj(:,:,1,2))
-!!$print*,maxval(f(lll,m1:m2,n1:n2,iuz)),maxval(dui_dxj(:,:,1,3))
-!!$print*,minval(f(lll,m1:m2,n1:n2,iuy)),minval(dui_dxj(:,:,1,2))
-!!$print*,minval(f(lll,m1:m2,n1:n2,iuz)),minval(dui_dxj(:,:,1,3))
-!!$print*,minval(parallell_term_rho),maxval(parallell_term_rho)
-!!$print*,minval(parallell_term_ux),maxval(parallell_term_ux)
-!!$print*,minval(parallell_term_uy),maxval(parallell_term_uy)
-!!$print*,minval(parallell_term_uz),maxval(parallell_term_uz)
-
-
-!
-!  NILS: Currently the implementation with the parallell terms does not 
-!  NILS: seem to work. Set at parallell terms to zero for now.
-!
-      parallell_term_rho=0
-      parallell_term_ux=0
-      parallell_term_uy=0
-      parallell_term_uz=0
 !
 !  Find the evolution equation for the x velocity at the boundary
 !  For 'top' L_1 plays the role of L5 and L_5 the role of L1
@@ -766,28 +732,28 @@ include 'NSCBC.h'
       select case (topbot)
       case ('bot')
         if (llinlet) then
-          df(lll,m1:m2,n1:n2,iux) = prefac2*( L_5 - L_1)-parallell_term_ux
+          df(lll,m1:m2,n1:n2,iux) = prefac2*( L_5 - L_1)-T_2
         else
-          df(lll,m1:m2,n1:n2,iux) = prefac2*( L_1 - L_5)-parallell_term_ux
+          df(lll,m1:m2,n1:n2,iux) = prefac2*( L_1 - L_5)!-parallell_term_ux
         endif
       case ('top')
         if (llinlet) then
-          df(lll,m1:m2,n1:n2,iux) = prefac2*( L_1 - L_5)-parallell_term_ux
+          df(lll,m1:m2,n1:n2,iux) = prefac2*( L_1 - L_5)!-parallell_term_ux
         else
-          df(lll,m1:m2,n1:n2,iux) = prefac2*(-L_1 + L_5)-parallell_term_ux
+          df(lll,m1:m2,n1:n2,iux) = prefac2*(-L_1 + L_5)-T_2
         endif
       endselect
 !
 !  Find the evolution equation for the other equations at the boundary
 !
-      df(lll,m1:m2,n1:n2,ilnrho) = prefac1*(2*L_2 + L_1 + L_5)-parallell_term_rho
+      df(lll,m1:m2,n1:n2,ilnrho) = prefac1*(2*L_2 + L_1 + L_5)-T_1
       if (ilnTT>0) then
         df(lll,m1:m2,n1:n2,ilnTT) = &
             -1./(rho0*cs20_ar(m1:m2,n1:n2))*(-L_2 &
             +0.5*(gamma(m1:m2,n1:n2)-1.)*(L_5+L_1))*TT
       endif
-      df(lll,m1:m2,n1:n2,iuy) = -L_3-parallell_term_uy
-      df(lll,m1:m2,n1:n2,iuz) = -L_4-parallell_term_uz
+      df(lll,m1:m2,n1:n2,iuy) = -L_3-T_3
+      df(lll,m1:m2,n1:n2,iuz) = -L_4-T_4
 !
 !  Check if we are solving for logrho or rho
 !
@@ -850,9 +816,6 @@ include 'NSCBC.h'
        enddo
       endif
 !
-
-
-
     endsubroutine bc_nscbc_prf_x
 !***********************************************************************
     subroutine bc_nscbc_prf_y(f,df,topbot,non_reflecting_inlet,linlet,u_t,T_t)
