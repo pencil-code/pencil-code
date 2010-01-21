@@ -328,7 +328,6 @@ include 'NSCBC.h'
 !  25-nov-08/nils: extended to work in multiple dimensions and with cross terms
 !                  i.e. not just the LODI equations.
 !
-      use EquationOfState, only: cs0, cs20
       use Deriv, only: der_onesided_4_slice, der_pencil, der2_pencil
       use Chemistry
       use Viscosity
@@ -349,7 +348,7 @@ include 'NSCBC.h'
       real, dimension(ny,nz) :: T_1,T_2,T_3,T_4,T_5,P0
       real, dimension(ny,nz,3) :: grad_rho, u_in, grad_T, grad_P
       real, dimension(ny,nz,3,3) :: dui_dxj
-      real, dimension (my,mz) :: cs0_ar,cs20_ar, gamma
+      real, dimension (ny,nz) :: cs,cs2, gamma
       real, dimension (my,mz) :: dYk_dx
       real :: Mach,KK,nu,coflow_inner_diameter, cs0_average
       integer lll,i,jjj,kkk,j,k
@@ -372,10 +371,14 @@ include 'NSCBC.h'
            'bc_nscbc_prf_x: when using linlet=T, you must also specify T_t)')
       select case (topbot)
       case ('bot')
-        lll = l1
+        if (direction == 1) lll = l1
+        if (direction == 2) lll = m1
+        if (direction == 3) lll = n1
         sgn = 1
       case ('top')
-        lll = l2
+        if (direction == 1) lll = l2
+        if (direction == 2) lll = m2
+        if (direction == 3) lll = n2
         sgn = -1
       case default
         print*, "bc_nscbc_prf_x: ", topbot, " should be `top' or `bot'"
@@ -385,7 +388,9 @@ include 'NSCBC.h'
 !
       allocate(slice(ny,nz,mfarray),STAT=stat)
       if (stat>0) call stop_it("Couldn't allocate memory for slice ")
-      slice=f(lll,m1:m2,n1:n2,:)
+      if (direction == 1) slice=f(lll,m1:m2,n1:n2,:)
+      if (direction == 2) slice=f(l1:l2,lll,n1:n2,:)
+      if (direction == 3) slice=f(l1:l2,m1:m2,lll,:)
 !
 !  Find density
 !
@@ -406,24 +411,7 @@ include 'NSCBC.h'
 !  Get viscoity
 !
       call getnu(nu)
-!
-!  Set arrays for the speed of sound and for the speed of sound squared (is it
-!  really necessarry to have both arrays?) 
-!  Set prefactors to be used later.
-!
-      if (leos_idealgas) then
-        cs20_ar(m1:m2,n1:n2)=cs20
-        cs0_ar(m1:m2,n1:n2)=cs0
-      elseif (leos_chemistry) then
-        call get_cs2_slice(cs20_ar,1,lll)
-        cs0_ar=sqrt(cs20_ar)
-      else
-        print*,"bc_nscbc_prf_x: leos_idealgas=",leos_idealgas,"."
-        print*,"bc_nscbc_prf_x: leos_chemistry=",leos_chemistry,"."
-        print*,"NSCBC boundary treatment only implemented for ideal gas or" 
-        print*,"chemistry. Boundary treatment skipped."
-        return
-      endif
+
      
 !
 !  Find derivatives at boundary
@@ -432,10 +420,10 @@ include 'NSCBC.h'
 !
 !  Get some thermodynamical variables
 !
-      call get_thermodynamics(mu1,grad_mu1,lll,sgn,gamma,direction)
+      call get_thermodynamics(mu1,grad_mu1,gamma,cs2,cs,lll,sgn,direction)
 
- prefac1 = -1./(2.*cs20_ar(m1:m2,n1:n2))
-      prefac2 = -1./(2.*rho0*cs0_ar(m1:m2,n1:n2))
+      prefac1 = -1./(2.*cs2)
+      prefac2 = -1./(2.*rho0*cs)
 
 
 !!$      if (ilnTT>0 .or. iTT>0) then
@@ -468,8 +456,8 @@ include 'NSCBC.h'
               +Rgas*grad_mu1*TT*rho0
           P0=rho0*Rgas*mu1*TT
         else
-          grad_P(:,:,i)=grad_rho(:,:,i)*cs20_ar(m1:m2,n1:n2)
-          P0=rho0*cs20_ar(m1:m2,n1:n2)
+          grad_P(:,:,i)=grad_rho(:,:,i)*cs2
+          P0=rho0*cs2
         endif
       enddo
 !
@@ -481,7 +469,7 @@ include 'NSCBC.h'
 !  I think that what we really want is a Mach number averaged over the 
 !  timescale of several acoustic waves. How could this be done????)
 !
-      Mach=sum(f(lll,m1:m2,n1:n2,iux)/cs0_ar(m1:m2,n1:n2))/(ny*nz)
+      Mach=sum(f(lll,m1:m2,n1:n2,iux)/cs)/(ny*nz)
 !
 !  We will need the transversal terms of the waves entering the domain
 !
@@ -497,7 +485,7 @@ include 'NSCBC.h'
           +grad_P(:,:,3)/rho0
       T_5= f(lll,m1:m2,n1:n2,iuy)*grad_P(:,:,2)&
           +f(lll,m1:m2,n1:n2,iuz)*grad_P(:,:,3)&
-          +gamma(m1:m2,n1:n2)*P0*(dui_dxj(:,:,2,2)+dui_dxj(:,:,3,3))
+          +gamma*P0*(dui_dxj(:,:,2,2)+dui_dxj(:,:,3,3))
 !
       if (llinlet) then
 !
@@ -509,8 +497,8 @@ include 'NSCBC.h'
 !  Having found the velocity at the inlet we are now ready to start
 !  defining the L's, which are really the Lodi equations.
 !
-        L_1 = (f(lll,m1:m2,n1:n2,iux) - sgn*cs0_ar(m1:m2,n1:n2))&
-            *(grad_P(:,:,1) - sgn*rho0*cs0_ar(m1:m2,n1:n2)*dui_dxj(:,:,1,1))
+        L_1 = (f(lll,m1:m2,n1:n2,iux) - sgn*cs)&
+            *(grad_P(:,:,1) - sgn*rho0*cs*dui_dxj(:,:,1,1))
         if (non_reflecting_inlet) then
           if (ilnTT>0) then
             call fatal_error('NSCBC.f90',&
@@ -525,39 +513,39 @@ include 'NSCBC.h'
 !  setting a small but non-zero nscbc_sigma_in.
 !
           L_3=nscbc_sigma_in*(f(lll,m1:m2,n1:n2,iuy)-u_in(:,:,2))&
-              *cs0_ar(m1:m2,n1:n2)/Lxyz(1)-T_3
+              *cs/Lxyz(1)-T_3
           L_4=nscbc_sigma_in*(f(lll,m1:m2,n1:n2,iuz)-u_in(:,:,3))&
-              *cs0_ar(m1:m2,n1:n2)/Lxyz(1)-T_4
-          L_5 = nscbc_sigma_in*cs20_ar(m1:m2,n1:n2)*rho0&
+              *cs/Lxyz(1)-T_4
+          L_5 = nscbc_sigma_in*cs2*rho0&
               *sgn*(f(lll,m1:m2,n1:n2,iux)-u_in(:,:,1))*(1-Mach**2)/Lxyz(1)&
-              -(T_5+sgn*rho0*cs0_ar(m1:m2,n1:n2)*T_2)
+              -(T_5+sgn*rho0*cs*T_2)
         else
           L_3=0
           L_4=0
           L_5 = L_1
-          L_2=0.5*(gamma(m1:m2,n1:n2)-1)*(L_5+L_1)
+          L_2=0.5*(gamma-1)*(L_5+L_1)
         endif
       else
 !
 !  Find the parameter determining 
 !
-        cs0_average=sum(cs0_ar(m1:m2,n1:n2))/(ny*nz)
+        cs0_average=sum(cs)/(ny*nz)
         KK=nscbc_sigma_out*(1-Mach**2)*cs0_average/Lxyz(1)
 !
 !  Find the L_i's. 
 !
-        L_1 = KK*(P0-p_infty)-(T_5-sgn*rho0*cs0_ar(m1:m2,n1:n2)*T_2)
+        L_1 = KK*(P0-p_infty)-(T_5-sgn*rho0*cs*T_2)
         if (ilnTT > 0) then 
           L_2=f(lll,m1:m2,n1:n2,iux)*&
-              (cs20_ar(m1:m2,n1:n2)*grad_rho(:,:,1)-grad_P(:,:,1))
+              (cs2*grad_rho(:,:,1)-grad_P(:,:,1))
         else
           L_2=0
         endif
         L_3 = f(lll,m1:m2,n1:n2,iux)*dui_dxj(:,:,2,1)
         L_4 = f(lll,m1:m2,n1:n2,iux)*dui_dxj(:,:,3,1)
-        L_5 = (f(lll,m1:m2,n1:n2,iux) - sgn*cs0_ar(m1:m2,n1:n2))*&
+        L_5 = (f(lll,m1:m2,n1:n2,iux) - sgn*cs)*&
              (grad_P(:,:,1)&
-             - sgn*rho0*cs0_ar(m1:m2,n1:n2)*dui_dxj(:,:,1,1))
+             - sgn*rho0*cs*dui_dxj(:,:,1,1))
       endif
 !
 !  Find the evolution equation for the x velocity at the boundary
@@ -583,8 +571,8 @@ include 'NSCBC.h'
       df(lll,m1:m2,n1:n2,ilnrho) = prefac1*(2*L_2 + L_1 + L_5)-T_1
       if (ilnTT>0) then
         df(lll,m1:m2,n1:n2,ilnTT) = &
-            -1./(rho0*cs20_ar(m1:m2,n1:n2))*(-L_2 &
-            +0.5*(gamma(m1:m2,n1:n2)-1.)*(L_5+L_1))*TT
+            -1./(rho0*cs2)*(-L_2 &
+            +0.5*(gamma-1.)*(L_5+L_1))*TT
       endif
       df(lll,m1:m2,n1:n2,iuy) = -L_3-T_3
       df(lll,m1:m2,n1:n2,iuz) = -L_4-T_4
@@ -1232,17 +1220,17 @@ include 'NSCBC.h'
 !
       end subroutine turbulent_vel_x
 !***********************************************************************
-      subroutine get_thermodynamics(mu1,grad_mu1,lll,sgn,gamma,direction)
+      subroutine get_thermodynamics(mu1,grad_mu1,gamma,cs2,cs,lll,sgn,direction)
 !
 !  Find thermodynamical quantities, including density and temperature
 !
 ! 2010.01.21/Nils Erland: coded
 !
         Use Chemistry
+        use EquationOfState, only: cs0, cs20      
 !
         integer, intent(in) :: direction, sgn,lll
-        real, dimension (my,mz), intent(out) :: gamma
-        real, dimension(ny,nz), intent(out)  :: mu1, grad_mu1
+        real, dimension(ny,nz), intent(out)  :: mu1, grad_mu1,cs2,cs,gamma
 !        
 !  Find mu1, grad_mu1 and gamma
 !
@@ -1254,6 +1242,24 @@ include 'NSCBC.h'
         else
           gamma=1.
         endif
+!
+!  Set arrays for the speed of sound and for the speed of sound squared (is it
+!  really necessarry to have both arrays?) 
+!  Set prefactors to be used later.
+!
+      if (leos_idealgas) then
+        cs2=cs20
+        cs=cs0
+      elseif (leos_chemistry) then
+        call get_cs2_slice(cs2,direction,lll)
+        cs=sqrt(cs2)
+      else
+        print*,"bc_nscbc_prf_x: leos_idealgas=",leos_idealgas,"."
+        print*,"bc_nscbc_prf_x: leos_chemistry=",leos_chemistry,"."
+        print*,"NSCBC boundary treatment only implemented for ideal gas or" 
+        print*,"chemistry. Boundary treatment skipped."
+        return
+      endif
 !
     end subroutine get_thermodynamics
 !***********************************************************************
