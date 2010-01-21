@@ -4444,14 +4444,14 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       integer, intent(in) :: index, dir
 !
       if (dir==1) then 
-        slice=cp_full(index,:,:)/cv_full(index,:,:)&
-            *mu1_full(index,:,:)*TT_full(index,:,:)*Rgas
+        slice=cp_full(index,m1:m2,n1:n2)/cv_full(index,m1:m2,n1:n2)&
+            *mu1_full(index,m1:m2,n1:n2)*TT_full(index,m1:m2,n1:n2)*Rgas
       elseif (dir==2) then 
-        slice=cp_full(:,index,:)/cv_full(:,index,:)&
-            *mu1_full(:,index,:)*TT_full(:,index,:)*Rgas
+        slice=cp_full(l1:l2,index,n1:n2)/cv_full(l1:l2,index,n1:n2)&
+            *mu1_full(l1:l2,index,n1:n2)*TT_full(l1:l2,index,n1:n2)*Rgas
       elseif (dir==3) then 
-        slice=cp_full(:,:,index)/cv_full(:,:,index)&
-            *mu1_full(:,:,index)*TT_full(:,:,index)*Rgas
+        slice=cp_full(l1:l2,m1:m2,index)/cv_full(l1:l2,m1:m2,index)&
+            *mu1_full(l1:l2,m1:m2,index)*TT_full(l1:l2,m1:m2,index)*Rgas
       else
         call fatal_error('get_cs2_slice','No such dir!')
       endif
@@ -4487,11 +4487,11 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       integer, intent(in) :: index, dir
 !
       if (dir==1) then 
-        slice=cp_full(index,:,:)/cv_full(index,:,:)
+        slice=cp_full(index,m1:m2,n1:n2)/cv_full(index,,m1:m2,n1:n2)
       elseif (dir==2) then 
-        slice=cp_full(:,index,:)/cv_full(:,index,:)
+        slice=cp_full(l1:l2,index,n1:n2)/cv_full(l1:l2,index,n1:n2)
       elseif (dir==3) then 
-        slice=cp_full(:,:,index)/cv_full(:,:,index)
+        slice=cp_full(l1:l2,m1:m2,index)/cv_full(l1:l2,m1:m2,index)
       else
         call fatal_error('get_gamma_slice','No such dir!')
       endif
@@ -6610,7 +6610,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       slice=mu1_full(l1:l2,m1:m2,index)
       call der_onesided_4_slice_other(mu1_full,sgn,grad_slice,index,3)
 !
-    end subroutine get_mu1_slicex
+    end subroutine get_mu1_slicez
 !********************************************************************
   subroutine chemistry_clean_up()
 !
