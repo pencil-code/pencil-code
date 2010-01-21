@@ -330,7 +330,6 @@ include 'NSCBC.h'
 !
       use Deriv, only: der_onesided_4_slice, der_pencil, der2_pencil
       use Chemistry
-      use Viscosity
       use General, only: random_number_wrapper
 
       real, dimension (mx,my,mz,mfarray) :: f
@@ -348,13 +347,12 @@ include 'NSCBC.h'
       real, dimension(ny,nz) :: T_1,T_2,T_3,T_4,T_5,P0
       real, dimension(ny,nz,3) :: grad_rho, u_in, grad_T, grad_P
       real, dimension(ny,nz,3,3) :: dui_dxj
-      real, dimension (ny,nz) :: cs,cs2, gamma
-      real, dimension (my,mz) :: dYk_dx
+      real, dimension (ny,nz) :: cs,cs2, gamma,dYk_dx
       real :: Mach,KK,nu,coflow_inner_diameter, cs0_average
-      integer lll,i,jjj,kkk,j,k
-      integer sgn,stat,direction
+      integer lll,i,jjj,kkk,j,k,ngridpoints
+      integer sgn,stat,direction,iused
       logical :: non_zero_transveral_velo
-      real, allocatable, dimension(:,:,:) :: slice
+      real, allocatable, dimension(:,:,:) :: fslice, dfslice
 !
       intent(inout) :: f
       intent(inout) :: df
@@ -384,82 +382,51 @@ include 'NSCBC.h'
         print*, "bc_nscbc_prf_x: ", topbot, " should be `top' or `bot'"
       endselect
 !
-!  Define the slice of interest
+!  Set some direction dependent variables
 !
-      allocate(slice(ny,nz,mfarray),STAT=stat)
-      if (stat>0) call stop_it("Couldn't allocate memory for slice ")
-      if (direction == 1) slice=f(lll,m1:m2,n1:n2,:)
-      if (direction == 2) slice=f(l1:l2,lll,n1:n2,:)
-      if (direction == 3) slice=f(l1:l2,m1:m2,lll,:)
-!
-!  Find density
-!
-      if (ldensity_nolog) then
-        rho0 = slice(:,:,irho)
+      if (direction == 1) then
+        allocate(fslice(ny,nz,mfarray),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for fslice ")        
+        allocate(dfslice(ny,nz,mvar),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for fslice ")        
+        fslice=f(lll,m1:m2,n1:n2,:)
+        dfslice=df(lll,m1:m2,n1:n2,:)
+        ngridpoints=ny*nz
+      elseif (direction == 2) then
+        allocate(fslice(nx,nz,mfarray),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for fslice ")        
+        allocate(dfslice(nx,nz,mvar),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for fslice ")        
+        fslice=f(l1:l2,lll,n1:n2,:)
+        dfslice=df(l1:l2,lll,n1:n2,:)
+        ngridpoints=nx*nz
+      elseif (direction == 3) then
+        allocate(fslice(nx,ny,mfarray),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for fslice ")        
+        allocate(dfslice(nx,ny,mvar),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for fslice ")        
+        fslice=f(l1:l2,m1:m2,lll,:)     
+        dfslice=df(l1:l2,m1:m2,lll,:)     
+        ngridpoints=nx*ny
       else
-        rho0 = exp(slice(:,:,ilnrho))
+        call fatal_error('bc_nscbc_prf_x','No such direction!')
       endif
-!
-!  Find temperature
-!
-      if (iTT>0) then
-        TT = slice(:,:,iTT)
-      elseif (ilnTT>0) then
-        TT = exp(slice(:,:,ilnTT))
-      endif
-!
-!  Get viscoity
-!
-      call getnu(nu)
-
-     
 !
 !  Find derivatives at boundary
 !
       call derivate_boundary(f,sgn,1,lll,dui_dxj,grad_T,grad_rho)
 !
 !  Get some thermodynamical variables
+!  This includes values and gradients of; density, temperature, pressure
+!  In addition also speed of sound, gamma and mu1 is found.
 !
-      call get_thermodynamics(mu1,grad_mu1,gamma,cs2,cs,lll,sgn,direction)
-
+      call get_thermodynamics(mu1,grad_mu1,gamma,cs2,cs,rho0,TT,P0,nu,&
+          grad_rho,grad_P,grad_T,lll,sgn,direction,fslice)
+!
+!  Define some prefactors to be used later
+!
       prefac1 = -1./(2.*cs2)
       prefac2 = -1./(2.*rho0*cs)
-
-
-!!$      if (ilnTT>0 .or. iTT>0) then
-!!$        call get_mu1_slicex(mu1,grad_mu1,lll,sgn)
-!!$        call get_gamma_slice(gamma,1,lll)
-!!$      else
-!!$        gamma=1.
-!!$      endif
-!
-!  Find gradient of rho and temperature
-!
-      if (.not. ldensity_nolog) then
-        do i=1,3
-          grad_rho(:,:,i)=grad_rho(:,:,i)*rho0
-        enddo
-      endif
-      if (.not. ltemperature_nolog .and. ilnTT>0) then
-        do i=1,3
-          grad_T(:,:,i)=grad_T(:,:,i)*TT
-        enddo
-      endif
-!
-!  Find pressure and the gradient of pressure
-!
-      do i=1,3
-        if (ilnTT>0) then 
-          grad_P(:,:,i)&
-              =grad_rho(:,:,i)*TT*Rgas*mu1&
-              +grad_T(:,:,i)*rho0*Rgas*mu1&
-              +Rgas*grad_mu1*TT*rho0
-          P0=rho0*Rgas*mu1*TT
-        else
-          grad_P(:,:,i)=grad_rho(:,:,i)*cs2
-          P0=rho0*cs2
-        endif
-      enddo
 !
 !  Find Mach number 
 !  (NILS: I do not think this is a good way to determine the Mach
@@ -469,22 +436,22 @@ include 'NSCBC.h'
 !  I think that what we really want is a Mach number averaged over the 
 !  timescale of several acoustic waves. How could this be done????)
 !
-      Mach=sum(f(lll,m1:m2,n1:n2,iux)/cs)/(ny*nz)
+      Mach=sum(fslice(:,:,direction)/cs)/ngridpoints
 !
 !  We will need the transversal terms of the waves entering the domain
 !
-      T_1= rho0*dui_dxj(:,:,2,2)+f(lll,m1:m2,n1:n2,iuy)*grad_rho(:,:,2)&
-          +rho0*dui_dxj(:,:,3,3)+f(lll,m1:m2,n1:n2,iuz)*grad_rho(:,:,3)
-      T_2= f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,1,2)&
-          +f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,1,3)
-      T_3= f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,2,2)&
-          +f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,2,3)&
+      T_1= rho0*dui_dxj(:,:,2,2)+fslice(:,:,iuy)*grad_rho(:,:,2)&
+          +rho0*dui_dxj(:,:,3,3)+fslice(:,:,iuz)*grad_rho(:,:,3)
+      T_2= fslice(:,:,iuy)*dui_dxj(:,:,1,2)&
+          +fslice(:,:,iuz)*dui_dxj(:,:,1,3)
+      T_3= fslice(:,:,iuy)*dui_dxj(:,:,2,2)&
+          +fslice(:,:,iuz)*dui_dxj(:,:,2,3)&
           +grad_P(:,:,2)/rho0
-      T_4= f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,3,2)&
-          +f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,3,3)&
+      T_4= fslice(:,:,iuy)*dui_dxj(:,:,3,2)&
+          +fslice(:,:,iuz)*dui_dxj(:,:,3,3)&
           +grad_P(:,:,3)/rho0
-      T_5= f(lll,m1:m2,n1:n2,iuy)*grad_P(:,:,2)&
-          +f(lll,m1:m2,n1:n2,iuz)*grad_P(:,:,3)&
+      T_5= fslice(:,:,iuy)*grad_P(:,:,2)&
+          +fslice(:,:,iuz)*grad_P(:,:,3)&
           +gamma*P0*(dui_dxj(:,:,2,2)+dui_dxj(:,:,3,3))
 !
       if (llinlet) then
@@ -497,7 +464,7 @@ include 'NSCBC.h'
 !  Having found the velocity at the inlet we are now ready to start
 !  defining the L's, which are really the Lodi equations.
 !
-        L_1 = (f(lll,m1:m2,n1:n2,iux) - sgn*cs)&
+        L_1 = (fslice(:,:,iux) - sgn*cs)&
             *(grad_P(:,:,1) - sgn*rho0*cs*dui_dxj(:,:,1,1))
         if (non_reflecting_inlet) then
           if (ilnTT>0) then
@@ -512,12 +479,12 @@ include 'NSCBC.h'
 !  away from the target velocity u_t. This problem should be overcome by 
 !  setting a small but non-zero nscbc_sigma_in.
 !
-          L_3=nscbc_sigma_in*(f(lll,m1:m2,n1:n2,iuy)-u_in(:,:,2))&
+          L_3=nscbc_sigma_in*(fslice(:,:,iuy)-u_in(:,:,2))&
               *cs/Lxyz(1)-T_3
-          L_4=nscbc_sigma_in*(f(lll,m1:m2,n1:n2,iuz)-u_in(:,:,3))&
+          L_4=nscbc_sigma_in*(fslice(:,:,iuz)-u_in(:,:,3))&
               *cs/Lxyz(1)-T_4
           L_5 = nscbc_sigma_in*cs2*rho0&
-              *sgn*(f(lll,m1:m2,n1:n2,iux)-u_in(:,:,1))*(1-Mach**2)/Lxyz(1)&
+              *sgn*(fslice(:,:,iux)-u_in(:,:,1))*(1-Mach**2)/Lxyz(1)&
               -(T_5+sgn*rho0*cs*T_2)
         else
           L_3=0
@@ -536,14 +503,14 @@ include 'NSCBC.h'
 !
         L_1 = KK*(P0-p_infty)-(T_5-sgn*rho0*cs*T_2)
         if (ilnTT > 0) then 
-          L_2=f(lll,m1:m2,n1:n2,iux)*&
+          L_2=fslice(:,:,iux)*&
               (cs2*grad_rho(:,:,1)-grad_P(:,:,1))
         else
           L_2=0
         endif
-        L_3 = f(lll,m1:m2,n1:n2,iux)*dui_dxj(:,:,2,1)
-        L_4 = f(lll,m1:m2,n1:n2,iux)*dui_dxj(:,:,3,1)
-        L_5 = (f(lll,m1:m2,n1:n2,iux) - sgn*cs)*&
+        L_3 = fslice(:,:,iux)*dui_dxj(:,:,2,1)
+        L_4 = fslice(:,:,iux)*dui_dxj(:,:,3,1)
+        L_5 = (fslice(:,:,iux) - sgn*cs)*&
              (grad_P(:,:,1)&
              - sgn*rho0*cs*dui_dxj(:,:,1,1))
       endif
@@ -554,39 +521,39 @@ include 'NSCBC.h'
       select case (topbot)
       case ('bot')
         if (llinlet) then
-          df(lll,m1:m2,n1:n2,iux) = prefac2*( L_5 - L_1)-T_2
+          dfslice(:,:,iux) = prefac2*( L_5 - L_1)-T_2
         else
-          df(lll,m1:m2,n1:n2,iux) = prefac2*( L_1 - L_5)!-parallell_term_ux
+          dfslice(:,:,iux) = prefac2*( L_1 - L_5)!-parallell_term_ux
         endif
       case ('top')
         if (llinlet) then
-          df(lll,m1:m2,n1:n2,iux) = prefac2*( L_1 - L_5)!-parallell_term_ux
+          dfslice(:,:,iux) = prefac2*( L_1 - L_5)!-parallell_term_ux
         else
-          df(lll,m1:m2,n1:n2,iux) = prefac2*(-L_1 + L_5)-T_2
+          dfslice(:,:,iux) = prefac2*(-L_1 + L_5)-T_2
         endif
       endselect
 !
 !  Find the evolution equation for the other equations at the boundary
 !
-      df(lll,m1:m2,n1:n2,ilnrho) = prefac1*(2*L_2 + L_1 + L_5)-T_1
+      dfslice(:,:,ilnrho) = prefac1*(2*L_2 + L_1 + L_5)-T_1
       if (ilnTT>0) then
-        df(lll,m1:m2,n1:n2,ilnTT) = &
+        dfslice(:,:,ilnTT) = &
             -1./(rho0*cs2)*(-L_2 &
             +0.5*(gamma-1.)*(L_5+L_1))*TT
       endif
-      df(lll,m1:m2,n1:n2,iuy) = -L_3-T_3
-      df(lll,m1:m2,n1:n2,iuz) = -L_4-T_4
+      dfslice(:,:,iuy) = -L_3-T_3
+      dfslice(:,:,iuz) = -L_4-T_4
 !
 !  Check if we are solving for logrho or rho
 !
       if (.not. ldensity_nolog) then
-        df(lll,m1:m2,n1:n2,ilnrho)=df(lll,m1:m2,n1:n2,ilnrho)/rho0
+        dfslice(:,:,ilnrho)=dfslice(:,:,ilnrho)/rho0
       endif
 !
 !  Check if we are solving for logT or T
 !
       if (.not. ltemperature_nolog .and. ilnTT>0) then
-        df(lll,m1:m2,n1:n2,ilnTT)=df(lll,m1:m2,n1:n2,ilnTT)/TT
+        dfslice(:,:,ilnTT)=dfslice(:,:,ilnTT)/TT
       endif
 !
 ! Impose required variables at the boundary
@@ -607,36 +574,28 @@ include 'NSCBC.h'
         endif
       endif 
 !
-! Check if we have species. In reality this should be the same for all
-! "passive" scalars. Should implement this......
+! Treat all other variables as passive scalars
 !
-      if (nchemspec>1) then
-        do k=1,nchemspec
-          call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dx(m1:m2,n1:n2),lll,1)
-!!$          do i=n1,n2
-!!$            call der_pencil(2,f(lll,:,i,ichemspec(k)),dYk_dy(:,i))
-!!$          enddo
-!!$          do i=m1,m2
-!!$            call der_pencil(3,f(lll,i,:,ichemspec(k)),dYk_dz(i,:))
-!!$          enddo
-           df(lll,m1:m2,n1:n2,ichemspec(k))=&
-              -f(lll,m1:m2,n1:n2,iux)*dYk_dx(m1:m2,n1:n2)
-!!$              -f(lll,m1:m2,n1:n2,iuy)*dYk_dy(m1:m2,n1:n2) &
-!!$              -f(lll,m1:m2,n1:n2,iuz)*dYk_dz(m1:m2,n1:n2) &
-!!$              + RHS_Y_full(lll,m1:m2,n1:n2,k)
-
-           do i=m1,m2
-           do j=n1,n2
-             if ((f(lll,i,j,ichemspec(k))+df(lll,i,j,ichemspec(k))*dt)<-1e-25 ) then
-               df(lll,i,j,ichemspec(k))=-1e-25*dt
-             endif
-             if ((f(lll,i,j,ichemspec(k))+df(lll,i,j,ichemspec(k))*dt)>1.) then
-               f(lll,i,j,ichemspec(k))=1.*dt
-             endif
-           enddo
-           enddo
-       enddo
+      iused=max(ilnTT,ilnrho)
+      if (mvar>iused) then 
+        do k=iused+1,mvar
+          call der_onesided_4_slice(f,sgn,k,dYk_dx,lll,direction)
+          dfslice(:,:,k)=-fslice(:,:,iux)*dYk_dx
+        enddo
       endif
+!
+!  Put everything that has been temporarily stored in dfslice back into
+!  the df array
+!
+      if (direction == 1) then
+        df(lll,m1:m2,n1:n2,:)=dfslice
+      elseif (direction == 2) then
+        f(l1:l2,lll,n1:n2,:)=dfslice
+      elseif (direction == 3) then
+        f(l1:l2,m1:m2,lll,:)=dfslice
+      else
+        call fatal_error('bc_nscbc_prf_x','No such direction!')
+      endif   
 !
     endsubroutine bc_nscbc_prf_x
 !***********************************************************************
@@ -1220,24 +1179,53 @@ include 'NSCBC.h'
 !
       end subroutine turbulent_vel_x
 !***********************************************************************
-      subroutine get_thermodynamics(mu1,grad_mu1,gamma,cs2,cs,lll,sgn,direction)
+      subroutine get_thermodynamics(mu1,grad_mu1,gamma,cs2,cs,rho0,TT,P0,nu,&
+          grad_rho,grad_P,grad_T,lll,sgn,direction,fslice)
 !
 !  Find thermodynamical quantities, including density and temperature
 !
 ! 2010.01.21/Nils Erland: coded
 !
         Use Chemistry
+        use Viscosity
         use EquationOfState, only: cs0, cs20      
 !
         integer, intent(in) :: direction, sgn,lll
-        real, dimension(ny,nz), intent(out)  :: mu1, grad_mu1,cs2,cs,gamma
+        real, dimension(:,:), intent(out)  :: mu1,cs2,cs,gamma, grad_mu1
+        real, dimension(:,:), intent(out)  :: rho0,TT,P0
+        real, dimension(:,:,:), intent(inout)  :: grad_rho,grad_T,grad_P
+        real, dimension(:,:,:), intent(in) :: fslice
+        real, intent(out) :: nu
+!
+        integer :: i
+!
+!  Find density
+!
+      if (ldensity_nolog) then
+        rho0 = fslice(:,:,irho)
+      else
+        rho0 = exp(fslice(:,:,ilnrho))
+      endif
+!
+!  Find temperature
+!
+      if (iTT>0) then
+        TT = fslice(:,:,iTT)
+      elseif (ilnTT>0) then
+        TT = exp(fslice(:,:,ilnTT))
+      endif
+!
+!  Get viscoity
+!
+      call getnu(nu)
 !        
 !  Find mu1, grad_mu1 and gamma
 !
         if (ilnTT>0 .or. iTT>0) then
-          if (direction==1) call get_mu1_slicex(mu1,grad_mu1,lll,sgn)
-          if (direction==2) call get_mu1_slicey(mu1,grad_mu1,lll,sgn)
-          if (direction==3) call get_mu1_slicez(mu1,grad_mu1,lll,sgn)
+          call get_mu1_slice(mu1,grad_mu1,lll,sgn,direction)
+!!$          if (direction==1) call get_mu1_slicex(mu1,grad_mu1,lll,sgn)
+!!$          if (direction==2) call get_mu1_slicey(mu1,grad_mu1,lll,sgn)
+!!$          if (direction==3) call get_mu1_slicez(mu1,grad_mu1,lll,sgn)
           call get_gamma_slice(gamma,direction,lll)
         else
           gamma=1.
@@ -1260,6 +1248,34 @@ include 'NSCBC.h'
         print*,"chemistry. Boundary treatment skipped."
         return
       endif
+!
+!  Find gradient of rho and temperature
+!
+      if (.not. ldensity_nolog) then
+        do i=1,3
+          grad_rho(:,:,i)=grad_rho(:,:,i)*rho0
+        enddo
+      endif
+      if (.not. ltemperature_nolog .and. ilnTT>0) then
+        do i=1,3
+          grad_T(:,:,i)=grad_T(:,:,i)*TT
+        enddo
+      endif
+!
+!  Find pressure and the gradient of pressure
+!
+      do i=1,3
+        if (ilnTT>0) then 
+          grad_P(:,:,i)&
+              =grad_rho(:,:,i)*TT*Rgas*mu1&
+              +grad_T(:,:,i)*rho0*Rgas*mu1&
+              +Rgas*grad_mu1*TT*rho0
+          P0=rho0*Rgas*mu1*TT
+        else
+          grad_P(:,:,i)=grad_rho(:,:,i)*cs2
+          P0=rho0*cs2
+        endif
+      enddo
 !
     end subroutine get_thermodynamics
 !***********************************************************************
