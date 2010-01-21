@@ -228,27 +228,27 @@ module Particles_collisions
 !               = (4/3)*tau_fric_j*(rhog/rhoj)*(cs/dv_jk)*
 !                     tau_fric_j^2/(tau_fric_j+tau_fric_k)^2
 !
-                 if (ltauc_from_tauf) then
-                   if (lparticles_radius.or.lparticles_number) then
-                     if (lroot) print*, 'particles_collisions_pencils: ', &
-                         'not implemented for variable particle radius '// &
-                         'or particle number'
-                     call fatal_error('particles_collisions_pencils','')
-                   endif
-                   if (npar_species>1) then
-                     tau_coll1=0.75*min(tausp1_j,tausp1_k)*deltavjk/cs0* &
-                         rhop_swarm/rho0*(tausp_j+tausp_k)**2* &
-                         min(tausp1_j,tausp1_k)**2
-                   else
-                     tau_coll1=3*tausp1_j*deltavjk/cs0*rhop_swarm/rho0
-                   endif
-                 else
+                  if (ltauc_from_tauf) then
+                    if (lparticles_radius.or.lparticles_number) then
+                      if (lroot) print*, 'particles_collisions_pencils: ', &
+                          'not implemented for variable particle radius '// &
+                          'or particle number'
+                      call fatal_error('particles_collisions_pencils','')
+                    endif
+                    if (npar_species>1) then
+                      tau_coll1=0.75*min(tausp1_j,tausp1_k)*deltavjk/cs0* &
+                          rhop_swarm/rho0*(tausp_j+tausp_k)**2* &
+                          min(tausp1_j,tausp1_k)**2
+                    else
+                      tau_coll1=3*tausp1_j*deltavjk/cs0*rhop_swarm/rho0
+                    endif
+                  else
 !
 !  If the mean free path is a user supplied constant, then we can readily
 !  calculate the collision time-scale.
 !
-                   tau_coll1=deltavjk/lambda_mfp_single
-                 endif
+                    tau_coll1=deltavjk/lambda_mfp_single
+                  endif
 !
 !  Increase collision rate artificially for fewer collisions.
 !
@@ -326,6 +326,7 @@ module Particles_collisions
 !  23-mar-09/anders: coded
 !
       use Diagnostics
+      use EquationOfState, only: cs0, rho0
       use General
 !
       real, dimension (mpar_loc,mpvar) :: fp
@@ -333,9 +334,12 @@ module Particles_collisions
 !
       real, dimension (3) :: xpj, xpk, vpj, vpk
       real :: deltavjk, tau_coll1, prob, r
+      real :: espec, asemi, omega_orbit
+      real :: tausp_j, tausp_k, tausp1_j, tausp1_k
       integer, dimension (nxb,nyb,nzb) :: kshepherdb, np_block
       integer :: ix, iy, iz, iblock, ix0, iy0, iz0
       integer :: j, k, np_point, ncoll, ncoll_par, npart_par
+      integer :: jspec, kspec
 !
       intent (in) :: ineargrid
       intent (inout) :: fp
@@ -376,6 +380,11 @@ module Particles_collisions
             np_point=np_block(ix-nghostb,iy-nghostb,iz-nghostb)
             do while (k/=0)
               j=k
+              if (ltauc_from_tauf) then
+                kspec=npar_species*(ipar(k)-1)/npar+1
+                tausp_k=tausp_species(kspec)
+                tausp1_k=tausp1_species(kspec)
+              endif
               npart_par=0
               ncoll_par=0
               do while (.true.)
@@ -387,6 +396,11 @@ module Particles_collisions
                     exit
                   endif
                 endif
+                if (ltauc_from_tauf) then
+                  jspec=npar_species*(ipar(j)-1)/npar+1
+                  tausp_j=tausp_species(jspec)
+                  tausp1_j=tausp1_species(jspec)
+                endif
 !
 !  Calculate the relative speed of particles j and k.
 !
@@ -396,40 +410,96 @@ module Particles_collisions
                 xpj=fp(j,ixp:izp)
                 vpj=fp(j,ivpx:ivpz)
                 if (lshear .and. lshear_in_vp) vpj(2)=vpj(2)-qshear*Omega*xpj(1)
-                deltavjk=sqrt(sum((vpk-vpj)**2))
+!
+!  Only consider collisions between particles approaching each other.
+!
+                if (sum((vpk-vpj)*(xpk-xpj))<0.0) then
+!
+!  For Keplerian particle discs, where the scale height of the particles is
+!  given by their velocity dispersion Hp~vrms/OmegaK, we can use the 2-D
+!  approach suggested by Lithwick & Chiang (2007). The collision time scale is
+!
+!    tcol=1/(n*sigma*vrms)=lambda/vrms
+!
+!  The particle density is n~Sigma/Hp, giving
+!
+!    tcol=1/(Sigma*sigma*OmegaK)=lambda0/(Omega*dx)
+!
+!  Here we used that lambda0=1/(npswarm*sigma) has been calculated as if
+!  the particle scale height was dx.
+!
+                  if (lkeplerian_flat) then
+                    espec=sum(vpk**2)/2-gravr/sqrt(sum(xpk**2))
+                    asemi=-gravr/(2*espec)
+                    omega_orbit=sqrt(gravr/asemi**3)
+                    deltavjk=omega_orbit*dx
+                  else
+                    deltavjk=sqrt(sum((vpk-vpj)**2))
+                  endif
 !
 !  The time-scale for collisions between a representative particle from
-!  superparticle k and the particle cluster in superparticle j is
+!  superparticle k and the particle swarm in superparticle j is
 !
 !    tau_coll = 1/(n*sigma*dv) = lambda/dv
 !
 !  where lambda is the mean free path of a particle relative to a single
-!  superparticle (this is a constant).
+!  superparticle and sigma is the collisional cross section.
 !
-                tau_coll1=deltavjk/lambda_mfp_single
+!  We can further write the collision time of a representative particle from
+!  swarm k colliding with the particles of swarm j in terms of their friction
+!  times.
+!
+!    tau_coll_k = 1/(nj*sigma_jk*dv_jk) = mj/(rhoj*sigma_jk*dv_jk)
+!               = (4/3)*pi*rhops*aj^3/(rhoj*pi*(aj+ak)^2*dv_jk)
+!               = (4/3)*rhops*aj^3/(rhoj*(aj+ak)^2*dv_jk)
+!               = (4/3)*tau_fric_j*(rhog/rhoj)*(cs/dv_jk)*
+!                     tau_fric_j^2/(tau_fric_j+tau_fric_k)^2
+!
+                  if (ltauc_from_tauf) then
+                    if (lparticles_radius.or.lparticles_number) then
+                      if (lroot) print*, 'particles_collisions_blocks: ', &
+                          'not implemented for variable particle radius '// &
+                          'or particle number'
+                      call fatal_error('particles_collisions_blocks','')
+                    endif
+                    if (npar_species>1) then
+                      tau_coll1=0.75*min(tausp1_j,tausp1_k)*deltavjk/cs0* &
+                          rhop_swarm/rho0*(tausp_j+tausp_k)**2* &
+                          min(tausp1_j,tausp1_k)**2
+                    else
+                      tau_coll1=3*tausp1_j*deltavjk/cs0*rhop_swarm/rho0
+                    endif
+                  else
+!
+!  If the mean free path is a user supplied constant, then we can readily
+!  calculate the collision time-scale.
+!
+                    tau_coll1=deltavjk/lambda_mfp_single
+                  endif
 !
 !  Increase collision rate artificially for fewer collisions.
 !
-                if (npart_max_par/=-1 .and. npart_max_par<np_point) then
-                  tau_coll1=tau_coll1*np_point/npart_max_par
-                endif
+                  if (npart_max_par/=-1 .and. npart_max_par<np_point) then
+                    tau_coll1=tau_coll1*np_point/npart_max_par
+                  endif
 !
-                if (tau_coll1/=0.0) then
+                  if (tau_coll1/=0.0) then
 !
 !  The probability for a collision in this time-step is dt/tau_coll.
 !
-                  prob=dt*tau_coll1
-                  call random_number_wrapper(r)
-                  if (r<=prob) then
-                    if (lshear .and. lshear_in_vp) then
-                      vpk(2)=vpk(2)+qshear*Omega*xpk(1)
-                      vpj(2)=vpj(2)+qshear*Omega*xpj(1)
+                    prob=dt*tau_coll1
+                    call random_number_wrapper(r)
+                    if (r<=prob) then
+                      if (lshear .and. lshear_in_vp) then
+                        vpk(2)=vpk(2)+qshear*Omega*xpk(1)
+                        vpj(2)=vpj(2)+qshear*Omega*xpj(1)
+                      endif
+                      call particle_collision(xpj,xpk,vpj,vpk,j,k)
+                      fp(k,ivpx:ivpz)=vpk
+                      fp(j,ivpx:ivpz)=vpj
+                      ncoll=ncoll+1
+                      ncoll_par=ncoll_par+1
                     endif
-                    call particle_collision(xpj,xpk,vpj,vpk,j,k)
-                    fp(k,ivpx:ivpz)=vpk
-                    fp(j,ivpx:ivpz)=vpj
-                    ncoll=ncoll+1
-                    ncoll_par=ncoll_par+1
                   endif
                 endif
                 npart_par=npart_par+1
@@ -456,6 +526,18 @@ module Particles_collisions
           endif
         enddo; enddo; enddo
       enddo
+!
+!  We need to register the diagnostic type, even if there are no particles
+!  at the local processor. This is a bug and should be fixed.
+!
+      if (it==1) then
+        if (npar_loc==0) then
+          if (idiag_ncollpm/=0) &
+              call sum_par_name(fp(1:npar_loc,ixp),idiag_ncollpm)
+          if (idiag_npartpm/=0) &
+              call sum_par_name(fp(1:npar_loc,ixp),idiag_npartpm)
+        endif
+      endif
 !
     endsubroutine particles_collisions_blocks
 !***********************************************************************
