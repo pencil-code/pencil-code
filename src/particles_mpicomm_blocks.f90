@@ -89,6 +89,28 @@ module Particles_mpicomm
         call fatal_error_local('initialize_particles_mpicomm','')
       endif
       call fatal_error_local_collect()
+      if (mod(nxgrid,nbrickx)/=0) then
+        if (lroot) print*, 'initialize_particles_mpicomm: nxgrid must be ' // &
+            'an integer multiple of nbrickx'
+        if (lroot) print*, 'initialize_particles_mpicomm: nbrickx, nxgrid=', &
+            nbrickx, nxgrid
+        call fatal_error_local('initialize_particles_mpicomm','')
+      endif
+      if (mod(nygrid,nbricky)/=0) then
+        if (lroot) print*, 'initialize_particles_mpicomm: nygrid must be ' // &
+            'an integer multiple of nbricky'
+        if (lroot) print*, 'initialize_particles_mpicomm: nbricky, nygrid=', &
+            nbricky, nygrid
+        call fatal_error_local('initialize_particles_mpicomm','')
+      endif
+      if (mod(nzgrid,nbrickz)/=0) then
+        if (lroot) print*, 'initialize_particles_mpicomm: nzgrid must be ' // &
+            'an integer multiple of nbrickz'
+        if (lroot) print*, 'initialize_particles_mpicomm: nbrickz, nzgrid=', &
+            nbrickz, nzgrid
+        call fatal_error_local('initialize_particles_mpicomm','')
+      endif
+      call fatal_error_local_collect()
 !
 !  Distribute particles evenly among processors to begin with.
 !
