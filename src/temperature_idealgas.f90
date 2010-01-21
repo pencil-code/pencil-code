@@ -92,14 +92,20 @@ module Entropy
 !  Diagnostic variables (needs to be consistent with reset list below).
 !
   integer :: idiag_TTmax=0    ! DIAG_DOC: $\max (T)$
-  integer :: idiag_gTmax=0    ! DIAG_DOC: $\max (|grad T|)$
+  integer :: idiag_gTmax=0    ! DIAG_DOC: $\max (|\nabla T|)$
   integer :: idiag_TTmin=0    ! DIAG_DOC: $\min (T)$
   integer :: idiag_TTm=0      ! DIAG_DOC: $\left< T \right>$
   integer :: idiag_fradtop=0  ! DIAG_DOC: $<-K{dT\over dz}>_{\text{top}}$ 
                               ! DIAG_DOC: \quad(radiative flux at the top)
   integer :: idiag_yHmax=0, idiag_yHmin=0, idiag_yHm=0
-  integer :: idiag_ethm=0, idiag_ssm=0, idiag_thcool=0
-  integer :: idiag_eem=0, idiag_ppm=0, idiag_csm=0
+  integer :: idiag_ethm=0     ! DIAG_DOC: $\left< e_{\text{th}}\right> = 
+                              ! DIAG_DOC:  \left< c_v \rho T \right> $
+                              ! DIAG_DOC: \quad(mean thermal energy)
+  integer :: idiag_eem=0      ! DIAG_DOC: $\left< e \right> = 
+                              ! DIAG_DOC:  \left< c_v T \right>$
+                              ! DIAG_DOC: \quad(mean internal energy)
+  integer :: idiag_ssm=0, idiag_thcool=0
+  integer :: idiag_ppm=0, idiag_csm=0
   integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
                                 ! DIAG_DOC:   /\max c_{\rm s}]$
                                 ! DIAG_DOC:   \quad(time step relative to
