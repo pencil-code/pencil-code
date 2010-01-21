@@ -350,7 +350,7 @@ include 'NSCBC.h'
       real, dimension (ny,nz) :: cs,cs2, gamma,dYk_dx
       real :: Mach,KK,nu,coflow_inner_diameter, cs0_average
       integer lll,i,jjj,kkk,j,k,ngridpoints
-      integer sgn,stat,direction,iused
+      integer sgn,stat,dir,iused
       logical :: non_zero_transveral_velo
       real, allocatable, dimension(:,:,:) :: fslice, dfslice
 !
@@ -359,7 +359,7 @@ include 'NSCBC.h'
 !
 !  Define the direction of this boundary
 !
-      direction=1
+      dir=1
 !
       llinlet = .false.
       if (present(linlet)) llinlet = linlet
@@ -369,14 +369,14 @@ include 'NSCBC.h'
            'bc_nscbc_prf_x: when using linlet=T, you must also specify T_t)')
       select case (topbot)
       case ('bot')
-        if (direction == 1) lll = l1
-        if (direction == 2) lll = m1
-        if (direction == 3) lll = n1
+        if (dir == 1) lll = l1
+        if (dir == 2) lll = m1
+        if (dir == 3) lll = n1
         sgn = 1
       case ('top')
-        if (direction == 1) lll = l2
-        if (direction == 2) lll = m2
-        if (direction == 3) lll = n2
+        if (dir == 1) lll = l2
+        if (dir == 2) lll = m2
+        if (dir == 3) lll = n2
         sgn = -1
       case default
         print*, "bc_nscbc_prf_x: ", topbot, " should be `top' or `bot'"
@@ -384,7 +384,7 @@ include 'NSCBC.h'
 !
 !  Set some direction dependent variables
 !
-      if (direction == 1) then
+      if (dir == 1) then
         allocate(fslice(ny,nz,mfarray),STAT=stat)
         if (stat>0) call stop_it("Couldn't allocate memory for fslice ")        
         allocate(dfslice(ny,nz,mvar),STAT=stat)
@@ -392,7 +392,7 @@ include 'NSCBC.h'
         fslice=f(lll,m1:m2,n1:n2,:)
         dfslice=df(lll,m1:m2,n1:n2,:)
         ngridpoints=ny*nz
-      elseif (direction == 2) then
+      elseif (dir == 2) then
         allocate(fslice(nx,nz,mfarray),STAT=stat)
         if (stat>0) call stop_it("Couldn't allocate memory for fslice ")        
         allocate(dfslice(nx,nz,mvar),STAT=stat)
@@ -400,7 +400,7 @@ include 'NSCBC.h'
         fslice=f(l1:l2,lll,n1:n2,:)
         dfslice=df(l1:l2,lll,n1:n2,:)
         ngridpoints=nx*nz
-      elseif (direction == 3) then
+      elseif (dir == 3) then
         allocate(fslice(nx,ny,mfarray),STAT=stat)
         if (stat>0) call stop_it("Couldn't allocate memory for fslice ")        
         allocate(dfslice(nx,ny,mvar),STAT=stat)
@@ -409,7 +409,7 @@ include 'NSCBC.h'
         dfslice=df(l1:l2,m1:m2,lll,:)     
         ngridpoints=nx*ny
       else
-        call fatal_error('bc_nscbc_prf_x','No such direction!')
+        call fatal_error('bc_nscbc_prf_x','No such dir!')
       endif
 !
 !  Find derivatives at boundary
@@ -421,7 +421,7 @@ include 'NSCBC.h'
 !  In addition also speed of sound, gamma and mu1 is found.
 !
       call get_thermodynamics(mu1,grad_mu1,gamma,cs2,cs,rho0,TT,P0,nu,&
-          grad_rho,grad_P,grad_T,lll,sgn,direction,fslice)
+          grad_rho,grad_P,grad_T,lll,sgn,dir,fslice)
 !
 !  Define some prefactors to be used later
 !
@@ -436,23 +436,12 @@ include 'NSCBC.h'
 !  I think that what we really want is a Mach number averaged over the 
 !  timescale of several acoustic waves. How could this be done????)
 !
-      Mach=sum(fslice(:,:,direction)/cs)/ngridpoints
+      Mach=sum(fslice(:,:,dir)/cs)/ngridpoints
 !
 !  We will need the transversal terms of the waves entering the domain
 !
-      T_1= rho0*dui_dxj(:,:,2,2)+fslice(:,:,iuy)*grad_rho(:,:,2)&
-          +rho0*dui_dxj(:,:,3,3)+fslice(:,:,iuz)*grad_rho(:,:,3)
-      T_2= fslice(:,:,iuy)*dui_dxj(:,:,1,2)&
-          +fslice(:,:,iuz)*dui_dxj(:,:,1,3)
-      T_3= fslice(:,:,iuy)*dui_dxj(:,:,2,2)&
-          +fslice(:,:,iuz)*dui_dxj(:,:,2,3)&
-          +grad_P(:,:,2)/rho0
-      T_4= fslice(:,:,iuy)*dui_dxj(:,:,3,2)&
-          +fslice(:,:,iuz)*dui_dxj(:,:,3,3)&
-          +grad_P(:,:,3)/rho0
-      T_5= fslice(:,:,iuy)*grad_P(:,:,2)&
-          +fslice(:,:,iuz)*grad_P(:,:,3)&
-          +gamma*P0*(dui_dxj(:,:,2,2)+dui_dxj(:,:,3,3))
+      call transversal_terms(T_1,T_2,T_3,T_4,T_5,rho0,P0,gamma,&
+          fslice,grad_rho,grad_P,dui_dxj,dir)
 !
       if (llinlet) then
 !
@@ -464,8 +453,8 @@ include 'NSCBC.h'
 !  Having found the velocity at the inlet we are now ready to start
 !  defining the L's, which are really the Lodi equations.
 !
-        L_1 = (fslice(:,:,iux) - sgn*cs)&
-            *(grad_P(:,:,1) - sgn*rho0*cs*dui_dxj(:,:,1,1))
+        L_1 = (fslice(:,:,dir) - sgn*cs)&
+            *(grad_P(:,:,dir) - sgn*rho0*cs*dui_dxj(:,:,dir,dir))
         if (non_reflecting_inlet) then
           if (ilnTT>0) then
             call fatal_error('NSCBC.f90',&
@@ -484,7 +473,7 @@ include 'NSCBC.h'
           L_4=nscbc_sigma_in*(fslice(:,:,iuz)-u_in(:,:,3))&
               *cs/Lxyz(1)-T_4
           L_5 = nscbc_sigma_in*cs2*rho0&
-              *sgn*(fslice(:,:,iux)-u_in(:,:,1))*(1-Mach**2)/Lxyz(1)&
+              *sgn*(fslice(:,:,dir)-u_in(:,:,dir))*(1-Mach**2)/Lxyz(1)&
               -(T_5+sgn*rho0*cs*T_2)
         else
           L_3=0
@@ -496,40 +485,39 @@ include 'NSCBC.h'
 !
 !  Find the parameter determining 
 !
-        cs0_average=sum(cs)/(ny*nz)
-        KK=nscbc_sigma_out*(1-Mach**2)*cs0_average/Lxyz(1)
+        cs0_average=sum(cs)/ngridpoints
+        KK=nscbc_sigma_out*(1-Mach**2)*cs0_average/Lxyz(dir)
 !
 !  Find the L_i's. 
 !
         L_1 = KK*(P0-p_infty)-(T_5-sgn*rho0*cs*T_2)
         if (ilnTT > 0) then 
-          L_2=fslice(:,:,iux)*&
-              (cs2*grad_rho(:,:,1)-grad_P(:,:,1))
+          L_2=fslice(:,:,dir)*(cs2*grad_rho(:,:,dir)-grad_P(:,:,dir))
         else
           L_2=0
         endif
-        L_3 = fslice(:,:,iux)*dui_dxj(:,:,2,1)
-        L_4 = fslice(:,:,iux)*dui_dxj(:,:,3,1)
-        L_5 = (fslice(:,:,iux) - sgn*cs)*&
-             (grad_P(:,:,1)&
-             - sgn*rho0*cs*dui_dxj(:,:,1,1))
+        L_3 = fslice(:,:,dir)*dui_dxj(:,:,2,dir)
+        L_4 = fslice(:,:,dir)*dui_dxj(:,:,3,dir)
+        L_5 = (fslice(:,:,dir) - sgn*cs)*&
+             (grad_P(:,:,dir)&
+             - sgn*rho0*cs*dui_dxj(:,:,dir,dir))
       endif
 !
-!  Find the evolution equation for the x velocity at the boundary
+!  Find the evolution equation for the normal velocity at the boundary
 !  For 'top' L_1 plays the role of L5 and L_5 the role of L1
 !
       select case (topbot)
       case ('bot')
         if (llinlet) then
-          dfslice(:,:,iux) = prefac2*( L_5 - L_1)-T_2
+          dfslice(:,:,dir) = prefac2*( L_5 - L_1)-T_2
         else
-          dfslice(:,:,iux) = prefac2*( L_1 - L_5)!-parallell_term_ux
+          dfslice(:,:,dir) = prefac2*( L_1 - L_5)!-parallell_term_ux
         endif
       case ('top')
         if (llinlet) then
-          dfslice(:,:,iux) = prefac2*( L_1 - L_5)!-parallell_term_ux
+          dfslice(:,:,dir) = prefac2*( L_1 - L_5)!-parallell_term_ux
         else
-          dfslice(:,:,iux) = prefac2*(-L_1 + L_5)-T_2
+          dfslice(:,:,dir) = prefac2*(-L_1 + L_5)-T_2
         endif
       endselect
 !
@@ -537,9 +525,7 @@ include 'NSCBC.h'
 !
       dfslice(:,:,ilnrho) = prefac1*(2*L_2 + L_1 + L_5)-T_1
       if (ilnTT>0) then
-        dfslice(:,:,ilnTT) = &
-            -1./(rho0*cs2)*(-L_2 &
-            +0.5*(gamma-1.)*(L_5+L_1))*TT
+        dfslice(:,:,ilnTT) = -1./(rho0*cs2)*(-L_2+0.5*(gamma-1.)*(L_5+L_1))*TT
       endif
       dfslice(:,:,iuy) = -L_3-T_3
       dfslice(:,:,iuz) = -L_4-T_4
@@ -560,16 +546,16 @@ include 'NSCBC.h'
 !
       if (llinlet) then
         if (.not. non_reflecting_inlet) then
-          f(lll,m1:m2,n1:n2,iux) = u_in(:,:,1)
+          fslice(:,:,dir) = u_in(:,:,dir)
           if (non_zero_transveral_velo) then
-            f(lll,m1:m2,n1:n2,iuy) = u_in(:,:,2)
-            f(lll,m1:m2,n1:n2,iuz) = u_in(:,:,3)
+            fslice(:,:,iuy) = u_in(:,:,2)
+            fslice(:,:,iuz) = u_in(:,:,3)
           else
-            f(lll,m1:m2,n1:n2,iuy) = 0.
-            f(lll,m1:m2,n1:n2,iuz) = 0.
+            fslice(:,:,iuy) = 0.
+            fslice(:,:,iuz) = 0.
           endif
           if (ilnTT>0) then
-            f(lll,m1:m2,n1:n2,ilnTT) = T_t
+            fslice(:,:,ilnTT) = T_t
           endif
         endif
       endif 
@@ -579,22 +565,25 @@ include 'NSCBC.h'
       iused=max(ilnTT,ilnrho)
       if (mvar>iused) then 
         do k=iused+1,mvar
-          call der_onesided_4_slice(f,sgn,k,dYk_dx,lll,direction)
-          dfslice(:,:,k)=-fslice(:,:,iux)*dYk_dx
+          call der_onesided_4_slice(f,sgn,k,dYk_dx,lll,dir)
+          dfslice(:,:,k)=-fslice(:,:,dir)*dYk_dx
         enddo
       endif
 !
 !  Put everything that has been temporarily stored in dfslice back into
 !  the df array
 !
-      if (direction == 1) then
+      if (dir == 1) then
         df(lll,m1:m2,n1:n2,:)=dfslice
-      elseif (direction == 2) then
-        f(l1:l2,lll,n1:n2,:)=dfslice
-      elseif (direction == 3) then
-        f(l1:l2,m1:m2,lll,:)=dfslice
+        f(lll,m1:m2,n1:n2,:) =fslice
+      elseif (dir == 2) then
+        df(l1:l2,lll,n1:n2,:)=dfslice
+        f(l1:l2,lll,n1:n2,:) =fslice
+      elseif (dir == 3) then
+        df(l1:l2,m1:m2,lll,:)=dfslice
+        f(l1:l2,m1:m2,lll,:) =fslice
       else
-        call fatal_error('bc_nscbc_prf_x','No such direction!')
+        call fatal_error('bc_nscbc_prf_x','No such dir!')
       endif   
 !
     endsubroutine bc_nscbc_prf_x
@@ -1223,9 +1212,6 @@ include 'NSCBC.h'
 !
         if (ilnTT>0 .or. iTT>0) then
           call get_mu1_slice(mu1,grad_mu1,lll,sgn,direction)
-!!$          if (direction==1) call get_mu1_slicex(mu1,grad_mu1,lll,sgn)
-!!$          if (direction==2) call get_mu1_slicey(mu1,grad_mu1,lll,sgn)
-!!$          if (direction==3) call get_mu1_slicez(mu1,grad_mu1,lll,sgn)
           call get_gamma_slice(gamma,direction,lll)
         else
           gamma=1.
@@ -1292,16 +1278,50 @@ include 'NSCBC.h'
         real, dimension(:,:,:)  , intent(out) :: grad_T,grad_rho
         real, dimension (mx,my,mz,mfarray), intent(in) :: f
 !
-        real, dimension (my,mz) :: tmp22,tmp12,tmp2_lnrho,tmp33,tmp13,tmp3_lnrho
-        real, dimension (my,mz) :: tmp23,tmp32,dYk_dx,tmp11,tmp21,tmp31,tmp1_lnrho
-        integer :: i
+!        real, dimension (my,mz) :: tmp1,tmp2,tmp3,tmp_lnrho
+        real, dimension (:,:), allocatable :: tmp1,tmp2,tmp3,tmp_lnrho
+        integer :: i,stat
+!
+!  Allocate arrays
+!
+      if (dir == 1) then
+        allocate(tmp1(my,mz),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for tmp1 ")        
+        allocate(tmp2(my,mz),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for tmp2 ")        
+        allocate(tmp3(my,mz),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for tmp3 ")        
+        allocate(tmp_lnrho(my,mz),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for tmp_lnrho ")   
+      elseif (dir == 2) then
+        allocate(tmp1(mx,mz),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for tmp1 ")        
+        allocate(tmp2(mx,mz),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for tmp2 ")        
+        allocate(tmp3(mx,mz),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for tmp3 ")        
+        allocate(tmp_lnrho(mx,mz),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for tmp_lnrho ")    
+      elseif (dir == 3) then
+        allocate(tmp1(mx,my),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for tmp1 ")        
+        allocate(tmp2(mx,my),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for tmp2 ")        
+        allocate(tmp3(mx,my),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for tmp3 ")        
+        allocate(tmp_lnrho(mx,my),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for tmp_lnrho ")   
+      else
+        call fatal_error('bc_nscbc_prf_x','No such dir!')
+      endif        
 !
 !  Initialize arrays
 !    
         dui_dxj =0
         grad_rho=0  
 !
-!  Find the derivatives in the direction normal to the boudary
+!  Find the derivatives in the direction normal to the boudary by 
+!  one-sided stencils
 !
         call der_onesided_4_slice(f,sgn,ilnrho,grad_rho(:,:,dir),lll,dir)
         call der_onesided_4_slice(f,sgn,iux,dui_dxj(:,:,1,dir),lll,dir)
@@ -1316,30 +1336,126 @@ include 'NSCBC.h'
         if (dir == 1) then
           if (nygrid /= 1) then
             do i=n1,n2
-              call der_pencil(2,f(lll,:,i,iuy),tmp22(:,i))
-              call der_pencil(2,f(lll,:,i,ilnrho),tmp2_lnrho(:,i))
-              call der_pencil(2,f(lll,:,i,iux),tmp12(:,i))
-              call der_pencil(2,f(lll,:,i,iuz),tmp32(:,i))
+              call der_pencil(2,f(lll,:,i,iux),tmp1(:,i))
+              call der_pencil(2,f(lll,:,i,iuy),tmp2(:,i))
+              call der_pencil(2,f(lll,:,i,iuz),tmp3(:,i))
+              call der_pencil(2,f(lll,:,i,ilnrho),tmp_lnrho(:,i))
             enddo
-            dui_dxj(:,:,1,2)=tmp12(m1:m2,n1:n2)
-            dui_dxj(:,:,2,2)=tmp22(m1:m2,n1:n2)
-            dui_dxj(:,:,3,2)=tmp32(m1:m2,n1:n2)
-            grad_rho(:,:,2)=tmp2_lnrho(m1:m2,n1:n2)
+            dui_dxj(:,:,1,2)=tmp1(m1:m2,n1:n2)
+            dui_dxj(:,:,2,2)=tmp2(m1:m2,n1:n2)
+            dui_dxj(:,:,3,2)=tmp3(m1:m2,n1:n2)
+            grad_rho(:,:,2)=tmp_lnrho(m1:m2,n1:n2)
           endif
           if (nzgrid /= 1) then
             do i=m1,m2
-              call der_pencil(3,f(lll,i,:,iuz),tmp33(i,:))
-              call der_pencil(3,f(lll,i,:,ilnrho),tmp3_lnrho(i,:))
-              call der_pencil(3,f(lll,i,:,iux),tmp13(i,:))
-              call der_pencil(3,f(lll,i,:,iuy),tmp23(i,:))
+              call der_pencil(3,f(lll,i,:,iux),tmp1(i,:))
+              call der_pencil(3,f(lll,i,:,iuy),tmp2(i,:))
+              call der_pencil(3,f(lll,i,:,iuz),tmp3(i,:))
+              call der_pencil(3,f(lll,i,:,ilnrho),tmp_lnrho(i,:))
             enddo
-            dui_dxj(:,:,1,3)=tmp13(m1:m2,n1:n2)
-            dui_dxj(:,:,2,3)=tmp23(m1:m2,n1:n2)
-            dui_dxj(:,:,3,3)=tmp33(m1:m2,n1:n2)
-            grad_rho(:,:,3)=tmp3_lnrho(m1:m2,n1:n2)
+            dui_dxj(:,:,1,3)=tmp1(m1:m2,n1:n2)
+            dui_dxj(:,:,2,3)=tmp2(m1:m2,n1:n2)
+            dui_dxj(:,:,3,3)=tmp3(m1:m2,n1:n2)
+            grad_rho(:,:,3)=tmp_lnrho(m1:m2,n1:n2)
+          endif
+        elseif (dir == 2) then
+          if (nxgrid /= 1) then
+            do i=n1,n2
+              call der_pencil(1,f(:,lll,i,iux),tmp1(:,i))
+              call der_pencil(1,f(:,lll,i,iuy),tmp2(:,i))
+              call der_pencil(1,f(:,lll,i,iuz),tmp3(:,i))
+              call der_pencil(1,f(:,lll,i,ilnrho),tmp_lnrho(:,i))
+            enddo
+            dui_dxj(:,:,1,1)=tmp1(l1:l2,n1:n2)
+            dui_dxj(:,:,2,1)=tmp2(l1:l2,n1:n2)
+            dui_dxj(:,:,3,1)=tmp3(l1:l2,n1:n2)
+            grad_rho(:,:,1)=tmp_lnrho(l1:l2,n1:n2)
+          endif
+          if (nzgrid /= 1) then
+            do i=l1,l2
+              call der_pencil(3,f(i,lll,:,iux),tmp1(i,:))
+              call der_pencil(3,f(i,lll,:,iuy),tmp2(i,:))
+              call der_pencil(3,f(i,lll,:,iuz),tmp3(i,:))
+              call der_pencil(3,f(i,lll,:,ilnrho),tmp_lnrho(i,:))
+            enddo
+            dui_dxj(:,:,1,3)=tmp1(l1:l2,n1:n2)
+            dui_dxj(:,:,2,3)=tmp2(l1:l2,n1:n2)
+            dui_dxj(:,:,3,3)=tmp3(l1:l2,n1:n2)
+            grad_rho(:,:,3)=tmp_lnrho(l1:l2,n1:n2)
+          endif
+        elseif (dir == 3) then
+          if (nxgrid /= 1) then
+            do i=m1,m2
+              call der_pencil(1,f(:,i,lll,iux),tmp1(:,i))
+              call der_pencil(1,f(:,i,lll,iuy),tmp2(:,i))
+              call der_pencil(1,f(:,i,lll,iuz),tmp3(:,i))
+              call der_pencil(1,f(:,i,lll,ilnrho),tmp_lnrho(:,i))
+            enddo
+            dui_dxj(:,:,1,1)=tmp1(l1:l2,m1:m2)
+            dui_dxj(:,:,2,1)=tmp2(l1:l2,m1:m2)
+            dui_dxj(:,:,3,1)=tmp3(l1:l2,m1:m2)
+            grad_rho(:,:,1)=tmp_lnrho(l1:l2,m1:m2)
+          endif
+          if (nygrid /= 1) then
+            do i=m1,m2
+              call der_pencil(2,f(:,i,lll,iux),tmp1(:,i))
+              call der_pencil(2,f(:,i,lll,iuy),tmp2(:,i))
+              call der_pencil(2,f(:,i,lll,iuz),tmp3(:,i))
+              call der_pencil(2,f(:,i,lll,ilnrho),tmp_lnrho(:,i))
+            enddo
+            dui_dxj(:,:,1,2)=tmp1(l1:l2,m1:m2)
+            dui_dxj(:,:,2,2)=tmp2(l1:l2,m1:m2)
+            dui_dxj(:,:,3,2)=tmp3(l1:l2,m1:m2)
+            grad_rho(:,:,2)=tmp_lnrho(l1:l2,m1:m2)
           endif
         endif
 !
       end subroutine derivate_boundary
+!***********************************************************************
+      subroutine transversal_terms(T_1,T_2,T_3,T_4,T_5,rho0,P0,gamma,&
+          fslice,grad_rho,grad_P,dui_dxj,dir)
+!
+!  Find the transversal terms.
+!  This correspond to the T's in Lodato et al. JCP (2008)
+!
+!  2010.01.21/Nils Erland: coded
+!
+        integer,                  intent(in) :: dir
+        real, dimension(:,:),     intent(out):: T_1, T_2, T_3, T_4, T_5
+        real, dimension(:,:),     intent(in) :: rho0,P0,gamma
+        real, dimension(:,:,:),   intent(in) :: fslice,grad_rho,grad_P
+        real, dimension(:,:,:,:), intent(in) :: dui_dxj 
+!
+        integer :: dir1, dir2, dir3
+!
+!  Set some auxillary variables
+!
+        if (dir==1) then
+          dir1=1; dir2=2; dir3=3
+        elseif (dir==2) then
+          dir1=2; dir2=1; dir3=3
+        elseif (dir==3) then
+          dir1=3; dir2=1; dir3=2
+        else
+          call fatal_error('transversal_terms','No such dir!')
+        endif
+!
+!  Calculate the T's
+!
+        T_1= rho0*dui_dxj(:,:,dir2,dir2)+fslice(:,:,dir2)*grad_rho(:,:,dir2)&
+            +rho0*dui_dxj(:,:,dir3,dir3)+fslice(:,:,dir3)*grad_rho(:,:,dir3)
+        T_2= fslice(:,:,dir2)*dui_dxj(:,:,dir1,dir2)&
+            +fslice(:,:,dir3)*dui_dxj(:,:,dir1,dir3)
+        T_3= fslice(:,:,dir2)*dui_dxj(:,:,dir2,dir2)&
+            +fslice(:,:,dir3)*dui_dxj(:,:,dir2,dir3)&
+            +grad_P(:,:,dir2)/rho0
+        T_4= fslice(:,:,dir2)*dui_dxj(:,:,dir3,dir2)&
+            +fslice(:,:,dir3)*dui_dxj(:,:,dir3,dir3)&
+            +grad_P(:,:,dir3)/rho0
+        T_5= fslice(:,:,dir2)*grad_P(:,:,dir2)&
+            +fslice(:,:,dir3)*grad_P(:,:,dir3)&
+            +gamma*P0*(dui_dxj(:,:,dir2,dir2)+dui_dxj(:,:,dir3,dir3))
+!
+      end subroutine transversal_terms
 !***********************************************************************
 endmodule NSCBC
