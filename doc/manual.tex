@@ -10367,6 +10367,16 @@ possible inputs to the file \file{video.in}.
 \midrule
   \var{ss}    & entropy $s$;
                 writes \file[]{ss.\{xz,yz,xy,xy2\}}  \\
+  \var{pp}    & presure $p$;
+                writes \file[]{pp.\{xz,yz,xy,xy2\}}  \\
+%
+\midrule
+  \multicolumn{2}{c}{Module \file{temperature_idealgas.f90}} \\
+\midrule
+  \var{lnTT}  & logarithmic temperature $\ln T$;
+                writes \file[]{lnTT.\{xz,yz,xy,xy2\}}  \\
+  \var{TT}    & temperature $T$;
+                writes \file[]{TT.\{xz,yz,xy,xy2\}}  \\
 %
 \midrule
   \multicolumn{2}{c}{Module \file{visc_shock.f90}} \\
@@ -10375,19 +10385,9 @@ possible inputs to the file \file{video.in}.
                 writes \file[]{shock.\{xz,yz,xy,xy2\}}  \\
 %
 \midrule
-  \multicolumn{2}{c}{Modules \file{ionization.f90} and \file{temperature.f90}}\\
+  \multicolumn{2}{c}{Module \file{eos_ionization.f90}} \\
 \midrule
-  \var{lnTT}  & logarithmic temperature $\ln T$;
-                writes \file[]{lnTT.\{xz,yz,xy,xy2\}}.
-
-                \emph{N.B.: This won't work with other modules, but not all
-                compilers will flag the array bound violation when
-                \code{ilnTT=0}}. \\
-%
-\midrule
-  \multicolumn{2}{c}{Module \file{ionization.f90}} \\
-\midrule
-  \var{ionization} & ionization fraction $y_{\rm H}$;
+  \var{yH} & ionization fraction $y_{\rm H}$;
                      writes \file[]{yH.\{xz,yz,xy,xy2\}}  \\
 %
 \midrule
