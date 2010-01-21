@@ -199,6 +199,14 @@ module Particles
         call fatal_error('initialize_particles','')
       endif
 !
+!  One must count particles in grid cells for proper load balancing.
+!
+      if (lnocalc_np) then
+        if (lroot) print*, 'initialize_particles: can not have '// &
+            'lnocalc_np=T with particle block domain decomposition'
+        call fatal_error('initialize_particles','')
+      endif
+!
 !  The inverse stopping time is needed for drag force and collisional cooling.
 !
       if (tausp/=0.0) tausp1=1/tausp
